@@ -1040,6 +1040,208 @@ static void test_window_redraw(void)
 #endif
 }
 
+static unsigned window_test_retired;
+static void *window_test_retired_data;
+static bool window_test_retired_on_video;
+
+static void window_test_retire(void *data)
+{
+   window_test_retired++;
+   window_test_retired_data = data;
+#ifdef HAVE_THREADS
+   window_test_retired_on_video = video_thread_is_video_thread();
+#endif
+}
+
+#ifdef HAVE_THREADS
+static video_poke_interface_t retire_poke;
+
+static void retire_poke_interface(void *data,
+      const video_poke_interface_t **iface)
+{
+   (void)data;
+   *iface = &retire_poke;
+}
+#endif
+
+static unsigned window_test_hook_order[2];
+static unsigned window_test_hook_calls;
+static void *window_test_hook_data;
+
+/* What had been let go of, plus 10 after */
+static void window_test_hook(void *data, bool done)
+{
+   if (window_test_hook_calls < 2)
+      window_test_hook_order[window_test_hook_calls] =
+         (done ? 10 : 0) + window_test_retired;
+   window_test_hook_calls++;
+   window_test_hook_data = data;
+}
+
+/* The windows let go of through the driver's hook, straight through
+ * with no video thread, the platform's hook around it */
+static void test_window_retire(void)
+{
+   int marker = 0;
+   window_test_begin();
+   window_test_retired    = 0;
+   window_test_hook_calls = 0;
+   CHECK(video_driver_windows_retire(NULL, NULL));
+   CHECK(window_test_retired == 0);
+   window_test_poke.windows_retire = window_test_retire;
+   CHECK(video_driver_windows_retire(window_test_hook, &marker));
+   CHECK(window_test_retired == 1);
+   CHECK(window_test_retired_data == &window_test_driver);
+   CHECK(!window_test_retired_on_video);
+   CHECK(window_test_hook_calls == 2);
+   CHECK(window_test_hook_order[0] == 0);
+   CHECK(window_test_hook_order[1] == 11);
+   CHECK(window_test_hook_data == &marker);
+   window_test_end();
+}
+
+#ifdef HAVE_THREADS
+/* A frame drawn until it is let go, or for a second */
+static retro_atomic_int_t retire_lane_hold;
+static retro_atomic_int_t retire_lane_drawing;
+static retro_atomic_int_t retire_lane_drawn;
+static retro_atomic_int_t retire_lane_retired;
+/* Bit 0 the hook before the retire, bit 1 after it */
+static retro_atomic_int_t retire_lane_hooks;
+static bool retire_lane_after_frame;
+static bool retire_lane_hooked_before;
+static bool retire_lane_acked_after;
+static bool retire_lane_on_video;
+static void *retire_lane_data;
+
+static bool retire_lane_frame(void *data, const void *frame, unsigned dims,
+      uint64_t count, unsigned pitch, const char *msg,
+      video_frame_info_t *info)
+{
+   retro_time_t until = cpu_features_get_time_usec() + 1000000;
+   (void)data;
+   (void)frame;
+   (void)dims;
+   (void)count;
+   (void)pitch;
+   (void)msg;
+   (void)info;
+   retro_atomic_store_release_int(&retire_lane_drawing, 1);
+   while (     retro_atomic_load_acquire_int(&retire_lane_hold)
+         &&  cpu_features_get_time_usec() < until) { }
+   retro_atomic_store_release_int(&retire_lane_drawn, 1);
+   return true;
+}
+
+static void retire_lane_hook(void *data, bool done)
+{
+   (void)data;
+   if (!video_thread_is_video_thread())
+      retire_lane_on_video = false;
+   if (done)
+      retire_lane_acked_after = retro_atomic_load_acquire_int(
+            &retire_lane_retired) == 1;
+   retro_atomic_fetch_or_int(&retire_lane_hooks, done ? 2 : 1);
+}
+
+static void retire_lane_retire(void *data)
+{
+   retire_lane_data          = data;
+   retire_lane_after_frame   = retro_atomic_load_acquire_int(
+         &retire_lane_drawn) != 0;
+   retire_lane_hooked_before = (retro_atomic_load_acquire_int(
+            &retire_lane_hooks) & 1) != 0;
+   if (!video_thread_is_video_thread())
+      retire_lane_on_video = false;
+   retro_atomic_fetch_add_int(&retire_lane_retired, 1);
+}
+#endif
+
+/* The retire queued behind a frame being drawn: it does not wait for
+ * it, runs after it, and the windows are let go of before the platform
+ * hears it is done */
+static void test_window_retire_in_flight(void)
+{
+#ifdef HAVE_THREADS
+   static video_frame_info_t frame;
+   static video_driver_t driver;
+   const video_driver_t *threaded      = NULL;
+   const video_poke_interface_t *iface = NULL;
+   void *data                          = NULL;
+   video_driver_state_t *video_st      = video_state_get_ptr();
+   void *saved_data                    = video_st->data;
+   bool saved_active              = video_st->thread_wrapper_active;
+   uint32_t pixel                 = 0;
+   retro_time_t took, until;
+   video_info_t info;
+   memset(&frame, 0, sizeof(frame));
+   memset(&driver, 0, sizeof(driver));
+   memset(&retire_poke, 0, sizeof(retire_poke));
+   memset(&info, 0, sizeof(info));
+   driver.init                = snapshot_init;
+   driver.frame               = retire_lane_frame;
+   driver.free                = snapshot_free;
+   driver.poke_interface      = retire_poke_interface;
+   driver.ident               = "retire_lane";
+   retire_poke.windows_retire = retire_lane_retire;
+   info.input_scale           = 1;
+   info.rgb32                 = true;
+   if (!video_init_thread(&threaded, &data, &driver, info))
+   {
+      CHECK(false);
+      return;
+   }
+   threaded->poke_interface(data, &iface);
+   CHECK(iface != NULL);
+   video_st->data                  = data;
+   video_st->thread_wrapper_active = true;
+   retire_lane_on_video            = true;
+   retro_atomic_store_release_int(&retire_lane_hold, 1);
+   CHECK(threaded->frame(data, &pixel, VIDEO_SCALE_PACK(1, 1),
+            1, sizeof(pixel), NULL, &frame));
+   until = cpu_features_get_time_usec() + 2000000;
+   while (     !retro_atomic_load_acquire_int(&retire_lane_drawing)
+         &&  cpu_features_get_time_usec() < until) { }
+   CHECK(retro_atomic_load_acquire_int(&retire_lane_drawing));
+   took = cpu_features_get_time_usec();
+   CHECK(video_driver_windows_retire(retire_lane_hook, NULL));
+   took = cpu_features_get_time_usec() - took;
+   CHECK(took < 200000);
+   CHECK(!retro_atomic_load_acquire_int(&retire_lane_retired));
+   CHECK(!retro_atomic_load_acquire_int(&retire_lane_hooks));
+   /* One at a time */
+   CHECK(!video_driver_windows_retire(retire_lane_hook, NULL));
+   retro_atomic_store_release_int(&retire_lane_hold, 0);
+   until = cpu_features_get_time_usec() + 2000000;
+   while (     !(retro_atomic_load_acquire_int(&retire_lane_hooks) & 2)
+         &&  cpu_features_get_time_usec() < until) { }
+   CHECK(retro_atomic_load_acquire_int(&retire_lane_hooks) == 3);
+   CHECK(retro_atomic_load_acquire_int(&retire_lane_retired) == 1);
+   CHECK(retire_lane_after_frame);
+   CHECK(retire_lane_hooked_before);
+   CHECK(retire_lane_acked_after);
+   CHECK(retire_lane_on_video);
+   CHECK(retire_lane_data == &snapshot_data);
+   /* Still run when the wrapper is freed behind the frame */
+   retro_atomic_store_release_int(&retire_lane_hooks, 0);
+   retro_atomic_store_release_int(&retire_lane_retired, 0);
+   retro_atomic_store_release_int(&retire_lane_drawing, 0);
+   retro_atomic_store_release_int(&retire_lane_hold, 1);
+   CHECK(threaded->frame(data, &pixel, VIDEO_SCALE_PACK(1, 1),
+            2, sizeof(pixel), NULL, &frame));
+   until = cpu_features_get_time_usec() + 2000000;
+   while (     !retro_atomic_load_acquire_int(&retire_lane_drawing)
+         &&  cpu_features_get_time_usec() < until) { }
+   CHECK(retro_atomic_load_acquire_int(&retire_lane_drawing));
+   CHECK(video_driver_windows_retire(retire_lane_hook, NULL));
+   video_st->data                  = saved_data;
+   video_st->thread_wrapper_active = saved_active;
+   threaded->free(data);
+   CHECK(retro_atomic_load_acquire_int(&retire_lane_hooks) == 3);
+   CHECK(retro_atomic_load_acquire_int(&retire_lane_retired) == 1);
+#endif
+}
+
 int main(int argc, char **argv)
 {
    if (argc != 2)
@@ -1062,6 +1264,8 @@ int main(int argc, char **argv)
    test_window_generation();
    test_window_frame_snapshot();
    test_window_redraw();
+   test_window_retire();
+   test_window_retire_in_flight();
    menu_setting_free(menu_state_get_ptr()->entries.list_settings);
    free(menu_state_get_ptr()->entries.list_settings);
    menu_state_get_ptr()->entries.list_settings = NULL;

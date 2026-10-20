@@ -6944,6 +6944,70 @@ void video_context_surface_destroy(void)
 #endif
 }
 
+static void video_driver_windows_retire_run(
+      void (*hook)(void *data, bool done), void *data,
+      void *driver_data, const video_poke_interface_t *poke)
+{
+   if (hook)
+      hook(data, false);
+   if (driver_data && poke && poke->windows_retire)
+      poke->windows_retire(driver_data);
+   if (hook)
+      hook(data, true);
+}
+
+#ifdef HAVE_THREADS
+/* The one retire queued: written before it is queued, busy until the
+ * video thread has taken it */
+static struct
+{
+   void (*hook)(void *data, bool done);
+   void *data;
+} video_windows_retire_job;
+static retro_atomic_int_t video_windows_retire_busy;
+
+static uintptr_t video_driver_windows_retire_cb(void *data)
+{
+   thread_video_t *thr                 = (thread_video_t*)data;
+   void (*hook)(void *data, bool done) = video_windows_retire_job.hook;
+   void *hook_data                     = video_windows_retire_job.data;
+   retro_atomic_store_release_int(&video_windows_retire_busy, 0);
+   video_driver_windows_retire_run(hook, hook_data,
+         thr->driver_data, thr->poke);
+   return 0;
+}
+#endif
+
+bool video_driver_windows_retire(void (*hook)(void *data, bool done),
+      void *data)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+#ifdef HAVE_THREADS
+   if (video_st->thread_wrapper_active && video_st->data)
+   {
+      /* Behind the frame being drawn, which may still use the windows */
+      if (retro_atomic_load_acquire_int(&video_windows_retire_busy))
+         return false;
+      video_windows_retire_job.hook = hook;
+      video_windows_retire_job.data = data;
+      retro_atomic_store_release_int(&video_windows_retire_busy, 1);
+      if (video_thread_run_queued(video_driver_windows_retire_cb,
+               video_st->data))
+         return true;
+      retro_atomic_store_release_int(&video_windows_retire_busy, 0);
+      return false;
+   }
+   if (video_st->thread_wrapper_active)
+   {
+      video_driver_windows_retire_run(hook, data, NULL, NULL);
+      return true;
+   }
+#endif
+   video_driver_windows_retire_run(hook, data, video_st->data,
+         video_st->poke);
+   return true;
+}
+
 const char *video_driver_get_configured_ident(void)
 {
    video_driver_state_t *video_st = &video_driver_st;

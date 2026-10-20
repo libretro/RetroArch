@@ -1430,6 +1430,10 @@ typedef struct video_poke_interface
    bool (*driver_pacing_wait)(void *data, uint64_t frame_id,
          uint64_t next_id, unsigned max_wait_us);
    void (*driver_pacing_mark)(void *data, uint64_t frame_id, unsigned marker);
+   /* Lets go of every secondary window now: GPU resources retired,
+    * each window handed to its context's destroy. Video thread.
+    * Optional. */
+   void (*windows_retire)(void *data);
 } video_poke_interface_t;
 
 /* dims is the frame's size, VIDEO_SCALE_PACK'd; msg is for showing a
@@ -2761,6 +2765,15 @@ bool video_context_driver_is(const char *ident);
 bool video_context_surface_can_create(void);
 bool video_context_surface_create(void);
 void video_context_surface_destroy(void);
+
+/* App thread, from a platform command, never from a frame: the
+ * renderer lets go of every secondary window, after any frame being
+ * drawn, and this does not wait for it. @hook(@data, false) runs just
+ * before and @hook(@data, true) just after, on the thread doing it: the
+ * video thread, or this one before returning. False when the video
+ * thread cannot take it yet, for the caller to ask again. */
+bool video_driver_windows_retire(void (*hook)(void *data, bool done),
+      void *data);
 
 /* The video driver the configuration names, when a core has forced
  * another for as long as it is loaded and the setting holds that one
