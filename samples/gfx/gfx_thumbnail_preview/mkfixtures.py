@@ -341,6 +341,8 @@ def main():
             'anim_dispose_prev.png', 'trailing_large.mp4',
               'trailing_huge.mp4', 'leading_huge.mp4', 'trailing_small.mp4',
               'audio_large_packet.m4a', 'audio_seek_gap.m4a',
+              'audio_group_opus.webm', 'audio_group_vorbis.webm',
+              'video_gap_head.webm', 'video_gap_pin.webm', 'video_group.webm',
             'vp9_tiles.webm', 'hevc_wpp.mp4', 'bframes_h264.mp4',
             'bframes_hevc.mp4', 'hevc_nowpp.mp4', 'mbaff_h264.mp4')):
         print('fixtures present, not rebuilt')
@@ -449,6 +451,8 @@ def main():
             '-ac', '2', '-c:v', 'libvpx-vp9', '-g', '12', '-auto-alt-ref', '0',
             '-c:a', 'lib' + codec, seed_path])
         pad_webm_audio(seed_path, j('audio_seek_' + codec + '_window.webm'))
+        insert_void(seed_path, j('audio_group_' + codec + '.webm'),
+                    after_picture=13, in_group=True)
         os.unlink(seed_path)
 
     # Legal padding gaps both inside and beyond the permanent head. Noise

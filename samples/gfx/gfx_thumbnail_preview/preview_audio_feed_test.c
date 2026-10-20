@@ -7,6 +7,11 @@
 #include <formats/rwebm.h>
 #include <formats/audio.h>
 #include <formats/data_transfer.h>
+#ifdef HAVE_THREADS
+#include <rthreads/rthreads.h>
+#include <retro_atomic.h>
+#include <retro_timers.h>
+#endif
 #include "../../../gfx/gfx_anim_preview.h"
 #include "../../../audio/audio_driver.h"
 #include "../../../configuration.h"
@@ -589,6 +594,240 @@ done:
    return failed;
 }
 
+static int resident_webm_pcm(const uint8_t *data, size_t size,
+      unsigned rate, bool s16, float *pcm, size_t target)
+{
+   enum audio_type_enum type = audio_transfer_webm_audio_type(data, size);
+   void *transfer = audio_transfer_new(type);
+   uint8_t *copy = NULL;
+   audio_mixer_sound_t *resident = NULL;
+   audio_mixer_voice_t *playing = NULL;
+   float block[128];
+   size_t done = 0, mixed = 0, before, serial;
+   unsigned i, steps;
+   int result = 0, failed = 1;
+   if (!transfer) return 1;
+   audio_transfer_set_buffer_ptr(transfer, type, data, size);
+   if (!audio_transfer_start(transfer, type)
+         || !audio_transfer_seek_begin_format(transfer, type, 0, s16)) goto finish;
+   for (steps = 0; steps < 10000 && !result; steps++)
+      result = audio_transfer_seek_step(transfer, type);
+   if (result != 1) goto finish;
+   copy = (uint8_t*)malloc(size);
+   if (!copy) goto finish;
+   memcpy(copy, data, size);
+   resident = audio_mixer_load_weba(copy, size);
+   if (!resident) goto finish;
+   copy = NULL;
+   if (!audio_mixer_sound_set_prepared_transfer(resident, transfer, rate, s16)) goto finish;
+   transfer = NULL;
+   playing = s16 ? audio_mixer_play_s16(resident, false, AUDIO_MIXER_GAIN_UNITY,
+         "sinc", RESAMPLER_QUALITY_DONTCARE, NULL)
+      : audio_mixer_play(resident, false, 1.0f, "sinc", RESAMPLER_QUALITY_DONTCARE, NULL);
+   if (!playing) goto finish;
+   for (steps = 0; steps < 8000 && done < target; steps++)
+   {
+      before = done;
+      memset(block, 0, sizeof(block));
+      if (s16) audio_mixer_mix_s16((int16_t*)block, 64, AUDIO_MIXER_GAIN_UNITY, false);
+      else audio_mixer_mix(block, 64, 1.0f, false);
+      if (!audio_mixer_voice_clock(playing, &mixed, NULL, &serial)
+            || mixed < before || mixed - before > 64) goto finish;
+      done = mixed;
+      for (i = 0; i < (done - before) * 2 && before + i / 2 < target; i++)
+         pcm[before * 2 + i] = s16 ? (float)((int16_t*)block)[i] / 32768.0f : block[i];
+   }
+   failed = done < target;
+finish:
+   if (playing) audio_mixer_stop(playing);
+   audio_mixer_destroy(resident);
+   if (transfer) audio_transfer_free(transfer, type);
+   free(copy);
+   return failed;
+}
+
+#ifdef HAVE_THREADS
+typedef struct audio_group_mix_state
+{
+   audio_mixer_voice_t *voice;
+   const float *reference;
+   void *out;
+   size_t serial, target, done, first_bad, peak_at;
+   unsigned ticks;
+   double peak;
+   bool s16, failed;
+   retro_atomic_int_t stop, finished;
+} audio_group_mix_state_t;
+
+static void audio_group_mix_thread(void *userdata)
+{
+   audio_group_mix_state_t *s = (audio_group_mix_state_t*)userdata;
+   size_t mixed, serial;
+   s->first_bad = (size_t)-1;
+   for (s->ticks = 0; s->ticks < 10000 && s->done < s->target
+         && !retro_atomic_load_acquire_int(&s->stop); s->ticks++)
+   {
+      size_t before = s->done;
+      unsigned i;
+      memset(s->out, 0, 128 * sizeof(float));
+      if (s->s16) audio_mixer_mix_s16((int16_t*)s->out, 64, AUDIO_MIXER_GAIN_UNITY, false);
+      else audio_mixer_mix((float*)s->out, 64, 1.0f, false);
+      if (!audio_mixer_voice_clock(s->voice, &mixed, NULL, &serial)
+            || serial != s->serial || mixed < before || mixed - before > 64)
+      { s->failed = true; break; }
+      s->done = mixed;
+      for (i = 0; i < (mixed - before) * 2 && before + i / 2 < s->target; i++)
+      {
+         double sample = s->s16 ? (double)((int16_t*)s->out)[i] / 32768.0 : ((float*)s->out)[i];
+         double error = sample - s->reference[before * 2 + i];
+         if (error < 0) error = -error;
+         if (error > 0.0001 && s->first_bad == (size_t)-1) s->first_bad = before + i / 2;
+         if (error > s->peak) { s->peak = error; s->peak_at = before + i / 2; }
+      }
+      if (mixed == before) retro_sleep(1);
+   }
+   retro_atomic_store_release_int(&s->finished, 1);
+}
+#endif
+
+static int continuous_webm(const char *path, bool s16)
+{
+   FILE *file = fopen(path, "rb");
+   uint8_t *data = NULL;
+   float *reference = NULL;
+   void *transfer = NULL, *out = NULL;
+   rwebm_t *demux = NULL;
+   gfx_anim_preview_t *p = NULL;
+   gfx_anim_preview_audio_prepared_t *a = NULL;
+   enum audio_type_enum type;
+   unsigned rate, channels, i, ticks = 0, steps;
+   size_t size, target = 0, done = 0, serial, mixed, before;
+   size_t first_bad = (size_t)-1, peak_at = 0;
+   size_t max_refill = 0;
+   unsigned requested_polls = 0;
+   long length;
+   int result = 0, failed = 1;
+   double peak = 0;
+   bool mixer_started = false;
+   if (!file) return 1;
+   if (fseek(file, 0, SEEK_END) || (length = ftell(file)) <= 0
+         || fseek(file, 0, SEEK_SET)) goto finish;
+   size = (size_t)length;
+   data = (uint8_t*)malloc(size);
+   if (!data || fread(data, 1, size, file) != size) goto finish;
+   type = audio_transfer_webm_audio_type(data, size);
+   transfer = audio_transfer_new(type);
+   if (!transfer) goto finish;
+   audio_transfer_set_buffer_ptr(transfer, type, data, size);
+   if (!audio_transfer_start(transfer, type)
+         || !audio_transfer_info(transfer, type, &channels, &rate, NULL)
+         || !channels || channels > 2) goto finish;
+   if (!audio_transfer_seek(transfer, type, 0)) goto finish;
+   target = (size_t)rate * 2;
+   reference = (float*)calloc(target * 2, sizeof(float));
+   out = calloc(64 * 2, sizeof(float));
+   if (!reference || !out) goto finish;
+   demux = rwebm_open_memory(data, size);
+   if (!demux) goto finish;
+   p = gfx_anim_preview_wrap(demux, IMAGE_TYPE_WEBM, NULL, data, size, false, path);
+   if (!p) goto finish;
+   audio_mixer_init(rate); mixer_started = true; prepared_s16 = s16;
+   if (resident_webm_pcm(data, size, rate, s16, reference, target)) goto finish;
+   a = gfx_anim_preview_audio_prepare_new(p, 0, rate, s16);
+   if (!a) goto finish;
+   for (steps = 0; steps < 10000 && !result; steps++)
+      result = gfx_anim_preview_audio_prepare_step(a);
+   if (result != 1) goto finish;
+   result = gfx_anim_preview_audio_adopt(p, a); a = NULL;
+   if (!result || !p->audio_voice) goto finish;
+   gfx_anim_preview_set_paused(p, false);
+#ifdef HAVE_THREADS
+   if (getenv("AUDIO_FEED_RACE"))
+   {
+      audio_group_mix_state_t state;
+      sthread_t *thread;
+      bool feed_ok = true;
+      memset(&state, 0, sizeof(state));
+      state.voice = p->audio_voice; state.serial = p->audio_serial;
+      state.reference = reference; state.out = out;
+      state.target = target; state.s16 = s16;
+      thread = sthread_create(audio_group_mix_thread, &state);
+      if (!thread) goto finish;
+      for (ticks = 0; ticks < 10000
+            && !retro_atomic_load_acquire_int(&state.finished); ticks++)
+      {
+         size_t wanted = audio_mixer_voice_buffer_read_end(p->audio_voice, p->audio_serial);
+         size_t old_hi = p->audio_hi;
+         if (audio_mixer_voice_buffer_read_end(p->audio_voice, p->audio_serial + 1)
+               || !gfx_anim_preview_audio_feed(p))
+         { feed_ok = false; break; }
+         if (wanted > old_hi && p->audio_hi > old_hi)
+         {
+            size_t refill = p->audio_hi - old_hi;
+            if (refill > max_refill) max_refill = refill;
+            requested_polls++;
+         }
+         retro_sleep(1);
+      }
+      retro_atomic_store_release_int(&state.stop, 1);
+      sthread_join(thread);
+      done = state.done; peak = state.peak;
+      first_bad = state.first_bad; peak_at = state.peak_at;
+      failed = !feed_ok || state.failed || done < target || peak > 0.0001
+         || requested_polls < 2 || max_refill > 256 * 1024;
+      goto finish;
+   }
+#endif
+   for (ticks = 0; ticks < 8000 && done < target; ticks++)
+   {
+      size_t wanted = audio_mixer_voice_buffer_read_end(p->audio_voice, p->audio_serial);
+      size_t old_hi = p->audio_hi;
+      before = done;
+      if (audio_mixer_voice_buffer_read_end(p->audio_voice, p->audio_serial + 1))
+         goto finish;
+      if (!gfx_anim_preview_audio_feed(p)) goto finish;
+      if (wanted > old_hi && p->audio_hi > old_hi)
+      {
+         size_t refill = p->audio_hi - old_hi;
+         if (refill > max_refill) max_refill = refill;
+         requested_polls++;
+      }
+      memset(out, 0, 64 * 2 * sizeof(float));
+      if (s16) audio_mixer_mix_s16((int16_t*)out, 64, AUDIO_MIXER_GAIN_UNITY, false);
+      else audio_mixer_mix((float*)out, 64, 1.0f, false);
+      if (!audio_mixer_voice_clock(p->audio_voice, &mixed, NULL, &serial)
+            || serial != p->audio_serial || mixed < before || mixed - before > 64)
+         goto finish;
+      done = mixed;
+      for (i = 0; i < (done - before) * 2 && before + i / 2 < target; i++)
+      {
+         double sample = s16 ? (double)((int16_t*)out)[i] / 32768.0 : ((float*)out)[i];
+         double error = sample - reference[before * 2 + i];
+         if (error < 0) error = -error;
+         if (error > 0.0001 && first_bad == (size_t)-1) first_bad = before + i / 2;
+         if (error > peak) { peak = error; peak_at = before + i / 2; }
+      }
+   }
+   failed = done < target || peak > 0.0001 || requested_polls < 2
+      || max_refill > 256 * 1024;
+finish:
+   printf("continuous WebM: s16=%u frames=%lu target=%lu polls=%u peak=%.9f %s\n",
+         s16, (unsigned long)done, (unsigned long)target, ticks, peak,
+         failed ? "FAIL" : "PASS");
+   printf("audio element admission: polls=%u largest_refill=%lu\n",
+         requested_polls, (unsigned long)max_refill);
+   if (peak > 0.0001) printf("PCM difference: first=%lu maximum=%lu\n",
+         (unsigned long)first_bad, (unsigned long)peak_at);
+   gfx_anim_preview_audio_prepare_free(a);
+   if (p) gfx_anim_preview_release(p);
+   if (mixer_started) audio_mixer_done();
+   if (demux) rwebm_close(demux);
+   if (transfer) audio_transfer_free(transfer, type);
+   if (file) fclose(file);
+   free(data); free(reference); free(out);
+   return failed;
+}
+
 int main(int argc, char **argv)
 {
    bool webm_only = argc > 2 && !strcmp(argv[1], "--prepared-webm");
@@ -596,6 +835,8 @@ int main(int argc, char **argv)
    int first_arg = prepared_only ? 2 : 1;
    int i, failed = argc <= first_arg;
    gfx_anim_preview_t fallback;
+   if (argc == 3 && !strcmp(argv[1], "--continuous-webm"))
+      return continuous_webm(argv[2], false) | continuous_webm(argv[2], true);
    memset(&fallback, 0, sizeof(fallback));
    fallback.audio_slot = -1;
    if (gfx_anim_preview_clock(&fallback, 1000) != 1000

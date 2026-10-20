@@ -862,7 +862,7 @@ failed:
 int gfx_anim_preview_audio_prepare_step(gfx_anim_preview_audio_prepared_t *a)
 {
 #ifdef GFX_ANIM_PREVIEW_AUDIO
-   size_t len, hi, res_hi, anchor;
+   size_t len, hi, res_hi, anchor, ahead, requested;
    const uint8_t *base;
    int result;
    if (!a || !a->window) return -1;
@@ -870,6 +870,10 @@ int gfx_anim_preview_audio_prepare_step(gfx_anim_preview_audio_prepared_t *a)
    if (!a->transfer) return -1;
    base = data_transfer_window_base(a->window->dt, &len);
    anchor = audio_transfer_buffer_tell(a->transfer, a->type);
+   ahead = a->ahead;
+   requested = audio_transfer_buffer_read_end(a->transfer, a->type);
+   if (requested > anchor && requested - anchor > ahead)
+      ahead = requested - anchor;
    /* A far seek must not make feed_budget fill the gap from the old
     * frontier, or take its unbudgeted catch-up arm. Reserve the target
     * region and commit only this bounded prefix before normal feeding. */
@@ -881,7 +885,7 @@ int gfx_anim_preview_audio_prepare_step(gfx_anim_preview_audio_prepared_t *a)
    if (hi > len) hi = len;
    if (!data_transfer_window_extend(a->window->dt, hi)
          || !data_transfer_window_feed_budget(a->window->dt, anchor,
-            a->ahead, GFX_ANIM_PREVIEW_AUDIO_MARGIN,
+            ahead, GFX_ANIM_PREVIEW_AUDIO_MARGIN,
             GFX_ANIM_PREVIEW_AUDIO_FEED_BUDGET, &res_hi))
       return -1;
    a->hi = res_hi;
@@ -1164,6 +1168,13 @@ bool gfx_anim_preview_audio_feed(gfx_anim_preview_t *p)
                     ? (size_t)-1 : anchor + ahead;
       size_t res_hi = 0;
       size_t budget = GFX_ANIM_PREVIEW_AUDIO_FEED_BUDGET;
+      size_t requested = p->audio_voice
+         ? audio_mixer_voice_buffer_read_end(p->audio_voice, p->audio_serial) : 0;
+      if (requested > anchor && requested - anchor > ahead)
+      {
+         ahead = requested - anchor;
+         hi = requested;
+      }
       if (hi > p->len)
          hi = p->len;
       /* The decoder looped: it stands at the wall until this tick has

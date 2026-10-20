@@ -113,6 +113,8 @@ audio_mixer_sound_t* audio_mixer_load_weba_avail(void *buffer, size_t size,
  * lock; one thread per voice, the one that calls
  * audio_mixer_voice_set_avail. */
 size_t audio_mixer_voice_buffer_tell(audio_mixer_voice_t *voice);
+/* Lock-free snapshot for this play only. Never inspects the live decoder. */
+size_t audio_mixer_voice_buffer_read_end(audio_mixer_voice_t *voice, size_t serial);
 
 void audio_mixer_destroy(audio_mixer_sound_t* sound);
 

@@ -220,6 +220,7 @@ endif
 THREADED_TARGET := gfx_thumbnail_preview_test_threaded
 AUDIO_ORACLE_TARGET := preview_audio_oracle_test
 AUDIO_FEED_TARGET := preview_audio_feed_test
+AUDIO_FEED_THREADED_TARGET := preview_audio_feed_test_threaded
 CATCHUP_THREADED_TARGET := $(CATCHUP_TARGET)_threaded
 THREADED_DEFS   := -DHAVE_THREADS -DPREVIEW_THREADED
 THREADED_EXTRA  := $(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
@@ -230,6 +231,7 @@ THREADED_OBJS   := $(call sample_objs,$(SOURCES:.c=.t.o) $(THREADED_EXTRA:.c=.t.
 AV1_HW_TARGET := preview_av1_hw_test
 
 all: $(AV1_HW_TARGET) $(TARGET) $(DECODE_TARGET) $(DECODE_TARGET_NORWEBM) $(PLATFORM_TARGETS) $(BLIT_BANDS_TARGET) $(CATCHUP_TARGET) $(CATCHUP_THREADED_TARGET) $(AUDIO_ORACLE_TARGET) $(AUDIO_FEED_TARGET) $(THREADED_TARGET)
+all: $(AUDIO_FEED_THREADED_TARGET)
 
 AV1_HW_SOURCES := preview_av1_hw_test.c $(filter-out preview_anim_window_test.c,$(ANIM_WINDOW_SOURCES)) \
       $(LIBRETRO_COMM_DIR)/formats/av1/rav1_hw.c \
@@ -276,6 +278,10 @@ AUDIO_FEED_SOURCES := preview_audio_feed_test.c $(ANIM_PREVIEW_SRC) \
 $(AUDIO_FEED_TARGET): $(AUDIO_FEED_SOURCES)
 	$(CC) -o $@ $(AUDIO_FEED_SOURCES) $(DECODE_CFLAGS_COMMON) -DHAVE_RWEBM -DHAVE_ROPUS -DHAVE_RVORBIS \
 	      -I$(REPO_ROOT) -I$(REPO_ROOT)/deps $(LDFLAGS)
+
+$(AUDIO_FEED_THREADED_TARGET): $(AUDIO_FEED_SOURCES) $(THREADED_EXTRA)
+	$(CC) -o $@ $^ $(DECODE_CFLAGS_COMMON) -DHAVE_RWEBM -DHAVE_ROPUS -DHAVE_RVORBIS -DHAVE_THREADS \
+	      -I$(REPO_ROOT) -I$(REPO_ROOT)/deps $(LDFLAGS) -lpthread
 
 # The banded colour conversion against the single-threaded one, frame
 # for frame, through the real rmp4_video stream on a real tpool.
@@ -397,6 +403,7 @@ fixtures:
 	python3 mkfixtures.py fixtures
 
 check: $(AV1_HW_TARGET) $(TARGET) $(THREADED_TARGET) $(DECODE_TARGET) $(DECODE_TARGET_NORWEBM) $(PLATFORM_TARGETS) $(BLIT_BANDS_TARGET) $(CATCHUP_TARGET) $(CATCHUP_THREADED_TARGET) $(AUDIO_ORACLE_TARGET) $(AUDIO_FEED_TARGET) fixtures
+check: $(AUDIO_FEED_THREADED_TARGET)
 	./$(AV1_HW_TARGET)
 	./$(TARGET) fixtures/*.mp4 fixtures/anim_lossless.webp
 ifneq ($(OS),Windows_NT)
@@ -422,6 +429,7 @@ endif
 # a different SANITIZER=, and a clean that took the fixtures with it
 # left the following run globbing nothing.  Use distclean to drop them.
 clean:
+	rm -f $(AUDIO_FEED_THREADED_TARGET) $(AUDIO_FEED_THREADED_TARGET).exe
 	rm -f $(AV1_HW_TARGET) $(AV1_HW_TARGET).exe av1-preview-fixture.mp4 av1-preview-fixture.webm
 	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(TARGET) $(THREADED_TARGET) $(THREADED_TARGET).exe $(THREADED_OBJS) \

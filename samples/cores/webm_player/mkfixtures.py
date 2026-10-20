@@ -33,6 +33,19 @@ for name, codec in cases:
 (out / "invalid.webm").write_bytes(b"not an EBML or MP4 movie\n")
 (out / "empty.webm").write_bytes(b"")
 
+# Beyond the core's 512-picture opening prefix and 16 MiB lookahead.
+subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i",
+                "testsrc2=size=64x48:rate=12:duration=53", "-f", "lavfi", "-i",
+                "sine=frequency=440:sample_rate=48000:duration=53", "-vf",
+                "noise=alls=100:allf=t+u", "-c:v", "libvpx", "-deadline",
+                "realtime", "-cpu-used", "8", "-qmin", "1", "-qmax", "1",
+                "-b:v", "100M", "-g", "12", "-auto-alt-ref", "0", "-c:a",
+                "libopus", "-ac", "2", str(out / "core-group-seed.webm")], check=True)
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "gfx/gfx_thumbnail_preview"))
+from webm_audio_padding import insert_void
+insert_void(out / "core-group-seed.webm", out / "core-group.webm",
+            amount=24 * 1024 * 1024, after_picture=541, in_group=True)
+
 subprocess.run([sys.executable, str(Path(__file__).with_name("mp4_audio_gap.py")),
                 str(out / "hevc-seek-aac.mp4"), str(out / "hevc-audio-gap.mp4")], check=True)
 

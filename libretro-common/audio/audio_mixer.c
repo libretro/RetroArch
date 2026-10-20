@@ -266,6 +266,7 @@ struct audio_mixer_voice
     * dropped once the decoder has rewound: the bytes it promised may
     * be gone. Lap 0 is a bound not derived from a position, -1 none. */
    retro_atomic_size_t tell;
+   retro_atomic_size_t read_end; /* complete encoded element requested */
    retro_atomic_int_t  lap;
    retro_atomic_size_t avail_req;
    retro_atomic_size_t avail_serial; /* the play a bound belongs to */
@@ -1579,6 +1580,12 @@ static size_t audio_mixer_voice_tell_owned(audio_mixer_voice_t *voice)
 #ifdef AUDIO_MIXER_HAS_STREAM
    switch (retro_atomic_load_relaxed_int(&voice->type))
    {
+#ifdef HAVE_ROPUS
+      case AUDIO_MIXER_TYPE_OPUS:
+         r = audio_transfer_buffer_tell(voice->types.stream.stream,
+               AUDIO_TYPE_OPUS);
+         break;
+#endif
 #ifdef HAVE_RWAV
       case AUDIO_MIXER_TYPE_WAV_STREAM:
          r = audio_transfer_buffer_tell(voice->types.stream.stream,
@@ -1711,6 +1718,7 @@ static void audio_mixer_feed_reset(audio_mixer_voice_t *voice, bool paused)
    retro_atomic_store_release_int(&voice->avail_lap, -1);
    retro_atomic_store_relaxed_int(&voice->feeder_lap, 0);
    retro_atomic_store_release_size(&voice->tell, 0);
+   retro_atomic_store_release_size(&voice->read_end, 0);
    retro_atomic_store_release_int(&voice->lap, audio_mixer_lap_next(
             retro_atomic_load_relaxed_int(&voice->lap)));
    voice->avail_done_valid = false;
@@ -1748,6 +1756,26 @@ static void audio_mixer_feed_apply(audio_mixer_voice_t *voice)
 /* After a decode: where the decoder stands now. */
 static void audio_mixer_feed_publish(audio_mixer_voice_t *voice)
 {
+   size_t end = 0;
+#ifdef AUDIO_MIXER_HAS_STREAM
+   enum audio_type_enum type = AUDIO_TYPE_NONE;
+   switch (retro_atomic_load_relaxed_int(&voice->type))
+   {
+#ifdef HAVE_ROPUS
+      case AUDIO_MIXER_TYPE_OPUS: type = AUDIO_TYPE_OPUS; break;
+#endif
+#ifdef HAVE_RVORBIS
+      case AUDIO_MIXER_TYPE_OGG: type = AUDIO_TYPE_VORBIS; break;
+#endif
+#ifdef HAVE_RAAC
+      case AUDIO_MIXER_TYPE_M4A: type = AUDIO_TYPE_AAC; break;
+#endif
+      default: break;
+   }
+   if (type != AUDIO_TYPE_NONE)
+      end = audio_transfer_buffer_read_end(voice->types.stream.stream, type);
+#endif
+   retro_atomic_store_release_size(&voice->read_end, end);
    retro_atomic_store_release_size(&voice->clock_frames, voice->mixed_frames);
    retro_atomic_store_release_size(&voice->tell,
          audio_mixer_voice_tell_owned(voice));
@@ -1820,6 +1848,17 @@ size_t audio_mixer_voice_buffer_tell(audio_mixer_voice_t *voice)
    retro_atomic_store_relaxed_int(&voice->feeder_lap,
          retro_atomic_load_acquire_int(&voice->lap));
    return retro_atomic_load_acquire_size(&voice->tell);
+}
+
+size_t audio_mixer_voice_buffer_read_end(audio_mixer_voice_t *voice, size_t serial)
+{
+   size_t end;
+   if (!voice || !serial
+         || retro_atomic_load_acquire_size(&voice->clock_serial) != serial)
+      return 0;
+   end = retro_atomic_load_acquire_size(&voice->read_end);
+   if (retro_atomic_load_acquire_size(&voice->clock_serial) != serial) return 0;
+   return end;
 }
 
 void audio_mixer_destroy(audio_mixer_sound_t* sound)
@@ -2930,6 +2969,11 @@ again:
          *buffer++ += *pcm++ * volume;
 
       buf_free -= voice->types.stream.samples;
+      /* A partial contribution exhausted this buffer. If the refill
+       * stalls, the next mix must retry decoding rather than replay
+       * these already-counted samples. */
+      voice->types.stream.samples = 0;
+      voice->types.stream.position = 0;
       goto again;
    }
 
@@ -3064,6 +3108,8 @@ again:
          buffer++;
       }
       buf_free -= voice->types.stream.samples;
+      voice->types.stream.samples = 0;
+      voice->types.stream.position = 0;
       goto again;
    }
 

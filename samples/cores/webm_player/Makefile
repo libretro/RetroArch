@@ -108,10 +108,14 @@ $(AV1_HW_TARGET): webm_av1_hw_test.c $(ROOT)/cores/libretro-media/media_core.c \
 	$(CC) $(CFLAGS) -DHAVE_RAV1 -DRWEBM_VIDEO_MAX_TS=2 -o $@ $< $(AV1_HW_SOURCES) $(COMMON)/formats/av1/rav1_hw.c $(LDFLAGS) $(LDLIBS)
 
 RESIDENCY_TARGET := webm_residency_test$(EXE)
+PROGRESSIVE_GROUP_TARGET := progressive_group_test$(EXE)
 RESIDENCY_SOURCES := $(filter-out webm_player_test.c $(ROOT)/cores/libretro-media/media_core.c,$(SOURCES))
 RESIDENCY_OBJS := $(call sample_objs,$(RESIDENCY_SOURCES:.c=.o))
 $(RESIDENCY_TARGET): webm_residency_test.c $(ROOT)/cores/libretro-media/media_core.c $(RESIDENCY_OBJS)
 	$(CC) $(CFLAGS) -o $@ webm_residency_test.c $(RESIDENCY_OBJS) $(LDFLAGS) $(LDLIBS)
+
+$(PROGRESSIVE_GROUP_TARGET): progressive_group_test.c webm_player_test.c $(ROOT)/cores/libretro-media/media_core.c $(RESIDENCY_OBJS)
+	$(CC) $(CFLAGS) -o $@ progressive_group_test.c $(RESIDENCY_OBJS) $(LDFLAGS) $(LDLIBS)
 
 ifeq ($(AUDIO),1)
 VORBIS_SEEK_TARGET := vorbis_seek_test$(EXE)
@@ -165,6 +169,8 @@ $(DEVICE_TARGET): webm_vp9_device_test.c
 endif
 
 check: $(WEBM_TIMING_TARGET) $(VORBIS_SEEK_TARGET) $(OPUS_SEEK_TARGET) $(WEBM_SEEK_TARGET) $(MP4_SEEK_TARGET) $(TARGET) $(HW_TARGET) $(AV1_HW_TARGET) $(RESIDENCY_TARGET) $(VP9_HW_TARGET) $(DEVICE_TARGET) $(AUDIO_START_TARGET)
+check: $(PROGRESSIVE_GROUP_TARGET)
+	$(RUNNER) ./$(PROGRESSIVE_GROUP_TARGET) fixtures/core-group-seed.webm fixtures/core-group.webm
 ifeq ($(AUDIO),1)
 	$(RUNNER) ./$(VORBIS_SEEK_TARGET) fixtures/vp9-vorbis.webm fixtures/vp9-seek-vorbis.webm
 	$(RUNNER) ./$(OPUS_SEEK_TARGET) fixtures/vp8-opus.webm fixtures/vp8-seek-opus.webm
@@ -187,6 +193,7 @@ ifeq ($(MP4),1)
 endif
 
 clean:
+	rm -f $(PROGRESSIVE_GROUP_TARGET)
 	rm -f webm_timing_test webm_timing_test.exe
 	rm -f vorbis_seek_test vorbis_seek_test.exe
 	rm -f opus_seek_test opus_seek_test.exe

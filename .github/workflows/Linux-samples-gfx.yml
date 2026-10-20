@@ -2320,6 +2320,11 @@ jobs:
           CPU_GAP=1 CPU_GAP_FRAMES=48 ./gfx_thumbnail_preview_test_threaded fixtures/video_gap_pin.webm
           CPU_GAP=1 CPU_GROUP=1 CPU_GAP_FRAMES=48 ./gfx_thumbnail_preview_test fixtures/video_group.webm
           CPU_GAP=1 CPU_GROUP=1 CPU_GAP_FRAMES=48 ./gfx_thumbnail_preview_test_threaded fixtures/video_group.webm
+          ./preview_audio_feed_test --continuous-webm fixtures/audio_group_opus.webm
+          ./preview_audio_feed_test --continuous-webm fixtures/audio_group_vorbis.webm
+          ./preview_audio_feed_test --prepared-webm fixtures/audio_group_opus.webm fixtures/audio_group_vorbis.webm
+          AUDIO_FEED_RACE=1 ./preview_audio_feed_test_threaded --continuous-webm fixtures/audio_group_opus.webm
+          AUDIO_FEED_RACE=1 ./preview_audio_feed_test_threaded --continuous-webm fixtures/audio_group_vorbis.webm
           CPU_MEDIA=1 TRANSPORT_PAUSE=1 TRANSPORT_SEEK=1 ./gfx_thumbnail_preview_test fixtures/trailing_small.mp4
           CPU_MEDIA=1 TRANSPORT_PAUSE=1 TRANSPORT_SEEK=1 ./gfx_thumbnail_preview_test_threaded fixtures/trailing_small.mp4
           # clean keeps fixtures/ by design; regenerate anyway so the

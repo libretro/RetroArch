@@ -253,6 +253,10 @@ int   audio_transfer_read_f32(void *data, enum audio_type_enum type,
  * material the demuxer keeps borrowed pointers into. DVD LPCM reports the
  * encoded read frontier; a partially emitted block lives in owned carry. */
 size_t audio_transfer_buffer_tell(void *data, enum audio_type_enum type);
+/* Complete encoded element blocking the next read, or zero. Query only
+ * with exclusive decoder ownership. This is admission demand, never a
+ * byte-release frontier. */
+size_t audio_transfer_buffer_read_end(void *data, enum audio_type_enum type);
 
 /* Seek to an absolute interleaved PCM frame (used to loop). true on
  * success.  Every arm seeks except a packet-fed Vorbis stream (demuxed

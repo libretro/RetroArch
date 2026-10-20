@@ -5684,6 +5684,33 @@ int audio_transfer_read_f32(void *data, enum audio_type_enum type,
    return (produced == 0) ? AUDIO_PROCESS_END : AUDIO_PROCESS_NEXT;
 }
 
+size_t audio_transfer_buffer_read_end(void *data, enum audio_type_enum type)
+{
+   size_t lo = 0, hi = 0;
+   if (!data) return 0;
+   switch (type)
+   {
+#if defined(HAVE_RWEBM) && defined(HAVE_ROPUS)
+      case AUDIO_TYPE_OPUS:
+         rwebm_read_span(((struct audio_transfer_opus*)data)->demux, &lo, &hi);
+         break;
+#endif
+#if defined(HAVE_RWEBM) && defined(HAVE_RVORBIS)
+      case AUDIO_TYPE_VORBIS:
+         rwebm_read_span(((struct audio_transfer_vorbis*)data)->demux, &lo, &hi);
+         break;
+#endif
+#if defined(HAVE_RWEBM) && defined(HAVE_RAAC)
+      case AUDIO_TYPE_AAC:
+         rwebm_read_span(((struct audio_transfer_aac*)data)->wdemux, &lo, &hi);
+         break;
+#endif
+      default: break;
+   }
+   (void)lo;
+   return hi;
+}
+
 size_t audio_transfer_buffer_tell(void *data, enum audio_type_enum type)
 {
    if (!data)
