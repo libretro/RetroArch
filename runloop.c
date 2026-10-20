@@ -1267,7 +1267,7 @@ static bool dynamic_request_hw_context(enum retro_hw_context_type type,
          RARCH_LOG("[HW] Requesting Vulkan context.\n");
          break;
 #else
-         RARCH_ERR("[HW] Requesting Vulkan context, but RetroArch is not compiled against Vulkan. Cannot use HW context.\n");
+         RARCH_WARN("[HW] Requesting Vulkan context, but RetroArch is not compiled against Vulkan. Cannot use HW context.\n");
          return false;
 #endif
 
@@ -1285,7 +1285,7 @@ static bool dynamic_request_hw_context(enum retro_hw_context_type type,
 #ifndef HAVE_OPENGLES3_2
          if (major == 3 && minor == 2)
          {
-            RARCH_ERR("[HW] Requesting OpenGLES%u.%u context, but RetroArch is compiled against a lesser version. Cannot use HW context.\n",
+            RARCH_WARN("[HW] Requesting OpenGLES%u.%u context, but RetroArch is compiled against a lesser version. Cannot use HW context.\n",
                   major, minor);
             return false;
          }
@@ -1293,7 +1293,7 @@ static bool dynamic_request_hw_context(enum retro_hw_context_type type,
 #if !defined(HAVE_OPENGLES3_2) && !defined(HAVE_OPENGLES3_1)
          if (major == 3 && minor == 1)
          {
-            RARCH_ERR("[HW] Requesting OpenGLES%u.%u context, but RetroArch is compiled against a lesser version. Cannot use HW context.\n",
+            RARCH_WARN("[HW] Requesting OpenGLES%u.%u context, but RetroArch is compiled against a lesser version. Cannot use HW context.\n",
                   major, minor);
             return false;
          }
@@ -1301,25 +1301,31 @@ static bool dynamic_request_hw_context(enum retro_hw_context_type type,
          RARCH_LOG("[HW] Requesting OpenGLES%u.%u context.\n",
                major, minor);
          break;
+#else
+      case RETRO_HW_CONTEXT_OPENGLES_VERSION:
+         RARCH_WARN("[HW] Requesting OpenGLES%u.%u context, but RetroArch "
+               "is compiled against OpenGLES2. Cannot use HW context.\n",
+               major, minor);
+         return false;
 #endif
 
 #endif
       case RETRO_HW_CONTEXT_OPENGL:
       case RETRO_HW_CONTEXT_OPENGL_CORE:
-         RARCH_ERR("[HW] Requesting OpenGL context, but RetroArch "
+         RARCH_WARN("[HW] Requesting OpenGL context, but RetroArch "
                "is compiled against OpenGLES. Cannot use HW context.\n");
          return false;
 
 #elif defined(HAVE_OPENGL) || defined(HAVE_OPENGL_CORE)
       case RETRO_HW_CONTEXT_OPENGLES2:
       case RETRO_HW_CONTEXT_OPENGLES3:
-         RARCH_ERR("[HW] Requesting OpenGLES%u context, but RetroArch "
+         RARCH_WARN("[HW] Requesting OpenGLES%u context, but RetroArch "
                "is compiled against OpenGL. Cannot use HW context.\n",
                type == RETRO_HW_CONTEXT_OPENGLES2 ? 2 : 3);
          return false;
 
       case RETRO_HW_CONTEXT_OPENGLES_VERSION:
-         RARCH_ERR("[HW] Requesting OpenGLES%u.%u context, but RetroArch "
+         RARCH_WARN("[HW] Requesting OpenGLES%u.%u context, but RetroArch "
                "is compiled against OpenGL. Cannot use HW context.\n",
                major, minor);
          return false;
@@ -1357,7 +1363,8 @@ static bool dynamic_request_hw_context(enum retro_hw_context_type type,
          break;
 #endif
       default:
-         RARCH_LOG("[HW] Requesting unknown context.\n");
+         RARCH_WARN("[HW] Requesting context type %d, which this build "
+               "does not support. Cannot use HW context.\n", (int)type);
          return false;
    }
 
@@ -3028,12 +3035,13 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             return false;
          }
 
-         RARCH_LOG("[Environ] SET_HW_RENDER, context type: %s.\n", hw_render_context_name(cb->context_type, cb->version_major, cb->version_minor));
-
+         /* A refusal is the answer to one probe: cores walk a list
+          * of context types until one is accepted, so it is a warning
+          * here and the core decides whether it was fatal. */
          if (!dynamic_request_hw_context(
                   cb->context_type, cb->version_minor, cb->version_major))
          {
-            RARCH_ERR("[Environ] SET_HW_RENDER: Dynamic request HW context failed.\n");
+            RARCH_WARN("[Environ] SET_HW_RENDER: Context refused, the core may request another.\n");
             return false;
          }
 
