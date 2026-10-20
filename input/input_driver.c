@@ -697,6 +697,10 @@ static const input_device_driver_t *input_joypad_for_read_(
 #define INPUT_JOYPAD_FOR_READ(st, drv) input_joypad_for_read_((st), (drv))
 
 #ifdef HAVE_HID
+static void input_beside_stop(void);
+#endif
+
+#ifdef HAVE_HID
 static bool null_hid_joypad_query(void *data, unsigned pad) {
    return pad < MAX_USERS; }
 static const char *null_hid_joypad_name(
@@ -8389,6 +8393,9 @@ static void joypad_driver_reinit_now(void *data,
       /* Run poll one last time in order to detect disconnections */
       tmp->poll();
       tmp->destroy();
+#ifdef HAVE_HID
+      input_beside_stop();
+#endif
    }
    if (!input_driver_st.primary_joypad)
    {
@@ -8595,6 +8602,330 @@ void input_driver_device_release(unsigned source, unsigned slot)
    input_device_pool_release(input_driver_device_pool(), source, slot);
 }
 
+#ifdef HAVE_HID
+/* A HID source beside the joypad driver: pads no joypad driver sees,
+ * a DualShock 3 bound to WinUSB for one. Its pads take numbers from
+ * the pool, and while it has any the joypad driver is reached through
+ * input_beside_joypad, which hands each of their numbers to the
+ * source and every other number to the driver. With none, the driver
+ * is reached directly, as before. */
+#define INPUT_BESIDE_SOURCE 0
+
+typedef struct
+{
+   char     name[64];
+   uint16_t vid;
+   uint16_t pid;
+   int8_t   number;  /* -1: not on one */
+} input_beside_pad_t;
+
+static struct
+{
+   const hid_driver_t *drv;
+   void *data;
+   const hid_driver_t *override; /* a test's, in place of the platform's */
+   const input_device_driver_t *real; /* while input_beside_joypad stands in */
+   input_beside_pad_t pads[INPUT_POOL_SLOTS];
+   bool tried;
+   bool starting; /* in its init, which may find pads before data is known */
+} input_beside;
+
+static input_device_driver_t input_beside_joypad;
+
+static const hid_driver_t *input_beside_source(void)
+{
+   if (input_beside.override)
+      return input_beside.override;
+#if defined(HAVE_WINUSB) && defined(HAVE_THREADS)
+   return &winusb_hid;
+#else
+   return NULL;
+#endif
+}
+
+void input_driver_beside_override(const hid_driver_t *drv)
+{
+   if (!drv && input_beside.drv && input_beside.drv == input_beside.override)
+      input_beside_stop();
+   input_beside.override = drv;
+   if (!input_beside.drv)
+      input_beside.tried = false;
+}
+
+/* The source's slot behind device number @pad, if it is one of its. */
+static INLINE bool input_beside_slot(unsigned pad, unsigned *slot)
+{
+   unsigned source;
+   return input_device_pool_owner(&input_device_pool, pad, &source, slot);
+}
+
+static bool input_beside_query_pad(unsigned pad)
+{
+   unsigned slot;
+   if (input_beside_slot(pad, &slot))
+      return true;
+   return input_beside.real->query_pad && input_beside.real->query_pad(pad);
+}
+
+static int32_t input_beside_button(unsigned pad, uint16_t key)
+{
+   unsigned slot;
+   if (input_beside_slot(pad, &slot))
+      return input_beside.drv->button(input_beside.data, slot, key);
+   return input_beside.real->button(pad, key);
+}
+
+static int16_t input_beside_state(rarch_joypad_info_t *joypad_info,
+      const uint16_t *joykeys, const uint32_t *joyaxes, unsigned port)
+{
+   unsigned slot;
+   if (input_beside_slot(joypad_info->joy_idx, &slot))
+   {
+      rarch_joypad_info_t info = *joypad_info;
+      info.joy_idx             = (uint16_t)slot;
+      return input_beside.drv->state(input_beside.data, &info,
+            joykeys, joyaxes, port);
+   }
+   return input_beside.real->state(joypad_info, joykeys, joyaxes, port);
+}
+
+static void input_beside_get_buttons(unsigned pad, input_bits_t *state)
+{
+   unsigned slot;
+   if (input_beside_slot(pad, &slot))
+      input_beside.drv->get_buttons(input_beside.data, slot, state);
+   else
+      input_beside.real->get_buttons(pad, state);
+}
+
+static int16_t input_beside_axis(unsigned pad, uint32_t joyaxis)
+{
+   unsigned slot;
+   if (input_beside_slot(pad, &slot))
+      return input_beside.drv->axis(input_beside.data, slot, joyaxis);
+   return input_beside.real->axis(pad, joyaxis);
+}
+
+static void input_beside_poll_real(void)
+{
+   if (input_beside.real->poll)
+      input_beside.real->poll();
+}
+
+static bool input_beside_set_rumble(unsigned pad,
+      enum retro_rumble_effect effect, uint16_t strength)
+{
+   unsigned slot;
+   if (input_beside_slot(pad, &slot))
+      return input_beside.drv->set_rumble
+         && input_beside.drv->set_rumble(input_beside.data, slot,
+               effect, strength);
+   return input_beside.real->set_rumble
+      && input_beside.real->set_rumble(pad, effect, strength);
+}
+
+static bool input_beside_set_rumble_gain(unsigned pad, unsigned gain)
+{
+   unsigned slot;
+   if (input_beside_slot(pad, &slot))
+      return false;
+   return input_beside.real->set_rumble_gain
+      && input_beside.real->set_rumble_gain(pad, gain);
+}
+
+static bool input_beside_set_sensor_state(unsigned port,
+      enum retro_sensor_action action, unsigned rate)
+{
+   return input_beside.real->set_sensor_state
+      && input_beside.real->set_sensor_state(port, action, rate);
+}
+
+static bool input_beside_get_sensor_input(unsigned port, unsigned id,
+      float *value)
+{
+   return input_beside.real->get_sensor_input
+      && input_beside.real->get_sensor_input(port, id, value);
+}
+
+static const char *input_beside_name(unsigned pad)
+{
+   unsigned slot;
+   if (input_beside_slot(pad, &slot))
+      return input_beside.drv->name
+         ? input_beside.drv->name(input_beside.data, slot) : NULL;
+   return input_beside.real->name ? input_beside.real->name(pad) : NULL;
+}
+
+static bool input_beside_get_bt_host(unsigned pad, uint8_t *addr)
+{
+   unsigned slot;
+   if (input_beside_slot(pad, &slot))
+      return input_beside.drv->get_bt_host
+         && input_beside.drv->get_bt_host(input_beside.data, slot, addr);
+   return input_beside.real->get_bt_host
+      && input_beside.real->get_bt_host(pad, addr);
+}
+
+static bool input_beside_set_bt_host(unsigned pad, const uint8_t *addr)
+{
+   unsigned slot;
+   if (input_beside_slot(pad, &slot))
+      return input_beside.drv->set_bt_host
+         && input_beside.drv->set_bt_host(input_beside.data, slot, addr);
+   return input_beside.real->set_bt_host
+      && input_beside.real->set_bt_host(pad, addr);
+}
+
+/* Standing in for the driver, it goes when the driver goes. */
+static void input_beside_destroy(void)
+{
+   const input_device_driver_t *real = input_beside.real;
+   input_beside.real = NULL;
+   if (real && real->destroy)
+      real->destroy();
+}
+
+/* input_beside_joypad stands in for the driver while the source has a
+ * pad, and the driver is reached directly again when it has none. */
+static void input_beside_route(input_driver_state_t *st)
+{
+   bool want = input_device_pool.beside != 0;
+
+   if (want && st->primary_joypad && !input_beside.real)
+   {
+      const input_device_driver_t *real = st->primary_joypad;
+      input_beside_joypad.init             = NULL;
+      input_beside_joypad.query_pad        = input_beside_query_pad;
+      input_beside_joypad.destroy          = input_beside_destroy;
+      input_beside_joypad.button           = input_beside_button;
+      input_beside_joypad.state            = input_beside_state;
+      input_beside_joypad.get_buttons      = input_beside_get_buttons;
+      input_beside_joypad.axis             = input_beside_axis;
+      input_beside_joypad.poll             = input_beside_poll_real;
+      input_beside_joypad.set_rumble       = input_beside_set_rumble;
+      input_beside_joypad.set_rumble_gain  = input_beside_set_rumble_gain;
+      input_beside_joypad.set_sensor_state = input_beside_set_sensor_state;
+      input_beside_joypad.get_sensor_input = input_beside_get_sensor_input;
+      input_beside_joypad.name             = input_beside_name;
+      input_beside_joypad.ident            = real->ident;
+      input_beside_joypad.get_bt_host      = input_beside_get_bt_host;
+      input_beside_joypad.set_bt_host      = input_beside_set_bt_host;
+      input_beside.real                    = real;
+      st->primary_joypad                   = &input_beside_joypad;
+   }
+   else if (!want && input_beside.real
+         && st->primary_joypad == &input_beside_joypad)
+   {
+      st->primary_joypad = input_beside.real;
+      input_beside.real  = NULL;
+   }
+}
+
+/* Started with the first poll a joypad driver other than "hid" is up
+ * for; polled ahead of it every frame. */
+static void input_beside_poll(input_driver_state_t *st)
+{
+   if (!input_beside.tried)
+   {
+      const hid_driver_t *drv = input_beside_source();
+      if (!st->primary_joypad)
+         return;
+      /* once per joypad driver: none here, or the driver is HID's own */
+      input_beside.tried = true;
+      if (drv && !string_is_equal(st->primary_joypad->ident, "hid"))
+      {
+         input_beside.starting = true;
+         if ((input_beside.data = drv->init()))
+            input_beside.drv = drv;
+         input_beside.starting = false;
+      }
+   }
+   if (input_beside.drv)
+   {
+      input_beside.drv->poll(input_beside.data);
+      input_beside_route(st);
+   }
+}
+
+/* With the joypad driver: the source's pads leave, and it is looked
+ * for again when the next driver is up. */
+static void input_beside_stop(void)
+{
+   if (input_beside.drv)
+      input_beside.drv->free(input_beside.data);
+   input_beside.drv   = NULL;
+   input_beside.data  = NULL;
+   input_beside.tried = false;
+}
+
+static bool input_beside_owns(const void *hid_data)
+{
+   return hid_data
+      && (input_beside.starting || hid_data == input_beside.data);
+}
+
+int input_driver_hid_claim(const void *hid_data, unsigned slot,
+      const char *name, uint16_t vid, uint16_t pid)
+{
+   int number;
+   input_beside_pad_t *pad;
+
+   if (!input_beside_owns(hid_data))
+      return (int)slot;
+   if (slot >= INPUT_POOL_SLOTS)
+      return -1;
+   if ((number = input_device_pool_claim(input_driver_device_pool(),
+               INPUT_BESIDE_SOURCE, slot)) < 0)
+      return -1;
+   pad         = &input_beside.pads[slot];
+   strlcpy(pad->name, name ? name : "", sizeof(pad->name));
+   pad->vid    = vid;
+   pad->pid    = pid;
+   pad->number = (int8_t)number;
+   return number;
+}
+
+int input_driver_hid_number(const void *hid_data, unsigned slot)
+{
+   if (!input_beside_owns(hid_data))
+      return (int)slot;
+   if (slot >= INPUT_POOL_SLOTS)
+      return -1;
+   return input_device_pool.index[INPUT_BESIDE_SOURCE][slot];
+}
+
+void input_driver_hid_release(const void *hid_data, unsigned slot)
+{
+   if (!input_beside_owns(hid_data) || slot >= INPUT_POOL_SLOTS)
+      return;
+   input_device_pool_release(input_driver_device_pool(),
+         INPUT_BESIDE_SOURCE, slot);
+   input_beside.pads[slot].number = -1;
+}
+
+/* The joypad driver's pad took @slot's number: it is given another and
+ * announced there, or, with none free, it is let go. */
+static void input_beside_move(unsigned slot)
+{
+   int number;
+   input_beside_pad_t *pad = &input_beside.pads[slot];
+
+   if (!input_beside.drv || slot >= INPUT_POOL_SLOTS || pad->number < 0)
+      return;
+   number = input_device_pool_claim(input_driver_device_pool(),
+         INPUT_BESIDE_SOURCE, slot);
+   pad->number = (int8_t)number;
+   if (number < 0)
+   {
+      RARCH_WARN("[Input] \"%s\" has no device number left.\n", pad->name);
+      return;
+   }
+   RARCH_LOG("[Input] \"%s\" moves to device %d.\n", pad->name, number + 1);
+   input_autoconfigure_connect(pad->name, NULL, NULL, "hid",
+         (unsigned)number, pad->vid, pad->pid);
+}
+#endif
+
 const struct input_registry *input_driver_get_registry(void)
 {
    return &input_registry;
@@ -8745,9 +9076,12 @@ void input_driver_registry_connect(unsigned slot, const char *provider,
       unsigned source, beside_slot;
       if (input_device_pool_driver_connect(input_driver_device_pool(),
                slot, &source, &beside_slot))
-         RARCH_LOG("[Input] Device number %u was a pad beside the joypad"
-               " driver's (source %u, slot %u); it moves.\n",
-               slot, source, beside_slot);
+      {
+#ifdef HAVE_HID
+         if (source == INPUT_BESIDE_SOURCE)
+            input_beside_move(beside_slot);
+#endif
+      }
    }
 
    handle = input_registry_connect(
@@ -9428,6 +9762,9 @@ void input_driver_drop_kept(void)
       const input_device_driver_t *tmp   = input_st->primary_joypad;
       input_st->primary_joypad           = NULL;
       tmp->destroy();
+#ifdef HAVE_HID
+      input_beside_stop();
+#endif
    }
    if (input_st->current_data == data)
       input_st->current_data = NULL;
@@ -9461,6 +9798,9 @@ void input_driver_free_with_video(const void *video_data)
       const input_device_driver_t *tmp   = input_st->primary_joypad;
       input_st->primary_joypad           = NULL;
       tmp->destroy();
+#ifdef HAVE_HID
+      input_beside_stop();
+#endif
    }
    input_keyboard_capture_release(INPUT_KEYBOARD_CAPTURE_ALL);
    input_st->current_data = NULL;
@@ -14804,6 +15144,13 @@ void input_driver_poll(void)
    {
       joypad                      = input_st->primary_joypad;
    }
+#endif
+
+#ifdef HAVE_HID
+   /* the source beside the joypad driver first: what it finds decides
+    * whether the driver is reached through input_beside_joypad */
+   input_beside_poll(input_st);
+   joypad = input_st->primary_joypad;
 #endif
 
    if (joypad && joypad->poll)

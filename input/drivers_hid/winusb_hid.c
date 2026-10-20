@@ -319,6 +319,7 @@ static winusb_device_t *winusb_hid_find(winusb_hid_t *hid,
 static void winusb_hid_open(winusb_hid_t *hid, const char *path,
       const char *instance, uint16_t vid, uint16_t pid)
 {
+   int number;
    winusb_device_t *dev;
 
    if (winusb_hid_find(hid, instance))
@@ -376,15 +377,27 @@ static void winusb_hid_open(winusb_hid_t *hid, const char *path,
       return;
    }
 
+   /* its device number: its slot where this is the joypad driver's,
+    * one from the frontend's pool where it is beside another */
+   if ((number = input_driver_hid_claim(hid, (unsigned)dev->slot,
+               dev->name, vid, pid)) < 0)
+   {
+      RARCH_WARN("[WinUSB] \"%s\": no device number left.\n", dev->name);
+      pad_connection_pad_deinit(&hid->slots[dev->slot], dev->slot);
+      winusb_hid_close(dev);
+      return;
+   }
+
    dev->next    = hid->devices;
    hid->devices = dev;
-   RARCH_LOG("[WinUSB] \"%s\" on port %d.\n", dev->name, dev->slot + 1);
+   RARCH_LOG("[WinUSB] \"%s\" is device %d.\n", dev->name, number + 1);
    input_autoconfigure_connect(dev->name, NULL, NULL, "hid",
-         dev->slot, vid, pid);
+         (unsigned)number, vid, pid);
 }
 
 static void winusb_hid_remove(winusb_hid_t *hid, winusb_device_t *dev)
 {
+   int number;
    winusb_device_t **link;
 
    for (link = &hid->devices; *link; link = &(*link)->next)
@@ -392,7 +405,9 @@ static void winusb_hid_remove(winusb_hid_t *hid, winusb_device_t *dev)
       if (*link != dev)
          continue;
       *link = dev->next;
-      input_autoconfigure_disconnect(dev->slot, dev->name);
+      if ((number = input_driver_hid_number(hid, (unsigned)dev->slot)) >= 0)
+         input_autoconfigure_disconnect((unsigned)number, dev->name);
+      input_driver_hid_release(hid, (unsigned)dev->slot);
       pad_connection_pad_deinit(&hid->slots[dev->slot], dev->slot);
       winusb_hid_close(dev);
       return;

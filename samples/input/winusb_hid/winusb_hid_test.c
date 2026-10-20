@@ -41,6 +41,14 @@ bool input_autoconfigure_disconnect(unsigned port, const char *name)
    return true;
 }
 void input_pad_connect(unsigned port, input_device_driver_t *driver) { }
+/* the hid joypad driver's numbering: slot n is device n */
+int input_driver_hid_claim(const void *hid_data, unsigned slot,
+      const char *name, uint16_t vid, uint16_t pid) { return (int)slot; }
+int input_driver_hid_number(const void *hid_data, unsigned slot)
+{
+   return (int)slot;
+}
+void input_driver_hid_release(const void *hid_data, unsigned slot) { }
 
 /* ---- winusb.dll ---- */
 
