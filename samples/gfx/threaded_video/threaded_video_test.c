@@ -714,6 +714,27 @@ static bool dplane_frame(void *data, const void *frame, unsigned dims,
          video_info);
 }
 
+/* A display that reports its vblank, on a grid from dplane_grid_base,
+ * while dplane_grid_period is set; none otherwise, whatever the driver
+ * underneath can say, so the hold's grid is the clock's. */
+static retro_time_t dplane_grid_base, dplane_grid_period;
+
+static retro_time_t dplane_last_vblank(void *data)
+{
+   retro_time_t now = cpu_features_get_time_usec();
+   (void)data;
+   if (!dplane_grid_period)
+      return 0;
+   return dplane_grid_base
+      + (now - dplane_grid_base) / dplane_grid_period * dplane_grid_period;
+}
+
+static float dplane_refresh(void *data)
+{
+   (void)data;
+   return dplane_grid_period ? 1000000.0f / (float)dplane_grid_period : 0.0f;
+}
+
 static void dplane_get_poke(void *data, const video_poke_interface_t **iface)
 {
    dplane_inner->poke_interface(data, &dplane_inner_poke);
@@ -721,7 +742,50 @@ static void dplane_get_poke(void *data, const video_poke_interface_t **iface)
    dplane_thread_poke.driver_pacing_set  = dplane_set;
    dplane_thread_poke.driver_pacing_wait = dplane_wait;
    dplane_thread_poke.driver_pacing_mark = dplane_mark;
+   dplane_thread_poke.get_last_present_time = dplane_last_vblank;
+   if (dplane_grid_period)
+      dplane_thread_poke.get_refresh_rate = dplane_refresh;
    *iface                                = &dplane_thread_poke;
+}
+
+/* Where 30 driver-released frames started against the display's grid:
+ * how many of them within a millisecond of their median phase, which a
+ * loaded machine's odd late wake does not move, that median, and how
+ * long they took. */
+static void dplane_phase_measure(thread_video_t *thr, unsigned *on_phase,
+      retro_time_t *median, retro_time_t *took)
+{
+   retro_time_t p = dplane_grid_period;
+   retro_time_t d[30], first = 0, t0, m;
+   unsigned i, j;
+   t0 = cpu_features_get_time_usec();
+   for (i = 0; i < 30; i++)
+   {
+      retro_time_t ph;
+      run_frames(1);
+      ph = (thr->run_start - dplane_grid_base) % p;
+      if (!i)
+         first = ph;
+      d[i] = ph - first;
+      while (d[i] > p / 2)
+         d[i] -= p;
+      while (d[i] <= -p / 2)
+         d[i] += p;
+   }
+   *took = cpu_features_get_time_usec() - t0;
+   for (i = 1; i < 30; i++)
+      for (j = i; j > 0 && d[j - 1] > d[j]; j--)
+      {
+         retro_time_t t = d[j];
+         d[j]     = d[j - 1];
+         d[j - 1] = t;
+      }
+   m     = d[15];
+   *on_phase = 0;
+   for (i = 0; i < 30; i++)
+      if (d[i] - m <= 1000 && m - d[i] <= 1000)
+         (*on_phase)++;
+   *median = ((first + m) % p + p) % p;
 }
 
 static void lane_driver_pacing(void)
@@ -987,6 +1051,71 @@ static void lane_driver_pacing(void)
                   && !(runloop_st->pace & RUNLOOP_PACE_DISPLAY),
                   "display pacing off: the driver alone, pace 0x%x",
                   runloop_st->pace);
+         }
+         /* With the display's vblank in hand, the driver's interval
+          * keeps the rate and the hold keeps the phase: the released
+          * frames start where the display wants them, after a hitch
+          * (a state load at start-up) as after display pacing is
+          * turned off and on again, and are not run unthrottled by a
+          * release that does not sleep. */
+         {
+            float saved_hz  = settings->floats.video_refresh_rate;
+            bool saved_ask  = settings->bools.video_present_timing_from_display;
+            bool saved_vs   = settings->bools.video_vsync;
+            unsigned content = (unsigned)runloop_content_frame_time_us(
+                  video_st->core_hz);
+            retro_time_t mean0, took0, mean1, took1, d;
+            unsigned on_phase0, on_phase1;
+            settings->floats.video_refresh_rate = 120.0f;
+            settings->bools.video_present_timing_from_display = true;
+            settings->bools.video_vsync = false;
+            command_event(CMD_EVENT_VIDEO_SET_BLOCKING_STATE, NULL);
+            dplane_grid_base   = cpu_features_get_time_usec();
+            dplane_grid_period = 8333;
+            video_thread_wait_idle();
+            set_poke_from(thr, &dplane_driver);
+            settings->bools.video_threaded_display_pacing = true;
+            run_frames(10);
+            /* The hitch's frame reads as core time to reserve, which
+             * the average sheds over a few dozen frames */
+            retro_sleep(30);
+            run_frames(40);
+            dplane_phase_measure(thr, &on_phase0, &mean0, &took0);
+            CHECK((runloop_st->pace & RUNLOOP_PACE_DRIVER)
+                  && (runloop_st->pace & RUNLOOP_PACE_DISPLAY),
+                  "phase: Display+Driver, pace 0x%x", runloop_st->pace);
+            CHECK(took0 >= (retro_time_t)content * 30 * 3 / 4,
+                  "phase: 30 released frames in %.1f ms, run unthrottled"
+                  " (content %.1f ms)", took0 / 1000.0, content / 1000.0);
+            CHECK(on_phase0 >= 24,
+                  "phase: %u of 30 released frames started on one phase"
+                  " of the display's grid after a hitch", on_phase0);
+            settings->bools.video_threaded_display_pacing = false;
+            run_frames(5);
+            settings->bools.video_threaded_display_pacing = true;
+            run_frames(40);
+            dplane_phase_measure(thr, &on_phase1, &mean1, &took1);
+            d = mean1 - mean0;
+            while (d > dplane_grid_period / 2)
+               d -= dplane_grid_period;
+            while (d <= -dplane_grid_period / 2)
+               d += dplane_grid_period;
+            if (d < 0)
+               d = -d;
+            CHECK(on_phase1 >= 24 && d <= 1500,
+                  "phase: after the toggle %u of 30 on one phase, %.2f ms"
+                  " from the start-up phase", on_phase1, d / 1000.0);
+            fprintf(stderr, "   driver pacing phase: start-up %u/30 on phase"
+                  " in %.1f ms, toggled %u/30, %.2f ms apart\n",
+                  on_phase0, took0 / 1000.0, on_phase1, d / 1000.0);
+            dplane_grid_period = 0;
+            video_thread_wait_idle();
+            set_poke_from(thr, &dplane_driver);
+            settings->bools.video_threaded_display_pacing = false;
+            settings->bools.video_vsync = saved_vs;
+            command_event(CMD_EVENT_VIDEO_SET_BLOCKING_STATE, NULL);
+            settings->bools.video_present_timing_from_display = saved_ask;
+            settings->floats.video_refresh_rate = saved_hz;
          }
          video_thread_wait_idle();
          set_driver(thr, dplane_inner);

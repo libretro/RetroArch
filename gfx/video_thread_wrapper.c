@@ -3509,8 +3509,12 @@ static VIDEO_NOINLINE void video_thread_handoff_latch(thread_video_t *thr,
     * A frame Driver Pacing released (@driver_released: its identity in
     * the frame info) is the driver's to hold: the runloop sleeps on the
     * driver before the next frame, at the content's period, which the
-    * runloop gives the driver as its minimum interval, and the hold
-    * stands aside rather than sleep a second time. */
+    * runloop gives the driver as its minimum interval. That interval
+    * keeps the rate but not the phase: with the display's own vblank
+    * in hand the hold still places the frame on it, and the driver's
+    * sleep after it, a period from the last, has nothing left to wait.
+    * Without one - a grid laid from the clock - the hold stands aside
+    * rather than sleep a second time. */
 static VIDEO_NOINLINE void video_thread_pace_hold(thread_video_t *thr,
       retro_time_t now, bool driver_released)
 {
@@ -3519,7 +3523,12 @@ static VIDEO_NOINLINE void video_thread_pace_hold(thread_video_t *thr,
    if (!thr->display_pacing || thr->fast_forward)
       return;
 
-   if (driver_released)
+   /* The presenter's period, next vblank and render time, as one
+    * snapshot from the video thread's last completion */
+   video_thread_read_stats(thr, &snap);
+
+   if (     driver_released
+         && !(snap.flags & VIDEO_THREAD_STAT_F_PHASE_DISPLAY))
    {
       double fps = thr->video_st->av_info.timing.fps;
       /* The video thread still judges a queued frame by the content's
@@ -3534,10 +3543,6 @@ static VIDEO_NOINLINE void video_thread_pace_hold(thread_video_t *thr,
       thr->driver_released++;
       return;
    }
-
-   /* The presenter's period, next vblank and render time, as one
-    * snapshot from the video thread's last completion */
-   video_thread_read_stats(thr, &snap);
 
    if (     snap.present_period > 0
          && snap.next_present > 0)

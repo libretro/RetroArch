@@ -455,8 +455,8 @@ enum runloop_pace_source
     * full period of "core time", reserves all of it, and holds for
     * nothing - which is what happened, and read as "Pacing: Timer" with
     * display pacing on. With RUNLOOP_PACE_DRIVER beside it the release
-    * is the driver's sleep, at the content's period, and the hold
-    * stands aside. */
+    * is the driver's sleep, at the content's period, and the hold only
+    * places the frame on the display's vblank where it has one. */
    RUNLOOP_PACE_DISPLAY  = (1 << 6),
    /* The video driver's low-latency backend (NVIDIA Reflex through
     * VK_NV_low_latency2) owns the release of the next frame: the loop
@@ -786,10 +786,10 @@ typedef unsigned runloop_pace_facts_t;
  * keep their existing pacing: a cached frame presented for them is
  * not a frame the core made, and a sleep for it would be one too
  * many. Under the threaded wrapper with display pacing on, the
- * driver's sleep is the hold's release: the presenter's hold stands
- * aside for a frame the driver released, and the content's period,
- * which the hold kept, goes to the driver as its minimum interval -
- * one owner, one cadence. Scanline Sync paces the present to a
+ * driver's sleep is the hold's release: the content's period, which
+ * the hold kept, goes to the driver as its minimum interval - one
+ * owner, one cadence - and the hold, standing aside otherwise, still
+ * places the frame on the display's vblank where it knows one. Scanline Sync paces the present to a
  * scanline, a release of its own. Vsync and audio may still hold
  * inside their own subsystems; the backend schedules the start of
  * the frame, not its presentation. */
