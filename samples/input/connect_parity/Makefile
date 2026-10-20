@@ -8,6 +8,8 @@ CFLAGS += -std=gnu89 -O1 -g1 -Wall -DHAVE_HID \
 SOURCES := connect_parity_test.c \
            $(ROOT)/input/connect/connect_ps4.c \
            $(ROOT)/input/connect/connect_wiiugca.c \
+           $(ROOT)/input/connect/connect_ps2adapter.c \
+           $(ROOT)/input/connect/connect_psxadapter.c \
            $(ROOT)/input/common/input_hid_common.c
 ifneq ($(SANITIZER),)
 CFLAGS  += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer

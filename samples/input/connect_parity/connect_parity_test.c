@@ -288,11 +288,157 @@ static void test_wiiugca(void)
          failures == had ? "pass" : "fail");
 }
 
+/* ---- PS2 and PSX adapters: the old handlers' report and reads -- */
+
+struct ref_adapter
+{
+   uint8_t data[64];
+   uint32_t buttons;
+};
+
+static const uint32_t ref_adapter_map[16] =
+{
+   RETRO_DEVICE_ID_JOYPAD_L2, RETRO_DEVICE_ID_JOYPAD_R2,
+   RETRO_DEVICE_ID_JOYPAD_L, RETRO_DEVICE_ID_JOYPAD_R,
+   RETRO_DEVICE_ID_JOYPAD_SELECT, RETRO_DEVICE_ID_JOYPAD_START,
+   RETRO_DEVICE_ID_JOYPAD_L3, RETRO_DEVICE_ID_JOYPAD_R3,
+   NO_BTN, NO_BTN, NO_BTN, NO_BTN,
+   RETRO_DEVICE_ID_JOYPAD_X, RETRO_DEVICE_ID_JOYPAD_A,
+   RETRO_DEVICE_ID_JOYPAD_B, RETRO_DEVICE_ID_JOYPAD_Y
+};
+
+static void ref_adapter_hat(struct ref_adapter *r, unsigned h)
+{
+   if (h == 5 || h == 6 || h == 7)
+      r->buttons |= 1u << RETRO_DEVICE_ID_JOYPAD_LEFT;
+   if (h == 1 || h == 2 || h == 3)
+      r->buttons |= 1u << RETRO_DEVICE_ID_JOYPAD_RIGHT;
+   if (h == 7 || h == 0 || h == 1)
+      r->buttons |= 1u << RETRO_DEVICE_ID_JOYPAD_UP;
+   if (h == 3 || h == 4 || h == 5)
+      r->buttons |= 1u << RETRO_DEVICE_ID_JOYPAD_DOWN;
+}
+
+static void ref_adapter_keys(struct ref_adapter *r, unsigned keys)
+{
+   unsigned i;
+   r->buttons = 0;
+   for (i = 0; i < 16; i++)
+      if (ref_adapter_map[i] != NO_BTN && (keys & (1u << i)))
+         r->buttons |= 1u << ref_adapter_map[i];
+}
+
+static void ref_ps2_take(struct ref_adapter *r, const uint8_t *p, unsigned size)
+{
+   if (p[1] != 1)
+      return;
+   memcpy(r->data, p, size);
+   ref_adapter_keys(r, r->data[7] | (r->data[6] << 8));
+   ref_adapter_hat(r, r->data[6] & 15);
+}
+
+static void ref_psx_take(struct ref_adapter *r, const uint8_t *p, unsigned size)
+{
+   memcpy(r->data, p, size);
+   ref_adapter_keys(r, r->data[6] | (r->data[5] << 8));
+   if (r->data[2] == 0x7F)
+   {
+      if (r->data[3] == 0x00) r->buttons |= 1u << RETRO_DEVICE_ID_JOYPAD_LEFT;
+      if (r->data[3] == 0xFF) r->buttons |= 1u << RETRO_DEVICE_ID_JOYPAD_RIGHT;
+      if (r->data[4] == 0x00) r->buttons |= 1u << RETRO_DEVICE_ID_JOYPAD_UP;
+      if (r->data[4] == 0xFF) r->buttons |= 1u << RETRO_DEVICE_ID_JOYPAD_DOWN;
+   }
+   else
+      ref_adapter_hat(r, r->data[5] & 15);
+}
+
+static int16_t ref_adapter_axis(const struct ref_adapter *r, unsigned axis,
+      bool psx)
+{
+   static const unsigned at[4] = { 4, 5, 3, 2 };
+   int val;
+   if (axis >= 4 || (psx && r->data[2] == 0x7F))
+      return 0;
+   val = (r->data[at[axis]] << 8) - 0x8000;
+   return abs(val) > 0x1000 ? (int16_t)val : 0;
+}
+
+static unsigned adapter_mismatches(const pad_connection_interface_t *ifc,
+      void *dev, const struct ref_adapter *r, bool psx)
+{
+   unsigned k, bad = 0;
+   input_bits_t bits;
+   ifc->get_buttons(dev, &bits);
+   for (k = 0; k < 32; k++)
+   {
+      int want = !!(r->buttons & (1u << k));
+      if (!!ifc->button(dev, (uint16_t)k) != want
+            || (k < 16 && !!BIT256_GET(bits, k) != want))
+         bad++;
+   }
+   for (k = 0; k < 5; k++)
+      if (ifc->get_axis(dev, k) != ref_adapter_axis(r, k, psx))
+         bad++;
+   return bad;
+}
+
+static void test_adapter(const pad_connection_interface_t *ifc,
+      const char *name, bool psx)
+{
+   uint8_t p[64];
+   struct ref_adapter ref;
+   unsigned n, i, bad = 0, had = failures;
+   unsigned min = psx ? 7 : 8;
+   int dummy_connection;
+   void *dev = ifc->init(&dummy_connection, 0, &stub_hid);
+
+   CHECK(dev != NULL, "%s: no device", name);
+   if (!dev)
+      return;
+   memset(&ref, 0, sizeof(ref));
+   srand(psx ? 4 : 3);
+   for (n = 0; n < 20000; n++)
+   {
+      unsigned size = min + (unsigned)rand() % (sizeof(p) + 1 - min);
+      for (i = 0; i < sizeof(p); i++)
+         p[i] = (uint8_t)rand();
+      if (psx)
+      {
+         /* digital mode half the time, its d-pad at the ends */
+         if (rand() & 1)
+            p[2] = 0x7F;
+         if (rand() & 1)
+            p[3] = (rand() & 1) ? 0xFF : 0x00;
+         if (rand() & 1)
+            p[4] = (rand() & 1) ? 0xFF : 0x00;
+      }
+      else if (rand() & 3)
+         p[1] = 1; /* the first controller; others are not taken */
+      ifc->packet_handler(dev, p, (uint16_t)size);
+      if (psx)
+         ref_psx_take(&ref, p, size);
+      else
+         ref_ps2_take(&ref, p, size);
+      bad += adapter_mismatches(ifc, dev, &ref, psx);
+   }
+   CHECK(!bad, "%s: %u reads disagree with the copying handler", name, bad);
+   /* a report too short to be one leaves the pad as it was */
+   memset(p, 0x01, sizeof(p));
+   ifc->packet_handler(dev, p, (uint16_t)(min - 1));
+   CHECK(!adapter_mismatches(ifc, dev, &ref, psx),
+         "%s: a short report was taken", name);
+   ifc->deinit(dev);
+   printf("[%s] %s: every button, the set and the axes as the copying handler, on 20000 reports\n",
+         failures == had ? "pass" : "fail", name);
+}
+
 int main(void)
 {
    stub_hid.send_control = stub_send_control;
    test_ps4();
    test_wiiugca();
+   test_adapter(&pad_connection_ps2adapter, "ps2adapter", false);
+   test_adapter(&pad_connection_psxadapter, "psxadapter", true);
    puts(failures ? "FAIL connect_parity_test" : "PASS connect_parity_test");
    return failures ? 1 : 0;
 }

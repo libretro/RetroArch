@@ -25,9 +25,9 @@
 struct hidpad_ps2adapter_data
 {
    struct pad_connection* connection;
-   uint8_t data[64];
    uint32_t slot;
    uint32_t buttons;
+   uint8_t axis[4];
 };
 
 static void* hidpad_ps2adapter_init(void *data, uint32_t slot,
@@ -82,21 +82,7 @@ static int16_t hidpad_ps2adapter_get_axis(void *data, unsigned axis)
    if (!device || axis >= 4)
       return 0;
 
-   switch (axis)
-   {
-      case 0:
-         val = device->data[4];
-         break;
-      case 1:
-         val = device->data[5];
-         break;
-      case 2:
-         val = device->data[3];
-         break;
-      case 3:
-         val = device->data[2];
-         break;
-   }
+   val = device->axis[axis];
 
    val = (val << 8) - 0x8000;
 
@@ -136,7 +122,7 @@ static void hidpad_ps2adapter_packet_handler(void *data, uint8_t *packet, uint16
    };
    struct hidpad_ps2adapter_data *device = (struct hidpad_ps2adapter_data*)data;
 
-   if (!device)
+   if (!device || size < 8)
       return;
 
    /* Check if the data corresponds to the first controller, 
@@ -144,17 +130,20 @@ static void hidpad_ps2adapter_packet_handler(void *data, uint8_t *packet, uint16
    if (packet[1] != 1)
       return;
 
-   memcpy(device->data, packet, size);
+   device->axis[0] = packet[4];
+   device->axis[1] = packet[5];
+   device->axis[2] = packet[3];
+   device->axis[3] = packet[2];
 
    device->buttons = 0;
-   pressed_keys    = device->data[7] | (device->data[6] << 8);
+   pressed_keys    = packet[7] | (packet[6] << 8);
 
    for (i = 0; i < 16; i ++)
       if (button_mapping[i] != NO_BTN)
          device->buttons |= (pressed_keys & (1 << i)) ? (UINT64_C(1) << button_mapping[i]) : 0;
 
    /* Now process the hat values as if they were pad buttons */
-   hat_value = PS2_H_GET(device->data[6]);
+   hat_value = PS2_H_GET(packet[6]);
    device->buttons |= PS2_H_LEFT(hat_value)  ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
    device->buttons |= PS2_H_RIGHT(hat_value) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
    device->buttons |= PS2_H_UP(hat_value)    ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_UP) : 0;
@@ -175,7 +164,7 @@ static int32_t hidpad_ps2adapter_button(void *data, uint16_t joykey)
    struct hidpad_ps2adapter_data *pad = (struct hidpad_ps2adapter_data*)data;
    if (!pad || joykey > 31)
       return 0;
-   return pad->buttons & (1 << joykey);
+   return (pad->buttons >> joykey) & 1;
 }
 
 pad_connection_interface_t pad_connection_ps2adapter = {

@@ -27,7 +27,8 @@ struct hidpad_psxadapter_data
    struct pad_connection* connection;
    uint32_t slot;
    uint32_t buttons;
-   uint8_t data[64];
+   uint8_t axis[4];
+   bool digital;
 };
 
 static void* hidpad_psxadapter_init(void *data, uint32_t slot, hid_driver_t *driver)
@@ -79,26 +80,10 @@ static int16_t hidpad_psxadapter_get_axis(void *data, unsigned axis)
    struct hidpad_psxadapter_data *device = 
       (struct hidpad_psxadapter_data*)data;
 
-   if (     !device 
-         || axis >= 4   
-         || (device->data[2]==0x7F) ) /* digital mode detection */
+   if (!device || axis >= 4 || device->digital)
       return 0;
 
-   switch (axis)
-   {
-      case 0:
-         val = device->data[4];
-         break;
-      case 1:
-         val = device->data[5];
-         break;
-      case 2:
-         val = device->data[3];
-         break;
-      case 3:
-         val = device->data[2];
-         break;
-   }
+   val = device->axis[axis];
 
    val = (val << 8) - 0x8000;
 
@@ -141,31 +126,35 @@ static void hidpad_psxadapter_packet_handler(void *data,
    struct hidpad_psxadapter_data *device = 
       (struct hidpad_psxadapter_data*)data;
 
-   if (!device)
+   if (!device || size < 7)
       return;
 
-   memcpy(device->data, packet, size);
+   device->axis[0] = packet[4];
+   device->axis[1] = packet[5];
+   device->axis[2] = packet[3];
+   device->axis[3] = packet[2];
+   device->digital = packet[2] == 0x7F;
 
    device->buttons = 0;
 
-   pressed_keys    = device->data[6] | (device->data[5] << 8);
+   pressed_keys    = packet[6] | (packet[5] << 8);
 
    for (i = 0; i < 16; i ++)
       if (button_mapping[i] != NO_BTN)
          device->buttons |= (pressed_keys & (1 << i)) ? (1 << button_mapping[i]) : 0;
 
-   if (device->data[2]==0x7F) /* digital mode detection */
+   if (device->digital)
    {
       /* We're in digital mode, process the dpad values */
-      device->buttons |= (device->data[3]==0x00) ? (1 << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
-      device->buttons |= (device->data[3]==0xFF) ? (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
-      device->buttons |= (device->data[4]==0x00) ? (1 << RETRO_DEVICE_ID_JOYPAD_UP) : 0;
-      device->buttons |= (device->data[4]==0xFF) ? (1 << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0;
+      device->buttons |= (packet[3]==0x00) ? (1 << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
+      device->buttons |= (packet[3]==0xFF) ? (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
+      device->buttons |= (packet[4]==0x00) ? (1 << RETRO_DEVICE_ID_JOYPAD_UP) : 0;
+      device->buttons |= (packet[4]==0xFF) ? (1 << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0;
    }
    else
    {
       /* We're in analog mode, process the hat values as if they were pad buttons */
-      hat_value = PSX_H_GET(device->data[5]);
+      hat_value = PSX_H_GET(packet[5]);
       device->buttons |= PSX_H_LEFT(hat_value) ? (1 << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
       device->buttons |= PSX_H_RIGHT(hat_value) ? (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
       device->buttons |= PSX_H_UP(hat_value) ? (1 << RETRO_DEVICE_ID_JOYPAD_UP) : 0;
@@ -188,7 +177,7 @@ static int32_t hidpad_psxadapter_button(void *data, uint16_t joykey)
       (struct hidpad_psxadapter_data*)data;
    if (!pad || joykey > 31)
       return 0;
-   return pad->buttons & (1 << joykey);
+   return (pad->buttons >> joykey) & 1;
 }
 
 pad_connection_interface_t pad_connection_psxadapter = {
