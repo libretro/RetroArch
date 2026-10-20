@@ -193,7 +193,8 @@ int ra_wgl_dxgi_present(ra_wgl_dxgi_t *p, unsigned interval)
    GLenum layout = RA_WGL_LAYOUT_GENERAL;
    GLint old_read, old_draw, old_buffer;
    GLboolean scissor, srgb;
-   if (index >= 2) return ra_dxgi_bridge_failed(p->bridge) ? 0 : -1;
+   if (index >= 2 || !ra_dxgi_bridge_wait_target(p->bridge, index))
+      return ra_dxgi_bridge_failed(p->bridge) ? 0 : -1;
    last_use = ra_dxgi_bridge_last_use(p->bridge, index);
    p->semaphore_parameter(p->done, RA_WGL_FENCE_VALUE, &last_use);
    p->wait_semaphore(p->done, 0, NULL, 1, &p->texture[index], &layout);

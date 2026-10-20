@@ -16,6 +16,8 @@ HANDLE ra_dxgi_bridge_resource(ra_dxgi_bridge_t *b, unsigned index)
 HANDLE ra_dxgi_bridge_ready_fence(ra_dxgi_bridge_t *b) { return NULL; }
 HANDLE ra_dxgi_bridge_done_fence(ra_dxgi_bridge_t *b) { return NULL; }
 int ra_dxgi_bridge_presentable(ra_dxgi_bridge_t *b) { return 0; }
+int ra_dxgi_bridge_wait_target(ra_dxgi_bridge_t *b, unsigned index)
+{ return 0; }
 int ra_dxgi_bridge_failed(ra_dxgi_bridge_t *b) { return 1; }
 void ra_dxgi_bridge_hdr_metadata(ra_dxgi_bridge_t *b, float peak) { }
 unsigned ra_dxgi_bridge_index(ra_dxgi_bridge_t *b, unsigned interval)
@@ -425,28 +427,52 @@ unsigned ra_dxgi_bridge_index(ra_dxgi_bridge_t *b, unsigned interval)
    b->current_index = b->chain->lpVtbl->GetCurrentBackBufferIndex(b->chain);
    return b->current_index;
 }
+/* Whether the window can be presented to at all: false only while it
+ * is occluded. A target the GPU has not finished with is not that - it
+ * is a window that is there and busy - and the runloop answers false
+ * here by sleeping a whole content frame as for a minimised window,
+ * which on a GPU-bound frame stacked a frame's sleep on every one and
+ * showed as "Pacing: NoWindow". The wait for a busy target is the
+ * producer's, at the target, in ra_dxgi_bridge_wait_target(). A failed
+ * bridge says presentable so its caller reaches the fallback. */
 int ra_dxgi_bridge_presentable(ra_dxgi_bridge_t *b)
 {
    HRESULT result;
+   if (b->failed || !b->occluded) return 1;
+   result = b->chain->lpVtbl->Present(b->chain, 0, DXGI_PRESENT_TEST);
+   b->occluded = result == DXGI_STATUS_OCCLUDED;
+   if (FAILED(result)) b->failed = 1;
+   return b->failed || !b->occluded;
+}
+/* Holds the caller until the GPU has finished with the target index
+ * was last used for, as a swapchain's acquire does, so a producer that
+ * nothing else bounds - GL, which only queues a GPU-side wait - cannot
+ * run frames ahead of the copy into the swap chain. One fence read when
+ * the target is free, which is every frame the GPU keeps up with.
+ * Returns 0 when the frame is to be skipped (timeout, or failure,
+ * which is recorded for the fallback). */
+int ra_dxgi_bridge_wait_target(ra_dxgi_bridge_t *b, unsigned index)
+{
    UINT64 completed;
-   unsigned index;
-   if (b->failed) return 1;
-   if (b->occluded)
-   {
-      result = b->chain->lpVtbl->Present(b->chain, 0, DXGI_PRESENT_TEST);
-      b->occluded = result == DXGI_STATUS_OCCLUDED;
-      if (FAILED(result)) b->failed = 1;
-      if (b->failed) return 1;
-      if (b->occluded) return 0;
-   }
-   index = b->chain->lpVtbl->GetCurrentBackBufferIndex(b->chain);
+   DWORD wait;
+   if (b->failed || index >= 2) return 0;
    completed = b->done->lpVtbl->GetCompletedValue(b->done);
    if (completed == ~(UINT64)0)
    {
       b->failed = 1;
-      return 1;
+      return 0;
    }
-   return completed >= b->last_use[index];
+   if (completed >= b->last_use[index]) return 1;
+   if (FAILED(b->done->lpVtbl->SetEventOnCompletion(
+               b->done, b->last_use[index], b->event)))
+   {
+      b->failed = 1;
+      return 0;
+   }
+   wait = WaitForSingleObject(b->event, 1000);
+   if (wait == WAIT_OBJECT_0) return 1;
+   b->failed = wait == WAIT_FAILED;
+   return 0;
 }
 int ra_dxgi_bridge_failed(ra_dxgi_bridge_t *b) { return b->failed; }
 uint64_t ra_dxgi_bridge_last_use(ra_dxgi_bridge_t *b, unsigned index)

@@ -12,6 +12,7 @@ HANDLE ra_dxgi_bridge_resource(ra_dxgi_bridge_t *bridge, unsigned index);
 HANDLE ra_dxgi_bridge_ready_fence(ra_dxgi_bridge_t *bridge);
 HANDLE ra_dxgi_bridge_done_fence(ra_dxgi_bridge_t *bridge);
 int ra_dxgi_bridge_presentable(ra_dxgi_bridge_t *bridge);
+int ra_dxgi_bridge_wait_target(ra_dxgi_bridge_t *bridge, unsigned index);
 int ra_dxgi_bridge_failed(ra_dxgi_bridge_t *bridge);
 void ra_dxgi_bridge_hdr_metadata(ra_dxgi_bridge_t *bridge, float peak);
 unsigned ra_dxgi_bridge_index(ra_dxgi_bridge_t *bridge, unsigned interval);
