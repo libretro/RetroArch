@@ -21,18 +21,22 @@
 
 void video_windows_plan(const video_views_map_t *map,
       const video_window_settings_t *settings, bool enabled,
-      bool supported, unsigned forced_attached,
+      bool supported, unsigned forced_attached, unsigned attached,
       video_windows_plan_t *out)
 {
    unsigned s;
    memset(out, 0, sizeof(*out));
    if (!map || !map->num_views)
       return;
+   if (attached >= map->num_screens || attached >= RETRO_VIDEO_VIEWS_MAX)
+      attached = 0;
    for (s = 0; s < map->num_screens && s < RETRO_VIDEO_VIEWS_MAX; s++)
    {
-      unsigned bit = 1u << s;
-      unsigned mode = settings ? settings[s].mode : VIDEO_WINDOW_ATTACHED;
-      if (!enabled || s == 0)
+      unsigned bit  = 1u << s;
+      /* screen 0 takes @attached's mode */
+      unsigned mode = settings
+         ? settings[s ? s : attached].mode : VIDEO_WINDOW_ATTACHED;
+      if (!enabled || s == attached)
          out->main_mask |= bit;
       else if (mode == VIDEO_WINDOW_HIDDEN)
          out->hidden_mask |= bit;

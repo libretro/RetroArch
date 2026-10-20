@@ -3754,7 +3754,7 @@ static VIDEO_NOINLINE const video_windows_frame_t *video_driver_windows_frame(
    out->scale_integer = params.scale_integer;
    out->swap_eyes     = params.swap_eyes;
    video_windows_plan(&out->core, out->settings, true, true,
-         video_st->windows_forced_attached, &out->plan);
+         video_st->windows_forced_attached, 0, &out->plan);
    return out;
 }
 

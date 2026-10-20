@@ -47,32 +47,75 @@ static void test_windows_policy(void)
    for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
       screens[i].mode = VIDEO_WINDOW_SEPARATE;
    mono_map(&map, 3);
-   video_windows_plan(&map, screens, true, true, 0, &plan);
+   video_windows_plan(&map, screens, true, true, 0, 0, &plan);
    CHECK(plan.main_mask == 1u && plan.separate_mask == 6u);
-   video_windows_plan(&map, screens, true, true, 2u, &plan);
+   video_windows_plan(&map, screens, true, true, 2u, 0, &plan);
    CHECK(plan.main_mask == 3u && plan.separate_mask == 4u);
    screens[2].mode = VIDEO_WINDOW_HIDDEN;
-   video_windows_plan(&map, screens, true, true, 4u, &plan);
+   video_windows_plan(&map, screens, true, true, 4u, 0, &plan);
    CHECK(plan.hidden_mask == 4u && plan.separate_mask == 2u);
-   video_windows_plan(&map, screens, false, true, 0, &plan);
+   video_windows_plan(&map, screens, false, true, 0, 0, &plan);
    CHECK(plan.main_mask == 7u && plan.hidden_mask == 0u);
-   video_windows_plan(&map, screens, true, false, 0, &plan);
+   video_windows_plan(&map, screens, true, false, 0, 0, &plan);
    CHECK(plan.main_mask == 3u && plan.separate_mask == 0u && plan.hidden_mask == 4u);
    screens[0].mode = VIDEO_WINDOW_HIDDEN;
    screens[1].mode = VIDEO_WINDOW_ATTACHED;
-   video_windows_plan(&map, screens, true, true, 0, &plan);
+   video_windows_plan(&map, screens, true, true, 0, 0, &plan);
    CHECK(plan.main_mask == 3u && plan.hidden_mask == 4u);
    screens[1].mode = 99;
-   video_windows_plan(&map, screens, true, true, 0, &plan);
+   video_windows_plan(&map, screens, true, true, 0, 0, &plan);
    CHECK(plan.main_mask == 3u);
    mono_map(&map, 0);
-   video_windows_plan(&map, screens, true, true, 0, &plan);
+   video_windows_plan(&map, screens, true, true, 0, 0, &plan);
    CHECK(plan.main_mask == 0u && plan.separate_mask == 0u && plan.hidden_mask == 0u);
    mono_map(&map, RETRO_VIDEO_VIEWS_MAX);
    for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
       screens[i].mode = VIDEO_WINDOW_SEPARATE;
-   video_windows_plan(&map, screens, true, true, 0, &plan);
+   video_windows_plan(&map, screens, true, true, 0, 0, &plan);
    CHECK(plan.main_mask == 1u && plan.separate_mask == 254u);
+}
+
+/* Screen @attached stays in the main window, and screen 0 takes its
+ * place: the external monitor rule */
+static void test_windows_attached(void)
+{
+   video_views_map_t map;
+   video_window_settings_t screens[RETRO_VIDEO_VIEWS_MAX];
+   video_windows_plan_t plan;
+   unsigned i;
+   memset(screens, 0, sizeof(screens));
+   for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
+      screens[i].mode = VIDEO_WINDOW_SEPARATE;
+   mono_map(&map, 3);
+   video_windows_plan(&map, screens, true, true, 0, 1, &plan);
+   CHECK(plan.main_mask == 2u && plan.separate_mask == 5u);
+   CHECK(plan.hidden_mask == 0u);
+   /* A close of screen 0's window puts it back */
+   video_windows_plan(&map, screens, true, true, 1u, 1, &plan);
+   CHECK(plan.main_mask == 3u && plan.separate_mask == 4u);
+   /* Screen 0 has the attached screen's mode */
+   screens[1].mode = VIDEO_WINDOW_ATTACHED;
+   video_windows_plan(&map, screens, true, true, 0, 1, &plan);
+   CHECK(plan.main_mask == 3u && plan.separate_mask == 4u);
+   screens[1].mode = VIDEO_WINDOW_HIDDEN;
+   video_windows_plan(&map, screens, true, true, 0, 1, &plan);
+   CHECK(plan.main_mask == 2u && plan.hidden_mask == 1u);
+   CHECK(plan.separate_mask == 4u);
+   screens[1].mode = VIDEO_WINDOW_SEPARATE;
+   /* Off, or no window support: every screen in the main window */
+   video_windows_plan(&map, screens, false, true, 0, 1, &plan);
+   CHECK(plan.main_mask == 7u);
+   video_windows_plan(&map, screens, true, false, 0, 1, &plan);
+   CHECK(plan.main_mask == 7u && plan.separate_mask == 0u);
+   /* A screen the map does not have: screen 0 stays */
+   mono_map(&map, 1);
+   video_windows_plan(&map, screens, true, true, 0, 1, &plan);
+   CHECK(plan.main_mask == 1u && plan.separate_mask == 0u);
+   mono_map(&map, 3);
+   video_windows_plan(&map, screens, true, true, 0, 5, &plan);
+   CHECK(plan.main_mask == 1u && plan.separate_mask == 6u);
+   video_windows_plan(&map, screens, true, true, 0, 99, &plan);
+   CHECK(plan.main_mask == 1u && plan.separate_mask == 6u);
 }
 
 static void test_selected_layout(void)
@@ -298,6 +341,7 @@ static void test_window_place(void)
 int main(void)
 {
    test_windows_policy();
+   test_windows_attached();
    test_selected_layout();
    test_window_events();
    test_window_place();

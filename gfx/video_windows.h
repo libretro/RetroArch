@@ -191,9 +191,11 @@ typedef struct video_windows_frame
 /* Any thread; zero means the lifetime counter is exhausted. */
 unsigned video_driver_window_generation(void);
 
+/* @attached stays in the main window whatever its mode, and screen 0
+ * takes its mode; one that @map does not have counts as 0. */
 void video_windows_plan(const video_views_map_t *map,
       const video_window_settings_t *settings, bool enabled,
-      bool supported, unsigned forced_attached,
+      bool supported, unsigned forced_attached, unsigned attached,
       video_windows_plan_t *out);
 
 /* Screen @screen's own window at @dims, from a frame's snapshot: its
