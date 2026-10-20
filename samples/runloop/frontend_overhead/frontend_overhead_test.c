@@ -434,6 +434,30 @@ static void lane_input_cost(void)
                RETRO_DEVICE_ID_JOYPAD_X) == input_driver_state_wrapper(1,
                RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_X),
             "SET_INPUT: another port changed");
+      /* What a command holds is what the core is given, exactly: not
+       * cleaned of opposing directions and not turned with the
+       * picture, which are for a person's hands on a pad - a script
+       * says what the game is to see. */
+      {
+         settings_t *settings = config_get_ptr();
+         unsigned socd_h      = settings->uints.input_socd_horizontal;
+         unsigned rotation    = settings->uints.input_rotation;
+         const int16_t lr     = (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)
+                              | (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT);
+         settings->uints.input_socd_horizontal = INPUT_SOCD_NEUTRAL;
+         settings->uints.input_rotation        = 1;
+         input_st->cmd_buttons[0] = (uint16_t)lr;
+         run_loop_frames(1);
+         CHECK((input_driver_state_wrapper(0, RETRO_DEVICE_JOYPAD, 0,
+                  RETRO_DEVICE_ID_JOYPAD_MASK) & lr) == lr
+               && input_driver_state_wrapper(0, RETRO_DEVICE_JOYPAD, 0,
+                  RETRO_DEVICE_ID_JOYPAD_LEFT)
+               && input_driver_state_wrapper(0, RETRO_DEVICE_JOYPAD, 0,
+                  RETRO_DEVICE_ID_JOYPAD_RIGHT),
+               "SET_INPUT: held left and right were cleaned or turned");
+         settings->uints.input_socd_horizontal = socd_h;
+         settings->uints.input_rotation        = rotation;
+      }
       input_st->cmd_buttons[0]   = 0;
       input_st->cmd_analog[0][1] = 0;
       input_st->cmd_input        = false;

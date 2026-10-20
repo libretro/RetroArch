@@ -3575,7 +3575,12 @@ static size_t command_input_line(unsigned port, char *s, size_t len)
  *
  * Holds a RetroPad button (1, or 0 to let it go) or a stick axis
  * (-32768 to 32767, 0 to let it go) for the core, over the player's own
- * input, until it is set again or RELEASE_INPUT lets it go. */
+ * input, until it is set again or RELEASE_INPUT lets it go.
+ *
+ * Held as the game is to see it: SOCD cleaning and D-Pad rotation are
+ * for a person's hands on a pad and are not applied. Under netplay the
+ * player is this machine's local device, sampled with its input and
+ * sent to the others, so every peer runs the same frames. */
 /* "<player> <control>[+<control>...] <number>", the request SET_INPUT
  * and PRESS both take: the player in @player, the controls in @ids and
  * how many of them in @count, and the number in @number. False with the
