@@ -643,6 +643,123 @@ static void test_pad(const pad_connection_interface_t *ifc, const char *name,
          failures == had ? "pass" : "fail", name);
 }
 
+/* ---- Kade encoder and Retrode: the old handlers' report and reads -- */
+
+static void ref_kade_take(struct ref_adapter *r, const uint8_t *p,
+      unsigned size)
+{
+   static const uint32_t map[16] =
+   {
+      RETRO_DEVICE_ID_JOYPAD_SELECT, RETRO_DEVICE_ID_JOYPAD_START,
+      NO_BTN, NO_BTN, NO_BTN, NO_BTN, NO_BTN, NO_BTN,
+      RETRO_DEVICE_ID_JOYPAD_Y, RETRO_DEVICE_ID_JOYPAD_B,
+      RETRO_DEVICE_ID_JOYPAD_A, RETRO_DEVICE_ID_JOYPAD_X,
+      RETRO_DEVICE_ID_JOYPAD_L, RETRO_DEVICE_ID_JOYPAD_R,
+      RETRO_DEVICE_ID_JOYPAD_L2, RETRO_DEVICE_ID_JOYPAD_R2
+   };
+   unsigned i, keys;
+   memcpy(r->data, p, size);
+   keys       = r->data[1] | (r->data[0] << 8);
+   r->buttons = 0;
+   for (i = 0; i < 16; i++)
+      if (map[i] != NO_BTN && (keys & (1u << i)))
+         r->buttons |= 1u << map[i];
+   ref_adapter_hat(r, r->data[2] & 15);
+}
+
+static int16_t ref_no_axis(const struct ref_adapter *r, unsigned axis)
+{
+   (void)r;
+   (void)axis;
+   return 0;
+}
+
+static void ref_retrode_take(struct ref_adapter *r, const uint8_t *p,
+      unsigned size)
+{
+   static const uint32_t map[8] =
+   {
+      RETRO_DEVICE_ID_JOYPAD_B, RETRO_DEVICE_ID_JOYPAD_Y,
+      RETRO_DEVICE_ID_JOYPAD_SELECT, RETRO_DEVICE_ID_JOYPAD_START,
+      RETRO_DEVICE_ID_JOYPAD_A, RETRO_DEVICE_ID_JOYPAD_X,
+      RETRO_DEVICE_ID_JOYPAD_L, RETRO_DEVICE_ID_JOYPAD_R
+   };
+   unsigned i;
+   memcpy(r->data, p, size);
+   r->buttons = 0;
+   for (i = 0; i < 8; i++)
+      if (r->data[3] & (1u << i))
+         r->buttons |= 1u << map[i];
+}
+
+static int16_t ref_retrode_axis(const struct ref_adapter *r, unsigned axis)
+{
+   int val;
+   if (axis >= 2)
+      return 0;
+   val = r->data[1 + axis];
+   if (val == 0x9C)
+      val = 0x00;
+   else if (val == 0x64)
+      val = 0xFF;
+   else
+      val = 0x7F;
+   val = (val << 8) - 0x8000;
+   return abs(val) > 0x1000 ? (int16_t)val : 0;
+}
+
+static void test_retrode(void)
+{
+   uint8_t p[64];
+   struct ref_adapter ref[4];
+   joypad_connection_t joy[4];
+   void *pads[4];
+   unsigned n, i, bad = 0, had = failures;
+   const pad_connection_interface_t *ifc = &pad_connection_retrode;
+   int dummy_handle;
+   void *dev = ifc->init(&dummy_handle, 0, &stub_hid);
+
+   CHECK(dev != NULL, "retrode: no device");
+   if (!dev)
+      return;
+   memset(ref, 0, sizeof(ref));
+   memset(joy, 0, sizeof(joy));
+   for (i = 0; i < 4; i++)
+      pads[i] = ifc->pad_init(dev, (int)i, &joy[i]);
+   srand(9);
+   for (n = 0; n < 20000; n++)
+   {
+      unsigned size = 4 + (unsigned)rand() % (sizeof(p) - 3);
+      for (i = 0; i < sizeof(p); i++)
+         p[i] = (uint8_t)rand();
+      p[0] = (uint8_t)(rand() % 6); /* ports 1-4, and two that are none */
+      for (i = 1; i < 3; i++)
+      {
+         static const uint8_t dir[3] = { 0x9C, 0x64, 0x00 };
+         if (rand() & 1)
+            p[i] = dir[rand() % 3];
+      }
+      ifc->packet_handler(dev, p, (uint16_t)size);
+      if (p[0] >= 1 && p[0] <= 4)
+         ref_retrode_take(&ref[p[0] - 1], p, size);
+      for (i = 0; i < 4; i++)
+         if (pads[i])
+            bad += pad_mismatches(ifc, pads[i], &ref[i], 16, ref_retrode_axis);
+   }
+   CHECK(!bad, "retrode: %u reads disagree with the copying handler", bad);
+   memset(p, 0xff, sizeof(p));
+   p[0] = 1;
+   ifc->packet_handler(dev, p, 3);
+   CHECK(!pads[0] || !pad_mismatches(ifc, pads[0], &ref[0], 16, ref_retrode_axis),
+         "retrode: a short report was taken");
+   for (i = 0; i < 4; i++)
+      if (pads[i])
+         ifc->pad_deinit(pads[i]);
+   ifc->deinit(dev);
+   printf("[%s] retrode: four ports' buttons, sets and axes as the copying handler, on 20000 reports\n",
+         failures == had ? "pass" : "fail");
+}
+
 int main(void)
 {
    stub_hid.send_control = stub_send_control;
@@ -656,6 +773,9 @@ int main(void)
          ref_dragonrise_take, ref_dragonrise_axis);
    test_pad(&pad_connection_ps4_hori_mini, "ps4_hori_mini", 8, 32, 8,
          ref_hori_take, ref_hori_axis);
+   test_pad(&pad_connection_kade, "kade", 3, 16, 10,
+         ref_kade_take, ref_no_axis);
+   test_retrode();
    puts(failures ? "FAIL connect_parity_test" : "PASS connect_parity_test");
    return failures ? 1 : 0;
 }

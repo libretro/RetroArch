@@ -28,7 +28,6 @@ struct hidpad_kade_data
    struct pad_connection* connection;
    uint32_t slot;
    uint32_t buttons;
-   uint8_t data[64];
 };
 
 static void* hidpad_kade_init(void* data, uint32_t slot, hid_driver_t* driver)
@@ -106,20 +105,18 @@ static void hidpad_kade_packet_handler(void* data, uint8_t* packet, uint16_t siz
    };
    struct hidpad_kade_data* device = (struct hidpad_kade_data*)data;
 
-   if (!device)
+   if (!device || size < 3)
       return;
-
-   memcpy(device->data, packet, size);
 
    device->buttons = 0;
 
-   pressed_keys = device->data[1] | (device->data[0] << 8);
+   pressed_keys = packet[1] | (packet[0] << 8);
 
    for (i = 0; i < 16; i++)
       if (button_mapping[i] != NO_BTN)
          device->buttons |= (pressed_keys & (1 << i)) ? (1 << button_mapping[i]) : 0;
 
-   hat_value = KADE_H_GET(device->data[2]);
+   hat_value = KADE_H_GET(packet[2]);
    device->buttons |= KADE_H_LEFT(hat_value) ? (1 << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
    device->buttons |= KADE_H_RIGHT(hat_value) ? (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
    device->buttons |= KADE_H_UP(hat_value) ? (1 << RETRO_DEVICE_ID_JOYPAD_UP) : 0;
@@ -140,7 +137,7 @@ static int32_t hidpad_kade_button(void* data, uint16_t joykey)
    struct hidpad_kade_data* pad = (struct hidpad_kade_data*)data;
    if (!pad || joykey > 31)
       return 0;
-   return pad->buttons & (1 << joykey);
+   return (pad->buttons >> joykey) & 1;
 }
 
 pad_connection_interface_t pad_connection_kade = {
