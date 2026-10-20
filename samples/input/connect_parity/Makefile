@@ -6,7 +6,9 @@ CC     ?= cc
 CFLAGS += -std=gnu89 -O1 -g1 -Wall -DHAVE_HID \
           -I$(ROOT) -I$(ROOT)/libretro-common/include
 SOURCES := connect_parity_test.c \
-           $(ROOT)/input/connect/connect_ps4.c
+           $(ROOT)/input/connect/connect_ps4.c \
+           $(ROOT)/input/connect/connect_wiiugca.c \
+           $(ROOT)/input/common/input_hid_common.c
 ifneq ($(SANITIZER),)
 CFLAGS  += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=$(SANITIZER)

@@ -11,6 +11,7 @@
 #include <stdlib.h>
 
 #include "input/connect/joypad_connection.h"
+#include "input/include/gamepad.h"
 
 static unsigned failures;
 #define CHECK(c, ...) do { if (!(c)) { printf("[FAIL] "); printf(__VA_ARGS__); \
@@ -160,10 +161,138 @@ static void test_ps4(void)
          failures == had ? "pass" : "fail");
 }
 
+/* ---- Wii U GameCube adapter: the old handler's report and reads -- */
+
+#define REF_GCA_LEN 37
+
+struct ref_gca_pad
+{
+   uint32_t buttons;
+   int16_t analog[3][2];
+   uint8_t connected;
+};
+
+/* the old update_button_state() and update_analog_state(), on the old
+ * nine-byte copy */
+static void ref_gca_take(struct ref_gca_pad *pads, const uint8_t *packet)
+{
+   static const uint32_t map[12] = {
+      RETRO_DEVICE_ID_JOYPAD_A, RETRO_DEVICE_ID_JOYPAD_B,
+      RETRO_DEVICE_ID_JOYPAD_X, RETRO_DEVICE_ID_JOYPAD_Y,
+      RETRO_DEVICE_ID_JOYPAD_LEFT, RETRO_DEVICE_ID_JOYPAD_RIGHT,
+      RETRO_DEVICE_ID_JOYPAD_DOWN, RETRO_DEVICE_ID_JOYPAD_UP,
+      RETRO_DEVICE_ID_JOYPAD_START, RETRO_DEVICE_ID_JOYPAD_SELECT,
+      RETRO_DEVICE_ID_JOYPAD_R, RETRO_DEVICE_ID_JOYPAD_L };
+   uint8_t copy[64];
+   unsigned i;
+   memcpy(copy, packet, REF_GCA_LEN);
+   for (i = 1; i < 37; i += 9)
+   {
+      struct ref_gca_pad *pad = &pads[i / 9];
+      uint8_t data[9];
+      uint32_t keys, k;
+      int a;
+      if (copy[i] <= 0x04)
+      {
+         pad->connected = 0;
+         continue;
+      }
+      pad->connected = copy[i];
+      memcpy(data, &copy[i], 9);
+      keys        = data[1] | (data[2] << 8);
+      pad->buttons = 0;
+      for (k = 0; k < 12; k++)
+         pad->buttons |= (keys & (1 << k)) ? (1 << map[k]) : 0;
+      for (a = 0; a < 4; a++)
+      {
+         unsigned axis = (a % 2) ? 0 : 1;
+         int16_t v     = data[3 + a];
+         v = axis ? ((v - 128) * 256) : ((v - 128) * -256);
+         pad->analog[a / 2][axis] = v;
+      }
+   }
+}
+
+static void test_wiiugca(void)
+{
+   uint8_t p[64];
+   struct ref_gca_pad ref[4];
+   joypad_connection_t joy[4];
+   void *pads[4];
+   unsigned n, i, bad = 0, had = failures;
+   const pad_connection_interface_t *ifc = &pad_connection_wiiugca;
+   int dummy_handle;
+   void *dev = ifc->init(&dummy_handle, 0, &stub_hid);
+   static const uint32_t axes[8] = {
+      AXIS_POS(0), AXIS_POS(1), AXIS_POS(2), AXIS_POS(3),
+      AXIS_NEG(0), AXIS_NEG(1), AXIS_NEG(2), AXIS_NEG(3) };
+
+   CHECK(dev != NULL, "wiiugca: no device");
+   if (!dev)
+      return;
+   memset(ref, 0, sizeof(ref));
+   memset(joy, 0, sizeof(joy));
+   memset(pads, 0, sizeof(pads));
+   srand(2);
+   for (n = 0; n < 20000; n++)
+   {
+      for (i = 0; i < sizeof(p); i++)
+         p[i] = (uint8_t)rand();
+      /* ports come and go: powered only, connected, a WaveBird */
+      for (i = 0; i < 4; i++)
+      {
+         static const uint8_t states[4] = { 0x04, 0x10, 0x14, 0x22 };
+         p[1 + i * 9] = states[rand() & 3];
+      }
+      ifc->packet_handler(dev, p, REF_GCA_LEN);
+      ref_gca_take(ref, p);
+      for (i = 0; i < 4; i++)
+      {
+         unsigned k;
+         input_bits_t bits;
+         if (!pads[i] && ref[i].connected)
+            pads[i] = ifc->pad_init(dev, (int)i, &joy[i]);
+         if (!pads[i])
+            continue;
+         if (!!(ifc->status(dev, (int)i) & PAD_CONNECT_READY) != !!ref[i].connected)
+            bad++;
+         ifc->get_buttons(pads[i], &bits);
+         for (k = 0; k < 16; k++)
+            if (   !!ifc->button(pads[i], (uint16_t)k) != !!(ref[i].buttons & (1u << k))
+                || !!BIT256_GET(bits, k) != !!(ref[i].buttons & (1u << k)))
+               bad++;
+         for (k = 0; k < 8; k++)
+         {
+            axis_data ad;
+            gamepad_read_axis_data(axes[k], &ad);
+            if (ifc->get_axis(pads[i], axes[k])
+                  != gamepad_get_axis_value_raw(ref[i].analog, &ad, false))
+               bad++;
+         }
+      }
+   }
+   CHECK(!bad, "wiiugca: %u reads disagree with the copying handler", bad);
+   /* a short report is not taken */
+   {
+      int16_t ax = pads[0] ? ifc->get_axis(pads[0], AXIS_POS(0)) : 0;
+      memset(p, 0x14, sizeof(p));
+      ifc->packet_handler(dev, p, REF_GCA_LEN - 1);
+      CHECK(!pads[0] || ifc->get_axis(pads[0], AXIS_POS(0)) == ax,
+            "wiiugca: a short report was taken");
+   }
+   for (i = 0; i < 4; i++)
+      if (pads[i])
+         ifc->pad_deinit(pads[i]);
+   ifc->deinit(dev);
+   printf("[%s] wiiugca: four ports' buttons, sets, axes and state as the copying handler, on 20000 reports\n",
+         failures == had ? "pass" : "fail");
+}
+
 int main(void)
 {
    stub_hid.send_control = stub_send_control;
    test_ps4();
+   test_wiiugca();
    puts(failures ? "FAIL connect_parity_test" : "PASS connect_parity_test");
    return failures ? 1 : 0;
 }

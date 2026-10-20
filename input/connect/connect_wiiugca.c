@@ -43,7 +43,6 @@ struct hidpad_wiiugca_pad_data
    int pad_index;
    uint32_t buttons;
    int16_t analog[3][2];
-   uint8_t data[9];
 };
 
 struct hidpad_wiiugca_data
@@ -53,8 +52,11 @@ struct hidpad_wiiugca_data
    hid_driver_t *driver;
    char connected[GCA_MAX_PAD];
    gca_pad_data_t pad_data[GCA_MAX_PAD];
-   uint8_t data[64];
 };
+
+/* The adapter's report: an ID, then nine bytes for each of the four
+ * ports - its state, two bytes of buttons, the sticks' four. */
+#define GCA_REPORT_LEN (1 + 9 * GCA_MAX_PAD)
 
 const char *GAMECUBE_PAD = "GameCube controller";
 const char *WAVEBIRD_PAD = "WaveBird controller";
@@ -139,7 +141,7 @@ static int16_t hidpad_wiiugca_get_axis(void *pad_data, unsigned axis)
    return gamepad_get_axis_value(device->pad_data[0].analog, &axis_data);
 }
 
-static void update_button_state(gca_pad_data_t *pad)
+static void update_button_state(gca_pad_data_t *pad, const uint8_t *data)
 {
    uint32_t i, pressed_keys;
 
@@ -162,7 +164,7 @@ static void update_button_state(gca_pad_data_t *pad)
    if (!pad)
       return;
 
-   pressed_keys     = pad->data[1] | (pad->data[2] << 8);
+   pressed_keys     = data[1] | (data[2] << 8);
    pad->buttons     = 0;
 
    for (i = 0; i < 12; i++)
@@ -170,7 +172,7 @@ static void update_button_state(gca_pad_data_t *pad)
          (1 << button_mapping[i]) : 0;
 }
 
-static void update_analog_state(gca_pad_data_t *pad)
+static void update_analog_state(gca_pad_data_t *pad, const uint8_t *data)
 {
    int pad_axis;
 
@@ -181,7 +183,7 @@ static void update_analog_state(gca_pad_data_t *pad)
    {
       unsigned axis            = (pad_axis % 2) ? 0 : 1;
       unsigned stick           = pad_axis / 2;
-      int16_t interpolated     = pad->data[3 + pad_axis];
+      int16_t interpolated     = data[3 + pad_axis];
       /* libretro requires "up" to be negative, so we invert the y axis */
       interpolated             = axis
          ? ((interpolated - 128) * 256)
@@ -191,13 +193,12 @@ static void update_analog_state(gca_pad_data_t *pad)
    }
 }
 
-static void hidpad_wiiugca_pad_packet_handler(gca_pad_data_t *pad, uint8_t *packet, size_t len)
+/* A port's nine bytes, read where they lie in the report. */
+static void hidpad_wiiugca_pad_packet_handler(gca_pad_data_t *pad,
+      const uint8_t *packet)
 {
-   if (len > 9)
-      return;
-   memcpy(pad->data, packet, len);
-   update_button_state(pad);
-   update_analog_state(pad);
+   update_button_state(pad, packet);
+   update_analog_state(pad, packet);
 }
 
 static void hidpad_wiiugca_packet_handler(void *device_data, uint8_t *packet, uint16_t len)
@@ -205,20 +206,20 @@ static void hidpad_wiiugca_packet_handler(void *device_data, uint8_t *packet, ui
    uint32_t i;
    gca_device_data_t *device = (gca_device_data_t *)device_data;
 
-   if (!device)
+   /* the whole report or nothing: it is read where it lies, and the
+    * copy it replaced took any length into 64 bytes */
+   if (!device || len < GCA_REPORT_LEN)
       return;
 
-   memcpy(device->data, packet, len);
-
-   for (i = 1; i < 37; i += 9)
+   for (i = 1; i < GCA_REPORT_LEN; i += 9)
    {
       int port                     = i / 9;
-      unsigned char port_connected = device->data[i];
+      unsigned char port_connected = packet[i];
 
       if (port_connected > GCA_PORT_POWERED)
       {
          device->connected[port] = port_connected;
-         hidpad_wiiugca_pad_packet_handler(&device->pad_data[port], &device->data[i], 9);
+         hidpad_wiiugca_pad_packet_handler(&device->pad_data[port], &packet[i]);
       }
       else
          device->connected[port] = 0;
