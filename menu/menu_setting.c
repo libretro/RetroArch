@@ -6764,26 +6764,6 @@ static bool setting_action_input_device_index_prevent(
    return false;
 }
 
-/* Hands 'p' to whichever other player currently holds 'p_new', so that
- * moving a player onto an occupied pad index exchanges the two rather
- * than leaving both players reading the same physical device. Two
- * players on one pad makes a single controller drive two libretro
- * ports, and autoconfiguration cannot undo it: reallocate_port_if_needed()
- * only ever transposes input_joypad_index[], which preserves a
- * duplicate instead of resolving it. */
-static void setting_action_input_device_index_swap(
-      settings_t *settings, unsigned player, unsigned p, unsigned p_new)
-{
-   unsigned i;
-   for (i = 0; i < MAX_USERS; i++)
-   {
-      if (i == player)
-         continue;
-      if (settings->uints.input_joypad_index[i] == p_new)
-         settings->uints.input_joypad_index[i] = p;
-   }
-}
-
 static int setting_action_left_input_device_index(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
@@ -6803,9 +6783,6 @@ static int setting_action_left_input_device_index(
 
    if (setting_action_input_device_index_prevent(setting, settings, *p, p_new))
       return 0;
-
-   setting_action_input_device_index_swap(settings,
-         (unsigned)setting->index_offset, *p, p_new);
 
    *p = p_new;
 
@@ -9639,9 +9616,6 @@ static int setting_action_right_input_device_index(
    if (setting_action_input_device_index_prevent(setting, settings, *p, p_new))
       return 0;
 
-   setting_action_input_device_index_swap(settings,
-         (unsigned)setting->index_offset, *p, p_new);
-
    *p = p_new;
 
    settings->flags |= SETTINGS_FLG_MODIFIED;
@@ -9840,13 +9814,37 @@ static size_t get_string_representation_input_device_index(
          unsigned idx = input_config_get_device_name_index(map);
 
          /* If idx is non-zero, it's part of a set */
-         if (idx > 0)
+         if (idx > 0 && _len < len)
             _len += snprintf(s + _len, len - _len, " (%u)", idx);
+      }
+
+      /* several ports on one pad is allowed; say so, in case it is
+       * not what was meant */
+      if (_len < len)
+      {
+         unsigned i;
+         unsigned users = settings->uints.input_max_users;
+         for (i = 0; i < users && i < MAX_USERS; i++)
+         {
+            if (     i != setting->index_offset
+                  && settings->uints.input_joypad_index[i] == map)
+            {
+               _len += strlcpy(s + _len, " (", len - _len);
+               if (_len < len)
+                  _len += snprintf(s + _len, len - _len,
+                        msg_hash_to_str(MSG_INPUT_DEVICE_INDEX_SHARED), i + 1);
+               if (_len < len)
+                  _len += strlcpy(s + _len, ")", len - _len);
+               break;
+            }
+         }
       }
    }
 
    if (!s || !*s)
       _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED), len);
+   if (len && _len >= len)
+      _len = len - 1;
    return _len;
 }
 

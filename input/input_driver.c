@@ -8983,8 +8983,9 @@ void input_driver_registry_restart(void)
    /* the joypad driver reports its pads afresh */
    input_driver_device_pool()->driver = 0;
 
+   /* the lowest port on a pad: the ports sharing it follow that one */
    memset(port_of_slot, INPUT_REGISTRY_NO_PORT, sizeof(port_of_slot));
-   for (i = 0; i < MAX_USERS; i++)
+   for (i = MAX_USERS; i-- > 0; )
       if (settings->uints.input_joypad_index[i] < MAX_USERS)
          port_of_slot[settings->uints.input_joypad_index[i]] = (uint8_t)i;
 
@@ -9001,6 +9002,7 @@ static void input_driver_registry_restore_ports(void)
 {
    unsigned i;
    unsigned moved;
+   uint8_t leader[MAX_USERS];
    settings_t *settings = config_get_ptr();
 
    /* A reserved device is the user's own word on who goes where, and
@@ -9015,7 +9017,6 @@ static void input_driver_registry_restore_ports(void)
       }
    }
 
-   /* The mapping has to be one-to-one for exchanges to keep it so. */
    input_config_sanitize_joypad_indices();
 
    if (     !input_ports_runtime_active
@@ -9024,8 +9025,18 @@ static void input_driver_registry_restore_ports(void)
       memcpy(input_ports_configured, settings->uints.input_joypad_index,
             sizeof(input_ports_configured));
 
+   /* The exchanges move one port per pad. A port sharing a lower
+    * port's pad is set aside on an index no pad has, then follows. */
+   if (input_config_shared_ports(leader))
+      for (i = 0; i < MAX_USERS; i++)
+         if (leader[i] != i)
+            settings->uints.input_joypad_index[i] = MAX_INPUT_DEVICES;
+
    moved = input_registry_restore_ports(&input_registry,
          settings->uints.input_joypad_index, MAX_USERS);
+   input_config_follow_shared_ports(leader);
+   /* a port the restart owed to a pad it no longer leads */
+   input_config_sanitize_joypad_indices();
 
    memcpy(input_ports_runtime, settings->uints.input_joypad_index,
          sizeof(input_ports_runtime));
@@ -10242,24 +10253,11 @@ unsigned *input_config_get_device_ptr(unsigned port)
    return NULL;
 }
 
-/* The player -> pad mapping is required to be a permutation of
- * [0, MAX_USERS):
- *
- * - Two players sharing a pad index makes a single physical device
- *   drive two libretro ports at once, so one controller presses
- *   Start for both players.
- * - reallocate_port_if_needed() in tasks/task_autodetect.c reassigns
- *   ports by transposing entries of this array. A transposition
- *   preserves the permutation property but cannot restore it, so a
- *   mapping that is already non-injective stays non-injective for
- *   every subsequent hotplug.
- * - That same function inverts the mapping through an array indexed
- *   by pad index, so an out of range entry is an out of bounds write.
- *
- * Nothing validates the mapping when it is read back from a
- * configuration file, and the menu's device index selector happily
- * lets two players point at the same pad, so the invariant has to be
- * asserted rather than assumed. */
+/* Several ports may read one controller - one pad as two N64 pads for
+ * GoldenEye's two-stick styles, or twin-stick games that read two
+ * ports - so a repeated index is the user's choice and is kept. An
+ * index past the devices is not: reallocate_port_if_needed() indexes
+ * an array with it. */
 bool input_config_sanitize_joypad_indices(void)
 {
    unsigned i;
@@ -10273,31 +10271,26 @@ bool input_config_sanitize_joypad_indices(void)
 
    for (i = 0; i < MAX_USERS; i++)
       taken[i] = false;
+   for (i = 0; i < MAX_USERS; i++)
+      if (settings->uints.input_joypad_index[i] < MAX_USERS)
+         taken[settings->uints.input_joypad_index[i]] = true;
 
    for (i = 0; i < MAX_USERS; i++)
    {
       unsigned joy_idx = settings->uints.input_joypad_index[i];
 
-      if (joy_idx < MAX_USERS && !taken[joy_idx])
-      {
-         taken[joy_idx] = true;
+      if (joy_idx < MAX_USERS)
          continue;
-      }
 
       while (next_free < MAX_USERS && taken[next_free])
          next_free++;
 
-      /* MAX_USERS players cannot claim more than MAX_USERS distinct
-       * indices, so this is unreachable; bail out rather than write
-       * past the end of the array if it ever is reached. */
+      /* a port out of range holds no index, so one is free */
       if (next_free >= MAX_USERS)
          break;
 
-      RARCH_WARN("[Input] Player %u had %s pad index %u, "
-            "reassigning to %u.\n",
-            i + 1,
-            (joy_idx < MAX_USERS) ? "duplicate" : "out of range",
-            joy_idx, next_free);
+      RARCH_WARN("[Input] Player %u had out of range pad index %u, "
+            "reassigning to %u.\n", i + 1, joy_idx, next_free);
 
       settings->uints.input_joypad_index[i] = next_free;
       taken[next_free]                      = true;
@@ -10305,6 +10298,40 @@ bool input_config_sanitize_joypad_indices(void)
    }
 
    return corrected;
+}
+
+unsigned input_config_shared_ports(uint8_t *leader)
+{
+   unsigned i, j;
+   unsigned shared      = 0;
+   settings_t *settings = config_get_ptr();
+   const unsigned *idx  = settings->uints.input_joypad_index;
+
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      leader[i] = (uint8_t)i;
+      for (j = 0; j < i; j++)
+      {
+         if (idx[j] == idx[i])
+         {
+            leader[i] = (uint8_t)j;
+            shared++;
+            break;
+         }
+      }
+   }
+   return shared;
+}
+
+void input_config_follow_shared_ports(const uint8_t *leader)
+{
+   unsigned i;
+   settings_t *settings = config_get_ptr();
+   unsigned *idx        = settings->uints.input_joypad_index;
+
+   for (i = 0; i < MAX_USERS; i++)
+      if (leader[i] != i)
+         idx[i] = idx[leader[i]];
 }
 
 /* Adds an index to devices with the same name,

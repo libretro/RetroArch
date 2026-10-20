@@ -425,6 +425,20 @@ static void lane_restart_ports(void)
    CHECK(input_registry_restore_ports(&reg, index, PORTS) == 0 && index[0] == 0
          && index[1] == 1 && index[2] == 2, "ports moved when nothing had");
 
+   /* a controller back in a slot no port reads (the port that read it
+    * shares another's pad): its port takes the slot, nobody moves */
+   three_pads(&reg, id);
+   ports_identity(index, port_of_slot);
+   port_of_slot[1] = INPUT_REGISTRY_NO_PORT;
+   index[1]        = PORTS;
+   input_registry_restart(&reg, port_of_slot, PORTS);
+   input_registry_connect(&reg, "x", 0, "Red",   "", 3, 0, NULL);
+   input_registry_connect(&reg, "x", 1, "Blue",  "", 3, 2, NULL);
+   input_registry_connect(&reg, "x", 2, "Green", "", 3, 1, NULL);
+   CHECK(input_registry_restore_ports(&reg, index, PORTS) == 1
+         && index[0] == 0 && index[1] == PORTS && index[2] == 1,
+         "a controller in a slot no port read was not given back its port");
+
    /* identical pads told apart by where they are plugged in */
    input_registry_init(&reg);
    id[0] = id_of(&reg, input_registry_connect(&reg, "x", 0, "Twin", "usb-1", 1, 2, NULL));

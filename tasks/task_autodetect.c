@@ -1185,7 +1185,8 @@ static bool input_autoconfigure_scan_config_files_internal(
  * - if there is no reservation, do not change anything
  *      (not even the assignment to first free player port)
  */
-static void reallocate_port_if_needed(
+static void reallocate_leading_ports(
+      const uint8_t *leader,
       unsigned detected_port,
       unsigned int vendor_id,
       unsigned int product_id,
@@ -1196,6 +1197,7 @@ static void reallocate_port_if_needed(
    char settings_value[NAME_MAX_LENGTH];
    char settings_value_device_name[NAME_MAX_LENGTH];
    unsigned prev_assigned_player_slots[MAX_USERS];
+   unsigned holder;
    unsigned int settings_value_vendor_id  = 0;
    unsigned int settings_value_product_id = 0;
    unsigned first_free_player_slot        = MAX_USERS + 1;
@@ -1206,14 +1208,6 @@ static void reallocate_port_if_needed(
    if (detected_port >= MAX_USERS)
       return;
 
-   /* The swaps below are transpositions of input_joypad_index[]: they
-    * preserve a one player <-> one pad mapping but cannot restore one,
-    * so a mapping that arrives with two players on the same pad keeps
-    * both of them there on every subsequent hotplug, and a single
-    * controller drives two libretro ports. Assert the invariant before
-    * relying on it. */
-   input_config_sanitize_joypad_indices();
-
    /* MAX_USERS marks a pad index that no player is mapped to. Zero
     * initialising this would instead claim such pads for player 1,
     * making the reassignment below write to an unrelated slot. */
@@ -1222,6 +1216,9 @@ static void reallocate_port_if_needed(
 
    for (player = 0; player < MAX_USERS; player++)
    {
+      /* a port sharing a lower port's pad goes where that one goes */
+      if (leader[player] != player)
+         continue;
       if (     first_free_player_slot > MAX_USERS
             && (detected_port == settings->uints.input_joypad_index[player]
             || !input_config_get_device_name(settings->uints.input_joypad_index[player]))
@@ -1252,16 +1249,15 @@ static void reallocate_port_if_needed(
       return;
    }
 
-   /* Both reassignment branches below write through
-    * prev_assigned_player_slots[detected_port]. The sanitisation above
-    * makes the mapping total, so this cannot trigger; it keeps the
-    * writes in bounds if that ever stops holding. */
-   if (prev_assigned_player_slots[detected_port] >= MAX_USERS)
-      return;
+   /* With ports sharing a pad, a pad can arrive where no port is.
+    * Then nobody is displaced: the port taking it just takes it. */
+   holder = prev_assigned_player_slots[detected_port];
 
    for (player = 0; player < MAX_USERS; player++)
    {
-      if (settings->uints.input_device_reservation_type[player] != INPUT_DEVICE_RESERVATION_NONE)
+      if (leader[player] != player)
+         settings_value[0] = '\0';
+      else if (settings->uints.input_device_reservation_type[player] != INPUT_DEVICE_RESERVATION_NONE)
          strlcpy(settings_value, settings->arrays.input_reserved_devices[player],
                  sizeof(settings_value));
       else
@@ -1345,20 +1341,23 @@ static void reallocate_port_if_needed(
          /* todo: fix the pushed info message */
          settings->uints.input_joypad_index[player] = detected_port;
 
-         RARCH_LOG("[Autoconf] Preferred slot was taken earlier by "
-                   "\"%s\", reassigning that to %d.\n",
-                    input_config_get_device_name(prev_assigned_port),
-                    prev_assigned_player_slots[detected_port]+1);
-         settings->uints.input_joypad_index[prev_assigned_player_slots[detected_port]] = prev_assigned_port;
-         if (input_config_get_device_name(prev_assigned_port))
+         if (holder < MAX_USERS)
          {
-            unsigned prev_assigned_port_l2 = settings->uints.input_joypad_index[first_free_player_slot];
+            RARCH_LOG("[Autoconf] Preferred slot was taken earlier by "
+                      "\"%s\", reassigning that to %d.\n",
+                       input_config_get_device_name(prev_assigned_port),
+                       holder+1);
+            settings->uints.input_joypad_index[holder] = prev_assigned_port;
+            if (input_config_get_device_name(prev_assigned_port))
+            {
+               unsigned prev_assigned_port_l2 = settings->uints.input_joypad_index[first_free_player_slot];
 
-            RARCH_LOG("[Autoconf] 2nd level reassignment, moving "
-                      "previously assigned port %d to first free player %d.\n",
-                      prev_assigned_port_l2, first_free_player_slot+1);
-            settings->uints.input_joypad_index[prev_assigned_player_slots[detected_port]] = prev_assigned_port_l2;
-            settings->uints.input_joypad_index[first_free_player_slot]                    = prev_assigned_port;
+               RARCH_LOG("[Autoconf] 2nd level reassignment, moving "
+                         "previously assigned port %d to first free player %d.\n",
+                         prev_assigned_port_l2, first_free_player_slot+1);
+               settings->uints.input_joypad_index[holder]                 = prev_assigned_port_l2;
+               settings->uints.input_joypad_index[first_free_player_slot] = prev_assigned_port;
+            }
          }
       }
       else
@@ -1376,17 +1375,35 @@ static void reallocate_port_if_needed(
             "any player slot.\n",
             device_name, vendor_id, product_id);
       if (   no_reservation_at_all
-            || prev_assigned_player_slots[detected_port] == first_free_player_slot)
+            || holder == first_free_player_slot)
          return;
 
       prev_assigned_port = settings->uints.input_joypad_index[first_free_player_slot];
       settings->uints.input_joypad_index[first_free_player_slot] = detected_port;
-      settings->uints.input_joypad_index[prev_assigned_player_slots[detected_port]] =
-         prev_assigned_port;
+      if (holder < MAX_USERS)
+         settings->uints.input_joypad_index[holder] = prev_assigned_port;
       RARCH_DBG("[Autoconf] Earlier free player slot found, "
             "reassigning to player %d.\n",
             first_free_player_slot+1);
    }
+}
+
+static void reallocate_port_if_needed(
+      unsigned detected_port,
+      unsigned int vendor_id,
+      unsigned int product_id,
+      const char *device_name,
+      const char *device_display_name)
+{
+   uint8_t leader[MAX_USERS];
+
+   if (detected_port >= MAX_USERS)
+      return;
+   input_config_sanitize_joypad_indices();
+   input_config_shared_ports(leader);
+   reallocate_leading_ports(leader, detected_port, vendor_id, product_id,
+         device_name, device_display_name);
+   input_config_follow_shared_ports(leader);
 }
 
 /*************************/

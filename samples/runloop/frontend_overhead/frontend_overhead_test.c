@@ -687,6 +687,139 @@ static void lane_device_registry(void)
 #endif
 }
 
+/* Several ports may read one controller (#19875): one pad as two N64
+ * pads for GoldenEye's two-stick styles. Two ports on one index are
+ * kept when the mapping is read and saved, a menu step moves only the
+ * port being edited, and a hotplug or a driver restart moves the
+ * ports on a pad together. */
+static void lane_shared_ports(void)
+{
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
+   settings_t *settings = config_get_ptr();
+   unsigned *idx        = settings->uints.input_joypad_index;
+   unsigned had         = failures;
+   unsigned i;
+   char     path[512];
+   char     line[256];
+   bool     saved_shared = false;
+   FILE    *f;
+
+   fast_forward(true);
+
+   /* read: a repeated index is kept, one out of range is put right */
+   idx[1] = 0;
+   idx[2] = 99;
+   CHECK(input_config_sanitize_joypad_indices(),
+         "shared: an index out of range was left");
+   CHECK(idx[0] == 0 && idx[1] == 0,
+         "shared: two ports on one pad were split when read");
+   CHECK(idx[2] == 1,
+         "shared: an index out of range was not put on a free one");
+   idx[2] = 2;
+   input_driver_deadzones_refresh();
+
+   /* saved as set */
+   snprintf(path, sizeof(path), "%s/shared.cfg", harness_dir_g);
+   CHECK(config_save_file(path),
+         "shared: the config could not be saved");
+   if ((f = fopen(path, "rb")))
+   {
+      while (fgets(line, sizeof(line), f))
+         if (strstr(line, "input_player2_joypad_index = \"0\""))
+            saved_shared = true;
+      fclose(f);
+   }
+   CHECK(saved_shared,
+         "shared: the saved config does not keep two ports on one pad");
+
+#ifdef HAVE_MENU
+   {
+      char shown[256];
+      rarch_setting_t *p1 = menu_setting_find("input_player1_joypad_index");
+      rarch_setting_t *p2 = menu_setting_find("input_player2_joypad_index");
+      CHECK(p1 && p2 && p2->actions && p2->actions->right && p2->actions->left,
+            "shared: the device index settings are not found");
+      if (p1 && p2 && p2->actions && p2->actions->right && p2->actions->left)
+      {
+         shown[0] = '\0';
+         if (p1->actions && p1->actions->repr)
+            p1->actions->repr(p1, shown, sizeof(shown));
+         CHECK(strstr(shown, "Port 2") != NULL,
+               "shared: port 1 does not show that port 2 shares its pad");
+         p2->actions->right(p2, 0, false);
+         CHECK(idx[1] == 1 && idx[0] == 0,
+               "shared: a step on port 2 moved port 1");
+         p2->actions->left(p2, 0, false);
+         CHECK(idx[1] == 0 && idx[0] == 0,
+               "shared: stepping port 2 onto port 1's pad moved port 1");
+      }
+   }
+#endif
+
+   /* a pad reserved for port 3 arrives: port 3 takes it, the pair stays */
+   settings->uints.input_device_reservation_type[2] = INPUT_DEVICE_RESERVATION_PREFERRED;
+   strlcpy(settings->arrays.input_reserved_devices[2], "Red pad",
+         sizeof(settings->arrays.input_reserved_devices[2]));
+   input_autoconfigure_connect("Red pad", NULL, NULL, "test", 5, 0x1111, 0x0001);
+   run_loop_frames(20);
+   CHECK(idx[2] == 5,
+         "shared: the reserved pad did not go to its port");
+   CHECK(idx[0] == 0 && idx[1] == 0,
+         "shared: a hotplug split two ports on one pad");
+   /* and one arriving where no port is, with a reservation set */
+   input_autoconfigure_connect("Blue pad", NULL, NULL, "test", 1, 0x1111, 0x0002);
+   run_loop_frames(20);
+   CHECK(idx[0] == 0 && idx[1] == 0,
+         "shared: a pad no port reads split the pair");
+   settings->uints.input_device_reservation_type[2] = INPUT_DEVICE_RESERVATION_NONE;
+   settings->arrays.input_reserved_devices[2][0]    = '\0';
+
+   /* the driver restarts and reports the shared pad in another slot */
+   for (i = 0; i < MAX_USERS; i++)
+      idx[i] = i;
+   idx[1] = 0;
+   input_driver_deadzones_refresh();
+   input_driver_registry_restart();
+   input_autoconfigure_connect("Red pad",  NULL, NULL, "test", 0, 0x1111, 0x0001);
+   input_autoconfigure_connect("Blue pad", NULL, NULL, "test", 1, 0x1111, 0x0002);
+   for (i = 2; i < 8; i++)
+      input_autoconfigure_connect("Harness pad", NULL, NULL, "test", i, 0x045e, 0x028e);
+   run_loop_frames(30);
+   CHECK(idx[0] == 0 && idx[1] == 0,
+         "shared: the pair is not on the red pad to begin with");
+   input_driver_registry_restart();
+   input_autoconfigure_connect("Blue pad", NULL, NULL, "test", 0, 0x1111, 0x0002);
+   input_autoconfigure_connect("Red pad",  NULL, NULL, "test", 1, 0x1111, 0x0001);
+   for (i = 2; i < 8; i++)
+      input_autoconfigure_connect("Harness pad", NULL, NULL, "test", i, 0x045e, 0x028e);
+   run_loop_frames(30);
+   CHECK(idx[0] == 1 && idx[1] == 1,
+         "shared: after a driver restart the pair did not follow its pad");
+   for (i = 2; i < 8; i++)
+      CHECK(idx[i] == i,
+            "shared: a port on its own pad moved on the restart");
+
+   /* back to the pads and the mapping the other lanes expect */
+   for (i = 0; i < MAX_USERS; i++)
+      idx[i] = i;
+   input_driver_deadzones_refresh();
+   input_driver_registry_restart();
+   for (i = 0; i < 8; i++)
+      input_autoconfigure_connect("Harness pad", NULL, NULL, "test", i, 0x045e, 0x028e);
+   run_loop_frames(30);
+   CHECK(pad_connected(0) && idx[0] == 0 && idx[1] == 1,
+         "shared: the lane did not leave the pads as it found them");
+
+   fast_forward(false);
+   if (failures == had)
+      printf("[pass] shared ports: two ports on one pad are kept when read and"
+            " saved, a menu step moves one port, and a hotplug or a driver"
+            " restart moves the pair together\n");
+#else
+   printf("[skip] shared-ports lane: need the test drivers\n");
+#endif
+}
+
 /* Where in a frame the frontend polls. The joypad driver's poll is
  * counted, and the count is read at four points of the core's
  * retro_run() and at both ends of the iterate. */
@@ -9215,6 +9348,7 @@ int main(int argc, char *argv[])
       lane_input_cost();
       lane_input_poll_modes();
       lane_device_registry();
+      lane_shared_ports();
       lane_input_poll_sites(load_poll_name[load_poll]);
       lane_output_store();
       /* before the core-view lane, whose netplay check leaves the

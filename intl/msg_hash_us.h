@@ -32952,6 +32952,10 @@ MSG_HASH(
    MSG_INPUT_BT_PAIR_FAILED,
    "Port %u's controller could not be paired with this computer."
    )
+MSG_HASH( /* %u is the other port on the same controller */
+   MSG_INPUT_DEVICE_INDEX_SHARED,
+   "shared with Port %u"
+   )
 MSG_HASH(
    MSG_INPUT_DS3_ASKING,
    "Changing the DualShock 3 driver: allow it in the Windows prompt."

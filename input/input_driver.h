@@ -1868,17 +1868,20 @@ unsigned input_config_get_device_count(void);
 /**
  * input_config_sanitize_joypad_indices:
  *
- * Restores the invariant that settings->uints.input_joypad_index[]
- * is a permutation of [0, MAX_USERS): every player maps to a distinct
- * pad index, and every entry is in range.
- *
- * Entries are examined in ascending player order and the first
- * claimant of an index keeps it, so repairing a duplicate never takes
- * a pad away from a lower numbered player.
+ * Puts a player whose pad index is out of range on an index no player
+ * holds. Players sharing an index are left as they are.
  *
  * Returns true if the mapping had to be corrected.
  **/
 bool input_config_sanitize_joypad_indices(void);
+
+/* A port whose pad index a lower port also holds follows that port:
+ * @leader gets, for each of the MAX_USERS ports, the lowest port on
+ * its index. Code that moves controllers between ports moves only the
+ * leaders and then calls input_config_follow_shared_ports(). Returns
+ * how many ports follow another. */
+unsigned input_config_shared_ports(uint8_t *leader);
+void input_config_follow_shared_ports(const uint8_t *leader);
 
 unsigned *input_config_get_device_ptr(unsigned port);
 

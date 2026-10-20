@@ -258,9 +258,9 @@ static INLINE bool input_registry_restart_complete(
 }
 
 /* Put every controller of a completed restart back on the port it had.
- * @index maps a port to the driver slot it reads, one entry per port,
- * and stays a one-to-one mapping: two entries are exchanged for each
- * controller that is not where it was. Returns how many were moved.
+ * @index maps a port to the driver slot it reads, one entry per port;
+ * two entries are exchanged for each controller that is not where it
+ * was, or one set if no port reads the slot it is in now. Returns how many were moved.
  * The restart is over afterwards. */
 static INLINE unsigned input_registry_restore_ports(input_registry_t *reg,
       unsigned *index, unsigned ports)
@@ -281,10 +281,12 @@ static INLINE unsigned input_registry_restore_ports(input_registry_t *reg,
       for (q = 0; q < ports; q++)
          if (index[q] == rec->slot)
             break;
-      if (q == ports || q == rec->port)
+      if (q == rec->port)
          continue;
 
-      index[q]         = index[rec->port];
+      /* no port reads the slot it is in now: nobody is displaced */
+      if (q < ports)
+         index[q]      = index[rec->port];
       index[rec->port] = rec->slot;
       moved++;
    }
