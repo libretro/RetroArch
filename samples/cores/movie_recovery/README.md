@@ -60,3 +60,23 @@ accurate rounding and full chroma precision. Default bicubic interpolation can
 overshoot near saturated chroma boundaries, even where clipped RGB patches
 appear flat. Decoded Main10 YUV samples and a double-precision BT.709 matrix
 confirmed this distinction; the three-value comparison tolerance is unchanged.
+
+Select `--window-mode resize` to grow the real window to 512x384 on tick two,
+then shrink it to 320x240 on tick seven. `--window-mode fullscreen` uses
+borderless fullscreen over the same ticks and verifies the actual HWND style
+and monitor rectangle, then returns to 320x240. Driver replacement on tick nine
+restores the configured 256x192 window. The default `steady` mode preserves the
+original fixed window. Each run needs its own fresh output directory.
+
+These modes keep the same twelve fixed picture ordinals and comparison tolerance.
+The changing viewport dimensions are asserted and recorded in `result.json`.
+Fullscreen requires a display large enough to exceed 512x384, with a captured
+viewport no larger than 4096x4096. The sample explicitly enables windowed
+fullscreen and does not change global display resolution or Windows HDR state.
+Test-only queue drains and cached redraws apply pending resizes before viewport
+queries; they do not advance the core or add production frame-path waits.
+
+Each run also saves the exact stereo S16 core callback stream as `audio.s16`.
+Per-tick callback counts, runloop flags, menu flags and focus state distinguish
+core progress from a cached picture that is still being presented. The null
+audio driver does not establish physical audio-device delivery.
