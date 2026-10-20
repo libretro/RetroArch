@@ -238,6 +238,7 @@ void CVPixelBufferRelease(CVPixelBufferRef image) { CFRelease(image); }
 
 #include "slots_test.h"
 #include "codec_test.h"
+#include "hdr_codec_test.h"
 #include "sequence_test.h"
 #include "batch_test.h"
 #include "owner_test.h"
@@ -475,6 +476,7 @@ int main(void)
    parameter_session = false;
 #endif
    test_codec_software();
+   test_hdr_codec_software();
    test_sequence_software();
    test_sequence_hardware_state();
 #ifdef VT_HEVC_NATIVE

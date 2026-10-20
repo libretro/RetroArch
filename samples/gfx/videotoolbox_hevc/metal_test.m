@@ -11,14 +11,14 @@
 
 static bool metal_hevc_decode_enabled(void *unused) { (void)unused; return true; }
 static void hevc_test_barrier(void *unused) { (void)unused; }
-int videotoolbox_hevc_test_start(void *owner, void *device)
+int videotoolbox_hevc_test_start(void *owner, void *device, int hdr)
 {
    void *pipeline = metal_frame_sdr_pipeline_create(device);
    bool started;
    assert(!metal_hevc_start(NULL, device, pipeline));
    assert(!metal_hevc_start(owner, NULL, pipeline));
    assert(!metal_hevc_start(owner, device, NULL));
-   started = metal_hevc_start(owner, device, pipeline);
+   started = metal_hevc_start_supported(owner, device, pipeline, hdr != 0);
    if (pipeline) CFRelease(pipeline);
    return started;
 }
@@ -119,7 +119,8 @@ void videotoolbox_hevc_test_export(video_hw_frame_t *frame, unsigned depth,
       assert(hevc_metal_encode(&copy, &lease->view, (__bridge void*)buffer));
       id<MTLTexture> front = hevc_movie_import(device, buffer, &imported);
       MTLTextureDescriptor *rgb_desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:
-         MTLPixelFormatRGBA8Unorm width:64 height:64 mipmapped:NO];
+         (frame->color.transfer == 16 || frame->color.transfer == 18) ? MTLPixelFormatRGBA16Float : MTLPixelFormatRGBA8Unorm
+         width:64 height:64 mipmapped:NO];
       rgb_desc.storageMode = MTLStorageModeShared;
       id<MTLTexture> rgb = [device newTextureWithDescriptor:rgb_desc]; assert(rgb);
       id<MTLBlitCommandEncoder> rgb_copy = [buffer blitCommandEncoder]; assert(rgb_copy);

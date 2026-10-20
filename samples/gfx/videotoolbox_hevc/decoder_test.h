@@ -7,7 +7,7 @@ void *videotoolbox_hevc_test_device_retain(void *);
 void videotoolbox_hevc_test_device_release(void *);
 void videotoolbox_hevc_test_export(video_hw_frame_t*, unsigned, unsigned, const uint32_t*);
 
-int videotoolbox_hevc_test_start(void*, void*);
+int videotoolbox_hevc_test_start(void*, void*, int);
 void videotoolbox_hevc_test_stop(void*);
 int videotoolbox_hevc_test_owns(void*);
 void videotoolbox_hevc_test_retired(void);
@@ -19,23 +19,35 @@ static void test_native_decoder_adapter(void)
    unsigned singles = sizeof(codec_cases) / sizeof(codec_cases[0]);
    unsigned sequences = sizeof(sequence_cases) / sizeof(sequence_cases[0]);
    unsigned reorders = sizeof(reorder_cases) / sizeof(reorder_cases[0]);
-   for (which = 0; which < singles + sequences + reorders; which++)
+   unsigned ordinary = singles + sequences + reorders;
+   unsigned hdr_count = sizeof(hdr_codec_cases) / sizeof(hdr_codec_cases[0]) / 2;
+   /* Apple's "High Dynamic Range Metadata For Apple Devices", HDR10/HLG
+    * sample-entry constraints, require Main10. Main8 color-tagged stress
+    * cases remain in software/portable admission checks, not this GPU gate. */
+   for (which = 0; which < ordinary + hdr_count; which++)
    {
-      const sequence_case_t *sequence = which < singles ? NULL
+      const hdr_codec_case_t *hdr = which >= ordinary ? &hdr_codec_cases[which - ordinary + hdr_count] : NULL;
+      const sequence_case_t *sequence = (hdr || which < singles) ? NULL
          : which < singles + sequences ? &sequence_cases[which - singles]
          : &reorder_cases[which - singles - sequences];
-      const codec_case_t *fixture = sequence ? &sequence->picture : &codec_cases[which];
+      const codec_case_t *fixture = hdr ? &hdr->picture : sequence ? &sequence->picture : &codec_cases[which];
       unsigned count = sequence ? VT_HEVC_TEST_BATCH : 1, input = 0, output = 0, i;
       rh265_video *source = rh265_video_open();
       video_hw_frame_t *frames = (video_hw_frame_t*)calloc(count, sizeof(*frames));
       void *device = videotoolbox_hevc_test_device(NULL);
       owner_queue_t queue;
       assert(source && frames && device);
+      if (hdr) assert(fixture->depth == 10);
       memset(&queue, 0, sizeof(queue));
       assert(!rh265_video_retain_parameter_sets(source));
       assert(!rh265_video_set_extradata(source, fixture->hvcc, fixture->hvcc_size));
       rh265_set_hw_backend(NULL); assert(!rh265_video_set_hw(source, 1));
-      assert(videotoolbox_hevc_test_start(&queue, device));
+      assert(videotoolbox_hevc_test_start(&queue, device, 0));
+      if (hdr)
+      {
+         assert(!rh265_video_set_hw(source, 1) && !rh265_video_is_hw(source));
+         assert(videotoolbox_hevc_test_start(&queue, device, 1));
+      }
       videotoolbox_hevc_test_device_release(device);
       assert(videotoolbox_hevc_test_owns(&queue));
       assert(rh265_video_set_hw(source, 1) && rh265_video_is_hw(source));
@@ -87,7 +99,7 @@ static void test_native_decoder_adapter(void)
       free(frames);
    }
    puts("Metal HEVC driver: shipping startup, withdrawal and retirement passed");
-   puts("VideoToolbox native adapter: twelve registered Main/Main10 IDR/I-P/B streams passed");
+   puts("VideoToolbox native adapter: sixteen registered SDR/Main10-HDR IDR/I-P/B streams passed");
 }
 #endif
 
@@ -96,7 +108,8 @@ static void test_native_decoder_adapter(void)
 struct metal_frame_cv_pool { int busy, fail; };
 static unsigned decoder_pools;
 static unsigned backend_acquired, backend_released, backend_failure;
-static bool backend_enabled;
+static bool backend_enabled, backend_hdr;
+static bool backend_hdr_enabled(void *user) { (void)user; return backend_hdr; }
 static int backend_device;
 static void *backend_acquire(void *user)
 { (void)user; backend_acquired++; return backend_failure == 1 ? NULL : &backend_device; }
@@ -141,10 +154,11 @@ static void decoder_complete(void)
 
 static void test_registered_backend(void)
 {
-   unsigned which;
-   for (which = 0; which < sizeof(codec_cases) / sizeof(codec_cases[0]); which++)
+   unsigned which, ordinary = sizeof(codec_cases) / sizeof(codec_cases[0]);
+   for (which = 0; which < ordinary + sizeof(hdr_codec_cases) / sizeof(hdr_codec_cases[0]); which++)
    {
-      const codec_case_t *fixture = &codec_cases[which];
+      const hdr_codec_case_t *hdr = which >= ordinary ? &hdr_codec_cases[which - ordinary] : NULL;
+      const codec_case_t *fixture = hdr ? &hdr->picture : &codec_cases[which];
       rh265_video *source = rh265_video_open();
       videotoolbox_hevc_backend_t backend;
       owner_queue_t queue;
@@ -154,7 +168,7 @@ static void test_registered_backend(void)
       assert(source && !objects && !decoder_pools);
       memset(&queue, 0, sizeof(queue));
       backend_acquired = backend_released = backend_failure = 0;
-      backend_enabled = false;
+      backend_enabled = backend_hdr = false;
       assert(!rh265_video_retain_parameter_sets(source));
       assert(!rh265_video_set_extradata(source, fixture->hvcc, fixture->hvcc_size));
       assert(!rh265_video_get_parameter_sets(source, 0, wanted_sets));
@@ -167,7 +181,10 @@ static void test_registered_backend(void)
             backend_is_enabled, owner_enqueue, &queue, true);
       rh265_set_hw_backend(&backend.offer);
       assert(!rh265_video_set_hw(source, 1) && !backend_acquired);
-      backend_enabled = true; backend_failure = 1;
+      backend_enabled = true;
+      backend.hdr_enabled = backend_hdr_enabled;
+      if (hdr) assert(!rh265_video_set_hw(source, 1) && !backend_acquired);
+      backend_hdr = true; backend_failure = 1;
       assert(!rh265_video_set_hw(source, 1) && backend_acquired == 1 && !backend_released);
       backend_failure = 2;
       assert(!rh265_video_set_hw(source, 1) && backend_acquired == 2 && backend_released == 1);
@@ -183,6 +200,7 @@ static void test_registered_backend(void)
       if (!status) { assert(!rh265_video_drain(source)); status = 1; }
       assert(status == 1 && !rh265_video_hw_frame(source, &frame));
       assert(frame.image && frame.pixfmt == (fixture->depth == 10 ? IMAGE_PIXFMT_P010 : IMAGE_PIXFMT_NV12));
+      if (hdr) assert(frame.color.primaries == 9 && frame.color.matrix == 9 && frame.color.transfer == hdr->transfer);
       assert(!rh265_video_plane(source, 0, NULL, NULL, NULL));
       rh265_video_close(source);
       assert(queue.submitted == 1 && !decoder_pools);
@@ -200,7 +218,7 @@ static void test_registered_backend(void)
       assert(!objects && !decoder_pools && backend_acquired == 3);
    }
    backend_enabled = false;
-   puts("VideoToolbox registration: four codec activations survive withdrawal and setup refusal");
+   puts("VideoToolbox registration: twelve SDR/HDR codec activations survive capability refusal and withdrawal");
 }
 #endif
 
