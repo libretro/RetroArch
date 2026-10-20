@@ -1852,6 +1852,13 @@ bool win32_window_keep(void)
    }
 
    win32_monitor_last = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+#ifndef _XBOX
+   /* The next driver may not take it - another family, another
+    * thread - and the window that replaces it then has to be given
+    * the foreground it had: with the content chosen on a controller,
+    * Windows refuses it otherwise and the keyboard goes elsewhere. */
+   win32_foreground_note(hwnd);
+#endif
    win32_kept_hwnd    = hwnd;
    win32_kept_tid     = GetCurrentThreadId();
    win32_kept_family  = (int)win32_wnd_family;
