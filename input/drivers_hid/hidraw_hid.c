@@ -43,6 +43,7 @@
 #include <retro_miscellaneous.h>
 
 #include "../connect/joypad_connection.h"
+#include "../common/hid_report_desc.h"
 #include "../input_defines.h"
 #include "../../tasks/tasks_internal.h"
 #include "../input_driver.h"
@@ -63,6 +64,10 @@ typedef struct hidraw_device
    char devnode[64];
    char name[NAME_MAX_LENGTH];
    uint8_t data[2][HIDRAW_REPORT_MAX];
+   /* a pad with no handler, read from its report descriptor */
+   bool generic;
+   hid_desc_layout_t layout;
+   hid_desc_state_t state;
 } hidraw_device_t;
 
 typedef struct hidraw_hid
@@ -79,7 +84,7 @@ extern hid_driver_t hidraw_hid;
 
 /* Every pad with a handler: hidraw hands a report over as the device
  * sent it, its ID first where it has one, which is how the handlers
- * read them. */
+ * read them. A pad with none is read from its report descriptor. */
 static bool hidraw_hid_handled(uint16_t vid, uint16_t pid, const char *name)
 {
    return find_connection_entry(vid, pid, name) != NULL;
@@ -126,6 +131,83 @@ static bool hidraw_hid_uevent(const char *node, bool *usb,
    return found;
 }
 
+/* The node's report descriptor, from sysfs - readable without the
+ * node's own permissions - made into @layout. False for no pad. */
+static bool hidraw_hid_descriptor(const char *node, hid_desc_layout_t *layout)
+{
+   char path[384];
+   uint8_t desc[4096];
+   ssize_t len;
+   int fd;
+
+   snprintf(path, sizeof(path), "/sys/class/hidraw/%s/device/report_descriptor",
+         node);
+   if ((fd = open(path, O_RDONLY | O_CLOEXEC)) < 0)
+      return false;
+   len = read(fd, desc, sizeof(desc));
+   close(fd);
+   return len > 0 && hid_desc_parse(layout, desc, (size_t)len);
+}
+
+/* A pad with no handler, as one: its report decoded at the poll into
+ * the device's state, which the getters read. */
+static void *hidraw_generic_init(void *data, uint32_t slot,
+      hid_driver_t *driver)
+{
+   return data;
+}
+
+static void hidraw_generic_deinit(void *data) { }
+
+static void hidraw_generic_packet(void *data, uint8_t *packet, uint16_t size)
+{
+   hidraw_device_t *dev = (hidraw_device_t*)data;
+   if (dev)
+      hid_desc_decode(&dev->layout, packet, size, &dev->state);
+}
+
+static void hidraw_generic_rumble(void *data,
+      enum retro_rumble_effect effect, uint16_t strength) { }
+
+static void hidraw_generic_get_buttons(void *data, input_bits_t *state)
+{
+   hidraw_device_t *dev = (hidraw_device_t*)data;
+   BIT256_CLEAR_ALL_PTR(state);
+   if (dev)
+      BITS_COPY32_PTR(state, dev->state.buttons);
+}
+
+static int16_t hidraw_generic_axis(void *data, unsigned axis)
+{
+   hidraw_device_t *dev = (hidraw_device_t*)data;
+   return (dev && axis < HID_DESC_AXES) ? dev->state.axes[axis] : 0;
+}
+
+static const char *hidraw_generic_name(void *data)
+{
+   hidraw_device_t *dev = (hidraw_device_t*)data;
+   return dev ? dev->name : NULL;
+}
+
+static int32_t hidraw_generic_button(void *data, uint16_t joykey)
+{
+   hidraw_device_t *dev = (hidraw_device_t*)data;
+   return (dev && joykey < 32)
+      ? (int32_t)((dev->state.buttons >> joykey) & 1) : 0;
+}
+
+static pad_connection_interface_t hidraw_generic_iface = {
+   hidraw_generic_init,
+   hidraw_generic_deinit,
+   hidraw_generic_packet,
+   hidraw_generic_rumble,
+   hidraw_generic_get_buttons,
+   hidraw_generic_axis,
+   hidraw_generic_name,
+   hidraw_generic_button,
+   false
+};
+
 static hidraw_device_t *hidraw_hid_find(hidraw_hid_t *hid,
       const char *devnode)
 {
@@ -147,12 +229,20 @@ static void hidraw_hid_add(hidraw_hid_t *hid, const char *devnode)
    node = node ? node + 1 : devnode;
    if (     strncmp(node, "hidraw", STRLEN_CONST("hidraw"))
          || hidraw_hid_find(hid, devnode)
-         || !hidraw_hid_uevent(node, &usb, &vid, &pid, name, sizeof(name))
-         || !hidraw_hid_handled(vid, pid, name))
+         || !hidraw_hid_uevent(node, &usb, &vid, &pid, name, sizeof(name)))
       return;
 
    if (!(dev = (hidraw_device_t*)calloc(1, sizeof(*dev))))
       return;
+   if (!hidraw_hid_handled(vid, pid, name))
+   {
+      if (!hidraw_hid_descriptor(node, &dev->layout))
+      {
+         free(dev);
+         return;
+      }
+      dev->generic = true;
+   }
    dev->slot = -1;
    dev->vid  = vid;
    dev->pid  = pid;
@@ -169,8 +259,19 @@ static void hidraw_hid_add(hidraw_hid_t *hid, const char *devnode)
    }
 
    /* the pad's handler starts it here, through set_report */
-   dev->slot = pad_connection_pad_init(hid->slots, name, vid, pid,
-         dev, &hidraw_hid);
+   if (dev->generic)
+   {
+      joypad_connection_entry_t gen_entry;
+      gen_entry.name  = dev->name;
+      gen_entry.vid   = vid;
+      gen_entry.pid   = pid;
+      gen_entry.iface = &hidraw_generic_iface;
+      dev->slot       = pad_connection_pad_init_entry(hid->slots, &gen_entry,
+            dev, &hidraw_hid);
+   }
+   else
+      dev->slot = pad_connection_pad_init(hid->slots, name, vid, pid,
+            dev, &hidraw_hid);
    if (dev->slot < 0 || !hid->slots[dev->slot].connection)
    {
       RARCH_ERR("[hidraw] \"%s\" at %s could not be started.\n",
@@ -376,8 +477,33 @@ static int16_t hidraw_hid_joypad_button(void *data,
       unsigned port, uint16_t joykey)
 {
    input_bits_t buttons;
+   unsigned hat_dir;
 
-   if (port >= MAX_USERS || GET_HAT_DIR(joykey) || joykey >= 32)
+   if (port >= MAX_USERS)
+      return 0;
+   /* the hat of a pad read from its descriptor; handlers give theirs
+    * as the RetroPad's D-pad */
+   if ((hat_dir = GET_HAT_DIR(joykey)))
+   {
+      hidraw_hid_t *hid = (hidraw_hid_t*)data;
+      hidraw_device_t *dev;
+      if (!hid || GET_HAT(joykey) != 0)
+         return 0;
+      for (dev = hid->devices; dev; dev = dev->next)
+      {
+         if (dev->slot != (int32_t)port || !dev->generic)
+            continue;
+         switch (hat_dir)
+         {
+            case HAT_UP_MASK:    return dev->state.hat_y < 0;
+            case HAT_DOWN_MASK:  return dev->state.hat_y > 0;
+            case HAT_LEFT_MASK:  return dev->state.hat_x < 0;
+            case HAT_RIGHT_MASK: return dev->state.hat_x > 0;
+         }
+      }
+      return 0;
+   }
+   if (joykey >= 32)
       return 0;
    hidraw_hid_joypad_get_buttons(data, port, &buttons);
    return BIT256_GET(buttons, joykey) != 0;

@@ -51,6 +51,7 @@
 #include <features/features_cpu.h>
 
 #include "../connect/joypad_connection.h"
+#include "../common/hid_report_desc.h"
 #include "../input_defines.h"
 #include "../../tasks/tasks_internal.h"
 #include "../input_driver.h"
@@ -153,6 +154,7 @@ typedef DWORD (WINAPI *winusb_cm_unregister_t)(HANDLE);
 #define WINUSB_GEN_AXES    11
 #define WINUSB_GEN_VALUES  16
 #define WINUSB_GEN_HAT     0xff
+#define WINUSB_GEN_LATER   0xfe /* an axis named twice, not yet placed */
 
 typedef struct
 {
@@ -536,11 +538,6 @@ static void winusb_generic_setup(winusb_generic_t *gen,
       PHIDP_PREPARSED_DATA pp, const HIDP_BUTTON_CAPS *bcaps, USHORT nb,
       const HIDP_VALUE_CAPS *vcaps, USHORT nv)
 {
-   static const USAGE axis_page[WINUSB_GEN_AXES] = {
-      0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x02, 0x02, 0x02, 0x02, 0x02 };
-   static const USAGE axis_usage[WINUSB_GEN_AXES] = {
-      0x30, 0x31, 0x33, 0x34, 0x32, 0x35, /* X, Y, Rx, Ry, Z, Rz */
-      0xba, 0xbb, 0xc8, 0xc4, 0xc5 };     /* rudder ... brake */
    bool taken[WINUSB_GEN_AXES];
    bool hat = false;
    USHORT i;
@@ -569,6 +566,7 @@ static void winusb_generic_setup(winusb_generic_t *gen,
       winusb_gen_value_t *v = &gen->value[gen->values];
       USAGE usage           = vcaps[i].IsRange
          ? vcaps[i].Range.UsageMin : vcaps[i].NotRange.Usage;
+      int index;
 
       v->page  = vcaps[i].UsagePage;
       v->usage = usage;
@@ -584,23 +582,31 @@ static void winusb_generic_setup(winusb_generic_t *gen,
          gen->values++;
          continue;
       }
-      for (a = 0; a < WINUSB_GEN_AXES; a++)
-         if (axis_page[a] == v->page && axis_usage[a] == usage)
-            break;
-      if (a == WINUSB_GEN_AXES)
+      if ((index = hid_desc_axis_index(v->page, usage)) < 0)
          continue;
-      /* an axis named twice takes the first free one, as on the Mac */
-      if (taken[a])
+      /* one named again is given a free axis once every other has its
+       * own, as on the Mac */
+      if (taken[index])
+         v->id = WINUSB_GEN_LATER;
+      else
       {
-         a = 0;
-         while (a < WINUSB_GEN_AXES && taken[a])
-            a++;
+         taken[index] = true;
+         v->id        = (uint8_t)index;
       }
-      if (a == WINUSB_GEN_AXES)
-         continue;
-      taken[a] = true;
-      v->id    = (uint8_t)a;
       gen->values++;
+   }
+   for (i = 0; i < gen->values; i++)
+   {
+      if (gen->value[i].id != WINUSB_GEN_LATER)
+         continue;
+      a = 0;
+      while (a < WINUSB_GEN_AXES && taken[a])
+         a++;
+      if (a < WINUSB_GEN_AXES)
+      {
+         taken[a]          = true;
+         gen->value[i].id  = (uint8_t)a;
+      }
    }
 }
 
@@ -660,6 +666,8 @@ static void winusb_generic_packet(void *data, uint8_t *report,
       if (v->min < 0 && v->bits > 0 && v->bits < 32
             && (raw & (1UL << (v->bits - 1))))
          val = (LONG)(raw | ~((1UL << v->bits) - 1));
+      if (v->id == WINUSB_GEN_LATER)
+         continue;
       if (v->id == WINUSB_GEN_HAT)
       {
          /* eight ways from the top, clockwise; out of range is rest */

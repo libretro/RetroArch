@@ -17,7 +17,10 @@
  *   free        -> every node closed
  *   dualsense   -> any pad with a handler is taken, not the DualShock 3
  *                  alone: a DualSense's node is opened, on port 1 with
- *                  its ids, and a report read through its handler */
+ *                  its ids, and a report read through its handler
+ *   no handler  -> a pad with none is read from its report descriptor,
+ *                  numbered as on the Mac, named as it names itself; a
+ *                  keyboard's descriptor is no pad */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -74,6 +77,8 @@ typedef struct
    const char *node;
    const char *uevent;
    int open_errno;     /* the node cannot be opened */
+   const uint8_t *desc; /* its report descriptor, in sysfs */
+   int desc_len;
    int open_flags;
    int opens;
    int closes;
@@ -91,9 +96,29 @@ typedef struct
    int features_got[256];
 } fake_node_t;
 
+/* a keyboard's report descriptor, and a common USB pad's */
+static const uint8_t keyboard_desc[] = {
+   0x05, 0x01, 0x09, 0x06, 0xa1, 0x01, 0x05, 0x07, 0x19, 0xe0, 0x29, 0xe7,
+   0x15, 0x00, 0x25, 0x01, 0x75, 0x01, 0x95, 0x08, 0x81, 0x02, 0x95, 0x01,
+   0x75, 0x08, 0x81, 0x01, 0x95, 0x06, 0x75, 0x08, 0x15, 0x00, 0x25, 0x65,
+   0x05, 0x07, 0x19, 0x00, 0x29, 0x65, 0x81, 0x00, 0xc0
+};
+static const uint8_t pad_desc[] = {
+   0x05, 0x01, 0x09, 0x04, 0xa1, 0x01, 0xa1, 0x02, 0x75, 0x08, 0x95, 0x05,
+   0x15, 0x00, 0x26, 0xff, 0x00, 0x35, 0x00, 0x46, 0xff, 0x00, 0x09, 0x30,
+   0x09, 0x30, 0x09, 0x30, 0x09, 0x30, 0x09, 0x31, 0x81, 0x02, 0x75, 0x04,
+   0x95, 0x01, 0x25, 0x07, 0x46, 0x3b, 0x01, 0x65, 0x14, 0x09, 0x39, 0x81,
+   0x42, 0x65, 0x00, 0x75, 0x01, 0x95, 0x0c, 0x25, 0x01, 0x45, 0x01, 0x05,
+   0x09, 0x19, 0x01, 0x29, 0x0c, 0x81, 0x02, 0x06, 0x00, 0xff, 0x75, 0x01,
+   0x95, 0x08, 0x25, 0x01, 0x45, 0x01, 0x09, 0x01, 0x81, 0x02, 0xc0, 0xa1,
+   0x02, 0x75, 0x08, 0x95, 0x07, 0x46, 0xff, 0x00, 0x26, 0xff, 0x00, 0x09,
+   0x02, 0x91, 0x02, 0xc0, 0xc0
+};
+
 static fake_node_t nodes[] = {
    { "hidraw0", "DRIVER=hid-generic\nHID_ID=0003:0000046D:0000C31C\n"
-                "HID_NAME=Logitech USB Keyboard\n" },
+                "HID_NAME=Logitech USB Keyboard\n", 0,
+                keyboard_desc, (int)sizeof(keyboard_desc) },
    { "hidraw1", "DRIVER=sony\nHID_ID=0003:0000054C:00000268\n"
                 "HID_NAME=Sony PLAYSTATION(R)3 Controller\n" },
    { "hidraw2", "DRIVER=sony\nHID_ID=0003:0000054C:00000268\n"
@@ -122,6 +147,17 @@ int __wrap_open(const char *path, int flags, ...)
          nodes[i].open_flags = flags;
          return 100 + i;
       }
+      snprintf(p, sizeof(p), "/sys/class/hidraw/%s/device/report_descriptor",
+            nodes[i].node);
+      if (!strcmp(path, p))
+      {
+         if (!nodes[i].desc)
+         {
+            errno = ENOENT;
+            return -1;
+         }
+         return 300 + i;
+      }
       snprintf(p, sizeof(p), "/sys/class/hidraw/%s/device/uevent",
             nodes[i].node);
       if (!strcmp(path, p))
@@ -145,6 +181,13 @@ ssize_t __wrap_read(int fd, void *buf, size_t len)
          n = len;
       memcpy(buf, s, n);
       uevent_pos[fd - 200] += (int)n;
+      return (ssize_t)n;
+   }
+   if (fd >= 300 && fd < 300 + NODES)
+   {
+      fake_node_t *nd = &nodes[fd - 300];
+      size_t n        = (size_t)nd->desc_len < len ? (size_t)nd->desc_len : len;
+      memcpy(buf, nd->desc, n);
       return (ssize_t)n;
    }
    if (fd >= 100 && fd < 100 + NODES)
@@ -227,6 +270,8 @@ int __wrap_ioctl(int fd, unsigned long req, ...)
 
 int __wrap_close(int fd)
 {
+   if (fd >= 300)
+      return 0;
    if (fd >= 100 && fd < 100 + NODES)
       nodes[fd - 100].closes++;
    return 0;
@@ -476,6 +521,33 @@ int main(void)
    }
    hidraw_hid.free(hid);
    CHECK(kbd->closes == 1, "the DualSense's node was not closed");
+
+   /* a pad with no handler where the DualSense was */
+   kbd->uevent   = "DRIVER=hid-generic\nHID_ID=0003:00001234:00005678\n"
+                   "HID_NAME=Generic USB Joystick\n";
+   kbd->desc     = pad_desc;
+   kbd->desc_len = (int)sizeof(pad_desc);
+   kbd->opens    = kbd->closes = 0;
+   connected_port = -1;
+   hid = hidraw_hid.init();
+   CHECK(kbd->opens == 1 && connected_port == 0 && connected_vid == 0x1234,
+         "a pad with no handler was not opened from its descriptor");
+   CHECK(!strcmp(hidraw_hid.name(hid, 0), "Generic USB Joystick"),
+         "a pad with no handler is not known by its name");
+   memset(kbd->queue[0], 0, sizeof(kbd->queue[0]));
+   kbd->queue[0][0] = 0xff;                 /* X: right */
+   kbd->queue[0][4] = 0x00;                 /* Y: up */
+   kbd->queue[0][5] = 0x06 | (0x02 << 4);   /* hat left, button 2 */
+   kbd->queued      = 1;
+   hidraw_hid.poll(hid);
+   CHECK(   hidraw_hid.axis(hid, 0, AXIS_POS(0)) == 32767
+         && hidraw_hid.axis(hid, 0, AXIS_NEG(1)) == -32767,
+         "a pad with no handler: its axes are not read");
+   CHECK(   hidraw_hid.button(hid, 0, 1) && !hidraw_hid.button(hid, 0, 0)
+         && hidraw_hid.button(hid, 0, HAT_MAP(0, HAT_LEFT_MASK))
+         && !hidraw_hid.button(hid, 0, HAT_MAP(0, HAT_RIGHT_MASK)),
+         "a pad with no handler: its buttons or hat are not read");
+   hidraw_hid.free(hid);
 
    if (failures)
    {

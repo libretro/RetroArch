@@ -261,6 +261,7 @@ static BOOLEAN WINAPI h_pp(HANDLE h, PHIDP_PREPARSED_DATA *pp)
 }
 static BOOLEAN WINAPI h_free_pp(PHIDP_PREPARSED_DATA pp) { return TRUE; }
 static bool generic_mode;
+static bool generic_dup; /* X named twice */
 static NTSTATUS WINAPI h_caps(PHIDP_PREPARSED_DATA pp, PHIDP_CAPS c)
 {
    memset(c, 0, sizeof(*c));
@@ -304,6 +305,7 @@ static NTSTATUS WINAPI h_vcaps(HIDP_REPORT_TYPE t, PHIDP_VALUE_CAPS c,
       PUSHORT n, PHIDP_PREPARSED_DATA pp)
 {
    static const USAGE usage[5] = { 0x30, 0x31, 0x35, 0x33, 0x39 };
+   static const USAGE dup[5]   = { 0x30, 0x30, 0x31, 0x33, 0x39 };
    USHORT i;
    memset(c, 0, sizeof(*c) * *n);
    if (!generic_mode)
@@ -315,7 +317,7 @@ static NTSTATUS WINAPI h_vcaps(HIDP_REPORT_TYPE t, PHIDP_VALUE_CAPS c,
    for (i = 0; i < 5 && i < *n; i++)
    {
       c[i].UsagePage       = 0x01;
-      c[i].NotRange.Usage  = usage[i];
+      c[i].NotRange.Usage  = generic_dup ? dup[i] : usage[i];
       c[i].BitSize         = 8;
       c[i].LogicalMin      = 0;
       c[i].LogicalMax      = 255;
@@ -668,6 +670,28 @@ static void test_hidclass(const char *path)
    h_unplugged = false;
    CHECK(frees_pp == 1, "hid class: the pad's layout was not let go with it");
    winusb_hidclass_api.FreePreparsedData = h_free_pp;
+
+   /* X named twice: Y keeps axis 1, and the second X takes the first
+    * free one once the others have theirs, as on the Mac */
+   generic_dup = true;
+   winusb_hid_open(hid, path, "HID\\VID_1234&PID_5678\\2",
+         0x1234, 0x5678, true);
+   CHECK(   hid->devices && hid->devices->gen.values == 5
+         && hid->devices->gen.value[0].id == 0
+         && hid->devices->gen.value[1].id == 3
+         && hid->devices->gen.value[2].id == 1
+         && hid->devices->gen.value[3].id == 2,
+         "hid class: an axis named twice is not placed as on the Mac");
+   dev = hid->devices;
+   EnterCriticalSection(&q_lock);
+   h_unplugged = true;
+   h_complete();
+   LeaveCriticalSection(&q_lock);
+   for (i = 0; i < 2000 && !retro_atomic_load_acquire_int(&dev->gone); i++)
+      Sleep(1);
+   winusb_hid.poll(hid);
+   h_unplugged = false;
+   generic_dup  = false;
    generic_mode = false;
 
    /* freed with a write in flight: the write is cancelled, the reader

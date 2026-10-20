@@ -824,6 +824,21 @@ jobs:
           make clean
           echo "[pass] sony_pad_output_test"
 
+      - name: Build and run hid_report_desc_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/input/hid_report_desc
+        run: |
+          set -eu
+          # A gamepad's reports read from its HID report descriptor
+          # (input/common/hid_report_desc.h, which hidraw reads pads
+          # with no handler through): axes numbered as on the Mac, a
+          # hat, buttons by usage, reports with IDs, and nothing read
+          # past a cut descriptor or a short report.
+          make clean && make -j$(nproc) all SANITIZER=address,undefined
+          timeout 60 make check
+          make clean
+          echo "[pass] hid_report_desc_test"
+
       - name: Build and run winraw_joypad_rumble_test (mingw + Wine)
         shell: bash
         working-directory: samples/input/winraw_joypad_rumble
