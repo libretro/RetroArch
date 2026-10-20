@@ -12244,6 +12244,11 @@ INPUT_NOINLINE static void input_hotkey_set_make(unsigned port)
  * bind has, and a command by a name in input_entry_commands[] below.
  * "held" and a time in seconds, to a tenth and up to 25, says the
  * sources must stay down that long first: by the clock, not by frames.
+ * "pressed" and a percentage says how far in its buttons must be
+ * pushed: for a trigger or a pressure-sensitive button, as the core
+ * would read it. A button with no such reading counts as all the way.
+ *
+ *    input_combo_4 = "l2+r2 pressed 80% : macro_1"
  *
  * The entries are read on the port the hotkeys are read on, after the
  * hotkeys, and are held back by what holds a hotkey back: "Hotkey
@@ -12270,6 +12275,7 @@ typedef struct
    uint8_t  kind;
    uint8_t  number;   /* the N of its input_combo_N */
    uint8_t  hold;     /* tenths of a second its sources must stay down first; 0 for none */
+   uint8_t  depth;    /* percent its buttons must be pushed in; 0 for any press */
 } input_entry_t;
 
 static struct
@@ -12366,6 +12372,43 @@ static bool input_entry_word(const char *s, const char *end,
    return true;
 }
 
+/* " held 2s" or " pressed 80%" between @s and @end: its number, in
+ * tenths of a second for @unit 's', in percent for '%'. 0 if it does
+ * not read as one. */
+static unsigned input_entry_amount(const char *s, const char *end,
+      char unit)
+{
+   unsigned n  = 0;
+   bool digits = false;
+   while (s < end && *s == ' ')
+      s++;
+   for (; s < end && *s >= '0' && *s <= '9'; s++)
+   {
+      n      = n * 10 + (unsigned)(*s - '0');
+      digits = true;
+      if (n > 250)
+         return 0;
+   }
+   if (unit == 's')
+   {
+      n *= 10;
+      if (s < end && *s == '.')
+      {
+         s++;
+         if (s >= end || *s < '0' || *s > '9')
+            return 0;
+         n += (unsigned)(*s - '0');
+         s++;
+      }
+   }
+   if (!digits || s >= end || *s != unit)
+      return 0;
+   for (s++; s < end; s++)
+      if (*s != ' ' && *s != '\t')
+         return 0;
+   return n;
+}
+
 /* An entry read from how the configuration writes it, "sources :
  * target", into @out. False if it does not read as one. */
 static bool input_entry_parse(unsigned number, const char *spec,
@@ -12375,7 +12418,8 @@ static bool input_entry_parse(unsigned number, const char *spec,
    unsigned i;
    input_entry_t e;
    const char *colon = spec ? strchr(spec, ':') : NULL;
-   /* where the sources end: at the colon, or at "held" before it */
+   /* where the sources end: at the colon, or at "held" or "pressed"
+    * before it */
    const char *colon_src = colon;
    const char *s     = spec;
 
@@ -12388,45 +12432,39 @@ static bool input_entry_parse(unsigned number, const char *spec,
    e.kind   = 0;
    e.number = (uint8_t)number;
    e.hold   = 0;
+   e.depth  = 0;
 
-   /* "held 2s" or "held 0.5s", after what is held: a time in tenths */
+   /* after what is held, either or both, in either order: "held 2s"
+    * or "held 0.5s", a time in tenths; "pressed 80%" */
    {
-      const char *h = spec;
-      const char *held = NULL;
+      const char *h       = spec;
+      const char *held    = NULL;
+      const char *pressed = NULL;
       for (; h + 6 <= colon; h++)
+      {
          if (!strncmp(h, " held ", 6))
             held = h;
+         else if (h + 9 <= colon && !strncmp(h, " pressed ", 9))
+            pressed = h;
+      }
       if (held)
       {
-         unsigned tenths = 0;
-         const char *d   = held + 6;
-         bool digits     = false;
-         while (d < colon && *d == ' ')
-            d++;
-         for (; d < colon && *d >= '0' && *d <= '9'; d++)
-         {
-            tenths = tenths * 10 + (unsigned)(*d - '0') * 10;
-            digits = true;
-            if (tenths > 250)
-               return false;
-         }
-         if (d < colon && *d == '.')
-         {
-            d++;
-            if (d >= colon || *d < '0' || *d > '9')
-               return false;
-            tenths += (unsigned)(*d - '0');
-            d++;
-         }
-         if (!digits || d >= colon || *d != 's')
-            return false;
-         for (d++; d < colon; d++)
-            if (*d != ' ' && *d != '\t')
-               return false;
+         const char *end = (pressed && pressed > held) ? pressed : colon;
+         unsigned tenths = input_entry_amount(held + 6, end, 's');
          if (!tenths || tenths > 250)
             return false;
-         e.hold = (uint8_t)tenths;
+         e.hold    = (uint8_t)tenths;
          colon_src = held;
+      }
+      if (pressed)
+      {
+         const char *end = (held && held > pressed) ? held : colon;
+         unsigned pct    = input_entry_amount(pressed + 9, end, '%');
+         if (!pct || pct > 100)
+            return false;
+         e.depth = (uint8_t)pct;
+         if (pressed < colon_src)
+            colon_src = pressed;
       }
    }
 
@@ -12841,6 +12879,35 @@ bool input_entry_set_hold(unsigned number, unsigned tenths)
    return false;
 }
 
+/* How far in entry @number's buttons must be pushed, in percent: 0 for
+ * any press. */
+unsigned input_entry_depth(unsigned number)
+{
+   unsigned i;
+   for (i = 0; i < input_entries.count; i++)
+      if (input_entries.entry[i].number == number)
+         return input_entries.entry[i].depth;
+   return 0;
+}
+
+/* ... and set. False if there is no such entry. */
+bool input_entry_set_depth(unsigned number, unsigned percent)
+{
+   unsigned i;
+   if (percent > 100)
+      return false;
+   for (i = 0; i < input_entries.count; i++)
+      if (input_entries.entry[i].number == number)
+      {
+         input_entries.entry[i].depth = (uint8_t)percent;
+         if (number < 32)
+            input_entries_unread &= ~((uint32_t)1 << number);
+         input_entries_changed();
+         return true;
+      }
+   return false;
+}
+
 /* What entry @number is, as the configuration names it, in @s; its
  * length, 0 for none. */
 size_t input_entry_target(unsigned number, char *s, size_t len)
@@ -12882,6 +12949,9 @@ size_t input_entry_spec(unsigned number, char *s, size_t len)
       at += (size_t)snprintf(s + at, at < len ? len - at : 0,
             (e->hold % 10) ? " held %u.%us" : " held %us",
             (unsigned)(e->hold / 10), (unsigned)(e->hold % 10));
+   if (e->depth)
+      at += (size_t)snprintf(s + at, at < len ? len - at : 0,
+            " pressed %u%%", (unsigned)e->depth);
 
    if (e->kind == INPUT_ENTRY_HOTKEY)
       at += (size_t)snprintf(s + at, at < len ? len - at : 0, " : %s",
@@ -13261,6 +13331,28 @@ INPUT_NOINLINE static void input_entries_frame(
 
       if (e->pad && (held16 & e->pad) != e->pad)
          all = false;
+      /* pushed far enough in: as the core reads the button. One held
+       * through something with no reading of how far - a key - reads
+       * 0, and counts as all the way. */
+      else if (e->depth && e->pad)
+      {
+         unsigned k;
+         int16_t need = (int16_t)(e->depth * 327);
+         for (k = 0; k < RARCH_FIRST_CUSTOM_BIND; k++)
+         {
+            int16_t v;
+            if (!(e->pad & (1u << k)))
+               continue;
+            v = input_joypad_analog_button(input_st->port_deadzone[port][1],
+                  settings->floats.input_analog_sensitivity,
+                  joypad, &joypad_info, k, &input_config_binds[port][k]);
+            if (v && v < need)
+            {
+               all = false;
+               break;
+            }
+         }
+      }
       if (e->key != RETROK_UNKNOWN)
       {
          if (!((down >> n) & 1))

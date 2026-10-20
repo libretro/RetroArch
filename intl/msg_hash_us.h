@@ -24972,7 +24972,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_COMBO_HOLD,
-   "Instant acts the moment all of the buttons are down. Hold For waits until they have been held together for a time you choose next, so that pressing them briefly - in the middle of a game, say - does nothing."
+   "Instant acts the moment all of the buttons are down. Hold For waits until they have been held together for a time you choose next, so that pressing them briefly - in the middle of a game, say - does nothing. Press Depth waits until they are pushed in as far as you choose next, so that analog triggers and pressure-sensitive buttons (DualShock 2 and 3) only act when pressed hard."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_COMBO_HOLD_TIME,
@@ -24981,6 +24981,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_COMBO_HOLD_TIME,
    "How long all of the combination's buttons must be held down together before it acts."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_COMBO_DEPTH,
+   "Press Depth"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_COMBO_DEPTH,
+   "How far in each of the combination's buttons must be pushed before it acts: for analog triggers and pressure-sensitive buttons. A button that only reads pressed or not counts as pushed all the way."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_REMAP_FIND,
@@ -32955,6 +32963,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_INPUT_COMBO_HOLD_FOR,
    "Hold For"
+   )
+MSG_HASH(
+   MSG_INPUT_COMBO_PRESS_DEPTH,
+   "Press Depth"
+   )
+MSG_HASH(
+   MSG_INPUT_COMBO_DEPTH_PERCENT,
+   "%u%% Pressed In"
    )
 MSG_HASH(
    MSG_INPUT_COMBO_ROW_SUBLABEL,

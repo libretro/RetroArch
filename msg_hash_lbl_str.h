@@ -559,6 +559,7 @@
 #define MENU_ENUM_LABEL_INPUT_COMBO_TARGET_STR "input_combo_target"
 #define MENU_ENUM_LABEL_INPUT_COMBO_HOLD_STR "input_combo_hold"
 #define MENU_ENUM_LABEL_INPUT_COMBO_HOLD_TIME_STR "input_combo_hold_time"
+#define MENU_ENUM_LABEL_INPUT_COMBO_DEPTH_STR "input_combo_depth"
 #define MENU_ENUM_LABEL_REMAP_FILE_FLUSH_STR "remap_file_flush"
 #define MENU_ENUM_LABEL_RESTART_CONTENT_STR "restart_content"
 #define MENU_ENUM_LABEL_RESUME_CONTENT_STR "resume_content"

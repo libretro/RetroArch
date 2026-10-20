@@ -841,17 +841,24 @@ static unsigned menu_target_number;
 static unsigned menu_target_pad;   /* the buttons held, for a new one; 0 keeps them */
 
 /* After what it does is picked, how quickly it does it: a second list,
- * "Response Time" - Instant, or Hold For - and after Hold For a third,
- * "Hold For", of how long: half a second to ten, by half seconds. Each
+ * "Response Time" - Instant, Hold For or Press Depth - and after Hold
+ * For a third, "Hold For", of how long: half a second to ten, by half
+ * seconds; after Press Depth one of how far in its buttons must be
+ * pushed, for triggers and pressure-sensitive buttons. Instant takes
+ * both away; each of the others keeps what the other is. Each
  * opens at the next pass of the menu (menu_setting_entry_pending()),
  * the list that was picked from being taken down after its change
  * handler returns. */
 static char     menu_hold_text[8];
 static char     menu_time_text[8];
+static char     menu_depth_text[8];
 static unsigned menu_hold_number;
 static unsigned menu_hold_pending;
 static unsigned menu_time_pending;
-static const char menu_hold_values[] = "0|hold";
+static unsigned menu_depth_pending;
+static const char menu_hold_values[] = "0|hold|depth";
+static const char menu_depth_values[] =
+   "10|20|30|40|50|60|70|80|90|100";
 static const char menu_time_values[] =
    "5|10|15|20|25|30|35|40|45|50|55|60|65|70|75|80|85|90|95|100";
 
@@ -862,9 +869,13 @@ static void setting_entry_hold_change(rarch_setting_t *setting)
    if (!strcmp(setting->value.target.string, "hold"))
       /* how long, next */
       menu_time_pending = menu_hold_number;
+   else if (!strcmp(setting->value.target.string, "depth"))
+      /* how far, next */
+      menu_depth_pending = menu_hold_number;
    else
    {
       input_entry_set_hold(menu_hold_number, 0);
+      input_entry_set_depth(menu_hold_number, 0);
       setting_entry_rows_repopulate();
    }
    menu_hold_number = 0;
@@ -873,9 +884,29 @@ static void setting_entry_hold_change(rarch_setting_t *setting)
 static size_t setting_entry_hold_repr(rarch_setting_t *setting,
       char *s, size_t len)
 {
+   const char *v = setting->value.target.string;
    return strlcpy(s, msg_hash_to_str(
-            strcmp(setting->value.target.string, "hold")
-            ? MSG_INPUT_COMBO_INSTANT : MSG_INPUT_COMBO_HOLD_FOR), len);
+              !strcmp(v, "hold")  ? MSG_INPUT_COMBO_HOLD_FOR
+            : !strcmp(v, "depth") ? MSG_INPUT_COMBO_PRESS_DEPTH
+            : MSG_INPUT_COMBO_INSTANT), len);
+}
+
+static void setting_entry_depth_change(rarch_setting_t *setting)
+{
+   if (!menu_hold_number)
+      return;
+   input_entry_set_depth(menu_hold_number,
+         (unsigned)strtoul(setting->value.target.string, NULL, 10));
+   menu_hold_number = 0;
+   setting_entry_rows_repopulate();
+}
+
+static size_t setting_entry_depth_repr(rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   return (size_t)snprintf(s, len,
+         msg_hash_to_str(MSG_INPUT_COMBO_DEPTH_PERCENT),
+         (unsigned)strtoul(setting->value.target.string, NULL, 10));
 }
 
 static void setting_entry_time_change(rarch_setting_t *setting)
@@ -917,6 +948,12 @@ void menu_setting_entry_pending(void)
       menu_time_pending = 0;
       list_enum         = MENU_ENUM_LABEL_INPUT_COMBO_HOLD_TIME;
    }
+   else if (menu_depth_pending)
+   {
+      number             = menu_depth_pending;
+      menu_depth_pending = 0;
+      list_enum          = MENU_ENUM_LABEL_INPUT_COMBO_DEPTH;
+   }
    else
       return;
    if (!input_entry_target(number, buf, sizeof(buf)))
@@ -930,9 +967,15 @@ void menu_setting_entry_pending(void)
    }
    else
    {
-      strlcpy(menu_hold_text, "0", sizeof(menu_hold_text));
+      strlcpy(menu_hold_text, input_entry_depth(number) ? "depth" : "0",
+            sizeof(menu_hold_text));
       strlcpy(menu_time_text, "10", sizeof(menu_time_text));
    }
+   if (input_entry_depth(number))
+      snprintf(menu_depth_text, sizeof(menu_depth_text), "%u",
+            input_entry_depth(number));
+   else
+      strlcpy(menu_depth_text, "50", sizeof(menu_depth_text));
    snprintf(buf, sizeof(buf), "%d", list_enum);
    generic_action_ok_displaylist_push(buf, NULL, NULL, 0,
          menu_st->selection_ptr, 0, ACTION_OK_DL_DROPDOWN_BOX_LIST);
@@ -16699,6 +16742,20 @@ static void settings_build_input_hotkey(
          MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
                MENU_ENUM_LABEL_INPUT_COMBO_HOLD_TIME);
          SETTINGS_ACTION_SET(repr, &(*list)[list_info->index - 1], setting_entry_time_repr)
+         (*list)[list_info->index - 1].free_flags &= ~SD_FREE_FLAG_VALUES;
+
+         /* how far in, after Press Depth: not a row */
+         CONFIG_STRING_OPTIONS(
+               list, list_info,
+               menu_depth_text, sizeof(menu_depth_text),
+               MENU_ENUM_LABEL_INPUT_COMBO_DEPTH,
+               MENU_ENUM_LABEL_VALUE_INPUT_COMBO_DEPTH,
+               "50", menu_depth_values,
+               &group_info, &subgroup_info, parent_group,
+               setting_entry_depth_change, NULL);
+         MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
+               MENU_ENUM_LABEL_INPUT_COMBO_DEPTH);
+         SETTINGS_ACTION_SET(repr, &(*list)[list_info->index - 1], setting_entry_depth_repr)
          (*list)[list_info->index - 1].free_flags &= ~SD_FREE_FLAG_VALUES;
 
          GROUP_END();

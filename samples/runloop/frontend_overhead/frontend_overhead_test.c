@@ -6232,6 +6232,40 @@ static void lane_entries(void)
       CHECK(!hf_paused_now(), "entries: a timed entry let go early was given");
    }
 
+   /* --- how far in its buttons must be pushed, as the core reads them --- */
+   input_entries_clear();
+   CHECK(   input_entry_add(3, "start pressed 50% held 1s : pause")
+         && input_entry_spec(3, spec, sizeof(spec))
+         && !strcmp(spec, "start held 1s pressed 50% : pause"),
+         "entries: a depth with a time, either order, does not read back as one");
+   CHECK(   !input_entry_add(4, "start pressed 0% : pause")
+         && !input_entry_add(4, "start pressed 101% : pause")
+         && !input_entry_add(4, "start pressed 50 : pause")
+         && !input_entry_add(4, "start pressed 50% x : pause")
+         && !input_entry_add(4, " pressed 50% : pause"),
+         "entries: a depth that is not one was taken");
+   input_entries_clear();
+   CHECK(input_entry_add(1, "start pressed 80% : pause"), "entries: a depth is not read");
+   CHECK(input_entry_add(2, "key_g : unpause"),           "entries: the key's entry is not read again");
+   input_autoconf_bind_edit(0, START)->joyaxis = AXIS_POS(2);
+   en_hold(0, 3);
+   syn_axes[2] = 0x4000;   /* half way */
+   en_hold(b_start, 4);
+   CHECK(!hf_paused(), "entries: a button pushed half way set off one that wants 80%");
+   syn_axes[2] = 0x7400;   /* most of the way */
+   en_hold(b_start, 4);
+   CHECK(hf_paused(), "entries: a button pushed past its depth did not set it off");
+   en_hold(0, 3);
+   syn_axes[2] = 0;
+   os_tap();
+   CHECK(!hf_paused(), "entries: the key did not give its command");
+   /* a button with no reading of how far counts as all the way */
+   input_autoconf_bind_edit(0, START)->joyaxis = AXIS_NONE;
+   en_hold(b_start, 4);
+   CHECK(hf_paused(), "entries: a button with no depth reading did not set it off");
+   en_hold(0, 3);
+   os_tap();
+
    /* --- no more than there is room for --- */
    input_entries_clear();
    for (i = 1; i <= 16; i++)
@@ -7447,17 +7481,20 @@ static void lane_entry_target_pick(void)
       snprintf(why, sizeof(why), "target pick: picking Menu Toggle made \"%s\", not \"l3+r3 : menu_toggle\"", spec);
       CHECK(!strcmp(spec, "l3+r3 : menu_toggle"), why);
    }
-   /* then the response time's list: Instant, or held for a time */
+   /* then the response time's list: Instant, held for a time, or
+    * pushed in so far */
    run_loop_frames(2);
    CHECK(stack && stack->size == depth + 1 && stack->list[depth].label
          && !strcmp(stack->list[depth].label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST)),
          "target pick: after the target the response time's list is not up");
    {
       file_list_t *sel = MENU_LIST_GET_SELECTION(menu_state_get_ptr()->entries.list, 0);
-      CHECK(   sel && sel->size == 2 && sel->list[0].path && sel->list[1].path
+      CHECK(   sel && sel->size == 3 && sel->list[0].path && sel->list[1].path
+            && sel->list[2].path
             && !strcmp(sel->list[0].path, msg_hash_to_str(MSG_INPUT_COMBO_INSTANT))
-            && !strcmp(sel->list[1].path, msg_hash_to_str(MSG_INPUT_COMBO_HOLD_FOR)),
-            "target pick: the response time's list is not Instant and Hold For");
+            && !strcmp(sel->list[1].path, msg_hash_to_str(MSG_INPUT_COMBO_HOLD_FOR))
+            && !strcmp(sel->list[2].path, msg_hash_to_str(MSG_INPUT_COMBO_PRESS_DEPTH)),
+            "target pick: the response time's list is not Instant, Hold For and Press Depth");
       menu_state_get_ptr()->selection_ptr = 1;   /* Hold For */
       tp_press(ok_b);
    }
@@ -7505,6 +7542,37 @@ static void lane_entry_target_pick(void)
    input_entry_spec(5, spec, sizeof(spec));
    CHECK(!strcmp(spec, "l3+r3 held 2s : macro_2") && stack && stack->size == depth,
          "target pick: picking a macro for an entry did not keep its buttons and time and change what it does");
+
+   /* --- Press Depth: how far in, ten to a hundred percent; the time kept --- */
+   row5->actions->left(row5, 0, false);
+   run_loop_frames(3);
+   idx = tp_index("macro_2");
+   if (idx >= 0)
+   {
+      menu_state_get_ptr()->selection_ptr = (size_t)idx;
+      tp_press(ok_b);
+   }
+   run_loop_frames(2);
+   menu_state_get_ptr()->selection_ptr = 2;   /* Press Depth */
+   tp_press(ok_b);
+   run_loop_frames(2);
+   {
+      file_list_t *sel = MENU_LIST_GET_SELECTION(menu_state_get_ptr()->entries.list, 0);
+      CHECK(   stack && stack->size == depth + 1 && sel && sel->size == 10
+            && sel->list[0].path && strstr(sel->list[0].path, "10%")
+            && sel->list[9].path && strstr(sel->list[9].path, "100%"),
+            "target pick: after Press Depth the list of how far in is not up");
+      menu_state_get_ptr()->selection_ptr = 7;   /* 80% */
+      tp_press(ok_b);
+   }
+   spec[0] = '\0';
+   input_entry_spec(5, spec, sizeof(spec));
+   {
+      char why[200];
+      snprintf(why, sizeof(why), "target pick: 80%% picked made \"%s\"", spec);
+      CHECK(!strcmp(spec, "l3+r3 held 2s pressed 80% : macro_2")
+            && stack && stack->size == depth, why);
+   }
 
    /* --- Back out of the list makes nothing --- */
    {
