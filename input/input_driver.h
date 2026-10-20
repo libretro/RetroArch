@@ -38,6 +38,7 @@
 #include "input_defines.h"
 #include "../gfx/video_defines.h"
 #include "input_types.h"
+#include "input_sensor_snap.h"
 #ifdef HAVE_OVERLAY
 #include "input_overlay.h"
 #endif
@@ -940,12 +941,9 @@ typedef struct
     * demand check on the main thread: atomic with release/acquire,
     * not a plain bool. */
    retro_atomic_int_t shader_uses_sensors;
-   /* Seqlock publication of the sensor caches below - poll computes
-    * the caches, then publishes gyro, accelerometer and rest (nine
-    * floats as bits) here for the shader backends' per-frame reads
-    * from the video thread. */
-   retro_atomic_int_t sensor_snap_seq;
-   retro_atomic_int_t sensor_snap_bits[9];
+   /* The sensor caches below, as the shader backends read them each
+    * frame from the video thread (input_sensor_snap.h). */
+   input_sensor_snap_t sensor_snap;
    bool frontend_sensors_enabled;
    /* The snapshot shaders read holds noughts and no shader reads
     * sensors: the poll has nothing to publish. The poll's own. */

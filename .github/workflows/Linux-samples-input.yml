@@ -694,6 +694,19 @@ jobs:
           WINEDEBUG=-all wine ./winraw_mouse_buttons_test.exe
           make clean
 
+      - name: Check the sensor snapshot hand-over
+        working-directory: samples/input/sensor_snap
+        shell: bash
+        run: |
+          set -eu
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1 ./sensor_snap_test
+          make clean SANITIZER=thread && make -j$(nproc) all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 ./sensor_snap_test
+          make clean CC=x86_64-w64-mingw32-gcc LDFLAGS="-static -lpthread" && make -j$(nproc) all CC=x86_64-w64-mingw32-gcc LDFLAGS="-static -lpthread"
+          WINEDEBUG=-all wine ./sensor_snap_test.exe
+          make clean
+
       - name: Check WinRaw mouse position-source draining
         working-directory: samples/input/winraw_mouse_pending
         shell: bash

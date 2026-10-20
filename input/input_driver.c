@@ -13789,31 +13789,12 @@ void input_driver_set_shader_uses_sensors(bool uses)
          &input_driver_st.shader_uses_sensors, uses ? 1 : 0);
 }
 
+/* The newest the poll has published. Never waits. One reader. */
 void input_driver_read_sensor_snapshot(float *gyro3,
       float *accel3, float *rest3)
 {
-   input_driver_state_t *input_st = &input_driver_st;
-   for (;;)
-   {
-      int v[9];
-      int i;
-      float *dst[3];
-      int s1 = retro_atomic_load_acquire_int(&input_st->sensor_snap_seq);
-      if (s1 & 1)
-         continue;
-      for (i = 0; i < 9; i++)
-         v[i] = retro_atomic_load_relaxed_int(
-               &input_st->sensor_snap_bits[i]);
-      retro_atomic_thread_fence_acquire();
-      if (retro_atomic_load_relaxed_int(&input_st->sensor_snap_seq) != s1)
-         continue;
-      dst[0] = gyro3;
-      dst[1] = accel3;
-      dst[2] = rest3;
-      for (i = 0; i < 9; i++)
-         memcpy(&dst[i / 3][i % 3], &v[i], sizeof(float));
-      return;
-   }
+   input_sensor_snap_take(&input_driver_st.sensor_snap,
+         gyro3, accel3, rest3);
 }
 
 #ifdef HAVE_THREADS
@@ -15376,32 +15357,12 @@ void input_driver_poll(void)
          }
          input_st->sensor_snap_quiet = !shader_uses;
 
-         /* Publish the three vec3s as one coherent snapshot: the shader
-          * backends read them from the video thread per frame, and plain
-          * float stores could hand them a vector mixing two polls (and
-          * carried no happens-before at all). Same seq discipline as the
-          * video viewport snapshots. */
-         {
-            unsigned seq = (unsigned)retro_atomic_load_relaxed_int(
-                  &input_st->sensor_snap_seq);
-            float *src[3];
-            int i, j;
-            src[0] = input_st->sensor_gyroscope_cache;
-            src[1] = input_st->sensor_accelerometer_cache;
-            src[2] = input_st->sensor_accelerometer_rest;
-            retro_atomic_store_relaxed_int(&input_st->sensor_snap_seq, (int)(seq + 1u));
-            retro_atomic_thread_fence_release();
-            for (i = 0; i < 3; i++)
-               for (j = 0; j < 3; j++)
-               {
-                  int b;
-                  memcpy(&b, &src[i][j], sizeof(b));
-                  retro_atomic_store_relaxed_int(
-                        &input_st->sensor_snap_bits[i * 3 + j], b);
-               }
-            retro_atomic_thread_fence_release();
-            retro_atomic_store_release_int(&input_st->sensor_snap_seq, (int)(seq + 2u));
-         }
+         /* Published as one snapshot for the shader backends' reads
+          * on the video thread (input_driver_read_sensor_snapshot()) */
+         input_sensor_snap_publish(&input_st->sensor_snap,
+               input_st->sensor_gyroscope_cache,
+               input_st->sensor_accelerometer_cache,
+               input_st->sensor_accelerometer_rest);
       }
    }
 

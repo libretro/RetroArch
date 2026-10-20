@@ -7942,57 +7942,34 @@ static void lane_sensor_snapshot_idle(void)
    input_driver_state_t *input_st = input_state_get_ptr();
    unsigned had                   = failures;
    float gyro[3], accel[3], rest[3];
-   int seq0, seq1, seq2, seq3, seq4;
+   unsigned n0, n1, n2, n3, n4;
 
    input_driver_set_shader_uses_sensors(false);
    run_loop_frames(3);
-   seq0 = retro_atomic_load_acquire_int(&input_st->sensor_snap_seq);
+   n0 = input_st->sensor_snap.published;
    run_loop_frames(20);
-   seq1 = retro_atomic_load_acquire_int(&input_st->sensor_snap_seq);
-   CHECK(seq1 == seq0,
+   n1 = input_st->sensor_snap.published;
+   CHECK(n1 == n0,
          "sensor snapshot: with no shader reading sensors the poll still publishes one");
 
    input_driver_set_shader_uses_sensors(true);
    run_loop_frames(10);
-   seq2 = retro_atomic_load_acquire_int(&input_st->sensor_snap_seq);
-   CHECK(seq2 >= seq1 + 2 * 10,
+   n2 = input_st->sensor_snap.published;
+   CHECK(n2 >= n1 + 10,
          "sensor snapshot: with a shader reading sensors it is not published every poll");
 
    input_driver_set_shader_uses_sensors(false);
    run_loop_frames(3);
-   seq3 = retro_atomic_load_acquire_int(&input_st->sensor_snap_seq);
+   n3 = input_st->sensor_snap.published;
    run_loop_frames(20);
-   seq4 = retro_atomic_load_acquire_int(&input_st->sensor_snap_seq);
-   CHECK(seq3 == seq2 + 2 && seq4 == seq3,
+   n4 = input_st->sensor_snap.published;
+   CHECK(n3 == n2 + 1 && n4 == n3,
          "sensor snapshot: after the shader went, noughts were not published once and then nothing");
    gyro[0] = accel[0] = 1.0f;
    input_driver_read_sensor_snapshot(gyro, accel, rest);
    CHECK(   gyro[0]  == 0.0f && gyro[1]  == 0.0f && gyro[2]  == 0.0f
          && accel[0] == 0.0f && accel[1] == 0.0f && accel[2] == 0.0f,
          "sensor snapshot: what is left published is not noughts");
-
-   /* Exercise the signed boundary and the full unsigned lap without
-    * waiting for months of sensor polls. */
-   {
-      unsigned edge;
-      for (edge = 0; edge < 2; edge++)
-      {
-         unsigned before = edge ? ~0u - 1u : (~0u >> 1) - 1u;
-         retro_atomic_store_relaxed_int(&input_st->sensor_snap_seq,
-               (int)before);
-         input_driver_set_shader_uses_sensors(true);
-         input_driver_poll();
-         CHECK((unsigned)retro_atomic_load_acquire_int(
-                  &input_st->sensor_snap_seq) == before + 2u,
-               "sensor snapshot: sequence did not wrap after one publication");
-         input_driver_set_shader_uses_sensors(false);
-         input_driver_poll();
-         input_driver_read_sensor_snapshot(gyro, accel, rest);
-         CHECK(   gyro[0] == 0.0f && gyro[1] == 0.0f && gyro[2] == 0.0f
-               && accel[0] == 0.0f && accel[1] == 0.0f && accel[2] == 0.0f,
-               "sensor snapshot: wrapped publication is not readable");
-      }
-   }
 
    if (failures == had)
       printf("[pass] sensor snapshot: published every poll while a shader"
