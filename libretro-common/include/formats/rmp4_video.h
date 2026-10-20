@@ -117,11 +117,9 @@ rmp4_video_stream_t *rmp4_video_stream_open_hw_avail(const uint8_t *buf,
 
 void rmp4_video_stream_close(rmp4_video_stream_t *stream);
 
-/* num_frames is the number of coded video packets, saturating at the
- * pre-scan cap (a few thousand): treat it as "at least this many", an
- * upper bound on displayed frames only below the cap (the stream may
- * carry non-shown frames).  loop_count is always 0: video loops
- * indefinitely. */
+/* num_frames is the number of coded video samples accepted by the
+ * demuxer, an upper bound on displayed frames (some may be non-shown).
+ * loop_count is always 0: video loops indefinitely. */
 void rmp4_video_stream_get_info(const rmp4_video_stream_t *stream,
       unsigned *width, unsigned *height, int *num_frames, int *loop_count);
 
@@ -261,6 +259,15 @@ void rmp4_video_stream_rewind(rmp4_video_stream_t *stream);
  * returns the frame at the position. Returns the position in
  * ms actually reached (the next slot's timestamp), or -1 on a
  * stream without timing. */
+/* Resumable owner-thread seek. Begin selects a presentation target;
+ * each step examines at most 256 key flags or decodes one packet.
+ * Step returns -1 failed, 0 retry (feed the consumed byte frontier if
+ * waiting for input), 1 ready for next(). The target picture is not
+ * consumed. A new begin or rewind cancels an unfinished request. */
+int rmp4_video_stream_seek_begin_ns(rmp4_video_stream_t *stream, int64_t ns);
+int rmp4_video_stream_seek_step(rmp4_video_stream_t *stream,
+      int64_t *position_us);
+
 int64_t rmp4_video_stream_seek_ms(rmp4_video_stream_t *stream, int64_t ms);
 
 /* Seek to a zero-based display slot, clamped to the timeline. The next

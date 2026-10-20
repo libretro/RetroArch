@@ -273,6 +273,23 @@ size_t audio_transfer_buffer_tell(void *data, enum audio_type_enum type);
 bool  audio_transfer_seek(void *data, enum audio_type_enum type,
       uint64_t frame);
 
+/* Exclusive-owner bounded seek preparation, MP4 AAC and WebM Opus/Vorbis. Begin
+ * selects an indexed AAC preroll packet without reading media bytes;
+ * WebM audio rewinds, then steps its header walk and preroll separately. Step
+ * decodes at most one access unit or examines <=256 other-track headers: -1 failure, 0 retry (including input
+ * starvation), 1 positioned for the next read. Feed buffer_tell before
+ * retrying a resident wall. A new successful begin replaces the request.
+ * Do not interleave reads or legacy seek with an unfinished request.
+ * Failure to begin leaves the previous request/decoder untouched. */
+bool audio_transfer_seek_begin(void *data, enum audio_type_enum type,
+      uint64_t frame);
+/* Select the WebM pending PCM format before preparation (AAC is format
+ * independent). The default begin above prepares float PCM. */
+bool audio_transfer_seek_begin_format(void *data, enum audio_type_enum type,
+      uint64_t frame, bool s16);
+
+int audio_transfer_seek_step(void *data, enum audio_type_enum type);
+
 RETRO_END_DECLS
 
 #endif

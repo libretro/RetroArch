@@ -75,6 +75,8 @@ struct audio_mixer_voice { int tag; };
 /* Called by every load stub, which is where a sound is built: the test
  * looks at whether the state lock is held while it is. */
 void (*stub_load_hook)(void) = NULL;
+unsigned stub_sound_destroys = 0;
+bool stub_play_fail = false;
 
 static audio_mixer_sound_t *new_sound_owning(void *data)
 {
@@ -133,6 +135,7 @@ void audio_mixer_destroy(audio_mixer_sound_t *sound)
 {
    if (!sound)
       return;
+   stub_sound_destroys++;
    if (sound->owned_data)
       free(sound->owned_data);
    free(sound);
@@ -144,7 +147,7 @@ audio_mixer_voice_t *audio_mixer_play(audio_mixer_sound_t *sound,
 {
    (void)sound; (void)repeat; (void)volume; (void)resampler_ident;
    (void)quality; (void)stop_cb;
-   return new_voice();
+   return stub_play_fail ? NULL : new_voice();
 }
 
 audio_mixer_voice_t *audio_mixer_play_s16(audio_mixer_sound_t *sound,
@@ -154,7 +157,7 @@ audio_mixer_voice_t *audio_mixer_play_s16(audio_mixer_sound_t *sound,
 {
    (void)sound; (void)repeat; (void)gain; (void)resampler_ident;
    (void)quality; (void)stop_cb;
-   return new_voice();
+   return stub_play_fail ? NULL : new_voice();
 }
 
 void audio_mixer_stop(audio_mixer_voice_t *voice)

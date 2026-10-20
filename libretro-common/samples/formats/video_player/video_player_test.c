@@ -36,6 +36,7 @@
 
 #include <time.h>
 #include <retro_timers.h>
+#include <retro_atomic.h>
 #include <formats/image.h>
 #include <formats/video_player.h>
 
@@ -913,13 +914,197 @@ static void lane_input_wait(bool threaded, bool slots)
    CHECK(!k.begun[0] && !k.begun[1], "input wait: slots released");
 }
 
+typedef struct
+{
+   fake_t *stream;
+   retro_atomic_int_t gate, steps;
+   int restarts;
+   int fail;
+   int64_t target;
+} seek_test_t;
+
+static int seek_step(void *user, int64_t target, bool restart,
+      int64_t *position)
+{
+   seek_test_t *seek = (seek_test_t*)user;
+   if (restart)
+   {
+      seek->restarts++;
+      seek->target = target;
+   }
+   retro_atomic_fetch_add_int(&seek->steps, 1);
+   if (!retro_atomic_load_acquire_int(&seek->gate))
+      return 0;
+   if (seek->fail)
+      return -1;
+   seek->stream->pos = (int)(target / 10000);
+   *position = target;
+   return 1;
+}
+
+static void lane_seek(bool threaded, bool hw)
+{
+   fake_t f;
+   sink_t k;
+   video_player_sink_t s;
+   video_player_t *p;
+   seek_test_t seek;
+   int i, state = VIDEO_PLAYER_PLAYING;
+   int64_t position = -1, now = 1000000;
+   fake_init(&f, 12, 10);
+   sink_init(&k, &s, true);
+   memset(&seek, 0, sizeof(seek));
+   seek.stream = &f;
+   f.direct = true;
+   f.wait_at = 5;
+   f.wait_left = 3;
+   f.hw_can = hw;
+   if (hw) sink_init_hw(&k, &s);
+   k.queue_every = threaded ? 1 : 0;
+   p = video_player_new(&f, IMAGE_TYPE_WEBM, 1, &s,
+         threaded ? 0 : VIDEO_PLAYER_INLINE);
+   CHECK(p != NULL, "seek: allocation");
+   if (!p) return;
+   CHECK(!video_player_seek(p, 0), "seek: handler required");
+   CHECK(video_player_set_seek_handler(p, seek_step, &seek),
+         "seek: handler installation");
+   for (i = 0; i < 1000 && !k.nseen; i++)
+   {
+      video_player_poll(p, now);
+      if (threaded) retro_sleep(1);
+   }
+   CHECK(k.nseen == 1, "seek: initial picture");
+   CHECK(!video_player_set_seek_handler(p, NULL, NULL),
+         "seek: running handler immutable");
+   video_player_set_paused(p, true, now);
+   CHECK(video_player_seek(p, 20000), "seek: first request");
+   if (threaded)
+   {
+      for (i = 0; i < 10; i++)
+      {
+         video_player_poll(p, now);
+         retro_sleep(1);
+      }
+      CHECK(!retro_atomic_load_acquire_int(&seek.steps),
+            "seek: accepted old slot remains sink-owned");
+      CHECK(k.held >= 0, "seek: initial slot held");
+      video_player_slot_released(p, (unsigned)k.held);
+      k.held = -1;
+      k.queue_every = 0;
+   }
+   for (i = 0; i < 1000
+         && !retro_atomic_load_acquire_int(&seek.steps); i++)
+   {
+      video_player_poll(p, now);
+      if (threaded) retro_sleep(1);
+   }
+   CHECK(retro_atomic_load_acquire_int(&seek.steps) > 0,
+         "seek: bounded step ran");
+   CHECK(k.nseen == 1 && !video_player_seek_position(p, &position),
+         "seek: old picture retained, result pending");
+   CHECK(video_player_seek(p, 30000) && video_player_seek(p, 50000),
+         "seek: newest target accepted");
+   retro_atomic_store_release_int(&seek.gate, 1);
+   for (i = 0; i < 1000 && (video_player_seeking(p) || k.nseen < 2); i++)
+   {
+      video_player_poll(p, now);
+      if (threaded) retro_sleep(1);
+   }
+   CHECK(k.nseen == 2 && k.seen[1] == 5 && !k.bad_px,
+         "seek: newest target picture, no stale frame (%d/%d)",
+         k.nseen, k.seen[1]);
+   CHECK(video_player_seek_position(p, &position) && position == 50000,
+         "seek: latest completion position");
+   CHECK(seek.restarts == 2 && seek.target == 50000,
+         "seek: intermediate request coalesced");
+   CHECK(video_player_paused(p), "seek: paused state preserved");
+   for (i = 0; i < 10; i++) video_player_poll(p, now + 1000000);
+   CHECK(k.nseen == 2, "seek: paused seek shows only one picture");
+   video_player_set_paused(p, false, now + 1000000);
+   CHECK(video_player_due(p) == now + 1010000,
+         "seek: resumed picture retains its full duration");
+   for (i = 0; i < 1000 && k.nseen < 3; i++)
+   {
+      video_player_poll(p, now + 1010000);
+      if (threaded) retro_sleep(1);
+   }
+   CHECK(k.nseen == 3 && k.seen[2] == 6, "seek: next frame follows target");
+   video_player_set_paused(p, true, now + 1010000);
+   CHECK(video_player_seek(p, -1), "seek: negative target accepted");
+   for (i = 0; i < 1000 && (video_player_seeking(p) || k.nseen < 4); i++)
+   {
+      video_player_poll(p, now + 1010000);
+      if (threaded) retro_sleep(1);
+   }
+   CHECK(k.nseen == 4 && k.seen[3] == 0
+         && video_player_seek_position(p, &position) && !position,
+         "seek: target clamped to zero");
+   seek.fail = 1;
+   CHECK(video_player_seek(p, 40000), "seek: failing request accepted");
+   for (i = 0; i < 1000 && state != VIDEO_PLAYER_ENDED; i++)
+   {
+      state = video_player_poll(p, now + 1010000);
+      if (threaded) retro_sleep(1);
+   }
+   CHECK(state == VIDEO_PLAYER_ENDED && k.nseen == 4,
+         "seek: failure retains the last picture");
+   CHECK(!video_player_seek(p, 0), "seek: failed player stopped");
+   video_player_free(p);
+   if (hw)
+      CHECK(f.hw_made == k.hw_taken + f.hw_abandoned,
+            "seek: each GPU lease taken or abandoned exactly once");
+}
+
+static void lane_seek_stop(bool threaded)
+{
+   fake_t f;
+   sink_t k;
+   video_player_sink_t s;
+   video_player_t *p;
+   seek_test_t seek;
+   int i, steps;
+   fake_init(&f, 12, 10);
+   sink_init(&k, &s, true);
+   memset(&seek, 0, sizeof(seek));
+   seek.stream = &f;
+   p = video_player_new(&f, IMAGE_TYPE_WEBM, 1, &s,
+         threaded ? 0 : VIDEO_PLAYER_INLINE);
+   CHECK(p != NULL, "seek stop: allocation");
+   if (!p) return;
+   video_player_set_seek_handler(p, seek_step, &seek);
+   video_player_set_paused(p, true, 1000000);
+   CHECK(video_player_seek(p, 40000), "seek stop: before first poll");
+   for (i = 0; i < 1000
+         && !retro_atomic_load_acquire_int(&seek.steps); i++)
+   {
+      video_player_poll(p, 1000000);
+      if (threaded) retro_sleep(1);
+   }
+   CHECK(!k.nseen && video_player_seeking(p),
+         "seek stop: no picture from incomplete initial seek");
+   while (!video_player_stop(p)) retro_sleep(1);
+   CHECK(!video_player_seek(p, 0) && !video_player_seeking(p),
+         "seek stop: cannot resume stopped request");
+   steps = retro_atomic_load_acquire_int(&seek.steps);
+   video_player_free(p);
+   video_player_worker_deinit();
+   CHECK(retro_atomic_load_acquire_int(&seek.steps) == steps,
+         "seek stop: callback not run after stream released");
+}
+
 int main(void)
 {
    lane_input_wait(false, false);
    lane_input_wait(false, true);
+   lane_seek(false, false);
+   lane_seek(false, true);
+   lane_seek_stop(false);
    lane_pause(false);
 #ifdef HAVE_THREADS
    lane_input_wait(true, true);
+   lane_seek(true, false);
+   lane_seek(true, true);
+   lane_seek_stop(true);
    lane_pause(true);
 #endif
    lane_inline_release();

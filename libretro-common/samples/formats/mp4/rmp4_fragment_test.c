@@ -158,6 +158,80 @@ static int read_all(rmp4_t *m, const buf_t *w, const char *name,
    return n;
 }
 
+static void test_sample_cursor(rmp4_t *m, const buf_t *w, size_t payload)
+{
+   rmp4_packet pkt;
+   rmp4_set_avail(m, 0);
+   CHECK(rmp4_track_sample_key(m, 0, 0) == 1,
+         "sample cursor: key metadata without resident media");
+   CHECK(rmp4_track_sample_key(m, -1, 0) == -1
+         && rmp4_track_sample_key(m, 0, 2) == -1,
+         "sample cursor: invalid key query");
+   CHECK(rmp4_select_track_sample(m, 0, 1), "sample cursor: select second");
+   CHECK(rmp4_consumed(m) == payload + 4,
+         "sample cursor: feeder anchor follows selected sample");
+   CHECK(rmp4_read_packet(m, &pkt) == RMP4_READ_AGAIN,
+         "sample cursor: read respects byte wall");
+   CHECK(!rmp4_select_track_sample(m, -1, 0)
+         && !rmp4_select_track_sample(m, 0, 2)
+         && rmp4_consumed(m) == payload + 4,
+         "sample cursor: invalid selection leaves position intact");
+   rmp4_set_avail(m, w->n);
+   CHECK(rmp4_read_packet(m, &pkt) == 1
+         && pkt.data == w->b + payload + 4 && pkt.size == 4,
+         "sample cursor: retry reads the selected sample");
+   CHECK(rmp4_read_packet(m, &pkt) == 0, "sample cursor: selected track ends");
+   rmp4_rewind(m);
+   CHECK(rmp4_consumed(m) == payload
+         && rmp4_read_packet(m, &pkt) == 1 && pkt.data == w->b + payload,
+         "sample cursor: rewind restores beginning");
+}
+
+#ifdef RMP4_TEST_ALLOCATOR
+static void test_track_selection(void)
+{
+   static const uint8_t bytes[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+   uint64_t offsets0[2] = {0, 4}, offsets1[2] = {2, 6};
+   uint32_t sizes[2] = {2, 2};
+   int64_t pts[2] = {0, 1000000};
+   uint8_t keys[2] = {1, 0};
+   rmp4_t *m = (rmp4_t*)calloc(1, sizeof(*m));
+   rmp4_packet packet;
+   int i;
+   CHECK(m != NULL, "track selection: allocation");
+   if (!m) return;
+   m->buf = bytes;
+   m->len = m->avail = sizeof(bytes);
+   m->num_tracks = 2;
+   for (i = 0; i < 2; i++)
+   {
+      m->trk[i].off = i ? offsets1 : offsets0;
+      m->trk[i].size = sizes;
+      m->trk[i].pts = pts;
+      m->trk[i].key = keys;
+      m->trk[i].count = 2;
+   }
+   CHECK(rmp4_track_sample_key(m, 0, 1) == 0,
+         "track selection: non-key metadata");
+   CHECK(rmp4_select_track_sample(m, 0, 1)
+         && rmp4_read_packet(m, &packet) == 1
+         && packet.track == 0 && packet.data == bytes + 4
+         && rmp4_read_packet(m, &packet) == 0,
+         "track selection: other track parked at end");
+   rmp4_rewind(m);
+   for (i = 0; i < 4; i++)
+      CHECK(rmp4_read_packet(m, &packet) == 1
+            && packet.track == (i & 1) && packet.data == bytes + i * 2,
+            "track selection: rewind restores both tracks");
+   rmp4_rewind(m);
+   offsets0[1] = (uint64_t)-1;
+   CHECK(!rmp4_select_track_sample(m, 0, 1)
+         && rmp4_read_packet(m, &packet) == 1 && packet.data == bytes,
+         "track selection: malformed offset leaves cursors unchanged");
+   free(m);
+}
+#endif
+
 static void test_valid(void)
 {
    buf_t w;
@@ -195,6 +269,7 @@ static void test_valid(void)
    n = read_all(m, &w, "valid", &first);
    CHECK(n == 2, "valid: %d packets, not 2", n);
    CHECK(first == w.b + mdat_payload, "valid: the first packet is the mdat's");
+   test_sample_cursor(m, &w, mdat_payload);
    rmp4_close(m);
    printf("valid: ok\n");
 }
@@ -260,6 +335,9 @@ static void test_countless(void)
 int main(void)
 {
    test_valid();
+#ifdef RMP4_TEST_ALLOCATOR
+   test_track_selection();
+#endif
    test_wrap();
    test_countless();
    test_private("avc1", "avcC", RMP4_CODEC_H264);

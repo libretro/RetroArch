@@ -14,9 +14,11 @@ the pad pushes them past 4 GiB.
 Needs ffmpeg for the seed clip; everything after that is box surgery.
 """
 import os
+import json
 import struct
 import subprocess
 import sys
+from webm_audio_padding import pad as pad_webm_audio, insert_void
 
 CONTAINERS = {b'moov', b'trak', b'mdia', b'minf', b'stbl', b'edts', b'udta'}
 
@@ -66,7 +68,7 @@ def boxes(path):
     return buf, {t: (p, s, h) for (p, s, t, h) in parse(buf, 0, len(buf))}
 
 
-def audio_large_packet(src, dst):
+def audio_large_packet(src, dst, packet_bytes=3 * 1024 * 1024):
     """Audio-only test: a video sample larger than the old audio window."""
     buf, bx = boxes(src)
     mp, ms, mh = bx[b'mdat']
@@ -86,7 +88,7 @@ def audio_large_packet(src, dst):
 
     find(vp + vh, vp + vs)
     cut = first[0] + first[1]
-    pad = 3 * 1024 * 1024 - first[1]
+    pad = packet_bytes - first[1]
 
     def grow(start, end, video=False):
         parts = []
@@ -338,7 +340,7 @@ def main():
             'still_lossless.webp', 'anim_lossless.png',
             'anim_dispose_prev.png', 'trailing_large.mp4',
               'trailing_huge.mp4', 'leading_huge.mp4', 'trailing_small.mp4',
-              'audio_large_packet.m4a',
+              'audio_large_packet.m4a', 'audio_seek_gap.m4a',
             'vp9_tiles.webm', 'hevc_wpp.mp4', 'bframes_h264.mp4',
             'bframes_hevc.mp4', 'hevc_nowpp.mp4', 'mbaff_h264.mp4')):
         print('fixtures present, not rebuilt')
@@ -426,12 +428,57 @@ def main():
         '-x264-params', 'tff=1:b-adapt=0',
         '-pix_fmt', 'yuv420p', '-an',
         j('mbaff_h264.mp4')])
+    # Prepared WebM audio: both codecs, including pause-before-adoption.
+    for codec, name in [('libopus', 'audio_seek_opus.weba'),
+                        ('libvorbis', 'audio_seek_vorbis.weba')]:
+        subprocess.check_call([
+            'ffmpeg', '-v', 'error', '-y', '-f', 'lavfi', '-i',
+            'sine=frequency=440:sample_rate=48000:duration=16',
+            '-ac', '2', '-c:a', codec, '-f', 'webm',
+            '-cluster_time_limit', '1000', j(name)])
+
+    # Interleaved blocks beyond the audio window's permanent head. The
+    # padded video payload is only for demux/audio residency acceptance.
+    for codec in ['opus', 'vorbis']:
+        seed_path = j('audio_seek_' + codec + '_seed.webm')
+        subprocess.check_call([
+            'ffmpeg', '-v', 'error', '-y', '-f', 'lavfi', '-i',
+            'testsrc2=size=64x48:rate=12:duration=4',
+            '-f', 'lavfi', '-i',
+            'sine=frequency=440:sample_rate=48000:duration=4',
+            '-ac', '2', '-c:v', 'libvpx-vp9', '-g', '12', '-auto-alt-ref', '0',
+            '-c:a', 'lib' + codec, seed_path])
+        pad_webm_audio(seed_path, j('audio_seek_' + codec + '_window.webm'))
+        os.unlink(seed_path)
+
+    # Legal padding gaps both inside and beyond the permanent head. Noise
+    # keeps picture forty's coded input outside that head, so the second
+    # fixture exercises an actual moving-window packet pin.
+    noise_seed = j('video_gap_seed.webm')
+    subprocess.check_call([
+        'ffmpeg', '-v', 'error', '-y', '-f', 'lavfi', '-i',
+        'testsrc2=size=640x360:rate=30:duration=3',
+        '-vf', 'noise=alls=100:allf=t+u', '-c:v', 'libvpx',
+        '-deadline', 'realtime', '-cpu-used', '8', '-qmin', '1', '-qmax', '1',
+        '-b:v', '100M', '-g', '30', '-auto-alt-ref', '0', '-an', noise_seed])
+    packets = json.loads(subprocess.check_output([
+        'ffprobe', '-v', 'error', '-select_streams', 'v:0',
+        '-show_entries', 'packet=pos,size', '-of', 'json', noise_seed],
+        text=True))['packets']
+    assert int(packets[39]['pos']) > 4 * 1024 * 1024
+    assert max(int(packet['size']) for packet in packets) <= 640 * 360 * 4
+    insert_void(noise_seed, j('video_gap_head.webm'), after_picture=2)
+    insert_void(noise_seed, j('video_gap_pin.webm'), after_picture=40)
+    os.unlink(noise_seed)
+
     seed(j('seed_small.mp4'), 3, 640, 360, '300k')
     seed(j('seed_4k.mp4'), 3, 3840, 2160, '400k')
 
     # trailing moov, small and fully resident
     os.replace(j('seed_small.mp4'), j('trailing_small.mp4'))
     audio_large_packet(j('trailing_small.mp4'), j('audio_large_packet.m4a'))
+    audio_large_packet(j('trailing_small.mp4'), j('audio_seek_gap.m4a'),
+                       32 * 1024 * 1024)
     # trailing moov well past any plausible head
     subprocess.check_call(['ffmpeg', '-v', 'error', '-y', '-stream_loop',
                            '60', '-i', j('seed_4k.mp4'), '-c', 'copy',

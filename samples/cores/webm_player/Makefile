@@ -105,7 +105,7 @@ $(AV1_HW_TARGET): webm_av1_hw_test.c $(ROOT)/cores/libretro-media/media_core.c \
       $(COMMON)/samples/formats/av1/rav1_webm_fixture.h $(AV1_HW_SOURCES) \
       $(COMMON)/formats/av1/rav1_hw.c $(COMMON)/include/formats/rav1_hw_stream.h
 	@mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) -DHAVE_RAV1 -o $@ $< $(AV1_HW_SOURCES) $(COMMON)/formats/av1/rav1_hw.c $(LDFLAGS) $(LDLIBS)
+	$(CC) $(CFLAGS) -DHAVE_RAV1 -DRWEBM_VIDEO_MAX_TS=2 -o $@ $< $(AV1_HW_SOURCES) $(COMMON)/formats/av1/rav1_hw.c $(LDFLAGS) $(LDLIBS)
 
 RESIDENCY_TARGET := webm_residency_test$(EXE)
 RESIDENCY_SOURCES := $(filter-out webm_player_test.c $(ROOT)/cores/libretro-media/media_core.c,$(SOURCES))
@@ -113,9 +113,38 @@ RESIDENCY_OBJS := $(call sample_objs,$(RESIDENCY_SOURCES:.c=.o))
 $(RESIDENCY_TARGET): webm_residency_test.c $(ROOT)/cores/libretro-media/media_core.c $(RESIDENCY_OBJS)
 	$(CC) $(CFLAGS) -o $@ webm_residency_test.c $(RESIDENCY_OBJS) $(LDFLAGS) $(LDLIBS)
 
+ifeq ($(AUDIO),1)
+VORBIS_SEEK_TARGET := vorbis_seek_test$(EXE)
+$(VORBIS_SEEK_TARGET): vorbis_seek_test.c opus_seek_test.c $(RESIDENCY_OBJS)
+	$(CC) $(CFLAGS) -o $@ $< $(RESIDENCY_OBJS) $(LDFLAGS) $(LDLIBS)
+OPUS_SEEK_TARGET := opus_seek_test$(EXE)
+$(OPUS_SEEK_TARGET): opus_seek_test.c $(RESIDENCY_OBJS)
+	$(CC) $(CFLAGS) -o $@ $< $(RESIDENCY_OBJS) $(LDFLAGS) $(LDLIBS)
+endif
+
+WEBM_TIMING_TARGET := webm_timing_test$(EXE)
+$(WEBM_TIMING_TARGET): webm_timing_test.c $(RESIDENCY_OBJS)
+	$(CC) $(CFLAGS) -o $@ $< $(RESIDENCY_OBJS) $(LDFLAGS) $(LDLIBS)
+
+WEBM_SEEK_TARGET := webm_seek_test$(EXE)
+$(WEBM_SEEK_TARGET): webm_seek_test.c $(RESIDENCY_OBJS)
+	$(CC) $(CFLAGS) -o $@ $< $(RESIDENCY_OBJS) $(LDFLAGS) $(LDLIBS)
+
+ifeq ($(MP4),1)
+MP4_SEEK_TARGET := mp4_seek_test$(EXE)
+$(MP4_SEEK_TARGET): mp4_seek_test.c $(RESIDENCY_OBJS)
+	$(CC) $(CFLAGS) -o $@ $< $(RESIDENCY_OBJS) $(LDFLAGS) $(LDLIBS)
+endif
+
+# Force the bounded timing cursor through ordinary short lease fixtures.
+HW_TIMING_OBJ := $(SAMPLE_OBJDIR)/rwebm_video_timing_prefix.o
+$(HW_TIMING_OBJ): $(COMMON)/formats/webm/rwebm_video.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -DRWEBM_VIDEO_MAX_TS=2 -c -o $@ $<
+VP9_HW_OBJS := $(filter-out %/formats/webm/rwebm_video.o,$(RESIDENCY_OBJS)) $(HW_TIMING_OBJ)
 VP9_HW_TARGET := webm_vp9_hw_test$(EXE)
-$(VP9_HW_TARGET): webm_vp9_hw_test.c $(ROOT)/cores/libretro-media/media_core.c $(RESIDENCY_OBJS)
-	$(CC) $(CFLAGS) -o $@ webm_vp9_hw_test.c $(RESIDENCY_OBJS) $(LDFLAGS) $(LDLIBS)
+$(VP9_HW_TARGET): webm_vp9_hw_test.c $(ROOT)/cores/libretro-media/media_core.c $(VP9_HW_OBJS)
+	$(CC) $(CFLAGS) -o $@ webm_vp9_hw_test.c $(VP9_HW_OBJS) $(LDFLAGS) $(LDLIBS)
 
 DEVICE_TARGET := webm_vp9_device_test$(EXE)
 ifeq ($(EXE),.exe)
@@ -135,7 +164,13 @@ $(DEVICE_TARGET): webm_vp9_device_test.c
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
 endif
 
-check: $(TARGET) $(HW_TARGET) $(AV1_HW_TARGET) $(RESIDENCY_TARGET) $(VP9_HW_TARGET) $(DEVICE_TARGET) $(AUDIO_START_TARGET)
+check: $(WEBM_TIMING_TARGET) $(VORBIS_SEEK_TARGET) $(OPUS_SEEK_TARGET) $(WEBM_SEEK_TARGET) $(MP4_SEEK_TARGET) $(TARGET) $(HW_TARGET) $(AV1_HW_TARGET) $(RESIDENCY_TARGET) $(VP9_HW_TARGET) $(DEVICE_TARGET) $(AUDIO_START_TARGET)
+ifeq ($(AUDIO),1)
+	$(RUNNER) ./$(VORBIS_SEEK_TARGET) fixtures/vp9-vorbis.webm fixtures/vp9-seek-vorbis.webm
+	$(RUNNER) ./$(OPUS_SEEK_TARGET) fixtures/vp8-opus.webm fixtures/vp8-seek-opus.webm
+endif
+	$(RUNNER) ./$(WEBM_TIMING_TARGET) fixtures/vp8-long-timing.webm
+	$(RUNNER) ./$(WEBM_SEEK_TARGET) fixtures/vp8-opus.webm fixtures/vp9-vorbis.webm fixtures/vp8-seek-opus.webm fixtures/vp9-seek-vorbis.webm fixtures/vp9-seek-live.webm
 	$(RUNNER) ./$(VP9_HW_TARGET)
 	$(RUNNER) ./$(DEVICE_TARGET)
 	$(RUNNER) ./$(RESIDENCY_TARGET)
@@ -147,10 +182,16 @@ ifeq ($(MP4)$(AUDIO),11)
 	$(RUNNER) ./$(AUDIO_START_TARGET) fixtures/hevc-aac44-audio-gap.mp4 44100
 endif
 ifeq ($(MP4),1)
+	$(RUNNER) ./$(MP4_SEEK_TARGET) fixtures/h264-seek-aac.mp4 fixtures/hevc-seek-aac.mp4 fixtures/h264-long-seek.mp4
 	$(RUNNER) ./$(HW_TARGET)
 endif
 
 clean:
+	rm -f webm_timing_test webm_timing_test.exe
+	rm -f vorbis_seek_test vorbis_seek_test.exe
+	rm -f opus_seek_test opus_seek_test.exe
+	rm -f webm_seek_test webm_seek_test.exe
+	rm -f mp4_seek_test mp4_seek_test.exe
 	rm -f webm_audio_start_test webm_audio_start_test.exe webm_av1_hw_test webm_av1_hw_test.exe av1-core-fixture.mp4 av1-core-fixture.webm
 	rm -rf $(SAMPLE_OBJDIR)
 	rm -f webm_player_test.o $(TARGET) webm_hw_test webm_hw_test.exe webm_residency_test webm_residency_test.exe webm_vp9_hw_test webm_vp9_hw_test.exe webm_vp9_device_test webm_vp9_device_test.exe

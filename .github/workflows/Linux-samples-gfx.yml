@@ -2130,6 +2130,15 @@ jobs:
           [ "$rc" = 0 ]
           make clean
 
+      - name: Shared media transport controls (C89, ASan, UBSan, TSan)
+        shell: bash
+        working-directory: samples/gfx/media_controls
+        run: |
+          set -eu
+          make -B check THREADS=0
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1 make -B check SANITIZER=address,undefined
+          TSAN_OPTIONS=halt_on_error=1 make -B check SANITIZER=thread
+
       - name: Build and run gfx_thumbnail_preview_test (ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/gfx/gfx_thumbnail_preview
@@ -2303,8 +2312,14 @@ jobs:
              ./preview_audio_oracle_test fixtures/trailing_small.mp4 fixtures/trailing_large.mp4
           echo "[pass] preview_audio_oracle_test (ASan)"
           ./preview_audio_feed_test fixtures/audio_large_packet.m4a
-          TRANSPORT_PAUSE=1 ./gfx_thumbnail_preview_test fixtures/trailing_small.mp4
-          TRANSPORT_PAUSE=1 ./gfx_thumbnail_preview_test_threaded fixtures/trailing_small.mp4
+          ./preview_audio_feed_test --prepared-only fixtures/audio_seek_gap.m4a
+          ./preview_audio_feed_test --prepared-webm fixtures/audio_seek_opus.weba fixtures/audio_seek_vorbis.weba fixtures/audio_seek_opus_window.webm fixtures/audio_seek_vorbis_window.webm
+          CPU_GAP=1 ./gfx_thumbnail_preview_test fixtures/video_gap_head.webm
+          CPU_GAP=1 ./gfx_thumbnail_preview_test_threaded fixtures/video_gap_head.webm
+          CPU_GAP=1 CPU_GAP_FRAMES=48 ./gfx_thumbnail_preview_test fixtures/video_gap_pin.webm
+          CPU_GAP=1 CPU_GAP_FRAMES=48 ./gfx_thumbnail_preview_test_threaded fixtures/video_gap_pin.webm
+          CPU_MEDIA=1 TRANSPORT_PAUSE=1 TRANSPORT_SEEK=1 ./gfx_thumbnail_preview_test fixtures/trailing_small.mp4
+          CPU_MEDIA=1 TRANSPORT_PAUSE=1 TRANSPORT_SEEK=1 ./gfx_thumbnail_preview_test_threaded fixtures/trailing_small.mp4
           # clean keeps fixtures/ by design; regenerate anyway so the
           # step cannot silently run against an empty glob.
           make clean SANITIZER=thread && make -j$(nproc) all SANITIZER=thread
@@ -2318,6 +2333,7 @@ jobs:
           THREADS=4 FRAMES=180 PACE_HZ=60 PACE_MAX_STALL_MS=1500 NOAUDIO=1 timeout 300 \
              ./gfx_thumbnail_preview_test_threaded fixtures/bframes_h264.mp4 fixtures/bframes_hevc.mp4
           echo "[pass] gfx_thumbnail_preview_test_threaded (TSan, 4 threads)"
+          CPU_MEDIA=1 TRANSPORT_PAUSE=1 TRANSPORT_SEEK=1 TSAN_OPTIONS=halt_on_error=1 timeout 120 ./gfx_thumbnail_preview_test_threaded fixtures/trailing_small.mp4
           # The pool and the tile-column threads under TSan: the
           # shared frame buffers and contexts are written in disjoint
           # columns, the counts merged after the join.

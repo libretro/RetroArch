@@ -47,6 +47,7 @@
       (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS) || defined(HAVE_RAAC))
 #define GFX_ANIM_PREVIEW_AUDIO 1
 #include <audio/audio_mixer.h>
+#include <formats/audio.h>
 #include "../audio/audio_driver.h"
 /* The mixer streams the audio track and decodes on the flush, so no
  * PCM is buffered up front and the clip is not length-capped. */
@@ -363,6 +364,9 @@ static gfx_anim_preview_t *gfx_anim_preview_open_internal(const char *path,
    p->base       = base;
    p->len        = blen;
    p->type       = type;
+   p->seekable   = image_transfer_anim_stream_seekable(stream, type);
+   p->timeline_start_us = image_transfer_anim_stream_start_ns(stream, type) / 1000;
+   if (p->timeline_start_us < 0) p->timeline_start_us = 0;
    p->windowed   = reserved;
    p->audio_slot = -1;
    p->path       = strldup(path, strlen(path) + 1);
@@ -440,7 +444,7 @@ size_t gfx_anim_preview_resident_bytes(const gfx_anim_preview_t *p)
 
 bool gfx_anim_preview_feed(gfx_anim_preview_t *p)
 {
-   size_t tell, floor_off, anchor;
+   size_t tell, floor_off, anchor, pin_lo = 0, pin_hi = 0;
    if (!p || !p->stream)
       return false;
    if (!p->windowed || !p->dt)
@@ -452,7 +456,9 @@ bool gfx_anim_preview_feed(gfx_anim_preview_t *p)
     * touching the range the decoder is reading; the margin exceeds the
     * largest single frame's packet by orders of magnitude. Anchor at
     * the media floor until the decoder has consumed anything. */
-   tell      = image_transfer_anim_stream_consumed(p->stream, p->type);
+   image_transfer_anim_stream_pin_span(p->stream, p->type, &pin_lo, &pin_hi);
+   if (!data_transfer_window_pin(p->dt, pin_lo, pin_hi)) return false;
+   tell      = image_transfer_anim_stream_feed_frontier(p->stream, p->type);
    floor_off = image_transfer_anim_stream_media_floor(p->stream, p->type);
    anchor    = (tell > 0) ? tell : floor_off;
    if (anchor > 0)
@@ -463,6 +469,15 @@ bool gfx_anim_preview_feed(gfx_anim_preview_t *p)
       size_t hi;
       size_t res_hi = 0;
       size_t span_lo = 0, span_hi = 0;
+      bool demand_jump = false;
+      if (p->type == IMAGE_TYPE_WEBM && (anchor > p->feed_res_hi
+            || anchor < p->feed_tell))
+      {
+         data_transfer_window_rewind(p->dt);
+         data_transfer_window_rebase(p->dt, anchor);
+         p->feed_tell = p->feed_res_hi = anchor;
+         demand_jump = true;
+      }
       if (anchor > floor_off && anchor - floor_off < margin)
          margin = anchor - floor_off;
       /* A frame larger than the lookahead (a lossless 4K WEBP or APNG
@@ -516,6 +531,7 @@ bool gfx_anim_preview_feed(gfx_anim_preview_t *p)
          else if (p->feed_res_hi <= anchor)
             budget = 0;
       }
+      if (demand_jump) budget = GFX_ANIM_PREVIEW_FEED_BUDGET;
       p->feed_tell = anchor;
       hi = (ahead > (size_t)-1 - anchor) ? (size_t)-1 : anchor + ahead;
       if (!data_transfer_window_feed_budget(p->dt, anchor,
@@ -658,23 +674,14 @@ static size_t gfx_anim_preview_audio_lookahead(const gfx_anim_preview_t *p)
    return p->feed_ahead > GFX_ANIM_PREVIEW_AUDIO_LOOKAHEAD
       ? p->feed_ahead : GFX_ANIM_PREVIEW_AUDIO_LOOKAHEAD;
 }
-#endif
-
-void gfx_anim_preview_audio_begin(gfx_anim_preview_t *p)
+/* Exclusive-owner source open shared by initial playback and worker
+ * preparation. The sound and session each retain their own window ref. */
+static gfx_anim_preview_audio_win_t *gfx_anim_preview_audio_source(
+      const gfx_anim_preview_t *p, size_t *initial_hi, size_t *feed_hi)
 {
-#if defined(GFX_ANIM_PREVIEW_AUDIO)
    gfx_anim_preview_audio_win_t *w;
-   const uint8_t *base = NULL;
-   size_t blen = 0, floor_off, keep, island_hi = 0, prime_hi, ahead;
-
-   if (!p || p->paused || !p->stream || !p->path || !*p->path)
-      return;
-   if (   (p->type != IMAGE_TYPE_WEBM && p->type != IMAGE_TYPE_MP4)
-       || !config_get_ptr()->bools.menu_thumbnail_preview_audio)
-      return;
-   if (p->audio_dt)
-      return;                   /* already streaming */
-
+   const uint8_t *base;
+   size_t blen, floor_off, keep, island_hi = 0, prime_hi, ahead;
    /* A second window over the same file, independent of the video one:
     * the two decoders run on different threads and each needs its own
     * committed range. The head must permanently cover the container's
@@ -689,12 +696,12 @@ void gfx_anim_preview_audio_begin(gfx_anim_preview_t *p)
       keep = GFX_ANIM_PREVIEW_AUDIO_HEAD_MAX;
 
    if (!(w = (gfx_anim_preview_audio_win_t*)calloc(1, sizeof(*w))))
-      return;
+      return NULL;
    retro_atomic_store_relaxed_int(&w->refs, 1);
    if (!(w->dt = data_transfer_open_window(p->path, keep)))
    {
       free(w);
-      return;
+      return NULL;
    }
    if (p->type == IMAGE_TYPE_MP4)
    {
@@ -726,7 +733,7 @@ void gfx_anim_preview_audio_begin(gfx_anim_preview_t *p)
                if (!data_transfer_window_grow_keep(w->dt, need))
                {
                   gfx_anim_preview_audio_win_release(w);
-                  return;
+                  return NULL;
                }
                keep = need;
             }
@@ -736,7 +743,7 @@ void gfx_anim_preview_audio_begin(gfx_anim_preview_t *p)
             if (!data_transfer_window_ensure(w->dt, meta_lo, meta_end))
             {
                gfx_anim_preview_audio_win_release(w);
-               return;
+               return NULL;
             }
             island_hi = meta_end;
          }
@@ -745,7 +752,7 @@ void gfx_anim_preview_audio_begin(gfx_anim_preview_t *p)
    if (!(base = data_transfer_window_base(w->dt, &blen)) || !blen)
    {
       gfx_anim_preview_audio_win_release(w);
-      return;
+      return NULL;
    }
    ahead = gfx_anim_preview_audio_lookahead(p);
    prime_hi = floor_off > (size_t)-1 - ahead
@@ -758,9 +765,308 @@ void gfx_anim_preview_audio_begin(gfx_anim_preview_t *p)
    if (!data_transfer_window_extend(w->dt, prime_hi))
    {
       gfx_anim_preview_audio_win_release(w);
-      return;
+      return NULL;
    }
-   p->audio_hi = island_hi ? blen : prime_hi;
+   *initial_hi = island_hi ? blen : prime_hi;
+   *feed_hi = prime_hi;
+   return w;
+
+}
+#endif
+
+/* No mixer or session state is touched while this object is prepared.
+ * The published decoder subsequently belongs to its sound/voice. */
+struct gfx_anim_preview_audio_prepared
+{
+#ifdef GFX_ANIM_PREVIEW_AUDIO
+   gfx_anim_preview_audio_win_t *window;
+   void *transfer;
+   audio_mixer_sound_t *sound;
+   size_t hi, tell, ahead, feed_anchor;
+   enum audio_type_enum type;
+   enum audio_mixer_type mixer_type;
+   unsigned mix_rate;
+   bool s16;
+#else
+   unsigned unused;
+#endif
+};
+
+void gfx_anim_preview_audio_prepare_free(gfx_anim_preview_audio_prepared_t *a)
+{
+   if (!a) return;
+#ifdef GFX_ANIM_PREVIEW_AUDIO
+   audio_mixer_destroy(a->sound);
+   if (a->transfer) audio_transfer_free(a->transfer, a->type);
+   gfx_anim_preview_audio_win_release(a->window);
+#endif
+   free(a);
+}
+
+gfx_anim_preview_audio_prepared_t *gfx_anim_preview_audio_prepare_new(
+      const gfx_anim_preview_t *p, int64_t target_us, unsigned mix_rate, bool s16)
+{
+#ifdef GFX_ANIM_PREVIEW_AUDIO
+   gfx_anim_preview_audio_prepared_t *a;
+   const uint8_t *base;
+   size_t len, initial_hi, feed_hi;
+   unsigned rate;
+   uint64_t seconds, frame;
+   if (!p || (p->type != IMAGE_TYPE_MP4 && p->type != IMAGE_TYPE_WEBM) || !p->stream || !p->path
+         || target_us < 0 || !mix_rate)
+      return NULL;
+   if (!(a = (gfx_anim_preview_audio_prepared_t*)calloc(1, sizeof(*a))))
+      return NULL;
+   a->mix_rate = mix_rate;
+   a->s16 = s16;
+   a->ahead = gfx_anim_preview_audio_lookahead(p);
+   if (!(a->window = gfx_anim_preview_audio_source(p, &initial_hi, &feed_hi)))
+      goto failed;
+   base = data_transfer_window_base(a->window->dt, &len);
+   a->type = p->type == IMAGE_TYPE_WEBM
+      ? audio_transfer_webm_audio_type(base, initial_hi) : AUDIO_TYPE_AAC;
+   a->mixer_type = p->type == IMAGE_TYPE_WEBM
+      ? AUDIO_MIXER_TYPE_WEBA : AUDIO_MIXER_TYPE_M4A;
+   if (a->type != AUDIO_TYPE_AAC && a->type != AUDIO_TYPE_OPUS
+         && a->type != AUDIO_TYPE_VORBIS) goto failed;
+   if (!(a->transfer = audio_transfer_new(a->type))) goto failed;
+   audio_transfer_set_buffer_ptr(a->transfer, a->type, (void*)base, len);
+   audio_transfer_set_output_rate(a->transfer, a->type, mix_rate);
+   audio_transfer_set_avail(a->transfer, a->type, initial_hi);
+   if (!audio_transfer_start(a->transfer, a->type)
+         || !audio_transfer_info(a->transfer, a->type, NULL, &rate, NULL)
+         || !rate) goto failed;
+   seconds = (uint64_t)target_us / 1000000;
+   if (seconds > (uint64_t)-1 / rate) goto failed;
+   frame = seconds * rate;
+   seconds = ((uint64_t)target_us % 1000000) * rate / 1000000;
+   if (frame > (uint64_t)-1 - seconds) goto failed;
+   frame += seconds;
+   if (!audio_transfer_seek_begin_format(a->transfer, a->type, frame, s16))
+      goto failed;
+   a->hi = feed_hi;
+   a->tell = audio_transfer_buffer_tell(a->transfer, a->type);
+   return a;
+failed:
+   gfx_anim_preview_audio_prepare_free(a);
+#else
+   (void)p; (void)target_us; (void)mix_rate; (void)s16;
+#endif
+   return NULL;
+}
+
+int gfx_anim_preview_audio_prepare_step(gfx_anim_preview_audio_prepared_t *a)
+{
+#ifdef GFX_ANIM_PREVIEW_AUDIO
+   size_t len, hi, res_hi, anchor;
+   const uint8_t *base;
+   int result;
+   if (!a || !a->window) return -1;
+   if (a->sound) return a->transfer ? -1 : 1;
+   if (!a->transfer) return -1;
+   base = data_transfer_window_base(a->window->dt, &len);
+   anchor = audio_transfer_buffer_tell(a->transfer, a->type);
+   /* A far seek must not make feed_budget fill the gap from the old
+    * frontier, or take its unbudgeted catch-up arm. Reserve the target
+    * region and commit only this bounded prefix before normal feeding. */
+   if (anchor > a->hi || anchor < a->feed_anchor)
+      data_transfer_window_rewind(a->window->dt);
+   data_transfer_window_rebase(a->window->dt, anchor);
+   hi = anchor > (size_t)-1 - GFX_ANIM_PREVIEW_AUDIO_FEED_BUDGET
+      ? len : anchor + GFX_ANIM_PREVIEW_AUDIO_FEED_BUDGET;
+   if (hi > len) hi = len;
+   if (!data_transfer_window_extend(a->window->dt, hi)
+         || !data_transfer_window_feed_budget(a->window->dt, anchor,
+            a->ahead, GFX_ANIM_PREVIEW_AUDIO_MARGIN,
+            GFX_ANIM_PREVIEW_AUDIO_FEED_BUDGET, &res_hi))
+      return -1;
+   a->hi = res_hi;
+   a->feed_anchor = anchor;
+   audio_transfer_set_avail(a->transfer, a->type, a->hi);
+   result = audio_transfer_seek_step(a->transfer, a->type);
+   a->tell = audio_transfer_buffer_tell(a->transfer, a->type);
+   if (result != 1) return result;
+   a->sound = a->mixer_type == AUDIO_MIXER_TYPE_WEBA
+      ? audio_mixer_load_weba_avail((void*)base, len, a->hi)
+      : audio_mixer_load_m4a((void*)base, len);
+   if (!a->sound) return -1;
+   retro_atomic_fetch_add_int(&a->window->refs, 1);
+   audio_mixer_sound_set_data_owner(a->sound, a->window,
+         gfx_anim_preview_audio_win_release);
+   audio_mixer_sound_set_avail(a->sound, a->hi);
+   if (!audio_mixer_sound_set_prepared_transfer(a->sound, a->transfer,
+            a->mix_rate, a->s16))
+      return -1;
+   a->transfer = NULL;
+   return 1;
+#else
+   (void)a;
+   return -1;
+#endif
+}
+
+bool gfx_anim_preview_audio_adopt(gfx_anim_preview_t *p,
+      gfx_anim_preview_audio_prepared_t *a)
+{
+   bool ok = false;
+#ifdef GFX_ANIM_PREVIEW_AUDIO
+   if (p && a && a->sound && !a->transfer)
+   {
+      audio_mixer_stream_params_t params;
+      int slot = -1;
+      gfx_anim_preview_audio_stop_slot(p);
+      memset(&params, 0, sizeof(params));
+      params.basename = (char*)GFX_ANIM_PREVIEW_AUDIO_NAME;
+      params.out_slot = &slot;
+      params.volume = 1.0f;
+      params.slot_selection_type = AUDIO_MIXER_SLOT_SELECTION_AUTOMATIC;
+      params.stream_type = AUDIO_STREAM_TYPE_SYSTEM;
+      params.type = a->mixer_type;
+      params.state = AUDIO_STREAM_STATE_PLAYING_LOOPED;
+      audio_mixer_sound_set_initial_paused(a->sound, p->paused);
+      ok = audio_driver_mixer_add_prepared_stream(&params, a->sound,
+            &p->audio_voice, &p->audio_serial);
+      a->sound = NULL;
+      if (ok)
+      {
+         p->audio_owner = a->window;
+         p->audio_dt = a->window->dt;
+         p->audio_hi = a->hi;
+         p->audio_tell = a->tell;
+         p->audio_slot = slot;
+         a->window = NULL;
+      }
+   }
+#else
+   (void)p;
+#endif
+   gfx_anim_preview_audio_prepare_free(a);
+   return ok;
+}
+
+bool gfx_anim_preview_seek_request(gfx_anim_preview_t *p,
+      unsigned mix_rate, bool s16)
+{
+   if (!p || !p->seekable || mix_rate > 0x3fffffffU)
+      return false;
+   retro_atomic_store_release_int(&p->seek_audio_format,
+         (int)(mix_rate | (s16 ? 0x40000000U : 0)));
+   p->seeking = true;
+   gfx_anim_preview_set_paused(p, p->paused);
+   return true;
+}
+
+static bool gfx_anim_preview_seek_feed(gfx_anim_preview_t *p)
+{
+   size_t anchor, hi, res_hi;
+   if (!p->windowed || !p->dt) return true;
+   anchor = image_transfer_anim_stream_consumed(p->stream, p->type);
+   if (!anchor) anchor = image_transfer_anim_stream_media_floor(p->stream, p->type);
+   if (anchor > p->seek_feed_hi || anchor < p->seek_feed_anchor)
+      data_transfer_window_rewind(p->dt);
+   data_transfer_window_rebase(p->dt, anchor);
+   hi = anchor > (size_t)-1 - GFX_ANIM_PREVIEW_FEED_BUDGET
+      ? p->len : anchor + GFX_ANIM_PREVIEW_FEED_BUDGET;
+   if (hi > p->len) hi = p->len;
+   if (!data_transfer_window_extend(p->dt, hi)
+         || !data_transfer_window_feed_budget(p->dt, anchor, p->feed_ahead,
+            p->feed_back, GFX_ANIM_PREVIEW_FEED_BUDGET, &res_hi))
+      return false;
+   p->seek_feed_hi = p->feed_res_hi = res_hi;
+   p->seek_feed_anchor = p->feed_tell = anchor;
+   image_transfer_anim_stream_set_avail(p->stream, p->type, res_hi);
+   {
+      size_t resident = data_transfer_window_resident(p->dt);
+      retro_atomic_store_release_int(&p->resident_seen,
+            resident > 0x7fffffffU ? 0x7fffffff : (int)resident);
+   }
+   return true;
+}
+
+int gfx_anim_preview_seek_step(void *user, int64_t target_us,
+      bool restart, int64_t *position_us)
+{
+   gfx_anim_preview_t *p = (gfx_anim_preview_t*)user;
+   int result;
+   if (!p || !position_us) return -1;
+   if (restart)
+   {
+      const int64_t maximum = (int64_t)((~(uint64_t)0) >> 1);
+      if (target_us < 0) target_us = 0;
+      target_us = target_us > maximum - p->timeline_start_us
+         ? maximum : target_us + p->timeline_start_us;
+      gfx_anim_preview_audio_prepare_free(p->seek_audio);
+      p->seek_audio = NULL;
+      p->seek_format = (unsigned)retro_atomic_load_acquire_int(&p->seek_audio_format);
+      p->seek_phase = 1;
+      p->seek_feed_hi = p->seek_feed_anchor = 0;
+      if (!image_transfer_anim_stream_seek_begin(p->stream, p->type, target_us))
+         return -1;
+      if (p->windowed && !data_transfer_window_pin(p->dt, 0, 0)) return -1;
+   }
+   if (p->seek_phase == 1)
+   {
+      if (!gfx_anim_preview_seek_feed(p)) return -1;
+      result = image_transfer_anim_stream_seek_step(p->stream, p->type,
+            &p->seek_video_us);
+      if (result != 1) return result;
+      p->seek_video_us = p->seek_video_us > p->timeline_start_us
+         ? p->seek_video_us - p->timeline_start_us : 0;
+      if (p->seek_format & 0x3fffffffU)
+         p->seek_audio = gfx_anim_preview_audio_prepare_new(p, p->seek_video_us,
+               p->seek_format & 0x3fffffffU, (p->seek_format & 0x40000000U) != 0);
+      p->seek_phase = 2;
+      return 0;
+   }
+   if (p->seek_phase != 2) return -1;
+   if (p->seek_audio)
+   {
+      result = gfx_anim_preview_audio_prepare_step(p->seek_audio);
+      if (!result) return 0;
+      if (result < 0)
+      {
+         /* A missing/failed audio track must not discard valid video. */
+         gfx_anim_preview_audio_prepare_free(p->seek_audio);
+         p->seek_audio = NULL;
+      }
+   }
+   *position_us = p->seek_video_us;
+   return 1;
+}
+
+void gfx_anim_preview_seek_commit(gfx_anim_preview_t *p, int64_t position_us)
+{
+   gfx_anim_preview_audio_prepared_t *audio;
+   if (!p || !p->seeking) return;
+   audio = p->seek_audio;
+   p->seek_audio = NULL;
+   gfx_anim_preview_audio_stop(p);
+   if (audio) gfx_anim_preview_audio_adopt(p, audio);
+   p->seeking = false;
+   p->media_origin_us = position_us;
+   p->media_clock_us = p->clock_us;
+   p->media_clock_valid = true;
+   gfx_anim_preview_set_paused(p, p->paused);
+}
+
+void gfx_anim_preview_audio_begin(gfx_anim_preview_t *p)
+{
+#if defined(GFX_ANIM_PREVIEW_AUDIO)
+   gfx_anim_preview_audio_win_t *w;
+   const uint8_t *base = NULL;
+   size_t blen = 0, prime_hi;
+
+   if (!p || p->paused || p->seeking || !p->stream || !p->path || !*p->path)
+      return;
+   if (   (p->type != IMAGE_TYPE_WEBM && p->type != IMAGE_TYPE_MP4)
+       || !config_get_ptr()->bools.menu_thumbnail_preview_audio)
+      return;
+   if (p->audio_dt)
+      return;                   /* already streaming */
+
+   if (!(w = gfx_anim_preview_audio_source(p, &p->audio_hi, &prime_hi)))
+      return;
+   base = data_transfer_window_base(w->dt, &blen);
 
    {
       audio_mixer_stream_params_t params;
@@ -797,8 +1103,7 @@ void gfx_anim_preview_audio_begin(gfx_anim_preview_t *p)
       p->audio_owner = w;
       p->audio_dt   = w->dt;
       p->audio_slot = out_slot;
-      if (island_hi)
-         p->audio_hi = prime_hi;
+      p->audio_hi = prime_hi;
       /* Every windowed stream decodes under a bound from its first
        * read: without one the decoder trusts the demuxer's offsets
        * outright, and the first lap's end shows why that cannot be -
@@ -905,7 +1210,7 @@ void gfx_anim_preview_set_paused(gfx_anim_preview_t *p, bool paused)
       const char *name = audio_driver_mixer_get_stream_name(
             (unsigned)p->audio_slot);
       if (name && string_is_equal(name, GFX_ANIM_PREVIEW_AUDIO_NAME))
-         audio_driver_mixer_stream_set_paused((unsigned)p->audio_slot, paused);
+         audio_driver_mixer_stream_set_paused((unsigned)p->audio_slot, paused || p->seeking);
    }
 #endif
 }
@@ -954,7 +1259,7 @@ int64_t gfx_anim_preview_clock(gfx_anim_preview_t *p, int64_t wall_us)
       advance = seconds > maximum / 1000000 ? maximum
          : seconds * 1000000;
       advance = advance > maximum - tail ? maximum : advance + tail;
-      if (!p->paused)
+      if (!p->paused && !p->seeking)
          p->clock_fraction = (unsigned)(fraction % rate);
       p->clock_frames = frames;
       p->clock_rate = rate;
@@ -964,7 +1269,7 @@ int64_t gfx_anim_preview_clock(gfx_anim_preview_t *p, int64_t wall_us)
       p->clock_fraction = 0;
    if (advance > maximum)
       advance = maximum;
-   if (!p->paused)
+   if (!p->paused && !p->seeking)
       p->clock_us = p->clock_us > (int64_t)(maximum - advance)
          ? (int64_t)maximum : p->clock_us + (int64_t)advance;
    if (wall_us > p->clock_wall_us)
@@ -999,6 +1304,9 @@ gfx_anim_preview_t *gfx_anim_preview_wrap(void *stream,
    p->base       = base;
    p->len        = len;
    p->type       = type;
+   p->seekable   = image_transfer_anim_stream_seekable(stream, type);
+   p->timeline_start_us = image_transfer_anim_stream_start_ns(stream, type) / 1000;
+   if (p->timeline_start_us < 0) p->timeline_start_us = 0;
    p->windowed   = windowed;
    p->audio_slot = -1;
    p->path       = path ? strldup(path, strlen(path) + 1) : NULL;
@@ -1027,6 +1335,7 @@ void gfx_anim_preview_release(gfx_anim_preview_t *p)
    if (!p)
       return;
    gfx_anim_preview_audio_stop(p);
+   gfx_anim_preview_audio_prepare_free(p->seek_audio);
    free(p->path);
    free(p);
 }
@@ -1038,6 +1347,7 @@ void gfx_anim_preview_close(gfx_anim_preview_t *p)
    if (!p)
       return;
    gfx_anim_preview_audio_stop(p);
+   gfx_anim_preview_audio_prepare_free(p->seek_audio);
    if (p->stream)
       image_transfer_anim_stream_free(p->stream, p->type);
    if (p->dt)

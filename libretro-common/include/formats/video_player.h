@@ -171,6 +171,24 @@ bool video_player_paused(const video_player_t *p);
  * (a QUEUED picture may still be in flight to the graphics driver). */
 bool video_player_has_presented(const video_player_t *p);
 
+/* One bounded seek step on the decoding thread: -1 failed, 0 needs
+ * another step, 1 positioned for the next frame. restart begins a new
+ * request, including replacing an unfinished one. The callback owns
+ * stream/window preparation; it must not wait. */
+typedef int (*video_player_seek_cb_t)(void *user, int64_t target_us,
+      bool restart, int64_t *position_us);
+
+/* Install before the first poll. The handler/user outlive the player. */
+bool video_player_set_seek_handler(video_player_t *p,
+      video_player_seek_cb_t handler, void *user);
+/* Polling-thread command: latest request wins, negative targets clamp
+ * to zero. No more old frames are offered to the sink; an already
+ * accepted frame may still be in flight to its driver. */
+bool video_player_seek(video_player_t *p, int64_t target_us);
+bool video_player_seeking(const video_player_t *p);
+/* Last completed request, false while a newer request is pending. */
+bool video_player_seek_position(const video_player_t *p, int64_t *position_us);
+
 /* When the next frame is due on that clock; 0 at once, INT64_MAX while
  * paused. A paused poll returns PLAYING without presenting or feeding. */
 int64_t video_player_due(const video_player_t *p);

@@ -135,6 +135,17 @@ void audio_mixer_sound_set_end_granule(audio_mixer_sound_t *sound,
  * decoder's container header parse at open.  0 = fully resident. */
 void audio_mixer_sound_set_avail(audio_mixer_sound_t *sound, size_t avail);
 
+/* Exclusive sound owner: attach a started audio_transfer context for
+ * this sound's codec, already positioned by a worker. Success takes
+ * ownership. The next matching play consumes it once; output-rate or
+ * float/S16 changes refuse the play without consuming it. Keep its
+ * borrowed source alive through the sound's usual source ownership. */
+bool audio_mixer_sound_set_prepared_transfer(audio_mixer_sound_t *sound,
+      void *transfer, unsigned mix_rate, bool s16);
+/* Applied before a new voice becomes visible to the mixer. */
+void audio_mixer_sound_set_initial_paused(audio_mixer_sound_t *sound,
+      bool paused);
+
 /* Set a live stream voice's resident prefix as the window slides.
  * Takes no lock: the mix applies it before its next decode.  A bound
  * set after audio_mixer_voice_buffer_tell belongs to the position
@@ -159,7 +170,7 @@ void audio_mixer_stop(audio_mixer_voice_t* voice);
 /* Retain the exact decoder/resampler/PCM position while paused. Applied
  * at the next mix block boundary; an already mixing block may finish.
  * The caller owns this live voice until stopped, as for gain/volume.
- * NULL is harmless. A newly played voice always starts unpaused. */
+ * NULL is harmless. A new voice uses the sound's initial pause setting. */
 void audio_mixer_voice_set_paused(audio_mixer_voice_t *voice, bool paused);
 
 /* PCM frames contributed to the mix, at the output sample rate. This

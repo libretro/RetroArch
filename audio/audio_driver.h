@@ -1327,6 +1327,10 @@ bool *audio_get_bool_ptr(enum audio_action action);
 #ifdef HAVE_AUDIOMIXER
 audio_mixer_stream_t *audio_driver_mixer_get_stream(unsigned i);
 
+/* Main-thread transport setup: snapshot initialized mixer output format.
+ * False with rate0/s16false when audio is unavailable. */
+bool audio_driver_mixer_prepare_format(unsigned *rate, bool *s16);
+
 bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params);
 
 /* As add_stream, with a clock binding captured before the existing
@@ -1335,6 +1339,13 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params);
  * are NULL/0 when no live voice was created. Ownership is unchanged. */
 bool audio_driver_mixer_add_stream_clocked(audio_mixer_stream_params_t *params,
       audio_mixer_voice_t **voice, size_t *serial);
+
+/* Install a worker-prepared sound without reopening its decoder. Takes
+ * sound ownership on every outcome; params buffer/owner fields are ignored.
+ * Only playing states are accepted. Outputs are cleared on failure. Call
+ * on the main thread, as for add_stream_clocked. */
+bool audio_driver_mixer_add_prepared_stream(audio_mixer_stream_params_t *params,
+      audio_mixer_sound_t *sound, audio_mixer_voice_t **voice, size_t *serial);
 
 /* Session teardown: remove only the play captured at add_stream_clocked.
  * Uses the existing stream-removal state lock, on the main thread. */

@@ -4,6 +4,8 @@
 #include <string.h>
 #include <audio/audio_mixer.h>
 #include <formats/rmp4.h>
+#include <formats/rwebm.h>
+#include <formats/audio.h>
 #include <formats/data_transfer.h>
 #include "../../../gfx/gfx_anim_preview.h"
 #include "../../../audio/audio_driver.h"
@@ -20,11 +22,11 @@ settings_t *config_get_ptr(void) { return &settings; }
 
 size_t image_transfer_anim_stream_media_floor(void *stream,
       enum image_type_enum type)
-{ (void)type; return rmp4_media_floor((rmp4_t*)stream); }
+{ return type == IMAGE_TYPE_WEBM ? rwebm_media_floor((rwebm_t*)stream) : rmp4_media_floor((rmp4_t*)stream); }
 
 int64_t image_transfer_anim_stream_duration_ns(void *stream,
       enum image_type_enum type)
-{ (void)type; return rmp4_duration_ns((rmp4_t*)stream); }
+{ return type == IMAGE_TYPE_WEBM ? rwebm_duration_ns((rwebm_t*)stream) : rmp4_duration_ns((rmp4_t*)stream); }
 
 void image_transfer_anim_stream_get_info(void *s, enum image_type_enum t,
       unsigned *w, unsigned *h, int *n, int *loops)
@@ -46,6 +48,11 @@ void image_transfer_anim_stream_free(void *s, enum image_type_enum t)
 { (void)s; (void)t; abort(); }
 size_t image_transfer_anim_stream_consumed(void *s, enum image_type_enum t)
 { (void)s; (void)t; abort(); return 0; }
+size_t image_transfer_anim_stream_feed_frontier(void *s, enum image_type_enum t)
+{ (void)s; (void)t; abort(); return 0; }
+void image_transfer_anim_stream_pin_span(void *s, enum image_type_enum t,
+      size_t *lo, size_t *hi)
+{ (void)s; (void)t; (void)lo; (void)hi; abort(); }
 void image_transfer_anim_stream_next_span(void *s, enum image_type_enum t,
       size_t *lo, size_t *hi)
 { (void)s; (void)t; (void)lo; (void)hi; abort(); }
@@ -54,6 +61,14 @@ void image_transfer_anim_stream_set_avail(void *s, enum image_type_enum t, size_
 const uint32_t *image_transfer_anim_stream_next(void *s,
       enum image_type_enum t, int *ms)
 { (void)s; (void)t; (void)ms; abort(); return NULL; }
+int64_t image_transfer_anim_stream_start_ns(void *s, enum image_type_enum t)
+{ (void)s; (void)t; return 0; }
+bool image_transfer_anim_stream_seekable(void *s, enum image_type_enum t)
+{ return s && (t == IMAGE_TYPE_MP4 || t == IMAGE_TYPE_WEBM); }
+bool image_transfer_anim_stream_seek_begin(void *s, enum image_type_enum t,
+      int64_t us) { (void)s; (void)t; (void)us; abort(); return false; }
+int image_transfer_anim_stream_seek_step(void *s, enum image_type_enum t,
+      int64_t *us) { (void)s; (void)t; (void)us; abort(); return -1; }
 void image_transfer_anim_stream_rewind(void *s, enum image_type_enum t)
 { (void)s; (void)t; abort(); }
 
@@ -97,6 +112,28 @@ bool audio_driver_mixer_add_stream_clocked(audio_mixer_stream_params_t *params,
    if (ok && audio_mixer_voice_clock(voice, NULL, NULL, serial))
       *out_voice = voice;
    return ok;
+}
+
+static bool prepared_s16;
+bool audio_driver_mixer_add_prepared_stream(audio_mixer_stream_params_t *p,
+      audio_mixer_sound_t *prepared, audio_mixer_voice_t **out_voice, size_t *serial)
+{
+   *out_voice = NULL;
+   *serial = 0;
+   sound = prepared;
+   voice = prepared_s16 ? audio_mixer_play_s16(sound, true,
+         AUDIO_MIXER_GAIN_UNITY, "sinc", RESAMPLER_QUALITY_DONTCARE, stopped)
+      : audio_mixer_play(sound, true, p->volume, "sinc",
+            RESAMPLER_QUALITY_DONTCARE, stopped);
+   *p->out_slot = voice ? 0 : -1;
+   if (voice && audio_mixer_voice_clock(voice, NULL, NULL, serial))
+   {
+      *out_voice = voice;
+      return true;
+   }
+   audio_mixer_destroy(sound);
+   sound = NULL;
+   return false;
 }
 
 void audio_driver_mixer_remove_stream_clocked(unsigned slot,
@@ -271,9 +308,293 @@ static int run_one(const char *path, unsigned rate)
    return failed;
 }
 
+static int prepared_session(const char *path, bool s16, bool webm)
+{
+   FILE *file = fopen(path, "rb");
+   uint8_t *data = NULL;
+   void *reference = NULL;
+   float *expected = NULL;
+   void *actual = NULL;
+   gfx_anim_preview_t *p = NULL;
+   gfx_anim_preview_audio_prepared_t *a = NULL;
+   void *demux = NULL;
+   enum audio_type_enum type = AUDIO_TYPE_AAC;
+   enum image_type_enum container = webm ? IMAGE_TYPE_WEBM : IMAGE_TYPE_MP4;
+   size_t size, got, frames = 123, resident = 0;
+   bool reserved = false;
+   unsigned rate, channels, i, steps;
+   long length;
+   int failed = 1, result = 0;
+   double peak = 0.0;
+   if (!file) return 1;
+   if (fseek(file, 0, SEEK_END) || (length = ftell(file)) <= 0
+         || fseek(file, 0, SEEK_SET)) goto done;
+   size = (size_t)length;
+   data = (uint8_t*)malloc(size);
+   if (!data || fread(data, 1, size, file) != size) goto done;
+   if (webm) type = audio_transfer_webm_audio_type(data, size);
+   reference = audio_transfer_new(type);
+   if (!reference) goto done;
+   audio_transfer_set_buffer_ptr(reference, type, data, size);
+   if (!audio_transfer_start(reference, type)
+         || !audio_transfer_info(reference, type, &channels, &rate, NULL)
+         || !channels || channels > 2) goto done;
+   expected = (float*)calloc(64 * channels, sizeof(float));
+   actual = calloc(64 * 2, sizeof(float));
+   if (!expected || !actual) goto done;
+   if (!audio_transfer_seek(reference, type, (uint64_t)rate * 5 / 4)
+         || audio_transfer_read_f32(reference, type, expected, 64, &got) < 0
+         || got != 64) goto done;
+   demux = webm ? (void*)rwebm_open_memory(data, size) : (void*)rmp4_open_memory(data, size);
+   if (!demux) goto done;
+   p = gfx_anim_preview_wrap(demux, container, NULL, data, size, false, path);
+   if (!p) goto done;
+   audio_mixer_init(rate);
+   prepared_s16 = s16;
+   gfx_anim_preview_set_paused(p, true);
+   if (gfx_anim_preview_clock(p, 1000) != 1000) goto mixer_done;
+   a = gfx_anim_preview_audio_prepare_new(p, 1250000, rate, s16);
+   if (!a) goto mixer_done;
+   /* Cancel an unpublished preparation, then prepare its replacement. */
+   if (gfx_anim_preview_audio_prepare_step(a) < 0) goto mixer_done;
+   gfx_anim_preview_audio_prepare_free(a);
+   a = gfx_anim_preview_audio_prepare_new(p, 1250000, rate, s16);
+   if (!a) goto mixer_done;
+   for (steps = 0; steps < 10000 && !result; steps++)
+      result = gfx_anim_preview_audio_prepare_step(a);
+   if (result != 1) goto mixer_done;
+   result = gfx_anim_preview_audio_adopt(p, a);
+   a = NULL;
+   if (!result || !p->audio_voice || !p->audio_owner) goto mixer_done;
+   resident = data_transfer_window_resident(p->audio_dt);
+   reserved = data_transfer_window_is_reserved(p->audio_dt);
+   if (size > 16 * 1024 * 1024 && data_transfer_reserve_supported()
+         && (!reserved || resident >= size / 2))
+      goto mixer_done;
+   if (s16) audio_mixer_mix_s16((int16_t*)actual, 64, AUDIO_MIXER_GAIN_UNITY, false);
+   else audio_mixer_mix((float*)actual, 64, 1.0f, false);
+   for (i = 0; i < 64 * 2; i++)
+      if (s16 ? ((int16_t*)actual)[i] != 0 : ((float*)actual)[i] != 0.0f)
+         goto mixer_done;
+   if (!audio_mixer_voice_clock(p->audio_voice, &frames, NULL, NULL) || frames
+         || gfx_anim_preview_clock(p, 9999) != 1000) goto mixer_done;
+   gfx_anim_preview_set_paused(p, false);
+   if (!gfx_anim_preview_audio_feed(p)) goto mixer_done;
+   if (s16) audio_mixer_mix_s16((int16_t*)actual, 64, AUDIO_MIXER_GAIN_UNITY, false);
+   else audio_mixer_mix((float*)actual, 64, 1.0f, false);
+   for (i = 0; i < 64 * 2; i++)
+   {
+      float value = s16 ? (float)((int16_t*)actual)[i] / 32768.0f : ((float*)actual)[i];
+      double error = (double)value - expected[(i / 2) * channels
+         + (channels == 2 ? i % 2 : 0)];
+      if (error < 0) error = -error;
+      if (error > peak) peak = error;
+   }
+   failed = peak > (webm ? 0.0001 : s16 ? 0.00004 : 0.0000001);
+ mixer_done:
+   gfx_anim_preview_audio_prepare_free(a); a = NULL;
+   gfx_anim_preview_release(p); p = NULL;
+   audio_mixer_done();
+ done:
+   gfx_anim_preview_audio_prepare_free(a);
+   if (p) gfx_anim_preview_release(p);
+   if (reference) audio_transfer_free(reference, type);
+   if (demux) { if (webm) rwebm_close((rwebm_t*)demux); else rmp4_close((rmp4_t*)demux); }
+   free(data); free(expected); free(actual);
+   fclose(file);
+   printf("prepared session: s16=%u reserved=%u resident=%lu peak=%.9f %s\n",
+         s16, reserved, (unsigned long)resident, peak,
+         failed ? "FAIL" : "PASS");
+   return failed;
+}
+
+static int bounded_aac_seek(const char *path)
+{
+   FILE *file = fopen(path, "rb");
+   uint8_t *data = NULL;
+   void *linear = NULL, *seek = NULL, *legacy = NULL;
+   float *reference = NULL, *actual = NULL, *old = NULL;
+   uint64_t total = 0, target;
+   unsigned channels = 0, rate, pass, steps, i;
+   size_t size, got, decoded = 0, frontier;
+   long length;
+   int failed = 1, result;
+   double peak = 0.0, old_peak = 0.0, equivalent = 0.0;
+   if (!file) return 1;
+   if (fseek(file, 0, SEEK_END) || (length = ftell(file)) <= 0
+         || fseek(file, 0, SEEK_SET)) goto done;
+   size = (size_t)length;
+   data = (uint8_t*)malloc(size);
+   if (!data || fread(data, 1, size, file) != size) goto done;
+   linear = audio_transfer_new(AUDIO_TYPE_AAC);
+   seek = audio_transfer_new(AUDIO_TYPE_AAC);
+   legacy = audio_transfer_new(AUDIO_TYPE_AAC);
+   if (!linear || !seek || !legacy) goto done;
+   audio_transfer_set_buffer_ptr(linear, AUDIO_TYPE_AAC, data, size);
+   audio_transfer_set_buffer_ptr(seek, AUDIO_TYPE_AAC, data, size);
+   audio_transfer_set_buffer_ptr(legacy, AUDIO_TYPE_AAC, data, size);
+   if (!audio_transfer_start(legacy, AUDIO_TYPE_AAC)
+         || !audio_transfer_start(linear, AUDIO_TYPE_AAC)
+         || !audio_transfer_start(seek, AUDIO_TYPE_AAC)
+         || !audio_transfer_info(linear, AUDIO_TYPE_AAC, &channels, &rate, &total)
+         || !channels || channels > 8 || total < 1024 || total > 1000000)
+      goto done;
+   reference = (float*)calloc((size_t)total * channels, sizeof(float));
+   actual = (float*)calloc(64 * channels, sizeof(float));
+   old = (float*)calloc(64 * channels, sizeof(float));
+   if (!reference || !actual || !old) goto done;
+   while (decoded < (size_t)total)
+   {
+      got = 0;
+      result = audio_transfer_read_f32(linear, AUDIO_TYPE_AAC,
+            reference + decoded * channels, (size_t)total - decoded, &got);
+      if (result < 0 || !got) goto done;
+      decoded += got;
+   }
+   for (pass = 0; pass < 4; pass++)
+   {
+      target = pass == 0 ? total / 2 + 13 : pass == 1 ? total - 100
+         : pass == 2 ? 113 : total / 3;
+      audio_transfer_set_avail(seek, AUDIO_TYPE_AAC, size);
+      if (!audio_transfer_seek_begin(seek, AUDIO_TYPE_AAC, target)) goto done;
+      frontier = audio_transfer_buffer_tell(seek, AUDIO_TYPE_AAC);
+      /* Begin selected the target preroll without reading its bytes.
+       * A zero-residency retry must preserve that exact frontier. */
+      for (i = 0; i < 10; i++)
+         if (audio_transfer_seek_step(seek, AUDIO_TYPE_AAC) != 0
+               || audio_transfer_buffer_tell(seek, AUDIO_TYPE_AAC) != frontier)
+            goto done;
+      if (audio_transfer_seek_begin(seek, AUDIO_TYPE_AAC, (uint64_t)-1)) goto done;
+      if (pass == 3)
+      {
+         target = 113;
+         if (!audio_transfer_seek_begin(seek, AUDIO_TYPE_AAC, target)) goto done;
+      }
+      audio_transfer_set_avail(seek, AUDIO_TYPE_AAC, size);
+      result = 0;
+      for (steps = 0; steps < 8 && result == 0; steps++)
+         result = audio_transfer_seek_step(seek, AUDIO_TYPE_AAC);
+      if (result != 1) goto done;
+      got = 0;
+      if (audio_transfer_read_f32(seek, AUDIO_TYPE_AAC, actual, 64, &got) < 0
+            || got != 64) goto done;
+      if (!audio_transfer_seek(legacy, AUDIO_TYPE_AAC, target)
+            || audio_transfer_read_f32(legacy, AUDIO_TYPE_AAC, old, 64, &got) < 0
+            || got != 64) goto done;
+      for (i = 0; i < 64 * channels; i++)
+      {
+         double error = (double)actual[i] - reference[(size_t)target * channels + i];
+         if (error < 0) error = -error;
+         if (error > peak) peak = error;
+         error = (double)old[i] - reference[(size_t)target * channels + i];
+         if (error < 0) error = -error;
+         if (error > old_peak) old_peak = error;
+         error = (double)old[i] - actual[i];
+         if (error < 0) error = -error;
+         if (error > equivalent) equivalent = error;
+      }
+   }
+   /* Lossy AAC seeks reset PNS state; the existing synchronous seek
+    * has the same documented limitation. Check absolute full-scale
+    * error below -60dB for both against a sequential decode. */
+   failed = peak > 0.001 || old_peak > 0.001 || equivalent > 0.0000001;
+ done:
+   if (legacy) audio_transfer_free(legacy, AUDIO_TYPE_AAC);
+   if (linear) audio_transfer_free(linear, AUDIO_TYPE_AAC);
+   if (seek) audio_transfer_free(seek, AUDIO_TYPE_AAC);
+   free(data); free(reference); free(actual); free(old);
+   fclose(file);
+   printf("bounded AAC seek: peak=%.9f legacy=%.9f difference=%.9f %s\n", peak, old_peak, equivalent, failed ? "FAIL" : "PASS");
+   return failed;
+}
+
+static int prepared_aac(const char *path, bool s16)
+{
+   FILE *file = fopen(path, "rb");
+   uint8_t *data = NULL, *copy = NULL;
+   void *transfer = NULL, *scratch = NULL, *reference = NULL, *actual = NULL;
+   audio_mixer_sound_t *first = NULL, *prepared = NULL;
+   audio_mixer_voice_t *playing = NULL;
+   unsigned channels = 0, rate = 0, active = 0, j;
+   size_t got = 0, size, bytes = s16 ? sizeof(int16_t) : sizeof(float);
+   long length;
+   int failed = 1, result;
+   if (!file) return 1;
+   if (fseek(file, 0, SEEK_END) || (length = ftell(file)) <= 0
+         || fseek(file, 0, SEEK_SET)) goto done;
+   size = (size_t)length;
+   data = (uint8_t*)malloc(size);
+   copy = (uint8_t*)malloc(size);
+   if (!data || !copy || fread(data, 1, size, file) != size) goto done;
+   memcpy(copy, data, size);
+   transfer = audio_transfer_new(AUDIO_TYPE_AAC);
+   if (!transfer) goto done;
+   audio_transfer_set_buffer_ptr(transfer, AUDIO_TYPE_AAC, copy, size);
+   if (!audio_transfer_start(transfer, AUDIO_TYPE_AAC)
+         || !audio_transfer_info(transfer, AUDIO_TYPE_AAC, &channels, &rate, NULL)
+         || !channels || channels > 8 || !rate) goto done;
+   scratch = calloc(113 * channels, bytes);
+   reference = calloc((113 + 64) * 2, bytes);
+   actual = calloc(64 * 2, bytes);
+   if (!scratch || !reference || !actual) goto done;
+   result = s16 ? audio_transfer_read_s16(transfer, AUDIO_TYPE_AAC,
+         (int16_t*)scratch, 113, &got)
+      : audio_transfer_read_f32(transfer, AUDIO_TYPE_AAC,
+            (float*)scratch, 113, &got);
+   if (result < 0 || got != 113) goto done;
+   audio_mixer_init(rate);
+   first = audio_mixer_load_m4a(data, size);
+   if (!first) goto mixer_done;
+   data = NULL;
+   prepared = audio_mixer_load_m4a(copy, size);
+   if (!prepared) goto mixer_done;
+   copy = NULL;
+   if (!audio_mixer_sound_set_prepared_transfer(prepared, transfer, rate, s16))
+      goto mixer_done;
+   transfer = NULL;
+   playing = s16 ? audio_mixer_play_s16(first, false, AUDIO_MIXER_GAIN_UNITY,
+         "sinc", RESAMPLER_QUALITY_NORMAL, NULL)
+      : audio_mixer_play(first, false, 1.0f, "sinc",
+            RESAMPLER_QUALITY_NORMAL, NULL);
+   if (!playing) goto mixer_done;
+   if (s16) audio_mixer_mix_s16((int16_t*)reference, 113 + 64,
+         AUDIO_MIXER_GAIN_UNITY, false);
+   else audio_mixer_mix((float*)reference, 113 + 64, 1.0f, false);
+   audio_mixer_stop(playing);
+   playing = s16 ? audio_mixer_play_s16(prepared, false, AUDIO_MIXER_GAIN_UNITY,
+         "sinc", RESAMPLER_QUALITY_NORMAL, NULL)
+      : audio_mixer_play(prepared, false, 1.0f, "sinc",
+            RESAMPLER_QUALITY_NORMAL, NULL);
+   if (!playing) goto mixer_done;
+   if (s16) audio_mixer_mix_s16((int16_t*)actual, 64, AUDIO_MIXER_GAIN_UNITY, false);
+   else audio_mixer_mix((float*)actual, 64, 1.0f, false);
+   failed = memcmp(actual, (const uint8_t*)reference + 113 * 2 * bytes,
+         64 * 2 * bytes) != 0;
+   for (j = 0; j < 64 * 2; j++)
+      if (s16 ? ((int16_t*)actual)[j] != 0 : ((float*)actual)[j] != 0.0f)
+         active++;
+   failed |= !active;
+mixer_done:
+   if (playing) audio_mixer_stop(playing);
+   /* The sound keeps the decoder's borrowed source alive. */
+   if (transfer) { audio_transfer_free(transfer, AUDIO_TYPE_AAC); transfer = NULL; }
+   audio_mixer_destroy(prepared);
+   audio_mixer_destroy(first);
+   audio_mixer_done();
+done:
+   if (transfer) audio_transfer_free(transfer, AUDIO_TYPE_AAC);
+   fclose(file);
+   free(data); free(copy); free(scratch); free(reference); free(actual);
+   printf("prepared AAC: s16=%u sample=113 %s\n", s16, failed ? "FAIL" : "PASS");
+   return failed;
+}
+
 int main(int argc, char **argv)
 {
-   int i, failed = argc < 2;
+   bool webm_only = argc > 2 && !strcmp(argv[1], "--prepared-webm");
+   bool prepared_only = webm_only || (argc > 2 && !strcmp(argv[1], "--prepared-only"));
+   int first_arg = prepared_only ? 2 : 1;
+   int i, failed = argc <= first_arg;
    gfx_anim_preview_t fallback;
    memset(&fallback, 0, sizeof(fallback));
    fallback.audio_slot = -1;
@@ -286,8 +607,18 @@ int main(int argc, char **argv)
          || gfx_anim_preview_clock(&fallback, 9000) != 2000) failed = 1;
    gfx_anim_preview_set_paused(&fallback, false);
    if (gfx_anim_preview_clock(&fallback, 10000) != 3000) failed = 1;
-   for (i = 1; i < argc; i++)
+   for (i = first_arg; i < argc; i++)
    {
+      failed |= prepared_session(argv[i], false, webm_only);
+      failed |= prepared_session(argv[i], true, webm_only);
+      if (webm_only) continue;
+      failed |= bounded_aac_seek(argv[i]);
+      failed |= prepared_aac(argv[i], false);
+      failed |= prepared_aac(argv[i], true);
+   }
+   for (i = first_arg; i < argc; i++)
+   {
+      if (prepared_only) continue;
       failed |= run_one(argv[i], 48000);
       failed |= run_one(argv[i], 44100);
    }

@@ -1274,6 +1274,9 @@ DRIVERS
 #include "../gfx/gfx_surface.c"
 #include "../gfx/gfx_surface_player.c"
 #include "../gfx/gfx_thumbnail.c"
+#include "../gfx/gfx_media_controls.c"
+#include "../gfx/gfx_media_player.c"
+#include "../gfx/gfx_media_cpu.c"
 #include "../gfx/gfx_anim_preview.c"
 
 /* rflac is used by the audio mixer (HAVE_RFLAC) and by the CHD FLAC
@@ -1710,6 +1713,8 @@ MENU
 #ifdef HAVE_MENU
 #include "../menu/menu_str.c"
 #include "../menu/menu_driver.c"
+#include "../menu/menu_media_controls.c"
+#include "../menu/menu_media_browser.c"
 #include "../menu/menu_setting.c"
 #if defined(HAVE_MATERIALUI) || defined(HAVE_XMB) || defined(HAVE_OZONE)
 #include "../menu/menu_screensaver.c"

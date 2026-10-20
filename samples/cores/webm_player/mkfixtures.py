@@ -7,6 +7,11 @@ import sys
 out = Path(sys.argv[1] if len(sys.argv) > 1 else "fixtures")
 out.mkdir(parents=True, exist_ok=True)
 cases = [
+    ("vp8-long-timing.webm", ["-c:v", "libvpx", "-deadline", "realtime", "-cpu-used", "8", "-g", "120", "-auto-alt-ref", "0", "-an"]),
+    ("vp8-seek-opus.webm", ["-c:v", "libvpx", "-g", "12", "-auto-alt-ref", "0", "-cluster_time_limit", "1000", "-c:a", "libopus"]),
+    ("vp9-seek-vorbis.webm", ["-c:v", "libvpx-vp9", "-g", "12", "-auto-alt-ref", "0", "-cluster_time_limit", "1000", "-c:a", "libvorbis"]),
+    ("vp9-seek-live.webm", ["-c:v", "libvpx-vp9", "-g", "12", "-auto-alt-ref", "0", "-live", "1", "-c:a", "libvorbis"]),
+    ("h264-long-seek.mp4", ["-c:v", "libx264", "-bf", "2", "-g", "600", "-keyint_min", "600", "-sc_threshold", "0", "-an", "-movflags", "+faststart"]),
     ("av1-opus.webm", ["-s", "64x64", "-c:v", "libaom-av1", "-cpu-used", "8", "-threads", "2", "-g", "8", "-c:a", "libopus"]),
     ("av1-vorbis.webm", ["-s", "64x64", "-c:v", "libaom-av1", "-cpu-used", "8", "-threads", "2", "-g", "8", "-c:a", "libvorbis"]),
     ("vp8-opus.webm", ["-c:v", "libvpx", "-deadline", "best", "-c:a", "libopus"]),
@@ -20,7 +25,7 @@ cases = [
     ("h264-seek-aac.mp4", ["-c:v", "libx264", "-bf", "2", "-g", "12", "-c:a", "aac", "-movflags", "+faststart"]),
 ]
 for name, codec in cases:
-    duration = 16 if "-seek-" in name else 2
+    duration = 700 if "-long-" in name else 16 if "-seek-" in name else 2
     subprocess.run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
                     "-f", "lavfi", "-i", f"testsrc2=size=64x48:rate=12:duration={duration}",
                     "-f", "lavfi", "-i", f"sine=frequency=440:sample_rate=48000:duration={duration}",

@@ -289,6 +289,13 @@ void rwebm_video_stream_set_avail(rwebm_video_stream_t *stream,
  * resident: [media_floor, consumed + lookahead). */
 size_t rwebm_video_stream_media_floor(rwebm_video_stream_t *stream);
 size_t rwebm_video_stream_consumed(rwebm_video_stream_t *stream);
+/* Read demand may lead the release frontier while a coded packet is held
+ * for timestamp lookahead. A window owner pins the returned encoded span
+ * before moving to the demand frontier; prefix owners retain consumed(). */
+size_t rwebm_video_stream_feed_frontier(rwebm_video_stream_t *stream);
+void rwebm_video_stream_pin_span(rwebm_video_stream_t *stream,
+      size_t *lo, size_t *hi);
+
 /* Container duration in nanoseconds, 0 when the file does not say. */
 int64_t rwebm_video_stream_duration_ns(rwebm_video_stream_t *stream);
 
@@ -305,6 +312,20 @@ void rwebm_video_stream_complete_scan(rwebm_video_stream_t *stream,
       const uint8_t *buf, size_t len);
 
 void rwebm_video_stream_rewind(rwebm_video_stream_t *stream);
+
+/* Software owner-thread seek. Begin selects a cue (or rewinds without
+ * one); each step reads <=256 headers or decodes one packet. Step is
+ * -1 failure, 0 retry/feed consumed(), 1 target ready for next(). The
+ * first video packet at or after ns is retained without decoding.
+ * New begin/rewind cancels. Hardware modes currently reject begin. */
+/* Query only while the stream is exclusively owned, before publishing a
+ * playback session. Hardware seek preparation is not yet supported. */
+int64_t rwebm_video_stream_start_ns(const rwebm_video_stream_t *stream);
+int rwebm_video_stream_seekable(const rwebm_video_stream_t *stream);
+int rwebm_video_stream_seek_begin_ns(rwebm_video_stream_t *stream, int64_t ns);
+int rwebm_video_stream_seek_step(rwebm_video_stream_t *stream,
+      int64_t *position_us);
+
 
 RETRO_END_DECLS
 

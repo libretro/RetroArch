@@ -705,6 +705,11 @@ int64_t image_transfer_anim_stream_duration_ns(void *stream,
       enum image_type_enum type);
 size_t image_transfer_anim_stream_consumed(void *stream,
       enum image_type_enum type);
+/* Feed-owner read demand and retained coded span. Demand can lead
+ * consumed() during metadata lookahead; window owners retain the span. */
+size_t image_transfer_anim_stream_feed_frontier(void *stream, enum image_type_enum type);
+void image_transfer_anim_stream_pin_span(void *stream, enum image_type_enum type,
+      size_t *lo, size_t *hi);
 void image_transfer_anim_stream_next_span(void *stream,
       enum image_type_enum type, size_t *lo, size_t *hi);
 
@@ -716,6 +721,17 @@ void image_transfer_anim_stream_next_span(void *stream,
  * without a scan. */
 void image_transfer_anim_stream_complete_scan(void *stream,
       enum image_type_enum type, const void *buf, size_t len);
+
+/* Exclusive decoding-thread bounded seek. MP4 currently supports this;
+ * begin selects the request, step returns -1/0/1 (failed/retry/positioned).
+ * The owner feeds the stream's selected byte frontier between steps. */
+/* Exclusive-owner query; cache before handing the decoder to a worker. */
+int64_t image_transfer_anim_stream_start_ns(void *stream, enum image_type_enum type);
+bool image_transfer_anim_stream_seekable(void *stream, enum image_type_enum type);
+bool image_transfer_anim_stream_seek_begin(void *stream,
+      enum image_type_enum type, int64_t target_us);
+int image_transfer_anim_stream_seek_step(void *stream,
+      enum image_type_enum type, int64_t *position_us);
 
 void image_transfer_anim_stream_rewind(void *stream,
       enum image_type_enum type);

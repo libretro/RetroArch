@@ -421,6 +421,9 @@ microphone_driver_t *microphone_drivers[] = {
 #endif
 
 static audio_driver_state_t audio_driver_st = {0}; /* double alignment */
+#ifdef HAVE_AUDIOMIXER
+static unsigned audio_driver_mixer_init_rate;
+#endif
 
 /* The setting's values, in menu order: what each opens. */
 static uint32_t audio_driver_layout_of_setting(unsigned value)
@@ -5077,6 +5080,7 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
 
 #ifdef HAVE_AUDIOMIXER
    audio_mixer_init(settings->uints.audio_output_sample_rate);
+   audio_driver_mixer_init_rate = settings->uints.audio_output_sample_rate;
    AUDIO_FLAGS_SET(&audio_driver_st, AUDIO_FLAG_MIXER_INITED);
 #endif
 
@@ -8320,18 +8324,26 @@ static bool audio_driver_mixer_get_free_stream_slot(
 
 static bool audio_driver_mixer_add_stream_internal(
       audio_mixer_stream_params_t *params, audio_mixer_voice_t **out_voice,
-      size_t *out_serial)
+      size_t *out_serial, audio_mixer_sound_t *prepared)
 {
    unsigned free_slot            = 0;
    audio_mixer_voice_t *voice    = NULL;
    audio_mixer_sound_t *handle   = NULL;
    audio_mixer_stop_cb_t stop_cb = audio_mixer_play_stop_cb;
 
-   bool looped                   = (params->state == AUDIO_STREAM_STATE_PLAYING_LOOPED);
+   bool looped;
    bool use_s16;
    void *buf                     = NULL;
    if (out_voice) *out_voice = NULL;
    if (out_serial) *out_serial = 0;
+
+   if (!params)
+   {
+      if (prepared)
+         audio_mixer_destroy(prepared);
+      return false;
+   }
+   looped = (params->state == AUDIO_STREAM_STATE_PLAYING_LOOPED);
 
    /* Ownership of params->buf_owner transfers on this call in every
     * outcome: each failure return releases it. */
@@ -8343,7 +8355,9 @@ static bool audio_driver_mixer_add_stream_internal(
          || (     params->slot_selection_type == AUDIO_MIXER_SLOT_SELECTION_MANUAL
                && params->slot_selection_idx  >= AUDIO_MIXER_MAX_SYSTEM_STREAMS))
    {
-      if (params->buf_owner)
+      if (prepared)
+         audio_mixer_destroy(prepared);
+      else if (params->buf_owner)
          params->buf_owner_free(params->buf_owner);
       return false;
    }
@@ -8359,130 +8373,138 @@ static bool audio_driver_mixer_add_stream_internal(
    if (!(AUDIO_FLAGS_GET(&audio_driver_st) & AUDIO_FLAG_MIXER_INITED))
    {
       audio_driver_state_unlock();
-      if (params->buf_owner)
+      if (prepared)
+         audio_mixer_destroy(prepared);
+      else if (params->buf_owner)
          params->buf_owner_free(params->buf_owner);
       return false;
    }
    use_s16 = audio_driver_mixer_use_s16(audio_driver_st.stat_core_is_float);
    audio_driver_state_unlock();
 
-   /* The sound is built without the lock: a WAV is converted and
-    * resampled whole here, and the audio thread mixes on meanwhile.
-    * Everything else it reads - the resampler and the mixer's rate -
-    * is set by audio init, on this thread. */
-   if (params->buf_owner)
-      /* borrowed: the sound reads straight out of the owner's bytes,
-       * and destroy hands them back - no copy is made */
-      buf = params->buf;
+   if (prepared)
+      handle = prepared;
    else
    {
-      if (!(buf = malloc(params->bufsize)))
-         return false;
-      memcpy(buf, params->buf, params->bufsize);
-   }
+      /* The sound is built without the lock: a WAV is converted and
+       * resampled whole here, and the audio thread mixes on meanwhile.
+       * Everything else it reads - the resampler and the mixer's rate -
+       * is set by audio init, on this thread. */
+      if (params->buf_owner)
+         /* borrowed: the sound reads straight out of the owner's bytes,
+          * and destroy hands them back - no copy is made */
+         buf = params->buf;
+      else
+      {
+         if (!(buf = malloc(params->bufsize)))
+            return false;
+         memcpy(buf, params->buf, params->bufsize);
+      }
 
-   switch (params->type)
-   {
-      case AUDIO_MIXER_TYPE_WAV:
-         handle = audio_mixer_load_wav(buf, params->bufsize,
-               audio_driver_st.resampler_ident,
-               audio_driver_st.resampler_quality,
-               use_s16);
-         /* WAV is a special case - input buffer is not
-          * free()'d when sound playback is complete (it is
-          * converted to a PCM buffer, which is free()'d instead),
-          * so release the source here */
+      switch (params->type)
+      {
+         case AUDIO_MIXER_TYPE_WAV:
+            handle = audio_mixer_load_wav(buf, params->bufsize,
+                  audio_driver_st.resampler_ident,
+                  audio_driver_st.resampler_quality,
+                  use_s16);
+            /* WAV is a special case - input buffer is not
+             * free()'d when sound playback is complete (it is
+             * converted to a PCM buffer, which is free()'d instead),
+             * so release the source here */
+            if (params->buf_owner)
+               params->buf_owner_free(params->buf_owner);
+            else
+               free(buf);
+            buf = NULL;
+            break;
+         case AUDIO_MIXER_TYPE_WAV_STREAM:
+            /* unlike AUDIO_MIXER_TYPE_WAV above, nothing is decoded at
+             * load: the sound keeps these bytes and reads frames from
+             * them as it mixes, so the source stays owned by the sound
+             * (or by its lender) exactly as the compressed types' does */
+            handle = audio_mixer_load_wav_stream(buf,
+                  params->bufsize);
+            break;
+         case AUDIO_MIXER_TYPE_OGG:
+            handle = audio_mixer_load_ogg(buf, params->bufsize);
+            break;
+         case AUDIO_MIXER_TYPE_MOD:
+            handle = audio_mixer_load_mod(buf, params->bufsize);
+            break;
+         case AUDIO_MIXER_TYPE_FLAC:
+   #ifdef HAVE_RFLAC
+            handle = audio_mixer_load_flac(buf, params->bufsize);
+   #endif
+            break;
+         case AUDIO_MIXER_TYPE_MP3:
+   #ifdef HAVE_RMP3
+            handle = audio_mixer_load_mp3(buf, params->bufsize);
+   #endif
+            break;
+         case AUDIO_MIXER_TYPE_M4A:
+   #ifdef HAVE_RAAC
+            handle = audio_mixer_load_m4a(buf, params->bufsize);
+   #endif
+            break;
+         case AUDIO_MIXER_TYPE_AC3:
+   #ifdef HAVE_RAC3
+            handle = audio_mixer_load_ac3(buf, params->bufsize);
+   #endif
+            break;
+         case AUDIO_MIXER_TYPE_LPCM:
+   #ifdef HAVE_RLPCM
+            handle = audio_mixer_load_lpcm(buf, params->bufsize);
+   #endif
+            break;
+         case AUDIO_MIXER_TYPE_OPUS:
+   #ifdef HAVE_ROPUS
+            handle = audio_mixer_load_opus(buf, params->bufsize);
+   #endif
+            break;
+         case AUDIO_MIXER_TYPE_WEBA:
+   #if defined(HAVE_RWEBM) && (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS))
+            handle = audio_mixer_load_weba_avail(buf, params->bufsize,
+                  params->avail);
+   #endif
+            break;
+         case AUDIO_MIXER_TYPE_NONE:
+            break;
+      }
+
+      if (!handle)
+      {
          if (params->buf_owner)
-            params->buf_owner_free(params->buf_owner);
+         {
+            /* WAV already released above; buf is NULL there */
+            if (buf)
+               params->buf_owner_free(params->buf_owner);
+         }
          else
             free(buf);
-         buf = NULL;
-         break;
-      case AUDIO_MIXER_TYPE_WAV_STREAM:
-         /* unlike AUDIO_MIXER_TYPE_WAV above, nothing is decoded at
-          * load: the sound keeps these bytes and reads frames from
-          * them as it mixes, so the source stays owned by the sound
-          * (or by its lender) exactly as the compressed types' does */
-         handle = audio_mixer_load_wav_stream(buf,
-               params->bufsize);
-         break;
-      case AUDIO_MIXER_TYPE_OGG:
-         handle = audio_mixer_load_ogg(buf, params->bufsize);
-         break;
-      case AUDIO_MIXER_TYPE_MOD:
-         handle = audio_mixer_load_mod(buf, params->bufsize);
-         break;
-      case AUDIO_MIXER_TYPE_FLAC:
-#ifdef HAVE_RFLAC
-         handle = audio_mixer_load_flac(buf, params->bufsize);
-#endif
-         break;
-      case AUDIO_MIXER_TYPE_MP3:
-#ifdef HAVE_RMP3
-         handle = audio_mixer_load_mp3(buf, params->bufsize);
-#endif
-         break;
-      case AUDIO_MIXER_TYPE_M4A:
-#ifdef HAVE_RAAC
-         handle = audio_mixer_load_m4a(buf, params->bufsize);
-#endif
-         break;
-      case AUDIO_MIXER_TYPE_AC3:
-#ifdef HAVE_RAC3
-         handle = audio_mixer_load_ac3(buf, params->bufsize);
-#endif
-         break;
-      case AUDIO_MIXER_TYPE_LPCM:
-#ifdef HAVE_RLPCM
-         handle = audio_mixer_load_lpcm(buf, params->bufsize);
-#endif
-         break;
-      case AUDIO_MIXER_TYPE_OPUS:
-#ifdef HAVE_ROPUS
-         handle = audio_mixer_load_opus(buf, params->bufsize);
-#endif
-         break;
-      case AUDIO_MIXER_TYPE_WEBA:
-#if defined(HAVE_RWEBM) && (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS))
-         handle = audio_mixer_load_weba_avail(buf, params->bufsize,
-               params->avail);
-#endif
-         break;
-      case AUDIO_MIXER_TYPE_NONE:
-         break;
-   }
-
-   if (!handle)
-   {
-      if (params->buf_owner)
-      {
-         /* WAV already released above; buf is NULL there */
-         if (buf)
-            params->buf_owner_free(params->buf_owner);
+         return false;
       }
-      else
-         free(buf);
-      return false;
+
+   #ifdef HAVE_ROPUS
+      /* Windowed Ogg-Opus supplies the last-page granule so the decoder
+       * skips its full-file end scan when it opens at play time. */
+      if (params->end_granule > 0)
+         audio_mixer_sound_set_end_granule(handle, params->end_granule);
+   #endif
+      /* NOT under HAVE_ROPUS: the resident bound applies to every
+       * windowed arm, and a build without Opus silently dropped it -
+       * the decoder then opened against the whole file's length with
+       * only the head committed. */
+      if (params->avail)
+         audio_mixer_sound_set_avail(handle, params->avail);
+
+      if (params->buf_owner && buf)
+         /* the sound holds the borrowed bytes for its lifetime; destroy
+          * hands the owner back */
+         audio_mixer_sound_set_data_owner(handle,
+               params->buf_owner, params->buf_owner_free);
+
    }
-
-#ifdef HAVE_ROPUS
-   /* Windowed Ogg-Opus supplies the last-page granule so the decoder
-    * skips its full-file end scan when it opens at play time. */
-   if (params->end_granule > 0)
-      audio_mixer_sound_set_end_granule(handle, params->end_granule);
-#endif
-   /* NOT under HAVE_ROPUS: the resident bound applies to every
-    * windowed arm, and a build without Opus silently dropped it -
-    * the decoder then opened against the whole file's length with
-    * only the head committed. */
-   if (params->avail)
-      audio_mixer_sound_set_avail(handle, params->avail);
-
-   if (params->buf_owner && buf)
-      /* the sound holds the borrowed bytes for its lifetime; destroy
-       * hands the owner back */
-      audio_mixer_sound_set_data_owner(handle,
-            params->buf_owner, params->buf_owner_free);
 
    /* Claim the slot and start the voice. */
    audio_driver_state_lock();
@@ -8537,6 +8559,15 @@ static bool audio_driver_mixer_add_stream_internal(
          break;
    }
 
+   /* A prepared play must acquire its decoder-owning voice before
+    * publishing a playing slot or incrementing its counter. */
+   if (prepared && !voice)
+   {
+      audio_driver_state_unlock();
+      audio_mixer_destroy(handle);
+      return false;
+   }
+
    AUDIO_FLAGS_SET(&audio_driver_st, AUDIO_FLAG_MIXER_ACTIVE);
 
    audio_driver_st.mixer_streams[free_slot].name        =
@@ -8570,15 +8601,56 @@ static bool audio_driver_mixer_add_stream_internal(
    return true;
 }
 
+bool audio_driver_mixer_prepare_format(unsigned *rate, bool *s16)
+{
+   bool ready;
+   if (rate) *rate = 0;
+   if (s16) *s16 = false;
+   /* Transport setup uses the existing installation/retirement lock. */
+   audio_driver_state_lock();
+   ready = (AUDIO_FLAGS_GET(&audio_driver_st) & AUDIO_FLAG_MIXER_INITED)
+      && audio_driver_mixer_init_rate != 0;
+   if (ready)
+   {
+      if (rate) *rate = audio_driver_mixer_init_rate;
+      if (s16) *s16 = audio_driver_mixer_use_s16(audio_driver_st.stat_core_is_float);
+   }
+   audio_driver_state_unlock();
+   return ready;
+}
+
 bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
 {
-   return audio_driver_mixer_add_stream_internal(params, NULL, NULL);
+   return audio_driver_mixer_add_stream_internal(params, NULL, NULL, NULL);
 }
 
 bool audio_driver_mixer_add_stream_clocked(audio_mixer_stream_params_t *params,
       audio_mixer_voice_t **voice, size_t *serial)
 {
-   return audio_driver_mixer_add_stream_internal(params, voice, serial);
+   return audio_driver_mixer_add_stream_internal(params, voice, serial, NULL);
+}
+
+bool audio_driver_mixer_add_prepared_stream(audio_mixer_stream_params_t *params,
+      audio_mixer_sound_t *sound, audio_mixer_voice_t **voice, size_t *serial)
+{
+   if (!sound)
+   {
+      if (voice) *voice = NULL;
+      if (serial) *serial = 0;
+      if (params && params->out_slot) *params->out_slot = -1;
+      return false;
+   }
+   if (params && params->state != AUDIO_STREAM_STATE_PLAYING
+         && params->state != AUDIO_STREAM_STATE_PLAYING_LOOPED
+         && params->state != AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL)
+   {
+      if (voice) *voice = NULL;
+      if (serial) *serial = 0;
+      if (params->out_slot) *params->out_slot = -1;
+      audio_mixer_destroy(sound);
+      return false;
+   }
+   return audio_driver_mixer_add_stream_internal(params, voice, serial, sound);
 }
 
 int64_t audio_driver_mixer_stream_byte_tell(unsigned i)

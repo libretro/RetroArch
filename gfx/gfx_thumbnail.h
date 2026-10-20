@@ -31,6 +31,7 @@
 #include <retro_atomic.h>
 
 #include "gfx_animation.h"
+#include "gfx_media_state.h"
 
 #include "../playlist.h"
 
@@ -479,6 +480,11 @@ void gfx_thumbnail_reset(gfx_thumbnail_t *thumbnail);
  * this function reads no clock of its own, so every thumbnail
  * advanced in a frame paces off one coherent 'now', and a harness can
  * drive it with synthetic time. */
+unsigned gfx_thumbnail_anim_threads_wanted(void);
+
+/* Main-thread identity check for an installed preview session. */
+bool gfx_thumbnail_has_file(const gfx_thumbnail_t *thumbnail, const char *path);
+
 void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
       retro_time_t current_time);
 
@@ -486,6 +492,20 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
  * Uses the same monotonic clock as animate. False for a still or a
  * thumbnail whose animation session has not been installed yet. */
 bool gfx_thumbnail_set_paused(gfx_thumbnail_t *thumbnail, bool paused,
+      retro_time_t current_time);
+
+typedef gfx_media_playback_state_t gfx_thumbnail_playback_state_t;
+
+/* Main-thread UI snapshot using the same monotonic time as animate.
+ * Position follows mixed PCM when available. While seeking it shows
+ * the latest requested target. False for a still/non-media thumbnail. */
+bool gfx_thumbnail_get_playback_state(gfx_thumbnail_t *thumbnail,
+      retro_time_t current_time, gfx_thumbnail_playback_state_t *state);
+
+/* Main-thread absolute media seek, currently MP4. Latest request wins;
+ * decoding and audio preparation use the existing player worker.
+ * Keeps the last texture visible and preserves the user's pause state. */
+bool gfx_thumbnail_seek(gfx_thumbnail_t *thumbnail, int64_t target_us,
       retro_time_t current_time);
 
 /* Stream processing */

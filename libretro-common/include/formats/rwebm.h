@@ -155,6 +155,13 @@ void rwebm_set_avail(rwebm_t *webm, size_t avail);
  * are usually written after the clusters, so a partial read whose
  * wall stopped the header walk short has none).  Seeking needs them:
  * without an index a target can only be reached by walking. */
+/* Independent packet cursor over the same borrowed encoded buffer and
+ * metadata. It owns no cue index. Allocate once, refresh without allocation,
+ * and close normally. Copy retains the destination's own cue index when
+ * the encoded buffer is unchanged; it never borrows the source index. */
+rwebm_t *rwebm_cursor_clone(const rwebm_t *source);
+void rwebm_cursor_copy(rwebm_t *destination, const rwebm_t *source);
+
 int rwebm_num_cues(const rwebm_t *webm);
 
 /* Reposition the packet walk to the indexed cluster at or before
@@ -164,6 +171,12 @@ int rwebm_num_cues(const rwebm_t *webm);
  * the file has no Cues, or when the target cluster lies past a
  * partial read's wall.  The next rwebm_read_packet resumes there. */
 int64_t rwebm_seek_time_ns(rwebm_t *webm, int64_t ns);
+
+/* Metadata-only cue selection, including a cluster beyond the readable
+ * wall. No media bytes are touched. consumed() identifies the frontier
+ * the owner must feed before read_packet() can resume. */
+int64_t rwebm_select_time_ns(rwebm_t *webm, int64_t ns);
+
 
 /* Restart packet reading from the first cluster. */
 void rwebm_rewind(rwebm_t *webm);

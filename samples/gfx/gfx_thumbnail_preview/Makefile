@@ -41,6 +41,8 @@ PLAYER_OBJ := gfx_surface_player_uut.o
 LAYOUT_OBJ := settings_layout_uut.o
 
 SOURCES := gfx_thumbnail_preview_test.c \
+           $(REPO_ROOT)/gfx/gfx_media_player.c \
+           $(REPO_ROOT)/gfx/gfx_media_cpu.c \
            stubs_retroarch.c \
            $(REPO_ROOT)/libretro-common/audio/audio_mixer.c \
            $(LIBRETRO_COMM_DIR)/audio/resampler/audio_resampler.c \
@@ -266,10 +268,13 @@ $(AUDIO_ORACLE_TARGET): $(AUDIO_ORACLE_SOURCES)
 	$(CC) -o $@ $(AUDIO_ORACLE_SOURCES) $(DECODE_CFLAGS_COMMON) -DHAVE_RWEBM $(LDFLAGS) -lm
 
 AUDIO_FEED_SOURCES := preview_audio_feed_test.c $(ANIM_PREVIEW_SRC) \
+                     $(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.c \
+                     $(LIBRETRO_COMM_DIR)/formats/opus/ropus.c \
+                     $(LIBRETRO_COMM_DIR)/formats/vorbis/rvorbis.c \
                      $(filter-out preview_audio_oracle_test.c,$(AUDIO_ORACLE_SOURCES)) \
                      $(LIBRETRO_COMM_DIR)/compat/compat_strldup.c
 $(AUDIO_FEED_TARGET): $(AUDIO_FEED_SOURCES)
-	$(CC) -o $@ $(AUDIO_FEED_SOURCES) $(DECODE_CFLAGS_COMMON) -DHAVE_RWEBM \
+	$(CC) -o $@ $(AUDIO_FEED_SOURCES) $(DECODE_CFLAGS_COMMON) -DHAVE_RWEBM -DHAVE_ROPUS -DHAVE_RVORBIS \
 	      -I$(REPO_ROOT) -I$(REPO_ROOT)/deps $(LDFLAGS)
 
 # The banded colour conversion against the single-threaded one, frame
@@ -401,6 +406,7 @@ endif
 	./$(CATCHUP_THREADED_TARGET) fixtures/bframes_h264.mp4 fixtures/bframes_hevc.mp4
 	./$(AUDIO_ORACLE_TARGET) fixtures/trailing_small.mp4 fixtures/trailing_large.mp4
 	./$(AUDIO_FEED_TARGET) fixtures/audio_large_packet.m4a
+	./$(AUDIO_FEED_TARGET) --prepared-only fixtures/audio_seek_gap.m4a
 	FRAMES=180 PACE_HZ=60 PACE_MAX_STALL_MS=500 NOAUDIO=1 ./$(TARGET) fixtures/bframes_h264.mp4 fixtures/bframes_hevc.mp4
 	THREADS=4 FRAMES=180 PACE_HZ=60 PACE_MAX_STALL_MS=500 NOAUDIO=1 ./$(THREADED_TARGET) fixtures/bframes_h264.mp4 fixtures/bframes_hevc.mp4
 	./$(BLIT_BANDS_TARGET) fixtures/long_video.mp4

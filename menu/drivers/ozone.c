@@ -39,6 +39,8 @@
 #include "../../gfx/video_thread_wrapper.h"
 #include "../menu_cbs.h"
 #include "../menu_driver.h"
+#include "../menu_media_controls.h"
+#include "../menu_media_browser.h"
 #include "../menu_str.h"
 #include "../menu_screensaver.h"
 #include "ozone_color_themes.h"
@@ -544,6 +546,7 @@ enum ozone_handle_flags2
 struct ozone_handle
 {
    menu_input_pointer_t pointer; /* retro_time_t alignment */
+   menu_media_controls_t media;
    retro_time_t cursor_old_time;
    retro_time_t draw_entry_hold_until;
 
@@ -9121,6 +9124,22 @@ static enum menu_action ozone_parse_menu_entry_action(
    file_list_t *selection_buf     = NULL;
    unsigned horizontal_list_size  = 0;
 
+   if ((ozone->flags & OZONE_FLAG_IS_FILE_LIST)
+         && !(ozone->flags2 & OZONE_FLAG2_SHOW_FULLSCREEN_THUMBNAILS)
+         && (action == MENU_ACTION_OK || action == MENU_ACTION_SELECT || action == MENU_ACTION_START)
+         && menu_media_open_selected_movie(menu_st, &ozone->thumbnails.left, &ozone->thumbnails.right))
+   {
+      ozone->thumbnails.pending = OZONE_PENDING_THUMBNAIL_NONE;
+      ozone->flags |= OZONE_FLAG_FULLSCREEN_THUMBNAILS_AVAILABLE;
+      ozone_show_fullscreen_thumbnails(ozone);
+      return MENU_ACTION_NOOP;
+   }
+
+   if ((ozone->flags2 & OZONE_FLAG2_SHOW_FULLSCREEN_THUMBNAILS)
+         && menu_media_controls_action(&ozone->media, action,
+            menu_driver_get_current_time()))
+      return MENU_ACTION_NOOP;
+
    /* We have to override the thumbnail stream
     * delay when opening the thumbnail sidebar;
     * ensure that the proper value is restored
@@ -10830,6 +10849,7 @@ static void ozone_context_destroy(void *data)
    /* Signal the render path to stop using textures/fonts.
     * Under threaded video, ozone_frame() may be mid-render on
     * the video thread when this runs on the main thread. */
+   menu_media_controls_cancel(&ozone->media);
    ozone->context_generation++;
    (void)retro_atomic_exchange_ptr(&ozone->pending_theme, NULL);
 
@@ -11033,6 +11053,15 @@ static void ozone_render(void *data,
          && ozone->header_retired != gfx_surface_retired())
       ozone_set_header_icon(ozone, settings->uints.menu_ozone_header_icon);
 
+   if ((ozone->flags & OZONE_FLAG_IS_FILE_LIST) && !(ozone->flags2 & OZONE_FLAG2_SHOW_FULLSCREEN_THUMBNAILS)
+         && !gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_RIGHT)
+         && !gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_LEFT)
+         && (ozone->thumbnails.left.anim_player || ozone->thumbnails.right.anim_player))
+   {
+      gfx_thumbnail_reset(&ozone->thumbnails.left);
+      gfx_thumbnail_reset(&ozone->thumbnails.right);
+   }
+
    /* Advance animated thumbnails (animated WebP) once per frame on the
     * main thread. No-op for still images. */
    gfx_thumbnail_animate(&ozone->thumbnails.right,
@@ -11145,6 +11174,15 @@ static void ozone_render(void *data,
 
    /* Read pointer state */
    menu_input_get_pointer_state(&ozone->pointer);
+   menu_media_controls_thumbnail(&ozone->media, &ozone->thumbnails.left,
+         &ozone->thumbnails.right,
+         (ozone->flags2 & OZONE_FLAG2_SHOW_FULLSCREEN_THUMBNAILS)
+            && !(ozone->flags & OZONE_FLAG_SHOW_SCREENSAVER)
+            && !menu_input_dialog_get_display_kb(),
+         VIDEO_SCALE_W(dims),
+         VIDEO_SCALE_H(dims) > (unsigned)ozone->dimensions.footer_height
+            ? VIDEO_SCALE_H(dims) - ozone->dimensions.footer_height : 0,
+         &ozone->pointer, menu_driver_get_current_time());
 
    /* y_accel is measured per frame; normalise it to px per
     * 16.667 ms with the measured frame delta so velocity
@@ -13226,6 +13264,9 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
          userdata,
          video_info->disp_userdata,
          VIDEO_SCALE_PACK(video_width, video_height));
+   menu_media_controls_draw(&ozone->media, p_disp, userdata,
+         video_info->dims, ozone->fonts.footer.font);
+   font_flush(video_info->dims, &ozone->fonts.footer);
 
    /* Message box & OSK - second layer of text */
    if (    (ozone->flags & OZONE_FLAG_SHOULD_DRAW_MSGBOX)
@@ -14270,6 +14311,14 @@ static int ozone_pointer_up(void *userdata,
 
    if (!ozone)
       return -1;
+
+   if ((ozone->flags2 & OZONE_FLAG2_SHOW_FULLSCREEN_THUMBNAILS)
+         && menu_media_controls_release(&ozone->media, x, y,
+            menu_driver_get_current_time()))
+   {
+      menu_input->pointer.y_accel = 0.0f;
+      return 0;
+   }
 
    /* If fullscreen thumbnail view is enabled,
     * all input will disable it and otherwise

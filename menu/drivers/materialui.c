@@ -42,6 +42,7 @@
 #include "../../ui/ui_companion_driver.h"
 
 #include "../menu_driver.h"
+#include "../menu_media_controls.h"
 #include "../menu_screensaver.h"
 
 #include "../../gfx/gfx_animation.h"
@@ -622,6 +623,12 @@ typedef struct materialui_handle
 {
    /* Pointer info */
    menu_input_pointer_t pointer;                      /* int64_t alignment */
+   menu_media_controls_t media;
+   gfx_thumbnail_t browser_thumbnail;
+   char browser_path[PATH_MAX_LENGTH];
+   char browser_directory[PATH_MAX_LENGTH];
+   char browser_name[PATH_MAX_LENGTH];
+   bool browser_suspended, browser_resume_paused;
    /* Use common tickers for all text
     * > Simplifies configuration and
     *   improves performance */
@@ -2517,6 +2524,13 @@ static void materialui_update_fullscreen_thumbnail_label(
    size_t selection            = menu_st->selection_ptr;
    menu_entry_t selected_entry;
 
+   if ((mui->flags & MUI_FLAG_IS_FILE_LIST) && *mui->browser_path)
+   {
+      strlcpy(mui->fullscreen_thumbnail_label, mui->browser_name,
+            sizeof(mui->fullscreen_thumbnail_label));
+      return;
+   }
+
    /* Cache selected entry label
     * (used as menu title when fullscreen thumbnails
     * are shown) */
@@ -4362,6 +4376,74 @@ static void materialui_layout(
       settings_t *settings,
       bool video_is_threaded);
 
+static void materialui_hide_fullscreen_thumbnails(materialui_handle_t *mui, bool animate);
+
+static void materialui_browser_update(materialui_handle_t *mui, struct menu_state *menu_st)
+{
+   file_list_t *list = menu_st->entries.list
+      ? MENU_LIST_GET_SELECTION(menu_st->entries.list, 0) : NULL;
+   file_list_t *stack = menu_st->entries.list
+      ? MENU_LIST_GET(menu_st->entries.list, 0) : NULL;
+   const char *directory = NULL, *name = NULL;
+   gfx_media_playback_state_t state;
+   if ((mui->flags & MUI_FLAG_IS_FILE_LIST) && list && stack && stack->size
+         && menu_st->selection_ptr < list->size)
+   {
+      const struct item_file *item = &list->list[menu_st->selection_ptr];
+      enum image_type_enum type = image_texture_get_type(item->path);
+      if (item->type == FILE_TYPE_IMAGE || item->type == FILE_TYPE_IMAGEVIEWER
+            || type == IMAGE_TYPE_MP4 || type == IMAGE_TYPE_WEBM)
+      {
+         directory = stack->list[stack->size - 1].path;
+         name = item->path;
+      }
+   }
+   if (!directory || !*directory || !name || !*name)
+   {
+      if (*mui->browser_path)
+      {
+         gfx_thumbnail_reset(&mui->browser_thumbnail);
+         materialui_hide_fullscreen_thumbnails(mui, false);
+      }
+      mui->browser_path[0] = mui->browser_directory[0] = mui->browser_name[0] = '\0';
+      return;
+   }
+   if (!string_is_equal(directory, mui->browser_directory)
+         || !string_is_equal(name, mui->browser_name)
+         || mui->browser_thumbnail.status == GFX_THUMBNAIL_STATUS_UNKNOWN)
+   {
+      gfx_thumbnail_reset(&mui->browser_thumbnail);
+      mui->browser_suspended = false;
+      strlcpy(mui->browser_directory, directory, sizeof(mui->browser_directory));
+      strlcpy(mui->browser_name, name, sizeof(mui->browser_name));
+      fill_pathname_join_special(mui->browser_path, directory, name, sizeof(mui->browser_path));
+      gfx_thumbnail_request_file(mui->browser_path, &mui->browser_thumbnail,
+            config_get_ptr()->uints.gfx_thumbnail_upscale_threshold);
+   }
+   if (mui->flags & MUI_FLAG_SHOW_FULLSCREEN_THUMBNAILS)
+   {
+      if (mui->browser_suspended)
+      {
+         gfx_thumbnail_set_paused(&mui->browser_thumbnail, mui->browser_resume_paused,
+               menu_driver_get_current_time());
+         mui->browser_suspended = false;
+      }
+      gfx_thumbnail_animate(&mui->browser_thumbnail, menu_driver_get_current_time());
+   }
+   else if (!mui->browser_suspended && gfx_thumbnail_get_playback_state(
+            &mui->browser_thumbnail, menu_driver_get_current_time(), &state))
+   {
+      mui->browser_resume_paused = state.paused;
+      gfx_thumbnail_set_paused(&mui->browser_thumbnail, true, menu_driver_get_current_time());
+      mui->browser_suspended = true;
+   }
+}
+
+static bool materialui_get_selected_thumbnails(
+      materialui_handle_t *mui, size_t selection,
+      gfx_thumbnail_t **primary_thumbnail,
+      gfx_thumbnail_t **secondary_thumbnail);
+
 /* Called on each frame. We use this callback to:
  * - Determine current scroll position
  * - Determine index of first/last on-screen entries
@@ -4512,6 +4594,22 @@ static void materialui_render(void *data,
 
    /* Read pointer state */
    menu_input_get_pointer_state(&mui->pointer);
+   materialui_browser_update(mui, menu_st);
+   {
+      gfx_thumbnail_t *primary = NULL, *secondary = NULL;
+      bool shown = (mui->flags & MUI_FLAG_SHOW_FULLSCREEN_THUMBNAILS)
+         && !(mui->flags & MUI_FLAG_SHOW_SCREENSAVER)
+         && !menu_input_dialog_get_display_kb();
+      if (shown)
+         materialui_get_selected_thumbnails(mui, menu_st->selection_ptr,
+               &primary, &secondary);
+      menu_media_controls_thumbnail(&mui->media, primary, secondary, shown,
+            dims_w > VIDEO_SCALE_W(mui->nav_bar_layout_dims)
+               ? dims_w - VIDEO_SCALE_W(mui->nav_bar_layout_dims) : 0,
+            dims_h > VIDEO_SCALE_H(mui->nav_bar_layout_dims)
+               ? dims_h - VIDEO_SCALE_H(mui->nav_bar_layout_dims) : 0,
+            &mui->pointer, menu_driver_get_current_time());
+   }
 
    /* If menu screensaver is active, update
     * screensaver and return */
@@ -7706,6 +7804,12 @@ static bool materialui_get_selected_thumbnails(
    struct menu_state   *menu_st = menu_state_get_ptr();
    menu_list_t *menu_list       = menu_st->entries.list;
 
+   if ((mui->flags & MUI_FLAG_IS_FILE_LIST) && *mui->browser_path)
+   {
+      *primary_thumbnail = *secondary_thumbnail = &mui->browser_thumbnail;
+      return true;
+   }
+
    /* Ensure selection is on screen
     * > Special case: When viewing 'desktop'-layout
     *   playlists skip this check, since thumbnails
@@ -7790,8 +7894,9 @@ static void materialui_show_fullscreen_thumbnails(
 
    /* Sanity check: Return immediately if this is a view
     * mode without thumbnails */
-   if (     (mui->list_view_type == MUI_LIST_VIEW_DEFAULT)
-         || (mui->list_view_type == MUI_LIST_VIEW_PLAYLIST))
+   if (!((mui->flags & MUI_FLAG_IS_FILE_LIST) && *mui->browser_path)
+         && ((mui->list_view_type == MUI_LIST_VIEW_DEFAULT)
+            || (mui->list_view_type == MUI_LIST_VIEW_PLAYLIST)))
       return;
 
    /* Get thumbnails */
@@ -7913,8 +8018,9 @@ MUI_NOINLINE static void materialui_render_fullscreen_thumbnails(materialui_hand
        * mode without thumbnails
        * > Note: Baring inexplicable internal errors, this
        *   can never happen... */
-      if (     (mui->list_view_type == MUI_LIST_VIEW_DEFAULT)
-            || (mui->list_view_type == MUI_LIST_VIEW_PLAYLIST))
+      if (!((mui->flags & MUI_FLAG_IS_FILE_LIST) && *mui->browser_path)
+         && ((mui->list_view_type == MUI_LIST_VIEW_DEFAULT)
+            || (mui->list_view_type == MUI_LIST_VIEW_PLAYLIST)))
          goto error;
 
       /* Get thumbnails */
@@ -7926,7 +8032,8 @@ MUI_NOINLINE static void materialui_render_fullscreen_thumbnails(materialui_hand
       show_primary_thumbnail =
             (primary_thumbnail->status != GFX_THUMBNAIL_STATUS_MISSING);
       show_secondary_thumbnail =
-               !(mui->flags & MUI_FLAG_SECONDARY_THUMBNAIL_BLOCKED)
+               !(mui->flags & MUI_FLAG_IS_FILE_LIST)
+            && !(mui->flags & MUI_FLAG_SECONDARY_THUMBNAIL_BLOCKED)
             && (mui->flags & MUI_FLAG_SECONDARY_THUMBNAIL_ENABLED)
             && (secondary_thumbnail->status != GFX_THUMBNAIL_STATUS_MISSING);
 
@@ -8578,6 +8685,8 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
     *   of text */
    materialui_render_fullscreen_thumbnails(mui, p_disp, userdata,
          video_info->dims, header_height, selection);
+   menu_media_controls_draw(&mui->media, p_disp, userdata,
+         video_info->dims, mui->font_data.hint.font);
 
    /* Draw title + system bar */
    materialui_render_header(mui, tex_list, menu_st, menu_list,
@@ -9657,6 +9766,7 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
    if (!(mui = (materialui_handle_t*)calloc(1, sizeof(materialui_handle_t))))
       goto error;
 
+   gfx_thumbnail_init_blank(&mui->browser_thumbnail);
    *userdata = mui;
 
    /* Get DPI/screen-size-aware base unit size for
@@ -9802,6 +9912,7 @@ static void materialui_free(void *data)
    if (!mui)
       return;
 
+   gfx_thumbnail_reset(&mui->browser_thumbnail);
    materialui_free_textures(mui);
    materialui_context_bg_destroy(mui);
 
@@ -9852,7 +9963,9 @@ static void materialui_context_destroy(void *data)
    /* Signal the render path to stop using textures/fonts.
     * Under threaded video, materialui_frame() may be mid-render
     * on the video thread when this runs on the main thread. */
+   menu_media_controls_cancel(&mui->media);
    mui->context_generation++;
+   gfx_thumbnail_reset(&mui->browser_thumbnail);
 
    /* Free standard menu textures */
    materialui_free_textures(mui);
@@ -10943,6 +11056,23 @@ static enum menu_action materialui_parse_menu_entry_action(
    enum menu_action new_action = action;
    struct menu_state *menu_st  = menu_state_get_ptr();
 
+   if ((mui->flags & MUI_FLAG_IS_FILE_LIST)
+         && !(mui->flags & MUI_FLAG_SHOW_FULLSCREEN_THUMBNAILS)
+         && (action == MENU_ACTION_OK || action == MENU_ACTION_SELECT || action == MENU_ACTION_START))
+   {
+      materialui_browser_update(mui, menu_st);
+      if (*mui->browser_path)
+      {
+         materialui_show_fullscreen_thumbnails(mui, menu_st, menu_st->selection_ptr);
+         return MENU_ACTION_NOOP;
+      }
+   }
+
+   if ((mui->flags & MUI_FLAG_SHOW_FULLSCREEN_THUMBNAILS)
+         && menu_media_controls_action(&mui->media, action,
+            menu_driver_get_current_time()))
+      return MENU_ACTION_NOOP;
+
    /* Scan user inputs */
    switch (action)
    {
@@ -11401,6 +11531,14 @@ static int materialui_pointer_down(void *userdata,
    if (!mui)
       return -1;
 
+   if ((mui->flags & MUI_FLAG_SHOW_FULLSCREEN_THUMBNAILS)
+         && mui->media.controls.target.user)
+   {
+      gfx_media_controls_pointer(&mui->media.controls, (int)x, (int)y,
+            true, true, menu_driver_get_current_time());
+      return 0;
+   }
+
    /* Any active scroll animation would otherwise fight
     * direct list dragging */
    materialui_kill_scroll_animation(mui, menu_st);
@@ -11665,6 +11803,14 @@ static int materialui_pointer_up(void *userdata,
    /* Read cached size from mui rather than locking video_st via
     * video_driver_get_output_dims: mui->last_{width,height} is updated
     * every frame in materialui_render. */
+
+   if ((mui->flags & MUI_FLAG_SHOW_FULLSCREEN_THUMBNAILS)
+         && menu_media_controls_release(&mui->media, x, y,
+            menu_driver_get_current_time()))
+   {
+      menu_input->pointer.y_accel = 0.0f;
+      return 0;
+   }
 
    /* All input is ignored if user was previously
     * dragging the scrollbar */

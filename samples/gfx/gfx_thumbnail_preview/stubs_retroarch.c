@@ -296,6 +296,8 @@ static size_t hp_alen, hp_aavail, hp_atell;
 static void *hp_aowner;
 static void (*hp_aownerfree)(void*);
 static int hp_alive;
+static audio_mixer_sound_t *hp_pcm_sound;
+static audio_mixer_voice_t *hp_pcm_voice;
 
 bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
 {
@@ -359,20 +361,48 @@ void audio_driver_mixer_stream_set_avail(unsigned i, size_t avail)
    hp.audio_avail_raises++;
 }
 void audio_driver_mixer_stream_set_paused(unsigned i, bool paused)
-{ (void)i; (void)paused; }
+{ (void)i; audio_mixer_voice_set_paused(hp_pcm_voice, paused); }
 /* This edge simulates byte residency, not PCM playback. It has no
  * clock binding; the real clock oracle lives in preview_audio_feed. */
+bool audio_driver_mixer_prepare_format(unsigned *rate, bool *s16)
+{ *rate = 48000; *s16 = false; return true; }
 bool audio_driver_mixer_add_stream_clocked(audio_mixer_stream_params_t *params,
       audio_mixer_voice_t **voice, size_t *serial)
 { *voice = NULL; *serial = 0; return audio_driver_mixer_add_stream(params); }
+/* Seek transport uses actual PCM; the initial byte-feeder model above
+ * stays independent so it can still deliberately touch promised bytes. */
+bool audio_driver_mixer_add_prepared_stream(audio_mixer_stream_params_t *params,
+      audio_mixer_sound_t *sound, audio_mixer_voice_t **voice, size_t *serial)
+{
+   *voice = NULL; *serial = 0;
+   hp_pcm_voice = audio_mixer_play(sound, true, 1.0f, "sinc",
+         RESAMPLER_QUALITY_NORMAL, NULL);
+   if (hp_pcm_voice && audio_mixer_voice_clock(hp_pcm_voice, NULL, NULL, serial))
+   {
+      hp_pcm_sound = sound;
+      *voice = hp_pcm_voice;
+      if (params->out_slot) *params->out_slot = 7;
+      return true;
+   }
+   audio_mixer_destroy(sound);
+   return false;
+}
 void audio_driver_mixer_remove_stream_clocked(unsigned i,
       audio_mixer_voice_t *voice, size_t serial)
-{ (void)i; (void)voice; (void)serial; }
+{
+   size_t current;
+   if (voice == hp_pcm_voice && audio_mixer_voice_clock(voice, NULL, NULL, &current)
+         && current == serial)
+      audio_driver_mixer_remove_stream(i);
+}
 void audio_driver_mixer_stop_stream(unsigned i) { (void)i; hp.audio_stops++; }
 void audio_driver_mixer_remove_stream(unsigned i)
 {
    (void)i;
    hp_alive = 0;
+   if (hp_pcm_voice) audio_mixer_stop(hp_pcm_voice);
+   if (hp_pcm_sound) audio_mixer_destroy(hp_pcm_sound);
+   hp_pcm_voice = NULL; hp_pcm_sound = NULL;
    if (hp_aowner && hp_aownerfree)
       hp_aownerfree(hp_aowner);
    hp_aowner = NULL; hp_abuf = NULL;

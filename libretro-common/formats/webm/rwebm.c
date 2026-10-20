@@ -35,6 +35,7 @@
 /* ===== EBML primitives ===== */
 
 /* Matroska element IDs (the ones we act on). */
+#define ID_VOID            0xECu
 #define ID_EBML            0x1A45DFA3u
 #define ID_SEGMENT         0x18538067u
 #define ID_INFO            0x1549A966u
@@ -609,12 +610,38 @@ void rwebm_close(rwebm_t *webm)
    free(webm);
 }
 
+rwebm_t *rwebm_cursor_clone(const rwebm_t *source)
+{
+   rwebm_t *copy;
+   if (!source || !(copy = (rwebm_t*)malloc(sizeof(*copy)))) return NULL;
+   memcpy(copy, source, sizeof(*copy));
+   copy->cues = NULL;
+   copy->num_cues = 0;
+   return copy;
+}
+
+void rwebm_cursor_copy(rwebm_t *destination, const rwebm_t *source)
+{
+   struct rwebm_cue *cues;
+   int count;
+   if (!destination || !source || destination == source) return;
+   cues = destination->cues;
+   count = destination->num_cues;
+   if (destination->data != source->data)
+   {
+      free(cues); cues = NULL; count = 0;
+   }
+   memcpy(destination, source, sizeof(*destination));
+   destination->cues = cues;
+   destination->num_cues = count;
+}
+
 int rwebm_num_cues(const rwebm_t *webm)
 {
    return webm ? webm->num_cues : 0;
 }
 
-int64_t rwebm_seek_time_ns(rwebm_t *webm, int64_t ns)
+static int64_t webm_select_time_ns(rwebm_t *webm, int64_t ns, int resident)
 {
    int64_t ticks;
    int     lo, hi, best;
@@ -646,7 +673,7 @@ int64_t rwebm_seek_time_ns(rwebm_t *webm, int64_t ns)
       const uint8_t *at = webm->seg_body + webm->cues[best].cluster_pos;
       /* Under a partial read the target may be past the wall; say so
        * rather than pointing the walk at bytes that are not there. */
-      if (at >= webm->avail_end)
+      if (resident && at >= webm->avail_end)
          return -1;
       webm->cur        = at;
    }
@@ -657,6 +684,16 @@ int64_t rwebm_seek_time_ns(rwebm_t *webm, int64_t ns)
    webm->lace_index      = 0;
    webm->pending_discard = 0;
    return webm->cues[best].time_ticks * webm->timestamp_scale;
+}
+
+int64_t rwebm_seek_time_ns(rwebm_t *webm, int64_t ns)
+{
+   return webm_select_time_ns(webm, ns, 1);
+}
+
+int64_t rwebm_select_time_ns(rwebm_t *webm, int64_t ns)
+{
+   return webm_select_time_ns(webm, ns, 0);
 }
 
 void rwebm_rewind(rwebm_t *webm)
@@ -747,6 +784,17 @@ int rwebm_read_packet(rwebm_t *webm, rwebm_packet *pkt)
             cend = webm->segment_end;   /* malformed/overlong: clamp  */
          r.p   = body;
          r.end = cend < r.end ? cend : r.end;
+         continue;
+      }
+      if (id == ID_VOID)
+      {
+         /* Padding carries no packet state. Its header establishes the
+          * next byte frontier even if its payload is not resident. Do
+          * not make a bounded feeder load a large padding body merely
+          * to discover that it contains no data. */
+         if (sz > (uint64_t)(webm->segment_end - body)) return -1;
+         r.p = body + (size_t)sz;
+         webm->cur = r.p;
          continue;
       }
       if (body + sz > r.end)

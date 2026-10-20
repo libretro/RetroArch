@@ -66,6 +66,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <formats/data_transfer.h>
+#include <memmap.h>
 #if defined(__linux__)
 #include <unistd.h>
 #endif
@@ -823,6 +824,74 @@ static int settle_releases_check(void)
 }
 #endif
 
+static int pin_check(void)
+{
+   const char *path = "dtwin_pin.bin";
+   data_transfer_t *dt = NULL;
+   const uint8_t *base;
+   uint8_t *ref = NULL;
+   size_t n = 8u << 20, i, blen, page = mempagesize(), lo, hi, before;
+   FILE *file;
+   int rv = 1;
+   if (!page || page > KEEP) return 0;
+   ref = (uint8_t*)malloc(n);
+   if (!ref) return 1;
+   for (i = 0; i < n; i++) ref[i] = (uint8_t)(i * 13 + i / 4096);
+   file = fopen(path, "wb");
+   if (!file) goto done;
+   if (fwrite(ref, 1, n, file) != n) { fclose(file); goto done; }
+   fclose(file);
+   dt = data_transfer_open_window(path, KEEP);
+   if (!dt) goto done;
+   base = data_transfer_window_base(dt, &blen);
+   if (!base || blen != n || !data_transfer_window_extend(dt, KEEP + LOOKAHD)) goto done;
+   lo = KEEP + 2 * page; hi = lo + 2 * page;
+   if (!data_transfer_window_pin(dt, lo, hi)) goto done;
+   if (data_transfer_window_pin(dt, n, n + 1)) goto done;
+   data_transfer_window_rewind(dt);
+   data_transfer_window_rebase(dt, 4u << 20);
+   if (!data_transfer_window_extend(dt, (4u << 20) + LOOKAHD / 2)) goto done;
+   if (memcmp(base + lo, ref + lo, hi - lo) || memcmp(base, ref, KEEP)) goto done;
+   before = data_transfer_window_resident(dt);
+   if (data_transfer_window_is_reserved(dt) && before > KEEP + LOOKAHD + 2 * page) goto done;
+   /* Shrinking an out-of-window pin releases only its retired pages. */
+   if (!data_transfer_window_pin(dt, lo + page, hi)
+         || memcmp(base + lo + page, ref + lo + page, page)) goto done;
+   if (data_transfer_window_is_reserved(dt)
+         && data_transfer_window_resident(dt) + page != before) goto done;
+   if (!data_transfer_window_pin(dt, 0, 0)) goto done;
+   if (data_transfer_window_is_reserved(dt)
+         && data_transfer_window_resident(dt) + 2 * page != before) goto done;
+   if (memcmp(base + (4u << 20), ref + (4u << 20), LOOKAHD / 2)) goto done;
+#if defined(__linux__) && defined(DT_STRICT)
+   if (data_transfer_window_is_reserved(dt))
+   {
+      int status;
+      pid_t child = fork();
+      if (child < 0) goto done;
+      if (!child) { volatile uint8_t value = base[lo + page]; (void)value; _exit(42); }
+      waitpid(child, &status, 0);
+      if (WIFEXITED(status) && WEXITSTATUS(status) == 42) goto done;
+   }
+#endif
+   /* A pin inside the moving window does not get released on clear. */
+   if (!data_transfer_window_pin(dt, (4u << 20) + page, (4u << 20) + 2 * page)
+         || !data_transfer_window_pin(dt, 0, 0)
+         || memcmp(base + (4u << 20), ref + (4u << 20), LOOKAHD / 2)) goto done;
+   data_transfer_window_rewind(dt);
+   if (!data_transfer_window_extend(dt, KEEP + LOOKAHD)
+         || !data_transfer_window_pin(dt, lo, hi)
+         || !data_transfer_window_grow_keep(dt, hi + page)
+         || !data_transfer_window_pin(dt, 0, 0)
+         || memcmp(base, ref, hi + page)) goto done;
+   ok("coded pin survives rebase; retired pages released, window/head overlaps retained");
+   rv = 0;
+done:
+   if (rv) fail("coded window pin lifecycle/accounting");
+   data_transfer_free(dt); free(ref); remove(path);
+   return rv;
+}
+
 int main(void)
 {
    const char *path = "/tmp/dtwin.bin";
@@ -904,6 +973,7 @@ int main(void)
    printf("[skip] residency bound: not measurable on this platform\n");
 #endif
 
+   bad |= pin_check();
    bad |= feed_budget_check();
    bad |= ahead_of_frontier_check();
    bad |= surface_mixing_check();

@@ -167,6 +167,16 @@ void rmp4_set_avail(rmp4_t *mp4, size_t avail);
 const int64_t *rmp4_track_pts(const rmp4_t *mp4, int track,
       uint32_t *count);
 
+/* Metadata-only key flag for a track sample: 0/1, -1 if invalid.
+ * Does not read sample bytes or change any packet cursor. */
+int rmp4_track_sample_key(const rmp4_t *mp4, int track, uint32_t sample);
+
+/* Read only this track from sample onward until rewind. Other tracks
+ * are parked at their ends. No sample bytes are read; the next read
+ * still obeys the current availability bound. Invalid input leaves
+ * all cursors unchanged. Returns 1 on success, 0 on failure. */
+int rmp4_select_track_sample(rmp4_t *mp4, int track, uint32_t sample);
+
 /* Restart packet reading from the first sample. */
 void rmp4_rewind(rmp4_t *mp4);
 

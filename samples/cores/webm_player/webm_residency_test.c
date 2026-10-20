@@ -117,6 +117,51 @@ static int check_lacing(unsigned mode)
    return 0;
 }
 
+static int check_void_frontier(void)
+{
+   rwebm_t *demux;
+   rwebm_packet packet;
+   size_t at, segment, tracks, track, video, cluster, block, padding;
+   size_t prefix, resume;
+   used = 0;
+   at = element(0x1a45dfa3, 4); finish(at);
+   segment = element(0x18538067, 4);
+   tracks = element(0x1654ae6b, 4);
+   track = element(0xae, 1);
+   integer(0xd7, 1); integer(0x83, 1);
+   at = element(0x86, 1); memcpy(file + used, "V_VP9", 5); used += 5; finish(at);
+   video = element(0xe0, 1);
+   integer(0xb0, 64); integer(0xba, 48);
+   finish(video); finish(track); finish(tracks);
+   cluster = element(0x1f43b675, 4); integer(0xe7, 0);
+   block = element(0xa3, 1);
+   file[used++] = 0x81; file[used++] = 0; file[used++] = 0;
+   file[used++] = 0x80; file[used++] = 0x31; finish(block);
+   padding = element(0xec, 1); prefix = used;
+   memset(file + used, 0, MEDIA_DISCARD_MARGIN * 2); used += MEDIA_DISCARD_MARGIN * 2;
+   finish(padding); resume = used;
+   block = element(0xa3, 1);
+   file[used++] = 0x81; file[used++] = 0; file[used++] = 1;
+   file[used++] = 0x80; file[used++] = 0x32; finish(block);
+   finish(cluster); finish(segment);
+   demux = rwebm_open_memory_avail(file, used, prefix, NULL);
+   CHECK(demux);
+   CHECK(rwebm_read_packet(demux, &packet) == 1 && packet.data[0] == 0x31);
+   CHECK(rwebm_read_packet(demux, &packet) == RWEBM_READ_AGAIN);
+   CHECK(rwebm_consumed(demux) == resume);
+   rwebm_set_avail(demux, used);
+   CHECK(rwebm_read_packet(demux, &packet) == 1
+         && packet.data[0] == 0x32 && packet.timestamp == 1000000);
+   rwebm_close(demux);
+   size_vint(padding, used + 1024);
+   demux = rwebm_open_memory(file, used);
+   CHECK(demux);
+   CHECK(rwebm_read_packet(demux, &packet) == 1);
+   CHECK(rwebm_read_packet(demux, &packet) == -1);
+   rwebm_close(demux);
+   return 0;
+}
+
 int main(void)
 {
    int failed = 0;
@@ -126,8 +171,9 @@ int main(void)
       return 1;
    for (mode = 1; mode <= 3; mode++)
       failed |= check_lacing(mode);
+   failed |= check_void_frontier();
    free(file);
    if (!failed)
-      puts("WebM movie residency: Xiph, fixed and EBML laces pass");
+      puts("WebM movie residency: Xiph/fixed/EBML laces and partial Void frontier pass");
    return failed;
 }

@@ -51,6 +51,7 @@
 RETRO_BEGIN_DECLS
 
 struct data_transfer;
+typedef struct gfx_anim_preview_audio_prepared gfx_anim_preview_audio_prepared_t;
 
 /* Window sizing shared by every consumer (see gfx_thumbnail.c history
  * for how these were arrived at). */
@@ -84,6 +85,8 @@ typedef struct gfx_anim_preview
    /* Both axes in one word, VIDEO_SCALE_PACK's layout. */
    unsigned dims;
    int num_frames, loop_count;
+   int64_t timeline_start_us; /* immutable first-picture presentation origin */
+   bool seekable; /* immutable decoder capability, sampled before publication */
    bool windowed;                /* dt is a sliding window (reserved) */
    /* Feed geometry for this session. The video types size these to
     * the container's bitrate at open (see gfx_anim_preview_open);
@@ -119,6 +122,14 @@ typedef struct gfx_anim_preview
    size_t clock_frames;
    size_t clock_serial;
    unsigned clock_rate, clock_fraction;
+   bool seeking; /* main-thread transport hold, independent of user pause */
+   retro_atomic_int_t seek_audio_format; /* main publishes, worker snapshots */
+   unsigned seek_format, seek_phase; /* decoding-thread state below */
+   size_t seek_feed_hi, seek_feed_anchor;
+   int64_t seek_video_us;
+   gfx_anim_preview_audio_prepared_t *seek_audio;
+   int64_t media_origin_us, media_clock_us, media_requested_us; /* main-thread position origin */
+   bool media_clock_valid;
 } gfx_anim_preview_t;
 
 /* Open @path for animated playback. @png_probe: what a still-load task
@@ -188,6 +199,29 @@ bool gfx_anim_preview_windowed(const gfx_anim_preview_t *p);
 /* Preview audio: start the container's audio track looping through the
  * mixer (WEBM / MP4 only; honours the menu_thumbnail_preview_audio
  * setting), feed its window per tick, stop it. Main thread. */
+/* Worker-owned preparation over an independent source window. Currently
+ * MP4 AAC; mix_rate/s16 are the main thread's captured device format.
+ * Step prepares at most one access unit with bounded source refill.
+ * Transfer the object to the main thread only after step returns 1;
+ * adopt consumes it on every outcome. Free cancels an unpublished seek.
+ * The session must remain alive while new reads its immutable metadata. */
+gfx_anim_preview_audio_prepared_t *gfx_anim_preview_audio_prepare_new(
+      const gfx_anim_preview_t *p, int64_t target_us, unsigned mix_rate, bool s16);
+int gfx_anim_preview_audio_prepare_step(gfx_anim_preview_audio_prepared_t *a);
+void gfx_anim_preview_audio_prepare_free(gfx_anim_preview_audio_prepared_t *a);
+bool gfx_anim_preview_audio_adopt(gfx_anim_preview_t *p,
+      gfx_anim_preview_audio_prepared_t *a);
+
+/* Main-thread request setup before the player is polled; rate0 disables
+ * audio preparation. Step is a video_player seek callback on its decoder
+ * thread. Commit only after that player completed the latest seek AND
+ * accepted its first target picture, using the player's landed position. */
+bool gfx_anim_preview_seek_request(gfx_anim_preview_t *p,
+      unsigned mix_rate, bool s16);
+int gfx_anim_preview_seek_step(void *user, int64_t target_us,
+      bool restart, int64_t *position_us);
+void gfx_anim_preview_seek_commit(gfx_anim_preview_t *p, int64_t position_us);
+
 void gfx_anim_preview_audio_begin(gfx_anim_preview_t *p);
 bool gfx_anim_preview_audio_feed(gfx_anim_preview_t *p);
 void gfx_anim_preview_audio_stop(gfx_anim_preview_t *p);

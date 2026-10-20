@@ -16,6 +16,7 @@
  * frame drew at zero opacity.
  */
 #include <features/features_cpu.h>
+#include <audio/audio_mixer.h>
 #include <retro_timers.h>
 #include <stdio.h>
 #include <math.h>
@@ -27,6 +28,8 @@
 #include "harness.h"
 #include "../../../gfx/gfx_thumbnail.h"
 #include "../../../gfx/gfx_anim_preview.h"
+#include "../../../gfx/gfx_media_cpu.h"
+#include "../../../gfx/video_defines.h"
 #include "../../../libretro-common/include/formats/data_transfer.h"
 
 static double rss_mib(void)
@@ -281,7 +284,75 @@ static void run(const char *path, const char *label, int expect_video)
       check(label, "transport resume accepted",
             gfx_thumbnail_set_paused(&th, false, pause_now + 2000000));
    }
+   if (getenv("TRANSPORT_SEEK") && th.anim_sess)
+   {
+      retro_time_t seek_now = cpu_features_get_time_usec();
+      int uploads = hp.texture_uploads;
+      int tick;
+      float pcm[128];
+      size_t mixed = 0;
+      double energy = 0.0;
+      gfx_thumbnail_playback_state_t playback;
+      gfx_anim_preview_t *session = (gfx_anim_preview_t*)th.anim_sess;
+      audio_mixer_init(48000);
+      check(label, "seek pauses current playback",
+            gfx_thumbnail_set_paused(&th, true, seek_now));
+      check(label, "first absolute seek accepted",
+            gfx_thumbnail_seek(&th, 1250000, seek_now));
+      gfx_thumbnail_animate(&th, seek_now);
+      check(label, "replacement absolute seek accepted",
+            gfx_thumbnail_seek(&th, 400000, seek_now + 1));
+      check(label, "seeking snapshot shows latest target",
+            gfx_thumbnail_get_playback_state(&th, seek_now + 1, &playback)
+            && playback.seeking && playback.paused && playback.position_us == 400000);
+      for (tick = 0; tick < 2000 && th.anim_sess
+            && ((gfx_anim_preview_t*)th.anim_sess)->seeking; tick++)
+      {
+         gfx_thumbnail_animate(&th, seek_now + 1000 + tick * 1000);
+         retro_sleep(1);
+      }
+      check(label, "latest seek presents and commits", th.anim_sess
+            && !((gfx_anim_preview_t*)th.anim_sess)->seeking);
+      if (th.anim_sess)
+      {
+         session = (gfx_anim_preview_t*)th.anim_sess;
+         check(label, "seek preserves user pause", session->paused);
+         check(label, "landed position belongs to replacement",
+               session->media_origin_us > 100000 && session->media_origin_us <= 400000);
+         check(label, "seek presents one replacement texture", hp.texture_uploads > uploads);
+         uploads = hp.texture_uploads;
+         for (tick = 0; tick < 10; tick++)
+            gfx_thumbnail_animate(&th, seek_now + 3000000 + tick * 1000);
+         check(label, "paused target texture is retained", hp.texture_uploads == uploads);
+         if (hp.force_preview_audio)
+         {
+            check(label, "seek installs actual prepared audio", session->audio_voice != NULL);
+            memset(pcm, 0, sizeof(pcm));
+            audio_mixer_mix(pcm, 64, 1.0f, false);
+            for (tick = 0; tick < 128; tick++) energy += fabs(pcm[tick]);
+            check(label, "paused target emits no PCM", energy == 0.0);
+            check(label, "paused target has zero mixed-frame clock",
+                  audio_mixer_voice_clock(session->audio_voice, &mixed, NULL, NULL) && !mixed);
+            check(label, "seek resume accepted",
+                  gfx_thumbnail_set_paused(&th, false, seek_now + 3500000));
+            memset(pcm, 0, sizeof(pcm));
+            audio_mixer_mix(pcm, 64, 1.0f, false);
+            for (tick = 0; tick < 128; tick++) energy += fabs(pcm[tick]);
+            check(label, "resumed target emits actual PCM", energy > 0.0);
+            check(label, "resumed target clock counts actual frames",
+                  audio_mixer_voice_clock(session->audio_voice, &mixed, NULL, NULL) && mixed == 64);
+            check(label, "timeline advances by PCM rather than wall gap",
+                  gfx_thumbnail_get_playback_state(&th, seek_now + 3600000, &playback)
+                  && playback.position_us > session->media_origin_us
+                  && playback.position_us - session->media_origin_us <= 2000);
+         }
+         check(label, "close during seek accepted",
+               gfx_thumbnail_seek(&th, 1000000, seek_now + 4000000));
+         gfx_thumbnail_animate(&th, seek_now + 4000000);
+      }
+   }
    gfx_thumbnail_reset(&th);
+   if (getenv("TRANSPORT_SEEK")) audio_mixer_done();
 }
 
 
@@ -551,6 +622,192 @@ static void lane_retire(const char *path)
 }
 #endif
 
+typedef struct cpu_media_capture
+{
+   unsigned frames;
+   uint32_t first_hash;
+} cpu_media_capture_t;
+
+static uint32_t cpu_media_hash(const uint32_t *pixels, unsigned width,
+      unsigned height, bool native)
+{
+   size_t i, count = (size_t)width * height;
+   uint32_t hash = 2166136261U;
+   for (i = 0; i < count; i++)
+   {
+      uint32_t v = pixels[i];
+      if (!native) v = (v & 0xff00ff00U)
+         | ((v & 0xffU) << 16) | ((v >> 16) & 0xffU);
+      hash = (hash ^ (v & 0xffffffU)) * 16777619U;
+   }
+   return hash;
+}
+
+static bool cpu_media_capture(void *user, const video_player_frame_t *frame)
+{
+   cpu_media_capture_t *c = (cpu_media_capture_t*)user;
+   if (!frame->pixels || frame->hw || !frame->width || !frame->height) return false;
+   if (!c->frames) c->first_hash = cpu_media_hash(frame->pixels,
+         frame->width, frame->height, frame->native);
+   c->frames++;
+   return true;
+}
+
+static void lane_cpu_gap(const char *path)
+{
+   gfx_anim_preview_t *session = gfx_anim_preview_open(path, -1);
+   gfx_media_cpu_t *player;
+   cpu_media_capture_t capture;
+   int tick;
+   size_t peak = 0, bound;
+   unsigned target = getenv("CPU_GAP_FRAMES") ? (unsigned)strtoul(getenv("CPU_GAP_FRAMES"), NULL, 10) : 8;
+   if (target < 8 || target > 1000) target = 8;
+   memset(&capture, 0, sizeof(capture));
+   check("cpu gap", "windowed session opened", session != NULL);
+   if (!session) return;
+   player = gfx_media_cpu_new(session, cpu_media_capture, &capture, 0);
+   check("cpu gap", "CPU player created", player != NULL);
+   if (!player) { gfx_anim_preview_close(session); return; }
+   for (tick = 0; tick < 4000 && capture.frames < target; tick++)
+   {
+      size_t resident;
+      gfx_media_cpu_poll(player, 1000000 + tick * 2000);
+      resident = gfx_anim_preview_resident_bytes(session);
+      if (resident > peak) peak = resident;
+      retro_sleep(1);
+   }
+   printf("cpu gap: pictures=%u ticks=%d resident=%lu size=%lu observed_peak=%lu\n", capture.frames,
+         tick, (unsigned long)gfx_anim_preview_resident_bytes(session), (unsigned long)session->len, (unsigned long)peak);
+   check("cpu gap", "playback crosses metadata gap", capture.frames >= target);
+   check("cpu gap", "reservation used for gap traversal", data_transfer_window_is_reserved(session->dt));
+   /* A noisy file's ordinary lookahead/back margin can exceed half its
+    * encoded length. Bound that case by the configured window plus one
+    * coded picture (the fixture generator checks its raw-picture bound),
+    * refill quantum and page rounding. Reading the 12 MiB hole would
+    * exceed this allowance. The small-header case has a tighter bound. */
+   bound = target == 8 ? session->len / 2
+      : GFX_ANIM_PREVIEW_WINDOW_KEEP + session->feed_ahead + session->feed_back
+        + (size_t)VIDEO_SCALE_W(session->dims) * VIDEO_SCALE_H(session->dims) * 4
+        + GFX_ANIM_PREVIEW_FEED_BUDGET + 128 * 1024;
+   printf("cpu gap: observed footprint bound=%lu\n", (unsigned long)bound);
+   check("cpu gap", "observed footprint stays within retained-window budget", peak < bound);
+   gfx_media_cpu_retire(player);
+   gfx_thumbnail_anim_worker_deinit();
+   gfx_media_cpu_reap();
+}
+
+static void lane_cpu_media(const char *path)
+{
+   gfx_anim_preview_t *reference = gfx_anim_preview_open(path, -1);
+   gfx_anim_preview_t *session;
+   gfx_media_cpu_t *player;
+   gfx_media_playback_state_t state;
+   cpu_media_capture_t capture;
+   const uint32_t *pixels = NULL;
+   uint32_t expected = 0;
+   int duration = 0, tick;
+   bool native = false, closed;
+   /* Frozen logical time must not freeze the real work budget. */
+   int64_t now = 1000000;
+   unsigned held;
+   int uploads = hp.texture_uploads;
+   memset(&capture, 0, sizeof(capture));
+   check("cpu media", "software reference opened", reference != NULL);
+   if (!reference) return;
+   for (tick = 0; tick < 2000 && !pixels; tick++)
+   {
+      gfx_anim_preview_feed(reference);
+      pixels = gfx_anim_preview_next(reference, &duration, &native);
+   }
+   check("cpu media", "reference first picture decoded", pixels != NULL);
+   if (pixels) expected = cpu_media_hash(pixels, VIDEO_SCALE_W(reference->dims),
+         VIDEO_SCALE_H(reference->dims), native);
+   gfx_anim_preview_close(reference);
+   session = gfx_anim_preview_open(path, -1);
+   check("cpu media", "framebuffer session opened", session != NULL);
+   if (!session) return;
+#ifdef PREVIEW_THREADED
+   player = gfx_media_cpu_new(session, cpu_media_capture, &capture, 0);
+#else
+   player = gfx_media_cpu_new(session, cpu_media_capture, &capture, 0);
+#endif
+   check("cpu media", "framebuffer sink created", player != NULL);
+   if (!player) { gfx_anim_preview_close(session); return; }
+   for (tick = 0; tick < 2000 && !capture.frames; tick++)
+   {
+      gfx_media_cpu_poll(player, now + tick * 1000);
+      retro_sleep(1);
+   }
+   check("cpu media", "CPU picture matches reference pixels",
+         capture.frames && capture.first_hash == expected);
+   check("cpu media", "CPU transport pauses", gfx_media_cpu_pause(player, true, now + 1000));
+   held = capture.frames;
+   for (tick = 0; tick < 10; tick++) gfx_media_cpu_poll(player, now + 3000000 + tick * 1000);
+   check("cpu media", "paused CPU picture retained", capture.frames == held);
+   check("cpu media", "CPU seek accepts first target",
+         gfx_media_cpu_seek(player, 1250000, 0, false, now + 4000000));
+   gfx_media_cpu_poll(player, now + 4000000);
+   check("cpu media", "CPU seek replaces pending target",
+         gfx_media_cpu_seek(player, 400000, 0, false, now + 4000001));
+   check("cpu media", "CPU snapshot follows replacement",
+         gfx_media_cpu_state(player, now + 4000001, &state)
+         && state.paused && state.seeking && state.position_us == 400000);
+   for (tick = 0; tick < 2000; tick++)
+   {
+      gfx_media_cpu_poll(player, now + 4001000 + tick * 1000);
+      if (gfx_media_cpu_state(player, now + 4001000 + tick * 1000, &state)
+            && !state.seeking) break;
+      retro_sleep(1);
+   }
+   check("cpu media", "CPU seek commits target while paused",
+         tick < 2000 && state.paused && state.position_us > 100000
+         && state.position_us <= 400000 && capture.frames > held);
+   check("cpu media", "CPU transport used no texture upload", hp.texture_uploads == uploads);
+   check("cpu media", "CPU closing during seek accepted",
+         gfx_media_cpu_seek(player, 1000000, 0, false, now + 7000000));
+   gfx_media_cpu_poll(player, now + 7000000);
+   closed = gfx_media_cpu_free(player);
+   for (tick = 0; tick < 2000 && !closed; tick++)
+   {
+      retro_sleep(1);
+      closed = gfx_media_cpu_free(player);
+   }
+   check("cpu media", "CPU retire completes without blocking free", closed);
+}
+
+static void lane_cpu_retirement(const char *path)
+{
+   unsigned i;
+   int64_t now = cpu_features_get_time_usec();
+   for (i = 0; i < 32; i++)
+   {
+      gfx_anim_preview_t *session = gfx_anim_preview_open(path, -1);
+      cpu_media_capture_t *capture = (cpu_media_capture_t*)calloc(1, sizeof(*capture));
+      gfx_media_cpu_t *player;
+      check("cpu retire", "retirement fixture and callback allocated", session && capture);
+      if (!session || !capture)
+      {
+         if (session) gfx_anim_preview_close(session);
+         free(capture); break;
+      }
+#ifdef PREVIEW_THREADED
+      player = gfx_media_cpu_new(session, cpu_media_capture, capture, 0);
+#else
+      player = gfx_media_cpu_new(session, cpu_media_capture, capture, VIDEO_PLAYER_INLINE);
+#endif
+      check("cpu retire", "retirement player created", player != NULL);
+      if (!player) { gfx_anim_preview_close(session); free(capture); break; }
+      gfx_media_cpu_poll(player, now);
+      gfx_media_cpu_seek(player, 400000, 0, false, now + 1);
+      gfx_media_cpu_poll(player, now + 1);
+      gfx_media_cpu_retire(player);
+      free(capture);
+      gfx_media_cpu_reap();
+   }
+   gfx_thumbnail_anim_worker_deinit();
+   gfx_media_cpu_reap();
+}
+
 int main(int argc, char **argv)
 {
    int i;
@@ -559,9 +816,19 @@ int main(int argc, char **argv)
       printf("usage: %s <video> [more...]\n", argv[0]);
       return 2;
    }
+   if (getenv("CPU_GAP"))
+   {
+      lane_cpu_gap(argv[1]);
+      return fails ? 1 : 0;
+   }
 #ifdef PREVIEW_THREADED
    lane_retire(argv[1]);
 #endif
+   if (getenv("CPU_MEDIA"))
+   {
+      lane_cpu_media(argv[1]);
+      lane_cpu_retirement(argv[1]);
+   }
    lane_savestate_thumbnail_path();
    lane_still_sets();
    for (i = 1; i < argc; i++)

@@ -902,6 +902,28 @@ size_t image_transfer_anim_stream_consumed(void *stream,
    return 0;
 }
 
+size_t image_transfer_anim_stream_feed_frontier(void *stream, enum image_type_enum type)
+{
+#ifdef HAVE_RWEBM
+   if (type == IMAGE_TYPE_WEBM)
+      return rwebm_video_stream_feed_frontier((rwebm_video_stream_t*)stream);
+#endif
+   return image_transfer_anim_stream_consumed(stream, type);
+}
+
+void image_transfer_anim_stream_pin_span(void *stream, enum image_type_enum type,
+      size_t *lo, size_t *hi)
+{
+   if (lo) *lo = 0;
+   if (hi) *hi = 0;
+   if (!lo || !hi) return;
+#ifdef HAVE_RWEBM
+   if (type == IMAGE_TYPE_WEBM)
+      rwebm_video_stream_pin_span((rwebm_video_stream_t*)stream, lo, hi);
+#endif
+   (void)stream; (void)type;
+}
+
 void image_transfer_anim_stream_next_span(void *stream,
       enum image_type_enum type, size_t *lo, size_t *hi)
 {
@@ -1558,6 +1580,68 @@ const uint32_t *image_transfer_anim_stream_next(void *stream,
          break;
    }
    return NULL;
+}
+
+int64_t image_transfer_anim_stream_start_ns(void *stream, enum image_type_enum type)
+{
+#ifdef HAVE_RWEBM
+   if (type == IMAGE_TYPE_WEBM)
+      return rwebm_video_stream_start_ns((rwebm_video_stream_t*)stream);
+#endif
+   (void)stream; (void)type;
+   return 0;
+}
+
+bool image_transfer_anim_stream_seekable(void *stream, enum image_type_enum type)
+{
+   if (!stream) return false;
+#ifdef HAVE_RMP4
+   if (type == IMAGE_TYPE_MP4) return true;
+#endif
+#ifdef HAVE_RWEBM
+   if (type == IMAGE_TYPE_WEBM)
+      return rwebm_video_stream_seekable((rwebm_video_stream_t*)stream) != 0;
+#endif
+   (void)type;
+   return false;
+}
+
+bool image_transfer_anim_stream_seek_begin(void *stream,
+      enum image_type_enum type, int64_t target_us)
+{
+#if defined(HAVE_RMP4) || defined(HAVE_RWEBM)
+   const int64_t maximum = (int64_t)((~(uint64_t)0) >> 1);
+   if (target_us < 0) target_us = 0;
+   if (target_us > maximum / 1000) target_us = maximum / 1000;
+#endif
+#ifdef HAVE_RMP4
+   if (type == IMAGE_TYPE_MP4)
+      return rmp4_video_stream_seek_begin_ns((rmp4_video_stream_t*)stream,
+            target_us * 1000) != 0;
+#endif
+#ifdef HAVE_RWEBM
+   if (type == IMAGE_TYPE_WEBM)
+      return rwebm_video_stream_seek_begin_ns((rwebm_video_stream_t*)stream,
+            target_us * 1000) != 0;
+#endif
+   (void)stream; (void)type; (void)target_us;
+   return false;
+}
+
+int image_transfer_anim_stream_seek_step(void *stream,
+      enum image_type_enum type, int64_t *position_us)
+{
+#ifdef HAVE_RMP4
+   if (type == IMAGE_TYPE_MP4)
+      return rmp4_video_stream_seek_step((rmp4_video_stream_t*)stream, position_us);
+#endif
+#ifdef HAVE_RWEBM
+   if (type == IMAGE_TYPE_WEBM)
+      return rwebm_video_stream_seek_step((rwebm_video_stream_t*)stream, position_us);
+#endif
+   (void)stream; (void)type;
+   if (position_us) *position_us = 0;
+   return -1;
 }
 
 void image_transfer_anim_stream_rewind(void *stream,

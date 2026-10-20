@@ -120,11 +120,91 @@ static void fill_params(audio_mixer_stream_params_t *p, unsigned slot)
    p->state               = AUDIO_STREAM_STATE_STOPPED;
 }
 
+extern unsigned stub_sound_destroys;
+extern bool stub_play_fail;
+
+static void prepared_adoption(unsigned slot)
+{
+   audio_mixer_stream_params_t p;
+   audio_mixer_sound_t *sound;
+   audio_mixer_voice_t *voice;
+   size_t serial;
+   unsigned before, loads;
+   int installed;
+   unsigned pass;
+
+   /* The caller's buffer owner is unrelated to the prepared sound.
+    * It must never be released or attached by the adoption path. */
+   for (pass = 0; pass < 7; pass++)
+   {
+      fill_params(&p, slot);
+      p.state = AUDIO_STREAM_STATE_PLAYING_LOOPED;
+      p.buf_owner = dummy_wav;
+      p.buf_owner_free = counting_owner_free;
+      p.out_slot = &installed;
+      installed = 123;
+      voice = NULL;
+      serial = 123;
+      before = stub_sound_destroys;
+      sound = audio_mixer_load_wav_stream(malloc(64), 64);
+      loads = loads_seen;
+      stub_load_hook = lock_free_during_load;
+      if (pass == 0) p.state = AUDIO_STREAM_STATE_STOPPED;
+      if (pass == 1) p.slot_selection_idx = AUDIO_MIXER_MAX_SYSTEM_STREAMS;
+      if (pass == 2) AUDIO_FLAGS_CLEAR(&audio_driver_st, AUDIO_FLAG_MIXER_INITED);
+      if (pass == 3) stub_play_fail = true;
+      if (pass == 6)
+      {
+         unsigned i;
+         p.slot_selection_type = AUDIO_MIXER_SLOT_SELECTION_AUTOMATIC;
+         for (i = AUDIO_MIXER_MAX_STREAMS; i < AUDIO_MIXER_MAX_SYSTEM_STREAMS; i++)
+            audio_driver_st.mixer_streams[i].state = AUDIO_STREAM_STATE_STOPPED;
+      }
+      if (pass == 4)
+      {
+         CHECK(!audio_driver_mixer_add_prepared_stream(NULL, sound,
+                  &voice, &serial), "prepared NULL params accepted");
+      }
+      else if (pass != 5)
+         CHECK(!audio_driver_mixer_add_prepared_stream(&p, sound,
+                  &voice, &serial), "prepared failure case %u accepted", pass);
+      else
+      {
+         CHECK(audio_driver_mixer_add_prepared_stream(&p, sound,
+                  &voice, &serial), "prepared success refused");
+         CHECK(installed == (int)slot, "prepared slot not returned");
+         CHECK(audio_driver_st.mixer_streams[slot].voice != NULL,
+               "prepared play installed without voice");
+         audio_driver_mixer_stop_stream(slot);
+         audio_driver_mixer_remove_stream(slot);
+      }
+      stub_load_hook = NULL;
+      CHECK(loads_seen == loads, "adoption reloaded the prepared sound");
+      CHECK(stub_sound_destroys == before + 1,
+            "prepared case %u did not destroy exactly once", pass);
+      if (pass != 5)
+      {
+         CHECK(!voice && !serial, "prepared refusal left a binding");
+         if (pass != 4) CHECK(installed == -1, "prepared refusal left a slot");
+      }
+      if (pass == 6)
+      {
+         unsigned i;
+         for (i = AUDIO_MIXER_MAX_STREAMS; i < AUDIO_MIXER_MAX_SYSTEM_STREAMS; i++)
+            audio_driver_st.mixer_streams[i].state = AUDIO_STREAM_STATE_NONE;
+      }
+      stub_play_fail = false;
+      AUDIO_FLAGS_SET(&audio_driver_st, AUDIO_FLAG_MIXER_INITED);
+   }
+}
+
 int main(void)
 {
    pthread_t dog;
    audio_mixer_stream_params_t params;
    unsigned slot = AUDIO_MIXER_SYSTEM_SLOT_OK;
+   unsigned prepared_rate = 123;
+   bool prepared_s16 = true;
 
    pthread_create(&dog, NULL, watchdog, NULL);
 
@@ -140,6 +220,8 @@ int main(void)
     *    AUDIO_FLAG_MIXER_INITED enforces for streams retiring after
     *    teardown. */
    STAGE(0);
+   CHECK(!audio_driver_mixer_prepare_format(&prepared_rate, &prepared_s16)
+         && !prepared_rate && !prepared_s16, "inactive mixer exposed prepare format");
    fill_params(&params, slot);
    owner_frees      = 0;
    params.buf_owner      = dummy_wav;
@@ -157,6 +239,10 @@ int main(void)
     * lifecycle has it: audio_driver_init_internal() raises the latch
     * right after audio_mixer_init(). */
    AUDIO_FLAGS_SET(&audio_driver_st, AUDIO_FLAG_MIXER_INITED);
+   audio_driver_mixer_init_rate = 48000;
+   CHECK(audio_driver_mixer_prepare_format(&prepared_rate, &prepared_s16)
+         && prepared_rate == 48000 && !prepared_s16,
+         "initialized mixer prepare format snapshot is wrong");
 
    /* 1. The menu-sound load itself: an empty manual slot. This is the
     *    call that deadlocked. The sound is built with the lock free. */
@@ -240,6 +326,14 @@ int main(void)
       unsigned i;
       for (i = 0; i < AUDIO_MIXER_MAX_SYSTEM_STREAMS; i++)
          audio_driver_mixer_remove_stream(i);
+   }
+   {
+      unsigned releases = owner_frees;
+      unsigned playing = audio_driver_st.mixer_streams_playing;
+      prepared_adoption(slot);
+      CHECK(owner_frees == releases, "prepared adoption released params owner");
+      CHECK(audio_driver_st.mixer_streams_playing == playing,
+            "prepared adoption leaked a playing counter");
    }
    slock_free(audio_driver_st.state_lock);
    audio_driver_st.state_lock = NULL;

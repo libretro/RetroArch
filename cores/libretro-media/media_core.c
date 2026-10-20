@@ -1833,7 +1833,7 @@ void MEDIA_CORE_PREFIX(retro_run)(void)
          && !data_transfer_capped(p->dt)
          && (   p->pending_seek_ns >= 0
              || data_transfer_avail(p->dt)
-                < (p->webmvs ? rwebm_video_stream_consumed(p->webmvs)
+                < (p->webmvs ? rwebm_video_stream_feed_frontier(p->webmvs)
                    : rwebm_tell(p->webm)) + MEDIA_FILL_LOOKAHEAD))
    {
       size_t avail = data_transfer_iterate(p->dt, 4 * 1024 * 1024);

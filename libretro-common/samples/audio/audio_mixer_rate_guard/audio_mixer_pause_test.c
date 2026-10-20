@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <audio/audio_mixer.h>
+#include <formats/audio.h>
 
 #define FRAMES 512
 #define BLOCK 32
@@ -112,6 +113,83 @@ static void render(bool s16, bool stream, bool pause, unsigned rate)
    audio_mixer_done();
 }
 
+static void prepared_voice(bool s16, bool cancel)
+{
+   unsigned char *data = wav();
+   audio_mixer_sound_t *sound = NULL;
+   audio_mixer_voice_t *voice = NULL;
+   void *transfer = NULL;
+   size_t got = 0, frames = 0;
+   unsigned i, before = failures;
+   int result;
+   if (!data) { failures++; return; }
+   audio_mixer_init(48000);
+   sound = audio_mixer_load_wav_stream(data, 44 + FRAMES * 4);
+   if (!sound) { free(data); failures++; goto done; }
+   transfer = audio_transfer_new(AUDIO_TYPE_WAV);
+   if (!transfer) { failures++; goto done; }
+   audio_transfer_set_buffer_ptr(transfer, AUDIO_TYPE_WAV,
+         data, 44 + FRAMES * 4);
+   if (!audio_transfer_start(transfer, AUDIO_TYPE_WAV))
+   { failures++; goto done; }
+   result = s16 ? audio_transfer_read_s16(transfer, AUDIO_TYPE_WAV,
+         actual_i, BLOCK * 3, &got)
+      : audio_transfer_read_f32(transfer, AUDIO_TYPE_WAV,
+            actual_f, BLOCK * 3, &got);
+   if (result < 0 || got != BLOCK * 3)
+   { failures++; goto done; }
+   if (!audio_mixer_sound_set_prepared_transfer(sound, transfer,
+            cancel ? 44100 : 48000, s16))
+   { failures++; goto done; }
+   transfer = NULL;
+   if (cancel)
+   {
+      voice = s16 ? audio_mixer_play_s16(sound, false, AUDIO_MIXER_GAIN_UNITY,
+            "sinc", RESAMPLER_QUALITY_NORMAL, NULL)
+         : audio_mixer_play(sound, false, 1.0f, "sinc",
+               RESAMPLER_QUALITY_NORMAL, NULL);
+      if (voice) failures++;
+      goto done;
+   }
+   /* A failed format match must not consume the prepared position. */
+   voice = !s16 ? audio_mixer_play_s16(sound, false, AUDIO_MIXER_GAIN_UNITY,
+         "sinc", RESAMPLER_QUALITY_NORMAL, NULL)
+      : audio_mixer_play(sound, false, 1.0f, "sinc",
+            RESAMPLER_QUALITY_NORMAL, NULL);
+   if (voice) { failures++; goto done; }
+   audio_mixer_sound_set_initial_paused(sound, true);
+   voice = s16 ? audio_mixer_play_s16(sound, false, AUDIO_MIXER_GAIN_UNITY,
+         "sinc", RESAMPLER_QUALITY_NORMAL, NULL)
+      : audio_mixer_play(sound, false, 1.0f, "sinc",
+            RESAMPLER_QUALITY_NORMAL, NULL);
+   if (!voice) { failures++; goto done; }
+   memset(actual_i, 0, sizeof(actual_i));
+   memset(actual_f, 0, sizeof(actual_f));
+   if (s16) audio_mixer_mix_s16(actual_i, BLOCK, AUDIO_MIXER_GAIN_UNITY, false);
+   else audio_mixer_mix(actual_f, BLOCK, 1.0f, false);
+   for (i = 0; i < BLOCK * 2; i++)
+      if (actual_i[i] || actual_f[i] != 0.0f) failures++;
+   if (!audio_mixer_voice_clock(voice, &frames, NULL, NULL) || frames)
+      failures++;
+   audio_mixer_voice_set_paused(voice, false);
+   if (s16) audio_mixer_mix_s16(actual_i, BLOCK, AUDIO_MIXER_GAIN_UNITY, false);
+   else audio_mixer_mix(actual_f, BLOCK, 1.0f, false);
+   if (s16 ? memcmp(actual_i, baseline_i + BLOCK * 2 * 3,
+            BLOCK * 2 * sizeof(*actual_i)) != 0
+         : memcmp(actual_f, baseline_f + BLOCK * 2 * 3,
+               BLOCK * 2 * sizeof(*actual_f)) != 0)
+      failures++;
+   if (!audio_mixer_voice_clock(voice, &frames, NULL, NULL) || frames != BLOCK)
+      failures++;
+done:
+   if (voice) audio_mixer_stop(voice);
+   if (transfer) audio_transfer_free(transfer, AUDIO_TYPE_WAV);
+   audio_mixer_destroy(sound);
+   audio_mixer_done();
+   if (failures != before)
+      printf("prepared voice: s16=%u cancel=%u failed\n", s16, cancel);
+}
+
 int main(void)
 {
    unsigned s16, stream, rate;
@@ -137,6 +215,14 @@ int main(void)
             if (s16 ? baseline_i[i] != 0 : baseline_f[i] != 0.0f) active++;
          if (!active) failures++;
       }
+   for (s16 = 0; s16 < 2; s16++)
+   {
+      memset(baseline_i, 0, sizeof(baseline_i));
+      memset(baseline_f, 0, sizeof(baseline_f));
+      render(s16 != 0, true, false, 48000);
+      prepared_voice(s16 != 0, false);
+      prepared_voice(s16 != 0, true);
+   }
    printf("audio_mixer pause: %u failures\n", failures);
    return failures != 0;
 }

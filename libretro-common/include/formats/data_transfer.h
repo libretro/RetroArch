@@ -252,6 +252,12 @@ bool data_transfer_window_feed(data_transfer_t *dt, size_t tell,
  * valid between this call and the owner's next feed, for the one
  * consumer the window serves; it is not the shared-frontier accessor
  * the single-owner contract above declines to provide. */
+/* Owner-thread retention of one already-readable encoded span across
+ * moving-window advance/rewind/rebase. No read, allocation or copy. The
+ * owner clears it with (0,0) after use; resident() includes pinned pages
+ * outside the normal window. The permanent head is always retained. */
+bool data_transfer_window_pin(data_transfer_t *dt, size_t lo, size_t hi);
+
 bool data_transfer_window_feed_budget(data_transfer_t *dt, size_t tell,
       size_t lookahead, size_t margin, size_t budget,
       size_t *resident_hi);

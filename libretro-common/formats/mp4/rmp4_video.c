@@ -60,11 +60,8 @@
 #include <features/features_cpu.h>
 #endif
 
-/* Per-packet timestamps are pre-scanned at open so every frame's display
- * duration is known without lookahead decoding; cap the table so a
- * pathological stream cannot balloon it. Frames past the cap reuse the
- * last stored delta. */
-#define RMP4_VIDEO_MAX_TS       8192
+/* The demuxer's bounded sample table supplies presentation timestamps
+ * without lookahead decoding or reading media bytes. */
 
 /* A VP9 superframe carries at most 8 sub-frames. */
 #define RMP4_VIDEO_MAX_SUPER    8
@@ -95,6 +92,8 @@ struct rmp4_video_stream
    int          ts_count;   /* entries stored in ts                   */
    int          num_frames; /* total video packets in the stream      */
    int          disp_idx;   /* ordinal of the next displayed picture  */
+   int          seek_state, seek_target, seek_scan;
+   int64_t      seek_position_us;
    /* The displayed picture most recently produced by a step.  Its
     * planes stay inside the decoder until the next decode or drain
     * call, so colour conversion into 'frame' is deferred to
@@ -826,8 +825,14 @@ static rmp4_video_stream_t *rmp4_video_stream_open_begin(
    s->width  = trk->width;
    s->height = trk->height;
 
-   if (!(s->ts = (int64_t*)malloc(RMP4_VIDEO_MAX_TS * sizeof(int64_t))))
-      goto fail;
+   {
+      uint32_t count = 0;
+      if (!rmp4_track_pts(s->demux, s->track, &count) || !count
+            || sizeof(*s->ts) > SIZE_MAX / (size_t)count)
+         goto fail;
+      if (!(s->ts = (int64_t*)malloc((size_t)count * sizeof(*s->ts))))
+         goto fail;
+   }
 
    return s;
 
@@ -836,19 +841,9 @@ fail:
    return NULL;
 }
 
-/* Pre-scan: count the track's packets and record their timestamps so
- * frame durations come straight from the container. This walks the
- * sample table only (no decode).  Stop at the table's capacity,
- * mirroring the WebM glue: frames past the cap reuse the last stored
- * delta, and num_frames saturates (its only external consumer is the
- * >= 2 animation admission).  For a plain MP4 the walk is cheap
- * (moov-resident sample tables), but a fragmented file interleaves
- * moof boxes with the media data, so an unbounded walk swept the
- * whole buffer there too.
- *
- * Walks at most max_packets container packets (any track; <= 0 means
- * no limit) and returns 1 when the scan is complete, 0 when there is
- * more to walk. */
+/* Copy the demuxer's bounded sample table without reading media.
+ * At most max_packets timestamps per call (<= 0 means no limit).
+ * Returns 1 when complete, 0 when another slice is needed. */
 static int rmp4_video_stream_scan_step(rmp4_video_stream_t *s,
       int max_packets)
 {
@@ -865,8 +860,7 @@ static int rmp4_video_stream_scan_step(rmp4_video_stream_t *s,
 
    if (!pts)
       return 1;
-   while (s->num_frames < RMP4_VIDEO_MAX_TS
-         && (uint32_t)s->ts_count < count)
+   while ((uint32_t)s->ts_count < count)
    {
       if (max_packets > 0 && walked >= max_packets)
          return 0;
@@ -1886,7 +1880,7 @@ void rmp4_video_stream_rewind(rmp4_video_stream_t *s)
 {
    if (!s)
       return;
-   s->pending = s->waiting = 0;
+   s->pending = s->waiting = s->seek_state = 0;
    rmp4_video_hwf_drop(s);
    s->rndr_kind = 0;   /* decoder reset invalidates the planes */
    rmp4_rewind(s->demux);
@@ -1903,6 +1897,99 @@ int64_t rmp4_video_stream_span_ms(const rmp4_video_stream_t *s)
    if (!s || s->ts_count < 2)
       return 0;
    return (int64_t)((s->ts[s->ts_count - 1] - s->ts[0]) / 1000000);
+}
+
+int rmp4_video_stream_seek_begin_ns(rmp4_video_stream_t *s, int64_t ns)
+{
+   int lo = 0, hi;
+   if (!s || s->ts_count <= 0)
+      return 0;
+   if (ns < 0) ns = 0;
+   hi = s->ts_count;
+   while (lo < hi)
+   {
+      int mid = lo + (hi - lo) / 2;
+      if (s->ts[mid] <= ns)
+         lo = mid + 1;
+      else
+         hi = mid;
+   }
+   s->seek_target = lo ? lo - 1 : 0;
+   s->seek_scan = s->seek_target;
+   s->seek_state = 1;
+   s->waiting = RMP4_VIDEO_WAIT_NONE;
+   return 1;
+}
+
+int rmp4_video_stream_seek_step(rmp4_video_stream_t *s, int64_t *position_us)
+{
+   if (position_us) *position_us = 0;
+   if (!s || !s->seek_state)
+      return -1;
+   if (s->seek_state == 1)
+   {
+      uint32_t count = 0;
+      const int64_t *pts = rmp4_track_pts(s->demux, s->track, &count);
+      unsigned budget = 256;
+      if (!pts || (uint32_t)s->seek_scan >= count)
+         goto failed;
+      while (budget--)
+      {
+         int key = rmp4_track_sample_key(s->demux, s->track,
+               (uint32_t)s->seek_scan);
+         if (key < 0)
+            goto failed;
+         if (key && pts[s->seek_scan] <= s->ts[s->seek_target])
+         {
+            int lo = 0, hi = s->ts_count;
+            int sample = s->seek_scan;
+            int64_t start_ns = pts[sample];
+            rmp4_video_stream_rewind(s);
+            if (!rmp4_select_track_sample(s->demux, s->track,
+                     (uint32_t)sample))
+               goto failed;
+            while (lo < hi)
+            {
+               int mid = lo + (hi - lo) / 2;
+               if (s->ts[mid] < start_ns) lo = mid + 1;
+               else hi = mid;
+            }
+            s->disp_idx = lo;
+            s->seek_state = 2;
+            return 0;
+         }
+         if (!s->seek_scan)
+            goto failed;
+         s->seek_scan--;
+      }
+      return 0;
+   }
+   if (s->seek_state == 2 && s->disp_idx < s->seek_target)
+   {
+      int r;
+      s->waiting = RMP4_VIDEO_WAIT_NONE;
+      r = rmp4_video_stream_step(s, NULL, 1);
+      if (r < 0)
+         goto failed;
+      if (r == 1)
+      {
+         rmp4_video_hwf_drop(s);
+         s->rndr_kind = 0;
+      }
+      if (s->disp_idx < s->seek_target)
+         return 0;
+   }
+   if (s->disp_idx >= s->ts_count)
+      goto failed;
+   if (s->seek_state != 3)
+      s->seek_position_us = s->ts[s->disp_idx] / 1000;
+   s->seek_state = 3;
+   s->waiting = RMP4_VIDEO_WAIT_NONE;
+   if (position_us) *position_us = s->seek_position_us;
+   return 1;
+failed:
+   s->seek_state = 0;
+   return -1;
 }
 
 int64_t rmp4_video_stream_seek_frame(rmp4_video_stream_t *s, int frame)

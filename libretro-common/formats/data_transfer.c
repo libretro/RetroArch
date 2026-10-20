@@ -321,6 +321,7 @@ struct data_transfer
    size_t  wtell;    /* last consumer position seen by feed()        */
    data_transfer_source_read_t src_cb; /* producer-backed transfer   */
    void   *src_ud;
+   size_t  pin_lo, pin_hi; /* one borrowed coded packet, page aligned */
    size_t  wfreed;   /* page-aligned decommit frontier: everything in
                         [keep-page-ceil, wfreed) is released.  Kept
                         across calls because the feeder advances in
@@ -398,6 +399,24 @@ static size_t data_transfer_prefix_iterate(data_transfer_t *dt,
 /* Release whole pages from the decommit frontier up to (not
  * including) the page containing 'to'.  The frontier survives calls,
  * so sub-page feeder steps accumulate into page releases. */
+static void data_transfer_wrelease(data_transfer_t *dt, size_t lo, size_t hi)
+{
+   if (lo >= hi) return;
+#ifdef DT_STRICT
+   memdecommit(dt->map + lo, hi - lo, true);
+#else
+   memdecommit(dt->map + lo, hi - lo, false);
+#endif
+}
+
+static void data_transfer_wrelease_except(data_transfer_t *dt,
+      size_t lo, size_t hi, size_t pin_lo, size_t pin_hi)
+{
+   if (pin_lo >= pin_hi) { data_transfer_wrelease(dt, lo, hi); return; }
+   if (lo < pin_lo) data_transfer_wrelease(dt, lo, hi < pin_lo ? hi : pin_lo);
+   if (hi > pin_hi) data_transfer_wrelease(dt, lo > pin_hi ? lo : pin_hi, hi);
+}
+
 static void data_transfer_wdecommit_to(data_transfer_t *dt, size_t to)
 {
    size_t from = dt->wfreed;
@@ -405,11 +424,7 @@ static void data_transfer_wdecommit_to(data_transfer_t *dt, size_t to)
    if (to <= from || !dt->map_len)
       return;
    dt->wfreed = to;
-#ifdef DT_STRICT
-   memdecommit(dt->map + from, to - from, true);
-#else
-   memdecommit(dt->map + from, to - from, false);
-#endif
+   data_transfer_wrelease_except(dt, from, to, dt->pin_lo, dt->pin_hi);
 }
 
 /* Settle a window into the same terminal the fill uses: failed() true,
@@ -566,14 +581,49 @@ bool data_transfer_reserve_supported(void)
 
 size_t data_transfer_window_resident(data_transfer_t *dt)
 {
-   size_t head, moving;
+   size_t head, moving, pinned = 0, end;
    if (!dt || !dt->window)
       return 0;
    if (dt->map_len == 0)     /* settled into a whole-file commit */
       return dt->len;
    head   = dt->wfreed < dt->keep ? dt->wfreed : dt->keep;
    moving = dt->whi > dt->wfreed ? dt->whi - dt->wfreed : 0;
-   return head + moving;
+   end = (dt->whi + dt->page - 1) & ~(dt->page - 1);
+   if (dt->pin_lo < dt->pin_hi)
+   {
+      size_t stop = dt->pin_hi < dt->wfreed ? dt->pin_hi : dt->wfreed;
+      size_t start = dt->pin_lo > end ? dt->pin_lo : end;
+      if (stop > dt->pin_lo) pinned += stop - dt->pin_lo;
+      if (dt->pin_hi > start) pinned += dt->pin_hi - start;
+   }
+   return head + moving + pinned;
+}
+
+bool data_transfer_window_pin(data_transfer_t *dt, size_t lo, size_t hi)
+{
+   size_t pin_lo = 0, pin_hi = 0, end, stop, start, head;
+   if (!dt || !dt->window || dt->failed || lo > hi || hi > dt->len) return false;
+   if (!dt->map_len) return true;
+   head = (dt->keep + dt->page - 1) & ~(dt->page - 1);
+   if (lo < hi && hi > head)
+   {
+      pin_lo = lo & ~(dt->page - 1);
+      if (pin_lo < head) pin_lo = head;
+      pin_hi = (hi + dt->page - 1) & ~(dt->page - 1);
+   }
+   if (pin_lo == dt->pin_lo && pin_hi == dt->pin_hi) return true;
+   /* Retired pin pages that remain inside the moving window continue
+    * to belong to it. Release only the remainder, excluding a new pin. */
+   end = (dt->whi + dt->page - 1) & ~(dt->page - 1);
+   stop = dt->pin_hi < dt->wfreed ? dt->pin_hi : dt->wfreed;
+   start = dt->pin_lo > end ? dt->pin_lo : end;
+   if (stop > dt->pin_lo)
+      data_transfer_wrelease_except(dt, dt->pin_lo, stop, pin_lo, pin_hi);
+   if (dt->pin_hi > start)
+      data_transfer_wrelease_except(dt, start, dt->pin_hi, pin_lo, pin_hi);
+   dt->pin_lo = pin_lo;
+   dt->pin_hi = pin_hi;
+   return true;
 }
 
 bool data_transfer_window_is_reserved(data_transfer_t *dt)
@@ -684,6 +734,7 @@ void data_transfer_window_rewind(data_transfer_t *dt)
     * frontier at the head boundary for the next lap */
    data_transfer_wdecommit_to(dt,
          (dt->whi + dt->page - 1) & ~(dt->page - 1));
+   dt->wtell  = 0;
    dt->wlo    = dt->keep;
    dt->whi    = dt->keep;
    dt->wfreed = (dt->keep + dt->page - 1) & ~(dt->page - 1);
@@ -714,6 +765,12 @@ bool data_transfer_window_grow_keep(data_transfer_t *dt, size_t keep)
       }
    }
    dt->keep = keep;
+   if (dt->pin_lo < dt->pin_hi)
+   {
+      size_t head = (keep + dt->page - 1) & ~(dt->page - 1);
+      if (dt->pin_hi <= head) dt->pin_lo = dt->pin_hi = 0;
+      else if (dt->pin_lo < head) dt->pin_lo = head;
+   }
    if (dt->wlo < keep)
       dt->wlo = keep;
    if (dt->whi < keep)

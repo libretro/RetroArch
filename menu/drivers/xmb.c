@@ -42,6 +42,8 @@
 #include "../../frontend/frontend_driver.h"
 
 #include "../menu_driver.h"
+#include "../menu_media_controls.h"
+#include "../menu_media_browser.h"
 #include "../menu_str.h"
 #include "../menu_entries.h"
 #include "../menu_screensaver.h"
@@ -383,6 +385,7 @@ typedef struct xmb_handle
 #endif
    xmb_node_t netplay_tab_node;
    menu_input_pointer_t pointer;
+   menu_media_controls_t media;
 
    /* Touch drag state for direction locking */
    enum xmb_drag_mode drag_mode;
@@ -6194,6 +6197,21 @@ static enum menu_action xmb_parse_menu_entry_action(
    struct menu_state   *menu_st = menu_state_get_ptr();
    menu_list_t *menu_list       = menu_st->entries.list;
 
+   if (xmb->is_file_list && !xmb->show_fullscreen_thumbnails
+         && (action == MENU_ACTION_OK || action == MENU_ACTION_SELECT || action == MENU_ACTION_START)
+         && menu_media_open_selected_movie(menu_st, &xmb->thumbnails.left, &xmb->thumbnails.right))
+   {
+      xmb->thumbnails.pending = XMB_PENDING_THUMBNAIL_NONE;
+      xmb->fullscreen_thumbnails_available = true;
+      xmb_show_fullscreen_thumbnails(xmb, menu_st, menu_st->selection_ptr);
+      return MENU_ACTION_NOOP;
+   }
+
+   if (xmb->show_fullscreen_thumbnails
+         && menu_media_controls_action(&xmb->media, action,
+            menu_driver_get_current_time()))
+      return MENU_ACTION_NOOP;
+
    /* Scan user inputs */
    switch (action)
    {
@@ -7371,6 +7389,15 @@ static void xmb_render(void *data,
    if (!xmb)
       return;
 
+   if (xmb->is_file_list && !xmb->show_fullscreen_thumbnails
+         && !gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_RIGHT)
+         && !gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_LEFT)
+         && (xmb->thumbnails.left.anim_player || xmb->thumbnails.right.anim_player))
+   {
+      gfx_thumbnail_reset(&xmb->thumbnails.left);
+      gfx_thumbnail_reset(&xmb->thumbnails.right);
+   }
+
    /* Advance animated thumbnails (animated WebP) once per frame on the
     * main thread. No-op for still images. */
    gfx_thumbnail_animate(&xmb->thumbnails.right,
@@ -7453,9 +7480,16 @@ static void xmb_render(void *data,
 
    /* Read pointer state */
    menu_input_get_pointer_state(&xmb->pointer);
+   menu_media_controls_thumbnail(&xmb->media, &xmb->thumbnails.left,
+         &xmb->thumbnails.right,
+         xmb->show_fullscreen_thumbnails && !xmb->show_screensaver
+            && !menu_input_dialog_get_display_kb(),
+         VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims),
+         &xmb->pointer, menu_driver_get_current_time());
 
    /* Direction locking for horizontal category dragging */
-   if (xmb->pointer.type != MENU_POINTER_DISABLED)
+   if (xmb->pointer.type != MENU_POINTER_DISABLED
+         && !xmb->media.controls.target.user)
    {
       if (     xmb->pointer.flags & MENU_INP_PTR_FLG_PRESSED
             && !*menu_st->driver_data->menu_state_msg)
@@ -7586,7 +7620,8 @@ static void xmb_render(void *data,
       return;
    }
 
-   if (xmb->pointer.type != MENU_POINTER_DISABLED)
+   if (xmb->pointer.type != MENU_POINTER_DISABLED
+         && !xmb->media.controls.target.user)
    {
       size_t selection     = menu_st->selection_ptr;
       int16_t margin_top   = (int16_t)xmb->margins_screen_top;
@@ -9602,6 +9637,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          color_theme,
          xmb_item_color,
          video_info, selection);
+   menu_media_controls_draw(&xmb->media, p_disp, userdata,
+         video_info->dims, xmb->font2 ? xmb->font2 : xmb->font);
 
    if (input_dialog_display_kb)
    {
@@ -10192,6 +10229,7 @@ static void xmb_context_destroy(void *data)
    /* Signal the render path to stop using textures/fonts.
     * Under threaded video, xmb_frame() may be mid-render on
     * the video thread when this runs on the main thread. */
+   menu_media_controls_cancel(&xmb->media);
    xmb->context_generation++;
 
    xmb_free_textures(xmb);
@@ -10364,6 +10402,13 @@ static int xmb_pointer_down(void *userdata,
    if (!xmb)
       return -1;
 
+   if (xmb->show_fullscreen_thumbnails && xmb->media.controls.target.user)
+   {
+      gfx_media_controls_pointer(&xmb->media.controls, (int)x, (int)y,
+            true, true, menu_driver_get_current_time());
+      return 0;
+   }
+
    /* Initialize drag detection */
    xmb->drag_mode = XMB_DRAG_DETECTING;
    xmb->drag_start_x = (float)x;
@@ -10393,6 +10438,14 @@ static int xmb_pointer_up(void *userdata,
 
    if (!xmb)
       return -1;
+
+   if (xmb->show_fullscreen_thumbnails
+         && menu_media_controls_release(&xmb->media, x, y,
+            menu_driver_get_current_time()))
+   {
+      menu_st->input_state.pointer.y_accel = 0.0f;
+      return 0;
+   }
 
    /* If fullscreen thumbnail view is enabled,
     * all input will disable it and otherwise

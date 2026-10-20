@@ -340,6 +340,9 @@ OBJ += \
        gfx/gfx_surface.o \
        gfx/gfx_surface_player.o \
        gfx/gfx_thumbnail.o \
+       gfx/gfx_media_controls.o \
+       gfx/gfx_media_player.o \
+       gfx/gfx_media_cpu.o \
        gfx/gfx_anim_preview.o \
        configuration.o \
        $(LIBRETRO_COMM_DIR)/dynamic/dylib.o \
@@ -1048,6 +1051,8 @@ endif
 ifeq ($(HAVE_MENU_COMMON), 1)
    OBJ += menu/menu_setting.o \
           menu/menu_driver.o \
+          menu/menu_media_controls.o \
+          menu/menu_media_browser.o \
           menu/menu_str.o \
           menu/cbs/menu_cbs_ok.o \
           menu/cbs/menu_cbs_cancel.o \

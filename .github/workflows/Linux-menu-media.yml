@@ -1,0 +1,46 @@
+name: CI fullscreen media menu
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  rgui-media:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      matrix:
+        threads: [enable, disable]
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install fixture encoder
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+      - name: Configure C89 frontend
+        run: ./configure --disable-qt --disable-vulkan --disable-wayland --disable-x11 --disable-opengl --disable-opengl1 --disable-opengl_core --disable-ffmpeg --disable-cheevos --enable-webmplayer --${{ matrix.threads }}-threads
+      - name: Build shipping frontend
+        run: make -j2 C89_BUILD=1
+      - name: Generate movie fixture
+        run: ffmpeg -v error -y -f lavfi -i testsrc2=size=320x240:rate=30 -f lavfi -i sine=frequency=440:sample_rate=48000 -t 3 -c:v libx264 -preset ultrafast -pix_fmt yuv420p -c:a aac -shortest samples/menu/rgui_media/fixture.mp4
+      - name: Real RGUI framebuffer and playback controls
+        run: python3 samples/menu/rgui_media/run.py --c89 samples/menu/rgui_media/fixture.mp4
+      - name: Real MaterialUI file-browser playback controls
+        run: python3 samples/menu/rgui_media/run.py --c89 --driver materialui samples/menu/rgui_media/fixture.mp4
+      - name: Real XMB file-browser playback controls
+        run: python3 samples/menu/rgui_media/run.py --c89 --driver xmb samples/menu/rgui_media/fixture.mp4
+      - name: Real Ozone file-browser playback controls
+        run: python3 samples/menu/rgui_media/run.py --c89 --driver ozone samples/menu/rgui_media/fixture.mp4
+      - name: Generate WebM transport fixtures
+        run: |
+          ffmpeg -v error -y -f lavfi -i testsrc2=size=320x240:rate=30 -f lavfi -i sine=frequency=440:sample_rate=48000 -t 3 -c:v libvpx -deadline realtime -cpu-used 8 -g 30 -auto-alt-ref 0 -c:a libopus -shortest samples/menu/rgui_media/fixture-opus.webm
+          ffmpeg -v error -y -f lavfi -i testsrc2=size=320x240:rate=30 -f lavfi -i sine=frequency=440:sample_rate=48000 -t 3 -c:v libvpx-vp9 -g 30 -auto-alt-ref 0 -c:a libvorbis -shortest samples/menu/rgui_media/fixture-vorbis.webm
+      - name: Real WebM controls across all four menus
+        run: |
+          for driver in rgui materialui xmb ozone; do
+            python3 samples/menu/rgui_media/run.py --c89 --driver "$driver" samples/menu/rgui_media/fixture-opus.webm
+            python3 samples/menu/rgui_media/run.py --c89 --driver "$driver" samples/menu/rgui_media/fixture-vorbis.webm
+          done

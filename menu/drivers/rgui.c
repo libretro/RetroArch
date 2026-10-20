@@ -43,6 +43,8 @@
 #include "../../frontend/frontend_driver.h"
 
 #include "../menu_driver.h"
+#include "../menu_media_controls.h"
+#include "../../gfx/gfx_media_cpu.h"
 #include "../../gfx/gfx_surface.h"
 #include "../../gfx/gfx_animation.h"
 #include "../../gfx/gfx_thumbnail.h"
@@ -296,6 +298,11 @@ typedef struct
 {
    retro_time_t thumbnail_load_trigger_time; /* uint64_t */
    retro_time_t draw_entry_hold_until;
+   gfx_media_cpu_t *media_player;
+   menu_media_controls_t media;
+   menu_input_pointer_t media_pointer;
+   char media_path[PATH_MAX_LENGTH];
+   char media_requested_path[PATH_MAX_LENGTH];
 
    struct
    {
@@ -2716,6 +2723,9 @@ static bool rgui_request_thumbnail(
       strlcpy(thumbnail->path, path, sizeof(thumbnail->path));
       if (path_is_valid(path))
       {
+         if (image_texture_get_type(path) == IMAGE_TYPE_MP4
+               || image_texture_get_type(path) == IMAGE_TYPE_WEBM)
+            return true;
          /* Would like to cancel any existing image load tasks
           * here, but can't see how to do it... */
          if (task_push_image_load(thumbnail->path,
@@ -3038,6 +3048,118 @@ static void rgui_process_thumbnail(
    image_resampled.pixels = NULL;
 }
 
+static void rgui_media_close(rgui_t *rgui)
+{
+   gfx_media_cpu_retire(rgui->media_player);
+   rgui->media_player = NULL;
+   rgui->media_path[0] = '\0';
+   menu_media_controls_cancel(&rgui->media);
+}
+
+static bool rgui_media_present(void *user, const video_player_frame_t *frame)
+{
+   rgui_t *rgui = (rgui_t*)user;
+   struct texture_image image;
+   uint32_t queue_size = 0;
+   settings_t *settings = config_get_ptr();
+   unsigned i;
+   thumbnail_t *thumbnails[2];
+   thumbnails[0] = &rgui->fs_thumbnail;
+   thumbnails[1] = &rgui->mini_thumbnail;
+   if (!frame->native || !frame->pixels) return false;
+   image.pixels = (uint32_t*)frame->pixels;
+   image.width = frame->width; image.height = frame->height; image.pix10 = false;
+   for (i = 0; i < 2; i++)
+   {
+      rgui_process_thumbnail(rgui, thumbnails[i], &queue_size,
+            settings->uints.menu_rgui_thumbnail_downscaler,
+            settings->bools.menu_rgui_thumbnail_dither, &image);
+      strlcpy(thumbnails[i]->path, rgui->media_path, sizeof(thumbnails[i]->path));
+   }
+   return rgui->fs_thumbnail.is_valid && rgui->mini_thumbnail.is_valid;
+}
+
+static bool rgui_media_state(void *user, int64_t now, gfx_media_playback_state_t *state)
+{
+   return gfx_media_cpu_state(((rgui_t*)user)->media_player, now, state);
+}
+
+static bool rgui_media_pause(void *user, bool paused, int64_t now)
+{
+   return gfx_media_cpu_pause(((rgui_t*)user)->media_player, paused, now);
+}
+
+static bool rgui_media_seek(void *user, int64_t target_us, int64_t now)
+{
+   unsigned rate = 0;
+   bool s16 = false;
+#if (defined(HAVE_RWEBM) || defined(HAVE_RMP4)) && defined(HAVE_AUDIOMIXER) && \
+      (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS) || defined(HAVE_RAAC))
+   if (config_get_ptr()->bools.menu_thumbnail_preview_audio)
+      audio_driver_mixer_prepare_format(&rate, &s16);
+#endif
+   return gfx_media_cpu_seek(((rgui_t*)user)->media_player, target_us, rate, s16, now);
+}
+
+RGUI_NOINLINE static void rgui_media_update(rgui_t *rgui, unsigned dims)
+{
+   settings_t *settings = config_get_ptr();
+   gfx_media_target_t target;
+   gfx_media_controls_t *controls = &rgui->media.controls;
+   int64_t now = menu_driver_get_current_time();
+   int64_t old_position = controls->playback.position_us, old_drag = controls->drag_us;
+   bool old_visible = controls->visible, old_paused = controls->playback.paused;
+   bool old_seeking = controls->playback.seeking, old_focus = controls->row_focus;
+   unsigned old_button = controls->focus;
+   int old_hover = controls->hover;
+   bool wanted = *rgui->media_requested_path
+      && ((rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
+            || settings->bools.menu_rgui_inline_thumbnails);
+   gfx_media_cpu_reap();
+   memset(&target, 0, sizeof(target));
+   if (!wanted || !string_is_equal(rgui->media_requested_path, rgui->media_path))
+   {
+      rgui_media_close(rgui);
+      if (wanted)
+      {
+         gfx_anim_preview_t *session;
+         strlcpy(rgui->media_path, rgui->media_requested_path, sizeof(rgui->media_path));
+         session = gfx_anim_preview_open(rgui->media_path, -1);
+         if (session)
+         {
+            rgui->media_player = gfx_media_cpu_new(session, rgui_media_present, rgui, 0);
+            if (!rgui->media_player) gfx_anim_preview_close(session);
+         }
+      }
+   }
+   if (rgui->media_player)
+   {
+      video_player_set_threads(gfx_thumbnail_anim_threads_wanted());
+      if (gfx_media_cpu_poll(rgui->media_player, now) == VIDEO_PLAYER_ENDED)
+      {
+         gfx_media_cpu_retire(rgui->media_player);
+         rgui->media_player = NULL;
+      }
+      else if ((rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
+            && !(rgui->flags & RGUI_FLAG_SHOW_SCREENSAVER)
+            && !menu_input_dialog_get_display_kb())
+      {
+         target.user = rgui;
+         target.identity = rgui->media_player;
+         target.state = rgui_media_state; target.pause = rgui_media_pause;
+         target.seek = rgui_media_seek;
+      }
+   }
+   menu_input_get_pointer_state(&rgui->media_pointer);
+   menu_media_controls_update(&rgui->media, &target, VIDEO_SCALE_W(dims),
+         VIDEO_SCALE_H(dims), &rgui->media_pointer, now);
+   if (old_position != controls->playback.position_us || old_drag != controls->drag_us
+         || old_visible != controls->visible || old_paused != controls->playback.paused
+         || old_seeking != controls->playback.seeking || old_focus != controls->row_focus
+         || old_button != controls->focus || old_hover != controls->hover)
+      rgui->flags |= RGUI_FLAG_FORCE_REDRAW;
+}
+
 static bool rgui_load_image(
       void *userdata,
       void *data,
@@ -3069,6 +3191,12 @@ static bool rgui_load_image(
             break;
       }
 
+      return false;
+   }
+
+   if (type == MENU_IMAGE_THUMBNAIL && *rgui->media_requested_path)
+   {
+      if (rgui->thumbnail_queue_size) rgui->thumbnail_queue_size--;
       return false;
    }
 
@@ -5785,6 +5913,60 @@ static bool rgui_wheel_scroll(void *data, int notches)
    return true;
 }
 
+RGUI_NOINLINE static void rgui_media_draw(rgui_t *rgui, unsigned dims)
+{
+   gfx_media_view_t *view = &rgui->media.view;
+   gfx_media_rect_t bar;
+   unsigned i, width = VIDEO_SCALE_W(dims);
+   int64_t position;
+   char elapsed[24], duration[24], caption[56];
+   size_t limit;
+   const char *labels[4];
+   gfx_media_controls_consume(&rgui->media.mailbox, view);
+   if (!view->visible || !view->layout.unit) return;
+   bar = view->layout.panel;
+   rgui_color_rect(rgui->frame_buf.data, dims, bar.x, bar.y, bar.w, bar.h,
+         rgui->colors.shadow_color);
+   bar = view->layout.timeline;
+   rgui_color_rect(rgui->frame_buf.data, dims, bar.x, bar.y, bar.w, bar.h,
+         rgui->colors.bg_light_color);
+   position = view->dragging ? view->drag_us : view->playback.position_us;
+   if (view->playback.duration_us > 0)
+   {
+      double fraction = (double)position / (double)view->playback.duration_us;
+      if (fraction < 0.0) fraction = 0.0;
+      if (fraction > 1.0) fraction = 1.0;
+      bar.w = (int)(bar.w * fraction);
+      rgui_color_rect(rgui->frame_buf.data, dims, bar.x, bar.y, bar.w, bar.h,
+            rgui->colors.hover_color);
+   }
+   menu_media_controls_time(elapsed, sizeof(elapsed), position);
+   menu_media_controls_time(duration, sizeof(duration), view->playback.duration_us);
+   snprintf(caption, sizeof(caption), "%s / %s", elapsed, duration);
+   limit = rgui->font_width_stride
+      ? (width - view->layout.timeline.x - 2) / rgui->font_width_stride : 0;
+   if (limit < sizeof(caption)) caption[limit] = '\0';
+   rgui_blit_line(rgui, width, view->layout.timeline.x,
+         view->layout.panel.y + 1, caption, rgui->colors.normal_color,
+         rgui->colors.shadow_color);
+   labels[0] = view->playback.paused ? ">" : "||";
+   labels[1] = "-5"; labels[2] = "+5"; labels[3] = "[]";
+   for (i = 0; i < 4; i++)
+   {
+      const gfx_media_rect_t *button = &view->layout.buttons[i];
+      bool focused = (view->row_focus && view->focus == i) || view->hover == (int)i;
+      bool enabled = !i || view->playback.seekable;
+      int x = button->x + (button->w - (int)(strlen(labels[i]) * rgui->font_width_stride)) / 2;
+      int y = button->y + (button->h - (int)VIDEO_SCALE_H(rgui->font_dims)) / 2;
+      rgui_color_rect(rgui->frame_buf.data, dims, button->x, button->y,
+            button->w, button->h, focused ? rgui->colors.border_light_color
+               : rgui->colors.bg_dark_color);
+      rgui_blit_line(rgui, width, x, y, labels[i], enabled
+            ? rgui->colors.normal_color : rgui->colors.disabled_color,
+            rgui->colors.shadow_color);
+   }
+}
+
 static void rgui_render(void *data, unsigned dims,
       bool is_idle)
 {
@@ -5862,6 +6044,7 @@ static void rgui_render(void *data, unsigned dims,
       return;
    }
 
+   rgui_media_update(rgui, p_disp->framebuf_dims);
    current_display_cb = menu_input_dialog_get_display_kb();
 
    if (!(rgui->flags & RGUI_FLAG_FORCE_REDRAW))
@@ -6030,6 +6213,7 @@ static void rgui_render(void *data, unsigned dims,
 
       /* Draw thumbnail */
       rgui_render_fs_thumbnail(rgui, p_disp->framebuf_dims, fb_pitch);
+      rgui_media_draw(rgui, p_disp->framebuf_dims);
 
       /* Get thumbnail title */
       if (     gfx_thumbnail_get_label(menu_st->thumbnail_path_data, &thumbnail_title)
@@ -7505,6 +7689,7 @@ static void rgui_free(void *data)
    if (!rgui)
       return;
 
+   rgui_media_close(rgui);
    rgui_fonts_free(rgui);
    rgui_buffers_free(rgui);
    rgui_upscale_buf_free(&rgui->upscale_buf);
@@ -7878,6 +8063,8 @@ static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
                                        | RGUI_FLAG_ENTRY_HAS_LEFT_THUMBNAIL
                                         );
 
+   rgui->media_requested_path[0] = '\0';
+
    /* Reset savestate thumbnails always */
    if (selection < list_size)
    {
@@ -7945,6 +8132,32 @@ static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
          has_thumbnail = gfx_thumbnail_update_path(menu_st->thumbnail_path_data, GFX_THUMBNAIL_LEFT) || has_thumbnail;
    }
 
+   if (!(rgui->flags & (RGUI_FLAG_IS_PLAYLIST | RGUI_FLAG_IS_EXPLORE_LIST
+               | RGUI_FLAG_IS_QUICK_MENU)) && list && selection < list_size)
+   {
+      const struct item_file *item = &list->list[selection];
+      enum image_type_enum type = image_texture_get_type(item->path);
+      file_list_t *stack = MENU_LIST_GET(menu_list, 0);
+      if (stack && stack->size && (item->type == FILE_TYPE_IMAGEVIEWER
+               || item->type == FILE_TYPE_IMAGE || type == IMAGE_TYPE_MP4
+               || type == IMAGE_TYPE_WEBM)
+            && gfx_thumbnail_set_content_image(menu_st->thumbnail_path_data,
+               stack->list[stack->size - 1].path, item->path))
+      {
+         strlcpy(menu_st->thumbnail_path_data->right_path,
+               menu_st->thumbnail_path_data->content_path,
+               sizeof(menu_st->thumbnail_path_data->right_path));
+         has_thumbnail = true;
+      }
+   }
+   if (has_thumbnail)
+   {
+      enum image_type_enum type = image_texture_get_type(menu_st->thumbnail_path_data->right_path);
+      if (type == IMAGE_TYPE_MP4 || type == IMAGE_TYPE_WEBM)
+         strlcpy(rgui->media_requested_path, menu_st->thumbnail_path_data->right_path,
+               sizeof(rgui->media_requested_path));
+   }
+
    /* Check whether thumbnails should be loaded */
    if (has_thumbnail)
    {
@@ -7982,7 +8195,7 @@ static void rgui_toggle_fs_thumbnail(rgui_t *rgui,
     * inline thumbnails, then 'fs_thumbnail' and 'mini_thumbnail'
     * can get mixed up. To avoid this, we simply 'reset' the
     * currently inactive right thumbnail. */
-   if (menu_rgui_inline_thumbnails)
+   if (menu_rgui_inline_thumbnails && !*rgui->media_requested_path)
    {
       if (*rgui->savestate_thumbnail_file_path)
          rgui_reset_savestate_thumbnail(rgui);
@@ -8553,6 +8766,14 @@ static int rgui_pointer_up(
    if (!rgui)
       return -1;
 
+   if ((rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
+         && menu_media_controls_release(&rgui->media, x, y, menu_driver_get_current_time()))
+   {
+      menu_st->input_state.pointer.y_accel = 0.0f;
+      rgui->flags |= RGUI_FLAG_FORCE_REDRAW;
+      return 0;
+   }
+
    switch (gesture)
    {
       case MENU_INPUT_GESTURE_TAP:
@@ -8973,6 +9194,12 @@ static void rgui_toggle(void *userdata, bool menu_on)
    }
 }
 
+static void rgui_context_destroy(void *data)
+{
+   rgui_t *rgui = (rgui_t*)data;
+   if (rgui) rgui_media_close(rgui);
+}
+
 static void rgui_context_reset(void *data, bool is_threaded)
 {
    rgui_t *rgui = (rgui_t*)data;
@@ -8980,6 +9207,7 @@ static void rgui_context_reset(void *data, bool is_threaded)
    if (!rgui)
       return;
 
+   menu_media_controls_cancel(&rgui->media);
    video_driver_monitor_reset();
 }
 
@@ -9009,6 +9237,25 @@ static enum menu_action rgui_parse_menu_entry_action(
 {
    struct menu_state *menu_st  = menu_state_get_ptr();
    enum menu_action new_action = action;
+
+   if (*rgui->media_requested_path)
+   {
+      bool fullscreen = (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL) != 0;
+      if ((fullscreen && (action == MENU_ACTION_CANCEL || action == MENU_ACTION_SELECT))
+            || (!fullscreen && (action == MENU_ACTION_OK || action == MENU_ACTION_START
+                  || action == MENU_ACTION_SELECT)))
+      {
+         rgui_toggle_fs_thumbnail(rgui, config_get_ptr()->bools.menu_rgui_inline_thumbnails);
+         rgui->flags |= RGUI_FLAG_FORCE_REDRAW;
+         return MENU_ACTION_NOOP;
+      }
+   }
+   if ((rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
+         && menu_media_controls_action(&rgui->media, action, menu_driver_get_current_time()))
+   {
+      rgui->flags |= RGUI_FLAG_FORCE_REDRAW;
+      return MENU_ACTION_NOOP;
+   }
 
    /* Scan user inputs */
    switch (action)
@@ -9283,7 +9530,7 @@ menu_ctx_driver_t menu_ctx_rgui = {
    rgui_init,
    rgui_free,
    rgui_context_reset,
-   NULL, /* context_destroy */
+   rgui_context_destroy,
    rgui_populate_entries,
    rgui_toggle,
    rgui_navigation_clear,
