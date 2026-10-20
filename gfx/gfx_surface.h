@@ -409,6 +409,18 @@ enum gfx_surface_submit_result gfx_surface_submit_external(gfx_surface_t *s,
       const gfx_surface_src_t *src,
       gfx_surface_release_t release, void *user);
 
+/* Upload the GPU-native payload @img carries (img->compressed) to a
+ * still, without decoding it. FAILED for a format the driver does not
+ * sample: the caller decodes it (image_texture_realize_rgba) and
+ * submits the pixels instead. The payload is read before the call
+ * returns (DONE) or, for QUEUED, until the completion; release() then
+ * says whether a texture came of it. A driver that refuses it under
+ * direct video has it decoded into @img's pixels for the upload. Main
+ * thread. */
+enum gfx_surface_submit_result gfx_surface_submit_compressed(
+      gfx_surface_t *s, struct texture_image *img,
+      gfx_surface_release_t release, void *user);
+
 /* A surface of @num_slots (1..GFX_SURFACE_MAX_SLOTS) frames of @dims
  * (one packed size word) in @pixfmt, one image_pixfmt bit, all
  * in one allocation. NULL when out of memory or the arguments are out
@@ -491,6 +503,11 @@ void gfx_surface_free(gfx_surface_t *s);
  * forget the pointer. Otherwise the surface is freed as usual and the
  * pixels stay the caller's: false. @pixels must be a malloc() block. */
 bool gfx_surface_free_adopt(gfx_surface_t *s, void *pixels);
+
+/* gfx_surface_free_adopt() for anything the caller frees with
+ * @payload_free, a compressed payload say. */
+bool gfx_surface_free_adopt_payload(gfx_surface_t *s, void *payload,
+      gfx_surface_payload_free_t payload_free);
 
 /* A count that moves whenever a surface lets a texture go - replaced by
  * a new one, or the surface freed - so a handle taken with

@@ -18,12 +18,16 @@ SOURCES := \
 	$(LIBRETRO_COMM_DIR)/formats/video_player.c \
 	$(REPO_ROOT)/libretro-common/formats/image/image_yuv_blit.c \
 	$(LIBRETRO_COMM_DIR)/formats/image_texture.c \
-	$(LIBRETRO_COMM_DIR)/formats/image_texture_set.c
+	$(LIBRETRO_COMM_DIR)/formats/image_texture_set.c \
+	$(LIBRETRO_COMM_DIR)/formats/image_transfer.c \
+	$(LIBRETRO_COMM_DIR)/formats/dds/rdds.c \
+	$(LIBRETRO_COMM_DIR)/features/features_cpu.c \
+	$(LIBRETRO_COMM_DIR)/time/rtime.c
 
 
-# image_texture.c is here for image_texture_free() alone; its loaders
-# are dropped at the link rather than chased through the transfer code.
-CFLAGS  += -Wall -std=gnu99 -g1 -O1 -DHAVE_OVERLAY -ffunction-sections \
+# The DDS loader is the one decoder linked: the BCn lanes load a real
+# DXT1 file, and an image the driver cannot sample is decoded by it.
+CFLAGS  += -Wall -std=gnu99 -g1 -O1 -DHAVE_OVERLAY -DHAVE_RDDS -ffunction-sections \
            -I$(REPO_ROOT) -I$(LIBRETRO_COMM_DIR)/include
 LDFLAGS += -Wl,--gc-sections -lm
 

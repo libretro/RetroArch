@@ -40,13 +40,56 @@
 #include "../gfx/video_thread_wrapper.h"
 #endif
 
-/* Every image of the pack still has the pixels it was decoded to. */
+/* Every image of the pack still has what it was decoded to: pixels,
+ * or the BCn payload of a DDS. */
 static bool input_overlay_has_pixels(const input_overlay_t *ol)
 {
    size_t i;
    for (i = 0; i < ol->num_images; i++)
-      if (!ol->images[i] || !ol->images[i]->pixels)
+      if (     !ol->images[i]
+            || (!ol->images[i]->pixels && !ol->images[i]->compressed))
          return false;
+   return true;
+}
+
+/* Image @u was decoded from its payload: every copy of it gets the
+ * pixels, so a page entry matches its image either way. */
+static void input_overlay_share_pixels(input_overlay_t *ol, size_t u)
+{
+   size_t i, j;
+   const struct texture_compressed *tc = ol->images[u]->compressed;
+   uint32_t *pixels                    = ol->images[u]->pixels;
+   for (i = 0; i < ol->size; i++)
+   {
+      struct overlay *o = &ol->overlays[i];
+      for (j = 0; j < o->load_images_size; j++)
+         if (o->load_images[j].compressed == tc)
+            o->load_images[j].pixels = pixels;
+      if (o->image.compressed == tc)
+         o->image.pixels = pixels;
+      for (j = 0; j < o->size; j++)
+         if (o->descs[j].image.compressed == tc)
+            o->descs[j].image.pixels = pixels;
+   }
+}
+
+/* Decode to pixels the BCn images the driver cannot sample, or with
+ * @all every one of them, for load(). False when one will not decode. */
+static bool input_overlay_realize(input_overlay_t *ol, bool all)
+{
+   size_t i;
+   for (i = 0; i < ol->num_images; i++)
+   {
+      struct texture_image *img = ol->images[i];
+      if (!img || !img->compressed || img->pixels)
+         continue;
+      if (     !all
+            && gfx_surface_supports_compressed(img->compressed->format))
+         continue;
+      if (!image_texture_realize_rgba(img))
+         return false;
+      input_overlay_share_pixels(ol, i);
+   }
    return true;
 }
 
@@ -69,6 +112,32 @@ static void input_overlay_forget_pixels(input_overlay_t *ol,
          if (o->descs[j].image.pixels == pixels)
             o->descs[j].image.pixels = NULL;
    }
+}
+
+static void input_overlay_forget_compressed(input_overlay_t *ol,
+      const struct texture_compressed *tc)
+{
+   size_t i, j;
+   for (i = 0; i < ol->size; i++)
+   {
+      struct overlay *o = &ol->overlays[i];
+      for (j = 0; j < o->load_images_size; j++)
+         if (o->load_images[j].compressed == tc)
+            o->load_images[j].compressed = NULL;
+      if (o->image.compressed == tc)
+         o->image.compressed = NULL;
+      for (j = 0; j < o->size; j++)
+         if (o->descs[j].image.compressed == tc)
+            o->descs[j].image.compressed = NULL;
+   }
+}
+
+static void input_overlay_compressed_free(void *payload)
+{
+   struct texture_image img;
+   memset(&img, 0, sizeof(img));
+   img.compressed = (struct texture_compressed*)payload;
+   image_texture_free(&img);
 }
 
 void input_overlay_anim_stop(input_overlay_t *ol)
@@ -110,7 +179,19 @@ void input_overlay_release_textures(input_overlay_t *ol)
             && ol->anim_2frame[i] == INPUT_OVERLAY_2FRAME_ATLAS;
          uint32_t *pixels = atlas ? ol->anim_2frame_pix[i]
             : ol->images[i] ? ol->images[i]->pixels : NULL;
-         if (gfx_surface_free_adopt((gfx_surface_t*)ol->surfaces[i], pixels))
+         /* what a compressed upload still out reads */
+         struct texture_compressed *tc = ol->surfaces[i]
+            ? ((gfx_surface_t*)ol->surfaces[i])->img.compressed : NULL;
+         if (tc)
+         {
+            /* likewise the payload of a compressed one */
+            if (gfx_surface_free_adopt_payload(
+                     (gfx_surface_t*)ol->surfaces[i], tc,
+                     input_overlay_compressed_free))
+               input_overlay_forget_compressed(ol, tc);
+         }
+         else if (gfx_surface_free_adopt((gfx_surface_t*)ol->surfaces[i],
+                  pixels))
          {
             if (atlas)
                ol->anim_2frame_pix[i] = NULL;
@@ -210,7 +291,7 @@ static bool input_overlay_submit_textures(input_overlay_t *ol)
          && VIDEO_SCALE_FITS(ol->images[i]->width, rows);
       if (atlas)
       {
-         gfx_surface_t *s = gfx_surface_new_static(
+         s = gfx_surface_new_static(
                VIDEO_SCALE_PACK(ol->images[i]->width, rows),
                TEXTURE_FILTER_LINEAR);
          GFX_INSTR_INC(GFX_INSTR_OVERLAY_UPLOAD);
@@ -227,6 +308,27 @@ static bool input_overlay_submit_textures(input_overlay_t *ol)
          if (gfx_surface_submit_external(s, &src, NULL, NULL)
                == GFX_SURFACE_SUBMIT_FAILED)
             return false;
+         continue;
+      }
+      /* A BCn image the driver samples goes up as it is */
+      if (!animated && ol->images[i]->compressed && !ol->images[i]->pixels)
+      {
+         s = gfx_surface_new_still(TEXTURE_FILTER_LINEAR);
+         GFX_INSTR_INC(GFX_INSTR_OVERLAY_UPLOAD);
+         ol->surfaces[i]  = s;
+         if (     !s
+               || gfx_surface_submit_compressed(s, ol->images[i], NULL,
+                     NULL) == GFX_SURFACE_SUBMIT_FAILED)
+            return false;
+         /* the driver refused it and it was decoded */
+         if (ol->images[i]->pixels)
+         {
+            input_overlay_share_pixels(ol, i);
+            GFX_INSTR_ADD(GFX_INSTR_OVERLAY_PIXEL_KIB,
+                  (int)(((size_t)ol->images[i]->width
+                        * ol->images[i]->height
+                        * sizeof(uint32_t)) >> 10));
+         }
          continue;
       }
       /* One slot: a frame is composed here and submitted immediately,
@@ -368,8 +470,10 @@ static enum overlay_textures_state input_overlay_collect_textures(
           * init reloads it from its path. */
          for (u = 0; u < ol->num_images; u++)
          {
-            if (     o->load_images[j].pixels
-                  && ol->images[u]->pixels == o->load_images[j].pixels)
+            const struct texture_image *e = &o->load_images[j];
+            if (     (e->pixels && ol->images[u]->pixels == e->pixels)
+                  || (     !e->pixels && e->compressed
+                        && ol->images[u]->compressed == e->compressed))
             {
                tex[k]    = tex[u];
                images[k] = (uint32_t)u;
@@ -422,7 +526,8 @@ bool input_overlay_upload_textures(input_overlay_t *ol)
        * the textures, and the textures went with the driver. */
       if (!input_overlay_has_pixels(ol))
          return false;
-      if (!input_overlay_submit_textures(ol))
+      if (     !input_overlay_realize(ol, false)
+            || !input_overlay_submit_textures(ol))
       {
          input_overlay_decline_textures(ol);
          return false;
@@ -492,10 +597,11 @@ static void input_overlay_drop_pixels(input_overlay_t *ol)
          free(ol->anim_2frame_pix[i]);
          ol->anim_2frame_pix[i] = NULL;
       }
-      if (!ol->images[i]->pixels)
+      if (!ol->images[i]->pixels && !ol->images[i]->compressed)
          continue;
-      GFX_INSTR_ADD(GFX_INSTR_OVERLAY_PIXEL_KIB,
-            -(int)(((size_t)width * height * sizeof(uint32_t)) >> 10));
+      if (ol->images[i]->pixels)
+         GFX_INSTR_ADD(GFX_INSTR_OVERLAY_PIXEL_KIB,
+               -(int)(((size_t)width * height * sizeof(uint32_t)) >> 10));
       image_texture_free(ol->images[i]);
       ol->images[i]->width  = width;
       ol->images[i]->height = height;
@@ -504,10 +610,17 @@ static void input_overlay_drop_pixels(input_overlay_t *ol)
    {
       struct overlay *o = &ol->overlays[i];
       for (j = 0; j < o->load_images_size; j++)
-         o->load_images[j].pixels = NULL;
-      o->image.pixels = NULL;
+      {
+         o->load_images[j].pixels     = NULL;
+         o->load_images[j].compressed = NULL;
+      }
+      o->image.pixels     = NULL;
+      o->image.compressed = NULL;
       for (j = 0; j < o->size; j++)
-         o->descs[j].image.pixels = NULL;
+      {
+         o->descs[j].image.pixels     = NULL;
+         o->descs[j].image.compressed = NULL;
+      }
    }
 }
 
@@ -559,7 +672,7 @@ enum input_overlay_page input_overlay_load_page(input_overlay_t *ol)
    /* A pack with neither textures nor pixels has nothing to show and
     * must not show what its pages used to point at; it is on its way
     * to being reloaded (input_overlay_init). */
-   if (!input_overlay_has_source(ol))
+   if (!input_overlay_has_source(ol) || !input_overlay_realize(ol, true))
       return INPUT_OVERLAY_PAGE_NONE;
    GFX_INSTR_INC(GFX_INSTR_OVERLAY_PAGE);
    GFX_INSTR_INC(GFX_INSTR_OVERLAY_PAGE_LOAD);

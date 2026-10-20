@@ -1924,12 +1924,26 @@ static void video_thread_async_run(thread_video_t *thr)
       }
       else
       {
+         const struct texture_image *ti =
+               (const struct texture_image*)n->img;
          /* Counted here, on the thread that runs it: the synchronous
           * entry point counts its own, and a load posted through the
           * list never passes through it. */
          GFX_INSTR_INC(GFX_INSTR_TEX_LOAD);
          n->handle = 0;
-         if (driver_data && poke && poke->load_texture)
+         /* A payload the driver samples as it is; 0 if it no longer
+          * does, and the poster decodes it */
+         if (ti && ti->compressed && !ti->pixels)
+         {
+            if (     driver_data && poke
+                  && poke->load_texture_compressed
+                  && poke->supports_texture_format
+                  && poke->supports_texture_format(driver_data,
+                        ti->compressed->format))
+               n->handle = poke->load_texture_compressed(driver_data,
+                     ti->compressed, false, n->filter);
+         }
+         else if (driver_data && poke && poke->load_texture)
             n->handle = poke->load_texture(driver_data,
                   n->img, false, n->filter);
       }

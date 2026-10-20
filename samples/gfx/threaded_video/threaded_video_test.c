@@ -3271,6 +3271,133 @@ static void lane_async_done_main_thread(void)
 }
 
 /* ------------------------------------------------------------------ */
+/* Lane: async load of a compressed payload                            */
+/*   A still posted with only its GPU-native blocks (a DDS overlay     */
+/*   image) is loaded through load_texture_compressed on the video     */
+/*   thread. A format the driver does not sample comes back 0, for the */
+/*   poster to decode - never load_texture with no pixels to read.     */
+/* ------------------------------------------------------------------ */
+
+static video_driver_t        bcnload_driver;
+static const video_driver_t *bcnload_inner;
+static video_poke_interface_t bcnload_poke;
+static const video_poke_interface_t *bcnload_inner_poke;
+static unsigned  bcnload_plain;
+static unsigned  bcnload_compressed;
+static unsigned  bcnload_done;
+static uintptr_t bcnload_handle[3];
+
+static uintptr_t bcnload_load(void *data, void *img, bool threaded,
+      enum texture_filter_type filter)
+{
+   (void)data; (void)img; (void)threaded; (void)filter;
+   return 0x4000 + ++bcnload_plain;
+}
+
+static uintptr_t bcnload_load_compressed(void *data,
+      const struct texture_compressed *tc, bool threaded,
+      enum texture_filter_type filter)
+{
+   (void)data; (void)tc; (void)threaded; (void)filter;
+   return 0x5000 + ++bcnload_compressed;
+}
+
+static bool bcnload_supports(void *data, enum texture_gpu_format fmt)
+{
+   (void)data;
+   return fmt == TEXTURE_GPU_FORMAT_BC1;
+}
+
+static void bcnload_unload(void *data, bool threaded, uintptr_t id)
+{
+   if (id > 0x4000 && id <= 0x6000)
+      return;
+   if (bcnload_inner_poke && bcnload_inner_poke->unload_texture)
+      bcnload_inner_poke->unload_texture(data, threaded, id);
+}
+
+static void bcnload_get_poke(void *data, const video_poke_interface_t **iface)
+{
+   bcnload_inner->poke_interface(data, &bcnload_inner_poke);
+   bcnload_poke = *bcnload_inner_poke;
+   bcnload_poke.load_texture            = bcnload_load;
+   bcnload_poke.load_texture_compressed = bcnload_load_compressed;
+   bcnload_poke.supports_texture_format = bcnload_supports;
+   bcnload_poke.unload_texture          = bcnload_unload;
+   *iface = &bcnload_poke;
+}
+
+static void bcnload_done_cb(void *user, uintptr_t handle)
+{
+   bcnload_handle[(uintptr_t)user] = handle;
+   bcnload_done++;
+}
+
+static void lane_async_compressed_load(void)
+{
+   unsigned had = failures;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   thread_video_t *thr;
+   static struct texture_image img[3];
+   static struct texture_compressed tc[2];
+   static video_thread_async_load_t nodes[3];
+   static uint32_t px[16];
+   unsigned i, posted = 0;
+
+   bcnload_plain = bcnload_compressed = bcnload_done = 0;
+   memset(bcnload_handle, 0, sizeof(bcnload_handle));
+   memset(img, 0, sizeof(img));
+   memset(tc, 0, sizeof(tc));
+   tc[0].format      = TEXTURE_GPU_FORMAT_BC1;
+   tc[1].format      = TEXTURE_GPU_FORMAT_BC7;
+   for (i = 0; i < 3; i++)
+      img[i].width = img[i].height = 4;
+   img[0].compressed = &tc[0];
+   img[1].compressed = &tc[1];
+   img[2].pixels     = px;
+
+   set_threaded_via_setting(true);
+   run_frames(3);
+   expect_wrapper(true, "async compressed load lane");
+   thr = (thread_video_t*)video_st->data;
+
+   video_thread_wait_idle();
+   bcnload_inner                  = thr->driver;
+   bcnload_driver                 = *thr->driver;
+   bcnload_driver.poke_interface  = bcnload_get_poke;
+   set_driver(thr, &bcnload_driver);
+   set_poke_from(thr, &bcnload_driver);
+
+   for (i = 0; i < 3; i++)
+      if (async_post_load(&nodes[i], &img[i], bcnload_done_cb,
+               (void*)(uintptr_t)i, NULL))
+         posted++;
+   run_frames(2);
+   video_thread_wait_idle();
+   run_frames(2);
+
+   CHECK(posted == 3 && bcnload_done == 3, "%u of %u loads answered",
+         bcnload_done, posted);
+   CHECK(bcnload_compressed == 1 && bcnload_handle[0] > 0x5000,
+         "a sampled payload did not go through load_texture_compressed "
+         "(%u calls)", bcnload_compressed);
+   CHECK(bcnload_handle[1] == 0,
+         "a payload the driver does not sample made a texture");
+   CHECK(bcnload_plain == 1 && bcnload_handle[2] > 0x4000
+         && bcnload_handle[2] <= 0x5000,
+         "load_texture ran %u times; only the pixel still takes it",
+         bcnload_plain);
+
+   set_driver(thr, bcnload_inner);
+   set_poke_from(thr, bcnload_inner);
+   set_threaded_via_setting(false);
+   run_frames(2);
+
+   if (failures == had)
+      fprintf(stderr, "[pass] async compressed load lane\n");
+}
+
+/* ------------------------------------------------------------------ */
 /* Lane: display-phase scheduling with a stale report                  */
 /*   The presenter schedules the next repeat from the driver's display */
 /*   timestamp. A driver whose report lags well behind the clock must  */
@@ -11305,6 +11432,7 @@ int main(int argc, char *argv[])
    lane_reentrant_from_frame();
    lane_window_thread_present();
    lane_async_done_main_thread();
+   lane_async_compressed_load();
    if (!real_driver())
       lane_display_phase();
    lane_command_runs_once();
