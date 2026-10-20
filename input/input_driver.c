@@ -9744,6 +9744,8 @@ bool input_driver_take_kept(input_driver_t **input, void **input_data)
 
 /* Nothing took the kept driver back: it and the joypad drivers go, as
  * they would have with the video driver. */
+static void input_keys_let_go(void);
+
 void input_driver_drop_kept(void)
 {
    input_driver_state_t *input_st = &input_driver_st;
@@ -9768,6 +9770,7 @@ void input_driver_drop_kept(void)
    }
    if (input_st->current_data == data)
       input_st->current_data = NULL;
+   input_keys_let_go();
 }
 
 /* The video driver is going away. Unless the input driver's data is
@@ -9778,8 +9781,12 @@ void input_driver_free_with_video(const void *video_data)
 {
    input_driver_state_t *input_st = &input_driver_st;
 
+   /* the video driver frees it with its own */
    if (input_st->current_data == video_data)
+   {
+      input_keys_let_go();
       return;
+   }
 
    /* The driver goes, or is kept across the restart: whoever had the
     * keyboard has it no longer, as it always was here. Game Focus takes
@@ -9804,6 +9811,7 @@ void input_driver_free_with_video(const void *video_data)
    }
    input_keyboard_capture_release(INPUT_KEYBOARD_CAPTURE_ALL);
    input_st->current_data = NULL;
+   input_keys_let_go();
 }
 
 void input_pointer_capture_apply(bool force)
@@ -17341,6 +17349,13 @@ static void input_keyboard_event_now(bool down, unsigned code,
 #ifdef HAVE_THREADS
 static input_key_lane_t input_key_lane;
 static bool input_key_lane_warned;
+#else
+/* the keys given out down, as the lane keeps them with threads */
+#define INPUT_KEY_LANE_WORDS ((RETROK_LAST + 31) / 32)
+static uint32_t input_keys_down[INPUT_KEY_LANE_WORDS];
+#endif
+
+#ifdef HAVE_THREADS
 
 /* The poll's: the events that came since the last one, then the kept
  * releases whose presses have been given out. */
@@ -17391,8 +17406,35 @@ static void input_keyboard_event_now(bool down, unsigned code,
 {
 #ifdef HAVE_THREADS
    input_key_lane_note(&input_key_lane, down, code, false);
+#else
+   if (code < RETROK_LAST)
+   {
+      if (down)
+         input_keys_down[code >> 5] |=  (1u << (code & 31));
+      else
+         input_keys_down[code >> 5] &= ~(1u << (code & 31));
+   }
 #endif
    input_keyboard_event_now_act(down, code, character, mod, device);
+}
+
+/* The input driver has gone, and with it the releases of the keys it
+ * gave out down: the core's keyboard callback and the menu are given
+ * them here, after what was still on its way. */
+static void input_keys_let_go(void)
+{
+   unsigned w, b;
+#ifdef HAVE_THREADS
+   uint32_t *down = input_key_lane.keys_down;
+   input_key_lane_poll();
+#else
+   uint32_t *down = input_keys_down;
+#endif
+   for (w = 0; w < INPUT_KEY_LANE_WORDS; w++)
+      for (b = 0; down[w] && b < 32; b++)
+         if (down[w] & (1u << b))
+            input_keyboard_event_now(false, w * 32 + b, 0, 0,
+                  RETRO_DEVICE_KEYBOARD);
 }
 
 static void input_keyboard_event_now_act(bool down, unsigned code,

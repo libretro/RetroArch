@@ -8857,6 +8857,57 @@ static void lane_key_events(void)
             " keeps releases; two threads at once, no lock, each in order\n");
 }
 
+/* A key held when the input driver goes with a video restart is let
+ * go: the driver that would have said so is gone, and the core's
+ * keyboard callback and the menu would keep it held. */
+static unsigned keygone_down, keygone_up;
+
+static void keygone_core_cb(bool down, unsigned code, uint32_t character,
+      uint16_t mod)
+{
+   (void)character; (void)mod;
+   if (code != RETROK_F14)
+      return;
+   if (down)
+      keygone_down++;
+   else
+      keygone_up++;
+}
+
+static void lane_keys_let_go(void)
+{
+   runloop_state_t *runloop_st  = runloop_state_get_ptr();
+   retro_keyboard_event_t saved = runloop_st->key_event;
+   int flags                    = DRIVER_VIDEO_AND_INPUT_MASK;
+   unsigned had                 = failures;
+
+   runloop_st->key_event = keygone_core_cb;
+   keygone_down = keygone_up = 0;
+   input_keyboard_event(true, RETROK_F14, 0, 0, RETRO_DEVICE_KEYBOARD);
+   run_loop_frames(2);
+   CHECK(keygone_down == 1 && keygone_up == 0,
+         "keys let go: the press did not reach the core");
+
+   /* the input driver restarted with the video driver, not kept */
+   setenv("RETROARCH_INPUT_KEEP", "0", 1);
+   command_event(CMD_EVENT_REINIT, &flags);
+   unsetenv("RETROARCH_INPUT_KEEP");
+   run_loop_frames(3);
+   CHECK(keygone_up == 1,
+         "keys let go: a key held when the input driver went stayed held");
+
+   /* and once only: a later restart has nothing to let go */
+   command_event(CMD_EVENT_REINIT, &flags);
+   run_loop_frames(3);
+   CHECK(keygone_down == 1 && keygone_up == 1,
+         "keys let go: a key was let go twice, or pressed again");
+
+   runloop_st->key_event = saved;
+   if (failures == had)
+      printf("[pass] keys let go: a key held when the input driver goes"
+            " with a video restart reaches the core as let go, once\n");
+}
+
 /* ---- a joypad driver restart asked for from another thread --------- */
 
 /* On Windows a controller plugged in or pulled reaches the frontend
@@ -9200,6 +9251,7 @@ int main(int argc, char *argv[])
       lane_bind_names();
       lane_binds_shared_rows();
       lane_entries();
+      lane_keys_let_go();
       lane_command_later();
       lane_macros();
       lane_macro_modes();
