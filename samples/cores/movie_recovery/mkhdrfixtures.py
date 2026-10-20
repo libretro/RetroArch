@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate coded Main10 PQ/HLG and independent SDR presentation references."""
+"""Generate coded ten-bit PQ/HLG and independent SDR presentation references."""
 from pathlib import Path
 import argparse
 import importlib.util
@@ -12,7 +12,11 @@ import tempfile
 parser=argparse.ArgumentParser()
 parser.add_argument("output",type=Path)
 parser.add_argument("--primaries",choices=("bt2020","bt709"),default="bt2020")
+parser.add_argument("--codec",choices=("hevc","vp9"),default="hevc")
+parser.add_argument("--unspecified-matrix",action="store_true")
 args=parser.parse_args()
+if args.unspecified_matrix and (args.codec != "vp9" or args.primaries != "bt2020"):
+    parser.error("--unspecified-matrix requires --codec vp9 --primaries bt2020")
 primaries = 1 if args.primaries == "bt709" else 9
 matrix = 1 if primaries == 1 else 9
 matrix_name = "bt709" if matrix == 1 else "bt2020nc"
@@ -28,7 +32,7 @@ with tempfile.TemporaryDirectory(prefix="movie-hdr-fixtures-") as temporary:
         d = w / ('pq' if transfer == 16 else 'hlg')
         d.mkdir(exist_ok=True)
         raw = Path(temporary) / ('input-' + tag + '.yuv')
-        movie = d / 'hevc-aac.mp4'
+        movie = d / ('movie.webm' if args.codec == 'vp9' else 'hevc-aac.mp4')
         with raw.open('wb') as f:
             for frame in range(192):
                 planes=[]
@@ -56,10 +60,24 @@ with tempfile.TemporaryDirectory(prefix="movie-hdr-fixtures-") as temporary:
             ':transfer=' + tag + ':colormatrix=' + matrix_name, '-color_range', 'tv',
             '-colorspace', matrix_name, '-color_primaries', args.primaries, '-color_trc',
             tag, '-c:a', 'aac', '-b:a', '96k', str(movie)]
+        if args.codec == 'vp9':
+            start = command.index('-c:v')
+            end = command.index('-color_range')
+            command[start:end] = ['-c:v', 'libvpx-vp9', '-deadline', 'good',
+                '-cpu-used', '4', '-row-mt', '1', '-threads', '2',
+                '-profile:v', '2', '-g', '48', '-crf', '18', '-b:v', '0']
+            command[command.index('-c:a') + 1] = 'libopus'
         subprocess.run(command,check=True)
+        if args.unspecified_matrix:
+            # Keep every coded packet intact: only the same-size EBML
+            # MatrixCoefficients value changes from BT.2020 NCL to code 2.
+            data = movie.read_bytes()
+            element = b'\x55\xb1\x81\x09'
+            assert data.count(element) == 1
+            movie.write_bytes(data.replace(element, b'\x55\xb1\x81\x02'))
         probe=json.loads(subprocess.check_output(['ffprobe','-v','error','-select_streams','v:0','-show_entries','stream=profile,pix_fmt,color_range,color_space,color_transfer,color_primaries','-of','json',str(movie)]))
         stream=probe['streams'][0]
-        assert stream['profile']=='Main 10' and stream['pix_fmt']=='yuv420p10le' and stream['color_range']=='tv'
+        assert stream['profile']==('Profile 2' if args.codec == 'vp9' else 'Main 10') and stream['pix_fmt']=='yuv420p10le' and stream['color_range']=='tv'
         assert stream['color_transfer']==tag and stream['color_space']==matrix_name and stream['color_primaries']==args.primaries
         decoded=subprocess.check_output(['ffmpeg','-v','error','-i',str(movie),'-frames:v','12','-an','-pix_fmt','yuv420p10le','-f','rawvideo','-'])
         assert len(decoded)==12*256*192*3
@@ -82,5 +100,8 @@ with tempfile.TemporaryDirectory(prefix="movie-hdr-fixtures-") as temporary:
             movie_sha256=hashlib.sha256(movie.read_bytes()).hexdigest(),
             reference_sha256=hashlib.sha256(reference).hexdigest(),
             output_acceptance='HDR coded input to SDR presentation; not physical HDR output')
+        if args.codec == 'vp9':
+            manifest['movie_file'] = movie.name
+            manifest['matrix_coefficients'] = 2 if args.unspecified_matrix else matrix
         (d/'fixture.json').write_text(json.dumps(manifest,indent=2))
         print('Generated',d.name,'reference colors',len(cache),flush=True)

@@ -962,7 +962,7 @@ static int d3d11vd_vp9_decode(void *dec, const uint8_t *packet, size_t size,
          || d->feedback == UINT32_MAX) return -1;
    h = &picture->header;
    if (h->w != (int)d->visible_w || h->h != (int)d->visible_h
-         || h->bit_depth != (int)d->bit_depth || h->color_space < 0 || h->color_space > 3
+         || h->bit_depth != (int)d->bit_depth || h->color_space < 0 || (h->color_space > 3 && h->color_space != 5)
          || h->uncomp_size >= size || h->first_partition_size < 1
          || (size_t)h->first_partition_size >= size - h->uncomp_size
          || picture->slot < 0 || (unsigned)picture->slot >= d->slots) return -1;
@@ -1021,7 +1021,7 @@ bool d3d11_video_decode_vp9_open(const rvp9_hdr *header,
    if (!d3d11vd.up || !header || header->frame_type || header->show_existing_frame
          || slots < 10 || slots > D3D11VD_MAX_SLOTS
          || header->w <= 0 || header->h <= 0 || ((header->w | header->h) & 1)
-         || header->color_space < 0 || header->color_space > 3
+         || header->color_space < 0 || (header->color_space > 3 && header->color_space != 5)
          || !(d3d11vd.import_formats & (header->bit_depth == 10 ? IMAGE_PIXFMT_P010 : IMAGE_PIXFMT_NV12))
          || (settings && settings->uints.video_hw_decode == VIDEO_HW_DECODE_OFF)) return false;
    memset(&picture, 0, sizeof(picture));

@@ -1141,8 +1141,16 @@ int rwebm_video_stream_set_hw(rwebm_video_stream_t *s, int enable)
    if (!s || s->codec != RWEBM_CODEC_VP9) return 0;
    if (!enable || s->hw) return s->hw != NULL;
    t = rwebm_get_track(s->demux, s->track);
-   if (!t || rwebm_video_stream_is_hdr(s) || t->colour_range > 2
-         || !(t->matrix_coefficients == 0 || t->matrix_coefficients == 2
+   if (!t || t->colour_range > 2) return 0;
+   if (rwebm_video_stream_is_hdr(s))
+   {
+      /* HDR importers consume the source metadata attached below. */
+      if (!(t->matrix_coefficients == 0 || t->matrix_coefficients == 2
+               || t->matrix_coefficients == 1 || t->matrix_coefficients == 9)
+            || !(t->primaries == 0 || t->primaries == 2
+               || t->primaries == 1 || t->primaries == 9)) return 0;
+   }
+   else if (!(t->matrix_coefficients == 0 || t->matrix_coefficients == 2
             || t->matrix_coefficients == 1 || t->matrix_coefficients == 5
             || t->matrix_coefficients == 6)) return 0;
    probe = rwebm_open_memory_avail(s->buf, s->len, s->avail, NULL);
@@ -1160,6 +1168,8 @@ int rwebm_video_stream_set_hw(rwebm_video_stream_t *s, int enable)
    }
    rwebm_close(probe);
    if (!found || candidate->pending.header.frame_type
+         /* The software HDR fallback currently requires ten-bit planes. */
+         || (rwebm_video_stream_is_hdr(s) && candidate->pending.header.bit_depth != 10)
          || candidate->pending.header.w != (int)s->width
          || candidate->pending.header.h != (int)s->height
          || !rvp9_hw_backend_open(&candidate->pending.header, 10, &ops, &backend))

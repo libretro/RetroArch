@@ -127,17 +127,19 @@ static void capture(unsigned index,const char *out)
 }
 int main(int argc,char **argv)
 {
-   char cfg_path[1024];char *args[6];FILE *f;unsigned i, restart_hold = 0;
-   bool threaded;
+   char cfg_path[1024];char *args[6];FILE *f;unsigned i, restart_hold = 0, recovery_cpu = 0;
+   bool threaded, continuous;
    int iterate_result;
    struct retro_system_av_info av;
    retro_time_t frame_us;
    runloop_state_t *loop;
    video_poke_interface_t fault_poke;
-   if(argc<4 || argc>6)return 2;
+   if(argc<4 || argc>7)return 2;
+   continuous=argc==7 && strcmp(argv[6],"continuous")==0;
+   if(argc==7 && !continuous)return 2;
    threaded=argc>=5 && strcmp(argv[4],"true")==0;
    if(argc>=5 && strcmp(argv[4],"true")!=0 && strcmp(argv[4],"false")!=0)return 2;
-   if(argc==6)
+   if(argc>=6)
    {
       if(strcmp(argv[5],"resize")==0)window_mode=MOVIE_WINDOW_RESIZE;
       else if(strcmp(argv[5],"fullscreen")==0)window_mode=MOVIE_WINDOW_FULLSCREEN;
@@ -171,6 +173,7 @@ int main(int argc,char **argv)
    video_state_get_ptr()->poke=&fault_poke;
    for(i=0;i<12;i++)
    {
+      unsigned cpu_before=cpu, gpu_before=gpu;
       if(window_mode!=MOVIE_WINDOW_STEADY && i==2)
          CHECK(video_driver_set_video_mode(window_mode==MOVIE_WINDOW_FULLSCREEN
                   ? video_driver_window_dims(true):VIDEO_SCALE_PACK(512,384),
@@ -205,7 +208,13 @@ int main(int argc,char **argv)
 #ifdef HAVE_THREADS
       if(window_mode!=MOVIE_WINDOW_STEADY && threaded)video_thread_wait_idle();
 #endif
-      if(i==9 && cpu==5 && gpu==5)
+      if(continuous && i>=9 && cpu>cpu_before)
+      {
+         CHECK(cpu==cpu_before+1 && gpu==gpu_before);
+         recovery_cpu++;
+         printf("RECOVERY_CPU tick=%u\n",i);
+      }
+      else if(i==9 && cpu==5 && gpu==5)
       {
          restart_hold=1;
          printf("RECOVERY_HOLD tick=9\n");
@@ -218,11 +227,12 @@ int main(int argc,char **argv)
 #endif
       }
       capture(i,argv[3]);
+      if(continuous && i==11)CHECK(gpu>gpu_before);
    }
-   CHECK(rejected==1);CHECK(cpu==4+restart_hold);CHECK(gpu==8-restart_hold);
+   CHECK(rejected==1);CHECK(cpu==4+restart_hold+recovery_cpu);CHECK(gpu==8-restart_hold-recovery_cpu);
    CHECK(frames>=12);
    if(strcmp(argv[2],"gl")==0){CHECK(gpu==0);CHECK(cpu>=12);}
-   else {CHECK(gpu>=7);CHECK(cpu>=4);}
+   else {CHECK(gpu>=(continuous?6u:7u));CHECK(cpu>=4);}
    CHECK(samples>0);
    quiet_input_end();
    main_exit(NULL);

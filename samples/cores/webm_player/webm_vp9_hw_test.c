@@ -122,14 +122,14 @@ static bool env(unsigned cmd, void *data)
 static void video(const void *data, unsigned w, unsigned h, size_t pitch)
 {
    CHECK(w == 64 && h == 48);
-   if (media_player.webmvs)
+   if (!data)
    {
-      CHECK(!data && !pitch);
+      CHECK(media_player.webmvs && !pitch);
       gpu_ticks++;
    }
    else
    {
-      CHECK(data && pitch == w * 4);
+      CHECK(data == media_player.fb && pitch == w * 4);
       cpu_frames++;
    }
 }
@@ -316,6 +316,23 @@ int main(void)
    CHECK(media_player.webmvs && media_player.webm_hw_shown > 0);
    before = closes;
    ready = 0;
+   {
+      int64_t clock = media_player.play_ns;
+      int64_t shown = media_player.vshown;
+      int64_t pts = media_player.vpts_ns;
+      uint64_t audio_before = pcm_frames;
+      unsigned cpu_before = cpu_frames;
+#ifdef MEDIA_HAVE_AUDIO
+      int64_t position = media_player.apos;
+#endif
+      media_video_hw_ready();
+      CHECK(media_player.play_ns == clock && media_player.vshown == shown
+            && media_player.vpts_ns == pts);
+      CHECK(cpu_frames == cpu_before && pcm_frames == audio_before);
+#ifdef MEDIA_HAVE_AUDIO
+      CHECK(media_player.apos == position);
+#endif
+   }
    retro_run();
    CHECK(!media_player.webmvs && !media_player.hw_frame.image && closes > before);
    CHECK(cpu_frames && !media_player.webmvs && !media_player.hw_restart);
@@ -327,7 +344,10 @@ int main(void)
    media_player.discarded = 1;
    retro_run();
    CHECK(!media_player.discarded);
-   CHECK(media_player.webmvs && media_player.hw_video && cpu_frames == before);
+   CHECK(media_player.webmvs && media_player.hw_video && cpu_frames == before + 1);
+   CHECK(media_player.webm_cpu_resume);
+   media_seek(&media_player, 750000000);
+   CHECK(!media_player.webm_cpu_resume && media_player.webm_seek_slot >= 0);
    finish_seek();
    rvp9_set_hw_backend(NULL);
    for (i = 0; i < 5; i++) retro_run();

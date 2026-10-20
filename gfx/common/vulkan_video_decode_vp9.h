@@ -16,7 +16,7 @@ static int vvd_vp9_decode(void *dec, const uint8_t *packet, size_t length,
          || (unsigned)pic->header.w != d->coded.width
          || (unsigned)pic->header.h != d->coded.height
          || pic->header.profile != (int)d->vp9_profile.stdProfile
-         || pic->header.color_space < 0 || pic->header.color_space > 3
+         || pic->header.color_space < 0 || (pic->header.color_space > 3 && pic->header.color_space != 5)
          || (pic->header.bit_depth == 10) != (d->pixfmt == IMAGE_PIXFMT_P010)) return -1;
    ready = vvd_try_wait(d->tl, d->dcb_value[k]);
    if (ready) return ready;
@@ -78,7 +78,7 @@ static bool vvd_vp9_open(void *user, const rvp9_hdr *header,
          || header->subsampling_x != 1 || header->subsampling_y != 1
          || header->w <= 0 || header->h <= 0 || ((header->w | header->h) & 1)
          || header->frame_type || header->show_existing_frame
-         || header->color_space < 0 || header->color_space > 3) return false;
+         || header->color_space < 0 || (header->color_space > 3 && header->color_space != 5)) return false;
    vvd_grave_reap(false);
    for (lane = 0; lane < vvd.lanes; lane++)
       if (retro_atomic_cas_int(&vvd.lane_busy[lane], 0, 1)) break;

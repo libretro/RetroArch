@@ -1120,7 +1120,7 @@ static void test_hevc_registry(void)
    rh265_video_close(v);
 }
 
-static void test_vp9(int depth)
+static void test_vp9(int depth, int color_space)
 {
    static rvp9_hw_picture_t p;
    static const uint8_t packet[7] = {0x82, 0x49, 0x83, 0x42, 1, 2, 3};
@@ -1145,9 +1145,13 @@ static void test_vp9(int depth)
             !d3d11_video_decode_vp9_open(&p.header, 10, &ops) && live == before);
    d3d11vd.import_formats = IMAGE_PIXFMT_NV12 | IMAGE_PIXFMT_P010;
    check("VP9: insufficient DPB refused", !d3d11_video_decode_vp9_open(&p.header, 9, &ops));
-   p.header.color_space = 5;
-   check("VP9: unsupported output matrix refused", !d3d11_video_decode_vp9_open(&p.header, 10, &ops));
-   p.header.color_space = 2; views = views_ok = 0;
+   p.header.color_space = 4;
+   check("VP9: unsupported SMPTE240 output matrix refused", !d3d11_video_decode_vp9_open(&p.header, 10, &ops));
+   p.header.color_space = 6;
+   check("VP9: reserved color space refused", !d3d11_video_decode_vp9_open(&p.header, 10, &ops));
+   p.header.color_space = 7;
+   check("VP9: RGB color space refused", !d3d11_video_decode_vp9_open(&p.header, 10, &ops));
+   p.header.color_space = color_space; views = views_ok = 0;
    if (!d3d11_video_decode_vp9_open(&p.header, 10, &ops))
    { check("VP9: decoder opens", 0); d3d11vd.import_formats = formats; return; }
    d = (d3d11vd_dec_t*)ops.decoder;
@@ -1176,7 +1180,7 @@ static void test_vp9(int depth)
       check("VP9: independent output lease", !ops.output(d, 0, &frames[i])
             && frames[i].width == 320 && frames[i].height == 192
             && frames[i].pixfmt == (unsigned)(depth == 10 ? IMAGE_PIXFMT_P010 : IMAGE_PIXFMT_NV12)
-            && frames[i].yuv == (IMAGE_YUV_FLAG_BT709 | IMAGE_YUV_FLAG_FULL_RANGE));
+            && frames[i].yuv == ((color_space == 2 ? IMAGE_YUV_FLAG_BT709 : 0) | IMAGE_YUV_FLAG_FULL_RANGE));
    old_copies = copies;
    check("VP9: held leases apply backpressure without a copy", ops.output(d, 0, &extra) == 1 && copies == old_copies);
    d3d11_video_decode_vp9_close(&ops);
@@ -1303,8 +1307,9 @@ int main(void)
    test_hevc();
    test_hevc_main10();
    test_hevc_registry();
-   test_vp9(8);
-   test_vp9(10);
+   test_vp9(8, 2);
+   test_vp9(10, 2);
+   test_vp9(10, 5);
 
    d3d11_video_decode_deinit();
    check("P010 renderer backend starts", d3d11_video_decode_init_formats(dev,

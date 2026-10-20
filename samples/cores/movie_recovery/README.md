@@ -90,6 +90,15 @@ hardware import, CPU fallback and recovery, rather than HDR display luminance.
 Use `mkhdrfixtures.py DIR --primaries bt709` for explicitly signalled BT.709 HDR,
 which must retain BT.709 primaries during both GPU import and CPU fallback.
 
+Use `--codec vp9` for ten-bit VP9/Opus WebM. Add `--unspecified-matrix`
+with BT.2020 primaries to change only the container matrix code to 2,
+exercising the HDR default without changing coded packets. The manifest names
+the movie file, so `run.py` accepts either container. WebM recovery keeps
+presenting current CPU pictures while the replacement GPU decoder catches up.
+The probe requires the GPU to resume by the final tick, checks every fixed
+picture ordinal, and records each intermediate `RECOVERY_CPU` tick. The
+existing MP4 replacement hold remains explicitly checked against ordinal 8.
+
 The probe temporarily sets the logical input-port count to zero while retaining
 device polling and cleanup. Requesting a nonexistent null joypad driver can otherwise
 fall back to a connected controller and let live hotkeys change playback or

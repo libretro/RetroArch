@@ -23,7 +23,8 @@ reference = (fixtures / "reference.rgb").read_bytes()
 stride = 256 * 192 * 3
 assert len(reference) == 12 * stride
 manifest = json.loads((fixtures / "fixture.json").read_text())
-for name, key in [("hevc-aac.mp4", "movie_sha256"), ("reference.rgb", "reference_sha256")]:
+movie_file = manifest.get("movie_file", "hevc-aac.mp4")
+for name, key in [(movie_file, "movie_sha256"), ("reference.rgb", "reference_sha256")]:
     if hashlib.sha256((fixtures / name).read_bytes()).hexdigest() != manifest[key]:
         raise RuntimeError("fixture hash mismatch: " + name)
 output = a.output.resolve()
@@ -37,7 +38,9 @@ for driver in a.drivers.split(","):
     directory.mkdir()
     cmd = [os.environ.get("GDB", "gdb"), "--batch", "-return-child-result", "-ex", "run",
            "-ex", "thread apply all bt", "--args", str(a.harness.resolve()),
-           str(fixtures / "hevc-aac.mp4"), driver, str(directory), "true" if a.threaded else "false", a.window_mode]
+           str(fixtures / movie_file), driver, str(directory), "true" if a.threaded else "false", a.window_mode]
+    if Path(movie_file).suffix.lower() == ".webm":
+        cmd.append("continuous")
     with (directory / "runtime.log").open("wb") as log:
         child = subprocess.Popen(cmd, stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT,
                                  creationflags=subprocess.CREATE_NO_WINDOW)

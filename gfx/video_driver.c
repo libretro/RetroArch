@@ -7293,16 +7293,16 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
          || video_driver_pix_fmt == RETRO_PIXEL_FORMAT_HDR10_2101010
          || video_driver_pix_fmt == RETRO_PIXEL_FORMAT_SCRGB_RGBA16F);
 #endif
-   /* A native 10-bit source is only presented to drivers that advertise
-    * support; otherwise it has already been down-converted to XRGB8888 in
-    * video_driver_frame and must not be flagged as 10-bit here. */
+   /* This describes the new driver before its instance exists. Use the
+    * configured driver's capability, as pixel-format negotiation does;
+    * live flags here can describe no driver or the outgoing session. */
    /* Both 10-bit formats share the packed 2-10-10-10 upload; they differ
     * only in how the samples are interpreted downstream.  HDR10 is refused
     * outright unless the driver can present it (see SET_PIXEL_FORMAT), so it
     * needs no capability test here. */
    video.source_10bit                =
          (   (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB2101010)
-          && video_driver_test_all_flags(GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE))
+          && video_driver_supports_10bit_source())
          || (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_HDR10_2101010);
    video.source_hdr10                =
          (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_HDR10_2101010);

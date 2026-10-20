@@ -710,7 +710,7 @@ void rwebm_video_blit_i420_hbd_color(uint32_t *dst, unsigned dst_stride,
    int is_pq   = (transfer == 16);
    int full    = (range == 2);
    const int *hdr_coefficients = rwebm_hbd_hdr_matrix(
-         matrix ? matrix : 9u, full);
+         matrix && matrix != 2 ? matrix : 9u, full);
    unsigned j, i;
 
    if (!rwebm_hbd_lut_ready || (is_pq && max_cll != rwebm_hbd_lut_peak))
@@ -805,7 +805,7 @@ void rwebm_video_blit_i420_10bit_color(uint32_t *dst, unsigned dst_stride,
    int is_pq   = (transfer == 16);
    int full    = (range == 2);
    const int *hdr_coefficients = rwebm_hbd_hdr_matrix(
-         matrix ? matrix : 9u, full);
+         matrix && matrix != 2 ? matrix : 9u, full);
    unsigned j, i;
 
    if (!rwebm_hbd_lut_ready || (is_pq && max_cll != rwebm_hbd_lut_peak))
@@ -926,7 +926,9 @@ int rwebm_video_blit_i420_fp16_color(uint16_t *dst, unsigned dst_stride,
 
    if (transfer != 16 && !is_hlg)
       return 0;
-   rwebm_hbd_matrix(matrix ? matrix : 9u, &re, &gd, &ge, &bd);
+   /* Match HDR importers: absent and explicitly unspecified matrices
+    * both use BT.2020 non-constant luminance. SDR defaults are separate. */
+   rwebm_hbd_matrix(matrix && matrix != 2 ? matrix : 9u, &re, &gd, &ge, &bd);
 
    for (j = 0; j < h; j++)
    {

@@ -365,6 +365,39 @@ static void lane_709_scrgb(void)
    }
 }
 
+static void lane_unspecified_hdr_matrix(void)
+{
+   static const unsigned matrices[] = {0,2,9};
+   static const unsigned primaries[] = {0,1,2,9};
+   uint16_t y[4] = {256,400,600,900}, u = 448, v = 576;
+   uint32_t out8[3][4], out10[3][4];
+   uint16_t linear[3][16];
+   unsigned t, full, p, m;
+   for (t = 16; t <= 18; t += 2)
+      for (full = 0; full < 2; full++)
+         for (p = 0; p < sizeof(primaries) / sizeof(primaries[0]); p++)
+         {
+            for (m = 0; m < 3; m++)
+            {
+               rwebm_video_blit_i420_hbd_color(out8[m],2,2,2,y,2,&u,&v,1,
+                     matrices[m],t,full?2:1,1000,primaries[p],0);
+               rwebm_video_blit_i420_10bit_color(out10[m],2,2,2,y,2,&u,&v,1,
+                     matrices[m],t,full?2:1,1000,primaries[p]);
+               CHECK(rwebm_video_blit_i420_fp16_color(linear[m],2,2,2,y,2,&u,&v,1,
+                     matrices[m],t,full?2:1,primaries[p]), "HDR default matrix refused");
+            }
+            for (m = 0; m < 2; m++)
+            {
+               CHECK(!memcmp(out8[m],out8[2],sizeof(out8[m])),
+                     "HDR matrix %u differs from BT2020 in SDR8",matrices[m]);
+               CHECK(!memcmp(out10[m],out10[2],sizeof(out10[m])),
+                     "HDR matrix %u differs from BT2020 in SDR10",matrices[m]);
+               CHECK(!memcmp(linear[m],linear[2],sizeof(linear[m])),
+                     "HDR matrix %u differs from BT2020 in scRGB",matrices[m]);
+            }
+         }
+}
+
 int main(void)
 {
    lane_fp16_ramp(16, "PQ");
@@ -375,6 +408,7 @@ int main(void)
    lane_sdr_color_precision();
    lane_source_primaries();
    lane_709_scrgb();
+   lane_unspecified_hdr_matrix();
    if (failures)
    {
       fprintf(stderr, "%u failure(s)\n", failures);
