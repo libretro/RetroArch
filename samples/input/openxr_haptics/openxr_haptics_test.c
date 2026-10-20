@@ -150,9 +150,9 @@ void video_xr_compose(const video_xr_pose_t *a, const video_xr_pose_t *b,
 { (void)a; *out = *b; }
 void video_xr_pose_invert(const video_xr_pose_t *a, video_xr_pose_t *out)
 { *out = *a; }
-void video_xr_euler(const video_xr_quat_t *q, float *yaw, float *pitch,
-      float *roll)
-{ (void)q; *yaw = *pitch = *roll = 0.0f; }
+void video_xr_grab_hold(video_xr_grab_t *g, const video_xr_pose_t *aim,
+      const video_xr_quat_t *q)
+{ (void)aim; g->turn = *q; }
 bool video_xr_grab_pose(const video_xr_grab_t *g, const video_xr_pose_t *aim,
       const video_xr_quad_set_t *targets, unsigned skip,
       const video_xr_pose_t *start, video_xr_pose_t *pose,
@@ -167,6 +167,9 @@ bool video_xr_grab_pose(const video_xr_grab_t *g, const video_xr_pose_t *aim,
 void video_xr_grab_stick(video_xr_grab_t *g, float x, float y, double dt,
       float *scale)
 { (void)g; (void)x; (void)y; (void)dt; (void)scale; }
+void video_xr_grab_turn(video_xr_grab_t *g, const video_xr_pose_t *aim,
+      float x, double dt)
+{ (void)g; (void)aim; (void)x; (void)dt; }
 void video_xr_menu_handle(const video_xr_quad_t *menu, video_xr_quad_t *out)
 { *out = *menu; }
 void video_xr_outline(const video_xr_quad_t *q, video_xr_quad_t *out)

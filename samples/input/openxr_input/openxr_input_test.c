@@ -2618,6 +2618,104 @@ static void test_edit_grab(void)
    t_edit_end();
 }
 
+/* A carried screen keeps its pitch as the ray rises; the trigger lets
+ * the pitch follow from where it is, and letting go keeps it. The free
+ * hand's stick turns what the other hand holds, about its middle, as
+ * fast as it is pushed; the holding hand's own stick still resizes;
+ * with both hands holding, each stick works its own item. */
+static void test_edit_turn(void)
+{
+   const video_xr_grab_t *r = &input_openxr_edit.hand[1].g;
+   const video_xr_grab_t *l = &input_openxr_edit.hand[0].g;
+   t_edit_start();
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   CHECK(r->state == VIDEO_XR_GRAB_HELD && r->slot == 0,
+         "took slot %u in state %u", r->slot, r->state);
+   /* The ray 20 degrees up: pitch held. */
+   t_aim[2].orientation.x = (float)sin(M_PI / 18.0);
+   t_aim[2].orientation.w = (float)cos(M_PI / 18.0);
+   t_edit_poll();
+   CHECK(t_near(t_xr[0].pitch, 0.0f) && t_xr[0].y > 0.5f,
+         "carried up to %.3f, pitched %.2f", t_xr[0].y, t_xr[0].pitch);
+   /* The trigger, then 10 degrees more: it follows from there. */
+   t_hold("edit/tilt", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   CHECK(t_near(t_xr[0].pitch, 0.0f), "the trigger pitched it at once");
+   t_aim[2].orientation.x = (float)sin(M_PI / 12.0);
+   t_aim[2].orientation.w = (float)cos(M_PI / 12.0);
+   t_edit_poll();
+   CHECK(t_near(t_xr[0].pitch, 10.0f), "pitched %.2f tilting",
+         t_xr[0].pitch);
+   /* Let go of the trigger, the ray level: the pitch stays. */
+   t_let_go();
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_aim[2].orientation.x = 0.0f;
+   t_aim[2].orientation.w = 1.0f;
+   t_edit_poll();
+   CHECK(t_near(t_xr[0].pitch, 10.0f), "the pitch went back to %.2f",
+         t_xr[0].pitch);
+   t_let_go();
+   t_edit_poll();
+   t_edit_end();
+
+   /* The left stick right for 0.1 s turns screen 1 nine degrees, in
+    * place. */
+   t_edit_start();
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   t_hold("edit/stick", 1, 1.0f, 0.0f);
+   t_clock += 100000;
+   t_edit_poll();
+   CHECK(t_near(t_xr[0].yaw, 9.0f) && t_near(t_xr[0].x, 0.0f)
+         && t_near(t_xr[0].z, 0.0f) && t_near(t_xr[0].pitch, 0.0f),
+         "turned to %.2f at %.3f,%.3f", t_xr[0].yaw, t_xr[0].x,
+         t_xr[0].z);
+   /* The holding hand's own stick right resizes it and turns nothing. */
+   t_let_go();
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_hold("edit/stick", 2, 1.0f, 0.0f);
+   t_clock += 100000;
+   t_edit_poll();
+   CHECK(t_near(t_xr[0].yaw, 9.0f) && t_near(t_xr[0].scale, 1.07177f),
+         "own stick: yaw %.2f, scale %.4f", t_xr[0].yaw, t_xr[0].scale);
+   /* The left hand takes the menu by its bar: its stick is the menu's. */
+   t_let_go();
+   t_aim[1].position.x = 2.0f;
+   t_aim[1].position.y = t_handle_y(0.6f);
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_hold("edit/grab", 1, 1.0f, 0.0f);
+   t_edit_poll();
+   CHECK(l->state == VIDEO_XR_GRAB_HELD && l->slot == VIDEO_XR_MENU_SLOT,
+         "the left took slot %u", l->slot);
+   t_hold("edit/stick", 1, 1.0f, 0.0f);
+   t_clock += 100000;
+   t_edit_poll();
+   CHECK(t_near(t_xr[0].yaw, 9.0f) && t_near(t_menu_xr.scale, 1.07177f),
+         "both holding: screen 1 yaw %.2f, menu scale %.4f", t_xr[0].yaw,
+         t_menu_xr.scale);
+   t_let_go();
+   t_edit_poll();
+   t_edit_end();
+
+   /* Taken pitched 15 degrees, the ray then 20 up: the grab took that
+    * pitch, and it keeps it. */
+   t_edit_start();
+   t_quads.quads[0].pose.orientation.x = (float)sin(M_PI / 24.0);
+   t_quads.quads[0].pose.orientation.w = (float)cos(M_PI / 24.0);
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   t_aim[2].position.x    = 0.2f;
+   t_aim[2].orientation.x = (float)sin(M_PI / 18.0);
+   t_aim[2].orientation.w = (float)cos(M_PI / 18.0);
+   t_edit_poll();
+   CHECK(t_near(t_xr[0].pitch, 15.0f), "taken at 15, carried at %.2f",
+         t_xr[0].pitch);
+   t_let_go();
+   t_edit_poll();
+   t_edit_end();
+}
+
 /* A grab with the trigger already held tilts from the start: the roll
  * follows at the next poll. */
 static void test_edit_tilt_from_grab(void)
@@ -4018,6 +4116,39 @@ static void test_edit_snap_two_hands(void)
    t_snap = false;
 }
 
+/* Snapping on, a held screen 8 degrees short of parallel, turned into
+ * the window by the free hand's stick, snaps while the stick turns it,
+ * and the holding hand buzzes. */
+static void test_edit_turn_snap(void)
+{
+   unsigned n;
+   video_xr_quad_t *q;
+   t_snap = true;
+   t_edit_start();
+   t_snap_beside();
+   q                     = &t_quads.quads[t_quads.num_quads - 1];
+   q->pose.orientation.y = (float)-sin(M_PI / 45.0);
+   q->pose.orientation.w = (float)cos(M_PI / 45.0);
+   t_aim[2].position.x   = 1.245f;
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   /* Carried 5.3 cm, so the snaps are whole. */
+   t_aim[2].position.x = 1.205f;
+   t_aim[2].position.y = 0.025f;
+   t_aim[2].position.z = 0.025f;
+   t_edit_poll();
+   CHECK(!t_near(t_xr[1].yaw, 0.0f), "parallel 8 degrees out");
+   n = t_applies[2];
+   t_hold("edit/stick", 1, 1.0f, 0.0f);
+   t_clock += 100000;
+   t_edit_poll();
+   CHECK(t_near(t_xr[1].yaw, 0.0f) && t_applies[2] == n + 1,
+         "turned in by the stick: yaw %.2f, %u buzzes", t_xr[1].yaw,
+         t_applies[2] - n);
+   t_edit_end();
+   t_snap = false;
+}
+
 /* Carried in, each snap buzzes as it takes hold, one still fading
  * staying armed. Resting at the edge of its whole pull, where it takes
  * hold and lets go poll by poll, no more; again only once that axis has
@@ -4239,6 +4370,7 @@ int main(void)
    test_edit_oversized();
    test_edit_pause();
    test_edit_grab();
+   test_edit_turn();
    test_edit_tilt_from_grab();
    test_edit_limits();
    test_edit_spot_moved();
@@ -4267,6 +4399,7 @@ int main(void)
    test_edit_select_lit();
    test_edit_snap();
    test_edit_snap_two_hands();
+   test_edit_turn_snap();
    test_edit_snap_edge();
    test_edit_room();
    if (failures)

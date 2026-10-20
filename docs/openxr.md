@@ -123,23 +123,34 @@ edit; keyboards and other gamepads still reach the content. The desktop
 window shows a notice when editing starts and when it stops. **Select
 Next** and **Select Previous** choose an item, below.
 
-| Controller | Grab | Tilt | Distance and size | Reset | Menu | Select Next / Previous |
-| --- | --- | --- | --- | --- | --- | --- |
-| Steam Frame | grip | trigger | stick | A; left hand: D-pad down | right stick click | left D-pad right / left |
-| Valve Index | grip | trigger | stick | A | left trackpad press | right B / left B |
-| Oculus Touch | grip | trigger | stick | X / A | menu button | B / Y |
-| HTC Vive | grip | trigger | trackpad | trackpad click | left menu button | right menu button / - |
-| Simple controller | select | - | - | - | left menu button | - |
+| Controller | Grab | Tilt | Distance and size | Turn (other hand) | Reset | Menu | Select Next / Previous |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Steam Frame | grip | trigger | stick | stick | A; left hand: D-pad down | right stick click | left D-pad right / left |
+| Valve Index | grip | trigger | stick | stick | A | left trackpad press | right B / left B |
+| Oculus Touch | grip | trigger | stick | stick | X / A | menu button | B / Y |
+| HTC Vive | grip | trigger | trackpad | trackpad | trackpad click | left menu button | right menu button / - |
+| Simple controller | select | - | - | - | - | left menu button | - |
 
 - A grip on an item grabs it: it keeps its place relative to the hand
   and follows it. Each hand holds one item; the other hand on the same
   item does nothing.
-- Items stay level: they turn left, right, up and down with the hand but
-  do not roll. Hold the trigger while grabbing to let the roll follow;
-  let go of the trigger to keep that roll.
-- Stick up pushes the item away along the laser and down pulls it
-  closer; right makes it larger and left smaller, faster the further the
-  stick is pushed.
+- Items keep the pitch and roll they had when grabbed, and their angle
+  to the way the hand points across the floor: they move with the hand
+  and turn left and right as it does, but raising, lowering or
+  twisting the hand does not tip, roll or swivel them. Pointing nearly
+  straight up or down, a twist of the hand turns them instead, and
+  tipping it 5 degrees past straight up or down turns them round to
+  face the other way. Hold the trigger while grabbing to let them ride
+  the hand, pitch and roll too; let go of the trigger to keep them.
+- The other hand's stick, while that hand holds nothing, turns the held
+  item about the vertical through its middle, keeping its pitch and
+  roll, whether or not the trigger is held: right turns it
+  anticlockwise as seen from above, so a screen facing you turns
+  towards your right; left the other way; faster the further the stick
+  is pushed. Snapping still catches it parallel or square.
+- On the holding hand's stick, up pushes the item away along the laser
+  and down pulls it closer; right makes it larger and left smaller,
+  faster the further the stick is pushed.
 - Offsets stop at +-10 m and scale at 0.1 to 10, as in the menu: the
   item waits at the limit and moves on from there once the hand comes
   back.

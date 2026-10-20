@@ -433,42 +433,6 @@ static void test_euler(void)
    CHECK(quat_same(&pose.orientation, &again.orientation));
 }
 
-static void test_level(void)
-{
-   unsigned i;
-   video_xr_vec3_t base;
-   video_screen_xr_t s;
-   video_xr_pose_t pose;
-   float yaw, pitch, roll;
-   base.x = base.y = base.z = 0.0f;
-   video_views_xr_reset(&s, 1);
-   s.yaw   = 30.0f;
-   s.pitch = 20.0f;
-   s.roll  = 40.0f;
-   video_xr_item_pose(&base, &s, &pose);
-   video_xr_level(&pose.orientation, 0.0f);
-   video_xr_euler(&pose.orientation, &yaw, &pitch, &roll);
-   CHECK(angle_near(yaw, 30.0f) && angle_near(pitch, 20.0f)
-         && angle_near(roll, 0.0f));
-   video_xr_level(&pose.orientation, -15.0f);
-   video_xr_euler(&pose.orientation, &yaw, &pitch, &roll);
-   CHECK(angle_near(yaw, 30.0f) && angle_near(pitch, 20.0f)
-         && angle_near(roll, -15.0f));
-
-   /* Straight up or down the roll is the yaw's: levelling a rolled
-    * item to its own roll leaves it as it is. */
-   for (i = 0; i < 2; i++)
-   {
-      video_xr_quat_t q;
-      s.pitch = i ? -90.0f : 90.0f;
-      s.roll  = 30.0f;
-      video_xr_item_pose(&base, &s, &pose);
-      q = pose.orientation;
-      video_xr_level(&q, 30.0f);
-      CHECK(quat_same(&q, &pose.orientation));
-   }
-}
-
 static void test_layout(void)
 {
    video_views_map_t map;
@@ -577,6 +541,7 @@ static void test_grab(void)
    g.base.z = -1.8f;
    video_xr_pose_identity(&g.rel);
    g.rel.position.z = -1.8f;
+   g.turn           = g.rel.orientation;
    CHECK(!video_xr_grab_pose(&g, &aim, NULL, 0, NULL, &pose, &s, NULL));
    CHECK(NEAR(pose.position.z, -1.8) && NEAR(s.x, 0.0) && NEAR(s.z, 0.0));
    /* The hand moves: the item with it. */
@@ -595,7 +560,7 @@ static void test_grab(void)
    CHECK(angle_near(s.roll, 30.0f));
    /* Level again at the roll it was left at. */
    g.tilt            = false;
-   g.roll            = 30.0f;
+   video_xr_grab_hold(&g, &aim, &pose.orientation);
    aim.orientation.z = 0.0f;
    aim.orientation.w = 1.0f;
    video_xr_grab_pose(&g, &aim, NULL, 0, NULL, &pose, &s, NULL);
@@ -613,6 +578,28 @@ static void test_grab(void)
    CHECK(NEAR(s.x, 9.9));
    /* out may be NULL: only the pose. */
    CHECK(!video_xr_grab_pose(&g, &aim, NULL, 0, NULL, &pose, NULL, NULL));
+   /* The ray rises 20 degrees: the item rides up with it, its pitch
+    * held... */
+   video_xr_pose_identity(&aim);
+   video_xr_pose_identity(&g.rel);
+   g.turn            = g.rel.orientation;
+   g.rel.position.z  = -1.8f;
+   aim.orientation.x = (float)sin(M_PI / 18.0);
+   aim.orientation.w = (float)cos(M_PI / 18.0);
+   video_xr_grab_pose(&g, &aim, NULL, 0, NULL, &pose, &s, NULL);
+   CHECK(angle_near(s.pitch, 0.0f) && angle_near(s.yaw, 0.0f)
+         && angle_near(s.roll, 0.0f));
+   CHECK(NEAR(pose.position.y, 1.8 * sin(M_PI / 9.0)));
+   /* ...tilting, it follows... */
+   g.tilt = true;
+   video_xr_grab_pose(&g, &aim, NULL, 0, NULL, &pose, &s, NULL);
+   CHECK(angle_near(s.pitch, 20.0f));
+   /* ...and stays at the pitch it was left at. */
+   g.tilt = false;
+   video_xr_grab_hold(&g, &aim, &pose.orientation);
+   video_xr_pose_identity(&aim);
+   video_xr_grab_pose(&g, &aim, NULL, 0, NULL, &pose, &s, NULL);
+   CHECK(angle_near(s.pitch, 20.0f) && angle_near(s.roll, 0.0f));
 }
 
 static void test_grab_stick(void)
@@ -642,6 +629,451 @@ static void test_grab_stick(void)
    CHECK(scale == 10.0f);
    video_xr_grab_stick(&g, -1.0f, 0.0f, 20.0, &scale);
    CHECK(NEAR(scale, 0.1));
+}
+
+/* The free hand's stick turns the held item about the vertical through
+ * its middle: right anticlockwise seen from above, as fast as the stick
+ * is pushed past the deadzone; a pitched item keeps its pitch. */
+static void test_grab_turn(void)
+{
+   video_xr_grab_t g;
+   video_xr_pose_t aim, pose;
+   video_screen_xr_t s;
+   memset(&g, 0, sizeof(g));
+   video_xr_pose_identity(&aim);
+   video_xr_pose_identity(&g.rel);
+   g.rel.position.x = 0.3f;
+   g.rel.position.z = -1.8f;
+   g.base           = g.rel.position;
+   g.turn           = g.rel.orientation;
+   /* Inside the deadzone: nothing. */
+   video_xr_grab_turn(&g, &aim, 0.15f, 1.0);
+   video_xr_grab_pose(&g, &aim, NULL, 0, NULL, &pose, &s, NULL);
+   CHECK(angle_near(s.yaw, 0.0f));
+   /* Full right for half a second: 45 degrees, in place. */
+   video_xr_grab_turn(&g, &aim, 1.0f, 0.5);
+   video_xr_grab_pose(&g, &aim, NULL, 0, NULL, &pose, &s, NULL);
+   CHECK(angle_near(s.yaw, 45.0f) && NEAR(s.x, 0.0) && NEAR(s.y, 0.0)
+         && NEAR(s.z, 0.0));
+   /* Half past the deadzone left for a second: back 45. */
+   video_xr_grab_turn(&g, &aim, -0.6f, 1.0);
+   video_xr_grab_pose(&g, &aim, NULL, 0, NULL, &pose, &s, NULL);
+   CHECK(angle_near(s.yaw, 0.0f));
+   /* Pitched 15 degrees, a quarter turn keeps the pitch, no roll. */
+   g.turn.x = (float)sin(M_PI / 24.0);
+   g.turn.y = 0.0f;
+   g.turn.w = (float)cos(M_PI / 24.0);
+   video_xr_grab_turn(&g, &aim, 1.0f, 1.0);
+   video_xr_grab_pose(&g, &aim, NULL, 0, NULL, &pose, &s, NULL);
+   CHECK(angle_near(s.yaw, 90.0f) && angle_near(s.pitch, 15.0f)
+         && angle_near(s.roll, 0.0f));
+}
+
+/* aim at the anchor turned to this yaw, pitch and roll. */
+static void turn_aim(video_xr_pose_t *aim, float yaw, float pitch,
+      float roll)
+{
+   video_xr_vec3_t at;
+   video_screen_xr_t s;
+   at.x    = 0.0f;
+   at.y    = 0.0f;
+   at.z    = 0.0f;
+   video_views_xr_reset(&s, 1);
+   s.yaw   = yaw;
+   s.pitch = pitch;
+   s.roll  = roll;
+   video_xr_item_pose(&at, &s, aim);
+}
+
+/* g holding an item 1.8 m ahead at this yaw, pitch and roll, taken
+ * with aim. */
+static void turn_grab(video_xr_grab_t *g, const video_xr_pose_t *aim,
+      float yaw, float pitch, float roll)
+{
+   video_xr_pose_t item, inv;
+   video_screen_xr_t s;
+   memset(g, 0, sizeof(*g));
+   g->base.z = -1.8f;
+   video_views_xr_reset(&s, 1);
+   s.yaw   = yaw;
+   s.pitch = pitch;
+   s.roll  = roll;
+   video_xr_item_pose(&g->base, &s, &item);
+   video_xr_pose_invert(aim, &inv);
+   video_xr_compose(&inv, &item, &g->rel);
+   video_xr_grab_hold(g, aim, &item.orientation);
+}
+
+/* Whether ten steps of 0.1 s of the free hand's stick at full right
+ * each turn g's item, held by aim, 9 degrees of shown yaw, keeping its
+ * shown pitch and roll and its middle. */
+static int turns_evenly(video_xr_grab_t *g, const video_xr_pose_t *aim)
+{
+   video_xr_pose_t start, pose;
+   video_screen_xr_t s0, s;
+   unsigned i;
+   video_xr_grab_pose(g, aim, NULL, 0, NULL, &start, &s0, NULL);
+   for (i = 1; i <= 10; i++)
+   {
+      video_xr_grab_turn(g, aim, 1.0f, 0.1);
+      video_xr_grab_pose(g, aim, NULL, 0, NULL, &pose, &s, NULL);
+      /* Read back near straight up or down, a float turn's pitch is
+       * good to a few hundredths of a degree. */
+      if (!angle_near(s.yaw, s0.yaw + 9.0f * (float)i)
+            || fabs((double)s.pitch - s0.pitch) > 0.1
+            || !angle_near(s.roll, s0.roll)
+            || !vec_is(&pose.position, start.position.x,
+               start.position.y, start.position.z))
+         return 0;
+   }
+   return 1;
+}
+
+/* The turn is about the vertical through the item's middle whatever its
+ * pitch and wherever the ray points, carried level or tilting. */
+static void test_grab_turn_pitched(void)
+{
+   video_xr_grab_t g;
+   video_xr_pose_t taken, aim;
+   video_xr_pose_identity(&taken);
+   video_xr_pose_identity(&aim);
+   turn_grab(&g, &taken, 0.0f, 60.0f, 0.0f);
+   CHECK(turns_evenly(&g, &aim));
+   turn_grab(&g, &taken, 0.0f, 80.0f, 0.0f);
+   CHECK(turns_evenly(&g, &aim));
+   /* Floor and ceiling screens. */
+   turn_grab(&g, &taken, 30.0f, 90.0f, 0.0f);
+   CHECK(turns_evenly(&g, &aim));
+   turn_grab(&g, &taken, 30.0f, -90.0f, 0.0f);
+   CHECK(turns_evenly(&g, &aim));
+   /* Upright, the ray raised 60 degrees since the grab. */
+   aim.orientation.x = (float)sin(M_PI / 6.0);
+   aim.orientation.w = (float)cos(M_PI / 6.0);
+   turn_grab(&g, &taken, 0.0f, 0.0f, 0.0f);
+   CHECK(turns_evenly(&g, &aim));
+   turn_grab(&g, &taken, 0.0f, 0.0f, 0.0f);
+   g.tilt = true;
+   CHECK(turns_evenly(&g, &aim));
+   /* Rolled, taken by a rolled aim and turned by another. */
+   turn_aim(&taken, 10.0f, 15.0f, 25.0f);
+   turn_aim(&aim, -20.0f, 35.0f, -40.0f);
+   turn_grab(&g, &taken, 20.0f, 40.0f, 30.0f);
+   CHECK(turns_evenly(&g, &aim));
+   turn_grab(&g, &taken, 20.0f, 40.0f, 30.0f);
+   g.tilt = true;
+   CHECK(turns_evenly(&g, &aim));
+}
+
+/* Whether an upright item, taken square to a level ray and turned a
+ * quarter with the ray raised this many degrees, keeps that yaw as the
+ * ray comes back down a degree at a time. */
+static int keeps_turn(unsigned raised)
+{
+   video_xr_grab_t g;
+   video_xr_pose_t aim, pose;
+   video_screen_xr_t s;
+   unsigned i;
+   turn_aim(&aim, 40.0f, 0.0f, 0.0f);
+   turn_grab(&g, &aim, 40.0f, 0.0f, 0.0f);
+   turn_aim(&aim, 40.0f, (float)raised, 0.0f);
+   if (!turns_evenly(&g, &aim))
+      return 0;
+   for (i = 0; i <= raised; i++)
+   {
+      turn_aim(&aim, 40.0f, (float)(raised - i), 0.0f);
+      video_xr_grab_pose(&g, &aim, NULL, 0, NULL, &pose, &s, NULL);
+      if (!angle_near(s.yaw, 130.0f) || !angle_near(s.pitch, 0.0f)
+            || !angle_near(s.roll, 0.0f))
+         return 0;
+   }
+   return 1;
+}
+
+/* Carried, a turn made with the ray raised stays as the ray comes down:
+ * squared up there, the item is still square, inside
+ * VIDEO_XR_SNAP_ANGLE, once lowered. */
+static void test_grab_turn_lowered(void)
+{
+   CHECK(keeps_turn(60));
+   CHECK(keeps_turn(20));
+}
+
+/* Tilting, the turned item rides the hand from where the turn left it:
+ * turned side-on to the ray, raising the ray rolls it. */
+static void test_grab_turn_tilt_ray(void)
+{
+   video_xr_grab_t g;
+   video_xr_pose_t aim, pose;
+   video_screen_xr_t s;
+   turn_aim(&aim, 40.0f, 0.0f, 0.0f);
+   turn_grab(&g, &aim, 40.0f, 0.0f, 0.0f);
+   g.tilt = true;
+   CHECK(turns_evenly(&g, &aim));
+   turn_aim(&aim, 40.0f, 30.0f, 0.0f);
+   video_xr_grab_pose(&g, &aim, NULL, 0, NULL, &pose, &s, NULL);
+   CHECK(angle_near(s.yaw, 130.0f) && angle_near(s.pitch, 0.0f)
+         && angle_near(s.roll, 30.0f));
+   turn_aim(&aim, 40.0f, 0.0f, 0.0f);
+   video_xr_grab_pose(&g, &aim, NULL, 0, NULL, &pose, &s, NULL);
+   CHECK(angle_near(s.yaw, 130.0f) && angle_near(s.pitch, 0.0f)
+         && angle_near(s.roll, 0.0f));
+}
+
+/* The trigger pressed or let go with g's hand at aim, as the hand's
+ * move does it, where it last put the item. */
+static void carry_tilt(video_xr_grab_t *g, const video_xr_pose_t *aim,
+      bool tilt)
+{
+   video_xr_pose_t inv;
+   video_xr_grab_pose(g, aim, NULL, 0, NULL, &g->last, NULL, NULL);
+   video_xr_pose_invert(aim, &inv);
+   if (tilt && !g->tilt)
+      video_xr_compose(&inv, &g->last, &g->rel);
+   else if (!tilt && g->tilt)
+      video_xr_grab_hold(g, aim, &g->last.orientation);
+   g->tilt = tilt;
+}
+
+/* Degrees between two turns. */
+static double turn_apart(const video_xr_quat_t *a, const video_xr_quat_t *b)
+{
+   double x = (double)a->w * b->x - (double)a->x * b->w
+      - (double)a->y * b->z + (double)a->z * b->y;
+   double y = (double)a->w * b->y + (double)a->x * b->z
+      - (double)a->y * b->w - (double)a->z * b->x;
+   double z = (double)a->w * b->z - (double)a->x * b->y
+      + (double)a->y * b->x - (double)a->z * b->w;
+   double w = (double)a->w * b->w + (double)a->x * b->x
+      + (double)a->y * b->y + (double)a->z * b->z;
+   return 2.0 * atan2(sqrt(x * x + y * y + z * z), fabs(w)) * 180.0 / M_PI;
+}
+
+/* Whether g shows its item at this yaw, pitch and roll for aim. */
+static int carried_at(const video_xr_grab_t *g, const video_xr_pose_t *aim,
+      float yaw, float pitch, float roll)
+{
+   video_xr_pose_t pose;
+   video_screen_xr_t s;
+   video_views_xr_reset(&s, 1);
+   video_xr_grab_pose(g, aim, NULL, 0, NULL, &pose, &s, NULL);
+   return angle_near(s.yaw, yaw) && angle_near(s.pitch, pitch)
+      && angle_near(s.roll, roll);
+}
+
+/* Carried, an item keeps its yaw from the hand's heading: raising,
+ * lowering or twisting the hand leaves it, and turning the heading
+ * turns it as much. */
+static void test_carry_heading(void)
+{
+   unsigned i;
+   video_xr_grab_t g;
+   video_xr_pose_t aim;
+   int kept = 1;
+   /* Square to a hand at 40, turned 45 by the stick, the ray raised
+    * 60 and lowered again a degree at a time. */
+   turn_aim(&aim, 40.0f, 0.0f, 0.0f);
+   turn_grab(&g, &aim, 40.0f, 0.0f, 0.0f);
+   for (i = 0; i < 5; i++)
+      video_xr_grab_turn(&g, &aim, 1.0f, 0.1);
+   for (i = 0; i <= 120; i++)
+   {
+      turn_aim(&aim, 40.0f, (float)(i <= 60 ? i : 120 - i), 0.0f);
+      if (!carried_at(&g, &aim, 85.0f, 0.0f, 0.0f))
+         kept = 0;
+   }
+   CHECK(kept);
+   /* Taken 45 off the ray, the ray raised 60. */
+   turn_aim(&aim, 40.0f, 0.0f, 0.0f);
+   turn_grab(&g, &aim, 85.0f, 0.0f, 0.0f);
+   turn_aim(&aim, 40.0f, 60.0f, 0.0f);
+   CHECK(carried_at(&g, &aim, 85.0f, 0.0f, 0.0f));
+   /* The wrist twisted 30, the ray level and raised 30. */
+   turn_aim(&aim, 40.0f, 0.0f, 30.0f);
+   CHECK(carried_at(&g, &aim, 85.0f, 0.0f, 0.0f));
+   turn_aim(&aim, 40.0f, 30.0f, 30.0f);
+   CHECK(carried_at(&g, &aim, 85.0f, 0.0f, 0.0f));
+   /* The heading turned 30, the ray raised and twisted. */
+   turn_aim(&aim, 70.0f, 20.0f, -10.0f);
+   CHECK(carried_at(&g, &aim, 115.0f, 0.0f, 0.0f));
+   /* A pitched and rolled item likewise. */
+   turn_aim(&aim, -20.0f, 10.0f, 5.0f);
+   turn_grab(&g, &aim, 25.0f, 30.0f, -20.0f);
+   turn_aim(&aim, 10.0f, 60.0f, 30.0f);
+   CHECK(carried_at(&g, &aim, 55.0f, 30.0f, -20.0f));
+}
+
+/* A full turn of the stick, a degree at a time, brings an item back
+ * where it began; each step turns it a degree about the vertical. Near
+ * straight down and rolled, the readback of its yaw is unsure of the
+ * roll, which must not add up. */
+static void test_carry_full_turn(void)
+{
+   unsigned k;
+   video_xr_grab_t g;
+   video_xr_pose_t taken, aim, start, pose, want, about;
+   double worst = 0.0;
+   turn_aim(&taken, -59.2f, 22.3f, 29.2f);
+   turn_aim(&aim, -44.9f, 14.0f, 18.7f);
+   turn_grab(&g, &taken, -14.429f, -89.743f, -31.768f);
+   video_xr_grab_pose(&g, &aim, NULL, 0, NULL, &start, NULL, NULL);
+   video_xr_pose_identity(&about);
+   for (k = 1; k <= 360; k++)
+   {
+      double d;
+      video_xr_grab_turn(&g, &aim, 1.0f, 1.0 / 90.0);
+      video_xr_grab_pose(&g, &aim, NULL, 0, NULL, &pose, NULL, NULL);
+      about.orientation.y = (float)sin(k * M_PI / 360.0);
+      about.orientation.w = (float)cos(k * M_PI / 360.0);
+      video_xr_compose(&about, &start, &want);
+      d = turn_apart(&want.orientation, &pose.orientation);
+      if (!(d <= worst))
+         worst = d;
+   }
+   CHECK(worst < 0.01);
+   CHECK(turn_apart(&start.orientation, &pose.orientation) < 0.1);
+   CHECK(vec_is(&pose.position, start.position.x, start.position.y,
+            start.position.z));
+}
+
+/* Whether the ray, at heading 40 and twisted roll, swept in 0.1 degree
+ * steps from from to to and back, moves g's item less than a degree a
+ * step and never to NaN; and, untwisted, keeps it at yaw. */
+static int sweeps_smoothly(const video_xr_grab_t *g, float roll, int from,
+      int to, float yaw)
+{
+   int i;
+   video_xr_pose_t aim, pose, prev;
+   video_screen_xr_t s;
+   int n    = to > from ? to - from : from - to;
+   int step = to > from ? 1 : -1;
+   for (i = 0; i <= 2 * n; i++)
+   {
+      int at = from + step * (i <= n ? i : 2 * n - i);
+      turn_aim(&aim, 40.0f, (float)at / 10.0f, roll);
+      video_views_xr_reset(&s, 1);
+      video_xr_grab_pose(g, &aim, NULL, 0, NULL, &pose, &s, NULL);
+      if (!(fabs(pose.orientation.w) <= 1.0f) || !(s.yaw == s.yaw))
+         return 0;
+      if (i && !(turn_apart(&prev.orientation, &pose.orientation) < 1.0))
+         return 0;
+      if (roll == 0.0f && !angle_near(s.yaw, yaw))
+         return 0;
+      prev = pose;
+   }
+   return 1;
+}
+
+/* Pointing at the ceiling or the floor, a little past them, or
+ * twisting there: nothing jumps or fails. Untwisted, the item keeps its
+ * yaw; twisted, it is back on it once the ray is lowered. */
+static void test_carry_vertical(void)
+{
+   unsigned i, r;
+   video_xr_grab_t g;
+   video_xr_pose_t aim, pose, prev;
+   static const float rolls[] = { 0.0f, 30.0f, -60.0f };
+   turn_aim(&aim, 40.0f, 0.0f, 0.0f);
+   turn_grab(&g, &aim, 85.0f, 0.0f, 0.0f);
+   for (r = 0; r < 3; r++)
+   {
+      int past = r ? 910 : 930;
+      CHECK(sweeps_smoothly(&g, rolls[r], 600, past, 85.0f));
+      CHECK(sweeps_smoothly(&g, rolls[r], -600, -past, 85.0f));
+      turn_aim(&aim, 40.0f, 60.0f, rolls[r]);
+      CHECK(carried_at(&g, &aim, 85.0f, 0.0f, 0.0f));
+   }
+   for (r = 0; r < 2; r++)
+   {
+      int ok = 1;
+      for (i = 0; i <= 720; i++)
+      {
+         turn_aim(&aim, 40.0f, r ? -90.0f : 90.0f, (float)i * 0.5f);
+         video_xr_grab_pose(&g, &aim, NULL, 0, NULL, &pose, NULL, NULL);
+         if (!(fabs(pose.orientation.w) <= 1.0f) || (i
+               && !(turn_apart(&prev.orientation, &pose.orientation)
+                  < 1.0)))
+            ok = 0;
+         prev = pose;
+      }
+      CHECK(ok);
+   }
+}
+
+/* Some heading must jump on the path over the top: an untwisted ray
+ * turns the item round once tipped 5 degrees past straight up or down. */
+static void test_carry_flip(void)
+{
+   int up;
+   video_xr_grab_t g;
+   video_xr_pose_t aim;
+   turn_aim(&aim, 40.0f, 0.0f, 0.0f);
+   turn_grab(&g, &aim, 85.0f, 0.0f, 0.0f);
+   for (up = 1; up >= -1; up -= 2)
+   {
+      turn_aim(&aim, 40.0f, (float)up * 94.0f, 0.0f);
+      CHECK(carried_at(&g, &aim, 85.0f, 0.0f, 0.0f));
+      turn_aim(&aim, 40.0f, (float)up * 96.0f, 0.0f);
+      CHECK(carried_at(&g, &aim, -95.0f, 0.0f, 0.0f));
+   }
+}
+
+/* Taking an item, and pressing or letting go of the trigger, leave it
+ * where it is: at any pitch, straight up or down too, and rolled; with
+ * the hand near level, past 80 degrees, or straight up or down. */
+static void test_carry_still(void)
+{
+   static const float pitches[] = { 0.0f, 45.0f, -70.0f, 89.8f, -89.9f,
+      90.0f, -90.0f };
+   static const float rolls[]   = { 0.0f, 30.0f, -120.0f };
+   /* The hand's yaw, pitch and roll at the grab, the trigger pressed
+    * and the trigger let go. */
+   static const float aims[3][3][3] = {
+      { { -30.0f, 25.0f, 15.0f }, { 10.0f, -40.0f, -35.0f },
+         { 60.0f, 50.0f, 70.0f } },
+      { { -30.0f, 84.0f, 15.0f }, { 10.0f, 87.0f, -35.0f },
+         { 60.0f, -82.0f, 70.0f } },
+      { { -30.0f, 90.0f, 15.0f }, { 10.0f, 90.0f, -35.0f },
+         { 60.0f, -90.0f, 70.0f } }
+   };
+   unsigned i, j;
+   int still = 1;
+   for (i = 0; i < sizeof(pitches) / sizeof(pitches[0]); i++)
+      for (j = 0; j < 9; j++)
+      {
+         video_xr_grab_t g;
+         video_xr_pose_t aim, item, pose, before;
+         video_screen_xr_t s;
+         const float (*a)[3] = aims[j / 3];
+         video_views_xr_reset(&s, 1);
+         s.yaw   = 20.0f;
+         s.pitch = pitches[i];
+         s.roll  = rolls[j % 3];
+         turn_aim(&aim, a[0][0], a[0][1], a[0][2]);
+         turn_grab(&g, &aim, s.yaw, s.pitch, s.roll);
+         video_xr_item_pose(&g.base, &s, &item);
+         video_xr_grab_pose(&g, &aim, NULL, 0, NULL, &pose, NULL, NULL);
+         if (turn_apart(&item.orientation, &pose.orientation) > 0.001
+               || !vec_is(&pose.position, item.position.x,
+                  item.position.y, item.position.z))
+            still = 0;
+         /* The trigger pressed with the hand moved, let go with it
+          * moved again. */
+         turn_aim(&aim, a[1][0], a[1][1], a[1][2]);
+         video_xr_grab_pose(&g, &aim, NULL, 0, NULL, &before, NULL, NULL);
+         carry_tilt(&g, &aim, true);
+         video_xr_grab_pose(&g, &aim, NULL, 0, NULL, &pose, NULL, NULL);
+         if (turn_apart(&before.orientation, &pose.orientation) > 0.001)
+            still = 0;
+         turn_aim(&aim, a[2][0], a[2][1], a[2][2]);
+         video_xr_grab_pose(&g, &aim, NULL, 0, NULL, &before, NULL, NULL);
+         carry_tilt(&g, &aim, false);
+         video_xr_grab_pose(&g, &aim, NULL, 0, NULL, &pose, NULL, NULL);
+         if (turn_apart(&before.orientation, &pose.orientation) > 0.001
+               || !vec_is(&pose.position, before.position.x,
+                  before.position.y, before.position.z))
+            still = 0;
+      }
+   CHECK(still);
 }
 
 static void test_menu_handle(void)
@@ -2612,6 +3044,7 @@ static void test_grab_snap(void)
    memset(&g, 0, sizeof(g));
    video_xr_pose_identity(&g.rel);
    g.rel.position.z = -2.0f;
+   g.turn           = g.rel.orientation;
    g.base.z         = -2.0f;
    g.width          = 1.0f;
    g.height         = 0.6f;
@@ -2645,6 +3078,38 @@ static void test_grab_snap(void)
    CHECK(NEAR(s.x, 10.0) && NEAR(pose.position.x, 10.0));
 }
 
+/* Turned by the stick into square at screen 1's right corner, a held
+ * screen snaps exactly square there and says so. */
+static void test_turn_snap(void)
+{
+   video_xr_quad_set_t set;
+   video_xr_grab_t g;
+   video_xr_pose_t aim, pose, start;
+   video_screen_xr_t s;
+   unsigned snapped = 0;
+   snap_set(&set);
+   memset(&g, 0, sizeof(g));
+   video_xr_pose_identity(&aim);
+   snap_pose(&g.rel, 0.8, 0.0, -1.5, 82.0);
+   g.base   = g.rel.position;
+   g.turn   = g.rel.orientation;
+   g.width  = 1.0f;
+   g.height = 0.6f;
+   g.slot   = 1;
+   /* Taken a metre away, so the snaps are whole. */
+   snap_pose(&start, 0.8, 0.0, -0.5, 82.0);
+   video_xr_grab_pose(&g, &aim, &set, 0, &start, &pose, &s, &snapped);
+   CHECK(!(snapped & VIDEO_XR_SNAP_TURN)
+         && (snapped & VIDEO_XR_SNAP_PULLING(VIDEO_XR_SNAP_TURN))
+         && !angle_near((float)snap_yaw(&pose), 90.0f));
+   /* Four degrees more by the stick: square, at the corner. */
+   video_xr_grab_turn(&g, &aim, 1.0f, 4.0 / VIDEO_XR_EDIT_TURN_RATE);
+   video_xr_grab_pose(&g, &aim, &set, 0, &start, &pose, &s, &snapped);
+   CHECK((snapped & VIDEO_XR_SNAP_ALL) == SNAP_ALL
+         && angle_near(s.yaw, 90.0f)
+         && vec_is(&pose.position, 0.8, 0.0, -1.5));
+}
+
 /* The 3DS layout: screen 1, 1.6 x 0.96 at 1.8 m; screen 2, 1.28 x 0.96,
  * held by a hand at the origin from its spot 3.2 cm under screen 1,
  * inside the bottom edge's 3-6 cm fade. */
@@ -2660,6 +3125,7 @@ static void snap_3ds(video_xr_quad_set_t *set, video_xr_grab_t *g,
    set->num_quads                = 1;
    memset(g, 0, sizeof(*g));
    video_xr_pose_identity(&g->rel);
+   g->turn           = g->rel.orientation;
    g->rel.position.y = -0.992f;
    g->rel.position.z = -1.8f;
    g->base.y         = -0.992f;
@@ -3044,11 +3510,19 @@ int main(void)
    test_screen_density();
    test_pose_invert();
    test_euler();
-   test_level();
    test_layout();
    test_settings_identity();
    test_grab();
    test_grab_stick();
+   test_grab_turn();
+   test_grab_turn_pitched();
+   test_grab_turn_lowered();
+   test_grab_turn_tilt_ray();
+   test_carry_heading();
+   test_carry_full_turn();
+   test_carry_vertical();
+   test_carry_flip();
+   test_carry_still();
    test_menu_handle();
    test_handle_first();
    test_handle_sticky();
@@ -3062,6 +3536,7 @@ int main(void)
    test_snap_turn_tie();
    test_snap_turned();
    test_grab_snap();
+   test_turn_snap();
    test_snap_no_hop();
    test_snap_fade_in();
    test_live_edit();

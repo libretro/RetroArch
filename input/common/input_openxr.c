@@ -2199,14 +2199,13 @@ static unsigned input_openxr_edit_armed(unsigned armed, unsigned snapped)
       | (VIDEO_XR_SNAP_ALL & ~pulling);
 }
 
-/* Hand h grabs st->quads' quad target: the item keeps its pose in the
- * aim's frame, wherever the hand is, and its roll. A second hand on an
- * item does nothing. */
+/* Hand h grabs st->quads' quad target: the item keeps its place in
+ * the aim's frame, wherever the hand is, its yaw from the aim's heading,
+ * and its pitch and roll. A second hand on an item does nothing. */
 static void input_openxr_edit_grab(input_openxr_t *st,
       input_openxr_edit_t *e, unsigned h, int target,
       const video_xr_pose_t *aim, bool tilt)
 {
-   float yaw, pitch;
    video_xr_pose_t inv;
    video_screen_xr_t now;
    const video_xr_quad_t *q         = &st->quads.quads[target];
@@ -2218,7 +2217,7 @@ static void input_openxr_edit_grab(input_openxr_t *st,
    memset(&hold->g, 0, sizeof(hold->g));
    video_xr_pose_invert(aim, &inv);
    video_xr_compose(&inv, &q->pose, &hold->g.rel);
-   video_xr_euler(&q->pose.orientation, &yaw, &pitch, &hold->g.roll);
+   video_xr_grab_hold(&hold->g, aim, &q->pose.orientation);
    hold->g.last   = q->pose;
    hold->g.base   = *base;
    hold->g.width  = q->width;
@@ -2248,16 +2247,17 @@ static void input_openxr_edit_grab(input_openxr_t *st,
    hold->height0 = q->height;
 }
 
-/* A held item to where the hand puts it now, snapped to targets'
- * screens unless NULL, fading in from where it was taken, its settings
- * with it. The trigger lets its roll follow from where it is; a clamp
- * holds it again, so it resumes from the limit. Returns the snaps
- * engaged or pulling (video_xr_snap). */
+/* A held item to where the hand puts it now, turned by turn (the free
+ * hand's stick X), snapped to targets' screens unless NULL, fading in
+ * from where it was taken, its settings with it. The trigger lets its
+ * pitch and roll follow from where it is; a clamp holds it again, so it
+ * resumes from the limit. Returns the snaps engaged or pulling
+ * (video_xr_snap). */
 static unsigned input_openxr_edit_move(input_openxr_edit_t *e,
       input_openxr_hold_t *hold, const video_xr_pose_t *aim, bool tilt,
-      const int16_t *stick, double dt, const video_xr_quad_set_t *targets)
+      const int16_t *stick, float turn, double dt,
+      const video_xr_quad_set_t *targets)
 {
-   float yaw, pitch;
    unsigned snapped;
    video_xr_pose_t inv, pose;
    video_screen_xr_t values;
@@ -2265,12 +2265,12 @@ static unsigned input_openxr_edit_move(input_openxr_edit_t *e,
    if (tilt && !hold->g.tilt)
       video_xr_compose(&inv, &hold->g.last, &hold->g.rel);
    else if (!tilt && hold->g.tilt)
-      video_xr_euler(&hold->g.last.orientation, &yaw, &pitch,
-            &hold->g.roll);
+      video_xr_grab_hold(&hold->g, aim, &hold->g.last.orientation);
    hold->g.tilt = tilt;
    /* The stick's Y is down, as the RetroPad's. */
    video_xr_grab_stick(&hold->g, (float)stick[0] / 32767.0f,
          -(float)stick[1] / 32767.0f, dt, &hold->scale);
+   video_xr_grab_turn(&hold->g, aim, turn, dt);
    hold->g.width  = hold->width0 * hold->scale / hold->scale0;
    hold->g.height = hold->height0 * hold->scale / hold->scale0;
    video_views_xr_reset(&values, 1);
@@ -2417,8 +2417,9 @@ static void input_openxr_edit_stop(input_openxr_edit_t *e)
  * are both put: Select Next and Previous step the chosen item; each
  * hand points at an item; a grip grabs the chosen item from anywhere,
  * or with none chosen (or the other hand holding it) what the hand
- * points at, and while held it goes where the hand puts it and writes
- * its settings; the main button resets the chosen item, or what a free
+ * points at, and while held it goes where the hand puts it, turned by
+ * the other hand's stick while that hand holds nothing, and writes its
+ * settings; the main button resets the chosen item, or what a free
  * hand points at. The RetroArch menu and Edit Screens come from its own
  * set; nothing reaches the pads, whose triggers go unread. */
 static void input_openxr_edit_poll(input_openxr_t *st,
@@ -2517,8 +2518,8 @@ static void input_openxr_edit_poll(input_openxr_t *st,
             {
                stick[0] = 0;
                stick[1] = 0;
-               input_openxr_edit_move(e, hold, &aim, tilt, stick, 0.0,
-                     targets);
+               input_openxr_edit_move(e, hold, &aim, tilt, stick, 0.0f,
+                     0.0, targets);
             }
             input_openxr_edit_let_go(e, hold, shown);
          }
@@ -2526,11 +2527,23 @@ static void input_openxr_edit_poll(input_openxr_t *st,
          else if (tracked)
          {
             unsigned snapped;
+            int16_t free_stick[2];
+            float turn = 0.0f;
             stick[0] = 0;
             stick[1] = 0;
             input_openxr_stick(st, IXA_E_STICK, hand, stick);
+            /* The other hand's stick turns it while that hand holds
+             * nothing. */
+            if (e->hand[h ^ 1].g.state != VIDEO_XR_GRAB_HELD)
+            {
+               free_stick[0] = 0;
+               free_stick[1] = 0;
+               input_openxr_stick(st, IXA_E_STICK, st->hands[h ^ 1],
+                     free_stick);
+               turn = (float)free_stick[0] / 32767.0f;
+            }
             snapped = input_openxr_edit_move(e, hold, &aim, tilt, stick,
-                  dt, targets);
+                  turn, dt, targets);
             if (snapped & hold->armed)
                input_openxr_edit_tick(st, h);
             hold->armed = input_openxr_edit_armed(hold->armed, snapped);

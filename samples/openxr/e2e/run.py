@@ -4172,13 +4172,14 @@ def aim_pose(p, t, roll=0.0):
 
 
 def held(item, aim0, aim1, tilt):
-    """Where a hand that took item at aim0 puts it at aim1: levelled to
-    the roll it had unless the trigger tilts it."""
+    """Where a hand that took item at aim0 puts it at aim1: turned as
+    the aim's heading turned, its pitch and roll kept, unless the
+    trigger tilts it. Neither aim points near straight up or down."""
     pose = compose(aim1, compose(inverse(aim0), item))
     if tilt:
         return pose
-    yaw, pitch, _ = euler(pose[1])
-    return (pose[0], from_euler(yaw, pitch, euler(item[1])[2]))
+    turn = euler(aim1[1])[0] - euler(aim0[1])[0]
+    return (pose[0], qmul(from_euler(turn, 0.0, 0.0), item[1]))
 
 
 def aim_line(p, t, hand='right', roll=None):
@@ -4668,12 +4669,15 @@ def check_edit_turn(tilt):
     want = held((S0, ID), aim_pose(*T0), aim_pose(*T1), tilt)
 
     def check(res):
-        """A hand beside screen 1 turned up turns it with the hand, as
-        video_xr's grab does: level, or with the trigger held its roll
-        too; saved as shown."""
+        """A hand beside screen 1 turned up carries it up, as video_xr's
+        grab does: keeping its yaw, pitch and roll, or with the trigger
+        held letting it follow the hand; saved as shown."""
         errors = edit_log_errors(res, ['on'], exact=False)
         if tilt != (abs(euler(want[1])[2]) > 5.0):
             errors.append('the case does not tell level from tilt')
+        if tilt != (abs(euler(want[1])[1]) > 5.0):
+            errors.append('the case does not tell a held pitch from one '
+                          'that follows')
         shown = [screen1_left(f) for f in
                  between(res, 'moved', None, edit_screen0, 1.5)]
         errors += pose_errors('screen 1 turned by the hand', shown, want[0],
@@ -5659,6 +5663,62 @@ EDIT_SNAP_EDGE_STEPS = edit_start(straight(SNAP_GRAB), 1) + [
      ('wait', 0.5), ('script', script(straight(EDGE_IN), EDIT_GRIP)),
      ('wait', 0.5), ('mark', 'back'), ('script', straight(EDGE_IN)),
      ('wait', 1), ('send', EDIT), ('wait', 2), ('mark', 'off'), ('wait', 1)]
+
+
+def check_edit_turn_stick(res):
+    """The left stick held right for half a second turns screen 1,
+    which the right hand holds, anticlockwise seen from above about its
+    own middle, about 45 degrees at 90 a second; saved as shown."""
+    errors = edit_log_errors(res, ['on', 'off'])
+    q = last_before(res, 'turned', screen1_left)
+    if not q:
+        return errors + ['no frame of screen 1 before the stick let go']
+    yaw, pitch, roll = euler(tuple(q['pose'][3:]))
+    if not 20.0 <= yaw <= 70.0 or abs(pitch) > 0.6 or abs(roll) > 0.6:
+        errors.append('screen 1 turned to yaw %.1f pitch %.1f roll %.1f, '
+                      'want 20 to 70, 0, 0' % (yaw, pitch, roll))
+    if any(abs(a - b) > EDIT_POS for a, b in zip(q['pose'][:3], S0)):
+        errors.append('screen 1 moved to %s as it turned, want %s'
+                      % (q['pose'][:3], S0))
+    return errors + saved_errors(res, 'screen 1', 'video_screen1_xr_', S0,
+                                 (tuple(q['pose'][:3]),
+                                  tuple(q['pose'][3:])), (1.6, 0.96),
+                                 last_before(res, 'off', screen1_left))
+
+
+# Screen 2 at screen 1's right corner, 18 degrees short of square
+# (yaw -72, facing left): chosen, gripped, and turned by the left stick
+# at an eighth of full speed (11.25 degrees a second) for 1.6 s, it
+# reaches the 5 degree window and clicks square at the corner.
+SQUARE = dict(SAVE, video_openxr_edit_snap='true',
+              video_screen2_xr_x='0.8', video_screen2_xr_y='0.992',
+              video_screen2_xr_z='0.64', video_screen2_xr_yaw='-72')
+SQUARED = (0.8, 0.0, -1.16)
+YAW_M90 = (0.0, -math.sqrt(0.5), 0.0, math.sqrt(0.5))
+
+
+def check_edit_snap_square(res):
+    """Screen 2, turned by the left stick from 18 degrees short of
+    square at screen 1's right corner, shows and is saved exactly
+    square there, and the right hand buzzes."""
+    errors = edit_log_errors(res, ['on', 'off'])
+    errors += pose_errors('screen 2 turned square',
+                          [screen2(f) for f in
+                           between(res, 'held', 'released', delay=0.2)],
+                          SQUARED, YAW_M90, (1.28, 0.96))
+    errors += saved_errors(res, 'screen 2', 'video_screen2_xr_', S1,
+                           (SQUARED, YAW_M90), (1.28, 0.96),
+                           last_before(res, 'off', screen2))
+    ticks = [e for e in haptics(res, 'right') if e['ev'] == 'haptic'
+             and e['t_us'] > res.marks['grab'] * 1e6
+             and abs(e['amplitude'] - SNAP_TICK[0]) < 1e-3
+             and e['duration_ns'] == SNAP_TICK[1]]
+    if not ticks:
+        errors.append('no snap buzz on the right hand: %s'
+                      % haptics(res, 'right'))
+    return errors
+
+
 EDIT_GRAB_STEPS = edit_start(edit_aim(), 1) + [
     ('mark', 'aimed'), ('wait', 1), ('mark', 'grab'),
     ('script', script(edit_aim(), EDIT_GRIP)), ('wait', 1),
@@ -6021,6 +6081,30 @@ EDIT_CASES += [
     {'name': 'edit-snap-edge', 'map': '3ds',
      'settings': dict(SAVE, video_openxr_edit_snap='true'),
      'steps': EDIT_SNAP_EDGE_STEPS, 'check': check_edit_snap_edge},
+    {'name': 'edit-turn-stick', 'map': '3ds', 'settings': SAVE,
+     'env': {'RA_XR_LAYER_SNAP_EVERY': '0'},
+     'steps': edit_start(edit_aim()) + [
+         ('script', script(edit_aim(), EDIT_GRIP)), ('wait', 1),
+         ('mark', 'held'),
+         ('script', script(edit_aim(), EDIT_GRIP,
+                           'action edit/stick@left 1 0')),
+         ('wait', 0.5), ('script', script(edit_aim(), EDIT_GRIP)),
+         ('wait', 1), ('mark', 'turned'), ('script', edit_aim()),
+         ('wait', 1), ('send', EDIT), ('wait', 2), ('mark', 'off'),
+         ('wait', 1)],
+     'check': check_edit_turn_stick},
+    {'name': 'edit-snap-square', 'map': '3ds', 'settings': SQUARE,
+     'steps': edit_start(edit_aim()) + edit_tap(EDIT_NEXT, edit_aim())
+     + edit_tap(EDIT_NEXT, edit_aim()) + [
+         ('mark', 'grab'), ('script', script(edit_aim(), EDIT_GRIP)),
+         ('wait', 1),
+         ('script', script(edit_aim(), EDIT_GRIP,
+                           'action edit/stick@left -0.3 0')),
+         ('wait', 1.6), ('script', script(edit_aim(), EDIT_GRIP)),
+         ('wait', 1), ('mark', 'held'), ('wait', 1),
+         ('script', edit_aim()), ('mark', 'released'), ('wait', 1),
+         ('send', EDIT), ('wait', 2), ('mark', 'off'), ('wait', 1)],
+     'check': check_edit_snap_square},
 ]
 
 

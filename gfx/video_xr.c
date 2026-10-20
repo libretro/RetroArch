@@ -256,20 +256,6 @@ void video_xr_euler(const video_xr_quat_t *q, float *yaw, float *pitch,
             1.0 - 2.0 * (x * x + z * z)) * 180.0 / VIDEO_XR_PI);
 }
 
-void video_xr_level(video_xr_quat_t *q, float roll)
-{
-   video_screen_xr_t s;
-   video_xr_pose_t pose;
-   if (fabs(video_xr_pitch_sin(q)) > VIDEO_XR_POLE)
-      return;
-   video_views_xr_reset(&s, 1);
-   video_xr_euler(q, &s.yaw, &s.pitch, &s.roll);
-   s.roll = roll;
-   video_xr_pose_identity(&pose);
-   video_xr_screen_rotate(&s, &pose);
-   *q = pose.orientation;
-}
-
 void video_xr_item_pose(const video_xr_vec3_t *base,
       const video_screen_xr_t *screen, video_xr_pose_t *out)
 {
@@ -1437,6 +1423,60 @@ unsigned video_xr_snap(const video_xr_quad_set_t *set, unsigned slot,
    return snapped;
 }
 
+/* Past this pitch of the ray, in degrees, its heading blends evenly
+ * into the one the hand's up gives, which straight up or down is the
+ * only one: so it never jumps there, but a twist there turns it. */
+#define VIDEO_XR_HEADING_BLEND 80.0
+
+/* The heading of aim's ray, as a turn about the vertical. */
+static void video_xr_heading(const video_xr_quat_t *aim,
+      video_xr_pose_t *out)
+{
+   double x, z, t, half;
+   video_xr_vec3_t v, ray, up;
+   v.x = 0.0f;
+   v.y = 0.0f;
+   v.z = -1.0f;
+   video_xr_rotate(aim, &v, &ray);
+   v.y = 1.0f;
+   v.z = 0.0f;
+   video_xr_rotate(aim, &v, &up);
+   x = ray.x;
+   z = ray.z;
+   t = fabs(ray.y);
+   t = (asin(t < 1.0 ? t : 1.0) * 180.0 / VIDEO_XR_PI
+         - VIDEO_XR_HEADING_BLEND) / (90.0 - VIDEO_XR_HEADING_BLEND);
+   if (t > 0.0)
+   {
+      /* Tipped up, the hand's up points back from the heading, tipped
+       * down along it; this far tipped, it is never upright. */
+      double ux = -ray.y * up.x;
+      double uz = -ray.y * up.z;
+      double n  = sqrt(x * x + z * z);
+      double m  = sqrt(ux * ux + uz * uz);
+      if (t > 1.0)
+         t = 1.0;
+      x = (n > 0.0 ? (1.0 - t) * x / n : 0.0) + t * ux / m;
+      z = (n > 0.0 ? (1.0 - t) * z / n : 0.0) + t * uz / m;
+   }
+   half = atan2(-x, -z) / 2.0;
+   video_xr_pose_identity(out);
+   out->orientation.y = (float)sin(half);
+   out->orientation.w = (float)cos(half);
+}
+
+void video_xr_grab_hold(video_xr_grab_t *g, const video_xr_pose_t *aim,
+      const video_xr_quat_t *q)
+{
+   video_xr_pose_t head, turn;
+   video_xr_heading(&aim->orientation, &head);
+   video_xr_pose_invert(&head, &head);
+   video_xr_pose_identity(&turn);
+   turn.orientation = *q;
+   video_xr_compose(&head, &turn, &turn);
+   g->turn = turn.orientation;
+}
+
 bool video_xr_grab_pose(const video_xr_grab_t *g, const video_xr_pose_t *aim,
       const video_xr_quad_set_t *targets, unsigned skip,
       const video_xr_pose_t *start, video_xr_pose_t *pose,
@@ -1447,7 +1487,14 @@ bool video_xr_grab_pose(const video_xr_grab_t *g, const video_xr_pose_t *aim,
    unsigned snaps = 0;
    video_xr_compose(aim, &g->rel, pose);
    if (!g->tilt)
-      video_xr_level(&pose->orientation, g->roll);
+   {
+      video_xr_pose_t head, turn;
+      video_xr_heading(&aim->orientation, &head);
+      video_xr_pose_identity(&turn);
+      turn.orientation = g->turn;
+      video_xr_compose(&head, &turn, &turn);
+      pose->orientation = turn.orientation;
+   }
    if (targets)
       snaps = video_xr_snap(targets, g->slot, skip, g->width, g->height,
             video_xr_snap_fade(start, pose), pose);
@@ -1509,6 +1556,55 @@ void video_xr_grab_stick(video_xr_grab_t *g, float x, float y, double dt,
       s.scale = (float)(*scale * pow(2.0, grow));
       video_views_xr_normalize(&s);
       *scale = s.scale;
+   }
+}
+
+void video_xr_grab_turn(video_xr_grab_t *g, const video_xr_pose_t *aim,
+      float x, double dt)
+{
+   double n, s;
+   video_xr_pose_t turn, item;
+   video_xr_vec3_t axis;
+   video_xr_quat_t *q;
+   double half = video_xr_deflection(x) * VIDEO_XR_EDIT_TURN_RATE
+      * dt * VIDEO_XR_PI / 360.0;
+   if (half == 0.0)
+      return;
+   axis.x = 0.0f;
+   axis.y = 1.0f;
+   axis.z = 0.0f;
+   video_xr_pose_identity(&item);
+   if (g->tilt)
+   {
+      video_xr_pose_t inv;
+      /* About the anchor's up in the aim's frame, before g->rel. */
+      video_xr_pose_invert(aim, &inv);
+      video_xr_rotate(&inv.orientation, &axis, &axis);
+      item.orientation = g->rel.orientation;
+      q                = &g->rel.orientation;
+   }
+   else
+   {
+      item.orientation = g->turn;
+      q                = &g->turn;
+   }
+   s = sin(half);
+   video_xr_pose_identity(&turn);
+   turn.orientation.x = (float)(axis.x * s);
+   turn.orientation.y = (float)(axis.y * s);
+   turn.orientation.z = (float)(axis.z * s);
+   turn.orientation.w = (float)cos(half);
+   video_xr_compose(&turn, &item, &item);
+   n = sqrt((double)item.orientation.x * item.orientation.x
+         + (double)item.orientation.y * item.orientation.y
+         + (double)item.orientation.z * item.orientation.z
+         + (double)item.orientation.w * item.orientation.w);
+   if (n > 0.0)
+   {
+      q->x = (float)(item.orientation.x / n);
+      q->y = (float)(item.orientation.y / n);
+      q->z = (float)(item.orientation.z / n);
+      q->w = (float)(item.orientation.w / n);
    }
 }
 

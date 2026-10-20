@@ -7319,6 +7319,7 @@ static void t_grab_held(openxr_grabs_t *g)
    memset(g, 0, sizeof(*g));
    video_xr_pose_identity(&g->hand[1].rel);
    g->hand[1].rel.position.z = -1.0f;
+   g->hand[1].turn           = g->hand[1].rel.orientation;
    video_xr_pose_identity(&g->hand[1].last);
    g->hand[1].last.position.z = -1.8f;
    g->hand[1].base.z          = -1.8f;

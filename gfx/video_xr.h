@@ -179,12 +179,14 @@ void video_xr_item_settings(const video_xr_vec3_t *base,
       const video_xr_pose_t *pose, video_screen_xr_t *out);
 
 /* Edit mode's stick: its deadzone as a fraction of its travel; at full
- * travel past it, the push along the aim's ray in metres a second and
- * the resize in doublings a second. A pulled item comes no nearer the
- * hand than VIDEO_XR_EDIT_REACH metres. */
+ * travel past it, the push along the aim's ray in metres a second, the
+ * resize in doublings a second, and the free hand's turn in degrees a
+ * second. A pulled item comes no nearer the hand than
+ * VIDEO_XR_EDIT_REACH metres. */
 #define VIDEO_XR_EDIT_DEADZONE   0.2f
 #define VIDEO_XR_EDIT_PUSH_RATE  1.5f
 #define VIDEO_XR_EDIT_SCALE_RATE 1.0f
+#define VIDEO_XR_EDIT_TURN_RATE  90.0f
 #define VIDEO_XR_EDIT_REACH      0.1f
 
 enum video_xr_grab_state
@@ -201,35 +203,50 @@ typedef struct video_xr_grab
 {
    video_xr_pose_t rel;    /* the item in the aim pose's frame */
    video_xr_pose_t last;   /* where the hand last put it */
+   video_xr_quat_t turn;   /* its turn from the aim's heading, kept
+                            * while it does not tilt */
    video_xr_vec3_t base;   /* its layout spot */
-   float roll;             /* degrees, kept while it does not tilt */
    float width;            /* metres, at its scale now */
    float height;
    unsigned slot;          /* its quads' slot */
    unsigned release_seq;
    unsigned state;         /* enum video_xr_grab_state */
-   bool tilt;              /* its roll follows the hand too */
+   bool tilt;              /* its pitch and roll follow the hand too */
 } video_xr_grab_t;
 
 /* Where g puts its item for an aim pose: the aim composed with g->rel,
- * levelled to g->roll unless g->tilt, snapped to the screens of
- * targets but those in skip, fading in from start, the item's pose as
- * it was grabbed (video_xr_snap, video_xr_snap_fade; NULL targets:
- * none, and start unread), its offsets from g->base clamped to the
- * settings' range. Writes the pose and, unless NULL, the offsets and
- * turn and the snaps engaged or pulling (video_xr_snap). Returns
- * whether a clamp held it back, never for a snap alone; the caller then
- * holds g->rel again from pose, so the item resumes from the limit. */
+ * its turn g->turn from the aim's heading unless g->tilt, snapped to
+ * the screens of targets but those in skip, fading in from start, the
+ * item's pose as it was grabbed (video_xr_snap, video_xr_snap_fade;
+ * NULL targets: none, and start unread), its offsets from g->base
+ * clamped to the settings' range. Writes the pose and, unless NULL, the
+ * offsets and turn and the snaps engaged or pulling (video_xr_snap).
+ * Returns whether a clamp held it back, never for a snap alone; the
+ * caller then holds g->rel again from pose, so the item resumes from
+ * the limit. */
 bool video_xr_grab_pose(const video_xr_grab_t *g, const video_xr_pose_t *aim,
       const video_xr_quad_set_t *targets, unsigned skip,
       const video_xr_pose_t *start, video_xr_pose_t *pose,
       video_screen_xr_t *out, unsigned *snapped);
+
+/* g carries its item, turned q at aim, from here on: it keeps its yaw
+ * from the aim's heading, the way the ray points across the floor, and
+ * its pitch and roll. Near straight up or down, the heading blends into
+ * the one the hand's up gives, so a twist there turns it. */
+void video_xr_grab_hold(video_xr_grab_t *g, const video_xr_pose_t *aim,
+      const video_xr_quat_t *q);
 
 /* The stick for dt seconds: past the deadzone y (up, +1) pushes g's
  * item along the aim's ray and x (right, +1) enlarges it, each by how
  * far past it is; *scale stays within the setting's range. */
 void video_xr_grab_stick(video_xr_grab_t *g, float x, float y, double dt,
       float *scale);
+
+/* The free hand's stick for dt seconds, g's item held by aim: past the
+ * deadzone x (right, +1) turns it about the vertical through its
+ * middle, anticlockwise seen from above, by how far past it is. */
+void video_xr_grab_turn(video_xr_grab_t *g, const video_xr_pose_t *aim,
+      float x, double dt);
 
 /* Snap to Screens. A held screen turns parallel or square (a
  * quarter turn about the other's up) to a screen within
@@ -297,10 +314,6 @@ void video_xr_pose_invert(const video_xr_pose_t *a, video_xr_pose_t *out);
  * vertical. */
 void video_xr_euler(const video_xr_quat_t *q, float *yaw, float *pitch,
       float *roll);
-
-/* q with its roll set to roll degrees, its yaw and pitch kept; straight
- * up or down, where it has no roll of its own, q as it is. */
-void video_xr_level(video_xr_quat_t *q, float roll);
 
 /* Lazy Follow: the screens stay until the head's heading is this far
  * from theirs, or the head this far from where they were placed from;
