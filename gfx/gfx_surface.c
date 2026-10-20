@@ -651,6 +651,41 @@ static void gfx_surface_done(void *user, uintptr_t handle)
 }
 #endif
 
+#ifdef HAVE_THREADS
+/* Post the GPU-native payload @img carries to the video thread as a
+ * load. The descriptor travels in the surface; the payload is read
+ * until the completion. False when the wrapper would not take it. */
+static bool gfx_surface_post_compressed(gfx_surface_t *s,
+      const struct texture_image *img)
+{
+   s->img              = *img;
+   s->img.pixels       = NULL;
+   s->img.planar       = NULL;
+   s->node.kind        = VIDEO_THREAD_ASYNC_LOAD;
+   s->node.img         = &s->img;
+   s->node.handle      = 0;
+   s->node.filter      = s->filter;
+   s->node.done        = gfx_surface_done;
+   s->node.user        = s;
+   s->node.release     = NULL;
+   s->node.dropped     = 0;
+   s->node.made        = 0;
+   s->node.lend        = 0;
+   s->node.lend_refresh = 0;
+   s->node.lend_padded = 0;
+   s->node.lent_idx[0] = s->node.lent_idx[1] = -1;
+   s->node.lent_mem[0] = s->node.lent_mem[1] = NULL;
+   if (video_thread_async_post(&s->node))
+   {
+      s->inflight      = 1;
+      s->inflight_slot = 0;
+      return true;
+   }
+   s->img.compressed   = NULL;
+   return false;
+}
+#endif
+
 static enum gfx_surface_submit_result gfx_surface_submit_img(
       gfx_surface_t *s, unsigned slot, uint8_t fmt)
 {
@@ -1057,34 +1092,13 @@ enum gfx_surface_submit_result gfx_surface_submit_compressed(
 #ifdef HAVE_THREADS
    if (video_driver_thread_wrapper_active())
    {
-      /* The descriptor travels in the surface; the payload stays the
-       * caller's until the completion */
-      s->img              = *img;
-      s->img.pixels       = NULL;
-      s->img.planar       = NULL;
-      s->node.kind        = VIDEO_THREAD_ASYNC_LOAD;
-      s->node.img         = &s->img;
-      s->node.handle      = 0;
-      s->node.filter      = s->filter;
-      s->node.done        = gfx_surface_done;
-      s->node.user        = s;
-      s->node.release     = NULL;
-      s->node.dropped     = 0;
-      s->node.made        = 0;
-      s->node.lend        = 0;
-      s->node.lend_refresh = 0;
-      s->node.lend_padded = 0;
-      s->node.lent_idx[0] = s->node.lent_idx[1] = -1;
-      s->node.lent_mem[0] = s->node.lent_mem[1] = NULL;
-      if (video_thread_async_post(&s->node))
+      /* the payload stays the caller's until the completion */
+      if (gfx_surface_post_compressed(s, img))
       {
-         s->inflight      = 1;
-         s->inflight_slot = 0;
-         r                = GFX_SURFACE_SUBMIT_QUEUED;
+         r = GFX_SURFACE_SUBMIT_QUEUED;
          gfx_surface_count(r);
          return r;
       }
-      s->img.compressed   = NULL;
    }
 #endif
    if (video_driver_texture_load(img, s->filter, &tex) && tex)
@@ -1208,6 +1222,20 @@ bool gfx_surface_submit_image(gfx_surface_t *s, struct texture_image *img)
    }
 
 #ifdef HAVE_THREADS
+   /* A payload the driver samples: posted, the image the surface's
+    * until the completion */
+   if (     img->compressed && !img->pixels
+         && video_driver_thread_wrapper_active()
+         && task_is_on_main_thread()
+         && video_driver_supports_texture_format(img->compressed->format))
+   {
+      s->payload      = img;
+      s->payload_free = gfx_surface_image_free;
+      if (gfx_surface_post_compressed(s, img))
+         return true;
+      s->payload      = NULL;
+      s->payload_free = NULL;
+   }
    if (     img->pixels && !img->compressed
          && VIDEO_SCALE_FITS(img->width, img->height)
          && video_driver_thread_wrapper_active()

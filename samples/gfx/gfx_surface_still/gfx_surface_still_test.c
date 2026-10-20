@@ -42,6 +42,9 @@ static uint32_t st_px_first, st_px_last;
 /* The planes and colour space of the last planar frame read */
 static struct texture_planar st_planar;
 static int st_planar_reads;
+/* The stub driver samples BC1; loads it was handed as a payload */
+static bool st_bc1;
+static int  st_compressed_loads;
 
 static void st_saw(void *data)
 {
@@ -75,6 +78,9 @@ bool video_driver_texture_load(void *data,
       if (img->pixels == st_lent_pixels[0] || img->pixels == st_lent_pixels[1])
          st_load_lent++;
    }
+   if (     data && ((const struct texture_image*)data)->compressed
+         && !((const struct texture_image*)data)->pixels)
+      st_compressed_loads++;
    st_saw(data);
    *id = st_next++;
    st_loads++;
@@ -124,6 +130,7 @@ static int st_yuv420;
 bool video_driver_supports_texture_format(enum texture_gpu_format fmt)
 {
    return (fmt == TEXTURE_GPU_FORMAT_YUV420 && st_yuv420)
+      || (fmt == TEXTURE_GPU_FORMAT_BC1 && st_bc1)
       || (st_fp16 && (fmt == TEXTURE_GPU_FORMAT_RGBA16F || fmt == TEXTURE_GPU_FORMAT_SCRGB));
 }
 
@@ -314,6 +321,13 @@ void image_texture_free(struct texture_image *img)
 {
    if (!img)
       return;
+   if (img->compressed)
+   {
+      free(img->compressed->storage);
+      free(img->compressed->mips);
+      free(img->compressed);
+      img->compressed = NULL;
+   }
    free(img->pixels);
    img->pixels = NULL;
    img->width  = img->height = 0;
@@ -361,7 +375,75 @@ static struct texture_image *st_image(unsigned w)
    return img;
 }
 
+/* A @w x @w still that is its BC1 blocks alone, as a DDS decodes */
+static struct texture_image *st_bc1_image(unsigned w)
+{
+   struct texture_image *img = (struct texture_image*)calloc(1, sizeof(*img));
+   struct texture_compressed *tc =
+      (struct texture_compressed*)calloc(1, sizeof(*tc));
+   size_t len                = (size_t)((w + 3) / 4) * ((w + 3) / 4) * 8;
+   tc->format                = TEXTURE_GPU_FORMAT_BC1;
+   tc->storage               = calloc(1, len);
+   tc->storage_len           = len;
+   tc->mips                  = (struct texture_mip*)calloc(1, sizeof(*tc->mips));
+   tc->mips[0].data          = tc->storage;
+   tc->mips[0].width         = tc->mips[0].height = w;
+   tc->mips[0].size          = len;
+   tc->num_mips              = 1;
+   img->width = img->height  = w;
+   img->compressed           = tc;
+   return img;
+}
+
 /* --- the test ---------------------------------------------------- */
+
+/* A still that is only a payload the driver samples goes to the video
+ * thread as a load, never through the caller: the payload is the
+ * surface's until the completion, and goes with a surface freed while
+ * it is still out. A format the driver does not sample takes the plain
+ * load, which decodes. */
+static void st_compressed_stills(void)
+{
+   gfx_surface_t *s;
+   int loads, compressed, live = st_live;
+
+   st_async = 1;
+   st_bc1   = true;
+   s        = gfx_surface_new_still(TEXTURE_FILTER_LINEAR);
+   loads    = st_loads;
+   CHECK(gfx_surface_submit_image(s, st_bc1_image(8)),
+         "compressed still: refused");
+   CHECK(s->inflight && st_loads == loads,
+         "compressed still: not posted, loaded on the caller");
+   st_flush();
+   CHECK(s->handle && !s->inflight && st_compressed_loads == 1,
+         "compressed still: no texture from its blocks");
+   CHECK(!s->img.compressed && !s->payload,
+         "compressed still: the payload outlived its upload");
+   gfx_surface_free(s);
+
+   /* freed with the load still queued */
+   s = gfx_surface_new_still(TEXTURE_FILTER_LINEAR);
+   CHECK(gfx_surface_submit_image(s, st_bc1_image(8)) && s->inflight,
+         "compressed still in flight: not posted");
+   gfx_surface_free(s);
+   st_flush();
+   CHECK(st_live == live, "compressed still in flight: %d textures left",
+         st_live - live);
+
+   /* not sampled: the plain load, on the caller */
+   st_bc1     = false;
+   compressed = st_compressed_loads;
+   s          = gfx_surface_new_still(TEXTURE_FILTER_LINEAR);
+   CHECK(gfx_surface_submit_image(s, st_bc1_image(8)), "unsampled: refused");
+   CHECK(!s->inflight && s->handle
+         && st_compressed_loads == compressed + 1,
+         "unsampled: did not take the plain load");
+   gfx_surface_free(s);
+   CHECK(st_live == live, "compressed stills: %d textures left",
+         st_live - live);
+   st_async = 0;
+}
 
 
 /* The path of slot @i in the set lane: "<8 + i>.png", but slot 3's
@@ -693,6 +775,7 @@ int main(void)
    st_retired_imports();
    st_retired_lent_textures();
    st_pitched_lending();
+   st_compressed_stills();
    st_async = 1;
    st_still_recovery();
 
