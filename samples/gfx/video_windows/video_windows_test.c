@@ -116,6 +116,14 @@ static void test_windows_attached(void)
    CHECK(plan.main_mask == 1u && plan.separate_mask == 6u);
    video_windows_plan(&map, screens, true, true, 0, 99, &plan);
    CHECK(plan.main_mask == 1u && plan.separate_mask == 6u);
+   /* Screen 2 attached: screen 0 takes its mode */
+   screens[2].mode = VIDEO_WINDOW_HIDDEN;
+   video_windows_plan(&map, screens, true, true, 0, 2, &plan);
+   CHECK(plan.main_mask == 4u && plan.hidden_mask == 1u);
+   CHECK(plan.separate_mask == 2u);
+   /* No settings: screen 0 attached too */
+   video_windows_plan(&map, NULL, true, true, 0, 1, &plan);
+   CHECK(plan.main_mask == 7u && plan.separate_mask == 0u && plan.hidden_mask == 0u);
 }
 
 static void test_display(video_window_display_t *d, unsigned ordinal,
@@ -228,6 +236,12 @@ static void test_windows_route(void)
    d[0].connection = d[2].connection = VIDEO_WINDOW_CONNECTION_DIRECT;
    video_windows_route(d, 3, screens, 2, &r);
    CHECK(test_routed(&r, 3, 1u, 0u, 1));
+   /* No ordinal: not for Auto, even external and listed last */
+   test_display(&d[0], 1, VIDEO_WINDOW_CONNECTION_UNKNOWN, true);
+   test_display(&d[1], 3, VIDEO_WINDOW_CONNECTION_BUILT_IN, false);
+   test_display(&d[2], 0, VIDEO_WINDOW_CONNECTION_DIRECT, false);
+   video_windows_route(d, 3, screens, 2, &r);
+   CHECK(test_routed(&r, 3, 2u, 0u, 0));
 
    /* The picker: display N takes the screen that names it, and the
     * external rule is Auto's alone */
@@ -246,6 +260,11 @@ static void test_windows_route(void)
    video_windows_route(d, 3, screens, 2, &r);
    CHECK(test_routed(&r, 2, 2u, 0u, 0));
    d[1].physical = true;
+   /* or off */
+   d[1].on = false;
+   video_windows_route(d, 3, screens, 2, &r);
+   CHECK(test_routed(&r, 2, 2u, 0u, 0));
+   d[1].on = true;
    /* N the main window's own display, or missing: the screen stays */
    screens[1].monitor = 1;
    video_windows_route(d, 3, screens, 2, &r);
@@ -258,6 +277,10 @@ static void test_windows_route(void)
    video_windows_route(d, 3, screens, 2, &r);
    CHECK(test_routed(&r, 0, 0u, 2u, 0));
    d[1].valid = true;
+   d[1].is_private = true;
+   video_windows_route(d, 3, screens, 2, &r);
+   CHECK(test_routed(&r, 0, 0u, 2u, 0));
+   d[1].is_private = false;
 
    /* One display at a time: a screen bound for another stays */
    screens[1].monitor = 2;
@@ -368,9 +391,9 @@ static void test_second_output_touch(void)
    video_views_map_t map;
    video_views_layout_params_t p;
    video_views_layout_t layout;
-   uint32_t point;
+   uint32_t point = 0;
 
-   /* Two screens, the lower on the Thor's lower panel */
+   /* Two screens, the lower on a 1240x1080 lower panel */
    stacked_map(&map, 2);
    memset(&p, 0, sizeof(p));
    p.map             = &map;
@@ -413,6 +436,11 @@ static void test_second_output_touch(void)
    CHECK(video_views_map_point(&layout, &map, VIDEO_SCALE_PACK(256, 576),
             100, 540, true, &point));
    CHECK(point == oob);
+   /* held to the nearer screen */
+   CHECK(video_views_map_point(&layout, &map, VIDEO_SCALE_PACK(256, 576),
+            100, 810, false, &point));
+   CHECK(VIDEO_POS_X(point) < -32500);
+   CHECK(VIDEO_POS_Y(point) > 21500 && VIDEO_POS_Y(point) < 22200);
 
    /* Screen 0 on an external monitor */
    stacked_map(&map, 2);
