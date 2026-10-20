@@ -1160,6 +1160,7 @@ typedef struct settings
       bool safeshutdown_enable;
 #endif
       bool localap_enable;
+      bool rtc_update_enable;
 #endif
 
       bool video_window_show_decorations;

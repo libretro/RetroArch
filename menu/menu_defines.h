@@ -168,6 +168,14 @@ enum menu_timedate_style_type
    MENU_TIMEDATE_STYLE_LAST
 };
 
+/* Orders the day, month and year of a date can be written in. */
+enum menu_timedate_date_order
+{
+   MENU_TIMEDATE_DATE_ORDER_DMY = 0,
+   MENU_TIMEDATE_DATE_ORDER_MDY,
+   MENU_TIMEDATE_DATE_ORDER_YMD
+};
+
 enum menu_remember_selection_type
 {
    MENU_REMEMBER_SELECTION_OFF = 0,

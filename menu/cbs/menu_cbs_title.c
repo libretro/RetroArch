@@ -875,6 +875,7 @@ DEFAULT_TITLE_MACRO(action_get_menu_bottom_settings_list,       MENU_ENUM_LABEL_
 #endif
 #ifdef HAVE_LAKKA
 DEFAULT_TITLE_MACRO(action_get_lakka_services_list,             MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES)
+DEFAULT_TITLE_MACRO(action_get_lakka_datetime_settings_list,    MENU_ENUM_LABEL_VALUE_LAKKA_DATETIME_SETTINGS)
 #endif
 #ifdef HAVE_LAKKA_SWITCH
 DEFAULT_TITLE_MACRO(action_get_lakka_switch_options_list,       MENU_ENUM_LABEL_VALUE_LAKKA_SWITCH_OPTIONS)
@@ -1092,6 +1093,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
 #endif
 #ifdef HAVE_LAKKA
       {MENU_ENUM_LABEL_DEFERRED_LAKKA_SERVICES_LIST,                  action_get_lakka_services_list},
+      {MENU_ENUM_LABEL_DEFERRED_LAKKA_DATETIME_SETTINGS_LIST,         action_get_lakka_datetime_settings_list},
 #endif
 #ifdef HAVE_LAKKA_SWITCH
       {MENU_ENUM_LABEL_DEFERRED_LAKKA_SWITCH_OPTIONS_LIST,            action_get_lakka_switch_options_list},

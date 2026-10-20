@@ -814,6 +814,58 @@ bool menu_entries_list_search(const char *needle, size_t *idx)
    return match_found;
 }
 
+/* Whether the menu clock shows 12-hour (AM/PM) time: it does when
+ * its style is one of the AM/PM ones. */
+bool menu_timedate_12hour_enabled(void)
+{
+   settings_t *settings = config_get_ptr();
+   unsigned style       = settings->uints.menu_timedate_style;
+   return    style >= MENU_TIMEDATE_STYLE_YMD_HMS_AMPM
+          && style <  MENU_TIMEDATE_STYLE_LAST;
+}
+
+/* The order the menu clock writes dates in, taken from its style.
+ * False for the styles that show no date. */
+bool menu_timedate_date_order(unsigned *order)
+{
+   settings_t *settings = config_get_ptr();
+
+   switch (settings->uints.menu_timedate_style)
+   {
+      case MENU_TIMEDATE_STYLE_YMD_HMS:
+      case MENU_TIMEDATE_STYLE_YMD_HM:
+      case MENU_TIMEDATE_STYLE_YMD:
+      case MENU_TIMEDATE_STYLE_YM:
+      case MENU_TIMEDATE_STYLE_YMD_HMS_AMPM:
+      case MENU_TIMEDATE_STYLE_YMD_HM_AMPM:
+         *order = MENU_TIMEDATE_DATE_ORDER_YMD;
+         return true;
+      case MENU_TIMEDATE_STYLE_MDYYYY_HMS:
+      case MENU_TIMEDATE_STYLE_MDYYYY_HM:
+      case MENU_TIMEDATE_STYLE_MD_HM:
+      case MENU_TIMEDATE_STYLE_MDYYYY:
+      case MENU_TIMEDATE_STYLE_MD:
+      case MENU_TIMEDATE_STYLE_MDYYYY_HMS_AMPM:
+      case MENU_TIMEDATE_STYLE_MDYYYY_HM_AMPM:
+      case MENU_TIMEDATE_STYLE_MD_HM_AMPM:
+         *order = MENU_TIMEDATE_DATE_ORDER_MDY;
+         return true;
+      case MENU_TIMEDATE_STYLE_DDMMYYYY_HMS:
+      case MENU_TIMEDATE_STYLE_DDMMYYYY_HM:
+      case MENU_TIMEDATE_STYLE_DDMM_HM:
+      case MENU_TIMEDATE_STYLE_DDMMYYYY:
+      case MENU_TIMEDATE_STYLE_DDMM:
+      case MENU_TIMEDATE_STYLE_DDMMYYYY_HMS_AMPM:
+      case MENU_TIMEDATE_STYLE_DDMMYYYY_HM_AMPM:
+      case MENU_TIMEDATE_STYLE_DDMM_HM_AMPM:
+         *order = MENU_TIMEDATE_DATE_ORDER_DMY;
+         return true;
+      default:
+         break;
+   }
+   return false;
+}
+
 /* Display the date and time - time_mode will influence how
  * the time representation will look like.
  * */
