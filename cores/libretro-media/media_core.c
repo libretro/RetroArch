@@ -1334,6 +1334,14 @@ void MEDIA_CORE_PREFIX(retro_reset)(void)
    p->aeof    = 0;
 #endif
    p->vpts_ns = 0;
+#ifdef HAVE_RMP4
+   if (p->mp4vs)
+   {
+      p->vpts_ns = rmp4_video_stream_presentation_delay_ns(p->mp4vs);
+      if (p->vpts_ns && p->fb)
+         memset(p->fb, 0, (size_t)p->width * p->height * sizeof(*p->fb));
+   }
+#endif
    p->vshown  = 0;
    p->play_ns = p->nvts ? p->vts[0] : 0;
    p->eof = 0;
@@ -1461,14 +1469,18 @@ static int64_t media_seek_internal_resume(media_player_t *p, int64_t target_ns,
    if (p->mp4vs)
    {
       int64_t ms;
+      int64_t delay = rmp4_video_stream_presentation_delay_ns(p->mp4vs);
+      int64_t relative = target_ns > delay ? target_ns - delay : 0;
       media_drop_hw(p);
-      ms = rmp4_video_stream_seek_ms(p->mp4vs, target_ns / 1000000);
+      ms = rmp4_video_stream_seek_ms(p->mp4vs, relative / 1000000);
+      if (target_ns < delay && p->fb)
+         memset(p->fb, 0, (size_t)p->width * p->height * sizeof(*p->fb));
       /* States restore by display ordinal. Seeking consumes pictures
        * without passing through the normal playback counter. */
       p->vshown = rmp4_video_stream_frame_index(p->mp4vs);
       p->hw_video = media_hw_refresh && rmp4_video_stream_set_hw(p->mp4vs, 0);
-      p->vpts_ns = ms >= 0 ? ms * 1000000 : 0;
-      p->play_ns = p->vpts_ns;
+      p->vpts_ns = (ms >= 0 ? ms * 1000000 : 0) + delay;
+      p->play_ns = target_ns < delay ? target_ns : p->vpts_ns;
       p->eof     = 0;
       (void)to_slot;   /* the mp4 glue's timestamp table is exact */
    }
@@ -1600,10 +1612,17 @@ seek_audio:
 #ifdef MEDIA_HAVE_AUDIO
    if (!resume && p->actx)
    {
-      int64_t want = (int64_t)((double)p->vpts_ns * 1e-9
-            * (double)p->arate);
+      int64_t audio_ns = p->vpts_ns;
+      int64_t want;
+#ifdef HAVE_RMP4
+      if (p->mp4vs && p->play_ns < audio_ns) audio_ns = p->play_ns;
+#endif
+      want = (int64_t)((double)audio_ns * 1e-9 * (double)p->arate);
       media_seek_audio(p, want);
    }
+#endif
+#ifdef HAVE_RMP4
+   if (p->mp4vs && p->play_ns < p->vpts_ns) return p->play_ns;
 #endif
    return p->vpts_ns;
 }
@@ -2130,7 +2149,7 @@ void MEDIA_CORE_PREFIX(retro_run)(void)
       {
          int have = 0;
          while (!p->eof && !p->hw_frame.image
-               && p->vpts_ns + p->frame_ns / 2 <= p->play_ns)
+               && p->vpts_ns <= p->play_ns - p->frame_ns / 2)
          {
             int dur_ms = 0;
             /* Pass-over frames are consumed without colour
@@ -2680,6 +2699,15 @@ static bool media_load_mp4(media_player_t *p)
    if (!p->silence)
       return false;
    rmp4_video_stream_set_output(p->mp4vs, p->fb);
+   {
+      const int64_t maximum = (int64_t)((~(uint64_t)0) >> 1);
+      int64_t span_ms = rmp4_video_stream_span_ms(p->mp4vs);
+      int64_t delay = rmp4_video_stream_presentation_delay_ns(p->mp4vs);
+      if (span_ms < 0 || span_ms > (maximum - p->frame_ns) / 1000000
+            || delay < 0 || delay > maximum - p->frame_ns - span_ms * 1000000)
+         return false;
+      p->vpts_ns = delay;
+   }
 
    if (MEDIA_CORE_PREFIX(log_cb))
       MEDIA_CORE_PREFIX(log_cb)(RETRO_LOG_INFO,

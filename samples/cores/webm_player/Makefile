@@ -94,6 +94,12 @@ ifeq ($(AUDIO),1)
 TIMELINE_TARGET := webm_audio_timeline_test$(EXE)
 TIMELINE_SOURCES := $(filter-out webm_player_test.c $(ROOT)/cores/libretro-media/media_core.c,$(SOURCES))
 TIMELINE_OBJS := $(call sample_objs,$(TIMELINE_SOURCES:.c=.o))
+ifeq ($(MP4),1)
+VIDEO_TIMELINE_TARGET := video_timeline_test$(EXE)
+$(VIDEO_TIMELINE_TARGET): video_timeline_test.c webm_player_test.c $(ROOT)/cores/libretro-media/media_core.c $(TIMELINE_OBJS)
+	$(CC) $(CFLAGS) -o $@ video_timeline_test.c $(TIMELINE_OBJS) $(LDFLAGS) $(LDLIBS)
+endif
+
 $(TIMELINE_TARGET): webm_audio_timeline_test.c $(ROOT)/cores/libretro-media/media_core.c $(TIMELINE_OBJS)
 	$(CC) $(CFLAGS) -o $@ webm_audio_timeline_test.c $(TIMELINE_OBJS) $(LDFLAGS) $(LDLIBS)
 endif
@@ -178,7 +184,7 @@ $(DEVICE_TARGET): webm_vp9_device_test.c
 endif
 
 check: $(WEBM_TIMING_TARGET) $(VORBIS_SEEK_TARGET) $(OPUS_SEEK_TARGET) $(WEBM_SEEK_TARGET) $(MP4_SEEK_TARGET) $(TARGET) $(HW_TARGET) $(AV1_HW_TARGET) $(RESIDENCY_TARGET) $(VP9_HW_TARGET) $(DEVICE_TARGET) $(AUDIO_START_TARGET)
-check: $(PROGRESSIVE_GROUP_TARGET) $(TIMELINE_TARGET)
+check: $(PROGRESSIVE_GROUP_TARGET) $(TIMELINE_TARGET) $(VIDEO_TIMELINE_TARGET)
 	$(RUNNER) ./$(PROGRESSIVE_GROUP_TARGET) fixtures/core-group-seed.webm fixtures/core-group.webm
 	CORE_SPARSE=1 $(RUNNER) ./$(PROGRESSIVE_GROUP_TARGET) fixtures/core-group-seed.webm fixtures/core-sparse.webm
 ifeq ($(AUDIO),1)
@@ -195,6 +201,7 @@ ifeq ($(MP4),1)
 	EXPECT_START_TRIM=4801 $(RUNNER) ./$(TIMELINE_TARGET) fixtures/timeline-opus-trim.mp4 0
 	$(RUNNER) ./$(TIMELINE_TARGET) fixtures/timeline-opus.mp4 0
 	$(RUNNER) ./$(TIMELINE_TARGET) fixtures/timeline-vorbis.mp4 0
+	$(RUNNER) ./$(VIDEO_TIMELINE_TARGET) fixtures/video-timeline-0.mp4 fixtures/video-timeline-1.mp4
 endif
 	$(RUNNER) ./$(VORBIS_SEEK_TARGET) fixtures/vp9-vorbis.webm fixtures/vp9-seek-vorbis.webm
 	$(RUNNER) ./$(OPUS_SEEK_TARGET) fixtures/vp8-opus.webm fixtures/vp8-seek-opus.webm
@@ -217,6 +224,7 @@ ifeq ($(MP4),1)
 endif
 
 clean:
+	rm -f video_timeline_test video_timeline_test.exe
 	rm -f webm_audio_timeline_test webm_audio_timeline_test.exe
 	rm -f $(PROGRESSIVE_GROUP_TARGET)
 	rm -f webm_timing_test webm_timing_test.exe

@@ -1892,6 +1892,14 @@ void rmp4_video_stream_rewind(rmp4_video_stream_t *s)
    rmp4_video_stream_open_decoder(s);
 }
 
+int64_t rmp4_video_stream_presentation_delay_ns(const rmp4_video_stream_t *s)
+{
+   const rmp4_track *track;
+   if (!s || !s->demux) return 0;
+   track = rmp4_get_track(s->demux, s->track);
+   return track ? track->presentation_delay_ns : 0;
+}
+
 int64_t rmp4_video_stream_span_ms(const rmp4_video_stream_t *s)
 {
    if (!s || s->ts_count < 2)

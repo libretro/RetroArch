@@ -58,3 +58,5 @@ subprocess.run([sys.executable, str(Path(__file__).with_name("mp4_audio_gap.py")
                 str(out / "hevc-seek-aac44.mp4"), str(out / "hevc-aac44-audio-gap.mp4")], check=True)
 
 subprocess.run([sys.executable, str(Path(__file__).with_name("audio_timeline_fixtures.py")), str(out)], check=True)
+
+subprocess.run([sys.executable, str(Path(__file__).with_name("video_timeline_fixtures.py")), str(out)], check=True)

@@ -284,6 +284,12 @@ int rmp4_video_stream_frame_index(const rmp4_video_stream_t *stream);
  * duration, which skews a rate derived from it. */
 int64_t rmp4_video_stream_span_ms(const rmp4_video_stream_t *stream);
 
+/* Leading empty edit before this video track, in movie nanoseconds.
+ * Zero for a stream without such an edit, or a NULL stream. Durations
+ * and raw decoder seek coordinates remain relative to the video track. */
+int64_t rmp4_video_stream_presentation_delay_ns(const rmp4_video_stream_t *stream);
+
+
 RETRO_END_DECLS
 
 #endif
