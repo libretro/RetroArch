@@ -169,3 +169,7 @@ declines mapped wrapper memory for packed 10-bit formats, matching its
 direct callback: those uploads require channel repacking. The wrapper
 still lends a CPU slot and the existing upload performs that packing. Run
 framebuffer_format.py for the shipping descriptor matrix.
+
+Native Vulkan SDR-core brightness, preset alpha and translucent UI checks are
+documented in brightness.md. These compare pre-compositor output numerically;
+they do not measure the physical display.

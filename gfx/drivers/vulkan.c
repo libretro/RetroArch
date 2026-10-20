@@ -534,7 +534,8 @@ typedef struct vk
       VkPipeline stock_rect;
       VkPipeline alpha_premult;
 #ifdef VULKAN_HDR_SWAPCHAIN
-      VkPipeline hdr;
+      VkPipeline hdr; /* UI composition preserves source alpha. */
+      VkPipeline hdr_opaque; /* Game RGB is opaque, as in SDR. */
       VkPipeline hdr_to_sdr; /* for readback */
       VkPipeline alpha_blend_sdr; /* for SDR offscreen compositing */
       VkPipeline font_sdr;        /* for SDR offscreen compositing */
@@ -5737,7 +5738,7 @@ static void vulkan_init_pipelines(vk_t *vk)
    if (vk->context->flags & VK_CTX_FLAG_HDR_SUPPORT)
    {
       /* HDR pipeline. */
-      blend_attachment.blendEnable = VK_TRUE;
+      blend_attachment.blendEnable = VK_FALSE;
 
       blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
       blend_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
@@ -5751,6 +5752,11 @@ static void vulkan_init_pipelines(vk_t *vk)
             &module_info, NULL, &shader_stages[1].module);
 
       pipe.renderPass             = vk->render_pass;
+      /* A shader may preserve the unused XRGB alpha byte. The game's
+       * transfer pass replaces RGB; only the later UI pass blends. */
+      vkCreateGraphicsPipelines(vk->context->device, vk->pipelines.cache,
+            1, &pipe, NULL, &vk->pipelines.hdr_opaque);
+      blend_attachment.blendEnable = VK_TRUE;
       vkCreateGraphicsPipelines(vk->context->device, vk->pipelines.cache,
             1, &pipe, NULL, &vk->pipelines.hdr);
 
@@ -6255,6 +6261,9 @@ if (vk->context->flags & VK_CTX_FLAG_HDR_SUPPORT)
 {
    vkDestroyPipeline(vk->context->device,
          vk->pipelines.hdr, NULL);
+   vkDestroyPipeline(vk->context->device,
+         vk->pipelines.hdr_opaque, NULL);
+   vk->pipelines.hdr_opaque = VK_NULL_HANDLE;
    vkDestroyPipeline(vk->context->device,
          vk->pipelines.hdr_to_sdr, NULL);
 }
@@ -12284,7 +12293,7 @@ static bool vulkan_frame(void *data, const void *frame,
             unsigned game_hdr_mode = vulkan_hdr_source_mode(vk, NULL,
                   filter_chain);
             vulkan_hdr_log_mode(vk, game_hdr_mode, "game");
-            vulkan_run_hdr_pipeline(vk->pipelines.hdr, vk->render_pass, &vk->offscreen_buffer, backbuffer, vk, &vk->hdr.ubo, game_hdr_mode, false);
+            vulkan_run_hdr_pipeline(vk->pipelines.hdr_opaque, vk->render_pass, &vk->offscreen_buffer, backbuffer, vk, &vk->hdr.ubo, game_hdr_mode, false);
          }
 
          VULKAN_IMAGE_LAYOUT_TRANSITION(vk->cmd, vk->offscreen_buffer.image,
