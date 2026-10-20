@@ -324,6 +324,7 @@ typedef struct settings
       unsigned accessibility_narrator_engine;
 
       unsigned menu_timedate_style;
+      unsigned menu_timedate_mode;
       unsigned menu_frame_rate;
       unsigned menu_timedate_date_separator;
       unsigned gfx_thumbnails;
@@ -834,6 +835,7 @@ typedef struct settings
       bool menu_savestate_resume;
       bool menu_insert_disk_resume;
       bool menu_timedate_enable;
+      bool menu_timedate_12hour;
       bool menu_battery_level_enable;
       bool menu_core_enable;
       bool menu_show_sublabels;

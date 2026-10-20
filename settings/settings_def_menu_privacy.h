@@ -16,11 +16,29 @@ S_BOOL(menu_timedate_enable, TIMEDATE_ENABLE,
 /* The configuration row lives under defined(HAVE_MENU); other passes are
  * unaffected. */
 #if !defined(SETTINGS_DEF_CONFIG_PASS) || (defined(HAVE_MENU))
+S_UINT_EX(menu_timedate_mode, TIMEDATE_MODE,
+      "menu_timedate_mode",
+      DEFAULT_MENU_TIMEDATE_MODE, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, MENU_TIMEDATE_MODE_LAST - 1, 1, 0, setting_action_ok_uint, setting_get_string_representation_uint_menu_timedate_mode, NULL, NULL, setting_uint_action_left_with_refresh, setting_uint_action_right_with_refresh, ST_UI_TYPE_UINT_COMBOBOX,
+      "Date and Time Format",
+      "Automatic shows the month, day and time (no year), in the order used in your time zone, with the 12-hour or 24-hour clock as chosen. Manual uses the chosen 'Style of Date and Time'.")
+#endif
+/* The configuration row lives under defined(HAVE_MENU); other passes are
+ * unaffected. */
+#if !defined(SETTINGS_DEF_CONFIG_PASS) || (defined(HAVE_MENU))
 S_UINT_EX(menu_timedate_style, TIMEDATE_STYLE,
       "menu_timedate_style",
       DEFAULT_MENU_TIMEDATE_STYLE, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, MENU_TIMEDATE_STYLE_LAST - 1, 1, 0, setting_action_ok_uint, setting_get_string_representation_uint_menu_timedate_style, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,
       "Style of Date and Time",
       "Change the style current date and/or time is shown inside the menu.")
+#endif
+/* The configuration row lives under defined(HAVE_MENU); other passes are
+ * unaffected. */
+#if !defined(SETTINGS_DEF_CONFIG_PASS) || (defined(HAVE_MENU))
+S_BOOL(menu_timedate_12hour, TIMEDATE_12HOUR,
+      "menu_timedate_12hour",
+      DEFAULT_MENU_TIMEDATE_12HOUR, SD_FLAG_NONE, 0, 0,
+      "12-Hour Clock",
+      "Use the 12-hour clock (with AM/PM) instead of the 24-hour clock while 'Date and Time Format' is Automatic, both for the time shown in the menu and when setting the time.")
 #endif
 /* The configuration row lives under defined(HAVE_MENU); other passes are
  * unaffected. */

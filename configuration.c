@@ -7729,6 +7729,18 @@ static bool config_load_file(const char *path, settings_t *settings)
          settings->ints.content_favorites_size = (int)settings->uints.content_history_size;
    }
 
+#ifdef HAVE_MENU
+   /* Date and Time Format came after 'Style of Date and Time': a config
+    * from before it that holds a style other than the default keeps
+    * that style, as Manual. */
+   if (     !config_get_entry(conf, "menu_timedate_mode")
+         &&  config_get_entry(conf, "menu_timedate_style")
+         &&  settings->uints.menu_timedate_style != DEFAULT_MENU_TIMEDATE_STYLE)
+      configuration_set_uint(settings,
+            settings->uints.menu_timedate_mode,
+            MENU_TIMEDATE_MODE_MANUAL);
+#endif
+
    /* Migrate "quit_press_twice" to "confirm_quit" */
    {
       const char *tmp_key = "quit_press_twice";

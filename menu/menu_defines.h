@@ -18,6 +18,7 @@
 #define __MENU_DEFINES__H
 
 #include <retro_common_api.h>
+#include <retro_inline.h>
 
 #include "../audio/audio_defines.h"
 
@@ -167,6 +168,97 @@ enum menu_timedate_style_type
    MENU_TIMEDATE_STYLE_HM_AMPM,
    MENU_TIMEDATE_STYLE_LAST
 };
+
+/* Date and Time Format: Automatic writes the date in the order used
+ * where the time zone is and takes 12- or 24-hour time from the
+ * '12-Hour Clock' option; Manual uses 'Style of Date and Time' as
+ * chosen. */
+enum menu_timedate_mode_type
+{
+   MENU_TIMEDATE_MODE_AUTOMATIC = 0,
+   MENU_TIMEDATE_MODE_MANUAL,
+   MENU_TIMEDATE_MODE_LAST
+};
+
+/* The AM/PM style matching a 24-hour one (styles without a time map
+ * to themselves). */
+static INLINE unsigned menu_timedate_style_to_12hour(unsigned style)
+{
+   switch (style)
+   {
+      case MENU_TIMEDATE_STYLE_YMD_HMS:
+         return MENU_TIMEDATE_STYLE_YMD_HMS_AMPM;
+      case MENU_TIMEDATE_STYLE_YMD_HM:
+         return MENU_TIMEDATE_STYLE_YMD_HM_AMPM;
+      case MENU_TIMEDATE_STYLE_MDYYYY_HMS:
+         return MENU_TIMEDATE_STYLE_MDYYYY_HMS_AMPM;
+      case MENU_TIMEDATE_STYLE_MDYYYY_HM:
+         return MENU_TIMEDATE_STYLE_MDYYYY_HM_AMPM;
+      case MENU_TIMEDATE_STYLE_MD_HM:
+         return MENU_TIMEDATE_STYLE_MD_HM_AMPM;
+      case MENU_TIMEDATE_STYLE_DDMMYYYY_HMS:
+         return MENU_TIMEDATE_STYLE_DDMMYYYY_HMS_AMPM;
+      case MENU_TIMEDATE_STYLE_DDMMYYYY_HM:
+         return MENU_TIMEDATE_STYLE_DDMMYYYY_HM_AMPM;
+      case MENU_TIMEDATE_STYLE_DDMM_HM:
+         return MENU_TIMEDATE_STYLE_DDMM_HM_AMPM;
+      case MENU_TIMEDATE_STYLE_HMS:
+         return MENU_TIMEDATE_STYLE_HMS_AMPM;
+      case MENU_TIMEDATE_STYLE_HM:
+         return MENU_TIMEDATE_STYLE_HM_AMPM;
+      default:
+         break;
+   }
+   return style;
+}
+
+/* Date orders, numbered as enum timezone_date_order in
+ * misc/timezone/timezone.h. */
+enum menu_timedate_date_order
+{
+   MENU_TIMEDATE_DATE_ORDER_DMY = 0,
+   MENU_TIMEDATE_DATE_ORDER_MDY,
+   MENU_TIMEDATE_DATE_ORDER_YMD
+};
+
+/* The 24-hour style showing the same fields as @style, with the date
+ * written in @order. Short dates have no year-first form; places that
+ * write the year first put the month before the day, so they keep
+ * MM-DD. Styles without a day, or without a date, are unchanged. */
+static INLINE unsigned menu_timedate_style_with_order(unsigned style,
+      unsigned order)
+{
+   /* One row per set of fields: { year first, month first, day first } */
+   static const unsigned char shapes[5][3] = {
+      { MENU_TIMEDATE_STYLE_YMD_HMS, MENU_TIMEDATE_STYLE_MDYYYY_HMS, MENU_TIMEDATE_STYLE_DDMMYYYY_HMS },
+      { MENU_TIMEDATE_STYLE_YMD_HM,  MENU_TIMEDATE_STYLE_MDYYYY_HM,  MENU_TIMEDATE_STYLE_DDMMYYYY_HM  },
+      { MENU_TIMEDATE_STYLE_YMD,     MENU_TIMEDATE_STYLE_MDYYYY,     MENU_TIMEDATE_STYLE_DDMMYYYY     },
+      { MENU_TIMEDATE_STYLE_MD_HM,   MENU_TIMEDATE_STYLE_MD_HM,      MENU_TIMEDATE_STYLE_DDMM_HM      },
+      { MENU_TIMEDATE_STYLE_MD,      MENU_TIMEDATE_STYLE_MD,         MENU_TIMEDATE_STYLE_DDMM         }
+   };
+   unsigned col;
+   unsigned row;
+
+   switch (order)
+   {
+      case MENU_TIMEDATE_DATE_ORDER_YMD:
+         col = 0;
+         break;
+      case MENU_TIMEDATE_DATE_ORDER_MDY:
+         col = 1;
+         break;
+      default:
+         col = 2;
+         break;
+   }
+
+   for (row = 0; row < 5; row++)
+      if (     style == shapes[row][0]
+            || style == shapes[row][1]
+            || style == shapes[row][2])
+         return shapes[row][col];
+   return style;
+}
 
 enum menu_remember_selection_type
 {
