@@ -6,6 +6,7 @@ on:
     paths:
       - 'cores/libretro-media/**'
       - 'samples/cores/webm_player/**'
+      - 'libretro-common/samples/formats/audio_transfer/**'
       - 'libretro-common/formats/**'
       - 'libretro-common/include/formats/**'
       - '.github/workflows/Linux-webm-player.yml'
@@ -14,6 +15,7 @@ on:
     paths:
       - 'cores/libretro-media/**'
       - 'samples/cores/webm_player/**'
+      - 'libretro-common/samples/formats/audio_transfer/**'
       - 'libretro-common/formats/**'
       - 'libretro-common/include/formats/**'
       - '.github/workflows/Linux-webm-player.yml'
@@ -35,6 +37,12 @@ jobs:
       - name: Generate media
         working-directory: samples/cores/webm_player
         run: python3 mkfixtures.py
+      - name: Metadata-only demuxed audio setup
+        run: |
+          make -j2 -C libretro-common/samples/formats/audio_transfer check-empty SANITIZER=address,undefined SAMPLE_OBJDIR=obj-player-meta
+        env:
+          ASAN_OPTIONS: detect_leaks=1
+          UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
       - name: Run the builtin core without FFmpeg
         working-directory: samples/cores/webm_player
         run: |

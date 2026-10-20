@@ -3637,7 +3637,8 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
          }
          else
          {
-            if (!op->setup || !op->packets || !op->pkt_sizes)
+            if (!op->setup || (op->num_packets
+                  && (!op->packets || !op->pkt_sizes)))
                return false;      /* no input set                        */
             op->handle = ropus_open(op->setup, op->setup_size);
             if (!op->handle)
@@ -3899,7 +3900,8 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
          else
 #endif
          {
-            if (!ac->setup || !ac->packets || !ac->pkt_sizes)
+            if (!ac->setup || (ac->num_packets
+                  && (!ac->packets || !ac->pkt_sizes)))
                return false;      /* no input set                        */
             ac->handle = raac_open(ac->setup, ac->setup_size);
             if (!ac->handle)
@@ -4584,9 +4586,6 @@ static int audio_transfer_opus_fill(struct audio_transfer_opus *op, int fmt)
 #endif
 
 #ifdef HAVE_RAAC
-/* Decode the next AAC access unit into the pending buffer, honouring
- * the edit list's start trim.  Returns frames now pending, 0 at end of
- * stream, < 0 on error. */
 /* The next access unit, wherever this context's come from.  Returns 1
  * with the bytes, 0 at end of stream, < 0 on a malformed one. */
 static int audio_transfer_aac_pull(struct audio_transfer_aac *ac,
@@ -4780,6 +4779,9 @@ static int64_t audio_transfer_aac_seek_to(struct audio_transfer_aac *ac,
    return pos;
 }
 
+/* Refill readiness is 1 for pending samples, 2 for the resident wall,
+ * 0 at end of stream, or negative on error. Sample counts are held in
+ * pend_frames, so a short tail cannot alias a status code. */
 static int audio_transfer_aac_fill(struct audio_transfer_aac *ac)
 {
    while (ac->pend_frames == 0)
@@ -4834,7 +4836,9 @@ static int audio_transfer_aac_fill(struct audio_transfer_aac *ac)
          ac->emitted += (int64_t)ac->pend_frames;
       }
    }
-   return (int)ac->pend_frames;
+   /* Readiness is distinct from the pending-frame count: two real
+    * frames must not alias the resident-wall status (2). */
+   return ac->pend_frames ? 1 : 0;
 }
 #endif
 

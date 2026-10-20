@@ -15,6 +15,8 @@ cases = [
     ("h264-aac.mkv", ["-c:v", "libx264", "-bf", "2", "-g", "12", "-c:a", "aac"]),
     ("hevc-aac.mp4", ["-c:v", "libx265", "-x265-params", "pools=1:frame-threads=1:log-level=error", "-c:a", "aac"]),
     ("hevc-seek-aac.mp4", ["-c:v", "libx265", "-x265-params", "pools=1:frame-threads=1:log-level=error", "-c:a", "aac"]),
+    ("hevc-seek-aac44.mp4", ["-c:v", "libx265", "-x265-params", "pools=1:frame-threads=1:log-level=error", "-c:a", "aac", "-ar", "44100"]),
+    ("hevc-seek-opus.mp4", ["-c:v", "libx265", "-x265-params", "pools=1:frame-threads=1:log-level=error", "-c:a", "libopus"]),
     ("h264-seek-aac.mp4", ["-c:v", "libx264", "-bf", "2", "-g", "12", "-c:a", "aac", "-movflags", "+faststart"]),
 ]
 for name, codec in cases:
@@ -25,3 +27,12 @@ for name, codec in cases:
                     "-ac", "2", "-pix_fmt", "yuv420p", *codec, str(out / name)], check=True)
 (out / "invalid.webm").write_bytes(b"not an EBML or MP4 movie\n")
 (out / "empty.webm").write_bytes(b"")
+
+subprocess.run([sys.executable, str(Path(__file__).with_name("mp4_audio_gap.py")),
+                str(out / "hevc-seek-aac.mp4"), str(out / "hevc-audio-gap.mp4")], check=True)
+
+subprocess.run([sys.executable, str(Path(__file__).with_name("mp4_audio_gap.py")),
+                str(out / "hevc-seek-opus.mp4"), str(out / "hevc-opus-audio-gap.mp4")], check=True)
+
+subprocess.run([sys.executable, str(Path(__file__).with_name("mp4_audio_gap.py")),
+                str(out / "hevc-seek-aac44.mp4"), str(out / "hevc-aac44-audio-gap.mp4")], check=True)

@@ -132,6 +132,9 @@ void  audio_transfer_set_buffer_ptr(void *data, enum audio_type_enum type,
  * the decoder.  Used by container demuxers (e.g. WebM) that have already
  * separated setup from payload; call instead of set_buffer_ptr, before
  * audio_transfer_start. Returns false if the codec has no demuxed path.
+ * Vorbis, Opus and AAC may start with an empty packet set: setup alone
+ * exposes the channel count and sample rate. Packets may arrive later
+ * under the growth contract below.
  *
  * GROWTH CONTRACT: this call may be repeated after audio_transfer_start,
  * mid-stream, to grow the packet set for a progressive source - e.g. a

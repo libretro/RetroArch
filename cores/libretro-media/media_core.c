@@ -247,6 +247,26 @@ bool media_set_video_hw_refresh(media_hw_refresh_t cb, void *user)
    return true;
 }
 
+#ifdef MEDIA_HAVE_AUDIO
+/* A current packet prefix is not an audio end. MP4 knows the eventual
+ * packet count, so a short audio track can still finish before the file. */
+static bool media_audio_may_grow(media_player_t *p)
+{
+   if (!p->dt || data_transfer_complete(p->dt)
+         || data_transfer_failed(p->dt) || data_transfer_capped(p->dt))
+      return false;
+#ifdef HAVE_RMP4
+   if (p->agather)
+   {
+      uint32_t count = 0;
+      rmp4_track_pts(p->agather, p->agtrack, &count);
+      return p->anpkts < count;
+   }
+#endif
+   return true;
+}
+#endif
+
 static void media_drop_hw(media_player_t *p)
 {
    if (p->hw_frame.image)
@@ -856,17 +876,24 @@ void MEDIA_CORE_PREFIX(retro_get_system_info)(
 #endif
 }
 
+static unsigned media_audio_rate(const media_player_t *p)
+{
+#ifdef MEDIA_HAVE_AUDIO
+   if (p->actx)
+      return p->arate;
+#else
+   (void)p;
+#endif
+   return MEDIA_AUDIO_RATE;
+}
+
 void MEDIA_CORE_PREFIX(retro_get_system_av_info)(
       struct retro_system_av_info *info)
 {
    media_player_t *p = &media_player;
    memset(info, 0, sizeof(*info));
    info->timing.fps            = p->fps;
-   info->timing.sample_rate    = MEDIA_AUDIO_RATE;
-#ifdef MEDIA_HAVE_AUDIO
-   if (media_player.actx)
-      info->timing.sample_rate = (double)media_player.arate;
-#endif
+   info->timing.sample_rate    = (double)media_audio_rate(p);
    info->geometry.base_width   = p->width;
    info->geometry.base_height  = p->height;
    info->geometry.max_width    = p->width;
@@ -1839,7 +1866,8 @@ audio:
          target = p->apos + (int64_t)((double)p->arate / p->fps) + 1;
       if (p->atotal >= 0 && target > p->atotal)
          target = p->atotal;
-      if (p->atotal >= 0 && p->apos >= p->atotal)
+      if (p->atotal >= 0 && p->apos >= p->atotal
+            && !media_audio_may_grow(p))
          p->aeof = 1;
       while (p->apos < target)
       {
@@ -1864,6 +1892,11 @@ audio:
          }
          if (r != AUDIO_PROCESS_NEXT || !got)
          {
+            /* A demuxed progressive source can grow after this read.
+             * Keep its decoder and position until more bytes arrive. */
+            if ((r == AUDIO_PROCESS_NEXT || r == AUDIO_PROCESS_END)
+                  && media_audio_may_grow(p))
+               break;
             p->aeof = 1;
             break;
          }
@@ -2209,6 +2242,9 @@ static bool media_load_mp4(media_player_t *p)
                   free(p->asizes);
                   p->apkts  = NULL;
                   p->asizes = NULL;
+                  p->apkts_used = p->anpkts = p->anpkts_cap = 0;
+                  rmp4_close(p->agather);
+                  p->agather = NULL;
                }
             }
          }
@@ -2238,7 +2274,7 @@ static bool media_load_mp4(media_player_t *p)
    if (!p->mp4_hw_required && !media_hw_refresh
          && !media_make_framebuffer(p))
       return false;
-   p->silence_frames = (size_t)(MEDIA_AUDIO_RATE / p->fps) + 1;
+   p->silence_frames = (size_t)(media_audio_rate(p) / p->fps) + 1;
    p->frame_ns       = (int64_t)(1000000000.0 / p->fps + 0.5);
    p->silence = (int16_t*)calloc(p->silence_frames * 2, sizeof(int16_t));
    if (!p->silence)
@@ -2586,7 +2622,7 @@ bool MEDIA_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
    if (!p->webm_hw_required && !media_hw_refresh
          && !media_make_framebuffer(p))
       goto error;
-   p->silence_frames = (size_t)(MEDIA_AUDIO_RATE / p->fps) + 1;
+   p->silence_frames = (size_t)(media_audio_rate(p) / p->fps) + 1;
    p->frame_ns       = (int64_t)(1000000000.0 / p->fps + 0.5);
    /* pace from the first frame's timestamp, wherever the container
     * starts its clock */
