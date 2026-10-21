@@ -5791,6 +5791,7 @@ int rh265_video_get_access_unit(rh265_video *v, const uint8_t *data,
       bytes += nal.size;
       address = (unsigned)info.slice_segment_address;
       intra = intra && info.slice_type == RH265_SLICE_I;
+      out->slice_types |= 1u << info.slice_type;
    }
    if (ret < 0) goto fail;
    out->num_slices = count;

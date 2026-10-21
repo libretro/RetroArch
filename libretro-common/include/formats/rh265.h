@@ -182,6 +182,7 @@ typedef struct rh265_access_unit
    rh265_slice_info_t first;
    size_t coded_bytes;
    unsigned num_slices;
+   unsigned slice_types; /* Bit 0 B, bit 1 P, bit 2 I; all slices. */
    int intra;
 } rh265_access_unit_t;
 

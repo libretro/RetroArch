@@ -20,6 +20,19 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
 
 jobs:
+  vaapi-hevc-parameters:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        cc: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install VA-API SDK headers
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq libva-dev
+      - name: Strict C89 native HEVC parameter ABI and parsed reference sets
+        run: make -C samples/gfx/vaapi_hevc clean check CC=${{ matrix.cc }} SANITIZER=address,undefined
+
   metal-frame-lease:
     runs-on: ubuntu-latest
     timeout-minutes: 10
