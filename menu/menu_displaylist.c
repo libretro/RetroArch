@@ -5582,7 +5582,7 @@ static unsigned menu_displaylist_parse_playlists(
                   MENU_SETTING_ACTION, 0, 0, NULL))
             count++;
 
-#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV) || defined(HAVE_WEBMPLAYER)
       if (settings->bools.menu_content_show_video && g_defaults.video_history)
          if (menu_entries_append(info_list,
                   playlist_get_conf_path(g_defaults.video_history),
@@ -6150,7 +6150,7 @@ static unsigned menu_displaylist_parse_playlist_manager_list(
             MENU_SETTING_ACTION, 0, 0, NULL))
          count++;
 
-#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV) || defined(HAVE_WEBMPLAYER)
    /* Add video history */
    if (playlist_size(g_defaults.video_history) > 0)
       if (menu_entries_append(list,
@@ -16146,7 +16146,7 @@ static bool menu_displaylist_ctl_internal(
             break;
          case DISPLAYLIST_VIDEO_HISTORY:
             menu_entries_clear(info->list);
-#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV) || defined(HAVE_WEBMPLAYER)
             {
                bool history_list_enable      = settings->bools.history_list_enable;
                const char *
@@ -16185,7 +16185,7 @@ static bool menu_displaylist_ctl_internal(
                info->flags    &= ~MD_FLAG_NEED_SORT;
                info->flags    |=  MD_FLAG_NEED_REFRESH
                   |  MD_FLAG_NEED_PUSH;
-#if (defined(HAVE_FFMPEG) || defined(HAVE_MPV))
+#if (defined(HAVE_FFMPEG) || defined(HAVE_MPV) || defined(HAVE_WEBMPLAYER))
                if (history_needs_navigation_clear(menu, g_defaults.video_history))
                   info->flags |=  MD_FLAG_NEED_NAVIGATION_CLEAR;
 #endif

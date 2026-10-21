@@ -5063,7 +5063,7 @@ bool command_event(enum event_command cmd, void *data)
          }
          g_defaults.music_history = NULL;
 
-#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV) || defined(HAVE_WEBMPLAYER)
          if (g_defaults.video_history)
          {
             playlist_write_file(g_defaults.video_history);
@@ -5088,7 +5088,7 @@ bool command_event(enum event_command cmd, void *data)
             bool history_list_enable               = settings->bools.history_list_enable;
             const char *path_content_history       = settings->paths.path_content_history;
             const char *path_content_music_history = settings->paths.path_content_music_history;
-#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV) || defined(HAVE_WEBMPLAYER)
             const char *path_content_video_history = settings->paths.path_content_video_history;
 #endif
 #ifdef HAVE_IMAGEVIEWER
@@ -5144,7 +5144,7 @@ bool command_event(enum event_command cmd, void *data)
                      g_defaults.music_history, PLAYLIST_SORT_MODE_OFF);
             }
 
-#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV) || defined(HAVE_WEBMPLAYER)
             if (path_content_video_history && *path_content_video_history)
             {
                RARCH_LOG("[Playlist] %s: \"%s\".\n", _msg,

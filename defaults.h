@@ -75,7 +75,7 @@ struct defaults
    playlist_t *image_history;
 #endif
    playlist_t *music_history;
-#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV) || defined(HAVE_WEBMPLAYER)
    playlist_t *video_history;
 #endif
 #endif

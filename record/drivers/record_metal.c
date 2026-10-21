@@ -283,7 +283,7 @@ void record_metal_poll(void)
       {
          RARCH_LOG("[Metal recording] Finalized %llu GPU frames, %llu PCM frames.\n",
                (unsigned long long)ctx->captured,(unsigned long long)ctx->audio_frames);
-#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV) || defined(HAVE_WEBMPLAYER)
          if (config_get_ptr()->bools.history_list_enable)
          {
             struct playlist_entry entry={0};

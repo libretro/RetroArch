@@ -9219,7 +9219,7 @@ static enum menu_action ozone_parse_menu_entry_action(
                      strlcpy(playlist_path, playlist_get_conf_path(g_defaults.music_history), sizeof(playlist_path));
                      break;
                   case MENU_ENUM_LABEL_VIDEO_TAB:
-#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV) || defined(HAVE_WEBMPLAYER)
                      strlcpy(playlist_path, playlist_get_conf_path(g_defaults.video_history), sizeof(playlist_path));
 #endif
                      break;

@@ -2625,7 +2625,7 @@ static void task_push_to_history_list(
          switch (path_is_media_type(tmp))
          {
             case RARCH_CONTENT_MOVIE:
-#ifdef HAVE_FFMPEG
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV) || defined(HAVE_WEBMPLAYER)
                playlist_hist        = g_defaults.video_history;
                core_name            = "movieplayer";
                core_path            = "builtin";
@@ -2760,7 +2760,7 @@ static bool task_push_to_history_list_from_playlist_pre_load_static(
    switch (path_is_media_type(content_path))
    {
       case RARCH_CONTENT_MOVIE:
-#ifdef HAVE_FFMPEG
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV) || defined(HAVE_WEBMPLAYER)
          playlist_hist       = g_defaults.video_history;
          core_name           = "movieplayer";
          core_path           = "builtin";
