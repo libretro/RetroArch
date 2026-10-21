@@ -66,6 +66,7 @@ static void test_window_config(void)
    config_file_t *conf;
    unsigned i, j, minimal;
    int value;
+   bool flag;
    memset(&system_info, 0, sizeof(system_info));
    system_info.info.library_name = "video_screens_test";
    load_fixture("");
@@ -143,6 +144,9 @@ static void test_window_config(void)
          CHECK(config_get_int(conf, "video_screen2_window_x", &value) && value == 0);
          CHECK(config_get_int(conf, "video_screen2_window_width", &value) && value == 800);
          CHECK(config_get_int(conf, "video_screen2_window_monitor", &value) && value == 0);
+         CHECK(config_get_int(conf, "video_screen2_window_mode", &value)
+               && value == VIDEO_WINDOW_ATTACHED);
+         CHECK(config_get_bool(conf, "video_windows_enable", &flag) && !flag);
          config_file_free(conf);
       }
       CHECK(config_unload_override());
