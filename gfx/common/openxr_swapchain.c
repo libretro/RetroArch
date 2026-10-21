@@ -158,24 +158,46 @@ fail:
    return XR_NULL_HANDLE;
 }
 
-void openxr_slot_destroy(openxr_swapchains_t *sc, unsigned slot)
+static void openxr_slot_destroy_chains(openxr_swapchains_t *sc,
+      XrSwapchain *chains)
 {
    unsigned l;
-   XrSwapchain chains[2];
-   openxr_slot_t *s = &sc->slots[slot];
-   if (!s->swapchains[0])
-      return;
-   openxr_session_lock(sc->session);
-   memcpy(chains, s->swapchains, sizeof(chains));
-   memset(s->swapchains, 0, sizeof(s->swapchains));
-   memset(s->acquired, 0, sizeof(s->acquired));
-   memset(s->waited, 0, sizeof(s->waited));
-   s->dims      = 0;
-   s->layers    = 0;
-   retro_atomic_store_release_int(&s->content, 0);
    for (l = 0; l < 2; l++)
       if (chains[l])
          sc->DestroySwapchain(chains[l]);
+   chains[0] = XR_NULL_HANDLE;
+   chains[1] = XR_NULL_HANDLE;
+}
+
+static void openxr_slot_drop_old(openxr_swapchains_t *sc, openxr_slot_t *s)
+{
+   openxr_slot_destroy_chains(sc, s->old);
+   s->old_dims = 0;
+   retro_atomic_store_release_int(&s->old_layers, 0);
+}
+
+/* Both sets; the caller holds the graphics lock. */
+static void openxr_slot_clear(openxr_swapchains_t *sc, openxr_slot_t *s)
+{
+   memset(s->acquired, 0, sizeof(s->acquired));
+   memset(s->waited, 0, sizeof(s->waited));
+   s->dims     = 0;
+   s->layers   = 0;
+   s->old_dims = 0;
+   retro_atomic_store_release_int(&s->content, 0);
+   retro_atomic_store_release_int(&s->old_layers, 0);
+   openxr_slot_destroy_chains(sc, s->swapchains);
+   openxr_slot_destroy_chains(sc, s->old);
+}
+
+void openxr_slot_destroy(openxr_swapchains_t *sc, unsigned slot)
+{
+   openxr_slot_t *s = &sc->slots[slot];
+   /* Old swapchains are only ever kept beside new ones. */
+   if (!s->swapchains[0])
+      return;
+   openxr_session_lock(sc->session);
+   openxr_slot_clear(sc, s);
    openxr_session_unlock(sc->session);
 }
 
@@ -184,13 +206,13 @@ bool openxr_slot_create(openxr_swapchains_t *sc, unsigned slot,
       openxr_images_cb images, void *images_user, unsigned *num_images)
 {
    uint32_t l;
+   int content;
    uint32_t n   = 0;
    XrResult res = XR_SUCCESS;
    XrSwapchainCreateInfo ci;
    XrSwapchain chains[2];
    openxr_slot_t *s = &sc->slots[slot];
 
-   openxr_slot_destroy(sc, slot);
    ci.type        = XR_TYPE_SWAPCHAIN_CREATE_INFO;
    ci.next        = NULL;
    ci.createFlags = 0;
@@ -211,6 +233,12 @@ bool openxr_slot_create(openxr_swapchains_t *sc, unsigned slot,
    chains[1] = XR_NULL_HANDLE;
 
    openxr_session_lock(sc->session);
+   /* What the slot shows stays until the new ones have an image. */
+   content = retro_atomic_load_acquire_int(&s->content);
+   if (content)
+      openxr_slot_drop_old(sc, s);
+   else
+      openxr_slot_destroy_chains(sc, s->swapchains);
    for (l = 0; l < layers && XR_SUCCEEDED(res); l++)
    {
       uint32_t count = 0;
@@ -228,6 +256,12 @@ bool openxr_slot_create(openxr_swapchains_t *sc, unsigned slot,
    }
    if (XR_SUCCEEDED(res))
    {
+      if (content)
+      {
+         memcpy(s->old, s->swapchains, sizeof(s->old));
+         s->old_dims = s->dims;
+         retro_atomic_store_release_int(&s->old_layers, (int)s->layers);
+      }
       memcpy(s->swapchains, chains, sizeof(chains));
       memset(s->acquired, 0, sizeof(s->acquired));
       memset(s->waited, 0, sizeof(s->waited));
@@ -236,9 +270,10 @@ bool openxr_slot_create(openxr_swapchains_t *sc, unsigned slot,
       retro_atomic_store_release_int(&s->content, 0);
    }
    else
-      for (l = 0; l < 2; l++)
-         if (chains[l] != XR_NULL_HANDLE)
-            sc->DestroySwapchain(chains[l]);
+   {
+      openxr_slot_destroy_chains(sc, chains);
+      openxr_slot_clear(sc, s);
+   }
    openxr_session_unlock(sc->session);
 
    if (XR_FAILED(res))
@@ -316,5 +351,19 @@ void openxr_slot_release(openxr_swapchains_t *sc, unsigned slot)
 
 void openxr_slot_forget(openxr_swapchains_t *sc, unsigned slot)
 {
+   retro_atomic_store_release_int(&sc->slots[slot].old_layers, 0);
    retro_atomic_store_release_int(&sc->slots[slot].content, 0);
+}
+
+void openxr_swapchains_drop_old(openxr_swapchains_t *sc)
+{
+   unsigned i;
+   for (i = 0; i < OPENXR_MAX_SLOTS; i++)
+   {
+      openxr_slot_t *s = &sc->slots[i];
+      if (     s->old[0]
+            && (   retro_atomic_load_acquire_int(&s->content)
+                || !retro_atomic_load_acquire_int(&s->old_layers)))
+         openxr_slot_drop_old(sc, s);
+   }
 }

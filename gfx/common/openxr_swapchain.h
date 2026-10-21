@@ -42,12 +42,15 @@ RETRO_BEGIN_DECLS
 typedef struct openxr_slot
 {
    XrSwapchain swapchains[2];   /* changed under the graphics lock */
+   XrSwapchain old[2];          /* shown until those have an image */
    unsigned dims;
    unsigned layers;
+   unsigned old_dims;
    uint32_t index[2];           /* the drawing thread */
    bool acquired[2];
    bool waited[2];
    retro_atomic_int_t content;  /* every layer has released an image */
+   retro_atomic_int_t old_layers; /* 0: none to show */
 } openxr_slot_t;
 
 /* The binding lists at most *count of swapchain's images where it keeps
@@ -99,6 +102,9 @@ bool openxr_slot_acquire(openxr_swapchains_t *sc, unsigned slot,
       unsigned *index);
 void openxr_slot_release(openxr_swapchains_t *sc, unsigned slot);
 void openxr_slot_forget(openxr_swapchains_t *sc, unsigned slot);
+/* After xrEndFrame, under the graphics lock: the old swapchains of the
+ * slots whose own have an image, or that were forgotten. */
+void openxr_swapchains_drop_old(openxr_swapchains_t *sc);
 
 RETRO_END_DECLS
 
