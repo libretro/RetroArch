@@ -38,12 +38,18 @@ static int test_release(test_viewer_t *v,unsigned x,unsigned y) { return ozone_p
 #include "../../../gfx/gfx_surface_player.h"
 #include "../../../gfx/gfx_anim_preview.h"
 
+static unsigned test_hdr_transfer(void)
+{
+   const char *transfer=getenv("MEDIA_TEST_HDR_TRANSFER");
+   return transfer?(!strcmp(transfer,"18")?18:0):16;
+}
+
 static bool test_hdr_import_matches(test_viewer_t *viewer, unsigned cll, unsigned fall)
 {
    gfx_surface_t *surface=(gfx_surface_t*)test_thumbnail(viewer)->anim_surface;
    return surface&&surface->imported&&surface->import.pixfmt==IMAGE_PIXFMT_P010
       &&surface->import.color.max_cll==cll&&surface->import.color.max_fall==fall
-      &&surface->import.color.transfer==16&&surface->import.color.primaries==9
+      &&surface->import.color.transfer==test_hdr_transfer()&&surface->import.color.primaries==9
       &&surface->import.color.matrix==9;
 }
 
@@ -152,7 +158,7 @@ int main(int argc,char **argv)
                &&surface->import.pixfmt==IMAGE_PIXFMT_P010);
          CHECK("coded HDR metadata reaches the importer",surface
                &&surface->import.color.max_cll==1000&&surface->import.color.max_fall==400
-               &&surface->import.color.transfer==16);
+               &&surface->import.color.transfer==test_hdr_transfer());
       }
       CHECK("preview uses the windowed file feeder",test_thumbnail(viewer)->anim_sess
             &&gfx_anim_preview_windowed((gfx_anim_preview_t*)test_thumbnail(viewer)->anim_sess));
