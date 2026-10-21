@@ -16,7 +16,7 @@
 #ifndef __D3D11_VIDEO_DECODE_H
 #define __D3D11_VIDEO_DECODE_H
 
-/* H.264/HEVC/VP9 decoded on the GPU with D3D11 video (DXVA).
+/* H.264/HEVC/VP9/AV1 decoded on the GPU with D3D11 video (DXVA).
  * Each decoder has a device of its own on the driver's
  * adapter, so the driver's device is never shared between threads; the
  * pictures to be shown are copied into shared NV12 textures, ordered
@@ -27,10 +27,13 @@
 #include <boolean.h>
 #include <formats/rh265_hw.h>
 #include <formats/rvp9_hw.h>
+#ifdef HAVE_RAV1
+#include <formats/rav1_hw.h>
+#endif
 
 RETRO_BEGIN_DECLS
 
-/* Offers H.264/HEVC/VP9 backends for decoders on @device's adapter (an
+/* Offers H.264/HEVC/VP9/AV1 backends for decoders on @device's adapter (an
  * ID3D11Device). Main thread, once the device is up; false when the
  * system cannot share the frames. */
 bool d3d11_video_decode_init(void *device);
@@ -65,6 +68,14 @@ void d3d11_video_decode_hevc_close(rh265_hw_ops_t *ops);
 bool d3d11_video_decode_vp9_open(const rvp9_hdr *header,
       unsigned slots, rvp9_hw_ops_t *ops);
 void d3d11_video_decode_vp9_close(rvp9_hw_ops_t *ops);
+
+#ifdef HAVE_RAV1
+/* Fixed-size SDR Profile 0, 8/10-bit 4:2:0, without film grain.
+ * Owner-thread calls; retained GPU leases can outlive close. */
+bool d3d11_video_decode_av1_open(const rav1_sequence_t *sequence,
+      unsigned slots, rav1_hw_ops_t *ops);
+void d3d11_video_decode_av1_close(rav1_hw_ops_t *ops);
+#endif
 
 RETRO_END_DECLS
 

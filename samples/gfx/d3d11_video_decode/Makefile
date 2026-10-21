@@ -40,6 +40,7 @@ BACKEND  := $(RA)/gfx/common/d3d11_video_decode.c \
 
 TARGETS := dxva_h264_test$(EXE) dxva_hevc_test$(EXE) dxva_hevc_access_unit_test$(EXE)
 TARGETS += dxva_vp9_test$(EXE)
+TARGETS += dxva_av1_test$(EXE)
 TARGETS += rh265_slice_snapshot_test$(EXE)
 TARGETS += rh265_hw_state_test$(EXE)
 TARGETS += rh265_hw_session_test$(EXE)
@@ -48,11 +49,50 @@ TARGETS += video_hw_format_test$(EXE) hevc_device_fixture_test$(EXE) hevc_color_
 ifeq ($(EXE),.exe)
 TARGETS += d3d11_video_decode_mock_test$(EXE) d3d11_video_decode_test$(EXE)
 TARGETS += d3d11_backpressure_test$(EXE)
+TARGETS += av1_decode_test$(EXE)
 LDFLAGS += -lwinmm
 WINFLAGS := -isystem $(RA)/gfx/include/dxsdk -Wno-cast-function-type -DHAVE_RVP9
+PROBE_LIBS := -ld3d11 -ldxgi -ldxguid
 endif
 
 all: $(TARGETS)
+
+av1_profile_probe$(EXE): av1_profile_probe.c
+	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS) $(PROBE_LIBS)
+
+dxva_av1_test$(EXE): dxva_av1_test.c $(RA)/gfx/common/dxva_av1.h
+	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
+
+AV1_CORE_DEPS := $(RA)/libretro-common/compat/compat_strl.c \
+      $(RA)/libretro-common/compat/compat_strcasestr.c \
+      $(RA)/libretro-common/compat/fopen_utf8.c \
+      $(RA)/libretro-common/encodings/encoding_utf.c \
+      $(RA)/libretro-common/encodings/encoding_crc32.c \
+      $(RA)/libretro-common/file/file_path.c \
+      $(RA)/libretro-common/file/file_path_io.c \
+      $(RA)/libretro-common/formats/data_transfer.c \
+      $(RA)/libretro-common/formats/webm/rwebm.c \
+      $(RA)/libretro-common/formats/webm/rwebm_video.c \
+      $(RA)/libretro-common/lists/string_list.c \
+      $(RA)/libretro-common/memmap/memmap.c \
+      $(RA)/libretro-common/memmap/memalign.c \
+      $(RA)/libretro-common/streams/file_stream.c \
+      $(RA)/libretro-common/string/rstrtod.c \
+      $(RA)/libretro-common/string/stdstring.c \
+      $(RA)/libretro-common/vfs/vfs_implementation.c
+
+ifeq ($(EXE),.exe)
+av1_decode_test$(EXE): av1_decode_test.c av1_core_decode.h $(RA)/cores/libretro-media/media_core.c $(AV1_CORE_DEPS) d3d11_video_decode_test.c $(BACKEND) \
+      $(RA)/gfx/common/dxva_av1.h $(DECODERS) $(PLAYER_SOURCES) \
+      $(RA)/libretro-common/formats/av1/rav1_hw.c
+	$(CC) $(CFLAGS) $(WINFLAGS) -DHAVE_RAV1 -DHAVE_RWEBM -flto -ffunction-sections -fdata-sections -o $@ \
+	   $< $(DECODERS) $(PLAYER_SOURCES) $(filter-out $(PLAYER_SOURCES),$(AV1_CORE_DEPS)) $(RA)/libretro-common/formats/vp9/rvp9.c \
+	   $(RA)/libretro-common/formats/av1/rav1_hw.c \
+	   $(LDFLAGS) -Wl,--gc-sections -ld3d11 -lm
+else
+av1_decode_test: av1_decode_test.c
+	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
+endif
 
 dxva_vp9_test$(EXE): dxva_vp9_test.c $(RA)/gfx/common/dxva_vp9.h \
       $(RA)/libretro-common/include/formats/rvp9_hw.h
@@ -153,6 +193,7 @@ d3d11_backpressure_test$(EXE): d3d11_backpressure_test.c \
 	   $(LDFLAGS) -Wl,--gc-sections $(if $(filter .exe,$(EXE)),-ld3d11) -lm
 
 check: all
+	$(RUNNER) ./dxva_av1_test$(EXE)
 	$(RUNNER) ./dxva_vp9_test$(EXE)
 	$(RUNNER) ./dxva_h264_test$(EXE)
 	$(RUNNER) ./dxva_hevc_test$(EXE)
@@ -177,6 +218,9 @@ ifeq ($(EXE),.exe)
 endif
 
 clean:
+	rm -f av1_decode_test av1_decode_test.exe
+	rm -f dxva_av1_test dxva_av1_test.exe
+	rm -f av1_profile_probe av1_profile_probe.exe
 	rm -f dxva_vp9_test dxva_vp9_test.exe
 	rm -f dxva_hevc_test dxva_hevc_test.exe
 	rm -f dxva_hevc_access_unit_test dxva_hevc_access_unit_test.exe
