@@ -98,6 +98,10 @@ static void read_many(void *data)
       int value = pad_connection_get_axis(slot, 0, 0);
       if (value != 0 && value != 42)
          retro_atomic_fetch_add_int(&bad_reads, 1);
+      /* as a reader does, between reads: four spinning without a break
+       * on two cores keep the gate from ever being seen empty, and the
+       * retirement waiting for that starves */
+      sthread_yield();
    }
 }
 
