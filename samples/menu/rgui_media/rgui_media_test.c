@@ -92,6 +92,7 @@ int main(int argc, char **argv)
    }
    MEDIA_CHECK("real decoder filled fullscreen and mini CPU thumbnails",
          tick < 2000 && rgui->media_player && rgui->fs_thumbnail.dims && rgui->mini_thumbnail.dims);
+   if (media_failures) goto cleanup;
    for (i = 0; i < VIDEO_SCALE_AREA(rgui->fs_thumbnail.dims); i++) pixels |= rgui->fs_thumbnail.data[i];
    MEDIA_CHECK("converted 16-bit movie picture is nonempty", pixels != 0);
    MEDIA_CHECK("fullscreen shared controller owns the CPU player", rgui->media.controls.target.user == rgui);
@@ -179,6 +180,7 @@ int main(int argc, char **argv)
    media_render(menu_st);
    MEDIA_CHECK("closing viewer retires player when inline previews are disabled",
          !rgui->media_player && !rgui->media.controls.target.user);
+cleanup:
    free(entry);
    main_exit(NULL);
    printf("rgui media: %u failure(s)\n", media_failures);
