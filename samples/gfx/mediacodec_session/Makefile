@@ -8,11 +8,18 @@ ifneq ($(SANITIZER),)
 CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
-all: test
+all: test hevc_decoder_test
 test: test.c mediacodec_session_test_types.h ../../../gfx/common/mediacodec_session.c
 	$(CC) $(CFLAGS) test.c ../../../gfx/common/mediacodec_session.c -o $@ $(LDFLAGS)
+HEVC_SOURCES := ../../../gfx/common/mediacodec_hevc_decoder.c \
+ ../../../gfx/common/mediacodec_hevc_packet.c ../../../gfx/common/android_image_queue.c
+hevc_decoder_test: hevc_decoder_test.c $(HEVC_SOURCES) \
+ ../../../gfx/common/mediacodec_hevc_decoder.h ../../../gfx/common/android_image_queue.h \
+ ../../../libretro-common/include/formats/rh265_hw.h
+	$(CC) $(CFLAGS) -DHAVE_THREADS hevc_decoder_test.c $(HEVC_SOURCES) -o $@ $(LDFLAGS)
 check: all
 	./test
+	./hevc_decoder_test
 clean:
-	rm -f test
+	rm -f test hevc_decoder_test
 .PHONY: all check clean
