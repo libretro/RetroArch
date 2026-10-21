@@ -62,6 +62,18 @@ with workspace as temp:
             command += ['-framework', framework]
         print('+', shlex.join(command), flush=True)
         subprocess.run(command, check=True)
+        if args.session and width == 162:
+            for fault in (1, 2, 3, 4):
+                fault_dir = directory / f'{binary.name}-fault{fault}'
+                fault_dir.mkdir()
+                result = subprocess.run([str(binary), '1', '10', '1', str(fault_dir / 'unused.bin'),
+                    str(fault_dir / 'reference.yuv'), str(fault_dir / 'output.mp4'), '48000'],
+                    timeout=60, env=dict(os.environ, SESSION_FAULT_CONTROL=str(fault)))
+                if result.returncode == 77:
+                    unavailable += 1
+                    print(f'SKIP: native owned session fault={fault} {ownership}', flush=True)
+                else:
+                    result.check_returncode()
         for hevc, depth, mode, control, dynamic, aperture in (
                 (0, 8, 0, False, False, False), (1, 8, 0, False, False, False),
                 (1, 10, 0, False, False, False), (1, 10, 1, False, False, False), (1, 10, 2, False, False, False),
