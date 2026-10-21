@@ -19,6 +19,19 @@ int main(void)
    CHECK(!record_mux_mp4_get(NULL, &bytes, &size));
    CHECK(!record_mux_mp4_release(NULL) && !record_mux_mp4_finish(NULL));
    record_mux_mp4_free(NULL);
+   c.color_primaries = 9;
+   CHECK(!record_mux_mp4_new(&c));
+   c.transfer_characteristics = 16; c.matrix_coefficients = 9;
+   m = record_mux_mp4_new(&c); CHECK(m != NULL);
+   CHECK(record_mux_mp4_get(m, &bytes, &size));
+   for (i = 4; i + 15 <= size; i++)
+      if (!memcmp((const uint8_t*)bytes + i, "colrnclx", 8)) break;
+   CHECK(i + 15 <= size);
+   CHECK(!memcmp((const uint8_t*)bytes + i + 8, "\0\11\0\20\0\11\0", 7));
+   record_mux_mp4_free(m);
+   c.color_primaries = 65536; CHECK(!record_mux_mp4_new(&c));
+   c.color_primaries = c.transfer_characteristics = c.matrix_coefficients = 0;
+   c.full_range = true; CHECK(!record_mux_mp4_new(&c)); c.full_range = false;
    m = record_mux_mp4_new(&c); CHECK(m != NULL);
    CHECK(record_mux_mp4_get(m, &bytes, &size) && size > 500);
    CHECK(!record_mux_mp4_finish(m));

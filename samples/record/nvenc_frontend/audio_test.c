@@ -10,7 +10,7 @@
 typedef struct record_nvenc_context
 {
    uint64_t audio_frames, origin, captured;
-   unsigned audio_rate, dims, duration;
+   unsigned audio_rate, dims, duration, output_mode;
    record_gpu_dispatch_d3d12_t *job;
    retro_atomic_int_t stop, failed;
    bool audio_enabled, armed, have_origin, allow_drop;
@@ -65,6 +65,7 @@ int main(void)
    record_nvenc_context_t ctx;
    int16_t samples[8] = {0};
    struct record_audio_data input;
+   unsigned mode, changed;
    input.data = samples; input.frames = 4;
    reset(&ctx);
    assert(record_nvenc_audio(&ctx, &input) && !pushes);
@@ -94,21 +95,37 @@ int main(void)
    reset(&ctx);
    ctx.audio_enabled = true;
    retro_atomic_store_release_int(&ctx.stop, 2);
-   record_nvenc_gpu_capture(&ctx, samples, 0, 0, ctx.dims, 7007);
+   record_nvenc_gpu_capture(&ctx, samples, 0, 0, ctx.dims, 7007, 0);
    assert(video_pushes == 1 && ctx.captured == 1 && last_timestamp == 7007);
    retro_atomic_store_release_int(&ctx.stop, 1);
-   record_nvenc_gpu_capture(&ctx, samples, 0, 0, ctx.dims, 8008);
+   record_nvenc_gpu_capture(&ctx, samples, 0, 0, ctx.dims, 8008, 0);
    assert(video_pushes == 1);
    retro_atomic_store_release_int(&ctx.stop, 3);
-   record_nvenc_gpu_capture(&ctx, samples, 0, 0, ctx.dims, 8008);
+   record_nvenc_gpu_capture(&ctx, samples, 0, 0, ctx.dims, 8008, 0);
    assert(video_pushes == 1);
    reset(&ctx); ctx.allow_drop = true;
    result = RECORD_GPU_QUEUE_BUSY;
-   record_nvenc_gpu_capture(&ctx, samples, 0, 0, ctx.dims, 0);
+   record_nvenc_gpu_capture(&ctx, samples, 0, 0, ctx.dims, 0, 0);
    assert(video_pushes == 1 && !ctx.captured && !cancels);
    ctx.allow_drop = false;
-   record_nvenc_gpu_capture(&ctx, samples, 0, 0, ctx.dims, 1001);
+   record_nvenc_gpu_capture(&ctx, samples, 0, 0, ctx.dims, 1001, 0);
    assert(video_pushes == 2 && !ctx.captured && cancels == 1);
+   for (mode = 0; mode < 3; mode++)
+      for (changed = 0; changed < 4; changed++)
+      {
+         reset(&ctx); ctx.output_mode = mode;
+         record_nvenc_gpu_capture(&ctx, samples, 0, 0, ctx.dims, 0, changed);
+         if (mode == changed)
+            assert(video_pushes == 1 && ctx.captured == 1
+                  && !retro_atomic_load_acquire_int(&ctx.stop));
+         else
+         {
+            assert(!video_pushes && !ctx.captured
+                  && retro_atomic_load_acquire_int(&ctx.stop) == 4);
+            record_nvenc_gpu_capture(&ctx, samples, 0, 0, ctx.dims, 1001, mode);
+            assert(!video_pushes && !ctx.captured);
+         }
+      }
    puts("PASS: native frontend PCM readiness, whole-batch backpressure and closure");
    return 0;
 }

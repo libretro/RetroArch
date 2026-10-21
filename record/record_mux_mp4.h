@@ -26,6 +26,11 @@ typedef struct record_mp4_config
     * NULL disables audio. Audio timestamps use the parsed sample rate. */
    const void *ac3_header;
    size_t ac3_header_size;
+   /* Optional coded-output colour description. All zero leaves NAL colour
+    * unspecified; AV1 always derives it from its sequence header. Explicit
+    * AV1 values must agree with that header. Never use display metadata. */
+   unsigned color_primaries, transfer_characteristics, matrix_coefficients;
+   bool full_range;
 } record_mp4_config_t;
 
 /* Single owner. Headers are Annex B SPS/PPS or VPS/SPS/PPS, or sized AV1

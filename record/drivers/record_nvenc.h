@@ -20,6 +20,6 @@ bool record_nvenc_cancel_start(void);
 /* Render producer only; no allocation, waits, CPU pixels or logging. */
 bool record_nvenc_gpu_reap(void *data);
 void record_nvenc_gpu_capture(void *data, void *source, unsigned state,
-      unsigned pos, unsigned dims, uint64_t timestamp);
+      unsigned pos, unsigned dims, uint64_t timestamp, unsigned output_mode);
 RETRO_END_DECLS
 #endif

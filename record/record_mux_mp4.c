@@ -129,6 +129,10 @@ static bool rmp4w_av1_config(record_mux_mp4_t *m, const record_mp4_config_t *c)
          || info.bit_depth != c->bit_depth || info.monochrome
          || !info.subsampling_x || !info.subsampling_y
          || info.max_width != c->width || info.max_height != c->height) return false;
+   if (c->color_primaries && (c->color_primaries != info.color_primaries
+         || c->transfer_characteristics != info.transfer_characteristics
+         || c->matrix_coefficients != info.matrix_coefficients
+         || c->full_range != !!info.color_range)) return false;
    box = rmp4w_box(m, "av1C");
    rmp4w_uint(m, 0x81, 1);
    rmp4w_uint(m, (info.profile << 5) | info.operating_points[0].level, 1);
@@ -268,6 +272,15 @@ static bool rmp4w_track(record_mux_mp4_t *m, const record_mp4_config_t *c, unsig
       rmp4w_zero(m, 4); rmp4w_uint(m, 1, 2); rmp4w_zero(m, 32);
       rmp4w_uint(m, 24, 2); rmp4w_uint(m, 65535, 2);
       if (!(c->codec == RECORD_MP4_AV1 ? rmp4w_av1_config(m, c) : rmp4w_nal_config(m, c))) return false;
+      if (c->codec != RECORD_MP4_AV1 && c->color_primaries)
+      {
+         box = rmp4w_box(m, "colr"); rmp4w_bytes(m, "nclx", 4);
+         rmp4w_uint(m, c->color_primaries, 2);
+         rmp4w_uint(m, c->transfer_characteristics, 2);
+         rmp4w_uint(m, c->matrix_coefficients, 2);
+         rmp4w_uint(m, c->full_range ? 128 : 0, 1);
+         rmp4w_end(m, box);
+      }
    }
    rmp4w_end(m, entry); rmp4w_end(m, stsd);
    box = rmp4w_full(m, "stts", 0); rmp4w_zero(m, 4); rmp4w_end(m, box);
@@ -289,6 +302,12 @@ record_mux_mp4_t *record_mux_mp4_new(const record_mp4_config_t *c)
          || !c->width || !c->height || c->width > 16384 || c->height > 16384
          || !c->timescale || (c->bit_depth != 8 && c->bit_depth != 10)
          || (!c->ac3_header && c->ac3_header_size)) return NULL;
+   if (c->color_primaries || c->transfer_characteristics
+         || c->matrix_coefficients || c->full_range)
+      if (!c->color_primaries || c->color_primaries > 65535
+            || !c->transfer_characteristics || c->transfer_characteristics > 65535
+            || !c->matrix_coefficients || c->matrix_coefficients > 65535)
+         return NULL;
    m = (record_mux_mp4_t*)calloc(1, sizeof(*m));
    if (!m) return NULL;
    m->capacity = c->max_packet_size + 4096 + c->headers_size;

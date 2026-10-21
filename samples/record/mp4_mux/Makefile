@@ -16,7 +16,7 @@ mux_file$(EXE): mux_file.c $(MUX) $(FRAME) $(ENCODE) $(OUTPUT)
 	$(CC) $(CFLAGS) -o $@ mux_file.c $(RA)/record/record_mux_mp4.c $(FRAME) $(ENCODE) $(OUTPUT) $(LDFLAGS) -lm
 check: all
 	$(RUNNER) ./mux_test$(EXE)
-	python3 run.py --runner "$(RUNNER)" ./mux_file$(EXE)
+	python3 run.py --hdr-tags --runner "$(RUNNER)" ./mux_file$(EXE)
 clean:
 	rm -f mux_test mux_test.exe mux_file mux_file.exe
 .PHONY: all check clean

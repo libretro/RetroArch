@@ -10396,7 +10396,7 @@ recording_resize_deferred:;
       record_nvenc_gpu_capture(video_info->recording_gpu,
             d3d12->chain.renderTargets[d3d12->chain.frame_index],
             D3D12_RESOURCE_STATE_PRESENT, d3d12->vp.pos, d3d12->vp.dims,
-            video_info->recording_gpu_timestamp);
+            video_info->recording_gpu_timestamp, d3d12_hdr_output_mode(d3d12));
    d3d12_record_signal(d3d12);
 
    /* Version 2: the core's texture is the core's again once this list,

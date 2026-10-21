@@ -30,7 +30,7 @@ typedef struct record_nvenc_context
    record_gpu_dispatch_d3d12_t *job;
    void *device;
    char *path;
-   unsigned dims, duration, audio_rate;
+   unsigned dims, duration, audio_rate, output_mode;
    retro_atomic_int_t failed, stop;
    bool allow_drop, have_origin, video_closed;
    bool audio_enabled, armed;
@@ -109,6 +109,32 @@ done:
    return ok;
 }
 
+static bool record_nvenc_color(nvenc_d3d12_config_t *encoder,
+      const struct retro_hdr_metadata *hdr)
+{
+   if (!encoder || !hdr || hdr->version != 1 || hdr->size < sizeof(*hdr)
+         || (unsigned)encoder->codec > NVENC_D3D12_AV1)
+      return false;
+   if (!hdr->output_mode)
+   {
+      encoder->format = NVENC_D3D12_BGRA8;
+      encoder->color = NVENC_D3D12_COLOR_BT709;
+   }
+   else
+   {
+      if (encoder->codec == NVENC_D3D12_H264
+            || !((hdr->output_mode == 1 && hdr->color_primaries == 9
+                     && hdr->transfer_function == 16)
+               || (hdr->output_mode == 2 && hdr->color_primaries == 1
+                     && hdr->transfer_function == 8)))
+         return false;
+      encoder->format = NVENC_D3D12_P010;
+      encoder->color = NVENC_D3D12_COLOR_BT2020_PQ;
+   }
+   encoder->full_range = false;
+   return true;
+}
+
 static bool record_nvenc_layout(uint32_t layout, unsigned channels)
 {
    if (!channels || channels > 6 || audio_layout_channels(layout) != channels)
@@ -132,34 +158,42 @@ static void *record_nvenc_init(const struct record_params *params)
 {
    nvenc_d3d12_config_t encoder;
    record_gpu_output_config_t output;
+   struct retro_hdr_metadata hdr;
    video_device_info_t device;
    record_gpu_capture_d3d12_t *capture;
    record_nvenc_context_t *ctx;
    settings_t *settings = config_get_ptr();
    size_t length;
    bool audio_enabled;
-   if (record_nvenc_active || record_nvenc_retired || !params
+   if (record_nvenc_active || record_nvenc_retired || !settings || !params
          || !params->filename || !*params->filename) return NULL;
    if (!params->video_gpu_record || recording_state_get_ptr()->streaming_enable
-         || settings->uints.video_hdr_mode
-         || settings->uints.video_swapchain_bit_depth == 2
          || settings->bools.video_record_game_only || audio_driver_has_callback())
    {
-      RARCH_ERR("[NVENC] Requires SDR D3D12 viewport recording without Game Only, streaming or an asynchronous core audio callback.\n");
+      RARCH_ERR("[NVENC] Requires D3D12 viewport recording without Game Only, streaming or an asynchronous core audio callback.\n");
       return NULL;
    }
    memset(&encoder, 0, sizeof(encoder)); memset(&output, 0, sizeof(output));
    if (!video_driver_get_device(&device) || device.api != VIDEO_DEVICE_D3D12
          || !device.device || !device.queue) return NULL;
+   memset(&hdr, 0, sizeof(hdr));
+   hdr.version = 1; hdr.size = sizeof(hdr);
+   if (!video_driver_get_display_metadata(RETRO_ENVIRONMENT_GET_HDR_METADATA, &hdr))
+      return NULL;
    encoder.device = device.device; encoder.slots = 4;
    encoder.width = VIDEO_SCALE_W(params->out_dims);
    encoder.height = VIDEO_SCALE_H(params->out_dims);
-   encoder.format = NVENC_D3D12_BGRA8; encoder.color = NVENC_D3D12_COLOR_BT709;
    encoder.bitrate = 16000000;
    if (!record_nvenc_rate(params->fps, &encoder.fps_num, &encoder.fps_den)
          || !record_nvenc_config(params->config, &encoder, &audio_enabled))
    {
       RARCH_ERR("[NVENC] Requires a valid frame rate and a native MP4 config with an explicit audio_enable setting.\n");
+      return NULL;
+   }
+   if (!record_nvenc_color(&encoder, &hdr)
+         || (!hdr.output_mode && settings->uints.video_swapchain_bit_depth == 2))
+   {
+      RARCH_ERR("[NVENC] HDR recording requires HEVC or AV1 with active PQ or scRGB output.\n");
       return NULL;
    }
    if (audio_enabled)
@@ -185,6 +219,7 @@ static void *record_nvenc_init(const struct record_params *params)
    ctx->audio_enabled = audio_enabled;
    ctx->armed = !audio_enabled;
    ctx->device = device.device; ctx->dims = params->out_dims;
+   ctx->output_mode = hdr.output_mode;
    ctx->duration = encoder.fps_den; ctx->allow_drop = params->allow_frame_drop;
    retro_atomic_int_init(&ctx->failed, 0); retro_atomic_int_init(&ctx->stop, 0);
    capture = record_gpu_capture_d3d12_new(&encoder, device.queue);
@@ -277,7 +312,7 @@ bool record_nvenc_gpu_reap(void *data)
 }
 
 void record_nvenc_gpu_capture(void *data, void *source, unsigned state,
-      unsigned pos, unsigned dims, uint64_t timestamp)
+      unsigned pos, unsigned dims, uint64_t timestamp, unsigned output_mode)
 {
    record_nvenc_context_t *ctx = (record_nvenc_context_t*)data;
    int result, stop;
@@ -286,6 +321,11 @@ void record_nvenc_gpu_capture(void *data, void *source, unsigned state,
    stop = retro_atomic_load_acquire_int(&ctx->stop);
    if ((stop && stop != 2)
          || retro_atomic_load_acquire_int(&ctx->failed)) return;
+   if (output_mode != ctx->output_mode)
+   {
+      retro_atomic_cas_int(&ctx->stop, 0, 4);
+      return;
+   }
    if (dims != ctx->dims || VIDEO_POS_X(pos) < 0 || VIDEO_POS_Y(pos) < 0)
    {
       retro_atomic_cas_int(&ctx->stop, 0, 1);
@@ -356,17 +396,25 @@ void record_nvenc_poll(void)
    if (record_nvenc_active)
    {
       video_device_info_t device;
+      struct retro_hdr_metadata hdr;
       record_nvenc_context_t *ctx = record_nvenc_active;
       enum record_gpu_dispatch_state state = record_gpu_dispatch_d3d12_status(ctx->job, NULL, NULL, NULL);
       if (state == RECORD_GPU_DISPATCH_READY) ctx->armed = true;
       if (!video_driver_get_device(&device) || device.device != ctx->device)
          retro_atomic_cas_int(&ctx->stop, 0, 3);
+      memset(&hdr, 0, sizeof(hdr));
+      hdr.version = 1; hdr.size = sizeof(hdr);
+      if (!video_driver_get_display_metadata(RETRO_ENVIRONMENT_GET_HDR_METADATA, &hdr)
+            || hdr.output_mode != ctx->output_mode)
+         retro_atomic_cas_int(&ctx->stop, 0, 4);
       if (retro_atomic_load_acquire_int(&ctx->stop)
             || retro_atomic_load_acquire_int(&ctx->failed)
             || state >= RECORD_GPU_DISPATCH_DRAINING)
       {
          if (retro_atomic_load_acquire_int(&ctx->stop) == 1)
             RARCH_WARN("[NVENC] %s\n", msg_hash_to_str(MSG_RECORDING_TERMINATED_DUE_TO_RESIZE));
+         else if (retro_atomic_load_acquire_int(&ctx->stop) == 4)
+            RARCH_WARN("[NVENC] Recording terminated because output encoding changed.\n");
          record_nvenc_stop();
       }
    }
@@ -434,6 +482,6 @@ bool record_nvenc_defer_start(void) { return false; }
 bool record_nvenc_cancel_start(void) { return false; }
 bool record_nvenc_gpu_reap(void *data) { (void)data; return true; }
 void record_nvenc_gpu_capture(void *data, void *source, unsigned state,
-      unsigned pos, unsigned dims, uint64_t timestamp)
-{ (void)data; (void)source; (void)state; (void)pos; (void)dims; (void)timestamp; }
+      unsigned pos, unsigned dims, uint64_t timestamp, unsigned output_mode)
+{ (void)data; (void)source; (void)state; (void)pos; (void)dims; (void)timestamp; (void)output_mode; }
 #endif

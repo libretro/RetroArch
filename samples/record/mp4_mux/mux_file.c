@@ -56,8 +56,15 @@ int main(int argc, char **argv)
    size_t audio_size = 0;
    uint64_t audio_pts = 0;
    int ok = 0;
-   if (argc != 4) return 1;
+   if (argc != 4 && argc != 8) return 1;
    memset(&c, 0, sizeof(c));
+   if (argc == 8)
+   {
+      c.color_primaries = (unsigned)strtoul(argv[4], NULL, 10);
+      c.transfer_characteristics = (unsigned)strtoul(argv[5], NULL, 10);
+      c.matrix_coefficients = (unsigned)strtoul(argv[6], NULL, 10);
+      c.full_range = strtoul(argv[7], NULL, 10) != 0;
+   }
    in = fopen(argv[1], "rb"); CHECK(in != NULL);
    for (i = 0; i < 10; i++) CHECK(read32(in, &h[i]));
    c.codec = (enum record_mp4_codec)h[0]; c.bit_depth = h[1]; c.width = h[2]; c.height = h[3];

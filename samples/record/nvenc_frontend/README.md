@@ -1,9 +1,13 @@
 # Native frontend GPU recording
 
 Desktop Windows builds with D3D12, threads, configuration files and built-in
-recording components expose `record_driver = "nvenc"`. Use an SDR 8-bit
-D3D12 swapchain and viewport recording (Game Only disabled). HDR, streaming and
-asynchronous core audio callbacks are not supported. Core audio can be recorded
+recording components expose `record_driver = "nvenc"`. Use viewport recording
+(Game Only disabled). SDR uses 8-bit BT.709 output. Active PQ or scRGB output
+can be recorded with HEVC or AV1 as 10-bit, limited-range BT.2020/PQ; H.264
+HDR recording is refused. Admission follows the renderer's active output,
+including fallback to SDR, rather than the requested HDR setting. Display peak
+brightness is not used to invent content-light or mastering metadata.
+Streaming and asynchronous core audio callbacks are not supported. Core audio can be recorded
 as native AC-3 at 32, 44.1 or 48 kHz.
 The recording keeps the speaker mask declared when it starts, independently
 of the playback device layout. AC-3 layouts up to six channels are accepted:
@@ -32,7 +36,9 @@ video begin together when the worker is ready. Audio queue exhaustion or a core
 sample-rate change fails recording without waiting or silently losing audio.
 Normal stop lets already queued video frames complete before retirement.
 Capture uses the rendered viewport without CPU pixel readback. A viewport size
-change stops and finalizes recording. Startup waits for the first valid
+change stops and finalizes recording. An output-encoding change also stops
+recording before a frame with the new encoding can enter the old session.
+Startup waits for the first valid
 viewport. Normal quit polls asynchronous encoder/file retirement before
 exiting.
 

@@ -6,7 +6,11 @@ ifneq ($(SANITIZER),)
 CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
-all: $(CORE) rate_test$(EXE) audio_test$(EXE) layout_test$(EXE) float_negotiation_test$(EXE)
+all: $(CORE) rate_test$(EXE) audio_test$(EXE) layout_test$(EXE) float_negotiation_test$(EXE) color_test$(EXE)
+color_fragment.c: $(RA)/record/drivers/record_nvenc.c
+	sed -n '/^static bool record_nvenc_color/,/^static bool record_nvenc_layout/p' $< | sed '$$d' > $@
+color_test$(EXE): color_test.c color_fragment.c $(RA)/gfx/video_hdr_metadata.h $(RA)/gfx/common/nvenc_d3d12.h
+	$(CC) $(CFLAGS) -o $@ color_test.c $(LDFLAGS) -lm
 float_fragment.c: $(RA)/runloop.c
 	sed -n '/^      case RETRO_ENVIRONMENT_GET_AUDIO_SAMPLE_BATCH_FLOAT:/,/^      case RETRO_ENVIRONMENT_GET_AUDIO_SAMPLE_BATCH_MULTI:/{ /^      case RETRO_ENVIRONMENT_GET_AUDIO_SAMPLE_BATCH_MULTI:/q; p; }' $< > $@
 float_negotiation_test$(EXE): float_negotiation_test.c float_fragment.c
@@ -32,7 +36,9 @@ check: all
 	$(RUNNER) ./audio_test$(EXE)
 	$(RUNNER) ./layout_test$(EXE)
 	$(RUNNER) ./float_negotiation_test$(EXE)
+	$(RUNNER) ./color_test$(EXE)
 	python3 run.py --core ./$(CORE) $(if $(RETROARCH),--retroarch "$(RETROARCH)",)
 clean:
 	rm -f frontend_core.dll frontend_core.so rate_fragment.c rate_test rate_test.exe audio_fragment.c video_fragment.c audio_test audio_test.exe layout_fragment.c layout_test layout_test.exe float_fragment.c float_negotiation_test float_negotiation_test.exe
+	rm -f color_fragment.c color_test color_test.exe
 .PHONY: all check clean

@@ -13,3 +13,6 @@
 /float_fragment.c
 /float_negotiation_test
 /float_negotiation_test.exe
+/color_fragment.c
+/color_test
+/color_test.exe

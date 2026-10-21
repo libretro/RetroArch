@@ -12,6 +12,7 @@ import tempfile
 
 p = argparse.ArgumentParser()
 p.add_argument('--runner', default='')
+p.add_argument('--hdr-tags', action='store_true')
 p.add_argument('binary')
 a = p.parse_args()
 binary = str(Path(a.binary).resolve())
@@ -40,9 +41,14 @@ def decode(path, audio=False, start=None):
 with tempfile.TemporaryDirectory(prefix='record-mp4-') as temp:
     root = Path(temp)
     passed = 0
-    for codec, depth in ((0, 8), (1, 8), (1, 10), (2, 8), (2, 10)):
+    cases = [(codec, depth, None) for codec, depth in
+             ((0, 8), (1, 8), (1, 10), (2, 8), (2, 10))]
+    if a.hdr_tags:
+        cases += [(codec, 10, transfer) for codec in (1, 2)
+                  for transfer in ('smpte2084', 'arib-std-b67')]
+    for codec, depth, transfer in cases:
         name = ('h264', 'hevc', 'obu')[codec]
-        source = root / f'{codec}-{depth}.{name}'
+        source = root / f'{codec}-{depth}-{transfer or "untagged"}.{name}'
         options = (['-c:v', 'libx264', '-preset', 'ultrafast', '-bf', '0', '-g', '8',
                     '-x264-params', 'repeat-headers=1'] if codec == 0 else
                    ['-c:v', 'libx265', '-preset', 'ultrafast', '-x265-params',
@@ -50,8 +56,13 @@ with tempfile.TemporaryDirectory(prefix='record-mp4-') as temp:
                    ['-c:v', 'libaom-av1', '-cpu-used', '8', '-lag-in-frames', '0', '-g', '8', '-threads', '1'])
         command([ffmpeg, '-v', 'error', '-f', 'lavfi', '-i', 'testsrc2=size=64x48:rate=30000/1001',
                  '-frames:v', '32', '-pix_fmt', 'yuv420p10le' if depth == 10 else 'yuv420p',
-                 *options, '-f', name, str(source)])
-        packets = probe(source)['packets']
+                 *options, *(['-color_primaries', 'bt2020', '-color_trc', transfer,
+                              '-colorspace', 'bt2020nc', '-color_range', 'tv'] if transfer else []),
+                 '-f', name, str(source)])
+        source_info = probe(source)
+        if transfer:
+            assert source_info['streams'][0]['color_transfer'] == transfer, source_info
+        packets = source_info['packets']
         assert len(packets) == 32
         payload = source.read_bytes()
         frames = [(('K' in q['flags']), payload[int(q['pos']):int(q['pos'])+int(q['size'])]) for q in packets]
@@ -64,9 +75,16 @@ with tempfile.TemporaryDirectory(prefix='record-mp4-') as temp:
             for key, packet in frames:
                 data += struct.pack('<2I', key, len(packet)) + packet
             fixture.write_bytes(data)
-            movie = root / f'{codec}-{depth}-{rate}.mp4'
+            movie = root / f'{codec}-{depth}-{transfer or "untagged"}-{rate}.mp4'
             audio = root / 'reference.ac3'
-            subprocess.run([*runner, binary, str(fixture), str(movie), str(audio)], check=True)
+            tags = ['9', '16' if transfer == 'smpte2084' else '18', '9', '0'] if transfer else []
+            if codec == 2 and transfer and not rate:
+                rejected = root / f'rejected-{transfer}.mp4'
+                mismatch = [tags[0], '18' if tags[1] == '16' else '16', *tags[2:]]
+                result = subprocess.run([*runner, binary, str(fixture), str(rejected),
+                                         str(audio), *mismatch], capture_output=True)
+                assert result.returncode != 0 and not rejected.exists(), result
+            subprocess.run([*runner, binary, str(fixture), str(movie), str(audio), *tags], check=True)
             info = probe(movie)
             streams = info['streams']
             if codec == 2:
@@ -75,6 +93,13 @@ with tempfile.TemporaryDirectory(prefix='record-mp4-') as temp:
             assert streams[0]['codec_name'] == ('h264', 'hevc', 'av1')[codec]
             assert (streams[0]['width'], streams[0]['height']) == (64, 48)
             assert ('10' in streams[0]['pix_fmt']) == (depth == 10), streams[0]
+            if transfer:
+                assert streams[0]['color_primaries'] == 'bt2020', streams[0]
+                assert streams[0]['color_transfer'] == transfer, streams[0]
+                assert streams[0]['color_space'] == 'bt2020nc', streams[0]
+                assert streams[0]['color_range'] == 'tv', streams[0]
+                blob = movie.read_bytes()
+                assert blob.count(b'colrnclx') == 1
             assert decode(movie) == pixels, 'video pixels changed'
             assert decode(movie, start=8 * 1001 / 30000) == pixels[8 * 64 * 48 * 3:], 'keyframe seek differs'
             video = [q for q in info['packets'] if q['stream_index'] == 0]
@@ -106,5 +131,5 @@ with tempfile.TemporaryDirectory(prefix='record-mp4-') as temp:
             prefix.write_bytes(blob[:fragments[len(fragments)//2]])
             command([ffmpeg, '-v', 'error', '-i', str(prefix), '-f', 'null', '-'])
             passed += 1
-            print(f'[pass] MP4 {name}/{depth}, AC-3 {rate} Hz/{channels} ch: pixels, samples, timing, prefix', flush=True)
+            print(f'[pass] MP4 {name}/{depth}/{transfer or "untagged"}, AC-3 {rate} Hz/{channels} ch: pixels, samples, timing, prefix', flush=True)
     print(f'PASS: {passed} independently decoded MP4 A/V cases', flush=True)

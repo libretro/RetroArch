@@ -156,6 +156,15 @@ static int normal(void)
    unsigned slot;
    setup(&o, &e); c.queue = record_gpu_queue_new(2); CHECK(c.queue);
    CHECK(!record_gpu_session_d3d12_new(NULL, &e, &o, "unused"));
+   o.video.color_primaries = 9;
+   CHECK(!record_gpu_session_d3d12_new(&c, &e, &o, "unused"));
+   o.video.color_primaries = 0; o.video.transfer_characteristics = 16;
+   CHECK(!record_gpu_session_d3d12_new(&c, &e, &o, "unused"));
+   o.video.transfer_characteristics = 0; o.video.matrix_coefficients = 9;
+   CHECK(!record_gpu_session_d3d12_new(&c, &e, &o, "unused"));
+   o.video.matrix_coefficients = 0; o.video.full_range = true;
+   CHECK(!record_gpu_session_d3d12_new(&c, &e, &o, "unused"));
+   o.video.full_range = false;
    s = record_gpu_session_d3d12_new(&c, &e, &o, "unused"); CHECK(s);
    CHECK(!record_gpu_session_d3d12_free(s));
    CHECK(record_gpu_session_d3d12_error(s, NULL) == RECORD_GPU_SESSION_ERROR_NONE);

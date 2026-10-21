@@ -21,6 +21,7 @@ parser.add_argument('--audio', nargs='+', choices=['false', 'true'], default=['f
 parser.add_argument('--rates', nargs='+', type=int, default=[32000, 44100, 48000])
 parser.add_argument('--layouts', nargs='+', type=lambda x: int(x, 0), default=[3])
 parser.add_argument('--float', action='store_true', dest='floating')
+parser.add_argument('--hdr-mode', type=int, choices=[0, 1, 2], default=0)
 args = parser.parse_args()
 if not args.retroarch:
     print('SKIP: provide a native Windows RetroArch build with D3D12/NVENC')
@@ -43,7 +44,10 @@ video_fullscreen = "false"
 video_scale = "1.0"
 video_vsync = "true"
 video_swapchain_bit_depth = "1"
-video_hdr_mode = "0"
+video_hdr_mode = "{args.hdr_mode}"
+video_hdr_paper_white_nits = "200.0"
+video_hdr_expand_gamut = "0"
+video_hdr_scanlines = "0"
 video_record_game_only = "false"
 video_record_allow_frame_drop = "true"
 video_font_enable = "false"
@@ -77,6 +81,10 @@ savestate_auto_load = "false"
     (path / 'run.log').write_text(log, encoding='utf-8')
     assert result.returncode == 0, (path, result.returncode, log[-5000:])
     assert f'[fixture] {"float" if args.floating else "s16"} source, mask {layout:x}' in log, log
+    if args.hdr_mode and codec == 'h264':
+        assert not movie.exists() and 'HDR recording requires HEVC or AV1' in log, log
+        print('[pass] active HDR H.264 refused before file creation', flush=True)
+        return
     if kind in ('rate', 'layout'):
         assert not movie.exists() and 'Audio requires an AC-3 speaker layout' in log, log
         print(f'[pass] unsupported native audio {kind} refused (mask {layout:x})', flush=True)
@@ -91,6 +99,11 @@ savestate_auto_load = "false"
         return
     finalized = re.search(r'Recording finalized \((\d+) GPU frames\)', log)
     assert finalized and int(finalized[1]) >= 20, log
+    movie_bytes = movie.read_bytes()
+    assert movie_bytes.count(b'colrnclx') == 1
+    colour = movie_bytes.index(b'colrnclx') + 8
+    assert movie_bytes[colour:colour + 7] == (b'\x00\x09\x00\x10\x00\x09\x00'
+           if args.hdr_mode else b'\x00\x01\x00\x01\x00\x01\x00')
     decoded = subprocess.run([ffmpeg, '-hide_banner', '-i', str(movie), '-map', '0:v:0',
                               '-vf', 'showinfo', '-pix_fmt', 'rgb24', '-fps_mode', 'passthrough',
                               '-f', 'rawvideo', '-'], stdout=subprocess.PIPE, stderr=subprocess.PIPE,
@@ -107,6 +120,21 @@ savestate_auto_load = "false"
     frame_size = width * height * 3
     assert len(decoded.stdout) == len(pts) * frame_size
     references = [(255, 32, 32), (32, 255, 32), (32, 32, 255), (192, 192, 192)]
+    if args.hdr_mode:
+        assert 'yuv420p10le(tv, bt2020nc/bt2020/smpte2084)' in source, source
+        # Independent double-precision SDR gamma -> absolute BT.2020 -> PQ.
+        # Both PQ output and scRGB recording must reach this coded signal
+        # once. Compare decoded signal RGB, without a display tone mapper.
+        matrix = ((.6274040, .3292820, .0433136),
+                  (.0690970, .9195400, .0113612),
+                  (.0163916, .0880132, .8955950))
+        def pq(value):
+            power = max(value, 0) ** (2610 / 16384)
+            return ((3424 / 4096 + 2413 / 128 * power) /
+                    (1 + 2392 / 128 * power)) ** (2523 / 32)
+        references = [tuple(255 * pq(sum(weight * (v / 255) ** 2.4
+                              for weight, v in zip(row, color)) * 200 / 10000)
+                            for row in matrix) for color in references]
     colors = set()
     for n in range(len(pts)):
         offset = n * frame_size + ((height // 2) * width + width // 2) * 3
@@ -160,10 +188,11 @@ try:
                 for rate in args.rates if audio == 'true' else [48000]:
                     for layout in args.layouts if audio == 'true' else [3]:
                         run_case(root, codec, threaded, audio=audio == 'true', rate=rate, layout=layout)
-    for layout in (0x33, 0x3f, 0x63f):
-        run_case(root, 'h264', 'true', 'layout', audio=True, layout=layout)
-    for kind in ('rate', 'exists', 'early'):
-        run_case(root, 'h264', 'true', kind, audio=True)
+    if not args.hdr_mode:
+        for layout in (0x33, 0x3f, 0x63f):
+            run_case(root, 'h264', 'true', 'layout', audio=True, layout=layout)
+        for kind in ('rate', 'exists', 'early'):
+            run_case(root, 'h264', 'true', kind, audio=True)
 finally:
     if temporary:
         temporary.cleanup()

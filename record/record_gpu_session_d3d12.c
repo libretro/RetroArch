@@ -36,6 +36,8 @@ record_gpu_session_d3d12_t *record_gpu_session_d3d12_new(
    if (!capture || !encoder || !output || !path || !*path
          || output->video.headers || output->video.headers_size
          || output->video.ac3_header || output->video.ac3_header_size
+         || output->video.color_primaries || output->video.transfer_characteristics
+         || output->video.matrix_coefficients || output->video.full_range
          || encoder->codec < NVENC_D3D12_H264 || encoder->codec > NVENC_D3D12_AV1)
       return NULL;
    config = *encoder;
@@ -66,6 +68,24 @@ record_gpu_session_d3d12_t *record_gpu_session_d3d12_new(
          mux.video.width = config.width;
          mux.video.height = config.height;
          mux.video.bit_depth = config.format == NVENC_D3D12_P010 ? 10 : 8;
+         switch (config.color)
+         {
+            case NVENC_D3D12_COLOR_BT709:
+               mux.video.color_primaries = 1;
+               mux.video.transfer_characteristics = 1;
+               mux.video.matrix_coefficients = 1;
+               break;
+            case NVENC_D3D12_COLOR_BT2020_PQ:
+            case NVENC_D3D12_COLOR_BT2020_HLG:
+               mux.video.color_primaries = 9;
+               mux.video.transfer_characteristics =
+                  config.color == NVENC_D3D12_COLOR_BT2020_PQ ? 16 : 18;
+               mux.video.matrix_coefficients = 9;
+               break;
+            default: break;
+         }
+         if (mux.video.color_primaries)
+            mux.video.full_range = config.full_range;
          switch (config.codec)
          {
             case NVENC_D3D12_H264: mux.video.codec = RECORD_MP4_H264; break;
