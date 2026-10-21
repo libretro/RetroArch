@@ -8,7 +8,7 @@ ifneq ($(SANITIZER),)
 CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
-all: test hevc_decoder_test vulkan_image_test vulkan_sync_test vulkan_pipeline_test android_frame_test
+all: test hevc_decoder_test vulkan_image_test vulkan_sync_test vulkan_pipeline_test android_frame_test frame_export_test
 test: test.c mediacodec_session_test_types.h ../../../gfx/common/mediacodec_session.c
 	$(CC) $(CFLAGS) test.c ../../../gfx/common/mediacodec_session.c -o $@ $(LDFLAGS)
 HEVC_SOURCES := ../../../gfx/common/mediacodec_hevc_decoder.c \
@@ -30,6 +30,10 @@ gpu-check: vulkan_rgb_gpu_test
 	./vulkan_rgb_gpu_test
 android_frame_test: android_frame_test.c ../../../gfx/common/android_frame.c ../../../gfx/common/android_frame.h ../../../gfx/common/android_image_queue.c
 	$(CC) $(CFLAGS) -DHAVE_THREADS -pthread android_frame_test.c ../../../gfx/common/android_frame.c ../../../gfx/common/android_image_queue.c -o $@ $(LDFLAGS)
+EXPORT_SOURCES := ../../../gfx/common/mediacodec_frame_export.c ../../../gfx/common/mediacodec_color.c \
+ ../../../gfx/common/android_frame.c ../../../gfx/common/android_image_queue.c
+frame_export_test: frame_export_test.c $(EXPORT_SOURCES) ../../../gfx/common/mediacodec_frame_export.h ../../../gfx/common/mediacodec_color.h
+	$(CC) $(CFLAGS) -DHAVE_THREADS frame_export_test.c $(EXPORT_SOURCES) -o $@ $(LDFLAGS)
 check: all
 	./test
 	./hevc_decoder_test
@@ -37,6 +41,7 @@ check: all
 	./vulkan_sync_test
 	./vulkan_pipeline_test
 	./android_frame_test
+	./frame_export_test
 clean:
-	rm -f test hevc_decoder_test vulkan_image_test vulkan_sync_test vulkan_pipeline_test vulkan_rgb_gpu_test android_frame_test
+	rm -f test hevc_decoder_test vulkan_image_test vulkan_sync_test vulkan_pipeline_test vulkan_rgb_gpu_test android_frame_test frame_export_test
 .PHONY: all check clean gpu-check
