@@ -189,6 +189,16 @@ static joypad_connection_entry_t pad_map[] = {
       PID_8BITDO_SN30_PRO_BT,
       &pad_connection_8bitdo_sn30_pro
    },
+   { "8Bitdo SF30 Pro",
+      VID_8BITDO,
+      PID_8BITDO_SF30_PRO,
+      &pad_connection_8bitdo_sf30_pro
+   },
+   { "8Bitdo SF30 Pro",
+      VID_8BITDO,
+      PID_8BITDO_SF30_PRO_BT,
+      &pad_connection_8bitdo_sf30_pro
+   },
 #endif
    { 0, 0}
 };

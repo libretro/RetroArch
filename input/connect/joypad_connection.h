@@ -66,7 +66,9 @@
 #define PID_HORI_MINI_WIRED_PS4 SWAP_IF_BIG(0x00ee)
 #define PID_KADE          SWAP_IF_BIG(0x82c0)
 #define PID_DRAGONRISE    SWAP_IF_BIG(0x0006)
+#define PID_8BITDO_SF30_PRO    SWAP_IF_BIG(0x6000)
 #define PID_8BITDO_SN30_PRO    SWAP_IF_BIG(0x6001)
+#define PID_8BITDO_SF30_PRO_BT SWAP_IF_BIG(0x6100)
 #define PID_8BITDO_SN30_PRO_BT SWAP_IF_BIG(0x6101)
 
 /* The HID owner publishes a slot and retires it before freeing the
@@ -163,6 +165,7 @@ extern pad_connection_interface_t pad_connection_retrode;
 extern pad_connection_interface_t pad_connection_ps4_hori_mini;
 extern pad_connection_interface_t pad_connection_kade;
 extern pad_connection_interface_t pad_connection_8bitdo_sn30_pro;
+extern pad_connection_interface_t pad_connection_8bitdo_sf30_pro;
 extern pad_connection_interface_t pad_connection_dragonrise;
 
 int32_t pad_connection_pad_init(joypad_connection_t *joyconn,

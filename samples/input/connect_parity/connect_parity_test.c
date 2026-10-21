@@ -1932,7 +1932,19 @@ static void test_8bitdo(void)
    ifc->deinit(dev);
    stub_hid.get_report = NULL;
 
-   printf("[%s] 8bitdo: buttons, home, hat, sticks and triggers as both firmwares' reports lay them, on 40000 reports; rumble report 0x05 from the poll only where its mode is on\n",
+   /* the SF30 Pro: the same reports, its own name */
+   dev = pad_connection_8bitdo_sf30_pro.init(&dummy_connection, 0, &stub_hid);
+   CHECK(dev && !strcmp(pad_connection_8bitdo_sf30_pro.get_name(dev),
+            "8Bitdo SF30 Pro"), "8bitdo: the SF30 Pro not named as its hid profile");
+   memset(p, 0, sizeof(p));
+   p[0] = 0x03; p[1] = 2; p[2] = 0xff; p[8] = 0x02;
+   deliver(&pad_connection_8bitdo_sf30_pro, dev, p, 15);
+   CHECK(dev && !mismatches_8bitdo(&pad_connection_8bitdo_sf30_pro, dev, p, false),
+         "8bitdo: the SF30 Pro's report read otherwise");
+   if (dev)
+      pad_connection_8bitdo_sf30_pro.deinit(dev);
+
+   printf("[%s] 8bitdo: SN30 Pro and SF30 Pro, buttons, home, hat, sticks and triggers as both firmwares' reports lay them, on 40000 reports; rumble report 0x05 from the poll only where its mode is on\n",
          failures == had ? "pass" : "fail");
 }
 

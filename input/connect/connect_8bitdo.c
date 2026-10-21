@@ -12,8 +12,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* The 8BitDo SN30 Pro in its D-input mode (B + Start), on USB and
- * Bluetooth.
+/* The 8BitDo SN30 Pro and SF30 Pro in their D-input mode (B + Start),
+ * on USB and Bluetooth: the same pad in two shells, the SF30 Pro with
+ * no Home button.
  *
  * Its buttons keep the numbers its report gives them - A 0, B 1, X 3,
  * Y 4, L 6, R 7, L2 8, R2 9, Select 10, Start 11, Home 12, L3 13,
@@ -48,10 +49,11 @@ struct hidpad_8bitdo_data
    bool rumble;         /* the mode with rumble is on */
    bool behind_stack;   /* a Bluetooth stack's header: nothing is sent */
    bool motors_due;
+   bool sf30;
 };
 
-static void *hidpad_8bitdo_init(void *data, uint32_t slot,
-      hid_driver_t *driver)
+static void *hidpad_8bitdo_start(void *data, hid_driver_t *driver,
+      bool sf30)
 {
    struct pad_connection *connection = (struct pad_connection*)data;
    struct hidpad_8bitdo_data *device;
@@ -64,6 +66,7 @@ static void *hidpad_8bitdo_init(void *data, uint32_t slot,
 
    device->connection = connection;
    device->driver     = driver;
+   device->sf30       = sf30;
    if (driver && driver->get_report)
    {
       uint8_t feature[64];
@@ -72,6 +75,18 @@ static void *hidpad_8bitdo_init(void *data, uint32_t slot,
             0x06, feature, sizeof(feature)) > 0;
    }
    return device;
+}
+
+static void *hidpad_8bitdo_sn30_init(void *data, uint32_t slot,
+      hid_driver_t *driver)
+{
+   return hidpad_8bitdo_start(data, driver, false);
+}
+
+static void *hidpad_8bitdo_sf30_init(void *data, uint32_t slot,
+      hid_driver_t *driver)
+{
+   return hidpad_8bitdo_start(data, driver, true);
 }
 
 static void hidpad_8bitdo_deinit(void *data)
@@ -200,9 +215,11 @@ static int16_t hidpad_8bitdo_get_axis(void *data, unsigned axis)
    return device->view.axes[axis];
 }
 
+/* as the hid profiles name them */
 static const char *hidpad_8bitdo_get_name(void *data)
 {
-   return "8Bitdo SN30 Pro";
+   struct hidpad_8bitdo_data *device = (struct hidpad_8bitdo_data*)data;
+   return (device && device->sf30) ? "8Bitdo SF30 Pro" : "8Bitdo SN30 Pro";
 }
 
 /* The hat too, for a driver that asks the handler for it */
@@ -237,7 +254,26 @@ static const input_pad_view_t *hidpad_8bitdo_view(void *data)
 }
 
 pad_connection_interface_t pad_connection_8bitdo_sn30_pro = {
-   hidpad_8bitdo_init,
+   hidpad_8bitdo_sn30_init,
+   hidpad_8bitdo_deinit,
+   hidpad_8bitdo_packet_handler,
+   hidpad_8bitdo_set_rumble,
+   hidpad_8bitdo_get_buttons,
+   hidpad_8bitdo_get_axis,
+   hidpad_8bitdo_get_name,
+   hidpad_8bitdo_button,
+   false, /* multi_pad */
+   0,     /* max_pad */
+   NULL,  /* pad_init */
+   NULL,  /* pad_deinit */
+   NULL,  /* status */
+   NULL,  /* joypad */
+   NULL,  /* set_player */
+   hidpad_8bitdo_view
+};
+
+pad_connection_interface_t pad_connection_8bitdo_sf30_pro = {
+   hidpad_8bitdo_sf30_init,
    hidpad_8bitdo_deinit,
    hidpad_8bitdo_packet_handler,
    hidpad_8bitdo_set_rumble,
