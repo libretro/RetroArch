@@ -646,8 +646,10 @@ void video_xr_place(const video_xr_params_t *p, video_xr_quad_set_t *out)
    }
 }
 
-bool video_xr_ray_hit(const video_xr_quad_t *q, const video_xr_vec3_t *origin,
-      const video_xr_vec3_t *dir, float *u, float *v, float *t)
+/* video_xr_ray_hit, or with both either face. */
+static bool video_xr_ray_hit_sides(const video_xr_quad_t *q,
+      const video_xr_vec3_t *origin, const video_xr_vec3_t *dir, bool both,
+      float *u, float *v, float *t)
 {
    double denom, dist, hu, hv;
    video_xr_quat_t inv;
@@ -658,8 +660,7 @@ bool video_xr_ray_hit(const video_xr_quad_t *q, const video_xr_vec3_t *origin,
    z.z = 1.0f;
    video_xr_rotate(&q->pose.orientation, &z, &n);
    denom = n.x * dir->x + n.y * dir->y + n.z * dir->z;
-   /* Only the front face. */
-   if (denom > -1e-6)
+   if (both ? fabs(denom) < 1e-6 : denom > -1e-6)
       return false;
    dist = (n.x * (q->pose.position.x - origin->x)
          + n.y * (q->pose.position.y - origin->y)
@@ -684,6 +685,35 @@ bool video_xr_ray_hit(const video_xr_quad_t *q, const video_xr_vec3_t *origin,
    *v = (float)(hv < 0.0 ? 0.0 : (hv > 1.0 ? 1.0 : hv));
    *t = (float)dist;
    return true;
+}
+
+bool video_xr_ray_hit(const video_xr_quad_t *q, const video_xr_vec3_t *origin,
+      const video_xr_vec3_t *dir, float *u, float *v, float *t)
+{
+   return video_xr_ray_hit_sides(q, origin, dir, false, u, v, t);
+}
+
+bool video_xr_quad_behind(const video_xr_quad_t *q,
+      const video_xr_vec3_t *eye)
+{
+   video_xr_vec3_t z, n;
+   z.x = 0.0f;
+   z.y = 0.0f;
+   z.z = 1.0f;
+   video_xr_rotate(&q->pose.orientation, &z, &n);
+   return n.x * (eye->x - q->pose.position.x)
+      + n.y * (eye->y - q->pose.position.y)
+      + n.z * (eye->z - q->pose.position.z) < 0.0f;
+}
+
+void video_xr_turn_back(video_xr_pose_t *pose)
+{
+   /* orientation times a half turn about Y, (0, 1, 0, 0). */
+   video_xr_quat_t o    = pose->orientation;
+   pose->orientation.x  = -o.z;
+   pose->orientation.y  = o.w;
+   pose->orientation.z  = o.x;
+   pose->orientation.w  = -o.y;
 }
 
 static int16_t video_xr_norm(unsigned p, unsigned size)
@@ -878,7 +908,7 @@ void video_xr_menu_handle(const video_xr_quad_t *menu, video_xr_quad_t *out)
 /* Where a ray meets the menu q's handle, or comes within the margin of
  * it, as a point in q's own frame; *bar whether on the bar itself. */
 static bool video_xr_handle_hit(const video_xr_quad_t *q,
-      const video_xr_vec3_t *origin, const video_xr_vec3_t *dir,
+      const video_xr_vec3_t *origin, const video_xr_vec3_t *dir, bool both,
       float *u, float *v, float *t, bool *bar)
 {
    float hu, hv;
@@ -888,7 +918,7 @@ static bool video_xr_handle_hit(const video_xr_quad_t *q,
    video_xr_menu_handle(q, &handle);
    handle.width  += 2.0f * VIDEO_XR_HANDLE_MARGIN;
    handle.height += 2.0f * VIDEO_XR_HANDLE_MARGIN;
-   if (!video_xr_ray_hit(&handle, origin, dir, &hu, &hv, t))
+   if (!video_xr_ray_hit_sides(&handle, origin, dir, both, &hu, &hv, t))
       return false;
    *bar = fabs(hu - 0.5f) * handle.width
          <= handle.width * 0.5f - VIDEO_XR_HANDLE_MARGIN
@@ -909,6 +939,7 @@ static int video_xr_pick_with(const video_xr_quad_set_t *set,
    int best   = -1;
    int handle = -1;
    bool bar   = false;
+   bool both  = laser == VIDEO_XR_LIVE_EDIT;
    float bu   = 0.0f;
    float bv   = 0.0f;
    float bt   = 0.0f;
@@ -921,7 +952,8 @@ static int video_xr_pick_with(const video_xr_quad_set_t *set,
          continue;
       if (laser == VIDEO_XR_LIVE_EDIT && q->kind == VIDEO_XR_QUAD_MENU)
       {
-         if (video_xr_handle_hit(q, origin, dir, &qu, &qv, &qt, &bar))
+         if (video_xr_handle_hit(q, origin, dir, both, &qu, &qv, &qt,
+                  &bar))
          {
             handle = (int)i;
             *u     = qu;
@@ -930,7 +962,7 @@ static int video_xr_pick_with(const video_xr_quad_set_t *set,
          }
          continue;
       }
-      if (!video_xr_ray_hit(q, origin, dir, &qu, &qv, &qt))
+      if (!video_xr_ray_hit_sides(q, origin, dir, both, &qu, &qv, &qt))
          continue;
       if (best < 0 || qt < bt)
       {
@@ -1960,6 +1992,10 @@ void video_xr_cursor_pixels(uint8_t *px)
             video_xr_cursor_texel(px, VIDEO_XR_BEAM_X(k) + x,
                   VIDEO_XR_BEAM_Y + y, level, level);
       }
+   for (y = 0; y < VIDEO_XR_BACK_CELL; y++)
+      for (x = 0; x < VIDEO_XR_BACK_CELL; x++)
+         video_xr_cursor_texel(px, VIDEO_XR_BACK_X + x, VIDEO_XR_BACK_Y + y,
+               VIDEO_XR_BACK_LEVEL, 255);
 }
 
 void video_xr_tag_pixels(uint8_t *px, unsigned tag, const uint8_t *cov,

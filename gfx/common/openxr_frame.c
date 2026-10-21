@@ -243,24 +243,46 @@ static void openxr_frame_hold(openxr_frame_t *f, XrTime time,
    }
 }
 
+static bool openxr_frame_head(openxr_frame_t *f, XrTime time,
+      video_xr_pose_t *head);
+
 /* This frame's quads, holds applied, where the screens are, into
- * f->shown; layers of those whose slot shows an image. No slot changes
- * under it: slots change under the graphics lock, or on this thread
- * where the host has none. */
+ * f->shown; layers of those whose slot shows an image. Runtimes draw
+ * only a quad's front, so with the head behind one its back, the laser
+ * image's grey square, takes its layer, turned to the head. No slot
+ * changes under it: slots change under the graphics lock, or on this
+ * thread where the host has none. */
 static unsigned openxr_frame_layers(openxr_frame_t *f, XrTime time,
       XrCompositionLayerQuad *layers,
       const XrCompositionLayerBaseHeader **ptrs)
 {
    unsigned i;
+   video_xr_pose_t head;
    unsigned n                 = 0;
+   bool seen                  = false;
    video_xr_quad_set_t *quads = &f->shown;
    openxr_seq_read(&f->quads_seq, f->quads_words,
          quads, sizeof(*quads));
    openxr_frame_hold(f, time, quads);
+   f->backs      = 0;
+   f->menu_layer = -1;
+   /* Follow Head's space is the head's own. */
+   if (f->cursor)
+   {
+      if (f->screens.view)
+      {
+         video_xr_pose_identity(&head);
+         seen = true;
+      }
+      else
+         seen = openxr_frame_head(f, time, &head);
+   }
    for (i = 0; i < quads->num_quads; i++)
    {
       unsigned dims, count;
       const XrSwapchain *chains;
+      video_xr_pose_t pose;
+      bool back;
       video_xr_quad_t *q        = &quads->quads[i];
       openxr_slot_t *slot       = &f->sc->slots[q->slot];
       XrCompositionLayerQuad *l = &layers[n];
@@ -268,13 +290,15 @@ static unsigned openxr_frame_layers(openxr_frame_t *f, XrTime time,
       if (     !(chains = openxr_frame_chains(slot, &dims, &count))
             || q->layer >= count)
          continue;
+      back = seen && video_xr_quad_behind(q, &head.position);
+      pose = q->pose;
       l->type                        = XR_TYPE_COMPOSITION_LAYER_QUAD;
       l->next                        = NULL;
       l->subImage.imageRect.offset.x = 0;
       l->subImage.imageRect.offset.y = 0;
       l->subImage.imageArrayIndex    = 0;
       /* The UI is drawn over transparent black: premultiplied. */
-      l->layerFlags    = (q->kind == VIDEO_XR_QUAD_MENU)
+      l->layerFlags    = (q->kind == VIDEO_XR_QUAD_MENU && !back)
          ? XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT : 0;
       l->space         = f->screens.view
          ? f->session->view_space : f->session->local_space;
@@ -282,18 +306,35 @@ static unsigned openxr_frame_layers(openxr_frame_t *f, XrTime time,
          ? XR_EYE_VISIBILITY_LEFT
          : ((q->eye == VIDEO_XR_EYE_RIGHT)
                ? XR_EYE_VISIBILITY_RIGHT : XR_EYE_VISIBILITY_BOTH);
-      l->subImage.swapchain               = chains[q->layer];
-      l->subImage.imageRect.extent.width  = (int32_t)VIDEO_SCALE_W(dims);
-      l->subImage.imageRect.extent.height = (int32_t)VIDEO_SCALE_H(dims);
-      l->pose.orientation.x = q->pose.orientation.x;
-      l->pose.orientation.y = q->pose.orientation.y;
-      l->pose.orientation.z = q->pose.orientation.z;
-      l->pose.orientation.w = q->pose.orientation.w;
-      l->pose.position.x    = q->pose.position.x;
-      l->pose.position.y    = q->pose.position.y;
-      l->pose.position.z    = q->pose.position.z;
+      if (back)
+      {
+         video_xr_turn_back(&pose);
+         f->backs                           |= 1u << i;
+         l->subImage.swapchain               = f->cursor;
+         l->subImage.imageRect.offset.x      =
+            VIDEO_XR_BACK_X + VIDEO_XR_BACK_MARGIN;
+         l->subImage.imageRect.offset.y      =
+            VIDEO_XR_BACK_Y + VIDEO_XR_BACK_MARGIN;
+         l->subImage.imageRect.extent.width  = VIDEO_XR_BACK_DIM;
+         l->subImage.imageRect.extent.height = VIDEO_XR_BACK_DIM;
+      }
+      else
+      {
+         l->subImage.swapchain               = chains[q->layer];
+         l->subImage.imageRect.extent.width  = (int32_t)VIDEO_SCALE_W(dims);
+         l->subImage.imageRect.extent.height = (int32_t)VIDEO_SCALE_H(dims);
+      }
+      l->pose.orientation.x = pose.orientation.x;
+      l->pose.orientation.y = pose.orientation.y;
+      l->pose.orientation.z = pose.orientation.z;
+      l->pose.orientation.w = pose.orientation.w;
+      l->pose.position.x    = pose.position.x;
+      l->pose.position.y    = pose.position.y;
+      l->pose.position.z    = pose.position.z;
       l->size.width         = q->width;
       l->size.height        = q->height;
+      if (q->kind == VIDEO_XR_QUAD_MENU)
+         f->menu_layer = (int)n;
       ptrs[n++]             = (const XrCompositionLayerBaseHeader*)l;
    }
    return n;
@@ -664,19 +705,15 @@ static bool openxr_frame_wait_begin(openxr_frame_t *f,
 
 /* At most the runtime's layer count: the last screens go first, so the
  * menu and the host's layers over it stay. The quads are ptrs[first]
- * up to ptrs[end]; returns the count kept. */
+ * up to ptrs[end], as openxr_frame_layers made them; returns the count
+ * kept. */
 static uint32_t openxr_frame_fit(const openxr_frame_t *f,
       const XrCompositionLayerBaseHeader **ptrs, uint32_t count,
       uint32_t first, uint32_t end)
 {
-   XrSwapchain menu     = f->sc->slots[VIDEO_XR_MENU_SLOT].swapchains[0];
-   XrSwapchain menu_old = f->sc->slots[VIDEO_XR_MENU_SLOT].old[0];
    while (count > f->rt->max_layers && end > first)
    {
-      const XrCompositionLayerQuad *q =
-         (const XrCompositionLayerQuad*)ptrs[--end];
-      if (     q->subImage.swapchain == menu
-            || q->subImage.swapchain == menu_old)
+      if ((int)(--end - first) == f->menu_layer)
          continue;
       memmove(&ptrs[end], &ptrs[end + 1],
             (count - end - 1) * sizeof(*ptrs));

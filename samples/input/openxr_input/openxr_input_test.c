@@ -3580,6 +3580,108 @@ static void test_edit_frame_aim(void)
    t_edit_end();
 }
 
+/* Where l's front faces, along z. */
+static float t_front_z(const XrCompositionLayerQuad *l)
+{
+   video_xr_quat_t o;
+   video_xr_vec3_t z;
+   o.x = l->pose.orientation.x;
+   o.y = l->pose.orientation.y;
+   o.z = l->pose.orientation.z;
+   o.w = l->pose.orientation.w;
+   z.x = 0.0f;
+   z.y = 0.0f;
+   z.z = 1.0f;
+   video_xr_rotate(&o, &z, &z);
+   return z.z;
+}
+
+/* Items the frame shows by their backs: their outlines, the menu's
+ * handle and the dot on one face the head, just in front of the back;
+ * a hand behind a screen points at it and grabs it by its back. Out of
+ * edit mode the dot is on the back too. */
+static void test_edit_backs(void)
+{
+   unsigned i, n;
+   video_xr_quad_set_t shown;
+   const XrCompositionLayerQuad *q;
+   const XrCompositionLayerBaseHeader *layers[OPENXR_MAX_EXTRA_LAYERS];
+   const video_xr_grab_t *g = &input_openxr_edit.hand[1].g;
+   XrSpace local            = XR_NULL_HANDLE;
+   bool facing              = true;
+   t_edit_start();
+   local                  = t_xr_session.local_space;
+   t_aim_tracked[1]       = false;
+   t_cursor               = true;
+   shown                  = t_quads;
+   /* The right hand 1.2 m behind screen 1, aiming back at it. */
+   t_aim[2].position.x    = 0.4f;
+   t_aim[2].position.z    = -3.0f;
+   t_aim[2].orientation.y = 1.0f;
+   t_aim[2].orientation.w = 0.0f;
+   t_xr_frame.backs       = 3u;
+   n = t_hooks.frame_layers(t_hooks.user, t_time, &shown, local, layers,
+         OPENXR_MAX_EXTRA_LAYERS, &t_under);
+   for (i = 0; i < n; i++)
+      facing &= t_near(t_front_z((const XrCompositionLayerQuad*)layers[i]),
+            -1.0f);
+   CHECK(n == 4 && facing, "%u layers from behind, all facing it %d", n,
+         (int)facing);
+   q = (const XrCompositionLayerQuad*)layers[0];
+   CHECK(     q->subImage.imageRect.offset.x == VIDEO_XR_OUTLINE_X(1)
+         && t_near(q->pose.position.z, -1.8f - VIDEO_XR_CURSOR_LIFT),
+         "screen 1's outline from behind: offset %d at z %.4f",
+         (int)q->subImage.imageRect.offset.x, q->pose.position.z);
+   q = (const XrCompositionLayerQuad*)layers[2];
+   CHECK(     q->subImage.imageRect.offset.x == VIDEO_XR_HANDLE_X(0)
+         && t_near(q->pose.position.x, 2.0f)
+         && t_near(q->pose.position.y, t_handle_y(0.6f))
+         && t_near(q->pose.position.z, -1.7f - VIDEO_XR_CURSOR_LIFT),
+         "the menu's handle from behind at %.3f,%.3f,%.4f",
+         q->pose.position.x, q->pose.position.y, q->pose.position.z);
+   q = (const XrCompositionLayerQuad*)layers[3];
+   CHECK(     q->subImage.imageRect.extent.width == VIDEO_XR_CURSOR_DIM
+         && t_near(q->pose.position.x, 0.4f)
+         && t_near(q->pose.position.z, -1.8f - VIDEO_XR_CURSOR_LIFT),
+         "the dot on screen 1's back at %.3f,%.4f", q->pose.position.x,
+         q->pose.position.z);
+   /* Shown by their fronts, all face the screens' front. */
+   t_xr_frame.backs = 0;
+   n = t_hooks.frame_layers(t_hooks.user, t_time, &shown, local, layers,
+         OPENXR_MAX_EXTRA_LAYERS, &t_under);
+   q = (const XrCompositionLayerQuad*)layers[3];
+   CHECK(n == 4 && t_near(t_front_z(q), 1.0f)
+         && t_near(q->pose.position.x, 0.4f)
+         && t_near(q->pose.position.z, -1.8f + VIDEO_XR_CURSOR_LIFT),
+         "fronts: the dot at %.3f,%.4f facing %.2f", q->pose.position.x,
+         q->pose.position.z, t_front_z(q));
+
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   CHECK(g->state == VIDEO_XR_GRAB_HELD && g->slot == 0,
+         "from behind the grip grabbed %u in state %u", g->slot, g->state);
+
+   /* Out of edit mode, Laser Pointer Always: a hand in front of screen
+    * 1 with the head behind it puts the dot on its back. */
+   t_let_go();
+   input_openxr_edit_toggle();
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_ALWAYS);
+   t_aim[2].position.z    = 0.0f;
+   t_aim[2].orientation.y = 0.0f;
+   t_aim[2].orientation.w = 1.0f;
+   t_xr_frame.backs       = 1u;
+   n = t_hooks.frame_layers(t_hooks.user, t_time, &shown, local, layers,
+         OPENXR_MAX_EXTRA_LAYERS, &t_under);
+   q = (const XrCompositionLayerQuad*)layers[0];
+   CHECK(n == 1 && t_near(t_front_z(q), -1.0f)
+         && t_near(q->pose.position.x, 0.4f)
+         && t_near(q->pose.position.z, -1.8f - VIDEO_XR_CURSOR_LIFT),
+         "Laser Pointer Always: %u layers, the dot at %.3f,%.4f facing "
+         "%.2f", n, q->pose.position.x, q->pose.position.z, t_front_z(q));
+   t_xr_frame.backs = 0;
+   t_edit_end();
+}
+
 /* Edit mode's layers: a bright outline round what a hand points at, a
  * faint one round every other item, the menu's handle bar after its
  * outline, then the dot; each where the frame shows its item; outlines
@@ -5106,6 +5208,7 @@ int main(void)
    test_edit_regrab();
    test_edit_frame_aim();
    test_edit_outlines();
+   test_edit_backs();
    test_edit_handle_sticky();
    test_edit_beams();
    test_edit_select_bindings();

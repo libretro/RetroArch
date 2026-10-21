@@ -188,6 +188,7 @@ unsigned video_xr_grab_step(video_xr_grab_t *g, const video_xr_pose_t *aim,
    (void)targets; (void)skip; (void)start;
    return 0;
 }
+void video_xr_turn_back(video_xr_pose_t *pose) { (void)pose; }
 void video_xr_menu_handle(const video_xr_quad_t *menu, video_xr_quad_t *out)
 { *out = *menu; }
 void video_xr_outline(const video_xr_quad_t *q, video_xr_quad_t *out)

@@ -185,8 +185,12 @@ typedef struct openxr_frame
    /* Edit Smoothing's aims as the frame loop publishes them. */
    retro_atomic_int_t aims_seq;
    retro_atomic_int_t aims_words[2 * OPENXR_WORDS(openxr_aims_t)];
-   /* This frame's quads where it shows them, for the input's layers. */
+   /* This frame's quads where it shows them, for the input's layers,
+    * and those it shows by their backs, a bit each. */
    video_xr_quad_set_t shown;      /* the frame loop's */
+   uint32_t backs;                 /* the frame loop's */
+   /* The menu's index among this frame's quad layers, or -1. */
+   int menu_layer;                 /* the frame loop's */
    /* The drawing thread's quads for the XR thread and the pointer, the
     * same way. */
    retro_atomic_int_t quads_seq;

@@ -1621,7 +1621,7 @@ static const XrCompositionLayerBaseHeader *input_openxr_edit_layer(
  * other item: one an item (a stereo screen's two quads are one, a fixed
  * slot none), each just outside its item, the menu's handle after its
  * outline: bright for the slots in lit, faint for the rest; up to cap
- * in all. */
+ * in all; turned to the head with an item the frame shows by its back. */
 static unsigned input_openxr_outlines(input_openxr_t *st,
       const video_xr_quad_set_t *set, XrSpace space, XrSwapchain cursor,
       unsigned lit, bool menu, const XrCompositionLayerBaseHeader **layers,
@@ -1634,6 +1634,7 @@ static unsigned input_openxr_outlines(input_openxr_t *st,
       const video_xr_quad_t *q = &set->quads[i];
       video_xr_quad_t outline;
       unsigned bright;
+      bool back = ((st->frame->backs >> i) & 1u) != 0;
       if (     q->slot >= VIDEO_XR_MAX_SLOTS || (done & (1u << q->slot))
             || set->slots[q->slot].fixed
             || (q->kind == VIDEO_XR_QUAD_MENU) != menu)
@@ -1641,6 +1642,8 @@ static unsigned input_openxr_outlines(input_openxr_t *st,
       done     |= 1u << q->slot;
       bright    = (lit >> q->slot) & 1u;
       video_xr_outline(q, &outline);
+      if (back)
+         video_xr_turn_back(&outline.pose);
       layers[n] = input_openxr_edit_layer(&st->outlines[n], &outline,
             space, cursor, VIDEO_XR_OUTLINE_X(bright), 0,
             VIDEO_XR_OUTLINE_DIM, VIDEO_XR_OUTLINE_DIM);
@@ -1649,6 +1652,8 @@ static unsigned input_openxr_outlines(input_openxr_t *st,
       {
          video_xr_quad_t handle;
          video_xr_menu_handle(q, &handle);
+         if (back)
+            video_xr_turn_back(&handle.pose);
          layers[n] = input_openxr_edit_layer(&st->outlines[n], &handle,
                space, cursor, VIDEO_XR_HANDLE_X(bright), VIDEO_XR_HANDLE_Y,
                VIDEO_XR_HANDLE_COLS, VIDEO_XR_HANDLE_ROWS);
@@ -1821,6 +1826,7 @@ static unsigned input_openxr_frame_layers(void *user, XrTime time,
    {
       int q;
       float u, v, size;
+      video_xr_quad_t on;
       float t                   = 0.0f;
       video_xr_pose_t pose;
       XrCompositionLayerQuad *l = &st->cursors[dots];
@@ -1840,7 +1846,14 @@ static unsigned input_openxr_frame_layers(void *user, XrTime time,
       if (q < 0)
          continue;
       pointed[h] = (int)set->quads[q].slot;
-      size       = video_xr_cursor(&set->quads[q], u, v, t, &pose);
+      on         = set->quads[q];
+      /* On a back, facing the head as the back does. */
+      if ((st->frame->backs >> q) & 1u)
+      {
+         video_xr_turn_back(&on.pose);
+         u = 1.0f - u;
+      }
+      size       = video_xr_cursor(&on, u, v, t, &pose);
       l->type                             = XR_TYPE_COMPOSITION_LAYER_QUAD;
       l->next                             = NULL;
       l->subImage.imageRect.offset.x      = 0;

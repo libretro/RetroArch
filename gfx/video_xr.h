@@ -409,6 +409,15 @@ void video_xr_place(const video_xr_params_t *p, video_xr_quad_set_t *out);
 bool video_xr_ray_hit(const video_xr_quad_t *q, const video_xr_vec3_t *origin,
       const video_xr_vec3_t *dir, float *u, float *v, float *t);
 
+/* Whether eye is behind q's plane, where runtimes draw nothing of a
+ * quad layer. */
+bool video_xr_quad_behind(const video_xr_quad_t *q,
+      const video_xr_vec3_t *eye);
+
+/* pose turned half round its own up: in the same plane, facing the
+ * other way. */
+void video_xr_turn_back(video_xr_pose_t *pose);
+
 /* A point on a quad as packed-frame pointer coordinates: any copy of a
  * screen lands in its EYE_NONE or left view at the same fraction, a
  * whole frame spreads over the frame. map and frame_dims are the
@@ -451,7 +460,9 @@ void video_xr_place_window(const video_xr_params_t *p, bool menu,
  * neighbour; the menu's faint and bright handle bars,
  * VIDEO_XR_HANDLE_COLS by VIDEO_XR_HANDLE_ROWS, light inside a dark
  * band; the beam's strips to the dot and into nothing (miss 0 and 1),
- * VIDEO_XR_BEAM_LEN long from the hand along x; edit mode's tags, one
+ * VIDEO_XR_BEAM_LEN long from the hand along x; a screen's back, a
+ * solid VIDEO_XR_BACK_CELL square whose middle VIDEO_XR_BACK_DIM square
+ * a back shows, so filtering takes in nothing else; edit mode's tags, one
  * for each item it can choose (0, the laser; a slot plus one, a screen
  * or the menu), VIDEO_XR_TAG_COLS by VIDEO_XR_TAG_ROWS, written by
  * video_xr_tag_pixels. */
@@ -474,8 +485,14 @@ void video_xr_place_window(const video_xr_params_t *p, bool menu,
    (VIDEO_XR_OUTLINE_X(2) + (lit) * (VIDEO_XR_HANDLE_COLS + 1))
 #define VIDEO_XR_BEAM_X(miss) \
    (VIDEO_XR_HANDLE_X(2) + (miss) * (VIDEO_XR_BEAM_LEN + 1))
+#define VIDEO_XR_BACK_DIM       8
+#define VIDEO_XR_BACK_MARGIN    4
+#define VIDEO_XR_BACK_CELL      (VIDEO_XR_BACK_DIM + 2 * VIDEO_XR_BACK_MARGIN)
+/* Before the tags, so a runtime too narrow for them keeps it. */
+#define VIDEO_XR_BACK_X         VIDEO_XR_BEAM_X(2)
 #define VIDEO_XR_TAG_X(tag) \
-   (VIDEO_XR_BEAM_X(2) + (tag) * (VIDEO_XR_TAG_COLS + 1))
+   (VIDEO_XR_BACK_X + VIDEO_XR_BACK_CELL + 1 \
+    + (tag) * (VIDEO_XR_TAG_COLS + 1))
 #define VIDEO_XR_CURSOR_W \
    (VIDEO_XR_TAG_X(VIDEO_XR_TAGS - 1) + VIDEO_XR_TAG_COLS)
 /* The image without the tags, for a runtime whose swapchains are
@@ -486,16 +503,20 @@ void video_xr_place_window(const video_xr_params_t *p, bool menu,
 #define VIDEO_XR_HANDLE_Y       ((VIDEO_XR_CURSOR_H - VIDEO_XR_HANDLE_ROWS) / 2)
 #define VIDEO_XR_BEAM_Y         ((VIDEO_XR_CURSOR_H - VIDEO_XR_BEAM_ROWS) / 2)
 #define VIDEO_XR_TAG_Y          ((VIDEO_XR_CURSOR_H - VIDEO_XR_TAG_ROWS) / 2)
+#define VIDEO_XR_BACK_Y         ((VIDEO_XR_CURSOR_H - VIDEO_XR_BACK_CELL) / 2)
 /* The beam's strips: white at this level, fading in over their first
  * FADE_IN texels; the one into nothing out over its last FADE_OUT. */
 #define VIDEO_XR_BEAM_LEVEL     160
 #define VIDEO_XR_BEAM_FADE_IN   8
 #define VIDEO_XR_BEAM_FADE_OUT  32
+/* A back's grey, opaque. */
+#define VIDEO_XR_BACK_LEVEL     40
 
 /* Its pixels, RGBA8 premultiplied, grey so RGBA and BGRA hold the same
  * bytes: a white dot with a dark rim and a one-pixel soft edge; outline
  * rims and handle bars in black and white, the faint ones at
- * VIDEO_XR_OUTLINE_FAINT alpha; white beam strips. px holds
+ * VIDEO_XR_OUTLINE_FAINT alpha; white beam strips; the back's grey
+ * cell. px holds
  * VIDEO_XR_CURSOR_W by VIDEO_XR_CURSOR_H times four bytes. */
 void video_xr_cursor_pixels(uint8_t *px);
 
@@ -549,7 +570,8 @@ void video_xr_menu_handle(const video_xr_quad_t *menu, video_xr_quad_t *out);
  * the menu only around its handle, at (u, v) in the menu's own frame:
  * on the bar before anything, even a nearer screen; in its margin,
  * which on a small menu reaches onto the menu's bottom edge, only where
- * it meets nothing else. Through the menu, what is behind. */
+ * it meets nothing else. Through the menu, what is behind. Edit mode
+ * meets either face, so an item turned away stays in reach. */
 int video_xr_pick(const video_xr_quad_set_t *set, unsigned laser,
       bool menu_open, const video_xr_vec3_t *origin,
       const video_xr_vec3_t *dir, float *u, float *v, float *t);

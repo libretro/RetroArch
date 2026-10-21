@@ -884,8 +884,8 @@ static void test_cursor_narrow(void)
    CHECK(openxr_frame_cursor_w(&f) == VIDEO_XR_CURSOR_W,
          "wide enough: %u wide", openxr_frame_cursor_w(&f));
    rt.max_width = VIDEO_XR_CURSOR_W - 1;
-   CHECK(openxr_frame_cursor_w(&f) == w && w == VIDEO_XR_BEAM_X(1)
-         + VIDEO_XR_BEAM_LEN, "too narrow: %u wide, want %u",
+   CHECK(openxr_frame_cursor_w(&f) == w && w == VIDEO_XR_BACK_X
+         + VIDEO_XR_BACK_CELL, "too narrow: %u wide, want %u",
          openxr_frame_cursor_w(&f), w);
    video_xr_cursor_pixels(plain);
    t_font_make();
@@ -3706,14 +3706,14 @@ static void test_frame_inline(void)
       memset(q, 0, sizeof(q));
       for (i = 0; i < 4; i++)
          kept[i] = (const XrCompositionLayerBaseHeader*)&q[i];
-      q[0].subImage.swapchain = sc.slots[1].swapchains[0];
-      q[1].subImage.swapchain = sc.slots[2].swapchains[0];
-      q[2].subImage.swapchain = sc.slots[VIDEO_XR_MENU_SLOT].swapchains[0];
-      CHECK(     openxr_frame_fit(&f, kept, 4, 0, 3) == 3
+      /* The frame's end left the menu third. */
+      CHECK(     f.menu_layer == 2
+            && openxr_frame_fit(&f, kept, 4, 0, 3) == 3
             && kept[0] == (const XrCompositionLayerBaseHeader*)&q[0]
             && kept[1] == (const XrCompositionLayerBaseHeader*)&q[2]
             && kept[2] == (const XrCompositionLayerBaseHeader*)&q[3],
-            "not the second screen dropped");
+            "the menu at %d; not the second screen dropped",
+            f.menu_layer);
    }
    openxr_frame_stop_inline(&f);
    openxr_slot_destroy(&sc, 1);
@@ -3788,7 +3788,7 @@ static void test_slot_resize(void)
    video_xr_quad_set_t set;
    XrSwapchain old0;
    uint32_t max_layers;
-   unsigned n = 0, i, destroyed, idx[2];
+   unsigned n = 0, destroyed, idx[2];
    const unsigned menu = VIDEO_XR_MENU_SLOT;
    int cb_user         = 0;
 
@@ -3972,6 +3972,10 @@ static void test_slot_resize(void)
 
    /* The menu resized: its old swapchain is still the menu's at the
     * runtime's layer count. */
+   CHECK(     openxr_slot_create(&sc, 1, 44, false, VIDEO_SCALE_PACK(64, 64),
+               1, t_images_cb, &cb_user, &n)
+         && openxr_slot_acquire(&sc, 1, idx), "menu: a screen");
+   openxr_slot_release(&sc, 1);
    CHECK(     openxr_slot_create(&sc, menu, 44, false,
                VIDEO_SCALE_PACK(64, 64), 1, t_images_cb, &cb_user, &n)
          && openxr_slot_acquire(&sc, menu, idx), "menu");
@@ -3979,21 +3983,25 @@ static void test_slot_resize(void)
    old0 = sc.slots[menu].swapchains[0];
    CHECK(openxr_slot_create(&sc, menu, 44, false, VIDEO_SCALE_PACK(96, 64),
             1, t_images_cb, &cb_user, &n), "menu: resize");
+   memset(&set, 0, sizeof(set));
+   set.num_quads     = 3;
+   set.quads[0].slot = 1;
+   set.quads[1].slot = 1;
+   set.quads[2].kind = VIDEO_XR_QUAD_MENU;
+   set.quads[2].slot = menu;
+   openxr_frame_publish(&f, &set);
    max_layers    = rt.max_layers;
    rt.max_layers = 3;
    {
-      XrCompositionLayerQuad q[4];
-      const XrCompositionLayerBaseHeader *kept[4];
-      memset(q, 0, sizeof(q));
-      for (i = 0; i < 4; i++)
-         kept[i] = (const XrCompositionLayerBaseHeader*)&q[i];
-      q[0].subImage.swapchain = sc.slots[1].swapchains[0];
-      q[1].subImage.swapchain = sc.slots[1].swapchains[0];
-      q[2].subImage.swapchain = old0;
-      CHECK(     openxr_frame_fit(&f, kept, 4, 0, 3) == 3
-            && kept[0] == (const XrCompositionLayerBaseHeader*)&q[0]
-            && kept[1] == (const XrCompositionLayerBaseHeader*)&q[2]
-            && kept[2] == (const XrCompositionLayerBaseHeader*)&q[3],
+      XrCompositionLayerQuad layers[VIDEO_XR_MAX_QUADS], host;
+      const XrCompositionLayerBaseHeader *ptrs[VIDEO_XR_MAX_QUADS + 1];
+      unsigned got = openxr_frame_layers(&f, 0, layers, ptrs);
+      ptrs[got]    = (const XrCompositionLayerBaseHeader*)&host;
+      CHECK(     got == 3 && layers[2].subImage.swapchain == old0
+            && openxr_frame_fit(&f, ptrs, 4, 0, 3) == 3
+            && ptrs[0] == (const XrCompositionLayerBaseHeader*)&layers[0]
+            && ptrs[1] == (const XrCompositionLayerBaseHeader*)&layers[2]
+            && ptrs[2] == (const XrCompositionLayerBaseHeader*)&host,
             "fit: the menu's old swapchain dropped as a screen");
    }
    rt.max_layers = max_layers;
@@ -8140,6 +8148,219 @@ static void test_frame_layer_budget(void)
    t_grab_free(&rt, &s, &sc, &f);
 }
 
+/* Whether l is the back of q, a quad facing +Z: the laser image's
+ * dark square in q's place at its size, opaque, facing -Z, up still
+ * up. */
+static bool t_back_of(const XrCompositionLayerQuad *l,
+      const video_xr_quad_t *q, XrSwapchain cursor)
+{
+   video_xr_quat_t o;
+   video_xr_vec3_t y, z;
+   o.x = l->pose.orientation.x;
+   o.y = l->pose.orientation.y;
+   o.z = l->pose.orientation.z;
+   o.w = l->pose.orientation.w;
+   y.x = 0.0f; y.y = 1.0f; y.z = 0.0f;
+   z.x = 0.0f; z.y = 0.0f; z.z = 1.0f;
+   video_xr_rotate(&o, &y, &y);
+   video_xr_rotate(&o, &z, &z);
+   return l->subImage.swapchain == cursor
+      && l->subImage.imageRect.offset.x
+         == VIDEO_XR_BACK_X + VIDEO_XR_BACK_MARGIN
+      && l->subImage.imageRect.offset.y
+         == VIDEO_XR_BACK_Y + VIDEO_XR_BACK_MARGIN
+      && l->subImage.imageRect.extent.width == VIDEO_XR_BACK_DIM
+      && l->subImage.imageRect.extent.height == VIDEO_XR_BACK_DIM
+      && !l->layerFlags
+      && t_near(l->size.width, q->width)
+      && t_near(l->size.height, q->height)
+      && t_near(l->pose.position.x, q->pose.position.x)
+      && t_near(l->pose.position.y, q->pose.position.y)
+      && t_near(l->pose.position.z, q->pose.position.z)
+      && t_near(y.y, 1.0f) && t_near(z.z, -1.0f);
+}
+
+/* A head behind a quad's plane, where runtimes draw nothing of it: the
+ * back in the quad's place, in no more layers, the menu's too, and kept
+ * as the menu by a runtime short of layers; the front from in front,
+ * with no head or with no laser image, each quad as the head is to it;
+ * Follow Head's head is its space's origin. The input sees the items
+ * where they are, and which show their backs. */
+static void test_frame_backs(void)
+{
+   openxr_runtime_t rt;
+   openxr_session_t s;
+   openxr_swapchains_t sc;
+   openxr_frame_t f;
+   video_xr_quad_set_t set;
+   unsigned i, n, count;
+   uint32_t max_layers;
+   unsigned made = 0;
+   int cb_user   = 0;
+   bool fronts   = true;
+   bool backs    = true;
+   XrCompositionLayerQuad layers[VIDEO_XR_MAX_QUADS];
+   const XrCompositionLayerBaseHeader *ptrs[VIDEO_XR_MAX_QUADS];
+   const XrCompositionLayerBaseHeader *kept[5];
+   const XrSwapchain cursor = (XrSwapchain)(uintptr_t)0x900;
+
+   t_grab_frame(&rt, &s, &sc, &f, &set);
+   max_layers = rt.max_layers;
+   openxr_slot_create(&sc, VIDEO_XR_MENU_SLOT, 44, false,
+         VIDEO_SCALE_PACK(64, 64), 1, t_images_cb, &cb_user, &made);
+   retro_atomic_store_release_int(&sc.slots[VIDEO_XR_MENU_SLOT].content, 1);
+   set.num_quads                        = 4;
+   set.quads[3]                         = set.quads[2];
+   set.quads[3].kind                    = VIDEO_XR_QUAD_MENU;
+   set.quads[3].slot                    = VIDEO_XR_MENU_SLOT;
+   set.quads[3].pose.position.y         = 0.0f;
+   set.quads[3].pose.position.z         = -1.7f;
+   set.quads[3].width                   = 1.0f;
+   set.quads[3].height                  = 0.6f;
+   set.slots[VIDEO_XR_MENU_SLOT].layers = 1;
+   openxr_frame_publish(&f, &set);
+   f.cursor       = cursor;
+   f.extra_layers = t_extra_layers;
+   t_head_tracked = true;
+   memset(&t_head, 0, sizeof(t_head));
+   t_head.orientation.w = 1.0f;
+
+   openxr_frame_place_screens(&f, 1000);
+   n = openxr_frame_layers(&f, 1000, layers, ptrs);
+   for (i = 0; i < n; i++)
+      fronts &= layers[i].subImage.swapchain != cursor;
+   CHECK(n == 4 && fronts && !f.backs
+         && layers[3].layerFlags
+            == XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT,
+         "in front: %u layers, fronts %d, backs %x", n, (int)fronts,
+         (unsigned)f.backs);
+   /* Short of layers, after a projection: a screen goes, never the
+    * menu. */
+   kept[0] = NULL;
+   memcpy(&kept[1], ptrs, 4 * sizeof(*ptrs));
+   rt.max_layers = 3;
+   CHECK(     openxr_frame_fit(&f, kept, 5, 1, 5) == 3
+         && kept[2] == (const XrCompositionLayerBaseHeader*)&layers[3],
+         "in front, 3 layers: the menu dropped");
+   rt.max_layers = max_layers;
+   openxr_frame_run(&f);
+   count = t_last_layer_count;
+
+   /* 1.2 m behind the screens. */
+   t_head.position.z = -3.0f;
+   openxr_frame_place_screens(&f, 2000);
+   n = openxr_frame_layers(&f, 2000, layers, ptrs);
+   for (i = 0; i < n; i++)
+      backs &= t_back_of(&layers[i], &set.quads[i], cursor);
+   CHECK(n == 4 && backs && f.backs == 0xfu
+         && layers[0].eyeVisibility == XR_EYE_VISIBILITY_LEFT
+         && layers[1].eyeVisibility == XR_EYE_VISIBILITY_RIGHT,
+         "behind: %u layers, backs %d (%x), first at %.2f facing %.2f",
+         n, (int)backs, (unsigned)f.backs, layers[0].pose.position.z,
+         layers[0].pose.orientation.y);
+   /* Short of layers, a screen's back goes, never the menu's. */
+   rt.max_layers = 3;
+   CHECK(     openxr_frame_fit(&f, ptrs, 4, 0, 4) == 3
+         && ptrs[2] == (const XrCompositionLayerBaseHeader*)&layers[3],
+         "behind, 3 layers: the menu's back dropped");
+   rt.max_layers = max_layers;
+   openxr_frame_run(&f);
+   CHECK(t_last_layer_count == count && t_last_layer_count == 5
+         && t_near(t_extra_shown.quads[0].pose.orientation.w, 1.0f)
+         && t_near(t_extra_shown.quads[3].pose.orientation.w, 1.0f)
+         && f.backs == 0xfu,
+         "a whole frame from behind: %u layers, %u in front; the input "
+         "saw screen 1 turned %.2f", t_last_layer_count, count,
+         t_extra_shown.quads[0].pose.orientation.w);
+
+   /* Between the menu and the screens: the menu's back alone. */
+   t_head.position.z = -1.75f;
+   openxr_frame_place_screens(&f, 3000);
+   n = openxr_frame_layers(&f, 3000, layers, ptrs);
+   CHECK(n == 4 && f.backs == 0x8u
+         && t_back_of(&layers[3], &set.quads[3], cursor)
+         && layers[0].subImage.swapchain != cursor,
+         "behind the menu only: backs %x", (unsigned)f.backs);
+
+   /* A runtime too narrow for the tags keeps the back. */
+   t_head.position.z = -3.0f;
+   rt.max_width      = 2048;
+   openxr_frame_place_screens(&f, 4000);
+   n = openxr_frame_layers(&f, 4000, layers, ptrs);
+   CHECK(openxr_frame_cursor_w(&f) == VIDEO_XR_CURSOR_UNTAGGED_W
+         && n == 4 && t_back_of(&layers[0], &set.quads[0], cursor)
+         && layers[0].subImage.imageRect.offset.x
+            + layers[0].subImage.imageRect.extent.width
+            + VIDEO_XR_BACK_MARGIN <= openxr_frame_cursor_w(&f),
+         "narrow: %u wide, the back from %d", openxr_frame_cursor_w(&f),
+         (int)layers[0].subImage.imageRect.offset.x);
+
+   /* No head, or no laser image: the fronts. */
+   t_head_tracked = false;
+   openxr_frame_place_screens(&f, 5000);
+   n = openxr_frame_layers(&f, 5000, layers, ptrs);
+   CHECK(n == 4 && !f.backs && layers[0].subImage.swapchain != cursor,
+         "no head: backs %x", (unsigned)f.backs);
+   t_head_tracked = true;
+   f.cursor       = XR_NULL_HANDLE;
+   openxr_frame_place_screens(&f, 6000);
+   n = openxr_frame_layers(&f, 6000, layers, ptrs);
+   CHECK(n == 4 && !f.backs && layers[0].subImage.swapchain,
+         "no laser image: backs %x", (unsigned)f.backs);
+   f.cursor = cursor;
+
+   /* Follow Head, screen 2 turned away: its back alone, with no locate. */
+   t_head_tracked       = false;
+   set.quads[2].pose.orientation.y = 1.0f;
+   set.quads[2].pose.orientation.w = 0.0f;
+   openxr_frame_publish(&f, &set);
+   openxr_frame_set_placement(&f, VIDEO_OPENXR_PLACEMENT_FOLLOW);
+   openxr_frame_place_screens(&f, 7000);
+   n = openxr_frame_layers(&f, 7000, layers, ptrs);
+   CHECK(n == 4 && f.backs == 0x4u
+         && layers[2].subImage.swapchain == cursor
+         && layers[0].subImage.swapchain != cursor,
+         "Follow Head: backs %x", (unsigned)f.backs);
+
+   /* The menu closed: no layer is the menu's. */
+   set.num_quads = 3;
+   openxr_frame_publish(&f, &set);
+   n = openxr_frame_layers(&f, 8000, layers, ptrs);
+   CHECK(n == 3 && f.menu_layer == -1, "the menu closed: the menu at %d",
+         f.menu_layer);
+   f.extra_layers = NULL;
+   openxr_slot_destroy(&sc, VIDEO_XR_MENU_SLOT);
+   t_grab_free(&rt, &s, &sc, &f);
+   t_head_tracked = false;
+}
+
+/* The back's square and the texel round it filtering reaches: its
+ * grey, opaque, at full width and without the tags, top down and
+ * bottom up. */
+static void test_cursor_backs(void)
+{
+   static uint8_t px[VIDEO_XR_CURSOR_W * VIDEO_XR_CURSOR_H * 4];
+   const unsigned x0 = VIDEO_XR_BACK_X + VIDEO_XR_BACK_MARGIN - 1;
+   const unsigned y0 = VIDEO_XR_BACK_Y + VIDEO_XR_BACK_MARGIN - 1;
+   unsigned k, x, y;
+   for (k = 0; k < 4; k++)
+   {
+      unsigned w   = (k & 1) ? VIDEO_XR_CURSOR_UNTAGGED_W : VIDEO_XR_CURSOR_W;
+      unsigned bad = 0;
+      openxr_frame_cursor_pixels(px, w, k >= 2);
+      for (y = y0; y < y0 + VIDEO_XR_BACK_DIM + 2; y++)
+         for (x = x0; x < x0 + VIDEO_XR_BACK_DIM + 2; x++)
+         {
+            const uint8_t *t = px + ((size_t)y * w + x) * 4;
+            if (     t[0] != VIDEO_XR_BACK_LEVEL || t[1] != t[0]
+                  || t[2] != t[0] || t[3] != 255)
+               bad++;
+         }
+      CHECK(!bad, "%u wide%s: %u texels round the back's square are not "
+            "its grey", w, (k >= 2) ? ", bottom up" : "", bad);
+   }
+}
+
 int main(void)
 {
    test_runtime();
@@ -8200,6 +8421,8 @@ int main(void)
    test_frame_grabs_snap_two();
    test_frame_grabs_threaded();
    test_frame_layer_budget();
+   test_frame_backs();
+   test_cursor_backs();
    test_cursor_tags();
    test_cursor_tag_lines();
    test_cursor_narrow();

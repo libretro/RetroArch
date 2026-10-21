@@ -2912,7 +2912,7 @@ static void test_cursor_pixels(void)
    CHECK(column_clear(VIDEO_XR_HANDLE_X(1) - 1));
    CHECK(column_clear(VIDEO_XR_BEAM_X(0) - 1));
    CHECK(column_clear(VIDEO_XR_BEAM_X(1) - 1));
-   CHECK(VIDEO_XR_BEAM_X(1) + VIDEO_XR_BEAM_LEN + 1 == VIDEO_XR_TAG_X(0));
+   CHECK(VIDEO_XR_BEAM_X(1) + VIDEO_XR_BEAM_LEN + 1 == VIDEO_XR_BACK_X);
    /* The beam's strips: white, faded in at the hand; the one into
     * nothing faded out at its far end too; mid-height, nothing above or
     * below them. */
@@ -2945,7 +2945,7 @@ static void test_tag_pixels(void)
    unsigned x, y;
    int clear = 1;
    CHECK(VIDEO_XR_TAGS == VIDEO_XR_MENU_SLOT + 2);
-   CHECK(VIDEO_XR_TAG_X(0) == VIDEO_XR_BEAM_X(1) + VIDEO_XR_BEAM_LEN + 1);
+   CHECK(VIDEO_XR_TAG_X(0) == VIDEO_XR_BACK_X + VIDEO_XR_BACK_CELL + 1);
    CHECK(VIDEO_XR_TAG_X(VIDEO_XR_TAGS - 1) + VIDEO_XR_TAG_COLS
          == VIDEO_XR_CURSOR_W);
    CHECK(2 * VIDEO_XR_TAG_Y + VIDEO_XR_TAG_ROWS == VIDEO_XR_CURSOR_H);
@@ -2973,6 +2973,89 @@ static void test_tag_pixels(void)
          && texel(x0 + 61, y0 + r - 7)[3] == f
          && texel(x0 + 61, y0 + r - 6)[3] == 0
          && texel(x0 + 61, y0 + 10)[3] == 0);
+}
+
+/* A screen's back: a solid cell after the beam strips, before the
+ * tags, so a runtime too narrow for the tags keeps it; centred on the
+ * middle row, the square a back shows kept its margin inside, so
+ * filtering takes in nothing else. Opaque dark grey. */
+static void test_back_pixels(void)
+{
+   const unsigned x0 = VIDEO_XR_BACK_X;
+   const unsigned y0 = VIDEO_XR_BACK_Y;
+   const uint8_t l   = VIDEO_XR_BACK_LEVEL;
+   unsigned x, y;
+   int solid = 1;
+   CHECK(VIDEO_XR_BACK_X == VIDEO_XR_BEAM_X(1) + VIDEO_XR_BEAM_LEN + 1);
+   CHECK(VIDEO_XR_BACK_CELL
+         == VIDEO_XR_BACK_DIM + 2 * VIDEO_XR_BACK_MARGIN);
+   CHECK(VIDEO_XR_BACK_MARGIN >= 2);
+   CHECK(VIDEO_XR_CURSOR_UNTAGGED_W == x0 + VIDEO_XR_BACK_CELL);
+   CHECK(2 * VIDEO_XR_BACK_Y + VIDEO_XR_BACK_CELL == VIDEO_XR_CURSOR_H);
+   CHECK(l > 0 && l < 64);
+   video_xr_cursor_pixels(t_atlas);
+   for (y = y0; y < y0 + VIDEO_XR_BACK_CELL; y++)
+      for (x = x0; x < x0 + VIDEO_XR_BACK_CELL; x++)
+         solid &= texel(x, y)[0] == l && texel(x, y)[1] == l
+            && texel(x, y)[2] == l && texel(x, y)[3] == 255;
+   CHECK(solid);
+   CHECK(column_clear(x0 - 1) && column_clear(x0 + VIDEO_XR_BACK_CELL));
+   CHECK(!texel(x0, y0 - 1)[3] && !texel(x0, y0 + VIDEO_XR_BACK_CELL)[3]);
+}
+
+/* A quad's back: its plane, its front the other way, its up the same;
+ * the head is behind it on the far side of its front. Edit mode picks
+ * by the plane, so a hand behind meets the back where the front is;
+ * other lasers only the front. */
+static void test_back_pick(void)
+{
+   video_xr_quad_set_t set;
+   video_xr_quad_t q;
+   video_xr_vec3_t o, d, eye, ax, az;
+   float u = 0.0f, v = 0.0f, t = 0.0f;
+   memset(&q, 0, sizeof(q));
+   q.pose.orientation.y = (float)sin(M_PI / 12.0);
+   q.pose.orientation.w = (float)cos(M_PI / 12.0);
+   q.pose.position.z    = -1.8f;
+   q.width              = 1.6f;
+   q.height             = 0.96f;
+   q.kind               = VIDEO_XR_QUAD_SCREEN;
+   q.screen             = 1;
+   set.quads[0]         = q;
+   video_xr_turn_back(&set.quads[0].pose);
+   ax.x = 1.0f; ax.y = 0.0f; ax.z = 0.0f;
+   video_xr_rotate(&set.quads[0].pose.orientation, &ax, &ax);
+   az.x = 0.0f; az.y = 0.0f; az.z = 1.0f;
+   video_xr_rotate(&set.quads[0].pose.orientation, &az, &az);
+   CHECK(pos_is(&set.quads[0], 0.0, 0.0, -1.8));
+   CHECK(vec_is(&ax, -cos(M_PI / 6.0), 0.0, sin(M_PI / 6.0)));
+   CHECK(vec_is(&az, -sin(M_PI / 6.0), 0.0, -cos(M_PI / 6.0)));
+   eye.x = 0.0f; eye.y = 0.3f; eye.z = 0.0f;
+   CHECK(!video_xr_quad_behind(&q, &eye));
+   CHECK(video_xr_quad_behind(&set.quads[0], &eye));
+   eye.z = -3.0f;
+   CHECK(video_xr_quad_behind(&q, &eye));
+   CHECK(!video_xr_quad_behind(&set.quads[0], &eye));
+
+   /* Square on, from behind, 40 cm right and 20 up of its middle. */
+   memset(&set, 0, sizeof(set));
+   set.quads[0]                  = q;
+   video_xr_pose_identity(&set.quads[0].pose);
+   set.quads[0].pose.position.z  = -1.8f;
+   set.num_quads                 = 1;
+   o.x = 0.4f; o.y = 0.2f; o.z = -3.0f;
+   d.x = 0.0f; d.y = 0.0f; d.z = 1.0f;
+   CHECK(video_xr_pick_edit(&set, false, &o, &d, &u, &v, &t, NULL) == 0);
+   CHECK(NEAR(u, 0.75) && NEAR(v, 0.5 - 0.2 / 0.96) && NEAR(t, 1.2));
+   CHECK(video_xr_pick(&set, VIDEO_OPENXR_LASER_ALWAYS, true,
+            &o, &d, &u, &v, &t) == -1);
+   /* The menu's handle bar too. */
+   set.quads[0].kind = VIDEO_XR_QUAD_MENU;
+   o.x = 0.0f;
+   o.y = -0.531f;
+   CHECK(video_xr_pick_edit(&set, false, &o, &d, &u, &v, &t, NULL) == 0);
+   CHECK(video_xr_pick(&set, VIDEO_OPENXR_LASER_ALWAYS, true,
+            &o, &d, &u, &v, &t) == -1);
 }
 
 /* The tag: 5 cm over the hand, its face towards the eye, its x level;
@@ -4442,6 +4525,8 @@ int main(void)
    test_beam();
    test_cursor_pixels();
    test_tag_pixels();
+   test_back_pixels();
+   test_back_pick();
    test_tag_pose();
    test_outline();
    test_compose();

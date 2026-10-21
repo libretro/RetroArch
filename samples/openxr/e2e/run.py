@@ -4143,16 +4143,23 @@ HANDLE_X = tuple(OUTLINE_X[0] + 2 * (OUTLINE_DIM + 1) + k * (HANDLE_COLS + 1)
                  for k in (0, 1))
 BEAM_X = tuple(HANDLE_X[0] + 2 * (HANDLE_COLS + 1) + k * (BEAM_LEN + 1)
                for k in (0, 1))
+# A back's solid cell after the beam strips; a back shows the square
+# BACK_MARGIN inside it, centred on the middle row.
+BACK_DIM, BACK_MARGIN, BACK_LEVEL = 8, 4, 40
+BACK_CELL = BACK_DIM + 2 * BACK_MARGIN
+BACK_X = BEAM_X[1] + BEAM_LEN + 1
+BACK_Y = (OUTLINE_DIM - BACK_CELL) // 2
+BACK_RECT = (BACK_X + BACK_MARGIN, BACK_Y + BACK_MARGIN, BACK_DIM, BACK_DIM)
 # Edit mode's tags, one cell for each item it can choose (0, the laser;
-# a slot plus one), after the beam strips, each centred on the middle
+# a slot plus one), after the back's cell, each centred on the middle
 # row.
 TAG_COLS, TAG_ROWS, TAGS = 128, 30, 10
-TAG_X = tuple(BEAM_X[1] + BEAM_LEN + 1 + k * (TAG_COLS + 1)
+TAG_X = tuple(BACK_X + BACK_CELL + 1 + k * (TAG_COLS + 1)
               for k in range(TAGS))
 TAG_Y = (OUTLINE_DIM - TAG_ROWS) // 2
 CURSOR_W = TAG_X[-1] + TAG_COLS
 # Its width without the tags, for runtimes too narrow for them.
-CURSOR_PLAIN_W = BEAM_X[1] + BEAM_LEN
+CURSOR_PLAIN_W = BACK_X + BACK_CELL
 TAG_HEIGHT, TAG_LIFT, TAG_FAINT = 0.02, 0.05, 160
 CURSOR_H = OUTLINE_DIM
 # The beam: VIDEO_XR_BEAM_WIDTH, _REACH and _LEVEL; AIM_GUN's and
@@ -6034,6 +6041,78 @@ def check_edit_tag(res):
     return errors
 
 
+def check_edit_back(res):
+    """From behind, each of screen 1's quads shows its back in its place:
+    the laser's image's dark square, opaque, at its size, facing the
+    head; every other item too, in no more layers. Its outline faces
+    the head too, lit by the hand that points at the back."""
+    errors = edit_log_errors(res, ['on', 'off'])
+    front = between(res, 'front', 'turn', pick=edit_screen0, delay=0.5)
+    behind = between(res, 'behind', 'end', pick=edit_screen0, delay=0.5)
+    if not front or not behind:
+        return errors + ['%d frames in front, %d behind'
+                         % (len(front), len(behind))]
+    want = edit_screen0(front[-1])
+    dots = cursors(front[-1])
+    items = [q for q in quads(front[-1]) if dots and q['sc'] != dots[0]['sc']]
+    if len(want) != 2 or len(items) < 3 \
+            or any(tuple(q['rect']) == BACK_RECT for q in items):
+        return errors + ['in front: %s' % [q['rect'] for q in items]]
+    for f in behind:
+        qs = edit_screen0(f)
+        backs = [q for q in quads(f) if tuple(q['rect']) == BACK_RECT
+                 and not q['flags'] & BLEND]
+        if len(quads(f)) != len(quads(front[-1])) or len(qs) != 2 \
+                or len(backs) != len(items):
+            return errors + ['from behind %d layers, %d backs; in front %d '
+                             'layers, %d items'
+                             % (len(quads(f)), len(backs),
+                                len(quads(front[-1])), len(items))]
+        for q, w in zip(qs, want):
+            z = qrot(tuple(q['pose'][3:]), (0.0, 0.0, 1.0))
+            if tuple(q['rect']) != BACK_RECT \
+                    or not near3(q['pose'][:3], w['pose'][:3]) \
+                    or not near(q['size'], w['size'], 1e-4) or z[2] > -0.999:
+                return errors + ['screen 1 from behind: rect %s at %s, %s, '
+                                 'facing %s; in front at %s, %s'
+                                 % (q['rect'], q['pose'][:3], q['size'], z,
+                                    w['pose'][:3], w['size'])]
+        rims = [q for q in outlines(f) if near3(q['pose'], S0)]
+        z = qrot(tuple(rims[0]['pose'][3:]), (0.0, 0.0, 1.0)) if rims \
+            else (0.0, 0.0, 1.0)
+        if len(rims) != 1 or rims[0]['rect'][0] != OUTLINE_X[1] \
+                or z[2] > -0.999 or rims[0]['pose'][2] > S0[2]:
+            return errors + ['screen 1\'s outline from behind: %s facing %s'
+                             % ([(q['rect'][0], q['pose'][:3]) for q in rims],
+                                z)]
+    snaps = [f for f in behind if f['snap']]
+    if not snaps:
+        return errors + ['no snapshot from behind']
+    w, h, bpp, rows = read_png(image(res, snaps[-1],
+                                     edit_screen0(snaps[-1])[0]))
+    x0, y0, bw, bh = BACK_RECT
+    bad = 0
+    for y in range(y0, y0 + bh):
+        for x in range(x0, x0 + bw):
+            px = rows[y][x * bpp:x * bpp + bpp]
+            if any(abs(c - BACK_LEVEL) > 2 for c in px[:3]) \
+                    or (bpp == 4 and px[3] != 255):
+                bad += 1
+    if bad:
+        errors.append('%d texels of the back are not its dark grey: %s'
+                      % (bad, list(rows[y0][x0 * bpp:x0 * bpp + bpp])))
+    return errors
+
+
+EDIT_BACK_HAND = (0.3, 0.0, -3.3)
+EDIT_BACK_STEPS = edit_start(script(HEAD_AT_ORIGIN, edit_aim(0.3))) + [
+    ('mark', 'front'), ('wait', 1.5), ('mark', 'turn'),
+    ('script', script('head 0 0 -3.6 180',
+                      aim_line(EDIT_BACK_HAND, (0.3, 0.0, -1.8)))),
+    ('wait', 0.5), ('mark', 'behind'), ('wait', 1.5), ('mark', 'end'),
+    ('send', EDIT), ('wait', 2), ('mark', 'off'), ('wait', 1)]
+
+
 EDIT_GRAB_STEPS = edit_start(edit_aim(), 1) + [
     ('mark', 'aimed'), ('wait', 1), ('mark', 'grab'),
     ('script', script(edit_aim(), EDIT_GRIP)), ('wait', 1),
@@ -6471,6 +6550,10 @@ EDIT_CASES += [
      'env': {'RA_XR_LAYER_SNAP_EVERY': '10',
              'RA_XR_LAYER_MAX_WIDTH': '2048'},
      'steps': EDIT_TAG_NARROW_STEPS, 'check': check_edit_tag_narrow},
+    {'name': 'edit-back', 'map': '3ds',
+     'settings': {'video_openxr_placement': '0'},
+     'env': {'RA_XR_LAYER_SNAP_EVERY': '10'}, 'steps': EDIT_BACK_STEPS,
+     'check': check_edit_back},
 ]
 
 
@@ -7756,7 +7839,8 @@ GL_EDIT = ['edit-grab', 'edit-grab-threaded', 'edit-command', 'edit-follow',
            'edit-regrab-threaded', 'edit-handover-threaded', 'edit-reset',
            'edit-outlines', 'edit-outlines-flush', 'edit-beam',
            'edit-fallback', 'edit-no-map', 'edit-lazy', 'edit-two-hands',
-           'edit-choose', 'edit-snap', 'edit-tag', 'edit-tag-narrow']
+           'edit-choose', 'edit-snap', 'edit-tag', 'edit-tag-narrow',
+           'edit-back']
 GL_EDIT_MENU = ['edit-menu-front', 'edit-menu-size']
 for custom_driver in GL_BASE:
     GL_BASE[custom_driver] += [c['name'] for c in CUSTOM_CASES] + GL_EDIT
