@@ -16,7 +16,10 @@ import tempfile
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--mux', action='store_true')
+parser.add_argument('--session', action='store_true')
 args = parser.parse_args()
+if args.session:
+    args.mux = True
 
 if sys.platform != 'darwin':
     raise SystemExit('Native recording pipeline acceptance requires Apple frameworks')
@@ -40,7 +43,7 @@ workspace = (contextlib.nullcontext(artifact_dir) if artifact_dir else
 with workspace as temp:
     directory = Path(temp)
     objects = []
-    for source in ('record/record_gpu_worker_vt.c', 'record/record_gpu_queue.c', 'record/record_audio_queue.c', 'record/record_avfoundation_worker.c',
+    for source in ('record/record_gpu_worker_vt.c', 'record/record_gpu_queue.c', 'record/record_audio_queue.c', 'record/record_avfoundation_worker.c', 'record/record_avfoundation_session.c',
                    'libretro-common/queues/retro_spsc.c', 'libretro-common/formats/h265/rh265_sps_crop.c'):
         obj = directory / (Path(source).stem + '.o')
         subprocess.run(compiler + flags + ['-c', str(root / source), '-o', str(obj)], check=True)
@@ -53,6 +56,8 @@ with workspace as temp:
             str(here / 'pipeline_test.m'), str(root / 'record/record_gpu_capture_metal.m'),
             str(root / 'record/record_mux_avfoundation.m'),
             *objects, '-o', str(binary)]
+        if args.session:
+            command += ['-DRECORD_AVF_SESSION_NATIVE_TEST']
         for framework in ('Foundation', 'Metal', 'CoreVideo', 'CoreMedia', 'VideoToolbox', 'CoreFoundation', 'AVFoundation', 'AudioToolbox'):
             command += ['-framework', framework]
         print('+', shlex.join(command), flush=True)
@@ -63,6 +68,8 @@ with workspace as temp:
                 (1, 10, 0, True, False, False), (1, 10, 1, True, False, False),
                 (1, 10, 0, False, True, False), (1, 10, 1, False, True, False), (1, 10, 2, False, True, False),
                 (1, 10, 1, False, False, True), (1, 10, 1, False, True, True)):
+            if args.session and (control or aperture):
+                continue
             if width != 162 and (depth != 10 or mode == 2 or control or dynamic or aperture):
                 continue
             case = directory / f'{binary.name}-hevc{hevc}-depth{depth}-mode{mode}-cpu{int(control)}-dynamic{int(dynamic)}-aperture{int(aperture)}'
@@ -80,6 +87,10 @@ with workspace as temp:
                 print(f'SKIP: native pipeline {ownership} hevc={hevc} depth={depth} mode={mode}', flush=True)
                 continue
             result.check_returncode()
+            if args.session:
+                coded.write_bytes(subprocess.check_output([ffmpeg, '-v', 'error', '-i', str(movie),
+                    '-map', '0:v:0', '-c:v', 'copy', '-bsf:v',
+                    'hevc_mp4toannexb' if hevc else 'h264_mp4toannexb', '-f', 'hevc' if hevc else 'h264', '-']))
             info = json.loads(subprocess.check_output([ffprobe, '-v', 'error', '-show_streams',
                                                       '-of', 'json', str(coded)]))['streams'][0]
             (case / 'probe.json').write_text(json.dumps(info, indent=2))
@@ -172,7 +183,8 @@ with workspace as temp:
                     amplitude = 2 * abs(sum(v * complex(math.cos(omega * n), math.sin(omega * n))
                                             for n, v in enumerate(values))) / len(values)
                     assert abs(amplitude - .2) < .04, (channel, amplitude)
-                print('PASS: MP4 unchanged VCL/pixels, sync flags/indexed seeks, source video clock and AAC stereo tones/duration', flush=True)
+                print('PASS: owned session independent pixels, sync flags/indexed seeks, source video clock and AAC stereo tones/duration' if args.session else
+                      'PASS: MP4 unchanged VCL/pixels, sync flags/indexed seeks, source video clock and AAC stereo tones/duration', flush=True)
 if failures:
     raise SystemExit('Native pipeline pixel failures: ' + ', '.join(failures))
 if unavailable:

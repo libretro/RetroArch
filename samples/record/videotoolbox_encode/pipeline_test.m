@@ -178,6 +178,7 @@ static int sink_audio(void *data,const int16_t *samples,size_t frames,uint64_t t
 }
 static int sink_finish(void *data)
 { return record_mux_avfoundation_finish(((native_mux_sink_t*)data)->mux); }
+#ifndef RECORD_AVF_SESSION_NATIVE_TEST
 int main(int argc,char **argv)
 {
    int rc=0;
@@ -370,3 +371,7 @@ int main(int argc,char **argv)
    }
    return rc;
 }
+
+#else
+#include "session_native_fixture.h"
+#endif

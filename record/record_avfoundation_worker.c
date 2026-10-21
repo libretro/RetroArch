@@ -76,3 +76,5 @@ bool record_avfoundation_worker_free(record_avfoundation_worker_t *w)
    if (w->started && !w->failed && !w->ended) return false;
    free(w); return true;
 }
+void record_avfoundation_worker_abort(record_avfoundation_worker_t *w)
+{ if (w) w->failed=true; }

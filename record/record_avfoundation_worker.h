@@ -30,5 +30,8 @@ int record_avfoundation_worker_step(record_avfoundation_worker_t *worker);
  * owns mux cancellation, GPU/encoder retirement and PCM drain; freeing this
  * coordinator does not release any borrowed component or in-flight callback. */
 bool record_avfoundation_worker_free(record_avfoundation_worker_t *worker);
+/* Worker-only after stopping service. Marks the coordinator failed so its
+ * bookkeeping can be freed; borrowed components still require retirement. */
+void record_avfoundation_worker_abort(record_avfoundation_worker_t *worker);
 RETRO_END_DECLS
 #endif
