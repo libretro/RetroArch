@@ -46,7 +46,7 @@ jobs:
         run: command -v ffmpeg >/dev/null && command -v ffprobe >/dev/null || brew install ffmpeg
       - name: Portable ownership and failure contracts
         working-directory: samples/record/videotoolbox_encode
-        run: make check thread_test worker_thread_test audio_thread_test && ./thread_test && ./worker_thread_test && ./audio_thread_test
+        run: make check thread_test worker_thread_test audio_thread_test av_session_thread_test && ./thread_test && ./worker_thread_test && ./audio_thread_test && ./av_session_thread_test
       - name: Native hardware encoder and independent pixels
         run: |
           rc=0

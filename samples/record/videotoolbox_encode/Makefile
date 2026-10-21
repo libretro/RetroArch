@@ -10,6 +10,8 @@ CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
 all: av_session_test$(EXE) crop_test$(EXE) av_worker_test$(EXE) audio_queue_test$(EXE) slots_test$(EXE) session_test$(EXE) worker_test$(EXE) audio_rate_test$(EXE)
+av_session_thread_test: av_session_thread_test.c $(RA)/record/record_avfoundation_session.c
+	$(CC) $(CFLAGS) -pthread -o $@ av_session_thread_test.c $(RA)/record/record_avfoundation_session.c $(RA)/record/record_avfoundation_worker.c $(RA)/record/record_gpu_worker_vt.c $(RA)/record/record_gpu_queue.c $(RA)/record/record_audio_queue.c $(RA)/libretro-common/queues/retro_spsc.c $(LDFLAGS)
 av_session_test$(EXE): av_worker_test.c $(RA)/record/record_avfoundation_session.c $(RA)/record/record_avfoundation_session.h
 	$(CC) $(CFLAGS) -Wno-unused-function -DRECORD_AVF_SESSION_TEST -o $@ av_worker_test.c $(RA)/record/record_avfoundation_session.c $(RA)/record/record_avfoundation_worker.c $(RA)/record/record_gpu_worker_vt.c $(RA)/record/record_gpu_queue.c $(RA)/record/record_audio_queue.c $(RA)/libretro-common/queues/retro_spsc.c $(LDFLAGS)
 av_worker_test$(EXE): av_worker_test.c $(RA)/record/record_avfoundation_worker.c $(RA)/record/record_avfoundation_worker.h
@@ -42,7 +44,7 @@ check: all
 	$(RUNNER) ./worker_test$(EXE)
 	$(RUNNER) ./audio_rate_test$(EXE)
 clean:
-	rm -f av_session_test av_session_test.exe
+	rm -f av_session_test av_session_test.exe av_session_thread_test
 	rm -f crop_test crop_test.exe
 	rm -f av_worker_test av_worker_test.exe
 	rm -f audio_queue_test audio_queue_test.exe audio_thread_test
