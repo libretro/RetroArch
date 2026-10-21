@@ -1,4 +1,7 @@
 CC ?= cc
+ifeq ($(OS),Windows_NT)
+BACKEND_HOST_FLAGS := -DANDROID_IMAGE_QUEUE_TEST_NO_FENCES -Wno-unused-parameter
+endif
 JAVA_HOME ?= $(shell dirname $$(dirname $$(readlink -f $$(command -v javac))))
 CFLAGS += -DHAVE_DYLIB -DMEDIACODEC_SESSION_TEST -O1 -g1 -std=c89 -pedantic -Wall -Wextra -Werror -Wno-long-long -Wframe-larger-than=2048 -I. -I../../../libretro-common/include -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux
 ifneq ($(findstring clang,$(shell $(CC) --version 2>/dev/null)),)
@@ -72,4 +75,4 @@ clean:
 .PHONY: all check clean gpu-check
 
 hevc_backend_test: hevc_backend_test.c ../../../gfx/common/mediacodec_hevc_backend.c ../../../gfx/common/mediacodec_hevc_backend.h
-	$(CC) $(CFLAGS) -D_DEFAULT_SOURCE -DHAVE_THREADS -pthread hevc_backend_test.c ../../../gfx/common/mediacodec_frame_export.c ../../../gfx/common/mediacodec_color.c ../../../gfx/common/android_frame.c ../../../gfx/common/android_image_queue.c ../../../libretro-common/rthreads/rthreads.c -o $@ $(LDFLAGS) -lm
+	$(CC) $(CFLAGS) $(BACKEND_HOST_FLAGS) -D_DEFAULT_SOURCE -DHAVE_THREADS -pthread hevc_backend_test.c ../../../gfx/common/mediacodec_frame_export.c ../../../gfx/common/mediacodec_color.c ../../../gfx/common/android_frame.c ../../../gfx/common/android_image_queue.c ../../../libretro-common/rthreads/rthreads.c ../../../libretro-common/rthreads/retro_eventcount.c -o $@ $(LDFLAGS) -lm

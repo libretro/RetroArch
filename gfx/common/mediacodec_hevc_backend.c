@@ -2,26 +2,35 @@
 #include "mediacodec_hevc_backend.h"
 #include "mediacodec_frame_export.h"
 #include <formats/image.h>
-#include <rthreads/rthreads.h>
+#include <rthreads/retro_eventcount.h>
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
 typedef struct mediacodec_hevc_backend_context {
  mediacodec_hevc_backend_t *backend;
  mediacodec_frame_exporter_t *exporter;
- slock_t *lock;
- scond_t *wake;
+ retro_eventcount_t wake;
+ retro_atomic_int_t state,refs;
  mediacodec_hevc_decoder_t *retired;
- int abort;
 } mediacodec_hevc_backend_context_t;
 static void mediacodec_hevc_backend_context_free(mediacodec_hevc_backend_context_t *c)
 {
  mediacodec_hevc_backend_t *backend=c->backend;
  if(c->exporter)mediacodec_frame_exporter_free(c->exporter);
- if(c->wake)scond_free(c->wake);
- if(c->lock)slock_free(c->lock);
+ retro_eventcount_free(&c->wake);
  free(c);
  retro_atomic_fetch_sub_int(&backend->active,1);
+}
+static void mediacodec_hevc_backend_context_unref(mediacodec_hevc_backend_context_t *c)
+{
+ if(retro_atomic_fetch_sub_int(&c->refs,1)==1)mediacodec_hevc_backend_context_free(c);
+}
+static void mediacodec_hevc_backend_publish(mediacodec_hevc_backend_context_t *c,int state)
+{
+ retro_atomic_store_release_int(&c->state,state);
+ retro_eventcount_notify(&c->wake);
+ /* The publisher keeps its reference until notification has returned. */
+ mediacodec_hevc_backend_context_unref(c);
 }
 static bool mediacodec_hevc_backend_release(void *opaque)
 {
@@ -38,22 +47,26 @@ static int mediacodec_hevc_backend_export(void *opaque,const android_image_view_
 static void mediacodec_hevc_backend_enqueue(void *opaque,mediacodec_hevc_decoder_t *decoder)
 {
  mediacodec_hevc_backend_context_t *c=(mediacodec_hevc_backend_context_t*)opaque;
- /* Cold decoder close only. The executor was created before native startup. */
- slock_lock(c->lock);c->retired=decoder;scond_signal(c->wake);slock_unlock(c->lock);
+ c->retired=decoder;mediacodec_hevc_backend_publish(c,1);
 }
 static void *mediacodec_hevc_backend_retire(void *opaque)
 {
  mediacodec_hevc_backend_context_t *c=(mediacodec_hevc_backend_context_t*)opaque;
  mediacodec_hevc_decoder_t *decoder;
- slock_lock(c->lock);
- while(!c->abort && !c->retired)scond_wait(c->wake,c->lock);
- decoder=c->retired;slock_unlock(c->lock);
- if(decoder)while(!mediacodec_hevc_decoder_retire_poll(decoder)) {
-  /* Poll native completion on this exclusive cold worker only. No busy spin,
-   * producer wait, task-queue/frame-thread execution or frame-path lock. */
-  slock_lock(c->lock);scond_wait_timeout(c->wake,c->lock,10000);slock_unlock(c->lock);
+ int key;
+ while(!retro_atomic_load_acquire_int(&c->state)) {
+  key=retro_eventcount_prepare_wait(&c->wake);
+  if(retro_atomic_load_acquire_int(&c->state)) {
+   retro_eventcount_cancel_wait(&c->wake);break;
+  }
+  retro_eventcount_commit_wait(&c->wake,key);
  }
- mediacodec_hevc_backend_context_free(c);
+ decoder=c->retired;
+ if(decoder)while(!mediacodec_hevc_decoder_retire_poll(decoder)) {
+  key=retro_eventcount_prepare_wait(&c->wake);
+  retro_eventcount_commit_wait_timeout(&c->wake,key,10000);
+ }
+ mediacodec_hevc_backend_context_unref(c);
  return NULL;
 }
 static bool mediacodec_hevc_backend_open(void *opaque,const rh265_video *source,
@@ -63,6 +76,7 @@ static bool mediacodec_hevc_backend_open(void *opaque,const rh265_video *source,
  mediacodec_hevc_backend_context_t *c;
  mediacodec_hevc_import_t importer;
  pthread_t thread;
+ pthread_attr_t attr;
  JNIEnv *env;
  int active;
  if(!ops)return false;
@@ -78,19 +92,25 @@ static bool mediacodec_hevc_backend_open(void *opaque,const rh265_video *source,
  if(!env){retro_atomic_fetch_sub_int(&backend->active,1);return false;}
  c=(mediacodec_hevc_backend_context_t*)calloc(1,sizeof(*c));
  if(!c){retro_atomic_fetch_sub_int(&backend->active,1);return false;}
- c->backend=backend;c->lock=slock_new();c->wake=scond_new();
+ c->backend=backend;
+ if(!retro_eventcount_init(&c->wake)) {
+  free(c);retro_atomic_fetch_sub_int(&backend->active,1);return false;
+ }
+ retro_atomic_int_init(&c->state,0);retro_atomic_int_init(&c->refs,2);
  c->exporter=mediacodec_frame_exporter_new(slots,params->bit_depth==10?IMAGE_PIXFMT_P010:IMAGE_PIXFMT_NV12);
- if(!c->lock || !c->wake || !c->exporter){mediacodec_hevc_backend_context_free(c);return false;}
- if(pthread_create(&thread,NULL,mediacodec_hevc_backend_retire,c)){mediacodec_hevc_backend_context_free(c);return false;}
+ if(!c->exporter){mediacodec_hevc_backend_context_free(c);return false;}
+ if(pthread_attr_init(&attr)){mediacodec_hevc_backend_context_free(c);return false;}
+ if(pthread_attr_setdetachstate(&attr,PTHREAD_CREATE_DETACHED)) {
+  pthread_attr_destroy(&attr);mediacodec_hevc_backend_context_free(c);return false;
+ }
+ active=pthread_create(&thread,&attr,mediacodec_hevc_backend_retire,c);
+ pthread_attr_destroy(&attr);
+ if(active){mediacodec_hevc_backend_context_free(c);return false;}
  memset(&importer,0,sizeof(importer));importer.context=c;
  importer.export_image=mediacodec_hevc_backend_export;importer.release=mediacodec_hevc_backend_release;
  importer.enqueue=mediacodec_hevc_backend_enqueue;
  if(!mediacodec_hevc_decoder_open(env,source,params,slots,backend->max_input,&importer,ops)) {
-  slock_lock(c->lock);c->abort=1;scond_signal(c->wake);slock_unlock(c->lock);
-  pthread_join(thread,NULL);return false;
- }
- if(pthread_detach(thread)) {
-  mediacodec_hevc_decoder_close(ops);pthread_join(thread,NULL);return false;
+  mediacodec_hevc_backend_publish(c,2);return false;
  }
  return true;
 }

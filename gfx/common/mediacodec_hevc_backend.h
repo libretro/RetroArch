@@ -18,7 +18,8 @@ typedef struct mediacodec_hevc_backend {
  * max_input is the explicit AU staging bound, <=64 MiB. At most 1..8 sessions
  * including retirement may coexist; seek storms refuse excess opens without
  * waiting. Each admitted session has one cold retirement worker, created before
- * native startup; decode/output/export add no thread, wait or lock. */
+ * native startup; decode/output/export add no thread, wait or lock. Failed
+ * startup and close return without joining; active includes deferred cleanup. */
 bool mediacodec_hevc_backend_init(mediacodec_hevc_backend_t *backend,
       JNIEnv *(*environment)(void*),void *user,unsigned max_input,unsigned max_sessions);
 unsigned mediacodec_hevc_backend_active(mediacodec_hevc_backend_t *backend);

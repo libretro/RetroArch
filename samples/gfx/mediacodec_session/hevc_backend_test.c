@@ -1,6 +1,7 @@
 /* Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier: GPL-3.0-or-later */
 #include "../../../gfx/common/mediacodec_hevc_backend.h"
 #include <rthreads/rthreads.h>
+#include <rthreads/retro_eventcount.h>
 #include <assert.h>
 #include <formats/image.h>
 #include <stdlib.h>
@@ -10,13 +11,35 @@
 #include <pthread.h>
 #include <errno.h>
 struct mediacodec_hevc_decoder {mediacodec_hevc_import_t importer;};
-static retro_atomic_int_t retire_gate,polls,retired;
+static retro_atomic_int_t retire_gate,polls,retired,worker_hold;
+typedef struct backend_test_start {void *(*run)(void*);void *user;} backend_test_start_t;
+static void *backend_test_start(void *opaque)
+{
+ backend_test_start_t start=*(backend_test_start_t*)opaque;
+ free(opaque);
+ while(retro_atomic_load_acquire_int(&worker_hold))usleep(1000);
+ return start.run(start.user);
+}
 static uintptr_t caller_thread;
-static int native_fail,env_fail,native_opens,image_token,deleted,thread_fail,detach_fail;
+static int native_fail,env_fail,native_opens,image_token,deleted,thread_fail,detach_fail,attr_fail,event_fail,notify_race;
 static int backend_test_pthread_create(pthread_t *thread,const pthread_attr_t *attr,void *(*run)(void*),void *user)
-{return thread_fail?EAGAIN:pthread_create(thread,attr,run,user);}
-static int backend_test_pthread_detach(pthread_t thread)
-{return detach_fail?EINVAL:pthread_detach(thread);}
+{
+ backend_test_start_t *start;int state,result;
+ assert(attr && !pthread_attr_getdetachstate(attr,&state) && state==PTHREAD_CREATE_DETACHED);
+ if(thread_fail)return EAGAIN;
+ start=(backend_test_start_t*)malloc(sizeof(*start));assert(start);
+ start->run=run;start->user=user;
+ result=pthread_create(thread,attr,backend_test_start,start);
+ if(result)free(start);
+ return result;
+}
+static int backend_test_pthread_attr_init(pthread_attr_t *attr)
+{return attr_fail?ENOMEM:pthread_attr_init(attr);}
+static int backend_test_pthread_attr_setdetachstate(pthread_attr_t *attr,int state)
+{return detach_fail?EINVAL:pthread_attr_setdetachstate(attr,state);}
+static bool backend_test_eventcount_init(retro_eventcount_t *ec)
+{return event_fail?false:retro_eventcount_init(ec);}
+static void backend_test_notify(retro_eventcount_t *ec);
 static int image_acquire(void *reader,void **image,int *fd)
 {assert(reader==&image_token);*image=&image_token;*fd=-1;return 1;}
 static bool image_describe(void *image,android_image_view_t *view)
@@ -49,10 +72,26 @@ bool mediacodec_hevc_decoder_retire_poll(mediacodec_hevc_decoder_t *decoder)
  free(decoder);retro_atomic_fetch_add_int(&retired,1);return true;
 }
 #define pthread_create backend_test_pthread_create
-#define pthread_detach backend_test_pthread_detach
+#define pthread_attr_init backend_test_pthread_attr_init
+#define pthread_attr_setdetachstate backend_test_pthread_attr_setdetachstate
+#define retro_eventcount_init backend_test_eventcount_init
+#define retro_eventcount_notify backend_test_notify
 #include "../../../gfx/common/mediacodec_hevc_backend.c"
 #undef pthread_create
-#undef pthread_detach
+#undef pthread_attr_init
+#undef pthread_attr_setdetachstate
+#undef retro_eventcount_init
+#undef retro_eventcount_notify
+static void backend_test_notify(retro_eventcount_t *ec)
+{
+ mediacodec_hevc_backend_context_t *c;
+ unsigned i;
+ retro_eventcount_notify(ec);
+ if(!notify_race)return;
+ c=(mediacodec_hevc_backend_context_t*)((char*)ec - offsetof(mediacodec_hevc_backend_context_t,wake));
+ for(i=0;i<2000 && retro_atomic_load_acquire_int(&c->refs)!=1;i++)usleep(1000);
+ assert(retro_atomic_load_acquire_int(&c->refs)==1);
+}
 static void wait_idle(mediacodec_hevc_backend_t *backend)
 {
  unsigned i;
@@ -71,16 +110,24 @@ int main(void)
  rh265_video_color_t color;video_hw_frame_t frame;
  struct mediacodec_hevc_decoder *decoder;
  caller_thread=sthread_get_current_thread_id();
- retro_atomic_int_init(&retire_gate,0);retro_atomic_int_init(&polls,0);retro_atomic_int_init(&retired,0);
+ retro_atomic_int_init(&retire_gate,0);retro_atomic_int_init(&polls,0);retro_atomic_int_init(&retired,0);retro_atomic_int_init(&worker_hold,0);
  assert(!mediacodec_hevc_backend_init(&backend,environment,&native_opens,1048576,9));
  assert(mediacodec_hevc_backend_init(&backend,environment,&native_opens,1048576,2));
  memset(&params,0,sizeof(params));params.chroma_format_idc=1;params.bit_depth=8;
  env_fail=1;assert(!backend.offer.open(backend.offer.user,source,&params,2,&a) && !mediacodec_hevc_backend_active(&backend));env_fail=0;
  thread_fail=1;assert(!backend.offer.open(backend.offer.user,source,&params,2,&a) && !mediacodec_hevc_backend_active(&backend));thread_fail=0;
+ event_fail=1;assert(!backend.offer.open(backend.offer.user,source,&params,2,&a) && !mediacodec_hevc_backend_active(&backend));event_fail=0;
+ attr_fail=1;assert(!backend.offer.open(backend.offer.user,source,&params,2,&a) && !mediacodec_hevc_backend_active(&backend));attr_fail=0;
  retro_atomic_store_release_int(&retire_gate,1);detach_fail=1;
  assert(!backend.offer.open(backend.offer.user,source,&params,2,&a) && !a.decoder && !mediacodec_hevc_backend_active(&backend));
  detach_fail=0;retro_atomic_store_release_int(&retire_gate,0);retro_atomic_store_release_int(&retired,0);
- native_fail=1;assert(!backend.offer.open(backend.offer.user,source,&params,2,&a) && !mediacodec_hevc_backend_active(&backend));native_fail=0;
+ native_fail=1;retro_atomic_store_release_int(&worker_hold,1);
+ assert(!backend.offer.open(backend.offer.user,source,&params,2,&a));
+ assert(mediacodec_hevc_backend_active(&backend)==1);
+ retro_atomic_store_release_int(&worker_hold,0);wait_idle(&backend);
+ notify_race=1;
+ assert(!backend.offer.open(backend.offer.user,source,&params,2,&a));wait_idle(&backend);
+ notify_race=0;native_fail=0;
  assert(backend.offer.open(backend.offer.user,source,&params,2,&a));params.bit_depth=10;
  assert(backend.offer.open(backend.offer.user,source,&params,2,&b));assert(mediacodec_hevc_backend_active(&backend)==2);
  opens=native_opens;assert(!backend.offer.open(backend.offer.user,source,&params,2,&rejected) && native_opens==opens);
@@ -107,10 +154,11 @@ int main(void)
  video_hw_frame_abandon(&frame);wait_idle(&backend);
  assert(android_image_queue_poll(images)==1 && deleted==1);
  android_image_queue_close(images);assert(android_image_queue_free(images));
+ notify_race=1;
  for(i=0;i<40;i++) {
   assert(backend.offer.open(backend.offer.user,source,&params,2,&a));backend.offer.close(&a);wait_idle(&backend);
  }
  assert(retro_atomic_load_acquire_int(&retired)==43);
- puts("PASS: HEVC backend startup rollback, bounded session admission, detached cold retirement and repeated seek epochs");
+ puts("PASS: HEVC backend detached startup, eventcount retirement, notifier lifetime, bounded admission and repeated seek epochs");
  return 0;
 }
