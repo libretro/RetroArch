@@ -40,7 +40,7 @@ workspace = (contextlib.nullcontext(artifact_dir) if artifact_dir else
 with workspace as temp:
     directory = Path(temp)
     objects = []
-    for source in ('record/record_gpu_worker_vt.c', 'record/record_gpu_queue.c', 'record/record_audio_queue.c',
+    for source in ('record/record_gpu_worker_vt.c', 'record/record_gpu_queue.c', 'record/record_audio_queue.c', 'record/record_avfoundation_worker.c',
                    'libretro-common/queues/retro_spsc.c', 'libretro-common/formats/h265/rh265_sps_crop.c'):
         obj = directory / (Path(source).stem + '.o')
         subprocess.run(compiler + flags + ['-c', str(root / source), '-o', str(obj)], check=True)

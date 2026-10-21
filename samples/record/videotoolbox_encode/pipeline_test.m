@@ -3,6 +3,7 @@
 #include "../../../record/record_gpu_worker_vt_native.h"
 #include "../../../record/record_mux_avfoundation.h"
 #include "../../../record/record_audio_queue.h"
+#include "../../../record/record_avfoundation_worker.h"
 #include "native_packet.h"
 #include "../../../gfx/common/videotoolbox_encode_crop.h"
 #include <unistd.h>
@@ -136,6 +137,47 @@ static void mux_startup_contracts(const record_mux_avfoundation_config_t *base,c
    assert(record_mux_avfoundation_free(probe));
    free(guard);
 }
+/* Real mux callbacks retain the fixture's independent packet/timing oracle. */
+typedef struct native_mux_sink
+{
+   record_mux_avfoundation_t *mux;
+   record_gpu_worker_vt_t *video;
+   FILE *coded;
+   unsigned *received,rate;
+   uint64_t *audio_target,*audio_written;
+   int length;
+   bool hevc;
+} native_mux_sink_t;
+static int sink_video(void *data,void *sample)
+{
+   native_mux_sink_t *sink=(native_mux_sink_t*)data;
+   CMSampleBufferRef encoded=(CMSampleBufferRef)sample;
+   void *again=NULL;
+   unsigned received=*sink->received;
+   int result;
+   assert(record_gpu_worker_vt_step(sink->video,&again)==RECORD_GPU_VT_PACKET && again==sample);
+   assert(!CMTimeCompare(CMSampleBufferGetPresentationTimeStamp(encoded),CMTimeMake((int64_t)received*1001,60000)));
+   assert(!CMTimeCompare(CMSampleBufferGetDuration(encoded),CMTimeMake(1001,60000)));
+   if (sink->rate) *sink->audio_target=((uint64_t)(received+1)*1001*sink->rate+59999)/60000;
+   result=record_mux_avfoundation_video(sink->mux,sample);
+   if (result==RECORD_AVF_OK)
+   {
+      if (!received) assert(headers(sink->coded,CMSampleBufferGetFormatDescription(encoded),sink->hevc,&sink->length));
+      assert(packet(sink->coded,encoded,sink->length)); ++*sink->received;
+   }
+   return result;
+}
+static int sink_audio(void *data,const int16_t *samples,size_t frames,uint64_t timestamp)
+{
+   native_mux_sink_t *sink=(native_mux_sink_t*)data;
+   int result;
+   assert(timestamp==*sink->audio_written);
+   result=record_mux_avfoundation_audio(sink->mux,samples,frames,timestamp);
+   if (result==RECORD_AVF_OK) *sink->audio_written+=frames;
+   return result;
+}
+static int sink_finish(void *data)
+{ return record_mux_avfoundation_finish(((native_mux_sink_t*)data)->mux); }
 int main(int argc,char **argv)
 {
    int rc=0;
@@ -151,6 +193,8 @@ int main(int argc,char **argv)
       record_gpu_worker_vt_t *worker;
       record_gpu_queue_t *queue;
       record_mux_avfoundation_t *mux=NULL;
+      record_avfoundation_worker_t *av_worker=NULL;
+      native_mux_sink_t sink;
       int16_t *pcm=NULL;
       unsigned audio_rate=argc==8?(unsigned)atoi(argv[7]):0;
       uint64_t audio_written=0,audio_target=0,audio_produced=0;
@@ -166,7 +210,7 @@ int main(int argc,char **argv)
       bool closed=false;
       CFAbsoluteTime deadline;
       if (!device) return 77;
-      memset(&config,0,sizeof(config));
+      memset(&config,0,sizeof(config)); memset(&sink,0,sizeof(sink));
       config.width=WIDTH; config.height=HEIGHT; config.slots=2;
       config.bitrate=16000000; config.key_interval=6; config.timescale=60000;
       config.hevc=atoi(argv[1])!=0; config.bit_depth=(unsigned)atoi(argv[2]); config.hdr=mode!=0;
@@ -212,6 +256,8 @@ int main(int argc,char **argv)
          pcm=(int16_t*)malloc(1024*2*sizeof(*pcm)); assert(pcm);
          audio_queue=record_audio_queue_new(2,1024,4*(16+4096)); assert(audio_queue);
       }
+      sink.video=worker; sink.coded=coded; sink.received=&received; sink.rate=audio_rate;
+      sink.audio_target=&audio_target; sink.audio_written=&audio_written; sink.hevc=config.hevc;
       deadline=CFAbsoluteTimeGetCurrent()+20;
       while (result!=RECORD_GPU_VT_END || audio_written<audio_target)
       {
@@ -242,15 +288,22 @@ int main(int argc,char **argv)
          }
          if (produced==PIPELINE_FRAMES && !closed)
          { assert(record_gpu_queue_finish(queue)); closed=true; }
-         result=record_gpu_worker_vt_step(worker,&sample); assert(result!=RECORD_GPU_VT_ERROR);
-         if (result==RECORD_GPU_VT_PACKET)
+         if (av_worker)
+         {
+            int step=record_avfoundation_worker_step(av_worker);
+            assert(step!=RECORD_AVF_WORKER_ERROR);
+            if (step==RECORD_AVF_WORKER_END) result=RECORD_GPU_VT_END;
+            if (step==RECORD_AVF_WORKER_PROGRESS || step==RECORD_AVF_WORKER_END) progress=true;
+         }
+         else { result=record_gpu_worker_vt_step(worker,&sample); assert(result!=RECORD_GPU_VT_ERROR); }
+         if (result==RECORD_GPU_VT_PACKET && !av_worker)
          {
             CMSampleBufferRef encoded=(CMSampleBufferRef)sample;
             void *again=NULL;
-            bool accepted=true;
             if (argc==8 && !mux)
             {
                record_mux_avfoundation_config_t output;
+               record_avfoundation_worker_ops_t ops;
                memset(&output,0,sizeof(output));
                output.video_format=CMSampleBufferGetFormatDescription(encoded); output.timescale=60000;
                if (audio_rate)
@@ -261,18 +314,14 @@ int main(int argc,char **argv)
                mux_startup_contracts(&output,argv[6]);
                mux=record_mux_avfoundation_new(&output,argv[6]); assert(mux);
                reject_video_times(mux,encoded);
+               sink.mux=mux; ops.video=sink_video; ops.audio=sink_audio; ops.finish=sink_finish;
+               av_worker=record_avfoundation_worker_new(worker,audio_queue,&sink,&ops); assert(av_worker);
             }
-            if (audio_rate) audio_target=((uint64_t)(received+1)*1001*audio_rate+59999)/60000;
-            assert(record_gpu_worker_vt_step(worker,&again)==RECORD_GPU_VT_PACKET && again==sample);
-            assert(!CMTimeCompare(CMSampleBufferGetPresentationTimeStamp(encoded),CMTimeMake((int64_t)received*1001,60000)));
-            assert(!CMTimeCompare(CMSampleBufferGetDuration(encoded),CMTimeMake(1001,60000)));
-            if (mux)
+            if (!av_worker)
             {
-               int appended=record_mux_avfoundation_video(mux,encoded);
-               assert(appended!=RECORD_AVF_ERROR); accepted=appended==RECORD_AVF_OK;
-            }
-            if (accepted)
-            {
+               assert(record_gpu_worker_vt_step(worker,&again)==RECORD_GPU_VT_PACKET && again==sample);
+               assert(!CMTimeCompare(CMSampleBufferGetPresentationTimeStamp(encoded),CMTimeMake((int64_t)received*1001,60000)));
+               assert(!CMTimeCompare(CMSampleBufferGetDuration(encoded),CMTimeMake(1001,60000)));
                if (!received) assert(headers(coded,CMSampleBufferGetFormatDescription(encoded),config.hevc,&length));
                assert(packet(coded,encoded,length));
                assert(record_gpu_worker_vt_release(worker)); received++; progress=true;
@@ -291,27 +340,13 @@ int main(int argc,char **argv)
             assert(pushed==RECORD_AUDIO_OK || pushed==RECORD_AUDIO_BUSY);
             if (pushed==RECORD_AUDIO_OK) { audio_produced+=frames; progress=true; }
          }
-         if (audio_queue)
-         {
-            const int16_t *samples;
-            size_t frames;
-            uint64_t pts;
-            int ready;
-            if (result==RECORD_GPU_VT_END && audio_produced==audio_target && !audio_closed)
-            { assert(record_audio_queue_finish(audio_queue)); audio_closed=true; }
-            ready=record_audio_queue_peek(audio_queue,&samples,&frames,&pts);
-            assert(ready!=RECORD_AUDIO_ERROR);
-            if (ready==RECORD_AUDIO_OK)
-            {
-               int appended=record_mux_avfoundation_audio(mux,samples,frames,pts);
-               assert(appended!=RECORD_AVF_ERROR);
-               if (appended==RECORD_AVF_OK)
-               { audio_written+=frames; assert(record_audio_queue_ack(audio_queue)); progress=true; }
-            }
-         }
+         if (audio_queue && received==PIPELINE_FRAMES && audio_produced==audio_target && !audio_closed)
+         { assert(record_audio_queue_finish(audio_queue)); audio_closed=true; }
          if (!progress) usleep(1000); /* Test-only deadline polling. */
       }
       assert(produced==PIPELINE_FRAMES && received==PIPELINE_FRAMES);
+      assert(record_avfoundation_worker_free(av_worker));
+      assert(!audio_queue || audio_closed);
       if (mux)
       {
          int finalized;
