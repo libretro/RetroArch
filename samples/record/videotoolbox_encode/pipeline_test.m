@@ -34,6 +34,43 @@ static void write_reference(FILE *out,unsigned depth,unsigned mode)
             assert(fwrite(bytes,1,2,out)==2);
          }
 }
+/* Diagnostic only: verify every GPU input, and optionally substitute a fresh
+ * CPU-filled encoder-pool buffer to isolate capture/reuse from native coding. */
+static unsigned diagnostic_depth,diagnostic_mode;
+static int diagnostic_submit(void *data,unsigned slot,void *buffer,uint64_t pts,uint64_t duration)
+{
+   videotoolbox_encode_t *encoder=(videotoolbox_encode_t*)data;
+   CVPixelBufferRef image=(CVPixelBufferRef)buffer,copy=NULL;
+   unsigned plane,x,y;
+   int result;
+   check_pixels(image,diagnostic_depth,diagnostic_mode);
+   if (getenv("PIPELINE_CPU_CONTROL"))
+   {
+      assert(!CVPixelBufferPoolCreatePixelBuffer(NULL,VTCompressionSessionGetPixelBufferPool(encoder->session),&copy));
+      assert(!CVPixelBufferLockBaseAddress(image,kCVPixelBufferLock_ReadOnly));
+      assert(!CVPixelBufferLockBaseAddress(copy,0));
+      for (plane=0;plane<2;plane++)
+      {
+         size_t stride=CVPixelBufferGetBytesPerRowOfPlane(copy,plane);
+         unsigned height=(unsigned)CVPixelBufferGetHeightOfPlane(copy,plane);
+         uint8_t *base=(uint8_t*)CVPixelBufferGetBaseAddressOfPlane(copy,plane);
+         for (y=0;y<height;y++)
+            for (x=0;x<stride/(diagnostic_depth==10?2:1);x++)
+            {
+               unsigned px=x<WIDTH?x:plane?WIDTH-2+(x&1):WIDTH-1;
+               unsigned value=read_code(image,plane,px,y,diagnostic_depth);
+               if (diagnostic_depth==10) ((uint16_t*)(base+y*stride))[x]=(uint16_t)(value<<6);
+               else base[y*stride+x]=(uint8_t)value;
+            }
+      }
+      CVPixelBufferUnlockBaseAddress(copy,0);
+      CVPixelBufferUnlockBaseAddress(image,kCVPixelBufferLock_ReadOnly);
+      image=copy;
+   }
+   result=record_vt_native_submit(data,slot,image,pts,duration);
+   if (copy) CVPixelBufferRelease(copy);
+   return result;
+}
 int main(int argc,char **argv)
 {
    int rc=0;
@@ -74,7 +111,14 @@ int main(int argc,char **argv)
       capture=record_gpu_capture_metal_new((__bridge void*)device,buffers,2,WIDTH,HEIGHT,config.bit_depth,mode);
       assert(capture);
       queue=record_gpu_queue_new(2); assert(queue);
-      worker=record_gpu_worker_vt_new_native(queue,capture,encoder); assert(worker);
+      {
+         record_gpu_worker_vt_ops_t ops;
+         ops.ready=record_vt_native_ready; ops.buffer=record_vt_native_buffer;
+         ops.release=record_vt_native_release; ops.submit=diagnostic_submit;
+         ops.peek=record_vt_native_peek; ops.ack=record_vt_native_ack; ops.finish=record_vt_native_finish;
+         diagnostic_depth=config.bit_depth; diagnostic_mode=mode;
+         worker=record_gpu_worker_vt_new(queue,capture,encoder,&ops); assert(worker);
+      }
       commands_queue=[device newCommandQueue]; assert(commands_queue);
       source=source_new(device,mode,false);
       coded=fopen(argv[4],"wb"); raw=fopen(argv[5],"wb"); assert(coded && raw);

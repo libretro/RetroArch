@@ -47,12 +47,15 @@ with workspace as temp:
             command += ['-framework', framework]
         print('+', shlex.join(command), flush=True)
         subprocess.run(command, check=True)
-        for hevc, depth, mode in ((0, 8, 0), (1, 8, 0), (1, 10, 0), (1, 10, 1), (1, 10, 2)):
-            case = directory / f'{binary.name}-hevc{hevc}-depth{depth}-mode{mode}'
+        for hevc, depth, mode, control in ((0, 8, 0, False), (1, 8, 0, False),
+                (1, 10, 0, False), (1, 10, 1, False), (1, 10, 2, False),
+                (1, 10, 0, True), (1, 10, 1, True)):
+            case = directory / f'{binary.name}-hevc{hevc}-depth{depth}-mode{mode}-cpu{int(control)}'
             case.mkdir()
             coded, reference = case / 'coded.bin', case / 'reference.yuv'
             result = subprocess.run([str(binary), str(hevc), str(depth), str(mode),
-                                     str(coded), str(reference)], timeout=60)
+                                     str(coded), str(reference)], timeout=60,
+                                     env=dict(os.environ, **({'PIPELINE_CPU_CONTROL': '1'} if control else {})))
             if result.returncode == 77:
                 unavailable += 1
                 print(f'SKIP: native pipeline {ownership} hevc={hevc} depth={depth} mode={mode}', flush=True)
