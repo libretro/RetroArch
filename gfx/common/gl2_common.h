@@ -81,6 +81,18 @@ struct gl2_views_prog
    GLint  loc_height;
 };
 
+/* A window of screens' own: the context's record, which stays put
+ * until its destroy, and what the views draw into it with */
+struct gl2_window
+{
+   video_window_native_t native;
+   /* As last drawn and published */
+   video_views_layout_t  layout;
+   /* Anaglyph and interlaced draw both eyes into it first */
+   struct gl2_views_fbo  canvas;
+   video_views_target_t  canvas_target;
+};
+
 enum gl2_flags
 {
    GL2_FLAG_TEXTURE_MIPMAP         = (1 <<  0),
@@ -360,6 +372,16 @@ struct gl2
       /* Each view's prev is filled */
       bool                  prev_live[RETRO_VIDEO_VIEWS_MAX];
    } views;
+
+   /* The screens' own windows, by window id; [0] is the main window
+    * and stays unused */
+   struct
+   {
+      struct gl2_window     win[RETRO_VIDEO_VIEWS_MAX];
+      video_windows_held_t  held;
+      /* gl2_frame()'s, for the preset's passes in them */
+      unsigned              frame_count;
+   } windows;
 
 #if defined(HAVE_OPENXR) && defined(ANDROID) && defined(HAVE_OPENGLES3)
    /* The framebuffer the headset's tracked eyes are drawn through. */

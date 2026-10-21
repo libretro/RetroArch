@@ -6030,6 +6030,8 @@ static bool gl2_views_write_wanted(const gl2_t *gl,
 {
    return video_info->views.num_views
       && gl->views.preset && video_info->shader_active
+      /* A screen's own window copies its views from the frame too */
+      && !(video_info->windows && video_info->windows->plan.separate_mask)
       && !(gl->flags & GL2_FLAG_TEXTURE_MIPMAP)
       && !(chain->flags & GL2_CHAIN_FLAG_EGL_IMAGES)
 #ifdef HAVE_OPENGLES
@@ -6611,6 +6613,216 @@ static void gl2_views_ui_end(gl2_t *gl, video_frame_info_t *video_info)
    glBindTexture(GL_TEXTURE_2D, gl->tex_info.tex);
    /* gl->vp is the window again, for the readbacks after. */
    gl2_set_viewport(gl, video_info->dims, false, true);
+}
+
+/* Events a frame takes from the context's windows */
+#define GL2_WINDOW_EVENTS 8
+
+/* Window @w let go: its GPU objects, then the context's window, and
+ * input stops mapping into it */
+static void gl2_window_retire(gl2_t *gl, unsigned w)
+{
+   struct gl2_window *win = &gl->windows.win[w];
+   gl2_vv_target_drop(gl, &win->canvas_target, &win->canvas);
+   gl->ctx_driver->windows->destroy(gl->ctx_data, &win->native);
+   video_driver_publish_window_layout(w, 0, NULL, NULL, 0, 0);
+   memset(win, 0, sizeof(*win));
+   gl->windows.held.live &= ~(1u << w);
+}
+
+static void gl2_windows_retire_all(gl2_t *gl)
+{
+   unsigned w;
+   for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
+      if (gl->windows.held.live & (1u << w))
+         gl2_window_retire(gl, w);
+}
+
+/* Window @w's screens back in the main window, until the next restore
+ * (video_driver_restore_windows()) */
+static void gl2_window_attach(gl2_t *gl, const video_windows_frame_t *f,
+      unsigned w)
+{
+   if (f)
+      video_driver_attach_windows(f->window_screens[w]);
+   gl->windows.held.failed |= 1u << w;
+   if (gl->windows.held.live & (1u << w))
+      gl2_window_retire(gl, w);
+}
+
+/* Window @w for @f's screens there, on @f's display */
+static bool gl2_window_make(gl2_t *gl, const video_windows_frame_t *f,
+      unsigned w)
+{
+   video_window_request_t request;
+   struct gl2_window *win = &gl->windows.win[w];
+
+   memset(&request, 0, sizeof(request));
+   memset(win, 0, sizeof(*win));
+   request.screen     = w;
+   request.generation = video_driver_window_generation();
+   request.settings   = f->settings[w];
+   request.display    = f->display;
+   if (     !request.generation
+         || !gl->ctx_driver->windows->create(gl->ctx_data, &request,
+            &win->native))
+      return false;
+   gl->windows.held.live       |= 1u << w;
+   gl->windows.held.display[w]  = f->display;
+   return true;
+}
+
+/* The preset's targets made to hold its passes for each of @chains'
+ * views at its rectangle in @rects, which a window larger than the main
+ * one draws past */
+static void gl2_windows_fit_chain(gl2_t *gl,
+      const video_frame_info_t *video_info, void *const *chains,
+      const video_views_rect_t *rects)
+{
+   unsigned i;
+   gl2_renderchain_data_t *chain = (gl2_renderchain_data_t*)
+      gl->renderchain_data;
+   if (!(gl->flags & GL2_FLAG_FBO_INITED))
+      return;
+   for (i = 0; i < video_info->views.num_views; i++)
+   {
+      const struct retro_video_view *v = &video_info->views.views[i];
+      if (!chains[i])
+         continue;
+      gl2_renderchain_recompute_pass_sizes(gl, chain,
+            VIDEO_SCALE_PACK(v->width, v->height), rects[i].dims);
+      gl2_renderchain_grow_fbos(gl, chain);
+   }
+}
+
+/* Window @w's screens drawn as the main window's views were this
+ * frame, and shown. Without a surface it can show, it keeps its last
+ * image. */
+static bool gl2_window_draw(gl2_t *gl,
+      const video_frame_info_t *video_info, unsigned w, bool new_frame)
+{
+   void *chains[RETRO_VIDEO_VIEWS_MAX];
+   video_views_rect_t rects[RETRO_VIDEO_VIEWS_MAX];
+   bool blend;
+   const video_windows_frame_t *f     = video_info->windows;
+   const gfx_ctx_window_driver_t *ctx = gl->ctx_driver->windows;
+   struct gl2_window *win             = &gl->windows.win[w];
+   video_views_layout_t *layout       = &win->layout;
+   unsigned dims                      = win->native.dims;
+   bool stock                         = !video_info->shader_active
+      || !gl->views.preset;
+
+   if (     !win->native.configured || !win->native.presentable
+         || !VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims))
+      return false;
+   video_driver_window_layout_screens(f, f->window_screens[w], dims,
+         layout);
+   blend = layout->offscreen
+      && gl2_vv_target_ensure(gl, &win->canvas_target, &win->canvas,
+            layout->canvas_dims);
+   if (!layout->offscreen)
+      gl2_vv_target_drop(gl, &win->canvas_target, &win->canvas);
+   if (!gl2_vv_pick_chains(gl, &gl->views.chains, &video_info->views,
+            layout, stock, blend || !layout->offscreen,
+            blend ? layout->canvas_dims : dims, chains, rects))
+      return false;
+   if (!ctx->bind_gl(gl->ctx_data, &win->native))
+   {
+      ctx->bind_gl(gl->ctx_data, NULL);
+      RARCH_WARN("[GL] A screen window can't be drawn. "
+            "Its screens go back to the main window.\n");
+      gl2_window_attach(gl, f, w);
+      return false;
+   }
+   if (!stock)
+      gl2_windows_fit_chain(gl, video_info, chains, rects);
+   gl2_views_render(gl, video_info, layout, dims, &win->canvas, chains,
+         rects, blend, stock, new_frame, NULL, 0, false,
+         gl->windows.frame_count);
+   /* False: not shown this time, its last image stays */
+   ctx->present_gl(gl->ctx_data, &win->native);
+   ctx->bind_gl(gl->ctx_data, NULL);
+   video_driver_publish_window_layout(w, win->native.generation, layout,
+         &f->core, f->core_dims, dims);
+   return true;
+}
+
+/* The screens' own windows for this frame: made, let go of, and drawn
+ * after the main window's frame and before its swap, which stays the
+ * only one that waits; a window swaps at interval 0. Views only: the
+ * menu, OSD, widgets and overlay stay in the main window. True when a
+ * window was drawn. */
+static bool gl2_windows_draw(gl2_t *gl,
+      const video_frame_info_t *video_info, bool new_frame)
+{
+   unsigned w, retire, create;
+   unsigned closed                    = 0;
+   const video_windows_frame_t *f     = video_info->windows;
+   const gfx_ctx_window_driver_t *ctx = gl->ctx_driver->windows;
+   bool drawn                         = false;
+
+   if (!ctx)
+      return false;
+   if (gl->windows.held.live)
+   {
+      unsigned i, count;
+      video_window_event_t events[GL2_WINDOW_EVENTS];
+      count = ctx->poll(gl->ctx_data, events, GL2_WINDOW_EVENTS);
+      for (i = 0; i < count; i++)
+      {
+         unsigned id = events[i].screen;
+         if (     events[i].kind == VIDEO_WINDOW_EVENT_CLOSE
+               && id && id < RETRO_VIDEO_VIEWS_MAX
+               && (gl->windows.held.live & (1u << id))
+               && gl->windows.win[id].native.generation
+                  == events[i].generation)
+            closed |= 1u << id;
+      }
+   }
+   video_windows_steps(&gl->windows.held, f, &retire, &create);
+   for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
+      if (retire & (1u << w))
+         gl2_window_retire(gl, w);
+   if (!f)
+      return false;
+   /* Marked after steps(), which clears the marks when this frame's
+    * restore count moved, so a closed window waits for the next one */
+   for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
+      if ((closed & (1u << w)) && f->window_screens[w])
+         gl2_window_attach(gl, f, w);
+   create &= ~closed;
+   for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
+   {
+      if (!(create & (1u << w)) || gl2_window_make(gl, f, w))
+         continue;
+      RARCH_WARN("[GL] A screen window can't be made. "
+            "Its screens stay in the main window.\n");
+      gl2_window_attach(gl, f, w);
+   }
+   /* Views the main window drew whole are not drawn here either */
+   if (!gl->views.active)
+      return false;
+   for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
+      if (     (gl->windows.held.live & (1u << w))
+            && gl2_window_draw(gl, video_info, w, new_frame))
+         drawn = true;
+   return drawn;
+}
+
+/* The poke's: every window let go of now, for a platform taking a
+ * surface back. The next frame makes them again where they still have
+ * screens. */
+static void gl2_windows_retire(void *data)
+{
+   gl2_t *gl = (gl2_t*)data;
+   if (!gl || !gl->windows.held.live)
+      return;
+   if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
+      gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
+   gl2_windows_retire_all(gl);
+   if (     (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
+         && !gl2_core_context_is_mains(gl))
+      gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
 }
 #endif
 
@@ -7195,6 +7407,24 @@ static bool gl2_frame(void *data, const void *frame,
       gl2_desktop_xr_frame(gl, video_info, frame != NULL, dims, &xr_vp);
 #endif
 
+#ifdef GL2_VIEWS
+   /* Before the ring's fence: the windows read the frame too. Not from
+    * the BFI light dupes. */
+   if (     (video_info->windows || gl->windows.held.live
+            || gl->windows.held.failed)
+         && !(gl->flags & GL2_FLAG_FRAME_DUPE_LOCK))
+   {
+      gl->windows.frame_count = (unsigned)frame_count;
+      if (     gl2_windows_draw(gl, video_info, frame != NULL)
+            && (gl->flags & GL2_FLAG_HW_RENDER_FBO_INIT))
+      {
+         /* As the frame leaves it for the core */
+         gl->shader->use(gl, gl->shader_data, 0, true);
+         glBindTexture(GL_TEXTURE_2D, 0);
+      }
+   }
+#endif
+
     gl2_hw_ring_drawn(gl);
     gl2_present_wait = 0;
     if (gl->ctx_driver->swap_buffers)
@@ -7392,6 +7622,8 @@ static void gl2_free(void *data)
 
    gl2_scrgb_deinit(gl);
 #ifdef GL2_VIEWS
+   /* Before the context, which sweeps what is left */
+   gl2_windows_retire_all(gl);
    gl2_views_release(gl);
 #endif
 #ifdef HAVE_GL_PLANAR
@@ -9467,7 +9699,15 @@ static uint32_t gl2_get_flags(void *data)
 #endif
 #ifdef GL2_VIEWS
    if (gl2 && retro_atomic_load_acquire_int(&gl2->views.allowed))
+   {
       BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS);
+#if !(defined(HAVE_OPENXR) && defined(ANDROID))
+      /* The context can make screens windows of their own. Not in the
+       * Quest's build, whose back buffer is the headset's framebuffer. */
+      if (gl2->ctx_driver && gl2->ctx_driver->windows)
+         BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_WINDOWS);
+#endif
+   }
    if (gl2 && retro_atomic_load_acquire_int(&gl2->views.fallback))
       BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS_FALLBACK);
 #endif
@@ -9766,9 +10006,22 @@ static const video_poke_interface_t gl2_poke_interface = {
    NULL, /* import_texture */
    NULL, /* get_last_present_sync */
 #if defined(HAVE_GL_ASYNC_READBACK) && !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
-   gl2_record_read
+   gl2_record_read,
 #else
-   NULL  /* record_read */
+   NULL, /* record_read */
+#endif
+   NULL, /* import_movie_frame */
+   NULL, /* get_menu_framebuffer */
+   NULL, /* menu_mem_alloc */
+   0,    /* menu_mem_pitch_align */
+   false, /* texture_lend_per_write */
+   NULL, /* driver_pacing_set */
+   NULL, /* driver_pacing_wait */
+   NULL, /* driver_pacing_mark */
+#ifdef GL2_VIEWS
+   gl2_windows_retire
+#else
+   NULL  /* windows_retire */
 #endif
 };
 
