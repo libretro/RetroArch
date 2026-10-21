@@ -2768,12 +2768,15 @@ static void android_input_poll_user(android_input_t *android)
          (UINT64_C(1) << RETRO_SENSOR_GYROSCOPE_ENABLE)) &&
                android_app->gyroscopeSensor;
 
-   if (poll_accelerometer || poll_gyroscope)
+   /* Drained with both sensors off too: an event left in the queue
+    * keeps its fd readable, and android_input_poll() spins on it. */
    {
       ASensorEvent event;
       while (ASensorEventQueue_getEvents(
             android_app->sensorEventQueue, &event, 1) > 0)
       {
+         if (!poll_accelerometer && !poll_gyroscope)
+            continue;
          switch (event.type)
          {
             case ASENSOR_TYPE_ACCELEROMETER:
