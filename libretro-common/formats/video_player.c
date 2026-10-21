@@ -101,6 +101,7 @@ typedef struct vp_job
    bool hw;                /* the READY frame is the player's hw[]   */
    bool seek;              /* a bounded transport step, no slot */
    bool fallback;          /* exclusive-owner software restart, no slot */
+   bool startup;           /* cold hardware admission, no slot */
    bool behind;            /* polling-side catch-up request */
 } vp_job_t;
 
@@ -124,6 +125,7 @@ struct video_player
    video_player_hw_restart_t hw_restart;
    void *hw_restart_user;
    bool hw_disabled, hw_fallback_pending, hw_fallback_active, preserve_origin;
+   bool hw_checked, hw_starting, hw_available;
    int64_t seek_target, seek_run_target, seek_position;
    int32_t initial_loops;
    bool seek_pending, seek_dirty, seek_active, seek_restart, seek_failed;
@@ -371,6 +373,11 @@ static int vp_job_step(vp_job_t *job)
    bool native, direct;
    enum video_player_how how;
 
+   if (job->startup)
+   {
+      job->gpu = image_transfer_anim_stream_set_hw(stream, type, true);
+      return 1;
+   }
    if (job->fallback)
    {
       int r = p->hw_restart(p->hw_restart_user);
@@ -639,6 +646,7 @@ static bool vp_job_start(video_player_t *p, vp_job_t *job)
    uint32_t *buf = NULL;
    job->hw       = false;
    job->seek     = false;
+   job->startup  = false;
    job->behind   = (p->flags & VP_BEHIND) != 0;
    if (     !(p->flags & VP_HW)
          && !(buf = p->sink.slot_begin(p->sink.user, slot)))
@@ -655,15 +663,18 @@ static bool vp_job_start(video_player_t *p, vp_job_t *job)
    return true;
 }
 
-/* The first threaded poll: the two jobs, the first one posted. */
-static bool vp_jobs_new(video_player_t *p)
+/* Allocate or reuse the jobs; cold setup takes no sink slot. */
+static bool vp_jobs_new(video_player_t *p, bool post)
 {
    uint8_t *block;
-   if (     sizeof(vp_job_t) > VP_JOB_STRIDE
-         || !(block = (uint8_t*)calloc(1, 2 * VP_JOB_STRIDE)))
-      return false;
-   p->job[0]             = (vp_job_t*)block;
-   p->job[1]             = (vp_job_t*)(block + VP_JOB_STRIDE);
+   if (!p->job[0])
+   {
+      if (     sizeof(vp_job_t) > VP_JOB_STRIDE
+            || !(block = (uint8_t*)calloc(1, 2 * VP_JOB_STRIDE)))
+         return false;
+      p->job[0] = (vp_job_t*)block;
+      p->job[1] = (vp_job_t*)(block + VP_JOB_STRIDE);
+   }
    p->job[0]->owner      = p;
    p->job[1]->owner      = p;
    p->job[0]->loops_left = p->loops_left;
@@ -673,8 +684,44 @@ static bool vp_jobs_new(video_player_t *p)
    retro_atomic_store_relaxed_int(&p->job[0]->status, VP_JOB_IDLE);
    retro_atomic_store_relaxed_int(&p->job[1]->status, VP_JOB_IDLE);
    p->upload             = 0;
-   if (!p->seek_pending)
+   if (post && !p->seek_pending)
       vp_job_start(p, p->job[0]);
+   return true;
+}
+
+/* No sink slot is lent until cold codec admission settles. */
+static bool vp_poll_hw_start(video_player_t *p, bool *hw)
+{
+   vp_job_t *job;
+   if (p->hw_checked)
+   {
+      *hw = p->hw_available;
+      return true;
+   }
+   if (!p->hw_starting)
+   {
+      if (!vp_worker_init())
+      {
+         p->hw_checked = true;
+         p->hw_available = image_transfer_anim_stream_set_hw(p->stream, p->type, false);
+         *hw = p->hw_available;
+         return true;
+      }
+      if (!vp_jobs_new(p, false)) return false;
+      job = p->job[0];
+      job->startup = true;
+      p->hw_starting = true;
+      vp_job_enqueue(job);
+      return false;
+   }
+   job = p->job[0];
+   if (!vp_job_settled(job)) return false;
+   p->hw_available = retro_atomic_load_acquire_int(&job->status) == VP_JOB_READY && job->gpu;
+   p->hw_checked = true;
+   p->hw_starting = false;
+   job->startup = job->gpu = false;
+   retro_atomic_store_relaxed_int(&job->status, VP_JOB_IDLE);
+   *hw = p->hw_available;
    return true;
 }
 
@@ -1195,8 +1242,16 @@ enum video_player_state video_player_poll(video_player_t *p, int64_t now_us)
       int r;
       bool threaded = false;
       /* frames on the GPU where the sink and the stream both can */
-      bool hw       = !p->hw_disabled && p->sink.start_hw
-         && image_transfer_anim_stream_set_hw(p->stream, p->type, true);
+      bool hw = false;
+      if (!p->hw_disabled && p->sink.start_hw
+            && (p->type == IMAGE_TYPE_MP4 || p->type == IMAGE_TYPE_WEBM))
+      {
+#ifdef VIDEO_PLAYER_WORKER
+         if (!vp_poll_hw_start(p, &hw)) return VIDEO_PLAYER_PLAYING;
+#else
+         hw = image_transfer_anim_stream_set_hw(p->stream, p->type, true);
+#endif
+      }
 #ifdef VIDEO_PLAYER_WORKER
       threaded = !(p->flags & VIDEO_PLAYER_INLINE)
          && (p->sink.slot_begin || hw) && vp_worker_init();
@@ -1210,6 +1265,9 @@ enum video_player_state video_player_poll(video_player_t *p, int64_t now_us)
       if (hw && r == VIDEO_PLAYER_HW_REFUSED && p->hw_restart)
       {
          p->flags |= VP_HW;
+#ifdef VIDEO_PLAYER_WORKER
+         if (p->job[0]) p->flags |= VP_THREADED;
+#endif
          video_player_request_software(p);
          return VIDEO_PLAYER_PLAYING;
       }
@@ -1226,10 +1284,15 @@ enum video_player_state video_player_poll(video_player_t *p, int64_t now_us)
       if (threaded)
       {
          /* all or nothing: asked again on a later poll */
-         if (!vp_jobs_new(p))
+         if (!vp_jobs_new(p, true))
             return VIDEO_PLAYER_PLAYING;
          p->flags |= VP_STARTED | VP_THREADED;
          return VIDEO_PLAYER_PLAYING;
+      }
+      if (p->job[0])
+      {
+         free(p->job[0]);
+         p->job[0] = p->job[1] = NULL;
       }
 #endif
       p->flags |= VP_STARTED;
@@ -1414,7 +1477,7 @@ void video_player_free(video_player_t *p)
       vp_retired_reap();
       /* a running decode was waited out and a queued one will not run:
        * neither slot is written any more */
-      if (p->sink.slot_end && !(p->flags & VP_HW))
+      if (p->sink.slot_end && (p->flags & VP_STARTED) && !(p->flags & VP_HW))
       {
          p->sink.slot_end(p->sink.user, 0);
          p->sink.slot_end(p->sink.user, 1);

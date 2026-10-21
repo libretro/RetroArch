@@ -31,7 +31,8 @@
  * and the decode: on a shared worker thread with two jobs, so one
  * frame is decoded while the one before it waits to be shown, or on
  * the polling thread (VIDEO_PLAYER_INLINE, or a build or run without
- * the worker). The sink owns where frames go: the buffers they are
+ * the worker). Hardware setup uses the worker when available.
+ * The sink owns where frames go: the buffers they are
  * decoded into, and showing them.
  *
  * video_player_poll() is called once a tick by one thread; the sink's
@@ -63,7 +64,7 @@ enum video_player_flags
     * the stream decodes into the slot itself can be one: any other
     * ends the playback on the last good frame. */
    VIDEO_PLAYER_FP16   = (1 << 1),
-   /* Decode on the polling thread, never the worker. */
+   /* Decode frames on the polling thread; cold hardware setup may use the worker. */
    VIDEO_PLAYER_INLINE = (1 << 2)
 };
 
@@ -156,11 +157,11 @@ typedef struct video_player_sink
 video_player_t *video_player_new(void *stream, enum image_type_enum type,
       int loop_count, const video_player_sink_t *sink, unsigned flags);
 
-/* Stops the playback: a queued decode will not run, a running one is
- * waited out. Every slot is ended. */
+/* Stops playback: queued work will not run; running decode/setup is
+ * waited out. Every started slot is ended. */
 void video_player_free(video_player_t *p);
 
-/* Cancels queued work without waiting. False: a running decode still
+/* Cancels queued work without waiting. False: running decode/setup still
  * borrows the player, stream and sink; retain them and poll stop again.
  * True: free() will not wait. A stopped player cannot resume. */
 bool video_player_stop(video_player_t *p);

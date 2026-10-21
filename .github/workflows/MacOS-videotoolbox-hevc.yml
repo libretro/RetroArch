@@ -16,6 +16,8 @@ on:
     - 'gfx/video_driver.h'
     - 'gfx/video_defines.h'
     - 'libretro-common/formats/h265/**'
+    - 'libretro-common/formats/video_player.c'
+    - 'libretro-common/samples/formats/video_player/**'
     - 'libretro-common/rthreads/**'
     - 'libretro-common/include/**'
   pull_request:
@@ -32,6 +34,8 @@ on:
     - 'gfx/video_driver.h'
     - 'gfx/video_defines.h'
     - 'libretro-common/formats/h265/**'
+    - 'libretro-common/formats/video_player.c'
+    - 'libretro-common/samples/formats/video_player/**'
     - 'libretro-common/rthreads/**'
     - 'libretro-common/include/**'
   workflow_dispatch:
@@ -45,6 +49,12 @@ jobs:
     timeout-minutes: 10
     steps:
     - uses: actions/checkout@v6
+    - name: Player cold hardware startup and cancellation
+      run: |
+        for threads in 0 1; do
+          make -C libretro-common/samples/formats/video_player clean all THREADS="$threads" SANITIZER=address,undefined
+          libretro-common/samples/formats/video_player/video_player_test
+        done
     - name: VideoToolbox HEVC hardware decode and pixel ownership
       run: |
         rc=0

@@ -635,6 +635,7 @@ bool image_transfer_anim_stream_set_output_stride(void *stream,
  * be. A stream under way starts over. The frame of each shown frame is
  * then taken with _hw_frame after _next - whose pointer only says a
  * frame came - and read or abandoned by the caller. */
+/* enable=false queries the backend without opening or disabling it. */
 bool image_transfer_anim_stream_set_hw(void *stream,
       enum image_type_enum type, bool enable);
 /* Exclusive decoder owner only, after all decode jobs stop. Withdraws the

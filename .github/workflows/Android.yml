@@ -86,10 +86,12 @@ jobs:
         run: make -C samples/gfx/android_image_queue clean all check CC=${{ matrix.cc }} SANITIZER=address,undefined
       - name: Native decoder session failure and Surface timestamp contracts
         run: make -C samples/gfx/mediacodec_session clean all check CC=${{ matrix.cc }} SANITIZER=address,undefined
-      - name: First-frame hardware refusal and software playback recovery
+      - name: Hardware startup, first-frame refusal and software playback recovery
         run: |
-          make -C libretro-common/samples/formats/video_player clean all CC=${{ matrix.cc }} SANITIZER=address,undefined
-          libretro-common/samples/formats/video_player/video_player_test
+          for threads in 0 1; do
+            make -C libretro-common/samples/formats/video_player clean all CC=${{ matrix.cc }} THREADS="$threads" SANITIZER=address,undefined
+            libretro-common/samples/formats/video_player/video_player_test
+          done
       - name: HEVC drain with no remaining display output
         run: |
           make -C samples/gfx/d3d11_video_decode rh265_hw_stream_test CC=${{ matrix.cc }} SANITIZER=address,undefined
