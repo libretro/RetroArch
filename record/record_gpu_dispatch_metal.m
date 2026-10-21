@@ -1,4 +1,7 @@
 /* Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier: GPL-3.0-or-later */
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
 #if defined(__APPLE__) && !defined(__cplusplus) \
       && (!defined(__STDC_VERSION__) || __STDC_VERSION__<199901L) && !defined(inline)
 #define inline __inline__

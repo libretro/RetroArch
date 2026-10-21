@@ -248,6 +248,7 @@ OBJ += frontend/frontend_driver.o \
        record/record_driver.o \
        record/drivers/record_wav.o \
        record/drivers/record_nvenc.o \
+       record/drivers/record_metal.o \
        command.o \
        msg_hash.o \
        intl/msg_hash_us.o \
@@ -1662,6 +1663,19 @@ ifeq ($(HAVE_METAL), 1)
    # for the standalone object â€” but the griffin_objc.m unity TU may
    # compile it either way depending on the Xcode configuration.
    OBJ += gfx/drivers/metal.o
+   ifeq ($(HAVE_AVF), 1)
+      OBJ += record/record_gpu_queue.o \
+             record/record_audio_queue.o \
+             record/record_gpu_worker_vt.o \
+             record/record_avfoundation_worker.o \
+             record/record_avfoundation_session.o \
+             record/record_gpu_capture_metal.o \
+             record/record_mux_avfoundation.o \
+             record/record_gpu_session_metal.o \
+             record/record_gpu_dispatch_metal.o \
+             $(LIBRETRO_COMM_DIR)/formats/h265/rh265_sps_crop.o
+      LIBS += -framework CoreMedia -framework VideoToolbox -framework AudioToolbox
+   endif
 endif
 
 ifeq ($(HAVE_MFI), 1)

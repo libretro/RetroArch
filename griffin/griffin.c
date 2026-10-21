@@ -1581,6 +1581,15 @@ RECORDING
 #include "../record/record_driver.c"
 #include "../record/drivers/record_wav.c"
 #include "../record/drivers/record_nvenc.c"
+#include "../record/drivers/record_metal.c"
+#ifdef HAVE_RECORD_METAL
+#include "../record/record_gpu_queue.c"
+#include "../record/record_audio_queue.c"
+#include "../record/record_gpu_worker_vt.c"
+#include "../record/record_avfoundation_worker.c"
+#include "../record/record_avfoundation_session.c"
+#include "../libretro-common/formats/h265/rh265_sps_crop.c"
+#endif
 #ifdef HAVE_FFMPEG
 #include "../record/drivers/record_ffmpeg.c"
 #endif

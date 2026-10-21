@@ -1,4 +1,7 @@
 /* Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier: GPL-3.0-or-later */
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
 #import <Foundation/Foundation.h>
 #import <Metal/Metal.h>
 #import <CoreVideo/CoreVideo.h>

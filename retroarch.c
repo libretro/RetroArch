@@ -135,7 +135,7 @@
 #include "camera/camera_driver.h"
 #include "location_driver.h"
 #include "record/record_driver.h"
-#include "record/drivers/record_nvenc.h"
+#include "record/record_driver.h"
 
 #ifdef HAVE_MICROPHONE
 #include "audio/microphone_driver.h"
@@ -10516,7 +10516,7 @@ static bool retroarch_main_quit_begin(void)
 
    if (runloop_st->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED)
       return false;
-   record_nvenc_stop();
+   recording_gpu_stop();
    if (   settings->bools.savestate_auto_save
        && runloop_st->current_core_type != CORE_TYPE_DUMMY)
       command_event_save_auto_state();
@@ -10663,11 +10663,11 @@ bool retroarch_main_quit_staged(void)
          || !video_st->data
          || !video_st->current_video->alive
          || !video_st->current_video->alive(video_st->data))
-         && !record_nvenc_pending())
+         && !recording_gpu_pending())
       return retroarch_main_quit();
 
    first = retroarch_main_quit_begin();
-   if (!first || (!retroarch_quit_state_task_pending(NULL) && !record_nvenc_pending()))
+   if (!first || (!retroarch_quit_state_task_pending(NULL) && !recording_gpu_pending()))
    {
       retroarch_main_quit_finish(first);
       return true;
@@ -10696,8 +10696,8 @@ bool retroarch_main_quit_poll(void)
 
    if (!runloop_st->quit_pending)
       return false;
-   record_nvenc_poll();
-   if (retroarch_quit_state_task_pending(NULL) || record_nvenc_pending())
+   recording_gpu_poll();
+   if (retroarch_quit_state_task_pending(NULL) || recording_gpu_pending())
       return false;
    runloop_st->quit_pending = false;
    retroarch_main_quit_finish(true);

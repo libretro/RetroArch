@@ -7,6 +7,11 @@ on:
       - 'gfx/common/videotoolbox_encode*.h'
       - 'libretro-common/formats/h265/rh265_sps_crop.c'
       - 'libretro-common/include/formats/rh265_sps_crop.h'
+      - 'record/drivers/record_metal.*'
+      - 'record/record_driver.*'
+      - 'gfx/drivers/metal.m'
+      - 'Makefile.common'
+      - 'griffin/griffin*'
       - 'record/record_gpu_capture_metal.*'
       - 'record/record_gpu_session_metal.*'
       - 'record/record_gpu_dispatch_metal.*'
@@ -18,6 +23,7 @@ on:
       - 'record/shaders/capture_metal.*'
       - 'record/shaders/generate_metal.py'
       - 'samples/record/videotoolbox_encode/**'
+      - 'samples/record/metal_frontend/**'
       - 'libretro-common/include/retro_atomic.h'
   pull_request:
     paths:
@@ -25,6 +31,11 @@ on:
       - 'gfx/common/videotoolbox_encode*.h'
       - 'libretro-common/formats/h265/rh265_sps_crop.c'
       - 'libretro-common/include/formats/rh265_sps_crop.h'
+      - 'record/drivers/record_metal.*'
+      - 'record/record_driver.*'
+      - 'gfx/drivers/metal.m'
+      - 'Makefile.common'
+      - 'griffin/griffin*'
       - 'record/record_gpu_capture_metal.*'
       - 'record/record_gpu_session_metal.*'
       - 'record/record_gpu_dispatch_metal.*'
@@ -36,6 +47,7 @@ on:
       - 'record/shaders/capture_metal.*'
       - 'record/shaders/generate_metal.py'
       - 'samples/record/videotoolbox_encode/**'
+      - 'samples/record/metal_frontend/**'
       - 'libretro-common/include/retro_atomic.h'
   workflow_dispatch:
 permissions:
@@ -136,3 +148,33 @@ jobs:
             ${{ runner.temp }}/metal-vt-dispatch-evidence
             ${{ runner.temp }}/metal-vt-devices.json
           if-no-files-found: warn
+
+  frontend-build:
+    runs-on: macos-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v6
+      - name: Configure native Metal recording frontend
+        run: |
+          set -eu
+          ./configure --enable-metal --enable-avf --enable-threads --enable-configfile \
+            --disable-qt --disable-ffmpeg --disable-discord --disable-cheevos \
+            --disable-networking --disable-sdl2 --disable-sdl --disable-translate \
+            --disable-update_cores --disable-update_assets --disable-online_updater \
+            --disable-cdrom --disable-7zip --disable-ssl
+          for feature in HAVE_METAL HAVE_AVF HAVE_THREADS HAVE_CONFIGFILE; do
+            grep -Eq "^#define $feature 1" config.h
+          done
+      - name: Build and link real frontend with native recording enabled
+        run: |
+          set -eu
+          make -j"$(sysctl -n hw.ncpu)" MINVERFLAGS="-mmacosx-version-min=$(sw_vers -productVersion)"
+          test -x retroarch
+          nm retroarch | grep '_record_metal_gpu_capture'
+
+  frontend-contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Source-clock capture and backpressure under sanitizers
+        run: make -C samples/record/metal_frontend check SANITIZER=address,undefined

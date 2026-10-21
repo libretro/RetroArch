@@ -54,6 +54,7 @@
 #include "../gfx_widgets.h"
 #endif
 
+#include "../../record/drivers/record_metal.h"
 #include "../font_driver.h"
 #include "../video_driver.h"
 #include "../gfx_instrument.h"
@@ -289,6 +290,7 @@ typedef NS_ENUM(NSUInteger, ViewportResetMode) {
 
 /*! @brief end commits the command buffer */
 - (void)end;
+- (void)endWithRecording:(video_frame_info_t *)video_info;
 
 /*! @brief swapBuffers acquires the next drawable, blocking if needed for vsync.
  *  This should be called after end to match Vulkan's swap_buffers timing. */
@@ -3782,8 +3784,11 @@ static float metal_hdr_pq_to_nits(float pq)
    [rce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:4];
 }
 
-- (void)end
+- (void)end { [self endWithRecording:NULL]; }
+
+- (void)endWithRecording:(video_frame_info_t *)video_info
 {
+   (void)video_info;
    if (_commandBuffer == nil)
    {
       RARCH_WARN("[Metal] end called without active command buffer\n");
@@ -3816,6 +3821,15 @@ static float metal_hdr_pq_to_nits(float pq)
    }
 
    id<CAMetalDrawable> drawable = self.nextDrawable;
+#ifdef HAVE_RECORD_METAL
+   /* Final render encoder is closed. Capture the negotiated drawable into
+    * the fixed encoder pool on this same retained-reference command buffer;
+    * normal presentation commits it. Native capture never enables readback. */
+   if (drawable && video_info && video_info->recording_gpu_capture)
+      record_metal_gpu_capture(video_info->recording_gpu,(__bridge void*)_commandBuffer,
+            (__bridge void*)drawable.texture,_viewport.pos,_viewport.dims,
+            video_info->recording_gpu_timestamp,_hdrOutputMode);
+#endif
 
    if (drawable)
    {
@@ -6918,13 +6932,13 @@ static void metal_views_render(metal_views_t *vs,
       }
 #endif
 
-      [self _endFrame];
+      [self _endFrame:video_info];
    }
 
    return YES;
 }
 
-- (void)_endFrame { [_context end]; }
+- (void)_endFrame:(video_frame_info_t *)video_info { [_context endWithRecording:video_info]; }
 /* TODO/FIXME (sgc): resize*/
 - (void)setNeedsResize { }
 - (void)setRotation:(unsigned)rotation { [_context setRotation:rotation]; }

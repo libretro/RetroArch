@@ -39,6 +39,7 @@
 #include "drivers/record_ffmpeg.h"
 #include "drivers/record_wav.h"
 #include "drivers/record_nvenc.h"
+#include "drivers/record_metal.h"
 #include "drivers/record_avfoundation.h"
 
 static recording_state_t recording_state = {0};
@@ -56,6 +57,9 @@ const record_driver_t *record_drivers[] = {
 #ifdef HAVE_AVF
    &record_avfoundation,
 #endif
+#ifdef HAVE_RECORD_METAL
+   &record_metal,
+#endif
 #ifdef HAVE_FFMPEG
    &record_ffmpeg,
 #endif
@@ -66,6 +70,30 @@ const record_driver_t *record_drivers[] = {
    &record_null,
    NULL,
 };
+
+void recording_gpu_frame_info(struct video_frame_info *info,bool capture)
+{
+#ifdef HAVE_RECORD_METAL
+   record_metal_frame_info(info,capture);
+#else
+   record_nvenc_frame_info(info,capture);
+#endif
+}
+void recording_gpu_poll(void) { record_nvenc_poll(); record_metal_poll(); }
+void recording_gpu_stop(void) { record_nvenc_stop(); record_metal_stop(); }
+bool recording_gpu_pending(void) { return record_nvenc_pending() || record_metal_pending(); }
+bool recording_gpu_cancel_start(void)
+{
+   bool nvenc=record_nvenc_cancel_start();
+   bool metal=record_metal_cancel_start();
+   return nvenc || metal;
+}
+bool recording_gpu_defer_start(const record_driver_t *driver)
+{
+   if (driver==&record_nvenc) return record_nvenc_defer_start();
+   if (driver==&record_metal) return record_metal_defer_start();
+   return false;
+}
 
 recording_state_t *recording_state_get_ptr(void)
 {
@@ -142,22 +170,18 @@ bool recording_deinit(void)
 {
    recording_state_t *recording_st = &recording_state;
    bool success                   = true;
-#ifdef HAVE_RECORD_NVENC
-   bool native                    = recording_st->driver == &record_nvenc;
-#endif
 #ifdef HAVE_FFMPEG
+   bool native                    = recording_is_native_gpu(recording_st->driver);
    bool history_list_enable        = config_get_ptr()->bools.history_list_enable;
 #endif
 
-#ifdef HAVE_RECORD_NVENC
-   if (record_nvenc_cancel_start())
+   if (recording_gpu_cancel_start())
    {
       recording_st->driver = NULL;
       recording_st->data = NULL;
       recording_st->path[0] = '\0';
       return true;
    }
-#endif
 
    if (     !recording_st->data
 		   || !recording_st->driver)
@@ -182,9 +206,7 @@ bool recording_deinit(void)
    /* Push recording to video history playlist */
 #ifdef HAVE_FFMPEG
    if (     success && history_list_enable
-#ifdef HAVE_RECORD_NVENC
          && !native
-#endif
          && *recording_st->path)
    {
       struct playlist_entry entry = {0};
@@ -227,15 +249,24 @@ bool recording_init(void)
       video_driver_pix_fmt              = video_st->pix_fmt;
    recording_state_t *recording_st      = &recording_state;
    bool recording_enable                = recording_st->enable;
-   bool gpu_native = string_is_equal(settings->arrays.record_driver, "nvenc");
+   bool nvenc_native = string_is_equal(settings->arrays.record_driver,"nvenc");
+   bool metal_native = string_is_equal(settings->arrays.record_driver,"metal");
+   bool gpu_native = nvenc_native || metal_native;
 
    if (!recording_enable)
       return false;
 
 #ifndef HAVE_RECORD_NVENC
-   if (gpu_native)
+   if (nvenc_native)
    {
       RARCH_ERR("[Recording] Native NVENC recording is unavailable in this build.\n");
+      return false;
+   }
+#endif
+#ifndef HAVE_RECORD_METAL
+   if (metal_native)
+   {
+      RARCH_ERR("[Recording] Native Metal recording is unavailable in this build.\n");
       return false;
    }
 #endif
@@ -397,8 +428,8 @@ bool recording_init(void)
       if (!video_driver_get_viewport_info(&vp)) return false;
       if (!VIDEO_SCALE_W(vp.dims) || !VIDEO_SCALE_H(vp.dims))
       {
-         recording_st->driver = &record_nvenc;
-         return record_nvenc_defer_start();
+         recording_st->driver=metal_native?&record_metal:&record_nvenc;
+         return recording_gpu_defer_start(recording_st->driver);
       }
       params.out_dims = params.fb_dims = vp.dims;
       params.pix_fmt = FFEMU_PIX_ARGB8888;
