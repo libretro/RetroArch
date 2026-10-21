@@ -86,8 +86,10 @@ jobs:
         run: make -C samples/gfx/android_image_queue clean all check CC=${{ matrix.cc }} SANITIZER=address,undefined
       - name: Native decoder session failure and Surface timestamp contracts
         run: make -C samples/gfx/mediacodec_session clean all check CC=${{ matrix.cc }} SANITIZER=address,undefined
+      - name: Install test-only HEVC generator if needed
+        run: command -v ffmpeg >/dev/null || (sudo apt-get update && sudo apt-get install -y ffmpeg)
       - name: HEVC Annex-B configuration and packet preservation
-        run: make -C samples/gfx/mediacodec_hevc_packet clean all check CC=${{ matrix.cc }} SANITIZER=address,undefined
+        run: make -C samples/gfx/mediacodec_hevc_packet clean all check parser-check CC=${{ matrix.cc }} SANITIZER=address,undefined
   ndk-compile:
     runs-on: ubuntu-latest
     steps:

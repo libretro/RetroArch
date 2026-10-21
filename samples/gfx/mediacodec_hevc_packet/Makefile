@@ -10,8 +10,12 @@ endif
 all: test
 test: test.c ../../../gfx/common/mediacodec_hevc_packet.c
 	$(CC) $(CFLAGS) test.c ../../../gfx/common/mediacodec_hevc_packet.c -o $@ $(LDFLAGS)
+parser_test: parser_test.c ../../../gfx/common/mediacodec_hevc_packet.c ../../../libretro-common/formats/h265/rh265.c
+	$(CC) $(CFLAGS) -Wno-unused-parameter parser_test.c ../../../gfx/common/mediacodec_hevc_packet.c ../../../libretro-common/formats/h265/rh265.c -o $@ $(LDFLAGS) -lm
+parser-check: parser_test
+	python3 run.py
 check: all
 	./test
 clean:
-	rm -f test
-.PHONY: all check clean
+	rm -f test parser_test
+.PHONY: all check parser-check clean
