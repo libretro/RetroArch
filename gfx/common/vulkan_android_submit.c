@@ -112,7 +112,7 @@ int vulkan_android_submission_present(vulkan_android_submission_t *e,
  submit.waitSemaphoreCount=1;submit.pWaitSemaphores=&e->sync.ready;submit.pWaitDstStageMask=&wait_stage;
  submit.signalSemaphoreCount=1;submit.pSignalSemaphores=&e->sync.done;
  e->held_owner=frame->owner;e->held_slot=frame->done;e->held_generation=frame->done_value;e->inflight=1;
- if(e->ops.submit(e->queue,1,&submit,e->fence)!=VK_SUCCESS){e->broken=1;return -2;}
+ if(e->ops.submit(e->ops.submit_context,e->queue,1,&submit,e->fence)!=VK_SUCCESS){e->broken=1;return -2;}
  if(vulkan_android_sync_export(e->device,&e->sync_ops,e->sync.done,&fd)) {
   if(!android_frame_finish(e->held_owner,e->held_slot,e->held_generation,fd)) {
    if(fd>=0)close(fd);

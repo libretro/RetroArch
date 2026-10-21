@@ -35,8 +35,9 @@ static VKAPI_ATTR VkResult VKAPI_CALL import_fd(VkDevice d,const VkImportSemapho
 {assert(d && p->fd==-1 && p->flags==VK_SEMAPHORE_IMPORT_TEMPORARY_BIT);return VK_SUCCESS;}
 static VKAPI_ATTR VkResult VKAPI_CALL export_fd(VkDevice d,const VkSemaphoreGetFdInfoKHR *p,int *fd)
 {assert(d && p);if(export_fail)return VK_ERROR_TOO_MANY_OBJECTS;*fd=done_fd;done_fd=-1;return VK_SUCCESS;}
-static VKAPI_ATTR VkResult VKAPI_CALL submit(VkQueue q,uint32_t n,const VkSubmitInfo *p,VkFence f)
+static VkResult submit(void *context,VkQueue q,uint32_t n,const VkSubmitInfo *p,VkFence f)
 {
+ assert(context==&native);
  assert(q && n==1 && f && p->waitSemaphoreCount==1 && p->signalSemaphoreCount==1 && p->commandBufferCount==1);
  assert(*p->pWaitDstStageMask==VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);submits++;fence_status=VK_NOT_READY;return submit_fail?VK_ERROR_DEVICE_LOST:VK_SUCCESS;
 }
@@ -50,7 +51,7 @@ static void setup(const android_frame_view_t *v)
  entry.pipeline_ops.update_sets=update;entry.sync_ops.import_fd=import_fd;entry.sync_ops.export_fd=export_fd;
  entry.ops.fence_status=status;entry.ops.reset_fences=reset_fences;entry.ops.reset_command=reset_command;
  entry.ops.begin=begin;entry.ops.end=end;entry.ops.barrier=barrier;entry.ops.bind_pipeline=bind_pipeline;
- entry.ops.bind_sets=bind_sets;entry.ops.push=push;entry.ops.dispatch=dispatch;entry.ops.submit=submit;
+ entry.ops.bind_sets=bind_sets;entry.ops.push=push;entry.ops.dispatch=dispatch;entry.ops.submit=submit;entry.ops.submit_context=&native;
  assert(vulkan_android_submission_configure(&entry,v,false));
 }
 int main(void)

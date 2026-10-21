@@ -17,7 +17,11 @@ typedef struct vulkan_android_submit_ops {
  PFN_vkCmdBindDescriptorSets bind_sets;
  PFN_vkCmdPushConstants push;
  PFN_vkCmdDispatch dispatch;
- PFN_vkQueueSubmit submit;
+ /* The renderer supplies its existing queue-serialization wrapper. The
+  * helper must never submit directly to a queue shared with presentation. */
+ VkResult (*submit)(void *context,VkQueue queue,uint32_t count,
+       const VkSubmitInfo *submits,VkFence fence);
+ void *submit_context;
 } vulkan_android_submit_ops_t;
 typedef struct vulkan_android_submission {
  VkDevice device;
