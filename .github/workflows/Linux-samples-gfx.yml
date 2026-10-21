@@ -1333,9 +1333,16 @@ jobs:
           # ChangeDisplaySettingsExA with the server's RandR modes, so
           # the CDS listed-mode switch is real; ADL, ATI legacy and
           # PowerStrip are linked and must decline.
+          # Its own Wine prefix: one a Wine program started before the
+          # display was up keeps that display's single mode, and Wine
+          # lists only it.
+          WINE_LIVE_PREFIX=$(mktemp -d)
           (cd samples/gfx/display_servers_win32_live \
              && make clean all \
-             && WINEDEBUG=-all timeout 300 wine ./display_servers_win32_live_test.exe)
+             && WINEPREFIX=$WINE_LIVE_PREFIX WINEDEBUG=-all timeout 300 \
+                wine ./display_servers_win32_live_test.exe)
+          WINEPREFIX=$WINE_LIVE_PREFIX wineserver -k || true
+          rm -rf "$WINE_LIVE_PREFIX"
           echo "[pass] display_servers_win32_live_test (Wine)"
           # The vendor timing paths against stand-ins: a mock
           # atiadlxx.dll that re-plugs the monitor after a forced set,
