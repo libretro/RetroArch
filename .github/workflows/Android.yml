@@ -68,3 +68,39 @@ jobs:
           pkg/android/phoenix/build/outputs/apk/normal/debug/phoenix-normal-debug.apk
           pkg/android/phoenix/build/outputs/apk/aarch64/debug/phoenix-aarch64-debug.apk
           pkg/android/phoenix/build/outputs/apk/quest/debug/phoenix-quest-debug.apk
+
+  jni-contract:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        cc: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Real JNI with synthetic Android codec inventory and exception faults
+        run: make -C samples/gfx/mediacodec_inventory clean all check CC=${{ matrix.cc }} SANITIZER=undefined
+  ndk-compile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Use the Android project NDK version
+        run: |
+          set -eu
+          version=$(sed -n 's/.*ndkVersion "\([^"]*\)".*/\1/p' pkg/android/phoenix/build.gradle)
+          test -n "$version"
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;$version"
+          echo "MEDIA_NDK=$ANDROID_HOME/ndk/$version" >> "$GITHUB_ENV"
+      - name: Strict C89 and JNI ABI compile on 32/64-bit Android targets
+        run: |
+          set -eu
+          for target in aarch64-linux-android armv7a-linux-androideabi; do
+            for api in 21 29; do
+              "$MEDIA_NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/$target$api-clang" \
+                -std=c89 -pedantic -Wall -Wextra -Werror -Wno-long-long \
+                -Wframe-larger-than=2048 -Ilibretro-common/include \
+                -c gfx/common/mediacodec_inventory.c -o "$RUNNER_TEMP/$target-$api.o"
+            done
+          done
