@@ -208,6 +208,18 @@ bool image_transfer_anim_stream_waiting(const void *stream,
    (void)stream; (void)type;
    return false;
 }
+int64_t image_transfer_anim_stream_duration_ns(void *stream,
+      enum image_type_enum type)
+{
+   (void)stream; (void)type;
+   return 0;
+}
+int64_t image_transfer_anim_stream_frame_time_ns(void *stream,
+      enum image_type_enum type)
+{
+   (void)stream; (void)type;
+   return -1;
+}
 void image_transfer_anim_stream_rewind(void *stream,
       enum image_type_enum type)
 {
