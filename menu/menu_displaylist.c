@@ -12428,6 +12428,38 @@ unsigned menu_displaylist_build_list(
                   MENU_ENUM_LABEL_VIDEO_SCREEN_LAYOUT,
                   PARSE_ONLY_UINT, false) == 0)
             count++;
+         if (video_driver_test_all_flags(GFX_CTX_FLAGS_VIDEO_WINDOWS))
+         {
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_VIDEO_WINDOWS_ENABLE,
+                     PARSE_ONLY_BOOL, false) == 0)
+               count++;
+            if (settings->bools.video_windows_enable)
+            {
+               /* Screen 2, and each further one the core has */
+               video_driver_state_t *video_st = video_state_get_ptr();
+               unsigned screens               = 2;
+               unsigned screen;
+               if (     video_st->views_presented
+                     && video_st->views_core.num_screens > screens)
+                  screens = video_st->views_core.num_screens;
+               if (screens > RETRO_VIDEO_VIEWS_MAX)
+                  screens = RETRO_VIDEO_VIEWS_MAX;
+               for (screen = 1; screen < screens; screen++)
+               {
+                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                           (enum msg_hash_enums)
+                           (MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MODE + screen),
+                           PARSE_ONLY_UINT, false) == 0)
+                     count++;
+                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                           (enum msg_hash_enums)
+                           (MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MONITOR + screen),
+                           PARSE_ONLY_UINT, false) == 0)
+                     count++;
+               }
+            }
+         }
 #ifdef HAVE_OPENXR
          if (video_driver_has_headset_path(settings->arrays.video_driver))
          {

@@ -25,6 +25,6 @@ S_UINT_EX(video_screen_layout, VIDEO_SCREEN_LAYOUT,
       "How to arrange the screens of multi-screen systems.")
 S_BOOL(video_windows_enable, VIDEO_WINDOWS_ENABLE,
       "video_windows_enable",
-      DEFAULT_VIDEO_WINDOWS_ENABLE, SD_FLAG_NONE, 0, 0,
+      DEFAULT_VIDEO_WINDOWS_ENABLE, SD_FLAG_NONE, SDESC_FLG_REFRESH, 0,
       "Separate Screen Windows",
       "Allow secondary screens to use separate desktop windows.")

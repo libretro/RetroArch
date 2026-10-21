@@ -22,6 +22,8 @@
 #include "../../../frontend/frontend_driver.h"
 #include "../../../menu/menu_setting.h"
 #include "../../../menu/menu_driver.h"
+#include "../../../menu/menu_displaylist.h"
+#include "../../../menu/menu_cbs.h"
 #include "../../../gfx/video_driver.h"
 #include "../../../gfx/video_thread_wrapper.h"
 #include "../../../input/input_driver.h"
@@ -980,6 +982,66 @@ static void test_window_menu_settings(void)
    load_fixture("");
 }
 
+static bool window_menu_has(const file_list_t *list, const char *label)
+{
+   size_t i;
+   for (i = 0; i < list->size; i++)
+      if (string_is_equal(list->list[i].label, label))
+         return true;
+   return false;
+}
+
+/* The screens' rows sit in Stereo 3D & Screens where the driver has
+ * windows: the switch, then each screen the core has from 2 on */
+static void test_window_menu_list(void)
+{
+   settings_t *settings = config_get_ptr();
+   file_list_t list;
+   char s[256];
+   load_fixture("");
+   memset(&list, 0, sizeof(list));
+   menu_displaylist_build_list(&list, settings,
+         DISPLAYLIST_VIDEO_STEREO_SETTINGS_LIST, false);
+   CHECK(!window_menu_has(&list, "video_windows_enable"));
+   CHECK(!window_menu_has(&list, "video_screen2_window_mode"));
+   file_list_deinitialize(&list);
+
+   window_test_begin();
+   window_test_run();
+   memset(&list, 0, sizeof(list));
+   menu_displaylist_build_list(&list, settings,
+         DISPLAYLIST_VIDEO_STEREO_SETTINGS_LIST, false);
+   CHECK(window_menu_has(&list, "video_windows_enable"));
+   CHECK(window_menu_has(&list, "video_screen2_window_mode"));
+   CHECK(window_menu_has(&list, "video_screen2_window_monitor"));
+   CHECK(!window_menu_has(&list, "video_screen1_window_mode"));
+   CHECK(!window_menu_has(&list, "video_screen3_window_mode"));
+   CHECK(!window_menu_has(&list, "video_screen2_window_x"));
+   file_list_deinitialize(&list);
+
+   settings->bools.video_windows_enable = false;
+   memset(&list, 0, sizeof(list));
+   menu_displaylist_build_list(&list, settings,
+         DISPLAYLIST_VIDEO_STEREO_SETTINGS_LIST, false);
+   CHECK(window_menu_has(&list, "video_windows_enable"));
+   CHECK(!window_menu_has(&list, "video_screen2_window_mode"));
+   file_list_deinitialize(&list);
+   window_test_end();
+
+   menu_cbs_sublabel_for_enum((enum msg_hash_enums)
+         (MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MODE + 1), 0, 0, s, sizeof(s));
+   CHECK(string_is_equal(s,
+            msg_hash_to_str(MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_MODE)));
+   menu_cbs_sublabel_for_enum((enum msg_hash_enums)
+         (MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MONITOR + 7), 0, 0, s, sizeof(s));
+   CHECK(string_is_equal(s,
+            msg_hash_to_str(MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_MONITOR)));
+   menu_cbs_sublabel_for_enum(MENU_ENUM_LABEL_VIDEO_WINDOWS_ENABLE,
+         0, 0, s, sizeof(s));
+   CHECK(string_is_equal(s,
+            msg_hash_to_str(MENU_ENUM_SUBLABEL_VIDEO_WINDOWS_ENABLE)));
+}
+
 #ifdef HAVE_THREADS
 static slock_t *snapshot_lock;
 static scond_t *snapshot_ready;
@@ -1409,6 +1471,7 @@ int main(int argc, char **argv)
    test_window_generation();
    test_window_frame_snapshot();
    test_window_menu_settings();
+   test_window_menu_list();
    test_window_redraw();
    test_window_retire();
    test_window_retire_in_flight();

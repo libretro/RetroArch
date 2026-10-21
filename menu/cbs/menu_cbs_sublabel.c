@@ -474,6 +474,11 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_overlay_hide_when_gamepad_conn
 #else
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_overlay_hide_when_gamepad_connected, MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED)
 #endif
+#if defined(ANDROID)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_windows_enable_android, MENU_ENUM_SUBLABEL_VIDEO_WINDOWS_ENABLE_ANDROID)
+#else
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_windows_enable, MENU_ENUM_SUBLABEL_VIDEO_WINDOWS_ENABLE)
+#endif
 #if (defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_runahead_mode,                 MENU_ENUM_SUBLABEL_RUNAHEAD_MODE)
 #else
@@ -2121,6 +2126,8 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       { MENU_ENUM_LABEL_VIDEO_OPENXR_PERF_BOOST, MENU_ENUM_SUBLABEL_VIDEO_OPENXR_PERF_BOOST },
       { MENU_ENUM_LABEL_VIDEO_OPENXR_CONTROLLERS, MENU_ENUM_SUBLABEL_VIDEO_OPENXR_CONTROLLERS },
       { MENU_ENUM_LABEL_VIDEO_OPENXR_LASER, MENU_ENUM_SUBLABEL_VIDEO_OPENXR_LASER },
+      { MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MODE, MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_MODE },
+      { MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MONITOR, MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_MONITOR },
       { MENU_ENUM_LABEL_FILE_BROWSER_OPEN_UWP_PERMISSIONS, MENU_ENUM_SUBLABEL_FILE_BROWSER_OPEN_UWP_PERMISSIONS },
       { MENU_ENUM_LABEL_FILE_BROWSER_OPEN_PICKER, MENU_ENUM_SUBLABEL_FILE_BROWSER_OPEN_PICKER },
       { MENU_ENUM_LABEL_MENU_SHOW_LOAD_CORE, MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CORE },
@@ -2858,6 +2865,13 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       unsigned lo  = 0;
       unsigned hi  = (unsigned)ARRAY_SIZE(sublabel_map);
       unsigned m;
+      /* A row a screen, each with an enum of its own */
+      if (     cbs->enum_idx >= MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MODE
+            && cbs->enum_idx <= MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MODE_LAST)
+         key = MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MODE;
+      else if (cbs->enum_idx >= MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MONITOR
+            && cbs->enum_idx <= MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MONITOR_LAST)
+         key = MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MONITOR;
       while (lo < hi)
       {
          unsigned mid = lo + ((hi - lo) >> 1);
@@ -3474,6 +3488,13 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_overlay_hide_when_gamepad_connected_android);
 #else
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_overlay_hide_when_gamepad_connected);
+#endif
+            break;
+         case MENU_ENUM_LABEL_VIDEO_WINDOWS_ENABLE:
+#if defined(ANDROID)
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_windows_enable_android);
+#else
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_windows_enable);
 #endif
             break;
          case MENU_ENUM_LABEL_NOTIFICATION_SHOW_CHEATS_APPLIED:
