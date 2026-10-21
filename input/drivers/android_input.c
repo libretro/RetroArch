@@ -2919,22 +2919,30 @@ static void android_input_poll_removed(android_input_t *android,
 }
 
 /* The presses the input block timeout kept back, shown now or held to
- * the next poll; with it at 0, those it still holds are shown. */
+ * the next poll; with it at 0, those it still holds are shown. The
+ * clock is read only on a poll a pad's button was pressed in: how new
+ * a press is, is all it is wanted for. */
 static void android_input_poll_press_groups(void)
 {
    static bool any;
-   struct timespec ts;
-   int64_t now;
+   int64_t now = 0;
    unsigned p;
 
    if (!android_press_window_ns && !any)
       return;
-   clock_gettime(CLOCK_MONOTONIC, &ts);
-   now = (int64_t)ts.tv_sec * 1000000000 + ts.tv_nsec;
+   for (p = 0; p < DEFAULT_MAX_PADS && !now; p++)
+      if (android_press_group[p].any_fresh)
+      {
+         struct timespec ts;
+         clock_gettime(CLOCK_MONOTONIC, &ts);
+         now = (int64_t)ts.tv_sec * 1000000000 + ts.tv_nsec;
+      }
    any = false;
    for (p = 0; p < DEFAULT_MAX_PADS; p++)
    {
       android_press_group_t *g = &android_press_group[p];
+      if (!g->any_fresh && !g->any_held && !g->any_untap)
+         continue;
       android_press_group_end(g, android_key_state[p], MAX_KEYS, now,
             android_press_window_ns);
       if (g->any_held || g->any_untap)

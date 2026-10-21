@@ -75,7 +75,8 @@ static INLINE bool android_press_group_up(android_press_group_t *g, int key)
 }
 
 /* The poll's end, at @now_ns: into the pad's @row what is to be shown
- * now, with a window of @window_ns. */
+ * now, with a window of @window_ns. @now_ns is read only where a press
+ * came this poll; without one it may be anything. */
 static INLINE void android_press_group_end(android_press_group_t *g,
       uint8_t *row, unsigned row_bytes, int64_t now_ns, int64_t window_ns)
 {

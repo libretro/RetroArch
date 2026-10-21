@@ -22,7 +22,9 @@
  *      the next with whatever came since, however new.
  *   5. A press let go before it was shown is shown for one poll.
  *   6. With the timeout at 0 nothing is kept back, and what was is
- *      shown. */
+ *      shown.
+ *   7. A poll with no press in it needs no time: what was held over is
+ *      shown, and a tap let go, without one. */
 #include <stdio.h>
 #include <string.h>
 
@@ -87,6 +89,16 @@ int main(void)
    poll_end(10, 5);
    poll_end(26, 5);
    CHECK(BIT_GET(row, A), "a press held over was not shown at the next poll");
+   /* with no press that poll, the time is not read: held over and a
+    * tap's end go by none */
+   reset();
+   android_press_group_down(&g, A, MS(9));
+   android_press_group_up(&g, A);
+   poll_end(10, 5);
+   android_press_group_end(&g, row, ROW_BYTES, 0, MS(5));
+   CHECK(BIT_GET(row, A), "a press held over needed the time to be shown");
+   android_press_group_end(&g, row, ROW_BYTES, 0, MS(5));
+   CHECK(!BIT_GET(row, A), "a tap's end needed the time");
    reset();
    android_press_group_down(&g, A, MS(9));
    poll_end(10, 5);
