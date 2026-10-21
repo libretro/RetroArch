@@ -32,6 +32,15 @@ static int av1_mp4_seek_frame(rmp4_video_stream_t *stream,
       video_hw_frame_abandon(&frame);
       return 0;
    }
+   if (getenv("AV1_TEST_HDR_TIMELINE") &&
+         (frame.color.max_cll != (expected >= 5 ? 2000u : 1000u) ||
+          frame.color.max_fall != (expected >= 5 ? 600u : 400u)))
+   {
+      fprintf(stderr, "FAIL AV1 seek HDR timeline at picture %u: %u/%u\n",
+            expected, frame.color.max_cll, frame.color.max_fall);
+      video_hw_frame_abandon(&frame);
+      return 0;
+   }
    return oracle_read_frame(reader, frame, fixture, &expected);
 }
 

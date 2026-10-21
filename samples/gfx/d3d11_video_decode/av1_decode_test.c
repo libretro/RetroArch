@@ -133,6 +133,15 @@ static int av1_container_seek_frame(void *stream, enum image_type_enum type,
       video_hw_frame_abandon(&frame);
       return 0;
    }
+   if (getenv("AV1_TEST_HDR_TIMELINE") &&
+         (frame.color.max_cll != (expected >= 5 ? 2000u : 1000u) ||
+          frame.color.max_fall != (expected >= 5 ? 600u : 400u)))
+   {
+      fprintf(stderr, "FAIL AV1 seek HDR timeline at picture %u: %u/%u\n",
+            expected, frame.color.max_cll, frame.color.max_fall);
+      video_hw_frame_abandon(&frame);
+      return 0;
+   }
    bps = frame.pixfmt == IMAGE_PIXFMT_P010 ? 2 : 1;
    if (!take_hw(&capture, opened, &frame)) goto done;
    bytes = (size_t)capture.w * capture.h * bps;

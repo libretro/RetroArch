@@ -262,6 +262,116 @@ static void test_early_hdr_seek(void)
    CHECK(opens == closes);
 }
 
+static void test_changed_hdr_seek(void)
+{
+   rmp4_video_stream_t *s;
+   video_hw_frame_t frame = {0};
+   unsigned n, seek, before;
+   const int64_t positions[4] = {0, 80000000, 40000000, 80000000};
+   int ret = 0;
+   make_mp4_clip(1, 2);
+   s = rmp4_video_stream_open_hw_avail(bytes, used, used, NULL, NULL, NULL);
+   CHECK(s && rmp4_video_stream_set_hw(s, 1));
+   if (!s) return;
+   for (n = 0; n < 3; n++)
+   {
+      CHECK(rmp4_video_stream_next(s, NULL));
+      CHECK(rmp4_video_stream_hw_frame(s, &frame));
+      CHECK(frame.color.max_cll == (n ? 2000 : 1000));
+      CHECK(frame.color.max_fall == (n ? 600 : 400));
+      video_hw_frame_abandon(&frame);
+   }
+   rmp4_video_stream_close(s);
+   s = rmp4_video_stream_open_hw_avail(bytes, used, used, NULL, NULL, NULL);
+   CHECK(s && rmp4_video_stream_set_hw(s, 1));
+   if (!s) return;
+   CHECK(rmp4_video_stream_seek_begin_ns(s, 80000000));
+   for (n = 0; n < 128 && ret == 0; n++)
+      ret = rmp4_video_stream_seek_step(s, NULL);
+   CHECK(ret == 1);
+   CHECK(rmp4_video_stream_next(s, NULL));
+   CHECK(rmp4_video_stream_hw_frame(s, &frame));
+   CHECK(frame.color.max_cll == 2000 && frame.color.max_fall == 600);
+   video_hw_frame_abandon(&frame);
+   for (seek = 0; seek < 4; seek++)
+   {
+      before = decodes;
+      ret = 0;
+      CHECK(rmp4_video_stream_seek_begin_ns(s, positions[seek]));
+      for (n = 0; n < 8 && !ret; n++)
+         ret = rmp4_video_stream_seek_step(s, NULL);
+      CHECK(ret == 1 && n <= 4 && decodes == before);
+      CHECK(rmp4_video_stream_next(s, NULL));
+      CHECK(rmp4_video_stream_hw_frame(s, &frame));
+      CHECK(frame.color.max_cll == (seek ? 2000 : 1000));
+      CHECK(frame.color.max_fall == (seek ? 600 : 400));
+      video_hw_frame_abandon(&frame);
+   }
+   rmp4_video_stream_close(s);
+   s = rmp4_video_stream_open_hw_avail(bytes, used,
+         media_at + sizeof(packet) + 8 + 40 * 4, NULL, NULL, NULL);
+   CHECK(s && rmp4_video_stream_set_hw(s, 1));
+   if (!s) return;
+   before = decodes;
+   CHECK(rmp4_video_stream_seek_begin_ns(s, 80000000));
+   for (n = 0; n < 128 &&
+         rmp4_video_stream_wait_reason(s) != RMP4_VIDEO_WAIT_INPUT; n++)
+      CHECK(rmp4_video_stream_seek_step(s, NULL) == 0);
+   CHECK(n < 128 && decodes == before);
+   CHECK(rmp4_video_stream_seek_begin_ns(s, 0));
+   ret = 0;
+   for (n = 0; n < 8 && !ret; n++) ret = rmp4_video_stream_seek_step(s, NULL);
+   CHECK(ret == 1 && decodes == before);
+   CHECK(rmp4_video_stream_next(s, NULL));
+   CHECK(rmp4_video_stream_hw_frame(s, &frame) && frame.color.max_cll == 1000);
+   video_hw_frame_abandon(&frame);
+   rmp4_video_stream_set_avail(s, used);
+   CHECK(rmp4_video_stream_seek_begin_ns(s, 80000000));
+   ret = 0;
+   for (n = 0; n < 128 && !ret; n++) ret = rmp4_video_stream_seek_step(s, NULL);
+   CHECK(ret == 1);
+   CHECK(rmp4_video_stream_next(s, NULL));
+   CHECK(rmp4_video_stream_hw_frame(s, &frame));
+   CHECK(frame.color.max_cll == 2000 && frame.color.max_fall == 600);
+   video_hw_frame_abandon(&frame);
+   rmp4_video_stream_close(s);
+   CHECK(opens == closes);
+}
+
+static void test_changed_bad_hdr(void)
+{
+   rmp4_video_stream_t *s;
+   size_t second;
+   unsigned n, attempt, before = decodes;
+   int ret;
+   make_mp4_clip(1, 2);
+   second = media_at + sizeof(packet) + 8 + 40 * 4;
+   bytes[second + 7] = 0;
+   s = rmp4_video_stream_open_hw_avail(bytes, used, second, NULL, NULL, NULL);
+   CHECK(s && rmp4_video_stream_set_hw(s, 1));
+   if (!s) return;
+   CHECK(rmp4_video_stream_seek_begin_ns(s, 80000000));
+   for (n = 0; n < 128 &&
+         rmp4_video_stream_wait_reason(s) != RMP4_VIDEO_WAIT_INPUT; n++)
+      CHECK(rmp4_video_stream_seek_step(s, NULL) == 0);
+   CHECK(n < 128 && decodes == before);
+   rmp4_video_stream_set_avail(s, used);
+   for (attempt = 0; attempt < 2; attempt++)
+   {
+      if (attempt)
+      {
+         rmp4_video_stream_rewind(s);
+         CHECK(rmp4_video_stream_seek_begin_ns(s, 80000000));
+      }
+      ret = 0;
+      for (n = 0; n < 128 && !ret; n++) ret = rmp4_video_stream_seek_step(s, NULL);
+      CHECK(ret == -1 && decodes == before);
+      CHECK(!rmp4_video_stream_next(s, NULL));
+   }
+   rmp4_video_stream_close(s);
+   CHECK(opens == closes);
+}
+
 static void test_early_bad_hdr(void)
 {
    rmp4_video_stream_t *s;
@@ -333,6 +443,8 @@ int main(void)
    test_seek();
    test_color();
    test_early_hdr_seek();
+   test_changed_hdr_seek();
+   test_changed_bad_hdr();
    test_early_bad_hdr();
    test_probe_frontier();
    test_unavailable();
