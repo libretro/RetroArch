@@ -101,6 +101,52 @@ static int av1_color_matches(const video_hw_frame_t *frame)
    return 0;
 }
 
+static int av1_container_seek_frame(void *stream, enum image_type_enum type,
+      opened_t *opened, const uint8_t *reference, size_t reference_size,
+      unsigned expected)
+{
+   frames_t capture;
+   video_hw_frame_t frame;
+   unsigned polls, bps;
+   size_t bytes, at;
+   int ret = 0, ok = 0;
+   memset(&capture, 0, sizeof(capture));
+   if (!image_transfer_anim_stream_seek_begin(stream, type,
+            (int64_t)expected * 1000000 / 25)) return 0;
+   for (polls = 0; polls < 10000; polls++)
+   {
+      ret = image_transfer_anim_stream_seek_step(stream, type, NULL);
+      if (ret) break;
+      Sleep(1);
+   }
+   if (ret != 1 || polls == 10000) return 0;
+   for (polls = 0; polls < 10000; polls++)
+   {
+      if (image_transfer_anim_stream_next(stream, type, NULL)) break;
+      if (!image_transfer_anim_stream_waiting(stream, type)) return 0;
+      Sleep(1);
+   }
+   if (polls == 10000 ||
+       !image_transfer_anim_stream_hw_frame(stream, type, &frame)) return 0;
+   if (!av1_color_matches(&frame))
+   {
+      video_hw_frame_abandon(&frame);
+      return 0;
+   }
+   bps = frame.pixfmt == IMAGE_PIXFMT_P010 ? 2 : 1;
+   if (!take_hw(&capture, opened, &frame)) goto done;
+   bytes = (size_t)capture.w * capture.h * bps;
+   at = (bytes + bytes / 2) * expected;
+   if (at > reference_size || bytes + bytes / 2 > reference_size - at ||
+       capture.n != 1 || !capture.y[0] || !capture.uv[0] ||
+       memcmp(capture.y[0], reference + at, bytes) ||
+       memcmp(capture.uv[0], reference + at + bytes, bytes / 2)) goto done;
+   ok = 1;
+done:
+   frames_free(&capture);
+   return ok;
+}
+
 #include "av1_core_decode.h"
 
 int main(int argc, char **argv)
@@ -153,6 +199,13 @@ int main(int argc, char **argv)
       stream = image_transfer_anim_stream_new_hw_avail(data, size, size,
             type, &more, NULL, NULL);
       if (!stream) { puts("FAIL AV1 container hardware stream open"); goto done; }
+      if (type == IMAGE_TYPE_WEBM && getenv("AV1_TEST_SEEK"))
+      {
+         if (!av1_container_seek_frame(stream, type, &opened,
+                  reference, reference_size, 9)) goto done;
+         puts("AV1 WebM early seek before first display: pixels and metadata PASS");
+         image_transfer_anim_stream_rewind(stream, type);
+      }
       for (polls = 0; polls < 10000; polls++)
       {
          int duration = 0;
@@ -173,6 +226,19 @@ int main(int argc, char **argv)
             Sleep(1);
       }
       if (polls == 10000 || !displayed) goto done;
+      if (type == IMAGE_TYPE_WEBM && getenv("AV1_TEST_SEEK"))
+      {
+         unsigned attempt;
+         if (displayed < 10 || !image_transfer_anim_stream_seekable(stream, type))
+            goto done;
+         for (attempt = 0; attempt < 3; attempt++)
+         {
+            unsigned expected = attempt == 1 ? 0 : 9;
+            if (!av1_container_seek_frame(stream, type, &opened,
+                     reference, reference_size, expected)) goto done;
+         }
+         puts("AV1 WebM seeks 9 to 0 to 9: independent pixels and metadata PASS");
+      }
       image_transfer_anim_stream_free(stream, type); stream = NULL;
       goto compare;
    }

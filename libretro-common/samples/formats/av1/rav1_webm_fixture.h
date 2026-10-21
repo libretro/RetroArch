@@ -31,10 +31,11 @@ static void number(uint32_t id, unsigned n)
    end_element(at);
 }
 
-static void make_webm(int inband, unsigned matrix, unsigned transfer,
-                      unsigned range)
+static void make_webm_clip(int inband, unsigned matrix, unsigned transfer,
+                      unsigned range, unsigned frames, int cues, int hdr)
 {
-   size_t b, segment, tracks, track, video, cluster;
+   static const uint8_t cll[] = {0x2a, 6, 1, 3, 232, 1, 144, 128};
+   size_t b, segment, tracks, track, video, cluster, body, positions[2];
    unsigned i;
    used = 0;
    b = element(0x1a45dfa3);
@@ -43,6 +44,7 @@ static void make_webm(int inband, unsigned matrix, unsigned transfer,
    end_element(video);
    end_element(b);
    segment = element(0x18538067);
+   body = used;
    tracks = element(0x1654ae6b);
    track = element(0xae);
    number(0xd7, 1);
@@ -66,24 +68,64 @@ static void make_webm(int inband, unsigned matrix, unsigned transfer,
    end_element(video);
    end_element(track);
    end_element(tracks);
+   positions[0] = used - body;
+   positions[1] = 0;
    cluster = element(0x1f43b675);
    number(0xe7, 0);
-   for (i = 0; i < 2; i++)
+   for (i = 0; i < frames; i++)
    {
+      if (cues && i == frames / 2)
+      {
+         end_element(cluster);
+         positions[1] = used - body;
+         cluster = element(0x1f43b675);
+         number(0xe7, i * 40);
+      }
       b = element(0xa3);
       put(0x81);
       put(0);
-      put(i * 40);
-      put(i ? 0 : 128);
+      put((cues && i >= frames / 2 ? i - frames / 2 : i) * 40);
+      put(!i || (cues && i == frames / 2) ? 128 : 0);
       if (!i)
          media_at = used;
       if (!i && inband)
          copy(config + 4, sizeof(config) - 4);
+      if (!i && hdr)
+         copy(cll, sizeof(cll));
       copy(packet, sizeof(packet));
       end_element(b);
    }
    end_element(cluster);
+   if (cues)
+   {
+      size_t points = element(0x1c53bb6b);
+      for (i = 0; i < 2; i++)
+      {
+         size_t point = element(0xbb);
+         number(0xb3, i * (frames / 2) * 40);
+         track = element(0xb7);
+         number(0xf7, 1);
+         b = element(0xf1);
+         be32((uint32_t)positions[i]);
+         end_element(b);
+         end_element(track);
+         end_element(point);
+      }
+      end_element(points);
+   }
    end_element(segment);
+}
+
+static void make_webm_frames(int inband, unsigned matrix, unsigned transfer,
+                      unsigned range, unsigned frames)
+{
+   make_webm_clip(inband, matrix, transfer, range, frames, 0, 0);
+}
+
+static void make_webm(int inband, unsigned matrix, unsigned transfer,
+                      unsigned range)
+{
+   make_webm_frames(inband, matrix, transfer, range, 2);
 }
 
 #endif

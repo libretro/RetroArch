@@ -127,6 +127,162 @@ static void test_stream(int inband)
    CHECK(opens == closes);
 }
 
+static void test_seek(int inband)
+{
+   rwebm_video_stream_t *s;
+   video_hw_frame_t frame = {0};
+   unsigned before, n;
+   int ret = 0;
+   int64_t position = -1;
+   make_webm(inband, 0, 0, 0);
+   s = rwebm_video_stream_open_hw_avail(bytes, used, used, NULL);
+   CHECK(s && rwebm_video_stream_set_hw(s, 1));
+   if (!s) return;
+   CHECK(rwebm_video_stream_seekable(s));
+   if (!rwebm_video_stream_seekable(s)) goto done;
+   CHECK(rwebm_video_stream_seek_begin_ns(s, 40000000));
+   before = exports;
+   decode_busy = 1;
+   for (n = 0; n < 8 && !rwebm_video_stream_waiting(s); n++)
+      CHECK(rwebm_video_stream_seek_step(s, NULL) == 0);
+   CHECK(rwebm_video_stream_waiting(s));
+   n = decodes;
+   CHECK(rwebm_video_stream_seek_step(s, NULL) == 0 && decodes == n + 1);
+   rwebm_video_stream_set_avail(s, media_at);
+   decode_busy = 0;
+   n = decodes;
+   CHECK(rwebm_video_stream_seek_step(s, NULL) == 0 && decodes == n);
+   rwebm_video_stream_set_avail(s, used);
+   for (n = 0; n < 128 && ret == 0; n++)
+      ret = rwebm_video_stream_seek_step(s, &position);
+   CHECK(ret == 1 && position == 40000 && exports == before);
+   CHECK(rwebm_video_stream_next(s, NULL));
+   CHECK(rwebm_video_stream_hw_frame(s, &frame));
+   CHECK(rwebm_video_stream_frame_time_ns(s) == 40000000);
+   video_hw_frame_abandon(&frame);
+   /* A new seek cancels a borrowed, busy preroll packet. */
+   CHECK(rwebm_video_stream_seek_begin_ns(s, 40000000));
+   decode_busy = 1;
+   for (n = 0; n < 8 && !rwebm_video_stream_waiting(s); n++)
+      CHECK(rwebm_video_stream_seek_step(s, NULL) == 0);
+   CHECK(rwebm_video_stream_seek_begin_ns(s, -1));
+   decode_busy = 0;
+   ret = 0;
+   for (n = 0; n < 128 && ret == 0; n++)
+      ret = rwebm_video_stream_seek_step(s, &position);
+   CHECK(ret == 1 && position == 0);
+   CHECK(rwebm_video_stream_next(s, NULL));
+   CHECK(rwebm_video_stream_hw_frame(s, &frame));
+   CHECK(rwebm_video_stream_frame_time_ns(s) == 0);
+   video_hw_frame_abandon(&frame);
+   CHECK(rwebm_video_stream_seek_begin_ns(s, 1000000000));
+   ret = 0;
+   for (n = 0; n < 128 && ret == 0; n++)
+      ret = rwebm_video_stream_seek_step(s, &position);
+   CHECK(ret == 1 && position == 40000);
+done:
+   decode_busy = 0;
+   rwebm_video_stream_close(s);
+   CHECK(opens == closes);
+}
+
+static void test_seek_partial(int inband)
+{
+   rwebm_video_stream_t *s;
+   video_hw_frame_t frame = {0};
+   unsigned n, before = exports;
+   int ret = 0;
+   int64_t position = -1;
+   make_webm_frames(inband, 0, 0, 0, 4);
+   s = rwebm_video_stream_open_hw_avail(bytes, used, used - 1, NULL);
+   CHECK(s && rwebm_video_stream_set_hw(s, 1));
+   if (!s) return;
+   CHECK(rwebm_video_stream_seek_begin_ns(s, 1000000000));
+   for (n = 0; n < 128 && !rwebm_video_stream_waiting(s); n++)
+      CHECK(rwebm_video_stream_seek_step(s, NULL) == 0);
+   CHECK(rwebm_video_stream_waiting(s) && exports == before);
+   rwebm_video_stream_set_avail(s, used);
+   for (n = 0; n < 128 && ret == 0; n++)
+      ret = rwebm_video_stream_seek_step(s, &position);
+   CHECK(ret == 1 && position == 120000 && exports == before);
+   CHECK(rwebm_video_stream_next(s, NULL));
+   CHECK(rwebm_video_stream_hw_frame(s, &frame));
+   CHECK(rwebm_video_stream_frame_time_ns(s) == 120000000);
+   video_hw_frame_abandon(&frame);
+   rwebm_video_stream_close(s);
+   CHECK(opens == closes);
+}
+
+static void test_seek_early_hdr(int inband)
+{
+   rwebm_video_stream_t *s;
+   video_hw_frame_t frame = {0};
+   unsigned n, before = decodes;
+   int ret = 0;
+   int64_t position = -1;
+   make_webm_clip(inband, 0, 0, 0, 4, 1, 1);
+   s = rwebm_video_stream_open_hw_avail(bytes, used, used, NULL);
+   CHECK(s && rwebm_video_stream_set_hw(s, 1));
+   if (!s) return;
+   CHECK(rwebm_video_stream_seek_begin_ns(s, 80000000));
+   for (n = 0; n < 128 && ret == 0; n++)
+      ret = rwebm_video_stream_seek_step(s, &position);
+   CHECK(ret == 1 && position == 80000 && decodes == before);
+   CHECK(rwebm_video_stream_next(s, NULL));
+   CHECK(rwebm_video_stream_hw_frame(s, &frame) && decodes == before + 1);
+   CHECK(frame.color.max_cll == 1000 && frame.color.max_fall == 400);
+   video_hw_frame_abandon(&frame);
+   rwebm_video_stream_close(s);
+   CHECK(opens == closes);
+}
+
+static void test_seek_error(void)
+{
+   rwebm_video_stream_t *s;
+   video_hw_frame_t held = {0}, frame = {0};
+   unsigned n, before;
+   int ret = 0;
+   make_webm(1, 0, 0, 0);
+   s = rwebm_video_stream_open_hw_avail(bytes, used, used, NULL);
+   CHECK(s && rwebm_video_stream_set_hw(s, 1));
+   if (!s) return;
+   CHECK(rwebm_video_stream_next(s, NULL));
+   CHECK(rwebm_video_stream_hw_frame(s, &held));
+   before = abandons;
+   CHECK(rwebm_video_stream_seek_begin_ns(s, 40000000));
+   CHECK(abandons == before);
+   decode_busy = -1;
+   for (n = 0; n < 128 && ret == 0; n++)
+      ret = rwebm_video_stream_seek_step(s, NULL);
+   CHECK(ret == -1 && abandons == before && held.image);
+   CHECK(!rwebm_video_stream_next(s, NULL) && !rwebm_video_stream_waiting(s));
+   decode_busy = 0;
+   CHECK(rwebm_video_stream_seek_begin_ns(s, 0));
+   ret = 0;
+   for (n = 0; n < 128 && ret == 0; n++)
+      ret = rwebm_video_stream_seek_step(s, NULL);
+   CHECK(ret == 1 && rwebm_video_stream_next(s, NULL));
+   CHECK(rwebm_video_stream_hw_frame(s, &frame));
+   rwebm_video_stream_close(s);
+   CHECK(abandons == before);
+   video_hw_frame_abandon(&held);
+   video_hw_frame_abandon(&frame);
+   CHECK(opens == closes);
+}
+
+static void test_bad_initial_hdr(int inband)
+{
+   rwebm_video_stream_t *s;
+   unsigned before = opens;
+   size_t cll;
+   make_webm_clip(inband, 0, 0, 0, 4, 1, 1);
+   cll = media_at + (inband ? sizeof(config) - 4 : 0);
+   bytes[cll + 7] = 0;
+   s = rwebm_video_stream_open_hw_avail(bytes, used, used, NULL);
+   CHECK(s && !rwebm_video_stream_set_hw(s, 1) && opens == before);
+   rwebm_video_stream_close(s);
+}
+
 static void test_config(int inband, unsigned matrix, unsigned transfer,
                         unsigned range, int allowed)
 {
@@ -159,6 +315,15 @@ int main(void)
    rav1_set_hw_backend(&factory);
    test_stream(0);
    test_stream(1);
+   test_seek(0);
+   test_seek(1);
+   test_seek_partial(0);
+   test_seek_partial(1);
+   test_seek_error();
+   test_seek_early_hdr(0);
+   test_seek_early_hdr(1);
+   test_bad_initial_hdr(0);
+   test_bad_initial_hdr(1);
    test_config(0, 1, 0, 1, 1);
    test_config(1, 0, 16, 0, 1);
    test_config(0, 0, 18, 0, 1);
