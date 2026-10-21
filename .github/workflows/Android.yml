@@ -82,6 +82,8 @@ jobs:
           java-version: '21'
       - name: Real JNI with synthetic Android codec inventory and exception faults
         run: make -C samples/gfx/mediacodec_inventory clean all check CC=${{ matrix.cc }} SANITIZER=undefined
+      - name: Image ownership and runtime reader fault contracts
+        run: make -C samples/gfx/android_image_queue clean all check CC=${{ matrix.cc }} SANITIZER=address,undefined
   ndk-compile:
     runs-on: ubuntu-latest
     steps:
@@ -98,9 +100,11 @@ jobs:
           set -eu
           for target in aarch64-linux-android armv7a-linux-androideabi; do
             for api in 21 29; do
-              "$MEDIA_NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/$target$api-clang" \
-                -std=c89 -pedantic -Wall -Wextra -Werror -Wno-long-long \
-                -Wframe-larger-than=2048 -Ilibretro-common/include \
-                -c gfx/common/mediacodec_inventory.c -o "$RUNNER_TEMP/$target-$api.o"
+              for source in mediacodec_inventory android_image_queue android_image_ndk; do
+                "$MEDIA_NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/$target$api-clang" \
+                  -std=c89 -pedantic -Wall -Wextra -Werror -Wno-long-long -Wno-c99-extensions \
+                  -DHAVE_THREADS -DHAVE_DYLIB -Wframe-larger-than=2048 -Ilibretro-common/include \
+                  -c "gfx/common/$source.c" -o "$RUNNER_TEMP/$source-$target-$api.o"
+              done
             done
           done
