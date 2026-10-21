@@ -70,6 +70,7 @@
 #include <queues/task_queue.h>
 
 static unsigned failures = 0;
+static retro_time_t dplane_grid_base, dplane_grid_period;
 
 #define CHECK(cond, ...) \
    do { \
@@ -153,7 +154,9 @@ static void run_frames(unsigned n)
    {
       runloop_iterate();
 #ifdef HAVE_COCOA
-      harness_cocoa_pump();
+      /* No native presents or event work on the synthetic display. */
+      if (!dplane_grid_period)
+         harness_cocoa_pump();
 #endif
    }
 }
@@ -697,7 +700,6 @@ static const video_driver_t          *dplane_inner;
 static video_driver_t                 dplane_driver;
 static const video_poke_interface_t  *dplane_inner_poke;
 static video_poke_interface_t         dplane_thread_poke;
-static retro_time_t dplane_grid_base, dplane_grid_period;
 
 static bool dplane_frame(void *data, const void *frame, unsigned dims,
       uint64_t frame_count, unsigned pitch, const char *msg,
