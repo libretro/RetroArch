@@ -127,3 +127,20 @@ for control in ('early', 'exists'):
         assert destination.read_bytes()==b'preserve existing output',log
         assert '[Metal recording] Failed' in log,log
     print(f'PASS: real frontend {control}: bounded shutdown and output preservation',flush=True)
+
+for threaded in ('false','true'):
+    changed=root/f'viewport-{threaded}.mp4'
+    changed_config=root/f'viewport-{threaded}.cfg'
+    changed_config.write_text(config.read_text(encoding='utf-8').replace(
+        'video_threaded = "true"',f'video_threaded = "{threaded}"'),encoding='utf-8')
+    changed_env=dict(env,NATIVE_RECORD_VIEWPORT_CHANGE='1')
+    result=subprocess.run([exe,'-v','--config',str(changed_config),'-L',core,
+        '--record',str(changed),'--recordconfig',str(record),'--max-frames','180'],
+        cwd=case,env=changed_env,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=60)
+    log=result.stdout.decode(errors='replace')
+    (root/f'viewport-{threaded}.log').write_text(log,encoding='utf-8')
+    assert result.returncode==0 and '[fixture] viewport geometry changed' in log,log[-8000:]
+    done=re.search(r'Finalized (\d+) GPU frames, (\d+) PCM frames',log)
+    assert done and 0<int(done[1])<100 and '[Metal recording] Failed' not in log,log[-8000:]
+    subprocess.run([ffmpeg,'-v','error','-i',str(changed),'-f','null','-'],check=True,timeout=30)
+    print(f'PASS: real frontend viewport change threaded={threaded}: retired playable recording',flush=True)

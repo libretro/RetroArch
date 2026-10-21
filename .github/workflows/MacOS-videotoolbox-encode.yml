@@ -176,7 +176,7 @@ jobs:
         run: |
           set -eu
           command -v ffmpeg >/dev/null && command -v ffprobe >/dev/null || brew install ffmpeg
-          cc -dynamiclib -std=gnu89 -Ilibretro-common/include samples/record/nvenc_frontend/core.c -o "$RUNNER_TEMP/metal-record-core.dylib" -lm
+          cc -dynamiclib -std=gnu89 -Ilibretro-common/include samples/record/metal_frontend/core.c -o "$RUNNER_TEMP/metal-record-core.dylib" -lm
           python3 samples/record/metal_frontend/run.py --retroarch ./retroarch --core "$RUNNER_TEMP/metal-record-core.dylib" --output-dir "$RUNNER_TEMP/metal-frontend-recordings"
       - uses: actions/upload-artifact@v6
         if: always()
