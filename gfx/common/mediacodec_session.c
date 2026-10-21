@@ -39,6 +39,30 @@ typedef void (*format_string_fn)(AMediaFormat*,const char*,const char*);
 typedef void (*format_integer_fn)(AMediaFormat*,const char*,int32_t);
 typedef void (*format_buffer_fn)(AMediaFormat*,const char*,const void*,size_t);
 typedef bool (*format_get_fn)(AMediaFormat*,const char*,int32_t*);
+#if defined(__ANDROID__) && defined(__clang__) && __ANDROID_API__>=29
+#define CODEC_ABI(type,symbol) __extension__ typedef char symbol##_abi[__builtin_types_compatible_p(type,__typeof__(&symbol))?1:-1]
+CODEC_ABI(codec_new_fn,AMediaCodec_createCodecByName);
+CODEC_ABI(codec_config_fn,AMediaCodec_configure);
+CODEC_ABI(codec_action_fn,AMediaCodec_start);
+CODEC_ABI(codec_action_fn,AMediaCodec_stop);
+CODEC_ABI(codec_action_fn,AMediaCodec_delete);
+CODEC_ABI(codec_name_fn,AMediaCodec_getName);
+CODEC_ABI(codec_name_free_fn,AMediaCodec_releaseName);
+CODEC_ABI(codec_input_fn,AMediaCodec_dequeueInputBuffer);
+CODEC_ABI(codec_buffer_fn,AMediaCodec_getInputBuffer);
+CODEC_ABI(codec_queue_fn,AMediaCodec_queueInputBuffer);
+CODEC_ABI(codec_output_fn,AMediaCodec_dequeueOutputBuffer);
+CODEC_ABI(codec_release_fn,AMediaCodec_releaseOutputBuffer);
+CODEC_ABI(codec_render_fn,AMediaCodec_releaseOutputBufferAtTime);
+CODEC_ABI(codec_format_fn,AMediaCodec_getOutputFormat);
+CODEC_ABI(format_new_fn,AMediaFormat_new);
+CODEC_ABI(format_free_fn,AMediaFormat_delete);
+CODEC_ABI(format_string_fn,AMediaFormat_setString);
+CODEC_ABI(format_integer_fn,AMediaFormat_setInt32);
+CODEC_ABI(format_buffer_fn,AMediaFormat_setBuffer);
+CODEC_ABI(format_get_fn,AMediaFormat_getInt32);
+#undef CODEC_ABI
+#endif
 struct mediacodec_session {
  dylib_t library;AMediaCodec *codec;AMediaFormat *config;
  codec_action_fn stop,delete_codec;codec_input_fn input;codec_buffer_fn buffer;

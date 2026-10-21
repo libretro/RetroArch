@@ -10,8 +10,16 @@
 #ifdef ANDROID_IMAGE_NDK_TEST
 #include "android_image_ndk_test_types.h"
 #else
+#if !defined(__cplusplus) && (!defined(__STDC_VERSION__) || __STDC_VERSION__<199901L) && !defined(inline)
+#define inline __inline__
+#define ANDROID_IMAGE_UNDEF_INLINE
+#endif
 #include <media/NdkImageReader.h>
 #include <android/hardware_buffer.h>
+#ifdef ANDROID_IMAGE_UNDEF_INLINE
+#undef inline
+#undef ANDROID_IMAGE_UNDEF_INLINE
+#endif
 #endif
 typedef media_status_t (*image_new_fn)(int32_t,int32_t,int32_t,uint64_t,int32_t,AImageReader**);
 typedef media_status_t (*image_window_fn)(AImageReader*,ANativeWindow**);
@@ -22,6 +30,21 @@ typedef media_status_t (*image_buffer_fn)(const AImage*,AHardwareBuffer**);
 typedef media_status_t (*image_int_fn)(const AImage*,int32_t*);
 typedef media_status_t (*image_crop_fn)(const AImage*,AImageCropRect*);
 typedef media_status_t (*image_time_fn)(const AImage*,int64_t*);
+#if defined(__ANDROID__) && defined(__clang__) && __ANDROID_API__>=26
+/* Type-only checks do not introduce native symbol references. */
+#define IMAGE_ABI(type,symbol) __extension__ typedef char symbol##_abi[__builtin_types_compatible_p(type,__typeof__(&symbol))?1:-1]
+IMAGE_ABI(image_new_fn,AImageReader_newWithUsage);
+IMAGE_ABI(image_window_fn,AImageReader_getWindow);
+IMAGE_ABI(image_next_fn,AImageReader_acquireNextImageAsync);
+IMAGE_ABI(image_reader_delete_fn,AImageReader_delete);
+IMAGE_ABI(image_delete_fn,AImage_delete);
+IMAGE_ABI(image_buffer_fn,AImage_getHardwareBuffer);
+IMAGE_ABI(image_int_fn,AImage_getWidth);
+IMAGE_ABI(image_int_fn,AImage_getHeight);
+IMAGE_ABI(image_crop_fn,AImage_getCropRect);
+IMAGE_ABI(image_time_fn,AImage_getTimestamp);
+#undef IMAGE_ABI
+#endif
 typedef struct android_ndk_reader android_ndk_reader_t;
 typedef struct android_ndk_image {
  android_ndk_reader_t *owner;
