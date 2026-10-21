@@ -10,6 +10,8 @@
  *                  with none waiting, one read and the state stays
  *   pressures   -> L2, R2 and the face, shoulder and D-pad buttons'
  *                  pressures are axes 4 to 15
+ *   rumble      -> the motors go in the output report with the lights,
+ *                  written at the pad's next report, once a change
  *   bluetooth   -> the address the pad connects to is feature 0xF5,
  *                  read and set most significant byte first
  *   gone        -> a read failing with ENODEV disconnects the pad, frees
@@ -387,6 +389,32 @@ int main(void)
          "the buttons are not the newest report's");
    x = hidraw_hid.axis(hid, 0, AXIS_POS(0));
    CHECK(x > 30000, "the stick is not the newest report's");
+
+   /* rumble: one output report at the next report the pad sends,
+    * the strong motor's force and the weak one only on or off; none
+    * again unchanged */
+   {
+      int writes = ds3->writes;
+      hidraw_hid.set_rumble(hid, 0, RETRO_RUMBLE_STRONG, 0x8000);
+      hidraw_hid.set_rumble(hid, 0, RETRO_RUMBLE_WEAK, 0x0100);
+      CHECK(ds3->writes == writes, "rumble was written outside the pad's report");
+      queue_report(ds3, circle, 255);
+      hidraw_hid.poll(hid);
+      CHECK(ds3->writes == writes + 1 && ds3->out[0] == 0x01
+            && ds3->out[2] == 0xff && ds3->out[3] == 1
+            && ds3->out[4] == 0xff && ds3->out[5] == 0x80
+            && ds3->out[10] == 0x02,
+            "the rumble report is not the motors asked for, with the lights");
+      queue_report(ds3, circle, 255);
+      hidraw_hid.poll(hid);
+      CHECK(ds3->writes == writes + 1, "rumble was written again unchanged");
+      hidraw_hid.set_rumble(hid, 0, RETRO_RUMBLE_STRONG, 0);
+      hidraw_hid.set_rumble(hid, 0, RETRO_RUMBLE_WEAK, 0);
+      queue_report(ds3, circle, 255);
+      hidraw_hid.poll(hid);
+      CHECK(ds3->writes == writes + 2 && !ds3->out[3] && !ds3->out[5],
+            "the motors were not stopped");
+   }
 
    /* the left stick half up and the right one fully down: up is
     * negative, down positive, neither turned round */

@@ -35,9 +35,10 @@ typedef struct ds3_instance
    int slot;
    int player;     /* told: from 1, -1 for none; 0 not yet */
    bool led_set;
+   bool motors_due;
    uint32_t buttons;
    int16_t analog_state[3][2];
-   uint16_t motors[2];
+   uint8_t motors[2]; /* strong, weak: what the core asked last */
    /* the pressures, in ds3_pressure_byte[]'s order */
    uint8_t pressure[12];
 } ds3_instance_t;
@@ -191,6 +192,9 @@ static int ds3_send_output_report(ds3_instance_t *instance)
 
    /* Initialize the report with default values */
    memcpy(&report, &default_report, sizeof(struct sixaxis_output_report));
+   /* the small motor is only on or off */
+   report.rumble.right_motor_on   = instance->motors[1] ? 1 : 0;
+   report.rumble.left_motor_force = instance->motors[0];
    report.leds_bitmap = instance->player < 0 ? 0
       : ds3_get_leds(instance->player ? (unsigned)instance->player
             : (unsigned)instance->slot + 1);
@@ -302,10 +306,13 @@ static void ds3_packet_handler(void *device_data,
    if (!device)
       return;
 
-   if (!device->led_set)
+   /* lights and motors go in one report, from here: a core changing
+    * its rumble every frame costs one report a packet at most */
+   if (!device->led_set || device->motors_due)
    {
       ds3_send_output_report(device);
-      device->led_set = true;
+      device->led_set    = true;
+      device->motors_due = false;
    }
 
    /* the input report, whole; nothing else is the pad's state. It is
@@ -326,7 +333,15 @@ static void ds3_packet_handler(void *device_data,
 static void ds3_set_rumble(void *device_data,
       enum retro_rumble_effect effect, uint16_t strength)
 {
-   /* TODO/FIXME - implement */
+   ds3_instance_t *device = (ds3_instance_t *)device_data;
+   unsigned idx           = (effect == RETRO_RUMBLE_STRONG) ? 0 : 1;
+   uint8_t motor          = (uint8_t)(strength >> 8);
+
+   if (device && device->motors[idx] != motor)
+   {
+      device->motors[idx] = motor;
+      device->motors_due  = true;
+   }
 }
 
 /* Its lights go with the next report the pad sends. */
