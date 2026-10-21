@@ -42,7 +42,7 @@ bool gfx_media_player_state(gfx_anim_preview_t *session,
    state->position_us = session->seeking ? session->media_requested_us
       : session->media_origin_us > maximum - elapsed ? maximum
       : session->media_origin_us + elapsed;
-   if (!session->seeking && session->type == IMAGE_TYPE_MP4
+   if (!session->seeking && (session->type == IMAGE_TYPE_MP4 || session->type == IMAGE_TYPE_WEBM)
          && !session->loop_count && state->duration_us
          && state->position_us > state->duration_us)
       state->position_us %= state->duration_us;

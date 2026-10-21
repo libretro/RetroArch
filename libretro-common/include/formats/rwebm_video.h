@@ -325,6 +325,14 @@ void rwebm_video_stream_rewind(rwebm_video_stream_t *stream);
 /* Query only while the stream is exclusively owned, before publishing a
  * playback session. Hardware seek preparation is not yet supported. */
 int64_t rwebm_video_stream_start_ns(const rwebm_video_stream_t *stream);
+/* Last displayed packet timestamp, on the exclusive decode owner;
+ * -1 before a picture or after rewind. Hidden packets do not advance it. */
+int64_t rwebm_video_stream_frame_time_ns(const rwebm_video_stream_t *stream);
+/* Movie coordinates preserve requested positions in leading/tail video
+ * intervals; the raw bounded seek APIs remain unchanged. */
+int rwebm_video_stream_seek_movie_begin_ns(rwebm_video_stream_t *stream, int64_t ns);
+int rwebm_video_stream_seek_movie_step(rwebm_video_stream_t *stream,
+      int64_t *position_us);
 int rwebm_video_stream_seekable(const rwebm_video_stream_t *stream);
 int rwebm_video_stream_seek_begin_ns(rwebm_video_stream_t *stream, int64_t ns);
 int rwebm_video_stream_seek_step(rwebm_video_stream_t *stream,

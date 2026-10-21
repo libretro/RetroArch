@@ -1058,7 +1058,7 @@ video_player_t *video_player_new(void *stream, enum image_type_enum type,
          | VIDEO_PLAYER_INLINE);
    p->loops_left = (loop_count == 0) ? -1 : loop_count;
    p->initial_loops = p->loops_left;
-   if (type == IMAGE_TYPE_MP4)
+   if (type == IMAGE_TYPE_MP4 || type == IMAGE_TYPE_WEBM)
    {
       int64_t duration = image_transfer_anim_stream_duration_ns(stream, type);
       if (duration > 0) p->movie_us = duration / 1000;

@@ -843,6 +843,32 @@ static bool frontend_timeline_present(void *user, const video_player_frame_t *fr
 
 /* Video occupies movie seconds 1..3; audio occupies 0..4. The next
  * video loop must begin at second5, including the movie tail and lead. */
+static bool frontend_timing_read(const char *path, int64_t *period, int64_t times[24])
+{
+   size_t n = strlen(path);
+   char *name = (char*)malloc(n + 8);
+   FILE *f;
+   unsigned i, sec, ns;
+   if (!name) return false;
+   memcpy(name,path,n);memcpy(name+n,".timing",8);
+   f=fopen(name,"r");free(name);
+   if(!f)
+   {
+      if(strstr(path,".webm"))return false;
+      *period=(int64_t)4000000*1000;
+      for(i=0;i<24;i++)times[i]=1000000000+(int64_t)i*1000000000/12;
+      return true;
+   }
+   for(i=0;i<25;i++)
+   {
+      int64_t value;
+      if(fscanf(f,"%u %u",&sec,&ns)!=2||ns>=1000000000){fclose(f);return false;}
+      value=(int64_t)sec*1000000000+ns;
+      if(!i)*period=value;else times[i-1]=value;
+   }
+   fclose(f);return true;
+}
+
 static void lane_frontend_timeline(const char *path)
 {
    gfx_anim_preview_t *session;
@@ -852,7 +878,13 @@ static void lane_frontend_timeline(const char *path)
    int tick, before_video_audio = 0, startup_voice = 0;
    int old_audio = hp.force_preview_audio;
    int64_t first_audio = -1;
+   int64_t period, expected_times[24], seek_time;
    const int64_t origin = 1000000;
+   bool timing=frontend_timing_read(path,&period,expected_times);
+   check("frontend timeline","independent timestamp expectations available",timing);
+   if(!timing)return;
+   seek_time=expected_times[0];
+   for(tick=0;tick<24;tick++)if(expected_times[tick]>=1500000000){seek_time=expected_times[tick];break;}
    memset(&capture,0,sizeof(capture));capture.first=capture.second=-1;
    hp.force_preview_audio=1;audio_mixer_init(48000);
    {
@@ -864,7 +896,7 @@ static void lane_frontend_timeline(const char *path)
          check("frontend timeline","timestamp unavailable before first decode",
                image_transfer_anim_stream_frame_time_ns(reference->stream,reference->type)==-1);
          check("frontend timeline","movie duration includes continuous audio",
-               image_transfer_anim_stream_duration_ns(reference->stream,reference->type)==4000000000);
+               image_transfer_anim_stream_duration_ns(reference->stream,reference->type)==period);
          for(i=0;i<24;i++)
          {
             bool native=false;
@@ -879,7 +911,7 @@ static void lane_frontend_timeline(const char *path)
             check("frontend timeline","still/reference decode remains immediately available",tries<100);
             check("frontend timeline","decoded frame exposes exact movie timestamp",
                   image_transfer_anim_stream_frame_time_ns(reference->stream,reference->type)
-                     ==1000000000+(int64_t)i*1000000000/12);
+                     ==expected_times[i]);
          }
          image_transfer_anim_stream_rewind(reference->stream,reference->type);
          check("frontend timeline","rewind clears current-frame timestamp",
@@ -892,7 +924,7 @@ static void lane_frontend_timeline(const char *path)
             gfx_anim_preview_feed(reference);
             if(image_transfer_anim_stream_seek_step(reference->stream,reference->type,&position)==1)
             {
-               check("frontend timeline","seek translates movie to decoder coordinates",position==1500000);
+               check("frontend timeline","seek translates movie to decoder coordinates",position==seek_time/1000);
                break;
             }
          }
@@ -904,7 +936,7 @@ static void lane_frontend_timeline(const char *path)
             if(gfx_anim_preview_next(reference,NULL,&native))break;
          }
          check("frontend timeline","next reference picture retains movie timestamp",
-               i<100&&image_transfer_anim_stream_frame_time_ns(reference->stream,reference->type)==1500000000);
+               i<100&&image_transfer_anim_stream_frame_time_ns(reference->stream,reference->type)==seek_time);
          gfx_anim_preview_close(reference);
       }
    }

@@ -85,7 +85,7 @@ typedef struct gfx_anim_preview
    /* Both axes in one word, VIDEO_SCALE_PACK's layout. */
    unsigned dims;
    int num_frames, loop_count;
-   int64_t timeline_start_us; /* immutable first-picture presentation origin */
+   int64_t timeline_start_us; /* immutable movie origin, currently zero */
    bool seekable; /* immutable decoder capability, sampled before publication */
    bool windowed;                /* dt is a sliding window (reserved) */
    /* Feed geometry for this session. The video types size these to

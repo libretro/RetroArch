@@ -96,6 +96,7 @@ struct rwebm_video_stream
 #endif
    int seek_active, seek_ready, seek_key, seek_scan;
    int64_t seek_target;
+   int64_t movie_seek_target_ns;
    size_t seek_floor;
    rwebm_packet seek_packet;
    int waiting;
@@ -109,6 +110,8 @@ struct rwebm_video_stream
    int64_t     *ts;         /* pre-scanned packet timestamps (ns)     */
    int          endpoint_known, have_last_shown;
    int64_t      last_shown_ts, first_shown_ts;
+   int64_t      frame_time_ns;
+   int          have_frame_time;
    int          ts_count;   /* entries stored in ts                   */
    int          num_frames; /* total video packets in the stream      */
    int          pkt_idx;    /* ordinal of the next video packet       */
@@ -1269,6 +1272,8 @@ static int rwebm_video_av1_step(rwebm_video_stream_t *s,
       memset(&s->hw_frame, 0, sizeof(s->hw_frame));
    if (duration_ms)
       *duration_ms = duration;
+   s->frame_time_ns = s->pending_packet.timestamp;
+   s->have_frame_time = 1;
    return 1;
 }
 #endif
@@ -1455,6 +1460,11 @@ static int rwebm_video_hw_step(rwebm_video_stream_t *s, int *duration_ms, int di
    }
    s->pending = 0;
    if (duration_ms) *duration_ms = duration;
+   if (s->last_show >= 0)
+   {
+      s->frame_time_ns = s->pending_packet.timestamp;
+      s->have_frame_time = 1;
+   }
    return s->last_show >= 0 ? 1 : 0;
 }
 #endif
@@ -1678,6 +1688,8 @@ static int rwebm_video_stream_step(rwebm_video_stream_t *s,
          return 0;       /* non-shown frame                  */
       if (duration_ms)
          *duration_ms = duration;
+      s->frame_time_ns = pkt.timestamp;
+      s->have_frame_time = 1;
       return 1;
    }
    return -1;             /* end of one pass */
@@ -1740,6 +1752,7 @@ void rwebm_video_stream_rewind(rwebm_video_stream_t *s)
    s->seek_active = s->seek_ready = s->seek_key = s->seek_scan = 0;
    s->soft_pending = s->timing_active = s->timing_ready = s->lookahead_ready = 0;
    s->pkt_idx = 0;
+   s->have_frame_time = 0;
    /* The stream restarts at a key frame, so a fresh decoder (empty
     * reference chain, default probabilities) is the correct state. */
    rwebm_video_stream_close_decoder(s);
@@ -1767,6 +1780,29 @@ static void rwebm_video_seek_select(rwebm_video_stream_t *s)
 int64_t rwebm_video_stream_start_ns(const rwebm_video_stream_t *s)
 {
    return s && s->have_last_shown ? s->first_shown_ts : 0;
+}
+
+int64_t rwebm_video_stream_frame_time_ns(const rwebm_video_stream_t *s)
+{
+   return s && s->have_frame_time ? s->frame_time_ns : -1;
+}
+
+int rwebm_video_stream_seek_movie_begin_ns(rwebm_video_stream_t *s, int64_t ns)
+{
+   if (!s) return 0;
+   s->movie_seek_target_ns = ns < 0 ? 0 : ns;
+   return rwebm_video_stream_seek_begin_ns(s, ns);
+}
+
+int rwebm_video_stream_seek_movie_step(rwebm_video_stream_t *s,
+      int64_t *position_us)
+{
+   int result = rwebm_video_stream_seek_step(s, position_us);
+   if (result == 1 && position_us && s->have_last_shown
+         && (s->movie_seek_target_ns < s->first_shown_ts
+            || (s->endpoint_known && s->movie_seek_target_ns > s->last_shown_ts)))
+      *position_us = s->movie_seek_target_ns / 1000;
+   return result;
 }
 
 int rwebm_video_stream_seekable(const rwebm_video_stream_t *s)

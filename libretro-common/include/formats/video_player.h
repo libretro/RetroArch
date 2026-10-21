@@ -38,7 +38,7 @@
  * slot_begin, slot_end and present run on that thread, feed and
  * decoded on the thread that decodes. No lock is taken anywhere. */
 
-/* MP4 movies with a declared duration use movie-relative picture
+/* MP4 and WebM movies with a declared duration use movie-relative picture
  * timestamps and the full movie period. The first picture waits through
  * a leading empty edit; the last picture is held through the video tail
  * and the next loop's leading interval. Still/reference decoding is

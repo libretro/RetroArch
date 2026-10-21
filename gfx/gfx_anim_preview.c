@@ -365,8 +365,9 @@ static gfx_anim_preview_t *gfx_anim_preview_open_internal(const char *path,
    p->len        = blen;
    p->type       = type;
    p->seekable   = image_transfer_anim_stream_seekable(stream, type);
-   p->timeline_start_us = image_transfer_anim_stream_start_ns(stream, type) / 1000;
-   if (p->timeline_start_us < 0) p->timeline_start_us = 0;
+   /* Movie time starts at the container origin, even when audio
+    * precedes its first video picture. The player schedules that gap. */
+   p->timeline_start_us = 0;
    p->windowed   = reserved;
    p->audio_slot = -1;
    p->path       = strldup(path, strlen(path) + 1);
@@ -1324,8 +1325,7 @@ gfx_anim_preview_t *gfx_anim_preview_wrap(void *stream,
    p->len        = len;
    p->type       = type;
    p->seekable   = image_transfer_anim_stream_seekable(stream, type);
-   p->timeline_start_us = image_transfer_anim_stream_start_ns(stream, type) / 1000;
-   if (p->timeline_start_us < 0) p->timeline_start_us = 0;
+   p->timeline_start_us = 0;
    p->windowed   = windowed;
    p->audio_slot = -1;
    p->path       = path ? strldup(path, strlen(path) + 1) : NULL;

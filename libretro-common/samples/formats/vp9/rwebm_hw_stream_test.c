@@ -209,6 +209,7 @@ int main(void)
    CHECK(rwebm_read_packet(demux, &pkt) == 1 && pkt.data == file + consumed);
    rwebm_close(demux);
    s = rwebm_video_stream_open_avail(file, used, prefix, &need_more); CHECK(s && !s->frame);
+   CHECK(rwebm_video_stream_frame_time_ns(s) == -1);
    rvp9_set_hw_backend(NULL);
    CHECK(!image_transfer_anim_stream_set_hw(s, IMAGE_TYPE_WEBM, true) && s->vp9 && !s->pkt_idx);
    rvp9_set_hw_backend(&backend);
@@ -245,6 +246,8 @@ int main(void)
          continue;
       }
       CHECK(token == &s->hw_marker && !s->frame);
+      CHECK(rwebm_video_stream_frame_time_ns(s)
+            == (int64_t)(frames < 2 ? frames : 2) * 40000000);
       CHECK(image_transfer_anim_stream_hw_frame(s, IMAGE_TYPE_WEBM, &frame));
       CHECK(frame.yuv == (IMAGE_YUV_FLAG_BT709 | IMAGE_YUV_FLAG_FULL_RANGE));
       CHECK(frame.color.primaries == 1 && frame.color.transfer == 1
@@ -264,6 +267,7 @@ int main(void)
          && !image_transfer_anim_stream_waiting(s, IMAGE_TYPE_WEBM));
    rvp9_set_hw_backend(&backend);
    rwebm_video_stream_rewind(s); CHECK(opens == 2 && closes == 1);
+   CHECK(rwebm_video_stream_frame_time_ns(s) == -1);
    for (tries = 0; tries < 30; tries++)
       if (rwebm_video_stream_next(s, NULL)) break;
    CHECK(tries < 30 && s->hw_untaken && held.image);

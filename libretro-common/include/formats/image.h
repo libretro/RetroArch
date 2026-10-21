@@ -723,15 +723,15 @@ void image_transfer_anim_stream_next_span(void *stream,
 void image_transfer_anim_stream_complete_scan(void *stream,
       enum image_type_enum type, const void *buf, size_t len);
 
-/* Exclusive decoding-thread bounded seek. MP4 currently supports this;
+/* Exclusive decoding-thread bounded seek. MP4 and software WebM support it;
  * begin selects the request, step returns -1/0/1 (failed/retry/positioned).
  * The owner feeds the stream's selected byte frontier between steps. */
 /* Exclusive-owner query; cache before handing the decoder to a worker. */
 int64_t image_transfer_anim_stream_start_ns(void *stream, enum image_type_enum type);
 /* Most recently decoded display frame in movie time. Decoder-owner
  * query only; -1 before a frame or when the format has no such query.
- * Currently MP4. Still-image decoding and decoder-specific raw seek
- * coordinates do not change. The generic MP4 seek below uses movie time. */
+ * MP4 and WebM. Still-image decoding and decoder-specific raw seek
+ * coordinates do not change. Generic seeks below use movie time. */
 int64_t image_transfer_anim_stream_frame_time_ns(void *stream, enum image_type_enum type);
 
 bool image_transfer_anim_stream_seekable(void *stream, enum image_type_enum type);
