@@ -172,9 +172,9 @@ check('the rows commands declare an outputSchema: %d' % len(schemas),
       and 'GET_PLAYLIST' in schemas)
 # What a model is handed of each tool is its name, description and
 # input schema: that is context a client pays for before it does
-# anything, 11479 bytes at 29 tools, held under 15000. Titles,
+# anything, 11607 bytes at 29 tools, held under 15000. Titles,
 # annotations and output schemas are for the client and cost the model
-# nothing, so the whole list has a looser ceiling, 25000 (21212 now),
+# nothing, so the whole list has a looser ceiling, 25000 (21340 now),
 # and the 1800 on each tool catches prose an average would not.
 seen = sum(len(json.dumps({'name': t['name'],
                            'description': t.get('description', ''),
@@ -458,6 +458,9 @@ check('and b dismisses it, closing nothing: %s' % sc.get('title'),
 sc = menu_walk(menu_home(320), ('Settings', 'User', 'Username'), 298)
 check('an entry that asks for text says so: %s' % sc.get('keyboard'),
       sc.get('keyboard') == 'Username')
+msg, t, _ = call(305, 'MENU', {'action': 'type', 'text': 'two\nlines'})
+check('type refuses a control character: ' + (t or '').strip(),
+      msg and msg['result']['isError'] and 'control character' in t)
 msg, t, _ = call(301, 'MENU', {'action': 'type', 'text': 'e2e player'})
 sc = msg and msg['result'].get('structuredContent') or {}
 check('and type enters it',

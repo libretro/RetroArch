@@ -1273,7 +1273,23 @@ static struct
    bool               has_index;
    bool               has_from;
    bool               lost;
+   /* the list the index was given in: how deep, and its label */
+   size_t             depth;
+   char               list[64];
 } command_menu_st;
+
+/* How deep the list shown is, and its label in @s. */
+static size_t command_menu_where(char *s, size_t len)
+{
+   menu_list_t *list  = menu_state_get_ptr()->entries.list;
+   file_list_t *stack = list ? MENU_LIST_GET(list, 0) : NULL;
+   s[0] = '\0';
+   if (!stack || !stack->size)
+      return 0;
+   if (stack->list[stack->size - 1].label)
+      strlcpy(s, stack->list[stack->size - 1].label, len);
+   return stack->size;
+}
 
 static void command_menu_clean(char *s)
 {
@@ -1428,14 +1444,29 @@ static char *command_menu_answer(bool has_from, unsigned from,
 unsigned command_menu_action(unsigned action)
 {
    struct menu_state *menu_st = menu_state_get_ptr();
+   char               where[sizeof(command_menu_st.list)];
    if (!command_menu_st.pending || command_menu_st.frames < 2)
       return action;
+   /* a request is input, as a press is: no screensaver comes over it,
+    * and one up takes the press that ends it */
+   menu_st->input_last_time_us = menu_st->current_time_us;
+   if (menu_st->flags & MENU_ST_FLAG_SCREENSAVER_ACTIVE)
+   {
+      menu_st->flags &= ~MENU_ST_FLAG_SCREENSAVER_ACTIVE;
+      if (menu_st->driver_ctx && menu_st->driver_ctx->environ_cb)
+         menu_st->driver_ctx->environ_cb(MENU_ENVIRON_DISABLE_SCREENSAVER,
+               NULL, menu_st->userdata);
+   }
    if (command_menu_st.has_index)
    {
       command_menu_st.has_index = false;
-      /* the list may have changed since the request checked it: then
-       * nothing is done to whichever entry took that place */
+      /* the list may have changed since the request checked it - another
+       * list, or this one shorter: then nothing is done to whichever
+       * entry took that place */
       if (     !menu_st->entries.list
+            || command_menu_where(where, sizeof(where))
+               != command_menu_st.depth
+            || !string_is_equal(where, command_menu_st.list)
             || command_menu_st.index
                >= MENU_LIST_GET_SELECTION(menu_st->entries.list, 0)->size)
       {
@@ -1550,9 +1581,17 @@ bool command_menu(command_t *cmd, const char *arg)
                "entry that asks for text opens one");
          return false;
       }
-      input_driver_keyboard_line_set(p, strlen(p));
-      input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
-      p += strlen(p);
+      for (n = 0; p[n]; n++)
+         if ((unsigned char)p[n] < 0x20 || p[n] == 0x7f)
+         {
+            command_reply_error(cmd, "MENU", "type takes one line of text, "
+                  "with no tab or control character");
+            return false;
+         }
+      input_driver_keyboard_line_set(p, n);
+      input_keyboard_event(true,  '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
+      input_keyboard_event(false, '\n', 0,    0, RETRO_DEVICE_KEYBOARD);
+      p += n;
    }
    else if (*p >= '0' && *p <= '9')
    {
@@ -1595,7 +1634,7 @@ bool command_menu(command_t *cmd, const char *arg)
    {
       char  *out;
       size_t _len = 0;
-      if (alive)
+      if (menu_st->flags & MENU_ST_FLAG_ALIVE)
          command_event(CMD_EVENT_MENU_TOGGLE, NULL);
       if (menu_st->flags & MENU_ST_FLAG_ALIVE)
       {
@@ -1611,7 +1650,7 @@ bool command_menu(command_t *cmd, const char *arg)
    }
    if (string_is_equal(actions[i].word, "open"))
    {
-      if (!alive)
+      if (!(menu_st->flags & MENU_ST_FLAG_ALIVE))
          command_event(CMD_EVENT_MENU_TOGGLE, NULL);
       if (!(menu_st->flags & MENU_ST_FLAG_ALIVE))
       {
@@ -1652,6 +1691,9 @@ bool command_menu(command_t *cmd, const char *arg)
    command_menu_st.has_index = has_index;
    command_menu_st.from      = (unsigned)from;
    command_menu_st.has_from  = has_from;
+   command_menu_st.depth     = command_menu_where(command_menu_st.list,
+         sizeof(command_menu_st.list));
+   command_menu_st.lost      = false;
    command_menu_st.frames    = 2;
    command_menu_st.pending   = true;
    command_deferred_take(&command_menu_st.deferred, cmd);

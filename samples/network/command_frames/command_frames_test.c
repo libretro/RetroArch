@@ -484,6 +484,26 @@ int main(int argc, char **argv)
    CHECK(strstr(reply,"\nSELECTED 0\n") != NULL);
    reply[0]=0;
    CHECK(!command_menu(&cmd,"select 9999") && strstr(reply,"no entry 9999"));
+   /* a list another hand changes before the frame: the entry asked for
+    * is not reached, and the request after it is not held to that */
+   {
+      menu_entry_t *entry = (menu_entry_t*)malloc(sizeof(*entry));
+      reply[0]=0; cmd.error=false;
+      CHECK(entry && command_menu(&cmd,"select 0") && !reply[0]);
+      if (entry)
+      {
+         MENU_ENTRY_INITIALIZE((*entry));
+         menu_entry_get(entry, 0, 0, NULL, false);
+         menu_entry_action(entry, 0, MENU_ACTION_OK);
+         free(entry);
+      }
+      for (i=0;i<8 && !reply[0];i++) runloop_iterate();
+      CHECK(strstr(reply,"the list changed") != NULL);
+      reply[0]=0; cmd.error=false;
+      CHECK(command_menu(&cmd,"b") && !reply[0]);
+      for (i=0;i<8 && !reply[0];i++) runloop_iterate();
+      CHECK(!strncmp(reply,"MENU ",5) && !cmd.error);
+   }
    /* one whose menu closes first is told so, not left waiting */
    reply[0]=0; cmd.error=false;
    CHECK(command_menu(&cmd,"down") && !reply[0]);

@@ -332,7 +332,7 @@ and `count` are its structured fields.
   `left` and `right` change a value, `a` confirms, `b` goes back. `left`,
   `right` and `a` take an index too, acting on that entry: `MENU a 3`
   opens Save States.
-- `type <text>` answers a keyboard: the text is entered whole and
+- `type <text>` answers a keyboard: one line, entered whole and
   confirmed, as a platform's own keyboard hands it over.
 
 What waits on the user comes as a line of its own after the title. A
@@ -345,7 +345,8 @@ The action runs on the menu's next frame as its own input would, and
 the answer comes a frame after that, so a list or a message an action
 opens is there to read. `MENU open` and `close` are the menu's switch:
 `menu` is not an `OPTION`. A second `MENU` while one waits replaces it, answered
-with an error, and one whose menu closes first - a hotkey, another
+with an error; one whose list another hand changes first does nothing
+to the entry that took its place, and says so; and one whose menu closes first - a hotkey, another
 client - is answered `CLOSED`. `MENU` is marked destructive: its
 entries include Quit, Close Content and Delete. It is RetroArch's menu, not a game's: a game's menus are
 its screen and memory, played with `PRESS`, `STEPS` and `WATCH`.
