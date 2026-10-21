@@ -7,6 +7,8 @@
 #include <retro_timers.h>
 
 static unsigned media_failures;
+static bool native_gpu;
+static uint32_t native_background[320*240];
 #define MEDIA_CHECK(message, cond) do { \
    bool passed = (cond) != 0; \
    printf("%s: %s\n", passed ? "ok" : "FAIL", message); \
@@ -15,9 +17,21 @@ static unsigned media_failures;
 
 static void media_render(struct menu_state *menu_st)
 {
-   menu_st->current_time_us += 1000;
+   if(native_gpu)menu_st->current_time_us=cpu_features_get_time_usec();
+   else menu_st->current_time_us += 1000;
    menu_st->driver_ctx->render(menu_st->userdata, VIDEO_SCALE_PACK(320, 240), false);
+   if(native_gpu)
+   {
+      video_driver_state_t *video=video_state_get_ptr();
+      if(menu_st->driver_ctx->set_texture)
+         menu_st->driver_ctx->set_texture(menu_st->userdata);
+      if(video->poke&&video->poke->set_texture_enable)
+         video->poke->set_texture_enable(video->data,true,false);
+      video_driver_frame(native_background,320,240,320*sizeof(uint32_t));
+   }
 }
+
+#include "../texture_media/native_media_capture.h"
 
 int main(int argc, char **argv)
 {
@@ -35,6 +49,7 @@ int main(int argc, char **argv)
    uint32_t pixels = 0;
    bool seeking;
    if (argc != 3) return 2;
+   native_gpu=getenv("MEDIA_TEST_GPU")!=NULL;
    config_file_set_io_default(config_file_io_filestream());
    rtime_init(); retroarch_config_init();
    retroarch_ctl(RARCH_CTL_STATE_FREE, NULL);
@@ -62,7 +77,7 @@ int main(int argc, char **argv)
          "", FILE_TYPE_PLAIN, 0, 0));
    MEDIA_CHECK("movie entry installed", file_list_append(list, path_basename(argv[1]),
          "", FILE_TYPE_MOVIE, 0, 0));
-   menu_st->selection_ptr = 0; menu_st->current_time_us = 1000000;
+   menu_st->selection_ptr = 0; menu_st->current_time_us = native_gpu?cpu_features_get_time_usec():1000000;
    rgui->flags &= ~(RGUI_FLAG_IS_PLAYLIST | RGUI_FLAG_IS_EXPLORE_LIST | RGUI_FLAG_IS_QUICK_MENU);
    rgui_scan_selected_entry_thumbnail(rgui, true);
    MEDIA_CHECK("file-browser movie resolves without a playlist", *rgui->media_requested_path);
@@ -83,6 +98,22 @@ int main(int argc, char **argv)
    MEDIA_CHECK("confirm pauses through the real menu adapter",
          rgui_parse_menu_entry_action(rgui, entry, MENU_ACTION_OK) == MENU_ACTION_NOOP
          && gfx_media_cpu_state(rgui->media_player, menu_st->current_time_us, &state) && state.paused);
+   if(native_gpu)
+   {
+      gfx_media_target_t target=rgui->media.controls.target;
+      uint32_t first=0,middle=0,again=0;
+      unsigned burst;
+      MEDIA_CHECK("paused CPU picture reaches renderer",media_native_seek_capture(menu_st,media_render,&target,0,0,0,0,&first));
+      MEDIA_CHECK("CPU seek changes rendered picture",media_native_seek_capture(menu_st,media_render,&target,375000,first,1,1,&middle));
+      MEDIA_CHECK("CPU backward seek restores picture",media_native_seek_capture(menu_st,media_render,&target,0,first,-1,2,&again));
+      for(burst=0;burst<16;burst++)
+      {
+         MEDIA_CHECK("CPU burst seek accepted",target.seek(target.user,burst&1?375000:0,cpu_features_get_time_usec()));
+         media_render(menu_st);retro_sleep(1);
+      }
+      MEDIA_CHECK("CPU latest burst reaches renderer while paused",media_native_seek_capture(menu_st,media_render,&target,375000,first,1,3,&middle));
+      printf("rendered CPU media hashes: %08x %08x %08x\n",first,middle,again);
+   }
    media_render(menu_st);
    MEDIA_CHECK("software controls reach the framebuffer", rgui->media.view.visible
          && display->framebuf_dims && rgui->frame_buf.data

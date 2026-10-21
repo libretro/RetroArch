@@ -1,10 +1,11 @@
-/* Real texture menu/frontend/codecs; only the GPU upload boundary is a
- * synchronous memory sink. This checks reachability, not GPU appearance. */
+/* Real menus/frontend/codecs: null mode uses a memory texture sink;
+ * explicit native mode presents and captures the fullscreen movie. */
 #if defined(TEST_MATERIALUI)
 #include "../../../menu/drivers/materialui.c"
 typedef materialui_handle_t test_viewer_t;
 #define TEST_IDENT "glui"
 static bool test_showing(test_viewer_t *v) { return (v->flags&MUI_FLAG_SHOW_FULLSCREEN_THUMBNAILS)!=0; }
+static bool test_fade_ready(test_viewer_t *v) { return v->fullscreen_thumbnail_alpha>=0.9999f; }
 static gfx_thumbnail_t *test_thumbnail(test_viewer_t *v) { return &v->browser_thumbnail; }
 static void test_prepare(test_viewer_t *v) { v->flags&=~(MUI_FLAG_IS_PLAYLIST|MUI_FLAG_IS_EXPLORE_LIST);v->flags|=MUI_FLAG_IS_FILE_LIST;v->list_view_type=MUI_LIST_VIEW_DEFAULT; }
 static enum menu_action test_action(test_viewer_t *v,enum menu_action a) { return materialui_parse_menu_entry_action(v,a); }
@@ -14,6 +15,7 @@ static int test_release(test_viewer_t *v,unsigned x,unsigned y) { return materia
 typedef xmb_handle_t test_viewer_t;
 #define TEST_IDENT "xmb"
 static bool test_showing(test_viewer_t *v) { return v->show_fullscreen_thumbnails; }
+static bool test_fade_ready(test_viewer_t *v) { return v->fullscreen_thumbnail_alpha>=0.9999f; }
 static gfx_thumbnail_t *test_thumbnail(test_viewer_t *v) { return v->thumbnails.left.anim_sess?&v->thumbnails.left:&v->thumbnails.right; }
 static void test_prepare(test_viewer_t *v) { v->is_playlist=v->is_explore_list=false;v->is_file_list=true;v->depth=2; }
 static enum menu_action test_action(test_viewer_t *v,enum menu_action a) { return xmb_parse_menu_entry_action(v,a); }
@@ -23,6 +25,7 @@ static int test_release(test_viewer_t *v,unsigned x,unsigned y) { return xmb_poi
 typedef ozone_handle_t test_viewer_t;
 #define TEST_IDENT "ozone"
 static bool test_showing(test_viewer_t *v) { return (v->flags2&OZONE_FLAG2_SHOW_FULLSCREEN_THUMBNAILS)!=0; }
+static bool test_fade_ready(test_viewer_t *v) { return v->animations.fullscreen_thumbnail_alpha>=0.9999f; }
 static gfx_thumbnail_t *test_thumbnail(test_viewer_t *v) { return v->thumbnails.left.anim_sess?&v->thumbnails.left:&v->thumbnails.right; }
 static void test_prepare(test_viewer_t *v) { v->flags&=~(OZONE_FLAG_IS_PLAYLIST|OZONE_FLAG_IS_EXPLORE_LIST|OZONE_FLAG_CURSOR_IN_SIDEBAR);v->flags|=OZONE_FLAG_IS_FILE_LIST;v->depth=2; }
 static enum menu_action test_action(test_viewer_t *v,enum menu_action a) { return ozone_parse_menu_entry_action(v,true,true,a); }
@@ -32,9 +35,13 @@ static int test_release(test_viewer_t *v,unsigned x,unsigned y) { return ozone_p
 #include "../../../frontend/frontend.h"
 #include <time/rtime.h>
 #include <retro_timers.h>
+#include "../../../gfx/gfx_surface_player.h"
+#include "../../../gfx/gfx_anim_preview.h"
 
 static unsigned failures, uploads;
 static uint32_t uploaded_pixels;
+static bool native_gpu;
+static uint32_t native_background[320 * 240];
 #define CHECK(message, cond) do { bool passed=(cond)!=0; \
    printf("%s: %s\n",passed?"ok":"FAIL",message); if(!passed)failures++; } while(0)
 
@@ -53,9 +60,23 @@ static void memory_unload(void *data, bool threaded, uintptr_t id)
 
 static void render(struct menu_state *menu_st)
 {
-   menu_st->current_time_us+=1000;
-   menu_st->driver_ctx->render(menu_st->userdata,VIDEO_SCALE_PACK(640,480),false);
+   unsigned dims=native_gpu?video_driver_get_ui_dims():VIDEO_SCALE_PACK(640,480);
+   if(native_gpu)menu_st->current_time_us=cpu_features_get_time_usec();
+   else menu_st->current_time_us+=1000;
+   if(native_gpu)gfx_animation_update(menu_st->current_time_us,false,1.0f,dims);
+   menu_st->driver_ctx->render(menu_st->userdata,dims,false);
+   if(native_gpu)
+   {
+      video_driver_state_t *video=video_state_get_ptr();
+      if(menu_st->driver_ctx->set_texture)
+         menu_st->driver_ctx->set_texture(menu_st->userdata);
+      if(video->poke&&video->poke->set_texture_enable)
+         video->poke->set_texture_enable(video->data,true,false);
+      video_driver_frame(native_background,320,240,320*sizeof(uint32_t));
+   }
 }
+
+#include "native_media_capture.h"
 
 int main(int argc,char **argv)
 {
@@ -72,6 +93,7 @@ int main(int argc,char **argv)
    unsigned x,y,selection;
    bool seeking=true;
    if(argc!=3)return 2;
+   native_gpu=getenv("MEDIA_TEST_GPU")!=NULL;
    config_file_set_io_default(config_file_io_filestream());rtime_init();retroarch_config_init();
    retroarch_ctl(RARCH_CTL_STATE_FREE,NULL);frontend_driver_init_first(NULL);
    rarch_argv[0]=(char*)"retroarch";rarch_argv[1]=(char*)"--menu";
@@ -82,14 +104,15 @@ int main(int argc,char **argv)
    if(failures){main_exit(NULL);return 1;}
    viewer=(test_viewer_t*)menu_st->userdata;
    video=video_state_get_ptr();old_poke=video->poke;
-   poke.load_texture=memory_texture;poke.unload_texture=memory_unload;video->poke=&poke;
+   if(!native_gpu)
+   { poke.load_texture=memory_texture;poke.unload_texture=memory_unload;video->poke=&poke; }
    config_get_ptr()->bools.menu_thumbnail_preview_audio=false;
    list=MENU_LIST_GET_SELECTION(menu_st->entries.list,0);stack=MENU_LIST_GET(menu_st->entries.list,0);
    file_list_clear(list);file_list_clear(stack);fill_pathname_basedir(directory,argv[1],sizeof(directory));
    CHECK("file-browser directory installed",file_list_append(stack,directory,"",FILE_TYPE_PLAIN,0,0));
    CHECK("movie entry installed",file_list_append(list,path_basename(argv[1]),"",FILE_TYPE_MOVIE,0,0));
    menu_st->driver_ctx->list_insert(viewer,list,path_basename(argv[1]),directory,"",0,FILE_TYPE_MOVIE);
-   menu_st->selection_ptr=0;menu_st->current_time_us=1000000;
+   menu_st->selection_ptr=0;menu_st->current_time_us=native_gpu?cpu_features_get_time_usec():1000000;
    test_prepare(viewer);
    config_get_ptr()->uints.gfx_thumbnails=0;
    config_get_ptr()->uints.menu_left_thumbnails=0;
@@ -104,14 +127,51 @@ int main(int argc,char **argv)
    for(tick=0;tick<2000;tick++)
    {
       render(menu_st);
-      if(uploads&&viewer->media.controls.target.user)break;
+      if((native_gpu?test_thumbnail(viewer)->texture!=0:uploads!=0)
+            &&viewer->media.controls.target.user)break;
       retro_sleep(1);
    }
-   CHECK("real movie pixels reach texture boundary",uploads&&uploaded_pixels);
+   if(native_gpu)
+   {
+      gfx_surface_player_t *player=(gfx_surface_player_t*)test_thumbnail(viewer)->anim_player;
+      CHECK("real movie reaches the GPU texture",test_thumbnail(viewer)->texture!=0);
+      CHECK("preview uses the decoding worker",player&&player->threaded);
+      if(getenv("MEDIA_TEST_HDR_AV1"))
+      {
+         gfx_surface_t *surface=(gfx_surface_t*)test_thumbnail(viewer)->anim_surface;
+         CHECK("HDR AV1 reaches the importer as P010",surface&&surface->imported
+               &&surface->import.pixfmt==IMAGE_PIXFMT_P010);
+         CHECK("coded HDR metadata reaches the importer",surface
+               &&surface->import.color.max_cll==1000&&surface->import.color.max_fall==400
+               &&surface->import.color.transfer==16);
+      }
+      CHECK("preview uses the windowed file feeder",test_thumbnail(viewer)->anim_sess
+            &&gfx_anim_preview_windowed((gfx_anim_preview_t*)test_thumbnail(viewer)->anim_sess));
+   }
+   else CHECK("real movie pixels reach texture boundary",uploads&&uploaded_pixels);
    CHECK("browser media controls are reachable",viewer->media.controls.target.user==test_thumbnail(viewer));
    CHECK("confirm pauses through menu adapter",
          test_action(viewer,MENU_ACTION_OK)==MENU_ACTION_NOOP
          &&gfx_thumbnail_get_playback_state(test_thumbnail(viewer),menu_st->current_time_us,&state)&&state.paused);
+   if(native_gpu)
+   {
+      gfx_media_target_t target=viewer->media.controls.target;
+      uint32_t first=0,middle=0,again=0;
+      unsigned burst;
+      for(tick=0;tick<2000&&(test_thumbnail(viewer)->alpha<0.9999f||!test_fade_ready(viewer));tick++)
+      { render(menu_st);retro_sleep(1); }
+      CHECK("thumbnail fades complete before pixel comparison",test_thumbnail(viewer)->alpha>=0.9999f&&test_fade_ready(viewer));
+      CHECK("paused start picture reaches renderer",media_native_seek_capture(menu_st,render,&target,0,0,0,0,&first));
+      CHECK("seek changes the rendered movie picture",media_native_seek_capture(menu_st,render,&target,375000,first,1,1,&middle));
+      CHECK("backward seek restores the rendered picture",media_native_seek_capture(menu_st,render,&target,0,first,-1,2,&again));
+      for(burst=0;burst<16;burst++)
+      {
+         CHECK("burst request accepted",target.seek(target.user,burst&1?375000:0,cpu_features_get_time_usec()));
+         render(menu_st);retro_sleep(1);
+      }
+      CHECK("latest burst target reaches renderer while paused",media_native_seek_capture(menu_st,render,&target,375000,first,1,3,&middle));
+      printf("rendered media hashes: %08x %08x %08x\n",first,middle,again);
+   }
    render(menu_st);
    selection=(unsigned)menu_st->selection_ptr;
    x=(unsigned)(viewer->media.controls.layout.timeline.x+viewer->media.controls.layout.timeline.w/2);
