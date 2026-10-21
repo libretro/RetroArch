@@ -52,7 +52,11 @@ static VKAPI_ATTR VkResult VKAPI_CALL ecommands(VkDevice d,const VkCommandBuffer
 {assert(d && p->commandBufferCount==1);if(entry_action()!=VK_SUCCESS)return VK_ERROR_OUT_OF_DEVICE_MEMORY;*out=H(VkCommandBuffer,++entry_serial);entry_live++;return VK_SUCCESS;}
 static VKAPI_ATTR void VKAPI_CALL efreecommands(VkDevice d,VkCommandPool p,uint32_t n,const VkCommandBuffer *c)
 {assert(d && p && n==1 && c && entry_live);entry_live--;}
-int main(void)
+static vulkan_android_entry_config_t entry_fixture_config;
+#ifndef VULKAN_ENTRY_TEST_MAIN
+#define VULKAN_ENTRY_TEST_MAIN main
+#endif
+int VULKAN_ENTRY_TEST_MAIN(void)
 {
  static vulkan_android_entry_config_t c;
  static vulkan_android_cache_entry_t cache,empty;
@@ -71,6 +75,7 @@ int main(void)
  c.pipeline.create_pool=epool;c.pipeline.destroy_pool=edpool;c.pipeline.allocate_sets=esets;c.pipeline.update_sets=update;
  c.pipeline.create_shader=eshader;c.pipeline.destroy_shader=edshader;c.pipeline.create_pipeline=epipeline;c.pipeline.destroy_pipeline=edpipeline;
  c.sync.create=esemaphore;c.sync.destroy=edsemaphore;c.sync.import_fd=import_fd;c.sync.export_fd=export_fd;
+ entry_fixture_config=c;
  for(i=1;i<=17;i++) {
   entry_fail=i;entry_calls=0;
   assert(!vulkan_android_cache_entry_create(&c,&v,false,&cache));
