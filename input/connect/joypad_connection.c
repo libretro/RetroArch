@@ -176,6 +176,20 @@ static joypad_connection_entry_t pad_map[] = {
       PID_DRAGONRISE,
       &pad_connection_dragonrise
    },
+#ifndef __APPLE__
+   /* macOS reads it from its report descriptor: its hat is the
+    * descriptor's there, which a handler's would not be */
+   { "8Bitdo SN30 Pro",
+      VID_8BITDO,
+      PID_8BITDO_SN30_PRO,
+      &pad_connection_8bitdo_sn30_pro
+   },
+   { "8Bitdo SN30 Pro",
+      VID_8BITDO,
+      PID_8BITDO_SN30_PRO_BT,
+      &pad_connection_8bitdo_sn30_pro
+   },
+#endif
    { 0, 0}
 };
 

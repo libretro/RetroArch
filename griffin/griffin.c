@@ -1020,6 +1020,7 @@ INPUT (HID)
 #include "../input/connect/connect_ps4_hori_mini.c"
 #include "../input/connect/connect_kade.c"
 #include "../input/connect/connect_zerodelay_dragonrise.c"
+#include "../input/connect/connect_8bitdo.c"
 #endif
 
 /*============================================================

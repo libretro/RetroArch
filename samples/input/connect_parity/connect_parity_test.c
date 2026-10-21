@@ -10,7 +10,8 @@
  * layout instead, and the Switch Pro's to its greeting and commands.
  * A handler that keeps its state as a view is held, after every report,
  * to its view saying what its getters say; the DualShock 3's to the
- * copying handler's axes. */
+ * copying handler's axes. The 8BitDo SN30 Pro's is new too, and held to
+ * its reports' layout and its rumble report. */
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -70,6 +71,9 @@ static int32_t stub_ds3_get_report(void *handle, uint8_t type, uint8_t id,
 static unsigned view_reads;
 static unsigned view_bad;
 
+/* the view's hat bit for up, down, left and right, in HAT_*_MASK order */
+static const unsigned view_hat_bit[4] = { 0, 1, 2, 3 };
+
 static void view_check(const pad_connection_interface_t *ifc, void *dev)
 {
    const input_pad_view_t *v;
@@ -89,8 +93,11 @@ static void view_check(const pad_connection_interface_t *ifc, void *dev)
    for (k = 0; k < INPUT_PAD_VIEW_AXES; k++)
       if (ifc->get_axis(dev, k) != v->axes[k])
          view_bad++;
-   if (v->hats)
-      view_bad++;
+   /* a handler with no hat answers none */
+   for (k = 0; k < 4; k++)
+      if (!!ifc->button(dev, (uint16_t)HAT_MAP(0, HAT_UP_MASK >> k))
+            != !!(v->hats & (1u << view_hat_bit[k])))
+         view_bad++;
 }
 
 static void deliver(const pad_connection_interface_t *ifc, void *dev,
@@ -1752,6 +1759,183 @@ static void test_ds3(void)
          failures == had ? "pass" : "fail");
 }
 
+/* ---- 8BitDo SN30 Pro: its reports' layout ---------------------- */
+
+static int32_t stub_8bitdo_feature(void *handle, uint8_t type, uint8_t id,
+      uint8_t *data, size_t len)
+{
+   (void)handle;
+   if (type != HID_REPORT_FEATURE || id != 0x06)
+      return -1;
+   memset(data, 0, len);
+   data[0] = 0x06;
+   return 16;
+}
+
+static int16_t ref_8bitdo_stick(uint8_t b)
+{
+   int v = (int)b - 0x7f;
+   if (!v)
+      return 0;
+   return (int16_t)(v < 0 ? v * 32768 / 127 : v * 32767 / 128);
+}
+
+static unsigned ref_8bitdo_hat(uint8_t h)
+{
+   /* up 1, down 2, left 4, right 8; 0 is up, clockwise */
+   static const uint8_t way[8] = { 1, 9, 8, 10, 2, 6, 4, 5 };
+   return h < 8 ? way[h] : 0;
+}
+
+static unsigned mismatches_8bitdo(const pad_connection_interface_t *ifc,
+      void *dev, const uint8_t *r, bool old)
+{
+   const uint8_t *b = old ? r : r + 8;
+   uint32_t want    = (uint32_t)b[0] | ((uint32_t)b[1] << 8);
+   unsigned hat     = ref_8bitdo_hat(old ? r[2] : r[1]);
+   const uint8_t *s = old ? r + 3 : r + 2;
+   int16_t axes[6];
+   input_bits_t bits;
+   unsigned k, bad = 0;
+
+   axes[0] = ref_8bitdo_stick(s[0]);
+   axes[1] = ref_8bitdo_stick(s[1]);
+   axes[4] = ref_8bitdo_stick(s[2]);
+   axes[5] = ref_8bitdo_stick(s[3]);
+   if (old)
+   {
+      axes[2] = (r[1] & 1) ? 0x7fff : 0;
+      axes[3] = (r[1] & 2) ? 0x7fff : 0;
+   }
+   else
+   {
+      axes[2] = (int16_t)((r[7] << 7) | (r[7] >> 1));
+      axes[3] = (int16_t)((r[6] << 7) | (r[6] >> 1));
+   }
+   ifc->get_buttons(dev, &bits);
+   for (k = 0; k < 32; k++)
+      if (     !!ifc->button(dev, (uint16_t)k) != !!(want & (1u << k))
+            || !!BIT256_GET(bits, k) != !!(want & (1u << k)))
+         bad++;
+   if (!!BIT256_GET(bits, RARCH_MENU_TOGGLE) != !!(b[1] & 0x10))
+      bad++;
+   for (k = 0; k < 4; k++)
+      if (!!ifc->button(dev, (uint16_t)HAT_MAP(0, HAT_UP_MASK >> k))
+            != !!(hat & (1u << k)))
+         bad++;
+   /* hat 1 is not there */
+   if (ifc->button(dev, (uint16_t)HAT_MAP(1, HAT_UP_MASK)))
+      bad++;
+   for (k = 0; k < 6; k++)
+      if (ifc->get_axis(dev, k) != axes[k])
+         bad++;
+   return bad;
+}
+
+static void test_8bitdo(void)
+{
+   uint8_t p[65], last[65];
+   unsigned n, i, bad = 0, had = failures, count;
+   bool last_old = false, have = false;
+   const pad_connection_interface_t *ifc = &pad_connection_8bitdo_sn30_pro;
+   int dummy_connection;
+   void *dev;
+
+   stub_hid.get_report = stub_8bitdo_feature;
+   dev = ifc->init(&dummy_connection, 0, &stub_hid);
+   CHECK(dev != NULL, "8bitdo: no device");
+   if (!dev)
+      return;
+   CHECK(!strcmp(ifc->get_name(dev), "8Bitdo SN30 Pro"),
+         "8bitdo: named '%s', not as its hid profiles", ifc->get_name(dev));
+
+   srand(11);
+   for (n = 0; n < 40000; n++)
+   {
+      static const uint8_t ids[5] = { 0x01, 0x03, 0x04, 0x02, 0x05 };
+      unsigned size;
+      bool old = (rand() % 4) == 0;
+      for (i = 0; i < sizeof(p); i++)
+         p[i] = (uint8_t)rand();
+      if (rand() & 1)
+         p[old ? 2 : 1] = (uint8_t)(rand() % 10); /* the hat's ways, rest */
+      for (i = 0; i < 4; i++)
+         if (!(rand() % 4))
+            p[(old ? 3 : 2) + i] = 0x7f;
+      if (old)
+         size = 9;
+      else
+      {
+         p[0] = ids[rand() % 5];
+         size = 10 + (unsigned)rand() % 55;
+      }
+      /* now and then a report too short to be one */
+      if (!(rand() % 16))
+         size = (unsigned)rand() % 9;
+      deliver(ifc, dev, p, (uint16_t)size);
+      if (     size == 9
+            || (size >= 10 && (p[0] == 1 || p[0] == 3 || p[0] == 4)))
+      {
+         memcpy(last, p, sizeof(last));
+         last_old = size == 9;
+         have     = true;
+      }
+      if (have)
+         bad += mismatches_8bitdo(ifc, dev, last, last_old);
+   }
+   CHECK(!bad, "8bitdo: %u reads disagree with the reports' layout", bad);
+
+   /* the ends of a stick */
+   memset(p, 0, sizeof(p));
+   p[0] = 0x04; p[1] = 8; p[2] = 0x00; p[3] = 0xff;
+   deliver(ifc, dev, p, 15);
+   CHECK(ifc->get_axis(dev, 0) == -32768 && ifc->get_axis(dev, 1) == 32767,
+         "8bitdo: a stick's ends read %d and %d",
+         ifc->get_axis(dev, 0), ifc->get_axis(dev, 1));
+
+   /* rumble: from the poll, once for each change */
+   count = sent_count;
+   ifc->set_rumble(dev, RETRO_RUMBLE_STRONG, 0xC000);
+   ifc->set_rumble(dev, RETRO_RUMBLE_WEAK, 0x4000);
+   CHECK(sent_count == count, "8bitdo: rumble was sent outside the poll");
+   deliver(ifc, dev, p, 15);
+   CHECK(sent_count == count + 1 && sent_len == 5 && sent[0] == 0x05
+         && sent[1] == 0xC0 && sent[2] == 0x40 && !sent[3] && !sent[4],
+         "8bitdo: rumble report not 05 C0 40 00 00");
+   deliver(ifc, dev, p, 15);
+   ifc->set_rumble(dev, RETRO_RUMBLE_STRONG, 0xC000);
+   deliver(ifc, dev, p, 15);
+   CHECK(sent_count == count + 1, "8bitdo: rumble sent again unchanged");
+   ifc->deinit(dev);
+
+   /* firmware with no mode for rumble: nothing sent */
+   stub_hid.get_report = NULL;
+   dev   = ifc->init(&dummy_connection, 0, &stub_hid);
+   count = sent_count;
+   ifc->set_rumble(dev, RETRO_RUMBLE_STRONG, 0xffff);
+   deliver(ifc, dev, p, 15);
+   CHECK(sent_count == count, "8bitdo: rumble sent with no mode for it");
+   ifc->deinit(dev);
+
+   /* behind a Bluetooth stack's header: read, nothing sent */
+   stub_hid.get_report = stub_8bitdo_feature;
+   dev   = ifc->init(&dummy_connection, 0, &stub_hid);
+   count = sent_count;
+   memset(p, 0, sizeof(p));
+   p[0] = 0xa1; p[1] = 0x01; p[2] = 8; p[9] = 0x01; p[10] = 0x10;
+   ifc->set_rumble(dev, RETRO_RUMBLE_STRONG, 0xffff);
+   deliver(ifc, dev, p, 16);
+   CHECK(ifc->button(dev, 0) && !ifc->button(dev, 1)
+         && ifc->view(dev)->buttons.data[0] & (1u << 12),
+         "8bitdo: a report behind a stack's header was not read");
+   CHECK(sent_count == count, "8bitdo: rumble sent behind a stack's header");
+   ifc->deinit(dev);
+   stub_hid.get_report = NULL;
+
+   printf("[%s] 8bitdo: buttons, home, hat, sticks and triggers as both firmwares' reports lay them, on 40000 reports; rumble report 0x05 from the poll only where its mode is on\n",
+         failures == had ? "pass" : "fail");
+}
+
 int main(void)
 {
    stub_hid.send_control = stub_send_control;
@@ -1774,6 +1958,7 @@ int main(void)
    test_switch2_pro();
    test_ds3();
    test_wiiupro();
+   test_8bitdo();
    CHECK(view_reads && !view_bad,
          "views: %u of %u reports' views disagree with the getters",
          view_bad, view_reads);

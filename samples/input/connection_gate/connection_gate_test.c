@@ -42,7 +42,7 @@ pad_connection_interface_t pad_connection_wii, pad_connection_wiiupro,
    pad_connection_nesusb, pad_connection_wiiugca, pad_connection_ps2adapter,
    pad_connection_psxadapter, pad_connection_retrode,
    pad_connection_ps4_hori_mini, pad_connection_kade,
-   pad_connection_dragonrise;
+   pad_connection_dragonrise, pad_connection_8bitdo_sn30_pro;
 
 static int payload;
 static retro_atomic_int_t destroyed, stop, bad_reads;
