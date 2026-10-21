@@ -51,15 +51,15 @@ static INLINE VT_ENCODE_AVAILABLE void videotoolbox_encode_cancel(videotoolbox_e
 
 /* Cold worker startup; hardware is required and independently queried.
  * Unsupported codec/format/property/device returns an error, not a fallback. */
-static INLINE VT_ENCODE_AVAILABLE videotoolbox_encode_t *videotoolbox_encode_new_with_gpu(
-      const videotoolbox_encode_config_t *config, uint64_t gpu_registry_id, OSStatus *error)
+static INLINE VT_ENCODE_AVAILABLE videotoolbox_encode_t *videotoolbox_encode_new_selected(
+      const videotoolbox_encode_config_t *config, CFStringRef encoder_id,uint64_t gpu_registry_id,OSStatus *error)
 {
    videotoolbox_encode_t *encoder = NULL;
    CFMutableDictionaryRef spec = NULL, attrs = NULL, props = NULL;
-   CFTypeRef hardware = NULL;
+   CFTypeRef hardware = NULL, selected_id = NULL;
    OSStatus status = kVTParameterErr;
    if (error) *error = status;
-   if (!config || !config->width || !config->height || (config->width & 1)
+   if ((encoder_id && !CFStringGetLength(encoder_id)) || !config || !config->width || !config->height || (config->width & 1)
          || (config->height & 1) || config->width > 16384 || config->height > 16384
          || config->slots < 2 || config->slots > VIDEOTOOLBOX_ENCODE_SLOTS
          || !config->bitrate || config->bitrate > INT32_MAX
@@ -77,6 +77,7 @@ static INLINE VT_ENCODE_AVAILABLE videotoolbox_encode_t *videotoolbox_encode_new
    encoder->pool = videotoolbox_encode_slots_new(config->slots);
    if (!encoder->pool) { status = kVTAllocationFailedErr; goto done; }
    CFDictionarySetValue(spec, kVTVideoEncoderSpecification_RequireHardwareAcceleratedVideoEncoder, kCFBooleanTrue);
+   if (encoder_id) CFDictionarySetValue(spec,kVTVideoEncoderSpecification_EncoderID,encoder_id);
    if (gpu_registry_id)
    {
 #if defined(VIDEOTOOLBOX_ENCODE_TEST_GPU_SELECTION) || (defined(__APPLE__) && defined(__clang__) \
@@ -135,7 +136,14 @@ static INLINE VT_ENCODE_AVAILABLE videotoolbox_encode_t *videotoolbox_encode_new
          kVTCompressionPropertyKey_UsingHardwareAcceleratedVideoEncoder, NULL, &hardware);
    if (!status && (!hardware || CFGetTypeID(hardware) != CFBooleanGetTypeID()
             || !CFBooleanGetValue((CFBooleanRef)hardware))) status = kVTCouldNotFindVideoEncoderErr;
+   if (!status && encoder_id)
+   {
+      status=VTSessionCopyProperty(encoder->session,kVTCompressionPropertyKey_EncoderID,NULL,&selected_id);
+      if (!status && (!selected_id || CFGetTypeID(selected_id)!=CFStringGetTypeID()
+               || !CFEqual(selected_id,encoder_id))) status=kVTCouldNotFindVideoEncoderErr;
+   }
 done:
+   if (selected_id) CFRelease(selected_id);
    if (hardware) CFRelease(hardware);
    if (props) CFRelease(props);
    if (attrs) CFRelease(attrs);
@@ -145,6 +153,12 @@ done:
    if (status) { videotoolbox_encode_cancel(encoder); return NULL; }
    return encoder;
 }
+
+/* Explicit selected ID is verified against the actual session, in addition
+ * to hardware acceleration. NULL ID preserves system automatic selection. */
+static INLINE VT_ENCODE_AVAILABLE videotoolbox_encode_t *videotoolbox_encode_new_with_gpu(
+      const videotoolbox_encode_config_t *config,uint64_t gpu_registry_id,OSStatus *error)
+{ return videotoolbox_encode_new_selected(config,NULL,gpu_registry_id,error); }
 
 /* Original automatic-selection API. An explicit nonzero GPU registry ID in
  * new_with_gpu requires that encoder device; no preferred-device fallback. */

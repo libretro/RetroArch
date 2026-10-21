@@ -26,7 +26,11 @@ int main(void)
       NSError *error=nil;
       NSData *json;
       for (id<MTLDevice> device in devices)
-         [gpu_records addObject:@{@"name":device.name,@"registry_id":@(device.registryID)}];
+      {
+         id unified=[NSNull null];
+         if (__builtin_available(macOS 10.15,*)) unified=@(device.hasUnifiedMemory);
+         [gpu_records addObject:@{@"name":device.name,@"registry_id":@(device.registryID),@"unified_memory":unified}];
+      }
       if (!status && encoders) for (i=0;i<CFArrayGetCount(encoders);i++)
       {
          NSDictionary *entry=(__bridge NSDictionary*)CFArrayGetValueAtIndex(encoders,i);

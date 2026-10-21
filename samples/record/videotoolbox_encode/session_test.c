@@ -23,6 +23,7 @@ struct object
 {
    unsigned refs, type, width, height, format, count;
    int64_t number;
+   const char *text;
    CFStringRef keys[24];
    const void *values[24];
    int64_t numbers[24];
@@ -35,6 +36,7 @@ static bool hardware = true;
 static bool expected_hdr, expected_hevc;
 static unsigned expected_depth = 8;
 static uint64_t expected_gpu;
+static CFStringRef expected_id;
 #ifndef VIDEOTOOLBOX_ENCODE_TEST_NO_GPU_SELECTION
 #define VIDEOTOOLBOX_ENCODE_TEST_GPU_SELECTION
 #endif
@@ -60,6 +62,8 @@ static int kCFTypeDictionaryKeyCallBacks, kCFTypeDictionaryValueCallBacks;
 #define kCVPixelBufferMetalCompatibilityKey "metal"
 #define kVTVideoEncoderSpecification_RequireHardwareAcceleratedVideoEncoder "require-hardware"
 #define kVTVideoEncoderSpecification_RequiredEncoderGPURegistryID "require-gpu"
+#define kVTVideoEncoderSpecification_EncoderID "encoder-id"
+#define kVTCompressionPropertyKey_EncoderID "encoder-id-result"
 #define kVTCompressionPropertyKey_AverageBitRate "bitrate"
 #define kVTCompressionPropertyKey_MaxKeyFrameInterval "key-interval"
 #define kVTCompressionPropertyKey_MaxFrameDelayCount "frame-delay"
@@ -94,6 +98,9 @@ static void CFRelease(CFTypeRef p)
 }
 static unsigned CFGetTypeID(CFTypeRef p) { return p->type; }
 static unsigned CFBooleanGetTypeID(void) { return 4; }
+static unsigned CFStringGetTypeID(void) { return 5; }
+static size_t CFStringGetLength(CFStringRef s) { return strlen(s); }
+static bool CFEqual(CFTypeRef a,CFStringRef b) { assert(a->type==5); return !strcmp(a->text,b); }
 static bool CFBooleanGetValue(CFBooleanRef p) { return p == &truth; }
 static CVPixelBufferRef CVPixelBufferRetain(CVPixelBufferRef p) { return CFRetain(p); }
 static void CVPixelBufferRelease(CVPixelBufferRef p) { CFRelease(p); }
@@ -133,6 +140,7 @@ static OSStatus VTCompressionSessionCreate(void *a, int32_t w, int32_t h, unsign
    assert(w==64 && h==48 && (codec==1 || codec==2));
    assert(codec == (expected_hevc ? 2u : 1u));
    assert(spec->values[entry(spec,"require-hardware")] == &truth);
+   if (expected_id) assert(!strcmp((const char*)spec->values[entry(spec,"encoder-id")],expected_id));
    if (expected_gpu) assert((uint64_t)spec->numbers[entry(spec,"require-gpu")]==expected_gpu);
    else
    {
@@ -150,7 +158,7 @@ static OSStatus VTCompressionSessionCreate(void *a, int32_t w, int32_t h, unsign
    }
    if (fail_stage==1) return -101;
    *out=object_new(3); if (!*out) return -2;
-   (*out)->callback=callback; return 0;
+   (*out)->callback=callback; (*out)->text=expected_id; return 0;
 }
 static OSStatus VTSessionSetProperties(VTCompressionSessionRef s, CFMutableDictionaryRef p)
 {
@@ -169,7 +177,18 @@ static OSStatus VTSessionSetProperties(VTCompressionSessionRef s, CFMutableDicti
 static OSStatus VTCompressionSessionPrepareToEncodeFrames(VTCompressionSessionRef s)
 { (void)s; return fail_stage==3 ? -103 : 0; }
 static OSStatus VTSessionCopyProperty(VTCompressionSessionRef s, CFStringRef k, void *a, CFTypeRef *out)
-{ (void)s; (void)k; (void)a; if (fail_stage==4) return -104; *out=CFRetain(hardware?&truth:&falsity); return 0; }
+{
+   (void)a;
+   if (!strcmp(k,kVTCompressionPropertyKey_EncoderID))
+   {
+      if (fail_stage==7) return -107;
+      if (fail_stage==8) { *out=CFRetain(&truth); return 0; }
+      *out=object_new(5); if (!*out) return kVTAllocationFailedErr;
+      (*out)->text=fail_stage==6?"unexpected-encoder":s->text; return 0;
+   }
+   if (fail_stage==4) return -104;
+   *out=CFRetain(hardware?&truth:&falsity); return 0;
+}
 static OSStatus VTCompressionSessionEncodeFrame(VTCompressionSessionRef s, CVPixelBufferRef p,
       CMTime pts, CMTime duration, void *props, void *ticket, VTEncodeInfoFlags *flags)
 {
@@ -269,6 +288,22 @@ int main(void)
    /* Unsupported SDK/runtime selection cannot silently choose another GPU. */
    assert(!videotoolbox_encode_new_with_gpu(&c,1,&error) && error==kVTParameterErr && !live);
 #endif
+   {
+      unsigned total;
+      expected_id="advertised-hardware-encoder"; allocations=0;
+      e=videotoolbox_encode_new_selected(&c,expected_id,0,&error); assert(e && !error);
+      total=allocations; videotoolbox_encode_cancel(e);
+      for (i=1;i<=total;i++)
+      {
+         allocations=0; allocation_fail=i;
+         assert(!videotoolbox_encode_new_selected(&c,expected_id,0,&error) && error && !live);
+      }
+      allocation_fail=0;
+      for (i=6;i<=8;i++)
+      { fail_stage=i; assert(!videotoolbox_encode_new_selected(&c,expected_id,0,&error) && error && !live); }
+      fail_stage=0; expected_id=NULL;
+      assert(!videotoolbox_encode_new_selected(&c,"",0,&error) && error==kVTParameterErr && !live);
+   }
    puts("PASS: VT adapter hardware admission, startup faults, FIFO, synchronous/drop callbacks and drain");
    return 0;
 }

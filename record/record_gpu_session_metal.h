@@ -16,8 +16,10 @@ enum record_gpu_session_metal_startup
    RECORD_METAL_STARTUP_POOL, RECORD_METAL_STARTUP_CAPTURE, RECORD_METAL_STARTUP_SESSION,
    RECORD_METAL_STARTUP_UNSUPPORTED
 };
-/* macOS cold I/O worker only. Requires hardware encoding on the supplied
- * Metal device registry ID, with no software/other-GPU fallback. Constructs
+/* macOS cold I/O worker only. Selects an explicit advertised hardware encoder
+ * ID, preferring the supplied Metal GPU over an encoder with no advertised
+ * GPU binding. Rejects software and encoders bound to a different GPU; checks
+ * the actual session ID and hardware flag. Constructs
  * the aligned encoder, fixed pixel pool, capture and owned A/V session.
  * output.video_format is NULL; first encoded sample binds the actual format.
  * On success producer outputs are borrowed only until video_finish; session

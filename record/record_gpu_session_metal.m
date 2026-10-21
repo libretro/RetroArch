@@ -15,6 +15,52 @@
 #include <string.h>
 #include "record_gpu_session_metal.h"
 #include "record_avfoundation_session_native.h"
+#if defined(VIDEOTOOLBOX_ENCODE_SLOTS) && TARGET_OS_OSX \
+      && defined(__MAC_OS_X_VERSION_MAX_ALLOWED) && __MAC_OS_X_VERSION_MAX_ALLOWED>=101400
+/* Enumerated IDs prevent silent default/software/other-GPU selection. A
+ * hardware encoder with no advertised GPU is a separate explicit category,
+ * as used by the hosted paravirtualized media engines. It is not evidence of
+ * physical same-GPU encoding; CVPixelBuffer/Metal interop remains gated. */
+static __attribute__((availability(macos,introduced=10.14))) videotoolbox_encode_t *record_metal_select_encoder(
+      const videotoolbox_encode_config_t *config,uint64_t renderer_gpu,OSStatus *error)
+{
+   CFArrayRef list=NULL;
+   CFIndex i,count;
+   unsigned priority;
+   videotoolbox_encode_t *encoder=NULL;
+   OSStatus status=VTCopyVideoEncoderList(NULL,&list);
+   if (status || !list)
+   { if (list) CFRelease(list); *error=status?status:kVTCouldNotFindVideoEncoderErr; return NULL; }
+   count=CFArrayGetCount(list); status=kVTCouldNotFindVideoEncoderErr;
+   if (count<0 || count>4096) goto done;
+   for (priority=2;priority && !encoder;priority--) for (i=0;i<count;i++)
+   {
+      CFDictionaryRef entry=(CFDictionaryRef)CFArrayGetValueAtIndex(list,i);
+      CFTypeRef hardware,codec,gpu,identifier;
+      int64_t codec_value=0,gpu_value=0;
+      unsigned rank;
+      if (!entry || CFGetTypeID(entry)!=CFDictionaryGetTypeID()) continue;
+      hardware=CFDictionaryGetValue(entry,kVTVideoEncoderList_IsHardwareAccelerated);
+      codec=CFDictionaryGetValue(entry,kVTVideoEncoderList_CodecType);
+      gpu=CFDictionaryGetValue(entry,kVTVideoEncoderList_GPURegistryID);
+      identifier=CFDictionaryGetValue(entry,kVTVideoEncoderList_EncoderID);
+      if (!hardware || CFGetTypeID(hardware)!=CFBooleanGetTypeID() || !CFBooleanGetValue((CFBooleanRef)hardware)
+            || !codec || CFGetTypeID(codec)!=CFNumberGetTypeID()
+            || !CFNumberGetValue((CFNumberRef)codec,kCFNumberSInt64Type,&codec_value)
+            || codec_value!=(int64_t)(config->hevc?kCMVideoCodecType_HEVC:kCMVideoCodecType_H264)
+            || !identifier || CFGetTypeID(identifier)!=CFStringGetTypeID()
+            || !CFStringGetLength((CFStringRef)identifier)) continue;
+      if (gpu && (CFGetTypeID(gpu)!=CFNumberGetTypeID()
+               || !CFNumberGetValue((CFNumberRef)gpu,kCFNumberSInt64Type,&gpu_value))) continue;
+      rank=!gpu_value?1:(uint64_t)gpu_value==renderer_gpu?2:0;
+      if (rank!=priority) continue;
+      encoder=videotoolbox_encode_new_selected(config,(CFStringRef)identifier,rank==2?renderer_gpu:0,&status);
+      if (encoder) break;
+   }
+done:
+   CFRelease(list); *error=status; return encoder;
+}
+#endif
 record_avfoundation_session_t *record_gpu_session_metal_new(void *device,
       const record_gpu_session_metal_config_t *c,const record_mux_avfoundation_config_t *output,
       size_t audio_capacity_bytes,const char *path,record_gpu_capture_metal_t **capture_out,
@@ -54,7 +100,7 @@ record_avfoundation_session_t *record_gpu_session_metal_new(void *device,
       if (config.hevc && config.bit_depth==10)
       { config.width=(config.width+31)&~31u; config.height=(config.height+31)&~31u; }
       failure=RECORD_METAL_STARTUP_ENCODER;
-      encoder=videotoolbox_encode_new_with_gpu(&config,gpu,&status);
+      encoder=record_metal_select_encoder(&config,gpu,&status);
       if (!encoder) goto done;
       failure=RECORD_METAL_STARTUP_POOL;
       pool=VTCompressionSessionGetPixelBufferPool(encoder->session); if (!pool) goto done;
