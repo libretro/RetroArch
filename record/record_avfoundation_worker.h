@@ -33,5 +33,7 @@ bool record_avfoundation_worker_free(record_avfoundation_worker_t *worker);
 /* Worker-only after stopping service. Marks the coordinator failed so its
  * bookkeeping can be freed; borrowed components still require retirement. */
 void record_avfoundation_worker_abort(record_avfoundation_worker_t *worker);
+/* Worker-only after BUSY; input/closure notifications are still required. */
+bool record_avfoundation_worker_retry_needed(const record_avfoundation_worker_t *worker);
 RETRO_END_DECLS
 #endif

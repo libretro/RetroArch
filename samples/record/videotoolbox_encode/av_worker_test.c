@@ -175,6 +175,8 @@ static void session_test(unsigned failure,unsigned cancel,bool empty)
    ops.cancel=session_cancel; ops.free_mux=session_mux_free;
    ops.destroy_encoder=session_encoder_destroy; ops.destroy_context=session_context_destroy;
    session=record_avfoundation_session_new(queue,video,audio,&f,&ops); assert(session);
+   assert(record_avfoundation_session_step(session)==RECORD_AVF_WORKER_BUSY);
+   assert(!record_avfoundation_session_retry_needed(session));
    memset(&ops,0,sizeof(ops));
    if (!empty) for (i=0;i<2;i++)
    {
@@ -190,6 +192,7 @@ static void session_test(unsigned failure,unsigned cancel,bool empty)
       assert(record_avfoundation_session_step(session)==RECORD_AVF_WORKER_BUSY);
       assert(record_avfoundation_session_error(session)==RECORD_AVF_SESSION_CANCELLED);
       assert(!record_avfoundation_session_free(session) && !f.encoder_destroyed);
+      assert(!record_avfoundation_session_retry_needed(session));
       f.gpu_busy=3; /* Cancellation cannot free an unfinished GPU lease. */
    }
    assert(record_avfoundation_session_video_finish(session));
@@ -204,10 +207,13 @@ static void session_test(unsigned failure,unsigned cancel,bool empty)
       result=record_avfoundation_session_step(session);
       if (result==RECORD_AVF_WORKER_ERROR || result==RECORD_AVF_WORKER_END) break;
       assert(!record_avfoundation_session_free(session));
+      if (result==RECORD_AVF_WORKER_BUSY && f.encoder_destroyed)
+         assert(record_avfoundation_session_retry_needed(session));
    }
    assert(i<150 && result==((failure || cancel || empty)?RECORD_AVF_WORKER_ERROR:RECORD_AVF_WORKER_END));
    assert(f.encoder_destroyed==1 && f.context_destroyed==1);
    assert(record_avfoundation_session_step(session)==result);
+   assert(!record_avfoundation_session_retry_needed(session));
    assert(record_avfoundation_session_free(session));
    if (!cancel && !empty && failure!=4) assert(f.opens==1 && f.frees==1);
 }

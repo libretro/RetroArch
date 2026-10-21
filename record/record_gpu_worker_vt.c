@@ -148,3 +148,6 @@ bool record_gpu_worker_vt_abandon(record_gpu_worker_vt_t *w)
    if (!all || w->owned) return false;
    record_gpu_worker_vt_destroy(w); return true;
 }
+
+bool record_gpu_worker_vt_retry_needed(const record_gpu_worker_vt_t *w)
+{ return w && !w->ended && (w->pending || w->packet || w->owned || w->input_end || w->abandoning); }

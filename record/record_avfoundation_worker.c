@@ -8,7 +8,7 @@ struct record_avfoundation_worker
    record_audio_queue_t *audio;
    void *mux;
    record_avfoundation_worker_ops_t ops;
-   bool started,video_end,audio_end,failed,ended;
+   bool started,video_end,audio_end,failed,ended,audio_busy;
 };
 record_avfoundation_worker_t *record_avfoundation_worker_new(
       record_gpu_worker_vt_t *video,record_audio_queue_t *audio,void *mux,
@@ -43,6 +43,7 @@ int record_avfoundation_worker_step(record_avfoundation_worker_t *w)
       }
       else if (result!=RECORD_GPU_VT_BUSY) goto failed;
    }
+   w->audio_busy=false;
    if (!w->audio_end)
    {
       const int16_t *samples=NULL;
@@ -56,7 +57,8 @@ int record_avfoundation_worker_step(record_avfoundation_worker_t *w)
          result=w->ops.audio(w->mux,samples,frames,timestamp);
          if (result==RECORD_AVF_OK)
          { if (!record_audio_queue_ack(w->audio)) goto failed; progress=true; }
-         else if (result!=RECORD_AVF_BUSY) goto failed;
+         else if (result==RECORD_AVF_BUSY) w->audio_busy=true;
+         else goto failed;
       }
       else if (result!=RECORD_AUDIO_BUSY) goto failed;
    }
@@ -78,3 +80,9 @@ bool record_avfoundation_worker_free(record_avfoundation_worker_t *w)
 }
 void record_avfoundation_worker_abort(record_avfoundation_worker_t *w)
 { if (w) w->failed=true; }
+
+bool record_avfoundation_worker_retry_needed(const record_avfoundation_worker_t *w)
+{
+   return w && !w->failed && !w->ended && (w->audio_busy || (w->video_end && w->audio_end)
+         || record_gpu_worker_vt_retry_needed(w->video));
+}

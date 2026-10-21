@@ -1,8 +1,10 @@
 /* Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier: GPL-3.0-or-later */
 #include "../../../record/record_avfoundation_session_native.h"
 #include "../../../record/record_gpu_session_metal.h"
+#include "dispatch_native_fixture.h"
 int main(int argc,char **argv)
 {
+   if (getenv("SESSION_DISPATCH_CONTROL")) return dispatch_native_main(argc,argv);
    if (argc!=8) return 1;
    @autoreleasepool
    {

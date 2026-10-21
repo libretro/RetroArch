@@ -150,3 +150,13 @@ bool record_avfoundation_session_free(record_avfoundation_session_t *s)
    if (s->stage!=AVFS_DONE) return false;
    free(s); return true;
 }
+
+bool record_avfoundation_session_retry_needed(const record_avfoundation_session_t *s)
+{
+   if (!s || s->stage==AVFS_DONE) return false;
+   if (s->stage==AVFS_BIND) return record_gpu_worker_vt_retry_needed(s->video);
+   if (s->stage==AVFS_RUN) return record_avfoundation_worker_retry_needed(s->pump);
+   if (s->stage==AVFS_CLOSE) return retro_atomic_load_acquire_int(&s->video_closed)
+      && retro_atomic_load_acquire_int(&s->audio_closed);
+   return true;
+}

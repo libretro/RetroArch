@@ -39,6 +39,8 @@ int record_gpu_worker_vt_step(record_gpu_worker_vt_t *worker,void **sample);
 /* A partial release can be retried, but invalidates the old sample borrow. */
 bool record_gpu_worker_vt_release(record_gpu_worker_vt_t *worker);
 bool record_gpu_worker_vt_free(record_gpu_worker_vt_t *worker);
+/* Worker-only after BUSY: native/GPU progress needs a scheduled retry. */
+bool record_gpu_worker_vt_retry_needed(const record_gpu_worker_vt_t *worker);
 /* Error teardown only after producer closure and native encoder teardown.
  * Polls outstanding GPU work without waiting; false retains the worker.
  * No encoder operation is invoked once abandon begins. */

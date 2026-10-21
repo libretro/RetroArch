@@ -49,5 +49,8 @@ enum record_avfoundation_session_error record_avfoundation_session_error(
 /* All callers quiesced. Refuses until terminal retirement, including startup
  * failure/cancellation. Does not join threads or wait for GPU completion. */
 bool record_avfoundation_session_free(record_avfoundation_session_t *session);
+/* Dedicated worker only, after BUSY. True schedules native completion polling;
+ * false awaits producer input/closure. No resource/service changes. */
+bool record_avfoundation_session_retry_needed(const record_avfoundation_session_t *session);
 RETRO_END_DECLS
 #endif
