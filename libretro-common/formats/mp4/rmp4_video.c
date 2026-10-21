@@ -88,11 +88,11 @@ struct rmp4_video_stream
    rh265_video *h265;
 #ifdef HAVE_RAV1
    rav1_hw_stream_t *av1;
-   rav1_hdr_metadata_t av1_hdr_initial;
+   rav1_hdr_metadata_t av1_hdr_initial, av1_hdr_seed;
    rmp4_av1_hdr_point_t *av1_hdr_points;
    rav1_hdr_metadata_t av1_hdr_scanned;
    size_t av1_hdr_count, av1_hdr_capacity, av1_hdr_scan_offset;
-   uint32_t av1_hdr_scan_sample;
+   uint32_t av1_hdr_scan_sample, av1_decode_sample;
    rav1_sequence_t av1_hdr_probe_sequence;
    size_t av1_hdr_probe_offset;
    uint32_t av1_hdr_probe_sample;
@@ -623,6 +623,7 @@ static bool rmp4_video_av1_open(rmp4_video_stream_t *s)
    s->range = seq->color_range;
    if (!rav1_hdr_metadata_config(&s->av1->hdr, &config))
       goto fail;
+   s->av1_hdr_seed = s->av1->hdr;
    if (s->av1_hdr_initial_set) s->av1->hdr = s->av1_hdr_initial;
    if (!rmp4_video_hw_color_allowed(s) || !rav1_hw_stream_open_sequence(s->av1))
       goto fail;
@@ -1029,6 +1030,23 @@ static int rmp4_video_duration_ms(const rmp4_video_stream_t *s, int idx)
 }
 
 #ifdef HAVE_RAV1
+static int rmp4_video_av1_hdr_point(rmp4_video_stream_t *s, uint32_t sample);
+
+static int rmp4_video_av1_learn_hdr(rmp4_video_stream_t *s)
+{
+   if (s->av1_decode_sample != s->av1_hdr_scan_sample) return 1;
+   if (!s->av1_hdr_count)
+   {
+      s->av1_hdr_scanned = s->av1_hdr_seed;
+      if (!rmp4_video_av1_hdr_point(s, 0)) return 0;
+   }
+   s->av1_hdr_scanned = s->av1->hdr;
+   if (!rmp4_video_av1_hdr_point(s, s->av1_decode_sample + 1)) return 0;
+   s->av1_hdr_scan_offset = 0;
+   s->av1_hdr_scan_sample++;
+   return 1;
+}
+
 static int rmp4_video_av1_packet(rmp4_video_stream_t *s, const rmp4_packet *pkt,
                                  int discard)
 {
@@ -1039,6 +1057,15 @@ static int rmp4_video_av1_packet(rmp4_video_stream_t *s, const rmp4_packet *pkt,
    if (!s->av1->packet && rav1_hw_stream_begin(s->av1, pkt->data, pkt->size))
       return -1;
    ret = rav1_hw_stream_step(s->av1, &frame, discard != 0);
+   if (ret == RAV1_HW_STREAM_END)
+   {
+      if (!rmp4_video_av1_learn_hdr(s))
+      {
+         s->av1->error = -1;
+         return -1;
+      }
+      s->av1_decode_sample++;
+   }
    if (!s->av1_hdr_initial_set &&
        (ret == RAV1_HW_STREAM_FRAME || ret == RAV1_HW_STREAM_DISCARDED))
    {
@@ -1919,6 +1946,7 @@ void rmp4_video_stream_rewind(rmp4_video_stream_t *s)
    s->pending = s->waiting = s->seek_state = 0;
 #ifdef HAVE_RAV1
    s->av1_hdr_probe_started = 0;
+   s->av1_decode_sample = 0;
 #endif
    rmp4_video_hwf_drop(s);
    s->rndr_kind = 0;   /* decoder reset invalidates the planes */
@@ -2034,7 +2062,7 @@ static const rav1_hdr_metadata_t *rmp4_video_av1_hdr_at(
       if (s->av1_hdr_points[mid].sample <= sample) lo = mid + 1;
       else hi = mid;
    }
-   return lo ? &s->av1_hdr_points[lo - 1].hdr : &s->av1_hdr_initial;
+   return lo ? &s->av1_hdr_points[lo - 1].hdr : &s->av1_hdr_seed;
 }
 
 /* Header-only prefix scan: one resident OBU, yielding before a new sample. */
@@ -2045,7 +2073,7 @@ static int rmp4_video_av1_scan_hdr(rmp4_video_stream_t *s)
    int ret;
    if (!s->av1_hdr_count)
    {
-      s->av1_hdr_scanned = s->av1_hdr_initial;
+      s->av1_hdr_scanned = s->av1_hdr_seed;
       if (!rmp4_video_av1_hdr_point(s, 0)) return -1;
       if (!rmp4_select_track_sample(s->demux, s->track, 0)) return -1;
       return 2;
@@ -2263,7 +2291,10 @@ int rmp4_video_stream_seek_step(rmp4_video_stream_t *s, int64_t *position_us)
             rmp4_video_stream_rewind(s);
 #ifdef HAVE_RAV1
             if (s->av1)
+            {
+               s->av1_decode_sample = (uint32_t)sample;
                s->av1->hdr = *rmp4_video_av1_hdr_at(s, (uint32_t)sample);
+            }
 #endif
             if (!rmp4_select_track_sample(s->demux, s->track,
                      (uint32_t)sample))

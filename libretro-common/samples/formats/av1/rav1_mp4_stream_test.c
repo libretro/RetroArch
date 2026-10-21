@@ -281,8 +281,14 @@ static void test_changed_hdr_seek(void)
       CHECK(frame.color.max_fall == (n ? 600 : 400));
       video_hw_frame_abandon(&frame);
    }
+   before = decodes;
+   CHECK(rmp4_video_stream_seek_begin_ns(s, 80000000));
+   ret = 0;
+   for (n = 0; n < 128 && !ret; n++) ret = rmp4_video_stream_seek_step(s, NULL);
+   CHECK(ret == 1 && n <= 4 && decodes == before);
    rmp4_video_stream_close(s);
    s = rmp4_video_stream_open_hw_avail(bytes, used, used, NULL, NULL, NULL);
+   ret = 0;
    CHECK(s && rmp4_video_stream_set_hw(s, 1));
    if (!s) return;
    CHECK(rmp4_video_stream_seek_begin_ns(s, 80000000));
