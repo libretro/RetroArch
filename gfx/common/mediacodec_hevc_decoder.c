@@ -15,7 +15,8 @@ struct mediacodec_hevc_decoder {
  uint64_t tag[32],last_tag;
  uint8_t *packet;
  unsigned slots,capacity;
- int failed,eos,closed;
+ uint32_t rendered;
+ int failed,eos,output_eos,closed;
 };
 static bool mediacodec_hevc_decoder_discard(android_image_view_t *v)
 {
@@ -36,6 +37,16 @@ static int mediacodec_hevc_decoder_service(mediacodec_hevc_decoder_t *d)
  android_image_queue_poll(d->images);
  status=mediacodec_session_pump(d->session,&pts);
  if(status<0)goto fail;
+ if(status==1) {
+  if(pts<=0 || (uint64_t)pts>d->last_tag)goto fail;
+  for(i=0;i<d->slots;i++)if(d->tag[i]==(uint64_t)pts) {
+   d->rendered|=(uint32_t)1<<i;break;
+  }
+ }
+ if(status==3) {
+  if(!d->eos)goto fail;
+  d->output_eos=1;
+ }
  if(status==2) {
   format=mediacodec_session_format(d->session);
   if(!format || format->width!=(unsigned)d->params.width
@@ -91,6 +102,7 @@ static int mediacodec_hevc_decoder_decode(void *opaque,const rh265_video_params_
   d->tag[i]=0;
  }
  if(!mediacodec_hevc_decoder_discard(&d->image[picture->slot])){d->failed=1;return -1;}
+ d->rendered&=picture->keep_outputs & ~((uint32_t)1<<picture->slot);
  d->tag[picture->slot]=picture->output?picture->serial:0;
  d->last_tag=picture->serial;
  return 0;
@@ -101,9 +113,17 @@ static int mediacodec_hevc_decoder_output(void *opaque,unsigned slot,video_hw_fr
  int status;
  if(!d || !out || slot>=d->slots || d->closed)return -1;
  if(mediacodec_hevc_decoder_service(d)<0)return -1;
- if(!d->image[slot].ticket)return 1;
+ if(!d->image[slot].ticket) {
+  if(d->output_eos && d->tag[slot] && !(d->rendered & ((uint32_t)1<<slot))) {
+   d->failed=1;return -1;
+  }
+  return 1;
+ }
  status=d->importer.export_image(d->importer.context,&d->image[slot],&d->format,&d->color,out);
- if(!status)memset(&d->image[slot],0,sizeof(d->image[slot]));
+ if(!status) {
+  memset(&d->image[slot],0,sizeof(d->image[slot]));d->tag[slot]=0;
+  d->rendered&=~((uint32_t)1<<slot);
+ }
  if(status<0)d->failed=1;
  return status;
 }

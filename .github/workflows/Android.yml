@@ -90,6 +90,10 @@ jobs:
         run: |
           make -C libretro-common/samples/formats/video_player clean all CC=${{ matrix.cc }} SANITIZER=address,undefined
           libretro-common/samples/formats/video_player/video_player_test
+      - name: HEVC drain with no remaining display output
+        run: |
+          make -C samples/gfx/d3d11_video_decode rh265_hw_stream_test CC=${{ matrix.cc }} SANITIZER=address,undefined
+          (cd samples/gfx/d3d11_video_decode && ./rh265_hw_stream_test)
       - name: Install test-only Vulkan software renderer
         run: sudo apt-get update && sudo apt-get install -y libvulkan-dev mesa-vulkan-drivers
       - name: Execute RGB shader crop and SDR PQ HLG pixel oracle on Vulkan software device
@@ -157,6 +161,11 @@ jobs:
                     -I. -Ilibretro-common/include "${extra[@]}" \
                     -c "$player_source" -o "$RUNNER_TEMP/$(basename "$player_source")-$target-$api-$offset.o"
                 done
+                "$bin/$target$api-clang" \
+                  -DHAVE_THREADS -O2 -std=c89 -pedantic -Wall -Wextra -Werror \
+                  -Wno-unused-parameter -Wno-long-long -Wno-c99-extensions -Wframe-larger-than=2048 \
+                  -Ilibretro-common/include "${extra[@]}" -c libretro-common/formats/h265/rh265.c \
+                  -o "$RUNNER_TEMP/rh265.c-$target-$api-$offset.o"
                 "$bin/ld.lld" -r \
                   "$RUNNER_TEMP/unity-$target-$api-$offset.o" \
                   "$RUNNER_TEMP/vulkan_common.c-$target-$api-$offset.o" \
@@ -165,6 +174,7 @@ jobs:
                   "$RUNNER_TEMP/video_player.c-$target-$api-$offset.o" \
                   "$RUNNER_TEMP/image_transfer.c-$target-$api-$offset.o" \
                   "$RUNNER_TEMP/rwebm_video.c-$target-$api-$offset.o" \
+                  "$RUNNER_TEMP/rh265.c-$target-$api-$offset.o" \
                   -o "$RUNNER_TEMP/media-root-$target-$api-$offset.o"
                 if "$bin/llvm-nm" -u "$RUNNER_TEMP/media-root-$target-$api-$offset.o" | \
                     grep -Eq ' U (mediacodec_|android_frame_|android_image_|vulkan_android_|video_player_(request_software|set_hw_fallback)|image_transfer_anim_stream_stop_hw|rwebm_video_stream_stop_hw)'; then

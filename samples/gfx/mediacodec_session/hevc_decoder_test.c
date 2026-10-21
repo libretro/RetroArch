@@ -5,7 +5,8 @@
 #include "../../../gfx/common/mediacodec_hevc_decoder.h"
 #include "../../../gfx/common/android_image_ndk.h"
 static int native,submitted,busy,eos,freed,reader_freed,released,startup_fail;
-static int timestamp_extra,release_busy,release_calls;
+static int timestamp_extra,release_busy,release_calls,pump_status;
+static int64_t rendered_tag;
 static int64_t queued_tag;
 static android_image_view_t held;
 static mediacodec_hevc_decoder_t *retired;
@@ -54,7 +55,12 @@ int mediacodec_session_submit(mediacodec_session_t *s,const void *data,size_t by
  submitted++;assert(pts>0);return 1;
 }
 int mediacodec_session_pump(mediacodec_session_t *s,int64_t *pts)
-{assert(s==(mediacodec_session_t*)&native);*pts=0;return format.serial?0:2;}
+{
+ assert(s==(mediacodec_session_t*)&native);*pts=0;
+ if(!format.serial)return 2;
+ if(rendered_tag){*pts=rendered_tag;rendered_tag=0;return 1;}
+ return pump_status;
+}
 const mediacodec_output_format_t *mediacodec_session_format(const mediacodec_session_t *s)
 {assert(s==(mediacodec_session_t*)&native);format.serial=1;return &format;}
 void mediacodec_session_free(mediacodec_session_t *s)
@@ -134,6 +140,25 @@ int main(void)
  mediacodec_hevc_decoder_close(&ops);
  assert(mediacodec_hevc_decoder_retire_poll(retired));
  assert(freed==1 && reader_freed==1 && released==1);
- puts("PASS: HEVC Surface owner startup faults, BUSY, reorder, EOF, bad timestamps and leased retirement");
+ /* EOS proves an expected codec output was never rendered. */
+ retired=NULL;format.serial=0;freed=reader_freed=released=0;timestamp_extra=0;eos=0;
+ assert(mediacodec_hevc_decoder_open((JNIEnv*)&native,(rh265_video*)&native,&params,4,1024,&importer,&ops));
+ assert(!ops.decode(ops.decoder,&params,&au,&slice,&picture));
+ assert(!ops.drain(ops.decoder) && eos==1);pump_status=3;
+ assert(ops.output(ops.decoder,0,&frame)==-1);
+ assert(ops.output(ops.decoder,0,&frame)==-1);
+ mediacodec_hevc_decoder_close(&ops);assert(mediacodec_hevc_decoder_retire_poll(retired));
+ /* A rendered Surface image may still arrive after codec EOS. */
+ retired=NULL;format.serial=0;freed=reader_freed=released=0;pump_status=0;eos=0;
+ assert(mediacodec_hevc_decoder_open((JNIEnv*)&native,(rh265_video*)&native,&params,4,1024,&importer,&ops));
+ assert(!ops.decode(ops.decoder,&params,&au,&slice,&picture));rendered_tag=1;
+ assert(!ops.drain(ops.decoder) && eos==1);pump_status=3;
+ assert(ops.output(ops.decoder,0,&frame)==1);
+ assert(ops.output(ops.decoder,0,&frame)==1);
+ queued_tag=1;assert(!ops.output(ops.decoder,0,&frame));
+ mediacodec_hevc_decoder_close(&ops);assert(!mediacodec_hevc_decoder_retire_poll(retired));
+ assert(android_image_queue_return(held.ticket,held.generation,-1));
+ assert(mediacodec_hevc_decoder_retire_poll(retired));
+ puts("PASS: HEVC Surface owner startup faults, BUSY, reorder, missing EOS output, delayed Surface delivery and leased retirement");
  return 0;
 }
