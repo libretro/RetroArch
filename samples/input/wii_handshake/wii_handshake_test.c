@@ -18,6 +18,9 @@
  *   no acknowledgement        -> a later packet moves it on, but only
  *                                once the old 100 ms have passed
  *   and no call takes more than a few milliseconds
+ *
+ * and that the view the remote keeps says what its getters said when
+ * they read its state.
  */
 
 #include <stdio.h>
@@ -85,6 +88,40 @@ static void *new_remote(int slot)
    return pad_connection_wii.init(conn, slot, &fake_driver);
 }
 
+/* the getters as they read the remote's state before its view */
+static unsigned view_mismatches(struct connect_wii_wiimote_t *wm)
+{
+   const struct connect_wii_classic_ctrl_t *cc = &wm->exp.cc.classic;
+   input_bits_t bits, want;
+   unsigned k, bad = 0;
+   uint32_t b = wm->btns | ((uint32_t)(uint16_t)cc->btns << 16);
+
+   BIT256_CLEAR_ALL(want);
+   BITS_COPY32_PTR(&want, b);
+   BIT256_CLEAR_ALL(bits);
+   pad_connection_wii.get_buttons(wm, &bits);
+   if (memcmp(&bits, &want, sizeof(bits)))
+      bad++;
+   if (memcmp(&bits, &pad_connection_wii.view(wm)->buttons, sizeof(bits)))
+      bad++;
+   for (k = 0; k < 16; k++)
+   {
+      int16_t old = 0;
+      if (wm->exp.type == EXP_CLASSIC)
+         switch (k)
+         {
+            case 0: old = cc->ljs.x.value * 0x7FFF; break;
+            case 1: old = cc->ljs.y.value * 0x7FFF; break;
+            case 2: old = cc->rjs.x.value * 0x7FFF; break;
+            case 3: old = cc->rjs.y.value * 0x7FFF; break;
+         }
+      if (     pad_connection_wii.get_axis(wm, k) != old
+            || pad_connection_wii.view(wm)->axes[k] != old)
+         bad++;
+   }
+   return bad + (pad_connection_wii.view(wm)->hats != 0);
+}
+
 int main(void)
 {
    uint8_t status[8]  = { WM_RPT_CTRL_STATUS, 0, 0, WM_CTRL_STATUS_BYTE1_ATTACHMENT, 0, 0, 0, 0 };
@@ -144,6 +181,28 @@ int main(void)
    pad_connection_wii.deinit(wm);
 
    check(worst_ms < 5.0, "no packet blocks the thread that delivers it");
+
+   printf("the view\n");
+   {
+      struct connect_wii_wiimote_t *rm;
+      uint8_t exp[22];
+      unsigned n, i, bad = 0;
+      rm = (struct connect_wii_wiimote_t *)new_remote(3);
+      srand(5);
+      for (n = 0; n < 20000; n++)
+      {
+         /* a classic controller comes and goes */
+         if (n % 5000 == 0)
+            rm->exp.type = (n / 5000) & 1 ? EXP_NONE : EXP_CLASSIC;
+         for (i = 0; i < sizeof(exp); i++)
+            exp[i] = (uint8_t)rand();
+         exp[0] = (rand() & 3) ? WM_RPT_BTN_EXP : WM_RPT_BTN;
+         feed(rm, exp, sizeof(exp));
+         bad += view_mismatches(rm);
+      }
+      check(!bad, "its buttons and sticks are what the getters read from the remote");
+      pad_connection_wii.deinit(rm);
+   }
 
    if (failures)
    {

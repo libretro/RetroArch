@@ -166,6 +166,7 @@ typedef struct connect_wii_wiimote_t
    struct connect_wii_expansion_t exp;
    /* What buttons have just been pressed. */
    uint16_t btns;
+   input_pad_view_t view;
 } connect_wii_wiimote;
 
 /* Macro to manage states */
@@ -654,44 +655,45 @@ error:
    return NULL;
 }
 
+/* The remote's state into its view, at the end of each packet. */
+static void wiimote_view_update(struct connect_wii_wiimote_t* wm)
+{
+   const struct connect_wii_classic_ctrl_t *cc = &wm->exp.cc.classic;
+
+   /* TODO/FIXME - Broken? this doesn't match retropad! */
+   pad_view_set_buttons(&wm->view,
+         wm->btns | ((uint32_t)(uint16_t)cc->btns << 16), false);
+   if (wm->exp.type == EXP_CLASSIC)
+   {
+      wm->view.axes[0] = (int16_t)(cc->ljs.x.value * 0x7FFF);
+      wm->view.axes[1] = (int16_t)(cc->ljs.y.value * 0x7FFF);
+      wm->view.axes[2] = (int16_t)(cc->rjs.x.value * 0x7FFF);
+      wm->view.axes[3] = (int16_t)(cc->rjs.y.value * 0x7FFF);
+   }
+   else
+      wm->view.axes[0] = wm->view.axes[1] =
+      wm->view.axes[2] = wm->view.axes[3] = 0;
+}
+
 static int16_t hidpad_wii_get_axis(void *data, unsigned axis)
 {
    struct connect_wii_wiimote_t* device = (struct connect_wii_wiimote_t*)data;
 
-   if (device)
-   {
-      switch (device->exp.type)
-      {
-         case EXP_CLASSIC:
-            switch (axis)
-            {
-               case 0:
-                  return device->exp.cc.classic.ljs.x.value * 0x7FFF;
-               case 1:
-                  return device->exp.cc.classic.ljs.y.value * 0x7FFF;
-               case 2:
-                  return device->exp.cc.classic.rjs.x.value * 0x7FFF;
-               case 3:
-                  return device->exp.cc.classic.rjs.y.value * 0x7FFF;
-            }
-            break;
-         default:
-            break;
-      }
-   }
-
-   return 0;
+   if (!device || axis >= INPUT_PAD_VIEW_AXES)
+      return 0;
+   return device->view.axes[axis];
 }
 
 static void hidpad_wii_get_buttons(void *data, input_bits_t *state)
 {
    struct connect_wii_wiimote_t* device = (struct connect_wii_wiimote_t*)data;
-   if ( device )
-   {
-      /* TODO/FIXME - Broken? this doesn't match retropad! */
-      uint32_t b = device->btns | (device->exp.cc.classic.btns << 16);
-      BITS_COPY32_PTR(state, b);
-   }
+   if (device)
+      *state = device->view.buttons;
+}
+
+static const input_pad_view_t *hidpad_wii_view(void *data)
+{
+   return &((struct connect_wii_wiimote_t*)data)->view;
 }
 
 static void hidpad_wii_packet_handler(void *data,
@@ -737,6 +739,7 @@ static void hidpad_wii_packet_handler(void *data,
          wiimote_handle_expansion(device, msg+2);
          break;
    }
+   wiimote_view_update(device);
 }
 
 static void hidpad_wii_set_rumble(void *data,
@@ -759,5 +762,6 @@ pad_connection_interface_t pad_connection_wii = {
    NULL,  /* pad_deinit */
    NULL,  /* status */
    NULL,  /* joypad */
-   hidpad_wii_set_player
+   hidpad_wii_set_player,
+   hidpad_wii_view
 };
