@@ -49,7 +49,10 @@
  *   sticks and the two triggers each on its own axis - and is read
  *   once a poll; another make of pad is raw input's as before; the
  *   pad rumbles, and one that goes is noticed and its slot given up.
- *   With the setting off none of that happens. */
+ *   With the setting off none of that happens;
+ * - a pad on a PlayStation adapter that rumbles it (the MP-8866) is
+ *   written its output report, Windows' parser placing the values:
+ *   on, the small motor on or off, the large one's force. */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -127,12 +130,60 @@ static UINT WINAPI fake_GetRawInputDeviceInfoA(HANDLE dev, UINT cmd,
    return (UINT)-1;
 }
 
+/* the adapter's parsed descriptor, as HidD_GetPreparsedData gives it:
+ * report 1 out, one field of three bytes */
+#define FAKE_SJOY_PP ((PHIDP_PREPARSED_DATA)(uintptr_t)0x5157)
+static unsigned sjoy_pp_freed;
+
 static NTSTATUS NTAPI fake_HidP_GetCaps(PHIDP_PREPARSED_DATA pp,
       PHIDP_CAPS caps)
 {
-   (void)pp;
    memset(caps, 0, sizeof(*caps));
    caps->OutputReportByteLength = FAKE_REPORT_LEN;
+   if (pp == FAKE_SJOY_PP)
+      caps->NumberOutputValueCaps = 1;
+   return HIDP_STATUS_SUCCESS;
+}
+static BOOLEAN WINAPI fake_HidD_GetPreparsedData(HANDLE h,
+      PHIDP_PREPARSED_DATA *pp)
+{
+   (void)h;
+   *pp = FAKE_SJOY_PP;
+   return TRUE;
+}
+static BOOLEAN WINAPI fake_HidD_FreePreparsedData(PHIDP_PREPARSED_DATA pp)
+{
+   if (pp == FAKE_SJOY_PP)
+      sjoy_pp_freed++;
+   return TRUE;
+}
+static NTSTATUS NTAPI fake_HidP_GetValueCaps(HIDP_REPORT_TYPE type,
+      PHIDP_VALUE_CAPS caps, PUSHORT n, PHIDP_PREPARSED_DATA pp)
+{
+   if (pp != FAKE_SJOY_PP)
+      return HidP_GetValueCaps(type, caps, n, pp);
+   if (type != HidP_Output || !*n)
+      return HIDP_STATUS_INVALID_PREPARSED_DATA;
+   memset(caps, 0, sizeof(*caps));
+   caps->ReportID         = 1;
+   caps->UsagePage        = 0x08;
+   caps->NotRange.Usage   = 0x4b;
+   caps->ReportCount      = 3;
+   caps->BitSize          = 8;
+   *n                     = 1;
+   return HIDP_STATUS_SUCCESS;
+}
+/* the field's three bytes after the report's ID */
+static NTSTATUS NTAPI fake_HidP_SetUsageValueArray(HIDP_REPORT_TYPE type,
+      USAGE page, USHORT link, USAGE usage, PCHAR value, USHORT bytes,
+      PHIDP_PREPARSED_DATA pp, PCHAR report, ULONG len)
+{
+   (void)link;
+   if (     pp != FAKE_SJOY_PP || type != HidP_Output || page != 0x08
+         || usage != 0x4b || bytes != 3 || len < 4)
+      return HIDP_STATUS_INVALID_PREPARSED_DATA;
+   report[0] = 1;
+   memcpy(report + 1, value, 3);
    return HIDP_STATUS_SUCCESS;
 }
 
@@ -205,6 +256,10 @@ static BOOL WINAPI fake_FreeLibrary(HMODULE mod) { (void)mod; return TRUE; }
 
 #define GetRawInputDeviceInfoA fake_GetRawInputDeviceInfoA
 #define HidP_GetCaps           fake_HidP_GetCaps
+#define HidD_GetPreparsedData  fake_HidD_GetPreparsedData
+#define HidD_FreePreparsedData fake_HidD_FreePreparsedData
+#define HidP_GetValueCaps      fake_HidP_GetValueCaps
+#define HidP_SetUsageValueArray fake_HidP_SetUsageValueArray
 #define CreateFileA            fake_CreateFileA
 #define LoadLibraryA           fake_LoadLibraryA
 #define GetProcAddress         fake_GetProcAddress
@@ -610,6 +665,35 @@ int main(void)
    winraw_joypad_joypad_destroy();
    stub_settings.bools.input_winraw_xinput_enable = false;
    printf("   ok   an XInput pad rumbles; one that goes is noticed at the next poll and gives its slot up, and comes back to it\n");
+
+   /* ---- a pad on a PlayStation adapter --------------------------- */
+   {
+      char sjoy[MAX_PATH];
+      snprintf(sjoy, sizeof(sjoy), "%srumble_sjoy.bin", dir);
+      DeleteFileA(sjoy);
+      fake_plug(H(30), 0x0925, 0x8866, sjoy);   /* MP-8866 Dual USB Joypad */
+      winraw_joypad_initialised = true;
+      winraw_joypad_add_device(H(30));
+      CHECK(winraw_joypad_pads[0].connected && winraw_joypad_out[0].present,
+            "the MP-8866's pad was not opened for writing");
+      ok = winraw_joypad_joypad_set_rumble(0, RETRO_RUMBLE_STRONG, 0x8000);
+      CHECK(ok, "set_rumble() said the adapter's pad cannot rumble");
+      winraw_joypad_joypad_set_rumble(0, RETRO_RUMBLE_WEAK, 0x0100);
+      CHECK(wait_for(sjoy, 2, 0x01, 0x80),
+            "the adapter's motors were not written: small on, large 0x80");
+      len = written_to(sjoy, buf, sizeof(buf));
+      CHECK(len == FAKE_REPORT_LEN && buf[0] == 1 && buf[1] == 1,
+            "the adapter's report: %lu bytes, id %02x, on %02x; want %u, 01, 01",
+            (unsigned long)len, buf[0], buf[1], FAKE_REPORT_LEN);
+      winraw_joypad_joypad_set_rumble(0, RETRO_RUMBLE_WEAK, 0);
+      CHECK(wait_for(sjoy, 2, 0x00, 0x80), "the small motor was not stopped");
+      winraw_joypad_joypad_destroy();
+      CHECK(wait_for(sjoy, 2, 0x00, 0x00) && sjoy_pp_freed == 1,
+            "stopping the driver did not still the adapter's pad, or kept its"
+            " parsed descriptor");
+      DeleteFileA(sjoy);
+      printf("   ok   a pad on a PlayStation adapter is rumbled through its output report, its values placed by Windows' parser\n");
+   }
 
    DeleteFileA(edge); DeleteFileA(ds4); DeleteFileA(other);
    if (failures)

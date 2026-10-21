@@ -18,7 +18,9 @@
  *                  whose reports have no ID given them without
  *                  Windows' leading 0; gone, and freed with a write in
  *                  flight; the pad's state lent where its handler
- *                  keeps it, a generic pad's hat in it
+ *                  keeps it, a generic pad's hat in it; a
+ *                  PlayStation adapter's pad rumbled through its output
+ *                  report, Windows' parser placing the values
  *   switch 2    -> the Switch 2 Pro Controller woken through its bulk
  *                  pipes: every command whole, each answer read, an
  *                  answer that never comes given up on; the player lit
@@ -267,6 +269,7 @@ static BOOLEAN WINAPI h_pp(HANDLE h, PHIDP_PREPARSED_DATA *pp)
 static BOOLEAN WINAPI h_free_pp(PHIDP_PREPARSED_DATA pp) { return TRUE; }
 static bool generic_mode;
 static bool generic_dup; /* X named twice */
+static bool sjoy_mode;   /* an MP-8866: one output field of three bytes */
 static NTSTATUS WINAPI h_caps(PHIDP_PREPARSED_DATA pp, PHIDP_CAPS c)
 {
    memset(c, 0, sizeof(*c));
@@ -276,6 +279,7 @@ static NTSTATUS WINAPI h_caps(PHIDP_PREPARSED_DATA pp, PHIDP_CAPS c)
    c->OutputReportByteLength = caps_out;
    c->NumberInputButtonCaps  = 1;
    c->NumberInputValueCaps   = generic_mode ? 5 : 1;
+   c->NumberOutputValueCaps  = sjoy_mode ? 1 : 0;
    return HIDP_STATUS_SUCCESS;
 }
 /* a pad with no handler: twelve buttons, X, Y and Rz from 0 to 255,
@@ -313,6 +317,18 @@ static NTSTATUS WINAPI h_vcaps(HIDP_REPORT_TYPE t, PHIDP_VALUE_CAPS c,
    static const USAGE dup[5]   = { 0x30, 0x30, 0x31, 0x33, 0x39 };
    USHORT i;
    memset(c, 0, sizeof(*c) * *n);
+   if (t == HidP_Output)
+   {
+      if (!sjoy_mode)
+         return HIDP_STATUS_INVALID_PREPARSED_DATA;
+      c->ReportID       = 1;
+      c->UsagePage      = 0x08;
+      c->NotRange.Usage = 0x4b;
+      c->ReportCount    = 3;
+      c->BitSize        = 8;
+      *n                = 1;
+      return HIDP_STATUS_SUCCESS;
+   }
    if (!generic_mode)
    {
       *n          = 1;
@@ -332,6 +348,23 @@ static NTSTATUS WINAPI h_vcaps(HIDP_REPORT_TYPE t, PHIDP_VALUE_CAPS c,
    c[4].BitSize    = 4;      /* the hat */
    c[4].LogicalMax = 7;
    *n              = i;
+   return HIDP_STATUS_SUCCESS;
+}
+static NTSTATUS WINAPI h_set_value(HIDP_REPORT_TYPE t, USAGE page,
+      USHORT lc, USAGE usage, ULONG v, PHIDP_PREPARSED_DATA pp, PCHAR r,
+      ULONG len)
+{
+   return HIDP_STATUS_USAGE_NOT_FOUND;
+}
+static NTSTATUS WINAPI h_set_array(HIDP_REPORT_TYPE t, USAGE page,
+      USHORT lc, USAGE usage, PCHAR v, USHORT bytes,
+      PHIDP_PREPARSED_DATA pp, PCHAR r, ULONG len)
+{
+   if (t != HidP_Output || page != 0x08 || usage != 0x4b || bytes != 3
+         || len < 4)
+      return HIDP_STATUS_USAGE_NOT_FOUND;
+   r[0] = 1;
+   memcpy(r + 1, v, 3);
    return HIDP_STATUS_SUCCESS;
 }
 static NTSTATUS WINAPI h_usages(HIDP_REPORT_TYPE t, USAGE page, USHORT lc,
@@ -528,6 +561,8 @@ static void test_hidclass(const char *path)
    winusb_hidclass_api.GetProductString  = h_product;
    winusb_hidclass_api.GetUsages         = h_usages;
    winusb_hidclass_api.GetUsageValue     = h_value;
+   winusb_hidclass_api.SetUsageValue     = h_set_value;
+   winusb_hidclass_api.SetUsageValueArray = h_set_array;
 
    hid = (winusb_hid_t*)winusb_hid.init();
    CHECK(hid != NULL, "hid class: init failed");
@@ -714,6 +749,47 @@ static void test_hidclass(const char *path)
    h_unplugged = false;
    generic_dup  = false;
 
+   /* an MP-8866's port: rumbled at the poll, through its output
+    * report's three values - on, the small motor, the large one */
+   sjoy_mode = true;
+   caps_in = 9; caps_out = 5; caps_id = 0;
+   winusb_hid_open(hid, path, "HID\\VID_0925&PID_8866&Col01\\1",
+         0x0925, 0x8866, true);
+   CHECK(hid->devices && hid->devices->generic
+         && hid->devices->gen.out.fields == 1,
+         "hid class: an MP-8866's rumble report was not found");
+   if (hid->devices)
+   {
+      int before = n_writes;
+      int w;
+      winusb_hid.set_rumble(hid, 0, RETRO_RUMBLE_STRONG, 0x8000);
+      winusb_hid.set_rumble(hid, 0, RETRO_RUMBLE_WEAK, 0x0100);
+      CHECK(n_writes == before, "hid class: the adapter was written outside the poll");
+      memset(r, 0, sizeof(r));
+      push_hreport(r, 9);
+      wait_hreader();
+      winusb_hid.poll(hid);
+      w = (n_writes - 1) & 15;
+      CHECK(n_writes == before + 1 && write_len[w] == 5
+            && writes[w][0] == 1 && writes[w][1] == 1 && writes[w][2] == 1
+            && writes[w][3] == 0x80 && writes[w][4] == 0,
+            "hid class: the adapter's report is not on, small on, large 0x80");
+      push_hreport(r, 9);
+      wait_hreader();
+      winusb_hid.poll(hid);
+      CHECK(n_writes == before + 1, "hid class: the adapter was written again unchanged");
+      dev = hid->devices;
+      EnterCriticalSection(&q_lock);
+      h_unplugged = true;
+      h_complete();
+      LeaveCriticalSection(&q_lock);
+      for (i = 0; i < 2000 && !retro_atomic_load_acquire_int(&dev->gone); i++)
+         Sleep(1);
+      winusb_hid.poll(hid);
+      h_unplugged = false;
+   }
+   sjoy_mode    = false;
+   caps_out     = 0;
    generic_mode = false;
 
    /* freed with a write in flight: the write is cancelled, the reader

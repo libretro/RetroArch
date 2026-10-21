@@ -56,6 +56,7 @@
 
 #include "../connect/joypad_connection.h"
 #include "../common/hid_report_desc.h"
+#include "../common/hid_sjoy_output.h"
 #include "../input_defines.h"
 #include "../../tasks/tasks_internal.h"
 #include "../input_driver.h"
@@ -136,6 +137,12 @@ typedef struct
          PULONG, PHIDP_PREPARSED_DATA, PCHAR, ULONG);
    NTSTATUS (WINAPI *GetUsageValue)(HIDP_REPORT_TYPE, USAGE, USHORT, USAGE,
          PULONG, PHIDP_PREPARSED_DATA, PCHAR, ULONG);
+   /* for an output report: a rumbling adapter's, read as no rumble
+    * where missing */
+   NTSTATUS (WINAPI *SetUsageValue)(HIDP_REPORT_TYPE, USAGE, USHORT, USAGE,
+         ULONG, PHIDP_PREPARSED_DATA, PCHAR, ULONG);
+   NTSTATUS (WINAPI *SetUsageValueArray)(HIDP_REPORT_TYPE, USAGE, USHORT,
+         USAGE, PCHAR, USHORT, PHIDP_PREPARSED_DATA, PCHAR, ULONG);
    BOOL (WINAPI *Read)(HANDLE, LPVOID, DWORD, LPDWORD, LPOVERLAPPED);
    BOOL (WINAPI *Write)(HANDLE, LPCVOID, DWORD, LPDWORD, LPOVERLAPPED);
    BOOL (WINAPI *Result)(HANDLE, LPOVERLAPPED, LPDWORD, BOOL);
@@ -210,6 +217,9 @@ typedef struct winusb_generic
    unsigned values;
    winusb_gen_value_t value[WINUSB_GEN_VALUES];
    input_pad_view_t view; /* its buttons, axes and hat, as decoded */
+   hid_sjoy_output_t out; /* a PlayStation adapter's rumble */
+   uint8_t motors[2];     /* strong, weak: what the core asked last */
+   bool motors_due;
 } winusb_generic_t;
 
 typedef struct winusb_device
@@ -331,6 +341,14 @@ static bool winusb_hidclass_api_load(void)
             HIDP_REPORT_TYPE, USAGE, USHORT, USAGE, PULONG,
             PHIDP_PREPARSED_DATA, PCHAR, ULONG))
       GetProcAddress(lib, "HidP_GetUsageValue");
+   winusb_hidclass_api.SetUsageValue     = (NTSTATUS (WINAPI*)(
+            HIDP_REPORT_TYPE, USAGE, USHORT, USAGE, ULONG,
+            PHIDP_PREPARSED_DATA, PCHAR, ULONG))
+      GetProcAddress(lib, "HidP_SetUsageValue");
+   winusb_hidclass_api.SetUsageValueArray = (NTSTATUS (WINAPI*)(
+            HIDP_REPORT_TYPE, USAGE, USHORT, USAGE, PCHAR, USHORT,
+            PHIDP_PREPARSED_DATA, PCHAR, ULONG))
+      GetProcAddress(lib, "HidP_SetUsageValueArray");
    if (     !winusb_hidclass_api.GetAttributes
          || !winusb_hidclass_api.GetPreparsedData
          || !winusb_hidclass_api.FreePreparsedData
@@ -784,6 +802,25 @@ static int16_t winusb_generic_scale(LONG v, LONG min, LONG max)
    return (int16_t)((((int64_t)(v - min) * 65534) / range) - 32767);
 }
 
+static void winusb_hidclass_write(winusb_device_t *dev,
+      const uint8_t *s, size_t len);
+
+/* The motors as the core last asked, in the adapter's output report:
+ * at a poll, as every pad's rumble goes. */
+static void winusb_generic_send_rumble(winusb_generic_t *gen)
+{
+   winusb_device_t *dev = gen->dev;
+   uint8_t r[WINUSB_OUT_MAX];
+
+   gen->motors_due = false;
+   if (     dev->out_len <= sizeof(r)
+         && hid_sjoy_output_report(&gen->out, gen->pp, r, dev->out_len,
+               gen->motors[0], gen->motors[1],
+               winusb_hidclass_api.SetUsageValue,
+               winusb_hidclass_api.SetUsageValueArray))
+      winusb_hidclass_write(dev, r, dev->out_len);
+}
+
 /* One report into the pad's state; a report that does not carry a
  * value - a device that splits its state across report IDs - leaves
  * it as it was. */
@@ -844,6 +881,8 @@ static void winusb_generic_packet(void *data, uint8_t *report,
       else
          gen->view.axes[v->id] = winusb_generic_scale(val, v->min, v->max);
    }
+   if (gen->motors_due && gen->out.fields)
+      winusb_generic_send_rumble(gen);
 }
 
 static void *winusb_generic_init(void *data, uint32_t slot,
@@ -857,7 +896,17 @@ static void *winusb_generic_init(void *data, uint32_t slot,
 static void winusb_generic_deinit(void *data) { }
 
 static void winusb_generic_rumble(void *data,
-      enum retro_rumble_effect effect, uint16_t strength) { }
+      enum retro_rumble_effect effect, uint16_t strength)
+{
+   winusb_generic_t *gen = (winusb_generic_t*)data;
+   unsigned idx          = (effect == RETRO_RUMBLE_STRONG) ? 0 : 1;
+   uint8_t motor         = (uint8_t)(strength >> 8);
+   if (gen && gen->out.fields && gen->motors[idx] != motor)
+   {
+      gen->motors[idx] = motor;
+      gen->motors_due  = true;
+   }
+}
 
 static void winusb_generic_get_buttons(void *data, input_bits_t *state)
 {
@@ -953,6 +1002,15 @@ static bool winusb_hidclass_setup(winusb_device_t *dev)
       if (ok && dev->generic)
       {
          winusb_generic_setup(&dev->gen, pp, bcaps, nb, vcaps, nv);
+         if (hid_sjoy_rumbles(dev->vid, dev->pid))
+            RARCH_LOG("%s %04x:%04x: %s (%u output values, %u bytes).\n",
+                  dev->tag, dev->vid, dev->pid,
+                  hid_sjoy_output_setup(&dev->gen.out, pp,
+                     caps.NumberOutputValueCaps,
+                     winusb_hidclass_api.GetValueCaps)
+                  ? "rumbles" : "no rumble report",
+                  (unsigned)caps.NumberOutputValueCaps,
+                  (unsigned)dev->out_len);
          pp = NULL; /* the pad's now, freed with it */
       }
    }

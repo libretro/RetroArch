@@ -54,6 +54,7 @@
 #include "../../tasks/tasks_internal.h"
 #include "../input_driver.h"
 #include "../common/sony_pad_output.h"
+#include "../common/hid_sjoy_output.h"
 #include "../common/output_writer.h"
 #include "../common/sony_pad_motion.h"
 #include <features/features_cpu.h>
@@ -436,6 +437,9 @@ typedef struct
    bool     sixaxis;
    uint8_t  sixaxis_state;   /* WINRAW_SIXAXIS_*                      */
    USHORT   feature_len;
+   /* a PlayStation adapter's port, its report placed by Windows */
+   PHIDP_PREPARSED_DATA sjoy_pp;
+   hid_sjoy_output_t sjoy;
 } winraw_joypad_out_dev_t;
 
 /* "close what you hold", in a pad's inbox */
@@ -726,12 +730,26 @@ static bool winraw_joypad_out_write(const winraw_joypad_out_dev_t *dev,
 {
    uint8_t buf[1024];
    bool ok       = false;
-   size_t report = sony_pad_output_report(buf, sizeof(buf),
-         (enum sony_pad_model)dev->model, dev->bluetooth, dev->v2,
-         (uint8_t)(((unsigned)want & 0xFFFF) >> 8),
-         (uint8_t)((((unsigned)want >> 16) & 0xFFFF) >> 8),
-         player);
-   size_t len    = report;
+   size_t report = 0;
+   size_t len;
+
+   if (dev->sjoy_pp)
+   {
+      if (     dev->report_len <= sizeof(buf)
+            && hid_sjoy_output_report(&dev->sjoy, dev->sjoy_pp, buf,
+               dev->report_len,
+               (uint8_t)(((unsigned)want & 0xFFFF) >> 8),
+               (uint8_t)((((unsigned)want >> 16) & 0xFFFF) >> 8),
+               HidP_SetUsageValue, HidP_SetUsageValueArray))
+         report = dev->report_len;
+   }
+   else
+      report = sony_pad_output_report(buf, sizeof(buf),
+            (enum sony_pad_model)dev->model, dev->bluetooth, dev->v2,
+            (uint8_t)(((unsigned)want & 0xFFFF) >> 8),
+            (uint8_t)((((unsigned)want >> 16) & 0xFFFF) >> 8),
+            player);
+   len = report;
 
    if (!report)
       return false;
@@ -761,6 +779,8 @@ static void winraw_joypad_out_dev_free(winraw_joypad_out_dev_t *dev)
       return;
    if (!dev->xinput)
       CloseHandle(dev->handle);
+   if (dev->sjoy_pp)
+      HidD_FreePreparsedData(dev->sjoy_pp);
    free(dev);
 }
 
@@ -949,8 +969,10 @@ static void winraw_joypad_out_open(unsigned slot,
    /* a DualShock 3 with a feature report the size of its state */
    bool sixaxis              = vid == 0x054C && pid == 0x0268
       && feature_len >= 49 && feature_len <= WINRAW_SIXAXIS_LEN;
+   bool sjoy                 = hid_sjoy_rumbles(vid, pid);
 
-   if ((model == SONY_PAD_NONE && !xinput && !sixaxis) || !path || !*path)
+   if (     (model == SONY_PAD_NONE && !xinput && !sixaxis && !sjoy)
+         || !path || !*path)
       return;
    if (!(dev = (winraw_joypad_out_dev_t*)calloc(1, sizeof(*dev))))
       return;
@@ -978,6 +1000,21 @@ static void winraw_joypad_out_open(unsigned slot,
       dev->report_len  = report_len;
       dev->sixaxis     = sixaxis;
       dev->feature_len = feature_len;
+      if (sjoy)
+      {
+         HIDP_CAPS caps;
+         if (     !HidD_GetPreparsedData(dev->handle, &dev->sjoy_pp)
+               || HidP_GetCaps(dev->sjoy_pp, &caps) != HIDP_STATUS_SUCCESS
+               || !hid_sjoy_output_setup(&dev->sjoy, dev->sjoy_pp,
+                  caps.NumberOutputValueCaps, HidP_GetValueCaps))
+         {
+            RARCH_LOG("[RawInput Joypad] Rumble: the adapter in slot %u"
+                  " (%04X:%04X) has no rumble report (%u bytes out).\n",
+                  slot, vid, pid, (unsigned)report_len);
+            winraw_joypad_out_dev_free(dev);
+            return;
+         }
+      }
       dev->bluetooth  =
             strstr(path, "00001124-0000-1000-8000-00805f9b34fb") != NULL
          || strstr(path, "00001124-0000-1000-8000-00805F9B34FB") != NULL;
@@ -1012,6 +1049,10 @@ static void winraw_joypad_out_open(unsigned slot,
       RARCH_LOG("[RawInput Joypad] The controller in slot %u is a DualShock"
             " 3: its state is asked for if its reports do not come.\n",
             slot);
+   else if (sjoy)
+      RARCH_LOG("[RawInput Joypad] Rumble: the controller in slot %u is on"
+            " a PlayStation adapter (%04X:%04X); it is written to from the"
+            " driver's own thread.\n", slot, vid, pid);
    else
       RARCH_LOG("[RawInput Joypad] Rumble: the controller in slot %u is a %s"
             " over %s; it is written to from the driver's own thread.\n", slot,
