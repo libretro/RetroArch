@@ -1531,7 +1531,15 @@ static int rwebm_video_hw_step(rwebm_video_stream_t *s, int *duration_ms, int di
       for (;;)
       {
          size_t floor = rwebm_consumed(s->demux);
-         ret = rwebm_video_read_packet(s, &s->pending_packet, &floor);
+         if (s->seek_ready)
+         {
+            s->pending_packet = s->seek_packet;
+            floor = s->seek_floor;
+            s->seek_ready = 0;
+            ret = 1;
+         }
+         else
+            ret = rwebm_video_read_packet(s, &s->pending_packet, &floor);
          if (ret == RWEBM_READ_AGAIN) { s->waiting = 1; return 2; }
          if (ret != 1) return -1;
          if (s->pending_packet.track != s->track) continue;
@@ -2047,8 +2055,7 @@ int rwebm_video_stream_seekable(const rwebm_video_stream_t *s)
    if (s->codec == RWEBM_CODEC_AV1) return s->av1 != NULL;
 #endif
 #ifdef HAVE_RVP9
-   if (s->hw || s->hw_want) return 0;
-   if (s->vp9) return 1;
+   if (s->hw || s->vp9) return 1;
 #endif
    return s->vp8 != NULL;
 }
@@ -2060,6 +2067,7 @@ int rwebm_video_stream_seek_begin_ns(rwebm_video_stream_t *s, int64_t ns)
    if (!s->vp8
 #ifdef HAVE_RVP9
          && !s->vp9
+         && !s->hw
 #endif
 #ifdef HAVE_RAV1
          && !s->av1
@@ -2232,6 +2240,13 @@ int rwebm_video_stream_seek_step(rwebm_video_stream_t *s,
       if (s->pending) return 0;
    }
 #endif
+#ifdef HAVE_RVP9
+   if (s->hw && s->pending)
+   {
+      if (rwebm_video_hw_step(s, NULL, 1) < 0) goto failed;
+      return 0;
+   }
+#endif
    for (walked = 0; walked < 256; walked++)
    {
       rwebm_packet packet;
@@ -2284,6 +2299,24 @@ int rwebm_video_stream_seek_step(rwebm_video_stream_t *s,
          s->pending = 1;
          s->pending_started = 0;
          s->timing_active = s->timing_ready = 0;
+         return 0;
+      }
+#endif
+#ifdef HAVE_RVP9
+      if (s->hw)
+      {
+         int lo = 0, hi = s->ts_count;
+         while (lo < hi)
+         {
+            int mid = lo + (hi - lo) / 2;
+            if (s->ts[mid] < packet.timestamp) lo = mid + 1;
+            else hi = mid;
+         }
+         s->pkt_idx = lo;
+         s->lookahead_packet = packet;
+         s->lookahead_floor = floor;
+         s->lookahead_ready = 1;
+         if (rwebm_video_hw_step(s, NULL, 1) < 0) goto failed;
          return 0;
       }
 #endif

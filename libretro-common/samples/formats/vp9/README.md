@@ -42,7 +42,7 @@ animation stream opts into it through image_transfer and the shared video_player
 including the thumbnail animation path. The primary media_core WebM path
 also adopts this stream; its host tests cover GPU sink ownership, transport
 and software fallback in
-`samples/cores/webm_player`. Vulkan VP9 submission remains pending.
+`samples/cores/webm_player`. Vulkan VP9 submission is also registered.
 
 Reference: [Vulkan VP9 reference management and show-existing behavior](https://docs.vulkan.org/features/latest/features/proposals/VK_KHR_video_decode_vp9.html).
 
@@ -67,3 +67,11 @@ export or software color conversion. Retry the same next/skip operation while
 it reports waiting. The movie core latches that choice across BUSY and input
 retries, so seek/catch-up frames avoid the DPB-to-output copy. Presented frames
 still require the backend's independent shared-output lease.
+
+Hardware seeks rewind to a keyframe and discard preroll without exporting
+GPU frames. Each seek step submits at most one container packet and retains
+pending submission state across BUSY responses. The target packet is kept for
+the next displayed frame. The stream test covers forward/backward seeks,
+partial input, superframes, show-existing frames, seek replacement while BUSY,
+and a held frame surviving decoder reset and close. These mock checks establish
+sequencing and ownership, not native GPU pixels or seek performance.

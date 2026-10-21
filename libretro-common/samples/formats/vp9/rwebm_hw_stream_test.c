@@ -188,6 +188,61 @@ static enum video_player_present present(void *user, const video_player_frame_t 
    presents++; video_hw_frame_abandon(f->hw); return VIDEO_PLAYER_PRESENT_DONE;
 }
 
+static int seek_hardware(void)
+{
+   static const int64_t targets[] = {40000000, 80000000, 0, 60000000};
+   rwebm_video_stream_t *s;
+   video_hw_frame_t frame, held;
+   unsigned i, tries, before, decoded;
+   int result, need_more;
+   int64_t position;
+   tail_hidden = 0;
+   fixture(1, 2, 1);
+   s = rwebm_video_stream_open_avail(file, used, prefix, &need_more);
+   CHECK(s && rwebm_video_stream_set_hw(s, 1));
+   CHECK(rwebm_video_stream_seekable(s));
+   memset(&held, 0, sizeof(held));
+   for (i = 0; i < sizeof(targets) / sizeof(targets[0]); i++)
+   {
+      before = exports;
+      decoded = decodes;
+      CHECK(rwebm_video_stream_seek_begin_ns(s, targets[i]));
+      for (tries = 0; tries < 100; tries++)
+      {
+         result = rwebm_video_stream_seek_step(s, &position);
+         CHECK(result >= 0 && exports == before);
+         if (result == 1) break;
+         if (s->seek_scan) CHECK(decodes == decoded);
+         if (rwebm_video_stream_waiting(s))
+         {
+            if (s->pending)
+               CHECK(rwebm_video_stream_consumed(s) <= s->pending_floor);
+            rwebm_video_stream_set_avail(s, used);
+         }
+      }
+      CHECK(tries < 100 && position == (targets[i] == 60000000 ? 80000 : targets[i] / 1000));
+      CHECK(s->hw && !s->vp9 && !s->frame);
+      for (tries = 0; tries < 100; tries++)
+         if (rwebm_video_stream_next(s, NULL)) break;
+      CHECK(tries < 100 && rwebm_video_stream_hw_frame(s, &frame));
+      CHECK(exports == before + 1 && rwebm_video_stream_frame_time_ns(s) == position * 1000);
+      if (!i) held = frame;
+      else video_hw_frame_abandon(&frame);
+   }
+   CHECK(rwebm_video_stream_seek_begin_ns(s, 80000000));
+   for (tries = 0; tries < 100 && !s->pending; tries++)
+      CHECK(rwebm_video_stream_seek_step(s, &position) == 0);
+   CHECK(s->pending && rwebm_video_stream_seek_begin_ns(s, 0));
+   for (tries = 0; tries < 100; tries++)
+      if (rwebm_video_stream_seek_step(s, &position) == 1) break;
+   CHECK(tries < 100 && position == 0 && held.image);
+   rwebm_video_stream_close(s);
+   CHECK(lives == 1);
+   video_hw_frame_abandon(&held);
+   CHECK(!lives && opens == closes && abandoned == exports);
+   return 0;
+}
+
 int main(void)
 {
    rwebm_video_stream_t *s;
@@ -337,7 +392,8 @@ int main(void)
    CHECK(lives == 1 && held.image);
    video_hw_frame_abandon(&held);
    CHECK(!lives && opens == closes && abandoned == exports);
+   CHECK(!seek_hardware());
    rvp9_set_hw_backend(NULL);
-   puts("WebM hardware dispatch, superframe retries, lacing, partial input and leases passed");
+   puts("WebM hardware dispatch, seeks, superframe retries, lacing, partial input and leases passed");
    return 0;
 }

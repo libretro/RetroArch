@@ -322,7 +322,8 @@ void rwebm_video_stream_rewind(rwebm_video_stream_t *stream);
  * -1 failure, 0 retry/feed consumed(), 1 target ready for next(). The
  * first video packet at or after ns is retained without decoding.
  * New begin/rewind cancels. AV1 hardware preroll yields on backpressure
- * or after at most 32 stream steps / 4 ms. VP9 hardware rejects begin. */
+ * or after at most 32 stream steps / 4 ms. VP9 hardware preroll decodes
+ * one packet per step and retains submission state across backpressure. */
 /* Query only while the stream is exclusively owned, before publishing a
  * playback session. AV1 requires an admitted hardware decoder. */
 int64_t rwebm_video_stream_start_ns(const rwebm_video_stream_t *stream);
