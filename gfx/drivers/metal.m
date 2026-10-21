@@ -3828,7 +3828,7 @@ static float metal_hdr_pq_to_nits(float pq)
    if (drawable && video_info && video_info->recording_gpu_capture)
       record_metal_gpu_capture(video_info->recording_gpu,(__bridge void*)_commandBuffer,
             (__bridge void*)drawable.texture,_viewport.pos,_viewport.dims,
-            video_info->recording_gpu_timestamp,_hdrOutputMode);
+            video_info->recording_gpu_timestamp,self.hdrOutputMode);
 #endif
 
    if (drawable)
