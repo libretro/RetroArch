@@ -371,6 +371,14 @@ VIDEO CONTEXT
 #ifdef HAVE_VULKAN
 #if defined(ANDROID) && defined(HAVE_RMP4)
 #include "../gfx/common/vulkan_android_device.c"
+#include "../gfx/common/android_image_queue.c"
+#include "../gfx/common/android_frame.c"
+#include "../gfx/common/vulkan_android_image.c"
+#include "../gfx/common/vulkan_android_sync.c"
+#include "../gfx/common/vulkan_android_pipeline.c"
+#include "../gfx/common/vulkan_android_submit.c"
+#include "../gfx/common/vulkan_android_cache_entry.c"
+#include "../gfx/common/vulkan_android_cache.c"
 #endif
 #include "../gfx/common/vulkan_common.c"
 #include "../libretro-common/vulkan/vulkan_symbol_wrapper.c"

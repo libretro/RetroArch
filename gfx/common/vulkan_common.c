@@ -31,6 +31,7 @@
 #endif
 #if defined(ANDROID) && defined(HAVE_RMP4)
 #include "vulkan_android_device.h"
+#include "vulkan_android_cache.h"
 #endif
 #include "vulkan_video_caps.h"
 #include "vulkan_memory_type.h"
@@ -4877,6 +4878,11 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
 
    video_st_flags              = (uint32_t)retro_atomic_load_relaxed_int(&video_st->flags);
 
+#if defined(ANDROID) && defined(HAVE_RMP4)
+   /* Failed submissions keep decoder images alive until actual device death. */
+   if (vulkan_android_cache_device_pending(vk->context.device))
+      video_st_flags &= ~VIDEO_FLAG_CACHE_CONTEXT;
+#endif
    if (video_st_flags & VIDEO_FLAG_CACHE_CONTEXT)
    {
       cached_device_vk         = vk->context.device;
@@ -4924,6 +4930,9 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
             vk->context.destroy_device();
          vk->context.destroy_device = NULL;
          vkDestroyDevice(vk->context.device, NULL);
+#if defined(ANDROID) && defined(HAVE_RMP4)
+         vulkan_android_cache_device_destroyed(vk->context.device);
+#endif
          vk->context.device = NULL;
       }
 

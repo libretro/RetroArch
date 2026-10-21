@@ -5,8 +5,9 @@
 struct vulkan_android_cache {
  vulkan_android_entry_config_t config;
  VkPhysicalDeviceMemoryProperties memory;
+ struct vulkan_android_cache *retired_next;
  unsigned count,next;
- bool fp16,closed;
+ bool fp16,closed,deferred;
  bool occupied[32];
  vulkan_android_cache_entry_t entry[32];
 };
@@ -93,4 +94,33 @@ bool vulkan_android_cache_after_device_destroy(vulkan_android_cache_t *cache)
  for(i=0;i<cache->count;i++)if(cache->occupied[i]
        && !vulkan_android_submission_after_device_destroy(&cache->entry[i].submission))complete=false;
  return complete;
+}
+
+/* Lifecycle-owner list, never accessed by frame or decoder producer threads. */
+static vulkan_android_cache_t *vulkan_android_retired_caches;
+void vulkan_android_cache_defer(vulkan_android_cache_t *cache)
+{
+ if(!cache || cache->deferred)return;
+ cache->closed=true;cache->deferred=true;
+ cache->retired_next=vulkan_android_retired_caches;
+ vulkan_android_retired_caches=cache;
+}
+bool vulkan_android_cache_device_pending(VkDevice device)
+{
+ vulkan_android_cache_t *cache=vulkan_android_retired_caches;
+ if(!device)return false;
+ for(;cache;cache=cache->retired_next)if(cache->config.device==device)return true;
+ return false;
+}
+void vulkan_android_cache_device_destroyed(VkDevice device)
+{
+ vulkan_android_cache_t **link=&vulkan_android_retired_caches;
+ if(!device)return;
+ while(*link) {
+  vulkan_android_cache_t *cache=*link;
+  if(cache->config.device!=device){link=&cache->retired_next;continue;}
+  if(!vulkan_android_cache_after_device_destroy(cache)){link=&cache->retired_next;continue;}
+  *link=cache->retired_next;
+  free(cache);
+ }
 }

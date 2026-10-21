@@ -51,10 +51,16 @@ int main(void)
  /* Mock vkDestroyDevice: it implicitly destroys every tracked Vulkan child.
   * No child destruction or queue operation may run through the dead device. */
  entry_live=0;
- assert(vulkan_android_cache_after_device_destroy(cache));
- assert(vulkan_android_cache_after_device_destroy(cache));
- assert(android_image_queue_poll(q)==1);
- assert(vulkan_android_cache_free(cache) && !entry_live && entry_calls==count);
+ vulkan_android_cache_defer(cache);
+ vulkan_android_cache_defer(cache); /* Idempotent ownership transfer. */
+ assert(vulkan_android_cache_device_pending(entry_fixture_config.device));
+ vulkan_android_cache_device_destroyed(H(VkDevice,99));
+ assert(vulkan_android_cache_device_pending(entry_fixture_config.device));
+ assert(!android_image_queue_poll(q));
+ vulkan_android_cache_device_destroyed(entry_fixture_config.device);
+ assert(!vulkan_android_cache_device_pending(entry_fixture_config.device));
+ vulkan_android_cache_device_destroyed(entry_fixture_config.device);
+ assert(android_image_queue_poll(q)==1 && !entry_live && entry_calls==count);
  submit_fail=0;
  android_frame_pool_close(pool);assert(android_frame_pool_free(pool));android_image_queue_close(q);assert(android_image_queue_free(q));
  puts("PASS: bounded Android Vulkan cache, allocation-free miss/hit, pending eviction refusal and deferred close");

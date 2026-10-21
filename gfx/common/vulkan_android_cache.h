@@ -26,5 +26,13 @@ void vulkan_android_cache_close(vulkan_android_cache_t *cache);
 bool vulkan_android_cache_free(vulkan_android_cache_t *cache);
 /* Cold renderer owner only AFTER its VkDevice has actually been destroyed. */
 bool vulkan_android_cache_after_device_destroy(vulkan_android_cache_t *cache);
+/* Cold renderer shutdown transfers ownership of a closed, unfreeable cache.
+ * Calls are serialized by the existing renderer/context lifecycle owner.
+ * A pending device must not be cached: destroy it and notify afterward. */
+void vulkan_android_cache_defer(vulkan_android_cache_t *cache);
+bool vulkan_android_cache_device_pending(VkDevice device);
+/* Only after vkDestroyDevice returned. Releases matching caches, without any
+ * call through their Vulkan operation tables. Other devices remain retained. */
+void vulkan_android_cache_device_destroyed(VkDevice device);
 RETRO_END_DECLS
 #endif
