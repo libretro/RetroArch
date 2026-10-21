@@ -4040,6 +4040,7 @@ static const struct
    char s_8ab54d62[78];
    char s_aa554847[23];
    char s_ac2c797c[23];
+   char s_3fe94404[6];
    char s_80528b14[38];
    char s_eae21890[36];
    char s_1451fe0d[29];
@@ -8963,6 +8964,7 @@ static const struct
    "\304\210iuj eblaj el\305\235utoj de bildetoj jam estis provitaj por \304\211i tiu ludlista ero.",
    "Kernoj preterlasitaj: ",
    "Kernoj \304\235isdatigitaj: ",
+   "Plata",
    "Klavara surmeta\304\265o ne estas agordita.",
    "Ne konservante. Transpasoj aktivas.",
    "Eraro forigante transpasojn.",
@@ -9142,7 +9144,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_eo_blob_check[
-      (sizeof(msg_hash_eo_blob) == (171551u
+      (sizeof(msg_hash_eo_blob) == (171557u
 #ifdef ANDROID
        + 312u
 #endif
@@ -13610,6 +13612,7 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
    (uint32_t)MSG_NUM_CORES_LOCKED,
    (uint32_t)MSG_NUM_CORES_UPDATED,
+   (uint32_t)MSG_OPENXR_HEADSET_VIEW_FLAT,
    (uint32_t)MSG_OSK_OVERLAY_NOT_SET,
    (uint32_t)MSG_OVERRIDES_ACTIVE_NOT_SAVING,
    (uint32_t)MSG_OVERRIDES_ERROR_REMOVING,

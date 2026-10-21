@@ -3952,6 +3952,7 @@ static const struct
    char s_8ab54d62[101];
    char s_aa554847[17];
    char s_ac2c797c[19];
+   char s_3fe94404[8];
    char s_80528b14[42];
    char s_eae21890[45];
    char s_1451fe0d[51];
@@ -9580,6 +9581,7 @@ static const struct
    "\251p let\303\266lt\303\251si opci\303\263 v\303\251gig volt pr\303\263b\303\241lva.",
    "Magok kihagyva: ",
    "Magok friss\303\255tve: ",
+   "Egyenes",
    "Nincs be\303\241ll\303\255tott billenty\305\261zet r\303\241t\303\251t.",
    "Nincs ment\303\251s. Fel\303\274lb\303\255r\303\241l\303\263 f\303\241jl akt\303\255v.",
    "Hiba a fel\303\274lb\303\255r\303\241l\303\263 f\303\241jlok elt\303\241vol\303\255t\303\241sako"
@@ -9792,7 +9794,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_hu_blob_check[
-      (sizeof(msg_hash_hu_blob) == (187907u
+      (sizeof(msg_hash_hu_blob) == (187915u
 #ifdef ANDROID
        + 316u
 #endif
@@ -14170,6 +14172,7 @@ static const uint32_t msg_hash_hu_ids[] =
    (uint32_t)MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
    (uint32_t)MSG_NUM_CORES_LOCKED,
    (uint32_t)MSG_NUM_CORES_UPDATED,
+   (uint32_t)MSG_OPENXR_HEADSET_VIEW_FLAT,
    (uint32_t)MSG_OSK_OVERLAY_NOT_SET,
    (uint32_t)MSG_OVERRIDES_ACTIVE_NOT_SAVING,
    (uint32_t)MSG_OVERRIDES_ERROR_REMOVING,

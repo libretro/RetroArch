@@ -4086,6 +4086,7 @@ static const struct
    char s_8ab54d62[105];
    char s_aa554847[21];
    char s_ac2c797c[23];
+   char s_3fe94404[8];
    char s_80528b14[49];
    char s_eae21890[45];
    char s_1451fe0d[33];
@@ -9312,6 +9313,7 @@ static const struct
    "entrada da playlist.",
    "N\303\272cleos ignorados: ",
    "N\303\272cleos atualizados: ",
+   "Simples",
    "A sobreposi\303\247\303\243o de teclado n\303\243o est\303\241 definida.",
    "N\303\243o est\303\241 salvando. Substitui\303\247\303\265es ativas.",
    "Erro ao remover substitui\303\247\303\265es.",
@@ -9506,7 +9508,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pt_br_blob_check[
-      (sizeof(msg_hash_pt_br_blob) == (194438u
+      (sizeof(msg_hash_pt_br_blob) == (194446u
 #ifdef ANDROID
        + 352u
 #endif
@@ -14048,6 +14050,7 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
    (uint32_t)MSG_NUM_CORES_LOCKED,
    (uint32_t)MSG_NUM_CORES_UPDATED,
+   (uint32_t)MSG_OPENXR_HEADSET_VIEW_FLAT,
    (uint32_t)MSG_OSK_OVERLAY_NOT_SET,
    (uint32_t)MSG_OVERRIDES_ACTIVE_NOT_SAVING,
    (uint32_t)MSG_OVERRIDES_ERROR_REMOVING,

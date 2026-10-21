@@ -4298,6 +4298,7 @@ static const struct
    char s_8ab54d62[92];
    char s_aa554847[21];
    char s_ac2c797c[25];
+   char s_3fe94404[8];
    char s_80528b14[41];
    char s_eae21890[37];
    char s_1451fe0d[32];
@@ -10011,6 +10012,7 @@ static const struct
    "isu na playli\305\233cie.",
    "Rdzenie pomini\304\231te: ",
    "Rdzenie zaktualizowane: ",
+   "P\305\202aski",
    "Nak\305\202adka klawiatury nie jest ustawiona.",
    "Nie zapisuj\304\231. Nadpisywanie aktywne.",
    "B\305\202\304\205d przy usuwaniu nadpisa\305\204.",
@@ -10208,7 +10210,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pl_blob_check[
-      (sizeof(msg_hash_pl_blob) == (200530u
+      (sizeof(msg_hash_pl_blob) == (200538u
 #ifdef ANDROID
        + 385u
 #endif
@@ -15004,6 +15006,7 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
    (uint32_t)MSG_NUM_CORES_LOCKED,
    (uint32_t)MSG_NUM_CORES_UPDATED,
+   (uint32_t)MSG_OPENXR_HEADSET_VIEW_FLAT,
    (uint32_t)MSG_OSK_OVERLAY_NOT_SET,
    (uint32_t)MSG_OVERRIDES_ACTIVE_NOT_SAVING,
    (uint32_t)MSG_OVERRIDES_ERROR_REMOVING,

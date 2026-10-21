@@ -1910,6 +1910,12 @@ static const struct
    char s_0a2aa953[10];
    char s_ffd0dac4[8];
    char s_80a2b273[12];
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   char s_7c66e948[69];
+   char s_35d14c7c[23];
+#endif
+#endif
    char s_91dd478e[33];
    char s_865cee49[17];
    char s_1b8a5cb5[15];
@@ -2401,6 +2407,7 @@ static const struct
    char s_f4341e25[37];
    char s_cc973e8a[8];
    char s_b9d37039[182];
+   char s_1249554a[19];
    char s_d0a04fe4[15];
    char s_c682e4e2[16];
    char s_cf6bc52a[22];
@@ -2446,6 +2453,7 @@ static const struct
    char s_f5df87be[4];
    char s_f5df885e[4];
    char s_fe2ec9bd[45];
+   char s_1e3a9360[27];
    char s_5741c1d0[26];
    char s_a1a7717d[28];
    char s_e6ca3876[40];
@@ -2469,6 +2477,10 @@ static const struct
    char s_83217fd0[15];
    char s_60258de0[9];
    char s_34b2592a[12];
+   char s_be406532[24];
+   char s_13ce50e1[21];
+   char s_8dfe8b04[16];
+   char s_bacb5991[26];
    char s_740ed6e5[16];
    char s_c7ab7873[42];
    char s_83ecb279[20];
@@ -2561,6 +2573,7 @@ static const struct
    char s_45816e1d[29];
    char s_730df420[23];
    char s_bcddf275[8];
+   char s_258060bf[48];
    char s_3bbc8b05[82];
    char s_e595f6df[66];
    char s_2a5f7cd7[50];
@@ -2727,6 +2740,8 @@ static const struct
    char s_f0838a35_1[320];
    char s_95821d83[50];
    char s_bdeebb68[43];
+   char s_84b03e36_0[500];
+   char s_84b03e36_1[280];
    char s_f9005edc[181];
    char s_6ade80dd[49];
    char s_ec7aa7a0_0[500];
@@ -2739,6 +2754,8 @@ static const struct
    char s_f46c7b83_1[175];
    char s_cb67f2a4[35];
    char s_3c3598a9[49];
+   char s_3bac47bd_0[500];
+   char s_3bac47bd_1[123];
    char s_90e7db40_0[500];
    char s_90e7db40_1[80];
    char s_b07cd572_0[500];
@@ -3034,7 +3051,6 @@ static const struct
    char s_d0b943e8[84];
    char s_4f2077b6[207];
    char s_5b920f01[133];
-   char s_71b76e1b[277];
    char s_f96ddf69[148];
    char s_d84f519b[245];
    char s_5d20ea2c[54];
@@ -3628,6 +3644,12 @@ static const struct
    char s_a5962f42[96];
    char s_0c7750cd[100];
    char s_f3b31ef1[74];
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   char s_458959b6[221];
+   char s_4598722a[288];
+#endif
+#endif
    char s_331c623c[58];
    char s_279c08f7[53];
    char s_60a8a963[41];
@@ -3959,6 +3981,7 @@ static const struct
    char s_82fab47a[45];
    char s_72e21512[248];
    char s_9f6de46b[377];
+   char s_26e66ece[246];
    char s_66f2b57e[63];
    char s_a776daeb[97];
    char s_88095324[97];
@@ -3975,7 +3998,9 @@ static const struct
    char s_4a09218b[36];
    char s_dea334de[211];
    char s_cacc1492[67];
+   char s_c0c6924e[273];
    char s_c83fcc7e[255];
+   char s_cdf158e0[403];
    char s_7efaf561[275];
    char s_c90aff27[113];
    char s_19d092ed[41];
@@ -4038,8 +4063,6 @@ static const struct
    char s_7e96b5ce[50];
    char s_3547866d_0[500];
    char s_3547866d_1[249];
-   char s_d73ccef3_0[500];
-   char s_d73ccef3_1[77];
    char s_81163acd_0[500];
    char s_81163acd_1[64];
    char s_ecc9b2c5[418];
@@ -4502,6 +4525,7 @@ static const struct
    char s_aa554847[19];
    char s_ac2c797c[22];
    char s_c5fee1cb[73];
+   char s_3fe94404[5];
    char s_272dccbd[20];
    char s_7da2720b[60];
    char s_9e9f8d9d[277];
@@ -4661,6 +4685,7 @@ static const struct
    char s_a2250ebd[60];
    char s_cc5d39b1[63];
    char s_2bf9a406[51];
+   char s_038f0580[26];
    char s_94fc1cd0[16];
    char s_2aaf8414[19];
    char s_28a4c280[26];
@@ -6875,6 +6900,12 @@ static const struct
    "V\303\251hicule",
    "Cam\303\251ra",
    "Red\303\251marrer",
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   "Forcer le red\303\251marrage sous Lakka si une mise \303\240 jour est disponible",
+   "Red\303\251marrer le payload",
+#endif
+#endif
    "Configurations d'enregistrement ",
    "Enregistrements ",
    "Enregistrement",
@@ -7368,6 +7399,7 @@ static const struct
    "Votre pilote graphique n'est pas compatible avec le pilote vid\303\251o actuel de RetroArch, ret"
    "our au pilote %s. Veuillez red\303\251marrer RetroArch pour que les modifications prennent effet"
    ".",
+   "Pr\303\251sentation DXGI",
    "Filtre vid\303\251o ",
    "Filtres vid\303\251o ",
    "Filtre vid\303\251o activ\303\251",
@@ -7413,6 +7445,7 @@ static const struct
    "RBV",
    "RVB",
    "Utiliser la luminosit\303\251 maximale de l'\303\251cran",
+   "D\303\251codage vid\303\251o mat\303\251riel",
    "Dispositions d'affichage ",
    "Latence maximale des images",
    "Nombre d'images max en m\303\251moire tampon ",
@@ -7437,6 +7470,10 @@ static const struct
    "Pointeur laser",
    "Toujours",
    "D\303\251sactiv\303\251",
+   "Emplacement de l'\303\251cran",
+   "Fix\303\251 dans la pi\303\250ce",
+   "Suivre la t\303\252te",
+   "Mouvement de suivi souple",
    "Choix du casque",
    "Fr\303\251quence de rafra\303\256chissement du casque",
    "Largeur de l'\303\251cran",
@@ -7529,6 +7566,7 @@ static const struct
    "Intervalle d'\303\251change V-Sync",
    "Synchronisation vid\303\251o",
    "Vid\303\251os",
+   "Pipeline vid\303\251o sur plusieurs fils d'ex\303\251cution",
    "R\303\251gulation de la cadence d'affichage avec vid\303\251o sur plusieurs fils d'ex\303\251cut"
    "ion",
    "R\303\251p\303\251tition d'images avec vid\303\251o sur plusieurs fils d'ex\303\251cution",
@@ -7770,6 +7808,17 @@ static const struct
    "\303\251o.",
    "Fr\303\251quence d'\303\251chantillonnage de la sortie audio.",
    "Modifier les r\303\251glages de la sortie audio.",
+   "Pour obtenir la latence la plus faible, limiter la file d'attente du pipeline \303\240 ce que re"
+   "quiert la m\303\251thode synchrone avec les images : le contr\303\264le du d\303\251bit maintien"
+   "t en file d'attente une quantit\303\251 d'audio \303\251quivalant \303\240 la moiti\303\251 de l"
+   "a latence audio, plut\303\264t que la quasi-totalit\303\251 de celle-ci augment\303\251e d'une i"
+   "mage suppl\303\251mentaire. Lorsque la synchronisation est activ\303\251e et que l'audio cadence"
+   " le c\305\223ur, par exemple, avec la synchronisation verticale d\303\251sactiv\303\251e, le c"
+   "\305\223ur est maintenu \303\240 l",
+   "a position qu'imposerait une \303\251criture synchrone avec les images, au lieu d'\303\252tre bl"
+   "oqu\303\251 par une file d'attente satur\303\251e. Si la synchronisation est d\303\251sactiv\303"
+   "\251e, la file d'attente ne conserve plus cette r\303\251serve audio suppl\303\251mentaire desti"
+   "n\303\251e \303\240 compenser les retards d'images.",
    "Aide \303\240 att\303\251nuer les imperfections de timing lors de la synchronisation audio et vi"
    "d\303\251o. Sachez que si d\303\251sactiv\303\251, une synchronisation correcte est presque impo"
    "ssible \303\240 obtenir.",
@@ -7801,6 +7850,15 @@ static const struct
    "orme 'Sink'.",
    "Synchroniser l'audio. Recommand\303\251.",
    "Modifier les r\303\251glages de synchronisation audio.",
+   "Le r\303\251\303\251chantillonnage, le filtrage et le mixage audio s'effectuent sur le fil d'ex"
+   "\303\251cution audio plut\303\264t qu'au sein de chaque image, le contr\303\264le du d\303\251bi"
+   "t est cal\303\251 sur la cadence propre du p\303\251riph\303\251rique et le r\303\251\303\251cha"
+   "ntillonnage s'op\303\250re hors du budget allou\303\251 \303\240 l'image. Lorsque la File d'atte"
+   "nte de pipeline peu profonde est d\303\251sactiv\303\251e, une plus grande quantit\303\251 d'aud"
+   "io est mise en m\303\251moire tampon en amont du p\303\251riph\303\251rique par rapport \303\240"
+   " la m\303\251thode synchronis\303\251e sur les images. Les pilo",
+   "tes audio incapables de sortir le p\303\251riph\303\251rique de veille continuent d'utiliser la "
+   "m\303\251thode synchronis\303\251e sur les images.",
    "Demande au syst\303\250me d'exploitation de planifier le fil d'ex\303\251cution audio avec une p"
    "riorit\303\251 sup\303\251rieure \303\240 celle du reste de l'interface graphique, afin de r\303"
    "\251duire le risque qu'une image gourmande en ressources ne prive le p\303\251riph\303\251rique "
@@ -8299,10 +8357,6 @@ static const struct
    "\251es simultan\303\251ment (Android uniquement).",
    "Jusqu'o\303\271 un axe doit \303\252tre inclin\303\251 pour r\303\251sulter en un appui sur la t"
    "ouche lors de l'utilisation de 'Analogique vers num\303\251rique'.",
-   "L'action est imm\303\251diate d\303\250s que tous les boutons sont enfonc\303\251s. 'Maintenir p"
-   "endant' attend qu'ils soient maintenus enfonc\303\251s simultan\303\251ment pendant une dur\303"
-   "\251e que vous d\303\251finissez, ainsi, une pression br\303\250ve \342\200\224 en pleine partie"
-   ", par exemple \342\200\224 ne d\303\251clenche aucune action.",
    "La dur\303\251e pendant laquelle tous les boutons de la combinaison doivent \303\252tre maintenu"
    "s enfonc\303\251s simultan\303\251ment avant que l'action ne se d\303\251clenche.",
    "Ce qu'il se passe lorsque toutes les touches de la combinaison sont maintenues enfonc\303\251es "
@@ -9411,6 +9465,17 @@ static const struct
    "Quitter l'application RetroArch. L'enregistrement de la configuration \303\240 la sortie est d"
    "\303\251sactiv\303\251.",
    "Affiche les informations dans la base de donn\303\251es pour le contenu actuel.",
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   "Lorsqu'une mise \303\240 jour de Lakka est pr\303\251par\303\251e, red\303\251marrer sur Lakka a"
+   "u lieu du payload s\303\251lectionn\303\251 afin que la mise \303\240 jour soit install\303\251e"
+   ". D\303\251sactivez cette option pour toujours respecter la s\303\251lection du payload.",
+   "Choisir l'entr\303\251e Hekate vers laquelle l'option 'Red\303\251marrer' du menu principal doit"
+   " d\303\251marrer. Utilisez les touches Gauche/Droite pour parcourir les entr\303\251es pr\303"
+   "\251sentes dans hekate_ipl.ini et bootloader/ini/. Par d\303\251faut, l'entr\303\251e actuelleme"
+   "nt en cours d'ex\303\251cution est s\303\251lectionn\303\251e.",
+#endif
+#endif
    "Les configurations d'enregistrement sont conserv\303\251es ici.",
    "Les enregistrements sont conserv\303\251s dans ce dossier.",
    "Modifier les r\303\251glages d'enregistrement.",
@@ -9979,6 +10044,10 @@ static const struct
    "HDR envoy\303\251es \303\240 l'\303\251cran. Si cette option est d\303\251sactiv\303\251e, c'est"
    " la valeur de 'Luminosit\303\251 maximale' d\303\251finie par l'utilisateur qui est utilis\303"
    "\251e.",
+   "D\303\251code les aper\303\247us vid\303\251o sur le processeur graphique lorsque le pilote vid"
+   "\303\251o le permet (H.264 avec Vulkan), lib\303\251rant ainsi le processeur ; 'D\303\251sactiv"
+   "\303\251' les d\303\251code sur le processeur. S'applique aux aper\303\247us ouverts \303\240 pa"
+   "rtir de maintenant.",
    "Les dispositions d'affichage sont conserv\303\251es dans ce dossier.",
    "Indique au pilote vid\303\251o d'utiliser explicitement le mode de mise en m\303\251moire tampon"
    " sp\303\251cifi\303\251.",
@@ -10008,9 +10077,18 @@ static const struct
    "ette pour le joueur 1. En mode s\303\251par\303\251, la manette de gauche est attribu\303\251e a"
    "u joueur 1 et celle de droite au joueur 2.",
    "La distance \303\240 laquelle le casque affiche les \303\251crans devant vous.",
+   "Afficher \303\251galement le contenu dans un casque OpenXR : chaque \303\251cran appara\303\256t"
+   " comme un \303\251cran flottant distinct, en 3D st\303\251r\303\251oscopique, pour les deux yeux"
+   ", avec le menu plac\303\251 devant eux. Utilise Vulkan, ou OpenGL sous Linux. La fen\303\252tre "
+   "conserve son affichage habituel.",
    "Utilise les zones tactiles de la manette au lieu d'appuyer sur L2 ou R2. Auto : dans le menu lor"
    "squ'il est ouvert, ainsi que les \303\251crans secondaires comme un \303\251cran tactile. Toujou"
    "rs : dans tous les \303\251crans (pour les pistolets). D\303\251sactiv\303\251 : nulle part.",
+   "Emplacement des \303\251crans par rapport au casque. Fix\303\251 dans la pi\303\250ce : l\303"
+   "\240 o\303\271 la fonction de recentrage les place. Suivre la t\303\252te : toujours devant vous"
+   " ; sur un grand \303\251cran, les bords se situent l\303\240 o\303\271 la vision \303\240 traver"
+   "s les lentilles devient floue. Mouvement de suivi souple : ils restent en place jusqu'\303\240 c"
+   "e que vous d\303\251tourniez nettement le regard, puis ils glissent pour revenir devant vous.",
    "La fr\303\251quence de rafra\303\256chissement \303\240 demander au casque. Auto s\303\251lectio"
    "nne celle qui convient le mieux au contenu, tandis que le mode Choix du casque ne formule aucune"
    " demande sp\303\251cifique. Le contenu se synchronise avec le casque d\303\250s lors que sa fr"
@@ -10173,13 +10251,6 @@ static const struct
    "\303\251 avec les pilotes Vulkan, Direct3D 11, Direct3D 12 et gl ; avec les autres pilotes, ils "
    "s'ex\303\251cutent sans s\303\251paration du fil d'ex\303\251cution quel que soit le r\303\251gl"
    "age choisi.",
-   "Avec l'option 'Vid\303\251o sur plusieurs fils d'ex\303\251cution', le traitement de chaque imag"
-   "e du c\305\223ur d\303\251bute le plus tard possible, en fonction des temps de calcul et de rend"
-   "u mesur\303\251s et dans la limite permise par le prochain rafra\303\256chissement de l'affichag"
-   "e, plut\303\264t que selon une cadence fixe. Cela r\303\251duit la latence au niveau de celle ob"
-   "tenue avec le retard d'images en mode vid\303\251o sur un seul fil d'ex\303\251cution, et permet"
-   " de r\303\251p\303\251ter une image dont le traitement a pris trop de temps au lieu de la pe",
-   "rdre. En position Off : le minutage fixe dicte la cadence, comme auparavant.",
    "Avec l'option 'Vid\303\251o sur plusieurs fils d'ex\303\251cution', la derni\303\250re image con"
    "tinue d'\303\252tre affich\303\251e \303\240 la fr\303\251quence de rafra\303\256chissement de l"
    "'\303\251cran m\303\252me si le c\305\223ur accuse un retard, \303\251vitant ainsi que l'image p"
@@ -10740,6 +10811,7 @@ static const struct
    "C\305\223urs ignor\303\251s : ",
    "C\305\223urs mis \303\240 jour : ",
    "La sortie du casque n'a pas pu d\303\251marrer. La fen\303\252tre affiche la sortie.",
+   "Plat",
    "Pointeur laser : %s",
    "La sortie casque d\303\251marre lorsque le contenu est recharg\303\251.",
    "Le casque fonctionne \303\240 %u Hz, ce qui ne correspond pas au taux de %.2f images/s de ce jeu"
@@ -10929,6 +11001,7 @@ static const struct
    "Utilisation du nom du c\305\223ur pour la nouvelle configuration.",
    "Utilisation du c\305\223ur libretro factice. Enregistrement ignor\303\251.",
    "Connecter le p\303\251riph\303\251rique depuis un port valide.",
+   "Installer la mise \303\240 jour",
    "Red\303\251marrage...",
    "Arr\303\252t en cours...",
    "Version de l'API libretro",
@@ -10955,7 +11028,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fr_blob_check[
-      (sizeof(msg_hash_fr_blob) == (257930u
+      (sizeof(msg_hash_fr_blob) == (259613u
 #ifdef ANDROID
        + 373u
 #endif
@@ -11105,6 +11178,12 @@ typedef char msg_hash_fr_blob_check[
 #endif
 #ifdef HAVE_GAME_AI
        + 21u
+#endif
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+       + 69u
+       + 23u
+#endif
 #endif
 #ifdef HAVE_LAKKA
 #ifdef HAVE_RETROFLAG
@@ -11365,6 +11444,12 @@ typedef char msg_hash_fr_blob_check[
 #endif
 #ifdef HAVE_GAME_AI
        + 31u
+#endif
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+       + 221u
+       + 288u
+#endif
 #endif
 #if !(defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
        + 277u
@@ -13402,6 +13487,12 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VEHICULAR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VISUAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_REBOOT,
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REBOOT_FORCE_SELF_ON_UPDATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REBOOT_PAYLOAD,
+#endif
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_RECORDING_CONFIG_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RECORDING_OUTPUT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS,
@@ -13893,6 +13984,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DXGI_PRESENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_DIR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_ENABLE,
@@ -13938,6 +14030,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SUBPIXEL_LAYOUT_RBG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SUBPIXEL_LAYOUT_RGB,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_USE_DISPLAY_PEAK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HW_DECODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
@@ -13961,6 +14054,10 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_ALWAYS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_OFF,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_PLACEMENT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_PLACEMENT_FIXED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_PLACEMENT_FOLLOW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_PLACEMENT_LAZY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_REFRESH_HEADSET,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_REFRESH_RATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_WIDTH,
@@ -14053,6 +14150,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED_DISPLAY_PACING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED_PRESENT_REPEAT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREAD_PRIORITY,
@@ -14215,6 +14313,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_LAYOUT,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_PIPELINE_FILL_CAP,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_HQ_OVERSAMPLING,
@@ -14225,6 +14324,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SINK_RATE_ESTIMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREADED_PIPELINE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREAD_PRIORITY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_TIME_STRETCH,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_TIME_STRETCH_LOWPASS,
@@ -14515,7 +14615,6 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_BLOCK_TIMEOUT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_COMBO_HOLD,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_COMBO_HOLD_TIME,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_COMBO_TARGET,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_DEVICE_INDEX,
@@ -15108,6 +15207,12 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
    (uint32_t)MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
    (uint32_t)MENU_ENUM_SUBLABEL_RDB_ENTRY_DETAIL,
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   (uint32_t)MENU_ENUM_SUBLABEL_REBOOT_FORCE_SELF_ON_UPDATE,
+   (uint32_t)MENU_ENUM_SUBLABEL_REBOOT_PAYLOAD,
+#endif
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_RECORDING_CONFIG_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_RECORDING_OUTPUT_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_RECORDING_SETTINGS,
@@ -15433,6 +15538,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SUBPIXEL_LAYOUT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_USE_DISPLAY_PEAK,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HW_DECODE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
@@ -15449,7 +15555,9 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_CONTROLLERS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_DISTANCE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_LASER,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_PLACEMENT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_WIDTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OUTPUT_SETTINGS,
@@ -15511,7 +15619,6 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED_DISPLAY_PACING,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED_PRESENT_REPEAT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREAD_PRIORITY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
@@ -15972,6 +16079,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MSG_NUM_CORES_LOCKED,
    (uint32_t)MSG_NUM_CORES_UPDATED,
    (uint32_t)MSG_OPENXR_FAILED,
+   (uint32_t)MSG_OPENXR_HEADSET_VIEW_FLAT,
    (uint32_t)MSG_OPENXR_LASER_POINTER,
    (uint32_t)MSG_OPENXR_NEEDS_RELOAD,
    (uint32_t)MSG_OPENXR_RATE_MISFIT,
@@ -16131,6 +16239,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MSG_USING_CORE_NAME_FOR_NEW_CONFIG,
    (uint32_t)MSG_USING_LIBRETRO_DUMMY_CORE_RECORDING_SKIPPED,
    (uint32_t)MSG_VALUE_CONNECT_DEVICE_FROM_A_VALID_PORT,
+   (uint32_t)MSG_VALUE_INSTALL_UPDATE,
    (uint32_t)MSG_VALUE_REBOOTING,
    (uint32_t)MSG_VALUE_SHUTTING_DOWN,
    (uint32_t)MSG_VERSION_OF_LIBRETRO_API,

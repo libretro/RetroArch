@@ -4119,6 +4119,7 @@ static const struct
    char s_8ab54d62[143];
    char s_aa554847[30];
    char s_ac2c797c[30];
+   char s_3fe94404[15];
    char s_80528b14[55];
    char s_eae21890[97];
    char s_1451fe0d[62];
@@ -18824,6 +18825,7 @@ static const struct
    "\265\321\200: ",
    "\320\276\320\261\320\275\320\276\320\262\320\273\320\265\320\275\320\276 \321\217\320\264\320"
    "\265\321\200: ",
+   "\320\237\320\273\320\276\321\201\320\272\320\270\320\271",
    "\320\235\320\265 \320\262\321\213\320\261\321\200\320\260\320\275 \320\276\320\262\320\265\321"
    "\200\320\273\320\265\320\271 \320\272\320\273\320\260\320\262\320\270\320\260\321\202\321\203"
    "\321\200\321\213.",
@@ -19344,7 +19346,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ru_blob_check[
-      (sizeof(msg_hash_ru_blob) == (310401u
+      (sizeof(msg_hash_ru_blob) == (310416u
 #ifdef ANDROID
        + 547u
 #endif
@@ -23875,6 +23877,7 @@ static const uint32_t msg_hash_ru_ids[] =
    (uint32_t)MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
    (uint32_t)MSG_NUM_CORES_LOCKED,
    (uint32_t)MSG_NUM_CORES_UPDATED,
+   (uint32_t)MSG_OPENXR_HEADSET_VIEW_FLAT,
    (uint32_t)MSG_OSK_OVERLAY_NOT_SET,
    (uint32_t)MSG_OVERRIDES_ACTIVE_NOT_SAVING,
    (uint32_t)MSG_OVERRIDES_ERROR_REMOVING,

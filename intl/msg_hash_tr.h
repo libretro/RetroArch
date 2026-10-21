@@ -3740,6 +3740,7 @@ static const struct
    char s_8ab54d62[87];
    char s_aa554847[23];
    char s_ac2c797c[28];
+   char s_3fe94404[5];
    char s_80528b14[34];
    char s_eae21890[40];
    char s_1451fe0d[41];
@@ -8975,6 +8976,7 @@ static const struct
    "resim indirmeleri zaten denendi.",
    "Atlanan \303\247ekirdekler: ",
    "\303\207ekirdekler g\303\274ncellendi: ",
+   "D\303\274z",
    "Klavye kaplamas\304\261 ayarlanmam\304\261\305\237.",
    "Kaydedilemedi. \303\226zelle\305\237tirmeler etkin.",
    "\303\226zelle\305\237tirmeler kald\304\261r\304\261lamad\304\261 hata.",
@@ -9172,7 +9174,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_tr_blob_check[
-      (sizeof(msg_hash_tr_blob) == (170043u
+      (sizeof(msg_hash_tr_blob) == (170048u
 #ifdef ANDROID
        + 340u
 #endif
@@ -13270,6 +13272,7 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
    (uint32_t)MSG_NUM_CORES_LOCKED,
    (uint32_t)MSG_NUM_CORES_UPDATED,
+   (uint32_t)MSG_OPENXR_HEADSET_VIEW_FLAT,
    (uint32_t)MSG_OSK_OVERLAY_NOT_SET,
    (uint32_t)MSG_OVERRIDES_ACTIVE_NOT_SAVING,
    (uint32_t)MSG_OVERRIDES_ERROR_REMOVING,

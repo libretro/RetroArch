@@ -940,6 +940,7 @@ static const struct
    char s_f4eaed02[31];
    char s_a9f5617a[35];
    char s_7b2598f2[32];
+   char s_01686cd6[34];
    char s_182194b5[35];
    char s_50e34bc5[16];
    char s_00ea00d3[17];
@@ -2325,6 +2326,7 @@ static const struct
 #else
    char s_e07e844d[38];
 #endif
+   char s_ef289a2f[26];
 #if defined(DINGUX)
    char s_bfd4c6ef[11];
    char s_ce997004[12];
@@ -2410,6 +2412,7 @@ static const struct
    char s_83217fd0[21];
    char s_60258de0[6];
    char s_34b2592a[9];
+   char s_2a1860ac[28];
    char s_be406532[23];
    char s_13ce50e1[19];
    char s_8dfe8b04[16];
@@ -2977,7 +2980,6 @@ static const struct
    char s_d0b943e8[57];
    char s_4f2077b6[151];
    char s_5b920f01[115];
-   char s_71b76e1b[234];
    char s_f96ddf69[83];
    char s_d84f519b[212];
    char s_5d20ea2c[44];
@@ -3021,6 +3023,7 @@ static const struct
    char s_e25b6b30[143];
    char s_4b347c28[54];
    char s_44480960[66];
+   char s_0cf12e84[205];
    char s_94c28c23[82];
    char s_0832c8b3[54];
    char s_109af481[52];
@@ -3853,6 +3856,7 @@ static const struct
 #else
    char s_c38ef33b[54];
 #endif
+   char s_f50cca5d[269];
 #if defined(DINGUX)
    char s_6dc7aece[235];
    char s_c0e554ab[138];
@@ -3867,7 +3871,7 @@ static const struct
 #endif
    char s_ab839b13[116];
    char s_135d20b8[52];
-   char s_5767a1f8[206];
+   char s_5767a1f8[412];
    char s_17663212[191];
    char s_e4aa2e10[64];
    char s_b853a798[106];
@@ -3921,6 +3925,7 @@ static const struct
    char s_cacc1492[51];
    char s_c0c6924e[210];
    char s_c83fcc7e[235];
+   char s_2fe7ca1a[241];
    char s_cdf158e0[294];
    char s_7efaf561[213];
    char s_c90aff27[90];
@@ -3984,7 +3989,6 @@ static const struct
    char s_7e96b5ce[40];
    char s_3547866d_0[500];
    char s_3547866d_1[35];
-   char s_d73ccef3[388];
    char s_81163acd[400];
    char s_ecc9b2c5[311];
    char s_c2314d30[190];
@@ -4446,6 +4450,10 @@ static const struct
    char s_aa554847[22];
    char s_ac2c797c[24];
    char s_c5fee1cb[66];
+   char s_7ce002de[24];
+   char s_3fe94404[8];
+   char s_0a17a4ae[12];
+   char s_fcce3890[16];
    char s_272dccbd[25];
    char s_7da2720b[64];
    char s_9e9f8d9d[193];
@@ -5838,6 +5846,7 @@ static const struct
    "Zachytenie my\305\241i (prep\303\255nanie)",
    "Zastavi\305\245 nahr\303\241vanie/prehr\303\241vanie",
    "Vycentrova\305\245 obrazovky headsetu",
+   "Zobrazenie headsetu (prep\303\255nanie)",
    "Laserov\303\251 ukazovadlo (prep\303\255nanie)",
    "Na\304\215\303\255ta\305\245 stav",
    "Prepnutie ponuky",
@@ -7240,6 +7249,7 @@ static const struct
 #else
    "\305\240k\303\241lovanie \305\241pecifick\303\251 pre kontext",
 #endif
+   "Prezent\303\241cia Direct3D 9Ex",
 #if defined(DINGUX)
    "Bikubick\303\241",
    "Biline\303\241rna",
@@ -7327,6 +7337,7 @@ static const struct
    "Laserov\303\251 ukazovadlo",
    "V\305\276dy",
    "Vypn\303\272\305\245",
+   "Zv\303\275\305\241enie v\303\275konu headsetu",
    "Umiestnenie obrazoviek",
    "Pevne v miestnosti",
    "Sledova\305\245 hlavu",
@@ -8249,11 +8260,6 @@ static const struct
    " tla\304\215idiel (iba Android).",
    "Ako \304\217aleko mus\303\255 by\305\245 os naklonen\303\241, aby vy\303\272stila do stla\304"
    "\215enia tla\304\215idla pri pou\305\276it\303\255 'Anal\303\263g na digit\303\241lne'.",
-   "Okam\305\276ite zareaguje vo chv\303\255li, ke\304\217 s\303\272 v\305\241etky tla\304\215idl"
-   "\303\241 stla\304\215en\303\251. Podr\305\276a\305\245 \304\215ak\303\241, k\303\275m nie s\303"
-   "\272 dr\305\276an\303\251 spolu po dobu, ktor\303\272 vyberiete v \304\217al\305\241om kroku, ta"
-   "k\305\276e ich kr\303\241tke stla\304\215enie, napr\303\255klad uprostred hry, neurob\303\255 ni"
-   "\304\215.",
    "Ako dlho musia by\305\245 v\305\241etky tla\304\215idl\303\241 kombin\303\241cie dr\305\276an"
    "\303\251 spolu, k\303\275m zareaguje.",
    "\304\214o sa stane, ke\304\217 s\303\272 v\305\241etky tla\304\215idl\303\241 kombin\303\241cie "
@@ -8349,6 +8355,9 @@ static const struct
    "\255vny vstup my\305\241i.",
    "Zastav\303\255 nahr\303\241vanie/prehr\303\241vanie aktu\303\241lneho replay.",
    "Umiestni obrazovky headsetu pred miesto, kam sa pr\303\241ve pozer\303\241te.",
+   "Prep\303\255na, \304\215o sa jadru oznamuje, \305\276e headset pr\303\241ve zobrazuje: Pohlcuj"
+   "\303\272ce (so sledovan\303\255m hlavy), Stereoskopick\303\251 (3D obrazovka) alebo Ploch\303"
+   "\251. Po zatvoren\303\255 jadra sa vr\303\241ti predvolen\303\251 nastavenie jadra.",
    "Prep\303\255na laserov\303\251 ukazovadlo headsetu medzi Vypnut\303\251 a jeho posledn\303\275m "
    "re\305\276imom.",
    "Na\304\215\303\255ta ulo\305\276en\303\275 stav z aktu\303\241lne vybran\303\251ho slotu.",
@@ -9849,6 +9858,10 @@ static const struct
 #else
    "Hardv\303\251rov\303\251 \305\241k\303\241lovanie kontextu (ak je dostupn\303\251).",
 #endif
+   "S ovl\303\241da\304\215mi Direct3D 9 vo Windows Vista a nov\305\241\303\255ch prezentova\305\245"
+   " tak ako Direct3D 11: okno cez flip model a so zoh\304\276adnen\303\255m \304\214akate\304\276n"
+   "\303\275ch swapchain a Max. oneskorenia sn\303\255mky, ke\304\217 je zapnut\303\241 V-Sync. Men"
+   "\303\255 \304\215asovanie sn\303\255mok. Vypnut\303\251: prezentuje sa ako predt\303\275m.",
 #if defined(DINGUX)
    "Vybra\305\245 met\303\263du interpol\303\241cie obrazu pri \305\241k\303\241lovan\303\255 obsahu"
    " pomocou intern\303\251ho IPU. Pri pou\305\276it\303\255 videofiltrov poh\303\241\305\210an\303"
@@ -9873,10 +9886,12 @@ static const struct
    "Window mana\305\276\303\251ri pou\305\276\303\255vaj\303\272 kompoz\303\255ciu na aplik\303\241c"
    "iu vizu\303\241lnych efektov, detekciu nereaguj\303\272cich okien a in\303\251.",
    "Ak\303\275 ovl\303\241da\304\215 videa pou\305\276i\305\245. (Vy\305\276aduje re\305\241tart)",
-   "Pou\305\276ije prezent\303\241ciu cez DXGI s kompatibiln\303\275mi ovl\303\241da\304\215mi OpenG"
-   "L a Vulkan vo Windows. Ak nie je podporovan\303\241, vr\303\241ti sa k nat\303\255vnej prezent"
-   "\303\241cii. M\303\264\305\276e zmeni\305\245 oneskorenie sn\303\255mok; predvolene vypnut\303"
-   "\251.",
+   "Pou\305\276i\305\245 swap chain DXGI s flip modelom s ovl\303\241da\304\215mi glcore a Vulkan vo"
+   " Windows. Zapne funkcie ovl\303\241da\304\215a displeja, ako je NVIDIA Smooth Motion. Ak nie je "
+   "podporovan\303\275, vr\303\241ti sa k nat\303\255vnej prezent\303\241cii a m\303\264\305\276e zm"
+   "eni\305\245 oneskorenie sn\303\255mok. So Smooth Motion to zapnite glob\303\241lne pre ponuky aj"
+   " jadr\303\241. Prep\303\255sanie len pre jadro m\303\264\305\276e v jednej rel\303\241cii prepn"
+   "\303\272\305\245 API prezent\303\241cie a zr\303\272ti\305\245 ovl\303\241da\304\215 displeja.",
    "Pou\305\276i\305\245 videofilter poh\303\241\305\210an\303\275 CPU. M\303\264\305\276e ma\305"
    "\245 ve\304\276k\303\275 dopad na v\303\275kon. Niektor\303\251 videofiltre m\303\264\305\276u f"
    "ungova\305\245 iba s jadrami, ktor\303\251 pou\305\276\303\255vaj\303\272 32-bitov\303\272 alebo"
@@ -10021,6 +10036,10 @@ static const struct
    "\303\241\304\215ania L2 alebo R2. Automaticky: menu, k\303\275m je otvoren\303\251, a druh\303"
    "\251 obrazovky, napr\303\255klad dotykov\303\241 obrazovka. V\305\276dy: ka\305\276d\303\241 obr"
    "azovka, pre sveteln\303\251 zbrane. Vypnut\303\251: nikde.",
+   "Po\305\276iada headset o jeho najvy\305\241\305\241\303\255 takt procesora, nad r\303\241mec toh"
+   "o, \304\215o dok\303\241\305\276e dlhodobo udr\305\276a\305\245, aby n\303\241ro\304\215n\303"
+   "\275 obsah st\303\255hal headset. Spotrebuje viac bat\303\251rie a viac hreje; hor\303\272ci hea"
+   "dset sa m\303\264\305\276e aj tak spomali\305\245. Prejav\303\255 sa hne\304\217.",
    "Kde headset dr\305\276\303\255 obrazovky. Pevne v miestnosti: tam, kam ich umiestni Vycentrovani"
    "e. Sledova\305\245 hlavu: v\305\276dy pred vami; pri ve\304\276kej obrazovke s\303\272 okraje ta"
    "m, kde \305\241o\305\241ovky rozmaz\303\241vaj\303\272. Leniv\303\251 sledovanie: ostan\303\272 "
@@ -10188,12 +10207,6 @@ static const struct
    ", be\305\276ia vl\303\241knovo s ovl\303\241da\304\215mi Vulkan, Direct3D 11, Direct3D 12 a gl; "
    "s ostatn\303\275mi ovl\303\241da\304\215mi be\305\276ia nevl\303\241kno",
    "vo bez oh\304\276adu na toto nastavenie.",
-   "Pri Vl\303\241knovom videu spust\303\255 ka\305\276d\303\272 sn\303\255mku jadra tak neskoro, ak"
-   "o to \304\217al\305\241ie obnovenie displeja dovol\303\255, pod\304\276a nameran\303\275ch \304"
-   "\215asov jadra a vykres\304\276ovania, namiesto pevn\303\251ho \304\215asova\304\215a. Zn\303"
-   "\255\305\276i oneskorenie na \303\272rove\305\210, ktor\303\272 dosahuje Oneskorenie sn\303\255m"
-   "ky pri nevl\303\241knovom videu, a sn\303\255mka, ktor\303\241 trv\303\241 dlh\305\241ie, sa zop"
-   "akuje namiesto vynechania. Vypnut\303\251: \304\215asuje \304\215asova\304\215 ako doteraz.",
    "Pri Vl\303\241knovom videu zobrazuje posledn\303\272 sn\303\255mku \304\217alej v obnovovacej fr"
    "ekvencii displeja, ke\304\217 jadro zaost\303\241va, namiesto ponechania predch\303\241dzaj\303"
    "\272ceho zobrazenia na obrazovke. Udr\305\276\303\255 Vkladanie \304\215iernych sn\303\255mok a "
@@ -10760,6 +10773,10 @@ static const struct
    "Presko\304\215en\303\251 jadr\303\241: ",
    "Aktualizovan\303\251 jadr\303\241: ",
    "V\303\275stup do headsetu sa nepodarilo spusti\305\245. V\303\275stup ukazuje okno.",
+   "Zobrazenie headsetu: %s",
+   "Ploch\303\251",
+   "Pohlcuj\303\272ce",
+   "Stereoskopick\303\251",
    "Laserov\303\251 ukazovadlo: %s",
    "V\303\275stup do headsetu sa spust\303\255 pri \304\217al\305\241om na\304\215\303\255tan\303"
    "\255 obsahu.",
@@ -10967,7 +10984,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sk_blob_check[
-      (sizeof(msg_hash_sk_blob) == (215121u
+      (sizeof(msg_hash_sk_blob) == (215568u
 #ifdef ANDROID
        + 389u
 #endif
@@ -12464,6 +12481,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_HALT_REPLAY_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_HEADSET_RECENTER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_HEADSET_VIEW_TOGGLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_LASER_POINTER_TOGGLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_MENU_TOGGLE,
@@ -13848,6 +13866,7 @@ static const uint32_t msg_hash_sk_ids[] =
 #else
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_CTX_SCALING,
 #endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_D3D9EX_PRESENT,
 #if defined(DINGUX)
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BICUBIC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BILINEAR,
@@ -13933,6 +13952,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_ALWAYS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_OFF,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_PERF_BOOST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_PLACEMENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_PLACEMENT_FIXED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_PLACEMENT_FOLLOW,
@@ -14493,7 +14513,6 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_BLOCK_TIMEOUT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_COMBO_HOLD,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_COMBO_HOLD_TIME,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_COMBO_TARGET,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_DEVICE_INDEX,
@@ -14537,6 +14556,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_GRAB_MOUSE_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_HALT_REPLAY_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_HEADSET_RECENTER,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_HEADSET_VIEW_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_LASER_POINTER_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_MENU_TOGGLE,
@@ -15369,6 +15389,7 @@ static const uint32_t msg_hash_sk_ids[] =
 #else
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_CTX_SCALING,
 #endif
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_D3D9EX_PRESENT,
 #if defined(DINGUX)
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_FILTER_TYPE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT,
@@ -15437,6 +15458,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_DISTANCE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_LASER,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_PERF_BOOST,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_PLACEMENT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_WIDTH,
@@ -15499,7 +15521,6 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED_DISPLAY_PACING,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED_PRESENT_REPEAT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREAD_PRIORITY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
@@ -15960,6 +15981,10 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MSG_NUM_CORES_LOCKED,
    (uint32_t)MSG_NUM_CORES_UPDATED,
    (uint32_t)MSG_OPENXR_FAILED,
+   (uint32_t)MSG_OPENXR_HEADSET_VIEW,
+   (uint32_t)MSG_OPENXR_HEADSET_VIEW_FLAT,
+   (uint32_t)MSG_OPENXR_HEADSET_VIEW_IMMERSIVE,
+   (uint32_t)MSG_OPENXR_HEADSET_VIEW_STEREOSCOPIC,
    (uint32_t)MSG_OPENXR_LASER_POINTER,
    (uint32_t)MSG_OPENXR_NEEDS_RELOAD,
    (uint32_t)MSG_OPENXR_RATE_MISFIT,

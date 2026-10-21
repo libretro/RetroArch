@@ -296,6 +296,7 @@ static const struct
    char s_46c57dde[55];
    char s_6e9f0493[55];
    char s_f7e279a6[11];
+   char s_3fe94404[13];
 } msg_hash_hr_blob =
 {
    "Pristupa\304\215nost",
@@ -583,13 +584,14 @@ static const struct
    "Instaliraj ili vrati jezgru iz mape \342\200\236Preuzimanja\342\200\235.",
    "A\305\276uriraj sve instalirane jezgre na najnoviju verziju.",
    "Prevodilac",
+   "Ravno (Flat)",
 };
 
 /* Contiguity check: char members have alignment 1, so any
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_hr_blob_check[
-      (sizeof(msg_hash_hr_blob) == (4219u
+      (sizeof(msg_hash_hr_blob) == (4232u
 #ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
        + 12u
@@ -915,4 +917,5 @@ static const uint32_t msg_hash_hr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
    (uint32_t)MENU_ENUM_SUBLABEL_UPDATE_INSTALLED_CORES,
    (uint32_t)MSG_COMPILER,
+   (uint32_t)MSG_OPENXR_HEADSET_VIEW_FLAT,
 };

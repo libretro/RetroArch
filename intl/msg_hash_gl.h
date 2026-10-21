@@ -3749,7 +3749,6 @@ static const struct
    char s_7e96b5ce[57];
    char s_3547866d_0[500];
    char s_3547866d_1[69];
-   char s_d73ccef3[431];
    char s_81163acd[473];
    char s_c2314d30[233];
 #if defined(RARCH_MOBILE)
@@ -4181,6 +4180,7 @@ static const struct
    char s_8ab54d62[101];
    char s_aa554847[20];
    char s_ac2c797c[24];
+   char s_3fe94404[6];
    char s_80528b14[48];
    char s_eae21890[35];
    char s_1451fe0d[47];
@@ -9095,12 +9095,6 @@ static const struct
    "cleos que renderizan na GPU exec\303\272tanse en f\303\255os cos controladores Vulkan, Direct3D "
    "11, Direct3D 12 e gl; cos demais",
    " controladores exec\303\272tanse sen f\303\255os independentemente deste axuste.",
-   "Co v\303\255deo en f\303\255os, iniciar cada fotograma do n\303\272cleo tan tarde como permita a"
-   " seguinte actualizaci\303\263n da pantalla, a partir dos tempos medidos do n\303\272cleo e da re"
-   "nderizaci\303\263n, en lugar de usar un temporizador fixo. Reduce a latencia ata o nivel que se "
-   "consegue con Atraso de fotograma no v\303\255deo sen f\303\255os, e un fotograma que tarda demas"
-   "iado rep\303\255tese en lugar de omitirse. Desactivado: o temporizador controla o ritmo, como an"
-   "tes.",
    "Co v\303\255deo en f\303\255os, continuar mostrando o \303\272ltimo fotograma \303\241 frecuenci"
    "a de actualizaci\303\263n da pantalla mentres o n\303\272cleo queda atrasado, en lugar de deixar"
    " na pantalla a presentaci\303\263n anterior. Mant\303\251n estables a inserci\303\263n de fotogr"
@@ -9590,6 +9584,7 @@ static const struct
    "\303\263n.",
    "N\303\272cleos omitidos: ",
    "N\303\272cleos actualizados: ",
+   "Plana",
    "A superposici\303\263n do teclado non est\303\241 definida.",
    "Non gardando. Anulaci\303\263ns activas.",
    "Produciuse un erro ao eliminar as anulaci\303\263ns.",
@@ -9776,7 +9771,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_gl_blob_check[
-      (sizeof(msg_hash_gl_blob) == (212200u
+      (sizeof(msg_hash_gl_blob) == (211775u
 #ifdef ANDROID
        + 365u
 #endif
@@ -13962,7 +13957,6 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED_DISPLAY_PACING,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED_PRESENT_REPEAT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
 #if defined(RARCH_MOBILE)
@@ -14394,6 +14388,7 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
    (uint32_t)MSG_NUM_CORES_LOCKED,
    (uint32_t)MSG_NUM_CORES_UPDATED,
+   (uint32_t)MSG_OPENXR_HEADSET_VIEW_FLAT,
    (uint32_t)MSG_OSK_OVERLAY_NOT_SET,
    (uint32_t)MSG_OVERRIDES_ACTIVE_NOT_SAVING,
    (uint32_t)MSG_OVERRIDES_ERROR_REMOVING,

@@ -3573,6 +3573,7 @@ static const struct
    char s_52d42c75[36];
    char s_a181214b[37];
    char s_8ab54d62[89];
+   char s_3fe94404[8];
    char s_80528b14[40];
    char s_eae21890[33];
    char s_1451fe0d[38];
@@ -8607,6 +8608,7 @@ static const struct
    "Nen\303\255 k dispozici \305\276\303\241dn\303\241 miniatura",
    "Pro tuto polo\305\276ku Playlist ji\305\276 byly vyzkou\305\241eny v\305\241echny mo\305\276n"
    "\303\251 n\303\241hledy ke sta\305\276en\303\255.",
+   "Ploch\303\251",
    "P\305\231ekryt\303\255 kl\303\241vesnice nen\303\255 nastaveno.",
    "Neulo\305\276eno. P\305\231episuje aktivn\303\255.",
    "Chyba p\305\231i odstra\305\210ov\303\241n\303\255 p\305\231epis\305\257.",
@@ -8790,7 +8792,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_cs_blob_check[
-      (sizeof(msg_hash_cs_blob) == (162223u
+      (sizeof(msg_hash_cs_blob) == (162231u
 #ifdef ANDROID
        + 390u
 #endif
@@ -12712,6 +12714,7 @@ static const uint32_t msg_hash_cs_ids[] =
    (uint32_t)MSG_NO_STATE_HAS_BEEN_LOADED_YET,
    (uint32_t)MSG_NO_THUMBNAIL_AVAILABLE,
    (uint32_t)MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
+   (uint32_t)MSG_OPENXR_HEADSET_VIEW_FLAT,
    (uint32_t)MSG_OSK_OVERLAY_NOT_SET,
    (uint32_t)MSG_OVERRIDES_ACTIVE_NOT_SAVING,
    (uint32_t)MSG_OVERRIDES_ERROR_REMOVING,

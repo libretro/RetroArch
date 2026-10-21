@@ -3351,6 +3351,7 @@ static const struct
    char s_8ab54d62[79];
    char s_aa554847[19];
    char s_ac2c797c[22];
+   char s_3fe94404[9];
    char s_80528b14[44];
    char s_eae21890[43];
    char s_1451fe0d[31];
@@ -7392,6 +7393,7 @@ static const struct
    "Kaikkia mahdollisia pienoiskuvalatauksia on jo kokeiltu t\303\244h\303\244n soittolistaan.",
    "Ytimi\303\244 ohitettu: ",
    "Ytimi\303\244 p\303\244ivitetty: ",
+   "Tasainen",
    "N\303\244pp\303\244imist\303\266p\303\244\303\244llyst\303\244 ei ole asetettu.",
    "Ei tallenneta. Ohitukset ovat k\303\244yt\303\266ss\303\244.",
    "Virhe poistettaessa ohituksia.",
@@ -7545,7 +7547,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fi_blob_check[
-      (sizeof(msg_hash_fi_blob) == (123704u
+      (sizeof(msg_hash_fi_blob) == (123713u
 #ifdef HAVE_LAKKA
        + 257u
 #endif
@@ -11219,6 +11221,7 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
    (uint32_t)MSG_NUM_CORES_LOCKED,
    (uint32_t)MSG_NUM_CORES_UPDATED,
+   (uint32_t)MSG_OPENXR_HEADSET_VIEW_FLAT,
    (uint32_t)MSG_OSK_OVERLAY_NOT_SET,
    (uint32_t)MSG_OVERRIDES_ACTIVE_NOT_SAVING,
    (uint32_t)MSG_OVERRIDES_ERROR_REMOVING,

@@ -2286,6 +2286,7 @@ static const struct
    char s_992592e3[55];
    char s_52d42c75[31];
    char s_a181214b[45];
+   char s_3fe94404[9];
    char s_7b63412e[39];
    char s_e6ffd274[39];
    char s_07b7b10d[10];
@@ -7728,6 +7729,7 @@ static const struct
    "\271\330\257.",
    "\331\204\330\247 \330\252\331\210\330\254\330\257 \330\265\331\210\330\261\330\251 \331\205\330"
    "\265\330\272\330\261\330\251 \331\205\330\252\330\247\330\255\330\251",
+   "\331\205\330\263\330\267\330\255",
    "\330\256\330\267\330\243 \331\201\331\212 \330\255\331\201\330\270 \330\247\331\204\330\252\330"
    "\254\330\247\331\210\330\262\330\247\330\252.",
    "\330\252\331\205 \330\255\331\201\330\270 \330\247\331\204\330\252\330\254\330\247\331\210\330"
@@ -7917,7 +7919,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ar_blob_check[
-      (sizeof(msg_hash_ar_blob) == (107078u
+      (sizeof(msg_hash_ar_blob) == (107087u
 #ifdef HAVE_LAKKA
        + 287u
 #endif
@@ -10399,6 +10401,7 @@ static const uint32_t msg_hash_ar_ids[] =
    (uint32_t)MSG_NO_SAVE_STATE_HAS_BEEN_OVERWRITTEN_YET,
    (uint32_t)MSG_NO_STATE_HAS_BEEN_LOADED_YET,
    (uint32_t)MSG_NO_THUMBNAIL_AVAILABLE,
+   (uint32_t)MSG_OPENXR_HEADSET_VIEW_FLAT,
    (uint32_t)MSG_OVERRIDES_ERROR_SAVING,
    (uint32_t)MSG_OVERRIDES_SAVED_SUCCESSFULLY,
    (uint32_t)MSG_PAUSED,

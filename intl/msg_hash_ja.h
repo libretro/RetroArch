@@ -3512,6 +3512,7 @@ static const struct
    char s_52d42c75[55];
    char s_a181214b[49];
    char s_8ab54d62[145];
+   char s_3fe94404[13];
    char s_80528b14[67];
    char s_eae21890[64];
    char s_1451fe0d[46];
@@ -13535,6 +13536,7 @@ static const struct
    "\343\202\265\343\203\240\343\203\215\343\202\244\343\203\253\343\203\200\343\202\246\343\203\263"
    "\343\203\255\343\203\274\343\203\211\343\201\257\343\201\231\343\201\247\343\201\253\350\251\246"
    "\350\241\214\343\201\225\343\202\214\343\201\246\343\201\204\343\201\276\343\201\231\343\200\202",
+   "\343\203\225\343\203\251\343\203\203\343\203\210",
    "\343\202\255\343\203\274\343\203\234\343\203\274\343\203\211\343\202\252\343\203\274\343\203\220"
    "\343\203\274\343\203\254\343\202\244\343\201\214\350\250\255\345\256\232\343\201\225\343\202\214"
    "\343\201\246\343\201\204\343\201\276\343\201\233\343\202\223\343\200\202",
@@ -13936,7 +13938,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ja_blob_check[
-      (sizeof(msg_hash_ja_blob) == (200125u
+      (sizeof(msg_hash_ja_blob) == (200138u
 #ifdef ANDROID
        + 484u
 #endif
@@ -17771,6 +17773,7 @@ static const uint32_t msg_hash_ja_ids[] =
    (uint32_t)MSG_NO_STATE_HAS_BEEN_LOADED_YET,
    (uint32_t)MSG_NO_THUMBNAIL_AVAILABLE,
    (uint32_t)MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
+   (uint32_t)MSG_OPENXR_HEADSET_VIEW_FLAT,
    (uint32_t)MSG_OSK_OVERLAY_NOT_SET,
    (uint32_t)MSG_OVERRIDES_ACTIVE_NOT_SAVING,
    (uint32_t)MSG_OVERRIDES_ERROR_REMOVING,

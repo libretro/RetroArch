@@ -56,6 +56,7 @@ static const struct
    char s_534cf44d[101];
    char s_5f9d9369[71];
    char s_6e51030f[76];
+   char s_18e73263[201];
    char s_d32da23d[16];
    char s_551f3071[23];
    char s_1f6e5f89[43];
@@ -102,7 +103,7 @@ static const struct
    char s_f319134a[35];
    char s_418f98ab[24];
    char s_7607974d[13];
-   char s_bdf1165f[29];
+   char s_bdf1165f[28];
    char s_6a15d029[21];
    char s_3817de39[369];
    char s_16ae54ac[304];
@@ -148,7 +149,7 @@ static const struct
    char s_9998fdce[332];
    char s_1d269383[200];
    char s_34c6f6e4[71];
-   char s_4dc69fe8[501];
+   char s_4dc69fe8[499];
    char s_138c1cdf[190];
    char s_a7206ebc[114];
 #ifdef HAVE_LAKKA
@@ -169,10 +170,10 @@ static const struct
    char s_11aa0e91[68];
    char s_11aa0e92[76];
    char s_11aa0e93[76];
-   char s_e1814648[47];
+   char s_e1814648[46];
    char s_246d2ab2[69];
    char s_f4657d5b[66];
-   char s_74276879[132];
+   char s_74276879[131];
    char s_5468c818[129];
    char s_4bea979b[170];
    char s_5468d309[78];
@@ -200,12 +201,12 @@ static const struct
    char s_378ad7dc[210];
    char s_95f467be[320];
    char s_49088c17[167];
-   char s_ae87ea53[286];
+   char s_ae87ea53[285];
    char s_9834febe_0[500];
    char s_9834febe_1[79];
    char s_93805cc8_0[500];
-   char s_93805cc8_1[40];
-   char s_b495662b[435];
+   char s_93805cc8_1[38];
+   char s_b495662b[434];
    char s_9953f4e2[249];
    char s_de76d2dc[20];
    char s_79e212bd[5];
@@ -311,7 +312,7 @@ static const struct
    char s_9f1f3534[54];
    char s_e66b1cb9[43];
    char s_1bf49fce[32];
-   char s_11e34db0[42];
+   char s_11e34db0[41];
    char s_0058b881[8];
    char s_14ec7b7e[12];
    char s_00614813[8];
@@ -837,6 +838,7 @@ static const struct
    char s_8b9af73a[24];
    char s_66389548[22];
    char s_926f9e93[28];
+   char s_c546f81b[11];
    char s_539024ed[14];
    char s_3703a97b[12];
    char s_933104ed[25];
@@ -916,6 +918,7 @@ static const struct
    char s_f4eaed02[34];
    char s_a9f5617a[32];
    char s_7b2598f2[40];
+   char s_01686cd6[29];
    char s_182194b5[26];
    char s_50e34bc5[16];
    char s_00ea00d3[17];
@@ -1056,7 +1059,7 @@ static const struct
    char s_9c91e6ef[25];
    char s_f03621e7[26];
 #endif
-   char s_9d47ac69[40];
+   char s_9d47ac69[38];
    char s_75851363[11];
    char s_a60a77f9[49];
    char s_f07432ff[16];
@@ -1497,9 +1500,9 @@ static const struct
    char s_b78a0248[28];
    char s_3a15d6a9[24];
    char s_b5896acf[44];
-   char s_9c41f685[53];
+   char s_9c41f685[52];
    char s_1226e190[30];
-   char s_94d6c2ce[23];
+   char s_94d6c2ce[22];
    char s_a1724dce[24];
    char s_25e86ee3[4];
    char s_c3168f05[4];
@@ -1635,6 +1638,8 @@ static const struct
    char s_3936fe87[78];
    char s_393985fc[24];
    char s_57110ba8[30];
+   char s_973fff7c[40];
+   char s_54463db9[35];
    char s_56e21ee1[18];
    char s_b152eb42[27];
    char s_f70406ce[21];
@@ -1719,7 +1724,7 @@ static const struct
    char s_43a38c95[50];
    char s_7c9d646a[13];
    char s_5f15f7a7[14];
-   char s_b6761774[30];
+   char s_b6761774[16];
    char s_f24476fa[11];
    char s_97d90c67[10];
    char s_033bf99f[15];
@@ -1753,7 +1758,7 @@ static const struct
    char s_2237e69e[17];
    char s_e5d4f181[22];
    char s_7217fd0f[27];
-   char s_abfa790d[26];
+   char s_abfa790d[25];
    char s_6d0b3292[6];
    char s_08785e85[13];
    char s_3313a0d7[7];
@@ -2058,7 +2063,7 @@ static const struct
    char s_3c518be3[21];
    char s_6bb9189a[7];
    char s_0f80075d[14];
-   char s_d3906073[42];
+   char s_d3906073[41];
    char s_c561b96e[32];
    char s_6262776d[5];
    char s_25f1508f[18];
@@ -2185,6 +2190,7 @@ static const struct
    char s_8356c98c[13];
    char s_5c7bbce1[19];
    char s_cd916c68[20];
+   char s_f017f754[15];
    char s_8fe41f79[17];
    char s_2c296537[14];
    char s_519cd5f8[24];
@@ -2318,6 +2324,7 @@ static const struct
 #else
    char s_e07e844d[30];
 #endif
+   char s_ef289a2f[27];
 #if defined(DINGUX)
    char s_bfd4c6ef[10];
    char s_52153570[18];
@@ -2337,6 +2344,8 @@ static const struct
    char s_f4341e25[30];
    char s_cc973e8a[13];
    char s_b9d37039[194];
+   char s_79f9b43b[15];
+   char s_1249554a[17];
    char s_d0a04fe4[12];
    char s_c682e4e2[12];
    char s_cf6bc52a[23];
@@ -2402,6 +2411,7 @@ static const struct
    char s_83217fd0[13];
    char s_60258de0[6];
    char s_34b2592a[4];
+   char s_2a1860ac[34];
    char s_be406532[19];
    char s_13ce50e1[16];
    char s_8dfe8b04[12];
@@ -2452,7 +2462,6 @@ static const struct
    char s_78585119[12];
    char s_f57f6158[15];
    char s_69b801ef[11];
-   char s_a40653a7[25];
    char s_e67b672d[21];
    char s_52e3d6ea[29];
    char s_f387bafb[21];
@@ -2461,8 +2470,8 @@ static const struct
    char s_a9c8430e[13];
    char s_f5911f43[25];
    char s_9017e0d3[13];
-   char s_55f488d2[19];
-   char s_d5901b68[30];
+   char s_55f488d2[18];
+   char s_d5901b68[16];
    char s_c49aa167[21];
    char s_f708ba7e[25];
    char s_fe3bb531[27];
@@ -2479,7 +2488,7 @@ static const struct
    char s_a9711945[33];
    char s_bdaa2cfe[51];
    char s_ec9ccdc3[26];
-   char s_8bf6ccd4[46];
+   char s_8bf6ccd4[45];
    char s_2cb6ab5c[19];
    char s_552163d9[40];
    char s_ef3d53d8[20];
@@ -2582,16 +2591,16 @@ static const struct
    char s_9eef0306[16];
    char s_13904abd[13];
    char s_368db7bb[10];
-   char s_b8a131f0[16];
+   char s_b8a131f0[15];
    char s_550ef26d[16];
    char s_fd7a891b[16];
    char s_f9dd6e61[13];
    char s_f4b6d13e[39];
    char s_25e89959[3];
    char s_b1d6fea6[10];
-   char s_aa0659db[24];
-   char s_49757b91[24];
-   char s_660eb9c4[24];
+   char s_aa0659db[23];
+   char s_49757b91[23];
+   char s_660eb9c4[23];
    char s_b6ca9df2[21];
 #if defined(RARCH_MOBILE)
    char s_b754294b[54];
@@ -2661,6 +2670,8 @@ static const struct
    char s_f0838a35_1[198];
    char s_95821d83[29];
    char s_bdeebb68[36];
+   char s_84b03e36_0[500];
+   char s_84b03e36_1[152];
    char s_f9005edc[142];
    char s_6ade80dd[42];
    char s_ec7aa7a0_0[500];
@@ -2673,6 +2684,7 @@ static const struct
    char s_f46c7b83_1[130];
    char s_cb67f2a4[34];
    char s_3c3598a9[44];
+   char s_3bac47bd[467];
    char s_90e7db40[465];
    char s_b07cd572_0[500];
    char s_b07cd572_1[89];
@@ -2964,7 +2976,8 @@ static const struct
    char s_d0b943e8[76];
    char s_4f2077b6[197];
    char s_5b920f01[116];
-   char s_71b76e1b[255];
+   char s_a8576709[242];
+   char s_71b76e1b[479];
    char s_f96ddf69[121];
    char s_d84f519b[220];
    char s_5d20ea2c[53];
@@ -3008,6 +3021,7 @@ static const struct
    char s_e25b6b30[173];
    char s_4b347c28[56];
    char s_44480960[75];
+   char s_0cf12e84[263];
    char s_94c28c23[90];
    char s_0832c8b3[58];
    char s_109af481[60];
@@ -3037,8 +3051,8 @@ static const struct
    char s_d9153542[57];
    char s_8e48ec69[43];
    char s_cd43c108[81];
-   char s_cd46e260[412];
-   char s_cd482ffe[412];
+   char s_cd46e260[410];
+   char s_cd482ffe[410];
    char s_49336383[51];
    char s_e92351d4[113];
    char s_8e22cdce[54];
@@ -3694,9 +3708,9 @@ static const struct
    char s_9807adbd[36];
    char s_35ff46c4[71];
    char s_288b93a6[51];
-   char s_2c1469aa[185];
+   char s_2c1469aa[183];
    char s_474b1a98[56];
-   char s_934cf7a1[76];
+   char s_934cf7a1[75];
    char s_d512ad1c[53];
    char s_4555fdb4[56];
    char s_4b009af3[41];
@@ -3840,6 +3854,7 @@ static const struct
 #else
    char s_c38ef33b[47];
 #endif
+   char s_f50cca5d[301];
 #if defined(DINGUX)
    char s_6dc7aece[250];
    char s_c0e554ab[160];
@@ -3854,6 +3869,8 @@ static const struct
 #endif
    char s_ab839b13[132];
    char s_135d20b8[54];
+   char s_5767a1f8_0[500];
+   char s_5767a1f8_1[27];
    char s_17663212[197];
    char s_e4aa2e10[68];
    char s_b853a798[101];
@@ -3866,7 +3883,7 @@ static const struct
    char s_055c296e[110];
    char s_fc2d67bb[179];
    char s_43946ee5[78];
-   char s_5492b73d[49];
+   char s_5492b73d[53];
    char s_15cad80e_0[500];
    char s_15cad80e_1[37];
    char s_01e5fbea[372];
@@ -3876,13 +3893,13 @@ static const struct
    char s_0d96ed73[35];
    char s_9f0fd076[125];
    char s_9f0fd077[124];
-   char s_c315b54c[453];
+   char s_c315b54c[451];
    char s_7a2050af[39];
    char s_d2859556[67];
    char s_ef13be35[66];
    char s_f2687ca7[76];
    char s_698d5124[108];
-   char s_7e43d750[208];
+   char s_7e43d750[207];
    char s_87ca7bc6[203];
    char s_cfa51e8c_0[500];
    char s_cfa51e8c_1[13];
@@ -3911,6 +3928,7 @@ static const struct
    char s_cacc1492[107];
    char s_c0c6924e[267];
    char s_c83fcc7e[304];
+   char s_2fe7ca1a[298];
    char s_cdf158e0[391];
    char s_7efaf561[276];
    char s_c90aff27[99];
@@ -3934,7 +3952,7 @@ static const struct
    char s_eec252b5[125];
    char s_f4e4e921[255];
    char s_7968f59d[39];
-   char s_8cee3615[248];
+   char s_8cee3615[259];
    char s_87ba81db[156];
    char s_58c80718[336];
    char s_dc6f9d69[89];
@@ -3943,26 +3961,26 @@ static const struct
    char s_afac733c[34];
    char s_3aaf6bf1[135];
    char s_ae3f2a01[68];
-   char s_5bc3f240[187];
-   char s_db5f84d6[104];
-   char s_ad8283d5[84];
+   char s_5bc3f240[190];
+   char s_db5f84d6[102];
+   char s_ad8283d5[83];
    char s_9847d52c[63];
-   char s_99bbf91f[46];
-   char s_19d9726f[50];
+   char s_99bbf91f[45];
+   char s_19d9726f[49];
    char s_812153e8[75];
    char s_27d53122[60];
    char s_1aecfa2a[130];
    char s_1aeeef7b[85];
    char s_9330dc72[88];
    char s_a769f02b[121];
-   char s_e84a3a16[77];
-   char s_23c22a2b[76];
-   char s_c9a8c2e5[46];
-   char s_23c41f7c[90];
-   char s_261210b3[78];
-   char s_3a4b246c[102];
-   char s_2ceab671[153];
-   char s_977f8e82[301];
+   char s_e84a3a16[75];
+   char s_23c22a2b[75];
+   char s_c9a8c2e5[45];
+   char s_23c41f7c[88];
+   char s_261210b3[77];
+   char s_3a4b246c[101];
+   char s_2ceab671[152];
+   char s_977f8e82[299];
    char s_3c679f0a[336];
    char s_5b059407[144];
    char s_36033606[199];
@@ -3973,9 +3991,8 @@ static const struct
    char s_2e69508b[389];
    char s_7e96b5ce[44];
    char s_3547866d_0[500];
-   char s_3547866d_1[75];
-   char s_d73ccef3[470];
-   char s_81163acd[468];
+   char s_3547866d_1[74];
+   char s_81163acd[467];
    char s_ecc9b2c5[352];
    char s_c2314d30[214];
 #if defined(RARCH_MOBILE)
@@ -4210,10 +4227,10 @@ static const struct
    char s_973bf41d[39];
    char s_07d69dad[49];
    char s_ed18242e[38];
-   char s_4c709183[48];
+   char s_4c709183[47];
    char s_ccc5138e[50];
    char s_6b27e52f[39];
-   char s_adf53ee4[49];
+   char s_adf53ee4[48];
    char s_1d1dd59f[20];
    char s_9759de44[9];
    char s_95b098ec[16];
@@ -4224,7 +4241,7 @@ static const struct
    char s_a0cd3533[34];
    char s_29ffdb0d[71];
    char s_135957cd[34];
-   char s_96b546df[54];
+   char s_96b546df[53];
    char s_731e9836[32];
    char s_ffb4111b[38];
    char s_a363d07a[36];
@@ -4302,11 +4319,20 @@ static const struct
    char s_59212b5f[15];
    char s_f26b6cff[16];
    char s_58909bc7[18];
+   char s_33aefb0e[16];
    char s_bd1fdff6[12];
    char s_d9d9a1be[12];
    char s_a63c824a[7];
+   char s_94d1736a[11];
    char s_b969706a[248];
    char s_a3f6ebc3[16];
+   char s_11b4cc97[26];
+   char s_a8fa00e0[64];
+   char s_4c1e527b[92];
+   char s_efc0708e[88];
+   char s_98ba6f71[114];
+   char s_33a982dd[55];
+   char s_5d9ea02b[54];
    char s_a9f3b2c3[18];
    char s_0e7aca8a[17];
    char s_ab1afe7c[18];
@@ -4375,6 +4401,7 @@ static const struct
    char s_583a8462[25];
    char s_3c214e5f[37];
    char s_2ada2134[16];
+   char s_d3bcc29d[90];
    char s_00fc26e4[9];
    char s_d66d432f[16];
    char s_15c0f14a[16];
@@ -4437,6 +4464,10 @@ static const struct
    char s_aa554847[22];
    char s_ac2c797c[21];
    char s_c5fee1cb[84];
+   char s_7ce002de[20];
+   char s_3fe94404[6];
+   char s_0a17a4ae[9];
+   char s_fcce3890[15];
    char s_272dccbd[17];
    char s_7da2720b[74];
    char s_9e9f8d9d[301];
@@ -4565,7 +4596,7 @@ static const struct
    char s_7f693288[27];
    char s_a7cf23bb[18];
    char s_6adfd40f[61];
-   char s_296c6849[44];
+   char s_296c6849[43];
    char s_75bc15aa[47];
    char s_50ebaaa1[29];
    char s_1055e4c5[10];
@@ -4599,6 +4630,8 @@ static const struct
    char s_94fc1cd0[12];
    char s_2aaf8414[11];
    char s_28a4c280[25];
+   char s_33d728a4[14];
+   char s_344809fa[4];
    char s_ae2838e7[25];
    char s_f5c32889[25];
    char s_d085ad84[46];
@@ -4663,6 +4696,9 @@ static const struct
    "tem:playback_2).",
    "Benutzerdefinierter Pfadangabe f\303\274r den OSS-Treiber (z.\302\240B. /dev/dsp).",
    "Benutzerdefinierte IP-Adresse eines RSound-Servers f\303\274r den RSound-Treiber.",
+   "AAudio-Treiber, ab Android 8.0. Geringere Latenz als bei OpenSL; Surround-Layouts werden als AC-"
+   "3 an eine Ausgabe \303\274bertragen, die nur Stereo-PCM akzeptiert, sofern sie AC-3 dekodiert (a"
+   "b Android 14).",
    "OpenAL-Treiber.",
    "Standard ALSA-Treiber.",
    "ALSA-Treiber mit Threading-Unterst\303\274tzung.",
@@ -4673,7 +4709,7 @@ static const struct
    "elsweise PulseAudio verwendet werden.",
    "PulseAudio-Treiber. Wenn das System PulseAudio verwendet, ist dieser Treiber anstelle von beispi"
    "elsweise ALSA zu verwenden.",
-   "RoarAudio Sound-Systemtreiber.",
+   "RoarAudio-Sound-Systemtreiber.",
    "RSound-Treiber f\303\274r vernetzte Audiosysteme.",
    "OpenSL-Treiber.",
    "ALSA-Treiber ohne Abh\303\244ngigkeiten implementiert.",
@@ -4740,7 +4776,7 @@ static const struct
    "Aufzeichnungs-Konfigurationsdatei.",
    "Eingabezuordnungsdatei.",
    "Shaderdatei.",
-   "Shader-Voreinstellungsdatei.",
+   "Shadervoreinstellungsdatei.",
    "Konfigurationsdatei.",
    "Das Aktivieren von Linux GameMode kann die Latenzzeit verbessern, Audioknackser beheben und die "
    "Gesamtleistung maximieren, indem CPU und GPU automatisch f\303\274r die beste Leistung konfiguri"
@@ -4873,12 +4909,12 @@ static const struct
    " normalerweise nicht \303\274bertragbar und funktionieren m\303\266glicherweise nicht mit andere"
    "n Versionen dieses Cores.",
    "Ausw\303\244hlen, um das gew\303\244hlte Verzeichnis nach Inhalten zu durchsuchen.",
-   "Nach dem \303\204ndern der Shader-Einstellungen, wie z.\302\240B. Anzahl der Shaderdurchg\303"
-   "\244nge, Filter, FBO-Skala, diese Option verwenden, um \303\204nderungen durchzuf\303\274hren.\n"
-   "Diese Shader-Einstellungen zu \303\244ndern, ist ein komplexer Vorgang, daher muss genau vorgega"
-   "ngen werden.\nWerden Shader angewendet, werden die Shadereinstellungen in einer tempor\303\244re"
-   "n Datei gespeichert (retroarch.slangp/.cgp/.glslp) und geladen. Die Datei bleibt nach dem Beende"
-   "n von RetroArch erhalten und wird im Shaderverzeichnis gespeichert.",
+   "Nach dem \303\204ndern der Shadereinstellungen, wie z.\302\240B. Anzahl der Shaderdurchg\303\244"
+   "nge, Filter, FBO-Skala, diese Option verwenden, um \303\204nderungen durchzuf\303\274hren.\nDies"
+   "e Shadereinstellungen zu \303\244ndern, ist ein komplexer Vorgang, daher muss genau vorgegangen "
+   "werden.\nWerden Shader angewendet, werden die Shadereinstellungen in einer tempor\303\244ren Dat"
+   "ei gespeichert (retroarch.slangp/.cgp/.glslp) und geladen. Die Datei bleibt nach dem Beenden von"
+   " RetroArch erhalten und wird im Shaderverzeichnis gespeichert.",
    "Shaderdateien auf neue \303\204nderungen beobachten. Nach dem Speichern von \303\204nderungen an"
    " einem Shader auf den Datentr\303\244ger, wird dieser automatisch neu kompiliert und auf den Inh"
    "alt angewendet.",
@@ -4932,11 +4968,11 @@ static const struct
    "Direct3D-10-Treiber mit Unterst\303\274tzung f\303\274r das Slang-Shaderformat.",
    "Direct3D-11-Treiber mit Unterst\303\274tzung f\303\274r HDR und das Slang-Shaderformat.",
    "Direct3D-12-Treiber mit Unterst\303\274tzung f\303\274r HDR und das Slang-Shaderformat.",
-   "Direct3D-8-Treiber ohne Shader-Unterst\303\274tzung.",
+   "Direct3D-8-Treiber ohne Shaderunterst\303\274tzung.",
    "Direct3D-9-Treiber mit Unterst\303\274tzung f\303\274r das alte Cg-Shaderformat.",
    "Direct3D-9-Treiber mit Unterst\303\274tzung f\303\274r das HLSL-Shaderformat.",
    "DispmanX-Treiber. Verwendet die DispmanX-API f\303\274r Videocore-IV-GPU in Raspberry Pi 0..3. K"
-   "eine Overlay- oder Shader-unterst\303\274tzung.",
+   "eine Overlay- oder Shaderunterst\303\274tzung.",
    "Einfacher DRM-Video-Treiber. Dies ist ein Low-Level-Videotreiber, der libdrm f\303\274r Hardware"
    "skalierung mit GPU-Overlays verwendet.",
    "Ein Low-Level-Exynos-Videotreiber, der den G2D-Block in Samsung Exynos SoC f\303\274r Blittingop"
@@ -5008,10 +5044,10 @@ static const struct
    "ird, wird ein \342\200\236leerer\342\200\234 Shader verwendet.",
    "Pfad zum Shader. Alle Shader m\303\274ssen den gleichen Typ haben (z.\302\240B. Cg, GLSL oder Sl"
    "ang). Shaderverzeichnis setzen, um festzulegen, wo der Browser nach Shadern sucht.",
-   "L\303\244dt eine Shader-Voreinstellung direkt. Das Shadermen\303\274 wird entsprechend aktualisi"
-   "ert.\nDer im Men\303\274 angezeigte Skalierungsfaktor ist nur dann betriebssicher, wenn die Vore"
-   "instellung einfache Skalierungsmethoden verwendet (z.\302\240B. Quellskalierung, gleicher Skalie"
-   "rungsfaktor f\303\274r X/Y).",
+   "L\303\244dt eine Shadervoreinstellung direkt. Das Shadermen\303\274 wird entsprechend aktualisie"
+   "rt.\nDer im Men\303\274 angezeigte Skalierungsfaktor ist nur dann betriebssicher, wenn die Vorei"
+   "nstellung einfache Skalierungsmethoden verwendet (z.\302\240B. Quellskalierung, gleicher Skalier"
+   "ungsfaktor f\303\274r X/Y).",
    "Skalierung f\303\274r diesen Durchgang. Der Skalierungsfaktor wird akkumuliert, d.\302\240h. 2x "
    "f\303\274r den ersten Durchgang und 2x f\303\274r den zweiten Durchgang ergibt eine Gesamtskalie"
    "rung von 4\303\227.\nWenn es einen Skalierungsfaktor f\303\274r den letzten Durchgang gibt, wird"
@@ -5019,19 +5055,19 @@ static const struct
    "\244ngig von der Einstellung der bilinearen Filterung in den Videoeinstellungen.\nWenn \342\200"
    "\236Standard\342\200\234 eingestellt ist, wird entweder auf den Vollbildschirm gest",
    "reckt oder 1x skaliert, je nachdem, ob es der letzte Durchgang ist oder nicht.",
-   "F\303\274gt zus\303\244tzlich Shader-Bild(er) zwischen Frames f\303\274r alle m\303\266glichen S"
-   "hader-Effekte ein, die darauf ausgelegt sind, schneller als die Inhaltsrate zu laufen. Nur die O"
-   "ption benutzen, die f\303\274r die aktuelle Aktualisierungsrate bestimmt ist. Nicht f\303\274r d"
-   "ie Verwendung bei Aktualisierungsraten mit nicht multiplen 60 Hz wie 144 Hz, 165Hz, usw. Nicht k"
-   "ombinieren mit Swap-Intervall > 1, Schwarzbilder, Bildverz\303\266gerung oder mit exakter Inhalt"
-   "ssignalfrequenz synchronisieren. System-VRR eingeschaltet lass",
-   "en ist ok, nur nicht diese Einstellung.",
+   "F\303\274gt zus\303\244tzlich Shaderbild(er) zwischen Frames f\303\274r alle m\303\266glichen Sh"
+   "adereffekte ein, die darauf ausgelegt sind, schneller als die Inhaltsrate zu laufen. Nur die Opt"
+   "ion benutzen, die f\303\274r die aktuelle Aktualisierungsrate bestimmt ist. Nicht f\303\274r die"
+   " Verwendung bei Aktualisierungsraten mit nicht multiplen 60 Hz wie 144 Hz, 165Hz, usw. Nicht kom"
+   "binieren mit Swap-Intervall > 1, Schwarzbilder, Bildverz\303\266gerung oder mit exakter Inhaltss"
+   "ignalfrequenz synchronisieren. System-VRR eingeschaltet lassen",
+   " ist ok, nur nicht diese Einstellung.",
    "Den Grafiktreiber in einem eigenen Thread ausf\303\274hren. Die Anzeige beh\303\244lt ihre Bildr"
    "ate bei, auch wenn der Core ruckelt, und der Core berechnet das n\303\244chste Bild, w\303\244hr"
-   "end das letzte die Shader-Kette durchl\303\244uft und dargestellt wird. Bei \342\200\236Threaded"
-   "-Video-Anzeigetaktung\342\200\234 startet der Kern so sp\303\244t, wie es die n\303\244chste Bil"
-   "dwiederholfrequenz zul\303\244sst, wodurch die Latenz auf dem durch \342\200\236Bildverz\303\266"
-   "gerung\342\200\234 festgelegten Wert bleibt.",
+   "end das letzte die Shaderkette durchl\303\244uft und dargestellt wird. Bei \342\200\236Threaded-"
+   "Video-Anzeigetaktung\342\200\234 startet der Kern so sp\303\244t, wie es die n\303\244chste Bild"
+   "wiederholfrequenz zul\303\244sst, wodurch die Latenz auf dem durch \342\200\236Bildverz\303\266g"
+   "erung\342\200\234 festgelegten Wert bleibt.",
    "Mit der exakten Inhaltswiederholfrequenz synchronisieren. Diese Option entspricht dem Erzwingen "
    "von x1-Geschwindigkeit, erlaubt aber trotzdem Vorspulen. Keine Abweichung der angeforderten Core"
    "-Bildfrequenz, keine dynamische Ratensteuerung des Tons.",
@@ -5139,7 +5175,7 @@ static const struct
    "Datei speichern: Autospeichern-Intervall f\303\274r SaveRAM",
    "\303\234berschreibende Dateien automatisch laden",
    "Remap-Dateien automatisch laden",
-   "Shader-Voreinstellungen automatisch laden",
+   "Shadervoreinstellungen automatisch laden",
    "Zur\303\274ck",
    "Best\303\244tigen",
    "Beenden",
@@ -5668,6 +5704,7 @@ static const struct
    "Zeitlimit f\303\274r Belegung",
    "Eingabe-Block-Timeout",
    "Analog-zu-digital-Grenzwert",
+   "Drucktiefe",
    "Reaktionszeit",
    "Halten f\303\274r",
    "Funktion der Kombination",
@@ -5747,6 +5784,7 @@ static const struct
    "Mauszeiger einfangen (Umschalten)",
    "Aufzeichnung/Wiedergabe stoppen",
    "Bildschirme des Headsets neu zentrieren",
+   "Headset-Ansicht (Umschalten)",
    "Laserpointer (Umschalten)",
    "Savestate laden",
    "Men\303\274 umschalten",
@@ -5888,7 +5926,7 @@ static const struct
    "VMouse im Touchpad-Modus",
    "VMouse im Trackball-Modus",
 #endif
-   "Analoge Trigger mit vollem Wertebereich",
+   "Analogtrigger mit vollem Wertebereich",
    "Turbofeuer",
    "Turbo bei Steuerkreuz-Richtungseingaben erlauben",
    "Turbo-Zuweisung",
@@ -6329,9 +6367,9 @@ static const struct
    "Keine Leistungsindikatoren.",
    "Keine Wiedergabelisten.",
    "Keine Wiedergabelisten-Eintr\303\244ge verf\303\274gbar",
-   "Keine automatischen Shader-Voreinstellungen gefunden",
+   "Keine automatischen Shadervoreinstellungen gefunden",
    "Keine Einstellungen gefunden.",
-   "Keine Shader-Parameter",
+   "Keine Shaderparameter",
    "Keine Videos verf\303\274gbar",
    "AUS",
    "EIN",
@@ -6468,6 +6506,8 @@ static const struct
    "d",
    "Ger\303\244tename Port %d: %s",
    "Kein Autokonfigurationsprofil",
+   "- DualShock-3-Unterst\303\274tzung aktivieren",
+   "- Windows-Treiber wiederherstellen",
    "Energieverwaltung",
    "Anzahl pr\303\244emptiver Frames",
    "Vorhanden, optional:",
@@ -6552,7 +6592,7 @@ static const struct
    "Maximale Gr\303\266\303\237e von Drag-n-Drop-Vorschaubildern:",
    "Vorschaubild",
    "Einstellungen",
-   "Vorschau der Shader-Parameter",
+   "Shaderparameter",
    "Nach unten",
    "Nach oben",
    "Netzwerkfehler",
@@ -6592,7 +6632,7 @@ static const struct
    "Thema ausw\303\244hlen",
    "Durchlauf hinzuf\303\274gen",
    "Alle Durchl\303\244ufe entfernen",
-   "Keine Shader-Durchl\303\244ufe.",
+   "Keine Shaderdurchl\303\244ufe.",
    "Stopp",
    "Dateibrowser",
    "Anfang",
@@ -6898,7 +6938,7 @@ static const struct
    "Schnee (vereinfacht)",
    "Schnee",
    "Schneeflocken",
-   "Shader-Dateien auf \303\204nderungen beobachten",
+   "Shaderdateien auf \303\204nderungen beobachten",
    "Erweiterte Einstellungen zeigen",
    "Alle",
    "Benutzerdefiniert",
@@ -7025,6 +7065,7 @@ static const struct
    "Anzeigen-DPI",
    "Anzeigenh\303\266he (mm)",
    "Anzeigenbreite (mm)",
+   "Treibertaktung",
    "Frontend-Kennung",
    "Frontend-Name",
    "Frontend-Betriebssystem",
@@ -7158,6 +7199,7 @@ static const struct
 #else
    "Kontextspezifische Skalierung",
 #endif
+   "Direct3D-9Ex-Pr\303\244sentation",
 #if defined(DINGUX)
    "Bikubisch",
    "N\303\244chste-Nachbarn",
@@ -7179,6 +7221,8 @@ static const struct
    "Der System-Grafiktreiber ist nicht mit dem aktuellen Grafiktreiber in RetroArch kompatibel. Grei"
    "fe auf den %s Treiber zur\303\274ck. Bitte RetroArch neu starten, damit die \303\204nderungen wi"
    "rksam werden.",
+   "Treibertaktung",
+   "DXGI-Bildausgabe",
    "Videofilter",
    "Videofilter",
    "Videofilter aktivieren",
@@ -7244,6 +7288,7 @@ static const struct
    "Laserpointer",
    "Immer",
    "Aus",
+   "Leistungssteigerung f\303\274r Headsets",
    "Bildschirmposition",
    "Im Raum fixiert",
    "Kopf folgen",
@@ -7294,7 +7339,6 @@ static const struct
    "Intelligent",
    "Unterskalieren",
    "Skalierung",
-   "Scanline-Synchronisation",
    "Scanline-Sync-Offset",
    "Rollende Scanline-Simulation",
    "Bildschirmaufteilung",
@@ -7303,8 +7347,8 @@ static const struct
    "Video-Shader",
    "Auto-Shader-Verz\303\266gerung",
    "Video-Shader",
-   "Shader-Durchl\303\244ufe",
-   "Vorschau der Shader-Parameter",
+   "Shaderdurchl\303\244ufe",
+   "Shaderparameter",
    "Voreinstellung laden",
    "Voreinstellung anh\303\244ngen",
    "Aktive Voreinstellungdatei",
@@ -7321,7 +7365,7 @@ static const struct
    "Globale Voreinstellung speichern",
    "Voreinstellung des Inhaltsverzeichnisses speichern",
    "Einfache Voreinstellungen",
-   "Zuletzt verwendetes Shader-Verzeichnis merken",
+   "Zuletzt verwendetes Shaderverzeichnis merken",
    "Shader-Unterbilder",
    "Gemeinsamen Hardware-Kontext aktivieren",
    "Bilineare Filterung",
@@ -7424,16 +7468,16 @@ static const struct
    "Hintergrundbild",
    "Sonnenstrahl",
    "Vulkanrot",
-   "Shader-Pipeline",
+   "Shaderpipeline",
    "Schatteneffekte",
    "Schaltersymbole",
    "Symboldesign",
    "Vertikale Anordnung der Miniaturbilder",
    "Ja",
    "HDR-Modus",
-   "Shader-Voreinstellungen",
-   "Shader-Voreinstellungen",
-   "Shader-Voreinstellungen",
+   "Shadervoreinstellungen",
+   "Shadervoreinstellungen",
+   "Shadervoreinstellungen",
    "Bittiefe der Anzeige",
 #if defined(RARCH_MOBILE)
    "Ansichtsfenster-Ankerpunkt-Ausrichtung X (Hochformat)",
@@ -7563,6 +7607,14 @@ static const struct
    "eiben bei Stereo.",
    "Abtastrate der Audioausgabe.",
    "Audioausgabe-Einstellungen \303\244ndern.",
+   "Die Warteschlange der Threaded-Pipeline auf die Gr\303\266\303\237e begrenzen, die der bildsynch"
+   "rone Pfad h\303\244lt, um die Latenz zu minimieren: Die Ratenregelung h\303\244lt etwa die H\303"
+   "\244lfte der Audiolatenz in der Warteschlange statt fast die gesamte Audiolatenz plus einen zus"
+   "\303\244tzlichen Frame. Bei aktivierter Synchronisierung und audioseitiger Taktung des Cores, et"
+   "wa bei deaktiviertem \342\200\236Vertikale Synchronisation\342\200\234, wird der Core an derselb"
+   "en Stelle angehalten wie bei einem bildsynchronen Schreibvorgang, statt ein",
+   "e volle Warteschlange aufzubauen. Bei deaktivierter Synchronisierung dient die zus\303\244tzlich"
+   "e Audiolatenz nicht mehr als Puffer gegen versp\303\244tete Frames.",
    "Hilft, Fehler bei der Audio- und Videosynchronisierung auszub\303\274geln. Wenn deaktiviert, ist"
    " eine brauchbare Synchronisation nahezu unm\303\266glich.",
    "Zu verwendender Audio-Resampling-Treiber.",
@@ -7589,6 +7641,12 @@ static const struct
    "das Overlay zeigt die Rate als \342\200\236Sink\342\200\234 an.",
    "Audio synchronisieren. Empfohlen.",
    "Audiosynchronisationseinstellungen \303\244ndern.",
+   "Audio auf dem Audiothread statt innerhalb jedes Frames resampeln, filtern und mischen. Die Raten"
+   "regelung wird dabei am eigenen Takt des Audioger\303\244ts ausgerichtet, und der Resampler wird "
+   "aus dem Frame-Budget herausgenommen. Ist \342\200\236Kurze Pipeline-Warteschlange\342\200\234 au"
+   "sgeschaltet, wird mehr Audio vor dem Audioger\303\244t bereitgehalten als beim bildsynchronen Pf"
+   "ad. Audiotreiber, die sich nicht durch das Ger\303\244t aufwecken lassen, verwenden weiterhin de"
+   "n bildsynchronen Pfad.",
    "Das Betriebssystem wird angewiesen, den Audiothread vor dem Rest des Frontends zu behandeln, sod"
    "ass es weniger wahrscheinlich ist, dass ein ausgelasteter Frame das Audioger\303\244t ausbremst."
    " Die Audiolatenz wird auf Systemen, die dies zulassen, verringert; ein System, das dies ablehnt,"
@@ -8038,10 +8096,16 @@ static const struct
    "ftreten (nur Android).",
    "Wie weit eine Achse gekippt werden muss, um einen Tastendruck zu bewirken, wenn \"Analog zu Digi"
    "tal\" verwendet wird.",
-   "\342\200\236Sofort\342\200\234 l\303\266st die Aktion aus, sobald alle Tasten gedr\303\274ckt si"
-   "nd. \342\200\236Halten f\303\274r\342\200\234 wartet, bis die Tasten gleichzeitig f\303\274r ein"
-   "e anschlie\303\237end festzulegende Dauer gedr\303\274ckt wurden. So bleibt kurzes Dr\303\274cke"
-   "n \342\200\223 etwa mitten im Spiel \342\200\223 ohne Wirkung.",
+   "Wie weit jede Taste der Kombination gedr\303\274ckt werden muss, bevor sie ausgel\303\266st wird"
+   ": f\303\274r Analogtrigger und druckempfindliche Tasten. Eine Taste, die nur zwischen gedr\303"
+   "\274ckt und nicht gedr\303\274ckt unterscheidet, gilt als vollst\303\244ndig gedr\303\274ckt.",
+   "\342\200\236Sofort\342\200\234 l\303\266st aus, sobald alle Tasten gedr\303\274ckt sind. Bei "
+   "\342\200\236Gedr\303\274ckt halten f\303\274r\342\200\234 wird gewartet, bis alle Tasten die ans"
+   "chlie\303\237end festgelegte Zeit lang gleichzeitig gedr\303\274ckt wurden; kurzes Dr\303\274cke"
+   "n \342\200\223 etwa mitten im Spiel \342\200\223 l\303\266st dann nichts aus. Bei \342\200\236Dr"
+   "ucktiefe\342\200\234 wird gewartet, bis die Tasten so weit gedr\303\274ckt sind wie anschlie\303"
+   "\237end festgelegt. So werden Analogtrigger und druckempfindliche Tasten (DualShock 2 und 3) ers"
+   "t bei kr\303\244ftigem Dr\303\274cken ausgel\303\266st.",
    "Wie lange alle Tasten der Kombination gleichzeitig gedr\303\274ckt gehalten werden m\303\274ssen"
    ", bevor die Aktion ausgef\303\274hrt wird.",
    "Was geschieht, wenn alle Tasten der Kombination gleichzeitig gedr\303\274ckt gehalten werden: ei"
@@ -8120,6 +8184,10 @@ static const struct
    "blendet und auf das RetroArch-Fenster beschr\303\244nkt, was relative Mauseingaben verbessert.",
    "Stoppt das Aufzeichnen/Abspielen des aktuellen Replays.",
    "Positioniert die Bildschirme des Headsets vor der aktuellen Blickrichtung.",
+   "Schaltet zyklisch durch die Modi, die dem Core f\303\274r die aktuelle Headset-Anzeige gemeldet "
+   "werden: \342\200\236Immersiv\342\200\234 (Kopfverfolgung), \342\200\236Stereoskopisch\342\200"
+   "\234 (3D-Bildschirm) oder \342\200\236Flach\342\200\234. Beim Schlie\303\237en des Cores wird de"
+   "ssen Standardeinstellung wiederhergestellt.",
    "Schaltet den Laserpointer des Headsets zwischen AUS und dem zuletzt verwendeten Modus um.",
    "L\303\244dt Savestate aus dem aktuell gew\303\244hlten Speicherplatz.",
    "Schaltet die aktuelle Anzeige zwischen Men\303\274 und Inhalt um.",
@@ -8154,16 +8222,16 @@ static const struct
    "Fertigt ein Foto des aktuellen Inhalts an.",
    "H\303\244lt den aktuell ausgew\303\244hlten Shader an/aus, solange die Taste gedr\303\274ckt wir"
    "d.",
-   "L\303\244dt und wendet die n\303\244chste Shader-Voreinstellung aus dem Ordner der aktuellen Vor"
-   "einstellung an. Wechselt nach der letzten Voreinstellung zum n\303\244chsten Ordner auf derselbe"
-   "n Ebene. Wenn die Option \342\200\236Zuletzt verwendetes Shader-Verzeichnis merken\342\200\234 d"
-   "eaktiviert ist, werden stattdessen die Voreinstellungen im Stammverzeichnis des Ordners \342\200"
+   "L\303\244dt und wendet die n\303\244chste Shadervoreinstellung aus dem Ordner der aktuellen Vore"
+   "instellung an. Wechselt nach der letzten Voreinstellung zum n\303\244chsten Ordner auf derselben"
+   " Ebene. Wenn die Option \342\200\236Zuletzt verwendetes Shaderverzeichnis merken\342\200\234 dea"
+   "ktiviert ist, werden stattdessen die Voreinstellungen im Stammverzeichnis des Ordners \342\200"
    "\236Video Shaders\342\200\234 durchgewechselt, sofern dort welche vorhanden sind.",
-   "L\303\244dt und wendet die vorherige Shader-Voreinstellung aus dem Ordner der aktuellen Voreinst"
-   "ellung an. Wechselt vor der ersten Voreinstellung zum vorherigen Ordner auf derselben Ebene. Wen"
-   "n die Option \342\200\236Zuletzt verwendetes Shader-Verzeichnis merken\342\200\234 deaktiviert i"
-   "st, werden stattdessen die Voreinstellungen im Stammverzeichnis des Ordners \342\200\236Video Sh"
-   "aders\342\200\234 durchgewechselt, sofern dort welche vorhanden sind.",
+   "L\303\244dt und wendet die vorherige Shadervoreinstellung aus dem Ordner der aktuellen Voreinste"
+   "llung an. Wechselt vor der ersten Voreinstellung zum vorherigen Ordner auf derselben Ebene. Wenn"
+   " die Option \342\200\236Zuletzt verwendetes Shaderverzeichnis merken\342\200\234 deaktiviert ist"
+   ", werden stattdessen die Voreinstellungen im Stammverzeichnis des Ordners \342\200\236Video Shad"
+   "ers\342\200\234 durchgewechselt, sofern dort welche vorhanden sind.",
    "Schaltet den aktuell ausgew\303\244hlten Shader ein/aus.",
    "Aktiviert Zeitlupe, solange gedr\303\274ckt. Inhalte laufen mit normaler Geschwindigkeit, wenn T"
    "aste losgelassen wird.",
@@ -9239,11 +9307,11 @@ static const struct
    "Die \"Video\"-Einstellungen anzeigen.",
    "Die Sichtbarkeit von Men\303\274elementen im Einstellungen-Men\303\274 umschalten.",
    "Core einstellen, der diesem Inhalt zugeordnet ist.",
-   "\303\204nderungen an der Shader-Konfiguration werden sofort \303\274bernommen. Verwende diese Op"
-   "tion, wenn Du die Anzahl der Shader-Durchl\303\244ufe, die Filter, die FBO-Skalierung usw. ge"
-   "\303\244ndert hast.",
+   "\303\204nderungen an der Shaderkonfiguration werden sofort \303\274bernommen. Diese Option verwe"
+   "nden, wenn die Anzahl der Shaderdurchl\303\244ufe, die Filter, die FBO-Skalierung usw. ge\303"
+   "\244ndert wurden.",
    "Verwende Shader, um die Videodarstellung zu verbessern.",
-   "\303\204nderungen an Shader-Dateien auf dem Datentr\303\244ger automatisch \303\274bernehmen.",
+   "\303\204nderungen an Shaderdateien auf dem Datentr\303\244ger automatisch \303\274bernehmen.",
    "Erweiterte Einstellungen f\303\274r Power-Nutzer anzeigen.",
    "Versteckte Dateien und Ordner im Dateimanager anzeigen.",
    "Das traditionelle Desktop-Men\303\274 \303\266ffnen.",
@@ -9443,6 +9511,10 @@ static const struct
 #else
    "Hardware-Kontextskalierung (falls verf\303\274gbar).",
 #endif
+   "Unter Windows Vista und h\303\266her mit Direct3D-9-Treibern die Bildausgabe wie bei Direct3D 11"
+   " durchf\303\274hren: im Fenster \303\274ber das Flip-Modell und bei aktiviertem V-Sync unter Ber"
+   "\303\274cksichtigung von Waitable Swapchains und der maximalen Frame-Latenz. \303\204ndert die F"
+   "rame-Taktung. Aus: Bildausgabe wie bisher.",
 #if defined(DINGUX)
    "Die Bildinterpolationsmethode, die beim Skalieren von Inhalten \303\274ber die interne IPU verwe"
    "ndet wird. Bei Verwendung von CPU-gest\303\274tzten Videofiltern wird 'Bikubisch' oder 'Bilinear"
@@ -9463,6 +9535,13 @@ static const struct
    "Fenstermanager verwenden Desktopgestaltung, um unter anderem visuelle Effekte anzuwenden und nic"
    "ht reagierende Fenster zu erkennen.",
    "Zu verwendender Videotreiber. (Neustart erforderlich)",
+   "Eine DXGI-Swapchain im Flip-Modell mit den glcore- und Vulkan-Treibern unter Windows verwenden. "
+   "Dadurch werden Funktionen des Anzeigetreibers wie NVIDIA Smooth Motion aktiviert. Bei fehlender "
+   "Unterst\303\274tzung wird auf die native Bildausgabe zur\303\274ckgegriffen; au\303\237erdem kan"
+   "n sich die Framelatenz \303\244ndern. F\303\274r Smooth Motion diese Option global f\303\274r Me"
+   "n\303\274s und Cores aktivieren. Eine nur f\303\274r den Core geltende \303\234berschreibung kan"
+   "n innerhalb einer Sitzung die Bildausgabe-APIs wechseln und zum Absturz de",
+   "s Anzeigetreibers f\303\274hren.",
    "Einen CPU-gest\303\274tzten Videofilter anwenden. Kann mit hohen Leistungskosten verbunden sein."
    " Einige Videofilter funktionieren m\303\266glicherweise nur mit Cores, die 32-Bit- oder 16-Bit-F"
    "arben verwenden.",
@@ -9486,7 +9565,7 @@ static const struct
    "Deaktivieren der sRGB-FBO-Unterst\303\274tzung erzwingen. Einige Intel OpenGL-Treiber haben unte"
    "r Windows Videoprobleme mit sRGB FBOs. Mit dieser Einstellung kann dies umgangen werden.",
    "Reduziert die Latenzzeit auf Kosten eines h\303\266heren Risikos von Videostottern.",
-   "Effektive \"Bildverz\303\266gerung\" dynamisch anpassen.",
+   "Effektive \342\200\236Bildverz\303\266gerung\342\200\234 dynamisch anpassen.",
    "\342\200\236Gesch\303\244tzte Bildwiederholfrequenz\342\200\234 wird aus dem Bericht des Display"
    "s selbst abgelesen, der angibt, wann die einzelnen Frames das Display erreicht haben, anstatt di"
    "e Frame-Schleife des Frontends zu messen. Es \303\244ndert sich lediglich die Anzeige: Sie wird "
@@ -9515,11 +9594,11 @@ static const struct
    "Benutzerdefinierte Bildh\303\266he f\303\274r den Vollbildmodus. Wird dieser Wert nicht gesetzt,"
    " wird die Desktop-Aufl\303\266sung verwendet.",
    "Shader als SPIR-V an den Grafiktreiber \303\274bergeben, anstatt sie zun\303\244chst in GLSL zu "
-   "kompilieren, was die Ladezeiten von Shader-Voreinstellungen verk\303\274rzen kann. Dies ist ledi"
-   "glich ein Hinweis: Es ist die Treibererweiterung \342\200\236GL_ARB_gl_spirv\342\200\234 erforde"
-   "rlich, und alle Shader oder Treiber, die diese nicht nutzen k\303\266nnen, greifen automatisch a"
-   "uf die Kreuzkompilierung zur\303\274ck. Die \303\204nderung wird beim n\303\244chsten Laden eine"
-   "r Shader-Voreinstellung wirksam.",
+   "kompilieren, was die Ladezeiten von Shadervoreinstellungen verk\303\274rzen kann. Dies ist ledig"
+   "lich ein Hinweis: Es ist die Treibererweiterung \342\200\236GL_ARB_gl_spirv\342\200\234 erforder"
+   "lich, und alle Shader oder Treiber, die diese nicht nutzen k\303\266nnen, greifen automatisch au"
+   "f die Kreuzkompilierung zur\303\274ck. Die \303\204nderung wird beim n\303\244chsten Laden einer"
+   " Shadervoreinstellung wirksam.",
    "Zu verwendende Grafikkarte ausw\303\244hlen.",
    "Bildmaterial nach Shaderdurchl\303\244ufen aufnehmen, sofern verf\303\274gbar.",
    "Screenshots erfassen GPU-schattiertes Material, falls verf\303\274gbar.",
@@ -9527,8 +9606,8 @@ static const struct
    "Anzahl der Bilder, um die die CPU der GPU voraus sein darf, wenn die GPU-CPU-Synchronisation akt"
    "iviert ist.",
    "Aktiviert den HDR-Ausgabemodus, wenn der Bildschirm ihn unterst\303\274tzt. Hinweis: scRGB kann "
-   "strenge CRT-Shader-Masken abschw\303\244chen, da der Betriebssystem-Compositor nach Anwendung de"
-   "r Maske in HDR10 umwandelt.",
+   "strenge CRT-Shadermasken abschw\303\244chen, da der Betriebssystem-Compositor nach Anwendung der"
+   " Maske in HDR10 umwandelt.",
    "Nutzt den gesamten Farbraum des Bildschirms, um ein helleres, satteres Bild zu erzeugen. Damit d"
    "ie Farben dem urspr\303\274nglichen Spieldesign getreuer entsprechen, diese Option auf \342\200"
    "\236Genau\342\200\234 eingestellen.",
@@ -9596,6 +9675,10 @@ static const struct
    "ungiert, statt L2 oder R2 zu bet\303\244tigen. Automatisch: im ge\303\266ffneten Men\303\274 und"
    " auf Zweitbildschirmen wie einem Touchscreen. Immer: auf allen Bildschirmen, etwa f\303\274r Lic"
    "htpistolen. Aus: auf keinem Bildschirm.",
+   "Den h\303\266chsten CPU-Takt des Headsets anfordern, auch wenn dieser \303\274ber dem dauerhaft "
+   "haltbaren Takt liegt, damit anspruchsvolle Inhalte mit dem Headset Schritt halten. Erh\303\266ht"
+   " den Akkuverbrauch und die W\303\244rmeentwicklung; ein \303\274berhitztes Headset kann trotzdem"
+   " langsamer werden. Wird sofort wirksam.",
    "Legt fest, wo das Headset die Bildschirme platziert. Im Raum fixiert: dort, wo sie durch \342"
    "\200\236Neu zentrieren\342\200\234 platziert werden. Kopf folgen: immer vor Ihnen; bei einem gro"
    "\303\237en Bildschirm liegen die R\303\244nder dort, wo die Linsen unscharf abbilden. Verz\303"
@@ -9652,8 +9735,8 @@ static const struct
    "zu gro\303\237 sind.",
    "Videoskalierungseinstellungen \303\244ndern.",
    "Videodarstellung mit der auf der Core-Zeit basierenden Vorhersage der Scanline-Position synchron"
-   "isieren. Voraussetzungen: VSync deaktiviert, Frame Delay deaktiviert, Bildwiederholfrequenz nahe"
-   " der 1-fachen Core-FPS und GPU mit maximalen Taktraten.",
+   "isieren. Voraussetzungen: VSync deaktiviert, \342\200\236Bildverz\303\266gerung\342\200\234 deak"
+   "tiviert, Bildwiederholfrequenz nahe der 1-fachen Core-FPS und GPU mit maximalen Taktraten.",
    "Den Scanline-Sync-Offset manuell anpassen. Andernfalls wird der Offset anhand der Gr\303\266\303"
    "\237en des vertikalen Austastintervalls und des Frame-Caches berechnet.",
    "WARNUNG: Schnelles Flackern kann auf manchen Bildschirmen zu einem Nachleuchten des Bildes f\303"
@@ -9672,15 +9755,15 @@ static const struct
    "Das automatische Laden von Shadern verz\303\266gern (in ms). Kann grafische Fehler beim Verwende"
    "n von 'Bildschirmaufnahme'-Software beheben.",
    "GPU-basierte Video-Shader werden in diesem Verzeichnis gespeichert.",
-   "Erh\303\266he oder verringere die Anzahl der Shader-Pipeline-Durchg\303\244nge. Separate Shader "
-   "k\303\266nnen an jeden Pipeline-Durchgang gebunden werden und dessen Skalierung und Filterung ko"
-   "nfigurieren.",
-   "Den aktuellen Shader modifizieren. \303\204nderungen werden nicht in den Shader-Voreinstellungen"
-   " gespeichert.",
-   "Lade eine Shader-Voreinstellung. Die Shader-Pipeline wird automatisch konfiguriert.",
+   "Anzahl der Durchl\303\244ufe f\303\274r Shaderpipeline erh\303\266hen oder verringern. Jedem Dur"
+   "chlauf kann ein eigener Shader zugewiesen werden; au\303\237erdem lassen sich Skalierung und Fil"
+   "terung konfigurieren.",
+   "Aktuellen Shader direkt bearbeiten. \303\204nderungen werden nicht in der Voreinstellungsdatei g"
+   "espeichert.",
+   "Eine Shadervoreinstellung laden. Die Shaderpipeline wird automatisch konfiguriert.",
    "Voreinstellung hinter aktuell geladene Voreinstellung h\303\244ngen.",
-   "Die aktuell verwendete Shader-Voreinstellung.",
-   "Shader-Voreinstellungen speichern oder entfernen.",
+   "Die aktuell verwendete Shadervoreinstellung.",
+   "Shadervoreinstellungen speichern oder entfernen.",
    "Modifiziert die Shader-Voreinstellung, die momentan im Men\303\274 benutzt wird.",
    "Voreinstellung vor aktuell geladene Voreinstellung stellen.",
    "Die Core-Voreinstellung, die von allen Inhalten verwendet wird, die mit dem aktuell geladenen Co"
@@ -9689,19 +9772,19 @@ static const struct
    "Die globale Voreinstellung, die von allen Inhalten und Cores verwendet wird, entfernen.",
    "Die Inhaltsverzeichnis-Voreinstellung, die von allen Inhalten im aktuellen Arbeitsverzeichnis ve"
    "rwendet wird, entfernen.",
-   "Die aktuellen Shader-Einstellungen als neue Shader-Voreinstellung speichern.",
-   "Die aktuellen Shader-Einstellungen als Standard f\303\274r diesen Core speichern.",
-   "Die aktuelle Shader-Voreinstellung speichern.",
-   "Die aktuellen Shader-Einstellungen als Standard-Einstellung f\303\274r diesen Inhalt speichern.",
-   "Die aktuellen Shader-Einstellungen als globale Standardeinstellung speichern.",
-   "Die aktuellen Shader-Einstellungen als Standard f\303\274r alle Dateien im aktuellen Verzeichnis"
-   " speichern.",
-   "Eine Shader-Voreinstellung speichern, die nur die von Dir vorgenommenen Parameter\303\244nderung"
-   "en und einen Link zur urspr\303\274nglichen Voreinstellung enth\303\244lt.",
-   "Den Dateibrowser beim Laden von Shader-Voreinstellungen und -Durchl\303\244ufe im zuletzt verwen"
-   "deten Verzeichnis \303\266ffnen. Die Tastenkombinationen N\303\244chster/Vorheriger Shader start"
-   "en von der aktuellen Voreinstellung aus weiter, anstatt innerhalb des Stammverzeichnisses \342"
-   "\200\236Video-Shaders\342\200\234 durchzuwechseln.",
+   "Die aktuellen Shadereinstellungen als neue Shadervoreinstellung speichern.",
+   "Die aktuellen Shadereinstellungen als Standard f\303\274r diesen Core speichern.",
+   "Die aktuelle Shadervoreinstellung speichern.",
+   "Die aktuellen Shadereinstellungen als Standardeinstellung f\303\274r diesen Inhalt speichern.",
+   "Die aktuellen Shadereinstellungen als globale Standardeinstellung speichern.",
+   "Die aktuellen Shadereinstellungen als Standard f\303\274r alle Dateien im aktuellen Verzeichnis "
+   "speichern.",
+   "Eine Shadervoreinstellung speichern, die nur die von Dir vorgenommenen Parameter\303\244nderunge"
+   "n und einen Link zur urspr\303\274nglichen Voreinstellung enth\303\244lt.",
+   "Den Dateibrowser beim Laden von Shadervoreinstellungen und -Durchl\303\244ufe im zuletzt verwend"
+   "eten Verzeichnis \303\266ffnen. Die Tastenkombinationen N\303\244chster/Vorheriger Shader starte"
+   "n von der aktuellen Voreinstellung aus weiter, anstatt innerhalb des Stammverzeichnisses \342"
+   "\200\236Videoshaders\342\200\234 durchzuwechseln.",
    "WARNUNG: Schnelles Flackern kann auf manchen Bildschirmen zu einem Nachleuchten des Bildes f\303"
    "\274hren. Verwendung auf eigene Gefahr // Simuliert eine einfache rollende Scanline \303\274ber "
    "mehrere Unterbilder, indem der Bildschirm vertikal aufgeteilt wird und jeder Teil des Bildschirm"
@@ -9731,25 +9814,19 @@ static const struct
    "hirm ausgef\303\274hrt werden.",
    "Videosynchronisationseinstellungen \303\244ndern.",
    "Den Core und den Grafiktreiber in separaten Threads ausf\303\274hren, damit die Anzeige ihren Ta"
-   "kt beibeh\303\244lt, wenn der Core ruckelt und sich der Core mit der Shader-Kette und der Darste"
-   "llung \303\274berschneidet. Bei \342\200\236Threaded-Video-Anzeigetaktung\342\200\234 startet de"
-   "r Kern so sp\303\244t, wie es die n\303\244chste Bildwiederholrate zul\303\244sst, entsprechend "
-   "der Latenz von \342\200\236Bildverz\303\266gerung\342\200\234. Cores, die auf der GPU rendern, l"
-   "aufen mit den Vulkan-, Direct3D 11-, Direct3D 12- und gl-Treibern im Thread-Modus; mit anderen T"
-   "re",
-   "ibern laufen sie unabh\303\244ngig von dieser Einstellung im Nicht-Thread-Modus.",
-   "Bei \342\200\236Threaded Video\342\200\234 wird jeder Core-Frame so sp\303\244t wie m\303\266gli"
-   "ch gestartet, wie es die n\303\244chste Bildschirmaktualisierung zul\303\244sst \342\200\223 bas"
-   "ierend auf den gemessenen Core- und Renderzeiten \342\200\223, anstatt nach einem festen Timer. "
-   "Dadurch wird die Latenz auf das Niveau gesenkt, das \342\200\236Bildverz\303\266gerung\342\200"
-   "\234 bei \342\200\236Unthreaded Video\342\200\234 erreicht, und ein Frame, der zu lange dauert, "
-   "wird wiederholt, anstatt ausgelassen zu werden. Aus: Der Timer bestimmt das Tempo wie bisher.",
+   "kt beibeh\303\244lt, wenn der Core ruckelt und sich der Core mit der Shaderkette und der Darstel"
+   "lung \303\274berschneidet. Bei \342\200\236Threaded-Video-Anzeigetaktung\342\200\234 startet der"
+   " Kern so sp\303\244t, wie es die n\303\244chste Bildwiederholrate zul\303\244sst, entsprechend d"
+   "er Latenz von \342\200\236Bildverz\303\266gerung\342\200\234. Cores, die auf der GPU rendern, la"
+   "ufen mit den Vulkan-, Direct3D 11-, Direct3D 12- und gl-Treibern im Thread-Modus; mit anderen Tr"
+   "ei",
+   "bern laufen sie unabh\303\244ngig von dieser Einstellung im Nicht-Thread-Modus.",
    "Mit \342\200\236Threaded Video\342\200\234 wird weiterhin das letzte Bild mit der Bildwiederholf"
    "requenz des Displays dargestellt, w\303\244hrend der Core hinterherhinkt, anstatt das vorherige "
    "Bild auf dem Bildschirm stehen zu lassen. Dies sorgt daf\303\274r, dass die Einblendung schwarze"
-   "r Bilder und Shader-Effekte zur Bildwiederholfrequenz auch bei Rucklern des Cores stabil bleiben"
-   ". Dies gilt, wenn der Grafiktreiber ein Bild wiederholen kann; bei Shader-Teilbildern wird dies "
-   "nicht angewendet.",
+   "r Bilder und Shadereffekte zur Bildwiederholfrequenz auch bei Rucklern des Cores stabil bleiben."
+   " Dies gilt, wenn der Grafiktreiber ein Bild wiederholen kann; bei Shader-Teilbildern wird dies n"
+   "icht angewendet.",
    "Fordert das Betriebssystem auf, den Thread f\303\274r Threaded Video mit Vorrang vor normalen Th"
    "reads einzuplanen, ohne Echtzeitplanung: die Klasse \342\200\236Games\342\200\234 unter Windows,"
    " die Dienstg\303\274te \342\200\236user-interactive\342\200\234 auf Apple-Systemen sowie einen n"
@@ -10035,10 +10112,10 @@ static const struct
    "Fehler beim Verarbeiten der Argumente.",
    "Fehler beim L\303\266schen der Core-Einstellungsdatei.",
    "Fehler beim L\303\266schen der Remap-Datei.",
-   "Fehler beim L\303\266schen der Shader-Voreinstellung.",
+   "Fehler beim L\303\266schen der Shadervoreinstellung.",
    "Fehler beim Speichern der Core-Einstellungsdatei.",
    "Fehler beim Speichern der Remap-Datei.",
-   "Fehler beim Speichern der Shader-Voreinstellung.",
+   "Fehler beim Speichern der Shadervoreinstellung.",
    "Externe Anwendungen",
    "Entpacke",
    "Entpacke Core: ",
@@ -10049,7 +10126,7 @@ static const struct
    "Anh\303\244ngen der Disc fehlgeschlagen",
    "Der Energiesparplan f\303\274r niedrige Latenz konnte nicht aktiviert werden",
    "Fehler beim Anwenden des Shaders.",
-   "Shader-Voreinstellung konnte nicht angewendet werden:",
+   "Shadervoreinstellung konnte nicht angewendet werden:",
    "Fehler beim binden des Sockets.",
    "Verbindung zum Client fehlgeschlagen.",
    "Verbindung zum Host fehlgeschlagen.",
@@ -10129,14 +10206,25 @@ static const struct
    "Cheat eingeben",
    "Cheat-Dateiname",
    "Aktion ausw\303\244hlen",
+   "%u %% gedr\303\274ckt",
    "Halten f\303\274r",
    "%s Sekunden",
    "Sofort",
+   "Drucktiefe",
    "Tasten, die gleichzeitig gedr\303\274ckt werden, um einen Hotkey, einen Befehl oder ein Makro au"
    "szul\303\266sen. Rechts: gew\303\274nschte Tasten gedr\303\274ckt halten und anschlie\303\237end"
    " die Funktion ausw\303\244hlen. Links: Funktion ausw\303\244hlen. OK: eingeben. Start: entfernen"
    ".",
    "Tasten zuweisen",
+   "freigegeben \303\274ber Port %u",
+   "DualShock-3-Treiber wird ge\303\244ndert: Im Windows-Dialog zulassen.",
+   "Der DualShock-3-Treiber wurde nicht ge\303\244ndert: Es wurden keine Administratorrechte erteilt"
+   ".",
+   "DualShock-3-Unterst\303\274tzung aktiviert. Der Controller verbindet sich automatisch wieder.",
+   "%s (Port %u) muss aktiviert werden: Informationen > Eingabeinformationen > DualShock-3-Unterst"
+   "\303\274tzung aktivieren.",
+   "Der DualShock-3-Treiber konnte nicht ge\303\244ndert werden.",
+   "DualShock 3 wieder an den Windows-Treiber \303\274bergeben.",
    "Passwort eingeben",
    "Passwort falsch.",
    "Passwort korrekt.",
@@ -10209,6 +10297,7 @@ static const struct
    "S\303\244ubere M3U-Eintr\303\244ge: ",
    "Aktuelle Eintr\303\244ge werden gepr\303\274ft: ",
    "Scanne Inhalt: ",
+   "MCP-Server konnte an %s:%u nicht lauschen. L\303\244uft bereits eine weitere RetroArch-Instanz?",
    "Speicher",
    "Inhaltsfrequenz",
    "Anzeigefrequenz",
@@ -10276,6 +10365,10 @@ static const struct
    "Cores \303\274bersprungen: ",
    "Cores aktualisiert: ",
    "Die Headsetausgabe konnte nicht gestartet werden. Das Fenster zeigt die Ausgabe an.",
+   "Headset-Ansicht: %s",
+   "Flach",
+   "Immersiv",
+   "Stereoskopisch",
    "Laserpointer: %s",
    "Die Headsetausgabe wird gestartet, sobald der Inhalt erneut geladen wird.",
    "Das Headset l\303\244uft mit %u Hz. Diese Bildwiederholfrequenz passt nicht zur Bildrate des Spi"
@@ -10417,7 +10510,7 @@ static const struct
    "Lege Disc ins Laufwerk ein",
    "Core zugeordnet: ",
    "Mehrere Patches wurden explizit definiert, ignoriere alle...",
-   "Shader-Voreinstellung erfolgreich entfernt.",
+   "Shadervoreinstellung erfolgreich entfernt.",
    "Shader-Voreinstellung erfolgreich gespeichert.",
    "\303\234berspringe Laden des SRAM.",
    "Zeitlupe.",
@@ -10455,6 +10548,8 @@ static const struct
    "Neustart...",
    "Beenden...",
    "Version der Libretro-API",
+   "Ein und Boost",
+   "Ein",
    "Videofilter: Ausschalten",
    "Videofilter: Einschalten",
    "Videoaktualisierungsrate auf %s Hz ge\303\244ndert.",
@@ -10477,7 +10572,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_de_blob_check[
-      (sizeof(msg_hash_de_blob) == (232111u
+      (sizeof(msg_hash_de_blob) == (235628u
 #ifdef ANDROID
        + 358u
 #endif
@@ -11099,6 +11194,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_JACK,
    (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_OSS,
    (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_RSOUND,
+   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_AAUDIO,
    (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_AL,
    (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ALSA,
    (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ALSATHREAD,
@@ -11876,6 +11972,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_BLOCK_TIMEOUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_COMBO_DEPTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_COMBO_HOLD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_COMBO_HOLD_TIME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_COMBO_TARGET,
@@ -11955,6 +12052,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_HALT_REPLAY_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_HEADSET_RECENTER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_HEADSET_VIEW_TOGGLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_LASER_POINTER_TOGGLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_MENU_TOGGLE,
@@ -12674,6 +12772,8 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NO_PROFILE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PORT_DS3_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PORT_DS3_RESTORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PREEMPT_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL,
@@ -13223,6 +13323,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DRIVER_PACING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS,
@@ -13356,6 +13457,7 @@ static const uint32_t msg_hash_de_ids[] =
 #else
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_CTX_SCALING,
 #endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_D3D9EX_PRESENT,
 #if defined(DINGUX)
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BICUBIC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
@@ -13375,6 +13477,8 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_PACING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DXGI_PRESENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_DIR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_ENABLE,
@@ -13440,6 +13544,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_ALWAYS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_OFF,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_PERF_BOOST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_PLACEMENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_PLACEMENT_FIXED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_PLACEMENT_FOLLOW,
@@ -13490,7 +13595,6 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_SMART,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC_OFFSET,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT,
@@ -13695,6 +13799,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_LAYOUT,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_PIPELINE_FILL_CAP,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_HQ_OVERSAMPLING,
@@ -13705,6 +13810,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SINK_RATE_ESTIMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREADED_PIPELINE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREAD_PRIORITY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_TIME_STRETCH,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_TIME_STRETCH_LOWPASS,
@@ -13994,6 +14100,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_BLOCK_TIMEOUT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_COMBO_DEPTH,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_COMBO_HOLD,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_COMBO_HOLD_TIME,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_COMBO_TARGET,
@@ -14038,6 +14145,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_GRAB_MOUSE_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_HALT_REPLAY_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_HEADSET_RECENTER,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_HEADSET_VIEW_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_LASER_POINTER_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_MENU_TOGGLE,
@@ -14870,6 +14978,7 @@ static const uint32_t msg_hash_de_ids[] =
 #else
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_CTX_SCALING,
 #endif
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_D3D9EX_PRESENT,
 #if defined(DINGUX)
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_FILTER_TYPE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT,
@@ -14884,6 +14993,7 @@ static const uint32_t msg_hash_de_ids[] =
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DXGI_PRESENT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_ENABLE,
@@ -14937,6 +15047,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_DISTANCE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_LASER,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_PERF_BOOST,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_PLACEMENT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_WIDTH,
@@ -14999,7 +15110,6 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED_DISPLAY_PACING,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED_PRESENT_REPEAT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREAD_PRIORITY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
@@ -15326,11 +15436,20 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MSG_INPUT_CHEAT,
    (uint32_t)MSG_INPUT_CHEAT_FILENAME,
    (uint32_t)MSG_INPUT_COMBO_CHOOSE_ACTION,
+   (uint32_t)MSG_INPUT_COMBO_DEPTH_PERCENT,
    (uint32_t)MSG_INPUT_COMBO_HOLD_FOR,
    (uint32_t)MSG_INPUT_COMBO_HOLD_SECONDS,
    (uint32_t)MSG_INPUT_COMBO_INSTANT,
+   (uint32_t)MSG_INPUT_COMBO_PRESS_DEPTH,
    (uint32_t)MSG_INPUT_COMBO_ROW_SUBLABEL,
    (uint32_t)MSG_INPUT_COMBO_SET_BUTTONS,
+   (uint32_t)MSG_INPUT_DEVICE_INDEX_SHARED,
+   (uint32_t)MSG_INPUT_DS3_ASKING,
+   (uint32_t)MSG_INPUT_DS3_DECLINED,
+   (uint32_t)MSG_INPUT_DS3_ENABLED,
+   (uint32_t)MSG_INPUT_DS3_NEEDS_ENABLING,
+   (uint32_t)MSG_INPUT_DS3_NOT_CHANGED,
+   (uint32_t)MSG_INPUT_DS3_RESTORED,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_OK,
@@ -15399,6 +15518,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MSG_MANUAL_CONTENT_SCAN_M3U_CLEANUP,
    (uint32_t)MSG_MANUAL_CONTENT_SCAN_PLAYLIST_CLEANUP,
    (uint32_t)MSG_MANUAL_CONTENT_SCAN_START,
+   (uint32_t)MSG_MCP_SERVER_NOT_LISTENING,
    (uint32_t)MSG_MEMORY,
    (uint32_t)MSG_MENU_FRAME_RATE_CONTENT,
    (uint32_t)MSG_MENU_FRAME_RATE_DISPLAY,
@@ -15461,6 +15581,10 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MSG_NUM_CORES_LOCKED,
    (uint32_t)MSG_NUM_CORES_UPDATED,
    (uint32_t)MSG_OPENXR_FAILED,
+   (uint32_t)MSG_OPENXR_HEADSET_VIEW,
+   (uint32_t)MSG_OPENXR_HEADSET_VIEW_FLAT,
+   (uint32_t)MSG_OPENXR_HEADSET_VIEW_IMMERSIVE,
+   (uint32_t)MSG_OPENXR_HEADSET_VIEW_STEREOSCOPIC,
    (uint32_t)MSG_OPENXR_LASER_POINTER,
    (uint32_t)MSG_OPENXR_NEEDS_RELOAD,
    (uint32_t)MSG_OPENXR_RATE_MISFIT,
@@ -15623,6 +15747,8 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MSG_VALUE_REBOOTING,
    (uint32_t)MSG_VALUE_SHUTTING_DOWN,
    (uint32_t)MSG_VERSION_OF_LIBRETRO_API,
+   (uint32_t)MSG_VIDEO_DRIVER_PACING_BOOST,
+   (uint32_t)MSG_VIDEO_DRIVER_PACING_ON,
    (uint32_t)MSG_VIDEO_FILTER_ENABLE_OFF,
    (uint32_t)MSG_VIDEO_FILTER_ENABLE_ON,
    (uint32_t)MSG_VIDEO_REFRESH_RATE_CHANGED,

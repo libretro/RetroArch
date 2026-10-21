@@ -3880,6 +3880,7 @@ static const struct
    char s_8ab54d62[92];
    char s_aa554847[15];
    char s_ac2c797c[18];
+   char s_3fe94404[7];
    char s_80528b14[52];
    char s_eae21890[34];
    char s_1451fe0d[43];
@@ -8634,6 +8635,7 @@ static const struct
    "eguito.",
    "Core saltati: ",
    "Core aggiornati: ",
+   "Piatto",
    "La sovrapposizione della tastiera non \303\250 impostata.",
    "Non salvare. Sostituzione attiva.",
    "Errore nella rimozione delle sovrascritte.",
@@ -8813,7 +8815,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_it_blob_check[
-      (sizeof(msg_hash_it_blob) == (182987u
+      (sizeof(msg_hash_it_blob) == (182994u
 #ifdef ANDROID
        + 376u
 #endif
@@ -13122,6 +13124,7 @@ static const uint32_t msg_hash_it_ids[] =
    (uint32_t)MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
    (uint32_t)MSG_NUM_CORES_LOCKED,
    (uint32_t)MSG_NUM_CORES_UPDATED,
+   (uint32_t)MSG_OPENXR_HEADSET_VIEW_FLAT,
    (uint32_t)MSG_OSK_OVERLAY_NOT_SET,
    (uint32_t)MSG_OVERRIDES_ACTIVE_NOT_SAVING,
    (uint32_t)MSG_OVERRIDES_ERROR_REMOVING,

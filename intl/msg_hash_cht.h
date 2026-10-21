@@ -3527,6 +3527,7 @@ static const struct
    char s_52d42c75[28];
    char s_a181214b[19];
    char s_8ab54d62[58];
+   char s_3fe94404[7];
    char s_80528b14[25];
    char s_eae21890[39];
    char s_1451fe0d[37];
@@ -10204,6 +10205,7 @@ static const struct
    "\345\267\262\347\202\272\346\255\244\345\210\227\350\241\250\345\230\227\350\251\246\346\211\200"
    "\346\234\211\345\217\257\350\203\275\347\232\204\351\240\220\350\246\275\347\270\256\345\234\226"
    "\344\270\213\350\274\211\343\200\202",
+   "\345\226\256\350\252\277",
    "\346\234\252\350\250\255\345\256\232\350\231\233\346\223\254\351\215\265\347\233\244\343\200\202",
    "\346\234\252\345\204\262\345\255\230\345\260\210\347\224\250\344\270\273\351\241\214, \345\224"
    "\257\350\256\200\346\252\224\346\241\210\343\200\202",
@@ -10465,7 +10467,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_cht_blob_check[
-      (sizeof(msg_hash_cht_blob) == (120823u
+      (sizeof(msg_hash_cht_blob) == (120830u
 #ifdef ANDROID
        + 157u
 #endif
@@ -14295,6 +14297,7 @@ static const uint32_t msg_hash_cht_ids[] =
    (uint32_t)MSG_NO_STATE_HAS_BEEN_LOADED_YET,
    (uint32_t)MSG_NO_THUMBNAIL_AVAILABLE,
    (uint32_t)MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
+   (uint32_t)MSG_OPENXR_HEADSET_VIEW_FLAT,
    (uint32_t)MSG_OSK_OVERLAY_NOT_SET,
    (uint32_t)MSG_OVERRIDES_ACTIVE_NOT_SAVING,
    (uint32_t)MSG_OVERRIDES_ERROR_REMOVING,
