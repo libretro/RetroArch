@@ -602,6 +602,16 @@ static void test_grab(void)
    CHECK(angle_near(s.pitch, 20.0f) && angle_near(s.roll, 0.0f));
 }
 
+/* A stick axis past the deadzone, as a fraction of the travel left. */
+static double past_deadzone(double v)
+{
+   double a = (fabs(v) - VIDEO_XR_EDIT_DEADZONE)
+      / (1.0 - VIDEO_XR_EDIT_DEADZONE);
+   if (a <= 0.0)
+      return 0.0;
+   return (v < 0.0) ? -a : a;
+}
+
 static void test_grab_stick(void)
 {
    video_xr_grab_t g;
@@ -629,6 +639,13 @@ static void test_grab_stick(void)
    CHECK(scale == 10.0f);
    video_xr_grab_stick(&g, -1.0f, 0.0f, 20.0, &scale);
    CHECK(NEAR(scale, 0.1));
+   /* 15 degrees off right pushes too: no lock to the nearest axis. */
+   g.rel.position.z = -1.0f;
+   scale            = 1.0f;
+   video_xr_grab_stick(&g, (float)cos(M_PI / 12.0), (float)sin(M_PI / 12.0),
+         1.0, &scale);
+   CHECK(NEAR(g.rel.position.z, -1.0 - 1.5 * past_deadzone(sin(M_PI / 12.0)))
+         && NEAR(scale, pow(2.0, past_deadzone(cos(M_PI / 12.0)))));
 }
 
 /* The free hand's stick turns the held item about the vertical through
@@ -647,23 +664,23 @@ static void test_grab_turn(void)
    g.base           = g.rel.position;
    g.turn           = g.rel.orientation;
    /* Inside the deadzone: nothing. */
-   video_xr_grab_turn(&g, &aim, 0.15f, 1.0);
+   video_xr_grab_turn(&g, &aim, 0.15f, 0.0f, 1.0);
    video_xr_grab_pose(&g, &aim, NULL, 0, NULL, &pose, &s, NULL);
    CHECK(angle_near(s.yaw, 0.0f));
    /* Full right for half a second: 45 degrees, in place. */
-   video_xr_grab_turn(&g, &aim, 1.0f, 0.5);
+   video_xr_grab_turn(&g, &aim, 1.0f, 0.0f, 0.5);
    video_xr_grab_pose(&g, &aim, NULL, 0, NULL, &pose, &s, NULL);
    CHECK(angle_near(s.yaw, 45.0f) && NEAR(s.x, 0.0) && NEAR(s.y, 0.0)
          && NEAR(s.z, 0.0));
    /* Half past the deadzone left for a second: back 45. */
-   video_xr_grab_turn(&g, &aim, -0.6f, 1.0);
+   video_xr_grab_turn(&g, &aim, -0.6f, 0.0f, 1.0);
    video_xr_grab_pose(&g, &aim, NULL, 0, NULL, &pose, &s, NULL);
    CHECK(angle_near(s.yaw, 0.0f));
    /* Pitched 15 degrees, a quarter turn keeps the pitch, no roll. */
    g.turn.x = (float)sin(M_PI / 24.0);
    g.turn.y = 0.0f;
    g.turn.w = (float)cos(M_PI / 24.0);
-   video_xr_grab_turn(&g, &aim, 1.0f, 1.0);
+   video_xr_grab_turn(&g, &aim, 1.0f, 0.0f, 1.0);
    video_xr_grab_pose(&g, &aim, NULL, 0, NULL, &pose, &s, NULL);
    CHECK(angle_near(s.yaw, 90.0f) && angle_near(s.pitch, 15.0f)
          && angle_near(s.roll, 0.0f));
@@ -715,7 +732,7 @@ static int turns_evenly(video_xr_grab_t *g, const video_xr_pose_t *aim)
    video_xr_grab_pose(g, aim, NULL, 0, NULL, &start, &s0, NULL);
    for (i = 1; i <= 10; i++)
    {
-      video_xr_grab_turn(g, aim, 1.0f, 0.1);
+      video_xr_grab_turn(g, aim, 1.0f, 0.0f, 0.1);
       video_xr_grab_pose(g, aim, NULL, 0, NULL, &pose, &s, NULL);
       /* Read back near straight up or down, a float turn's pitch is
        * good to a few hundredths of a degree. */
@@ -874,7 +891,7 @@ static void test_carry_heading(void)
    turn_aim(&aim, 40.0f, 0.0f, 0.0f);
    turn_grab(&g, &aim, 40.0f, 0.0f, 0.0f);
    for (i = 0; i < 5; i++)
-      video_xr_grab_turn(&g, &aim, 1.0f, 0.1);
+      video_xr_grab_turn(&g, &aim, 1.0f, 0.0f, 0.1);
    for (i = 0; i <= 120; i++)
    {
       turn_aim(&aim, 40.0f, (float)(i <= 60 ? i : 120 - i), 0.0f);
@@ -920,7 +937,7 @@ static void test_carry_full_turn(void)
    for (k = 1; k <= 360; k++)
    {
       double d;
-      video_xr_grab_turn(&g, &aim, 1.0f, 1.0 / 90.0);
+      video_xr_grab_turn(&g, &aim, 1.0f, 0.0f, 1.0 / 90.0);
       video_xr_grab_pose(&g, &aim, NULL, 0, NULL, &pose, NULL, NULL);
       about.orientation.y = (float)sin(k * M_PI / 360.0);
       about.orientation.w = (float)cos(k * M_PI / 360.0);
@@ -933,6 +950,259 @@ static void test_carry_full_turn(void)
    CHECK(turn_apart(&start.orientation, &pose.orientation) < 0.1);
    CHECK(vec_is(&pose.position, start.position.x, start.position.y,
             start.position.z));
+}
+
+/* A turn of deg degrees about +X (axis 0) or +Y (axis 1). */
+static void axis_turn(video_xr_pose_t *out, int axis, double deg)
+{
+   video_xr_pose_identity(out);
+   if (axis)
+      out->orientation.y = (float)sin(deg * M_PI / 360.0);
+   else
+      out->orientation.x = (float)sin(deg * M_PI / 360.0);
+   out->orientation.w = (float)cos(deg * M_PI / 360.0);
+}
+
+static double dist(const video_xr_vec3_t *a, const video_xr_vec3_t *b)
+{
+   double x = (double)a->x - b->x;
+   double y = (double)a->y - b->y;
+   double z = (double)a->z - b->z;
+   return sqrt(x * x + y * y + z * z);
+}
+
+/* How far the top and bottom edges' middles of an item 0.9 m high at
+ * pose are from at. */
+static void edges_from(const video_xr_pose_t *pose,
+      const video_xr_vec3_t *at, double *top, double *bottom)
+{
+   video_xr_pose_t edge, p;
+   video_xr_pose_identity(&edge);
+   edge.position.y = 0.45f;
+   video_xr_compose(pose, &edge, &p);
+   *top            = dist(&p.position, at);
+   edge.position.y = -0.45f;
+   video_xr_compose(pose, &edge, &p);
+   *bottom         = dist(&p.position, at);
+}
+
+/* The free hand's stick up tips the held item's top away from the user
+ * about its own left-right line through its middle, past the deadzone
+ * as the turn is; down tips it back. */
+static void test_grab_tilt(void)
+{
+   video_xr_grab_t g;
+   video_xr_pose_t aim, pose;
+   video_screen_xr_t s;
+   double top0, bottom0, top, bottom;
+   memset(&g, 0, sizeof(g));
+   video_xr_pose_identity(&aim);
+   video_xr_pose_identity(&g.rel);
+   g.rel.position.z = -1.8f;
+   g.base           = g.rel.position;
+   g.turn           = g.rel.orientation;
+   /* Inside the deadzone: nothing. */
+   video_xr_grab_turn(&g, &aim, 0.0f, 0.15f, 1.0);
+   video_xr_grab_pose(&g, &aim, NULL, 0, NULL, &pose, &s, NULL);
+   CHECK(turn_apart(&pose.orientation, &aim.orientation) < 0.01);
+   edges_from(&pose, &aim.position, &top0, &bottom0);
+   /* Full up for 0.1 s, a screen facing the user at the aim: 9 degrees,
+    * its top edge farther and its bottom edge nearer, in place. */
+   video_xr_grab_turn(&g, &aim, 0.0f, 1.0f, 0.1);
+   video_xr_grab_pose(&g, &aim, NULL, 0, NULL, &pose, &s, NULL);
+   edges_from(&pose, &aim.position, &top, &bottom);
+   CHECK(top > top0 + 0.03 && bottom < bottom0 - 0.03);
+   CHECK(angle_near(s.pitch, -9.0f) && angle_near(s.yaw, 0.0f)
+         && angle_near(s.roll, 0.0f) && NEAR(s.x, 0.0) && NEAR(s.y, 0.0)
+         && NEAR(s.z, 0.0));
+   /* Half past the deadzone down for a second: 45 back. */
+   video_xr_grab_turn(&g, &aim, 0.0f, -0.6f, 1.0);
+   video_xr_grab_pose(&g, &aim, NULL, 0, NULL, &pose, &s, NULL);
+   CHECK(angle_near(s.pitch, 36.0f) && angle_near(s.yaw, 0.0f)
+         && angle_near(s.roll, 0.0f));
+}
+
+/* Whether ten steps of 0.1 s of the free hand's stick full up each tip
+ * g's item, held by aim, 9 degrees more about its own left-right line,
+ * keeping its middle. */
+static int tilts_evenly(video_xr_grab_t *g, const video_xr_pose_t *aim)
+{
+   video_xr_pose_t start, pose, tip, want;
+   unsigned i;
+   video_xr_grab_pose(g, aim, NULL, 0, NULL, &start, NULL, NULL);
+   for (i = 1; i <= 10; i++)
+   {
+      video_xr_grab_turn(g, aim, 0.0f, 1.0f, 0.1);
+      video_xr_grab_pose(g, aim, NULL, 0, NULL, &pose, NULL, NULL);
+      axis_turn(&tip, 0, -9.0 * i);
+      video_xr_compose(&start, &tip, &want);
+      if (!(turn_apart(&want.orientation, &pose.orientation) < 0.01)
+            || !vec_is(&pose.position, start.position.x,
+               start.position.y, start.position.z))
+         return 0;
+   }
+   return 1;
+}
+
+/* Carried or tilting with the trigger, upright or turned every way. */
+static void test_grab_tilt_evenly(void)
+{
+   video_xr_grab_t g;
+   video_xr_pose_t taken, aim;
+   video_xr_pose_identity(&taken);
+   video_xr_pose_identity(&aim);
+   turn_grab(&g, &taken, 0.0f, 0.0f, 0.0f);
+   CHECK(tilts_evenly(&g, &aim));
+   turn_grab(&g, &taken, 0.0f, 0.0f, 0.0f);
+   g.tilt = true;
+   CHECK(tilts_evenly(&g, &aim));
+   /* Rolled, taken by a rolled aim and tilted by another. */
+   turn_aim(&taken, 10.0f, 15.0f, 25.0f);
+   turn_aim(&aim, -20.0f, 35.0f, -40.0f);
+   turn_grab(&g, &taken, 20.0f, 40.0f, 30.0f);
+   CHECK(tilts_evenly(&g, &aim));
+   turn_grab(&g, &taken, 20.0f, 40.0f, 30.0f);
+   g.tilt = true;
+   CHECK(tilts_evenly(&g, &aim));
+}
+
+/* Whether the stick right and up together for 0.1 s turns g's item 9
+ * degrees about the vertical and tips it 9 about its own left-right
+ * line at once, keeping its middle. */
+static int turns_and_tilts(video_xr_grab_t *g, const video_xr_pose_t *aim)
+{
+   video_xr_pose_t start, pose, about, tip, want;
+   video_xr_grab_pose(g, aim, NULL, 0, NULL, &start, NULL, NULL);
+   video_xr_grab_turn(g, aim, 1.0f, 1.0f, 0.1);
+   video_xr_grab_pose(g, aim, NULL, 0, NULL, &pose, NULL, NULL);
+   axis_turn(&about, 1, 9.0);
+   axis_turn(&tip, 0, -9.0);
+   video_xr_compose(&start, &tip, &want);
+   want.position = about.position;
+   video_xr_compose(&about, &want, &want);
+   return turn_apart(&want.orientation, &pose.orientation) < 0.01
+      && vec_is(&pose.position, start.position.x, start.position.y,
+            start.position.z);
+}
+
+static void test_grab_turn_and_tilt(void)
+{
+   video_xr_grab_t g;
+   video_xr_pose_t taken, aim;
+   turn_aim(&taken, 10.0f, 15.0f, 25.0f);
+   turn_aim(&aim, -20.0f, 35.0f, -40.0f);
+   turn_grab(&g, &taken, 20.0f, 40.0f, 30.0f);
+   CHECK(turns_and_tilts(&g, &aim));
+   turn_grab(&g, &taken, 20.0f, 40.0f, 30.0f);
+   g.tilt = true;
+   CHECK(turns_and_tilts(&g, &aim));
+}
+
+/* The free hand's stick pushed full, deg degrees anticlockwise from
+ * right, for half a second: within VIDEO_XR_EDIT_TURN_LOCK degrees of
+ * left or right it only turns an item facing the user, within that of
+ * up or down it only tilts it, and between it does both. */
+static void test_grab_turn_lock(void)
+{
+   static const struct
+   {
+      float deg;
+      int turns, tilts;
+   } pushes[] =
+   {
+      {  15.0f, 1, 0 }, { 165.0f, 1, 0 }, { 195.0f, 1, 0 },
+      { 345.0f, 1, 0 }, {  75.0f, 0, 1 }, { 105.0f, 0, 1 },
+      { 255.0f, 0, 1 }, { 285.0f, 0, 1 }, {  45.0f, 1, 1 },
+      { 135.0f, 1, 1 }, { 225.0f, 1, 1 }, { 315.0f, 1, 1 },
+      { VIDEO_XR_EDIT_TURN_LOCK - 1.0f, 1, 0 },
+      { VIDEO_XR_EDIT_TURN_LOCK + 1.0f, 1, 1 },
+      { 91.0f - VIDEO_XR_EDIT_TURN_LOCK, 0, 1 },
+      { 89.0f - VIDEO_XR_EDIT_TURN_LOCK, 1, 1 },
+      { 180.0f + VIDEO_XR_EDIT_TURN_LOCK - 1.0f, 1, 0 },
+      { 269.0f + VIDEO_XR_EDIT_TURN_LOCK, 0, 1 }
+   };
+   unsigned i;
+   for (i = 0; i < sizeof(pushes) / sizeof(pushes[0]); i++)
+   {
+      video_xr_grab_t g;
+      video_xr_pose_t aim, pose;
+      video_screen_xr_t s;
+      double r = pushes[i].deg * M_PI / 180.0;
+      float  x = (float)cos(r);
+      float  y = (float)sin(r);
+      float  yaw, pitch;
+      yaw   = pushes[i].turns ? (float)(past_deadzone(x) * 45.0) : 0.0f;
+      pitch = pushes[i].tilts ? (float)(-past_deadzone(y) * 45.0) : 0.0f;
+      video_xr_pose_identity(&aim);
+      turn_grab(&g, &aim, 0.0f, 0.0f, 0.0f);
+      video_xr_grab_turn(&g, &aim, x, y, 0.5);
+      video_xr_grab_pose(&g, &aim, NULL, 0, NULL, &pose, &s, NULL);
+      if (!(angle_near(s.yaw, yaw) && angle_near(s.pitch, pitch)
+            && angle_near(s.roll, 0.0f)))
+      {
+         printf("  FAIL %s:%d: stick at %.1f deg: yaw %.2f pitch %.2f,"
+               " want %.2f %.2f\n", __FILE__, __LINE__, pushes[i].deg,
+               s.yaw, s.pitch, yaw, pitch);
+         failures++;
+      }
+   }
+}
+
+/* An item turned 45 degrees tips about its own left-right line, not the
+ * world's: its yaw stays and it takes no roll. */
+static void test_grab_tilt_turned(void)
+{
+   video_xr_grab_t g;
+   video_xr_pose_t aim, pose;
+   video_screen_xr_t s;
+   video_xr_pose_identity(&aim);
+   turn_grab(&g, &aim, 45.0f, 0.0f, 0.0f);
+   video_xr_grab_turn(&g, &aim, 0.0f, 1.0f, 30.0 / VIDEO_XR_EDIT_TURN_RATE);
+   video_xr_grab_pose(&g, &aim, NULL, 0, NULL, &pose, &s, NULL);
+   CHECK(angle_near(s.yaw, 45.0f) && angle_near(s.pitch, -30.0f)
+         && angle_near(s.roll, 0.0f));
+   /* Turned 45 by the stick, tilting with the trigger. */
+   turn_grab(&g, &aim, 0.0f, 0.0f, 0.0f);
+   g.tilt = true;
+   video_xr_grab_turn(&g, &aim, 1.0f, 0.0f, 0.5);
+   video_xr_grab_turn(&g, &aim, 0.0f, 1.0f, 30.0 / VIDEO_XR_EDIT_TURN_RATE);
+   video_xr_grab_pose(&g, &aim, NULL, 0, NULL, &pose, &s, NULL);
+   CHECK(angle_near(s.yaw, 45.0f) && angle_near(s.pitch, -30.0f)
+         && angle_near(s.roll, 0.0f));
+}
+
+/* A full tilt of the stick, a degree at a time, through straight up
+ * and down with no stop, brings an item back where it began; each step
+ * tips it a degree about its own left-right line. */
+static void test_tilt_full_turn(void)
+{
+   unsigned k, tilt;
+   video_xr_grab_t g;
+   video_xr_pose_t taken, aim, start, pose, tip, want;
+   for (tilt = 0; tilt < 2; tilt++)
+   {
+      double worst = 0.0;
+      turn_aim(&taken, -59.2f, 22.3f, 29.2f);
+      turn_aim(&aim, -44.9f, 14.0f, 18.7f);
+      turn_grab(&g, &taken, 30.0f, 20.0f, -15.0f);
+      g.tilt = tilt != 0;
+      video_xr_grab_pose(&g, &aim, NULL, 0, NULL, &start, NULL, NULL);
+      for (k = 1; k <= 360; k++)
+      {
+         double d;
+         video_xr_grab_turn(&g, &aim, 0.0f, 1.0f, 1.0 / 90.0);
+         video_xr_grab_pose(&g, &aim, NULL, 0, NULL, &pose, NULL, NULL);
+         axis_turn(&tip, 0, -(double)k);
+         video_xr_compose(&start, &tip, &want);
+         d = turn_apart(&want.orientation, &pose.orientation);
+         if (!(d <= worst))
+            worst = d;
+      }
+      CHECK(worst < 0.01);
+      CHECK(turn_apart(&start.orientation, &pose.orientation) < 0.1);
+      CHECK(vec_is(&pose.position, start.position.x, start.position.y,
+               start.position.z));
+   }
 }
 
 /* Whether the ray, at heading 40 and twisted roll, swept in 0.1 degree
@@ -3176,11 +3446,45 @@ static void test_turn_snap(void)
          && (snapped & VIDEO_XR_SNAP_PULLING(VIDEO_XR_SNAP_TURN))
          && !angle_near((float)snap_yaw(&pose), 90.0f));
    /* Four degrees more by the stick: square, at the corner. */
-   video_xr_grab_turn(&g, &aim, 1.0f, 4.0 / VIDEO_XR_EDIT_TURN_RATE);
+   video_xr_grab_turn(&g, &aim, 1.0f, 0.0f, 4.0 / VIDEO_XR_EDIT_TURN_RATE);
    video_xr_grab_pose(&g, &aim, &set, 0, &start, &pose, &s, &snapped);
    CHECK((snapped & VIDEO_XR_SNAP_ALL) == SNAP_ALL
          && angle_near(s.yaw, 90.0f)
          && vec_is(&pose.position, 0.8, 0.0, -1.5));
+}
+
+/* Tilted by the stick into parallel beside screen 1, a held screen
+ * snaps exactly parallel and says so, as a turn does. */
+static void test_tilt_snap(void)
+{
+   video_xr_quad_set_t set;
+   video_xr_grab_t g;
+   video_xr_pose_t aim, pose, start;
+   video_screen_xr_t s;
+   unsigned snapped = 0;
+   snap_set(&set);
+   memset(&g, 0, sizeof(g));
+   video_xr_pose_identity(&aim);
+   axis_turn(&g.rel, 0, 8.0);
+   g.rel.position.x = 1.3f;
+   g.rel.position.z = -2.0f;
+   g.base   = g.rel.position;
+   g.turn   = g.rel.orientation;
+   g.width  = 1.0f;
+   g.height = 0.6f;
+   g.slot   = 1;
+   /* Taken a metre away, so the snaps are whole. */
+   start            = g.rel;
+   start.position.z = -1.0f;
+   video_xr_grab_pose(&g, &aim, &set, 0, &start, &pose, &s, &snapped);
+   CHECK(!(snapped & VIDEO_XR_SNAP_TURN)
+         && (snapped & VIDEO_XR_SNAP_PULLING(VIDEO_XR_SNAP_TURN))
+         && !angle_near(s.pitch, 0.0f));
+   /* Four degrees back by the stick: parallel. */
+   video_xr_grab_turn(&g, &aim, 0.0f, 1.0f, 4.0 / VIDEO_XR_EDIT_TURN_RATE);
+   video_xr_grab_pose(&g, &aim, &set, 0, &start, &pose, &s, &snapped);
+   CHECK((snapped & VIDEO_XR_SNAP_TURN)
+         && turn_apart(&pose.orientation, &aim.orientation) < 0.01);
 }
 
 #define SMOOTH_MAX 400
@@ -3779,6 +4083,12 @@ int main(void)
    test_grab_turn_tilt_ray();
    test_carry_heading();
    test_carry_full_turn();
+   test_grab_tilt();
+   test_grab_tilt_evenly();
+   test_grab_turn_and_tilt();
+   test_grab_turn_lock();
+   test_grab_tilt_turned();
+   test_tilt_full_turn();
    test_carry_vertical();
    test_carry_flip();
    test_carry_still();
@@ -3796,6 +4106,7 @@ int main(void)
    test_snap_turned();
    test_grab_snap();
    test_turn_snap();
+   test_tilt_snap();
    test_smooth_steady();
    test_smooth_tremor();
    test_smooth_sweep();

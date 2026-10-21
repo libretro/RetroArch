@@ -5704,6 +5704,37 @@ def check_edit_turn_stick(res):
                                  last_before(res, 'off', screen1_left))
 
 
+def check_edit_tilt_stick(res):
+    """The left stick held up for half a second tips screen 1, which the
+    right hand holds, back about its own left-right line through its
+    middle, about 45 degrees at 90 a second: its top edge goes away from
+    the user and its bottom edge comes nearer; saved as shown."""
+    errors = edit_log_errors(res, ['on', 'off'])
+    q = last_before(res, 'tilted', screen1_left)
+    if not q:
+        return errors + ['no frame of screen 1 before the stick let go']
+    rot = tuple(q['pose'][3:])
+    yaw, pitch, roll = euler(rot)
+    if not -70.0 <= pitch <= -20.0 or abs(yaw) > 0.6 or abs(roll) > 0.6:
+        errors.append('screen 1 tilted to yaw %.1f pitch %.1f roll %.1f, '
+                      'want 0, -20 to -70, 0' % (yaw, pitch, roll))
+    if any(abs(a - b) > EDIT_POS for a, b in zip(q['pose'][:3], S0)):
+        errors.append('screen 1 moved to %s as it tilted, want %s'
+                      % (q['pose'][:3], S0))
+    edge = math.sqrt(sum(v * v for v in S0) + 0.48 ** 2)
+    top, bottom = (math.sqrt(sum((p + e) ** 2 for p, e in
+                                 zip(q['pose'][:3], qrot(rot, (0.0, h, 0.0)))))
+                   for h in (0.48, -0.48))
+    if not top > edge + 0.1 or not bottom < edge - 0.1:
+        errors.append('screen 1 top edge %.3f m and bottom edge %.3f m from '
+                      'the user, want the top past %.3f and the bottom '
+                      'inside it' % (top, bottom, edge))
+    return errors + saved_errors(res, 'screen 1', 'video_screen1_xr_', S0,
+                                 (tuple(q['pose'][:3]),
+                                  tuple(q['pose'][3:])), (1.6, 0.96),
+                                 last_before(res, 'off', screen1_left))
+
+
 # Screen 2 at screen 1's right corner, 18 degrees short of square
 # (yaw -72, facing left): chosen, gripped, and turned by the left stick
 # at an eighth of full speed (11.25 degrees a second) for 1.6 s, it
@@ -6284,6 +6315,18 @@ EDIT_CASES += [
          ('wait', 1), ('send', EDIT), ('wait', 2), ('mark', 'off'),
          ('wait', 1)],
      'check': check_edit_turn_stick},
+    {'name': 'edit-tilt-stick', 'map': '3ds', 'settings': SAVE,
+     'env': {'RA_XR_LAYER_SNAP_EVERY': '0'},
+     'steps': edit_start(edit_aim()) + [
+         ('script', script(edit_aim(), EDIT_GRIP)), ('wait', 1),
+         ('mark', 'held'),
+         ('script', script(edit_aim(), EDIT_GRIP,
+                           'action edit/stick@left 0 1')),
+         ('wait', 0.5), ('script', script(edit_aim(), EDIT_GRIP)),
+         ('wait', 1), ('mark', 'tilted'), ('script', edit_aim()),
+         ('wait', 1), ('send', EDIT), ('wait', 2), ('mark', 'off'),
+         ('wait', 1)],
+     'check': check_edit_tilt_stick},
     {'name': 'edit-snap-square', 'map': '3ds', 'settings': SQUARE,
      'steps': edit_start(edit_aim()) + edit_tap(EDIT_NEXT, edit_aim())
      + edit_tap(EDIT_NEXT, edit_aim()) + [

@@ -2744,6 +2744,123 @@ static void test_edit_turn(void)
    t_edit_end();
 }
 
+/* The free hand's stick up tips what the other hand holds back, its
+ * top away, about its own left-right line through its middle, as fast
+ * as it turns it, the trigger held or not; left and right turn it at
+ * once. The holding hand's own stick up still pushes and tips nothing. */
+static void test_edit_tilt_stick(void)
+{
+   t_edit_start();
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   /* The left stick up for 0.1 s: nine degrees back, in place. */
+   t_hold("edit/stick", 1, 0.0f, 1.0f);
+   t_clock += 100000;
+   t_edit_poll();
+   CHECK(t_near(t_xr[0].pitch, -9.0f) && t_near(t_xr[0].yaw, 0.0f)
+         && t_near(t_xr[0].roll, 0.0f) && t_near(t_xr[0].x, 0.0f)
+         && t_near(t_xr[0].y, 0.0f) && t_near(t_xr[0].z, 0.0f),
+         "tilted to pitch %.2f yaw %.2f roll %.2f at %.3f,%.3f,%.3f",
+         t_xr[0].pitch, t_xr[0].yaw, t_xr[0].roll, t_xr[0].x, t_xr[0].y,
+         t_xr[0].z);
+   /* The holding hand's own stick up pushes it and tips nothing. */
+   t_let_go();
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_hold("edit/stick", 2, 0.0f, 1.0f);
+   t_clock += 100000;
+   t_edit_poll();
+   CHECK(t_near(t_xr[0].pitch, -9.0f) && t_near(t_xr[0].z, -0.15f),
+         "own stick: pitch %.2f, pushed to %.3f", t_xr[0].pitch,
+         t_xr[0].z);
+   /* The trigger held, the left stick down and right: tipped back up
+    * and turned, in place. */
+   t_let_go();
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_hold("edit/tilt", 2, 1.0f, 0.0f);
+   t_hold("edit/stick", 1, 1.0f, -1.0f);
+   t_clock += 100000;
+   t_edit_poll();
+   CHECK(t_near(t_xr[0].pitch, 0.0f) && t_near(t_xr[0].yaw, 9.0f)
+         && t_near(t_xr[0].roll, 0.0f) && t_near(t_xr[0].x, 0.0f)
+         && t_near(t_xr[0].z, -0.15f),
+         "tilting: pitch %.2f yaw %.2f roll %.2f at %.3f,%.3f",
+         t_xr[0].pitch, t_xr[0].yaw, t_xr[0].roll, t_xr[0].x, t_xr[0].z);
+   t_let_go();
+   t_edit_poll();
+   t_edit_end();
+}
+
+/* Degrees in 0.1 s from a stick axis at v. */
+static float t_stick_deg(float v)
+{
+   double a = (fabs(v) - VIDEO_XR_EDIT_DEADZONE)
+      / (1.0 - VIDEO_XR_EDIT_DEADZONE);
+   return (a > 0.0) ? (float)(a * VIDEO_XR_EDIT_TURN_RATE * 0.1) : 0.0f;
+}
+
+/* The free hand's stick near left or right only turns what the other
+ * hand holds, near up or down only tilts it, and on a diagonal does
+ * both. The holding hand's own stick 15 degrees off right still pushes
+ * as it resizes. */
+static void test_edit_stick_lock(void)
+{
+   float c = (float)cos(M_PI / 12.0);
+   float s = (float)sin(M_PI / 12.0);
+   float d = (float)cos(M_PI / 4.0);
+   float yaw, pitch;
+   t_edit_start();
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   /* The left stick 15 degrees off right for 0.1 s: turned only. */
+   t_hold("edit/stick", 1, c, s);
+   t_clock += 100000;
+   t_edit_poll();
+   yaw = t_stick_deg(c);
+   CHECK(fabs(t_xr[0].yaw - yaw) < 0.01 && t_near(t_xr[0].pitch, 0.0f)
+         && t_near(t_xr[0].roll, 0.0f),
+         "15 off right: yaw %.2f pitch %.2f roll %.2f, want yaw %.2f",
+         t_xr[0].yaw, t_xr[0].pitch, t_xr[0].roll, yaw);
+   /* 15 degrees off down: tilted only. */
+   t_let_go();
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_hold("edit/stick", 1, -s, -c);
+   t_clock += 100000;
+   t_edit_poll();
+   pitch = t_stick_deg(c);
+   CHECK(fabs(t_xr[0].yaw - yaw) < 0.01
+         && fabs(t_xr[0].pitch - pitch) < 0.01
+         && t_near(t_xr[0].roll, 0.0f),
+         "15 off down: yaw %.2f pitch %.2f roll %.2f, want %.2f %.2f",
+         t_xr[0].yaw, t_xr[0].pitch, t_xr[0].roll, yaw, pitch);
+   /* Up and right together: both. */
+   t_let_go();
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_hold("edit/stick", 1, d, d);
+   t_clock += 100000;
+   t_edit_poll();
+   yaw   += t_stick_deg(d);
+   pitch -= t_stick_deg(d);
+   CHECK(fabs(t_xr[0].yaw - yaw) < 0.01
+         && fabs(t_xr[0].pitch - pitch) < 0.01
+         && t_near(t_xr[0].roll, 0.0f) && t_near(t_xr[0].z, 0.0f),
+         "diagonal: yaw %.2f pitch %.2f roll %.2f, want %.2f %.2f",
+         t_xr[0].yaw, t_xr[0].pitch, t_xr[0].roll, yaw, pitch);
+   /* The holding hand's own stick 15 degrees off right. */
+   t_let_go();
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_hold("edit/stick", 2, c, s);
+   t_clock += 100000;
+   t_edit_poll();
+   CHECK(fabs(t_xr[0].z + t_stick_deg(s) / 60.0f) < 1e-3
+         && fabs(t_xr[0].scale - pow(2.0, t_stick_deg(c) / 90.0)) < 1e-3
+         && fabs(t_xr[0].yaw - yaw) < 0.01,
+         "own stick: pushed to %.4f, scale %.4f, yaw %.2f", t_xr[0].z,
+         t_xr[0].scale, t_xr[0].yaw);
+   t_let_go();
+   t_edit_poll();
+   t_edit_end();
+}
+
 /* A grab with the trigger already held tilts from the start: the roll
  * follows at the next poll. */
 static void test_edit_tilt_from_grab(void)
@@ -4653,6 +4770,8 @@ int main(void)
    test_edit_pause();
    test_edit_grab();
    test_edit_turn();
+   test_edit_tilt_stick();
+   test_edit_stick_lock();
    test_edit_tilt_from_grab();
    test_edit_limits();
    test_edit_spot_moved();

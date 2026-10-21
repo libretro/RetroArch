@@ -180,13 +180,15 @@ void video_xr_item_settings(const video_xr_vec3_t *base,
 
 /* Edit mode's stick: its deadzone as a fraction of its travel; at full
  * travel past it, the push along the aim's ray in metres a second, the
- * resize in doublings a second, and the free hand's turn in degrees a
- * second. A pulled item comes no nearer the hand than
- * VIDEO_XR_EDIT_REACH metres. */
+ * resize in doublings a second, and the free hand's turn and tilt in
+ * degrees a second, that stick within VIDEO_XR_EDIT_TURN_LOCK degrees
+ * of left-right only turning and of up-down only tilting. A pulled
+ * item comes no nearer the hand than VIDEO_XR_EDIT_REACH metres. */
 #define VIDEO_XR_EDIT_DEADZONE   0.2f
 #define VIDEO_XR_EDIT_PUSH_RATE  1.5f
 #define VIDEO_XR_EDIT_SCALE_RATE 1.0f
 #define VIDEO_XR_EDIT_TURN_RATE  90.0f
+#define VIDEO_XR_EDIT_TURN_LOCK  25.0f
 #define VIDEO_XR_EDIT_REACH      0.1f
 
 enum video_xr_grab_state
@@ -244,9 +246,12 @@ void video_xr_grab_stick(video_xr_grab_t *g, float x, float y, double dt,
 
 /* The free hand's stick for dt seconds, g's item held by aim: past the
  * deadzone x (right, +1) turns it about the vertical through its
- * middle, anticlockwise seen from above, by how far past it is. */
+ * middle, anticlockwise seen from above, and y (up, +1) tips its top
+ * back about its own left-right line through its middle, each by how
+ * far past it is; near one axis, only that one acts
+ * (VIDEO_XR_EDIT_TURN_LOCK). */
 void video_xr_grab_turn(video_xr_grab_t *g, const video_xr_pose_t *aim,
-      float x, double dt);
+      float x, float y, double dt);
 
 /* Snap to Screens. A held screen turns parallel or square (a
  * quarter turn about the other's up) to a screen within

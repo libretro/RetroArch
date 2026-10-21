@@ -1668,15 +1668,25 @@ void video_xr_grab_stick(video_xr_grab_t *g, float x, float y, double dt,
 }
 
 void video_xr_grab_turn(video_xr_grab_t *g, const video_xr_pose_t *aim,
-      float x, double dt)
+      float x, float y, double dt)
 {
-   double n, s;
+   double n, s, half, tip;
    video_xr_pose_t turn, item;
    video_xr_vec3_t axis;
    video_xr_quat_t *q;
-   double half = video_xr_deflection(x) * VIDEO_XR_EDIT_TURN_RATE
+   double lock = tan(VIDEO_XR_EDIT_TURN_LOCK * VIDEO_XR_PI / 180.0);
+   /* A push a little off one axis is meant along it: a turn takes no
+    * tilt, a tilt no turn. */
+   if (fabs(y) < fabs(x) * lock)
+      y = 0.0f;
+   else if (fabs(x) < fabs(y) * lock)
+      x = 0.0f;
+   half = video_xr_deflection(x) * VIDEO_XR_EDIT_TURN_RATE
       * dt * VIDEO_XR_PI / 360.0;
-   if (half == 0.0)
+   /* Up tips its top back: about its own -X. */
+   tip  = -video_xr_deflection(y) * VIDEO_XR_EDIT_TURN_RATE
+      * dt * VIDEO_XR_PI / 360.0;
+   if (half == 0.0 && tip == 0.0)
       return;
    axis.x = 0.0f;
    axis.y = 1.0f;
@@ -1703,6 +1713,11 @@ void video_xr_grab_turn(video_xr_grab_t *g, const video_xr_pose_t *aim,
    turn.orientation.z = (float)(axis.z * s);
    turn.orientation.w = (float)cos(half);
    video_xr_compose(&turn, &item, &item);
+   /* Composed after it: about its own X, carried or tilting. */
+   video_xr_pose_identity(&turn);
+   turn.orientation.x = (float)sin(tip);
+   turn.orientation.w = (float)cos(tip);
+   video_xr_compose(&item, &turn, &item);
    n = sqrt((double)item.orientation.x * item.orientation.x
          + (double)item.orientation.y * item.orientation.y
          + (double)item.orientation.z * item.orientation.z

@@ -34482,7 +34482,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_OPENXR_EDIT_ON,
-   "Editing headset screens: grip grabs, the trigger tilts, the stick moves and resizes, the other hand's stick turns, the main button resets."
+   "Editing headset screens: grip grabs, the stick moves and resizes, the trigger tilts it with your hand, the other hand's stick turns and tilts it, the main button resets."
    )
 MSG_HASH(
    MSG_OPENXR_EDIT_OFF,

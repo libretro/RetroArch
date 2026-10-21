@@ -173,8 +173,8 @@ void video_xr_grab_stick(video_xr_grab_t *g, float x, float y, double dt,
       float *scale)
 { (void)g; (void)x; (void)y; (void)dt; (void)scale; }
 void video_xr_grab_turn(video_xr_grab_t *g, const video_xr_pose_t *aim,
-      float x, double dt)
-{ (void)g; (void)aim; (void)x; (void)dt; }
+      float x, float y, double dt)
+{ (void)g; (void)aim; (void)x; (void)y; (void)dt; }
 void video_xr_menu_handle(const video_xr_quad_t *menu, video_xr_quad_t *out)
 { *out = *menu; }
 void video_xr_outline(const video_xr_quad_t *q, video_xr_quad_t *out)

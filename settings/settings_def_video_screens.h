@@ -54,4 +54,4 @@ S_ACTION(VIDEO_SCREEN_XR_RESET_ALL,
 S_ACTION(VIDEO_SCREEN_XR_EDIT,
       "video_screen_xr_edit",
       "Edit Screens",
-      "Close the menu and move the headset's screens and menu with the controllers: grip grabs, the trigger tilts, the stick changes distance and size, the main button resets.")
+      "Close the menu and move the headset's screens and menu with the controllers: grip grabs, the trigger tilts, the stick changes distance and size, the free hand's stick turns and tilts, the main button resets, Select Next and Select Previous choose an item.")

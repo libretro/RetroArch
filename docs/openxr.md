@@ -120,10 +120,11 @@ set to, with a beam unless **Laser Beam** is Off. The menu also shows a
 handle bar under it in the same light and dark, faint, and bright when
 the menu's outline is. The headset's controllers only
 edit; keyboards and other gamepads still reach the content. The desktop
-window shows a notice when editing starts and when it stops. **Select
+window shows a notice when editing starts, with the controls, for
+about 8 seconds, and a short one when it stops. **Select
 Next** and **Select Previous** choose an item, below.
 
-| Controller | Grab | Tilt | Distance and size | Turn (other hand) | Reset | Menu | Select Next / Previous |
+| Controller | Grab | Tilt | Distance and size | Turn and tilt (other hand) | Reset | Menu | Select Next / Previous |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Steam Frame | grip | trigger | stick | stick | A; left hand: D-pad down | right stick click | left D-pad right / left |
 | Valve Index | grip | trigger | stick | stick | A | left trackpad press | right B / left B |
@@ -142,12 +143,17 @@ Next** and **Select Previous** choose an item, below.
   tipping it 5 degrees past straight up or down turns them round to
   face the other way. Hold the trigger while grabbing to let them ride
   the hand, pitch and roll too; let go of the trigger to keep them.
-- The other hand's stick, while that hand holds nothing, turns the held
-  item about the vertical through its middle, keeping its pitch and
-  roll, whether or not the trigger is held: right turns it
+- The other hand's stick, while that hand holds nothing, turns and
+  tilts the held item about its middle, whether or not the trigger is
+  held, faster the further the stick is pushed, with no stop. Right
+  turns it about the vertical, keeping its pitch and roll,
   anticlockwise as seen from above, so a screen facing you turns
-  towards your right; left the other way; faster the further the stick
-  is pushed. Snapping still catches it parallel or square.
+  towards your right; left the other way. Up tips its top back about
+  its own left-right line, as when pushing a monitor's top back; down
+  the other way. Within about 25 degrees of left or right the stick
+  only turns, and within about 25 degrees of up or down it only tilts;
+  pushed clearly diagonally, it does both at once. Snapping still
+  catches it parallel or square.
 - On the holding hand's stick, up pushes the item away along the laser
   and down pulls it closer; right makes it larger and left smaller,
   faster the further the stick is pushed.
