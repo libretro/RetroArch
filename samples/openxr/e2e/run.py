@@ -5868,6 +5868,33 @@ def check_edit_snap_square(res):
     return errors
 
 
+def check_edit_snap_sticks(res):
+    """Screen 2, turned by the left stick from 18 degrees short of
+    square at screen 1's right corner for 1.25 s, about 14 degrees,
+    shows square once the stick is let go; pushed back the other way at
+    the same speed for 1.42 s, about 16 degrees, it turns on from
+    square, to yaw -74, not from where the stick stopped (about -70),
+    and is saved there. The head is held at the anchor, so no step
+    holds either."""
+    errors = edit_log_errors(res, ['on', 'off'])
+    errors += pose_errors('screen 2 square, the stick let go',
+                          [screen2(f) for f in
+                           between(res, 'square', 'push', delay=0.2)],
+                          SQUARED, YAW_M90, (1.28, 0.96))
+    q = last_before(res, 'released', screen2)
+    if not q:
+        return errors + ['no frame of screen 2 before the grip let go']
+    yaw = euler(tuple(q['pose'][3:]))[0]
+    if abs(yaw + 74.0) > 1.5:
+        errors.append('screen 2 pushed back to yaw %.2f, want -74, 16 on '
+                      'from square' % yaw)
+    errors += pose_errors('screen 2 pushed back', [q], SQUARED)
+    return errors + saved_errors(res, 'screen 2', 'video_screen2_xr_', S1,
+                                 (tuple(q['pose'][:3]),
+                                  tuple(q['pose'][3:])), (1.28, 0.96),
+                                 last_before(res, 'off', screen2))
+
+
 # The right hand holding screen 1 sways half a degree either side every
 # 50 ms, a 10 Hz shake 1.6 cm either side at the screen, then stops for
 # a tenth of a second and lets go, before a smoothed screen catches up.
@@ -6538,6 +6565,22 @@ EDIT_CASES += [
          ('script', edit_aim()), ('mark', 'released'), ('wait', 1),
          ('send', EDIT), ('wait', 2), ('mark', 'off'), ('wait', 1)],
      'check': check_edit_snap_square},
+    {'name': 'edit-snap-sticks', 'map': '3ds', 'settings': SQUARE,
+     'script': HEAD_AT_ORIGIN,
+     'steps': edit_start(edit_aim()) + edit_tap(EDIT_NEXT, edit_aim())
+     + edit_tap(EDIT_NEXT, edit_aim()) + [
+         ('script', script(edit_aim(), EDIT_GRIP)), ('wait', 1),
+         ('script', script(edit_aim(), EDIT_GRIP,
+                           'action edit/stick@left -0.3 0')),
+         ('wait', 1.25), ('script', script(edit_aim(), EDIT_GRIP)),
+         ('wait', 1), ('mark', 'square'), ('wait', 0.5), ('mark', 'push'),
+         ('script', script(edit_aim(), EDIT_GRIP,
+                           'action edit/stick@left 0.3 0')),
+         ('wait', 1.42), ('script', script(edit_aim(), EDIT_GRIP)),
+         ('wait', 1), ('script', edit_aim()), ('mark', 'released'),
+         ('wait', 1), ('send', EDIT), ('wait', 2), ('mark', 'off'),
+         ('wait', 1)],
+     'check': check_edit_snap_sticks},
     {'name': 'edit-smooth', 'map': '3ds',
      'settings': dict(SAVE, video_openxr_edit_smoothing='2'),
      'steps': EDIT_SWAY_STEPS, 'check': check_edit_sway(True)},

@@ -561,7 +561,8 @@ static input_openxr_t input_openxr_st;
  * scale of what it holds now and at the grab with its size then, the
  * snaps whose buzz may still fire, the free hand's turn and tilt past
  * the steps they hold at (video_xr_grab_step) and the steps whose buzz
- * may still fire, and last poll's grip and reset, for their presses. */
+ * may still fire, and last poll's free stick past its deadzone, grip
+ * and reset, for their changes. */
 typedef struct input_openxr_hold
 {
    video_xr_grab_t g;
@@ -573,6 +574,7 @@ typedef struct input_openxr_hold
    float rest[2];
    unsigned armed;
    unsigned steps;
+   bool pushed;
    bool grip;
    bool reset;
 } input_openxr_hold_t;
@@ -2415,6 +2417,7 @@ static void input_openxr_edit_grab(input_openxr_t *st,
    hold->rest[0]  = 0.0f;
    hold->rest[1]  = 0.0f;
    hold->steps    = 0;
+   hold->pushed   = false;
    if (q->slot != VIDEO_XR_MENU_SLOT)
       config_get_video_screen_xr(q->slot, &now);
    else if (!config_get_video_menu_xr(&now))
@@ -2437,7 +2440,8 @@ static void input_openxr_edit_grab(input_openxr_t *st,
 
 /* A held item to where the hand puts it now, turned and tilted by the
  * free hand's stick in steps, the turn's from facing head (NULL: none),
- * snapped to targets' screens unless NULL,
+ * snapped to targets' screens unless NULL, keeping an engaged snap's
+ * turn as that stick lets go or starts a push,
  * fading in from where it was taken, its settings with it. The trigger
  * lets its pitch and roll follow from where it is; a clamp holds it
  * again, so it resumes from the limit. Returns the snaps engaged or
@@ -2454,6 +2458,8 @@ static unsigned input_openxr_edit_move(input_openxr_edit_t *e,
    video_screen_xr_t values;
    float x = (float)free_stick[0] / 32767.0f;
    float y = -(float)free_stick[1] / 32767.0f;
+   bool pushed = x * x + y * y
+      > VIDEO_XR_EDIT_DEADZONE * VIDEO_XR_EDIT_DEADZONE;
    video_xr_pose_invert(aim, &inv);
    if (tilt && !hold->g.tilt)
       video_xr_compose(&inv, &hold->g.last, &hold->g.rel);
@@ -2463,20 +2469,40 @@ static unsigned input_openxr_edit_move(input_openxr_edit_t *e,
    /* The stick's Y is down, as the RetroPad's. */
    video_xr_grab_stick(&hold->g, (float)stick[0] / 32767.0f,
          -(float)stick[1] / 32767.0f, dt, &hold->scale);
+   hold->g.width  = hold->width0 * hold->scale / hold->scale0;
+   hold->g.height = hold->height0 * hold->scale / hold->scale0;
    /* Only a stick let go leaves the item where it shows: a wavering
     * push that drops an axis for a poll would stay at its step. */
-   if (x * x + y * y <= VIDEO_XR_EDIT_DEADZONE * VIDEO_XR_EDIT_DEADZONE)
+   if (!pushed)
    {
       hold->rest[0] = 0.0f;
       hold->rest[1] = 0.0f;
    }
+   /* So does an engaged screen snap's turn, and as a push starts, so
+    * the turn goes on from it; never by carrying alone, which can pull
+    * it out, nor a fading pull, which would hop it into the snap. */
+   if (targets && pushed != hold->pushed)
+   {
+      video_xr_grab_pose(&hold->g, aim, targets,
+            input_openxr_edit_holding(e), &hold->start, &pose, NULL,
+            &snapped);
+      if (snapped & VIDEO_XR_SNAP_TURN)
+      {
+         if (hold->g.tilt)
+         {
+            video_xr_compose(&inv, &pose, &pose);
+            hold->g.rel.orientation = pose.orientation;
+         }
+         else
+            video_xr_grab_hold(&hold->g, aim, &pose.orientation);
+      }
+   }
+   hold->pushed = pushed;
    /* As the snaps' buzz, armed by where the item is, however it got
     * there. */
    hold->steps   |= video_xr_grab_off_step(&hold->g, aim, head, e->step,
          hold->rest);
    axes           = video_xr_grab_turn(&hold->g, aim, x, y, dt);
-   hold->g.width  = hold->width0 * hold->scale / hold->scale0;
-   hold->g.height = hold->height0 * hold->scale / hold->scale0;
    held           = video_xr_grab_step(&hold->g, aim, head, e->step, axes,
          hold->rest, targets, input_openxr_edit_holding(e), &hold->start);
    *stepped       = (held & hold->steps) != 0;
@@ -2745,6 +2771,8 @@ static void input_openxr_edit_poll(input_openxr_t *st,
                bool stepped;
                stick[0] = 0;
                stick[1] = 0;
+               /* The grip let go, not the stick: no snap's turn kept. */
+               hold->pushed = false;
                input_openxr_edit_move(e, hold, &aim, NULL, tilt, stick,
                      stick, 0.0, targets, &stepped);
             }

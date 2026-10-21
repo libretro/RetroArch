@@ -4921,6 +4921,206 @@ static void test_edit_snap_edge(void)
    t_snap = false;
 }
 
+/* Screen 2, 0.8 x 0.6, 18 degrees short of square to screen 1 (yaw
+ * -72), its middle 1.4 m ahead of a right hand at x 0.82: square, it
+ * would stand 2 cm right of screen 1's right corner, which pulls it
+ * there. */
+static void t_snap_square(void)
+{
+   video_xr_quad_t *q = &t_quads.quads[t_quads.num_quads++];
+   memset(q, 0, sizeof(*q));
+   q->pose.orientation.y   = (float)-sin(0.2 * M_PI);
+   q->pose.orientation.w   = (float)cos(0.2 * M_PI);
+   q->pose.position.x      = 0.82f;
+   q->pose.position.z      = -1.4f;
+   q->width                = 0.8f;
+   q->height               = 0.6f;
+   q->kind                 = VIDEO_XR_QUAD_SCREEN;
+   q->screen               = 1;
+   q->slot                 = 1;
+   t_quads.slots[1].base.x = 0.82f;
+   t_quads.slots[1].base.z = -1.4f;
+   t_aim[2].position.x     = 0.82f;
+}
+
+/* n polls us apart, the right hand gripping, its trigger held if tilt,
+ * and the left stick at x. */
+static void t_turn_polls(unsigned n, float x, retro_time_t us, bool tilt)
+{
+   unsigned i;
+   t_let_go();
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   if (tilt)
+      t_hold("edit/tilt", 2, 1.0f, 0.0f);
+   t_hold("edit/stick", 1, x, 0.0f);
+   for (i = 0; i < n; i++)
+   {
+      t_clock += us;
+      t_edit_poll();
+   }
+}
+
+/* Edit mode with Snap to Screens as snap, screen 2 taken by the right
+ * hand and carried 7 cm up, past the lines across screen 1's middle,
+ * so its snaps are whole. */
+static void t_take_square(bool snap, bool tilt)
+{
+   t_snap = snap;
+   t_edit_start();
+   t_snap_square();
+   t_turn_polls(1, 0.0f, 10000, tilt);
+   CHECK(     input_openxr_edit.hand[1].g.state == VIDEO_XR_GRAB_HELD
+         && input_openxr_edit.hand[1].g.slot == 1
+         && input_openxr_edit.hand[1].g.tilt == tilt,
+         "took slot %u", input_openxr_edit.hand[1].g.slot);
+   t_aim[2].position.y = 0.07f;
+   t_turn_polls(1, 0.0f, 10000, tilt);
+}
+
+static void t_take_end(void)
+{
+   t_let_go();
+   t_edit_poll();
+   t_edit_end();
+   t_snap = false;
+}
+
+/* The right hand turned deg about the vertical, its ray still through
+ * where screen 2's middle was taken. */
+static void t_point(double deg)
+{
+   double r = deg * M_PI / 180.0;
+   t_aim[2].orientation.y = (float)sin(r / 2.0);
+   t_aim[2].orientation.w = (float)cos(r / 2.0);
+   t_aim[2].position.x    = (float)(0.82 + 1.4 * sin(r));
+   t_aim[2].position.z    = (float)(-1.4 + 1.4 * cos(r));
+}
+
+/* An engaged screen snap's turn sticks as the free hand's stick lets
+ * go or starts a push, carried or tilting: turned on, the screen moves
+ * on from the angle it showed, and its place is still the hand's. Where
+ * the pull only fades nothing sticks: let go, it stays where it shows,
+ * and pushed away, it never hops toward the snap. Carrying alone keeps
+ * the hand's angle. */
+static void t_snap_commit(bool tilt)
+{
+   const char *how = tilt ? "tilting" : "carried";
+   /* Turned 13.5 in, 4.5 short: square, at the corner. */
+   t_take_square(true, tilt);
+   t_turn_polls(15, -1.0f, 10000, tilt);
+   CHECK(t_deg_near(t_xr[1].yaw, -90.0) && t_near(t_xr[1].x, -0.02f)
+         && t_near(t_xr[1].y, 0.07f),
+         "%s, turned in: yaw %.3f at %.4f,%.4f", how, t_xr[1].yaw,
+         t_xr[1].x, t_xr[1].y);
+   t_turn_polls(1, 0.0f, 10000, tilt);
+   CHECK(t_deg_near(t_xr[1].yaw, -90.0), "%s, let go: yaw %.3f", how,
+         t_xr[1].yaw);
+   /* Out 9 from square, where the pull leaves 1; then 18, unpulled, at
+    * the hand's place. */
+   t_turn_polls(1, 1.0f, 100000, tilt);
+   CHECK(t_deg_near(t_xr[1].yaw, -82.0), "%s, pushed out: yaw %.3f", how,
+         t_xr[1].yaw);
+   t_turn_polls(1, 1.0f, 100000, tilt);
+   CHECK(t_deg_near(t_xr[1].yaw, -72.0) && t_near(t_xr[1].x, 0.0f)
+         && t_near(t_xr[1].y, 0.07f),
+         "%s, pushed on: yaw %.3f at %.4f,%.4f", how, t_xr[1].yaw,
+         t_xr[1].x, t_xr[1].y);
+   t_take_end();
+
+   /* Turned 10.8 in, 7.2 short, the pull shows it at 4.4: let go, it
+    * stays there; pushed out, it goes on from its own 7.2. */
+   t_take_square(true, tilt);
+   t_turn_polls(12, -1.0f, 10000, tilt);
+   CHECK(t_deg_near(t_xr[1].yaw, -85.6), "%s, in the fade: yaw %.3f", how,
+         t_xr[1].yaw);
+   t_turn_polls(1, 0.0f, 10000, tilt);
+   CHECK(t_deg_near(t_xr[1].yaw, -85.6), "%s, let go in the fade: yaw %.3f",
+         how, t_xr[1].yaw);
+   t_turn_polls(1, 1.0f, 100000, tilt);
+   CHECK(t_deg_near(t_xr[1].yaw, -73.8),
+         "%s, pushed out of the fade: yaw %.3f", how, t_xr[1].yaw);
+   t_take_end();
+
+   /* Turned 9 in, 9 short, shown at 8: let go, it stays; pushed slowly
+    * away, it goes on from there. */
+   t_take_square(true, tilt);
+   t_turn_polls(10, -1.0f, 10000, tilt);
+   CHECK(t_deg_near(t_xr[1].yaw, -82.0), "%s, at 9: yaw %.3f", how,
+         t_xr[1].yaw);
+   t_turn_polls(1, 0.0f, 10000, tilt);
+   CHECK(t_deg_near(t_xr[1].yaw, -82.0), "%s, let go at 9: yaw %.3f", how,
+         t_xr[1].yaw);
+   t_turn_polls(1, 1.0f, 10000, tilt);
+   CHECK(t_deg_near(t_xr[1].yaw, -80.2), "%s, pushed on from 9: yaw %.3f",
+         how, t_xr[1].yaw);
+   t_take_end();
+
+   /* Pointed 11 round, 7 short, shown at 4: pushed slowly away, it
+    * leaves the snap from there, a step a poll. */
+   t_take_square(true, tilt);
+   t_point(-11.0);
+   t_turn_polls(1, 0.0f, 10000, tilt);
+   CHECK(t_deg_near(t_xr[1].yaw, -86.0), "%s, pointed to 7: yaw %.3f", how,
+         t_xr[1].yaw);
+   t_turn_polls(1, 1.0f, 10000, tilt);
+   CHECK(t_deg_near(t_xr[1].yaw, -84.2), "%s, pointed, pushed: yaw %.3f",
+         how, t_xr[1].yaw);
+   t_turn_polls(1, 1.0f, 10000, tilt);
+   CHECK(t_deg_near(t_xr[1].yaw, -82.4), "%s, pointed, pushed on: yaw %.3f",
+         how, t_xr[1].yaw);
+   t_take_end();
+
+   /* Pointed 14 round, 4 short: square; the stick then pushes on from
+    * square. */
+   t_take_square(true, tilt);
+   t_point(-14.0);
+   t_turn_polls(1, 0.0f, 10000, tilt);
+   CHECK(t_deg_near(t_xr[1].yaw, -90.0), "%s, pointed in: yaw %.3f", how,
+         t_xr[1].yaw);
+   t_turn_polls(1, 1.0f, 100000, tilt);
+   CHECK(t_deg_near(t_xr[1].yaw, -82.0), "%s, pointed, pushed: yaw %.3f",
+         how, t_xr[1].yaw);
+   t_take_end();
+
+   /* Pointed in, then out again with the stick never touched: at the
+    * hand's angle. */
+   t_take_square(true, tilt);
+   t_point(-14.0);
+   t_turn_polls(1, 0.0f, 10000, tilt);
+   t_point(4.0);
+   t_turn_polls(1, 0.0f, 10000, tilt);
+   CHECK(t_deg_near(t_xr[1].yaw, -68.0), "%s, pointed out: yaw %.3f", how,
+         t_xr[1].yaw);
+   t_take_end();
+}
+
+static void test_edit_snap_commit(void)
+{
+   t_snap_commit(false);
+   t_snap_commit(true);
+   /* In the fade, the grip let go with the stick still pushed: left
+    * where it shows. */
+   t_take_square(true, false);
+   t_turn_polls(12, -1.0f, 10000, false);
+   t_let_go();
+   t_hold("edit/stick", 1, -1.0f, 0.0f);
+   t_edit_poll();
+   CHECK(     input_openxr_edit.hand[1].g.state != VIDEO_XR_GRAB_HELD
+         && t_deg_near(t_xr[1].yaw, -85.6),
+         "the grip let go in the fade: yaw %.3f", t_xr[1].yaw);
+   t_take_end();
+   /* Snap to Screens off: nothing snaps, nothing sticks. */
+   t_take_square(false, false);
+   t_turn_polls(15, -1.0f, 10000, false);
+   t_turn_polls(1, 0.0f, 10000, false);
+   CHECK(t_deg_near(t_xr[1].yaw, -85.5) && t_near(t_xr[1].x, 0.0f),
+         "off, let go: yaw %.3f at %.4f", t_xr[1].yaw, t_xr[1].x);
+   t_turn_polls(1, 1.0f, 100000, false);
+   CHECK(t_deg_near(t_xr[1].yaw, -76.5), "off, pushed: yaw %.3f",
+         t_xr[1].yaw);
+   t_take_end();
+}
+
 /* Edit Smoothing: the frame loop steps each hand's aim once a frame,
  * starting from the raw aim, whichever hook asks first, and publishes
  * it; losing the hand, a recenter or a jump start it afresh. The main
@@ -5224,6 +5424,7 @@ int main(void)
    test_edit_turn_snap();
    test_edit_step_snap();
    test_edit_snap_edge();
+   test_edit_snap_commit();
    test_edit_smoothing();
    test_edit_room();
    if (failures)
