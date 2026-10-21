@@ -35,6 +35,9 @@ $(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
 	@mkdir -p $(@D)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
+# the handler is built inside the test's own object
+wii_handshake_test.o: $(RARCH_DIR)/input/connect/connect_wii.c
+
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $(OBJS) $(LDFLAGS)
 
