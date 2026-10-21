@@ -10105,6 +10105,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_INPUT_ALL_USERS_CONTROL_MENU,       PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_MENU_SINGLECLICK_PLAYLISTS,         PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_MENU_ALLOW_TABS_BACK,               PARSE_ONLY_BOOL, true},
+               {MENU_ENUM_LABEL_MENU_SCROLL_QUICK,                  PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_MENU_SCROLL_FAST,                   PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_MENU_SCROLL_DELAY,                  PARSE_ONLY_UINT, true},
                {MENU_ENUM_LABEL_INPUT_DISABLE_INFO_BUTTON,          PARSE_ONLY_BOOL, true},

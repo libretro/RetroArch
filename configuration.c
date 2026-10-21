@@ -2927,6 +2927,7 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("menu_disable_search_button",    &settings->bools.menu_disable_search_button, true, false, false);
    SETTING_BOOL("menu_disable_left_analog",      &settings->bools.menu_disable_left_analog, true, false, false);
    SETTING_BOOL("menu_disable_right_analog",     &settings->bools.menu_disable_right_analog, true, false, false);
+   SETTING_BOOL("menu_scroll_quick",             &settings->bools.menu_scroll_quick, true, DEFAULT_MENU_SCROLL_QUICK, false);
    SETTING_BOOL("menu_scroll_fast",              &settings->bools.menu_scroll_fast, true, DEFAULT_MENU_SCROLL_FAST, false);
    SETTING_BOOL("menu_ignore_missing_assets",    &settings->bools.menu_ignore_missing_assets, true, DEFAULT_MENU_IGNORE_MISSING_ASSETS, false);
 

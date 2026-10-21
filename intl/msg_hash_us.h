@@ -11756,6 +11756,14 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
 /* Settings > Input > Menu Controls */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_QUICK,
+   "Quick Scroll With Left+Right"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SCROLL_QUICK,
+   "Allow left+right for quick scrolling on items that are not settings."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
    "Scroll Acceleration"
    )
