@@ -20,7 +20,8 @@
  *                  flight
  *   switch 2    -> the Switch 2 Pro Controller woken through its bulk
  *                  pipes: every command whole, each answer read, an
- *                  answer that never comes given up on, the player lit */
+ *                  answer that never comes given up on; the player lit
+ *                  once it reports */
 
 #include "input/drivers_hid/winusb_hid.c"
 #include "input/common/sony_pad_output.h"
@@ -799,19 +800,21 @@ static void test_switch2_wake(void)
    for (i = 0; i < w2_writes && i < 16; i++)
       if (w2_len[i] == (ULONG)w2_cmd[i][5] + 8 && w2_cmd[i][1] == 0x91)
          whole++;
-   CHECK(w2_writes == 11 && whole == 11,
+   CHECK(w2_writes == 10 && whole == 10,
          "switch 2: not every wake command went out whole on the pipe out");
-   CHECK(w2_reads == 11 && w2_aborts == 0, "switch 2: an answer not read");
+   CHECK(w2_reads == 10 && w2_aborts == 0, "switch 2: an answer not read");
    CHECK(w2_cmd[0][0] == 0x07 && w2_cmd[9][0] == 0x03 && w2_cmd[9][3] == 0x0d,
          "switch 2: the wake is not in its order, reports started last");
-   CHECK(w2_cmd[10][0] == 0x09 && w2_cmd[10][3] == 0x07 && w2_cmd[10][8] == 0x03,
+   winusb_switch2_lights(dev);
+   CHECK(w2_writes == 11 && w2_len[10] == 16 && w2_cmd[10][0] == 0x09
+         && w2_cmd[10][3] == 0x07 && w2_cmd[10][8] == 0x03,
          "switch 2: player 2's lights not set");
 
    /* a pad that never answers: each wait given up on, the wake done */
    w2_writes = w2_reads = 0;
    w2_silent = true;
    winusb_switch2_wake(dev);
-   CHECK(w2_writes == 11 && w2_aborts == 11,
+   CHECK(w2_writes == 10 && w2_aborts == 10,
          "switch 2: an answer that never came held the wake up");
    w2_silent = false;
 

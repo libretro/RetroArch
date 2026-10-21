@@ -464,8 +464,25 @@ static int32_t winusb_switch2_transfer(winusb_device_t *dev, UCHAR pipe,
    return (int32_t)got;
 }
 
+/* The player's lights, as the console lights them: one for player 1,
+ * four for 4. Taken once the pad is reporting, not while it wakes. */
+static void winusb_switch2_lights(winusb_device_t *dev)
+{
+   uint8_t lights[16] = {
+      0x09, 0x91, 0x00, 0x07, 0x00, 0x08, 0x00, 0x00 };
+   uint8_t reply[64];
+
+   memset(lights + 8, 0, 8);
+   lights[8] = (uint8_t)((1u << ((dev->slot % 4) + 1)) - 1);
+   if (     winusb_switch2_transfer(dev, dev->bulk_out, lights,
+               sizeof(lights), 1000) != (int32_t)sizeof(lights))
+      RARCH_WARN("[WinUSB] \"%s\": its lights were not taken.\n",
+            dev->name);
+   winusb_switch2_transfer(dev, dev->bulk_in, reply, sizeof(reply), 100);
+}
+
 /* Each command is eight bytes and its data, the data's length in its
- * sixth; answered on the pipe in. The last lights the player. */
+ * sixth; answered on the pipe in. */
 static void winusb_switch2_wake(winusb_device_t *dev)
 {
    static const uint8_t wake[] = {
@@ -491,8 +508,6 @@ static void winusb_switch2_wake(winusb_device_t *dev)
       0x03, 0x91, 0x00, 0x0d, 0x00, 0x08, 0x00, 0x00,
       0x01, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
    };
-   uint8_t lights[16] = {
-      0x09, 0x91, 0x00, 0x07, 0x00, 0x08, 0x00, 0x00 };
    uint8_t reply[64];
    size_t at = 0;
    unsigned sent = 0;
@@ -506,15 +521,8 @@ static void winusb_switch2_wake(winusb_device_t *dev)
       winusb_switch2_transfer(dev, dev->bulk_in, reply, sizeof(reply), 100);
       at += len;
    }
-   /* as the console lights them: one for player 1, four for 4 */
-   memset(lights + 8, 0, 8);
-   lights[8] = (uint8_t)((1u << ((dev->slot % 4) + 1)) - 1);
-   if (     winusb_switch2_transfer(dev, dev->bulk_out, lights,
-               sizeof(lights), 1000) == (int32_t)sizeof(lights))
-      sent++;
-   winusb_switch2_transfer(dev, dev->bulk_in, reply, sizeof(reply), 100);
-   if (sent < 11)
-      RARCH_WARN("[WinUSB] \"%s\": %u of 11 wake commands taken.\n",
+   if (sent < 10)
+      RARCH_WARN("[WinUSB] \"%s\": %u of 10 wake commands taken.\n",
             dev->name, sent);
 }
 
@@ -598,6 +606,8 @@ static void winusb_hid_reader(void *data)
          if (dev->last && now - dev->last > dev->gap_max)
             dev->gap_max = now - dev->last;
          dev->last = now;
+         if (dev->bulk_usb && dev->reports == 1)
+            winusb_switch2_lights(dev);
       }
    }
    CloseHandle(ov.hEvent);
