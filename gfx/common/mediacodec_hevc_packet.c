@@ -2,13 +2,13 @@
 #include "mediacodec_hevc_packet.h"
 #include <string.h>
 #define MEDIACODEC_PACKET_MAX (64u*1024u*1024u)
-static int packet_overlap(const void *a,size_t na,const void *b,size_t nb)
+static int mediacodec_hevc_packet_overlap(const void *a,size_t na,const void *b,size_t nb)
 {
  uintptr_t x=(uintptr_t)a,y=(uintptr_t)b;
  if(na>(uintptr_t)-1-x || nb>(uintptr_t)-1-y)return 1;
  return x<y+nb && y<x+na;
 }
-static int packet_pack(const rh265_nal_t *nals,unsigned count,int parameter_sets,
+static int mediacodec_hevc_packet_pack(const rh265_nal_t *nals,unsigned count,int parameter_sets,
       int type,int temporal,size_t coded,uint8_t *out,size_t capacity,size_t *needed)
 {
  size_t total=0,bytes=0,offset=0;unsigned i;
@@ -32,8 +32,8 @@ static int packet_pack(const rh265_nal_t *nals,unsigned count,int parameter_sets
  if(!out || capacity<total){*needed=total;return 0;}
  /* Each accepted NAL contributes at least seven bytes to the 64 MiB
   * bound, so descriptor byte multiplication also fits 32-bit size_t. */
- if(packet_overlap(out,total,nals,(size_t)count*sizeof(*nals)))return -1;
- for(i=0;i<count;i++)if(packet_overlap(out,total,nals[i].data,nals[i].size))return -1;
+ if(mediacodec_hevc_packet_overlap(out,total,nals,(size_t)count*sizeof(*nals)))return -1;
+ for(i=0;i<count;i++)if(mediacodec_hevc_packet_overlap(out,total,nals[i].data,nals[i].size))return -1;
  for(i=0;i<count;i++) {
   out[offset++]=0;out[offset++]=0;out[offset++]=0;out[offset++]=1;
   memcpy(out+offset,nals[i].data,nals[i].size);offset+=nals[i].size;
@@ -41,12 +41,12 @@ static int packet_pack(const rh265_nal_t *nals,unsigned count,int parameter_sets
  *needed=total;return 1;
 }
 int mediacodec_hevc_csd(const rh265_nal_t sets[3],uint8_t *output,size_t capacity,size_t *needed)
-{return packet_pack(sets,3,1,0,0,0,output,capacity,needed);}
+{return mediacodec_hevc_packet_pack(sets,3,1,0,0,0,output,capacity,needed);}
 int mediacodec_hevc_packet(const rh265_access_unit_t *au,const rh265_nal_t *slices,
       unsigned count,uint8_t *output,size_t capacity,size_t *needed)
 {
  if(needed)*needed=0;
  if(!au || !au->num_slices || au->num_slices>count)return -1;
- return packet_pack(slices,au->num_slices,0,au->first.nal_type,au->first.temporal_id,
+ return mediacodec_hevc_packet_pack(slices,au->num_slices,0,au->first.nal_type,au->first.temporal_id,
        au->coded_bytes,output,capacity,needed);
 }

@@ -1,7 +1,7 @@
 /* Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier: GPL-3.0-or-later */
 #include "mediacodec_color.h"
 #include <string.h>
-static bool merge(unsigned *coded,unsigned native)
+static bool mediacodec_color_merge(unsigned *coded,unsigned native)
 {
  if(!native)return true;
  if(*coded && *coded!=2 && *coded!=native)return false;
@@ -46,8 +46,8 @@ bool mediacodec_color_resolve(const mediacodec_output_format_t *native,
   case 2:range=1;break;
   default:return false;
  }
- if(!merge(&color.primaries,primaries) || !merge(&color.matrix,matrix)
-       || !merge(&color.transfer,transfer))return false;
+ if(!mediacodec_color_merge(&color.primaries,primaries) || !mediacodec_color_merge(&color.matrix,matrix)
+       || !mediacodec_color_merge(&color.transfer,transfer))return false;
  /* Range uses 2 for full, not the CICP unspecified code point. */
  if(range && color.range && range!=color.range)return false;
  if(range)color.range=range;

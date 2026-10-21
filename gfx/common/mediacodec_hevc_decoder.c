@@ -17,14 +17,14 @@ struct mediacodec_hevc_decoder {
  unsigned slots,capacity;
  int failed,eos,closed;
 };
-static bool discard(android_image_view_t *v)
+static bool mediacodec_hevc_decoder_discard(android_image_view_t *v)
 {
  if(!v->ticket)return true;
  if(!android_image_queue_return(v->ticket,v->generation,-1))return false;
  memset(v,0,sizeof(*v));return true;
 }
 /* Exactly one codec output action and one reader acquire per invocation. */
-static int service(mediacodec_hevc_decoder_t *d)
+static int mediacodec_hevc_decoder_service(mediacodec_hevc_decoder_t *d)
 {
  android_image_view_t image;
  const mediacodec_output_format_t *format;
@@ -51,22 +51,22 @@ static int service(mediacodec_hevc_decoder_t *d)
  if(!status)return 0;
  tag=(uint64_t)image.timestamp_ns/1000;
  if(!tag || image.timestamp_ns%1000 || tag>d->last_tag) {
-  discard(&image);goto fail;
+  mediacodec_hevc_decoder_discard(&image);goto fail;
  }
  for(i=0;i<d->slots;i++)if(d->tag[i]==tag)break;
  /* A discarded parser output may arrive after its reference slot was reused. */
  if(i==d->slots) {
-  if(!discard(&image))goto fail;
+  if(!mediacodec_hevc_decoder_discard(&image))goto fail;
   return 0;
  }
  if(d->image[i].ticket || !d->format.serial) {
-  discard(&image);goto fail;
+  mediacodec_hevc_decoder_discard(&image);goto fail;
  }
  d->image[i]=image;return 0;
 fail:
  d->failed=1;return -1;
 }
-static int decode(void *opaque,const rh265_video_params_t *params,
+static int mediacodec_hevc_decoder_decode(void *opaque,const rh265_video_params_t *params,
       const rh265_access_unit_t *au,const rh265_nal_t *slices,
       const rh265_hw_picture_t *picture)
 {
@@ -78,7 +78,7 @@ static int decode(void *opaque,const rh265_video_params_t *params,
        || picture->slot>=d->slots || !picture->serial
        || picture->serial>((~(uint64_t)0)>>1)/1000
        || memcmp(params,&d->params,sizeof(*params)))return -1;
- if(service(d)<0)return -1;
+ if(mediacodec_hevc_decoder_service(d)<0)return -1;
  if(mediacodec_hevc_packet(au,slices,au->num_slices,d->packet,d->capacity,&bytes)!=1)
   return -1;
  status=mediacodec_session_submit(d->session,d->packet,bytes,(int64_t)picture->serial,false);
@@ -87,31 +87,31 @@ static int decode(void *opaque,const rh265_video_params_t *params,
  /* Codec-owned references do not need acquired Surface images. Drop prior
   * display outputs canceled by an IRAP/DPB transaction, including late arrivals. */
  for(i=0;i<d->slots;i++)if(!(picture->keep_outputs & ((uint32_t)1<<i))) {
-  if(!discard(&d->image[i])){d->failed=1;return -1;}
+  if(!mediacodec_hevc_decoder_discard(&d->image[i])){d->failed=1;return -1;}
   d->tag[i]=0;
  }
- if(!discard(&d->image[picture->slot])){d->failed=1;return -1;}
+ if(!mediacodec_hevc_decoder_discard(&d->image[picture->slot])){d->failed=1;return -1;}
  d->tag[picture->slot]=picture->output?picture->serial:0;
  d->last_tag=picture->serial;
  return 0;
 }
-static int output(void *opaque,unsigned slot,video_hw_frame_t *out)
+static int mediacodec_hevc_decoder_output(void *opaque,unsigned slot,video_hw_frame_t *out)
 {
  mediacodec_hevc_decoder_t *d=(mediacodec_hevc_decoder_t*)opaque;
  int status;
  if(!d || !out || slot>=d->slots || d->closed)return -1;
- if(service(d)<0)return -1;
+ if(mediacodec_hevc_decoder_service(d)<0)return -1;
  if(!d->image[slot].ticket)return 1;
  status=d->importer.export_image(d->importer.context,&d->image[slot],&d->format,&d->color,out);
  if(!status)memset(&d->image[slot],0,sizeof(d->image[slot]));
  if(status<0)d->failed=1;
  return status;
 }
-static int drain(void *opaque)
+static int mediacodec_hevc_decoder_drain(void *opaque)
 {
  mediacodec_hevc_decoder_t *d=(mediacodec_hevc_decoder_t*)opaque;
  int status;
- if(!d || d->closed || service(d)<0)return -1;
+ if(!d || d->closed || mediacodec_hevc_decoder_service(d)<0)return -1;
  if(d->eos)return 0;
  status=mediacodec_session_submit(d->session,NULL,0,0,true);
  if(status<0){d->failed=1;return -1;}
@@ -123,7 +123,7 @@ bool mediacodec_hevc_decoder_retire_poll(mediacodec_hevc_decoder_t *d)
  unsigned i;
  if(!d)return true;
  if(!d->closed)return false;
- for(i=0;i<d->slots;i++)if(!discard(&d->image[i]))return false;
+ for(i=0;i<d->slots;i++)if(!mediacodec_hevc_decoder_discard(&d->image[i]))return false;
  if(d->images) {
   android_image_queue_poll(d->images);
   if(!android_image_queue_idle(d->images))return false;
@@ -179,7 +179,7 @@ bool mediacodec_hevc_decoder_open(JNIEnv *env,const rh265_video *source,
  d->session=mediacodec_session_new(env,&config,window);
  if(!d->session)goto fail;
  d->importer=*importer;free(csd);
- ops->decoder=d;ops->decode=decode;ops->output=output;ops->drain=drain;
+ ops->decoder=d;ops->decode=mediacodec_hevc_decoder_decode;ops->output=mediacodec_hevc_decoder_output;ops->drain=mediacodec_hevc_decoder_drain;
  return true;
 fail:
  if(d->images){android_image_queue_close(d->images);android_image_queue_free(d->images);}

@@ -47,7 +47,7 @@ bool android_frame_finish(void *owner,uint64_t index,uint64_t generation,int fd)
  }
  memset(&s->view,0,sizeof(s->view));retro_atomic_store_release_int(&s->state,0);return true;
 }
-static void abandon(void *owner,uint64_t index,uint64_t generation)
+static void android_frame_abandon(void *owner,uint64_t index,uint64_t generation)
 {
  android_frame_view_t view;
  android_frame_pool_t *p=(android_frame_pool_t*)owner;
@@ -55,7 +55,7 @@ static void abandon(void *owner,uint64_t index,uint64_t generation)
  if(android_frame_claim(owner,index,generation,(uint64_t)(uintptr_t)&p->slot[(unsigned)index],&view))
   android_frame_finish(owner,index,generation,-1);
 }
-bool android_frame_callback(void (*callback)(void*,uint64_t,uint64_t)){return callback==abandon;}
+bool android_frame_callback(void (*callback)(void*,uint64_t,uint64_t)){return callback==android_frame_abandon;}
 bool android_frame_unclaim(void *owner,uint64_t index,uint64_t generation)
 {
  android_frame_pool_t *p=(android_frame_pool_t*)owner;
@@ -88,7 +88,7 @@ int android_frame_export(android_frame_pool_t *p,const android_frame_view_t *vie
  s=&p->slot[i];if(s->generation==~(uint64_t)0)return -1;
  s->generation++;s->view=*view;
  memset(&frame,0,sizeof(frame));frame.image=(uint64_t)(uintptr_t)s;
- frame.owner=p;frame.done=i;frame.done_value=s->generation;frame.abandon=abandon;
+ frame.owner=p;frame.done=i;frame.done_value=s->generation;frame.abandon=android_frame_abandon;
  frame.width=view->image.right-view->image.left;frame.height=view->image.bottom-view->image.top;
  frame.crop_x=view->image.left;frame.crop_y=view->image.top;frame.pixfmt=view->pixfmt;frame.color=view->color;
  retro_atomic_store_release_int(&s->state,1);*out=frame;return 0;

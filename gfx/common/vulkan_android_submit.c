@@ -47,7 +47,7 @@ int vulkan_android_submission_poll(vulkan_android_submission_t *e)
  }
  e->inflight=0;return 1;
 }
-static void destination_barrier(vulkan_android_submission_t *e,VkImage image,
+static void vulkan_android_destination_barrier(vulkan_android_submission_t *e,VkImage image,
       VkImageLayout old,VkImageLayout next,bool before)
 {
  VkImageMemoryBarrier b;
@@ -99,12 +99,12 @@ int vulkan_android_submission_present(vulkan_android_submission_t *e,
  memset(&begin,0,sizeof(begin));begin.sType=VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
  if(e->ops.begin(e->command,&begin)!=VK_SUCCESS)goto refuse;
  vulkan_android_image_barrier(e->command,e->ops.barrier,e->image.image,e->family,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,true);
- destination_barrier(e,destination,layout,VK_IMAGE_LAYOUT_GENERAL,true);
+ vulkan_android_destination_barrier(e,destination,layout,VK_IMAGE_LAYOUT_GENERAL,true);
  e->ops.bind_pipeline(e->command,VK_PIPELINE_BIND_POINT_COMPUTE,e->pipeline.pipeline);
  e->ops.bind_sets(e->command,VK_PIPELINE_BIND_POINT_COMPUTE,e->pipeline.layout,0,1,e->pipeline.sets,0,NULL);
  e->ops.push(e->command,e->pipeline.layout,VK_SHADER_STAGE_COMPUTE_BIT,0,sizeof(e->header),e->header);
  e->ops.dispatch(e->command,(e->header[0]+7)/8,(e->header[1]+7)/8,1);
- destination_barrier(e,destination,VK_IMAGE_LAYOUT_GENERAL,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,false);
+ vulkan_android_destination_barrier(e,destination,VK_IMAGE_LAYOUT_GENERAL,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,false);
  vulkan_android_image_barrier(e->command,e->ops.barrier,e->image.image,e->family,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,false);
  if(e->ops.end(e->command)!=VK_SUCCESS || e->ops.reset_fences(e->device,1,&e->fence)!=VK_SUCCESS)goto refuse;
  memset(&submit,0,sizeof(submit));submit.sType=VK_STRUCTURE_TYPE_SUBMIT_INFO;

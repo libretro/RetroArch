@@ -1,10 +1,10 @@
 /* Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier: GPL-3.0-or-later */
 #include "vulkan_android_cache_entry.h"
 #include <string.h>
-static const uint32_t rgba8_shader[]=
+static const uint32_t vulkan_android_entry_rgba8_shader[]=
 #include "../drivers/vulkan_shaders/external_rgb_to_rgba8888.comp.inc"
 ;
-static const uint32_t fp16_shader[]=
+static const uint32_t vulkan_android_entry_fp16_shader[]=
 #include "../drivers/vulkan_shaders/external_rgb_to_rgba16f.comp.inc"
 ;
 bool vulkan_android_cache_entry_destroy(vulkan_android_cache_entry_t *e)
@@ -55,7 +55,7 @@ bool vulkan_android_cache_entry_create(const vulkan_android_entry_config_t *c,
  if(!vulkan_android_image_create(c->device,&c->image,(struct AHardwareBuffer*)source->image.buffer,
           source->image.buffer_width,source->image.buffer_height,c->memory,model,range,&s->image))goto fail;
  if(!vulkan_android_pipeline_create(c->device,&c->pipeline,s->image.sampler,c->sampler_descriptors,
-          1,fp16?fp16_shader:rgba8_shader,fp16?sizeof(fp16_shader):sizeof(rgba8_shader),&s->pipeline))goto fail;
+          1,fp16?vulkan_android_entry_fp16_shader:vulkan_android_entry_rgba8_shader,fp16?sizeof(vulkan_android_entry_fp16_shader):sizeof(vulkan_android_entry_rgba8_shader),&s->pipeline))goto fail;
  if(!vulkan_android_sync_create(c->device,&c->sync,&s->sync))goto fail;
  memset(&command,0,sizeof(command));command.sType=VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
  command.commandPool=c->command_pool;command.commandBufferCount=1;
