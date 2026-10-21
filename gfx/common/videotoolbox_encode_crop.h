@@ -17,7 +17,7 @@ static INLINE bool videotoolbox_encode_crop_format(CMVideoFormatDescriptionRef b
    int length=0;
    bool found=false,ok=false;
    CFDictionaryRef extensions,old_atoms,generated_atoms;
-   CFTypeRef configuration;
+   CFTypeRef configuration,clean_aperture;
    CMVideoFormatDescriptionRef generated=NULL;
    CFMutableDictionaryRef copy=NULL,atoms=NULL;
    if (output) *output=NULL;
@@ -53,6 +53,14 @@ static INLINE bool videotoolbox_encode_crop_format(CMVideoFormatDescriptionRef b
       if (!generated_atoms || CFGetTypeID(generated_atoms)!=CFDictionaryGetTypeID()) goto done;
       configuration=CFDictionaryGetValue(generated_atoms,CFSTR("hvcC")); if (!configuration) goto done;
       CFDictionarySetValue(atoms,CFSTR("hvcC"),configuration);
+      /* The SPS now defines the visible rectangle. Original aperture offsets
+       * refer to the larger encoder surface and would crop the MP4 twice.
+       * Use CoreMedia's geometry derived from the rewritten SPS instead. */
+      CFDictionaryRemoveValue(atoms,CFSTR("clap"));
+      clean_aperture=CFDictionaryGetValue(CMFormatDescriptionGetExtensions(generated),
+            kCMFormatDescriptionExtension_CleanAperture);
+      if (clean_aperture) CFDictionarySetValue(copy,kCMFormatDescriptionExtension_CleanAperture,clean_aperture);
+      else CFDictionaryRemoveValue(copy,kCMFormatDescriptionExtension_CleanAperture);
       CFDictionarySetValue(copy,kCMFormatDescriptionExtension_SampleDescriptionExtensionAtoms,atoms);
       if (CMVideoFormatDescriptionCreateFromHEVCParameterSets(NULL,count,sets,sizes,length,copy,output)) goto done;
    }
