@@ -580,6 +580,7 @@ uint	video_openxr_placement	1	0
 uint	video_openxr_controllers	1	0
 uint	video_openxr_laser	1	0
 uint	video_openxr_laser_beam	1	1
+uint	video_openxr_edit_snap_angles	1	1
 uint	video_openxr_edit_smoothing	1	2
 uint	rewind_granularity	1	1
 uint	playlist_show_history_icons	1	PLAYLIST_SHOW_HISTORY_ICONS_CONTENT
@@ -1302,6 +1303,7 @@ uint	video_openxr_placement	1	0
 uint	video_openxr_controllers	1	0
 uint	video_openxr_laser	1	0
 uint	video_openxr_laser_beam	1	1
+uint	video_openxr_edit_snap_angles	1	1
 uint	video_openxr_edit_smoothing	1	2
 uint	rewind_granularity	1	1
 uint	playlist_show_history_icons	1	PLAYLIST_SHOW_HISTORY_ICONS_CONTENT
@@ -2045,6 +2047,7 @@ uint	video_openxr_placement	1	0
 uint	video_openxr_controllers	1	0
 uint	video_openxr_laser	1	0
 uint	video_openxr_laser_beam	1	1
+uint	video_openxr_edit_snap_angles	1	1
 uint	video_openxr_edit_smoothing	1	2
 uint	rewind_granularity	1	1
 uint	playlist_show_history_icons	1	PLAYLIST_SHOW_HISTORY_ICONS_CONTENT

@@ -79,11 +79,13 @@ bool input_openxr_hotkey(unsigned id);
  * desktop told when not. Begin, once the menu was asked to close: on at
  * once, pausing running content when @pause (While Editing Screens)
  * asks, held screens snapping when @snap (Snap to Screens) does;
- * Edit Smoothing's level, @smoothing, holds until edit mode ends; a
- * menu that stayed open (no content) is told instead. End: off at once,
- * as a video reinit wants. */
+ * Snap to Angles' step, @snap_angles, and Edit Smoothing's level,
+ * @smoothing, hold until edit mode ends; a menu that stayed open (no
+ * content) is told instead. End: off at once, as a video reinit
+ * wants. */
 bool input_openxr_edit_toggle(void);
-void input_openxr_edit_begin(bool pause, bool snap, unsigned smoothing);
+void input_openxr_edit_begin(bool pause, bool snap, unsigned snap_angles,
+      unsigned smoothing);
 void input_openxr_edit_end(void);
 
 /* Main thread: what each hand holds is let go where it is, as before a

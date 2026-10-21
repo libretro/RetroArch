@@ -82,6 +82,18 @@ enum video_openxr_laser_beam
    VIDEO_OPENXR_LASER_BEAM_LAST
 };
 
+/* Snap to Angles: the step edit mode turns and tilts a held item in
+ * (video_openxr_edit_snap_angles). */
+enum video_openxr_edit_snap_angles
+{
+   VIDEO_OPENXR_EDIT_SNAP_ANGLES_OFF = 0,
+   VIDEO_OPENXR_EDIT_SNAP_ANGLES_15,
+   VIDEO_OPENXR_EDIT_SNAP_ANGLES_30,
+   VIDEO_OPENXR_EDIT_SNAP_ANGLES_45,
+   VIDEO_OPENXR_EDIT_SNAP_ANGLES_90,
+   VIDEO_OPENXR_EDIT_SNAP_ANGLES_LAST
+};
+
 /* Edit Smoothing: how much edit mode steadies the controllers' aim
  * (video_openxr_edit_smoothing). */
 enum video_openxr_edit_smoothing

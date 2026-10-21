@@ -3487,6 +3487,301 @@ static void test_tilt_snap(void)
          && turn_apart(&pose.orientation, &aim.orientation) < 0.01);
 }
 
+/* The angle the free hand's stick has given, as steps every size
+ * degrees show it: within VIDEO_XR_EDIT_TURN_HOLD of a step, the step,
+ * and *held. Size 0: no steps. */
+static double step_shown(double deg, double size, int *held)
+{
+   double s;
+   *held = 0;
+   if (size <= 0.0)
+      return deg;
+   s     = floor(deg / size + 0.5) * size;
+   *held = fabs(deg - s) <= VIDEO_XR_EDIT_TURN_HOLD;
+   return *held ? s : deg;
+}
+
+/* Degrees between two angles, either side of +-180. */
+static double angle_off(double a, double b)
+{
+   double d = fmod(fabs(a - b), 360.0);
+   return (d > 180.0) ? 360.0 - d : d;
+}
+
+/* g holding an item at x, y, z turned yaw then pitch degrees, taken
+ * with aim. */
+static void step_grab(video_xr_grab_t *g, const video_xr_pose_t *aim,
+      double x, double y, double z, double yaw, double pitch)
+{
+   video_xr_pose_t item, tip, inv;
+   memset(g, 0, sizeof(*g));
+   snap_pose(&item, x, y, z, yaw);
+   axis_turn(&tip, 0, pitch);
+   video_xr_compose(&item, &tip, &item);
+   g->base = item.position;
+   video_xr_pose_invert(aim, &inv);
+   video_xr_compose(&inv, &item, &g->rel);
+   video_xr_grab_hold(g, aim, &item.orientation);
+}
+
+/* The free hand's stick for 10 ms at x, y on g's item, then its steps
+ * every size degrees from facing head; *buzzes counts the steps taken
+ * with their buzz armed, as the main thread arms it in *armed. */
+static unsigned step_stick(video_xr_grab_t *g, const video_xr_pose_t *aim,
+      const video_xr_vec3_t *head, float size, float *rest, float x,
+      float y, unsigned *armed, unsigned *buzzes)
+{
+   unsigned held;
+   *armed |= video_xr_grab_off_step(g, aim, head, size, rest);
+   held    = video_xr_grab_step(g, aim, head, size,
+         video_xr_grab_turn(g, aim, x, y, 0.01), rest, NULL, 0, NULL);
+   if (held & *armed)
+      (*buzzes)++;
+   *armed &= ~held;
+   return held;
+}
+
+/* Turned by the free hand's stick, an item off to the side steps every
+ * size degrees from facing the head across the floor, from where the
+ * head is, not where the hand points: within VIDEO_XR_EDIT_TURN_HOLD
+ * of a step it holds there, and pushed on, it leaves it, its buzz armed
+ * again for the next step it comes to. Left, then right, and on round a
+ * whole turn. Size 0: never held. */
+static void test_step_turn_at(float size)
+{
+   unsigned k, held, bad = 0, holds = 0, faced = 0, armed = 0, buzzes = 0;
+   unsigned entered = 0;
+   int was_at = 0;
+   float rest[2];
+   double zero, deg = 20.1;
+   video_xr_grab_t g;
+   video_xr_pose_t aim, pose;
+   video_xr_vec3_t head;
+   video_screen_xr_t s;
+   rest[0] = 0.0f;
+   rest[1] = 0.0f;
+   head.x  = -0.3f;
+   head.y  = 0.2f;
+   head.z  = 0.4f;
+   /* The yaw that faces the head from 0.9, -1.8. */
+   zero    = atan2(-1.2, 2.2) * 180.0 / M_PI;
+   turn_aim(&aim, 30.0f, 10.0f, 0.0f);
+   step_grab(&g, &aim, 0.9, 0.0, -1.8, zero + deg, 0.0);
+   for (k = 0; k < 600; k++)
+   {
+      float x     = (k < 100) ? -1.0f : 1.0f;
+      int at;
+      double want;
+      deg        += 0.9 * x;
+      want        = step_shown(deg, size, &at);
+      held        = step_stick(&g, &aim, &head, size, rest, x, 0.0f,
+            &armed, &buzzes);
+      video_xr_grab_pose(&g, &aim, NULL, 0, NULL, &pose, &s, NULL);
+      if (held)
+         holds++;
+      if (at && !was_at)
+         entered++;
+      was_at = at;
+      if (     angle_off(s.yaw, zero + want) > 0.02
+            || held != (at ? VIDEO_XR_STEP_TURN : 0u)
+            || !vec_is(&pose.position, 0.9, 0.0, -1.8))
+      {
+         if (!bad++)
+            printf("  FAIL %s:%d: size %.0f frame %u at %.2f: yaw %.3f"
+                  " held %u, want %.3f\n", __FILE__, __LINE__, size, k,
+                  deg, s.yaw, held, zero + want);
+      }
+      if (size > 0.0f && want == 0.0)
+      {
+         /* At 0, its front looks at the head across the floor. */
+         video_xr_vec3_t v, front;
+         v.x = 0.0f;
+         v.y = 0.0f;
+         v.z = 1.0f;
+         video_xr_rotate(&pose.orientation, &v, &front);
+         if (     fabs(front.x * (head.z - pose.position.z)
+                  - front.z * (head.x - pose.position.x)) < 1e-3
+               && front.x * (head.x - pose.position.x)
+                  + front.z * (head.z - pose.position.z) > 0.0)
+            faced++;
+         else
+            bad++;
+      }
+   }
+   CHECK(bad == 0);
+   /* One buzz a step, about four frames each. */
+   CHECK(buzzes == entered && holds >= 4 * entered && holds <= 5 * entered);
+   if (size > 0.0f)
+      CHECK(entered >= (unsigned)(500.0f / size) && faced >= 8);
+   else
+      CHECK(holds == 0 && buzzes == 0);
+}
+
+static void test_step_turn(void)
+{
+   test_step_turn_at(15.0f);
+   test_step_turn_at(30.0f);
+   test_step_turn_at(45.0f);
+   test_step_turn_at(90.0f);
+   test_step_turn_at(0.0f);
+}
+
+/* Tilted by the free hand's stick, an item steps every size degrees
+ * from upright about its own left-right line, holding within
+ * VIDEO_XR_EDIT_TURN_HOLD of each and buzzing once each time it comes
+ * to one, either way and on all the way round; carried or with Tilt
+ * held. Size 0: never held. */
+static void test_step_tilt_at(float size)
+{
+   unsigned tilt;
+   for (tilt = 0; tilt < 2; tilt++)
+   {
+      unsigned k, held, bad = 0, holds = 0, armed = 0, buzzes = 0;
+      unsigned entered = 0;
+      int was_at = 0;
+      float rest[2];
+      double deg = -6.3;
+      video_xr_grab_t g;
+      video_xr_pose_t aim, pose, want_q, tip;
+      rest[0] = 0.0f;
+      rest[1] = 0.0f;
+      turn_aim(&aim, -20.0f, 15.0f, 5.0f);
+      step_grab(&g, &aim, 0.4, 0.1, -1.8, 25.0, deg);
+      g.tilt = tilt != 0;
+      for (k = 0; k < 480; k++)
+      {
+         /* Down 30 frames, then up 450: a whole turn and more. */
+         float y = (k < 30) ? -1.0f : 1.0f;
+         int at;
+         double want;
+         deg   -= 0.9 * y;
+         want   = step_shown(deg, size, &at);
+         held   = step_stick(&g, &aim, NULL, size, rest, 0.0f, y, &armed,
+               &buzzes);
+         video_xr_grab_pose(&g, &aim, NULL, 0, NULL, &pose, NULL, NULL);
+         snap_pose(&want_q, 0.0, 0.0, 0.0, 25.0);
+         axis_turn(&tip, 0, want);
+         video_xr_compose(&want_q, &tip, &want_q);
+         if (held)
+            holds++;
+         if (at && !was_at)
+            entered++;
+         was_at = at;
+         if (     turn_apart(&pose.orientation, &want_q.orientation) > 0.02
+               || held != (at ? VIDEO_XR_STEP_TILT : 0u)
+               || !vec_is(&pose.position, 0.4, 0.1, -1.8))
+         {
+            if (!bad++)
+               printf("  FAIL %s:%d: size %.0f tilt %u frame %u at %.2f:"
+                     " %.3f off, held %u\n", __FILE__, __LINE__, size,
+                     tilt, k, deg,
+                     turn_apart(&pose.orientation, &want_q.orientation),
+                     held);
+         }
+      }
+      CHECK(bad == 0);
+      CHECK(buzzes == entered && holds >= 4 * entered
+            && holds <= 5 * entered);
+      if (size > 0.0f)
+         CHECK(entered >= (unsigned)(400.0f / size));
+      else
+         CHECK(holds == 0 && buzzes == 0);
+   }
+}
+
+static void test_step_tilt(void)
+{
+   test_step_tilt_at(15.0f);
+   test_step_tilt_at(30.0f);
+   test_step_tilt_at(45.0f);
+   test_step_tilt_at(90.0f);
+   test_step_tilt_at(0.0f);
+}
+
+/* Lying flat, face up, an item still turns in steps from facing the
+ * head, its top away from it at 0, and never to NaN. Its heading there
+ * blends in a little of its front's, so a little off. */
+static void test_step_flat(void)
+{
+   unsigned k, held, bad = 0, armed = 0, buzzes = 0;
+   float rest[2];
+   double deg = 0.0;
+   video_xr_grab_t g;
+   video_xr_pose_t aim, pose, want_q, tip;
+   video_xr_vec3_t head;
+   rest[0] = 0.0f;
+   rest[1] = 0.0f;
+   head.x  = 0.0f;
+   head.y  = 0.0f;
+   head.z  = 0.0f;
+   video_xr_pose_identity(&aim);
+   step_grab(&g, &aim, 0.0, -0.5, -1.8, 0.0, -90.0);
+   for (k = 0; k < 50; k++)
+   {
+      int at;
+      double want;
+      deg  += 0.9;
+      want  = step_shown(deg, 15.0, &at);
+      held  = step_stick(&g, &aim, &head, 15.0f, rest, 1.0f, 0.0f, &armed,
+            &buzzes);
+      video_xr_grab_pose(&g, &aim, NULL, 0, NULL, &pose, NULL, NULL);
+      snap_pose(&want_q, 0.0, 0.0, 0.0, want);
+      axis_turn(&tip, 0, -90.0);
+      video_xr_compose(&want_q, &tip, &want_q);
+      if (     !(turn_apart(&pose.orientation, &want_q.orientation) < 0.2)
+            || held != (at ? VIDEO_XR_STEP_TURN : 0u))
+      {
+         if (!bad++)
+            printf("  FAIL %s:%d: frame %u at %.2f: %.3f off\n", __FILE__,
+                  __LINE__, k, deg,
+                  turn_apart(&pose.orientation, &want_q.orientation));
+      }
+   }
+   CHECK(bad == 0);
+}
+
+/* A snap to another screen that would engage beats a step: turned on
+ * by the stick from holding at a step 6.5 degrees short of parallel,
+ * the held screen snaps parallel once the stick has taken it within
+ * VIDEO_XR_SNAP_ANGLE, still inside the step's hold. */
+static void test_step_snap_first(void)
+{
+   unsigned k, held[7], snapped = 0;
+   float rest[2];
+   video_xr_quad_set_t set;
+   video_xr_grab_t g;
+   video_xr_pose_t aim, pose, start;
+   video_xr_vec3_t head;
+   rest[0] = 0.0f;
+   rest[1] = 0.0f;
+   snap_set(&set);
+   video_xr_pose_identity(&aim);
+   /* Facing the head 23.5 degrees left of parallel: the 30 step is
+    * 6.5 right of it. */
+   head.x   = (float)(1.3 - 2.0 * tan(23.5 * M_PI / 180.0));
+   head.y   = 0.0f;
+   head.z   = 0.0f;
+   step_grab(&g, &aim, 1.3, 0.0, -2.0, 10.0, 0.0);
+   g.width  = 1.0f;
+   g.height = 0.6f;
+   g.slot   = 1;
+   /* Taken a metre away, so the snaps are whole. */
+   snap_pose(&start, 1.3, 0.0, -1.0, 10.0);
+   for (k = 1; k <= 6; k++)
+   {
+      held[k] = video_xr_grab_step(&g, &aim, &head, 15.0f,
+            video_xr_grab_turn(&g, &aim, -1.0f, 0.0f, 0.01), rest, &set, 0,
+            &start);
+      video_xr_grab_pose(&g, &aim, &set, 0, &start, &pose, NULL, &snapped);
+   }
+   /* 31.7 to 29.0 held at 30; at 28.1, 4.6 from parallel, the snap. */
+   CHECK(held[1] == 0 && held[2] == VIDEO_XR_STEP_TURN
+         && held[5] == VIDEO_XR_STEP_TURN);
+   CHECK(held[6] == 0 && (snapped & VIDEO_XR_SNAP_TURN)
+         && turn_apart(&pose.orientation, &aim.orientation) < 0.01
+         && rest[0] == 0.0f);
+}
+
 #define SMOOTH_MAX 400
 static double t_smooth_raw[SMOOTH_MAX];
 static double t_smooth_out[SMOOTH_MAX];
@@ -4107,6 +4402,10 @@ int main(void)
    test_grab_snap();
    test_turn_snap();
    test_tilt_snap();
+   test_step_turn();
+   test_step_tilt();
+   test_step_flat();
+   test_step_snap_first();
    test_smooth_steady();
    test_smooth_tremor();
    test_smooth_sweep();

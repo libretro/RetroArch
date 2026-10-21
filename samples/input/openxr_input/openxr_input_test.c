@@ -2020,6 +2020,7 @@ static void test_joypad_wrapped(void)
 
 /* Snap to Screens, as edit mode starts; off unless a case says. */
 static bool t_snap;
+static unsigned t_angles = VIDEO_OPENXR_EDIT_SNAP_ANGLES_15;
 static unsigned t_smooth;
 
 /* As the frontend's command does it, between frames, with the menu
@@ -2027,7 +2028,7 @@ static unsigned t_smooth;
 static void t_edit_on(bool pause)
 {
    if (input_openxr_edit_toggle())
-      input_openxr_edit_begin(pause, t_snap, t_smooth);
+      input_openxr_edit_begin(pause, t_snap, t_angles, t_smooth);
 }
 
 /* Edit Screens: the frontend's command starts it at once, between
@@ -2053,7 +2054,7 @@ static void test_edit_mode(void)
    t_let_go();
    CHECK(input_openxr_edit_toggle(), "a start was refused");
    CHECK(!t_editing, "the toggle alone started it");
-   input_openxr_edit_begin(false, false, 0);
+   input_openxr_edit_begin(false, false, 0, 0);
    CHECK(t_editing, "did not start at once");
    t_hold("combined/a", 0, 1.0f, 0.0f);
    t_hold("edit/edit_screens", 0, 1.0f, 0.0f);
@@ -2116,7 +2117,7 @@ static void test_edit_mode(void)
    t_menu_open = true;
    t_notices   = 0;
    CHECK(input_openxr_edit_toggle(), "a start was refused with the menu open");
-   input_openxr_edit_begin(false, false, 0);
+   input_openxr_edit_begin(false, false, 0, 0);
    CHECK(!t_editing && t_notices == 1 && !strcmp(t_notice, "edit no content"),
          "%u notices, the last %s, editing %d", t_notices, t_notice,
          (int)t_editing);
@@ -2859,6 +2860,262 @@ static void test_edit_stick_lock(void)
    t_let_go();
    t_edit_poll();
    t_edit_end();
+}
+
+/* n polls 10 ms apart, the right hand gripping and the left stick at
+ * x, y: 0.9 degrees each at full travel. */
+static void t_step_polls(unsigned n, float x, float y)
+{
+   unsigned i;
+   t_let_go();
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_hold("edit/stick", 1, x, y);
+   for (i = 0; i < n; i++)
+   {
+      t_clock += 10000;
+      t_edit_poll();
+   }
+}
+
+static bool t_deg_near(float a, double b)
+{
+   return fabs((double)a - b) < 0.01;
+}
+
+/* The free hand's stick turns and tilts what the other hand holds in
+ * 15 degree steps from facing the head and from upright: within 2 of
+ * one it holds there, the holding hand buzzing once as it takes hold,
+ * and again only once it has left that step. Taken at a step, no buzz
+ * there. */
+static void test_edit_step_stick(void)
+{
+   unsigned n;
+   t_head_tracked = true;
+   t_edit_start();
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   n = t_applies[2];
+   /* Right from facing the head: held at 0 to 1.8, then on. */
+   t_step_polls(2, 1.0f, 0.0f);
+   CHECK(t_deg_near(t_xr[0].yaw, 0.0) && t_applies[2] == n,
+         "at 1.8: yaw %.3f, %u buzzes", t_xr[0].yaw, t_applies[2] - n);
+   t_step_polls(12, 1.0f, 0.0f);
+   CHECK(t_deg_near(t_xr[0].yaw, 12.6) && t_applies[2] == n,
+         "at 12.6: yaw %.3f, %u buzzes", t_xr[0].yaw, t_applies[2] - n);
+   /* 13.5 to 16.2 at 15, one buzz; 17.1 is past it. */
+   t_step_polls(1, 1.0f, 0.0f);
+   CHECK(t_deg_near(t_xr[0].yaw, 15.0) && t_applies[2] == n + 1,
+         "at 13.5: yaw %.3f, %u buzzes", t_xr[0].yaw, t_applies[2] - n);
+   t_step_polls(3, 1.0f, 0.0f);
+   CHECK(t_deg_near(t_xr[0].yaw, 15.0) && t_applies[2] == n + 1,
+         "at 16.2: yaw %.3f, %u buzzes", t_xr[0].yaw, t_applies[2] - n);
+   t_step_polls(1, 1.0f, 0.0f);
+   CHECK(t_deg_near(t_xr[0].yaw, 17.1) && t_applies[2] == n + 1,
+         "at 17.1: yaw %.3f, %u buzzes", t_xr[0].yaw, t_applies[2] - n);
+   /* On to 31.5, back to 28.8, all within 30's hold: one buzz. */
+   t_step_polls(16, 1.0f, 0.0f);
+   t_step_polls(3, -1.0f, 0.0f);
+   CHECK(t_deg_near(t_xr[0].yaw, 30.0) && t_applies[2] == n + 2,
+         "at 28.8: yaw %.3f, %u buzzes", t_xr[0].yaw, t_applies[2] - n);
+   /* Out of it at 27.9 and back in at 28.8: again. */
+   t_step_polls(1, -1.0f, 0.0f);
+   CHECK(t_deg_near(t_xr[0].yaw, 27.9) && t_applies[2] == n + 2,
+         "at 27.9: yaw %.3f, %u buzzes", t_xr[0].yaw, t_applies[2] - n);
+   t_step_polls(1, 1.0f, 0.0f);
+   CHECK(t_deg_near(t_xr[0].yaw, 30.0) && t_applies[2] == n + 3,
+         "back at 28.8: yaw %.3f, %u buzzes", t_xr[0].yaw,
+         t_applies[2] - n);
+   /* Up from upright: -13.5 holds at -15 with a buzz, in place. */
+   t_step_polls(15, 0.0f, 1.0f);
+   CHECK(t_deg_near(t_xr[0].pitch, -15.0) && t_deg_near(t_xr[0].yaw, 30.0)
+         && t_near(t_xr[0].x, 0.0f) && t_near(t_xr[0].z, 0.0f)
+         && t_applies[2] == n + 4,
+         "tilted to -13.5: pitch %.3f yaw %.3f, %u buzzes", t_xr[0].pitch,
+         t_xr[0].yaw, t_applies[2] - n);
+   t_let_go();
+   t_edit_poll();
+   t_edit_end();
+
+   /* Carried, nothing steps: turned to 12.6, then the hand 4.4 cm right
+    * puts it 14 from facing the head, and it stays at yaw 12.6. */
+   t_edit_start();
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   t_step_polls(14, 1.0f, 0.0f);
+   n = t_applies[2];
+   t_let_go();
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_aim[2].position.x = (float)(1.8 * tan(1.4 * M_PI / 180.0));
+   t_edit_poll();
+   CHECK(t_deg_near(t_xr[0].yaw, 12.6) && t_applies[2] == n,
+         "carried to 14 from facing: yaw %.3f, %u buzzes", t_xr[0].yaw,
+         t_applies[2] - n);
+   t_let_go();
+   t_edit_poll();
+   t_edit_end();
+
+   /* Taken at 0, carried out of its hold and into 15's with the stick
+    * idle: the first push holds at 15 with a buzz. */
+   t_edit_start();
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   n                   = t_applies[2];
+   t_aim[2].position.x = (float)(1.8 * tan(8.0 * M_PI / 180.0));
+   t_edit_poll();
+   t_aim[2].position.x = (float)(1.8 * tan(14.0 * M_PI / 180.0));
+   t_edit_poll();
+   t_step_polls(1, 1.0f, 0.0f);
+   CHECK(t_deg_near(t_xr[0].yaw, 1.0) && t_applies[2] == n + 1,
+         "carried to 14, pushed: yaw %.3f, %u buzzes", t_xr[0].yaw,
+         t_applies[2] - n);
+   t_let_go();
+   t_edit_poll();
+   t_edit_end();
+
+   /* Tilted by the trigger to 14, it stays there. */
+   t_edit_start();
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_hold("edit/tilt", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   n = t_applies[2];
+   t_aim[2].orientation.x = (float)sin(7.0 * M_PI / 180.0);
+   t_aim[2].orientation.w = (float)cos(7.0 * M_PI / 180.0);
+   t_edit_poll();
+   CHECK(t_deg_near(t_xr[0].pitch, 14.0) && t_applies[2] == n,
+         "tilted by the trigger: pitch %.3f, %u buzzes", t_xr[0].pitch,
+         t_applies[2] - n);
+   t_let_go();
+   t_edit_poll();
+   t_edit_end();
+   t_head_tracked = false;
+}
+
+/* What the stick gave past a step is kept while the stick is out of
+ * its deadzone, though a wavering push drops its axis now and then, and
+ * let go of as the stick is: held at 0, the stick let go, then pushed
+ * back, it leaves after 2. */
+static void test_edit_step_waver(void)
+{
+   unsigned i;
+   double on  = 26.0 * M_PI / 180.0;
+   double off = 24.0 * M_PI / 180.0;
+   t_head_tracked = true;
+   t_edit_start();
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   t_step_polls(2, 1.0f, 0.0f);
+   t_step_polls(1, 0.0f, 0.0f);
+   t_step_polls(3, -1.0f, 0.0f);
+   CHECK(t_deg_near(t_xr[0].yaw, -2.7), "let go at 1.8, back 2.7: yaw %.3f",
+         t_xr[0].yaw);
+   t_let_go();
+   t_edit_poll();
+   t_edit_end();
+
+   /* About the lock line, the tilt acts every other poll. */
+   t_edit_start();
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   for (i = 0; i < 10; i++)
+   {
+      t_step_polls(1, (float)cos(on), (float)sin(on));
+      t_step_polls(1, (float)cos(off), (float)sin(off));
+   }
+   CHECK(t_deg_near(t_xr[0].pitch, -9.0 * (sin(on) - 0.2) / 0.8),
+         "lock line: pitch %.3f", t_xr[0].pitch);
+   t_let_go();
+   t_edit_poll();
+   t_edit_end();
+
+   /* The turn about its deadzone, a little up, too little to tilt,
+    * keeping the stick out of it. */
+   t_edit_start();
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   for (i = 0; i < 20; i++)
+   {
+      t_step_polls(1, 0.3f, 0.15f);
+      t_step_polls(1, 0.19f, 0.15f);
+   }
+   CHECK(t_deg_near(t_xr[0].yaw, 18.0 * 0.1 / 0.8) && t_near(t_xr[0].pitch,
+            0.0f), "deadzone: yaw %.3f pitch %.3f", t_xr[0].yaw,
+         t_xr[0].pitch);
+   t_let_go();
+   t_edit_poll();
+   t_edit_end();
+   t_head_tracked = false;
+}
+
+/* Snap to Angles sets the step. At 45 the stick turns on past 15 and
+ * 30, holds within 2 of 45 with one buzz, leaves it, buzzes again back
+ * in its hold, and again at 90. Off, it neither holds nor buzzes,
+ * turning or tilting. A config's value past 90 steps at 15. */
+static void test_edit_step_sizes(void)
+{
+   unsigned n;
+   t_head_tracked = true;
+   t_angles       = VIDEO_OPENXR_EDIT_SNAP_ANGLES_45;
+   t_edit_start();
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   n = t_applies[2];
+   t_step_polls(15, 1.0f, 0.0f);
+   CHECK(t_deg_near(t_xr[0].yaw, 13.5) && t_applies[2] == n,
+         "45, at 13.5: yaw %.3f, %u buzzes", t_xr[0].yaw, t_applies[2] - n);
+   t_step_polls(17, 1.0f, 0.0f);
+   CHECK(t_deg_near(t_xr[0].yaw, 28.8) && t_applies[2] == n,
+         "45, at 28.8: yaw %.3f, %u buzzes", t_xr[0].yaw, t_applies[2] - n);
+   t_step_polls(16, 1.0f, 0.0f);
+   CHECK(t_deg_near(t_xr[0].yaw, 45.0) && t_applies[2] == n + 1,
+         "45, at 43.2: yaw %.3f, %u buzzes", t_xr[0].yaw, t_applies[2] - n);
+   t_step_polls(4, 1.0f, 0.0f);
+   CHECK(t_deg_near(t_xr[0].yaw, 45.0) && t_applies[2] == n + 1,
+         "45, at 46.8: yaw %.3f, %u buzzes", t_xr[0].yaw, t_applies[2] - n);
+   t_step_polls(1, 1.0f, 0.0f);
+   CHECK(t_deg_near(t_xr[0].yaw, 47.7) && t_applies[2] == n + 1,
+         "45, at 47.7: yaw %.3f, %u buzzes", t_xr[0].yaw, t_applies[2] - n);
+   t_step_polls(1, -1.0f, 0.0f);
+   CHECK(t_deg_near(t_xr[0].yaw, 45.0) && t_applies[2] == n + 2,
+         "45, back at 46.8: yaw %.3f, %u buzzes", t_xr[0].yaw,
+         t_applies[2] - n);
+   t_step_polls(46, 1.0f, 0.0f);
+   CHECK(t_deg_near(t_xr[0].yaw, 90.0) && t_applies[2] == n + 3,
+         "45, at 88.2: yaw %.3f, %u buzzes", t_xr[0].yaw, t_applies[2] - n);
+   t_let_go();
+   t_edit_poll();
+   t_edit_end();
+
+   t_angles = VIDEO_OPENXR_EDIT_SNAP_ANGLES_OFF;
+   t_edit_start();
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   n = t_applies[2];
+   t_step_polls(2, 1.0f, 0.0f);
+   CHECK(t_deg_near(t_xr[0].yaw, 1.8), "off, at 1.8: yaw %.3f",
+         t_xr[0].yaw);
+   t_step_polls(13, 1.0f, 0.0f);
+   t_step_polls(15, 0.0f, 1.0f);
+   CHECK(t_deg_near(t_xr[0].yaw, 13.5) && t_deg_near(t_xr[0].pitch, -13.5)
+         && t_applies[2] == n, "off, at 13.5 and -13.5: yaw %.3f pitch %.3f,"
+         " %u buzzes", t_xr[0].yaw, t_xr[0].pitch, t_applies[2] - n);
+   t_let_go();
+   t_edit_poll();
+   t_edit_end();
+
+   t_angles = VIDEO_OPENXR_EDIT_SNAP_ANGLES_LAST;
+   t_edit_start();
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   n = t_applies[2];
+   t_step_polls(15, 1.0f, 0.0f);
+   CHECK(t_deg_near(t_xr[0].yaw, 15.0) && t_applies[2] == n + 1,
+         "past 90, at 13.5: yaw %.3f, %u buzzes", t_xr[0].yaw,
+         t_applies[2] - n);
+   t_let_go();
+   t_edit_poll();
+   t_edit_end();
+   t_angles       = VIDEO_OPENXR_EDIT_SNAP_ANGLES_15;
+   t_head_tracked = false;
 }
 
 /* A grab with the trigger already held tilts from the start: the roll
@@ -4442,6 +4699,63 @@ static void test_edit_turn_snap(void)
    t_snap = false;
 }
 
+/* A snap to another screen beats a step. Screen 2 beside screen 1,
+ * 10 degrees past parallel, the head where the 30 step is 6.5 past it:
+ * turned back by the stick it holds at that step with one buzz, and at
+ * 4.6 from parallel, still in the step's hold, snaps parallel with the
+ * snap's buzz. */
+static void test_edit_step_snap(void)
+{
+   unsigned i, n;
+   video_xr_quad_t *q;
+   t_snap = true;
+   t_head_tracked = true;
+   t_edit_start();
+   t_snap_beside();
+   q                     = &t_quads.quads[t_quads.num_quads - 1];
+   q->pose.orientation.y = (float)sin(5.0 * M_PI / 180.0);
+   q->pose.orientation.w = (float)cos(5.0 * M_PI / 180.0);
+   t_aim[2].position.x   = 1.245f;
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   /* Carried 5.3 cm, so the snaps are whole. */
+   t_aim[2].position.x = 1.205f;
+   t_aim[2].position.y = 0.025f;
+   t_aim[2].position.z = 0.025f;
+   t_head.position.x   = (float)(1.205 - 1.775 * tan(23.5 * M_PI / 180.0));
+   t_edit_poll();
+   n = t_applies[2];
+   CHECK(t_deg_near(t_xr[1].yaw, 10.0), "taken at %.3f", t_xr[1].yaw);
+   t_step_polls(2, -1.0f, 0.0f);
+   /* Held 6.5 past parallel, the snap's pull shows it at 3. */
+   CHECK(t_deg_near(t_xr[1].yaw, 3.0) && t_applies[2] == n + 1,
+         "at 31.7 from facing: yaw %.3f, %u buzzes", t_xr[1].yaw,
+         t_applies[2] - n);
+   t_step_polls(3, -1.0f, 0.0f);
+   CHECK(t_applies[2] == n + 1, "held at 30: %u buzzes", t_applies[2] - n);
+   t_step_polls(1, -1.0f, 0.0f);
+   CHECK(t_deg_near(t_xr[1].yaw, 0.0) && t_applies[2] == n + 2,
+         "at 28.1 from facing: yaw %.3f, %u buzzes", t_xr[1].yaw,
+         t_applies[2] - n);
+   /* Out of the snap and back to 30, never out of its hold: no step
+    * buzz, however often. */
+   for (i = 0; i < 2; i++)
+   {
+      n = t_applies[2];
+      t_step_polls(1, 1.0f, 0.0f);
+      CHECK(t_deg_near(t_xr[1].yaw, 3.0) && t_applies[2] == n,
+            "back at 29.0 from facing: yaw %.3f, %u buzzes", t_xr[1].yaw,
+            t_applies[2] - n);
+      t_step_polls(1, -1.0f, 0.0f);
+      CHECK(t_deg_near(t_xr[1].yaw, 0.0), "at 28.1 again: yaw %.3f",
+            t_xr[1].yaw);
+   }
+   t_head.position.x = 0.0f;
+   t_head_tracked    = false;
+   t_edit_end();
+   t_snap = false;
+}
+
 /* Carried in, each snap buzzes as it takes hold, one still fading
  * staying armed. Resting at the edge of its whole pull, where it takes
  * hold and lets go poll by poll, no more; again only once that axis has
@@ -4772,6 +5086,9 @@ int main(void)
    test_edit_turn();
    test_edit_tilt_stick();
    test_edit_stick_lock();
+   test_edit_step_stick();
+   test_edit_step_waver();
+   test_edit_step_sizes();
    test_edit_tilt_from_grab();
    test_edit_limits();
    test_edit_spot_moved();
@@ -4802,6 +5119,7 @@ int main(void)
    test_edit_snap();
    test_edit_snap_two_hands();
    test_edit_turn_snap();
+   test_edit_step_snap();
    test_edit_snap_edge();
    test_edit_smoothing();
    test_edit_room();

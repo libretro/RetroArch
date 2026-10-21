@@ -154,6 +154,8 @@ class Result(object):
         self.screen_frames = {}
         self.shot = None
         self.events = []
+        # What each 'until' step that timed out waited for.
+        self.missed = []
         # A pixel of the window inside the 2D map's top screen.
         self.top_px = (800, 240)
         # Seconds after a video reinit's hotkey that its new session's
@@ -206,6 +208,33 @@ def wait_shot(d):
             time.sleep(1)
             return os.path.join(d, 'shots', sorted(pngs)[0])
     return None
+
+
+def wait_frame(d, pick, timeout):
+    """Whether a frame recorded from now on, within timeout seconds, has
+    something pick finds."""
+    path = os.path.join(d, 'xr', 'frames.jsonl')
+    deadline = time.monotonic() + timeout
+    pos = os.path.getsize(path) if os.path.exists(path) else 0
+    part = b''
+    while time.monotonic() < deadline:
+        data = b''
+        if os.path.exists(path):
+            with open(path, 'rb') as f:
+                f.seek(pos)
+                data = f.read()
+        pos += len(data)
+        lines = (part + data).split(b'\n')
+        part = lines.pop()
+        for line in lines:
+            try:
+                e = json.loads(line)
+            except ValueError:
+                continue  # the rest of a line begun before the wait
+            if isinstance(e, dict) and e.get('ev') == 'frame' and pick(e):
+                return True
+        time.sleep(0.01)
+    return False
 
 
 def write_overlay(d):
@@ -435,6 +464,10 @@ def run_case(retroarch, root, monado, case, validate):
             elif kind == 'shot':
                 send('SCREENSHOT', port)
                 res.shot = wait_shot(d)
+            elif kind == 'until':
+                what, pick, timeout = arg
+                if not wait_frame(d, pick, timeout):
+                    res.missed.append('%s within %g s' % (what, timeout))
         # Without its command interface it cannot be told to quit: stop()
         # ends it.
         if settings.get('network_cmd_enable') != 'false':
@@ -4581,6 +4614,16 @@ def screen1_left(frame):
     return eyes[0] if eyes else None
 
 
+def screen1_at_yaw(yaw):
+    """A pick: screen 1's left eye where it shows exactly yaw."""
+    def pick(frame):
+        q = screen1_left(frame)
+        if q and abs(euler(tuple(q['pose'][3:]))[0] - yaw) <= 0.05:
+            return q
+        return None
+    return pick
+
+
 def check_edit_release(res):
     """Let go after a sweep under threaded video: screen 1 never steps
     back from where the hand left it, and is saved there."""
@@ -5735,6 +5778,56 @@ def check_edit_tilt_stick(res):
                                  last_before(res, 'off', screen1_left))
 
 
+def check_edit_step_stick(res, step=15.0):
+    """The left stick, held right at an eighth of full speed (11.25
+    degrees a second) until a frame shows the step, turns screen 1,
+    which the right hand holds and which faces the user, the head held
+    still at the anchor, into the 15 degree step's hold, so it shows and
+    is saved at exactly 15, and the right hand buzzes once, as it takes
+    hold of the step. Taken at the 0 step, it does not buzz there. The
+    step the stick ends in is step. Not a set time: stalled polls cut
+    the stick's turn short."""
+    errors = edit_log_errors(res, ['on', 'off'])
+    q = last_before(res, 'turned', screen1_left)
+    if not q:
+        return errors + ['no frame of screen 1 before the stick let go']
+    yaw, pitch, roll = euler(tuple(q['pose'][3:]))
+    if abs(yaw - step) > 0.05 or abs(pitch) > 0.05 or abs(roll) > 0.05:
+        errors.append('screen 1 turned to yaw %.3f pitch %.3f roll %.3f, '
+                      'want %g, 0, 0' % (yaw, pitch, roll, step))
+    if any(abs(a - b) > EDIT_POS for a, b in zip(q['pose'][:3], S0)):
+        errors.append('screen 1 moved to %s as it turned, want %s'
+                      % (q['pose'][:3], S0))
+    ticks = [e for e in haptics(res, 'right') if e['ev'] == 'haptic'
+             and res.marks['held'] * 1e6 < e['t_us']
+             < res.marks['turned'] * 1e6
+             and abs(e['amplitude'] - SNAP_TICK[0]) < 1e-3
+             and e['duration_ns'] == SNAP_TICK[1]]
+    if len(ticks) != 1:
+        errors.append('%d step buzzes on the right hand, want 1: %s'
+                      % (len(ticks), ticks))
+    return errors + saved_errors(res, 'screen 1', 'video_screen1_xr_', S0,
+                                 (tuple(q['pose'][:3]),
+                                  tuple(q['pose'][3:])), (1.6, 0.96),
+                                 last_before(res, 'off', screen1_left))
+
+
+def check_edit_step_45(res):
+    """With Snap to Angles at 45 degrees, the stick as in edit-step-stick
+    turns screen 1 on past 15 and 30 with no hold there, then into the
+    45 step's hold, so it shows and is saved at exactly 45, with one
+    buzz."""
+    errors = check_edit_step_stick(res, 45.0)
+    yaws = [euler(tuple(q['pose'][3:]))[0] for q in
+            map(screen1_left, between(res, 'held', 'turned', screen1_left))]
+    for s in (15.0, 30.0):
+        near = [y for y in yaws if abs(y - s) < 2.0]
+        if not near or all(abs(y - s) < 0.05 for y in near):
+            errors.append('screen 1 held at %g on its way to 45: %s'
+                          % (s, ['%.3f' % y for y in near[:8]]))
+    return errors
+
+
 # Screen 2 at screen 1's right corner, 18 degrees short of square
 # (yaw -72, facing left): chosen, gripped, and turned by the left stick
 # at an eighth of full speed (11.25 degrees a second) for 1.6 s, it
@@ -6327,6 +6420,33 @@ EDIT_CASES += [
          ('wait', 1), ('send', EDIT), ('wait', 2), ('mark', 'off'),
          ('wait', 1)],
      'check': check_edit_tilt_stick},
+    {'name': 'edit-step-stick', 'map': '3ds', 'settings': SAVE,
+     'script': HEAD_AT_ORIGIN,
+     'steps': edit_start(edit_aim()) + [
+         ('script', script(edit_aim(), EDIT_GRIP)), ('wait', 1),
+         ('mark', 'held'),
+         ('script', script(edit_aim(), EDIT_GRIP,
+                           'action edit/stick@left 0.3 0')),
+         ('until', ('screen 1 at 15', screen1_at_yaw(15.0), 10)),
+         ('script', script(edit_aim(), EDIT_GRIP)),
+         ('wait', 1), ('mark', 'turned'), ('script', edit_aim()),
+         ('wait', 1), ('send', EDIT), ('wait', 2), ('mark', 'off'),
+         ('wait', 1)],
+     'check': check_edit_step_stick},
+    {'name': 'edit-step-45', 'map': '3ds',
+     'settings': dict(SAVE, video_openxr_edit_snap_angles='3'),
+     'script': HEAD_AT_ORIGIN,
+     'steps': edit_start(edit_aim()) + [
+         ('script', script(edit_aim(), EDIT_GRIP)), ('wait', 1),
+         ('mark', 'held'),
+         ('script', script(edit_aim(), EDIT_GRIP,
+                           'action edit/stick@left 0.3 0')),
+         ('until', ('screen 1 at 45', screen1_at_yaw(45.0), 10)),
+         ('script', script(edit_aim(), EDIT_GRIP)),
+         ('wait', 1), ('mark', 'turned'), ('script', edit_aim()),
+         ('wait', 1), ('send', EDIT), ('wait', 2), ('mark', 'off'),
+         ('wait', 1)],
+     'check': check_edit_step_45},
     {'name': 'edit-snap-square', 'map': '3ds', 'settings': SQUARE,
      'steps': edit_start(edit_aim()) + edit_tap(EDIT_NEXT, edit_aim())
      + edit_tap(EDIT_NEXT, edit_aim()) + [
@@ -7829,6 +7949,7 @@ def main():
         errors = case['check'](res) + capture_errors(res, case)
         if 'hung' in res.marks:
             errors.append('RetroArch did not quit')
+        errors += ['no frame showed ' + m for m in res.missed]
         if validate:
             extra, known = unexpected(res.log,
                                       baseline + case.get('baseline', []))

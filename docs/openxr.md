@@ -22,9 +22,9 @@ Linux). Then turn on **Settings > Video > Stereo 3D & Screens > Headset
 Output (OpenXR)**. The other rows there are Headset Refresh Rate, Screen
 Distance, Screen Width, Screen Placement (Fixed in Room, Follow Head,
 Lazy Follow), Headset Controllers, Laser Pointer and Laser Beam; Edit
-Screens, While Editing Screens, Snap to Screens and Edit Smoothing
-are described below. The Recenter Headset Screens, Laser Pointer
-(Toggle) and Edit Headset Screens hotkeys are unbound by default.
+Screens, While Editing Screens, Snap to Screens, Snap to Angles and Edit
+Smoothing are described below. The Recenter Headset Screens, Laser
+Pointer (Toggle) and Edit Headset Screens hotkeys are unbound by default.
 
 **Laser Beam** draws a thin line from each controller to its laser's
 dot, turned to face you. It shows only where the dot can: outside edit
@@ -152,8 +152,12 @@ Next** and **Select Previous** choose an item, below.
   its own left-right line, as when pushing a monitor's top back; down
   the other way. Within about 25 degrees of left or right the stick
   only turns, and within about 25 degrees of up or down it only tilts;
-  pushed clearly diagonally, it does both at once. Snapping still
-  catches it parallel or square.
+  pushed clearly diagonally, it does both at once. As the stick turns
+  and tilts it, the item clicks into steps of Snap to Angles, counted
+  from facing you and from upright: it holds within about 2 degrees of
+  each and the holding hand buzzes once; pushing on leaves the step.
+  Carrying it or tilting it with the trigger never clicks. Snapping
+  still catches it parallel or square, and wins over a step.
 - On the holding hand's stick, up pushes the item away along the laser
   and down pulls it closer; right makes it larger and left smaller,
   faster the further the stick is pushed.
@@ -208,6 +212,10 @@ whole once it is 5 cm or 10 degrees from where it was taken. The
 holding hand gets a short buzz as a snap takes hold, and none again
 from that snap until the screen has left its pull. The menu neither
 snaps nor is snapped to. Where it is let go is where it is saved.
+
+**Snap to Angles** (15 degrees by default) is the step the other hand's
+stick turns and tilts a held item in: 15, 30, 45 or 90 degrees. Off
+turns and tilts it smoothly, with no steps and no buzz.
 
 **Edit Smoothing** (Medium by default) steadies the controllers' aim
 while editing, so a screen held far out on the laser does not shake

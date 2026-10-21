@@ -1667,25 +1667,16 @@ void video_xr_grab_stick(video_xr_grab_t *g, float x, float y, double dt,
    }
 }
 
-void video_xr_grab_turn(video_xr_grab_t *g, const video_xr_pose_t *aim,
-      float x, float y, double dt)
+/* g's item turned about the vertical through its middle and tipped
+ * about its own X, half and tip being half the angles, as a quaternion
+ * takes them. */
+static void video_xr_grab_rotate(video_xr_grab_t *g,
+      const video_xr_pose_t *aim, double half, double tip)
 {
-   double n, s, half, tip;
+   double n, s;
    video_xr_pose_t turn, item;
    video_xr_vec3_t axis;
    video_xr_quat_t *q;
-   double lock = tan(VIDEO_XR_EDIT_TURN_LOCK * VIDEO_XR_PI / 180.0);
-   /* A push a little off one axis is meant along it: a turn takes no
-    * tilt, a tilt no turn. */
-   if (fabs(y) < fabs(x) * lock)
-      y = 0.0f;
-   else if (fabs(x) < fabs(y) * lock)
-      x = 0.0f;
-   half = video_xr_deflection(x) * VIDEO_XR_EDIT_TURN_RATE
-      * dt * VIDEO_XR_PI / 360.0;
-   /* Up tips its top back: about its own -X. */
-   tip  = -video_xr_deflection(y) * VIDEO_XR_EDIT_TURN_RATE
-      * dt * VIDEO_XR_PI / 360.0;
    if (half == 0.0 && tip == 0.0)
       return;
    axis.x = 0.0f;
@@ -1729,6 +1720,162 @@ void video_xr_grab_turn(video_xr_grab_t *g, const video_xr_pose_t *aim,
       q->z = (float)(item.orientation.z / n);
       q->w = (float)(item.orientation.w / n);
    }
+}
+
+unsigned video_xr_grab_turn(video_xr_grab_t *g, const video_xr_pose_t *aim,
+      float x, float y, double dt)
+{
+   double half, tip;
+   double lock = tan(VIDEO_XR_EDIT_TURN_LOCK * VIDEO_XR_PI / 180.0);
+   /* A push a little off one axis is meant along it: a turn takes no
+    * tilt, a tilt no turn. */
+   if (fabs(y) < fabs(x) * lock)
+      y = 0.0f;
+   else if (fabs(x) < fabs(y) * lock)
+      x = 0.0f;
+   half = video_xr_deflection(x) * VIDEO_XR_EDIT_TURN_RATE
+      * dt * VIDEO_XR_PI / 360.0;
+   /* Up tips its top back: about its own -X. */
+   tip  = -video_xr_deflection(y) * VIDEO_XR_EDIT_TURN_RATE
+      * dt * VIDEO_XR_PI / 360.0;
+   video_xr_grab_rotate(g, aim, half, tip);
+   return (half != 0.0 ? VIDEO_XR_STEP_TURN : 0u)
+      | (tip != 0.0 ? VIDEO_XR_STEP_TILT : 0u);
+}
+
+/* Degrees within half a turn either way. */
+static double video_xr_wrap(double deg)
+{
+   deg = fmod(deg, 360.0);
+   if (deg > 180.0)
+      deg -= 360.0;
+   else if (deg <= -180.0)
+      deg += 360.0;
+   return deg;
+}
+
+/* An item's turn from facing head across the floor, in degrees; false
+ * with head right above or below its middle. */
+static bool video_xr_facing(const video_xr_pose_t *item,
+      const video_xr_vec3_t *head, double *deg)
+{
+   video_xr_pose_t back, h;
+   double dx = (double)head->x - item->position.x;
+   double dz = (double)head->z - item->position.z;
+   if (dx * dx + dz * dz < 1e-8)
+      return false;
+   /* It faces its +Z, the heading reads a ray's -Z: so the heading of
+    * it turned half round, which lying flat blends as a ray's does. */
+   video_xr_pose_identity(&back);
+   back.orientation.y = 1.0f;
+   back.orientation.w = 0.0f;
+   video_xr_compose(item, &back, &back);
+   video_xr_heading(&back.orientation, &h);
+   *deg = video_xr_wrap((2.0 * atan2(h.orientation.y, h.orientation.w)
+            - atan2(-dx, -dz)) * 180.0 / VIDEO_XR_PI);
+   return true;
+}
+
+/* An item's tilt from upright about its own X, in degrees; false on its
+ * side, with no upright about that line. */
+static bool video_xr_upright(const video_xr_quat_t *q, double *deg)
+{
+   video_xr_vec3_t v, front, up;
+   v.x = 0.0f;
+   v.y = 0.0f;
+   v.z = 1.0f;
+   video_xr_rotate(q, &v, &front);
+   v.y = 1.0f;
+   v.z = 0.0f;
+   video_xr_rotate(q, &v, &up);
+   if ((double)front.y * front.y + (double)up.y * up.y < 1e-8)
+      return false;
+   *deg = atan2(-(double)front.y, (double)up.y) * 180.0 / VIDEO_XR_PI;
+   return true;
+}
+
+/* The step, every size degrees (0: none), within
+ * VIDEO_XR_EDIT_TURN_HOLD degrees of deg, if one is. */
+static bool video_xr_step_near(double deg, double size, double *step)
+{
+   double s;
+   if (size <= 0.0)
+      return false;
+   s = floor(deg / size + 0.5) * size;
+   if (fabs(deg - s) > VIDEO_XR_EDIT_TURN_HOLD)
+      return false;
+   *step = s;
+   return true;
+}
+
+unsigned video_xr_grab_step(video_xr_grab_t *g, const video_xr_pose_t *aim,
+      const video_xr_vec3_t *head, float size, unsigned axes, float *rest,
+      const video_xr_quad_set_t *targets, unsigned skip,
+      const video_xr_pose_t *start)
+{
+   double deg, step;
+   video_xr_pose_t pose;
+   unsigned held = 0;
+   /* Where the stick alone has taken it. */
+   video_xr_grab_rotate(g, aim,
+         (axes & VIDEO_XR_STEP_TURN) ? rest[0] * VIDEO_XR_PI / 360.0 : 0.0,
+         (axes & VIDEO_XR_STEP_TILT) ? rest[1] * VIDEO_XR_PI / 360.0 : 0.0);
+   if (axes & VIDEO_XR_STEP_TURN)
+      rest[0] = 0.0f;
+   if (axes & VIDEO_XR_STEP_TILT)
+      rest[1] = 0.0f;
+   if (!head)
+      axes &= ~VIDEO_XR_STEP_TURN;
+   if (!axes)
+      return 0;
+   if (targets)
+   {
+      unsigned snapped = 0;
+      video_xr_grab_pose(g, aim, targets, skip, start, &pose, NULL,
+            &snapped);
+      if (snapped & VIDEO_XR_SNAP_ALL)
+         return 0;
+   }
+   /* The tilt first: a turn about the vertical keeps it. */
+   video_xr_grab_pose(g, aim, NULL, 0, NULL, &pose, NULL, NULL);
+   if (     (axes & VIDEO_XR_STEP_TILT)
+         && video_xr_upright(&pose.orientation, &deg)
+         && video_xr_step_near(deg, size, &step))
+   {
+      video_xr_grab_rotate(g, aim, 0.0, (step - deg) * VIDEO_XR_PI / 360.0);
+      rest[1] = (float)(deg - step);
+      held   |= VIDEO_XR_STEP_TILT;
+      video_xr_grab_pose(g, aim, NULL, 0, NULL, &pose, NULL, NULL);
+   }
+   if (     (axes & VIDEO_XR_STEP_TURN)
+         && video_xr_facing(&pose, head, &deg)
+         && video_xr_step_near(deg, size, &step))
+   {
+      video_xr_grab_rotate(g, aim, (step - deg) * VIDEO_XR_PI / 360.0, 0.0);
+      rest[0] = (float)(deg - step);
+      held   |= VIDEO_XR_STEP_TURN;
+   }
+   return held;
+}
+
+unsigned video_xr_grab_off_step(const video_xr_grab_t *g,
+      const video_xr_pose_t *aim, const video_xr_vec3_t *head, float size,
+      const float *rest)
+{
+   double deg, step;
+   video_xr_pose_t pose;
+   unsigned off = 0;
+   video_xr_grab_pose(g, aim, NULL, 0, NULL, &pose, NULL, NULL);
+   /* rest adds to the angles exactly: it turns about the vertical and
+    * tips about the item's own X. */
+   if (     video_xr_upright(&pose.orientation, &deg)
+         && !video_xr_step_near(deg + rest[1], size, &step))
+      off |= VIDEO_XR_STEP_TILT;
+   if (     head
+         && video_xr_facing(&pose, head, &deg)
+         && !video_xr_step_near(deg + rest[0], size, &step))
+      off |= VIDEO_XR_STEP_TURN;
+   return off;
 }
 
 /* A grey premultiplied texel of the laser's image. */

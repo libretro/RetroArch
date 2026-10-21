@@ -3972,6 +3972,38 @@ static size_t setting_get_string_representation_video_openxr_laser_beam(
    return 0;
 }
 
+static size_t setting_get_string_representation_video_openxr_edit_snap_angles(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case VIDEO_OPENXR_EDIT_SNAP_ANGLES_OFF:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SNAP_ANGLES_OFF),
+                  len);
+         case VIDEO_OPENXR_EDIT_SNAP_ANGLES_15:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SNAP_ANGLES_15),
+                  len);
+         case VIDEO_OPENXR_EDIT_SNAP_ANGLES_30:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SNAP_ANGLES_30),
+                  len);
+         case VIDEO_OPENXR_EDIT_SNAP_ANGLES_45:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SNAP_ANGLES_45),
+                  len);
+         case VIDEO_OPENXR_EDIT_SNAP_ANGLES_90:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SNAP_ANGLES_90),
+                  len);
+      }
+   }
+   return 0;
+}
+
 static size_t setting_get_string_representation_video_openxr_edit_smoothing(
       rarch_setting_t *setting, char *s, size_t len)
 {

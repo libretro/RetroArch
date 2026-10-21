@@ -559,8 +559,9 @@ static input_openxr_t input_openxr_st;
 
 /* A hand in edit mode: its hold, where its item was as it took it, the
  * scale of what it holds now and at the grab with its size then, the
- * snaps whose buzz may still fire, and last poll's grip and reset, for
- * their presses. */
+ * snaps whose buzz may still fire, the free hand's turn and tilt past
+ * the steps they hold at (video_xr_grab_step) and the steps whose buzz
+ * may still fire, and last poll's grip and reset, for their presses. */
 typedef struct input_openxr_hold
 {
    video_xr_grab_t g;
@@ -569,7 +570,9 @@ typedef struct input_openxr_hold
    float scale0;
    float width0;
    float height0;
+   float rest[2];
    unsigned armed;
+   unsigned steps;
    bool grip;
    bool reset;
 } input_openxr_hold_t;
@@ -590,6 +593,7 @@ typedef struct input_openxr_edit
    bool paused;       /* edit mode paused the content */
    bool changed;      /* it wrote a setting */
    bool snap;         /* Snap to Screens */
+   float step;        /* Snap to Angles in degrees, 0 Off */
    unsigned smoothing; /* Edit Smoothing, as edit mode started */
    bool next;         /* last poll's Select Next and Previous */
    bool prev;
@@ -2394,6 +2398,10 @@ static void input_openxr_edit_grab(input_openxr_t *st,
    hold->g.tilt   = tilt;
    hold->start    = q->pose;
    hold->armed    = VIDEO_XR_SNAP_ALL;
+   /* Taken at a step, it buzzes only once it has left it. */
+   hold->rest[0]  = 0.0f;
+   hold->rest[1]  = 0.0f;
+   hold->steps    = 0;
    if (q->slot != VIDEO_XR_MENU_SLOT)
       config_get_video_screen_xr(q->slot, &now);
    else if (!config_get_video_menu_xr(&now))
@@ -2415,19 +2423,24 @@ static void input_openxr_edit_grab(input_openxr_t *st,
 }
 
 /* A held item to where the hand puts it now, turned and tilted by the
- * free hand's stick, snapped to targets' screens unless NULL,
+ * free hand's stick in steps, the turn's from facing head (NULL: none),
+ * snapped to targets' screens unless NULL,
  * fading in from where it was taken, its settings with it. The trigger
  * lets its pitch and roll follow from where it is; a clamp holds it
  * again, so it resumes from the limit. Returns the snaps engaged or
- * pulling (video_xr_snap). */
+ * pulling (video_xr_snap), and in *stepped whether a step took hold
+ * with its buzz armed. */
 static unsigned input_openxr_edit_move(input_openxr_edit_t *e,
-      input_openxr_hold_t *hold, const video_xr_pose_t *aim, bool tilt,
-      const int16_t *stick, const int16_t *free_stick, double dt,
-      const video_xr_quad_set_t *targets)
+      input_openxr_hold_t *hold, const video_xr_pose_t *aim,
+      const video_xr_vec3_t *head, bool tilt, const int16_t *stick,
+      const int16_t *free_stick, double dt,
+      const video_xr_quad_set_t *targets, bool *stepped)
 {
-   unsigned snapped;
+   unsigned snapped, axes, held;
    video_xr_pose_t inv, pose;
    video_screen_xr_t values;
+   float x = (float)free_stick[0] / 32767.0f;
+   float y = -(float)free_stick[1] / 32767.0f;
    video_xr_pose_invert(aim, &inv);
    if (tilt && !hold->g.tilt)
       video_xr_compose(&inv, &hold->g.last, &hold->g.rel);
@@ -2437,10 +2450,24 @@ static unsigned input_openxr_edit_move(input_openxr_edit_t *e,
    /* The stick's Y is down, as the RetroPad's. */
    video_xr_grab_stick(&hold->g, (float)stick[0] / 32767.0f,
          -(float)stick[1] / 32767.0f, dt, &hold->scale);
-   video_xr_grab_turn(&hold->g, aim, (float)free_stick[0] / 32767.0f,
-         -(float)free_stick[1] / 32767.0f, dt);
+   /* Only a stick let go leaves the item where it shows: a wavering
+    * push that drops an axis for a poll would stay at its step. */
+   if (x * x + y * y <= VIDEO_XR_EDIT_DEADZONE * VIDEO_XR_EDIT_DEADZONE)
+   {
+      hold->rest[0] = 0.0f;
+      hold->rest[1] = 0.0f;
+   }
+   /* As the snaps' buzz, armed by where the item is, however it got
+    * there. */
+   hold->steps   |= video_xr_grab_off_step(&hold->g, aim, head, e->step,
+         hold->rest);
+   axes           = video_xr_grab_turn(&hold->g, aim, x, y, dt);
    hold->g.width  = hold->width0 * hold->scale / hold->scale0;
    hold->g.height = hold->height0 * hold->scale / hold->scale0;
+   held           = video_xr_grab_step(&hold->g, aim, head, e->step, axes,
+         hold->rest, targets, input_openxr_edit_holding(e), &hold->start);
+   *stepped       = (held & hold->steps) != 0;
+   hold->steps   &= ~held;
    video_views_xr_reset(&values, 1);
    if (video_xr_grab_pose(&hold->g, aim, targets,
             input_openxr_edit_holding(e), &hold->start, &pose, &values,
@@ -2526,13 +2553,14 @@ static void input_openxr_edit_reset(input_openxr_edit_t *e, unsigned slot)
  * Screens asks, and the desktop told. Video hears of it first, so the
  * frame the pause draws shows edit mode. */
 static void input_openxr_edit_start(input_openxr_edit_t *e, bool pause,
-      bool snap, unsigned smoothing)
+      bool snap, float step, unsigned smoothing)
 {
    unsigned h;
    const char *msg = msg_hash_to_str(MSG_OPENXR_EDIT_ON);
    uint32_t flags  = runloop_get_flags();
    e->on      = true;
    e->snap    = snap;
+   e->step    = step;
    e->smoothing = smoothing;
    e->changed = false;
    e->unbound = 0;
@@ -2701,10 +2729,11 @@ static void input_openxr_edit_poll(input_openxr_t *st,
              * showed it: no step back. */
             if (shown && tracked)
             {
+               bool stepped;
                stick[0] = 0;
                stick[1] = 0;
-               input_openxr_edit_move(e, hold, &aim, tilt, stick, stick,
-                     0.0, targets);
+               input_openxr_edit_move(e, hold, &aim, NULL, tilt, stick,
+                     stick, 0.0, targets, &stepped);
             }
             input_openxr_edit_let_go(e, hold, shown);
          }
@@ -2712,7 +2741,10 @@ static void input_openxr_edit_poll(input_openxr_t *st,
          else if (tracked)
          {
             unsigned snapped;
+            bool stepped;
             int16_t free_stick[2];
+            video_xr_pose_t head;
+            const video_xr_vec3_t *at = NULL;
             stick[0]      = 0;
             stick[1]      = 0;
             free_stick[0] = 0;
@@ -2723,9 +2755,15 @@ static void input_openxr_edit_poll(input_openxr_t *st,
             if (e->hand[h ^ 1].g.state != VIDEO_XR_GRAB_HELD)
                input_openxr_stick(st, IXA_E_STICK, st->hands[h ^ 1],
                      free_stick);
-            snapped = input_openxr_edit_move(e, hold, &aim, tilt, stick,
-                  free_stick, dt, targets);
-            if (snapped & hold->armed)
+            if (input_openxr_locate(st, st->frame->session->view_space,
+                     space, time, &head))
+            {
+               video_xr_compose(&inv, &head, &head);
+               at = &head.position;
+            }
+            snapped = input_openxr_edit_move(e, hold, &aim, at, tilt, stick,
+                  free_stick, dt, targets, &stepped);
+            if ((snapped & hold->armed) || stepped)
                input_openxr_edit_tick(st, h);
             hold->armed = input_openxr_edit_armed(hold->armed, snapped);
          }
@@ -3027,8 +3065,11 @@ bool input_openxr_edit_toggle(void)
    return true;
 }
 
-void input_openxr_edit_begin(bool pause, bool snap, unsigned smoothing)
+void input_openxr_edit_begin(bool pause, bool snap, unsigned snap_angles,
+      unsigned smoothing)
 {
+   static const float steps[VIDEO_OPENXR_EDIT_SNAP_ANGLES_LAST] =
+         { 0.0f, 15.0f, 30.0f, 45.0f, 90.0f };
    input_openxr_edit_t *e = &input_openxr_edit;
    if (e->on || !input_openxr_st.frame)
       return;
@@ -3042,10 +3083,13 @@ void input_openxr_edit_begin(bool pause, bool snap, unsigned smoothing)
       return;
    }
 #endif
-   /* A config can hold any value: past Edit Smoothing's, Medium. */
+   /* A config can hold any value: past Snap to Angles', 15 degrees;
+    * past Edit Smoothing's, Medium. */
+   if (snap_angles >= VIDEO_OPENXR_EDIT_SNAP_ANGLES_LAST)
+      snap_angles = VIDEO_OPENXR_EDIT_SNAP_ANGLES_15;
    if (smoothing >= VIDEO_OPENXR_EDIT_SMOOTHING_LAST)
       smoothing = VIDEO_OPENXR_EDIT_SMOOTHING_MEDIUM;
-   input_openxr_edit_start(e, pause, snap, smoothing);
+   input_openxr_edit_start(e, pause, snap, steps[snap_angles], smoothing);
 }
 
 void input_openxr_edit_end(void)

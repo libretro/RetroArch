@@ -538,6 +538,27 @@ static bool menu_has_setting(const char *name)
    return found;
 }
 
+/* Whether the headset list shows name right after prev. */
+static bool menu_setting_follows(const char *name, const char *prev)
+{
+   settings_t *settings = config_get_ptr();
+   file_list_t *list = (file_list_t*)calloc(1, sizeof(*list));
+   bool follows = false;
+   size_t i;
+   CHECK(list != NULL);
+   if (!list)
+      return false;
+   menu_displaylist_build_list(list, settings,
+         DISPLAYLIST_VIDEO_STEREO_SETTINGS_LIST, false);
+   for (i = 1; i < list->size; i++)
+      if (     list->list[i].label && list->list[i - 1].label
+            && !strcmp(list->list[i].label, name)
+            && !strcmp(list->list[i - 1].label, prev))
+         follows = true;
+   file_list_free(list);
+   return follows;
+}
+
 #endif
 
 static void menu_action(const char *name, unsigned action)
@@ -924,6 +945,7 @@ static void test_xr_edit_rows(void)
    CHECK(!menu_has_setting("video_screen_xr_edit"));
    CHECK(!menu_has_setting("video_openxr_edit_pause"));
    CHECK(!menu_has_setting("video_openxr_edit_snap"));
+   CHECK(!menu_has_setting("video_openxr_edit_snap_angles"));
    CHECK(!menu_has_setting("video_openxr_edit_smoothing"));
    settings->bools.video_openxr_enable = true;
    CHECK(menu_has_setting("video_screen_xr_edit"));
@@ -938,6 +960,15 @@ static void test_xr_edit_rows(void)
    menu_action("video_openxr_edit_snap", MENU_ACTION_RIGHT);
    CHECK(!settings->bools.video_openxr_edit_snap);
    menu_value("video_openxr_edit_snap", "OFF");
+   CHECK(menu_setting_follows("video_openxr_edit_snap_angles",
+         "video_openxr_edit_snap"));
+   CHECK(settings->uints.video_openxr_edit_snap_angles
+         == VIDEO_OPENXR_EDIT_SNAP_ANGLES_15);
+   menu_value("video_openxr_edit_snap_angles", "15°");
+   menu_action("video_openxr_edit_snap_angles", MENU_ACTION_RIGHT);
+   CHECK(settings->uints.video_openxr_edit_snap_angles
+         == VIDEO_OPENXR_EDIT_SNAP_ANGLES_30);
+   menu_value("video_openxr_edit_snap_angles", "30°");
    CHECK(menu_has_setting("video_openxr_edit_smoothing"));
    CHECK(settings->uints.video_openxr_edit_smoothing
          == VIDEO_OPENXR_EDIT_SMOOTHING_MEDIUM);
@@ -1000,6 +1031,25 @@ static void test_xr_edit_smoothing_row(void)
          "video_openxr_enable = \"true\"\n"
          "video_openxr_edit_smoothing = \"1\"\n");
    menu_value("video_openxr_edit_smoothing", "Low");
+}
+
+static void test_xr_edit_snap_angles_row(void)
+{
+   settings_t *settings = config_get_ptr();
+   load_fixture("video_driver = \"glcore\"\n"
+         "video_openxr_enable = \"true\"\n"
+         "video_openxr_edit_snap_angles = \"0\"\n");
+   CHECK(settings->uints.video_openxr_edit_snap_angles
+         == VIDEO_OPENXR_EDIT_SNAP_ANGLES_OFF);
+   menu_value("video_openxr_edit_snap_angles", "Off");
+   load_fixture("video_driver = \"glcore\"\n"
+         "video_openxr_enable = \"true\"\n"
+         "video_openxr_edit_snap_angles = \"3\"\n");
+   menu_value("video_openxr_edit_snap_angles", "45°");
+   load_fixture("video_driver = \"glcore\"\n"
+         "video_openxr_enable = \"true\"\n"
+         "video_openxr_edit_snap_angles = \"4\"\n");
+   menu_value("video_openxr_edit_snap_angles", "90°");
 }
 #endif
 
@@ -2267,6 +2317,7 @@ int main(int argc, char **argv)
    test_xr_edit_rows();
    test_xr_laser_beam_row();
    test_xr_edit_smoothing_row();
+   test_xr_edit_snap_angles_row();
 #endif
    menu_setting_free(menu_state_get_ptr()->entries.list_settings);
    free(menu_state_get_ptr()->entries.list_settings);

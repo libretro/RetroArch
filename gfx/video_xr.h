@@ -182,13 +182,16 @@ void video_xr_item_settings(const video_xr_vec3_t *base,
  * travel past it, the push along the aim's ray in metres a second, the
  * resize in doublings a second, and the free hand's turn and tilt in
  * degrees a second, that stick within VIDEO_XR_EDIT_TURN_LOCK degrees
- * of left-right only turning and of up-down only tilting. A pulled
- * item comes no nearer the hand than VIDEO_XR_EDIT_REACH metres. */
+ * of left-right only turning and of up-down only tilting; as it turns
+ * and tilts, Snap to Angles' steps each holding within
+ * VIDEO_XR_EDIT_TURN_HOLD degrees of it. A pulled item comes no nearer
+ * the hand than VIDEO_XR_EDIT_REACH metres. */
 #define VIDEO_XR_EDIT_DEADZONE   0.2f
 #define VIDEO_XR_EDIT_PUSH_RATE  1.5f
 #define VIDEO_XR_EDIT_SCALE_RATE 1.0f
 #define VIDEO_XR_EDIT_TURN_RATE  90.0f
 #define VIDEO_XR_EDIT_TURN_LOCK  25.0f
+#define VIDEO_XR_EDIT_TURN_HOLD  2.0f
 #define VIDEO_XR_EDIT_REACH      0.1f
 
 enum video_xr_grab_state
@@ -249,9 +252,29 @@ void video_xr_grab_stick(video_xr_grab_t *g, float x, float y, double dt,
  * middle, anticlockwise seen from above, and y (up, +1) tips its top
  * back about its own left-right line through its middle, each by how
  * far past it is; near one axis, only that one acts
- * (VIDEO_XR_EDIT_TURN_LOCK). */
-void video_xr_grab_turn(video_xr_grab_t *g, const video_xr_pose_t *aim,
+ * (VIDEO_XR_EDIT_TURN_LOCK). Returns the axes that acted, as
+ * VIDEO_XR_STEP_TURN and VIDEO_XR_STEP_TILT. */
+#define VIDEO_XR_STEP_TURN 1u
+#define VIDEO_XR_STEP_TILT 2u
+unsigned video_xr_grab_turn(video_xr_grab_t *g, const video_xr_pose_t *aim,
       float x, float y, double dt);
+
+/* Holds g's item at a step, every size degrees (0: none), on the axes
+ * video_xr_grab_turn moved: the turn counts from facing head across the
+ * floor (NULL: no turn steps), the tilt from upright. rest is how far
+ * the stick has taken each past where it shows, so pushing on leaves
+ * the step; an axis not in axes keeps its rest. A snap to targets that
+ * would engage wins. Returns the axes held. */
+unsigned video_xr_grab_step(video_xr_grab_t *g, const video_xr_pose_t *aim,
+      const video_xr_vec3_t *head, float size, unsigned axes, float *rest,
+      const video_xr_quad_set_t *targets, unsigned skip,
+      const video_xr_pose_t *start);
+
+/* The axes on which g's item, with rest as video_xr_grab_step keeps it,
+ * is outside every step's hold. NULL head: the turn is not known. */
+unsigned video_xr_grab_off_step(const video_xr_grab_t *g,
+      const video_xr_pose_t *aim, const video_xr_vec3_t *head, float size,
+      const float *rest);
 
 /* Snap to Screens. A held screen turns parallel or square (a
  * quarter turn about the other's up) to a screen within

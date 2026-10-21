@@ -172,9 +172,22 @@ bool video_xr_grab_pose(const video_xr_grab_t *g, const video_xr_pose_t *aim,
 void video_xr_grab_stick(video_xr_grab_t *g, float x, float y, double dt,
       float *scale)
 { (void)g; (void)x; (void)y; (void)dt; (void)scale; }
-void video_xr_grab_turn(video_xr_grab_t *g, const video_xr_pose_t *aim,
+unsigned video_xr_grab_turn(video_xr_grab_t *g, const video_xr_pose_t *aim,
       float x, float y, double dt)
-{ (void)g; (void)aim; (void)x; (void)y; (void)dt; }
+{ (void)g; (void)aim; (void)x; (void)y; (void)dt; return 0; }
+unsigned video_xr_grab_off_step(const video_xr_grab_t *g,
+      const video_xr_pose_t *aim, const video_xr_vec3_t *head, float step,
+      const float *rest)
+{ (void)g; (void)aim; (void)head; (void)step; (void)rest; return 0; }
+unsigned video_xr_grab_step(video_xr_grab_t *g, const video_xr_pose_t *aim,
+      const video_xr_vec3_t *head, float step, unsigned axes, float *rest,
+      const video_xr_quad_set_t *targets, unsigned skip,
+      const video_xr_pose_t *start)
+{
+   (void)g; (void)aim; (void)head; (void)step; (void)axes; (void)rest;
+   (void)targets; (void)skip; (void)start;
+   return 0;
+}
 void video_xr_menu_handle(const video_xr_quad_t *menu, video_xr_quad_t *out)
 { *out = *menu; }
 void video_xr_outline(const video_xr_quad_t *q, video_xr_quad_t *out)
