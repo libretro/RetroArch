@@ -690,6 +690,11 @@ static void sdl3_manage_text_input(void)
 
    if (!sdl3_uses_screen_keyboard() || !(win = sdl3_get_window()))
    {
+#ifndef WEBOS
+      /* A keyboard attached since: text events come from text input. */
+      if ((win = sdl3_get_window()) && !SDL_TextInputActive(win))
+         SDL_StartTextInput(win);
+#endif
       input_driver_set_native_keyboard_shown(false);
       input_driver_set_native_keyboard_available(false);
       return;

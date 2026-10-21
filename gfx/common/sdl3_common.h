@@ -76,6 +76,10 @@ typedef struct _sdl3_video
    /* The largest swap interval the renderer took at init */
    unsigned swap_interval_cap;
 
+   /* Resolution steps asked for on the main thread, taken on the
+    * video thread */
+   retro_atomic_int_t mode_step;
+
    /* What SDL_RenderGeometry is handed, grown to the largest batch:
     * the display draws, and the interlaced placement's rows */
    SDL_Vertex *display_verts;

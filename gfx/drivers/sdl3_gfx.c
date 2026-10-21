@@ -302,10 +302,19 @@ error:
    return NULL;
 }
 
+static void sdl3_cycle_video_mode(sdl3_video_t *vid, int dir);
+
 static void sdl3_check_window(sdl3_video_t *vid)
 {
    bool quit   = false;
    bool resize = false;
+   int step    = retro_atomic_load_acquire_int(&vid->mode_step);
+
+   if (step)
+   {
+      retro_atomic_fetch_add_int(&vid->mode_step, -step);
+      sdl3_cycle_video_mode(vid, step);
+   }
 
    sdl3_pump_window_events(&quit, &resize);
 
@@ -915,6 +924,8 @@ static void sdl3_render_ui(sdl3_video_t *vid, const char *msg,
       menu_dst.h = (float)VIDEO_SCALE_H(vid->vp.dims);
       if (vid->views.active)
          sdl3_views_menu_rect(vid, &menu_dst);
+      SDL_SetTextureScaleMode(vid->menu.tex, video_info->menu_linear_filter
+            ? SDL_SCALEMODE_LINEAR : SDL_SCALEMODE_NEAREST);
       SDL_RenderTexture(vid->renderer, vid->menu.tex, NULL, &menu_dst);
    }
 
@@ -1278,7 +1289,7 @@ static void sdl3_cycle_video_mode(sdl3_video_t *vid, int dir)
       }
    }
 
-   target = modes[(index + dir + count) % count];
+   target = modes[((index + dir) % count + count) % count];
 
    /* Switch the mode, and clear the mode list afterwards. */
    if (SDL_SetWindowFullscreenMode(vid->window, target))
@@ -1290,14 +1301,16 @@ static void sdl3_cycle_video_mode(sdl3_video_t *vid, int dir)
    SDL_free(modes);
 }
 
+/* Called on the main thread under threaded video: the window is the
+ * video thread's, so the step is taken there. */
 static void sdl3_get_video_output_prev(void *data)
 {
-   sdl3_cycle_video_mode((sdl3_video_t*)data, -1);
+   retro_atomic_fetch_add_int(&((sdl3_video_t*)data)->mode_step, -1);
 }
 
 static void sdl3_get_video_output_next(void *data)
 {
-   sdl3_cycle_video_mode((sdl3_video_t*)data, 1);
+   retro_atomic_fetch_add_int(&((sdl3_video_t*)data)->mode_step, 1);
 }
 
 static void sdl3_poke_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
@@ -1355,6 +1368,7 @@ static uint32_t sdl3_get_flags(void *data)
    /* The viewport readback redraws the core's frame alone, so a GPU
     * recording never holds the menu or messages. */
    BIT32_SET(flags, GFX_CTX_FLAGS_RECORD_GAME_ONLY);
+   BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
    if (vid && retro_atomic_load_acquire_int(&vid->views.allowed))
       BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS);
    if (vid && retro_atomic_load_acquire_int(&vid->views.fallback))
@@ -2109,6 +2123,24 @@ static void sdl3_raster_font_render_message(
 
 #define FONT_LAYOUT_ALIGNED (align == TEXT_ALIGN_RIGHT \
       || align == TEXT_ALIGN_CENTER)
+/* A glyph cached mid-line lands in the atlas after the line's upload:
+ * what is batched goes out first, on the texture it was laid out for. */
+#define FONT_LAYOUT_DIRTY(glyph) \
+   do \
+   { \
+      (void)(glyph); \
+      if (font->atlas->dirty) \
+      { \
+         if (line_ok && n_glyphs > 0) \
+            SDL_RenderGeometry(font->vid->renderer, font->tex, \
+                  verts, n_glyphs * 4, idx, n_glyphs * 6); \
+         n_glyphs = 0; \
+         sdl3_raster_font_upload_atlas(font); \
+         line_ok  = line_ok && font->tex; \
+         inv_w    = 1.0f / (float)VIDEO_SCALE_W(font->tex_dims); \
+         inv_h    = 1.0f / (float)VIDEO_SCALE_H(font->tex_dims); \
+      } \
+   } while (0)
 #define FONT_LAYOUT_LINE(line, line_width, count, bytes) \
    do \
    { \

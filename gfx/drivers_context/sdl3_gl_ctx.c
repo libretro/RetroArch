@@ -344,6 +344,15 @@ static void sdl3_ctx_make_current(bool release)
          release ? NULL : sdl3_gl_current->ctx);
 }
 
+/* The threaded wrapper's hardware ring gives up the core's context on
+ * the main thread here at teardown. */
+static void sdl3_ctx_release_current(void *data)
+{
+   gfx_ctx_sdl3_data_t *sdl = (gfx_ctx_sdl3_data_t*)data;
+   if (sdl && sdl->win)
+      SDL_GL_MakeCurrent(sdl->win, NULL);
+}
+
 /* As in the SDL2 context: minimised or hidden means SDL_GL_SwapWindow()
  * returns at once rather than blocking to vblank. */
 static bool sdl3_ctx_presentable(void *data)
@@ -390,5 +399,7 @@ const gfx_ctx_driver_t gfx_ctx_sdl3_gl =
    sdl3_ctx_make_current,
    NULL, /* create_surface */
    NULL, /* destroy_surface */
-   sdl3_ctx_presentable
+   sdl3_ctx_presentable,
+   NULL, /* last_present_time */
+   sdl3_ctx_release_current
 };

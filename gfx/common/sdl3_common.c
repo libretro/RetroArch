@@ -94,6 +94,21 @@ static void sdl3_window_save_position(SDL_Window *win)
    settings->uints.window_position_dims = VIDEO_SCALE_PACK(w, h);
 }
 
+/* Events nothing reads, which would otherwise fill the queue */
+static void sdl3_flush_unread_events(void)
+{
+   SDL_FlushEvents(SDL_EVENT_TERMINATING,   SDL_EVENT_SYSTEM_THEME_CHANGED);
+#if SDL_VERSION_ATLEAST(3, 4, 0)
+   SDL_FlushEvents(SDL_EVENT_PINCH_BEGIN,   SDL_EVENT_PINCH_END);
+#endif
+   SDL_FlushEvent(SDL_EVENT_CLIPBOARD_UPDATE);
+   SDL_FlushEvents(SDL_EVENT_DROP_FILE,     SDL_EVENT_DROP_POSITION);
+   SDL_FlushEvents(SDL_EVENT_AUDIO_DEVICE_ADDED,
+         SDL_EVENT_AUDIO_DEVICE_FORMAT_CHANGED);
+   SDL_FlushEvents(SDL_EVENT_RENDER_TARGETS_RESET,
+         SDL_EVENT_RENDER_DEVICE_LOST);
+}
+
 void sdl3_pump_input_events(void)
 {
    /* Two threads pumping at once deadlock in the X11 backend. */
@@ -101,6 +116,7 @@ void sdl3_pump_input_events(void)
          && SDL_WasInit(SDL_INIT_VIDEO))
       return;
    SDL_PumpEvents();
+   sdl3_flush_unread_events();
 }
 
 void sdl3_pump_window_events(bool *quit, bool *resize)
@@ -143,6 +159,8 @@ void sdl3_pump_window_events(bool *quit, bool *resize)
       SDL_FlushEvents(SDL_EVENT_FINGER_DOWN,      SDL_EVENT_FINGER_CANCELED);
       SDL_FlushEvents(SDL_EVENT_PEN_PROXIMITY_IN, SDL_EVENT_PEN_AXIS);
    }
+
+   sdl3_flush_unread_events();
 }
 
 void sdl3_set_handles(SDL_Window *window)
@@ -289,8 +307,9 @@ static SDL_Window *sdl3_window_create(unsigned width, unsigned height,
       /* Desktop full screen at the desktop's size: a window made
        * smaller is only grown by a window manager, and without one it
        * keeps the size it was made at. The size is the configured
-       * monitor's, which is where the window goes below. */
-      if (settings->bools.video_windowed_fullscreen)
+       * monitor's, which is where the window goes below. So is a 0x0
+       * size's, which asks for the desktop's. */
+      if (settings->bools.video_windowed_fullscreen || !width || !height)
       {
          const SDL_DisplayMode *mode = SDL_GetDesktopDisplayMode(
                sdl3_target_display(NULL));
@@ -343,11 +362,26 @@ static void sdl3_window_apply_fullscreen(SDL_Window *win,
 {
    SDL_DisplayMode mode;
    settings_t *settings = config_get_ptr();
-   bool exclusive = fullscreen
+   SDL_DisplayID display = sdl3_target_display(win);
+   unsigned mode_w       = width;
+   unsigned mode_h       = height;
+   bool exclusive;
+
+   /* 0x0 asks for the desktop's size */
+   if (fullscreen && (!mode_w || !mode_h))
+   {
+      const SDL_DisplayMode *desktop = SDL_GetDesktopDisplayMode(display);
+      if (desktop)
+      {
+         mode_w = (unsigned)desktop->w;
+         mode_h = (unsigned)desktop->h;
+      }
+   }
+
+   exclusive = fullscreen
          && !settings->bools.video_windowed_fullscreen
-         && SDL_GetClosestFullscreenDisplayMode(
-               sdl3_target_display(win),
-               width, height,
+         && SDL_GetClosestFullscreenDisplayMode(display,
+               (int)mode_w, (int)mode_h,
                settings->floats.video_refresh_rate, false, &mode);
 
    SDL_SetWindowFullscreenMode(win, exclusive ? &mode : NULL);
