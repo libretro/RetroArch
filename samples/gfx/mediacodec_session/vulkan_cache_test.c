@@ -36,6 +36,26 @@ int main(void)
  assert(!vulkan_android_cache_free(cache) && entry_live);
  fence_status=VK_SUCCESS;assert(vulkan_android_cache_free(cache) && !entry_live);
  assert(android_image_queue_poll(q)==1);
+ /* A failed queue submission may have touched GPU input. Closing must keep
+  * the lease until the renderer proves that its device has been destroyed. */
+ cache=vulkan_android_cache_new(&entry_fixture_config,1,false);assert(cache);
+ assert(android_image_queue_acquire(q,&view.image)==1);
+ assert(!android_frame_export(pool,&view,&frame));
+ assert(vulkan_android_cache_prepare(cache,&frame)==1 && entry_live);
+ count=entry_calls;submit_fail=1;
+ assert(vulkan_android_cache_present(cache,&frame,H(VkImage,9),H(VkImageView,9),
+          VK_IMAGE_LAYOUT_UNDEFINED,&prepare_needed)==-2);
+ video_hw_frame_abandon(&frame);
+ vulkan_android_cache_close(cache);
+ assert(!vulkan_android_cache_free(cache) && !android_image_queue_poll(q));
+ /* Mock vkDestroyDevice: it implicitly destroys every tracked Vulkan child.
+  * No child destruction or queue operation may run through the dead device. */
+ entry_live=0;
+ assert(vulkan_android_cache_after_device_destroy(cache));
+ assert(vulkan_android_cache_after_device_destroy(cache));
+ assert(android_image_queue_poll(q)==1);
+ assert(vulkan_android_cache_free(cache) && !entry_live && entry_calls==count);
+ submit_fail=0;
  android_frame_pool_close(pool);assert(android_frame_pool_free(pool));android_image_queue_close(q);assert(android_image_queue_free(q));
  puts("PASS: bounded Android Vulkan cache, allocation-free miss/hit, pending eviction refusal and deferred close");
  return 0;
