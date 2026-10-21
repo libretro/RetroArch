@@ -19,6 +19,9 @@
 #include "input/include/gamepad.h"
 #include "input/common/sony_pad_output.h"
 
+/* shorter than the Wii U Pro's buttons, which end at 0x0E */
+#define WIIUPRO_SHORT 0x0E
+
 static unsigned failures;
 #define CHECK(c, ...) do { if (!(c)) { printf("[FAIL] "); printf(__VA_ARGS__); \
    printf("\n"); failures++; } } while (0)
@@ -1590,6 +1593,80 @@ static void test_switch2_pro(void)
          failures == had ? "pass" : "fail");
 }
 
+/* ---- Wii U Pro: the old handler's decode ----------------------- */
+
+/* the old packet handler's buttons, from a copy of the report it
+ * inverted in place, and the old button()'s answer for each */
+static int ref_wiiupro_button(const uint8_t *p, unsigned key)
+{
+   uint8_t c = (uint8_t)(p[0x0C] ^ 0xFF);
+   uint8_t d = (uint8_t)(p[0x0D] ^ 0xFF);
+   uint8_t e = (uint8_t)(p[0x0E] ^ 0xFF);
+   switch (key)
+   {
+      case RETRO_DEVICE_ID_JOYPAD_R3:     return (e & 0x01) != 0;
+      case RETRO_DEVICE_ID_JOYPAD_L3:     return (e & 0x02) != 0;
+      case RETRO_DEVICE_ID_JOYPAD_START:  return (c & 0x04) != 0;
+      case RETRO_DEVICE_ID_JOYPAD_SELECT: return (c & 0x10) != 0;
+      case RETRO_DEVICE_ID_JOYPAD_R2:     return (d & 0x04) != 0;
+      case RETRO_DEVICE_ID_JOYPAD_L2:     return (d & 0x80) != 0;
+      case RETRO_DEVICE_ID_JOYPAD_R:      return (c & 0x02) != 0;
+      case RETRO_DEVICE_ID_JOYPAD_L:      return (c & 0x20) != 0;
+      case RETRO_DEVICE_ID_JOYPAD_X:      return (d & 0x08) != 0;
+      case RETRO_DEVICE_ID_JOYPAD_A:      return (d & 0x10) != 0;
+      case RETRO_DEVICE_ID_JOYPAD_B:      return (d & 0x40) != 0;
+      case RETRO_DEVICE_ID_JOYPAD_Y:      return (d & 0x20) != 0;
+      case RETRO_DEVICE_ID_JOYPAD_LEFT:   return (d & 0x02) != 0;
+      case RETRO_DEVICE_ID_JOYPAD_RIGHT:  return (c & 0x80) != 0;
+      case RETRO_DEVICE_ID_JOYPAD_DOWN:   return (c & 0x40) != 0;
+      case RETRO_DEVICE_ID_JOYPAD_UP:     return (d & 0x01) != 0;
+      case RARCH_MENU_TOGGLE:             return (c & 0x08) != 0;
+   }
+   return 0;
+}
+
+static void test_wiiupro(void)
+{
+   uint8_t p[64], before[64];
+   unsigned i, k, bad = 0, touched = 0, had = failures;
+   const pad_connection_interface_t *ifc = &pad_connection_wiiupro;
+   int dummy_connection;
+   void *dev = ifc->init(&dummy_connection, 0, &stub_hid);
+
+   CHECK(dev != NULL, "wiiupro: no device");
+   if (!dev)
+      return;
+   srand(5);
+   for (i = 0; i < 20000; i++)
+   {
+      input_bits_t bits;
+      for (k = 0; k < sizeof(p); k++)
+         p[k] = (uint8_t)rand();
+      memcpy(before, p, sizeof(p));
+      deliver(ifc, dev, p, 22);
+      if (memcmp(before, p, sizeof(p)))
+         touched++;
+      ifc->get_buttons(dev, &bits);
+      for (k = 0; k < RARCH_BIND_LIST_END; k++)
+      {
+         int want = ref_wiiupro_button(p, k);
+         if (     !!ifc->button(dev, (uint16_t)k) != want
+               || !!BIT256_GET(bits, k) != want)
+            bad++;
+      }
+   }
+   CHECK(!bad, "wiiupro: %u reads disagree with the old handler", bad);
+   CHECK(!touched, "wiiupro: the report was changed in %u of the handler's reads", touched);
+   /* a report too short to hold the buttons is not read */
+   memset(p, 0, sizeof(p));
+   deliver(ifc, dev, p, WIIUPRO_SHORT);
+   CHECK(ifc->button(dev, RETRO_DEVICE_ID_JOYPAD_UP) == ref_wiiupro_button(before, RETRO_DEVICE_ID_JOYPAD_UP),
+         "wiiupro: a short report was read");
+   ifc->deinit(dev);
+   printf("[%s] wiiupro: every button and the set as the old handler, on 20000 reports, the report left as it came; a short one not read\n",
+         failures == had ? "pass" : "fail");
+}
+
 /* ---- DualShock 3: the copying handler's axes ------------------ */
 
 static const uint8_t ref_ds3_pressure_byte[12] = {
@@ -1696,6 +1773,7 @@ int main(void)
    test_switch_pro();
    test_switch2_pro();
    test_ds3();
+   test_wiiupro();
    CHECK(view_reads && !view_bad,
          "views: %u of %u reports' views disagree with the getters",
          view_bad, view_reads);

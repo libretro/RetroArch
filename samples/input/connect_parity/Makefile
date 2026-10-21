@@ -21,6 +21,7 @@ SOURCES := connect_parity_test.c \
            $(ROOT)/input/connect/connect_zerodelay_dragonrise.c \
            $(ROOT)/input/connect/connect_ps4_hori_mini.c \
            $(ROOT)/input/connect/connect_kade.c \
+           $(ROOT)/input/connect/connect_wiiupro.c \
            $(ROOT)/input/connect/connect_retrode.c \
            $(ROOT)/input/common/input_hid_common.c \
            $(ROOT)/libretro-common/encodings/encoding_crc32.c \
