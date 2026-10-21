@@ -57,10 +57,9 @@ static bool media_native_seek_capture(struct menu_state *menu_st,
       if(target->state(target->user,now,&state)&&!state.seeking&&state.paused)
       {
          if(!settled)settled=now;
-         if(now-settled>=50000&&media_native_capture(hash,-1)
+         if(now-settled>=50000&&media_native_capture(hash,ordinal)
                &&(!comparison||(comparison>0?*hash!=expected:*hash==expected)))
-            return state.position_us>=position-50000&&state.position_us<=position+50000
-               &&media_native_capture(hash,ordinal);
+            return state.position_us>=position-50000&&state.position_us<=position+50000;
       }
       retro_sleep(1);
    }
