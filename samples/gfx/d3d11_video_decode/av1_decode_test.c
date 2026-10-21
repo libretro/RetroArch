@@ -112,7 +112,7 @@ static int av1_container_seek_frame(void *stream, enum image_type_enum type,
    int ret = 0, ok = 0;
    memset(&capture, 0, sizeof(capture));
    if (!image_transfer_anim_stream_seek_begin(stream, type,
-            (int64_t)expected * 1000000 / 25)) return 0;
+            (int64_t)expected * 1000000 / (type == IMAGE_TYPE_MP4 ? 24 : 25))) return 0;
    for (polls = 0; polls < 10000; polls++)
    {
       ret = image_transfer_anim_stream_seek_step(stream, type, NULL);
@@ -199,11 +199,11 @@ int main(int argc, char **argv)
       stream = image_transfer_anim_stream_new_hw_avail(data, size, size,
             type, &more, NULL, NULL);
       if (!stream) { puts("FAIL AV1 container hardware stream open"); goto done; }
-      if (type == IMAGE_TYPE_WEBM && getenv("AV1_TEST_SEEK"))
+      if (getenv("AV1_TEST_SEEK"))
       {
          if (!av1_container_seek_frame(stream, type, &opened,
                   reference, reference_size, 9)) goto done;
-         puts("AV1 WebM early seek before first display: pixels and metadata PASS");
+         puts("AV1 container early seek before first display: pixels and metadata PASS");
          image_transfer_anim_stream_rewind(stream, type);
       }
       for (polls = 0; polls < 10000; polls++)
@@ -226,7 +226,7 @@ int main(int argc, char **argv)
             Sleep(1);
       }
       if (polls == 10000 || !displayed) goto done;
-      if (type == IMAGE_TYPE_WEBM && getenv("AV1_TEST_SEEK"))
+      if (getenv("AV1_TEST_SEEK"))
       {
          unsigned attempt;
          if (displayed < 10 || !image_transfer_anim_stream_seekable(stream, type))
@@ -237,7 +237,7 @@ int main(int argc, char **argv)
             if (!av1_container_seek_frame(stream, type, &opened,
                      reference, reference_size, expected)) goto done;
          }
-         puts("AV1 WebM seeks 9 to 0 to 9: independent pixels and metadata PASS");
+         puts("AV1 container seeks 9 to 0 to 9: independent pixels and metadata PASS");
       }
       image_transfer_anim_stream_free(stream, type); stream = NULL;
       goto compare;

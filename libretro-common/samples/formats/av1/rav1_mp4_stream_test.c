@@ -133,7 +133,8 @@ static void test_stream(void)
 static void test_seek(void)
 {
    rmp4_video_stream_t *s;
-   unsigned before;
+   unsigned before, n;
+   int ret = 0;
    int64_t position = -1;
    make_mp4(1);
    s = rmp4_video_stream_open_hw_avail(bytes, used,
@@ -150,12 +151,16 @@ static void test_seek(void)
    CHECK(rmp4_video_stream_wait_reason(s) == RMP4_VIDEO_WAIT_INPUT);
    rmp4_video_stream_set_avail(s, used);
    decode_busy = 1;
-   CHECK(rmp4_video_stream_seek_step(s, NULL) == 0);
+   for (n = 0; n < 16 &&
+         rmp4_video_stream_wait_reason(s) != RMP4_VIDEO_WAIT_DECODER; n++)
+      CHECK(rmp4_video_stream_seek_step(s, NULL) == 0);
    CHECK(decodes == before + 1);
    CHECK(rmp4_video_stream_wait_reason(s) == RMP4_VIDEO_WAIT_DECODER);
    decode_busy = 0;
    before = exports;
-   CHECK(rmp4_video_stream_seek_step(s, &position) == 1);
+   for (n = 0; n < 16 && !ret; n++)
+      ret = rmp4_video_stream_seek_step(s, &position);
+   CHECK(ret == 1);
    CHECK(position == 40000 && exports == before);
    rmp4_video_stream_close(s);
    CHECK(opens == closes);
@@ -225,6 +230,74 @@ static void test_color(void)
    rmp4_video_stream_close(s);
 }
 
+static void test_early_hdr_seek(void)
+{
+   rmp4_video_stream_t *s;
+   video_hw_frame_t frame = {0};
+   unsigned n, before = decodes;
+   int ret = 0;
+   make_mp4_clip(1, 1);
+   s = rmp4_video_stream_open_hw_avail(bytes, used, used, NULL, NULL, NULL);
+   CHECK(s && rmp4_video_stream_set_hw(s, 1));
+   if (!s) return;
+   CHECK(rmp4_video_stream_seek_begin_ns(s, 40000000));
+   CHECK(rmp4_video_stream_seek_step(s, NULL) == 0 && decodes == before);
+   CHECK(rmp4_video_stream_seek_step(s, NULL) == 0 && decodes == before);
+   CHECK(rmp4_video_stream_wait_reason(s) == RMP4_VIDEO_WAIT_NONE);
+   CHECK(rmp4_video_stream_consumed(s) <= media_at);
+   rmp4_video_stream_set_avail(s, media_at);
+   CHECK(rmp4_video_stream_seek_step(s, NULL) == 0 && decodes == before);
+   CHECK(rmp4_video_stream_wait_reason(s) == RMP4_VIDEO_WAIT_INPUT);
+   CHECK(rmp4_video_stream_seek_begin_ns(s, 0));
+   CHECK(rmp4_video_stream_seek_begin_ns(s, 40000000));
+   rmp4_video_stream_set_avail(s, used);
+   for (n = 0; n < 128 && ret == 0; n++)
+      ret = rmp4_video_stream_seek_step(s, NULL);
+   CHECK(ret == 1 && decodes == before);
+   CHECK(rmp4_video_stream_next(s, NULL));
+   CHECK(rmp4_video_stream_hw_frame(s, &frame));
+   CHECK(frame.color.max_cll == 1000 && frame.color.max_fall == 400);
+   video_hw_frame_abandon(&frame);
+   rmp4_video_stream_close(s);
+   CHECK(opens == closes);
+}
+
+static void test_early_bad_hdr(void)
+{
+   rmp4_video_stream_t *s;
+   unsigned n, before = decodes;
+   int ret = 0;
+   make_mp4_clip(1, 1);
+   bytes[media_at + 40 * 4 + 7] = 0;
+   s = rmp4_video_stream_open_hw_avail(bytes, used, used, NULL, NULL, NULL);
+   CHECK(s && rmp4_video_stream_set_hw(s, 1));
+   if (!s) return;
+   CHECK(rmp4_video_stream_seek_begin_ns(s, 40000000));
+   for (n = 0; n < 128 && !ret; n++)
+      ret = rmp4_video_stream_seek_step(s, NULL);
+   CHECK(ret == -1 && decodes == before);
+   CHECK(!rmp4_video_stream_next(s, NULL));
+   rmp4_video_stream_close(s);
+   CHECK(opens == closes);
+}
+
+static void test_probe_frontier(void)
+{
+   rmp4_video_stream_t *s;
+   unsigned before = decodes;
+   make_mp4_clip(1, 1);
+   bytes[media_at] = 128;
+   s = rmp4_video_stream_open_hw_avail(bytes, used, used, NULL, NULL, NULL);
+   CHECK(s && rmp4_video_stream_set_hw(s, 1));
+   if (!s) return;
+   CHECK(rmp4_video_stream_seek_begin_ns(s, 40000000));
+   CHECK(rmp4_video_stream_seek_step(s, NULL) == 0);
+   CHECK(rmp4_video_stream_consumed(s) == media_at && decodes == before);
+   CHECK(rmp4_video_stream_seek_step(s, NULL) == -1 && decodes == before);
+   rmp4_video_stream_close(s);
+   CHECK(opens == closes);
+}
+
 static void test_unavailable(void)
 {
    rmp4_video_stream_t *s;
@@ -259,6 +332,9 @@ int main(void)
    test_stream();
    test_seek();
    test_color();
+   test_early_hdr_seek();
+   test_early_bad_hdr();
+   test_probe_frontier();
    test_unavailable();
    rav1_set_hw_backend(NULL);
    printf("AV1 MP4 hardware reader: %u failures\n", failures);

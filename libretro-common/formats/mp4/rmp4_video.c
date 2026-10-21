@@ -81,7 +81,10 @@ struct rmp4_video_stream
 #ifdef HAVE_RAV1
    rav1_hw_stream_t *av1;
    rav1_hdr_metadata_t av1_hdr_initial;
-   int av1_hdr_initial_set;
+   rav1_sequence_t av1_hdr_probe_sequence;
+   size_t av1_hdr_probe_offset;
+   uint32_t av1_hdr_probe_sample;
+   int av1_hdr_initial_set, av1_hdr_probe_started;
 #endif
    uint32_t hw_marker;
    uint32_t    *frame;      /* width * height ABGR words              */
@@ -582,9 +585,6 @@ static bool rmp4_video_av1_open(rmp4_video_stream_t *s)
    if (!s->av1)
       return false;
    rav1_hw_stream_init(s->av1, NULL);
-   /* Static metadata from the first picture is the fallback after a
-    * decoder reset. Later in-band updates remain local to that decode. */
-   if (s->av1_hdr_initial_set) s->av1->hdr = s->av1_hdr_initial;
    seq = &s->av1->sequence;
    if (!rav1_config_sequence(seq, &config) || seq->max_width != s->width ||
        seq->max_height != s->height)
@@ -609,8 +609,10 @@ static bool rmp4_video_av1_open(rmp4_video_stream_t *s)
                      ? seq->transfer_characteristics
                      : t->transfer_characteristics;
    s->range = seq->color_range;
-   if (!rav1_hdr_metadata_config(&s->av1->hdr, &config) ||
-       !rmp4_video_hw_color_allowed(s) || !rav1_hw_stream_open_sequence(s->av1))
+   if (!rav1_hdr_metadata_config(&s->av1->hdr, &config))
+      goto fail;
+   if (s->av1_hdr_initial_set) s->av1->hdr = s->av1_hdr_initial;
+   if (!rmp4_video_hw_color_allowed(s) || !rav1_hw_stream_open_sequence(s->av1))
       goto fail;
    return true;
 fail:
@@ -1900,6 +1902,9 @@ void rmp4_video_stream_rewind(rmp4_video_stream_t *s)
    if (!s)
       return;
    s->pending = s->waiting = s->seek_state = 0;
+#ifdef HAVE_RAV1
+   s->av1_hdr_probe_started = 0;
+#endif
    rmp4_video_hwf_drop(s);
    s->rndr_kind = 0;   /* decoder reset invalidates the planes */
    rmp4_rewind(s->demux);
@@ -1978,6 +1983,83 @@ int64_t rmp4_video_stream_span_ms(const rmp4_video_stream_t *s)
    return (int64_t)((s->ts[s->ts_count - 1] - s->ts[0]) / 1000000);
 }
 
+#ifdef HAVE_RAV1
+/* One resident OBU per call; 2 yields a new byte frontier to the feeder. */
+static int rmp4_video_av1_probe_hdr(rmp4_video_stream_t *s)
+{
+   rmp4_packet packet;
+   rav1_obu_t obu;
+   int ret;
+   if (!s->av1_hdr_probe_started)
+   {
+      rmp4_video_stream_rewind(s);
+      if (!s->av1) return -1;
+      s->av1_hdr_initial = s->av1->hdr;
+      s->av1_hdr_probe_sequence = s->av1->sequence;
+      s->av1_hdr_probe_offset = 0;
+      s->av1_hdr_probe_sample = 0;
+      s->av1_hdr_probe_started = 1;
+      s->seek_state = 4;
+      if (!rmp4_select_track_sample(s->demux, s->track, 0)) return -1;
+      return 2;
+   }
+   /* Re-reading the selected sample checks its current resident bound. */
+   if (!rmp4_select_track_sample(s->demux, s->track, s->av1_hdr_probe_sample))
+      return -1;
+   if (!s->pending) s->pending_floor = rmp4_consumed(s->demux);
+   ret = rmp4_read_packet(s->demux, &packet);
+   if (ret == RMP4_READ_AGAIN)
+   {
+      s->waiting = RMP4_VIDEO_WAIT_INPUT;
+      return 0;
+   }
+   if (ret != 1 || packet.track != s->track) return -1;
+   s->pending_packet = packet;
+   s->pending = 1;
+   ret = rav1_obu_next(&obu, packet.data, packet.size,
+         &s->av1_hdr_probe_offset, true);
+   if (ret < 0) return -1;
+   if (!ret)
+   {
+      s->pending = 0;
+      s->av1_hdr_probe_offset = 0;
+      s->av1_hdr_probe_sample++;
+      if (!rmp4_select_track_sample(s->demux, s->track, s->av1_hdr_probe_sample))
+         return -1;
+      return 2;
+   }
+   if (obu.temporal_id || obu.spatial_id) return -1;
+   if (obu.type == 1)
+   {
+      if (!rav1_sequence_parse(&s->av1_hdr_probe_sequence,
+               obu.payload, obu.payload_size)) return -1;
+   }
+   else if (obu.type == 5)
+   {
+      if (rav1_hdr_metadata_obu(&s->av1_hdr_initial, &obu) < 0) return -1;
+   }
+   else if (obu.type == 3 || obu.type == 6)
+   {
+      rav1_frame_prefix_t frame;
+      rav1_bits_t bits;
+      bits.data = obu.payload;
+      bits.size = obu.payload_size;
+      bits.byte = 0;
+      bits.bit = bits.failed = 0;
+      if (!rav1_frame_prefix_parse(&frame, &bits, &s->av1_hdr_probe_sequence,
+               0, 0, obu.type == 6)) return -1;
+      if (frame.show_existing || frame.show_frame)
+      {
+         s->av1_hdr_initial_set = 1;
+         s->pending = 0;
+         s->av1_hdr_probe_started = 0;
+         return 1;
+      }
+   }
+   return 0;
+}
+#endif
+
 int rmp4_video_stream_seek_begin_ns(rmp4_video_stream_t *s, int64_t ns)
 {
    int lo = 0, hi;
@@ -1996,6 +2078,11 @@ int rmp4_video_stream_seek_begin_ns(rmp4_video_stream_t *s, int64_t ns)
    s->seek_target = lo ? lo - 1 : 0;
    s->seek_scan = s->seek_target;
    s->seek_state = 1;
+#ifdef HAVE_RAV1
+   s->av1_hdr_probe_started = 0;
+   if (s->codec == RMP4_CODEC_AV1 && !s->av1_hdr_initial_set)
+      s->seek_state = 4;
+#endif
    s->waiting = RMP4_VIDEO_WAIT_NONE;
    return 1;
 }
@@ -2005,6 +2092,28 @@ int rmp4_video_stream_seek_step(rmp4_video_stream_t *s, int64_t *position_us)
    if (position_us) *position_us = 0;
    if (!s || !s->seek_state)
       return -1;
+#ifdef HAVE_RAV1
+   if (s->seek_state == 4)
+   {
+      int64_t started = cpu_features_get_time_usec();
+      unsigned budget = 32;
+      s->waiting = RMP4_VIDEO_WAIT_NONE;
+      do
+      {
+         int ret = rmp4_video_av1_probe_hdr(s);
+         if (ret < 0) goto failed;
+         if (ret == 2) return 0;
+         if (ret == 1)
+         {
+            s->seek_state = 1;
+            return 0;
+         }
+         if (s->waiting || cpu_features_get_time_usec() - started >= 4000)
+            break;
+      } while (--budget);
+      return 0;
+   }
+#endif
    if (s->seek_state == 1)
    {
       uint32_t count = 0;
@@ -2086,6 +2195,13 @@ int rmp4_video_stream_seek_step(rmp4_video_stream_t *s, int64_t *position_us)
    if (position_us) *position_us = s->seek_position_us;
    return 1;
 failed:
+#ifdef HAVE_RAV1
+   if (s->seek_state == 4)
+   {
+      s->pending = s->av1_hdr_probe_started = 0;
+      if (s->av1) s->av1->error = -1;
+   }
+#endif
    s->seek_state = 0;
    return -1;
 }

@@ -51,9 +51,12 @@ static void end_box(size_t at)
    patch32(at, (uint32_t)(used - at));
 }
 
-static void make_mp4(int with_config)
+static void make_mp4_clip(int with_config, int hdr)
 {
+   static const uint8_t cll[] = {0x2a, 6, 1, 3, 232, 1, 144, 128};
+   static const uint8_t unknown[] = {0x2a, 2, 0, 128};
    size_t b, moov, trak, mdia, minf, stbl, stsd, entry, chunk;
+   unsigned i;
    used = 0;
    config_at = 0;
    b = box("ftyp");
@@ -116,17 +119,17 @@ static void make_mp4(int with_config)
    put(2);
    put(0);
    end_box(b);
-   b = box("clli"); put(4); put(0); put(1); put(0); end_box(b);
-   b = box("mdcv");
+   if (!hdr)
    {
-      unsigned i;
+      b = box("clli"); put(4); put(0); put(1); put(0); end_box(b);
+      b = box("mdcv");
       for (i = 0; i < 8; i++)
       {
          put(0x61);
          put(0xa8);
       }
+      be32(10240000); be32(0); end_box(b);
    }
-   be32(10240000); be32(0); end_box(b);
    end_box(entry);
    end_box(stsd);
    b = box("stts");
@@ -144,8 +147,13 @@ static void make_mp4(int with_config)
    end_box(b);
    b = box("stsz");
    be32(0);
-   be32(sizeof(packet));
+   be32(hdr ? 0 : sizeof(packet));
    be32(2);
+   if (hdr)
+   {
+      be32((uint32_t)(sizeof(packet) + sizeof(cll) + 40 * sizeof(unknown)));
+      be32(sizeof(packet));
+   }
    end_box(b);
    b = box("stco");
    be32(0);
@@ -155,8 +163,9 @@ static void make_mp4(int with_config)
    end_box(b);
    b = box("stss");
    be32(0);
+   be32(hdr ? 2 : 1);
    be32(1);
-   be32(1);
+   if (hdr) be32(2);
    end_box(b);
    end_box(stbl);
    end_box(minf);
@@ -165,10 +174,20 @@ static void make_mp4(int with_config)
    end_box(moov);
    b = box("mdat");
    media_at = used;
+   if (hdr)
+   {
+      for (i = 0; i < 40; i++) copy(unknown, sizeof(unknown));
+      copy(cll, sizeof(cll));
+   }
    copy(packet, sizeof(packet));
    copy(packet, sizeof(packet));
    end_box(b);
    patch32(chunk, (uint32_t)media_at);
+}
+
+static void make_mp4(int with_config)
+{
+   make_mp4_clip(with_config, 0);
 }
 
 #endif
