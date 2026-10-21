@@ -558,6 +558,52 @@ JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_SecondDisplayCon
       android_second_surface_term(android_app);
 }
 
+/* For each pointer of a touch on the second display. Downs and moves
+ * keep room in the ring for every finger's up. */
+JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_SecondDisplayController_nativeTouch(
+      JNIEnv *env, jclass clazz, jint pointer_id, jint x, jint y,
+      jboolean down, jint generation)
+{
+   /* Ids whose last record written was a down; UI thread only */
+   static uint32_t down_ids        = 0;
+   android_second_touch_t touch;
+   uint32_t bit;
+   size_t room;
+   struct android_app *android_app = g_android_early;
+
+   if (!android_app)
+      return;
+#ifdef DEBUG_ANDROID_INPUT
+   RARCH_LOG("[RA Input] Second display touch id=%d x=%d y=%d down=%d"
+         " surface=%d\n", (int)pointer_id, (int)x, (int)y,
+         (int)(down != JNI_FALSE), (int)generation);
+#endif
+   /* MotionEvent ids are 0-31 */
+   if (pointer_id < 0 || pointer_id > 31)
+      return;
+   bit  = (uint32_t)1 << pointer_id;
+   room = retro_spsc_write_avail(&android_app->second_display.touches);
+   if (down != JNI_FALSE)
+   {
+      if (room < (MAX_TOUCH + 1) * sizeof(touch))
+         return;
+      down_ids |= bit;
+   }
+   else
+   {
+      if (!(down_ids & bit) || room < sizeof(touch))
+         return;
+      down_ids &= ~bit;
+   }
+   touch.pointer_id = pointer_id;
+   touch.x          = x;
+   touch.y          = y;
+   touch.generation = generation;
+   touch.down       = (down != JNI_FALSE);
+   retro_spsc_write(&android_app->second_display.touches, &touch,
+         sizeof(touch));
+}
+
 /* Upper bound on how long a lifecycle callback will block waiting for the
  * app thread to pick the command up. The app thread only reads the command
  * pipe between frames, so anything that keeps it out of the looper - a core

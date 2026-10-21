@@ -68,7 +68,6 @@
 #include "../../gfx/video_thread_wrapper.h"
 #endif
 
-#define MAX_TOUCH 16
 #define MAX_NUM_KEYBOARDS 3
 #define DEFAULT_ASENSOR_EVENT_RATE 60
 
@@ -226,6 +225,13 @@ typedef struct android_input
    sensor_t gyroscope_state;                    /* float alignment */
    float mouse_x_prev, mouse_y_prev;
    struct input_pointer pointer[MAX_TOUCH];     /* int16_t alignment */
+   /* The second display's fingers, after the main display's in the
+    * pointer list, by the order they went down */
+   struct input_pointer second_pointer[MAX_TOUCH];
+   int32_t second_pointer_id[MAX_TOUCH];
+   unsigned second_pointer_count;
+   /* The bound_surface those fingers are on */
+   int32_t second_surface;
    char device_model[256];
 } android_input_t;
 
@@ -1102,6 +1108,72 @@ static void android_input_poll_main_cmd(void)
       case APP_CMD_SECOND_TERM_WINDOW:
          android_second_display_retire(android_app);
          break;
+   }
+}
+
+/* The second display's touches since the last poll, mapped through the
+ * window that shows it as android_pointer_set() maps the main display's;
+ * one from another surface is dropped. They never move the mouse or
+ * count as a quick tap. */
+static void android_input_poll_second_touches(android_input_t *android,
+      struct android_app *android_app)
+{
+   android_second_touch_t touch;
+   struct android_second_display *second = &android_app->second_display;
+   int32_t surface     = retro_atomic_load_acquire_int(&second->bound_surface);
+   unsigned window     = (unsigned)
+      retro_atomic_load_acquire_int(&second->bound_window);
+   unsigned generation = (unsigned)
+      retro_atomic_load_acquire_int(&second->bound_generation);
+
+   /* Fingers on a surface that went have no up to come */
+   if (surface != android->second_surface)
+   {
+      android->second_pointer_count = 0;
+      android->second_surface       = surface;
+   }
+
+   while (retro_spsc_read_avail(&second->touches) >= sizeof(touch))
+   {
+      unsigned i;
+      unsigned count = android->second_pointer_count;
+      retro_spsc_read(&second->touches, &touch, sizeof(touch));
+      /* Window 0 would map through the main viewport: a clear raced */
+      if (!surface || !window || touch.generation != surface)
+         continue;
+      for (i = 0; i < count; i++)
+         if (android->second_pointer_id[i] == touch.pointer_id)
+            break;
+      if (!touch.down)
+      {
+         if (i < count)
+         {
+            memmove(&android->second_pointer[i],
+                  &android->second_pointer[i + 1],
+                  (count - i - 1) * sizeof(android->second_pointer[0]));
+            memmove(&android->second_pointer_id[i],
+                  &android->second_pointer_id[i + 1],
+                  (count - i - 1) * sizeof(android->second_pointer_id[0]));
+            android->second_pointer_count--;
+         }
+         continue;
+      }
+      if (i == count)
+      {
+         if (count >= MAX_TOUCH)
+            continue;
+         android->second_pointer_id[i] = touch.pointer_id;
+         android->second_pointer_count++;
+      }
+      if (!video_driver_translate_window_point(window, generation,
+               touch.x, touch.y, false,
+               &android->second_pointer[i].confined_pos))
+         android->second_pointer[i].confined_pos =
+            VIDEO_POS_PACK(-0x8000, -0x8000);
+      if (!video_driver_translate_window_point(window, generation,
+               touch.x, touch.y, true, &android->second_pointer[i].pos))
+         android->second_pointer[i].pos = VIDEO_POS_PACK(-0x8000, -0x8000);
+      android->second_pointer[i].full_pos = VIDEO_POS_PACK(-0x8000, -0x8000);
    }
 }
 
@@ -2974,7 +3046,10 @@ static void android_input_poll(void *data)
 
    /* Report the pads the OS has removed since the last poll. */
    if (android && android_app)
+   {
       android_input_poll_removed(android, android_app);
+      android_input_poll_second_touches(android, android_app);
+   }
 
    /* Backgrounded (APP_CMD_PAUSE/STOP set RUNLOOP_FLAG_IDLE): there is
     * nothing to do until the OS delivers the next command, and the
@@ -3271,6 +3346,31 @@ static int16_t android_input_state(
           * idx is core/frontend-controlled: bounds-check it before
           * any pointer[] access. PRESSED already range-checks via
           * pointer_count (<= MAX_TOUCH). */
+         /* The core's list goes on with the second display's fingers;
+          * the frontend's own screen device has the main display's */
+         if (     device == RETRO_DEVICE_POINTER
+               && idx >= android->pointer_count
+               && idx - android->pointer_count
+                  < android->second_pointer_count)
+         {
+            const struct input_pointer *p = &android->second_pointer[
+               idx - android->pointer_count];
+            switch (id)
+            {
+               case RETRO_DEVICE_ID_POINTER_X:
+                  return VIDEO_POS_X(p->confined_pos);
+               case RETRO_DEVICE_ID_POINTER_Y:
+                  return VIDEO_POS_Y(p->confined_pos);
+               case RETRO_DEVICE_ID_POINTER_PRESSED:
+                  return (VIDEO_POS_X(p->pos) != -0x8000)
+                     && (VIDEO_POS_Y(p->pos) != -0x8000);
+               case RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN:
+                  return input_driver_pointer_is_offscreen(
+                        VIDEO_POS_X(p->pos), VIDEO_POS_Y(p->pos));
+               default:
+                  break;
+            }
+         }
          switch (id)
          {
             case RETRO_DEVICE_ID_POINTER_X:
@@ -3305,6 +3405,9 @@ static int16_t android_input_state(
                   return 0;
                return input_driver_pointer_is_offscreen(VIDEO_POS_X(android->pointer[idx].pos), VIDEO_POS_Y(android->pointer[idx].pos));
             case RETRO_DEVICE_ID_POINTER_COUNT:
+               if (device == RETRO_DEVICE_POINTER)
+                  return android->pointer_count
+                     + android->second_pointer_count;
                return android->pointer_count;
             case RARCH_DEVICE_ID_POINTER_BACK:
             {

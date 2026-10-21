@@ -74,6 +74,9 @@ struct android_app;
 #define ANDROID_DISPLAY_PRIVATE  (1 << 3)
 #define ANDROID_DISPLAY_PHYSICAL (1 << 4)
 
+/* Fingers tracked on each display */
+#define MAX_TOUCH 16
+
 /* A touch on the second display, UI thread to the input poll */
 typedef struct android_second_touch
 {
