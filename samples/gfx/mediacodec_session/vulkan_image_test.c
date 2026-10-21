@@ -72,16 +72,17 @@ static VKAPI_ATTR void VKAPI_CALL barrier(VkCommandBuffer command,VkPipelineStag
       VkPipelineStageFlags dst,VkDependencyFlags flags,uint32_t nm,const VkMemoryBarrier *m,
       uint32_t nb,const VkBufferMemoryBarrier *b,uint32_t ni,const VkImageMemoryBarrier *im)
 {
+ VkPipelineStageFlags stage=barrier_calls<2?VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT:VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
  assert(command && !flags && !nm && !m && !nb && !b && ni==1 && im);
  assert(im->image==HANDLE(VkImage,1) && im->subresourceRange.aspectMask==VK_IMAGE_ASPECT_COLOR_BIT);
  assert(im->subresourceRange.levelCount==1 && im->subresourceRange.layerCount==1);
- if(!barrier_calls) {
-  assert(src==VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT && dst==VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+ if(!(barrier_calls&1)) {
+  assert(src==VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT && dst==stage);
   assert(im->srcQueueFamilyIndex==VK_QUEUE_FAMILY_FOREIGN_EXT && im->dstQueueFamilyIndex==2);
   assert(im->oldLayout==VK_IMAGE_LAYOUT_GENERAL && im->newLayout==VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
   assert(!im->srcAccessMask && im->dstAccessMask==VK_ACCESS_SHADER_READ_BIT);
  } else {
-  assert(src==VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT && dst==VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
+  assert(src==stage && dst==VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
   assert(im->srcQueueFamilyIndex==2 && im->dstQueueFamilyIndex==VK_QUEUE_FAMILY_FOREIGN_EXT);
   assert(im->oldLayout==VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL && im->newLayout==VK_IMAGE_LAYOUT_GENERAL);
   assert(im->srcAccessMask==VK_ACCESS_SHADER_READ_BIT && !im->dstAccessMask);
@@ -112,11 +113,15 @@ int main(void)
  assert(vulkan_android_image_create(device,&ops,HANDLE(struct AHardwareBuffer*,1),64,32,&memory,
        VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_2020,VK_SAMPLER_YCBCR_RANGE_ITU_NARROW,&out));
  assert(live==31 && out.external_format==123);
- assert(!vulkan_android_image_barrier(HANDLE(VkCommandBuffer,1),barrier,out.image,VK_QUEUE_FAMILY_IGNORED,true));
+ assert(!vulkan_android_image_barrier(HANDLE(VkCommandBuffer,1),barrier,out.image,VK_QUEUE_FAMILY_IGNORED,VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,true));
  assert(!barrier_calls);
- assert(vulkan_android_image_barrier(HANDLE(VkCommandBuffer,1),barrier,out.image,2,true));
- assert(vulkan_android_image_barrier(HANDLE(VkCommandBuffer,1),barrier,out.image,2,false));
+ assert(vulkan_android_image_barrier(HANDLE(VkCommandBuffer,1),barrier,out.image,2,VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,true));
+ assert(vulkan_android_image_barrier(HANDLE(VkCommandBuffer,1),barrier,out.image,2,VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,false));
  assert(barrier_calls==2);
+ assert(!vulkan_android_image_barrier(HANDLE(VkCommandBuffer,1),barrier,out.image,2,VK_PIPELINE_STAGE_TRANSFER_BIT,true));
+ assert(vulkan_android_image_barrier(HANDLE(VkCommandBuffer,1),barrier,out.image,2,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,true));
+ assert(vulkan_android_image_barrier(HANDLE(VkCommandBuffer,1),barrier,out.image,2,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,false));
+ assert(barrier_calls==4);
  vulkan_android_image_destroy(device,&ops,&out);assert(!live && !memcmp(&out,&empty,sizeof(out)));
  puts("PASS: Vulkan AHB dedicated import, external YCbCr resources and every partial failure unwind");
  return 0;

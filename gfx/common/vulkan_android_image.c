@@ -2,10 +2,11 @@
 #include "vulkan_android_image.h"
 #include <string.h>
 bool vulkan_android_image_barrier(VkCommandBuffer command,PFN_vkCmdPipelineBarrier barrier,
-      VkImage image,unsigned graphics_family,bool acquire)
+      VkImage image,unsigned graphics_family,VkPipelineStageFlags sample_stage,bool acquire)
 {
  VkImageMemoryBarrier info;
- if(!command || !barrier || !image || graphics_family>=VK_QUEUE_FAMILY_FOREIGN_EXT)return false;
+ if(!command || !barrier || !image || graphics_family>=VK_QUEUE_FAMILY_FOREIGN_EXT
+       || (sample_stage!=VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT && sample_stage!=VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT))return false;
  memset(&info,0,sizeof(info));info.sType=VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
  info.image=image;info.subresourceRange.aspectMask=VK_IMAGE_ASPECT_COLOR_BIT;
  info.subresourceRange.levelCount=info.subresourceRange.layerCount=1;
@@ -15,8 +16,8 @@ bool vulkan_android_image_barrier(VkCommandBuffer command,PFN_vkCmdPipelineBarri
  info.newLayout=acquire?VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:VK_IMAGE_LAYOUT_GENERAL;
  info.srcAccessMask=acquire?0:VK_ACCESS_SHADER_READ_BIT;
  info.dstAccessMask=acquire?VK_ACCESS_SHADER_READ_BIT:0;
- barrier(command,acquire?VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT:VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-       acquire?VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT:VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+ barrier(command,acquire?VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT:sample_stage,
+       acquire?sample_stage:VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
        0,0,NULL,0,NULL,1,&info);
  return true;
 }
