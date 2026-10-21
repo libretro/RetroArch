@@ -469,9 +469,9 @@ static int hevc_decode_probe(VkInstance instance, VkPhysicalDevice gpu,
    ctx->video_xfer_family = graphics; ctx->video_lanes = 1;
    ctx->video_codec_operations = VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR;
    vkGetPhysicalDeviceMemoryProperties(gpu, &ctx->memory_properties);
+   vkGetPhysicalDeviceProperties(gpu, &ctx->gpu_properties);
 #ifdef HEVC_RENDER_TEST
    ctx->flags |= VK_CTX_FLAG_TIMELINE_SEMAPHORE;
-   vkGetPhysicalDeviceProperties(gpu, &ctx->gpu_properties);
    vkGetDeviceQueue(device, graphics, 0, &ctx->queue);
    render_context = ctx;
 #endif

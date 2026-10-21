@@ -14,7 +14,11 @@ static int vvd_av1_decode(void *decoder, const uint8_t *packet, size_t length,
    int ready;
    if (!sequence || !p ||
        memcmp(sequence, &d->av1_sequence, sizeof(*sequence)) ||
-       p->grain.params.apply || p->setup.size.width != d->coded.width ||
+       p->grain.params.apply ||
+#ifdef _WIN32
+       (vvd.av1_intrabc_broken && p->setup.allow_intrabc) ||
+#endif
+       p->setup.size.width != d->coded.width ||
        p->setup.size.upscaled_width != d->coded.width ||
        p->setup.size.height != d->coded.height)
       return -2;

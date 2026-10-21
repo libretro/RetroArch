@@ -173,6 +173,32 @@ static int av1_decode_fixture(void)
                goto done;
             }
          }
+#ifdef _WIN32
+         if (ret == RAV1_HW_STREAM_FRAME && !count && vvd.av1_intrabc_broken)
+         {
+            vvd_dec_t *d = (vvd_dec_t *)ops.decoder;
+            rav1_hw_picture_t *unsupported =
+               (rav1_hw_picture_t *)malloc(sizeof(*unsupported));
+            unsigned ring = d->dring;
+            uint64_t value = d->tl_value;
+            int refused;
+            if (!unsupported)
+            {
+               video_hw_frame_abandon(&frame);
+               goto done;
+            }
+            *unsupported = session->pending;
+            unsupported->setup.allow_intrabc = 1;
+            refused = ops.decode(ops.decoder, packet_start, packet_size,
+                  &session->sequence, unsupported);
+            free(unsupported);
+            if (refused != -2 || d->dring != ring || d->tl_value != value)
+            {
+               video_hw_frame_abandon(&frame);
+               goto done;
+            }
+         }
+#endif
          memset((void *)packet_start, 0, packet_size);
          packet_start = data + offset;
       }

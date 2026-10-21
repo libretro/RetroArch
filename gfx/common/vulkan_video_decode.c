@@ -164,6 +164,9 @@ static struct
 #endif
 #ifdef HAVE_RAV1
    rav1_hw_backend_t av1;
+#ifdef _WIN32
+   bool av1_intrabc_broken;
+#endif
 #endif
    VkVideoCodecOperationFlagsKHR codecs;
 
@@ -1751,6 +1754,11 @@ bool vulkan_video_decode_init(const vulkan_context_t *ctx)
    vvd.codecs      = ctx->video_codec_operations;
    vvd.general     = (ctx->flags & VK_CTX_FLAG_VIDEO_GENERAL) != 0;
    vvd.mem         = ctx->memory_properties;
+#if defined(HAVE_RAV1) && defined(_WIN32)
+   /* NVIDIA 610.47 faults in vkCmdDecodeVideoKHR for AV1 intra block copy. */
+   vvd.av1_intrabc_broken = ctx->gpu_properties.vendorID == 0x10de
+      && ctx->gpu_properties.driverVersion == ((610u << 22) | (47u << 14));
+#endif
    vvd.gfx_family  = ctx->graphics_queue_index;
    vvd.dec_family  = ctx->video_decode_family;
    vvd.xfer_family = ctx->video_xfer_family;
