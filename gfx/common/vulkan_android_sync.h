@@ -24,7 +24,8 @@ void vulkan_android_sync_destroy(VkDevice device,const vulkan_android_sync_ops_t
 /* Owner only, semaphore must have NO pending queue operations. Duplicates the
  * borrowed AImage ready fd and transfers only the duplicate on success. -1
  * imports the already-signaled SYNC_FD payload. Submit a binary GPU wait before
- * touching the image. No CPU fence wait, allocation or native image operation. */
+ * touching the image. Ownership transfer requires wait stage ALL_COMMANDS.
+ * No CPU fence wait, allocation or native image operation. */
 bool vulkan_android_sync_import(VkDevice device,const vulkan_android_sync_ops_t *ops,
       VkSemaphore ready,int borrowed_fd);
 /* Call after successfully submitting a signal of done, covering FOREIGN release

@@ -43,5 +43,13 @@ bool vulkan_android_image_create(VkDevice device,const vulkan_android_image_ops_
 /* Owner only, after all GPU use/descriptor references retire. */
 void vulkan_android_image_destroy(VkDevice device,const vulkan_android_image_ops_t *ops,
       vulkan_android_image_t *image);
+/* Record outside render passes, on the graphics queue owner. The external
+ * producer/consumer contract must use GENERAL layout. acquire transitions
+ * FOREIGN/GENERAL -> graphics/SHADER_READ_ONLY; release reverses it after the
+ * final fragment read. Neither operation submits or waits. Wait the imported
+ * ready semaphore at ALL_COMMANDS (ownership transfers have no defined stage),
+ * and signal/export completion after release. Never discard via UNDEFINED. */
+bool vulkan_android_image_barrier(VkCommandBuffer command,PFN_vkCmdPipelineBarrier barrier,
+      VkImage image,unsigned graphics_family,bool acquire);
 RETRO_END_DECLS
 #endif
