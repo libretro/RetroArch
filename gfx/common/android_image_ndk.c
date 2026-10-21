@@ -5,6 +5,7 @@
 #include "android_image_ndk.h"
 #if defined(__ANDROID__) || defined(ANDROID_IMAGE_NDK_TEST)
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include <dynamic/dylib.h>
 #ifdef ANDROID_IMAGE_NDK_TEST
@@ -30,6 +31,7 @@ typedef media_status_t (*image_buffer_fn)(const AImage*,AHardwareBuffer**);
 typedef media_status_t (*image_int_fn)(const AImage*,int32_t*);
 typedef media_status_t (*image_crop_fn)(const AImage*,AImageCropRect*);
 typedef media_status_t (*image_time_fn)(const AImage*,int64_t*);
+typedef void (*buffer_describe_fn)(const AHardwareBuffer*,AHardwareBuffer_Desc*);
 #if defined(__ANDROID__) && defined(__clang__) && __ANDROID_API__>=26
 /* Type-only checks do not introduce native symbol references. */
 #define IMAGE_ABI(type,symbol) __extension__ typedef char symbol##_abi[__builtin_types_compatible_p(type,__typeof__(&symbol))?1:-1]
@@ -43,6 +45,7 @@ IMAGE_ABI(image_int_fn,AImage_getWidth);
 IMAGE_ABI(image_int_fn,AImage_getHeight);
 IMAGE_ABI(image_crop_fn,AImage_getCropRect);
 IMAGE_ABI(image_time_fn,AImage_getTimestamp);
+IMAGE_ABI(buffer_describe_fn,AHardwareBuffer_describe);
 #undef IMAGE_ABI
 #endif
 typedef struct android_ndk_reader android_ndk_reader_t;
@@ -51,7 +54,7 @@ typedef struct android_ndk_image {
  AImage *image;
 } android_ndk_image_t;
 struct android_ndk_reader {
- dylib_t library;
+ dylib_t library,android_library;
  AImageReader *reader;
  image_next_fn next;
  image_reader_delete_fn delete_reader;
@@ -60,6 +63,7 @@ struct android_ndk_reader {
  image_int_fn width,height;
  image_crop_fn crop;
  image_time_fn timestamp;
+ buffer_describe_fn describe_buffer;
  unsigned count;
  android_ndk_image_t image[32];
 };
@@ -84,12 +88,19 @@ static bool android_ndk_describe(void *context,android_image_view_t *view)
  android_ndk_image_t *image=(android_ndk_image_t*)context;
  android_ndk_reader_t *r=image->owner;
  int32_t width,height; AImageCropRect crop; AHardwareBuffer *buffer=NULL;
+ AHardwareBuffer_Desc desc;
  if(!image->image || r->buffer(image->image,&buffer)!=AMEDIA_OK || !buffer
        || r->width(image->image,&width)!=AMEDIA_OK || width<=0
        || r->height(image->image,&height)!=AMEDIA_OK || height<=0
        || r->crop(image->image,&crop)!=AMEDIA_OK || crop.left<0 || crop.top<0
        || crop.right<0 || crop.bottom<0
        || r->timestamp(image->image,&view->timestamp_ns)!=AMEDIA_OK)return false;
+ memset(&desc,0,sizeof(desc));r->describe_buffer(buffer,&desc);
+ if(desc.width<(unsigned)width || desc.height<(unsigned)height
+       || desc.width>16384 || desc.height>16384 || desc.layers!=1
+       || !(desc.usage&AHARDWAREBUFFER_USAGE_GPU_SAMPLED_IMAGE)
+       || (desc.usage&AHARDWAREBUFFER_USAGE_PROTECTED_CONTENT))return false;
+ view->buffer_width=desc.width;view->buffer_height=desc.height;
  view->buffer=buffer;view->width=(unsigned)width;view->height=(unsigned)height;
  view->left=(unsigned)crop.left;view->top=(unsigned)crop.top;
  view->right=(unsigned)crop.right;view->bottom=(unsigned)crop.bottom;return true;
@@ -102,7 +113,7 @@ static void android_ndk_delete_image(void *context)
 static void android_ndk_delete_reader(void *context)
 {
  android_ndk_reader_t *r=(android_ndk_reader_t*)context;
- r->delete_reader(r->reader);dylib_close(r->library);free(r);
+ r->delete_reader(r->reader);dylib_close(r->library);dylib_close(r->android_library);free(r);
 }
 android_image_queue_t *android_image_ndk_new(unsigned width,unsigned height,unsigned slots,void **window)
 {
@@ -127,6 +138,9 @@ android_image_queue_t *android_image_ndk_new(unsigned width,unsigned height,unsi
  LOAD(r->crop,image_crop_fn,"AImage_getCropRect");
  LOAD(r->timestamp,image_time_fn,"AImage_getTimestamp");
 #undef LOAD
+ r->android_library=dylib_load("libandroid.so");if(!r->android_library)goto failed;
+ r->describe_buffer=(buffer_describe_fn)dylib_proc(r->android_library,"AHardwareBuffer_describe");
+ if(!r->describe_buffer)goto failed;
  if(make((int32_t)width,(int32_t)height,AIMAGE_FORMAT_PRIVATE,
           AHARDWAREBUFFER_USAGE_GPU_SAMPLED_IMAGE,(int32_t)slots,&r->reader)!=AMEDIA_OK || !r->reader
        || get_window(r->reader,&native_window)!=AMEDIA_OK || !native_window)goto failed;
@@ -138,6 +152,7 @@ android_image_queue_t *android_image_ndk_new(unsigned width,unsigned height,unsi
 failed:
  if(r->reader && r->delete_reader)r->delete_reader(r->reader);
  if(r->library)dylib_close(r->library);
+ if(r->android_library)dylib_close(r->android_library);
  free(r);return NULL;
 }
 #else

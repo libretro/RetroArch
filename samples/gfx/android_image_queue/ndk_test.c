@@ -6,7 +6,7 @@
 #include "android_image_ndk_test_types.h"
 #include "../../../gfx/common/android_image_ndk.h"
 static AImageReader reader;static ANativeWindow window;static AImage image;static AHardwareBuffer buffer;
-static int loads,unloads,readers,images,missing,lookup,fail_create,fail_window,metadata_fail,available;
+static int loads,unloads,readers,images,missing,lookup,fail_create,fail_window,metadata_fail,available,bad_desc;
 static media_status_t make(int32_t w,int32_t h,int32_t format,uint64_t usage,int32_t slots,AImageReader **out)
 {assert(w==320 && h==192 && format==34 && usage==256 && slots==2);*out=&reader;readers++;return fail_create?-99:0;}
 static media_status_t get_window(AImageReader *r,ANativeWindow **out)
@@ -22,7 +22,15 @@ static media_status_t height(const AImage *im,int32_t *out){assert(im==&image);*
 static media_status_t crop(const AImage *im,AImageCropRect *out)
 {assert(im==&image);out->left=out->top=0;out->right=320;out->bottom=192;return 0;}
 static media_status_t timestamp(const AImage *im,int64_t *out){assert(im==&image);*out=1000;return 0;}
-dylib_t dylib_load(const char *path){assert(!strcmp(path,"libmediandk.so"));loads++;lookup=0;return &reader;}
+static void describe_buffer(const AHardwareBuffer *b,AHardwareBuffer_Desc *d)
+{
+ assert(b==&buffer);memset(d,0,sizeof(*d));d->width=320;d->height=192;d->layers=1;d->usage=256;
+ if(bad_desc==1)d->width=319;
+ if(bad_desc==2)d->layers=2;
+ if(bad_desc==3)d->usage=0;
+ if(bad_desc==4)d->usage|=AHARDWAREBUFFER_USAGE_PROTECTED_CONTENT;
+}
+dylib_t dylib_load(const char *path){assert(!strcmp(path,"libmediandk.so") || !strcmp(path,"libandroid.so"));loads++;if(!strcmp(path,"libmediandk.so"))lookup=0;return &reader;}
 void dylib_close(dylib_t lib){assert(lib==&reader);unloads++;}
 function_t dylib_proc(dylib_t lib,const char *name)
 {
@@ -33,13 +41,14 @@ function_t dylib_proc(dylib_t lib,const char *name)
  FN("AImage_delete",del_image);FN("AImage_getHardwareBuffer",get_buffer);
  FN("AImage_getWidth",width);FN("AImage_getHeight",height);
  FN("AImage_getCropRect",crop);FN("AImage_getTimestamp",timestamp);
+ FN("AHardwareBuffer_describe",describe_buffer);
 #undef FN
  assert(0);return NULL;
 }
 int main(void)
 {
  android_image_queue_t *q;android_image_view_t view;void *out;int i;
- for(i=1;i<=10;i++) {missing=i;assert(!android_image_ndk_new(320,192,2,&out) && !out);assert(!readers && loads==unloads);}
+ for(i=1;i<=11;i++) {missing=i;assert(!android_image_ndk_new(320,192,2,&out) && !out);assert(!readers && loads==unloads);}
  missing=0;fail_create=1;assert(!android_image_ndk_new(320,192,2,&out));assert(!readers && loads==unloads);
  fail_create=0;fail_window=1;assert(!android_image_ndk_new(320,192,2,&out));assert(!readers && loads==unloads);
  fail_window=0;q=android_image_ndk_new(320,192,2,&out);assert(q && out==&window);
@@ -51,6 +60,13 @@ int main(void)
  q=android_image_ndk_new(320,192,2,&out);assert(q);available=metadata_fail=1;
  assert(android_image_queue_acquire(q,&view)==-1);assert(android_image_queue_poll(q)==1);
  android_image_queue_close(q);assert(android_image_queue_free(q));assert(!readers && !images && loads==unloads);
+ metadata_fail=0;
+ for(i=1;i<=4;i++) {
+  bad_desc=i;q=android_image_ndk_new(320,192,2,&out);assert(q);available=1;
+  assert(android_image_queue_acquire(q,&view)==-1);assert(android_image_queue_poll(q)==1);
+  android_image_queue_close(q);assert(android_image_queue_free(q));
+  assert(!readers && !images && loads==unloads);
+ }
  puts("PASS: runtime NDK reader missing symbols, partial startup, borrowed hardware buffer and delayed reader/library retirement");
  return 0;
 }

@@ -14,6 +14,7 @@ typedef struct android_image_view {
  int ready_fd; /* borrowed; renderer duplicates it for GPU-side waiting */
  int64_t timestamp_ns;
  unsigned width,height,left,top,right,bottom;
+ unsigned buffer_width,buffer_height; /* actual AHardwareBuffer allocation */
 } android_image_view_t;
 typedef struct android_image_ops {
  /* Worker only. 1 image/owned ready-fd, 0 no image, -1 failure. */
