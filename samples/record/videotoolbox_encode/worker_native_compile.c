@@ -1,3 +1,4 @@
+#include "../../../record/record_avfoundation_worker_native.h"
 /* Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier: GPL-3.0-or-later */
 #include "../../../record/record_gpu_worker_vt_native.h"
 /* Compiled against the real Apple SDK independently of hardware availability.

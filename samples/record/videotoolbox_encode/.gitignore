@@ -15,3 +15,6 @@
 /audio_queue_test
 /audio_queue_test.exe
 /audio_thread_test
+
+/av_worker_test
+/av_worker_test.exe

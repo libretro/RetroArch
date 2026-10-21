@@ -9,7 +9,9 @@ ifneq ($(SANITIZER),)
 CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
-all: crop_test$(EXE) audio_queue_test$(EXE) slots_test$(EXE) session_test$(EXE) worker_test$(EXE) audio_rate_test$(EXE)
+all: crop_test$(EXE) av_worker_test$(EXE) audio_queue_test$(EXE) slots_test$(EXE) session_test$(EXE) worker_test$(EXE) audio_rate_test$(EXE)
+av_worker_test$(EXE): av_worker_test.c $(RA)/record/record_avfoundation_worker.c $(RA)/record/record_avfoundation_worker.h
+	$(CC) $(CFLAGS) -o $@ av_worker_test.c $(RA)/record/record_avfoundation_worker.c $(RA)/record/record_gpu_worker_vt.c $(RA)/record/record_gpu_queue.c $(RA)/record/record_audio_queue.c $(RA)/libretro-common/queues/retro_spsc.c $(LDFLAGS)
 audio_queue_test$(EXE): audio_queue_test.c $(RA)/record/record_audio_queue.c $(RA)/record/record_audio_queue.h
 	$(CC) $(CFLAGS) -o $@ audio_queue_test.c $(RA)/record/record_audio_queue.c $(RA)/libretro-common/queues/retro_spsc.c $(LDFLAGS)
 audio_thread_test: audio_queue_test.c $(RA)/record/record_audio_queue.c $(RA)/record/record_audio_queue.h
@@ -30,6 +32,7 @@ worker_thread_test: worker_thread_test.c $(RA)/record/record_gpu_worker_vt.c $(R
 	$(CC) $(CFLAGS) -pthread -o $@ worker_thread_test.c $(RA)/record/record_gpu_worker_vt.c $(RA)/record/record_gpu_queue.c $(RA)/libretro-common/queues/retro_spsc.c $(LDFLAGS)
 check: all
 	$(RUNNER) ./crop_test$(EXE)
+	$(RUNNER) ./av_worker_test$(EXE)
 	$(RUNNER) ./audio_queue_test$(EXE)
 	$(RUNNER) ./slots_test$(EXE)
 	$(RUNNER) ./session_test$(EXE)
@@ -37,6 +40,7 @@ check: all
 	$(RUNNER) ./audio_rate_test$(EXE)
 clean:
 	rm -f crop_test crop_test.exe
+	rm -f av_worker_test av_worker_test.exe
 	rm -f audio_queue_test audio_queue_test.exe audio_thread_test
 	rm -f slots_test slots_test.exe session_test session_test.exe worker_test worker_test.exe thread_test worker_thread_test
 	rm -f audio_rate_test audio_rate_test.exe
