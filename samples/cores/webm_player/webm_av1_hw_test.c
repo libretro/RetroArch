@@ -9,6 +9,7 @@ static unsigned taken, stopped, ticks, ready, sink_busy, decode_busy,
 static video_hw_frame_t held, retry;
 static const char *fixture_path;
 static unsigned container;
+static unsigned first_display;
 static uint64_t pcm_frames, pcm_nonzero;
 static uint32_t pcm_hash;
 #define CHECK(c)                                                               \
@@ -132,6 +133,8 @@ static bool sink(void *user, const video_hw_frame_t *frame)
    if (held.image)
       video_hw_frame_abandon(&held);
    held = *frame;
+   if (!first_display)
+      first_display = (unsigned)media_player.vshown;
    taken++;
    return true;
 }
@@ -258,6 +261,7 @@ static void test_container(void)
    }
    rav1_set_hw_backend(&backend);
    ready = 1;
+   first_display = 0;
    decode_busy = output_busy = sink_busy = 2;
    for (i = 0; i < 32 && !stopped; i++)
    {
@@ -268,6 +272,8 @@ static void test_container(void)
          CHECK(accepted == decoded);
    }
    CHECK(stopped && taken && ticks && !media_player.hw_frame.image);
+   if (!container)
+      CHECK(first_display == 1);
    unload();
    before = taken;
    if (!load())

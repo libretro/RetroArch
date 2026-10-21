@@ -2161,8 +2161,12 @@ void MEDIA_CORE_PREFIX(retro_run)(void)
                         == RMP4_VIDEO_WAIT_DECODER
                      || (p->dt && !data_transfer_complete(p->dt)
                         && !data_transfer_failed(p->dt))))
+            {
                /* Hold the picture until input or decoder capacity returns. */
+               if (p->mp4_hw_required && !p->vshown)
+                  p->play_ns -= p->frame_ns;
                break;
+            }
             if (r != 1)
             {
                p->eof = 1;
