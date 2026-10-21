@@ -51,8 +51,8 @@ static INLINE VT_ENCODE_AVAILABLE void videotoolbox_encode_cancel(videotoolbox_e
 
 /* Cold worker startup; hardware is required and independently queried.
  * Unsupported codec/format/property/device returns an error, not a fallback. */
-static INLINE VT_ENCODE_AVAILABLE videotoolbox_encode_t *videotoolbox_encode_new(
-      const videotoolbox_encode_config_t *config, OSStatus *error)
+static INLINE VT_ENCODE_AVAILABLE videotoolbox_encode_t *videotoolbox_encode_new_with_gpu(
+      const videotoolbox_encode_config_t *config, uint64_t gpu_registry_id, OSStatus *error)
 {
    videotoolbox_encode_t *encoder = NULL;
    CFMutableDictionaryRef spec = NULL, attrs = NULL, props = NULL;
@@ -77,6 +77,21 @@ static INLINE VT_ENCODE_AVAILABLE videotoolbox_encode_t *videotoolbox_encode_new
    encoder->pool = videotoolbox_encode_slots_new(config->slots);
    if (!encoder->pool) { status = kVTAllocationFailedErr; goto done; }
    CFDictionarySetValue(spec, kVTVideoEncoderSpecification_RequireHardwareAcceleratedVideoEncoder, kCFBooleanTrue);
+   if (gpu_registry_id)
+   {
+#if defined(__APPLE__) && defined(__clang__) && defined(__MAC_OS_X_VERSION_MAX_ALLOWED) \
+      && __MAC_OS_X_VERSION_MAX_ALLOWED>=101400
+      if (__builtin_available(macOS 10.14, iOS 13.0, tvOS 13.0, *))
+      {
+         CFNumberRef gpu=CFNumberCreate(NULL,kCFNumberSInt64Type,&gpu_registry_id);
+         if (!gpu) { status=kVTAllocationFailedErr; goto done; }
+         CFDictionarySetValue(spec,kVTVideoEncoderSpecification_RequiredEncoderGPURegistryID,gpu);
+         CFRelease(gpu);
+      }
+      else
+#endif
+      { status=kVTParameterErr; goto done; }
+   }
    CFDictionarySetValue(attrs, kCVPixelBufferMetalCompatibilityKey, kCFBooleanTrue);
    if (!videotoolbox_encode_number(attrs, kCVPixelBufferWidthKey, config->width)
          || !videotoolbox_encode_number(attrs, kCVPixelBufferHeightKey, config->height)
@@ -125,6 +140,12 @@ done:
    if (status) { videotoolbox_encode_cancel(encoder); return NULL; }
    return encoder;
 }
+
+/* Original automatic-selection API. An explicit nonzero GPU registry ID in
+ * new_with_gpu requires that encoder device; no preferred-device fallback. */
+static INLINE VT_ENCODE_AVAILABLE videotoolbox_encode_t *videotoolbox_encode_new(
+      const videotoolbox_encode_config_t *config, OSStatus *error)
+{ return videotoolbox_encode_new_with_gpu(config,0,error); }
 
 /* Worker only, after GPU completion. 1 accepted, 0 busy, -1 failed.
  * No pixel lock/copy; the fixed buffer stays immutable through packet ack. */

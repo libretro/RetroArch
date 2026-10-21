@@ -232,6 +232,9 @@ int main(void)
    c.bit_depth=expected_depth=8;
    e=videotoolbox_encode_new(&c,&error); assert(e); videotoolbox_encode_cancel(e);
    assert(!live);
+   /* A platform with no explicit GPU-selection API must refuse the request,
+    * rather than silently falling back to its default hardware encoder. */
+   assert(!videotoolbox_encode_new_with_gpu(&c,1,&error) && error==kVTParameterErr && !live);
    puts("PASS: VT adapter hardware admission, startup faults, FIFO, synchronous/drop callbacks and drain");
    return 0;
 }

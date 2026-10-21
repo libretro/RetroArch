@@ -17,7 +17,11 @@ import tempfile
 parser = argparse.ArgumentParser()
 parser.add_argument('--mux', action='store_true')
 parser.add_argument('--session', action='store_true')
+parser.add_argument('--cold', action='store_true')
 args = parser.parse_args()
+if args.cold:
+    args.session = True
+    os.environ['SESSION_COLD_STARTUP_CONTROL'] = '1'
 if args.session:
     args.mux = True
 
@@ -54,7 +58,7 @@ with workspace as temp:
                               + f'-{width}x{height}')
         command = compiler + flags + [f'-DWIDTH={width}', f'-DHEIGHT={height}', '-fblocks', ownership, '-Wno-unused-function',
             str(here / 'pipeline_test.m'), str(root / 'record/record_gpu_capture_metal.m'),
-            str(root / 'record/record_mux_avfoundation.m'),
+            str(root / 'record/record_mux_avfoundation.m'), str(root / 'record/record_gpu_session_metal.m'),
             *objects, '-o', str(binary)]
         if args.session:
             command += ['-DRECORD_AVF_SESSION_NATIVE_TEST']

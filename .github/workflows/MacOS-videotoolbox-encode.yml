@@ -8,6 +8,7 @@ on:
       - 'libretro-common/formats/h265/rh265_sps_crop.c'
       - 'libretro-common/include/formats/rh265_sps_crop.h'
       - 'record/record_gpu_capture_metal.*'
+      - 'record/record_gpu_session_metal.*'
       - 'record/record_gpu_worker_vt*'
       - 'record/record_audio_queue.*'
       - 'record/record_avfoundation_worker*'
@@ -24,6 +25,7 @@ on:
       - 'libretro-common/formats/h265/rh265_sps_crop.c'
       - 'libretro-common/include/formats/rh265_sps_crop.h'
       - 'record/record_gpu_capture_metal.*'
+      - 'record/record_gpu_session_metal.*'
       - 'record/record_gpu_worker_vt*'
       - 'record/record_audio_queue.*'
       - 'record/record_avfoundation_worker*'
@@ -96,6 +98,16 @@ jobs:
             exit 0
           fi
           exit "$rc"
+      - name: Native renderer-device cold recording startup
+        if: ${{ !cancelled() }}
+        run: |
+          rc=0
+          PIPELINE_ARTIFACT_DIR="$RUNNER_TEMP/metal-vt-cold-evidence" python3 samples/record/videotoolbox_encode/pipeline_run.py --cold || rc=$?
+          if [ "$rc" = 77 ]; then
+            echo "::warning::Renderer-device encoder unavailable; cold startup acceptance is incomplete"
+            exit 0
+          fi
+          exit "$rc"
       - name: Preserve native pipeline evidence
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
@@ -105,4 +117,5 @@ jobs:
             ${{ runner.temp }}/metal-vt-evidence
             ${{ runner.temp }}/metal-vt-mux-evidence
             ${{ runner.temp }}/metal-vt-session-evidence
+            ${{ runner.temp }}/metal-vt-cold-evidence
           if-no-files-found: warn

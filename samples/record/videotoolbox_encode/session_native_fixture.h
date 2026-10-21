@@ -1,5 +1,6 @@
 /* Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier: GPL-3.0-or-later */
 #include "../../../record/record_avfoundation_session_native.h"
+#include "../../../record/record_gpu_session_metal.h"
 int main(int argc,char **argv)
 {
    if (argc!=8) return 1;
@@ -34,6 +35,33 @@ int main(int argc,char **argv)
       config.hevc=atoi(argv[1])!=0; config.bit_depth=(unsigned)atoi(argv[2]); config.hdr=mode!=0;
       if (config.hevc && config.bit_depth==10)
       { config.width=(WIDTH+31)&~31u; config.height=(HEIGHT+31)&~31u; }
+      if (fault==3)
+      {
+         FILE *guard=fopen(argv[6],"wb"); assert(guard);
+         assert(fwrite("keep",1,4,guard)==4 && !fclose(guard));
+      }
+      output.timescale=60000; output.audio_rate=rate; output.channels=2; output.audio_layout=3;
+      output.audio_bitrate=128000; output.max_audio_frames=1024;
+      if (getenv("SESSION_COLD_STARTUP_CONTROL"))
+      {
+         record_gpu_session_metal_config_t cold;
+         enum record_gpu_session_metal_startup stage;
+         int32_t native_status;
+         memset(&cold,0,sizeof(cold)); cold.width=WIDTH; cold.height=HEIGHT; cold.slots=2;
+         cold.bitrate=config.bitrate; cold.key_interval=config.key_interval; cold.timescale=config.timescale;
+         cold.bit_depth=config.bit_depth; cold.mode=mode; cold.hevc=config.hevc;
+         session=record_gpu_session_metal_new((__bridge void*)device,&cold,&output,4*(16+4096),
+               argv[6],&capture,&queue,&stage,&native_status);
+         if (!session)
+         {
+            assert(!capture && !queue);
+            fprintf(stderr,"UNAVAILABLE: cold session stage %d native status %d\n",(int)stage,(int)native_status);
+            RARCH_RELEASE(device); return native_status==kVTCouldNotFindVideoEncoderErr?77:1;
+         }
+         assert(stage==RECORD_METAL_STARTUP_NONE && !native_status);
+      }
+      else
+      {
       encoder=videotoolbox_encode_new(&config,&status);
       if (!encoder)
       {
@@ -45,15 +73,9 @@ int main(int argc,char **argv)
       { assert(!CVPixelBufferPoolCreatePixelBuffer(NULL,pool,&images[i])); buffers[i]=images[i]; }
       capture=record_gpu_capture_metal_new((__bridge void*)device,buffers,2,WIDTH,HEIGHT,config.bit_depth,mode);
       queue=record_gpu_queue_new(2); assert(capture && queue);
-      output.timescale=60000; output.audio_rate=rate; output.channels=2; output.audio_layout=3;
-      output.audio_bitrate=128000; output.max_audio_frames=1024;
-      if (fault==3)
-      {
-         FILE *guard=fopen(argv[6],"wb"); assert(guard);
-         assert(fwrite("keep",1,4,guard)==4 && !fclose(guard));
-      }
       session=record_avfoundation_session_new_native(queue,capture,encoder,WIDTH,HEIGHT,
             &output,4*(16+4096),argv[6]); assert(session);
+      }
       /* Session now owns all three components and its bounded audio queue. */
       assert(!record_avfoundation_session_free(session));
       commands=[device newCommandQueue]; assert(commands);
@@ -145,7 +167,7 @@ int main(int argc,char **argv)
          assert(fgetc(guard)==EOF && !fclose(guard));
       }
       /* No direct capture/queue/encoder access after producer closure. */
-      for (i=0;i<2;i++) CVPixelBufferRelease(images[i]);
+      for (i=0;i<2;i++) if (images[i]) CVPixelBufferRelease(images[i]);
       assert(!fclose(raw)); free(pcm);
       RARCH_RELEASE(source); RARCH_RELEASE(commands); RARCH_RELEASE(device);
       if (fault) printf("PASS: native owned session lifecycle fault=%u, terminal retirement and preserved output\n",fault);
