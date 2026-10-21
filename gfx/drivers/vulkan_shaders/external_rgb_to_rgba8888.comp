@@ -1,0 +1,29 @@
+#version 450
+#extension GL_GOOGLE_include_directive : require
+#define float3 vec3
+#define float4 vec4
+#include "../../drivers_shader/video_hdr.inc.glsl"
+/* YCbCr model/range conversion already belongs to the immutable Vulkan sampler.
+ * Its result is nonlinear coded R'G'B', so apply only the shared transfer/gamut
+ * conversion here. Never apply the planar YUV coefficients a second time. */
+layout(local_size_x = 8, local_size_y = 8) in;
+layout(set = 0, binding = 1) uniform sampler2D Source;
+#ifdef OUTPUT_FP16
+layout(set = 0, binding = 3, rgba16f)
+#else
+layout(set = 0, binding = 3, rgba8)
+#endif
+ writeonly uniform image2D Destination;
+/* Visible size, crop origin, native allocation size; HDR at the shared offsets. */
+layout(push_constant, std430) uniform Header { uint words[20]; };
+void main()
+{
+   uvec2 p = gl_GlobalInvocationID.xy;
+   if (p.x >= words[0] || p.y >= words[1]) return;
+   vec2 uv = (vec2(p) + vec2(words[2], words[3]) + vec2(0.5))
+      / vec2(words[4], words[5]);
+   vec3 rgb = textureLod(Source, uv, 0.0).rgb;
+   vec4 hdr = vec4(uintBitsToFloat(words[16]), uintBitsToFloat(words[17]),
+         uintBitsToFloat(words[18]), uintBitsToFloat(words[19]));
+   imageStore(Destination, ivec2(p), vec4(video_hdr_convert(rgb, hdr), 1.0));
+}

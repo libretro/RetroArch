@@ -7,6 +7,7 @@ GLSLANG := glslc
 GLSLFLAGS := -mfmt=c
 
 SPIRV += yuv420_to_rgba16f.comp.inc yuv_image_to_rgba16f.comp.inc
+SPIRV += external_rgb_to_rgba16f.comp.inc
 
 all: $(SPIRV)
 
@@ -20,6 +21,7 @@ all: $(SPIRV)
 	$(GLSLANG) $(GLSLFLAGS) -o $@ $<
 
 yuv420_to_rgba8888.comp.inc yuv_image_to_rgba8888.comp.inc: ../../drivers_shader/video_hdr.inc.glsl
+external_rgb_to_rgba8888.comp.inc: ../../drivers_shader/video_hdr.inc.glsl
 
 clean:
 	rm -f $(SPIRV)
@@ -30,4 +32,7 @@ yuv420_to_rgba16f.comp.inc: yuv420_to_rgba8888.comp ../../drivers_shader/video_h
 	$(GLSLANG) $(GLSLFLAGS) -DOUTPUT_FP16 -o $@ $<
 
 yuv_image_to_rgba16f.comp.inc: yuv_image_to_rgba8888.comp ../../drivers_shader/video_hdr.inc.glsl
+	$(GLSLANG) $(GLSLFLAGS) -DOUTPUT_FP16 -o $@ $<
+
+external_rgb_to_rgba16f.comp.inc: external_rgb_to_rgba8888.comp ../../drivers_shader/video_hdr.inc.glsl
 	$(GLSLANG) $(GLSLFLAGS) -DOUTPUT_FP16 -o $@ $<
