@@ -44,7 +44,9 @@ audio_format_negotiation = "1"
 audio_fastpath_s16 = "false"
 menu_driver = "rgui"
 menu_show_start_screen = "false"
-history_list_enable = "false"
+history_list_enable = "true"
+playlist_directory = "{case / 'playlists'}"
+playlist_use_old_format = "false"
 config_save_on_exit = "false"
 pause_nonactive = "false"
 savestate_auto_save = "false"
@@ -104,4 +106,24 @@ savestate_auto_load = "false"
                     amplitude=2*math.hypot(cosine,sine)/len(values)
                     assert abs(amplitude-.2)<.04,(case,channel,frequency,amplitude)
 
+            histories = list(case.rglob('content_video_history.lpl'))
+            entries = [entry for history in histories for entry in json.loads(history.read_text(encoding='utf-8'))['items']]
+            assert any(entry['path']==str(movie) and entry['core_path']=='builtin'
+                and entry['core_name']=='movieplayer' for entry in entries), (case,histories,entries)
             print(f'PASS: real Metal frontend {case.name}: {len(packets)} GPU frames, clocks, independent colors and audio contract',flush=True)
+
+# The last normal case supplies a working configuration for lifecycle faults.
+for control in ('early', 'exists'):
+    destination=root/f'control-{control}.mp4'
+    if control=='exists': destination.write_bytes(b'preserve existing output')
+    result=subprocess.run([exe,'-v','--config',str(config),'-L',core,
+        '--record',str(destination),'--recordconfig',str(record),'--max-frames',
+        '1' if control=='early' else '30'],cwd=case,env=env,
+        stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=60)
+    log=result.stdout.decode(errors='replace')
+    (root/f'control-{control}.log').write_text(log,encoding='utf-8')
+    assert result.returncode==0,(control,result.returncode,log[-8000:])
+    if control=='exists':
+        assert destination.read_bytes()==b'preserve existing output',log
+        assert '[Metal recording] Failed' in log,log
+    print(f'PASS: real frontend {control}: bounded shutdown and output preservation',flush=True)

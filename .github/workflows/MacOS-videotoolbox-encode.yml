@@ -157,12 +157,12 @@ jobs:
       - name: Configure native Metal recording frontend
         run: |
           set -eu
-          ./configure --enable-metal --enable-avf --enable-threads --enable-configfile \
+          ./configure --enable-metal --enable-avf --enable-threads --enable-configfile --enable-webmplayer \
             --disable-qt --disable-ffmpeg --disable-discord --disable-cheevos \
             --disable-networking --disable-sdl2 --disable-sdl --disable-translate \
             --disable-update_cores --disable-update_assets --disable-online_updater \
             --disable-cdrom --disable-7zip --disable-ssl
-          for feature in HAVE_METAL HAVE_AVF HAVE_THREADS HAVE_CONFIGFILE; do
+          for feature in HAVE_METAL HAVE_AVF HAVE_THREADS HAVE_CONFIGFILE HAVE_WEBMPLAYER; do
             grep -Eq "^#define $feature 1" config.h
           done
       - name: Build and link real frontend with native recording enabled
