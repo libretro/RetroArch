@@ -1,6 +1,6 @@
 # The converted pad handlers of input/connect against the copying
-# handlers they replace, and the DualSense's and Switch Pro's against
-# their reports.
+# handlers they replace, and the DualSense's and both Switch Pro
+# Controllers' against their reports.
 ROOT   := ../../..
 TARGET := connect_parity_test
 CC     ?= cc
@@ -10,6 +10,7 @@ SOURCES := connect_parity_test.c \
            $(ROOT)/input/connect/connect_ps4.c \
            $(ROOT)/input/connect/connect_ps5.c \
            $(ROOT)/input/connect/connect_switch_pro.c \
+           $(ROOT)/input/connect/connect_switch2_pro.c \
            $(ROOT)/input/connect/connect_wiiugca.c \
            $(ROOT)/input/connect/connect_ps2adapter.c \
            $(ROOT)/input/connect/connect_psxadapter.c \

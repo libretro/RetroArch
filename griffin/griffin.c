@@ -1008,6 +1008,7 @@ INPUT (HID)
 #include "../input/connect/connect_ps4.c"
 #include "../input/connect/connect_ps5.c"
 #include "../input/connect/connect_switch_pro.c"
+#include "../input/connect/connect_switch2_pro.c"
 #include "../input/connect/connect_wii.c"
 #include "../input/connect/connect_wiiupro.c"
 #include "../input/connect/connect_snesusb.c"

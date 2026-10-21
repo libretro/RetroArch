@@ -17,7 +17,10 @@
  *                  wait, the newest waiting behind one in flight; a pad
  *                  whose reports have no ID given them without
  *                  Windows' leading 0; gone, and freed with a write in
- *                  flight */
+ *                  flight
+ *   switch 2    -> the Switch 2 Pro Controller woken through its bulk
+ *                  pipes: every command whole, each answer read, an
+ *                  answer that never comes given up on, the player lit */
 
 #include "input/drivers_hid/winusb_hid.c"
 #include "input/common/sony_pad_output.h"
@@ -717,6 +720,107 @@ static void test_hidclass(const char *path)
    firmware   = 0;
 }
 
+/* ---- the Switch 2 Pro Controller's bulk pipes ---- */
+
+static uint8_t w2_cmd[16][32];
+static ULONG w2_len[16];
+static int w2_writes, w2_reads, w2_aborts;
+static bool w2_silent;     /* answers never come */
+static OVERLAPPED *w2_pending;
+
+static BOOL WINAPI w2_write(void *usb, UCHAR pipe, UCHAR *buf, ULONG len,
+      ULONG *got, OVERLAPPED *ov)
+{
+   int i = w2_writes++ & 15;
+   memcpy(w2_cmd[i], buf, len < 32 ? len : 32);
+   w2_len[i] = len;
+   if (usb != (void*)0x5678 || pipe != 0x02)
+      w2_len[i] = 0;
+   ov->InternalHigh = len;
+   SetEvent(ov->hEvent);
+   return TRUE;
+}
+
+static BOOL WINAPI w2_read(void *usb, UCHAR pipe, UCHAR *buf, ULONG len,
+      ULONG *got, OVERLAPPED *ov)
+{
+   w2_reads++;
+   if (w2_silent)
+   {
+      w2_pending = ov;
+      SetLastError(ERROR_IO_PENDING);
+      return FALSE;
+   }
+   memset(buf, 0, len);
+   ov->InternalHigh = 8;
+   SetEvent(ov->hEvent);
+   return TRUE;
+}
+
+static BOOL WINAPI w2_abort(void *usb, UCHAR pipe)
+{
+   w2_aborts++;
+   if (w2_pending)
+   {
+      w2_pending->Internal = 1; /* failed */
+      SetEvent(w2_pending->hEvent);
+      w2_pending = NULL;
+   }
+   return TRUE;
+}
+
+static BOOL WINAPI w2_result(void *usb, OVERLAPPED *ov, ULONG *got, BOOL wait)
+{
+   if (wait)
+      WaitForSingleObject(ov->hEvent, INFINITE);
+   *got = (ULONG)ov->InternalHigh;
+   return ov->Internal == 0;
+}
+
+static void test_switch2_wake(void)
+{
+   winusb_api_t saved = winusb_api;
+   winusb_device_t *dev = (winusb_device_t*)calloc(1, sizeof(*dev));
+   int i, whole = 0;
+
+   winusb_api.WritePipe           = w2_write;
+   winusb_api.ReadPipe            = w2_read;
+   winusb_api.AbortPipe           = w2_abort;
+   winusb_api.GetOverlappedResult = w2_result;
+   dev->quit_event = CreateEventA(NULL, TRUE, FALSE, NULL);
+   dev->ctrl_event = CreateEventA(NULL, TRUE, FALSE, NULL);
+   dev->bulk_usb   = (void*)0x5678;
+   dev->bulk_out   = 0x02;
+   dev->bulk_in    = 0x82;
+   dev->slot       = 1;
+   strlcpy(dev->name, "Nintendo Switch 2 Pro Controller", sizeof(dev->name));
+
+   winusb_switch2_wake(dev);
+   for (i = 0; i < w2_writes && i < 16; i++)
+      if (w2_len[i] == (ULONG)w2_cmd[i][5] + 8 && w2_cmd[i][1] == 0x91)
+         whole++;
+   CHECK(w2_writes == 11 && whole == 11,
+         "switch 2: not every wake command went out whole on the pipe out");
+   CHECK(w2_reads == 11 && w2_aborts == 0, "switch 2: an answer not read");
+   CHECK(w2_cmd[0][0] == 0x07 && w2_cmd[9][0] == 0x03 && w2_cmd[9][3] == 0x0d,
+         "switch 2: the wake is not in its order, reports started last");
+   CHECK(w2_cmd[10][0] == 0x09 && w2_cmd[10][3] == 0x07 && w2_cmd[10][8] == 0x03,
+         "switch 2: player 2's lights not set");
+
+   /* a pad that never answers: each wait given up on, the wake done */
+   w2_writes = w2_reads = 0;
+   w2_silent = true;
+   winusb_switch2_wake(dev);
+   CHECK(w2_writes == 11 && w2_aborts == 11,
+         "switch 2: an answer that never came held the wake up");
+   w2_silent = false;
+
+   CloseHandle(dev->quit_event);
+   CloseHandle(dev->ctrl_event);
+   free(dev);
+   winusb_api = saved;
+}
+
 int main(void)
 {
    char path[MAX_PATH], dir[MAX_PATH];
@@ -866,6 +970,7 @@ int main(void)
          "free did not stop the reader and let the pad go quietly");
 
    test_hidclass(path);
+   test_switch2_wake();
 
    CloseHandle(submit_entered);
    CloseHandle(allow_submit);

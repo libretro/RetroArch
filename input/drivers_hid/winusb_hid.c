@@ -24,6 +24,10 @@
  *   that starts it. Bound to WinUSB, the pad is the program's, and its
  *   handler starts it.
  *
+ * The Switch 2 Pro Controller is on Windows' HID driver, but says
+ * nothing until it is woken through the bulk pipes of its second
+ * interface, which the pad itself has Windows bind to WinUSB.
+ *
  * winusb.dll and hid.dll are loaded when the driver starts: nothing is
  * linked, and a Windows without one has no pads that way.
  *
@@ -81,7 +85,36 @@ typedef struct
          OVERLAPPED*);
    BOOL (WINAPI *AbortPipe)(void*, UCHAR);
    BOOL (WINAPI *GetOverlappedResult)(void*, OVERLAPPED*, ULONG*, BOOL);
+   /* for the Switch 2 Pro Controller's wake alone: may be NULL */
+   BOOL (WINAPI *WritePipe)(void*, UCHAR, UCHAR*, ULONG, ULONG*,
+         OVERLAPPED*);
+   BOOL (WINAPI *QueryInterfaceSettings)(void*, UCHAR, void*);
+   BOOL (WINAPI *QueryPipe)(void*, UCHAR, UCHAR, void*);
 } winusb_api_t;
+
+/* USB_INTERFACE_DESCRIPTOR and WINUSB_PIPE_INFORMATION */
+typedef struct
+{
+   UCHAR bLength;
+   UCHAR bDescriptorType;
+   UCHAR bInterfaceNumber;
+   UCHAR bAlternateSetting;
+   UCHAR bNumEndpoints;
+   UCHAR bInterfaceClass;
+   UCHAR bInterfaceSubClass;
+   UCHAR bInterfaceProtocol;
+   UCHAR iInterface;
+} winusb_interface_desc_t;
+
+typedef struct
+{
+   int PipeType;
+   UCHAR PipeId;
+   USHORT MaximumPacketSize;
+   UCHAR Interval;
+} winusb_pipe_info_t;
+
+#define WINUSB_PIPE_BULK 2
 
 /* hid.dll's, and kernel32's reads and writes, for a pad on Windows'
  * HID driver: a test stands in for the device through them. */
@@ -129,6 +162,8 @@ typedef DWORD (CALLBACK *winusb_cm_callback_t)(HANDLE, void*, DWORD,
 typedef DWORD (WINAPI *winusb_cm_register_t)(winusb_cm_filter_t*, void*,
       winusb_cm_callback_t, HANDLE*);
 typedef DWORD (WINAPI *winusb_cm_unregister_t)(HANDLE);
+typedef DWORD (WINAPI *winusb_cm_locate_t)(DWORD*, const char*, ULONG);
+typedef DWORD (WINAPI *winusb_cm_parent_t)(DWORD*, DWORD, ULONG);
 
 #define WINUSB_CM_FILTER_ALL_INTERFACES 0x1
 #define WINUSB_CM_DEVICEINTERFACE       0
@@ -186,6 +221,12 @@ typedef struct winusb_device
    struct winusb_hid *hid;
    HANDLE file;
    void *usb;           /* WinUSB's; NULL on Windows' HID driver */
+   /* the Switch 2 Pro Controller's second interface, woken by the
+    * reader before it reads */
+   HANDLE bulk_file;
+   void *bulk_usb;
+   UCHAR bulk_out;
+   UCHAR bulk_in;
    HANDLE ctrl_event;
    HANDLE quit_event;
    const char *tag;     /* for the log */
@@ -241,6 +282,8 @@ typedef struct winusb_hid
    unsigned busy_seen; /* bit n: busy[n] was there at this scan */
    HMODULE cfgmgr;
    winusb_cm_unregister_t cm_unregister;
+   winusb_cm_locate_t cm_locate;
+   winusb_cm_parent_t cm_parent;
    HANDLE notification;
    retro_atomic_int_t rescan;
 } winusb_hid_t;
@@ -334,6 +377,14 @@ static bool winusb_api_load(void)
    winusb_api.GetOverlappedResult = (BOOL (WINAPI*)(void*, OVERLAPPED*,
             ULONG*, BOOL))
       GetProcAddress(lib, "WinUsb_GetOverlappedResult");
+   winusb_api.WritePipe           = (BOOL (WINAPI*)(void*, UCHAR, UCHAR*,
+            ULONG, ULONG*, OVERLAPPED*))
+      GetProcAddress(lib, "WinUsb_WritePipe");
+   winusb_api.QueryInterfaceSettings = (BOOL (WINAPI*)(void*, UCHAR, void*))
+      GetProcAddress(lib, "WinUsb_QueryInterfaceSettings");
+   winusb_api.QueryPipe           = (BOOL (WINAPI*)(void*, UCHAR, UCHAR,
+            void*))
+      GetProcAddress(lib, "WinUsb_QueryPipe");
    if (     !winusb_api.Initialize || !winusb_api.Free
          || !winusb_api.ControlTransfer || !winusb_api.ReadPipe
          || !winusb_api.AbortPipe || !winusb_api.GetOverlappedResult)
@@ -380,6 +431,93 @@ static int32_t winusb_hid_control(winusb_device_t *dev, UCHAR type,
    return (int32_t)got;
 }
 
+#define WINUSB_SWITCH2_PID 0x2069
+
+/* One transfer on a pipe of the Switch 2 Pro Controller's second
+ * interface, on the reader's thread, given up after @ms: the length
+ * moved, or -1. */
+static int32_t winusb_switch2_transfer(winusb_device_t *dev, UCHAR pipe,
+      uint8_t *data, ULONG len, DWORD ms)
+{
+   OVERLAPPED ov;
+   HANDLE events[2];
+   ULONG got = 0;
+   BOOL ok;
+
+   memset(&ov, 0, sizeof(ov));
+   ov.hEvent = dev->ctrl_event;
+   ResetEvent(ov.hEvent);
+   ok = (pipe & 0x80)
+      ? winusb_api.ReadPipe(dev->bulk_usb, pipe, data, len, NULL, &ov)
+      : winusb_api.WritePipe(dev->bulk_usb, pipe, data, len, NULL, &ov);
+   if (!ok && GetLastError() != ERROR_IO_PENDING)
+      return -1;
+   if (!ok)
+   {
+      events[0] = dev->quit_event;
+      events[1] = ov.hEvent;
+      if (WaitForMultipleObjects(2, events, FALSE, ms) != WAIT_OBJECT_0 + 1)
+         winusb_api.AbortPipe(dev->bulk_usb, pipe);
+   }
+   if (!winusb_api.GetOverlappedResult(dev->bulk_usb, &ov, &got, TRUE))
+      return -1;
+   return (int32_t)got;
+}
+
+/* Each command is eight bytes and its data, the data's length in its
+ * sixth; answered on the pipe in. The last lights the player. */
+static void winusb_switch2_wake(winusb_device_t *dev)
+{
+   static const uint8_t wake[] = {
+      0x07, 0x91, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00,
+      /* the features reported, then turned on */
+      0x0c, 0x91, 0x00, 0x02, 0x00, 0x04, 0x00, 0x00,
+      0x27, 0x00, 0x00, 0x00,
+      0x11, 0x91, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00,
+      0x0a, 0x91, 0x00, 0x08, 0x00, 0x14, 0x00, 0x00,
+      0x01, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+      0xff, 0x35, 0x00, 0x46, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00,
+      0x0c, 0x91, 0x00, 0x04, 0x00, 0x04, 0x00, 0x00,
+      0x27, 0x00, 0x00, 0x00,
+      0x01, 0x91, 0x00, 0x0c, 0x00, 0x00, 0x00, 0x00,
+      /* rumble */
+      0x01, 0x91, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00,
+      0x08, 0x91, 0x00, 0x02, 0x00, 0x04, 0x00, 0x00,
+      0x01, 0x00, 0x00, 0x00,
+      /* the report's shape, then the reports */
+      0x03, 0x91, 0x00, 0x0a, 0x00, 0x04, 0x00, 0x00,
+      0x05, 0x00, 0x00, 0x00,
+      0x03, 0x91, 0x00, 0x0d, 0x00, 0x08, 0x00, 0x00,
+      0x01, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
+   };
+   uint8_t lights[16] = {
+      0x09, 0x91, 0x00, 0x07, 0x00, 0x08, 0x00, 0x00 };
+   uint8_t reply[64];
+   size_t at = 0;
+   unsigned sent = 0;
+
+   while (at + 8 <= sizeof(wake))
+   {
+      size_t len = 8 + (size_t)wake[at + 5];
+      if (     winusb_switch2_transfer(dev, dev->bulk_out,
+                  (uint8_t*)wake + at, (ULONG)len, 1000) == (int32_t)len)
+         sent++;
+      winusb_switch2_transfer(dev, dev->bulk_in, reply, sizeof(reply), 100);
+      at += len;
+   }
+   /* as the console lights them: one for player 1, four for 4 */
+   memset(lights + 8, 0, 8);
+   lights[8] = (uint8_t)((1u << ((dev->slot % 4) + 1)) - 1);
+   if (     winusb_switch2_transfer(dev, dev->bulk_out, lights,
+               sizeof(lights), 1000) == (int32_t)sizeof(lights))
+      sent++;
+   winusb_switch2_transfer(dev, dev->bulk_in, reply, sizeof(reply), 100);
+   if (sent < 11)
+      RARCH_WARN("[WinUSB] \"%s\": %u of 11 wake commands taken.\n",
+            dev->name, sent);
+}
+
 static void winusb_hid_reader(void *data)
 {
    OVERLAPPED ov;
@@ -397,6 +535,8 @@ static void winusb_hid_reader(void *data)
    /* as the main, video and audio threads are: a report waiting
     * behind them is a press or release seen late */
    sthread_raise_current_priority();
+   if (dev->bulk_usb)
+      winusb_switch2_wake(dev);
 
    while (!retro_atomic_load_acquire_int(&dev->quit))
    {
@@ -486,6 +626,10 @@ static void winusb_hid_close(winusb_device_t *dev)
       winusb_hidclass_api.FreePreparsedData(dev->gen.pp);
    if (dev->usb)
       winusb_api.Free(dev->usb);
+   if (dev->bulk_usb)
+      winusb_api.Free(dev->bulk_usb);
+   if (dev->bulk_file && dev->bulk_file != INVALID_HANDLE_VALUE)
+      CloseHandle(dev->bulk_file);
    if (dev->file != INVALID_HANDLE_VALUE)
       CloseHandle(dev->file);
    if (dev->out_ov.hEvent)
@@ -790,6 +934,93 @@ static bool winusb_hidclass_setup(winusb_device_t *dev)
    return ok;
 }
 
+/* The Switch 2 Pro Controller's second interface, on the pad whose HID
+ * collection is @instance: the one under the class the pad gives it
+ * whose parent, the pad, is the collection's grandparent. */
+static bool winusb_switch2_bulk_path(winusb_hid_t *hid, const char *instance,
+      char *path, size_t len)
+{
+   static const GUID wake_guid = { 0x6f13725e, 0xef0e, 0x4fd3,
+      { 0xae, 0x5f, 0xb2, 0xde, 0x98, 0x9e, 0xc8, 0x25 } };
+   HDEVINFO ifs;
+   DWORD i, pad = 0, up = 0;
+   bool found = false;
+
+   if (     !hid->cm_locate || !hid->cm_parent
+         || hid->cm_locate(&pad, instance, 0)
+         || hid->cm_parent(&up, pad, 0)
+         || hid->cm_parent(&pad, up, 0))
+      return false;
+   ifs = SetupDiGetClassDevsA(&wake_guid, NULL, NULL,
+         DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
+   if (ifs == INVALID_HANDLE_VALUE)
+      return false;
+   for (i = 0; !found; i++)
+   {
+      SP_DEVICE_INTERFACE_DATA ifd;
+      SP_DEVINFO_DATA info;
+      union
+      {
+         SP_DEVICE_INTERFACE_DETAIL_DATA_A d;
+         char b[sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA_A) + MAX_PATH];
+      } detail;
+
+      ifd.cbSize = sizeof(ifd);
+      if (!SetupDiEnumDeviceInterfaces(ifs, NULL, &wake_guid, i, &ifd))
+         break;
+      info.cbSize     = sizeof(info);
+      detail.d.cbSize = sizeof(detail.d);
+      if (     SetupDiGetDeviceInterfaceDetailA(ifs, &ifd, &detail.d,
+                  sizeof(detail), NULL, &info)
+            && !hid->cm_parent(&up, info.DevInst, 0)
+            && up == pad)
+      {
+         strlcpy(path, detail.d.DevicePath, len);
+         found = true;
+      }
+   }
+   SetupDiDestroyDeviceInfoList(ifs);
+   return found;
+}
+
+/* That interface opened, and its bulk pipes found, for the reader. */
+static bool winusb_switch2_open(winusb_hid_t *hid, winusb_device_t *dev)
+{
+   char path[MAX_PATH];
+   winusb_interface_desc_t desc;
+   UCHAR i;
+
+   if (     !winusb_api.WritePipe || !winusb_api.QueryInterfaceSettings
+         || !winusb_api.QueryPipe
+         || !winusb_switch2_bulk_path(hid, dev->instance, path, sizeof(path)))
+      return false;
+   dev->bulk_file = CreateFileA(path, GENERIC_READ | GENERIC_WRITE,
+         FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
+         FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, NULL);
+   if (     dev->bulk_file == INVALID_HANDLE_VALUE
+         || !(dev->ctrl_event = CreateEventA(NULL, TRUE, FALSE, NULL))
+         || !winusb_api.Initialize(dev->bulk_file, &dev->bulk_usb))
+   {
+      dev->bulk_usb = NULL;
+      return false;
+   }
+   memset(&desc, 0, sizeof(desc));
+   if (winusb_api.QueryInterfaceSettings(dev->bulk_usb, 0, &desc))
+      for (i = 0; i < desc.bNumEndpoints; i++)
+      {
+         winusb_pipe_info_t pipe;
+         memset(&pipe, 0, sizeof(pipe));
+         if (     !winusb_api.QueryPipe(dev->bulk_usb, 0, i, &pipe)
+               || pipe.PipeType != WINUSB_PIPE_BULK)
+            continue;
+         if (pipe.PipeId & 0x80)
+            dev->bulk_in  = pipe.PipeId;
+         else
+            dev->bulk_out = pipe.PipeId;
+      }
+   return dev->bulk_in && dev->bulk_out;
+}
+
 static void winusb_hid_open(winusb_hid_t *hid, const char *path,
       const char *instance, uint16_t vid, uint16_t pid, bool hidclass)
 {
@@ -862,6 +1093,16 @@ static void winusb_hid_open(winusb_hid_t *hid, const char *path,
       dev->usb = NULL;
       winusb_hid_close(dev);
       return;
+   }
+   /* held by another program, that one woke it */
+   if (     hidclass && vid == 0x057e && pid == WINUSB_SWITCH2_PID
+         && !winusb_switch2_open(hid, dev))
+   {
+      RARCH_WARN("%s \"%s\" cannot be woken (error %lu); read as it is.\n",
+            dev->tag, dev->name, (unsigned long)GetLastError());
+      if (dev->bulk_usb)
+         winusb_api.Free(dev->bulk_usb);
+      dev->bulk_usb = NULL;
    }
 
    /* known by the name it gives, as on the Mac */
@@ -1112,6 +1353,19 @@ static void winusb_hidclass_scan(winusb_hid_t *hid)
          winusb_hidclass_api.FreePreparsedData(pp);
       }
       CloseHandle(probe);
+      /* the Switch 2 Pro Controller once its second interface is there
+       * to wake it: told of its arrival, this looks again */
+      if (     pad && attr.VendorID == 0x057e
+            && attr.ProductID == WINUSB_SWITCH2_PID)
+      {
+         char bulk[MAX_PATH];
+         if (!winusb_switch2_bulk_path(hid, instance, bulk, sizeof(bulk)))
+         {
+            RARCH_LOG("[HID] %s: waiting for its WinUSB interface.\n",
+                  instance);
+            pad = false;
+         }
+      }
       if (pad)
          winusb_hid_open(hid, detail.d.DevicePath, instance,
                attr.VendorID, attr.ProductID, true);
@@ -1229,6 +1483,10 @@ static void *winusb_hid_init(void)
          GetProcAddress(hid->cfgmgr, "CM_Register_Notification");
       hid->cm_unregister       = (winusb_cm_unregister_t)
          GetProcAddress(hid->cfgmgr, "CM_Unregister_Notification");
+      hid->cm_locate           = (winusb_cm_locate_t)
+         GetProcAddress(hid->cfgmgr, "CM_Locate_DevNodeA");
+      hid->cm_parent           = (winusb_cm_parent_t)
+         GetProcAddress(hid->cfgmgr, "CM_Get_Parent");
       if (reg && hid->cm_unregister)
       {
          winusb_cm_filter_t filter;

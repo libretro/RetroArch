@@ -53,6 +53,7 @@
 #define PID_SONY_DS5      SWAP_IF_BIG(0x0ce6)
 #define PID_SONY_DS5_EDGE SWAP_IF_BIG(0x0df2)
 #define PID_NINTENDO_SWITCH_PRO SWAP_IF_BIG(0x2009)
+#define PID_NINTENDO_SWITCH2_PRO SWAP_IF_BIG(0x2069)
 #define PID_DS3_CLONE     SWAP_IF_BIG(0x20d6)
 #define PID_SNES_CLONE    SWAP_IF_BIG(0xe401)
 #define PID_MICRONTEK_NES SWAP_IF_BIG(0x0011)
@@ -125,6 +126,7 @@ extern pad_connection_interface_t pad_connection_ps4;
 extern pad_connection_interface_t pad_connection_ps5;
 extern pad_connection_interface_t pad_connection_ps5_edge;
 extern pad_connection_interface_t pad_connection_switch_pro;
+extern pad_connection_interface_t pad_connection_switch2_pro;
 extern pad_connection_interface_t pad_connection_snesusb;
 extern pad_connection_interface_t pad_connection_nesusb;
 extern pad_connection_interface_t pad_connection_wiiugca;

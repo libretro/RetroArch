@@ -1366,6 +1366,132 @@ static void test_switch_pro(void)
          failures == had ? "pass" : "fail");
 }
 
+/* ---- Switch 2 Pro Controller: its layout and rumble ----------- */
+
+static void test_switch2_pro(void)
+{
+   static const struct { unsigned byte, bit, id; } map[] = {
+      { 5, 0x01, RETRO_DEVICE_ID_JOYPAD_Y },
+      { 5, 0x02, RETRO_DEVICE_ID_JOYPAD_X },
+      { 5, 0x04, RETRO_DEVICE_ID_JOYPAD_B },
+      { 5, 0x08, RETRO_DEVICE_ID_JOYPAD_A },
+      { 5, 0x40, RETRO_DEVICE_ID_JOYPAD_R },
+      { 5, 0x80, RETRO_DEVICE_ID_JOYPAD_R2 },
+      { 6, 0x01, RETRO_DEVICE_ID_JOYPAD_SELECT },
+      { 6, 0x02, RETRO_DEVICE_ID_JOYPAD_START },
+      { 6, 0x04, RETRO_DEVICE_ID_JOYPAD_R3 },
+      { 6, 0x08, RETRO_DEVICE_ID_JOYPAD_L3 },
+      { 6, 0x10, 16 },
+      { 6, 0x20, 17 },
+      { 6, 0x40, 18 },
+      { 7, 0x01, RETRO_DEVICE_ID_JOYPAD_DOWN },
+      { 7, 0x02, RETRO_DEVICE_ID_JOYPAD_UP },
+      { 7, 0x04, RETRO_DEVICE_ID_JOYPAD_RIGHT },
+      { 7, 0x08, RETRO_DEVICE_ID_JOYPAD_LEFT },
+      { 7, 0x40, RETRO_DEVICE_ID_JOYPAD_L },
+      { 7, 0x80, RETRO_DEVICE_ID_JOYPAD_L2 },
+      { 8, 0x01, 19 },
+      { 8, 0x02, 20 }
+   };
+   const pad_connection_interface_t *ifc = &pad_connection_switch2_pro;
+   uint8_t p[64];
+   unsigned n, k, bad = 0, had = failures, count;
+   int dummy_connection;
+   void *dev;
+
+   sent_count = 0;
+   dev = ifc->init(&dummy_connection, 0, &stub_hid);
+   CHECK(dev != NULL, "switch2_pro: no device");
+   if (!dev)
+      return;
+   CHECK(sent_count == 0, "switch2_pro: something sent at start");
+
+   /* buttons */
+   srand(31);
+   for (n = 0; n < 20000; n++)
+   {
+      input_bits_t bits;
+      uint32_t want = 0;
+      for (k = 0; k < 64; k++)
+         p[k] = (uint8_t)rand();
+      for (k = 0; k < sizeof(map) / sizeof(map[0]); k++)
+         if (p[map[k].byte] & map[k].bit)
+            want |= 1u << map[k].id;
+      ifc->packet_handler(dev, p, 64);
+      ifc->get_buttons(dev, &bits);
+      for (k = 0; k < 21; k++)
+         if (     (unsigned)ifc->button(dev, k) != ((want >> k) & 1)
+               || (unsigned)BIT256_GET(bits, k) != ((want >> k) & 1))
+            bad++;
+      if ((unsigned)BIT256_GET(bits, RARCH_MENU_TOGGLE) != ((want >> 16) & 1))
+         bad++;
+   }
+   CHECK(!bad, "switch2_pro: %u reads disagree with the report", bad);
+   ifc->deinit(dev);
+
+   /* sticks: centred, full right, full up; down positive out */
+   dev = ifc->init(&dummy_connection, 0, &stub_hid);
+   memset(p, 0, sizeof(p));
+   sp_put_pair(p + 11, 2048, 2048);
+   sp_put_pair(p + 14, 2048 + 1200, 2048 + 1200);
+   ifc->packet_handler(dev, p, 64);
+   CHECK(ifc->get_axis(dev, 0) == 0 && ifc->get_axis(dev, 1) == 0,
+         "switch2_pro: a centred stick is not at rest");
+   CHECK(ifc->get_axis(dev, 2) == 32767 && ifc->get_axis(dev, 3) == -32767,
+         "switch2_pro: the right stick right and up is %d %d",
+         ifc->get_axis(dev, 2), ifc->get_axis(dev, 3));
+   sp_put_pair(p + 11, 2048 - 1800, 2048);
+   ifc->packet_handler(dev, p, 64);
+   sp_put_pair(p + 11, 2048 - 1200, 2048);
+   ifc->packet_handler(dev, p, 64);
+   CHECK(ifc->get_axis(dev, 0) == -1200 * 32767 / 1800,
+         "switch2_pro: the reach did not widen (%d)", ifc->get_axis(dev, 0));
+   CHECK(ifc->get_axis(dev, 4) == 0, "switch2_pro: an axis past the sticks");
+
+   /* a short report is not one */
+   memset(p, 0xff, sizeof(p));
+   ifc->packet_handler(dev, p, 63);
+   CHECK(!ifc->button(dev, RETRO_DEVICE_ID_JOYPAD_A), "switch2_pro: a short report was taken");
+
+   /* rumble: from the poll, both hands alike, kept up while held, at
+    * rest once */
+   memset(p, 0, sizeof(p));
+   for (n = 0; n < 4; n++)
+      ifc->packet_handler(dev, p, 64);
+   count = sent_count;
+   ifc->set_rumble(dev, RETRO_RUMBLE_STRONG, 0xffff);
+   ifc->set_rumble(dev, RETRO_RUMBLE_WEAK, 0x8000);
+   CHECK(sent_count == count, "switch2_pro: rumble sent outside the poll");
+   ifc->packet_handler(dev, p, 64);
+   {
+      /* weak 0x8000 -> 14500 (0x38a4), strong 29000 (0x7148) */
+      static const uint8_t want[7] = { 0x02, 0x50, 0x87, 0x89, 0x23, 0x51, 0x71 };
+      CHECK(sent_count == count + 1 && sent_len == 64 && !memcmp(sent, want, 7)
+            && !memcmp(sent + 0x11, sent + 1, 6),
+            "switch2_pro: rumble is not the motors asked for"
+            " (%02x %02x %02x %02x %02x %02x %02x)",
+            sent[0], sent[1], sent[2], sent[3], sent[4], sent[5], sent[6]);
+   }
+   for (n = 0; n < 9; n++)
+      ifc->packet_handler(dev, p, 64);
+   CHECK(sent_count == count + 4 && (sent[1] & 0x0f) == 3,
+         "switch2_pro: held rumble not kept up, numbered (%u)", sent_count - count);
+   ifc->set_rumble(dev, RETRO_RUMBLE_STRONG, 0);
+   ifc->set_rumble(dev, RETRO_RUMBLE_WEAK, 0);
+   for (n = 0; n < 12; n++)
+      ifc->packet_handler(dev, p, 64);
+   CHECK(sent_count == count + 5 && sent[3] == 0x01 && sent[4] == 0x20
+         && sent[5] == 0x11 && sent[6] == 0x00,
+         "switch2_pro: rumble not put at rest once");
+   CHECK(!strcmp(ifc->get_name(dev), "Nintendo Switch 2 Pro Controller"),
+         "switch2_pro: misnamed");
+   ifc->deinit(dev);
+
+   printf("[%s] switch2_pro: buttons and grips read as laid out on 20000 reports,"
+         " sticks centred and widened, rumble from the poll on both hands and kept up\n",
+         failures == had ? "pass" : "fail");
+}
+
 int main(void)
 {
    stub_hid.send_control = stub_send_control;
@@ -1384,6 +1510,7 @@ int main(void)
    test_retrode();
    test_ps5();
    test_switch_pro();
+   test_switch2_pro();
    puts(failures ? "FAIL connect_parity_test" : "PASS connect_parity_test");
    return failures ? 1 : 0;
 }

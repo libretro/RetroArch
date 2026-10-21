@@ -111,6 +111,11 @@ static joypad_connection_entry_t pad_map[] = {
       PID_NINTENDO_SWITCH_PRO,
       &pad_connection_switch_pro
    },
+   { "Nintendo Switch 2 Pro Controller",
+      VID_NINTENDO,
+      PID_NINTENDO_SWITCH2_PRO,
+      &pad_connection_switch2_pro
+   },
    { "PLAYSTATION(R)3 Controller",
       VID_SONY,
       PID_SONY_DS3,
