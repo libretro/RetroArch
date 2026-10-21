@@ -61,6 +61,7 @@ typedef struct hidraw_device
    uint16_t vid;
    uint16_t pid;
    bool usb;
+   bool bluetooth;
    char devnode[64];
    char name[NAME_MAX_LENGTH];
    uint8_t data[2][HIDRAW_REPORT_MAX];
@@ -92,7 +93,7 @@ static bool hidraw_hid_handled(uint16_t vid, uint16_t pid, const char *name)
 
 /* The ids and name the node's HID device reports through sysfs, read
  * before the node is opened. */
-static bool hidraw_hid_uevent(const char *node, bool *usb,
+static bool hidraw_hid_uevent(const char *node, unsigned *bus,
       uint16_t *vid, uint16_t *pid, char *name, size_t name_len)
 {
    char path[384];
@@ -115,12 +116,11 @@ static bool hidraw_hid_uevent(const char *node, bool *usb,
    for (line = strtok_r(buf, "\n", &save); line;
          line = strtok_r(NULL, "\n", &save))
    {
-      unsigned bus, v, p;
+      unsigned v, p;
       if (     !strncmp(line, "HID_ID=", STRLEN_CONST("HID_ID="))
             && sscanf(line + STRLEN_CONST("HID_ID="), "%x:%x:%x",
-               &bus, &v, &p) == 3)
+               bus, &v, &p) == 3)
       {
-         *usb  = (bus == 0x03); /* BUS_USB */
          *vid  = (uint16_t)v;
          *pid  = (uint16_t)p;
          found = true;
@@ -221,7 +221,7 @@ static hidraw_device_t *hidraw_hid_find(hidraw_hid_t *hid,
 static void hidraw_hid_add(hidraw_hid_t *hid, const char *devnode)
 {
    uint16_t vid, pid;
-   bool usb;
+   unsigned bus;
    char name[NAME_MAX_LENGTH];
    const char *node = strrchr(devnode, '/');
    hidraw_device_t *dev;
@@ -229,7 +229,7 @@ static void hidraw_hid_add(hidraw_hid_t *hid, const char *devnode)
    node = node ? node + 1 : devnode;
    if (     strncmp(node, "hidraw", STRLEN_CONST("hidraw"))
          || hidraw_hid_find(hid, devnode)
-         || !hidraw_hid_uevent(node, &usb, &vid, &pid, name, sizeof(name)))
+         || !hidraw_hid_uevent(node, &bus, &vid, &pid, name, sizeof(name)))
       return;
 
    if (!(dev = (hidraw_device_t*)calloc(1, sizeof(*dev))))
@@ -246,7 +246,8 @@ static void hidraw_hid_add(hidraw_hid_t *hid, const char *devnode)
    dev->slot = -1;
    dev->vid  = vid;
    dev->pid  = pid;
-   dev->usb  = usb;
+   dev->usb       = (bus == 0x03); /* BUS_USB */
+   dev->bluetooth = (bus == 0x05); /* BUS_BLUETOOTH */
    strlcpy(dev->devnode, devnode, sizeof(dev->devnode));
    strlcpy(dev->name, name, sizeof(dev->name));
 
@@ -577,6 +578,12 @@ static void hidraw_hid_send_control(void *handle, uint8_t *s, size_t len)
             dev->devnode, strerror(errno));
 }
 
+static bool hidraw_hid_is_bluetooth(void *handle)
+{
+   hidraw_device_t *dev = (hidraw_device_t*)handle;
+   return dev && dev->bluetooth;
+}
+
 static int32_t hidraw_hid_set_report(void *handle, uint8_t report_type,
       uint8_t report_id, uint8_t *s, size_t len)
 {
@@ -669,5 +676,6 @@ hid_driver_t hidraw_hid = {
    NULL, /* set_protocol */
    NULL, /* read */
    hidraw_hid_get_bt_host,
-   hidraw_hid_set_bt_host
+   hidraw_hid_set_bt_host,
+   hidraw_hid_is_bluetooth
 };

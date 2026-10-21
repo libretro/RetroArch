@@ -6,7 +6,8 @@
  * handler are given the same reports, and every button, the whole set
  * and every axis must agree. Random reports, and the edges (every hat
  * value, every bit alone, a report too short to be one). The DualSense
- * handler is new, so it is held to the reports' layout instead. */
+ * and Switch Pro handlers are new, so they are held to the reports'
+ * layout instead, and the Switch Pro's to its greeting and commands. */
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -23,11 +24,17 @@ static uint8_t  sent[128];
 static size_t   sent_len;
 static unsigned sent_count;
 
+/* every report's first bytes, by when it went */
+static uint8_t  sent_head[64][12];
+
 static void stub_send_control(void *handle, uint8_t *s, size_t len)
 {
    (void)handle;
    sent_len = len < sizeof(sent) ? len : sizeof(sent);
    memcpy(sent, s, sent_len);
+   memset(sent_head[sent_count % 64], 0, sizeof(sent_head[0]));
+   memcpy(sent_head[sent_count % 64], s,
+         sent_len < sizeof(sent_head[0]) ? sent_len : sizeof(sent_head[0]));
    sent_count++;
 }
 
@@ -1036,6 +1043,329 @@ static void test_ps5(void)
          failures == had ? "pass" : "fail");
 }
 
+/* ---- Switch Pro Controller: its layout, greeting and commands - */
+
+struct sp_state
+{
+   uint8_t b[3];      /* bytes 3 to 5 of the full report */
+   int stick[4];      /* 12 bits */
+};
+
+static uint32_t sp_want(const struct sp_state *st)
+{
+   static const struct { unsigned byte, bit, id; } map[] = {
+      { 0, 0x01, RETRO_DEVICE_ID_JOYPAD_Y },
+      { 0, 0x02, RETRO_DEVICE_ID_JOYPAD_X },
+      { 0, 0x04, RETRO_DEVICE_ID_JOYPAD_B },
+      { 0, 0x08, RETRO_DEVICE_ID_JOYPAD_A },
+      { 0, 0x40, RETRO_DEVICE_ID_JOYPAD_R },
+      { 0, 0x80, RETRO_DEVICE_ID_JOYPAD_R2 },
+      { 1, 0x01, RETRO_DEVICE_ID_JOYPAD_SELECT },
+      { 1, 0x02, RETRO_DEVICE_ID_JOYPAD_START },
+      { 1, 0x04, RETRO_DEVICE_ID_JOYPAD_R3 },
+      { 1, 0x08, RETRO_DEVICE_ID_JOYPAD_L3 },
+      { 1, 0x10, 16 },
+      { 1, 0x20, 17 },
+      { 2, 0x01, RETRO_DEVICE_ID_JOYPAD_DOWN },
+      { 2, 0x02, RETRO_DEVICE_ID_JOYPAD_UP },
+      { 2, 0x04, RETRO_DEVICE_ID_JOYPAD_RIGHT },
+      { 2, 0x08, RETRO_DEVICE_ID_JOYPAD_LEFT },
+      { 2, 0x40, RETRO_DEVICE_ID_JOYPAD_L },
+      { 2, 0x80, RETRO_DEVICE_ID_JOYPAD_L2 }
+   };
+   uint32_t r = 0;
+   unsigned i;
+   for (i = 0; i < sizeof(map) / sizeof(map[0]); i++)
+      if (st->b[map[i].byte] & map[i].bit)
+         r |= 1u << map[i].id;
+   return r;
+}
+
+static void sp_put_pair(uint8_t *p, int a, int b)
+{
+   p[0] = (uint8_t)a;
+   p[1] = (uint8_t)(((a >> 8) & 0x0f) | ((b & 0x0f) << 4));
+   p[2] = (uint8_t)(b >> 4);
+}
+
+static unsigned sp_report(uint8_t *p, uint8_t id, const struct sp_state *st)
+{
+   memset(p, 0, 64);
+   p[0] = id;
+   memcpy(p + 3, st->b, 3);
+   sp_put_pair(p + 6, st->stick[0], st->stick[1]);
+   sp_put_pair(p + 9, st->stick[2], st->stick[3]);
+   return 64;
+}
+
+/* a command's answer, @data at 15 */
+static unsigned sp_reply(uint8_t *p, const struct sp_state *st, uint8_t cmd,
+      const uint8_t *data, unsigned len)
+{
+   sp_report(p, 0x21, st);
+   p[13] = 0x80;
+   p[14] = cmd;
+   if (data)
+      memcpy(p + 15, data, len);
+   return 64;
+}
+
+static void sp_random(struct sp_state *st)
+{
+   unsigned i;
+   for (i = 0; i < 3; i++) st->b[i]     = (uint8_t)rand();
+   for (i = 0; i < 4; i++) st->stick[i] = rand() & 0xfff;
+}
+
+static unsigned sp_mismatches(void *dev, const struct sp_state *st)
+{
+   const pad_connection_interface_t *ifc = &pad_connection_switch_pro;
+   input_bits_t bits;
+   uint32_t want = sp_want(st);
+   unsigned k, bad = 0;
+   ifc->get_buttons(dev, &bits);
+   for (k = 0; k < 18; k++)
+   {
+      if ((unsigned)ifc->button(dev, k) != ((want >> k) & 1))
+         bad++;
+      if ((unsigned)BIT256_GET(bits, k) != ((want >> k) & 1))
+         bad++;
+   }
+   if ((unsigned)BIT256_GET(bits, RARCH_MENU_TOGGLE) != ((want >> 16) & 1))
+      bad++;
+   return bad;
+}
+
+/* the report sent @back reports ago starts so */
+static bool sp_sent(unsigned back, const uint8_t *head, unsigned len)
+{
+   if (sent_count < back + 1)
+      return false;
+   return !memcmp(sent_head[(sent_count - 1 - back) % 64], head, len);
+}
+
+static bool sp_sent_command(unsigned back, uint8_t cmd, uint8_t arg)
+{
+   const uint8_t *h;
+   if (sent_count < back + 1)
+      return false;
+   h = sent_head[(sent_count - 1 - back) % 64];
+   return h[0] == 0x01 && h[10] == cmd && h[11] == arg;
+}
+
+static void test_switch_pro(void)
+{
+   static const uint8_t hello[2]  = { 0x80, 0x02 };
+   static const uint8_t baud[2]   = { 0x80, 0x03 };
+   static const uint8_t start[2]  = { 0x80, 0x04 };
+   static const uint8_t neutral[8] = { 0x00, 0x01, 0x40, 0x40,
+      0x00, 0x01, 0x40, 0x40 };
+   const pad_connection_interface_t *ifc = &pad_connection_switch_pro;
+   uint8_t p[65], flash[5 + 22];
+   struct sp_state st;
+   unsigned n, bad = 0, had = failures, count;
+   int dummy_connection;
+   void *dev;
+
+   memset(&st, 0, sizeof(st));
+   for (n = 0; n < 4; n++)
+      st.stick[n] = 0x800;
+
+   /* USB: the greeting, each step on its answer */
+   sent_count = 0;
+   dev = ifc->init(&dummy_connection, 2, &stub_hid);
+   CHECK(dev != NULL, "switch_pro: no device");
+   if (!dev)
+      return;
+   CHECK(sent_count == 1 && sp_sent(0, hello, 2), "switch_pro: USB not greeted");
+   p[0] = 0x81; p[1] = 0x02;
+   ifc->packet_handler(dev, p, 64);
+   CHECK(sent_count == 2 && sp_sent(0, baud, 2), "switch_pro: no faster link after the greeting");
+   p[1] = 0x02;
+   ifc->packet_handler(dev, p, 64);
+   CHECK(sent_count == 2, "switch_pro: a greeting's answer out of turn was taken");
+   p[1] = 0x03;
+   ifc->packet_handler(dev, p, 64);
+   CHECK(sent_count == 3 && sp_sent(0, hello, 2), "switch_pro: not greeted again");
+   p[1] = 0x02;
+   ifc->packet_handler(dev, p, 64);
+   CHECK(sent_count == 5 && sp_sent(1, start, 2) && sp_sent_command(0, 0x48, 0x01),
+         "switch_pro: the reports not started, or rumble not turned on");
+   CHECK(!memcmp(sent + 2, neutral, 8), "switch_pro: a command's rumble is not at rest");
+
+   /* the commands, each on its answer: lights for player 3, the flash */
+   ifc->packet_handler(dev, p, (uint16_t)sp_reply(p, &st, 0x48, NULL, 0));
+   CHECK(sp_sent_command(0, 0x30, 0x07), "switch_pro: player 3's lights not set");
+   ifc->packet_handler(dev, p, (uint16_t)sp_reply(p, &st, 0x30, NULL, 0));
+   CHECK(sp_sent_command(0, 0x10, 0x3d) && sent[12] == 0x60 && sent[15] == 18,
+         "switch_pro: the factory calibration not read");
+
+   /* left: reach up 0x500/0x600, centre 0x7f0/0x810, reach down
+    * 0x400/0x480; right: centre 0x800/0x800, unwritten reach */
+   memset(flash, 0, sizeof(flash));
+   flash[0] = 0x3d; flash[1] = 0x60; flash[4] = 18;
+   sp_put_pair(flash + 5,      0x500, 0x600);
+   sp_put_pair(flash + 5 + 3,  0x7f0, 0x810);
+   sp_put_pair(flash + 5 + 6,  0x400, 0x480);
+   sp_put_pair(flash + 5 + 9,  0x800, 0x800);
+   sp_put_pair(flash + 5 + 12, 0xfff, 0xfff);
+   sp_put_pair(flash + 5 + 15, 0xfff, 0xfff);
+   ifc->packet_handler(dev, p, (uint16_t)sp_reply(p, &st, 0x10, flash, 5 + 18));
+   CHECK(sp_sent_command(0, 0x10, 0x10) && sent[12] == 0x80 && sent[15] == 22,
+         "switch_pro: the user's calibration not read");
+
+   /* the user calibrated only the right stick: centre 0x900 */
+   memset(flash, 0xff, sizeof(flash));
+   flash[0] = 0x10; flash[1] = 0x80; flash[2] = 0; flash[3] = 0; flash[4] = 22;
+   flash[5 + 11] = 0xb2; flash[5 + 12] = 0xa1;
+   sp_put_pair(flash + 5 + 13, 0x900, 0x900);
+   sp_put_pair(flash + 5 + 16, 0x300, 0x300);
+   sp_put_pair(flash + 5 + 19, 0x300, 0x300);
+   count = sent_count;
+   ifc->packet_handler(dev, p, (uint16_t)sp_reply(p, &st, 0x10, flash, 5 + 22));
+   CHECK(sent_count == count, "switch_pro: something sent after the last command");
+
+   /* sticks: up positive becomes down positive; the factory's reach is
+    * taken at seven tenths */
+   st.stick[0] = 0x7f0 + 0x500 * 7 / 10;
+   st.stick[1] = 0x810 - 0x480 * 7 / 10;
+   st.stick[2] = 0x900;
+   st.stick[3] = 0x900 + 0x300 * 7 / 10;
+   ifc->packet_handler(dev, p, (uint16_t)sp_report(p, 0x30, &st));
+   CHECK(ifc->get_axis(dev, 0) == 32767, "switch_pro: left x at its reach is %d", ifc->get_axis(dev, 0));
+   CHECK(ifc->get_axis(dev, 1) == 32767, "switch_pro: left y down is %d", ifc->get_axis(dev, 1));
+   CHECK(ifc->get_axis(dev, 2) == 0, "switch_pro: the user's centre not taken (%d)", ifc->get_axis(dev, 2));
+   CHECK(ifc->get_axis(dev, 3) == -32767, "switch_pro: right y up is %d", ifc->get_axis(dev, 3));
+   st.stick[0] = 0xfff;
+   ifc->packet_handler(dev, p, (uint16_t)sp_report(p, 0x30, &st));
+   CHECK(ifc->get_axis(dev, 0) == 32767, "switch_pro: a stick past its reach is %d", ifc->get_axis(dev, 0));
+   st.stick[0] = 0x7f0 + 0x500 * 7 / 10;
+   ifc->packet_handler(dev, p, (uint16_t)sp_report(p, 0x30, &st));
+   CHECK(ifc->get_axis(dev, 0) == 0x500 * 7 / 10 * 32767 / (0xfff - 0x7f0),
+         "switch_pro: the reach did not widen (%d)", ifc->get_axis(dev, 0));
+   CHECK(ifc->get_axis(dev, 4) == 0, "switch_pro: an axis past the sticks");
+
+   /* buttons, from every report that carries them */
+   srand(23);
+   for (n = 0; n < 20000; n++)
+   {
+      static const uint8_t ids[5] = { 0x30, 0x31, 0x32, 0x33, 0x21 };
+      sp_random(&st);
+      ifc->packet_handler(dev, p, (uint16_t)sp_report(p, ids[n % 5], &st));
+      bad += sp_mismatches(dev, &st);
+   }
+   CHECK(!bad, "switch_pro: %u reads disagree with the full report", bad);
+   p[0] = 0x30;
+   memset(p + 1, 0xff, 63);
+   ifc->packet_handler(dev, p, 11);
+   p[0] = 0x3e;
+   ifc->packet_handler(dev, p, 64);
+   CHECK(!sp_mismatches(dev, &st), "switch_pro: a short or foreign report was taken");
+
+   /* rumble: from the poll, the strong motor the left hand's, held
+    * while it lasts, at rest once */
+   ifc->packet_handler(dev, p, (uint16_t)sp_report(p, 0x30, &st));
+   ifc->packet_handler(dev, p, (uint16_t)sp_report(p, 0x30, &st));
+   count = sent_count;
+   ifc->set_rumble(dev, RETRO_RUMBLE_STRONG, 0xffff);
+   ifc->set_rumble(dev, RETRO_RUMBLE_WEAK, 1);
+   CHECK(sent_count == count, "switch_pro: rumble sent outside the poll");
+   ifc->packet_handler(dev, p, (uint16_t)sp_report(p, 0x30, &st));
+   CHECK(sent_count == count + 1 && sent[0] == 0x10 && sent_len == 10
+         && sent[2] == 0x74 && sent[3] == 0xc8 && sent[4] == 0x3d && sent[5] == 0x72
+         && sent[6] == 0x74 && sent[7] == 0x02 && sent[8] == 0xbd && sent[9] == 0x40,
+         "switch_pro: rumble is not the motors asked for");
+   for (n = 0; n < 12; n++)
+      ifc->packet_handler(dev, p, (uint16_t)sp_report(p, 0x30, &st));
+   CHECK(sent_count == count + 3, "switch_pro: held rumble not kept up (%u)", sent_count - count);
+   ifc->set_rumble(dev, RETRO_RUMBLE_STRONG, 0);
+   ifc->set_rumble(dev, RETRO_RUMBLE_WEAK, 0);
+   for (n = 0; n < 12; n++)
+      ifc->packet_handler(dev, p, (uint16_t)sp_report(p, 0x30, &st));
+   CHECK(sent_count == count + 4 && !memcmp(sent + 2, neutral, 8),
+         "switch_pro: rumble not put at rest once");
+   CHECK(!strcmp(ifc->get_name(dev), "Pro Controller"), "switch_pro: misnamed");
+   ifc->deinit(dev);
+
+   /* a command not answered goes again, then the next */
+   sent_count = 0;
+   dev = ifc->init(&dummy_connection, 0, &stub_hid);
+   p[0] = 0x81; p[1] = 0x02; ifc->packet_handler(dev, p, 64);
+   p[1] = 0x03;               ifc->packet_handler(dev, p, 64);
+   p[1] = 0x02;               ifc->packet_handler(dev, p, 64);
+   count = sent_count;
+   for (n = 0; n < 32 * 4; n++)
+      ifc->packet_handler(dev, p, (uint16_t)sp_report(p, 0x30, &st));
+   CHECK(sent_count == count + 4 && sp_sent_command(0, 0x30, 0x01)
+         && sp_sent_command(1, 0x48, 0x01),
+         "switch_pro: an unanswered command not sent again, then given up");
+   ifc->deinit(dev);
+
+   /* a pad already sending, its greeting unanswered: on to the commands */
+   sent_count = 0;
+   dev = ifc->init(&dummy_connection, 0, &stub_hid);
+   for (n = 0; n < 32 * 4; n++)
+      ifc->packet_handler(dev, p, (uint16_t)sp_report(p, 0x30, &st));
+   CHECK(sp_sent_command(0, 0x48, 0x01), "switch_pro: stuck on an unanswered greeting");
+   ifc->deinit(dev);
+
+   /* Bluetooth the driver says: full reports asked for first */
+   sent_count            = 0;
+   stub_hid.is_bluetooth = stub_is_bluetooth;
+   dev = ifc->init(&dummy_connection, 0, &stub_hid);
+   CHECK(sent_count == 1 && sp_sent_command(0, 0x03, 0x30),
+         "switch_pro: Bluetooth not asked for full reports");
+   ifc->packet_handler(dev, p, (uint16_t)sp_reply(p, &st, 0x03, NULL, 0));
+   CHECK(sp_sent_command(0, 0x48, 0x01), "switch_pro: Bluetooth's commands stopped");
+   ifc->deinit(dev);
+   stub_hid.is_bluetooth = NULL;
+
+   /* Bluetooth the driver cannot say: the short report tells, and is read */
+   sent_count = 0;
+   dev = ifc->init(&dummy_connection, 0, &stub_hid);
+   memset(p, 0, sizeof(p));
+   p[0] = 0x3f;
+   p[1] = 0x01 | 0x40;           /* B, ZL */
+   p[2] = 0x10;                  /* Home */
+   p[3] = 0x02;                  /* right */
+   p[4] = 0xff; p[5] = 0xbf;     /* left x: half way right */
+   p[6] = 0x00; p[7] = 0x80;
+   p[8] = 0x00; p[9] = 0x00;     /* right x: all the way left */
+   p[10] = 0x00; p[11] = 0x80;
+   ifc->packet_handler(dev, p, 12);
+   CHECK(sp_sent_command(0, 0x03, 0x30), "switch_pro: the short report did not tell Bluetooth");
+   CHECK(ifc->button(dev, RETRO_DEVICE_ID_JOYPAD_B) && ifc->button(dev, RETRO_DEVICE_ID_JOYPAD_L2)
+         && ifc->button(dev, RETRO_DEVICE_ID_JOYPAD_RIGHT) && ifc->button(dev, 16)
+         && !ifc->button(dev, RETRO_DEVICE_ID_JOYPAD_A) && !ifc->button(dev, RETRO_DEVICE_ID_JOYPAD_UP),
+         "switch_pro: the short report's buttons misread");
+   CHECK(ifc->get_axis(dev, 0) > 32000 && ifc->get_axis(dev, 1) == 0
+         && ifc->get_axis(dev, 2) == -32767,
+         "switch_pro: the short report's sticks misread (%d %d %d)",
+         ifc->get_axis(dev, 0), ifc->get_axis(dev, 1), ifc->get_axis(dev, 2));
+   ifc->deinit(dev);
+
+   /* behind a Bluetooth stack's header: read, nothing more sent */
+   sent_count = 0;
+   dev = ifc->init(&dummy_connection, 0, &stub_hid);
+   count = sent_count;
+   for (n = 0; n < 200; n++)
+   {
+      sp_random(&st);
+      sp_report(p + 1, 0x30, &st);
+      p[0] = 0xa1;
+      ifc->packet_handler(dev, p, 65);
+      bad += sp_mismatches(dev, &st);
+   }
+   CHECK(!bad, "switch_pro: reports behind a stack's header misread");
+   CHECK(sent_count == count, "switch_pro: output went behind a Bluetooth stack's header");
+   ifc->deinit(dev);
+
+   printf("[%s] switch_pro: greeted on USB step by step, commands one at a time"
+         " and again when unanswered, the flash's calibration, full and short reports"
+         " read as laid out, rumble from the poll and kept up\n",
+         failures == had ? "pass" : "fail");
+}
+
 int main(void)
 {
    stub_hid.send_control = stub_send_control;
@@ -1053,6 +1383,7 @@ int main(void)
          ref_kade_take, ref_no_axis);
    test_retrode();
    test_ps5();
+   test_switch_pro();
    puts(failures ? "FAIL connect_parity_test" : "PASS connect_parity_test");
    return failures ? 1 : 0;
 }

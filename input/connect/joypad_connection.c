@@ -106,6 +106,11 @@ static joypad_connection_entry_t pad_map[] = {
       PID_SONY_DS5_EDGE,
       &pad_connection_ps5_edge
    },
+   { "Pro Controller",
+      VID_NINTENDO,
+      PID_NINTENDO_SWITCH_PRO,
+      &pad_connection_switch_pro
+   },
    { "PLAYSTATION(R)3 Controller",
       VID_SONY,
       PID_SONY_DS3,

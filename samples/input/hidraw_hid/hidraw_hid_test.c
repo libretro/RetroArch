@@ -18,6 +18,8 @@
  *   dualsense   -> any pad with a handler is taken, not the DualShock 3
  *                  alone: a DualSense's node is opened, on port 1 with
  *                  its ids, and a report read through its handler
+ *   bus         -> a handler is told Bluetooth by the node's bus: a
+ *                  Switch Pro Controller greeted on USB, not on Bluetooth
  *   no handler  -> a pad with none is read from its report descriptor,
  *                  numbered as on the Mac, named as it names itself; a
  *                  keyboard's descriptor is no pad */
@@ -521,6 +523,24 @@ int main(void)
    }
    hidraw_hid.free(hid);
    CHECK(kbd->closes == 1, "the DualSense's node was not closed");
+
+   /* a Switch Pro Controller: on USB it is greeted; on Bluetooth, which
+    * the bus tells, asked for its full reports at once */
+   kbd->uevent = "DRIVER=nintendo\nHID_ID=0003:0000057E:00002009\n"
+                 "HID_NAME=Nintendo Co., Ltd. Pro Controller\n";
+   kbd->writes = 0;
+   hid = hidraw_hid.init();
+   CHECK(kbd->writes == 1 && kbd->out[0] == 0x80 && kbd->out[1] == 0x02,
+         "a Switch Pro Controller on USB was not greeted");
+   hidraw_hid.free(hid);
+   kbd->uevent = "DRIVER=nintendo\nHID_ID=0005:0000057E:00002009\n"
+                 "HID_NAME=Pro Controller\n";
+   kbd->writes = 0;
+   hid = hidraw_hid.init();
+   CHECK(kbd->writes == 1 && kbd->out[0] == 0x01 && kbd->out[10] == 0x03
+         && kbd->out[11] == 0x30,
+         "a Switch Pro Controller on Bluetooth was not asked for full reports");
+   hidraw_hid.free(hid);
 
    /* a pad with no handler where the DualSense was */
    kbd->uevent   = "DRIVER=hid-generic\nHID_ID=0003:00001234:00005678\n"
