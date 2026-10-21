@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Native Metal->fixed queue->VideoToolbox worker encode pixel/timing gate."""
+import contextlib
 import array
 import json
 import os
@@ -23,7 +24,13 @@ flags = ['-DHAVE_THREADS', '-O2', '-std=c89', '-pedantic', '-Wall', '-Wextra', '
          '-mmacosx-version-min=10.14', '-I' + str(root / 'libretro-common/include')]
 subprocess.run([sys.executable, str(root / 'record/shaders/generate_metal.py'), '--check'], check=True)
 unavailable = 0
-with tempfile.TemporaryDirectory(prefix='metal-vt-pipeline-') as temp:
+failures = []
+artifact_dir = os.environ.get('PIPELINE_ARTIFACT_DIR')
+if artifact_dir:
+    Path(artifact_dir).mkdir(parents=True, exist_ok=True)
+workspace = (contextlib.nullcontext(artifact_dir) if artifact_dir else
+             tempfile.TemporaryDirectory(prefix='metal-vt-pipeline-'))
+with workspace as temp:
     directory = Path(temp)
     objects = []
     for source in ('record/record_gpu_worker_vt.c', 'record/record_gpu_queue.c',
@@ -41,7 +48,9 @@ with tempfile.TemporaryDirectory(prefix='metal-vt-pipeline-') as temp:
         print('+', shlex.join(command), flush=True)
         subprocess.run(command, check=True)
         for hevc, depth, mode in ((0, 8, 0), (1, 8, 0), (1, 10, 0), (1, 10, 1), (1, 10, 2)):
-            coded, reference = directory / 'coded.bin', directory / 'reference.yuv'
+            case = directory / f'{binary.name}-hevc{hevc}-depth{depth}-mode{mode}'
+            case.mkdir()
+            coded, reference = case / 'coded.bin', case / 'reference.yuv'
             result = subprocess.run([str(binary), str(hevc), str(depth), str(mode),
                                      str(coded), str(reference)], timeout=60)
             if result.returncode == 77:
@@ -65,8 +74,28 @@ with tempfile.TemporaryDirectory(prefix='metal-vt-pipeline-') as temp:
             assert len(actual) == len(expected) == 24 * 162 * 130 * 3 // 2
             errors = sorted(abs(a-b) for a, b in zip(actual, expected))
             mean, peak, p99 = sum(errors) / len(errors), errors[-1], errors[int(.99 * len(errors))]
-            assert mean < 4 and peak <= 64 and p99 <= 16, (mean, peak, p99)
+            (case / 'decoded.yuv').write_bytes(pixels)
+            report = dict(mean=mean, peak=peak, p99=p99, stream=info, planes=[])
+            frame_size, luma_size = 162 * 130 * 3 // 2, 162 * 130
+            for plane, offset, width, height in (('Y', 0, 162, 130),
+                    ('U', luma_size, 81, 65), ('V', luma_size * 5 // 4, 81, 65)):
+                worst = []
+                for frame in range(24):
+                    start = frame * frame_size + offset
+                    index = max(range(width * height),
+                                key=lambda i: abs(actual[start+i]-expected[start+i]))
+                    a, b = actual[start+index], expected[start+index]
+                    worst.append(dict(frame=frame, x=index % width, y=index // width,
+                                      actual=a, expected=b, error=abs(a-b)))
+                report['planes'].append(dict(plane=plane, worst=worst))
+            (case / 'errors.json').write_text(json.dumps(report, indent=2) + '\n')
+            if not (mean < 4 and peak <= 64 and p99 <= 16):
+                failures.append(str(case))
+                print(f'FAIL: {case.name}: {json.dumps(report)}', flush=True)
+                continue
             print(f'PASS: native pipeline {ownership} hevc={hevc} depth={depth} mode={mode}: '
                   f'24 frames, mean={mean:.3f}, peak={peak}, p99={p99}', flush=True)
+if failures:
+    raise SystemExit('Native pipeline pixel failures: ' + ', '.join(failures))
 if unavailable:
     raise SystemExit(77)

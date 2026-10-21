@@ -48,7 +48,7 @@ jobs:
         if: ${{ !cancelled() }}
         run: |
           rc=0
-          python3 samples/record/videotoolbox_encode/pipeline_run.py || rc=$?
+          PIPELINE_ARTIFACT_DIR="$RUNNER_TEMP/metal-vt-evidence" python3 samples/record/videotoolbox_encode/pipeline_run.py || rc=$?
           if [ "$rc" = 77 ]; then
             echo "::warning::Native pipeline hardware unavailable; integrated recording acceptance is incomplete"
             exit 0
@@ -64,3 +64,10 @@ jobs:
             exit 0
           fi
           exit "$rc"
+      - name: Preserve native pipeline evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: metal-vt-pipeline-evidence
+          path: ${{ runner.temp }}/metal-vt-evidence
+          if-no-files-found: warn
