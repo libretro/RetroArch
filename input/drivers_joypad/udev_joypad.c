@@ -339,8 +339,8 @@ static void udev_rumble_write(unsigned p)
                   effect, p);
             continue;
          }
-         o->due[effect] = strength
-            ? udev_rumble_now() + UDEV_RUMBLE_REFRESH_MS : 0;
+         /* from the pass's own clock, read before anything went */
+         o->due[effect] = strength ? now + UDEV_RUMBLE_REFRESH_MS : 0;
       }
       o->playing[effect] = strength;
       if (!strength)

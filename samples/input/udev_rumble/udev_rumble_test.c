@@ -158,6 +158,12 @@ static void pad_plug(void)
 }
 
 /* Waits for one event the driver wrote to the pad. */
+/* How long an event that is due is waited for: a sanitizer build on a
+ * busy runner can take far past the deadline the driver keeps; one
+ * that comes returns at once, so only a failure waits it out. The
+ * waits for an event that must not come stay short. */
+#define PAD_WAIT_MS 3000
+
 static bool pad_event(struct input_event *ev, int timeout_ms)
 {
    struct pollfd pfd;
@@ -200,7 +206,7 @@ int main(void)
    settle(1);
    CHECK(N(uploads) == 1 && N(upload_strong) == 0x8000 && N(upload_id_in) == -1,
          "the strength did not arrive: %d upload(s), strength 0x%x", N(uploads), N(upload_strong));
-   CHECK(pad_event(&ev, 500) && ev.type == EV_FF && ev.value == 1,
+   CHECK(pad_event(&ev, PAD_WAIT_MS) && ev.type == EV_FF && ev.value == 1,
          "the effect was not played");
    strong_id = ev.code;
 #ifdef HAVE_THREADS
@@ -234,17 +240,17 @@ int main(void)
    /* stopped: played with a value of nought, nothing uploaded */
    before = N(uploads);
    udev_set_rumble(0, RETRO_RUMBLE_STRONG, 0);
-   CHECK(pad_event(&ev, 500) && ev.type == EV_FF && ev.code == strong_id && ev.value == 0,
+   CHECK(pad_event(&ev, PAD_WAIT_MS) && ev.type == EV_FF && ev.code == strong_id && ev.value == 0,
          "the effect was not stopped");
    CHECK(N(uploads) == before, "stopping uploaded an effect");
    printf("   ok   a strength of nought stops the effect and uploads nothing\n");
 
    /* the other motor is another effect */
    udev_set_rumble(0, RETRO_RUMBLE_WEAK, 0x4000);
-   CHECK(pad_event(&ev, 500) && ev.value == 1 && ev.code != strong_id && N(upload_weak) == 0x4000,
+   CHECK(pad_event(&ev, PAD_WAIT_MS) && ev.value == 1 && ev.code != strong_id && N(upload_weak) == 0x4000,
          "the weak motor is not an effect of its own");
    udev_set_rumble(0, RETRO_RUMBLE_WEAK, 0);
-   CHECK(pad_event(&ev, 500) && ev.value == 0, "the weak motor was not stopped");
+   CHECK(pad_event(&ev, PAD_WAIT_MS) && ev.value == 0, "the weak motor was not stopped");
    printf("   ok   the weak motor is an effect of its own\n");
 
    before = N(uploads);
@@ -253,9 +259,9 @@ int main(void)
    settle(before + 2);
    CHECK(N(last_strong) == 0xffff && N(last_weak) == 0xffff,
          "full-strength pair lost a motor or precision");
-   CHECK(pad_event(&ev, 500) && ev.value == 1,
+   CHECK(pad_event(&ev, PAD_WAIT_MS) && ev.value == 1,
          "first full-strength motor was not started");
-   CHECK(pad_event(&ev, 500) && ev.value == 1,
+   CHECK(pad_event(&ev, PAD_WAIT_MS) && ev.value == 1,
          "second full-strength motor was not started");
    before = N(uploads);
    udev_set_rumble(0, RETRO_RUMBLE_STRONG, 0x1234);
@@ -271,20 +277,20 @@ int main(void)
    CHECK(!pad_event(&ev, 50), "changing weak stopped or replayed strong");
    udev_set_rumble(0, RETRO_RUMBLE_STRONG, 0);
    udev_set_rumble(0, RETRO_RUMBLE_WEAK, 0);
-   CHECK(pad_event(&ev, 500) && ev.value == 0, "first motor did not stop");
-   CHECK(pad_event(&ev, 500) && ev.value == 0, "second motor did not stop");
+   CHECK(pad_event(&ev, PAD_WAIT_MS) && ev.value == 0, "first motor did not stop");
+   CHECK(pad_event(&ev, PAD_WAIT_MS) && ev.value == 0, "second motor did not stop");
    printf("   ok   full-strength pairs preserve independent motor changes\n");
 
 #ifndef HAVE_LAKKA_SWITCH
    /* the gain is written by the writer too */
    CHECK(udev_set_rumble_gain(0, 50), "the gain was refused");
-   CHECK(pad_event(&ev, 500) && ev.type == EV_FF && ev.code == FF_GAIN
+   CHECK(pad_event(&ev, PAD_WAIT_MS) && ev.type == EV_FF && ev.code == FF_GAIN
          && ev.value > 0x7000 && ev.value < 0x9000, "the gain did not arrive");
    printf("   ok   the gain arrives the same way\n");
 #endif
 
    udev_set_rumble(0, RETRO_RUMBLE_STRONG, 0x6000);
-   CHECK(pad_event(&ev, 500) && ev.value == 1,
+   CHECK(pad_event(&ev, PAD_WAIT_MS) && ev.value == 1,
          "effect was not active before hotplug");
 
    /* the pad goes and another comes in its slot: the new one is
@@ -302,7 +308,7 @@ int main(void)
       close(old_rd);
       pad_plug();
       udev_set_rumble(0, RETRO_RUMBLE_STRONG, 0x2000);
-      CHECK(pad_event(&ev, 500) && ev.value == 1, "the new pad in the slot is not written to");
+      CHECK(pad_event(&ev, PAD_WAIT_MS) && ev.value == 1, "the new pad in the slot is not written to");
       CHECK(N(upload_id_in) == -1 && N(upload_strong) == 0x2000,
             "the new pad was given the old one's effect");
       printf("   ok   a pad that goes is let go of, and the next one in its slot is written to afresh\n");
@@ -319,11 +325,11 @@ int main(void)
    usleep(120000);
    udev_rumble_poll();
 #endif
-   CHECK(pad_event(&ev, 500) && ev.value == 1,
+   CHECK(pad_event(&ev, PAD_WAIT_MS) && ev.value == 1,
          "unchanged effect was not refreshed by its deadline");
    CHECK(N(uploads) == before, "refresh uploaded an unchanged effect");
    udev_set_rumble(0, RETRO_RUMBLE_STRONG, 0);
-   CHECK(pad_event(&ev, 500) && ev.value == 0, "refreshed effect did not stop");
+   CHECK(pad_event(&ev, PAD_WAIT_MS) && ev.value == 0, "refreshed effect did not stop");
    CHECK(!pad_event(&ev, 100), "stopped effect was refreshed");
 
    /* Failed uploads retry after a deadline, not on unrelated wakes. */
@@ -341,7 +347,7 @@ int main(void)
    usleep(120000);
    udev_rumble_poll();
 #endif
-   CHECK(pad_event(&ev, 500) && ev.value == 1 && N(uploads) == before + 2,
+   CHECK(pad_event(&ev, PAD_WAIT_MS) && ev.value == 1 && N(uploads) == before + 2,
          "failed upload did not recover without a new core post");
 
    /* Failed stops remain pending and recover without a new request. */
@@ -355,7 +361,7 @@ int main(void)
    usleep(120000);
    udev_rumble_poll();
 #endif
-   CHECK(pad_event(&ev, 500) && ev.value == 0,
+   CHECK(pad_event(&ev, PAD_WAIT_MS) && ev.value == 0,
          "failed stop did not recover without a new request");
 #ifndef HAVE_THREADS
    CHECK(udev_rumble_timeout(NULL) == -1, "stopped motor retained a deadline");
@@ -386,10 +392,10 @@ int main(void)
    usleep(120000);
    udev_rumble_poll();
 #endif
-   CHECK(pad_event(&ev, 500) && ev.value == 1,
+   CHECK(pad_event(&ev, PAD_WAIT_MS) && ev.value == 1,
          "failed initial play did not recover");
    udev_set_rumble(0, RETRO_RUMBLE_STRONG, 0);
-   CHECK(pad_event(&ev, 500) && ev.value == 0, "recovered start did not stop");
+   CHECK(pad_event(&ev, PAD_WAIT_MS) && ev.value == 0, "recovered start did not stop");
 
    printf("   ok   valid replay duration, unchanged refresh, bounded upload retry and failed-stop recovery\n");
 
@@ -407,14 +413,14 @@ int main(void)
    usleep(120000);
    udev_rumble_poll();
 #endif
-   CHECK(pad_event(&ev, 500) && ev.code == FF_GAIN && ev.value == 0xffff,
+   CHECK(pad_event(&ev, PAD_WAIT_MS) && ev.code == FF_GAIN && ev.value == 0xffff,
          "failed gain did not recover without a new request");
 
    __atomic_store_n(&fail_play, 1, __ATOMIC_SEQ_CST);
    udev_set_rumble_gain(0, 25);
    CHECK(!pad_event(&ev, 50), "second injected gain failure did not occur");
    udev_set_rumble_gain(0, 75);
-   CHECK(pad_event(&ev, 500) && ev.code == FF_GAIN
+   CHECK(pad_event(&ev, PAD_WAIT_MS) && ev.code == FF_GAIN
          && ev.value >= 0xbfff && ev.value <= 0xc000,
          "new gain did not replace the failed request immediately");
 #ifndef HAVE_THREADS
