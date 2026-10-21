@@ -2816,10 +2816,11 @@ void vulkan_debug_mark_memory(VkDevice device, VkDeviceMemory memory)
    vulkan_debug_mark_object(device, VK_OBJECT_TYPE_DEVICE_MEMORY, (uint64_t)memory, "RetroArch memory", ++object_count);
 }
 
-bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
-      enum vulkan_wsi_type type,
-      void *display, void *surface,
-      unsigned dims, int8_t swap_interval)
+/* A surface for @surface of a window system's @type, which
+ * VULKAN_WSI_DISPLAY is not: that one needs the context's GPU. */
+static bool vulkan_wsi_surface_create(VkInstance instance,
+      enum vulkan_wsi_type type, void *display, void *surface,
+      VkSurfaceKHR *out)
 {
    switch (type)
    {
@@ -2828,7 +2829,7 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
          {
             VkWaylandSurfaceCreateInfoKHR surf_info;
             PFN_vkCreateWaylandSurfaceKHR create;
-            if (!VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(vk->context.instance, "vkCreateWaylandSurfaceKHR", create))
+            if (!VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(instance, "vkCreateWaylandSurfaceKHR", create))
                return false;
 
             surf_info.sType   = VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR;
@@ -2837,8 +2838,8 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
             surf_info.display = (struct wl_display*)display;
             surf_info.surface = (struct wl_surface*)surface;
 
-            if (create(vk->context.instance,
-                     &surf_info, NULL, &vk->vk_surface) != VK_SUCCESS)
+            if (create(instance,
+                     &surf_info, NULL, out) != VK_SUCCESS)
                return false;
          }
 #endif
@@ -2848,7 +2849,7 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
          {
             VkAndroidSurfaceCreateInfoKHR surf_info;
             PFN_vkCreateAndroidSurfaceKHR create;
-            if (!VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(vk->context.instance, "vkCreateAndroidSurfaceKHR", create))
+            if (!VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(instance, "vkCreateAndroidSurfaceKHR", create))
                return false;
 
             surf_info.sType  = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR;
@@ -2856,14 +2857,14 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
             surf_info.flags  = 0;
             surf_info.window = (ANativeWindow*)surface;
 
-            if (create(vk->context.instance,
-                     &surf_info, NULL, &vk->vk_surface) != VK_SUCCESS)
+            if (create(instance,
+                     &surf_info, NULL, out) != VK_SUCCESS)
             {
                RARCH_ERR("[Vulkan] Failed to create Android surface.\n");
                return false;
             }
             RARCH_LOG("[Vulkan] Created Android surface: %llu.\n",
-                  (unsigned long long)vk->vk_surface);
+                  (unsigned long long)*out);
          }
 #endif
          break;
@@ -2873,7 +2874,7 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
             VkWin32SurfaceCreateInfoKHR surf_info;
             PFN_vkCreateWin32SurfaceKHR create;
 
-            if (!VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(vk->context.instance, "vkCreateWin32SurfaceKHR", create))
+            if (!VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(instance, "vkCreateWin32SurfaceKHR", create))
                return false;
 
             surf_info.sType     = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
@@ -2881,12 +2882,9 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
             surf_info.flags     = 0;
             surf_info.hinstance = *(const HINSTANCE*)display;
             surf_info.hwnd      = *(const HWND*)surface;
-#ifndef __WINRT__
-            vk->dxgi_window     = surf_info.hwnd;
-#endif
 
-            if (create(vk->context.instance,
-                     &surf_info, NULL, &vk->vk_surface) != VK_SUCCESS)
+            if (create(instance,
+                     &surf_info, NULL, out) != VK_SUCCESS)
                return false;
          }
 #endif
@@ -2896,7 +2894,7 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
          {
             VkXlibSurfaceCreateInfoKHR surf_info;
             PFN_vkCreateXlibSurfaceKHR create;
-            if (!VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(vk->context.instance, "vkCreateXlibSurfaceKHR", create))
+            if (!VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(instance, "vkCreateXlibSurfaceKHR", create))
                return false;
 
             surf_info.sType  = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR;
@@ -2905,8 +2903,8 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
             surf_info.dpy    = (Display*)display;
             surf_info.window = *(const Window*)surface;
 
-            if (create(vk->context.instance,
-                     &surf_info, NULL, &vk->vk_surface)
+            if (create(instance,
+                     &surf_info, NULL, out)
                   != VK_SUCCESS)
                return false;
          }
@@ -2918,7 +2916,7 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
          {
             VkXcbSurfaceCreateInfoKHR surf_info;
             PFN_vkCreateXcbSurfaceKHR create;
-            if (!VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(vk->context.instance, "vkCreateXcbSurfaceKHR", create))
+            if (!VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(instance, "vkCreateXcbSurfaceKHR", create))
                return false;
 
             surf_info.sType      = VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR;
@@ -2929,8 +2927,8 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
             surf_info.connection = (xcb_connection_t*)display;
             surf_info.window     = *(const xcb_window_t*)surface;
 
-            if (create(vk->context.instance,
-                     &surf_info, NULL, &vk->vk_surface)
+            if (create(instance,
+                     &surf_info, NULL, out)
                   != VK_SUCCESS)
                return false;
          }
@@ -2942,7 +2940,7 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
          {
             VkMirSurfaceCreateInfoKHR surf_info;
             PFN_vkCreateMirSurfaceKHR create;
-            if (!VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(vk->context.instance, "vkCreateMirSurfaceKHR", create))
+            if (!VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(instance, "vkCreateMirSurfaceKHR", create))
                return false;
 
             surf_info.sType      = VK_STRUCTURE_TYPE_MIR_SURFACE_CREATE_INFO_KHR;
@@ -2950,21 +2948,12 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
             surf_info.connection = display;
             surf_info.mirSurface = surface;
 
-            if (create(vk->context.instance,
-                     &surf_info, NULL, &vk->vk_surface)
+            if (create(instance,
+                     &surf_info, NULL, out)
                   != VK_SUCCESS)
                return false;
          }
 #endif
-         break;
-      case VULKAN_WSI_DISPLAY:
-         /* We need to decide on GPU here to be able to query support. */
-         if (!vulkan_context_init_gpu(vk))
-            return false;
-         if (!vulkan_create_display_surface(vk,
-                  &dims,
-                  (const struct vulkan_display_surface_info*)display))
-            return false;
          break;
       case VULKAN_WSI_MVK_MACOS:
       case VULKAN_WSI_MVK_IOS:
@@ -2972,7 +2961,7 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
          {
             VkMetalSurfaceCreateInfoEXT surf_info;
             PFN_vkCreateMetalSurfaceEXT create;
-            if (!VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(vk->context.instance, "vkCreateMetalSurfaceEXT", create))
+            if (!VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(instance, "vkCreateMetalSurfaceEXT", create))
                return false;
 
             surf_info.sType  = VK_STRUCTURE_TYPE_METAL_SURFACE_CREATE_INFO_EXT;
@@ -2980,7 +2969,7 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
             surf_info.flags  = 0;
             surf_info.pLayer = surface;
 
-            if (create(vk->context.instance, &surf_info, NULL, &vk->vk_surface)
+            if (create(instance, &surf_info, NULL, out)
                 != VK_SUCCESS)
                return false;
          }
@@ -2990,7 +2979,7 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
 #ifdef HAVE_SDL3
          /* The SDL3 context driver passes its SDL_Window through the
           * 'surface' parameter; SDL picks the platform surface path. */
-         if (!SDL_Vulkan_CreateSurface((SDL_Window*)surface, vk->context.instance, NULL, &vk->vk_surface))
+         if (!SDL_Vulkan_CreateSurface((SDL_Window*)surface, instance, NULL, out))
          {
             RARCH_ERR("[Vulkan] Failed to create SDL3 surface: %s.\n",
                   SDL_GetError());
@@ -2998,8 +2987,38 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
          }
 #endif
          break;
+      case VULKAN_WSI_DISPLAY:
       case VULKAN_WSI_NONE:
       default:
+         return false;
+   }
+
+   return true;
+}
+
+bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
+      enum vulkan_wsi_type type,
+      void *display, void *surface,
+      unsigned dims, int8_t swap_interval)
+{
+   if (type == VULKAN_WSI_DISPLAY)
+   {
+      /* We need to decide on GPU here to be able to query support. */
+      if (!vulkan_context_init_gpu(vk))
+         return false;
+      if (!vulkan_create_display_surface(vk,
+               &dims,
+               (const struct vulkan_display_surface_info*)display))
+         return false;
+   }
+   else
+   {
+#if defined(_WIN32) && !defined(__WINRT__)
+      if (type == VULKAN_WSI_WIN32)
+         vk->dxgi_window = *(const HWND*)surface;
+#endif
+      if (!vulkan_wsi_surface_create(vk->context.instance, type,
+               display, surface, &vk->vk_surface))
          return false;
    }
 
