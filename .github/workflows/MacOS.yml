@@ -134,6 +134,9 @@ jobs:
         test -x retroarch
 
     - name: Harness on Metal (RGB565 core, then XRGB8888)
+      env:
+        # Hosted macOS timers cannot reliably meet the synthetic 120 Hz grid.
+        HARNESS_SKIP_PHASE_GRID: '1'
       run: |
         set -o pipefail
         SAN=none GFX_INSTRUMENT=1 DRIVER=metal CYCLES=1 make -C samples/gfx/threaded_video MINVERFLAGS="-mmacosx-version-min=$MACOSX_DEPLOYMENT_TARGET" check-driver

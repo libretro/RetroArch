@@ -1110,6 +1110,9 @@ static void lane_driver_pacing(void)
           * (a state load at start-up) as after display pacing is
           * turned off and on again, and are not run unthrottled by a
           * release that does not sleep. */
+         if (getenv("HARNESS_SKIP_PHASE_GRID"))
+            fprintf(stderr, "[skip] synthetic display phase grid (host timer jitter)\n");
+         else
          {
             float saved_hz  = settings->floats.video_refresh_rate;
             bool saved_ask  = settings->bools.video_present_timing_from_display;
