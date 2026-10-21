@@ -68,10 +68,22 @@ jobs:
             exit 0
           fi
           exit "$rc"
+      - name: Native compressed MP4 and AAC worker mux
+        if: ${{ !cancelled() }}
+        run: |
+          rc=0
+          PIPELINE_ARTIFACT_DIR="$RUNNER_TEMP/metal-vt-mux-evidence" python3 samples/record/videotoolbox_encode/pipeline_run.py --mux || rc=$?
+          if [ "$rc" = 77 ]; then
+            echo "::warning::Native mux hardware unavailable; A/V acceptance is incomplete"
+            exit 0
+          fi
+          exit "$rc"
       - name: Preserve native pipeline evidence
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
           name: metal-vt-pipeline-evidence
-          path: ${{ runner.temp }}/metal-vt-evidence
+          path: |
+            ${{ runner.temp }}/metal-vt-evidence
+            ${{ runner.temp }}/metal-vt-mux-evidence
           if-no-files-found: warn
