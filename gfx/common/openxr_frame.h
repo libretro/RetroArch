@@ -38,19 +38,23 @@ RETRO_BEGIN_DECLS
 
 /* Layers the input may add to the screens: the laser's dots, kept
  * where the screens must make room, then edit mode's outlines and the
- * menu's handle, then the beams, only in room they leave. */
+ * menu's handle, then its tag, then the beams, only in room they
+ * leave. */
 #define OPENXR_KEPT_EXTRA_LAYERS 2
 #define OPENXR_BEAM_LAYERS       2
+#define OPENXR_TAG_LAYERS        1
 #define OPENXR_MAX_EXTRA_LAYERS  \
-   (OPENXR_KEPT_EXTRA_LAYERS + OPENXR_BEAM_LAYERS + VIDEO_XR_MAX_SLOTS + 1)
+   (OPENXR_KEPT_EXTRA_LAYERS + OPENXR_BEAM_LAYERS + OPENXR_TAG_LAYERS \
+    + VIDEO_XR_MAX_SLOTS + 1)
 
 /* Edit mode's hands, the main thread's for the frame loop: what each
  * holds and where its item was as it took it (snapping fades in from
  * there), each slot's last let-go hold, kept after its hand takes
  * another item until quads planned at its release show it, the item
  * chosen to edit (its slot plus one; 0, the laser's), the hands whose
- * laser has the menu's handle stuck (bit h for hand h), and whether
- * held screens snap (Snap to Screens). */
+ * laser has the menu's handle stuck (bit h for hand h), the hand whose
+ * Select Next or Previous was pressed last, for the tag (0, the left),
+ * and whether held screens snap (Snap to Screens). */
 typedef struct openxr_grabs
 {
    video_xr_grab_t hand[2];
@@ -58,6 +62,7 @@ typedef struct openxr_grabs
    video_xr_grab_t let_go[VIDEO_XR_MAX_SLOTS];
    unsigned chosen;
    unsigned stuck;
+   unsigned tag;
    bool snap;
 } openxr_grabs_t;
 
@@ -373,6 +378,17 @@ void openxr_frame_set_input_hooks(const openxr_input_hooks_t *hooks);
 void openxr_frame_input_attach(openxr_frame_t *f);
 void openxr_frame_input_detach(openxr_frame_t *f);
 XrSwapchain openxr_frame_cursor(const openxr_frame_t *f);
+/* The width hosts make the laser's image: VIDEO_XR_CURSOR_W, or
+ * VIDEO_XR_CURSOR_UNTAGGED_W, without edit mode's tags, where the
+ * runtime's swapchains are narrower. */
+unsigned openxr_frame_cursor_w(const openxr_frame_t *f);
+/* The laser's image (video_xr_cursor_pixels) w wide, as
+ * openxr_frame_cursor_w says, in px's VIDEO_XR_CURSOR_W by
+ * VIDEO_XR_CURSOR_H texels; at full width with edit mode's tags
+ * written in the default font and the interface language as it is now;
+ * bottom_up for an image whose rows run bottom up, as GL's. Without a
+ * font, the tags stay clear. */
+void openxr_frame_cursor_pixels(uint8_t *px, unsigned w, bool bottom_up);
 
 RETRO_END_DECLS
 

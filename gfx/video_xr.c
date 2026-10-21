@@ -1065,6 +1065,50 @@ void video_xr_beam(const video_xr_vec3_t *o, const video_xr_vec3_t *d,
    video_xr_quat_axes(d, &y, &z, &pose->orientation);
 }
 
+void video_xr_tag(const video_xr_vec3_t *hand, const video_xr_vec3_t *eye,
+      video_xr_pose_t *pose)
+{
+   float n;
+   video_xr_vec3_t x, y, z;
+   pose->position.x = hand->x;
+   pose->position.y = hand->y + VIDEO_XR_TAG_LIFT;
+   pose->position.z = hand->z;
+   z.x              = eye->x - pose->position.x;
+   z.y              = eye->y - pose->position.y;
+   z.z              = eye->z - pose->position.z;
+   n                = (float)sqrt(z.x * z.x + z.y * z.y + z.z * z.z);
+   if (n < 0.0001f)
+   {
+      pose->orientation.x = 0.0f;
+      pose->orientation.y = 0.0f;
+      pose->orientation.z = 0.0f;
+      pose->orientation.w = 1.0f;
+      return;
+   }
+   z.x /= n;
+   z.y /= n;
+   z.z /= n;
+   /* Level: square to the vertical and to the way to the eye. */
+   x.x  = z.z;
+   x.y  = 0.0f;
+   x.z  = -z.x;
+   n    = (float)sqrt(x.x * x.x + x.z * x.z);
+   if (n < 0.0001f)
+   {
+      x.x = 1.0f;
+      x.z = 0.0f;
+   }
+   else
+   {
+      x.x /= n;
+      x.z /= n;
+   }
+   y.x = z.y * x.z - z.z * x.y;
+   y.y = z.z * x.x - z.x * x.z;
+   y.z = z.x * x.y - z.y * x.x;
+   video_xr_quat_axes(&x, &y, &z, &pose->orientation);
+}
+
 void video_xr_outline(const video_xr_quad_t *q, video_xr_quad_t *out)
 {
    const float inner = 1.0f - 2.0f * (VIDEO_XR_OUTLINE_EDGE + 0.5f)
@@ -1753,6 +1797,33 @@ void video_xr_cursor_pixels(uint8_t *px)
          for (y = 0; y < VIDEO_XR_BEAM_ROWS; y++)
             video_xr_cursor_texel(px, VIDEO_XR_BEAM_X(k) + x,
                   VIDEO_XR_BEAM_Y + y, level, level);
+      }
+}
+
+void video_xr_tag_pixels(uint8_t *px, unsigned tag, const uint8_t *cov,
+      bool bottom_up)
+{
+   unsigned x, y;
+   for (y = 0; y < VIDEO_XR_TAG_ROWS; y++)
+      for (x = 0; x < VIDEO_XR_TAG_COLS; x++)
+      {
+         unsigned i, j, a;
+         unsigned c    = cov[y * VIDEO_XR_TAG_COLS + x];
+         unsigned halo = 0;
+         unsigned row  = bottom_up ? VIDEO_XR_TAG_ROWS - 1 - y : y;
+         for (j = (y > VIDEO_XR_TAG_HALO) ? y - VIDEO_XR_TAG_HALO : 0;
+               j <= y + VIDEO_XR_TAG_HALO && j < VIDEO_XR_TAG_ROWS; j++)
+            for (i = (x > VIDEO_XR_TAG_HALO) ? x - VIDEO_XR_TAG_HALO : 0;
+                  i <= x + VIDEO_XR_TAG_HALO && i < VIDEO_XR_TAG_COLS;
+                  i++)
+               if (cov[j * VIDEO_XR_TAG_COLS + i] > halo)
+                  halo = cov[j * VIDEO_XR_TAG_COLS + i];
+         /* Light text over its dark halo, premultiplied. */
+         a = c + halo * (255 - c) / 255;
+         video_xr_cursor_texel(px, VIDEO_XR_TAG_X(tag) + x,
+               VIDEO_XR_TAG_Y + row,
+               (uint8_t)(c * VIDEO_XR_TAG_FAINT / 255),
+               (uint8_t)(a * VIDEO_XR_TAG_FAINT / 255));
       }
 }
 

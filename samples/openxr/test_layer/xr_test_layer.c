@@ -37,6 +37,8 @@
  *   RA_XR_LAYER_QUAD_INDEX0 1: quads show array layer 0 whatever their
  *                           imageArrayIndex, as SteamVR on the Steam
  *                           Frame does
+ *   RA_XR_LAYER_MAX_WIDTH   the runtime's maxSwapchainImageWidth, at most
+ *                           this; 0 or unset leaves it
  *
  * Script lines:
  *   head <x> <y> <z> <yaw>  the VIEW space's pose in LOCAL, yaw in degrees
@@ -181,6 +183,7 @@ static struct
    char dir[1024];
    unsigned snap_every;
    bool quad_index0;
+   uint32_t max_width;
    char script[1024];
    struct timespec script_mtime;
    ino_t script_ino;
@@ -262,6 +265,7 @@ static struct
    PFN_xrBeginFrame BeginFrame;
    PFN_xrEndFrame EndFrame;
    PFN_xrEnumerateViewConfigurationViews EnumerateViewConfigurationViews;
+   PFN_xrGetSystemProperties GetSystemProperties;
 
    XrInstance instance;
    bool frame;               /* the application enabled FRAME_EXT */
@@ -319,6 +323,7 @@ static void layer_open(void)
    const char *snap  = getenv("RA_XR_LAYER_SNAP_EVERY");
    const char *scr   = getenv("RA_XR_LAYER_SCRIPT");
    const char *idx0  = getenv("RA_XR_LAYER_QUAD_INDEX0");
+   const char *maxw  = getenv("RA_XR_LAYER_MAX_WIDTH");
    char path[1100];
    if (dir && *dir && !L.out)
    {
@@ -328,6 +333,7 @@ static void layer_open(void)
    }
    L.snap_every  = snap ? (unsigned)strtoul(snap, NULL, 10) : 0;
    L.quad_index0 = idx0 && atoi(idx0) != 0;
+   L.max_width   = maxw ? (uint32_t)strtoul(maxw, NULL, 10) : 0;
    if (scr)
       snprintf(L.script, sizeof(L.script), "%s", scr);
 }
@@ -1550,6 +1556,18 @@ static XRAPI_ATTR XrResult XRAPI_CALL layer_WaitFrame(XrSession session,
    return res;
 }
 
+/* RA_XR_LAYER_MAX_WIDTH: the widest swapchain the runtime says it
+ * makes, at most this. */
+static XRAPI_ATTR XrResult XRAPI_CALL layer_GetSystemProperties(
+      XrInstance instance, XrSystemId system, XrSystemProperties *props)
+{
+   XrResult res = L.GetSystemProperties(instance, system, props);
+   if (     XR_SUCCEEDED(res) && L.max_width
+         && props->graphicsProperties.maxSwapchainImageWidth > L.max_width)
+      props->graphicsProperties.maxSwapchainImageWidth = L.max_width;
+   return res;
+}
+
 static XRAPI_ATTR XrResult XRAPI_CALL layer_EnumerateDisplayRefreshRatesFB(
       XrSession session, uint32_t cap, uint32_t *count, float *rates)
 {
@@ -2076,6 +2094,7 @@ static XRAPI_ATTR XrResult XRAPI_CALL layer_GetInstanceProcAddr(XrInstance insta
    HOOK(WaitFrame)
    HOOK(EndFrame)
    HOOK(EnumerateViewConfigurationViews)
+   HOOK(GetSystemProperties)
    HOOK(CreateActionSet)
    HOOK(DestroyActionSet)
    HOOK(CreateAction)
@@ -2143,6 +2162,7 @@ static XRAPI_ATTR XrResult XRAPI_CALL layer_CreateApiLayerInstance(
    NEXT(BeginFrame);
    NEXT(EndFrame);
    NEXT(EnumerateViewConfigurationViews);
+   NEXT(GetSystemProperties);
    NEXT(PathToString);
    NEXT(CreateActionSet);
    NEXT(DestroyActionSet);

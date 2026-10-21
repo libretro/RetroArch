@@ -34500,6 +34500,18 @@ MSG_HASH(
    MSG_OPENXR_EDIT_NO_CONTENT,
    "Edit Screens needs content running: load content first."
    )
+MSG_HASH(
+   MSG_OPENXR_EDIT_TAG_LASER,
+   "Laser"
+   )
+MSG_HASH(
+   MSG_OPENXR_EDIT_TAG_SCREEN,
+   "Screen %u"
+   )
+MSG_HASH(
+   MSG_OPENXR_EDIT_TAG_MENU,
+   "Menu"
+   )
 
 
 /* Lakka */

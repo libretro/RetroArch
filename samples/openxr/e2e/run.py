@@ -4110,7 +4110,17 @@ HANDLE_X = tuple(OUTLINE_X[0] + 2 * (OUTLINE_DIM + 1) + k * (HANDLE_COLS + 1)
                  for k in (0, 1))
 BEAM_X = tuple(HANDLE_X[0] + 2 * (HANDLE_COLS + 1) + k * (BEAM_LEN + 1)
                for k in (0, 1))
-CURSOR_W = BEAM_X[1] + BEAM_LEN
+# Edit mode's tags, one cell for each item it can choose (0, the laser;
+# a slot plus one), after the beam strips, each centred on the middle
+# row.
+TAG_COLS, TAG_ROWS, TAGS = 128, 30, 10
+TAG_X = tuple(BEAM_X[1] + BEAM_LEN + 1 + k * (TAG_COLS + 1)
+              for k in range(TAGS))
+TAG_Y = (OUTLINE_DIM - TAG_ROWS) // 2
+CURSOR_W = TAG_X[-1] + TAG_COLS
+# Its width without the tags, for runtimes too narrow for them.
+CURSOR_PLAIN_W = BEAM_X[1] + BEAM_LEN
+TAG_HEIGHT, TAG_LIFT, TAG_FAINT = 0.02, 0.05, 160
 CURSOR_H = OUTLINE_DIM
 # The beam: VIDEO_XR_BEAM_WIDTH, _REACH and _LEVEL; AIM_GUN's and
 # AIM_MISS's rays; the head where the beams' cases put it.
@@ -4248,6 +4258,12 @@ def beams(frame, miss=None):
     xs = BEAM_X if miss is None else (BEAM_X[miss],)
     return [q for q in quads(frame)
             if q['flags'] & BLEND and q['rect'][0] in xs]
+
+
+def tags(frame):
+    """Edit mode's tag naming the chosen item."""
+    return [q for q in quads(frame) if q['flags'] & BLEND
+            and tuple(q['rect'][2:]) == (TAG_COLS, TAG_ROWS)]
 
 
 def unit(v):
@@ -5786,6 +5802,114 @@ def check_edit_sway(smooth):
     return check
 
 
+TAG_LEFT, TAG_RIGHT = (-0.2, -0.3, -0.3), (0.2, -0.3, -0.3)
+
+
+def both_aims():
+    """The head at the origin; each hand below the eyes and to its side,
+    aiming straight ahead at screen 1."""
+    return script(HEAD_AT_ORIGIN,
+                  aim_line(TAG_LEFT, (TAG_LEFT[0], TAG_LEFT[1], -1.8),
+                           hand='left'),
+                  aim_line(TAG_RIGHT, (TAG_RIGHT[0], TAG_RIGHT[1], -1.8)))
+
+
+EDIT_TAG_STEPS = edit_start(both_aims()) + [
+    ('wait', 1.5), ('mark', 'next'),
+    ('script', script(both_aims(), 'action edit/select_next@right 1')),
+    ('wait', 0.5), ('script', both_aims()), ('wait', 1),
+    ('mark', 'previous'),
+    ('script', script(both_aims(), 'action edit/select_previous@left 1')),
+    ('wait', 0.5), ('script', both_aims()), ('wait', 1),
+    ('mark', 'end'), ('send', EDIT), ('wait', 2), ('mark', 'off'),
+    ('wait', 1)]
+EDIT_TAG_NARROW_STEPS = edit_start(both_aims()) + [
+    ('wait', 1.5), ('mark', 'end'), ('send', EDIT), ('wait', 2),
+    ('mark', 'off'), ('wait', 1)]
+
+
+def tag_errors(res, what, frames, k, hand):
+    """Each frame's one tag shows cell k 5 cm over hand, facing the head
+    at the origin; its cell has light texels and dark ones."""
+    if not frames:
+        return ['no frames %s' % what]
+    want = (hand[0], hand[1] + TAG_LIFT, hand[2])
+    face = unit(tuple(-a for a in want))
+    for f in frames:
+        t = tags(f)
+        if len(t) != 1:
+            return ['%s: %d tags' % (what, len(t))]
+        q = t[0]
+        z = qrot(tuple(q['pose'][3:]), (0.0, 0.0, 1.0))
+        if q['rect'][0] != TAG_X[k] or q['rect'][1] != TAG_Y \
+                or not near3(q['pose'], want, 0.002) \
+                or abs(q['size'][1] - TAG_HEIGHT) > 1e-4 \
+                or sum(a * b for a, b in zip(z, face)) < 0.999:
+            return ['%s: tag at %s rect %s facing %s, want cell %d at %s '
+                    'facing %s' % (what, q['pose'][:3], q['rect'], z, k,
+                                   want, face)]
+    snaps = [f for f in frames if f['snap']]
+    if not snaps:
+        return ['%s: no snapshot of the tag' % what]
+    q = tags(snaps[-1])[0]
+    w, h, bpp, rows = read_png(image(res, snaps[-1], q))
+    light = dark = 0
+    for y in range(q['rect'][1], q['rect'][1] + TAG_ROWS):
+        for x in range(q['rect'][0], q['rect'][0] + TAG_COLS):
+            px = rows[y][x * bpp:x * bpp + bpp]
+            a = px[3] if bpp == 4 else 255
+            if a >= TAG_FAINT - 8 and px[0] >= TAG_FAINT - 8:
+                light += 1
+            elif a >= TAG_FAINT - 8 and px[0] <= 8:
+                dark += 1
+    if not light or not dark:
+        return ['%s: the tag\'s cell has %d light and %d dark texels'
+                % (what, light, dark)]
+    return []
+
+
+def check_edit_tag_narrow(res):
+    """A runtime whose swapchains are narrower than the laser's image
+    with its tags: the image without them, as wide as before them; no
+    tag, and each hand's beam and dot."""
+    errors = edit_log_errors(res, ['on', 'off'])
+    frames = between(res, 'on', 'end', delay=2.5)
+    if not frames:
+        return errors + ['no frames in edit mode']
+    for f in frames:
+        dots = cursors(f)
+        late = [q for q in quads(f) if dots and q['sc'] == dots[0]['sc']
+                and q['rect'][0] >= CURSOR_PLAIN_W]
+        if late or len(beams(f)) != 2 or len(dots) != 2:
+            return errors + ['%d tags, %d beams, %d dots'
+                             % (len(late), len(beams(f)), len(dots))]
+    snaps = [f for f in frames if f['snap']]
+    if not snaps:
+        return errors + ['no snapshot of the laser\'s image']
+    w = read_png(image(res, snaps[-1], cursors(snaps[-1])[0]))[0]
+    if w != CURSOR_PLAIN_W:
+        errors.append('the laser\'s image is %d wide, want %d'
+                      % (w, CURSOR_PLAIN_W))
+    return errors
+
+
+def check_edit_tag(res):
+    """The tag starts over the left hand reading Laser; the right hand's
+    Select Next moves it over the right reading Screen 1; the left's
+    Select Previous moves it back. Light text with a dark halo."""
+    errors = edit_log_errors(res, ['on', 'off'])
+    errors += tag_errors(res, 'from the start',
+                         between(res, 'on', 'next', delay=2.5),
+                         0, TAG_LEFT)
+    errors += tag_errors(res, 'after the right\'s Select Next',
+                         between(res, 'next', 'previous', delay=0.5),
+                         1, TAG_RIGHT)
+    errors += tag_errors(res, 'after the left\'s Select Previous',
+                         between(res, 'previous', 'end', delay=0.5),
+                         0, TAG_LEFT)
+    return errors
+
+
 EDIT_GRAB_STEPS = edit_start(edit_aim(), 1) + [
     ('mark', 'aimed'), ('wait', 1), ('mark', 'grab'),
     ('script', script(edit_aim(), EDIT_GRIP)), ('wait', 1),
@@ -6177,6 +6301,13 @@ EDIT_CASES += [
      'steps': EDIT_SWAY_STEPS, 'check': check_edit_sway(True)},
     {'name': 'edit-smooth-off', 'map': '3ds', 'settings': SAVE,
      'steps': EDIT_SWAY_STEPS, 'check': check_edit_sway(False)},
+    {'name': 'edit-tag', 'map': '3ds',
+     'env': {'RA_XR_LAYER_SNAP_EVERY': '10'}, 'steps': EDIT_TAG_STEPS,
+     'check': check_edit_tag},
+    {'name': 'edit-tag-narrow', 'map': '3ds',
+     'env': {'RA_XR_LAYER_SNAP_EVERY': '10',
+             'RA_XR_LAYER_MAX_WIDTH': '2048'},
+     'steps': EDIT_TAG_NARROW_STEPS, 'check': check_edit_tag_narrow},
 ]
 
 
@@ -7462,7 +7593,7 @@ GL_EDIT = ['edit-grab', 'edit-grab-threaded', 'edit-command', 'edit-follow',
            'edit-regrab-threaded', 'edit-handover-threaded', 'edit-reset',
            'edit-outlines', 'edit-outlines-flush', 'edit-beam',
            'edit-fallback', 'edit-no-map', 'edit-lazy', 'edit-two-hands',
-           'edit-choose', 'edit-snap']
+           'edit-choose', 'edit-snap', 'edit-tag', 'edit-tag-narrow']
 GL_EDIT_MENU = ['edit-menu-front', 'edit-menu-size']
 for custom_driver in GL_BASE:
     GL_BASE[custom_driver] += [c['name'] for c in CUSTOM_CASES] + GL_EDIT

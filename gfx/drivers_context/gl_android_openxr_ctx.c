@@ -375,16 +375,22 @@ static void gl_android_openxr_host_register(gl_android_openxr_t *xr)
 
 /* ===================== the session ===================== */
 
+struct gl_xr_dot
+{
+   uint32_t tex[OPENXR_MAX_IMAGES][2];
+   unsigned w;
+};
+
 /* The dot's image, with the video context current. */
 static bool gl_xr_cursor_fill(void *user, uint32_t index,
       const char **step, int *code)
 {
    static uint8_t px[VIDEO_XR_CURSOR_W * VIDEO_XR_CURSOR_H * 4];
-   uint32_t (*tex)[2] = (uint32_t (*)[2])user;
-   video_xr_cursor_pixels(px);
-   glBindTexture(GL_TEXTURE_2D, (GLuint)tex[index][0]);
-   glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, VIDEO_XR_CURSOR_W,
-         VIDEO_XR_CURSOR_H, GL_RGBA, GL_UNSIGNED_BYTE, px);
+   struct gl_xr_dot *dot = (struct gl_xr_dot*)user;
+   openxr_frame_cursor_pixels(px, dot->w, true);
+   glBindTexture(GL_TEXTURE_2D, (GLuint)dot->tex[index][0]);
+   glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, dot->w, VIDEO_XR_CURSOR_H,
+         GL_RGBA, GL_UNSIGNED_BYTE, px);
    glBindTexture(GL_TEXTURE_2D, 0);
    /* The compositor reads the image on its own context. */
    glFlush();
@@ -396,16 +402,17 @@ static void gl_xr_cursor_create(gl_android_openxr_t *xr)
 {
    static const int64_t formats[2] = {
       OPENXR_GLES_SRGB8_ALPHA8, OPENXR_GLES_RGBA8 };
-   uint32_t tex[OPENXR_MAX_IMAGES][2];
+   struct gl_xr_dot dot;
    openxr_gles_images_t li;
    const char *step = NULL;
    int code         = 0;
 
+   dot.w            = openxr_frame_cursor_w(&xr->frame);
    li.sc            = &xr->sc;
-   li.tex           = tex;
+   li.tex           = dot.tex;
    xr->frame.cursor = openxr_swapchains_create_filled(&xr->sc, formats, 2,
-         VIDEO_SCALE_PACK(VIDEO_XR_CURSOR_W, VIDEO_XR_CURSOR_H),
-         openxr_binding_gles_images, &li, gl_xr_cursor_fill, tex,
+         VIDEO_SCALE_PACK(dot.w, VIDEO_XR_CURSOR_H),
+         openxr_binding_gles_images, &li, gl_xr_cursor_fill, &dot,
          &step, &code);
    if (xr->frame.cursor)
       RARCH_LOG("[XR] Laser cursor ready.\n");

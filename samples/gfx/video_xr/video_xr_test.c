@@ -2642,7 +2642,7 @@ static void test_cursor_pixels(void)
    CHECK(column_clear(VIDEO_XR_HANDLE_X(1) - 1));
    CHECK(column_clear(VIDEO_XR_BEAM_X(0) - 1));
    CHECK(column_clear(VIDEO_XR_BEAM_X(1) - 1));
-   CHECK(VIDEO_XR_BEAM_X(1) + VIDEO_XR_BEAM_LEN == VIDEO_XR_CURSOR_W);
+   CHECK(VIDEO_XR_BEAM_X(1) + VIDEO_XR_BEAM_LEN + 1 == VIDEO_XR_TAG_X(0));
    /* The beam's strips: white, faded in at the hand; the one into
     * nothing faded out at its far end too; mid-height, nothing above or
     * below them. */
@@ -2658,6 +2658,79 @@ static void test_cursor_pixels(void)
    CHECK(!texel(VIDEO_XR_BEAM_X(0) + 64, VIDEO_XR_BEAM_Y - 1)[3]);
    CHECK(!texel(VIDEO_XR_BEAM_X(1) + 64, VIDEO_XR_BEAM_Y
             + VIDEO_XR_BEAM_ROWS)[3]);
+}
+
+/* Edit mode's tags: a cell for each item it can choose after the beam
+ * strips, each centred on the middle row with a clear column between,
+ * empty until text goes in. Text is light over a dark halo two texels
+ * wide, at the tag's faint level; bottom up, its rows mirror within the
+ * cell. */
+static void test_tag_pixels(void)
+{
+   static uint8_t cov[VIDEO_XR_TAG_COLS * VIDEO_XR_TAG_ROWS];
+   const unsigned x0 = VIDEO_XR_TAG_X(3);
+   const unsigned y0 = VIDEO_XR_TAG_Y;
+   const unsigned r  = VIDEO_XR_TAG_ROWS - 1;
+   const uint8_t f   = VIDEO_XR_TAG_FAINT;
+   unsigned x, y;
+   int clear = 1;
+   CHECK(VIDEO_XR_TAGS == VIDEO_XR_MENU_SLOT + 2);
+   CHECK(VIDEO_XR_TAG_X(0) == VIDEO_XR_BEAM_X(1) + VIDEO_XR_BEAM_LEN + 1);
+   CHECK(VIDEO_XR_TAG_X(VIDEO_XR_TAGS - 1) + VIDEO_XR_TAG_COLS
+         == VIDEO_XR_CURSOR_W);
+   CHECK(2 * VIDEO_XR_TAG_Y + VIDEO_XR_TAG_ROWS == VIDEO_XR_CURSOR_H);
+   video_xr_cursor_pixels(t_atlas);
+   for (x = VIDEO_XR_TAG_X(0) - 1; x < VIDEO_XR_CURSOR_W; x++)
+      clear &= column_clear(x);
+   CHECK(clear);
+   /* A 4 x 2 block, its top left at 60, 9: off the middle, so the rows
+    * bottom up differ. */
+   memset(cov, 0, sizeof(cov));
+   for (y = 9; y < 11; y++)
+      for (x = 60; x < 64; x++)
+         cov[y * VIDEO_XR_TAG_COLS + x] = 255;
+   video_xr_tag_pixels(t_atlas, 3, cov, false);
+   CHECK(texel(x0 + 61, y0 + 10)[0] == f && texel(x0 + 61, y0 + 10)[3] == f);
+   CHECK(texel(x0 + 58, y0 + 10)[0] == 0 && texel(x0 + 58, y0 + 10)[3] == f);
+   CHECK(texel(x0 + 57, y0 + 10)[3] == 0);
+   CHECK(texel(x0 + 61, y0 + 7)[0] == 0 && texel(x0 + 61, y0 + 7)[3] == f);
+   CHECK(texel(x0 + 61, y0 + 6)[3] == 0);
+   CHECK(column_clear(x0 - 1) && column_clear(x0 + VIDEO_XR_TAG_COLS));
+   /* Bottom up: row y at r - y. */
+   video_xr_tag_pixels(t_atlas, 3, cov, true);
+   CHECK(texel(x0 + 61, y0 + r - 10)[0] == f
+         && texel(x0 + 61, y0 + r - 7)[0] == 0
+         && texel(x0 + 61, y0 + r - 7)[3] == f
+         && texel(x0 + 61, y0 + r - 6)[3] == 0
+         && texel(x0 + 61, y0 + 10)[3] == 0);
+}
+
+/* The tag: 5 cm over the hand, its face towards the eye, its x level;
+ * with the eye straight above, facing up. */
+static void test_tag_pose(void)
+{
+   double n;
+   video_xr_vec3_t hand, eye, ax, az;
+   video_xr_pose_t pose;
+   hand.x = 0.2f;
+   hand.y = -0.3f;
+   hand.z = -0.3f;
+   eye.x  = 0.0f;
+   eye.y  = 0.0f;
+   eye.z  = 0.0f;
+   video_xr_tag(&hand, &eye, &pose);
+   CHECK(vec_is(&pose.position, 0.2, -0.25, -0.3));
+   pose_axis(&pose, 1.0f, 0.0f, 0.0f, &ax);
+   pose_axis(&pose, 0.0f, 0.0f, 1.0f, &az);
+   n = sqrt(0.2 * 0.2 + 0.25 * 0.25 + 0.3 * 0.3);
+   CHECK(vec_is(&az, -0.2 / n, 0.25 / n, 0.3 / n));
+   CHECK(NEAR(ax.y, 0.0) && ax.x > 0.0f);
+   eye.x = 0.2f;
+   eye.y = 1.0f;
+   eye.z = -0.3f;
+   video_xr_tag(&hand, &eye, &pose);
+   pose_axis(&pose, 0.0f, 0.0f, 1.0f, &az);
+   CHECK(vec_is(&az, 0.0, 1.0, 0.0));
 }
 
 static int pose_same(const video_xr_pose_t *a, const video_xr_pose_t *b)
@@ -3758,6 +3831,8 @@ int main(void)
    test_cursor();
    test_beam();
    test_cursor_pixels();
+   test_tag_pixels();
+   test_tag_pose();
    test_outline();
    test_compose();
    test_lazy_follow();

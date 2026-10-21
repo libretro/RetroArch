@@ -45,6 +45,8 @@ bool openxr_session_ended(openxr_session_t *session)
 { (void)session; return false; }
 XrSwapchain openxr_frame_cursor(const openxr_frame_t *frame)
 { (void)frame; return test_frame ? (XrSwapchain)(uintptr_t)1 : XR_NULL_HANDLE; }
+unsigned openxr_frame_cursor_w(const openxr_frame_t *frame)
+{ (void)frame; return VIDEO_XR_CURSOR_W; }
 void openxr_frame_set_input_hooks(const openxr_input_hooks_t *hooks)
 { (void)hooks; }
 XrTime openxr_frame_predicted_time(openxr_frame_t *frame)
@@ -127,6 +129,9 @@ float video_xr_cursor(const video_xr_quad_t *q, float u, float v,
 void video_xr_beam(const video_xr_vec3_t *o, const video_xr_vec3_t *d,
       float len, const video_xr_vec3_t *eye, video_xr_pose_t *pose)
 { (void)o; (void)d; (void)len; (void)eye; memset(pose, 0, sizeof(*pose)); }
+void video_xr_tag(const video_xr_vec3_t *hand, const video_xr_vec3_t *eye,
+      video_xr_pose_t *pose)
+{ (void)hand; (void)eye; memset(pose, 0, sizeof(*pose)); }
 /* What edit mode reaches, never run here. */
 void openxr_frame_get_quads(openxr_frame_t *f, video_xr_quad_set_t *out)
 { (void)f; memset(out, 0, sizeof(*out)); }

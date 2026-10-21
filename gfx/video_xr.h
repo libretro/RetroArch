@@ -423,7 +423,10 @@ void video_xr_place_window(const video_xr_params_t *p, bool menu,
  * neighbour; the menu's faint and bright handle bars,
  * VIDEO_XR_HANDLE_COLS by VIDEO_XR_HANDLE_ROWS, light inside a dark
  * band; the beam's strips to the dot and into nothing (miss 0 and 1),
- * VIDEO_XR_BEAM_LEN long from the hand along x. */
+ * VIDEO_XR_BEAM_LEN long from the hand along x; edit mode's tags, one
+ * for each item it can choose (0, the laser; a slot plus one, a screen
+ * or the menu), VIDEO_XR_TAG_COLS by VIDEO_XR_TAG_ROWS, written by
+ * video_xr_tag_pixels. */
 #define VIDEO_XR_CURSOR_DIM     32
 #define VIDEO_XR_OUTLINE_DIM    256
 #define VIDEO_XR_OUTLINE_BAND   2
@@ -433,17 +436,28 @@ void video_xr_place_window(const video_xr_params_t *p, bool menu,
 #define VIDEO_XR_HANDLE_ROWS    8
 #define VIDEO_XR_BEAM_LEN       128
 #define VIDEO_XR_BEAM_ROWS      4
+#define VIDEO_XR_TAGS           (VIDEO_XR_MAX_SLOTS + 1)
+#define VIDEO_XR_TAG_COLS       128
+#define VIDEO_XR_TAG_ROWS \
+   (VIDEO_XR_TAG_TEXT_ROWS + 2 * VIDEO_XR_TAG_INSET)
 #define VIDEO_XR_OUTLINE_X(lit) \
    (VIDEO_XR_CURSOR_DIM + 1 + (lit) * (VIDEO_XR_OUTLINE_DIM + 1))
 #define VIDEO_XR_HANDLE_X(lit) \
    (VIDEO_XR_OUTLINE_X(2) + (lit) * (VIDEO_XR_HANDLE_COLS + 1))
 #define VIDEO_XR_BEAM_X(miss) \
    (VIDEO_XR_HANDLE_X(2) + (miss) * (VIDEO_XR_BEAM_LEN + 1))
-#define VIDEO_XR_CURSOR_W       (VIDEO_XR_BEAM_X(1) + VIDEO_XR_BEAM_LEN)
+#define VIDEO_XR_TAG_X(tag) \
+   (VIDEO_XR_BEAM_X(2) + (tag) * (VIDEO_XR_TAG_COLS + 1))
+#define VIDEO_XR_CURSOR_W \
+   (VIDEO_XR_TAG_X(VIDEO_XR_TAGS - 1) + VIDEO_XR_TAG_COLS)
+/* The image without the tags, for a runtime whose swapchains are
+ * narrower than VIDEO_XR_CURSOR_W. */
+#define VIDEO_XR_CURSOR_UNTAGGED_W (VIDEO_XR_TAG_X(0) - 1)
 #define VIDEO_XR_CURSOR_H       VIDEO_XR_OUTLINE_DIM
 #define VIDEO_XR_CURSOR_Y       ((VIDEO_XR_CURSOR_H - VIDEO_XR_CURSOR_DIM) / 2)
 #define VIDEO_XR_HANDLE_Y       ((VIDEO_XR_CURSOR_H - VIDEO_XR_HANDLE_ROWS) / 2)
 #define VIDEO_XR_BEAM_Y         ((VIDEO_XR_CURSOR_H - VIDEO_XR_BEAM_ROWS) / 2)
+#define VIDEO_XR_TAG_Y          ((VIDEO_XR_CURSOR_H - VIDEO_XR_TAG_ROWS) / 2)
 /* The beam's strips: white at this level, fading in over their first
  * FADE_IN texels; the one into nothing out over its last FADE_OUT. */
 #define VIDEO_XR_BEAM_LEVEL     160
@@ -456,6 +470,23 @@ void video_xr_place_window(const video_xr_params_t *p, bool menu,
  * VIDEO_XR_OUTLINE_FAINT alpha; white beam strips. px holds
  * VIDEO_XR_CURSOR_W by VIDEO_XR_CURSOR_H times four bytes. */
 void video_xr_cursor_pixels(uint8_t *px);
+
+/* A tag's words: light over a dark halo this many texels wide, kept
+ * this far inside its cell, at this level and alpha; drawn at this
+ * font size, in rows for a line half again as tall (Noto Sans's is
+ * 1.44 times its size). */
+#define VIDEO_XR_TAG_HALO   2
+#define VIDEO_XR_TAG_INSET  (VIDEO_XR_TAG_HALO + 1)
+#define VIDEO_XR_TAG_FAINT  160
+#define VIDEO_XR_TAG_FONT   16
+#define VIDEO_XR_TAG_TEXT_ROWS (VIDEO_XR_TAG_FONT * 3 / 2)
+
+/* Tag tag's cell of the laser's image from cov, the cell's text as
+ * coverage (VIDEO_XR_TAG_COLS by VIDEO_XR_TAG_ROWS, 0 to 255): light
+ * text over its dark halo; bottom_up writes the rows last first, for
+ * an image whose rows run bottom up, as GL's. */
+void video_xr_tag_pixels(uint8_t *px, unsigned tag, const uint8_t *cov,
+      bool bottom_up);
 
 /* The laser's dot: this wide per metre along the ray, never narrower
  * than VIDEO_XR_CURSOR_MIN, just in front of the quad it is on. */
@@ -518,6 +549,16 @@ float video_xr_cursor(const video_xr_quad_t *q, float u, float v,
  * towards eye. */
 void video_xr_beam(const video_xr_vec3_t *o, const video_xr_vec3_t *d,
       float len, const video_xr_vec3_t *eye, video_xr_pose_t *pose);
+
+/* Edit mode's tag: this tall, as wide as its cell's shape, this far
+ * above the hand's aim. */
+#define VIDEO_XR_TAG_HEIGHT 0.02f
+#define VIDEO_XR_TAG_LIFT   0.05f
+
+/* The tag over a hand at hand: its pose, its face towards eye and its
+ * x level; with eye straight above or below, any level x. */
+void video_xr_tag(const video_xr_vec3_t *hand, const video_xr_vec3_t *eye,
+      video_xr_pose_t *pose);
 
 /* Edit mode's outline round q: q, grown so the rim's inner edge, with
  * the half texel filtering spreads it by, is VIDEO_XR_OUTLINE_GAP

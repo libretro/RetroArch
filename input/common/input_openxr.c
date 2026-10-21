@@ -187,8 +187,8 @@ static const input_openxr_action_def_t input_openxr_actions[IXA_COUNT] = {
    { INPUT_OPENXR_SET_EDIT,     "reset",       "Reset",          XR_ACTION_TYPE_BOOLEAN_INPUT,    true  },
    { INPUT_OPENXR_SET_EDIT,     "menu",        "RetroArch Menu", XR_ACTION_TYPE_BOOLEAN_INPUT,    false },
    { INPUT_OPENXR_SET_EDIT,     "edit_screens", "Edit Screens",  XR_ACTION_TYPE_BOOLEAN_INPUT,    false },
-   { INPUT_OPENXR_SET_EDIT,     "select_next", "Select Next",    XR_ACTION_TYPE_BOOLEAN_INPUT,    false },
-   { INPUT_OPENXR_SET_EDIT,     "select_previous", "Select Previous", XR_ACTION_TYPE_BOOLEAN_INPUT, false }
+   { INPUT_OPENXR_SET_EDIT,     "select_next", "Select Next",    XR_ACTION_TYPE_BOOLEAN_INPUT,    true  },
+   { INPUT_OPENXR_SET_EDIT,     "select_previous", "Select Previous", XR_ACTION_TYPE_BOOLEAN_INPUT, true }
 };
 
 static const char *const input_openxr_set_names[INPUT_OPENXR_SETS] = {
@@ -544,12 +544,13 @@ typedef struct input_openxr
    uint16_t last_buttons[INPUT_OPENXR_PADS];
    unsigned last_sticks[INPUT_OPENXR_PADS];
 
-   /* XR thread: the dots, the beams, edit mode's outlines and the
-    * menu's handle, and Edit Smoothing's filters and the aims they
+   /* XR thread: the dots, the beams, edit mode's outlines, the menu's
+    * handle and the tag, and Edit Smoothing's filters and the aims they
     * published. */
    XrCompositionLayerQuad cursors[INPUT_OPENXR_HANDS];
    XrCompositionLayerQuad beams[INPUT_OPENXR_HANDS];
    XrCompositionLayerQuad outlines[VIDEO_XR_MAX_SLOTS + 1];
+   XrCompositionLayerQuad tag;
    input_openxr_smooth_t smooth[INPUT_OPENXR_HANDS];
    openxr_aims_t aims;
 } input_openxr_t;
@@ -584,6 +585,7 @@ typedef struct input_openxr_edit
    unsigned unbound;  /* polls in a row with its grab and menu unbound */
    int chosen;        /* the item Select Next chose: a slot, -1 none */
    unsigned stuck;    /* hands whose laser has the handle stuck, bits */
+   unsigned tag;      /* the hand that pressed Select last, for the tag */
    bool on;
    bool paused;       /* edit mode paused the content */
    bool changed;      /* it wrote a setting */
@@ -1700,6 +1702,40 @@ static const XrCompositionLayerBaseHeader *input_openxr_beam_layer(
    return (const XrCompositionLayerBaseHeader*)l;
 }
 
+/* Edit mode's tag over the hand at o, facing eye: tag's cell, the
+ * chosen item's words. */
+static const XrCompositionLayerBaseHeader *input_openxr_tag_layer(
+      XrCompositionLayerQuad *l, const video_xr_vec3_t *o,
+      const video_xr_vec3_t *eye, unsigned tag, XrSpace space,
+      XrSwapchain cursor)
+{
+   video_xr_pose_t pose;
+   video_xr_tag(o, eye, &pose);
+   l->type                             = XR_TYPE_COMPOSITION_LAYER_QUAD;
+   l->next                             = NULL;
+   l->subImage.imageArrayIndex         = 0;
+   l->layerFlags                       =
+      XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT;
+   l->space                            = space;
+   l->eyeVisibility                    = XR_EYE_VISIBILITY_BOTH;
+   l->subImage.swapchain               = cursor;
+   l->subImage.imageRect.offset.x      = VIDEO_XR_TAG_X(tag);
+   l->subImage.imageRect.offset.y      = VIDEO_XR_TAG_Y;
+   l->subImage.imageRect.extent.width  = VIDEO_XR_TAG_COLS;
+   l->subImage.imageRect.extent.height = VIDEO_XR_TAG_ROWS;
+   l->pose.orientation.x               = pose.orientation.x;
+   l->pose.orientation.y               = pose.orientation.y;
+   l->pose.orientation.z               = pose.orientation.z;
+   l->pose.orientation.w               = pose.orientation.w;
+   l->pose.position.x                  = pose.position.x;
+   l->pose.position.y                  = pose.position.y;
+   l->pose.position.z                  = pose.position.z;
+   l->size.width                       = VIDEO_XR_TAG_HEIGHT
+      * VIDEO_XR_TAG_COLS / VIDEO_XR_TAG_ROWS;
+   l->size.height                      = VIDEO_XR_TAG_HEIGHT;
+   return (const XrCompositionLayerBaseHeader*)l;
+}
+
 /* Edit mode's bright items, from the slot each hand's dot is on (-1:
  * none): every held item; with nothing chosen, those pointed at; else
  * the chosen item, and what a hand points at while the other holds the
@@ -1731,8 +1767,10 @@ static unsigned input_openxr_edit_lit(const openxr_grabs_t *g,
  * main thread says), from its own locate at the frame's display time;
  * in edit mode an outline round every item first, in the layers the
  * dots do not keep, the screens' to go under the screens so a flush
- * neighbour covers them; then, as Laser Beam says, each tracked hand's
- * beam facing the head, in what the outlines leave. */
+ * neighbour covers them; then in edit mode a tag over the hand that
+ * last chose, naming the chosen item, in what the outlines leave; then,
+ * as Laser Beam says, each tracked hand's beam facing the head, in what
+ * is left; tag and beams only with something live to point at. */
 static unsigned input_openxr_frame_layers(void *user, XrTime time,
       const video_xr_quad_set_t *set, XrSpace space,
       const XrCompositionLayerBaseHeader **layers, unsigned cap,
@@ -1747,6 +1785,9 @@ static unsigned input_openxr_frame_layers(void *user, XrTime time,
    float reach[INPUT_OPENXR_HANDS];
    bool hit[INPUT_OPENXR_HANDS];
    int pointed[INPUT_OPENXR_HANDS];
+   int ray_of[INPUT_OPENXR_HANDS];
+   bool live, tagged, beaming;
+   const openxr_grabs_t *g;
    unsigned lit;
    unsigned n         = 0;
    unsigned dots      = 0;
@@ -1768,7 +1809,10 @@ static unsigned input_openxr_frame_layers(void *user, XrTime time,
          || !(cursor = openxr_frame_cursor(st->frame)))
       return 0;
    for (h = 0; h < INPUT_OPENXR_HANDS; h++)
+   {
       pointed[h] = -1;
+      ray_of[h]  = -1;
+   }
    for (h = 0; h < INPUT_OPENXR_HANDS && dots < cap; h++)
    {
       int q;
@@ -1787,6 +1831,7 @@ static unsigned input_openxr_frame_layers(void *user, XrTime time,
                &d[rays], &u, &v, &t);
       hit[rays]   = q >= 0;
       reach[rays] = (q >= 0) ? t : VIDEO_XR_BEAM_REACH;
+      ray_of[h]   = (int)rays;
       rays++;
       if (q < 0)
          continue;
@@ -1824,16 +1869,33 @@ static unsigned input_openxr_frame_layers(void *user, XrTime time,
       n      = input_openxr_outlines(st, set, space, cursor, lit, true,
             layers, n, cap - OPENXR_KEPT_EXTRA_LAYERS);
    }
-   if (     rays && n + OPENXR_KEPT_EXTRA_LAYERS < cap
-         && (beam == VIDEO_OPENXR_LASER_BEAM_ALWAYS
-            || (beam == VIDEO_OPENXR_LASER_BEAM_EDIT
-               && laser == VIDEO_XR_LIVE_EDIT))
-         && input_openxr_any_live(set, (unsigned)laser, menu_open)
+   /* The tag in what the outlines leave, the beams in what it leaves;
+    * drawn beams first, so the tag is over them. */
+   g       = &st->frame->grabs;
+   live    = input_openxr_any_live(set, (unsigned)laser, menu_open);
+   tagged  = live && laser == VIDEO_XR_LIVE_EDIT
+      && g->tag < INPUT_OPENXR_HANDS && ray_of[g->tag] >= 0
+      && n + OPENXR_KEPT_EXTRA_LAYERS < cap
+      && openxr_frame_cursor_w(st->frame) == VIDEO_XR_CURSOR_W;
+   beaming = live && rays
+      && n + (tagged ? 1u : 0u) + OPENXR_KEPT_EXTRA_LAYERS < cap
+      && (beam == VIDEO_OPENXR_LASER_BEAM_ALWAYS
+         || (beam == VIDEO_OPENXR_LASER_BEAM_EDIT
+            && laser == VIDEO_XR_LIVE_EDIT));
+   if (     (tagged || beaming)
          && input_openxr_locate(st, st->frame->session->view_space, space,
             time, &head))
-      for (h = 0; h < rays && n + OPENXR_KEPT_EXTRA_LAYERS < cap; h++)
-         layers[n++] = input_openxr_beam_layer(&st->beams[h], &o[h], &d[h],
-               reach[h], hit[h], &head.position, space, cursor);
+   {
+      if (beaming)
+         for (h = 0; h < rays && n + (tagged ? 1u : 0u)
+               + OPENXR_KEPT_EXTRA_LAYERS < cap; h++)
+            layers[n++] = input_openxr_beam_layer(&st->beams[h], &o[h],
+                  &d[h], reach[h], hit[h], &head.position, space, cursor);
+      if (tagged)
+         layers[n++] = input_openxr_tag_layer(&st->tag, &o[ray_of[g->tag]],
+               &head.position, (g->chosen < VIDEO_XR_TAGS) ? g->chosen : 0,
+               space, cursor);
+   }
    for (h = 0; h < dots; h++)
       layers[n++] = (const XrCompositionLayerBaseHeader*)&st->cursors[h];
    return n;
@@ -2422,6 +2484,7 @@ static void input_openxr_edit_publish(input_openxr_t *st,
    e->grabs.start[1] = e->hand[1].start;
    e->grabs.chosen   = (unsigned)(e->chosen + 1);
    e->grabs.stuck    = e->stuck;
+   e->grabs.tag      = e->tag;
    e->grabs.snap     = e->snap;
    openxr_frame_publish_grabs(st->frame, &e->grabs);
 }
@@ -2476,6 +2539,7 @@ static void input_openxr_edit_start(input_openxr_edit_t *e, bool pause,
    e->last    = 0;
    e->chosen  = -1;
    e->stuck   = 0;
+   e->tag     = 0;
    /* Held as it starts (the menu's OK on A, which is Reset): no press
     * until let go. */
    for (h = 0; h < INPUT_OPENXR_HANDS; h++)
@@ -2508,6 +2572,7 @@ static void input_openxr_edit_stop(input_openxr_edit_t *e)
          ? MSG_OPENXR_EDIT_UNSAVED : MSG_OPENXR_EDIT_OFF);
    e->chosen = -1;
    e->stuck  = 0;
+   e->tag    = 0;
    input_openxr_edit_let_go_all(e);
    e->on = false;
    if (e->paused && (runloop_get_flags() & RUNLOOP_FLAG_PAUSED))
@@ -2578,10 +2643,17 @@ static void input_openxr_edit_poll(input_openxr_t *st,
    if (     e->chosen >= 0
          && !input_openxr_edit_shown(&st->quads, (unsigned)e->chosen))
       e->chosen = -1;
+   /* The tag goes to the hand that pressed, the left if both did. */
    if (next && !e->next)
+   {
       e->chosen = input_openxr_edit_cycle(&st->quads, e->chosen, 1);
+      e->tag    = input_openxr_bool(st, IXA_E_NEXT, st->hands[0]) ? 0 : 1;
+   }
    if (prev && !e->prev)
+   {
       e->chosen = input_openxr_edit_cycle(&st->quads, e->chosen, -1);
+      e->tag    = input_openxr_bool(st, IXA_E_PREV, st->hands[0]) ? 0 : 1;
+   }
    e->next = next;
    e->prev = prev;
 

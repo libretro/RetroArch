@@ -176,6 +176,9 @@ Next** and **Select Previous** choose an item, below.
   after letting go, until stepped back to Laser or edit mode ends; a
   chosen screen that is hidden or goes away goes back to Laser. This
   takes a screen hidden behind another.
+- A faint tag just above the hand that last pressed Select Next or
+  Select Previous (the left hand at first) names the chosen item:
+  Laser, Screen 1, Screen 2 and so on, or Menu.
 - A head-tracked core's projection cannot be grabbed, nor can the whole
   frame a views core falls back to when its screens cannot be placed. In
   Follow Head a grabbed screen keeps its place in view; Lazy Follow does

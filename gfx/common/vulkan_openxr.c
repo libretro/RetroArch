@@ -632,7 +632,8 @@ static bool vulkan_openxr_cursor_fill(void *user, uint32_t index,
       failed = "staging memory";
       goto end;
    }
-   video_xr_cursor_pixels((uint8_t*)map);
+   openxr_frame_cursor_pixels((uint8_t*)map,
+         openxr_frame_cursor_w(&dot->xr->frame), false);
    vkUnmapMemory(device, memory);
 
    pi.sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -690,7 +691,8 @@ static bool vulkan_openxr_cursor_fill(void *user, uint32_t index,
    region.imageOffset.z                   = 0;
    region.imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
    region.imageSubresource.layerCount     = 1;
-   region.imageExtent.width               = VIDEO_XR_CURSOR_W;
+   region.imageExtent.width               =
+      openxr_frame_cursor_w(&dot->xr->frame);
    region.imageExtent.height              = VIDEO_XR_CURSOR_H;
    region.imageExtent.depth               = 1;
    vkCmdCopyBufferToImage(cmd, buffer, dot->images[index][0],
@@ -760,7 +762,8 @@ static void vulkan_openxr_cursor_create(vulkan_openxr_t *xr,
    li.xr            = xr;
    li.images        = dot.images;
    xr->frame.cursor = openxr_swapchains_create_filled(&xr->sc, formats, 4,
-         VIDEO_SCALE_PACK(VIDEO_XR_CURSOR_W, VIDEO_XR_CURSOR_H),
+         VIDEO_SCALE_PACK(openxr_frame_cursor_w(&xr->frame),
+            VIDEO_XR_CURSOR_H),
          vulkan_openxr_list_images, &li, vulkan_openxr_cursor_fill, &dot,
          &step, &code);
    if (xr->frame.cursor)

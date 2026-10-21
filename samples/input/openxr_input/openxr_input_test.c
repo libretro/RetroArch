@@ -752,6 +752,12 @@ XrSwapchain openxr_frame_cursor(const openxr_frame_t *f)
 {
    return t_cursor ? (XrSwapchain)(uintptr_t)0x51 : XR_NULL_HANDLE;
 }
+/* Its width: with the tags, unless a case narrows it. */
+static unsigned t_cursor_w = VIDEO_XR_CURSOR_W;
+unsigned openxr_frame_cursor_w(const openxr_frame_t *f)
+{
+   return t_cursor_w;
+}
 /* What the hands hold, as last given to the frame loop. */
 static openxr_grabs_t t_grabs;
 static unsigned       t_grabs_published;
@@ -3583,19 +3589,25 @@ static void test_edit_beams(void)
    n = t_hooks.frame_layers(t_hooks.user, t_time, &t_quads, local, layers,
          OPENXR_KEPT_EXTRA_LAYERS + 2, &t_under);
    CHECK(n == 3, "with room for two outlines: %u layers", n);
-   /* Two hands on screen 1, room for one beam: the first hand's. */
+   /* Two hands on screen 1, one more layer's room: the left's tag. */
    t_aim_tracked[1]    = true;
    t_aim[1].position.x = -0.2f;
    t_aim[1].position.y = -0.3f;
    n = t_hooks.frame_layers(t_hooks.user, t_time, &t_quads, local, layers,
          OPENXR_KEPT_EXTRA_LAYERS + 4, &t_under);
    q = (const XrCompositionLayerQuad*)layers[3];
-   CHECK(n == 6 && q->subImage.imageRect.offset.x == VIDEO_XR_BEAM_X(0)
-         && t_near(q->pose.position.x, -0.2f),
-         "two hands, one beam's room: %u layers", n);
+   CHECK(n == 6 && q->subImage.imageRect.offset.x == VIDEO_XR_TAG_X(0),
+         "two hands, one more layer's room: the tag, beams dropped first: "
+         "%u layers", n);
+   n = t_hooks.frame_layers(t_hooks.user, t_time, &t_quads, local, layers,
+         OPENXR_KEPT_EXTRA_LAYERS + 5, &t_under);
+   q = (const XrCompositionLayerQuad*)layers[4];
+   CHECK(n == 7 && q->subImage.imageRect.offset.x == VIDEO_XR_TAG_X(0),
+         "two hands, two more layers' room: %u layers, want 3 + 1 + 1 + 2",
+         n);
    n = t_hooks.frame_layers(t_hooks.user, t_time, &t_quads, local, layers,
          OPENXR_MAX_EXTRA_LAYERS, &t_under);
-   CHECK(n == 7, "two hands with room: %u layers, want 3 + 2 + 2", n);
+   CHECK(n == 8, "two hands with room: %u layers, want 3 + 2 + 1 + 2", n);
    t_aim_tracked[1] = false;
 
    /* No head: no beam. */
@@ -4001,6 +4013,148 @@ static void test_edit_select_lit(void)
          t_lit(layers, n));
    memset(&t_xr_frame.grabs, 0, sizeof(t_xr_frame.grabs));
    t_cursor = false;
+   t_edit_end();
+}
+
+/* The tag among layers, and where: the one showing a tag cell. */
+static const XrCompositionLayerQuad *t_tag_layer(
+      const XrCompositionLayerBaseHeader **layers, unsigned n,
+      unsigned *at)
+{
+   unsigned i;
+   for (i = 0; i < n; i++)
+   {
+      const XrCompositionLayerQuad *q =
+         (const XrCompositionLayerQuad*)layers[i];
+      if (     q->subImage.imageRect.extent.width == VIDEO_XR_TAG_COLS
+            && q->subImage.imageRect.extent.height == VIDEO_XR_TAG_ROWS)
+      {
+         *at = i;
+         return q;
+      }
+   }
+   return NULL;
+}
+
+/* Edit mode's tag: over the hand that last pressed Select Next or
+ * Previous, the left at each start, showing the chosen item's cell; after
+ * the outlines and beams, before the dots; only while that hand and
+ * the head are tracked. */
+static void test_edit_tag(void)
+{
+   unsigned n, at, k, beams;
+   video_xr_quad_set_t shown;
+   const XrCompositionLayerQuad *q;
+   const XrCompositionLayerBaseHeader *layers[OPENXR_MAX_EXTRA_LAYERS];
+   XrSpace local = XR_NULL_HANDLE;
+   t_edit_start();
+   local               = t_xr_session.local_space;
+   t_cursor            = true;
+   t_head_tracked      = true;
+   shown               = t_quads;
+   t_aim[1].position.x = -0.2f;
+   t_aim[1].position.y = -0.3f;
+   t_edit_poll();
+   CHECK(t_grabs.tag == 0, "the tag starts on hand %u", t_grabs.tag);
+   t_xr_frame.grabs = t_grabs;
+   n = t_hooks.frame_layers(t_hooks.user, t_time, &shown, local, layers,
+         OPENXR_MAX_EXTRA_LAYERS, &t_under);
+   q = t_tag_layer(layers, n, &at);
+   CHECK(q && q->subImage.imageRect.offset.x == VIDEO_XR_TAG_X(0)
+         && q->subImage.imageRect.offset.y == VIDEO_XR_TAG_Y
+         && q->subImage.swapchain == (XrSwapchain)(uintptr_t)0x51
+         && t_near(q->pose.position.x, -0.2f)
+         && t_near(q->pose.position.y, -0.3f + VIDEO_XR_TAG_LIFT)
+         && t_near(q->size.height, VIDEO_XR_TAG_HEIGHT)
+         && t_near(q->size.width, VIDEO_XR_TAG_HEIGHT * VIDEO_XR_TAG_COLS
+            / VIDEO_XR_TAG_ROWS)
+         && at == n - 3,
+         "the laser's tag: layer %u of %u", q ? at : 99u, n);
+   /* The right hand's Select Next: Screen 1's, over the right. */
+   t_hold("edit/select_next", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   t_let_go();
+   t_edit_poll();
+   CHECK(t_grabs.tag == 1 && t_grabs.chosen == 1, "tag %u chosen %u",
+         t_grabs.tag, t_grabs.chosen);
+   t_xr_frame.grabs = t_grabs;
+   n = t_hooks.frame_layers(t_hooks.user, t_time, &shown, local, layers,
+         OPENXR_MAX_EXTRA_LAYERS, &t_under);
+   q = t_tag_layer(layers, n, &at);
+   CHECK(q && q->subImage.imageRect.offset.x == VIDEO_XR_TAG_X(1)
+         && t_near(q->pose.position.x, 0.0f)
+         && t_near(q->pose.position.y, VIDEO_XR_TAG_LIFT),
+         "screen 1's tag over the right hand");
+   /* The right hand lost, or the head: no tag. */
+   t_aim_tracked[2] = false;
+   n = t_hooks.frame_layers(t_hooks.user, t_time, &shown, local, layers,
+         OPENXR_MAX_EXTRA_LAYERS, &t_under);
+   CHECK(!t_tag_layer(layers, n, &at), "a tag over an untracked hand");
+   t_aim_tracked[2] = true;
+   t_head_tracked   = false;
+   n = t_hooks.frame_layers(t_hooks.user, t_time, &shown, local, layers,
+         OPENXR_MAX_EXTRA_LAYERS, &t_under);
+   CHECK(!t_tag_layer(layers, n, &at), "a tag with the head lost");
+   t_head_tracked = true;
+   /* Nothing to edit, as when the screens go at the end: no tag. */
+   memset(&shown, 0, sizeof(shown));
+   n = t_hooks.frame_layers(t_hooks.user, t_time, &shown, local, layers,
+         OPENXR_MAX_EXTRA_LAYERS, &t_under);
+   CHECK(!t_tag_layer(layers, n, &at), "a tag with nothing to edit");
+   shown = t_quads;
+   /* An image too narrow for the tags: no tag; the beams and dots. */
+   n          = t_hooks.frame_layers(t_hooks.user, t_time, &shown, local,
+         layers, OPENXR_MAX_EXTRA_LAYERS, &t_under);
+   t_cursor_w = VIDEO_XR_TAG_X(0) - 1;
+   at         = t_hooks.frame_layers(t_hooks.user, t_time, &shown, local,
+         layers, OPENXR_MAX_EXTRA_LAYERS, &t_under);
+   t_cursor_w = VIDEO_XR_CURSOR_W;
+   for (k = 0, beams = 0; k < at; k++)
+   {
+      int32_t x = ((const XrCompositionLayerQuad*)layers[k])
+         ->subImage.imageRect.offset.x;
+      beams += x == VIDEO_XR_BEAM_X(0) || x == VIDEO_XR_BEAM_X(1);
+   }
+   CHECK(     at == n - 1 && !t_tag_layer(layers, at, &k) && beams
+         && ((const XrCompositionLayerQuad*)layers[at - 1])
+            ->subImage.imageRect.offset.x == 0,
+         "a narrow image: %u layers of %u, %u beams, a tag or no dot", at,
+         n, beams);
+   /* The left's Select Previous: back to the laser, over the left. */
+   t_hold("edit/select_previous", 1, 1.0f, 0.0f);
+   t_edit_poll();
+   t_let_go();
+   t_edit_poll();
+   CHECK(t_grabs.tag == 0 && t_grabs.chosen == 0, "tag %u chosen %u",
+         t_grabs.tag, t_grabs.chosen);
+   /* Both hands at once: the left's. */
+   t_hold("edit/select_next", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   t_let_go();
+   t_edit_poll();
+   t_hold("edit/select_previous", 1, 1.0f, 0.0f);
+   t_hold("edit/select_previous", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   t_let_go();
+   t_edit_poll();
+   CHECK(t_grabs.tag == 0 && t_grabs.chosen == 0,
+         "both hands: tag %u chosen %u", t_grabs.tag, t_grabs.chosen);
+   /* The right's, then edit mode again: the left's from the first poll,
+    * whose frames read what the stop published. */
+   t_hold("edit/select_next", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   t_let_go();
+   t_edit_poll();
+   input_openxr_edit_toggle();
+   t_edit_on(false);
+   CHECK(t_editing && t_grabs.tag == 0,
+         "edit mode again: the tag on hand %u", t_grabs.tag);
+   t_edit_poll();
+   CHECK(t_grabs.tag == 0, "its first poll: the tag on hand %u",
+         t_grabs.tag);
+   memset(&t_xr_frame.grabs, 0, sizeof(t_xr_frame.grabs));
+   t_cursor       = false;
+   t_head_tracked = false;
    t_edit_end();
 }
 
@@ -4525,6 +4679,7 @@ int main(void)
    test_edit_select_grips();
    test_edit_held_lit();
    test_edit_select_lit();
+   test_edit_tag();
    test_edit_snap();
    test_edit_snap_two_hands();
    test_edit_turn_snap();

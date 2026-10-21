@@ -13,6 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -21,10 +22,14 @@
 #include <retro_atomic.h>
 #include <retro_miscellaneous.h>
 #include <retro_timers.h>
+#include <compat/strl.h>
+#include <encodings/utf.h>
 
 #include "openxr_frame.h"
 
 #include "../video_defines.h"
+#include "../font_driver.h"
+#include "../../msg_hash.h"
 
 #include "../../runloop.h"
 #include "../../verbosity.h"
@@ -1022,6 +1027,12 @@ XrSwapchain openxr_frame_cursor(const openxr_frame_t *f)
    return f->cursor;
 }
 
+unsigned openxr_frame_cursor_w(const openxr_frame_t *f)
+{
+   return (f->rt->max_width && f->rt->max_width < VIDEO_XR_CURSOR_W)
+      ? VIDEO_XR_CURSOR_UNTAGGED_W : VIDEO_XR_CURSOR_W;
+}
+
 bool openxr_frame_start(openxr_frame_t *f)
 {
    if (f->inline_host || f->thread)
@@ -1382,4 +1393,137 @@ int openxr_frame_recenters(openxr_frame_t *f)
 XrDuration openxr_frame_period(openxr_frame_t *f)
 {
    return (XrDuration)retro_atomic_load_acquire_int(&f->period_ns);
+}
+
+/* A glyph's coverage from the font's atlas into a tag cell's cov at x,
+ * y, kept VIDEO_XR_TAG_INSET inside the cell. */
+static void openxr_frame_tag_glyph(const struct font_atlas *atlas,
+      const struct font_glyph *g, int x, int y, uint8_t *cov)
+{
+   unsigned gx, gy;
+   unsigned w  = VIDEO_SCALE_W(g->dims);
+   unsigned h  = VIDEO_SCALE_H(g->dims);
+   unsigned ax = VIDEO_SCALE_W(g->atlas_pos);
+   unsigned ay = VIDEO_SCALE_H(g->atlas_pos);
+   if (!atlas || !atlas->buffer || atlas->format != FONT_ATLAS_FORMAT_A8)
+      return;
+   for (gy = 0; gy < h && ay + gy < atlas->height; gy++)
+      for (gx = 0; gx < w && ax + gx < atlas->width; gx++)
+      {
+         uint8_t a;
+         int cx = x + (int)gx;
+         int cy = y + (int)gy;
+         if (     cx < VIDEO_XR_TAG_INSET || cy < VIDEO_XR_TAG_INSET
+               || cx >= VIDEO_XR_TAG_COLS - VIDEO_XR_TAG_INSET
+               || cy >= VIDEO_XR_TAG_ROWS - VIDEO_XR_TAG_INSET)
+            continue;
+         a = atlas->buffer[(ay + gy) * atlas->width + ax + gx];
+         if (a > cov[cy * VIDEO_XR_TAG_COLS + cx])
+            cov[cy * VIDEO_XR_TAG_COLS + cx] = a;
+      }
+}
+
+/* A line of font's, size high, in whole rows above and below its
+ * baseline: the font's own, or, where it gives none, a 1.25 em line
+ * as a common font's. */
+static void openxr_frame_tag_metrics(const font_renderer_driver_t *drv,
+      void *font, unsigned size, int *asc, int *desc)
+{
+   struct font_line_metrics *m = NULL;
+   *asc                        = (int)size;
+   *desc                       = (int)size / 4;
+   if (drv->get_line_metrics)
+      drv->get_line_metrics(font, &m);
+   if (m)
+   {
+      *asc  = (int)ceil(m->ascender);
+      *desc = (int)ceil(m->descender);
+   }
+}
+
+/* text in one line, centred in a tag cell's coverage cov, the line
+ * (asc rows over its baseline, desc under) in the cell's text rows; a
+ * line too tall loses the top of its ascender, never a descender. */
+static void openxr_frame_tag_line(const font_renderer_driver_t *drv,
+      void *font, int asc, int desc, const char *text, uint8_t *cov)
+{
+   const char *msg                   = text;
+   size_t msg_len                    = strlen(text);
+   void *font_data                   = font;
+   const struct font_glyph *(*get_glyph)(void*, uint32_t) =
+      drv->get_glyph;
+   const struct font_glyph *glyph_q  = drv->get_glyph(font, '?');
+   int line_x                        = 0;
+   int spare                         = VIDEO_XR_TAG_TEXT_ROWS - asc - desc;
+   int base                          = VIDEO_XR_TAG_ROWS
+      - VIDEO_XR_TAG_INSET - desc - (spare > 0 ? spare / 2 : 0);
+#define FONT_LAYOUT_ALIGNED 1
+#define FONT_LAYOUT_LINE(line, width, count, bytes) \
+   (void)(line); \
+   line_x = ((int)VIDEO_XR_TAG_COLS - (int)(width)) / 2;
+#define FONT_LAYOUT_GLYPH(glyph, pen_x, pen_y) \
+   openxr_frame_tag_glyph(drv->get_atlas(font), (glyph), \
+         line_x + (pen_x) + (glyph)->draw_offset_x, \
+         base - (pen_y) + (glyph)->draw_offset_y, cov);
+#include "../font_layout.h"
+}
+
+/* Tag tag's words: the laser's, a screen's by number, the menu's. */
+static void openxr_frame_tag_text(unsigned tag, char *s, size_t len)
+{
+   if (!tag)
+      strlcpy(s, msg_hash_to_str(MSG_OPENXR_EDIT_TAG_LASER), len);
+   else if (tag == VIDEO_XR_MENU_SLOT + 1)
+      strlcpy(s, msg_hash_to_str(MSG_OPENXR_EDIT_TAG_MENU), len);
+   else
+      snprintf(s, len, msg_hash_to_str(MSG_OPENXR_EDIT_TAG_SCREEN), tag);
+}
+
+void openxr_frame_cursor_pixels(uint8_t *px, unsigned w, bool bottom_up)
+{
+   unsigned i;
+   int asc, desc;
+   uint8_t *cov                      = NULL;
+   void *font                        = NULL;
+   const font_renderer_driver_t *drv = NULL;
+   unsigned size                     = VIDEO_XR_TAG_FONT;
+   video_xr_cursor_pixels(px);
+   if (w < VIDEO_XR_CURSOR_W)
+   {
+      for (i = 1; i < VIDEO_XR_CURSOR_H; i++)
+         memmove(px + (size_t)i * w * 4,
+               px + (size_t)i * VIDEO_XR_CURSOR_W * 4, (size_t)w * 4);
+      return;
+   }
+   if (!font_renderer_create_default(&drv, &font, NULL, size,
+            FONT_ATLAS_FORMAT_A8))
+      return;
+   openxr_frame_tag_metrics(drv, font, size, &asc, &desc);
+   /* A font whose line is taller than the rows is drawn smaller, so no
+    * descender is cut. */
+   if (asc + desc > VIDEO_XR_TAG_TEXT_ROWS)
+   {
+      if (drv->free)
+         drv->free(font);
+      font = NULL;
+      size = VIDEO_XR_TAG_FONT * VIDEO_XR_TAG_TEXT_ROWS / (asc + desc);
+      if (!size || !font_renderer_create_default(&drv, &font, NULL, size,
+               FONT_ATLAS_FORMAT_A8))
+         return;
+      openxr_frame_tag_metrics(drv, font, size, &asc, &desc);
+   }
+   if ((cov = (uint8_t*)malloc(VIDEO_XR_TAG_COLS * VIDEO_XR_TAG_ROWS)))
+   {
+      for (i = 0; i < VIDEO_XR_TAGS; i++)
+      {
+         char text[64];
+         openxr_frame_tag_text(i, text, sizeof(text));
+         memset(cov, 0, VIDEO_XR_TAG_COLS * VIDEO_XR_TAG_ROWS);
+         openxr_frame_tag_line(drv, font, asc, desc, text, cov);
+         video_xr_tag_pixels(px, i, cov, bottom_up);
+      }
+      free(cov);
+   }
+   if (drv->free)
+      drv->free(font);
 }

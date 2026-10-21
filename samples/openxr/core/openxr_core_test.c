@@ -45,7 +45,23 @@ void RARCH_LOG(const char *fmt, ...) { va_list ap; va_start(ap, fmt); t_append(f
 void RARCH_WARN(const char *fmt, ...) { va_list ap; va_start(ap, fmt); t_append(fmt, ap); va_end(ap); }
 void RARCH_ERR(const char *fmt, ...) { va_list ap; va_start(ap, fmt); t_append(fmt, ap); va_end(ap); }
 static int t_notified = -1;
-const char *msg_hash_to_str(enum msg_hash_enums msg) { t_notified = (int)msg; return "msg"; }
+/* The tags' words each their own, with descenders (g, Cyrillic er). */
+const char *msg_hash_to_str(enum msg_hash_enums msg)
+{
+   t_notified = (int)msg;
+   switch (msg)
+   {
+      case MSG_OPENXR_EDIT_TAG_LASER:
+         return "Lg";
+      case MSG_OPENXR_EDIT_TAG_SCREEN:
+         return "S%u";
+      case MSG_OPENXR_EDIT_TAG_MENU:
+         return "M\xd1\x80";
+      default:
+         break;
+   }
+   return "msg";
+}
 void runloop_msg_queue_push(const char *msg, size_t len, unsigned prio,
       unsigned duration, bool flush, char *title,
       enum message_queue_icon icon, enum message_queue_category category) { }
@@ -726,6 +742,224 @@ static bool t_locate_hands(void *user, XrSpace base, XrTime time,
    return true;
 }
 
+/* The cursor's tags' font: none unless a test gives one. The fake
+ * draws every glyph as a solid 6 x 10 box on its baseline, 8 apart,
+ * but g and Cyrillic er as 6 x 14, 5 rows of it below. With line
+ * metrics, its ascender and descender are these many a pixel of the
+ * size asked. It keeps the sizes asked and the codes drawn. */
+static const font_renderer_driver_t *t_font_drv;
+static uint8_t t_font_px[6 * 14];
+static struct font_atlas t_font_atlas;
+static struct font_glyph t_font_glyph;
+static struct font_glyph t_font_desc;
+static struct font_line_metrics t_font_metrics;
+static float t_font_asc, t_font_dsc;
+static unsigned t_font_sizes[4], t_font_made;
+static uint32_t t_font_code, t_font_drawn[64];
+static unsigned t_font_num_drawn;
+int font_renderer_create_default(const font_renderer_driver_t **drv,
+      void **handle, const char *font_path, unsigned font_size,
+      enum font_atlas_format fmt)
+{
+   (void)font_path; (void)fmt;
+   if (!t_font_drv)
+      return 0;
+   if (t_font_made < 4)
+      t_font_sizes[t_font_made] = font_size;
+   t_font_made++;
+   t_font_metrics.ascender  = t_font_asc * font_size;
+   t_font_metrics.descender = t_font_dsc * font_size;
+   *drv    = t_font_drv;
+   *handle = &t_font_atlas;
+   return 1;
+}
+/* Asked for once a glyph is laid out, to draw it. */
+static struct font_atlas *t_font_get_atlas(void *data)
+{
+   (void)data;
+   if (t_font_num_drawn < 64)
+      t_font_drawn[t_font_num_drawn++] = t_font_code;
+   return &t_font_atlas;
+}
+static const struct font_glyph *t_font_get_glyph(void *data, uint32_t code)
+{
+   (void)data;
+   t_font_code = code;
+   return (code == 'g' || code == 0x440) ? &t_font_desc : &t_font_glyph;
+}
+static void t_font_get_metrics(void *data,
+      struct font_line_metrics **metrics)
+{ (void)data; *metrics = &t_font_metrics; }
+static void t_font_free(void *data) { (void)data; }
+static font_renderer_driver_t t_font;
+
+static void t_font_make(void)
+{
+   memset(t_font_px, 255, sizeof(t_font_px));
+   memset(&t_font_atlas, 0, sizeof(t_font_atlas));
+   t_font_atlas.buffer = t_font_px;
+   t_font_atlas.width  = 6;
+   t_font_atlas.height = 14;
+   t_font_atlas.format = FONT_ATLAS_FORMAT_A8;
+   memset(&t_font_glyph, 0, sizeof(t_font_glyph));
+   t_font_glyph.dims          = VIDEO_SCALE_PACK(6, 10);
+   t_font_glyph.draw_offset_y = -10;
+   t_font_glyph.advance_x     = 8;
+   t_font_desc                = t_font_glyph;
+   t_font_desc.dims           = VIDEO_SCALE_PACK(6, 14);
+   t_font_desc.draw_offset_y  = -9;
+   memset(&t_font, 0, sizeof(t_font));
+   t_font.get_atlas = t_font_get_atlas;
+   t_font.get_glyph = t_font_get_glyph;
+   t_font.free      = t_font_free;
+   t_font_made      = 0;
+   t_font_num_drawn = 0;
+}
+
+/* The laser's image with edit mode's tags: none without a font; with
+ * one, each tag's words centred in its cell, light with a dark halo,
+ * the rest of the image as video_xr_cursor_pixels makes it; bottom up,
+ * each cell's rows mirrored. Before a font is made the strings are not
+ * even looked up. */
+static void test_cursor_tags(void)
+{
+   static uint8_t px[VIDEO_XR_CURSOR_W * VIDEO_XR_CURSOR_H * 4];
+   static uint8_t up[VIDEO_XR_CURSOR_W * VIDEO_XR_CURSOR_H * 4];
+   static uint8_t plain[VIDEO_XR_CURSOR_W * VIDEO_XR_CURSOR_H * 4];
+   unsigned k, x, y, light = 0, dark = 0, mirrored = 1;
+   video_xr_cursor_pixels(plain);
+   t_font_drv = NULL;
+   t_notified = 0;
+   openxr_frame_cursor_pixels(px, VIDEO_XR_CURSOR_W, false);
+   CHECK(!memcmp(px, plain, sizeof(px)) && !t_notified,
+         "no font: the image changed, or a string was asked for");
+   t_font_make();
+   t_font_drv = &t_font;
+   openxr_frame_cursor_pixels(px, VIDEO_XR_CURSOR_W, false);
+   openxr_frame_cursor_pixels(up, VIDEO_XR_CURSOR_W, true);
+   t_font_drv = NULL;
+   for (k = 0; k < VIDEO_XR_TAGS; k++)
+      for (y = 0; y < VIDEO_XR_TAG_ROWS; y++)
+         for (x = 0; x < VIDEO_XR_TAG_COLS; x++)
+         {
+            const uint8_t *p = px + (((size_t)VIDEO_XR_TAG_Y + y)
+                  * VIDEO_XR_CURSOR_W + VIDEO_XR_TAG_X(k) + x) * 4;
+            const uint8_t *q = up + (((size_t)VIDEO_XR_TAG_Y
+                     + VIDEO_XR_TAG_ROWS - 1 - y) * VIDEO_XR_CURSOR_W
+                  + VIDEO_XR_TAG_X(k) + x) * 4;
+            light += p[0] == VIDEO_XR_TAG_FAINT;
+            dark  += p[0] == 0 && p[3] == VIDEO_XR_TAG_FAINT;
+            mirrored &= !memcmp(p, q, 4);
+         }
+   CHECK(light && dark && mirrored,
+         "tags: %u light, %u dark texels, mirrored %u", light, dark,
+         mirrored);
+   for (x = 0; x < VIDEO_XR_TAG_X(0); x++)
+      for (y = 0; y < VIDEO_XR_CURSOR_H; y++)
+         if (memcmp(px + ((size_t)y * VIDEO_XR_CURSOR_W + x) * 4,
+                  plain + ((size_t)y * VIDEO_XR_CURSOR_W + x) * 4, 4))
+         {
+            CHECK(0, "the tags touched %u,%u", x, y);
+            return;
+         }
+}
+
+/* A runtime whose swapchains are narrower than the image with its
+ * tags: the image without them, VIDEO_XR_CURSOR_UNTAGGED_W wide, the
+ * rest as at full width; no font is made. */
+static void test_cursor_narrow(void)
+{
+   static uint8_t px[VIDEO_XR_CURSOR_W * VIDEO_XR_CURSOR_H * 4];
+   static uint8_t plain[VIDEO_XR_CURSOR_W * VIDEO_XR_CURSOR_H * 4];
+   const unsigned w = VIDEO_XR_CURSOR_UNTAGGED_W;
+   openxr_runtime_t rt;
+   openxr_frame_t f;
+   unsigned y, same = 1;
+   memset(&rt, 0, sizeof(rt));
+   memset(&f, 0, sizeof(f));
+   f.rt = &rt;
+   CHECK(openxr_frame_cursor_w(&f) == VIDEO_XR_CURSOR_W,
+         "no width said: %u wide", openxr_frame_cursor_w(&f));
+   rt.max_width = VIDEO_XR_CURSOR_W;
+   CHECK(openxr_frame_cursor_w(&f) == VIDEO_XR_CURSOR_W,
+         "wide enough: %u wide", openxr_frame_cursor_w(&f));
+   rt.max_width = VIDEO_XR_CURSOR_W - 1;
+   CHECK(openxr_frame_cursor_w(&f) == w && w == VIDEO_XR_BEAM_X(1)
+         + VIDEO_XR_BEAM_LEN, "too narrow: %u wide, want %u",
+         openxr_frame_cursor_w(&f), w);
+   video_xr_cursor_pixels(plain);
+   t_font_make();
+   t_font_drv = &t_font;
+   openxr_frame_cursor_pixels(px, w, false);
+   t_font_drv = NULL;
+   for (y = 0; y < VIDEO_XR_CURSOR_H; y++)
+      same &= !memcmp(px + (size_t)y * w * 4,
+            plain + (size_t)y * VIDEO_XR_CURSOR_W * 4, (size_t)w * 4);
+   CHECK(same && !t_font_made, "narrow: rows differ (%u), %u fonts made",
+         same, t_font_made);
+}
+
+/* Light texels in tag k's cell. */
+static unsigned t_tag_light(const uint8_t *px, unsigned k)
+{
+   unsigned x, y, light = 0;
+   for (y = 0; y < VIDEO_XR_TAG_ROWS; y++)
+      for (x = 0; x < VIDEO_XR_TAG_COLS; x++)
+         light += px[(((size_t)VIDEO_XR_TAG_Y + y) * VIDEO_XR_CURSOR_W
+               + VIDEO_XR_TAG_X(k) + x) * 4] == VIDEO_XR_TAG_FAINT;
+   return light;
+}
+
+/* Each cell's own words: the laser's, screens 1 to 8, the menu's; and
+ * with a font's line metrics, every row of a full line inside the
+ * halo's inset, descenders too (a 16 px Noto Sans line: 18 rows up, 5
+ * down). A font whose line is taller is drawn smaller. */
+static void test_cursor_tag_lines(void)
+{
+   static uint8_t px[VIDEO_XR_CURSOR_W * VIDEO_XR_CURSOR_H * 4];
+   static const char *words[VIDEO_XR_TAGS] = { "Lg", "S1", "S2", "S3",
+      "S4", "S5", "S6", "S7", "S8", "M\xd1\x80" };
+   uint32_t want[64];
+   unsigned k, n = 0, full = 1;
+   for (k = 0; k < VIDEO_XR_TAGS; k++)
+   {
+      want[n++] = (uint32_t)(unsigned char)words[k][0];
+      want[n++] = k ? (k < VIDEO_XR_TAGS - 1
+            ? (uint32_t)(unsigned char)words[k][1] : 0x440) : 'g';
+   }
+   t_font_make();
+   t_font.get_line_metrics = t_font_get_metrics;
+   t_font_asc              = 18.0f / 16.0f;
+   t_font_dsc              = 5.0f / 16.0f;
+   t_font_drv              = &t_font;
+   openxr_frame_cursor_pixels(px, VIDEO_XR_CURSOR_W, false);
+   CHECK(     t_font_num_drawn == n
+         && !memcmp(t_font_drawn, want, n * sizeof(*want)),
+         "the tags drew %u glyphs, not Lg S1 .. S8 Mer", t_font_num_drawn);
+   for (k = 0; k < VIDEO_XR_TAGS; k++)
+      full &= t_tag_light(px, k) == (k && k < VIDEO_XR_TAGS - 1
+            ? 2 * 6 * 10 : 6 * 10 + 6 * 14);
+   CHECK(full && t_font_made == 1 && t_font_sizes[0] == VIDEO_XR_TAG_FONT,
+         "a 23 row line: glyphs cut (laser %u, menu %u light), or %u "
+         "fonts made", t_tag_light(px, 0),
+         t_tag_light(px, VIDEO_XR_TAGS - 1), t_font_made);
+
+   /* A line half again as tall as its size, and a third. */
+   t_font_make();
+   t_font.get_line_metrics = t_font_get_metrics;
+   t_font_asc              = 1.25f;
+   t_font_dsc              = 0.5f;
+   openxr_frame_cursor_pixels(px, VIDEO_XR_CURSOR_W, false);
+   t_font_drv = NULL;
+   CHECK(     t_font_made == 2 && t_font_sizes[0] == VIDEO_XR_TAG_FONT
+         && t_font_sizes[1] == VIDEO_XR_TAG_FONT
+            * (VIDEO_XR_TAG_ROWS - 2 * VIDEO_XR_TAG_INSET)
+            / (unsigned)(1.75f * VIDEO_XR_TAG_FONT + 0.5f)
+         && t_tag_light(px, 0) == 6 * 10 + 6 * 14,
+         "a tall line: %u fonts made, sizes %u then %u, %u laser texels",
+         t_font_made, t_font_sizes[0], t_font_sizes[1], t_tag_light(px, 0));
+}
+
 /* The input's hooks, stood in for. */
 static video_xr_quad_set_t t_extra_shown;
 static XrSpace             t_extra_space;
@@ -880,6 +1114,7 @@ static void test_runtime(void)
    CHECK(rt.DestroyInstance && rt.RequestDisplayRefreshRateFB, "functions not loaded");
    CHECK(openxr_runtime_find_system(&rt) == OPENXR_RUNTIME_OK, "system");
    CHECK(rt.max_dim == 2048, "max_dim %u: the smaller side, at most 4096", rt.max_dim);
+   CHECK(rt.max_width == 8192, "max_width %u", rt.max_width);
    CHECK(rt.rec_width == 1728, "rec_width %u", (unsigned)rt.rec_width);
    CHECK(rt.rec_height == 1824, "rec_height %u", (unsigned)rt.rec_height);
    CHECK(LOGGED("[OpenXR] Headset: Stand-in HMD.\n"), "log: %s", t_log);
@@ -7899,7 +8134,8 @@ static void test_frame_layer_budget(void)
    openxr_frame_run(&f);
    CHECK(t_extra_cap == OPENXR_MAX_EXTRA_LAYERS
          && OPENXR_MAX_EXTRA_LAYERS == OPENXR_KEPT_EXTRA_LAYERS
-            + OPENXR_BEAM_LAYERS + VIDEO_XR_MAX_SLOTS + 1,
+            + OPENXR_BEAM_LAYERS + OPENXR_TAG_LAYERS + VIDEO_XR_MAX_SLOTS
+            + 1,
          "with room to spare, cap %u", t_extra_cap);
    t_grab_free(&rt, &s, &sc, &f);
 }
@@ -7964,6 +8200,9 @@ int main(void)
    test_frame_grabs_snap_two();
    test_frame_grabs_threaded();
    test_frame_layer_budget();
+   test_cursor_tags();
+   test_cursor_tag_lines();
+   test_cursor_narrow();
 #ifdef HAVE_OPENXR_GL
    /* Last: they leave the stand-in's formats and extensions as GL's. */
    test_gl_host_start_failure();
