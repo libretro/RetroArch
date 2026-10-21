@@ -107,7 +107,7 @@ class GlLanes(unittest.TestCase):
     def test_extra_cases_gl_only(self):
         names = {c['name'] for c in run.CASES}
         self.assertTrue(all(c['name'] not in names for c in run.GL_EXTRA))
-        self.assertEqual(len(run.CASES), 139)
+        self.assertEqual(len(run.CASES), 141)
 
 
 class Select(unittest.TestCase):
