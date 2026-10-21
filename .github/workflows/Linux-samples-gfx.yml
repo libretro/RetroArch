@@ -716,6 +716,20 @@ jobs:
           timeout 60 ./vulkan_swapchain_clamp_test
           echo "[pass] vulkan_swapchain_clamp_test"
 
+      - name: Build and run vulkan_output_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/vulkan_output
+        run: |
+          set -eu
+          # The second output's swapchain (vulkan_output_* in
+          # gfx/common/vulkan_common.c), the real code against a fake
+          # device: nothing it does in a frame waits, and nothing is
+          # destroyed before the fence that covers it.
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
+          test -x vulkan_output_test
+          timeout 60 ./vulkan_output_test
+          echo "[pass] vulkan_output_test"
+
       - name: Build and run vulkan_chain_alloc_test (ASan + UBSan)
         shell: bash
         working-directory: samples/gfx/vulkan_chain_alloc

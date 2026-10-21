@@ -3065,6 +3065,520 @@ error_surface:
    return false;
 }
 
+/* How long a teardown waits for the presentation engine to give back an
+ * image it was asked for: it may never, for a surface going away. */
+#define VULKAN_OUTPUT_FINISH_NS 100000000
+
+static void vulkan_output_destroy_set(VkDevice device,
+      VkSwapchainKHR swapchain, VkImageView *views,
+      VkFramebuffer *framebuffers, VkSemaphore *semaphores,
+      unsigned num_images)
+{
+   unsigned i;
+   for (i = 0; i < num_images; i++)
+   {
+      if (framebuffers[i] != VK_NULL_HANDLE)
+         vkDestroyFramebuffer(device, framebuffers[i], NULL);
+      if (views[i] != VK_NULL_HANDLE)
+         vkDestroyImageView(device, views[i], NULL);
+      if (semaphores[i] != VK_NULL_HANDLE)
+         vkDestroySemaphore(device, semaphores[i], NULL);
+      framebuffers[i] = VK_NULL_HANDLE;
+      views[i]        = VK_NULL_HANDLE;
+      semaphores[i]   = VK_NULL_HANDLE;
+   }
+   if (swapchain != VK_NULL_HANDLE)
+      vkDestroySwapchainKHR(device, swapchain, NULL);
+}
+
+/* Destroys each retired swapchain whose fence has signalled. True when
+ * none is left. */
+static bool vulkan_output_sweep(vulkan_output_t *output)
+{
+   unsigned i;
+   bool clear      = true;
+   VkDevice device = output->owner->device;
+   for (i = 0; i < VULKAN_OUTPUT_RETIRED_MAX; i++)
+   {
+      struct vulkan_output_retired *r = &output->retired[i];
+      if (!r->pending)
+         continue;
+      if (vkGetFenceStatus(device, r->fence) == VK_NOT_READY)
+      {
+         clear = false;
+         continue;
+      }
+      vulkan_output_destroy_set(device, r->swapchain, r->views,
+            r->framebuffers, r->semaphores, r->num_images);
+      vkResetFences(device, 1, &r->fence);
+      r->swapchain  = VK_NULL_HANDLE;
+      r->num_images = 0;
+      r->pending    = false;
+   }
+   return clear;
+}
+
+/* The current swapchain into a free retired slot, behind an empty
+ * submission: its fence signals once everything queued so far has run,
+ * the frames that drew into the swapchain and the waits of its
+ * presents among it (see vulkan_context_wait_frames()). False when
+ * both slots are busy. */
+static bool vulkan_output_release(vulkan_output_t *output)
+{
+   unsigned i;
+   VkResult res;
+   struct vulkan_output_retired *r = NULL;
+   vulkan_context_t *ctx           = output->owner;
+
+   if (output->swapchain == VK_NULL_HANDLE)
+      return true;
+   for (i = 0; i < VULKAN_OUTPUT_RETIRED_MAX; i++)
+   {
+      if (!output->retired[i].pending)
+      {
+         r = &output->retired[i];
+         break;
+      }
+   }
+   if (!r)
+      return false;
+
+   r->swapchain  = output->swapchain;
+   r->num_images = output->num_images;
+   for (i = 0; i < output->num_images; i++)
+   {
+      r->views[i]        = output->views[i];
+      r->framebuffers[i] = output->framebuffers[i];
+      r->semaphores[i]   = output->semaphores[i];
+   }
+   output->swapchain  = VK_NULL_HANDLE;
+   output->num_images = 0;
+   output->flags     &= ~(VK_OUTPUT_FLAG_ACQUIRED | VK_OUTPUT_FLAG_READY);
+   memset(output->images,       0, sizeof(output->images));
+   memset(output->views,        0, sizeof(output->views));
+   memset(output->framebuffers, 0, sizeof(output->framebuffers));
+   memset(output->semaphores,   0, sizeof(output->semaphores));
+
+#ifdef HAVE_THREADS
+   slock_lock(ctx->queue_lock);
+#endif
+   res = vkQueueSubmit(ctx->queue, 0, NULL, r->fence);
+#ifdef HAVE_THREADS
+   slock_unlock(ctx->queue_lock);
+#endif
+   /* Nothing to wait for on a queue that takes nothing: a lost device */
+   if (res != VK_SUCCESS)
+   {
+      vulkan_output_destroy_set(ctx->device, r->swapchain, r->views,
+            r->framebuffers, r->semaphores, r->num_images);
+      r->swapchain  = VK_NULL_HANDLE;
+      r->num_images = 0;
+      return true;
+   }
+   r->pending = true;
+   return true;
+}
+
+bool vulkan_output_resize(vulkan_output_t *output, unsigned dims)
+{
+   unsigned i;
+   VkResult res;
+   uint32_t count;
+   uint32_t num_images;
+   VkExtent2D extent;
+   VkImageViewCreateInfo view;
+   VkFramebufferCreateInfo fb;
+   VkSemaphoreCreateInfo sem;
+   VkSwapchainCreateInfoKHR info;
+   VkSurfaceCapabilitiesKHR caps;
+   VkSurfaceFormatKHR formats[64];
+   VkPresentModeKHR modes[16];
+   VkSwapchainKHR swapchain       = VK_NULL_HANDLE;
+   VkPresentModeKHR present_mode  = VK_PRESENT_MODE_FIFO_KHR;
+   bool format_ok                 = false;
+   bool use_requested_extent      = false;
+   vulkan_context_t *ctx          = output->owner;
+
+   if (output->flags & VK_OUTPUT_FLAG_LOST)
+      return false;
+   vulkan_output_sweep(output);
+   /* An image the presentation engine may still read can't go yet */
+   if (     (output->flags & VK_OUTPUT_FLAG_ACQUIRED)
+         && !(output->flags & VK_OUTPUT_FLAG_READY))
+      return false;
+   if (output->swapchain != VK_NULL_HANDLE)
+   {
+      for (i = 0; i < VULKAN_OUTPUT_RETIRED_MAX; i++)
+         if (!output->retired[i].pending)
+            break;
+      if (i == VULKAN_OUTPUT_RETIRED_MAX)
+         return false;
+   }
+
+   if (vkGetPhysicalDeviceSurfaceCapabilitiesKHR(ctx->gpu,
+            output->surface, &caps) != VK_SUCCESS)
+   {
+      output->flags |= VK_OUTPUT_FLAG_LOST;
+      return false;
+   }
+#ifdef ANDROID
+   use_requested_extent = dims != 0;
+#endif
+   extent = vulkan_swapchain_extent(&caps,
+         VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims),
+         use_requested_extent);
+   if (!extent.width || !extent.height)
+   {
+      output->flags |= VK_OUTPUT_FLAG_RECREATE;
+      return false;
+   }
+
+   /* The main output's format, so its render pass and the chains'
+    * pipelines draw here too */
+   count = sizeof(formats) / sizeof(formats[0]);
+   vkGetPhysicalDeviceSurfaceFormatsKHR(ctx->gpu, output->surface,
+         &count, formats);
+   if (count == 1 && formats[0].format == VK_FORMAT_UNDEFINED)
+      format_ok = true;
+   for (i = 0; i < count; i++)
+      if (     formats[i].format     == ctx->swapchain_format
+            && formats[i].colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+         format_ok = true;
+   if (!format_ok)
+   {
+      RARCH_ERR("[Vulkan] A second output's surface has no format %d.\n",
+            (int)ctx->swapchain_format);
+      output->flags |= VK_OUTPUT_FLAG_LOST;
+      return false;
+   }
+
+   count = sizeof(modes) / sizeof(modes[0]);
+   vkGetPhysicalDeviceSurfacePresentModesKHR(ctx->gpu, output->surface,
+         &count, modes);
+   for (i = 0; i < count; i++)
+      if (modes[i] == VK_PRESENT_MODE_MAILBOX_KHR)
+         present_mode = VK_PRESENT_MODE_MAILBOX_KHR;
+
+   /* One beyond the least, so a zero-timeout acquire finds one free */
+   num_images = caps.minImageCount + 1;
+   if (caps.maxImageCount && num_images > caps.maxImageCount)
+      num_images = caps.maxImageCount;
+   if (num_images > VULKAN_MAX_SWAPCHAIN_IMAGES)
+      num_images = VULKAN_MAX_SWAPCHAIN_IMAGES;
+
+   info.sType                 = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+   info.pNext                 = NULL;
+   info.flags                 = 0;
+   info.surface               = output->surface;
+   info.minImageCount         = num_images;
+   info.imageFormat           = ctx->swapchain_format;
+   info.imageColorSpace       = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+   info.imageExtent           = extent;
+   info.imageArrayLayers      = 1;
+   info.imageUsage            = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+   info.imageSharingMode      = VK_SHARING_MODE_EXCLUSIVE;
+   info.queueFamilyIndexCount = 0;
+   info.pQueueFamilyIndices   = NULL;
+   info.preTransform          = (caps.supportedTransforms
+         & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR)
+      ? VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR : caps.currentTransform;
+   if (caps.supportedCompositeAlpha & VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR)
+      info.compositeAlpha     = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+   else if (caps.supportedCompositeAlpha & VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR)
+      info.compositeAlpha     = VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR;
+   else if (caps.supportedCompositeAlpha & VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR)
+      info.compositeAlpha     = VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR;
+   else
+      info.compositeAlpha     = VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR;
+   info.presentMode           = present_mode;
+   info.clipped               = VK_TRUE;
+   info.oldSwapchain          = output->swapchain;
+
+   res = vkCreateSwapchainKHR(ctx->device, &info, NULL, &swapchain);
+   /* The old one is retired by the call whether or not it worked */
+   vulkan_output_release(output);
+   if (res != VK_SUCCESS)
+   {
+      RARCH_ERR("[Vulkan] Could not make a second output's swapchain "
+            "(err = %d).\n", (int)res);
+      output->flags |= VK_OUTPUT_FLAG_LOST;
+      return false;
+   }
+   output->swapchain = swapchain;
+
+   count = 0;
+   vkGetSwapchainImagesKHR(ctx->device, swapchain, &count, NULL);
+   if (!count || count > VULKAN_MAX_SWAPCHAIN_IMAGES)
+   {
+      RARCH_ERR("[Vulkan] A second output's swapchain has %u images.\n",
+            (unsigned)count);
+      output->flags |= VK_OUTPUT_FLAG_LOST;
+      return false;
+   }
+   vkGetSwapchainImagesKHR(ctx->device, swapchain, &count, output->images);
+   output->num_images = count;
+
+   memset(&view, 0, sizeof(view));
+   view.sType                           = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+   view.viewType                        = VK_IMAGE_VIEW_TYPE_2D;
+   view.format                          = ctx->swapchain_format;
+   view.components.r                    = VK_COMPONENT_SWIZZLE_R;
+   view.components.g                    = VK_COMPONENT_SWIZZLE_G;
+   view.components.b                    = VK_COMPONENT_SWIZZLE_B;
+   view.components.a                    = VK_COMPONENT_SWIZZLE_A;
+   view.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+   view.subresourceRange.levelCount     = 1;
+   view.subresourceRange.layerCount     = 1;
+   memset(&fb, 0, sizeof(fb));
+   fb.sType                             = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+   fb.renderPass                        = output->render_pass;
+   fb.attachmentCount                   = 1;
+   fb.width                             = extent.width;
+   fb.height                            = extent.height;
+   fb.layers                            = 1;
+   sem.sType                            = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+   sem.pNext                            = NULL;
+   sem.flags                            = 0;
+   for (i = 0; i < count; i++)
+   {
+      view.image      = output->images[i];
+      if (vkCreateImageView(ctx->device, &view, NULL,
+               &output->views[i]) != VK_SUCCESS)
+         break;
+      fb.pAttachments = &output->views[i];
+      if (vkCreateFramebuffer(ctx->device, &fb, NULL,
+               &output->framebuffers[i]) != VK_SUCCESS)
+         break;
+      if (vkCreateSemaphore(ctx->device, &sem, NULL,
+               &output->semaphores[i]) != VK_SUCCESS)
+         break;
+   }
+   if (i < count)
+   {
+      RARCH_ERR("[Vulkan] Could not make a second output's image %u.\n", i);
+      output->flags |= VK_OUTPUT_FLAG_LOST;
+      return false;
+   }
+
+   output->format       = ctx->swapchain_format;
+   output->present_mode = present_mode;
+   output->dims         = VIDEO_SCALE_PACK(extent.width, extent.height);
+   output->flags       &= ~VK_OUTPUT_FLAG_RECREATE;
+   return true;
+}
+
+bool vulkan_output_create(vulkan_output_t *output,
+      vulkan_context_t *owner, enum vulkan_wsi_type type,
+      void *display, void *surface, unsigned dims)
+{
+   unsigned i;
+   VkFenceCreateInfo fence_info;
+   VkBool32 supported = VK_FALSE;
+
+   output->owner      = owner;
+   if (     !vulkan_wsi_surface_create(owner->instance, type, display,
+            surface, &output->surface)
+         || output->surface == VK_NULL_HANDLE)
+   {
+      RARCH_ERR("[Vulkan] Could not make a second output's surface.\n");
+      output->flags |= VK_OUTPUT_FLAG_LOST;
+      return false;
+   }
+   if (     vkGetPhysicalDeviceSurfaceSupportKHR(owner->gpu,
+            owner->graphics_queue_index, output->surface, &supported)
+            != VK_SUCCESS
+         || !supported)
+   {
+      RARCH_ERR("[Vulkan] The device's queue cannot present to a second "
+            "output.\n");
+      output->flags |= VK_OUTPUT_FLAG_LOST;
+      return false;
+   }
+
+   fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+   fence_info.pNext = NULL;
+   fence_info.flags = 0;
+   if (vkCreateFence(owner->device, &fence_info, NULL,
+            &output->acquire_fence) != VK_SUCCESS)
+   {
+      output->flags |= VK_OUTPUT_FLAG_LOST;
+      return false;
+   }
+   for (i = 0; i < VULKAN_OUTPUT_RETIRED_MAX; i++)
+   {
+      if (vkCreateFence(owner->device, &fence_info, NULL,
+               &output->retired[i].fence) != VK_SUCCESS)
+      {
+         output->flags |= VK_OUTPUT_FLAG_LOST;
+         return false;
+      }
+   }
+
+   /* A zero extent is made later, by the acquire */
+   return vulkan_output_resize(output, dims)
+      || !(output->flags & VK_OUTPUT_FLAG_LOST);
+}
+
+bool vulkan_output_acquire(vulkan_output_t *output)
+{
+   VkResult res;
+   VkDevice device = output->owner->device;
+
+   if (output->flags & VK_OUTPUT_FLAG_LOST)
+      return false;
+   vulkan_output_sweep(output);
+   if (!(output->flags & VK_OUTPUT_FLAG_ACQUIRED))
+   {
+      if (     (   (output->flags & VK_OUTPUT_FLAG_RECREATE)
+                || output->swapchain == VK_NULL_HANDLE)
+            && !vulkan_output_resize(output, output->dims))
+         return false;
+      if (output->flags & VK_OUTPUT_FLAG_FENCE_USED)
+      {
+         vkResetFences(device, 1, &output->acquire_fence);
+         output->flags &= ~VK_OUTPUT_FLAG_FENCE_USED;
+      }
+      /* A fence, not a semaphore: nothing the presentation engine
+       * signals ever goes into the queue, which the main output's
+       * frames share. */
+      res = vkAcquireNextImageKHR(device, output->swapchain, 0,
+            VK_NULL_HANDLE, output->acquire_fence, &output->index);
+      if (     res == VK_ERROR_OUT_OF_DATE_KHR
+            && vulkan_output_resize(output, output->dims))
+         res = vkAcquireNextImageKHR(device, output->swapchain, 0,
+               VK_NULL_HANDLE, output->acquire_fence, &output->index);
+      if (res != VK_SUCCESS && res != VK_SUBOPTIMAL_KHR)
+      {
+         if (res == VK_ERROR_OUT_OF_DATE_KHR)
+            output->flags |= VK_OUTPUT_FLAG_RECREATE;
+         else if (res != VK_NOT_READY && res != VK_TIMEOUT)
+            output->flags |= VK_OUTPUT_FLAG_LOST;
+         return false;
+      }
+      output->flags |= VK_OUTPUT_FLAG_ACQUIRED | VK_OUTPUT_FLAG_FENCE_USED;
+   }
+   if (     !(output->flags & VK_OUTPUT_FLAG_READY)
+         && vkGetFenceStatus(device, output->acquire_fence) == VK_SUCCESS)
+      output->flags |= VK_OUTPUT_FLAG_READY;
+   return (output->flags & VK_OUTPUT_FLAG_READY) != 0;
+}
+
+bool vulkan_output_present(vulkan_output_t *output)
+{
+   VkPresentInfoKHR present;
+   VkResult err;
+   VkResult result         = VK_SUCCESS;
+   uint32_t index          = output->index;
+   vulkan_context_t *ctx   = output->owner;
+
+   if (!(output->flags & VK_OUTPUT_FLAG_READY))
+      return false;
+
+   present.sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+   present.pNext              = NULL;
+   present.waitSemaphoreCount = 1;
+   present.pWaitSemaphores    = &output->semaphores[index];
+   present.swapchainCount     = 1;
+   present.pSwapchains        = &output->swapchain;
+   present.pImageIndices      = &index;
+   present.pResults           = &result;
+#ifdef HAVE_THREADS
+   slock_lock(ctx->queue_lock);
+#endif
+   err = vkQueuePresentKHR(ctx->queue, &present);
+#ifdef HAVE_THREADS
+   slock_unlock(ctx->queue_lock);
+#endif
+   output->flags &= ~(VK_OUTPUT_FLAG_ACQUIRED | VK_OUTPUT_FLAG_READY);
+
+   /* As the main output: one rebuild for suboptimal, then the surface's
+    * standing answer (Android without prerotate) is kept */
+   if (err == VK_SUBOPTIMAL_KHR || result == VK_SUBOPTIMAL_KHR)
+   {
+      if (!(output->flags & VK_OUTPUT_FLAG_SUBOPTIMAL_REBUILT))
+      {
+         output->flags |= VK_OUTPUT_FLAG_SUBOPTIMAL_REBUILT
+                        | VK_OUTPUT_FLAG_RECREATE;
+         vulkan_output_resize(output, output->dims);
+      }
+      return true;
+   }
+   if (err == VK_ERROR_OUT_OF_DATE_KHR || result == VK_ERROR_OUT_OF_DATE_KHR)
+   {
+      output->flags |= VK_OUTPUT_FLAG_RECREATE;
+      vulkan_output_resize(output, output->dims);
+      return true;
+   }
+   if (err != VK_SUCCESS || result != VK_SUCCESS)
+   {
+      output->flags |= VK_OUTPUT_FLAG_LOST;
+      return false;
+   }
+   output->flags &= ~VK_OUTPUT_FLAG_SUBOPTIMAL_REBUILT;
+   return true;
+}
+
+bool vulkan_output_retire(vulkan_output_t *output)
+{
+   unsigned i;
+   VkDevice device;
+
+   if (!output->owner)
+      return true;
+   device = output->owner->device;
+   if (     (output->flags & VK_OUTPUT_FLAG_ACQUIRED)
+         && !(output->flags & VK_OUTPUT_FLAG_READY))
+   {
+      if (vkGetFenceStatus(device, output->acquire_fence) == VK_NOT_READY)
+         return false;
+      output->flags |= VK_OUTPUT_FLAG_READY;
+   }
+   if (!vulkan_output_release(output))
+   {
+      vulkan_output_sweep(output);
+      return false;
+   }
+   if (!vulkan_output_sweep(output))
+      return false;
+
+   if (output->acquire_fence != VK_NULL_HANDLE)
+      vkDestroyFence(device, output->acquire_fence, NULL);
+   for (i = 0; i < VULKAN_OUTPUT_RETIRED_MAX; i++)
+      if (output->retired[i].fence != VK_NULL_HANDLE)
+         vkDestroyFence(device, output->retired[i].fence, NULL);
+   if (output->surface != VK_NULL_HANDLE)
+      vkDestroySurfaceKHR(output->owner->instance, output->surface, NULL);
+   memset(output, 0, sizeof(*output));
+   return true;
+}
+
+void vulkan_output_finish(vulkan_output_t *output)
+{
+   unsigned i;
+   VkDevice device;
+
+   if (!output->owner)
+      return;
+   device = output->owner->device;
+   if (     (output->flags & VK_OUTPUT_FLAG_ACQUIRED)
+         && !(output->flags & VK_OUTPUT_FLAG_READY))
+   {
+      vkWaitForFences(device, 1, &output->acquire_fence, VK_TRUE,
+            VULKAN_OUTPUT_FINISH_NS);
+      output->flags |= VK_OUTPUT_FLAG_READY;
+   }
+   for (i = 0; i < VULKAN_OUTPUT_RETIRED_MAX; i++)
+      if (output->retired[i].pending)
+         vkWaitForFences(device, 1, &output->retired[i].fence, VK_TRUE,
+               UINT64_MAX);
+   vulkan_output_sweep(output);
+   vulkan_output_release(output);
+   for (i = 0; i < VULKAN_OUTPUT_RETIRED_MAX; i++)
+      if (output->retired[i].pending)
+         vkWaitForFences(device, 1, &output->retired[i].fence, VK_TRUE,
+               UINT64_MAX);
+}
+
 uint32_t vulkan_find_memory_type(
       const VkPhysicalDeviceMemoryProperties *mem_props,
       uint32_t device_reqs, uint32_t host_reqs)

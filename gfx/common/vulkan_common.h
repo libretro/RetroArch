@@ -734,6 +734,101 @@ void vulkan_low_latency_present_end(gfx_ctx_vulkan_data_t *vk);
 void vulkan_low_latency_retire(gfx_ctx_vulkan_data_t *vk,
       VkSwapchainKHR swapchain);
 
+#define VULKAN_OUTPUT_RETIRED_MAX 2
+
+/* A swapchain an output let go of, destroyed once its fence shows that
+ * the frames that drew into it and its presents have run */
+struct vulkan_output_retired
+{
+   VkSwapchainKHR swapchain;     /* ptr alignment */
+   VkImageView views[VULKAN_MAX_SWAPCHAIN_IMAGES];
+   VkFramebuffer framebuffers[VULKAN_MAX_SWAPCHAIN_IMAGES];
+   VkSemaphore semaphores[VULKAN_MAX_SWAPCHAIN_IMAGES];
+   /* Made with the output; signalled by an empty submission queued
+    * behind its last present */
+   VkFence fence;
+   unsigned num_images;
+   bool pending;
+};
+
+enum vulkan_output_flags
+{
+   /* images[index] is acquired and not yet presented */
+   VK_OUTPUT_FLAG_ACQUIRED           = (1 << 0),
+   /* and acquire_fence has signalled: the image is free to draw into */
+   VK_OUTPUT_FLAG_READY              = (1 << 1),
+   /* acquire_fence went to an acquire and needs a reset before the next */
+   VK_OUTPUT_FLAG_FENCE_USED         = (1 << 2),
+   /* out of date or suboptimal: remade at the next chance */
+   VK_OUTPUT_FLAG_RECREATE           = (1 << 3),
+   /* remade for a suboptimal present; another suboptimal one is kept */
+   VK_OUTPUT_FLAG_SUBOPTIMAL_REBUILT = (1 << 4),
+   /* the surface is gone, or no swapchain can be made for it */
+   VK_OUTPUT_FLAG_LOST               = (1 << 5)
+};
+
+/* A second presentable surface on the context's device and queue, with
+ * a swapchain of its own. The driver draws into it in the frame's own
+ * submission, which signals semaphores[index], and presents it after.
+ * Nothing here waits in a frame: the acquire takes no time, its fence
+ * is polled, and a swapchain let go of is destroyed once a fence says
+ * its work is done. */
+typedef struct vulkan_output
+{
+   vulkan_context_t *owner;      /* borrowed: instance, device, queue */
+   VkSurfaceKHR surface;
+   VkSwapchainKHR swapchain;
+   /* Set by the caller before create: the framebuffers are made for it */
+   VkRenderPass render_pass;
+   VkFence acquire_fence;
+   VkImage images[VULKAN_MAX_SWAPCHAIN_IMAGES];
+   VkImageView views[VULKAN_MAX_SWAPCHAIN_IMAGES];
+   VkFramebuffer framebuffers[VULKAN_MAX_SWAPCHAIN_IMAGES];
+   /* Signalled by the submission that drew image i, waited by its
+    * present */
+   VkSemaphore semaphores[VULKAN_MAX_SWAPCHAIN_IMAGES];
+   struct vulkan_output_retired retired[VULKAN_OUTPUT_RETIRED_MAX];
+   VkFormat format;
+   VkPresentModeKHR present_mode;
+   unsigned num_images;
+   unsigned index;
+   unsigned dims;                /* VIDEO_SCALE_PACK of the extent */
+   unsigned flags;               /* VK_OUTPUT_FLAG_* */
+} vulkan_output_t;
+
+/* @output's surface, from @display and @surface as
+ * vulkan_surface_create() takes them, and a swapchain of @dims (or of
+ * the surface's own extent) in @owner's swapchain format: MAILBOX where
+ * the surface offers it, else FIFO. @output is zeroed by the caller,
+ * with render_pass set. False when it can't be made; retire still
+ * frees what was. */
+bool vulkan_output_create(vulkan_output_t *output,
+      vulkan_context_t *owner, enum vulkan_wsi_type type,
+      void *display, void *surface, unsigned dims);
+
+/* A new swapchain at @dims, the old one retired behind a fence. False
+ * while it can't be yet (an acquire still pending, both retired slots
+ * busy, a zero extent), and with VK_OUTPUT_FLAG_LOST when it can't be. */
+bool vulkan_output_resize(vulkan_output_t *output, unsigned dims);
+
+/* True when images[index] is free to draw into. Never waits: an image
+ * whose fence has not signalled is kept for the next call, and out of
+ * date remakes the swapchain and tries once more. */
+bool vulkan_output_acquire(vulkan_output_t *output);
+
+/* Presents images[index] behind semaphores[index]. Never waits. Out of
+ * date, or suboptimal once, remakes the swapchain. False with
+ * VK_OUTPUT_FLAG_LOST when the surface is gone. */
+bool vulkan_output_present(vulkan_output_t *output);
+
+/* Lets go of everything, the surface last: true once all of it is
+ * destroyed. Never waits; call it again on a later frame until true. */
+bool vulkan_output_retire(vulkan_output_t *output);
+
+/* Teardown only, never from a frame: waits for what retire waits on,
+ * so that the next vulkan_output_retire() returns true. */
+void vulkan_output_finish(vulkan_output_t *output);
+
 void vulkan_debug_mark_image(VkDevice device, VkImage image);
 void vulkan_debug_mark_memory(VkDevice device, VkDeviceMemory memory);
 
