@@ -274,6 +274,9 @@ typedef struct rh265_hw_ops
          const rh265_access_unit_t *au, const rh265_nal_t *slices,
          const rh265_hw_picture_t *picture);
    int (*output)(void *decoder, unsigned slot, video_hw_frame_t *frame);
+   /* Optional EOF submission: 0 accepted/already sent, 1 busy, negative failure.
+    * Never called for ordinary output pressure; must not wait or take a lease. */
+   int (*drain)(void *decoder);
 } rh265_hw_ops_t;
 
 typedef struct rh265_hw_backend
@@ -382,6 +385,18 @@ static INLINE int rh265_hw_session_output(rh265_hw_session_t *s,
    if (!out) return -1;
    memset(out, 0, sizeof(*out));
    if (!s || s->broken || !s->ops.output) return -1;
+   if (drain && s->ops.drain)
+   {
+      if (s->phase) return 1;
+      ret = s->ops.drain(s->ops.decoder);
+      if (ret > 0) return 1;
+      if (ret < 0)
+      {
+         s->broken = 1;
+         rh265_hw_session_clear_packet(s);
+         return -1;
+      }
+   }
    slot = rh265_hw_output_pick(&s->state, s->max_reorder, drain || s->pressure);
    if (slot < 0) return 1;
    memset(&frame, 0, sizeof(frame));

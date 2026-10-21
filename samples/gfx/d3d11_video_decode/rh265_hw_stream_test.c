@@ -69,6 +69,7 @@ static bool open_backend(void *user, const rh265_video *source, const rh265_vide
    d->width = params->width - params->crop_left - params->crop_right;
    d->height = params->height - params->crop_top - params->crop_bottom;
    d->bit_depth = params->bit_depth;
+   memset(ops, 0, sizeof(*ops));
    ops->decoder = d; ops->decode = decode; ops->output = output;
    opened++;
    return true;
