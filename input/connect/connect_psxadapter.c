@@ -29,6 +29,7 @@ struct hidpad_psxadapter_data
    uint32_t buttons;
    uint8_t axis[4];
    bool digital;
+   input_pad_view_t view;  /* what the getters answer */
 };
 
 static void* hidpad_psxadapter_init(void *data, uint32_t slot, hid_driver_t *driver)
@@ -63,18 +64,22 @@ static void hidpad_psxadapter_deinit(void *data)
 
 static void hidpad_psxadapter_get_buttons(void *data, input_bits_t *state)
 {
-   struct hidpad_psxadapter_data *device = 
-      (struct hidpad_psxadapter_data*)data;
-
+   struct hidpad_psxadapter_data *device = (struct hidpad_psxadapter_data*)data;
    if (device)
-   {
-      BITS_COPY16_PTR(state, device->buttons);
-   }
+      *state = device->view.buttons;
    else
       BIT256_CLEAR_ALL_PTR(state);
 }
 
 static int16_t hidpad_psxadapter_get_axis(void *data, unsigned axis)
+{
+   struct hidpad_psxadapter_data *device = (struct hidpad_psxadapter_data*)data;
+   if (!device || axis >= INPUT_PAD_VIEW_AXES)
+      return 0;
+   return device->view.axes[axis];
+}
+
+static int16_t hidpad_psxadapter_axis_of(void *data, unsigned axis)
 {
    int val                               = 0;
    struct hidpad_psxadapter_data *device = 
@@ -160,6 +165,13 @@ static void hidpad_psxadapter_packet_handler(void *data,
       device->buttons |= PSX_H_UP(hat_value) ? (1 << RETRO_DEVICE_ID_JOYPAD_UP) : 0;
       device->buttons |= PSX_H_DOWN(hat_value) ? (1 << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0;
    }
+   /* the view, which the getters and the frontend read */
+   pad_view_set_buttons(&device->view, device->buttons & 0xffff, false);
+   {
+      unsigned a;
+      for (a = 0; a < 4; a++)
+         device->view.axes[a] = hidpad_psxadapter_axis_of(device, a);
+   }
 }
 
 static void hidpad_psxadapter_set_rumble(void *data,
@@ -177,7 +189,12 @@ static int32_t hidpad_psxadapter_button(void *data, uint16_t joykey)
       (struct hidpad_psxadapter_data*)data;
    if (!pad || joykey > 31)
       return 0;
-   return (pad->buttons >> joykey) & 1;
+   return BIT256_GET(pad->view.buttons, joykey) ? 1 : 0;
+}
+
+static const input_pad_view_t *hidpad_psxadapter_view(void *data)
+{
+   return &((struct hidpad_psxadapter_data*)data)->view;
 }
 
 pad_connection_interface_t pad_connection_psxadapter = {
@@ -189,5 +206,12 @@ pad_connection_interface_t pad_connection_psxadapter = {
    hidpad_psxadapter_get_axis,
    hidpad_psxadapter_get_name,
    hidpad_psxadapter_button,
-   false
+   false, /* multi_pad */
+   0,     /* max_pad */
+   NULL,  /* pad_init */
+   NULL,  /* pad_deinit */
+   NULL,  /* status */
+   NULL,  /* joypad */
+   NULL,  /* set_player */
+   hidpad_psxadapter_view
 };

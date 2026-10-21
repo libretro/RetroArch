@@ -28,6 +28,7 @@ struct hidpad_kade_data
    struct pad_connection* connection;
    uint32_t slot;
    uint32_t buttons;
+   input_pad_view_t view;  /* what the getters answer */
 };
 
 static void* hidpad_kade_init(void* data, uint32_t slot, hid_driver_t* driver)
@@ -59,20 +60,25 @@ static void hidpad_kade_deinit(void* data)
       free(device);
 }
 
-static void hidpad_kade_get_buttons(void* data, input_bits_t* state)
+static void hidpad_kade_get_buttons(void *data, input_bits_t *state)
 {
-   struct hidpad_kade_data* device = (struct hidpad_kade_data*)data;
+   struct hidpad_kade_data *device = (struct hidpad_kade_data*)data;
    if (device)
-   {
-      BITS_COPY16_PTR(state, device->buttons);
-   }
+      *state = device->view.buttons;
    else
       BIT256_CLEAR_ALL_PTR(state);
 }
 
+static int16_t hidpad_kade_get_axis(void *data, unsigned axis)
+{
+   struct hidpad_kade_data *device = (struct hidpad_kade_data*)data;
+   if (!device || axis >= INPUT_PAD_VIEW_AXES)
+      return 0;
+   return device->view.axes[axis];
+}
+
 /*This is being implemented for use with an arcade stick, so there are no axis values on this control, only a hat values .
 If your device with kade firmware uses analog controls this function must be implemented.*/
-static int16_t hidpad_kade_get_axis(void* data, unsigned axis) { return 0; }
 
 #define KADE_H_GET(a)   (a & 0x0F) /*HAT MASK = 0x0F */
 #define KADE_H_LEFT(a)  (a == 0x05) || (a == 0x06) || (a == 0x07)
@@ -121,6 +127,8 @@ static void hidpad_kade_packet_handler(void* data, uint8_t* packet, uint16_t siz
    device->buttons |= KADE_H_RIGHT(hat_value) ? (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
    device->buttons |= KADE_H_UP(hat_value) ? (1 << RETRO_DEVICE_ID_JOYPAD_UP) : 0;
    device->buttons |= KADE_H_DOWN(hat_value) ? (1 << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0;
+   /* the view, which the getters and the frontend read */
+   pad_view_set_buttons(&device->view, device->buttons & 0xffff, false);
 }
 
 static void hidpad_kade_set_rumble(void* data,
@@ -137,7 +145,12 @@ static int32_t hidpad_kade_button(void* data, uint16_t joykey)
    struct hidpad_kade_data* pad = (struct hidpad_kade_data*)data;
    if (!pad || joykey > 31)
       return 0;
-   return (pad->buttons >> joykey) & 1;
+   return BIT256_GET(pad->view.buttons, joykey) ? 1 : 0;
+}
+
+static const input_pad_view_t *hidpad_kade_view(void *data)
+{
+   return &((struct hidpad_kade_data*)data)->view;
 }
 
 pad_connection_interface_t pad_connection_kade = {
@@ -149,5 +162,12 @@ pad_connection_interface_t pad_connection_kade = {
    hidpad_kade_get_axis,
    hidpad_kade_get_name,
    hidpad_kade_button,
-   false
+   false, /* multi_pad */
+   0,     /* max_pad */
+   NULL,  /* pad_init */
+   NULL,  /* pad_deinit */
+   NULL,  /* status */
+   NULL,  /* joypad */
+   NULL,  /* set_player */
+   hidpad_kade_view
 };
