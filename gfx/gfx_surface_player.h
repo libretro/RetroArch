@@ -64,6 +64,7 @@ typedef struct gfx_surface_player
    unsigned hw_slot;          /* the player's job a queued GPU frame is */
    bool rgba;
    bool threaded;             /* two slots, decoded on the worker */
+   bool hw_confirmed;        /* renderer accepted at least one GPU picture */
    bool hw_resent;            /* the frame in flight was sent again */
 } gfx_surface_player_t;
 

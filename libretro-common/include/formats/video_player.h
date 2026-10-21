@@ -85,6 +85,8 @@ enum video_player_present
    VIDEO_PLAYER_PRESENT_FAILED    /* the playback ends                   */
 };
 
+#define VIDEO_PLAYER_HW_REFUSED (-2)
+
 enum video_player_state
 {
    VIDEO_PLAYER_PLAYING = 0,
@@ -140,6 +142,8 @@ typedef struct video_player_sink
     * frames then come as video_player_frame_t::hw, into no slot;
     * @jobs is 2 when they are decoded on the worker, a frame ahead,
     * and 1 in line. As start returns. */
+   /* VIDEO_PLAYER_HW_REFUSED permanently refuses hardware;
+    * -1 retains the existing retry-later contract. */
    int (*start_hw)(void *user, unsigned width, unsigned height,
          unsigned jobs);
    /* Optional, after slot_begin: row stride in pixels for that buffer.
@@ -181,6 +185,19 @@ bool video_player_has_presented(const video_player_t *p);
 /* Sink resources are ready. Audio may start at the movie origin before
  * a delayed first video picture is due. Polling thread only. */
 bool video_player_started(const video_player_t *p);
+
+/* Optional first-frame hardware recovery. Installed before startup. Called on
+ * the exclusive decode owner after decode jobs and sink slots have settled:
+ * -1 cannot recover, 0 another bounded step, 1 software stream rewound/ready.
+ * The callback must not re-enable hardware or wait on renderer completion.
+ * Returning ready restarts sink.start, without calling sink.start_hw again. */
+typedef int (*video_player_hw_restart_t)(void *user);
+bool video_player_set_hw_fallback(video_player_t *p,
+      video_player_hw_restart_t restart, void *user);
+/* Polling-thread renderer refusal notification (including a failed first async
+ * import). Idempotent while recovery is pending; does not wait or run restart.
+ * The sink must settle/release its queued slots normally before restart runs. */
+bool video_player_request_software(video_player_t *p);
 
 /* One bounded seek step on the decoding thread: -1 failed, 0 needs
  * another step, 1 positioned for the next frame. restart begins a new

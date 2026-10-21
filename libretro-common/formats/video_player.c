@@ -100,6 +100,7 @@ typedef struct vp_job
    bool gpu;               /* frames come on the GPU (VP_HW)        */
    bool hw;                /* the READY frame is the player's hw[]   */
    bool seek;              /* a bounded transport step, no slot */
+   bool fallback;          /* exclusive-owner software restart, no slot */
    bool behind;            /* polling-side catch-up request */
 } vp_job_t;
 
@@ -109,7 +110,7 @@ struct video_player
    int64_t pause_left_us;  /* remaining picture duration at pause */
    bool paused;           /* polling thread only */
    bool presented;
-   bool inline_ready, inline_finished;
+   bool inline_ready, inline_finished, inline_held;
    video_player_frame_t inline_frame;
    int64_t movie_us;       /* immutable full movie period, or zero */
    int64_t origin_us;      /* polling clock's movie origin */
@@ -120,6 +121,9 @@ struct video_player
    bool decode_behind;     /* exclusive decoder owner's last setting */
    video_player_seek_cb_t seek_cb;
    void *seek_user;
+   video_player_hw_restart_t hw_restart;
+   void *hw_restart_user;
+   bool hw_disabled, hw_fallback_pending, hw_fallback_active, preserve_origin;
    int64_t seek_target, seek_run_target, seek_position;
    int32_t initial_loops;
    bool seek_pending, seek_dirty, seek_active, seek_restart, seek_failed;
@@ -367,6 +371,11 @@ static int vp_job_step(vp_job_t *job)
    bool native, direct;
    enum video_player_how how;
 
+   if (job->fallback)
+   {
+      int r = p->hw_restart(p->hw_restart_user);
+      return r < 0 ? 0 : (r ? 1 : 2);
+   }
    if (p->decode_behind != job->behind)
    {
       image_transfer_anim_stream_set_catchup(stream, type, job->behind ? 1 : 0);
@@ -722,7 +731,11 @@ static enum video_player_state vp_poll_threaded(video_player_t *p,
    /* loops done or the stream failed: the sibling holds only a frame
     * already shown, so nothing is lost */
    if (su == VP_JOB_FINISHED)
+   {
+      if ((p->flags & VP_HW) && !p->presented && video_player_request_software(p))
+         return VIDEO_PLAYER_PLAYING;
       return VIDEO_PLAYER_ENDED;
+   }
    if (su != VP_JOB_READY)
       return VIDEO_PLAYER_PLAYING;
 
@@ -743,6 +756,8 @@ static enum video_player_state vp_poll_threaded(video_player_t *p,
       if (fr.hw)
          video_hw_frame_abandon(fr.hw);
       ju->hw = false;
+      if (fr.hw && !p->presented && video_player_request_software(p))
+         return VIDEO_PLAYER_PLAYING;
       return VIDEO_PLAYER_ENDED;
    }
    ju->hw         = false;   /* the sink's now */
@@ -784,6 +799,7 @@ static enum video_player_state vp_poll_inline(video_player_t *p,
    int duration_ms      = 0;
    int64_t budget_now   = 0;
 
+   if (p->inline_held) return VIDEO_PLAYER_PLAYING;
    if (p->inline_ready)
    {
       if (now < p->next_us) return VIDEO_PLAYER_PLAYING;
@@ -918,12 +934,17 @@ present_frame:
    if (res == VIDEO_PLAYER_PRESENT_FAILED)
    {
       if (fr.hw) video_hw_frame_abandon(fr.hw);
+      if (fr.hw && !p->presented && video_player_request_software(p))
+         return VIDEO_PLAYER_PLAYING;
       return VIDEO_PLAYER_ENDED;
    }
+   p->inline_held = fr.hw && res == VIDEO_PLAYER_PRESENT_QUEUED;
    vp_schedule(p, fr.duration_ms, now);
    return VIDEO_PLAYER_PLAYING;
 
 finished:
+   if ((p->flags & VP_HW) && !p->presented && video_player_request_software(p))
+      return VIDEO_PLAYER_PLAYING;
    if (p->movie_us)
    {
       p->inline_finished = true;
@@ -1041,6 +1062,92 @@ finished:
    return 1;
 }
 
+/* Polling side quiesces without waiting; the existing decoder worker owns
+ * stream replacement. No frame/slot is lent to this recovery job. */
+static int vp_poll_hw_fallback(video_player_t *p)
+{
+   int result;
+   if (p->inline_held) return 0;
+#ifdef VIDEO_PLAYER_WORKER
+   if (p->flags & VP_THREADED)
+   {
+      vp_job_t *job = p->job[0];
+      if (!p->hw_fallback_active)
+      {
+         unsigned i;
+         for (i = 0; i < 2; i++)
+         {
+            vp_job_t *j = p->job[i];
+            int status = retro_atomic_load_acquire_int(&j->status);
+            if (status == VP_JOB_QUEUED)
+            {
+               retro_atomic_cas_int(&j->status, VP_JOB_QUEUED, VP_JOB_CANCELLED);
+               return 0;
+            }
+            if (!vp_job_settled(j) || status == VP_JOB_HELD) return 0;
+            if (j->hw) video_hw_frame_abandon(&p->hw[i]);
+            j->hw = false;
+            retro_atomic_store_relaxed_int(&j->status, VP_JOB_IDLE);
+         }
+         job->fallback = true;
+         p->hw_fallback_active = true;
+         vp_job_enqueue(job);
+         return 0;
+      }
+      if (!vp_job_settled(job)) return 0;
+      if (retro_atomic_load_acquire_int(&job->status) == VP_JOB_WAITING)
+      {
+         vp_job_enqueue(job);
+         return 0;
+      }
+      result = retro_atomic_load_acquire_int(&job->status) == VP_JOB_READY ? 1 : -1;
+      free(p->job[0]);
+      p->job[0] = p->job[1] = NULL;
+   }
+   else
+#endif
+      result = p->hw_restart(p->hw_restart_user);
+   if (!result) return 0;
+   p->hw_fallback_pending = p->hw_fallback_active = false;
+   if (result < 0)
+   {
+      p->flags |= VP_STOPPED;
+      return -1;
+   }
+   p->flags &= VIDEO_PLAYER_INLINE;
+   p->presented = false;
+   p->loops_left = p->initial_loops;
+   p->next_us = p->decode_epoch_us = 0;
+   p->decode_behind = false;
+   p->inline_ready = p->inline_finished = false;
+   p->seek_active = false;
+   p->seek_dirty = p->seek_pending;
+   return 1;
+}
+
+bool video_player_set_hw_fallback(video_player_t *p,
+      video_player_hw_restart_t restart, void *user)
+{
+   if (!p || (p->flags & (VP_STARTED | VP_STOPPED))
+         || p->hw_fallback_pending || p->hw_disabled)
+      return false;
+   p->hw_restart = restart;
+   p->hw_restart_user = user;
+   return true;
+}
+bool video_player_request_software(video_player_t *p)
+{
+   if (!p || (p->flags & VP_STOPPED) || !p->hw_restart) return false;
+   if (p->hw_fallback_pending) return true;
+   if (!(p->flags & VP_HW) || p->hw_disabled) return false;
+   if (p->inline_ready && p->inline_frame.hw)
+      video_hw_frame_abandon(p->inline_frame.hw);
+   p->inline_ready = false;
+   p->hw_disabled = p->hw_fallback_pending = true;
+   p->preserve_origin = (p->flags & VP_STARTED) != 0;
+   return true;
+}
+
 video_player_t *video_player_new(void *stream, enum image_type_enum type,
       int loop_count, const video_player_sink_t *sink, unsigned flags)
 {
@@ -1072,6 +1179,12 @@ enum video_player_state video_player_poll(video_player_t *p, int64_t now_us)
 {
    if (!p || (p->flags & VP_STOPPED))
       return VIDEO_PLAYER_ENDED;
+   if (p->hw_fallback_pending)
+   {
+      int recovered = vp_poll_hw_fallback(p);
+      if (recovered <= 0)
+         return recovered < 0 ? VIDEO_PLAYER_ENDED : VIDEO_PLAYER_PLAYING;
+   }
    if (p->seek_failed)
       return VIDEO_PLAYER_SEEK_FAILED;
    if (p->paused && !p->seek_pending && !p->seek_show)
@@ -1082,7 +1195,7 @@ enum video_player_state video_player_poll(video_player_t *p, int64_t now_us)
       int r;
       bool threaded = false;
       /* frames on the GPU where the sink and the stream both can */
-      bool hw       = p->sink.start_hw
+      bool hw       = !p->hw_disabled && p->sink.start_hw
          && image_transfer_anim_stream_set_hw(p->stream, p->type, true);
 #ifdef VIDEO_PLAYER_WORKER
       threaded = !(p->flags & VIDEO_PLAYER_INLINE)
@@ -1094,6 +1207,12 @@ enum video_player_state video_player_poll(video_player_t *p, int64_t now_us)
       else
          r = p->sink.start(p->sink.user, p->width, p->height,
                threaded ? 2 : (p->sink.slot_begin ? 1 : 0));
+      if (hw && r == VIDEO_PLAYER_HW_REFUSED && p->hw_restart)
+      {
+         p->flags |= VP_HW;
+         video_player_request_software(p);
+         return VIDEO_PLAYER_PLAYING;
+      }
       if (r < 0)
          return VIDEO_PLAYER_PLAYING;
       p->flags = (p->flags & VIDEO_PLAYER_INLINE) | (hw ? VP_HW
@@ -1101,7 +1220,8 @@ enum video_player_state video_player_poll(video_player_t *p, int64_t now_us)
       /* told once, before any decode */
       image_transfer_anim_stream_set_want_fp16(p->stream, p->type,
             (p->flags & VIDEO_PLAYER_FP16) ? true : false);
-      p->origin_us = now_us;
+      if (!p->preserve_origin) p->origin_us = now_us;
+      p->preserve_origin = false;
 #ifdef VIDEO_PLAYER_WORKER
       if (threaded)
       {
@@ -1222,6 +1342,9 @@ void video_player_slot_released(video_player_t *p, unsigned slot)
 {
 #ifdef VIDEO_PLAYER_WORKER
    vp_job_t *job;
+#endif
+   if (p && slot == 0) p->inline_held = false;
+#ifdef VIDEO_PLAYER_WORKER
    if (!p || slot > 1 || !(job = p->job[slot]))
       return;
    if (retro_atomic_load_relaxed_int(&job->status) == VP_JOB_HELD)

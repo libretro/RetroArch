@@ -86,6 +86,10 @@ jobs:
         run: make -C samples/gfx/android_image_queue clean all check CC=${{ matrix.cc }} SANITIZER=address,undefined
       - name: Native decoder session failure and Surface timestamp contracts
         run: make -C samples/gfx/mediacodec_session clean all check CC=${{ matrix.cc }} SANITIZER=address,undefined
+      - name: First-frame hardware refusal and software playback recovery
+        run: |
+          make -C libretro-common/samples/formats/video_player clean all CC=${{ matrix.cc }} SANITIZER=address,undefined
+          libretro-common/samples/formats/video_player/video_player_test
       - name: Install test-only Vulkan software renderer
         run: sudo apt-get update && sudo apt-get install -y libvulkan-dev mesa-vulkan-drivers
       - name: Execute RGB shader crop and SDR PQ HLG pixel oracle on Vulkan software device
@@ -135,7 +139,7 @@ jobs:
                   -std=c89 -pedantic -Wall -Wextra -Werror -Wno-long-long -Wno-c99-extensions \
                   -DHAVE_THREADS -DHAVE_DYLIB -Wframe-larger-than=2048 -Ilibretro-common/include -Igfx/include \
                   "${extra[@]}" -c "$unity" -o "$RUNNER_TEMP/unity-$target-$api-$offset.o"
-                for root_source in gfx/common/vulkan_common.c gfx/drivers/vulkan.c; do
+                for root_source in gfx/common/vulkan_common.c gfx/drivers/vulkan.c gfx/gfx_surface_player.c; do
                   "$bin/$target$api-clang" \
                     -DANDROID -DHAVE_MENU -DHAVE_GFX_WIDGETS \
                     -DHAVE_VULKAN -DHAVE_RMP4 -DHAVE_DYLIB -DHAVE_THREADS \
@@ -144,13 +148,25 @@ jobs:
                     -I. -Ilibretro-common/include -Igfx/include "${extra[@]}" \
                     -c "$root_source" -o "$RUNNER_TEMP/$(basename "$root_source")-$target-$api-$offset.o"
                 done
+                for player_source in libretro-common/formats/video_player.c libretro-common/formats/image_transfer.c libretro-common/formats/webm/rwebm_video.c; do
+                  "$bin/$target$api-clang" \
+                    -DHAVE_RMP4 -DHAVE_RWEBM -DHAVE_RVP9 -DHAVE_RAV1 -DHAVE_THREADS \
+                    -Dinline=__inline__ -O1 -std=c89 -Wno-long-long -Wno-c99-extensions \
+                    -Werror=declaration-after-statement -Werror=frame-larger-than -Wframe-larger-than=2048 \
+                    -I. -Ilibretro-common/include "${extra[@]}" \
+                    -c "$player_source" -o "$RUNNER_TEMP/$(basename "$player_source")-$target-$api-$offset.o"
+                done
                 "$bin/ld.lld" -r \
                   "$RUNNER_TEMP/unity-$target-$api-$offset.o" \
                   "$RUNNER_TEMP/vulkan_common.c-$target-$api-$offset.o" \
                   "$RUNNER_TEMP/vulkan.c-$target-$api-$offset.o" \
+                  "$RUNNER_TEMP/gfx_surface_player.c-$target-$api-$offset.o" \
+                  "$RUNNER_TEMP/video_player.c-$target-$api-$offset.o" \
+                  "$RUNNER_TEMP/image_transfer.c-$target-$api-$offset.o" \
+                  "$RUNNER_TEMP/rwebm_video.c-$target-$api-$offset.o" \
                   -o "$RUNNER_TEMP/media-root-$target-$api-$offset.o"
                 if "$bin/llvm-nm" -u "$RUNNER_TEMP/media-root-$target-$api-$offset.o" | \
-                    grep -Eq ' U (mediacodec_|android_frame_|android_image_|vulkan_android_)'; then
+                    grep -Eq ' U (mediacodec_|android_frame_|android_image_|vulkan_android_|video_player_(request_software|set_hw_fallback)|image_transfer_anim_stream_stop_hw|rwebm_video_stream_stop_hw)'; then
                   echo "Unresolved private Android media helper in root link"
                   exit 1
                 fi

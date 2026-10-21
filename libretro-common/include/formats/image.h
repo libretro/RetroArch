@@ -637,6 +637,11 @@ bool image_transfer_anim_stream_set_output_stride(void *stream,
  * frame came - and read or abandoned by the caller. */
 bool image_transfer_anim_stream_set_hw(void *stream,
       enum image_type_enum type, bool enable);
+/* Exclusive decoder owner only, after all decode jobs stop. Withdraws the
+ * stream's hardware preference and rewinds with a fresh software decoder where
+ * available. Exported leases retain their old decoder's retirement context.
+ * False means this stream type has no supported restart operation. */
+bool image_transfer_anim_stream_stop_hw(void *stream, enum image_type_enum type);
 bool image_transfer_anim_stream_waiting(const void *stream,
       enum image_type_enum type);
 bool image_transfer_anim_stream_hw_frame(void *stream,

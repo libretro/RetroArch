@@ -39,6 +39,9 @@
 #include <retro_atomic.h>
 #include <formats/image.h>
 #include <formats/video_player.h>
+#ifdef HAVE_THREADS
+#include <rthreads/rthreads.h>
+#endif
 
 #define W 4
 #define H 2
@@ -281,6 +284,15 @@ typedef struct
    int hw_busy_every;
    int hw_offers;
    int hw_started;
+   fake_t *fallback_stream;
+   int fallback_calls, fallback_waits;
+   retro_atomic_int_t fallback_entered;
+   bool fallback_error;
+   bool hw_start_refused, fallback_threaded, fallback_async;
+   video_hw_frame_t fallback_held;
+#ifdef HAVE_THREADS
+   uintptr_t fallback_caller;
+#endif
    bool hw_twice;        /* the same frame offered after it was taken */
 } sink_t;
 
@@ -352,7 +364,7 @@ static int sink_start_hw(void *user, unsigned width, unsigned height,
    CHECK(jobs == 1 || jobs == 2, "start_hw: %u jobs", jobs);
    CHECK(width == W && height == H, "start_hw: %ux%u", width, height);
    k->hw_started++;
-   return 0;
+   return k->hw_start_refused ? VIDEO_PLAYER_HW_REFUSED : 0;
 }
 
 static enum video_player_present sink_present_hw(void *user,
@@ -390,6 +402,7 @@ static void sink_init(sink_t *k, video_player_sink_t *s, bool slots)
 {
    memset(k, 0, sizeof(*k));
    k->held       = -1;
+   retro_atomic_int_init(&k->fallback_entered,0);
    k->slots_on   = slots;
    s->user       = k;
    s->start      = sink_start;
@@ -1213,8 +1226,135 @@ static void lane_movie_stop(bool threaded)
          "movie stop: future hardware leases returned once");
 }
 
+static int fallback_restart(void *user)
+{
+   sink_t *k = (sink_t*)user;
+   fake_t *f = k->fallback_stream;
+#ifdef HAVE_THREADS
+   bool worker = sthread_get_current_thread_id() != k->fallback_caller;
+   CHECK(worker == (k->fallback_threaded && !k->hw_start_refused),
+         "fallback: restart ran on the wrong stream owner");
+#endif
+   k->fallback_calls++;
+   retro_atomic_store_release_int(&k->fallback_entered,1);
+   if (k->fallback_error) return -1;
+   if (k->fallback_waits) { k->fallback_waits--; return 0; }
+   f->hw_on = f->hw_pending = false;
+   f->pos = 0;
+   return 1;
+}
+static enum video_player_present fallback_present(void *user,
+      const video_player_frame_t *frame)
+{
+   sink_t *k = (sink_t*)user;
+   if (frame->hw)
+   {
+      if (!k->fallback_async) return VIDEO_PLAYER_PRESENT_FAILED;
+      k->fallback_held = *frame->hw;
+      k->held = (int)frame->slot;
+      return VIDEO_PLAYER_PRESENT_QUEUED;
+   }
+   return sink_present(user,frame);
+}
+static void lane_hw_fallback(bool threaded,bool refused,bool decode_failed,bool async)
+{
+   fake_t f;
+   sink_t k;
+   video_player_sink_t sink;
+   video_player_t *p;
+   enum video_player_state state = VIDEO_PLAYER_PLAYING;
+   int polls;
+   int64_t now = 1000000;
+   fake_init(&f,6,5);f.hw_can = true;f.movie_ns = 1000000000;
+   if (decode_failed) f.hw_fail_from = 1;
+   sink_init_hw(&k,&sink);k.fallback_stream = &f;
+   k.hw_start_refused = refused;k.fallback_waits = 2;k.fallback_threaded = threaded;k.fallback_async = async;
+#ifdef HAVE_THREADS
+   k.fallback_caller = sthread_get_current_thread_id();
+#endif
+   sink.present = fallback_present;
+   p = video_player_new(&f,IMAGE_TYPE_MP4,1,&sink,threaded ? 0 : VIDEO_PLAYER_INLINE);
+   CHECK(p && video_player_set_hw_fallback(p,fallback_restart,&k),"fallback: setup failed");
+   for (polls=0;polls<3000 && state==VIDEO_PLAYER_PLAYING;polls++)
+   {
+      state = video_player_poll(p,now);
+      if (k.held >= 0)
+      {
+         CHECK(video_player_request_software(p) && video_player_request_software(p),
+               "fallback async: refusal request was not idempotent");
+         video_player_poll(p,now);
+         CHECK(!k.fallback_calls,"fallback async: restarted before releasing the held slot");
+         video_hw_frame_abandon(&k.fallback_held);
+         video_player_slot_released(p,(unsigned)k.held);
+         k.held = -1;
+      }
+      now += 6000;
+      if (threaded) retro_sleep(1);
+   }
+   CHECK(state==VIDEO_PLAYER_ENDED && k.nseen==6 && seen_in_order(&k,6),
+         "fallback: %d frames, state %d (thread %d refused %d decode %d)",
+         k.nseen,state,threaded,refused,decode_failed);
+   CHECK(k.hw_started==1 && k.fallback_calls==3 && !f.hw_on,
+         "fallback: selected hardware again or failed to finish bounded restart");
+   if (!refused)
+      CHECK(video_player_due(p)==2000000,"fallback: movie clock origin reset during recovery");
+   video_player_free(p);
+   CHECK(f.hw_made==f.hw_abandoned,"fallback: unused GPU lease lost or returned twice");
+}
+
+static void lane_hw_fallback_stop(bool threaded,bool cancel)
+{
+   fake_t f;
+   sink_t k;
+   video_player_sink_t sink;
+   video_player_t *p;
+   enum video_player_state state = VIDEO_PLAYER_PLAYING;
+   int polls;
+   int64_t now = 0;
+   fake_init(&f,6,5);f.hw_can = true;
+   sink_init_hw(&k,&sink);k.fallback_stream = &f;k.fallback_threaded = threaded;
+   k.fallback_error = !cancel;k.fallback_waits = cancel ? 10000 : 0;
+#ifdef HAVE_THREADS
+   k.fallback_caller = sthread_get_current_thread_id();
+#endif
+   sink.present = fallback_present;
+   p = video_player_new(&f,IMAGE_TYPE_MP4,1,&sink,threaded ? 0 : VIDEO_PLAYER_INLINE);
+   CHECK(p && video_player_set_hw_fallback(p,fallback_restart,&k),"fallback stop: setup");
+   for (polls=0;polls<1000 && state==VIDEO_PLAYER_PLAYING;polls++)
+   {
+      state = video_player_poll(p,now);now += 6000;
+      if (cancel && retro_atomic_load_acquire_int(&k.fallback_entered)) break;
+      if (threaded) retro_sleep(1);
+   }
+   if (cancel)
+   {
+      CHECK(retro_atomic_load_acquire_int(&k.fallback_entered),"fallback stop: callback never ran");
+      for (polls=0;polls<1000 && !video_player_stop(p);polls++) retro_sleep(1);
+      CHECK(polls<1000,"fallback stop: decoder owner never settled");
+   }
+   else
+      CHECK(state==VIDEO_PLAYER_ENDED && k.fallback_calls==1,"fallback stop: failed restart retried forever");
+   CHECK(video_player_poll(p,now)==VIDEO_PLAYER_ENDED && !k.nseen,"fallback stop: stopped player resumed");
+   video_player_free(p);
+   CHECK(f.hw_made==f.hw_abandoned,"fallback stop: GPU lease lost or returned twice");
+}
+
 int main(void)
 {
+   lane_hw_fallback_stop(false,false);
+   lane_hw_fallback_stop(false,true);
+   lane_hw_fallback(false,false,false,false);
+   lane_hw_fallback(false,true,false,false);
+   lane_hw_fallback(false,false,true,false);
+   lane_hw_fallback(false,false,false,true);
+#ifdef HAVE_THREADS
+   lane_hw_fallback_stop(true,false);
+   lane_hw_fallback_stop(true,true);
+   lane_hw_fallback(true,false,false,false);
+   lane_hw_fallback(true,true,false,false);
+   lane_hw_fallback(true,false,true,false);
+   lane_hw_fallback(true,false,false,true);
+#endif
    lane_movie_stop(false);
    lane_movie(false, false, false);
    lane_movie(false, true, true);

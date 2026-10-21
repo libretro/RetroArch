@@ -1881,6 +1881,15 @@ int rwebm_video_stream_skip(rwebm_video_stream_t *s, int *duration_ms)
    return ret > 0 ? ret : 0;
 }
 
+void rwebm_video_stream_stop_hw(rwebm_video_stream_t *s)
+{
+   if (!s) return;
+#if defined(HAVE_RVP9) || defined(HAVE_RAV1)
+   s->hw_want = 0;
+#endif
+   rwebm_video_stream_rewind(s);
+}
+
 void rwebm_video_stream_rewind(rwebm_video_stream_t *s)
 {
    if (!s)
