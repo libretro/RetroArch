@@ -43,3 +43,16 @@ mux/audio input. Reuse record_gpu_queue for producer/worker ownership. Encoder
 calls, final draining and file work must stay off the render thread. Native
 Apple codec, pixel, A/V and lifecycle oracles remain required; mock tests are
 not native acceptance.
+
+The queue worker now has fault-injected and 5,000-frame two-thread tests using
+the real SPSC queue. GPU-pending input, encoder BUSY and borrowed output retain
+their slots. Partial release invalidates a consumed sample borrow and can be
+retried; cancellation holds GPU work until completion. A one-frame maximum
+encoder delay with at least two slots prevents unbounded native buffering
+from exhausting the fixed pool. Unsupported delay settings refuse startup.
+
+`python3 pipeline_run.py` is the native ARC/MRC capture-to-encode gate. It
+cycles 24 frames through two fixed buffers and the shipping capture, queue,
+worker and compression adapters. Independent decoding checks YUV and colour
+tags; the native fixture checks borrowed output and PTS/duration. This still
+does not establish AVFoundation mux/audio or renderer/controller integration.

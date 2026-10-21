@@ -4,47 +4,7 @@
 #include "../../../gfx/common/videotoolbox_encode.h"
 #define CHECK(x) do { if (!(x)) { fprintf(stderr,"FAIL %u: %s\n",(unsigned)__LINE__,#x); goto done; } } while (0)
 #define FRAMES 12
-static bool prefix(FILE *out, const uint8_t *data, size_t size)
-{
-   static const uint8_t start[4] = {0,0,0,1};
-   return fwrite(start,1,4,out)==4 && fwrite(data,1,size,out)==size;
-}
-static bool headers(FILE *out, CMVideoFormatDescriptionRef format, bool hevc, int *length)
-{
-   const uint8_t *data;
-   size_t size, count, i;
-   OSStatus status;
-   count=0;
-   for (i=0; !i || i<count; i++)
-   {
-      status=hevc ? CMVideoFormatDescriptionGetHEVCParameterSetAtIndex(format,i,&data,&size,&count,length)
-                  : CMVideoFormatDescriptionGetH264ParameterSetAtIndex(format,i,&data,&size,&count,length);
-      if (status || !count || count>16 || *length<1 || *length>4 || !prefix(out,data,size)) return false;
-   }
-   return true;
-}
-static bool packet(FILE *out, CMSampleBufferRef sample, int length)
-{
-   CMBlockBufferRef block=CMSampleBufferGetDataBuffer(sample);
-   size_t size=block?CMBlockBufferGetDataLength(block):0, at=0, n;
-   unsigned i;
-   uint8_t *bytes;
-   bool ok=false;
-   if (!size || size>4*1024*1024) return false;
-   bytes=(uint8_t*)malloc(size); if (!bytes) return false;
-   if (CMBlockBufferCopyDataBytes(block,0,size,bytes)) goto done;
-   while (at<size)
-   {
-      if (size-at<(unsigned)length) goto done;
-      n=0;
-      for (i=0;i<(unsigned)length;i++) n=(n<<8)|bytes[at++];
-      if (!n || n>size-at || !prefix(out,bytes+at,n)) goto done;
-      at+=n;
-   }
-   ok=true;
-done:
-   free(bytes); return ok;
-}
+#include "native_packet.h"
 /* Test-only CPU fixture creation. Production Metal capture must fill these
  * compatible planes on the GPU, not call this helper or lock their address. */
 static bool fill(CVPixelBufferRef image, FILE *reference, unsigned frame, unsigned depth)

@@ -54,6 +54,7 @@ static int kCFTypeDictionaryKeyCallBacks, kCFTypeDictionaryValueCallBacks;
 #define kVTVideoEncoderSpecification_RequireHardwareAcceleratedVideoEncoder "require-hardware"
 #define kVTCompressionPropertyKey_AverageBitRate "bitrate"
 #define kVTCompressionPropertyKey_MaxKeyFrameInterval "key-interval"
+#define kVTCompressionPropertyKey_MaxFrameDelayCount "frame-delay"
 #define kVTCompressionPropertyKey_RealTime "realtime"
 #define kVTCompressionPropertyKey_AllowFrameReordering "reorder"
 #define kVTCompressionPropertyKey_ProfileLevel "profile"
@@ -96,7 +97,7 @@ static CFMutableDictionaryRef CFDictionaryCreateMutable(void *a, int n, void *k,
 static CFNumberRef CFNumberCreate(void *a, int t, const int32_t *value)
 { object_t *p = object_new(2); (void)a; (void)t; if (p) p->number = *value; return p; }
 static bool number_key(CFStringRef key)
-{ return !strcmp(key,"width") || !strcmp(key,"height") || !strcmp(key,"format") || !strcmp(key,"bitrate") || !strcmp(key,"key-interval"); }
+{ return !strcmp(key,"width") || !strcmp(key,"height") || !strcmp(key,"format") || !strcmp(key,"bitrate") || !strcmp(key,"key-interval") || !strcmp(key,"frame-delay"); }
 static void CFDictionarySetValue(CFMutableDictionaryRef d, CFStringRef key, const void *value)
 {
    unsigned i = d->count++;
@@ -135,6 +136,7 @@ static OSStatus VTSessionSetProperties(VTCompressionSessionRef s, CFMutableDicti
    assert(!strcmp((const char*)p->values[entry(p,"transfer")],expected_hdr?"pq":"709-transfer"));
    assert(!strcmp((const char*)p->values[entry(p,"matrix")],expected_hdr?"2020-matrix":"709-matrix"));
    assert(p->numbers[entry(p,"bitrate")] == 1000000);
+   assert(p->numbers[entry(p,"frame-delay")] == 1);
    return fail_stage==2 ? -102 : 0;
 }
 static OSStatus VTCompressionSessionPrepareToEncodeFrames(VTCompressionSessionRef s)
@@ -178,9 +180,10 @@ int main(void)
    for (i=1;i<=5;i++)
    { fail_stage=i; e=videotoolbox_encode_new(&c,&error); if (i<5) {assert(!e && error); assert(!live);} else {assert(e); assert(!videotoolbox_encode_finish(e)); videotoolbox_encode_cancel(e);} }
    fail_stage=0; hardware=false; assert(!videotoolbox_encode_new(&c,&error)); assert(!live); hardware=true;
-   for (i=1;i<=9;i++)
+   for (i=1;i<=10;i++)
    { allocations=0; allocation_fail=i; e=videotoolbox_encode_new(&c,&error); assert(!e && error && !live); }
    allocation_fail=0;
+   c.slots=1; assert(!videotoolbox_encode_new(&c,&error)); c.slots=2;
    e=videotoolbox_encode_new(&c,&error); assert(e && !error);
    assert(!videotoolbox_encode_free(e));
    assert(videotoolbox_encode_submit(e,0,&image,0,1001)==1);

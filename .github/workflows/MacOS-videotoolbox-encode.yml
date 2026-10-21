@@ -6,6 +6,7 @@ on:
       - '.github/workflows/MacOS-videotoolbox-encode.yml'
       - 'gfx/common/videotoolbox_encode*.h'
       - 'record/record_gpu_capture_metal.*'
+      - 'record/record_gpu_worker_vt*'
       - 'record/shaders/capture_metal.*'
       - 'record/shaders/generate_metal.py'
       - 'samples/record/videotoolbox_encode/**'
@@ -15,6 +16,7 @@ on:
       - '.github/workflows/MacOS-videotoolbox-encode.yml'
       - 'gfx/common/videotoolbox_encode*.h'
       - 'record/record_gpu_capture_metal.*'
+      - 'record/record_gpu_worker_vt*'
       - 'record/shaders/capture_metal.*'
       - 'record/shaders/generate_metal.py'
       - 'samples/record/videotoolbox_encode/**'
@@ -32,13 +34,23 @@ jobs:
         run: command -v ffmpeg >/dev/null && command -v ffprobe >/dev/null || brew install ffmpeg
       - name: Portable ownership and failure contracts
         working-directory: samples/record/videotoolbox_encode
-        run: make check thread_test && ./thread_test
+        run: make check thread_test worker_thread_test && ./thread_test && ./worker_thread_test
       - name: Native hardware encoder and independent pixels
         run: |
           rc=0
           python3 samples/record/videotoolbox_encode/run.py --native || rc=$?
           if [ "$rc" = 77 ]; then
             echo "::warning::Some required hardware encode cases unavailable; native encode acceptance is incomplete"
+            exit 0
+          fi
+          exit "$rc"
+      - name: Native Metal to VideoToolbox queue-worker pipeline
+        if: ${{ !cancelled() }}
+        run: |
+          rc=0
+          python3 samples/record/videotoolbox_encode/pipeline_run.py || rc=$?
+          if [ "$rc" = 77 ]; then
+            echo "::warning::Native pipeline hardware unavailable; integrated recording acceptance is incomplete"
             exit 0
           fi
           exit "$rc"

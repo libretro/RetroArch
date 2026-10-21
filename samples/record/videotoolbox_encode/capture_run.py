@@ -12,6 +12,11 @@ if sys.platform != 'darwin':
 here = Path(__file__).resolve().parent
 root = here.parents[2]
 subprocess.run([sys.executable, str(root / 'record/shaders/generate_metal.py'), '--check'], check=True)
+subprocess.run(shlex.split(os.environ.get('CC', 'cc')) + [
+    '-DHAVE_THREADS', '-std=c89', '-pedantic', '-Wall', '-Wextra', '-Werror',
+    '-Wno-long-long', '-Wno-c99-extensions', '-mmacosx-version-min=10.14',
+    '-I' + str(root / 'libretro-common/include'), '-fsyntax-only',
+    str(here / 'worker_native_compile.c')], check=True)
 unavailable = 0
 with tempfile.TemporaryDirectory(prefix='metal-record-capture-') as temp:
     for ownership in ('-fobjc-arc', '-fno-objc-arc'):

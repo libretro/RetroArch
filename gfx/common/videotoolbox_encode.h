@@ -61,7 +61,7 @@ static INLINE VT_ENCODE_AVAILABLE videotoolbox_encode_t *videotoolbox_encode_new
    if (error) *error = status;
    if (!config || !config->width || !config->height || (config->width & 1)
          || (config->height & 1) || config->width > 16384 || config->height > 16384
-         || !config->slots || config->slots > VIDEOTOOLBOX_ENCODE_SLOTS
+         || config->slots < 2 || config->slots > VIDEOTOOLBOX_ENCODE_SLOTS
          || !config->bitrate || config->bitrate > INT32_MAX
          || !config->key_interval || config->key_interval > INT32_MAX
          || !config->timescale || config->timescale > INT32_MAX
@@ -84,7 +84,8 @@ static INLINE VT_ENCODE_AVAILABLE videotoolbox_encode_t *videotoolbox_encode_new
             config->bit_depth == 10 ? kCVPixelFormatType_420YpCbCr10BiPlanarVideoRange
                         : kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange)
          || !videotoolbox_encode_number(props, kVTCompressionPropertyKey_AverageBitRate, config->bitrate)
-         || !videotoolbox_encode_number(props, kVTCompressionPropertyKey_MaxKeyFrameInterval, config->key_interval))
+         || !videotoolbox_encode_number(props, kVTCompressionPropertyKey_MaxKeyFrameInterval, config->key_interval)
+         || !videotoolbox_encode_number(props, kVTCompressionPropertyKey_MaxFrameDelayCount, 1))
    { status = kVTAllocationFailedErr; goto done; }
    CFDictionarySetValue(props, kVTCompressionPropertyKey_RealTime, kCFBooleanTrue);
    CFDictionarySetValue(props, kVTCompressionPropertyKey_AllowFrameReordering, kCFBooleanFalse);
