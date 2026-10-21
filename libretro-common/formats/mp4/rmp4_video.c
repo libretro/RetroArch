@@ -2028,15 +2028,34 @@ int rmp4_video_stream_seek_step(rmp4_video_stream_t *s, int64_t *position_us)
    if (s->seek_state == 2 && s->disp_idx < s->seek_target)
    {
       int r;
-      s->waiting = RMP4_VIDEO_WAIT_NONE;
-      r = rmp4_video_stream_step(s, NULL, 1);
-      if (r < 0)
-         goto failed;
-      if (r == 1)
+      unsigned budget = 1;
+#ifdef HAVE_RAV1
+      int64_t started = 0;
+      if (s->codec == RMP4_CODEC_AV1)
       {
-         rmp4_video_hwf_drop(s);
-         s->rndr_kind = 0;
+         budget = 32;
+         started = cpu_features_get_time_usec();
       }
+#endif
+      do
+      {
+         s->waiting = RMP4_VIDEO_WAIT_NONE;
+         r = rmp4_video_stream_step(s, NULL, 1);
+         if (r < 0)
+            goto failed;
+         if (r == 1)
+         {
+            rmp4_video_hwf_drop(s);
+            s->rndr_kind = 0;
+         }
+         if (r == 2 || s->disp_idx >= s->seek_target)
+            break;
+#ifdef HAVE_RAV1
+         if (s->codec == RMP4_CODEC_AV1 &&
+               cpu_features_get_time_usec() - started >= 4000)
+            break;
+#endif
+      } while (--budget);
       if (s->disp_idx < s->seek_target)
          return 0;
    }

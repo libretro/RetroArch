@@ -130,6 +130,37 @@ static void test_stream(void)
    rav1_set_hw_backend(&factory);
 }
 
+static void test_seek(void)
+{
+   rmp4_video_stream_t *s;
+   unsigned before;
+   int64_t position = -1;
+   make_mp4(1);
+   s = rmp4_video_stream_open_hw_avail(bytes, used,
+         media_at + sizeof(packet) - 1, NULL, NULL, NULL);
+   CHECK(s != NULL);
+   if (!s)
+      return;
+   CHECK(rmp4_video_stream_set_hw(s, 1));
+   CHECK(rmp4_video_stream_seek_begin_ns(s, 40000000));
+   CHECK(rmp4_video_stream_seek_step(s, NULL) == 0);
+   before = decodes;
+   CHECK(rmp4_video_stream_seek_step(s, NULL) == 0);
+   CHECK(decodes == before);
+   CHECK(rmp4_video_stream_wait_reason(s) == RMP4_VIDEO_WAIT_INPUT);
+   rmp4_video_stream_set_avail(s, used);
+   decode_busy = 1;
+   CHECK(rmp4_video_stream_seek_step(s, NULL) == 0);
+   CHECK(decodes == before + 1);
+   CHECK(rmp4_video_stream_wait_reason(s) == RMP4_VIDEO_WAIT_DECODER);
+   decode_busy = 0;
+   before = exports;
+   CHECK(rmp4_video_stream_seek_step(s, &position) == 1);
+   CHECK(position == 40000 && exports == before);
+   rmp4_video_stream_close(s);
+   CHECK(opens == closes);
+}
+
 static void test_color(void)
 {
    rmp4_video_stream_t *s;
@@ -226,6 +257,7 @@ int main(void)
    factory.close = close_backend;
    rav1_set_hw_backend(&factory);
    test_stream();
+   test_seek();
    test_color();
    test_unavailable();
    rav1_set_hw_backend(NULL);
