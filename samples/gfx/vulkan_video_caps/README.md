@@ -376,3 +376,20 @@ Four held exports force physical-slot renaming and output pressure; the
 readback oracle rereads held pictures before release, including after close.
 The default checks retain the copied path. Sampled allocation/view faults
 also retain copied output when unified layouts are enabled.
+
+### H.264 external and host-lifetime probes
+
+`H264_CONFORMANCE_MP4` selects an additional H.264 MP4 of at most 64 MiB
+and 32 displayed pictures. The decoder oracle compares all displayed YUV
+plane hashes with the software decoder and requires hardware admission.
+
+`H264_TEST_HOST_LIFETIME=1` additionally changes the outer H.264 picture
+header after `vkCmdDecodeVideoKHR` returns, before queue submission. The
+recording call receives a valid header and unchanged decoded bitstream.
+Application-owned header memory is no longer an input after that call.
+This opt-in conformance probe can crash a driver that retains the header.
+Do not count such a crash, unavailable device or disabled probe as a pass.
+Run without validation to distinguish driver retention from layer copies.
+Normal oracle and production behavior do not enable this probe.
+
+Reference: [Vulkan object lifetime](https://docs.vulkan.org/spec/latest/chapters/fundamentals.html#fundamentals-objectmodel-lifetime).

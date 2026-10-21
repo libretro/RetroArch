@@ -1,6 +1,19 @@
 /* Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier: GPL-3.0-or-later */
 #include "../d3d11_video_decode/d3d11_video_decode_test_data.h"
 
+static PFN_vkCmdDecodeVideoKHR h264_host_decode;
+static VkVideoDecodeH264PictureInfoKHR h264_host_picture;
+
+static void VKAPI_CALL h264_host_lifetime(VkCommandBuffer command,
+      const VkVideoDecodeInfoKHR *info)
+{
+   VkVideoDecodeInfoKHR copy = *info;
+   h264_host_picture = *(const VkVideoDecodeH264PictureInfoKHR*)info->pNext;
+   copy.pNext = &h264_host_picture;
+   h264_host_decode(command, &copy);
+   h264_host_picture.pStdPictureInfo = NULL;
+}
+
 static int h264_hash(rh264_video *v, uint32_t *hash, unsigned *count)
 {
    unsigned plane;
@@ -60,6 +73,34 @@ done:
    return ok;
 }
 
+static int h264_external_regression(void)
+{
+   const char *path = getenv("H264_CONFORMANCE_MP4");
+   FILE *file;
+   uint8_t *data;
+   long length;
+   unsigned cpu_count, gpu_count;
+   uint32_t cpu[32], gpu[32];
+   int ok;
+   if (!path) return 1;
+   file = fopen(path, "rb");
+   if (!file) return 0;
+   if (fseek(file, 0, SEEK_END) || (length = ftell(file)) <= 0
+         || length > 64 * 1024 * 1024 || fseek(file, 0, SEEK_SET))
+   { fclose(file); return 0; }
+   data = (uint8_t*)malloc((size_t)length);
+   if (!data) { fclose(file); return 0; }
+   ok = fread(data, 1, (size_t)length, file) == (size_t)length;
+   fclose(file);
+   if (ok)
+      ok = h264_decode_fixture(data, (size_t)length, 0, cpu, &cpu_count)
+         && h264_decode_fixture(data, (size_t)length, 1, gpu, &gpu_count)
+         && cpu_count == gpu_count && !memcmp(cpu, gpu, cpu_count * sizeof(*cpu));
+   free(data);
+   printf("Vulkan H.264 external regression: %s\n", ok ? "PASS" : "FAIL");
+   return ok;
+}
+
 static int h264_regression(void)
 {
    static const struct { const char *name; const uint8_t *data; size_t size; } streams[] = {
@@ -70,6 +111,14 @@ static int h264_regression(void)
    unsigned i, cpu_count, gpu_count;
    uint32_t cpu[32], gpu[32];
    int ok = 1;
+   int host_lifetime = getenv("H264_TEST_HOST_LIFETIME") != NULL;
+   if (host_lifetime)
+   {
+      puts("Vulkan H.264 host-lifetime conformance enabled");
+      fflush(stdout);
+      h264_host_decode = vvd.cmd_decode;
+      vvd.cmd_decode = h264_host_lifetime;
+   }
    for (i = 0; i < sizeof(streams) / sizeof(streams[0]); i++)
    {
       int pass = h264_decode_fixture(streams[i].data, streams[i].size, 0, cpu, &cpu_count)
@@ -78,5 +127,7 @@ static int h264_regression(void)
       printf("Vulkan H.264 regression %s: %s\n", streams[i].name, pass ? "PASS" : "FAIL");
       if (!pass) ok = 0;
    }
+   if (!h264_external_regression()) ok = 0;
+   if (host_lifetime) vvd.cmd_decode = h264_host_decode;
    return ok;
 }
