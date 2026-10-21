@@ -131,7 +131,7 @@ static joypad_connection_entry_t pad_map[] = {
       PID_SNES_CLONE,
       &pad_connection_snesusb
    },
-   { "Generic NES USB Controller",
+   { "USB Gamepad",
       VID_MICRONTEK,
       PID_MICRONTEK_NES,
       &pad_connection_nesusb
@@ -274,8 +274,8 @@ joypad_connection_t *pad_connection_init(unsigned pads)
 
    return joyconn;
 }
-/* "USB Gamepad", as the NES pad on Microntek's chip calls itself;
- * Linux puts the maker's name in front */
+/* "USB Gamepad", as every pad on Microntek's chip calls itself; Linux
+ * puts the maker's name in front */
 static bool joypad_connection_is_nes_clone_name(const char *name)
 {
    return strstr(name, "USB Gamepad") != NULL;
@@ -311,11 +311,12 @@ joypad_connection_entry_t *find_connection_entry(uint16_t vid, uint16_t pid, con
             continue;
       }
 
-      /* DragonRise's and Microntek's chips give one id to pads of every
-       * layout - NES and SNES pads, Saturn pads, arcade sticks. The NES
-       * handler takes only a pad that names itself as its NES pad does;
-       * any other is read from its report descriptor. With no name to
-       * go by, it is taken as before. */
+      /* Microntek's chip gives one id, and one name, to pads of every
+       * make - NES and SNES pads, Saturn pads - and reports them all
+       * the same way: four face buttons, four shoulder buttons, Select
+       * and Start. Its handler takes a pad that names itself as the
+       * chip does; any other on the id is read from its report
+       * descriptor. With no name to go by, it is taken as before. */
       if (     pad_map[i].iface == &pad_connection_nesusb
             && pad_map[i].vid == vid && pad_map[i].pid == pid
             && has_name

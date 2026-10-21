@@ -797,11 +797,11 @@ static void test_hidclass(const char *path)
    sjoy_mode    = false;
    caps_out     = 0;
 
-   /* 0079:0011 is a chip's, on pads of every layout: a Saturn pad is
-    * read from its layout and known by its own name; the NES pad that
-    * calls itself "USB Gamepad" still has its handler */
+   /* 0079:0011 is a chip's: a pad on it that names itself otherwise is
+    * read from its layout and known by its own name; one that calls
+    * itself "USB Gamepad", as the chip does, has the chip's handler */
    {
-      static const char *names[2] = { "Retro-bit Saturn Pad", "USB Gamepad " };
+      static const char *names[2] = { "Other Pad", "USB Gamepad " };
       unsigned k;
       for (k = 0; k < 2; k++)
       {
@@ -814,12 +814,12 @@ static void test_hidclass(const char *path)
             continue;
          if (k == 0)
             CHECK(hid->devices->generic
-                  && !strcmp(hid->devices->name, "Retro-bit Saturn Pad"),
-                  "hid class: a Saturn pad on 0079:0011 was taken for the NES pad");
+                  && !strcmp(hid->devices->name, "Other Pad"),
+                  "hid class: a pad on 0079:0011 naming itself otherwise was taken by the chip's handler");
          else
             CHECK(!hid->devices->generic
-                  && !strcmp(hid->devices->name, "Generic NES USB Controller"),
-                  "hid class: the NES pad on 0079:0011 lost its handler");
+                  && !strcmp(hid->devices->name, "USB Gamepad"),
+                  "hid class: a \"USB Gamepad\" on 0079:0011 lost its handler");
          dev = hid->devices;
          EnterCriticalSection(&q_lock);
          h_unplugged = true;

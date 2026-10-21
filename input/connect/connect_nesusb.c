@@ -129,10 +129,11 @@ static void hidpad_nesusb_packet_handler(void *data,
 static void hidpad_nesusb_set_rumble(void *data,
       enum retro_rumble_effect effect, uint16_t strength) { }
 
-/* For now we return a single static name */
+/* As the pad calls itself: the chip's name, the same on an NES pad, an
+ * SNES pad or a Saturn pad */
 const char * hidpad_nesusb_get_name(void *data)
 {
-   return "Generic NES USB Controller";
+   return "USB Gamepad";
 }
 
 static int32_t hidpad_nesusb_button(void *data, uint16_t joykey)
