@@ -64,6 +64,7 @@ static int diagnostic_submit(void *data,unsigned slot,void *buffer,uint64_t pts,
             }
       }
       CVPixelBufferUnlockBaseAddress(copy,0);
+      assert(!CVPixelBufferFillExtendedPixels(copy));
       CVPixelBufferUnlockBaseAddress(image,kCVPixelBufferLock_ReadOnly);
       image=copy;
    }
@@ -108,6 +109,13 @@ int main(int argc,char **argv)
       pool=VTCompressionSessionGetPixelBufferPool(encoder->session); assert(pool);
       for (i=0;i<2;i++)
       { assert(!CVPixelBufferPoolCreatePixelBuffer(NULL,pool,&images[i])); buffers[i]=images[i]; }
+      {
+         size_t left,right,top,bottom;
+         CVPixelBufferGetExtendedPixels(images[0],&left,&right,&top,&bottom);
+         printf("POOL: %u x %u depth %u stride %lu, extended %lu %lu %lu %lu\n",
+               WIDTH,HEIGHT,config.bit_depth,(unsigned long)CVPixelBufferGetBytesPerRowOfPlane(images[0],0),
+               (unsigned long)left,(unsigned long)right,(unsigned long)top,(unsigned long)bottom);
+      }
       capture=record_gpu_capture_metal_new((__bridge void*)device,buffers,2,WIDTH,HEIGHT,config.bit_depth,mode);
       assert(capture);
       queue=record_gpu_queue_new(2); assert(queue);
@@ -155,7 +163,7 @@ int main(int argc,char **argv)
             assert(record_gpu_worker_vt_step(worker,&again)==RECORD_GPU_VT_PACKET && again==sample);
             assert(!CMTimeCompare(CMSampleBufferGetPresentationTimeStamp(encoded),CMTimeMake((int64_t)received*1001,60000)));
             assert(!CMTimeCompare(CMSampleBufferGetDuration(encoded),CMTimeMake(1001,60000)));
-            if (!received) assert(headers(coded,CMSampleBufferGetFormatDescription(encoded),config.hevc,&length));
+            assert(headers(coded,CMSampleBufferGetFormatDescription(encoded),config.hevc,&length));
             assert(packet(coded,encoded,length));
             assert(record_gpu_worker_vt_release(worker)); received++; progress=true;
          }

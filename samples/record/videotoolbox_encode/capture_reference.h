@@ -11,8 +11,12 @@
 #include <stdint.h>
 #include <defines/cocoa_defines.h>
 #include "../../../record/record_gpu_capture_metal.h"
+#ifndef WIDTH
 #define WIDTH 162
+#endif
+#ifndef HEIGHT
 #define HEIGHT 130
+#endif
 #define SOURCE_W (WIDTH+4)
 #define SOURCE_H (HEIGHT+4)
 static double component(unsigned x,unsigned y,unsigned c,unsigned mode)

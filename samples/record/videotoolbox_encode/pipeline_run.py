@@ -38,9 +38,11 @@ with workspace as temp:
         obj = directory / (Path(source).stem + '.o')
         subprocess.run(compiler + flags + ['-c', str(root / source), '-o', str(obj)], check=True)
         objects.append(str(obj))
-    for ownership in ('-fobjc-arc', '-fno-objc-arc'):
-        binary = directory / ('pipeline-arc' if ownership == '-fobjc-arc' else 'pipeline-mrc')
-        command = compiler + flags + ['-fblocks', ownership, '-Wno-unused-function',
+    for ownership, width, height in ((a, w, h) for w, h in ((162, 130), (192, 160))
+                                     for a in ('-fobjc-arc', '-fno-objc-arc')):
+        binary = directory / (('pipeline-arc' if ownership == '-fobjc-arc' else 'pipeline-mrc')
+                              + f'-{width}x{height}')
+        command = compiler + flags + [f'-DWIDTH={width}', f'-DHEIGHT={height}', '-fblocks', ownership, '-Wno-unused-function',
             str(here / 'pipeline_test.m'), str(root / 'record/record_gpu_capture_metal.m'),
             *objects, '-o', str(binary)]
         for framework in ('Foundation', 'Metal', 'CoreVideo', 'CoreMedia', 'VideoToolbox', 'CoreFoundation'):
@@ -50,6 +52,8 @@ with workspace as temp:
         for hevc, depth, mode, control in ((0, 8, 0, False), (1, 8, 0, False),
                 (1, 10, 0, False), (1, 10, 1, False), (1, 10, 2, False),
                 (1, 10, 0, True), (1, 10, 1, True)):
+            if width != 162 and (depth != 10 or mode == 2 or control):
+                continue
             case = directory / f'{binary.name}-hevc{hevc}-depth{depth}-mode{mode}-cpu{int(control)}'
             case.mkdir()
             coded, reference = case / 'coded.bin', case / 'reference.yuv'
@@ -63,7 +67,7 @@ with workspace as temp:
             result.check_returncode()
             info = json.loads(subprocess.check_output([ffprobe, '-v', 'error', '-show_streams',
                                                       '-of', 'json', str(coded)]))['streams'][0]
-            assert (info['width'], info['height']) == (162, 130), info
+            assert (info['width'], info['height']) == (width, height), info
             assert info['codec_name'] == ('hevc' if hevc else 'h264'), info
             assert info['pix_fmt'] == ('yuv420p10le' if depth == 10 else 'yuv420p'), info
             assert info['color_range'] == 'tv', info
@@ -74,21 +78,21 @@ with workspace as temp:
                                                '-pix_fmt', 'yuv420p10le', '-f', 'rawvideo', '-'])
             actual, expected = array.array('H'), array.array('H')
             actual.frombytes(pixels); expected.frombytes(reference.read_bytes())
-            assert len(actual) == len(expected) == 24 * 162 * 130 * 3 // 2
+            assert len(actual) == len(expected) == 24 * width * height * 3 // 2
             errors = sorted(abs(a-b) for a, b in zip(actual, expected))
             mean, peak, p99 = sum(errors) / len(errors), errors[-1], errors[int(.99 * len(errors))]
             (case / 'decoded.yuv').write_bytes(pixels)
             report = dict(mean=mean, peak=peak, p99=p99, stream=info, planes=[])
-            frame_size, luma_size = 162 * 130 * 3 // 2, 162 * 130
-            for plane, offset, width, height in (('Y', 0, 162, 130),
-                    ('U', luma_size, 81, 65), ('V', luma_size * 5 // 4, 81, 65)):
+            frame_size, luma_size = width * height * 3 // 2, width * height
+            for plane, offset, plane_width, plane_height in (('Y', 0, width, height),
+                    ('U', luma_size, width // 2, height // 2), ('V', luma_size * 5 // 4, width // 2, height // 2)):
                 worst = []
                 for frame in range(24):
                     start = frame * frame_size + offset
-                    index = max(range(width * height),
+                    index = max(range(plane_width * plane_height),
                                 key=lambda i: abs(actual[start+i]-expected[start+i]))
                     a, b = actual[start+index], expected[start+index]
-                    worst.append(dict(frame=frame, x=index % width, y=index // width,
+                    worst.append(dict(frame=frame, x=index % plane_width, y=index // plane_width,
                                       actual=a, expected=b, error=abs(a-b)))
                 report['planes'].append(dict(plane=plane, worst=worst))
             (case / 'errors.json').write_text(json.dumps(report, indent=2) + '\n')
