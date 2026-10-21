@@ -17,8 +17,9 @@
  * path and to the other one report at a time, and after every burst
  * the two must read the same.
  *
- * Also checked: how many parses each took, and that removing a
- * controller forgets what was held for it. */
+ * Also checked: how many parses each took, that removing a
+ * controller forgets what was held for it, and that the state the
+ * driver lends the frontend in place of a copy is what its reads say. */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -202,9 +203,7 @@ static int same_state(void)
 {
    const winraw_joypad_joypad_data_t *a = &winraw_joypad_pads[0];
    const winraw_joypad_joypad_data_t *b = &winraw_joypad_pads[1];
-   return !memcmp(a->buttons, b->buttons, sizeof(a->buttons))
-       && !memcmp(a->axes,    b->axes,    sizeof(a->axes))
-       && !memcmp(a->hats,    b->hats,    sizeof(a->hats));
+   return !memcmp(&a->view, &b->view, sizeof(a->view));
 }
 
 int main(void)
@@ -269,6 +268,37 @@ int main(void)
          parses_held += parses - p0;
       }
 
+      /* what the pad lends the frontend is what its reads say */
+      {
+         static const uint16_t dirs[4] = {
+            HAT_UP_MASK, HAT_DOWN_MASK, HAT_LEFT_MASK, HAT_RIGHT_MASK };
+         const input_pad_view_t *v;
+         unsigned k, d, off = 0;
+         winraw_joypad_by_poll = true;
+         v = winraw_joypad_joypad_view(0);
+         for (k = 0; k < 256; k++)
+            if ((BIT256_GET(v->buttons, k) != 0)
+                  != (winraw_joypad_joypad_button(0, (uint16_t)k) != 0))
+               off++;
+         for (k = 0; k < 4; k++)
+            for (d = 0; d < 4; d++)
+               if (((v->hats >> (k * 4 + d)) & 1) != (unsigned)(
+                     winraw_joypad_joypad_button(0,
+                        (uint16_t)HAT_MAP(k, dirs[d])) != 0))
+                  off++;
+         for (k = 0; k < INPUT_PAD_VIEW_AXES; k++)
+            if (v->axes[k] != (int16_t)(
+                     winraw_joypad_joypad_axis(0, AXIS_POS(k))
+                   + winraw_joypad_joypad_axis(0, AXIS_NEG(k))))
+               off++;
+         if (off)
+         {
+            printf("FAIL burst %u: the lent state differs from the reads"
+                  " in %u places\n", burst, off);
+            failures++;
+         }
+      }
+
       if (!same_state())
       {
          printf("FAIL burst %u (%u records): the newest-only state differs from"
@@ -307,6 +337,7 @@ int main(void)
    }
    printf("   %lu reports in 20000 bursts: %lu parses holding the newest,"
          " %lu parsing every one\n", reports, parses_held, parses_every);
-   printf("PASS winraw_joypad_newest_test: the state is the same after every burst\n");
+   printf("PASS winraw_joypad_newest_test: the state is the same after every"
+         " burst, and lent as its reads say\n");
    return 0;
 }

@@ -91,7 +91,10 @@ struct udev_joypad
     * identification strings, the keycode maps and the sensor state -
     * touched at hotplug and on the rare sensor read - trail behind. */
    int fd;
-   uint64_t buttons;
+   /* the buttons, the hats' directions and the first axes as the reads
+    * answer them, kept with each event: lent to the frontend's readers
+    * between two polls, nothing copied */
+   input_pad_view_t view;
    int8_t hats[NUM_HATS][2];
    int16_t axes[NUM_AXES];
    /* Deal with analog triggers that report -32767 to 32767 */
@@ -802,6 +805,34 @@ static const uint8_t udev_ds3_pressure_byte[UDEV_DS3_PRESSURES] = {
    24, 23, 25, 22, 20, 21, 14, 16, 17, 15
 };
 
+/* Axis @i's value in the lent state, as axis() answers it. */
+static void udev_joypad_view_axis(struct udev_joypad *pad, unsigned i)
+{
+   int16_t val;
+   if (i >= INPUT_PAD_VIEW_AXES)
+      return;
+   val = pad->axes[i];
+   /* Deal with analog triggers that report -32767 to 32767 */
+   if (pad->neg_trigger[i])
+      val = (val + 0x7fff) / 2;
+   pad->view.axes[i] = val;
+}
+
+/* Hat @h's four directions in the lent state, as button() answers
+ * them: up, down, left, right from the low bit. */
+static void udev_joypad_view_hat(struct udev_joypad *pad, unsigned h)
+{
+   unsigned bits = 0;
+   if (h >= INPUT_PAD_VIEW_HATS)
+      return;
+   if (pad->hats[h][1] < 0) bits |= 1;
+   if (pad->hats[h][1] > 0) bits |= 2;
+   if (pad->hats[h][0] < 0) bits |= 4;
+   if (pad->hats[h][0] > 0) bits |= 8;
+   pad->view.hats = (uint16_t)((pad->view.hats & ~(0xf << (h * 4)))
+         | (bits << (h * 4)));
+}
+
 static void udev_pressure_attach(struct udev_joypad *pad, int fd,
       unsigned *axes)
 {
@@ -836,6 +867,7 @@ static void udev_pressure_read(struct udev_joypad *pad)
       {
          unsigned b = report[newest][udev_ds3_pressure_byte[n]];
          pad->axes[pad->pressure_axis + n] = (int16_t)((b << 7) | (b >> 1));
+         udev_joypad_view_axis(pad, pad->pressure_axis + n);
       }
    }
    /* gone, or no longer ours: the buttons go on without */
@@ -844,7 +876,10 @@ static void udev_pressure_read(struct udev_joypad *pad)
       close(pad->pressure_fd);
       pad->pressure = false;
       for (n = 0; n < UDEV_DS3_PRESSURES; n++)
+      {
          pad->axes[pad->pressure_axis + n] = 0;
+         udev_joypad_view_axis(pad, pad->pressure_axis + n);
+      }
    }
 }
 
@@ -1007,6 +1042,7 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
             if (     (i == ABS_Z || i == ABS_RZ)
                   && udev_compute_axis(abs, abs->value) < -1300)
               pad->neg_trigger[axes] = true;
+            udev_joypad_view_axis(pad, axes);
             pad->axes_bind[i] = axes++;
          }
       }
@@ -1342,9 +1378,9 @@ static void udev_joypad_poll(void)
                   if (code > 0 && code < KEY_MAX)
                   {
                      if (value)
-                        BIT64_SET(pad->buttons, pad->button_bind[code]);
+                        BIT256_SET(pad->view.buttons, pad->button_bind[code]);
                      else
-                        BIT64_CLEAR(pad->buttons, pad->button_bind[code]);
+                        BIT256_CLEAR(pad->view.buttons, pad->button_bind[code]);
                   }
                   break;
 
@@ -1364,6 +1400,7 @@ static void udev_joypad_poll(void)
                      case ABS_HAT3Y:
                         code                           -= ABS_HAT0X;
                         pad->hats[code >> 1][code & 1]  = value;
+                        udev_joypad_view_hat(pad, code >> 1);
                         break;
                      default:
                         {
@@ -1378,6 +1415,7 @@ static void udev_joypad_poll(void)
                                  && abs(pad->axes[axis]) < 0x2000)
                               pad->neg_trigger[axis] = false;
                            pad->axis_reported[axis] = true;
+                           udev_joypad_view_axis(pad, axis);
                            break;
                         }
                   }
@@ -1541,7 +1579,7 @@ static int32_t udev_joypad_button_state(
       /* hat requested and no hat button down */
    }
    else if (joykey < UDEV_NUM_BUTTONS)
-      return (BIT64_GET(pad->buttons, joykey));
+      return BIT256_GET(pad->view.buttons, joykey) ? 1 : 0;
    return 0;
 }
 
@@ -1561,7 +1599,7 @@ static void udev_joypad_get_buttons(unsigned port, input_bits_t *state)
 
 	if (pad)
    {
-		BITS_COPY64_PTR( state, pad->buttons );
+		*state = pad->view.buttons;
 	}
    else
       BIT256_CLEAR_ALL_PTR(state);
@@ -1590,6 +1628,12 @@ static int16_t udev_joypad_axis_state(
          return val;
    }
    return 0;
+}
+
+/* Read in the poll alone: the state is the same until the next. */
+static const input_pad_view_t *udev_joypad_view(unsigned port)
+{
+   return (port < MAX_USERS) ? &udev_pads[port].view : NULL;
 }
 
 static int16_t udev_joypad_axis(unsigned port, uint32_t joyaxis)
@@ -1777,6 +1821,12 @@ input_device_driver_t udev_joypad = {
    "udev",
 #if defined(__linux__)
    udev_joypad_get_bt_host,
-   udev_joypad_set_bt_host
+   udev_joypad_set_bt_host,
+#else
+   NULL, /* get_bt_host */
+   NULL, /* set_bt_host */
 #endif
+   NULL, /* survives_video */
+   NULL, /* set_player */
+   udev_joypad_view
 };

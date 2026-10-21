@@ -149,9 +149,10 @@ typedef struct winraw_joypad_joypad_data
    uint16_t            num_hats;
    USAGE               btn_usage_min;
 
-   int16_t             axes[RAWINPUT_MAX_AXES];        /* 16 bytes */
-   uint8_t             hats[RAWINPUT_MAX_HATS];        /*  4 bytes */
-   bool                buttons[RAWINPUT_MAX_BUTTONS];  /* 128 bytes */
+   /* the buttons, the hats' four directions and the axes as the reads
+    * answer them: lent to the frontend's readers between two polls
+    * where the reports are parsed in the poll, nothing copied */
+   input_pad_view_t    view;
 
    /* --- Cold fields (accessed only at device add/remove) ---------- */
    PHIDP_PREPARSED_DATA preparsed;   /* HID preparsed data (opaque blob) */
@@ -180,6 +181,15 @@ typedef struct winraw_joypad_joypad_data
    bool                motion_seen;  /* a report has had them            */
    sony_pad_motion_t   motion;
 } winraw_joypad_joypad_data_t;
+
+#define WINRAW_BUTTON(pad, i)        BIT256_GET((pad)->view.buttons, (i))
+#define WINRAW_SET_BUTTON(pad, i, on) do { if (on) \
+   BIT256_SET((pad)->view.buttons, (i)); \
+   else BIT256_CLEAR((pad)->view.buttons, (i)); } while (0)
+/* hat @h's four bits: up, down, left, right from the low one */
+#define WINRAW_HAT(pad, h)  (((pad)->view.hats >> ((h) * 4)) & 0xf)
+#define WINRAW_SET_HAT(pad, h, bits) ((pad)->view.hats = (uint16_t)( \
+   ((pad)->view.hats & ~(0xf << ((h) * 4))) | (((bits) & 0xf) << ((h) * 4))))
 
 /* ------------------------------------------------------------------ */
 /* Static globals                                                      */
@@ -1194,18 +1204,18 @@ static void winraw_joypad_xinput_fill(winraw_joypad_joypad_data_t *pad,
    unsigned i;
 
    for (i = 0; i < 10; i++)
-      pad->buttons[i] = (st->buttons & bits[i]) != 0;
-   pad->hats[0] = (uint8_t)(
+      WINRAW_SET_BUTTON(pad, i, (st->buttons & bits[i]) != 0);
+   WINRAW_SET_HAT(pad, 0,
            ((st->buttons & 0x0001) ? (1 << 0) : 0)
          | ((st->buttons & 0x0002) ? (1 << 1) : 0)
          | ((st->buttons & 0x0004) ? (1 << 2) : 0)
          | ((st->buttons & 0x0008) ? (1 << 3) : 0));
-   pad->axes[0] = st->lx == -32768 ? -32767 : st->lx;
-   pad->axes[1] = st->ly == -32768 ? -32767 : st->ly;
-   pad->axes[2] = st->rx == -32768 ? -32767 : st->rx;
-   pad->axes[3] = st->ry == -32768 ? -32767 : st->ry;
-   pad->axes[4] = (int16_t)(st->left_trigger  * 32767 / 255);
-   pad->axes[5] = (int16_t)(st->right_trigger * 32767 / 255);
+   pad->view.axes[0] = st->lx == -32768 ? -32767 : st->lx;
+   pad->view.axes[1] = st->ly == -32768 ? -32767 : st->ly;
+   pad->view.axes[2] = st->rx == -32768 ? -32767 : st->rx;
+   pad->view.axes[3] = st->ry == -32768 ? -32767 : st->ry;
+   pad->view.axes[4] = (int16_t)(st->left_trigger  * 32767 / 255);
+   pad->view.axes[5] = (int16_t)(st->right_trigger * 32767 / 255);
 }
 
 /* XInput's four pads are looked at: one that has come is given a
@@ -1644,7 +1654,7 @@ static void winraw_joypad_out_publish_buttons(
    if (slot >= MAX_USERS || !winraw_joypad_out[slot].xinput)
       return;
    for (b = 0; b < 10 && b < pad->num_buttons; b++)
-      if (pad->buttons[b])
+      if (WINRAW_BUTTON(pad, b))
          mask |= 1 << b;
    retro_atomic_store_release_int(&winraw_joypad_out[slot].buttons, mask);
 }
@@ -1680,11 +1690,11 @@ static void winraw_joypad_parse_sixaxis(winraw_joypad_joypad_data_t *pad,
    pad->num_axes    = 6;
    pad->num_hats    = 0;
    for (i = 0; i < 19; i++)
-      pad->buttons[i] = (b >> i) & 1;
-   pad->axes[0] = winraw_joypad_scale_axis(r[6], 0, 255);
-   pad->axes[1] = winraw_joypad_scale_axis(r[7], 0, 255);
-   pad->axes[2] = winraw_joypad_scale_axis(r[8], 0, 255);
-   pad->axes[5] = winraw_joypad_scale_axis(r[9], 0, 255);
+      WINRAW_SET_BUTTON(pad, i, (b >> i) & 1);
+   pad->view.axes[0] = winraw_joypad_scale_axis(r[6], 0, 255);
+   pad->view.axes[1] = winraw_joypad_scale_axis(r[7], 0, 255);
+   pad->view.axes[2] = winraw_joypad_scale_axis(r[8], 0, 255);
+   pad->view.axes[5] = winraw_joypad_scale_axis(r[9], 0, 255);
    winraw_joypad_reports_parsed++;
 }
 
@@ -1728,9 +1738,10 @@ static void winraw_joypad_parse_hid_report(winraw_joypad_joypad_data_t *pad,
    num_buttons = pad->num_buttons;
 
    /* --- Buttons --- */
-   /* Clear only the buttons this device actually has, not the full 128 */
+   /* Those past the device's own are never set: all thirty-two bytes
+    * are one clear */
    if (num_buttons > 0)
-      memset(pad->buttons, 0, num_buttons * sizeof(pad->buttons[0]));
+      BIT256_CLEAR_ALL(pad->view.buttons);
 
    /* Hats are cleared for the same reason as buttons: a hat whose
     * usage is absent from this report must read as centred rather
@@ -1741,7 +1752,7 @@ static void winraw_joypad_parse_hid_report(winraw_joypad_joypad_data_t *pad,
     * and zeroing them would fight sticks that legitimately rest
     * off-centre. */
    if (pad->num_hats > 0)
-      memset(pad->hats, 0, pad->num_hats * sizeof(pad->hats[0]));
+      pad->view.hats = 0;
 
    usage_count = (ULONG)num_buttons;
    if (usage_count > RAWINPUT_MAX_BUTTONS)
@@ -1760,7 +1771,7 @@ static void winraw_joypad_parse_hid_report(winraw_joypad_joypad_data_t *pad,
       {
          unsigned btn_index = usages[i] - btn_min;
          if (btn_index < num_buttons)
-            pad->buttons[btn_index] = true;
+            BIT256_SET(pad->view.buttons, btn_index);
       }
    }
 
@@ -1814,10 +1825,11 @@ static void winraw_joypad_parse_hid_report(winraw_joypad_joypad_data_t *pad,
          if (is_hat)
          {
             if ((unsigned)slot_idx < max_hats)
-               pad->hats[slot_idx] = winraw_joypad_hat_value_to_bitmask(
+               WINRAW_SET_HAT(pad, slot_idx,
+                     winraw_joypad_hat_value_to_bitmask(
                      (LONG)value,
                      pad->val_caps[i].LogicalMin,
-                     pad->val_caps[i].LogicalMax);
+                     pad->val_caps[i].LogicalMax));
          }
          else
          {
@@ -1826,7 +1838,7 @@ static void winraw_joypad_parse_hid_report(winraw_joypad_joypad_data_t *pad,
                LONG signed_value = (pad->val_caps[i].LogicalMin < 0)
                   ? winraw_joypad_sign_extend(value, pad->val_caps[i].BitSize)
                   : (LONG)value;
-               pad->axes[slot_idx] = winraw_joypad_scale_axis(
+               pad->view.axes[slot_idx] = winraw_joypad_scale_axis(
                      signed_value,
                      pad->val_caps[i].LogicalMin,
                      pad->val_caps[i].LogicalMax);
@@ -2246,13 +2258,13 @@ static int32_t winraw_joypad_joypad_button(unsigned port, uint16_t joykey)
       switch (hat_dir)
       {
          case HAT_UP_MASK:
-            return (pad->hats[hat_index] & (1 << 0)) ? 1 : 0;
+            return (WINRAW_HAT(pad, hat_index) & (1 << 0)) ? 1 : 0;
          case HAT_DOWN_MASK:
-            return (pad->hats[hat_index] & (1 << 1)) ? 1 : 0;
+            return (WINRAW_HAT(pad, hat_index) & (1 << 1)) ? 1 : 0;
          case HAT_LEFT_MASK:
-            return (pad->hats[hat_index] & (1 << 2)) ? 1 : 0;
+            return (WINRAW_HAT(pad, hat_index) & (1 << 2)) ? 1 : 0;
          case HAT_RIGHT_MASK:
-            return (pad->hats[hat_index] & (1 << 3)) ? 1 : 0;
+            return (WINRAW_HAT(pad, hat_index) & (1 << 3)) ? 1 : 0;
          default:
             break;
       }
@@ -2260,15 +2272,24 @@ static int32_t winraw_joypad_joypad_button(unsigned port, uint16_t joykey)
    }
 
    if (joykey < pad->num_buttons)
-      return pad->buttons[joykey] ? 1 : 0;
+      return WINRAW_BUTTON(pad, joykey) ? 1 : 0;
 
    return 0;
+}
+
+/* Lent where the reports are read in the poll, which is then the only
+ * place a pad's state changes; under the window of its own, read on
+ * whichever thread made it, it is copied. */
+static const input_pad_view_t *winraw_joypad_joypad_view(unsigned port)
+{
+   if (port >= MAX_USERS || !winraw_joypad_by_poll)
+      return NULL;
+   return &winraw_joypad_pads[port].view;
 }
 
 static void winraw_joypad_joypad_get_buttons(unsigned port,
    input_bits_t *state)
 {
-   unsigned i;
    const winraw_joypad_joypad_data_t *pad;
 
    if (port >= MAX_USERS)
@@ -2284,12 +2305,7 @@ static void winraw_joypad_joypad_get_buttons(unsigned port,
       return;
    }
 
-   BIT256_CLEAR_ALL_PTR(state);
-   for (i = 0; i < pad->num_buttons && i < RAWINPUT_MAX_BUTTONS; i++)
-   {
-      if (pad->buttons[i])
-         BIT256_SET_PTR(state, i);
-   }
+   *state = pad->view.buttons;
 }
 
 static int16_t winraw_joypad_joypad_axis(unsigned port, uint32_t joyaxis)
@@ -2323,7 +2339,7 @@ static int16_t winraw_joypad_joypad_axis(unsigned port, uint32_t joyaxis)
    if (axis < 0 || (unsigned)axis >= pad->num_axes)
       return 0;
 
-   val = pad->axes[axis];
+   val = pad->view.axes[axis];
 
    if (is_neg && val > 0)
       return 0;
@@ -2383,7 +2399,7 @@ static int16_t winraw_joypad_joypad_state(
             unsigned hat_index = GET_HAT(key);
             if (hat_index < pad->num_hats)
             {
-               uint8_t hv = pad->hats[hat_index];
+               uint8_t hv = (uint8_t)WINRAW_HAT(pad, hat_index);
                switch (hat_dir)
                {
                   case HAT_UP_MASK:    if (hv & (1 << 0)) ret |= (1 << i); break;
@@ -2394,7 +2410,7 @@ static int16_t winraw_joypad_joypad_state(
                }
             }
          }
-         else if (key < pad->num_buttons && pad->buttons[key])
+         else if (key < pad->num_buttons && WINRAW_BUTTON(pad, key))
             ret |= (1 << i);
 
          /* If button matched, skip axis check for this bind */
@@ -2413,7 +2429,7 @@ static int16_t winraw_joypad_joypad_state(
             axis = AXIS_NEG_GET(joyaxis);
             if (axis >= 0 && (unsigned)axis < pad->num_axes)
             {
-               val = pad->axes[axis];
+               val = pad->view.axes[axis];
                if (val < 0 && abs((int)val) > threshold)
                   ret |= (1 << i);
             }
@@ -2423,7 +2439,7 @@ static int16_t winraw_joypad_joypad_state(
             axis = AXIS_POS_GET(joyaxis);
             if (axis >= 0 && (unsigned)axis < pad->num_axes)
             {
-               val = pad->axes[axis];
+               val = pad->view.axes[axis];
                if (val > 0 && val > threshold)
                   ret |= (1 << i);
             }
@@ -2685,5 +2701,7 @@ input_device_driver_t winraw_joypad = {
    "winraw_joypad",
    NULL,                         /* get_bt_host  */
    NULL,                         /* set_bt_host  */
-   winraw_joypad_survives_video
+   winraw_joypad_survives_video,
+   NULL,                         /* set_player   */
+   winraw_joypad_joypad_view
 };

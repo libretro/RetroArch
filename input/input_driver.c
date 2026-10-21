@@ -974,20 +974,23 @@ static input_driver_state_t input_driver_st; /* double alignment */
  * the loop every driver has, run against the copy. Rumble, sensors,
  * names and the poll itself still go to the real driver.
  *
+ * A driver whose state changes only in its own poll lends it instead:
+ * its view() hands the bridge the pad's state where the driver keeps
+ * it, and the readers read that, with nothing copied. The rest are
+ * copied.
+ *
  * This is the legacy bridge of the input plan (WP-03, WP-05). A driver
  * is switched over when it has been checked - that its get_buttons
  * says what its button() says, and its state() is the common loop -
  * and the rest read their drivers as before. */
-#define INPUT_SNAPSHOT_AXES 16
-#define INPUT_SNAPSHOT_HATS 4
+#define INPUT_SNAPSHOT_AXES INPUT_PAD_VIEW_AXES
+#define INPUT_SNAPSHOT_HATS INPUT_PAD_VIEW_HATS
 
 typedef struct
 {
-   input_bits_t buttons;
-   int16_t      axes[INPUT_SNAPSHOT_AXES];
+   input_pad_view_t copy;
    uint16_t     axes_known; /* axes in the copy */
    uint16_t     axes_used;  /* axes read since the copy was taken */
-   uint16_t     hats;       /* four bits a hat: up, down, left, right */
    uint8_t      hats_known;
    uint8_t      hats_used;
 } input_pad_snapshot_t;
@@ -997,6 +1000,9 @@ typedef struct
    const input_device_driver_t *real;
    input_device_driver_t        adapter;
    input_pad_snapshot_t         pads[MAX_USERS];
+   /* this poll's state of each pad read: the driver's own, lent, or
+    * the copy */
+   const input_pad_view_t      *view[MAX_USERS];
 } input_snapshot_bridge_t;
 
 static input_snapshot_bridge_t input_snapshot_bridge;
@@ -1096,7 +1102,7 @@ static bool input_snapshot_driver_checked(const input_device_driver_t *drv)
 }
 
 static void input_snapshot_fetch_axis(const input_device_driver_t *real,
-      input_pad_snapshot_t *snap, unsigned pad, unsigned i)
+      input_pad_view_t *snap, unsigned pad, unsigned i)
 {
    /* a driver gives each direction on its own; one of the two is 0 */
    snap->axes[i] = (int16_t)(real->axis(pad, AXIS_POS(i))
@@ -1104,7 +1110,7 @@ static void input_snapshot_fetch_axis(const input_device_driver_t *real,
 }
 
 static void input_snapshot_fetch_hat(const input_device_driver_t *real,
-      input_pad_snapshot_t *snap, unsigned pad, unsigned h)
+      input_pad_view_t *snap, unsigned pad, unsigned h)
 {
    uint16_t bits = 0;
    if (real->button(pad, (uint16_t)HAT_MAP(h, HAT_UP_MASK)))
@@ -1123,9 +1129,19 @@ static void input_snapshot_fetch_hat(const input_device_driver_t *real,
 /* Takes the copy of a pad for this poll. */
 INPUT_NOINLINE static void input_snapshot_pad_take(unsigned pad)
 {
-   unsigned i;
+   unsigned m;
    input_snapshot_bridge_t *bridge = &input_snapshot_bridge;
    input_pad_snapshot_t *snap      = &bridge->pads[pad];
+   const input_pad_view_t *lent    = bridge->real->view
+      ? bridge->real->view(pad) : NULL;
+
+   input_driver_st.frame_valid.snapshot |= (1 << pad);
+   if (lent)
+   {
+      bridge->view[pad] = lent;
+      return;
+   }
+   bridge->view[pad] = &snap->copy;
 
    /* Copy what was read out of the last copy, and no more: a
     * control that has stopped being read - the bind screen scans
@@ -1136,29 +1152,30 @@ INPUT_NOINLINE static void input_snapshot_pad_take(unsigned pad)
    snap->axes_used  = 0;
    snap->hats_used  = 0;
 
-   bridge->real->get_buttons(pad, &snap->buttons);
-   for (i = 0; i < INPUT_SNAPSHOT_AXES; i++)
-      if (snap->axes_known & (1 << i))
-         input_snapshot_fetch_axis(bridge->real, snap, pad, i);
-   for (i = 0; i < INPUT_SNAPSHOT_HATS; i++)
-      if (snap->hats_known & (1 << i))
-         input_snapshot_fetch_hat(bridge->real, snap, pad, i);
-   input_driver_st.frame_valid.snapshot |= (1 << pad);
+   bridge->real->get_buttons(pad, &snap->copy.buttons);
+   /* the controls in the copy, and no walk over the rest */
+   for (m = snap->axes_known; m; m &= m - 1)
+      input_snapshot_fetch_axis(bridge->real, &snap->copy, pad,
+            (unsigned)compat_ctz(m));
+   for (m = snap->hats_known; m; m &= m - 1)
+      input_snapshot_fetch_hat(bridge->real, &snap->copy, pad,
+            (unsigned)compat_ctz(m));
 }
 
-/* A pad's copy, taken if this is the poll's first look at it. Whether
- * it is, is one test, here where it is asked - it is asked for every
- * axis and hat read. */
-static INLINE input_pad_snapshot_t *input_snapshot_pad(unsigned pad)
+/* A pad's state for this poll, taken if this is the poll's first look
+ * at it. Whether it is, is one test, here where it is asked - it is
+ * asked for every axis and hat read. */
+static INLINE const input_pad_view_t *input_snapshot_view(unsigned pad)
 {
    if (!(input_driver_st.frame_valid.snapshot & (1 << pad)))
       input_snapshot_pad_take(pad);
-   return &input_snapshot_bridge.pads[pad];
+   return input_snapshot_bridge.view[pad];
 }
 
 static int32_t input_snapshot_button(unsigned pad, uint16_t joykey)
 {
    const input_device_driver_t *real = input_snapshot_bridge.real;
+   const input_pad_view_t *view;
    input_pad_snapshot_t *snap;
    uint16_t dir                      = GET_HAT_DIR(joykey);
 
@@ -1182,26 +1199,31 @@ static int32_t input_snapshot_button(unsigned pad, uint16_t joykey)
       if (h >= INPUT_SNAPSHOT_HATS)
          return real->button(pad, joykey);
 
-      snap = input_snapshot_pad(pad);
-      if (!(snap->hats_known & (1 << h)))
+      view = input_snapshot_view(pad);
+      snap = &input_snapshot_bridge.pads[pad];
+      /* a copy holds the hats read before; a lent view, all of them */
+      if (view == &snap->copy)
       {
-         input_snapshot_fetch_hat(real, snap, pad, h);
-         snap->hats_known |= (1 << h);
+         if (!(snap->hats_known & (1 << h)))
+         {
+            input_snapshot_fetch_hat(real, &snap->copy, pad, h);
+            snap->hats_known |= (1 << h);
+         }
+         snap->hats_used |= (1 << h);
       }
-      snap->hats_used |= (1 << h);
-      return (snap->hats >> (h * 4 + bit)) & 1;
+      return (view->hats >> (h * 4 + bit)) & 1;
    }
 
    if (joykey >= 256)
       return real->button(pad, joykey);
 
-   snap = input_snapshot_pad(pad);
-   return BIT256_GET(snap->buttons, joykey) ? 1 : 0;
+   return BIT256_GET(input_snapshot_view(pad)->buttons, joykey) ? 1 : 0;
 }
 
 static int16_t input_snapshot_axis(unsigned pad, uint32_t joyaxis)
 {
    const input_device_driver_t *real = input_snapshot_bridge.real;
+   const input_pad_view_t *view;
    input_pad_snapshot_t *snap;
    bool     negative                 = AXIS_NEG_GET(joyaxis) < INPUT_SNAPSHOT_AXES;
    unsigned i                        = negative
@@ -1211,14 +1233,18 @@ static int16_t input_snapshot_axis(unsigned pad, uint32_t joyaxis)
    if (pad >= MAX_USERS || i >= INPUT_SNAPSHOT_AXES)
       return real->axis(pad, joyaxis);
 
-   snap = input_snapshot_pad(pad);
-   if (!(snap->axes_known & (1 << i)))
+   view = input_snapshot_view(pad);
+   snap = &input_snapshot_bridge.pads[pad];
+   if (view == &snap->copy)
    {
-      input_snapshot_fetch_axis(real, snap, pad, i);
-      snap->axes_known |= (1 << i);
+      if (!(snap->axes_known & (1 << i)))
+      {
+         input_snapshot_fetch_axis(real, &snap->copy, pad, i);
+         snap->axes_known |= (1 << i);
+      }
+      snap->axes_used |= (1 << i);
    }
-   snap->axes_used |= (1 << i);
-   value = snap->axes[i];
+   value = view->axes[i];
    if (negative)
       return (value < 0) ? value : 0;
    return (value > 0) ? value : 0;
@@ -1525,7 +1551,7 @@ static int16_t input_snapshot_state(
    unsigned bound;
    bool full_range;
    const input_port_pads_t *pads;
-   const input_pad_snapshot_t *snap;
+   const input_pad_view_t *snap;
 
    if (pad >= MAX_USERS)
       return 0;
@@ -1557,8 +1583,8 @@ static int16_t input_snapshot_state(
          return input_st->pad_state_cache[port];
    }
 
-   /* the copy of the pad, taken now if this is the poll's first look */
-   snap = input_snapshot_pad(pad);
+   /* the pad's state, taken now if this is the poll's first look */
+   snap = input_snapshot_view(pad);
 
    for (; bound; bound &= bound - 1)
    {
@@ -1667,7 +1693,7 @@ static void input_snapshot_get_buttons(unsigned pad,
       input_snapshot_bridge.real->get_buttons(pad, state);
       return;
    }
-   *state = input_snapshot_pad(pad)->buttons;
+   *state = input_snapshot_view(pad)->buttons;
 }
 
 /* The bridge for @drv, set up if it is not the driver it last stood in
@@ -1692,6 +1718,7 @@ static const input_device_driver_t *input_snapshot_for(
    if (bridge->real != drv)
    {
       memset(bridge->pads, 0, sizeof(bridge->pads));
+      memset(bridge->view, 0, sizeof(bridge->view));
       st->frame_valid.snapshot  = 0;
       st->frame_valid.pad_state = 0;
       bridge->real                = drv;
@@ -1716,6 +1743,7 @@ static void input_snapshot_forget_pad(unsigned slot)
       return;
    memset(&input_snapshot_bridge.pads[slot], 0,
          sizeof(input_snapshot_bridge.pads[slot]));
+   input_snapshot_bridge.view[slot] = NULL;
    input_driver_st.frame_valid.snapshot &= ~(1 << slot);
    /* and any port's mask worked out from it */
    input_driver_st.frame_valid.pad_state = 0;
@@ -3119,7 +3147,7 @@ static INLINE bool input_analog_button_key(
       return false;
    if (     drv == &input_snapshot_bridge.adapter
          && pad < MAX_USERS && key < 256 && !GET_HAT_DIR(key))
-      return BIT256_GET(input_snapshot_pad(pad)->buttons, key) != 0;
+      return BIT256_GET(input_snapshot_view(pad)->buttons, key) != 0;
    return drv->button(pad, key) != 0;
 }
 

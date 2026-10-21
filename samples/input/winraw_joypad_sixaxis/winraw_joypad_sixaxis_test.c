@@ -215,7 +215,7 @@ static bool poll_until(unsigned slot, unsigned b, bool want)
    for (tries = 0; tries < 200; tries++)
    {
       winraw_joypad_joypad_poll();
-      if (winraw_joypad_pads[slot].buttons[b] == want)
+      if ((WINRAW_BUTTON(&winraw_joypad_pads[slot], b) != 0) == want)
          return true;
       Sleep(5);
    }
@@ -254,19 +254,19 @@ int main(void)
    winraw_joypad_add_device(H(2));
    CHECK(winraw_joypad_out[0].sixaxis && winraw_joypad_out[1].sixaxis,
          "the DualShock 3s were not taken as maybe on Sony's driver");
-   CHECK(!winraw_joypad_pads[0].buttons[14],
+   CHECK(!WINRAW_BUTTON(&winraw_joypad_pads[0], 14),
          "the state was read before a poll");
    CHECK(poll_until(0, 14, true), "the DualShock 3's state never reached the poll");
    CHECK(winraw_joypad_pads[0].num_buttons == 19
-         && winraw_joypad_pads[0].axes[0] == 0x7fff
-         && winraw_joypad_pads[0].axes[5] == 0x7fff
-         && winraw_joypad_pads[0].axes[1] < 300
-         && winraw_joypad_pads[0].axes[1] > -300,
+         && winraw_joypad_pads[0].view.axes[0] == 0x7fff
+         && winraw_joypad_pads[0].view.axes[5] == 0x7fff
+         && winraw_joypad_pads[0].view.axes[1] < 300
+         && winraw_joypad_pads[0].view.axes[1] > -300,
          "laid out wrong: %u buttons, axes %d %d %d",
-         winraw_joypad_pads[0].num_buttons, winraw_joypad_pads[0].axes[0],
-         winraw_joypad_pads[0].axes[1], winraw_joypad_pads[0].axes[5]);
+         winraw_joypad_pads[0].num_buttons, winraw_joypad_pads[0].view.axes[0],
+         winraw_joypad_pads[0].view.axes[1], winraw_joypad_pads[0].view.axes[5]);
    set_state(0, 1u << 16, 0x80, 0x80);  /* PS */
-   CHECK(poll_until(0, 16, true) && !winraw_joypad_pads[0].buttons[14],
+   CHECK(poll_until(0, 16, true) && !WINRAW_BUTTON(&winraw_joypad_pads[0], 14),
          "a new state did not replace the last");
    asks = fake[0].asks;
    Sleep(200);

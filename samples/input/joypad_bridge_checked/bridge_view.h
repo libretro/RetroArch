@@ -172,4 +172,32 @@ static unsigned bv_compare(const input_device_driver_t *drv, unsigned pad)
    return bad;
 }
 
+/* A driver that lends the bridge its state: what it lends is what its
+ * reads say - every button, the four hats' directions and the axes the
+ * view holds. Returns the number of disagreements. */
+static unsigned bv_compare_view(const input_device_driver_t *drv,
+      unsigned pad)
+{
+   static const uint16_t dirs[4] = {
+      HAT_UP_MASK, HAT_DOWN_MASK, HAT_LEFT_MASK, HAT_RIGHT_MASK };
+   const input_pad_view_t *view = drv->view ? drv->view(pad) : NULL;
+   unsigned bad = 0, i, t;
+
+   if (!view)
+      return 1;
+   for (i = 0; i < 256; i++)
+      if ((BIT256_GET(view->buttons, i) != 0) != (drv->button(pad, (uint16_t)i) != 0))
+         bad++;
+   for (i = 0; i < BV_HATS; i++)
+      for (t = 0; t < 4; t++)
+         if (     ((view->hats >> (i * 4 + t)) & 1)
+               != (drv->button(pad, (uint16_t)HAT_MAP(i, dirs[t])) != 0))
+            bad++;
+   for (i = 0; i < BV_AXES; i++)
+      if (view->axes[i] != (int16_t)(drv->axis(pad, AXIS_POS(i))
+               + drv->axis(pad, AXIS_NEG(i))))
+         bad++;
+   return bad;
+}
+
 #endif

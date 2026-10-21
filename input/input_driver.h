@@ -596,6 +596,22 @@ struct input_driver
    unsigned (*bind_mouse_buttons)(void *data, unsigned port);
 };
 
+/* A pad's state as a joypad driver keeps it, for a driver whose state
+ * changes only in its own poll: lent to the readers between two polls
+ * in place of a copy (input_driver.c, the snapshot bridge). What each
+ * field holds is what button(), axis() and get_buttons() answer. */
+#define INPUT_PAD_VIEW_AXES 16
+#define INPUT_PAD_VIEW_HATS 4
+
+typedef struct input_pad_view
+{
+   input_bits_t buttons;
+   /* each axis signed, as axis() gives its two directions */
+   int16_t      axes[INPUT_PAD_VIEW_AXES];
+   /* four bits a hat, from bit 0: up, down, left, right */
+   uint16_t     hats;
+} input_pad_view_t;
+
 struct rarch_joypad_driver
 {
    void *(*init)(void *data);
@@ -639,6 +655,11 @@ struct rarch_joypad_driver
     * it changed; the driver acts on a change. NULL where the driver
     * lights nothing, or lights by its own lights. */
    void (*set_player)(unsigned pad, unsigned player);
+
+   /* Pad @pad's state, unchanged until the driver's next poll; NULL
+    * where the driver cannot say that, which then gets copied. Asked
+    * once a poll per pad read. */
+   const input_pad_view_t *(*view)(unsigned pad);
 };
 
 /**

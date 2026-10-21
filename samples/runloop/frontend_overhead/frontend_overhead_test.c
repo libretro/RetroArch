@@ -59,10 +59,11 @@
  *     default mapping, a remap, analog-to-d-pad, the four turbo modes,
  *     hold, and run-ahead; a recording of the pattern must play back
  *     as the same sequence; and hosting netplay with nobody connected
- *     must not change it. The mappings are run twice, reading the
- *     driver directly and reading it through the snapshot bridge
- *     (input plan, WP-03 and WP-05), and must give the same digests
- *     both ways. This is the reference the frame-local view has to reproduce: it is
+ *     must not change it. The mappings are run three times, reading
+ *     the driver directly, through the snapshot bridge's copy (input
+ *     plan, WP-03 and WP-05), and through the pad's state the driver
+ *     lends the bridge, and must give the same digests each way; lent,
+ *     the driver is asked for nothing but the pad. This is the reference the frame-local view has to reproduce: it is
  *     what the state path does today, pinned before that path changes.
  *
  *   - The device registry (input plan, WP-02) follows the drivers.
@@ -1206,6 +1207,31 @@ static void syn_get_buttons(unsigned pad, input_bits_t *state)
          BIT256_SET_PTR(state, i);
 }
 
+/* The pad lent to the snapshot bridge in place of its copy, as a
+ * driver whose state changes only in its poll lends it. */
+static unsigned long syn_calls_view;
+static input_pad_view_t syn_lent;
+
+static const input_pad_view_t *syn_view(unsigned pad)
+{
+   unsigned i;
+   syn_calls_view++;
+   memset(&syn_lent, 0, sizeof(syn_lent));
+   if (pad != syn_pad_index)
+      return &syn_lent;
+   for (i = 0; i < 32; i++)
+      if (syn_buttons & (1u << i))
+         BIT256_SET(syn_lent.buttons, i);
+   for (i = 0; i < 4; i++)
+      syn_lent.axes[i] = syn_axes[i];
+   syn_lent.hats = (uint16_t)(
+           ((syn_hat & HAT_UP_MASK)    ? 1 : 0)
+         | ((syn_hat & HAT_DOWN_MASK)  ? 2 : 0)
+         | ((syn_hat & HAT_LEFT_MASK)  ? 4 : 0)
+         | ((syn_hat & HAT_RIGHT_MASK) ? 8 : 0));
+   return &syn_lent;
+}
+
 /* The RetroPad mask from the binds, as every joypad driver builds it. */
 static int16_t syn_state(rarch_joypad_info_t *joypad_info,
       const uint16_t *joykeys, const uint32_t *joyaxes, unsigned port)
@@ -1385,16 +1411,20 @@ static void lane_core_view(void)
    run_loop_frames(5);
    trace(0, 0);
 
-   /* Everything twice: read from the driver, as shipped, and read
-    * through the snapshot bridge. The core must see the same. */
-   for (bridged = 0; bridged < 2; bridged++)
+   /* Everything three times: read from the driver, as shipped, read
+    * through the snapshot bridge's copy, and through the state the
+    * driver lends it. The core must see the same. */
+   for (bridged = 0; bridged < 3; bridged++)
    {
    unsigned long frames_run = 0;
 
+   input_driver_set_snapshot_bridge(false);
+   syn_joypad.view = (bridged == 2) ? syn_view : NULL;
    input_driver_set_snapshot_bridge(bridged != 0);
    run_loop_frames(5);
    syn_calls_state = 0;
    syn_calls_other = 0;
+   syn_calls_view  = 0;
 
    for (sc = 0; sc < VIEW_SCENARIOS; sc++)
    {
@@ -1466,7 +1496,8 @@ static void lane_core_view(void)
             "core view: input was not polled once a frame");
       if (input_st->turbo_btns.count != VIEW_FRAMES)
          fprintf(stderr, "       %s%s: %u polls in %u frames\n", golden[sc].name,
-               bridged ? ", through the snapshot bridge" : "",
+               bridged == 2 ? ", lent to the snapshot bridge"
+               : bridged ? ", through the snapshot bridge" : "",
                (unsigned)input_st->turbo_btns.count, (unsigned)VIEW_FRAMES);
 
       /* run-ahead by one frame runs the core twice an iterate; if it
@@ -1500,8 +1531,9 @@ static void lane_core_view(void)
          printf("[info] core view, %s: digest %08x over %u frames\n",
                golden[sc].name, (unsigned)digest, (unsigned)VIEW_FRAMES);
       if (bridged && digest != golden[sc].digest)
-         fprintf(stderr, "       %s, through the snapshot bridge: digest %08x\n",
-               golden[sc].name, (unsigned)digest);
+         fprintf(stderr, "       %s, %s: digest %08x\n", golden[sc].name,
+               bridged == 2 ? "lent to the snapshot bridge"
+               : "through the snapshot bridge", (unsigned)digest);
       if (differ)
          fprintf(stderr, "       %s: %u frame(s) differ between the two"
                " readings; frame %u read %04x button by button and %04x"
@@ -1533,9 +1565,21 @@ static void lane_core_view(void)
    /* Who read the driver. Through the bridge its state() is not called
     * at all, and what is called is the copy being taken. */
    printf("[info] core view, %s: %.1f calls into the driver a frame\n",
-         bridged ? "through the snapshot bridge" : "read from the driver",
-         frames_run ? (double)(syn_calls_state + syn_calls_other) / frames_run : 0.0);
-   if (bridged)
+         bridged == 2 ? "lent to the snapshot bridge"
+         : bridged ? "through the snapshot bridge" : "read from the driver",
+         frames_run ? (double)(syn_calls_state + syn_calls_other
+            + syn_calls_view) / frames_run : 0.0);
+   /* Lent, the pad is read where the driver keeps it: the driver is
+    * asked for it once a poll and for nothing else. */
+   if (bridged == 2)
+   {
+      CHECK(syn_calls_other == 0 && syn_calls_view > 0,
+            "core view: a lent pad was still read through the driver");
+      if (syn_calls_other)
+         fprintf(stderr, "       %lu reads through the driver, %lu views\n",
+               syn_calls_other, syn_calls_view);
+   }
+   if (bridged == 1)
    {
       /* Something reads every axis for a few frames, as the bind
        * screen does. Once it stops, the copy must go back to what the
@@ -1721,9 +1765,9 @@ static void lane_core_view(void)
    run_loop_frames(5);
    if (failures == had)
       printf("[pass] core view: button by button and as a mask agree, match"
-            " the recorded digests read from the driver and through the"
-            " snapshot bridge, play back from a recording, and are the same"
-            " under netplay\n");
+            " the recorded digests read from the driver, through the"
+            " snapshot bridge's copy and lent to it, play back from a"
+            " recording, and are the same under netplay\n");
 #else
    printf("[skip] core-view lane: need the test drivers and dlopen\n");
 #endif

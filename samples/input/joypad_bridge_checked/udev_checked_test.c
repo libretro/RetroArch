@@ -15,11 +15,15 @@ int main(void)
       struct udev_joypad *pad = &udev_pads[n % 3];
 
       pad->fd      = 1; /* as a connected pad has one */
-      pad->buttons = ((uint64_t)bv_rand() << 32) | bv_rand();
+      memset(&pad->view.buttons, 0, sizeof(pad->view.buttons));
+      pad->view.buttons.data[0] = bv_rand();
+      pad->view.buttons.data[1] = bv_rand();
       for (i = 0; i < NUM_HATS; i++)
       {
          pad->hats[i][0] = (int8_t)((int)(bv_rand() % 3) - 1);
          pad->hats[i][1] = (int8_t)((int)(bv_rand() % 3) - 1);
+         /* as an event does */
+         udev_joypad_view_hat(pad, i);
       }
       for (i = 0; i < NUM_AXES; i++)
       {
@@ -30,8 +34,10 @@ int main(void)
                              : (r == 3) ? (int16_t)-0x8000
                              : (int16_t)bv_rand();
          pad->neg_trigger[i] = (bv_rand() & 1) != 0;
+         udev_joypad_view_axis(pad, i);
       }
       bad += bv_compare(&udev_joypad, n % 3);
+      bad += bv_compare_view(&udev_joypad, n % 3);
    }
 
    if (bad)
@@ -40,6 +46,6 @@ int main(void)
       return 1;
    }
    printf("PASS udev_checked_test: 4000 random pads; what the bridge would"
-         " read is what the driver says\n");
+         " read, copied or lent, is what the driver says\n");
    return 0;
 }

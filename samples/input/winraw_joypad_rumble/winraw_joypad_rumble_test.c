@@ -518,7 +518,7 @@ int main(void)
          xpad[0].sets, xpad[1].sets);
    /* A held on the pad in slot 0, which XInput has as its second */
    winraw_joypad_pads[0].num_buttons = 10;
-   winraw_joypad_pads[0].buttons[0]  = true;
+   BIT256_SET(winraw_joypad_pads[0].view.buttons, 0);
    winraw_joypad_out_publish_buttons(&winraw_joypad_pads[0]);
    xpad[1].buttons = 0x1000;
    winraw_joypad_joypad_set_rumble(0, RETRO_RUMBLE_STRONG, 0x5000);
