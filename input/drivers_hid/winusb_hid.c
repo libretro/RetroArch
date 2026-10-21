@@ -209,10 +209,7 @@ typedef struct winusb_generic
    USAGE btn_min;
    unsigned values;
    winusb_gen_value_t value[WINUSB_GEN_VALUES];
-   uint32_t buttons;
-   int16_t axes[WINUSB_GEN_AXES];
-   int8_t hat_x;        /* -1 left, 1 right */
-   int8_t hat_y;        /* -1 up, 1 down */
+   input_pad_view_t view; /* its buttons, axes and hat, as decoded */
 } winusb_generic_t;
 
 typedef struct winusb_device
@@ -713,14 +710,10 @@ static void winusb_generic_setup(winusb_generic_t *gen,
    unsigned a;
 
    gen->pp      = pp;
-   gen->hat_x   = gen->hat_y = 0;
-   gen->buttons = 0;
    gen->values  = 0;
+   memset(&gen->view, 0, sizeof(gen->view));
    for (a = 0; a < WINUSB_GEN_AXES; a++)
-   {
       taken[a]      = false;
-      gen->axes[a]  = 0;
-   }
    gen->btn_page = 0;
    for (i = 0; i < nb && !gen->btn_page; i++)
    {
@@ -818,7 +811,7 @@ static void winusb_generic_packet(void *data, uint8_t *report,
             if (idx < 32)
                b |= 1u << idx;
          }
-         gen->buttons = b;
+         pad_view_set_buttons(&gen->view, b, false);
       }
    }
    for (i = 0; i < gen->values; i++)
@@ -839,22 +832,17 @@ static void winusb_generic_packet(void *data, uint8_t *report,
          continue;
       if (v->id == WINUSB_GEN_HAT)
       {
-         /* eight ways from the top, clockwise; out of range is rest */
-         static const int8_t hx[8] = { 0, 1, 1, 1, 0, -1, -1, -1 };
-         static const int8_t hy[8] = { -1, -1, 0, 1, 1, 1, 0, -1 };
+         /* eight ways from the top, clockwise, as up 1, down 2, left 4
+          * and right 8; out of range is rest */
+         static const uint8_t hat[8] = { 1, 1 | 8, 8, 8 | 2, 2, 2 | 4, 4, 4 | 1 };
          LONG way = val - v->min;
          if (v->max - v->min == 3)
             way *= 2;
-         if (val < v->min || val > v->max || way < 0 || way > 7)
-            gen->hat_x = gen->hat_y = 0;
-         else
-         {
-            gen->hat_x = hx[way];
-            gen->hat_y = hy[way];
-         }
+         gen->view.hats = (val < v->min || val > v->max || way < 0 || way > 7)
+            ? 0 : hat[way];
       }
       else
-         gen->axes[v->id] = winusb_generic_scale(val, v->min, v->max);
+         gen->view.axes[v->id] = winusb_generic_scale(val, v->min, v->max);
    }
 }
 
@@ -874,15 +862,16 @@ static void winusb_generic_rumble(void *data,
 static void winusb_generic_get_buttons(void *data, input_bits_t *state)
 {
    winusb_generic_t *gen = (winusb_generic_t*)data;
-   BIT256_CLEAR_ALL_PTR(state);
    if (gen)
-      BITS_COPY32_PTR(state, gen->buttons);
+      *state = gen->view.buttons;
+   else
+      BIT256_CLEAR_ALL_PTR(state);
 }
 
 static int16_t winusb_generic_axis(void *data, unsigned axis)
 {
    winusb_generic_t *gen = (winusb_generic_t*)data;
-   return (gen && axis < WINUSB_GEN_AXES) ? gen->axes[axis] : 0;
+   return (gen && axis < WINUSB_GEN_AXES) ? gen->view.axes[axis] : 0;
 }
 
 static const char *winusb_generic_name(void *data)
@@ -894,7 +883,13 @@ static const char *winusb_generic_name(void *data)
 static int32_t winusb_generic_button(void *data, uint16_t joykey)
 {
    winusb_generic_t *gen = (winusb_generic_t*)data;
-   return (gen && joykey < 32) ? (int32_t)((gen->buttons >> joykey) & 1) : 0;
+   return (gen && joykey < 32)
+      ? (BIT256_GET(gen->view.buttons, joykey) ? 1 : 0) : 0;
+}
+
+static const input_pad_view_t *winusb_generic_view(void *data)
+{
+   return &((winusb_generic_t*)data)->view;
 }
 
 static pad_connection_interface_t winusb_generic_iface = {
@@ -906,7 +901,14 @@ static pad_connection_interface_t winusb_generic_iface = {
    winusb_generic_axis,
    winusb_generic_name,
    winusb_generic_button,
-   false
+   false, /* multi_pad */
+   0,     /* max_pad */
+   NULL,  /* pad_init */
+   NULL,  /* pad_deinit */
+   NULL,  /* status */
+   NULL,  /* joypad */
+   NULL,  /* set_player */
+   winusb_generic_view
 };
 
 /* A pad on Windows' HID driver: how long its reports are, and whether
@@ -1620,6 +1622,17 @@ static void winusb_hid_poll(void *data)
    }
 }
 
+/* Lent: the reader threads only pass reports on; the handlers are
+ * given them in the poll. */
+static const input_pad_view_t *winusb_hid_joypad_view(void *data,
+      unsigned pad)
+{
+   winusb_hid_t *hid = (winusb_hid_t*)data;
+   if (!hid || pad >= MAX_USERS)
+      return NULL;
+   return pad_connection_view(&hid->slots[pad]);
+}
+
 static bool winusb_hid_joypad_query(void *data, unsigned pad)
 {
    return pad < MAX_USERS;
@@ -1656,20 +1669,16 @@ static int16_t winusb_hid_joypad_button(void *data,
    if ((hat_dir = GET_HAT_DIR(joykey)))
    {
       winusb_hid_t *hid = (winusb_hid_t*)data;
-      winusb_device_t *dev;
-      if (!hid || GET_HAT(joykey) != 0)
+      const input_pad_view_t *view;
+      if (     !hid || GET_HAT(joykey) != 0
+            || !(view = pad_connection_view(&hid->slots[port])))
          return 0;
-      for (dev = hid->devices; dev; dev = dev->next)
+      switch (hat_dir)
       {
-         if (dev->slot != (int32_t)port || !dev->generic)
-            continue;
-         switch (hat_dir)
-         {
-            case HAT_UP_MASK:    return dev->gen.hat_y < 0;
-            case HAT_DOWN_MASK:  return dev->gen.hat_y > 0;
-            case HAT_LEFT_MASK:  return dev->gen.hat_x < 0;
-            case HAT_RIGHT_MASK: return dev->gen.hat_x > 0;
-         }
+         case HAT_UP_MASK:    return (view->hats & 1) != 0;
+         case HAT_DOWN_MASK:  return (view->hats & 2) != 0;
+         case HAT_LEFT_MASK:  return (view->hats & 4) != 0;
+         case HAT_RIGHT_MASK: return (view->hats & 8) != 0;
       }
       return 0;
    }
@@ -1873,5 +1882,6 @@ hid_driver_t winusb_hid = {
    winusb_hid_get_bt_host,
    winusb_hid_set_bt_host,
    winusb_hid_is_bluetooth,
-   winusb_hid_set_player
+   winusb_hid_set_player,
+   winusb_hid_joypad_view
 };

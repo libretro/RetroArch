@@ -643,6 +643,20 @@ void pad_connection_set_player(joypad_connection_t *joyconn,
    pad_connection_release(joyconn);
 }
 
+const input_pad_view_t *pad_connection_view(joypad_connection_t *joyconn)
+{
+   const input_pad_view_t *view = NULL;
+   if (joyconn && pad_connection_acquire(joyconn))
+   {
+      if (     joyconn->iface
+            && joyconn->iface->view
+            && joyconn->connection)
+         view = joyconn->iface->view(joyconn->connection);
+      pad_connection_release(joyconn);
+   }
+   return view;
+}
+
 const char* pad_connection_get_name(joypad_connection_t *joyconn,
       unsigned pad)
 {

@@ -36,11 +36,10 @@ typedef struct ds3_instance
    int player;     /* told: from 1, -1 for none; 0 not yet */
    bool led_set;
    bool motors_due;
-   uint32_t buttons;
-   int16_t analog_state[3][2];
+   /* the RetroPad's buttons and PS as 16; the sticks as 0 to 3, the
+    * pressures 4 to 15 */
+   input_pad_view_t view;
    uint8_t motors[2]; /* strong, weak: what the core asked last */
-   /* the pressures, in ds3_pressure_byte[]'s order */
-   uint8_t pressure[12];
 } ds3_instance_t;
 
 struct __attribute__((__packed__)) sixaxis_led
@@ -206,6 +205,7 @@ static void ds3_update_pad_state(ds3_instance_t *instance,
       const uint8_t *report)
 {
    uint32_t i, pressed_keys;
+   uint32_t buttons = 0;
 
    static const uint32_t button_mapping[17] =
    {
@@ -228,16 +228,15 @@ static void ds3_update_pad_state(ds3_instance_t *instance,
       16 /* PS button */
    };
 
-   instance->buttons     = 0;
-
    pressed_keys          = 
           report[2]
       |  (report[3]         << 8)
       | ((report[4] & 0x01) << 16);
 
    for (i = 0; i < 17; i++)
-      instance->buttons |= (pressed_keys & (1 << i)) ?
+      buttons |= (pressed_keys & (1 << i)) ?
          (1 << button_mapping[i]) : 0;
+   pad_view_set_buttons(&instance->view, buttons, false);
 }
 
 static void ds3_update_analog_state(ds3_instance_t *instance,
@@ -246,9 +245,9 @@ static void ds3_update_analog_state(ds3_instance_t *instance,
    int pad_axis;
 
    /* The pad's 0 is left and up, as libretro's negative is: no axis is
-    * turned round. [stick][1] is X and [stick][0] Y. */
+    * turned round. */
    for (pad_axis = 0; pad_axis < 4; pad_axis++)
-      instance->analog_state[pad_axis / 2][(pad_axis % 2) ? 0 : 1] =
+      instance->view.axes[pad_axis] =
          (int16_t)(report[6 + pad_axis] * 257 - 32768);
 }
 
@@ -326,7 +325,10 @@ static void ds3_packet_handler(void *device_data,
    {
       unsigned i;
       for (i = 0; i < 12; i++)
-         device->pressure[i] = packet[ds3_pressure_byte[i]];
+      {
+         unsigned b = packet[ds3_pressure_byte[i]];
+         device->view.axes[4 + i] = (int16_t)((b << 7) | (b >> 1));
+      }
    }
 }
 
@@ -359,38 +361,25 @@ static void ds3_get_buttons(void *device_data, input_bits_t *state)
 {
    ds3_instance_t *device = (ds3_instance_t *)device_data;
    if (device)
-   {
-      /* copy 32 bits : needed for PS button? */
-      BITS_COPY32_PTR(state, device->buttons);
-   }
+      *state = device->view.buttons;
    else
       BIT256_CLEAR_ALL_PTR(state);
 }
 
 static int16_t ds3_get_axis(void *device_data, unsigned axis)
 {
-   union joyaxis
-   {
-      uint32_t encoded;
-      int16_t axis[2];
-   } joyaxis;
-   axis_data axis_data    = {0};
    ds3_instance_t *device = (ds3_instance_t *)device_data;
-
-   joyaxis.encoded        = axis;
-   if (device && axis >= 4 && axis < 16)
-   {
-      unsigned b = device->pressure[axis - 4];
-      return (int16_t)((b << 7) | (b >> 1));
-   }
-   gamepad_read_axis_data(axis, &axis_data);
-
-   if (!device || axis_data.axis >= 4)
+   int16_t val;
+   if (!device)
       return 0;
-
-   if (joyaxis.axis[0] < 0 || joyaxis.axis[1] < 0)
-      return gamepad_get_axis_value(device->analog_state, &axis_data);
-   return gamepad_get_axis_value_raw(device->analog_state, &axis_data, false);
+   if (axis < INPUT_PAD_VIEW_AXES)
+      return device->view.axes[axis];
+   /* a stick's direction, bound: what wiiu_hid's state() asks */
+   if (AXIS_NEG_GET(axis) < 4)
+      return ((val = device->view.axes[AXIS_NEG_GET(axis)]) < 0) ? val : 0;
+   if (AXIS_POS_GET(axis) < 4)
+      return ((val = device->view.axes[AXIS_POS_GET(axis)]) > 0) ? val : 0;
+   return 0;
 }
 
 static const char *ds3_get_name(void *device_data)
@@ -404,7 +393,12 @@ static int32_t ds3_button(void *device_data, uint16_t joykey)
 
    if (!device || joykey > 31)
       return 0;
-   return device->buttons & (1 << joykey);
+   return BIT256_GET(device->view.buttons, joykey) ? 1 : 0;
+}
+
+static const input_pad_view_t *ds3_view(void *device_data)
+{
+   return &((ds3_instance_t *)device_data)->view;
 }
 
 pad_connection_interface_t pad_connection_ps3 = {
@@ -422,5 +416,6 @@ pad_connection_interface_t pad_connection_ps3 = {
    NULL,  /* pad_deinit */
    NULL,  /* status */
    NULL,  /* joypad */
-   ds3_set_player
+   ds3_set_player,
+   ds3_view
 };

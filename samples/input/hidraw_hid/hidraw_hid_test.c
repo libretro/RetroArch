@@ -24,7 +24,11 @@
  *                  Switch Pro Controller greeted on USB, not on Bluetooth
  *   no handler  -> a pad with none is read from its report descriptor,
  *                  numbered as on the Mac, named as it names itself; a
- *                  keyboard's descriptor is no pad */
+ *                  keyboard's descriptor is no pad
+ *   lend        -> a pad's state is lent where its handler keeps it:
+ *                  what the reads answer, the same storage poll after
+ *                  poll, the hat of a pad read from its descriptor in
+ *                  it; none for a port with no pad */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -390,6 +394,29 @@ int main(void)
    x = hidraw_hid.axis(hid, 0, AXIS_POS(0));
    CHECK(x > 30000, "the stick is not the newest report's");
 
+   /* lend: the handler's own state, what the reads answered */
+   {
+      const input_pad_view_t *v = hidraw_hid.view(hid, 0);
+      CHECK(v != NULL, "the DualShock 3's state is not lent");
+      CHECK(!hidraw_hid.view(hid, 1), "a port with no pad lends a state");
+      if (v)
+      {
+         CHECK(!memcmp(&v->buttons, &bits, sizeof(bits)) && v->axes[0] == x
+               && v->axes[5] == hidraw_hid.axis(hid, 0, AXIS_POS(5))
+               && !v->hats,
+               "the lent state is not what the reads answer");
+         queue_report(ds3, cross, 0);
+         hidraw_hid.poll(hid);
+         CHECK(hidraw_hid.view(hid, 0) == v
+               && BIT256_GET(v->buttons, RETRO_DEVICE_ID_JOYPAD_B)
+               && !BIT256_GET(v->buttons, RETRO_DEVICE_ID_JOYPAD_A)
+               && v->axes[0] < -30000,
+               "the lent state is not the handler's, kept up at each poll");
+         queue_report(ds3, circle, 255);
+         hidraw_hid.poll(hid);
+      }
+   }
+
    /* rumble: one output report at the next report the pad sends,
     * the strong motor's force and the weak one only on or off; none
     * again unchanged */
@@ -595,6 +622,12 @@ int main(void)
          && hidraw_hid.button(hid, 0, HAT_MAP(0, HAT_LEFT_MASK))
          && !hidraw_hid.button(hid, 0, HAT_MAP(0, HAT_RIGHT_MASK)),
          "a pad with no handler: its buttons or hat are not read");
+   {
+      const input_pad_view_t *v = hidraw_hid.view(hid, 0);
+      CHECK(v && v->hats == 4 && v->axes[0] == 32767
+            && BIT256_GET(v->buttons, 1) && !BIT256_GET(v->buttons, 0),
+            "a pad with no handler: its state, hat and all, is not lent");
+   }
    hidraw_hid.free(hid);
 
    if (failures)

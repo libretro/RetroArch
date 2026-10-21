@@ -35,6 +35,8 @@
  * state data for the HID driver.
  */
 
+struct input_pad_view;
+
 struct hid_driver
 {
    void *(*init)(void);
@@ -65,6 +67,9 @@ struct hid_driver
    bool (*is_bluetooth)(void *handle);
    /* as input_device_driver_t's: the player @pad's lights are to show */
    void (*set_player)(void *handle, unsigned pad, unsigned player);
+   /* as input_device_driver_t's: pad @pad's state, unchanged until the
+    * next poll; NULL where it cannot be lent */
+   const struct input_pad_view *(*view)(void *handle, unsigned pad);
 };
 
 #endif /* HID_DRIVER_H__ */

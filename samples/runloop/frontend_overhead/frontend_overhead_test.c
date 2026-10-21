@@ -2414,6 +2414,9 @@ static unsigned pressure_frame(uint32_t buttons, int a2, int a3,
  * slot 0, whose buttons are beside_buttons. */
 static uint32_t beside_buttons;
 static int beside_init_number = -2;
+static unsigned long beside_calls_read; /* button, get_buttons, axis */
+static unsigned long beside_calls_view;
+static input_pad_view_t beside_lent;
 
 /* a pad already there is found in init, as WinUSB's are */
 static void *beside_init(void)
@@ -2426,15 +2429,31 @@ static void beside_free(const void *data) { (void)data; }
 static bool beside_query(void *data, unsigned pad) { return pad < 16; }
 static int16_t beside_button(void *data, unsigned pad, uint16_t key)
 {
+   beside_calls_read++;
    return pad == 0 && key < 32 && ((beside_buttons >> key) & 1);
 }
 static void beside_get_buttons(void *data, unsigned pad, input_bits_t *state)
 {
+   beside_calls_read++;
    BIT256_CLEAR_ALL_PTR(state);
    if (pad == 0)
       BITS_COPY32_PTR(state, beside_buttons);
 }
-static int16_t beside_axis(void *data, unsigned pad, uint32_t axis) { return 0; }
+static int16_t beside_axis(void *data, unsigned pad, uint32_t axis)
+{
+   beside_calls_read++;
+   return 0;
+}
+/* lent, as WinUSB lends its pads */
+static const input_pad_view_t *beside_view(void *data, unsigned pad)
+{
+   beside_calls_view++;
+   if (pad != 0)
+      return NULL;
+   memset(&beside_lent, 0, sizeof(beside_lent));
+   BITS_COPY32_PTR(&beside_lent.buttons, beside_buttons);
+   return &beside_lent;
+}
 static int16_t beside_state(void *data, rarch_joypad_info_t *info,
       const uint16_t *joykeys, const uint32_t *joyaxes, unsigned port)
 {
@@ -2466,7 +2485,8 @@ static void lane_beside_source(void)
 #ifdef HAVE_HID
    input_driver_state_t *input_st     = input_state_get_ptr();
    settings_t *settings               = config_get_ptr();
-   const input_device_driver_t *real  = input_st->primary_joypad;
+   const input_device_driver_t *joypad_real = input_st->primary_joypad;
+   const input_device_driver_t *real  = joypad_real;
    struct retro_keybind *b_bind       = &input_autoconf_binds[15][RETRO_DEVICE_ID_JOYPAD_B];
    struct retro_keybind saved_b       = *b_bind;
    unsigned saved_index               = settings->uints.input_joypad_index[1];
@@ -2478,6 +2498,20 @@ static void lane_beside_source(void)
       printf("[skip] beside source: no joypad driver, or it is HID's own\n");
       return;
    }
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
+   /* the scripted pad's driver, which can lend, with nothing held */
+   syn_joypad               = *joypad_real;
+   syn_joypad.button        = syn_button;
+   syn_joypad.axis          = syn_axis;
+   syn_joypad.state         = syn_state;
+   syn_joypad.get_buttons   = syn_get_buttons;
+   syn_joypad.view          = NULL;
+   syn_hat                  = 0;
+   syn_buttons              = 0;
+   memset(syn_axes, 0, sizeof(syn_axes));
+   input_st->primary_joypad = &syn_joypad;
+   real                     = &syn_joypad;
+#endif
    input_driver_beside_override(&beside_hid);
    run_loop_frames(1);
    CHECK(beside_init_number == 15,
@@ -2514,6 +2548,42 @@ static void lane_beside_source(void)
             RETRO_DEVICE_ID_JOYPAD_B),
          "beside source: the pad's release does not reach its port");
 
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
+   /* through the snapshot bridge, both lending: the source's pad is
+    * read where the source keeps it, and the driver's pads stay lent */
+   {
+      bool pressed, other;
+
+      input_driver_set_snapshot_bridge(false);
+      syn_joypad.view = syn_view;
+      beside_hid.view = beside_view;
+      input_driver_set_snapshot_bridge(true);
+      beside_buttons  = 1;
+      run_loop_frames(1);
+      beside_calls_read = beside_calls_view = 0;
+      syn_calls_view    = 0;
+      run_loop_frames(1);
+      pressed = input_driver_state_wrapper(1, RETRO_DEVICE_JOYPAD, 0,
+            RETRO_DEVICE_ID_JOYPAD_B) != 0;
+      other   = input_driver_state_wrapper(0, RETRO_DEVICE_JOYPAD, 0,
+            RETRO_DEVICE_ID_JOYPAD_B) != 0;
+      CHECK(pressed && !other,
+            "beside source: lent, the pad's press does not reach its port alone");
+      CHECK(beside_calls_view && !beside_calls_read,
+            "beside source: its lent pad was still read through it");
+      CHECK(syn_calls_view,
+            "beside source: the driver's pads are not lent beside it");
+      beside_buttons = 0;
+      run_loop_frames(1);
+      CHECK(!input_driver_state_wrapper(1, RETRO_DEVICE_JOYPAD, 0,
+               RETRO_DEVICE_ID_JOYPAD_B),
+            "beside source: lent, the pad's release does not reach its port");
+      input_driver_set_snapshot_bridge(false);
+      syn_joypad.view = NULL;
+      beside_hid.view = NULL;
+   }
+#endif
+
    /* gone: the driver is reached directly again */
    input_driver_hid_release(&beside_buttons, 0);
    run_loop_frames(1);
@@ -2536,10 +2606,13 @@ static void lane_beside_source(void)
    run_loop_frames(2);
    CHECK(input_st->primary_joypad == real,
          "beside source: stopping the source left the driver stood in for");
+   input_st->primary_joypad = joypad_real;
    if (failures == had)
       printf("[pass] beside source: a pad beside the joypad driver takes a"
             " pooled device number, its port reads it, the driver's ports"
-            " do not, and the driver is reached directly once it is gone\n");
+            " do not; lent through the snapshot bridge, with the driver's"
+            " pads lent beside it; the driver is reached directly once it"
+            " is gone\n");
 #else
    printf("[skip] beside source: no HID\n");
 #endif

@@ -7,7 +7,10 @@
  * and every axis must agree. Random reports, and the edges (every hat
  * value, every bit alone, a report too short to be one). The DualSense
  * and Switch Pro handlers are new, so they are held to the reports'
- * layout instead, and the Switch Pro's to its greeting and commands. */
+ * layout instead, and the Switch Pro's to its greeting and commands.
+ * A handler that keeps its state as a view is held, after every report,
+ * to its view saying what its getters say; the DualShock 3's to the
+ * copying handler's axes. */
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -39,6 +42,60 @@ static void stub_send_control(void *handle, uint8_t *s, size_t len)
 }
 
 static hid_driver_t stub_hid;
+
+void RARCH_LOG(const char *f, ...) { (void)f; }
+void RARCH_DBG(const char *f, ...) { (void)f; }
+void RARCH_ERR(const char *f, ...) { (void)f; }
+
+static int32_t stub_set_report(void *handle, uint8_t type, uint8_t id,
+      uint8_t *data, size_t len)
+{
+   (void)handle; (void)type; (void)id; (void)data;
+   return (int32_t)len;
+}
+
+static int32_t stub_ds3_get_report(void *handle, uint8_t type, uint8_t id,
+      uint8_t *data, size_t len)
+{
+   (void)handle; (void)type; (void)id;
+   memset(data, 0, len);
+   return (int32_t)len;
+}
+
+/* ---- a handler's view against its getters -------------------- */
+
+static unsigned view_reads;
+static unsigned view_bad;
+
+static void view_check(const pad_connection_interface_t *ifc, void *dev)
+{
+   const input_pad_view_t *v;
+   input_bits_t bits;
+   unsigned k;
+
+   if (!ifc->view)
+      return;
+   v = ifc->view(dev);
+   view_reads++;
+   ifc->get_buttons(dev, &bits);
+   if (memcmp(&bits, &v->buttons, sizeof(bits)))
+      view_bad++;
+   for (k = 0; k < 32; k++)
+      if (!!ifc->button(dev, (uint16_t)k) != !!BIT256_GET(v->buttons, k))
+         view_bad++;
+   for (k = 0; k < INPUT_PAD_VIEW_AXES; k++)
+      if (ifc->get_axis(dev, k) != v->axes[k])
+         view_bad++;
+   if (v->hats)
+      view_bad++;
+}
+
+static void deliver(const pad_connection_interface_t *ifc, void *dev,
+      uint8_t *p, uint16_t len)
+{
+   ifc->packet_handler(dev, p, len);
+   view_check(ifc, dev);
+}
 
 /* ---- PS4: the old handler's report and reads ------------------ */
 
@@ -165,14 +222,14 @@ static void test_ps4(void)
          p[6] = p[7] = 0;
          p[5 + (i - 16) / 8] |= (uint8_t)(1u << ((i - 16) % 8));
       }
-      ifc->packet_handler(dev, p, 10);
+      deliver(ifc, dev, p, 10);
       ref_ps4_take(&ref, p);
       bad += ps4_mismatches(dev, &ref);
    }
    CHECK(!bad, "ps4: %u reads disagree with the copying handler", bad);
    /* a report too short to be one leaves the pad as it was */
    memset(p, 0xff, sizeof(p));
-   ifc->packet_handler(dev, p, 9);
+   deliver(ifc, dev, p, 9);
    CHECK(!ps4_mismatches(dev, &ref), "ps4: a short report was taken");
    ifc->deinit(dev);
    printf("[%s] ps4: every button, the set and the axes as the copying handler, on 20040 reports\n",
@@ -262,7 +319,7 @@ static void test_wiiugca(void)
          static const uint8_t states[4] = { 0x04, 0x10, 0x14, 0x22 };
          p[1 + i * 9] = states[rand() & 3];
       }
-      ifc->packet_handler(dev, p, REF_GCA_LEN);
+      deliver(ifc, dev, p, REF_GCA_LEN);
       ref_gca_take(ref, p);
       for (i = 0; i < 4; i++)
       {
@@ -294,7 +351,7 @@ static void test_wiiugca(void)
    {
       int16_t ax = pads[0] ? ifc->get_axis(pads[0], AXIS_POS(0)) : 0;
       memset(p, 0x14, sizeof(p));
-      ifc->packet_handler(dev, p, REF_GCA_LEN - 1);
+      deliver(ifc, dev, p, REF_GCA_LEN - 1);
       CHECK(!pads[0] || ifc->get_axis(pads[0], AXIS_POS(0)) == ax,
             "wiiugca: a short report was taken");
    }
@@ -432,7 +489,7 @@ static void test_adapter(const pad_connection_interface_t *ifc,
       }
       else if (rand() & 3)
          p[1] = 1; /* the first controller; others are not taken */
-      ifc->packet_handler(dev, p, (uint16_t)size);
+      deliver(ifc, dev, p, (uint16_t)size);
       if (psx)
          ref_psx_take(&ref, p, size);
       else
@@ -442,7 +499,7 @@ static void test_adapter(const pad_connection_interface_t *ifc,
    CHECK(!bad, "%s: %u reads disagree with the copying handler", name, bad);
    /* a report too short to be one leaves the pad as it was */
    memset(p, 0x01, sizeof(p));
-   ifc->packet_handler(dev, p, (uint16_t)(min - 1));
+   deliver(ifc, dev, p, (uint16_t)(min - 1));
    CHECK(!adapter_mismatches(ifc, dev, &ref, psx),
          "%s: a short report was taken", name);
    ifc->deinit(dev);
@@ -531,13 +588,13 @@ static void test_usbpad(const pad_connection_interface_t *ifc,
       unsigned size = 7 + (unsigned)rand() % (sizeof(p) - 6);
       for (i = 0; i < sizeof(p); i++)
          p[i] = (uint8_t)rand();
-      ifc->packet_handler(dev, p, (uint16_t)size);
+      deliver(ifc, dev, p, (uint16_t)size);
       ref_usbpad_take(&ref, map, p, size);
       bad += usbpad_mismatches(ifc, dev, &ref, at);
    }
    CHECK(!bad, "%s: %u reads disagree with the copying handler", name, bad);
    memset(p, 0xff, sizeof(p));
-   ifc->packet_handler(dev, p, 6);
+   deliver(ifc, dev, p, 6);
    CHECK(!usbpad_mismatches(ifc, dev, &ref, at), "%s: a short report was taken", name);
    ifc->deinit(dev);
    printf("[%s] %s: every button, the set and the axes as the copying handler, on 20000 reports\n",
@@ -647,13 +704,13 @@ static void test_pad(const pad_connection_interface_t *ifc, const char *name,
          p[i] = (uint8_t)rand();
       if (rand() & 1)
          p[3] = 0x7F; /* the DragonRise's analog mode */
-      ifc->packet_handler(dev, p, (uint16_t)size);
+      deliver(ifc, dev, p, (uint16_t)size);
       take(&ref, p, size);
       bad += pad_mismatches(ifc, dev, &ref, set_bits, axis);
    }
    CHECK(!bad, "%s: %u reads disagree with the copying handler", name, bad);
    memset(p, 0x7F, sizeof(p));
-   ifc->packet_handler(dev, p, (uint16_t)(min - 1));
+   deliver(ifc, dev, p, (uint16_t)(min - 1));
    CHECK(!pad_mismatches(ifc, dev, &ref, set_bits, axis),
          "%s: a short report was taken", name);
    ifc->deinit(dev);
@@ -757,7 +814,7 @@ static void test_retrode(void)
          if (rand() & 1)
             p[i] = dir[rand() % 3];
       }
-      ifc->packet_handler(dev, p, (uint16_t)size);
+      deliver(ifc, dev, p, (uint16_t)size);
       if (p[0] >= 1 && p[0] <= 4)
          ref_retrode_take(&ref[p[0] - 1], p, size);
       for (i = 0; i < 4; i++)
@@ -767,7 +824,7 @@ static void test_retrode(void)
    CHECK(!bad, "retrode: %u reads disagree with the copying handler", bad);
    memset(p, 0xff, sizeof(p));
    p[0] = 1;
-   ifc->packet_handler(dev, p, 3);
+   deliver(ifc, dev, p, 3);
    CHECK(!pads[0] || !pad_mismatches(ifc, pads[0], &ref[0], 16, ref_retrode_axis),
          "retrode: a short report was taken");
    for (i = 0; i < 4; i++)
@@ -940,7 +997,7 @@ static void test_ps5(void)
          len = ps5_report(p + 1, &st, 1) + 1;
          p[0] = 0xa1;
       }
-      ifc->packet_handler(dev, p, (uint16_t)len);
+      deliver(ifc, dev, p, (uint16_t)len);
       bad += ps5_mismatches(ifc, dev, &st);
    }
    CHECK(!bad, "ps5: %u reads over Bluetooth disagree with the report", bad);
@@ -949,11 +1006,11 @@ static void test_ps5(void)
    /* reports that are not the pad's state, or too short to be */
    memset(p, 0xff, sizeof(p));
    p[0] = 0x01;
-   ifc->packet_handler(dev, p, 9);
+   deliver(ifc, dev, p, 9);
    p[0] = 0x31;
-   ifc->packet_handler(dev, p, 11);
+   deliver(ifc, dev, p, 11);
    p[0] = 0x05;
-   ifc->packet_handler(dev, p, 64);
+   deliver(ifc, dev, p, 64);
    CHECK(!ps5_mismatches(ifc, dev, &st), "ps5: a short or foreign report was taken");
    ifc->deinit(dev);
 
@@ -962,11 +1019,11 @@ static void test_ps5(void)
    sent_count = 0;
    dev = ifc->init(&dummy_connection, 1, &stub_hid);
    ps5_random_state(&st);
-   ifc->packet_handler(dev, p, (uint16_t)ps5_report(p, &st, 1));
+   deliver(ifc, dev, p, (uint16_t)ps5_report(p, &st, 1));
    CHECK(sent_count == 1 && ps5_sent_is(true, false, 0, 0, 2),
          "ps5: the first Bluetooth report did not light player 2");
    ifc->set_rumble(dev, RETRO_RUMBLE_STRONG, 0x8000);
-   ifc->packet_handler(dev, p, (uint16_t)ps5_report(p, &st, 3));
+   deliver(ifc, dev, p, (uint16_t)ps5_report(p, &st, 3));
    CHECK(sent_count == 2 && ps5_sent_is(true, false, 0x80, 0, 0),
          "ps5: Bluetooth rumble is not the shared builder's report");
    CHECK(!ps5_mismatches(ifc, dev, &st), "ps5: Bluetooth's full report misread");
@@ -979,7 +1036,7 @@ static void test_ps5(void)
    dev = ifc->init(&dummy_connection, 1, &stub_hid);
    ps5_random_state(&st);
    ps5_report(p, &st, 1);
-   ifc->packet_handler(dev, p, 78);
+   deliver(ifc, dev, p, 78);
    CHECK(!ps5_mismatches(ifc, dev, &st), "ps5: Windows' padded Bluetooth report was read as USB's");
    CHECK(sent_count == 1 && ps5_sent_is(true, false, 0, 0, 2),
          "ps5: output to a pad the driver says is on Bluetooth is not Bluetooth's");
@@ -993,7 +1050,7 @@ static void test_ps5(void)
    for (n = 0; n < 20000; n++)
    {
       ps5_random_state(&st);
-      ifc->packet_handler(dev, p, (uint16_t)ps5_report(p, &st, 0));
+      deliver(ifc, dev, p, (uint16_t)ps5_report(p, &st, 0));
       bad += ps5_mismatches(ifc, dev, &st);
       if (n == 0)
          CHECK(sent_count == 1 && ps5_sent_is(false, false, 0, 0, 2),
@@ -1007,25 +1064,25 @@ static void test_ps5(void)
    ifc->set_rumble(dev, RETRO_RUMBLE_WEAK, 0xff00);
    ifc->set_rumble(dev, RETRO_RUMBLE_WEAK, 0xff00);
    CHECK(sent_count == 1, "ps5: rumble was sent outside the poll");
-   ifc->packet_handler(dev, p, (uint16_t)ps5_report(p, &st, 0));
+   deliver(ifc, dev, p, (uint16_t)ps5_report(p, &st, 0));
    CHECK(sent_count == 2 && ps5_sent_is(false, false, 0x80, 0xff, 0),
          "ps5: the rumble report is not the motors asked for");
-   ifc->packet_handler(dev, p, (uint16_t)ps5_report(p, &st, 0));
+   deliver(ifc, dev, p, (uint16_t)ps5_report(p, &st, 0));
    CHECK(sent_count == 2, "ps5: rumble was sent again unchanged");
 
    /* told its port: relit at the next report, then put out on none */
    ifc->set_player(dev, 3);
-   ifc->packet_handler(dev, p, (uint16_t)ps5_report(p, &st, 0));
+   deliver(ifc, dev, p, (uint16_t)ps5_report(p, &st, 0));
    CHECK(ps5_sent_is(false, false, 0x80, 0xff, 3), "ps5: not relit for port 3");
    ifc->set_player(dev, 0);
-   ifc->packet_handler(dev, p, (uint16_t)ps5_report(p, &st, 0));
+   deliver(ifc, dev, p, (uint16_t)ps5_report(p, &st, 0));
    CHECK(ps5_sent_is(false, false, 0x80, 0xff, -1), "ps5: lit on no port");
    ifc->deinit(dev);
    /* told before its first report: that port lit, not its slot's */
    sent_count = 0;
    dev = ifc->init(&dummy_connection, 1, &stub_hid);
    ifc->set_player(dev, 4);
-   ifc->packet_handler(dev, p, (uint16_t)ps5_report(p, &st, 0));
+   deliver(ifc, dev, p, (uint16_t)ps5_report(p, &st, 0));
    CHECK(sent_count == 1 && ps5_sent_is(false, false, 0, 0, 4),
          "ps5: a pad told its port before its first report lit its slot");
    ifc->deinit(dev);
@@ -1034,7 +1091,7 @@ static void test_ps5(void)
     * firmware 2.21 */
    sent_count = 0;
    dev = pad_connection_ps5_edge.init(&dummy_connection, 0, &stub_hid);
-   ifc->packet_handler(dev, p, (uint16_t)ps5_report(p, &st, 0));
+   deliver(ifc, dev, p, (uint16_t)ps5_report(p, &st, 0));
    CHECK(ps5_sent_is(false, true, 0, 0, 1), "ps5: an Edge's motors are not the newer way");
    CHECK(!strcmp(ifc->get_name(dev), "DualSense Edge Wireless Controller"),
          "ps5: an Edge is not named one");
@@ -1042,12 +1099,12 @@ static void test_ps5(void)
    stub_hid.get_report = stub_get_report;
    feature_firmware    = 0x0221;
    dev = ifc->init(&dummy_connection, 0, &stub_hid);
-   ifc->packet_handler(dev, p, (uint16_t)ps5_report(p, &st, 0));
+   deliver(ifc, dev, p, (uint16_t)ps5_report(p, &st, 0));
    CHECK(ps5_sent_is(false, true, 0, 0, 1), "ps5: firmware 2.21's motors are not the newer way");
    ifc->deinit(dev);
    feature_firmware    = 0x0215;
    dev = ifc->init(&dummy_connection, 0, &stub_hid);
-   ifc->packet_handler(dev, p, (uint16_t)ps5_report(p, &st, 0));
+   deliver(ifc, dev, p, (uint16_t)ps5_report(p, &st, 0));
    CHECK(ps5_sent_is(false, false, 0, 0, 1), "ps5: older firmware's motors are the newer way");
    ifc->deinit(dev);
    stub_hid.get_report = NULL;
@@ -1195,24 +1252,24 @@ static void test_switch_pro(void)
       return;
    CHECK(sent_count == 1 && sp_sent(0, hello, 2), "switch_pro: USB not greeted");
    p[0] = 0x81; p[1] = 0x02;
-   ifc->packet_handler(dev, p, 64);
+   deliver(ifc, dev, p, 64);
    CHECK(sent_count == 2 && sp_sent(0, baud, 2), "switch_pro: no faster link after the greeting");
    p[1] = 0x02;
-   ifc->packet_handler(dev, p, 64);
+   deliver(ifc, dev, p, 64);
    CHECK(sent_count == 2, "switch_pro: a greeting's answer out of turn was taken");
    p[1] = 0x03;
-   ifc->packet_handler(dev, p, 64);
+   deliver(ifc, dev, p, 64);
    CHECK(sent_count == 3 && sp_sent(0, hello, 2), "switch_pro: not greeted again");
    p[1] = 0x02;
-   ifc->packet_handler(dev, p, 64);
+   deliver(ifc, dev, p, 64);
    CHECK(sent_count == 5 && sp_sent(1, start, 2) && sp_sent_command(0, 0x48, 0x01),
          "switch_pro: the reports not started, or rumble not turned on");
    CHECK(!memcmp(sent + 2, neutral, 8), "switch_pro: a command's rumble is not at rest");
 
    /* the commands, each on its answer: lights for player 3, the flash */
-   ifc->packet_handler(dev, p, (uint16_t)sp_reply(p, &st, 0x48, NULL, 0));
+   deliver(ifc, dev, p, (uint16_t)sp_reply(p, &st, 0x48, NULL, 0));
    CHECK(sp_sent_command(0, 0x30, 0x07), "switch_pro: player 3's lights not set");
-   ifc->packet_handler(dev, p, (uint16_t)sp_reply(p, &st, 0x30, NULL, 0));
+   deliver(ifc, dev, p, (uint16_t)sp_reply(p, &st, 0x30, NULL, 0));
    CHECK(sp_sent_command(0, 0x10, 0x3d) && sent[12] == 0x60 && sent[15] == 18,
          "switch_pro: the factory calibration not read");
 
@@ -1226,7 +1283,7 @@ static void test_switch_pro(void)
    sp_put_pair(flash + 5 + 9,  0x800, 0x800);
    sp_put_pair(flash + 5 + 12, 0xfff, 0xfff);
    sp_put_pair(flash + 5 + 15, 0xfff, 0xfff);
-   ifc->packet_handler(dev, p, (uint16_t)sp_reply(p, &st, 0x10, flash, 5 + 18));
+   deliver(ifc, dev, p, (uint16_t)sp_reply(p, &st, 0x10, flash, 5 + 18));
    CHECK(sp_sent_command(0, 0x10, 0x10) && sent[12] == 0x80 && sent[15] == 22,
          "switch_pro: the user's calibration not read");
 
@@ -1238,7 +1295,7 @@ static void test_switch_pro(void)
    sp_put_pair(flash + 5 + 16, 0x300, 0x300);
    sp_put_pair(flash + 5 + 19, 0x300, 0x300);
    count = sent_count;
-   ifc->packet_handler(dev, p, (uint16_t)sp_reply(p, &st, 0x10, flash, 5 + 22));
+   deliver(ifc, dev, p, (uint16_t)sp_reply(p, &st, 0x10, flash, 5 + 22));
    CHECK(sent_count == count, "switch_pro: something sent after the last command");
 
    /* sticks: up positive becomes down positive; the factory's reach is
@@ -1247,16 +1304,16 @@ static void test_switch_pro(void)
    st.stick[1] = 0x810 - 0x480 * 7 / 10;
    st.stick[2] = 0x900;
    st.stick[3] = 0x900 + 0x300 * 7 / 10;
-   ifc->packet_handler(dev, p, (uint16_t)sp_report(p, 0x30, &st));
+   deliver(ifc, dev, p, (uint16_t)sp_report(p, 0x30, &st));
    CHECK(ifc->get_axis(dev, 0) == 32767, "switch_pro: left x at its reach is %d", ifc->get_axis(dev, 0));
    CHECK(ifc->get_axis(dev, 1) == 32767, "switch_pro: left y down is %d", ifc->get_axis(dev, 1));
    CHECK(ifc->get_axis(dev, 2) == 0, "switch_pro: the user's centre not taken (%d)", ifc->get_axis(dev, 2));
    CHECK(ifc->get_axis(dev, 3) == -32767, "switch_pro: right y up is %d", ifc->get_axis(dev, 3));
    st.stick[0] = 0xfff;
-   ifc->packet_handler(dev, p, (uint16_t)sp_report(p, 0x30, &st));
+   deliver(ifc, dev, p, (uint16_t)sp_report(p, 0x30, &st));
    CHECK(ifc->get_axis(dev, 0) == 32767, "switch_pro: a stick past its reach is %d", ifc->get_axis(dev, 0));
    st.stick[0] = 0x7f0 + 0x500 * 7 / 10;
-   ifc->packet_handler(dev, p, (uint16_t)sp_report(p, 0x30, &st));
+   deliver(ifc, dev, p, (uint16_t)sp_report(p, 0x30, &st));
    CHECK(ifc->get_axis(dev, 0) == 0x500 * 7 / 10 * 32767 / (0xfff - 0x7f0),
          "switch_pro: the reach did not widen (%d)", ifc->get_axis(dev, 0));
    CHECK(ifc->get_axis(dev, 4) == 0, "switch_pro: an axis past the sticks");
@@ -1267,52 +1324,52 @@ static void test_switch_pro(void)
    {
       static const uint8_t ids[5] = { 0x30, 0x31, 0x32, 0x33, 0x21 };
       sp_random(&st);
-      ifc->packet_handler(dev, p, (uint16_t)sp_report(p, ids[n % 5], &st));
+      deliver(ifc, dev, p, (uint16_t)sp_report(p, ids[n % 5], &st));
       bad += sp_mismatches(dev, &st);
    }
    CHECK(!bad, "switch_pro: %u reads disagree with the full report", bad);
    p[0] = 0x30;
    memset(p + 1, 0xff, 63);
-   ifc->packet_handler(dev, p, 11);
+   deliver(ifc, dev, p, 11);
    p[0] = 0x3e;
-   ifc->packet_handler(dev, p, 64);
+   deliver(ifc, dev, p, 64);
    CHECK(!sp_mismatches(dev, &st), "switch_pro: a short or foreign report was taken");
 
    /* rumble: from the poll, the strong motor the left hand's, held
     * while it lasts, at rest once */
-   ifc->packet_handler(dev, p, (uint16_t)sp_report(p, 0x30, &st));
-   ifc->packet_handler(dev, p, (uint16_t)sp_report(p, 0x30, &st));
+   deliver(ifc, dev, p, (uint16_t)sp_report(p, 0x30, &st));
+   deliver(ifc, dev, p, (uint16_t)sp_report(p, 0x30, &st));
    count = sent_count;
    ifc->set_rumble(dev, RETRO_RUMBLE_STRONG, 0xffff);
    ifc->set_rumble(dev, RETRO_RUMBLE_WEAK, 1);
    CHECK(sent_count == count, "switch_pro: rumble sent outside the poll");
-   ifc->packet_handler(dev, p, (uint16_t)sp_report(p, 0x30, &st));
+   deliver(ifc, dev, p, (uint16_t)sp_report(p, 0x30, &st));
    CHECK(sent_count == count + 1 && sent[0] == 0x10 && sent_len == 10
          && sent[2] == 0x74 && sent[3] == 0xc8 && sent[4] == 0x3d && sent[5] == 0x72
          && sent[6] == 0x74 && sent[7] == 0x02 && sent[8] == 0xbd && sent[9] == 0x40,
          "switch_pro: rumble is not the motors asked for");
    for (n = 0; n < 12; n++)
-      ifc->packet_handler(dev, p, (uint16_t)sp_report(p, 0x30, &st));
+      deliver(ifc, dev, p, (uint16_t)sp_report(p, 0x30, &st));
    CHECK(sent_count == count + 3, "switch_pro: held rumble not kept up (%u)", sent_count - count);
    ifc->set_rumble(dev, RETRO_RUMBLE_STRONG, 0);
    ifc->set_rumble(dev, RETRO_RUMBLE_WEAK, 0);
    for (n = 0; n < 12; n++)
-      ifc->packet_handler(dev, p, (uint16_t)sp_report(p, 0x30, &st));
+      deliver(ifc, dev, p, (uint16_t)sp_report(p, 0x30, &st));
    CHECK(sent_count == count + 4 && !memcmp(sent + 2, neutral, 8),
          "switch_pro: rumble not put at rest once");
    /* told its port once ready: the lights as a command of their own,
     * port 5 as the console lights it; on no port, out */
    ifc->set_player(dev, 5);
    for (n = 0; n < 2; n++)
-      ifc->packet_handler(dev, p, (uint16_t)sp_report(p, 0x30, &st));
+      deliver(ifc, dev, p, (uint16_t)sp_report(p, 0x30, &st));
    CHECK(sp_sent_command(0, 0x30, 0x09), "switch_pro: not relit for port 5");
    count = sent_count;
    for (n = 0; n < 4; n++)
-      ifc->packet_handler(dev, p, (uint16_t)sp_report(p, 0x30, &st));
+      deliver(ifc, dev, p, (uint16_t)sp_report(p, 0x30, &st));
    CHECK(sent_count == count, "switch_pro: lit again unchanged");
    ifc->set_player(dev, 0);
    for (n = 0; n < 2; n++)
-      ifc->packet_handler(dev, p, (uint16_t)sp_report(p, 0x30, &st));
+      deliver(ifc, dev, p, (uint16_t)sp_report(p, 0x30, &st));
    CHECK(sp_sent_command(0, 0x30, 0x00), "switch_pro: lit on no port");
    CHECK(!strcmp(ifc->get_name(dev), "Pro Controller"), "switch_pro: misnamed");
    ifc->deinit(dev);
@@ -1322,8 +1379,8 @@ static void test_switch_pro(void)
    stub_hid.is_bluetooth = stub_is_bluetooth;
    dev = ifc->init(&dummy_connection, 0, &stub_hid);
    ifc->set_player(dev, 2);
-   ifc->packet_handler(dev, p, (uint16_t)sp_reply(p, &st, 0x03, NULL, 0));
-   ifc->packet_handler(dev, p, (uint16_t)sp_reply(p, &st, 0x48, NULL, 0));
+   deliver(ifc, dev, p, (uint16_t)sp_reply(p, &st, 0x03, NULL, 0));
+   deliver(ifc, dev, p, (uint16_t)sp_reply(p, &st, 0x48, NULL, 0));
    CHECK(sp_sent_command(0, 0x30, 0x03), "switch_pro: setup lit its slot, not its port");
    ifc->deinit(dev);
    stub_hid.is_bluetooth = NULL;
@@ -1331,12 +1388,12 @@ static void test_switch_pro(void)
    /* a command not answered goes again, then the next */
    sent_count = 0;
    dev = ifc->init(&dummy_connection, 0, &stub_hid);
-   p[0] = 0x81; p[1] = 0x02; ifc->packet_handler(dev, p, 64);
-   p[1] = 0x03;               ifc->packet_handler(dev, p, 64);
-   p[1] = 0x02;               ifc->packet_handler(dev, p, 64);
+   p[0] = 0x81; p[1] = 0x02; deliver(ifc, dev, p, 64);
+   p[1] = 0x03;               deliver(ifc, dev, p, 64);
+   p[1] = 0x02;               deliver(ifc, dev, p, 64);
    count = sent_count;
    for (n = 0; n < 32 * 4; n++)
-      ifc->packet_handler(dev, p, (uint16_t)sp_report(p, 0x30, &st));
+      deliver(ifc, dev, p, (uint16_t)sp_report(p, 0x30, &st));
    CHECK(sent_count == count + 4 && sp_sent_command(0, 0x30, 0x01)
          && sp_sent_command(1, 0x48, 0x01),
          "switch_pro: an unanswered command not sent again, then given up");
@@ -1346,7 +1403,7 @@ static void test_switch_pro(void)
    sent_count = 0;
    dev = ifc->init(&dummy_connection, 0, &stub_hid);
    for (n = 0; n < 32 * 4; n++)
-      ifc->packet_handler(dev, p, (uint16_t)sp_report(p, 0x30, &st));
+      deliver(ifc, dev, p, (uint16_t)sp_report(p, 0x30, &st));
    CHECK(sp_sent_command(0, 0x48, 0x01), "switch_pro: stuck on an unanswered greeting");
    ifc->deinit(dev);
 
@@ -1356,7 +1413,7 @@ static void test_switch_pro(void)
    dev = ifc->init(&dummy_connection, 0, &stub_hid);
    CHECK(sent_count == 1 && sp_sent_command(0, 0x03, 0x30),
          "switch_pro: Bluetooth not asked for full reports");
-   ifc->packet_handler(dev, p, (uint16_t)sp_reply(p, &st, 0x03, NULL, 0));
+   deliver(ifc, dev, p, (uint16_t)sp_reply(p, &st, 0x03, NULL, 0));
    CHECK(sp_sent_command(0, 0x48, 0x01), "switch_pro: Bluetooth's commands stopped");
    ifc->deinit(dev);
    stub_hid.is_bluetooth = NULL;
@@ -1373,7 +1430,7 @@ static void test_switch_pro(void)
    p[6] = 0x00; p[7] = 0x80;
    p[8] = 0x00; p[9] = 0x00;     /* right x: all the way left */
    p[10] = 0x00; p[11] = 0x80;
-   ifc->packet_handler(dev, p, 12);
+   deliver(ifc, dev, p, 12);
    CHECK(sp_sent_command(0, 0x03, 0x30), "switch_pro: the short report did not tell Bluetooth");
    CHECK(ifc->button(dev, RETRO_DEVICE_ID_JOYPAD_B) && ifc->button(dev, RETRO_DEVICE_ID_JOYPAD_L2)
          && ifc->button(dev, RETRO_DEVICE_ID_JOYPAD_RIGHT) && ifc->button(dev, 16)
@@ -1394,7 +1451,7 @@ static void test_switch_pro(void)
       sp_random(&st);
       sp_report(p + 1, 0x30, &st);
       p[0] = 0xa1;
-      ifc->packet_handler(dev, p, 65);
+      deliver(ifc, dev, p, 65);
       bad += sp_mismatches(dev, &st);
    }
    CHECK(!bad, "switch_pro: reports behind a stack's header misread");
@@ -1458,7 +1515,7 @@ static void test_switch2_pro(void)
       for (k = 0; k < sizeof(map) / sizeof(map[0]); k++)
          if (p[map[k].byte] & map[k].bit)
             want |= 1u << map[k].id;
-      ifc->packet_handler(dev, p, 64);
+      deliver(ifc, dev, p, 64);
       ifc->get_buttons(dev, &bits);
       for (k = 0; k < 21; k++)
          if (     (unsigned)ifc->button(dev, k) != ((want >> k) & 1)
@@ -1475,35 +1532,35 @@ static void test_switch2_pro(void)
    memset(p, 0, sizeof(p));
    sp_put_pair(p + 11, 2048, 2048);
    sp_put_pair(p + 14, 2048 + 1200, 2048 + 1200);
-   ifc->packet_handler(dev, p, 64);
+   deliver(ifc, dev, p, 64);
    CHECK(ifc->get_axis(dev, 0) == 0 && ifc->get_axis(dev, 1) == 0,
          "switch2_pro: a centred stick is not at rest");
    CHECK(ifc->get_axis(dev, 2) == 32767 && ifc->get_axis(dev, 3) == -32767,
          "switch2_pro: the right stick right and up is %d %d",
          ifc->get_axis(dev, 2), ifc->get_axis(dev, 3));
    sp_put_pair(p + 11, 2048 - 1800, 2048);
-   ifc->packet_handler(dev, p, 64);
+   deliver(ifc, dev, p, 64);
    sp_put_pair(p + 11, 2048 - 1200, 2048);
-   ifc->packet_handler(dev, p, 64);
+   deliver(ifc, dev, p, 64);
    CHECK(ifc->get_axis(dev, 0) == -1200 * 32767 / 1800,
          "switch2_pro: the reach did not widen (%d)", ifc->get_axis(dev, 0));
    CHECK(ifc->get_axis(dev, 4) == 0, "switch2_pro: an axis past the sticks");
 
    /* a short report is not one */
    memset(p, 0xff, sizeof(p));
-   ifc->packet_handler(dev, p, 63);
+   deliver(ifc, dev, p, 63);
    CHECK(!ifc->button(dev, RETRO_DEVICE_ID_JOYPAD_A), "switch2_pro: a short report was taken");
 
    /* rumble: from the poll, both hands alike, kept up while held, at
     * rest once */
    memset(p, 0, sizeof(p));
    for (n = 0; n < 4; n++)
-      ifc->packet_handler(dev, p, 64);
+      deliver(ifc, dev, p, 64);
    count = sent_count;
    ifc->set_rumble(dev, RETRO_RUMBLE_STRONG, 0xffff);
    ifc->set_rumble(dev, RETRO_RUMBLE_WEAK, 0x8000);
    CHECK(sent_count == count, "switch2_pro: rumble sent outside the poll");
-   ifc->packet_handler(dev, p, 64);
+   deliver(ifc, dev, p, 64);
    {
       /* weak 0x8000 -> 14500 (0x38a4), strong 29000 (0x7148) */
       static const uint8_t want[7] = { 0x02, 0x50, 0x87, 0x89, 0x23, 0x51, 0x71 };
@@ -1514,13 +1571,13 @@ static void test_switch2_pro(void)
             sent[0], sent[1], sent[2], sent[3], sent[4], sent[5], sent[6]);
    }
    for (n = 0; n < 9; n++)
-      ifc->packet_handler(dev, p, 64);
+      deliver(ifc, dev, p, 64);
    CHECK(sent_count == count + 4 && (sent[1] & 0x0f) == 3,
          "switch2_pro: held rumble not kept up, numbered (%u)", sent_count - count);
    ifc->set_rumble(dev, RETRO_RUMBLE_STRONG, 0);
    ifc->set_rumble(dev, RETRO_RUMBLE_WEAK, 0);
    for (n = 0; n < 12; n++)
-      ifc->packet_handler(dev, p, 64);
+      deliver(ifc, dev, p, 64);
    CHECK(sent_count == count + 5 && sent[3] == 0x01 && sent[4] == 0x20
          && sent[5] == 0x11 && sent[6] == 0x00,
          "switch2_pro: rumble not put at rest once");
@@ -1533,9 +1590,95 @@ static void test_switch2_pro(void)
          failures == had ? "pass" : "fail");
 }
 
+/* ---- DualShock 3: the copying handler's axes ------------------ */
+
+static const uint8_t ref_ds3_pressure_byte[12] = {
+   18, 19, 24, 23, 25, 22, 20, 21, 14, 16, 17, 15
+};
+
+/* the old ds3_update_analog_state() and ds3_get_axis(), on the old
+ * analog_state and pressures */
+static int16_t ref_ds3_axis(const uint8_t *report, uint32_t axis)
+{
+   union { uint32_t encoded; int16_t axis[2]; } joyaxis;
+   int16_t analog_state[3][2];
+   axis_data ad = {0};
+   int p;
+
+   memset(analog_state, 0, sizeof(analog_state));
+   for (p = 0; p < 4; p++)
+      analog_state[p / 2][(p % 2) ? 0 : 1] =
+         (int16_t)(report[6 + p] * 257 - 32768);
+   joyaxis.encoded = axis;
+   if (axis >= 4 && axis < 16)
+   {
+      unsigned b = report[ref_ds3_pressure_byte[axis - 4]];
+      return (int16_t)((b << 7) | (b >> 1));
+   }
+   gamepad_read_axis_data(axis, &ad);
+   if (ad.axis >= 4)
+      return 0;
+   if (joyaxis.axis[0] < 0 || joyaxis.axis[1] < 0)
+      return gamepad_get_axis_value(analog_state, &ad);
+   return gamepad_get_axis_value_raw(analog_state, &ad, false);
+}
+
+static void test_ds3(void)
+{
+   static const unsigned map[17] = {
+      RETRO_DEVICE_ID_JOYPAD_SELECT, RETRO_DEVICE_ID_JOYPAD_L3,
+      RETRO_DEVICE_ID_JOYPAD_R3,     RETRO_DEVICE_ID_JOYPAD_START,
+      RETRO_DEVICE_ID_JOYPAD_UP,     RETRO_DEVICE_ID_JOYPAD_RIGHT,
+      RETRO_DEVICE_ID_JOYPAD_DOWN,   RETRO_DEVICE_ID_JOYPAD_LEFT,
+      RETRO_DEVICE_ID_JOYPAD_L2,     RETRO_DEVICE_ID_JOYPAD_R2,
+      RETRO_DEVICE_ID_JOYPAD_L,      RETRO_DEVICE_ID_JOYPAD_R,
+      RETRO_DEVICE_ID_JOYPAD_X,      RETRO_DEVICE_ID_JOYPAD_A,
+      RETRO_DEVICE_ID_JOYPAD_B,      RETRO_DEVICE_ID_JOYPAD_Y,
+      16
+   };
+   uint8_t p[64];
+   unsigned i, k, bad = 0, had = failures;
+   const pad_connection_interface_t *ifc = &pad_connection_ps3;
+   int dummy_connection;
+   void *dev;
+
+   stub_hid.get_report = stub_ds3_get_report;
+   dev                 = ifc->init(&dummy_connection, 0, &stub_hid);
+   stub_hid.get_report = NULL;
+   CHECK(dev != NULL, "ds3: no device");
+   if (!dev)
+      return;
+   srand(3);
+   for (i = 0; i < 20000; i++)
+   {
+      uint32_t keys;
+      for (k = 0; k < sizeof(p); k++)
+         p[k] = (uint8_t)rand();
+      p[0] = 0x01;
+      deliver(ifc, dev, p, 49);
+      keys = p[2] | (p[3] << 8) | ((p[4] & 0x01) << 16);
+      for (k = 0; k < 17; k++)
+         if (!!ifc->button(dev, (uint16_t)map[k]) != !!(keys & (1u << k)))
+            bad++;
+      for (k = 0; k < 16; k++)
+         if (ifc->get_axis(dev, k) != ref_ds3_axis(p, k))
+            bad++;
+      /* a stick's direction asked as bound, as wiiu_hid's state() asks */
+      for (k = 0; k < 4; k++)
+         if (     ifc->get_axis(dev, AXIS_NEG(k)) != ref_ds3_axis(p, AXIS_NEG(k))
+               || ifc->get_axis(dev, AXIS_POS(k)) != ref_ds3_axis(p, AXIS_POS(k)))
+            bad++;
+   }
+   CHECK(!bad, "ds3: %u reads disagree with the copying handler", bad);
+   ifc->deinit(dev);
+   printf("[%s] ds3: every button and axis, plain and bound, as the copying handler, on 20000 reports\n",
+         failures == had ? "pass" : "fail");
+}
+
 int main(void)
 {
    stub_hid.send_control = stub_send_control;
+   stub_hid.set_report   = stub_set_report;
    test_ps4();
    test_wiiugca();
    test_adapter(&pad_connection_ps2adapter, "ps2adapter", false);
@@ -1552,6 +1695,12 @@ int main(void)
    test_ps5();
    test_switch_pro();
    test_switch2_pro();
+   test_ds3();
+   CHECK(view_reads && !view_bad,
+         "views: %u of %u reports' views disagree with the getters",
+         view_bad, view_reads);
+   printf("[%s] views: each kept as a view says what its getters say, after %u reports\n",
+         view_bad || !view_reads ? "fail" : "pass", view_reads);
    puts(failures ? "FAIL connect_parity_test" : "PASS connect_parity_test");
    return failures ? 1 : 0;
 }

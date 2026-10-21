@@ -39,10 +39,8 @@ struct hidpad_ps4_data
    struct pad_connection* connection;
    hid_driver_t *driver;
    uint32_t slot;
-   uint32_t buttons;    /* the RetroPad's, decoded from the report */
+   input_pad_view_t view; /* the RetroPad's buttons and the sticks */
    uint16_t motors[2];
-   uint8_t hatvalue[4];
-   bool ps;
    bool have_led;
 };
 
@@ -150,31 +148,23 @@ static void hidpad_ps4_get_buttons(void *data, input_bits_t* state)
 
    if (!device)
       return;
-
-   BIT256_CLEAR_ALL_PTR( state );
-   BITS_COPY32_PTR( state, device->buttons );
-   if (device->ps)
-      BIT256_SET_PTR( state, RARCH_MENU_TOGGLE );
+   *state = device->view.buttons;
 }
 
 static int16_t hidpad_ps4_get_axis(void *data, unsigned axis)
 {
    struct hidpad_ps4_data *device = (struct hidpad_ps4_data*)data;
 
-   if (device && (axis < 4))
-   {
-      int val = ((int)device->hatvalue[axis] << 8) - 0x8000;
-      if (abs(val) > 0x1000)
-         return val;
-   }
-
-   return 0;
+   if (!device || axis >= INPUT_PAD_VIEW_AXES)
+      return 0;
+   return device->view.axes[axis];
 }
 
 static void hidpad_ps4_packet_handler(void *data,
       uint8_t *packet, uint16_t size)
 {
    struct hidpad_ps4_data *device = (struct hidpad_ps4_data*)data;
+   unsigned i;
 
    if (!device)
       return;
@@ -191,9 +181,13 @@ static void hidpad_ps4_packet_handler(void *data,
     * the report */
    if (size < 1 + PS4_REPORT_LEN)
       return;
-   memcpy(device->hatvalue, packet + 1, sizeof(device->hatvalue));
-   device->buttons = hidpad_ps4_decode(packet + 1);
-   device->ps      = (packet[1 + 6] & 0x01) != 0;
+   for (i = 0; i < 4; i++)
+   {
+      int val = ((int)packet[1 + i] << 8) - 0x8000;
+      device->view.axes[i] = (int16_t)((abs(val) > 0x1000) ? val : 0);
+   }
+   pad_view_set_buttons(&device->view, hidpad_ps4_decode(packet + 1),
+         (packet[1 + 6] & 0x01) != 0);
 }
 
 static void hidpad_ps4_set_rumble(void *data,
@@ -217,7 +211,12 @@ static int32_t hidpad_ps4_button(void *data, uint16_t joykey)
    struct hidpad_ps4_data *device = (struct hidpad_ps4_data*)data;
    if (!device || joykey > 31)
       return 0;
-   return (device->buttons >> joykey) & 1;
+   return BIT256_GET(device->view.buttons, joykey) ? 1 : 0;
+}
+
+static const input_pad_view_t *hidpad_ps4_view(void *data)
+{
+   return &((struct hidpad_ps4_data*)data)->view;
 }
 
 pad_connection_interface_t pad_connection_ps4 = {
@@ -229,5 +228,12 @@ pad_connection_interface_t pad_connection_ps4 = {
    hidpad_ps4_get_axis,
    NULL, /* get_name */
    hidpad_ps4_button,
-   false
+   false, /* multi_pad */
+   0,     /* max_pad */
+   NULL,  /* pad_init */
+   NULL,  /* pad_deinit */
+   NULL,  /* status */
+   NULL,  /* joypad */
+   NULL,  /* set_player */
+   hidpad_ps4_view
 };

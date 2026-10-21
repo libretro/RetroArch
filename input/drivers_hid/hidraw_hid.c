@@ -69,6 +69,7 @@ typedef struct hidraw_device
    bool generic;
    hid_desc_layout_t layout;
    hid_desc_state_t state;
+   input_pad_view_t view;  /* the state, as it is lent */
 } hidraw_device_t;
 
 typedef struct hidraw_hid
@@ -162,8 +163,16 @@ static void hidraw_generic_deinit(void *data) { }
 static void hidraw_generic_packet(void *data, uint8_t *packet, uint16_t size)
 {
    hidraw_device_t *dev = (hidraw_device_t*)data;
-   if (dev)
-      hid_desc_decode(&dev->layout, packet, size, &dev->state);
+   unsigned i;
+   if (!dev)
+      return;
+   hid_desc_decode(&dev->layout, packet, size, &dev->state);
+   pad_view_set_buttons(&dev->view, dev->state.buttons, false);
+   for (i = 0; i < HID_DESC_AXES; i++)
+      dev->view.axes[i] = dev->state.axes[i];
+   dev->view.hats = (uint16_t)(
+           (dev->state.hat_y < 0 ? 1 : 0) | (dev->state.hat_y > 0 ? 2 : 0)
+         | (dev->state.hat_x < 0 ? 4 : 0) | (dev->state.hat_x > 0 ? 8 : 0));
 }
 
 static void hidraw_generic_rumble(void *data,
@@ -172,15 +181,16 @@ static void hidraw_generic_rumble(void *data,
 static void hidraw_generic_get_buttons(void *data, input_bits_t *state)
 {
    hidraw_device_t *dev = (hidraw_device_t*)data;
-   BIT256_CLEAR_ALL_PTR(state);
    if (dev)
-      BITS_COPY32_PTR(state, dev->state.buttons);
+      *state = dev->view.buttons;
+   else
+      BIT256_CLEAR_ALL_PTR(state);
 }
 
 static int16_t hidraw_generic_axis(void *data, unsigned axis)
 {
    hidraw_device_t *dev = (hidraw_device_t*)data;
-   return (dev && axis < HID_DESC_AXES) ? dev->state.axes[axis] : 0;
+   return (dev && axis < HID_DESC_AXES) ? dev->view.axes[axis] : 0;
 }
 
 static const char *hidraw_generic_name(void *data)
@@ -196,6 +206,11 @@ static int32_t hidraw_generic_button(void *data, uint16_t joykey)
       ? (int32_t)((dev->state.buttons >> joykey) & 1) : 0;
 }
 
+static const input_pad_view_t *hidraw_generic_view(void *data)
+{
+   return &((hidraw_device_t*)data)->view;
+}
+
 static pad_connection_interface_t hidraw_generic_iface = {
    hidraw_generic_init,
    hidraw_generic_deinit,
@@ -205,7 +220,14 @@ static pad_connection_interface_t hidraw_generic_iface = {
    hidraw_generic_axis,
    hidraw_generic_name,
    hidraw_generic_button,
-   false
+   false, /* multi_pad */
+   0,     /* max_pad */
+   NULL,  /* pad_init */
+   NULL,  /* pad_deinit */
+   NULL,  /* status */
+   NULL,  /* joypad */
+   NULL,  /* set_player */
+   hidraw_generic_view
 };
 
 static hidraw_device_t *hidraw_hid_find(hidraw_hid_t *hid,
@@ -451,6 +473,16 @@ static void hidraw_hid_poll(void *data)
    }
 }
 
+/* Lent: the packets reach the handlers in the poll, and nowhere else. */
+static const input_pad_view_t *hidraw_hid_joypad_view(void *data,
+      unsigned pad)
+{
+   hidraw_hid_t *hid = (hidraw_hid_t*)data;
+   if (!hid || pad >= MAX_USERS)
+      return NULL;
+   return pad_connection_view(&hid->slots[pad]);
+}
+
 static bool hidraw_hid_joypad_query(void *data, unsigned pad)
 {
    return pad < MAX_USERS;
@@ -487,20 +519,16 @@ static int16_t hidraw_hid_joypad_button(void *data,
    if ((hat_dir = GET_HAT_DIR(joykey)))
    {
       hidraw_hid_t *hid = (hidraw_hid_t*)data;
-      hidraw_device_t *dev;
-      if (!hid || GET_HAT(joykey) != 0)
+      const input_pad_view_t *view;
+      if (     !hid || GET_HAT(joykey) != 0
+            || !(view = pad_connection_view(&hid->slots[port])))
          return 0;
-      for (dev = hid->devices; dev; dev = dev->next)
+      switch (hat_dir)
       {
-         if (dev->slot != (int32_t)port || !dev->generic)
-            continue;
-         switch (hat_dir)
-         {
-            case HAT_UP_MASK:    return dev->state.hat_y < 0;
-            case HAT_DOWN_MASK:  return dev->state.hat_y > 0;
-            case HAT_LEFT_MASK:  return dev->state.hat_x < 0;
-            case HAT_RIGHT_MASK: return dev->state.hat_x > 0;
-         }
+         case HAT_UP_MASK:    return (view->hats & 1) != 0;
+         case HAT_DOWN_MASK:  return (view->hats & 2) != 0;
+         case HAT_LEFT_MASK:  return (view->hats & 4) != 0;
+         case HAT_RIGHT_MASK: return (view->hats & 8) != 0;
       }
       return 0;
    }
@@ -686,5 +714,6 @@ hid_driver_t hidraw_hid = {
    hidraw_hid_get_bt_host,
    hidraw_hid_set_bt_host,
    hidraw_hid_is_bluetooth,
-   hidraw_hid_set_player
+   hidraw_hid_set_player,
+   hidraw_hid_joypad_view
 };

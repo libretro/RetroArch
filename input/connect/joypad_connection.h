@@ -25,6 +25,7 @@
 #include <retro_endianness.h>
 #include <retro_atomic.h>
 #include "../input_driver.h"
+#include "../input_defines.h"
 
 /* Gekko (NGC/Wii) has PID/VID already swapped by USB_GetDescriptors from libogc, so skip bigendian byteswap */
 #if defined(MSB_FIRST) && !defined(GEKKO)
@@ -95,6 +96,8 @@ struct joypad_connection
 
 #define SLOT_AUTO -1
 
+struct input_pad_view;
+
 typedef struct pad_connection_interface
 {
    void*    	(*init)(void *data, uint32_t slot, hid_driver_t *driver);
@@ -119,7 +122,19 @@ typedef struct pad_connection_interface
     * pad never told shows its slot, as before. From the frontend's
     * thread: what is sent goes from the packet handler. May be NULL. */
    void        (*set_player)(void *device, unsigned player);
+   /* The pad's state as its packet handler keeps it, which its getters
+    * answer from. NULL where the handler keeps it otherwise. */
+   const struct input_pad_view *(*view)(void *device);
 } pad_connection_interface_t;
+
+/* A handler's buttons into its view: the 32 it decodes, and the menu
+ * toggle where its home button is down. */
+#define pad_view_set_buttons(view, bits, menu) do { \
+   BIT256_CLEAR_ALL_PTR(&(view)->buttons); \
+   BITS_COPY32_PTR(&(view)->buttons, (bits)); \
+   if (menu) \
+      BIT256_SET_PTR(&(view)->buttons, RARCH_MENU_TOGGLE); \
+} while (0)
 
 typedef struct joypad_connection_entry {
    const char* name;
@@ -189,6 +204,12 @@ bool pad_connection_rumble(joypad_connection_t *s,
 
 void pad_connection_set_player(joypad_connection_t *joyconn,
       unsigned player);
+
+/* The slot's pad's state, where its handler keeps one; NULL otherwise.
+ * Unchanged until the next packet, so for a driver that hands its
+ * packets over in its own poll: it can lend it until then. */
+const struct input_pad_view *pad_connection_view(
+      joypad_connection_t *joyconn);
 
 const char* pad_connection_get_name(joypad_connection_t *joyconn,
    unsigned idx);

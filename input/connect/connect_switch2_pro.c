@@ -46,16 +46,15 @@ struct hidpad_switch2_pro_data
    struct pad_connection *connection;
    hid_driver_t *driver;
    uint32_t slot;
-   uint32_t buttons;    /* the RetroPad's, then Home, Capture, C and the
-                           right and left grips as 16 to 20 */
-   int16_t axes[4];
+   /* the RetroPad's buttons, then Home, Capture, C and the right and
+    * left grips as 16 to 20; the sticks as 0 to 3 */
+   input_pad_view_t view;
    /* the sticks' reach either way, widened as they go further */
    int16_t reach_up[4];
    int16_t reach_down[4];
    uint16_t motors[2];  /* strong, weak: what the core asked last */
    uint8_t sequence;
    uint8_t since_sent;  /* reports since rumble last went */
-   bool home;
    bool motors_due;
 };
 
@@ -138,16 +137,15 @@ static void hidpad_switch2_pro_decode(struct hidpad_switch2_pro_data *device,
    b |= (uint32_t)((r[6] >> 4) & 0x07) << 16;   /* Home, Capture, C */
    b |= (uint32_t)(r[8] & 0x03) << 19;          /* the grips */
 
-   device->axes[0] = hidpad_switch2_pro_scale(device, 0,
+   device->view.axes[0] = hidpad_switch2_pro_scale(device, 0,
          r[11] | ((r[12] & 0x0f) << 8), false);
-   device->axes[1] = hidpad_switch2_pro_scale(device, 1,
+   device->view.axes[1] = hidpad_switch2_pro_scale(device, 1,
          (r[12] >> 4) | (r[13] << 4), true);
-   device->axes[2] = hidpad_switch2_pro_scale(device, 2,
+   device->view.axes[2] = hidpad_switch2_pro_scale(device, 2,
          r[14] | ((r[15] & 0x0f) << 8), false);
-   device->axes[3] = hidpad_switch2_pro_scale(device, 3,
+   device->view.axes[3] = hidpad_switch2_pro_scale(device, 3,
          (r[15] >> 4) | (r[16] << 4), true);
-   device->buttons = b;
-   device->home    = (r[6] & 0x10) != 0;
+   pad_view_set_buttons(&device->view, b, (r[6] & 0x10) != 0);
 }
 
 /* Both hands' actuators alike: the weak motor the high band at about
@@ -215,12 +213,10 @@ static void hidpad_switch2_pro_get_buttons(void *data, input_bits_t *state)
    struct hidpad_switch2_pro_data *device =
       (struct hidpad_switch2_pro_data*)data;
 
-   BIT256_CLEAR_ALL_PTR(state);
-   if (!device)
-      return;
-   BITS_COPY32_PTR(state, device->buttons);
-   if (device->home)
-      BIT256_SET_PTR(state, RARCH_MENU_TOGGLE);
+   if (device)
+      *state = device->view.buttons;
+   else
+      BIT256_CLEAR_ALL_PTR(state);
 }
 
 /* The sticks as 0 to 3; ZL and ZR have no travel. */
@@ -230,7 +226,7 @@ static int16_t hidpad_switch2_pro_get_axis(void *data, unsigned axis)
       (struct hidpad_switch2_pro_data*)data;
    if (!device || axis >= 4)
       return 0;
-   return device->axes[axis];
+   return device->view.axes[axis];
 }
 
 static const char *hidpad_switch2_pro_get_name(void *data)
@@ -244,7 +240,12 @@ static int32_t hidpad_switch2_pro_button(void *data, uint16_t joykey)
       (struct hidpad_switch2_pro_data*)data;
    if (!device || joykey > 31)
       return 0;
-   return (device->buttons >> joykey) & 1;
+   return BIT256_GET(device->view.buttons, joykey) ? 1 : 0;
+}
+
+static const input_pad_view_t *hidpad_switch2_pro_view(void *data)
+{
+   return &((struct hidpad_switch2_pro_data*)data)->view;
 }
 
 pad_connection_interface_t pad_connection_switch2_pro = {
@@ -256,5 +257,12 @@ pad_connection_interface_t pad_connection_switch2_pro = {
    hidpad_switch2_pro_get_axis,
    hidpad_switch2_pro_get_name,
    hidpad_switch2_pro_button,
-   false
+   false, /* multi_pad */
+   0,     /* max_pad */
+   NULL,  /* pad_init */
+   NULL,  /* pad_deinit */
+   NULL,  /* status */
+   NULL,  /* joypad */
+   NULL,  /* set_player */
+   hidpad_switch2_pro_view
 };

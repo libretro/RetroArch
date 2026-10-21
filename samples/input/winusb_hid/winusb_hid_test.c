@@ -17,7 +17,8 @@
  *                  wait, the newest waiting behind one in flight; a pad
  *                  whose reports have no ID given them without
  *                  Windows' leading 0; gone, and freed with a write in
- *                  flight
+ *                  flight; the pad's state lent where its handler
+ *                  keeps it, a generic pad's hat in it
  *   switch 2    -> the Switch 2 Pro Controller woken through its bulk
  *                  pipes: every command whole, each answer read, an
  *                  answer that never comes given up on; the player lit
@@ -555,6 +556,15 @@ static void test_hidclass(const char *path)
    CHECK(winusb_hid.button(hid, 0, RETRO_DEVICE_ID_JOYPAD_B)
          && !winusb_hid.button(hid, 0, RETRO_DEVICE_ID_JOYPAD_A),
          "hid class: the report was not read");
+   {
+      const input_pad_view_t *v = winusb_hid.view(hid, 0);
+      input_bits_t bits;
+      winusb_hid.get_buttons(hid, 0, &bits);
+      CHECK(v && !memcmp(&v->buttons, &bits, sizeof(bits)) && !v->hats
+            && v->axes[0] == winusb_hid.axis(hid, 0, AXIS_POS(0))
+            && !winusb_hid.view(hid, 1),
+            "hid class: the pad's state is not lent as the reads answer");
+   }
    CHECK(n_writes == 1 && written_is(true, 0, 0, 1),
          "hid class: the first report did not light player 1, at the device's length");
 
@@ -657,6 +667,13 @@ static void test_hidclass(const char *path)
    CHECK(   winusb_hid.button(hid, 0, HAT_MAP(0, HAT_RIGHT_MASK))
          && !winusb_hid.button(hid, 0, HAT_MAP(0, HAT_UP_MASK)),
          "hid class: the hat is not read");
+   {
+      const input_pad_view_t *v = winusb_hid.view(hid, 0);
+      CHECK(v && v->hats == 8 && v->axes[0] == 32767
+            && BIT256_GET(v->buttons, 0) && BIT256_GET(v->buttons, 2)
+            && !BIT256_GET(v->buttons, 1),
+            "hid class: a pad with no handler: its state, hat and all, is not lent");
+   }
    g_value[0x39] = 8;    /* at rest: out of the hat's range */
    push_hreport(r, 9);
    wait_hreader();
@@ -696,6 +713,7 @@ static void test_hidclass(const char *path)
    winusb_hid.poll(hid);
    h_unplugged = false;
    generic_dup  = false;
+
    generic_mode = false;
 
    /* freed with a write in flight: the write is cancelled, the reader

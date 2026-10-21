@@ -56,17 +56,15 @@ struct hidpad_ps5_data
    struct pad_connection *connection;
    hid_driver_t *driver;
    uint32_t slot;
-   uint32_t buttons;    /* the RetroPad's, then PS, touchpad and mute
-                           as 16, 17 and 18 */
-   uint8_t sticks[4];
-   uint8_t triggers[2];
+   /* the RetroPad's buttons, then PS, touchpad and mute as 16, 17 and
+    * 18; the sticks as 0 to 3 and the triggers as 4 and 5 */
+   input_pad_view_t view;
    uint8_t motors[2];   /* strong, weak: what the core asked last */
    uint8_t link;
    int player;          /* told: from 1, -1 for none; 0 not yet */
    bool edge;
    bool bluetooth;      /* the driver says so: its reports' lengths do not */
    bool vibration_v2;   /* the newer way of driving the motors */
-   bool ps;
    bool lights_sent;
    bool motors_due;
 };
@@ -89,8 +87,6 @@ static void *hidpad_ps5_start(void *data, uint32_t slot,
    device->edge         = edge;
    device->bluetooth    = driver && driver->is_bluetooth
       && driver->is_bluetooth(connection);
-   device->sticks[0]    = device->sticks[1] = 0x80;
-   device->sticks[2]    = device->sticks[3] = 0x80;
    /* the Edge drives its motors the newer way; a DualSense from
     * firmware 2.21, which its feature report 0x20 tells */
    device->vibration_v2 = edge;
@@ -179,6 +175,7 @@ static void hidpad_ps5_packet_handler(void *data,
    const uint8_t *r               = packet;
    const uint8_t *buttons, *triggers;
    unsigned len                   = size;
+   unsigned i;
    uint8_t link                   = PS5_LINK_NONE;
 
    if (!device || !r)
@@ -216,10 +213,13 @@ static void hidpad_ps5_packet_handler(void *data,
       return;
    device->link = link ? link : PS5_LINK_BT;
 
-   memcpy(device->sticks, r + 1, sizeof(device->sticks));
-   memcpy(device->triggers, triggers, sizeof(device->triggers));
-   device->buttons = hidpad_ps5_decode(buttons);
-   device->ps      = (buttons[2] & 0x01) != 0;
+   for (i = 0; i < 4; i++)
+      device->view.axes[i]     = (int16_t)(((int)r[1 + i] << 8) - 0x8000);
+   for (i = 0; i < 2; i++)
+      device->view.axes[4 + i] = (int16_t)((triggers[i] << 7)
+            | (triggers[i] >> 1));
+   pad_view_set_buttons(&device->view, hidpad_ps5_decode(buttons),
+         (buttons[2] & 0x01) != 0);
 
    if (     device->link != PS5_LINK_STACK
          && (!device->lights_sent || device->motors_due))
@@ -254,12 +254,10 @@ static void hidpad_ps5_get_buttons(void *data, input_bits_t *state)
 {
    struct hidpad_ps5_data *device = (struct hidpad_ps5_data*)data;
 
-   BIT256_CLEAR_ALL_PTR(state);
-   if (!device)
-      return;
-   BITS_COPY32_PTR(state, device->buttons);
-   if (device->ps)
-      BIT256_SET_PTR(state, RARCH_MENU_TOGGLE);
+   if (device)
+      *state = device->view.buttons;
+   else
+      BIT256_CLEAR_ALL_PTR(state);
 }
 
 /* The sticks as 0 to 3, L2 and R2's travel as 4 and 5. No dead zone
@@ -268,16 +266,9 @@ static int16_t hidpad_ps5_get_axis(void *data, unsigned axis)
 {
    struct hidpad_ps5_data *device = (struct hidpad_ps5_data*)data;
 
-   if (!device)
+   if (!device || axis >= INPUT_PAD_VIEW_AXES)
       return 0;
-   if (axis < 4)
-      return (int16_t)(((int)device->sticks[axis] << 8) - 0x8000);
-   if (axis < 6)
-   {
-      unsigned t = device->triggers[axis - 4];
-      return (int16_t)((t << 7) | (t >> 1));
-   }
-   return 0;
+   return device->view.axes[axis];
 }
 
 static const char *hidpad_ps5_get_name(void *data)
@@ -293,7 +284,12 @@ static int32_t hidpad_ps5_button(void *data, uint16_t joykey)
    struct hidpad_ps5_data *device = (struct hidpad_ps5_data*)data;
    if (!device || joykey > 31)
       return 0;
-   return (device->buttons >> joykey) & 1;
+   return BIT256_GET(device->view.buttons, joykey) ? 1 : 0;
+}
+
+static const input_pad_view_t *hidpad_ps5_view(void *data)
+{
+   return &((struct hidpad_ps5_data*)data)->view;
 }
 
 pad_connection_interface_t pad_connection_ps5 = {
@@ -311,7 +307,8 @@ pad_connection_interface_t pad_connection_ps5 = {
    NULL,  /* pad_deinit */
    NULL,  /* status */
    NULL,  /* joypad */
-   hidpad_ps5_set_player
+   hidpad_ps5_set_player,
+   hidpad_ps5_view
 };
 
 pad_connection_interface_t pad_connection_ps5_edge = {
@@ -329,5 +326,6 @@ pad_connection_interface_t pad_connection_ps5_edge = {
    NULL,  /* pad_deinit */
    NULL,  /* status */
    NULL,  /* joypad */
-   hidpad_ps5_set_player
+   hidpad_ps5_set_player,
+   hidpad_ps5_view
 };

@@ -8833,6 +8833,16 @@ static void input_beside_set_player(unsigned pad, unsigned player)
       input_beside.real->set_player(pad, player);
 }
 
+/* The source's pads lent as it lends them, the driver's as it does */
+static const input_pad_view_t *input_beside_view(unsigned pad)
+{
+   unsigned slot;
+   if (input_beside_slot(pad, &slot))
+      return input_beside.drv->view
+         ? input_beside.drv->view(input_beside.data, slot) : NULL;
+   return input_beside.real->view ? input_beside.real->view(pad) : NULL;
+}
+
 /* Standing in for the driver, it goes when the driver goes. */
 static void input_beside_destroy(void)
 {
@@ -8869,6 +8879,7 @@ static void input_beside_route(input_driver_state_t *st)
       input_beside_joypad.get_bt_host      = input_beside_get_bt_host;
       input_beside_joypad.set_bt_host      = input_beside_set_bt_host;
       input_beside_joypad.set_player       = input_beside_set_player;
+      input_beside_joypad.view             = input_beside_view;
       input_beside.real                    = real;
       st->primary_joypad                   = &input_beside_joypad;
    }
