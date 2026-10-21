@@ -72,6 +72,7 @@ static int decode(void *opaque,const rh265_video_params_t *params,
 {
  mediacodec_hevc_decoder_t *d=(mediacodec_hevc_decoder_t*)opaque;
  size_t bytes;
+ unsigned i;
  int status;
  if(!d || !params || !au || !slices || !picture || d->closed || d->eos
        || picture->slot>=d->slots || !picture->serial
@@ -83,8 +84,15 @@ static int decode(void *opaque,const rh265_video_params_t *params,
  status=mediacodec_session_submit(d->session,d->packet,bytes,(int64_t)picture->serial,false);
  if(status<0){d->failed=1;return -1;}
  if(!status)return 1;
+ /* Codec-owned references do not need acquired Surface images. Drop prior
+  * display outputs canceled by an IRAP/DPB transaction, including late arrivals. */
+ for(i=0;i<d->slots;i++)if(!(picture->keep_outputs & ((uint32_t)1<<i))) {
+  if(!discard(&d->image[i])){d->failed=1;return -1;}
+  d->tag[i]=0;
+ }
  if(!discard(&d->image[picture->slot])){d->failed=1;return -1;}
- d->tag[picture->slot]=picture->serial;d->last_tag=picture->serial;
+ d->tag[picture->slot]=picture->output?picture->serial:0;
+ d->last_tag=picture->serial;
  return 0;
 }
 static int output(void *opaque,unsigned slot,video_hw_frame_t *out)

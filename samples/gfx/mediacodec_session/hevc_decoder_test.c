@@ -82,7 +82,7 @@ int main(void)
  importer.export_image=export_image;importer.enqueue=enqueue;importer.release=release;
  params.width=params.height=64;params.bit_depth=8;params.chroma_format_idc=1;
  format.width=format.height=format.right=format.bottom=64;
- memset(&picture,0,sizeof(picture));picture.serial=1;
+ memset(&picture,0,sizeof(picture));picture.serial=1;picture.output=1;
  memset(&slice,0,sizeof(slice));slice.data=bytes;slice.size=3;
  au.num_slices=1;au.coded_bytes=3;au.first.nal_type=19;
  startup_fail=1;
@@ -92,11 +92,17 @@ int main(void)
  assert(mediacodec_hevc_decoder_open((JNIEnv*)&native,(rh265_video*)&native,&params,4,1024,&importer,&ops));
  busy=1;assert(ops.decode(ops.decoder,&params,&au,&slice,&picture)==1 && !submitted);
  assert(!ops.decode(ops.decoder,&params,&au,&slice,&picture) && submitted==1);
- picture.serial=2;picture.slot=1;
+ picture.serial=2;picture.slot=1;picture.keep_outputs=1;
  assert(!ops.decode(ops.decoder,&params,&au,&slice,&picture) && submitted==2);
  /* Surface delivery can arrive in display order rather than submission order. */
  queued_tag=2;assert(ops.output(ops.decoder,0,&frame)==1);
  queued_tag=1;assert(!ops.output(ops.decoder,0,&frame));
+ /* No-output transactions cancel prior display images. Their late Surface
+  * deliveries must be returned, not consume reader capacity or be exported. */
+ picture.serial=3;picture.slot=2;picture.keep_outputs=0;picture.output=0;
+ assert(!ops.decode(ops.decoder,&params,&au,&slice,&picture));
+ queued_tag=3;assert(ops.output(ops.decoder,1,&frame)==1);
+ queued_tag=2;assert(ops.output(ops.decoder,1,&frame)==1);
  busy=1;assert(ops.drain(ops.decoder)==1 && !eos);
  assert(!ops.drain(ops.decoder) && eos==1);
  assert(!ops.drain(ops.decoder) && eos==1);
@@ -109,7 +115,7 @@ int main(void)
  /* A malformed synthetic timestamp must fail without exporting or leaking. */
  retired=NULL;format.serial=0;freed=reader_freed=released=0;
  assert(mediacodec_hevc_decoder_open((JNIEnv*)&native,(rh265_video*)&native,&params,4,1024,&importer,&ops));
- picture.serial=1;picture.slot=0;
+ picture.serial=1;picture.slot=0;picture.output=1;
  assert(!ops.decode(ops.decoder,&params,&au,&slice,&picture));
  queued_tag=1;timestamp_extra=1;
  assert(ops.output(ops.decoder,0,&frame)==-1);
