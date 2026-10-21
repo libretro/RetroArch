@@ -8,7 +8,7 @@ ifneq ($(SANITIZER),)
 CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
-all: test hevc_decoder_test vulkan_image_test
+all: test hevc_decoder_test vulkan_image_test vulkan_sync_test
 test: test.c mediacodec_session_test_types.h ../../../gfx/common/mediacodec_session.c
 	$(CC) $(CFLAGS) test.c ../../../gfx/common/mediacodec_session.c -o $@ $(LDFLAGS)
 HEVC_SOURCES := ../../../gfx/common/mediacodec_hevc_decoder.c \
@@ -19,10 +19,13 @@ hevc_decoder_test: hevc_decoder_test.c $(HEVC_SOURCES) \
 	$(CC) $(CFLAGS) -DHAVE_THREADS hevc_decoder_test.c $(HEVC_SOURCES) -o $@ $(LDFLAGS)
 vulkan_image_test: vulkan_image_test.c ../../../gfx/common/vulkan_android_image.c ../../../gfx/common/vulkan_android_image.h
 	$(CC) $(CFLAGS) -I../../../gfx/include vulkan_image_test.c ../../../gfx/common/vulkan_android_image.c -o $@ $(LDFLAGS)
+vulkan_sync_test: vulkan_sync_test.c ../../../gfx/common/vulkan_android_sync.c ../../../gfx/common/vulkan_android_sync.h
+	$(CC) $(CFLAGS) -I../../../gfx/include vulkan_sync_test.c ../../../gfx/common/vulkan_android_sync.c -o $@ $(LDFLAGS)
 check: all
 	./test
 	./hevc_decoder_test
 	./vulkan_image_test
+	./vulkan_sync_test
 clean:
-	rm -f test hevc_decoder_test vulkan_image_test
+	rm -f test hevc_decoder_test vulkan_image_test vulkan_sync_test
 .PHONY: all check clean
