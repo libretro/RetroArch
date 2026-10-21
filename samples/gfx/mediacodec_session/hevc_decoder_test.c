@@ -5,7 +5,7 @@
 #include "../../../gfx/common/mediacodec_hevc_decoder.h"
 #include "../../../gfx/common/android_image_ndk.h"
 static int native,submitted,busy,eos,freed,reader_freed,released,startup_fail;
-static int timestamp_extra;
+static int timestamp_extra,release_busy,release_calls;
 static int64_t queued_tag;
 static android_image_view_t held;
 static mediacodec_hevc_decoder_t *retired;
@@ -65,7 +65,12 @@ static int export_image(void *ctx,const android_image_view_t *image,
  assert(ctx==&native && fmt->serial && color);held=*image;
  out->image=1;out->width=out->height=64;return 0;
 }
-static void release(void *ctx){assert(ctx==&native && freed && reader_freed);released++;}
+static bool release(void *ctx)
+{
+ assert(ctx==&native && freed && reader_freed);release_calls++;
+ if(release_busy){release_busy--;return false;}
+ released++;return true;
+}
 static void enqueue(void *ctx,mediacodec_hevc_decoder_t *d)
 {assert(ctx==&native && !retired);retired=d;}
 int main(void)
@@ -110,7 +115,13 @@ int main(void)
  mediacodec_hevc_decoder_close(&ops);assert(!ops.decoder && retired);
  assert(!mediacodec_hevc_decoder_retire_poll(retired) && !freed && !reader_freed);
  assert(android_image_queue_return(held.ticket,held.generation,-1));
+ release_busy=2;
+ assert(!mediacodec_hevc_decoder_retire_poll(retired));
+ assert(freed==1 && reader_freed==1 && !released && release_calls==1);
+ assert(!mediacodec_hevc_decoder_retire_poll(retired));
+ assert(freed==1 && reader_freed==1 && !released && release_calls==2);
  assert(mediacodec_hevc_decoder_retire_poll(retired));
+ assert(release_calls==3);
  assert(freed==1 && reader_freed==1 && released==1);
  /* A malformed synthetic timestamp must fail without exporting or leaking. */
  retired=NULL;format.serial=0;freed=reader_freed=released=0;

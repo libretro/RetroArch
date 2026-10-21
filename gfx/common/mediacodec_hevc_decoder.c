@@ -124,11 +124,16 @@ bool mediacodec_hevc_decoder_retire_poll(mediacodec_hevc_decoder_t *d)
  if(!d)return true;
  if(!d->closed)return false;
  for(i=0;i<d->slots;i++)if(!discard(&d->image[i]))return false;
- android_image_queue_poll(d->images);
- if(!android_image_queue_idle(d->images))return false;
- mediacodec_session_free(d->session);d->session=NULL;
- if(!android_image_queue_free(d->images))return false;
- d->importer.release(d->importer.context);
+ if(d->images) {
+  android_image_queue_poll(d->images);
+  if(!android_image_queue_idle(d->images))return false;
+  if(d->session){mediacodec_session_free(d->session);d->session=NULL;}
+  if(!android_image_queue_free(d->images))return false;
+  d->images=NULL;
+ }
+ /* Ticket return is published before the renderer finishes clearing its
+  * frame-pool slot. Image idleness alone does not prove context retirement. */
+ if(!d->importer.release(d->importer.context))return false;
  free(d->packet);free(d);return true;
 }
 void mediacodec_hevc_decoder_close(rh265_hw_ops_t *ops)

@@ -15,7 +15,8 @@ typedef struct mediacodec_hevc_import {
  int (*export_image)(void *context,const android_image_view_t *image,
        const mediacodec_output_format_t *format,const rh265_video_color_t *color,
        video_hw_frame_t *frame);
- void (*release)(void *context);
+ /* Cold nonblocking retirement: false keeps context for a later poll. */
+ bool (*release)(void *context);
  /* Guaranteed non-inline enqueue of a cold retirement job. The executor calls
   * retire_poll later until true, without spinning or waiting on a frame path. */
  void (*enqueue)(void *context,mediacodec_hevc_decoder_t *decoder);
