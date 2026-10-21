@@ -1144,7 +1144,7 @@ static int rwebm_video_av1_open(rwebm_video_stream_t *s)
    const rwebm_track *t = rwebm_get_track(s->demux, s->track);
    rav1_config_t config;
    rav1_sequence_t *seq;
-   unsigned matrix, transfer;
+   unsigned matrix, transfer, primaries;
    if (!t || !rav1_config_parse(&config, t->codec_private,
             t->codec_private_size) || !rwebm_video_av1_sequence(s, &config))
       return 0;
@@ -1170,12 +1170,19 @@ static int rwebm_video_av1_open(rwebm_video_stream_t *s)
       : (t->matrix_coefficients == 2 ? 0 : t->matrix_coefficients);
    transfer = seq->transfer_characteristics != 2 ? seq->transfer_characteristics
       : t->transfer_characteristics;
-   if ((matrix != 0 && matrix != 1 && matrix != 5 && matrix != 6)
-         || transfer == 16 || transfer == 18
-         || !rav1_hw_stream_open_sequence(s->av1))
-      goto fail;
-   s->hw_color.primaries = seq->color_primaries != 2
+   primaries = seq->color_primaries != 2
       ? seq->color_primaries : t->primaries;
+   if (transfer == 16 || transfer == 18)
+   {
+      if ((matrix != 0 && matrix != 1 && matrix != 9) ||
+          (primaries != 0 && primaries != 1 && primaries != 2 && primaries != 9))
+         goto fail;
+   }
+   else if (matrix != 0 && matrix != 1 && matrix != 5 && matrix != 6)
+      goto fail;
+   if (!rav1_hw_stream_open_sequence(s->av1))
+      goto fail;
+   s->hw_color.primaries = primaries;
    s->hw_color.transfer = transfer;
    s->hw_color.matrix = matrix;
    s->hw_color.range = seq->color_range ? 2 : 1;

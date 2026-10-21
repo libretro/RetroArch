@@ -1138,6 +1138,19 @@ static int d3d11vd_av1_output(void *dec, unsigned slot,
    return d3d11vd_output(dec, slot, frame);
 }
 
+/* Decoding preserves coded samples; the container supplies source colour
+ * to the shared-frame importer. Admit only its supported matrix/gamut. */
+static bool d3d11vd_av1_color(const rav1_sequence_t *sequence)
+{
+   unsigned matrix = sequence->matrix_coefficients;
+   if (sequence->transfer_characteristics == 16 ||
+       sequence->transfer_characteristics == 18)
+      return (matrix == 1 || matrix == 2 || matrix == 9) &&
+         (sequence->color_primaries == 1 || sequence->color_primaries == 2 ||
+          sequence->color_primaries == 9);
+   return matrix == 1 || matrix == 2 || matrix == 5 || matrix == 6;
+}
+
 bool d3d11_video_decode_av1_open(const rav1_sequence_t *sequence,
       unsigned slots, rav1_hw_ops_t *ops)
 {
@@ -1148,9 +1161,7 @@ bool d3d11_video_decode_av1_open(const rav1_sequence_t *sequence,
    memset(ops, 0, sizeof(*ops));
    if (!d3d11vd.up || !dxva_av1_sequence(sequence) || slots < 9 || slots > D3D11VD_MAX_SLOTS ||
        sequence->film_grain_params_present || ((sequence->max_width | sequence->max_height) & 1) ||
-       (sequence->matrix_coefficients != 1 && sequence->matrix_coefficients != 2 &&
-        sequence->matrix_coefficients != 5 && sequence->matrix_coefficients != 6) ||
-       sequence->transfer_characteristics == 16 || sequence->transfer_characteristics == 18 ||
+       !d3d11vd_av1_color(sequence) ||
        !(d3d11vd.import_formats & (sequence->bit_depth == 10 ? IMAGE_PIXFMT_P010 : IMAGE_PIXFMT_NV12)) ||
        (settings && settings->uints.video_hw_decode == VIDEO_HW_DECODE_OFF))
       return false;

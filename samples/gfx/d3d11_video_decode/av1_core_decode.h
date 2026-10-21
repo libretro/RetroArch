@@ -75,6 +75,7 @@ static int read_av1_core(const char *path, frames_t *hw, opened_t *opened, unsig
          video_hw_frame_t frame = av1_core.frame;
          unsigned index = av1_core.index;
          memset(&av1_core.frame, 0, sizeof(av1_core.frame));
+         if (!av1_color_matches(&frame)) { video_hw_frame_abandon(&frame); goto done; }
          *bps = frame.pixfmt == IMAGE_PIXFMT_P010 ? 2 : 1;
          if ((last != UINT32_MAX && index != last + 1) || (last == UINT32_MAX && index))
          {

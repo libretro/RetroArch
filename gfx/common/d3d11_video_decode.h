@@ -70,7 +70,9 @@ bool d3d11_video_decode_vp9_open(const rvp9_hdr *header,
 void d3d11_video_decode_vp9_close(rvp9_hw_ops_t *ops);
 
 #ifdef HAVE_RAV1
-/* Fixed-size SDR Profile 0, 8/10-bit 4:2:0, without film grain.
+/* Fixed-size Profile 0, 8/10-bit 4:2:0, without film grain.
+ * SDR and supported PQ/HLG matrix/gamut combinations are preserved for
+ * container source-colour metadata and the shared-frame importer.
  * Owner-thread calls; retained GPU leases can outlive close. */
 bool d3d11_video_decode_av1_open(const rav1_sequence_t *sequence,
       unsigned slots, rav1_hw_ops_t *ops);

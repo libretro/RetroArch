@@ -142,7 +142,9 @@ static void test_config(int inband, unsigned matrix, unsigned transfer,
    {
       CHECK(rwebm_video_stream_next(s, NULL) != NULL);
       CHECK(rwebm_video_stream_hw_frame(s, &frame));
-      CHECK((frame.yuv & IMAGE_YUV_FLAG_BT709) != 0);
+      CHECK(((frame.yuv & IMAGE_YUV_FLAG_BT709) != 0) == (matrix == 1));
+      CHECK(frame.color.transfer == transfer);
+      CHECK(frame.color.range == 1);
       video_hw_frame_abandon(&frame);
    }
    rwebm_video_stream_close(s);
@@ -158,9 +160,11 @@ int main(void)
    test_stream(0);
    test_stream(1);
    test_config(0, 1, 0, 1, 1);
-   test_config(1, 0, 16, 0, 0);
-   test_config(0, 0, 18, 0, 0);
+   test_config(1, 0, 16, 0, 1);
+   test_config(0, 0, 18, 0, 1);
    test_config(1, 9, 0, 0, 0);
+   test_config(1, 10, 16, 0, 0);
+   test_config(0, 10, 18, 0, 0);
    test_config(0, 0, 0, 2, 0);
    test_config(1, 0, 0, 3, 0);
    make_webm(1, 0, 0, 0);

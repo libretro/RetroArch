@@ -43,9 +43,9 @@ static int av1_sequence_refusals(const rav1_sequence_t *sequence)
          case 2: changed.monochrome = 1; break;
          case 3: changed.subsampling_x = 0; break;
          case 4: changed.film_grain_params_present = 1; break;
-         case 5: changed.transfer_characteristics = 16; break;
-         case 6: changed.transfer_characteristics = 18; break;
-         case 7: changed.matrix_coefficients = 9; break;
+         case 5: changed.transfer_characteristics = 16; changed.matrix_coefficients = 10; break;
+         case 6: changed.transfer_characteristics = 18; changed.color_primaries = 12; break;
+         case 7: changed.matrix_coefficients = 10; break;
          case 8: changed.max_width |= 1; break;
          case 9: changed.max_height |= 1; break;
       }
@@ -78,6 +78,18 @@ static int read_av1_frame(frames_t *hw, opened_t *opened,
    return take_hw(hw, opened, frame);
 }
 
+static unsigned av1_expected_transfer, av1_expected_range;
+static int av1_color_matches(const video_hw_frame_t *frame)
+{
+   if (!av1_expected_transfer) return 1;
+   if (frame->color.transfer == av1_expected_transfer &&
+       frame->color.primaries == 9 && frame->color.matrix == 9 &&
+       frame->color.range == av1_expected_range &&
+       frame->pixfmt == IMAGE_PIXFMT_P010) return 1;
+   puts("FAIL AV1 HDR shared-frame source colour");
+   return 0;
+}
+
 #include "av1_core_decode.h"
 
 int main(int argc, char **argv)
@@ -101,6 +113,9 @@ int main(int argc, char **argv)
    setvbuf(stdout, NULL, _IONBF, 0);
    if (argc != 3) { puts("usage: av1_decode_test stream.obu reference.nv12-or-p010"); return 1; }
    printf("AV1 fixture=%s retain=%u\n", argv[1], (unsigned)retain);
+   if (strstr(argv[1], "smpte2084")) av1_expected_transfer = 16;
+   if (strstr(argv[1], "arib-std-b67")) av1_expected_transfer = 18;
+   av1_expected_range = strstr(argv[1], "-pc.") ? 2 : 1;
    if (FAILED(D3D11CreateDevice(NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, 0,
          levels, 2, D3D11_SDK_VERSION, &dev, NULL, &ctx)) ||
        FAILED(dev->lpVtbl->QueryInterface(dev, &d3d11vd_iid_device5, (void**)&dev5)) ||
@@ -135,6 +150,7 @@ int main(int argc, char **argv)
          {
             video_hw_frame_t frame;
             if (!image_transfer_anim_stream_hw_frame(stream, type, &frame)) goto done;
+            if (!av1_color_matches(&frame)) { video_hw_frame_abandon(&frame); goto done; }
             bps = frame.pixfmt == IMAGE_PIXFMT_P010 ? 2 : 1;
             if (!read_av1_frame(&hw, &opened, &frame, displayed))
             { video_hw_frame_abandon(&frame); goto done; }
