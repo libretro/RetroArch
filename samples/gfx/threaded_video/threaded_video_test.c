@@ -70,7 +70,8 @@
 #include <queues/task_queue.h>
 
 static unsigned failures = 0;
-static retro_time_t dplane_grid_base, dplane_grid_period;
+static retro_time_t dplane_grid_base;
+static retro_atomic_int_t dplane_grid_period;
 
 #define CHECK(cond, ...) \
    do { \
@@ -155,7 +156,7 @@ static void run_frames(unsigned n)
       runloop_iterate();
 #ifdef HAVE_COCOA
       /* No native presents or event work on the synthetic display. */
-      if (!dplane_grid_period)
+      if (!retro_atomic_load_acquire_int(&dplane_grid_period))
          harness_cocoa_pump();
 #endif
    }
@@ -714,7 +715,7 @@ static bool dplane_frame(void *data, const void *frame, unsigned dims,
       retro_atomic_fetch_add_size(&dplane_seen_frames, 1);
    }
    /* The synthetic display must not inherit a real backend's swap clock. */
-   if (dplane_grid_period)
+   if (retro_atomic_load_acquire_int(&dplane_grid_period))
       return true;
    return dplane_inner->frame(data, frame, dims, frame_count, pitch, msg,
          video_info);
@@ -726,17 +727,19 @@ static bool dplane_frame(void *data, const void *frame, unsigned dims,
 static retro_time_t dplane_last_vblank(void *data)
 {
    retro_time_t now = cpu_features_get_time_usec();
+   int period = retro_atomic_load_acquire_int(&dplane_grid_period);
    (void)data;
-   if (!dplane_grid_period)
+   if (!period)
       return 0;
    return dplane_grid_base
-      + (now - dplane_grid_base) / dplane_grid_period * dplane_grid_period;
+      + (now - dplane_grid_base) / period * period;
 }
 
 static float dplane_refresh(void *data)
 {
+   int period = retro_atomic_load_acquire_int(&dplane_grid_period);
    (void)data;
-   return dplane_grid_period ? 1000000.0f / (float)dplane_grid_period : 0.0f;
+   return period ? 1000000.0f / (float)period : 0.0f;
 }
 
 static void dplane_get_poke(void *data, const video_poke_interface_t **iface)
@@ -747,27 +750,56 @@ static void dplane_get_poke(void *data, const video_poke_interface_t **iface)
    dplane_thread_poke.driver_pacing_wait = dplane_wait;
    dplane_thread_poke.driver_pacing_mark = dplane_mark;
    dplane_thread_poke.get_last_present_time = dplane_last_vblank;
-   if (dplane_grid_period)
+   if (retro_atomic_load_acquire_int(&dplane_grid_period))
       dplane_thread_poke.get_refresh_rate = dplane_refresh;
    *iface                                = &dplane_thread_poke;
+}
+
+typedef struct
+{
+   retro_time_t phase, core, render, extra, elapsed, due;
+} dplane_phase_sample_t;
+static dplane_phase_sample_t dplane_phase_samples[2][30];
+
+static void dplane_phase_report(void)
+{
+   unsigned pass, i;
+   for (pass = 0; pass < 2; pass++)
+      for (i = 0; i < 30; i++)
+      {
+         const dplane_phase_sample_t *s = &dplane_phase_samples[pass][i];
+         fprintf(stderr, "phase sample %u/%u: phase=%ld core=%ld render=%ld"
+               " extra=%ld elapsed=%ld due_phase=%ld us\n", pass, i,
+               (long)s->phase, (long)s->core, (long)s->render,
+               (long)s->extra, (long)s->elapsed, (long)s->due);
+      }
 }
 
 /* Where 30 driver-released frames started against the display's grid:
  * how many of them within a millisecond of their median phase, which a
  * loaded machine's odd late wake does not move, that median, and how
  * long they took. */
-static void dplane_phase_measure(thread_video_t *thr, unsigned *on_phase,
-      retro_time_t *median, retro_time_t *took)
+static void dplane_phase_measure(thread_video_t *thr, unsigned pass,
+      unsigned *on_phase, retro_time_t *median, retro_time_t *took)
 {
-   retro_time_t p = dplane_grid_period;
+   retro_time_t p = retro_atomic_load_acquire_int(&dplane_grid_period);
    retro_time_t d[30], first = 0, t0, m;
    unsigned i, j;
    t0 = cpu_features_get_time_usec();
    for (i = 0; i < 30; i++)
    {
-      retro_time_t ph;
+      retro_time_t ph, reported_core;
+      retro_time_t began = cpu_features_get_time_usec();
+      bool pacing;
+      dplane_phase_sample_t *sample = &dplane_phase_samples[pass][i];
       run_frames(1);
       ph = (thr->run_start - dplane_grid_base) % p;
+      sample->phase = ph;
+      sample->core = thr->core_time;
+      sample->extra = retro_atomic_load_acquire_int(&thr->margin_extra_us);
+      sample->elapsed = cpu_features_get_time_usec() - began;
+      sample->due = (thr->content_due - dplane_grid_base) % p;
+      video_thread_pacing_stats(&pacing, &reported_core, &sample->render);
       if (!i)
          first = ph;
       d[i] = ph - first;
@@ -982,6 +1014,7 @@ static void lane_driver_pacing(void)
          dplane_driver                = *thr->driver;
          dplane_driver.frame          = dplane_frame;
          dplane_driver.poke_interface = dplane_get_poke;
+         dplane_grid_base = cpu_features_get_time_usec();
          set_driver(thr, &dplane_driver);
          set_poke_from(thr, &dplane_driver);
          retro_atomic_store_release_size(&dplane_seen_id, 0);
@@ -1069,13 +1102,14 @@ static void lane_driver_pacing(void)
             unsigned content = (unsigned)runloop_content_frame_time_us(
                   video_st->core_hz);
             retro_time_t mean0, took0, mean1, took1, d;
+            retro_time_t period = 8333;
             unsigned on_phase0, on_phase1;
+            unsigned phase_failures = failures;
             settings->floats.video_refresh_rate = 120.0f;
             settings->bools.video_present_timing_from_display = true;
             settings->bools.video_vsync = false;
             command_event(CMD_EVENT_VIDEO_SET_BLOCKING_STATE, NULL);
-            dplane_grid_base   = cpu_features_get_time_usec();
-            dplane_grid_period = 8333;
+            retro_atomic_store_release_int(&dplane_grid_period, 8333);
             video_thread_wait_idle();
             set_poke_from(thr, &dplane_driver);
             settings->bools.video_threaded_display_pacing = true;
@@ -1084,7 +1118,7 @@ static void lane_driver_pacing(void)
              * the average sheds over a few dozen frames */
             retro_sleep(30);
             run_frames(40);
-            dplane_phase_measure(thr, &on_phase0, &mean0, &took0);
+            dplane_phase_measure(thr, 0, &on_phase0, &mean0, &took0);
             CHECK((runloop_st->pace & RUNLOOP_PACE_DRIVER)
                   && (runloop_st->pace & RUNLOOP_PACE_DISPLAY),
                   "phase: Display+Driver, pace 0x%x", runloop_st->pace);
@@ -1098,12 +1132,12 @@ static void lane_driver_pacing(void)
             run_frames(5);
             settings->bools.video_threaded_display_pacing = true;
             run_frames(40);
-            dplane_phase_measure(thr, &on_phase1, &mean1, &took1);
+            dplane_phase_measure(thr, 1, &on_phase1, &mean1, &took1);
             d = mean1 - mean0;
-            while (d > dplane_grid_period / 2)
-               d -= dplane_grid_period;
-            while (d <= -dplane_grid_period / 2)
-               d += dplane_grid_period;
+            while (d > period / 2)
+               d -= period;
+            while (d <= -period / 2)
+               d += period;
             if (d < 0)
                d = -d;
             CHECK(on_phase1 >= 24 && d <= 1500,
@@ -1112,7 +1146,9 @@ static void lane_driver_pacing(void)
             fprintf(stderr, "   driver pacing phase: start-up %u/30 on phase"
                   " in %.1f ms, toggled %u/30, %.2f ms apart\n",
                   on_phase0, took0 / 1000.0, on_phase1, d / 1000.0);
-            dplane_grid_period = 0;
+            if (failures != phase_failures)
+               dplane_phase_report();
+            retro_atomic_store_release_int(&dplane_grid_period, 0);
             video_thread_wait_idle();
             set_poke_from(thr, &dplane_driver);
             settings->bools.video_threaded_display_pacing = false;
