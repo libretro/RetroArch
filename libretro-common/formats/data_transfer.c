@@ -1124,7 +1124,8 @@ static size_t data_transfer_prefix_iterate(data_transfer_t *dt,
                release_end = end < dt->committed ? end : dt->committed;
                release_end = release_end / dt->page * dt->page;
                if (release_end > dt->inert[lo].lo)
-                  data_transfer_wrelease(dt, dt->inert[lo].lo, release_end);
+                  memdecommit(dt->map + dt->inert[lo].lo,
+                        release_end - dt->inert[lo].lo, true);
                dt->avail = end;
                if (dt->committed < end) dt->committed = end;
                continue;
@@ -1255,7 +1256,10 @@ bool data_transfer_prefix_inert(data_transfer_t *dt, size_t from, size_t to)
    dt->inert[first].lo = lo; dt->inert[first].hi = hi;
    dt->inert_count = count;
    if (hi > dt->committed) hi = dt->committed / dt->page * dt->page;
-   if (hi > lo) data_transfer_wrelease(dt, lo, hi);
+   /* Permanent holes must remain inaccessible even in non-strict builds.
+    * Otherwise Linux can back them again with a transparent huge page
+    * when a neighbouring live interval is refilled. */
+   if (hi > lo) memdecommit(dt->map + lo, hi - lo, true);
    return true;
 }
 

@@ -622,6 +622,12 @@ static void inert_prefix_check(void)
    }
    refill_bytes = inert_io_bytes;
 #endif
+#if defined(__linux__) && defined(MADV_HUGEPAGE)
+   /* Exercise hosts that permit huge-page backing of writable holes.
+    * The reservation is anonymous; this advice changes no file bytes. */
+   if (data_transfer_reserve_supported())
+      madvise((void*)base, n, MADV_HUGEPAGE);
+#endif
    data_transfer_discard(dt, n - page);
    if (!data_transfer_refill(dt, 0)) { fail("inert refill"); goto finish; }
    for (i = 0; i < 1024; i++)
