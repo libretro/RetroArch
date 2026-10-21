@@ -12,3 +12,6 @@
 
 /crop_test
 /crop_test.exe
+/audio_queue_test
+/audio_queue_test.exe
+/audio_thread_test

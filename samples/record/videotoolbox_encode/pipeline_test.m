@@ -2,6 +2,7 @@
 #include "capture_reference.h"
 #include "../../../record/record_gpu_worker_vt_native.h"
 #include "../../../record/record_mux_avfoundation.h"
+#include "../../../record/record_audio_queue.h"
 #include "native_packet.h"
 #include "../../../gfx/common/videotoolbox_encode_crop.h"
 #include <unistd.h>
@@ -152,7 +153,9 @@ int main(int argc,char **argv)
       record_mux_avfoundation_t *mux=NULL;
       int16_t *pcm=NULL;
       unsigned audio_rate=argc==8?(unsigned)atoi(argv[7]):0;
-      uint64_t audio_written=0,audio_target=0;
+      uint64_t audio_written=0,audio_target=0,audio_produced=0;
+      record_audio_queue_t *audio_queue=NULL;
+      bool audio_closed=false;
       CVPixelBufferRef images[2]={NULL,NULL};
       CVPixelBufferPoolRef pool;
       void *buffers[2];
@@ -204,7 +207,11 @@ int main(int argc,char **argv)
       commands_queue=[device newCommandQueue]; assert(commands_queue);
       source=source_new_extent(device,mode,false,config.width,config.height);
       coded=fopen(argv[4],"wb"); raw=fopen(argv[5],"wb"); assert(coded && raw);
-      if (audio_rate) { pcm=(int16_t*)malloc(1024*2*sizeof(*pcm)); assert(pcm); }
+      if (audio_rate)
+      {
+         pcm=(int16_t*)malloc(1024*2*sizeof(*pcm)); assert(pcm);
+         audio_queue=record_audio_queue_new(2,1024,4*(16+4096)); assert(audio_queue);
+      }
       deadline=CFAbsoluteTimeGetCurrent()+20;
       while (result!=RECORD_GPU_VT_END || audio_written<audio_target)
       {
@@ -271,18 +278,36 @@ int main(int argc,char **argv)
                assert(record_gpu_worker_vt_release(worker)); received++; progress=true;
             }
          }
-         if (mux && audio_written<audio_target)
+         if (mux && audio_produced<audio_target)
          {
-            size_t frames=audio_target-audio_written>1024?1024:(size_t)(audio_target-audio_written),n;
-            int appended;
+            size_t frames=audio_target-audio_produced>1024?1024:(size_t)(audio_target-audio_produced),n;
+            int pushed;
             for (n=0;n<frames;n++)
             {
-               pcm[n*2]=(int16_t)(.2*32767*sin((double)(audio_written+n)*440*6.283185307179586/audio_rate));
-               pcm[n*2+1]=(int16_t)(.2*32767*sin((double)(audio_written+n)*660*6.283185307179586/audio_rate));
+               pcm[n*2]=(int16_t)(.2*32767*sin((double)(audio_produced+n)*440*6.283185307179586/audio_rate));
+               pcm[n*2+1]=(int16_t)(.2*32767*sin((double)(audio_produced+n)*660*6.283185307179586/audio_rate));
             }
-            appended=record_mux_avfoundation_audio(mux,pcm,frames,audio_written);
-            assert(appended!=RECORD_AVF_ERROR);
-            if (appended==RECORD_AVF_OK) { audio_written+=frames; progress=true; }
+            pushed=record_audio_queue_push(audio_queue,pcm,frames,audio_produced);
+            assert(pushed==RECORD_AUDIO_OK || pushed==RECORD_AUDIO_BUSY);
+            if (pushed==RECORD_AUDIO_OK) { audio_produced+=frames; progress=true; }
+         }
+         if (audio_queue)
+         {
+            const int16_t *samples;
+            size_t frames;
+            uint64_t pts;
+            int ready;
+            if (result==RECORD_GPU_VT_END && audio_produced==audio_target && !audio_closed)
+            { assert(record_audio_queue_finish(audio_queue)); audio_closed=true; }
+            ready=record_audio_queue_peek(audio_queue,&samples,&frames,&pts);
+            assert(ready!=RECORD_AUDIO_ERROR);
+            if (ready==RECORD_AUDIO_OK)
+            {
+               int appended=record_mux_avfoundation_audio(mux,samples,frames,pts);
+               assert(appended!=RECORD_AVF_ERROR);
+               if (appended==RECORD_AVF_OK)
+               { audio_written+=frames; assert(record_audio_queue_ack(audio_queue)); progress=true; }
+            }
          }
          if (!progress) usleep(1000); /* Test-only deadline polling. */
       }
@@ -303,6 +328,7 @@ int main(int argc,char **argv)
       assert(record_gpu_capture_metal_free(capture)); assert(record_gpu_queue_free(queue));
       for (i=0;i<2;i++) CVPixelBufferRelease(images[i]);
       if (fclose(coded) || fclose(raw)) rc=1;
+      assert(record_audio_queue_free(audio_queue));
       free(pcm);
       RARCH_RELEASE(source); RARCH_RELEASE(commands_queue); RARCH_RELEASE(device);
       if (!rc) puts("PASS: two-slot Metal capture->queue->VT worker, borrowed output, timestamps and drain");

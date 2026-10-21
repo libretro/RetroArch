@@ -9,7 +9,11 @@ ifneq ($(SANITIZER),)
 CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
-all: crop_test$(EXE) slots_test$(EXE) session_test$(EXE) worker_test$(EXE) audio_rate_test$(EXE)
+all: crop_test$(EXE) audio_queue_test$(EXE) slots_test$(EXE) session_test$(EXE) worker_test$(EXE) audio_rate_test$(EXE)
+audio_queue_test$(EXE): audio_queue_test.c $(RA)/record/record_audio_queue.c $(RA)/record/record_audio_queue.h
+	$(CC) $(CFLAGS) -o $@ audio_queue_test.c $(RA)/record/record_audio_queue.c $(RA)/libretro-common/queues/retro_spsc.c $(LDFLAGS)
+audio_thread_test: audio_queue_test.c $(RA)/record/record_audio_queue.c $(RA)/record/record_audio_queue.h
+	$(CC) $(CFLAGS) -DRECORD_AUDIO_THREAD_TEST -pthread -o $@ audio_queue_test.c $(RA)/record/record_audio_queue.c $(RA)/libretro-common/queues/retro_spsc.c $(LDFLAGS)
 audio_rate_test$(EXE): audio_rate_test.c mock/AudioToolbox/AudioToolbox.h $(RA)/record/drivers/record_avfoundation_audio.h
 	$(CC) $(CFLAGS) -Imock -o $@ $< $(LDFLAGS)
 crop_test$(EXE): crop_test.c $(RA)/libretro-common/formats/h265/rh265_sps_crop.c $(RA)/libretro-common/include/formats/rh265_sps_crop.h
@@ -26,12 +30,14 @@ worker_thread_test: worker_thread_test.c $(RA)/record/record_gpu_worker_vt.c $(R
 	$(CC) $(CFLAGS) -pthread -o $@ worker_thread_test.c $(RA)/record/record_gpu_worker_vt.c $(RA)/record/record_gpu_queue.c $(RA)/libretro-common/queues/retro_spsc.c $(LDFLAGS)
 check: all
 	$(RUNNER) ./crop_test$(EXE)
+	$(RUNNER) ./audio_queue_test$(EXE)
 	$(RUNNER) ./slots_test$(EXE)
 	$(RUNNER) ./session_test$(EXE)
 	$(RUNNER) ./worker_test$(EXE)
 	$(RUNNER) ./audio_rate_test$(EXE)
 clean:
 	rm -f crop_test crop_test.exe
+	rm -f audio_queue_test audio_queue_test.exe audio_thread_test
 	rm -f slots_test slots_test.exe session_test session_test.exe worker_test worker_test.exe thread_test worker_thread_test
 	rm -f audio_rate_test audio_rate_test.exe
 .PHONY: all check clean

@@ -9,6 +9,7 @@ on:
       - 'libretro-common/include/formats/rh265_sps_crop.h'
       - 'record/record_gpu_capture_metal.*'
       - 'record/record_gpu_worker_vt*'
+      - 'record/record_audio_queue.*'
       - 'record/shaders/capture_metal.*'
       - 'record/shaders/generate_metal.py'
       - 'samples/record/videotoolbox_encode/**'
@@ -21,6 +22,7 @@ on:
       - 'libretro-common/include/formats/rh265_sps_crop.h'
       - 'record/record_gpu_capture_metal.*'
       - 'record/record_gpu_worker_vt*'
+      - 'record/record_audio_queue.*'
       - 'record/shaders/capture_metal.*'
       - 'record/shaders/generate_metal.py'
       - 'samples/record/videotoolbox_encode/**'
@@ -38,7 +40,7 @@ jobs:
         run: command -v ffmpeg >/dev/null && command -v ffprobe >/dev/null || brew install ffmpeg
       - name: Portable ownership and failure contracts
         working-directory: samples/record/videotoolbox_encode
-        run: make check thread_test worker_thread_test && ./thread_test && ./worker_thread_test
+        run: make check thread_test worker_thread_test audio_thread_test && ./thread_test && ./worker_thread_test && ./audio_thread_test
       - name: Native hardware encoder and independent pixels
         run: |
           rc=0

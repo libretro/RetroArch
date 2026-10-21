@@ -206,12 +206,14 @@ jobs:
         working-directory: samples/record/videotoolbox_encode
         run: |
           set -eu
-          make clean && make check thread_test worker_thread_test SANITIZER=address,undefined
+          make clean && make check thread_test worker_thread_test audio_thread_test SANITIZER=address,undefined
           ./thread_test
           ./worker_thread_test
-          make clean && make thread_test worker_thread_test SANITIZER=thread
+          ./audio_thread_test
+          make clean && make thread_test worker_thread_test audio_thread_test SANITIZER=thread
           TSAN_OPTIONS=halt_on_error=1 timeout 120 ./thread_test
           TSAN_OPTIONS=halt_on_error=1 timeout 120 ./worker_thread_test
+          TSAN_OPTIONS=halt_on_error=1 timeout 120 ./audio_thread_test
           make clean && make check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
           make clean
 
