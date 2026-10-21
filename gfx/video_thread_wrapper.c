@@ -1717,13 +1717,16 @@ static void video_thread_margin_learn(thread_video_t *thr, retro_time_t waited)
  * so a stale or late report cannot make the next wait fire at once. */
 static void video_thread_schedule_next(thread_video_t *thr)
 {
-   retro_time_t now  = cpu_features_get_time_usec();
+   retro_time_t now;
    retro_time_t base = 0;
    retro_time_t next;
 
    if (     (thr->present_timing_ask || thr->present_shown)
          && thr->driver_data && thr->poke && thr->poke->get_last_present_time)
       base = thr->poke->get_last_present_time(thr->driver_data);
+   /* The callback can cross a display tick: compare against its return
+    * time so a newly reported present is not mistaken for the future. */
+   now = cpu_features_get_time_usec();
    thr->phase_from_display = base > 0 && base <= now;
    if (!thr->phase_from_display)
       base = now;

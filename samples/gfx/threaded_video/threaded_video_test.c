@@ -724,11 +724,19 @@ static bool dplane_frame(void *data, const void *frame, unsigned dims,
 /* A display that reports its vblank, on a grid from dplane_grid_base,
  * while dplane_grid_period is set; none otherwise, whatever the driver
  * underneath can say, so the hold's grid is the clock's. */
+static retro_atomic_int_t dplane_fresh_timestamp;
+
 static retro_time_t dplane_last_vblank(void *data)
 {
    retro_time_t now = cpu_features_get_time_usec();
    int period = retro_atomic_load_acquire_int(&dplane_grid_period);
    (void)data;
+   if (retro_atomic_load_acquire_int(&dplane_fresh_timestamp))
+   {
+      /* Model a callback preempted across a display tick. Test only. */
+      retro_sleep(2);
+      return cpu_features_get_time_usec();
+   }
    if (!period)
       return 0;
    return dplane_grid_base
@@ -760,6 +768,13 @@ typedef struct
    retro_time_t phase, core, render, extra, elapsed, due;
 } dplane_phase_sample_t;
 static dplane_phase_sample_t dplane_phase_samples[2][30];
+
+/* Read the presenter-owned phase flag between frames on its owner. */
+static uintptr_t dplane_read_phase(void *data)
+{
+   thread_video_t *thr = (thread_video_t*)data;
+   return thr->phase_from_display ? 1 : 0;
+}
 
 static void dplane_phase_report(void)
 {
@@ -1114,6 +1129,12 @@ static void lane_driver_pacing(void)
             set_poke_from(thr, &dplane_driver);
             settings->bools.video_threaded_display_pacing = true;
             run_frames(10);
+            retro_atomic_store_release_int(&dplane_fresh_timestamp, 1);
+            run_frames(5);
+            video_thread_wait_idle();
+            CHECK(video_thread_run_blocking(dplane_read_phase, thr) == 1,
+                  "phase: a timestamp sampled during the callback is past");
+            retro_atomic_store_release_int(&dplane_fresh_timestamp, 0);
             /* The hitch's frame reads as core time to reserve, which
              * the average sheds over a few dozen frames */
             retro_sleep(30);
