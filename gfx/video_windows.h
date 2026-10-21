@@ -308,6 +308,30 @@ bool video_driver_translate_window_point(unsigned window,
       unsigned generation, int x, int y, bool report_oob,
       uint32_t *result);
 
+/* A renderer's screen windows from one frame to the next, a bit a
+ * window id; id 0, the main window, is never set */
+typedef struct video_windows_held
+{
+   /* Ids that have a window */
+   unsigned live;
+   /* Ids whose window closed or could not be made or drawn: not made
+    * again while the frame's restore count stays at restore */
+   unsigned failed;
+   unsigned restore;
+   /* Each live id's video_window_request_t::display */
+   unsigned display[RETRO_VIDEO_VIEWS_MAX];
+} video_windows_held_t;
+
+/* For @frame, NULL while windows are off: in *@retire the live ids to
+ * let go of, those with no screens now or made for another display; in
+ * *@create the ids with screens and no window, those that failed since
+ * the restore count last moved left out. An id in both is made again.
+ * The caller keeps live, failed and display as it makes and lets go of
+ * windows. Pure, any thread. */
+void video_windows_steps(video_windows_held_t *held,
+      const video_windows_frame_t *frame, unsigned *retire,
+      unsigned *create);
+
 RETRO_END_DECLS
 
 #endif

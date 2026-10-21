@@ -223,3 +223,31 @@ void video_window_place_rect(video_window_rect_t *rect,
    if (rect->y + rect->h > area->y + area->h)
       rect->y = area->y + area->h - rect->h;
 }
+
+void video_windows_steps(video_windows_held_t *held,
+      const video_windows_frame_t *frame, unsigned *retire,
+      unsigned *create)
+{
+   unsigned w;
+   unsigned wanted = 0;
+   *retire         = 0;
+   if (frame)
+   {
+      /* A restore tries the failed ones again */
+      if (frame->restore != held->restore)
+         held->failed = 0;
+      held->restore = frame->restore;
+      for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
+      {
+         unsigned bit = 1u << w;
+         if (!frame->window_screens[w])
+            continue;
+         wanted |= bit;
+         if ((held->live & bit) && held->display[w] != frame->display)
+            *retire |= bit;
+      }
+   }
+   held->failed &= wanted;
+   *retire      |= held->live & ~wanted;
+   *create       = wanted & ~(held->live & ~*retire) & ~held->failed;
+}

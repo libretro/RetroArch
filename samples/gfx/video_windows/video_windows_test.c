@@ -612,6 +612,77 @@ static void test_window_place(void)
    CHECK(video_window_rect_overlap(&a, &b) == 0);
 }
 
+/* A renderer's windows across frames */
+static void test_windows_steps(void)
+{
+   video_windows_frame_t frame;
+   video_windows_held_t held;
+   unsigned retire, create;
+   memset(&frame, 0, sizeof(frame));
+   memset(&held, 0, sizeof(held));
+
+   /* Screen 1 on display 2, its window id 1: made */
+   frame.display           = 2;
+   frame.restore           = 5;
+   frame.window_screens[1] = 1u << 1;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 0 && create == 2u);
+   held.live       = 2u;
+   held.display[1] = 2;
+   /* Kept while nothing changes */
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 0 && create == 0);
+   /* Screens 0 and 1 share it: still kept */
+   frame.window_screens[1] = 3u;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 0 && create == 0);
+   /* Another display: let go of and made again */
+   frame.display = 3;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 2u && create == 2u);
+   held.display[1] = 3;
+   /* No screens: let go of */
+   frame.window_screens[1] = 0;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 2u && create == 0);
+   /* Windows off: every live one let go of */
+   held.live = 6u;
+   video_windows_steps(&held, NULL, &retire, &create);
+   CHECK(retire == 6u && create == 0);
+   held.live = 0;
+
+   /* A failure stays out until the restore count moves */
+   frame.window_screens[1] = 2u;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(create == 2u);
+   held.failed |= 2u;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 0 && create == 0);
+   frame.restore = 6;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(create == 2u && held.failed == 0);
+   /* ... or the id has no screens */
+   held.failed = 2u;
+   frame.window_screens[1] = 0;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(held.failed == 0 && create == 0);
+   /* ... or windows go off */
+   held.failed = 2u;
+   video_windows_steps(&held, NULL, &retire, &create);
+   CHECK(held.failed == 0);
+
+   /* A window a screen, as on a desktop: ids 1 and 2 */
+   frame.display           = 0;
+   frame.window_screens[1] = 1u << 1;
+   frame.window_screens[2] = 1u << 2;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 0 && create == 6u);
+   held.live       = 2u;
+   held.display[1] = 0;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 0 && create == 4u);
+}
+
 int main(void)
 {
    test_windows_policy();
@@ -621,6 +692,7 @@ int main(void)
    test_second_output_touch();
    test_window_events();
    test_window_place();
+   test_windows_steps();
    if (failures)
       return 1;
    puts("video_windows: ok");
