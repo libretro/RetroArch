@@ -274,6 +274,13 @@ joypad_connection_t *pad_connection_init(unsigned pads)
 
    return joyconn;
 }
+/* "USB Gamepad", as the NES pad on Microntek's chip calls itself;
+ * Linux puts the maker's name in front */
+static bool joypad_connection_is_nes_clone_name(const char *name)
+{
+   return strstr(name, "USB Gamepad") != NULL;
+}
+
 joypad_connection_entry_t *find_connection_entry(uint16_t vid, uint16_t pid, const char *name)
 {
    unsigned i;
@@ -303,6 +310,18 @@ joypad_connection_entry_t *find_connection_entry(uint16_t vid, uint16_t pid, con
          else if (!string_is_equal(pad_map[i].name, name))
             continue;
       }
+
+      /* DragonRise's and Microntek's chips give one id to pads of every
+       * layout - NES and SNES pads, Saturn pads, arcade sticks. The NES
+       * handler takes only a pad that names itself as its NES pad does;
+       * any other is read from its report descriptor. With no name to
+       * go by, it is taken as before. */
+      if (     pad_map[i].iface == &pad_connection_nesusb
+            && pad_map[i].vid == vid && pad_map[i].pid == pid
+            && has_name
+            && !string_is_equal(name, pad_map[i].name)
+            && !joypad_connection_is_nes_clone_name(name))
+         continue;
 
       if (name_match || (pad_map[i].vid == vid && pad_map[i].pid == pid))
          return &pad_map[i];

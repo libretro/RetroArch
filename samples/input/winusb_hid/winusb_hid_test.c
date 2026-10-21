@@ -20,7 +20,9 @@
  *                  flight; the pad's state lent where its handler
  *                  keeps it, a generic pad's hat in it; a
  *                  PlayStation adapter's pad rumbled through its output
- *                  report, Windows' parser placing the values
+ *                  report, Windows' parser placing the values; a pad on
+ *                  a chip's shared id taken by the handler its name
+ *                  says, and read from its layout where it says none
  *   switch 2    -> the Switch 2 Pro Controller woken through its bulk
  *                  pipes: every command whole, each answer read, an
  *                  answer that never comes given up on; the player lit
@@ -386,10 +388,14 @@ static NTSTATUS WINAPI h_value(HIDP_REPORT_TYPE t, USAGE page, USHORT lc,
    *v = g_value[usage];
    return HIDP_STATUS_SUCCESS;
 }
+static const char *product_name = "Generic Pad";
 static BOOLEAN WINAPI h_product(HANDLE h, PVOID buf, ULONG len)
 {
-   static const WCHAR name[] = { 'G','e','n','e','r','i','c',' ','P','a','d',0 };
-   memcpy(buf, name, sizeof(name) < len ? sizeof(name) : len);
+   WCHAR *w = (WCHAR*)buf;
+   ULONG i;
+   for (i = 0; product_name[i] && (i + 1) * sizeof(WCHAR) < len; i++)
+      w[i] = (WCHAR)product_name[i];
+   w[i] = 0;
    return TRUE;
 }
 static BOOLEAN WINAPI h_get_feature(HANDLE h, PVOID buf, ULONG len)
@@ -790,6 +796,42 @@ static void test_hidclass(const char *path)
    }
    sjoy_mode    = false;
    caps_out     = 0;
+
+   /* 0079:0011 is a chip's, on pads of every layout: a Saturn pad is
+    * read from its layout and known by its own name; the NES pad that
+    * calls itself "USB Gamepad" still has its handler */
+   {
+      static const char *names[2] = { "Retro-bit Saturn Pad", "USB Gamepad " };
+      unsigned k;
+      for (k = 0; k < 2; k++)
+      {
+         product_name = names[k];
+         caps_in = 9; caps_out = 0; caps_id = 0;
+         winusb_hid_open(hid, path, k ? "HID\\VID_0079&PID_0011\\2"
+               : "HID\\VID_0079&PID_0011\\1", 0x0079, 0x0011, true);
+         CHECK(hid->devices, "hid class: a pad on 0079:0011 was not taken");
+         if (!hid->devices)
+            continue;
+         if (k == 0)
+            CHECK(hid->devices->generic
+                  && !strcmp(hid->devices->name, "Retro-bit Saturn Pad"),
+                  "hid class: a Saturn pad on 0079:0011 was taken for the NES pad");
+         else
+            CHECK(!hid->devices->generic
+                  && !strcmp(hid->devices->name, "Generic NES USB Controller"),
+                  "hid class: the NES pad on 0079:0011 lost its handler");
+         dev = hid->devices;
+         EnterCriticalSection(&q_lock);
+         h_unplugged = true;
+         h_complete();
+         LeaveCriticalSection(&q_lock);
+         for (i = 0; i < 2000 && !retro_atomic_load_acquire_int(&dev->gone); i++)
+            Sleep(1);
+         winusb_hid.poll(hid);
+         h_unplugged = false;
+      }
+      product_name = "Generic Pad";
+   }
    generic_mode = false;
 
    /* freed with a write in flight: the write is cancelled, the reader

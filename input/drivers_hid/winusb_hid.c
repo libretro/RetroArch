@@ -1167,6 +1167,29 @@ static void winusb_hid_open(winusb_hid_t *hid, const char *path,
       if (busy >= 0)
          winusb_hid_busy_drop(hid, (unsigned)busy);
    }
+   /* known by the name it gives, as on the Mac, and its handler found
+    * by it too: some ids are a chip's, shared by pads of every layout */
+   if (hidclass)
+   {
+      WCHAR wname[128];
+      char product[sizeof(dev->name)];
+      product[0] = '\0';
+      memset(wname, 0, sizeof(wname));
+      if (     winusb_hidclass_api.GetProductString(dev->file, wname,
+                  sizeof(wname) - sizeof(WCHAR))
+            && wname[0])
+         WideCharToMultiByte(CP_UTF8, 0, wname, -1, product,
+               sizeof(product) - 1, NULL, NULL);
+      product[sizeof(product) - 1] = '\0';
+      entry        = find_connection_entry(vid, pid, product);
+      RARCH_DBG("%s %04x:%04x names itself \"%s\"%s.\n", dev->tag,
+            vid, pid, product, entry ? "" : ": read from its descriptor");
+      dev->generic = !entry;
+      if (entry)
+         strlcpy(dev->name, entry->name, sizeof(dev->name));
+      else if (product[0])
+         strlcpy(dev->name, product, sizeof(dev->name));
+   }
    if (     !(dev->quit_event = CreateEventA(NULL, TRUE, FALSE, NULL))
          || (hidclass
             ?    !(dev->out_ov.hEvent = CreateEventA(NULL, TRUE, FALSE, NULL))
@@ -1189,18 +1212,6 @@ static void winusb_hid_open(winusb_hid_t *hid, const char *path,
       if (dev->bulk_usb)
          winusb_api.Free(dev->bulk_usb);
       dev->bulk_usb = NULL;
-   }
-
-   /* known by the name it gives, as on the Mac */
-   if (dev->generic)
-   {
-      WCHAR wname[128];
-      memset(wname, 0, sizeof(wname));
-      if (     winusb_hidclass_api.GetProductString(dev->file, wname,
-                  sizeof(wname) - sizeof(WCHAR))
-            && wname[0])
-         WideCharToMultiByte(CP_UTF8, 0, wname, -1, dev->name,
-               sizeof(dev->name) - 1, NULL, NULL);
    }
 
    /* the pad's handler starts it here */
