@@ -13,6 +13,7 @@ import tempfile
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--native', action='store_true')
+parser.add_argument('--metal', action='store_true')
 args = parser.parse_args()
 if not args.native or sys.platform != 'darwin':
     raise SystemExit('Native encode acceptance requires --native on Apple')
@@ -62,5 +63,11 @@ with tempfile.TemporaryDirectory(prefix='vt-encode-') as temp:
         print(f'PASS: native hardware hevc={hevc} depth={depth} hdr={hdr}, '
               f'12 frames, mean={mean:.4f}, peak={peak}', flush=True)
     print(f'Native VT encode: {passed} passed, {unavailable} unavailable', flush=True)
+    if args.metal:
+        result = subprocess.run([sys.executable, str(here / 'capture_run.py')])
+        if result.returncode == 77:
+            unavailable += 1
+        else:
+            result.check_returncode()
     if unavailable:
         raise SystemExit(77)

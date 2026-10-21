@@ -28,6 +28,15 @@ The native executable also checks source timestamps and durations. Return 77
 means at least one hardware case was unavailable; it is not a complete pass.
 CPU plane fills belong only to this fixture, not the intended capture path.
 
+`python3 capture_run.py` independently compiles Metal capture under ARC and
+manual reference counting, without requiring an encoder or FFmpeg. The fixed
+CoreVideo buffer/view pool and compute shader are not selected by a renderer
+yet. The oracle checks all cropped luma/chroma codes against double-precision
+RGB/PQ/scRGB references, both packed channel orders, left chroma filtering,
+P010 packing, pending-slot refusal and explicit encoder/output ownership.
+Test-only command-buffer waits and CPU plane reads do not enter capture code.
+Native compilation/GPU execution must pass before any acceptance claim.
+
 Next validate the hardware-required VTCompressionSession on Apple, then integrate
 fixed Metal-compatible pixel-buffer capture and compressed AVFoundation
 mux/audio input. Reuse record_gpu_queue for producer/worker ownership. Encoder
