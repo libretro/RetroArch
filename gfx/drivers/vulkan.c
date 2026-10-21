@@ -296,6 +296,33 @@ struct vk_effect_template
    bool                                   valid;
 };
 
+enum vk_window_flags
+{
+   /* output holds a surface: made, or being let go of */
+   VK_WINDOW_FLAG_OUTPUT   = (1 << 0),
+   /* the output goes, for a new surface; the window stays */
+   VK_WINDOW_FLAG_DROP     = (1 << 1),
+   /* the window goes, once its output has */
+   VK_WINDOW_FLAG_CLOSE    = (1 << 2),
+   /* this frame: an image free, the views' chains picked */
+   VK_WINDOW_FLAG_PREPARED = (1 << 3),
+   /* this frame: drawn, presented after the submission */
+   VK_WINDOW_FLAG_DRAWN    = (1 << 4)
+};
+
+/* A screen window: the context's record and the output drawn into it */
+struct vk_window
+{
+   video_window_native_t native;
+   vulkan_output_t output;
+   video_views_layout_t layout;
+   /* The views it draws this frame, each with its own chain */
+   vulkan_filter_chain_t *chains[RETRO_VIDEO_VIEWS_MAX];
+   void *surface;      /* native.surface the output was made from */
+   unsigned dims;      /* native.dims the output was made at */
+   uint8_t flags;      /* VK_WINDOW_FLAG_* */
+};
+
 /* Frame buffers lent to the threaded wrapper at once: what it takes
  * (VIDEO_THREAD_FRAME_MEM_DRIVER), the menu pool, and resize headroom. */
 #define VK_FRAME_MEM_MAX 20
@@ -346,6 +373,17 @@ typedef struct vk
       bool in_place_seen;
       bool written_seen;
    } views;
+   /* The screens' own windows (video_windows.h), by window id; [0],
+    * the main window's, stays unused */
+   struct
+   {
+      struct vk_window win[RETRO_VIDEO_VIEWS_MAX];
+      video_windows_held_t held;
+      /* The views' mvp as the frame set it, and the frame's texture
+       * where stock views draw straight from it */
+      math_matrix_4x4 mvp;
+      struct vk_texture *direct;
+   } windows;
 #ifdef HAVE_OPENXR
    /* Headset output: each slot's swapchain images, with a view and a
     * framebuffer per image and layer, and this frame's quads. Each view
@@ -6733,6 +6771,7 @@ static void vulkan_views_draw_pass(vk_t *vk, vulkan_filter_chain_t *fc,
       bool again);
 static bool vulkan_views_make(vk_t *vk, struct vk_image *img, unsigned dims);
 static bool vulkan_views_retire(vk_t *vk, struct vk_image *img);
+static void vulkan_windows_retire(void *data);
 
 /* The views compositor, with these calls bound in */
 #define VV_FN(name)                     vulkan_vv_##name
@@ -7258,6 +7297,8 @@ static void vulkan_free(void *data)
    {
       vulkan_import_movie_frame(vk, NULL);
       vulkan_wait_own_submissions(vk);
+      /* Before the context's destroy, which takes the instance */
+      vulkan_windows_retire(vk);
       vulkan_deferred_textures_flush(vk);
       vulkan_deferred_cmds_flush(vk);
       vulkan_stream_states_flush(vk);
@@ -10413,6 +10454,375 @@ static void vulkan_views_ui_end(vk_t *vk, video_frame_info_t *video_info,
       vulkan_set_viewport(vk, video_info->dims, false, true);
 }
 
+/* Events a frame takes from the context's windows */
+#define VK_WINDOW_EVENTS 8
+
+/* Window @w let go of: its output retired, then the context's window,
+ * and input stops mapping into it. Never waits: while its output is
+ * not done the id stays live, and a later frame finishes it. */
+static void vulkan_window_retire(vk_t *vk, unsigned w)
+{
+   struct vk_window *win = &vk->windows.win[w];
+   if (!(vk->windows.held.live & (1u << w)))
+      return;
+   if (!(win->flags & VK_WINDOW_FLAG_CLOSE))
+   {
+      win->flags |= VK_WINDOW_FLAG_CLOSE;
+      video_driver_publish_window_layout(w, 0, NULL, NULL, 0, 0);
+   }
+   win->flags &= ~(VK_WINDOW_FLAG_PREPARED | VK_WINDOW_FLAG_DRAWN);
+   if (     (win->flags & VK_WINDOW_FLAG_OUTPUT)
+         && !vulkan_output_retire(&win->output))
+      return;
+   vk->ctx_driver->windows->destroy(vk->ctx_data, &win->native);
+   memset(win, 0, sizeof(*win));
+   vk->windows.held.live &= ~(1u << w);
+}
+
+/* Window @w's screens back in the main window, until the next restore
+ * (video_driver_restore_windows()) */
+static void vulkan_window_attach(vk_t *vk,
+      const video_windows_frame_t *f, unsigned w)
+{
+   if (f)
+      video_driver_attach_windows(f->window_screens[w]);
+   vk->windows.held.failed |= 1u << w;
+   vulkan_window_retire(vk, w);
+}
+
+/* Window @w for @f's screens there, on @f's display */
+static bool vulkan_window_make(vk_t *vk, const video_windows_frame_t *f,
+      unsigned w)
+{
+   video_window_request_t request;
+   struct vk_window *win = &vk->windows.win[w];
+
+   memset(&request, 0, sizeof(request));
+   memset(win, 0, sizeof(*win));
+   request.screen     = w;
+   request.generation = video_driver_window_generation();
+   request.settings   = f->settings[w];
+   request.display    = f->display;
+   if (     !request.generation
+         || !vk->ctx_driver->windows->create(vk->ctx_data, &request,
+            &win->native))
+      return false;
+   vk->windows.held.live       |= 1u << w;
+   vk->windows.held.display[w]  = f->display;
+   return true;
+}
+
+/* @win's output for the surface it has now: made the first time,
+ * remade for a new surface or format, resized for new dims. 1 when it
+ * may draw, 0 not this frame, -1 when it can't be made or kept. */
+static int vulkan_window_output(vk_t *vk, struct vk_window *win)
+{
+   vulkan_output_t *out = &win->output;
+
+   if (win->flags & VK_WINDOW_FLAG_DROP)
+   {
+      if (!vulkan_output_retire(out))
+         return 0;
+      win->flags &= ~(VK_WINDOW_FLAG_DROP | VK_WINDOW_FLAG_OUTPUT);
+   }
+   if (     (win->flags & VK_WINDOW_FLAG_OUTPUT)
+         && (     win->surface != win->native.surface
+               /* Made again by a swapchain rebuild: a resize would make
+                * framebuffers from the one destroyed */
+               || out->render_pass != vk->views.render_pass
+               || (   out->swapchain != VK_NULL_HANDLE
+                   && out->format != vk->context->swapchain_format)))
+   {
+      win->flags |= VK_WINDOW_FLAG_DROP;
+      vulkan_output_retire(out);
+      return 0;
+   }
+   if (!(win->flags & VK_WINDOW_FLAG_OUTPUT))
+   {
+      memset(out, 0, sizeof(*out));
+      /* The chains' final passes draw in it, as for the headset */
+      out->render_pass = vk->views.render_pass;
+      win->flags      |= VK_WINDOW_FLAG_OUTPUT;
+      win->surface     = win->native.surface;
+      win->dims        = win->native.dims;
+      return vulkan_output_create(out, vk->context,
+            VULKAN_CTX_DATA_FROM_CONTEXT(vk->context)->wsi_type,
+            win->native.display, win->native.surface, win->native.dims)
+         ? 1 : -1;
+   }
+   if (     win->dims != win->native.dims
+         && vulkan_output_resize(out, win->native.dims))
+      win->dims = win->native.dims;
+   return (out->flags & VK_OUTPUT_FLAG_LOST) ? -1 : 1;
+}
+
+/* The windows' part of a frame, before its views are settled: each one
+ * made or let go of, polled, and given an output and a free image.
+ * Those that will draw put their views' chains, sized for them, in
+ * @view_chains and @view_rects beside the main window's, so the frame
+ * copies those views and runs their passes too: a view is in one
+ * window only. @views and @stock as vulkan_views_prepare() left them.
+ * Never waits. */
+static VIDEO_NOINLINE void vulkan_windows_prepare(vk_t *vk,
+      const video_frame_info_t *video_info, bool new_frame, bool views,
+      bool stock, vulkan_filter_chain_t **view_chains,
+      video_views_rect_t *view_rects)
+{
+   unsigned w, i, retire, create;
+   video_views_rect_t rects[RETRO_VIDEO_VIEWS_MAX];
+   unsigned closed                    = 0;
+   const video_windows_frame_t *f     = video_info->windows;
+   const gfx_ctx_window_driver_t *ctx = vk->ctx_driver
+      ? vk->ctx_driver->windows : NULL;
+
+   if (!ctx)
+      return;
+   if (vk->windows.held.live)
+   {
+      unsigned count;
+      video_window_event_t events[VK_WINDOW_EVENTS];
+      count = ctx->poll(vk->ctx_data, events, VK_WINDOW_EVENTS);
+      for (i = 0; i < count; i++)
+      {
+         unsigned id = events[i].screen;
+         if (     events[i].kind == VIDEO_WINDOW_EVENT_CLOSE
+               && id && id < RETRO_VIDEO_VIEWS_MAX
+               && (vk->windows.held.live & (1u << id))
+               && vk->windows.win[id].native.generation
+                  == events[i].generation)
+            closed |= 1u << id;
+      }
+      /* Those let go of on an earlier frame whose output is done now */
+      for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
+         if (vk->windows.win[w].flags & VK_WINDOW_FLAG_CLOSE)
+            vulkan_window_retire(vk, w);
+   }
+   video_windows_steps(&vk->windows.held, f, &retire, &create);
+   for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
+      if (retire & (1u << w))
+         vulkan_window_retire(vk, w);
+   if (!f)
+      return;
+   /* Marked after steps(), which clears the marks when this frame's
+    * restore count moved, so a closed window waits for the next one */
+   for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
+      if ((closed & (1u << w)) && f->window_screens[w])
+         vulkan_window_attach(vk, f, w);
+   create &= ~closed;
+   for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
+   {
+      /* An id still going is made again on a later frame */
+      if (     !(create & (1u << w))
+            || (vk->windows.held.live & (1u << w))
+            || vulkan_window_make(vk, f, w))
+         continue;
+      RARCH_WARN("[Vulkan] A screen window can't be made. "
+            "Its screens stay in the main window.\n");
+      vulkan_window_attach(vk, f, w);
+   }
+
+   for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
+   {
+      int state;
+      struct vk_window *win = &vk->windows.win[w];
+      vulkan_output_t *out  = &win->output;
+
+      /* A frame that ended before its draw left it set */
+      win->flags &= ~VK_WINDOW_FLAG_PREPARED;
+      if (     !(vk->windows.held.live & (1u << w))
+            || (win->flags & VK_WINDOW_FLAG_CLOSE)
+            || !f->window_screens[w]
+            || !win->native.configured || !win->native.presentable
+            || !win->native.surface
+            || !VIDEO_SCALE_W(win->native.dims)
+            || !VIDEO_SCALE_H(win->native.dims))
+         continue;
+      state = vulkan_window_output(vk, win);
+      /* Views the main window draws whole are not drawn here either,
+       * and a repeat keeps the last image */
+      if (state > 0 && !(new_frame && views))
+         state = 0;
+      if (state > 0 && !vulkan_output_acquire(out))
+         state = (out->flags & VK_OUTPUT_FLAG_LOST) ? -1 : 0;
+      if (state < 0)
+      {
+         RARCH_WARN("[Vulkan] A screen window can't be drawn. "
+               "Its screens go back to the main window.\n");
+         vulkan_window_attach(vk, f, w);
+         continue;
+      }
+      if (!state)
+         continue;
+
+      video_driver_window_layout_screens(f, f->window_screens[w],
+            out->dims, &win->layout);
+      if (!vulkan_vv_pick_chains(vk, &vk->views.chains,
+               &video_info->views, &win->layout, stock,
+               !win->layout.offscreen, out->dims, win->chains, rects))
+         continue;
+      for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
+      {
+         if (!win->chains[i])
+            continue;
+         /* A view drawn in two places would run its passes twice */
+         if (view_chains[i])
+         {
+            win->chains[i] = NULL;
+            continue;
+         }
+         view_chains[i] = win->chains[i];
+         view_rects[i]  = rects[i];
+      }
+      win->flags |= VK_WINDOW_FLAG_PREPARED;
+   }
+}
+
+/* The screens' own windows, each prepared one drawn into its image in
+ * the frame's command buffer: after the main pass, before the chains
+ * end their frame, so the views' copies and passes are where the main
+ * window's draw left them. Views only: the menu, OSD, widgets and
+ * overlay stay in the main window. True when a window was drawn, whose
+ * semaphore the frame's submission then signals. */
+static bool vulkan_windows_draw(vk_t *vk,
+      const video_frame_info_t *video_info, bool new_frame)
+{
+   unsigned w;
+   struct vulkan_views_draw_ctx d;
+   math_matrix_4x4 mvp = vk->mvp;
+   bool drawn          = false;
+
+   d.video_info        = video_info;
+   d.direct            = vk->windows.direct;
+   /* The views' mvp; the UI has set its own since */
+   vk->mvp             = vk->windows.mvp;
+   for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
+   {
+      VkClearValue clear;
+      VkRenderPassBeginInfo rp;
+      struct vk_window *win = &vk->windows.win[w];
+      vulkan_output_t *out  = &win->output;
+
+      if (!(win->flags & VK_WINDOW_FLAG_PREPARED))
+         continue;
+      win->flags &= ~VK_WINDOW_FLAG_PREPARED;
+      /* The image stays acquired for the next frame that draws */
+      if (!new_frame || !vk->views.active)
+         continue;
+
+      /* Its acquire fence has signalled: nothing reads it any more */
+      VULKAN_IMAGE_LAYOUT_TRANSITION(vk->cmd, out->images[out->index],
+            VK_IMAGE_LAYOUT_UNDEFINED,
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+      clear.color.float32[0]      = 0.0f;
+      clear.color.float32[1]      = 0.0f;
+      clear.color.float32[2]      = 0.0f;
+      clear.color.float32[3]      = 0.0f;
+      rp.sType                    = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+      rp.pNext                    = NULL;
+      rp.renderPass               = vk->views.render_pass;
+      rp.framebuffer              = out->framebuffers[out->index];
+      rp.renderArea.offset.x      = 0;
+      rp.renderArea.offset.y      = 0;
+      rp.renderArea.extent.width  = VIDEO_SCALE_W(out->dims);
+      rp.renderArea.extent.height = VIDEO_SCALE_H(out->dims);
+      rp.clearValueCount          = 1;
+      rp.pClearValues             = &clear;
+      vkCmdBeginRenderPass(vk->cmd, &rp, VK_SUBPASS_CONTENTS_INLINE);
+      vk->tracker.dirty   |= VULKAN_DIRTY_DYNAMIC_BIT;
+      vk->tracker.pipeline = VK_NULL_HANDLE;
+      vulkan_vv_draw_placements(vk, &d, &win->layout, win->chains,
+            !win->layout.offscreen, out->dims, d.direct != NULL);
+      vkCmdEndRenderPass(vk->cmd);
+      VULKAN_IMAGE_LAYOUT_TRANSITION(vk->cmd, out->images[out->index],
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, 0,
+            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
+      win->flags |= VK_WINDOW_FLAG_DRAWN;
+      drawn       = true;
+   }
+   vk->mvp = mvp;
+   if (drawn)
+   {
+      /* The chains bound descriptor sets of their own. */
+      vk->tracker.view     = VK_NULL_HANDLE;
+      vk->tracker.sampler  = VK_NULL_HANDLE;
+      vk->tracker.pipeline = VK_NULL_HANDLE;
+      vk->tracker.dirty   |= VULKAN_DIRTY_DYNAMIC_BIT;
+      memset(vk->tracker.mvp.data, 0, sizeof(vk->tracker.mvp.data));
+   }
+   return drawn;
+}
+
+/* The semaphores of the windows drawn this frame, for its submission;
+ * @sems has room for RETRO_VIDEO_VIEWS_MAX */
+static unsigned vulkan_windows_signals(vk_t *vk, VkSemaphore *sems)
+{
+   unsigned w;
+   unsigned n = 0;
+   for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
+   {
+      vulkan_output_t *out = &vk->windows.win[w].output;
+      if (vk->windows.win[w].flags & VK_WINDOW_FLAG_DRAWN)
+         sems[n++] = out->semaphores[out->index];
+   }
+   return n;
+}
+
+/* After the frame's submission and before the main present: each
+ * window drawn is presented, without waiting, and input maps through
+ * the layout it was drawn with. One that can't present any more puts
+ * its screens back in the main window. */
+static void vulkan_windows_present(vk_t *vk,
+      const video_frame_info_t *video_info)
+{
+   unsigned w;
+   const video_windows_frame_t *f = video_info->windows;
+   for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
+   {
+      struct vk_window *win = &vk->windows.win[w];
+      if (!(win->flags & VK_WINDOW_FLAG_DRAWN))
+         continue;
+      win->flags &= ~VK_WINDOW_FLAG_DRAWN;
+      if (!vulkan_output_present(&win->output))
+      {
+         if (win->output.flags & VK_OUTPUT_FLAG_LOST)
+         {
+            RARCH_WARN("[Vulkan] A screen window's surface is gone. "
+                  "Its screens go back to the main window.\n");
+            vulkan_window_attach(vk, f, w);
+         }
+         continue;
+      }
+      if (f)
+         video_driver_publish_window_layout(w, win->native.generation,
+               &win->layout, &f->core, f->core_dims, win->native.dims);
+   }
+}
+
+/* The poke's, and the driver's teardown: every window let go of
+ * now, waiting on each output's own fences. Never from a frame. The
+ * next frame makes them again where they still have screens. */
+static void vulkan_windows_retire(void *data)
+{
+   unsigned w;
+   vk_t *vk = (vk_t*)data;
+   if (!vk || !vk->windows.held.live)
+      return;
+   for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
+   {
+      if (!(vk->windows.held.live & (1u << w)))
+         continue;
+      if (vk->windows.win[w].flags & VK_WINDOW_FLAG_OUTPUT)
+         vulkan_output_finish(&vk->windows.win[w].output);
+      vulkan_window_retire(vk, w);
+   }
+}
+
 #ifdef HAVE_OPENXR
 /* The runtime's format for the window's, which the chains' final passes
  * render in: its sRGB twin through a UNORM view where there is one, so
@@ -11152,7 +11562,7 @@ static bool vulkan_frame(void *data, const void *frame,
    VkClearValue clear_color;
    VkRenderPassBeginInfo rp_info;
    VkCommandBufferBeginInfo begin_info;
-   VkSemaphore signal_semaphores[2];
+   VkSemaphore signal_semaphores[2 + RETRO_VIDEO_VIEWS_MAX];
    retro_perf_tick_t c_lock                      = 0;
    vk_t *vk                                      = (vk_t*)data;
    vulkan_filter_chain_t *filter_chain           = NULL;
@@ -11239,6 +11649,7 @@ static bool vulkan_frame(void *data, const void *frame,
 #endif
    /* Recording's readback was already taken this frame, before the UI. */
    bool record_readback_done                     = false;
+   bool windows_drawn                            = false;
    bool movie_frame                              = vk->movie_pending;
 
 #ifdef HAVE_OPENXR
@@ -11664,6 +12075,9 @@ static bool vulkan_frame(void *data, const void *frame,
             views_blend ? video_info->views_layout.canvas_dims
                         : vk->context->swapchain_dims,
             view_chains, view_rects, &views_direct);
+   /* The screens' own windows' views are this frame's too */
+   vulkan_windows_prepare(vk, video_info, frame || movie_frame, views,
+         views_direct, view_chains, view_rects);
    /* Stock views draw straight from the frame, but for a rolling
     * scanline, drawn by the chain's final pass. */
    views_direct = views_direct && vk->pipelines.stock_rect
@@ -12100,6 +12514,7 @@ static bool vulkan_frame(void *data, const void *frame,
 
    /* Views place themselves in the whole window. */
    vulkan_set_viewport(vk, VIDEO_SCALE_PACK(width, height), views, true);
+   vk->windows.mvp = vk->mvp;
 #ifdef HAVE_OPENXR
    /* The menu and UI set their own before the headset draws. */
    vk->xr.mvp    = vk->mvp;
@@ -12519,6 +12934,11 @@ static bool vulkan_frame(void *data, const void *frame,
       vk->xr.ui_dims = 0;
 #endif
 
+   /* The screens' own windows, from the views this frame set up */
+   vk->windows.direct = views_direct_tex;
+   windows_drawn      = vulkan_windows_draw(vk, video_info,
+         frame || movie_frame);
+
    /* End the filter chain frame.
     * This must happen outside a render pass.
     */
@@ -12780,6 +13200,10 @@ static bool vulkan_frame(void *data, const void *frame,
       signal_semaphores[submit_info.signalSemaphoreCount++] = vk->hw.signal_semaphore;
       vk->hw.signal_semaphore = VK_NULL_HANDLE;
    }
+   /* Each window's present waits on the frame that drew it */
+   if (windows_drawn)
+      submit_info.signalSemaphoreCount += vulkan_windows_signals(vk,
+            signal_semaphores + submit_info.signalSemaphoreCount);
    submit_info.pSignalSemaphores = submit_info.signalSemaphoreCount ? signal_semaphores : NULL;
 
    /* What this frame's textures were loaded with goes ahead of it */
@@ -12822,6 +13246,10 @@ static bool vulkan_frame(void *data, const void *frame,
 #ifdef HAVE_THREADS
    slock_unlock(vk->context->queue_lock);
 #endif
+
+   /* Before the main present, the only one that may wait */
+   if (windows_drawn)
+      vulkan_windows_present(vk, video_info);
 
    vulkan_present_wait = 0;
    vulkan_fence_wait   = 0;
@@ -14709,6 +15137,13 @@ static uint32_t vulkan_get_flags(void *data)
       BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS);
    if (vk && retro_atomic_load_acquire_int(&vk->views.fallback))
       BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS_FALLBACK);
+#if !(defined(HAVE_OPENXR) && defined(ANDROID))
+   /* Not the Quest's: its window is the headset's, and it has no
+    * second display */
+   if (     vk && vk->ctx_driver && vk->ctx_driver->windows
+         && retro_atomic_load_acquire_int(&vk->views.allowed))
+      BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_WINDOWS);
+#endif
    /* HDR output keeps the end-of-frame readback, for its tonemap */
 #ifdef VULKAN_HDR_SWAPCHAIN
    if (vk && !retro_atomic_load_acquire_int(&vk->built_hdr_output))
@@ -15196,7 +15631,8 @@ static const video_poke_interface_t vulkan_poke_interface = {
    false, /* texture_lend_per_write */
    vulkan_driver_pacing_set,
    vulkan_driver_pacing_wait,
-   vulkan_driver_pacing_mark
+   vulkan_driver_pacing_mark,
+   vulkan_windows_retire
 };
 
 static void vulkan_get_poke_interface(void *data,
