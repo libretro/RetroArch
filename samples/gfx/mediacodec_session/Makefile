@@ -23,6 +23,11 @@ vulkan_sync_test: vulkan_sync_test.c ../../../gfx/common/vulkan_android_sync.c .
 	$(CC) $(CFLAGS) -I../../../gfx/include vulkan_sync_test.c ../../../gfx/common/vulkan_android_sync.c -o $@ $(LDFLAGS)
 vulkan_pipeline_test: vulkan_pipeline_test.c ../../../gfx/common/vulkan_android_pipeline.c ../../../gfx/common/vulkan_android_pipeline.h
 	$(CC) $(CFLAGS) -I../../../gfx/include vulkan_pipeline_test.c ../../../gfx/common/vulkan_android_pipeline.c -o $@ $(LDFLAGS)
+vulkan_rgb_gpu_test: vulkan_rgb_gpu_test.c ../../../gfx/common/vulkan_android_pipeline.c ../../../gfx/common/vulkan_android_pipeline.h \
+ ../../../gfx/drivers/vulkan_shaders/external_rgb_to_rgba8888.comp.inc ../../../gfx/drivers/vulkan_shaders/external_rgb_to_rgba16f.comp.inc
+	$(CC) $(CFLAGS) -I../../../gfx/include vulkan_rgb_gpu_test.c ../../../gfx/common/vulkan_android_pipeline.c -o $@ $(LDFLAGS) -lvulkan -lm
+gpu-check: vulkan_rgb_gpu_test
+	./vulkan_rgb_gpu_test
 check: all
 	./test
 	./hevc_decoder_test
@@ -30,5 +35,5 @@ check: all
 	./vulkan_sync_test
 	./vulkan_pipeline_test
 clean:
-	rm -f test hevc_decoder_test vulkan_image_test vulkan_sync_test vulkan_pipeline_test
-.PHONY: all check clean
+	rm -f test hevc_decoder_test vulkan_image_test vulkan_sync_test vulkan_pipeline_test vulkan_rgb_gpu_test
+.PHONY: all check clean gpu-check
