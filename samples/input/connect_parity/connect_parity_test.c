@@ -1012,6 +1012,22 @@ static void test_ps5(void)
          "ps5: the rumble report is not the motors asked for");
    ifc->packet_handler(dev, p, (uint16_t)ps5_report(p, &st, 0));
    CHECK(sent_count == 2, "ps5: rumble was sent again unchanged");
+
+   /* told its port: relit at the next report, then put out on none */
+   ifc->set_player(dev, 3);
+   ifc->packet_handler(dev, p, (uint16_t)ps5_report(p, &st, 0));
+   CHECK(ps5_sent_is(false, false, 0x80, 0xff, 3), "ps5: not relit for port 3");
+   ifc->set_player(dev, 0);
+   ifc->packet_handler(dev, p, (uint16_t)ps5_report(p, &st, 0));
+   CHECK(ps5_sent_is(false, false, 0x80, 0xff, -1), "ps5: lit on no port");
+   ifc->deinit(dev);
+   /* told before its first report: that port lit, not its slot's */
+   sent_count = 0;
+   dev = ifc->init(&dummy_connection, 1, &stub_hid);
+   ifc->set_player(dev, 4);
+   ifc->packet_handler(dev, p, (uint16_t)ps5_report(p, &st, 0));
+   CHECK(sent_count == 1 && ps5_sent_is(false, false, 0, 0, 4),
+         "ps5: a pad told its port before its first report lit its slot");
    ifc->deinit(dev);
 
    /* the newer motor control: an Edge always, a DualSense from
@@ -1284,8 +1300,33 @@ static void test_switch_pro(void)
       ifc->packet_handler(dev, p, (uint16_t)sp_report(p, 0x30, &st));
    CHECK(sent_count == count + 4 && !memcmp(sent + 2, neutral, 8),
          "switch_pro: rumble not put at rest once");
+   /* told its port once ready: the lights as a command of their own,
+    * port 5 as the console lights it; on no port, out */
+   ifc->set_player(dev, 5);
+   for (n = 0; n < 2; n++)
+      ifc->packet_handler(dev, p, (uint16_t)sp_report(p, 0x30, &st));
+   CHECK(sp_sent_command(0, 0x30, 0x09), "switch_pro: not relit for port 5");
+   count = sent_count;
+   for (n = 0; n < 4; n++)
+      ifc->packet_handler(dev, p, (uint16_t)sp_report(p, 0x30, &st));
+   CHECK(sent_count == count, "switch_pro: lit again unchanged");
+   ifc->set_player(dev, 0);
+   for (n = 0; n < 2; n++)
+      ifc->packet_handler(dev, p, (uint16_t)sp_report(p, 0x30, &st));
+   CHECK(sp_sent_command(0, 0x30, 0x00), "switch_pro: lit on no port");
    CHECK(!strcmp(ifc->get_name(dev), "Pro Controller"), "switch_pro: misnamed");
    ifc->deinit(dev);
+
+   /* told its port before its lights went: that port, not its slot */
+   sent_count = 0;
+   stub_hid.is_bluetooth = stub_is_bluetooth;
+   dev = ifc->init(&dummy_connection, 0, &stub_hid);
+   ifc->set_player(dev, 2);
+   ifc->packet_handler(dev, p, (uint16_t)sp_reply(p, &st, 0x03, NULL, 0));
+   ifc->packet_handler(dev, p, (uint16_t)sp_reply(p, &st, 0x48, NULL, 0));
+   CHECK(sp_sent_command(0, 0x30, 0x03), "switch_pro: setup lit its slot, not its port");
+   ifc->deinit(dev);
+   stub_hid.is_bluetooth = NULL;
 
    /* a command not answered goes again, then the next */
    sent_count = 0;

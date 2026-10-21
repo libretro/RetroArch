@@ -33,6 +33,7 @@ typedef struct ds3_instance
    hid_driver_t *driver;
    void *handle;
    int slot;
+   int player;     /* told: from 1, -1 for none; 0 not yet */
    bool led_set;
    uint32_t buttons;
    int16_t analog_state[3][2];
@@ -190,7 +191,9 @@ static int ds3_send_output_report(ds3_instance_t *instance)
 
    /* Initialize the report with default values */
    memcpy(&report, &default_report, sizeof(struct sixaxis_output_report));
-   report.leds_bitmap = ds3_get_leds(instance->slot + 1);
+   report.leds_bitmap = instance->player < 0 ? 0
+      : ds3_get_leds(instance->player ? (unsigned)instance->player
+            : (unsigned)instance->slot + 1);
 
    return instance->driver->set_report(instance->handle, HID_REPORT_OUTPUT, report.report_id, packet, sizeof(report));
 }
@@ -326,6 +329,17 @@ static void ds3_set_rumble(void *device_data,
    /* TODO/FIXME - implement */
 }
 
+/* Its lights go with the next report the pad sends. */
+static void ds3_set_player(void *device_data, unsigned player)
+{
+   ds3_instance_t *device = (ds3_instance_t *)device_data;
+   if (device)
+   {
+      device->player  = player ? (int)player : -1;
+      device->led_set = false;
+   }
+}
+
 static void ds3_get_buttons(void *device_data, input_bits_t *state)
 {
    ds3_instance_t *device = (ds3_instance_t *)device_data;
@@ -387,5 +401,11 @@ pad_connection_interface_t pad_connection_ps3 = {
    ds3_get_axis,
    ds3_get_name,
    ds3_button,
-   false,
+   false, /* multi_pad */
+   0,     /* max_pad */
+   NULL,  /* pad_init */
+   NULL,  /* pad_deinit */
+   NULL,  /* status */
+   NULL,  /* joypad */
+   ds3_set_player
 };

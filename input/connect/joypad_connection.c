@@ -263,6 +263,7 @@ joypad_connection_t *pad_connection_init(unsigned pads)
       joypad_connection_t *conn  = (joypad_connection_t*)&joyconn[i];
       retro_atomic_int_init(&conn->gate, 0);
       retro_atomic_int_init(&conn->claimed, 0);
+      retro_atomic_int_init(&conn->player, 0);
 
       conn->connected            = false;
       conn->iface                = NULL;
@@ -476,7 +477,8 @@ int32_t pad_connection_pad_init_entry(joypad_connection_t *joyconn,
       void *data, hid_driver_t *driver)
 {
    joypad_connection_t *conn = NULL;
-   int pad = pad_connection_find_vacant_pad(joyconn);
+   int pad  = pad_connection_find_vacant_pad(joyconn);
+   int told = -1; /* the player its pad was given; -1 for none to give */
 
    if (pad < 0)
       return -1;
@@ -488,6 +490,10 @@ int32_t pad_connection_pad_init_entry(joypad_connection_t *joyconn,
    {
       conn->iface      = entry->iface;
       conn->connection = conn->iface->init(data, pad, driver);
+      if (conn->connection && conn->iface->set_player)
+         told = retro_atomic_load_acquire_int(&conn->player);
+      if (told > 0)
+         conn->iface->set_player(conn->connection, (unsigned)(told - 1));
    }
    else
    {
@@ -499,6 +505,14 @@ int32_t pad_connection_pad_init_entry(joypad_connection_t *joyconn,
    conn->data          = data;
    conn->connected     = true;
    slot_publish(conn);
+   /* told while it started, before the frontend could reach it */
+   if (     told >= 0
+         && retro_atomic_load_acquire_int(&conn->player) != told)
+   {
+      told = retro_atomic_load_acquire_int(&conn->player);
+      if (told)
+         conn->iface->set_player(conn->connection, (unsigned)(told - 1));
+   }
 
    return pad;
 }
@@ -611,6 +625,22 @@ bool pad_connection_rumble(joypad_connection_t *joyconn,
    }
    pad_connection_release(joyconn);
    return ret;
+}
+
+/* Kept for the slot, and told to its pad when it changes. */
+void pad_connection_set_player(joypad_connection_t *joyconn,
+      unsigned player)
+{
+   int told = (int)player + 1;
+   if (     !joyconn
+         || retro_atomic_load_acquire_int(&joyconn->player) == told)
+      return;
+   retro_atomic_store_release_int(&joyconn->player, told);
+   if (!pad_connection_acquire(joyconn))
+      return;
+   if (joyconn->iface && joyconn->iface->set_player && joyconn->connection)
+      joyconn->iface->set_player(joyconn->connection, player);
+   pad_connection_release(joyconn);
 }
 
 const char* pad_connection_get_name(joypad_connection_t *joyconn,

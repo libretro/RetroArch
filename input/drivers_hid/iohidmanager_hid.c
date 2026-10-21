@@ -273,6 +273,15 @@ static bool iohidmanager_hid_joypad_rumble(void *data, unsigned pad,
    return pad_connection_rumble(&hid->slots[pad], pad, effect, strength);
 }
 
+static void iohidmanager_hid_set_player(void *data, unsigned pad,
+      unsigned player)
+{
+   iohidmanager_hid_t *hid = (iohidmanager_hid_t*)data;
+   if (!hid || pad >= MAX_USERS)
+      return;
+   pad_connection_set_player(&hid->slots[pad], player);
+}
+
 static void iohidmanager_hid_device_send_control(void *data,
       uint8_t *s, size_t len)
 {
@@ -1148,5 +1157,9 @@ hid_driver_t iohidmanager_hid = {
    iohidmanager_get_report,
    NULL, /* set_idle */
    NULL, /* set protocol */
-   NULL  /* read */
+   NULL, /* read */
+   NULL, /* get_bt_host */
+   NULL, /* set_bt_host */
+   NULL, /* is_bluetooth */
+   iohidmanager_hid_set_player
 };

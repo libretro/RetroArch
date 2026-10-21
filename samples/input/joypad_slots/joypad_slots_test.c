@@ -11,6 +11,10 @@
  * the pad once it is deregistered, and for a driver that calls the
  * pad's interface itself under pad_connection_acquire().
  *
+ * The player a slot's lights are to show is kept for the slot: a pad
+ * started there is told it as it starts, and told again only when it
+ * changes.
+ *
  * And two threads looking for a vacant slot at once - a HID driver's
  * thread and the input poll, on the Wii U - must never be given the
  * same one.
@@ -103,11 +107,18 @@ static int16_t fake_axis(void *data, unsigned axis)
 { (void)axis; check_pad(data); return 0; }
 static const char *fake_name(void *data)
 { check_pad(data); return "fake pad"; }
+static retro_atomic_int_t players_told, last_player;
+static void fake_set_player(void *data, unsigned player)
+{
+   check_pad(data);
+   retro_atomic_fetch_add_int(&players_told, 1);
+   retro_atomic_store_release_int(&last_player, (int)player);
+}
 
 static pad_connection_interface_t fake_iface = {
    fake_init, fake_deinit, fake_packet, fake_rumble,
    fake_buttons, fake_axis, fake_name, NULL,
-   false, 0, NULL, NULL, NULL, NULL
+   false, 0, NULL, NULL, NULL, NULL, fake_set_player
 };
 static joypad_connection_entry_t fake_entry = { "fake", 1, 1, &fake_iface };
 
@@ -118,10 +129,13 @@ static retro_atomic_int_t   reading;
 
 static void reader(void *unused)
 {
+   unsigned n = 0;
    (void)unused;
    while (retro_atomic_load_acquire_int(&reading))
    {
       input_bits_t state;
+      /* the frontend telling the pad's port */
+      pad_connection_set_player(&slots[0], 1 + (n++ & 1));
       uint8_t      pkt[4] = { 0 };
       pad_connection_get_buttons(&slots[0], 0, &state);
       pad_connection_get_axis(&slots[0], 0, 0);
@@ -238,6 +252,31 @@ int main(void)
       failures++;
    }
 
+   pad_connection_destroy(slots);
+
+   /* the player told to an empty slot reaches the pad started there;
+    * told again unchanged, it is not passed on */
+   slots = pad_connection_init(4);
+   pad_connection_pad_init_entry(slots, &fake_entry, NULL, NULL);
+   pad_connection_set_player(&slots[1], 3);
+   retro_atomic_store_release_int(&players_told, 0);
+   if (     pad_connection_pad_init_entry(slots, &fake_entry, NULL, NULL) != 1
+         || retro_atomic_load_acquire_int(&players_told) != 1
+         || retro_atomic_load_acquire_int(&last_player) != 3)
+   {
+      printf("FAIL: a pad started in a slot was not told its player\n");
+      failures++;
+   }
+   pad_connection_set_player(&slots[1], 3);
+   pad_connection_set_player(&slots[1], 0);
+   if (     retro_atomic_load_acquire_int(&players_told) != 2
+         || retro_atomic_load_acquire_int(&last_player) != 0)
+   {
+      printf("FAIL: a player was told unchanged, or a change not told\n");
+      failures++;
+   }
+   pad_connection_pad_deinit(&slots[0], 0);
+   pad_connection_pad_deinit(&slots[1], 1);
    pad_connection_destroy(slots);
    alarm(0);
 

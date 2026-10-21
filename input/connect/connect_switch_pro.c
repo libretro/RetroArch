@@ -93,6 +93,8 @@ struct hidpad_switch_pro_data
    uint8_t tries;
    uint8_t number;      /* the output's packet number */
    uint8_t since_sent;  /* reports since output last went */
+   int player;          /* told: from 1, -1 for none; 0 not yet */
+   bool lights_due;     /* told another once its commands are done */
    bool bluetooth;
    bool stack;          /* behind a Bluetooth stack's header */
    bool home;
@@ -117,6 +119,17 @@ static void hidpad_switch_pro_usb_command(
    hidpad_switch_pro_write(device, r, sizeof(r));
 }
 
+/* The player's lights as the console lights them: one for player 1,
+ * four for 4, then patterns to 8; its slot's until it is told. */
+static uint8_t hidpad_switch_pro_lights(struct hidpad_switch_pro_data *device)
+{
+   static const uint8_t pattern[8] = {
+      0x01, 0x03, 0x07, 0x0f, 0x09, 0x05, 0x0d, 0x06 };
+   int player = device->player ? device->player : (int)device->slot + 1;
+   device->lights_due = false;
+   return player > 0 ? pattern[(player - 1) % 8] : 0;
+}
+
 static void hidpad_switch_pro_send_command(
       struct hidpad_switch_pro_data *device)
 {
@@ -138,9 +151,8 @@ static void hidpad_switch_pro_send_command(
          r[11] = 0x01;
          break;
       case SWITCH_PRO_CMD_LIGHTS:
-         /* as the console lights them: one for player 1, four for 4 */
          r[10] = 0x30;
-         r[11] = (uint8_t)((1u << ((device->slot % 4) + 1)) - 1);
+         r[11] = hidpad_switch_pro_lights(device);
          break;
       case SWITCH_PRO_CMD_FACTORY:
          address = SWITCH_PRO_FACTORY_CAL;
@@ -593,6 +605,17 @@ static void hidpad_switch_pro_packet_handler(void *data,
       device->since_sent++;
    hidpad_switch_pro_retry(device);
 
+   /* lights told after the commands, as a command of their own; its
+    * answer is not waited for */
+   if (     device->state == SWITCH_PRO_READY
+         && device->lights_due
+         && device->since_sent >= SWITCH_PRO_RUMBLE_GAP)
+   {
+      device->command = SWITCH_PRO_CMD_LIGHTS;
+      hidpad_switch_pro_send_command(device);
+      return;
+   }
+
    /* rumble rides in the commands until they are done; then on its
     * own, kept up while it is held */
    if (     device->state == SWITCH_PRO_READY
@@ -616,6 +639,17 @@ static void hidpad_switch_pro_set_rumble(void *data,
       /* the strong motor is the left hand's, the weak the right's */
       hidpad_switch_pro_encode(device->rumble + idx * 4, strength);
       device->motors_due  = true;
+   }
+}
+
+static void hidpad_switch_pro_set_player(void *data, unsigned player)
+{
+   struct hidpad_switch_pro_data *device =
+      (struct hidpad_switch_pro_data*)data;
+   if (device)
+   {
+      device->player     = player ? (int)player : -1;
+      device->lights_due = true;
    }
 }
 
@@ -665,5 +699,11 @@ pad_connection_interface_t pad_connection_switch_pro = {
    hidpad_switch_pro_get_axis,
    hidpad_switch_pro_get_name,
    hidpad_switch_pro_button,
-   false
+   false, /* multi_pad */
+   0,     /* max_pad */
+   NULL,  /* pad_init */
+   NULL,  /* pad_deinit */
+   NULL,  /* status */
+   NULL,  /* joypad */
+   hidpad_switch_pro_set_player
 };

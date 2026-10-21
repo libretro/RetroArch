@@ -569,6 +569,14 @@ static bool hidraw_hid_joypad_rumble(void *data, unsigned pad,
    return pad_connection_rumble(&hid->slots[pad], pad, effect, strength);
 }
 
+static void hidraw_hid_set_player(void *data, unsigned pad, unsigned player)
+{
+   hidraw_hid_t *hid = (hidraw_hid_t*)data;
+   if (!hid || pad >= MAX_USERS)
+      return;
+   pad_connection_set_player(&hid->slots[pad], player);
+}
+
 /* The handle is the pad's device. Reports go with their ID first. */
 static void hidraw_hid_send_control(void *handle, uint8_t *s, size_t len)
 {
@@ -677,5 +685,6 @@ hid_driver_t hidraw_hid = {
    NULL, /* read */
    hidraw_hid_get_bt_host,
    hidraw_hid_set_bt_host,
-   hidraw_hid_is_bluetooth
+   hidraw_hid_is_bluetooth,
+   hidraw_hid_set_player
 };

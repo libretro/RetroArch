@@ -143,6 +143,10 @@ typedef struct connect_wii_wiimote_t
 {
    /* User specified ID. */
    int unid;
+   /* the player its lights show: from 1, -1 for none, 0 not yet told -
+    * then its slot's */
+   int player;
+   bool leds_due;
 
    struct pad_connection* connection;
    hid_driver_t *driver;
@@ -244,6 +248,15 @@ static void wiimote_set_leds(struct connect_wii_wiimote_t* wm, int leds)
    buf      = wm->leds;
 
    wiimote_send(wm, WM_CMD_LED, &buf, 1);
+}
+
+/* One light for players 1 to 4, as the console lights them. */
+static void wiimote_player_leds(struct connect_wii_wiimote_t* wm)
+{
+   int player   = wm->player ? wm->player : wm->unid + 1;
+   wm->leds_due = false;
+   wiimote_set_leds(wm, player > 0
+         ? WIIMOTE_LED_1 << ((player - 1) % 4) : WIIMOTE_LED_NONE);
 }
 
 /* Find what buttons are pressed. */
@@ -587,25 +600,21 @@ static int wiimote_handshake(struct connect_wii_wiimote_t* wm,
             WIIMOTE_ENABLE_STATE(wm, WIIMOTE_STATE_HANDSHAKE_COMPLETE);
             wm->handshake_state = 1;
 
-            switch (wm->unid)
-            {
-               case 0:
-                  wiimote_set_leds(wm, WIIMOTE_LED_1);
-                  break;
-               case 1:
-                  wiimote_set_leds(wm, WIIMOTE_LED_2);
-                  break;
-               case 2:
-                  wiimote_set_leds(wm, WIIMOTE_LED_3);
-                  break;
-               case 3:
-                  wiimote_set_leds(wm, WIIMOTE_LED_4);
-                  break;
-            }
+            wiimote_player_leds(wm);
             return 1;
          default:
             break;
       }
+   }
+}
+
+static void hidpad_wii_set_player(void *data, unsigned player)
+{
+   struct connect_wii_wiimote_t* device = (struct connect_wii_wiimote_t*)data;
+   if (device)
+   {
+      device->player   = player ? (int)player : -1;
+      device->leds_due = true;
    }
 }
 
@@ -694,6 +703,10 @@ static void hidpad_wii_packet_handler(void *data,
    if (!device)
       return;
 
+   if (     device->leds_due
+         && WIIMOTE_IS_SET(device, WIIMOTE_STATE_HANDSHAKE_COMPLETE))
+      wiimote_player_leds(device);
+
    switch (packet[0])
    {
       case WM_RPT_BTN:
@@ -740,5 +753,11 @@ pad_connection_interface_t pad_connection_wii = {
    hidpad_wii_get_axis,
    NULL, /* get_name */
    NULL, /* button */
-   false,
+   false, /* multi_pad */
+   0,     /* max_pad */
+   NULL,  /* pad_init */
+   NULL,  /* pad_deinit */
+   NULL,  /* status */
+   NULL,  /* joypad */
+   hidpad_wii_set_player
 };

@@ -112,6 +112,7 @@ void pad_connection_get_buttons(joypad_connection_t *c, unsigned idx, input_bits
 int16_t pad_connection_get_axis(joypad_connection_t *c, unsigned idx, unsigned i) { return 0; }
 bool pad_connection_rumble(joypad_connection_t *c, unsigned pad,
       enum retro_rumble_effect e, uint16_t s) { return false; }
+void pad_connection_set_player(joypad_connection_t *c, unsigned player) { }
 bool input_autoconfigure_connect(const char *a, const char *b, const char *c,
       const char *d, unsigned port, unsigned vid, unsigned pid) { return true; }
 bool input_autoconfigure_disconnect(unsigned port, const char *name)

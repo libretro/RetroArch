@@ -489,6 +489,14 @@ static bool gekko_hid_joypad_rumble(void *data, unsigned pad,
    return pad_connection_rumble(&hid->connections[pad], pad, effect, strength);
 }
 
+static void gekko_hid_set_player(void *data, unsigned pad, unsigned player)
+{
+   gekko_hid_t *hid = (gekko_hid_t*)data;
+   if (!hid || pad >= MAX_USERS)
+      return;
+   pad_connection_set_player(&hid->connections[pad], player);
+}
+
 static void gekko_hid_poll(void *data)
 {
    (void)data;
@@ -511,5 +519,9 @@ hid_driver_t gekko_hid = {
    gekko_hid_get_report,
    gekko_hid_set_idle,
    gekko_hid_set_protocol,
-   gekko_hid_read
+   gekko_hid_read,
+   NULL, /* get_bt_host */
+   NULL, /* set_bt_host */
+   NULL, /* is_bluetooth */
+   gekko_hid_set_player
 };

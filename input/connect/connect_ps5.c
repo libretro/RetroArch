@@ -62,6 +62,7 @@ struct hidpad_ps5_data
    uint8_t triggers[2];
    uint8_t motors[2];   /* strong, weak: what the core asked last */
    uint8_t link;
+   int player;          /* told: from 1, -1 for none; 0 not yet */
    bool edge;
    bool bluetooth;      /* the driver says so: its reports' lengths do not */
    bool vibration_v2;   /* the newer way of driving the motors */
@@ -162,7 +163,8 @@ static void hidpad_ps5_send(struct hidpad_ps5_data *device)
    size_t len = sony_pad_output_report(r, sizeof(r), SONY_PAD_DUALSENSE,
          device->link == PS5_LINK_BT, device->vibration_v2,
          device->motors[0], device->motors[1],
-         device->lights_sent ? 0 : (int)(device->slot % 4) + 1);
+         device->lights_sent ? 0 : device->player ? device->player
+         : (int)(device->slot % 4) + 1);
 
    if (len && device->driver && device->driver->send_control)
       device->driver->send_control(device->connection, r, len);
@@ -238,6 +240,16 @@ static void hidpad_ps5_set_rumble(void *data,
    }
 }
 
+static void hidpad_ps5_set_player(void *data, unsigned player)
+{
+   struct hidpad_ps5_data *device = (struct hidpad_ps5_data*)data;
+   if (device)
+   {
+      device->player      = player ? (int)player : -1;
+      device->lights_sent = false;
+   }
+}
+
 static void hidpad_ps5_get_buttons(void *data, input_bits_t *state)
 {
    struct hidpad_ps5_data *device = (struct hidpad_ps5_data*)data;
@@ -293,7 +305,13 @@ pad_connection_interface_t pad_connection_ps5 = {
    hidpad_ps5_get_axis,
    hidpad_ps5_get_name,
    hidpad_ps5_button,
-   false
+   false, /* multi_pad */
+   0,     /* max_pad */
+   NULL,  /* pad_init */
+   NULL,  /* pad_deinit */
+   NULL,  /* status */
+   NULL,  /* joypad */
+   hidpad_ps5_set_player
 };
 
 pad_connection_interface_t pad_connection_ps5_edge = {
@@ -305,5 +323,11 @@ pad_connection_interface_t pad_connection_ps5_edge = {
    hidpad_ps5_get_axis,
    hidpad_ps5_get_name,
    hidpad_ps5_button,
-   false
+   false, /* multi_pad */
+   0,     /* max_pad */
+   NULL,  /* pad_init */
+   NULL,  /* pad_deinit */
+   NULL,  /* status */
+   NULL,  /* joypad */
+   hidpad_ps5_set_player
 };

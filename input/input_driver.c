@@ -8583,6 +8583,14 @@ static void input_sensor_update_rest_capture(settings_t *settings)
  * before. */
 static input_registry_t input_registry;
 
+/* Which port reads each pad, as the joypad driver was last told: it is
+ * told again only when the ports change, or it or a pad beside it
+ * starts. Looked at every 32 polls. */
+static unsigned input_player_lights_tick;
+static unsigned input_player_lights_index[MAX_USERS];
+static unsigned input_player_lights_users;
+static bool     input_player_lights_told;
+
 /* The device numbers, shared with the sources beside the joypad
  * driver (input_device_pool.h). */
 static input_device_pool_t input_device_pool;
@@ -8785,6 +8793,18 @@ static bool input_beside_set_bt_host(unsigned pad, const uint8_t *addr)
       && input_beside.real->set_bt_host(pad, addr);
 }
 
+static void input_beside_set_player(unsigned pad, unsigned player)
+{
+   unsigned slot;
+   if (input_beside_slot(pad, &slot))
+   {
+      if (input_beside.drv->set_player)
+         input_beside.drv->set_player(input_beside.data, slot, player);
+   }
+   else if (input_beside.real->set_player)
+      input_beside.real->set_player(pad, player);
+}
+
 /* Standing in for the driver, it goes when the driver goes. */
 static void input_beside_destroy(void)
 {
@@ -8820,6 +8840,7 @@ static void input_beside_route(input_driver_state_t *st)
       input_beside_joypad.survives_video   = real->survives_video;
       input_beside_joypad.get_bt_host      = input_beside_get_bt_host;
       input_beside_joypad.set_bt_host      = input_beside_set_bt_host;
+      input_beside_joypad.set_player       = input_beside_set_player;
       input_beside.real                    = real;
       st->primary_joypad                   = &input_beside_joypad;
    }
@@ -8892,6 +8913,8 @@ int input_driver_hid_claim(const void *hid_data, unsigned slot,
    if ((number = input_device_pool_claim(input_driver_device_pool(),
                INPUT_BESIDE_SOURCE, slot)) < 0)
       return -1;
+   /* its lights are told by the number it now has */
+   input_player_lights_told = false;
    pad         = &input_beside.pads[slot];
    strlcpy(pad->name, name ? name : "", sizeof(pad->name));
    pad->vid    = vid;
@@ -8988,6 +9011,8 @@ void input_driver_registry_restart(void)
 
    /* the joypad driver reports its pads afresh */
    input_driver_device_pool()->driver = 0;
+   input_player_lights_tick           = 0;
+   input_player_lights_told           = false;
 
    /* the lowest port on a pad: the ports sharing it follow that one */
    memset(port_of_slot, INPUT_REGISTRY_NO_PORT, sizeof(port_of_slot));
@@ -15261,6 +15286,36 @@ static INLINE bool input_cmd_forbidden(void)
 #endif
 }
 
+/* Each pad's lights show the lowest port that reads it, none where no
+ * port does. Every pad number is told, a slot with no pad too, so one
+ * plugged in there is lit as it starts. */
+static void input_player_lights(const input_device_driver_t *joypad,
+      const unsigned *index, unsigned max_users)
+{
+   uint8_t player[MAX_USERS];
+   unsigned u;
+
+   if (input_player_lights_tick-- || !joypad || !joypad->set_player)
+      return;
+   input_player_lights_tick = 31;
+   if (     input_player_lights_told
+         && input_player_lights_users == max_users
+         && !memcmp(input_player_lights_index, index,
+            sizeof(input_player_lights_index)))
+      return;
+   memcpy(input_player_lights_index, index,
+         sizeof(input_player_lights_index));
+   input_player_lights_users = max_users;
+   input_player_lights_told  = true;
+
+   memset(player, 0, sizeof(player));
+   for (u = max_users; u-- > 0; )
+      if (index[u] < MAX_USERS)
+         player[index[u]] = (uint8_t)(u + 1);
+   for (u = 0; u < MAX_USERS; u++)
+      joypad->set_player(u, player[u]);
+}
+
 void input_driver_poll(void)
 {
    size_t i, j;
@@ -15300,6 +15355,8 @@ void input_driver_poll(void)
 
    if (joypad && joypad->poll)
       joypad->poll();
+   input_player_lights(joypad, settings->uints.input_joypad_index,
+         max_users);
    /* a driver that keeps its mice publishes them in its poll; one that
     * does not is asked for them, as before */
    input_pointer_frames_clear();

@@ -63,6 +63,8 @@ struct hid_driver
     * cannot tell it by their length: Windows gives every report at the
     * longest one's length. NULL where the lengths tell. */
    bool (*is_bluetooth)(void *handle);
+   /* as input_device_driver_t's: the player @pad's lights are to show */
+   void (*set_player)(void *handle, unsigned pad, unsigned player);
 };
 
 #endif /* HID_DRIVER_H__ */

@@ -805,7 +805,7 @@ static void test_switch2_wake(void)
    CHECK(w2_reads == 10 && w2_aborts == 0, "switch 2: an answer not read");
    CHECK(w2_cmd[0][0] == 0x07 && w2_cmd[9][0] == 0x03 && w2_cmd[9][3] == 0x0d,
          "switch 2: the wake is not in its order, reports started last");
-   winusb_switch2_lights(dev);
+   winusb_switch2_lights(dev, 2);
    CHECK(w2_writes == 11 && w2_len[10] == 16 && w2_cmd[10][0] == 0x09
          && w2_cmd[10][3] == 0x07 && w2_cmd[10][8] == 0x03,
          "switch 2: player 2's lights not set");

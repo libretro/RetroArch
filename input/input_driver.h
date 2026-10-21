@@ -633,6 +633,12 @@ struct rarch_joypad_driver
     * input driver across a video driver restart: it holds nothing of
     * the video driver's. NULL means no, and both are restarted. */
    bool (*survives_video)(void);
+
+   /* The player pad @pad's lights are to show, from 1; 0 for none, no
+    * port reading it. Told by the frontend now and then, whether or not
+    * it changed; the driver acts on a change. NULL where the driver
+    * lights nothing, or lights by its own lights. */
+   void (*set_player)(unsigned pad, unsigned player);
 };
 
 /**

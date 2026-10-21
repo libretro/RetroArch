@@ -81,6 +81,10 @@ struct joypad_connection
      * and the input poll - never get the same one; given back by
      * pad_connection_release_slot() when the pad is gone. */
     retro_atomic_int_t claimed;
+    /* The port the frontend reads this slot's pad on, for its lights:
+     * 0 not yet said, else the player plus one - player 0 none. Kept
+     * across pads, so one plugged in is lit at once. */
+    retro_atomic_int_t player;
     bool connected;
 };
 
@@ -110,6 +114,11 @@ typedef struct pad_connection_interface
    /* pad_index is a number from 0 to max_pad-1 */
    int8_t      (*status)(void *data, int pad_index); /* returns a PAD_CONNECT_* state */
    joypad_connection_t* (*joypad)(void *device_data, int pad_index);
+   /* The player the pad's lights are to show, from 1; 0 for none - no
+    * port reads it. Told when it changes, and once just after init; a
+    * pad never told shows its slot, as before. From the frontend's
+    * thread: what is sent goes from the packet handler. May be NULL. */
+   void        (*set_player)(void *device, unsigned player);
 } pad_connection_interface_t;
 
 typedef struct joypad_connection_entry {
@@ -177,6 +186,9 @@ void pad_connection_release(joypad_connection_t *joyconn);
 
 bool pad_connection_rumble(joypad_connection_t *s,
    unsigned pad, enum retro_rumble_effect effect, uint16_t strength);
+
+void pad_connection_set_player(joypad_connection_t *joyconn,
+      unsigned player);
 
 const char* pad_connection_get_name(joypad_connection_t *joyconn,
    unsigned idx);

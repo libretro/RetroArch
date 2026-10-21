@@ -130,6 +130,12 @@ static bool hid_joypad_set_bt_host(unsigned pad, const uint8_t *addr)
       && generic_hid->set_bt_host((void*)hid_driver_get_data(), pad, addr);
 }
 
+static void hid_joypad_set_player(unsigned pad, unsigned player)
+{
+   if (generic_hid && generic_hid->set_player)
+      generic_hid->set_player((void*)hid_driver_get_data(), pad, player);
+}
+
 /* Kept across a video driver restart: a HID driver's pads are read on
  * its own threads, or at the poll, and nothing of it is the video
  * driver's. Stopping it would only close every pad and open it again. */
@@ -155,5 +161,6 @@ input_device_driver_t hid_joypad = {
    "hid",
    hid_joypad_get_bt_host,
    hid_joypad_set_bt_host,
-   hid_joypad_survives_video
+   hid_joypad_survives_video,
+   hid_joypad_set_player
 };

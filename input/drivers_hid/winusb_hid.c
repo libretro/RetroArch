@@ -227,6 +227,10 @@ typedef struct winusb_device
    void *bulk_usb;
    UCHAR bulk_out;
    UCHAR bulk_in;
+   /* its player, as pad_connection's; and the one its lights show,
+    * the reader's: -1 before the first */
+   retro_atomic_int_t player;
+   int lit;
    HANDLE ctrl_event;
    HANDLE quit_event;
    const char *tag;     /* for the log */
@@ -464,16 +468,18 @@ static int32_t winusb_switch2_transfer(winusb_device_t *dev, UCHAR pipe,
    return (int32_t)got;
 }
 
-/* The player's lights, as the console lights them: one for player 1,
- * four for 4. Taken once the pad is reporting, not while it wakes. */
-static void winusb_switch2_lights(winusb_device_t *dev)
+/* The player's lights, as the console lights them, @player from 1; 0
+ * puts them out. Taken once the pad is reporting, not while it wakes. */
+static void winusb_switch2_lights(winusb_device_t *dev, unsigned player)
 {
+   static const uint8_t pattern[8] = {
+      0x01, 0x03, 0x07, 0x0f, 0x09, 0x05, 0x0d, 0x06 };
    uint8_t lights[16] = {
       0x09, 0x91, 0x00, 0x07, 0x00, 0x08, 0x00, 0x00 };
    uint8_t reply[64];
 
    memset(lights + 8, 0, 8);
-   lights[8] = (uint8_t)((1u << ((dev->slot % 4) + 1)) - 1);
+   lights[8] = player ? pattern[(player - 1) % 8] : 0;
    if (     winusb_switch2_transfer(dev, dev->bulk_out, lights,
                sizeof(lights), 1000) != (int32_t)sizeof(lights))
       RARCH_WARN("[WinUSB] \"%s\": its lights were not taken.\n",
@@ -606,8 +612,17 @@ static void winusb_hid_reader(void *data)
          if (dev->last && now - dev->last > dev->gap_max)
             dev->gap_max = now - dev->last;
          dev->last = now;
-         if (dev->bulk_usb && dev->reports == 1)
-            winusb_switch2_lights(dev);
+         if (dev->bulk_usb)
+         {
+            /* the port it is read on, or its slot until that is said */
+            int player = retro_atomic_load_acquire_int(&dev->player);
+            if (player != dev->lit)
+            {
+               dev->lit = player;
+               winusb_switch2_lights(dev, player
+                     ? (unsigned)(player - 1) : (unsigned)dev->slot + 1);
+            }
+         }
       }
    }
    CloseHandle(ov.hEvent);
@@ -1055,6 +1070,7 @@ static void winusb_hid_open(winusb_hid_t *hid, const char *path,
    retro_atomic_int_init(&dev->middle, 2);
    retro_atomic_int_init(&dev->quit, 0);
    retro_atomic_int_init(&dev->gone, 0);
+   retro_atomic_int_init(&dev->player, 0);
    dev->generic   = hidclass && !entry;
    strlcpy(dev->instance, instance, sizeof(dev->instance));
    strlcpy(dev->name, entry ? entry->name : "HID Gamepad", sizeof(dev->name));
@@ -1149,6 +1165,9 @@ static void winusb_hid_open(winusb_hid_t *hid, const char *path,
       winusb_hid_close(dev);
       return;
    }
+   retro_atomic_int_init(&dev->player, retro_atomic_load_acquire_int(
+            &hid->slots[dev->slot].player));
+   dev->lit = -1;
    if (!(dev->reader = sthread_create(winusb_hid_reader, dev)))
    {
       pad_connection_pad_deinit(&hid->slots[dev->slot], dev->slot);
@@ -1719,6 +1738,21 @@ static bool winusb_hid_joypad_rumble(void *data, unsigned pad,
    return pad_connection_rumble(&hid->slots[pad], pad, effect, strength);
 }
 
+static void winusb_hid_set_player(void *data, unsigned pad, unsigned player)
+{
+   winusb_hid_t *hid = (winusb_hid_t*)data;
+   if (!hid || pad >= MAX_USERS)
+      return;
+   /* a Switch 2 Pro Controller's lights are its reader's to send */
+   {
+      winusb_device_t *dev;
+      for (dev = hid->devices; dev; dev = dev->next)
+         if (dev->slot == (int32_t)pad && dev->bulk_usb)
+            retro_atomic_store_release_int(&dev->player, (int)player + 1);
+   }
+   pad_connection_set_player(&hid->slots[pad], player);
+}
+
 /* HID class requests on the control pipe: SET_REPORT and GET_REPORT,
  * the report's type and ID in the value. The report goes with its ID
  * first. */
@@ -1838,5 +1872,6 @@ hid_driver_t winusb_hid = {
    NULL, /* read */
    winusb_hid_get_bt_host,
    winusb_hid_set_bt_host,
-   winusb_hid_is_bluetooth
+   winusb_hid_is_bluetooth,
+   winusb_hid_set_player
 };

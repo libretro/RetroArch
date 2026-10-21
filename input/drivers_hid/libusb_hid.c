@@ -727,6 +727,14 @@ static bool libusb_hid_joypad_rumble(void *data, unsigned pad,
    return pad_connection_rumble(&hid->slots[pad], pad, effect, strength);
 }
 
+static void libusb_hid_set_player(void *data, unsigned pad, unsigned player)
+{
+   libusb_hid_t *hid = (libusb_hid_t*)data;
+   if (!hid || pad >= MAX_USERS)
+      return;
+   pad_connection_set_player(&hid->slots[pad], player);
+}
+
 static int16_t libusb_hid_joypad_axis(void *data,
       unsigned port, uint32_t joyaxis)
 {
@@ -1001,4 +1009,13 @@ hid_driver_t libusb_hid = {
    libusb_hid_joypad_name,
    "libusb",
    libusb_hid_device_send_control,
+   NULL, /* set_report */
+   NULL, /* get_report */
+   NULL, /* set_idle */
+   NULL, /* set_protocol */
+   NULL, /* read */
+   NULL, /* get_bt_host */
+   NULL, /* set_bt_host */
+   NULL, /* is_bluetooth */
+   libusb_hid_set_player
 };
