@@ -9,7 +9,11 @@ ifneq ($(SANITIZER),)
 CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
-all: test$(EXE)
+all: test$(EXE) session_test$(EXE) abi-check
+session_test$(EXE): session_test.c ../../../gfx/common/vaapi_hevc_session.c ../../../gfx/common/vaapi_hevc_session.h
+	$(CC) $(CFLAGS) session_test.c -o $@ $(LDFLAGS)
+abi-check: abi.c ../../../gfx/common/vaapi_hevc_session.h
+	$(CC) $(CFLAGS) -fsyntax-only abi.c
 test$(EXE): test.c ../../../gfx/common/vaapi_hevc.h \
  ../../../libretro-common/include/formats/rh265.h \
  ../../../libretro-common/formats/h265/rh265.c \
@@ -17,6 +21,7 @@ test$(EXE): test.c ../../../gfx/common/vaapi_hevc.h \
 	$(CC) $(CFLAGS) -Wno-unused-parameter test.c ../../../libretro-common/formats/h265/rh265.c -o $@ $(LDFLAGS) -lm
 check: all
 	$(RUNNER) ./test$(EXE)
+	$(RUNNER) ./session_test$(EXE)
 clean:
-	rm -f test test.exe
-.PHONY: all check clean
+	rm -f test test.exe session_test session_test.exe
+.PHONY: all check clean abi-check

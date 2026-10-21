@@ -30,7 +30,7 @@ jobs:
       - uses: actions/checkout@v6
       - name: Install VA-API SDK headers
         run: sudo apt-get update -qq && sudo apt-get install -y -qq libva-dev
-      - name: Strict C89 native HEVC parameter ABI and parsed reference sets
+      - name: Strict C89 HEVC buffer ABI and cold session ownership
         run: make -C samples/gfx/vaapi_hevc clean check CC=${{ matrix.cc }} SANITIZER=address,undefined
 
   metal-frame-lease:
