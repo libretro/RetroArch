@@ -697,6 +697,7 @@ static const video_driver_t          *dplane_inner;
 static video_driver_t                 dplane_driver;
 static const video_poke_interface_t  *dplane_inner_poke;
 static video_poke_interface_t         dplane_thread_poke;
+static retro_time_t dplane_grid_base, dplane_grid_period;
 
 static bool dplane_frame(void *data, const void *frame, unsigned dims,
       uint64_t frame_count, unsigned pitch, const char *msg,
@@ -710,6 +711,9 @@ static bool dplane_frame(void *data, const void *frame, unsigned dims,
             (size_t)video_info->driver_pacing_interval_us);
       retro_atomic_fetch_add_size(&dplane_seen_frames, 1);
    }
+   /* The synthetic display must not inherit a real backend's swap clock. */
+   if (dplane_grid_period)
+      return true;
    return dplane_inner->frame(data, frame, dims, frame_count, pitch, msg,
          video_info);
 }
@@ -717,8 +721,6 @@ static bool dplane_frame(void *data, const void *frame, unsigned dims,
 /* A display that reports its vblank, on a grid from dplane_grid_base,
  * while dplane_grid_period is set; none otherwise, whatever the driver
  * underneath can say, so the hold's grid is the clock's. */
-static retro_time_t dplane_grid_base, dplane_grid_period;
-
 static retro_time_t dplane_last_vblank(void *data)
 {
    retro_time_t now = cpu_features_get_time_usec();
