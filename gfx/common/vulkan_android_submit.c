@@ -88,6 +88,7 @@ int vulkan_android_submission_present(vulkan_android_submission_t *e,
        || !e->ops.dispatch || !e->ops.submit || e->family>=VK_QUEUE_FAMILY_FOREIGN_EXT)return -1;
  status=vulkan_android_submission_poll(e);if(status<=0)return status;
  if(!android_frame_claim(frame->owner,frame->done,frame->done_value,frame->image,&source))return -1;
+ if(!android_frame_resolve_color(&source,&frame->color))goto refuse;
  if(source.image.buffer!=e->source.image.buffer || source.image.buffer_width!=e->source.image.buffer_width
        || source.image.buffer_height!=e->source.image.buffer_height
        || source.image.left!=e->source.image.left || source.image.top!=e->source.image.top

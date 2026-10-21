@@ -83,6 +83,7 @@ static PFN_vkVoidFunction renderer_proc(VkDevice device,const char *name)
 #define vkCreateCommandPool renderer_pool
 #define vkDestroyCommandPool renderer_pool_destroy
 #define vkGetDeviceProcAddr renderer_proc
+#include "../../../gfx/common/video_import_color.h"
 #include "../../../gfx/drivers/vulkan_android_video.h"
 int main(void)
 {
@@ -103,15 +104,28 @@ int main(void)
  image_ops.delete_image=del_image;image_ops.delete_reader=del_reader;
  queue=android_image_queue_new(&native,1,&image_ops);pool=android_frame_pool_new(1);assert(queue && pool);
  memset(&source,0,sizeof(source));source.format.serial=1;source.pixfmt=IMAGE_PIXFMT_NV12;
- source.color.primaries=source.color.matrix=source.color.range=1;source.color.transfer=13;
+ source.color.primaries=source.color.matrix=9;source.color.range=1;source.color.transfer=16;
  assert(android_image_queue_acquire(queue,&source.image)==1);assert(!android_frame_export(pool,&source,&frame));
  memset(&input,0,sizeof(input));input.image=frame.image;input.owner=frame.owner;input.done=frame.done;input.done_value=frame.done_value;
  input.abandon=frame.abandon;input.pixfmt=frame.pixfmt;input.color=frame.color;
  input.pixfmt=IMAGE_PIXFMT_P010;
  assert(vulkan_android_renderer_import(&vk,texture,&input)==VIDEO_TEXTURE_UPDATE_REFUSED && !pool_live);
  input.pixfmt=frame.pixfmt;
+ input.color.range=2;
+ assert(vulkan_android_renderer_import(&vk,texture,&input)==VIDEO_TEXTURE_UPDATE_REFUSED && !pool_live);
+ input.color=frame.color;input.color.transfer=18;
+ assert(vulkan_android_renderer_import(&vk,texture,&input)==VIDEO_TEXTURE_UPDATE_REFUSED && !pool_live);
+ input.color=frame.color;input.color.max_cll=4000;input.color.max_fall=600;
+ input.color.mastering.present=VIDEO_MASTERING_DISPLAY_COMPLETE;
+ input.color.mastering.luminance_max=20000000;
  assert(vulkan_android_renderer_import(&vk,texture,&input)==VIDEO_TEXTURE_UPDATE_DONE);
  assert(lock_calls==1 && !locked && pool_live==1 && entry_live);
+ {
+  float expected[4],coefficients[6],actual[4];unsigned yuv=0;
+  assert(video_import_color(&yuv,&input.color,coefficients,expected));
+  memcpy(actual,pushed_hdr,sizeof(actual));
+  assert(!memcmp(actual,expected,sizeof(actual)));
+ }
  assert(android_image_queue_poll(queue)==1);
  assert(android_image_queue_acquire(queue,&source.image)==1);assert(!android_frame_export(pool,&source,&frame));
  input.image=frame.image;input.done=frame.done;input.done_value=frame.done_value;

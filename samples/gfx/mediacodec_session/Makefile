@@ -8,7 +8,10 @@ ifneq ($(SANITIZER),)
 CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
-all: test hevc_backend_test hevc_decoder_test vulkan_image_test vulkan_sync_test vulkan_pipeline_test android_frame_test frame_export_test vulkan_submit_test vulkan_entry_test vulkan_cache_test vulkan_renderer_test vulkan_device_test
+all: color_refine_test test hevc_backend_test hevc_decoder_test vulkan_image_test vulkan_sync_test vulkan_pipeline_test android_frame_test frame_export_test vulkan_submit_test vulkan_entry_test vulkan_cache_test vulkan_renderer_test vulkan_device_test
+color_refine_test: color_refine_test.c ../../../gfx/common/android_frame.h
+	$(CC) $(CFLAGS) color_refine_test.c -o $@ $(LDFLAGS)
+
 test: test.c mediacodec_session_test_types.h ../../../gfx/common/mediacodec_session.c
 	$(CC) $(CFLAGS) test.c ../../../gfx/common/mediacodec_session.c -o $@ $(LDFLAGS)
 HEVC_SOURCES := ../../../gfx/common/mediacodec_hevc_decoder.c \
@@ -49,6 +52,7 @@ vulkan_renderer_test: vulkan_renderer_test.c ../../../gfx/drivers/vulkan_android
 vulkan_device_test: vulkan_device_test.c ../../../gfx/common/vulkan_android_device.c ../../../gfx/common/vulkan_android_device.h
 	$(CC) $(CFLAGS) -I../../../gfx/include vulkan_device_test.c ../../../gfx/common/vulkan_android_device.c -o $@ $(LDFLAGS)
 check: all
+	./color_refine_test
 	./test
 	./hevc_backend_test
 	./hevc_decoder_test
@@ -64,7 +68,7 @@ check: all
 	./vulkan_device_test
 	CC="$(CC)" python3 root_optional_test.py
 clean:
-	rm -f test hevc_backend_test hevc_decoder_test vulkan_image_test vulkan_sync_test vulkan_pipeline_test vulkan_rgb_gpu_test android_frame_test frame_export_test vulkan_submit_test vulkan_entry_test vulkan_cache_test vulkan_renderer_test vulkan_device_test
+	rm -f color_refine_test test hevc_backend_test hevc_decoder_test vulkan_image_test vulkan_sync_test vulkan_pipeline_test vulkan_rgb_gpu_test android_frame_test frame_export_test vulkan_submit_test vulkan_entry_test vulkan_cache_test vulkan_renderer_test vulkan_device_test
 .PHONY: all check clean gpu-check
 
 hevc_backend_test: hevc_backend_test.c ../../../gfx/common/mediacodec_hevc_backend.c ../../../gfx/common/mediacodec_hevc_backend.h

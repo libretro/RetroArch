@@ -8,6 +8,7 @@
 #define H(t,n) ((t)(uintptr_t)(n))
 static int native,deleted,submits,barriers,export_fail,end_fail,submit_fail,done_fd=-1;
 static VkResult fence_status=VK_SUCCESS;
+static float pushed_hdr[4];
 static int acquire(void *r,void **im,int *fd){assert(r==&native);*im=&native;*fd=-1;return 1;}
 static bool describe(void *im,android_image_view_t *v)
 {assert(im==&native);v->buffer=&native;v->width=v->right=v->buffer_width=64;v->height=v->bottom=v->buffer_height=32;return true;}
@@ -27,7 +28,7 @@ static VKAPI_ATTR void VKAPI_CALL bind_sets(VkCommandBuffer c,VkPipelineBindPoin
       const VkDescriptorSet *s,uint32_t nd,const uint32_t *offset)
 {assert(c && b==VK_PIPELINE_BIND_POINT_COMPUTE && l && !first && n==1 && s && !nd && !offset);}
 static VKAPI_ATTR void VKAPI_CALL push(VkCommandBuffer c,VkPipelineLayout l,VkShaderStageFlags s,uint32_t offset,uint32_t bytes,const void *data)
-{assert(c && l && s==VK_SHADER_STAGE_COMPUTE_BIT && !offset && bytes==80 && ((const uint32_t*)data)[0]==64);}
+{assert(c && l && s==VK_SHADER_STAGE_COMPUTE_BIT && !offset && bytes==80 && ((const uint32_t*)data)[0]==64);memcpy(pushed_hdr,(const unsigned char*)data+64,sizeof(pushed_hdr));}
 static VKAPI_ATTR void VKAPI_CALL dispatch(VkCommandBuffer c,uint32_t x,uint32_t y,uint32_t z){assert(c && x==8 && y==4 && z==1);}
 static VKAPI_ATTR void VKAPI_CALL update(VkDevice d,uint32_t n,const VkWriteDescriptorSet *w,uint32_t nc,const VkCopyDescriptorSet *copy)
 {assert(d && n==2 && w && !nc && !copy);}

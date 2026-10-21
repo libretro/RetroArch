@@ -103,13 +103,13 @@ static enum video_texture_update vulkan_android_renderer_import(vk_t *vk,
    int result;
    memset(&frame,0,sizeof(frame));
    frame.image=input->image;frame.done=input->done;frame.done_value=input->done_value;
-   frame.owner=input->owner;frame.abandon=input->abandon;
+   frame.owner=input->owner;frame.abandon=input->abandon;frame.color=input->color;
    if(!android_frame_claim(frame.owner,frame.done,frame.done_value,frame.image,&source))
       return VIDEO_TEXTURE_UPDATE_REFUSED;
    matches=source.pixfmt==input->pixfmt
       && source.image.right-source.image.left==VIDEO_SCALE_W(texture->dims)
       && source.image.bottom-source.image.top==VIDEO_SCALE_H(texture->dims)
-      && !memcmp(&source.color,&input->color,sizeof(source.color));
+      && android_frame_resolve_color(&source,&input->color);
    if(!android_frame_unclaim(frame.owner,frame.done,frame.done_value) || !matches)
       return VIDEO_TEXTURE_UPDATE_REFUSED;
    if(!texture->android_cache)

@@ -28,8 +28,10 @@ static bool vulkan_android_cache_matches(const vulkan_android_submission_t *e,co
 }
 static bool vulkan_android_cache_claim(const video_hw_frame_t *frame,android_frame_view_t *view)
 {
- return frame && android_frame_callback(frame->abandon)
-       && android_frame_claim(frame->owner,frame->done,frame->done_value,frame->image,view);
+ if(!frame || !android_frame_callback(frame->abandon)
+       || !android_frame_claim(frame->owner,frame->done,frame->done_value,frame->image,view))return false;
+ if(android_frame_resolve_color(view,&frame->color))return true;
+ android_frame_unclaim(frame->owner,frame->done,frame->done_value);return false;
 }
 int vulkan_android_cache_prepare(vulkan_android_cache_t *cache,const video_hw_frame_t *frame)
 {
