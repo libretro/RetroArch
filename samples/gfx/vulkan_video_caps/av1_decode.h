@@ -77,9 +77,11 @@ static int av1_decode_fixture(void)
             else if (i == 2)
                session->sequence.bit_depth = 12;
             else if (i == 3)
-               session->sequence.transfer_characteristics = 16;
+               { session->sequence.transfer_characteristics = 16;
+                 session->sequence.matrix_coefficients = 10; }
             else if (i == 4)
-               session->sequence.matrix_coefficients = 9;
+               { session->sequence.transfer_characteristics = 18;
+                 session->sequence.color_primaries = 12; }
             if (rav1_hw_backend_open(&session->sequence, i == 5 ? 33 : 9,
                                      &refused, &factory))
             {

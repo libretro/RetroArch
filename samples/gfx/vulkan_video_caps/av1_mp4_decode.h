@@ -97,6 +97,7 @@ static int av1_mp4_decode_fixture(void)
          continue;
       }
       if (!rmp4_video_stream_hw_frame(stream, &frame) ||
+          !av1_hdr_frame_matches(path, &frame) ||
           !oracle_read_frame(reader, frame, &fixture, &count))
          goto done;
    }

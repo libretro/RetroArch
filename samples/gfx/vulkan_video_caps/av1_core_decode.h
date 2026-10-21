@@ -2,6 +2,22 @@
  * GPL-3.0-or-later */
 #include "../../../cores/libretro-media/media_core.c"
 
+/* Expectations come from the independent fixture-generation command. */
+static int av1_hdr_frame_matches(const char *path, video_hw_frame_t *frame)
+{
+   unsigned transfer = strstr(path, "smpte2084") ? 16 :
+      (strstr(path, "arib-std-b67") ? 18 : 0);
+   unsigned range = strstr(path, "-pc.") ? 2 : 1;
+   if (!transfer) return 1;
+   if (frame->color.transfer == transfer && frame->color.primaries == 9 &&
+       frame->color.matrix == 9 && frame->color.range == range &&
+       frame->pixfmt == IMAGE_PIXFMT_P010) return 1;
+   puts("FAIL AV1 Vulkan HDR shared-frame source colour");
+   video_hw_frame_abandon(frame);
+   memset(frame, 0, sizeof(*frame));
+   return 0;
+}
+
 static struct
 {
    video_hw_frame_t frame;
@@ -86,9 +102,11 @@ static int av1_core_decode_fixture(const char *path, oracle_readback_t *reader,
       if (av1_core.frame.image)
       {
          index = av1_core.index;
-         if (index >= fixture->frames || (last != UINT32_MAX && index <= last))
+         if (index >= fixture->frames ||
+             (last == UINT32_MAX ? index != 0 : index != last + 1))
             goto done;
          oracle_release(reader);
+         if (!av1_hdr_frame_matches(path, &av1_core.frame)) goto done;
          if (!oracle_read_frame(reader, av1_core.frame, fixture, &index))
          {
             memset(&av1_core.frame, 0, sizeof(av1_core.frame));

@@ -98,6 +98,7 @@ static int av1_webm_decode_fixture(void)
          continue;
       }
       if (!rwebm_video_stream_hw_frame(stream, &frame) ||
+          !av1_hdr_frame_matches(path, &frame) ||
           !oracle_read_frame(reader, frame, &fixture, &count))
          goto done;
    }
