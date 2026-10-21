@@ -1,0 +1,38 @@
+name: CI VideoToolbox hardware encode
+on:
+  push:
+    branches: [master]
+    paths:
+      - '.github/workflows/MacOS-videotoolbox-encode.yml'
+      - 'gfx/common/videotoolbox_encode*.h'
+      - 'samples/record/videotoolbox_encode/**'
+      - 'libretro-common/include/retro_atomic.h'
+  pull_request:
+    paths:
+      - '.github/workflows/MacOS-videotoolbox-encode.yml'
+      - 'gfx/common/videotoolbox_encode*.h'
+      - 'samples/record/videotoolbox_encode/**'
+      - 'libretro-common/include/retro_atomic.h'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  encode:
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install independent test decoder
+        run: command -v ffmpeg >/dev/null && command -v ffprobe >/dev/null || brew install ffmpeg
+      - name: Portable ownership and failure contracts
+        working-directory: samples/record/videotoolbox_encode
+        run: make check thread_test && ./thread_test
+      - name: Native hardware encoder and independent pixels
+        run: |
+          rc=0
+          python3 samples/record/videotoolbox_encode/run.py --native || rc=$?
+          if [ "$rc" = 77 ]; then
+            echo "::warning::Some required hardware encode cases unavailable; native encode acceptance is incomplete"
+            exit 0
+          fi
+          exit "$rc"

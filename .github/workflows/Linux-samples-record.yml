@@ -6,6 +6,7 @@ on:
       - master
     paths:
       - 'record/**'
+      - 'gfx/common/videotoolbox_encode*.h'
       - 'libretro-common/queues/**'
       - 'libretro-common/include/retro_spsc.h'
       - 'libretro-common/include/retro_atomic.h'
@@ -16,6 +17,7 @@ on:
       - master
     paths:
       - 'record/**'
+      - 'gfx/common/videotoolbox_encode*.h'
       - 'libretro-common/queues/**'
       - 'libretro-common/include/retro_spsc.h'
       - 'libretro-common/include/retro_atomic.h'
@@ -195,6 +197,19 @@ jobs:
         run: |
           set -eu
           make clean && make check SANITIZER=address,undefined
+          make clean && make check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
+          make clean
+
+      # The Apple API stand-in checks ownership/configuration only. Native
+      # compilation and hardware encode run in MacOS-videotoolbox-encode.yml.
+      - name: VideoToolbox encode callback and session contracts
+        working-directory: samples/record/videotoolbox_encode
+        run: |
+          set -eu
+          make clean && make check thread_test SANITIZER=address,undefined
+          ./thread_test
+          make clean && make thread_test SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 120 ./thread_test
           make clean && make check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
           make clean
 
