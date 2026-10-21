@@ -10478,9 +10478,12 @@ static bool vulkan_xr_slot_ensure(vk_t *vk, unsigned s, unsigned dims,
          return false;
       if (vk->xr.slots[s].num_images)
       {
-         /* This driver's earlier frames may still draw into it. */
+         /* This driver's earlier frames may still draw into it. Its
+          * swapchain stays: the headset shows it until the new one has
+          * an image. */
          vulkan_wait_own_submissions(vk);
-         vulkan_xr_slot_free(vk, s);
+         vulkan_xr_slot_free_views(vk, s);
+         memset(&vk->xr.slots[s], 0, sizeof(vk->xr.slots[s]));
       }
       if (!vulkan_openxr_slot_create(vk->context->xr, s, vk->xr.format,
                vk->xr.mutable_format, dims, layers,
@@ -10969,7 +10972,7 @@ static void vulkan_xr_draw(vk_t *vk, const video_frame_info_t *video_info,
       vk->xr.slots[s].drawn = false;
       /* A menu that comes back must not show the last one's image. */
       if (     s == VIDEO_XR_MENU_SLOT && !vk->xr.set.slots[s].dims
-            && vk->xr.slots[s].released)
+            && vk->xr.slots[s].num_images)
       {
          vulkan_openxr_slot_forget(xr, s);
          vk->xr.slots[s].released = false;
