@@ -133,6 +133,7 @@ void android_app_set_window_settings(bool notch_write_over,
 #include "../retroarch.h"
 #include "../gfx/video_display_server.h"
 #include "../gfx/video_views.h"
+#include "../gfx/video_windows.h"
 #ifdef HAVE_MODELINE
 #include "../gfx/video_crt_switch.h"
 #endif
@@ -3801,6 +3802,109 @@ static size_t setting_get_string_representation_video_screen_layout(
       }
    }
    return 0;
+}
+
+static size_t setting_get_string_representation_video_screen_window_mode(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case VIDEO_WINDOW_ATTACHED:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_ATTACHED), len);
+         case VIDEO_WINDOW_SEPARATE:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SEPARATE), len);
+         case VIDEO_WINDOW_HIDDEN:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HIDDEN), len);
+      }
+   }
+   return 0;
+}
+
+/* Display N is the Nth the platform lists, 0 is Auto */
+static unsigned setting_video_screen_window_displays(void)
+{
+   video_window_display_t displays[VIDEO_WINDOW_DISPLAYS_MAX];
+   return video_driver_get_window_displays(displays,
+         VIDEO_WINDOW_DISPLAYS_MAX);
+}
+
+static size_t setting_get_string_representation_video_screen_window_monitor(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   video_window_display_t displays[VIDEO_WINDOW_DISPLAYS_MAX];
+   unsigned i, count, ordinal;
+   if (!setting)
+      return 0;
+   ordinal = *setting->value.target.unsigned_integer;
+   if (!ordinal)
+      return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUTO), len);
+   count = video_driver_get_window_displays(displays,
+         VIDEO_WINDOW_DISPLAYS_MAX);
+   for (i = 0; i < count; i++)
+   {
+      if (displays[i].ordinal != ordinal || !displays[i].name[0])
+         continue;
+      if (displays[i].dims)
+         return snprintf(s, len, "%u (%s %ux%u)", ordinal, displays[i].name,
+               VIDEO_SCALE_W(displays[i].dims), VIDEO_SCALE_H(displays[i].dims));
+      return snprintf(s, len, "%u (%s)", ordinal, displays[i].name);
+   }
+   return snprintf(s, len, "%u", ordinal);
+}
+
+/* Left and right go through Auto and the displays there are; one no
+ * longer listed is left on the next press */
+static int setting_action_left_video_screen_window_monitor(
+      rarch_setting_t *setting, size_t idx, bool wraparound)
+{
+   unsigned *p;
+   unsigned last;
+   if (!setting)
+      return -1;
+   p    = setting->value.target.unsigned_integer;
+   last = setting_video_screen_window_displays();
+   if (*p > last)
+      *p = last;
+   else if (*p)
+      (*p)--;
+   else
+      *p = last;
+   config_get_ptr()->flags |= SETTINGS_FLG_MODIFIED;
+   return 0;
+}
+
+static int setting_action_right_video_screen_window_monitor(
+      rarch_setting_t *setting, size_t idx, bool wraparound)
+{
+   unsigned *p;
+   if (!setting)
+      return -1;
+   p  = setting->value.target.unsigned_integer;
+   *p = (*p < setting_video_screen_window_displays()) ? *p + 1 : 0;
+   config_get_ptr()->flags |= SETTINGS_FLG_MODIFIED;
+   return 0;
+}
+
+/* The list offers Auto, each display, and the one chosen now if a
+ * display could have it */
+static int setting_action_ok_video_screen_window_monitor(
+      rarch_setting_t *setting, size_t idx, bool wraparound)
+{
+   unsigned cur;
+   unsigned last;
+   if (!setting)
+      return -1;
+   cur  = *setting->value.target.unsigned_integer;
+   last = setting_video_screen_window_displays();
+   if (cur > last && cur <= VIDEO_WINDOW_DISPLAYS_MAX)
+      last = cur;
+   setting->max = (float)last;
+   return setting_action_ok_uint(setting, idx, wraparound);
 }
 
 static size_t setting_get_string_representation_video_openxr_controllers(
@@ -10079,6 +10183,14 @@ static void general_write_handler(rarch_setting_t *setting)
    if (     setting->enum_idx >= MENU_ENUM_LABEL_INPUT_KEYBOARD_INDEX
          && setting->enum_idx <= MENU_ENUM_LABEL_INPUT_KEYBOARD_INDEX_LAST)
       input_keyboard_pin_from_index(setting->index_offset);
+   /* a screen sent back to the main window gets another try at the
+    * window or display it is now given */
+   if (     (   setting->enum_idx >= MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MODE
+             && setting->enum_idx <= MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MODE_LAST)
+         || (   setting->enum_idx >= MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MONITOR
+             && setting->enum_idx <= MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MONITOR_LAST)
+         || setting->enum_idx == MENU_ENUM_LABEL_VIDEO_WINDOWS_ENABLE)
+      video_driver_restore_windows();
 
    switch (setting->enum_idx)
    {
@@ -15730,6 +15842,69 @@ static void settings_build_cheat_search(
    }
 }
 
+/* Screens 2 and up: where each one goes, and on which display */
+static void setting_append_list_video_screen_windows(
+      settings_t *settings,
+      rarch_setting_t **list, rarch_setting_info_t *list_info,
+      rarch_setting_group_info_t *group_info,
+      rarch_setting_group_info_t *subgroup_info,
+      const char *parent_group)
+{
+   unsigned screen;
+   for (screen = 1; screen < RETRO_VIDEO_VIEWS_MAX; screen++)
+   {
+      char name[64];
+      char label[64];
+
+      snprintf(name, sizeof(name),
+            MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MODE_STR, screen + 1);
+      snprintf(label, sizeof(label), msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_WINDOW_MODE), screen + 1);
+      CONFIG_UINT_ALT(
+            list, list_info,
+            &settings->uints.video_screen_window_mode[screen],
+            name,
+            label,
+            VIDEO_WINDOW_SEPARATE,
+            group_info,
+            subgroup_info,
+            parent_group,
+            general_write_handler,
+            general_read_handler);
+      (*list)[list_info->index - 1].index_offset = screen;
+      SETTINGS_ACTION_SET(ok, &(*list)[list_info->index - 1], &setting_action_ok_uint)
+      SETTINGS_ACTION_SET(repr, &(*list)[list_info->index - 1], &setting_get_string_representation_video_screen_window_mode)
+      menu_settings_list_current_add_range(list, list_info, 0, VIDEO_WINDOW_HIDDEN, 1.0, true, true);
+      MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
+            (enum msg_hash_enums)(MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MODE + screen));
+
+      snprintf(name, sizeof(name),
+            MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MONITOR_STR, screen + 1);
+      snprintf(label, sizeof(label), msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_WINDOW_MONITOR), screen + 1);
+      CONFIG_UINT_ALT(
+            list, list_info,
+            &settings->uints.video_screen_window_monitor[screen],
+            name,
+            label,
+            0,
+            group_info,
+            subgroup_info,
+            parent_group,
+            general_write_handler,
+            general_read_handler);
+      (*list)[list_info->index - 1].index_offset = screen;
+      SETTINGS_ACTION_SET(left, &(*list)[list_info->index - 1], &setting_action_left_video_screen_window_monitor)
+      SETTINGS_ACTION_SET(right, &(*list)[list_info->index - 1], &setting_action_right_video_screen_window_monitor)
+      SETTINGS_ACTION_SET(sel, &(*list)[list_info->index - 1], &setting_action_right_video_screen_window_monitor)
+      SETTINGS_ACTION_SET(ok, &(*list)[list_info->index - 1], &setting_action_ok_video_screen_window_monitor)
+      SETTINGS_ACTION_SET(repr, &(*list)[list_info->index - 1], &setting_get_string_representation_video_screen_window_monitor)
+      menu_settings_list_current_add_range(list, list_info, 0, VIDEO_WINDOW_DISPLAYS_MAX, 1.0, true, true);
+      MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
+            (enum msg_hash_enums)(MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MONITOR + screen));
+   }
+}
+
 static void settings_build_video(
       settings_t *settings,
       rarch_setting_t **list, rarch_setting_info_t *list_info,
@@ -16026,6 +16201,8 @@ static void settings_build_video(
          START_SUB_GROUP(list, list_info, "Stereo 3D & Screens", &group_info, &subgroup_info, parent_group);
 
          ADD_DESC(stereo_desc);
+         setting_append_list_video_screen_windows(settings, list, list_info,
+               &group_info, &subgroup_info, parent_group);
 
          END_SUB_GROUP(list, list_info, parent_group);
 

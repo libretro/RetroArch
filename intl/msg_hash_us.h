@@ -7730,6 +7730,38 @@ MSG_HASH(
    "Horizontal"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_ATTACHED,
+   "Attached"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SEPARATE,
+   "Separate"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HIDDEN,
+   "Hidden"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOWS_ENABLE_ANDROID,
+   "Show secondary screens on another display."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_WINDOW_MODE,
+   "Screen %u"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_MODE,
+   "Attached keeps this screen with the others. Separate puts it on a window or display of its own. Hidden leaves it out."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_WINDOW_MONITOR,
+   "Screen %u Display"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_MONITOR,
+   "Where this screen goes when it is Separate. Auto picks a second display. The display RetroArch is on keeps the screen attached."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_CONTROLLERS_COMBINED,
    "Combined"
    )

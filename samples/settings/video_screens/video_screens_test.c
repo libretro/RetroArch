@@ -12,6 +12,7 @@
 #include <streams/file_stream.h>
 #include <time/rtime.h>
 #include <features/features_cpu.h>
+#include <string/stdstring.h>
 
 #include "../../../configuration.h"
 #include "../../../gfx/video_windows.h"
@@ -854,6 +855,131 @@ static void test_window_generation(void)
    retro_atomic_store_release_int(&video_st->window_generation, saved);
 }
 
+/* Screens 2 and up each have a window mode and a display in the menu;
+ * the display picker goes through Auto and the displays published */
+static void test_window_menu_settings(void)
+{
+   static video_window_display_t displays[2];
+   settings_t *settings           = config_get_ptr();
+   video_driver_state_t *video_st = video_state_get_ptr();
+   unsigned *picked               = &settings->uints.video_screen_window_monitor[1];
+   rarch_setting_t *mode;
+   rarch_setting_t *monitor;
+   rarch_setting_t *enable;
+   char s[128];
+   load_fixture("");
+   video_driver_publish_window_displays(displays, 0);
+   CHECK(menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MODE) == NULL);
+   CHECK(menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MONITOR) == NULL);
+   CHECK(menu_setting_find_enum((enum msg_hash_enums)
+            (MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MODE + RETRO_VIDEO_VIEWS_MAX - 1)) != NULL);
+   mode    = menu_setting_find_enum((enum msg_hash_enums)
+         (MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MODE + 1));
+   monitor = menu_setting_find_enum((enum msg_hash_enums)
+         (MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MONITOR + 1));
+   enable  = menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_WINDOWS_ENABLE);
+   CHECK(mode != NULL);
+   CHECK(monitor != NULL);
+   CHECK(enable != NULL);
+   if (!mode || !monitor || !enable)
+      return;
+   CHECK(string_is_equal(mode->name, "video_screen2_window_mode"));
+   CHECK(string_is_equal(mode->short_description, "Screen 2"));
+   CHECK(mode->value.target.unsigned_integer
+         == &settings->uints.video_screen_window_mode[1]);
+   CHECK(string_is_equal(monitor->name, "video_screen2_window_monitor"));
+   CHECK(string_is_equal(monitor->short_description, "Screen 2 Display"));
+   CHECK(monitor->value.target.unsigned_integer == picked);
+   mode->actions->repr(mode, s, sizeof(s));
+   CHECK(string_is_equal(s, "Separate"));
+   settings->uints.video_screen_window_mode[1] = VIDEO_WINDOW_HIDDEN;
+   mode->actions->repr(mode, s, sizeof(s));
+   CHECK(string_is_equal(s, "Hidden"));
+   settings->uints.video_screen_window_mode[1] = VIDEO_WINDOW_ATTACHED;
+   mode->actions->repr(mode, s, sizeof(s));
+   CHECK(string_is_equal(s, "Attached"));
+   CHECK(mode->max == (float)VIDEO_WINDOW_HIDDEN);
+
+   /* A change to any of them gives closed windows another try */
+   video_st->windows_forced_attached = 2u;
+   mode->actions->change(mode);
+   CHECK(video_st->windows_forced_attached == 0u);
+   video_st->windows_forced_attached = 2u;
+   monitor->actions->change(monitor);
+   CHECK(video_st->windows_forced_attached == 0u);
+   video_st->windows_forced_attached = 2u;
+   enable->actions->change(enable);
+   CHECK(video_st->windows_forced_attached == 0u);
+
+   /* Nothing published: Auto only, and a display set elsewhere kept */
+   monitor->actions->repr(monitor, s, sizeof(s));
+   CHECK(string_is_equal(s, "Auto"));
+   CHECK(monitor->actions->right(monitor, 0, false) == 0);
+   CHECK(*picked == 0);
+   CHECK(monitor->actions->left(monitor, 0, false) == 0);
+   CHECK(*picked == 0);
+   *picked = 5;
+   monitor->actions->repr(monitor, s, sizeof(s));
+   CHECK(string_is_equal(s, "5"));
+
+   /* As the Thor lists its panels */
+   memset(displays, 0, sizeof(displays));
+   displays[0].ordinal  = 1;
+   displays[0].own      = true;
+   displays[0].valid    = true;
+   displays[0].on       = true;
+   displays[0].physical = true;
+   displays[0].dims     = VIDEO_SCALE_PACK(1920, 1080);
+   strlcpy(displays[0].name, "Built-in Screen", sizeof(displays[0].name));
+   displays[1].ordinal  = 2;
+   displays[1].valid    = true;
+   displays[1].on       = true;
+   displays[1].physical = true;
+   displays[1].dims     = VIDEO_SCALE_PACK(1240, 1080);
+   strlcpy(displays[1].name, "Screen-2", sizeof(displays[1].name));
+   video_driver_publish_window_displays(displays, 2);
+   monitor->actions->repr(monitor, s, sizeof(s));
+   CHECK(string_is_equal(s, "5"));
+   CHECK(monitor->actions->ok(monitor, 0, false) == 1);
+   CHECK(monitor->max == 5.0f);
+   CHECK(monitor->actions->left(monitor, 0, false) == 0);
+   CHECK(*picked == 2);
+   monitor->actions->repr(monitor, s, sizeof(s));
+   CHECK(string_is_equal(s, "2 (Screen-2 1240x1080)"));
+   CHECK(monitor->actions->ok(monitor, 0, false) == 1);
+   CHECK(monitor->max == 2.0f);
+   CHECK(monitor->actions->left(monitor, 0, false) == 0);
+   monitor->actions->repr(monitor, s, sizeof(s));
+   CHECK(string_is_equal(s, "1 (Built-in Screen 1920x1080)"));
+   CHECK(monitor->actions->left(monitor, 0, false) == 0);
+   CHECK(*picked == 0);
+   CHECK(monitor->actions->left(monitor, 0, false) == 0);
+   CHECK(*picked == 2);
+   CHECK(monitor->actions->right(monitor, 0, false) == 0);
+   CHECK(*picked == 0);
+   CHECK(monitor->actions->right(monitor, 0, false) == 0);
+   CHECK(*picked == 1);
+   *picked = 5;
+   CHECK(monitor->actions->right(monitor, 0, false) == 0);
+   CHECK(*picked == 0);
+   /* No published display can have an ordinal past the list's size */
+   *picked = VIDEO_WINDOW_DISPLAYS_MAX;
+   CHECK(monitor->actions->ok(monitor, 0, false) == 1);
+   CHECK(monitor->max == (float)VIDEO_WINDOW_DISPLAYS_MAX);
+   *picked = 1000;
+   CHECK(monitor->actions->ok(monitor, 0, false) == 1);
+   CHECK(monitor->max == 2.0f);
+   /* A display with no size reported */
+   displays[1].dims = 0;
+   video_driver_publish_window_displays(displays, 2);
+   *picked = 2;
+   monitor->actions->repr(monitor, s, sizeof(s));
+   CHECK(string_is_equal(s, "2 (Screen-2)"));
+   video_driver_publish_window_displays(displays, 0);
+   monitor->max = (float)VIDEO_WINDOW_DISPLAYS_MAX;
+   load_fixture("");
+}
+
 #ifdef HAVE_THREADS
 static slock_t *snapshot_lock;
 static scond_t *snapshot_ready;
@@ -1282,6 +1408,7 @@ int main(int argc, char **argv)
    test_window_pointer_mapping();
    test_window_generation();
    test_window_frame_snapshot();
+   test_window_menu_settings();
    test_window_redraw();
    test_window_retire();
    test_window_retire_in_flight();
