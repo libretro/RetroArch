@@ -359,6 +359,23 @@ jobs:
           make clean
           echo "[pass] android_pad_removed_test (ASan, TSan)"
 
+      - name: Build and run android_block_timeout_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/input/android_block_timeout
+        run: |
+          set -eu
+          # The input block timeout as the Android poll waits by it: at
+          # N, a press a pad sends as several events, each within N ms
+          # of the last, is taken in one poll; at 0 nothing is waited
+          # for; backgrounded the poll waits for what comes and drains
+          # the queue. Waiting for the first event only - the way that
+          # left the setting doing nothing - is asserted to be caught.
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 60 ./android_block_timeout_test
+          make clean
+          echo "[pass] android_block_timeout_test (ASan)"
+
       - name: Build and run android_kbd_keys_test (ASan + UBSan)
         shell: bash
         working-directory: samples/input/android_kbd_keys

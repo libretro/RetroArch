@@ -44,6 +44,7 @@
 #include "../../command.h"
 #include "../../frontend/drivers/platform_unix.h"
 #include "android_pad_removed.h"
+#include "android_poll_wait.h"
 #include "../drivers_keyboard/keyboard_event_android.h"
 #include "android_kbd_route.h"
 #ifdef HAVE_OPENXR
@@ -2894,6 +2895,7 @@ static void android_input_poll(void *data)
 {
    int ident;
    int timeout;
+   int then;
    struct android_app *android_app = (struct android_app*)g_android;
    android_input_t *android        = (android_input_t*)data;
 
@@ -2914,15 +2916,14 @@ static void android_input_poll(void *data)
     * set site, and Android's doze accounting penalises exactly that.
     * First iteration blocks; once an event has woken us, drain the rest
     * without blocking so a burst (RESUME then INPUT_CHANGED) is handled
-    * in one call. */
-   timeout = input_config_get_block_timeout();
-   if (runloop_get_flags() & RUNLOOP_FLAG_IDLE)
-      timeout = -1;
+    * in one call. In the foreground see android_poll_wait.h. */
+   android_poll_waits((int)input_config_get_block_timeout(),
+         (runloop_get_flags() & RUNLOOP_FLAG_IDLE) != 0, &timeout, &then);
 
    while ((ident =
             ALooper_pollOnce(timeout, NULL, NULL, NULL)) >= 0)
    {
-      timeout = 0;
+      timeout = then;
       switch (ident)
       {
          case LOOPER_ID_INPUT:
