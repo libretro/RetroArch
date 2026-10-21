@@ -86,6 +86,8 @@ jobs:
         run: make -C samples/gfx/android_image_queue clean all check CC=${{ matrix.cc }} SANITIZER=address,undefined
       - name: Native decoder session failure and Surface timestamp contracts
         run: make -C samples/gfx/mediacodec_session clean all check CC=${{ matrix.cc }} SANITIZER=address,undefined
+      - name: HEVC Annex-B configuration and packet preservation
+        run: make -C samples/gfx/mediacodec_hevc_packet clean all check CC=${{ matrix.cc }} SANITIZER=address,undefined
   ndk-compile:
     runs-on: ubuntu-latest
     steps:
@@ -102,7 +104,7 @@ jobs:
           set -eu
           for target in aarch64-linux-android armv7a-linux-androideabi; do
             for api in 21 29; do
-              for source in mediacodec_inventory android_image_queue android_image_ndk mediacodec_session; do
+              for source in mediacodec_inventory android_image_queue android_image_ndk mediacodec_session mediacodec_hevc_packet; do
                 "$MEDIA_NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/$target$api-clang" \
                   -std=c89 -pedantic -Wall -Wextra -Werror -Wno-long-long -Wno-c99-extensions \
                   -DHAVE_THREADS -DHAVE_DYLIB -Wframe-larger-than=2048 -Ilibretro-common/include \
