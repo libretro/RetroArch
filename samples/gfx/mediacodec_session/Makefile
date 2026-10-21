@@ -8,7 +8,7 @@ ifneq ($(SANITIZER),)
 CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
-all: test hevc_decoder_test vulkan_image_test vulkan_sync_test vulkan_pipeline_test
+all: test hevc_decoder_test vulkan_image_test vulkan_sync_test vulkan_pipeline_test android_frame_test
 test: test.c mediacodec_session_test_types.h ../../../gfx/common/mediacodec_session.c
 	$(CC) $(CFLAGS) test.c ../../../gfx/common/mediacodec_session.c -o $@ $(LDFLAGS)
 HEVC_SOURCES := ../../../gfx/common/mediacodec_hevc_decoder.c \
@@ -28,12 +28,15 @@ vulkan_rgb_gpu_test: vulkan_rgb_gpu_test.c ../../../gfx/common/vulkan_android_pi
 	$(CC) $(CFLAGS) -I../../../gfx/include vulkan_rgb_gpu_test.c ../../../gfx/common/vulkan_android_pipeline.c -o $@ $(LDFLAGS) -lvulkan -lm
 gpu-check: vulkan_rgb_gpu_test
 	./vulkan_rgb_gpu_test
+android_frame_test: android_frame_test.c ../../../gfx/common/android_frame.c ../../../gfx/common/android_frame.h ../../../gfx/common/android_image_queue.c
+	$(CC) $(CFLAGS) -DHAVE_THREADS -pthread android_frame_test.c ../../../gfx/common/android_frame.c ../../../gfx/common/android_image_queue.c -o $@ $(LDFLAGS)
 check: all
 	./test
 	./hevc_decoder_test
 	./vulkan_image_test
 	./vulkan_sync_test
 	./vulkan_pipeline_test
+	./android_frame_test
 clean:
-	rm -f test hevc_decoder_test vulkan_image_test vulkan_sync_test vulkan_pipeline_test vulkan_rgb_gpu_test
+	rm -f test hevc_decoder_test vulkan_image_test vulkan_sync_test vulkan_pipeline_test vulkan_rgb_gpu_test android_frame_test
 .PHONY: all check clean gpu-check

@@ -114,7 +114,7 @@ jobs:
               for offset in default 64; do
                 extra=()
                 if [ "$offset" = 64 ]; then extra=(-D_FILE_OFFSET_BITS=64); fi
-                for source in mediacodec_inventory android_image_queue android_image_ndk mediacodec_session mediacodec_hevc_packet mediacodec_hevc_decoder vulkan_android_image vulkan_android_sync vulkan_android_pipeline; do
+                for source in mediacodec_inventory android_image_queue android_image_ndk android_frame mediacodec_session mediacodec_hevc_packet mediacodec_hevc_decoder vulkan_android_image vulkan_android_sync vulkan_android_pipeline; do
                   object="$RUNNER_TEMP/$source-$target-$api-$offset.o"
                   "$bin/$target$api-clang" \
                     -std=c89 -pedantic -Wall -Wextra -Werror -Wno-long-long -Wno-c99-extensions \
