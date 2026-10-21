@@ -348,10 +348,12 @@ void android_second_surface_free(struct android_second_surface *node)
    free(node);
 }
 
-void android_second_display_request(unsigned ordinal)
+void android_second_display_request(unsigned ordinal, bool given_up)
 {
    JNIEnv *env;
+   unsigned number;
    struct android_app *android_app = (struct android_app*)g_android;
+   struct android_second_display *second;
 
    if (     !android_app
          || !android_app->setSecondDisplay
@@ -359,8 +361,13 @@ void android_second_display_request(unsigned ordinal)
       return;
    if (!(env = jni_thread_getenv()))
       return;
+   second = &android_app->second_display;
+   number = (unsigned)retro_atomic_fetch_add_int(&second->requests, 1) + 1;
+   /* Before Java can act on the hide */
+   if (given_up && !ordinal)
+      retro_atomic_store_release_int(&second->released, (int)number);
    CALL_VOID_METHOD_PARAM(env, android_app->activity->clazz,
-         android_app->setSecondDisplay, (jint)ordinal);
+         android_app->setSecondDisplay, (jint)ordinal, (jint)number);
 }
 
 /* On the thread letting go of the windows; done acknowledges
@@ -394,17 +401,19 @@ void android_second_display_retire(struct android_app *android_app)
  * thread holds nothing of it, as android_app_set_window() does. */
 static void android_second_surface_term(struct android_app *android_app)
 {
+   struct android_second_display *second = &android_app->second_display;
    unsigned ticket = android_lifecycle_last_ticket(&android_app->lc);
 
-   if (     !android_app_thread_gone(android_app)
+   if (     !ANDROID_SECOND_BEFORE(android_app->posted_second_request,
+               retro_atomic_load_acquire_int(&second->released))
+         && !android_app_thread_gone(android_app)
          && android_app_write_cmd(android_app, APP_CMD_SECOND_TERM_WINDOW))
       ticket = android_lifecycle_ticket(&android_app->lc);
    else
    {
-      /* Nobody left to take it */
+      /* Given up already, or nobody left to take it */
       struct android_second_surface *node = (struct android_second_surface*)
-         retro_atomic_exchange_ptr(&android_app->second_display.surface,
-               NULL);
+         retro_atomic_exchange_ptr(&second->surface, NULL);
       if (node)
          android_second_surface_free(node);
    }
@@ -480,7 +489,8 @@ JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_SecondDisplayCon
 }
 
 JNIEXPORT jint JNICALL Java_com_retroarch_browser_retroactivity_SecondDisplayController_nativeSurfaceChanged(
-      JNIEnv *env, jclass clazz, jobject surface, jint width, jint height)
+      JNIEnv *env, jclass clazz, jobject surface, jint width, jint height,
+      jint request)
 {
    ANativeWindow *window;
    struct android_second_surface *node;
@@ -524,11 +534,13 @@ JNIEXPORT jint JNICALL Java_com_retroarch_browser_retroactivity_SecondDisplayCon
       ANativeWindow_release(window);
       return 0;
    }
-   node->window                      = window;
-   node->dims                        = dims;
-   node->generation                  = generation;
-   android_app->posted_second_window = window;
-   android_app->posted_second_dims   = dims;
+   node->window                       = window;
+   node->dims                         = dims;
+   node->generation                   = generation;
+   node->request                      = (int)request;
+   android_app->posted_second_window  = window;
+   android_app->posted_second_dims    = dims;
+   android_app->posted_second_request = (int)request;
 
    if ((stale = (struct android_second_surface*)retro_atomic_exchange_ptr(
                &second->surface, node)))
@@ -3909,7 +3921,7 @@ static void frontend_unix_init(void *data)
    GET_METHOD_ID(env, android_app->hideKeyboard, class,
          "hideKeyboard", "()V");
    GET_METHOD_ID(env, android_app->setSecondDisplay, class,
-         "setSecondDisplay", "(I)V");
+         "setSecondDisplay", "(II)V");
 
    CALL_BOOLEAN_METHOD(env, android_app->is_play_store_build,
          android_app->activity->clazz, android_app->isPlayStoreBuild);

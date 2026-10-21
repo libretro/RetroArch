@@ -325,6 +325,7 @@ VIDEO CONTEXT
 #endif
 
 #if defined(ANDROID)
+#include "../gfx/common/android_windows.c"
 #include "../gfx/drivers_context/android_ctx.c"
 #if defined(HAVE_OPENXR)
 #if defined(HAVE_OPENGLES3)
