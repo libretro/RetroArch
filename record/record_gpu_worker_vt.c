@@ -4,7 +4,8 @@
 struct record_gpu_worker_vt
 {
    record_gpu_queue_t *queue;
-   void *capture, *encoder, *sample;
+   void *capture, *encoder, *sample, *owned_context;
+   void (*destroy)(void*);
    record_gpu_worker_vt_ops_t ops;
    record_gpu_frame_t frame;
    uint32_t owned, retired;
@@ -21,6 +22,18 @@ record_gpu_worker_vt_t *record_gpu_worker_vt_new(record_gpu_queue_t *queue,
    if (w) { w->queue=queue; w->capture=capture; w->encoder=encoder; w->ops=*ops; }
    return w;
 }
+record_gpu_worker_vt_t *record_gpu_worker_vt_new_owned(record_gpu_queue_t *queue,
+      void *capture,void *encoder,const record_gpu_worker_vt_ops_t *ops,
+      void *owned_context,void (*destroy)(void*))
+{
+   record_gpu_worker_vt_t *w;
+   if (!destroy) return NULL;
+   w=record_gpu_worker_vt_new(queue,capture,encoder,ops);
+   if (w) { w->owned_context=owned_context; w->destroy=destroy; }
+   return w;
+}
+static void record_gpu_worker_vt_destroy(record_gpu_worker_vt_t *w)
+{ if (w->destroy) w->destroy(w->owned_context); free(w); }
 int record_gpu_worker_vt_step(record_gpu_worker_vt_t *w,void **sample)
 {
    int result;
@@ -103,7 +116,7 @@ bool record_gpu_worker_vt_free(record_gpu_worker_vt_t *w)
 {
    if (!w) return true;
    if (w->owned || w->retired || w->pending || w->packet || w->abandoning || (w->started && !w->ended)) return false;
-   free(w); return true;
+   record_gpu_worker_vt_destroy(w); return true;
 }
 bool record_gpu_worker_vt_abandon(record_gpu_worker_vt_t *w)
 {
@@ -133,5 +146,5 @@ bool record_gpu_worker_vt_abandon(record_gpu_worker_vt_t *w)
          w->retired&=~((uint32_t)1<<slot);
       }
    if (!all || w->owned) return false;
-   free(w); return true;
+   record_gpu_worker_vt_destroy(w); return true;
 }

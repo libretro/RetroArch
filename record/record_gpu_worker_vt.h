@@ -24,9 +24,16 @@ typedef struct record_gpu_worker_vt_ops
 } record_gpu_worker_vt_ops_t;
 /* One worker; queue/capture/encoder borrowed and their fixed pools match.
  * Driver supplies native adapter operations; tests use fault-injected APIs.
- * No frame-path calls, waits, pixel copies or allocation in service steps. */
+ * No frame-path calls. The pump itself does not allocate, wait or copy pixels;
+ * native adapters may create bounded worker-side metadata objects. */
 record_gpu_worker_vt_t *record_gpu_worker_vt_new(record_gpu_queue_t *queue,
       void *capture,void *encoder,const record_gpu_worker_vt_ops_t *ops);
+/* Adopts owned_context only on success. destroy runs exactly once on normal
+ * free or successful abandon, after encoder teardown/GPU retirement. It must
+ * not access an encoder that the caller has already destroyed. */
+record_gpu_worker_vt_t *record_gpu_worker_vt_new_owned(record_gpu_queue_t *queue,
+      void *capture,void *encoder,const record_gpu_worker_vt_ops_t *ops,
+      void *owned_context,void (*destroy)(void*));
 /* One bounded step. PACKET repeats the borrowed sample until release. */
 int record_gpu_worker_vt_step(record_gpu_worker_vt_t *worker,void **sample);
 /* A partial release can be retried, but invalidates the old sample borrow. */

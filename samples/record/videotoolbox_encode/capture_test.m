@@ -18,7 +18,8 @@ static void test(id<MTLDevice> device,unsigned depth,unsigned mode,bool reverse)
                ?kCVPixelFormatType_420YpCbCr10BiPlanarVideoRange:kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange,
                (__bridge CFDictionaryRef)attrs,&images[i])); buffers[i]=images[i];
    }
-   capture=record_gpu_capture_metal_new((__bridge void*)device,buffers,2,WIDTH,HEIGHT,depth,mode); assert(capture);
+   capture=record_gpu_capture_metal_new((__bridge void*)device,buffers,2,WIDTH,HEIGHT,depth,mode); if (!capture) diagnose_shader(device);
+      assert(capture);
    assert(record_gpu_capture_metal_encode(capture,2,(__bridge void*)commands,(__bridge void*)source,2,2)==-1);
    assert(record_gpu_capture_metal_encode(capture,0,(__bridge void*)commands,(__bridge void*)source,SOURCE_W,2)==-1);
    for (i=0;i<2;i++)

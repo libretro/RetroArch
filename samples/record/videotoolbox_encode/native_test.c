@@ -27,6 +27,7 @@ static bool fill(CVPixelBufferRef image, FILE *reference, unsigned frame, unsign
          }
    }
    CVPixelBufferUnlockBaseAddress(image,0);
+   if (CVPixelBufferFillExtendedPixels(image)) return false;
    /* Planar 10-bit reference for an independent decoder. */
    for (plane=0;plane<3;plane++)
       for (x=0;x<(plane?64u*48u/4:64u*48u);x++)

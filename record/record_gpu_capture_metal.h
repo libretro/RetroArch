@@ -7,6 +7,8 @@ RETRO_BEGIN_DECLS
 typedef struct record_gpu_capture_metal record_gpu_capture_metal_t;
 /* Cold setup on the fixed encoder pixel-buffer pool. Mode 0 is SDR RGB,
  * 1 PQ/BT.2020, 2 linear scRGB (80 nits/unit). HDR requires depth 10.
+ * Width/height specify the active image; encoder buffers may be larger.
+ * Cold setup attaches the active clean aperture and GPU-replicates borders.
  * Device and 1..16 distinct NV12/P010 buffers are borrowed and retained. */
 record_gpu_capture_metal_t *record_gpu_capture_metal_new(void *device,
       void *const *buffers, unsigned count, unsigned width, unsigned height,

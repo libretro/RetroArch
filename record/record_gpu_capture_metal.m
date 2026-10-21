@@ -15,7 +15,7 @@ struct record_gpu_capture_metal
    CVPixelBufferRef buffers[16];
    CVMetalTextureRef views[16][2];
    retro_atomic_int_t state[16]; /* 0 reusable, 1 GPU, 2 encoder, 3 failed GPU */
-   unsigned count, width, height, depth, mode;
+   unsigned count, width, height, write_width, write_height, buffer_width, buffer_height, depth, mode;
 };
 bool record_gpu_capture_metal_free(record_gpu_capture_metal_t *capture)
 {
@@ -66,11 +66,33 @@ record_gpu_capture_metal_t *record_gpu_capture_metal_new(void *device_ptr,
       for (i=0;i<count;i++)
       {
          CVPixelBufferRef image=(CVPixelBufferRef)buffers[i];
+         size_t left,right,top,bottom,buffer_width,buffer_height;
+         if (!image) goto fail;
+         buffer_width=CVPixelBufferGetWidth(image); buffer_height=CVPixelBufferGetHeight(image);
          if (!image || !CVPixelBufferIsPlanar(image) || CVPixelBufferGetPlaneCount(image)!=2
-               || CVPixelBufferGetWidth(image)!=width || CVPixelBufferGetHeight(image)!=height
+               || buffer_width<width || buffer_height<height || buffer_width>16384 || buffer_height>16384
+               || ((buffer_width|buffer_height)&1)
                || CVPixelBufferGetPixelFormatType(image)!=(depth==10
                   ? kCVPixelFormatType_420YpCbCr10BiPlanarVideoRange
                   : kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange)) goto fail;
+         CVPixelBufferGetExtendedPixels(image,&left,&right,&top,&bottom);
+         if (left || top || right>16384-buffer_width || bottom>16384-buffer_height
+               || (right&1) || (bottom&1)) goto fail;
+         if (!i)
+         {
+            capture->buffer_width=(unsigned)buffer_width; capture->buffer_height=(unsigned)buffer_height;
+            capture->write_width=(unsigned)(buffer_width+right); capture->write_height=(unsigned)(buffer_height+bottom);
+         }
+         else if (capture->buffer_width!=buffer_width || capture->buffer_height!=buffer_height
+               || capture->write_width!=buffer_width+right || capture->write_height!=buffer_height+bottom) goto fail;
+         if (buffer_width!=width || buffer_height!=height)
+         {
+            NSDictionary *aperture=@{(__bridge NSString*)kCVImageBufferCleanApertureWidthKey:@(width),
+               (__bridge NSString*)kCVImageBufferCleanApertureHeightKey:@(height),
+               (__bridge NSString*)kCVImageBufferCleanApertureHorizontalOffsetKey:@(((int)width-(int)buffer_width)/2),
+               (__bridge NSString*)kCVImageBufferCleanApertureVerticalOffsetKey:@(((int)height-(int)buffer_height)/2)};
+            CVBufferSetAttachment(image,kCVImageBufferCleanApertureKey,(__bridge CFDictionaryRef)aperture,kCVAttachmentMode_ShouldPropagate);
+         }
          for (j=0;j<i;j++) if (image==capture->buffers[j]) goto fail;
          capture->buffers[i]=CVPixelBufferRetain(image);
          for (plane=0;plane<2;plane++)
@@ -80,7 +102,7 @@ record_gpu_capture_metal_t *record_gpu_capture_metal_new(void *device_ptr,
                : (plane?MTLPixelFormatRG8Unorm:MTLPixelFormatR8Unorm);
             id<MTLTexture> texture;
             if (CVMetalTextureCacheCreateTextureFromImage(NULL,capture->cache,image,NULL,
-                     format,width>>plane,height>>plane,plane,&capture->views[i][plane])!=kCVReturnSuccess) goto fail;
+                     format,capture->write_width>>plane,capture->write_height>>plane,plane,&capture->views[i][plane])!=kCVReturnSuccess) goto fail;
             texture=CVMetalTextureGetTexture(capture->views[i][plane]);
             if (!texture || texture.device!=device || !(texture.usage&MTLTextureUsageShaderWrite)) goto fail;
          }
@@ -122,7 +144,7 @@ int record_gpu_capture_metal_encode(record_gpu_capture_metal_t *capture,
       [encoder setTexture:CVMetalTextureGetTexture(capture->views[slot][0]) atIndex:1];
       [encoder setTexture:CVMetalTextureGetTexture(capture->views[slot][1]) atIndex:2];
       [encoder setBytes:params length:sizeof(params) atIndex:0];
-      [encoder dispatchThreadgroups:MTLSizeMake((capture->width/2+7)/8,(capture->height/2+7)/8,1)
+      [encoder dispatchThreadgroups:MTLSizeMake((capture->write_width/2+7)/8,(capture->write_height/2+7)/8,1)
             threadsPerThreadgroup:MTLSizeMake(8,8,1)];
       [encoder endEncoding];
       retro_atomic_store_release_int(&capture->state[slot],1);

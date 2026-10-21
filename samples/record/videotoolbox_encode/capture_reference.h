@@ -17,13 +17,27 @@
 #ifndef HEIGHT
 #define HEIGHT 130
 #endif
+#include "../../../record/shaders/capture_metal.h"
+/* Fixture-only cold diagnostics; production capture keeps startup reporting
+ * with its controller and performs no frame-path shader logging. */
+static void diagnose_shader(id<MTLDevice> device)
+{
+   NSError *error=nil;
+   NSString *source=[[NSString alloc] initWithBytes:record_capture_metal_shader
+         length:sizeof(record_capture_metal_shader)-1 encoding:NSUTF8StringEncoding];
+   id<MTLLibrary> library=[device newLibraryWithSource:source options:nil error:&error];
+   fprintf(stderr,"Capture startup: %s\n",library?"shader compiled; inspect buffer/view setup"
+         :error?[[error localizedDescription] UTF8String]:"shader compilation failed without error text");
+   RARCH_RELEASE(library); RARCH_RELEASE(source);
+}
 #define SOURCE_W (WIDTH+4)
 #define SOURCE_H (HEIGHT+4)
+static unsigned reference_frame;
 static double component(unsigned x,unsigned y,unsigned c,unsigned mode)
 {
    static const double linear[]={0,.25,.5,1,2,4,8,-.25};
-   return mode==2?linear[(x+3*y+c*2)%8]
-      :(double)((x*17+y*13+c*(mode?127:67))%(mode?1024:256))/(mode?1023:255);
+   return mode==2?linear[(x+3*y+c*2+reference_frame)%8]
+      :(double)((x*17+y*13+c*(mode?127:67)+reference_frame*11)%(mode?1024:256))/(mode?1023:255);
 }
 static double clamp01(double v) { return v<0?0:v>1?1:v; }
 static double pq(double light)
@@ -46,46 +60,50 @@ static void reference(unsigned x,unsigned y,unsigned mode,double *out)
    out[1]=(b-out[0])/(mode?1.8814:1.8556);
    out[2]=(r-out[0])/(mode?1.4746:1.5748);
 }
-static id<MTLTexture> source_new(id<MTLDevice> device,unsigned mode,bool reverse)
+static id<MTLTexture> source_new_extent(id<MTLDevice> device,unsigned mode,bool reverse,unsigned width,unsigned height)
 {
+   unsigned target_w=width+4,target_h=height+4;
    static const uint16_t halves[]={0,0x3400,0x3800,0x3c00,0x4000,0x4400,0x4800,0xb400};
    MTLPixelFormat format=mode==2?MTLPixelFormatRGBA16Float:mode==1
       ?(reverse?MTLPixelFormatBGR10A2Unorm:MTLPixelFormatRGB10A2Unorm)
       :(reverse?MTLPixelFormatBGRA8Unorm:MTLPixelFormatRGBA8Unorm);
    MTLTextureDescriptor *desc=[MTLTextureDescriptor texture2DDescriptorWithPixelFormat:format
-         width:SOURCE_W height:SOURCE_H mipmapped:NO];
-   size_t pixel=mode==2?8:4, stride=SOURCE_W*pixel;
-   uint8_t *bytes=(uint8_t*)calloc(SOURCE_H,stride);
+         width:target_w height:target_h mipmapped:NO];
+   size_t pixel=mode==2?8:4, stride=target_w*pixel;
+   uint8_t *bytes=(uint8_t*)calloc(target_h,stride);
    unsigned x,y,c;
    id<MTLTexture> texture;
    assert(bytes);
    desc.storageMode=MTLStorageModeShared; desc.usage=MTLTextureUsageShaderRead;
    texture=[device newTextureWithDescriptor:desc]; assert(texture);
-   for (y=0;y<SOURCE_H;y++)
-      for (x=0;x<SOURCE_W;x++)
+   for (y=0;y<target_h;y++)
+      for (x=0;x<target_w;x++)
       {
          uint8_t *at=bytes+y*stride+x*pixel;
+         unsigned sx=x>WIDTH+1?WIDTH+1:x,sy=y>HEIGHT+1?HEIGHT+1:y;
          if (mode==2)
          {
-            for (c=0;c<3;c++) ((uint16_t*)at)[c]=halves[(x+3*y+c*2)%8];
+            for (c=0;c<3;c++) ((uint16_t*)at)[c]=halves[(sx+3*sy+c*2+reference_frame)%8];
             ((uint16_t*)at)[3]=0x3c00;
          }
          else if (mode==1)
          {
             uint32_t value=3u<<30;
-            for (c=0;c<3;c++) value|=(uint32_t)floor(component(x,y,c,mode)*1023+.5)<<((reverse?2-c:c)*10);
+            for (c=0;c<3;c++) value|=(uint32_t)floor(component(sx,sy,c,mode)*1023+.5)<<((reverse?2-c:c)*10);
             *(uint32_t*)at=value;
          }
          else
          {
-            for (c=0;c<3;c++) at[reverse?2-c:c]=(uint8_t)floor(component(x,y,c,mode)*255+.5);
+            for (c=0;c<3;c++) at[reverse?2-c:c]=(uint8_t)floor(component(sx,sy,c,mode)*255+.5);
             at[3]=255;
          }
       }
-   [texture replaceRegion:MTLRegionMake2D(0,0,SOURCE_W,SOURCE_H) mipmapLevel:0
+   [texture replaceRegion:MTLRegionMake2D(0,0,target_w,target_h) mipmapLevel:0
          withBytes:bytes bytesPerRow:stride];
    free(bytes); return texture;
 }
+static id<MTLTexture> source_new(id<MTLDevice> device,unsigned mode,bool reverse)
+{ return source_new_extent(device,mode,reverse,WIDTH,HEIGHT); }
 static unsigned read_code(CVPixelBufferRef image,unsigned plane,unsigned x,unsigned y,unsigned depth)
 {
    const uint8_t *row=(const uint8_t*)CVPixelBufferGetBaseAddressOfPlane(image,plane);

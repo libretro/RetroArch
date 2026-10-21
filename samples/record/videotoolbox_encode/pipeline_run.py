@@ -34,7 +34,7 @@ with workspace as temp:
     directory = Path(temp)
     objects = []
     for source in ('record/record_gpu_worker_vt.c', 'record/record_gpu_queue.c',
-                   'libretro-common/queues/retro_spsc.c'):
+                   'libretro-common/queues/retro_spsc.c', 'libretro-common/formats/h265/rh265_sps_crop.c'):
         obj = directory / (Path(source).stem + '.o')
         subprocess.run(compiler + flags + ['-c', str(root / source), '-o', str(obj)], check=True)
         objects.append(str(obj))
@@ -49,17 +49,22 @@ with workspace as temp:
             command += ['-framework', framework]
         print('+', shlex.join(command), flush=True)
         subprocess.run(command, check=True)
-        for hevc, depth, mode, control in ((0, 8, 0, False), (1, 8, 0, False),
-                (1, 10, 0, False), (1, 10, 1, False), (1, 10, 2, False),
-                (1, 10, 0, True), (1, 10, 1, True)):
-            if width != 162 and (depth != 10 or mode == 2 or control):
+        for hevc, depth, mode, control, dynamic, aperture in (
+                (0, 8, 0, False, False, False), (1, 8, 0, False, False, False),
+                (1, 10, 0, False, False, False), (1, 10, 1, False, False, False), (1, 10, 2, False, False, False),
+                (1, 10, 0, True, False, False), (1, 10, 1, True, False, False),
+                (1, 10, 0, False, True, False), (1, 10, 1, False, True, False), (1, 10, 2, False, True, False),
+                (1, 10, 1, False, False, True), (1, 10, 1, False, True, True)):
+            if width != 162 and (depth != 10 or mode == 2 or control or dynamic or aperture):
                 continue
-            case = directory / f'{binary.name}-hevc{hevc}-depth{depth}-mode{mode}-cpu{int(control)}'
+            case = directory / f'{binary.name}-hevc{hevc}-depth{depth}-mode{mode}-cpu{int(control)}-dynamic{int(dynamic)}-aperture{int(aperture)}'
             case.mkdir()
             coded, reference = case / 'coded.bin', case / 'reference.yuv'
             result = subprocess.run([str(binary), str(hevc), str(depth), str(mode),
                                      str(coded), str(reference)], timeout=60,
-                                     env=dict(os.environ, **({'PIPELINE_CPU_CONTROL': '1'} if control else {})))
+                                     env=dict(os.environ, **({'PIPELINE_CPU_CONTROL': '1'} if control else {}),
+                                              **({'PIPELINE_DYNAMIC_CONTROL': '1'} if dynamic else {}),
+                                              **({'PIPELINE_APERTURE_CONTROL': '1'} if aperture else {})))
             if result.returncode == 77:
                 unavailable += 1
                 print(f'SKIP: native pipeline {ownership} hevc={hevc} depth={depth} mode={mode}', flush=True)
@@ -67,6 +72,7 @@ with workspace as temp:
             result.check_returncode()
             info = json.loads(subprocess.check_output([ffprobe, '-v', 'error', '-show_streams',
                                                       '-of', 'json', str(coded)]))['streams'][0]
+            (case / 'probe.json').write_text(json.dumps(info, indent=2))
             assert (info['width'], info['height']) == (width, height), info
             assert info['codec_name'] == ('hevc' if hevc else 'h264'), info
             assert info['pix_fmt'] == ('yuv420p10le' if depth == 10 else 'yuv420p'), info

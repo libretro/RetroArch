@@ -5,6 +5,8 @@ on:
     paths:
       - '.github/workflows/MacOS-videotoolbox-encode.yml'
       - 'gfx/common/videotoolbox_encode*.h'
+      - 'libretro-common/formats/h265/rh265_sps_crop.c'
+      - 'libretro-common/include/formats/rh265_sps_crop.h'
       - 'record/record_gpu_capture_metal.*'
       - 'record/record_gpu_worker_vt*'
       - 'record/shaders/capture_metal.*'
@@ -15,6 +17,8 @@ on:
     paths:
       - '.github/workflows/MacOS-videotoolbox-encode.yml'
       - 'gfx/common/videotoolbox_encode*.h'
+      - 'libretro-common/formats/h265/rh265_sps_crop.c'
+      - 'libretro-common/include/formats/rh265_sps_crop.h'
       - 'record/record_gpu_capture_metal.*'
       - 'record/record_gpu_worker_vt*'
       - 'record/shaders/capture_metal.*'

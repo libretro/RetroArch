@@ -58,6 +58,8 @@ static void publish(record_gpu_queue_t *q,unsigned count)
    }
    assert(record_gpu_queue_finish(q));
 }
+static unsigned destroyed;
+static void destroy_context(void *context) { assert(context==&destroyed); destroyed++; }
 int main(void)
 {
    record_gpu_worker_vt_ops_t ops;
@@ -72,7 +74,8 @@ int main(void)
    ops.submit=submit; ops.peek=peek; ops.ack=ack; ops.finish=finish;
    q=record_gpu_queue_new(2); assert(q);
    assert(!record_gpu_worker_vt_new(q,&m,&m,NULL));
-   w=record_gpu_worker_vt_new(q,&m,&m,&ops); assert(w);
+   w=record_gpu_worker_vt_new_owned(q,&m,&m,&ops,&destroyed,destroy_context); assert(w);
+   assert(!destroyed);
    publish(q,2);
    assert(record_gpu_worker_vt_step(w,&sample)==RECORD_GPU_VT_PROGRESS);
    assert(record_gpu_worker_vt_step(w,&sample)==RECORD_GPU_VT_BUSY && !m.submits);
@@ -98,16 +101,21 @@ int main(void)
    }
    assert(result==RECORD_GPU_VT_END && packets==2 && m.submits==2 && m.acks==2
          && m.releases==2 && m.finishes==1);
-   assert(record_gpu_worker_vt_free(w)); assert(record_gpu_queue_free(q));
+   assert(record_gpu_worker_vt_free(w)); assert(destroyed==1); assert(record_gpu_queue_free(q));
    /* Cancellation holds GPU-pending inputs and makes no more encoder calls. */
    memset(&m,0,sizeof(m)); q=record_gpu_queue_new(2); assert(q);
-   w=record_gpu_worker_vt_new(q,&m,&m,&ops); assert(w); publish(q,2);
+   w=record_gpu_worker_vt_new_owned(q,&m,&m,&ops,&destroyed,destroy_context); assert(w); publish(q,2);
    assert(record_gpu_worker_vt_step(w,&sample)==RECORD_GPU_VT_PROGRESS);
-   assert(!record_gpu_worker_vt_abandon(w));
+   assert(!record_gpu_worker_vt_abandon(w)); assert(destroyed==1);
    assert(record_gpu_worker_vt_step(w,&sample)==RECORD_GPU_VT_ERROR);
    m.ready[0]=1; m.ready[1]=-1;
-   assert(record_gpu_worker_vt_abandon(w)); assert(!m.submits && !m.finishes);
+   assert(record_gpu_worker_vt_abandon(w)); assert(destroyed==2); assert(!m.submits && !m.finishes);
    assert(record_gpu_queue_free(q));
+   q=record_gpu_queue_new(2); assert(q);
+   assert(!record_gpu_worker_vt_new_owned(q,&m,&m,NULL,&destroyed,destroy_context));
+   assert(destroyed==2);
+   w=record_gpu_worker_vt_new_owned(q,&m,&m,&ops,&destroyed,destroy_context); assert(w);
+   assert(record_gpu_worker_vt_free(w) && destroyed==3); assert(record_gpu_queue_free(q));
    puts("PASS: VT worker GPU readiness, encoder BUSY, output borrow, partial release, drain and cancellation");
    return 0;
 }

@@ -16,7 +16,10 @@ static bool headers(FILE *out, CMVideoFormatDescriptionRef format, bool hevc, in
    {
       status=hevc ? CMVideoFormatDescriptionGetHEVCParameterSetAtIndex(format,i,&data,&size,&count,length)
                   : CMVideoFormatDescriptionGetH264ParameterSetAtIndex(format,i,&data,&size,&count,length);
-      if (status || !count || count>16 || *length<1 || *length>4 || !prefix(out,data,size)) return false;
+      if (status || !count || count>16 || *length<1 || *length>4)
+      { fprintf(stderr,"Header export failed: status %d index %lu count %lu length %d\n",
+            (int)status,(unsigned long)i,(unsigned long)count,*length); return false; }
+      if (!prefix(out,data,size)) return false;
    }
    return true;
 }

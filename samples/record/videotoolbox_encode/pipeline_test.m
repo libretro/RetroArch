@@ -2,6 +2,7 @@
 #include "capture_reference.h"
 #include "../../../record/record_gpu_worker_vt_native.h"
 #include "native_packet.h"
+#include "../../../gfx/common/videotoolbox_encode_crop.h"
 #include <unistd.h>
 #define PIPELINE_FRAMES 24
 static void write_reference(FILE *out,unsigned depth,unsigned mode)
@@ -43,7 +44,9 @@ static int diagnostic_submit(void *data,unsigned slot,void *buffer,uint64_t pts,
    CVPixelBufferRef image=(CVPixelBufferRef)buffer,copy=NULL;
    unsigned plane,x,y;
    int result;
-   check_pixels(image,diagnostic_depth,diagnostic_mode);
+   reference_frame=getenv("PIPELINE_DYNAMIC_CONTROL")?(unsigned)(pts/1001):0;
+   if (getenv("PIPELINE_CHECK_INPUT") || getenv("PIPELINE_CPU_CONTROL"))
+      check_pixels(image,diagnostic_depth,diagnostic_mode);
    if (getenv("PIPELINE_CPU_CONTROL"))
    {
       assert(!CVPixelBufferPoolCreatePixelBuffer(NULL,VTCompressionSessionGetPixelBufferPool(encoder->session),&copy));
@@ -100,6 +103,8 @@ int main(int argc,char **argv)
       config.width=WIDTH; config.height=HEIGHT; config.slots=2;
       config.bitrate=16000000; config.key_interval=6; config.timescale=60000;
       config.hevc=atoi(argv[1])!=0; config.bit_depth=(unsigned)atoi(argv[2]); config.hdr=mode!=0;
+      if (config.hevc && config.bit_depth==10 && !getenv("PIPELINE_LEGACY_CONTROL"))
+      { config.width=(WIDTH+31)&~31u; config.height=(HEIGHT+31)&~31u; }
       encoder=videotoolbox_encode_new(&config,&status);
       if (!encoder)
       {
@@ -108,7 +113,9 @@ int main(int argc,char **argv)
       }
       pool=VTCompressionSessionGetPixelBufferPool(encoder->session); assert(pool);
       for (i=0;i<2;i++)
-      { assert(!CVPixelBufferPoolCreatePixelBuffer(NULL,pool,&images[i])); buffers[i]=images[i]; }
+      {
+         assert(!CVPixelBufferPoolCreatePixelBuffer(NULL,pool,&images[i])); buffers[i]=images[i];
+      }
       {
          size_t left,right,top,bottom;
          CVPixelBufferGetExtendedPixels(images[0],&left,&right,&top,&bottom);
@@ -117,6 +124,7 @@ int main(int argc,char **argv)
                (unsigned long)left,(unsigned long)right,(unsigned long)top,(unsigned long)bottom);
       }
       capture=record_gpu_capture_metal_new((__bridge void*)device,buffers,2,WIDTH,HEIGHT,config.bit_depth,mode);
+      if (!capture) diagnose_shader(device);
       assert(capture);
       queue=record_gpu_queue_new(2); assert(queue);
       {
@@ -125,10 +133,12 @@ int main(int argc,char **argv)
          ops.release=record_vt_native_release; ops.submit=diagnostic_submit;
          ops.peek=record_vt_native_peek; ops.ack=record_vt_native_ack; ops.finish=record_vt_native_finish;
          diagnostic_depth=config.bit_depth; diagnostic_mode=mode;
-         worker=record_gpu_worker_vt_new(queue,capture,encoder,&ops); assert(worker);
+         worker=getenv("PIPELINE_LEGACY_CONTROL")?record_gpu_worker_vt_new(queue,capture,encoder,&ops)
+            :record_gpu_worker_vt_new_native_visible_ops(queue,capture,encoder,WIDTH,HEIGHT,&ops);
+         assert(worker);
       }
       commands_queue=[device newCommandQueue]; assert(commands_queue);
-      source=source_new(device,mode,false);
+      source=source_new_extent(device,mode,false,config.width,config.height);
       coded=fopen(argv[4],"wb"); raw=fopen(argv[5],"wb"); assert(coded && raw);
       deadline=CFAbsoluteTimeGetCurrent()+20;
       while (result!=RECORD_GPU_VT_END)
@@ -144,6 +154,11 @@ int main(int argc,char **argv)
             if (available==RECORD_GPU_QUEUE_OK)
             {
                id<MTLCommandBuffer> cb=[commands_queue commandBuffer]; assert(cb);
+               if (getenv("PIPELINE_DYNAMIC_CONTROL"))
+               {
+                  reference_frame=produced;
+                  RARCH_RELEASE(source); source=source_new_extent(device,mode,false,config.width,config.height);
+               }
                assert(record_gpu_capture_metal_encode(capture,frame.slot,(__bridge void*)cb,
                         (__bridge void*)source,2,2)==1);
                frame.timestamp=(uint64_t)produced*1001; frame.duration=1001;
@@ -160,6 +175,15 @@ int main(int argc,char **argv)
          {
             CMSampleBufferRef encoded=(CMSampleBufferRef)sample;
             void *again=NULL;
+            if (!received && getenv("PIPELINE_APERTURE_CONTROL"))
+            {
+               CGRect aperture=CMVideoFormatDescriptionGetCleanAperture(CMSampleBufferGetFormatDescription(encoded),true);
+               fprintf(stderr,"APERTURE sample: %.0f %.0f %.0f %.0f\n",
+                     (double)aperture.origin.x,(double)aperture.origin.y,
+                     (double)aperture.size.width,(double)aperture.size.height);
+               assert(aperture.origin.x==0 && aperture.origin.y==0
+                     && aperture.size.width==WIDTH && aperture.size.height==HEIGHT);
+            }
             assert(record_gpu_worker_vt_step(worker,&again)==RECORD_GPU_VT_PACKET && again==sample);
             assert(!CMTimeCompare(CMSampleBufferGetPresentationTimeStamp(encoded),CMTimeMake((int64_t)received*1001,60000)));
             assert(!CMTimeCompare(CMSampleBufferGetDuration(encoded),CMTimeMake(1001,60000)));

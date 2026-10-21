@@ -83,6 +83,11 @@ static INLINE VT_ENCODE_AVAILABLE videotoolbox_encode_t *videotoolbox_encode_new
          || !videotoolbox_encode_number(attrs, kCVPixelBufferPixelFormatTypeKey,
             config->bit_depth == 10 ? kCVPixelFormatType_420YpCbCr10BiPlanarVideoRange
                         : kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange)
+         || (config->hevc && config->bit_depth == 10
+            && (!videotoolbox_encode_number(attrs, kCVPixelBufferExtendedPixelsRightKey,
+                     (32-(config->width&31))&31)
+               || !videotoolbox_encode_number(attrs, kCVPixelBufferExtendedPixelsBottomKey,
+                     (32-(config->height&31))&31)))
          || !videotoolbox_encode_number(props, kVTCompressionPropertyKey_AverageBitRate, config->bitrate)
          || !videotoolbox_encode_number(props, kVTCompressionPropertyKey_MaxKeyFrameInterval, config->key_interval)
          || !videotoolbox_encode_number(props, kVTCompressionPropertyKey_MaxFrameDelayCount, 1))

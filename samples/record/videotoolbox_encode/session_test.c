@@ -49,6 +49,8 @@ static int kCFTypeDictionaryKeyCallBacks, kCFTypeDictionaryValueCallBacks;
 /* Keys and constant string values are distinct stable strings. */
 #define kCVPixelBufferWidthKey "width"
 #define kCVPixelBufferHeightKey "height"
+#define kCVPixelBufferExtendedPixelsRightKey "right"
+#define kCVPixelBufferExtendedPixelsBottomKey "bottom"
 #define kCVPixelBufferPixelFormatTypeKey "format"
 #define kCVPixelBufferMetalCompatibilityKey "metal"
 #define kVTVideoEncoderSpecification_RequireHardwareAcceleratedVideoEncoder "require-hardware"
@@ -97,7 +99,7 @@ static CFMutableDictionaryRef CFDictionaryCreateMutable(void *a, int n, void *k,
 static CFNumberRef CFNumberCreate(void *a, int t, const int32_t *value)
 { object_t *p = object_new(2); (void)a; (void)t; if (p) p->number = *value; return p; }
 static bool number_key(CFStringRef key)
-{ return !strcmp(key,"width") || !strcmp(key,"height") || !strcmp(key,"format") || !strcmp(key,"bitrate") || !strcmp(key,"key-interval") || !strcmp(key,"frame-delay"); }
+{ return !strcmp(key,"right") || !strcmp(key,"bottom") || !strcmp(key,"width") || !strcmp(key,"height") || !strcmp(key,"format") || !strcmp(key,"bitrate") || !strcmp(key,"key-interval") || !strcmp(key,"frame-delay"); }
 static void CFDictionarySetValue(CFMutableDictionaryRef d, CFStringRef key, const void *value)
 {
    unsigned i = d->count++;
@@ -121,6 +123,11 @@ static OSStatus VTCompressionSessionCreate(void *a, int32_t w, int32_t h, unsign
    assert(attrs->numbers[entry(attrs,"width")] == w);
    assert(attrs->numbers[entry(attrs,"height")] == h);
    assert(attrs->numbers[entry(attrs,"format")] == (expected_depth==10?11:10));
+   if (expected_hevc && expected_depth==10)
+   {
+      assert(attrs->numbers[entry(attrs,"right")]==0);
+      assert(attrs->numbers[entry(attrs,"bottom")]==16);
+   }
    if (fail_stage==1) return -101;
    *out=object_new(3); if (!*out) return -2;
    (*out)->callback=callback; return 0;
@@ -216,6 +223,9 @@ int main(void)
    c.hdr=true; assert(!videotoolbox_encode_new(&c,&error));
    c.bit_depth=10; assert(!videotoolbox_encode_new(&c,&error)); c.hevc=true;
    expected_hdr=expected_hevc=true; expected_depth=10;
+   for (i=1;i<=12;i++)
+   { allocations=0; allocation_fail=i; e=videotoolbox_encode_new(&c,&error); assert(!e && error && !live); }
+   allocation_fail=0;
    e=videotoolbox_encode_new(&c,&error); assert(e); videotoolbox_encode_cancel(e);
    c.hdr=expected_hdr=false;
    e=videotoolbox_encode_new(&c,&error); assert(e); videotoolbox_encode_cancel(e);

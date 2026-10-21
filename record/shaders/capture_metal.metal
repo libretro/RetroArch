@@ -16,7 +16,7 @@ float3 capture_pq(float3 light)
 float3 capture_yuv(texture2d<float,access::read> image,
       constant CaptureMetal &p, uint2 at)
 {
-   float3 rgb=image.read(p.origin+at).rgb;
+   float3 rgb=image.read(p.origin+min(at,p.size-uint2(1))).rgb;
    if (p.mode==2)
    {
       float3 wide=float3(dot(rgb,float3(.627404f,.329283f,.043313f)),
@@ -34,7 +34,7 @@ kernel void capture_metal(texture2d<float,access::read> image [[texture(0)]],
       constant CaptureMetal &p [[buffer(0)]], uint2 id [[thread_position_in_grid]])
 {
    uint2 pos=id*2;
-   if (any(pos>=p.size)) return;
+   if (any(pos>=uint2(luma.get_width(),luma.get_height()))) return;
    float3 a=capture_yuv(image,p,pos), b=capture_yuv(image,p,pos+uint2(1,0));
    float3 c=capture_yuv(image,p,pos+uint2(0,1)), d=capture_yuv(image,p,pos+uint2(1,1));
    float scale=p.depth==10?876.0f:219.0f;
@@ -44,9 +44,17 @@ kernel void capture_metal(texture2d<float,access::read> image [[texture(0)]],
    luma.write(float4(round(black+scale*b.x)*pack,0,0,1),pos+uint2(1,0));
    luma.write(float4(round(black+scale*c.x)*pack,0,0,1),pos+uint2(0,1));
    luma.write(float4(round(black+scale*d.x)*pack,0,0,1),pos+uint2(1,1));
-   uint left=pos.x?pos.x-1:0;
-   float3 e=capture_yuv(image,p,uint2(left,pos.y));
-   float3 f=capture_yuv(image,p,uint2(left,pos.y+1));
+   /* Encoder pools expose right/bottom extension beyond the active image.
+    * Replicate luma pixels and complete chroma samples into that region. */
+   uint2 edge=min(pos,p.size-uint2(2));
+   if (any(edge!=pos))
+   {
+      a=capture_yuv(image,p,edge); b=capture_yuv(image,p,edge+uint2(1,0));
+      c=capture_yuv(image,p,edge+uint2(0,1)); d=capture_yuv(image,p,edge+uint2(1,1));
+   }
+   uint left=edge.x?edge.x-1:0;
+   float3 e=capture_yuv(image,p,uint2(left,edge.y));
+   float3 f=capture_yuv(image,p,uint2(left,edge.y+1));
    float2 uv=(e.yz+f.yz+2.0f*(a.yz+c.yz)+b.yz+d.yz)*.125f;
    float center=p.depth==10?512.0f:128.0f;
    float range=p.depth==10?896.0f:224.0f;
