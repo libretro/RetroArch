@@ -760,6 +760,27 @@ void openxr_frame_publish_grabs(openxr_frame_t *f, const openxr_grabs_t *g)
    t_grabs = *g;
    t_grabs_published++;
 }
+/* Edit Smoothing's aims as the frame loop last published them, and the
+ * recenters it has seen. */
+static openxr_aims_t t_aims;
+static unsigned t_aims_published;
+static int t_recenters;
+void openxr_frame_publish_aims(openxr_frame_t *f, const openxr_aims_t *a)
+{
+   (void)f;
+   t_aims = *a;
+   t_aims_published++;
+}
+void openxr_frame_get_aims(openxr_frame_t *f, openxr_aims_t *out)
+{
+   (void)f;
+   *out = t_aims;
+}
+int openxr_frame_recenters(openxr_frame_t *f)
+{
+   (void)f;
+   return t_recenters;
+}
 void openxr_frame_set_input_hooks(const openxr_input_hooks_t *hooks)
 {
    if (hooks)
@@ -1993,13 +2014,14 @@ static void test_joypad_wrapped(void)
 
 /* Snap to Screens, as edit mode starts; off unless a case says. */
 static bool t_snap;
+static unsigned t_smooth;
 
 /* As the frontend's command does it, between frames, with the menu
  * closed. */
 static void t_edit_on(bool pause)
 {
    if (input_openxr_edit_toggle())
-      input_openxr_edit_begin(pause, t_snap);
+      input_openxr_edit_begin(pause, t_snap, t_smooth);
 }
 
 /* Edit Screens: the frontend's command starts it at once, between
@@ -2025,7 +2047,7 @@ static void test_edit_mode(void)
    t_let_go();
    CHECK(input_openxr_edit_toggle(), "a start was refused");
    CHECK(!t_editing, "the toggle alone started it");
-   input_openxr_edit_begin(false, false);
+   input_openxr_edit_begin(false, false, 0);
    CHECK(t_editing, "did not start at once");
    t_hold("combined/a", 0, 1.0f, 0.0f);
    t_hold("edit/edit_screens", 0, 1.0f, 0.0f);
@@ -2088,7 +2110,7 @@ static void test_edit_mode(void)
    t_menu_open = true;
    t_notices   = 0;
    CHECK(input_openxr_edit_toggle(), "a start was refused with the menu open");
-   input_openxr_edit_begin(false, false);
+   input_openxr_edit_begin(false, false, 0);
    CHECK(!t_editing && t_notices == 1 && !strcmp(t_notice, "edit no content"),
          "%u notices, the last %s, editing %d", t_notices, t_notice,
          (int)t_editing);
@@ -4212,6 +4234,112 @@ static void test_edit_snap_edge(void)
    t_snap = false;
 }
 
+/* Edit Smoothing: the frame loop steps each hand's aim once a frame,
+ * starting from the raw aim, whichever hook asks first, and publishes
+ * it; losing the hand, a recenter or a jump start it afresh. The main
+ * thread grabs and lets go from the published aim, so a screen is saved
+ * where the frame loop last showed it. Off: the raw aim, nothing
+ * published. */
+static void test_edit_smoothing(void)
+{
+   unsigned n;
+   video_xr_pose_t a, b, want;
+   video_xr_grab_t held;
+   video_screen_xr_t s;
+   video_xr_quad_set_t set;
+   const XrCompositionLayerBaseHeader *layers[OPENXR_MAX_EXTRA_LAYERS];
+   XrSpace local            = XR_NULL_HANDLE;
+   const video_xr_grab_t *g = &input_openxr_edit.hand[1].g;
+
+   t_smooth = VIDEO_OPENXR_EDIT_SMOOTHING_MEDIUM;
+   t_edit_start();
+   local   = t_xr_session.local_space;
+   t_time += 11111111;
+   CHECK(t_hooks.aim(t_hooks.user, 1, local, t_time, &a)
+         && a.position.x == 0.0f, "the first frame's aim at %.4f",
+         a.position.x);
+   /* The hand 1 cm right: the next frame's aim goes part way, and the
+    * layers in that frame get the same, not a second step. */
+   t_aim[2].position.x = 0.01f;
+   t_time += 11111111;
+   CHECK(t_hooks.aim(t_hooks.user, 1, local, t_time, &a)
+         && a.position.x > 0.0005f && a.position.x < 0.009f,
+         "smoothed to %.4f", a.position.x);
+   n   = t_aims_published;
+   set = t_quads;
+   t_hooks.frame_layers(t_hooks.user, t_time, &set, local, layers,
+         OPENXR_MAX_EXTRA_LAYERS, &t_under);
+   t_hooks.aim(t_hooks.user, 1, local, t_time, &b);
+   CHECK(b.position.x == a.position.x && t_aims_published == n + 1
+         && (t_aims.valid & 3u) == 3u
+         && t_aims.pose[1].position.x == a.position.x,
+         "stepped again to %.4f, %u publishes, valid %#x",
+         b.position.x, t_aims_published - n, t_aims.valid);
+   /* The main thread grabs from the published aim. */
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   CHECK(g->state == VIDEO_XR_GRAB_HELD
+         && t_near(g->rel.position.x, -a.position.x),
+         "taken from %.4f", -g->rel.position.x);
+   /* The hand moves on: what the frame loop shows is what is let go. */
+   t_aim[2].position.x = 0.05f;
+   t_time += 11111111;
+   t_hooks.aim(t_hooks.user, 1, local, t_time, &a);
+   held = *g;
+   video_xr_grab_pose(&held, &a, NULL, 0, NULL, &want, &s, NULL);
+   t_let_go();
+   t_edit_poll();
+   CHECK(t_near(t_xr[0].x, s.x) && t_xr[0].x < 0.045f,
+         "let go at %.4f, shown at %.4f", t_xr[0].x, s.x);
+   /* Lost, then back 10 cm on: the raw aim at once. */
+   t_aim_tracked[2] = false;
+   t_time += 11111111;
+   CHECK(!t_hooks.aim(t_hooks.user, 1, local, t_time, &a)
+         && !(t_aims.valid & 2u), "untracked, still published");
+   t_aim_tracked[2]    = true;
+   t_aim[2].position.x = 0.15f;
+   t_time += 11111111;
+   t_hooks.aim(t_hooks.user, 1, local, t_time, &a);
+   CHECK(a.position.x == 0.15f, "back at %.4f", a.position.x);
+   /* A recenter: afresh. */
+   t_aim[2].position.x = 0.16f;
+   t_recenters++;
+   t_time += 11111111;
+   t_hooks.aim(t_hooks.user, 1, local, t_time, &a);
+   CHECK(a.position.x == 0.16f, "after a recenter at %.4f",
+         a.position.x);
+   /* 0.6 m in a frame: afresh. */
+   t_aim[2].position.x = 0.76f;
+   t_time += 11111111;
+   t_hooks.aim(t_hooks.user, 1, local, t_time, &a);
+   CHECK(a.position.x == 0.76f, "after a jump at %.4f", a.position.x);
+   t_edit_end();
+
+   /* Past High, as a config may hold: Medium. */
+   t_smooth = VIDEO_OPENXR_EDIT_SMOOTHING_LAST;
+   t_edit_start();
+   t_time += 11111111;
+   t_hooks.aim(t_hooks.user, 1, local, t_time, &a);
+   t_aim[2].position.x = 0.01f;
+   t_time += 11111111;
+   CHECK(t_hooks.aim(t_hooks.user, 1, local, t_time, &a)
+         && a.position.x > 0.0005f && a.position.x < 0.009f
+         && (t_aims.valid & 2u), "past High: at %.4f, valid %#x",
+         a.position.x, t_aims.valid);
+   t_edit_end();
+
+   /* Off: the raw aim, nothing published. */
+   t_smooth = VIDEO_OPENXR_EDIT_SMOOTHING_OFF;
+   t_edit_start();
+   n                   = t_aims_published;
+   t_aim[2].position.x = 0.01f;
+   t_time += 11111111;
+   CHECK(t_hooks.aim(t_hooks.user, 1, local, t_time, &a)
+         && a.position.x == 0.01f && t_aims_published == n,
+         "off: at %.4f, %u publishes", a.position.x, t_aims_published - n);
+   t_edit_end();
+}
+
 /* Let go with the hand still moving: the release poll's own aim puts
  * the item, so the frame loop, which showed it from each frame's aim,
  * shows no step back to the poll before; the stick moves nothing then.
@@ -4401,6 +4529,7 @@ int main(void)
    test_edit_snap_two_hands();
    test_edit_turn_snap();
    test_edit_snap_edge();
+   test_edit_smoothing();
    test_edit_room();
    if (failures)
    {

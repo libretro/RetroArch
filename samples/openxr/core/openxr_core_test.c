@@ -7472,6 +7472,33 @@ static void test_frame_grabs(void)
    t_grab_free(&rt, &s, &sc, &f);
 }
 
+/* Edit Smoothing's aims reach the main thread whole, as published; a
+ * new session starts with none. */
+static void test_frame_aims(void)
+{
+   openxr_runtime_t rt;
+   openxr_session_t s;
+   openxr_swapchains_t sc;
+   openxr_frame_t f;
+   video_xr_quad_set_t set;
+   openxr_aims_t a, got;
+   t_grab_frame(&rt, &s, &sc, &f, &set);
+   memset(&a, 0, sizeof(a));
+   video_xr_pose_identity(&a.pose[0]);
+   video_xr_pose_identity(&a.pose[1]);
+   a.pose[1].position.x = 0.25f;
+   a.valid              = 2u;
+   openxr_frame_publish_aims(&f, &a);
+   openxr_frame_get_aims(&f, &got);
+   CHECK(got.valid == 2u && got.pose[1].position.x == 0.25f
+         && got.pose[1].orientation.w == 1.0f,
+         "read back valid %#x at %.3f", got.valid, got.pose[1].position.x);
+   openxr_frame_session_created(&f);
+   openxr_frame_get_aims(&f, &got);
+   CHECK(got.valid == 0u, "a new session kept aims %#x", got.valid);
+   t_grab_free(&rt, &s, &sc, &f);
+}
+
 /* The hand in the room, the screens elsewhere: Fixed in Room at an
  * anchor turned a quarter left, the held item goes where the hand puts
  * it in LOCAL; Follow Head asks the hand in VIEW. */
@@ -7928,6 +7955,7 @@ int main(void)
    test_frame_repeat();
    test_screen_placement_repeat();
    test_frame_grabs();
+   test_frame_aims();
    test_frame_grabs_reused();
    test_frame_grabs_spaces();
    test_frame_grabs_new_session();

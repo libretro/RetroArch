@@ -61,6 +61,15 @@ typedef struct openxr_grabs
    bool snap;
 } openxr_grabs_t;
 
+/* Edit Smoothing's aims, the frame loop's for the main thread: each
+ * hand's, in the frame's space, as the frame last built from it took
+ * it; bit h of valid while hand h's is tracked. */
+typedef struct openxr_aims
+{
+   video_xr_pose_t pose[2];
+   unsigned valid;
+} openxr_aims_t;
+
 /* Where a hand's held item was last shown, for the hold (slot and
  * state) it was shown for. */
 typedef struct openxr_held
@@ -168,6 +177,9 @@ typedef struct openxr_frame
    retro_atomic_int_t grabs_words[2 * OPENXR_WORDS(openxr_grabs_t)];
    openxr_grabs_t grabs;           /* the frame loop's */
    openxr_held_t held[2];          /* the frame loop's */
+   /* Edit Smoothing's aims as the frame loop publishes them. */
+   retro_atomic_int_t aims_seq;
+   retro_atomic_int_t aims_words[2 * OPENXR_WORDS(openxr_aims_t)];
    /* This frame's quads where it shows them, for the input's layers. */
    video_xr_quad_set_t shown;      /* the frame loop's */
    /* The drawing thread's quads for the XR thread and the pointer, the
@@ -323,6 +335,10 @@ void openxr_frame_publish(openxr_frame_t *f, const video_xr_quad_set_t *set);
 /* Main thread: edit mode's hands, for each frame to place what they
  * hold at its own aim. */
 void openxr_frame_publish_grabs(openxr_frame_t *f, const openxr_grabs_t *g);
+/* The frame loop's thread: the hands' smoothed aims. */
+void openxr_frame_publish_aims(openxr_frame_t *f, const openxr_aims_t *a);
+/* The main thread: the aims last published. */
+void openxr_frame_get_aims(openxr_frame_t *f, openxr_aims_t *out);
 /* The projection the XR thread submits from now on, behind the
  * screens; left out until its slot releases an image, and once the
  * track space it was drawn in is replaced without a carry. Published

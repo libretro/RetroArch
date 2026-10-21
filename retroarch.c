@@ -6614,7 +6614,8 @@ bool command_event(enum event_command cmd, void *data)
 #endif
             input_openxr_edit_begin(
                   settings->bools.video_openxr_edit_pause,
-                  settings->bools.video_openxr_edit_snap);
+                  settings->bools.video_openxr_edit_snap,
+                  settings->uints.video_openxr_edit_smoothing);
          }
 #endif
          break;

@@ -1169,6 +1169,70 @@ float video_xr_snap_fade(const video_xr_pose_t *start,
    return (k < 1.0) ? (float)k : 1.0f;
 }
 
+/* Edit Smoothing's levels, Low to High: the turn's least cutoff in Hz
+ * and its rise per radian a second, then the position's and its rise
+ * per metre a second. */
+static const float video_xr_smooth_levels[3][4] = {
+   { 2.0f, 0.6f, 4.0f, 1.0f },
+   { 1.0f, 0.4f, 2.0f, 0.7f },
+   { 0.5f, 0.3f, 1.0f, 0.5f }
+};
+
+/* A smoother's share of the way for a step of dt at a cutoff of hz. */
+static double video_xr_smooth_alpha(double dt, double hz)
+{
+   double tau = 1.0 / (2.0 * VIDEO_XR_PI * hz);
+   return 1.0 / (1.0 + tau / dt);
+}
+
+static bool video_xr_smooth_jumped(const video_xr_pose_t *a,
+      const video_xr_pose_t *b)
+{
+   double dx = (double)b->position.x - a->position.x;
+   double dy = (double)b->position.y - a->position.y;
+   double dz = (double)b->position.z - a->position.z;
+   return sqrt(dx * dx + dy * dy + dz * dz) > VIDEO_XR_SMOOTH_JUMP_M
+      || video_xr_quat_angle(&a->orientation, &b->orientation)
+         > VIDEO_XR_SMOOTH_JUMP_DEG;
+}
+
+void video_xr_smooth_step(video_xr_smooth_t *s, unsigned level,
+      const video_xr_pose_t *raw, double dt, video_xr_pose_t *out)
+{
+   const float *k;
+   double dx, dy, dz, move, turn, d, a;
+   if (     !level || level >= VIDEO_OPENXR_EDIT_SMOOTHING_LAST
+         || !s->on || dt <= 0.0 || video_xr_smooth_jumped(&s->raw, raw))
+   {
+      s->raw   = *raw;
+      s->pose  = *raw;
+      s->speed = 0.0f;
+      s->turn  = 0.0f;
+      s->on    = level && level < VIDEO_OPENXR_EDIT_SMOOTHING_LAST;
+      *out     = *raw;
+      return;
+   }
+   k     = video_xr_smooth_levels[level - 1];
+   /* The speeds from the last smoothed pose, as the filter's own. */
+   dx    = (double)raw->position.x - s->pose.position.x;
+   dy    = (double)raw->position.y - s->pose.position.y;
+   dz    = (double)raw->position.z - s->pose.position.z;
+   move  = sqrt(dx * dx + dy * dy + dz * dz) / dt;
+   turn  = video_xr_quat_angle(&s->pose.orientation, &raw->orientation)
+      * VIDEO_XR_PI / 180.0 / dt;
+   d     = video_xr_smooth_alpha(dt, VIDEO_XR_SMOOTH_DCUTOFF);
+   s->speed += (float)(d * (move - s->speed));
+   s->turn  += (float)(d * (turn - s->turn));
+   a     = video_xr_smooth_alpha(dt, k[2] + k[3] * s->speed);
+   s->pose.position.x += (float)(a * dx);
+   s->pose.position.y += (float)(a * dy);
+   s->pose.position.z += (float)(a * dz);
+   a     = video_xr_smooth_alpha(dt, k[0] + k[1] * s->turn);
+   video_xr_quat_toward(&s->pose.orientation, &raw->orientation, a);
+   s->raw = *raw;
+   *out   = s->pose;
+}
+
 /* A screen a held one may snap to: the turn it is nearest, parallel or
  * square, how many degrees off that it is, and the share of its pulls:
  * the gap's, times the grab's fade-in. */

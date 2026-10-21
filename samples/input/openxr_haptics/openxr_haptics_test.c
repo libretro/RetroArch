@@ -176,6 +176,15 @@ void video_xr_outline(const video_xr_quad_t *q, video_xr_quad_t *out)
 { *out = *q; }
 void openxr_frame_publish_grabs(openxr_frame_t *f, const openxr_grabs_t *g)
 { (void)f; (void)g; }
+void video_xr_smooth_step(video_xr_smooth_t *s, unsigned level,
+      const video_xr_pose_t *raw, double dt, video_xr_pose_t *out)
+{ (void)s; (void)level; (void)dt; *out = *raw; }
+void openxr_frame_publish_aims(openxr_frame_t *f, const openxr_aims_t *a)
+{ (void)f; (void)a; }
+void openxr_frame_get_aims(openxr_frame_t *f, openxr_aims_t *out)
+{ (void)f; memset(out, 0, sizeof(*out)); }
+int openxr_frame_recenters(openxr_frame_t *f)
+{ (void)f; return 0; }
 static video_xr_quad_set_t test_shown;
 static unsigned test_under;
 

@@ -82,6 +82,17 @@ enum video_openxr_laser_beam
    VIDEO_OPENXR_LASER_BEAM_LAST
 };
 
+/* Edit Smoothing: how much edit mode steadies the controllers' aim
+ * (video_openxr_edit_smoothing). */
+enum video_openxr_edit_smoothing
+{
+   VIDEO_OPENXR_EDIT_SMOOTHING_OFF = 0,
+   VIDEO_OPENXR_EDIT_SMOOTHING_LOW,
+   VIDEO_OPENXR_EDIT_SMOOTHING_MEDIUM,
+   VIDEO_OPENXR_EDIT_SMOOTHING_HIGH,
+   VIDEO_OPENXR_EDIT_SMOOTHING_LAST
+};
+
 /* video_openxr_placement: where the headset keeps the screens. */
 enum video_openxr_placement
 {

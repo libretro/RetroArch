@@ -59,3 +59,8 @@ S_BOOL(video_openxr_edit_snap, VIDEO_OPENXR_EDIT_SNAP,
       true, SD_FLAG_NONE, 0, 0,
       "Snap to Screens",
       "Lines up a held screen with the screens near it: parallel or square to one, then in its plane and level, or edge to edge. The holding hand buzzes as a snap takes hold.")
+S_UINT_EX(video_openxr_edit_smoothing, VIDEO_OPENXR_EDIT_SMOOTHING,
+      "video_openxr_edit_smoothing",
+      2, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, 3, 1, 0, setting_action_ok_uint, setting_get_string_representation_video_openxr_edit_smoothing, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,
+      "Edit Smoothing",
+      "Steadies the controllers' aim while Edit Screens moves the screens, so a screen held far out does not shake with the hand: a slow hand is smoothed a lot, a fast one little. Off: the aim as tracked.")

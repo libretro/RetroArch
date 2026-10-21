@@ -289,6 +289,31 @@ unsigned video_xr_snap(const video_xr_quad_set_t *set, unsigned slot,
 float video_xr_snap_fade(const video_xr_pose_t *start,
       const video_xr_pose_t *pose);
 
+/* Edit Smoothing's filter for a hand's aim: a One Euro filter (Casiez
+ * et al. 2012) on its position and its turn, smoothing a slow hand
+ * hard and a fast one little. */
+typedef struct video_xr_smooth
+{
+   video_xr_pose_t raw;    /* the last step's raw pose */
+   video_xr_pose_t pose;   /* and what it gave */
+   float speed;            /* metres a second, filtered */
+   float turn;             /* radians a second, filtered */
+   bool on;                /* false: the next step starts afresh */
+} video_xr_smooth_t;
+
+/* A step jumping further than these starts afresh. */
+#define VIDEO_XR_SMOOTH_JUMP_M   0.5f
+#define VIDEO_XR_SMOOTH_JUMP_DEG 45.0f
+/* The speeds' own cutoff in Hz. */
+#define VIDEO_XR_SMOOTH_DCUTOFF  1.0f
+
+/* s one step on, dt seconds after the last, to raw, as level (enum
+ * video_openxr_edit_smoothing) smooths: the pose into out. Off, a first
+ * step (s->on false, or dt not above 0) or a jump: out is raw, and the
+ * filter starts from it. */
+void video_xr_smooth_step(video_xr_smooth_t *s, unsigned level,
+      const video_xr_pose_t *raw, double dt, video_xr_pose_t *out);
+
 void video_xr_pose_identity(video_xr_pose_t *pose);
 
 /* out = q applied to v; out may be v. */

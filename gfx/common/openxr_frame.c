@@ -34,7 +34,8 @@ typedef char openxr_seq_fits[
       (   OPENXR_WORDS(openxr_tracked_t)    <= OPENXR_WORDS(video_xr_quad_set_t)
        && OPENXR_WORDS(openxr_screens_t)    <= OPENXR_WORDS(video_xr_quad_set_t)
        && OPENXR_WORDS(openxr_projection_t) <= OPENXR_WORDS(video_xr_quad_set_t)
-       && OPENXR_WORDS(openxr_grabs_t)      <= OPENXR_WORDS(video_xr_quad_set_t))
+       && OPENXR_WORDS(openxr_grabs_t)      <= OPENXR_WORDS(video_xr_quad_set_t)
+       && OPENXR_WORDS(openxr_aims_t)       <= OPENXR_WORDS(video_xr_quad_set_t))
       ? 1 : -1];
 
 /* A latched seqlock: two copies of the words, one writer, any number
@@ -937,6 +938,7 @@ void openxr_frame_deinit(openxr_frame_t *f)
 
 /* A new session's frame loop holds nothing, whatever the input does. */
 static const openxr_grabs_t openxr_frame_no_grabs;
+static const openxr_aims_t openxr_frame_no_aims;
 
 void openxr_frame_session_created(openxr_frame_t *f)
 {
@@ -950,6 +952,8 @@ void openxr_frame_session_created(openxr_frame_t *f)
          &f->screens, sizeof(f->screens));
    openxr_seq_publish(&f->grabs_seq, f->grabs_words,
          &openxr_frame_no_grabs, sizeof(openxr_frame_no_grabs));
+   openxr_seq_publish(&f->aims_seq, f->aims_words,
+         &openxr_frame_no_aims, sizeof(openxr_frame_no_aims));
    retro_atomic_store_release_int(&f->recenter, 0);
    openxr_frame_list_rates(f);
 }
@@ -1303,6 +1307,11 @@ void openxr_frame_publish_grabs(openxr_frame_t *f, const openxr_grabs_t *g)
    openxr_seq_publish(&f->grabs_seq, f->grabs_words, g, sizeof(*g));
 }
 
+void openxr_frame_publish_aims(openxr_frame_t *f, const openxr_aims_t *a)
+{
+   openxr_seq_publish(&f->aims_seq, f->aims_words, a, sizeof(*a));
+}
+
 void openxr_frame_publish_projection(openxr_frame_t *f,
       const openxr_projection_t *p)
 {
@@ -1353,6 +1362,11 @@ void openxr_frame_get_screens(openxr_frame_t *f, video_xr_pose_t *pose,
    openxr_seq_read(&f->screens_seq, f->screens_words, &at, sizeof(at));
    *pose  = at.pose;
    *space = at.view ? f->session->view_space : f->session->local_space;
+}
+
+void openxr_frame_get_aims(openxr_frame_t *f, openxr_aims_t *out)
+{
+   openxr_seq_read(&f->aims_seq, f->aims_words, out, sizeof(*out));
 }
 
 void openxr_frame_request_recenter(openxr_frame_t *f)

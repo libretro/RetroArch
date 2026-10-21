@@ -924,6 +924,7 @@ static void test_xr_edit_rows(void)
    CHECK(!menu_has_setting("video_screen_xr_edit"));
    CHECK(!menu_has_setting("video_openxr_edit_pause"));
    CHECK(!menu_has_setting("video_openxr_edit_snap"));
+   CHECK(!menu_has_setting("video_openxr_edit_smoothing"));
    settings->bools.video_openxr_enable = true;
    CHECK(menu_has_setting("video_screen_xr_edit"));
    CHECK(menu_has_setting("video_openxr_edit_pause"));
@@ -937,6 +938,14 @@ static void test_xr_edit_rows(void)
    menu_action("video_openxr_edit_snap", MENU_ACTION_RIGHT);
    CHECK(!settings->bools.video_openxr_edit_snap);
    menu_value("video_openxr_edit_snap", "OFF");
+   CHECK(menu_has_setting("video_openxr_edit_smoothing"));
+   CHECK(settings->uints.video_openxr_edit_smoothing
+         == VIDEO_OPENXR_EDIT_SMOOTHING_MEDIUM);
+   menu_value("video_openxr_edit_smoothing", "Medium");
+   menu_action("video_openxr_edit_smoothing", MENU_ACTION_RIGHT);
+   CHECK(settings->uints.video_openxr_edit_smoothing
+         == VIDEO_OPENXR_EDIT_SMOOTHING_HIGH);
+   menu_value("video_openxr_edit_smoothing", "High");
    for (i = 0; input_config_bind_map_get_valid(i); i++)
       if (input_config_bind_map_get_retro_key(i) == RARCH_HEADSET_EDIT_SCREENS)
          base = input_config_bind_map_get_base(i);
@@ -976,6 +985,21 @@ static void test_xr_laser_beam_row(void)
    CHECK(settings->uints.video_openxr_laser_beam
          == VIDEO_OPENXR_LASER_BEAM_OFF);
    menu_value("video_openxr_laser_beam", "Off");
+}
+
+static void test_xr_edit_smoothing_row(void)
+{
+   settings_t *settings = config_get_ptr();
+   load_fixture("video_driver = \"glcore\"\n"
+         "video_openxr_enable = \"true\"\n"
+         "video_openxr_edit_smoothing = \"0\"\n");
+   CHECK(settings->uints.video_openxr_edit_smoothing
+         == VIDEO_OPENXR_EDIT_SMOOTHING_OFF);
+   menu_value("video_openxr_edit_smoothing", "Off");
+   load_fixture("video_driver = \"glcore\"\n"
+         "video_openxr_enable = \"true\"\n"
+         "video_openxr_edit_smoothing = \"1\"\n");
+   menu_value("video_openxr_edit_smoothing", "Low");
 }
 #endif
 
@@ -2242,6 +2266,7 @@ int main(int argc, char **argv)
    test_xr_menu_tracked_screen();
    test_xr_edit_rows();
    test_xr_laser_beam_row();
+   test_xr_edit_smoothing_row();
 #endif
    menu_setting_free(menu_state_get_ptr()->entries.list_settings);
    free(menu_state_get_ptr()->entries.list_settings);

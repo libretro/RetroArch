@@ -263,11 +263,13 @@ def run_case(retroarch, root, monado, case, validate):
 
     # A screen carried 5 cm or more snaps: in the 3DS layout the other
     # screen's edge, 3.2 cm off, would pull it 2.8 cm. The snap cases
-    # turn it on.
+    # turn it on. Edit Smoothing too: a smoothed screen lags the scripted
+    # hand; the smoothing cases turn it on.
     settings = {'video_openxr_enable': 'true',
                 'video_openxr_distance': '1.8',
                 'video_openxr_width': '1.6',
-                'video_openxr_edit_snap': 'false'}
+                'video_openxr_edit_snap': 'false',
+                'video_openxr_edit_smoothing': '0'}
     if case.get('overlay'):
         settings.update(write_overlay(d))
     settings.update(case.get('settings', {}))
@@ -5719,6 +5721,71 @@ def check_edit_snap_square(res):
     return errors
 
 
+# The right hand holding screen 1 sways half a degree either side every
+# 50 ms, a 10 Hz shake 1.6 cm either side at the screen, then stops for
+# a tenth of a second and lets go, before a smoothed screen catches up.
+SWAY = math.tan(math.radians(0.5)) * 1.8
+
+
+def sway_aim(k):
+    return aim_line((0.0, 0.0, 0.0), (SWAY if k % 2 else -SWAY, 0.0, -1.8))
+
+
+EDIT_SWAY_STEPS = edit_start(edit_aim()) + [
+    ('script', script(edit_aim(), EDIT_GRIP)), ('wait', 1),
+    ('mark', 'sway')] + [
+    step for k in range(24)
+    for step in (('script', script(sway_aim(k), EDIT_GRIP)), ('wait', 0.05))
+] + [('wait', 0.1), ('mark', 'still'), ('script', sway_aim(23)),
+     ('mark', 'released'),
+     ('wait', 1.5), ('send', EDIT), ('wait', 2), ('mark', 'off'),
+     ('wait', 1)]
+
+
+def check_edit_sway(smooth):
+    def check(res):
+        """Screen 1 held by a hand swaying half a degree either side at
+        10 Hz: with Edit Smoothing at Medium it moves less than 60% of
+        the sway's 3.1 cm, Off the whole sway. Let go before it catches
+        up with the hand, it shows no step from where it was last shown,
+        and is saved there. Frames further apart than two of the sway's
+        are not compared: after a stall the smoothing catches up in one
+        frame."""
+        errors = edit_log_errors(res, ['on', 'off'])
+        sway = between(res, 'sway', 'still', screen1_left, delay=0.3)
+        xs = [screen1_left(f)['pose'][0] for f in sway]
+        if len(xs) < 10:
+            return errors + ['%d frames of the sway' % len(xs)]
+        span = max(xs) - min(xs)
+        if smooth and span > 0.6 * 2 * SWAY:
+            errors.append('smoothed, screen 1 swayed %.4f m, want under '
+                          '%.4f' % (span, 0.6 * 2 * SWAY))
+        if not smooth and span < 0.9 * 2 * SWAY:
+            errors.append('off, screen 1 swayed %.4f m of %.4f'
+                          % (span, 2 * SWAY))
+        gaps = sorted(b['t_us'] - a['t_us'] for a, b in zip(sway, sway[1:]))
+        period = gaps[len(gaps) // 2]
+        after = sway[-1:] + between(res, 'still', 'off', screen1_left)
+        steps = [abs(screen1_left(b)['pose'][0] - screen1_left(a)['pose'][0])
+                 for a, b in zip(after, after[1:])
+                 if b['t_us'] - a['t_us'] <= 2 * period]
+        if len(steps) < 20:
+            errors.append('%d of %d pairs of frames from the let-go to the '
+                          'end without a stall between them, want 20'
+                          % (len(steps), len(after) - 1))
+        elif max(steps) > 0.004:
+            errors.append('screen 1 stepped %.4f m between frames as it '
+                          'was let go' % max(steps))
+        last = last_before(res, 'off', screen1_left)
+        if not last:
+            return errors + ['no frame of screen 1 before the end']
+        return errors + saved_errors(res, 'screen 1', 'video_screen1_xr_',
+                                     S0, (tuple(last['pose'][:3]),
+                                          tuple(last['pose'][3:])),
+                                     (1.6, 0.96), last)
+    return check
+
+
 EDIT_GRAB_STEPS = edit_start(edit_aim(), 1) + [
     ('mark', 'aimed'), ('wait', 1), ('mark', 'grab'),
     ('script', script(edit_aim(), EDIT_GRIP)), ('wait', 1),
@@ -6105,6 +6172,11 @@ EDIT_CASES += [
          ('script', edit_aim()), ('mark', 'released'), ('wait', 1),
          ('send', EDIT), ('wait', 2), ('mark', 'off'), ('wait', 1)],
      'check': check_edit_snap_square},
+    {'name': 'edit-smooth', 'map': '3ds',
+     'settings': dict(SAVE, video_openxr_edit_smoothing='2'),
+     'steps': EDIT_SWAY_STEPS, 'check': check_edit_sway(True)},
+    {'name': 'edit-smooth-off', 'map': '3ds', 'settings': SAVE,
+     'steps': EDIT_SWAY_STEPS, 'check': check_edit_sway(False)},
 ]
 
 

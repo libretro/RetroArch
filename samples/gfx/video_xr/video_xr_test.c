@@ -3110,6 +3110,192 @@ static void test_turn_snap(void)
          && vec_is(&pose.position, 0.8, 0.0, -1.5));
 }
 
+#define SMOOTH_MAX 400
+static double t_smooth_raw[SMOOTH_MAX];
+static double t_smooth_out[SMOOTH_MAX];
+
+/* Edit Smoothing at level, hz frames a second for secs, on a yaw that
+ * turns rate degrees a second with a shake of amp degrees at f Hz: each
+ * frame's raw and smoothed yaw into t_smooth_raw and t_smooth_out.
+ * Returns the frames. */
+static unsigned smooth_run(unsigned level, double hz, double secs,
+      double rate, double amp, double f)
+{
+   unsigned i;
+   video_xr_smooth_t s;
+   video_xr_pose_t raw, out;
+   unsigned n = (unsigned)(secs * hz) + 1;
+   memset(&s, 0, sizeof(s));
+   for (i = 0; i < n && i < SMOOTH_MAX; i++)
+   {
+      double t   = i / hz;
+      double yaw = rate * t + amp * sin(2.0 * M_PI * f * t);
+      snap_pose(&raw, 0.0, 0.0, 0.0, yaw);
+      video_xr_smooth_step(&s, level, &raw, i ? 1.0 / hz : 0.0, &out);
+      t_smooth_raw[i] = yaw;
+      t_smooth_out[i] = snap_yaw(&out);
+   }
+   return i;
+}
+
+/* The root mean square of a run's second differences: what a shake
+ * adds and a steady turn does not. */
+static double smooth_jerk(const double *a, unsigned n)
+{
+   unsigned i;
+   double sum = 0.0;
+   for (i = 1; i + 1 < n; i++)
+   {
+      double d = a[i + 1] - 2.0 * a[i] + a[i - 1];
+      sum += d * d;
+   }
+   return sqrt(sum / (n - 2));
+}
+
+/* Steady after a step of 2 cm and 5 degrees, Medium settles on the
+ * hand within two seconds, part way after one frame. */
+static void test_smooth_steady(void)
+{
+   unsigned i;
+   video_xr_smooth_t s;
+   video_xr_pose_t raw, out;
+   memset(&s, 0, sizeof(s));
+   snap_pose(&raw, 0.0, 0.0, 0.0, 0.0);
+   video_xr_smooth_step(&s, VIDEO_OPENXR_EDIT_SMOOTHING_MEDIUM, &raw, 0.0,
+         &out);
+   CHECK(s.on && pose_same(&out, &raw));
+   snap_pose(&raw, 0.02, 0.0, 0.0, 5.0);
+   video_xr_smooth_step(&s, VIDEO_OPENXR_EDIT_SMOOTHING_MEDIUM, &raw,
+         1.0 / 90.0, &out);
+   CHECK(out.position.x > 0.0f && out.position.x < 0.02f
+         && snap_yaw(&out) > 0.0 && snap_yaw(&out) < 5.0);
+   for (i = 0; i < 180; i++)
+      video_xr_smooth_step(&s, VIDEO_OPENXR_EDIT_SMOOTHING_MEDIUM, &raw,
+            1.0 / 90.0, &out);
+   CHECK(fabs(snap_yaw(&out) - 5.0) < 0.01
+         && fabs(out.position.x - 0.02) < 0.0001);
+}
+
+/* A 0.3 degree shake at 8 to 12 Hz, the hand still or turning 10
+ * degrees a second: Medium cuts it by at least half (about a fifth). */
+static void test_smooth_tremor(void)
+{
+   unsigned k, m;
+   static const double f[3] = { 8.0, 10.0, 12.0 };
+   for (k = 0; k < 3; k++)
+      for (m = 0; m < 2; m++)
+      {
+         unsigned n = smooth_run(VIDEO_OPENXR_EDIT_SMOOTHING_MEDIUM, 90.0,
+               3.0, m ? 10.0 : 0.0, 0.3, f[k]);
+         /* After a second's settling. */
+         CHECK(smooth_jerk(t_smooth_out + 90, n - 90)
+               < 0.5 * smooth_jerk(t_smooth_raw + 90, n - 90));
+      }
+}
+
+/* A fast 90 degree sweep in 0.25 s, at 72, 90 and 120 Hz: 100 ms after
+ * it ends Medium is within a degree of the hand (about 0.5 at most). */
+static void test_smooth_sweep(void)
+{
+   unsigned k;
+   static const double hz[3] = { 72.0, 90.0, 120.0 };
+   for (k = 0; k < 3; k++)
+   {
+      unsigned i;
+      video_xr_smooth_t s;
+      video_xr_pose_t raw, out;
+      unsigned end = (unsigned)(0.35 * hz[k] + 0.5);
+      memset(&s, 0, sizeof(s));
+      for (i = 0; i <= end; i++)
+      {
+         double t = i / hz[k];
+         snap_pose(&raw, 0.0, 0.0, 0.0, (t < 0.25 ? t / 0.25 : 1.0) * 90.0);
+         video_xr_smooth_step(&s, VIDEO_OPENXR_EDIT_SMOOTHING_MEDIUM, &raw,
+               i ? 1.0 / hz[k] : 0.0, &out);
+      }
+      CHECK(fabs(snap_yaw(&out) - 90.0) < 1.0);
+   }
+}
+
+/* The same move, 30 degrees and 10 cm over a second then still, at 72
+ * and 120 Hz: at every 24th of a second the two agree within a degree
+ * (about 0.4 at most) and 3 mm. */
+static void test_smooth_rates(void)
+{
+   unsigned i, j;
+   static const double hz[2]       = { 72.0, 120.0 };
+   static const unsigned every[2]  = { 3, 5 };
+   double yaw[2][49];
+   double x[2][49];
+   for (j = 0; j < 2; j++)
+   {
+      video_xr_smooth_t s;
+      video_xr_pose_t raw, out;
+      memset(&s, 0, sizeof(s));
+      for (i = 0; i <= 48 * every[j]; i++)
+      {
+         double t = i / hz[j];
+         double k = (t < 1.0) ? t : 1.0;
+         snap_pose(&raw, 0.1 * k, 0.0, 0.0, 30.0 * k);
+         video_xr_smooth_step(&s, VIDEO_OPENXR_EDIT_SMOOTHING_MEDIUM, &raw,
+               i ? 1.0 / hz[j] : 0.0, &out);
+         if (i % every[j] == 0)
+         {
+            yaw[j][i / every[j]] = snap_yaw(&out);
+            x[j][i / every[j]]   = out.position.x;
+         }
+      }
+   }
+   for (i = 0; i < 49; i++)
+      CHECK(fabs(yaw[0][i] - yaw[1][i]) < 1.0
+            && fabs(x[0][i] - x[1][i]) < 0.003);
+}
+
+/* Off is the raw aim and keeps nothing. A first step, a step of no
+ * time, a filter not on, and a jump of more than half a metre or 45
+ * degrees in a step all start afresh from the raw aim; the next step
+ * smooths again. */
+static void test_smooth_resets(void)
+{
+   video_xr_smooth_t s;
+   video_xr_pose_t raw, out;
+   memset(&s, 0, sizeof(s));
+   snap_pose(&raw, 0.0, 0.0, 0.0, 0.0);
+   video_xr_smooth_step(&s, VIDEO_OPENXR_EDIT_SMOOTHING_OFF, &raw, 0.0,
+         &out);
+   snap_pose(&raw, 0.01, 0.0, 0.0, 3.0);
+   video_xr_smooth_step(&s, VIDEO_OPENXR_EDIT_SMOOTHING_OFF, &raw,
+         1.0 / 90.0, &out);
+   CHECK(!s.on && pose_same(&out, &raw));
+   video_xr_smooth_step(&s, VIDEO_OPENXR_EDIT_SMOOTHING_HIGH, &raw,
+         1.0 / 90.0, &out);
+   CHECK(s.on && pose_same(&out, &raw));
+   snap_pose(&raw, 0.02, 0.0, 0.0, 4.0);
+   video_xr_smooth_step(&s, VIDEO_OPENXR_EDIT_SMOOTHING_HIGH, &raw,
+         1.0 / 90.0, &out);
+   CHECK(!pose_same(&out, &raw));
+   video_xr_smooth_step(&s, VIDEO_OPENXR_EDIT_SMOOTHING_HIGH, &raw, 0.0,
+         &out);
+   CHECK(pose_same(&out, &raw));
+   snap_pose(&raw, 0.62, 0.0, 0.0, 4.0);
+   video_xr_smooth_step(&s, VIDEO_OPENXR_EDIT_SMOOTHING_HIGH, &raw,
+         1.0 / 90.0, &out);
+   CHECK(pose_same(&out, &raw));
+   snap_pose(&raw, 0.62, 0.0, 0.0, 54.0);
+   video_xr_smooth_step(&s, VIDEO_OPENXR_EDIT_SMOOTHING_HIGH, &raw,
+         1.0 / 90.0, &out);
+   CHECK(pose_same(&out, &raw));
+   /* 0.4 m and 40 degrees in a step: smoothed. */
+   snap_pose(&raw, 0.22, 0.0, 0.0, 14.0);
+   video_xr_smooth_step(&s, VIDEO_OPENXR_EDIT_SMOOTHING_HIGH, &raw,
+         1.0 / 90.0, &out);
+   CHECK(!pose_same(&out, &raw));
+   s.on = false;
+   video_xr_smooth_step(&s, VIDEO_OPENXR_EDIT_SMOOTHING_HIGH, &raw,
+         1.0 / 90.0, &out);
+   CHECK(pose_same(&out, &raw));
+}
+
 /* The 3DS layout: screen 1, 1.6 x 0.96 at 1.8 m; screen 2, 1.28 x 0.96,
  * held by a hand at the origin from its spot 3.2 cm under screen 1,
  * inside the bottom edge's 3-6 cm fade. */
@@ -3537,6 +3723,11 @@ int main(void)
    test_snap_turned();
    test_grab_snap();
    test_turn_snap();
+   test_smooth_steady();
+   test_smooth_tremor();
+   test_smooth_sweep();
+   test_smooth_rates();
+   test_smooth_resets();
    test_snap_no_hop();
    test_snap_fade_in();
    test_live_edit();

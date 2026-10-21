@@ -443,6 +443,19 @@ enum input_openxr_role
    INPUT_OPENXR_ROLE_SPENT  /* nothing */
 };
 
+/* A hand's Edit Smoothing, the XR thread's: its filter, the frame and
+ * space it was last stepped for, what that gave, and the recenters it
+ * had seen. */
+typedef struct input_openxr_smooth
+{
+   video_xr_smooth_t filter;
+   video_xr_pose_t pose;
+   XrTime time;
+   XrSpace space;
+   int recenters;
+   bool tracked;
+} input_openxr_smooth_t;
+
 typedef struct input_openxr
 {
    /* Written by the session hooks, while neither the poll nor the XR
@@ -532,10 +545,13 @@ typedef struct input_openxr
    unsigned last_sticks[INPUT_OPENXR_PADS];
 
    /* XR thread: the dots, the beams, edit mode's outlines and the
-    * menu's handle. */
+    * menu's handle, and Edit Smoothing's filters and the aims they
+    * published. */
    XrCompositionLayerQuad cursors[INPUT_OPENXR_HANDS];
    XrCompositionLayerQuad beams[INPUT_OPENXR_HANDS];
    XrCompositionLayerQuad outlines[VIDEO_XR_MAX_SLOTS + 1];
+   input_openxr_smooth_t smooth[INPUT_OPENXR_HANDS];
+   openxr_aims_t aims;
 } input_openxr_t;
 
 static input_openxr_t input_openxr_st;
@@ -572,18 +588,21 @@ typedef struct input_openxr_edit
    bool paused;       /* edit mode paused the content */
    bool changed;      /* it wrote a setting */
    bool snap;         /* Snap to Screens */
+   unsigned smoothing; /* Edit Smoothing, as edit mode started */
    bool next;         /* last poll's Select Next and Previous */
    bool prev;
 } input_openxr_edit_t;
 
 static input_openxr_edit_t input_openxr_edit;
 
-/* The main thread's laser mode, menu and Laser Beam, for the XR
- * thread's dots and beams. */
-#define INPUT_OPENXR_LASER_MASK 3
-#define INPUT_OPENXR_MENU_OPEN  4
-#define INPUT_OPENXR_BEAM_SHIFT 3
-#define INPUT_OPENXR_BEAM_MASK  3
+/* The main thread's laser mode, menu, Laser Beam and edit mode's Edit
+ * Smoothing, for the XR thread's dots, beams and aims. */
+#define INPUT_OPENXR_LASER_MASK   3
+#define INPUT_OPENXR_MENU_OPEN    4
+#define INPUT_OPENXR_BEAM_SHIFT   3
+#define INPUT_OPENXR_BEAM_MASK    3
+#define INPUT_OPENXR_SMOOTH_SHIFT 5
+#define INPUT_OPENXR_SMOOTH_MASK  3
 static retro_atomic_int_t input_openxr_pointer_config;
 
 /* A core's rumble per pad, strong in the high half and weak in the
@@ -1242,6 +1261,87 @@ static bool input_openxr_ray(const input_openxr_t *st, unsigned h,
    return true;
 }
 
+/* Edit Smoothing's level for the frame loop from the main thread's
+ * config: edit mode's, else Off. */
+static unsigned input_openxr_smoothing(int config)
+{
+   if ((config & INPUT_OPENXR_LASER_MASK) != VIDEO_XR_LIVE_EDIT)
+      return VIDEO_OPENXR_EDIT_SMOOTHING_OFF;
+   return ((unsigned)config >> INPUT_OPENXR_SMOOTH_SHIFT)
+      & INPUT_OPENXR_SMOOTH_MASK;
+}
+
+/* The frame loop's aim for hand h at time in space: in edit mode with
+ * Edit Smoothing on, its filter's, stepped once a frame whichever hook
+ * asks first and published for the main thread; else as located. Lost,
+ * recentred or in another space, the filter starts afresh. */
+static bool input_openxr_frame_pose(input_openxr_t *st, unsigned h,
+      XrSpace space, XrTime time, video_xr_pose_t *pose)
+{
+   video_xr_pose_t raw;
+   input_openxr_smooth_t *s = &st->smooth[h];
+   unsigned level           = input_openxr_smoothing(
+         retro_atomic_load_acquire_int(&input_openxr_pointer_config));
+   if (!level || !st->frame)
+   {
+      /* The next edit mode with it on starts afresh. */
+      s->filter.on = false;
+      s->time      = 0;
+      return input_openxr_aim(st, h, space, time, pose);
+   }
+   if (s->time != time || s->space != space)
+   {
+      int recenters = openxr_frame_recenters(st->frame);
+      double dt     = (s->time && time > s->time && s->space == space)
+         ? (double)(time - s->time) / 1000000000.0 : 0.0;
+      s->tracked    = input_openxr_aim(st, h, space, time, &raw);
+      if (!s->tracked || recenters != s->recenters)
+         s->filter.on = false;
+      if (s->tracked)
+      {
+         video_xr_smooth_step(&s->filter, level, &raw, dt, &s->pose);
+         st->aims.pose[h] = s->pose;
+         st->aims.valid  |= 1u << h;
+      }
+      else
+         st->aims.valid  &= ~(1u << h);
+      s->time      = time;
+      s->space     = space;
+      s->recenters = recenters;
+      openxr_frame_publish_aims(st->frame, &st->aims);
+   }
+   if (s->tracked)
+      *pose = s->pose;
+   return s->tracked;
+}
+
+/* First in each headset frame: in edit mode with Edit Smoothing on,
+ * both hands' filters stepped and published whatever the layers then
+ * draw; else every filter afresh and any aims published taken back,
+ * so the main thread never reads an earlier edit's. */
+static void input_openxr_frame_aims(input_openxr_t *st, int config,
+      XrSpace space, XrTime time)
+{
+   unsigned h;
+   video_xr_pose_t pose;
+   if (input_openxr_smoothing(config))
+   {
+      for (h = 0; h < INPUT_OPENXR_HANDS; h++)
+         input_openxr_frame_pose(st, h, space, time, &pose);
+      return;
+   }
+   for (h = 0; h < INPUT_OPENXR_HANDS; h++)
+   {
+      st->smooth[h].filter.on = false;
+      st->smooth[h].time      = 0;
+   }
+   if (st->aims.valid)
+   {
+      st->aims.valid = 0;
+      openxr_frame_publish_aims(st->frame, &st->aims);
+   }
+}
+
 /* A point on a screen's quad as the core's pointer coordinates: into
  * the core's view map when it has one, over the whole frame when not.
  * A window has the frame where the video driver's viewport puts it, as
@@ -1641,6 +1741,7 @@ static unsigned input_openxr_frame_layers(void *user, XrTime time,
    unsigned h;
    XrSwapchain cursor;
    video_xr_pose_t head;
+   video_xr_pose_t aim;
    video_xr_vec3_t o[INPUT_OPENXR_HANDS];
    video_xr_vec3_t d[INPUT_OPENXR_HANDS];
    float reach[INPUT_OPENXR_HANDS];
@@ -1660,6 +1761,8 @@ static unsigned input_openxr_frame_layers(void *user, XrTime time,
    (void)user;
 
    *under = 0;
+   if (st->frame)
+      input_openxr_frame_aims(st, config, space, time);
    if (     !st->frame || laser == VIDEO_OPENXR_LASER_OFF
          || !openxr_session_focused(st->frame->session)
          || !(cursor = openxr_frame_cursor(st->frame)))
@@ -1673,8 +1776,9 @@ static unsigned input_openxr_frame_layers(void *user, XrTime time,
       float t                   = 0.0f;
       video_xr_pose_t pose;
       XrCompositionLayerQuad *l = &st->cursors[dots];
-      if (!input_openxr_ray(st, h, space, time, &o[rays], &d[rays]))
+      if (!input_openxr_frame_pose(st, h, space, time, &aim))
          continue;
+      input_openxr_aim_ray(&aim, &o[rays], &d[rays]);
       q           = (laser == VIDEO_XR_LIVE_EDIT)
          ? video_xr_pick_edit(set,
                ((st->frame->grabs.stuck >> h) & 1u) != 0, &o[rays],
@@ -1736,13 +1840,14 @@ static unsigned input_openxr_frame_layers(void *user, XrTime time,
 }
 
 /* The XR thread: a hand's aim pose at a frame's time, for what it
- * holds. */
+ * holds; edit mode's smoothed as Edit Smoothing says. */
 static bool input_openxr_frame_aim(void *user, unsigned hand,
       XrSpace space, XrTime time, video_xr_pose_t *pose)
 {
    (void)user;
    return hand < INPUT_OPENXR_HANDS
-      && input_openxr_aim(&input_openxr_st, hand, space, time, pose);
+      && input_openxr_frame_pose(&input_openxr_st, hand, space, time,
+            pose);
 }
 
 /* Rumble into each hand's haptics: in Combined player 1's strong motor
@@ -2357,13 +2462,14 @@ static void input_openxr_edit_reset(input_openxr_edit_t *e, unsigned slot)
  * Screens asks, and the desktop told. Video hears of it first, so the
  * frame the pause draws shows edit mode. */
 static void input_openxr_edit_start(input_openxr_edit_t *e, bool pause,
-      bool snap)
+      bool snap, unsigned smoothing)
 {
    unsigned h;
    const char *msg = msg_hash_to_str(MSG_OPENXR_EDIT_ON);
    uint32_t flags  = runloop_get_flags();
    e->on      = true;
    e->snap    = snap;
+   e->smoothing = smoothing;
    e->changed = false;
    e->unbound = 0;
    e->paused  = false;
@@ -2415,11 +2521,12 @@ static void input_openxr_edit_stop(input_openxr_edit_t *e)
 
 /* Edit mode's poll, in the screens' frame, where the quads and the aims
  * are both put: Select Next and Previous step the chosen item; each
- * hand points at an item; a grip grabs the chosen item from anywhere,
- * or with none chosen (or the other hand holding it) what the hand
- * points at, and while held it goes where the hand puts it, turned by
- * the other hand's stick while that hand holds nothing, and writes its
- * settings; the main button resets the chosen item, or what a free
+ * hand points at an item; with Edit Smoothing on, each hand's aim is
+ * the frame loop's smoothed one; a grip grabs the chosen item from
+ * anywhere, or with none chosen (or the other hand holding it) what the
+ * hand points at, and while held it goes where the hand puts it, turned
+ * by the other hand's stick while that hand holds nothing, and writes
+ * its settings; the main button resets the chosen item, or what a free
  * hand points at. The RetroArch menu and Edit Screens come from its own
  * set; nothing reaches the pads, whose triggers go unread. */
 static void input_openxr_edit_poll(input_openxr_t *st,
@@ -2428,6 +2535,7 @@ static void input_openxr_edit_poll(input_openxr_t *st,
    unsigned h;
    bool next, prev;
    video_xr_pose_t screens, inv;
+   openxr_aims_t aims;
    XrSpace space    = XR_NULL_HANDLE;
    XrTime time      = openxr_frame_predicted_time(st->frame);
    retro_time_t now = cpu_features_get_time_usec();
@@ -2446,6 +2554,11 @@ static void input_openxr_edit_poll(input_openxr_t *st,
    openxr_frame_get_quads(st->frame, &st->quads);
    openxr_frame_get_screens(st->frame, &screens, &space);
    video_xr_pose_invert(&screens, &inv);
+   /* Edit Smoothing: the aims the frame loop built its last frame
+    * from, so what is let go is where it was shown. */
+   memset(&aims, 0, sizeof(aims));
+   if (e->smoothing)
+      openxr_frame_get_aims(st->frame, &aims);
    /* Items where the headset shows them: let go and not yet in the
     * quads, as the frame loop holds them; held, where the hand put
     * them. */
@@ -2486,10 +2599,14 @@ static void input_openxr_edit_poll(input_openxr_t *st,
       bool grip                 = input_openxr_bool(st, IXA_E_GRAB, hand);
       bool reset                = input_openxr_bool(st, IXA_E_RESET, hand);
       bool tilt                 = input_openxr_bool(st, IXA_E_TILT, hand);
-      bool tracked              = input_openxr_aim(st, h, space, time, &aim);
+      bool tracked              = e->smoothing
+         ? ((aims.valid >> h) & 1u) != 0
+         : input_openxr_aim(st, h, space, time, &aim);
       bool grabbed              = grip && !hold->grip;
       bool reset_pressed        = reset && !hold->reset;
 
+      if (e->smoothing && tracked)
+         aim = aims.pose[h];
       hold->grip  = grip;
       hold->reset = reset;
       sticks      = false;
@@ -2608,7 +2725,9 @@ void input_openxr_poll(unsigned max_users, unsigned controllers,
          (e->on ? VIDEO_XR_LIVE_EDIT
          : ((st->yield ? VIDEO_OPENXR_LASER_OFF : (int)laser)
             | (menu_open ? INPUT_OPENXR_MENU_OPEN : 0)))
-         | ((int)beam << INPUT_OPENXR_BEAM_SHIFT));
+         | ((int)beam << INPUT_OPENXR_BEAM_SHIFT)
+         | (e->on ? (int)(e->smoothing & INPUT_OPENXR_SMOOTH_MASK)
+            << INPUT_OPENXR_SMOOTH_SHIFT : 0));
 
    /* Nothing stops the last rumble of a core closed behind a menu that
     * ran it; no later content may inherit it. */
@@ -2844,7 +2963,7 @@ bool input_openxr_edit_toggle(void)
    return true;
 }
 
-void input_openxr_edit_begin(bool pause, bool snap)
+void input_openxr_edit_begin(bool pause, bool snap, unsigned smoothing)
 {
    input_openxr_edit_t *e = &input_openxr_edit;
    if (e->on || !input_openxr_st.frame)
@@ -2859,7 +2978,10 @@ void input_openxr_edit_begin(bool pause, bool snap)
       return;
    }
 #endif
-   input_openxr_edit_start(e, pause, snap);
+   /* A config can hold any value: past Edit Smoothing's, Medium. */
+   if (smoothing >= VIDEO_OPENXR_EDIT_SMOOTHING_LAST)
+      smoothing = VIDEO_OPENXR_EDIT_SMOOTHING_MEDIUM;
+   input_openxr_edit_start(e, pause, snap, smoothing);
 }
 
 void input_openxr_edit_end(void)

@@ -3972,6 +3972,34 @@ static size_t setting_get_string_representation_video_openxr_laser_beam(
    return 0;
 }
 
+static size_t setting_get_string_representation_video_openxr_edit_smoothing(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case VIDEO_OPENXR_EDIT_SMOOTHING_OFF:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_OFF),
+                  len);
+         case VIDEO_OPENXR_EDIT_SMOOTHING_LOW:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_LOW),
+                  len);
+         case VIDEO_OPENXR_EDIT_SMOOTHING_MEDIUM:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_MEDIUM),
+                  len);
+         case VIDEO_OPENXR_EDIT_SMOOTHING_HIGH:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_HIGH),
+                  len);
+      }
+   }
+   return 0;
+}
+
 static size_t setting_get_string_representation_video_openxr_edit_pause(
       rarch_setting_t *setting, char *s, size_t len)
 {

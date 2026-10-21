@@ -22,9 +22,9 @@ Linux). Then turn on **Settings > Video > Stereo 3D & Screens > Headset
 Output (OpenXR)**. The other rows there are Headset Refresh Rate, Screen
 Distance, Screen Width, Screen Placement (Fixed in Room, Follow Head,
 Lazy Follow), Headset Controllers, Laser Pointer and Laser Beam; Edit
-Screens, While Editing Screens and Snap to Screens are described
-below. The Recenter Headset Screens, Laser Pointer (Toggle) and Edit
-Headset Screens hotkeys are unbound by default.
+Screens, While Editing Screens, Snap to Screens and Edit Smoothing
+are described below. The Recenter Headset Screens, Laser Pointer
+(Toggle) and Edit Headset Screens hotkeys are unbound by default.
 
 **Laser Beam** draws a thin line from each controller to its laser's
 dot, turned to face you. It shows only where the dot can: outside edit
@@ -199,6 +199,15 @@ whole once it is 5 cm or 10 degrees from where it was taken. The
 holding hand gets a short buzz as a snap takes hold, and none again
 from that snap until the screen has left its pull. The menu neither
 snaps nor is snapped to. Where it is let go is where it is saved.
+
+**Edit Smoothing** (Medium by default) steadies the controllers' aim
+while editing, so a screen held far out on the laser does not shake
+with the hand: a slow or still hand is smoothed a lot and a fast one
+little, so quick moves keep up. Low, Medium and High smooth more in
+turn; Off uses the aim as tracked. Everything edit mode does with the
+lasers follows the smoothed aim: the dots and beams, what lights, what
+a grip takes, the stick and what is held; a screen is saved where it
+was shown. The lasers are never smoothed outside edit mode.
 
 Edits change the same settings as the menu's rows and are saved the
 same way: on quit while **Save Configuration on Quit** is on (the
