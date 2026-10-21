@@ -254,9 +254,19 @@ static void test_ps4(void)
 struct ref_gca_pad
 {
    uint32_t buttons;
-   int16_t analog[3][2];
+   int16_t axes[6];  /* the sticks, then the triggers' travel */
+   int lo[6], hi[6]; /* the reach seen */
    uint8_t connected;
 };
+
+/* SDL's reach: 128 +- 88 for a stick, from 40 for a trigger, widened
+ * as the pad goes further, and reset when a pad is put in */
+static int ref_gca_reach(struct ref_gca_pad *pad, unsigned i, int v)
+{
+   if (v < pad->lo[i]) pad->lo[i] = v;
+   if (v > pad->hi[i]) pad->hi[i] = v;
+   return (int)((long)(v - pad->lo[i]) * 65535 / (pad->hi[i] - pad->lo[i]));
+}
 
 /* the old update_button_state() and update_analog_state(), on the old
  * nine-byte copy */
@@ -283,6 +293,12 @@ static void ref_gca_take(struct ref_gca_pad *pads, const uint8_t *packet)
          pad->connected = 0;
          continue;
       }
+      if (!pad->connected)
+         for (a = 0; a < 6; a++)
+         {
+            pad->lo[a] = 40;
+            pad->hi[a] = 216;
+         }
       pad->connected = copy[i];
       memcpy(data, &copy[i], 9);
       keys        = data[1] | (data[2] << 8);
@@ -291,11 +307,13 @@ static void ref_gca_take(struct ref_gca_pad *pads, const uint8_t *packet)
          pad->buttons |= (keys & (1 << k)) ? (1 << map[k]) : 0;
       for (a = 0; a < 4; a++)
       {
-         unsigned axis = (a % 2) ? 0 : 1;
-         int16_t v     = data[3 + a];
-         v = axis ? ((v - 128) * 256) : ((v - 128) * -256);
-         pad->analog[a / 2][axis] = v;
+         long v = ref_gca_reach(pad, (unsigned)a, data[3 + a]) - 32768L;
+         if (a & 1)
+            v = v <= -32768L ? 32767L : -v; /* up negative */
+         pad->axes[a] = (int16_t)v;
       }
+      for (a = 4; a < 6; a++)
+         pad->axes[a] = (int16_t)(ref_gca_reach(pad, (unsigned)a, data[3 + a]) / 2);
    }
 }
 
@@ -316,6 +334,8 @@ static void test_wiiugca(void)
    CHECK(dev != NULL, "wiiugca: no device");
    if (!dev)
       return;
+   CHECK(sent_len == 1 && sent[0] == 0x13,
+         "wiiugca: not started with report 0x13 alone");
    memset(ref, 0, sizeof(ref));
    memset(joy, 0, sizeof(joy));
    memset(pads, 0, sizeof(pads));
@@ -347,14 +367,13 @@ static void test_wiiugca(void)
             if (   !!ifc->button(pads[i], (uint16_t)k) != !!(ref[i].buttons & (1u << k))
                 || !!BIT256_GET(bits, k) != !!(ref[i].buttons & (1u << k)))
                bad++;
-         for (k = 0; k < 8; k++)
-         {
-            axis_data ad;
-            gamepad_read_axis_data(axes[k], &ad);
-            if (ifc->get_axis(pads[i], axes[k])
-                  != gamepad_get_axis_value_raw(ref[i].analog, &ad, false))
+         /* plain, and bound as wiiu_hid asks: the stick's whole value */
+         for (k = 0; k < 6; k++)
+            if (ifc->get_axis(pads[i], k) != ref[i].axes[k])
                bad++;
-         }
+         for (k = 0; k < 8; k++)
+            if (ifc->get_axis(pads[i], axes[k]) != ref[i].axes[k & 3])
+               bad++;
       }
    }
    CHECK(!bad, "wiiugca: %u reads disagree with the copying handler", bad);
@@ -366,11 +385,34 @@ static void test_wiiugca(void)
       CHECK(!pads[0] || ifc->get_axis(pads[0], AXIS_POS(0)) == ax,
             "wiiugca: a short report was taken");
    }
+   /* rumble: report 0x11, a byte a port, only a port with the power
+    * for it and not a WaveBird; sent once a change */
+   if (pads[0] && pads[2])
+   {
+      unsigned count;
+      memset(p, 0, sizeof(p));
+      p[1] = 0x14; p[10] = 0x10; p[19] = 0x22; p[28] = 0x14;
+      deliver(ifc, dev, p, REF_GCA_LEN);
+      count = sent_count;
+      ifc->set_rumble(pads[0], RETRO_RUMBLE_STRONG, 0x8000);
+      ifc->set_rumble(pads[2], RETRO_RUMBLE_WEAK, 0x8000);
+      CHECK(sent_count == count, "wiiugca: rumble sent outside the packet handler");
+      deliver(ifc, dev, p, REF_GCA_LEN);
+      CHECK(sent_count == count + 1 && sent_len == 5 && sent[0] == 0x11
+            && sent[1] == 1 && !sent[2] && !sent[3] && !sent[4],
+            "wiiugca: rumble report not 11 01 00 00 00");
+      ifc->set_rumble(pads[0], RETRO_RUMBLE_STRONG, 0x8000);
+      deliver(ifc, dev, p, REF_GCA_LEN);
+      CHECK(sent_count == count + 1, "wiiugca: rumble sent again unchanged");
+      ifc->set_rumble(pads[0], RETRO_RUMBLE_STRONG, 0);
+      deliver(ifc, dev, p, REF_GCA_LEN);
+      CHECK(sent_count == count + 2 && sent[1] == 0, "wiiugca: rumble not stopped");
+   }
    for (i = 0; i < 4; i++)
       if (pads[i])
          ifc->pad_deinit(pads[i]);
    ifc->deinit(dev);
-   printf("[%s] wiiugca: four ports' buttons, sets, axes and state as the copying handler, on 20000 reports\n",
+   printf("[%s] wiiugca: started with report 0x13; four ports' buttons, sets and state as the copying handler, sticks and triggers over SDL's widening reach, on 20000 reports; rumble report 0x11 for powered wired pads\n",
          failures == had ? "pass" : "fail");
 }
 

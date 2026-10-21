@@ -35,13 +35,25 @@
 typedef struct hidpad_wiiugca_pad_data gca_pad_data_t;
 typedef struct hidpad_wiiugca_data gca_device_data_t;
 
+/* the sticks' and triggers' reach, as SDL starts it: a stick's from
+ * 128 - 88 to 128 + 88, a trigger's from 40, both widened as they go
+ * further */
+#define GCA_STICK_LOW   (128 - 88)
+#define GCA_STICK_HIGH  (128 + 88)
+#define GCA_TRIGGER_LOW 40
+
 struct hidpad_wiiugca_pad_data
 {
    uint8_t datatype;
    gca_device_data_t *device_data;
    joypad_connection_t *joypad;
    int pad_index;
+   /* the sticks as 0 to 3, L and R's travel as 4 and 5 */
    input_pad_view_t view;
+   uint8_t low[6];
+   uint8_t high[6];
+   bool rumble_strong;  /* what the core asked last */
+   bool rumble_weak;
 };
 
 struct hidpad_wiiugca_data
@@ -51,11 +63,15 @@ struct hidpad_wiiugca_data
    hid_driver_t *driver;
    char connected[GCA_MAX_PAD];
    gca_pad_data_t pad_data[GCA_MAX_PAD];
+   uint8_t motors[GCA_MAX_PAD]; /* as last sent */
+   bool motors_due;
 };
 
 /* The adapter's report: an ID, then nine bytes for each of the four
- * ports - its state, two bytes of buttons, the sticks' four. */
+ * ports - its state, two bytes of buttons, the sticks' four, the
+ * triggers' two. */
 #define GCA_REPORT_LEN (1 + 9 * GCA_MAX_PAD)
+#define GCA_PORT_RUMBLE_POWER  0x04 /* the second plug is in */
 
 const char *GAMECUBE_PAD = "GameCube controller";
 const char *WAVEBIRD_PAD = "WaveBird controller";
@@ -63,10 +79,13 @@ const char *DEVICE_NAME  = "Wii U GC Controller Adapter";
 
 static void* hidpad_wiiugca_init(void *data, uint32_t slot, hid_driver_t *driver)
 {
-#ifdef WIIU
-   static uint8_t magic_data[] = {0x13      }; /* Special command to enable reading */
+   /* Report 0x13, which is its ID alone, starts the reports. The
+    * drivers take a report with its ID first; iohidmanager takes the
+    * first byte off and sends report 0x01. */
+#if defined(__APPLE__) && !defined(WIIU)
+   static uint8_t magic_data[] = {0x01, 0x13};
 #else
-   static uint8_t magic_data[] = {0x01, 0x13}; /* Special command to enable reading */
+   static uint8_t magic_data[] = {0x13};
 #endif
    int i;
    gca_device_data_t * device  = (gca_device_data_t *)calloc(1, sizeof(gca_device_data_t));
@@ -91,6 +110,9 @@ static void* hidpad_wiiugca_init(void *data, uint32_t slot, hid_driver_t *driver
 
    device->driver                     = driver;
 
+   /* what SDL sends first, which Nyko's and EVORETRO's adapters need */
+   if (device->driver->set_protocol)
+      device->driver->set_protocol(device->handle, 1);
    device->driver->send_control(device->handle, magic_data, sizeof(magic_data));
 
    return device;
@@ -169,23 +191,75 @@ static void update_button_state(gca_pad_data_t *pad, const uint8_t *data)
    pad_view_set_buttons(&pad->view, buttons, false);
 }
 
+static void hidpad_wiiugca_reset_reach(gca_pad_data_t *pad)
+{
+   memset(pad->low,  GCA_STICK_LOW,  sizeof(pad->low));
+   memset(pad->high, GCA_STICK_HIGH, sizeof(pad->high));
+   pad->low[4] = GCA_TRIGGER_LOW;
+   pad->low[5] = GCA_TRIGGER_LOW;
+}
+
+/* @v within the reach seen so far, widened to take it in */
+static int32_t hidpad_wiiugca_reach(gca_pad_data_t *pad, unsigned i,
+      uint8_t v)
+{
+   if (v < pad->low[i])
+      pad->low[i]  = v;
+   if (v > pad->high[i])
+      pad->high[i] = v;
+   return (int32_t)(v - pad->low[i]) * 65535 / (pad->high[i] - pad->low[i]);
+}
+
 static void update_analog_state(gca_pad_data_t *pad, const uint8_t *data)
 {
-   int pad_axis;
+   unsigned i;
 
-   /* GameCube analog axis are 8-bit unsigned, where 128/128 is center.
-    * So, we subtract 128 to get a signed, 0-based value and then multiply
-    * by 256 to get the 16-bit range RetroArch expects. */
-   for (pad_axis = 0; pad_axis < 4; pad_axis++)
+   /* the sticks, the reach across the RetroPad's range; libretro's up is
+    * negative, the pad's high */
+   for (i = 0; i < 4; i++)
    {
-      int16_t interpolated     = data[3 + pad_axis];
-      /* libretro requires "up" to be negative, so we invert the y axis */
-      interpolated             = (pad_axis % 2)
-         ? ((interpolated - 128) * -256)
-         : ((interpolated - 128) * 256);
-
-      pad->view.axes[pad_axis] = interpolated;
+      int32_t v = hidpad_wiiugca_reach(pad, i, data[3 + i]) - 32768;
+      if (i & 1)
+         v = v <= -32768 ? 32767 : -v;
+      pad->view.axes[i] = (int16_t)v;
    }
+   /* the triggers' travel, 0 to 32767 */
+   for (i = 4; i < 6; i++)
+      pad->view.axes[i] = (int16_t)(hidpad_wiiugca_reach(pad, i,
+               data[3 + i]) >> 1);
+}
+
+/* Report 0x11: a byte for each port's motor. A port is only rumbled
+ * when its pad has the power for it - the second plug in - and is not
+ * a WaveBird, as SDL does. Sent from the packet handler, when changed.
+ * Not on macOS, where iohidmanager sends every report as 0x01. */
+static void hidpad_wiiugca_send_rumble(gca_device_data_t *device)
+{
+#if !defined(__APPLE__) || defined(WIIU)
+   uint8_t r[1 + GCA_MAX_PAD];
+   unsigned i;
+   bool changed = false;
+
+   device->motors_due = false;
+   r[0] = 0x11;
+   for (i = 0; i < GCA_MAX_PAD; i++)
+   {
+      const gca_pad_data_t *pad = &device->pad_data[i];
+      r[1 + i] = (uint8_t)(
+               (pad->rumble_strong || pad->rumble_weak)
+            && (device->connected[i] & GCA_PORT_RUMBLE_POWER)
+            &&  device->connected[i] != GCA_WAVEBIRD_CONNECTED);
+      if (r[1 + i] != device->motors[i])
+         changed = true;
+   }
+   if (!changed)
+      return;
+   memcpy(device->motors, r + 1, GCA_MAX_PAD);
+   if (device->driver && device->driver->send_control)
+      device->driver->send_control(device->handle, r, sizeof(r));
+#else
+   device->motors_due = false;
+#endif
 }
 
 /* A port's nine bytes, read where they lie in the report. */
@@ -213,16 +287,36 @@ static void hidpad_wiiugca_packet_handler(void *device_data, uint8_t *packet, ui
 
       if (port_connected > GCA_PORT_POWERED)
       {
+         /* a pad just put in: its sticks' reach is its own */
+         if (!device->connected[port])
+            hidpad_wiiugca_reset_reach(&device->pad_data[port]);
          device->connected[port] = port_connected;
          hidpad_wiiugca_pad_packet_handler(&device->pad_data[port], &packet[i]);
       }
       else
          device->connected[port] = 0;
    }
+
+   if (device->motors_due)
+      hidpad_wiiugca_send_rumble(device);
 }
 
 static void hidpad_wiiugca_set_rumble(void *data,
-      enum retro_rumble_effect effect, uint16_t strength) { }
+      enum retro_rumble_effect effect, uint16_t strength)
+{
+   gca_pad_data_t *pad = (gca_pad_data_t *)data;
+   bool on;
+
+   /* a port's motor is on or off: on while either strength is asked */
+   if (!pad || pad->datatype != GCA_TYPE_PAD)
+      return;
+   on = strength != 0;
+   if (effect == RETRO_RUMBLE_STRONG)
+      pad->rumble_strong = on;
+   else
+      pad->rumble_weak   = on;
+   pad->device_data->motors_due = true;
+}
 
 const char *hidpad_wiiugca_get_name(void *pad_data)
 {
