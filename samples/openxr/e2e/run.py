@@ -1554,6 +1554,120 @@ def check_menu_closed(res):
     return []
 
 
+# RGUI, OK and Cancel unswapped, from the Quick Menu: back to the Main
+# Menu, Settings (row 5), Video (1), Stereo 3D & Screens (5), and down
+# to Screen Distance (row 5).
+DISTANCE_NAV = ([('send', 'MENU_B'), ('wait', 0.8)]
+                + [('send', 'MENU_DOWN'), ('wait', 0.3)] * 5
+                + [('send', 'MENU_A'), ('wait', 0.8)]
+                + [('send', 'MENU_DOWN'), ('wait', 0.3)]
+                + [('send', 'MENU_A'), ('wait', 0.8)]
+                + [('send', 'MENU_DOWN'), ('wait', 0.3)] * 5
+                + [('send', 'MENU_A'), ('wait', 0.8)]
+                + [('send', 'MENU_DOWN'), ('wait', 0.3)] * 5)
+STEP_RIGHT = [('send', 'MENU_RIGHT'), ('wait', 2)]
+STEP_LEFT = [('send', 'MENU_LEFT'), ('wait', 2)]
+# Screen Distance out and in, Screen Width out and back, and Width once
+# more just after the menu reopens. Every new swapchain's image comes a
+# frame late, so each step has the old ones to show. busy new waits
+# for the session: the laser cursor's swapchain is filled as it is
+# made, and a timeout on that wait fails it.
+MENU_RESIZE = ([('wait', 6), ('script', 'busy new'), ('send', 'MENU_TOGGLE'),
+                ('wait', 3)]
+               + DISTANCE_NAV + STEP_RIGHT * 2 + STEP_LEFT * 4 + STEP_RIGHT * 2
+               + [('send', 'MENU_DOWN'), ('wait', 0.3)]
+               + STEP_RIGHT * 2 + STEP_LEFT * 2
+               + [('mark', 'closed'), ('send', 'MENU_TOGGLE'), ('wait', 3),
+                  ('mark', 'reopen'), ('send', 'MENU_TOGGLE'), ('wait', 2)]
+               + STEP_RIGHT + [('mark', 'done'), ('send', 'MENU_TOGGLE'),
+                               ('wait', 3)])
+DISTANCES = [1.8, 1.9, 2.0, 1.9, 1.8, 1.7, 1.6, 1.7, 1.8]
+WIDTHS = [1.6, 1.7, 1.8, 1.7, 1.6, 1.7]
+SLOT_MADE = re.compile(r'\[OpenXR\] Slot (\d+): (\d+x\d+),')
+SCREEN_COLOURS = {'left': RED, 'right': BLUE, 'both': YELLOW}
+
+
+def stepped(values):
+    out = []
+    for v in values:
+        if not out or abs(out[-1] - v) > POS:
+            out.append(round(v, 2))
+    return out
+
+
+def check_menu_resize(res):
+    """Each step makes the screens' and the menu's swapchains again at
+    another size, and the old ones show until the new ones are drawn: no
+    frame leaves a screen or the open menu out, or shows an image the
+    core did not draw."""
+    tops = [x for f in res.frames for x in quads(f) if x['eye'] == 'left']
+    if not tops:
+        return no_quads(res)
+    dist = stepped(-x['pose'][2] for x in tops)
+    if dist[:2] != DISTANCES[:2]:
+        return ['the screens went %s m, not 1.8 then 1.9: the menu walk '
+                'missed Screen Distance' % dist]
+    errors = []
+    width = stepped(x['size'][0] for x in tops)
+    if dist != DISTANCES or width != WIDTHS:
+        errors.append('Screen Distance went %s and Width %s, want %s and %s'
+                      % (dist, width, DISTANCES, WIDTHS))
+    made, resized = {}, []
+    for slot, size in SLOT_MADE.findall(res.log):
+        if made.get(slot, size) != size:
+            resized.append(slot)
+        made[slot] = size
+    if not resized:
+        errors.append('no slot was made again at another size')
+    n = [len([x for x in quads(f) if not x['flags'] & BLEND])
+         for f in res.frames]
+    if 3 not in n:
+        return errors + ['no frame shows all three screens']
+    first = n.index(3)
+    last = max(i for i, f in enumerate(res.frames) if quads(f))
+    shown = res.frames[first:last + 1]
+    fewer = [f['n'] for f, k in zip(shown, n[first:]) if k < 3]
+    if fewer:
+        errors.append('%d frames show fewer than three screens (first n=%d)'
+                      % (len(fewer), fewer[0]))
+    gone = []
+    for t0, t1 in ((0, res.marks['closed']),
+                   (res.marks['reopen'], res.marks['done'])):
+        up = [f for f in res.frames if t0 * 1e6 < f['t_us'] < t1 * 1e6]
+        since = [i for i, f in enumerate(up) if menus(f)]
+        if not since:
+            errors.append('the menu did not show')
+            continue
+        gone += [f['n'] for f in up[since[0]:] if not menus(f)]
+    if gone:
+        errors.append('the open menu left %d frames out (first n=%d)'
+                      % (len(gone), gone[0]))
+    cut, undrawn = [], []
+    for f in shown:
+        for x in quads(f):
+            sc = res.chains.get(x['sc'])
+            if not sc or x['rect'] != [0, 0, sc['w'], sc['h']]:
+                cut.append((f['n'], x['sc'], x['rect']))
+            if f['snap'] and not x['flags'] & BLEND:
+                path = image(res, f, x)
+                if not os.path.exists(path):
+                    undrawn.append((f['n'], x['sc'], 'no image'))
+                    continue
+                c, _ = colour(path, 0.5, 0.5)
+                if not near(c, SCREEN_COLOURS[x['eye']]):
+                    undrawn.append((f['n'], x['sc'], c))
+    if cut:
+        errors.append('%d quads do not show all of their swapchain '
+                      '(first n=%d sc%d %s)' % ((len(cut),) + cut[0]))
+    if undrawn:
+        errors.append('%d screen images the core did not draw (first n=%d '
+                      'sc%d %s)' % ((len(undrawn),) + undrawn[0]))
+    bad = [x.strip() for x in res.log.splitlines() if '[ERROR]' in x]
+    if bad:
+        errors.append('%d error lines, first: %s' % (len(bad), bad[0]))
+    return errors
+
+
 def check_recenter(res):
     shown = [f for f in res.frames if quads(f)]
     if not shown:
@@ -3791,6 +3905,18 @@ CASES = [
      'steps': [('wait', 6), ('send', 'MENU_TOGGLE'), ('wait', 3),
                ('send', 'MENU_TOGGLE'), ('wait', 3)],
      'check': check_menu_closed},
+    # Every frame's images saved, to see each new swapchain's first.
+    {'name': 'menu-resize', 'map': '3ds',
+     'settings': {'menu_driver': 'rgui',
+                  'menu_swap_ok_cancel_buttons': 'false'},
+     'env': {'RA_XR_LAYER_SNAP_EVERY': '1'}, 'steps': MENU_RESIZE,
+     'check': check_menu_resize},
+    {'name': 'menu-resize-running', 'map': '3ds',
+     'settings': {'menu_driver': 'rgui',
+                  'menu_swap_ok_cancel_buttons': 'false',
+                  'menu_pause_libretro': 'false'},
+     'env': {'RA_XR_LAYER_SNAP_EVERY': '1'}, 'steps': MENU_RESIZE,
+     'check': check_menu_resize},
     {'name': 'recenter', 'map': '3ds',
      'steps': [('wait', 6), ('script', 'head 0.5 0.2 0.3 90'), ('wait', 1),
                ('send', 'HEADSET_RECENTER'), ('wait', 3)],
@@ -4928,7 +5054,8 @@ GL_BASE = {
                'hw-3ds-stereo-threaded', '3ds-output-size',
                'no-map-output-size', '3ds-shrink', 'no-map-shrink',
                '3ds-enlarge', 'menu', 'menu-running', 'menu-small',
-               'menu-overlay', 'menu-closes', 'menu-reopen', 'recenter',
+               'menu-overlay', 'menu-closes', 'menu-resize',
+               'menu-resize-running', 'menu-reopen', 'recenter',
                'recenter-menu', 'runtime-recenter', 'no-runtime',
                'session-fails', 'session-lost', 'exit-window',
                'options-follow-headset', 'pacing', 'focus', 'hw-teardown',

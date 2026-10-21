@@ -52,6 +52,8 @@
  *                           swapchain at the recommended view size, as
  *                           while the compositor still reads its image;
  *                           busy off: the runtime's own answer
+ *   busy new                xrWaitSwapchainImage times out for a
+ *                           swapchain made since the last xrEndFrame
  *   invalid stage <n>       the next session's first n locations in a
  *                           STAGE space come back without valid bits
  *   invalid views           xrLocateViews answers without valid bits
@@ -155,6 +157,7 @@ struct chain
    int id;
    uint32_t width, height, layers;
    int64_t format;
+   uint64_t made;                   /* L.frames when it was made */
    VkImage images[MAX_IMAGES];
    GLuint gl_images[MAX_IMAGES];    /* a GL session's */
    uint32_t num_images;
@@ -184,6 +187,7 @@ static struct
    bool fail_instance;
    bool fail_eyes;
    bool busy_eyes;
+   bool busy_new;
    bool fail_stage;
    unsigned invalid_stage_next;  /* for the next session */
    unsigned invalid_stage;       /* left in this one */
@@ -452,6 +456,7 @@ static void script_fail(const char *args)
 static void script_busy(const char *args)
 {
    L.busy_eyes = !strncmp(args, "eyes", 4);
+   L.busy_new  = !strncmp(args, "new", 3);
 }
 
 static void script_sync(const char *args)
@@ -1354,6 +1359,7 @@ static XRAPI_ATTR XrResult XRAPI_CALL layer_CreateSwapchain(XrSession session,
          c->height = info->height;
          c->layers = info->arraySize;
          c->format = info->format;
+         c->made   = L.frames;
          if (L.out)
          {
             fprintf(L.out, "{\"ev\":\"swapchain\",\"sc\":%d,\"w\":%u,\"h\":%u,"
@@ -1443,8 +1449,9 @@ static XRAPI_ATTR XrResult XRAPI_CALL layer_WaitSwapchainImage(XrSwapchain sc,
    struct chain *c;
    pthread_mutex_lock(&L.lock);
    script_poll();
-   busy = L.busy_eyes && (c = find_chain(sc)) && c->width == L.eye_w
-      && c->height == L.eye_h;
+   c    = find_chain(sc);
+   busy = c && ((L.busy_eyes && c->width == L.eye_w && c->height == L.eye_h)
+         || (L.busy_new && c->made == L.frames));
    pthread_mutex_unlock(&L.lock);
    if (busy)
       return XR_TIMEOUT_EXPIRED;
