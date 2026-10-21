@@ -7,6 +7,7 @@ ifneq ($(SANITIZER),)
 CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
+all: capture_test
 capture_fragment.c: $(RA)/record/drivers/record_metal.c
 	sed -n '/^typedef struct record_metal_context/,/^} record_metal_context_t;/p' $< > $@
 	sed -n '/^void record_metal_gpu_capture/,/^void record_metal_stop/{ /^void record_metal_stop/q; p; }' $< >> $@
@@ -17,4 +18,4 @@ check: capture_test
 	./capture_test
 clean:
 	rm -f capture_test capture_fragment.c
-.PHONY: check clean
+.PHONY: all check clean
