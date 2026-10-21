@@ -172,6 +172,19 @@ jobs:
           test -x retroarch
           nm retroarch | grep '_record_metal_gpu_capture'
 
+      - name: Independent real frontend GPU recording
+        run: |
+          set -eu
+          command -v ffmpeg >/dev/null && command -v ffprobe >/dev/null || brew install ffmpeg
+          cc -dynamiclib -std=gnu89 -Ilibretro-common/include samples/record/nvenc_frontend/core.c -o "$RUNNER_TEMP/metal-record-core.dylib" -lm
+          python3 samples/record/metal_frontend/run.py --retroarch ./retroarch --core "$RUNNER_TEMP/metal-record-core.dylib" --output-dir "$RUNNER_TEMP/metal-frontend-recordings"
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: metal-frontend-recordings
+          path: ${{ runner.temp }}/metal-frontend-recordings
+          if-no-files-found: warn
+
   frontend-contracts:
     runs-on: ubuntu-latest
     steps:
