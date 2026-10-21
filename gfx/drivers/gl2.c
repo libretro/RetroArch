@@ -2342,6 +2342,60 @@ static void gl2_renderchain_recompute_pass_sizes(
    }
 }
 
+/* Each pass's target remade larger where its pass, as
+ * gl2_renderchain_recompute_pass_sizes() last sized them, draws past
+ * it. Never smaller, so outputs of different sizes take turns without
+ * remaking anything. */
+static void gl2_renderchain_grow_fbos(gl2_t *gl,
+      gl2_renderchain_data_t *chain)
+{
+   size_t i;
+   for (i = 0; i < (size_t)chain->fbo_pass; i++)
+   {
+      struct video_fbo_rect *fbo_rect = &gl->fbo_rect[i];
+      if (fbo_rect)
+      {
+         unsigned img_width   = VIDEO_SCALE_W(fbo_rect->max_img_dims);
+         unsigned img_height  = VIDEO_SCALE_H(fbo_rect->max_img_dims);
+
+         if (     (img_width  > VIDEO_SCALE_W(fbo_rect->dims))
+               || (img_height > VIDEO_SCALE_H(fbo_rect->dims)))
+         {
+            /* Check proactively since we might suddenly
+             * get sizes of tex_w width or tex_h height. */
+            unsigned max                    = img_width > img_height ? img_width : img_height;
+            unsigned pow2_size              = next_pow2(max);
+            bool update_feedback            = (gl->flags & GL2_FLAG_FBO_FEEDBACK_ENABLE)
+               && (unsigned)i == gl->fbo_feedback_pass;
+
+            fbo_rect->dims                  = VIDEO_SCALE_PACK(
+                  pow2_size, pow2_size);
+
+            gl2_recreate_fbo(gl, chain, (unsigned)i,
+                  chain->fbo[i], &chain->fbo_texture[i]);
+
+            /* Update feedback texture in-place so we avoid having to
+             * juggle two different fbo_rect structs since they get updated here. */
+            if (update_feedback)
+            {
+               if (gl2_recreate_fbo(gl, chain, (unsigned)i,
+                        gl->fbo_feedback, &gl->fbo_feedback_texture))
+               {
+                  /* Make sure the feedback textures are cleared
+                   * so we don't feedback noise. */
+                  glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+                  glClear(GL_COLOR_BUFFER_BIT);
+               }
+            }
+
+            RARCH_LOG("[GL] Recreating FBO texture #%d: %ux%u.\n",
+                  i, VIDEO_SCALE_W(fbo_rect->dims),
+                  VIDEO_SCALE_H(fbo_rect->dims));
+         }
+      }
+   }
+}
+
 static void gl2_renderchain_start_render(gl2_t *gl,
       gl2_renderchain_data_t *chain, bool video_scale_integer)
 {
@@ -6392,20 +6446,21 @@ static bool gl2_views_setup(gl2_t *gl, const video_frame_info_t *video_info,
    return views;
 }
 
-/* Draws the frame's views into the back buffer, sized dims, or with
- * blend into the canvas, whose halves one pass then blends into the
- * back buffer: with direct straight from the frame, else each through
- * the preset, one view after another, from its view of software frame
- * @sw written straight in or else a copy of it. */
+/* Draws the frame's views as @layout places them into the back
+ * buffer, sized @dims, or with blend into @canvas, whose halves one
+ * pass then blends into the back buffer: with direct straight from the
+ * frame, else each through the preset, one view after another, from
+ * its view of software frame @sw written straight in or else a copy of
+ * it. */
 static void gl2_views_render(gl2_t *gl,
-      const video_frame_info_t *video_info, void *const *chains,
+      const video_frame_info_t *video_info,
+      const video_views_layout_t *layout, unsigned dims,
+      const struct gl2_views_fbo *canvas, void *const *chains,
       const video_views_rect_t *rects, bool blend, bool direct,
       bool fresh, const void *sw, unsigned pitch, bool use_rgba,
       unsigned frame_count)
 {
    struct gl2_views_draw d;
-   const video_views_layout_t *layout = &video_info->views_layout;
-   unsigned dims                      = video_info->dims;
    unsigned target_dims               = blend ? layout->canvas_dims : dims;
 
    /* The window's viewport and projection, which the preset's first
@@ -6415,12 +6470,12 @@ static void gl2_views_render(gl2_t *gl,
       gl2_set_viewport(gl, gl->video_dims, false, true);
 
    d.video_info    = video_info;
-   d.target        = blend ? gl->views.canvas.fbo : 0;
+   d.target        = blend ? canvas->fbo : 0;
    d.target_height = VIDEO_SCALE_H(target_dims);
    d.frame_count   = frame_count;
 
    if (blend)
-      gl2_bind_fb(gl->views.canvas.fbo);
+      gl2_bind_fb(canvas->fbo);
    else
       gl2_renderchain_bind_backbuffer();
    glDisable(GL_BLEND);
@@ -6482,7 +6537,7 @@ static void gl2_views_render(gl2_t *gl,
          ? &gl->views.interlaced : &gl->views.anaglyph;
       gl2_renderchain_bind_backbuffer();
       glViewport(0, 0, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims));
-      glBindTexture(GL_TEXTURE_2D, gl->views.canvas.tex);
+      glBindTexture(GL_TEXTURE_2D, canvas->tex);
       glUseProgram(p->prog);
       if (p->loc_height >= 0)
          glUniform1f(p->loc_height,
@@ -6700,52 +6755,7 @@ static bool gl2_frame(void *data, const void *frame,
       {
          /* On resize, we might have to recreate our FBOs
           * due to "Viewport" scale, and set a new viewport. */
-         size_t i;
-         /* Check if we have to recreate our FBO textures. */
-         for (i = 0; i < (size_t)chain->fbo_pass; i++)
-         {
-            struct video_fbo_rect *fbo_rect = &gl->fbo_rect[i];
-            if (fbo_rect)
-            {
-               unsigned img_width   = VIDEO_SCALE_W(fbo_rect->max_img_dims);
-               unsigned img_height  = VIDEO_SCALE_H(fbo_rect->max_img_dims);
-
-               if (     (img_width  > VIDEO_SCALE_W(fbo_rect->dims))
-                     || (img_height > VIDEO_SCALE_H(fbo_rect->dims)))
-               {
-                  /* Check proactively since we might suddenly
-                   * get sizes of tex_w width or tex_h height. */
-                  unsigned max                    = img_width > img_height ? img_width : img_height;
-                  unsigned pow2_size              = next_pow2(max);
-                  bool update_feedback            = (gl->flags & GL2_FLAG_FBO_FEEDBACK_ENABLE)
-                     && (unsigned)i == gl->fbo_feedback_pass;
-
-                  fbo_rect->dims                  = VIDEO_SCALE_PACK(
-                        pow2_size, pow2_size);
-
-                  gl2_recreate_fbo(gl, chain, (unsigned)i,
-                        chain->fbo[i], &chain->fbo_texture[i]);
-
-                  /* Update feedback texture in-place so we avoid having to
-                   * juggle two different fbo_rect structs since they get updated here. */
-                  if (update_feedback)
-                  {
-                     if (gl2_recreate_fbo(gl, chain, (unsigned)i,
-                              gl->fbo_feedback, &gl->fbo_feedback_texture))
-                     {
-                        /* Make sure the feedback textures are cleared
-                         * so we don't feedback noise. */
-                        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-                        glClear(GL_COLOR_BUFFER_BIT);
-                     }
-                  }
-
-                  RARCH_LOG("[GL] Recreating FBO texture #%d: %ux%u.\n",
-                        i, VIDEO_SCALE_W(fbo_rect->dims),
-                        VIDEO_SCALE_H(fbo_rect->dims));
-               }
-            }
-         }
+         gl2_renderchain_grow_fbos(gl, chain);
 
          /* Go back to what we're supposed to do,
           * render to FBO #0. */
@@ -6876,7 +6886,8 @@ static bool gl2_frame(void *data, const void *frame,
          (video_info->views.num_views && !views) ? 1 : 0);
    gl2_views_publish(gl);
    if (views)
-      gl2_views_render(gl, video_info, view_chains, view_rects,
+      gl2_views_render(gl, video_info, &video_info->views_layout,
+            video_info->dims, &gl->views.canvas, view_chains, view_rects,
             views_blend, views_direct, frame != NULL, views_sw, pitch,
             use_rgba, (unsigned)frame_count);
    else
