@@ -16,6 +16,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <time.h>
 #include <errno.h>
 #include <limits.h>
 #include <unistd.h>
@@ -45,6 +46,7 @@
 #include "../../frontend/drivers/platform_unix.h"
 #include "android_pad_removed.h"
 #include "android_poll_wait.h"
+#include "android_press_group.h"
 #include "../drivers_keyboard/keyboard_event_android.h"
 #include "android_kbd_route.h"
 #ifdef HAVE_OPENXR
@@ -120,6 +122,12 @@ enum {
  * Every bit index used against a row must be < LAST_KEYCODE;
  * writers bound incoming keycodes, readers bound bind keysyms. */
 static uint8_t android_key_state[DEFAULT_MAX_PADS + 1][MAX_KEYS];
+/* each pad's presses kept back by the input block timeout, and the
+ * timeout for this poll, in ns: 0 keeps nothing back */
+static android_press_group_t android_press_group[DEFAULT_MAX_PADS];
+static int64_t android_press_window_ns;
+typedef char android_press_group_fits[
+   (MAX_KEYS <= ANDROID_PRESS_GROUP_BYTES) ? 1 : -1];
 
 /* Samsung S-Pen firmware emits phantom touchscreen DOWN events shortly
  * after a hover ends. arm() records the last hover point and a deadline;
@@ -1914,6 +1922,24 @@ static INLINE void android_input_poll_event_type_key(
    /* What a press sets and a release clears is decided in
     * android_key_state.h, in one place, so the two cannot drift
     * apart again. */
+   /* a pad's button, kept back by the input block timeout; BACK is
+    * left alone, for what it puts on the keyboard row */
+   if (     android_press_window_ns
+         && port < DEFAULT_MAX_PADS
+         && keycode > 0 && keycode < LAST_KEYCODE
+         && keycode != ANDROID_KEY_BACK)
+   {
+      if (action == AKEY_EVENT_ACTION_DOWN)
+      {
+         android_press_group_down(&android_press_group[port], keycode,
+               (int64_t)AKeyEvent_getEventTime(event));
+         action = -1;
+      }
+      else if (action == AKEY_EVENT_ACTION_UP
+            && android_press_group_up(&android_press_group[port], keycode))
+         action = -1;
+   }
+
    if (     action == AKEY_EVENT_ACTION_DOWN
          || action == AKEY_EVENT_ACTION_UP)
       android_key_state_write(
@@ -2868,6 +2894,7 @@ static void android_input_pad_removed(android_input_t *android,
    {
       android_key_state_release_row(android_key_state[port],
             android_key_state[ANDROID_KEYBOARD_PORT], LAST_KEYCODE);
+      memset(&android_press_group[port], 0, sizeof(android_press_group[port]));
       memset(android_app->analog_state[port], 0,
             sizeof(android_app->analog_state[port]));
       memset(android_app->hat_state[port], 0,
@@ -2889,6 +2916,30 @@ static void android_input_poll_removed(android_input_t *android,
 
    for (i = 0; i < count; i++)
       android_input_pad_removed(android, android_app, ids[i]);
+}
+
+/* The presses the input block timeout kept back, shown now or held to
+ * the next poll; with it at 0, those it still holds are shown. */
+static void android_input_poll_press_groups(void)
+{
+   static bool any;
+   struct timespec ts;
+   int64_t now;
+   unsigned p;
+
+   if (!android_press_window_ns && !any)
+      return;
+   clock_gettime(CLOCK_MONOTONIC, &ts);
+   now = (int64_t)ts.tv_sec * 1000000000 + ts.tv_nsec;
+   any = false;
+   for (p = 0; p < DEFAULT_MAX_PADS; p++)
+   {
+      android_press_group_t *g = &android_press_group[p];
+      android_press_group_end(g, android_key_state[p], MAX_KEYS, now,
+            android_press_window_ns);
+      if (g->any_held || g->any_untap)
+         any = true;
+   }
 }
 
 static void android_input_poll(void *data)
@@ -2916,9 +2967,12 @@ static void android_input_poll(void *data)
     * set site, and Android's doze accounting penalises exactly that.
     * First iteration blocks; once an event has woken us, drain the rest
     * without blocking so a burst (RESUME then INPUT_CHANGED) is handled
-    * in one call. In the foreground see android_poll_wait.h. */
-   android_poll_waits((int)input_config_get_block_timeout(),
-         (runloop_get_flags() & RUNLOOP_FLAG_IDLE) != 0, &timeout, &then);
+    * in one call. In the foreground it never waits: the input block
+    * timeout keeps presses back instead (android_press_group.h). */
+   android_poll_waits((runloop_get_flags() & RUNLOOP_FLAG_IDLE) != 0,
+         &timeout, &then);
+   android_press_window_ns =
+      (int64_t)input_config_get_block_timeout() * 1000000;
 
    while ((ident =
             ALooper_pollOnce(timeout, NULL, NULL, NULL)) >= 0)
@@ -2949,6 +3003,8 @@ static void android_input_poll(void *data)
          return;
       }
    }
+
+   android_input_poll_press_groups();
 }
 
 /* Dismiss queued input from before the input driver exists. ALooper

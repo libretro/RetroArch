@@ -22,25 +22,16 @@
  * looper, in milliseconds as ALooper_pollOnce takes them: @first for
  * the first event, @then after each one that came.
  *
- * In the foreground both are the input block timeout: a pad that sends
- * one press as several events has the rest land in the same poll, as
- * long as each follows the last within it. 0, the default, waits for
- * nothing. Backgrounded (@idle), the first wait is for whatever wakes
- * the app, however long, and the rest of a burst is taken without
- * waiting. */
-static INLINE void android_poll_waits(int block_ms, bool idle,
-      int *first, int *then)
+ * In the foreground, nothing: the poll takes what is queued and the
+ * frame goes on. (The input block timeout used to be waited here, and
+ * stalled every frame by it; it keeps presses back instead now,
+ * android_press_group.h.) Backgrounded (@idle), the first wait is for
+ * whatever wakes the app, however long, and the rest of a burst is
+ * taken without waiting. */
+static INLINE void android_poll_waits(bool idle, int *first, int *then)
 {
-   if (idle)
-   {
-      *first = -1;
-      *then  = 0;
-   }
-   else
-   {
-      *first = block_ms;
-      *then  = block_ms;
-   }
+   *first = idle ? -1 : 0;
+   *then  = 0;
 }
 
 #endif

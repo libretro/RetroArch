@@ -4,9 +4,10 @@ TARGET := android_block_timeout_test
 
 LIBRETRO_COMM_DIR := ../../../libretro-common
 
-# The waits are the driver's own (input/drivers/android_poll_wait.h,
-# which takes no NDK types); the looper is reproduced in the test,
-# because the driver only builds against the NDK.
+# The waits and the keeping back are the driver's own
+# (input/drivers/android_poll_wait.h and android_press_group.h, which
+# take no NDK types); the event times are given by the test, because
+# the driver only builds against the NDK.
 SOURCES := android_block_timeout_test.c
 
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
@@ -23,7 +24,8 @@ all: $(TARGET)
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $(OBJS) $(LDFLAGS)
 
-android_block_timeout_test.o: ../../../input/drivers/android_poll_wait.h
+android_block_timeout_test.o: ../../../input/drivers/android_poll_wait.h \
+	../../../input/drivers/android_press_group.h
 
 check: all
 	./$(TARGET)

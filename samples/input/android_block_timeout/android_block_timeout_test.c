@@ -1,122 +1,123 @@
-/* android_block_timeout_test.c -- the input block timeout, as the
- * Android input poll waits by it.
+/* android_block_timeout_test.c -- the input block timeout on Android,
+ * without waiting.
  *
  * Some pads send one press of several buttons as separate events a few
- * milliseconds apart. With "Input Block Timeout" at N, the poll waits
- * up to N ms for an event and again up to N ms after each one, so that
- * the rest of such a press is taken in the same poll. A change that
- * stopped the poll draining the battery in the background waited only
- * for the first event and took nothing after it, and the setting did
- * nothing any more.
+ * milliseconds apart, and a poll can fall between them. The timeout
+ * used to be waited by the poll - every frame stalled by it, pressed or
+ * not - and then for a while it did nothing at all. Now the poll never
+ * waits in the foreground, and the timeout keeps a press back instead:
+ * a pad's presses whose newest came within it of the poll wait for the
+ * next one, so the rest of the press is shown with them.
  *
- * The waits are the driver's own (android_poll_wait.h); the looper is a
- * queue of events, each due at a time, that ALooper_pollOnce's way of
- * waiting takes from. The claims:
+ * The waits and the keeping back are the driver's own
+ * (android_poll_wait.h, android_press_group.h); the times are Android's
+ * event times, given here. The claims:
  *
- *   1. At 0, the default, a poll takes what is queued and waits for
- *      nothing.
- *   2. At N, events each within N ms of the last are taken in one poll,
- *      and one past that is left for the next.
- *   3. Backgrounded, the poll waits for whatever comes, however late,
- *      then takes only what is already queued.
- *   4. The broken way - waiting for the first event only - is caught:
- *      at N it takes one event of a press sent as three. */
+ *   1. In the foreground the poll waits for nothing; backgrounded it
+ *      waits for what wakes it, then drains the queue without waiting.
+ *   2. A press older than the timeout is shown at the poll it came in.
+ *   3. One that came within it waits for the next poll, and the rest of
+ *      the press, coming before that, is shown with it.
+ *   4. Nothing waits more than one poll: presses held over are shown at
+ *      the next with whatever came since, however new.
+ *   5. A press let go before it was shown is shown for one poll.
+ *   6. With the timeout at 0 nothing is kept back, and what was is
+ *      shown. */
 #include <stdio.h>
 #include <string.h>
 
 #include "../../../input/drivers/android_poll_wait.h"
+#include "../../../input/drivers/android_press_group.h"
 
 static unsigned failures;
 #define CHECK(c, ...) do { if (!(c)) { printf("[FAIL] "); printf(__VA_ARGS__); \
    printf("\n"); failures++; } } while (0)
 
-/* the looper: events due at these times, ms; now moves as it waits */
-static int due[8];
-static unsigned n_due, next_due;
-static int now;
+#define MS(x) ((int64_t)(x) * 1000000)
+#define ROW_BYTES 28
 
-static void looper(const int *at, unsigned n, int start)
+static android_press_group_t g;
+static uint8_t row[ROW_BYTES];
+
+static void reset(void)
 {
-   memcpy(due, at, n * sizeof(*at));
-   n_due    = n;
-   next_due = 0;
-   now      = start;
+   memset(&g, 0, sizeof(g));
+   memset(row, 0, sizeof(row));
 }
 
-/* as ALooper_pollOnce: the next event if it comes within @timeout ms
- * (-1: however long), else -1 once the time is up */
-static int poll_once(int timeout)
+/* a poll's end at @at_ms, with a window of @window_ms */
+static void poll_end(int at_ms, int window_ms)
 {
-   if (next_due < n_due)
-   {
-      int at = due[next_due];
-      if (at <= now || timeout < 0 || at <= now + timeout)
-      {
-         if (at > now)
-            now = at;
-         next_due++;
-         return 1;
-      }
-   }
-   if (timeout > 0)
-      now += timeout;
-   return -1;
+   android_press_group_end(&g, row, ROW_BYTES, MS(at_ms), MS(window_ms));
 }
 
-/* one input poll, as android_input_poll() runs its loop; @broken waits
- * for the first event only. The events it took. */
-static unsigned input_poll(int block_ms, bool idle, bool broken)
-{
-   int timeout, then;
-   unsigned taken = 0;
-   android_poll_waits(block_ms, idle, &timeout, &then);
-   if (broken && !idle)
-      then = 0;
-   while (poll_once(timeout) >= 0)
-   {
-      timeout = then;
-      taken++;
-   }
-   return taken;
-}
+#define A 96 /* AKEYCODE_BUTTON_A */
+#define B 97 /* AKEYCODE_BUTTON_B */
 
 int main(void)
 {
-   /* a press sent as three events, 3 ms apart, then one 6 ms later */
-   static const int press[4] = { 0, 3, 6, 12 };
-   static const int late[2]  = { 1000, 1001 };
-   unsigned got;
+   int first, then;
 
-   /* 1. the default: what is queued at the poll, nothing waited for */
-   looper(press, 4, 0);
-   got = input_poll(0, false, false);
-   CHECK(got == 1 && now == 0, "at 0, the poll took %u events and waited %d ms; want 1 and 0", got, now);
+   /* 1. */
+   android_poll_waits(false, &first, &then);
+   CHECK(first == 0 && then == 0, "in the foreground the poll waits %d then %d ms; want 0 and 0", first, then);
+   android_poll_waits(true, &first, &then);
+   CHECK(first == -1 && then == 0, "backgrounded the poll waits %d then %d; want -1 and 0", first, then);
 
-   /* 2. at 5 ms: the three, each within 5 ms of the last; not the
-    *    fourth, 6 ms after the third, which the next poll has */
-   looper(press, 4, 0);
-   got = input_poll(5, false, false);
-   CHECK(got == 3, "at 5 ms the poll took %u events of the press; want 3", got);
-   got = input_poll(5, false, false);
-   CHECK(got == 1, "the event past the window was not left for the next poll (%u)", got);
+   /* 2. a press 10 ms old at a 5 ms window: shown now */
+   reset();
+   android_press_group_down(&g, A, MS(0));
+   poll_end(10, 5);
+   CHECK(BIT_GET(row, A), "a press older than the window was kept back");
 
-   /* no events at all: the poll waits the window once and goes on */
-   looper(press, 0, 0);
-   got = input_poll(5, false, false);
-   CHECK(got == 0 && now == 5, "with nothing coming the poll took %u and waited %d ms; want 0 and 5", got, now);
+   /* 3. A 2 ms before the poll: kept; B comes 2 ms after it; both at
+    *    the next poll, together */
+   reset();
+   android_press_group_down(&g, A, MS(8));
+   poll_end(10, 5);
+   CHECK(!BIT_GET(row, A), "a press within the window was shown before the rest could come");
+   android_press_group_down(&g, B, MS(12));
+   poll_end(26, 5);
+   CHECK(BIT_GET(row, A) && BIT_GET(row, B), "the two halves of a press were not shown together");
 
-   /* 3. backgrounded: waits for what comes, then takes no more than
-    *    is queued */
-   looper(late, 2, 0);
-   got = input_poll(5, true, false);
-   CHECK(got == 1 && now == 1000, "backgrounded, the poll took %u events at %d ms; want 1 at 1000", got, now);
+   /* 4. held over and nothing else: shown at the next poll; held over
+    *    and a new press right at the poll: both shown, no second wait */
+   reset();
+   android_press_group_down(&g, A, MS(9));
+   poll_end(10, 5);
+   poll_end(26, 5);
+   CHECK(BIT_GET(row, A), "a press held over was not shown at the next poll");
+   reset();
+   android_press_group_down(&g, A, MS(9));
+   poll_end(10, 5);
+   android_press_group_down(&g, B, MS(25));
+   poll_end(26, 5);
+   CHECK(BIT_GET(row, A) && BIT_GET(row, B), "a press waited more than one poll");
 
-   /* 4. the broken way is caught */
-   looper(press, 4, 0);
-   got = input_poll(5, false, true);
-   CHECK(got == 1, "waiting for the first event only was not caught (%u)", got);
+   /* 5. pressed and let go before shown: shown for one poll, then let go */
+   reset();
+   android_press_group_down(&g, A, MS(9));
+   CHECK(android_press_group_up(&g, A), "the release of a press kept back was not taken as a tap");
+   poll_end(10, 5);
+   poll_end(26, 5);
+   CHECK(BIT_GET(row, A), "a tap was lost");
+   poll_end(42, 5);
+   CHECK(!BIT_GET(row, A), "a tap was held after its poll");
+   /* a release of one shown already is the row's */
+   CHECK(!android_press_group_up(&g, B), "a release of a press not kept back was taken");
 
-   printf("[%s] android block timeout: nothing waited for at 0; at N a press sent as several events taken in one poll, one past the window left for the next; backgrounded, woken by what comes and the queue drained\n",
+   /* 6. the window at 0: shown at once; one held when it went to 0 too */
+   reset();
+   android_press_group_down(&g, A, MS(10));
+   poll_end(10, 0);
+   CHECK(BIT_GET(row, A), "with the window at 0 a press was kept back");
+   reset();
+   android_press_group_down(&g, A, MS(9));
+   poll_end(10, 5);
+   poll_end(26, 0);
+   CHECK(BIT_GET(row, A), "a press held when the window went to 0 was not shown");
+
+   printf("[%s] android block timeout: the poll never waits in the foreground; a press within the window waits one poll for the rest, older ones are shown at once, none waits longer, a tap is shown for a poll, 0 keeps nothing back\n",
          failures ? "fail" : "pass");
    return failures ? 1 : 0;
 }

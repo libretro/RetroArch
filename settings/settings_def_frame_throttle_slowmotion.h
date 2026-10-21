@@ -11,5 +11,5 @@ S_UINT_EX(input_block_timeout, INPUT_BLOCK_TIMEOUT,
       "input_block_timeout",
       DEFAULT_INPUT_BLOCK_TIMEOUT, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, 4, 1, 0, setting_action_ok_uint, NULL, NULL, NULL, NULL, NULL, 0,
       "Input Block Timeout",
-      "The number of milliseconds to wait to get a complete input sample. Use it if you have issues with simultaneous button presses (Android only).")
+      "How long, in milliseconds, a controller's press is held back for the rest of a press of several buttons at once to arrive with it. Use it if a pad's simultaneous presses are taken one frame apart (Android only).")
 #endif

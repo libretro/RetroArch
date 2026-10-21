@@ -364,12 +364,12 @@ jobs:
         working-directory: samples/input/android_block_timeout
         run: |
           set -eu
-          # The input block timeout as the Android poll waits by it: at
-          # N, a press a pad sends as several events, each within N ms
-          # of the last, is taken in one poll; at 0 nothing is waited
-          # for; backgrounded the poll waits for what comes and drains
-          # the queue. Waiting for the first event only - the way that
-          # left the setting doing nothing - is asserted to be caught.
+          # The input block timeout on Android, without waiting: the
+          # poll never waits in the foreground; a pad's presses whose
+          # newest came within the timeout of the poll wait one poll for
+          # the rest of the press, older ones are shown at once, none
+          # waits longer, and a press let go before it was shown is
+          # shown for one poll.
           make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
              timeout 60 ./android_block_timeout_test
