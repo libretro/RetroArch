@@ -3,6 +3,7 @@
 #include "../../../menu/drivers/rgui.c"
 #include "../../../retroarch.h"
 #include "../../../frontend/frontend.h"
+#include "../../../gfx/gfx_surface_player.h"
 #include <time/rtime.h>
 #include <retro_timers.h>
 
@@ -70,6 +71,8 @@ int main(int argc, char **argv)
    gfx_media_playback_state_t state;
    uint32_t pixels = 0;
    bool seeking;
+   const char *first_video = getenv("MEDIA_TEST_FIRST_VIDEO_US");
+   int64_t first_video_us = first_video ? strtol(first_video, NULL, 10) : 0;
    if (argc != 3) return 2;
    native_gpu=getenv("MEDIA_TEST_GPU")!=NULL;
    gpu_surface=getenv("MEDIA_TEST_GPU_SURFACE")!=NULL;
@@ -117,6 +120,12 @@ int main(int argc, char **argv)
    MEDIA_CHECK("real decoder supplies the requested presentation path",
          tick < 2000 && media_picture_ready(rgui));
    if (media_failures) goto cleanup;
+   if (getenv("MEDIA_TEST_HW_DECODE"))
+      MEDIA_CHECK("movie uses the hardware decoder sink",
+            gpu_surface && rgui->media_gpu.anim_player
+            && ((gfx_surface_player_t*)rgui->media_gpu.anim_player)->hw_output_pixfmt
+            && rgui->media_gpu.anim_surface
+            && ((gfx_surface_t*)rgui->media_gpu.anim_surface)->imported);
    for (i = 0; i < VIDEO_SCALE_AREA(rgui->fs_thumbnail.dims); i++) pixels |= rgui->fs_thumbnail.data[i];
    MEDIA_CHECK("decoded movie picture is nonempty",
          gpu_surface ? rgui->media_gpu.texture != 0 : pixels != 0);
@@ -129,9 +138,9 @@ int main(int argc, char **argv)
       gfx_media_target_t target=rgui->media.controls.target;
       uint32_t first=0,middle=0,again=0;
       unsigned burst;
-      MEDIA_CHECK("paused movie picture reaches renderer",media_native_seek_capture(menu_st,media_render,&target,0,0,0,0,&first));
+      MEDIA_CHECK("paused movie picture reaches renderer",media_native_seek_capture(menu_st,media_render,&target,first_video_us,0,0,0,&first));
       MEDIA_CHECK("movie seek changes rendered picture",media_native_seek_capture(menu_st,media_render,&target,375000,first,1,1,&middle));
-      MEDIA_CHECK("movie backward seek restores picture",media_native_seek_capture(menu_st,media_render,&target,0,first,-1,2,&again));
+      MEDIA_CHECK("movie backward seek restores picture",media_native_seek_capture(menu_st,media_render,&target,first_video_us,first,-1,2,&again));
       for(burst=0;burst<16;burst++)
       {
          MEDIA_CHECK("movie burst seek accepted",target.seek(target.user,burst&1?375000:0,cpu_features_get_time_usec()));

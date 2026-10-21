@@ -3162,6 +3162,16 @@ static bool rgui_media_seek(void *user, int64_t target_us, int64_t now)
    return gfx_media_cpu_seek(((rgui_t*)user)->media_player, target_us, rate, s16, now);
 }
 
+static bool rgui_media_gpu_supported(void)
+{
+   video_device_info_t info;
+   if (!disp_get_ptr()->dispctx || !video_driver_get_device(&info)
+         || !(info.import_formats & IMAGE_PIXFMT_NV12))
+      return false;
+   return info.api == VIDEO_DEVICE_VULKAN || info.api == VIDEO_DEVICE_D3D11
+      || info.api == VIDEO_DEVICE_D3D12;
+}
+
 RGUI_NOINLINE static void rgui_media_update(rgui_t *rgui, unsigned dims)
 {
    settings_t *settings = config_get_ptr();
@@ -3184,14 +3194,25 @@ RGUI_NOINLINE static void rgui_media_update(rgui_t *rgui, unsigned dims)
       if (wanted)
       {
          gfx_anim_preview_t *session;
+         bool gpu = rgui_media_gpu_supported();
          strlcpy(rgui->media_path, rgui->media_requested_path, sizeof(rgui->media_path));
-         session = gfx_anim_preview_open(rgui->media_path, -1);
+         if (gpu)
+            gfx_thumbnail_request_file(rgui->media_path, &rgui->media_gpu, 0);
+         session = rgui->media_gpu.anim_sess ? NULL
+            : gfx_anim_preview_open(rgui->media_path, -1);
          if (session)
          {
             rgui->media_player = gfx_media_cpu_new(session, rgui_media_present, rgui, 0);
             if (!rgui->media_player) gfx_anim_preview_close(session);
          }
-         if (!rgui->media_player && disp_get_ptr()->dispctx)
+         if (rgui->media_player && gpu)
+         {
+            if (retro_atomic_load_acquire_int(&rgui->media_gpu.status)
+                  == GFX_THUMBNAIL_STATUS_PENDING)
+               gfx_thumbnail_cancel_pending_requests();
+            gfx_thumbnail_reset(&rgui->media_gpu);
+         }
+         else if (!rgui->media_player && !gpu && disp_get_ptr()->dispctx)
             gfx_thumbnail_request_file(rgui->media_path, &rgui->media_gpu, 0);
       }
    }
