@@ -35,6 +35,7 @@ static void make_webm_clip(int inband, unsigned matrix, unsigned transfer,
                       unsigned range, unsigned frames, int cues, int hdr)
 {
    static const uint8_t cll[] = {0x2a, 6, 1, 3, 232, 1, 144, 128};
+   static const uint8_t changed_cll[] = {0x2a, 6, 1, 7, 208, 2, 88, 128};
    size_t b, segment, tracks, track, video, cluster, body, positions[2];
    unsigned i;
    used = 0;
@@ -92,6 +93,7 @@ static void make_webm_clip(int inband, unsigned matrix, unsigned transfer,
          copy(config + 4, sizeof(config) - 4);
       if (!i && hdr)
          copy(cll, sizeof(cll));
+      if (hdr == 2 && i == 4) copy(changed_cll, sizeof(changed_cll));
       copy(packet, sizeof(packet));
       end_element(b);
    }

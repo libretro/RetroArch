@@ -61,6 +61,14 @@
 /* A VP9 superframe carries at most 8 sub-frames. */
 #define RWEBM_VIDEO_MAX_SUPER    8
 
+#ifdef HAVE_RAV1
+typedef struct rwebm_av1_hdr_point
+{
+   rav1_hdr_metadata_t hdr;
+   size_t offset;
+} rwebm_av1_hdr_point_t;
+#endif
+
 struct rwebm_video_stream
 {
    rwebm_t     *timing;
@@ -83,8 +91,16 @@ struct rwebm_video_stream
 #endif
 #ifdef HAVE_RAV1
    rav1_hw_stream_t *av1;
-   rav1_sequence_t av1_scan_sequence;
+   rav1_sequence_t av1_scan_sequence, av1_initial_sequence;
+   int av1_initial_sequence_set;
    rav1_hdr_metadata_t av1_hdr_initial;
+   rwebm_t *av1_hdr_cursor;
+   rwebm_av1_hdr_point_t *av1_hdr_points;
+   rav1_hdr_metadata_t av1_hdr_work;
+   rwebm_packet av1_hdr_packet;
+   size_t av1_hdr_count, av1_hdr_capacity, av1_hdr_offset;
+   size_t av1_hdr_done, av1_hdr_target, av1_hdr_floor;
+   int av1_hdr_active, av1_hdr_pending, av1_hdr_yield;
    int av1_hdr_initial_set, av1_hdr_initial_error;
 #endif
 #if defined(HAVE_RVP9) || defined(HAVE_RAV1)
@@ -744,6 +760,10 @@ void rwebm_video_stream_close(rwebm_video_stream_t *s)
    if (!s)
       return;
    rwebm_video_stream_close_decoder(s);
+#ifdef HAVE_RAV1
+   rwebm_close(s->av1_hdr_cursor);
+   free(s->av1_hdr_points);
+#endif
    rwebm_close(s->timing);
    rwebm_close(s->demux);
    free(s->ts);
@@ -908,6 +928,9 @@ void rwebm_video_stream_set_avail(rwebm_video_stream_t *s, size_t avail)
    {
       rwebm_set_avail(s->demux, avail);
       rwebm_set_avail(s->timing, avail);
+#ifdef HAVE_RAV1
+      rwebm_set_avail(s->av1_hdr_cursor, avail);
+#endif
       s->avail = avail > s->len ? s->len : avail;
    }
 }
@@ -920,6 +943,11 @@ size_t rwebm_video_stream_media_floor(rwebm_video_stream_t *s)
 size_t rwebm_video_stream_consumed(rwebm_video_stream_t *s)
 {
    if (!s) return 0;
+#ifdef HAVE_RAV1
+   if (s->av1_hdr_active)
+      return s->av1_hdr_pending ? s->av1_hdr_floor
+         : rwebm_consumed(s->av1_hdr_cursor);
+#endif
    if (s->seek_scan) return rwebm_consumed(s->timing);
    if (s->soft_pending) return s->soft_floor;
    if (s->seek_ready) return s->seek_floor;
@@ -933,6 +961,11 @@ size_t rwebm_video_stream_consumed(rwebm_video_stream_t *s)
 size_t rwebm_video_stream_feed_frontier(rwebm_video_stream_t *s)
 {
    if (!s) return 0;
+#ifdef HAVE_RAV1
+   if (s->av1_hdr_active)
+      return s->av1_hdr_pending ? s->av1_hdr_floor
+         : rwebm_consumed(s->av1_hdr_cursor);
+#endif
    if (s->lookahead_ready) return s->lookahead_floor;
    if (s->seek_scan || s->timing_active) return rwebm_consumed(s->timing);
    return rwebm_video_stream_consumed(s);
@@ -944,6 +977,10 @@ void rwebm_video_stream_pin_span(rwebm_video_stream_t *s, size_t *lo, size_t *hi
    if (lo) *lo = 0;
    if (hi) *hi = 0;
    if (!s || !lo || !hi) return;
+#ifdef HAVE_RAV1
+   if (s->av1_hdr_active && s->av1_hdr_pending) packet = &s->av1_hdr_packet;
+   else
+#endif
    if (s->soft_pending) packet = &s->soft_packet;
 #if defined(HAVE_RVP9) || defined(HAVE_RAV1)
    else if (s->pending) packet = &s->pending_packet;
@@ -959,6 +996,13 @@ void rwebm_video_stream_pin_span(rwebm_video_stream_t *s, size_t *lo, size_t *hi
 
 void rwebm_video_stream_read_span(rwebm_video_stream_t *s, size_t *lo, size_t *hi)
 {
+#ifdef HAVE_RAV1
+   if (s && s->av1_hdr_active)
+   {
+      rwebm_read_span(s->av1_hdr_cursor, lo, hi);
+      return;
+   }
+#endif
    rwebm_read_span(s ? ((s->seek_scan || s->timing_active)
             ? s->timing : s->demux) : NULL, lo, hi);
 }
@@ -1149,14 +1193,17 @@ static int rwebm_video_av1_open(rwebm_video_stream_t *s)
    rav1_sequence_t *seq;
    unsigned matrix, transfer, primaries;
    if (s->av1_hdr_initial_error || !t || !rav1_config_parse(&config, t->codec_private,
-            t->codec_private_size) || !rwebm_video_av1_sequence(s, &config))
+            t->codec_private_size) || (!s->av1_initial_sequence_set
+            && !rwebm_video_av1_sequence(s, &config)))
       return 0;
    s->av1 = (rav1_hw_stream_t*)calloc(1, sizeof(*s->av1));
    if (!s->av1)
       return 0;
    rav1_hw_stream_init(s->av1, NULL);
    seq = &s->av1->sequence;
-   if (!rav1_config_sequence(seq, &config) || seq->max_width != s->width
+   if (s->av1_initial_sequence_set) *seq = s->av1_initial_sequence;
+   else if (!rav1_config_sequence(seq, &config)) goto fail;
+   if (seq->max_width != s->width
          || seq->max_height != s->height || t->colour_range > 2)
       goto fail;
    if ((t->primaries && t->primaries != 2 && seq->color_primaries != 2
@@ -1200,6 +1247,8 @@ static int rwebm_video_av1_open(rwebm_video_stream_t *s)
    s->hw_yuv = seq->color_range ? IMAGE_YUV_FLAG_FULL_RANGE : 0;
    if (matrix == 1 || (!matrix && s->height >= 720))
       s->hw_yuv |= IMAGE_YUV_FLAG_BT709;
+   s->av1_initial_sequence = *seq;
+   s->av1_initial_sequence_set = 1;
    s->hw_want = 1;
    return 1;
 fail:
@@ -1391,6 +1440,9 @@ int rwebm_video_stream_set_hw(rwebm_video_stream_t *s, int enable)
    s->pkt_idx = s->pending = s->waiting = 0;
    s->soft_pending = s->timing_active = s->timing_ready = s->lookahead_ready = 0;
    s->seek_active = s->seek_ready = s->seek_key = s->seek_scan = 0;
+#ifdef HAVE_RAV1
+   s->av1_hdr_active = 0;
+#endif
    return 1;
 #else
 #ifdef HAVE_RAV1
@@ -1785,6 +1837,9 @@ void rwebm_video_stream_rewind(rwebm_video_stream_t *s)
       return;
    rwebm_rewind(s->demux);
    s->seek_active = s->seek_ready = s->seek_key = s->seek_scan = 0;
+#ifdef HAVE_RAV1
+   s->av1_hdr_active = 0;
+#endif
    s->soft_pending = s->timing_active = s->timing_ready = s->lookahead_ready = 0;
    s->pkt_idx = 0;
    s->have_frame_time = 0;
@@ -1798,6 +1853,101 @@ void rwebm_video_stream_rewind(rwebm_video_stream_t *s)
 #endif
 }
 
+#ifdef HAVE_RAV1
+static const rav1_hdr_metadata_t *rwebm_video_av1_hdr_at(
+      const rwebm_video_stream_t *s, size_t offset)
+{
+   size_t lo = 0, hi = s->av1_hdr_count;
+   while (lo < hi)
+   {
+      size_t mid = lo + (hi - lo) / 2;
+      if (s->av1_hdr_points[mid].offset <= offset) lo = mid + 1;
+      else hi = mid;
+   }
+   return lo ? &s->av1_hdr_points[lo - 1].hdr : &s->av1_hdr_initial;
+}
+
+static int rwebm_video_av1_hdr_point(rwebm_video_stream_t *s, size_t offset)
+{
+   rwebm_av1_hdr_point_t *points;
+   size_t capacity;
+   if (s->av1_hdr_count && !memcmp(&s->av1_hdr_work,
+            &s->av1_hdr_points[s->av1_hdr_count - 1].hdr,
+            sizeof(s->av1_hdr_work))) return 1;
+   if (s->av1_hdr_count == s->av1_hdr_capacity)
+   {
+      capacity = s->av1_hdr_capacity ? s->av1_hdr_capacity * 2 : 8;
+      if (capacity < s->av1_hdr_capacity
+            || capacity > (size_t)-1 / sizeof(*points)) return 0;
+      points = (rwebm_av1_hdr_point_t*)realloc(s->av1_hdr_points,
+            capacity * sizeof(*points));
+      if (!points) return 0;
+      s->av1_hdr_points = points;
+      s->av1_hdr_capacity = capacity;
+   }
+   s->av1_hdr_points[s->av1_hdr_count].offset = offset;
+   s->av1_hdr_points[s->av1_hdr_count++].hdr = s->av1_hdr_work;
+   return 1;
+}
+
+/* One header OBU per call, with the metadata cursor exposed to the feeder. */
+static int rwebm_video_av1_scan_hdr(rwebm_video_stream_t *s)
+{
+   rav1_obu_t obu;
+   int ret;
+   if (!s->av1_hdr_cursor)
+   {
+      s->av1_hdr_cursor = rwebm_cursor_clone(s->demux);
+      if (!s->av1_hdr_cursor) return -1;
+      rwebm_rewind(s->av1_hdr_cursor);
+      s->av1_hdr_work = s->av1_hdr_initial;
+      if (!rwebm_video_av1_hdr_point(s, 0)) return -1;
+      return 2;
+   }
+   if (s->av1_hdr_done >= s->av1_hdr_target) return 1;
+   if (!s->av1_hdr_pending)
+   {
+      s->av1_hdr_floor = rwebm_consumed(s->av1_hdr_cursor);
+      ret = rwebm_read_packet(s->av1_hdr_cursor, &s->av1_hdr_packet);
+      if (ret == RWEBM_READ_AGAIN) { s->waiting = 1; return 0; }
+      if (ret != 1) return -1;
+      if (s->av1_hdr_packet.track != s->track)
+      {
+         s->av1_hdr_done = rwebm_consumed(s->av1_hdr_cursor);
+         return 2;
+      }
+      s->av1_hdr_pending = 1;
+      s->av1_hdr_offset = 0;
+   }
+   if ((size_t)(s->av1_hdr_packet.data - s->buf) >= s->av1_hdr_target)
+   {
+      s->av1_hdr_done = (size_t)(s->av1_hdr_packet.data - s->buf);
+      return 1;
+   }
+   if ((size_t)(s->av1_hdr_packet.data - s->buf) > s->avail ||
+         s->av1_hdr_packet.size > s->avail - (size_t)(s->av1_hdr_packet.data - s->buf))
+   {
+      s->waiting = 1;
+      return 0;
+   }
+   ret = rav1_obu_next(&obu, s->av1_hdr_packet.data, s->av1_hdr_packet.size,
+         &s->av1_hdr_offset, true);
+   if (ret < 0) return -1;
+   if (!ret)
+   {
+      size_t end = (size_t)(s->av1_hdr_packet.data - s->buf) + s->av1_hdr_packet.size;
+      if (!rwebm_video_av1_hdr_point(s, end)) return -1;
+      s->av1_hdr_done = end;
+      s->av1_hdr_pending = 0;
+      return 2;
+   }
+   if (obu.temporal_id || obu.spatial_id) return -1;
+   if (obu.type == 5 && rav1_hdr_metadata_obu(&s->av1_hdr_work, &obu) < 0)
+      return -1;
+   return 0;
+}
+#endif
+
 /* Resumable seek: cue selection only changes metadata. Each
  * step reads at most 256 packet headers or decodes one video packet.
  * A file without visible Cues uses the same bounded walk from the start. */
@@ -1810,6 +1960,13 @@ static void rwebm_video_seek_select(rwebm_video_stream_t *s)
    landed = rwebm_select_time_ns(s->demux, s->seek_target);
    if (landed < 0 || landed > s->seek_target) rwebm_rewind(s->demux);
    s->seek_scan = 0;
+#ifdef HAVE_RAV1
+   if (s->codec == RWEBM_CODEC_AV1)
+   {
+      s->av1_hdr_target = rwebm_consumed(s->demux);
+      s->av1_hdr_active = s->av1_hdr_yield = 1;
+   }
+#endif
 }
 
 int64_t rwebm_video_stream_start_ns(const rwebm_video_stream_t *s)
@@ -1998,6 +2155,26 @@ int rwebm_video_stream_seek_step(rwebm_video_stream_t *s,
       return 0;
    }
 #ifdef HAVE_RAV1
+   if (s->av1_hdr_active)
+   {
+      int64_t started = cpu_features_get_time_usec();
+      unsigned budget = 32;
+      if (s->av1_hdr_yield) { s->av1_hdr_yield = 0; return 0; }
+      do
+      {
+         int ret = rwebm_video_av1_scan_hdr(s);
+         if (ret < 0) goto failed;
+         if (ret == 1)
+         {
+            s->av1->hdr = *rwebm_video_av1_hdr_at(s, s->av1_hdr_target);
+            s->av1_hdr_active = 0;
+            return 0;
+         }
+         if (ret == 2 || s->waiting) return 0;
+         if (cpu_features_get_time_usec() - started >= 4000) break;
+      } while (--budget);
+      return 0;
+   }
    if (s->codec == RWEBM_CODEC_AV1 && s->pending)
    {
       int64_t started = cpu_features_get_time_usec();
@@ -2072,6 +2249,17 @@ int rwebm_video_stream_seek_step(rwebm_video_stream_t *s,
    }
    return 0;
 failed:
+#ifdef HAVE_RAV1
+   if (s->av1_hdr_active)
+   {
+      s->av1_hdr_offset = 0;
+      s->av1_hdr_work = *rwebm_video_av1_hdr_at(s,
+            s->av1_hdr_pending ? (size_t)(s->av1_hdr_packet.data - s->buf)
+            : s->av1_hdr_done);
+      s->av1_hdr_active = 0;
+      if (s->av1) s->av1->error = -1;
+   }
+#endif
    s->seek_active = s->seek_scan = 0;
    return -1;
 }

@@ -236,6 +236,107 @@ static void test_seek_early_hdr(int inband)
    CHECK(opens == closes);
 }
 
+static void test_seek_changed_hdr(int inband)
+{
+   rwebm_video_stream_t *s;
+   video_hw_frame_t frame = {0};
+   unsigned n, seek;
+   const int64_t positions[3] = {0, 360000000, 80000000};
+   int ret = 0;
+   make_webm_clip(inband, 0, 0, 0, 12, 1, 2);
+   s = rwebm_video_stream_open_hw_avail(bytes, used, used, NULL);
+   CHECK(s && rwebm_video_stream_set_hw(s, 1));
+   if (!s) return;
+   CHECK(rwebm_video_stream_seek_begin_ns(s, 360000000));
+   for (n = 0; n < 128 && !ret; n++) ret = rwebm_video_stream_seek_step(s, NULL);
+   CHECK(ret == 1);
+   CHECK(rwebm_video_stream_next(s, NULL));
+   CHECK(rwebm_video_stream_hw_frame(s, &frame));
+   CHECK(frame.color.max_cll == 2000 && frame.color.max_fall == 600);
+   video_hw_frame_abandon(&frame);
+   for (seek = 0; seek < 3; seek++)
+   {
+      ret = 0;
+      CHECK(rwebm_video_stream_seek_begin_ns(s, positions[seek]));
+      for (n = 0; n < 128 && !ret; n++) ret = rwebm_video_stream_seek_step(s, NULL);
+      CHECK(ret == 1 && rwebm_video_stream_next(s, NULL));
+      CHECK(rwebm_video_stream_hw_frame(s, &frame));
+      CHECK(frame.color.max_cll == (seek == 1 ? 2000u : 1000u));
+      CHECK(frame.color.max_fall == (seek == 1 ? 600u : 400u));
+      video_hw_frame_abandon(&frame);
+   }
+   rwebm_video_stream_close(s);
+   CHECK(opens == closes);
+}
+
+static void test_changed_hdr_partial(int inband)
+{
+   rwebm_video_stream_t *s;
+   video_hw_frame_t frame = {0};
+   unsigned n, before = decodes;
+   int ret = 0;
+   make_webm_clip(inband, 0, 0, 0, 12, 1, 2);
+   s = rwebm_video_stream_open_hw_avail(bytes, used, used, NULL);
+   CHECK(s && rwebm_video_stream_set_hw(s, 1));
+   if (!s) return;
+   rwebm_video_stream_set_avail(s, media_at);
+   CHECK(rwebm_video_stream_seek_begin_ns(s, 360000000));
+   for (n = 0; n < 128 && !rwebm_video_stream_waiting(s); n++)
+      CHECK(rwebm_video_stream_seek_step(s, NULL) == 0);
+   CHECK(n < 128 && decodes == before);
+   CHECK(rwebm_video_stream_seek_begin_ns(s, 0));
+   rwebm_video_stream_set_avail(s, used);
+   for (n = 0; n < 128 && !ret; n++) ret = rwebm_video_stream_seek_step(s, NULL);
+   CHECK(ret == 1 && rwebm_video_stream_next(s, NULL));
+   CHECK(rwebm_video_stream_hw_frame(s, &frame) && frame.color.max_cll == 1000);
+   video_hw_frame_abandon(&frame);
+   CHECK(rwebm_video_stream_seek_begin_ns(s, 360000000));
+   ret = 0;
+   for (n = 0; n < 128 && !ret; n++) ret = rwebm_video_stream_seek_step(s, NULL);
+   CHECK(ret == 1 && rwebm_video_stream_next(s, NULL));
+   CHECK(rwebm_video_stream_hw_frame(s, &frame));
+   CHECK(frame.color.max_cll == 2000 && frame.color.max_fall == 600);
+   video_hw_frame_abandon(&frame);
+   rwebm_video_stream_close(s);
+   CHECK(opens == closes);
+}
+
+static void test_changed_hdr_malformed(void)
+{
+   static const uint8_t record[] = {0x2a,6,1,7,208,2,88,128};
+   rwebm_video_stream_t *s;
+   size_t at;
+   unsigned n, attempt, before = decodes;
+   int ret;
+   make_webm_clip(0, 0, 0, 0, 12, 1, 2);
+   for (at = media_at; at + sizeof(record) <= used; at++)
+      if (!memcmp(bytes + at, record, sizeof(record))) break;
+   CHECK(at + sizeof(record) <= used);
+   if (at + sizeof(record) > used) return;
+   bytes[at + 7] = 0;
+   s = rwebm_video_stream_open_hw_avail(bytes, used, used, NULL);
+   CHECK(s && rwebm_video_stream_set_hw(s, 1));
+   if (!s) return;
+   for (attempt = 0; attempt < 2; attempt++)
+   {
+      if (attempt) rwebm_video_stream_set_avail(s, media_at);
+      CHECK(rwebm_video_stream_seek_begin_ns(s, 360000000));
+      if (attempt)
+      {
+         for (n = 0; n < 128 && !rwebm_video_stream_waiting(s); n++)
+            CHECK(rwebm_video_stream_seek_step(s, NULL) == 0);
+         CHECK(n < 128 && decodes == before);
+         rwebm_video_stream_set_avail(s, used);
+      }
+      ret = 0;
+      for (n = 0; n < 128 && !ret; n++) ret = rwebm_video_stream_seek_step(s, NULL);
+      CHECK(ret == -1 && decodes == before);
+      CHECK(!rwebm_video_stream_next(s, NULL));
+   }
+   rwebm_video_stream_close(s);
+   CHECK(opens == closes);
+}
+
 static void test_seek_error(void)
 {
    rwebm_video_stream_t *s;
@@ -320,6 +421,11 @@ int main(void)
    test_seek_partial(0);
    test_seek_partial(1);
    test_seek_error();
+   test_seek_changed_hdr(0);
+   test_seek_changed_hdr(1);
+   test_changed_hdr_partial(0);
+   test_changed_hdr_partial(1);
+   test_changed_hdr_malformed();
    test_seek_early_hdr(0);
    test_seek_early_hdr(1);
    test_bad_initial_hdr(0);
