@@ -31,6 +31,9 @@
 
 #define VULKAN_DIRTY_DYNAMIC_BIT                0x0001
 
+#ifdef ANDROID
+#include <compat/android_native_window.h>
+#endif
 #include "vksym.h"
 
 #include <stddef.h>

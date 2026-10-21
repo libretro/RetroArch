@@ -109,7 +109,7 @@ jobs:
         run: |
           set -euo pipefail
           bin="$MEDIA_NDK/toolchains/llvm/prebuilt/linux-x86_64/bin"
-          sources=(mediacodec_inventory android_image_queue android_image_ndk android_frame mediacodec_session mediacodec_color mediacodec_frame_export mediacodec_hevc_packet mediacodec_hevc_decoder vulkan_android_image vulkan_android_sync vulkan_android_pipeline vulkan_android_submit vulkan_android_cache_entry vulkan_android_cache vulkan_android_device)
+          sources=(mediacodec_inventory android_image_queue android_image_ndk android_frame mediacodec_session mediacodec_color mediacodec_frame_export mediacodec_hevc_packet mediacodec_hevc_decoder mediacodec_hevc_backend vulkan_android_image vulkan_android_sync vulkan_android_pipeline vulkan_android_submit vulkan_android_cache_entry vulkan_android_cache vulkan_android_device)
           unity="$RUNNER_TEMP/android-media-unity.c"
           : > "$unity"
           for source in "${sources[@]}"; do
@@ -126,7 +126,7 @@ jobs:
                     -std=c89 -pedantic -Wall -Wextra -Werror -Wno-long-long -Wno-c99-extensions \
                     -DHAVE_THREADS -DHAVE_DYLIB -Wframe-larger-than=2048 -Ilibretro-common/include -Igfx/include \
                     "${extra[@]}" -c "gfx/common/$source.c" -o "$object"
-                  if "$bin/llvm-nm" -u "$object" | grep -Eq ' U (AMedia|AImage|AHardwareBuffer)'; then
+                  if "$bin/llvm-nm" -u "$object" | grep -Eq ' U (AMedia|AImage|AHardwareBuffer|ANativeWindow_setFrameRateWithChangeStrategy)'; then
                     echo "Unexpected direct media API dependency: $object"
                     exit 1
                   fi
@@ -139,11 +139,21 @@ jobs:
                   "$bin/$target$api-clang" \
                     -DANDROID -DHAVE_MENU -DHAVE_GFX_WIDGETS \
                     -DHAVE_VULKAN -DHAVE_RMP4 -DHAVE_DYLIB -DHAVE_THREADS \
-                    -Dinline=__inline__ -include android/native_window.h -O1 -std=c89 \
+                    -Dinline=__inline__ -O1 -std=c89 \
                     -Werror=declaration-after-statement -Werror=frame-larger-than -Wframe-larger-than=4096 \
                     -I. -Ilibretro-common/include -Igfx/include "${extra[@]}" \
                     -c "$root_source" -o "$RUNNER_TEMP/$(basename "$root_source")-$target-$api-$offset.o"
                 done
+                "$bin/ld.lld" -r \
+                  "$RUNNER_TEMP/unity-$target-$api-$offset.o" \
+                  "$RUNNER_TEMP/vulkan_common.c-$target-$api-$offset.o" \
+                  "$RUNNER_TEMP/vulkan.c-$target-$api-$offset.o" \
+                  -o "$RUNNER_TEMP/media-root-$target-$api-$offset.o"
+                if "$bin/llvm-nm" -u "$RUNNER_TEMP/media-root-$target-$api-$offset.o" | \
+                    grep -Eq ' U (mediacodec_|android_frame_|android_image_|vulkan_android_)'; then
+                  echo "Unresolved private Android media helper in root link"
+                  exit 1
+                fi
               done
             done
           done

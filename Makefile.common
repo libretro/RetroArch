@@ -1825,6 +1825,16 @@ ifeq ($(HAVE_VULKAN), 1)
                 gfx/common/vulkan_android_submit.o \
                 gfx/common/vulkan_android_cache_entry.o \
                 gfx/common/vulkan_android_cache.o
+         ifeq ($(HAVE_THREADS), 1)
+            OBJ += gfx/common/mediacodec_inventory.o \
+                   gfx/common/android_image_ndk.o \
+                   gfx/common/mediacodec_session.o \
+                   gfx/common/mediacodec_color.o \
+                   gfx/common/mediacodec_frame_export.o \
+                   gfx/common/mediacodec_hevc_packet.o \
+                   gfx/common/mediacodec_hevc_decoder.o \
+                   gfx/common/mediacodec_hevc_backend.o
+         endif
       endif
    endif
 

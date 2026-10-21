@@ -379,6 +379,16 @@ VIDEO CONTEXT
 #include "../gfx/common/vulkan_android_submit.c"
 #include "../gfx/common/vulkan_android_cache_entry.c"
 #include "../gfx/common/vulkan_android_cache.c"
+#ifdef HAVE_THREADS
+#include "../gfx/common/mediacodec_inventory.c"
+#include "../gfx/common/android_image_ndk.c"
+#include "../gfx/common/mediacodec_session.c"
+#include "../gfx/common/mediacodec_color.c"
+#include "../gfx/common/mediacodec_frame_export.c"
+#include "../gfx/common/mediacodec_hevc_packet.c"
+#include "../gfx/common/mediacodec_hevc_decoder.c"
+#include "../gfx/common/mediacodec_hevc_backend.c"
+#endif
 #endif
 #include "../gfx/common/vulkan_common.c"
 #include "../libretro-common/vulkan/vulkan_symbol_wrapper.c"

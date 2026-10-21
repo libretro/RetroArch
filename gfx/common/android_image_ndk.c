@@ -11,6 +11,7 @@
 #ifdef ANDROID_IMAGE_NDK_TEST
 #include "android_image_ndk_test_types.h"
 #else
+#include <compat/android_native_window.h>
 #if !defined(__cplusplus) && (!defined(__STDC_VERSION__) || __STDC_VERSION__<199901L) && !defined(inline)
 #define inline __inline__
 #define ANDROID_IMAGE_UNDEF_INLINE
