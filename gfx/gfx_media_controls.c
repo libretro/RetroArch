@@ -91,7 +91,8 @@ bool gfx_media_controls_update(gfx_media_controls_t *c, const gfx_media_target_t
 
 static bool gfx_media_button(gfx_media_controls_t *c, unsigned button, int64_t now)
 {
-   int64_t position = c->playback.position_us;
+   int64_t position = c->playback.seek_failed ? c->playback.seek_target_us
+      : c->playback.position_us;
    const int64_t maximum = (int64_t)((~(uint64_t)0) >> 1);
    if (button == 0)
       return c->target.pause(c->target.user, !c->playback.paused, now);

@@ -58,6 +58,26 @@ void gfx_display_draw_text(const font_data_t *font, const char *text,
    captions++;
 }
 
+static void failed_seek_transport(void)
+{
+   gfx_media_controls_t c;
+   gfx_media_target_t target;
+   fake_player_t f;
+   memset(&c, 0, sizeof(c)); memset(&target, 0, sizeof(target));
+   memset(&f, 0, sizeof(f));
+   f.available = f.state.seekable = f.state.paused = true;
+   f.state.position_us = 10000000;
+   f.state.seek_failed = true;
+   f.state.seek_target_us = 15000000;
+   target.user = &f; target.identity = &f;
+   target.state = fake_state; target.pause = fake_pause; target.seek = fake_seek;
+   gfx_media_controls_update(&c, &target, 640, 480, 1);
+   CHECK(gfx_media_controls_action(&c, GFX_MEDIA_SEEK_FORWARD, 2));
+   CHECK(f.last_seek == 20000000);
+   CHECK(gfx_media_controls_action(&c, GFX_MEDIA_SEEK_BACK, 3));
+   CHECK(f.last_seek == 10000000);
+}
+
 static void menu_transport(void)
 {
    menu_media_controls_t *m = (menu_media_controls_t*)calloc(1, sizeof(*m));
@@ -268,6 +288,7 @@ static void mailbox_races(void)
 int main(void)
 {
    transport();
+   failed_seek_transport();
    menu_transport();
 #ifdef HAVE_THREADS
    mailbox_races();

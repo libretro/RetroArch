@@ -962,6 +962,7 @@ bool gfx_anim_preview_seek_request(gfx_anim_preview_t *p,
    retro_atomic_store_release_int(&p->seek_audio_format,
          (int)(mix_rate | (s16 ? 0x40000000U : 0)));
    p->seeking = true;
+   p->seek_failed = false;
    gfx_anim_preview_set_paused(p, p->paused);
    return true;
 }
@@ -1065,6 +1066,16 @@ int gfx_anim_preview_seek_step(void *user, int64_t target_us,
    return 1;
 }
 
+void gfx_anim_preview_seek_cancel(gfx_anim_preview_t *p)
+{
+   if (!p || !p->seeking) return;
+   gfx_anim_preview_audio_prepare_free(p->seek_audio);
+   p->seek_audio = NULL;
+   gfx_anim_preview_set_paused(p, true);
+   p->seeking = false;
+   p->seek_failed = true;
+}
+
 void gfx_anim_preview_seek_commit(gfx_anim_preview_t *p, int64_t position_us)
 {
    gfx_anim_preview_audio_prepared_t *audio;
@@ -1074,6 +1085,7 @@ void gfx_anim_preview_seek_commit(gfx_anim_preview_t *p, int64_t position_us)
    gfx_anim_preview_audio_stop(p);
    if (audio) gfx_anim_preview_audio_adopt(p, audio);
    p->seeking = false;
+   p->seek_failed = false;
    p->media_origin_us = position_us;
    p->media_clock_us = p->clock_us;
    p->media_clock_valid = true;

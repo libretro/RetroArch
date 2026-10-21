@@ -1058,14 +1058,25 @@ static void lane_seek(bool threaded, bool hw)
          "seek: target clamped to zero");
    seek.fail = 1;
    CHECK(video_player_seek(p, 40000), "seek: failing request accepted");
-   for (i = 0; i < 1000 && state != VIDEO_PLAYER_ENDED; i++)
+   for (i = 0; i < 1000 && state != VIDEO_PLAYER_SEEK_FAILED; i++)
    {
       state = video_player_poll(p, now + 1010000);
       if (threaded) retro_sleep(1);
    }
-   CHECK(state == VIDEO_PLAYER_ENDED && k.nseen == 4,
+   CHECK(state == VIDEO_PLAYER_SEEK_FAILED && k.nseen == 4,
          "seek: failure retains the last picture");
-   CHECK(!video_player_seek(p, 0), "seek: failed player stopped");
+   CHECK(video_player_poll(p, now + 1010000) == VIDEO_PLAYER_SEEK_FAILED
+         && !video_player_seeking(p), "seek: failure is stable without decoding");
+   seek.fail = 0;
+   CHECK(video_player_seek(p, 0), "seek: failed player accepts recovery");
+   for (i = 0; i < 1000 && (video_player_seeking(p) || k.nseen < 5); i++)
+   {
+      video_player_poll(p, now + 1010000);
+      if (threaded) retro_sleep(1);
+   }
+   CHECK(k.nseen == 5 && k.seen[4] == 0
+         && video_player_seek_position(p, &position) && !position,
+         "seek: recovery presents a replacement picture");
    video_player_free(p);
    if (hw)
       CHECK(f.hw_made == k.hw_taken + f.hw_abandoned,

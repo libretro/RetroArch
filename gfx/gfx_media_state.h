@@ -7,7 +7,8 @@
 typedef struct gfx_media_playback_state
 {
    int64_t position_us, duration_us;
-   bool paused, seeking, seekable;
+   int64_t seek_target_us;
+   bool paused, seeking, seekable, seek_failed;
 } gfx_media_playback_state_t;
 
 #endif

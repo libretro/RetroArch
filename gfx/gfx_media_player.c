@@ -6,7 +6,7 @@ bool gfx_media_player_set_paused(gfx_anim_preview_t *session,
       video_player_t *player, bool paused, bool audio_ready, int64_t wall_us)
 {
    int64_t now = wall_us;
-   if (!player) return false;
+   if (!player || (session && session->seek_failed && !paused)) return false;
    if (session)
    {
       now = gfx_anim_preview_clock(session, now);
@@ -51,6 +51,8 @@ bool gfx_media_player_state(gfx_anim_preview_t *session,
    state->paused = session->paused;
    state->seeking = session->seeking;
    state->seekable = session->seekable;
+   state->seek_failed = session->seek_failed;
+   state->seek_target_us = session->media_requested_us;
    return true;
 }
 
@@ -77,6 +79,15 @@ enum video_player_state gfx_media_player_poll(gfx_anim_preview_t *session,
 {
    int64_t now = session ? gfx_anim_preview_clock(session, wall_us) : wall_us;
    enum video_player_state result = video_player_poll(player, now);
+   if (result == VIDEO_PLAYER_SEEK_FAILED)
+   {
+      if (session && session->seeking)
+      {
+         gfx_anim_preview_seek_cancel(session);
+         video_player_set_paused(player, true, now);
+      }
+      return VIDEO_PLAYER_PLAYING;
+   }
    if (result != VIDEO_PLAYER_ENDED && session && video_player_started(player))
    {
       int64_t position_us;

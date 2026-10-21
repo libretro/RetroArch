@@ -122,7 +122,7 @@ struct video_player
    void *seek_user;
    int64_t seek_target, seek_run_target, seek_position;
    int32_t initial_loops;
-   bool seek_pending, seek_dirty, seek_active, seek_restart;
+   bool seek_pending, seek_dirty, seek_active, seek_restart, seek_failed;
    bool seek_valid, seek_show, seek_gap;
    void *stream;
    vp_job_t *job[2];       /* one block; NULL until a threaded start */
@@ -1013,7 +1013,7 @@ finished:
    p->seek_pending = p->seek_active = false;
    if (result < 0 || p->seek_position < 0)
    {
-      p->flags |= VP_STOPPED;
+      p->seek_failed = true;
       return -1;
    }
    p->seek_valid = p->seek_show = true;
@@ -1072,6 +1072,8 @@ enum video_player_state video_player_poll(video_player_t *p, int64_t now_us)
 {
    if (!p || (p->flags & VP_STOPPED))
       return VIDEO_PLAYER_ENDED;
+   if (p->seek_failed)
+      return VIDEO_PLAYER_SEEK_FAILED;
    if (p->paused && !p->seek_pending && !p->seek_show)
       return VIDEO_PLAYER_PLAYING;
 
@@ -1117,7 +1119,7 @@ enum video_player_state video_player_poll(video_player_t *p, int64_t now_us)
    {
       int r = vp_poll_seek(p, now_us);
       if (r <= 0)
-         return r < 0 ? VIDEO_PLAYER_ENDED : VIDEO_PLAYER_PLAYING;
+         return r < 0 ? VIDEO_PLAYER_SEEK_FAILED : VIDEO_PLAYER_PLAYING;
    }
    if (p->paused && p->movie_us) now_us = p->pause_us;
 
@@ -1146,6 +1148,7 @@ bool video_player_seek(video_player_t *p, int64_t target_us)
       video_hw_frame_abandon(p->inline_frame.hw);
    p->inline_ready = false;
    p->seek_target = target_us < 0 ? 0 : target_us;
+   p->seek_failed = false;
    p->seek_pending = p->seek_dirty = true;
    p->seek_valid = p->seek_show = false;
    p->seek_gap = false;

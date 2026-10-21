@@ -123,6 +123,7 @@ typedef struct gfx_anim_preview
    size_t clock_serial;
    unsigned clock_rate, clock_fraction;
    bool seeking; /* main-thread transport hold, independent of user pause */
+   bool seek_failed;
    retro_atomic_int_t seek_audio_format; /* main publishes, worker snapshots */
    unsigned seek_format, seek_phase; /* decoding-thread state below */
    size_t seek_feed_hi, seek_feed_anchor;
@@ -220,6 +221,7 @@ bool gfx_anim_preview_seek_request(gfx_anim_preview_t *p,
       unsigned mix_rate, bool s16);
 int gfx_anim_preview_seek_step(void *user, int64_t target_us,
       bool restart, int64_t *position_us);
+void gfx_anim_preview_seek_cancel(gfx_anim_preview_t *p);
 void gfx_anim_preview_seek_commit(gfx_anim_preview_t *p, int64_t position_us);
 
 void gfx_anim_preview_audio_begin(gfx_anim_preview_t *p);

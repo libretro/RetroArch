@@ -88,8 +88,8 @@ enum video_player_present
 enum video_player_state
 {
    VIDEO_PLAYER_PLAYING = 0,
-   VIDEO_PLAYER_ENDED          /* loops done, or an error: the last frame
-                                  shown stays the sink's */
+   VIDEO_PLAYER_ENDED,         /* loops done, or a decode error */
+   VIDEO_PLAYER_SEEK_FAILED    /* picture retained; a new seek can recover */
 };
 
 typedef struct video_player_frame
