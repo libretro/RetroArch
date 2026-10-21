@@ -606,6 +606,23 @@ void pad_connection_packet(joypad_connection_t *joyconn, uint32_t pad,
    pad_connection_release(joyconn);
 }
 
+void pad_connection_idle(joypad_connection_t *joyconn)
+{
+   /* most handlers have none: no gate taken for them. The interface
+    * is static and checked again under the gate. */
+   const pad_connection_interface_t *iface;
+   if (     !joyconn
+         || !(iface = joyconn->iface)
+         || !iface->idle
+         || !pad_connection_acquire(joyconn))
+      return;
+   if (     joyconn->connection
+         && joyconn->iface
+         && joyconn->iface->idle)
+      joyconn->iface->idle(joyconn->connection);
+   pad_connection_release(joyconn);
+}
+
 void pad_connection_get_buttons(joypad_connection_t *joyconn,
       unsigned pad, input_bits_t *state)
 {

@@ -464,6 +464,8 @@ static void hidraw_hid_poll(void *data)
       if (got_len > 0)
          pad_connection_packet(&hid->slots[dev->slot], dev->slot,
                dev->data[(n - 1) & 1], (uint32_t)got_len);
+      else
+         pad_connection_idle(&hid->slots[dev->slot]);
       if (len < 0 && errno != EAGAIN && errno != EINTR)
       {
          RARCH_LOG("[hidraw] \"%s\" at %s is gone (%s).\n",

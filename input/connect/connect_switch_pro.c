@@ -17,8 +17,12 @@
  *
  * On USB it says nothing until it is greeted: 0x80 0x02, 0x80 0x03
  * (a faster link to its own chip), 0x80 0x02 again, each answered with
- * 0x81, then 0x80 0x04 starts its reports. Over Bluetooth it sends the
- * short report 0x3F until it is told to send the full one.
+ * 0x81, then 0x80 0x04 starts its reports. Pads that pass for one -
+ * 8BitDo's among them - do not answer 0x80 0x03, so a step not answered
+ * goes on after a while, by the clock: such a pad sends nothing to count
+ * the while by. Reports that stop over USB are started again. Over
+ * Bluetooth it sends the short report 0x3F until it is told to send the
+ * full one.
  *
  * Commands are output report 0x01 - a packet number, the rumble, then
  * the command - answered by input report 0x21, which also carries the
@@ -37,6 +41,7 @@
 
 #include <boolean.h>
 #include <retro_miscellaneous.h>
+#include <features/features_cpu.h>
 
 #include "joypad_connection.h"
 #include "../input_defines.h"
@@ -51,6 +56,8 @@
  * often it is */
 #define SWITCH_PRO_RETRY_AFTER   32
 #define SWITCH_PRO_TRIES         4
+/* how long a pad may be quiet before a step goes on: SDL's wait */
+#define SWITCH_PRO_QUIET_US      100000
 /* reports between rumble reports, and between refreshes of one held */
 #define SWITCH_PRO_RUMBLE_GAP    2
 #define SWITCH_PRO_RUMBLE_HOLD   6
@@ -93,6 +100,7 @@ struct hidpad_switch_pro_data
    uint8_t tries;
    uint8_t number;      /* the output's packet number */
    uint8_t since_sent;  /* reports since output last went */
+   retro_time_t quiet_since; /* the first poll without a report; 0: one came */
    int player;          /* told: from 1, -1 for none; 0 not yet */
    bool lights_due;     /* told another once its commands are done */
    bool bluetooth;
@@ -179,6 +187,21 @@ static void hidpad_switch_pro_commands(struct hidpad_switch_pro_data *device)
       ? SWITCH_PRO_CMD_MODE : SWITCH_PRO_CMD_RUMBLE;
    device->tries   = 1;
    hidpad_switch_pro_send_command(device);
+}
+
+/* The greeting done, answered or not: 0x80 0x04 starts the reports,
+ * and the commands follow. */
+static void hidpad_switch_pro_start(struct hidpad_switch_pro_data *device)
+{
+   hidpad_switch_pro_usb_command(device, 0x04);
+   hidpad_switch_pro_commands(device);
+}
+
+static void hidpad_switch_pro_hello2(struct hidpad_switch_pro_data *device)
+{
+   device->state = SWITCH_PRO_USB_HELLO2;
+   device->tries = 1;
+   hidpad_switch_pro_usb_command(device, 0x02);
 }
 
 static void hidpad_switch_pro_next_command(
@@ -476,15 +499,13 @@ static void hidpad_switch_pro_usb_reply(struct hidpad_switch_pro_data *device,
       case SWITCH_PRO_USB_BAUD:
          if (command != 0x03)
             return;
-         device->state = SWITCH_PRO_USB_HELLO2;
-         hidpad_switch_pro_usb_command(device, 0x02);
-         break;
+         hidpad_switch_pro_hello2(device);
+         return;
       case SWITCH_PRO_USB_HELLO2:
          if (command != 0x02)
             return;
          /* not answered: the reports start */
-         hidpad_switch_pro_usb_command(device, 0x04);
-         hidpad_switch_pro_commands(device);
+         hidpad_switch_pro_start(device);
          return;
       default:
          return;
@@ -511,20 +532,26 @@ static void hidpad_switch_pro_command_reply(
    hidpad_switch_pro_next_command(device);
 }
 
-/* A command not answered after a while of reports goes again, a few
- * times; then the next. The greeting is given up on, its reports
- * coming without it. */
+/* A command not answered after a while goes again, a few times; then
+ * the next. The faster link is not asked twice: a pad that passes for
+ * one does not answer it. The greeting given up on, the reports are
+ * started anyway. */
 static void hidpad_switch_pro_retry(struct hidpad_switch_pro_data *device)
 {
    if (     device->state == SWITCH_PRO_READY
          || device->since_sent < SWITCH_PRO_RETRY_AFTER)
       return;
+   if (device->state == SWITCH_PRO_USB_BAUD)
+   {
+      hidpad_switch_pro_hello2(device);
+      return;
+   }
    if (device->tries++ >= SWITCH_PRO_TRIES)
    {
       if (device->state == SWITCH_PRO_COMMANDS)
          hidpad_switch_pro_next_command(device);
       else
-         hidpad_switch_pro_commands(device);
+         hidpad_switch_pro_start(device);
       return;
    }
    switch (device->state)
@@ -532,9 +559,6 @@ static void hidpad_switch_pro_retry(struct hidpad_switch_pro_data *device)
       case SWITCH_PRO_USB_HELLO:
       case SWITCH_PRO_USB_HELLO2:
          hidpad_switch_pro_usb_command(device, 0x02);
-         break;
-      case SWITCH_PRO_USB_BAUD:
-         hidpad_switch_pro_usb_command(device, 0x03);
          break;
       default:
          hidpad_switch_pro_send_command(device);
@@ -562,6 +586,7 @@ static void hidpad_switch_pro_packet_handler(void *data,
    }
    if (!len)
       return;
+   device->quiet_since = 0;
 
    switch (r[0])
    {
@@ -621,6 +646,36 @@ static void hidpad_switch_pro_packet_handler(void *data,
             || (     (device->motors[0] || device->motors[1])
                   && device->since_sent >= SWITCH_PRO_RUMBLE_HOLD)))
       hidpad_switch_pro_send_rumble(device);
+}
+
+/* A poll with no report. Quiet for a while, a step not answered goes
+ * on as it would after a while of reports; once ready, reports that
+ * stopped on USB are started again, as SDL does - Steam can stop them. */
+static void hidpad_switch_pro_idle(void *data)
+{
+   struct hidpad_switch_pro_data *device =
+      (struct hidpad_switch_pro_data*)data;
+   retro_time_t now;
+
+   if (!device)
+      return;
+   now = cpu_features_get_time_usec();
+   if (!device->quiet_since)
+   {
+      device->quiet_since = now;
+      return;
+   }
+   if (now - device->quiet_since < SWITCH_PRO_QUIET_US)
+      return;
+   device->quiet_since = now;
+   if (device->state == SWITCH_PRO_READY)
+   {
+      if (!device->bluetooth && !device->stack)
+         hidpad_switch_pro_usb_command(device, 0x04);
+      return;
+   }
+   device->since_sent = SWITCH_PRO_RETRY_AFTER;
+   hidpad_switch_pro_retry(device);
 }
 
 static void hidpad_switch_pro_set_rumble(void *data,
@@ -706,5 +761,6 @@ pad_connection_interface_t pad_connection_switch_pro = {
    NULL,  /* status */
    NULL,  /* joypad */
    hidpad_switch_pro_set_player,
-   hidpad_switch_pro_view
+   hidpad_switch_pro_view,
+   hidpad_switch_pro_idle
 };

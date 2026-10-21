@@ -1681,6 +1681,8 @@ static void winusb_hid_poll(void *data)
                dev->buf[dev->read_idx] + skip,
                (uint32_t)dev->len[dev->read_idx] - skip);
       }
+      else
+         pad_connection_idle(&hid->slots[dev->slot]);
       if (dev->out_waiting)
          winusb_hidclass_flush(dev);
       if (retro_atomic_load_acquire_int(&dev->gone))

@@ -130,6 +130,9 @@ typedef struct pad_connection_interface
    /* The pad's state as its packet handler keeps it, which its getters
     * answer from. NULL where the handler keeps it otherwise. */
    const struct input_pad_view *(*view)(void *device);
+   /* A poll that brought the pad no report, for a handler with steps
+    * that go on by time, not by its reports. May be NULL. */
+   void        (*idle)(void *device);
 } pad_connection_interface_t;
 
 /* A handler's buttons into its view: the 32 it decodes, and the menu
@@ -181,6 +184,10 @@ void pad_connection_pad_deinit(joypad_connection_t *joyconn,
 
 void pad_connection_packet(joypad_connection_t *joyconn,
    uint32_t idx, uint8_t* data, uint32_t length);
+
+/* For a driver that hands its packets over in its own poll: the slot's
+ * pad brought none this poll. */
+void pad_connection_idle(joypad_connection_t *joyconn);
 
 void pad_connection_get_buttons(joypad_connection_t *joyconn,
    unsigned idx, input_bits_t* state);

@@ -19,6 +19,7 @@
 #include "input/connect/joypad_connection.h"
 #include "input/include/gamepad.h"
 #include "input/common/sony_pad_output.h"
+#include <retro_timers.h>
 
 /* shorter than the Wii U Pro's buttons, which end at 0x0E */
 #define WIIUPRO_SHORT 0x0E
@@ -1236,6 +1237,8 @@ static bool sp_sent_command(unsigned back, uint8_t cmd, uint8_t arg)
    return h[0] == 0x01 && h[10] == cmd && h[11] == arg;
 }
 
+#define SWITCH_PRO_TEST_TRIES 4 /* the handler's greetings before it gives up */
+
 static void test_switch_pro(void)
 {
    static const uint8_t hello[2]  = { 0x80, 0x02 };
@@ -1415,6 +1418,55 @@ static void test_switch_pro(void)
    for (n = 0; n < 32 * 4; n++)
       deliver(ifc, dev, p, (uint16_t)sp_report(p, 0x30, &st));
    CHECK(sp_sent_command(0, 0x48, 0x01), "switch_pro: stuck on an unanswered greeting");
+   ifc->deinit(dev);
+
+   /* a pad that passes for one, as 8BitDo's do: the faster link not
+    * answered and nothing sent, so the polls without a report go on by
+    * the clock - on to the second greeting, then the reports; once
+    * ready, reports that stop are started again */
+   sent_count = 0;
+   dev = ifc->init(&dummy_connection, 0, &stub_hid);
+   p[0] = 0x81; p[1] = 0x02; deliver(ifc, dev, p, 64);
+   CHECK(sp_sent(0, baud, 2), "switch_pro: no faster link asked for");
+   count = sent_count;
+   ifc->idle(dev);
+   ifc->idle(dev);
+   CHECK(sent_count == count, "switch_pro: went on before the pad had a while");
+   retro_sleep(110);
+   ifc->idle(dev);
+   CHECK(sent_count == count + 1 && sp_sent(0, hello, 2),
+         "switch_pro: an unanswered faster link not gone past");
+   p[1] = 0x02; deliver(ifc, dev, p, 64);
+   CHECK(sp_sent(1, start, 2) && sp_sent_command(0, 0x48, 0x01),
+         "switch_pro: the reports not started after the second greeting");
+   deliver(ifc, dev, p, (uint16_t)sp_reply(p, &st, 0x48, NULL, 0));
+   deliver(ifc, dev, p, (uint16_t)sp_reply(p, &st, 0x30, NULL, 0));
+   deliver(ifc, dev, p, (uint16_t)sp_reply(p, &st, 0x10, NULL, 0));
+   deliver(ifc, dev, p, (uint16_t)sp_reply(p, &st, 0x10, NULL, 0));
+   deliver(ifc, dev, p, (uint16_t)sp_report(p, 0x30, &st));
+   count = sent_count;
+   ifc->idle(dev);
+   retro_sleep(110);
+   ifc->idle(dev);
+   CHECK(sent_count == count + 1 && sp_sent(0, start, 2),
+         "switch_pro: stopped reports not started again");
+   deliver(ifc, dev, p, (uint16_t)sp_report(p, 0x30, &st));
+   ifc->idle(dev);
+   CHECK(sent_count == count + 1, "switch_pro: started again with reports coming");
+   ifc->deinit(dev);
+
+   /* a pad that answers nothing at all: greeted a few times, then its
+    * reports started anyway */
+   sent_count = 0;
+   dev = ifc->init(&dummy_connection, 0, &stub_hid);
+   ifc->idle(dev);
+   for (n = 0; n < SWITCH_PRO_TEST_TRIES; n++)
+   {
+      retro_sleep(110);
+      ifc->idle(dev);
+   }
+   CHECK(sp_sent(1, start, 2) && sp_sent_command(0, 0x48, 0x01),
+         "switch_pro: a silent pad's reports never started");
    ifc->deinit(dev);
 
    /* Bluetooth the driver says: full reports asked for first */
