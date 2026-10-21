@@ -41,8 +41,7 @@ struct hidpad_wiiugca_pad_data
    gca_device_data_t *device_data;
    joypad_connection_t *joypad;
    int pad_index;
-   uint32_t buttons;
-   int16_t analog[3][2];
+   input_pad_view_t view;
 };
 
 struct hidpad_wiiugca_data
@@ -105,45 +104,43 @@ static void hidpad_wiiugca_deinit(void *device_data)
       free(device);
 }
 
-static void hidpad_wiiugca_get_buttons(void *pad_data, input_bits_t *state)
+/* the device stands for its first port */
+static gca_pad_data_t *hidpad_wiiugca_pad(void *pad_data)
 {
    gca_pad_data_t *pad = (gca_pad_data_t *)pad_data;
+   if (pad && pad->datatype != GCA_TYPE_PAD)
+      return &((gca_device_data_t *)pad_data)->pad_data[0];
+   return pad;
+}
+
+static void hidpad_wiiugca_get_buttons(void *pad_data, input_bits_t *state)
+{
+   gca_pad_data_t *pad = hidpad_wiiugca_pad(pad_data);
    if (pad)
-   {
-      if (pad->datatype == GCA_TYPE_PAD)
-      {
-         BITS_COPY16_PTR(state, pad->buttons);
-      }
-      else
-      {
-         gca_device_data_t *device = (gca_device_data_t *)pad_data;
-         BITS_COPY16_PTR(state, device->pad_data[0].buttons);
-      }
-   }
+      *state = pad->view.buttons;
    else
-   {
       BIT256_CLEAR_ALL_PTR(state);
-   }
 }
 
 static int16_t hidpad_wiiugca_get_axis(void *pad_data, unsigned axis)
 {
    axis_data axis_data;
-   gca_pad_data_t *pad = (gca_pad_data_t *)pad_data;
-   gca_device_data_t *device = (gca_device_data_t *)pad_data;
+   gca_pad_data_t *pad = hidpad_wiiugca_pad(pad_data);
 
-   gamepad_read_axis_data(axis, &axis_data);
-
-   if (!pad || axis_data.axis >= 4)
+   if (!pad)
       return 0;
-   if (pad->datatype == GCA_TYPE_PAD)
-      return gamepad_get_axis_value_raw(pad->analog, &axis_data, false);
-   return gamepad_get_axis_value(device->pad_data[0].analog, &axis_data);
+   if (axis < INPUT_PAD_VIEW_AXES)
+      return pad->view.axes[axis];
+   /* a stick's direction, bound: what wiiu_hid's state() asks */
+   gamepad_read_axis_data(axis, &axis_data);
+   if (axis_data.axis >= 4)
+      return 0;
+   return pad->view.axes[axis_data.axis];
 }
 
 static void update_button_state(gca_pad_data_t *pad, const uint8_t *data)
 {
-   uint32_t i, pressed_keys;
+   uint32_t i, pressed_keys, buttons = 0;
 
    static const uint32_t button_mapping[12] =
    {
@@ -165,11 +162,11 @@ static void update_button_state(gca_pad_data_t *pad, const uint8_t *data)
       return;
 
    pressed_keys     = data[1] | (data[2] << 8);
-   pad->buttons     = 0;
 
    for (i = 0; i < 12; i++)
-      pad->buttons |= (pressed_keys & (1 << i)) ?
+      buttons |= (pressed_keys & (1 << i)) ?
          (1 << button_mapping[i]) : 0;
+   pad_view_set_buttons(&pad->view, buttons, false);
 }
 
 static void update_analog_state(gca_pad_data_t *pad, const uint8_t *data)
@@ -181,15 +178,13 @@ static void update_analog_state(gca_pad_data_t *pad, const uint8_t *data)
     * by 256 to get the 16-bit range RetroArch expects. */
    for (pad_axis = 0; pad_axis < 4; pad_axis++)
    {
-      unsigned axis            = (pad_axis % 2) ? 0 : 1;
-      unsigned stick           = pad_axis / 2;
       int16_t interpolated     = data[3 + pad_axis];
       /* libretro requires "up" to be negative, so we invert the y axis */
-      interpolated             = axis
-         ? ((interpolated - 128) * 256)
-         : ((interpolated - 128) * -256);
+      interpolated             = (pad_axis % 2)
+         ? ((interpolated - 128) * -256)
+         : ((interpolated - 128) * 256);
 
-      pad->analog[stick][axis] = interpolated;
+      pad->view.axes[pad_axis] = interpolated;
    }
 }
 
@@ -251,21 +246,16 @@ const char *hidpad_wiiugca_get_name(void *pad_data)
 
 static int32_t hidpad_wiiugca_button(void *pad_data, uint16_t joykey)
 {
-   gca_pad_data_t *pad = (gca_pad_data_t *)pad_data;
+   gca_pad_data_t *pad = hidpad_wiiugca_pad(pad_data);
 
-   if (!pad)
+   if (!pad || joykey > 31)
       return 0;
+   return BIT256_GET(pad->view.buttons, joykey) ? 1 : 0;
+}
 
-   if (pad->datatype != GCA_TYPE_PAD)
-   {
-      gca_device_data_t *device = (gca_device_data_t *)pad_data;
-      pad = &device->pad_data[0];
-   }
-
-   if (!pad->device_data || joykey > 31 || !pad->joypad)
-      return 0;
-
-   return pad->buttons & (1 << joykey);
+static const input_pad_view_t *hidpad_wiiugca_view(void *pad_data)
+{
+   return &hidpad_wiiugca_pad(pad_data)->view;
 }
 
 static void *hidpad_wiiugca_pad_init(void *device_data, int pad_index, joypad_connection_t *joypad)
@@ -327,4 +317,6 @@ pad_connection_interface_t pad_connection_wiiugca = {
    hidpad_wiiugca_pad_deinit,
    hidpad_wiiugca_status,
    hidpad_wiiugca_joypad,
+   NULL, /* set_player */
+   hidpad_wiiugca_view
 };

@@ -37,8 +37,7 @@ struct hidpad_retrode_pad_data
    retrode_device_data_t *device_data;
    joypad_connection_t *joypad;
    int pad_index;
-   uint32_t buttons;
-   uint8_t axis[2];
+   input_pad_view_t view;
 };
 
 struct hidpad_retrode_data
@@ -86,41 +85,35 @@ static void hidpad_retrode_deinit(void *data)
       free(device);
 }
 
+/* the device stands for its first port */
+static retrode_pad_data_t *hidpad_retrode_pad(void *pad_data)
+{
+   retrode_pad_data_t *pad = (retrode_pad_data_t *)pad_data;
+   if (pad && pad->datatype != RETRODE_TYPE_PAD)
+      return &((retrode_device_data_t *)pad_data)->pad_data[0];
+   return pad;
+}
+
 static void hidpad_retrode_get_buttons(void *pad_data, input_bits_t *state)
 {
-    retrode_pad_data_t *pad = (retrode_pad_data_t *)pad_data;
-    if (pad)
-    {
-       if (pad->datatype == RETRODE_TYPE_PAD)
-       {
-          BITS_COPY16_PTR(state, pad->buttons);
-       }
-       else
-       {
-          retrode_device_data_t *device = (retrode_device_data_t *)pad_data;
-          BITS_COPY16_PTR(state, device->pad_data[0].buttons);
-       }
-    }
-    else
-    {
-       BIT256_CLEAR_ALL_PTR(state);
-    }
+   retrode_pad_data_t *pad = hidpad_retrode_pad(pad_data);
+   if (pad)
+      *state = pad->view.buttons;
+   else
+      BIT256_CLEAR_ALL_PTR(state);
 }
 
 static int16_t hidpad_retrode_get_axis(void *pad_data, unsigned axis)
 {
-   int val;
-   retrode_pad_data_t       *pad = (retrode_pad_data_t *)pad_data;
-   retrode_device_data_t *device = (retrode_device_data_t *)pad_data;
+   retrode_pad_data_t *pad = hidpad_retrode_pad(pad_data);
 
-   if (!pad || axis >= 2)
+   if (!pad || axis >= INPUT_PAD_VIEW_AXES)
       return 0;
+   return pad->view.axes[axis];
+}
 
-   if (pad->datatype == RETRODE_TYPE_PAD)
-      val = pad->axis[axis];
-   else
-      val = device->pad_data[0].axis[axis];
-
+static int16_t retrode_axis_value(int val)
+{
    /* map Retrode values to a known gamepad (VID=0x0079, PID=0x0011) */
    if (val == 0x9C)
       val = 0x00; /* axis=0 left, axis=1 up */
@@ -139,7 +132,7 @@ static int16_t hidpad_retrode_get_axis(void *pad_data, unsigned axis)
 static void retrode_update_button_state(retrode_pad_data_t *pad,
       const uint8_t *data)
 {
-   uint32_t i, pressed_keys;
+   uint32_t i, pressed_keys, buttons = 0;
 
    static const uint32_t button_mapping[8] =
    {
@@ -157,18 +150,18 @@ static void retrode_update_button_state(retrode_pad_data_t *pad,
       return;
 
    pressed_keys = data[3];
-   pad->buttons = 0;
 
    for (i = 0; i < 8; i ++)
       if (button_mapping[i] != NO_BTN)
-          pad->buttons |= (pressed_keys & (1 << i)) ? (1 << button_mapping[i]) : 0;
+          buttons |= (pressed_keys & (1 << i)) ? (1 << button_mapping[i]) : 0;
+   pad_view_set_buttons(&pad->view, buttons, false);
 }
 
 static void hidpad_retrode_pad_packet_handler(retrode_pad_data_t *pad,
       const uint8_t *packet)
 {
-   pad->axis[0] = packet[1];
-   pad->axis[1] = packet[2];
+   pad->view.axes[0] = retrode_axis_value(packet[1]);
+   pad->view.axes[1] = retrode_axis_value(packet[2]);
    retrode_update_button_state(pad, packet);
 }
 
@@ -212,21 +205,16 @@ const char * hidpad_retrode_get_name(void *pad_data)
 
 static int32_t hidpad_retrode_button(void *pad_data, uint16_t joykey)
 {
-   retrode_pad_data_t *pad = (retrode_pad_data_t *)pad_data;
+   retrode_pad_data_t *pad = hidpad_retrode_pad(pad_data);
 
-   if (!pad)
+   if (!pad || joykey > 31)
       return 0;
+   return BIT256_GET(pad->view.buttons, joykey) ? 1 : 0;
+}
 
-   if (pad->datatype != RETRODE_TYPE_PAD)
-   {
-      retrode_device_data_t *device = (retrode_device_data_t *)pad_data;
-      pad = &device->pad_data[0];
-  }
-
-  if (!pad->device_data || joykey > 31 || !pad->joypad)
-     return 0;
-
-  return (pad->buttons >> joykey) & 1;
+static const input_pad_view_t *hidpad_retrode_view(void *pad_data)
+{
+   return &hidpad_retrode_pad(pad_data)->view;
 }
 
 static void *hidpad_retrode_pad_init(void *device_data, int pad_index, joypad_connection_t *joypad)
@@ -287,4 +275,6 @@ pad_connection_interface_t pad_connection_retrode = {
    hidpad_retrode_pad_deinit,
    hidpad_retrode_status,
    hidpad_retrode_joypad,
+   NULL, /* set_player */
+   hidpad_retrode_view
 };
