@@ -24,6 +24,8 @@ SURFACE_OBJ := gfx_surface_uut.o
 # The playback the animation goes through, and its surface side.
 PLAYER_SRC := $(REPO_ROOT)/gfx/gfx_surface_player.c
 PLAYER_OBJ := gfx_surface_player_uut.o
+MEDIA_PLAYER_OBJ := gfx_media_player_uut.o
+MEDIA_CPU_OBJ := gfx_media_cpu_uut.o
 # Direct-video outcomes of the surface, slot by slot; it includes
 # gfx_surface.h, so it takes the unit's flags.
 OUTCOME_OBJ := surface_outcome_test.o
@@ -119,11 +121,17 @@ $(SURFACE_OBJ): $(SURFACE_SRC)
 $(PLAYER_OBJ): $(PLAYER_SRC)
 	$(CC) -c -o $@ $< $(UUT_CFLAGS)
 
+$(MEDIA_PLAYER_OBJ): $(REPO_ROOT)/gfx/gfx_media_player.c
+	$(CC) -c -o $@ $< $(UUT_CFLAGS)
+
+$(MEDIA_CPU_OBJ): $(REPO_ROOT)/gfx/gfx_media_cpu.c
+	$(CC) -c -o $@ $< $(UUT_CFLAGS)
+
 $(OUTCOME_OBJ): surface_outcome_test.c
 	$(CC) -c -o $@ $< $(UUT_CFLAGS)
 
 $(TARGET): $(OBJS) $(UUT_OBJ) $(ANIM_PREVIEW_OBJ) $(SURFACE_OBJ) \
-      $(PLAYER_OBJ) $(OUTCOME_OBJ)
+      $(PLAYER_OBJ) $(MEDIA_PLAYER_OBJ) $(MEDIA_CPU_OBJ) $(OUTCOME_OBJ)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 # ASan and TSan are mutually exclusive, hence separate passes.
@@ -139,6 +147,6 @@ sweep:
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(TARGET) $(OBJS) $(UUT_OBJ) $(ANIM_PREVIEW_OBJ) $(SURFACE_OBJ) \
-	   $(PLAYER_OBJ) $(OUTCOME_OBJ)
+	   $(PLAYER_OBJ) $(MEDIA_PLAYER_OBJ) $(MEDIA_CPU_OBJ) $(OUTCOME_OBJ)
 
 .PHONY: all sweep clean
