@@ -105,6 +105,36 @@ static void reject_video_times(record_mux_avfoundation_t *mux,CMSampleBufferRef 
       CFRelease(copy);
    }
 }
+static void mux_startup_contracts(const record_mux_avfoundation_config_t *base,const char *path)
+{
+   record_mux_avfoundation_config_t invalid;
+   record_mux_avfoundation_t *probe;
+   char *guard=(char*)malloc(strlen(path)+16);
+   char bytes[4];
+   FILE *file;
+   assert(guard);
+   assert(!record_mux_avfoundation_new(NULL,path));
+   invalid=*base; invalid.timescale=0;
+   assert(!record_mux_avfoundation_new(&invalid,path));
+   invalid=*base; invalid.epoch=-1;
+   assert(!record_mux_avfoundation_new(&invalid,path));
+   invalid=*base; invalid.channels=2; invalid.audio_layout=1;
+   assert(!record_mux_avfoundation_new(&invalid,path));
+   sprintf(guard,"%s.guard",path);
+   file=fopen(guard,"wb"); assert(file);
+   assert(fwrite("keep",1,4,file)==4); assert(!fclose(file));
+   assert(!record_mux_avfoundation_new(base,guard));
+   file=fopen(guard,"rb"); assert(file);
+   assert(fread(bytes,1,4,file)==4 && !memcmp(bytes,"keep",4));
+   assert(fgetc(file)==EOF); assert(!fclose(file)); assert(!remove(guard));
+   sprintf(guard,"%s.cancel",path);
+   probe=record_mux_avfoundation_new(base,guard); assert(probe);
+   assert(!record_mux_avfoundation_free(probe));
+   assert(record_mux_avfoundation_finish(probe)==RECORD_AVF_ERROR);
+   assert(record_mux_avfoundation_cancel(probe));
+   assert(record_mux_avfoundation_free(probe));
+   free(guard);
+}
 int main(int argc,char **argv)
 {
    int rc=0;
@@ -221,6 +251,7 @@ int main(int argc,char **argv)
                   output.audio_rate=audio_rate; output.channels=2; output.audio_layout=3;
                   output.audio_bitrate=128000; output.max_audio_frames=1024;
                }
+               mux_startup_contracts(&output,argv[6]);
                mux=record_mux_avfoundation_new(&output,argv[6]); assert(mux);
                reject_video_times(mux,encoded);
             }

@@ -1,7 +1,17 @@
 /* Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier: GPL-3.0-or-later */
+/* Keep modern SDK inline spellings local to framework declarations in C89. */
+#if defined(__APPLE__) && !defined(__cplusplus) \
+      && (!defined(__STDC_VERSION__) || __STDC_VERSION__ < 199901L) && !defined(inline)
+#define inline __inline__
+#define RECORD_AVF_UNDEF_INLINE
+#endif
 #import <Foundation/Foundation.h>
 #import <AVFoundation/AVFoundation.h>
 #import <CoreMedia/CoreMedia.h>
+#ifdef RECORD_AVF_UNDEF_INLINE
+#undef inline
+#undef RECORD_AVF_UNDEF_INLINE
+#endif
 #include <stdlib.h>
 #include <string.h>
 #include <retro_atomic.h>
