@@ -13,6 +13,13 @@ typedef struct vulkan_android_entry_config {
  VkDevice device;
  VkQueue queue;
  VkCommandPool command_pool;
+ /* Optional ownership transfer to a successful cache_new. On failure the
+  * caller retains the pool; deferred device destruction destroys it implicitly. */
+ PFN_vkDestroyCommandPool destroy_owned_pool;
+ /* Only a deferred cache invokes this at context teardown, after device idle
+  * (or device loss), before vkDestroyDevice. Normal texture retirement owns it. */
+ void (*destroy_deferred_destination)(VkDevice device,void *destination);
+ void *deferred_destination;
  unsigned family,sampler_descriptors;
  const VkPhysicalDeviceMemoryProperties *memory;
  vulkan_android_image_ops_t image;

@@ -5,8 +5,9 @@
 RETRO_BEGIN_DECLS
 typedef struct vulkan_android_cache vulkan_android_cache_t;
 /* Cold renderer-owner creation, 1..32 native buffers. Copies operation tables
- * and memory properties. Device/queue/resettable command pool remain borrowed;
- * their owner retains them until cache retirement. Fixed output encoding. */
+ * and memory properties. Device/queue remain borrowed. The resettable command
+ * pool is borrowed unless destroy_owned_pool transfers ownership on success.
+ * Borrowed owners retain their resources until cache retirement. Fixed output encoding. */
 vulkan_android_cache_t *vulkan_android_cache_new(const vulkan_android_entry_config_t *config,
       unsigned count,bool fp16);
 /* Cold renderer-owner resource preparation, outside frame submission. The
@@ -24,13 +25,17 @@ void vulkan_android_cache_close(vulkan_android_cache_t *cache);
 /* Cold renderer owner, only after close. False retains pending entries/cache;
  * call again later. True consumes cache. No waits/device-idle. */
 bool vulkan_android_cache_free(vulkan_android_cache_t *cache);
-/* Cold renderer owner only AFTER its VkDevice has actually been destroyed. */
+/* Cold context owner only AFTER device_destroying and actual VkDevice destruction.
+ * Refuses if Vulkan children have not been retired first. */
 bool vulkan_android_cache_after_device_destroy(vulkan_android_cache_t *cache);
 /* Cold renderer shutdown transfers ownership of a closed, unfreeable cache.
  * Calls are serialized by the existing renderer/context lifecycle owner.
  * A pending device must not be cached: destroy it and notify afterward. */
 void vulkan_android_cache_defer(vulkan_android_cache_t *cache);
 bool vulkan_android_cache_device_pending(VkDevice device);
+/* Cold context teardown after vkDeviceWaitIdle returned success/device-lost,
+ * before vkDestroyDevice. Destroys Vulkan children while retaining image leases. */
+void vulkan_android_cache_device_destroying(VkDevice device);
 /* Only after vkDestroyDevice returned. Releases matching caches, without any
  * call through their Vulkan operation tables. Other devices remain retained. */
 void vulkan_android_cache_device_destroyed(VkDevice device);

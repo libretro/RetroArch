@@ -135,12 +135,15 @@ jobs:
                   -std=c89 -pedantic -Wall -Wextra -Werror -Wno-long-long -Wno-c99-extensions \
                   -DHAVE_THREADS -DHAVE_DYLIB -Wframe-larger-than=2048 -Ilibretro-common/include -Igfx/include \
                   "${extra[@]}" -c "$unity" -o "$RUNNER_TEMP/unity-$target-$api-$offset.o"
-                "$bin/$target$api-clang" \
-                  -DANDROID -DHAVE_VULKAN -DHAVE_RMP4 -DHAVE_DYLIB -DHAVE_THREADS \
-                  -Dinline=__inline__ -include android/native_window.h -O1 -std=c89 \
-                  -Werror=declaration-after-statement -Werror=frame-larger-than -Wframe-larger-than=4096 \
-                  -I. -Ilibretro-common/include -Igfx/include "${extra[@]}" \
-                  -c gfx/common/vulkan_common.c -o "$RUNNER_TEMP/context-$target-$api-$offset.o"
+                for root_source in gfx/common/vulkan_common.c gfx/drivers/vulkan.c; do
+                  "$bin/$target$api-clang" \
+                    -DANDROID -DHAVE_MENU -DHAVE_GFX_WIDGETS \
+                    -DHAVE_VULKAN -DHAVE_RMP4 -DHAVE_DYLIB -DHAVE_THREADS \
+                    -Dinline=__inline__ -include android/native_window.h -O1 -std=c89 \
+                    -Werror=declaration-after-statement -Werror=frame-larger-than -Wframe-larger-than=4096 \
+                    -I. -Ilibretro-common/include -Igfx/include "${extra[@]}" \
+                    -c "$root_source" -o "$RUNNER_TEMP/$(basename "$root_source")-$target-$api-$offset.o"
+                done
               done
             done
           done

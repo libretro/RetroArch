@@ -7,7 +7,7 @@ struct vulkan_android_cache {
  VkPhysicalDeviceMemoryProperties memory;
  struct vulkan_android_cache *retired_next;
  unsigned count,next;
- bool fp16,closed,deferred;
+ bool fp16,closed,deferred,children_destroyed;
  bool occupied[32];
  vulkan_android_cache_entry_t entry[32];
 };
@@ -78,18 +78,20 @@ bool vulkan_android_cache_free(vulkan_android_cache_t *cache)
 {
  unsigned i;bool pending=false;
  if(!cache)return true;
- if(!cache->closed)return false;
+ if(!cache->closed || cache->deferred)return false;
  for(i=0;i<cache->count;i++)if(cache->occupied[i]) {
   if(vulkan_android_cache_entry_destroy(&cache->entry[i]))cache->occupied[i]=false;
   else pending=true;
  }
  if(pending)return false;
+ if(cache->config.destroy_owned_pool)cache->config.destroy_owned_pool(cache->config.device,cache->config.command_pool,NULL);
  free(cache);return true;
 }
 bool vulkan_android_cache_after_device_destroy(vulkan_android_cache_t *cache)
 {
  unsigned i;bool complete=true;
  if(!cache)return true;
+ if(!cache->children_destroyed)return false;
  cache->closed=true;
  for(i=0;i<cache->count;i++)if(cache->occupied[i]
        && !vulkan_android_submission_after_device_destroy(&cache->entry[i].submission))complete=false;
@@ -112,13 +114,36 @@ bool vulkan_android_cache_device_pending(VkDevice device)
  for(;cache;cache=cache->retired_next)if(cache->config.device==device)return true;
  return false;
 }
+void vulkan_android_cache_device_destroying(VkDevice device)
+{
+ vulkan_android_cache_t *cache=vulkan_android_retired_caches;
+ if(!device)return;
+ for(;cache;cache=cache->retired_next)if(cache->config.device==device && !cache->children_destroyed) {
+  unsigned i;
+  for(i=0;i<cache->count;i++)if(cache->occupied[i]) {
+   vulkan_android_submission_t *s=&cache->entry[i].submission;
+   void *owner=s->held_owner;
+   uint64_t slot=s->held_slot,generation=s->held_generation;
+   /* Device idle or loss permits child teardown, but external producer memory
+    * remains leased until actual device destruction. Do not poll/return it. */
+   s->inflight=0;s->held_owner=NULL;
+   vulkan_android_cache_entry_destroy(&cache->entry[i]);
+   s->held_owner=owner;s->held_slot=slot;s->held_generation=generation;
+  }
+  if(cache->config.destroy_owned_pool)
+   cache->config.destroy_owned_pool(device,cache->config.command_pool,NULL);
+  if(cache->config.destroy_deferred_destination)
+   cache->config.destroy_deferred_destination(device,cache->config.deferred_destination);
+  cache->children_destroyed=true;
+ }
+}
 void vulkan_android_cache_device_destroyed(VkDevice device)
 {
  vulkan_android_cache_t **link=&vulkan_android_retired_caches;
  if(!device)return;
  while(*link) {
   vulkan_android_cache_t *cache=*link;
-  if(cache->config.device!=device){link=&cache->retired_next;continue;}
+  if(cache->config.device!=device || !cache->children_destroyed){link=&cache->retired_next;continue;}
   if(!vulkan_android_cache_after_device_destroy(cache)){link=&cache->retired_next;continue;}
   *link=cache->retired_next;
   free(cache);

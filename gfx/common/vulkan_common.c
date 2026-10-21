@@ -4929,6 +4929,9 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
          if (vk->context.destroy_device)
             vk->context.destroy_device();
          vk->context.destroy_device = NULL;
+#if defined(ANDROID) && defined(HAVE_RMP4)
+         vulkan_android_cache_device_destroying(vk->context.device);
+#endif
          vkDestroyDevice(vk->context.device, NULL);
 #if defined(ANDROID) && defined(HAVE_RMP4)
          vulkan_android_cache_device_destroyed(vk->context.device);

@@ -60,6 +60,9 @@
 #include "../common/vulkan_memory_type.h"
 #ifdef HAVE_RMP4
 #include "../common/vulkan_video_decode.h"
+#ifdef ANDROID
+#include "../common/vulkan_android_cache.h"
+#endif
 #endif
 #include "../common/rgba16_pack.h"
 #ifdef HAVE_OPENXR
@@ -199,6 +202,9 @@ struct vk_image
 
 struct vk_texture
 {
+#if defined(ANDROID) && defined(HAVE_RMP4)
+   vulkan_android_cache_t *android_cache;
+#endif
    VkDeviceSize memory_size;     /* uint64_t alignment */
 
    void *mapped;
@@ -1853,6 +1859,20 @@ static void vulkan_stream_states_flush(vk_t *vk)
 static void vulkan_texture_retire(vk_t *vk, struct vk_texture *texture)
 {
    struct vk_stream_state **cur = &vk->stream_states;
+#if defined(ANDROID) && defined(HAVE_RMP4)
+   if (texture->android_cache)
+   {
+      vulkan_android_cache_close(texture->android_cache);
+      if (!vulkan_android_cache_free(texture->android_cache))
+      {
+         /* Both source and destination may still be in use. Native children
+          * stay on the device until context destruction, without a new wait. */
+         vulkan_android_cache_defer(texture->android_cache);
+         return;
+      }
+      texture->android_cache = NULL;
+   }
+#endif
    while (*cur)
    {
       struct vk_stream_state *st = *cur;
@@ -14186,6 +14206,10 @@ static struct vk_stream_state *vulkan_import_state_get(vk_t *vk,
 
 /* Sample exported planes directly, or copy into a buffer when no views
  * are available. Both paths preserve the producer's layout and lease. */
+#if defined(ANDROID) && defined(HAVE_RMP4)
+#include "vulkan_android_video.h"
+#endif
+
 static enum video_texture_update vulkan_import_convert(vk_t *vk,
       struct vk_texture *texture, const video_frame_import_t *f)
 {
@@ -14237,6 +14261,12 @@ static enum video_texture_update vulkan_import_convert(vk_t *vk,
       transfer_layout = VK_IMAGE_LAYOUT_GENERAL;
       sampled_layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
    }
+#endif
+
+#if defined(ANDROID) && defined(HAVE_RMP4)
+   /* Opaque Android image leases are never raw VkImage/timeline handles. */
+   if (android_frame_callback(f->abandon))
+      return vulkan_android_renderer_import(vk, texture, f);
 #endif
 
    if (     !vulkan_video_layout(&layout, w, h, source_pixfmt, f->yuv)
@@ -14471,10 +14501,14 @@ static enum video_texture_update vulkan_import_texture(void *data,
    struct vk_texture *texture;
    enum video_texture_update r;
    VkFormat output_format;
+   bool android_input = false;
+#if defined(ANDROID) && defined(HAVE_RMP4)
+   android_input = f && android_frame_callback(f->abandon);
+#endif
 
    if (     !vk || !vk->context || !id || !f
-         || !(vk->context->flags & VK_CTX_FLAG_TIMELINE_SEMAPHORE)
-         || vk->pipelines.yuv420_to_rgba8888 == VK_NULL_HANDLE
+         || (!android_input && !(vk->context->flags & VK_CTX_FLAG_TIMELINE_SEMAPHORE))
+         || (!android_input && vk->pipelines.yuv420_to_rgba8888 == VK_NULL_HANDLE)
          || !VIDEO_SCALE_W(f->dims) || !VIDEO_SCALE_H(f->dims))
       return VIDEO_TEXTURE_UPDATE_REFUSED;
    if (f->output_pixfmt && f->output_pixfmt != IMAGE_PIXFMT_8888
@@ -14488,7 +14522,7 @@ static enum video_texture_update vulkan_import_texture(void *data,
       vkGetPhysicalDeviceFormatProperties(vk->context->gpu, output_format, &props);
       if (!(props.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT)
             || !(props.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT)
-            || vk->pipelines.yuv420_to_rgba16f == VK_NULL_HANDLE)
+            || (!android_input && vk->pipelines.yuv420_to_rgba16f == VK_NULL_HANDLE))
          return VIDEO_TEXTURE_UPDATE_REFUSED;
    }
    if (*id)
