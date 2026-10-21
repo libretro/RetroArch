@@ -5989,7 +5989,7 @@ int rh265_video_set_extradata(rh265_video *v, const uint8_t *hvcc, size_t len)
    int num_arrays, i;
    if (!v || !hvcc || v->hw)
       return -1;
-   if (len >= 3 && (hvcc[0] || hvcc[1]) && hvcc[2] == 1)
+   if (rh265_start_code(hvcc, len))
    {
       /* Annex-B extradata: feed it through the NAL splitter */
       return rh265_video_decode(v, hvcc, len) < 0 ? -1 : 0;

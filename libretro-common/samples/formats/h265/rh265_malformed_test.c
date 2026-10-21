@@ -876,8 +876,41 @@ static void test_vps_info(void)
    rh265_video_close(v);
 }
 
+static void test_annexb_extradata(void)
+{
+   bitw w;
+   static uint8_t units_buf[2][1024], buf[2100];
+   static rh265_video_params_t params;
+   const uint8_t *units[2];
+   size_t lens[2], n;
+   unsigned prefix, i;
+   rh265_video *v;
+   units[0] = units_buf[0]; units[1] = units_buf[1];
+   sps(&w, F_NONE, 8); lens[0] = nal(units_buf[0], 33, &w);
+   pps(&w, 0, 0); lens[1] = nal(units_buf[1], 34, &w);
+   for (prefix = 3; prefix <= 4; prefix++)
+   {
+      n = 0;
+      for (i = 0; i < 2; i++)
+      {
+         memset(buf + n, 0, prefix); buf[n + prefix - 1] = 1; n += prefix;
+         memcpy(buf + n, units[i], lens[i]); n += lens[i];
+      }
+      v = rh265_video_open(); if (!v) abort();
+      expect("Annex-B parameter input", rh265_video_set_extradata(v, buf, n), 0);
+      expect("Annex-B parameter sets parsed", rh265_video_get_params(v, 0, &params), 0);
+      rh265_video_close(v);
+   }
+   n = hvcc(buf, units, lens, 2); buf[2] = 1;
+   v = rh265_video_open(); if (!v) abort();
+   expect("hvcC compatibility byte is not a start code", rh265_video_set_extradata(v, buf, n), 0);
+   expect("hvcC compatibility input sets parsed", rh265_video_get_params(v, 0, &params), 0);
+   rh265_video_close(v);
+}
+
 int main(void)
 {
+   test_annexb_extradata();
    test_nal_iterator(); test_access_unit();
    test_slice_info();
    test_color_info();
