@@ -4,7 +4,8 @@
 #include <string.h>
 #include "../../../gfx/common/mediacodec_hevc_decoder.h"
 #include "../../../gfx/common/android_image_ndk.h"
-static int native,submitted,busy,eos,freed,reader_freed,released;
+static int native,submitted,busy,eos,freed,reader_freed,released,startup_fail;
+static int timestamp_extra;
 static int64_t queued_tag;
 static android_image_view_t held;
 static mediacodec_hevc_decoder_t *retired;
@@ -27,10 +28,10 @@ static bool describe(void *image,android_image_view_t *view)
 {
  assert(image==&native);view->buffer=&native;
  view->width=view->right=64;view->height=view->bottom=64;
- view->timestamp_ns=queued_tag*1000;queued_tag=0;return true;
+ view->timestamp_ns=queued_tag*1000+timestamp_extra;queued_tag=0;return true;
 }
 static void delete_image(void *image){assert(image==&native);}
-static void delete_reader(void *reader){assert(reader==&native && freed);reader_freed++;}
+static void delete_reader(void *reader){assert(reader==&native && (freed || startup_fail));reader_freed++;}
 android_image_queue_t *android_image_ndk_new(unsigned w,unsigned h,unsigned slots,void **window)
 {
  android_image_ops_t ops;
@@ -42,7 +43,7 @@ mediacodec_session_t *mediacodec_session_new(JNIEnv *env,const mediacodec_config
 {
  assert(env && window==&native && c->profile==1 && c->csd_size[0]==21);
  assert(!memcmp(c->csd[0],"\0\0\0\1\100\1",6));
- return (mediacodec_session_t*)&native;
+ return startup_fail?NULL:(mediacodec_session_t*)&native;
 }
 int mediacodec_session_submit(mediacodec_session_t *s,const void *data,size_t bytes,int64_t pts,bool end)
 {
@@ -84,6 +85,10 @@ int main(void)
  memset(&picture,0,sizeof(picture));picture.serial=1;
  memset(&slice,0,sizeof(slice));slice.data=bytes;slice.size=3;
  au.num_slices=1;au.coded_bytes=3;au.first.nal_type=19;
+ startup_fail=1;
+ assert(!mediacodec_hevc_decoder_open((JNIEnv*)&native,(rh265_video*)&native,&params,4,1024,&importer,&ops));
+ assert(!ops.decoder && !released && !freed && reader_freed==1);
+ startup_fail=0;reader_freed=0;
  assert(mediacodec_hevc_decoder_open((JNIEnv*)&native,(rh265_video*)&native,&params,4,1024,&importer,&ops));
  busy=1;assert(ops.decode(ops.decoder,&params,&au,&slice,&picture)==1 && !submitted);
  assert(!ops.decode(ops.decoder,&params,&au,&slice,&picture) && submitted==1);
@@ -101,6 +106,17 @@ int main(void)
  assert(android_image_queue_return(held.ticket,held.generation,-1));
  assert(mediacodec_hevc_decoder_retire_poll(retired));
  assert(freed==1 && reader_freed==1 && released==1);
- puts("PASS: HEVC Surface owner BUSY, reordered images, EOF and leased-image retirement");
+ /* A malformed synthetic timestamp must fail without exporting or leaking. */
+ retired=NULL;format.serial=0;freed=reader_freed=released=0;
+ assert(mediacodec_hevc_decoder_open((JNIEnv*)&native,(rh265_video*)&native,&params,4,1024,&importer,&ops));
+ picture.serial=1;picture.slot=0;
+ assert(!ops.decode(ops.decoder,&params,&au,&slice,&picture));
+ queued_tag=1;timestamp_extra=1;
+ assert(ops.output(ops.decoder,0,&frame)==-1);
+ assert(ops.output(ops.decoder,0,&frame)==-1);
+ mediacodec_hevc_decoder_close(&ops);
+ assert(mediacodec_hevc_decoder_retire_poll(retired));
+ assert(freed==1 && reader_freed==1 && released==1);
+ puts("PASS: HEVC Surface owner startup faults, BUSY, reorder, EOF, bad timestamps and leased retirement");
  return 0;
 }
