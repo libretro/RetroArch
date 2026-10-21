@@ -269,6 +269,35 @@ static void test_seek_changed_hdr(int inband)
    CHECK(opens == closes);
 }
 
+static void test_playback_hdr_cache(int inband)
+{
+   rwebm_video_stream_t *s;
+   video_hw_frame_t frame = {0};
+   unsigned n, before;
+   int ret = 0;
+   make_webm_clip(inband, 0, 0, 0, 12, 1, 2);
+   s = rwebm_video_stream_open_hw_avail(bytes, used, used, NULL);
+   CHECK(s && rwebm_video_stream_set_hw(s, 1));
+   if (!s) return;
+   for (n = 0; n < 12; n++)
+   {
+      CHECK(rwebm_video_stream_next(s, NULL));
+      CHECK(rwebm_video_stream_hw_frame(s, &frame));
+      CHECK(frame.color.max_cll == (n >= 4 ? 2000u : 1000u));
+      video_hw_frame_abandon(&frame);
+   }
+   before = decodes;
+   CHECK(rwebm_video_stream_seek_begin_ns(s, 240000000));
+   for (n = 0; n < 128 && !ret; n++) ret = rwebm_video_stream_seek_step(s, NULL);
+   CHECK(ret == 1 && n <= 6 && decodes == before);
+   CHECK(rwebm_video_stream_next(s, NULL));
+   CHECK(rwebm_video_stream_hw_frame(s, &frame));
+   CHECK(frame.color.max_cll == 2000 && frame.color.max_fall == 600);
+   video_hw_frame_abandon(&frame);
+   rwebm_video_stream_close(s);
+   CHECK(opens == closes);
+}
+
 static void test_changed_hdr_partial(int inband)
 {
    rwebm_video_stream_t *s;
@@ -423,6 +452,8 @@ int main(void)
    test_seek_error();
    test_seek_changed_hdr(0);
    test_seek_changed_hdr(1);
+   test_playback_hdr_cache(0);
+   test_playback_hdr_cache(1);
    test_changed_hdr_partial(0);
    test_changed_hdr_partial(1);
    test_changed_hdr_malformed();

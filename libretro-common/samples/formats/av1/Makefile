@@ -41,8 +41,8 @@ $(TARGET_TEST2): rav1_mp4_stream_test.c rav1_mp4_fixture.h $(MP4_SOURCES) $(wild
 	$(CC) $(CFLAGS) -DHAVE_RAV1 -DHAVE_RMP4 -ffunction-sections -fdata-sections -o $@ $< $(MP4_SOURCES) $(LDFLAGS) -Wl,--gc-sections -lm
 
 WEBM_SOURCES := $(COMMON)/formats/webm/rwebm.c $(COMMON)/formats/webm/rwebm_video.c
-$(TARGET_TEST3): rav1_webm_stream_test.c rav1_webm_fixture.h rav1_mp4_fixture.h $(MP4_SOURCES) $(WEBM_SOURCES) $(wildcard $(COMMON)/include/formats/rav1*.h) $(COMMON)/include/formats/rwebm_video.h
-	$(CC) $(CFLAGS) -DHAVE_RAV1 -ffunction-sections -fdata-sections -o $@ $< $(MP4_SOURCES) $(WEBM_SOURCES) $(LDFLAGS) -Wl,--gc-sections -lm
+$(TARGET_TEST3): rav1_webm_stream_test.c rav1_webm_fixture.h rav1_mp4_fixture.h $(MP4_SOURCES) $(WEBM_SOURCES) $(wildcard $(COMMON)/include/formats/rav1*.h) $(COMMON)/include/formats/rwebm_video.h Makefile
+	$(CC) $(CFLAGS) -DHAVE_RAV1 -DRWEBM_VIDEO_MAX_TS=4 -ffunction-sections -fdata-sections -o $@ $< $(MP4_SOURCES) $(WEBM_SOURCES) $(LDFLAGS) -Wl,--gc-sections -lm
 
 $(TARGET_TEST): rav1_hw_stream_test.c $(COMMON)/formats/av1/rav1_hw.c $(wildcard $(COMMON)/include/formats/rav1*.h)
 	$(CC) $(CFLAGS) -o $@ $< $(COMMON)/formats/av1/rav1_hw.c $(LDFLAGS)

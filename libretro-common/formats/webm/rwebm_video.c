@@ -93,12 +93,12 @@ struct rwebm_video_stream
    rav1_hw_stream_t *av1;
    rav1_sequence_t av1_scan_sequence, av1_initial_sequence;
    int av1_initial_sequence_set;
-   rav1_hdr_metadata_t av1_hdr_initial;
+   rav1_hdr_metadata_t av1_hdr_initial, av1_hdr_seed;
    rwebm_t *av1_hdr_cursor;
    rwebm_av1_hdr_point_t *av1_hdr_points;
    rav1_hdr_metadata_t av1_hdr_work;
    rwebm_packet av1_hdr_packet;
-   size_t av1_hdr_count, av1_hdr_capacity, av1_hdr_offset;
+   size_t av1_hdr_count, av1_hdr_capacity, av1_hdr_offset, av1_hdr_packets;
    size_t av1_hdr_done, av1_hdr_target, av1_hdr_floor;
    int av1_hdr_active, av1_hdr_pending, av1_hdr_yield;
    int av1_hdr_initial_set, av1_hdr_initial_error;
@@ -1233,6 +1233,7 @@ static int rwebm_video_av1_open(rwebm_video_stream_t *s)
    if (!rav1_hdr_metadata_config(&s->av1->hdr, &config))
       goto fail;
    /* The bounded opening scan can precede the first decoded picture. */
+   s->av1_hdr_seed = s->av1->hdr;
    if (s->av1_hdr_initial_set) s->av1->hdr = s->av1_hdr_initial;
    if (!rav1_hw_stream_open_sequence(s->av1))
       goto fail;
@@ -1256,6 +1257,40 @@ fail:
    free(s->av1);
    s->av1 = NULL;
    return 0;
+}
+
+static int rwebm_video_av1_hdr_point(rwebm_video_stream_t *s, size_t offset);
+
+static int rwebm_video_av1_learn_hdr(rwebm_video_stream_t *s)
+{
+   size_t end = (size_t)(s->pending_packet.data - s->buf) + s->pending_packet.size;
+   if (s->pending_idx < 0 || (size_t)s->pending_idx != s->av1_hdr_packets)
+      return 1;
+   if (s->av1_hdr_pending && (s->av1_hdr_packet.data != s->pending_packet.data
+            || s->av1_hdr_packet.size != s->pending_packet.size)) return 1;
+   if (!s->av1_hdr_count)
+   {
+      s->av1_hdr_work = s->av1_hdr_seed;
+      if (!rwebm_video_av1_hdr_point(s, 0)) return 0;
+   }
+   if (!s->av1_hdr_cursor)
+   {
+      s->av1_hdr_cursor = rwebm_cursor_clone(s->demux);
+      if (!s->av1_hdr_cursor) return 0;
+   }
+   s->av1_hdr_work = s->av1->hdr;
+   if (!rwebm_video_av1_hdr_point(s, end)) return 0;
+   rwebm_cursor_copy(s->av1_hdr_cursor, s->demux);
+   s->av1_hdr_done = end;
+   s->av1_hdr_packets++;
+   s->av1_hdr_offset = 0;
+   s->av1_hdr_pending = s->lookahead_ready;
+   if (s->lookahead_ready)
+   {
+      s->av1_hdr_packet = s->lookahead_packet;
+      s->av1_hdr_floor = s->lookahead_floor;
+   }
+   return 1;
 }
 
 static int rwebm_video_av1_step(rwebm_video_stream_t *s,
@@ -1331,7 +1366,14 @@ static int rwebm_video_av1_step(rwebm_video_stream_t *s,
       return 2;
    }
    if (ret == RAV1_HW_STREAM_END)
+   {
+      if (!rwebm_video_av1_learn_hdr(s))
+      {
+         s->av1->error = -1;
+         return -1;
+      }
       s->pending = 0;
+   }
    if (ret == RAV1_HW_STREAM_PROGRESS || ret == RAV1_HW_STREAM_END)
       return 0;
    if (ret != RAV1_HW_STREAM_FRAME && ret != RAV1_HW_STREAM_DISCARDED)
@@ -1864,7 +1906,7 @@ static const rav1_hdr_metadata_t *rwebm_video_av1_hdr_at(
       if (s->av1_hdr_points[mid].offset <= offset) lo = mid + 1;
       else hi = mid;
    }
-   return lo ? &s->av1_hdr_points[lo - 1].hdr : &s->av1_hdr_initial;
+   return lo ? &s->av1_hdr_points[lo - 1].hdr : &s->av1_hdr_seed;
 }
 
 static int rwebm_video_av1_hdr_point(rwebm_video_stream_t *s, size_t offset)
@@ -1900,7 +1942,7 @@ static int rwebm_video_av1_scan_hdr(rwebm_video_stream_t *s)
       s->av1_hdr_cursor = rwebm_cursor_clone(s->demux);
       if (!s->av1_hdr_cursor) return -1;
       rwebm_rewind(s->av1_hdr_cursor);
-      s->av1_hdr_work = s->av1_hdr_initial;
+      s->av1_hdr_work = s->av1_hdr_seed;
       if (!rwebm_video_av1_hdr_point(s, 0)) return -1;
       return 2;
    }
@@ -1938,6 +1980,7 @@ static int rwebm_video_av1_scan_hdr(rwebm_video_stream_t *s)
       size_t end = (size_t)(s->av1_hdr_packet.data - s->buf) + s->av1_hdr_packet.size;
       if (!rwebm_video_av1_hdr_point(s, end)) return -1;
       s->av1_hdr_done = end;
+      s->av1_hdr_packets++;
       s->av1_hdr_pending = 0;
       return 2;
    }
