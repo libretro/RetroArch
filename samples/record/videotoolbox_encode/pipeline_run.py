@@ -2,14 +2,21 @@
 """Native Metal->fixed queue->VideoToolbox worker encode pixel/timing gate."""
 import contextlib
 import array
+import argparse
 import json
 import os
+import math
 from pathlib import Path
 import shlex
 import shutil
+import re
 import subprocess
 import sys
 import tempfile
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--mux', action='store_true')
+args = parser.parse_args()
 
 if sys.platform != 'darwin':
     raise SystemExit('Native recording pipeline acceptance requires Apple frameworks')
@@ -44,8 +51,9 @@ with workspace as temp:
                               + f'-{width}x{height}')
         command = compiler + flags + [f'-DWIDTH={width}', f'-DHEIGHT={height}', '-fblocks', ownership, '-Wno-unused-function',
             str(here / 'pipeline_test.m'), str(root / 'record/record_gpu_capture_metal.m'),
+            str(root / 'record/record_mux_avfoundation.m'),
             *objects, '-o', str(binary)]
-        for framework in ('Foundation', 'Metal', 'CoreVideo', 'CoreMedia', 'VideoToolbox', 'CoreFoundation'):
+        for framework in ('Foundation', 'Metal', 'CoreVideo', 'CoreMedia', 'VideoToolbox', 'CoreFoundation', 'AVFoundation', 'AudioToolbox'):
             command += ['-framework', framework]
         print('+', shlex.join(command), flush=True)
         subprocess.run(command, check=True)
@@ -60,8 +68,10 @@ with workspace as temp:
             case = directory / f'{binary.name}-hevc{hevc}-depth{depth}-mode{mode}-cpu{int(control)}-dynamic{int(dynamic)}-aperture{int(aperture)}'
             case.mkdir()
             coded, reference = case / 'coded.bin', case / 'reference.yuv'
+            movie = case / 'output.mp4'
             result = subprocess.run([str(binary), str(hevc), str(depth), str(mode),
-                                     str(coded), str(reference)], timeout=60,
+                                     str(coded), str(reference),
+                                     *([str(movie), '48000'] if args.mux else [])], timeout=60,
                                      env=dict(os.environ, **({'PIPELINE_CPU_CONTROL': '1'} if control else {}),
                                               **({'PIPELINE_DYNAMIC_CONTROL': '1'} if dynamic else {}),
                                               **({'PIPELINE_APERTURE_CONTROL': '1'} if aperture else {})))
@@ -105,9 +115,46 @@ with workspace as temp:
             if not (mean < 4 and peak <= 64 and p99 <= 16):
                 failures.append(str(case))
                 print(f'FAIL: {case.name}: {json.dumps(report)}', flush=True)
-                continue
-            print(f'PASS: native pipeline {ownership} hevc={hevc} depth={depth} mode={mode}: '
+            else:
+                print(f'PASS: native pipeline {ownership} hevc={hevc} depth={depth} mode={mode}: '
                   f'24 frames, mean={mean:.3f}, peak={peak}, p99={p99}', flush=True)
+            if args.mux:
+                container = json.loads(subprocess.check_output([ffprobe, '-v', 'error', '-show_streams',
+                    '-show_packets', '-of', 'json', str(movie)]))
+                tracks = {s['codec_type']: s for s in container['streams']}
+                assert len(container['streams']) == 2 and set(tracks) == {'video', 'audio'}, container
+                video, audio = tracks['video'], tracks['audio']
+                for key in ('codec_name', 'pix_fmt', 'color_range', 'color_primaries', 'color_transfer', 'color_space'):
+                    assert video[key] == info[key], (key, video, info)
+                assert video['time_base'] == '1/60000', video
+                packets = [p for p in container['packets'] if p['stream_index'] == video['index']]
+                assert [int(p['pts']) for p in packets] == [i * 1001 for i in range(24)], packets
+                assert [int(p['dts']) for p in packets] == [i * 1001 for i in range(24)], packets
+                assert all(int(p['duration']) == 1001 for p in packets), packets
+                movie_pixels = subprocess.check_output([ffmpeg, '-v', 'error', '-i', str(movie), '-map', '0:v:0',
+                    '-pix_fmt', 'yuv420p10le', '-fps_mode', 'passthrough', '-f', 'rawvideo', '-'])
+                assert movie_pixels == pixels, 'MP4 passthrough changed decoded video'
+                annexb = subprocess.check_output([ffmpeg, '-v', 'error', '-i', str(movie), '-map', '0:v:0',
+                    '-c:v', 'copy', '-bsf:v', 'hevc_mp4toannexb' if hevc else 'h264_mp4toannexb',
+                    '-f', 'hevc' if hevc else 'h264', '-'])
+                def vcl(data):
+                    nals = [n for n in (p.rstrip(b'\0') for p in re.split(b'\x00\x00\x00\x01|\x00\x00\x01', data)) if n]
+                    return [n for n in nals if ((n[0] >> 1) & 63) <= 31] if hevc else [n for n in nals if 1 <= (n[0] & 31) <= 5]
+                assert vcl(annexb) == vcl(coded.read_bytes()) and vcl(annexb), 'VCL bitstream changed'
+                assert audio['codec_name'] == 'aac' and int(audio['sample_rate']) == 48000 and audio['channels'] == 2, audio
+                pcm = array.array('f')
+                pcm.frombytes(subprocess.check_output([ffmpeg, '-v', 'error', '-i', str(movie), '-map', '0:a:0', '-f', 'f32le', '-']))
+                target = math.ceil(24 * 1001 * 48000 / 60000)
+                assert target - 1 <= len(pcm) // 2 <= target + 1024, (len(pcm), target)
+                assert abs(float(audio['duration']) - target / 48000) <= 2 / 48000, audio
+                for channel, frequency in enumerate((440, 660)):
+                    values = pcm[2048 * 2:min(len(pcm), target * 2)][channel::2]
+                    assert len(values) > 2000
+                    omega = 2 * math.pi * frequency / 48000
+                    amplitude = 2 * abs(sum(v * complex(math.cos(omega * n), math.sin(omega * n))
+                                            for n, v in enumerate(values))) / len(values)
+                    assert abs(amplitude - .2) < .04, (channel, amplitude)
+                print('PASS: MP4 unchanged VCL/pixels, source video clock and AAC stereo tones/duration', flush=True)
 if failures:
     raise SystemExit('Native pipeline pixel failures: ' + ', '.join(failures))
 if unavailable:

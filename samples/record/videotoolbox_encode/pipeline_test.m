@@ -1,6 +1,7 @@
 /* Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier: GPL-3.0-or-later */
 #include "capture_reference.h"
 #include "../../../record/record_gpu_worker_vt_native.h"
+#include "../../../record/record_mux_avfoundation.h"
 #include "native_packet.h"
 #include "../../../gfx/common/videotoolbox_encode_crop.h"
 #include <unistd.h>
@@ -75,10 +76,39 @@ static int diagnostic_submit(void *data,unsigned slot,void *buffer,uint64_t pts,
    if (copy) CVPixelBufferRelease(copy);
    return result;
 }
+/* Invalid input must not append, poison the writer or consume the first PTS. */
+static void reject_video_times(record_mux_avfoundation_t *mux,CMSampleBufferRef encoded)
+{
+   unsigned i;
+   assert(record_mux_avfoundation_video(mux,NULL)==RECORD_AVF_ERROR);
+   for (i=0;i<9;i++)
+   {
+      CMSampleTimingInfo timing;
+      CMSampleBufferRef copy=NULL;
+      timing.presentationTimeStamp=CMSampleBufferGetPresentationTimeStamp(encoded);
+      timing.duration=CMSampleBufferGetDuration(encoded);
+      timing.decodeTimeStamp=kCMTimeInvalid;
+      switch (i)
+      {
+         case 0: timing.presentationTimeStamp=CMTimeMake(-1,60000); break;
+         case 1: timing.presentationTimeStamp=kCMTimePositiveInfinity; break;
+         case 2: timing.duration=kCMTimeZero; break;
+         case 3: timing.duration=CMTimeMake(-1,60000); break;
+         case 4: timing.duration=kCMTimeIndefinite; break;
+         case 5: timing.decodeTimeStamp=CMTimeMake(1,60000); break;
+         case 6: timing.decodeTimeStamp=kCMTimePositiveInfinity; break;
+         case 7: timing.presentationTimeStamp.epoch=1; break;
+         case 8: timing.duration.epoch=1; break;
+      }
+      assert(!CMSampleBufferCreateCopyWithNewTiming(NULL,encoded,1,&timing,&copy));
+      assert(record_mux_avfoundation_video(mux,copy)==RECORD_AVF_ERROR);
+      CFRelease(copy);
+   }
+}
 int main(int argc,char **argv)
 {
    int rc=0;
-   if (argc!=6) return 1;
+   if (argc!=6 && argc!=8) return 1;
    @autoreleasepool
    {
       id<MTLDevice> device=MTLCreateSystemDefaultDevice();
@@ -89,6 +119,10 @@ int main(int argc,char **argv)
       record_gpu_capture_metal_t *capture;
       record_gpu_worker_vt_t *worker;
       record_gpu_queue_t *queue;
+      record_mux_avfoundation_t *mux=NULL;
+      int16_t *pcm=NULL;
+      unsigned audio_rate=argc==8?(unsigned)atoi(argv[7]):0;
+      uint64_t audio_written=0,audio_target=0;
       CVPixelBufferRef images[2]={NULL,NULL};
       CVPixelBufferPoolRef pool;
       void *buffers[2];
@@ -140,8 +174,9 @@ int main(int argc,char **argv)
       commands_queue=[device newCommandQueue]; assert(commands_queue);
       source=source_new_extent(device,mode,false,config.width,config.height);
       coded=fopen(argv[4],"wb"); raw=fopen(argv[5],"wb"); assert(coded && raw);
+      if (audio_rate) { pcm=(int16_t*)malloc(1024*2*sizeof(*pcm)); assert(pcm); }
       deadline=CFAbsoluteTimeGetCurrent()+20;
-      while (result!=RECORD_GPU_VT_END)
+      while (result!=RECORD_GPU_VT_END || audio_written<audio_target)
       {
          void *sample=NULL;
          bool progress=false;
@@ -175,29 +210,69 @@ int main(int argc,char **argv)
          {
             CMSampleBufferRef encoded=(CMSampleBufferRef)sample;
             void *again=NULL;
-            if (!received && getenv("PIPELINE_APERTURE_CONTROL"))
+            bool accepted=true;
+            if (argc==8 && !mux)
             {
-               CGRect aperture=CMVideoFormatDescriptionGetCleanAperture(CMSampleBufferGetFormatDescription(encoded),true);
-               fprintf(stderr,"APERTURE sample: %.0f %.0f %.0f %.0f\n",
-                     (double)aperture.origin.x,(double)aperture.origin.y,
-                     (double)aperture.size.width,(double)aperture.size.height);
-               assert(aperture.origin.x==0 && aperture.origin.y==0
-                     && aperture.size.width==WIDTH && aperture.size.height==HEIGHT);
+               record_mux_avfoundation_config_t output;
+               memset(&output,0,sizeof(output));
+               output.video_format=CMSampleBufferGetFormatDescription(encoded); output.timescale=60000;
+               if (audio_rate)
+               {
+                  output.audio_rate=audio_rate; output.channels=2; output.audio_layout=3;
+                  output.audio_bitrate=128000; output.max_audio_frames=1024;
+               }
+               mux=record_mux_avfoundation_new(&output,argv[6]); assert(mux);
+               reject_video_times(mux,encoded);
             }
+            if (audio_rate) audio_target=((uint64_t)(received+1)*1001*audio_rate+59999)/60000;
             assert(record_gpu_worker_vt_step(worker,&again)==RECORD_GPU_VT_PACKET && again==sample);
             assert(!CMTimeCompare(CMSampleBufferGetPresentationTimeStamp(encoded),CMTimeMake((int64_t)received*1001,60000)));
             assert(!CMTimeCompare(CMSampleBufferGetDuration(encoded),CMTimeMake(1001,60000)));
-            assert(headers(coded,CMSampleBufferGetFormatDescription(encoded),config.hevc,&length));
-            assert(packet(coded,encoded,length));
-            assert(record_gpu_worker_vt_release(worker)); received++; progress=true;
+            if (mux)
+            {
+               int appended=record_mux_avfoundation_video(mux,encoded);
+               assert(appended!=RECORD_AVF_ERROR); accepted=appended==RECORD_AVF_OK;
+            }
+            if (accepted)
+            {
+               if (!received) assert(headers(coded,CMSampleBufferGetFormatDescription(encoded),config.hevc,&length));
+               assert(packet(coded,encoded,length));
+               assert(record_gpu_worker_vt_release(worker)); received++; progress=true;
+            }
          }
-         if (!progress && result==RECORD_GPU_VT_BUSY) usleep(1000); /* Test-only deadline polling. */
+         if (mux && audio_written<audio_target)
+         {
+            size_t frames=audio_target-audio_written>1024?1024:(size_t)(audio_target-audio_written),n;
+            int appended;
+            for (n=0;n<frames;n++)
+            {
+               pcm[n*2]=(int16_t)(.2*32767*sin((double)(audio_written+n)*440*6.283185307179586/audio_rate));
+               pcm[n*2+1]=(int16_t)(.2*32767*sin((double)(audio_written+n)*660*6.283185307179586/audio_rate));
+            }
+            appended=record_mux_avfoundation_audio(mux,pcm,frames,audio_written);
+            assert(appended!=RECORD_AVF_ERROR);
+            if (appended==RECORD_AVF_OK) { audio_written+=frames; progress=true; }
+         }
+         if (!progress) usleep(1000); /* Test-only deadline polling. */
       }
       assert(produced==PIPELINE_FRAMES && received==PIPELINE_FRAMES);
+      if (mux)
+      {
+         int finalized;
+         do
+         {
+            assert(CFAbsoluteTimeGetCurrent()<deadline);
+            finalized=record_mux_avfoundation_finish(mux); assert(finalized!=RECORD_AVF_ERROR);
+            if (finalized==RECORD_AVF_BUSY) usleep(1000);
+         } while (finalized==RECORD_AVF_BUSY);
+         assert(record_mux_avfoundation_finish(mux)==RECORD_AVF_OK);
+         assert(record_mux_avfoundation_free(mux));
+      }
       assert(record_gpu_worker_vt_free(worker)); assert(videotoolbox_encode_free(encoder));
       assert(record_gpu_capture_metal_free(capture)); assert(record_gpu_queue_free(queue));
       for (i=0;i<2;i++) CVPixelBufferRelease(images[i]);
       if (fclose(coded) || fclose(raw)) rc=1;
+      free(pcm);
       RARCH_RELEASE(source); RARCH_RELEASE(commands_queue); RARCH_RELEASE(device);
       if (!rc) puts("PASS: two-slot Metal capture->queue->VT worker, borrowed output, timestamps and drain");
    }
