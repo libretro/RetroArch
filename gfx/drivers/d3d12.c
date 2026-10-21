@@ -957,6 +957,7 @@ typedef struct
       D3D12_PLACED_SUBRESOURCE_FOOTPRINT footprint;
       UINT64        total_bytes;
       bool          enable;
+      bool          streaming;
       /* Set by the capture recorded into a frame's list, consumed by
        * the signal after that list is executed. */
       bool          pending;
@@ -10382,6 +10383,7 @@ recording_resize_deferred:;
     * fence behind the list tells read_viewport when it can be read.
     * Torn down when recording stops. */
    d3d12_record_reclaim(d3d12);
+   d3d12->record.streaming = video_info->gpu_recording;
    if (video_info->gpu_recording
          && !(d3d12->flags & D3D12_ST_FLAG_FRAME_DUPE_LOCK))
       d3d12_record_capture(d3d12, cmd);
@@ -10773,7 +10775,7 @@ static bool d3d12_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
    if (!d3d12)
       return false;
 
-   if (d3d12->record.enable)
+   if (d3d12->record.enable && d3d12->record.streaming)
       /* Recording: the oldest copy, made RING frames ago. The recorder
        * treats false as "not this frame" and tries again. */
       slot = d3d12->record.index;

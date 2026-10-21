@@ -1483,6 +1483,12 @@ jobs:
           CFLAGS="-O1 -g -std=c89 -Wall -Wextra -fsanitize=address,undefined -fno-omit-frame-pointer" python3 samples/gfx/d3d12_pass_tables/run.py
           CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/d3d12_pass_tables/run.py
 
+      - name: D3D12 repeated screenshots and recording slots (Linux and mingw + Wine)
+        run: |
+          set -eu
+          CFLAGS="-O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer" python3 samples/gfx/d3d12_readback_slot/run.py
+          CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/d3d12_readback_slot/run.py
+
       - name: D3D12 frame ring, one frame in flight or two (Linux and mingw + Wine)
         run: |
           set -eu
