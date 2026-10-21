@@ -484,6 +484,20 @@ jobs:
           make -C samples/input/hotkey_menu clean check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
           make -C samples/input/hotkey_menu clean
 
+      - name: Build and run pointer_second_test (ASan + UBSan, mingw + Wine)
+        shell: bash
+        run: |
+          set -eu
+          # A core's pointer read where the input driver has a second
+          # list (Android's second display): its fingers go after the
+          # overlay's, after none while the overlay blocks the pointer,
+          # else after the driver's main list; a driver with no second
+          # list answers with its main list alone. The test runs
+          # input_state_device() extracted from input_driver.c.
+          make -C samples/input/pointer_second clean check SANITIZER=address,undefined
+          make -C samples/input/pointer_second clean check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
+          make -C samples/input/pointer_second clean
+
       - name: Build and run key_lane_test (plain, ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/input/key_lane

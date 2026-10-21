@@ -225,8 +225,8 @@ typedef struct android_input
    sensor_t gyroscope_state;                    /* float alignment */
    float mouse_x_prev, mouse_y_prev;
    struct input_pointer pointer[MAX_TOUCH];     /* int16_t alignment */
-   /* The second display's fingers, after the main display's in the
-    * pointer list, by the order they went down */
+   /* The second display's fingers (RARCH_DEVICE_POINTER_SECOND), by the
+    * order they went down */
    struct input_pointer second_pointer[MAX_TOUCH];
    int32_t second_pointer_id[MAX_TOUCH];
    unsigned second_pointer_count;
@@ -3346,31 +3346,6 @@ static int16_t android_input_state(
           * idx is core/frontend-controlled: bounds-check it before
           * any pointer[] access. PRESSED already range-checks via
           * pointer_count (<= MAX_TOUCH). */
-         /* The core's list goes on with the second display's fingers;
-          * the frontend's own screen device has the main display's */
-         if (     device == RETRO_DEVICE_POINTER
-               && idx >= android->pointer_count
-               && idx - android->pointer_count
-                  < android->second_pointer_count)
-         {
-            const struct input_pointer *p = &android->second_pointer[
-               idx - android->pointer_count];
-            switch (id)
-            {
-               case RETRO_DEVICE_ID_POINTER_X:
-                  return VIDEO_POS_X(p->confined_pos);
-               case RETRO_DEVICE_ID_POINTER_Y:
-                  return VIDEO_POS_Y(p->confined_pos);
-               case RETRO_DEVICE_ID_POINTER_PRESSED:
-                  return (VIDEO_POS_X(p->pos) != -0x8000)
-                     && (VIDEO_POS_Y(p->pos) != -0x8000);
-               case RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN:
-                  return input_driver_pointer_is_offscreen(
-                        VIDEO_POS_X(p->pos), VIDEO_POS_Y(p->pos));
-               default:
-                  break;
-            }
-         }
          switch (id)
          {
             case RETRO_DEVICE_ID_POINTER_X:
@@ -3405,9 +3380,6 @@ static int16_t android_input_state(
                   return 0;
                return input_driver_pointer_is_offscreen(VIDEO_POS_X(android->pointer[idx].pos), VIDEO_POS_Y(android->pointer[idx].pos));
             case RETRO_DEVICE_ID_POINTER_COUNT:
-               if (device == RETRO_DEVICE_POINTER)
-                  return android->pointer_count
-                     + android->second_pointer_count;
                return android->pointer_count;
             case RARCH_DEVICE_ID_POINTER_BACK:
             {
@@ -3415,6 +3387,29 @@ static int16_t android_input_state(
                   input_autoconf_bind(0, RARCH_MENU_TOGGLE);
                if (keyptr->joykey == 0)
                   return ANDROID_KEYBOARD_INPUT_PRESSED(AKEYCODE_BACK);
+            }
+         }
+         break;
+      case RARCH_DEVICE_POINTER_SECOND:
+         if (id == RETRO_DEVICE_ID_POINTER_COUNT)
+            return android->second_pointer_count;
+         if (idx < android->second_pointer_count)
+         {
+            const struct input_pointer *p = &android->second_pointer[idx];
+            switch (id)
+            {
+               case RETRO_DEVICE_ID_POINTER_X:
+                  return VIDEO_POS_X(p->confined_pos);
+               case RETRO_DEVICE_ID_POINTER_Y:
+                  return VIDEO_POS_Y(p->confined_pos);
+               case RETRO_DEVICE_ID_POINTER_PRESSED:
+                  return (VIDEO_POS_X(p->pos) != -0x8000)
+                     && (VIDEO_POS_Y(p->pos) != -0x8000);
+               case RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN:
+                  return input_driver_pointer_is_offscreen(
+                        VIDEO_POS_X(p->pos), VIDEO_POS_Y(p->pos));
+               default:
+                  break;
             }
          }
          break;
