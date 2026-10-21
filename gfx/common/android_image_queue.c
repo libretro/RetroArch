@@ -113,11 +113,17 @@ unsigned android_image_queue_poll(android_image_queue_t *q)
  return released;
 }
 void android_image_queue_close(android_image_queue_t *q){if(q)q->closed=true;}
-bool android_image_queue_free(android_image_queue_t *q)
+bool android_image_queue_idle(const android_image_queue_t *q)
 {
  unsigned i;
  if(!q)return true;
  if(!q->closed)return false;
  for(i=0;i<q->count;i++)if(retro_atomic_load_acquire_int(&q->ticket[i].state) || q->ticket[i].image)return false;
+ return true;
+}
+bool android_image_queue_free(android_image_queue_t *q)
+{
+ if(!q)return true;
+ if(!android_image_queue_idle(q))return false;
  q->ops.delete_reader(q->reader);free(q);return true;
 }

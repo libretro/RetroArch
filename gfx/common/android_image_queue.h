@@ -35,6 +35,9 @@ bool android_image_queue_return(android_image_ticket_t *ticket,uint64_t generati
  * Reader and AImages survive close until every ticket/fence retires. */
 unsigned android_image_queue_poll(android_image_queue_t *q);
 void android_image_queue_close(android_image_queue_t *q);
+/* Worker only, after close: true when every acquired image/fence retired.
+ * Does not delete the reader; stop its codec before freeing the queue. */
+bool android_image_queue_idle(const android_image_queue_t *q);
 bool android_image_queue_free(android_image_queue_t *q);
 RETRO_END_DECLS
 #endif
