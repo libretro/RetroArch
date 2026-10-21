@@ -83,6 +83,8 @@ struct rwebm_video_stream
 #endif
 #ifdef HAVE_RAV1
    rav1_hw_stream_t *av1;
+   rav1_hdr_metadata_t av1_hdr_initial;
+   int av1_hdr_initial_set;
 #endif
 #if defined(HAVE_RVP9) || defined(HAVE_RAV1)
    uint32_t hw_marker;
@@ -1152,6 +1154,9 @@ static int rwebm_video_av1_open(rwebm_video_stream_t *s)
    if (!s->av1)
       return 0;
    rav1_hw_stream_init(s->av1, NULL);
+   /* Static metadata from the first picture is the fallback after a
+    * decoder reset. Later in-band updates remain local to that decode. */
+   if (s->av1_hdr_initial_set) s->av1->hdr = s->av1_hdr_initial;
    seq = &s->av1->sequence;
    if (!rav1_config_sequence(seq, &config) || seq->max_width != s->width
          || seq->max_height != s->height || t->colour_range > 2)
@@ -1180,7 +1185,8 @@ static int rwebm_video_av1_open(rwebm_video_stream_t *s)
    }
    else if (matrix != 0 && matrix != 1 && matrix != 5 && matrix != 6)
       goto fail;
-   if (!rav1_hw_stream_open_sequence(s->av1))
+   if (!rav1_hdr_metadata_config(&s->av1->hdr, &config) ||
+       !rav1_hw_stream_open_sequence(s->av1))
       goto fail;
    s->hw_color.primaries = primaries;
    s->hw_color.transfer = transfer;
@@ -1255,6 +1261,12 @@ static int rwebm_video_av1_step(rwebm_video_stream_t *s,
       s->pending_started = 1;
    }
    ret = rav1_hw_stream_step(s->av1, &frame, discard != 0);
+   if (!s->av1_hdr_initial_set &&
+       (ret == RAV1_HW_STREAM_FRAME || ret == RAV1_HW_STREAM_DISCARDED))
+   {
+      s->av1_hdr_initial = s->av1->hdr;
+      s->av1_hdr_initial_set = 1;
+   }
    if (ret == RAV1_HW_STREAM_BUSY)
    {
       s->waiting = 1;
@@ -1266,15 +1278,22 @@ static int rwebm_video_av1_step(rwebm_video_stream_t *s,
       return 0;
    if (ret != RAV1_HW_STREAM_FRAME && ret != RAV1_HW_STREAM_DISCARDED)
       return -1;
+   if (ret == RAV1_HW_STREAM_FRAME)
+   {
+      frame.yuv = (frame.yuv & ~s->hw_yuv_mask) | s->hw_yuv;
+      frame.color = s->hw_color;
+      if (!rav1_hdr_metadata_merge(&frame.color, &s->av1->hdr))
+      {
+         video_hw_frame_abandon(&frame);
+         s->av1->error = -1;
+         return -1;
+      }
+   }
    if (s->hw_untaken)
       video_hw_frame_abandon(&s->hw_frame);
    s->hw_untaken = ret == RAV1_HW_STREAM_FRAME;
    if (s->hw_untaken)
-   {
-      frame.yuv = (frame.yuv & ~s->hw_yuv_mask) | s->hw_yuv;
-      frame.color = s->hw_color;
       s->hw_frame = frame;
-   }
    else
       memset(&s->hw_frame, 0, sizeof(s->hw_frame));
    if (duration_ms)

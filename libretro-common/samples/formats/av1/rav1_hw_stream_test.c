@@ -299,6 +299,35 @@ static void test_errors(void)
    rav1_hw_stream_close(&stream);
 }
 
+static void test_hdr(void)
+{
+   static const uint8_t metadata[] = {42, 6, 1, 3, 232, 1, 144, 128};
+   video_hw_frame_t frame, held;
+   uint8_t bad[sizeof(metadata)];
+   CHECK(rav1_hw_stream_init(&stream, &sequence));
+   CHECK(!rav1_hw_stream_begin(&stream, metadata, sizeof(metadata)));
+   CHECK(rav1_hw_stream_step(&stream, &frame, false) == RAV1_HW_STREAM_PROGRESS);
+   CHECK(stream.hdr.max_cll == 1000 && !frame.image);
+   CHECK(rav1_hw_stream_step(&stream, &frame, false) == RAV1_HW_STREAM_END);
+   make_frame(1); expected = packet;
+   CHECK(!rav1_hw_stream_begin(&stream, packet, packet_size));
+   output_busy = 1;
+   CHECK(rav1_hw_stream_step(&stream, &frame, false) == RAV1_HW_STREAM_BUSY);
+   CHECK(stream.hdr.max_cll == 1000 && !frame.image);
+   output_busy = 0;
+   CHECK(rav1_hw_stream_step(&stream, &held, false) == RAV1_HW_STREAM_FRAME);
+   CHECK(held.color.max_cll == 1000 && held.color.max_fall == 400);
+   CHECK(rav1_hw_stream_step(&stream, &frame, false) == RAV1_HW_STREAM_END);
+   memcpy(bad, metadata, sizeof(bad)); bad[7] = 0;
+   CHECK(!rav1_hw_stream_begin(&stream, bad, sizeof(bad)));
+   CHECK(rav1_hw_stream_step(&stream, &frame, false) == -1);
+   CHECK(stream.hdr.max_cll == 1000 && held.color.max_cll == 1000);
+   rav1_hw_stream_close(&stream);
+   CHECK(!stream.hdr.present);
+   CHECK(held.color.max_cll == 1000);
+   video_hw_frame_abandon(&held);
+}
+
 int main(void)
 {
    CHECK(rav1_sequence_parse(&sequence, sequence_obu + 2,
@@ -312,6 +341,7 @@ int main(void)
    test_sequences();
    test_initial_sequence();
    test_decode_failure();
+   test_hdr();
    test_errors();
    CHECK(opens == closes);
    printf("AV1 packet hardware stream: %u failures\n", failures);

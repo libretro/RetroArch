@@ -3,6 +3,17 @@
 #include "../../../cores/libretro-media/media_core.c"
 
 /* Expectations come from the independent fixture-generation command. */
+static int av1_static_hdr_matches(const video_hw_frame_t *frame)
+{
+   static const uint16_t xy[8] = {35400,14600,8500,39850,6550,2300,15635,16450};
+   if (!getenv("AV1_TEST_STATIC_HDR")) return 1;
+   return frame->color.max_cll == 1000 && frame->color.max_fall == 400 &&
+      frame->color.mastering.present == VIDEO_MASTERING_DISPLAY_COMPLETE &&
+      frame->color.mastering.luminance_max == 10000000 &&
+      frame->color.mastering.luminance_min == 50 &&
+      !memcmp(frame->color.mastering.chromaticity, xy, sizeof(xy));
+}
+
 static int av1_hdr_frame_matches(const char *path, video_hw_frame_t *frame)
 {
    unsigned transfer = strstr(path, "smpte2084") ? 16 :
@@ -11,7 +22,7 @@ static int av1_hdr_frame_matches(const char *path, video_hw_frame_t *frame)
    if (!transfer) return 1;
    if (frame->color.transfer == transfer && frame->color.primaries == 9 &&
        frame->color.matrix == 9 && frame->color.range == range &&
-       frame->pixfmt == IMAGE_PIXFMT_P010) return 1;
+       frame->pixfmt == IMAGE_PIXFMT_P010 && av1_static_hdr_matches(frame)) return 1;
    puts("FAIL AV1 Vulkan HDR shared-frame source colour");
    video_hw_frame_abandon(frame);
    memset(frame, 0, sizeof(*frame));

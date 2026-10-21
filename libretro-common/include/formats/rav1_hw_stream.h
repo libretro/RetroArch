@@ -3,6 +3,7 @@
 #define __LIBRETRO_SDK_FORMAT_RAV1_HW_STREAM_H__
 
 #include <formats/rav1_hw.h>
+#include <formats/rav1_hdr.h>
 
 enum rav1_hw_stream_result
 {
@@ -22,6 +23,7 @@ typedef struct rav1_hw_stream
    const uint8_t *packet;
    size_t size, offset, next;
    rav1_sequence_t sequence;
+   rav1_hdr_metadata_t hdr;
    int opened, submitted, started, error;
 } rav1_hw_stream_t;
 
@@ -171,6 +173,12 @@ static INLINE int rav1_hw_stream_step(rav1_hw_stream_t *s,
       }
       break;
    case 5:
+      if (rav1_hdr_metadata_obu(&s->hdr, &s->obu) < 0)
+      {
+         ret = -1;
+         goto fail;
+      }
+      break;
    case 15:
       break;
    case 3:
@@ -203,6 +211,7 @@ static INLINE int rav1_hw_stream_step(rav1_hw_stream_t *s,
                return RAV1_HW_STREAM_BUSY;
             if (ret < 0)
                goto fail;
+            rav1_hdr_metadata_apply(&out->color, &s->hdr);
             result = RAV1_HW_STREAM_FRAME;
          }
       }

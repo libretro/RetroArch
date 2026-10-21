@@ -16,13 +16,17 @@ TILE_INFO := rav1_tile_info_test$(EXE)
 TILES := rav1_tiles_test$(EXE)
 SEQUENCE := rav1_sequence_test$(EXE)
 CONTAINER := rav1_container_test$(EXE)
+HDR := rav1_hdr_test$(EXE)
 CFLAGS += -O1 -g1 -std=gnu89 -Wall -Wextra -Werror=declaration-after-statement -I$(COMMON)/include
 ifneq ($(SANITIZER),)
 CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
 
-all: $(TARGET) $(CONTAINER) $(SEQUENCE) $(TILES) $(TILE_INFO) $(FRAME) $(PICTURE) $(REFERENCE) $(MOTION) $(GRAIN) $(STATE) $(HW) $(BACKEND) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3)
+all: $(HDR) $(TARGET) $(CONTAINER) $(SEQUENCE) $(TILES) $(TILE_INFO) $(FRAME) $(PICTURE) $(REFERENCE) $(MOTION) $(GRAIN) $(STATE) $(HW) $(BACKEND) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3)
+
+$(HDR): rav1_hdr_test.c $(COMMON)/include/formats/rav1_hdr.h
+	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
 
 $(TARGET): rav1_test.c $(COMMON)/include/formats/rav1.h
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
@@ -84,6 +88,7 @@ $(CONTAINER): rav1_container_test.c $(COMMON)/include/formats/rav1.h \
 	   $(COMMON)/formats/mp4/rmp4.c $(COMMON)/formats/webm/rwebm.c $(LDFLAGS) -lm
 
 check: all
+	$(RUNNER) ./$(HDR)
 	$(RUNNER) ./$(TARGET)
 	$(RUNNER) ./$(CONTAINER)
 	$(RUNNER) ./$(SEQUENCE)
@@ -102,6 +107,7 @@ check: all
 	$(RUNNER) ./$(BACKEND)
 
 clean:
+	rm -f rav1_hdr_test rav1_hdr_test.exe
 	rm -f rav1_webm_stream_test rav1_webm_stream_test.exe
 	rm -f rav1_mp4_stream_test rav1_mp4_stream_test.exe
 	rm -f rav1_hw_stream_test rav1_hw_stream_test.exe

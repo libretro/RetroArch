@@ -79,13 +79,24 @@ static int read_av1_frame(frames_t *hw, opened_t *opened,
 }
 
 static unsigned av1_expected_transfer, av1_expected_range;
+static int av1_static_hdr_matches(const video_hw_frame_t *frame)
+{
+   static const uint16_t xy[8] = {35400,14600,8500,39850,6550,2300,15635,16450};
+   if (!getenv("AV1_TEST_STATIC_HDR")) return 1;
+   return frame->color.max_cll == 1000 && frame->color.max_fall == 400 &&
+      frame->color.mastering.present == VIDEO_MASTERING_DISPLAY_COMPLETE &&
+      frame->color.mastering.luminance_max == 10000000 &&
+      frame->color.mastering.luminance_min == 50 &&
+      !memcmp(frame->color.mastering.chromaticity, xy, sizeof(xy));
+}
+
 static int av1_color_matches(const video_hw_frame_t *frame)
 {
    if (!av1_expected_transfer) return 1;
    if (frame->color.transfer == av1_expected_transfer &&
        frame->color.primaries == 9 && frame->color.matrix == 9 &&
        frame->color.range == av1_expected_range &&
-       frame->pixfmt == IMAGE_PIXFMT_P010) return 1;
+       frame->pixfmt == IMAGE_PIXFMT_P010 && av1_static_hdr_matches(frame)) return 1;
    puts("FAIL AV1 HDR shared-frame source colour");
    return 0;
 }
