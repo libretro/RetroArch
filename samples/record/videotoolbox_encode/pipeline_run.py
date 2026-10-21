@@ -131,9 +131,27 @@ with workspace as temp:
                 assert [int(p['pts']) for p in packets] == [i * 1001 for i in range(24)], packets
                 assert [int(p['dts']) for p in packets] == [i * 1001 for i in range(24)], packets
                 assert all(int(p['duration']) == 1001 for p in packets), packets
+                raw_packets = json.loads(subprocess.check_output([ffprobe, '-v', 'error',
+                    '-show_packets', '-of', 'json', str(coded)]))['packets']
+                raw_keys = ['K' in p.get('flags', '') for p in raw_packets]
+                movie_keys = ['K' in p.get('flags', '') for p in packets]
+                assert len(raw_keys) == 24 and movie_keys == raw_keys, (raw_keys, movie_keys)
+                assert movie_keys[0] and sum(movie_keys) >= 2, movie_keys
                 movie_pixels = subprocess.check_output([ffmpeg, '-v', 'error', '-i', str(movie), '-map', '0:v:0',
                     '-pix_fmt', 'yuv420p10le', '-fps_mode', 'passthrough', '-f', 'rawvideo', '-'])
                 assert movie_pixels == pixels, 'MP4 passthrough changed decoded video'
+                # Seek via the container index, not a linear decode from frame zero.
+                # Compare the complete independently decoded keyframe to its exact
+                # source-clock frame in the sequential output.
+                frame_bytes = width * height * 3
+                for index, keyframe in enumerate(movie_keys):
+                    if not keyframe:
+                        continue
+                    seek_pixels = subprocess.check_output([ffmpeg, '-v', 'error', '-ss',
+                        f'{index * 1001 / 60000:.9f}', '-i', str(movie), '-map', '0:v:0',
+                        '-frames:v', '1', '-pix_fmt', 'yuv420p10le', '-f', 'rawvideo', '-'])
+                    assert seek_pixels == pixels[index * frame_bytes:(index + 1) * frame_bytes], (
+                        'MP4 indexed seek changed frame', index, len(seek_pixels))
                 annexb = subprocess.check_output([ffmpeg, '-v', 'error', '-i', str(movie), '-map', '0:v:0',
                     '-c:v', 'copy', '-bsf:v', 'hevc_mp4toannexb' if hevc else 'h264_mp4toannexb',
                     '-f', 'hevc' if hevc else 'h264', '-'])
@@ -154,7 +172,7 @@ with workspace as temp:
                     amplitude = 2 * abs(sum(v * complex(math.cos(omega * n), math.sin(omega * n))
                                             for n, v in enumerate(values))) / len(values)
                     assert abs(amplitude - .2) < .04, (channel, amplitude)
-                print('PASS: MP4 unchanged VCL/pixels, source video clock and AAC stereo tones/duration', flush=True)
+                print('PASS: MP4 unchanged VCL/pixels, sync flags/indexed seeks, source video clock and AAC stereo tones/duration', flush=True)
 if failures:
     raise SystemExit('Native pipeline pixel failures: ' + ', '.join(failures))
 if unavailable:
