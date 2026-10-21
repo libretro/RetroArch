@@ -38,6 +38,15 @@ static int test_release(test_viewer_t *v,unsigned x,unsigned y) { return ozone_p
 #include "../../../gfx/gfx_surface_player.h"
 #include "../../../gfx/gfx_anim_preview.h"
 
+static bool test_hdr_import_matches(test_viewer_t *viewer, unsigned cll, unsigned fall)
+{
+   gfx_surface_t *surface=(gfx_surface_t*)test_thumbnail(viewer)->anim_surface;
+   return surface&&surface->imported&&surface->import.pixfmt==IMAGE_PIXFMT_P010
+      &&surface->import.color.max_cll==cll&&surface->import.color.max_fall==fall
+      &&surface->import.color.transfer==16&&surface->import.color.primaries==9
+      &&surface->import.color.matrix==9;
+}
+
 static unsigned failures, uploads;
 static uint32_t uploaded_pixels;
 static bool native_gpu;
@@ -162,14 +171,18 @@ int main(int argc,char **argv)
       { render(menu_st);retro_sleep(1); }
       CHECK("thumbnail fades complete before pixel comparison",test_thumbnail(viewer)->alpha>=0.9999f&&test_fade_ready(viewer));
       CHECK("paused start picture reaches renderer",media_native_seek_capture(menu_st,render,&target,0,0,0,0,&first));
+      if(getenv("MEDIA_TEST_HDR_TIMELINE"))CHECK("start picture has initial HDR metadata",test_hdr_import_matches(viewer,1000,400));
       CHECK("seek changes the rendered movie picture",media_native_seek_capture(menu_st,render,&target,375000,first,1,1,&middle));
+      if(getenv("MEDIA_TEST_HDR_TIMELINE"))CHECK("forward seek imports changed HDR metadata",test_hdr_import_matches(viewer,2000,600));
       CHECK("backward seek restores the rendered picture",media_native_seek_capture(menu_st,render,&target,0,first,-1,2,&again));
+      if(getenv("MEDIA_TEST_HDR_TIMELINE"))CHECK("backward seek restores initial HDR metadata",test_hdr_import_matches(viewer,1000,400));
       for(burst=0;burst<16;burst++)
       {
          CHECK("burst request accepted",target.seek(target.user,burst&1?375000:0,cpu_features_get_time_usec()));
          render(menu_st);retro_sleep(1);
       }
       CHECK("latest burst target reaches renderer while paused",media_native_seek_capture(menu_st,render,&target,375000,first,1,3,&middle));
+      if(getenv("MEDIA_TEST_HDR_TIMELINE"))CHECK("latest burst imports changed HDR metadata",test_hdr_import_matches(viewer,2000,600));
       printf("rendered media hashes: %08x %08x %08x\n",first,middle,again);
    }
    render(menu_st);

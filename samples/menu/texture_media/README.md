@@ -31,4 +31,8 @@ and static HDR metadata (MaxCLL 1000, MaxFALL 400). This additionally requires
 P010 hardware imports, matching metadata, and an active player worker. It does
 not measure physical HDR output or prove RGUI AV1 support.
 
+Set `MEDIA_TEST_HDR_TIMELINE=1` with a PQ fixture whose CLL changes from
+1000/400 to 2000/600 before 375 ms. Native captures also check imported
+metadata after forward, backward and burst seeks.
+
 Readbacks and bounded polling belong to this test harness only.
