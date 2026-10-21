@@ -1,6 +1,6 @@
 CC ?= cc
-VAAPI_CFLAGS ?= $(shell pkg-config --cflags libva)
-CFLAGS += -O1 -g1 -std=c89 -pedantic -Wall -Wextra -Werror -Wno-long-long \
+VAAPI_CFLAGS ?= $(shell pkg-config --cflags libva libdrm)
+CFLAGS += -DHAVE_DYLIB -O1 -g1 -std=c89 -pedantic -Wall -Wextra -Werror -Wno-long-long \
  -Wframe-larger-than=2048 -I../../../libretro-common/include $(VAAPI_CFLAGS)
 ifneq ($(findstring clang,$(shell $(CC) --version 2>/dev/null)),)
 CFLAGS += -Wno-c99-extensions
@@ -9,7 +9,14 @@ ifneq ($(SANITIZER),)
 CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
-all: test$(EXE) session_test$(EXE) abi-check
+ifeq ($(shell uname -s),Linux)
+NATIVE_PROBE = native_probe
+endif
+all: test$(EXE) session_test$(EXE) runtime_test$(EXE) abi-check $(NATIVE_PROBE)
+runtime_test$(EXE): runtime_test.c session_test.c ../../../gfx/common/vaapi_hevc_runtime.c ../../../gfx/common/vaapi_hevc_runtime.h ../../../gfx/common/vaapi_hevc_session.c ../../../gfx/common/vaapi_hevc_session.h
+	$(CC) $(CFLAGS) runtime_test.c -o $@ $(LDFLAGS)
+native_probe: native_probe.c ../../../gfx/common/vaapi_hevc_runtime.c ../../../gfx/common/vaapi_hevc_session.c ../../../libretro-common/dynamic/dylib.c
+	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS) -ldl
 session_test$(EXE): session_test.c ../../../gfx/common/vaapi_hevc_session.c ../../../gfx/common/vaapi_hevc_session.h
 	$(CC) $(CFLAGS) session_test.c -o $@ $(LDFLAGS)
 abi-check: abi.c ../../../gfx/common/vaapi_hevc_session.h
@@ -22,6 +29,10 @@ test$(EXE): test.c ../../../gfx/common/vaapi_hevc.h \
 check: all
 	$(RUNNER) ./test$(EXE)
 	$(RUNNER) ./session_test$(EXE)
+	$(RUNNER) ./runtime_test$(EXE)
+ifneq ($(NATIVE_PROBE),)
+	./native_probe
+endif
 clean:
-	rm -f test test.exe session_test session_test.exe
+	rm -f test test.exe session_test session_test.exe runtime_test runtime_test.exe native_probe
 .PHONY: all check clean abi-check
