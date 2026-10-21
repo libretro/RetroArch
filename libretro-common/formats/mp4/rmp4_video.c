@@ -1488,8 +1488,9 @@ int rmp4_video_stream_set_hw(rmp4_video_stream_t *s, int enable)
       rmp4_video_stream_rewind(s);
    else if (s->h264)
       rh264_video_set_hw(s->h264, 1);
-   return s->h265 ? rh265_video_is_hw(s->h265)
+   s->want_hw = s->h265 ? rh265_video_is_hw(s->h265)
          : s->h264 && rh264_video_is_hw(s->h264);
+   return s->want_hw;
 }
 
 void rmp4_video_stream_stop_hw(rmp4_video_stream_t *s)

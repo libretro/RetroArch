@@ -62,6 +62,30 @@ static void color_stream(const uint8_t *data, size_t size, unsigned matrix,
    rmp4_video_stream_close(s);
 }
 
+static void refused_stream(void)
+{
+   static uint32_t pixels[64 * 64];
+   rmp4_video_stream_t *s = rmp4_video_stream_open(color_full, sizeof(color_full));
+   unsigned before = opened, cycle;
+   int duration;
+   CHECK(s != NULL);
+   if (!s) return;
+   refuse = 1;
+   CHECK(!rmp4_video_stream_set_hw(s, 1));
+   refuse = 0;
+   CHECK(!s->want_hw && opened == before);
+   rmp4_video_stream_set_output(s, pixels);
+   for (cycle = 0; cycle < 2; cycle++)
+   {
+      rmp4_video_stream_rewind(s);
+      CHECK(!rmp4_video_stream_set_hw(s, 0) && opened == before);
+      CHECK(rmp4_video_stream_skip(s, &duration) == 1);
+      CHECK(rmp4_video_stream_render(s) == pixels);
+   }
+   CHECK(rmp4_video_stream_set_hw(s, 1) && opened == before + 1);
+   rmp4_video_stream_close(s);
+}
+
 static void peak_stream(const uint8_t *data, size_t size, unsigned peak, int mastering_only)
 {
    static uint32_t pixels[64 * 64];
@@ -152,6 +176,7 @@ int main(void)
 {
    rh265_set_hw_backend(&backend);
    color_blits();
+   refused_stream();
    peak_stream(color_pq_peak400, sizeof(color_pq_peak400), 400, 0);
    peak_stream(color_pq_peak4000, sizeof(color_pq_peak4000), 4000, 0);
    peak_stream(color_pq_peak10000, sizeof(color_pq_peak10000), 10000, 0);

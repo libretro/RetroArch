@@ -92,10 +92,10 @@ jobs:
             make -C libretro-common/samples/formats/video_player clean all CC=${{ matrix.cc }} THREADS="$threads" SANITIZER=address,undefined
             libretro-common/samples/formats/video_player/video_player_test
           done
-      - name: HEVC drain with no remaining display output
+      - name: HEVC drain and software output after hardware admission refusal
         run: |
-          make -C samples/gfx/d3d11_video_decode rh265_hw_stream_test CC=${{ matrix.cc }} SANITIZER=address,undefined
-          (cd samples/gfx/d3d11_video_decode && ./rh265_hw_stream_test)
+          make -C samples/gfx/d3d11_video_decode rh265_hw_stream_test hevc_color_stream_test CC=${{ matrix.cc }} SANITIZER=address,undefined
+          (cd samples/gfx/d3d11_video_decode && ./rh265_hw_stream_test && ./hevc_color_stream_test)
       - name: Install test-only Vulkan software renderer
         run: sudo apt-get update && sudo apt-get install -y libvulkan-dev mesa-vulkan-drivers
       - name: Execute RGB shader crop and SDR PQ HLG pixel oracle on Vulkan software device
@@ -155,7 +155,7 @@ jobs:
                     -I. -Ilibretro-common/include -Igfx/include "${extra[@]}" \
                     -c "$root_source" -o "$RUNNER_TEMP/$(basename "$root_source")-$target-$api-$offset.o"
                 done
-                for player_source in libretro-common/formats/video_player.c libretro-common/formats/image_transfer.c libretro-common/formats/webm/rwebm_video.c; do
+                for player_source in libretro-common/formats/video_player.c libretro-common/formats/image_transfer.c libretro-common/formats/webm/rwebm_video.c libretro-common/formats/mp4/rmp4_video.c; do
                   "$bin/$target$api-clang" \
                     -DHAVE_RMP4 -DHAVE_RWEBM -DHAVE_RVP9 -DHAVE_RAV1 -DHAVE_THREADS \
                     -Dinline=__inline__ -O1 -std=c89 -Wno-long-long -Wno-c99-extensions \
@@ -176,6 +176,7 @@ jobs:
                   "$RUNNER_TEMP/video_player.c-$target-$api-$offset.o" \
                   "$RUNNER_TEMP/image_transfer.c-$target-$api-$offset.o" \
                   "$RUNNER_TEMP/rwebm_video.c-$target-$api-$offset.o" \
+                  "$RUNNER_TEMP/rmp4_video.c-$target-$api-$offset.o" \
                   "$RUNNER_TEMP/rh265.c-$target-$api-$offset.o" \
                   -o "$RUNNER_TEMP/media-root-$target-$api-$offset.o"
                 if "$bin/llvm-nm" -u "$RUNNER_TEMP/media-root-$target-$api-$offset.o" | \
