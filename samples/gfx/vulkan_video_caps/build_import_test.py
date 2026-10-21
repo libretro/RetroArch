@@ -11,6 +11,9 @@ root = Path(__file__).resolve().parents[3]
 subprocess.run([sys.executable, str(Path(__file__).with_name('generate_ui_roundtrip.py')), '--check'], check=True)
 source = (root / 'gfx/drivers/vulkan.c').read_text()
 common = (root / 'gfx/common/vulkan_common.c').read_text()
+win32 = (root / 'gfx/drivers/vulkan_win32_video.h').read_text()
+win32_types, separator, win32_functions = win32.partition('static bool vulkan_win32_video_matches(')
+assert separator
 
 def function(text, signature):
     start = text.index(signature)
@@ -22,6 +25,8 @@ for name in ('vk_texture', 'vk_stream_state'):
     types.append(source[start:source.index('\n};', start) + 3])
 with tempfile.TemporaryDirectory() as directory:
     tmp = Path(directory)
+    (tmp / 'import_win32_types.inc').write_text(win32_types)
+    (tmp / 'import_win32_functions.inc').write_text(separator + win32_functions)
     (tmp / 'import_types.inc').write_text('\n'.join(types))
     bodies = [function(common, 'uint32_t vulkan_find_memory_type_fallback(')]
     for signature in ('static bool vulkan_import_buffer(',

@@ -12,6 +12,9 @@
 #include "../../../gfx/common/vulkan_video_planes.h"
 #define VK_STREAM_SLOTS 2
 #define VK_PLANAR_HEADER VULKAN_VIDEO_HEADER_WORDS
+#if defined(_WIN32) && !defined(__WINRT__)
+#include "import_win32_types.inc"
+#endif
 #include "import_types.inc"
 typedef struct vk
 {
@@ -19,7 +22,15 @@ typedef struct vk
    VkCommandPool staging_pool;
    struct vk_stream_state *stream_states;
    struct { VkSampler nearest; } samplers;
-   struct { VkPipeline yuv420_to_rgba8888, yuv_image_to_rgba8888, yuv420_to_rgba16f, yuv_image_to_rgba16f; VkPipelineLayout layout; VkDescriptorSetLayout set_layout; } pipelines;
+   struct {
+      VkPipeline yuv420_to_rgba8888, yuv_image_to_rgba8888;
+      VkPipeline yuv420_to_rgba16f, yuv_image_to_rgba16f;
+#if defined(_WIN32) && !defined(__WINRT__)
+      VkPipeline yuv_packed_to_rgba8888, yuv_packed_to_rgba16f;
+#endif
+      VkPipelineLayout layout;
+      VkDescriptorSetLayout set_layout;
+   } pipelines;
 } vk_t;
 
 void RARCH_ERR(const char *format, ...)
@@ -31,6 +42,9 @@ static unsigned import_errors;
 static void vulkan_upload_batch_submit(vk_t *vk) { (void)vk; }
 static void vulkan_check_device_lost(vk_t *vk, VkResult result)
 { (void)vk; if (result != VK_SUCCESS) import_errors++; }
+#if defined(_WIN32) && !defined(__WINRT__)
+#include "import_win32_functions.inc"
+#endif
 #include "import_functions.inc"
 
 static unsigned plane_copies;
