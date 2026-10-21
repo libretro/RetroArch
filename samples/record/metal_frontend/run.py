@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Native frontend Metal recording; independent decoding is test-only."""
 import argparse
+import array
+import math
 import json
 import os
 from pathlib import Path
@@ -89,4 +91,17 @@ savestate_auto_load = "false"
                 a=audios[0]
                 assert a['codec_name']=='aac' and int(a['sample_rate'])==48000 and a['channels']==2,a
                 assert abs(float(a['duration'])-int(done[2])/48000)<.05,(a,done.groups())
+                pcm = subprocess.check_output([ffmpeg, '-v', 'error', '-i', str(movie),
+                    '-map', '0:a:0', '-f', 'f32le', '-'], timeout=30)
+                samples = array.array('f', pcm)
+                assert len(samples)%2==0 and abs(len(samples)//2-int(done[2]))<=2048, (len(samples),done.groups())
+                for channel,frequency in enumerate((440,660)):
+                    values=samples[4096:min(len(samples),20480)][channel::2]
+                    assert len(values)>2000, len(values)
+                    omega=2*math.pi*frequency/48000
+                    cosine=sum(v*math.cos(omega*i) for i,v in enumerate(values))
+                    sine=sum(v*math.sin(omega*i) for i,v in enumerate(values))
+                    amplitude=2*math.hypot(cosine,sine)/len(values)
+                    assert abs(amplitude-.2)<.04,(case,channel,frequency,amplitude)
+
             print(f'PASS: real Metal frontend {case.name}: {len(packets)} GPU frames, clocks, independent colors and audio contract',flush=True)
