@@ -44,6 +44,7 @@
 #include <d3d11.h>
 #include <d3d11_4.h>
 #include <dxgi1_2.h>
+#include <d3dcompiler.h>
 
 #include <retro_atomic.h>
 #include <formats/rh264.h>
@@ -124,9 +125,14 @@ typedef struct d3d11vd_dec
    ID3D11VideoDecoder           *decoder;
    ID3D11Texture2D              *dpb;
    ID3D11Texture2D              *readback;
+   ID3D11Texture2D *pack_input;
+   ID3D11ShaderResourceView *pack_views[2];
+   ID3D11UnorderedAccessView *pack_output[D3D11VD_OUTS];
+   ID3D11ComputeShader *pack_shader;
    ID3D11VideoDecoderOutputView *view[D3D11VD_MAX_SLOTS + D3D11VD_OUTS];
    HANDLE dpb_handle;
    bool direct_dpb;
+   bool packed_yuv;
    unsigned physical_slots, slot_map[D3D11VD_MAX_SLOTS];
    unsigned out_slot[D3D11VD_OUTS];
 
@@ -183,6 +189,8 @@ static struct
 #endif
    unsigned import_formats;
    bool shared_dpb;
+   bool packed_yuv;
+   bool av1_only;
 } d3d11vd;
 
 /* ---- teardown ---- */
@@ -199,6 +207,7 @@ static void d3d11vd_destroy(d3d11vd_dec_t *d)
          CloseHandle(d->out_handle[i]);
       if (d->out_done_handle[i])
          CloseHandle(d->out_done_handle[i]);
+      D3D11VD_RELEASE(d->pack_output[i]);
       D3D11VD_RELEASE(d->out[i]);
       D3D11VD_RELEASE(d->out_done[i]);
    }
@@ -208,6 +217,10 @@ static void d3d11vd_destroy(d3d11vd_dec_t *d)
    if (d->dpb_handle) CloseHandle(d->dpb_handle);
    for (i = 0; i < D3D11VD_MAX_SLOTS + D3D11VD_OUTS; i++)
       D3D11VD_RELEASE(d->view[i]);
+   D3D11VD_RELEASE(d->pack_shader);
+   D3D11VD_RELEASE(d->pack_views[0]);
+   D3D11VD_RELEASE(d->pack_views[1]);
+   D3D11VD_RELEASE(d->pack_input);
    D3D11VD_RELEASE(d->readback);
    D3D11VD_RELEASE(d->dpb);
    D3D11VD_RELEASE(d->decoder);
@@ -401,7 +414,7 @@ static bool d3d11vd_make_dpb_storage(d3d11vd_dec_t *d, unsigned min_targets)
 static bool d3d11vd_make_dpb(d3d11vd_dec_t *d, unsigned min_targets)
 {
    unsigned i;
-   d->direct_dpb = d3d11vd.shared_dpb
+   d->direct_dpb = !d->packed_yuv && d3d11vd.shared_dpb
          && d->slots <= D3D11VD_MAX_SLOTS - D3D11VD_OUTS;
    if (d3d11vd_make_dpb_storage(d, min_targets)) return true;
    if (!d->direct_dpb) return false;
@@ -443,8 +456,9 @@ static bool d3d11vd_shared_fence(ID3D11Device5 *dev5, ID3D11Fence **f,
             NULL, h));
 }
 
-/* The shared textures the driver reads and the fences either side
- * raises. */
+#include "d3d11_video_pack.h"
+
+/* The shared textures and fences on either side of each read. */
 static bool d3d11vd_make_outputs(d3d11vd_dec_t *d)
 {
    D3D11_TEXTURE2D_DESC desc;
@@ -459,10 +473,12 @@ static bool d3d11vd_make_outputs(d3d11vd_dec_t *d)
    desc.Height             = d->visible_h;
    desc.MipLevels          = 1;
    desc.ArraySize          = 1;
-   desc.Format             = d->format;
+   desc.Format             = d->packed_yuv
+      ? DXGI_FORMAT_R16G16B16A16_FLOAT : d->format;
    desc.SampleDesc.Count   = 1;
    desc.Usage              = D3D11_USAGE_DEFAULT;
-   desc.BindFlags          = D3D11_BIND_SHADER_RESOURCE;
+   desc.BindFlags          = D3D11_BIND_SHADER_RESOURCE
+      | (d->packed_yuv ? D3D11_BIND_UNORDERED_ACCESS : 0);
    desc.MiscFlags          = D3D11_RESOURCE_MISC_SHARED
                            | D3D11_RESOURCE_MISC_SHARED_NTHANDLE;
    desc.SampleDesc.Quality = 0;
@@ -482,12 +498,16 @@ static bool d3d11vd_make_outputs(d3d11vd_dec_t *d)
                &d->out_handle[o]);
          D3D11VD_RELEASE(res);
          if (FAILED(hr)) goto end;
+         if (d->packed_yuv && FAILED(d->dev->lpVtbl->CreateUnorderedAccessView(
+                  d->dev, (ID3D11Resource*)d->out[o], NULL, &d->pack_output[o])))
+            goto end;
       }
       if (!d3d11vd_shared_fence(dev5, &d->out_done[o],
                &d->out_done_handle[o])) goto end;
       retro_atomic_store_release_int(&d->out_abandoned[o], 0);
    }
-   ok = d3d11vd_shared_fence(dev5, &d->ready, &d->ready_handle);
+   ok = (!d->packed_yuv || d3d11vd_pack_init(d))
+      && d3d11vd_shared_fence(dev5, &d->ready, &d->ready_handle);
 end:
    D3D11VD_RELEASE(dev5);
    return ok;
@@ -721,8 +741,13 @@ static int d3d11vd_output(void *dec, unsigned slot, video_hw_frame_t *out)
    box.bottom = d->crop_y + d->visible_h;
    box.back   = 1;
    if (!d->direct_dpb)
-      d->ctx->lpVtbl->CopySubresourceRegion(d->ctx, (ID3D11Resource*)d->out[o],
+   {
+      d->ctx->lpVtbl->CopySubresourceRegion(d->ctx,
+            (ID3D11Resource*)(d->packed_yuv ? d->pack_input : d->out[o]),
             0, 0, 0, 0, (ID3D11Resource*)d->dpb, d->slot_map[slot], &box);
+      if (d->packed_yuv)
+         d3d11vd_pack(d, o);
+   }
    d->out_slot[o] = d->slot_map[slot];
    if (FAILED(d->ctx4->lpVtbl->Signal(d->ctx4, d->ready,
          d->ready_value + 1)))
@@ -743,6 +768,9 @@ static int d3d11vd_output(void *dec, unsigned slot, video_hw_frame_t *out)
    out->height     = d->visible_h;
    out->pixfmt     = d->format == DXGI_FORMAT_P010
       ? IMAGE_PIXFMT_P010 : IMAGE_PIXFMT_NV12;
+   if (d->packed_yuv)
+      out->pixfmt = d->bit_depth == 10
+         ? IMAGE_PIXFMT_YUV10_FP16 : IMAGE_PIXFMT_YUV8_FP16;
    out->layout     = d->gen;
    out->yuv        = d->yuv[slot];
    if (d->direct_dpb)
@@ -1167,6 +1195,7 @@ bool d3d11_video_decode_av1_open(const rav1_sequence_t *sequence,
       return false;
    d3d11vd_grave_reap(false);
    if (!(d = (d3d11vd_dec_t*)calloc(1, sizeof(*d)))) return false;
+   d->packed_yuv = d3d11vd.packed_yuv;
    d->av1_sequence = *sequence;
    d->av1_sc = (uint8_t*)malloc(4096 * DXVA_AV1_TILE_SIZE);
    if (!d->av1_sc) { d3d11vd_destroy(d); return false; }
@@ -1225,7 +1254,7 @@ static bool d3d11vd_hevc_open(void *user, const rh265_video *source, const rh265
 
 /* ---- the backend ---- */
 
-bool d3d11_video_decode_init_adapter_formats(void *adapter, unsigned formats)
+static bool d3d11vd_init_adapter(void *adapter, unsigned formats, bool av1_only)
 {
    IDXGIAdapter *a = (IDXGIAdapter*)adapter;
 
@@ -1254,18 +1283,21 @@ bool d3d11_video_decode_init_adapter_formats(void *adapter, unsigned formats)
    d3d11vd.ops.readback = d3d11vd_readback;
    d3d11vd.ops.api = VIDEO_HW_API_D3D11;
    d3d11vd.up         = true;
-   rh264_set_hw_backend(&d3d11vd.ops);
+   d3d11vd.av1_only = av1_only;
+   if (!av1_only) rh264_set_hw_backend(&d3d11vd.ops);
    d3d11vd.shared_dpb = !!(formats & D3D11_VIDEO_DECODE_SHARED_DPB);
-   d3d11vd.import_formats = formats & ~D3D11_VIDEO_DECODE_SHARED_DPB;
+   d3d11vd.packed_yuv = !!(formats & D3D11_VIDEO_DECODE_PACKED_YUV);
+   d3d11vd.import_formats = formats
+      & ~(D3D11_VIDEO_DECODE_SHARED_DPB | D3D11_VIDEO_DECODE_PACKED_YUV);
    d3d11vd.hevc.user = &d3d11vd.import_formats;
    d3d11vd.hevc.open = d3d11vd_hevc_open;
    d3d11vd.hevc.close = d3d11_video_decode_hevc_close;
-   rh265_set_hw_backend(&d3d11vd.hevc);
+   if (!av1_only) rh265_set_hw_backend(&d3d11vd.hevc);
 #ifdef HAVE_RVP9
    d3d11vd.vp9.user = NULL;
    d3d11vd.vp9.open = d3d11vd_vp9_open;
    d3d11vd.vp9.close = d3d11_video_decode_vp9_close;
-   rvp9_set_hw_backend(&d3d11vd.vp9);
+   if (!av1_only) rvp9_set_hw_backend(&d3d11vd.vp9);
 #endif
 #ifdef HAVE_RAV1
    d3d11vd.av1.user = NULL;
@@ -1275,6 +1307,22 @@ bool d3d11_video_decode_init_adapter_formats(void *adapter, unsigned formats)
 #endif
    return true;
 }
+
+bool d3d11_video_decode_init_adapter_formats(void *adapter, unsigned formats)
+{
+   return d3d11vd_init_adapter(adapter, formats, false);
+}
+
+#ifdef HAVE_RAV1
+bool d3d11_video_decode_init_av1_adapter(void *adapter, unsigned formats)
+{
+   unsigned native_formats = 0;
+   if (formats & IMAGE_PIXFMT_YUV8_FP16) native_formats |= IMAGE_PIXFMT_NV12;
+   if (formats & IMAGE_PIXFMT_YUV10_FP16) native_formats |= IMAGE_PIXFMT_P010;
+   return native_formats && d3d11vd_init_adapter(adapter,
+         native_formats | D3D11_VIDEO_DECODE_PACKED_YUV, true);
+}
+#endif
 
 bool d3d11_video_decode_init_adapter(void *adapter)
 {
@@ -1308,10 +1356,13 @@ void d3d11_video_decode_deinit(void)
 {
    if (!d3d11vd.up)
       return;
-   rh264_set_hw_backend(NULL);
-   rh265_unset_hw_backend(&d3d11vd.hevc);
+   if (!d3d11vd.av1_only)
+   {
+      rh264_set_hw_backend(NULL);
+      rh265_unset_hw_backend(&d3d11vd.hevc);
+   }
 #ifdef HAVE_RVP9
-   rvp9_set_hw_backend(NULL);
+   if (!d3d11vd.av1_only) rvp9_set_hw_backend(NULL);
 #endif
 #ifdef HAVE_RAV1
    rav1_set_hw_backend(NULL);

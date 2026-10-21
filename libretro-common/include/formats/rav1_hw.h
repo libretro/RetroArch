@@ -316,8 +316,9 @@ static INLINE int rav1_hw_session_output(rav1_hw_session_t *s,
    if (ret < 0 || !frame.image || frame.width != s->output_width ||
        frame.height != s->output_height ||
        (s->sequence.bit_depth == 10
-            ? frame.pixfmt != IMAGE_PIXFMT_P010
-            : frame.pixfmt && frame.pixfmt != IMAGE_PIXFMT_NV12))
+            ? frame.pixfmt != IMAGE_PIXFMT_P010 && frame.pixfmt != IMAGE_PIXFMT_YUV10_FP16
+            : frame.pixfmt && frame.pixfmt != IMAGE_PIXFMT_NV12
+                 && frame.pixfmt != IMAGE_PIXFMT_YUV8_FP16))
    {
       if (!ret)
          video_hw_frame_abandon(&frame);

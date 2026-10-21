@@ -32,6 +32,7 @@ WEBM_DECODERS := $(RA)/libretro-common/formats/webm/rwebm.c \
    $(RA)/libretro-common/features/features_cpu.c $(RA)/libretro-common/time/rtime.c
 BACKEND  := $(RA)/gfx/common/d3d11_video_decode.c \
             $(RA)/gfx/common/d3d11_video_decode.h frontend_stubs.h \
+            $(RA)/gfx/common/d3d11_video_pack.h \
             $(RA)/gfx/common/dxva_hevc.h $(RA)/gfx/common/dxva_hevc_rh265.h \
             $(RA)/gfx/common/dxva_vp9.h $(RA)/libretro-common/include/formats/rvp9_hw.h \
             $(RA)/libretro-common/include/formats/rh265.h \
@@ -50,12 +51,16 @@ ifeq ($(EXE),.exe)
 TARGETS += d3d11_video_decode_mock_test$(EXE) d3d11_video_decode_test$(EXE)
 TARGETS += d3d11_backpressure_test$(EXE)
 TARGETS += av1_decode_test$(EXE)
+TARGETS += vulkan_win32_import_test$(EXE)
 LDFLAGS += -lwinmm
 WINFLAGS := -isystem $(RA)/gfx/include/dxsdk -Wno-cast-function-type -DHAVE_RVP9
 PROBE_LIBS := -ld3d11 -ldxgi -ldxguid
 endif
 
 all: $(TARGETS)
+
+vulkan_win32_import_test$(EXE): vulkan_win32_import_test.c $(RA)/gfx/drivers/vulkan_win32_video.h
+	$(CC) $(CFLAGS) $(WINFLAGS) -I$(RA)/gfx/include -o $@ $< $(LDFLAGS)
 
 av1_profile_probe$(EXE): av1_profile_probe.c
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS) $(PROBE_LIBS)
@@ -215,6 +220,7 @@ ifeq ($(EXE),.exe)
 	$(RUNNER) ./d3d11_video_decode_mock_test$(EXE)
 	$(RUNNER) ./d3d11_video_decode_test$(EXE)
 	$(RUNNER) ./d3d11_backpressure_test$(EXE)
+	$(RUNNER) ./vulkan_win32_import_test$(EXE)
 endif
 
 clean:
@@ -231,5 +237,6 @@ clean:
 	rm -f dxva_h264_test dxva_h264_test.exe \
 	   d3d11_video_decode_mock_test.exe d3d11_video_decode_test.exe
 	rm -f d3d11_backpressure_test d3d11_backpressure_test.exe
+	rm -f vulkan_win32_import_test vulkan_win32_import_test.exe
 
 .PHONY: all check clean

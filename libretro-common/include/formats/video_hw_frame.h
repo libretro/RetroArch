@@ -39,7 +39,9 @@
  * A view selects @array_slice; @crop_x/@crop_y locate the visible window.
  *
  * D3D11: NT handles of a shared DXGI_FORMAT_NV12 or P010 texture and of two
- * shared ID3D11Fences, used as above; @layout names the decoder's set
+ * shared ID3D11Fences, used as above. YUV8_FP16/YUV10_FP16 instead name
+ * RGBA16F textures with integer Y,Cb,Cr samples, without colour conversion.
+ * @layout names the decoder's set
  * of handles, so that a reader keeping what it opened of them opens
  * them again when it changes. D3D12 readers may receive a decoder array:
  * @array_slice selects its element and @crop_x/@crop_y its visible origin.

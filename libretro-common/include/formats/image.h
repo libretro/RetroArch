@@ -215,7 +215,10 @@ enum image_pixfmt
     * is NV12 with 16-bit samples holding 10 bits in the high bits. */
    IMAGE_PIXFMT_I420     = (1 << 7),
    IMAGE_PIXFMT_NV12     = (1 << 8),
-   IMAGE_PIXFMT_P010     = (1 << 9)
+   IMAGE_PIXFMT_P010     = (1 << 9),
+   /* GPU-only Y,Cb,Cr integer samples in an RGBA16F texel. */
+   IMAGE_PIXFMT_YUV8_FP16  = (1 << 10),
+   IMAGE_PIXFMT_YUV10_FP16 = (1 << 11)
 };
 
 #define IMAGE_PIXFMT_PLANAR \
@@ -230,7 +233,8 @@ enum image_pixfmt
  * one */
 #define IMAGE_PIXFMT_BPP(f) \
    (((f) & IMAGE_PIXFMT_FP32) ? 16u \
-   : ((f) & IMAGE_PIXFMT_FP16) ? 8u \
+   : ((f) & (IMAGE_PIXFMT_FP16 | IMAGE_PIXFMT_YUV8_FP16 \
+         | IMAGE_PIXFMT_YUV10_FP16)) ? 8u \
    : ((f) & (IMAGE_PIXFMT_565 | IMAGE_PIXFMT_4444 | IMAGE_PIXFMT_P010)) ? 2u \
    : ((f) & (IMAGE_PIXFMT_I420 | IMAGE_PIXFMT_NV12)) ? 1u : 4u)
 

@@ -1083,8 +1083,12 @@ static unsigned vulkan_optional_device_count(const gfx_ctx_vulkan_data_t *vk)
 {
    unsigned count = ARRAY_SIZE(vulkan_optional_device_extensions);
 #if defined(_WIN32) && !defined(__WINRT__)
+#if !defined(HAVE_RAV1) || (!defined(HAVE_D3D11) && !defined(HAVE_D3D12))
    if (!vk->context.swapchain_settings.dxgi_present)
       count -= 6;
+#else
+   (void)vk;
+#endif
 #else
    (void)vk;
 #endif

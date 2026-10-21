@@ -52,6 +52,12 @@
 #include "../../configuration.h"
 #include "../../verbosity.h"
 
+#if defined(_WIN32) && !defined(__WINRT__) && defined(HAVE_RAV1) \
+   && (defined(HAVE_D3D11) || defined(HAVE_D3D12))
+#include <dxgi1_2.h>
+#include "d3d11_video_decode.h"
+#endif
+
 #define VVD_MAX_LANES  2
 #define VVD_MAX_SLOTS  32
 #define VVD_OUTS       4    /* output images per decoder          */
@@ -166,6 +172,10 @@ static struct
    rav1_hw_backend_t av1;
 #ifdef _WIN32
    bool av1_intrabc_broken;
+#if defined(_WIN32) && !defined(__WINRT__) && defined(HAVE_RAV1) \
+   && (defined(HAVE_D3D11) || defined(HAVE_D3D12))
+   bool av1_fallback;
+#endif
 #endif
 #endif
    VkVideoCodecOperationFlagsKHR codecs;
@@ -1837,10 +1847,23 @@ bool vulkan_video_decode_init(const vulkan_context_t *ctx)
    return true;
 }
 
+#if defined(_WIN32) && !defined(__WINRT__) && defined(HAVE_RAV1) \
+   && (defined(HAVE_D3D11) || defined(HAVE_D3D12))
+#include "vulkan_video_win32.h"
+#endif
+
 void vulkan_video_decode_deinit(void)
 {
    if (!vvd.up)
       return;
+#if defined(_WIN32) && !defined(__WINRT__) && defined(HAVE_RAV1) \
+   && (defined(HAVE_D3D11) || defined(HAVE_D3D12))
+   if (vvd.av1_fallback)
+   {
+      d3d11_video_decode_deinit();
+      vvd.av1_fallback = false;
+   }
+#endif
 #ifdef HAVE_RAV1
    rav1_set_hw_backend(NULL);
 #endif

@@ -529,6 +529,10 @@ typedef struct vk
       VkPipeline yuv_image_to_rgba8888;
       VkPipeline yuv420_to_rgba16f;
       VkPipeline yuv_image_to_rgba16f;
+#if defined(_WIN32) && !defined(__WINRT__)
+      VkPipeline yuv_packed_to_rgba8888;
+      VkPipeline yuv_packed_to_rgba16f;
+#endif
       VkPipeline stereo_anaglyph;
       VkPipeline stereo_interlaced;
       VkPipeline stock_rect;
@@ -1526,6 +1530,9 @@ struct vk_deferred_cmd
  * allocates nothing. Created on the first update, destroyed with the
  * texture. */
 #define VK_STREAM_SLOTS 2
+#if defined(_WIN32) && !defined(__WINRT__)
+#include "vulkan_win32_video.h"
+#endif
 struct vk_stream_state
 {
    struct vk_texture staging[VK_STREAM_SLOTS];
@@ -1533,6 +1540,10 @@ struct vk_stream_state
    struct vk_texture *texture;
    VkCommandBuffer cmd[VK_STREAM_SLOTS];
    VkFence fence[VK_STREAM_SLOTS];
+#if defined(_WIN32) && !defined(__WINRT__)
+   vk_win32_video_import_t win32_import[VK_STREAM_SLOTS][VK_WIN32_VIDEO_IMPORTS];
+   unsigned win32_next[VK_STREAM_SLOTS];
+#endif
    unsigned next_slot;
    /* Slots whose staging memory a producer writes itself
     * (vulkan_texture_lend): an update from elsewhere never uses them. */
@@ -1805,6 +1816,13 @@ static void vulkan_stream_state_free(vk_t *vk, struct vk_stream_state *st)
             st->cmd);
    for (i = 0; i < VK_STREAM_SLOTS; i++)
    {
+#if defined(_WIN32) && !defined(__WINRT__)
+      {
+         unsigned j;
+         for (j = 0; j < VK_WIN32_VIDEO_IMPORTS; j++)
+            vulkan_win32_video_free(device, &st->win32_import[i][j]);
+      }
+#endif
       if (st->fence[i] != VK_NULL_HANDLE)
          vkDestroyFence(device, st->fence[i], NULL);
       if (st->staging[i].memory != VK_NULL_HANDLE)
@@ -5482,6 +5500,14 @@ static void vulkan_init_pipelines(vk_t *vk)
    static const uint32_t yuv_image_to_rgba16f_comp[] =
 #include "vulkan_shaders/yuv_image_to_rgba16f.comp.inc"
    ;
+#if defined(_WIN32) && !defined(__WINRT__)
+   static const uint32_t yuv_packed_to_rgba8888_comp[] =
+#include "vulkan_shaders/yuv_packed_to_rgba8888.comp.inc"
+      ;
+   static const uint32_t yuv_packed_to_rgba16f_comp[] =
+#include "vulkan_shaders/yuv_packed_to_rgba16f.comp.inc"
+      ;
+#endif
    static const uint32_t yuv420_to_rgba8888_comp[] =
 #include "vulkan_shaders/yuv420_to_rgba8888.comp.inc"
    ;
@@ -6024,6 +6050,32 @@ static void vulkan_init_pipelines(vk_t *vk)
          vk->pipelines.yuv_image_to_rgba16f = VK_NULL_HANDLE;
       vkDestroyShaderModule(vk->context->device, cpipe.stage.module, NULL);
    }
+#if defined(_WIN32) && !defined(__WINRT__)
+   module_info.codeSize = sizeof(yuv_packed_to_rgba8888_comp);
+   module_info.pCode = yuv_packed_to_rgba8888_comp;
+   cpipe.stage.module = VK_NULL_HANDLE;
+   vk->pipelines.yuv_packed_to_rgba8888 = VK_NULL_HANDLE;
+   if (vkCreateShaderModule(vk->context->device, &module_info, NULL,
+            &cpipe.stage.module) == VK_SUCCESS)
+   {
+      if (vkCreateComputePipelines(vk->context->device, vk->pipelines.cache,
+               1, &cpipe, NULL, &vk->pipelines.yuv_packed_to_rgba8888) != VK_SUCCESS)
+         vk->pipelines.yuv_packed_to_rgba8888 = VK_NULL_HANDLE;
+      vkDestroyShaderModule(vk->context->device, cpipe.stage.module, NULL);
+   }
+   module_info.codeSize = sizeof(yuv_packed_to_rgba16f_comp);
+   module_info.pCode = yuv_packed_to_rgba16f_comp;
+   cpipe.stage.module = VK_NULL_HANDLE;
+   vk->pipelines.yuv_packed_to_rgba16f = VK_NULL_HANDLE;
+   if (vkCreateShaderModule(vk->context->device, &module_info, NULL,
+            &cpipe.stage.module) == VK_SUCCESS)
+   {
+      if (vkCreateComputePipelines(vk->context->device, vk->pipelines.cache,
+               1, &cpipe, NULL, &vk->pipelines.yuv_packed_to_rgba16f) != VK_SUCCESS)
+         vk->pipelines.yuv_packed_to_rgba16f = VK_NULL_HANDLE;
+      vkDestroyShaderModule(vk->context->device, cpipe.stage.module, NULL);
+   }
+#endif
 }
 
 static void vulkan_init_samplers(vk_t *vk)
@@ -6255,6 +6307,12 @@ static void vulkan_deinit_pipelines(vk_t *vk)
    vk->pipelines.yuv420_to_rgba16f = VK_NULL_HANDLE;
    vkDestroyPipeline(vk->context->device, vk->pipelines.yuv_image_to_rgba16f, NULL);
    vk->pipelines.yuv_image_to_rgba16f = VK_NULL_HANDLE;
+#if defined(_WIN32) && !defined(__WINRT__)
+   vkDestroyPipeline(vk->context->device, vk->pipelines.yuv_packed_to_rgba8888, NULL);
+   vk->pipelines.yuv_packed_to_rgba8888 = VK_NULL_HANDLE;
+   vkDestroyPipeline(vk->context->device, vk->pipelines.yuv_packed_to_rgba16f, NULL);
+   vk->pipelines.yuv_packed_to_rgba16f = VK_NULL_HANDLE;
+#endif
 
 #ifdef VULKAN_HDR_SWAPCHAIN
 if (vk->context->flags & VK_CTX_FLAG_HDR_SUPPORT)
@@ -7987,6 +8045,13 @@ static void *vulkan_init(const video_info_t *video)
 #ifdef HAVE_RMP4
       /* previews decoded on the GPU, where the device can */
       vulkan_video_decode_init(vk->context);
+#if defined(_WIN32) && !defined(__WINRT__) && defined(HAVE_RAV1) \
+   && (defined(HAVE_D3D11) || defined(HAVE_D3D12))
+      if (vk->pipelines.yuv_packed_to_rgba8888 != VK_NULL_HANDLE
+            && vk->pipelines.yuv_packed_to_rgba16f != VK_NULL_HANDLE)
+         vulkan_video_decode_av1_fallback_init(vk->context,
+               IMAGE_PIXFMT_YUV8_FP16 | IMAGE_PIXFMT_YUV10_FP16);
+#endif
 #endif
    }
 
@@ -13692,7 +13757,7 @@ static struct vk_stream_state *vulkan_planar_state_get(vk_t *vk,
    struct vk_stream_state *st = vk->stream_states;
    VkFenceCreateInfo fence_info;
    VkCommandBufferAllocateInfo cmd_info;
-   VkDescriptorPoolSize sizes[2];
+   VkDescriptorPoolSize sizes[4];
    VkDescriptorPoolCreateInfo pool_info;
    VkDescriptorSetAllocateInfo set_info;
    VkDescriptorSetLayout layouts[VK_STREAM_SLOTS];
@@ -13734,7 +13799,11 @@ static struct vk_stream_state *vulkan_planar_state_get(vk_t *vk,
    pool_info.pNext            = NULL;
    pool_info.flags            = 0;
    pool_info.maxSets          = VK_STREAM_SLOTS;
-   pool_info.poolSizeCount    = 2;
+   sizes[2].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+   sizes[2].descriptorCount = 2 * VK_STREAM_SLOTS;
+   sizes[3].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+   sizes[3].descriptorCount = VK_STREAM_SLOTS;
+   pool_info.poolSizeCount    = 4;
    pool_info.pPoolSizes       = sizes;
    if (vkCreateDescriptorPool(device, &pool_info, NULL, &st->pool)
          != VK_SUCCESS)
@@ -14019,7 +14088,7 @@ static struct vk_stream_state *vulkan_import_state_get(vk_t *vk,
    struct vk_stream_state *st = vk->stream_states;
    VkFenceCreateInfo fence_info;
    VkCommandBufferAllocateInfo cmd_info;
-   VkDescriptorPoolSize sizes[3];
+   VkDescriptorPoolSize sizes[4];
    VkDescriptorPoolCreateInfo pool_info;
    VkDescriptorSetAllocateInfo set_info;
    VkDescriptorSetLayout layouts[VK_STREAM_SLOTS];
@@ -14065,7 +14134,9 @@ static struct vk_stream_state *vulkan_import_state_get(vk_t *vk,
    pool_info.maxSets          = VK_STREAM_SLOTS;
    sizes[2].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
    sizes[2].descriptorCount = 2 * VK_STREAM_SLOTS;
-   pool_info.poolSizeCount    = 3;
+   sizes[3].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+   sizes[3].descriptorCount = VK_STREAM_SLOTS;
+   pool_info.poolSizeCount    = 4;
    pool_info.pPoolSizes       = sizes;
    if (vkCreateDescriptorPool(device, &pool_info, NULL, &st->pool)
          != VK_SUCCESS)
@@ -14119,6 +14190,11 @@ static enum video_texture_update vulkan_import_convert(vk_t *vk,
       struct vk_texture *texture, const video_frame_import_t *f)
 {
    struct vk_stream_state *st;
+#if defined(_WIN32) && !defined(__WINRT__)
+   video_frame_import_t imported;
+   bool packed = f->pixfmt == IMAGE_PIXFMT_YUV8_FP16
+      || f->pixfmt == IMAGE_PIXFMT_YUV10_FP16;
+#endif
    VkCommandBufferBeginInfo begin_info;
    VkImageMemoryBarrier bar;
    VkBufferMemoryBarrier bbar;
@@ -14148,8 +14224,22 @@ static enum video_texture_update vulkan_import_convert(vk_t *vk,
       ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
    bool sampled = f->plane_views[0] && f->plane_views[1]
       && sampled_pipeline != VK_NULL_HANDLE;
+   unsigned source_pixfmt = f->pixfmt;
+#if defined(_WIN32) && !defined(__WINRT__)
+   if (packed)
+   {
+      sampled_pipeline = fp16 ? vk->pipelines.yuv_packed_to_rgba16f
+         : vk->pipelines.yuv_packed_to_rgba8888;
+      source_pixfmt = f->pixfmt == IMAGE_PIXFMT_YUV10_FP16
+         ? IMAGE_PIXFMT_P010 : IMAGE_PIXFMT_NV12;
+      sampled = sampled_pipeline != VK_NULL_HANDLE;
+      if (!sampled) return VIDEO_TEXTURE_UPDATE_REFUSED;
+      transfer_layout = VK_IMAGE_LAYOUT_GENERAL;
+      sampled_layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+   }
+#endif
 
-   if (     !vulkan_video_layout(&layout, w, h, f->pixfmt, f->yuv)
+   if (     !vulkan_video_layout(&layout, w, h, source_pixfmt, f->yuv)
          || !vulkan_video_color(&layout, f->yuv, &f->color) || !f->image
          || ((f->crop_x | f->crop_y) & 1)
          || texture->dims != f->dims
@@ -14175,6 +14265,20 @@ static enum video_texture_update vulkan_import_convert(vk_t *vk,
       if (vkGetFenceStatus(device, st->fence[slot]) != VK_SUCCESS)
          return VIDEO_TEXTURE_UPDATE_DROPPED;
    }
+#if defined(_WIN32) && !defined(__WINRT__)
+   if (packed)
+   {
+      unsigned cache;
+      for (cache = 0; cache < VK_WIN32_VIDEO_IMPORTS; cache++)
+         if (vulkan_win32_video_matches(&st->win32_import[slot][cache], f))
+            break;
+      if (cache == VK_WIN32_VIDEO_IMPORTS)
+         cache = st->win32_next[slot]++ % VK_WIN32_VIDEO_IMPORTS;
+      if (!vulkan_win32_video_get(vk, &st->win32_import[slot][cache], f, &imported))
+         return VIDEO_TEXTURE_UPDATE_REFUSED;
+      f = &imported;
+   }
+#endif
    if (!sampled && !vulkan_import_buffer(vk, st, slot, bytes))
       return VIDEO_TEXTURE_UPDATE_REFUSED;
    st->next_slot = slot ^ 1;
@@ -14226,6 +14330,13 @@ static enum video_texture_update vulkan_import_convert(vk_t *vk,
    bar.newLayout                       = sampled ? sampled_layout : transfer_layout;
    bar.srcQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
    bar.dstQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
+#if defined(_WIN32) && !defined(__WINRT__)
+   if (packed)
+   {
+      bar.srcQueueFamilyIndex = VK_QUEUE_FAMILY_EXTERNAL;
+      bar.dstQueueFamilyIndex = vk->context->graphics_queue_index;
+   }
+#endif
    /* Non-dispatchable handles are 64 bits wide on every target */
    memcpy(&bar.image, &f->image, sizeof(bar.image));
    bar.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -14290,6 +14401,13 @@ static enum video_texture_update vulkan_import_convert(vk_t *vk,
    bar.dstAccessMask = 0;
    bar.oldLayout     = sampled ? sampled_layout : transfer_layout;
    bar.newLayout     = (VkImageLayout)f->layout;
+#if defined(_WIN32) && !defined(__WINRT__)
+   if (packed)
+   {
+      bar.srcQueueFamilyIndex = vk->context->graphics_queue_index;
+      bar.dstQueueFamilyIndex = VK_QUEUE_FAMILY_EXTERNAL;
+   }
+#endif
    if (     bar.newLayout == VK_IMAGE_LAYOUT_UNDEFINED
          || bar.newLayout == VK_IMAGE_LAYOUT_PREINITIALIZED)
       bar.newLayout  = VK_IMAGE_LAYOUT_GENERAL;

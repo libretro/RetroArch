@@ -18,10 +18,18 @@ void main()
    uvec2 p = gl_GlobalInvocationID.xy;
    if (p.x >= words[0] || p.y >= words[1]) return;
    ivec2 origin = ivec2(words[2], words[3]);
+#ifdef PACKED_YUV
+   float divisor = words[14] == 2u ? (words[15] != 0u ? 1023.0 : 1020.0) : 255.0;
+   float center = words[14] == 2u && words[15] != 0u ? 512.0 / 1023.0 : 128.0 / 255.0;
+   vec3 samples = texelFetch(Y, ivec2(p) + origin, 0).rgb / divisor;
+   float y = samples.r;
+   vec2 c = samples.gb - center;
+#else
    float scale = words[14] == 2u ? 65535.0 / (words[15] != 0u ? 65472.0 : 65280.0) : 1.0;
    float center = words[14] == 2u && words[15] != 0u ? 512.0 / 1023.0 : 128.0 / 255.0;
    float y = texelFetch(Y, ivec2(p) + origin, 0).r * scale;
    vec2 c = texelFetch(C, (ivec2(p) + origin) >> 1, 0).rg * scale - center;
+#endif
    vec3 rgb = vec3(uintBitsToFloat(words[8]) * y + uintBitsToFloat(words[9]));
    rgb += vec3(uintBitsToFloat(words[10]) * c.y,
          uintBitsToFloat(words[11]) * c.x + uintBitsToFloat(words[12]) * c.y,

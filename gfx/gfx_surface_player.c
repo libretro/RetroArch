@@ -82,7 +82,8 @@ static enum video_player_present gfx_surface_player_present_hw(
    const video_hw_frame_t *hw = fr->hw;
 
    uint32_t pixfmt = hw->pixfmt ? hw->pixfmt : IMAGE_PIXFMT_NV12;
-   if (pixfmt != IMAGE_PIXFMT_NV12 && pixfmt != IMAGE_PIXFMT_P010)
+   if (pixfmt != IMAGE_PIXFMT_NV12 && pixfmt != IMAGE_PIXFMT_P010
+         && pixfmt != IMAGE_PIXFMT_YUV8_FP16 && pixfmt != IMAGE_PIXFMT_YUV10_FP16)
       return VIDEO_PLAYER_PRESENT_FAILED;
 
    imp.image      = hw->image;

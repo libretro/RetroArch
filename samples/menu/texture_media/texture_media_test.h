@@ -47,7 +47,8 @@ static unsigned test_hdr_transfer(void)
 static bool test_hdr_import_matches(test_viewer_t *viewer, unsigned cll, unsigned fall)
 {
    gfx_surface_t *surface=(gfx_surface_t*)test_thumbnail(viewer)->anim_surface;
-   return surface&&surface->imported&&surface->import.pixfmt==IMAGE_PIXFMT_P010
+   return surface&&surface->imported
+      &&(surface->import.pixfmt==IMAGE_PIXFMT_P010||surface->import.pixfmt==IMAGE_PIXFMT_YUV10_FP16)
       &&surface->import.color.max_cll==cll&&surface->import.color.max_fall==fall
       &&surface->import.color.transfer==test_hdr_transfer()&&surface->import.color.primaries==9
       &&surface->import.color.matrix==9;
@@ -154,8 +155,9 @@ int main(int argc,char **argv)
       if(getenv("MEDIA_TEST_HDR_AV1"))
       {
          gfx_surface_t *surface=(gfx_surface_t*)test_thumbnail(viewer)->anim_surface;
-         CHECK("HDR AV1 reaches the importer as P010",surface&&surface->imported
-               &&surface->import.pixfmt==IMAGE_PIXFMT_P010);
+         CHECK("HDR AV1 preserves 10-bit samples at the importer",surface&&surface->imported
+               &&(surface->import.pixfmt==IMAGE_PIXFMT_P010
+                  ||surface->import.pixfmt==IMAGE_PIXFMT_YUV10_FP16));
          CHECK("coded HDR metadata reaches the importer",surface
                &&surface->import.color.max_cll==1000&&surface->import.color.max_fall==400
                &&surface->import.color.transfer==test_hdr_transfer());

@@ -55,7 +55,8 @@ int main(void)
    gfx_surface_t surface;
    video_hw_frame_t hw;
    video_player_frame_t frame;
-   unsigned formats[4] = { 0, IMAGE_PIXFMT_NV12, IMAGE_PIXFMT_P010, IMAGE_PIXFMT_8888 };
+   unsigned formats[6] = { 0, IMAGE_PIXFMT_NV12, IMAGE_PIXFMT_P010,
+      IMAGE_PIXFMT_YUV8_FP16, IMAGE_PIXFMT_YUV10_FP16, IMAGE_PIXFMT_8888 };
    unsigned i;
    memset(&player, 0, sizeof(player));
    memset(&surface, 0, sizeof(surface));
@@ -66,19 +67,22 @@ int main(void)
    hw.image = 1; hw.width = hw.height = 64;
    hw.plane_views[0] = 11; hw.plane_views[1] = 12;
    hw.array_slice = 7; hw.crop_x = 2; hw.crop_y = 4;
-   for (i = 0; i < 4; i++)
+   for (i = 0; i < 6; i++)
    {
       enum video_player_present result;
       hw.pixfmt = formats[i];
       result = gfx_surface_player_present_hw(&player, &surface, &frame);
-      if (i == 3)
+      if (i == 5)
       {
-         if (result != VIDEO_PLAYER_PRESENT_FAILED || imported != 3) failures++;
+         if (result != VIDEO_PLAYER_PRESENT_FAILED || imported != 5) failures++;
       }
       else if (result != VIDEO_PLAYER_PRESENT_DONE
             || received != (formats[i] ? formats[i] : IMAGE_PIXFMT_NV12)) failures++;
    }
-   if (shown != 3) failures++;
+   if (shown != 5) failures++;
+   if (IMAGE_PIXFMT_BPP(IMAGE_PIXFMT_YUV8_FP16) != 8
+         || IMAGE_PIXFMT_FRAME_SIZE(IMAGE_PIXFMT_YUV10_FP16, 64, 32) != 16384
+         || IMAGE_PIXFMT_PLANES(IMAGE_PIXFMT_YUV10_FP16) != 1) failures++;
    printf("GPU frame format transport: %u failures\n", failures);
    return failures ? 1 : 0;
 }

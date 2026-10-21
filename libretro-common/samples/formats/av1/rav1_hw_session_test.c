@@ -15,6 +15,7 @@ static uint8_t saved_hints[32][8];
 static rav1_grain_t saved_grains[32];
 static int decode_result, output_result, bad_output, verify_retry;
 static size_t packet_size;
+static int format_override = -1;
 
 #define CHECK(x)                                                               \
    do                                                                          \
@@ -108,6 +109,7 @@ static int export_frame(void *owner, unsigned slot, const rav1_grain_t *grain,
    frame->height = heights[slot];
    frame->pixfmt =
        sequence.bit_depth == 10 ? IMAGE_PIXFMT_P010 : IMAGE_PIXFMT_NV12;
+   if (format_override >= 0) frame->pixfmt = (unsigned)format_override;
    frame->wait = 1;
    frame->wait_value = accepted;
    frame->done = 2;
@@ -138,6 +140,7 @@ static void reset(void)
    memset(saved_grains, 0, sizeof(saved_grains));
    decode_calls = accepted = exports = abandons = 0;
    decode_result = output_result = bad_output = verify_retry = 0;
+   format_override = -1;
    CHECK(initialize(9));
 }
 
@@ -332,6 +335,36 @@ static void test_failures(void)
          !memcmp(&output, &zero, sizeof(output)));
 }
 
+static void test_output_formats(void)
+{
+   static const unsigned formats[] = { 0, IMAGE_PIXFMT_NV12, IMAGE_PIXFMT_P010,
+      IMAGE_PIXFMT_YUV8_FP16, IMAGE_PIXFMT_YUV10_FP16, IMAGE_PIXFMT_FP16,
+      IMAGE_PIXFMT_YUV8_FP16 | IMAGE_PIXFMT_YUV10_FP16 };
+   unsigned depth, i;
+   for (depth = 8; depth <= 10; depth += 2)
+      for (i = 0; i < sizeof(formats) / sizeof(formats[0]); i++)
+      {
+         bool valid = depth == 10
+            ? formats[i] == IMAGE_PIXFMT_P010 || formats[i] == IMAGE_PIXFMT_YUV10_FP16
+            : !formats[i] || formats[i] == IMAGE_PIXFMT_NV12 || formats[i] == IMAGE_PIXFMT_YUV8_FP16;
+         reset();
+         sequence.bit_depth = depth;
+         CHECK(initialize(9));
+         format_override = (int)formats[i];
+         make_packet(0, 1, 255);
+         CHECK(rav1_hw_session_submit(&session, packet, packet_size) == 0);
+         CHECK(rav1_hw_session_output(&session, &output) == (valid ? 0 : -1));
+         CHECK(session.broken == !valid);
+         if (valid)
+         {
+            CHECK(output.pixfmt == formats[i]);
+            video_hw_frame_abandon(&output);
+         }
+         else CHECK(!memcmp(&output, &zero, sizeof(output)));
+         CHECK(abandons == 1);
+      }
+}
+
 static int inspect(const char *path)
 {
    FILE *file = fopen(path, "rb");
@@ -410,6 +443,7 @@ int main(int argc, char **argv)
    test_busy_and_output();
    test_replay_and_cancel();
    test_failures();
+   test_output_formats();
    test_unsized();
    printf("AV1 hardware session: %u failures\n", failures);
    return failures ? 1 : 0;

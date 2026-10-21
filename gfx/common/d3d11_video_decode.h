@@ -46,6 +46,8 @@ bool d3d11_video_decode_init_adapter(void *adapter);
  * is offered only when @formats includes IMAGE_PIXFMT_P010. */
 /* D3D12 consumers can read shared decoder arrays directly. */
 #define D3D11_VIDEO_DECODE_SHARED_DPB (1u << 31)
+/* Single-plane sample packing for Win32 external-memory consumers. */
+#define D3D11_VIDEO_DECODE_PACKED_YUV (1u << 30)
 bool d3d11_video_decode_init_formats(void *device, unsigned formats);
 bool d3d11_video_decode_init_adapter_formats(void *adapter, unsigned formats);
 
@@ -70,6 +72,9 @@ bool d3d11_video_decode_vp9_open(const rvp9_hdr *header,
 void d3d11_video_decode_vp9_close(rvp9_hw_ops_t *ops);
 
 #ifdef HAVE_RAV1
+/* Offers only AV1 with packed sample exports; other codec owners stay intact. */
+bool d3d11_video_decode_init_av1_adapter(void *adapter, unsigned formats);
+
 /* Fixed-size Profile 0, 8/10-bit 4:2:0, without film grain.
  * SDR and supported PQ/HLG matrix/gamut combinations are preserved for
  * container source-colour metadata and the shared-frame importer.
