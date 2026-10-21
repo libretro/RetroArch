@@ -1694,8 +1694,15 @@ static void gl2_load_texture_image(GLenum target,
    }
 }
 
+static void gl2_create_fbo_texture(gl2_t *gl,
+      gl2_renderchain_data_t *chain,
+      unsigned i, GLuint texture,
+      bool video_smooth, bool force_srgb_disable);
+
 static bool gl2_recreate_fbo(
-      struct video_fbo_rect *fbo_rect,
+      gl2_t *gl,
+      gl2_renderchain_data_t *chain,
+      unsigned i,
       GLuint fbo,
       GLuint* texture
       )
@@ -1703,13 +1710,9 @@ static bool gl2_recreate_fbo(
    gl2_bind_fb(fbo);
    glDeleteTextures(1, texture);
    glGenTextures(1, texture);
-   glBindTexture(GL_TEXTURE_2D, *texture);
-   gl2_load_texture_image(GL_TEXTURE_2D,
-         0, RARCH_GL_INTERNAL_FORMAT32,
-         VIDEO_SCALE_W(fbo_rect->dims),
-         VIDEO_SCALE_H(fbo_rect->dims),
-         0, RARCH_GL_TEXTURE_TYPE32,
-         RARCH_GL_FORMAT32, NULL);
+   gl2_create_fbo_texture(gl, chain, i, *texture,
+         (gl->flags & GL2_FLAG_FBO_SMOOTH) != 0,
+         (gl->flags & GL2_FLAG_FBO_SRGB_DISABLE) != 0);
 
    gl2_fb_texture_2d(RARCH_GL_FRAMEBUFFER,
          RARCH_GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
@@ -6720,14 +6723,15 @@ static bool gl2_frame(void *data, const void *frame,
                   fbo_rect->dims                  = VIDEO_SCALE_PACK(
                         pow2_size, pow2_size);
 
-                  gl2_recreate_fbo(fbo_rect, chain->fbo[i], &chain->fbo_texture[i]);
+                  gl2_recreate_fbo(gl, chain, (unsigned)i,
+                        chain->fbo[i], &chain->fbo_texture[i]);
 
                   /* Update feedback texture in-place so we avoid having to
                    * juggle two different fbo_rect structs since they get updated here. */
                   if (update_feedback)
                   {
-                     if (gl2_recreate_fbo(fbo_rect, gl->fbo_feedback,
-                              &gl->fbo_feedback_texture))
+                     if (gl2_recreate_fbo(gl, chain, (unsigned)i,
+                              gl->fbo_feedback, &gl->fbo_feedback_texture))
                      {
                         /* Make sure the feedback textures are cleared
                          * so we don't feedback noise. */
