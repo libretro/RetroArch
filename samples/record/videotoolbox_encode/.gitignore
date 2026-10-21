@@ -23,3 +23,6 @@
 /av_session_test.exe
 
 /av_session_thread_test
+
+/session_gpu_refusal_test
+/session_gpu_refusal_test.exe

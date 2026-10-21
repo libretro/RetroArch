@@ -22,10 +22,10 @@ typedef void (*callback_t)(void*, void*, OSStatus, VTEncodeInfoFlags, CMSampleBu
 struct object
 {
    unsigned refs, type, width, height, format, count;
-   int32_t number;
+   int64_t number;
    CFStringRef keys[24];
    const void *values[24];
-   int32_t numbers[24];
+   int64_t numbers[24];
    callback_t callback;
    void *tickets[16];
    CVPixelBufferRef inputs[16];
@@ -34,10 +34,15 @@ static unsigned live, allocations, allocation_fail, fail_stage, encode_mode, sub
 static bool hardware = true;
 static bool expected_hdr, expected_hevc;
 static unsigned expected_depth = 8;
+static uint64_t expected_gpu;
+#ifndef VIDEOTOOLBOX_ENCODE_TEST_NO_GPU_SELECTION
+#define VIDEOTOOLBOX_ENCODE_TEST_GPU_SELECTION
+#endif
 static object_t truth, falsity, image, sample;
 #define kCFBooleanTrue (&truth)
 #define kCFBooleanFalse (&falsity)
 #define kCFNumberSInt32Type 1
+#define kCFNumberSInt64Type 2
 static int kCFTypeDictionaryKeyCallBacks, kCFTypeDictionaryValueCallBacks;
 #define kVTParameterErr (-1)
 #define kVTAllocationFailedErr (-2)
@@ -54,6 +59,7 @@ static int kCFTypeDictionaryKeyCallBacks, kCFTypeDictionaryValueCallBacks;
 #define kCVPixelBufferPixelFormatTypeKey "format"
 #define kCVPixelBufferMetalCompatibilityKey "metal"
 #define kVTVideoEncoderSpecification_RequireHardwareAcceleratedVideoEncoder "require-hardware"
+#define kVTVideoEncoderSpecification_RequiredEncoderGPURegistryID "require-gpu"
 #define kVTCompressionPropertyKey_AverageBitRate "bitrate"
 #define kVTCompressionPropertyKey_MaxKeyFrameInterval "key-interval"
 #define kVTCompressionPropertyKey_MaxFrameDelayCount "frame-delay"
@@ -96,10 +102,18 @@ static unsigned CVPixelBufferGetHeight(CVPixelBufferRef p) { return p->height; }
 static unsigned CVPixelBufferGetPixelFormatType(CVPixelBufferRef p) { return p->format; }
 static CFMutableDictionaryRef CFDictionaryCreateMutable(void *a, int n, void *k, void *v)
 { (void)a; (void)n; (void)k; (void)v; return object_new(1); }
-static CFNumberRef CFNumberCreate(void *a, int t, const int32_t *value)
-{ object_t *p = object_new(2); (void)a; (void)t; if (p) p->number = *value; return p; }
+static CFNumberRef CFNumberCreate(void *a, int t, const void *value)
+{
+   object_t *p=object_new(2); (void)a;
+   if (p)
+   {
+      if (t==kCFNumberSInt64Type) memcpy(&p->number,value,sizeof(p->number));
+      else { int32_t number; memcpy(&number,value,sizeof(number)); p->number=number; }
+   }
+   return p;
+}
 static bool number_key(CFStringRef key)
-{ return !strcmp(key,"right") || !strcmp(key,"bottom") || !strcmp(key,"width") || !strcmp(key,"height") || !strcmp(key,"format") || !strcmp(key,"bitrate") || !strcmp(key,"key-interval") || !strcmp(key,"frame-delay"); }
+{ return !strcmp(key,"require-gpu") || !strcmp(key,"right") || !strcmp(key,"bottom") || !strcmp(key,"width") || !strcmp(key,"height") || !strcmp(key,"format") || !strcmp(key,"bitrate") || !strcmp(key,"key-interval") || !strcmp(key,"frame-delay"); }
 static void CFDictionarySetValue(CFMutableDictionaryRef d, CFStringRef key, const void *value)
 {
    unsigned i = d->count++;
@@ -119,6 +133,12 @@ static OSStatus VTCompressionSessionCreate(void *a, int32_t w, int32_t h, unsign
    assert(w==64 && h==48 && (codec==1 || codec==2));
    assert(codec == (expected_hevc ? 2u : 1u));
    assert(spec->values[entry(spec,"require-hardware")] == &truth);
+   if (expected_gpu) assert((uint64_t)spec->numbers[entry(spec,"require-gpu")]==expected_gpu);
+   else
+   {
+      unsigned i;
+      for (i=0;i<spec->count;i++) assert(strcmp(spec->keys[i],"require-gpu"));
+   }
    assert(attrs->values[entry(attrs,"metal")] == &truth);
    assert(attrs->numbers[entry(attrs,"width")] == w);
    assert(attrs->numbers[entry(attrs,"height")] == h);
@@ -232,9 +252,23 @@ int main(void)
    c.bit_depth=expected_depth=8;
    e=videotoolbox_encode_new(&c,&error); assert(e); videotoolbox_encode_cancel(e);
    assert(!live);
-   /* A platform with no explicit GPU-selection API must refuse the request,
-    * rather than silently falling back to its default hardware encoder. */
+#ifdef VIDEOTOOLBOX_ENCODE_TEST_GPU_SELECTION
+   {
+      unsigned total;
+      expected_gpu=((uint64_t)1<<48)|0x1234;
+      allocations=0; e=videotoolbox_encode_new_with_gpu(&c,expected_gpu,&error);
+      assert(e && !error); total=allocations; videotoolbox_encode_cancel(e);
+      for (i=1;i<=total;i++)
+      {
+         allocations=0; allocation_fail=i;
+         assert(!videotoolbox_encode_new_with_gpu(&c,expected_gpu,&error) && error && !live);
+      }
+      allocation_fail=0; expected_gpu=0;
+   }
+#else
+   /* Unsupported SDK/runtime selection cannot silently choose another GPU. */
    assert(!videotoolbox_encode_new_with_gpu(&c,1,&error) && error==kVTParameterErr && !live);
+#endif
    puts("PASS: VT adapter hardware admission, startup faults, FIFO, synchronous/drop callbacks and drain");
    return 0;
 }

@@ -79,9 +79,14 @@ static INLINE VT_ENCODE_AVAILABLE videotoolbox_encode_t *videotoolbox_encode_new
    CFDictionarySetValue(spec, kVTVideoEncoderSpecification_RequireHardwareAcceleratedVideoEncoder, kCFBooleanTrue);
    if (gpu_registry_id)
    {
-#if defined(__APPLE__) && defined(__clang__) && defined(__MAC_OS_X_VERSION_MAX_ALLOWED) \
-      && __MAC_OS_X_VERSION_MAX_ALLOWED>=101400
+#if defined(VIDEOTOOLBOX_ENCODE_TEST_GPU_SELECTION) || (defined(__APPLE__) && defined(__clang__) \
+      && !defined(VIDEOTOOLBOX_ENCODE_TEST_TYPES) && defined(__MAC_OS_X_VERSION_MAX_ALLOWED) \
+      && __MAC_OS_X_VERSION_MAX_ALLOWED>=101400)
+#ifdef VIDEOTOOLBOX_ENCODE_TEST_GPU_SELECTION
+      if (true)
+#else
       if (__builtin_available(macOS 10.14, iOS 13.0, tvOS 13.0, *))
+#endif
       {
          CFNumberRef gpu=CFNumberCreate(NULL,kCFNumberSInt64Type,&gpu_registry_id);
          if (!gpu) { status=kVTAllocationFailedErr; goto done; }

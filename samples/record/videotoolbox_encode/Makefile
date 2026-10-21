@@ -9,7 +9,7 @@ ifneq ($(SANITIZER),)
 CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
-all: av_session_test$(EXE) crop_test$(EXE) av_worker_test$(EXE) audio_queue_test$(EXE) slots_test$(EXE) session_test$(EXE) worker_test$(EXE) audio_rate_test$(EXE)
+all: session_gpu_refusal_test$(EXE) av_session_test$(EXE) crop_test$(EXE) av_worker_test$(EXE) audio_queue_test$(EXE) slots_test$(EXE) session_test$(EXE) worker_test$(EXE) audio_rate_test$(EXE)
 av_session_thread_test: av_session_thread_test.c $(RA)/record/record_avfoundation_session.c
 	$(CC) $(CFLAGS) -pthread -o $@ av_session_thread_test.c $(RA)/record/record_avfoundation_session.c $(RA)/record/record_avfoundation_worker.c $(RA)/record/record_gpu_worker_vt.c $(RA)/record/record_gpu_queue.c $(RA)/record/record_audio_queue.c $(RA)/libretro-common/queues/retro_spsc.c $(LDFLAGS)
 av_session_test$(EXE): av_worker_test.c $(RA)/record/record_avfoundation_session.c $(RA)/record/record_avfoundation_session.h
@@ -26,6 +26,8 @@ crop_test$(EXE): crop_test.c $(RA)/libretro-common/formats/h265/rh265_sps_crop.c
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
 worker_test$(EXE): worker_test.c $(RA)/record/record_gpu_worker_vt.c $(RA)/record/record_gpu_worker_vt.h $(RA)/record/record_gpu_queue.c
 	$(CC) $(CFLAGS) -o $@ worker_test.c $(RA)/record/record_gpu_worker_vt.c $(RA)/record/record_gpu_queue.c $(RA)/libretro-common/queues/retro_spsc.c $(LDFLAGS)
+session_gpu_refusal_test$(EXE): session_test.c $(RA)/gfx/common/videotoolbox_encode.h
+	$(CC) $(CFLAGS) -DVIDEOTOOLBOX_ENCODE_TEST_NO_GPU_SELECTION -o $@ $< $(LDFLAGS)
 session_test$(EXE): session_test.c $(RA)/gfx/common/videotoolbox_encode.h $(RA)/gfx/common/videotoolbox_encode_slots.h
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
 slots_test$(EXE): slots_test.c $(RA)/gfx/common/videotoolbox_encode_slots.h
@@ -35,6 +37,7 @@ thread_test: slots_test.c $(RA)/gfx/common/videotoolbox_encode_slots.h
 worker_thread_test: worker_thread_test.c $(RA)/record/record_gpu_worker_vt.c $(RA)/record/record_gpu_worker_vt.h $(RA)/record/record_gpu_queue.c
 	$(CC) $(CFLAGS) -pthread -o $@ worker_thread_test.c $(RA)/record/record_gpu_worker_vt.c $(RA)/record/record_gpu_queue.c $(RA)/libretro-common/queues/retro_spsc.c $(LDFLAGS)
 check: all
+	$(RUNNER) ./session_gpu_refusal_test$(EXE)
 	$(RUNNER) ./av_session_test$(EXE)
 	$(RUNNER) ./crop_test$(EXE)
 	$(RUNNER) ./av_worker_test$(EXE)
@@ -44,6 +47,7 @@ check: all
 	$(RUNNER) ./worker_test$(EXE)
 	$(RUNNER) ./audio_rate_test$(EXE)
 clean:
+	rm -f session_gpu_refusal_test session_gpu_refusal_test.exe
 	rm -f av_session_test av_session_test.exe av_session_thread_test
 	rm -f crop_test crop_test.exe
 	rm -f av_worker_test av_worker_test.exe
