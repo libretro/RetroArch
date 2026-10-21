@@ -8,7 +8,7 @@ ifneq ($(SANITIZER),)
 CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
-all: test hevc_decoder_test
+all: test hevc_decoder_test vulkan_image_test
 test: test.c mediacodec_session_test_types.h ../../../gfx/common/mediacodec_session.c
 	$(CC) $(CFLAGS) test.c ../../../gfx/common/mediacodec_session.c -o $@ $(LDFLAGS)
 HEVC_SOURCES := ../../../gfx/common/mediacodec_hevc_decoder.c \
@@ -17,9 +17,12 @@ hevc_decoder_test: hevc_decoder_test.c $(HEVC_SOURCES) \
  ../../../gfx/common/mediacodec_hevc_decoder.h ../../../gfx/common/android_image_queue.h \
  ../../../libretro-common/include/formats/rh265_hw.h
 	$(CC) $(CFLAGS) -DHAVE_THREADS hevc_decoder_test.c $(HEVC_SOURCES) -o $@ $(LDFLAGS)
+vulkan_image_test: vulkan_image_test.c ../../../gfx/common/vulkan_android_image.c ../../../gfx/common/vulkan_android_image.h
+	$(CC) $(CFLAGS) -I../../../gfx/include vulkan_image_test.c ../../../gfx/common/vulkan_android_image.c -o $@ $(LDFLAGS)
 check: all
 	./test
 	./hevc_decoder_test
+	./vulkan_image_test
 clean:
-	rm -f test hevc_decoder_test
+	rm -f test hevc_decoder_test vulkan_image_test
 .PHONY: all check clean
