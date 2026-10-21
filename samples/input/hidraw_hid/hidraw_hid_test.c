@@ -28,7 +28,12 @@
  *   lend        -> a pad's state is lent where its handler keeps it:
  *                  what the reads answer, the same storage poll after
  *                  poll, the hat of a pad read from its descriptor in
- *                  it; none for a port with no pad */
+ *                  it; none for a port with no pad
+ *   bridge      -> what the snapshot bridge assumes of a driver it
+ *                  serves (samples/input/joypad_bridge_checked): its
+ *                  button(), axis() and state() say what get_buttons()
+ *                  and the lent state say - a home button's menu
+ *                  toggle and a descriptor pad's hat among them */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -46,6 +51,36 @@
 #include "input/connect/joypad_connection.h"
 
 extern hid_driver_t hidraw_hid;
+
+#include "../joypad_bridge_checked/bridge_view.h"
+
+/* hidraw as the HID joypad driver (hid_joypad.c) has it */
+static void *bridge_hid;
+static int32_t bridge_button(unsigned pad, uint16_t key)
+{ return hidraw_hid.button(bridge_hid, pad, key); }
+static int16_t bridge_axis(unsigned pad, uint32_t axis)
+{ return hidraw_hid.axis(bridge_hid, pad, axis); }
+static void bridge_get_buttons(unsigned pad, input_bits_t *state)
+{ hidraw_hid.get_buttons(bridge_hid, pad, state); }
+static int16_t bridge_state(rarch_joypad_info_t *info,
+      const uint16_t *keys, const uint32_t *axes, unsigned port)
+{ return hidraw_hid.state(bridge_hid, info, keys, axes, port); }
+static const input_pad_view_t *bridge_view(unsigned pad)
+{ return hidraw_hid.view(bridge_hid, pad); }
+
+/* the disagreements the bridge would find on pad 0 of @hid */
+static unsigned bridge_check(void *hid)
+{
+   input_device_driver_t drv;
+   memset(&drv, 0, sizeof(drv));
+   drv.button      = bridge_button;
+   drv.axis        = bridge_axis;
+   drv.get_buttons = bridge_get_buttons;
+   drv.state       = bridge_state;
+   drv.view        = bridge_view;
+   bridge_hid      = hid;
+   return bv_compare(&drv, 0) + bv_compare_view(&drv, 0);
+}
 
 static int failures;
 #define CHECK(cond, msg) do { if (!(cond)) { \
@@ -415,6 +450,8 @@ int main(void)
          queue_report(ds3, circle, 255);
          hidraw_hid.poll(hid);
       }
+      CHECK(!bridge_check(hid),
+            "the DualShock 3: the reads say what the bridge would not");
    }
 
    /* rumble: one output report at the next report the pad sends,
@@ -575,6 +612,18 @@ int main(void)
       CHECK(BIT256_GET(bits, RETRO_DEVICE_ID_JOYPAD_B)
             && !BIT256_GET(bits, RETRO_DEVICE_ID_JOYPAD_A),
             "the DualSense's report was not read through its handler");
+      /* the PS button held: the menu toggle, past the first 32 */
+      memset(kbd->queue[0], 0, sizeof(kbd->queue[0]));
+      kbd->queue[0][0] = 0x01;
+      kbd->queue[0][1] = kbd->queue[0][2] = kbd->queue[0][3] = kbd->queue[0][4] = 0x80;
+      kbd->queue[0][5] = 0x08 | 0x20;
+      kbd->queue[0][7] = 0x01;
+      kbd->queued      = 1;
+      hidraw_hid.poll(hid);
+      CHECK(hidraw_hid.button(hid, 0, RARCH_MENU_TOGGLE),
+            "the DualSense's PS button is not the menu toggle through button()");
+      CHECK(!bridge_check(hid),
+            "the DualSense: the reads say what the bridge would not");
    }
    hidraw_hid.free(hid);
    CHECK(kbd->closes == 1, "the DualSense's node was not closed");
@@ -627,6 +676,8 @@ int main(void)
       CHECK(v && v->hats == 4 && v->axes[0] == 32767
             && BIT256_GET(v->buttons, 1) && !BIT256_GET(v->buttons, 0),
             "a pad with no handler: its state, hat and all, is not lent");
+      CHECK(!bridge_check(hid),
+            "a pad with no handler: the reads say what the bridge would not");
    }
    hidraw_hid.free(hid);
 

@@ -20,11 +20,16 @@
 /* TODO/FIXME - static global */
 static const hid_driver_t *generic_hid = NULL;
 
+static const input_pad_view_t *hid_joypad_view(unsigned pad);
+
 static void *hid_joypad_init(void *data)
 {
    generic_hid = input_hid_init_first();
    if (!generic_hid)
       return NULL;
+   /* lent where the HID driver lends: its pads are then read through
+    * the snapshot bridge (input_driver.c) */
+   hid_joypad.view = generic_hid->view ? hid_joypad_view : NULL;
    return (void*)-1;
 }
 
@@ -130,6 +135,13 @@ static bool hid_joypad_set_bt_host(unsigned pad, const uint8_t *addr)
       && generic_hid->set_bt_host((void*)hid_driver_get_data(), pad, addr);
 }
 
+static const input_pad_view_t *hid_joypad_view(unsigned pad)
+{
+   if (generic_hid && generic_hid->view)
+      return generic_hid->view((void*)hid_driver_get_data(), pad);
+   return NULL;
+}
+
 static void hid_joypad_set_player(unsigned pad, unsigned player)
 {
    if (generic_hid && generic_hid->set_player)
@@ -162,5 +174,6 @@ input_device_driver_t hid_joypad = {
    hid_joypad_get_bt_host,
    hid_joypad_set_bt_host,
    hid_joypad_survives_video,
-   hid_joypad_set_player
+   hid_joypad_set_player,
+   NULL  /* view: set at init, where the HID driver lends */
 };

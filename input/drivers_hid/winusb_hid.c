@@ -1751,7 +1751,9 @@ static int16_t winusb_hid_joypad_button(void *data,
       }
       return 0;
    }
-   if (joykey >= 32)
+   /* every one get_buttons() says: a home button's menu toggle is
+    * past the first 32 */
+   if (joykey >= 256)
       return 0;
    winusb_hid_joypad_get_buttons(data, port, &buttons);
    return BIT256_GET(buttons, joykey) != 0;

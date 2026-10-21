@@ -30,6 +30,36 @@
 
 #include "input/drivers_hid/winusb_hid.c"
 #include "input/common/sony_pad_output.h"
+#include "../joypad_bridge_checked/bridge_view.h"
+
+/* winusb as the HID joypad driver (hid_joypad.c) has it */
+static void *bridge_hid;
+static int32_t bridge_button(unsigned pad, uint16_t key)
+{ return winusb_hid.button(bridge_hid, pad, key); }
+static int16_t bridge_axis(unsigned pad, uint32_t axis)
+{ return winusb_hid.axis(bridge_hid, pad, axis); }
+static void bridge_get_buttons(unsigned pad, input_bits_t *state)
+{ winusb_hid.get_buttons(bridge_hid, pad, state); }
+static int16_t bridge_state(rarch_joypad_info_t *info,
+      const uint16_t *keys, const uint32_t *axes, unsigned port)
+{ return winusb_hid.state(bridge_hid, info, keys, axes, port); }
+static const input_pad_view_t *bridge_view(unsigned pad)
+{ return winusb_hid.view(bridge_hid, pad); }
+
+/* the disagreements the snapshot bridge would find on pad 0 of @hid
+ * (samples/input/joypad_bridge_checked) */
+static unsigned bridge_check(void *hid)
+{
+   input_device_driver_t drv;
+   memset(&drv, 0, sizeof(drv));
+   drv.button      = bridge_button;
+   drv.axis        = bridge_axis;
+   drv.get_buttons = bridge_get_buttons;
+   drv.state       = bridge_state;
+   drv.view        = bridge_view;
+   bridge_hid      = hid;
+   return bv_compare(&drv, 0) + bv_compare_view(&drv, 0);
+}
 
 static int failures;
 #define CHECK(cond, msg) do { if (!(cond)) { \
@@ -605,6 +635,7 @@ static void test_hidclass(const char *path)
             && v->axes[0] == winusb_hid.axis(hid, 0, AXIS_POS(0))
             && !winusb_hid.view(hid, 1),
             "hid class: the pad's state is not lent as the reads answer");
+      CHECK(!bridge_check(hid), "hid class: the DualSense's reads say what the bridge would not");
    }
    CHECK(n_writes == 1 && written_is(true, 0, 0, 1),
          "hid class: the first report did not light player 1, at the device's length");
@@ -714,6 +745,7 @@ static void test_hidclass(const char *path)
             && BIT256_GET(v->buttons, 0) && BIT256_GET(v->buttons, 2)
             && !BIT256_GET(v->buttons, 1),
             "hid class: a pad with no handler: its state, hat and all, is not lent");
+      CHECK(!bridge_check(hid), "hid class: a pad with no handler: its reads say what the bridge would not");
    }
    g_value[0x39] = 8;    /* at rest: out of the hat's range */
    push_hreport(r, 9);
