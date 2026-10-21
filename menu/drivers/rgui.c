@@ -294,11 +294,27 @@ enum rgui_flags
    RGUI_FLAG_DRAW_ENTRY_SKIP           = (1 << 26)
 };
 
+typedef struct rgui_media_gpu_view
+{
+   uintptr_t texture;
+   gfx_media_rect_t rect;
+   unsigned source_dims;
+   unsigned texture_dims;
+   float alpha;
+   uint8_t flags;
+   bool visible;
+} rgui_media_gpu_view_t;
+
 typedef struct
 {
    retro_time_t thumbnail_load_trigger_time; /* uint64_t */
    retro_time_t draw_entry_hold_until;
    gfx_media_cpu_t *media_player;
+   gfx_thumbnail_t media_gpu;
+   rgui_media_gpu_view_t media_gpu_views[3];
+   retro_atomic_int_t media_gpu_states[3];
+   rgui_media_gpu_view_t media_gpu_pending;
+   rgui_media_gpu_view_t media_gpu_view;
    menu_media_controls_t media;
    menu_input_pointer_t media_pointer;
    char media_path[PATH_MAX_LENGTH];
@@ -3048,10 +3064,48 @@ static void rgui_process_thumbnail(
    image_resampled.pixels = NULL;
 }
 
+static void rgui_media_gpu_publish(rgui_t *rgui, const rgui_media_gpu_view_t *view)
+{
+   unsigned slot, i;
+   if (view->visible != rgui->media_gpu_pending.visible
+         || (view->visible && (view->texture != rgui->media_gpu_pending.texture
+            || view->texture_dims != rgui->media_gpu_pending.texture_dims
+            || view->source_dims != rgui->media_gpu_pending.source_dims
+            || memcmp(&view->rect, &rgui->media_gpu_pending.rect, sizeof(view->rect)))))
+      rgui->flags |= RGUI_FLAG_FORCE_REDRAW;
+   rgui->media_gpu_pending = *view;
+   for (slot = 0; slot < 3; slot++)
+      if (retro_atomic_cas_int(&rgui->media_gpu_states[slot], 0, 1)) break;
+   if (slot == 3) return;
+   rgui->media_gpu_views[slot] = *view;
+   for (i = 0; i < 3; i++)
+      if (i != slot) retro_atomic_cas_int(&rgui->media_gpu_states[i], 2, 0);
+   retro_atomic_store_release_int(&rgui->media_gpu_states[slot], 2);
+}
+
+static void rgui_media_gpu_consume(rgui_t *rgui)
+{
+   unsigned i;
+   for (i = 0; i < 3; i++)
+      if (retro_atomic_cas_int(&rgui->media_gpu_states[i], 2, 3))
+      {
+         rgui->media_gpu_view = rgui->media_gpu_views[i];
+         retro_atomic_store_release_int(&rgui->media_gpu_states[i], 0);
+         return;
+      }
+}
+
 static void rgui_media_close(rgui_t *rgui)
 {
+   rgui_media_gpu_view_t draw;
+   memset(&draw, 0, sizeof(draw));
+   rgui_media_gpu_publish(rgui, &draw);
    gfx_media_cpu_retire(rgui->media_player);
    rgui->media_player = NULL;
+   if (retro_atomic_load_acquire_int(&rgui->media_gpu.status)
+         == GFX_THUMBNAIL_STATUS_PENDING)
+      gfx_thumbnail_cancel_pending_requests();
+   gfx_thumbnail_reset(&rgui->media_gpu);
    rgui->media_path[0] = '\0';
    menu_media_controls_cancel(&rgui->media);
 }
@@ -3081,18 +3135,25 @@ static bool rgui_media_present(void *user, const video_player_frame_t *frame)
 
 static bool rgui_media_state(void *user, int64_t now, gfx_media_playback_state_t *state)
 {
-   return gfx_media_cpu_state(((rgui_t*)user)->media_player, now, state);
+   rgui_t *rgui = (rgui_t*)user;
+   return rgui->media_player ? gfx_media_cpu_state(rgui->media_player, now, state)
+      : gfx_thumbnail_get_playback_state(&rgui->media_gpu, now, state);
 }
 
 static bool rgui_media_pause(void *user, bool paused, int64_t now)
 {
-   return gfx_media_cpu_pause(((rgui_t*)user)->media_player, paused, now);
+   rgui_t *rgui = (rgui_t*)user;
+   return rgui->media_player ? gfx_media_cpu_pause(rgui->media_player, paused, now)
+      : gfx_thumbnail_set_paused(&rgui->media_gpu, paused, now);
 }
 
 static bool rgui_media_seek(void *user, int64_t target_us, int64_t now)
 {
    unsigned rate = 0;
    bool s16 = false;
+   rgui_t *rgui = (rgui_t*)user;
+   if (!rgui->media_player)
+      return gfx_thumbnail_seek(&rgui->media_gpu, target_us, now);
 #if (defined(HAVE_RWEBM) || defined(HAVE_RMP4)) && defined(HAVE_AUDIOMIXER) && \
       (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS) || defined(HAVE_RAAC))
    if (config_get_ptr()->bools.menu_thumbnail_preview_audio)
@@ -3130,6 +3191,21 @@ RGUI_NOINLINE static void rgui_media_update(rgui_t *rgui, unsigned dims)
             rgui->media_player = gfx_media_cpu_new(session, rgui_media_present, rgui, 0);
             if (!rgui->media_player) gfx_anim_preview_close(session);
          }
+         if (!rgui->media_player && disp_get_ptr()->dispctx)
+            gfx_thumbnail_request_file(rgui->media_path, &rgui->media_gpu, 0);
+      }
+   }
+   if (rgui->media_gpu.anim_sess)
+   {
+      gfx_thumbnail_animate(&rgui->media_gpu, now);
+      if ((rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
+            && !(rgui->flags & RGUI_FLAG_SHOW_SCREENSAVER)
+            && !menu_input_dialog_get_display_kb())
+      {
+         target.user = rgui;
+         target.identity = rgui->media_gpu.anim_sess;
+         target.state = rgui_media_state; target.pause = rgui_media_pause;
+         target.seek = rgui_media_seek;
       }
    }
    if (rgui->media_player)
@@ -3139,6 +3215,8 @@ RGUI_NOINLINE static void rgui_media_update(rgui_t *rgui, unsigned dims)
       {
          gfx_media_cpu_retire(rgui->media_player);
          rgui->media_player = NULL;
+         if (!rgui->fs_thumbnail.is_valid && disp_get_ptr()->dispctx)
+            gfx_thumbnail_request_file(rgui->media_path, &rgui->media_gpu, 0);
       }
       else if ((rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
             && !(rgui->flags & RGUI_FLAG_SHOW_SCREENSAVER)
@@ -3153,6 +3231,39 @@ RGUI_NOINLINE static void rgui_media_update(rgui_t *rgui, unsigned dims)
    menu_input_get_pointer_state(&rgui->media_pointer);
    menu_media_controls_update(&rgui->media, &target, VIDEO_SCALE_W(dims),
          VIDEO_SCALE_H(dims), &rgui->media_pointer, now);
+   {
+      rgui_media_gpu_view_t draw;
+      memset(&draw, 0, sizeof(draw));
+      draw.visible = wanted && rgui->media_gpu.anim_sess
+         && !(rgui->flags & RGUI_FLAG_SHOW_SCREENSAVER)
+         && !menu_input_dialog_get_display_kb()
+         && retro_atomic_load_acquire_int(&rgui->media_gpu.status)
+            == GFX_THUMBNAIL_STATUS_AVAILABLE;
+      if (draw.visible)
+      {
+         draw.texture = rgui->media_gpu.texture;
+         draw.texture_dims = rgui->media_gpu.dims;
+         draw.alpha = rgui->media_gpu.alpha;
+         draw.flags = rgui->media_gpu.flags;
+      }
+      if (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
+      {
+         draw.rect.x = 0;
+         draw.rect.y = rgui->font_height_stride + 1;
+         draw.rect.w = VIDEO_SCALE_W(dims);
+         draw.rect.h = controls->layout.panel.y - draw.rect.y - 2;
+      }
+      else
+      {
+         draw.rect.w = VIDEO_SCALE_W(rgui->mini_thumbnail_max_dims);
+         draw.rect.h = VIDEO_SCALE_H(rgui->mini_thumbnail_max_dims);
+         draw.rect.x = rgui->term_layout.start_x
+            + rgui->term_layout.width * rgui->font_width_stride - draw.rect.w;
+         draw.rect.y = rgui->term_layout.start_y;
+      }
+      draw.source_dims = dims;
+      rgui_media_gpu_publish(rgui, &draw);
+   }
    if (old_position != controls->playback.position_us || old_drag != controls->drag_us
          || old_visible != controls->visible || old_paused != controls->playback.paused
          || old_seeking != controls->playback.seeking || old_focus != controls->row_focus
@@ -3447,6 +3558,8 @@ static INLINE unsigned rgui_get_mini_thumbnail_fullwidth(rgui_t *rgui)
          ? VIDEO_SCALE_W(rgui->mini_thumbnail.dims) : 0;
    unsigned left_width = rgui->mini_left_thumbnail.is_valid
          ? VIDEO_SCALE_W(rgui->mini_left_thumbnail.dims) : 0;
+   if (retro_atomic_load_acquire_int(&rgui->media_gpu.status) == GFX_THUMBNAIL_STATUS_AVAILABLE)
+      width = VIDEO_SCALE_W(rgui->mini_thumbnail_max_dims);
    return width >= left_width ? width : left_width;
 }
 
@@ -3732,6 +3845,19 @@ static void rgui_update_dynamic_theme_path(
             "default.cfg", sizeof(rgui->theme_dynamic_path));
 }
 
+RGUI_NOINLINE static void rgui_queue_wallpaper(
+      const char *theme_path, const char *wallpaper_file)
+{
+   char wallpaper_path[PATH_MAX_LENGTH];
+   wallpaper_path[0] = '\0';
+   fill_pathname_resolve_relative(wallpaper_path, theme_path,
+         wallpaper_file, sizeof(wallpaper_path));
+   if (path_is_valid(wallpaper_path))
+      task_push_image_load(wallpaper_path,
+            gfx_surface_wants_rgba(), 0, 0,
+            menu_display_handle_wallpaper_upload, NULL);
+}
+
 static void rgui_load_custom_theme(
       rgui_t *rgui,
       rgui_theme_t *theme_colors,
@@ -3850,23 +3976,7 @@ end:
       /* Load wallpaper, if required */
       if (config_get_array(conf, wallpaper_key,
             wallpaper_file, sizeof(wallpaper_file)))
-      {
-         char wallpaper_path[PATH_MAX_LENGTH];
-         wallpaper_path[0] = '\0';
-
-         fill_pathname_resolve_relative(wallpaper_path, theme_path, wallpaper_file, sizeof(wallpaper_path));
-         /* Ensure that path is valid... */
-         if (path_is_valid(wallpaper_path))
-            /* Unlike thumbnails, we don't worry about queued images
-             * here - in general, wallpaper is loaded once per session
-             * and then forgotten, so performance issues are not a concern */
-            task_push_image_load(wallpaper_path,
-                  gfx_surface_wants_rgba(),
-                  0,
-                  0,
-                  menu_display_handle_wallpaper_upload,
-                  NULL);
-      }
+         rgui_queue_wallpaper(theme_path, wallpaper_file);
    }
    else
    {
@@ -5913,6 +6023,36 @@ static bool rgui_wheel_scroll(void *data, int notches)
    return true;
 }
 
+static void rgui_media_gpu_cutout(rgui_t *rgui, unsigned dims)
+{
+   const rgui_media_gpu_view_t *view = &rgui->media_gpu_pending;
+   const gfx_media_rect_t *rect = &view->rect;
+   gfx_thumbnail_t thumbnail;
+   float width, height, left, top;
+   int x, y, right, bottom;
+   if (!view->visible || rect->w <= 0 || rect->h <= 0)
+      return;
+   gfx_thumbnail_init_blank(&thumbnail);
+   thumbnail.dims = view->texture_dims;
+   thumbnail.flags = view->flags;
+   retro_atomic_store_release_int(&thumbnail.status, GFX_THUMBNAIL_STATUS_AVAILABLE);
+   gfx_thumbnail_get_draw_dimensions(&thumbnail,
+         VIDEO_SCALE_PACK(rect->w, rect->h), 1.0f, &width, &height);
+   left = rect->x + (rect->w - width) * 0.5f;
+   top = rect->y + (rect->h - height) * 0.5f;
+   x = (int)floor(left);
+   y = (int)floor(top);
+   right = (int)ceil(left + width);
+   bottom = (int)ceil(top + height);
+   if (x < 0) x = 0;
+   if (y < 0) y = 0;
+   if (right <= x || bottom <= y)
+      return;
+   /* Some drivers composite the software menu after the GPU picture. */
+   rgui_color_rect(rgui->frame_buf.data, dims, x, y,
+         (unsigned)(right - x), (unsigned)(bottom - y), 0);
+}
+
 RGUI_NOINLINE static void rgui_media_draw(rgui_t *rgui, unsigned dims)
 {
    gfx_media_view_t *view = &rgui->media.view;
@@ -6835,6 +6975,7 @@ static void rgui_render(void *data, unsigned dims,
       }
    }
 
+   rgui_media_gpu_cutout(rgui, p_disp->framebuf_dims);
    if (*rgui->msgbox)
    {
       /* Draw popup directly on top of the menu; the messagebox
@@ -7562,6 +7703,10 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
    if (!(rgui = (rgui_t*)calloc(1, sizeof(rgui_t))))
       goto error;
 
+   gfx_thumbnail_init_blank(&rgui->media_gpu);
+   retro_atomic_int_init(&rgui->media_gpu_states[0], 0);
+   retro_atomic_int_init(&rgui->media_gpu_states[1], 0);
+   retro_atomic_int_init(&rgui->media_gpu_states[2], 0);
    *userdata = rgui;
 
    rgui->menu_title[0]              = '\0';
@@ -8825,6 +8970,30 @@ static int rgui_pointer_up(
    return 0;
 }
 
+static void rgui_media_gpu_draw(rgui_t *rgui, video_frame_info_t *video_info)
+{
+   gfx_thumbnail_t thumbnail;
+   rgui_media_gpu_view_t *view = &rgui->media_gpu_view;
+   gfx_media_rect_t *rect = &view->rect;
+   unsigned dims = video_info->dims;
+   float sx, sy;
+   rgui_media_gpu_consume(rgui);
+   if (!view->visible || rect->w <= 0 || rect->h <= 0
+         || !VIDEO_SCALE_W(view->source_dims) || !VIDEO_SCALE_H(view->source_dims)) return;
+   sx = (float)VIDEO_SCALE_W(dims) / VIDEO_SCALE_W(view->source_dims);
+   sy = (float)VIDEO_SCALE_H(dims) / VIDEO_SCALE_H(view->source_dims);
+   gfx_thumbnail_init_blank(&thumbnail);
+   thumbnail.texture = view->texture;
+   thumbnail.dims = view->texture_dims;
+   thumbnail.alpha = view->alpha;
+   thumbnail.flags = view->flags;
+   retro_atomic_store_release_int(&thumbnail.status, GFX_THUMBNAIL_STATUS_AVAILABLE);
+   gfx_thumbnail_draw(video_info->userdata, dims, &thumbnail,
+         rect->x * sx, rect->y * sy,
+         VIDEO_SCALE_PACK((unsigned)(rect->w * sx), (unsigned)(rect->h * sy)),
+         GFX_THUMBNAIL_ALIGN_CENTRE, 1.0f, 1.0f, NULL);
+}
+
 static void rgui_frame(void *data, video_frame_info_t *video_info)
 {
    rgui_t *rgui                        = (rgui_t*)data;
@@ -9106,6 +9275,7 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
    }
    else
       rgui->pointer.type = MENU_POINTER_DISABLED;
+   rgui_media_gpu_draw(rgui, video_info);
 }
 
 static void rgui_toggle(void *userdata, bool menu_on)
@@ -9208,6 +9378,8 @@ static void rgui_context_reset(void *data, bool is_threaded)
       return;
 
    menu_media_controls_cancel(&rgui->media);
+   if (!disp_get_ptr()->dispctx)
+      gfx_display_init_first_driver(disp_get_ptr(), is_threaded);
    video_driver_monitor_reset();
 }
 

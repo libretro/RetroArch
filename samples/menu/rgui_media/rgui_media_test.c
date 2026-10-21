@@ -8,12 +8,22 @@
 
 static unsigned media_failures;
 static bool native_gpu;
+static bool gpu_surface;
 static uint32_t native_background[320*240];
 #define MEDIA_CHECK(message, cond) do { \
    bool passed = (cond) != 0; \
    printf("%s: %s\n", passed ? "ok" : "FAIL", message); \
    if (!passed) media_failures++; \
 } while (0)
+
+static bool media_picture_ready(rgui_t *rgui)
+{
+   if (gpu_surface)
+      return !rgui->media_player && rgui->media_gpu.texture
+         && rgui->media_gpu.anim_player;
+   return rgui->media_player && rgui->fs_thumbnail.is_valid
+      && rgui->mini_thumbnail.is_valid;
+}
 
 static void media_render(struct menu_state *menu_st)
 {
@@ -33,6 +43,18 @@ static void media_render(struct menu_state *menu_st)
 
 #include "../texture_media/native_media_capture.h"
 
+static bool media_capture_settled(struct menu_state *menu_st, int ordinal)
+{
+   int64_t until = cpu_features_get_time_usec() + 50000;
+   uint32_t hash;
+   do
+   {
+      media_render(menu_st);
+      retro_sleep(1);
+   } while (cpu_features_get_time_usec() < until);
+   return media_native_capture(&hash, ordinal);
+}
+
 int main(int argc, char **argv)
 {
    struct menu_state *menu_st;
@@ -50,6 +72,8 @@ int main(int argc, char **argv)
    bool seeking;
    if (argc != 3) return 2;
    native_gpu=getenv("MEDIA_TEST_GPU")!=NULL;
+   gpu_surface=getenv("MEDIA_TEST_GPU_SURFACE")!=NULL;
+   if (gpu_surface && !native_gpu) return 2;
    config_file_set_io_default(config_file_io_filestream());
    rtime_init(); retroarch_config_init();
    retroarch_ctl(RARCH_CTL_STATE_FREE, NULL);
@@ -87,33 +111,34 @@ int main(int argc, char **argv)
    for (tick = 0; tick < 2000; tick++)
    {
       media_render(menu_st);
-      if (rgui->fs_thumbnail.is_valid && rgui->mini_thumbnail.is_valid) break;
+      if (media_picture_ready(rgui)) break;
       retro_sleep(1);
    }
-   MEDIA_CHECK("real decoder filled fullscreen and mini CPU thumbnails",
-         tick < 2000 && rgui->media_player && rgui->fs_thumbnail.dims && rgui->mini_thumbnail.dims);
+   MEDIA_CHECK("real decoder supplies the requested presentation path",
+         tick < 2000 && media_picture_ready(rgui));
    if (media_failures) goto cleanup;
    for (i = 0; i < VIDEO_SCALE_AREA(rgui->fs_thumbnail.dims); i++) pixels |= rgui->fs_thumbnail.data[i];
-   MEDIA_CHECK("converted 16-bit movie picture is nonempty", pixels != 0);
-   MEDIA_CHECK("fullscreen shared controller owns the CPU player", rgui->media.controls.target.user == rgui);
+   MEDIA_CHECK("decoded movie picture is nonempty",
+         gpu_surface ? rgui->media_gpu.texture != 0 : pixels != 0);
+   MEDIA_CHECK("fullscreen shared controller owns the player", rgui->media.controls.target.user == rgui);
    MEDIA_CHECK("confirm pauses through the real menu adapter",
          rgui_parse_menu_entry_action(rgui, entry, MENU_ACTION_OK) == MENU_ACTION_NOOP
-         && gfx_media_cpu_state(rgui->media_player, menu_st->current_time_us, &state) && state.paused);
+         && rgui_media_state(rgui, menu_st->current_time_us, &state) && state.paused);
    if(native_gpu)
    {
       gfx_media_target_t target=rgui->media.controls.target;
       uint32_t first=0,middle=0,again=0;
       unsigned burst;
-      MEDIA_CHECK("paused CPU picture reaches renderer",media_native_seek_capture(menu_st,media_render,&target,0,0,0,0,&first));
-      MEDIA_CHECK("CPU seek changes rendered picture",media_native_seek_capture(menu_st,media_render,&target,375000,first,1,1,&middle));
-      MEDIA_CHECK("CPU backward seek restores picture",media_native_seek_capture(menu_st,media_render,&target,0,first,-1,2,&again));
+      MEDIA_CHECK("paused movie picture reaches renderer",media_native_seek_capture(menu_st,media_render,&target,0,0,0,0,&first));
+      MEDIA_CHECK("movie seek changes rendered picture",media_native_seek_capture(menu_st,media_render,&target,375000,first,1,1,&middle));
+      MEDIA_CHECK("movie backward seek restores picture",media_native_seek_capture(menu_st,media_render,&target,0,first,-1,2,&again));
       for(burst=0;burst<16;burst++)
       {
-         MEDIA_CHECK("CPU burst seek accepted",target.seek(target.user,burst&1?375000:0,cpu_features_get_time_usec()));
+         MEDIA_CHECK("movie burst seek accepted",target.seek(target.user,burst&1?375000:0,cpu_features_get_time_usec()));
          media_render(menu_st);retro_sleep(1);
       }
-      MEDIA_CHECK("CPU latest burst reaches renderer while paused",media_native_seek_capture(menu_st,media_render,&target,375000,first,1,3,&middle));
-      printf("rendered CPU media hashes: %08x %08x %08x\n",first,middle,again);
+      MEDIA_CHECK("movie latest burst reaches renderer while paused",media_native_seek_capture(menu_st,media_render,&target,375000,first,1,3,&middle));
+      printf("rendered media hashes: %08x %08x %08x\n",first,middle,again);
    }
    media_render(menu_st);
    MEDIA_CHECK("software controls reach the framebuffer", rgui->media.view.visible
@@ -137,13 +162,13 @@ int main(int argc, char **argv)
    MEDIA_CHECK("release seeks without dismissing or activating the browser",
          (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
          && menu_st->selection_ptr == selection
-         && gfx_media_cpu_state(rgui->media_player, menu_st->current_time_us, &state) && state.seeking);
+         && rgui_media_state(rgui, menu_st->current_time_us, &state) && state.seeking);
    menu_st->input_state.pointer.flags = 0;
    seeking = true;
    for (tick = 0; tick < 2000 && seeking; tick++)
    {
       media_render(menu_st);
-      gfx_media_cpu_state(rgui->media_player, menu_st->current_time_us, &state);
+      rgui_media_state(rgui, menu_st->current_time_us, &state);
       seeking = state.seeking;
       retro_sleep(1);
    }
@@ -155,7 +180,7 @@ int main(int argc, char **argv)
    for (tick = 0; tick < 2000 && seeking; tick++)
    {
       media_render(menu_st);
-      gfx_media_cpu_state(rgui->media_player, menu_st->current_time_us, &state);
+      rgui_media_state(rgui, menu_st->current_time_us, &state);
       seeking = state.seeking;
       retro_sleep(1);
    }
@@ -166,12 +191,18 @@ int main(int argc, char **argv)
    rgui_parse_menu_entry_action(rgui, entry, MENU_ACTION_CANCEL);
    media_render(menu_st);
    MEDIA_CHECK("paused inline picture survives leaving fullscreen",
-         rgui->media_player && rgui->mini_thumbnail.is_valid);
+         media_picture_ready(rgui));
+   if (gpu_surface)
+      MEDIA_CHECK("inline surface reaches the renderer",
+            media_capture_settled(menu_st, 4));
    rgui_parse_menu_entry_action(rgui, entry, MENU_ACTION_OK);
    media_render(menu_st);
    MEDIA_CHECK("paused fullscreen picture survives reopening",
-         rgui->fs_thumbnail.is_valid && rgui->mini_thumbnail.is_valid
-         && gfx_media_cpu_state(rgui->media_player, menu_st->current_time_us, &state) && state.paused);
+         media_picture_ready(rgui)
+         && rgui_media_state(rgui, menu_st->current_time_us, &state) && state.paused);
+   if (gpu_surface)
+      MEDIA_CHECK("reopened surface reaches the renderer",
+            media_capture_settled(menu_st, 5));
    settings->bools.menu_rgui_inline_thumbnails = false;
    rgui_media_seek(rgui, 1000000, menu_st->current_time_us);
    media_render(menu_st);
@@ -179,7 +210,68 @@ int main(int argc, char **argv)
          rgui_parse_menu_entry_action(rgui, entry, MENU_ACTION_CANCEL) == MENU_ACTION_NOOP);
    media_render(menu_st);
    MEDIA_CHECK("closing viewer retires player when inline previews are disabled",
-         !rgui->media_player && !rgui->media.controls.target.user);
+         !rgui->media_player && !rgui->media_gpu.anim_sess && !rgui->media.controls.target.user);
+   if (gpu_surface)
+   {
+      char broken_path[PATH_MAX_LENGTH];
+      FILE *broken;
+      for (i = 0; i < 8; i++)
+      {
+         rgui_parse_menu_entry_action(rgui, entry, MENU_ACTION_OK);
+         for (tick = 0; tick < 2000; tick++)
+         {
+            media_render(menu_st);
+            if (media_picture_ready(rgui)) break;
+            retro_sleep(1);
+         }
+         MEDIA_CHECK("replacement viewer has a new playable session",
+               tick < 2000 && media_picture_ready(rgui));
+         if (media_failures) break;
+         MEDIA_CHECK("replacement accepts seek before retirement",
+               rgui_media_seek(rgui, 375000, menu_st->current_time_us));
+         rgui_parse_menu_entry_action(rgui, entry, MENU_ACTION_CANCEL);
+         media_render(menu_st);
+         MEDIA_CHECK("retirement cancels pending transport ownership",
+               !rgui->media_gpu.anim_sess && !rgui->media.controls.target.user);
+      }
+      MEDIA_CHECK("retired surface disappears from the renderer",
+            media_capture_settled(menu_st, 6));
+      strlcpy(rgui->media_requested_path, argv[1], sizeof(rgui->media_requested_path));
+      strlcat(rgui->media_requested_path, ".missing.mp4", sizeof(rgui->media_requested_path));
+      rgui->flags |= RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL;
+      media_render(menu_st);
+      MEDIA_CHECK("missing replacement has no playable target",
+            !rgui->media_gpu.anim_sess && !rgui->media.controls.target.user
+            && retro_atomic_load_acquire_int(&rgui->media_gpu.status)
+               == GFX_THUMBNAIL_STATUS_MISSING);
+      snprintf(broken_path, sizeof(broken_path), "%s.broken.mp4", argv[2]);
+      broken = fopen(broken_path, "wb");
+      MEDIA_CHECK("broken movie fixture opens", broken != NULL);
+      if (!broken) goto cleanup;
+      fputs("not a video", broken);
+      fclose(broken);
+      strlcpy(rgui->media_requested_path, broken_path, sizeof(rgui->media_requested_path));
+      media_render(menu_st);
+      MEDIA_CHECK("failed video admission queues a still-image task",
+            retro_atomic_load_acquire_int(&rgui->media_gpu.status)
+               == GFX_THUMBNAIL_STATUS_PENDING);
+      rgui_media_close(rgui);
+      task_queue_check();
+      MEDIA_CHECK("closing invalidates queued image delivery",
+            !rgui->media_gpu.anim_sess && !rgui->media.controls.target.user
+            && retro_atomic_load_acquire_int(&rgui->media_gpu.status)
+               == GFX_THUMBNAIL_STATUS_UNKNOWN);
+      remove(broken_path);
+      strlcpy(rgui->media_requested_path, argv[1], sizeof(rgui->media_requested_path));
+      for (tick = 0; tick < 2000; tick++)
+      {
+         media_render(menu_st);
+         if (media_picture_ready(rgui)) break;
+         retro_sleep(1);
+      }
+      MEDIA_CHECK("valid replacement recovers after failed admission",
+            tick < 2000 && media_picture_ready(rgui));
+   }
 cleanup:
    free(entry);
    main_exit(NULL);
