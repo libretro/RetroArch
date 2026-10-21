@@ -177,6 +177,8 @@ public class RetroActivityCommon extends NativeActivity
    * the same links at once. */
   private final Object mSymlinkLock = new Object();
   private Object mInputDeviceListener;
+  /* API 17+: the second display's Presentation; null below */
+  private SecondDisplayController secondDisplay;
 
   /* Keep the API 16 interface off the activity loaded on Android 2.x. */
   @TargetApi(16)
@@ -257,6 +259,8 @@ public class RetroActivityCommon extends NativeActivity
 
     PlayCoreManager.getInstance().onCreate(this);
     super.onCreate(savedInstanceState);
+    if (Build.VERSION.SDK_INT >= 17)
+      secondDisplay = new SecondDisplayController(this);
 
     /* super.onCreate has loaded the native library and started the
      * native thread; it now waits on the permission gate until this
@@ -265,6 +269,24 @@ public class RetroActivityCommon extends NativeActivity
       resolveStartupPermissions();
     else
       mStartupSettingsPaused = true;
+  }
+
+  @Override
+  protected void onStart()
+  {
+    super.onStart();
+    if (secondDisplay != null)
+      secondDisplay.onStart();
+  }
+
+  @Override
+  protected void onStop()
+  {
+    /* The second display lets go of its surface while the app thread
+     * still answers */
+    if (secondDisplay != null)
+      secondDisplay.onStop();
+    super.onStop();
   }
 
   @Override
@@ -1696,6 +1718,8 @@ public class RetroActivityCommon extends NativeActivity
     boolean hasOldOrientation = false;
 
     super.onConfigurationChanged(newConfig);
+    if (secondDisplay != null)
+      secondDisplay.onConfigurationChanged();
 
     Log.i("RetroActivity", "onConfigurationChanged: orientation is now " + newConfig.orientation);
 
@@ -1898,6 +1922,20 @@ public class RetroActivityCommon extends NativeActivity
               getSystemService(Context.INPUT_METHOD_SERVICE);
         if (imm != null)
           imm.showSoftInput(keyboardEditText, InputMethodManager.SHOW_FORCED);
+      }
+    });
+  }
+
+  /**
+   * Shows the second display on display ordinal of the last published
+   * list, or hides it for 0; request numbers the request. Called from
+   * native code on any thread; posts to the UI thread and returns.
+   */
+  public void setSecondDisplay(final int ordinal, final int request) {
+    runOnUiThread(new Runnable() {
+      @Override public void run() {
+        if (secondDisplay != null)
+          secondDisplay.show(ordinal, request);
       }
     });
   }
