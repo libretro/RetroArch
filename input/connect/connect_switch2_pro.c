@@ -171,7 +171,7 @@ static void hidpad_switch2_pro_send_rumble(
    r[4] = (uint8_t)((high >> 12) | (low_freq << 4));
    r[5] = (uint8_t)((low & 0xc0) | ((low_freq >> 4) & 0x3f));
    r[6] = (uint8_t)(low >> 8);
-   memcpy(r + 0x11, r + 1, 6);
+   memmove(r + 0x11, r + 1, 6);
 
    if (device->driver && device->driver->send_control)
       device->driver->send_control(device->connection, r, sizeof(r));
