@@ -369,6 +369,9 @@ VIDEO CONTEXT
 #endif
 
 #ifdef HAVE_VULKAN
+#if defined(ANDROID) && defined(HAVE_RMP4)
+#include "../gfx/common/vulkan_android_device.c"
+#endif
 #include "../gfx/common/vulkan_common.c"
 #include "../libretro-common/vulkan/vulkan_symbol_wrapper.c"
 #ifdef HAVE_RMP4

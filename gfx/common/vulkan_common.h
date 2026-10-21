@@ -208,7 +208,9 @@ enum vulkan_context_flags
     * present from it is the surface's standing answer, not a request
     * to rebuild again. */
    VK_CTX_FLAG_SUBOPTIMAL_REBUILT           = (1 << 8),
-   VK_CTX_FLAG_VIDEO_GENERAL                = (1 << 9)
+   VK_CTX_FLAG_VIDEO_GENERAL                = (1 << 9),
+   /* Own-device AHB conversion and binary SYNC_FD prerequisites enabled. */
+   VK_CTX_FLAG_ANDROID_IMAGES               = (1 << 10)
 };
 
 enum gfx_ctx_vulkan_data_flags
@@ -268,6 +270,8 @@ typedef struct vulkan_context
 
    VkPhysicalDeviceProperties gpu_properties;
    VkPhysicalDeviceMemoryProperties memory_properties;
+   unsigned android_sampler_descriptors;
+   bool android_legacy_descriptor_budget;
 
    VkPresentModeKHR present_modes[16];
    /* Whether the surface offers FIFO_RELAXED, which is what the

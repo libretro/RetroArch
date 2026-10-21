@@ -29,6 +29,9 @@
 #ifdef HAVE_RMP4
 #include "vulkan_video_decode.h"
 #endif
+#if defined(ANDROID) && defined(HAVE_RMP4)
+#include "vulkan_android_device.h"
+#endif
 #include "vulkan_video_caps.h"
 #include "vulkan_memory_type.h"
 #include "vulkan_surface_format.h"
@@ -99,6 +102,10 @@ static bool                          cached_instance_hdr_vk;
 static bool                          cached_timeline_vk;
 /* The video decode queues a cached device was made with */
 static uint32_t                      cached_video_vk[6];
+#if defined(ANDROID) && defined(HAVE_RMP4)
+static bool cached_android_images_vk, cached_android_legacy_vk;
+static unsigned cached_android_descriptors_vk;
+#endif
 #ifdef HAVE_OPENXR
 /* Kept with a cached device: the runtime made it. */
 static vulkan_openxr_t              *cached_xr;
@@ -911,6 +918,19 @@ static const char *vulkan_optional_device_extensions[] = {
     * HDR still works via the colour space alone. */
    , "VK_EXT_hdr_metadata"
 #endif
+#if defined(ANDROID) && defined(HAVE_RMP4)
+   , "VK_ANDROID_external_memory_android_hardware_buffer"
+   , "VK_EXT_queue_family_foreign"
+   , "VK_KHR_external_semaphore_fd"
+   , "VK_KHR_external_memory"
+   , "VK_KHR_external_semaphore"
+   , "VK_KHR_sampler_ycbcr_conversion"
+   , "VK_KHR_bind_memory2"
+   , "VK_KHR_maintenance1"
+   , "VK_KHR_get_memory_requirements2"
+   , "VK_KHR_dedicated_allocation"
+   , "VK_KHR_maintenance6"
+#endif
 #if defined(_WIN32) && !defined(__WINRT__)
    , "VK_KHR_external_memory"
    , "VK_KHR_external_memory_win32"
@@ -1096,9 +1116,16 @@ static void vulkan_dxgi_pacing_deinit(gfx_ctx_vulkan_data_t *vk);
 static void vulkan_low_latency_marker(gfx_ctx_vulkan_data_t *vk,
       uint64_t frame_id, unsigned marker);
 
-static unsigned vulkan_optional_device_count(const gfx_ctx_vulkan_data_t *vk)
+static unsigned vulkan_optional_device_count(const gfx_ctx_vulkan_data_t *vk, bool own_device)
 {
    unsigned count = ARRAY_SIZE(vulkan_optional_device_extensions);
+#if defined(ANDROID) && defined(HAVE_RMP4)
+   if (!own_device)
+      while (count && vulkan_android_device_extension(vulkan_optional_device_extensions[count - 1]))
+         count--;
+#else
+   (void)own_device;
+#endif
 #if defined(_WIN32) && !defined(__WINRT__)
 #if !defined(HAVE_RAV1) || (!defined(HAVE_D3D11) && !defined(HAVE_D3D12))
    if (!vk->context.swapchain_settings.dxgi_present)
@@ -1233,7 +1260,7 @@ static VkDevice vulkan_context_create_device_wrapper(
          device_extensions, &info.enabledExtensionCount,
          vulkan_device_extensions, ARRAY_SIZE(vulkan_device_extensions),
          vulkan_optional_device_extensions,
-         vulkan_optional_device_count(vk))))
+         vulkan_optional_device_count(vk, false))))
    {
       RARCH_ERR("[Vulkan] Could not find required device extensions.\n");
       free((void*)device_extensions);
@@ -1423,6 +1450,9 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
 #endif
    video_driver_state_t *video_st          = video_state_get_ptr();
 
+#if defined(ANDROID) && defined(HAVE_RMP4)
+   vulkan_android_device_plan_t android_plan;
+#endif
    VkPhysicalDeviceFeatures features       = { false };
    VkPhysicalDeviceTimelineSemaphoreFeaturesKHR timeline;
    VkPhysicalDeviceAntiLagFeaturesAMD anti_lag_features;
@@ -1433,6 +1463,12 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
                                     *iface = (struct retro_hw_render_context_negotiation_interface_vulkan*)
                                     video_st->hw_render_context_negotiation;
 
+#if defined(ANDROID) && defined(HAVE_RMP4)
+   memset(&android_plan, 0, sizeof(android_plan));
+   vk->context.flags &= ~VK_CTX_FLAG_ANDROID_IMAGES;
+   vk->context.android_sampler_descriptors = 0;
+   vk->context.android_legacy_descriptor_budget = false;
+#endif
    queue_info.sType                        = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
    queue_info.pNext                        = NULL;
    queue_info.flags                        = 0;
@@ -1693,7 +1729,7 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
               enabled_device_extensions, &enabled_device_extension_count,
               vulkan_device_extensions, ARRAY_SIZE(vulkan_device_extensions),
               vulkan_optional_device_extensions,
-         vulkan_optional_device_count(vk))))
+         vulkan_optional_device_count(vk, true))))
       {
           RARCH_ERR("[Vulkan] Could not find required device extensions.\n");
           return false;
@@ -1772,6 +1808,26 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
          device_info.pNext  = &timeline;
          vk->context.flags |= VK_CTX_FLAG_TIMELINE_SEMAPHORE;
       }
+#if defined(ANDROID) && defined(HAVE_RMP4)
+      {
+         PFN_vkGetInstanceProcAddr proc = vulkan_symbol_wrapper_instance_proc_addr();
+         uint32_t version = VK_API_VERSION_1_0;
+         if (vkEnumerateInstanceVersion)
+            vkEnumerateInstanceVersion(&version);
+         if (version > vk->context.gpu_properties.apiVersion)
+            version = vk->context.gpu_properties.apiVersion;
+         /* This frontend instance requests 1.1, even on a newer loader. */
+         if (version > VK_API_VERSION_1_1)
+            version = VK_API_VERSION_1_1;
+         if (vulkan_android_device_plan_query(vk->context.gpu, version,
+                  enabled_device_extensions, enabled_device_extension_count,
+                  (PFN_vkGetPhysicalDeviceFeatures2)proc(vk->context.instance, "vkGetPhysicalDeviceFeatures2"),
+                  (PFN_vkGetPhysicalDeviceExternalSemaphoreProperties)proc(vk->context.instance, "vkGetPhysicalDeviceExternalSemaphoreProperties"),
+                  (PFN_vkGetPhysicalDeviceProperties2)proc(vk->context.instance, "vkGetPhysicalDeviceProperties2"),
+                  &android_plan))
+            device_info.pNext = vulkan_android_device_plan_chain(&android_plan, device_info.pNext);
+      }
+#endif
       device_info.pNext = vulkan_anti_lag_chain(vk, vk->context.gpu,
             &anti_lag_features, device_info.pNext);
 
@@ -1796,6 +1852,11 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
          vk->context.video_codec_operations = cached_video_vk[4];
          if (cached_video_vk[5]) vk->context.flags |= VK_CTX_FLAG_VIDEO_GENERAL;
          else vk->context.flags &= ~VK_CTX_FLAG_VIDEO_GENERAL;
+#if defined(ANDROID) && defined(HAVE_RMP4)
+         if (cached_android_images_vk) vk->context.flags |= VK_CTX_FLAG_ANDROID_IMAGES;
+         vk->context.android_sampler_descriptors = cached_android_descriptors_vk;
+         vk->context.android_legacy_descriptor_budget = cached_android_legacy_vk;
+#endif
          cached_gpu_vk      = VK_NULL_HANDLE;
 
          if (cached_destroy_device_vk)
@@ -1877,10 +1938,33 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
                && vulkan_context_create_device(vk, vk->context.gpu,
                   &device_info, &dev) != VK_SUCCESS)
          {
-            RARCH_ERR("[Vulkan] Failed to create device.\n");
-            return false;
+            dev = VK_NULL_HANDLE;
+#if defined(ANDROID) && defined(HAVE_RMP4)
+            /* Optional import refusal must not prevent normal Vulkan use. */
+            if (vulkan_android_device_plan_disable(&android_plan, &device_info.pNext,
+                     enabled_device_extensions, &enabled_device_extension_count))
+            {
+               device_info.enabledExtensionCount = enabled_device_extension_count;
+               if (vulkan_context_create_device(vk, vk->context.gpu,
+                        &device_info, &dev) != VK_SUCCESS)
+                  dev = VK_NULL_HANDLE;
+            }
+#endif
+            if (dev == VK_NULL_HANDLE)
+            {
+               RARCH_ERR("[Vulkan] Failed to create device.\n");
+               return false;
+            }
          }
          vk->context.device = dev;
+#if defined(ANDROID) && defined(HAVE_RMP4)
+         if (android_plan.supported)
+         {
+            vk->context.flags |= VK_CTX_FLAG_ANDROID_IMAGES;
+            vk->context.android_sampler_descriptors = android_plan.sampler_descriptors;
+            vk->context.android_legacy_descriptor_budget = android_plan.legacy_descriptor_budget;
+         }
+#endif
       }
    }
 
@@ -4810,6 +4894,11 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
       cached_video_vk[3]       = vk->context.video_lanes;
       cached_video_vk[4]       = vk->context.video_codec_operations;
       cached_video_vk[5]       = vk->context.flags & VK_CTX_FLAG_VIDEO_GENERAL;
+#if defined(ANDROID) && defined(HAVE_RMP4)
+      cached_android_images_vk = !!(vk->context.flags & VK_CTX_FLAG_ANDROID_IMAGES);
+      cached_android_descriptors_vk = vk->context.android_sampler_descriptors;
+      cached_android_legacy_vk = vk->context.android_legacy_descriptor_budget;
+#endif
 #ifdef HAVE_OPENXR
       cached_xr                = vk->context.xr;
       vk->context.xr           = NULL;

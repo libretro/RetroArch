@@ -109,7 +109,7 @@ jobs:
         run: |
           set -euo pipefail
           bin="$MEDIA_NDK/toolchains/llvm/prebuilt/linux-x86_64/bin"
-          sources=(mediacodec_inventory android_image_queue android_image_ndk android_frame mediacodec_session mediacodec_color mediacodec_frame_export mediacodec_hevc_packet mediacodec_hevc_decoder vulkan_android_image vulkan_android_sync vulkan_android_pipeline vulkan_android_submit vulkan_android_cache_entry vulkan_android_cache)
+          sources=(mediacodec_inventory android_image_queue android_image_ndk android_frame mediacodec_session mediacodec_color mediacodec_frame_export mediacodec_hevc_packet mediacodec_hevc_decoder vulkan_android_image vulkan_android_sync vulkan_android_pipeline vulkan_android_submit vulkan_android_cache_entry vulkan_android_cache vulkan_android_device)
           unity="$RUNNER_TEMP/android-media-unity.c"
           : > "$unity"
           for source in "${sources[@]}"; do
@@ -135,6 +135,12 @@ jobs:
                   -std=c89 -pedantic -Wall -Wextra -Werror -Wno-long-long -Wno-c99-extensions \
                   -DHAVE_THREADS -DHAVE_DYLIB -Wframe-larger-than=2048 -Ilibretro-common/include -Igfx/include \
                   "${extra[@]}" -c "$unity" -o "$RUNNER_TEMP/unity-$target-$api-$offset.o"
+                "$bin/$target$api-clang" \
+                  -DANDROID -DHAVE_VULKAN -DHAVE_RMP4 -DHAVE_DYLIB -DHAVE_THREADS \
+                  -Dinline=__inline__ -include android/native_window.h -O1 -std=c89 \
+                  -Werror=declaration-after-statement -Werror=frame-larger-than -Wframe-larger-than=4096 \
+                  -I. -Ilibretro-common/include -Igfx/include "${extra[@]}" \
+                  -c gfx/common/vulkan_common.c -o "$RUNNER_TEMP/context-$target-$api-$offset.o"
               done
             done
           done

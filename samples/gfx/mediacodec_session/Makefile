@@ -8,7 +8,7 @@ ifneq ($(SANITIZER),)
 CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
-all: test hevc_decoder_test vulkan_image_test vulkan_sync_test vulkan_pipeline_test android_frame_test frame_export_test vulkan_submit_test vulkan_entry_test vulkan_cache_test
+all: test hevc_decoder_test vulkan_image_test vulkan_sync_test vulkan_pipeline_test android_frame_test frame_export_test vulkan_submit_test vulkan_entry_test vulkan_cache_test vulkan_device_test
 test: test.c mediacodec_session_test_types.h ../../../gfx/common/mediacodec_session.c
 	$(CC) $(CFLAGS) test.c ../../../gfx/common/mediacodec_session.c -o $@ $(LDFLAGS)
 HEVC_SOURCES := ../../../gfx/common/mediacodec_hevc_decoder.c \
@@ -44,6 +44,8 @@ vulkan_entry_test: vulkan_entry_test.c vulkan_submit_test.c $(SUBMIT_SOURCES) ..
 	$(CC) $(CFLAGS) -DHAVE_THREADS -I../../../gfx/include vulkan_entry_test.c $(SUBMIT_SOURCES) ../../../gfx/common/vulkan_android_cache_entry.c -o $@ $(LDFLAGS) -lm
 vulkan_cache_test: vulkan_cache_test.c vulkan_entry_test.c vulkan_submit_test.c $(SUBMIT_SOURCES) ../../../gfx/common/vulkan_android_cache_entry.c ../../../gfx/common/vulkan_android_cache.c ../../../gfx/common/vulkan_android_cache.h
 	$(CC) $(CFLAGS) -DHAVE_THREADS -I../../../gfx/include vulkan_cache_test.c $(SUBMIT_SOURCES) ../../../gfx/common/vulkan_android_cache_entry.c ../../../gfx/common/vulkan_android_cache.c -o $@ $(LDFLAGS) -lm
+vulkan_device_test: vulkan_device_test.c ../../../gfx/common/vulkan_android_device.c ../../../gfx/common/vulkan_android_device.h
+	$(CC) $(CFLAGS) -I../../../gfx/include vulkan_device_test.c ../../../gfx/common/vulkan_android_device.c -o $@ $(LDFLAGS)
 check: all
 	./test
 	./hevc_decoder_test
@@ -55,6 +57,8 @@ check: all
 	./vulkan_submit_test
 	./vulkan_entry_test
 	./vulkan_cache_test
+	./vulkan_device_test
+	CC="$(CC)" python3 root_optional_test.py
 clean:
-	rm -f test hevc_decoder_test vulkan_image_test vulkan_sync_test vulkan_pipeline_test vulkan_rgb_gpu_test android_frame_test frame_export_test vulkan_submit_test vulkan_entry_test vulkan_cache_test
+	rm -f test hevc_decoder_test vulkan_image_test vulkan_sync_test vulkan_pipeline_test vulkan_rgb_gpu_test android_frame_test frame_export_test vulkan_submit_test vulkan_entry_test vulkan_cache_test vulkan_device_test
 .PHONY: all check clean gpu-check
