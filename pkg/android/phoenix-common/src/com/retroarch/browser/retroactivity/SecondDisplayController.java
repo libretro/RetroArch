@@ -17,12 +17,16 @@ package com.retroarch.browser.retroactivity;
 import android.annotation.TargetApi;
 import android.app.Presentation;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.hardware.display.DeviceProductInfo;
 import android.hardware.display.DisplayManager;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
+import android.util.SparseBooleanArray;
 import android.view.Choreographer;
 import android.view.Display;
 import android.view.MotionEvent;
@@ -54,19 +58,22 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
 
   private final RetroActivityCommon activity;
   private final DisplayManager displayManager;
-  /* The last published list; its ids by ordinal - 1 */
+  private final Handler handler = new Handler(Looper.getMainLooper());
+  /* The last published list, without the failure marking; its ids by
+   * ordinal - 1 */
   private DisplayList published = new DisplayList(0);
   /* The display native code asked for, -1 for none */
   private int wantedId = -1;
   /* The request that asked for it; its Presentations' surfaces carry it */
   private int wantedRequest;
-  /* A display show() failed on, published invalid until the list
-   * changes */
-  private int failedId = -1;
+  /* Displays show() failed on, published invalid until the list
+   * changes or onStart */
+  private final SparseBooleanArray failedIds = new SparseBooleanArray();
   private boolean started;
   private boolean publishPending;
   private Presentation presentation;
   private int presentationId = -1;
+  private Screen presentationScreen;
   /* The screen whose surface native code holds */
   private Screen surfaceOwner;
 
@@ -79,11 +86,40 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
             return;
           list = listDisplays();
           /* A Presentation coming or going may report a change that
-           * is none; the failed display must stay invalid through it */
+           * is none; failed displays must stay invalid through it */
           if (list.sameAs(published))
             return;
-          failedId = -1;
+          failedIds.clear();
           publish(list);
+        }
+      };
+
+  private final Runnable reshow = new Runnable() {
+    @Override public void run() {
+      if (started && wantedId >= 0)
+        showOn(wantedId);
+    }
+  };
+
+  /* Android cancels a Presentation itself when its display's metrics
+   * change; our dismiss() clears presentation first */
+  private final DialogInterface.OnDismissListener onDismiss =
+      new DialogInterface.OnDismissListener() {
+        @Override public void onDismiss(DialogInterface dialog) {
+          int id        = presentationId;
+          Screen screen = presentationScreen;
+          if (presentation == null || dialog != presentation)
+            return;
+          presentation       = null;
+          presentationId     = -1;
+          presentationScreen = null;
+          if (!started || wantedId != id)
+            return;
+          /* One that cancels before it draws would do so again */
+          if (screen.hadSurface)
+            handler.post(reshow);
+          else
+            showFailed(id, null);
         }
       };
 
@@ -97,6 +133,7 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
   void onStart()
   {
     started = true;
+    failedIds.clear();
     displayManager.registerDisplayListener(this, null);
     publish(listDisplays());
     if (wantedId >= 0)
@@ -211,7 +248,7 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
   {
     int[] flags = list.flags.clone();
     for (int i = 0; i < flags.length; i++)
-      if (list.ids[i] == failedId)
+      if (failedIds.get(list.ids[i]))
         flags[i] &= ~FLAG_VALID;
     published = list;
     nativeDisplaysChanged(list.connections, flags, list.widths,
@@ -247,6 +284,7 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
     view.setOnTouchListener(screen);
     view.addOnLayoutChangeListener(screen);
     p.setContentView(view);
+    p.setOnDismissListener(onDismiss);
     try
     {
       p.show();
@@ -261,22 +299,24 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
       showFailed(displayId, e);
       return;
     }
-    presentation   = p;
-    presentationId = displayId;
+    presentation       = p;
+    presentationId     = displayId;
+    presentationScreen = screen;
   }
 
   private void showFailed(int displayId, RuntimeException e)
   {
     Log.w(TAG, "[SecondDisplay] Cannot show on display " + displayId, e);
-    failedId = displayId;
+    failedIds.put(displayId, true);
     publish(listDisplays());
   }
 
   private void dismiss()
   {
-    Presentation p = presentation;
-    presentation   = null;
-    presentationId = -1;
+    Presentation p     = presentation;
+    presentation       = null;
+    presentationId     = -1;
+    presentationScreen = null;
     if (p == null)
       return;
     /* The display may already be gone */
@@ -328,6 +368,8 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
     private final int request;
     /* nativeSurfaceChanged()'s, 0 while there is none */
     private int generation;
+    /* Native code has taken a surface of it */
+    private boolean hadSurface;
 
     Screen(int request)
     {
@@ -345,7 +387,10 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
           request);
       generation = g;
       if (g > 0)
+      {
         surfaceOwner = this;
+        hadSurface   = true;
+      }
     }
 
     @Override public void surfaceDestroyed(SurfaceHolder holder)
