@@ -571,7 +571,10 @@ the next content does not start with a button held for this one. Both answer wit
 player, the buttons held and the axes held, tab separated, and `none`
 for either where nothing is held. `INPUT release` with no player lets
 go for every player and answers for the first of them. Achievements
-hardcore mode refuses `INPUT set`. `INPUT show [player]` answers in the same
+hardcore mode refuses `INPUT set`. The core is given exactly what is
+held: opposing directions are not cleaned and the D-Pad is not turned
+with the picture, and under netplay the player is this machine's, so a
+hold is sent like a press. `INPUT show [player]` answers in the same
 shape **without changing anything**, which neither of the others can
 do: one has to set something to answer and the other lets go before it
 does.

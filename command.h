@@ -1260,7 +1260,7 @@ static const struct cmd_action_map action_map[] = {
 
    { "LOAD_CORE", command_load_core, "<core path>", "Load the core library at the given path.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, cmd_params_core },
    { "START_CORE", command_start_core, "No argument", "Start the loaded core without content.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, NULL },
-   { "INPUT", command_input, "<set|release|show> [player] [control] [value]", "Hold RetroPad buttons or stick axes over a player's own input until set again or released, or show what is held. Answers player, buttons and axes, tab separated, none where nothing is held.", 0, cmd_params_input_family, &cmd_rows_input },
+   { "INPUT", command_input, "<set|release|show> [player] [control] [value]", "Hold RetroPad buttons or stick axes over a player's own input until set again or released, or show what is held. The core gets exactly what is held: opposites are not cleaned nor the D-Pad turned; under netplay the player is this machine's. Answers player, buttons and axes, tab separated, none where nothing is held.", 0, cmd_params_input_family, &cmd_rows_input },
    { "OPTION", command_option, "<show|set> [option] [on|off]", "Show RetroArch's options - pause, fast-forward, the frame count, the slots and more - or turn one on or off.", 0, cmd_params_option_family, &cmd_rows_option },
    { "CORE_OPTION", command_core_option, "<show|set> [key] [value]", "Show the running core's options - key, value and description - or set one to one of its values.", 0, cmd_params_core_option_family, &cmd_rows_core_option },
    { "CORE", command_core, "<load|start|unload> [core path]", "Load a core library, start it without content, or unload it.", CMD_INFO_DESTRUCTIVE, cmd_params_core_family },
