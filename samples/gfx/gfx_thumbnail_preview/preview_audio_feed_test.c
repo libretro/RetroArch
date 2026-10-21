@@ -7,6 +7,7 @@
 #include <formats/rwebm.h>
 #include <formats/audio.h>
 #include <formats/data_transfer.h>
+#include <memmap.h>
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
 #include <retro_atomic.h>
@@ -347,9 +348,15 @@ static int prepared_session(const char *path, bool s16, bool webm)
    expected = (float*)calloc(64 * channels, sizeof(float));
    actual = calloc(64 * 2, sizeof(float));
    if (!expected || !actual) goto done;
-   if (!audio_transfer_seek(reference, type, (uint64_t)rate * 5 / 4)
-         || audio_transfer_read_f32(reference, type, expected, 64, &got) < 0
-         || got != 64) goto done;
+   if (!audio_transfer_seek(reference, type, (uint64_t)rate * 5 / 4)) goto done;
+   for (steps = 0; steps < 10000; steps++)
+   {
+      result = audio_transfer_read_f32(reference, type, expected, 64, &got);
+      if (result < 0 || (result == AUDIO_PROCESS_END && !got)) goto done;
+      if (got) break;
+   }
+   if (got != 64) goto done;
+   result = 0;
    demux = webm ? (void*)rwebm_open_memory(data, size) : (void*)rmp4_open_memory(data, size);
    if (!demux) goto done;
    p = gfx_anim_preview_wrap(demux, container, NULL, data, size, false, path);
@@ -421,7 +428,7 @@ static int bounded_aac_seek(const char *path)
    float *reference = NULL, *actual = NULL, *old = NULL;
    uint64_t total = 0, target;
    unsigned channels = 0, rate, pass, steps, i;
-   size_t size, got, decoded = 0, frontier;
+   size_t size, got, decoded = 0;
    long length;
    int failed = 1, result;
    double peak = 0.0, old_peak = 0.0, equivalent = 0.0;
@@ -429,8 +436,9 @@ static int bounded_aac_seek(const char *path)
    if (fseek(file, 0, SEEK_END) || (length = ftell(file)) <= 0
          || fseek(file, 0, SEEK_SET)) goto done;
    size = (size_t)length;
-   data = (uint8_t*)malloc(size);
-   if (!data || fread(data, 1, size, file) != size) goto done;
+   data = (uint8_t*)memreserve(size);
+   if (!data || !memcommit(data, size)
+         || fread(data, 1, size, file) != size) goto done;
    linear = audio_transfer_new(AUDIO_TYPE_AAC);
    seek = audio_transfer_new(AUDIO_TYPE_AAC);
    legacy = audio_transfer_new(AUDIO_TYPE_AAC);
@@ -461,13 +469,13 @@ static int bounded_aac_seek(const char *path)
       target = pass == 0 ? total / 2 + 13 : pass == 1 ? total - 100
          : pass == 2 ? 113 : total / 3;
       audio_transfer_set_avail(seek, AUDIO_TYPE_AAC, size);
+      if (!memrearm(data, size)) goto done;
       if (!audio_transfer_seek_begin(seek, AUDIO_TYPE_AAC, target)) goto done;
-      frontier = audio_transfer_buffer_tell(seek, AUDIO_TYPE_AAC);
-      /* Begin selected the target preroll without reading its bytes.
-       * A zero-residency retry must preserve that exact frontier. */
+      /* Metadata slices may select a new byte frontier. Every encoded
+       * source page is inaccessible: begin/retries must use copied
+       * sample tables and refuse decoder reads until explicitly fed. */
       for (i = 0; i < 10; i++)
-         if (audio_transfer_seek_step(seek, AUDIO_TYPE_AAC) != 0
-               || audio_transfer_buffer_tell(seek, AUDIO_TYPE_AAC) != frontier)
+         if (audio_transfer_seek_step(seek, AUDIO_TYPE_AAC) != 0)
             goto done;
       if (audio_transfer_seek_begin(seek, AUDIO_TYPE_AAC, (uint64_t)-1)) goto done;
       if (pass == 3)
@@ -475,10 +483,16 @@ static int bounded_aac_seek(const char *path)
          target = 113;
          if (!audio_transfer_seek_begin(seek, AUDIO_TYPE_AAC, target)) goto done;
       }
+      if (mprotect(data, size, PROT_READ | PROT_WRITE) != 0) goto done;
       audio_transfer_set_avail(seek, AUDIO_TYPE_AAC, size);
       result = 0;
       for (steps = 0; steps < 8 && result == 0; steps++)
+      {
+         /* A replacement request may still be mapping its sample
+          * table; re-admit the selected frontier after every step. */
+         audio_transfer_set_avail(seek, AUDIO_TYPE_AAC, size);
          result = audio_transfer_seek_step(seek, AUDIO_TYPE_AAC);
+      }
       if (result != 1) goto done;
       got = 0;
       if (audio_transfer_read_f32(seek, AUDIO_TYPE_AAC, actual, 64, &got) < 0
@@ -507,7 +521,8 @@ static int bounded_aac_seek(const char *path)
    if (legacy) audio_transfer_free(legacy, AUDIO_TYPE_AAC);
    if (linear) audio_transfer_free(linear, AUDIO_TYPE_AAC);
    if (seek) audio_transfer_free(seek, AUDIO_TYPE_AAC);
-   free(data); free(reference); free(actual); free(old);
+   if (data) memrelease(data, size);
+   free(reference); free(actual); free(old);
    fclose(file);
    printf("bounded AAC seek: peak=%.9f legacy=%.9f difference=%.9f %s\n", peak, old_peak, equivalent, failed ? "FAIL" : "PASS");
    return failed;
@@ -621,9 +636,9 @@ static int resident_webm_pcm(const uint8_t *data, size_t size,
    copy = NULL;
    if (!audio_mixer_sound_set_prepared_transfer(resident, transfer, rate, s16)) goto finish;
    transfer = NULL;
-   playing = s16 ? audio_mixer_play_s16(resident, false, AUDIO_MIXER_GAIN_UNITY,
+   playing = s16 ? audio_mixer_play_s16(resident, getenv("AUDIO_MOVIE_LOOPS") != NULL, AUDIO_MIXER_GAIN_UNITY,
          "sinc", RESAMPLER_QUALITY_DONTCARE, NULL)
-      : audio_mixer_play(resident, false, 1.0f, "sinc", RESAMPLER_QUALITY_DONTCARE, NULL);
+      : audio_mixer_play(resident, getenv("AUDIO_MOVIE_LOOPS") != NULL, 1.0f, "sinc", RESAMPLER_QUALITY_DONTCARE, NULL);
    if (!playing) goto finish;
    for (steps = 0; steps < 8000 && done < target; steps++)
    {
@@ -700,6 +715,7 @@ static int continuous_webm(const char *path, bool s16)
    gfx_anim_preview_t *p = NULL;
    gfx_anim_preview_audio_prepared_t *a = NULL;
    enum audio_type_enum type;
+   uint64_t total = 0;
    unsigned rate, channels, i, ticks = 0, steps;
    size_t size, target = 0, done = 0, serial, mixed, before;
    size_t first_bad = (size_t)-1, peak_at = 0;
@@ -720,10 +736,15 @@ static int continuous_webm(const char *path, bool s16)
    if (!transfer) goto finish;
    audio_transfer_set_buffer_ptr(transfer, type, data, size);
    if (!audio_transfer_start(transfer, type)
-         || !audio_transfer_info(transfer, type, &channels, &rate, NULL)
+         || !audio_transfer_info(transfer, type, &channels, &rate, &total)
          || !channels || channels > 2) goto finish;
    if (!audio_transfer_seek(transfer, type, 0)) goto finish;
    target = (size_t)rate * 2;
+   if (getenv("AUDIO_MOVIE_LOOPS"))
+   {
+      if (!total || total > (uint64_t)rate * 5) goto finish;
+      target = (size_t)total * 2;
+   }
    reference = (float*)calloc(target * 2, sizeof(float));
    out = calloc(64 * 2, sizeof(float));
    if (!reference || !out) goto finish;

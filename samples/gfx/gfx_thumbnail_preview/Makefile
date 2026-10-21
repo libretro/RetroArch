@@ -223,6 +223,7 @@ endif
 THREADED_TARGET := gfx_thumbnail_preview_test_threaded
 AUDIO_ORACLE_TARGET := preview_audio_oracle_test
 AUDIO_FEED_TARGET := preview_audio_feed_test
+AUDIO_TIMELINE_TARGET := preview_audio_timeline_test
 AUDIO_FEED_THREADED_TARGET := preview_audio_feed_test_threaded
 CATCHUP_THREADED_TARGET := $(CATCHUP_TARGET)_threaded
 THREADED_DEFS   := -DHAVE_THREADS -DPREVIEW_THREADED
@@ -234,7 +235,7 @@ THREADED_OBJS   := $(call sample_objs,$(SOURCES:.c=.t.o) $(THREADED_EXTRA:.c=.t.
 AV1_HW_TARGET := preview_av1_hw_test
 
 all: $(AV1_HW_TARGET) $(TARGET) $(DECODE_TARGET) $(DECODE_TARGET_NORWEBM) $(PLATFORM_TARGETS) $(BLIT_BANDS_TARGET) $(CATCHUP_TARGET) $(CATCHUP_THREADED_TARGET) $(AUDIO_ORACLE_TARGET) $(AUDIO_FEED_TARGET) $(THREADED_TARGET)
-all: $(AUDIO_FEED_THREADED_TARGET)
+all: $(AUDIO_FEED_THREADED_TARGET) $(AUDIO_TIMELINE_TARGET)
 
 AV1_HW_SOURCES := preview_av1_hw_test.c $(filter-out preview_anim_window_test.c,$(ANIM_WINDOW_SOURCES)) \
       $(LIBRETRO_COMM_DIR)/formats/av1/rav1_hw.c \
@@ -278,6 +279,39 @@ AUDIO_FEED_SOURCES := preview_audio_feed_test.c $(ANIM_PREVIEW_SRC) \
                      $(LIBRETRO_COMM_DIR)/formats/vorbis/rvorbis.c \
                      $(filter-out preview_audio_oracle_test.c,$(AUDIO_ORACLE_SOURCES)) \
                      $(LIBRETRO_COMM_DIR)/compat/compat_strldup.c
+
+AUDIO_TIMELINE_SOURCES := preview_audio_timeline_test.c \
+                     $(filter-out preview_audio_feed_test.c $(ANIM_PREVIEW_SRC),$(AUDIO_FEED_SOURCES))
+$(AUDIO_TIMELINE_TARGET): $(AUDIO_TIMELINE_SOURCES)
+	$(CC) -o $@ $^ $(DECODE_CFLAGS_COMMON) -DHAVE_RWEBM -DHAVE_ROPUS -DHAVE_RVORBIS \
+	      -I$(REPO_ROOT) -I$(REPO_ROOT)/deps $(LDFLAGS)
+
+# Independent container movie positions, silence and complete loop period.
+audio-timeline-check: $(AUDIO_TIMELINE_TARGET)
+	python3 ../../cores/webm_player/audio_timeline_fixtures.py fixtures/audio-movie-timeline
+	@set -e; for fixture in timeline-control.mp4 timeline-0.mp4 timeline-1.mp4 \
+	   timeline-0.webm timeline-1.webm timeline-gap-libopus.webm \
+	   timeline-gap-libvorbis.webm timeline-overlap.webm \
+	   timeline-late-libopus.webm timeline-late-libvorbis.webm timeline-delayed-vorbis.webm \
+	   timeline-aac-0.mkv timeline-aac-1.mkv; do \
+	   file=fixtures/audio-movie-timeline/$$fixture; \
+	   echo "$$fixture"; \
+	   ./$(AUDIO_TIMELINE_TARGET) "$$file" "$$(cat "$$file.onset")" \
+	      "$$file.activity" "$$(cat "$$file.period")"; \
+	done
+	python3 audio_movie_edge_fixtures.py fixtures/audio-movie-timeline
+	@set -e; base=fixtures/audio-movie-timeline; for codec in opus vorbis aac; do \
+	   case "$$codec" in opus) source=timeline-0.webm;; \
+	      vorbis) source=timeline-delayed-vorbis.webm;; aac) source=timeline-aac-1.mkv;; esac; \
+	   period=$$(cat "$$base/$$source.period"); \
+	   for flags in 1-0 0-1 1-1; do \
+	      unknown=$${flags%-*}; empty=$${flags#*-}; \
+	      file=$$base/edges/$$codec-unknown$$unknown-empty$$empty.mkv; \
+	      declared=0; expected=$$(cat "$${file%.mkv}.frames"); \
+	      if test "$$unknown" = 0; then declared=$$period; expected=$$period; fi; \
+	      ./$(AUDIO_TIMELINE_TARGET) --edge "$$file" "$$declared" "$$empty" "$$expected"; \
+	   done; \
+	done
 $(AUDIO_FEED_TARGET): $(AUDIO_FEED_SOURCES)
 	$(CC) -o $@ $(AUDIO_FEED_SOURCES) $(DECODE_CFLAGS_COMMON) -DHAVE_RWEBM -DHAVE_ROPUS -DHAVE_RVORBIS \
 	      -I$(REPO_ROOT) -I$(REPO_ROOT)/deps $(LDFLAGS)
@@ -432,6 +466,7 @@ endif
 # a different SANITIZER=, and a clean that took the fixtures with it
 # left the following run globbing nothing.  Use distclean to drop them.
 clean:
+	rm -f $(AUDIO_TIMELINE_TARGET) $(AUDIO_TIMELINE_TARGET).exe
 	rm -f $(AUDIO_FEED_THREADED_TARGET) $(AUDIO_FEED_THREADED_TARGET).exe
 	rm -f $(AV1_HW_TARGET) $(AV1_HW_TARGET).exe av1-preview-fixture.mp4 av1-preview-fixture.webm
 	rm -rf $(SAMPLE_OBJDIR)
@@ -446,4 +481,4 @@ clean:
 distclean: clean
 	rm -rf fixtures
 
-.PHONY: bench all check fixtures clean distclean
+.PHONY: bench all check audio-timeline-check fixtures clean distclean

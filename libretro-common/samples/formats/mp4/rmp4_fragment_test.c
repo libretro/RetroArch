@@ -266,6 +266,8 @@ static void test_valid(void)
    CHECK(m != NULL, "valid: opens");
    if (!m)
       return;
+   CHECK(rmp4_get_track(m, 0)->presentation_duration_ns == -1,
+         "valid: absent edit duration remains unknown");
    n = read_all(m, &w, "valid", &first);
    CHECK(n == 2, "valid: %d packets, not 2", n);
    CHECK(first == w.b + mdat_payload, "valid: the first packet is the mdat's");
@@ -348,15 +350,18 @@ static void test_edit_lists(void)
    static buf_t w, edit;
    unsigned version, mutation;
    for (version = 0; version <= 1; version++)
-      for (mutation = 0; mutation < 12; mutation++)
+      for (mutation = 0; mutation < 15; mutation++)
       {
          rmp4_box moov, trak, mvhd;
          size_t moov_at, trak_at, insert, outer, inner;
          uint32_t count = mutation == 1 ? 1 : mutation == 6 ? 3 : 2;
          uint64_t delay = mutation == 9 ? ((~(uint64_t)0) >> 1) : 1500;
          uint64_t media = mutation == 5 ? (uint64_t)-2 : 128;
+         uint64_t play = mutation == 12 ? ((~(uint64_t)0) >> 1)
+            : mutation == 13 ? 0 : mutation == 14 ? ~(uint64_t)0 : 1000;
          int valid = mutation == 0 || mutation == 1 || mutation == 7
-            || (mutation == 9 && !version);
+            || mutation == 13 || ((mutation == 9 || mutation == 12
+                     || mutation == 14) && !version);
          int parsed;
          rmp4_t *m;
          memset(&w, 0, sizeof(w)); head(&w, 4, 40);
@@ -372,7 +377,7 @@ static void test_edit_lists(void)
             edit_entry(&edit, version, delay, mutation == 10 ? 0 : (uint64_t)-1,
                   mutation == 11 ? 0x00018000u : 0x00010000u);
          if (count > 2) edit_entry(&edit, version, 500, 0, 0x00010000u);
-         edit_entry(&edit, version, 1000, media, mutation == 3 ? 0 : 0x00010000u);
+         edit_entry(&edit, version, play, media, mutation == 3 ? 0 : 0x00010000u);
          box_end(&edit, inner); box_end(&edit, outer);
          if (mutation == 4) edit.n--;
          memmove(w.b + insert + edit.n, w.b + insert, w.n - insert);
@@ -403,7 +408,7 @@ static void test_edit_lists(void)
          CHECK(m != NULL, "edit allocation");
          if (!m) continue;
          parsed = rmp4_parse_moov(m, w.b + moov_at + 8, w.n - moov_at - 8);
-         if (mutation == 8 || (mutation == 9 && version))
+         if (mutation == 8 || ((mutation == 9 || mutation == 12) && version))
             CHECK(!parsed, "edit v%u mutation%u must reject unrepresentable delay", version, mutation);
          else
          {
@@ -414,6 +419,10 @@ static void test_edit_lists(void)
                      ? (int64_t)4294967295u * 1000000
                      : valid && mutation != 1 ? 1500000000 : 0),
                   "edit v%u mutation%u delay", version, mutation);
+            CHECK(m->trk[0].pub.presentation_duration_ns == (!valid ? -1
+                     : mutation == 13 ? 0 : mutation == 12 || mutation == 14
+                     ? (int64_t)4294967295u * 1000000 : 1000000000),
+                  "edit v%u mutation%u play length", version, mutation);
          }
          rmp4_close(m);
       }

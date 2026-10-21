@@ -268,12 +268,11 @@ size_t audio_transfer_buffer_tell(void *data, enum audio_type_enum type);
  * byte-release frontier. */
 size_t audio_transfer_buffer_read_end(void *data, enum audio_type_enum type);
 
-/* Seek to an absolute interleaved PCM frame (used to loop). true on
- * success.  Every arm seeks except a packet-fed Vorbis stream (demuxed
- * input, or a WebM buffer), which takes frame 0 only - the rewind a
- * loop needs.  There is no Ogg for it to seek in and, unlike Opus, a
- * Vorbis packet does not carry its own duration, so the packets before
- * a target cannot be stepped over without being decoded.
+/* Seek to an absolute PCM frame (used to loop). Internally demuxed
+ * container audio uses movie coordinates, including gaps and tail;
+ * caller-demuxed input keeps source-sample coordinates. true accepts
+ * the request. Packet duration queries locate Vorbis and Opus preroll;
+ * MP4 AAC uses its sample tables. Unsupported input modes may refuse.
  *
  * Seeking is not always cheap, and what it costs is spent on the
  * calling thread: MOD walks the sequence to get where it is going,
@@ -281,16 +280,20 @@ size_t audio_transfer_buffer_read_end(void *data, enum audio_type_enum type);
  * decoding them and then decode a short pre-roll before it.  That
  * pre-roll is why a seek in a lossy codec does not resume bit-exactly -
  * the decoder converges rather than arriving in the state a playthrough
- * would have left it in.  An Opus seek happens at the following read
- * rather than in the call itself, since decoding the pre-roll is what
- * settles the output format. */
+ * would have left it in. An Opus seek starts at the following read
+ * because preroll settles the output format. Container preparation may
+ * return NEXT with zero output while metadata/preroll work remains;
+ * retry normally, feeding the requested byte frontier when starved. */
 bool  audio_transfer_seek(void *data, enum audio_type_enum type,
       uint64_t frame);
 
-/* Exclusive-owner bounded seek preparation, MP4 AAC and WebM Opus/Vorbis. Begin
- * selects an indexed AAC preroll packet without reading media bytes;
- * WebM audio rewinds, then steps its header walk and preroll separately. Step
- * decodes at most one access unit or examines <=256 other-track headers: -1 failure, 0 retry (including input
+/* Exclusive-owner bounded seek preparation, MP4 AAC and Matroska/WebM
+ * AAC, Opus and Vorbis.
+ * Targets use container movie frames, including gaps and the declared tail.
+ * AAC maps <=256 sample-table timestamps per metadata slice, then selects
+ * indexed preroll without reading media bytes. WebM steps header mapping
+ * and decoder preroll separately. Step decodes at most one access unit or
+ * examines <=256 packet/sample headers: -1 failure, 0 retry (including input
  * starvation), 1 positioned for the next read. Feed buffer_tell before
  * retrying a resident wall. A new successful begin replaces the request.
  * Do not interleave reads or legacy seek with an unfinished request.

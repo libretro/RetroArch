@@ -2313,6 +2313,8 @@ jobs:
           echo "[pass] preview_audio_oracle_test (ASan)"
           ./preview_audio_feed_test fixtures/audio_large_packet.m4a
           ./preview_audio_feed_test --prepared-only fixtures/audio_seek_gap.m4a
+          make audio-timeline-check SANITIZER=address,undefined
+          ./preview_audio_feed_test --prepared-webm fixtures/audio-movie-timeline/timeline-aac-0.mkv fixtures/audio-movie-timeline/timeline-aac-1.mkv
           ./preview_audio_feed_test --prepared-webm fixtures/audio_seek_opus.weba fixtures/audio_seek_vorbis.weba fixtures/audio_seek_opus_window.webm fixtures/audio_seek_vorbis_window.webm
           CPU_GAP=1 ./gfx_thumbnail_preview_test fixtures/video_gap_head.webm
           CPU_GAP=1 ./gfx_thumbnail_preview_test_threaded fixtures/video_gap_head.webm
@@ -2324,6 +2326,8 @@ jobs:
           GROUP_SEEK=1 ./gfx_thumbnail_preview_test_threaded fixtures/video_group.webm
           ./preview_audio_feed_test --continuous-webm fixtures/audio_group_opus.webm
           ./preview_audio_feed_test --continuous-webm fixtures/audio_group_vorbis.webm
+          AUDIO_MOVIE_LOOPS=1 ./preview_audio_feed_test --continuous-webm fixtures/audio_group_aac.mkv
+          ./preview_audio_feed_test --prepared-webm fixtures/audio_group_aac.mkv
           ./preview_audio_feed_test --prepared-webm fixtures/audio_group_opus.webm fixtures/audio_group_vorbis.webm
           AUDIO_FEED_RACE=1 ./preview_audio_feed_test_threaded --continuous-webm fixtures/audio_group_opus.webm
           AUDIO_FEED_RACE=1 ./preview_audio_feed_test_threaded --continuous-webm fixtures/audio_group_vorbis.webm
@@ -2351,6 +2355,12 @@ jobs:
           for fixture in video-timeline-1.mp4 video-timeline-libopus.webm video-timeline-libvorbis.webm; do
             FRONTEND_TIMELINE=1 TSAN_OPTIONS=halt_on_error=1 timeout 120 ./gfx_thumbnail_preview_test_threaded fixtures/movie-timeline/"$fixture"
           done
+          for codec in opus vorbis; do
+            AUDIO_MOVIE_LOOPS=1 AUDIO_FEED_RACE=1 TSAN_OPTIONS=halt_on_error=1 timeout 120 \
+              ./preview_audio_feed_test_threaded --continuous-webm fixtures/audio_group_"$codec".webm
+          done
+          AUDIO_MOVIE_LOOPS=1 AUDIO_FEED_RACE=1 TSAN_OPTIONS=halt_on_error=1 timeout 120 \
+            ./preview_audio_feed_test_threaded --continuous-webm fixtures/audio_group_aac.mkv
           # The pool and the tile-column threads under TSan: the
           # shared frame buffers and contexts are written in disjoint
           # columns, the counts merged after the join.

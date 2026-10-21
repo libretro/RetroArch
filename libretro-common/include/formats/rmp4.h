@@ -92,6 +92,9 @@ typedef struct
    char                   codec_id[24];
    /* Leading empty edit in movie time, converted to nanoseconds. */
    int64_t                presentation_delay_ns;
+   /* Duration of the supported nonempty unity-rate edit, excluding the
+    * leading delay. -1 when no such edit declares a play length. */
+   int64_t                presentation_duration_ns;
 } rmp4_track;
 
 typedef struct

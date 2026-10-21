@@ -126,6 +126,8 @@ typedef struct
    rmp4_track  pub;
    uint32_t    timescale;      /* mdhd media timescale               */
    uint64_t    empty_edit_ticks; /* leading empty edit, movie scale  */
+   uint64_t    play_edit_ticks;
+   int         play_edit_known;
    /* Per-sample tables (parallel arrays, 'count' entries). */
    uint64_t   *off;
    uint32_t   *size;
@@ -766,6 +768,7 @@ static void rmp4_parse_trak(rmp4_t *m, const uint8_t *body, uint64_t size)
 
    t = &m->trk[m->num_tracks];
    memset(t, 0, sizeof(*t));
+   t->pub.presentation_duration_ns = -1;
    t->pub.number = m->num_tracks + 1;
 
    /* The common edit is a unity-rate priming trim, optionally after
@@ -787,6 +790,7 @@ static void rmp4_parse_trak(rmp4_t *m, const uint8_t *body, uint64_t size)
             const uint8_t *last = first + (count - 1) * entry;
             uint64_t media = version ? rmp4_be64(last + 8) : rmp4_be32(last + 4);
             uint64_t empty = 0;
+            uint64_t play = version ? rmp4_be64(last) : rmp4_be32(last);
             int valid = rmp4_be32(last + entry - 4) == 0x00010000u;
             if (count == 2)
             {
@@ -796,12 +800,14 @@ static void rmp4_parse_trak(rmp4_t *m, const uint8_t *body, uint64_t size)
                      || rmp4_be32(first + entry - 4) != 0x00010000u)
                   valid = 0;
             }
-            if ((version && (media >> 63 || empty >> 63))
+            if ((version && (media >> 63 || empty >> 63 || play >> 63))
                   || (!version && media > 0x7fffffffu)) valid = 0;
             if (valid)
             {
                t->pub.media_skip = media;
                t->empty_edit_ticks = empty;
+               t->play_edit_ticks = play;
+               t->play_edit_known = 1;
             }
          }
       }
@@ -928,16 +934,24 @@ static int rmp4_parse_moov(rmp4_t *m, const uint8_t *body, uint64_t size)
       int i;
       for (i = 0; i < m->num_tracks; i++)
       {
-         uint64_t ticks = m->trk[i].empty_edit_ticks;
-         uint64_t seconds, fraction, limit = (~(uint64_t)0) >> 1;
-         if (!ticks) continue;
-         if (!m->movie_timescale) return 0;
-         seconds = ticks / m->movie_timescale;
-         fraction = (ticks % m->movie_timescale) * 1000000000u / m->movie_timescale;
-         if (seconds > limit / 1000000000u) return 0;
-         seconds *= 1000000000u;
-         if (seconds > limit - fraction) return 0;
-         m->trk[i].pub.presentation_delay_ns = (int64_t)(seconds + fraction);
+         unsigned part;
+         for (part = 0; part < 2; part++)
+         {
+            uint64_t ticks = part ? m->trk[i].play_edit_ticks
+               : m->trk[i].empty_edit_ticks;
+            uint64_t seconds, fraction, limit = (~(uint64_t)0) >> 1;
+            if (part ? !m->trk[i].play_edit_known : !ticks) continue;
+            if (!m->movie_timescale) return 0;
+            seconds = ticks / m->movie_timescale;
+            fraction = (ticks % m->movie_timescale) * 1000000000u / m->movie_timescale;
+            if (seconds > limit / 1000000000u) return 0;
+            seconds *= 1000000000u;
+            if (seconds > limit - fraction) return 0;
+            if (part)
+               m->trk[i].pub.presentation_duration_ns = (int64_t)(seconds + fraction);
+            else
+               m->trk[i].pub.presentation_delay_ns = (int64_t)(seconds + fraction);
+         }
       }
    }
    /* mvex marks a fragmented movie; its trex boxes carry per-track

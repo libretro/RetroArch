@@ -5,6 +5,9 @@ import array
 import json
 import subprocess
 import sys
+from fractions import Fraction
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "gfx/gfx_thumbnail_preview"))
+from audio_movie_reference import aac_matroska_pcm
 
 out = Path(sys.argv[1] if len(sys.argv) > 1 else "fixtures")
 out.mkdir(parents=True, exist_ok=True)
@@ -63,6 +66,8 @@ def make(name, *, delay=0, duration=4, audio_duration=2, codec="libopus", filter
     pcm = subprocess.check_output(["ffmpeg", "-v", "error", "-copyts", "-i", str(out / name),
           "-map", "0:a:0", "-af", "aresample=async=1:first_pts=0", "-ar", "48000",
           "-ac", "2", "-f", "s16le", "pipe:1"])
+    if codec == "aac" and not mp4:
+        pcm = aac_matroska_pcm(out / name)
     if trim:
         # MOV demuxing rounds Vorbis edits to whole packets. Build the
         # sample-accurate oracle from edit-free decoded frames and their
@@ -84,7 +89,21 @@ def make(name, *, delay=0, duration=4, audio_duration=2, codec="libopus", filter
     first = next(i // 2 for i in range(0, len(samples), 2)
                  if abs(samples[i]) > 64 or abs(samples[i + 1]) > 64)
     (out / (name + ".onset")).write_text(str(first) + "\n", encoding="utf-8")
+    # The movie period includes the video-only tail. Keep this independent
+    # of the frontend's decoder duration and loop bookkeeping. Activity is
+    # deliberately coarse: it tests placement, not codec waveform equality.
+    probe = json.loads(subprocess.check_output(["ffprobe", "-v", "error",
+          "-show_entries", "format=duration", "-of", "json", str(out / name)]))
+    period = round(Fraction(probe["format"]["duration"]) * 48000)
+    activity = bytearray()
+    for start in range(0, period, 960):
+        peak = max((abs(x) for x in samples[start*2:min(start+960,period)*2]), default=0)
+        activity.append(2 if peak > 512 else 0 if peak <= 64 else 1)
+    (out / (name + ".activity")).write_bytes(activity)
+    (out / (name + ".period")).write_text(str(period) + "\n", encoding="utf-8")
 
+make("timeline-control.mp4", codec="aac", mp4=True, audio_duration=4,
+     filter=r"volume=enable='between(t,1,2)':volume=0")
 for delay in (0, 1, 2):
     make(f"timeline-{delay}.webm", delay=delay)
 for codec in ("libopus", "libvorbis"):
@@ -99,3 +118,10 @@ make("timeline-vorbis-trim.mp4", codec="libvorbis", mp4=True, trim=4801)
 make("timeline-opus-trim.mp4", codec="libopus", mp4=True, trim=4801)
 make("timeline-opus.mp4", codec="libopus", mp4=True)
 make("timeline-vorbis.mp4", codec="libvorbis", mp4=True)
+for codec in ("libopus", "libvorbis"):
+    # More than 256 video packets precede the first audio packet. The
+    # movie reader must yield without reporting EOF or rewinding a voice.
+    make(f"timeline-late-{codec}.webm", delay=30, duration=35, codec=codec)
+make("timeline-delayed-vorbis.webm", delay=1, codec="libvorbis")
+for delay in (0, 1):
+    make(f"timeline-aac-{delay}.mkv", delay=delay, codec="aac")

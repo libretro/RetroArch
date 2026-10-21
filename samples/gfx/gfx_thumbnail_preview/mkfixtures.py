@@ -326,11 +326,30 @@ def apng_dispose_previous(dst):
     open(dst, 'wb').write(out)
 
 
+def make_aac_group(out):
+    """Small AAC case can be refreshed without the large image fixtures."""
+    os.makedirs(out, exist_ok=True)
+    j = lambda n: os.path.join(out, n)
+    # Add the small new container case independently of the cached large
+    # fixture set. AAC in Matroska has CodecDelay but no Opus pre-skip.
+    if not os.path.exists(j('audio_group_aac.mkv')):
+        seed = j('audio_group_aac_seed.mkv')
+        subprocess.check_call([
+            'ffmpeg', '-v', 'error', '-y', '-f', 'lavfi', '-i',
+            'testsrc2=size=64x48:rate=12:duration=4', '-f', 'lavfi', '-i',
+            'sine=frequency=440:sample_rate=48000:duration=4',
+            '-ac', '2', '-c:v', 'libvpx-vp9', '-g', '12', '-auto-alt-ref', '0',
+            '-c:a', 'aac', seed])
+        insert_void(seed, j('audio_group_aac.mkv'), after_picture=13, in_group=True)
+        os.unlink(seed)
+
+
 def main():
     out = sys.argv[1] if len(sys.argv) > 1 else '.'
     os.makedirs(out, exist_ok=True)
     j = lambda n: os.path.join(out, n)
     BIG = 7817178301          # the size that started all of this
+    make_aac_group(out)
 
     # The workflow rebuilds the fixtures before each sanitizer pass so
     # a clean cannot leave the run globbing nothing; the outputs are
@@ -341,7 +360,7 @@ def main():
             'anim_dispose_prev.png', 'trailing_large.mp4',
               'trailing_huge.mp4', 'leading_huge.mp4', 'trailing_small.mp4',
               'audio_large_packet.m4a', 'audio_seek_gap.m4a',
-              'audio_group_opus.webm', 'audio_group_vorbis.webm',
+              'audio_group_opus.webm', 'audio_group_vorbis.webm', 'audio_group_aac.mkv',
               'video_gap_head.webm', 'video_gap_pin.webm', 'video_group.webm',
             'vp9_tiles.webm', 'hevc_wpp.mp4', 'bframes_h264.mp4',
             'bframes_hevc.mp4', 'hevc_nowpp.mp4', 'mbaff_h264.mp4')):

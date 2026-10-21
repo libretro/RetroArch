@@ -2939,9 +2939,10 @@ bool MEDIA_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
                | ((int64_t)at0->codec_private[11] << 8);
 #ifdef HAVE_RAAC
          if (p->atype == AUDIO_TYPE_AAC)
-            p->atrim = (at0->codec_delay_ns
-                  * (uint64_t)(at0->sample_rate ? at0->sample_rate
-                     : 48000) + 500000000) / 1000000000;
+            /* Gathered timestamps already subtract CodecDelay. AAC
+             * has no additional mandatory pre-skip like Opus; negative
+             * presentation samples are discarded by media_audio_read. */
+            p->atrim = 0;
 #endif
          p->atotal = -1;
       }
