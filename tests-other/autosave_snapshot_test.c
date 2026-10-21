@@ -124,6 +124,23 @@ int main(void)
 {
    unsigned i;
    unsigned before;
+   char slot_path[32];
+
+   strcpy(slot_path, "a/Game.srm");
+   assert(path_savefile_slot(slot_path, sizeof(slot_path), 0));
+   assert(!strcmp(slot_path, "a/Game.srm"));
+   assert(path_savefile_slot(slot_path, sizeof(slot_path), 12));
+   assert(!strcmp(slot_path, "a/Game.srm12"));
+
+   /* Room for "1" but not "10": no fallback to another slot's name. */
+   strcpy(slot_path, "a/Game.srm");
+   assert(path_savefile_slot(slot_path, 12, 1));
+   assert(!strcmp(slot_path, "a/Game.srm1"));
+   strcpy(slot_path, "a/Game.srm");
+   assert(!path_savefile_slot(slot_path, 12, 10));
+   strcpy(slot_path, "a/Game.srm");
+   assert(!path_savefile_slot(slot_path, 10, 1));
+
    io_lock = slock_new();
    io_cond = scond_new();
    assert(io_lock && io_cond);

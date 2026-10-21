@@ -373,6 +373,8 @@ struct runloop
       char xdelta   [PATH_MAX_LENGTH];
    } name;
 
+   bool savefile_is_cli_file;
+
    /* Main-thread state for deferred automatic state loading. */
    bool auto_state_load_pending;
    bool auto_state_load_attempted;

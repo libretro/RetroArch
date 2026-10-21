@@ -487,6 +487,7 @@ uint	ozone_font_scale	1	0
 uint	ozone_header_icon	1	1
 uint	ozone_header_separator	1	1
 uint	autosave_interval	1	10
+uint	sram_slot	1	0
 uint	savestate_automatic_interval	1	0
 uint	savestate_max_keep	1	0
 uint	replay_max_keep	1	0
@@ -1179,6 +1180,7 @@ uint	ozone_font_scale	1	0
 uint	ozone_header_icon	1	1
 uint	ozone_header_separator	1	1
 uint	autosave_interval	1	10
+uint	sram_slot	1	0
 uint	savestate_automatic_interval	1	0
 uint	savestate_max_keep	1	0
 uint	replay_max_keep	1	0
@@ -1883,6 +1885,7 @@ uint	ozone_font_scale	1	0
 uint	ozone_header_icon	1	1
 uint	ozone_header_separator	1	1
 uint	autosave_interval	1	10
+uint	sram_slot	1	0
 uint	savestate_automatic_interval	1	0
 uint	savestate_max_keep	1	0
 uint	replay_max_keep	1	0

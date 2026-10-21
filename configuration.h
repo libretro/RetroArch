@@ -254,6 +254,7 @@ typedef struct settings
       unsigned rewind_granularity;
       unsigned rewind_buffer_size_step;
       unsigned autosave_interval;
+      unsigned sram_slot;
       unsigned savestate_automatic_interval;
       unsigned replay_checkpoint_interval;
       unsigned replay_max_keep;

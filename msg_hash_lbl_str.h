@@ -1631,6 +1631,7 @@
 #define MENU_ENUM_LABEL_SMB_CLIENT_REALM_STR "smb_client_realm"
 #define MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS_STR "smb_client_settings"
 #define MENU_ENUM_LABEL_SMB_CLIENT_TIMEOUT_STR "smb_client_timeout"
+#define MENU_ENUM_LABEL_SRAM_SLOT_STR "sram_slot"
 #define MENU_ENUM_LABEL_START_CORE_STR "start_core"
 #define MENU_ENUM_LABEL_START_NET_RETROPAD_STR "menu_start_net_retropad"
 #define MENU_ENUM_LABEL_START_VIDEO_PROCESSOR_STR "menu_start_video_processor"

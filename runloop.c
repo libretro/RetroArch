@@ -5753,7 +5753,8 @@ void runloop_event_deinit_core(void)
 #endif
 }
 
-static bool runloop_path_init_subsystem(runloop_state_t *runloop_st)
+static bool runloop_path_init_subsystem(runloop_state_t *runloop_st,
+      unsigned slot)
 {
    size_t i, j;
    const struct retro_subsystem_info *info = NULL;
@@ -5805,6 +5806,13 @@ static bool runloop_path_init_subsystem(runloop_state_t *runloop_st)
             else
                fill_pathname(path, savename, ext, sizeof(path));
 
+            if (!path_savefile_slot(path, sizeof(path), slot))
+            {
+               RARCH_ERR("[SRAM] Path too long for slot %u: \"%s\".\n",
+                     slot, path);
+               continue;
+            }
+
             RARCH_LOG("[Subsystem] %s \"%s\".\n",
                msg_hash_to_str(MSG_REDIRECTING_SAVEFILE_TO),
                path);
@@ -5841,10 +5849,14 @@ static bool runloop_path_init_subsystem(runloop_state_t *runloop_st)
 
 static void runloop_path_init_savefile_internal(runloop_state_t *runloop_st)
 {
+   /* A file given with --save is used as is */
+   unsigned slot = runloop_st->savefile_is_cli_file
+      ? 0 : config_get_ptr()->uints.sram_slot;
+
    path_deinit_savefile();
    path_init_savefile_new();
-   if (!runloop_path_init_subsystem(runloop_st))
-      path_init_savefile_rtc(runloop_st->name.savefile);
+   if (!runloop_path_init_subsystem(runloop_st, slot))
+      path_init_savefile_rtc(runloop_st->name.savefile, slot);
 }
 
 static void runloop_path_init_savefile(runloop_state_t *runloop_st)
@@ -11390,6 +11402,7 @@ void runloop_path_set_redirect(settings_t *settings,
 
       if (savefile_is_dir)
       {
+         runloop_st->savefile_is_cli_file = false;
          fill_pathname_dir(runloop_st->name.savefile,
                            (*runloop_st->runtime_content_path_basename)
                            ? runloop_st->runtime_content_path_basename

@@ -8367,6 +8367,7 @@ static bool retroarch_parse_input_and_config(
     * again, and -s / -S override them after that. */
    path_clear(RARCH_PATH_BASENAME);
    *runloop_st->name.savefile      = '\0';
+   runloop_st->savefile_is_cli_file = false;
    *runloop_st->name.savestate     = '\0';
    *runloop_st->name.replay        = '\0';
    *runloop_st->name.cheatfile     = '\0';
@@ -8463,6 +8464,7 @@ static bool retroarch_parse_input_and_config(
             case 's':
                strlcpy(runloop_st->name.savefile, optarg,
                      sizeof(runloop_st->name.savefile));
+               runloop_st->savefile_is_cli_file = !path_is_directory(optarg);
                retroarch_override_setting_set(
                      RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL);
                break;

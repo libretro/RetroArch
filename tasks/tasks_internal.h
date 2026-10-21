@@ -433,7 +433,9 @@ bool content_savefile_is_live(const char *path);
 bool event_save_files(bool sram_used, bool compress_files,
       const char *path_cheat_database);
 
-void path_init_savefile_rtc(const char *savefile_path);
+bool path_savefile_slot(char *s, size_t len, unsigned slot);
+
+void path_init_savefile_rtc(const char *savefile_path, unsigned slot);
 
 void *savefile_ptr_get(void);
 
