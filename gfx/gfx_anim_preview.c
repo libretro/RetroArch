@@ -29,6 +29,7 @@
 #include <formats/image.h>
 #include <formats/data_transfer.h>
 #include <retro_atomic.h>
+#include <features/features_cpu.h>
 #include <memory/mem_stats.h>
 #ifdef HAVE_RPNG
 #include <formats/rpng.h>
@@ -1019,9 +1020,26 @@ int gfx_anim_preview_seek_step(void *user, int64_t target_us,
    }
    if (p->seek_phase == 1)
    {
+      int64_t started = cpu_features_get_time_usec();
+      unsigned budget = 1024;
       if (!gfx_anim_preview_seek_feed(p)) return -1;
-      result = image_transfer_anim_stream_seek_step(p->stream, p->type,
-            &p->seek_video_us);
+      do
+      {
+         result = image_transfer_anim_stream_seek_step(p->stream, p->type,
+               &p->seek_video_us);
+         if (result || image_transfer_anim_stream_waiting(p->stream, p->type)
+               || cpu_features_get_time_usec() - started >= 4000) break;
+         if (p->windowed && p->dt)
+         {
+            size_t anchor = image_transfer_anim_stream_consumed(p->stream, p->type);
+            size_t lo = 0, hi = 0;
+            if (!anchor) anchor = image_transfer_anim_stream_media_floor(p->stream, p->type);
+            image_transfer_anim_stream_next_span(p->stream, p->type, &lo, &hi);
+            if (anchor < p->seek_feed_anchor || anchor >= p->seek_feed_hi
+                  || (hi > lo && (lo < p->seek_feed_anchor || hi > p->seek_feed_hi)))
+               break;
+         }
+      } while (--budget);
       if (result != 1) return result;
       p->seek_video_us = p->seek_video_us > p->timeline_start_us
          ? p->seek_video_us - p->timeline_start_us : 0;

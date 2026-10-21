@@ -23,6 +23,12 @@ static settings_t settings;
 static audio_mixer_sound_t *sound;
 static audio_mixer_voice_t *voice;
 static unsigned repeats, finishes;
+static bool seek_probe, seek_probe_wait;
+static int seek_probe_error;
+static unsigned seek_probe_calls, seek_probe_end;
+static int64_t seek_probe_target;
+static size_t seek_probe_anchor, seek_probe_lo, seek_probe_hi;
+static unsigned seek_probe_boundary;
 
 settings_t *config_get_ptr(void) { return &settings; }
 
@@ -53,7 +59,7 @@ void *image_transfer_anim_stream_new_avail(void *b, size_t n, size_t a,
 void image_transfer_anim_stream_free(void *s, enum image_type_enum t)
 { (void)s; (void)t; abort(); }
 size_t image_transfer_anim_stream_consumed(void *s, enum image_type_enum t)
-{ (void)s; (void)t; abort(); return 0; }
+{ (void)s; (void)t; if (!seek_probe) abort(); return seek_probe_anchor; }
 size_t image_transfer_anim_stream_feed_frontier(void *s, enum image_type_enum t)
 { (void)s; (void)t; abort(); return 0; }
 void image_transfer_anim_stream_pin_span(void *s, enum image_type_enum t,
@@ -61,9 +67,9 @@ void image_transfer_anim_stream_pin_span(void *s, enum image_type_enum t,
 { (void)s; (void)t; (void)lo; (void)hi; abort(); }
 void image_transfer_anim_stream_next_span(void *s, enum image_type_enum t,
       size_t *lo, size_t *hi)
-{ (void)s; (void)t; (void)lo; (void)hi; abort(); }
+{ (void)s; (void)t; if (!seek_probe) abort(); *lo=seek_probe_lo; *hi=seek_probe_hi; }
 void image_transfer_anim_stream_set_avail(void *s, enum image_type_enum t, size_t a)
-{ (void)s; (void)t; (void)a; abort(); }
+{ (void)s; (void)t; (void)a; if (!seek_probe) abort(); }
 const uint32_t *image_transfer_anim_stream_next(void *s,
       enum image_type_enum t, int *ms)
 { (void)s; (void)t; (void)ms; abort(); return NULL; }
@@ -72,9 +78,27 @@ int64_t image_transfer_anim_stream_start_ns(void *s, enum image_type_enum t)
 bool image_transfer_anim_stream_seekable(void *s, enum image_type_enum t)
 { return s && (t == IMAGE_TYPE_MP4 || t == IMAGE_TYPE_WEBM); }
 bool image_transfer_anim_stream_seek_begin(void *s, enum image_type_enum t,
-      int64_t us) { (void)s; (void)t; (void)us; abort(); return false; }
+      int64_t us) { (void)s; (void)t; if (!seek_probe) abort(); seek_probe_target=us; return true; }
 int image_transfer_anim_stream_seek_step(void *s, enum image_type_enum t,
-      int64_t *us) { (void)s; (void)t; (void)us; abort(); return -1; }
+      int64_t *us)
+{
+   (void)s; (void)t;
+   if (!seek_probe) abort();
+   seek_probe_calls++;
+   if (seek_probe_boundary == 1) seek_probe_anchor = 1;
+   if (seek_probe_boundary == 2) seek_probe_anchor = ((gfx_anim_preview_t*)s)->seek_feed_hi;
+   if (seek_probe_boundary == 3)
+   {
+      seek_probe_lo = seek_probe_anchor;
+      seek_probe_hi = ((gfx_anim_preview_t*)s)->seek_feed_hi + 1;
+   }
+   if (seek_probe_error) return -1;
+   if (!seek_probe_end || seek_probe_calls < seek_probe_end) return 0;
+   *us=seek_probe_target;
+   return 1;
+}
+bool image_transfer_anim_stream_waiting(const void *s, enum image_type_enum t)
+{ (void)s; (void)t; if (!seek_probe) abort(); return seek_probe_wait; }
 void image_transfer_anim_stream_rewind(void *s, enum image_type_enum t)
 { (void)s; (void)t; abort(); }
 
@@ -849,6 +873,80 @@ finish:
    return failed;
 }
 
+static int bounded_video_seek(void)
+{
+   gfx_anim_preview_t p;
+   int64_t position = -1;
+   int failed = 0;
+   unsigned attempt;
+   memset(&p, 0, sizeof(p));
+   p.stream = &p;
+   p.type = IMAGE_TYPE_MP4;
+   p.audio_slot = -1;
+   seek_probe = true;
+   seek_probe_calls = 0;
+   seek_probe_end = 64;
+   for (attempt = 0; attempt < 8 && p.seek_phase != 2; attempt++)
+      if (gfx_anim_preview_seek_step(&p, 1200000, attempt == 0, &position) != 0)
+         failed = 1;
+   if (p.seek_phase != 2 || seek_probe_calls != 64) failed = 1;
+   if (gfx_anim_preview_seek_step(&p, 1200000, false, &position) != 1
+         || position != 1200000) failed = 1;
+   seek_probe_calls = seek_probe_end = 0;
+   if (gfx_anim_preview_seek_step(&p, 0, true, &position) != 0
+         || !seek_probe_calls || seek_probe_calls > 1024) failed = 1;
+   seek_probe_calls = 0;
+   seek_probe_wait = true;
+   if (gfx_anim_preview_seek_step(&p, 0, true, &position) != 0
+         || seek_probe_calls != 1) failed = 1;
+   seek_probe_calls = 0;
+   seek_probe_wait = false;
+   seek_probe_error = 1;
+   if (gfx_anim_preview_seek_step(&p, 0, true, &position) != -1
+         || seek_probe_calls != 1) failed = 1;
+   seek_probe_error = 0;
+   {
+      const char *path = "seek-batch-window.tmp";
+      unsigned char zeros[1024];
+      FILE *file = fopen(path, "wb");
+      unsigned i;
+      memset(zeros, 0, sizeof(zeros));
+      if (!file) failed = 1;
+      else
+      {
+         for (i = 0; i < 1024; i++)
+            if (fwrite(zeros, 1, sizeof(zeros), file) != sizeof(zeros)) failed = 1;
+         fclose(file);
+         p.dt = data_transfer_open_window(path, 65536);
+         if (!p.dt) failed = 1;
+         else
+         {
+            p.windowed = true;
+            p.len = 1024 * 1024;
+            p.feed_ahead = 4096;
+            for (i = 1; i <= 3; i++)
+            {
+               p.seek_phase = 1;
+               p.seek_feed_anchor = p.seek_feed_hi = 0;
+               seek_probe_anchor = 4096;
+               seek_probe_lo = seek_probe_hi = 0;
+               seek_probe_boundary = i;
+               seek_probe_calls = 0;
+               if (gfx_anim_preview_seek_step(&p, 0, false, &position) != 0
+                     || seek_probe_calls != 1) failed = 1;
+            }
+            data_transfer_free(p.dt);
+         }
+         remove(path);
+      }
+   }
+   seek_probe_boundary = 0;
+   seek_probe = false;
+   fprintf(stderr, "%s bounded video seek progress, waiting, error and step ceiling\n",
+         failed ? "FAIL" : "PASS");
+   return failed;
+}
+
 int main(int argc, char **argv)
 {
    bool webm_only = argc > 2 && !strcmp(argv[1], "--prepared-webm");
@@ -856,6 +954,8 @@ int main(int argc, char **argv)
    int first_arg = prepared_only ? 2 : 1;
    int i, failed = argc <= first_arg;
    gfx_anim_preview_t fallback;
+   if (argc == 2 && !strcmp(argv[1], "--seek-batch")) return bounded_video_seek();
+   failed |= bounded_video_seek();
    if (argc == 3 && !strcmp(argv[1], "--continuous-webm"))
       return continuous_webm(argv[2], false) | continuous_webm(argv[2], true);
    memset(&fallback, 0, sizeof(fallback));
