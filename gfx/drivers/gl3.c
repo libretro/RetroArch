@@ -2404,7 +2404,8 @@ static void gl3_destroy_resources(gl3_t *gl)
    if (!gl)
       return;
 
-   if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+   /* (none to unbind where the context never came up) */
+   if ((gl->flags & GL3_FLAG_USE_SHARED_CONTEXT) && gl->ctx_driver)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
 
 #ifdef HAVE_SLANG
@@ -3974,6 +3975,16 @@ static void *gl3_init(const video_info_t *video)
       (video->source_hdr10 ? 1 : 0);
 
    RARCH_LOG("[GLCore] Found GL context: \"%s\".\n", ctx_driver->ident);
+
+   /* The null context comes up with no OpenGL behind it: nothing to
+    * load the entry points from, and the first call would be through
+    * a null pointer. */
+   if (!ctx_driver->get_proc_address)
+   {
+      RARCH_ERR("[GLCore] The \"%s\" context has no OpenGL.\n",
+            ctx_driver->ident);
+      goto error;
+   }
 
    if (gl->ctx_driver->get_video_size)
       gl->ctx_driver->get_video_size(gl->ctx_data,

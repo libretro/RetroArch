@@ -1972,6 +1972,7 @@ void drivers_init(
        * a global notifications on/off toggle switch */
       if (   video_font_enable
           && menu_enable_widgets
+          && video_st->data
           && video_st->current_video
           && video_st->current_video->gfx_widgets_enabled
           && video_st->current_video->gfx_widgets_enabled(video_st->data))

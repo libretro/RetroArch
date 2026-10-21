@@ -7882,6 +7882,15 @@ static void *gl2_init(const video_info_t *video)
 
    RARCH_LOG("[GL] Found GL context: \"%s\".\n", ctx_driver->ident);
 
+#if !defined(RARCH_CONSOLE) || defined(HAVE_LIBNX)
+   if (!ctx_driver->get_proc_address)
+   {
+      RARCH_ERR("[GL] The \"%s\" context has no OpenGL.\n",
+            ctx_driver->ident);
+      goto error;
+   }
+#endif
+
    if (gl->ctx_driver->get_video_size)
       gl->ctx_driver->get_video_size(gl->ctx_data,
                &mode_dims);
