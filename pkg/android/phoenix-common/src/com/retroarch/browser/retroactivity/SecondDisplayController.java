@@ -18,6 +18,8 @@ import android.annotation.TargetApi;
 import android.app.Presentation;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.res.Configuration;
+import android.content.res.Resources;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.hardware.display.DeviceProductInfo;
@@ -25,6 +27,7 @@ import android.hardware.display.DisplayManager;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.SparseBooleanArray;
 import android.view.Choreographer;
@@ -270,6 +273,9 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
       return;
 
     p      = new Presentation(activity, display);
+    /* From Android 12 a Presentation has a window context of its own */
+    if (Build.VERSION.SDK_INT < 31)
+      updateMetrics(p.getResources(), display);
     window = p.getWindow();
     /* Touching it must not take focus or the gamepad from the Activity */
     if (window != null)
@@ -302,6 +308,33 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
     presentation       = p;
     presentationId     = displayId;
     presentationScreen = screen;
+  }
+
+  /* Before Android 12 a display's cached resources keep its old
+   * metrics, and a new Presentation cancels itself on them in onStart */
+  private static void updateMetrics(Resources res, Display display)
+  {
+    DisplayMetrics now = new DisplayMetrics();
+    DisplayMetrics had = res.getDisplayMetrics();
+    Configuration config;
+
+    display.getMetrics(now);
+    if (now.widthPixels == had.widthPixels
+        && now.heightPixels == had.heightPixels
+        && now.densityDpi == had.densityDpi
+        && now.xdpi == had.xdpi
+        && now.ydpi == had.ydpi)
+      return;
+    config                       = new Configuration(res.getConfiguration());
+    config.densityDpi            = now.densityDpi;
+    config.screenWidthDp         = (int)(now.widthPixels  / now.density);
+    config.screenHeightDp        = (int)(now.heightPixels / now.density);
+    config.smallestScreenWidthDp = Math.min(config.screenWidthDp,
+        config.screenHeightDp);
+    config.orientation           = now.widthPixels > now.heightPixels
+        ? Configuration.ORIENTATION_LANDSCAPE
+        : Configuration.ORIENTATION_PORTRAIT;
+    res.updateConfiguration(config, now);
   }
 
   private void showFailed(int displayId, RuntimeException e)
