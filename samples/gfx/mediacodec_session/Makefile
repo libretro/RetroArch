@@ -74,5 +74,5 @@ clean:
 	rm -f color_refine_test test hevc_backend_test hevc_decoder_test vulkan_image_test vulkan_sync_test vulkan_pipeline_test vulkan_rgb_gpu_test android_frame_test frame_export_test vulkan_submit_test vulkan_entry_test vulkan_cache_test vulkan_renderer_test vulkan_device_test
 .PHONY: all check clean gpu-check
 
-hevc_backend_test: hevc_backend_test.c ../../../gfx/common/mediacodec_hevc_backend.c ../../../gfx/common/mediacodec_hevc_backend.h
+hevc_backend_test: hevc_backend_test.c registry_test.h ../../../gfx/common/mediacodec_hevc_registry.h ../../../gfx/common/mediacodec_hevc_backend.c ../../../gfx/common/mediacodec_hevc_backend.h
 	$(CC) $(CFLAGS) $(BACKEND_HOST_FLAGS) -D_DEFAULT_SOURCE -DHAVE_THREADS -pthread hevc_backend_test.c ../../../gfx/common/mediacodec_frame_export.c ../../../gfx/common/mediacodec_color.c ../../../gfx/common/android_frame.c ../../../gfx/common/android_image_queue.c ../../../libretro-common/rthreads/rthreads.c ../../../libretro-common/rthreads/retro_eventcount.c -o $@ $(LDFLAGS) -lm

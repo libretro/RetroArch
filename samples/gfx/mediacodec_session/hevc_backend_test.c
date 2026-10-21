@@ -11,7 +11,7 @@
 #include <pthread.h>
 #include <errno.h>
 struct mediacodec_hevc_decoder {mediacodec_hevc_import_t importer;};
-static retro_atomic_int_t retire_gate,polls,retired,worker_hold;
+static retro_atomic_int_t retire_gate,polls,retired,worker_hold,open_hold,open_entered;
 typedef struct backend_test_start {void *(*run)(void*);void *user;} backend_test_start_t;
 static void *backend_test_start(void *opaque)
 {
@@ -54,6 +54,10 @@ bool mediacodec_hevc_decoder_open(JNIEnv *env,const rh265_video *source,
  struct mediacodec_hevc_decoder *decoder;
  assert(env && source && params && slots==2 && max_input==1048576 && importer);
  native_opens++;if(native_fail)return false;
+ if(retro_atomic_load_acquire_int(&open_hold)) {
+  retro_atomic_store_release_int(&open_entered,1);
+  while(retro_atomic_load_acquire_int(&open_hold))usleep(1000);
+ }
  decoder=(struct mediacodec_hevc_decoder*)calloc(1,sizeof(*decoder));assert(decoder);
  decoder->importer=*importer;ops->decoder=decoder;return true;
 }
@@ -98,6 +102,7 @@ static void wait_idle(mediacodec_hevc_backend_t *backend)
  for(i=0;i<2000 && mediacodec_hevc_backend_active(backend);i++)usleep(1000);
  assert(!mediacodec_hevc_backend_active(backend));
 }
+#include "registry_test.h"
 int main(void)
 {
  static mediacodec_hevc_backend_t backend;
@@ -110,7 +115,7 @@ int main(void)
  rh265_video_color_t color;video_hw_frame_t frame;
  struct mediacodec_hevc_decoder *decoder;
  caller_thread=sthread_get_current_thread_id();
- retro_atomic_int_init(&retire_gate,0);retro_atomic_int_init(&polls,0);retro_atomic_int_init(&retired,0);retro_atomic_int_init(&worker_hold,0);
+ retro_atomic_int_init(&retire_gate,0);retro_atomic_int_init(&polls,0);retro_atomic_int_init(&retired,0);retro_atomic_int_init(&worker_hold,0);retro_atomic_int_init(&open_hold,0);retro_atomic_int_init(&open_entered,0);
  assert(!mediacodec_hevc_backend_init(&backend,environment,&native_opens,1048576,9));
  assert(mediacodec_hevc_backend_init(&backend,environment,&native_opens,1048576,2));
  memset(&params,0,sizeof(params));params.chroma_format_idc=1;params.bit_depth=8;
@@ -159,6 +164,7 @@ int main(void)
   assert(backend.offer.open(backend.offer.user,source,&params,2,&a));backend.offer.close(&a);wait_idle(&backend);
  }
  assert(retro_atomic_load_acquire_int(&retired)==43);
+ notify_race=0;test_registry();
  puts("PASS: HEVC backend detached startup, eventcount retirement, notifier lifetime, bounded admission and repeated seek epochs");
  return 0;
 }
