@@ -91,7 +91,7 @@ jobs:
                 extra=""
                 if [ "$offset" = 64 ]; then extra="-D_FILE_OFFSET_BITS=64"; fi
                 CC="$bin/$target$api-clang $extra" python3 libretro-common/samples/formats/vp9/check_stack.py
-                for source in android_image_queue android_image_ndk mediacodec_session; do
+                for source in android_image_queue android_image_ndk mediacodec_session android_frame; do
                   "$bin/$target$api-clang" $extra -O1 -std=c89 -pedantic -Wall -Wextra -Werror \
                     -Wno-long-long -Wno-c99-extensions -Wframe-larger-than=2048 \
                     -DHAVE_THREADS -DHAVE_DYLIB -Ilibretro-common/include \
@@ -138,3 +138,5 @@ jobs:
           java-version: '21'
       - name: Cold session, Surface timestamps and terminal output contracts
         run: make -C samples/gfx/mediacodec_session session-check CC=${{ matrix.cc }} SANITIZER=address,undefined
+      - name: Opaque frame leases, HDR refinement and concurrent handoffs
+        run: make -C samples/gfx/mediacodec_session frame-check CC=${{ matrix.cc }} SANITIZER=address,undefined
