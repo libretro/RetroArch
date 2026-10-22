@@ -1009,51 +1009,52 @@ static int rh265_parse_pred_weight_table(rh265_bits *b, rh265_shdr *sh,
 {
    int list, i, c;
    int nlists = is_b ? 2 : 1;
-   uint8_t lflag[2][16], cflag[2][16];
+   uint8_t lflag[16], cflag[16];
    sh->luma_log2_denom = (int)rh265_ue(b);
-   if (sh->luma_log2_denom > 7) return -1;
+   if (sh->luma_log2_denom > 7)
+      return -1;
    sh->chroma_log2_denom = sh->luma_log2_denom + (int)rh265_se(b);
-   if (sh->chroma_log2_denom < 0 || sh->chroma_log2_denom > 7) return -1;
+   if (sh->chroma_log2_denom < 0 || sh->chroma_log2_denom > 7)
+      return -1;
    for (list = 0; list < nlists; list++)
+   {
       for (i = 0; i < sh->nb_refs[list]; i++)
-         lflag[list][i] = (uint8_t)rh265_u1(b);
-   for (list = 0; list < nlists; list++)
+         lflag[i] = (uint8_t)rh265_u1(b);
       for (i = 0; i < sh->nb_refs[list]; i++)
-         cflag[list][i] = (uint8_t)rh265_u1(b);
-   for (list = 0; list < nlists; list++)
+         cflag[i] = (uint8_t)rh265_u1(b);
       for (i = 0; i < sh->nb_refs[list]; i++)
       {
          sh->luma_w[list][i] = (int16_t)(1 << sh->luma_log2_denom);
          sh->luma_o[list][i] = 0;
-         if (lflag[list][i])
+         if (lflag[i])
          {
             int dw = (int)rh265_se(b);
             int o  = (int)rh265_se(b);
-            if (dw < -128 || dw > 127 || o < -128 || o > 127) return -1;
+            if (dw < -128 || dw > 127 || o < -128 || o > 127)
+               return -1;
             sh->luma_w[list][i] = (int16_t)((1 << sh->luma_log2_denom) + dw);
             sh->luma_o[list][i] = (int16_t)o;
          }
          for (c = 0; c < 2; c++)
          {
-            sh->chroma_w[list][i][c] =
-                  (int16_t)(1 << sh->chroma_log2_denom);
+            sh->chroma_w[list][i][c] = (int16_t)(1 << sh->chroma_log2_denom);
             sh->chroma_o[list][i][c] = 0;
          }
-         if (cflag[list][i])
+         if (cflag[i])
             for (c = 0; c < 2; c++)
             {
                int dw = (int)rh265_se(b);
                int dof = (int)rh265_se(b);
                int w, o;
-               if (dw < -128 || dw > 127) return -1;
+               if (dw < -128 || dw > 127 || dof < -512 || dof > 511)
+                  return -1;
                w = (1 << sh->chroma_log2_denom) + dw;
-               /* 7.4.7.3: offset reconstructed against the midpoint */
                o = 128 + dof - ((128 * w) >> sh->chroma_log2_denom);
-               if (o < -128 || o > 127) return -1;
                sh->chroma_w[list][i][c] = (int16_t)w;
-               sh->chroma_o[list][i][c] = (int16_t)o;
+               sh->chroma_o[list][i][c] = (int16_t)rh265_clip3(-128, 127, o);
             }
       }
+   }
    return 0;
 }
 

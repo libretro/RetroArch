@@ -37,6 +37,10 @@ ifneq ($(SANITIZER),)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
 
+ifneq ($(findstring undefined,$(SANITIZER)),)
+   CFLAGS += -fno-sanitize-recover=undefined
+endif
+
 LDLIBS += -lm -lpthread
 
 all: $(TARGET) $(TARGET_TEST) $(TARGET_VOLATILE) $(TARGET_MALFORMED)

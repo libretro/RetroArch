@@ -460,6 +460,12 @@ int main(void)
          "-x265-params crf=22:sao=1:deblock=1:bframes=2:wpp=1:frame-threads=1");
    oracle_case("lossy_10_b",    "mandelbrot=s=176x144:r=10", 8, "yuv420p10le",
          "-x265-params crf=22:sao=1:deblock=1:bframes=2:wpp=0:frame-threads=1");
+   oracle_case("weighted_b", "testsrc2=s=176x144:r=10,fade=t=in:st=0:d=1.5", 16,
+         "yuv420p",
+         "-x265-params crf=24:bframes=2:weightb=1:weightp=1:wpp=0:frame-threads=1:pools=none");
+   oracle_case("weighted_10_b", "testsrc2=s=176x144:r=10,fade=t=in:st=0:d=1.5",
+         16, "yuv420p10le",
+         "-x265-params crf=24:bframes=2:weightb=1:weightp=1:wpp=0:frame-threads=1:pools=none");
    /* Taller: five CTB rows and a partial sixth, P and B referencing
     * across them, the row hook and the reads that wait on it doing
     * real work; and a small-CTB stream, every row a quantisation

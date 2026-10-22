@@ -437,7 +437,7 @@ static void RH265_FN(mc_write)(RH265_PEL *dst, int stride,
       {
          int shift  = denom + 14 - RH265_BD;
          int offset = 1 << (shift - 1);
-         int oxs    = o0 << (RH265_BD - 8);
+         int oxs    = o0 * (1 << (RH265_BD - 8));
          for (j = 0; j < h; j++)
             for (i = 0; i < w; i++)
                dst[j * stride + i] = RH265_FN(clip_pel)(
@@ -457,12 +457,13 @@ static void RH265_FN(mc_write)(RH265_PEL *dst, int stride,
       else
       {
          int log2wd = denom + 14 - RH265_BD;
-         int oxp1   = (o0 << (RH265_BD - 8)) + (o1 << (RH265_BD - 8)) + 1;
+         int oxp1   = (o0 + o1) * (1 << (RH265_BD - 8)) + 1;
          for (j = 0; j < h; j++)
             for (i = 0; i < w; i++)
                dst[j * stride + i] = RH265_FN(clip_pel)(
                      (val1[j * w + i] * w1 + val0[j * w + i] * w0
-                      + (oxp1 << log2wd)) >> (log2wd + 1));
+                           + oxp1 * (1 << log2wd))
+                     >> (log2wd + 1));
       }
    }
 }
