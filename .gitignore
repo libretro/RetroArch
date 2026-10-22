@@ -283,6 +283,7 @@ gfx/common/wayland/wlr-output-management-unstable-v1.h
 samples/**/*_test
 samples/**/*_test_*
 samples/audio/stretch/stretch_bench
+samples/gfx/rslc_corpus/rslc_corpus_dump
 samples/**/*.o
 libretro-common/samples/**/*_test
 libretro-common/samples/**/*_test_*
