@@ -39,7 +39,7 @@ repository is cloned instead), setup-python is the host's Python, and
 cache and artifact steps are skipped. A job using any other action is
 refused unless --force is given, which skips it.
 """
-import fnmatch, json, os, re, shlex, shutil, subprocess, sys, tempfile
+import fnmatch, json, os, re, shlex, shutil, subprocess, sys, tempfile, time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 WF_DIR = os.path.join(ROOT, '.github', 'workflows')
@@ -1133,11 +1133,15 @@ class Runner:
             self.failed.append(label)
             self.say('== %s: FAILED' % label)
             return 'failure', {}
+      took = []
       try:
          for n, step in enumerate(steps):
+            started = time.time()
             status = self.run_step(wf, job, step, n, ctx, status, plat,
                                    defaults, workspace, temp, files,
                                    extra_path, engine, cid)
+            took.append((time.time() - started,
+                         step.get('name') or step.get('uses') or str(n)))
       finally:
          if cid:
             subprocess.run([engine, 'rm', '-f', cid], stdout=subprocess.DEVNULL,
@@ -1149,6 +1153,11 @@ class Runner:
                outputs[k] = interpolate(v, ctx, status)
             except Unresolved:
                outputs[k] = ''
+      # where the time went: a slow step is one to make faster
+      if not self.opts.dry_run:
+         for secs, name in sorted(took, reverse=True)[:3]:
+            if secs >= 10:
+               self.say('   %4.0f s  %s' % (secs, name))
       if status == 'failure':
          self.failed.append(label)
          self.say('== %s: FAILED' % label)
