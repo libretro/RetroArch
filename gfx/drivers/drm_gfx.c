@@ -264,6 +264,9 @@ struct drm_video
    /* Quarter turns counter-clockwise the frame is shown at */
    unsigned rotation;
    bool rotation_dirty;
+   /* The frame's place on the screen changed: the next frame is put
+    * there rather than flipped to */
+   bool plane_dirty;
 
    /* Menu */
    bool menu_active;
@@ -898,9 +901,6 @@ static void drm_surface_update(void *data, const void *frame,
 #ifdef HAVE_OVERLAY
    drm_overlay_blend(surface->pages[0].drmvars, surface);
 #endif
-
-   /* Page flipping */
-   drm_page_flip(surface);
 }
 
 /* The ID of the plane's property called @name, 0 if it has none. */
@@ -1372,6 +1372,7 @@ static bool drm_set_mode(const drmModeModeInfo *mode)
 static bool init_drm(const video_info_t *video)
 {
    size_t i;
+   drmModeModeInfo custom;
    settings_t *settings     = config_get_ptr();
    unsigned monitor         = settings ? settings->uints.video_monitor_index : 0;
    const drmModeModeInfo *m = NULL;
@@ -1392,7 +1393,13 @@ static bool init_drm(const video_info_t *video)
          drm.atomic ? "" : ", without atomic commits");
    dir_list_free(cards);
 
-   if (     video && video->fullscreen
+   /* The CRT switch's mode, then HDMI timings, then a fullscreen size,
+    * then the console's */
+   if (     drm_mode_from_crt_switch(&custom)
+         || (settings && drm_mode_from_timings(
+               settings->arrays.crt_switch_timings, &custom)))
+      m = &custom;
+   if (     !m && video && video->fullscreen
          && VIDEO_SCALE_W(video->dims) && VIDEO_SCALE_H(video->dims))
       m = drm_find_mode(g_drm_connector, VIDEO_SCALE_W(video->dims),
             VIDEO_SCALE_H(video->dims), 1.0f,
@@ -2272,8 +2279,9 @@ static bool drm_frame(void *data, const void *frame,
          RARCH_LOG("[DRM] Frame turned %u degrees by the %s.\n",
                90 * (rot | hw), hw ? "plane" : "CPU");
 
-      /* We need to change the plane to read from the main surface */
-      if (     !_drmvars->views_surface
+      /* We need to change the plane to read from the main surface; under
+       * the menu, when it closes */
+      if (     !_drmvars->views_surface && !_drmvars->menu_active
             && !drm_plane_setup(_drmvars->main_surface))
       {
          drm_surface_free(_drmvars, &_drmvars->main_surface);
@@ -2304,8 +2312,10 @@ static bool drm_frame(void *data, const void *frame,
       return true;
 
    /* A frame in the threaded wrapper's frame memory goes up where it
-    * lies, unless the copy turns it or blends the overlay into it */
-   if (     !_drmvars->main_surface->rot
+    * lies, unless the copy turns it or blends the overlay into it, or it
+    * waits under the menu or for the plane to be placed */
+   if (     !_drmvars->main_surface->rot && !_drmvars->menu_active
+         && !_drmvars->plane_dirty
 #ifdef HAVE_OVERLAY
          && !(_drmvars->ov.enabled && _drmvars->ov.count
             && _drmvars->ov.mode == DRM_OVERLAY_BLEND)
@@ -2322,8 +2332,20 @@ static bool drm_frame(void *data, const void *frame,
       }
    }
 
-   /* Update main surface: locate free page, blit and flip. */
+   /* Update main surface: locate free page, blit and flip. Under the
+    * menu it is not shown: the next is written over it, and it goes up
+    * when the menu closes. */
    drm_surface_update(_drmvars, frame, pitch, _drmvars->main_surface);
+   if (!_drmvars->menu_active)
+   {
+      if (_drmvars->plane_dirty)
+      {
+         _drmvars->plane_dirty = false;
+         drm_plane_setup(_drmvars->main_surface);
+      }
+      else
+         drm_page_flip(_drmvars->main_surface);
+   }
    drm_fmem_sweep(_drmvars);
    return true;
 }
@@ -2503,16 +2525,24 @@ static void drm_set_video_mode(void *data, unsigned dims, bool fullscreen)
    struct drm_video *v        = (struct drm_video*)data;
    settings_t *settings       = config_get_ptr();
    const drmModeModeInfo *m;
+   drmModeModeInfo custom;
    struct drm_surface *s;
 
    if (!v || !g_drm_connector || drm.fd < 0)
       return;
-   if (!(m = drm_find_mode(g_drm_connector, VIDEO_SCALE_W(dims),
+   /* A CRT modeline as it was asked for, else the connector's closest */
+   if (drm_mode_from_crt_switch(&custom))
+      m = &custom;
+   else if (!(m = drm_find_mode(g_drm_connector, VIDEO_SCALE_W(dims),
                VIDEO_SCALE_H(dims), 1.0f,
                settings ? settings->floats.video_refresh_rate : 60.0f)))
       return;
    if (     m->hdisplay == drm.mode.hdisplay && m->vdisplay == drm.mode.vdisplay
-         && m->clock == drm.mode.clock && m->vrefresh == drm.mode.vrefresh)
+         && m->clock == drm.mode.clock && m->vrefresh == drm.mode.vrefresh
+         && m->htotal == drm.mode.htotal && m->vtotal == drm.mode.vtotal
+         && m->hsync_start == drm.mode.hsync_start
+         && m->vsync_start == drm.mode.vsync_start
+         && m->flags == drm.mode.flags)
       return;
 
    drm_set_plane(drm.plane_id, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
@@ -2628,22 +2658,30 @@ static bool drm_suppress_screensaver(void *a, bool b) { return false; }
 static bool drm_set_shader(void *data,
       enum rarch_shader_type type, const char *path) { return false; }
 
-static void drm_set_aspect_ratio (void *data, unsigned aspect_ratio_idx)
+/* The menu is placed again now, the frame with the next one */
+static void drm_take_aspect(struct drm_video *v, float aspect)
 {
-   struct drm_video *_drmvars = data;
-   /* Here we obtain the new aspect ratio. */
-   float new_aspect = aspectratio_lut[aspect_ratio_idx].value;
+   if (!v || v->current_aspect == aspect)
+      return;
+   v->current_aspect = aspect;
+   drm_surface_set_aspect(v->main_surface, aspect);
+   drm_surface_set_aspect(v->menu_surface, aspect);
+   if (v->menu_active && v->menu_surface)
+      drm_plane_setup(v->menu_surface);
+   else if (v->main_surface)
+      v->plane_dirty = true;
+}
 
-   if (_drmvars && _drmvars->current_aspect != new_aspect)
-   {
-      _drmvars->current_aspect = new_aspect;
-      drm_surface_set_aspect(_drmvars->main_surface, new_aspect);
-      if (_drmvars->menu_active)
-      {
-         drm_surface_set_aspect(_drmvars->menu_surface, new_aspect);
-         drm_plane_setup(_drmvars->menu_surface);
-      }
-   }
+static void drm_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
+{
+   drm_take_aspect((struct drm_video*)data,
+         aspectratio_lut[aspect_ratio_idx].value);
+}
+
+/* The CRT switch puts its aspect and asks for it to be taken up */
+static void drm_apply_state_changes(void *data)
+{
+   drm_take_aspect((struct drm_video*)data, video_driver_get_aspect_ratio());
 }
 
 static uint32_t drm_get_flags(void *data)
@@ -2672,7 +2710,7 @@ static const video_poke_interface_t drm_poke_interface = {
    NULL, /* get_current_framebuffer */
    NULL, /* get_proc_address */
    drm_set_aspect_ratio,
-   NULL, /* drm_apply_state_changes */
+   drm_apply_state_changes,
    drm_set_texture_frame,
    drm_set_texture_enable,
    NULL, /* drm_set_osd_msg */

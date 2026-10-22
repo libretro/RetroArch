@@ -134,30 +134,6 @@ struct drm_fb
    uint32_t fb_id;
 };
 
-/*
- * https://github.com/libretro/RetroArch/pull/11590
- * https://www.raspberrypi.org/documentation/configuration/config-txt/video.md
- */
-typedef struct hdmi_timings
-{
-   int h_active_pixels; /* Horizontal pixels (width) */
-   int h_sync_polarity; /* Invert HSync polarity */
-   int h_front_porch;   /* Horizontal forward padding from DE active edge */
-   int h_sync_pulse;    /* HSync pulse width in pixel clocks */
-   int h_back_porch;    /* Vertical back padding from DE active edge */
-   int v_active_lines;  /* Vertical pixels height (lines) */
-   int v_sync_polarity; /* Invert vsync polarity */
-   int v_front_porch;   /* Vertical forward padding from DE active edge */
-   int v_sync_pulse;    /* VSync pulse width in pixel clocks */
-   int v_back_porch;    /* Vertical back padding from DE active edge */
-   int v_sync_offset_a; /* Leave at zero */
-   int v_sync_offset_b; /* Leave at zero */
-   int pixel_rep;       /* Leave at zero */
-   int frame_rate;      /* Screen refresh rate in Hz */
-   int interlaced;      /* Leave at zero */
-   int pixel_freq;      /* Clock frequency (width*height*framerate) */
-   int aspect_ratio;
-} hdmi_timings_t;
 
 static enum gfx_ctx_api drm_api           = GFX_CTX_NONE;
 /* 24 for XRGB8888 scanout, 30 for the XRGB2101010 of HDR10 */
@@ -165,29 +141,6 @@ static unsigned drm_fb_depth               = 24;
 static drmModeModeInfo gfx_ctx_crt_switch_mode;
 static bool switch_mode                   = false;
 
-#ifdef HAVE_MODELINE
-static float mode_vrefresh(drmModeModeInfo *mode)
-{
-   return  mode->clock * 1000.00f / (mode->htotal * mode->vtotal);
-}
-
-static void dump_mode(drmModeModeInfo *mode, int index)
-{
-   RARCH_DBG("[KMS] Mode details:  #%i %s %.2f %d %d %d %d %d %d %d %d %d\n",
-      index,
-      mode->name,
-      mode_vrefresh(mode),
-      mode->hdisplay,
-      mode->hsync_start,
-      mode->hsync_end,
-      mode->htotal,
-      mode->vdisplay,
-      mode->vsync_start,
-      mode->vsync_end,
-      mode->vtotal,
-      mode->clock);
-}
-#endif
 
 static EGLint *gfx_ctx_drm_egl_fill_attribs(
       gfx_ctx_drm_data_t *drm, EGLint *attr)
@@ -411,130 +364,6 @@ error:
 }
 #endif
 
-
-/* Get the mode from video_state */
-bool gfx_ctx_drm_get_mode_from_video_state(drmModeModeInfoPtr modeInfo)
-{
-#ifdef HAVE_MODELINE
-   video_driver_state_t *video_st = video_state_get_ptr();
-   if (video_st->crt_switch_st.vdisplay >= 1)
-   {
-      modeInfo->clock       = video_st->crt_switch_st.clock;
-      modeInfo->hdisplay    = video_st->crt_switch_st.hdisplay;
-      modeInfo->hsync_start = video_st->crt_switch_st.hsync_start;
-      modeInfo->hsync_end   = video_st->crt_switch_st.hsync_end;
-      modeInfo->htotal      = video_st->crt_switch_st.htotal;
-      modeInfo->vdisplay    = video_st->crt_switch_st.vdisplay;
-      modeInfo->vsync_start = video_st->crt_switch_st.vsync_start;
-      modeInfo->vsync_end   = video_st->crt_switch_st.vsync_end;
-      modeInfo->vtotal      = video_st->crt_switch_st.vtotal;
-      modeInfo->flags       = (video_st->crt_switch_st.interlace ? DRM_MODE_FLAG_INTERLACE : 0)
-         | (video_st->crt_switch_st.doublescan ? DRM_MODE_FLAG_DBLSCAN : 0)
-         | (video_st->crt_switch_st.hsync      ? DRM_MODE_FLAG_PHSYNC  : DRM_MODE_FLAG_NHSYNC)
-         | (video_st->crt_switch_st.vsync      ? DRM_MODE_FLAG_PVSYNC  : DRM_MODE_FLAG_NVSYNC);
-      modeInfo->hskew       = 0;
-      modeInfo->vscan       = 0;
-      modeInfo->vrefresh    = video_st->crt_switch_st.vrefresh;
-      modeInfo->type        = DRM_MODE_TYPE_USERDEF;
-
-      snprintf(modeInfo->name, DRM_DISPLAY_MODE_LEN, "RetroArch_CRT-%dx%d@%.02f%s"
-            , video_st->crt_switch_st.hdisplay
-            , video_st->crt_switch_st.vdisplay
-            , mode_vrefresh(modeInfo)
-            , video_st->crt_switch_st.interlace ? "i" : "");
-      dump_mode(modeInfo, 0);
-      /* consider the mode read and removed */
-      video_st->crt_switch_st.vdisplay = 0;
-      return true;
-   }
-#endif
-   return false;
-}
-
-/* Load custom hdmi timings from config */
-static bool gfx_ctx_drm_load_mode(drmModeModeInfoPtr modeInfo)
-{
-   settings_t *settings     = config_get_ptr();
-   char *crt_switch_timings = settings->arrays.crt_switch_timings;
-
-   if (modeInfo && crt_switch_timings && *crt_switch_timings)
-   {
-      hdmi_timings_t timings;
-      int *timings_fields[17];
-      int i;
-      char *p = crt_switch_timings;
-      char *endptr;
-
-      timings_fields[0]  = &timings.h_active_pixels;
-      timings_fields[1]  = &timings.h_sync_polarity;
-      timings_fields[2]  = &timings.h_front_porch;
-      timings_fields[3]  = &timings.h_sync_pulse;
-      timings_fields[4]  = &timings.h_back_porch;
-      timings_fields[5]  = &timings.v_active_lines;
-      timings_fields[6]  = &timings.v_sync_polarity;
-      timings_fields[7]  = &timings.v_front_porch;
-      timings_fields[8]  = &timings.v_sync_pulse;
-      timings_fields[9]  = &timings.v_back_porch;
-      timings_fields[10] = &timings.v_sync_offset_a;
-      timings_fields[11] = &timings.v_sync_offset_b;
-      timings_fields[12] = &timings.pixel_rep;
-      timings_fields[13] = &timings.frame_rate;
-      timings_fields[14] = &timings.interlaced;
-      timings_fields[15] = &timings.pixel_freq;
-      timings_fields[16] = &timings.aspect_ratio;
-
-      for (i = 0; i < 17; i++)
-      {
-         long val;
-
-         /* Skip whitespace */
-         while (*p == ' ' || *p == '\t')
-            p++;
-
-         if (*p == '\0')
-         {
-            RARCH_ERR("[KMS] Malformed mode requested: %s.\n", crt_switch_timings);
-            return false;
-         }
-
-         endptr = NULL;
-         val    = strtol(p, &endptr, 10);
-
-         if (endptr == p)
-         {
-            RARCH_ERR("[KMS] Malformed mode requested: %s.\n", crt_switch_timings);
-            return false;
-         }
-
-         *timings_fields[i] = (int)val;
-         p = endptr;
-      }
-
-      memset(modeInfo, 0, sizeof(drmModeModeInfo));
-      modeInfo->clock       = timings.pixel_freq / 1000;
-      modeInfo->hdisplay    = timings.h_active_pixels;
-      modeInfo->hsync_start = modeInfo->hdisplay + timings.h_front_porch;
-      modeInfo->hsync_end   = modeInfo->hsync_start + timings.h_sync_pulse;
-      modeInfo->htotal      = modeInfo->hsync_end + timings.h_back_porch;
-      modeInfo->hskew       = 0;
-      modeInfo->vdisplay    = timings.v_active_lines;
-      modeInfo->vsync_start = modeInfo->vdisplay + (timings.v_front_porch * (timings.interlaced ? 2 : 1));
-      modeInfo->vsync_end   = modeInfo->vsync_start + (timings.v_sync_pulse * (timings.interlaced ? 2 : 1));
-      modeInfo->vtotal      = modeInfo->vsync_end + (timings.v_back_porch * (timings.interlaced ? 2 : 1));
-      modeInfo->vscan       = 0; /* TODO: ?? */
-      modeInfo->vrefresh    = timings.frame_rate;
-      modeInfo->flags       = timings.interlaced ? DRM_MODE_FLAG_INTERLACE : 0;
-      modeInfo->flags      |= timings.v_sync_polarity ? DRM_MODE_FLAG_NVSYNC : DRM_MODE_FLAG_PVSYNC;
-      modeInfo->flags      |= timings.h_sync_polarity ? DRM_MODE_FLAG_NHSYNC : DRM_MODE_FLAG_PHSYNC;
-      modeInfo->type        = 0;
-      snprintf(modeInfo->name, DRM_DISPLAY_MODE_LEN, "CRT_%ux%u_%u",
-               modeInfo->hdisplay, modeInfo->vdisplay, modeInfo->vrefresh);
-
-      return true;
-   }
-
-   return false;
-}
 
 static void drm_fb_destroy_callback(struct gbm_bo *bo, void *data)
 {
@@ -1242,12 +1071,14 @@ have_device:
      - custom timings from configuration
      - else the current video mode from the CRTC
      - otherwise pick first connector mode */
-   if (gfx_ctx_drm_get_mode_from_video_state(&gfx_ctx_crt_switch_mode))
+   if (drm_mode_from_crt_switch(&gfx_ctx_crt_switch_mode))
    {
       drm->fb_width  = gfx_ctx_crt_switch_mode.hdisplay;
       drm->fb_height = gfx_ctx_crt_switch_mode.vdisplay;
    }
-   else if (gfx_ctx_drm_load_mode(&gfx_ctx_crt_switch_mode))
+   else if (drm_mode_from_timings(
+            config_get_ptr()->arrays.crt_switch_timings,
+            &gfx_ctx_crt_switch_mode))
    {
       drm->fb_width  = gfx_ctx_crt_switch_mode.hdisplay;
       drm->fb_height = gfx_ctx_crt_switch_mode.vdisplay;
@@ -1342,7 +1173,7 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
    /* Find desired video mode, and use that.
     * If not fullscreen, we get desired windowed size,
     * which is not appropriate. */
-   if (gfx_ctx_drm_get_mode_from_video_state(&gfx_ctx_crt_switch_mode))
+   if (drm_mode_from_crt_switch(&gfx_ctx_crt_switch_mode))
    {
       RARCH_DBG("[KMS] New mode detected: %dx%d.\n", gfx_ctx_crt_switch_mode.hdisplay, gfx_ctx_crt_switch_mode.vdisplay);
       g_drm_mode     = &gfx_ctx_crt_switch_mode;

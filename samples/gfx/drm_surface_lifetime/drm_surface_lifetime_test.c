@@ -30,7 +30,10 @@ void RARCH_DBG(const char *fmt, ...) { (void)fmt; }
 void RARCH_WARN(const char *fmt, ...) { (void)fmt; }
 void RARCH_ERR(const char *fmt, ...) { (void)fmt; }
 struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END];
-float video_driver_get_aspect_ratio(void) { return 4.0f / 3.0f; }
+static float drv_aspect = 4.0f / 3.0f;
+float video_driver_get_aspect_ratio(void) { return drv_aspect; }
+static video_driver_state_t video_st;
+video_driver_state_t *video_state_get_ptr(void) { return &video_st; }
 static unsigned retires;
 void video_driver_cached_frame_retire(void) { retires++; }
 static unsigned output_dims;
@@ -195,7 +198,7 @@ static uint32_t ov_fb;                 /* the fb the overlay plane scans out */
 static int32_t  ov_x, ov_y;
 static uint32_t ov_w, ov_h;
 /* The size the frame's plane reads from its fb */
-static uint32_t plane_sw, plane_sh;
+static uint32_t plane_sw, plane_sh, plane_cw;
 static unsigned ov_blanks, ov_setplanes;
 
 static uint32_t flight_fb, flight_ov_fb;
@@ -239,6 +242,7 @@ int drmModeSetPlane(int fd, uint32_t plane, uint32_t crtc, uint32_t fb,
    plane_fb = fb;
    plane_sw = sw >> 16;
    plane_sh = sh >> 16;
+   plane_cw = cw;
    return 0;
 }
 
@@ -1528,6 +1532,113 @@ int main(void)
          count(dumb_alive), count(fb_alive), maps_alive);
    if (failures == before)
       printf("   ok   the threaded wrapper's frames scanned out where they lie\n");
+   before = failures;
+
+   /* CRT modes: the switch's modeline at init and on a mode switch,
+    * HDMI timings from the config, and the aspect the switch puts
+    * taken up with the next frame */
+   {
+      videocrt_switch_t *sw = &video_st.crt_switch_st;
+      memset(sw, 0, sizeof(*sw));
+      sw->clock = 25000; sw->hdisplay = 2560; sw->hsync_start = 2620;
+      sw->hsync_end = 2860; sw->htotal = 3200; sw->vdisplay = 240;
+      sw->vsync_start = 244; sw->vsync_end = 247; sw->vtotal = 262;
+      sw->vrefresh = 60; sw->hsync = 0; sw->vsync = 0;
+      v = (struct drm_video*)drm_init(&info);
+      CHECK(v && crtc_mode.hdisplay == 2560 && crtc_mode.htotal == 3200
+            && crtc_mode.vtotal == 262 && crtc_mode.clock == 25000
+            && (crtc_mode.flags & DRM_MODE_FLAG_NHSYNC)
+            && (crtc_mode.flags & DRM_MODE_FLAG_NVSYNC) && !sw->vdisplay,
+            "the CRT switch's modeline is set at init, and taken (%ux%u)",
+            crtc_mode.hdisplay, crtc_mode.vdisplay);
+      if (v)
+      {
+         unsigned c0;
+         memset(frame_px, 0, sizeof(frame_px));
+         core_frame(v, 320, 240);
+         sw->clock = 6700; sw->hdisplay = 320; sw->hsync_start = 336;
+         sw->hsync_end = 367; sw->htotal = 426; sw->vdisplay = 240;
+         sw->vsync_start = 244; sw->vsync_end = 247; sw->vtotal = 262;
+         sw->interlace = 0; sw->hsync = 1; sw->vsync = 1;
+         drm_set_video_mode(v, VIDEO_SCALE_PACK(320, 240), true);
+         CHECK(crtc_mode.hdisplay == 320 && crtc_mode.htotal == 426
+               && (crtc_mode.flags & DRM_MODE_FLAG_PHSYNC) && !sw->vdisplay
+               && plane_fb && fb_alive[plane_fb],
+               "a modeline switched to, the frame back on its plane");
+         /* A super resolution: the switch puts the mode's own aspect */
+         sw->clock = 50000; sw->hdisplay = 2560; sw->hsync_start = 2620;
+         sw->hsync_end = 2860; sw->htotal = 3200; sw->vdisplay = 240;
+         sw->vsync_start = 244; sw->vsync_end = 247; sw->vtotal = 262;
+         drm_set_video_mode(v, VIDEO_SCALE_PACK(2560, 240), true);
+         drv_aspect = 2560.0f / 240.0f;
+         drm_apply_state_changes(v);
+         c0 = commits;
+         frame_px[0] = 0x123456;
+         core_frame(v, 320, 240);
+         CHECK(plane_cw == 2560 && commits == c0
+               && ((uint32_t*)v->main_surface->current_page->buf.map)[0]
+                  == 0x123456,
+               "the frame placed at the switch's aspect with the next frame"
+               " (%u wide)", plane_cw);
+         drv_aspect = 4.0f / 3.0f;
+         drm_gfx_free(v);
+      }
+      CHECK(crtc_mode.hdisplay == 1920, "the console gets its mode back");
+      strlcpy(settings.arrays.crt_switch_timings,
+            "320 1 20 30 40 240 1 4 3 15 0 0 0 60 0 6400000 1",
+            sizeof(settings.arrays.crt_switch_timings));
+      v = (struct drm_video*)drm_init(&info);
+      CHECK(v && crtc_mode.hdisplay == 320 && crtc_mode.htotal == 410
+            && crtc_mode.vtotal == 262 && crtc_mode.clock == 6400
+            && (crtc_mode.flags & DRM_MODE_FLAG_NHSYNC)
+            && (crtc_mode.flags & DRM_MODE_FLAG_NVSYNC),
+            "HDMI timings from the config (%ux%u, htotal %u)",
+            crtc_mode.hdisplay, crtc_mode.vdisplay, crtc_mode.htotal);
+      if (v)
+         drm_gfx_free(v);
+      strlcpy(settings.arrays.crt_switch_timings, "320 1 20",
+            sizeof(settings.arrays.crt_switch_timings));
+      v = (struct drm_video*)drm_init(&info);
+      CHECK(v && crtc_mode.hdisplay == 1920,
+            "malformed timings: the console's mode");
+      if (v)
+         drm_gfx_free(v);
+      settings.arrays.crt_switch_timings[0] = '\0';
+   }
+   CHECK(fds_open == 0 && !count(dumb_alive), "and leaves nothing");
+   if (failures == before)
+      printf("   ok   CRT modelines and HDMI timings set, the aspect taken up\n");
+   before = failures;
+
+   /* Content running under the menu: its frames are not flipped over
+    * the menu, and the last one goes up when the menu closes */
+   v = (struct drm_video*)drm_init(&info);
+   if (v)
+   {
+      uint32_t menu_fb;
+      unsigned c0, f;
+      core_frame(v, 64, 32);
+      drm_set_texture_enable(v, true, false);
+      drm_set_texture_frame(v, frame_px, true, VIDEO_SCALE_PACK(32, 24), 1.0f);
+      menu_fb = plane_fb;
+      c0      = commits;
+      for (f = 1; f <= 5; f++)
+      {
+         frame_px[0] = 0xab0000 | f;
+         core_frame(v, 64 + (f == 3), 32);
+         CHECK(plane_fb == menu_fb, "frame %u went over the menu", f);
+      }
+      CHECK(commits == c0, "no flip under the menu (%u)", commits - c0);
+      drm_set_texture_enable(v, false, false);
+      CHECK(v->main_surface && v->main_surface->current_page
+            && plane_fb == v->main_surface->current_page->buf.fb_id
+            && ((uint32_t*)v->main_surface->current_page->buf.map)[0]
+               == (0xab0000u | 5),
+            "closing the menu shows the last frame");
+      drm_gfx_free(v);
+   }
+   if (failures == before)
+      printf("   ok   content under the menu stays under it\n");
 
 
    if (failures)

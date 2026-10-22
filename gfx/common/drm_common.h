@@ -74,6 +74,13 @@ bool drm_hotplug_needs_restart(int fd, unsigned monitor_index, bool *lost);
 
 float drm_get_refresh_rate(void *data);
 
+/* The mode the CRT switch asked for, taken: false when none is waiting */
+bool drm_mode_from_crt_switch(drmModeModeInfo *mode);
+
+/* A mode from HDMI timings as config.txt writes them (17 numbers):
+ * false when @timings is empty or malformed */
+bool drm_mode_from_timings(const char *timings, drmModeModeInfo *mode);
+
 /* drm_wait_flip(), also watching hotplug_fd (-1 for none): its revents
  * go to *hotplug when it wakes, and its data is left for the caller */
 bool drm_wait_flip_hotplug(int timeout, int hotplug_fd, short *hotplug);

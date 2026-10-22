@@ -14,12 +14,18 @@
  */
 
 #include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include <compat/strl.h>
 
 #include <retro_miscellaneous.h>
 
 #include "../../verbosity.h"
+#ifdef HAVE_MODELINE
+#include "../video_driver.h"
+#endif
 
 #include "drm_common.h"
 
@@ -220,6 +226,94 @@ bool drm_wait_flip_hotplug(int timeout, int hotplug_fd, short *hotplug)
       if (timeout >= 0)
          return false;
    }
+}
+
+bool drm_mode_from_crt_switch(drmModeModeInfo *mode)
+{
+#ifdef HAVE_MODELINE
+   video_driver_state_t *video_st = video_state_get_ptr();
+   videocrt_switch_t *sw          = &video_st->crt_switch_st;
+   if (sw->vdisplay < 1)
+      return false;
+   memset(mode, 0, sizeof(*mode));
+   mode->clock       = sw->clock;
+   mode->hdisplay    = sw->hdisplay;
+   mode->hsync_start = sw->hsync_start;
+   mode->hsync_end   = sw->hsync_end;
+   mode->htotal      = sw->htotal;
+   mode->vdisplay    = sw->vdisplay;
+   mode->vsync_start = sw->vsync_start;
+   mode->vsync_end   = sw->vsync_end;
+   mode->vtotal      = sw->vtotal;
+   mode->flags       = (sw->interlace  ? DRM_MODE_FLAG_INTERLACE : 0)
+      | (sw->doublescan ? DRM_MODE_FLAG_DBLSCAN : 0)
+      | (sw->hsync      ? DRM_MODE_FLAG_PHSYNC  : DRM_MODE_FLAG_NHSYNC)
+      | (sw->vsync      ? DRM_MODE_FLAG_PVSYNC  : DRM_MODE_FLAG_NVSYNC);
+   mode->vrefresh    = sw->vrefresh;
+   mode->type        = DRM_MODE_TYPE_USERDEF;
+   snprintf(mode->name, DRM_DISPLAY_MODE_LEN, "RetroArch_CRT-%dx%d@%.02f%s",
+         sw->hdisplay, sw->vdisplay,
+         (mode->htotal && mode->vtotal) ? drm_calc_refresh_rate(mode) : 0.0f,
+         sw->interlace ? "i" : "");
+   RARCH_DBG("[KMS] Mode %s: %d %d %d %d %d %d %d %d %d\n", mode->name,
+         mode->hdisplay, mode->hsync_start, mode->hsync_end, mode->htotal,
+         mode->vdisplay, mode->vsync_start, mode->vsync_end, mode->vtotal,
+         mode->clock);
+   /* Taken */
+   sw->vdisplay = 0;
+   return true;
+#else
+   return false;
+#endif
+}
+
+bool drm_mode_from_timings(const char *timings, drmModeModeInfo *mode)
+{
+   /* https://www.raspberrypi.org/documentation/configuration/config-txt/video.md
+    * h_active, h_sync_polarity, h_front_porch, h_sync_pulse,
+    * h_back_porch, v_active, v_sync_polarity, v_front_porch,
+    * v_sync_pulse, v_back_porch, v_sync_offset_a, v_sync_offset_b,
+    * pixel_rep, frame_rate, interlaced, pixel_freq, aspect_ratio */
+   long t[17];
+   const char *p = timings;
+   unsigned il;
+   int i;
+
+   if (!mode || !p || !*p)
+      return false;
+   for (i = 0; i < 17; i++)
+   {
+      char *end = NULL;
+      while (*p == ' ' || *p == '\t')
+         p++;
+      if (*p)
+         t[i] = strtol(p, &end, 10);
+      if (!*p || end == p)
+      {
+         RARCH_ERR("[KMS] Malformed mode requested: %s.\n", timings);
+         return false;
+      }
+      p = end;
+   }
+
+   il = t[14] ? 2 : 1;
+   memset(mode, 0, sizeof(*mode));
+   mode->clock       = (uint32_t)(t[15] / 1000);
+   mode->hdisplay    = (uint16_t)t[0];
+   mode->hsync_start = (uint16_t)(mode->hdisplay + t[2]);
+   mode->hsync_end   = (uint16_t)(mode->hsync_start + t[3]);
+   mode->htotal      = (uint16_t)(mode->hsync_end + t[4]);
+   mode->vdisplay    = (uint16_t)t[5];
+   mode->vsync_start = (uint16_t)(mode->vdisplay + t[7] * il);
+   mode->vsync_end   = (uint16_t)(mode->vsync_start + t[8] * il);
+   mode->vtotal      = (uint16_t)(mode->vsync_end + t[9] * il);
+   mode->vrefresh    = (uint32_t)t[13];
+   mode->flags       = (t[14] ? DRM_MODE_FLAG_INTERLACE : 0)
+      | (t[6] ? DRM_MODE_FLAG_NVSYNC : DRM_MODE_FLAG_PVSYNC)
+      | (t[1] ? DRM_MODE_FLAG_NHSYNC : DRM_MODE_FLAG_PHSYNC);
+   snprintf(mode->name, DRM_DISPLAY_MODE_LEN, "CRT_%ux%u_%u",
+         mode->hdisplay, mode->vdisplay, mode->vrefresh);
+   return true;
 }
 
 float drm_calc_refresh_rate(drmModeModeInfo *mode)

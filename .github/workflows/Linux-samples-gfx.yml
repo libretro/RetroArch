@@ -1733,7 +1733,12 @@ jobs:
           # memory is scanned out where a frame lies, from inside a
           # buffer too, never written while shown or on its way, freed
           # only once the plane has left it, and copied where the display
-          # refuses the pitch or the copy turns the frame.
+          # refuses the pitch or the copy turns the frame. The CRT
+          # switch's modeline is set at init and on a mode switch, HDMI
+          # timings from the config, malformed ones passed over, and the
+          # aspect the switch puts taken up with the next frame; content
+          # running under the menu is never flipped over it, and its last
+          # frame goes up when the menu closes.
           make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
              timeout 60 ./drm_surface_lifetime_test
