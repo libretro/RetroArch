@@ -15,6 +15,7 @@
 package com.retroarch.browser.retroactivity;
 
 import android.annotation.TargetApi;
+import android.app.ActivityManager;
 import android.app.Presentation;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -32,6 +33,9 @@ import android.util.Log;
 import android.util.SparseBooleanArray;
 import android.view.Choreographer;
 import android.view.Display;
+import android.view.InputDevice;
+import android.view.KeyCharacterMap;
+import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.SurfaceHolder;
@@ -79,6 +83,22 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
   private Screen presentationScreen;
   /* The screen whose surface native code holds */
   private Screen surfaceOwner;
+  /* What native code was last told of the Presentation's focus */
+  private boolean presentationFocused;
+
+  /* nativeMotion()'s axes, ANDROID_JOYSTICK_AXES' order */
+  private static final int[] AXES = {
+    MotionEvent.AXIS_X, MotionEvent.AXIS_Y, MotionEvent.AXIS_Z,
+    MotionEvent.AXIS_RZ, MotionEvent.AXIS_HAT_X, MotionEvent.AXIS_HAT_Y,
+    MotionEvent.AXIS_LTRIGGER, MotionEvent.AXIS_RTRIGGER,
+    MotionEvent.AXIS_BRAKE, MotionEvent.AXIS_GAS
+  };
+  /* Sources native code reads as touches or a mouse, never as a stick
+   * (android_input.c); compile-time constants, so safe below API 26 */
+  private static final int POINTER_SOURCES = InputDevice.SOURCE_TOUCHPAD
+      | InputDevice.SOURCE_TOUCHSCREEN | InputDevice.SOURCE_MOUSE_RELATIVE
+      | InputDevice.SOURCE_STYLUS | InputDevice.SOURCE_MOUSE;
+  private final float[] axisValues = new float[AXES.length];
 
   private final Choreographer.FrameCallback publishFrame =
       new Choreographer.FrameCallback() {
@@ -116,6 +136,7 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
           presentation       = null;
           presentationId     = -1;
           presentationScreen = null;
+          reportFocus(false);
           if (!started || wantedId != id)
             return;
           /* One that cancels before it draws would do so again */
@@ -272,15 +293,18 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
     if ((display = displayManager.getDisplay(displayId)) == null)
       return;
 
-    p      = new Presentation(activity, display);
+    p      = new SecondPresentation(display);
     /* From Android 12 a Presentation has a window context of its own */
     if (Build.VERSION.SDK_INT < 31)
       updateMetrics(p.getResources(), display);
     window = p.getWindow();
-    /* Touching it must not take focus or the gamepad from the Activity */
+    /* It takes focus, so a focus mode or a tap can give it the pad; it
+     * never takes the soft keyboard itself */
     if (window != null)
-      window.addFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
-          | WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL);
+      window.addFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
+          | WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM);
+    /* BACK goes to native code; never cancel on it */
+    p.setCancelable(false);
     view   = new SurfaceView(p.getContext());
     screen = new Screen(wantedRequest);
     view.setFocusable(false);
@@ -337,6 +361,55 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
     res.updateConfiguration(config, now);
   }
 
+  /* Native code counts the Presentation's focus with the Activity's */
+  private void reportFocus(boolean focused)
+  {
+    if (focused == presentationFocused)
+      return;
+    presentationFocused = focused;
+    nativeFocusChanged(focused);
+  }
+
+  /* Every key goes to native code, as the Activity's do; the answer is
+   * native code's, so a key it uses never comes back as a fallback key
+   * (BUTTON_B as BACK, BUTTON_MODE as HOME) */
+  private boolean relayKey(KeyEvent e)
+  {
+    nativeKey(e.getDeviceId(), e.getSource(), e.getAction(),
+        e.getKeyCode(), e.getFlags(), e.getMetaState(), e.getEventTime());
+    return nativeUses(e);
+  }
+
+  /* android_input.c leaves the volume keys to the system, and the soft
+   * keyboard's keys but BACK to the text field while that is open */
+  private boolean nativeUses(KeyEvent e)
+  {
+    int code = e.getKeyCode();
+    if (code == KeyEvent.KEYCODE_VOLUME_UP
+        || code == KeyEvent.KEYCODE_VOLUME_DOWN)
+      return false;
+    return code == KeyEvent.KEYCODE_BACK
+        || !activity.isKeyboardActive()
+        || ((e.getFlags() & KeyEvent.FLAG_SOFT_KEYBOARD) == 0
+            && e.getDeviceId() != KeyCharacterMap.VIRTUAL_KEYBOARD);
+  }
+
+  /* A stick or hat move goes to native code, as the Activity's do;
+   * touches and mouse moves stay with the view */
+  private boolean relayMotion(MotionEvent e)
+  {
+    int index = e.getActionIndex();
+    if ((e.getSource() & POINTER_SOURCES) != 0)
+      return false;
+    /* Sent as the focus leaves; it repeats the last axes */
+    if (e.getActionMasked() == MotionEvent.ACTION_CANCEL)
+      return true;
+    for (int i = 0; i < AXES.length; i++)
+      axisValues[i] = e.getAxisValue(AXES[i], index);
+    nativeMotion(e.getDeviceId(), e.getSource(), axisValues);
+    return true;
+  }
+
   private void showFailed(int displayId, RuntimeException e)
   {
     Log.w(TAG, "[SecondDisplay] Cannot show on display " + displayId, e);
@@ -350,6 +423,11 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
     presentation       = null;
     presentationId     = -1;
     presentationScreen = null;
+    /* With one focus for all displays, it would pass to this
+     * display's launcher; take it back first */
+    if (p != null && presentationFocused && started)
+      takeFocusBack();
+    reportFocus(false);
     if (p == null)
       return;
     /* The display may already be gone */
@@ -359,6 +437,20 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
     }
     catch (RuntimeException e)
     {
+    }
+  }
+
+  private void takeFocusBack()
+  {
+    ActivityManager am = (ActivityManager)
+        activity.getSystemService(Context.ACTIVITY_SERVICE);
+    try
+    {
+      am.moveTaskToFront(activity.getTaskId(), 0);
+    }
+    catch (RuntimeException e)
+    {
+      Log.w(TAG, "[SecondDisplay] Cannot take the focus back", e);
     }
   }
 
@@ -465,6 +557,33 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
     }
   }
 
+  /** The second display's window: it takes focus, and passes the keys
+   * and sticks it gets to native code. */
+  private final class SecondPresentation extends Presentation
+  {
+    SecondPresentation(Display display)
+    {
+      super(activity, display);
+    }
+
+    @Override public boolean dispatchKeyEvent(KeyEvent e)
+    {
+      return relayKey(e) || super.dispatchKeyEvent(e);
+    }
+
+    @Override public boolean dispatchGenericMotionEvent(MotionEvent e)
+    {
+      return relayMotion(e) || super.dispatchGenericMotionEvent(e);
+    }
+
+    @Override public void onWindowFocusChanged(boolean hasFocus)
+    {
+      super.onWindowFocusChanged(hasFocus);
+      if (this == presentation)
+        reportFocus(hasFocus);
+    }
+  }
+
   /** API 31: a real panel or monitor has product info; casts and
    * screen shares have none. Its own class, so older systems never
    * load the type. */
@@ -486,4 +605,9 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
   static native void nativeSurfaceDestroyed();
   static native void nativeTouch(int pointerId, int x, int y,
       boolean down, int generation);
+  static native void nativeKey(int deviceId, int source, int action,
+      int keyCode, int flags, int metaState, long eventTime);
+  static native void nativeMotion(int deviceId, int source,
+      float[] axes);
+  static native void nativeFocusChanged(boolean focused);
 }

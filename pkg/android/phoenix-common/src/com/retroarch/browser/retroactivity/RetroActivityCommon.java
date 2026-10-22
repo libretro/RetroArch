@@ -1846,6 +1846,11 @@ public class RetroActivityCommon extends NativeActivity
   private boolean  keyboardActive;
   private boolean  keyboardSuppressWatcher;
 
+  /* Read by SecondDisplayController on the UI thread */
+  boolean isKeyboardActive() {
+    return keyboardActive;
+  }
+
   /**
    * Raises the native system keyboard for menu text entry.
    *
@@ -1918,12 +1923,16 @@ public class RetroActivityCommon extends NativeActivity
         keyboardEditText.setFocusableInTouchMode(true);
         keyboardEditText.requestFocus();
 
-        InputMethodManager imm = (InputMethodManager)
-              getSystemService(Context.INPUT_METHOD_SERVICE);
-        if (imm != null)
-          imm.showSoftInput(keyboardEditText, InputMethodManager.SHOW_FORCED);
+        askForKeyboard();
       }
     });
+  }
+
+  private void askForKeyboard() {
+    InputMethodManager imm = (InputMethodManager)
+          getSystemService(Context.INPUT_METHOD_SERVICE);
+    if (imm != null)
+      imm.showSoftInput(keyboardEditText, InputMethodManager.SHOW_FORCED);
   }
 
   /**
@@ -1959,6 +1968,21 @@ public class RetroActivityCommon extends NativeActivity
         keyboardEditText.setVisibility(View.GONE);
       }
     });
+  }
+
+  /* On a one-focus system the IME refuses the field while the second
+   * display's window holds the focus; it serves the field again only
+   * after this returns */
+  @Override
+  public void onWindowFocusChanged(boolean hasFocus) {
+    super.onWindowFocusChanged(hasFocus);
+    if (hasFocus && keyboardActive && keyboardEditText != null)
+      keyboardEditText.post(new Runnable() {
+        @Override public void run() {
+          if (keyboardActive)
+            askForKeyboard();
+        }
+      });
   }
 
   /////////////// JNI methods ///////////////
