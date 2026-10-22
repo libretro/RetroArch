@@ -81,7 +81,7 @@ with tempfile.TemporaryDirectory(prefix="android-root-optional-") as directory:
     path = Path(directory)
     (path / "test.c").write_text(unit, encoding="utf-8")
     for android in (False, True):
-        for codec in ("HAVE_RMP4", "HAVE_RVP9"):
+        for codec in ("HAVE_RMP4", "HAVE_RVP9", "HAVE_RAV1"):
             binary = path / (("android-" if android else "other-") + codec)
             command = compiler + flags + (["-DANDROID"] if android else [])
             command += ["-D" + codec, "-I" + str(root), "-I" + str(root / "gfx/include"),

@@ -58,7 +58,7 @@ static INLINE bool mediacodec_av1_registry_init(mediacodec_av1_registry_t *r,
    r->offer.user           = r;
    r->offer.open_config    = mediacodec_av1_registry_open;
    r->offer.close          = r->backend.offer.close;
-   r->offer.drain = r->backend.offer.drain;
+   r->offer.drain          = r->backend.offer.drain;
    r->offer.packet_decoder = true;
    return true;
 }

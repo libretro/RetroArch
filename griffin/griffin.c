@@ -369,7 +369,8 @@ VIDEO CONTEXT
 #endif
 
 #ifdef HAVE_VULKAN
-#if defined(ANDROID) && (defined(HAVE_RMP4) || defined(HAVE_RVP9))
+#if defined(ANDROID) \
+   && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1))
 #include "../gfx/common/vulkan_android_device.c"
 #include "../gfx/common/android_image_queue.c"
 #include "../gfx/common/android_frame.c"
@@ -393,6 +394,10 @@ VIDEO CONTEXT
 #ifdef HAVE_RVP9
 #include "../gfx/common/mediacodec_vp9_decoder.c"
 #include "../gfx/common/mediacodec_vp9_backend.c"
+#endif
+#ifdef HAVE_RAV1
+#include "../gfx/common/mediacodec_av1_decoder.c"
+#include "../gfx/common/mediacodec_av1_backend.c"
 #endif
 #endif
 #endif

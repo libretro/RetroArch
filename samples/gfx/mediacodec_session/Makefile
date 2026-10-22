@@ -66,7 +66,7 @@ vulkan_device_test: vulkan_device_test.c ../../../gfx/common/vulkan_android_devi
 	$(CC) $(CFLAGS) -I../../../gfx/include vulkan_device_test.c ../../../gfx/common/vulkan_android_device.c -o $@ $(LDFLAGS)
 check: all
 	./renderer_backend_test
-	CC="$(CC)" python3 renderer_sources_test.py
+	SANITIZER="$(SANITIZER)" CC="$(CC)" python3 renderer_sources_test.py
 	./vp9_backend_test
 	./vp9_color_test
 	./vp9_decoder_test
@@ -108,5 +108,5 @@ vp9_backend_test: vp9_backend_test.c vp9_registry_test.h ../../../gfx/common/med
 av1_backend_test: av1_backend_test.c av1_registry_test.h av1_config_test.h ../../../gfx/common/mediacodec_av1_registry.h ../../../gfx/common/mediacodec_av1_backend.c ../../../gfx/common/mediacodec_av1_backend.h
 	$(CC) $(CFLAGS) $(BACKEND_HOST_FLAGS) -D_DEFAULT_SOURCE -DHAVE_THREADS -pthread av1_backend_test.c $(EXPORT_SOURCES) ../../../libretro-common/rthreads/rthreads.c ../../../libretro-common/rthreads/retro_eventcount.c -o $@ $(LDFLAGS) -lm
 
-renderer_backend_test: renderer_backend_test.c ../../../gfx/drivers/vulkan_android_backend.h ../../../gfx/common/mediacodec_hevc_registry.h ../../../gfx/common/mediacodec_vp9_registry.h
-	$(CC) $(CFLAGS) -DHAVE_THREADS -DHAVE_RMP4 -DHAVE_RVP9 -I../../../gfx/include renderer_backend_test.c -o $@ $(LDFLAGS)
+renderer_backend_test: renderer_backend_test.c ../../../gfx/drivers/vulkan_android_backend.h ../../../gfx/common/mediacodec_hevc_registry.h ../../../gfx/common/mediacodec_vp9_registry.h ../../../gfx/common/mediacodec_av1_registry.h
+	$(CC) $(CFLAGS) -DHAVE_THREADS -DHAVE_RMP4 -DHAVE_RVP9 -DHAVE_RAV1 -I../../../gfx/include renderer_backend_test.c -o $@ $(LDFLAGS)

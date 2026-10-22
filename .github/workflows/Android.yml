@@ -157,14 +157,22 @@ jobs:
                     -I. -Ilibretro-common/include -Igfx/include "${extra[@]}" \
                     -c "$root_source" -o "$RUNNER_TEMP/$(basename "$root_source")-$target-$api-$offset.o"
                 done
-                for root_source in gfx/common/vulkan_common.c gfx/drivers/vulkan.c; do
-                  "$bin/$target$api-clang" \
-                    -DANDROID -DHAVE_MENU -DHAVE_GFX_WIDGETS \
-                    -DHAVE_VULKAN -DHAVE_RVP9 -DHAVE_DYLIB -DHAVE_THREADS \
-                    -Dinline=__inline__ -O1 -std=c89 \
-                    -Werror=declaration-after-statement -Werror=frame-larger-than -Wframe-larger-than=4096 \
-                    -I. -Ilibretro-common/include -Igfx/include "${extra[@]}" \
-                    -c "$root_source" -o "$RUNNER_TEMP/vp9-only-$(basename "$root_source")-$target-$api-$offset.o"
+                for variant in vp9-only av1-only no-codecs; do
+                  codec_flags=()
+                  case "$variant" in
+                    vp9-only) codec_flags=(-DHAVE_RVP9 -DHAVE_THREADS) ;;
+                    av1-only) codec_flags=(-DHAVE_RAV1 -DHAVE_THREADS) ;;
+                    no-codecs) codec_flags=(-DHAVE_THREADS) ;;
+                  esac
+                  for root_source in gfx/common/vulkan_common.c gfx/drivers/vulkan.c; do
+                    "$bin/$target$api-clang" \
+                      -DANDROID -DHAVE_MENU -DHAVE_GFX_WIDGETS \
+                      -DHAVE_VULKAN -DHAVE_DYLIB "${codec_flags[@]}" \
+                      -Dinline=__inline__ -O1 -std=c89 \
+                      -Werror=declaration-after-statement -Werror=frame-larger-than -Wframe-larger-than=4096 \
+                      -I. -Ilibretro-common/include -Igfx/include "${extra[@]}" \
+                      -c "$root_source" -o "$RUNNER_TEMP/$variant-$(basename "$root_source")-$target-$api-$offset.o"
+                  done
                 done
                 for player_source in libretro-common/formats/video_player.c libretro-common/formats/image_transfer.c libretro-common/formats/webm/rwebm_video.c libretro-common/formats/mp4/rmp4_video.c; do
                   "$bin/$target$api-clang" \
@@ -186,6 +194,29 @@ jobs:
                   -Wno-unused-parameter -Wno-long-long -Wno-c99-extensions -Wframe-larger-than=2048 -fstack-usage \
                   -Ilibretro-common/include "${extra[@]}" -c libretro-common/formats/vp9/rvp9.c \
                   -o "$RUNNER_TEMP/threadless-rvp9.c-$target-$api-$offset.o"
+                # Link AV1-only roots with exactly their selected native sources.
+                av1_objects=()
+                for source in mediacodec_inventory android_image_queue android_image_ndk android_frame mediacodec_session mediacodec_color mediacodec_frame_export mediacodec_av1_decoder mediacodec_av1_backend vulkan_android_image vulkan_android_sync vulkan_android_pipeline vulkan_android_submit vulkan_android_cache_entry vulkan_android_cache vulkan_android_device; do
+                  av1_objects+=("$RUNNER_TEMP/$source-$target-$api-$offset.o")
+                done
+                "$bin/ld.lld" -r "${av1_objects[@]}" \
+                  "$RUNNER_TEMP/av1-only-vulkan_common.c-$target-$api-$offset.o" \
+                  "$RUNNER_TEMP/av1-only-vulkan.c-$target-$api-$offset.o" \
+                  "$RUNNER_TEMP/rjni.c-$target-$api-$offset.o" \
+                  "$RUNNER_TEMP/rav1_hw.c-$target-$api-$offset.o" \
+                  -o "$RUNNER_TEMP/av1-only-root-$target-$api-$offset.o"
+                if "$bin/llvm-nm" -u "$RUNNER_TEMP/av1-only-root-$target-$api-$offset.o" | \
+                    grep -Eq ' U (rav1_|rvp9_|rh265_|rjni_env$|mediacodec_|android_frame_|android_image_|vulkan_android_)'; then
+                  echo "Unresolved private helper in AV1-only Android root"
+                  exit 1
+                fi
+                for variant in no-codecs; do
+                  if "$bin/llvm-nm" -u "$RUNNER_TEMP/$variant-vulkan.c-$target-$api-$offset.o" | \
+                      grep -Eq ' U (mediacodec_|rav1_(set|unset)_hw_backend)'; then
+                    echo "Unexpected native decoder dependency: $variant"
+                    exit 1
+                  fi
+                done
                 "$bin/ld.lld" -r \
                   "$RUNNER_TEMP/unity-$target-$api-$offset.o" \
                   "$RUNNER_TEMP/vulkan_common.c-$target-$api-$offset.o" \

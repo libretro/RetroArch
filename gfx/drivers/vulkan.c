@@ -65,7 +65,8 @@
 #include "../common/vaapi_hevc_backend.h"
 #endif
 #endif
-#if defined(ANDROID) && (defined(HAVE_RMP4) || defined(HAVE_RVP9))
+#if defined(ANDROID) \
+   && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1))
 #include "../common/vulkan_android_cache.h"
 #endif
 #include "../common/rgba16_pack.h"
@@ -210,7 +211,8 @@ struct vk_texture
    vaapi_hevc_vulkan_cache_t *vaapi_cache;
    struct vk_texture *vaapi_next;
 #endif
-#if defined(ANDROID) && (defined(HAVE_RMP4) || defined(HAVE_RVP9))
+#if defined(ANDROID) \
+   && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1))
    vulkan_android_cache_t *android_cache;
 #endif
    VkDeviceSize memory_size;     /* uint64_t alignment */
@@ -752,7 +754,7 @@ typedef struct vk
 #include "vulkan_vaapi_backend.h"
 #endif
 #if defined(ANDROID) && defined(HAVE_THREADS) \
-   && (defined(HAVE_RMP4) || defined(HAVE_RVP9))
+   && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1))
 #include "vulkan_android_backend.h"
 #endif
 
@@ -1878,7 +1880,8 @@ static void vulkan_stream_states_flush(vk_t *vk)
 static void vulkan_texture_retire(vk_t *vk, struct vk_texture *texture)
 {
    struct vk_stream_state **cur = &vk->stream_states;
-#if defined(ANDROID) && (defined(HAVE_RMP4) || defined(HAVE_RVP9))
+#if defined(ANDROID) \
+   && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1))
    if (texture->android_cache)
    {
       vulkan_android_cache_close(texture->android_cache);
@@ -14266,7 +14269,8 @@ static struct vk_stream_state *vulkan_import_state_get(vk_t *vk,
 
 /* Sample exported planes directly, or copy into a buffer when no views
  * are available. Both paths preserve the producer's layout and lease. */
-#if defined(ANDROID) && (defined(HAVE_RMP4) || defined(HAVE_RVP9))
+#if defined(ANDROID) \
+   && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1))
 #include "vulkan_android_video.h"
 #endif
 #ifdef HAVE_VAAPI
@@ -14326,7 +14330,8 @@ static enum video_texture_update vulkan_import_convert(vk_t *vk,
    }
 #endif
 
-#if defined(ANDROID) && (defined(HAVE_RMP4) || defined(HAVE_RVP9))
+#if defined(ANDROID) \
+   && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1))
    /* Opaque Android image leases are never raw VkImage/timeline handles. */
    if (android_frame_callback(f->abandon))
       return vulkan_android_renderer_import(vk, texture, f);
@@ -14570,7 +14575,8 @@ static enum video_texture_update vulkan_import_texture(void *data,
    enum video_texture_update r;
    VkFormat output_format;
    bool opaque_input = false;
-#if defined(ANDROID) && (defined(HAVE_RMP4) || defined(HAVE_RVP9))
+#if defined(ANDROID) \
+   && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1))
    opaque_input = f && android_frame_callback(f->abandon);
 #endif
 #ifdef HAVE_VAAPI

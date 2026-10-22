@@ -1835,7 +1835,7 @@ ifeq ($(HAVE_VULKAN), 1)
       endif
    endif
 
-   ifneq ($(filter 1,$(HAVE_RMP4) $(HAVE_RVP9)),)
+   ifneq ($(filter 1,$(HAVE_RMP4) $(HAVE_RVP9) $(HAVE_RAV1)),)
       ifeq ($(ANDROID), 1)
          OBJ += gfx/common/vulkan_android_device.o \
                 gfx/common/android_image_queue.o \
@@ -1860,6 +1860,10 @@ ifeq ($(HAVE_VULKAN), 1)
             ifeq ($(HAVE_RVP9), 1)
                OBJ += gfx/common/mediacodec_vp9_decoder.o \
                       gfx/common/mediacodec_vp9_backend.o
+            endif
+            ifeq ($(HAVE_RAV1), 1)
+               OBJ += gfx/common/mediacodec_av1_decoder.o \
+                      gfx/common/mediacodec_av1_backend.o
             endif
          endif
       endif

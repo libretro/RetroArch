@@ -8,13 +8,20 @@
 #ifdef HAVE_RVP9
 #include "../common/mediacodec_vp9_registry.h"
 #endif
-#if defined(MEDIACODEC_HEVC_REGISTRY) || defined(MEDIACODEC_VP9_REGISTRY)
+#ifdef HAVE_RAV1
+#include "../common/mediacodec_av1_registry.h"
+#endif
+#if defined(MEDIACODEC_HEVC_REGISTRY) || defined(MEDIACODEC_VP9_REGISTRY) \
+      || defined(MEDIACODEC_AV1_REGISTRY)
 #define VULKAN_ANDROID_DECODERS 1
 #ifdef HAVE_RMP4
 static mediacodec_hevc_registry_t vulkan_android_hevc;
 #endif
 #ifdef HAVE_RVP9
 static mediacodec_vp9_registry_t vulkan_android_vp9;
+#endif
+#ifdef HAVE_RAV1
+static mediacodec_av1_registry_t vulkan_android_av1;
 #endif
 
 static JNIEnv *vulkan_android_decoder_environment(void *user)
@@ -30,6 +37,9 @@ static void vulkan_android_decoder_withdraw(vk_t *vk)
 #endif
 #ifdef HAVE_RVP9
    mediacodec_vp9_registry_withdraw(&vulkan_android_vp9, vk);
+#endif
+#ifdef HAVE_RAV1
+   mediacodec_av1_registry_withdraw(&vulkan_android_av1, vk);
 #endif
 }
 
@@ -61,6 +71,15 @@ static void vulkan_android_decoder_publish(vk_t *vk, bool native_video)
                   vulkan_android_decoder_environment, NULL, 64u * 1024u * 1024u,
                   8))
       mediacodec_vp9_registry_publish(&vulkan_android_vp9, vk);
+#endif
+#ifdef HAVE_RAV1
+   if (codecs & VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR)
+      mediacodec_av1_registry_withdraw(&vulkan_android_av1, vk);
+   else if (vulkan_android_av1.offer.open_config
+            || mediacodec_av1_registry_init(&vulkan_android_av1,
+                  vulkan_android_decoder_environment, NULL, 64u * 1024u * 1024u,
+                  8))
+      mediacodec_av1_registry_publish(&vulkan_android_av1, vk);
 #endif
 }
 #endif

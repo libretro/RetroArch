@@ -29,7 +29,8 @@
 #ifdef HAVE_RMP4
 #include "vulkan_video_decode.h"
 #endif
-#if defined(ANDROID) && (defined(HAVE_RMP4) || defined(HAVE_RVP9))
+#if defined(ANDROID) \
+   && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1))
 #include "vulkan_android_device.h"
 #include "vulkan_android_cache.h"
 #endif
@@ -112,7 +113,8 @@ static bool                          cached_instance_hdr_vk;
 static bool                          cached_timeline_vk;
 /* The video decode queues a cached device was made with */
 static uint32_t                      cached_video_vk[6];
-#if defined(ANDROID) && (defined(HAVE_RMP4) || defined(HAVE_RVP9))
+#if defined(ANDROID) \
+   && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1))
 static bool cached_android_images_vk, cached_android_legacy_vk;
 static unsigned cached_android_descriptors_vk;
 #endif
@@ -935,7 +937,8 @@ static const char *vulkan_optional_device_extensions[] = {
    , "VK_EXT_queue_family_foreign"
    , "VK_KHR_image_format_list"
 #endif
-#if defined(ANDROID) && (defined(HAVE_RMP4) || defined(HAVE_RVP9))
+#if defined(ANDROID) \
+   && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1))
    , "VK_ANDROID_external_memory_android_hardware_buffer"
    , "VK_EXT_queue_family_foreign"
    , "VK_KHR_external_semaphore_fd"
@@ -1136,7 +1139,8 @@ static void vulkan_low_latency_marker(gfx_ctx_vulkan_data_t *vk,
 static unsigned vulkan_optional_device_count(const gfx_ctx_vulkan_data_t *vk, bool own_device)
 {
    unsigned count = ARRAY_SIZE(vulkan_optional_device_extensions);
-#if defined(ANDROID) && (defined(HAVE_RMP4) || defined(HAVE_RVP9))
+#if defined(ANDROID) \
+   && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1))
    if (!own_device)
       while (count && vulkan_android_device_extension(vulkan_optional_device_extensions[count - 1]))
          count--;
@@ -1490,7 +1494,8 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
 #endif
    video_driver_state_t *video_st          = video_state_get_ptr();
 
-#if defined(ANDROID) && (defined(HAVE_RMP4) || defined(HAVE_RVP9))
+#if defined(ANDROID) \
+   && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1))
    vulkan_android_device_plan_t android_plan;
 #endif
    VkPhysicalDeviceFeatures features       = { false };
@@ -1503,7 +1508,8 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
                                     *iface = (struct retro_hw_render_context_negotiation_interface_vulkan*)
                                     video_st->hw_render_context_negotiation;
 
-#if defined(ANDROID) && (defined(HAVE_RMP4) || defined(HAVE_RVP9))
+#if defined(ANDROID) \
+   && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1))
    memset(&android_plan, 0, sizeof(android_plan));
    vk->context.flags &= ~VK_CTX_FLAG_ANDROID_IMAGES;
    vk->context.android_sampler_descriptors = 0;
@@ -1862,7 +1868,8 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
          device_info.pNext  = &timeline;
          vk->context.flags |= VK_CTX_FLAG_TIMELINE_SEMAPHORE;
       }
-#if defined(ANDROID) && (defined(HAVE_RMP4) || defined(HAVE_RVP9))
+#if defined(ANDROID) \
+   && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1))
       {
          PFN_vkGetInstanceProcAddr proc = vulkan_symbol_wrapper_instance_proc_addr();
          uint32_t version = VK_API_VERSION_1_0;
@@ -1913,7 +1920,8 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
          vk->context.video_codec_operations = cached_video_vk[4];
          if (cached_video_vk[5]) vk->context.flags |= VK_CTX_FLAG_VIDEO_GENERAL;
          else vk->context.flags &= ~VK_CTX_FLAG_VIDEO_GENERAL;
-#if defined(ANDROID) && (defined(HAVE_RMP4) || defined(HAVE_RVP9))
+#if defined(ANDROID) \
+   && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1))
          if (cached_android_images_vk) vk->context.flags |= VK_CTX_FLAG_ANDROID_IMAGES;
          vk->context.android_sampler_descriptors = cached_android_descriptors_vk;
          vk->context.android_legacy_descriptor_budget = cached_android_legacy_vk;
@@ -2000,7 +2008,8 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
                   &device_info, &dev) != VK_SUCCESS)
          {
             dev = VK_NULL_HANDLE;
-#if defined(ANDROID) && (defined(HAVE_RMP4) || defined(HAVE_RVP9))
+#if defined(ANDROID) \
+   && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1))
             /* Optional import refusal must not prevent normal Vulkan use. */
             if (vulkan_android_device_plan_disable(&android_plan, &device_info.pNext,
                      enabled_device_extensions, &enabled_device_extension_count))
@@ -2018,7 +2027,8 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
             }
          }
          vk->context.device = dev;
-#if defined(ANDROID) && (defined(HAVE_RMP4) || defined(HAVE_RVP9))
+#if defined(ANDROID) \
+   && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1))
          if (android_plan.supported)
          {
             vk->context.flags |= VK_CTX_FLAG_ANDROID_IMAGES;
@@ -4949,7 +4959,8 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
 
    video_st_flags              = (uint32_t)retro_atomic_load_relaxed_int(&video_st->flags);
 
-#if defined(ANDROID) && (defined(HAVE_RMP4) || defined(HAVE_RVP9))
+#if defined(ANDROID) \
+   && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1))
    /* Failed submissions keep decoder images alive until actual device death. */
    if (vulkan_android_cache_device_pending(vk->context.device))
       video_st_flags &= ~VIDEO_FLAG_CACHE_CONTEXT;
@@ -4980,7 +4991,8 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
       cached_video_vk[3]       = vk->context.video_lanes;
       cached_video_vk[4]       = vk->context.video_codec_operations;
       cached_video_vk[5]       = vk->context.flags & VK_CTX_FLAG_VIDEO_GENERAL;
-#if defined(ANDROID) && (defined(HAVE_RMP4) || defined(HAVE_RVP9))
+#if defined(ANDROID) \
+   && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1))
       cached_android_images_vk = !!(vk->context.flags & VK_CTX_FLAG_ANDROID_IMAGES);
       cached_android_descriptors_vk = vk->context.android_sampler_descriptors;
       cached_android_legacy_vk = vk->context.android_legacy_descriptor_budget;
@@ -5009,7 +5021,8 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
          if (vk->context.destroy_device)
             vk->context.destroy_device();
          vk->context.destroy_device = NULL;
-#if defined(ANDROID) && (defined(HAVE_RMP4) || defined(HAVE_RVP9))
+#if defined(ANDROID) \
+   && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1))
          vulkan_android_cache_device_destroying(vk->context.device);
 #endif
 #ifdef HAVE_VAAPI
@@ -5019,7 +5032,8 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
 #ifdef HAVE_VAAPI
          vaapi_hevc_vulkan_cache_device_destroyed(vk->context.device);
 #endif
-#if defined(ANDROID) && (defined(HAVE_RMP4) || defined(HAVE_RVP9))
+#if defined(ANDROID) \
+   && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1))
          vulkan_android_cache_device_destroyed(vk->context.device);
 #endif
          vk->context.device = NULL;
