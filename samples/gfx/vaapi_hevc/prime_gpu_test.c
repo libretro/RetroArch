@@ -3,14 +3,9 @@
 #include <math.h>
 #include <stdio.h>
 #include "../../../gfx/common/vaapi_hevc_vulkan_submit.h"
+#include "../../../gfx/common/vaapi_hevc_vulkan_resources.h"
 #include "../d3d_p010_import/fp16_reference.h"
 #define OK(call) assert((call) == VK_SUCCESS)
-static const uint32_t rgba_shader[] =
-#include "../../../gfx/drivers/vulkan_shaders/yuv_image_to_rgba8888.comp.inc"
-;
-static const uint32_t fp16_shader[] =
-#include "../../../gfx/drivers/vulkan_shaders/yuv_image_to_rgba16f.comp.inc"
-;
 static VkInstance instance;
 static VkDebugUtilsMessengerEXT messenger;
 static VkDevice device;
@@ -19,6 +14,7 @@ static VkPhysicalDeviceMemoryProperties memory;
 static VkQueue queue;
 static unsigned family, errors, submitted;
 static unsigned checked_channels, max_byte_error;
+static uint32_t resource_slots;
 static double max_half_error, max_half_relative;
 static VkCommandPool command_pool;
 static VkCommandBuffer command;
@@ -26,12 +22,7 @@ static VkFence fence;
 static VkBuffer buffer;
 static VkDeviceMemory buffer_memory;
 static uint8_t *mapped;
-static VkSampler sampler;
-static VkDescriptorSetLayout set_layout;
-static VkPipelineLayout pipeline_layout;
-static VkDescriptorPool descriptor_pool;
-static VkDescriptorSet descriptor_set;
-static VkPipeline pipeline;
+static vaapi_hevc_vulkan_resources_t resources;
 static vaapi_hevc_vulkan_frame_t frame;
 static vaapi_hevc_vulkan_submission_t entry;
 static vaapi_hevc_pool_t identity_only;
@@ -183,43 +174,14 @@ static void upload(unsigned depth, unsigned full)
 }
 static void make_pipeline(bool fp16)
 {
-   VkDescriptorSetLayoutBinding bindings[3];
-   VkDescriptorSetLayoutCreateInfo set;
-   VkPipelineLayoutCreateInfo layout;
-   VkPushConstantRange push;
-   VkDescriptorPoolSize sizes[2];
-   VkDescriptorPoolCreateInfo pool;
-   VkDescriptorSetAllocateInfo allocation;
-   VkShaderModuleCreateInfo shader_info;
-   VkComputePipelineCreateInfo compute;
-   VkShaderModule shader;
-   unsigned i;
-   memset(bindings, 0, sizeof(bindings));
-   for (i = 0; i < 3; i++)
-   {
-      bindings[i].binding = i+1; bindings[i].descriptorCount = 1; bindings[i].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-      bindings[i].descriptorType = i < 2 ? VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER : VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-   }
-   memset(&set, 0, sizeof(set)); set.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-   set.bindingCount = 3; set.pBindings = bindings; OK(vkCreateDescriptorSetLayout(device, &set, NULL, &set_layout));
-   memset(&push, 0, sizeof(push)); push.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT; push.size = 80;
-   memset(&layout, 0, sizeof(layout)); layout.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-   layout.setLayoutCount = 1; layout.pSetLayouts = &set_layout; layout.pushConstantRangeCount = 1; layout.pPushConstantRanges = &push;
-   OK(vkCreatePipelineLayout(device, &layout, NULL, &pipeline_layout));
-   memset(sizes, 0, sizeof(sizes)); sizes[0].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER; sizes[0].descriptorCount = 2;
-   sizes[1].type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE; sizes[1].descriptorCount = 1;
-   memset(&pool, 0, sizeof(pool)); pool.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-   pool.maxSets = 1; pool.poolSizeCount = 2; pool.pPoolSizes = sizes; OK(vkCreateDescriptorPool(device, &pool, NULL, &descriptor_pool));
-   memset(&allocation, 0, sizeof(allocation)); allocation.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-   allocation.descriptorPool = descriptor_pool; allocation.descriptorSetCount = 1; allocation.pSetLayouts = &set_layout;
-   OK(vkAllocateDescriptorSets(device, &allocation, &descriptor_set));
-   memset(&shader_info, 0, sizeof(shader_info)); shader_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-   shader_info.pCode = fp16 ? fp16_shader : rgba_shader; shader_info.codeSize = fp16 ? sizeof(fp16_shader) : sizeof(rgba_shader);
-   OK(vkCreateShaderModule(device, &shader_info, NULL, &shader));
-   memset(&compute, 0, sizeof(compute)); compute.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
-   compute.layout = pipeline_layout; compute.stage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-   compute.stage.stage = VK_SHADER_STAGE_COMPUTE_BIT; compute.stage.module = shader; compute.stage.pName = "main";
-   OK(vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &compute, NULL, &pipeline)); vkDestroyShaderModule(device, shader, NULL);
+   static const vaapi_hevc_vulkan_resource_ops_t ops = {
+      vkCreateSampler, vkDestroySampler, vkCreateDescriptorSetLayout, vkDestroyDescriptorSetLayout,
+      vkCreatePipelineLayout, vkDestroyPipelineLayout, vkCreateDescriptorPool, vkDestroyDescriptorPool,
+      vkAllocateDescriptorSets, vkCreateShaderModule, vkDestroyShaderModule, vkCreateComputePipelines,
+      vkDestroyPipeline, vkCreateCommandPool, vkDestroyCommandPool, vkAllocateCommandBuffers,
+      vkCreateFence, vkDestroyFence
+   };
+   assert(vaapi_hevc_vulkan_resources_create(&resources, device, family, 32, fp16, &ops));
 }
 static VkResult serialized_submit(void *context, VkQueue target, uint32_t count, const VkSubmitInfo *info, VkFence done)
 {
@@ -343,26 +305,31 @@ static void execute(unsigned depth, unsigned full, unsigned mode)
    color.matrix = transfer == 16 || transfer == 18 ? 9 : flags ? 1 : 6;
    color.transfer = transfer; color.range = full ? 2 : 1; color.max_cll = 1000;
    assert(vaapi_hevc_vulkan_submission_configure(&entry, &frame, 2, 2, 3, 2, flags, &color, fp16));
+   assert(entry.output_format == resources.format);
 #ifdef PRIME_GPU_NEGATIVE_CROP
    entry.header[2] = 0;
 #endif
-   entry.queue=queue; entry.command=command; entry.fence=fence; entry.pipeline=pipeline; entry.layout=pipeline_layout;
-   entry.set=descriptor_set; entry.sampler=sampler; entry.family=family;
+   entry.queue=queue; entry.command=resources.commands[0]; entry.fence=resources.fences[0];
+   entry.pipeline=resources.pipeline; entry.layout=resources.layout;
+   entry.set=resources.sets[0]; entry.sampler=resources.sampler; entry.family=family;
    entry.ops.fence_status=vkGetFenceStatus; entry.ops.reset_fences=vkResetFences; entry.ops.reset_command=vkResetCommandBuffer;
    entry.ops.begin=vkBeginCommandBuffer; entry.ops.end=vkEndCommandBuffer; entry.ops.update=vkUpdateDescriptorSets;
    entry.ops.barrier=vkCmdPipelineBarrier; entry.ops.bind_pipeline=vkCmdBindPipeline; entry.ops.bind_sets=vkCmdBindDescriptorSets;
    entry.ops.push=vkCmdPushConstants; entry.ops.dispatch=vkCmdDispatch; entry.ops.submit=serialized_submit; entry.ops.context=&entry;
    for (i = 0; i < 3; i++)
    {
+      unsigned slot = ((depth == 10 ? 16u : 0u) + full*8 + mode + i) % 32;
+      entry.command = resources.commands[slot]; entry.fence = resources.fences[slot];
+      entry.set = resources.sets[slot];
+      resource_slots |= (uint32_t)1 << slot;
       assert(vaapi_hevc_vulkan_submission_present(&entry, destination, destination_view, entry.output_format, 3, 2, tracked) == 1);
       assert(!vaapi_hevc_vulkan_frame_retire(&frame, &returned));
-      OK(vkWaitForFences(device, 1, &fence, VK_TRUE, (uint64_t)5000000000.0));
+      OK(vkWaitForFences(device, 1, &entry.fence, VK_TRUE, (uint64_t)5000000000.0));
       assert(vaapi_hevc_vulkan_frame_poll(&frame, vkGetFenceStatus) == 1);
       tracked = i ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL;
       readback(tracked); check_pixels(depth, full, transfer, flags, fp16); assert(!errors);
    }
-   vkDestroyDescriptorPool(device,descriptor_pool,NULL); vkDestroyPipeline(device,pipeline,NULL);
-   vkDestroyPipelineLayout(device,pipeline_layout,NULL); vkDestroyDescriptorSetLayout(device,set_layout,NULL);
+   vaapi_hevc_vulkan_resources_destroy(&resources);
    assert(vaapi_hevc_vulkan_frame_retire(&frame,&returned)); memset(&returned,0,sizeof(returned));
    vkDestroyImageView(device,destination_view,NULL); vkDestroyImage(device,destination,NULL); vkFreeMemory(device,destination_memory,NULL);
    printf("PASS: native exportable-plane submission depth=%u full=%u mode=%u, 3 cropped/layout/foreign/fence rounds; not VA DMA-BUF import\n",depth,full,mode);
@@ -386,7 +353,6 @@ static void initialize(void)
    VkBufferCreateInfo bi;
    VkMemoryRequirements req;
    VkMemoryAllocateInfo ai;
-   VkSamplerCreateInfo si;
    uint32_t count=16, n=32, i;
    float priority=1;
    memset(&app,0,sizeof(app));app.sType=VK_STRUCTURE_TYPE_APPLICATION_INFO;app.apiVersion=VK_API_VERSION_1_1;
@@ -416,8 +382,6 @@ static void initialize(void)
    memset(&ai,0,sizeof(ai));ai.sType=VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;ai.allocationSize=req.size;
    ai.memoryTypeIndex=find_memory(req.memoryTypeBits,VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
    OK(vkAllocateMemory(device,&ai,NULL,&buffer_memory));OK(vkBindBufferMemory(device,buffer,buffer_memory,0));OK(vkMapMemory(device,buffer_memory,0,1024,0,(void**)&mapped));
-   memset(&si,0,sizeof(si));si.sType=VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-   si.addressModeU=si.addressModeV=si.addressModeW=VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;OK(vkCreateSampler(device,&si,NULL,&sampler));
 }
 int main(void)
 {
@@ -425,8 +389,8 @@ int main(void)
    PFN_vkDestroyDebugUtilsMessengerEXT destroy_messenger;
    initialize();
    for(depth=8;depth<=10;depth+=2)for(full=0;full<2;full++)for(mode=0;mode<8;mode++)execute(depth,full,mode);
-   assert(submitted==96 && checked_channels==2304 && !errors);
-   vkDestroySampler(device,sampler,NULL);vkUnmapMemory(device,buffer_memory);vkDestroyBuffer(device,buffer,NULL);vkFreeMemory(device,buffer_memory,NULL);
+   assert(submitted==96 && checked_channels==2304 && resource_slots==(uint32_t)-1 && !errors);
+   vkUnmapMemory(device,buffer_memory);vkDestroyBuffer(device,buffer,NULL);vkFreeMemory(device,buffer_memory,NULL);
    vkDestroyFence(device,fence,NULL);vkDestroyCommandPool(device,command_pool,NULL);vkDestroyDevice(device,NULL);
    destroy_messenger=(PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance,"vkDestroyDebugUtilsMessengerEXT");
    assert(destroy_messenger);destroy_messenger(instance,messenger,NULL);vkDestroyInstance(instance,NULL);assert(!errors);

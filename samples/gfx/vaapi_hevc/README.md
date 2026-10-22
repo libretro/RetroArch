@@ -23,6 +23,10 @@ restores the pending lease; completion publishes its return for decoder
 collection. Uncertain work retains ownership until exact device teardown.
 `lease_test` covers this path with the typed Vulkan command fixture.
 
+`resources_test` faults each cold sampler/pipeline/descriptor/command/fence
+creation step for one and thirty-two slots. The GPU oracle uses this same
+production resource owner, including its commands, fences and shader variants.
+
 `make gpu-check SANITIZER=address,undefined` additionally needs the Vulkan
 loader, development library, validation layer and a device supporting
 Vulkan 1.1, external-memory FD and foreign queue ownership. Mesa lavapipe
