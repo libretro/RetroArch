@@ -130,3 +130,10 @@ frame-check:
 export-check:
 	python3 export_run.py
 .PHONY: export-check
+
+vulkan-check:
+	python3 vulkan_run.py
+vulkan-gpu-check:
+	python3 vulkan_run.py --gpu
+	python3 vulkan_run.py --gpu --compile-shaders
+.PHONY: vulkan-check vulkan-gpu-check
