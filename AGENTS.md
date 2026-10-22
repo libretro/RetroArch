@@ -130,6 +130,20 @@ If a change touches code already covered by the GitHub CI workflow regression te
 - Do not present a change while any of those tests fail.
 - A workflow construct `ci_local.py` cannot read fails `tools/ci_local.py selftest`, which CI runs; extend the script in the same change.
 
+## Never commit build output
+
+Nothing built is ever committed: no executables, objects, libraries,
+archives, generated images or captures. This includes every sample and
+tool harness built under samples/, libretro-common/samples/ and tools/.
+
+- Stage files by name (`git add path/file.c`), never a directory or
+  `git add -A`, so a build that ran after a `make clean` cannot slip in.
+- Before every commit run `git status --short` and check that each
+  staged path is source, a Makefile, a script or documentation.
+- A new harness whose executable name the `.gitignore` patterns do not
+  cover (`*_test`, `*_test_*`) gets its own ignore line in the same
+  commit that adds the harness.
+
 ## Scope of changes
 
 Keep changes focused.
