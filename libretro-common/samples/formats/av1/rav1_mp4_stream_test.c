@@ -69,6 +69,24 @@ static bool open_backend(void *user, const rav1_sequence_t *seq, unsigned slots,
    return true;
 }
 
+static rav1_sequence_t admitted_sequence;
+static unsigned config_opens;
+static bool open_config(void *user, const rav1_sequence_t *seq,
+      const rav1_obu_t *obu, const video_color_metadata_t *color,
+      unsigned slots, rav1_hw_ops_t *ops)
+{
+   CHECK(obu && obu->type == 1 && obu->data && obu->payload);
+   if (!obu) return false;
+   CHECK(rav1_sequence_parse(&admitted_sequence, obu->payload, obu->payload_size));
+   CHECK(!memcmp(seq, &admitted_sequence, sizeof(*seq)));
+   CHECK(color && color->range == (seq->color_range ? 2u : 1u));
+   if (seq->color_primaries != 2) CHECK(color->primaries == seq->color_primaries);
+   if (seq->transfer_characteristics != 2) CHECK(color->transfer == seq->transfer_characteristics);
+   if (seq->matrix_coefficients != 2) CHECK(color->matrix == seq->matrix_coefficients);
+   config_opens++;
+   return open_backend(user, seq, slots, ops);
+}
+
 static void close_backend(rav1_hw_ops_t *ops)
 {
    CHECK(ops->decoder == &factory);
@@ -439,11 +457,13 @@ static void test_unavailable(void)
    CHECK(opens == before);
 }
 
-int main(void)
+int main(int argc, char **argv)
 {
    factory.user = &factory;
    factory.open = open_backend;
    factory.close = close_backend;
+   if (argc == 2 && !strcmp(argv[1], "--config"))
+      factory.open_config = open_config;
    rav1_set_hw_backend(&factory);
    test_stream();
    test_seek();
@@ -455,6 +475,7 @@ int main(void)
    test_probe_frontier();
    test_unavailable();
    rav1_set_hw_backend(NULL);
+   if (factory.open_config) CHECK(config_opens);
    printf("AV1 MP4 hardware reader: %u failures\n", failures);
    return failures ? 1 : 0;
 }

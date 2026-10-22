@@ -104,6 +104,8 @@ check: all
 	$(RUNNER) ./$(TARGET_TEST)
 	$(RUNNER) ./$(TARGET_TEST2)
 	$(RUNNER) ./$(TARGET_TEST3)
+	$(RUNNER) ./$(TARGET_TEST2) --config
+	$(RUNNER) ./$(TARGET_TEST3) --config
 	$(RUNNER) ./$(BACKEND)
 
 clean:

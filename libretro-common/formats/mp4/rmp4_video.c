@@ -625,7 +625,17 @@ static bool rmp4_video_av1_open(rmp4_video_stream_t *s)
       goto fail;
    s->av1_hdr_seed = s->av1->hdr;
    if (s->av1_hdr_initial_set) s->av1->hdr = s->av1_hdr_initial;
-   if (!rmp4_video_hw_color_allowed(s) || !rav1_hw_stream_open_sequence(s->av1))
+   s->av1->sequence_obu = config.sequence;
+   s->av1->color.primaries = s->primaries;
+   s->av1->color.transfer = s->transfer;
+   s->av1->color.matrix = s->matrix;
+   s->av1->color.range = s->range ? 2 : 1;
+   s->av1->color.mastering = s->mastering;
+   s->av1->color.max_cll = s->max_cll;
+   s->av1->color.max_fall = s->max_fall;
+   if (!rav1_hdr_metadata_merge(&s->av1->color, &s->av1->hdr)
+         || !rmp4_video_hw_color_allowed(s)
+         || !rav1_hw_stream_open_sequence(s->av1))
       goto fail;
    return true;
 fail:

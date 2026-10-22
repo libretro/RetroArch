@@ -91,6 +91,8 @@ struct rwebm_video_stream
 #endif
 #ifdef HAVE_RAV1
    rav1_hw_stream_t *av1;
+   uint8_t *av1_sequence_bytes;
+   size_t av1_sequence_size;
    rav1_sequence_t av1_scan_sequence, av1_initial_sequence;
    int av1_initial_sequence_set;
    rav1_hdr_metadata_t av1_hdr_initial, av1_hdr_seed;
@@ -763,6 +765,7 @@ void rwebm_video_stream_close(rwebm_video_stream_t *s)
 #ifdef HAVE_RAV1
    rwebm_close(s->av1_hdr_cursor);
    free(s->av1_hdr_points);
+   free(s->av1_sequence_bytes);
 #endif
    rwebm_close(s->timing);
    rwebm_close(s->demux);
@@ -1161,9 +1164,17 @@ static bool rwebm_video_av1_sequence(rwebm_video_stream_t *s,
    rwebm_t *probe;
    rwebm_packet packet;
    unsigned walked;
+   size_t offset = 0;
    bool found = false;
+   if (s->av1_sequence_bytes)
+      return rav1_obu_next(&config->sequence, s->av1_sequence_bytes,
+            s->av1_sequence_size, &offset, true) == 1;
    if (config->sequence.data)
-      return !config->sequence.temporal_id && !config->sequence.spatial_id;
+   {
+      if (config->sequence.temporal_id || config->sequence.spatial_id)
+         return false;
+      goto retain;
+   }
    probe = rwebm_open_memory_avail(s->buf, s->len, s->avail, NULL);
    if (!probe)
       return false;
@@ -1191,7 +1202,18 @@ static bool rwebm_video_av1_sequence(rwebm_video_stream_t *s,
       break;
    }
    rwebm_close(probe);
-   return found;
+   if (!found)
+      return false;
+retain:
+   if (!config->sequence.size || config->sequence.size > 1024u * 1024u)
+      return false;
+   s->av1_sequence_bytes = (uint8_t*)malloc(config->sequence.size);
+   if (!s->av1_sequence_bytes)
+      return false;
+   s->av1_sequence_size = config->sequence.size;
+   memcpy(s->av1_sequence_bytes, config->sequence.data, s->av1_sequence_size);
+   return rav1_obu_next(&config->sequence, s->av1_sequence_bytes,
+         s->av1_sequence_size, &offset, true) == 1;
 }
 
 static int rwebm_video_av1_open(rwebm_video_stream_t *s)
@@ -1201,8 +1223,7 @@ static int rwebm_video_av1_open(rwebm_video_stream_t *s)
    rav1_sequence_t *seq;
    unsigned matrix, transfer, primaries;
    if (s->av1_hdr_initial_error || !t || !rav1_config_parse(&config, t->codec_private,
-            t->codec_private_size) || (!s->av1_initial_sequence_set
-            && !rwebm_video_av1_sequence(s, &config)))
+            t->codec_private_size) || !rwebm_video_av1_sequence(s, &config))
       return 0;
    s->av1 = (rav1_hw_stream_t*)calloc(1, sizeof(*s->av1));
    if (!s->av1)
@@ -1243,8 +1264,6 @@ static int rwebm_video_av1_open(rwebm_video_stream_t *s)
    /* The bounded opening scan can precede the first decoded picture. */
    s->av1_hdr_seed = s->av1->hdr;
    if (s->av1_hdr_initial_set) s->av1->hdr = s->av1_hdr_initial;
-   if (!rav1_hw_stream_open_sequence(s->av1))
-      goto fail;
    s->hw_color.primaries = primaries;
    s->hw_color.transfer = transfer;
    s->hw_color.matrix = matrix;
@@ -1252,6 +1271,11 @@ static int rwebm_video_av1_open(rwebm_video_stream_t *s)
    s->hw_color.mastering = t->mastering;
    s->hw_color.max_cll = t->max_cll;
    s->hw_color.max_fall = t->max_fall;
+   s->av1->sequence_obu = config.sequence;
+   s->av1->color = s->hw_color;
+   if (!rav1_hdr_metadata_merge(&s->av1->color, &s->av1->hdr)
+         || !rav1_hw_stream_open_sequence(s->av1))
+      goto fail;
    s->hw_yuv_mask = IMAGE_YUV_FLAG_BT709 | IMAGE_YUV_FLAG_FULL_RANGE;
    s->hw_yuv = seq->color_range ? IMAGE_YUV_FLAG_FULL_RANGE : 0;
    if (matrix == 1 || (!matrix && s->height >= 720))

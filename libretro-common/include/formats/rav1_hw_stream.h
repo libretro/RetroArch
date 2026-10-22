@@ -19,11 +19,12 @@ typedef struct rav1_hw_stream
 {
    rav1_hw_session_t session;
    rav1_hw_backend_t backend;
-   rav1_obu_t obu;
+   rav1_obu_t obu, sequence_obu;
    const uint8_t *packet;
    size_t size, offset, next;
    rav1_sequence_t sequence;
    rav1_hdr_metadata_t hdr;
+   video_color_metadata_t color;
    int opened, submitted, started, error;
 } rav1_hw_stream_t;
 
@@ -52,7 +53,9 @@ static INLINE bool rav1_hw_stream_open_sequence(rav1_hw_stream_t *s)
       s->backend.close(&s->session.ops);
       s->opened = 0;
    }
-   if (!rav1_hw_backend_open(&s->sequence, 9, &ops, &s->backend))
+   if (!rav1_hw_backend_open_config(&s->sequence,
+            s->sequence_obu.data ? &s->sequence_obu : NULL, &s->color,
+            9, &ops, &s->backend))
       return false;
    if (!rav1_hw_session_init_mode(&s->session, &s->sequence, &ops, 9,
             s->backend.packet_decoder))
@@ -61,6 +64,7 @@ static INLINE bool rav1_hw_stream_open_sequence(rav1_hw_stream_t *s)
       memset(&s->backend, 0, sizeof(s->backend));
       return false;
    }
+   memset(&s->sequence_obu, 0, sizeof(s->sequence_obu));
    s->opened = 1;
    return true;
 }
@@ -160,6 +164,7 @@ static INLINE int rav1_hw_stream_step(rav1_hw_stream_t *s,
          ret = -1;
          goto fail;
       }
+      s->sequence_obu = s->obu;
       if (!rav1_hw_stream_open_sequence(s))
       {
          ret = -2;

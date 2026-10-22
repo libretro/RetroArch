@@ -56,6 +56,18 @@ static void close_backend(rav1_hw_ops_t *result)
    memset(result, 0, sizeof(*result));
 }
 
+static unsigned config_opens;
+static rav1_obu_t config_obu;
+static video_color_metadata_t config_color;
+static bool open_config(void *user, const rav1_sequence_t *seq,
+      const rav1_obu_t *obu, const video_color_metadata_t *color,
+      unsigned slots, rav1_hw_ops_t *result)
+{
+   CHECK(obu == &config_obu && color == &config_color);
+   config_opens++;
+   return open_backend(user, seq, slots, result);
+}
+
 int main(void)
 {
    rav1_set_hw_backend(NULL);
@@ -91,6 +103,19 @@ int main(void)
    factory.close = NULL;
    rav1_set_hw_backend(&factory);
    CHECK(!rav1_hw_backend_open(&sequence, 9, &ops, &retained) && opens == 4);
+   rav1_set_hw_backend(NULL);
+   factory.close = close_backend;
+   factory.open_config = open_config;
+   factory.open = NULL;
+   rav1_set_hw_backend(&factory);
+   CHECK(rav1_hw_backend_open_config(&sequence, &config_obu, &config_color,
+         9, &ops, &retained));
+   CHECK(config_opens == 1 && retained.open_config == open_config);
+   retained.close(&ops);
+   mode = 1;
+   CHECK(!rav1_hw_backend_open_config(&sequence, &config_obu, &config_color,
+         9, &ops, &retained));
+   CHECK(config_opens == 2 && !ops.decoder && !retained.open_config);
    rav1_set_hw_backend(NULL);
    printf("AV1 hardware backend registry: %u failures\n", failures);
    return failures ? 1 : 0;
