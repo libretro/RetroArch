@@ -22,8 +22,17 @@ unit = r'''
 #include <stdio.h>
 #include <string.h>
 #include "gfx/common/vulkan_android_device.h"
+#include "gfx/common/vulkan_prime_device.h"
 #define ARRAY_SIZE(a) (sizeof(a)/sizeof((a)[0]))
-typedef struct gfx_ctx_vulkan_data { int unused; } gfx_ctx_vulkan_data_t;
+typedef struct gfx_ctx_vulkan_data {
+ struct {
+  struct { bool dxgi_present; } swapchain_settings;
+  bool xr;
+ } context;
+} gfx_ctx_vulkan_data_t;
+#ifdef ANDROID
+#undef _WIN32
+#endif
 ''' + fallbacks + extensions + "\n" + function + r'''
 int main(void)
 {
@@ -47,10 +56,20 @@ int main(void)
   }
   assert(seen==7);
  }
+#elif defined(__linux__)
+ {
+  unsigned i,seen=0;
+  assert(own==core+5);
+  for(i=0;i<core;i++)assert(!vulkan_prime_device_extension(vulkan_optional_device_extensions[i]));
+  for(i=core;i<own;i++)seen|=vulkan_prime_device_extension(vulkan_optional_device_extensions[i]);
+  assert(seen==31);
+  context.context.xr=true;
+  assert(vulkan_optional_device_count(&context,true)==core);
+ }
 #else
  assert(own==core);
 #endif
- puts("PASS: shipping own-device optional imports leave core/non-Android extension lists intact");
+ puts("PASS: shipping optional imports preserve core devices, Linux XR and platform extension lists");
  return 0;
 }
 '''
