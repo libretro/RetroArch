@@ -1447,7 +1447,11 @@ static uint32_t drm_plane_takes(uint32_t fmt);
  * plane can show frames on */
 static bool init_drm_card(const char *path, unsigned monitor_index)
 {
+#ifdef O_CLOEXEC
    int fd = open(path, O_RDWR | O_CLOEXEC);
+#else
+   int fd = open(path, O_RDWR);
+#endif
 
    if (fd < 0)
       return false;
@@ -2157,7 +2161,7 @@ static void drm_overlay_blend(struct drm_video *v, struct drm_surface *s)
    struct modeset_buf *buf;
    struct drm_overlay *ov;
 
-   if (!v || s != v->main_surface)
+   if (!v || (s != v->main_surface && s != v->views_surface))
       return;
    ov = &v->ov;
    if (     ov->mode != DRM_OVERLAY_BLEND || !ov->enabled || !ov->layer
@@ -2346,6 +2350,11 @@ static bool drm_views_frame(struct drm_video *v, const void *frame,
          info->video_smooth ? SCALER_TYPE_BILINEAR : SCALER_TYPE_POINT,
          scale, cdims, (uint32_t*)page->buf.map, page->buf.stride / 4,
          layout->offscreen ? v->views_canvas : NULL);
+#ifdef HAVE_OVERLAY
+   /* Laid out over the views as over a frame, the plane showing them */
+   drm_overlay_prepare(v, v->views_surface);
+   drm_overlay_blend(v, v->views_surface);
+#endif
    if (v->msg)
       drm_draw_msg(v, &page->buf, VIDEO_SCALE_W(cdims), VIDEO_SCALE_H(cdims),
             4, 0, v->msg, v->msg_info);
@@ -2456,15 +2465,15 @@ static bool drm_frame(void *data, const void *frame,
    _drmvars->msg      = (msg && *msg && !_drmvars->menu_active) ? msg : NULL;
    _drmvars->msg_info = video_info;
 
-#ifdef HAVE_OVERLAY
-   drm_overlay_prepare(_drmvars, _drmvars->main_surface);
-#endif
-
    if (drm_views_frame(_drmvars, frame, dims, pitch, video_info))
    {
       _drmvars->msg = NULL;
       return true;
    }
+
+#ifdef HAVE_OVERLAY
+   drm_overlay_prepare(_drmvars, _drmvars->main_surface);
+#endif
 
    /* A frame in the threaded wrapper's frame memory goes up where it
     * lies, unless the copy turns it or blends the overlay into it, or it

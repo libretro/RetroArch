@@ -1186,6 +1186,48 @@ int main(void)
       pp[0].has_rot = 0;
       drm.rot_plane = 0;
 
+      /* A core's views: the overlay blended into them as into a frame */
+      {
+         static video_frame_info_t vinfo;
+         struct retro_video_view vv[2];
+         video_views_layout_params_t lp;
+         struct modeset_buf *pg;
+         memset(vv, 0, sizeof(vv));
+         vv[0].width = vv[1].width = 256;
+         vv[0].height = vv[1].height = 192;
+         vv[1].y = 192;
+         vv[1].screen = 1;
+         video_views_validate(vv, 2, &vinfo.views);
+         memset(&lp, 0, sizeof(lp));
+         lp.map         = &vinfo.views;
+         lp.dims        = VIDEO_SCALE_PACK(1920, 1080);
+         lp.stereo_mode = VIDEO_STEREO_MODE_2D;
+         video_views_layout(&lp, &vinfo.views_layout);
+         vinfo.dims     = lp.dims;
+         memset(frame_px, 0, sizeof(frame_px));
+         drm_frame(v, frame_px, VIDEO_SCALE_PACK(256, 384), 0, 256 * 4, NULL,
+               &vinfo);
+         CHECK(v->views_surface, "views drawn");
+         if (v->views_surface)
+         {
+            pg = &v->views_surface->current_page->buf;
+            px = ((const uint32_t*)(pg->map + (size_t)10 * pg->stride))[10];
+            CHECK((px & 0xffffff) == 0xff0000,
+                  "the overlay blended into the views (%08x)", px);
+            px = ((const uint32_t*)(pg->map + (size_t)300 * pg->stride))[300];
+            CHECK(!(px & 0xffffff), "and nowhere else (%08x)", px);
+         }
+         memset(&vinfo.views, 0, sizeof(vinfo.views));
+         drm_frame(v, frame_px, VIDEO_SCALE_PACK(256, 384), 0, 256 * 4, NULL,
+               &vinfo);
+         memset(frame_px, 0, sizeof(frame_px));
+         core_frame(v, 320, 240);
+         pg = &v->main_surface->current_page->buf;
+         px = ((const uint32_t*)(pg->map + (size_t)10 * pg->stride))[10];
+         CHECK((px & 0xffffff) == 0xff0000,
+               "and into the frame again after them (%08x)", px);
+      }
+
       /* No zpos at all: a later plane is taken as drawn over */
       drm_overlay_free(&v->ov);
       memset(&v->ov, 0, sizeof(v->ov));
