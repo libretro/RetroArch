@@ -999,7 +999,7 @@ static void test_xr_edit_rows(void)
          "video_openxr_edit_smoothing"));
    CHECK(menu_setting_follows("video_openxr_refresh_rate",
          "video_openxr_edit_pause"));
-   CHECK(menu_setting_follows("video_openxr_controllers",
+   CHECK(menu_setting_follows("video_openxr_laser",
          "video_openxr_perf_boost"));
    CHECK(menu_setting_follows("video_openxr_placement",
          "video_openxr_laser_beam"));

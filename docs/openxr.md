@@ -21,11 +21,12 @@ At run time an OpenXR runtime has to be active (SteamVR or Monado on
 Linux). Then turn on **Settings > Video > Stereo 3D & Screens > Headset
 Output (OpenXR)**. Under it come Edit Screens, Snap to Screens, Snap to
 Angles, Hinge Gap, Edit Smoothing and While Editing Screens, described
-below, then Headset Refresh Rate, Headset Controllers, Laser Pointer,
-Laser Beam, Screen Placement (Fixed in Room, Follow Head, Lazy Follow),
-Screen Distance and Screen Width. The Recenter Headset Screens, Laser
-Pointer (Toggle) and Edit Headset Screens hotkeys are unbound by
-default.
+below, then Headset Refresh Rate, Laser Pointer, Laser Beam, Screen
+Placement (Fixed in Room, Follow Head, Lazy Follow), Screen Distance and
+Screen Width. OpenXR Controller Layout (Combined or Separate) is the
+last row of **Settings > Input > Controllers**. The Recenter Headset
+Screens, Laser Pointer (Toggle) and Edit Headset Screens hotkeys are
+unbound by default.
 
 **Laser Beam** draws a thin line from each controller to its laser's
 dot, turned to face you. It shows only where the dot can: outside edit

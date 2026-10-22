@@ -8044,6 +8044,9 @@ static bool menu_displaylist_refresh(struct menu_state *menu_st, file_list_t *li
    return true;
 }
 
+/* plays_as_row for the OpenXR Controller Layout row */
+#define PLAYS_AS_ROW_LAYOUT (MAX_INPUT_DEVICES + MAX_USERS + 1)
+
 /* Put the cursor back on the Controllers or Port N Controls (@page) row
  * in plays_as_row: the rows go in port order, so its index moves. Once
  * the list is made it is forgotten, so a row that is gone leaves the
@@ -8074,7 +8077,13 @@ static void menu_displaylist_restore_plays_as_row(
    }
    for (i = 0; menu->plays_as_row && i < list->size; i++)
    {
-      if (list->list[i].type
+      if (menu->plays_as_row == PLAYS_AS_ROW_LAYOUT)
+      {
+         if (!string_is_equal(list->list[i].label,
+                  MENU_ENUM_LABEL_VIDEO_OPENXR_CONTROLLERS_STR))
+            continue;
+      }
+      else if (list->list[i].type
             != MENU_SETTINGS_INPUT_PLAYS_AS_BEGIN + menu->plays_as_row - 1)
          continue;
 
@@ -8112,8 +8121,9 @@ static void menu_displaylist_restore_plays_as_row(
    menu->plays_as_links = (unsigned)links;
 }
 
-/* A hotplug makes the list again with the cursor at its index: note the
- * controller it is on, for the pass above to put it back. */
+/* A hotplug, or a layout change reconnecting the headset's controllers,
+ * makes the list again with the cursor at its index: note the row it is
+ * on, for the pass above to put it back. */
 static void menu_displaylist_keep_plays_as_row(
       struct menu_state *menu_st, file_list_t *list)
 {
@@ -8127,6 +8137,9 @@ static void menu_displaylist_keep_plays_as_row(
    if (     type >= MENU_SETTINGS_INPUT_PLAYS_AS_BEGIN
          && type <  MENU_SETTINGS_INPUT_PLAYS_AS_END)
       menu->plays_as_row = type - MENU_SETTINGS_INPUT_PLAYS_AS_BEGIN + 1;
+   else if (string_is_equal(list->list[sel].label,
+            MENU_ENUM_LABEL_VIDEO_OPENXR_CONTROLLERS_STR))
+      menu->plays_as_row = PLAYS_AS_ROW_LAYOUT;
 }
 
 #ifdef HAVE_NETWORKING
@@ -9469,6 +9482,12 @@ static unsigned menu_displaylist_parse_input_controllers(
                MAX_INPUT_DEVICES + e, 0))
          count++;
    }
+#ifdef HAVE_OPENXR
+   if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+            MENU_ENUM_LABEL_VIDEO_OPENXR_CONTROLLERS,
+            PARSE_ONLY_UINT, false) == 0)
+      count++;
+#endif
    return count;
 }
 
@@ -13113,7 +13132,6 @@ unsigned menu_displaylist_build_list(
                static const menu_displaylist_settings_row_t headset_rows[] = {
                   { MENU_ENUM_LABEL_VIDEO_OPENXR_REFRESH_RATE, PARSE_ONLY_UINT, false },
                   { MENU_ENUM_LABEL_VIDEO_OPENXR_PERF_BOOST, PARSE_ONLY_BOOL, false },
-                  { MENU_ENUM_LABEL_VIDEO_OPENXR_CONTROLLERS, PARSE_ONLY_UINT, false },
                   { MENU_ENUM_LABEL_VIDEO_OPENXR_LASER, PARSE_ONLY_UINT, false },
                   { MENU_ENUM_LABEL_VIDEO_OPENXR_LASER_BEAM, PARSE_ONLY_UINT, false },
                   { MENU_ENUM_LABEL_VIDEO_OPENXR_PLACEMENT, PARSE_ONLY_UINT, false },

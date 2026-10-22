@@ -45,8 +45,8 @@ struct rarch_joypad_driver;
 void input_openxr_register(void);
 
 /* Syncs the controllers, and connects or disconnects their devices;
- * once per input poll, with Max Users, the Headset Controllers, Laser
- * Pointer and Laser Beam settings and the axis threshold. */
+ * once per input poll, with Max Users, the OpenXR Controller Layout,
+ * Laser Pointer and Laser Beam settings and the axis threshold. */
 void input_openxr_poll(unsigned max_users, unsigned controllers,
       unsigned laser, unsigned beam, float threshold);
 
