@@ -1478,6 +1478,7 @@ static void winusb_hidclass_scan(winusb_hid_t *hid)
       if (probe == INVALID_HANDLE_VALUE)
          continue;
       attr.Size = sizeof(attr);
+      memset(&caps, 0, sizeof(caps));
       /* a pad with a handler, or none - read from its layout - but
        * not the DualShock 3, which Windows' HID driver will not start */
       if (     winusb_hidclass_api.GetAttributes(probe, &attr)
@@ -1488,6 +1489,13 @@ static void winusb_hidclass_scan(winusb_hid_t *hid)
             pad =    caps.UsagePage == 0x01
                   && (caps.Usage == 0x04 || caps.Usage == 0x05
                      || caps.Usage == 0x08);
+         /* a pad with a handler, whatever its collection says */
+         if (     !pad
+               && pad_connection_has_ids(attr.VendorID, attr.ProductID))
+            pad = true;
+         RARCH_DBG("[HID] %04x:%04x, usage %02x:%02x: %s.\n",
+               attr.VendorID, attr.ProductID, caps.UsagePage, caps.Usage,
+               pad ? "a pad" : "not a pad");
          winusb_hidclass_api.FreePreparsedData(pp);
       }
       CloseHandle(probe);

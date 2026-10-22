@@ -750,6 +750,16 @@ static bool joypad_connection_is_nes_clone_name(const char *name)
    return strstr(name, "USB Gamepad") != NULL;
 }
 
+/* Whether some handler is for @vid and @pid, whatever its name. */
+bool pad_connection_has_ids(uint16_t vid, uint16_t pid)
+{
+   unsigned i;
+   for (i = 0; pad_map[i].name != NULL; i++)
+      if (pad_map[i].vid == vid && pad_map[i].pid == pid)
+         return true;
+   return false;
+}
+
 joypad_connection_entry_t *find_connection_entry(uint16_t vid, uint16_t pid, const char *name)
 {
    unsigned i;
