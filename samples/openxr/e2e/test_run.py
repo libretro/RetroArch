@@ -133,6 +133,73 @@ class Select(unittest.TestCase):
         self.assertIsNone(cases)
         self.assertIn('Vulkan', error)
 
+    def test_xvfb_wayland_refused(self):
+        cases, error = run.select(['glcore-egl-menu-resize',
+                                   'glcore-glx-menu-resize'], True, False,
+                                  True)
+        self.assertIsNone(cases)
+        self.assertIn('glcore-egl-menu-resize', error)
+        self.assertNotIn('glcore-glx-menu-resize', error)
+
+    def test_xvfb_screen_refused(self):
+        cases, error = run.select(['menu-small', 'menu-resize'], False,
+                                  False, True)
+        self.assertIsNone(cases)
+        self.assertIn('menu-small', error)
+        self.assertNotIn('menu-resize', error)
+        cases, error = run.select([], False, False, True)
+        self.assertIsNone(cases)
+        self.assertIn('menu-small', error)
+
+    def test_xvfb_named(self):
+        cases, error = run.select(['glcore-glx-menu-resize',
+                                   'glcore-glx-menu-resize-running'], True,
+                                  False, True)
+        self.assertIsNone(error)
+        self.assertEqual(len(cases), 2)
+        cases, error = run.select(['menu-resize', 'menu-resize-running'],
+                                  False, False, True)
+        self.assertIsNone(error)
+        self.assertEqual(len(cases), 2)
+
+
+class Launch(unittest.TestCase):
+    CHILD = {'WAYLAND_DISPLAY': 'openxr-e2e-no-socket',
+             'XDG_RUNTIME_DIR': run.RUNTIME_DIR}
+
+    def cmd(self, case, xvfb):
+        return run.case_cmd('/ra/retroarch', '/out/c/retroarch.cfg',
+                            '/out/c', case, self.CHILD, xvfb)
+
+    def test_xvfb(self):
+        cmd = self.cmd({}, True)
+        self.assertEqual(cmd[:2], ['sh', '-c'])
+        self.assertEqual(cmd[3:], ['/ra/retroarch', '--config',
+                                   '/out/c/retroarch.cfg', '-L', run.CORE,
+                                   '--verbose'])
+        self.assertNotIn('GAMESCOPE', cmd[2])
+
+    def test_xvfb_guard(self):
+        # The desktop's display is still refused, and RetroArch still
+        # gets no Wayland socket and the case's runtime dir.
+        guard = self.cmd({}, True)[2]
+        self.assertTrue(guard.startswith('case "$DISPLAY" in ""|:0)'))
+        self.assertIn('exit 99', guard)
+        self.assertIn('WAYLAND_DISPLAY=openxr-e2e-no-socket', guard)
+        self.assertIn('XDG_RUNTIME_DIR=run', guard)
+
+    def test_gamescope(self):
+        cmd = self.cmd({}, False)
+        self.assertEqual(cmd[:3], ['gamescope', '--backend', 'headless'])
+        inner = cmd[cmd.index('--') + 1:]
+        self.assertEqual(inner[:2], ['sh', '-c'])
+        self.assertIn('GAMESCOPE_WAYLAND_DISPLAY', inner[2])
+        self.assertEqual(inner[3:], self.cmd({}, True)[3:])
+        wayland = self.cmd({'context': 'wayland', 'screen': (320, 192)},
+                           False)
+        self.assertIn('--expose-wayland', wayland)
+        self.assertEqual(wayland[wayland.index('-w') + 1], '320')
+
 
 class Capture(unittest.TestCase):
     class Res:

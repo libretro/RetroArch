@@ -1,0 +1,124 @@
+name: CI OpenXR end to end (Monado)
+
+# samples/openxr/e2e's resize cases: a headset slot made again at
+# another size keeps showing its old swapchains until the new ones
+# have an image. Vulkan only: on Mesa 26.2's llvmpipe, Monado's GL
+# client could not import the service's images.
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+  MONADO_TAG: v25.1.0
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+jobs:
+  openxr-e2e:
+    name: Resize cases against Monado (Xvfb, lavapipe)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Link with lld
+        run: sh .github/workflows/scripts/use-lld.sh
+
+      - name: Install dependencies
+        timeout-minutes: 20
+        run: |
+          pkgs="build-essential pkg-config cmake ninja-build glslang-tools libeigen3-dev libudev-dev libx11-dev libx11-xcb-dev libxcb1-dev libxcb-randr0-dev libxext-dev libxrandr-dev libxinerama-dev libxxf86vm-dev libxkbcommon-dev zlib1g-dev libvulkan-dev libgl1-mesa-dev libglvnd-dev libegl1-mesa-dev mesa-vulkan-drivers libgl1-mesa-dri xvfb"
+          for i in 1 2 3; do
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
+            echo "apt-get update failed (attempt $i); retrying in 10s"
+            sleep 10
+          done
+          # Fetch first, under a bound: a download is safe to stop and
+          # resumes, an install is not. A mirror that stalls is left for
+          # the main archive on the next attempt.
+          for i in 1 2 3; do
+            sudo timeout 240 apt-get install -y --download-only \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+              $pkgs && break
+            [ $i = 3 ] && exit 1
+            echo "package download failed or stalled (attempt $i); retrying from archive.ubuntu.com"
+            for f in /etc/apt/sources.list /etc/apt/sources.list.d/*; do
+              [ -f "$f" ] || continue
+              sudo sed -i -e 's#mirror+file:/etc/apt/apt-mirrors.txt#http://archive.ubuntu.com/ubuntu/#g' \
+                -e 's#http://azure\.archive\.ubuntu\.com/ubuntu#http://archive.ubuntu.com/ubuntu#g' "$f"
+            done
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 || true
+          done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            $pkgs
+
+      - name: Cache Monado
+        id: monado
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/monado
+          key: monado-${{ env.MONADO_TAG }}-${{ runner.os }}-${{ hashFiles('.github/workflows/scripts/build-monado.sh') }}
+
+      - name: Build Monado
+        if: steps.monado.outputs.cache-hit != 'true'
+        run: sh .github/workflows/scripts/build-monado.sh "$MONADO_TAG" "$RUNNER_TEMP/monado"
+
+      - name: Build RetroArch with OpenXR
+        shell: bash
+        run: |
+          set -eu
+          ./configure --disable-qt --enable-openxr
+          grep -q '^HAVE_OPENXR = 1' config.mk
+          grep -q '^HAVE_VULKAN = 1' config.mk
+          make -j$(nproc)
+          test -f obj-unix/release/gfx/common/vulkan_openxr.o
+          test -f obj-unix/release/gfx/common/gl_openxr.o
+
+      - name: Build the video_views core and the OpenXR test layer
+        shell: bash
+        run: |
+          set -eu
+          make -C samples/cores/video_views
+          make -C samples/openxr/test_layer
+
+      - name: Run the resize cases on Vulkan
+        shell: bash
+        run: |
+          set -eu
+          prefix=$RUNNER_TEMP/monado
+          sed "s#^RUNTIME_JSON=.*#RUNTIME_JSON=$prefix/share/openxr/1/openxr_monado.json#" \
+            samples/openxr/e2e/monado.env.example > "$RUNNER_TEMP/monado.env"
+          grep -q "^RUNTIME_JSON=$prefix/" "$RUNNER_TEMP/monado.env"
+          # run.py starts monado-service by name.
+          export PATH="$prefix/bin:$PATH"
+          lvp=$(ls /usr/share/vulkan/icd.d/lvp_icd*.json | paste -sd: -)
+          test -n "$lvp"
+          export VK_DRIVER_FILES="$lvp" VK_ICD_FILENAMES="$lvp"
+          python3 -u samples/openxr/e2e/run.py ./retroarch \
+            "$RUNNER_TEMP/openxr-e2e" "$RUNNER_TEMP/monado.env" --xvfb \
+            menu-resize menu-resize-running
+
+      - name: Upload the cases' output
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: openxr-e2e
+          path: ${{ runner.temp }}/openxr-e2e
+          retention-days: 7

@@ -4,17 +4,19 @@
 Runs the video_views test core with Headset Output on against Monado's
 simulated headset in headless gamescope, through the test API layer in
 samples/openxr/test_layer, which records every xrEndFrame's quads and
-saves the images they show. Not run in CI: it needs a GPU, gamescope,
-Monado, and a RetroArch built with HAVE_OPENXR.
+saves the images they show. It needs Monado, a RetroArch built with
+HAVE_OPENXR, and a GPU and gamescope, or with --xvfb Xvfb and Mesa's
+software renderers. CI runs some cases with --xvfb (Linux-openxr-e2e.yml).
 
-Usage: run.py <retroarch> <out dir> <monado.env> [--validate|--gl] [case ...]
+Usage: run.py <retroarch> <out dir> <monado.env> [--validate|--gl] [--xvfb]
+              [case ...]
 
 Build the test core and layer first (make -C samples/cores/video_views,
 make -C samples/openxr/test_layer). monado.env.example here runs
 Monado's null compositor and simulated headset; RetroArch reaches Monado
 through XR_RUNTIME_JSON, so the system's active runtime is not used.
-gamescope and Monado get none of the desktop's display, session bus or
-runtime dir.
+gamescope, Xvfb and Monado get none of the desktop's display, session
+bus or runtime dir.
 
 monado.env holds KEY=VALUE lines (values may be double-quoted): MODE
 (inprocess or service), RUNTIME_JSON (Monado's manifest), CLIENT_ENV and
@@ -31,6 +33,9 @@ layer reads their GL images itself. Validation is Vulkan's alone.
 be installed, and fails a case on any other message, or when none of the
 baseline's appear: the window's own come every run, so without them the
 layer did not load.
+--xvfb runs each case's RetroArch on an Xvfb of its own instead of
+headless gamescope. A Wayland lane, or a case with a screen size of its
+own, cannot run there.
 """
 
 import copy
@@ -51,8 +56,8 @@ import zlib
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.normpath(os.path.join(HERE, '..', '..', '..'))
 sys.path.insert(0, os.path.join(ROOT, 'samples', 'cores', 'video_views', 'e2e'))
-from run import (CORE, free_port, isolated_env, read_png, send,  # noqa: E402
-                 write_cfg)
+from run import (CORE, free_port, isolated_env, read_png,  # noqa: E402
+                 release_display, send, write_cfg, xvfb_start)
 
 PRESET = os.path.join(HERE, 'output_size.slangp')
 LAYER_DIR = os.path.join(ROOT, 'samples', 'openxr', 'test_layer')
@@ -245,7 +250,49 @@ def capture_errors(res, case):
     return errors
 
 
-def run_case(retroarch, root, monado, case, validate):
+def case_cmd(retroarch, cfg, d, case, child, xvfb):
+    """RetroArch's command for a case, under a guard that refuses the
+    desktop: in headless gamescope, or with xvfb bare, for the Xvfb
+    run_case starts."""
+    exports = ' '.join('%s=%s' % (k, shlex.quote(v))
+                       for k, v in sorted(child.items()))
+    # Never reach the desktop: refuse the real display; what the runtime
+    # and RetroArch open lives in this case's directory. The gamescope
+    # WSI layer still needs gamescope's own socket, by an absolute path in
+    # gamescope's private runtime dir.
+    helper = ''
+    if case.get('unfocus'):
+        helper = ' %s %s --unfocus-when %s &' % (
+            shlex.quote(sys.executable), shlex.quote(os.path.abspath(__file__)),
+            shlex.quote(os.path.join(d, 'unfocus')))
+    # A Wayland lane's window is gamescope's own client, on its socket.
+    wayland = case.get('context') == 'wayland'
+    own_socket = (' [ -n "${GAMESCOPE_WAYLAND_DISPLAY:-}" ] || exit 97;'
+                  ' export WAYLAND_DISPLAY="$GAMESCOPE_WAYLAND_DISPLAY";'
+                  if wayland else '')
+    wsi = ('' if xvfb else
+           ' case "${GAMESCOPE_WAYLAND_DISPLAY:-}" in ""|/*) ;;'
+           ' *) GAMESCOPE_WAYLAND_DISPLAY="$XDG_RUNTIME_DIR/'
+           '$GAMESCOPE_WAYLAND_DISPLAY"; export GAMESCOPE_WAYLAND_DISPLAY;;'
+           ' esac;')
+    guard = ('case "$DISPLAY" in ""|:0) echo "refusing DISPLAY=$DISPLAY" >&2;'
+             ' exit 99;; esac; cd ' + shlex.quote(d) + ' || exit 98;' + helper +
+             wsi + ' export ' + exports + ';' + own_socket +
+             ' exec "$0" "$@"')
+    cmd = ['sh', '-c', guard, retroarch, '--config', cfg, '-L',
+           case.get('core', CORE), '--verbose'] + case.get('args', [])
+    if case.get('content'):
+        cmd.append(case['content'])
+    if xvfb:
+        return cmd
+    w, h = case.get('screen', (W, H))
+    return ['gamescope', '--backend', 'headless'] + (
+            ['--expose-wayland'] if wayland else []) + [
+            '-w', str(w), '-h', str(h), '-W', str(w), '-H', str(h),
+            '-r', '60', '--'] + cmd
+
+
+def run_case(retroarch, root, monado, case, validate, xvfb=False):
     d = os.path.realpath(os.path.join(root, case['name']))
     if os.path.commonpath([root, d]) != root or d == root:
         raise RuntimeError('refusing to touch ' + d)
@@ -311,44 +358,12 @@ def run_case(retroarch, root, monado, case, validate):
     child.update(pairs(monado.get('CLIENT_ENV', '')))
     if validate:
         child['VK_INSTANCE_LAYERS'] = 'VK_LAYER_KHRONOS_validation'
-    exports = ' '.join('%s=%s' % (k, shlex.quote(v))
-                       for k, v in sorted(child.items()))
-    # Never reach the desktop: refuse the real display; what the runtime
-    # and RetroArch open lives in this case's directory. The gamescope
-    # WSI layer still needs gamescope's own socket, by an absolute path in
-    # gamescope's private runtime dir.
-    helper = ''
-    if case.get('unfocus'):
-        helper = ' %s %s --unfocus-when %s &' % (
-            shlex.quote(sys.executable), shlex.quote(os.path.abspath(__file__)),
-            shlex.quote(os.path.join(d, 'unfocus')))
-    # A Wayland lane's window is gamescope's own client, on its socket.
-    wayland = case.get('context') == 'wayland'
-    own_socket = (' [ -n "${GAMESCOPE_WAYLAND_DISPLAY:-}" ] || exit 97;'
-                  ' export WAYLAND_DISPLAY="$GAMESCOPE_WAYLAND_DISPLAY";'
-                  if wayland else '')
-    guard = ('case "$DISPLAY" in ""|:0) echo "refusing DISPLAY=$DISPLAY" >&2;'
-             ' exit 99;; esac; cd ' + shlex.quote(d) + ' || exit 98;' + helper +
-             ' case "${GAMESCOPE_WAYLAND_DISPLAY:-}" in ""|/*) ;;'
-             ' *) GAMESCOPE_WAYLAND_DISPLAY="$XDG_RUNTIME_DIR/'
-             '$GAMESCOPE_WAYLAND_DISPLAY"; export GAMESCOPE_WAYLAND_DISPLAY;;'
-             ' esac; export ' + exports + ';' + own_socket +
-             ' exec "$0" "$@"')
+    cmd = case_cmd(retroarch, cfg, d, case, child, xvfb)
 
-    w, h = case.get('screen', (W, H))
-    cmd = ['gamescope', '--backend', 'headless'] + (
-           ['--expose-wayland'] if wayland else []) + [
-           '-w', str(w), '-h', str(h), '-W', str(w), '-H', str(h),
-           '-r', '60', '--', 'sh', '-c', guard,
-           retroarch, '--config', cfg, '-L', case.get('core', CORE),
-           '--verbose'] + case.get('args', [])
-    if case.get('content'):
-        cmd.append(case['content'])
-
-    # gamescope and the service get none of the desktop's display, bus or
-    # runtime dir.
+    # gamescope, Xvfb and the service get none of the desktop's display,
+    # bus or runtime dir.
     env = isolated_env()
-    svc = svc_log = log = p = None
+    svc = svc_log = log = p = xs = None
     res = Result(d)
     res.top_px = case.get('top_px', res.top_px)
     res.reinit_grace = case.get('reinit_grace', res.reinit_grace)
@@ -372,6 +387,8 @@ def run_case(retroarch, root, monado, case, validate):
                 time.sleep(0.1)
 
         log = open(os.path.join(d, 'run.log'), 'w')
+        if xvfb:
+            xs, env['DISPLAY'] = xvfb_start(env)
         p = subprocess.Popen(cmd, stdout=log, stderr=subprocess.STDOUT,
                              env=env, start_new_session=True)
         for kind, arg in case['steps']:
@@ -406,6 +423,9 @@ def run_case(retroarch, root, monado, case, validate):
             res.marks['hung'] = time.monotonic()
     finally:
         stop(p)
+        stop(xs)
+        if xs:
+            release_display(env['DISPLAY'])
         stop(svc)
         if log:
             log.close()
@@ -5193,8 +5213,9 @@ def gl_cases():
     return out
 
 
-def select(names, gl, validate):
-    """The cases to run, or an error: every name must be one."""
+def select(names, gl, validate, xvfb=False):
+    """The cases to run, or an error: every name must be one, and Xvfb
+    runs no Wayland lane and no case with a screen size of its own."""
     if gl and validate:
         return None, '--gl and --validate: validation is Vulkan\'s alone'
     pool = gl_cases() if gl else CASES
@@ -5203,7 +5224,15 @@ def select(names, gl, validate):
     if unknown:
         return None, 'no such case%s: %s' % (
             's' if len(unknown) > 1 else '', ', '.join(unknown))
-    return [c for c in pool if not names or c['name'] in names], None
+    cases = [c for c in pool if not names or c['name'] in names]
+    wayland = [c['name'] for c in cases if c.get('context') == 'wayland']
+    if xvfb and wayland:
+        return None, '--xvfb: Xvfb has no Wayland for %s' % ', '.join(wayland)
+    sized = [c['name'] for c in cases if 'screen' in c]
+    if xvfb and sized:
+        return None, '--xvfb: Xvfb is %dx%d, not a size of its own for %s' % (
+            W, H, ', '.join(sized))
+    return cases, None
 
 
 def unfocus_when(trigger):
@@ -5250,6 +5279,7 @@ def main():
     args = [a for a in sys.argv[1:] if not a.startswith('--')]
     validate = '--validate' in sys.argv[1:]
     gl = '--gl' in sys.argv[1:]
+    xvfb = '--xvfb' in sys.argv[1:]
     if len(args) < 3:
         print(__doc__)
         return 2
@@ -5263,14 +5293,14 @@ def main():
             os.path.dirname(os.path.abspath(args[2])),
             monado.get('VALIDATION_BASELINE', os.path.join(
                 HERE, 'validation-baseline.txt'))))
-    cases, error = select(names, gl, validate)
+    cases, error = select(names, gl, validate, xvfb)
     if error:
         print(error)
         return 2
     os.makedirs(root, exist_ok=True)
     failed = 0
     for case in cases:
-        res = run_case(retroarch, root, monado, case, validate)
+        res = run_case(retroarch, root, monado, case, validate, xvfb)
         errors = case['check'](res) + capture_errors(res, case)
         if 'hung' in res.marks:
             errors.append('RetroArch did not quit')
