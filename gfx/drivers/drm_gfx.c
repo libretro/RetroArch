@@ -652,7 +652,7 @@ static int modeset_create_dumbfb(int fd, struct modeset_buf *buf,
 {
    struct drm_mode_create_dumb create_dumb = {0};
    struct drm_mode_map_dumb map_dumb       = {0};
-   struct drm_mode_fb_cmd cmd_dumb         = {0};
+   struct drm_mode_fb_cmd2 cmd_dumb        = {0};
    struct drm_mode_destroy_dumb destroy_dumb = {0};
 
    create_dumb.width  = VIDEO_SCALE_W(buf->dims);
@@ -668,15 +668,14 @@ static int modeset_create_dumbfb(int fd, struct modeset_buf *buf,
       return -1;
    }
 
-   /* Create the buffer. We just copy values here... */
+   /* The format named, as no legacy depth and bpp can name RGBX4444 */
    cmd_dumb.width        = create_dumb.width;
    cmd_dumb.height       = create_dumb.height;
-   cmd_dumb.bpp          = create_dumb.bpp;
-   cmd_dumb.pitch        = create_dumb.pitch;
-   cmd_dumb.handle       = create_dumb.handle;
-   cmd_dumb.depth        = 24;
+   cmd_dumb.pixel_format = pixformat;
+   cmd_dumb.handles[0]   = create_dumb.handle;
+   cmd_dumb.pitches[0]   = create_dumb.pitch;
 
-   if (drmIoctl(drm.fd, DRM_IOCTL_MODE_ADDFB, &cmd_dumb))
+   if (drmIoctl(drm.fd, DRM_IOCTL_MODE_ADDFB2, &cmd_dumb))
    {
       RARCH_ERR("[DRM] Cannot add framebuffer.\n");
       goto error_destroy;

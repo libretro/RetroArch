@@ -45,6 +45,7 @@ void video_driver_set_output_dims(unsigned dims) { (void)dims; }
 static int      dumb_alive[MAX_OBJ];   /* by handle */
 static uint32_t dumb_size[MAX_OBJ];
 static int      fb_alive[MAX_OBJ];     /* by fb id */
+static uint32_t fb_format[MAX_OBJ];    /* the format each was made with */
 static unsigned maps_alive;
 static uint32_t plane_fb;              /* the fb the plane scans out */
 static unsigned blanks;                /* times it was removed from under the plane */
@@ -77,13 +78,25 @@ int drmIoctl(int fd, unsigned long request, void *arg)
       dumb_size[c->handle]  = (uint32_t)c->size;
       return 0;
    }
+   if (request == DRM_IOCTL_MODE_ADDFB2)
+   {
+      struct drm_mode_fb_cmd2 *f = (struct drm_mode_fb_cmd2*)arg;
+      if (next_fb >= MAX_OBJ || !dumb_alive[f->handles[0]])
+         return -1;
+      f->fb_id = next_fb++;
+      fb_alive[f->fb_id]  = 1;
+      fb_format[f->fb_id] = f->pixel_format;
+      return 0;
+   }
+   /* Legacy: a depth and bpp, which name XRGB8888 or RGB565 at best */
    if (request == DRM_IOCTL_MODE_ADDFB)
    {
       struct drm_mode_fb_cmd *f = (struct drm_mode_fb_cmd*)arg;
       if (next_fb >= MAX_OBJ || !dumb_alive[f->handle])
          return -1;
       f->fb_id = next_fb++;
-      fb_alive[f->fb_id] = 1;
+      fb_alive[f->fb_id]  = 1;
+      fb_format[f->fb_id] = f->bpp == 16 ? DRM_FORMAT_RGB565 : DRM_FORMAT_XRGB8888;
       return 0;
    }
    if (request == DRM_IOCTL_MODE_MAP_DUMB)
@@ -269,6 +282,18 @@ int main(void)
    CHECK(count(dumb_alive) == 3 && count(fb_alive) == 3 && maps_alive == 3,
          "a 3-page surface: %u buffers, %u fbs, %u maps",
          count(dumb_alive), count(fb_alive), maps_alive);
+   CHECK(v->main_surface
+         && fb_format[v->main_surface->pages[0].buf.fb_id] == DRM_FORMAT_XRGB8888,
+         "the frame's framebuffers are XRGB8888");
+   {
+      /* A 16-bit core's frames are RGB565 framebuffers */
+      struct drm_surface *s16 = NULL;
+      CHECK(drm_surface_setup(v, VIDEO_SCALE_PACK(64, 32), 128, 2,
+               DRM_FORMAT_RGB565, 255, 1.0f, 2, 0, &s16)
+            && fb_format[s16->pages[0].buf.fb_id] == DRM_FORMAT_RGB565,
+            "an RGB565 surface's framebuffers are RGB565");
+      drm_surface_free(v, &s16);
+   }
    CHECK(plane_fb && fb_alive[plane_fb], "the plane scans out no live fb");
    before = failures;
 
@@ -513,6 +538,9 @@ int main(void)
       CHECK(loan && s && s->pixformat == DRM_FORMAT_RGBX4444
             && pitch == s->pages[s->flip_page].buf.stride,
             "the next RGBX4444 page is lent, at its stride");
+      CHECK(s && fb_format[s->pages[0].buf.fb_id] == DRM_FORMAT_RGBX4444
+            && fb_format[s->pages[1].buf.fb_id] == DRM_FORMAT_RGBX4444,
+            "the menu's framebuffers are RGBX4444, as their pixels are");
       if (loan && s)
       {
          loan_fb = s->pages[s->flip_page].buf.fb_id;
