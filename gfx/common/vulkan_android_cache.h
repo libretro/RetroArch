@@ -41,6 +41,9 @@ bool vulkan_android_cache_after_device_destroy(vulkan_android_cache_t *cache);
  * A pending device must not be cached: destroy it and notify afterward. */
 void vulkan_android_cache_defer(vulkan_android_cache_t *cache);
 bool vulkan_android_cache_device_pending(VkDevice device);
+/* Cold lifecycle owner. Collect only entries whose fences prove completion.
+ * Pending or ambiguous work remains retained; no waits. */
+void vulkan_android_cache_device_collect(VkDevice device);
 /* Cold context teardown after vkDeviceWaitIdle returned success/device-lost,
  * before vkDestroyDevice. Destroys Vulkan children while retaining image
  * leases. */

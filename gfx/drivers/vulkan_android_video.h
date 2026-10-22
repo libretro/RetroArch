@@ -15,6 +15,7 @@ static vulkan_android_cache_t *vulkan_android_renderer_cache(
    VkCommandPoolCreateInfo pool;
    vulkan_android_cache_t *cache;
    VkDevice device = vk->context->device;
+   vulkan_android_cache_device_collect(device);
    if (!(vk->context->flags & VK_CTX_FLAG_ANDROID_IMAGES))
       return NULL;
    memset(&config, 0, sizeof(config));
