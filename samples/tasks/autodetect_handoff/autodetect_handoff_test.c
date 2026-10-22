@@ -152,6 +152,8 @@ const char *input_config_get_device_name(unsigned port)
 {
    return port_names[port];
 }
+retro_atomic_int_t input_binds_generation;
+void input_binds_kept_invalidate(void) { }
 void input_config_clear_device_config_name(unsigned port) { }
 void input_config_clear_device_display_name(unsigned port) { }
 void input_config_clear_device_joypad_driver(unsigned port) { }
@@ -164,6 +166,7 @@ uint16_t input_config_get_device_pid(unsigned port) { return 0; }
 uint16_t input_config_get_device_vid(unsigned port) { return 0; }
 bool input_config_parse_vid_pid(const char *s, unsigned long *vid,
       unsigned long *pid, const char **name) { return false; }
+void input_config_plays_as_max_users_changed(uint8_t *again) { }
 bool input_config_plays_as_place(unsigned slot) { return false; }
 void input_config_plays_as_release(unsigned slot) { }
 void input_config_reset_autoconfig_binds(unsigned port) { }

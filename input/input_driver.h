@@ -2028,8 +2028,32 @@ bool input_config_plays_as_any_player(void);
 /* The controller just connected in @slot takes its entry and its port:
  * true when it was placed, false for one the reservations place. */
 bool input_config_plays_as_place(unsigned slot);
+/* Max Users has changed: @again gets, for each of the MAX_USERS slots,
+ * whether its controller is placed again - one with no port below Max
+ * Users now, or one whose player was above Max Users when controllers
+ * were last placed and is within it now. */
+void input_config_plays_as_max_users_changed(uint8_t *again);
 /* The controller in @slot is gone. */
 void input_config_plays_as_release(unsigned slot);
+/* The user whose player user @user's controller plays as: the one it
+ * shares, else @user (also with no controller). */
+unsigned input_config_user_player(unsigned user);
+/* Where a controller plays, as the menu's rows show it. */
+enum input_plays_as_where
+{
+   INPUT_PLAYS_AS_GONE = 0,
+   INPUT_PLAYS_AS_NO_PORT,
+   INPUT_PLAYS_AS_ABOVE_MAX_USERS,
+   INPUT_PLAYS_AS_SHARING,
+   INPUT_PLAYS_AS_OWN_PORT
+};
+/* Where the controller in @slot plays: into @player the player it
+ * feeds, into @port the port its binds are on, both from 1, 0 for
+ * none. */
+enum input_plays_as_where input_config_plays_as_where(unsigned slot,
+      unsigned *player, unsigned *port);
+/* The lowest user below Max Users reading @slot, or MAX_USERS. */
+unsigned input_config_slot_user(unsigned slot);
 
 unsigned *input_config_get_device_ptr(unsigned port);
 

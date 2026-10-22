@@ -809,6 +809,158 @@ static void test_place_leave_and_change(void)
          "connected again, the controller set to Player 1 is not on port 1");
 }
 
+/* The controllers placed again as input_autoconfigure_reallocate_ports()
+ * places them: the one in @slot, or with @slot MAX_USERS those a change
+ * of Max Users moves, lowest slot first, as on connect. */
+static void t_place_again(unsigned slot)
+{
+   unsigned s;
+   uint8_t again[MAX_USERS];
+
+   if (slot < MAX_USERS)
+   {
+      memset(again, 0, sizeof(again));
+      again[slot] = 1;
+   }
+   else
+      input_config_plays_as_max_users_changed(again);
+   for (s = 0; s < MAX_USERS; s++)
+      if (again[s] && input_config_get_device_name(s))
+         input_config_plays_as_place(s);
+   input_config_binds_changed();
+}
+
+/* Placed again, a steady arrangement stays; a Player change and a
+ * lower Max Users move what they change. */
+static void test_place_again(void)
+{
+   t_reset();
+   t_entries(
+         "input_plays_as_device_1 = \"0001:0001 A\"\n"
+         "input_plays_as_player_1 = \"1\"\n"
+         "input_plays_as_device_2 = \"0002:0002 B\"\n"
+         "input_plays_as_player_2 = \"1\"\n");
+   t_connect(0, "A", 1, 1);
+   t_connect(1, "B", 2, 2);
+   t_place_again(0);
+   t_place_again(1);
+   CHECK(t_user_of(0) == 0 && t_user_of(1) == 3,
+         "placed again, a steady arrangement moved");
+
+   CHECK(input_config_plays_as_set(1, 2), "Player 2 was refused");
+   t_place_again(1);
+   CHECK(t_user_of(0) == 0 && t_user_of(1) == 1,
+         "placed again, Player 2 is not on port 2");
+
+   CHECK(input_config_plays_as_set(1, 1), "Player 1 was refused");
+   t_place_again(1);
+   CHECK(t_user_of(1) == 3,
+         "placed again, Player 1 does not share from port 4");
+   settings.uints.input_max_users = 2;
+   t_place_again(MAX_USERS);
+   CHECK(t_user_of(0) == 0 && t_user_of(1) == 1,
+         "with Max Users 2 the sharer was not placed below it");
+}
+
+/* A Player change places that controller again, and no other: an Auto
+ * controller above a port emptied earlier stays where it is. */
+static void test_place_again_player(void)
+{
+   t_reset();
+   t_connect(0, "A", 1, 1);
+   t_connect(1, "X", 3, 3);
+   t_connect(2, "B", 2, 2);
+   t_disconnect(1);
+   CHECK(input_config_plays_as_set(0, 1), "Player 1 was refused");
+   t_place_again(0);
+   CHECK(t_user_of(0) == 0 && t_user_of(2) == 2,
+         "A's Player changed, B left port 3");
+}
+
+/* A Max Users change places again only the controllers left with no
+ * port, and those whose player it brings within Max Users. */
+static void test_place_again_max_users(void)
+{
+   t_reset();
+   t_entries(
+         "input_plays_as_device_1 = \"0001:0001 A\"\n"
+         "input_plays_as_player_1 = \"1\"\n");
+   t_connect(0, "A", 1, 1);
+   t_connect(1, "X", 9, 9);
+   t_connect(2, "C", 3, 3);
+   t_connect(3, "D", 4, 4);
+   t_disconnect(1);
+   settings.uints.input_max_users = 3;
+   t_place_again(MAX_USERS);
+   CHECK(t_user_of(0) == 0 && t_user_of(2) == 2 && t_user_of(3) == 1,
+         "Max Users 3 moved a controller below it");
+
+   t_reset();
+   settings.uints.input_max_users = 2;
+   t_entries(
+         "input_plays_as_device_1 = \"0003:0003 C\"\n"
+         "input_plays_as_player_1 = \"3\"\n");
+   t_connect(0, "A", 1, 1);
+   t_connect(1, "C", 3, 3);
+   settings.uints.input_max_users = 4;
+   t_place_again(MAX_USERS);
+   CHECK(t_user_of(0) == 0 && t_user_of(1) == 2,
+         "Max Users 4 did not put Player 3 on port 3");
+}
+
+/* A Player or Max Users change that leaves no player in effect places
+ * the controller it changed as Auto does, on the first free port: set
+ * back to Auto, or its player past a lower Max Users. A connect with
+ * none in effect still leaves it be (test_place_no_player). */
+static void test_place_again_last_player(void)
+{
+   t_reset();
+   t_connect(0, "Pad", 1, 1);
+   CHECK(input_config_plays_as_set(0, 3), "Player 3 was refused");
+   t_place_again(0);
+   CHECK(t_user_of(0) == 2, "Player 3 is not on port 3");
+   CHECK(input_config_plays_as_set(0, 0), "Auto was refused");
+   t_place_again(0);
+   CHECK(t_user_of(0) == 0,
+         "the last player set back to Auto stayed on port 3");
+
+   t_reset();
+   t_connect(0, "Pad", 1, 1);
+   CHECK(input_config_plays_as_set(0, 3), "Player 3 was refused");
+   t_place_again(0);
+   settings.uints.input_max_users = 2;
+   t_place_again(MAX_USERS);
+   CHECK(t_user_of(0) == 0,
+         "the last player past Max Users 2 got no port");
+}
+
+/* A player above Max Users was never in effect: the controller set
+ * back to Auto from it, or left above a lower Max Users, stays where
+ * it is with port 2 free. */
+static void test_place_again_never_in_effect(void)
+{
+   t_reset();
+   t_connect(0, "A", 1, 1);
+   t_connect(2, "C", 3, 3);
+   CHECK(input_config_plays_as_set(2, 6), "Player 6 was refused");
+   t_place_again(2);
+   CHECK(t_user_of(2) == 2, "fixture: C on 6 left port 3");
+   CHECK(input_config_plays_as_set(2, 0), "Auto was refused");
+   t_place_again(2);
+   CHECK(t_user_of(2) == 2,
+         "C back on Auto from 6, above Max Users, left port 3");
+
+   t_reset();
+   t_connect(0, "A", 1, 1);
+   t_connect(2, "C", 3, 3);
+   CHECK(input_config_plays_as_set(2, 6), "Player 6 was refused");
+   t_place_again(2);
+   settings.uints.input_max_users = 2;
+   t_place_again(MAX_USERS);
+   CHECK(t_user_of(2) == MAX_USERS,
+         "C on 6, above Max Users 4 and then 2, took port 2");
+}
+
 /* The frame's end, as runloop.c's: what the poll left for it is done
  * with the core off the stack. */
 static void t_frame_end(void)
@@ -1129,6 +1281,79 @@ static void test_announce_join_netplay(void)
    CHECK(t_inits == 0,
          "netplay started at the frame's end: the join told the core");
    t_netplay = false;
+}
+
+/* The port a controller's row shows: the user reading its slot below
+ * Max Users, a sharer's included; none past Max Users. */
+static void test_slot_user(void)
+{
+   t_reset();
+   t_two_player_1();
+   CHECK(input_config_slot_user(0) == 0 && input_config_slot_user(1) == 3,
+         "the rows' ports are not the users reading the slots");
+   CHECK(input_config_slot_user(7) == MAX_USERS,
+         "a slot past Max Users has a port");
+}
+
+/* What a Controllers row shows: where its controller plays, the player
+ * it feeds (the one it shares, an Auto sharer's too) and the port its
+ * binds are on; none past Max Users; a player above Max Users playing
+ * Auto. A port's page is for the player its controller plays as, its
+ * own when empty. */
+static void test_plays_as_where(void)
+{
+   unsigned player, port;
+
+   t_reset();
+   t_two_player_1();
+   t_connect(2, "C", 3, 3);
+   CHECK(input_config_plays_as_where(0, &player, &port)
+            == INPUT_PLAYS_AS_OWN_PORT && player == 1 && port == 1,
+         "A on port 1 is not Player 1 there");
+   CHECK(input_config_plays_as_where(1, &player, &port)
+            == INPUT_PLAYS_AS_SHARING && player == 1 && port == 4,
+         "B is not Player 1 shared, its binds on port 4");
+   CHECK(input_config_plays_as_where(2, &player, &port)
+            == INPUT_PLAYS_AS_OWN_PORT && player == 2 && port == 2,
+         "C on Auto is not Player 2 on port 2");
+   CHECK(input_config_plays_as_where(3, &player, &port)
+            == INPUT_PLAYS_AS_GONE && !player && !port,
+         "an empty slot is not gone");
+   CHECK(input_config_user_player(0) == 0
+         && input_config_user_player(3) == 0
+         && input_config_user_player(1) == 1
+         && input_config_user_player(2) == 2,
+         "a port's page is not for the player its controller plays as");
+   t_disconnect(0);
+   CHECK(input_config_user_player(0) == 0
+         && input_config_user_player(3) == 0,
+         "port 1 emptied: its page or its sharer's is not Player 1's");
+
+   /* an Auto controller sharing by a reservation */
+   t_reset();
+   t_reserve_1();
+   t_connect(0, "B", 2, 2);
+   t_connect(1, "Res", 5, 5);
+   CHECK(input_config_plays_as_player(1) == 0
+         && input_config_plays_as_where(1, &player, &port)
+            == INPUT_PLAYS_AS_SHARING && player == 1 && port == 4,
+         "an Auto sharer does not show Player 1");
+
+   /* past Max Users: no port; a player above it plays Auto */
+   t_reset();
+   settings.uints.input_max_users = 2;
+   t_entries(
+         "input_plays_as_device_1 = \"0003:0003 C\"\n"
+         "input_plays_as_player_1 = \"3\"\n");
+   t_connect(0, "A", 1, 1);
+   t_connect(1, "C", 3, 3);
+   t_connect(2, "D", 4, 4);
+   CHECK(input_config_plays_as_where(1, &player, &port)
+            == INPUT_PLAYS_AS_ABOVE_MAX_USERS && player == 2 && port == 2,
+         "Player 3 with Max Users 2 does not play Auto as Player 2");
+   CHECK(input_config_plays_as_where(2, &player, &port)
+            == INPUT_PLAYS_AS_NO_PORT,
+         "a third controller with Max Users 2 has a port");
 }
 
 /* Entries that give no player within Max Users: Auto controllers are
@@ -2918,6 +3143,11 @@ int main(void)
    test_place_reservation();
    test_place_reservation_order();
    test_place_leave_and_change();
+   test_place_again();
+   test_place_again_player();
+   test_place_again_max_users();
+   test_place_again_last_player();
+   test_place_again_never_in_effect();
    test_announce_nothing();
    test_join_port_map();
    test_join_follows_mapped_port();
@@ -2930,6 +3160,8 @@ int main(void)
    test_announce_first_press();
    test_announce_join_ends();
    test_announce_join_netplay();
+   test_slot_user();
+   test_plays_as_where();
    test_place_no_player();
    test_place_restart();
    test_place_restart_twins();

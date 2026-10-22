@@ -128,6 +128,8 @@ enum menu_settings_type
    MENU_SETTING_DROPDOWN_ITEM_INPUT_DEVICE_TYPE,
    MENU_SETTING_DROPDOWN_ITEM_INPUT_DEVICE_INDEX,
    MENU_SETTING_DROPDOWN_ITEM_INPUT_SELECT_RESERVED_DEVICE,
+   MENU_SETTING_DROPDOWN_ITEM_INPUT_PLAYS_AS,
+   MENU_SETTING_DROPDOWN_ITEM_INPUT_PLAYS_AS_ADD,
 #ifdef ANDROID
     MENU_SETTING_DROPDOWN_ITEM_INPUT_SELECT_PHYSICAL_KEYBOARD,
 #endif
@@ -261,6 +263,11 @@ enum menu_settings_type
    MENU_SETTINGS_INPUT_DESC_KBD_END = MENU_SETTINGS_INPUT_DESC_KBD_BEGIN + (RARCH_MAX_KEYS * MAX_USERS),
    MENU_SETTINGS_REMAPPING_PORT_BEGIN,
    MENU_SETTINGS_REMAPPING_PORT_END = MENU_SETTINGS_REMAPPING_PORT_BEGIN + (MAX_USERS),
+   /* Settings > Input > Controllers: a connected controller by its
+    * slot, then from MAX_INPUT_DEVICES the Plays As entry of one that
+    * is gone */
+   MENU_SETTINGS_INPUT_PLAYS_AS_BEGIN,
+   MENU_SETTINGS_INPUT_PLAYS_AS_END = MENU_SETTINGS_INPUT_PLAYS_AS_BEGIN + (MAX_INPUT_DEVICES + MAX_USERS),
 
    MENU_SETTINGS_SUBSYSTEM_LOAD,
    MENU_SETTINGS_SUBSYSTEM_ADD,
@@ -490,6 +497,15 @@ typedef struct
 
    /* The Content Downloader directory the user last stepped into. */
    char core_content_dir[NAME_MAX_LENGTH];
+   /* The Controllers row to put the cursor back on: a controller's
+    * row type less MENU_SETTINGS_INPUT_PLAYS_AS_BEGIN, and one; 0 for
+    * none. */
+   unsigned plays_as_row;
+   /* Port N Controls as last made, N, its controller rows and its
+    * links, while no other list was made since; N is 0 for none. */
+   unsigned plays_as_page;
+   unsigned plays_as_rows;
+   unsigned plays_as_links;
 } menu_handle_t;
 
 struct menu_state
@@ -840,6 +856,11 @@ void menu_input_remap_find_begin(unsigned port);
  * that takes the menu's input meanwhile. False if there is no such
  * combination. */
 bool menu_input_entry_capture_begin(unsigned number);
+
+/* Settings > Input > Controllers row @row (a slot, or from
+ * MAX_INPUT_DEVICES the entry of a controller that is gone) set to
+ * player @player, 0 for Auto; the controllers are placed again. */
+void menu_input_plays_as_change(unsigned row, unsigned player);
 
 bool menu_input_key_bind_set_mode(
       enum menu_input_binds_ctl_state state, void *data);

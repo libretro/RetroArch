@@ -12681,6 +12681,50 @@ MSG_HASH(
    "Device Reservation Type"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_PLAYS_AS_AUTO_PLAYER,
+   "Auto (%u)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_PLAYS_AS_ADD,
+   "Add Controller"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_PLAYS_AS_ADD_ITEM,
+   "%s (Player %u)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_PLAYS_AS_BINDS,
+   "%s (Port %u Controls)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_PLAYS_AS_PLAYER,
+   "Player %u"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_PLAYS_AS_SHARING,
+   "Player %u, shared · binds in Port %u Controls"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_PLAYS_AS_NO_PORT,
+   "Not playing: more controllers than Max Users"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_PLAYS_AS_ABOVE_MAX_USERS,
+   "Above Max Users: plays as Auto (Player %u)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_PLAYS_AS_GONE,
+   "Not connected"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_PLAYS_AS_THIS_PORT,
+   "This port"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_PLAYS_AS_SHARED_BINDS,
+   "Shared · binds in Port %u Controls"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DEVICE_RESERVATION_TYPE,
    "Preferred: if specified device is present, it will be allocated for this player. Reserved: no other controller will be allocated for this player."
    )
@@ -33233,7 +33277,7 @@ MSG_HASH(
    )
 MSG_HASH( /* %u is the other port on the same controller */
    MSG_INPUT_DEVICE_INDEX_SHARED,
-   "shared with Port %u"
+   "used by Port %u"
    )
 MSG_HASH(
    MSG_INPUT_DS3_ASKING,
@@ -33650,6 +33694,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_DEVICE_AND_KEYBOARD_ASSIGNED_TO_CORE_PORT_NR,
    "%s and keyboard assigned to core port %u"
+   )
+MSG_HASH(
+   MSG_INPUT_PLAYS_AS_FULL,
+   "Controller list full: set a disconnected controller to Auto"
    )
 MSG_HASH(
    MSG_DEVICE_DISCONNECTED_FROM_PORT_NR,

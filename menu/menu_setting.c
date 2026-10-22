@@ -6900,6 +6900,9 @@ static int setting_action_left_input_device_index(
    *p = p_new;
 
    settings->flags |= SETTINGS_FLG_MODIFIED;
+   /* Port N Controls' controller rows follow it */
+   menu_state_get_ptr()->flags |= MENU_ST_FLAG_PREVENT_POPULATE
+                               |  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
    return 0;
 }
 
@@ -9608,6 +9611,9 @@ static int setting_action_start_input_device_index(rarch_setting_t *setting)
          settings->uints.input_joypad_index[setting->index_offset],
          setting->index_offset);
    input_driver_deadzones_refresh();
+   /* Port N Controls' controller rows follow it */
+   menu_state_get_ptr()->flags |= MENU_ST_FLAG_PREVENT_POPULATE
+                               |  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
    return 0;
 }
 
@@ -9929,6 +9935,9 @@ static int setting_action_right_input_device_index(
    *p = p_new;
 
    settings->flags |= SETTINGS_FLG_MODIFIED;
+   /* Port N Controls' controller rows follow it */
+   menu_state_get_ptr()->flags |= MENU_ST_FLAG_PREVENT_POPULATE
+                               |  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
    return 0;
 }
 
@@ -10840,6 +10849,9 @@ static void general_write_handler(rarch_setting_t *setting)
          break;
       case MENU_ENUM_LABEL_INPUT_MAX_USERS:
          command_event(CMD_EVENT_CONTROLLER_INIT, NULL);
+         /* a player past Max Users plays Auto: placed again */
+         if (input_config_plays_as_active())
+            input_autoconfigure_reallocate_ports(MAX_USERS);
          break;
 #ifdef ANDROID
       case MENU_ENUM_LABEL_INPUT_SELECT_PHYSICAL_KEYBOARD:

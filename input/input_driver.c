@@ -10938,6 +10938,11 @@ static uint8_t input_plays_as_claim[MAX_INPUT_DEVICES];
  * reservation names it, that user and one, kept while it stays
  * connected; 0 for none */
 static uint8_t input_plays_as_shares[MAX_INPUT_DEVICES];
+/* the Max Users the controllers were last placed under */
+static unsigned input_plays_as_placed_max_users;
+/* by slot: its controller had a player in effect before the Player or
+ * Max Users change it is placed again for */
+static uint8_t input_plays_as_was[MAX_INPUT_DEVICES];
 
 /* @h with each entry's controller and player mixed in, as
  * input_driver_detect_settings() mixes the reservations */
@@ -11203,6 +11208,7 @@ static int input_plays_as_new(unsigned slot)
 bool input_config_plays_as_set(unsigned slot, unsigned player)
 {
    int e;
+   unsigned was;
 
    if (     slot >= MAX_INPUT_DEVICES
          || !*input_driver_st.input_device_info[slot].name)
@@ -11214,6 +11220,9 @@ bool input_config_plays_as_set(unsigned slot, unsigned player)
       if ((e = input_plays_as_new(slot)) < 0)
          return false;
    }
+   was                      = input_plays_as[e].player;
+   input_plays_as_was[slot] = (uint8_t)(was
+         && was <= config_get_ptr()->uints.input_max_users);
    input_plays_as[e].player = player;
    input_plays_as_tidy((unsigned)e);
    return true;
@@ -11261,6 +11270,7 @@ void input_config_plays_as_release(unsigned slot)
    {
       input_plays_as_claim[slot]  = 0;
       input_plays_as_shares[slot] = 0;
+      input_plays_as_was[slot]    = 0;
    }
 }
 
@@ -11471,20 +11481,28 @@ static unsigned input_plays_as_now(unsigned slot, unsigned max_users)
    return (player <= max_users) ? player : 0;
 }
 
+/* Whether user @u's reservation names the controller @d, as the
+ * reservation reads its string. */
+static bool input_plays_as_res_names(const settings_t *settings,
+      unsigned u, const input_device_info_t *d)
+{
+   return settings->uints.input_device_reservation_type[u]
+            != INPUT_DEVICE_RESERVATION_NONE
+      && input_plays_as_names(settings->arrays.input_reserved_devices[u],
+            false, d->name, d->display_name, d->vid, d->pid);
+}
+
 /* Whether the controller in @slot plays as user @user's player: by its
  * own player, which beats any reservation; playing Auto, by @user's
- * reservation naming it, as the reservation reads its string. */
+ * reservation naming it. */
 static bool input_plays_as_plays(const settings_t *settings,
       unsigned slot, unsigned user, unsigned max_users)
 {
-   const input_device_info_t *d = &input_driver_st.input_device_info[slot];
-   unsigned player              = input_plays_as_now(slot, max_users);
+   unsigned player = input_plays_as_now(slot, max_users);
    if (player)
       return player == user + 1;
-   return settings->uints.input_device_reservation_type[user]
-            != INPUT_DEVICE_RESERVATION_NONE
-      && input_plays_as_names(settings->arrays.input_reserved_devices[user],
-            false, d->name, d->display_name, d->vid, d->pid);
+   return input_plays_as_res_names(settings, user,
+         &input_driver_st.input_device_info[slot]);
 }
 
 /* The user whose reservation names the controller in @slot, chosen as
@@ -11497,22 +11515,18 @@ static unsigned input_plays_as_reserved_held(const settings_t *settings,
    const input_device_info_t *d = &input_driver_st.input_device_info[slot];
    for (u = 0; u < MAX_USERS; u++)
    {
-      const char *res = settings->arrays.input_reserved_devices[u];
-      unsigned held   = settings->uints.input_joypad_index[u];
+      unsigned held = settings->uints.input_joypad_index[u];
       const input_device_info_t *h;
-      if (     settings->uints.input_device_reservation_type[u]
-               == INPUT_DEVICE_RESERVATION_NONE
-            || !input_plays_as_names(res, false,
-               d->name, d->display_name, d->vid, d->pid))
+      if (!input_plays_as_res_names(settings, u, d))
          continue;
       if (held == slot || held >= MAX_INPUT_DEVICES)
          break;
       h = &input_driver_st.input_device_info[held];
       if (!*h->name)
          break;
-      /* a twin it also names has this port: the reservations look on */
-      if (input_plays_as_names(res, false,
-               h->name, h->display_name, h->vid, h->pid))
+      /* a twin it also names has this port: the reservation code looks
+       * further */
+      if (input_plays_as_res_names(settings, u, h))
          continue;
       if (input_plays_as_now(held, max_users) == u + 1)
          return u;
@@ -11554,6 +11568,7 @@ static void input_plays_as_move(const settings_t *settings,
 bool input_config_plays_as_place(unsigned slot)
 {
    unsigned u, t, held, player;
+   bool was;
    settings_t *settings = config_get_ptr();
    unsigned max_users   = settings->uints.input_max_users;
 
@@ -11561,8 +11576,11 @@ bool input_config_plays_as_place(unsigned slot)
       return false;
    if (max_users > MAX_USERS)
       max_users = MAX_USERS;
+   input_plays_as_placed_max_users = max_users;
    input_plays_as_take(slot);
    input_plays_as_shares[slot] = 0;
+   was                         = input_plays_as_was[slot] != 0;
+   input_plays_as_was[slot]    = 0;
 
    if (!(player = input_plays_as_now(slot, max_users)))
    {
@@ -11581,7 +11599,9 @@ bool input_config_plays_as_place(unsigned slot)
          if (settings->uints.input_device_reservation_type[u]
                != INPUT_DEVICE_RESERVATION_NONE)
             return false;
-      if (!input_config_plays_as_any_player())
+      /* none in effect: its port is left be, unless the change that
+       * ended Plays As was this one's */
+      if (!was && !input_config_plays_as_any_player())
          return false;
       input_plays_as_move(settings,
             input_plays_as_free(settings, max_users, slot, MAX_USERS, false),
@@ -11616,10 +11636,46 @@ bool input_config_plays_as_place(unsigned slot)
    return true;
 }
 
+void input_config_plays_as_max_users_changed(uint8_t *again)
+{
+   unsigned s;
+   unsigned before    = input_plays_as_placed_max_users;
+   unsigned max_users = config_get_ptr()->uints.input_max_users;
+
+   if (max_users > MAX_USERS)
+      max_users = MAX_USERS;
+   input_plays_as_placed_max_users = max_users;
+   for (s = 0; s < MAX_USERS; s++)
+   {
+      unsigned player = input_config_plays_as_player(s);
+      again[s] = *input_driver_st.input_device_info[s].name
+         && (     input_config_slot_user(s) >= MAX_USERS
+               || (player > before && player <= max_users));
+      input_plays_as_was[s] = (uint8_t)(again[s] && player
+            && player <= before);
+   }
+}
+
 /* By user: for a controller playing as another user's player, that
  * user and one; 0 for none. Made by the port map's rebuild, and never
  * saved. */
 static uint8_t input_join_to[MAX_USERS];
+
+/* The player user @u's controller plays as when it is not @u's own:
+ * its player, or an Auto one's that it shares by a reservation; 0 for
+ * its own or none. */
+static unsigned input_join_of(const settings_t *settings, unsigned u,
+      unsigned max_users)
+{
+   unsigned slot   = settings->uints.input_joypad_index[u];
+   unsigned player = input_plays_as_now(slot, max_users);
+   if (     !player
+         && slot < MAX_INPUT_DEVICES
+         && *input_driver_st.input_device_info[slot].name
+         && input_plays_as_shares[slot] <= max_users)
+      player = input_plays_as_shares[slot];
+   return (player != u + 1) ? player : 0;
+}
 
 /* What input_join_to is to hold now, into @join. */
 static void input_join_make(const settings_t *settings, uint8_t *join)
@@ -11631,17 +11687,58 @@ static void input_join_make(const settings_t *settings, uint8_t *join)
       max_users = MAX_USERS;
    memset(join, 0, MAX_USERS);
    for (u = 0; u < max_users; u++)
-   {
-      unsigned slot   = settings->uints.input_joypad_index[u];
-      unsigned player = input_plays_as_now(slot, max_users);
-      if (     !player
-            && slot < MAX_INPUT_DEVICES
-            && *input_driver_st.input_device_info[slot].name
-            && input_plays_as_shares[slot] <= max_users)
-         player = input_plays_as_shares[slot];
-      if (player && player != u + 1)
-         join[u] = (uint8_t)player;
-   }
+      join[u] = (uint8_t)input_join_of(settings, u, max_users);
+}
+
+unsigned input_config_slot_user(unsigned slot)
+{
+   unsigned u;
+   const settings_t *settings = config_get_ptr();
+   unsigned max_users         = settings->uints.input_max_users;
+
+   if (max_users > MAX_USERS)
+      max_users = MAX_USERS;
+   for (u = 0; u < max_users; u++)
+      if (settings->uints.input_joypad_index[u] == slot)
+         return u;
+   return MAX_USERS;
+}
+
+/* As the poll will make it, not as it last did: the menu shows a
+ * change before any core runs. */
+unsigned input_config_user_player(unsigned user)
+{
+   unsigned join;
+   const settings_t *settings = config_get_ptr();
+   unsigned max_users         = settings->uints.input_max_users;
+
+   if (max_users > MAX_USERS)
+      max_users = MAX_USERS;
+   if (user >= max_users)
+      return user;
+   join = input_join_of(settings, user, max_users);
+   return join ? join - 1 : user;
+}
+
+enum input_plays_as_where input_config_plays_as_where(unsigned slot,
+      unsigned *player, unsigned *port)
+{
+   unsigned user;
+
+   *player = 0;
+   *port   = 0;
+   if (     slot >= MAX_INPUT_DEVICES
+         || !*input_driver_st.input_device_info[slot].name)
+      return INPUT_PLAYS_AS_GONE;
+   if ((user = input_config_slot_user(slot)) >= MAX_USERS)
+      return INPUT_PLAYS_AS_NO_PORT;
+   *port   = user + 1;
+   *player = input_config_user_player(user) + 1;
+   if (input_config_plays_as_player(slot)
+         > config_get_ptr()->uints.input_max_users)
+      return INPUT_PLAYS_AS_ABOVE_MAX_USERS;
+   return (*player != *port) ? INPUT_PLAYS_AS_SHARING
+      : INPUT_PLAYS_AS_OWN_PORT;
 }
 
 unsigned input_remapping_join_user(unsigned user)

@@ -142,6 +142,22 @@ static int action_right_cheat(unsigned type, const char *label,
 }
 #endif
 
+/* A controller's player, one up: 1 above Auto, Auto above Max Users. */
+static int action_right_input_plays_as(unsigned type, const char *label,
+      bool wraparound)
+{
+   unsigned row       = type - MENU_SETTINGS_INPUT_PLAYS_AS_BEGIN;
+   unsigned max_users = config_get_ptr()->uints.input_max_users;
+   unsigned player    = (row < MAX_INPUT_DEVICES)
+      ? input_config_plays_as_player(row)
+      : input_config_plays_as_entry_player(row - MAX_INPUT_DEVICES);
+
+   if (max_users > MAX_USERS)
+      max_users = MAX_USERS;
+   menu_input_plays_as_change(row, (player < max_users) ? player + 1 : 0);
+   return 0;
+}
+
 static int action_right_input_desc(unsigned type, const char *label,
       bool wraparound)
 {
@@ -1249,6 +1265,11 @@ static int menu_cbs_init_bind_right_compare_type(menu_file_list_cbs_t *cbs,
          && type <= MENU_SETTINGS_INPUT_DESC_END)
    {
       BIND_ACTION_RIGHT(cbs, action_right_input_desc);
+   }
+   else if (type >= MENU_SETTINGS_INPUT_PLAYS_AS_BEGIN
+         && type <= MENU_SETTINGS_INPUT_PLAYS_AS_END)
+   {
+      BIND_ACTION_RIGHT(cbs, action_right_input_plays_as);
    }
    else if (type >= MENU_SETTINGS_INPUT_DESC_KBD_BEGIN
          && type <= MENU_SETTINGS_INPUT_DESC_KBD_END)
