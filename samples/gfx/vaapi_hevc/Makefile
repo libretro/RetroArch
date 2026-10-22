@@ -68,6 +68,7 @@ prime_gpu_test$(EXE): prime_gpu_test.c ../../../gfx/common/vaapi_hevc_vulkan_res
 	$(CC) $(CFLAGS) prime_gpu_test.c ../../../gfx/common/vaapi_hevc_vulkan_resources.c ../../../gfx/common/vulkan_prime_image.c ../../../gfx/common/vaapi_hevc_vulkan_frame.c ../../../gfx/common/vaapi_hevc_vulkan_submit.c ../../../libretro-common/formats/image/image_yuv_blit.c -o $@ $(LDFLAGS) -lvulkan -lm
 gpu-check: prime_gpu_test$(EXE)
 	$(RUNNER) ./prime_gpu_test$(EXE)
+	$(RUNNER) ./native_import_gpu_test$(EXE)
 frame_test$(EXE): frame_test.c prime_frame_test.c export_test.c ../../../gfx/common/vaapi_frame.c ../../../gfx/common/vaapi_frame.h ../../../gfx/common/vaapi_hevc_vulkan_frame.c ../../../gfx/common/vaapi_hevc_vulkan_frame.h ../../../gfx/common/vulkan_prime_image.c ../../../gfx/common/vulkan_prime_image.h $(FRAME_THREAD_SOURCES)
 	$(CC) $(CFLAGS) frame_test.c ../../../gfx/common/vaapi_frame.c ../../../gfx/common/vulkan_prime_image.c ../../../gfx/common/vaapi_hevc_vulkan_frame.c $(FRAME_THREAD_SOURCES) rh265_test.o -o $@ $(LDFLAGS) $(FRAME_THREAD_FLAGS)
 lease_test$(EXE): lease_test.c prime_submit_test.c prime_frame_test.c export_test.c ../../../gfx/common/vaapi_hevc_vulkan_lease.c ../../../gfx/common/vaapi_hevc_vulkan_lease.h ../../../gfx/common/vaapi_frame.c ../../../gfx/common/vaapi_frame.h ../../../gfx/common/vaapi_hevc_vulkan_frame.c ../../../gfx/common/vaapi_hevc_vulkan_frame.h ../../../gfx/common/vaapi_hevc_vulkan_submit.c ../../../gfx/common/vaapi_hevc_vulkan_submit.h ../../../gfx/common/vulkan_prime_image.c ../../../gfx/common/vulkan_prime_image.h $(FRAME_THREAD_SOURCES)
@@ -131,6 +132,7 @@ ifneq ($(NATIVE_PROBE),)
 	./native_probe
 endif
 clean:
+	rm -f native_import_gpu_test native_import_gpu_test.exe
 	rm -f weighted_test weighted_test.exe
 	rm -f native_import native_decode native_pixels_test native_pixels_test.exe
 	rm -f rh265_test.o rh265_tsan.o
@@ -149,7 +151,7 @@ test$(EXE) pool_test$(EXE) decoder_test$(EXE) owner_test$(EXE) export_test$(EXE)
 native_probe: rh265_test.o
 frame_tsan_test$(EXE) lease_tsan_test$(EXE): rh265_tsan.o
 
-native_pixels_test$(EXE): native_pixels_test.c native_pixels.h
+native_pixels_test$(EXE): native_pixels_test.c native_pixels.h native_rgb.h
 	$(CC) $(CFLAGS) native_pixels_test.c -o $@ $(LDFLAGS)
 all: native_pixels_test$(EXE) $(NATIVE_DECODE) $(NATIVE_IMPORT)
 NATIVE_DECODE_SOURCES := native_decode.c ../../../gfx/common/vaapi_hevc_owner.c ../../../gfx/common/vaapi_hevc_decoder.c ../../../gfx/common/vaapi_frame.c ../../../gfx/common/vaapi_hevc_pool.c ../../../gfx/common/vaapi_hevc_export.c ../../../gfx/common/vaapi_hevc_runtime.c ../../../gfx/common/vaapi_hevc_session.c ../../../gfx/common/vaapi_hevc_submit.c ../../../libretro-common/dynamic/dylib.c
@@ -163,9 +165,12 @@ weighted_test$(EXE): weighted_test.c test.c weighted_data.h native_pixels.h rh26
 all: weighted_test$(EXE)
 native_decode: weighted_data.h
 
-NATIVE_IMPORT_SOURCES := ../../../gfx/common/vulkan_prime_image.c ../../../gfx/common/vaapi_hevc_vulkan_frame.c
-native_import: $(NATIVE_DECODE_SOURCES) $(NATIVE_IMPORT_SOURCES) native_import.h native_pixels.h weighted_data.h rh265_test.o
+NATIVE_IMPORT_SOURCES := ../../../gfx/common/vulkan_prime_image.c ../../../gfx/common/vaapi_hevc_vulkan_frame.c ../../../gfx/common/vaapi_hevc_vulkan_submit.c ../../../gfx/common/vaapi_hevc_vulkan_resources.c ../../../libretro-common/formats/image/image_yuv_blit.c
+native_import: $(NATIVE_DECODE_SOURCES) $(NATIVE_IMPORT_SOURCES) native_import.h native_import_gpu.h native_rgb.h native_pixels.h weighted_data.h rh265_test.o
 	$(CC) $(CFLAGS) -DNATIVE_VULKAN_IMPORT $(NATIVE_DECODE_SOURCES) $(NATIVE_IMPORT_SOURCES) rh265_test.o -o $@ $(LDFLAGS) -ldl -lva -lvulkan -ldrm
 native-import-check: native_import
 	./native_import "$(VAAPI_RENDER_NODE)"
 .PHONY: native-import-check
+native_import_gpu_test$(EXE): native_import_gpu_test.c native_import_gpu.h native_rgb.h prime_gpu_test$(EXE)
+	$(CC) $(CFLAGS) native_import_gpu_test.c $(NATIVE_IMPORT_SOURCES) -o $@ $(LDFLAGS) -lvulkan -lm
+gpu-check: native_import_gpu_test$(EXE)

@@ -144,7 +144,8 @@ static void close_owner(rh265_hw_ops_t *ops)
 
 /* Test-only CPU transfer. Production decode/export/import adds no readback. */
 static void compare_pixels(const vaapi_frame_view_t *view,
-      const uint32_t expected[3], unsigned display_index)
+      const uint32_t expected[3], unsigned display_index,
+      const video_hw_frame_t *lease)
 {
    const vaapi_hevc_export_t *source = view->source;
    const vaapi_hevc_session_t *session;
@@ -184,6 +185,11 @@ static void compare_pixels(const vaapi_frame_view_t *view,
    assert(mapped && image.format.fourcc == fourcc);
    assert(native_image_crc(&image, (const uint8_t *)mapped, view->x, view->y,
          view->width, view->height, crc));
+#ifdef NATIVE_VULKAN_IMPORT
+   native_import_check(view, lease, &image, (const uint8_t *)mapped);
+#else
+   (void)lease;
+#endif
    VA_OK(vaUnmapBuffer(display, image.buf));
    VA_OK(vaDestroyImage(display, image.image_id));
    if (memcmp(crc, expected, sizeof(crc)))
@@ -193,9 +199,6 @@ static void compare_pixels(const vaapi_frame_view_t *view,
             (unsigned)crc[1], (unsigned)crc[2], (unsigned)expected[0],
             (unsigned)expected[1], (unsigned)expected[2]);
    assert(!memcmp(crc, expected, sizeof(crc)));
-#ifdef NATIVE_VULKAN_IMPORT
-   native_import_check(source);
-#endif
    assert(session->slice_mode == VA_DEC_SLICE_MODE_NORMAL
           || session->slice_mode == VA_DEC_SLICE_MODE_BASE);
    modes |= session->slice_mode;
@@ -226,7 +229,7 @@ static void output_picture(rh265_video *source)
    assert(vaapi_frame_claim(
          frame.owner, frame.done, frame.done_value, frame.image, &view));
    assert(frame.width == visible_width && frame.height == visible_height);
-   compare_pixels(&view, display_crc(shown), shown);
+   compare_pixels(&view, display_crc(shown), shown, &frame);
    if (shown == 7)
    {
       held      = frame;
@@ -290,7 +293,7 @@ static bool execute(const sequence_case_t *fixture, bool wpp)
    }
    rh265_video_close(source);
    assert(retired && !vaapi_hevc_owner_retire(retired));
-   compare_pixels(&held_view, display_crc(7), 7);
+   compare_pixels(&held_view, display_crc(7), 7, &held);
    video_hw_frame_abandon(&held);
    assert(vaapi_frame_finish(held.owner, held.done, held.done_value, NULL));
    retire_owner();
@@ -363,11 +366,14 @@ int main(int argc, char **argv)
 #ifdef NATIVE_VULKAN_IMPORT
    assert(imported == 216);
    native_import_close();
-   puts("PASS: 216 real VA modifier allocation/import/retirement checks; "
-        "GPU sampling/pixel comparison remains separate");
-#endif
+   assert(!import_errors && import_pixels);
+   printf("PASS: 216 real VA modifier import/conversion/retirement checks, "
+         "%u RGBA pixels, maximum channel error %u, zero validation errors\n",
+         import_pixels, import_max_error);
+#else
    printf(
          "PASS native VA oracle: %u pictures, selected slice-mode mask %u; Vulkan modifier import remains separate\n",
          total, modes);
+#endif
    return 0;
 }

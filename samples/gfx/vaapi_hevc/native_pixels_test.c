@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "native_pixels.h"
+#include "native_rgb.h"
 
 static VAImage image;
 static uint8_t data[512], preserved[512];
@@ -111,6 +112,20 @@ int main(void)
    static const uint8_t vector[] = "123456789";
    uint32_t value                = (uint32_t)-1;
    unsigned i;
+   uint8_t rgb[4];
+   for (i = 0; i < 2; i++)
+   {
+      native_rgb(i ? 64 : 16, i ? 512 : 128, i ? 512 : 128, i, 0, 1, rgb);
+      assert(rgb[0] == 0 && rgb[1] == 0 && rgb[2] == 0 && rgb[3] == 255);
+      native_rgb(i ? 940 : 235, i ? 512 : 128, i ? 512 : 128, i, 0, 0, rgb);
+      assert(rgb[0] == 255 && rgb[1] == 255 && rgb[2] == 255);
+      native_rgb(i ? 1023 : 255, i ? 512 : 128, i ? 512 : 128, i, 1, 1, rgb);
+      assert(rgb[0] == 255 && rgb[1] == 255 && rgb[2] == 255);
+   }
+   native_rgb(81, 90, 240, 0, 0, 0, rgb);
+   assert(rgb[0] == 254 && rgb[1] == 0 && rgb[2] == 0);
+   native_rgb(81, 90, 240, 0, 0, 1, rgb);
+   assert(rgb[0] == 255 && rgb[1] == 24 && rgb[2] == 0);
    for (i = 0; i < 9; i++)
       value = native_crc_byte(value, vector[i]);
    assert(~value == UINT32_C(0xcbf43926));

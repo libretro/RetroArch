@@ -145,7 +145,16 @@ requires the DMA-BUF/modifier/foreign-queue extensions. Every decoded export,
 including each retained output after parser close, passes the production
 two-layer modifier importer and retires its Vulkan images/views/memory before
 the VA claim is returned. Each of the 216 import checks restores its FD baseline.
-No queue submission or GPU pixel readback is performed by this allocation gate;
-successful allocation alone does not establish GPU sampling or conversion pixels.
+The claimed export moves into the imported frame, passes the production sampled
+YUV conversion submission, and returns only after fence completion and resource
+retirement. The claim is then restored for the retained-output lifetime checks.
+The validation layer must report zero errors. Test-only RGBA8 readback checks
+every pixel against independent BT.601/709 full/limited SDR equations using the
+separately CRC-verified VAImage samples (one RGB code tolerance, exact alpha).
 Missing matching hardware returns nonzero UNAVAILABLE. Compile coverage does not
 establish that any of these native import checks executed.
+
+`gpu-check` also exercises the new conversion/readback/reference code with eight
+synthetic exportable-plane cases, including cropped NV12/P010, black/white,
+BT.601/709 and both ranges. This executes on software Vulkan and checks harness
+behavior; it does not establish real VA DMA-BUF import or native decoder pixels.
