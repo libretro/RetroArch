@@ -197,7 +197,10 @@ static void vf_finish(void)
    assert(vaapi_hevc_export_close(&vf_returned) && !ex_pool.exports && ex_closes == (ex_mode == 2 ? 4u : ex_mode == 1 ? 2u : 1u));
    assert(vaapi_hevc_pool_close(&ex_pool));
 }
-int main(void)
+#ifndef VAAPI_PRIME_FRAME_TEST_MAIN
+#define VAAPI_PRIME_FRAME_TEST_MAIN main
+#endif
+int VAAPI_PRIME_FRAME_TEST_MAIN(void)
 {
    unsigned fault, i, calls;
    assert(!export_unit_main());
