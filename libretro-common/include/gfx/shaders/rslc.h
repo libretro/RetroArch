@@ -83,15 +83,18 @@ enum rslc_base
  * from the start of the blob to a NUL-terminated string. */
 #define RSLC_STR(blob, off) ((const char *)(blob) + (off))
 
-/* One member of the UBO or push-constant block.  Offsets are std140
- * as laid out by the compiler; the same numbers are decorated on the
- * emitted SPIR-V and printed into the cbuffer / constant block, so a
- * CPU overlay built from this table matches every backend. */
+/* One member of the UBO or push-constant block, laid out as glslang
+ * does: std140 for the uniform block, std430 for push constants
+ * unless the block is declared std140.  The same numbers are decorated
+ * on the emitted SPIR-V and printed into the cbuffer / constant block,
+ * so a CPU overlay built from this table matches every backend. */
 struct rslc_member
 {
    uint32_t    name;     /* RSLC_STR offset */
-   uint32_t    offset;   /* std140 byte offset */
-   uint32_t    size;     /* std140 byte size, arrays included */
+   uint32_t    offset;   /* byte offset in the block's layout: std140
+                            for the UBO, std430 for push constants
+                            unless the block says std140 */
+   uint32_t    size;     /* byte size in that layout, arrays included */
    uint32_t    array_len;/* 0 when not an array */
    uint8_t     base;     /* enum rslc_base */
    uint8_t     cols;     /* 1 for scalars and vectors */
@@ -104,7 +107,9 @@ struct rslc_block
    uint32_t    members;  /* byte offset of struct rslc_member[member_count] */
    uint32_t    name;     /* block type name; 0 when absent */
    uint32_t    instance; /* block instance name; 0 when absent */
-   uint32_t    size;     /* std140 size of the whole block */
+   uint32_t    size;     /* bytes to the end of the last member: what
+                            SPIRV-Cross's get_declared_struct_size
+                            reports, with no tail padding */
    uint32_t    member_count;
    uint32_t    binding;  /* RSLC_NO_BINDING when not declared; unused for push */
    uint32_t    present;  /* 0 when the stage declares no such block */
@@ -256,7 +261,7 @@ struct rslc_opts
 };
 
 #define RSLC_ARENA_CHUNK        (64u * 1024u)
-#define RSLC_ARENA_CAP_DEFAULT  (8u * 1024u * 1024u)
+#define RSLC_ARENA_CAP_DEFAULT  (16u * 1024u * 1024u)
 
 /* Output of a compile.  blob is the caller's to keep, cache, or hand
  * to a driver; every other pointer points into it.  spirv is set for

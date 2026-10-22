@@ -313,7 +313,8 @@ struct rslc_var
    uint8_t                 precision;
    uint8_t                 quals;      /* RSLC_VQ_* */
    uint8_t                 builtin;    /* RSLC_BI_* for RSLC_ST_BUILTIN */
-   uint8_t                 pad[2];
+   uint8_t                 global;     /* declared at file scope */
+   uint8_t                 pad;
 };
 
 /* Builtin variables. */
@@ -335,6 +336,7 @@ struct rslc_blockdecl
    uint32_t                set;
    uint32_t                line;
    bool                    push;
+   bool                    std140;    /* layout; push blocks default std430 */
 };
 
 struct rslc_func
@@ -611,6 +613,15 @@ uint32_t rslc_node_new(struct rslc_ctx *c, enum rslc_op op,
       const struct rslc_type *type, uint32_t a, uint32_t b, uint32_t c_,
       uint16_t aux, uint32_t line);
 uint32_t rslc_list_new(struct rslc_ctx *c, const uint32_t *items, uint32_t n);
+/* Constant folding over the IR, for TU 2: out->v holds component
+ * bits, out->type the folded type.  False when not a constant. */
+struct rslc_cval
+{
+   const struct rslc_type *type;
+   uint32_t                v[16];
+};
+bool     rslc_const_eval(struct rslc_ctx *c, uint32_t node, struct rslc_cval *out);
+unsigned rslc_ty_components(const struct rslc_type *t);
 #define rslc_list_len(c, id)     ((c)->lists[(id)])
 #define rslc_list_item(c, id, i) ((c)->lists[(id) + 1 + (i)])
 
