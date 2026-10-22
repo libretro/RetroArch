@@ -91,7 +91,10 @@ static void test_owner_threads(void)
    assert(!retro_atomic_load_acquire_int(&objects));
 }
 
-int main(void)
+#ifndef OWNER_MAIN_NAME
+#define OWNER_MAIN_NAME main
+#endif
+int OWNER_MAIN_NAME(void)
 {
    videotoolbox_vp9_owner_t *o = open_owner();
    videotoolbox_vp9_result_t result;

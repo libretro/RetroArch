@@ -13,7 +13,7 @@ typedef struct videotoolbox_vp9_work
    videotoolbox_vp9_sample_t sample;
    void *cookie;
    retro_atomic_int_t submitted, hidden;
-   int taken;
+   int taken, discard;
 } videotoolbox_vp9_work_t;
 
 typedef struct videotoolbox_vp9_owner
@@ -25,7 +25,7 @@ typedef struct videotoolbox_vp9_owner
    videotoolbox_vp9_slots_t *slots;
    uint8_t *storage;
    void (*wake)(void *);
-   void *user;
+   void *user, *latest_display;
    retro_atomic_int_t broken, closing;
    unsigned count, terminal;
    int building;
@@ -120,7 +120,7 @@ static INLINE void videotoolbox_vp9_owner_collect(
       videotoolbox_vp9_work_t *w = &o->work[i];
       if (!w->cookie || !retro_atomic_load_acquire_int(&w->submitted))
          continue;
-      if (!w->taken && (w->packet.display_slot < 0 || discard)
+      if (!w->taken && (w->packet.display_slot < 0 || w->discard || discard)
             && videotoolbox_vp9_slots_take(o->slots, i, &result) == 1)
       {
          if (result.image)
@@ -148,13 +148,15 @@ static INLINE int videotoolbox_vp9_owner_publish(videotoolbox_vp9_owner_t *o)
    w->cookie = videotoolbox_vp9_slots_begin(o->slots, index);
    if (!w->cookie)
       return -1;
-   w->taken = 0;
+   w->taken = w->discard = 0;
    retro_atomic_store_release_int(&w->submitted, 0);
    if (retro_spsc_write(&o->queue, &index, sizeof(index)) != sizeof(index))
    {
       retro_atomic_store_release_int(&o->broken, 1);
       return -1;
    }
+   if (w->packet.display_slot >= 0)
+      o->latest_display = w->cookie;
    o->building = -1;
    o->wake(o->user);
    return 0;
@@ -194,6 +196,17 @@ static INLINE int videotoolbox_vp9_owner_append(videotoolbox_vp9_owner_t *o,
          return -1;
    }
    return result;
+}
+
+/* Producer only, after accepting a replacement visible packet. */
+static INLINE void videotoolbox_vp9_owner_discard_previous(
+      videotoolbox_vp9_owner_t *o)
+{
+   unsigned i;
+   for (i = 0; i < o->count; i++)
+      if (o->work[i].cookie && o->work[i].cookie != o->latest_display)
+         o->work[i].discard = 1;
+   videotoolbox_vp9_owner_collect(o, false);
 }
 
 /* Serialized executor: at most one native submission; no caller-thread work. */
@@ -236,7 +249,8 @@ static INLINE int videotoolbox_vp9_owner_take(videotoolbox_vp9_owner_t *o,
    for (i = 0; i < o->count; i++)
    {
       videotoolbox_vp9_work_t *w = &o->work[i];
-      if (!w->cookie || w->taken || w->packet.display_slot != (int)slot)
+      if (!w->cookie || w->taken || w->discard
+            || w->packet.display_slot != (int)slot)
          continue;
       if (!retro_atomic_load_acquire_int(&w->submitted)
             || videotoolbox_vp9_slots_take(o->slots, i, out) != 1)
