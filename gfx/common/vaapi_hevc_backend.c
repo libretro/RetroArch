@@ -239,8 +239,9 @@ static bool vaapi_hevc_backend_open(void *opaque, const rh265_video *source,
       vaapi_hevc_backend_unref(session);
       return false;
    }
-   if (!vaapi_hevc_owner_open(&session->retired, path, major_id, minor_id,
-            params, &color, yuv, slots, backend->max_input, &session->native))
+   if (!vaapi_hevc_owner_open_source(&session->retired, source, path, major_id,
+             minor_id, params, &color, yuv, slots, backend->max_input,
+             &session->native))
    {
       vaapi_hevc_backend_release(session);
       return false;

@@ -72,8 +72,12 @@ native setup across renderer replacement. It tests publisher notification
 lifetime and epoch exhaustion. `make tsan-check` additionally executes its
 worker and setup/withdrawal lanes. Native factory registration does not prove
 actual VA decode, DRM modifier import pixels, seeks or shutdown acceptance.
-The adapter still requires BASE mode; NORMAL long-format submission remains
-open. The long-slice mapper is exercised separately by `long_slice_test` and
+The shipping factory borrows the live decoder on its owner thread and selects
+NORMAL when advertised (or when the slice-mode attribute is absent), with BASE
+retained for BASE-only drivers. Parser/data workspaces are allocated at cold
+setup. Detach clears the parser borrow before source destruction; deferred
+retirement polls native transactions and exported leases without querying it.
+The long-slice mapper is exercised separately by `long_slice_test` and
 the parsed Main8/Main10 I/P/B sequence fixtures. It maps coded short/long-term
 reference order and list modifications to picture-buffer indices, effective
 weights to VA deltas/offsets, filtering flags and escaped-header accounting.
@@ -85,8 +89,11 @@ Submission owns up to five buffers, including an optional subset array; failure
 and destruction retries retain the existing transaction ownership rules.
 `long_packet_test` checks synthetic Main8/Main10 I/P/B WPP headers and refusal
 without payload writes. The parsed sequence fixture also submits NORMAL layouts
-through typed callbacks. Connecting the packet workspace to the owner/pool is
-still required; these tests do not establish native NORMAL decode.
+through typed callbacks. Both pool modes exercise parsed sequence backpressure
+and incarnation reuse. The owner fixture decodes a parsed Main8/Main10 picture
+through typed VA calls, holds exports through detach/source destruction and
+retries termination. These tests do not establish native NORMAL decode/export/
+import pixel accuracy.
 
 `make gpu-check SANITIZER=address,undefined` additionally needs the Vulkan
 loader, development library, validation layer and a device supporting

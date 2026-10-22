@@ -111,9 +111,11 @@ bool vaapi_hevc_decoder_open(vaapi_hevc_pool_t *pool,
       return false;
    session = pool->session;
    if (!session || !session->ready || session->closing
-         || session->slice_mode != VA_DEC_SLICE_MODE_BASE || !session->slots
-         || session->slots > 32 || params->width <= 0 || params->height <= 0
-         || (unsigned)params->width != session->width
+         || (session->slice_mode != VA_DEC_SLICE_MODE_BASE
+               && (session->slice_mode != VA_DEC_SLICE_MODE_NORMAL
+                     || !pool->source || !pool->long_work))
+         || !session->slots || session->slots > 32 || params->width <= 0
+         || params->height <= 0 || (unsigned)params->width != session->width
          || (unsigned)params->height != session->height
          || (unsigned)params->bit_depth != session->depth
          || (params->bit_depth != 8 && params->bit_depth != 10)
@@ -161,6 +163,7 @@ vaapi_hevc_decoder_t *vaapi_hevc_decoder_detach(rh265_hw_ops_t *ops)
       return NULL;
    decoder         = (vaapi_hevc_decoder_t *)ops->decoder;
    decoder->closed = true;
+   decoder->pool->source = NULL;
    vaapi_frame_pool_close(decoder->frames);
    memset(ops, 0, sizeof(*ops));
    return decoder;

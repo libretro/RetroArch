@@ -278,9 +278,198 @@ static void owner_transaction(unsigned bits, bool poisoned)
    assert(!fd_live && !display_live && loads == unloads);
 }
 
+typedef struct codec_case
+{
+   const char *name;
+   const uint8_t *hvcc;
+   size_t hvcc_size;
+   const uint8_t *data;
+   size_t size;
+   unsigned depth, full;
+   uint32_t crc[3];
+} codec_case_t;
+
+typedef struct sequence_packet
+{
+   int64_t dts;
+   const uint8_t *data;
+   size_t size;
+   uint32_t crc[3];
+   unsigned display_index, slice_type;
+} sequence_packet_t;
+
+typedef struct sequence_case
+{
+   codec_case_t picture;
+   const sequence_packet_t *packets;
+   unsigned reordered;
+} sequence_case_t;
+
+#include "../videotoolbox_hevc/sequence_data.h"
+static rh265_access_unit_t owner_au;
+static rh265_hw_state_t owner_state;
+static rh265_hw_picture_t owner_picture;
+static rh265_nal_t owner_nals[8];
+static unsigned owner_created, owner_dropped;
+
+static VAStatus owner_create_buffer(VADisplay display, VAContextID context,
+      VABufferType type, unsigned size, unsigned count, void *data,
+      VABufferID *id)
+{
+   assert(display == test_owner->runtime.display && context == 22 && data);
+   assert(owner_created < 5 && size && count);
+   if (type == VASliceParameterBufferType)
+      assert(count == owner_au.num_slices
+             && size
+                      == (mode == VA_DEC_SLICE_MODE_NORMAL
+                                  ? sizeof(VASliceParameterBufferHEVC)
+                                  : sizeof(VASliceParameterBufferBase)));
+   *id = 200 + owner_created++;
+   return VA_STATUS_SUCCESS;
+}
+
+static VAStatus owner_destroy_buffer(VADisplay display, VABufferID id)
+{
+   assert(display == test_owner->runtime.display && id == 200 + owner_dropped);
+   owner_dropped++;
+   return VA_STATUS_SUCCESS;
+}
+
+static VAStatus owner_begin_picture(
+      VADisplay display, VAContextID context, VASurfaceID surface)
+{
+   assert(display == test_owner->runtime.display && context == 22
+          && surface == 100);
+   return VA_STATUS_SUCCESS;
+}
+
+static VAStatus owner_render_picture(
+      VADisplay display, VAContextID context, VABufferID *ids, int count)
+{
+   unsigned i;
+   assert(display == test_owner->runtime.display && context == 22
+          && (unsigned)count == owner_created);
+   for (i = 0; i < (unsigned)count; i++)
+      assert(ids[i] == 200 + i);
+   return VA_STATUS_SUCCESS;
+}
+
+static VAStatus owner_end_picture(VADisplay display, VAContextID context)
+{
+   assert(display == test_owner->runtime.display && context == 22);
+   return VA_STATUS_SUCCESS;
+}
+
+static rh265_video *owner_source_setup(unsigned bits)
+{
+   const codec_case_t *fixture = &sequence_cases[bits == 8 ? 0 : 1].picture;
+   rh265_video *source;
+   owner_reset(bits);
+   source = rh265_video_open();
+   assert(source
+          && !rh265_video_set_extradata(
+                source, fixture->hvcc, fixture->hvcc_size));
+   assert(!rh265_video_get_access_unit(
+         source, fixture->data, fixture->size, 4, owner_nals, 8, &owner_au));
+   assert(!rh265_video_get_params(
+         source, (unsigned)owner_au.first.pps_id, &owner_params));
+   return source;
+}
+
+static bool owner_source_open(rh265_video *source)
+{
+   return vaapi_hevc_owner_open_source_with_io(&test_owner, source,
+         "/render-test", 226, 128, &owner_params, &owner_color, 0, 4, 4096,
+         &owner_io, &owner_exports, &owner_ops);
+}
+
+static void owner_source_case(unsigned bits, unsigned mask, bool claimed)
+{
+   video_hw_frame_t frame;
+   vaapi_frame_view_t view;
+   vaapi_hevc_export_t taken;
+   rh265_video *source = owner_source_setup(bits);
+   mode                = mask == VA_DEC_SLICE_MODE_BASE ? VA_DEC_SLICE_MODE_BASE
+                                                        : VA_DEC_SLICE_MODE_NORMAL;
+   slice_mask          = mask;
+   exports.submit.create  = owner_create_buffer;
+   exports.submit.destroy = owner_destroy_buffer;
+   exports.submit.begin   = owner_begin_picture;
+   exports.submit.render  = owner_render_picture;
+   exports.submit.end     = owner_end_picture;
+   exports.submit.sync    = owner_sync;
+   owner_created = owner_dropped = owner_polls = 0;
+   owner_complete                              = false;
+   assert(owner_source_open(source));
+   assert(test_owner->runtime.session.slice_mode == mode);
+   assert((test_owner->pool.source == source)
+          == (mode == VA_DEC_SLICE_MODE_NORMAL));
+   assert(rh265_hw_state_init(&owner_state, 4));
+   assert(!rh265_hw_prepare(
+         &owner_state, &owner_params, &owner_au, &owner_picture));
+   assert(!owner_ops.decode(owner_ops.decoder, &owner_params, &owner_au,
+         owner_nals, &owner_picture));
+   assert(rh265_hw_commit(&owner_state, &owner_picture));
+   assert(owner_ops.output(owner_ops.decoder, owner_picture.slot, &frame) == 1);
+   owner_complete = true;
+   assert(!owner_ops.output(owner_ops.decoder, owner_picture.slot, &frame));
+   assert(owner_created == owner_dropped && owner_fds);
+   memset(&taken, 0, sizeof(taken));
+   if (claimed)
+   {
+      assert(vaapi_frame_claim(
+            frame.owner, frame.done, frame.done_value, frame.image, &view));
+      assert(vaapi_frame_take(
+            frame.owner, frame.done, frame.done_value, &taken));
+   }
+   assert(vaapi_hevc_owner_detach(&owner_ops) == test_owner
+          && !test_owner->pool.source);
+   rh265_video_close(source);
+   assert(!vaapi_hevc_owner_retire(test_owner) && !term_calls && owner_fds);
+   video_hw_frame_abandon(&frame);
+   if (claimed)
+   {
+      assert(!vaapi_hevc_owner_retire(test_owner));
+      assert(vaapi_frame_finish(
+            frame.owner, frame.done, frame.done_value, &taken));
+   }
+   term_failures = 1;
+   assert(!vaapi_hevc_owner_retire(test_owner) && !owner_fds && !unloads);
+   assert(vaapi_hevc_owner_retire(test_owner) && loads == unloads && !fd_live);
+}
+
+static void owner_source_failures(unsigned bits)
+{
+   unsigned i;
+   for (i = 1; i <= 4; i++)
+   {
+      rh265_video *source = owner_source_setup(bits);
+      owner_alloc_fail    = i;
+      assert(!owner_source_open(source) && !owner_ops.decoder && !loads);
+      assert((test_owner != NULL) == (i > 1));
+      rh265_video_close(source);
+      assert(vaapi_hevc_owner_retire(test_owner));
+   }
+   {
+      rh265_video *source = owner_source_setup(bits);
+      mode                = VA_DEC_SLICE_MODE_NORMAL;
+      fault               = CONTEXT;
+      assert(!owner_source_open(source) && test_owner && !owner_ops.decoder);
+      rh265_video_close(source);
+      term_failures = 1;
+      assert(!vaapi_hevc_owner_retire(test_owner) && !unloads && fd_live);
+      assert(vaapi_hevc_owner_retire(test_owner) && loads == unloads
+             && !fd_live);
+   }
+}
+
 int main(void)
 {
-   unsigned bits;
+   unsigned bits, i;
+   static const unsigned masks[4] = {
+         VA_DEC_SLICE_MODE_NORMAL | VA_DEC_SLICE_MODE_BASE,
+         VA_DEC_SLICE_MODE_NORMAL, VA_DEC_SLICE_MODE_BASE,
+         VA_ATTRIB_NOT_SUPPORTED};
    owner_test_runtime = &owner_dummy;
    assert(!runtime_unit_main());
    for (bits = 8; bits <= 10; bits += 2)
@@ -290,6 +479,12 @@ int main(void)
       owner_lifetime(bits, true);
       owner_transaction(bits, false);
       owner_transaction(bits, true);
+      owner_source_failures(bits);
+      for (i = 0; i < 4; i++)
+      {
+         owner_source_case(bits, masks[i], false);
+         owner_source_case(bits, masks[i], true);
+      }
    }
    puts("PASS: cold VA runtime/pool/decoder ownership, partial-open cleanup, held opaque exports and termination-only retry");
    return 0;

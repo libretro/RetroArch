@@ -69,8 +69,8 @@ static video_hw_frame_t decoder_frame, decoder_before;
 static rh265_hw_state_t decoder_state;
 static video_color_metadata_t decoder_color;
 
-static void decoder_case(
-      const sequence_case_t *fixture, bool claimed, bool failed, unsigned yuv)
+static void decoder_case(const sequence_case_t *fixture, bool claimed,
+      bool failed, unsigned yuv, bool normal)
 {
    rh265_video *source = rh265_video_open();
    vaapi_hevc_decoder_t *decoder;
@@ -86,6 +86,8 @@ static void decoder_case(
    assert(!rh265_video_get_params(
          source, (unsigned)po_au.first.pps_id, &po_params));
    po_setup((unsigned)po_params.bit_depth);
+   if (normal)
+      po_select_normal(source);
    po_session.width  = (unsigned)po_params.width;
    po_session.height = (unsigned)po_params.height;
    memset(&decoder_ops, 0, sizeof(decoder_ops));
@@ -118,7 +120,8 @@ static void decoder_case(
    if (failed)
    {
       decoder_fault = true;
-      assert(decoder_ops.output(decoder, po_picture.slot, &decoder_frame) == -1);
+      assert(
+            decoder_ops.output(decoder, po_picture.slot, &decoder_frame) == -1);
       assert(!memcmp(&decoder_frame, &decoder_before, sizeof(decoder_frame)));
       assert(!decoder_fds && decoder_closes == 1 && !po_pool.exports);
       assert(decoder_ops.drain(decoder) == -1);
@@ -149,6 +152,9 @@ static void decoder_case(
             decoder_frame.done_value, &taken));
    }
    assert(vaapi_hevc_decoder_detach(&decoder_ops) == decoder);
+   assert(!po_pool.source);
+   rh265_video_close(source);
+   source = NULL;
    assert(!decoder_ops.decoder && !decoder_ops.decode && !decoder_ops.output
           && !decoder_ops.drain);
    assert(!vaapi_hevc_decoder_retire(decoder) && !decoder_closes);
@@ -174,18 +180,21 @@ static void decoder_case(
 
 int main(void)
 {
-   unsigned i;
+   unsigned i, normal;
    assert(!pool_unit_main());
-   for (i = 0; i < sizeof(sequence_cases) / sizeof(sequence_cases[0]); i++)
-   {
-      decoder_case(&sequence_cases[i], false, false, 0);
-      decoder_case(&sequence_cases[i], false, false, IMAGE_YUV_FLAG_FULL_RANGE);
-      decoder_case(&sequence_cases[i], true, false, IMAGE_YUV_FLAG_BT709);
-      decoder_case(&sequence_cases[i], false, true,
-            IMAGE_YUV_FLAG_FULL_RANGE | IMAGE_YUV_FLAG_BT709);
-      decoder_case(&sequence_cases[i], false, false,
-            IMAGE_YUV_FLAG_FULL_RANGE | IMAGE_YUV_FLAG_BT709);
-   }
+   for (normal = 0; normal < 2; normal++)
+      for (i = 0; i < sizeof(sequence_cases) / sizeof(sequence_cases[0]); i++)
+      {
+         decoder_case(&sequence_cases[i], false, false, 0, normal != 0);
+         decoder_case(&sequence_cases[i], false, false,
+               IMAGE_YUV_FLAG_FULL_RANGE, normal != 0);
+         decoder_case(&sequence_cases[i], true, false, IMAGE_YUV_FLAG_BT709,
+               normal != 0);
+         decoder_case(&sequence_cases[i], false, true,
+               IMAGE_YUV_FLAG_FULL_RANGE | IMAGE_YUV_FLAG_BT709, normal != 0);
+         decoder_case(&sequence_cases[i], false, false,
+               IMAGE_YUV_FLAG_FULL_RANGE | IMAGE_YUV_FLAG_BT709, normal != 0);
+      }
    assert(!vaapi_hevc_decoder_detach(NULL));
    assert(vaapi_hevc_decoder_retire(NULL));
    puts("PASS: parsed HEVC decode/completion to opaque VA leases, busy output, crop/color, detach and decoder-owner return retirement");

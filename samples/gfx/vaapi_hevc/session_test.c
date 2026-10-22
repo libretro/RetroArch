@@ -206,10 +206,37 @@ static void cases(void)
  assert(vaapi_hevc_session_terminated(&session,(VADisplay)(uintptr_t)1));
  assert(!session.initialized && calls==before && vaapi_hevc_session_close(&session));
 }
+
+static void auto_cases(void)
+{
+   unsigned i;
+   const unsigned masks[5] = {VA_DEC_SLICE_MODE_NORMAL | VA_DEC_SLICE_MODE_BASE,
+         VA_DEC_SLICE_MODE_BASE, VA_DEC_SLICE_MODE_NORMAL,
+         VA_ATTRIB_NOT_SUPPORTED, 0};
+   for (i = 0; i < 5; i++)
+   {
+      reset();
+      slice_mask = masks[i];
+      mode       = i == 1 ? VA_DEC_SLICE_MODE_BASE : VA_DEC_SLICE_MODE_NORMAL;
+      assert(vaapi_hevc_session_open(&session, (VADisplay)(uintptr_t)1, &ops,
+                   64, 64, depth, expected_slots, VAAPI_HEVC_SLICE_AUTO)
+             == (i != 4));
+      if (i != 4)
+         assert(session.slice_mode == mode && session.ready);
+      else
+         assert(!configs);
+      assert(vaapi_hevc_session_close(&session));
+   }
+}
+
 int main(void)
 {
- for(depth=8;depth<=10;depth+=2)
-  for(mode=VA_DEC_SLICE_MODE_NORMAL;mode<=VA_DEC_SLICE_MODE_BASE;mode++)cases();
- puts("PASS: VA-API HEVC profile/mode admission, partial creation, ordered retirement and retry; no device execution");
- return 0;
+   for (depth = 8; depth <= 10; depth += 2)
+      for (mode = VA_DEC_SLICE_MODE_NORMAL; mode <= VA_DEC_SLICE_MODE_BASE;
+            mode++)
+         cases();
+   for (depth = 8; depth <= 10; depth += 2)
+      auto_cases();
+   puts("PASS: VA-API HEVC profile/mode admission, partial creation, ordered retirement and retry; no device execution");
+   return 0;
 }

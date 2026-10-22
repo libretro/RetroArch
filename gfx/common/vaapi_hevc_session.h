@@ -5,6 +5,7 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 RETRO_BEGIN_DECLS
+#define VAAPI_HEVC_SLICE_AUTO 0
 typedef struct vaapi_hevc_session_ops {
  int (*max_profiles)(VADisplay);
  VAStatus (*profiles)(VADisplay,VAProfile*,int*);
@@ -32,6 +33,8 @@ typedef struct vaapi_hevc_session {
 /* Cold decoder worker, initially zeroed storage. Display is initialized and
  * borrowed; native functions/library outlive retirement. Explicit NORMAL/BASE mode
  * is a caller implementation choice, not inferred from picture parameters.
+ * AUTO prefers NORMAL, including the API default when the attribute is absent,
+ * and selects BASE only if NORMAL is not advertised. The caller implements both.
  * Failure can retain partial native ownership: close even after false.
  * This does not prove surface export/import support or register a backend. */
 bool vaapi_hevc_session_open(vaapi_hevc_session_t *s,VADisplay display,

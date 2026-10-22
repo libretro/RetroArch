@@ -81,12 +81,13 @@ static int test_drain(void *owner)
    return 9;
 }
 
-bool vaapi_hevc_owner_open(vaapi_hevc_owner_t **out, const char *path,
+bool vaapi_hevc_owner_open_source(vaapi_hevc_owner_t **out,
+      const rh265_video *source, const char *path,
       unsigned major_id, unsigned minor_id, const rh265_video_params_t *p,
       const video_color_metadata_t *color, unsigned yuv, unsigned slots,
       size_t max_input, rh265_hw_ops_t *ops)
 {
-   assert(!*out && !ops->decoder && p == &params && slots == 3
+   assert(source && !*out && !ops->decoder && p == &params && slots == 3
          && max_input == 4096 && !strcmp(path, "/dev/dri/renderD128")
          && major_id == seen_major && minor_id == seen_minor);
    seen_yuv   = yuv;

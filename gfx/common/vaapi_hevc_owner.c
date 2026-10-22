@@ -12,6 +12,7 @@ struct vaapi_hevc_owner
    rh265_hw_ops_t decoder;
    vaapi_hevc_decoder_t *retired;
    vaapi_hevc_short_work_t *work;
+   vaapi_hevc_long_work_t *long_work;
    VADisplay terminated_display;
    bool published, closing, terminating;
 };
@@ -44,14 +45,17 @@ static int vaapi_hevc_owner_drain(void *opaque)
    return owner->decoder.drain(owner->decoder.decoder);
 }
 
-bool vaapi_hevc_owner_open_with_io(vaapi_hevc_owner_t **out, const char *path,
-      unsigned major_id, unsigned minor_id, const rh265_video_params_t *params,
-      const video_color_metadata_t *color, unsigned yuv, unsigned slots,
-      size_t max_input, const vaapi_hevc_runtime_io_t *io,
-      const vaapi_hevc_export_ops_t *exports, rh265_hw_ops_t *ops)
+static bool vaapi_hevc_owner_open_common(vaapi_hevc_owner_t **out,
+      const char *path, unsigned major_id, unsigned minor_id,
+      const rh265_video_params_t *params, const video_color_metadata_t *color,
+      unsigned yuv, unsigned slots, size_t max_input,
+      const vaapi_hevc_runtime_io_t *io, const vaapi_hevc_export_ops_t *exports,
+      rh265_hw_ops_t *ops, const rh265_video *source)
 {
    vaapi_hevc_owner_t *owner;
    vaapi_hevc_export_ops_t native_exports;
+   unsigned slice_mode =
+         source ? VAAPI_HEVC_SLICE_AUTO : VA_DEC_SLICE_MODE_BASE;
    bool opened;
    if (!out || *out || !ops || ops->decoder || !path || !*path || !params
          || !color
@@ -75,18 +79,34 @@ bool vaapi_hevc_owner_open_with_io(vaapi_hevc_owner_t **out, const char *path,
    if (!owner->work->data)
       return false;
    owner->work->capacity = max_input;
+   if (source)
+   {
+      owner->long_work =
+            (vaapi_hevc_long_work_t *)calloc(1, sizeof(*owner->long_work));
+      if (!owner->long_work)
+         return false;
+      owner->long_work->data     = owner->work->data;
+      owner->long_work->capacity = max_input;
+   }
    if (io)
       opened = vaapi_hevc_runtime_open_with_io(&owner->runtime, path, major_id,
             minor_id, (unsigned)params->width, (unsigned)params->height,
-            (unsigned)params->bit_depth, slots, VA_DEC_SLICE_MODE_BASE, io);
+            (unsigned)params->bit_depth, slots, slice_mode, io);
    else
       opened = vaapi_hevc_runtime_open(&owner->runtime, path, major_id,
             minor_id, (unsigned)params->width, (unsigned)params->height,
-            (unsigned)params->bit_depth, slots, VA_DEC_SLICE_MODE_BASE);
+            (unsigned)params->bit_depth, slots, slice_mode);
    if (!opened)
       return false;
-   if (!vaapi_hevc_pool_init(&owner->pool, &owner->runtime.session,
-             &owner->runtime.submit, owner->work))
+   if (owner->runtime.session.slice_mode == VA_DEC_SLICE_MODE_NORMAL)
+      /* The factory borrows a mutable decoder through a const view. Queries
+       * change only its parser scratch on the same decoder owner thread. */
+      opened = vaapi_hevc_pool_init_long(&owner->pool, &owner->runtime.session,
+            &owner->runtime.submit, (rh265_video *)source, owner->long_work);
+   else
+      opened = vaapi_hevc_pool_init(&owner->pool, &owner->runtime.session,
+            &owner->runtime.submit, owner->work);
+   if (!opened)
       return false;
    if (exports)
       native_exports = *exports;
@@ -102,6 +122,39 @@ bool vaapi_hevc_owner_open_with_io(vaapi_hevc_owner_t **out, const char *path,
    ops->drain       = vaapi_hevc_owner_drain;
    owner->published = true;
    return true;
+}
+
+bool vaapi_hevc_owner_open_with_io(vaapi_hevc_owner_t **out, const char *path,
+      unsigned major_id, unsigned minor_id, const rh265_video_params_t *params,
+      const video_color_metadata_t *color, unsigned yuv, unsigned slots,
+      size_t max_input, const vaapi_hevc_runtime_io_t *io,
+      const vaapi_hevc_export_ops_t *exports, rh265_hw_ops_t *ops)
+{
+   return vaapi_hevc_owner_open_common(out, path, major_id, minor_id, params,
+         color, yuv, slots, max_input, io, exports, ops, NULL);
+}
+
+bool vaapi_hevc_owner_open_source_with_io(vaapi_hevc_owner_t **out,
+      const rh265_video *source, const char *path, unsigned major_id,
+      unsigned minor_id, const rh265_video_params_t *params,
+      const video_color_metadata_t *color, unsigned yuv, unsigned slots,
+      size_t max_input, const vaapi_hevc_runtime_io_t *io,
+      const vaapi_hevc_export_ops_t *exports, rh265_hw_ops_t *ops)
+{
+   if (!source)
+      return false;
+   return vaapi_hevc_owner_open_common(out, path, major_id, minor_id, params,
+         color, yuv, slots, max_input, io, exports, ops, source);
+}
+
+bool vaapi_hevc_owner_open_source(vaapi_hevc_owner_t **out,
+      const rh265_video *source, const char *path, unsigned major_id,
+      unsigned minor_id, const rh265_video_params_t *params,
+      const video_color_metadata_t *color, unsigned yuv, unsigned slots,
+      size_t max_input, rh265_hw_ops_t *ops)
+{
+   return vaapi_hevc_owner_open_source_with_io(out, source, path, major_id,
+         minor_id, params, color, yuv, slots, max_input, NULL, NULL, ops);
 }
 
 bool vaapi_hevc_owner_open(vaapi_hevc_owner_t **out, const char *path,
@@ -132,7 +185,8 @@ bool vaapi_hevc_owner_retire(vaapi_hevc_owner_t *owner)
       return true;
    if (owner->published && !owner->closing)
       return false;
-   owner->closing = true;
+   owner->closing     = true;
+   owner->pool.source = NULL;
    if (!owner->terminating)
    {
       unsigned i;
@@ -178,6 +232,7 @@ bool vaapi_hevc_owner_retire(vaapi_hevc_owner_t *owner)
       free(owner->work->data);
       free(owner->work);
    }
+   free(owner->long_work);
    free(owner);
    return true;
 }
