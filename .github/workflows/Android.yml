@@ -91,6 +91,12 @@ jobs:
                 extra=""
                 if [ "$offset" = 64 ]; then extra="-D_FILE_OFFSET_BITS=64"; fi
                 CC="$bin/$target$api-clang $extra" python3 libretro-common/samples/formats/vp9/check_stack.py
+                for source in android_image_queue android_image_ndk; do
+                  "$bin/$target$api-clang" $extra -O1 -std=c89 -pedantic -Wall -Wextra -Werror \
+                    -Wno-long-long -Wno-c99-extensions -Wframe-larger-than=2048 \
+                    -DHAVE_THREADS -DHAVE_DYLIB -Ilibretro-common/include \
+                    -c "gfx/common/$source.c" -o "$RUNNER_TEMP/$source-$target-$api-$offset.o"
+                done
               done
             done
           done
@@ -108,3 +114,13 @@ jobs:
           java-version: '21'
       - name: Real JNI codec admission and exception contracts
         run: make -C samples/gfx/mediacodec_inventory clean all check CC=${{ matrix.cc }} SANITIZER=undefined
+
+  image-ownership:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        cc: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v6
+      - name: Image ownership and runtime reader fault contracts
+        run: make -C samples/gfx/android_image_queue clean all check CC=${{ matrix.cc }} SANITIZER=address,undefined
