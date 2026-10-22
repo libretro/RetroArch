@@ -65,6 +65,7 @@
 #endif
 #ifdef HAVE_VAAPI
 #include "../common/vaapi_hevc_vulkan_cache.h"
+#include "../common/vaapi_hevc_backend.h"
 #endif
 #endif
 #include "../common/rgba16_pack.h"
@@ -746,6 +747,10 @@ typedef struct vk
    } tracker;
    uint32_t flags;
 } vk_t;
+
+#if defined(HAVE_RMP4) && defined(HAVE_VAAPI)
+#include "vulkan_vaapi_backend.h"
+#endif
 
 typedef struct
 {
@@ -7377,6 +7382,9 @@ static void vulkan_free(void *data)
    vk_t *vk = (vk_t*)data;
    if (!vk)
       return;
+#if defined(HAVE_RMP4) && defined(HAVE_VAAPI)
+   vaapi_hevc_backend_withdraw(&vulkan_vaapi_backend, vk);
+#endif
 
    if (vk->context && vk->context->device)
    {
@@ -8100,7 +8108,11 @@ static void *vulkan_init(const video_info_t *video)
 
 #ifdef HAVE_RMP4
       /* previews decoded on the GPU, where the device can */
+#ifdef HAVE_VAAPI
+      vulkan_vaapi_decoder_publish(vk, vulkan_video_decode_init(vk->context));
+#else
       vulkan_video_decode_init(vk->context);
+#endif
 #if defined(_WIN32) && !defined(__WINRT__) && defined(HAVE_RAV1) \
    && (defined(HAVE_D3D11) || defined(HAVE_D3D12))
       if (vk->pipelines.yuv_packed_to_rgba8888 != VK_NULL_HANDLE

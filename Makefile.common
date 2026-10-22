@@ -1820,6 +1820,7 @@ ifeq ($(HAVE_VULKAN), 1)
          OBJ += gfx/common/vaapi_frame.o \
                 gfx/common/vaapi_hevc_decoder.o \
                 gfx/common/vaapi_hevc_owner.o \
+                gfx/common/vaapi_hevc_backend.o \
                 gfx/common/vaapi_hevc_session.o \
                 gfx/common/vaapi_hevc_runtime.o \
                 gfx/common/vaapi_hevc_submit.o \

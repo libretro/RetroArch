@@ -38,7 +38,7 @@ cache scenarios use one slot. Native decoder factory integration remains open.
 operations, including loader/prerequisite refusal, crop validation, queue
 serialization and uncertain destination retention. Configure detects optional
 Linux VA headers; --disable-vaapi omits these frontend objects. Runtime VA
-libraries remain dynamically loaded. No native decoder factory is registered yet.
+libraries remain dynamically loaded.
 
 `decoder_test` sends parsed HEVC pictures through the production adapter and
 native-pool fixture, then exports completed pictures as opaque carriers. It
@@ -46,7 +46,7 @@ checks pending output, crop/color transport, export failure and detach while a
 renderer still claims a frame. Failed native ticket returns remain retryable.
 The adapter borrows its native pool; the factory must keep that pool, session
 and runtime alive through deferred retirement and drive collection on owner
-ticks. Native factory registration and device acceptance remain open.
+ticks. Native device acceptance remains open.
 
 `owner_test` composes the cold runtime, native pool, packet workspace and
 decoder adapter. It faults allocations, native symbols/libraries and adapter
@@ -54,6 +54,25 @@ setup, retains exports across detach, polls pending work once per pass and
 retries termination without further decoder calls. Cleanup belongs on the
 existing cold retirement executor; the owner is not itself an executor or a
 registered decoder factory. Native device acceptance remains separate.
+
+`backend_test` checks the shipping Vulkan admission helper and the native-owner
+factory with typed owner operations. The process-lifetime offer snapshots atomic
+DRM identity/epoch fields; reinit does not expose a renderer pointer to decoder
+setup. Native Vulkan HEVC keeps priority. Linux PRIME fallback resolves the
+actual render node through libdrm and verifies its FD identity in the runtime.
+Eight sessions including retirement bound seek storms; each cold open creates
+its retirement worker before native startup. Close and failed setup publish
+ownership to that worker without joining. Outstanding exports and failed native
+termination retain their owner for retry. The existing eventcount timeout runs
+only on that cold executor. Threadless/non-lock-free builds refuse admission.
+
+The backend fixture faults path lookup, allocation, eventcount and thread
+startup, holds retirement ownership, verifies operation forwarding and pauses
+native setup across renderer replacement. It tests publisher notification
+lifetime and epoch exhaustion. `make tsan-check` additionally executes its
+worker and setup/withdrawal lanes. Native factory registration does not prove
+actual VA decode, DRM modifier import pixels, seeks or shutdown acceptance.
+The adapter still requires BASE mode; NORMAL long-format slices remain open.
 
 `make gpu-check SANITIZER=address,undefined` additionally needs the Vulkan
 loader, development library, validation layer and a device supporting

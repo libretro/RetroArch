@@ -1,4 +1,7 @@
 CC ?= cc
+ifeq ($(OS),Windows_NT)
+BACKEND_HOST_FLAGS := -Wno-unused-parameter
+endif
 VAAPI_CFLAGS ?= $(shell pkg-config --cflags libva libdrm)
 CFLAGS += -DHAVE_DYLIB -O1 -g1 -std=c89 -pedantic -Wall -Wextra -Werror -Wno-long-long \
  -Wframe-larger-than=2048 -I../../../libretro-common/include -I../../../gfx/include $(VAAPI_CFLAGS)
@@ -14,7 +17,19 @@ NATIVE_PROBE = native_probe
 FRAME_THREAD_SOURCES = ../../../libretro-common/queues/retro_spsc.c
 FRAME_THREAD_FLAGS = -pthread
 endif
-all: test$(EXE) session_test$(EXE) runtime_test$(EXE) submit_test$(EXE) pool_test$(EXE) export_test$(EXE) identity_test$(EXE) prime_device_test$(EXE) prime_format_test$(EXE) prime_surface_test$(EXE) prime_image_test$(EXE) prime_frame_test$(EXE) prime_submit_test$(EXE) frame_test$(EXE) lease_test$(EXE) resources_test$(EXE) cache_test$(EXE) renderer_test$(EXE) decoder_test$(EXE) owner_test$(EXE) abi-check $(NATIVE_PROBE)
+all: backend_nothreads_test$(EXE) backend_volatile_test$(EXE) node_test$(EXE) backend_test$(EXE) test$(EXE) session_test$(EXE) runtime_test$(EXE) submit_test$(EXE) pool_test$(EXE) export_test$(EXE) identity_test$(EXE) prime_device_test$(EXE) prime_format_test$(EXE) prime_surface_test$(EXE) prime_image_test$(EXE) prime_frame_test$(EXE) prime_submit_test$(EXE) frame_test$(EXE) lease_test$(EXE) resources_test$(EXE) cache_test$(EXE) renderer_test$(EXE) decoder_test$(EXE) owner_test$(EXE) abi-check $(NATIVE_PROBE)
+backend_nothreads_test$(EXE): backend_disabled_test.c ../../../gfx/common/vaapi_hevc_backend.c ../../../gfx/common/vaapi_hevc_backend.h
+	$(CC) $(CFLAGS) backend_disabled_test.c ../../../gfx/common/vaapi_hevc_backend.c -o $@ $(LDFLAGS) -lm
+backend_volatile_test$(EXE): backend_disabled_test.c ../../../gfx/common/vaapi_hevc_backend.c ../../../gfx/common/vaapi_hevc_backend.h
+	$(CC) $(CFLAGS) -DHAVE_THREADS -DRETRO_ATOMIC_FORCE_VOLATILE -DRETRO_ATOMIC_SUPPRESS_WARNING backend_disabled_test.c ../../../gfx/common/vaapi_hevc_backend.c -o $@ $(LDFLAGS) -lm
+node_test$(EXE): node_test.c ../../../gfx/common/vaapi_hevc_backend.c ../../../gfx/common/vaapi_hevc_backend.h
+	$(CC) $(CFLAGS) -DHAVE_THREADS -ffunction-sections -fdata-sections node_test.c -o $@ $(LDFLAGS) -Wl,--gc-sections
+BACKEND_SOURCES := ../../../libretro-common/rthreads/rthreads.c \
+ ../../../libretro-common/rthreads/retro_eventcount.c
+backend_test$(EXE): backend_test.c ../../../gfx/common/vaapi_hevc_backend.c ../../../gfx/common/vaapi_hevc_backend.h ../../../gfx/drivers/vulkan_vaapi_backend.h ../../../gfx/common/vulkan_drm_identity.h $(BACKEND_SOURCES)
+	$(CC) $(CFLAGS) $(BACKEND_HOST_FLAGS) -DHAVE_THREADS -D_DEFAULT_SOURCE -pthread backend_test.c $(BACKEND_SOURCES) -o $@ $(LDFLAGS) -lm
+backend_tsan_test$(EXE): backend_test.c ../../../gfx/common/vaapi_hevc_backend.c ../../../gfx/common/vaapi_hevc_backend.h ../../../gfx/drivers/vulkan_vaapi_backend.h ../../../gfx/common/vulkan_drm_identity.h $(BACKEND_SOURCES)
+	$(CC) $(filter-out -fsanitize=%,$(CFLAGS)) $(BACKEND_HOST_FLAGS) -DHAVE_THREADS -D_DEFAULT_SOURCE -pthread -fsanitize=thread -fno-omit-frame-pointer backend_test.c $(BACKEND_SOURCES) -o $@ $(filter-out -fsanitize=%,$(LDFLAGS)) -fsanitize=thread -lm
 owner_test$(EXE): owner_test.c runtime_test.c session_test.c submit_test.c ../../../gfx/common/vaapi_hevc_owner.c ../../../gfx/common/vaapi_hevc_owner.h ../../../gfx/common/vaapi_hevc_decoder.c ../../../gfx/common/vaapi_hevc_decoder.h ../../../gfx/common/vaapi_hevc_runtime.c ../../../gfx/common/vaapi_hevc_runtime.h ../../../gfx/common/vaapi_hevc_pool.c ../../../gfx/common/vaapi_hevc_pool.h ../../../gfx/common/vaapi_hevc_export.c ../../../gfx/common/vaapi_frame.c ../../../gfx/common/vaapi_hevc_session.c ../../../gfx/common/vaapi_hevc_session.h ../../../gfx/common/vaapi_hevc_submit.c ../../../gfx/common/vaapi_hevc_submit.h ../../../gfx/common/vaapi_hevc_export.h ../../../gfx/common/vaapi_frame.h ../../../gfx/common/vaapi_hevc_packet.h ../../../gfx/common/vaapi_hevc.h
 	$(CC) $(CFLAGS) owner_test.c ../../../gfx/common/vaapi_hevc_decoder.c ../../../gfx/common/vaapi_frame.c ../../../gfx/common/vaapi_hevc_pool.c ../../../gfx/common/vaapi_hevc_export.c -o $@ $(LDFLAGS) -lm
 decoder_test$(EXE): decoder_test.c pool_test.c test.c ../../../gfx/common/vaapi_hevc_decoder.c ../../../gfx/common/vaapi_hevc_decoder.h ../../../gfx/common/vaapi_frame.c ../../../gfx/common/vaapi_hevc_export.c ../../../gfx/common/vaapi_hevc_pool.c ../../../gfx/common/vaapi_hevc_pool.h ../../../gfx/common/vaapi_hevc_submit.c ../../../gfx/common/vaapi_hevc_submit.h ../../../gfx/common/vaapi_hevc_packet.h ../../../gfx/common/vaapi_hevc.h ../../../gfx/common/vaapi_frame.h ../../../gfx/common/vaapi_hevc_export.h ../../../libretro-common/formats/h265/rh265.c ../../../libretro-common/include/formats/rh265_hw.h ../videotoolbox_hevc/sequence_data.h ../videotoolbox_hevc/reorder_data.h
@@ -59,7 +74,8 @@ frame_tsan_test$(EXE): frame_test.c prime_frame_test.c export_test.c ../../../gf
 	$(CC) $(filter-out -fsanitize=%,$(CFLAGS)) -fsanitize=thread -fno-omit-frame-pointer frame_test.c ../../../gfx/common/vaapi_frame.c ../../../gfx/common/vulkan_prime_image.c ../../../gfx/common/vaapi_hevc_vulkan_frame.c $(FRAME_THREAD_SOURCES) -o $@ $(filter-out -fsanitize=%,$(LDFLAGS)) -fsanitize=thread $(FRAME_THREAD_FLAGS)
 lease_tsan_test$(EXE): lease_test.c prime_submit_test.c prime_frame_test.c export_test.c ../../../gfx/common/vaapi_hevc_vulkan_lease.c ../../../gfx/common/vaapi_hevc_vulkan_lease.h ../../../gfx/common/vaapi_frame.c ../../../gfx/common/vaapi_frame.h ../../../gfx/common/vaapi_hevc_vulkan_frame.c ../../../gfx/common/vaapi_hevc_vulkan_frame.h ../../../gfx/common/vaapi_hevc_vulkan_submit.c ../../../gfx/common/vaapi_hevc_vulkan_submit.h ../../../gfx/common/vulkan_prime_image.c ../../../gfx/common/vulkan_prime_image.h $(FRAME_THREAD_SOURCES)
 	$(CC) $(filter-out -fsanitize=%,$(CFLAGS)) -fsanitize=thread -fno-omit-frame-pointer lease_test.c ../../../gfx/common/vaapi_hevc_vulkan_lease.c ../../../gfx/common/vaapi_frame.c ../../../gfx/common/vulkan_prime_image.c ../../../gfx/common/vaapi_hevc_vulkan_frame.c ../../../gfx/common/vaapi_hevc_vulkan_submit.c ../../../libretro-common/formats/image/image_yuv_blit.c $(FRAME_THREAD_SOURCES) -o $@ $(filter-out -fsanitize=%,$(LDFLAGS)) -fsanitize=thread $(FRAME_THREAD_FLAGS) -lm
-tsan-check: frame_tsan_test$(EXE) lease_tsan_test$(EXE)
+tsan-check: backend_tsan_test$(EXE) frame_tsan_test$(EXE) lease_tsan_test$(EXE)
+	TSAN_OPTIONS=halt_on_error=1 $(RUNNER) ./backend_tsan_test$(EXE)
 	TSAN_OPTIONS=halt_on_error=1 $(RUNNER) ./frame_tsan_test$(EXE)
 	TSAN_OPTIONS=halt_on_error=1 $(RUNNER) ./lease_tsan_test$(EXE)
 native_probe: native_probe.c ../../../gfx/common/vaapi_hevc_export.c ../../../gfx/common/vaapi_hevc_pool.c ../../../gfx/common/vaapi_hevc_submit.c ../../../gfx/common/vaapi_hevc_runtime.c ../../../gfx/common/vaapi_hevc_session.c ../../../libretro-common/dynamic/dylib.c
@@ -74,6 +90,10 @@ test$(EXE): test.c ../../../gfx/common/vaapi_hevc_packet.h ../../../gfx/common/v
  ../videotoolbox_hevc/sequence_data.h ../videotoolbox_hevc/reorder_data.h
 	$(CC) $(CFLAGS) -Wno-unused-parameter test.c ../../../libretro-common/formats/h265/rh265.c -o $@ $(LDFLAGS) -lm
 check: all
+	$(RUNNER) ./backend_nothreads_test$(EXE)
+	$(RUNNER) ./backend_volatile_test$(EXE)
+	$(RUNNER) ./node_test$(EXE)
+	$(RUNNER) ./backend_test$(EXE)
 	$(RUNNER) ./test$(EXE)
 	$(RUNNER) ./session_test$(EXE)
 	$(RUNNER) ./runtime_test$(EXE)
@@ -98,5 +118,5 @@ ifneq ($(NATIVE_PROBE),)
 	./native_probe
 endif
 clean:
-	rm -f owner_test owner_test.exe decoder_test decoder_test.exe renderer_test renderer_test.exe cache_test cache_test.exe test test.exe session_test session_test.exe runtime_test runtime_test.exe submit_test submit_test.exe pool_test pool_test.exe export_test export_test.exe identity_test identity_test.exe prime_device_test prime_device_test.exe prime_format_test prime_format_test.exe prime_surface_test prime_surface_test.exe prime_image_test prime_image_test.exe prime_frame_test prime_frame_test.exe prime_submit_test prime_submit_test.exe frame_test frame_test.exe lease_test lease_test.exe resources_test resources_test.exe lease_tsan_test lease_tsan_test.exe frame_tsan_test frame_tsan_test.exe prime_gpu_test prime_gpu_test.exe native_probe
+	rm -f backend_nothreads_test backend_nothreads_test.exe backend_volatile_test backend_volatile_test.exe node_test node_test.exe backend_test backend_test.exe backend_tsan_test backend_tsan_test.exe owner_test owner_test.exe decoder_test decoder_test.exe renderer_test renderer_test.exe cache_test cache_test.exe test test.exe session_test session_test.exe runtime_test runtime_test.exe submit_test submit_test.exe pool_test pool_test.exe export_test export_test.exe identity_test identity_test.exe prime_device_test prime_device_test.exe prime_format_test prime_format_test.exe prime_surface_test prime_surface_test.exe prime_image_test prime_image_test.exe prime_frame_test prime_frame_test.exe prime_submit_test prime_submit_test.exe frame_test frame_test.exe lease_test lease_test.exe resources_test resources_test.exe lease_tsan_test lease_tsan_test.exe frame_tsan_test frame_tsan_test.exe prime_gpu_test prime_gpu_test.exe native_probe
 .PHONY: all check gpu-check tsan-check clean abi-check
