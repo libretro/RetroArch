@@ -404,11 +404,20 @@ static void rmp4_parse_stsd(rmp4_itrack *t, const uint8_t *p, uint64_t size)
       switch (e.type)
       {
          case RMP4_FOURCC('v','p','0','8'):
-            t->pub.codec = RMP4_CODEC_VP8;
-            break;
          case RMP4_FOURCC('v','p','0','9'):
-            t->pub.codec = RMP4_CODEC_VP9;
+         {
+            rmp4_box vpcc;
+            t->pub.codec = e.type == RMP4_FOURCC('v','p','0','9')
+                  ? RMP4_CODEC_VP9 : RMP4_CODEC_VP8;
+            if (e.size > 78
+                  && rmp4_find_child(e.body + 78, e.size - 78,
+                     RMP4_FOURCC('v','p','c','C'), &vpcc))
+            {
+               t->pub.codec_private = vpcc.body;
+               t->pub.codec_private_size = (size_t)vpcc.size;
+            }
             break;
+         }
          case RMP4_FOURCC('a','v','0','1'):
          {
             rmp4_box av1c;
@@ -463,8 +472,6 @@ static void rmp4_parse_stsd(rmp4_itrack *t, const uint8_t *p, uint64_t size)
          default:
             break;
       }
-      /* vpcC codecIntializationData is empty for VP8/VP9, matching the
-       * empty CodecPrivate WebM carries; nothing further to extract. */
    }
    else if (t->pub.type == RMP4_TRACK_AUDIO)
    {
