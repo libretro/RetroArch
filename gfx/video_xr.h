@@ -280,10 +280,16 @@ unsigned video_xr_grab_off_step(const video_xr_grab_t *g,
  * quarter turn about the other's up) to a screen within
  * VIDEO_XR_SNAP_ANGLE degrees, then lines up within VIDEO_XR_SNAP_DIST
  * metres: into the other's plane, edges or centres level or edge to
- * edge, square ones meeting at a corner. Each pull is whole within its
- * range and fades out over as far again; a gap between the screens
- * past VIDEO_XR_SNAP_NEAR metres fades them all, likewise. Of several,
- * the turn and each line go to the pull that leaves the least. */
+ * edge, square ones meeting at a corner. Or one of its edges hinges on
+ * one of the other's within VIDEO_XR_SNAP_ANGLE degrees of parallel and
+ * VIDEO_XR_SNAP_DIST metres where the two overlap: turned the least way
+ * parallel, onto that line, centres or ends level along it, at any
+ * angle between them, whole from flat to square and fading to none
+ * folded shut, and fading in over the first VIDEO_XR_SNAP_DIST metres
+ * of overlap. Each pull is whole within its range and fades out over
+ * as far again; a gap between the screens past VIDEO_XR_SNAP_NEAR
+ * metres fades them all, likewise. Of several, the turn and each line
+ * go to the pull that leaves the least. */
 #define VIDEO_XR_SNAP_DIST  0.03f
 #define VIDEO_XR_SNAP_ANGLE 5.0f
 #define VIDEO_XR_SNAP_NEAR  0.30f
@@ -307,6 +313,38 @@ unsigned video_xr_grab_off_step(const video_xr_grab_t *g,
 unsigned video_xr_snap(const video_xr_quad_set_t *set, unsigned slot,
       unsigned skip, float width, float height, float fade,
       video_xr_pose_t *pose);
+
+/* A hinge engaged: an edge of the held screen exactly on a target's
+ * edge line, both screens either side of it at any angle; also in what
+ * video_xr_snap returns. */
+#define VIDEO_XR_SNAP_HINGE 256u
+
+/* The hinge video_xr_snap_hinge engaged, in the anchor's frame: the held
+ * edge's middle on the shared line, the line's way, the way from it
+ * that is flat with the target, the held screen's edge (0 top,
+ * 1 bottom, 2 right, 3 left), the screens' angle from flat in degrees
+ * about dir, and the free hand's stick axis whose turn lies nearer
+ * the line (VIDEO_XR_STEP_TILT or VIDEO_XR_STEP_TURN). */
+typedef struct video_xr_hinge
+{
+   video_xr_vec3_t point;
+   video_xr_vec3_t dir;
+   video_xr_vec3_t flat;
+   float angle;
+   unsigned edge;
+   unsigned axis;
+} video_xr_hinge_t;
+
+/* video_xr_snap, and the hinge it engaged unless hinge is NULL; hinge is
+ * written only with VIDEO_XR_SNAP_HINGE returned. */
+unsigned video_xr_snap_hinge(const video_xr_quad_set_t *set, unsigned slot,
+      unsigned skip, float width, float height, float fade,
+      video_xr_pose_t *pose, video_xr_hinge_t *hinge);
+
+/* A held screen turned q, its edge h->edge on h's line: its angle from
+ * flat about h->dir, in degrees. */
+float video_xr_hinge_angle(const video_xr_hinge_t *h,
+      const video_xr_quat_t *q);
 
 /* Snapping fades in from a grab: 0 at start, the item's pose as it was
  * grabbed, rising evenly to 1 once pose is VIDEO_XR_SNAP_FADE_DIST

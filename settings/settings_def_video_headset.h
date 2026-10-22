@@ -58,7 +58,7 @@ S_BOOL(video_openxr_edit_snap, VIDEO_OPENXR_EDIT_SNAP,
       "video_openxr_edit_snap",
       true, SD_FLAG_NONE, 0, 0,
       "Snap to Screens",
-      "Lines up a held screen with the screens near it: parallel or square to one, then in its plane and level, or edge to edge. The holding hand buzzes as a snap takes hold.")
+      "Lines up a held screen with the screens near it: parallel or square to one, then in its plane and level, or edge to edge; or hinged to one along a shared edge at any angle. The holding hand buzzes as a snap takes hold.")
 S_UINT_EX(video_openxr_edit_snap_angles, VIDEO_OPENXR_EDIT_SNAP_ANGLES,
       "video_openxr_edit_snap_angles",
       1, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, 4, 1, 0, setting_action_ok_uint, setting_get_string_representation_video_openxr_edit_snap_angles, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,

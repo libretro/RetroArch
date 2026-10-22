@@ -206,7 +206,13 @@ degrees of facing the same way as one, or of a quarter turn from it
 about its vertical, the held screen turns exactly so. Then, within 3 cm,
 it moves into the other's plane, and its left, right, top, bottom or
 centre lines up with the other's, level or edge to edge; a screen at a
-quarter turn meets the other at a corner. Past each range the pull
+quarter turn meets the other at a corner. Or, at any angle between
+them, an edge of the held screen hinges on an edge of the other where
+the two overlap along it, top, bottom or side, within 5 degrees of
+parallel and 3 cm: it turns exactly
+parallel to that edge and moves onto it, centres or ends level along
+it, keeping its angle, like the two halves of a DS. Screens that would
+overlap do not hinge. Past each range the pull
 fades out over as far again, and from 30 to 60 cm away every pull
 fades, so the screen catches up with the hand instead of jumping. A
 screen just taken does not move: snapping fades in as it is carried,

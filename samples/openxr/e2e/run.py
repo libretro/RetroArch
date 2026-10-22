@@ -4631,6 +4631,18 @@ def screen1_at_yaw(yaw):
     return pick
 
 
+def screen2_at_yaw(yaw, past=False):
+    """A pick: screen 2 where it shows exactly yaw, or once it has
+    turned past it (yaw rising) if past."""
+    def pick(frame):
+        q = screen2(frame)
+        if not q:
+            return None
+        y = euler(tuple(q['pose'][3:]))[0]
+        return q if (y >= yaw if past else abs(y - yaw) <= 0.05) else None
+    return pick
+
+
 def check_edit_release(res):
     """Let go after a sweep under threaded video: screen 1 never steps
     back from where the hand left it, and is saved there."""
@@ -5837,8 +5849,9 @@ def check_edit_step_45(res):
 
 # Screen 2 at screen 1's right corner, 18 degrees short of square
 # (yaw -72, facing left): chosen, gripped, and turned by the left stick
-# at an eighth of full speed (11.25 degrees a second) for 1.6 s, it
-# reaches the 5 degree window and clicks square at the corner.
+# at an eighth of full speed (11.25 degrees a second) until a frame
+# shows it square, it reaches the 5 degree window and clicks square at
+# the corner.
 SQUARE = dict(SAVE, video_openxr_edit_snap='true',
               video_screen2_xr_x='0.8', video_screen2_xr_y='0.992',
               video_screen2_xr_z='0.64', video_screen2_xr_yaw='-72')
@@ -5870,12 +5883,12 @@ def check_edit_snap_square(res):
 
 def check_edit_snap_sticks(res):
     """Screen 2, turned by the left stick from 18 degrees short of
-    square at screen 1's right corner for 1.25 s, about 14 degrees,
-    shows square once the stick is let go; pushed back the other way at
-    the same speed for 1.42 s, about 16 degrees, it turns on from
-    square, to yaw -74, not from where the stick stopped (about -70),
-    and is saved there. The head is held at the anchor, so no step
-    holds either."""
+    square at screen 1's right corner until it shows square, stays
+    square once the stick is let go; pushed back the other way at the
+    same speed until it shows -74, it turns on from square, not from
+    where the stick stopped, and is saved there. The head is held at
+    the anchor, so no step holds either. Not a set time: stalled polls
+    cut the stick's turn short."""
     errors = edit_log_errors(res, ['on', 'off'])
     errors += pose_errors('screen 2 square, the stick let go',
                           [screen2(f) for f in
@@ -6560,7 +6573,8 @@ EDIT_CASES += [
          ('wait', 1),
          ('script', script(edit_aim(), EDIT_GRIP,
                            'action edit/stick@left -0.3 0')),
-         ('wait', 1.6), ('script', script(edit_aim(), EDIT_GRIP)),
+         ('until', ('screen 2 square', screen2_at_yaw(-90.0), 10)),
+         ('script', script(edit_aim(), EDIT_GRIP)),
          ('wait', 1), ('mark', 'held'), ('wait', 1),
          ('script', edit_aim()), ('mark', 'released'), ('wait', 1),
          ('send', EDIT), ('wait', 2), ('mark', 'off'), ('wait', 1)],
@@ -6572,11 +6586,14 @@ EDIT_CASES += [
          ('script', script(edit_aim(), EDIT_GRIP)), ('wait', 1),
          ('script', script(edit_aim(), EDIT_GRIP,
                            'action edit/stick@left -0.3 0')),
-         ('wait', 1.25), ('script', script(edit_aim(), EDIT_GRIP)),
+         ('until', ('screen 2 square', screen2_at_yaw(-90.0), 10)),
+         ('script', script(edit_aim(), EDIT_GRIP)),
          ('wait', 1), ('mark', 'square'), ('wait', 0.5), ('mark', 'push'),
          ('script', script(edit_aim(), EDIT_GRIP,
                            'action edit/stick@left 0.3 0')),
-         ('wait', 1.42), ('script', script(edit_aim(), EDIT_GRIP)),
+         ('until', ('screen 2 back at -74', screen2_at_yaw(-74.0, True),
+                    10)),
+         ('script', script(edit_aim(), EDIT_GRIP)),
          ('wait', 1), ('script', edit_aim()), ('mark', 'released'),
          ('wait', 1), ('send', EDIT), ('wait', 2), ('mark', 'off'),
          ('wait', 1)],

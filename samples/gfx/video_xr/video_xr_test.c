@@ -3194,7 +3194,8 @@ static void test_snap_pulling(void)
    snap_set(&set);
    snap_pose(&p, 1.32, 0.01, -1.98, 0.0);
    CHECK(video_xr_snap(&set, 1, 0, 1.0f, 0.6f, 1.0f, &p)
-         == (SNAP_ALL | VIDEO_XR_SNAP_PULLING(SNAP_ALL)));
+         == (SNAP_ALL | VIDEO_XR_SNAP_PULLING(SNAP_ALL)
+            | VIDEO_XR_SNAP_HINGE));
    /* 4.5 cm off flush: the edge fades, pulling but not engaged. */
    snap_pose(&p, 1.345, 0.0, -2.0, 0.0);
    CHECK(video_xr_snap(&set, 1, 0, 1.0f, 0.6f, 1.0f, &p)
@@ -3453,6 +3454,619 @@ static void test_snap_turned(void)
             -2.0 - 1.32 * s + 0.02 * c, 33.0, &p) == SNAP_ALL);
    CHECK(vec_is(&p.position, 1.30 * c, 0.0, -2.0 - 1.30 * s)
          && angle_near((float)snap_yaw(&p), 30.0f));
+}
+
+/* Metres between two poses' middles. */
+static double pose_gap(const video_xr_pose_t *a, const video_xr_pose_t *b)
+{
+   double dx = (double)a->position.x - b->position.x;
+   double dy = (double)a->position.y - b->position.y;
+   double dz = (double)a->position.z - b->position.z;
+   return sqrt(dx * dx + dy * dy + dz * dz);
+}
+
+/* Screen 1 of the 3DS layout alone, 1.6 x 0.96 at 1.8 m: its bottom
+ * edge runs along x at y -0.48, z -1.8, its right edge up y at x 0.8. */
+static void hinge_set(video_xr_quad_set_t *set)
+{
+   memset(set, 0, sizeof(*set));
+   video_xr_pose_identity(&set->quads[0].pose);
+   set->quads[0].pose.position.z = -1.8f;
+   set->quads[0].width           = 1.6f;
+   set->quads[0].height          = 0.96f;
+   set->quads[0].kind            = VIDEO_XR_QUAD_SCREEN;
+   set->num_quads                = 1;
+}
+
+/* deg degrees about x, y, z. */
+static void hinge_turn(video_xr_quat_t *q, double x, double y, double z,
+      double deg)
+{
+   double n = sqrt(x * x + y * y + z * z);
+   double s = sin(deg * M_PI / 360.0);
+   q->x     = (float)(x / n * s);
+   q->y     = (float)(y / n * s);
+   q->z     = (float)(z / n * s);
+   q->w     = (float)cos(deg * M_PI / 360.0);
+}
+
+/* b, then a: a b. */
+static void hinge_then(const video_xr_quat_t *a, const video_xr_quat_t *b,
+      video_xr_quat_t *out)
+{
+   video_xr_pose_t pa, pb;
+   video_xr_pose_identity(&pa);
+   video_xr_pose_identity(&pb);
+   pa.orientation = *a;
+   pb.orientation = *b;
+   video_xr_compose(&pa, &pb, &pa);
+   *out = pa.orientation;
+}
+
+/* Turned q, with its own point mx, my at x, y, z. */
+static void hinge_place(video_xr_pose_t *p, const video_xr_quat_t *q,
+      double mx, double my, double x, double y, double z)
+{
+   video_xr_vec3_t m, w;
+   m.x            = (float)mx;
+   m.y            = (float)my;
+   m.z            = 0.0f;
+   video_xr_rotate(q, &m, &w);
+   p->orientation = *q;
+   p->position.x  = (float)(x - w.x);
+   p->position.y  = (float)(y - w.y);
+   p->position.z  = (float)(z - w.z);
+}
+
+/* Screen 2 of the 3DS layout, 1.28 x 0.96, held at p, snapped to set. */
+static unsigned hinge_snap(const video_xr_quad_set_t *set,
+      video_xr_pose_t *p, float fade, video_xr_hinge_t *h)
+{
+   return video_xr_snap_hinge(set, 1, 0, 1.28f, 0.96f, fade, p, h);
+}
+
+#define HINGE_LINES (VIDEO_XR_SNAP_X | VIDEO_XR_SNAP_Y | VIDEO_XR_SNAP_Z)
+
+/* The 3DS pair: screen 2 tipped 30 degrees toward the user about its
+ * top edge, that edge 1.5 cm under and 1.3 cm in front of screen 1's
+ * bottom edge and turned 3 degrees off it, by a yaw or a roll, snaps
+ * touching and exactly parallel and keeps its 30 degrees: a hinge, its
+ * top edge on that line, swung by the tilt. */
+static void test_hinge_3ds(void)
+{
+   unsigned i;
+   video_xr_quad_set_t set;
+   video_xr_pose_t p, want;
+   video_xr_quat_t tip, off, q;
+   video_xr_hinge_t h;
+   hinge_set(&set);
+   hinge_turn(&tip, 1.0, 0.0, 0.0, -30.0);
+   hinge_place(&want, &tip, 0.0, 0.48, 0.0, -0.48, -1.8);
+   for (i = 0; i < 2; i++)
+   {
+      unsigned bits;
+      hinge_turn(&off, 0.0, i ? 0.0 : 1.0, i ? 1.0 : 0.0, 3.0);
+      hinge_then(&off, &tip, &q);
+      hinge_place(&p, &q, 0.0, 0.48, 0.0, -0.495, -1.787);
+      memset(&h, 0, sizeof(h));
+      bits = hinge_snap(&set, &p, 1.0f, &h);
+      CHECK((bits & VIDEO_XR_SNAP_HINGE)
+            && (bits & VIDEO_XR_SNAP_ALL) == HINGE_LINES);
+      CHECK(vec_is(&p.position, 0.0, -0.895692, -1.56)
+            && turn_apart(&p.orientation, &want.orientation) < 0.01);
+      CHECK(h.edge == 0 && h.axis == VIDEO_XR_STEP_TILT
+            && fabs(h.angle + 30.0) < 0.01);
+      CHECK(vec_is(&h.point, 0.0, -0.48, -1.8)
+            && vec_is(&h.dir, 1.0, 0.0, 0.0)
+            && vec_is(&h.flat, 0.0, -1.0, 0.0));
+      CHECK(fabs(video_xr_hinge_angle(&h, &p.orientation) + 30.0) < 0.01);
+   }
+   /* No hinge out asked: the same pose. */
+   hinge_turn(&off, 0.0, 1.0, 0.0, 3.0);
+   hinge_then(&off, &tip, &q);
+   hinge_place(&p, &q, 0.0, 0.48, 0.0, -0.495, -1.787);
+   want = p;
+   hinge_snap(&set, &p, 1.0f, &h);
+   CHECK((video_xr_snap(&set, 1, 0, 1.28f, 0.96f, 1.0f, &want)
+            & VIDEO_XR_SNAP_HINGE) && pose_same(&p, &want));
+}
+
+/* Tipped square about the line, as the 90 degree step leaves it, a
+ * rounding past square still hinges; 0.05 degrees past does not. */
+static void test_hinge_square_fold(void)
+{
+   static const double past[3] = { 1e-4, -1e-4, 0.05 };
+   unsigned i;
+   video_xr_quad_set_t set;
+   video_xr_pose_t p;
+   video_xr_quat_t q;
+   video_xr_hinge_t h;
+   hinge_set(&set);
+   for (i = 0; i < 3; i++)
+   {
+      hinge_turn(&q, 1.0, 0.0, 0.0, -90.0 - past[i]);
+      hinge_place(&p, &q, 0.0, 0.48, 0.0, -0.48, -1.8);
+      CHECK(((hinge_snap(&set, &p, 1.0f, &h) & VIDEO_XR_SNAP_HINGE) != 0)
+            == (i < 2));
+   }
+}
+
+/* Side by side like a triptych: screen 2's left edge, 3 degrees tipped
+ * off upright, 1.5 cm right of and 1.3 cm in front of screen 1's right
+ * edge, turned 30 degrees toward the user: hinged there, swung by the
+ * turn. On its side, its top edge hinges the same way. */
+static void test_hinge_side(void)
+{
+   unsigned bits;
+   video_xr_quad_set_t set;
+   video_xr_pose_t p;
+   video_xr_quat_t turn, off, q;
+   video_xr_hinge_t h;
+   hinge_set(&set);
+   hinge_turn(&turn, 0.0, 1.0, 0.0, -30.0);
+   hinge_turn(&off, 1.0, 0.0, 0.0, 3.0);
+   hinge_then(&off, &turn, &q);
+   hinge_place(&p, &q, -0.64, 0.0, 0.815, 0.0, -1.787);
+   bits = hinge_snap(&set, &p, 1.0f, &h);
+   CHECK((bits & VIDEO_XR_SNAP_HINGE)
+         && (bits & VIDEO_XR_SNAP_ALL) == HINGE_LINES);
+   CHECK(vec_is(&p.position, 1.354256, 0.0, -1.48)
+         && turn_apart(&p.orientation, &turn) < 0.01);
+   CHECK(h.edge == 3 && h.axis == VIDEO_XR_STEP_TURN
+         && fabs(h.angle + 30.0) < 0.01
+         && vec_is(&h.point, 0.8, 0.0, -1.8) && vec_is(&h.dir, 0.0, 1.0, 0.0)
+         && vec_is(&h.flat, 1.0, 0.0, 0.0));
+   /* Turned a quarter in its own plane, then as before. */
+   hinge_turn(&q, 0.0, 0.0, 1.0, 90.0);
+   hinge_then(&turn, &q, &q);
+   hinge_then(&off, &q, &q);
+   hinge_place(&p, &q, 0.0, 0.48, 0.815, 0.0, -1.787);
+   bits = hinge_snap(&set, &p, 1.0f, &h);
+   CHECK((bits & VIDEO_XR_SNAP_HINGE) && h.edge == 0
+         && h.axis == VIDEO_XR_STEP_TURN && fabs(h.angle + 30.0) < 0.01);
+   CHECK(vec_is(&p.position, 1.215692, 0.0, -1.56));
+}
+
+/* Screens that overlap never hinge: screen 2 flat 1 cm in front of
+ * screen 1, top edges 1 cm apart, levels as before; folded back over
+ * it from its bottom edge, 170 or 135 degrees from flat, the pull only
+ * fades, whole again by 90. */
+static void test_hinge_overlap(void)
+{
+   video_xr_quad_set_t set;
+   video_xr_pose_t p;
+   video_xr_quat_t q;
+   hinge_set(&set);
+   video_xr_pose_identity(&p);
+   p.position.x = 0.1f;
+   p.position.y = -0.01f;
+   p.position.z = -1.79f;
+   CHECK(hinge_snap(&set, &p, 1.0f, NULL)
+         == (VIDEO_XR_SNAP_TURN | VIDEO_XR_SNAP_Y | VIDEO_XR_SNAP_Z
+            | VIDEO_XR_SNAP_PULLING(VIDEO_XR_SNAP_TURN | VIDEO_XR_SNAP_Y
+               | VIDEO_XR_SNAP_Z)));
+   CHECK(vec_is(&p.position, 0.1, 0.0, -1.8));
+   hinge_turn(&q, 1.0, 0.0, 0.0, -170.0);
+   hinge_place(&p, &q, 0.0, 0.48, 0.0, -0.49, -1.79);
+   CHECK(hinge_snap(&set, &p, 1.0f, NULL)
+         == VIDEO_XR_SNAP_PULLING(HINGE_LINES));
+   hinge_turn(&q, 1.0, 0.0, 0.0, -135.0);
+   hinge_place(&p, &q, 0.0, 0.48, 0.0, -0.49, -1.79);
+   CHECK(hinge_snap(&set, &p, 1.0f, NULL)
+         == VIDEO_XR_SNAP_PULLING(HINGE_LINES));
+   hinge_turn(&q, 1.0, 0.0, 0.0, -90.0);
+   hinge_place(&p, &q, 0.0, 0.48, 0.0, -0.49, -1.79);
+   CHECK(hinge_snap(&set, &p, 1.0f, NULL) & VIDEO_XR_SNAP_HINGE);
+   CHECK(vec_is(&p.position, 0.0, -0.48, -1.32));
+}
+
+/* Out of range nothing; in a fade band a part pull, as the other snaps:
+ * 7 cm under, none; 4.5 cm, part of the way; the grab's fade half in,
+ * half way; 7.5 degrees off parallel, turned to 5; 12, none. Along
+ * screen 1's edge, 1 cm past its end, none; overlapping it 1.5 cm, half
+ * way; 4 cm, a hinge. Flat 4 cm in, the corner's X line leaves 2 cm
+ * overlapping: lined up, but no hinge. */
+static void test_hinge_range(void)
+{
+   video_xr_quad_set_t set;
+   video_xr_pose_t p, was;
+   video_xr_quat_t tip, off, q;
+   hinge_set(&set);
+   hinge_turn(&tip, 1.0, 0.0, 0.0, -30.0);
+   hinge_place(&p, &tip, 0.0, 0.48, 0.0, -0.55, -1.8);
+   was = p;
+   CHECK(hinge_snap(&set, &p, 1.0f, NULL) == 0 && pose_same(&p, &was));
+   hinge_place(&p, &tip, 0.0, 0.48, 0.0, -0.525, -1.8);
+   CHECK(hinge_snap(&set, &p, 1.0f, NULL)
+         == VIDEO_XR_SNAP_PULLING(HINGE_LINES));
+   CHECK(vec_is(&p.position, 0.0, -0.925961, -1.555514));
+   hinge_place(&p, &tip, 0.0, 0.48, 0.0, -0.49, -1.8);
+   CHECK(hinge_snap(&set, &p, 0.5f, NULL)
+         == VIDEO_XR_SNAP_PULLING(HINGE_LINES));
+   CHECK(vec_is(&p.position, 0.0, -0.900692, -1.56));
+   hinge_turn(&off, 0.0, 1.0, 0.0, 7.5);
+   hinge_then(&off, &tip, &q);
+   hinge_place(&p, &q, 0.0, 0.48, 0.0, -0.49, -1.8);
+   CHECK(hinge_snap(&set, &p, 1.0f, NULL)
+         == VIDEO_XR_SNAP_PULLING(HINGE_LINES));
+   CHECK(fabs(snap_yaw(&p) - 5.0) < 0.02);
+   hinge_turn(&off, 0.0, 1.0, 0.0, 12.0);
+   hinge_then(&off, &tip, &q);
+   hinge_place(&p, &q, 0.0, 0.48, 0.0, -0.49, -1.8);
+   was = p;
+   CHECK(hinge_snap(&set, &p, 1.0f, NULL) == 0 && pose_same(&p, &was));
+   hinge_place(&p, &tip, 0.0, 0.48, 1.45, -0.49, -1.8);
+   was = p;
+   CHECK(hinge_snap(&set, &p, 1.0f, NULL) == 0 && pose_same(&p, &was));
+   hinge_place(&p, &tip, 0.0, 0.48, 1.425, -0.49, -1.8);
+   CHECK(hinge_snap(&set, &p, 1.0f, NULL)
+         == VIDEO_XR_SNAP_PULLING(VIDEO_XR_SNAP_Y | VIDEO_XR_SNAP_Z));
+   CHECK(vec_is(&p.position, 1.425, -0.900692, -1.56));
+   hinge_place(&p, &tip, 0.0, 0.48, 1.4, -0.49, -1.8);
+   CHECK(hinge_snap(&set, &p, 1.0f, NULL) & VIDEO_XR_SNAP_HINGE);
+   snap_pose(&p, 1.4, -0.97, -1.8, 0.0);
+   CHECK(hinge_snap(&set, &p, 1.0f, NULL) == (VIDEO_XR_SNAP_TURN
+            | VIDEO_XR_SNAP_Y | VIDEO_XR_SNAP_Z
+            | VIDEO_XR_SNAP_PULLING(SNAP_ALL)));
+   CHECK(vec_is(&p.position, 1.42, -0.96, -1.8));
+}
+
+/* A hinge at 0 and at 90 degrees is the plain flush and corner snap:
+ * the same poses, to rounding, and also a hinge. Flat: yawed 3
+ * degrees, 1.5 cm under and 1.3 cm out. Square: 2 degrees short,
+ * behind screen 1's right corner by 1 cm each way. */
+static void test_hinge_flush_corner(void)
+{
+   unsigned bits;
+   video_xr_quad_set_t set;
+   video_xr_pose_t p;
+   video_xr_quat_t q;
+   video_xr_hinge_t h;
+   hinge_set(&set);
+   hinge_turn(&q, 0.0, 1.0, 0.0, 3.0);
+   hinge_place(&p, &q, 0.0, 0.48, 0.05, -0.495, -1.787);
+   bits = hinge_snap(&set, &p, 1.0f, &h);
+   CHECK(bits == (VIDEO_XR_SNAP_HINGE | VIDEO_XR_SNAP_TURN | VIDEO_XR_SNAP_Y
+            | VIDEO_XR_SNAP_Z | VIDEO_XR_SNAP_PULLING(SNAP_ALL)));
+   CHECK(fabs(p.position.x - 0.04) < 1e-6 && fabs(p.position.y + 0.96) < 1e-6
+         && fabs(p.position.z + 1.8) < 1e-6
+         && turn_apart(&p.orientation, &set.quads[0].pose.orientation) < 1e-3);
+   CHECK(h.edge == 0 && fabs(h.angle) < 1e-3);
+   hinge_turn(&q, 0.0, 1.0, 0.0, 88.0);
+   hinge_place(&p, &q, 0.64, 0.0, 0.81, 0.01, -1.81);
+   bits = hinge_snap(&set, &p, 1.0f, &h);
+   CHECK(bits == (VIDEO_XR_SNAP_HINGE | SNAP_ALL
+            | VIDEO_XR_SNAP_PULLING(SNAP_ALL)));
+   CHECK(fabs(p.position.x - 0.8) < 1e-6 && fabs(p.position.y) < 1e-6
+         && fabs(p.position.z + 1.16) < 1e-6
+         && angle_near((float)snap_yaw(&p), 90.0f));
+   CHECK(h.edge == 2 && h.axis == VIDEO_XR_STEP_TURN
+         && fabs(fabs(h.angle) - 90.0) < 1e-3);
+}
+
+/* A turn to the hinge's own screen turns about the shared edge: tipped
+ * 4.5 degrees about it, on it, screen 2 snaps flat and stays on the
+ * line, flush, where turning about its middle would lift that edge
+ * 3.8 cm off it and leave it short of screen 1's plane. */
+static void test_hinge_pivot(void)
+{
+   video_xr_quad_set_t set;
+   video_xr_pose_t p;
+   video_xr_quat_t q;
+   hinge_set(&set);
+   hinge_turn(&q, 1.0, 0.0, 0.0, -4.5);
+   hinge_place(&p, &q, 0.0, 0.48, 0.05, -0.48, -1.8);
+   CHECK(hinge_snap(&set, &p, 1.0f, NULL) & VIDEO_XR_SNAP_HINGE);
+   CHECK(vec_is(&p.position, 0.04, -0.96, -1.8)
+         && turn_apart(&p.orientation, &set.quads[0].pose.orientation) < 1e-3);
+}
+
+/* Of several hinges the one its pull leaves nearest wins, as for every
+ * snap: two screens above screen 2, A level, C turned 2 degrees, their
+ * bottom edges as one line, screen 2 tipped 30 and yawed 3 under both:
+ * whole on A beats fading on C, whole on C beats fading on A, and of two
+ * whole, the smaller turn (C's 1 degree). A screen the whole turn goes
+ * to keeps it: no hinge turns it from there. */
+static void test_hinge_ranked(void)
+{
+   unsigned i;
+   video_xr_quad_set_t set;
+   video_xr_pose_t p;
+   video_xr_quat_t tip, off, q, c;
+   video_xr_hinge_t h;
+   const double ya[3] = { -0.48, -0.455, -0.48 };
+   const double yc[3] = { -0.455, -0.48, -0.49 };
+   hinge_turn(&tip, 1.0, 0.0, 0.0, -30.0);
+   hinge_turn(&off, 0.0, 1.0, 0.0, 3.0);
+   hinge_then(&off, &tip, &q);
+   hinge_turn(&c, 0.0, 1.0, 0.0, 2.0);
+   for (i = 0; i < 3; i++)
+   {
+      memset(&set, 0, sizeof(set));
+      snap_add(&set, 0, -0.32, 0.0);
+      set.quads[0].pose.position.y = (float)(ya[i] + 0.2);
+      set.quads[0].width           = 0.6f;
+      snap_add(&set, 2, 0.32, 2.0);
+      set.quads[1].pose.position.y = (float)(yc[i] + 0.2);
+      set.quads[1].width           = 0.6f;
+      set.quads[1].pose.position.z = -1.8f;
+      set.quads[0].pose.position.z = -1.8f;
+      hinge_place(&p, &q, 0.0, 0.48, 0.0, -0.5, -1.8);
+      CHECK(hinge_snap(&set, &p, 1.0f, &h) & VIDEO_XR_SNAP_HINGE);
+      CHECK(h.edge == 0 && fabs(h.angle + 30.0) < 0.01);
+      if (i)
+         CHECK(NEAR(h.point.y, yc[i]) && vec_is(&h.dir, 0.999391, 0.0,
+                  -0.034899));
+      else
+         CHECK(NEAR(h.point.y, ya[i]) && vec_is(&h.dir, 1.0, 0.0, 0.0));
+   }
+   /* C nearer, 1 cm to A's 2.5, but 7.5 degrees off, its pull fading:
+    * A, whole at 3, still wins. C turned 10.5 about where its edge line
+    * crosses under screen 2's middle. */
+   set.quads[0].pose.position.y  = -0.275f;
+   hinge_turn(&set.quads[1].pose.orientation, 0.0, 1.0, 0.0, 10.5);
+   set.quads[1].pose.position.x  = (float)(0.32 * cos(10.5 * M_PI / 180.0));
+   set.quads[1].pose.position.z  = (float)(-1.8
+         - 0.32 * sin(10.5 * M_PI / 180.0));
+   hinge_place(&p, &q, 0.0, 0.48, 0.0, -0.5, -1.8);
+   CHECK(hinge_snap(&set, &p, 1.0f, &h) & VIDEO_XR_SNAP_HINGE);
+   CHECK(NEAR(h.point.y, -0.475) && vec_is(&h.dir, 1.0, 0.0, 0.0));
+   /* A screen 10 cm right of screen 2's place, as it is turned 2 more:
+    * the turn goes whole to it, and screen 1's hinge 3 degrees off is
+    * left at that. */
+   hinge_set(&set);
+   hinge_place(&p, &q, 0.0, 0.48, 0.0, -0.49, -1.8);
+   {
+      video_xr_quad_t *t = &set.quads[set.num_quads++];
+      video_xr_vec3_t o, w;
+      *t        = set.quads[0];
+      hinge_then(&q, &c, &t->pose.orientation);
+      o.x       = 0.99f;
+      o.y       = 0.0f;
+      o.z       = 0.0f;
+      video_xr_rotate(&q, &o, &w);
+      t->pose.position.x = p.position.x + w.x;
+      t->pose.position.y = p.position.y + w.y;
+      t->pose.position.z = p.position.z + w.z;
+      t->width  = 0.5f;
+      t->height = 0.4f;
+      t->slot   = 2;
+      t->screen = 2;
+   }
+   CHECK(hinge_snap(&set, &p, 1.0f, NULL) == (SNAP_ALL
+            | VIDEO_XR_SNAP_PULLING(SNAP_ALL)));
+   CHECK(turn_apart(&p.orientation, &set.quads[1].pose.orientation) < 0.02);
+}
+
+/* Turned whole to a screen on its right, screen 2 keeps a hinge to
+ * screen 1 as that turn leaves it: rolled 5.5 degrees off screen 1,
+ * its top edge 1 cm under, the other screen rolled 3.9 to 4.9 more, so
+ * the pair ends 9.4 to 10.4 off parallel. No step hops, and at 10.4
+ * the hinge still pulls that edge up toward screen 1's. */
+static void test_hinge_turned_away(void)
+{
+   unsigned i, bits;
+   video_xr_quad_set_t set;
+   video_xr_pose_t p, last;
+   video_xr_quat_t q;
+   video_xr_vec3_t o, w;
+   video_xr_quad_t *t;
+   hinge_set(&set);
+   hinge_turn(&q, 0.0, 0.0, 1.0, -5.5);
+   t         = &set.quads[set.num_quads++];
+   *t        = set.quads[0];
+   t->width  = 0.5f;
+   t->height = 0.4f;
+   t->slot   = 2;
+   t->screen = 2;
+   o.x       = 1.04f;
+   o.y       = 0.06f;
+   o.z       = 0.0f;
+   video_xr_pose_identity(&last);
+   for (i = 0; i <= 100; i++)
+   {
+      hinge_place(&p, &q, 0.0, 0.48, -0.04, -0.49, -1.8);
+      video_xr_rotate(&q, &o, &w);
+      t->pose.position.x = p.position.x + w.x;
+      t->pose.position.y = p.position.y + w.y;
+      t->pose.position.z = p.position.z + w.z;
+      hinge_turn(&t->pose.orientation, 0.0, 0.0, 1.0, -9.4 - 0.01 * i);
+      bits = hinge_snap(&set, &p, 1.0f, NULL);
+      CHECK(turn_apart(&p.orientation, &t->pose.orientation) < 1e-3);
+      if (i)
+         CHECK(pose_gap(&p, &last) <= 0.0005);
+      last = p;
+   }
+   CHECK(bits == (VIDEO_XR_SNAP_TURN | VIDEO_XR_SNAP_Z
+            | VIDEO_XR_SNAP_PULLING(SNAP_ALL)));
+   CHECK(vec_is(&p.position, -0.086482, -0.953119, -1.8));
+}
+
+/* A whole line to another screen beats a hinge's part pull: screen 2
+ * tipped 7 degrees, its top edge 5 mm under screen 1's bottom edge and
+ * overlapping it 1.5 cm, a screen parallel to it on its right, carried
+ * from 3 cm behind screen 1's line to 3 cm in front in 0.1 mm steps.
+ * It stays in that screen's plane, and no step hops. */
+static void test_hinge_outranked(void)
+{
+   unsigned i, bits;
+   video_xr_quad_set_t set;
+   video_xr_pose_t p, last;
+   video_xr_quat_t q;
+   video_xr_vec3_t o, w;
+   video_xr_quad_t *t;
+   hinge_set(&set);
+   hinge_turn(&q, 1.0, 0.0, 0.0, -7.0);
+   t         = &set.quads[set.num_quads++];
+   *t        = set.quads[0];
+   t->width  = 0.5f;
+   t->height = 0.4f;
+   t->slot   = 2;
+   t->screen = 2;
+   o.x       = 1.04f;
+   o.y       = 0.14f;
+   o.z       = 0.0f;
+   video_xr_pose_identity(&last);
+   for (i = 0; i <= 600; i++)
+   {
+      hinge_place(&p, &q, 0.0, 0.48, 1.425, -0.485, -1.83 + 0.0001 * i);
+      video_xr_rotate(&q, &o, &w);
+      t->pose.orientation = q;
+      t->pose.position.x  = p.position.x + w.x;
+      t->pose.position.y  = p.position.y + w.y;
+      t->pose.position.z  = p.position.z + w.z;
+      bits = hinge_snap(&set, &p, 1.0f, NULL);
+      CHECK(bits & VIDEO_XR_SNAP_Z);
+      if (i)
+         CHECK(pose_gap(&p, &last) <= 0.0005);
+      last = p;
+   }
+}
+
+/* No jumps: screen 2, its top edge 1.5 cm under and 1.3 cm out from
+ * screen 1's bottom edge and yawed 3, folded from -100 to 100 degrees
+ * about that edge in quarter degrees; on the line, through flat and
+ * square's fades in tenths, and tipped to 12 degrees in hundredths
+ * 1 cm past the end of screen 1's edge, a diagonal neighbour that never
+ * hinges nor pulls as one; carried away from the line in 0.5 mm steps
+ * and slid along it from 5 cm of overlap to 2 cm past the end in 1 mm
+ * steps, at 30 degrees, let go of there, and in flat's fade at 7.5
+ * and 9.5.
+ * No step moves it more than the bound, the hand's own step a few
+ * times over. */
+static void test_hinge_continuous(void)
+{
+   unsigned i, j, bits;
+   video_xr_quad_set_t set;
+   video_xr_pose_t p, last, was;
+   video_xr_quat_t tip, off, q;
+   double most = 0.0;
+   hinge_set(&set);
+   video_xr_pose_identity(&last);
+   hinge_turn(&off, 0.0, 1.0, 0.0, 3.0);
+   for (i = 0; i <= 800; i++)
+   {
+      hinge_turn(&tip, 1.0, 0.0, 0.0, -100.0 + 0.25 * i);
+      hinge_then(&off, &tip, &q);
+      hinge_place(&p, &q, 0.0, 0.48, 0.05, -0.495, -1.787);
+      hinge_snap(&set, &p, 1.0f, NULL);
+      if (i)
+         CHECK(pose_gap(&p, &last) <= 0.0080
+               && turn_apart(&p.orientation, &last.orientation) <= 0.5);
+      last = p;
+   }
+   for (j = 0; j < 3; j++)
+   {
+      for (i = 0; i <= ((j == 2) ? 1200u : 2000u); i++)
+      {
+         if (j == 2)
+         {
+            hinge_turn(&q, 1.0, 0.0, 0.0, -0.01 * i);
+            hinge_place(&p, &q, 0.0, 0.48, 1.45, -0.48, -1.8);
+         }
+         else if (j)
+         {
+            hinge_turn(&q, 0.0, 1.0, 0.0, -80.0 - 0.01 * i);
+            hinge_place(&p, &q, -0.64, 0.0, 0.814, 0.01, -1.786);
+         }
+         else
+         {
+            hinge_turn(&q, 1.0, 0.0, 0.0, -0.1 * i);
+            hinge_place(&p, &q, 0.0, 0.48, 0.05, -0.48, -1.8);
+         }
+         bits = hinge_snap(&set, &p, 1.0f, NULL);
+         if (j == 2)
+            CHECK(!(bits & VIDEO_XR_SNAP_HINGE)
+                  && (!i || pose_gap(&p, &last) <= 0.0005));
+         if (j == 2 && i == 600)
+            CHECK(fabs(p.position.x - 1.442) < 1e-5
+                  && fabs(p.position.y + 0.959006) < 1e-5
+                  && fabs(p.position.z + 1.763161) < 1e-5);
+         if (i && pose_gap(&p, &last) > most)
+            most = pose_gap(&p, &last);
+         last = p;
+      }
+   }
+   CHECK(most <= 0.0040);
+   for (j = 0; j < 2; j++)
+   {
+      hinge_turn(&tip, 1.0, 0.0, 0.0, j ? -7.5 : -30.0);
+      hinge_then(&off, &tip, &q);
+      for (i = 0; i <= 160; i++)
+      {
+         hinge_place(&p, &q, 0.0, 0.48, 0.05, -0.48 - 0.0005 * i, -1.8);
+         hinge_snap(&set, &p, 1.0f, NULL);
+         if (i)
+            CHECK(pose_gap(&p, &last) <= 0.0015);
+         last = p;
+      }
+   }
+   for (j = 0; j < 3; j++)
+   {
+      hinge_turn(&tip, 1.0, 0.0, 0.0, (j == 2) ? -9.5 : j ? -7.5 : -30.0);
+      hinge_then(&off, &tip, &q);
+      for (i = 0; i <= 70; i++)
+      {
+         hinge_place(&p, &q, 0.0, 0.48, 1.39 + 0.001 * i, -0.495, -1.787);
+         was  = p;
+         bits = hinge_snap(&set, &p, 1.0f, NULL);
+         if (!i && !j)
+            CHECK(bits & VIDEO_XR_SNAP_HINGE);
+         if (i)
+            CHECK(pose_gap(&p, &last) <= 0.0030);
+         last = p;
+      }
+      if (!j)
+         CHECK(bits == 0 && pose_same(&p, &was));
+   }
+}
+
+/* Rolled 1 to 4 degrees off the line, its edge's middle on it 10 cm
+ * along, screen 2 swung through flat's fade band under screen 1, or
+ * square's beside it: that middle keeps its place along the line. */
+static void test_hinge_roll_band(void)
+{
+   static const double rolls[] = { 1.0, 2.0, 4.0 };
+   unsigned k, ri, i;
+   double most = 0.0;
+   for (k = 0; k < 2; k++)
+   for (ri = 0; ri < 3; ri++)
+   for (i = 0; i <= 240; i++)
+   {
+      video_xr_quad_set_t set;
+      video_xr_pose_t p;
+      video_xr_quat_t a, b, q;
+      video_xr_vec3_t m, w;
+      double along;
+      hinge_set(&set);
+      hinge_turn(&b, 0.0, 0.0, 1.0, rolls[ri]);
+      if (k)
+      {
+         hinge_turn(&a, 0.0, 1.0, 0.0, -78.0 - 0.05 * i);
+         hinge_then(&a, &b, &q);
+         hinge_place(&p, &q, -0.64, 0.0, 0.8, 0.10, -1.8);
+      }
+      else
+      {
+         hinge_turn(&a, 1.0, 0.0, 0.0, -12.0 + 0.05 * i);
+         hinge_then(&b, &a, &q);
+         hinge_place(&p, &q, 0.0, 0.48, 0.10, -0.48, -1.8);
+      }
+      CHECK(hinge_snap(&set, &p, 1.0f, NULL) & VIDEO_XR_SNAP_HINGE);
+      m.x   = k ? -0.64f : 0.0f;
+      m.y   = k ? 0.0f : 0.48f;
+      m.z   = 0.0f;
+      video_xr_rotate(&p.orientation, &m, &w);
+      along = k ? (double)p.position.y + w.y : (double)p.position.x + w.x;
+      if (fabs(along - 0.10) > most)
+         most = fabs(along - 0.10);
+   }
+   if (most > 1e-4)
+   {
+      printf("  FAIL %s:%d: the edge's middle %.4f m along the line off"
+            " its place\n", __FILE__, __LINE__, most);
+      failures++;
+   }
 }
 
 /* In the grab: snapped after levelling, its settings from the snapped
@@ -4482,6 +5096,18 @@ int main(void)
    test_snap_whole_line();
    test_snap_turn_tie();
    test_snap_turned();
+   test_hinge_3ds();
+   test_hinge_square_fold();
+   test_hinge_side();
+   test_hinge_overlap();
+   test_hinge_range();
+   test_hinge_flush_corner();
+   test_hinge_pivot();
+   test_hinge_ranked();
+   test_hinge_turned_away();
+   test_hinge_outranked();
+   test_hinge_continuous();
+   test_hinge_roll_band();
    test_grab_snap();
    test_turn_snap();
    test_tilt_snap();
