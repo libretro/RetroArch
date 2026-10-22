@@ -38,6 +38,9 @@ typedef struct rvp9_hw_backend
    bool (*open)(void *user, const rvp9_hdr *header, unsigned slots,
          rvp9_hw_ops_t *ops);
    void (*close)(rvp9_hw_ops_t *ops);
+   /* Opaque bitstream decoders also consume show_existing_frame packets. */
+   bool packet_decoder;
+   /* New callbacks follow the published user/open/close/mode prefix. */
    /* Optional admission with container metadata, borrowed only during open. */
    bool (*open_color)(void *user, const rvp9_hdr *header,
          const video_color_metadata_t *color, unsigned slots,
@@ -45,8 +48,6 @@ typedef struct rvp9_hw_backend
    /* Packet decoders only. Terminal input: 0 complete, 1 pending, negative failure.
     * discard drops pending display output. Exported leases remain valid. */
    int (*drain)(void *decoder, bool discard);
-   /* Opaque bitstream decoders also consume show_existing_frame packets. */
-   bool packet_decoder;
    /* Append-only extension; config may be NULL and arguments are borrowed. */
    bool (*open_config)(void *user, const rvp9_hdr *header,
          const video_color_metadata_t *color, const rvp9_config_t *config,

@@ -1,11 +1,26 @@
 /* SPDX-License-Identifier: MIT */
 #include <stdio.h>
+#include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 #include <formats/image.h>
 #include <formats/rvp9_hw.h>
 #include <formats/video_player.h>
 #include "../../../formats/webm/rwebm_video.c"
+
+/* The extension must preserve the backend prefix already published. */
+typedef struct rvp9_backend_v1
+{
+   void *user;
+   bool (*open)(void *, const rvp9_hdr *, unsigned, rvp9_hw_ops_t *);
+   void (*close)(rvp9_hw_ops_t *);
+   bool packet_decoder;
+} rvp9_backend_v1_t;
+typedef char rvp9_backend_mode_offset_preserved[
+   offsetof(rvp9_hw_backend_t, packet_decoder)
+      == offsetof(rvp9_backend_v1_t, packet_decoder) ? 1 : -1];
+typedef char rvp9_backend_callback_appended[
+   offsetof(rvp9_hw_backend_t, open_color) >= sizeof(rvp9_backend_v1_t) ? 1 : -1];
 
 #define CHECK(x) do { if (!(x)) { fprintf(stderr, "line %d: %s\n", __LINE__, #x); return 1; } } while (0)
 static uint8_t file[4096], packet[64], key[64], hidden[64], shown[64];
@@ -196,7 +211,7 @@ static void close_backend(rvp9_hw_ops_t *ops)
 {
    closes++; release((mock_t*)ops->decoder); memset(ops, 0, sizeof(*ops));
 }
-static const rvp9_hw_backend_t backend = {NULL, open_backend, close_backend, NULL, NULL, false, NULL};
+static const rvp9_hw_backend_t backend = {NULL, open_backend, close_backend, false, NULL, NULL, NULL};
 static video_color_metadata_t admitted_color;
 static unsigned color_opens, color_refuse, color_partial;
 
@@ -220,7 +235,7 @@ static bool open_color_backend(void *user, const rvp9_hdr *h,
 static int color_admission(void)
 {
    static const rvp9_hw_backend_t colors = {
-      NULL, open_backend, close_backend, open_color_backend, NULL, true, NULL
+      NULL, open_backend, close_backend, true, open_color_backend, NULL, NULL
    };
    rwebm_video_stream_t *s;
    rvp9_hw_ops_t ops;
@@ -472,7 +487,7 @@ static int seek_hardware(void)
 
 static int packet_stream(void)
 {
-   static const rvp9_hw_backend_t packets = {NULL, open_backend, close_backend, NULL, NULL, true, NULL};
+   static const rvp9_hw_backend_t packets = {NULL, open_backend, close_backend, true, NULL, NULL, NULL};
    rwebm_video_stream_t *s;
    video_hw_frame_t frame, held;
    unsigned before = decodes, submitted = calls, shown = 0, tries;
@@ -518,7 +533,7 @@ static int drain_backend(void *owner, bool discard)
 static int terminal_stream(void)
 {
    static const rvp9_hw_backend_t terminal = {
-         NULL, open_backend, close_backend, NULL, drain_backend, true, NULL};
+         NULL, open_backend, close_backend, true, NULL, drain_backend, NULL};
    rwebm_video_stream_t *s;
    video_hw_frame_t frame, held;
    mock_t *m;
