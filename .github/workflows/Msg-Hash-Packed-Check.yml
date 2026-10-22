@@ -124,3 +124,13 @@ jobs:
           # the blob's bytes. Regenerating must be a no-op.
           python3 tools/gen_lbl_str.py
           git diff --exit-code -- msg_hash_lbl_str.h
+
+      - name: Sublabel map sorted
+        shell: bash
+        run: |
+          set -eu
+          # The sublabel binder looks rows up by binary search; a row
+          # out of order is never found and its entry loses its
+          # sublabel without any build failing.
+          python3 tools/sublabel_map_check.py --selftest
+          python3 tools/sublabel_map_check.py

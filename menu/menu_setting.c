@@ -11627,6 +11627,9 @@ typedef struct setting_desc
    float                       min;
    float                       max;
    float                       step;
+   uint32_t                    def_offset;     /* with SDESC_FLG_DEF_SETTINGS:
+                                                  offsetof of the settings_t
+                                                  field holding the default */
    const char                 *rounding;      /* float rows: printf rounding
                                                  string rows: default value  */
    get_string_representation_t repr;           /* NULL = class default    */
@@ -11646,9 +11649,6 @@ typedef struct setting_desc
    /* Fields below are absent from older row macros and zero-initialize
     * under C89 partial aggregate initialization. */
    const char                 *values;         /* browser extension filter */
-   uint32_t                    def_offset;     /* with SDESC_FLG_DEF_SETTINGS:
-                                                  offsetof of the settings_t
-                                                  field holding the default */
    change_handler_t            action_change;  /* NULL = none; a change
                                                   handler poked into the
                                                   actions tuple after build */
@@ -11660,12 +11660,12 @@ typedef struct setting_desc
 #define SDESC_BOOL_ROW(field, label, def, sd_flags, dflags, cmd) \
    { (uint32_t)offsetof(settings_t, bools.field), (sd_flags), \
      MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
-     0.0f, 0.0f, 0.0f, NULL, NULL, NULL, \
+     0.0f, 0.0f, 0.0f, 0, NULL, NULL, NULL, \
      (int32_t)(def), 0.0f, NULL, NULL, NULL, NULL, (uint16_t)(cmd), 0, SDESC_BOOL, (dflags), 0, 0 }
 #define SDESC_BOOL_ROW_EX(field, label, def, sd_flags, dflags, cmd, ok, _repr, _start, _select, _left, _right, _uitype) \
    { (uint32_t)offsetof(settings_t, bools.field), (sd_flags), \
      MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
-     0.0f, 0.0f, 0.0f, NULL, (_repr), (ok), \
+     0.0f, 0.0f, 0.0f, 0, NULL, (_repr), (ok), \
      (int32_t)(def), 0.0f, (_start), (_select), (_left), (_right), \
      (uint16_t)(cmd), 0, SDESC_BOOL, (dflags), (uint8_t)(_uitype), 0 }
 
@@ -11674,44 +11674,44 @@ typedef struct setting_desc
 #define SDESC_BOOL_ROW_CH(field, label, def, sd_flags, dflags, cmd, ok, _repr, _start, _select, _left, _right, _uitype, chg) \
    { (uint32_t)offsetof(settings_t, bools.field), (sd_flags), \
      MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
-     0.0f, 0.0f, 0.0f, NULL, (_repr), (ok), \
+     0.0f, 0.0f, 0.0f, 0, NULL, (_repr), (ok), \
      (int32_t)(def), 0.0f, (_start), (_select), (_left), (_right), \
      (uint16_t)(cmd), 0, SDESC_BOOL, (dflags), (uint8_t)(_uitype), 0, \
-     NULL, 0, (chg) }
+     NULL, (chg) }
 
 /* _DF variant: bool default resolved by a function at build time. */
 #define SDESC_BOOL_ROW_DF(field, label, resolver, sd_flags, dflags, cmd, ok, _repr, _start, _select, _left, _right, _uitype) \
    { (uint32_t)offsetof(settings_t, bools.field), (sd_flags), \
      MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
-     0.0f, 0.0f, 0.0f, NULL, (_repr), (ok), \
+     0.0f, 0.0f, 0.0f, 0, NULL, (_repr), (ok), \
      0, 0.0f, (_start), (_select), (_left), (_right), \
      (uint16_t)(cmd), 0, SDESC_BOOL, ((dflags) | SDESC_FLG_DEF_FUNC), (uint8_t)(_uitype), 0, \
-     NULL, 0, NULL, (resolver) }
+     NULL, NULL, (resolver) }
 
 /* _LV variants take the label and value enums as separate tokens for
  * the few registrations whose pair is mismatched. */
 #define SDESC_BOOL_ROW_LV(field, label, value, def, sd_flags, dflags, cmd) \
    { (uint32_t)offsetof(settings_t, bools.field), (sd_flags), \
      MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##value, \
-     0.0f, 0.0f, 0.0f, NULL, NULL, NULL, \
+     0.0f, 0.0f, 0.0f, 0, NULL, NULL, NULL, \
      (int32_t)(def), 0.0f, NULL, NULL, NULL, NULL, \
      (uint16_t)(cmd), 0, SDESC_BOOL, (dflags), 0, 0 }
 #define SDESC_FLOAT_ROW_LV(field, label, value, def, _rounding, sd_flags, dflags, cmd) \
    { (uint32_t)offsetof(settings_t, floats.field), (sd_flags), \
      MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##value, \
-     0.0f, 0.0f, 0.0f, (_rounding), NULL, NULL, \
+     0.0f, 0.0f, 0.0f, 0, (_rounding), NULL, NULL, \
      0, (float)(def), NULL, NULL, NULL, NULL, \
      (uint16_t)(cmd), 0, SDESC_FLOAT, (dflags), 0, 0 }
 #define SDESC_STRING_ROW_LV(field, label, value, def, sd_flags, cmd, ok, _repr, _start, _select, _left, _right, _uitype) \
    { (uint32_t)offsetof(settings_t, arrays.field), (sd_flags), \
      MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##value, \
-     0.0f, 0.0f, 0.0f, (def), (_repr), (ok), \
+     0.0f, 0.0f, 0.0f, 0, (def), (_repr), (ok), \
      (int32_t)sizeof(((settings_t*)0)->arrays.field), 0.0f, \
      (_start), (_select), (_left), (_right), (uint16_t)(cmd), 0, SDESC_STRING, 0, (uint8_t)(_uitype), 0 }
 #define SDESC_ACTION_ROW_LV(label, value, sd_flags, ok, _repr, cmd) \
    { 0, (sd_flags), \
      MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##value, \
-     0.0f, 0.0f, 0.0f, NULL, (_repr), (ok), \
+     0.0f, 0.0f, 0.0f, 0, NULL, (_repr), (ok), \
      0, 0.0f, NULL, NULL, NULL, NULL, (uint16_t)(cmd), 0, SDESC_ACTION, 0, 0, 0 }
 
 /* String rows whose value target lives in settings_t.paths rather
@@ -11719,37 +11719,37 @@ typedef struct setting_desc
 #define SDESC_STRING_ROW_P(field, label, def, sd_flags, cmd, ok, _repr, _start, _select, _left, _right, _uitype) \
    { (uint32_t)offsetof(settings_t, paths.field), (sd_flags), \
      MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
-     0.0f, 0.0f, 0.0f, (def), (_repr), (ok), \
+     0.0f, 0.0f, 0.0f, 0, (def), (_repr), (ok), \
      (int32_t)sizeof(((settings_t*)0)->paths.field), 0.0f, \
      (_start), (_select), (_left), (_right), (uint16_t)(cmd), 0, SDESC_STRING, 0, (uint8_t)(_uitype), 0 }
 
 #define SDESC_UINT_ROW(field, label, def, sd_flags, dflags, cmd, _min, _max, _step, offby, ok, _repr) \
    { (uint32_t)offsetof(settings_t, uints.field), (sd_flags), \
      MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
-     (float)(_min), (float)(_max), (float)(_step), NULL, (_repr), (ok), \
+     (float)(_min), (float)(_max), (float)(_step), 0, NULL, (_repr), (ok), \
      (int32_t)(def), 0.0f, NULL, NULL, NULL, NULL, (uint16_t)(cmd), (int16_t)(offby), SDESC_UINT, (dflags), 0, 0 }
 
 #define SDESC_INT_ROW(field, label, def, sd_flags, dflags, cmd, _min, _max, _step, offby, ok, _repr) \
    { (uint32_t)offsetof(settings_t, ints.field), (sd_flags), \
      MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
-     (float)(_min), (float)(_max), (float)(_step), NULL, (_repr), (ok), \
+     (float)(_min), (float)(_max), (float)(_step), 0, NULL, (_repr), (ok), \
      (int32_t)(def), 0.0f, NULL, NULL, NULL, NULL, (uint16_t)(cmd), (int16_t)(offby), SDESC_INT, (dflags), 0, 0 }
 
 #define SDESC_FLOAT_ROW(field, label, def, _rounding, sd_flags, dflags, cmd, _min, _max, _step, ok, _repr) \
    { (uint32_t)offsetof(settings_t, floats.field), (sd_flags), \
      MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
-     (float)(_min), (float)(_max), (float)(_step), (_rounding), (_repr), (ok), \
+     (float)(_min), (float)(_max), (float)(_step), 0, (_rounding), (_repr), (ok), \
      0, (float)(def), NULL, NULL, NULL, NULL, (uint16_t)(cmd), 0, SDESC_FLOAT, (dflags), 0, 0 }
 
 #define SDESC_ACTION_ROW(label) \
    { 0, 0, \
      MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
-     0.0f, 0.0f, 0.0f, NULL, NULL, NULL, \
+     0.0f, 0.0f, 0.0f, 0, NULL, NULL, NULL, \
      0, 0.0f, NULL, NULL, NULL, NULL, 0, 0, SDESC_ACTION, 0, 0, 0 }
 #define SDESC_ACTION_ROW_EX(label, sd_flags, ok, _repr, cmd) \
    { 0, (sd_flags), \
      MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
-     0.0f, 0.0f, 0.0f, NULL, (_repr), (ok), \
+     0.0f, 0.0f, 0.0f, 0, NULL, (_repr), (ok), \
      0, 0.0f, NULL, NULL, NULL, NULL, (uint16_t)(cmd), 0, SDESC_ACTION, 0, 0, 0 }
 
 /* _EX variants add action_start / action_select / ui_type overrides
@@ -11759,7 +11759,7 @@ typedef struct setting_desc
 #define SDESC_INT_ROW_EX(field, label, def, sd_flags, dflags, cmd, _min, _max, _step, offby, ok, _repr, _start, _select, _left, _right, _uitype) \
    { (uint32_t)offsetof(settings_t, ints.field), (sd_flags), \
      MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
-     (float)(_min), (float)(_max), (float)(_step), NULL, (_repr), (ok), \
+     (float)(_min), (float)(_max), (float)(_step), 0, NULL, (_repr), (ok), \
      (int32_t)(def), 0.0f, (_start), (_select), (_left), (_right), \
      (uint16_t)(cmd), (int16_t)(offby), SDESC_INT, (dflags), (uint8_t)(_uitype), 0 }
 
@@ -11769,17 +11769,17 @@ typedef struct setting_desc
 #define SDESC_UINT_ROW_AT_EX(offs, label, def, sd_flags, dflags, cmd, _min, _max, _step, offby, ok, _repr, _start, _select, _left, _right, _uitype) \
    { (uint32_t)(offs), (sd_flags), \
      MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
-     (float)(_min), (float)(_max), (float)(_step), NULL, (_repr), (ok), \
+     (float)(_min), (float)(_max), (float)(_step), 0, NULL, (_repr), (ok), \
      (int32_t)(def), 0.0f, (_start), (_select), (_left), (_right), (uint16_t)(cmd), (int16_t)(offby), SDESC_UINT, (dflags), (uint8_t)(_uitype), 0 }
 
 /* _CH variant: UINT with a change handler in the trailing slot. */
 #define SDESC_UINT_ROW_CH(field, label, def, sd_flags, dflags, cmd, _min, _max, _step, offby, ok, _repr, _uitype, chg) \
    { (uint32_t)offsetof(settings_t, uints.field), (sd_flags), \
      MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
-     (float)(_min), (float)(_max), (float)(_step), NULL, (_repr), (ok), \
+     (float)(_min), (float)(_max), (float)(_step), 0, NULL, (_repr), (ok), \
      (int32_t)(def), 0.0f, NULL, NULL, NULL, NULL, (uint16_t)(cmd), (int16_t)(offby), SDESC_UINT, \
      (dflags), (uint8_t)(_uitype), 0, \
-     NULL, 0, (chg) }
+     NULL, (chg) }
 
 /* _DF variant: default is resolved by a function at build time
  * (SDESC_FLG_DEF_FUNC), for the settings whose default depends on
@@ -11787,21 +11787,21 @@ typedef struct setting_desc
 #define SDESC_UINT_ROW_DF(field, label, resolver, sd_flags, dflags, cmd, _min, _max, _step, offby, ok, _repr, _uitype) \
    { (uint32_t)offsetof(settings_t, uints.field), (sd_flags), \
      MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
-     (float)(_min), (float)(_max), (float)(_step), NULL, (_repr), (ok), \
+     (float)(_min), (float)(_max), (float)(_step), 0, NULL, (_repr), (ok), \
      0, 0.0f, NULL, NULL, NULL, NULL, (uint16_t)(cmd), (int16_t)(offby), SDESC_UINT, \
      ((dflags) | SDESC_FLG_DEF_FUNC), (uint8_t)(_uitype), 0, \
-     NULL, 0, NULL, (resolver) }
+     NULL, NULL, (resolver) }
 
 #define SDESC_INT_ROW_AT(offs, label, def, sd_flags, dflags, cmd, _min, _max, _step, offby, ok, _repr) \
    { (uint32_t)(offs), (sd_flags), \
      MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
-     (float)(_min), (float)(_max), (float)(_step), NULL, (_repr), (ok), \
+     (float)(_min), (float)(_max), (float)(_step), 0, NULL, (_repr), (ok), \
      (int32_t)(def), 0.0f, NULL, NULL, NULL, NULL, (uint16_t)(cmd), (int16_t)(offby), SDESC_INT, (dflags), 0, 0 }
 
 #define SDESC_FLOAT_ROW_EX(field, label, def, _rounding, sd_flags, dflags, cmd, _min, _max, _step, ok, _repr, _start, _select, _left, _right, _uitype) \
    { (uint32_t)offsetof(settings_t, floats.field), (sd_flags), \
      MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
-     (float)(_min), (float)(_max), (float)(_step), (_rounding), (_repr), (ok), \
+     (float)(_min), (float)(_max), (float)(_step), 0, (_rounding), (_repr), (ok), \
      0, (float)(def), (_start), (_select), (_left), (_right), (uint16_t)(cmd), 0, SDESC_FLOAT, (dflags), (uint8_t)(_uitype), 0 }
 
 /* String rows: value target is a char array inside settings_t;
@@ -11810,7 +11810,7 @@ typedef struct setting_desc
 #define SDESC_STRING_ROW(field, label, def, sd_flags, cmd, ok, _repr, _start, _select, _left, _right, _uitype) \
    { (uint32_t)offsetof(settings_t, arrays.field), (sd_flags), \
      MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
-     0.0f, 0.0f, 0.0f, (def), (_repr), (ok), \
+     0.0f, 0.0f, 0.0f, 0, (def), (_repr), (ok), \
      (int32_t)sizeof(((settings_t*)0)->arrays.field), 0.0f, \
      (_start), (_select), (_left), (_right), (uint16_t)(cmd), 0, SDESC_STRING, 0, (uint8_t)(_uitype), 0 }
 
@@ -11820,18 +11820,18 @@ typedef struct setting_desc
 #define SDESC_PATH_ROW(field, label, def, sd_flags, cmd, vals, _repr, _uitype) \
    { (uint32_t)offsetof(settings_t, paths.field), (sd_flags), \
      MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
-     0.0f, 0.0f, 0.0f, (def), (_repr), NULL, \
+     0.0f, 0.0f, 0.0f, 0, (def), (_repr), NULL, \
      (int32_t)sizeof(((settings_t*)0)->paths.field), 0.0f, \
      NULL, NULL, NULL, NULL, (uint16_t)(cmd), 0, SDESC_PATH, 0, (uint8_t)(_uitype), 0, \
-     (vals), 0 }
+     (vals) }
 #define SDESC_PATH_ROW_DS(field, label, def_field, sd_flags, cmd, vals, _repr, _uitype) \
    { (uint32_t)offsetof(settings_t, paths.field), (sd_flags), \
      MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
-     0.0f, 0.0f, 0.0f, NULL, (_repr), NULL, \
+     0.0f, 0.0f, 0.0f, (uint32_t)offsetof(settings_t, paths.def_field), NULL, (_repr), NULL, \
      (int32_t)sizeof(((settings_t*)0)->paths.field), 0.0f, \
      NULL, NULL, NULL, NULL, (uint16_t)(cmd), 0, SDESC_PATH, \
      SDESC_FLG_DEF_SETTINGS, (uint8_t)(_uitype), 0, \
-     (vals), (uint32_t)offsetof(settings_t, paths.def_field) }
+     (vals) }
 
 /* Directory rows: like path rows.  Defaults are address constants
  * such as g_defaults.dirs[x], legal in static initializers, carried
@@ -11839,7 +11839,7 @@ typedef struct setting_desc
 #define SDESC_DIR_ROW(field, label, def, empty_label, sd_flags, cmd, _start) \
    { (uint32_t)offsetof(settings_t, paths.field), (sd_flags), \
      MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
-     0.0f, 0.0f, 0.0f, (def), NULL, NULL, \
+     0.0f, 0.0f, 0.0f, 0, (def), NULL, NULL, \
      (int32_t)sizeof(((settings_t*)0)->paths.field), 0.0f, \
      (_start), NULL, NULL, NULL, (uint16_t)(cmd), \
      0, SDESC_DIR, 0, 0, 0 }

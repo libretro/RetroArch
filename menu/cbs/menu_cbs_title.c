@@ -167,8 +167,8 @@ enum title_variant
 
 typedef struct title_enum_map
 {
-   uint32_t label;      /* MENU_ENUM_LABEL_* matched by string    */
-   uint32_t title;      /* MENU_ENUM_LABEL_VALUE_* to render       */
+   msg_hash_id_t label; /* MENU_ENUM_LABEL_* matched by string    */
+   msg_hash_id_t title; /* MENU_ENUM_LABEL_VALUE_* to render       */
    uint8_t  variant;    /* enum title_variant                      */
 } title_enum_map_t;
 
