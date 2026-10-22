@@ -300,6 +300,8 @@ static void winbt_scan_end(void *data)
    bt->scan  = NULL;
    memcpy(bt->devices, bt->found, sizeof(bt->found[0]) * bt->found_count);
    bt->count = bt->found_count;
+   RARCH_LOG("[Bluetooth] Scan found %u device%s.\n", bt->count,
+         bt->count == 1 ? "" : "s");
 }
 
 static void winbt_get_devices(void *data, struct string_list *list)

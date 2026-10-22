@@ -7697,6 +7697,13 @@ static void bluetooth_scan_callback(retro_task_t *task,
             MENU_ENUM_LABEL_CONNECT_BLUETOOTH,
             MENU_BLUETOOTH, 0, 0, NULL);
    }
+   /* never left empty: a list with nothing in it cannot be left */
+   if (device_list->size == 0)
+      menu_entries_append(selection_buf,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_BT_DEVICES_FOUND),
+            MENU_ENUM_LABEL_NO_BT_DEVICES_FOUND_STR,
+            MENU_ENUM_LABEL_NO_BT_DEVICES_FOUND,
+            0, 0, 0, NULL);
 
    string_list_free(device_list);
 }
