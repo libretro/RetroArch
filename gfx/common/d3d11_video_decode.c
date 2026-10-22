@@ -1372,7 +1372,7 @@ void d3d11_video_decode_deinit(void)
    if (!d3d11vd.av1_only) rvp9_unset_hw_backend(&d3d11vd.vp9);
 #endif
 #ifdef HAVE_RAV1
-   rav1_set_hw_backend(NULL);
+   rav1_unset_hw_backend(&d3d11vd.av1);
 #endif
    if (retro_atomic_load_acquire_int(&d3d11vd.live))
       RARCH_ERR("[D3D11] Video decode: %d decoder(s) still open at teardown.\n",

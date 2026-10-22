@@ -153,6 +153,15 @@ int main(void)
    CHECK(!rav1_unset_hw_backend(&foreign));
    CHECK(rav1_unset_hw_backend(&factory));
    CHECK(!rav1_unset_hw_backend(&factory) && !rav1_unset_hw_backend(NULL));
+   foreign = factory;
+   rav1_set_hw_backend(&foreign);
+   CHECK(!rav1_unset_hw_backend(&factory));
+   mode = 0;
+   CHECK(rav1_hw_backend_open_config(&sequence, &config_obu, &config_color,
+         9, &ops, &retained));
+   CHECK(retained.open_config == foreign.open_config);
+   retained.close(&ops);
+   CHECK(rav1_unset_hw_backend(&foreign));
    printf("AV1 hardware backend registry: %u failures\n", failures);
    return failures ? 1 : 0;
 }
