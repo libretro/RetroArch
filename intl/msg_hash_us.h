@@ -33885,7 +33885,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_INPUT_PLAYS_AS_FULL,
-   "Controller list full: set a disconnected controller with a player to Auto"
+   "Controller list full: set a disconnected controller with a player and no own hotkeys to Auto"
    )
 MSG_HASH(
    MSG_DEVICE_DISCONNECTED_FROM_PORT_NR,
