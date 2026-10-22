@@ -22,14 +22,68 @@ concurrency:
 jobs:
   vaapi-hevc-parameters:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 30
     strategy:
       matrix:
         cc: [gcc, clang]
     steps:
       - uses: actions/checkout@v6
       - name: Install VA-API and Vulkan oracle dependencies
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq libva-dev libdrm-dev libvulkan-dev mesa-vulkan-drivers vulkan-validationlayers
+        timeout-minutes: 20
+        run: |
+          set -eu
+          pkgs="libva-dev libdrm-dev libvulkan-dev mesa-vulkan-drivers vulkan-validationlayers"
+          if dpkg -s $pkgs >/dev/null 2>&1; then
+            echo "All packages already present on runner image; skipping apt."
+            exit 0
+          fi
+          for i in 1 2 3; do
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
+            echo "apt-get update failed (attempt $i); retrying in 10s"
+            sleep 10
+          done
+          # Fetch first, under a bound: a download is safe to stop and
+          # resumes, an install is not. A mirror that stalls is left for
+          # the main archive on the next attempt.
+          for i in 1 2 3; do
+            sudo timeout 240 apt-get install -y --download-only \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+              $pkgs && break
+            [ $i = 3 ] && exit 1
+            echo "package download failed or stalled (attempt $i); retrying from archive.ubuntu.com"
+            if [ ! -d /etc/apt/ra-orig ]; then
+              sudo mkdir /etc/apt/ra-orig
+              sudo cp -a /etc/apt/sources.list.d /etc/apt/ra-orig/
+              [ ! -f /etc/apt/sources.list ] || sudo cp -a /etc/apt/sources.list /etc/apt/ra-orig/
+            fi
+            for f in /etc/apt/sources.list /etc/apt/sources.list.d/*; do
+              [ -f "$f" ] || continue
+              sudo sed -i -e 's#mirror+file:/etc/apt/apt-mirrors.txt#http://archive.ubuntu.com/ubuntu/#g' \
+                -e 's#http://azure\.archive\.ubuntu\.com/ubuntu#http://archive.ubuntu.com/ubuntu#g' "$f"
+            done
+            # A refresh cut short or refused leaves apt no package lists: it
+            # is retried, without translations or command-not-found data, and
+            # the mirror is put back when the archive will not answer either.
+            upd="-o Acquire::Retries=3 -o Acquire::http::Timeout=30
+              -o Acquire::Languages=none
+              -o Acquire::IndexTargets::deb::CNF::DefaultEnabled=false
+              -o APT::Update::Error-Mode=any"
+            ok=0
+            for j in 1 2; do
+              sudo timeout 120 apt-get update -y $upd && { ok=1; break; }
+            done
+            if [ $ok = 0 ]; then
+              sudo rm -rf /etc/apt/sources.list.d
+              sudo cp -a /etc/apt/ra-orig/sources.list.d /etc/apt/
+              [ ! -f /etc/apt/ra-orig/sources.list ] || sudo cp -a /etc/apt/ra-orig/sources.list /etc/apt/
+              sudo rm -rf /etc/apt/ra-orig
+              sudo timeout 120 apt-get update -y $upd || true
+            fi
+          done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            $pkgs
       - name: Strict C89 HEVC buffer ABI and cold session ownership
         run: |
           make -C samples/gfx/vaapi_hevc clean check CC=${{ matrix.cc }} SANITIZER=address,undefined
