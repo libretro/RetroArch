@@ -1183,3 +1183,113 @@ unsigned glslang_num_miplevels(unsigned width, unsigned height)
    /* One more level than the index of the highest set bit. */
    return compat_highbit_u32((uint32_t)size) + 1u;
 }
+
+/* Grow-buffer used to assemble stage source in C.  Returns false on
+ * allocation failure; the buffer is always left in a freeable state. */
+struct stage_source_buf
+{
+   char *data;
+   size_t len;
+   size_t cap;
+};
+
+static bool stage_source_append(struct stage_source_buf *buf,
+      const char *s, size_t s_len)
+{
+   if (buf->len + s_len + 1 > buf->cap)
+   {
+      char *grown;
+      size_t new_cap = buf->cap ? buf->cap : 4096;
+      while (buf->len + s_len + 1 > new_cap)
+         new_cap *= 2;
+      grown = (char*)realloc(buf->data, new_cap);
+      if (!grown)
+         return false;
+      buf->data = grown;
+      buf->cap  = new_cap;
+   }
+   memcpy(buf->data + buf->len, s, s_len);
+   buf->len            += s_len;
+   buf->data[buf->len]  = '\0';
+   return true;
+}
+
+static bool stage_source_append_line(struct stage_source_buf *buf,
+      const char *line)
+{
+   if (!stage_source_append(buf, line, strlen(line)))
+      return false;
+   return stage_source_append(buf, "\n", 1);
+}
+
+char *glslang_build_stage_source(
+      const struct shader_line_buf *lines, const char *stage)
+{
+   size_t i;
+   struct stage_source_buf buf;
+   bool active = true;
+
+   buf.data = NULL;
+   buf.len  = 0;
+   buf.cap  = 0;
+
+   if (!lines || lines->num_lines < 1)
+   {
+      if (!stage_source_append(&buf, "", 0))
+         return NULL;
+      return buf.data;
+   }
+
+   /* Reserve the full preprocessed length up front (lines->len counts
+    * every line plus separators), so assembly never reallocates - the
+    * same exact-fit reservation the std::string implementation made
+    * via str.reserve(lines->len). */
+   buf.data = (char*)malloc(lines->len + 2);
+   if (!buf.data)
+      return NULL;
+   buf.cap     = lines->len + 2;
+   buf.data[0] = '\0';
+
+   /* Version header (line 0). */
+   if (!stage_source_append_line(&buf, shader_line_buf_get(lines, 0)))
+      goto error;
+
+   for (i = 1; i < lines->num_lines; i++)
+   {
+      const char *line = shader_line_buf_get(lines, i);
+      if (!memcmp(line, "#pragma", sizeof("#pragma")-1))
+      {
+         if (!memcmp(line, "#pragma stage ", sizeof("#pragma stage ")-1))
+         {
+            if (stage && *stage)
+            {
+               char expected[128];
+               size_t _len = strlcpy_lit(expected, "#pragma stage ", sizeof(expected));
+               strlcpy(expected + _len, stage, sizeof(expected) - _len);
+               active = !strcmp(expected, line);
+            }
+         }
+         else if (
+                  !memcmp(line, "#pragma name ", sizeof("#pragma name ")-1)
+               || !memcmp(line, "#pragma format ", sizeof("#pragma format ")-1))
+         {
+            /* Ignore */
+         }
+         else if (active)
+         {
+            if (!stage_source_append_line(&buf, line))
+               goto error;
+         }
+      }
+      else if (active)
+      {
+         if (!stage_source_append_line(&buf, line))
+            goto error;
+      }
+   }
+   return buf.data;
+
+error:
+   free(buf.data);
+   return NULL;
+}

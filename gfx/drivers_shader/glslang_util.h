@@ -261,6 +261,15 @@ bool glslang_read_shader_file_cached(const char *path,
       struct shader_line_buf *output, bool root_file, bool is_optional,
       void *cache);
 
+/* Assemble the source for one stage ("vertex" / "fragment") from the
+ * include-expanded line buffer: line 0 is the #version line, '#pragma
+ * stage' selects, '#pragma name' and '#pragma format' are dropped,
+ * every other line of the active stage is kept.  Returns a malloc'd
+ * NUL-terminated string the caller frees, NULL on allocation failure;
+ * an empty line buffer yields an empty string. */
+char *glslang_build_stage_source(const struct shader_line_buf *lines,
+      const char *stage);
+
 bool shader_line_buf_init(struct shader_line_buf *buf);
 
 /* Free all memory owned by a shader_line_buf. */
