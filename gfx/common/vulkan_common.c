@@ -399,6 +399,10 @@ static void vulkan_emulated_mailbox_loop(void *userdata)
             dead = retro_atomic_load_acquire_int(&mailbox->dead) != 0;
             if (dead)
                break;
+#ifdef __APPLE__
+            /* See vulkan_acquire_next_image(). */
+            break;
+#endif
          }
 
          if (dead)
@@ -410,6 +414,19 @@ static void vulkan_emulated_mailbox_loop(void *userdata)
                RARCH_ERR("[Vulkan] Mailbox acquire fence still pending at teardown.\n");
             break;
          }
+
+#ifdef __APPLE__
+         /* The image may never come back: have the swapchain rebuilt,
+          * on a new fence, as the old image may still signal this one. */
+         if (wait_res == VK_TIMEOUT)
+         {
+            vkDestroyFence(mailbox->device, fence, NULL);
+            vkCreateFence(mailbox->device, &info, NULL, &fence);
+            mailbox->result = VK_ERROR_OUT_OF_DATE_KHR;
+            vulkan_emulated_mailbox_answer(mailbox);
+            continue;
+         }
+#endif
 
          /* A lost device reaches the main thread as an error, not an image. */
          mailbox->result = wait_res;
@@ -3257,10 +3274,24 @@ retry:
                semaphore, fence, &vk->context.current_swapchain_index);
    }
 
+#ifdef __APPLE__
+   /* MoltenVK signals this fence from the drawable's presented handler,
+    * which macOS drops for a window hidden with presents in flight:
+    * rebuild the swapchain rather than wait forever. MoltenVK holds its
+    * own reference, so the fence is destroyed below as usual. */
+   if (     (err == VK_SUCCESS || err == VK_SUBOPTIMAL_KHR)
+         && fence != VK_NULL_HANDLE
+         && vkWaitForFences(vk->context.device, 1, &fence, true,
+               (uint64_t)vk->acquire_timeout_us * 1000) == VK_TIMEOUT)
+      err = VK_ERROR_OUT_OF_DATE_KHR;
+#endif
+
    if (err == VK_SUCCESS || err == VK_SUBOPTIMAL_KHR)
    {
+#ifndef __APPLE__
       if (fence != VK_NULL_HANDLE)
          vkWaitForFences(vk->context.device, 1, &fence, true, UINT64_MAX);
+#endif
       vk->context.flags |= VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN;
 
       if (vk->context.swapchain_acquire_semaphore)
@@ -4318,6 +4349,9 @@ dxgi_unavailable:
     * the first acquire from the new one. */
    vk->context.current_swapchain_index = 0;
    vulkan_create_wait_fences(vk);
+#ifdef __APPLE__
+   vk->acquire_timeout_us              = vulkan_mailbox_timeout_us();
+#endif
 
    if (vk->flags & VK_DATA_FLAG_EMULATING_MAILBOX)
    {
@@ -4723,7 +4757,15 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
    }
 
    if (vk->context.device)
+   {
+#ifdef __APPLE__
+      /* MoltenVK before 1.2.11 idles without what is still on its
+       * asynchronous submission queue; a fence behind that is not. */
+      vk->context.present_pending = true;
+      vulkan_context_wait_frames(vk);
+#endif
       vkDeviceWaitIdle(vk->context.device);
+   }
    /* Drained above; the fence would only be waited on again. */
    vk->context.present_pending = false;
 

@@ -543,6 +543,10 @@ typedef struct gfx_ctx_vulkan_data
    PFN_vkVoidFunction display_timing_query;
    uint32_t present_id;
    bool display_timing_supported;
+#ifdef __APPLE__
+   /* Bound on the acquire fence wait, from the display's rate. */
+   int64_t acquire_timeout_us;
+#endif
 #ifdef HAVE_OPENXR
    /* A headset's own context (the Quest's): OpenXR starts whatever
     * Headset Output says, and a failure falls through to the flat
