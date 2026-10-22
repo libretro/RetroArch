@@ -19,11 +19,15 @@ bool gfx_surface_wants_rgba(void)
 { failures++; return false; }
 bool image_transfer_anim_stream_is_hdr(const void *stream, enum image_type_enum type)
 { (void)stream; (void)type; failures++; return false; }
+bool image_transfer_anim_stream_stop_hw(void *stream, enum image_type_enum type)
+{ (void)stream; (void)type; failures++; return false; }
 video_player_t *video_player_new(void *stream, enum image_type_enum type,
       int loops, const video_player_sink_t *sink, unsigned flags)
 { (void)stream; (void)type; (void)loops; (void)sink; (void)flags; failures++; return NULL; }
 void video_player_free(video_player_t *p)
 { (void)p; failures++; }
+bool video_player_request_software(video_player_t *p)
+{ (void)p; failures++; return false; }
 void video_player_slot_released(video_player_t *p, unsigned slot)
 { (void)p; (void)slot; failures++; }
 enum gfx_surface_submit_result gfx_surface_submit(gfx_surface_t *s, unsigned slot, bool rgba)
