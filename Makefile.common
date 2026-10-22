@@ -1833,6 +1833,9 @@ ifeq ($(HAVE_VULKAN), 1)
                 gfx/common/vaapi_hevc_vulkan_resources.o \
                 gfx/common/vaapi_hevc_vulkan_cache.o
       endif
+   endif
+
+   ifneq ($(filter 1,$(HAVE_RMP4) $(HAVE_RVP9)),)
       ifeq ($(ANDROID), 1)
          OBJ += gfx/common/vulkan_android_device.o \
                 gfx/common/android_image_queue.o \
@@ -1848,10 +1851,16 @@ ifeq ($(HAVE_VULKAN), 1)
                    gfx/common/android_image_ndk.o \
                    gfx/common/mediacodec_session.o \
                    gfx/common/mediacodec_color.o \
-                   gfx/common/mediacodec_frame_export.o \
-                   gfx/common/mediacodec_hevc_packet.o \
-                   gfx/common/mediacodec_hevc_decoder.o \
-                   gfx/common/mediacodec_hevc_backend.o
+                   gfx/common/mediacodec_frame_export.o
+            ifeq ($(HAVE_RMP4), 1)
+               OBJ += gfx/common/mediacodec_hevc_packet.o \
+                      gfx/common/mediacodec_hevc_decoder.o \
+                      gfx/common/mediacodec_hevc_backend.o
+            endif
+            ifeq ($(HAVE_RVP9), 1)
+               OBJ += gfx/common/mediacodec_vp9_decoder.o \
+                      gfx/common/mediacodec_vp9_backend.o
+            endif
          endif
       endif
    endif

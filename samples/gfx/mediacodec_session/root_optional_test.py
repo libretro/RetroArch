@@ -56,7 +56,7 @@ int main(void)
   }
   assert(seen==7);
  }
-#elif defined(__linux__)
+#elif defined(__linux__) && defined(HAVE_RMP4)
  {
   unsigned i,seen=0;
   assert(own==core+5);
@@ -81,10 +81,11 @@ with tempfile.TemporaryDirectory(prefix="android-root-optional-") as directory:
     path = Path(directory)
     (path / "test.c").write_text(unit, encoding="utf-8")
     for android in (False, True):
-        binary = path / ("android" if android else "other")
-        command = compiler + flags + (["-DANDROID"] if android else [])
-        command += ["-DHAVE_RMP4", "-I" + str(root), "-I" + str(root / "gfx/include"),
-                    "-I" + str(root / "libretro-common/include"), str(path / "test.c"),
-                    str(root / "gfx/common/vulkan_android_device.c"), "-o", str(binary)]
-        subprocess.run(command, check=True)
-        subprocess.run([str(binary)], check=True)
+        for codec in ("HAVE_RMP4", "HAVE_RVP9"):
+            binary = path / (("android-" if android else "other-") + codec)
+            command = compiler + flags + (["-DANDROID"] if android else [])
+            command += ["-D" + codec, "-I" + str(root), "-I" + str(root / "gfx/include"),
+                        "-I" + str(root / "libretro-common/include"), str(path / "test.c"),
+                        str(root / "gfx/common/vulkan_android_device.c"), "-o", str(binary)]
+            subprocess.run(command, check=True)
+            subprocess.run([str(binary)], check=True)

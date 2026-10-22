@@ -369,7 +369,7 @@ VIDEO CONTEXT
 #endif
 
 #ifdef HAVE_VULKAN
-#if defined(ANDROID) && defined(HAVE_RMP4)
+#if defined(ANDROID) && (defined(HAVE_RMP4) || defined(HAVE_RVP9))
 #include "../gfx/common/vulkan_android_device.c"
 #include "../gfx/common/android_image_queue.c"
 #include "../gfx/common/android_frame.c"
@@ -385,9 +385,15 @@ VIDEO CONTEXT
 #include "../gfx/common/mediacodec_session.c"
 #include "../gfx/common/mediacodec_color.c"
 #include "../gfx/common/mediacodec_frame_export.c"
+#ifdef HAVE_RMP4
 #include "../gfx/common/mediacodec_hevc_packet.c"
 #include "../gfx/common/mediacodec_hevc_decoder.c"
 #include "../gfx/common/mediacodec_hevc_backend.c"
+#endif
+#ifdef HAVE_RVP9
+#include "../gfx/common/mediacodec_vp9_decoder.c"
+#include "../gfx/common/mediacodec_vp9_backend.c"
+#endif
 #endif
 #endif
 #include "../gfx/common/vulkan_common.c"
