@@ -41,6 +41,9 @@
 #include "../common/drm_common.h"
 #include "../video_views.h"
 #include "../video_views_cpu.h"
+#ifdef HAVE_OVERLAY
+#include "../../input/input_overlay.h"
+#endif
 
 #include "drm_pixformats.h"
 
@@ -121,10 +124,61 @@ struct drm_struct
    uint32_t plane_fb_prop_id;
    /* Reused by every flip */
    drmModeAtomicReqPtr flip_req;
+   /* Where the plane puts the surface it shows, in screen pixels */
+   int vp_x;
+   int vp_y;
+   unsigned vp_w;
+   unsigned vp_h;
 
    drmModeEncoder *encoder;
    drmModeRes *resources;
 } drm;
+
+#ifdef HAVE_OVERLAY
+struct drm_overlay_image
+{
+   uint32_t *px;     /* premultiplied ARGB8888 */
+   uint32_t *scaled; /* px at the size it is shown */
+   float tex[4];
+   float vert[4];
+   float alpha;
+   unsigned w, h;
+   int x, y;         /* where it is shown, in the layer's space */
+   unsigned sw, sh;
+};
+
+/* The input overlay: its images composed, when one of them changes,
+ * into a layer that a plane of its own shows over the frame, or that
+ * is blended into each frame where the CRTC has no plane to spare */
+struct drm_overlay
+{
+   struct drm_overlay_image *img;
+   uint32_t *layer;  /* premultiplied ARGB8888, lw x lh */
+   struct modeset_buf page[2];
+   unsigned count;
+   int lx, ly;       /* the layer: screen pixels, or the frame's */
+   unsigned lw, lh;
+   uint32_t plane_id;
+   uint32_t fb_prop;
+   unsigned back;
+   /* The frame's size the layer was laid out at, where it is blended */
+   unsigned frame_dims;
+   enum
+   {
+      DRM_OVERLAY_UNTRIED = 0,
+      DRM_OVERLAY_PLANE,
+      DRM_OVERLAY_BLEND
+   } mode;
+   bool enabled;
+   bool fullscreen;
+   bool geom_dirty;
+   bool layer_dirty;
+   /* The back page holds a layer the next flip shows */
+   bool pending;
+   /* The plane shows the layer at lx, ly */
+   bool shown;
+};
+#endif
 
 struct drm_video
 {
@@ -133,6 +187,9 @@ struct drm_video
    struct drm_surface *menu_surface;
    /* A core's views composed for the plane to scale to the screen */
    struct drm_surface *views_surface;
+#ifdef HAVE_OVERLAY
+   struct drm_overlay ov;
+#endif
    video_views_cpu_t views_cpu;
    /* Both eyes side by side, for anaglyph and interlaced */
    uint32_t *views_canvas;
@@ -325,8 +382,17 @@ static bool drm_surface_setup(void *data, unsigned src_dims,
    return true;
 }
 
+#ifdef HAVE_OVERLAY
+static void drm_overlay_flip_add(struct drm_video *v, drmModeAtomicReqPtr req);
+static void drm_overlay_flipped(struct drm_video *v);
+static void drm_overlay_blend(struct drm_video *v, struct drm_surface *s);
+#endif
+
 static void drm_page_flip(struct drm_surface *surface)
 {
+#ifdef HAVE_OVERLAY
+   struct drm_video *v = surface->pages[0].drmvars;
+#endif
    /* We already have the id of the FB_ID property of
     * the plane on which we are going to do a pageflip:
     * we got it back in drm_plane_setup()  */
@@ -347,6 +413,10 @@ static void drm_page_flip(struct drm_surface *surface)
    {
       RARCH_ERR("[DRM] Failed to add atomic property for pageflip.\n");
    }
+#ifdef HAVE_OVERLAY
+   /* A new overlay layer goes up in the same commit as the frame */
+   drm_overlay_flip_add(v, req);
+#endif
    /*... now we just need to do the commit */
 
    /* REMEMBER!!! The DRM_MODE_PAGE_FLIP_EVENT flag asks the kernel
@@ -359,6 +429,9 @@ static void drm_page_flip(struct drm_surface *surface)
       RARCH_ERR("[DRM] Failed to commit for pageflip.\n");
    }
 
+#ifdef HAVE_OVERLAY
+   drm_overlay_flipped(v);
+#endif
    surface->flip_page = !(surface->flip_page);
 }
 
@@ -381,6 +454,10 @@ static void drm_surface_update(void *data, const void *frame,
          dst += buf->stride;
       }
    }
+
+#ifdef HAVE_OVERLAY
+   drm_overlay_blend(surface->pages[0].drmvars, surface);
+#endif
 
    /* Page flipping */
    drm_page_flip(surface);
@@ -628,6 +705,19 @@ static void drm_plane_setup(struct drm_surface *surface)
    src_w = VIDEO_SCALE_W(surface->src_dims);
    src_h = VIDEO_SCALE_H(surface->src_dims);
 
+   if (     drm.vp_x != (int)plane_x || drm.vp_y != (int)plane_y
+         || drm.vp_w != plane_w || drm.vp_h != plane_h)
+   {
+      drm.vp_x = (int)plane_x;
+      drm.vp_y = (int)plane_y;
+      drm.vp_w = plane_w;
+      drm.vp_h = plane_h;
+#ifdef HAVE_OVERLAY
+      if (surface->pages[0].drmvars)
+         surface->pages[0].drmvars->ov.geom_dirty = true;
+#endif
+   }
+
    /* We have to set a buffer for the plane, whatever buffer we want,
     * but we must set a buffer so the plane starts reading from it now. */
    if (drmModeSetPlane(drm.fd, drm.plane_id, drm.crtc_id,
@@ -816,6 +906,648 @@ static bool init_drm(void)
    return true;
 }
 
+#ifdef HAVE_OVERLAY
+/* Plane @plane's property @name: its id, value, flags and the top of its
+ * range, and the value of its enum entry @entry when asked for one; 0
+ * when it has none */
+static uint32_t drm_plane_prop(uint32_t plane, const char *name,
+      uint64_t *value, uint32_t *flags, uint64_t *max,
+      const char *entry, uint64_t *entry_value)
+{
+   int i, j;
+   uint32_t id                    = 0;
+   drmModeObjectProperties *props = drmModeObjectGetProperties(drm.fd,
+         plane, DRM_MODE_OBJECT_PLANE);
+
+   if (!props)
+      return 0;
+   for (i = 0; i < (int)props->count_props && !id; i++)
+   {
+      drmModePropertyRes *prop = drmModeGetProperty(drm.fd, props->props[i]);
+      if (!prop)
+         continue;
+      if (string_is_equal(prop->name, name))
+      {
+         id = prop->prop_id;
+         if (value)
+            *value = props->prop_values[i];
+         if (flags)
+            *flags = prop->flags;
+         if (max)
+            *max = ((prop->flags & DRM_MODE_PROP_RANGE)
+                  && prop->count_values >= 2) ? prop->values[1] : 0;
+         if (entry && entry_value)
+         {
+            id = 0;
+            for (j = 0; j < prop->count_enums; j++)
+               if (string_is_equal(prop->enums[j].name, entry))
+               {
+                  *entry_value = prop->enums[j].value;
+                  id           = prop->prop_id;
+               }
+         }
+      }
+      drmModeFreeProperty(prop);
+   }
+   drmModeFreeObjectProperties(props);
+   return id;
+}
+
+/* An overlay plane besides the frame's, on the CRTC, that takes ARGB8888
+ * and is above the frame's: by zpos, raised when it can be, else by
+ * order. 0 when there is none. */
+static uint32_t drm_overlay_find_plane(void)
+{
+   int i;
+   int frame_idx   = -1;
+   unsigned crtc   = 0;
+   uint32_t found  = 0;
+   uint64_t fz     = 0;
+   uint32_t fz_id  = drm_plane_prop(drm.plane_id, "zpos", &fz, NULL, NULL,
+         NULL, NULL);
+   drmModePlaneRes *res = drmModeGetPlaneResources(drm.fd);
+
+   if (!res)
+      return 0;
+   for (i = 0; i < drm.resources->count_crtcs; i++)
+      if (drm.crtc_id == drm.resources->crtcs[i])
+         crtc = i;
+   for (i = 0; i < (int)res->count_planes; i++)
+      if (res->planes[i] == drm.plane_id)
+         frame_idx = i;
+
+   for (i = 0; i < (int)res->count_planes && !found; i++)
+   {
+      bool fits;
+      uint64_t cz = 0, cmax = 0;
+      uint32_t cflags = 0, cz_id;
+      drmModePlane *plane;
+
+      if (res->planes[i] == drm.plane_id)
+         continue;
+      if (!(plane = drmModeGetPlane(drm.fd, res->planes[i])))
+         continue;
+      fits = (plane->possible_crtcs & (1u << crtc))
+         && drm_plane_type(plane) == DRM_PLANE_TYPE_OVERLAY
+         && format_support(plane, DRM_FORMAT_ARGB8888);
+      drmModeFreePlane(plane);
+      if (!fits)
+         continue;
+
+      cz_id = drm_plane_prop(res->planes[i], "zpos", &cz, &cflags, &cmax,
+            NULL, NULL);
+      if (fz_id && cz_id)
+      {
+         if (     cz <= fz
+               && (     (cflags & DRM_MODE_PROP_IMMUTABLE) || fz + 1 > cmax
+                     || drmModeObjectSetProperty(drm.fd, res->planes[i],
+                           DRM_MODE_OBJECT_PLANE, cz_id, fz + 1)))
+            continue;
+      }
+      /* Without zpos, later planes are drawn over earlier ones */
+      else if (i < frame_idx)
+         continue;
+      found = res->planes[i];
+   }
+   drmModeFreePlaneResources(res);
+
+   if (found)
+   {
+      uint64_t premul = 0;
+      uint32_t flags  = 0;
+      uint32_t mode   = drm_plane_prop(found, "pixel blend mode", NULL,
+            &flags, NULL, "Pre-multiplied", &premul);
+      if (mode && !(flags & DRM_MODE_PROP_IMMUTABLE))
+         drmModeObjectSetProperty(drm.fd, found, DRM_MODE_OBJECT_PLANE,
+               mode, premul);
+   }
+   return found;
+}
+
+static void drm_overlay_hide(struct drm_overlay *ov)
+{
+   if (ov->mode == DRM_OVERLAY_PLANE && ov->shown)
+      drmModeSetPlane(drm.fd, ov->plane_id, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0);
+   ov->shown   = false;
+   ov->pending = false;
+}
+
+static void drm_overlay_free_images(struct drm_overlay *ov)
+{
+   unsigned i;
+   for (i = 0; i < ov->count; i++)
+   {
+      free(ov->img[i].px);
+      free(ov->img[i].scaled);
+   }
+   free(ov->img);
+   ov->img   = NULL;
+   ov->count = 0;
+}
+
+static void drm_overlay_free(struct drm_overlay *ov)
+{
+   drm_overlay_hide(ov);
+   modeset_destroy_dumbfb(&ov->page[0]);
+   modeset_destroy_dumbfb(&ov->page[1]);
+   drm_overlay_free_images(ov);
+   free(ov->layer);
+   ov->layer = NULL;
+}
+
+static bool drm_overlay_load(void *data, const void *image_data,
+      unsigned num_images)
+{
+   unsigned i;
+   size_t k, n;
+   struct drm_video *v              = (struct drm_video*)data;
+   const struct texture_image *imgs = (const struct texture_image*)image_data;
+   struct drm_overlay *ov;
+
+   if (!v)
+      return false;
+   ov = &v->ov;
+   drm_overlay_free_images(ov);
+   ov->geom_dirty  = true;
+   ov->layer_dirty = true;
+   if (!num_images || !imgs)
+      return true;
+   if (!(ov->img = (struct drm_overlay_image*)calloc(num_images,
+               sizeof(*ov->img))))
+      return false;
+   ov->count = num_images;
+
+   for (i = 0; i < num_images; i++)
+   {
+      struct drm_overlay_image *o = &ov->img[i];
+      o->tex[2]  = o->tex[3]  = 1.0f;
+      o->vert[2] = o->vert[3] = 1.0f;
+      o->alpha   = 1.0f;
+      if (     !imgs[i].pixels || !imgs[i].width || !imgs[i].height
+            || imgs[i].pix10 || imgs[i].fp16)
+         continue;
+      n = (size_t)imgs[i].width * imgs[i].height;
+      if (!(o->px = (uint32_t*)malloc(n * sizeof(uint32_t))))
+         continue;
+      o->w = imgs[i].width;
+      o->h = imgs[i].height;
+      /* Premultiplied, as the plane blends and the layer is composed */
+      for (k = 0; k < n; k++)
+      {
+         uint32_t p = imgs[i].pixels[k];
+         uint32_t a = p >> 24;
+         uint32_t r = imgs[i].supports_rgba ? (p & 0xff) : ((p >> 16) & 0xff);
+         uint32_t g = (p >> 8) & 0xff;
+         uint32_t b = imgs[i].supports_rgba ? ((p >> 16) & 0xff) : (p & 0xff);
+         o->px[k]   = (a << 24) | (((r * a + 127) / 255) << 16)
+            | (((g * a + 127) / 255) << 8) | ((b * a + 127) / 255);
+      }
+   }
+   return true;
+}
+
+static void drm_overlay_tex_geom(void *data, unsigned i,
+      float x, float y, float w, float h)
+{
+   struct drm_video *v = (struct drm_video*)data;
+   float *t;
+   if (!v || i >= v->ov.count)
+      return;
+   t = v->ov.img[i].tex;
+   if (t[0] != x || t[1] != y || t[2] != w || t[3] != h)
+   {
+      t[0] = x; t[1] = y; t[2] = w; t[3] = h;
+      v->ov.geom_dirty = true;
+   }
+}
+
+static void drm_overlay_vertex_geom(void *data, unsigned i,
+      float x, float y, float w, float h)
+{
+   struct drm_video *v = (struct drm_video*)data;
+   float *t;
+   if (!v || i >= v->ov.count)
+      return;
+   t = v->ov.img[i].vert;
+   if (t[0] != x || t[1] != y || t[2] != w || t[3] != h)
+   {
+      t[0] = x; t[1] = y; t[2] = w; t[3] = h;
+      v->ov.geom_dirty = true;
+   }
+}
+
+static void drm_overlay_full_screen(void *data, bool enable)
+{
+   struct drm_video *v = (struct drm_video*)data;
+   if (v && v->ov.fullscreen != enable)
+   {
+      v->ov.fullscreen = enable;
+      v->ov.geom_dirty = true;
+   }
+}
+
+static void drm_overlay_set_alpha(void *data, unsigned i, float mod)
+{
+   struct drm_video *v = (struct drm_video*)data;
+   if (v && i < v->ov.count && v->ov.img[i].alpha != mod)
+   {
+      v->ov.img[i].alpha  = mod;
+      v->ov.layer_dirty   = true;
+   }
+}
+
+static void drm_overlay_enable(void *data, bool state)
+{
+   struct drm_video *v = (struct drm_video*)data;
+   if (!v || v->ov.enabled == state)
+      return;
+   v->ov.enabled     = state;
+   v->ov.layer_dirty = true;
+   if (!state)
+      drm_overlay_hide(&v->ov);
+}
+
+/* Image @o at @w x @h, from the part of it its texture coordinates name:
+ * bilinear in 8.8 fixed point, which keeps a flat colour exact */
+static bool drm_overlay_scale(struct drm_overlay_image *o,
+      unsigned w, unsigned h)
+{
+   unsigned x, y;
+   int x0 = (int)(o->tex[0] * o->w + 0.5f);
+   int y0 = (int)(o->tex[1] * o->h + 0.5f);
+   int tw = (int)(o->tex[2] * o->w + 0.5f);
+   int th = (int)(o->tex[3] * o->h + 0.5f);
+   uint32_t *out;
+
+   x0 = MAX(0, MIN(x0, (int)o->w - 1));
+   y0 = MAX(0, MIN(y0, (int)o->h - 1));
+   tw = MAX(1, MIN(tw, (int)o->w - x0));
+   th = MAX(1, MIN(th, (int)o->h - y0));
+   free(o->scaled);
+   o->scaled = NULL;
+   if (!(out = (uint32_t*)malloc((size_t)w * h * sizeof(uint32_t))))
+      return false;
+
+   for (y = 0; y < h; y++)
+   {
+      /* Texel centres, in 1/256ths */
+      int sy  = (int)(((int64_t)(2 * y + 1) * th * 256) / (2 * (int)h)) - 128;
+      int ya  = MAX(0, MIN(sy >> 8, th - 1));
+      int yb  = MIN(ya + 1, th - 1);
+      unsigned fy = (sy < 0) ? 0 : (unsigned)(sy & 0xff);
+      const uint32_t *ra = o->px + (size_t)(y0 + ya) * o->w + x0;
+      const uint32_t *rb = o->px + (size_t)(y0 + yb) * o->w + x0;
+      for (x = 0; x < w; x++)
+      {
+         int sx = (int)(((int64_t)(2 * x + 1) * tw * 256) / (2 * (int)w)) - 128;
+         int xa = MAX(0, MIN(sx >> 8, tw - 1));
+         int xb = MIN(xa + 1, tw - 1);
+         unsigned fx = (sx < 0) ? 0 : (unsigned)(sx & 0xff);
+         uint32_t p00 = ra[xa], p01 = ra[xb], p10 = rb[xa], p11 = rb[xb];
+         uint32_t px = 0;
+         unsigned sh;
+         for (sh = 0; sh < 32; sh += 8)
+         {
+            uint32_t top = ((p00 >> sh) & 0xff) * (256 - fx)
+               + ((p01 >> sh) & 0xff) * fx;
+            uint32_t bot = ((p10 >> sh) & 0xff) * (256 - fx)
+               + ((p11 >> sh) & 0xff) * fx;
+            px |= ((top * (256 - fy) + bot * fy + 32768) >> 16) << sh;
+         }
+         out[(size_t)y * w + x] = px;
+      }
+   }
+   o->scaled = out;
+   return true;
+}
+
+/* Each image placed and scaled in @base (x, y, w, h), the layer the part
+ * of them inside 0, 0, @bw x @bh */
+static void drm_overlay_layout(struct drm_overlay *ov, const float *base,
+      int bw, int bh)
+{
+   unsigned i;
+   int x0 = bw, y0 = bh, x1 = 0, y1 = 0;
+
+   for (i = 0; i < ov->count; i++)
+   {
+      struct drm_overlay_image *o = &ov->img[i];
+      float fx = base[0] + o->vert[0] * base[2];
+      float fy = base[1] + o->vert[1] * base[3];
+      float fw = o->vert[2] * base[2];
+      float fh = o->vert[3] * base[3];
+      if (fw < 0.0f)
+      {
+         fx += fw;
+         fw  = -fw;
+      }
+      if (fh < 0.0f)
+      {
+         fy += fh;
+         fh  = -fh;
+      }
+      o->x  = (int)(fx + 0.5f);
+      o->y  = (int)(fy + 0.5f);
+      o->sw = (unsigned)(fw + 0.5f);
+      o->sh = (unsigned)(fh + 0.5f);
+      if (     !o->px || !o->sw || !o->sh || o->sw > 8192 || o->sh > 8192
+            || !drm_overlay_scale(o, o->sw, o->sh))
+      {
+         free(o->scaled);
+         o->scaled = NULL;
+         continue;
+      }
+      x0 = MIN(x0, MAX(o->x, 0));
+      y0 = MIN(y0, MAX(o->y, 0));
+      x1 = MAX(x1, MIN(o->x + (int)o->sw, bw));
+      y1 = MAX(y1, MIN(o->y + (int)o->sh, bh));
+   }
+   if (x1 <= x0 || y1 <= y0)
+      x0 = y0 = x1 = y1 = 0;
+   ov->lx = x0;
+   ov->ly = y0;
+   for (i = 0; i < ov->count; i++)
+   {
+      ov->img[i].x -= x0;
+      ov->img[i].y -= y0;
+   }
+   if (     (unsigned)(x1 - x0) != ov->lw || (unsigned)(y1 - y0) != ov->lh
+         || !ov->layer)
+   {
+      free(ov->layer);
+      ov->lw    = (unsigned)(x1 - x0);
+      ov->lh    = (unsigned)(y1 - y0);
+      ov->layer = (ov->lw && ov->lh) ? (uint32_t*)malloc(
+            (size_t)ov->lw * ov->lh * sizeof(uint32_t)) : NULL;
+      if (!ov->layer)
+         ov->lw = ov->lh = 0;
+   }
+}
+
+#define DRM_DIV255(x) ((((x) + 1) + ((x) >> 8)) >> 8)
+
+/* The images over one another, each at its alpha */
+static void drm_overlay_compose(struct drm_overlay *ov)
+{
+   unsigned i;
+   int x, y;
+   memset(ov->layer, 0, (size_t)ov->lw * ov->lh * sizeof(uint32_t));
+   for (i = 0; i < ov->count; i++)
+   {
+      const struct drm_overlay_image *o = &ov->img[i];
+      unsigned m = (unsigned)(MAX(0.0f, MIN(o->alpha, 1.0f)) * 255.0f + 0.5f);
+      int xa = MAX(0, o->x), ya = MAX(0, o->y);
+      int xb = MIN((int)ov->lw, o->x + (int)o->sw);
+      int yb = MIN((int)ov->lh, o->y + (int)o->sh);
+      if (!o->scaled || !m)
+         continue;
+      for (y = ya; y < yb; y++)
+      {
+         const uint32_t *src = o->scaled + (size_t)(y - o->y) * o->sw
+            + (xa - o->x);
+         uint32_t *dst       = ov->layer + (size_t)y * ov->lw + xa;
+         for (x = xa; x < xb; x++, src++, dst++)
+         {
+            uint32_t s = *src, d = *dst, a, inv, c, out = 0;
+            unsigned sh;
+            if (m < 255)
+               s = (DRM_DIV255((s >> 24) * m) << 24)
+                 | (DRM_DIV255(((s >> 16) & 0xff) * m) << 16)
+                 | (DRM_DIV255(((s >> 8) & 0xff) * m) << 8)
+                 | DRM_DIV255((s & 0xff) * m);
+            if (!(a = s >> 24))
+               continue;
+            inv = 255 - a;
+            for (sh = 0; sh < 32; sh += 8)
+            {
+               c    = ((s >> sh) & 0xff) + DRM_DIV255(((d >> sh) & 0xff) * inv);
+               out |= MIN(c, 255u) << sh;
+            }
+            *dst = out;
+         }
+      }
+   }
+}
+
+/* Composes what changed, before the flip that shows it: into a page of
+ * the plane's own, or into the layer @frame's pages are blended with */
+static void drm_overlay_prepare(struct drm_video *v, struct drm_surface *frame)
+{
+   unsigned y;
+   float base[4];
+   int bw, bh;
+   struct drm_overlay *ov = &v->ov;
+
+   if (!ov->enabled || !ov->count)
+      return;
+   if (ov->mode == DRM_OVERLAY_UNTRIED)
+   {
+      if (drm.plane_id && (ov->plane_id = drm_overlay_find_plane()))
+      {
+         ov->fb_prop = get_plane_prop_id(ov->plane_id, "FB_ID");
+         ov->mode    = ov->fb_prop ? DRM_OVERLAY_PLANE : DRM_OVERLAY_BLEND;
+      }
+      else
+         ov->mode    = DRM_OVERLAY_BLEND;
+      RARCH_LOG("[DRM] Overlay %s.\n", ov->mode == DRM_OVERLAY_PLANE
+            ? "on a plane of its own" : "blended into the frame");
+      ov->geom_dirty = true;
+   }
+
+   if (ov->mode == DRM_OVERLAY_PLANE)
+   {
+      bw = (int)VIDEO_SCALE_W(v->kms_dims);
+      bh = (int)VIDEO_SCALE_H(v->kms_dims);
+      if (ov->fullscreen || !drm.vp_w || !drm.vp_h)
+      {
+         base[0] = base[1] = 0.0f;
+         base[2] = (float)bw;
+         base[3] = (float)bh;
+      }
+      else
+      {
+         base[0] = (float)drm.vp_x;
+         base[1] = (float)drm.vp_y;
+         base[2] = (float)drm.vp_w;
+         base[3] = (float)drm.vp_h;
+      }
+   }
+   else
+   {
+      /* In the frame's pixels: what lies off the frame is not shown */
+      if (!frame || !drm.vp_w || !drm.vp_h)
+         return;
+      bw = (int)VIDEO_SCALE_W(frame->src_dims);
+      bh = (int)VIDEO_SCALE_H(frame->src_dims);
+      if (frame->src_dims != ov->frame_dims)
+      {
+         ov->frame_dims = frame->src_dims;
+         ov->geom_dirty = true;
+      }
+      if (ov->fullscreen)
+      {
+         float sx = (float)bw / drm.vp_w, sy = (float)bh / drm.vp_h;
+         base[0]  = -drm.vp_x * sx;
+         base[1]  = -drm.vp_y * sy;
+         base[2]  = VIDEO_SCALE_W(v->kms_dims) * sx;
+         base[3]  = VIDEO_SCALE_H(v->kms_dims) * sy;
+      }
+      else
+      {
+         base[0] = base[1] = 0.0f;
+         base[2] = (float)bw;
+         base[3] = (float)bh;
+      }
+   }
+
+   if (ov->geom_dirty)
+   {
+      unsigned lw = ov->lw, lh = ov->lh;
+      drm_overlay_layout(ov, base, bw, bh);
+      ov->geom_dirty  = false;
+      ov->layer_dirty = true;
+      if (ov->mode == DRM_OVERLAY_PLANE)
+      {
+         /* The plane moves, and is given pages of the new size */
+         drm_overlay_hide(ov);
+         if (lw != ov->lw || lh != ov->lh || !ov->page[0].map)
+         {
+            modeset_destroy_dumbfb(&ov->page[0]);
+            modeset_destroy_dumbfb(&ov->page[1]);
+            if (ov->lw && ov->lh)
+            {
+               ov->page[0].dims = ov->page[1].dims =
+                  VIDEO_SCALE_PACK(ov->lw, ov->lh);
+               if (     modeset_create_dumbfb(drm.fd, &ov->page[0], 4,
+                           DRM_FORMAT_ARGB8888)
+                     || modeset_create_dumbfb(drm.fd, &ov->page[1], 4,
+                           DRM_FORMAT_ARGB8888))
+               {
+                  modeset_destroy_dumbfb(&ov->page[0]);
+                  modeset_destroy_dumbfb(&ov->page[1]);
+               }
+            }
+         }
+      }
+   }
+
+   if (!ov->layer || !ov->lw || !ov->lh)
+      return;
+   if (ov->layer_dirty)
+   {
+      drm_overlay_compose(ov);
+      ov->layer_dirty = false;
+      if (ov->mode == DRM_OVERLAY_PLANE && ov->page[ov->back].map)
+      {
+         struct modeset_buf *pg = &ov->page[ov->back];
+         for (y = 0; y < ov->lh; y++)
+            memcpy(pg->map + (size_t)y * pg->stride,
+                  ov->layer + (size_t)y * ov->lw, (size_t)ov->lw * 4);
+         ov->pending = true;
+      }
+   }
+
+   /* Placed once; after that its pages change with the frame's flips */
+   if (     ov->mode == DRM_OVERLAY_PLANE && ov->pending && !ov->shown
+         && !drmModeSetPlane(drm.fd, ov->plane_id, drm.crtc_id,
+               ov->page[ov->back].fb_id, 0, ov->lx, ov->ly, ov->lw, ov->lh,
+               0, 0, ov->lw << 16, ov->lh << 16))
+   {
+      ov->shown   = true;
+      ov->pending = false;
+      ov->back   ^= 1;
+   }
+}
+
+static void drm_overlay_flip_add(struct drm_video *v, drmModeAtomicReqPtr req)
+{
+   struct drm_overlay *ov;
+   if (!v)
+      return;
+   ov = &v->ov;
+   if (     ov->mode == DRM_OVERLAY_PLANE && ov->shown && ov->pending
+         && drmModeAtomicAddProperty(req, ov->plane_id, ov->fb_prop,
+               ov->page[ov->back].fb_id) < 0)
+      ov->pending = false;
+}
+
+static void drm_overlay_flipped(struct drm_video *v)
+{
+   struct drm_overlay *ov;
+   if (!v)
+      return;
+   ov = &v->ov;
+   if (ov->mode == DRM_OVERLAY_PLANE && ov->shown && ov->pending)
+   {
+      ov->pending = false;
+      ov->back   ^= 1;
+   }
+}
+
+/* Where no plane is spare: the layer over the frame, in its page */
+static void drm_overlay_blend(struct drm_video *v, struct drm_surface *s)
+{
+   int x, y;
+   struct modeset_buf *buf;
+   struct drm_overlay *ov;
+
+   if (!v || s != v->main_surface)
+      return;
+   ov = &v->ov;
+   if (     ov->mode != DRM_OVERLAY_BLEND || !ov->enabled || !ov->layer
+         || !ov->lw || !ov->lh)
+      return;
+   buf = &s->pages[s->flip_page].buf;
+   for (y = 0; y < (int)ov->lh; y++)
+   {
+      const uint32_t *src = ov->layer + (size_t)y * ov->lw;
+      uint8_t *row        = buf->map + (size_t)(ov->ly + y) * buf->stride;
+      for (x = 0; x < (int)ov->lw; x++)
+      {
+         uint32_t p = src[x], a = p >> 24, inv;
+         if (!a)
+            continue;
+         inv = 255 - a;
+         if (s->bpp == 4)
+         {
+            uint32_t *d = (uint32_t*)row + ov->lx + x;
+            uint32_t q  = *d;
+            *d = (MIN(((p >> 16) & 0xff) + DRM_DIV255(((q >> 16) & 0xff) * inv), 255u) << 16)
+               | (MIN(((p >> 8) & 0xff) + DRM_DIV255(((q >> 8) & 0xff) * inv), 255u) << 8)
+               |  MIN((p & 0xff) + DRM_DIV255((q & 0xff) * inv), 255u);
+         }
+         else
+         {
+            uint16_t *d = (uint16_t*)row + ov->lx + x;
+            uint32_t q  = *d;
+            uint32_t r  = ((q >> 11) & 0x1f), g = ((q >> 5) & 0x3f), b = q & 0x1f;
+            r = MIN(((p >> 16) & 0xff) + DRM_DIV255(((r << 3) | (r >> 2)) * inv), 255u);
+            g = MIN(((p >> 8) & 0xff) + DRM_DIV255(((g << 2) | (g >> 4)) * inv), 255u);
+            b = MIN((p & 0xff) + DRM_DIV255(((b << 3) | (b >> 2)) * inv), 255u);
+            *d = (uint16_t)(((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3));
+         }
+      }
+   }
+}
+
+static const video_overlay_interface_t drm_overlay_interface = {
+   drm_overlay_enable,
+   drm_overlay_load,
+   NULL, /* load_textures */
+   drm_overlay_tex_geom,
+   drm_overlay_vertex_geom,
+   drm_overlay_full_screen,
+   drm_overlay_set_alpha
+};
+
+static void drm_get_overlay_interface(void *data,
+      const video_overlay_interface_t **iface)
+{
+   *iface = &drm_overlay_interface;
+}
+#endif
+
 static void *drm_init(const video_info_t *video)
 {
    struct drm_video *_drmvars = (struct drm_video*)
@@ -1000,6 +1732,10 @@ static bool drm_frame(void *data, const void *frame,
    if (!frame || !_drmvars->main_surface)
       return true;
 
+#ifdef HAVE_OVERLAY
+   drm_overlay_prepare(_drmvars, _drmvars->main_surface);
+#endif
+
    if (drm_views_frame(_drmvars, frame, dims, pitch, video_info))
       return true;
 
@@ -1132,6 +1868,9 @@ static void drm_set_texture_frame(void *data, const void *frame, bool rgb32,
       }
    }
 
+#ifdef HAVE_OVERLAY
+   drm_overlay_prepare(_drmvars, NULL);
+#endif
    /* The bytes are in place in the dumb buffer; commit the page flip. */
    drm_page_flip(surface);
 }
@@ -1288,6 +2027,9 @@ static void drm_gfx_free(void *data)
    if (!_drmvars)
       return;
 
+#ifdef HAVE_OVERLAY
+   drm_overlay_free(&_drmvars->ov);
+#endif
    if (_drmvars->main_surface && _drmvars->main_surface->lent)
       video_driver_cached_frame_retire();
    drm_surface_free(_drmvars, &_drmvars->main_surface);
@@ -1330,7 +2072,7 @@ video_driver_t video_drm = {
    drm_viewport_info,
    NULL, /* read_viewport */
 #ifdef HAVE_OVERLAY
-   NULL, /* get_overlay_interface */
+   drm_get_overlay_interface,
 #endif
    drm_get_poke_interface,
    NULL, /* wrap_type_to_enum */

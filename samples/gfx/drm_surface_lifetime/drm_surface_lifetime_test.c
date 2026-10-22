@@ -40,7 +40,7 @@ void video_driver_set_output_dims(unsigned dims) { (void)dims; }
 #define CRTC_ID      41
 #define FB_PROP_ID   51
 #define TYPE_PROP_ID 52
-#define MAX_OBJ      64
+#define MAX_OBJ      512
 
 static int      dumb_alive[MAX_OBJ];   /* by handle */
 static uint32_t dumb_size[MAX_OBJ];
@@ -136,6 +136,13 @@ int __wrap_munmap(void *addr, size_t len)
    return 0;
 }
 
+/* The overlay plane, beside the frame's */
+#define PLANE2_ID   33
+static uint32_t ov_fb;                 /* the fb the overlay plane scans out */
+static int32_t  ov_x, ov_y;
+static uint32_t ov_w, ov_h;
+static unsigned ov_blanks, ov_setplanes;
+
 int drmModeRmFB(int fd, uint32_t fb)
 {
    (void)fd;
@@ -146,6 +153,11 @@ int drmModeRmFB(int fd, uint32_t fb)
       blanks++;
       plane_fb = 0;
    }
+   if (fb == ov_fb)
+   {
+      ov_blanks++;
+      ov_fb = 0;
+   }
    fb_alive[fb] = 0;
    return 0;
 }
@@ -154,23 +166,45 @@ int drmModeSetPlane(int fd, uint32_t plane, uint32_t crtc, uint32_t fb,
       uint32_t flags, int32_t cx, int32_t cy, uint32_t cw, uint32_t ch,
       uint32_t sx, uint32_t sy, uint32_t sw, uint32_t sh)
 {
-   (void)fd; (void)plane; (void)crtc; (void)flags; (void)cx; (void)cy;
-   (void)cw; (void)ch; (void)sx; (void)sy; (void)sw; (void)sh;
+   (void)fd; (void)crtc; (void)flags; (void)sx; (void)sy; (void)sw; (void)sh;
+   if (plane == PLANE2_ID)
+   {
+      ov_setplanes++;
+      ov_fb = fb;
+      ov_x  = cx; ov_y = cy; ov_w = cw; ov_h = ch;
+      return 0;
+   }
    plane_fb = fb;
    return 0;
 }
 
-/* One plane, an overlay on the CRTC, reading XRGB8888 and RGB565, and
- * RGBX4444 when count_formats says so */
-static uint32_t       plane_ids[1] = { PLANE_ID };
+/* The frame's plane, an overlay on the CRTC, reading XRGB8888 and
+ * RGB565, and RGBX4444 when count_formats says so; and a second overlay
+ * plane, there when planes is 2, reading ARGB8888 when count_formats
+ * says so, with a zpos and a pixel blend mode when it has them */
+static uint32_t       plane_ids[2] = { PLANE_ID, PLANE2_ID };
 static uint32_t       formats[3]   = { DRM_FORMAT_XRGB8888, DRM_FORMAT_RGB565,
    DRM_FORMAT_RGBX4444 };
-static uint32_t       prop_ids[2]  = { FB_PROP_ID, TYPE_PROP_ID };
-static uint64_t       prop_vals[2] = { 0, DRM_PLANE_TYPE_OVERLAY };
+static uint32_t       formats2[1]  = { DRM_FORMAT_ARGB8888 };
 static drmModePlaneRes  plane_res  = { 1, plane_ids };
 static drmModePlane     plane      = { 2, formats, PLANE_ID, CRTC_ID, 0, 0, 0, 0, 0, 1, 0 };
-static drmModeObjectProperties props = { 2, prop_ids, prop_vals };
-static drmModePropertyRes prop_fb, prop_type;
+static drmModePlane     plane2     = { 1, formats2, PLANE2_ID, 0, 0, 0, 0, 0, 0, 1, 0 };
+
+/* Per plane: FB_ID, type, zpos, pixel blend mode; the frame's from 51,
+ * the overlay's from 71 */
+#define PROP_FB    0
+#define PROP_TYPE  1
+#define PROP_ZPOS  2
+#define PROP_BLEND 3
+typedef struct
+{
+   uint64_t zpos, zpos_max, blend;
+   int has_zpos, zpos_fixed, has_blend;
+} fake_plane_props_t;
+static fake_plane_props_t pp[2];
+#define PROP_BASE(i) ((i) ? 71u : 51u)
+
+static int plane_index(uint32_t id) { return id == PLANE2_ID ? 1 : 0; }
 
 /* Each a copy on the heap, as libdrm's are: one not handed back to
  * its free leaks, which LeakSanitizer reports. */
@@ -186,34 +220,128 @@ drmModePlaneResPtr drmModeGetPlaneResources(int fd)
 void drmModeFreePlaneResources(drmModePlaneResPtr p) { free(p); }
 static unsigned plane_queries;
 drmModePlanePtr drmModeGetPlane(int fd, uint32_t id)
-{ (void)fd; (void)id; plane_queries++; return (drmModePlanePtr)dup_obj(&plane, sizeof(plane)); }
+{
+   (void)fd;
+   plane_queries++;
+   return (drmModePlanePtr)dup_obj(id == PLANE2_ID ? &plane2 : &plane,
+         sizeof(plane));
+}
 void drmModeFreePlane(drmModePlanePtr p) { free(p); }
+
+/* One allocation each, freed whole, as the arrays live inside it */
 drmModeObjectPropertiesPtr drmModeObjectGetProperties(int fd, uint32_t id, uint32_t type)
-{ (void)fd; (void)id; (void)type; return (drmModeObjectPropertiesPtr)dup_obj(&props, sizeof(props)); }
+{
+   int i = plane_index(id);
+   uint32_t n = 2;
+   drmModeObjectPropertiesPtr o = (drmModeObjectPropertiesPtr)calloc(1,
+         sizeof(*o) + 4 * (sizeof(uint32_t) + sizeof(uint64_t)));
+   (void)fd; (void)type;
+   o->prop_values = (uint64_t*)(o + 1);
+   o->props       = (uint32_t*)(o->prop_values + 4);
+   o->props[0] = PROP_BASE(i) + PROP_FB;   o->prop_values[0] = 0;
+   o->props[1] = PROP_BASE(i) + PROP_TYPE; o->prop_values[1] = DRM_PLANE_TYPE_OVERLAY;
+   if (pp[i].has_zpos)
+   {
+      o->props[n] = PROP_BASE(i) + PROP_ZPOS; o->prop_values[n++] = pp[i].zpos;
+   }
+   if (pp[i].has_blend)
+   {
+      o->props[n] = PROP_BASE(i) + PROP_BLEND; o->prop_values[n++] = pp[i].blend;
+   }
+   o->count_props = n;
+   return o;
+}
 void drmModeFreeObjectProperties(drmModeObjectPropertiesPtr p) { free(p); }
 drmModePropertyPtr drmModeGetProperty(int fd, uint32_t id)
 {
+   static const char *blend_names[3] = { "None", "Pre-multiplied", "Coverage" };
+   int i     = (id >= 71) ? 1 : 0;
+   int which = (int)(id - PROP_BASE(i));
+   drmModePropertyPtr r = (drmModePropertyPtr)calloc(1, sizeof(*r)
+         + 2 * sizeof(uint64_t) + 3 * sizeof(struct drm_mode_property_enum));
    (void)fd;
-   return (drmModePropertyPtr)dup_obj(id == FB_PROP_ID ? &prop_fb : &prop_type,
-         sizeof(prop_fb));
+   r->prop_id = id;
+   switch (which)
+   {
+      case PROP_FB:   strlcpy(r->name, "FB_ID", sizeof(r->name)); break;
+      case PROP_TYPE: strlcpy(r->name, "type", sizeof(r->name)); break;
+      case PROP_ZPOS:
+         strlcpy(r->name, "zpos", sizeof(r->name));
+         r->flags        = DRM_MODE_PROP_RANGE
+            | (pp[i].zpos_fixed ? DRM_MODE_PROP_IMMUTABLE : 0);
+         r->count_values = 2;
+         r->values       = (uint64_t*)(r + 1);
+         r->values[0]    = 0;
+         r->values[1]    = pp[i].zpos_max;
+         break;
+      case PROP_BLEND:
+      {
+         int k;
+         strlcpy(r->name, "pixel blend mode", sizeof(r->name));
+         r->flags       = DRM_MODE_PROP_ENUM;
+         r->count_enums = 3;
+         r->enums       = (struct drm_mode_property_enum*)
+            ((uint64_t*)(r + 1) + 2);
+         for (k = 0; k < 3; k++)
+         {
+            r->enums[k].value = (uint64_t)k;
+            strlcpy(r->enums[k].name, blend_names[k], sizeof(r->enums[k].name));
+         }
+         break;
+      }
+   }
+   return r;
 }
 void drmModeFreeProperty(drmModePropertyPtr p) { free(p); }
+int drmModeObjectSetProperty(int fd, uint32_t obj, uint32_t type,
+      uint32_t prop, uint64_t v)
+{
+   int i = plane_index(obj);
+   (void)fd; (void)type;
+   if (prop == PROP_BASE(i) + PROP_ZPOS)
+   {
+      if (pp[i].zpos_fixed || v > pp[i].zpos_max)
+         return -1;
+      pp[i].zpos = v;
+      return 0;
+   }
+   if (prop == PROP_BASE(i) + PROP_BLEND)
+   {
+      pp[i].blend = v;
+      return 0;
+   }
+   return -1;
+}
 
-/* The flip: the atomic request carries the new fb for the plane */
-static uint32_t pending_fb;
-static unsigned atomic_allocs;
+/* The flip: the atomic request carries the new fb for each plane */
+static uint32_t pending_fb, pending_ov_fb;
+static unsigned atomic_allocs, ov_commits;
 drmModeAtomicReqPtr drmModeAtomicAlloc(void)
 { atomic_allocs++; return (drmModeAtomicReqPtr)calloc(1, 16); }
 void drmModeAtomicSetCursor(drmModeAtomicReqPtr r, int c) { (void)r; (void)c; }
 void drmModeAtomicFree(drmModeAtomicReqPtr r) { free(r); }
 int drmModeAtomicAddProperty(drmModeAtomicReqPtr r, uint32_t obj, uint32_t prop, uint64_t v)
-{ (void)r; (void)obj; (void)prop; pending_fb = (uint32_t)v; return 0; }
+{
+   (void)r;
+   if (obj == PLANE2_ID && prop == PROP_BASE(1) + PROP_FB)
+      pending_ov_fb = (uint32_t)v;
+   else
+      pending_fb = (uint32_t)v;
+   return 0;
+}
 int drmModeAtomicCommit(int fd, drmModeAtomicReqPtr r, uint32_t f, void *u)
 {
    (void)fd; (void)r; (void)f; (void)u;
-   if (!pending_fb || !fb_alive[pending_fb])
+   if (     !pending_fb || !fb_alive[pending_fb]
+         || (pending_ov_fb && !fb_alive[pending_ov_fb]))
       return -1;
    plane_fb = pending_fb;
+   if (pending_ov_fb)
+   {
+      ov_fb = pending_ov_fb;
+      ov_commits++;
+   }
+   pending_ov_fb = 0;
    return 0;
 }
 
@@ -258,10 +386,6 @@ int main(void)
    unsigned               i, before;
 
    setvbuf(stdout, NULL, _IONBF, 0);
-   strlcpy(prop_fb.name, "FB_ID", sizeof(prop_fb.name));
-   prop_fb.prop_id = FB_PROP_ID;
-   strlcpy(prop_type.name, "type", sizeof(prop_type.name));
-   prop_type.prop_id = TYPE_PROP_ID;
    mode.hdisplay = 1920;
    mode.vdisplay = 1080;
    res.count_crtcs = 1;
@@ -586,10 +710,150 @@ int main(void)
       before = failures;
    }
 
+   /* The input overlay: on a plane of its own above the frame's,
+    * composed only when it changes and flipped with the frame; blended
+    * into the frame where no plane can take it */
+   {
+      static uint32_t red[32 * 16], green[16 * 16];
+      struct texture_image img[2];
+      const video_overlay_interface_t *ovi = NULL;
+      const uint32_t *row;
+      unsigned setplanes, commits;
+      uint32_t px, first_fb;
+
+      for (i = 0; i < 32 * 16; i++)
+         red[i] = 0xffff0000u;
+      for (i = 0; i < 16 * 16; i++)
+         green[i] = 0x8000ff00u;
+      memset(img, 0, sizeof(img));
+      img[0].pixels = red;   img[0].width = 32; img[0].height = 16;
+      img[1].pixels = green; img[1].width = 16; img[1].height = 16;
+      v->kms_dims = VIDEO_SCALE_PACK(1920, 1080);
+      drm_get_overlay_interface(v, &ovi);
+
+      /* Two planes; the frame's at a fixed zpos 1, the other below it
+       * but free to be raised, and blending as coverage */
+      plane_res.count_planes = 2;
+      plane2.count_formats   = 1;
+      pp[0].has_zpos   = 1; pp[0].zpos = 1; pp[0].zpos_fixed = 1; pp[0].zpos_max = 3;
+      pp[1].has_zpos   = 1; pp[1].zpos = 0; pp[1].zpos_max = 3;
+      pp[1].has_blend  = 1; pp[1].blend = 2;
+
+      ovi->load(v, img, 2);
+      ovi->full_screen(v, true);
+      ovi->vertex_geom(v, 0, 0.1f, 0.2f, 0.05f, 0.05f);
+      ovi->vertex_geom(v, 1, 0.5f, 0.5f, 0.1f, 0.1f);
+      ovi->enable(v, true);
+      core_frame(v, 320, 240);
+      CHECK(v->ov.mode == DRM_OVERLAY_PLANE, "the overlay is on a plane of its own");
+      CHECK(pp[1].zpos == 2, "the plane is raised above the frame's (zpos %u)",
+            (unsigned)pp[1].zpos);
+      CHECK(pp[1].blend == 1, "the plane blends premultiplied");
+      CHECK(ov_fb && fb_alive[ov_fb] && fb_format[ov_fb] == DRM_FORMAT_ARGB8888,
+            "the plane scans out an ARGB8888 page");
+      CHECK(ov_x == 192 && ov_y == 216 && ov_w == 960 && ov_h == 432,
+            "the plane covers the images only: %d,%d %ux%u", ov_x, ov_y, ov_w, ov_h);
+      {
+         struct modeset_buf *pg = v->ov.page[0].fb_id == ov_fb
+            ? &v->ov.page[0] : &v->ov.page[1];
+         row = (const uint32_t*)(pg->map + (size_t)27 * pg->stride);
+         px  = row[48];
+         CHECK(px == 0xffff0000u, "an opaque image as it is (%08x)", px);
+         row = (const uint32_t*)(pg->map + (size_t)378 * pg->stride);
+         px  = row[864];
+         CHECK((px >> 24) >= 0x7f && (px >> 24) <= 0x81 && ((px >> 8) & 0xff) == (px >> 24),
+               "a half-transparent one premultiplied (%08x)", px);
+         row = (const uint32_t*)(pg->map + (size_t)200 * pg->stride);
+         CHECK(row[400] == 0, "and nothing between them");
+      }
+      CHECK(plane_fb && fb_alive[plane_fb], "the frame stays on its plane");
+
+      /* A press: the layer again, flipped with the frame, not placed */
+      setplanes = ov_setplanes;
+      commits   = ov_commits;
+      first_fb  = ov_fb;
+      ovi->set_alpha(v, 1, 0.5f);
+      core_frame(v, 320, 240);
+      CHECK(ov_commits == commits + 1 && ov_setplanes == setplanes
+            && ov_fb != first_fb && fb_alive[ov_fb],
+            "an alpha change goes up in the frame's own flip");
+      ovi->set_alpha(v, 1, 0.5f);
+      for (i = 0; i < 3; i++)
+         core_frame(v, 320, 240);
+      CHECK(ov_commits == commits + 1, "nothing changed, nothing composed or flipped");
+
+      /* Off and on */
+      ovi->enable(v, false);
+      CHECK(!ov_fb, "turned off, the plane shows nothing");
+      ovi->enable(v, true);
+      core_frame(v, 320, 240);
+      CHECK(ov_fb && fb_alive[ov_fb], "turned on, it is back");
+
+      /* Moved: placed again, on pages of the new size */
+      ovi->vertex_geom(v, 1, 0.2f, 0.25f, 0.1f, 0.1f);
+      core_frame(v, 320, 240);
+      CHECK(ov_x == 192 && ov_y == 216 && ov_w == 384 && ov_h == 162,
+            "moved, the plane covers the images: %d,%d %ux%u", ov_x, ov_y, ov_w, ov_h);
+      CHECK(ov_blanks == 0, "no page went while the plane read it");
+
+      /* A plane fixed below the frame's: blended into the frame */
+      drm_overlay_free(&v->ov);
+      memset(&v->ov, 0, sizeof(v->ov));
+      pp[1].zpos_fixed = 1; pp[1].zpos = 0;
+      ovi->load(v, img, 2);
+      ovi->full_screen(v, false);
+      ovi->vertex_geom(v, 0, 0.0f, 0.0f, 0.5f, 0.5f);
+      ovi->vertex_geom(v, 1, 0.0f, 0.0f, 0.0f, 0.0f);
+      ovi->enable(v, true);
+      memset(frame_px, 0, sizeof(frame_px));
+      core_frame(v, 320, 240);
+      CHECK(v->ov.mode == DRM_OVERLAY_BLEND, "a plane fixed below is not used");
+      {
+         struct modeset_buf *pg = &v->main_surface->pages[!v->main_surface->flip_page].buf;
+         px = ((const uint32_t*)(pg->map + (size_t)10 * pg->stride))[10];
+         CHECK((px & 0xffffff) == 0xff0000, "blended into the frame (%08x)", px);
+         px = ((const uint32_t*)(pg->map + (size_t)200 * pg->stride))[200];
+         CHECK((px & 0xffffff) == 0, "the frame elsewhere as it was (%08x)", px);
+      }
+
+      /* No zpos at all: a later plane is taken as drawn over */
+      drm_overlay_free(&v->ov);
+      memset(&v->ov, 0, sizeof(v->ov));
+      pp[0].has_zpos = pp[1].has_zpos = 0;
+      ovi->load(v, img, 2);
+      ovi->enable(v, true);
+      core_frame(v, 320, 240);
+      CHECK(v->ov.mode == DRM_OVERLAY_PLANE, "without zpos, the later plane is used");
+
+      /* No plane takes ARGB8888 */
+      drm_overlay_free(&v->ov);
+      memset(&v->ov, 0, sizeof(v->ov));
+      plane2.count_formats = 0;
+      ovi->load(v, img, 2);
+      ovi->enable(v, true);
+      core_frame(v, 320, 240);
+      CHECK(v->ov.mode == DRM_OVERLAY_BLEND, "no ARGB8888 plane: blended");
+      plane2.count_formats = 1;
+      drm_overlay_free(&v->ov);
+      memset(&v->ov, 0, sizeof(v->ov));
+      pp[1].zpos_fixed = 0; pp[1].has_zpos = 1; pp[0].has_zpos = 1;
+      ovi->load(v, img, 2);
+      ovi->enable(v, true);
+      core_frame(v, 320, 240);
+      CHECK(v->ov.mode == DRM_OVERLAY_PLANE && ov_fb,
+            "on a plane again for the free (mode %d, fb %u, zpos %u/%u)",
+            (int)v->ov.mode, ov_fb, (unsigned)pp[0].zpos, (unsigned)pp[1].zpos);
+
+      if (failures == before)
+         printf("   ok   the overlay on a plane of its own, or blended into the frame\n");
+      before = failures;
+   }
+
    drm_gfx_free(v);
    CHECK(count(dumb_alive) == 0 && count(fb_alive) == 0 && maps_alive == 0,
          "after the driver's free: %u buffers, %u fbs, %u maps",
          count(dumb_alive), count(fb_alive), maps_alive);
+   CHECK(!ov_fb && !ov_blanks, "the overlay plane let go before its pages went");
    if (failures == before)
       printf("   ok   the driver's free leaves nothing behind\n");
 

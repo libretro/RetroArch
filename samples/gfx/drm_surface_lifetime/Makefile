@@ -3,7 +3,8 @@
 # the surface goes, and the one the plane scans out is never removed
 # from under it; a core's views composed into a surface of their
 # own for the plane; padded rows, lent pages and dupes; the menu in
-# RGUI's own format, lent, and resized.
+# RGUI's own format, lent, and resized; the input overlay on a plane of
+# its own, or blended into the frame.
 
 TARGET    := drm_surface_lifetime_test
 REPO_ROOT := ../../..
@@ -19,7 +20,7 @@ SOURCES   := drm_surface_lifetime_test.c \
              $(LRC)/gfx/scaler/scaler_int.c \
              $(LRC)/gfx/scaler/pixconv.c
 CFLAGS    += -Wall -std=gnu99 -g1 -O0 -I$(REPO_ROOT) -I$(LRC)/include \
-             -DHAVE_THREADS $(shell pkg-config --cflags libdrm)
+             -DHAVE_THREADS -DHAVE_OVERLAY $(shell pkg-config --cflags libdrm)
 LDFLAGS   += -lpthread -lm -Wl,--wrap=mmap,--wrap=munmap
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)
