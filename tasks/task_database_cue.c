@@ -285,23 +285,66 @@ static int64_t task_database_cue_get_token(cue_tok_stream_t *t, char *s,
 
 #define DISC_DATA_SIZE_PS1 60000
 
+/* Whether the disc boots PSX.EXE, so carries no serial: a SYSTEM.CNF
+ * BOOT line names it ("cdrom:", any backslashes, then PSX.EXE), or
+ * @data lists PSX.EXE and no SYSTEM.CNF, which the BIOS then boots. */
+static bool ps1_boots_psx_exe(const char *data, int len)
+{
+   int pos;
+   bool psx_exe    = false;
+   bool system_cnf = false;
+   for (pos = 0; pos + 7 <= len; pos++)
+   {
+      int boot;
+      if (memcmp(&data[pos], "PSX.EXE", 7) == 0)
+         psx_exe = true;
+      if (pos + 10 <= len && memcmp(&data[pos], "SYSTEM.CNF", 10) == 0)
+         system_cnf = true;
+      if (!string_starts_with_case_insensitive(&data[pos], "cdrom:"))
+         continue;
+      boot = pos + 6;
+      while (boot < len && data[boot] == '\\')
+         boot++;
+      if (  boot + 7 <= len
+         && string_starts_with_case_insensitive(&data[boot], "PSX.EXE"))
+         return true;
+   }
+   return psx_exe && !system_cnf;
+}
+
 int detect_ps1_game(intfstream_t *fd, char *s, size_t len,
    const char *filename)
 {
    int pos;
+   int data_len;
+   int64_t got     = 0;
    char raw_game_id[50];
    char *disc_data = (char*)malloc(DISC_DATA_SIZE_PS1);
    if (!disc_data)
       return 0;
-   if (  intfstream_seek(fd, 0, SEEK_SET) < 0
-      || intfstream_read(fd, disc_data, DISC_DATA_SIZE_PS1) <= 0)
+   if (intfstream_seek(fd, 0, SEEK_SET) >= 0)
+      got = intfstream_read(fd, disc_data, DISC_DATA_SIZE_PS1);
+   if (got <= 0)
    {
       free(disc_data);
       return 0;
    }
-   disc_data[DISC_DATA_SIZE_PS1 - 1] = '\0';
+   /* A short read leaves the rest of the buffer unset. */
+   data_len = (int)got;
+   if (data_len < DISC_DATA_SIZE_PS1)
+      disc_data[data_len] = '\0';
+   else
+      disc_data[DISC_DATA_SIZE_PS1 - 1] = '\0';
 
-   for (pos = 0; pos < DISC_DATA_SIZE_PS1; pos++)
+   if (ps1_boots_psx_exe(disc_data, data_len))
+   {
+      strlcpy(s, "PSX.EXE", len);
+      cue_append_multi_disc_suffix(s, len, filename);
+      free(disc_data);
+      return 0;
+   }
+
+   for (pos = 0; pos < data_len; pos++)
    {
       strlcpy(raw_game_id, &disc_data[pos], sizeof(raw_game_id));
       raw_game_id[12] = '\0';
@@ -349,14 +392,6 @@ int detect_ps1_game(intfstream_t *fd, char *s, size_t len,
          cue_append_multi_disc_suffix(s, len, filename);
          free(disc_data);
          return 1;
-      }
-      else if (memcmp(raw_game_id, "PSX.EXE", 7) == 0)
-      {
-         raw_game_id[7] = '\0';
-         string_remove_all_whitespace(s, raw_game_id);
-         cue_append_multi_disc_suffix(s, len, filename);
-         free(disc_data);
-         return 0;
       }
    }
 

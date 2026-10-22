@@ -277,28 +277,54 @@ static void buint32(buf_t *b, uint32_t v)
    bbyte(b, 0xce); bput(b, c, 4);
 }
 
-/* One database holding a single named record. */
-static int write_db(const char *path, const char *game, uint32_t crc,
-      uint32_t size)
+static void bbin(buf_t *b, const char *s)
+{
+   size_t n = strlen(s);
+   bbyte(b, 0xc4);
+   bbyte(b, (uint8_t)n);
+   bput(b, s, n);
+}
+
+/* A database record.  Real databases store the serial as binary. */
+typedef struct
+{
+   const char *name;
+   const char *serial;
+   uint32_t    crc;
+   uint32_t    size;
+} db_rec_t;
+
+/* One database holding @n records; a NULL serial leaves the key out. */
+static int write_db_set(const char *path, const db_rec_t *recs,
+      unsigned n)
 {
    buf_t    body, meta;
    FILE    *f;
    uint8_t  hdr[16];
    uint64_t off;
+   unsigned r;
    int      i;
 
    memset(&body, 0, sizeof(body));
    memset(&meta, 0, sizeof(meta));
 
-   bfixmap(&body, 3);
-   bfixstr(&body, "name"); bfixstr(&body, game);
-   bfixstr(&body, "crc");  bbin4(&body, crc);
-   bfixstr(&body, "size"); buint32(&body, size);
+   for (r = 0; r < n; r++)
+   {
+      bfixmap(&body, recs[r].serial ? 4 : 3);
+      bfixstr(&body, "name"); bfixstr(&body, recs[r].name);
+      if (recs[r].serial)
+      {
+         bfixstr(&body, "serial");
+         bbin(&body, recs[r].serial);
+      }
+      bfixstr(&body, "crc");  bbin4(&body, recs[r].crc);
+      bfixstr(&body, "size"); buint32(&body, recs[r].size);
+   }
    bbyte(&body, 0xc0);
 
    bfixmap(&meta, 1);
    bfixstr(&meta, "count");
-   bbyte(&meta, 0x01);
+   bbyte(&meta, (uint8_t)n);
 
    off = 16 + (uint64_t)body.len;
    memcpy(hdr, "RARCHDB", 7);
@@ -307,7 +333,11 @@ static int write_db(const char *path, const char *game, uint32_t crc,
       hdr[8 + i] = (uint8_t)(off >> (56 - 8 * i));
 
    if (!(f = fopen(path, "wb")))
+   {
+      free(body.d);
+      free(meta.d);
       return 0;
+   }
    fwrite(hdr, 1, sizeof(hdr), f);
    fwrite(body.d, 1, body.len, f);
    fwrite(meta.d, 1, meta.len, f);
@@ -315,6 +345,18 @@ static int write_db(const char *path, const char *game, uint32_t crc,
    free(body.d);
    free(meta.d);
    return 1;
+}
+
+/* One database holding a single named record. */
+static int write_db(const char *path, const char *game, uint32_t crc,
+      uint32_t size)
+{
+   db_rec_t rec;
+   rec.name   = game;
+   rec.serial = NULL;
+   rec.crc    = crc;
+   rec.size   = size;
+   return write_db_set(path, &rec, 1);
 }
 
 /* Content of @size whose crc32 is @crc. */
@@ -346,6 +388,67 @@ static int write_content(const char *path, uint32_t crc, uint32_t size)
    fwrite(d, 1, size, f);
    fclose(f);
    free(d);
+   return 1;
+}
+
+/* Brings @d's crc32 to @crc through its last four bytes, then writes
+ * it out. */
+static int write_forced(const char *path, uint8_t *d, uint32_t size,
+      uint32_t crc)
+{
+   FILE *f;
+
+   crc_force(d, size - 4, crc, d + size - 4);
+   if (crc_of(d, size) != crc || !(f = fopen(path, "wb")))
+      return 0;
+   fwrite(d, 1, size, f);
+   fclose(f);
+   return 1;
+}
+
+#define PS1_SECTOR     2352
+#define PS1_TRACK_SIZE (26 * PS1_SECTOR)
+/* Shorter than the 60000 bytes detect_ps1_game() reads. */
+#define PS1_SHORT_SIZE (24 * PS1_SECTOR)
+
+/* A raw MODE2/2352 PS1 data track of @size bytes: the license string
+ * detect_system() looks for, and @n strings at the offsets in @at. */
+static int write_ps1_track_sized(const char *path, uint32_t size,
+      const char *const *str, const unsigned *at, unsigned n, uint32_t crc)
+{
+   uint8_t *d = (uint8_t*)calloc(1, size);
+   unsigned i;
+   int      ok;
+
+   if (!d)
+      return 0;
+   memcpy(d + 0x24f8, "Sony Computer ", 14);
+   for (i = 0; i < n; i++)
+      memcpy(d + at[i], str[i], strlen(str[i]));
+   ok = write_forced(path, d, size, crc);
+   free(d);
+   return ok;
+}
+
+/* A full track: the forced crc lands past the bytes
+ * detect_ps1_game() reads. */
+static int write_ps1_track(const char *path, const char *const *str,
+      const unsigned *at, unsigned n, uint32_t crc)
+{
+   return write_ps1_track_sized(path, PS1_TRACK_SIZE, str, at, n, crc);
+}
+
+static int write_cue(const char *path, const char *track)
+{
+   FILE *f = fopen(path, "w");
+
+   if (!f)
+      return 0;
+   fprintf(f,
+         "FILE \"%s\" BINARY\n"
+         "  TRACK 01 MODE2/2352\n"
+         "    INDEX 01 00:00:00\n", track);
+   fclose(f);
    return 1;
 }
 
@@ -628,6 +731,20 @@ int main(int argc, char **argv)
    }
    sprintf(p, "%s/gamma_libretro.so", core_dir);
    { FILE *f = fopen(p, "wb"); if (f) { fputs("\177ELF", f); fclose(f); } }
+   sprintf(p, "%s/ps1_libretro.info", info_dir);
+   {
+      FILE *f = fopen(p, "w");
+      if (!f)
+      { check(0, "fixture", "could not write core info"); return 1; }
+      fprintf(f,
+            "display_name = \"PS1 Test\"\n"
+            "corename = \"PS1Test\"\n"
+            "supported_extensions = \"cue\"\n"
+            "database = \"Test PS1\"\n");
+      fclose(f);
+   }
+   sprintf(p, "%s/ps1_libretro.so", core_dir);
+   { FILE *f = fopen(p, "wb"); if (f) { fputs("\177ELF", f); fclose(f); } }
 
 #ifdef HAVE_THREADS
    task_queue_init(true, msgq_push);
@@ -706,6 +823,149 @@ int main(int argc, char **argv)
    check(!file_contains(p, "06_cross.gam"),
          "extension of a core not claiming the database refused",
          "no 06_cross.gam in Alpha");
+
+   /* PS1 discs match on the serial their data track carries.  A root
+    * directory listing PSX.EXE ahead of the executable the disc boots
+    * must not end the search.  A disc that boots PSX.EXE, as the
+    * SYSTEM.CNF BOOT target or for want of a SYSTEM.CNF, has no serial
+    * whatever else the track holds, so the crc decides. */
+   {
+      static const db_rec_t ps1_recs[] = {
+         { "Serial The Game",   "SLUS-00152", 0x5E1A0152u, PS1_TRACK_SIZE },
+         { "Short Track Game",  "SLUS-00777", 0x5E1A0777u, PS1_SHORT_SIZE },
+         { "PSX Boot The Game", NULL,         0x0B0071E5u, PS1_TRACK_SIZE },
+         { "Decoy Boot Game",   "SLUS-00998", 0xDEC0DEC3u, PS1_TRACK_SIZE },
+         { "PSX Boot Two",      NULL,         0x0B0071E6u, PS1_TRACK_SIZE },
+         { "Decoy Serial Game", "SLUS-00999", 0xDEC0DEC0u, PS1_TRACK_SIZE },
+         { "PSX No CNF Game",   NULL,         0x0B0071E7u, PS1_TRACK_SIZE },
+         { "Decoy No CNF Game", "SLUS-01010", 0xDEC0DEC1u, PS1_TRACK_SIZE },
+         { "PSX Lower Game",    NULL,         0x0B0071E8u, PS1_TRACK_SIZE },
+         { "Decoy Lower Game",  "SLUS-01111", 0xDEC0DEC2u, PS1_TRACK_SIZE }
+      };
+      /* Where Tomb Raider (USA) has them: the root directory in sector
+       * 22, SYSTEM.CNF in sector 23. */
+      static const char *const serial_str[] = {
+         "PSX.EXE;1", "SLUS_001.52;1", "SYSTEM.CNF;1",
+         "BOOT = cdrom:\\SLUS_001.52;1"
+      };
+      static const unsigned serial_at[] = { 52407, 52517, 52577, 54120 };
+      /* The same, on a track that ends inside the probe window. */
+      static const char *const short_str[] = {
+         "PSX.EXE;1", "SLUS_007.77;1", "SYSTEM.CNF;1",
+         "BOOT = cdrom:\\SLUS_007.77;1"
+      };
+      /* No backslash after "cdrom:"; a serial-like record listed. */
+      static const char *const boot_str[] = {
+         "PSX.EXE;1", "SLUS_009.98;1", "SYSTEM.CNF;1",
+         "BOOT=cdrom:PSX.EXE;1"
+      };
+      static const unsigned boot_at[]   = { 52407, 52517, 52577, 54120 };
+      /* A serial-like record listed between PSX.EXE and SYSTEM.CNF. */
+      static const char *const decoy_str[] = {
+         "PSX.EXE;1", "SLUS_009.99;1", "SYSTEM.CNF;1",
+         "BOOT = cdrom:\\PSX.EXE;1"
+      };
+      static const unsigned decoy_at[]  = { 52407, 52517, 52577, 54120 };
+      /* No SYSTEM.CNF, so the BIOS boots PSX.EXE. */
+      static const char *const nocnf_str[] = {
+         "PSX.EXE;1", "SLUS_010.10;1"
+      };
+      static const unsigned nocnf_at[]  = { 52407, 52517 };
+      static const char *const lower_str[] = {
+         "PSX.EXE;1", "SLUS_011.11;1", "SYSTEM.CNF;1",
+         "BOOT = cdrom:\\psx.exe;1"
+      };
+      static const unsigned lower_at[]  = { 52407, 52517, 52577, 54120 };
+      char ps1_db[512], ps1_in[512];
+
+      sprintf(ps1_db, "%s/scan_db_ps1", root);
+      sprintf(ps1_in, "%s/scan_ps1",    root);
+      path_mkdir(ps1_db);
+      path_mkdir(ps1_in);
+
+      sprintf(p, "%s/Test PS1.rdb", ps1_db);
+      if (!write_db_set(p, ps1_recs, ARRAY_SIZE(ps1_recs)))
+      { check(0, "fixture", "could not write database"); goto done; }
+      sprintf(p, "%s/07_serial.bin", ps1_in);
+      if (!write_ps1_track(p, serial_str, serial_at,
+            ARRAY_SIZE(serial_str), 0x07070707u))
+      { check(0, "fixture", "could not write track"); goto done; }
+      sprintf(p, "%s/07_serial.cue", ps1_in);
+      if (!write_cue(p, "07_serial.bin"))
+      { check(0, "fixture", "could not write cue"); goto done; }
+      sprintf(p, "%s/12_ps1_short.bin", ps1_in);
+      if (!write_ps1_track_sized(p, PS1_SHORT_SIZE, short_str, serial_at,
+            ARRAY_SIZE(short_str), 0x12121212u))
+      { check(0, "fixture", "could not write track"); goto done; }
+      sprintf(p, "%s/12_ps1_short.cue", ps1_in);
+      if (!write_cue(p, "12_ps1_short.bin"))
+      { check(0, "fixture", "could not write cue"); goto done; }
+      sprintf(p, "%s/08_psx_boot.bin", ps1_in);
+      if (!write_ps1_track(p, boot_str, boot_at,
+            ARRAY_SIZE(boot_str), 0x0B0071E5u))
+      { check(0, "fixture", "could not write track"); goto done; }
+      sprintf(p, "%s/08_psx_boot.cue", ps1_in);
+      if (!write_cue(p, "08_psx_boot.bin"))
+      { check(0, "fixture", "could not write cue"); goto done; }
+      sprintf(p, "%s/09_psx_decoy.bin", ps1_in);
+      if (!write_ps1_track(p, decoy_str, decoy_at,
+            ARRAY_SIZE(decoy_str), 0x0B0071E6u))
+      { check(0, "fixture", "could not write track"); goto done; }
+      sprintf(p, "%s/09_psx_decoy.cue", ps1_in);
+      if (!write_cue(p, "09_psx_decoy.bin"))
+      { check(0, "fixture", "could not write cue"); goto done; }
+      sprintf(p, "%s/10_psx_nocnf.bin", ps1_in);
+      if (!write_ps1_track(p, nocnf_str, nocnf_at,
+            ARRAY_SIZE(nocnf_str), 0x0B0071E7u))
+      { check(0, "fixture", "could not write track"); goto done; }
+      sprintf(p, "%s/10_psx_nocnf.cue", ps1_in);
+      if (!write_cue(p, "10_psx_nocnf.bin"))
+      { check(0, "fixture", "could not write cue"); goto done; }
+      sprintf(p, "%s/11_psx_lower.bin", ps1_in);
+      if (!write_ps1_track(p, lower_str, lower_at,
+            ARRAY_SIZE(lower_str), 0x0B0071E8u))
+      { check(0, "fixture", "could not write track"); goto done; }
+      sprintf(p, "%s/11_psx_lower.cue", ps1_in);
+      if (!write_cue(p, "11_psx_lower.bin"))
+      { check(0, "fixture", "could not write cue"); goto done; }
+
+      strlcpy(config_get_ptr()->paths.path_content_database, ps1_db,
+            sizeof(config_get_ptr()->paths.path_content_database));
+      if (!run_scan(ps1_in))
+      {
+         check(0, "PS1 scan started", "task_push_dbscan refused");
+         goto done;
+      }
+      strlcpy(config_get_ptr()->paths.path_content_database, db_dir,
+            sizeof(config_get_ptr()->paths.path_content_database));
+      check(scan_completed, "PS1 scan completed",
+            scan_completed ? "callback fired" : "timed out");
+
+      sprintf(p, "%s/Test PS1.lpl", pl_dir);
+      check(   file_contains(p, "Serial The Game")
+            && file_contains(p, "SLUS-00152|serial"),
+            "PS1 serial found past a listed PSX.EXE", "SLUS-00152|serial");
+      check(   file_contains(p, "Short Track Game")
+            && file_contains(p, "SLUS-00777|serial"),
+            "PS1 serial found on a track shorter than the probe",
+            "SLUS-00777|serial");
+      check(   file_contains(p, "PSX Boot The Game")
+            && file_contains(p, "0B0071E5|crc")
+            && !file_contains(p, "Decoy Boot Game"),
+            "PSX.EXE as BOOT target falls to the crc", "0B0071E5|crc");
+      check(   file_contains(p, "PSX Boot Two")
+            && file_contains(p, "0B0071E6|crc")
+            && !file_contains(p, "Decoy Serial Game"),
+            "listed serial ignored when PSX.EXE boots", "0B0071E6|crc");
+      check(   file_contains(p, "PSX No CNF Game")
+            && file_contains(p, "0B0071E7|crc")
+            && !file_contains(p, "Decoy No CNF Game"),
+            "no SYSTEM.CNF: PSX.EXE falls to the crc", "0B0071E7|crc");
+      check(   file_contains(p, "PSX Lower Game")
+            && file_contains(p, "0B0071E8|crc")
+            && !file_contains(p, "Decoy Lower Game"),
+            "lowercase PSX.EXE BOOT falls to the crc", "0B0071E8|crc");
+   }
 
    /* A strict scan hands every file to DATABASE_SCAN_ITERATE_NEXT.  32
     * files fill string_list_new()'s initial capacity, so ASan catches a
