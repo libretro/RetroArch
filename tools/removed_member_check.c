@@ -290,17 +290,26 @@ static void declared_names(const char *b, const char *e,
       s = blanks(w, e);
       if (s == w)
          continue;
+      /* A qualifier may have consumed the type before a named bitfield. */
+      if (i && s < e && *s == ':')
+         continue;
       for (xb = s; s < e && !strchr(";()=", *s); s++);
       if (s >= e || *s != ';')
          continue;
       if (s == xb && xb - w < 2)
          continue;
-      /* the names, split on ',', bounds dropped, ' \t*' stripped */
+      /* Names split on ',', bounds/bit widths dropped, ' \t*' stripped. */
       for (p = xb; p <= s; p++)
       {
          if (p == s || *p == ',')
          {
-            const char *pb = part.p, *pe = part.p + part.len;
+            const char *pb = part.p, *pe, *colon;
+            if (!pb)
+               continue;
+            pe = pb + part.len;
+            colon = (const char*)memchr(pb, ':', part.len);
+            if (colon && blanks(colon + 1, pe) < pe)
+               pe = colon;
             while (pb < pe && (IS_BL(*pb) || *pb == '*'))
                pb++;
             while (pe > pb && (IS_BL(pe[-1]) || pe[-1] == '*'))
@@ -556,7 +565,32 @@ static const struct fixture fixtures[] = {
      "-   int next_row;\n",
      { "a.c", "int seq_pos, break_pos, row, next_row, tick;\n"
               "v = replay->next_row;\n", NULL, NULL },
-     0 }
+     0 },
+   { "a name declared in a bitfield list still counts as declared",
+     "-   unsigned l3;\n",
+     { "a.c", "unsigned l1 : 1, r1 : 1, l3 : 1, r3 : 1;\n"
+              "v = report->l3;\n", NULL, NULL },
+     0 },
+   { "a lone bitfield still counts as declared",
+     "-   unsigned held;\n",
+     { "a.c", "unsigned held : FLAG_WIDTH;\n"
+              "v = report->held;\n", NULL, NULL },
+     0 },
+   { "the first name in a bitfield list is retained",
+     "-   unsigned held;\n",
+     { "a.c", "unsigned held : 1, other : 1;\n"
+              "v = report->held;\n", NULL, NULL },
+     0 },
+   { "an unnamed bitfield does not hide a removed member",
+     "-   unsigned held;\n",
+     { "a.c", "unsigned : 0, other : 1;\n"
+              "v = report->held;\n", NULL, NULL },
+     1 },
+   { "an empty bitfield width does not hide a removed member",
+     "-   unsigned held;\n",
+     { "a.c", "unsigned held : ;\n"
+              "v = report->held;\n", NULL, NULL },
+     1 }
 };
 
 static int selftest(void)
