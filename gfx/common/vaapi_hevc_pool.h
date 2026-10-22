@@ -45,10 +45,22 @@ int vaapi_hevc_pool_decode(vaapi_hevc_pool_t *p,
 int vaapi_hevc_pool_poll(vaapi_hevc_pool_t *p, unsigned slot);
 /* One export ticket per surface incarnation. The renderer's frame object may
  * have multiple references; return the ticket once, after its last GPU use. */
-bool vaapi_hevc_pool_acquire(
-      vaapi_hevc_pool_t *p, unsigned slot, uint64_t *ticket);
-bool vaapi_hevc_pool_release(
-      vaapi_hevc_pool_t *p, unsigned slot, uint64_t ticket);
+static INLINE bool vaapi_hevc_pool_acquire(vaapi_hevc_pool_t *p,unsigned slot,uint64_t *ticket)
+{
+ uint32_t bit;
+ if(!p || !p->active || p->broken || !ticket || slot>=p->session->slots)return false;
+ bit=UINT32_C(1)<<slot;
+ if(!(p->ready&bit) || (p->exports&bit) || !p->generation[slot])return false;
+ p->exports|=bit;*ticket=p->generation[slot];return true;
+}
+static INLINE bool vaapi_hevc_pool_release(vaapi_hevc_pool_t *p,unsigned slot,uint64_t ticket)
+{
+ uint32_t bit;
+ if(!p || !p->active || slot>=p->session->slots || !ticket)return false;
+ bit=UINT32_C(1)<<slot;
+ if(!(p->exports&bit) || p->generation[slot]!=ticket)return false;
+ p->exports&=~bit;return true;
+}
 bool vaapi_hevc_pool_close(vaapi_hevc_pool_t *p);
 /* Only after actual successful termination of this display, with no exports. */
 bool vaapi_hevc_pool_terminated(vaapi_hevc_pool_t *p, VADisplay display);

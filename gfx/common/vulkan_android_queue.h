@@ -23,13 +23,15 @@ typedef struct vulkan_android_queue
    VkResult failure;
 } vulkan_android_queue_t;
 
-/* Renderer owner only. Zero-initialize before use. Copies all submit data.
- * NOT_READY accepts; TIMEOUT leaves ownership with caller; errors are sticky. */
-VkResult vulkan_android_queue_push(void *context, VkQueue queue,
-      uint32_t count, const VkSubmitInfo *submits, VkFence fence);
+/* Renderer owner only. One command, optional single wait/signal semaphore.
+ * Zero-initialize before use. Copies all submit data.
+ * NOT_READY accepts; TIMEOUT leaves ownership with caller; errors are sticky.
+ */
+VkResult vulkan_android_queue_push(void *context, VkQueue queue, uint32_t count,
+      const VkSubmitInfo *submits, VkFence fence);
 /* Caller already holds its existing queue serialization. Failed work stays
  * retained until cold device destruction; never retry an ambiguous failure. */
-VkResult vulkan_android_queue_flush(vulkan_android_queue_t *queue,
-      PFN_vkQueueSubmit submit);
+VkResult vulkan_android_queue_flush(
+      vulkan_android_queue_t *queue, PFN_vkQueueSubmit submit);
 RETRO_END_DECLS
 #endif

@@ -19,8 +19,8 @@ typedef struct vaapi_hevc_vulkan_submit_ops
    PFN_vkCmdBindDescriptorSets bind_sets;
    PFN_vkCmdPushConstants push;
    PFN_vkCmdDispatch dispatch;
-   /* Existing renderer queue serialization, never direct shared-queue access.
-    */
+   /* Existing queue serialization. SUCCESS submitted; NOT_READY deferred and
+    * owned; TIMEOUT refused without GPU use. Negative errors are ambiguous. */
    VkResult (*submit)(void *, VkQueue, uint32_t, const VkSubmitInfo *, VkFence);
    void *context;
 } vaapi_hevc_vulkan_submit_ops_t;
@@ -28,7 +28,7 @@ typedef struct vaapi_hevc_vulkan_submit_ops
 typedef struct vaapi_hevc_vulkan_submission
 {
    vaapi_hevc_vulkan_frame_t *frame;
-   vaapi_hevc_pool_t *pool;
+   void *pool;
    vaapi_hevc_vulkan_submit_ops_t ops;
    uint64_t ticket;
    VkDevice device;

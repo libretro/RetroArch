@@ -4,8 +4,16 @@
 #include <math.h>
 #include <stdio.h>
 #include "../../../gfx/common/vaapi_hevc_vulkan_submit.h"
+#include "../../../gfx/common/vulkan_android_queue.h"
 #include "../../../gfx/common/vaapi_hevc_vulkan_resources.h"
 #include "../d3d_p010_import/fp16_reference.h"
+#ifdef _WIN32
+#define PRIME_GPU_HANDLE_TYPE VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT
+#define PRIME_GPU_MEMORY_EXTENSION "VK_KHR_external_memory_win32"
+#else
+#define PRIME_GPU_HANDLE_TYPE VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT
+#define PRIME_GPU_MEMORY_EXTENSION VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME
+#endif
 #define OK(call) assert((call) == VK_SUCCESS)
 static VkInstance instance;
 static VkDebugUtilsMessengerEXT messenger;
@@ -14,6 +22,8 @@ static VkPhysicalDevice physical;
 static VkPhysicalDeviceMemoryProperties memory;
 static VkQueue queue;
 static unsigned family, errors, submitted;
+static vulkan_android_queue_t pending;
+static bool deferred;
 static unsigned checked_channels, max_byte_error;
 static uint32_t resource_slots;
 static double max_half_error, max_half_relative;
@@ -100,7 +110,7 @@ static void make_image(VkFormat format, unsigned width, unsigned height,
       query.pNext  = &external_query;
       external_query.sType =
             VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO;
-      external_query.handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT;
+      external_query.handleType = PRIME_GPU_HANDLE_TYPE;
       properties.sType          = VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2;
       properties.pNext          = &external_properties;
       external_properties.sType =
@@ -110,7 +120,7 @@ static void make_image(VkFormat format, unsigned width, unsigned height,
       assert(external_properties.externalMemoryProperties.externalMemoryFeatures
              & VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT);
       handles.sType       = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO;
-      handles.handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT;
+      handles.handleTypes = PRIME_GPU_HANDLE_TYPE;
       info.pNext          = &handles;
    }
    OK(vkCreateImage(device, &info, NULL, image));
@@ -124,7 +134,7 @@ static void make_image(VkFormat format, unsigned width, unsigned height,
    if (external)
    {
       export_info.sType       = VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO;
-      export_info.handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT;
+      export_info.handleTypes = PRIME_GPU_HANDLE_TYPE;
       dedicated.sType = VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO;
       dedicated.image = *image;
       dedicated.pNext = &export_info;
@@ -267,6 +277,8 @@ static VkResult serialized_submit(void *context, VkQueue target, uint32_t count,
       const VkSubmitInfo *info, VkFence done)
 {
    assert(context == &entry && target == queue && count == 1 && frame.pending);
+   if (deferred)
+      return vulkan_android_queue_push(&pending, target, count, info, done);
    submitted++;
    return vkQueueSubmit(target, count, info, done);
 }
@@ -504,10 +516,27 @@ static void execute(unsigned depth, unsigned full, unsigned mode)
       entry.fence   = resources.fences[slot];
       entry.set     = resources.sets[slot];
       resource_slots |= (uint32_t)1 << slot;
+      deferred = i != 0;
+      if (i == 2)
+      {
+         unsigned before = submitted;
+         pending.count = VULKAN_ANDROID_QUEUE_CAPACITY;
+         assert(vaapi_hevc_vulkan_submission_present(&entry, destination,
+               destination_view, entry.output_format, 3, 2, tracked) == 0);
+         assert(!frame.pending && submitted == before);
+         pending.count = 0;
+      }
       assert(vaapi_hevc_vulkan_submission_present(&entry, destination,
                    destination_view, entry.output_format, 3, 2, tracked)
              == 1);
       assert(!vaapi_hevc_vulkan_frame_retire(&frame, &returned));
+      if (deferred)
+      {
+         assert(pending.count == 1);
+         assert(vaapi_hevc_vulkan_frame_poll(&frame, vkGetFenceStatus) == 0);
+         OK(vulkan_android_queue_flush(&pending, vkQueueSubmit));
+         submitted++;
+      }
       OK(vkWaitForFences(
             device, 1, &entry.fence, VK_TRUE, (uint64_t)5000000000.0));
       assert(vaapi_hevc_vulkan_frame_poll(&frame, vkGetFenceStatus) == 1);
@@ -534,7 +563,7 @@ static void initialize(void)
    static VkQueueFamilyProperties families[32];
    static VkPhysicalDeviceProperties properties;
    const char *extensions[] = {VK_EXT_QUEUE_FAMILY_FOREIGN_EXTENSION_NAME,
-         VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME};
+         PRIME_GPU_MEMORY_EXTENSION};
    const char *layer        = "VK_LAYER_KHRONOS_validation",
               *debug        = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
    VkApplicationInfo app;

@@ -32,7 +32,7 @@ bool vaapi_hevc_vulkan_submission_configure(vaapi_hevc_vulkan_submission_t *e,
    }
    memcpy(e->header, layout.header, sizeof(e->header));
    e->frame  = frame;
-   e->pool   = frame->source.pool;
+   e->pool   = vaapi_export_owner(&frame->source);
    e->ticket = frame->source.ticket;
    e->slot   = frame->source.slot;
    e->device = frame->device;
@@ -85,6 +85,7 @@ int vaapi_hevc_vulkan_submission_present(vaapi_hevc_vulkan_submission_t *e,
    VkSubmitInfo submit;
    unsigned i;
    int status;
+   VkResult result;
    if (!e || !e->frame || !e->frame->active || !e->frame->source.active
          || !destination || !view || !e->device || e->device != e->frame->device
          || !e->queue || !e->command || !e->fence || !e->pipeline || !e->layout
@@ -97,7 +98,7 @@ int vaapi_hevc_vulkan_submission_present(vaapi_hevc_vulkan_submission_t *e,
          || (layout != VK_IMAGE_LAYOUT_UNDEFINED
                && layout != VK_IMAGE_LAYOUT_GENERAL
                && layout != VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
-         || e->pool != e->frame->source.pool || e->slot != e->frame->source.slot
+         || e->pool != vaapi_export_owner(&e->frame->source) || e->slot != e->frame->source.slot
          || e->ticket != e->frame->source.ticket || !e->ops.fence_status
          || !e->ops.reset_fences || !e->ops.reset_command || !e->ops.begin
          || !e->ops.end || !e->ops.update || !e->ops.barrier
@@ -163,8 +164,14 @@ int vaapi_hevc_vulkan_submission_present(vaapi_hevc_vulkan_submission_t *e,
    submit.pCommandBuffers      = &e->command;
    if (!vaapi_hevc_vulkan_frame_track(e->frame, e->fence))
       return -1;
-   if (e->ops.submit(e->ops.context, e->queue, 1, &submit, e->fence)
-         != VK_SUCCESS)
+   result = e->ops.submit(e->ops.context, e->queue, 1, &submit, e->fence);
+   if (result == VK_TIMEOUT)
+   {
+      e->frame->pending = false;
+      e->frame->fence = VK_NULL_HANDLE;
+      return 0;
+   }
+   if (result != VK_SUCCESS && result != VK_NOT_READY)
    {
       e->frame->broken = true;
       return -2;

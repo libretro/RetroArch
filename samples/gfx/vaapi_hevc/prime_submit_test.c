@@ -164,7 +164,9 @@ static VkResult sub_submit(void *context, VkQueue queue, uint32_t count,
           && info->commandBufferCount == 1
           && info->pCommandBuffers[0] == sub.command);
    submissions++;
-   return sub_fault == 5 ? VK_ERROR_DEVICE_LOST : VK_SUCCESS;
+   return sub_fault == 5 ? VK_ERROR_DEVICE_LOST
+         : sub_fault == 6 ? VK_NOT_READY
+         : sub_fault == 7 ? VK_TIMEOUT : VK_SUCCESS;
 }
 
 static const vaapi_hevc_vulkan_submit_ops_t sub_ops = {vf_status,
@@ -292,6 +294,26 @@ int VAAPI_PRIME_SUBMIT_TEST_MAIN(void)
    assert(sub_present() == -1 && !phase);
    assert(vaapi_hevc_vulkan_frame_retire(&vf, &vf_returned));
    vf_finish();
+   for (fault = 6; fault <= 7; fault++)
+   {
+      sub_setup();
+      destination_layout = VK_IMAGE_LAYOUT_UNDEFINED;
+      sub_fault = fault;
+      assert(sub_present() == (fault == 6 ? 1 : 0));
+      assert(submissions == 1 && !vf.broken);
+      if (fault == 6)
+      {
+         assert(vf.pending && !vaapi_hevc_vulkan_frame_retire(&vf, &vf_returned));
+         assert(vaapi_hevc_vulkan_frame_poll(&vf, vf_status) == 0);
+         vf_fence_result = VK_SUCCESS;
+         assert(vaapi_hevc_vulkan_frame_poll(&vf, vf_status) == 1);
+      }
+      else
+         assert(!vf.pending && !vf.fence);
+      assert(vaapi_hevc_vulkan_frame_retire(&vf, &vf_returned));
+      vf_finish();
+   }
+   sub_fault = 0;
    puts("PASS: warm borrowed YUV conversion commands, cropped NV12/P010 uniforms, destination layouts, busy/stale refusal and uncertain-submit retention; no GPU execution");
    return 0;
 }

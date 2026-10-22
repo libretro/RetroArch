@@ -3,6 +3,7 @@
 #define _GNU_SOURCE
 #endif
 #include "vaapi_hevc_runtime.h"
+#include "vaapi_vp9_runtime.h"
 #include <string.h>
 #if defined(__linux__) && !defined(__ANDROID__) && defined(NEED_DYNAMIC) && !defined(VAAPI_HEVC_RUNTIME_TEST)
 #include <fcntl.h>
@@ -22,6 +23,10 @@ static int vaapi_hevc_open_node(const char *path,unsigned major_id,unsigned mino
 }
 static void vaapi_hevc_close_node(int fd){close(fd);}
 #endif
+static bool vaapi_runtime_open_with_io(vaapi_hevc_runtime_t *r,
+      const char *path, unsigned major_id, unsigned minor_id, unsigned width,
+      unsigned height, unsigned depth, unsigned slots, unsigned slice_mode,
+      const vaapi_hevc_runtime_io_t *io, bool vp9);
 bool vaapi_hevc_runtime_open(vaapi_hevc_runtime_t *r,const char *path,
       unsigned major_id,unsigned minor_id,unsigned width,unsigned height,
       unsigned depth,unsigned slots,unsigned slice_mode)
@@ -36,18 +41,20 @@ bool vaapi_hevc_runtime_open(vaapi_hevc_runtime_t *r,const char *path,
 #endif
 }
 
-bool vaapi_hevc_runtime_open_with_io(vaapi_hevc_runtime_t *r, const char *path,
+static bool vaapi_runtime_open_with_io(vaapi_hevc_runtime_t *r, const char *path,
       unsigned major_id, unsigned minor_id, unsigned width, unsigned height,
       unsigned depth, unsigned slots, unsigned slice_mode,
-      const vaapi_hevc_runtime_io_t *io)
+      const vaapi_hevc_runtime_io_t *io, bool vp9)
 {
    vaapi_hevc_runtime_io_t native;
    if (!r || r->active || !path || !*path || !io || !io->open_node
          || !io->close_node || !io->load || !io->symbol || !io->unload
-         || width < 8 || width > 65535 || height < 8 || height > 65535
-         || (width & 1) || (height & 1) || (depth != 8 && depth != 10)
-         || slots < 2 || slots > 32
-         || (slice_mode != VAAPI_HEVC_SLICE_AUTO
+         || width < (vp9 ? 1u : 8u) || width > 65535
+         || height < (vp9 ? 1u : 8u) || height > 65535
+         || (!vp9 && ((width & 1) || (height & 1)))
+         || (depth != 8 && depth != 10)
+         || slots < (vp9 ? 10u : 2u) || slots > 32
+         || (!vp9 && slice_mode != VAAPI_HEVC_SLICE_AUTO
                && slice_mode != VA_DEC_SLICE_MODE_NORMAL
                && slice_mode != VA_DEC_SLICE_MODE_BASE))
       return false;
@@ -116,8 +123,10 @@ bool vaapi_hevc_runtime_open_with_io(vaapi_hevc_runtime_t *r, const char *path,
       r->error = VA_STATUS_ERROR_UNIMPLEMENTED;
       return false;
    }
-   if (!vaapi_hevc_session_open(&r->session, r->display, &r->session.ops, width,
-             height, depth, slots, slice_mode))
+   if (!(vp9 ? vaapi_vp9_session_open(&r->session, r->display,
+                      &r->session.ops, width, height, depth, slots)
+              : vaapi_hevc_session_open(&r->session, r->display,
+                      &r->session.ops, width, height, depth, slots, slice_mode)))
    {
       r->error = r->session.error;
       return false;
@@ -125,6 +134,46 @@ bool vaapi_hevc_runtime_open_with_io(vaapi_hevc_runtime_t *r, const char *path,
    r->ready = true;
    return true;
 }
+bool vaapi_hevc_runtime_open_with_io(vaapi_hevc_runtime_t *r,
+      const char *path, unsigned major_id, unsigned minor_id, unsigned width,
+      unsigned height, unsigned depth, unsigned slots, unsigned slice_mode,
+      const vaapi_hevc_runtime_io_t *io)
+{
+   return vaapi_runtime_open_with_io(r, path, major_id, minor_id, width,
+         height, depth, slots, slice_mode, io, false);
+}
+
+bool vaapi_vp9_runtime_open_with_io(vaapi_vp9_runtime_t *r,
+      const char *path, unsigned major_id, unsigned minor_id, unsigned width,
+      unsigned height, unsigned depth, unsigned slots,
+      const vaapi_vp9_runtime_io_t *io)
+{
+   return vaapi_runtime_open_with_io(r, path, major_id, minor_id, width,
+         height, depth, slots, 0, io, true);
+}
+
+bool vaapi_vp9_runtime_open(vaapi_vp9_runtime_t *r, const char *path,
+      unsigned major_id, unsigned minor_id, unsigned width, unsigned height,
+      unsigned depth, unsigned slots)
+{
+#ifdef VAAPI_HEVC_NATIVE_RUNTIME
+   static const vaapi_vp9_runtime_io_t io = {vaapi_hevc_open_node,
+         vaapi_hevc_close_node, dylib_load, dylib_proc, dylib_close};
+   return vaapi_vp9_runtime_open_with_io(r, path, major_id, minor_id, width,
+         height, depth, slots, &io);
+#else
+   (void)r;
+   (void)path;
+   (void)major_id;
+   (void)minor_id;
+   (void)width;
+   (void)height;
+   (void)depth;
+   (void)slots;
+   return false;
+#endif
+}
+
 bool vaapi_hevc_runtime_close(vaapi_hevc_runtime_t *r)
 {
  if(!r || !r->active)return true;

@@ -18,6 +18,12 @@ typedef struct rvp9_hw_picture
    int previous_slot, use_prev_frame_mvs;
 } rvp9_hw_picture_t;
 
+typedef struct rvp9_hw_segment
+{
+   int16_t y_dc, y_ac, uv_dc, uv_ac;
+   uint8_t filter[4][2];
+} rvp9_hw_segment_t;
+
 typedef struct rvp9_hw_ops
 {
    void *decoder;
@@ -58,6 +64,10 @@ typedef struct rvp9_hw_backend
 } rvp9_hw_backend_t;
 
 RETRO_BEGIN_DECLS
+/* Effective segment coefficients for native decoders. No decoder allocation.
+ * Invalid input leaves out unchanged. quant/filter state is already inherited. */
+bool rvp9_hw_segment(const rvp9_hdr *header, unsigned segment,
+      rvp9_hw_segment_t *out);
 /* Publish immutable backend storage before opening streams; NULL withdraws it.
  * The backend/user must outlive its open decoders. Existing sessions keep close. */
 void rvp9_set_hw_backend(const rvp9_hw_backend_t *backend);

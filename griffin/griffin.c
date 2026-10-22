@@ -369,6 +369,9 @@ VIDEO CONTEXT
 #endif
 
 #ifdef HAVE_VULKAN
+#if defined(HAVE_VAAPI) && defined(HAVE_RMP4) && !defined(ANDROID)
+#include "../gfx/common/vulkan_android_queue.c"
+#endif
 #if defined(ANDROID) \
    && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1))
 #include "../gfx/common/vulkan_android_device.c"

@@ -1818,6 +1818,10 @@ ifeq ($(HAVE_VULKAN), 1)
       OBJ += gfx/common/vulkan_video_decode.o
       ifeq ($(HAVE_VAAPI), 1)
          DEFINES += -DHAVE_VAAPI
+         DEF_FLAGS += $(VAAPI_DRM_CFLAGS)
+         ifneq ($(ANDROID), 1)
+            OBJ += gfx/common/vulkan_android_queue.o
+         endif
          OBJ += gfx/common/vaapi_frame.o \
                 gfx/common/vaapi_hevc_decoder.o \
                 gfx/common/vaapi_hevc_owner.o \

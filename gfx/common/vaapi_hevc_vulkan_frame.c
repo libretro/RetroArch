@@ -47,7 +47,7 @@ bool vaapi_hevc_vulkan_frame_prepare(vaapi_hevc_vulkan_frame_t *out,
       }
    }
    out->descriptor = source->descriptor;
-   out->pool       = source->pool;
+   out->pool       = vaapi_export_owner(source);
    out->slot       = source->slot;
    for (i = 0; i < 4; i++)
    {
@@ -146,8 +146,8 @@ bool vaapi_hevc_vulkan_frame_matches(
    unsigned i, j;
    if (!frame || !frame->active || frame->broken || !source || !source->active
          || !source->ready || source == &frame->source
-         || source->pool != frame->pool || source->slot != frame->slot
-         || !source->pool || source->slot >= 32 || !source->ticket)
+         || vaapi_export_owner(source) != frame->pool || source->slot != frame->slot
+         || !vaapi_export_owner(source) || source->slot >= 32 || !source->ticket)
       return false;
    a = &frame->descriptor;
    b = &source->descriptor;

@@ -59,7 +59,8 @@ bool vaapi_hevc_export_bind(
 static bool vaapi_hevc_export_valid(const vaapi_hevc_export_t *e)
 {
    const VADRMPRIMESurfaceDescriptor *d = &e->descriptor;
-   const vaapi_hevc_session_t *s        = e->pool->session;
+   const vaapi_hevc_session_t *s = e->native_session
+         ? e->native_session : e->pool->session;
    unsigned i, j, k, used = 0;
    if ((s->depth != 8 && s->depth != 10) || !d->width || !d->height
          || (d->width & 1) || (d->height & 1)
@@ -119,27 +120,36 @@ static bool vaapi_hevc_export_valid(const vaapi_hevc_export_t *e)
    return used == ((1u << d->num_objects) - 1);
 }
 
-bool vaapi_hevc_export_open(vaapi_hevc_export_t *e, vaapi_hevc_pool_t *pool,
-      unsigned slot, const vaapi_hevc_export_ops_t *ops)
+bool vaapi_export_open(vaapi_hevc_export_t *e, void *owner,
+      const vaapi_hevc_session_t *session,
+      const vaapi_export_owner_ops_t *ownership, unsigned slot,
+      const vaapi_hevc_export_ops_t *ops)
 {
    vaapi_hevc_export_ops_t native;
+   vaapi_export_owner_ops_t owner_ops;
    uint64_t ticket;
    unsigned i;
-   if (!e || e->active || !ops || !ops->surface || !ops->cloexec || !ops->close
+   if (!e || e->active || !owner || !session || !session->display
+         || slot >= session->slots || !ownership || !ownership->acquire
+         || !ownership->current || !ownership->release
+         || !ops || !ops->surface || !ops->cloexec || !ops->close
          || !ops->identity)
       return false;
    native = *ops;
-   if (!vaapi_hevc_pool_acquire(pool, slot, &ticket))
+   owner_ops = *ownership;
+   if (!owner_ops.acquire(owner, slot, &ticket))
       return false;
    memset(e, 0, sizeof(*e));
-   e->pool   = pool;
+   e->native_owner = owner;
+   e->native_session = session;
+   e->ownership = owner_ops;
    e->slot   = slot;
    e->ticket = ticket;
    e->ops    = native;
    e->active = true;
    for (i = 0; i < 4; i++)
       e->descriptor.objects[i].fd = -1;
-   if (e->ops.surface(pool->display, pool->session->surfaces[slot],
+   if (e->ops.surface(session->display, session->surfaces[slot],
              VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME_2,
              VA_EXPORT_SURFACE_READ_ONLY | VA_EXPORT_SURFACE_SEPARATE_LAYERS,
              &e->descriptor)
@@ -157,6 +167,39 @@ bool vaapi_hevc_export_open(vaapi_hevc_export_t *e, vaapi_hevc_pool_t *pool,
 failed:
    vaapi_hevc_export_close(e);
    return false;
+}
+
+static bool vaapi_export_hevc_acquire(void *owner, unsigned slot,
+      uint64_t *ticket)
+{
+   return vaapi_hevc_pool_acquire((vaapi_hevc_pool_t *)owner, slot, ticket);
+}
+static bool vaapi_export_hevc_current(void *owner, unsigned slot,
+      uint64_t ticket)
+{
+   const vaapi_hevc_pool_t *pool = (const vaapi_hevc_pool_t *)owner;
+   return pool && pool->active && !pool->broken && slot < 32 && ticket
+         && (pool->exports & (UINT32_C(1) << slot))
+         && pool->generation[slot] == ticket;
+}
+static bool vaapi_export_hevc_release(void *owner, unsigned slot,
+      uint64_t ticket)
+{
+   return vaapi_hevc_pool_release((vaapi_hevc_pool_t *)owner, slot, ticket);
+}
+bool vaapi_hevc_export_open(vaapi_hevc_export_t *e, vaapi_hevc_pool_t *pool,
+      unsigned slot, const vaapi_hevc_export_ops_t *ops)
+{
+   static const vaapi_export_owner_ops_t ownership = {
+         vaapi_export_hevc_acquire, vaapi_export_hevc_current,
+         vaapi_export_hevc_release};
+   bool result;
+   if (!pool)
+      return false;
+   result = vaapi_export_open(e, pool, pool->session, &ownership, slot, ops);
+   if (e && e->active && e->native_owner == pool)
+      e->pool = pool;
+   return result;
 }
 
 int vaapi_hevc_export_take(vaapi_hevc_export_t *e, unsigned object)
@@ -184,7 +227,13 @@ bool vaapi_hevc_export_close(vaapi_hevc_export_t *e)
                e->descriptor.objects[j].fd = -1;
          e->ops.close(fd);
       }
-   if (!vaapi_hevc_pool_release(e->pool, e->slot, e->ticket))
+   if (e->native_owner)
+   {
+      if (!e->ownership.release || !e->ownership.release(
+                e->native_owner, e->slot, e->ticket))
+         return false;
+   }
+   else if (!vaapi_hevc_pool_release(e->pool, e->slot, e->ticket))
       return false;
    memset(e, 0, sizeof(*e));
    return true;

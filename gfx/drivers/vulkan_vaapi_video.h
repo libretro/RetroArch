@@ -5,12 +5,8 @@ static VkResult vulkan_vaapi_renderer_submit(void *context, VkQueue queue,
       uint32_t count, const VkSubmitInfo *submits, VkFence fence)
 {
    vk_t *vk = (vk_t *)context;
-   VkResult result;
-   vulkan_lock_queue(vk);
-   result = vkQueueSubmit(queue, count, submits, fence);
-   vulkan_unlock_queue(vk);
-   vulkan_check_device_lost(vk, result);
-   return result;
+   return vulkan_android_queue_push(
+         &vk->vaapi_submissions, queue, count, submits, fence);
 }
 
 static void vulkan_vaapi_renderer_destroy_destination(
@@ -97,48 +93,64 @@ static vaapi_hevc_vulkan_cache_t *vulkan_vaapi_renderer_cache(
          &config, 32, texture->format == VK_FORMAT_R16G16B16A16_SFLOAT);
 }
 
-static enum video_texture_update vulkan_vaapi_renderer_import(
+static void vulkan_vaapi_renderer_frame(const video_frame_import_t *input,
+      video_hw_frame_t *frame)
+{
+   memset(frame, 0, sizeof(*frame));
+   frame->color      = input->color;
+   frame->yuv        = input->yuv;
+   frame->owner      = input->owner;
+   frame->abandon    = input->abandon;
+   frame->image      = input->image;
+   frame->done       = input->done;
+   frame->done_value = input->done_value;
+   frame->width      = VIDEO_SCALE_W(input->dims);
+   frame->height     = VIDEO_SCALE_H(input->dims);
+   frame->crop_x     = input->crop_x;
+   frame->crop_y     = input->crop_y;
+   frame->pixfmt     = input->pixfmt;
+}
+
+static enum video_texture_update vulkan_vaapi_renderer_prepare(
       vk_t *vk, struct vk_texture *texture, const video_frame_import_t *input)
 {
    video_hw_frame_t frame;
-   bool prepare = false;
    int result;
    if (texture->dims != input->dims
          || (texture->format == VK_FORMAT_R16G16B16A16_SFLOAT)
-                  != (input->output_pixfmt == IMAGE_PIXFMT_FP16))
+               != (input->output_pixfmt == IMAGE_PIXFMT_FP16))
       return VIDEO_TEXTURE_UPDATE_REFUSED;
-   memset(&frame, 0, sizeof(frame));
-   frame.color      = input->color;
-   frame.yuv        = input->yuv;
-   frame.owner      = input->owner;
-   frame.abandon    = input->abandon;
-   frame.image      = input->image;
-   frame.done       = input->done;
-   frame.done_value = input->done_value;
-   frame.width      = VIDEO_SCALE_W(input->dims);
-   frame.height     = VIDEO_SCALE_H(input->dims);
-   frame.crop_x     = input->crop_x;
-   frame.crop_y     = input->crop_y;
-   frame.pixfmt     = input->pixfmt;
+   vulkan_vaapi_renderer_frame(input, &frame);
    if (!texture->vaapi_cache)
    {
       texture->vaapi_cache = vulkan_vaapi_renderer_cache(vk, texture);
       if (!texture->vaapi_cache)
          return VIDEO_TEXTURE_UPDATE_REFUSED;
       texture->vaapi_next = vk->vaapi_textures;
-      vk->vaapi_textures  = texture;
+      vk->vaapi_textures = texture;
    }
+   result = vaapi_hevc_vulkan_cache_prepare(texture->vaapi_cache, &frame);
+   return result > 0 ? VIDEO_TEXTURE_UPDATE_DONE
+         : result == 0 || result == -2 ? VIDEO_TEXTURE_UPDATE_DROPPED
+                                      : VIDEO_TEXTURE_UPDATE_REFUSED;
+}
+
+static enum video_texture_update vulkan_vaapi_renderer_import(
+      vk_t *vk, struct vk_texture *texture, const video_frame_import_t *input)
+{
+   video_hw_frame_t frame;
+   int result;
+   (void)vk;
+   if (texture->dims != input->dims
+         || (texture->format == VK_FORMAT_R16G16B16A16_SFLOAT)
+               != (input->output_pixfmt == IMAGE_PIXFMT_FP16))
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   if (!texture->vaapi_cache)
+      return VIDEO_TEXTURE_UPDATE_DROPPED;
+   vulkan_vaapi_renderer_frame(input, &frame);
    result = vaapi_hevc_vulkan_cache_present(texture->vaapi_cache, &frame,
          texture->image, texture->view, texture->format, frame.width,
-         frame.height, texture->layout, &prepare);
-   if (prepare)
-   {
-      result = vaapi_hevc_vulkan_cache_prepare(texture->vaapi_cache, &frame);
-      if (result > 0)
-         result = vaapi_hevc_vulkan_cache_present(texture->vaapi_cache, &frame,
-               texture->image, texture->view, texture->format, frame.width,
-               frame.height, texture->layout, NULL);
-   }
+         frame.height, texture->layout, NULL);
    if (result == 1)
    {
       texture->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;

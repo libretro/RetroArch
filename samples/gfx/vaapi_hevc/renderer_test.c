@@ -4,6 +4,7 @@
 #include "cache_test.c"
 #undef VAAPI_CACHE_TEST_MAIN
 #include "../../../gfx/video_driver.h"
+#include "../../../gfx/common/vulkan_android_queue.h"
 
 struct vk_texture
 {
@@ -31,6 +32,7 @@ typedef struct vk
 {
    struct renderer_context *context;
    struct vk_texture *vaapi_textures;
+   vulkan_android_queue_t vaapi_submissions;
 } vk_t;
 
 static vk_t renderer;
@@ -49,12 +51,6 @@ static void vulkan_unlock_queue(void *vk)
 {
    assert(vk == &renderer && renderer_locked);
    renderer_locked = 0;
-}
-
-static void vulkan_check_device_lost(vk_t *vk, VkResult result)
-{
-   assert(vk == &renderer && !renderer_locked);
-   assert(result == VK_SUCCESS || result == VK_ERROR_DEVICE_LOST);
 }
 
 static void vulkan_destroy_texture(VkDevice d, struct vk_texture *texture)
@@ -217,6 +213,7 @@ static void renderer_setup(bool fp16, video_frame_import_t *input)
    renderer_context.graphics_queue_index = 2;
    renderer_context.memory_properties    = vf_memory;
    renderer_context.prime_import_device  = true;
+   memset(&renderer.vaapi_submissions, 0, sizeof(renderer.vaapi_submissions));
    renderer.context                      = &renderer_context;
    renderer.vaapi_textures               = NULL;
    memset(&renderer_ops, 0, sizeof(renderer_ops));
@@ -284,7 +281,7 @@ static void renderer_setup(bool fp16, video_frame_import_t *input)
 int main(void)
 {
    video_frame_import_t input;
-   unsigned depth, fp16, lost;
+   unsigned depth, fp16, lost, prepared_calls;
    vulkan_video_layout_t expected;
    float linear = -1.0f;
    assert(!cache_unit_main());
@@ -295,36 +292,55 @@ int main(void)
             ex_depth = depth;
             ex_mode  = 2;
             renderer_setup(fp16 != 0, &input);
+            assert(vulkan_vaapi_renderer_import(&renderer, renderer_texture, &input)
+                  == VIDEO_TEXTURE_UPDATE_DROPPED);
+            assert(!calls && !renderer_submits && !renderer_locked);
             renderer_context.prime_import_device = false;
-            assert(vulkan_vaapi_renderer_import(
+            assert(vulkan_vaapi_renderer_prepare(
                          &renderer, renderer_texture, &input)
                    == VIDEO_TEXTURE_UPDATE_REFUSED);
             renderer_context.prime_import_device = true;
             renderer_missing                     = "loader";
-            assert(vulkan_vaapi_renderer_import(
+            assert(vulkan_vaapi_renderer_prepare(
                          &renderer, renderer_texture, &input)
                    == VIDEO_TEXTURE_UPDATE_REFUSED);
             renderer_missing = "vkGetMemoryFdPropertiesKHR";
-            assert(vulkan_vaapi_renderer_import(
+            assert(vulkan_vaapi_renderer_prepare(
                          &renderer, renderer_texture, &input)
                    == VIDEO_TEXTURE_UPDATE_REFUSED);
             renderer_missing = "vkGetPhysicalDeviceFormatProperties2";
-            assert(vulkan_vaapi_renderer_import(
+            assert(vulkan_vaapi_renderer_prepare(
                          &renderer, renderer_texture, &input)
                    == VIDEO_TEXTURE_UPDATE_REFUSED);
             assert(!live && !calls && !renderer.vaapi_textures && !ex_closes);
             renderer_missing = NULL;
-            input.crop_x     = 4;
-            assert(vulkan_vaapi_renderer_import(
-                         &renderer, renderer_texture, &input)
-                   == VIDEO_TEXTURE_UPDATE_REFUSED);
+            input.crop_x = 4;
+            assert(vulkan_vaapi_renderer_prepare(&renderer, renderer_texture, &input)
+                  == VIDEO_TEXTURE_UPDATE_DONE);
+            assert(vulkan_vaapi_renderer_import(&renderer, renderer_texture, &input)
+                  == VIDEO_TEXTURE_UPDATE_REFUSED);
             assert(!renderer_submits && !phase && !ex_closes);
             input.crop_x = 2;
-            sub_fault    = lost ? 5 : 0;
+            assert(vulkan_vaapi_renderer_prepare(&renderer, renderer_texture, &input)
+                  == VIDEO_TEXTURE_UPDATE_DONE);
+            prepared_calls = calls;
+            renderer.vaapi_submissions.count = VULKAN_ANDROID_QUEUE_CAPACITY;
+            assert(vulkan_vaapi_renderer_import(&renderer, renderer_texture, &input)
+                  == VIDEO_TEXTURE_UPDATE_DROPPED);
+            assert(calls == prepared_calls && !renderer_submits && !renderer_locked);
+            renderer.vaapi_submissions.count = 0;
+            phase = 0;
+            sub_fault = lost ? 5 : 0;
             assert(vulkan_vaapi_renderer_import(
                          &renderer, renderer_texture, &input)
-                   == (lost ? VIDEO_TEXTURE_UPDATE_DROPPED
-                            : VIDEO_TEXTURE_UPDATE_DONE));
+                   == VIDEO_TEXTURE_UPDATE_DONE);
+            assert(calls == prepared_calls);
+            assert(!renderer_submits && !renderer_locked && phase == 13
+                  && renderer.vaapi_submissions.count == 1);
+            vulkan_lock_queue(&renderer);
+            assert(vulkan_android_queue_flush(&renderer.vaapi_submissions,
+                  renderer_queue_submit) == (lost ? VK_ERROR_DEVICE_LOST : VK_SUCCESS));
+            vulkan_unlock_queue(&renderer);
             cache = renderer_texture->vaapi_cache;
             assert(vulkan_video_layout(
                   &expected, 60, 58, input.pixfmt, input.yuv));
@@ -336,8 +352,7 @@ int main(void)
             assert(cache && renderer.vaapi_textures == renderer_texture
                    && phase == 14 && renderer_submits == 1 && !renderer_locked);
             assert(renderer_texture->layout
-                   == (lost ? VK_IMAGE_LAYOUT_UNDEFINED
-                            : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+                   == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
             memset(&vf, 0, sizeof(vf));
             vaapi_hevc_vulkan_cache_close(cache);
             if (lost)

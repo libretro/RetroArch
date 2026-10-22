@@ -1,7 +1,7 @@
 CC ?= cc
 CFLAGS ?= -O2 -Wall -Wextra -std=c89
 CFLAGS += -I../../../include
-TARGETS := rmp4_vp9_hw_stream_test rmp4_vp9_config_test rvp9_config_test rvp9_reference_test rvp9_hw_session_test rwebm_hw_stream_test
+TARGETS := rvp9_hw_segment_test rmp4_vp9_hw_stream_test rmp4_vp9_config_test rvp9_config_test rvp9_reference_test rvp9_hw_session_test rwebm_hw_stream_test
 THREADS ?= 1
 PIXEL_FLAGS :=
 PIXEL_SOURCES :=
@@ -32,6 +32,9 @@ rmp4_vp9_config_test rmp4_vp9_hw_stream_test: %: %.c rvp9_mp4_fixture.h $(MP4_SO
 	$(CC) $(CFLAGS) -D_POSIX_C_SOURCE=200809L -DHAVE_RMP4 -DHAVE_RVP9 \
 	 $< $(MP4_SOURCES) -o $@ $(LDFLAGS) -lm
 
+rvp9_hw_segment_test: rvp9_hw_segment_test.c ../../../formats/vp9/rvp9.c ../../../formats/vp9/rvp9_recon.inc ../../../include/formats/rvp9_hw.h
+	$(CC) $(CFLAGS) $< -o $@ $(LDFLAGS)
+
 rvp9_config_test: rvp9_config_test.c ../../../include/formats/rvp9_config.h ../../../include/formats/rvp9_color.h
 	$(CC) $(CFLAGS) $< -o $@ $(LDFLAGS)
 
@@ -47,6 +50,7 @@ rwebm_hw_stream_test: rwebm_hw_stream_test.c $(WEBM_SOURCES) ../../../formats/we
 	 rwebm_hw_stream_test.c $(WEBM_SOURCES) -o $@ $(LDFLAGS) -Wl,--gc-sections -lm
 
 check: $(TARGETS)
+	./rvp9_hw_segment_test
 	./rmp4_vp9_hw_stream_test
 	./rmp4_vp9_config_test
 	./rvp9_config_test

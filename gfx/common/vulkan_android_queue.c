@@ -3,19 +3,23 @@
 #include "vulkan_android_queue.h"
 #include <string.h>
 
-VkResult vulkan_android_queue_push(void *context, VkQueue queue,
-      uint32_t count, const VkSubmitInfo *submits, VkFence fence)
+VkResult vulkan_android_queue_push(void *context, VkQueue queue, uint32_t count,
+      const VkSubmitInfo *submits, VkFence fence)
 {
    vulkan_android_queue_t *pending = (vulkan_android_queue_t *)context;
    vulkan_android_queued_submit_t *entry;
    if (!pending || !queue || !fence || count != 1 || !submits
          || submits->sType != VK_STRUCTURE_TYPE_SUBMIT_INFO || submits->pNext
-         || submits->waitSemaphoreCount != 1 || !submits->pWaitSemaphores
-         || !submits->pWaitDstStageMask || submits->commandBufferCount != 1
-         || !submits->pCommandBuffers || submits->signalSemaphoreCount != 1
-         || !submits->pSignalSemaphores || !*submits->pWaitSemaphores
-         || !*submits->pCommandBuffers || !*submits->pSignalSemaphores
-         || !*submits->pWaitDstStageMask)
+         || submits->commandBufferCount != 1 || !submits->pCommandBuffers
+         || !*submits->pCommandBuffers || submits->waitSemaphoreCount > 1
+         || submits->signalSemaphoreCount > 1
+         || (submits->waitSemaphoreCount
+               && (!submits->pWaitSemaphores || !submits->pWaitDstStageMask
+                     || !*submits->pWaitSemaphores
+                     || !*submits->pWaitDstStageMask))
+         || (submits->signalSemaphoreCount
+               && (!submits->pSignalSemaphores
+                     || !*submits->pSignalSemaphores)))
       return VK_TIMEOUT;
    if (pending->failure != VK_SUCCESS)
       return pending->failure;
@@ -24,16 +28,18 @@ VkResult vulkan_android_queue_push(void *context, VkQueue queue,
       return VK_TIMEOUT;
    entry = &pending->entries[pending->count++];
    entry->command = *submits->pCommandBuffers;
-   entry->ready = *submits->pWaitSemaphores;
-   entry->done = *submits->pSignalSemaphores;
-   entry->stage = *submits->pWaitDstStageMask;
+   entry->ready = submits->waitSemaphoreCount ? *submits->pWaitSemaphores
+                                              : VK_NULL_HANDLE;
+   entry->done = submits->signalSemaphoreCount ? *submits->pSignalSemaphores
+                                               : VK_NULL_HANDLE;
+   entry->stage = submits->waitSemaphoreCount ? *submits->pWaitDstStageMask : 0;
    entry->fence = fence;
    pending->queue = queue;
    return VK_NOT_READY;
 }
 
-VkResult vulkan_android_queue_flush(vulkan_android_queue_t *pending,
-      PFN_vkQueueSubmit submit)
+VkResult vulkan_android_queue_flush(
+      vulkan_android_queue_t *pending, PFN_vkQueueSubmit submit)
 {
    unsigned i;
    VkSubmitInfo info;
@@ -43,16 +49,17 @@ VkResult vulkan_android_queue_flush(vulkan_android_queue_t *pending,
       return pending->failure;
    memset(&info, 0, sizeof(info));
    info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-   info.waitSemaphoreCount = info.commandBufferCount
-         = info.signalSemaphoreCount = 1;
+   info.commandBufferCount = 1;
    for (i = 0; i < pending->count; i++)
    {
       vulkan_android_queued_submit_t *entry = &pending->entries[i];
       VkResult result;
       info.pCommandBuffers = &entry->command;
-      info.pWaitSemaphores = &entry->ready;
-      info.pSignalSemaphores = &entry->done;
-      info.pWaitDstStageMask = &entry->stage;
+      info.waitSemaphoreCount = entry->ready ? 1 : 0;
+      info.pWaitSemaphores = entry->ready ? &entry->ready : NULL;
+      info.signalSemaphoreCount = entry->done ? 1 : 0;
+      info.pSignalSemaphores = entry->done ? &entry->done : NULL;
+      info.pWaitDstStageMask = entry->ready ? &entry->stage : NULL;
       result = submit(pending->queue, 1, &info, entry->fence);
       if (result != VK_SUCCESS)
       {

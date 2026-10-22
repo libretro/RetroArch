@@ -12,7 +12,7 @@ typedef struct vaapi_frame_slot
    retro_atomic_int_t state; /* free, pending, claimed, mutation, returned */
    vaapi_hevc_export_t source;
    vaapi_frame_view_t view;
-   vaapi_hevc_pool_t *pool;
+   void *pool;
    uint64_t generation, ticket;
    unsigned slot;
 } vaapi_frame_slot_t;
@@ -76,7 +76,7 @@ static bool vaapi_frame_put(void *owner, uint64_t index, uint64_t generation,
          || (source
                && (slot->source.active || source == &slot->source
                      || !source->active || !source->ready
-                     || source->pool != slot->pool || source->slot != slot->slot
+                     || vaapi_export_owner(source) != slot->pool || source->slot != slot->slot
                      || source->ticket != slot->ticket))
          || (!source && !slot->source.active))
    {
@@ -177,7 +177,7 @@ int vaapi_frame_export(vaapi_frame_pool_t *pool, vaapi_hevc_export_t *source,
    video_hw_frame_t frame;
    unsigned i;
    if (!pool || pool->closed || !source || !source->active || !source->ready
-         || !source->pool || !source->ticket || !out || !width || !height
+         || !vaapi_export_owner(source) || !source->ticket || !out || !width || !height
          || ((x | y) & 1) || x >= source->descriptor.width
          || y >= source->descriptor.height
          || width > source->descriptor.width - x
@@ -185,9 +185,7 @@ int vaapi_frame_export(vaapi_frame_pool_t *pool, vaapi_hevc_export_t *source,
          || (source->descriptor.fourcc != VA_FOURCC_NV12
                && source->descriptor.fourcc != VA_FOURCC_P010))
       return -1;
-   if (!source->pool->active || source->pool->broken || source->slot >= 32
-         || !(source->pool->exports & ((uint32_t)1 << source->slot))
-         || source->pool->generation[source->slot] != source->ticket
+   if (!vaapi_export_current(source)
          || !source->descriptor.num_objects
          || source->descriptor.num_objects > 4)
       return -1;
@@ -203,7 +201,7 @@ int vaapi_frame_export(vaapi_frame_pool_t *pool, vaapi_hevc_export_t *source,
    if (slot->generation == ~(uint64_t)0 || source == &slot->source)
       return -1;
    slot->generation++;
-   slot->pool   = source->pool;
+   slot->pool   = vaapi_export_owner(source);
    slot->slot   = source->slot;
    slot->ticket = source->ticket;
    slot->source = *source;

@@ -158,22 +158,6 @@ int vaapi_hevc_pool_poll(vaapi_hevc_pool_t *p, unsigned slot)
  }
  return status;
 }
-bool vaapi_hevc_pool_acquire(vaapi_hevc_pool_t *p,unsigned slot,uint64_t *ticket)
-{
- uint32_t bit;
- if(!p || !p->active || p->broken || !ticket || slot>=p->session->slots)return false;
- bit=UINT32_C(1)<<slot;
- if(!(p->ready&bit) || (p->exports&bit) || !p->generation[slot])return false;
- p->exports|=bit;*ticket=p->generation[slot];return true;
-}
-bool vaapi_hevc_pool_release(vaapi_hevc_pool_t *p,unsigned slot,uint64_t ticket)
-{
- uint32_t bit;
- if(!p || !p->active || slot>=p->session->slots || !ticket)return false;
- bit=UINT32_C(1)<<slot;
- if(!(p->exports&bit) || p->generation[slot]!=ticket)return false;
- p->exports&=~bit;return true;
-}
 bool vaapi_hevc_pool_close(vaapi_hevc_pool_t *p)
 {
  uint64_t generation;

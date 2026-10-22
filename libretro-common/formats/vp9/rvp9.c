@@ -2104,6 +2104,70 @@ static int rvp9_seg_qindex(const rvp9_hdr *hd, int seg)
    return hd->base_qindex;
 }
 
+bool rvp9_hw_segment(const rvp9_hdr *hd, unsigned segment,
+      rvp9_hw_segment_t *out)
+{
+   rvp9_hw_segment_t value;
+   const int16_t *dc, *ac;
+   unsigned i, j;
+   int q, level, scale, ydc, uvdc, uvac;
+   if (!hd || !out || segment >= RVP9_MAX_SEGMENTS
+         || (hd->bit_depth != 8 && hd->bit_depth != 10 && hd->bit_depth != 12)
+         || (unsigned)hd->base_qindex > 255
+         || hd->y_dc_delta_q < -15 || hd->y_dc_delta_q > 15
+         || hd->uv_dc_delta_q < -15 || hd->uv_dc_delta_q > 15
+         || hd->uv_ac_delta_q < -15 || hd->uv_ac_delta_q > 15
+         || (unsigned)hd->lf_level > 63
+         || (unsigned)hd->lf_delta_enabled > 1
+         || (unsigned)hd->seg_enabled > 1 || (unsigned)hd->seg_abs_delta > 1)
+      return false;
+   for (i = 0; i < 4; i++)
+   {
+      static const int limits[4] = {255, 63, 3, 0};
+      if (hd->lf_ref_deltas[i] < -63 || hd->lf_ref_deltas[i] > 63
+            || (unsigned)hd->seg_feature_enabled[segment][i] > 1
+            || hd->seg_feature_data[segment][i] < -limits[i]
+            || hd->seg_feature_data[segment][i] > limits[i]
+            || (i == 2 && hd->seg_feature_data[segment][i] < 0))
+         return false;
+   }
+   for (i = 0; i < 2; i++)
+      if (hd->lf_mode_deltas[i] < -63 || hd->lf_mode_deltas[i] > 63)
+         return false;
+   dc = hd->bit_depth == 10 ? rvp9_dc_qlookup_10
+         : hd->bit_depth == 12 ? rvp9_dc_qlookup_12 : rvp9_dc_qlookup;
+   ac = hd->bit_depth == 10 ? rvp9_ac_qlookup_10
+         : hd->bit_depth == 12 ? rvp9_ac_qlookup_12 : rvp9_ac_qlookup;
+   q = rvp9_seg_qindex(hd, (int)segment);
+   ydc = q + hd->y_dc_delta_q;
+   uvdc = q + hd->uv_dc_delta_q;
+   uvac = q + hd->uv_ac_delta_q;
+   value.y_dc = dc[ydc < 0 ? 0 : ydc > 255 ? 255 : ydc];
+   value.y_ac = ac[q];
+   value.uv_dc = dc[uvdc < 0 ? 0 : uvdc > 255 ? 255 : uvdc];
+   value.uv_ac = ac[uvac < 0 ? 0 : uvac > 255 ? 255 : uvac];
+   level = hd->lf_level;
+   if (rvp9_segfeature_active(hd, (int)segment, RVP9_SEG_LVL_ALT_LF))
+   {
+      int data = rvp9_segdata(hd, (int)segment, RVP9_SEG_LVL_ALT_LF);
+      level = hd->seg_abs_delta ? data : level + data;
+      level = level < 0 ? 0 : level > 63 ? 63 : level;
+   }
+   scale = 1 << (hd->lf_level >> 5);
+   for (i = 0; i < 4; i++)
+      for (j = 0; j < 2; j++)
+      {
+         int filter = level;
+         if (hd->lf_delta_enabled)
+            filter += (hd->lf_ref_deltas[i]
+                  + (i ? hd->lf_mode_deltas[j] : 0)) * scale;
+         value.filter[i][j] = (uint8_t)(filter < 0 ? 0
+               : filter > 63 ? 63 : filter);
+      }
+   *out = value;
+   return true;
+}
+
 static int rvp9_read_segment_id(rvp9_br *r, const rvp9_hdr *hd)
 {
    return rvp9_read_tree8(r, rvp9_segment_tree, hd->seg_tree_probs);

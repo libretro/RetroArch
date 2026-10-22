@@ -1743,8 +1743,8 @@ static int rvp9_get_mode_context(const rvp9_dec *d, const int8_t (*search)[2],
 }
 
 /* assign_mv */
-static int rvp9_assign_mv(rvp9_dec *d, rvp9_br *r, int mode, rvp9_mv mv[2],
-      rvp9_mv ref_mv[2], rvp9_mv near_nearest[2], int is_compound,
+static int rvp9_assign_mv(rvp9_dec *d, rvp9_br *r, int mode, rvp9_mv *mv,
+      rvp9_mv *ref_mv, rvp9_mv *near_nearest, int is_compound,
       int allow_hp)
 {
    int i, ret = 1;

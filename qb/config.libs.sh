@@ -926,6 +926,13 @@ check_platform Linux VAAPI 'VA-API' true
 check_enabled VULKAN VAAPI 'VA-API' 'Vulkan is' false
 check_enabled RMP4 VAAPI 'VA-API' 'RMP4 is' false
 check_enabled 'DYLIB DYNAMIC' VAAPI 'VA-API' 'Dynamic loading is' false
+if [ "$HAVE_VAAPI" != 'no' ]; then
+   check_pkgconf VAAPI_DRM libdrm '' '' '' nopkg
+   check_nopkg '' VAAPI_DRM -ldrm libdrm \
+      '#include <xf86drm.h>
+int main(void) { return drmGetNodeTypeFromFd(-1); }'
+   check_enabled VAAPI_DRM VAAPI 'VA-API' 'libdrm is' false
+fi
 check_header '' VAAPI va/va.h va/va_dec_hevc.h va/va_drmcommon.h
 check_macro VAAPI VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME_2 va/va_drmcommon.h
 

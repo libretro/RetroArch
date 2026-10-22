@@ -11,7 +11,7 @@ typedef struct vaapi_hevc_vulkan_frame
    vaapi_hevc_export_t source;
    VADRMPRIMESurfaceDescriptor descriptor;
    uint64_t object_device[4], object_inode[4];
-   vaapi_hevc_pool_t *pool;
+   void *pool;
    vulkan_prime_image_ops_t ops;
    vulkan_prime_image_t layers[2];
    VkDevice device;
