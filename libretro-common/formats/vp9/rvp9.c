@@ -71,24 +71,43 @@ int rvp9_unset_hw_backend(const rvp9_hw_backend_t *backend)
 #endif
 }
 
-bool rvp9_hw_backend_open_color(const rvp9_hdr *header,
-      const video_color_metadata_t *color, unsigned slots,
-      rvp9_hw_ops_t *ops, rvp9_hw_backend_t *backend)
+bool rvp9_hw_backend_open_config(const rvp9_hdr *header,
+      const video_color_metadata_t *color, const rvp9_config_t *config,
+      unsigned slots, rvp9_hw_ops_t *ops, rvp9_hw_backend_t *backend)
 {
    const rvp9_hw_backend_t *factory = RVP9_BACKEND_GET();
+   video_color_metadata_t resolved;
    bool opened;
    if (!ops || !backend)
       return false;
    memset(ops, 0, sizeof(*ops));
    memset(backend, 0, sizeof(*backend));
    if (!header || slots < 10 || slots > 32 || !factory
-         || (!factory->open && !factory->open_color) || !factory->close)
+         || (!factory->open && !factory->open_color && !factory->open_config)
+         || !factory->close)
       return false;
    if (factory->drain && !factory->packet_decoder)
       return false;
-   opened = factory->open_color
-      ? factory->open_color(factory->user, header, color, slots, ops)
-      : factory->open(factory->user, header, slots, ops);
+   if (config)
+   {
+      if (config->profile != header->profile
+            || config->bit_depth != header->bit_depth || config->chroma > 3
+            || config->full_range != header->color_range
+            || header->subsampling_x != (config->chroma != 3)
+            || header->subsampling_y != (config->chroma < 2)
+            || (!factory->open_config && config->chroma != 1)
+            || !rvp9_config_apply_color(config, color, &resolved))
+         return false;
+      color = &resolved;
+   }
+   if ((config || (!factory->open && !factory->open_color))
+         && factory->open_config)
+      opened = factory->open_config(factory->user, header, color,
+            config, slots, ops);
+   else
+      opened = factory->open_color
+         ? factory->open_color(factory->user, header, color, slots, ops)
+         : factory->open(factory->user, header, slots, ops);
    if (!opened || !ops->decoder || !ops->decode || !ops->output)
    {
       if (ops->decoder)
@@ -98,6 +117,13 @@ bool rvp9_hw_backend_open_color(const rvp9_hdr *header,
    }
    *backend = *factory;
    return true;
+}
+
+bool rvp9_hw_backend_open_color(const rvp9_hdr *header,
+      const video_color_metadata_t *color, unsigned slots,
+      rvp9_hw_ops_t *ops, rvp9_hw_backend_t *backend)
+{
+   return rvp9_hw_backend_open_config(header, color, NULL, slots, ops, backend);
 }
 
 bool rvp9_hw_backend_open(const rvp9_hdr *header, unsigned slots,

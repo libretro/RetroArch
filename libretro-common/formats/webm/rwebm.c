@@ -54,6 +54,8 @@
 #define ID_PIXELHEIGHT     0xBAu
 #define ID_COLOUR          0x55B0u
 #define ID_MATRIXCOEFF     0x55B1u
+#define ID_CHROMASITINGHORZ 0x55B7u
+#define ID_CHROMASITINGVERT 0x55B8u
 #define ID_COLOURRANGE     0x55B9u
 #define ID_TRANSFERCHAR    0x55BAu
 #define ID_PRIMARIES       0x55BBu
@@ -462,6 +464,18 @@ static void parse_track_av(const uint8_t *p, const uint8_t *end,
                   case ID_MATRIXCOEFF:
                      trk->matrix_coefficients     = (unsigned)be_uint(cb, (size_t)csz);
                      break;
+                  case ID_CHROMASITINGHORZ:
+                  case ID_CHROMASITINGVERT:
+                  {
+                     uint64_t value = csz <= 8
+                           ? be_uint(cb, (size_t)csz) : 3;
+                     unsigned siting = value <= 2 ? (unsigned)value : 3;
+                     if (cid == ID_CHROMASITINGHORZ)
+                        trk->chroma_siting_horz = siting;
+                     else
+                        trk->chroma_siting_vert = siting;
+                     break;
+                  }
                   case ID_COLOURRANGE:
                      trk->colour_range            = (unsigned)be_uint(cb, (size_t)csz);
                      break;

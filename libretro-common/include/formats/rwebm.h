@@ -78,6 +78,8 @@ typedef struct
    unsigned               transfer_characteristics;
    unsigned               primaries;
    unsigned               colour_range;
+   /* Matroska siting: 0 unspecified, 1 colocated, 2 half. */
+   unsigned               chroma_siting_horz, chroma_siting_vert;
    /* HDR static metadata (0 = absent) */
    video_mastering_display_t mastering;
    unsigned               max_cll;     /* MaxCLL, nits                     */

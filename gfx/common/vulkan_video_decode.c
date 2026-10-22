@@ -1836,6 +1836,7 @@ bool vulkan_video_decode_init(const vulkan_context_t *ctx)
    vvd.vp9.user = NULL; vvd.vp9.open = vvd_vp9_open; vvd.vp9.close = vvd_vp9_close;
    vvd.vp9.packet_decoder = false;
    vvd.vp9.open_color = NULL;
+   vvd.vp9.open_config = NULL;
    vvd.vp9.drain = NULL;
    if (vvd.codecs & VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR)
       rvp9_set_hw_backend(&vvd.vp9);
