@@ -1874,7 +1874,7 @@ void vulkan_video_decode_deinit(void)
    rh264_set_hw_backend(NULL);
    rh265_unset_hw_backend(&vvd.hevc);
 #ifdef HAVE_RVP9
-   rvp9_set_hw_backend(NULL);
+   rvp9_unset_hw_backend(&vvd.vp9);
 #endif
    if (retro_atomic_load_acquire_int(&vvd.live))
       RARCH_ERR("[Vulkan] Video decode: %d decoder(s) still open at teardown.\n",
