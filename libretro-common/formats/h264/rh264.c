@@ -1725,9 +1725,6 @@ static RH264_INLINE void rh264_pcm_put(const rh264_frame *f, uint8_t *p,
  * samples; the frame's sample width (bsh: 0 for a byte per sample, 1
  * for two) picks the instantiation.  The 8-bit path is exactly what
  * the kernels were before the split. */
-#define RH264_K2(f, name, p1, p2, ...) \
-   do { if ((f)->bsh) rh264_##name##_16((uint16_t*)(p1), (uint16_t*)(p2), __VA_ARGS__, (f)->bd); \
-        else          rh264_##name##_8 ((p1), (p2), __VA_ARGS__, 8); } while (0)
 static void rh264_add_bypass(const rh264_frame *f, uint8_t *dst, int stride,
       const int32_t *r, int rstride, int w, int h)
 {  if (f->bsh) rh264_add_bypass_16((uint16_t*)dst, stride, r, rstride, w, h, f->bd);
@@ -1795,7 +1792,6 @@ static void rh264_avg_block(const rh264_frame *f, uint8_t *d, int dstride,
       const uint8_t *s0, int s0s, const uint8_t *s1, int s1s, int w, int h)
 {  if (f->bsh) rh264_avg_block_16((uint16_t*)d, dstride, (const uint16_t*)s0, s0s, (const uint16_t*)s1, s1s, w, h, f->bd);
    else        rh264_avg_block_8(d, dstride, s0, s0s, s1, s1s, w, h, 8); }
-#undef RH264_K2
 
 /* Macroblock position from its address.  With macroblock-adaptive
  * frame/field coding the picture is scanned in vertical PAIRS:
