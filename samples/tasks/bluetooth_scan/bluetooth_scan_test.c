@@ -4,16 +4,17 @@
  * The scan ran inside one handler call and the drivers waited out the
  * ten-second discovery window in it - bluez in a sleep, bluetoothctl in
  * a blocking "scan on" - holding the one task thread, and every task
- * queued behind it, for the whole window. It is now two steps: begin,
- * then the task reschedules itself for the end of the window and the
- * queue runs other tasks meanwhile.
+ * queued behind it, for the whole window. It now begins, is parked and
+ * looks every poll whether the driver is done, and the queue runs
+ * other tasks meanwhile.
  *
  * The contract this pins, with the window shortened to 300 ms:
  *
  *   begin, then end        -> once each, a window apart
  *   during the window      -> another task runs at once
  *   the callback           -> fires after end, with the task done
- *   the end of the window  -> a pass or two, not a run of them
+ *   the window             -> a pass a poll, not a run of them
+ *   a driver done early    -> the scan ends then, not at the window
  */
 
 #include <stdio.h>
@@ -49,6 +50,11 @@ void driver_bluetooth_scan_begin(void)
 void driver_bluetooth_scan_end(void)
 { end_at = mono_ms(); retro_atomic_fetch_add_int(&ends, 1); }
 const char *msg_hash_to_str(enum msg_hash_enums msg) { return "msg"; }
+
+/* the driver says it has found all it will */
+static retro_atomic_int_t driver_done = RETRO_ATOMIC_INT_INITIALIZER(0);
+bool driver_bluetooth_scan_done(void)
+{ return retro_atomic_load_acquire_int(&driver_done) != 0; }
 
 /* ---- the task under test's neighbours ---- */
 
@@ -123,10 +129,26 @@ int main(void)
          "a window after it began");
    check(retro_atomic_load_acquire_int(&scan_done), "the scan's callback fires");
    check(retro_atomic_load_acquire_int(&begins) == 1, "and it began only once");
-   /* The queue may start the end of the window a little early; the
-    * scan waits out the rest parked, not in a run of passes. */
-   check(retro_atomic_load_acquire_int(&scan_passes) <= 4,
-         "the window ends in a pass or two");
+   /* a pass a poll through the window, parked between them */
+   check(retro_atomic_load_acquire_int(&scan_passes)
+         <= BLUETOOTH_SCAN_WINDOW_US / BLUETOOTH_SCAN_POLL_US + 3,
+         "the window passes in a pass a poll");
+
+   /* a driver that has found all it will 100 ms in: ended then */
+   retro_atomic_store_release_int(&scan_done, 0);
+   check(task_push_bluetooth_scan(scan_cb), "a second scan is pushed");
+   for (i = 0; i < 1000 && retro_atomic_load_acquire_int(&begins) < 2; i++)
+      usleep(1000);
+   usleep(100000);
+   retro_atomic_store_release_int(&driver_done, 1);
+   for (i = 0; i < 3000 && !retro_atomic_load_acquire_int(&scan_done); i++)
+   {
+      task_queue_check();
+      usleep(1000);
+   }
+   check(retro_atomic_load_acquire_int(&ends) == 2
+         && end_at - begin_at < 280,
+         "a driver done early ends the scan before the window");
 
    task_queue_deinit();
 

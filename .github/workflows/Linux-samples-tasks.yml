@@ -1267,10 +1267,11 @@ jobs:
           # The Bluetooth scan task on the real threaded task queue,
           # with the discovery window shortened. The scan used to wait
           # out the window inside one handler call, holding the task
-          # thread; it now begins, reschedules itself for the end of
-          # the window, and ends. Pins that begin and end run once each
-          # a window apart, that another task runs during the window,
-          # and that the callback fires.
+          # thread; it now begins, is parked, looks every poll whether
+          # the driver is done, and ends. Pins that begin and end run
+          # once each a window apart, that another task runs during the
+          # window, that the callback fires, and that a driver done
+          # early ends the scan then.
           make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
              timeout 60 ./bluetooth_scan_test

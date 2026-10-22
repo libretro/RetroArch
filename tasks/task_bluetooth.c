@@ -54,7 +54,9 @@ static void task_bluetooth_scan_handler(retro_task_t *task)
          && !driver_bluetooth_scan_done())
    {
       retro_time_t now = cpu_features_get_time_usec();
-      if (now < task_bluetooth_scan_deadline)
+      /* the queue runs a parked task up to half a millisecond early:
+       * what is left within a millisecond of the end is not waited */
+      if (now + 1000 < task_bluetooth_scan_deadline)
       {
          retro_time_t wait = task_bluetooth_scan_deadline - now;
          if (wait > BLUETOOTH_SCAN_POLL_US)
