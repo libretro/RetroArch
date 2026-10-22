@@ -137,3 +137,7 @@ vulkan-gpu-check:
 	python3 vulkan_run.py --gpu
 	python3 vulkan_run.py --gpu --compile-shaders
 .PHONY: vulkan-check vulkan-gpu-check
+
+warm-check:
+	python3 warm_run.py
+.PHONY: warm-check
