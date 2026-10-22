@@ -3,6 +3,7 @@
 # overlay planes and writeback connector, and exits as the test did.
 #
 #   run_vm.sh ./drm_vkms_live_test [args]
+#   run_vm.sh --kernel-version     (prints the kernel it would fetch)
 #
 # KERNEL_DIR, when set, names a directory holding vmlinuz and vkms.ko;
 # otherwise Ubuntu's current HWE kernel is fetched with apt-get download
@@ -12,6 +13,21 @@
 set -eu
 
 here=$(cd "$(dirname "$0")" && pwd)
+
+hwe_kernel() {
+   apt-cache depends linux-image-generic-hwe-24.04 2>/dev/null \
+      | sed -n 's/.*Depends: linux-image-\([0-9][^ ]*-generic\)$/\1/p' \
+      | head -n 1
+}
+# Lists the runner never refreshed name no kernel: refreshed once
+if [ -z "$(hwe_kernel)" ] && command -v sudo >/dev/null 2>&1; then
+   sudo timeout 120 apt-get update -qq >/dev/null 2>&1 || true
+fi
+if [ "${1:-}" = --kernel-version ]; then
+   hwe_kernel
+   exit 0
+fi
+
 test_bin=$1
 shift
 cache=${VKMS_CACHE:-$here/.kernel}
@@ -25,15 +41,19 @@ done
 if [ -z "${KERNEL_DIR:-}" ]; then
    KERNEL_DIR=$cache
    if [ ! -f "$KERNEL_DIR/vmlinuz" ] || [ ! -f "$KERNEL_DIR/vkms.ko" ]; then
-      image=$(apt-cache depends linux-image-generic-hwe-24.04 2>/dev/null \
-         | sed -n 's/.*Depends: \(linux-image-[0-9][^ ]*-generic\)$/\1/p' \
-         | head -n 1)
-      [ -n "$image" ] || { echo "run_vm.sh: no HWE kernel in apt"; exit 1; }
-      kver=${image#linux-image-}
+      kver=$(hwe_kernel)
+      [ -n "$kver" ] || { echo "run_vm.sh: no HWE kernel in apt"; exit 1; }
       echo "run_vm.sh: fetching $kver"
       mkdir -p "$KERNEL_DIR" "$work/deb"
-      (cd "$work/deb" && apt-get download "linux-image-unsigned-$kver" \
-         "linux-modules-$kver" >/dev/null)
+      # Bounded and retried: a download stalled on a mirror resumes
+      for i in 1 2 3; do
+         (cd "$work/deb" && timeout 300 apt-get download \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            "linux-image-unsigned-$kver" "linux-modules-$kver" >/dev/null) \
+            && break
+         [ $i = 3 ] && { echo "run_vm.sh: could not fetch $kver"; exit 1; }
+         echo "run_vm.sh: fetching $kver stalled (attempt $i)"
+      done
       # vkms is in the modules, or in the extra ones, by kernel
       (cd "$work/deb" && apt-get download "linux-modules-extra-$kver" \
          >/dev/null 2>&1) || true

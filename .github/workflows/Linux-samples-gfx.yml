@@ -23,12 +23,34 @@ jobs:
   metal-frame-lease:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      APT_PKGS: clang libgnustep-base-dev libblocksruntime-dev ffmpeg
+
     steps:
       - uses: actions/checkout@v6
-      - name: Install Metal lease mock dependencies
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq clang libgnustep-base-dev libblocksruntime-dev ffmpeg
+
+      - name: Apt cache key
+        id: apt
+        run: sh .github/workflows/scripts/apt-cache-key.sh "$APT_PKGS"
+
+      - name: Restore apt cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+          restore-keys: ${{ steps.apt.outputs.prefix }}
+
+      - name: Install dependencies
+        timeout-minutes: 10
+        run: sh .github/workflows/scripts/apt-install.sh $APT_PKGS
+
+      - name: Save apt cache
+        if: env.APT_CACHE_SAVE == '1'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+
       - name: Strict C89 geometry with Clang
         run: CC=clang python3 samples/gfx/metal_frame/run.py
       - name: VideoToolbox HEVC parameter ownership and session setup
@@ -85,16 +107,47 @@ jobs:
     name: The DRM driver on a real kernel (vkms)
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      APT_PKGS: libdrm-dev qemu-system-x86 busybox-static zstd cpio
 
     steps:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Apt cache key
+        id: apt
+        run: sh .github/workflows/scripts/apt-cache-key.sh "$APT_PKGS"
+
+      - name: Restore apt cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+          restore-keys: ${{ steps.apt.outputs.prefix }}
+
       - name: Install dependencies
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq libdrm-dev qemu-system-x86 \
-             busybox-static zstd cpio
+        timeout-minutes: 10
+        run: sh .github/workflows/scripts/apt-install.sh $APT_PKGS
+
+      - name: Save apt cache
+        if: env.APT_CACHE_SAVE == '1'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+
+      # The kernel the VM boots: Ubuntu's current HWE kernel, fetched
+      # once per version rather than every run
+      - name: Kernel version
+        id: kernel
+        run: echo "kver=$(sh samples/gfx/drm_vkms_live/run_vm.sh --kernel-version)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore kernel
+        id: kernel-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: samples/gfx/drm_vkms_live/.kernel
+          key: vkms-kernel-${{ steps.kernel.outputs.kver }}
 
       - name: Build and run drm_vkms_live_test in a VM
         shell: bash
@@ -114,6 +167,13 @@ jobs:
           # plane, was refused here.
           make SANITIZER=address,undefined
           make check SANITIZER=address,undefined
+
+      - name: Save kernel
+        if: steps.kernel-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: samples/gfx/drm_vkms_live/.kernel
+          key: vkms-kernel-${{ steps.kernel.outputs.kver }}
 
   surface-requirements:
     name: Producers ask the surface layer
@@ -174,21 +234,35 @@ jobs:
     name: Vulkan driver pacing backend (fake VK_NV_low_latency2 and NVAPI)
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      APT_PKGS: gcc-mingw-w64-x86-64 wine64
+
     steps:
-      - name: Install dependencies
-        timeout-minutes: 10
-        run: |
-          set -eu
-          pkgs="gcc-mingw-w64-x86-64 wine64"
-          for i in 1 2 3; do
-            sudo timeout 90 apt-get update -y \
-              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
-            sleep 10
-          done
-          sudo apt-get install -y -qq \
-            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 $pkgs
       - name: Checkout
         uses: actions/checkout@v5
+
+      - name: Apt cache key
+        id: apt
+        run: sh .github/workflows/scripts/apt-cache-key.sh "$APT_PKGS"
+
+      - name: Restore apt cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+          restore-keys: ${{ steps.apt.outputs.prefix }}
+
+      - name: Install dependencies
+        timeout-minutes: 10
+        run: sh .github/workflows/scripts/apt-install.sh $APT_PKGS
+
+      - name: Save apt cache
+        if: env.APT_CACHE_SAVE == '1'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+
       - name: Regression test
         run: |
           # The mode and sleep state machine of the Driver Pacing
@@ -209,23 +283,34 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
-    steps:
-      - name: Install dependencies
-        timeout-minutes: 10
-        run: |
-          set -eu
-          pkgs="build-essential libegl-dev libgl-dev libegl-mesa0 libgl1-mesa-dri"
-          pkgs="$pkgs gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 wine64"
-          for i in 1 2 3; do
-            sudo timeout 90 apt-get update -y \
-              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
-            sleep 10
-          done
-          sudo apt-get install -y -qq \
-            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 $pkgs
+    env:
+      APT_PKGS: build-essential libegl-dev libgl-dev libegl-mesa0 libgl1-mesa-dri gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 wine64
 
+    steps:
       - name: Checkout
         uses: actions/checkout@v5
+
+      - name: Apt cache key
+        id: apt
+        run: sh .github/workflows/scripts/apt-cache-key.sh "$APT_PKGS"
+
+      - name: Restore apt cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+          restore-keys: ${{ steps.apt.outputs.prefix }}
+
+      - name: Install dependencies
+        timeout-minutes: 10
+        run: sh .github/workflows/scripts/apt-install.sh $APT_PKGS
+
+      - name: Save apt cache
+        if: env.APT_CACHE_SAVE == '1'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
 
       - name: Link with lld
         run: sh .github/workflows/scripts/use-lld.sh
@@ -261,22 +346,34 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
-    steps:
-      - name: Install dependencies
-        timeout-minutes: 10
-        run: |
-          set -eu
-          pkgs="build-essential libgl-dev gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 wine64"
-          for i in 1 2 3; do
-            sudo timeout 90 apt-get update -y \
-              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
-            sleep 10
-          done
-          sudo apt-get install -y -qq \
-            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 $pkgs
+    env:
+      APT_PKGS: build-essential libgl-dev gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 wine64
 
+    steps:
       - name: Checkout
         uses: actions/checkout@v5
+
+      - name: Apt cache key
+        id: apt
+        run: sh .github/workflows/scripts/apt-cache-key.sh "$APT_PKGS"
+
+      - name: Restore apt cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+          restore-keys: ${{ steps.apt.outputs.prefix }}
+
+      - name: Install dependencies
+        timeout-minutes: 10
+        run: sh .github/workflows/scripts/apt-install.sh $APT_PKGS
+
+      - name: Save apt cache
+        if: env.APT_CACHE_SAVE == '1'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
 
       - name: Build and run slang_last_pass_target_test (ASan + UBSan)
         shell: bash
