@@ -66,7 +66,6 @@ static const char *const allowed[][2] = {
    { "gfx/drivers/ctr_gfx.c",    "3DS: no video thread" },
    { "gfx/drivers/d3d8.c",       "the D3D8 path predates threaded video" },
    { "gfx/drivers/d3d9cg.c",     "the D3D9 Cg path predates threaded video" },
-   { "gfx/drivers/exynos_gfx.c", "Exynos: single-threaded KMS frontend" },
    { "gfx/drivers/omap_gfx.c",   "OMAP: single-threaded KMS frontend" },
    { "gfx/drivers/ps2_gfx.c",    "PS2: no video thread" },
    { "gfx/drivers/gl1.c",        "null check, not a read of the settings" }

@@ -1874,6 +1874,24 @@ jobs:
           make clean
           echo "[pass] drm_crtc_pick_test"
 
+      - name: Build and run exynos_g2d_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/exynos_g2d
+        run: |
+          set -eu
+          # gfx/drivers/exynos_gfx.c against a fake kernel and a G2D that
+          # draws into the GEM buffers: the frame at its aspect ratio, a
+          # core rendering into the buffer the G2D reads, vsync off
+          # neither waiting nor queueing flips, messages and statistics
+          # cleared and blended over only what they cover, the menu's
+          # alpha, screenshots, mode switches and CRT modelines, and a
+          # free and a failed init that leave nothing behind.
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 60 ./exynos_g2d_test
+          make clean
+          echo "[pass] exynos_g2d_test"
+
       - name: Build and run egl_gbm_frames_test (ASan + UBSan)
         shell: bash
         working-directory: samples/gfx/egl_gbm_frames

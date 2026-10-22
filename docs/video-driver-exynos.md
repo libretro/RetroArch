@@ -10,15 +10,11 @@ If you want to use such a device with an upstream kernel, the GPU block will mos
 
 Since the G2D block is present on all modern Exynos SoCs, the natural way of proceeding would be to use it instead of the GPU block. The G2D is still a dedicated piece of hardware, so all operations are offloaded from the CPU. It should be noted though, that using the G2D instead of the GPU removes the possibility to use GPU shaders to enhance the image quality of your emulator core of choice. If the user relies on these enhancements, then he's advised to continue using the GPU, most likely by using the EGL/GLES video driver.
 
-The author uses a Hardkernel ODROID-X2, which is an developer board powered by an Exynos4412 SoC. The vendor supplied kernel, a Linux tree based on the 3.8.y branch, currently offers no way to use the G2D because of issues related to clock setup. However upstreaming work is in progress and a tree based on 3.15.y, with some slight modifications, is available from here:
-
-[odroid-3.15.y repository](https://github.com/tobiasjakobi/linux-odroid)
-
-Please refer to the minimalistic documentation in README-ODROID for setup.
+The driver was written on a Hardkernel ODROID-X2, a developer board powered by an Exynos4412 SoC. The G2D needs the exynos DRM driver of the mainline kernel with its G2D support enabled (`CONFIG_DRM_EXYNOS_G2D`).
 
 ## Performance analysis
 
-Some simple benchmarking was done to evaluate the performance of the G2D block. The test run was done with the snes9x-next emulation core and a game title that uses a native resolution of 256x224 pixels. The output screen was configured to a 1280x720 mode. Scaling to the output screen was done by keeping the native aspect ratio. In this case this would result in an output rectangle of size 822x720.
+Some simple benchmarking was done to evaluate the performance of the G2D block. The test run was done with the snes9x-next emulation core and a game title that uses a native resolution of 256x224 pixels. The output screen was configured to a 1280x720 mode. Scaling to the output screen was done by keeping the native aspect ratio. At the time the driver placed this in an output rectangle of 822x720; it now uses the core's aspect ratio (4:3 here, so 960x720).
 
     total memcpy calls: 18795
     total g2d calls: 18795
@@ -31,30 +27,30 @@ The average time to display the emulator framebuffer on screen is roughly 2058 m
 
 ## Configuration
 
-The video driver uses the libdrm API to interface with the DRM. Some patches are still missing in the upstream tree, therefore the user is advised to use the 'exynos' branch of the repository mentioned below.
-
-[libdrm repository](https://github.com/tobiasjakobi/libdrm)
-
-Make sure that the Exynos API support is enabled. If you're building libdrm from source, then use
-
-    ./configure --enable-exynos-experimental-api
-
-to enable it.
+The video driver uses the libdrm API to interface with the DRM. The Exynos API of upstream libdrm is enough: build libdrm with its Exynos support (`-Dexynos=enabled` with meson) and RetroArch with `--enable-exynos`.
 
 The video driver name is 'exynos'. It honors the following video settings:
 
    - video\_monitor\_index
-   - video\_fullscreen\_x and video\_fullscreen\_y
+   - video\_fullscreen\_x and video\_fullscreen\_y, at video\_refresh\_rate
+   - video\_vsync: with it off, a frame that comes before the last flip is done is not flipped to, and nothing waits
+   - the aspect ratio, from the core or as chosen
+   - video\_font\_enable, video\_font\_path and video\_font\_size, with the message position and colour
+   - the on-screen statistics
+   - CRT SwitchRes modelines and resolution switches
 
-The monitor index maps to the DRM connector index. If it is zero, then it just selects the first 'sane' connector, which means that it is connected to a display device and it provides at least one useable mode. If the value is non-zero, it forces the selection of this connector. For example, on the author's ODROID-X2, with an odroid-3.15.y kernel, the HDMI connector has index 1.
+The monitor index maps to the DRM connector index. If it is zero, then it just selects the first 'sane' connector, which means that it is connected to a display device and it provides at least one useable mode. If the value is non-zero, it forces the selection of this connector. For example, on the author's ODROID-X2, the HDMI connector has index 1.
 
-The two fullscreen parameters select the mode the DRM should select. If zero, the native connector mode is selected. If non-zero, the DRM tries to select the wanted mode. This might fail if the mode is not available from the connector.
+The two fullscreen parameters select the mode the DRM should select. If zero, the native connector mode is selected. If non-zero, the mode of that size closest to the refresh rate is selected; if the connector has none, the native mode is used.
+
+A core that renders into a buffer the frontend provides (`get_current_software_framebuffer`) is given the GEM buffer the G2D reads its frame from, so the frame is never copied. A core that reads its frame back is not given it, as the mapping may be uncached. Screenshots read the page on screen.
+
+Messages and statistics are drawn into a buffer of their own, and only the area the glyphs cover is cleared and blended.
 
 ## Issues and TODOs
 
-The driver still suffers from some issues.
+   - Rotation, of a core's frame and the menu's alike, is not applied: the G2D calls libdrm offers cannot rotate.
+   - A core's frame is copied into a GEM buffer unless the core renders into the one it is lent. The G2D can read from the core's own memory (`G2D_IMGBUF_USERPTR`) when the IOMMU is enabled; the driver does not use it.
+   - Overlays are not supported.
 
-   - The aspect ratio computation can be improved. In particular the user supplied aspect ratio is currently unused.
-   - Font rendering and blitting is very inefficient since the backing buffer is cleared every frame. Introduce a invalidation rectangle which covers the region where font glyphs are drawn, and then only clear this region. Also consider converting the buffer to A8 color format and using global color (not sure if this is possible).
-   - Temporary GEM buffers are used as source for blitting operations. Support for the IOMMU has to be enabled, so that one can use the 'userptr' functionality.
-   - More TODOs are pointed out in the code itself.
+The driver is tested against a fake kernel and G2D in `samples/gfx/exynos_g2d`.
