@@ -1,7 +1,7 @@
 /* Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier: GPL-3.0-or-later */
 #ifndef RARCH_VAAPI_HEVC_RUNTIME_H
 #define RARCH_VAAPI_HEVC_RUNTIME_H
-#include "vaapi_hevc_session.h"
+#include "vaapi_hevc_submit.h"
 #include <dynamic/dylib.h>
 RETRO_BEGIN_DECLS
 enum { VAAPI_HEVC_RENDER_NODE=2 };
@@ -15,6 +15,7 @@ typedef struct vaapi_hevc_runtime_io {
 } vaapi_hevc_runtime_io_t;
 typedef struct vaapi_hevc_runtime {
  vaapi_hevc_session_t session;
+ vaapi_hevc_submit_ops_t submit;
  vaapi_hevc_runtime_io_t io;
  dylib_t va,va_drm,drm;
  VADisplay display;

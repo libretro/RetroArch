@@ -16,6 +16,9 @@ typedef char vaapi_render_node_matches_sdk[(VAAPI_HEVC_RENDER_NODE==DRM_NODE_REN
 #endif
 void vaapi_hevc_runtime_sdk_signatures(vaapi_hevc_runtime_t *runtime)
 {
+ runtime->submit.create=vaCreateBuffer;runtime->submit.destroy=vaDestroyBuffer;
+ runtime->submit.begin=vaBeginPicture;runtime->submit.render=vaRenderPicture;
+ runtime->submit.end=vaEndPicture;runtime->submit.sync=vaSyncSurface2;
  runtime->get_display=vaGetDisplayDRM;
  runtime->initialize=vaInitialize;runtime->terminate=vaTerminate;
 #ifdef __linux__

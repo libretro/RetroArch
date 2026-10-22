@@ -2,6 +2,9 @@
 #define main vaapi_session_reference_main
 #include "session_test.c"
 #undef main
+#define main vaapi_submit_reference_main
+#include "submit_test.c"
+#undef main
 #define VAAPI_HEVC_RUNTIME_TEST
 #include "../../../gfx/common/vaapi_hevc_runtime.c"
 static vaapi_hevc_runtime_t runtime,exports;
@@ -63,6 +66,12 @@ static function_t symbol(dylib_t lib,const char *name)
  lookups++;if(missing_symbol==lookups)return NULL;
 #define EXPORTED(name_string,member,library) if(!strcmp(name,name_string)) { \
  assert((uintptr_t)lib==library);return symbol_value(&exports.member,sizeof(exports.member)); }
+ EXPORTED("vaCreateBuffer",submit.create,1)
+ EXPORTED("vaDestroyBuffer",submit.destroy,1)
+ EXPORTED("vaBeginPicture",submit.begin,1)
+ EXPORTED("vaRenderPicture",submit.render,1)
+ EXPORTED("vaEndPicture",submit.end,1)
+ EXPORTED("vaSyncSurface2",submit.sync,1)
  EXPORTED("vaGetDisplayDRM",get_display,2)
  EXPORTED("vaInitialize",initialize,1)
  EXPORTED("vaTerminate",terminate,1)
@@ -87,7 +96,7 @@ static void runtime_reset(void)
 {
  assert(!runtime.active && !fd_live && !display_live && !driver_live);reset();
  memset(&runtime,0,sizeof(runtime));memset(&exports,0,sizeof(exports));
- exports.session.ops=ops;exports.get_display=get_display;exports.initialize=initialize;
+ exports.session.ops=ops;exports.submit=ss_ops;exports.get_display=get_display;exports.initialize=initialize;
  exports.terminate=terminate;exports.node_type=node_type;
  loads=unloads=lookups=fd_closes=display_calls=init_calls=term_calls=0;
  missing_symbol=failed_load=term_failures=0;
@@ -101,10 +110,10 @@ static bool runtime_open(void)
 static void runtime_cases(void)
 {
  unsigned i,before;
- runtime_reset();assert(runtime_open() && runtime.ready && runtime.session.ready && lookups==16);
+ runtime_reset();assert(runtime_open() && runtime.ready && runtime.session.ready && lookups==22);
  assert(vaapi_hevc_runtime_close(&runtime) && term_calls==1 && fd_closes==1 && unloads==3);
  assert(vaapi_hevc_runtime_close(&runtime) && term_calls==1 && fd_closes==1);
- for(i=1;i<=16;i++) {
+ for(i=1;i<=22;i++) {
   runtime_reset();missing_symbol=i;assert(!runtime_open() && !display_calls);
   assert(vaapi_hevc_runtime_close(&runtime) && loads==unloads && fd_closes==1);
  }

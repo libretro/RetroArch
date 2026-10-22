@@ -26,7 +26,7 @@ typedef struct vaapi_hevc_session {
  VAConfigID config;
  VAContextID context;
  VAStatus error;
- unsigned slots,width,height,depth;
+ unsigned slots,width,height,depth,slice_mode;
  bool initialized,ready,closing;
 } vaapi_hevc_session_t;
 /* Cold decoder worker, initially zeroed storage. Display is initialized and

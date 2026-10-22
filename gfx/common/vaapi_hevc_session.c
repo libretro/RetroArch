@@ -43,7 +43,7 @@ bool vaapi_hevc_session_open(vaapi_hevc_session_t *s,VADisplay display,
        || (depth!=8 && depth!=10) || slots<2 || slots>32
        || (slice_mode!=VA_DEC_SLICE_MODE_NORMAL && slice_mode!=VA_DEC_SLICE_MODE_BASE))return false;
  native=*ops;memset(s,0,sizeof(*s));s->ops=native;s->display=display;ops=&s->ops;
- s->width=width;s->height=height;s->depth=depth;s->slots=slots;s->initialized=true;
+ s->width=width;s->height=height;s->depth=depth;s->slots=slots;s->slice_mode=slice_mode;s->initialized=true;
  s->config=VA_INVALID_ID;s->context=VA_INVALID_ID;
  for(i=0;i<32;i++)s->surfaces[i]=VA_INVALID_SURFACE;
  s->error=VA_STATUS_ERROR_ALLOCATION_FAILED;

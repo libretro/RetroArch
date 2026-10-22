@@ -72,6 +72,12 @@ bool vaapi_hevc_runtime_open_with_io(vaapi_hevc_runtime_t *r,const char *path,
  VAAPI_HEVC_LOAD(session.ops.destroy_surfaces,va,"vaDestroySurfaces");
  VAAPI_HEVC_LOAD(session.ops.create_context,va,"vaCreateContext");
  VAAPI_HEVC_LOAD(session.ops.destroy_context,va,"vaDestroyContext");
+ VAAPI_HEVC_LOAD(submit.create,va,"vaCreateBuffer");
+ VAAPI_HEVC_LOAD(submit.destroy,va,"vaDestroyBuffer");
+ VAAPI_HEVC_LOAD(submit.begin,va,"vaBeginPicture");
+ VAAPI_HEVC_LOAD(submit.render,va,"vaRenderPicture");
+ VAAPI_HEVC_LOAD(submit.end,va,"vaEndPicture");
+ VAAPI_HEVC_LOAD(submit.sync,va,"vaSyncSurface2");
 #undef VAAPI_HEVC_LOAD
  r->error=VA_STATUS_ERROR_INVALID_DISPLAY;
  if(r->node_type(r->fd)!=VAAPI_HEVC_RENDER_NODE)return false;
