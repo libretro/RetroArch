@@ -94,3 +94,17 @@ jobs:
               done
             done
           done
+
+  codec-inventory:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        cc: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Real JNI codec admission and exception contracts
+        run: make -C samples/gfx/mediacodec_inventory clean all check CC=${{ matrix.cc }} SANITIZER=undefined
