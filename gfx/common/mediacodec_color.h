@@ -3,6 +3,7 @@
 #define MEDIACODEC_COLOR_H
 #include "mediacodec_session.h"
 #include <formats/rvp9.h>
+#include <formats/rav1_sequence.h>
 #include <formats/video_color.h>
 RETRO_BEGIN_DECLS
 /* Resolve Android MediaFormat constants against coded CICP metadata. Absent
@@ -15,6 +16,8 @@ bool mediacodec_color_resolve(const mediacodec_output_format_t *native,
  * Transfer/mastering/light metadata is not inferred from the VP9 color space.
  * Failure clears out; out may alias container, but not header. */
 bool mediacodec_vp9_color(const rvp9_hdr *header,
+      const video_color_metadata_t *container, video_color_metadata_t *out);
+bool mediacodec_av1_color(const rav1_sequence_t *sequence,
       const video_color_metadata_t *container, video_color_metadata_t *out);
 /* Cold input-format hints. Unknown values stay unset; unsupported explicit
  * combinations refuse without changing config. */

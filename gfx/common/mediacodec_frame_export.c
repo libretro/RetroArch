@@ -80,3 +80,17 @@ int mediacodec_vp9_frame_export(void *opaque, const android_image_view_t *image,
       return -1;
    return mediacodec_frame_export_color(opaque, image, format, &color, frame);
 }
+
+int mediacodec_av1_frame_export(void *opaque, const android_image_view_t *image,
+      const mediacodec_output_format_t *format, const rav1_sequence_t *sequence,
+      const video_color_metadata_t *container, video_hw_frame_t *frame)
+{
+   mediacodec_frame_exporter_t *e = (mediacodec_frame_exporter_t *)opaque;
+   video_color_metadata_t color;
+   if (!mediacodec_av1_color(sequence, container, &color) || !e
+         || e->pixfmt
+                  != (sequence->bit_depth == 10 ? IMAGE_PIXFMT_P010
+                                                : IMAGE_PIXFMT_NV12))
+      return -1;
+   return mediacodec_frame_export_color(opaque, image, format, &color, frame);
+}

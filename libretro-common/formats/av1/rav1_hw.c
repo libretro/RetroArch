@@ -20,6 +20,20 @@ void rav1_set_hw_backend(const rav1_hw_backend_t *backend)
 #endif
 }
 
+int rav1_unset_hw_backend(const rav1_hw_backend_t *backend)
+{
+   if (!backend)
+      return 0;
+#ifdef RETRO_ATOMIC_HAS_PTR
+   return retro_atomic_cas_ptr(&rav1_backend, (void*)backend, NULL);
+#else
+   if (rav1_backend != backend)
+      return 0;
+   rav1_backend = NULL;
+   return 1;
+#endif
+}
+
 bool rav1_hw_backend_open_config(const rav1_sequence_t *sequence,
       const rav1_obu_t *sequence_obu, const video_color_metadata_t *color,
       unsigned slots, rav1_hw_ops_t *ops, rav1_hw_backend_t *backend)

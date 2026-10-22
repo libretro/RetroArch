@@ -62,6 +62,8 @@ RETRO_BEGIN_DECLS
 /* Publish immutable storage before opening streams; NULL withdraws it.
  * Backend/user storage must outlive open decoders, which retain close. */
 void rav1_set_hw_backend(const rav1_hw_backend_t *backend);
+/* Withdraw only this offer; leave a replacement backend registered. */
+int rav1_unset_hw_backend(const rav1_hw_backend_t *backend);
 bool rav1_hw_backend_open(const rav1_sequence_t *sequence, unsigned slots,
       rav1_hw_ops_t *ops, rav1_hw_backend_t *backend);
 bool rav1_hw_backend_open_config(const rav1_sequence_t *sequence,

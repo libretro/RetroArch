@@ -108,6 +108,41 @@ bool mediacodec_vp9_color(const rvp9_hdr *header,
    return true;
 }
 
+bool mediacodec_av1_color(const rav1_sequence_t *sequence,
+      const video_color_metadata_t *container, video_color_metadata_t *out)
+{
+   video_color_metadata_t color;
+   unsigned range;
+   if (!out)
+      return false;
+   memset(&color, 0, sizeof(color));
+   if (container)
+      color = *container;
+   memset(out, 0, sizeof(*out));
+   if (!sequence || sequence->profile || sequence->monochrome
+         || (sequence->bit_depth != 8 && sequence->bit_depth != 10)
+         || sequence->subsampling_x != 1 || sequence->subsampling_y != 1
+         || sequence->color_range > 1 || color.range > 2
+         || !sequence->color_primaries || !sequence->transfer_characteristics
+         || !sequence->matrix_coefficients)
+      return false;
+   range = sequence->color_range ? 2 : 1;
+   if ((color.range && color.range != range)
+         || (sequence->color_primaries != 2
+               && !mediacodec_color_merge(
+                     &color.primaries, sequence->color_primaries))
+         || (sequence->transfer_characteristics != 2
+               && !mediacodec_color_merge(
+                     &color.transfer, sequence->transfer_characteristics))
+         || (sequence->matrix_coefficients != 2
+               && !mediacodec_color_merge(
+                     &color.matrix, sequence->matrix_coefficients)))
+      return false;
+   color.range = range;
+   *out        = color;
+   return true;
+}
+
 bool mediacodec_color_configure(
       const video_color_metadata_t *color, mediacodec_config_t *config)
 {

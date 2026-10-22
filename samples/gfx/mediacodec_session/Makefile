@@ -12,8 +12,8 @@ CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
 all: renderer_backend_test vp9_backend_test color_refine_test test hevc_backend_test hevc_decoder_test vulkan_image_test vulkan_sync_test vulkan_pipeline_test android_frame_test frame_export_test vulkan_submit_test vulkan_entry_test vulkan_cache_test vulkan_renderer_test vulkan_device_test
-all: vp9_decoder_test av1_decoder_test
-all: vp9_color_test
+all: vp9_decoder_test av1_decoder_test av1_backend_test
+all: vp9_color_test av1_color_test
 vp9_decoder_test: vp9_decoder_test.c ../../../gfx/common/mediacodec_vp9_decoder.c ../../../gfx/common/mediacodec_vp9_decoder.h ../../../gfx/common/mediacodec_color.c ../../../gfx/common/mediacodec_color.h ../../../gfx/common/android_image_queue.c ../../../libretro-common/include/formats/rvp9_hw.h
 	$(CC) $(CFLAGS) $(BACKEND_HOST_FLAGS) -DHAVE_THREADS vp9_decoder_test.c ../../../gfx/common/mediacodec_vp9_decoder.c ../../../gfx/common/mediacodec_color.c ../../../gfx/common/android_image_queue.c -o $@ $(LDFLAGS)
 av1_decoder_test: av1_decoder_test.c av1_config_test.h ../../../gfx/common/mediacodec_av1_decoder.c ../../../gfx/common/mediacodec_av1_decoder.h ../../../gfx/common/mediacodec_color.c ../../../gfx/common/android_image_queue.c $(wildcard ../../../libretro-common/include/formats/rav1*.h)
@@ -48,6 +48,8 @@ frame_export_test: frame_export_test.c $(EXPORT_SOURCES) ../../../gfx/common/med
 	$(CC) $(CFLAGS) -DHAVE_THREADS frame_export_test.c $(EXPORT_SOURCES) -o $@ $(LDFLAGS)
 vp9_color_test: vp9_color_test.c frame_export_test.c $(EXPORT_SOURCES) ../../../gfx/common/mediacodec_frame_export.h ../../../gfx/common/mediacodec_color.h
 	$(CC) $(CFLAGS) $(BACKEND_HOST_FLAGS) -DHAVE_THREADS vp9_color_test.c $(EXPORT_SOURCES) -o $@ $(LDFLAGS)
+av1_color_test: av1_color_test.c frame_export_test.c $(EXPORT_SOURCES) ../../../gfx/common/mediacodec_frame_export.h ../../../gfx/common/mediacodec_color.h
+	$(CC) $(CFLAGS) $(BACKEND_HOST_FLAGS) -DHAVE_THREADS av1_color_test.c $(EXPORT_SOURCES) -o $@ $(LDFLAGS)
 SUBMIT_SOURCES := ../../../gfx/common/vulkan_android_submit.c ../../../gfx/common/vulkan_android_image.c \
  ../../../gfx/common/vulkan_android_sync.c ../../../gfx/common/vulkan_android_pipeline.c \
  ../../../gfx/common/android_frame.c ../../../gfx/common/android_image_queue.c \
@@ -69,6 +71,8 @@ check: all
 	./vp9_color_test
 	./vp9_decoder_test
 	./av1_decoder_test
+	./av1_backend_test
+	./av1_color_test
 	./color_refine_test
 	./test
 	./hevc_backend_test
@@ -85,6 +89,8 @@ check: all
 	./vulkan_device_test
 	CC="$(CC)" python3 root_optional_test.py
 clean:
+	rm -f av1_color_test av1_color_test.exe
+	rm -f av1_backend_test av1_backend_test.exe
 	rm -f av1_decoder_test av1_decoder_test.exe
 	rm -f renderer_backend_test renderer_backend_test.exe
 	rm -f vp9_backend_test vp9_backend_test.exe
@@ -98,6 +104,9 @@ hevc_backend_test: hevc_backend_test.c registry_test.h ../../../gfx/common/media
 
 vp9_backend_test: vp9_backend_test.c vp9_registry_test.h ../../../gfx/common/mediacodec_vp9_registry.h ../../../gfx/common/mediacodec_vp9_backend.c ../../../gfx/common/mediacodec_vp9_backend.h
 	$(CC) $(CFLAGS) $(BACKEND_HOST_FLAGS) -D_DEFAULT_SOURCE -DHAVE_THREADS -pthread vp9_backend_test.c $(EXPORT_SOURCES) ../../../libretro-common/rthreads/rthreads.c ../../../libretro-common/rthreads/retro_eventcount.c -o $@ $(LDFLAGS) -lm
+
+av1_backend_test: av1_backend_test.c av1_registry_test.h av1_config_test.h ../../../gfx/common/mediacodec_av1_registry.h ../../../gfx/common/mediacodec_av1_backend.c ../../../gfx/common/mediacodec_av1_backend.h
+	$(CC) $(CFLAGS) $(BACKEND_HOST_FLAGS) -D_DEFAULT_SOURCE -DHAVE_THREADS -pthread av1_backend_test.c $(EXPORT_SOURCES) ../../../libretro-common/rthreads/rthreads.c ../../../libretro-common/rthreads/retro_eventcount.c -o $@ $(LDFLAGS) -lm
 
 renderer_backend_test: renderer_backend_test.c ../../../gfx/drivers/vulkan_android_backend.h ../../../gfx/common/mediacodec_hevc_registry.h ../../../gfx/common/mediacodec_vp9_registry.h
 	$(CC) $(CFLAGS) -DHAVE_THREADS -DHAVE_RMP4 -DHAVE_RVP9 -I../../../gfx/include renderer_backend_test.c -o $@ $(LDFLAGS)

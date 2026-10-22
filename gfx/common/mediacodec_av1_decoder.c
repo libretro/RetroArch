@@ -267,16 +267,6 @@ void mediacodec_av1_decoder_close(rav1_hw_ops_t *ops)
    d->importer.enqueue(d->importer.context, d);
 }
 
-static bool mediacodec_av1_color_field(unsigned *value, unsigned coded)
-{
-   if (coded == 2)
-      return true;
-   if (*value && *value != 2 && *value != coded)
-      return false;
-   *value = coded;
-   return true;
-}
-
 bool mediacodec_av1_decoder_open(JNIEnv *env, const uint8_t *av1c,
       size_t av1c_size, const video_color_metadata_t *color, unsigned slots,
       unsigned max_input, const mediacodec_av1_import_t *importer,
@@ -306,19 +296,8 @@ bool mediacodec_av1_decoder_open(JNIEnv *env, const uint8_t *av1c,
          || d->sequence.operating_point_count != 1
          || d->sequence.operating_points[0].idc)
       goto fail;
-   if (color)
-      d->color = *color;
-   if (d->color.range > 2
-         || (d->color.range
-               && d->color.range != (d->sequence.color_range ? 2u : 1u))
-         || !mediacodec_av1_color_field(
-               &d->color.primaries, d->sequence.color_primaries)
-         || !mediacodec_av1_color_field(
-               &d->color.transfer, d->sequence.transfer_characteristics)
-         || !mediacodec_av1_color_field(
-               &d->color.matrix, d->sequence.matrix_coefficients))
+   if (!mediacodec_av1_color(&d->sequence, color, &d->color))
       goto fail;
-   d->color.range = d->sequence.color_range ? 2 : 1;
    d->slots       = slots;
    d->capacity    = max_input;
    memset(&config, 0, sizeof(config));

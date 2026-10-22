@@ -3,7 +3,7 @@
 #include <formats/rav1_hw.h>
 
 static rav1_sequence_t sequence;
-static rav1_hw_backend_t factory, retained, empty_backend;
+static rav1_hw_backend_t factory, retained, empty_backend, foreign;
 static rav1_hw_ops_t ops, empty_ops;
 static unsigned failures, opens, closes;
 static int mode;
@@ -117,6 +117,10 @@ int main(void)
          9, &ops, &retained));
    CHECK(config_opens == 2 && !ops.decoder && !retained.open_config);
    rav1_set_hw_backend(NULL);
+   rav1_set_hw_backend(&factory);
+   CHECK(!rav1_unset_hw_backend(&foreign));
+   CHECK(rav1_unset_hw_backend(&factory));
+   CHECK(!rav1_unset_hw_backend(&factory) && !rav1_unset_hw_backend(NULL));
    printf("AV1 hardware backend registry: %u failures\n", failures);
    return failures ? 1 : 0;
 }
