@@ -80,6 +80,7 @@
 #include "../../tasks/task_content.h"
 #include "../../tasks/task_file_transfer.h"
 #include "../../tasks/tasks_internal.h"
+#include "../../tasks/task_romm.h"
 #include "../../input/input_remapping.h"
 #include "../../paths.h"
 #include "../../playlist.h"
@@ -1701,6 +1702,14 @@ int generic_action_ok_displaylist_push(
          info_path          = path;
          info_label         = MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_LIST_STR;
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_LIST;
+         dl_type            = DISPLAYLIST_PENDING_CLEAR;
+         break;
+      case ACTION_OK_DL_ROMM_LIST:
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = path;
+         info_label         = MENU_ENUM_LABEL_DEFERRED_ROMM_LIST_STR;
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_ROMM_LIST;
          dl_type            = DISPLAYLIST_PENDING_CLEAR;
          break;
       case ACTION_OK_DL_CORE_CONTENT_LIST:
@@ -5628,6 +5637,46 @@ static int generic_action_ok_network(const char *path,
 
 DEFAULT_ACTION_OK_LIST(action_ok_core_content_list, MENU_ENUM_LABEL_CB_CORE_CONTENT_LIST)
 DEFAULT_ACTION_OK_LIST_NON_STATIC(action_ok_core_content_dirs_list, MENU_ENUM_LABEL_CB_CORE_CONTENT_DIRS_LIST)
+
+/* The Online Updater entry opens the platforms; a platform or "next
+ * page" entry carries the list context of the ROMs to show. */
+int action_ok_romm_list(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   file_transfer_t *transf    = NULL;
+   const char *ctx            = (type == FILE_TYPE_ROMM_PLATFORM) ? path : "";
+
+   generic_action_ok_command(CMD_EVENT_NETWORK_INIT);
+
+   if (!(transf = (file_transfer_t*)calloc(1, sizeof(*transf))))
+      return -1;
+
+   menu_st->flags |= MENU_ST_FLAG_ENTRIES_NONBLOCKING_REFRESH;
+
+   if (!task_push_romm_list(ctx, cb_net_generic, transf))
+   {
+      menu_st->flags &= ~MENU_ST_FLAG_ENTRIES_NONBLOCKING_REFRESH;
+      free(transf);
+      return -1;
+   }
+
+   return generic_action_ok_displaylist_push(ctx, NULL,
+         label, type, idx, entry_idx, ACTION_OK_DL_ROMM_LIST);
+}
+
+static int action_ok_romm_download(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   const char *menu_path = NULL;
+
+   menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
+
+   /* Says by itself why it did not start */
+   task_push_romm_download(menu_path, path);
+   return 0;
+}
+
 DEFAULT_ACTION_OK_LIST(action_ok_core_system_files_list, MENU_ENUM_LABEL_CB_CORE_SYSTEM_FILES_LIST)
 DEFAULT_ACTION_OK_LIST(action_ok_lakka_list, MENU_ENUM_LABEL_CB_LAKKA_LIST)
 
@@ -9776,6 +9825,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
 #ifdef HAVE_NETWORKING
          {MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT,               action_ok_core_content_list},
          {MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS,          action_ok_core_content_dirs_list},
+         {MENU_ENUM_LABEL_ROMM_LIBRARY,                        action_ok_romm_list},
          {MENU_ENUM_LABEL_DOWNLOAD_CORE_SYSTEM_FILES,          action_ok_core_system_files_list},
          {MENU_ENUM_LABEL_CORE_UPDATER_LIST,                   action_ok_core_updater_list},
          {MENU_ENUM_LABEL_UPDATE_INSTALLED_CORES,              action_ok_update_installed_cores},
@@ -10454,6 +10504,16 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
          case FILE_TYPE_DOWNLOAD_CORE_SYSTEM_FILES:
 #ifdef HAVE_NETWORKING
             BIND_ACTION_OK(cbs, action_ok_core_system_files_download);
+#endif
+            break;
+         case FILE_TYPE_ROMM_PLATFORM:
+#ifdef HAVE_NETWORKING
+            BIND_ACTION_OK(cbs, action_ok_romm_list);
+#endif
+            break;
+         case FILE_TYPE_ROMM_ROM:
+#ifdef HAVE_NETWORKING
+            BIND_ACTION_OK(cbs, action_ok_romm_download);
 #endif
             break;
          case FILE_TYPE_DOWNLOAD_THUMBNAIL_CONTENT:

@@ -1087,6 +1087,7 @@ static const char *config_sensitive_keys[] = {
    "smb_client_username",
    "smb_client_password",
    "mcp_server_token",
+   "romm_token",
    "netplay_password",
    "netplay_spectate_password",
    "kiosk_mode_password",
@@ -2015,6 +2016,8 @@ static struct config_array_setting *populate_settings_array(
    SETTING_ARRAY("mcp_server_bind_address",               settings->arrays.mcp_server_bind_address, false, NULL, true);
    SETTING_ARRAY_SENSITIVE("mcp_server_token",            settings->arrays.mcp_server_token, false, NULL, true);
    SETTING_ARRAY("netplay_mitm_server",                   settings->arrays.netplay_mitm_server, false, NULL, true);
+   SETTING_ARRAY("romm_url",                              settings->arrays.romm_url, false, NULL, true);
+   SETTING_ARRAY_SENSITIVE("romm_token",                  settings->arrays.romm_token, false, NULL, true);
 #ifdef HAVE_CLOUDSYNC
    SETTING_ARRAY("webdav_url",                            settings->arrays.webdav_url, false, NULL, true);
    SETTING_ARRAY_SENSITIVE("webdav_username",             settings->arrays.webdav_username, false, NULL, true);
@@ -2686,6 +2689,7 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_updater_backup.h"
 #include "settings/settings_def_updater_experimental.h"
 #include "settings/settings_def_updater_extract.h"
+#include "settings/settings_def_updater_romm.h"
 #include "settings/settings_def_gamemode.h"
 #include "settings/settings_def_sustained_performance.h"
 #include "settings/settings_def_power_plan.h"
@@ -3410,6 +3414,7 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_updater_backup.h"
 #include "settings/settings_def_updater_experimental.h"
 #include "settings/settings_def_updater_extract.h"
+#include "settings/settings_def_updater_romm.h"
 #include "settings/settings_def_gamemode.h"
 #include "settings/settings_def_sustained_performance.h"
 #include "settings/settings_def_power_plan.h"
@@ -4111,6 +4116,7 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_updater_backup.h"
 #include "settings/settings_def_updater_experimental.h"
 #include "settings/settings_def_updater_extract.h"
+#include "settings/settings_def_updater_romm.h"
 #include "settings/settings_def_gamemode.h"
 #include "settings/settings_def_sustained_performance.h"
 #include "settings/settings_def_power_plan.h"
@@ -4850,6 +4856,7 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_updater_backup.h"
 #include "settings/settings_def_updater_experimental.h"
 #include "settings/settings_def_updater_extract.h"
+#include "settings/settings_def_updater_romm.h"
 #include "settings/settings_def_gamemode.h"
 #include "settings/settings_def_sustained_performance.h"
 #include "settings/settings_def_power_plan.h"
@@ -5448,6 +5455,7 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_updater_backup.h"
 #include "settings/settings_def_updater_experimental.h"
 #include "settings/settings_def_updater_extract.h"
+#include "settings/settings_def_updater_romm.h"
 #include "settings/settings_def_gamemode.h"
 #include "settings/settings_def_sustained_performance.h"
 #include "settings/settings_def_power_plan.h"

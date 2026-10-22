@@ -330,6 +330,22 @@ jobs:
           timeout 60 ./natt_desc_parse_test
           echo "[pass] natt_desc_parse_test"
 
+      - name: Build and run romm_list_test
+        shell: bash
+        working-directory: samples/tasks/romm
+        run: |
+          set -eu
+          # The RomM response parser (tasks/romm_list.c).  Names and
+          # covers in a server's answers become paths and URLs, so the
+          # test feeds it traversal names and covers off the server.
+          make clean && make -j$(nproc) romm_list_test
+          timeout 60 ./romm_list_test
+          make clean SANITIZER=address,undefined && make -j$(nproc) romm_list_test SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+            timeout 120 ./romm_list_test
+          make clean >/dev/null
+          echo "[pass] romm_list_test"
+
       - name: Build and run http_method_match_test (ASan)
         shell: bash
         working-directory: samples/tasks/http
