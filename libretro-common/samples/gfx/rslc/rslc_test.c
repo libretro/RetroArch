@@ -235,13 +235,16 @@ static void test_pbuf(void)
    struct rslc_pbuf b;
    char             err[128];
    unsigned         i;
+   size_t           calls;
 
    opts_default(&o, err, sizeof(err));
    CHECK(rslc_ctx_init(&c, &o, RSLC_STAGE_VERTEX));
 
-   CHECK(rslc_pbuf_init(&c, &b, 64));
+   /* A right hint is one allocation and no growth. */
+   calls = alloc_calls;
+   CHECK(rslc_pbuf_init(&c, &b, 64, 39));
    CHECK(b.len == 64);
-   CHECK(b.cap >= 64);
+   CHECK(b.cap >= 103);
    CHECK(rslc_pbuf_puts(&c, &b, "layout(location = "));
    CHECK(rslc_pbuf_putu(&c, &b, 0));
    CHECK(rslc_pbuf_puts(&c, &b, ") in vec"));
@@ -250,9 +253,13 @@ static void test_pbuf(void)
    CHECK(rslc_pbuf_putc(&c, &b, '\0'));
    CHECK(!strcmp((const char*)b.data + 64,
             "layout(location = 0) in vec4294967295;"));
+   CHECK(b.grows == 0);
+   CHECK(alloc_calls == calls + 1);
+   /* A wrong hint still works, and is counted. */
    for (i = 0; i < 20000; i++)
       CHECK(rslc_pbuf_puts(&c, &b, "0123456789"));
    CHECK(b.len == 64 + 39 + 200000);
+   CHECK(b.grows > 0);
    CHECK(!memcmp(b.data + b.len - 10, "0123456789", 10));
    rslc_pbuf_free(&c, &b);
    CHECK(b.data == NULL);

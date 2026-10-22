@@ -247,12 +247,14 @@ const char *rslc_intern_cstr(struct rslc_ctx *c, const char *s)
 
 /* Print buffer */
 
-bool rslc_pbuf_init(struct rslc_ctx *c, struct rslc_pbuf *b, size_t prefix)
+bool rslc_pbuf_init(struct rslc_ctx *c, struct rslc_pbuf *b,
+      size_t prefix, size_t hint)
 {
-   size_t cap = 4096;
-   while (cap < prefix)
-      cap *= 2;
-   b->data = (uint8_t*)rslc_mem_alloc(c->opts, cap);
+   size_t cap = prefix + hint;
+   if (cap < 256)
+      cap = 256;
+   b->grows = 0;
+   b->data  = (uint8_t*)rslc_mem_alloc(c->opts, cap);
    if (!b->data)
    {
       b->len = b->cap = 0;
@@ -274,9 +276,10 @@ bool rslc_pbuf_reserve(struct rslc_ctx *c, struct rslc_pbuf *b, size_t extra)
 
    if (need <= b->cap)
       return true;
-   cap = b->cap ? b->cap : 4096;
+   cap = b->cap ? b->cap : 256;
    while (cap < need)
       cap *= 2;
+   b->grows++;
    nw = (uint8_t*)rslc_mem_alloc(c->opts, cap);
    if (!nw)
    {

@@ -76,15 +76,18 @@ struct rslc_intern
    uint32_t                  count;
 };
 
-/* Growing output buffer that becomes the result blob.  The caller
- * reserves the header and reflection section up front by starting
- * len at that size; the backend appends the payload; the blob is the
- * buffer, so there is no final copy. */
+/* Output buffer that becomes the result blob.  The backend reserves
+ * the header and reflection section by starting len at that size and
+ * sizes the whole buffer from the IR up front, so the blob is one
+ * allocation and the buffer is the blob: no final copy.  Growth by
+ * doubling exists for a misestimate only; it counts as a defect when
+ * it fires on a corpus shader. */
 struct rslc_pbuf
 {
    uint8_t *data;
    size_t   len;
    size_t   cap;
+   unsigned grows;
 };
 
 /* Per-compile state shared by the three TUs. */
@@ -119,11 +122,14 @@ const char *rslc_intern(struct rslc_ctx *c, const char *s, size_t len);
 const char *rslc_intern_cstr(struct rslc_ctx *c, const char *s);
 uint32_t    rslc_hash(const char *s, size_t len);
 
-/* Print buffer.  rslc_pbuf_reserve guarantees extra free bytes;
- * rslc_pbuf_put / _putc append.  All return false and mark the compile
- * failed when the allocator refuses.  The buffer is released by
- * rslc_pbuf_free, or detached into a result by the backend. */
-bool  rslc_pbuf_init(struct rslc_ctx *c, struct rslc_pbuf *b, size_t prefix);
+/* Print buffer.  rslc_pbuf_init allocates prefix + hint bytes once;
+ * rslc_pbuf_reserve guarantees extra free bytes; rslc_pbuf_put /
+ * _putc append.  All return false and mark the compile failed when
+ * the allocator refuses.  The buffer is released by rslc_pbuf_free, or
+ * detached into a result by the backend.  grows counts the times the
+ * hint was wrong. */
+bool  rslc_pbuf_init(struct rslc_ctx *c, struct rslc_pbuf *b,
+      size_t prefix, size_t hint);
 bool  rslc_pbuf_reserve(struct rslc_ctx *c, struct rslc_pbuf *b, size_t extra);
 bool  rslc_pbuf_put(struct rslc_ctx *c, struct rslc_pbuf *b,
       const void *src, size_t len);
