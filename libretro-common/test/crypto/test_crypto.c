@@ -829,14 +829,22 @@ START_TEST (test_x509)
    chain[2] = x509_inter; lens[2] = sizeof(x509_inter);
    ck_assert_int_eq(x509_verify_chain(chain, lens, 3, "example.com", X509_TEST_NOW, info, sizeof(info)), 0);
 
-   /* the shipped bundle: every anchor with an RSA or P-256 key parses */
+   /* the shipped bundle: every anchor with an RSA or P-256 key parses,
+    * read in place from its DER parts */
    {
-      int n = x509_trust_load_pem_parts(cacert_pem_parts, cacert_pem_sizes,
-            CACERT_PEM_PARTS);
+      int n = x509_trust_load_der_parts(cacert_der_parts, cacert_der_sizes,
+            CACERT_DER_PARTS);
       ck_assert_int_eq(n, 155);   /* every certificate in the bundle, all parts */
-      ck_assert_int_eq(x509_trust_load_pem_parts(cacert_pem_parts, cacert_pem_sizes,
-            CACERT_PEM_PARTS), n);
+      ck_assert_int_eq(x509_trust_load_der_parts(cacert_der_parts, cacert_der_sizes,
+            CACERT_DER_PARTS), n);
       ck_assert_int_eq(x509_verify_chain(chain, lens, 3, "example.com", X509_TEST_NOW, info, sizeof(info)), -1);
+   }
+   x509_trust_free();
+   /* a part cut inside a certificate is refused, not read past */
+   {
+      const unsigned char *part = cacert_der_parts[0];
+      size_t len = cacert_der_sizes[0] - 1;
+      ck_assert_int_eq(x509_trust_load_der_parts(&part, &len, 1), -1);
    }
    x509_trust_free();
 }

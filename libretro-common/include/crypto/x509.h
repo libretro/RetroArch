@@ -166,6 +166,18 @@ int x509_trust_load_pem(const char *pem, size_t len);
 int x509_trust_load_pem_parts(const char *const *parts, const size_t *lens,
       unsigned count);
 
+/**
+ * x509_trust_load_der_parts:
+ *
+ * As x509_trust_load_pem_parts() for a bundle kept as DER (net/cacert.h):
+ * each part is a run of whole DER certificates, read in place for the
+ * life of the store rather than decoded and copied.
+ *
+ * Returns: the number of anchors loaded, or -1 on failure.
+ **/
+int x509_trust_load_der_parts(const unsigned char *const *parts,
+      const size_t *lens, unsigned count);
+
 void x509_trust_free(void);
 
 /**

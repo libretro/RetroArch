@@ -204,12 +204,33 @@ void* ssl_socket_init(int fd, const char *domain)
 
 #if defined(MBEDTLS_X509_CRT_PARSE_C)
    {
-      /* the bundle's parts, each NUL-terminated PEM, into one chain */
+      /* the bundle's parts, each a run of DER certificates, into one
+       * chain; a part is walked by each certificate's SEQUENCE length */
       unsigned i;
-      for (i = 0; i < CACERT_PEM_PARTS; i++)
-         if (mbedtls_x509_crt_parse(&state->ca,
-                  (const unsigned char*)cacert_pem_parts[i], cacert_pem_sizes[i]) < 0)
-            goto error;
+      for (i = 0; i < CACERT_DER_PARTS; i++)
+      {
+         const unsigned char *p   = cacert_der_parts[i];
+         const unsigned char *end = p + cacert_der_sizes[i];
+         while (p < end)
+         {
+            size_t len;
+            if (end - p < 4 || p[0] != 0x30)
+               goto error;
+            if (p[1] < 0x80)
+               len = 2 + p[1];
+            else if (p[1] == 0x81)
+               len = 3 + p[2];
+            else if (p[1] == 0x82)
+               len = 4 + ((size_t)p[2] << 8 | p[3]);
+            else
+               goto error;
+            if (len > (size_t)(end - p))
+               goto error;
+            if (mbedtls_x509_crt_parse_der(&state->ca, p, len) < 0)
+               goto error;
+            p += len;
+         }
+      }
    }
 #endif
 
