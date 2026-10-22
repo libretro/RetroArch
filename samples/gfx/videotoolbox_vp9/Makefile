@@ -7,12 +7,15 @@ ifneq ($(SANITIZER),)
 CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
-all: config_test$(EXE)
+all: config_test$(EXE) packet_test$(EXE)
 config_test$(EXE): config_test.c ../../../gfx/common/videotoolbox_vp9_config.h ../../../gfx/common/vp9_color.h
+	$(CC) $(CFLAGS) $< -o $@ $(LDFLAGS)
+packet_test$(EXE): packet_test.c ../../../gfx/common/videotoolbox_vp9_packet.h
 	$(CC) $(CFLAGS) $< -o $@ $(LDFLAGS)
 check: all
 	./config_test$(EXE)
+	./packet_test$(EXE)
 	CC="$(CC)" CFLAGS="$(CFLAGS) $(LDFLAGS)" python3 run.py
 clean:
-	rm -f config_test config_test.exe *.su
+	rm -f config_test config_test.exe packet_test packet_test.exe *.su
 .PHONY: all check clean
