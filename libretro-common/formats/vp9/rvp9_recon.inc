@@ -1393,7 +1393,8 @@ static const RVP9_PIXEL rvp9_extend_modes[10] = {
    RVP9_NEED_LEFT | RVP9_NEED_ABOVE    /* TM   */
 };
 
-static void rvp9_build_intra(rvp9_dec *d, const RVP9_PIXEL *ref, int ref_stride,
+/* Inlined predictors inflate reconstruction register spills. */
+static RVP9_NOINLINE void rvp9_build_intra(rvp9_dec *d, const RVP9_PIXEL *ref, int ref_stride,
       RVP9_PIXEL *dst, int dst_stride, int mode, int tx_size,
       int up_available, int left_available, int right_available,
       int x, int y, int plane, int mi_col, int mi_row)
@@ -2768,7 +2769,9 @@ static int rvp9_decode_frame_impl(rvp9_dec *d, const uint8_t *data,
       const uint8_t *tp   = data + tile_off;
       const uint8_t *tend = data + len;
       int tile_cols       = 1 << hd->log2_tile_cols;
+#ifdef HAVE_THREADS
       int workers         = 1;
+#endif
       int rc;
 
 #ifdef HAVE_THREADS
@@ -2782,7 +2785,9 @@ static int rvp9_decode_frame_impl(rvp9_dec *d, const uint8_t *data,
       }
 #endif
 
+#ifdef HAVE_THREADS
       if (workers <= 1)
+#endif
          rc = rvp9_decode_tile_cols(d, tp, tend, 0, tile_cols - 1);
 #ifdef HAVE_THREADS
       else

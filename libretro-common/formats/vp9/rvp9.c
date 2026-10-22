@@ -27,6 +27,13 @@
 #include <retro_inline.h>
 #include <formats/rvp9_hw.h>
 #include <retro_atomic.h>
+#if defined(__GNUC__)
+#define RVP9_NOINLINE __attribute__((noinline))
+#elif defined(_MSC_VER) && _MSC_VER >= 1300
+#define RVP9_NOINLINE __declspec(noinline)
+#else
+#define RVP9_NOINLINE
+#endif
 #ifdef HAVE_THREADS
 #include <rthreads/tpool.h>
 #include <rthreads/rthreads.h>
@@ -1758,6 +1765,16 @@ static void rvp9_diff_update_prob(rvp9_br *r, uint8_t *p)
    }
 }
 
+/* Bound probability-loop unrolling and its address-register spills. */
+static RVP9_NOINLINE void rvp9_update_coef_band(rvp9_br *r,
+      uint8_t probs[RVP9_COEFF_CONTEXTS][RVP9_UNCONSTRAINED], int contexts)
+{
+   int context, node;
+   for (context = 0; context < contexts; context++)
+      for (node = 0; node < RVP9_UNCONSTRAINED; node++)
+         rvp9_diff_update_prob(r, &probs[context][node]);
+}
+
 /* ==================================================================== */
 /* Frame context: probability tables adapted across frames.             */
 /* Sizes per libvpx vp9_entropymode.h / vp9_entropy.h.                  */
@@ -1770,7 +1787,7 @@ static int rvp9_parse_compressed_intra(const uint8_t *data, size_t sz,
       const rvp9_hdr *hd, rvp9_frame_ctx *fc, rvp9_br *r_out)
 {
    rvp9_br r;
-   int tx_mode, i, j, k, l, m;
+   int tx_mode, i, j, k, l;
    static const int band_ctx[RVP9_COEF_BANDS] = { 3, 6, 6, 6, 6, 6 };
    static const int biggest_tx[5] = { 0, 1, 2, 3, 3 };
 
@@ -1799,13 +1816,7 @@ static int rvp9_parse_compressed_intra(const uint8_t *data, size_t sz,
          for (j = 0; j < RVP9_PLANE_TYPES; j++)
             for (k = 0; k < RVP9_REF_TYPES; k++)
                for (l = 0; l < RVP9_COEF_BANDS; l++)
-               {
-                  int c;
-                  for (c = 0; c < band_ctx[l]; c++)
-                     for (m = 0; m < RVP9_UNCONSTRAINED; m++)
-                        rvp9_diff_update_prob(&r,
-                           &fc->coef[i][j][k][l][c][m]);
-               }
+                  rvp9_update_coef_band(&r, fc->coef[i][j][k][l], band_ctx[l]);
    }
    for (i = 0; i < RVP9_SKIP_CONTEXTS; i++)
       rvp9_diff_update_prob(&r, &fc->skip[i]);
@@ -2730,7 +2741,8 @@ static int rvp9_decode_coefs(rvp9_dec *d, int plane_type, int is_inter,
    unsigned (*eob_counts)[RVP9_COEFF_CONTEXTS] =
       d->cnt.eob_branch[tx_size][plane_type][is_inter];
    const uint8_t *prob;
-   uint8_t token_cache[32 * 32];
+   /* Entropy decode finishes before inverse transforms use this workspace. */
+   uint8_t *token_cache = (uint8_t*)d->iht_scratch;
    const uint8_t *band_translate =
       (tx_size == RVP9_TX_4X4) ? rvp9_coefband_4x4 : rvp9_coefband_8x8p;
    const int dq_shift = (tx_size == RVP9_TX_32X32);
