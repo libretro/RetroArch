@@ -73,10 +73,9 @@ void msg_hash_strtab_index_build(msg_hash_strtab_index_t *idx,
    if (!id_slots)
       return;
 
-   if (tab->blob)
    {
-      /* Packed encoding: rows are contiguous NUL-terminated
-       * strings; recover each row's offset with one walk. */
+      /* Rows are contiguous NUL-terminated strings; recover each
+       * row's offset with one walk. */
       const char *p = tab->blob;
       for (i = 0; i < tab->count; i++)
       {
@@ -85,14 +84,6 @@ void msg_hash_strtab_index_build(msg_hash_strtab_index_t *idx,
          while (*p)
             p++;
          p++;
-      }
-   }
-   else
-   {
-      for (i = 0; i < tab->count; i++)
-      {
-         if (tab->ids[i] < (uint32_t)MSG_LAST)
-            id_slots[tab->ids[i]] = i + 1;
       }
    }
 
@@ -120,11 +111,7 @@ const char *msg_hash_strtab_lookup(const msg_hash_strtab_t *tab,
       {
          uint32_t slot = idx->id_slots[id];
          if (slot)
-         {
-            if (tab->strs)
-               return tab->strs[slot - 1];
             return tab->blob + (slot - 1);
-         }
       }
       return NULL;
    }
@@ -132,23 +119,14 @@ const char *msg_hash_strtab_lookup(const msg_hash_strtab_t *tab,
    /* Allocation-failure path only. */
    {
       uint32_t i;
-      if (tab->strs)
+      const char *p = tab->blob;
+      for (i = 0; i < tab->count; i++)
       {
-         for (i = 0; i < tab->count; i++)
-            if (tab->ids[i] == id)
-               return tab->strs[i];
-      }
-      else
-      {
-         const char *p = tab->blob;
-         for (i = 0; i < tab->count; i++)
-         {
-            if (tab->ids[i] == id)
-               return p;
-            while (*p)
-               p++;
+         if (tab->ids[i] == id)
+            return p;
+         while (*p)
             p++;
-         }
+         p++;
       }
    }
 
@@ -290,147 +268,147 @@ const char *get_user_language_iso639_1(bool limit)
 #include "intl/msg_hash_th.h"
 
 static const msg_hash_strtab_t msg_hash_strtab_he =
-{ msg_hash_he_ids, NULL,
+{ msg_hash_he_ids,
   (uint32_t)(sizeof(msg_hash_he_ids) / sizeof(msg_hash_he_ids[0])),
   (const char*)&msg_hash_he_blob };
 static const msg_hash_strtab_t msg_hash_strtab_sk =
-{ msg_hash_sk_ids, NULL,
+{ msg_hash_sk_ids,
   (uint32_t)(sizeof(msg_hash_sk_ids) / sizeof(msg_hash_sk_ids[0])),
   (const char*)&msg_hash_sk_blob };
 static const msg_hash_strtab_t msg_hash_strtab_uk =
-{ msg_hash_uk_ids, NULL,
+{ msg_hash_uk_ids,
   (uint32_t)(sizeof(msg_hash_uk_ids) / sizeof(msg_hash_uk_ids[0])),
   (const char*)&msg_hash_uk_blob };
 static const msg_hash_strtab_t msg_hash_strtab_eo =
-{ msg_hash_eo_ids, NULL,
+{ msg_hash_eo_ids,
   (uint32_t)(sizeof(msg_hash_eo_ids) / sizeof(msg_hash_eo_ids[0])),
   (const char*)&msg_hash_eo_blob };
 static const msg_hash_strtab_t msg_hash_strtab_pl =
-{ msg_hash_pl_ids, NULL,
+{ msg_hash_pl_ids,
   (uint32_t)(sizeof(msg_hash_pl_ids) / sizeof(msg_hash_pl_ids[0])),
   (const char*)&msg_hash_pl_blob };
 static const msg_hash_strtab_t msg_hash_strtab_fi =
-{ msg_hash_fi_ids, NULL,
+{ msg_hash_fi_ids,
   (uint32_t)(sizeof(msg_hash_fi_ids) / sizeof(msg_hash_fi_ids[0])),
   (const char*)&msg_hash_fi_blob };
 static const msg_hash_strtab_t msg_hash_strtab_hu =
-{ msg_hash_hu_ids, NULL,
+{ msg_hash_hu_ids,
   (uint32_t)(sizeof(msg_hash_hu_ids) / sizeof(msg_hash_hu_ids[0])),
   (const char*)&msg_hash_hu_blob };
 static const msg_hash_strtab_t msg_hash_strtab_be =
-{ msg_hash_be_ids, NULL,
+{ msg_hash_be_ids,
   (uint32_t)(sizeof(msg_hash_be_ids) / sizeof(msg_hash_be_ids[0])),
   (const char*)&msg_hash_be_blob };
 static const msg_hash_strtab_t msg_hash_strtab_en =
-{ msg_hash_en_ids, NULL,
+{ msg_hash_en_ids,
   (uint32_t)(sizeof(msg_hash_en_ids) / sizeof(msg_hash_en_ids[0])),
   (const char*)&msg_hash_en_blob };
 static const msg_hash_strtab_t msg_hash_strtab_it =
-{ msg_hash_it_ids, NULL,
+{ msg_hash_it_ids,
   (uint32_t)(sizeof(msg_hash_it_ids) / sizeof(msg_hash_it_ids[0])),
   (const char*)&msg_hash_it_blob };
 static const msg_hash_strtab_t msg_hash_strtab_fa =
-{ msg_hash_fa_ids, NULL,
+{ msg_hash_fa_ids,
   (uint32_t)(sizeof(msg_hash_fa_ids) / sizeof(msg_hash_fa_ids[0])),
   (const char*)&msg_hash_fa_blob };
 static const msg_hash_strtab_t msg_hash_strtab_ast =
-{ msg_hash_ast_ids, NULL,
+{ msg_hash_ast_ids,
   (uint32_t)(sizeof(msg_hash_ast_ids) / sizeof(msg_hash_ast_ids[0])),
   (const char*)&msg_hash_ast_blob };
 static const msg_hash_strtab_t msg_hash_strtab_nl =
-{ msg_hash_nl_ids, NULL,
+{ msg_hash_nl_ids,
   (uint32_t)(sizeof(msg_hash_nl_ids) / sizeof(msg_hash_nl_ids[0])),
   (const char*)&msg_hash_nl_blob };
 static const msg_hash_strtab_t msg_hash_strtab_sv =
-{ msg_hash_sv_ids, NULL,
+{ msg_hash_sv_ids,
   (uint32_t)(sizeof(msg_hash_sv_ids) / sizeof(msg_hash_sv_ids[0])),
   (const char*)&msg_hash_sv_blob };
 static const msg_hash_strtab_t msg_hash_strtab_id =
-{ msg_hash_id_ids, NULL,
+{ msg_hash_id_ids,
   (uint32_t)(sizeof(msg_hash_id_ids) / sizeof(msg_hash_id_ids[0])),
   (const char*)&msg_hash_id_blob };
 static const msg_hash_strtab_t msg_hash_strtab_cs =
-{ msg_hash_cs_ids, NULL,
+{ msg_hash_cs_ids,
   (uint32_t)(sizeof(msg_hash_cs_ids) / sizeof(msg_hash_cs_ids[0])),
   (const char*)&msg_hash_cs_blob };
 static const msg_hash_strtab_t msg_hash_strtab_ar =
-{ msg_hash_ar_ids, NULL,
+{ msg_hash_ar_ids,
   (uint32_t)(sizeof(msg_hash_ar_ids) / sizeof(msg_hash_ar_ids[0])),
   (const char*)&msg_hash_ar_blob };
 static const msg_hash_strtab_t msg_hash_strtab_fr =
-{ msg_hash_fr_ids, NULL,
+{ msg_hash_fr_ids,
   (uint32_t)(sizeof(msg_hash_fr_ids) / sizeof(msg_hash_fr_ids[0])),
   (const char*)&msg_hash_fr_blob };
 static const msg_hash_strtab_t msg_hash_strtab_cht =
-{ msg_hash_cht_ids, NULL,
+{ msg_hash_cht_ids,
   (uint32_t)(sizeof(msg_hash_cht_ids) / sizeof(msg_hash_cht_ids[0])),
   (const char*)&msg_hash_cht_blob };
 static const msg_hash_strtab_t msg_hash_strtab_de =
-{ msg_hash_de_ids, NULL,
+{ msg_hash_de_ids,
   (uint32_t)(sizeof(msg_hash_de_ids) / sizeof(msg_hash_de_ids[0])),
   (const char*)&msg_hash_de_blob };
 static const msg_hash_strtab_t msg_hash_strtab_es =
-{ msg_hash_es_ids, NULL,
+{ msg_hash_es_ids,
   (uint32_t)(sizeof(msg_hash_es_ids) / sizeof(msg_hash_es_ids[0])),
   (const char*)&msg_hash_es_blob };
 static const msg_hash_strtab_t msg_hash_strtab_ca =
-{ msg_hash_ca_ids, NULL,
+{ msg_hash_ca_ids,
   (uint32_t)(sizeof(msg_hash_ca_ids) / sizeof(msg_hash_ca_ids[0])),
   (const char*)&msg_hash_ca_blob };
 static const msg_hash_strtab_t msg_hash_strtab_el =
-{ msg_hash_el_ids, NULL,
+{ msg_hash_el_ids,
   (uint32_t)(sizeof(msg_hash_el_ids) / sizeof(msg_hash_el_ids[0])),
   (const char*)&msg_hash_el_blob };
 static const msg_hash_strtab_t msg_hash_strtab_jp =
-{ msg_hash_ja_ids, NULL,
+{ msg_hash_ja_ids,
   (uint32_t)(sizeof(msg_hash_ja_ids) / sizeof(msg_hash_ja_ids[0])),
   (const char*)&msg_hash_ja_blob };
 static const msg_hash_strtab_t msg_hash_strtab_ko =
-{ msg_hash_ko_ids, NULL,
+{ msg_hash_ko_ids,
   (uint32_t)(sizeof(msg_hash_ko_ids) / sizeof(msg_hash_ko_ids[0])),
   (const char*)&msg_hash_ko_blob };
 static const msg_hash_strtab_t msg_hash_strtab_pt_pt =
-{ msg_hash_pt_pt_ids, NULL,
+{ msg_hash_pt_pt_ids,
   (uint32_t)(sizeof(msg_hash_pt_pt_ids) / sizeof(msg_hash_pt_pt_ids[0])),
   (const char*)&msg_hash_pt_pt_blob };
 static const msg_hash_strtab_t msg_hash_strtab_ru =
-{ msg_hash_ru_ids, NULL,
+{ msg_hash_ru_ids,
   (uint32_t)(sizeof(msg_hash_ru_ids) / sizeof(msg_hash_ru_ids[0])),
   (const char*)&msg_hash_ru_blob };
 static const msg_hash_strtab_t msg_hash_strtab_tr =
-{ msg_hash_tr_ids, NULL,
+{ msg_hash_tr_ids,
   (uint32_t)(sizeof(msg_hash_tr_ids) / sizeof(msg_hash_tr_ids[0])),
   (const char*)&msg_hash_tr_blob };
 static const msg_hash_strtab_t msg_hash_strtab_val =
-{ msg_hash_val_ids, NULL,
+{ msg_hash_val_ids,
   (uint32_t)(sizeof(msg_hash_val_ids) / sizeof(msg_hash_val_ids[0])),
   (const char*)&msg_hash_val_blob };
 static const msg_hash_strtab_t msg_hash_strtab_vn =
-{ msg_hash_vn_ids, NULL,
+{ msg_hash_vn_ids,
   (uint32_t)(sizeof(msg_hash_vn_ids) / sizeof(msg_hash_vn_ids[0])),
   (const char*)&msg_hash_vn_blob };
 static const msg_hash_strtab_t msg_hash_strtab_chs =
-{ msg_hash_chs_ids, NULL,
+{ msg_hash_chs_ids,
   (uint32_t)(sizeof(msg_hash_chs_ids) / sizeof(msg_hash_chs_ids[0])),
   (const char*)&msg_hash_chs_blob };
 static const msg_hash_strtab_t msg_hash_strtab_pt_br =
-{ msg_hash_pt_br_ids, NULL,
+{ msg_hash_pt_br_ids,
   (uint32_t)(sizeof(msg_hash_pt_br_ids) / sizeof(msg_hash_pt_br_ids[0])),
   (const char*)&msg_hash_pt_br_blob };
 static const msg_hash_strtab_t msg_hash_strtab_gl =
-{ msg_hash_gl_ids, NULL,
+{ msg_hash_gl_ids,
   (uint32_t)(sizeof(msg_hash_gl_ids) / sizeof(msg_hash_gl_ids[0])),
   (const char*)&msg_hash_gl_blob };
 static const msg_hash_strtab_t msg_hash_strtab_no =
-{ msg_hash_no_ids, NULL,
+{ msg_hash_no_ids,
   (uint32_t)(sizeof(msg_hash_no_ids) / sizeof(msg_hash_no_ids[0])),
   (const char*)&msg_hash_no_blob };
 static const msg_hash_strtab_t msg_hash_strtab_ga =
-{ msg_hash_ga_ids, NULL,
+{ msg_hash_ga_ids,
   (uint32_t)(sizeof(msg_hash_ga_ids) / sizeof(msg_hash_ga_ids[0])),
   (const char*)&msg_hash_ga_blob };
 static const msg_hash_strtab_t msg_hash_strtab_th =
-{ msg_hash_th_ids, NULL,
+{ msg_hash_th_ids,
   (uint32_t)(sizeof(msg_hash_th_ids) / sizeof(msg_hash_th_ids[0])),
   (const char*)&msg_hash_th_blob };
 

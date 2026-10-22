@@ -2315,9 +2315,9 @@ static struct config_bool_setting *populate_settings_bool(
 #endif
    /* GENERATED: single-source setting rows (bool kind emits here) */
 #define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
-   SETTING_BOOL(n, &settings->bools.f, true, d, false);
+   SETTING_BOOL(MENU_ENUM_LABEL_##T##_STR, &settings->bools.f, true, d, false);
 #define S_BOOL_NS(f, T, n, d, sd, df, c, us) \
-   SETTING_BOOL(n, &settings->bools.f, true, d, false);
+   SETTING_BOOL(MENU_ENUM_LABEL_##T##_STR, &settings->bools.f, true, d, false);
 #define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub)
 #define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us)
 #define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub)
@@ -2337,9 +2337,9 @@ static struct config_bool_setting *populate_settings_bool(
 #define S_ACTION(T, n, us, sub)
 #define S_ACTION_NS(T, n, us)
 #define S_BOOL_EX(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
-   SETTING_BOOL(n, &settings->bools.f, true, d, false);
+   SETTING_BOOL(MENU_ENUM_LABEL_##T##_STR, &settings->bools.f, true, d, false);
 #define S_BOOL_EX_NS(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us) \
-   SETTING_BOOL(n, &settings->bools.f, true, d, false);
+   SETTING_BOOL(MENU_ENUM_LABEL_##T##_STR, &settings->bools.f, true, d, false);
 #define S_UINT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub)
 #define S_UINT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us)
 #define S_INT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub)
@@ -2349,9 +2349,9 @@ static struct config_bool_setting *populate_settings_bool(
 #define S_ACTION_EX(T, n, sd, ok, rp, c, us, sub)
 #define S_ACTION_EX_NS(T, n, sd, ok, rp, c, us)
 #define S_BOOL_LV(f, T, TV, n, d, sd, df, c, us, sub) \
-   SETTING_BOOL(n, &settings->bools.f, true, d, false);
+   SETTING_BOOL(MENU_ENUM_LABEL_##T##_STR, &settings->bools.f, true, d, false);
 #define S_BOOL_LV_NS(f, T, TV, n, d, sd, df, c, us) \
-   SETTING_BOOL(n, &settings->bools.f, true, d, false);
+   SETTING_BOOL(MENU_ENUM_LABEL_##T##_STR, &settings->bools.f, true, d, false);
 #define S_FLOAT_LV(f, T, TV, n, d, rnd, sd, df, c, us, sub)
 #define S_FLOAT_LV_NS(f, T, TV, n, d, rnd, sd, df, c, us)
 #define S_STRING_LV(f, T, TV, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub)
@@ -3045,9 +3045,9 @@ static struct config_float_setting *populate_settings_float(
 #define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub)
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us)
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) \
-   SETTING_FLOAT(n, &settings->floats.f, true, d, false);
+   SETTING_FLOAT(MENU_ENUM_LABEL_##T##_STR, &settings->floats.f, true, d, false);
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) \
-   SETTING_FLOAT(n, &settings->floats.f, true, d, false);
+   SETTING_FLOAT(MENU_ENUM_LABEL_##T##_STR, &settings->floats.f, true, d, false);
 #define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub)
 #define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us)
 #define S_DIR(f, T, n, d, el, sd, c, sta, us, sub)
@@ -3067,17 +3067,17 @@ static struct config_float_setting *populate_settings_float(
 #define S_INT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub)
 #define S_INT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us)
 #define S_FLOAT_EX(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us, sub) \
-   SETTING_FLOAT(n, &settings->floats.f, true, d, false);
+   SETTING_FLOAT(MENU_ENUM_LABEL_##T##_STR, &settings->floats.f, true, d, false);
 #define S_FLOAT_EX_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us) \
-   SETTING_FLOAT(n, &settings->floats.f, true, d, false);
+   SETTING_FLOAT(MENU_ENUM_LABEL_##T##_STR, &settings->floats.f, true, d, false);
 #define S_ACTION_EX(T, n, sd, ok, rp, c, us, sub)
 #define S_ACTION_EX_NS(T, n, sd, ok, rp, c, us)
 #define S_BOOL_LV(f, T, TV, n, d, sd, df, c, us, sub)
 #define S_BOOL_LV_NS(f, T, TV, n, d, sd, df, c, us)
 #define S_FLOAT_LV(f, T, TV, n, d, rnd, sd, df, c, us, sub) \
-   SETTING_FLOAT(n, &settings->floats.f, true, d, false);
+   SETTING_FLOAT(MENU_ENUM_LABEL_##T##_STR, &settings->floats.f, true, d, false);
 #define S_FLOAT_LV_NS(f, T, TV, n, d, rnd, sd, df, c, us) \
-   SETTING_FLOAT(n, &settings->floats.f, true, d, false);
+   SETTING_FLOAT(MENU_ENUM_LABEL_##T##_STR, &settings->floats.f, true, d, false);
 #define S_STRING_LV(f, T, TV, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub)
 #define S_STRING_LV_NS(f, T, TV, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us)
 #define S_ACTION_LV(T, TV, n, sd, ok, rp, c, us, sub)
@@ -3744,9 +3744,9 @@ static struct config_uint_setting *populate_settings_uint(
 #define S_BOOL(f, T, n, d, sd, df, c, us, sub)
 #define S_BOOL_NS(f, T, n, d, sd, df, c, us)
 #define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
-   SETTING_UINT(n, &settings->uints.f, true, d, false);
+   SETTING_UINT(MENU_ENUM_LABEL_##T##_STR, &settings->uints.f, true, d, false);
 #define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
-   SETTING_UINT(n, &settings->uints.f, true, d, false);
+   SETTING_UINT(MENU_ENUM_LABEL_##T##_STR, &settings->uints.f, true, d, false);
 #define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub)
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us)
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub)
@@ -3766,9 +3766,9 @@ static struct config_uint_setting *populate_settings_uint(
 #define S_BOOL_EX(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us, sub)
 #define S_BOOL_EX_NS(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us)
 #define S_UINT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) \
-   SETTING_UINT(n, &settings->uints.f, true, d, false);
+   SETTING_UINT(MENU_ENUM_LABEL_##T##_STR, &settings->uints.f, true, d, false);
 #define S_UINT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us) \
-   SETTING_UINT(n, &settings->uints.f, true, d, false);
+   SETTING_UINT(MENU_ENUM_LABEL_##T##_STR, &settings->uints.f, true, d, false);
 #define S_INT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub)
 #define S_INT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us)
 #define S_FLOAT_EX(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us, sub)
@@ -4485,9 +4485,9 @@ static struct config_int_setting *populate_settings_int(
 #define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub)
 #define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us)
 #define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
-   SETTING_INT(n, &settings->ints.f, true, d, false);
+   SETTING_INT(MENU_ENUM_LABEL_##T##_STR, &settings->ints.f, true, d, false);
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
-   SETTING_INT(n, &settings->ints.f, true, d, false);
+   SETTING_INT(MENU_ENUM_LABEL_##T##_STR, &settings->ints.f, true, d, false);
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub)
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us)
 #define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub)
@@ -4507,9 +4507,9 @@ static struct config_int_setting *populate_settings_int(
 #define S_UINT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub)
 #define S_UINT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us)
 #define S_INT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) \
-   SETTING_INT(n, &settings->ints.f, true, d, false);
+   SETTING_INT(MENU_ENUM_LABEL_##T##_STR, &settings->ints.f, true, d, false);
 #define S_INT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us) \
-   SETTING_INT(n, &settings->ints.f, true, d, false);
+   SETTING_INT(MENU_ENUM_LABEL_##T##_STR, &settings->ints.f, true, d, false);
 #define S_FLOAT_EX(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us, sub)
 #define S_FLOAT_EX_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us)
 #define S_ACTION_EX(T, n, sd, ok, rp, c, us, sub)
@@ -5087,9 +5087,9 @@ static struct config_int_setting *populate_settings_int(
 #define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub)
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us)
 #define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
-   SETTING_ARRAY(n, settings->arrays.f, false, NULL, true);
+   SETTING_ARRAY(MENU_ENUM_LABEL_##T##_STR, settings->arrays.f, false, NULL, true);
 #define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) \
-   SETTING_ARRAY(n, settings->arrays.f, false, NULL, true);
+   SETTING_ARRAY(MENU_ENUM_LABEL_##T##_STR, settings->arrays.f, false, NULL, true);
 #define S_DIR(f, T, n, d, el, sd, c, sta, us, sub)
 #define S_DIR_NS(f, T, n, d, el, sd, c, sta, us)
 #define S_STRING_P(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub)
@@ -5115,9 +5115,9 @@ static struct config_int_setting *populate_settings_int(
 #define S_FLOAT_LV(f, T, TV, n, d, rnd, sd, df, c, us, sub)
 #define S_FLOAT_LV_NS(f, T, TV, n, d, rnd, sd, df, c, us)
 #define S_STRING_LV(f, T, TV, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
-   SETTING_ARRAY(n, settings->arrays.f, false, NULL, true);
+   SETTING_ARRAY(MENU_ENUM_LABEL_##T##_STR, settings->arrays.f, false, NULL, true);
 #define S_STRING_LV_NS(f, T, TV, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) \
-   SETTING_ARRAY(n, settings->arrays.f, false, NULL, true);
+   SETTING_ARRAY(MENU_ENUM_LABEL_##T##_STR, settings->arrays.f, false, NULL, true);
 #define S_ACTION_LV(T, TV, n, sd, ok, rp, c, us, sub)
 #define S_ACTION_LV_NS(T, TV, n, sd, ok, rp, c, us)
 #define S_INT_AT(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub)

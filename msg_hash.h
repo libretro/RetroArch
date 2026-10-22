@@ -68,8 +68,8 @@
  * memory-resident.
  *
  * msg_hash_us.h and msg_hash_lbl.h remain hand-maintained
- * MSG_HASH(ID, "...") rows (they are the Crowdin source of truth)
- * and are consumed as string-pointer tables instead. */
+ * MSG_HASH(ID, "...") rows (they are the Crowdin source of truth);
+ * intl/msg_hash_us.c packs them the same way at compile time. */
 #define MSG_HASH_HAVE_STRTAB 1
 
 #define MENU_LABEL(STR) \
@@ -93,18 +93,16 @@ typedef uint16_t msg_hash_id_t;
 typedef struct msg_hash_strtab
 {
    const msg_hash_id_t *ids; /* one id per row, header order      */
-   const char *const  *strs; /* one string per row, or NULL when  */
-                             /* the packed blob encoding is used  */
    uint32_t            count;
-   const char         *blob; /* packed encoding: rows concatenated
-                                NUL-terminated; offsets recovered
-                                by one walk at index build          */
+   const char         *blob; /* rows concatenated NUL-terminated;
+                                offsets recovered by one walk at
+                                index build                        */
 } msg_hash_strtab_t;
 
 typedef struct msg_hash_strtab_index
 {
    const msg_hash_strtab_t *tab;    /* table this index describes    */
-   uint32_t                *id_slots; /* MSG_LAST slots: row index+1,
+   uint32_t                *id_slots; /* MSG_LAST slots: blob offset+1,
                                          0 = no row for that id     */
 } msg_hash_strtab_index_t;
 

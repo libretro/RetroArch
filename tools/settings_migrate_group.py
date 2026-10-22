@@ -224,12 +224,14 @@ for k, f, T, a in rows:
         if m.group(1):
             uscmt[T] = (uscmt.get(T, '') + ' ' + m.group(1)).strip()
 
-lblstr = open('msg_hash_lbl_str.h').read()
-names, lblstr_span = {}, []
+# The label string lives in the msg_hash_lbl.h row itself; the row
+# moves to the def and msg_hash_lbl_str.h is regenerated from both.
+lbl = open('intl/msg_hash_lbl.h').read()
+names, lbl_span = {}, []
 for k, f, T, a in rows:
     if T in ref_tokens:
         continue
-    m = re.search(r'#define MENU_ENUM_LABEL_%s_STR (%s)\n' % (T, CSTR), lblstr)
+    m = re.search(r'MSG_HASH\(\s*\n?\s*MENU_ENUM_LABEL_%s,\s*\n?\s*(%s)\s*\n?\s*\)\n?' % (T, CSTR), lbl)
     if not m and run("grep -lE 'S_\\w*\\((\\w+, *)?%s,' settings/*.h" % T).stdout.strip():
         # the label already lives in a migrated def (a level-variant twin
         # took it); this row becomes a reference
@@ -238,17 +240,7 @@ for k, f, T, a in rows:
         usspan = [sp for sp in usspan if sp[2] != T]
         continue
     assert m, T
-    names[T] = m.group(1); lblstr_span.append((m.start(), m.end()))
-    ext = run('grep -rl "MENU_ENUM_LABEL_%s_STR\\b" --include=*.h --include=*.c . | grep -v msg_hash_lbl' % T).stdout.strip()
-    assert ext == '', (T, ext)
-lbl = open('intl/msg_hash_lbl.h').read()
-lbl_span = []
-for k, f, T, a in rows:
-    if T in ref_tokens:
-        continue
-    m = re.search(r'MSG_HASH\(\s*\n?\s*MENU_ENUM_LABEL_%s,\s*\n?\s*MENU_ENUM_LABEL_%s_STR\s*\n?\s*\)\n?' % (T, T), lbl)
-    assert m, T
-    lbl_span.append((m.start(), m.end()))
+    names[T] = m.group(1); lbl_span.append((m.start(), m.end()))
 # Entanglement guard: a field that also appears in a variant row
 # (_LV level overrides, _EX, _AT and friends) elsewhere shares runtime
 # state with that row; migrating only the plain row breaks the
@@ -652,16 +644,18 @@ region = ('/* GENERATED REGION: %s (see %s). */\n' % (TITLE, DEF)
 us = us[:first] + region + us[first:]
 us = re.sub(r'#if[^\n]*\n#endif\n', '', us)
 open('intl/msg_hash_us.h','w').write(us)
-for s, e in sorted(lblstr_span, reverse=True): lblstr = lblstr[:s] + lblstr[e:]
-open('msg_hash_lbl_str.h','w').write(lblstr)
 for s, e in sorted(lbl_span, reverse=True): lbl = lbl[:s] + lbl[e:]
 lbl = re.sub(r'#if[^\n]*\n#endif\n', '', lbl)
 open('intl/msg_hash_lbl.h','w').write(lbl)
-mc = open('intl/msg_hash_us.c').read()
-assert mc.count('#include "../settings/settings_def_video_sync.h"') == 2
+mc = open('intl/msg_hash_lbl_rows.h').read()
+assert mc.count('#include "../settings/settings_def_video_sync.h"') == 1
 mc = mc.replace('#include "../settings/settings_def_video_sync.h"',
                 '#include "../settings/settings_def_video_sync.h"\n#include "../settings/%s"' % DEF)
-open('intl/msg_hash_us.c','w').write(mc)
+open('intl/msg_hash_lbl_rows.h','w').write(mc)
+_gen = subprocess.run([sys.executable, os.path.join(os.path.dirname(
+            os.path.abspath(__file__)), 'gen_lbl_str.py')],
+            capture_output=True, text=True)
+assert _gen.returncode == 0, _gen.stdout + _gen.stderr
 assert cfg.count('#include "settings/settings_def_video_sync.h"') == 5
 if '#define SETTINGS_DEF_CONFIG_PASS' not in cfg:
     cfg = cfg.replace('#include "settings/settings_def_video_sync.h"',

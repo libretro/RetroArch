@@ -111,3 +111,16 @@ jobs:
           # assumed from the namespace: ninety rows reach a printf-family
           # format argument today and twenty-nine of them are not MSG_*.
           tools/check.sh tools/msg_hash_format_check.c
+
+      - name: Label macros current
+        shell: bash
+        run: |
+          set -eu
+          # msg_hash_lbl_str.h names each label's member of the packed
+          # label blob and is generated from the same rows the blob is
+          # built from; a row added, renamed or guarded without rerunning
+          # the generator would leave a macro pointing at a stale or
+          # missing member, or fall back to a literal that duplicates
+          # the blob's bytes. Regenerating must be a no-op.
+          python3 tools/gen_lbl_str.py
+          git diff --exit-code -- msg_hash_lbl_str.h

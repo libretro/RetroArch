@@ -82,23 +82,21 @@ static const setting_desc_t selftest_desc[] = {
                    '#endif\n')
     W(root, 'intl/msg_hash_us.h', ''.join(us_rows) + '\n')
 
-    W(root, 'msg_hash_lbl_str.h', ''.join(
-        '#define MENU_ENUM_LABEL_%s_STR "%s"\n' % (tok, key)
+    W(root, 'msg_hash_lbl_str.h',
+      '/* GENERATED REGION BEGIN: label strings */\n'
+      '/* GENERATED REGION END: label strings */\n')
+
+    W(root, 'intl/msg_hash_lbl.h', ''.join(
+        'MSG_HASH(\n   MENU_ENUM_LABEL_%s,\n   "%s"\n   )\n'
+        % (tok, key)
         for tok, key in (('SELFTEST_PLAIN', 'selftest_plain'),
                          ('SELFTEST_NOSLOT', 'selftest_noslot'),
                          ('SELFTEST_MACRO', 'selftest_macro'),
                          ('SELFTEST_BLOCK', 'selftest_block'),
-                         ('SELFTEST_GAMEPAD', 'selftest_gamepad'),
-                         ('SELFTEST_SCALING', 'selftest_scaling'))))
-
-    W(root, 'intl/msg_hash_lbl.h', ''.join(
-        'MSG_HASH(\n   MENU_ENUM_LABEL_%s,\n   MENU_ENUM_LABEL_%s_STR\n   )\n'
-        % (tok, tok)
-        for tok in ('SELFTEST_PLAIN', 'SELFTEST_NOSLOT', 'SELFTEST_MACRO',
-                    'SELFTEST_BLOCK', 'SELFTEST_GAMEPAD'))
+                         ('SELFTEST_GAMEPAD', 'selftest_gamepad')))
       + '#ifdef HAVE_ODROIDGO2\n'
         'MSG_HASH(\n   MENU_ENUM_LABEL_SELFTEST_SCALING,\n'
-        '   MENU_ENUM_LABEL_SELFTEST_SCALING_STR\n   )\n'
+        '   "selftest_scaling"\n   )\n'
         '#endif\n')
 
     anchors = '\n'.join('#include "settings/settings_def_video_sync.h"'
@@ -128,8 +126,10 @@ enum msg_hash_enums
 };
 ''')
 
-    W(root, 'intl/msg_hash_us.c',
-      '#include "../settings/settings_def_video_sync.h"\n'
+    W(root, 'intl/msg_hash_lbl_rows.h',
+      '#define S_BOOL(f, T, n, d, sd, df, c, us, sub) MSG_HASH_LBL_ROW(MENU_ENUM_LABEL_##T, n)\n'
+      '#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MSG_HASH_LBL_ROW(MENU_ENUM_LABEL_##T, n)\n'
+      '#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MSG_HASH_LBL_ROW(MENU_ENUM_LABEL_##T, n)\n'
       '#include "../settings/settings_def_video_sync.h"\n')
 
     os.makedirs(os.path.join(root, 'settings'), exist_ok=True)
@@ -172,6 +172,17 @@ def main():
             r'S_INT\(selftest_noslot,', d)
         assert m, 'no-default def row is not excluded from the config pass'
         assert 'carries no default' in out
+
+        # The label macros are regenerated from the moved rows: every
+        # migrated label names its blob member, the guarded one only
+        # where its row is.
+        lblstr = open(os.path.join(root, 'msg_hash_lbl_str.h')).read()
+        assert ('#define MENU_ENUM_LABEL_SELFTEST_PLAIN_STR '
+                '(msg_hash_us_lbl_blob.m_MENU_ENUM_LABEL_SELFTEST_PLAIN)') in lblstr, \
+            'migrated label has no blob macro'
+        assert 'MSG_HASH(\n   MENU_ENUM_LABEL_SELFTEST_PLAIN,' not in \
+            open(os.path.join(root, 'intl', 'msg_hash_lbl.h')).read(), \
+            'migrated label row still in msg_hash_lbl.h'
 
         # Class 2: the macro spelling from the config row replaces the
         # descriptor's literal transcription.
