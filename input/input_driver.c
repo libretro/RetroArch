@@ -10934,6 +10934,10 @@ typedef struct
 static input_plays_as_entry_t input_plays_as[MAX_USERS];
 /* by slot: the entry its controller took, and one; 0 for none */
 static uint8_t input_plays_as_claim[MAX_INPUT_DEVICES];
+/* by slot: for an Auto controller placed to share with the user whose
+ * reservation names it, that user and one, kept while it stays
+ * connected; 0 for none */
+static uint8_t input_plays_as_shares[MAX_INPUT_DEVICES];
 
 /* @h with each entry's controller and player mixed in, as
  * input_driver_detect_settings() mixes the reservations */
@@ -11254,7 +11258,10 @@ void input_config_plays_as_set_entry(unsigned e, unsigned player)
 void input_config_plays_as_release(unsigned slot)
 {
    if (slot < MAX_INPUT_DEVICES)
-      input_plays_as_claim[slot] = 0;
+   {
+      input_plays_as_claim[slot]  = 0;
+      input_plays_as_shares[slot] = 0;
+   }
 }
 
 void input_plays_as_read(void *data)
@@ -11555,6 +11562,7 @@ bool input_config_plays_as_place(unsigned slot)
    if (max_users > MAX_USERS)
       max_users = MAX_USERS;
    input_plays_as_take(slot);
+   input_plays_as_shares[slot] = 0;
 
    if (!(player = input_plays_as_now(slot, max_users)))
    {
@@ -11566,6 +11574,7 @@ bool input_config_plays_as_place(unsigned slot)
          input_plays_as_move(settings,
                input_plays_as_free(settings, max_users, slot, t, true),
                slot);
+         input_plays_as_shares[slot] = (uint8_t)(t + 1);
          return true;
       }
       for (u = 0; u < MAX_USERS; u++)
@@ -11605,6 +11614,40 @@ bool input_config_plays_as_place(unsigned slot)
    }
    input_plays_as_move(settings, t, slot);
    return true;
+}
+
+/* By user: for a controller playing as another user's player, that
+ * user and one; 0 for none. Made by the port map's rebuild, and never
+ * saved. */
+static uint8_t input_join_to[MAX_USERS];
+
+/* What input_join_to is to hold now, into @join. */
+static void input_join_make(const settings_t *settings, uint8_t *join)
+{
+   unsigned u;
+   unsigned max_users = settings->uints.input_max_users;
+
+   if (max_users > MAX_USERS)
+      max_users = MAX_USERS;
+   memset(join, 0, MAX_USERS);
+   for (u = 0; u < max_users; u++)
+   {
+      unsigned slot   = settings->uints.input_joypad_index[u];
+      unsigned player = input_plays_as_now(slot, max_users);
+      if (     !player
+            && slot < MAX_INPUT_DEVICES
+            && *input_driver_st.input_device_info[slot].name
+            && input_plays_as_shares[slot] <= max_users)
+         player = input_plays_as_shares[slot];
+      if (player && player != u + 1)
+         join[u] = (uint8_t)player;
+   }
+}
+
+unsigned input_remapping_join_user(unsigned user)
+{
+   return (user < MAX_USERS && input_join_to[user])
+      ? input_join_to[user] - 1u : MAX_USERS;
 }
 
 struct input_plays_as_copy
@@ -15447,6 +15490,9 @@ static void input_key_lane_poll(void);
           | (1U << RETRO_DEVICE_ID_JOYPAD_RIGHT)))
 /* in first_press_pending: no press, every unmapped user gets its own port */
 #define INPUT_FIRST_PRESS_GIVE_UP (1U << 31)
+/* in first_press_pending: a controller began or stopped playing as
+ * another user's player; the core is told its controllers again */
+#define INPUT_FIRST_PRESS_ANNOUNCE (1U << 30)
 static bool input_first_press_blocked(void);
 
 #ifdef HAVE_BSV_MOVIE
@@ -16994,6 +17040,17 @@ void input_driver_poll(void)
    input_openxr_poll(max_users, settings->uints.video_openxr_controllers,
          settings->uints.video_openxr_laser, input_axis_threshold);
 #endif
+   {
+      uint8_t join[MAX_USERS];
+      input_join_make(settings, join);
+      if (memcmp(join, input_join_to, sizeof(join)))
+      {
+         input_remapping_update_port_map();
+         /* not while netplay or a replay owns the ports */
+         if (!input_first_press_blocked())
+            input_st->first_press_pending |= INPUT_FIRST_PRESS_ANNOUNCE;
+      }
+   }
    input_poll_generation++;
    input_port_keys_at_poll(input_st->current_driver,
          input_st->current_data, max_users);
@@ -17111,7 +17168,7 @@ void input_driver_poll(void)
          : settings->floats.input_overlay_opacity;
 
       {
-         unsigned mapped_port   = settings->uints.input_remap_ports[0];
+         unsigned mapped_port   = input_remapping_user_port(0);
          input_analog_dpad_mode = input_analog_dpad_mode_in_effect(
                input_analog_dpad_mode,
                mapped_port < MAX_USERS
@@ -17255,7 +17312,7 @@ void input_driver_poll(void)
             input_st->first_press_pending = INPUT_FIRST_PRESS_GIVE_UP;
          else if (  input_st->first_press_live
                && !menu_alive
-               && settings->uints.input_remap_ports[i] >= MAX_USERS
+               && input_remapping_user_port((unsigned)i) >= MAX_USERS
                && joypad)
          {
             /* The d-pad does not count: idle axes of some receivers
@@ -17290,11 +17347,14 @@ void input_driver_poll(void)
 #ifdef HAVE_NETWORKGAMEPAD
                pad |= net;
 #endif
+               /* one playing as another user's player presses for
+                * that user */
                if (     (edge & pad)
                      || !settings->uints.input_assign_ports_keyboard
                      || !joypad->query_pad
                      || !joypad->query_pad(joypad_info[i].joy_idx))
-                  input_st->first_press_pending |= (1U << i);
+                  input_st->first_press_pending |= 1U << (input_join_to[i]
+                        ? input_join_to[i] - 1u : (unsigned)i);
             }
             input_st->first_press_released[i] |=
                ~held & INPUT_FIRST_PRESS_BUTTONS;
@@ -17304,7 +17364,7 @@ void input_driver_poll(void)
          if (do_remap)
          {
          input_bits_t current_inputs;
-         unsigned mapped_port            = settings->uints.input_remap_ports[i];
+         unsigned mapped_port            = input_remapping_user_port((unsigned)i);
          /* mapped to no core port: nothing to remap */
          unsigned device                 = (mapped_port < MAX_USERS)
             ? (settings->uints.input_libretro_device[mapped_port] & RETRO_DEVICE_MASK)
@@ -18461,9 +18521,21 @@ void input_first_press_apply(void)
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
 
-   /* the core is told the port's device, which the setting keeps */
-   if (mapped)
+   /* the core is told the port's device, which the setting keeps; not
+    * for a join once netplay or a replay owns the ports */
+   if (     mapped
+         || (   (pending & INPUT_FIRST_PRESS_ANNOUNCE)
+             && !input_first_press_blocked()))
       command_event(CMD_EVENT_CONTROLLER_INIT, NULL);
+}
+
+unsigned input_remapping_user_port(unsigned user)
+{
+   if (user >= MAX_USERS)
+      return MAX_USERS;
+   if (input_join_to[user])
+      user = input_join_to[user] - 1u;
+   return config_get_ptr()->uints.input_remap_ports[user];
 }
 
 void input_remapping_update_port_map(void)
@@ -18475,6 +18547,7 @@ void input_remapping_update_port_map(void)
    bool unmapped                      = false;
 
    input_config_binds_changed();
+   input_join_make(settings, input_join_to);
 
    /* First pass: 'reset' port map */
    for (i = 0; i < MAX_USERS; i++)
@@ -18485,7 +18558,7 @@ void input_remapping_update_port_map(void)
     * 'input_remap_ports' */
    for (i = 0; i < MAX_USERS; i++)
    {
-      unsigned remap_port = settings->uints.input_remap_ports[i];
+      unsigned remap_port = input_remapping_user_port(i);
 
       if (remap_port < MAX_USERS)
       {

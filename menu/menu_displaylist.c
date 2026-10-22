@@ -7481,7 +7481,7 @@ static int menu_displaylist_parse_input_description_list(
        || (btn_idx >= RARCH_CUSTOM_BIND_LIST_END))
       return 0;
 
-   mapped_port = settings->uints.input_remap_ports[user_idx];
+   mapped_port = input_remapping_user_port(user_idx);
 
    if (mapped_port >= MAX_USERS)
       return 0;
@@ -15188,7 +15188,7 @@ static bool menu_displaylist_ctl_internal(
 #endif
                file_list_t *list           = info->list;
                unsigned port               = string_to_unsigned(info->path);
-               unsigned mapped_port        = settings->uints.input_remap_ports[port];
+               unsigned mapped_port        = input_remapping_user_port(port);
                size_t selection            = menu_st->selection_ptr;
 
                menu_entries_clear(info->list);

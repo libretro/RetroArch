@@ -54,6 +54,7 @@
 #include "../../misc/reboot2payload/reboot2payload.h"
 #endif
 #include "../../audio/audio_driver.h"
+#include "../../input/input_remapping.h"
 
 #ifdef HAVE_NETWORKING
 #include "../../network/netplay/netplay.h"
@@ -831,7 +832,7 @@ static size_t menu_action_setting_disp_set_label_input_desc(
    if ((remap_idx   = settings->uints.input_remap_ids[user_idx][btn_idx]) !=
          RARCH_UNMAPPED)
    {
-      unsigned mapped_port   = settings->uints.input_remap_ports[user_idx];
+      unsigned mapped_port   = input_remapping_user_port(user_idx);
       const char *descriptor = (mapped_port < MAX_USERS)
          ? runloop_state_get_ptr()->system.input_desc_btn[mapped_port][remap_idx]
          : NULL;

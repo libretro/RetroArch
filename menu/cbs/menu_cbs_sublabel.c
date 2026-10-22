@@ -1007,6 +1007,7 @@ static int action_bind_sublabel_input_remap_port(
       char *s, size_t len)
 {
    size_t _len;
+   unsigned with, core;
    unsigned user_idx     = 0;
    unsigned display_port = 0;
    menu_entry_t entry;
@@ -1044,12 +1045,24 @@ static int action_bind_sublabel_input_remap_port(
          return 0;
    }
 
+   if (display_port)
+      user_idx = display_port - 1;
+
+   /* playing as another user's player, it feeds that user's core
+    * port, whatever its own Mapped Port holds; the join can change
+    * while this is shown, so it is not kept */
+   if (     (with = input_remapping_join_user(user_idx)) < MAX_USERS
+         && (core = input_remapping_user_port(user_idx)) < MAX_USERS)
+   {
+      snprintf(s, len,
+            msg_hash_to_str(MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT_SHARING),
+            with + 1, core + 1);
+      return 0;
+   }
+
    _len = snprintf(s, len,
          msg_hash_to_str(MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT),
          display_port);
-
-   if (display_port)
-      user_idx = display_port - 1;
 
    /* Remove trailing dot */
    snprintf(s + _len - 1, len - _len - 1, ": %s",

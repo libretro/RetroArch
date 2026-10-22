@@ -232,7 +232,7 @@ static int action_start_input_desc(
    {
       unsigned user_idx    = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) / RARCH_ANALOG_BIND_LIST_END;
       unsigned btn_idx     = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) - RARCH_ANALOG_BIND_LIST_END * user_idx;
-      unsigned mapped_port = settings->uints.input_remap_ports[user_idx];
+      unsigned mapped_port = input_remapping_user_port(user_idx);
 
       if (     (user_idx    >= MAX_USERS)
             || (mapped_port >= MAX_USERS)

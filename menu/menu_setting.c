@@ -6808,7 +6808,7 @@ static int setting_action_left_input_remap_port(
       return -1;
 
    port = setting->index_offset;
-   was  = settings->uints.input_remap_ports[port];
+   was  = input_remapping_user_port(port);
 
    /* MAX_USERS is 'None', between the last port and the first */
    if (settings->uints.input_remap_ports[port] > 0)
@@ -6816,7 +6816,7 @@ static int setting_action_left_input_remap_port(
    else
       settings->uints.input_remap_ports[port] = MAX_USERS;
    setting_input_remap_port_follow(menu_st, was,
-         settings->uints.input_remap_ports[port]);
+         input_remapping_user_port(port));
    input_first_press_set_by_hand(port);
 
    /* Must be called whenever settings->uints.input_remap_ports
@@ -9738,7 +9738,7 @@ static int setting_action_start_libretro_device_type(rarch_setting_t *setting)
 
 static int setting_action_start_input_remap_port(rarch_setting_t *setting)
 {
-   unsigned port;
+   unsigned port, was;
    settings_t *settings                    = config_get_ptr();
    struct menu_state *menu_st              = menu_state_get_ptr();
 
@@ -9746,9 +9746,10 @@ static int setting_action_start_input_remap_port(rarch_setting_t *setting)
       return -1;
 
    port                                    = setting->index_offset;
-   setting_input_remap_port_follow(menu_st,
-         settings->uints.input_remap_ports[port], port);
+   was                                     = input_remapping_user_port(port);
    settings->uints.input_remap_ports[port] = port;
+   setting_input_remap_port_follow(menu_st, was,
+         input_remapping_user_port(port));
    input_first_press_set_by_hand(port);
 
    /* Must be called whenever settings->uints.input_remap_ports
@@ -9881,14 +9882,14 @@ static int setting_action_right_input_remap_port(
       return -1;
 
    port = setting->index_offset;
-   was  = settings->uints.input_remap_ports[port];
+   was  = input_remapping_user_port(port);
 
    if (settings->uints.input_remap_ports[port] < MAX_USERS)
       settings->uints.input_remap_ports[port]++;
    else
       settings->uints.input_remap_ports[port] = 0;
    setting_input_remap_port_follow(menu_st, was,
-         settings->uints.input_remap_ports[port]);
+         input_remapping_user_port(port));
    input_first_press_set_by_hand(port);
 
    /* Must be called whenever settings->uints.input_remap_ports

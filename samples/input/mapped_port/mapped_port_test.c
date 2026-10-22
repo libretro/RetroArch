@@ -1,8 +1,10 @@
 /* Mapped Port in input/input_driver.c: the users mapped to a core port
  * feed it and get its rumble. Plays As: a controller's own player
  * places it, and one playing as another user's player feeds that
- * user's core port; the remap ports stay as they were. The real
- * input_driver.c, with the rest of the frontend stood in for. */
+ * user's core port; the remap ports stay as they were and the core is
+ * told its controllers again when that changes. The real
+ * input_driver.c and command.c, with the rest of the frontend stood in
+ * for. */
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
@@ -14,6 +16,8 @@
 
 #include "../../../configuration.h"
 #include "../../../command.h"
+#include "../../../core.h"
+#include "../../../dynamic.h"
 #include "../../../retroarch.h"
 #include "../../../runloop.h"
 #include "../../../verbosity.h"
@@ -24,6 +28,7 @@
 #include "../../../menu/menu_driver.h"
 #include "../../../menu/menu_entries.h"
 #include "../../../menu/menu_input.h"
+#include "../../../network/netplay/netplay.h"
 
 static settings_t        settings;
 static runloop_state_t   runloop_st;
@@ -32,6 +37,13 @@ static int               failures;
 
 #define CHECK(c, msg) do { if (!(c)) { \
    printf("FAIL line %d: %s\n", __LINE__, msg); failures++; } } while (0)
+
+/* The core's four ports: how often the core was told its controllers,
+ * and what each port was told last (T_UNTOLD: never). */
+#define T_UNTOLD 0xffffffffu
+static struct retro_controller_info t_core_ports[4];
+static unsigned t_inits;
+static unsigned t_device[4];
 
 settings_t *config_get_ptr(void) { return &settings; }
 runloop_state_t *runloop_state_get_ptr(void) { return &runloop_st; }
@@ -42,8 +54,28 @@ void RARCH_DBG(const char *fmt, ...) { (void)fmt; }
 input_device_driver_t linuxraw_joypad;
 #endif
 void RARCH_WARN(const char *fmt, ...) { (void)fmt; }
+/* as retroarch.c's: command.c tells the core */
 bool command_event(enum event_command cmd, void *data)
-{ (void)cmd; (void)data; return false; }
+{
+   (void)data;
+   if (cmd == CMD_EVENT_CONTROLLER_INIT)
+   {
+      t_inits++;
+      command_event_init_controllers(&runloop_st.system, &settings,
+            settings.uints.input_max_users);
+   }
+   return false;
+}
+const struct retro_controller_description *
+libretro_find_controller_description(
+      const struct retro_controller_info *info, unsigned id)
+{ (void)info; (void)id; return NULL; }
+bool core_set_controller_port_device(retro_ctx_controller_info_t *pad)
+{
+   if (pad->port < 4)
+      t_device[pad->port] = pad->device;
+   return true;
+}
 bool retroarch_ctl(enum rarch_ctl_state state, void *data)
 { (void)state; (void)data; return false; }
 /* config_file.c's #include and #reference, which no test reaches */
@@ -57,6 +89,13 @@ size_t fill_pathname_abbreviated_or_relative(char *s, const char *ref,
       const char *in, size_t len)
 { (void)ref; return strlcpy(s, in, len); }
 bool video_driver_has_focus(void) { return true; }
+/* netplay on: the ports are the session's */
+static bool t_netplay;
+bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
+{
+   (void)data;
+   return state == RARCH_NETPLAY_CTL_IS_ENABLED && t_netplay;
+}
 #if defined(_WIN32)
 void win32_text_entry(bool active) { (void)active; }
 #endif
@@ -158,7 +197,14 @@ static void t_reset(void)
    unsigned u, i;
    input_driver_state_t *st = input_state_get_ptr();
 
+   memset(&st->mapper, 0, sizeof(st->mapper));
+   st->remap_worked = 0;
    t_rumble_refused = 0;
+   t_inits          = 0;
+   runloop_st.system.ports.data = t_core_ports;
+   runloop_st.system.ports.size = 4;
+   for (i = 0; i < 4; i++)
+      t_device[i] = T_UNTOLD;
 
    for (i = 0; i < RARCH_BIND_LIST_END; i++)
    {
@@ -204,6 +250,8 @@ static void t_reset(void)
          input_config_binds[u][i].attr    =
             RETRO_KEYBIND_ATTR(RETROK_UNKNOWN, NO_BTN, false);
       }
+      for (i = 0; i < RARCH_FIRST_CUSTOM_BIND + 8; i++)
+         settings.uints.input_remap_ids[u][i] = i;
       input_autoconf_binds[u]                 = t_auto;
       settings.uints.input_joypad_index[u]    = u;
       settings.uints.input_remap_ports[u]     = u;
@@ -217,10 +265,14 @@ static void t_reset(void)
    settings.floats.input_axis_threshold           = 0.5f;
    settings.bools.input_hotkey_follows_player1    = false;
    settings.bools.input_all_users_control_menu    = false;
+   settings.bools.input_remap_binds_enable        = false;
    st->primary_joypad                             = &t_joypad;
+   st->first_press_on                             = false;
+   t_netplay                                      = false;
    t_menu_st.flags                               &= ~MENU_ST_FLAG_ALIVE;
    input_plays_as_read(NULL);
    input_remapping_update_port_map();
+   st->first_press_pending                        = 0;
 }
 
 /* User @user on core port @port (MAX_USERS: None). */
@@ -755,6 +807,328 @@ static void test_place_leave_and_change(void)
    input_config_plays_as_place(1);
    CHECK(t_user_of(1) == 0 && t_user_of(0) == 1,
          "connected again, the controller set to Player 1 is not on port 1");
+}
+
+/* The frame's end, as runloop.c's: what the poll left for it is done
+ * with the core off the stack. */
+static void t_frame_end(void)
+{
+   if (input_state_get_ptr()->first_press_pending)
+      input_first_press_apply();
+}
+
+/* A and B both Player 1: A in slot 0 on port 1, B in slot 1 sharing
+ * from port 4. */
+static void t_two_player_1(void)
+{
+   t_entries(
+         "input_plays_as_device_1 = \"0001:0001 A\"\n"
+         "input_plays_as_player_1 = \"1\"\n"
+         "input_plays_as_device_2 = \"0002:0002 B\"\n"
+         "input_plays_as_player_2 = \"1\"\n");
+   t_connect(0, "A", 1, 1);
+   t_connect(1, "B", 2, 2);
+}
+
+/* Nothing joining and nothing changing: the frames' ends tell the core
+ * nothing. */
+static void test_announce_nothing(void)
+{
+   t_reset();
+   input_driver_poll();
+   t_frame_end();
+   input_driver_poll();
+   t_frame_end();
+   CHECK(t_inits == 0, "the core was told its controllers with nothing changed");
+}
+
+/* A sharer feeds player 1's core port with player 1's controller and
+ * alone is player 1; its remap port is untouched, so a remap save,
+ * which writes the remap ports, cannot store the join. */
+static void test_join_port_map(void)
+{
+   t_reset();
+   t_two_player_1();
+   input_driver_poll();
+   t_buttons[0] = T_A;
+   t_buttons[1] = T_B;
+   CHECK(t_read(0) == (T_A | T_B),
+         "core port 1 does not read both of player 1's controllers");
+   CHECK(t_read(3) == 0, "core port 4 still reads the sharer");
+   CHECK(settings.uints.input_remap_ports[3] == 3,
+         "the join was written to the remap ports");
+   CHECK(input_remapping_user_port(3) == 0
+         && input_remapping_join_user(3) == 0
+         && input_remapping_join_user(0) == MAX_USERS,
+         "the sharer's core port is not player 1's");
+   t_buttons[0] = 0;
+   CHECK(t_read(0) == T_B, "the sharer alone is not player 1");
+}
+
+/* A sharer follows player 1's Mapped Port: user 1 moved to core port
+ * 2 by a remap takes the sharer with it. */
+static void test_join_follows_mapped_port(void)
+{
+   t_reset();
+   t_two_player_1();
+   t_map(0, 1);
+   t_buttons[1] = T_B;
+   CHECK(t_read(1) == T_B && t_read(0) == 0,
+         "the sharer does not follow user 1 to core port 2");
+   CHECK(input_remapping_user_port(3) == 1,
+         "the sharer's core port is not user 1's Mapped Port");
+}
+
+/* The poll joins and lets go: an entry set back to Auto ends the join;
+ * the occupant leaving does not. */
+static void test_join_poll(void)
+{
+   t_reset();
+   t_two_player_1();
+   t_buttons[1] = T_B;
+   input_driver_poll();
+   CHECK(t_read(0) == T_B, "the poll did not join the sharer");
+   t_disconnect(0);
+   input_driver_poll();
+   CHECK(t_read(0) == T_B, "the sharer stopped feeding port 1 when A left");
+   input_config_plays_as_set(1, 0);
+   input_driver_poll();
+   CHECK(t_read(0) == 0 && t_read(3) == T_B,
+         "the join outlived the sharer's entry");
+}
+
+/* Port 1's reservation names Res; B is Player 1. */
+static void t_reserve_1(void)
+{
+   settings.uints.input_device_reservation_type[0] =
+      INPUT_DEVICE_RESERVATION_PREFERRED;
+   strlcpy(settings.arrays.input_reserved_devices[0], "0005:0005 Res",
+         sizeof(settings.arrays.input_reserved_devices[0]));
+   t_entries(
+         "input_plays_as_device_1 = \"0002:0002 B\"\n"
+         "input_plays_as_player_1 = \"1\"\n");
+}
+
+/* A controller port 1's reservation names shares with a Player 1
+ * controller there, in either connect order: both feed core port 1. */
+static void test_join_reserved(void)
+{
+   unsigned order;
+   for (order = 0; order < 2; order++)
+   {
+      t_reset();
+      t_reserve_1();
+      if (order)
+      {
+         t_connect(0, "B", 2, 2);
+         t_connect(1, "Res", 5, 5);
+      }
+      else
+      {
+         t_connect(0, "Res", 5, 5);
+         t_connect(1, "B", 2, 2);
+      }
+      input_driver_poll();
+      t_buttons[0] = T_A;
+      t_buttons[1] = T_B;
+      CHECK(t_read(0) == (T_A | T_B) && t_read(3) == 0,
+            order ? "Player 1 first: the reserved controller does not "
+                    "feed core port 1"
+                  : "reserved first: Player 1 does not feed core port 1");
+   }
+}
+
+/* The Player 1 controller leaving: the reserved controller sharing
+ * with it stays and feeds core port 1, and the next Auto controller
+ * takes port 1 beside it. */
+static void test_join_reserved_stays(void)
+{
+   t_reset();
+   t_reserve_1();
+   t_connect(0, "B", 2, 2);
+   t_connect(1, "Res", 5, 5);
+   input_driver_poll();
+   t_disconnect(0);
+   input_driver_poll();
+   t_buttons[1] = T_B;
+   CHECK(t_read(0) == T_B && t_read(3) == 0
+         && input_remapping_join_user(3) == 0,
+         "the reserved controller stopped sharing when Player 1 left");
+
+   t_connect(0, "Auto", 9, 9);
+   input_driver_poll();
+   t_buttons[0] = T_A;
+   CHECK(t_user_of(0) == 0 && t_read(0) == (T_A | T_B),
+         "the next Auto controller is not on port 1 beside the reserved "
+         "controller");
+}
+
+/* Player 1's rumble reaches the sharer; core port 4's does not. */
+static void test_rumble_join(void)
+{
+   t_reset();
+   t_two_player_1();
+   input_driver_poll();
+   CHECK(t_rumble_port(0, 1100) == ((1u << 0) | (1u << 1)),
+         "player 1's rumble did not reach both of its controllers");
+   CHECK(t_rumble_port(3, 1101) == 0,
+         "core port 4's rumble reached the sharer");
+}
+
+/* First press: a press on any of player 1's controllers gives user 1
+ * a port, and the sharer feeds it; the sharer's own port stays None. */
+static void test_first_press_group(void)
+{
+   unsigned u;
+   input_driver_state_t *st = input_state_get_ptr();
+
+   t_reset();
+   t_two_player_1();
+   for (u = 0; u < MAX_USERS; u++)
+      settings.uints.input_remap_ports[u] = MAX_USERS;
+   st->first_press_on = true;
+   input_remapping_update_port_map();
+
+   /* seen released, then pressed on the sharer */
+   input_driver_poll();
+   t_buttons[1] = T_A;
+   input_driver_poll();
+   input_first_press_apply();
+
+   CHECK(settings.uints.input_remap_ports[0] == 0,
+         "a press on the sharer did not give user 1 core port 1");
+   CHECK(settings.uints.input_remap_ports[3] == MAX_USERS,
+         "the sharer was given a port of its own");
+   CHECK(t_read(0) == T_A, "the sharer does not feed the port it claimed");
+   st->first_press_on = false;
+}
+
+/* A sharer's remaps go by its core port's device, whatever its own
+ * Mapped Port says: A remapped to B, core port 4 with no device, under
+ * First Press (user 1 pressed, the rest None) or the identity map.
+ * Returns core port 1's buttons with A held on the sharer. */
+static unsigned t_remap_join(bool first_press)
+{
+   unsigned u, i, got;
+   input_driver_state_t *st = input_state_get_ptr();
+
+   t_reset();
+   if (first_press)
+      for (u = 0; u < MAX_USERS; u++)
+         settings.uints.input_remap_ports[u] = MAX_USERS;
+   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+      input_config_binds[3][i].attr =
+         RETRO_KEYBIND_ATTR(RETROK_UNKNOWN, NO_BTN, true);
+   settings.uints.input_libretro_device[3] = RETRO_DEVICE_NONE;
+   settings.uints.input_remap_ids[3][RETRO_DEVICE_ID_JOYPAD_A] =
+      RETRO_DEVICE_ID_JOYPAD_B;
+   settings.bools.input_remap_binds_enable = true;
+   st->first_press_on = first_press;
+   t_two_player_1();
+   if (first_press)
+      settings.uints.input_remap_ports[0] = 0;
+   input_remapping_update_port_map();
+
+   t_buttons[1] = T_A;
+   input_driver_poll();
+   got = t_read(0);
+
+   settings.bools.input_remap_binds_enable = false;
+   st->first_press_on = false;
+   return got;
+}
+
+static void test_remap_join(void)
+{
+   CHECK(t_remap_join(true) == T_B,
+         "First Press: the sharer's remap is not core port 1's");
+   CHECK(t_remap_join(false) == T_B,
+         "the identity map: the sharer's remap is not core port 1's");
+}
+
+/* First Press: a controller beginning to share tells the core its
+ * controllers at the frame's end; going on, nothing more. */
+static void test_announce_first_press(void)
+{
+   unsigned u;
+   input_driver_state_t *st = input_state_get_ptr();
+
+   t_reset();
+   for (u = 0; u < MAX_USERS; u++)
+      settings.uints.input_remap_ports[u] = MAX_USERS;
+   /* A was pressed */
+   settings.uints.input_remap_ports[0] = 0;
+   st->first_press_on = true;
+   t_entries(
+         "input_plays_as_device_1 = \"0001:0001 A\"\n"
+         "input_plays_as_player_1 = \"1\"\n"
+         "input_plays_as_device_2 = \"0002:0002 B\"\n"
+         "input_plays_as_player_2 = \"1\"\n");
+   t_connect(0, "A", 1, 1);
+   input_remapping_update_port_map();
+   command_event(CMD_EVENT_CONTROLLER_INIT, NULL);
+   t_inits = 0;
+
+   t_connect(1, "B", 2, 2);
+   input_driver_poll();
+   t_frame_end();
+   CHECK(t_inits == 1 && t_device[0] == RETRO_DEVICE_JOYPAD,
+         "a controller beginning to share did not tell the core");
+
+   input_driver_poll();
+   t_frame_end();
+   CHECK(t_inits == 1, "sharing going on told the core again");
+   st->first_press_on = false;
+}
+
+/* The join ending gives the sharer's own core port its device back at
+ * the frame's end. */
+static void test_announce_join_ends(void)
+{
+   t_reset();
+   t_two_player_1();
+   input_driver_poll();
+   t_frame_end();
+   CHECK(t_device[3] == RETRO_DEVICE_NONE,
+         "core port 4 was told a device with its user sharing");
+   t_inits = 0;
+
+   input_config_plays_as_set(1, 0);
+   input_driver_poll();
+   t_frame_end();
+   CHECK(t_inits == 1 && t_device[3] == RETRO_DEVICE_JOYPAD,
+         "the join ending did not give core port 4 its device back");
+}
+
+/* Netplay on: the join still feeds player 1's core port, but the core
+ * is not told its controllers again, the ports being the session's;
+ * nor when netplay starts between the poll and the frame's end. */
+static void test_announce_join_netplay(void)
+{
+   t_reset();
+   t_netplay = true;
+   t_two_player_1();
+   input_driver_poll();
+   t_frame_end();
+   t_buttons[1] = T_B;
+   CHECK(t_read(0) == T_B, "netplay: the sharer does not feed port 1");
+   CHECK(t_inits == 0, "netplay: the join told the core its controllers");
+
+   t_netplay = false;
+   input_config_plays_as_set(1, 0);
+   input_driver_poll();
+   t_frame_end();
+   CHECK(t_read(0) == 0 && t_inits == 1,
+         "the join ending after netplay did not tell the core");
+
+   t_inits = 0;
+   input_config_plays_as_set(1, 1);
+   input_driver_poll();
+   t_netplay = true;
+   t_frame_end();
+   CHECK(t_inits == 0,
+         "netplay started at the frame's end: the join told the core");
+   t_netplay = false;
 }
 
 /* Entries that give no player within Max Users: Auto controllers are
@@ -2544,6 +2918,18 @@ int main(void)
    test_place_reservation();
    test_place_reservation_order();
    test_place_leave_and_change();
+   test_announce_nothing();
+   test_join_port_map();
+   test_join_follows_mapped_port();
+   test_join_poll();
+   test_join_reserved();
+   test_join_reserved_stays();
+   test_rumble_join();
+   test_first_press_group();
+   test_remap_join();
+   test_announce_first_press();
+   test_announce_join_ends();
+   test_announce_join_netplay();
    test_place_no_player();
    test_place_restart();
    test_place_restart_twins();

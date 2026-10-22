@@ -40,6 +40,7 @@
 #include "../../file_path_special.h"
 #include "../../retroarch.h"
 #include "../../audio/audio_driver.h"
+#include "../../input/input_remapping.h"
 #include "../../verbosity.h"
 #include "../../msg_hash_lbl_str.h"
 #include "../../ui/ui_companion_driver.h"
@@ -152,7 +153,7 @@ static int action_right_input_desc(unsigned type, const char *label,
       unsigned bind_idx;
       unsigned user_idx    = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) / RARCH_ANALOG_BIND_LIST_END;
       unsigned btn_idx     = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) - RARCH_ANALOG_BIND_LIST_END * user_idx;
-      unsigned mapped_port = settings->uints.input_remap_ports[user_idx];
+      unsigned mapped_port = input_remapping_user_port(user_idx);
       unsigned remap_idx   = settings->uints.input_remap_ids[user_idx][btn_idx];
 
       if (mapped_port >= MAX_USERS)

@@ -12693,6 +12693,10 @@ MSG_HASH(
    "Specifies which core port will receive input from frontend controller port %u. 'None' sends its input to no core port."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT_SHARING,
+   "Shares Player %u (core port %u)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL,
    "Set All Controls"
    )
