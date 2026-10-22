@@ -51,6 +51,7 @@
 #include "../font_driver.h"
 #include "../drivers_shader/shader_vulkan.h"
 #include "../include/vulkan/vulkan.h"
+#include "vulkan_drm_identity.h"
 
 #ifndef VK_KHR_unified_image_layouts
 #define VK_KHR_unified_image_layouts 1
@@ -272,6 +273,10 @@ typedef struct vulkan_context
    VkQueue queue;
 
    VkPhysicalDeviceProperties gpu_properties;
+   VkInstance properties2_instance;
+   vulkan_drm_identity_t drm_identity;
+   uint32_t instance_api_version;
+   bool instance_properties2;
    VkPhysicalDeviceMemoryProperties memory_properties;
    unsigned android_sampler_descriptors;
    bool android_legacy_descriptor_budget;

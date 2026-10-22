@@ -14598,6 +14598,9 @@ static bool vulkan_get_device(void *data, video_device_info_t *info)
    info->get_instance_proc_addr = (retro_proc_address_t)
       vulkan_symbol_wrapper_instance_proc_addr();
    info->queue_family           = vk->context->graphics_queue_index;
+   info->drm_render_major       = vk->context->drm_identity.major_id;
+   info->drm_render_minor       = vk->context->drm_identity.minor_id;
+   info->drm_render_valid       = vk->context->drm_identity.valid;
    info->import_formats         =
          (     (vk->context->flags & VK_CTX_FLAG_TIMELINE_SEMAPHORE)
             && vk->pipelines.yuv420_to_rgba8888 != VK_NULL_HANDLE)

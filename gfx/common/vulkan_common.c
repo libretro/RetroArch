@@ -91,6 +91,8 @@
  * mechanism assumes single-context ownership. */
 static dylib_t                       vulkan_library;
 static VkInstance                    cached_instance_vk;
+static uint32_t                      cached_instance_api_vk;
+static bool                          cached_instance_properties2_vk;
 #if defined(_WIN32) && !defined(__WINRT__)
 #include "win_vulkan_dxgi.h"
 #endif
@@ -1619,6 +1621,19 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
 
    vkGetPhysicalDeviceProperties(vk->context.gpu,
          &vk->context.gpu_properties);
+   memset(&vk->context.drm_identity, 0, sizeof(vk->context.drm_identity));
+#if defined(__linux__) && !defined(ANDROID)
+   if (vk->context.properties2_instance == vk->context.instance)
+   {
+      PFN_vkGetInstanceProcAddr proc = vulkan_symbol_wrapper_instance_proc_addr();
+      const char *name = vulkan_drm_properties_command(vk->context.instance_api_version,
+            vk->context.instance_properties2);
+      if (proc && name)
+         vulkan_drm_identity_query(&vk->context.drm_identity, vk->context.gpu,
+               vkEnumerateDeviceExtensionProperties,
+               (PFN_vkGetPhysicalDeviceProperties2)proc(vk->context.instance, name));
+   }
+#endif
    vkGetPhysicalDeviceMemoryProperties(vk->context.gpu,
          &vk->context.memory_properties);
 
@@ -2305,6 +2320,14 @@ static VkInstance vulkan_context_create_instance_wrapper(void *opaque, const VkI
       instance = VK_NULL_HANDLE;
       goto end;
    }
+
+   vk->context.properties2_instance = instance;
+   vk->context.instance_api_version = info.pApplicationInfo && info.pApplicationInfo->apiVersion
+      ? info.pApplicationInfo->apiVersion : VK_API_VERSION_1_0;
+   vk->context.instance_properties2 = false;
+   for (i = 0; i < info.enabledExtensionCount; i++)
+      if (string_is_equal(info.ppEnabledExtensionNames[i], VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME))
+         vk->context.instance_properties2 = true;
 
 end:
    free((void*)instance_extensions);
@@ -4751,6 +4774,9 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    {
       vk->context.instance = cached_instance_vk;
       cached_instance_vk   = NULL;
+      vk->context.properties2_instance = vk->context.instance;
+      vk->context.instance_api_version = cached_instance_api_vk;
+      vk->context.instance_properties2 = cached_instance_properties2_vk;
       /* Only the create wrapper sees the enabled extensions. */
       if (cached_instance_hdr_vk)
          vk->context.flags |=  VK_CTX_FLAG_HDR_SUPPORT;
@@ -4889,6 +4915,10 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
       cached_gpu_vk            = vk->context.gpu;
       cached_gpu_index_vk      = vk->context.gpu_index;
       cached_instance_vk       = vk->context.instance;
+      cached_instance_api_vk   = vk->context.properties2_instance == vk->context.instance
+         ? vk->context.instance_api_version : 0;
+      cached_instance_properties2_vk = vk->context.properties2_instance == vk->context.instance
+         && vk->context.instance_properties2;
       cached_destroy_device_vk = vk->context.destroy_device;
       cached_instance_hdr_vk   =
          (vk->context.flags & VK_CTX_FLAG_HDR_SUPPORT) ? true : false;

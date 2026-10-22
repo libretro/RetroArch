@@ -111,6 +111,7 @@
 
 #include "../../../gfx/common/vulkan_common.h"
 #include "../../../configuration.h"
+#include "../../../gfx/video_driver.h"
 
 bool video_driver_thread_wrapper_active(void) { return false; }
 
@@ -200,6 +201,12 @@ static int test_context_init_destroy(int *skipped)
       vulkan_context_destroy(&vk, true);
       return 1;
    }
+   if (vk.context.properties2_instance != vk.context.instance || !vk.context.instance_api_version)
+   {
+      fputs("FAIL: instance query capability was not retained\n", stderr);
+      vulkan_context_destroy(&vk, true);
+      return 1;
+   }
    if (!vk.context.memory_properties.memoryTypeCount)
    {
       fputs("FAIL: device reports no memory types\n", stderr);
@@ -216,6 +223,46 @@ static int test_context_init_destroy(int *skipped)
    vulkan_context_destroy(&vk, true);
 
    return report("context init/surface/device/swapchain/destroy");
+}
+
+static int test_cached_instance_identity(void)
+{
+   gfx_ctx_vulkan_data_t *first = (gfx_ctx_vulkan_data_t*)calloc(2, sizeof(*first));
+   gfx_ctx_vulkan_data_t *second = first ? first + 1 : NULL;
+   video_driver_state_t *video = video_state_get_ptr();
+   uint32_t flags = (uint32_t)retro_atomic_load_relaxed_int(&video->flags);
+   uint32_t version;
+   bool properties2;
+   VkInstance instance;
+   int failed;
+   reset_counts();
+   if (!first) return 1;
+   if (!context_up(first)) { free(first); return 1; }
+   instance = first->context.instance;
+   version = first->context.instance_api_version;
+   properties2 = first->context.instance_properties2;
+   retro_atomic_store_relaxed_int(&video->flags, (int)(flags | VIDEO_FLAG_CACHE_CONTEXT));
+   vulkan_context_destroy(first, true);
+   if (!context_up(second))
+   {
+      retro_atomic_store_relaxed_int(&video->flags, (int)flags);
+      free(first);
+      return 1;
+   }
+   failed = second->context.instance != instance
+      || second->context.properties2_instance != instance
+      || second->context.instance_api_version != version
+      || second->context.instance_properties2 != properties2;
+   retro_atomic_store_relaxed_int(&video->flags, (int)(flags & ~VIDEO_FLAG_CACHE_CONTEXT));
+   vulkan_context_destroy(second, true);
+   retro_atomic_store_relaxed_int(&video->flags, (int)flags);
+   free(first);
+   if (failed)
+   {
+      fputs("FAIL: cached instance query capability changed\n", stderr);
+      return 1;
+   }
+   return report("cached instance query capability");
 }
 
 /* Repeat it.  A leak that validation only notices at
@@ -1295,6 +1342,8 @@ int main(void)
    else if (skipped)
       ret = SKIP_EXIT_CODE;
    else if (test_context_cycle())
+      ret = 1;
+   else if (test_cached_instance_identity())
       ret = 1;
    else if (test_memory_type_selection())
       ret = 1;
