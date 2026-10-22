@@ -1892,7 +1892,7 @@ static size_t rvp8_arena_carve(rvp8_dec *s, uint8_t *base,
 
 #if defined(__GNUC__) || defined(__clang__)
 #define RVP8_NOINLINE __attribute__((noinline))
-#elif defined(_MSC_VER)
+#elif defined(_MSC_VER) && _MSC_VER >= 1300
 #define RVP8_NOINLINE __declspec(noinline)
 #else
 #define RVP8_NOINLINE
