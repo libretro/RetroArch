@@ -26,6 +26,7 @@
 #include <poll.h>
 
 #include <compat/strl.h>
+#include <retro_miscellaneous.h>
 #include <file/file_path.h>
 #include <lists/dir_list.h>
 #include <retro_atomic.h>
@@ -292,6 +293,8 @@ struct drm_video
    void *font;
    unsigned font_px;
    bool font_enable;
+   /* The font file asked for at init, empty for the renderer's own */
+   char font_path[PATH_MAX_LENGTH];
    /* This frame's message, while it is drawn */
    const char *msg;
    const video_frame_info_t *msg_info;
@@ -894,7 +897,6 @@ static void drm_draw_msg(struct drm_video *v, struct modeset_buf *buf,
    int dh = (int)((rot & 1) ? w : h);
    int line_x, line_y, msg_base_x, msg_base_y, line_h = 0;
    unsigned screen_h = VIDEO_SCALE_H(v->kms_dims);
-   settings_t *settings = config_get_ptr();
 
    if (!v->font_enable || !msg || !*msg || !info || !dw || !dh)
       return;
@@ -909,8 +911,7 @@ static void drm_draw_msg(struct drm_video *v, struct modeset_buf *buf,
          v->font_driver->free(v->font);
       v->font = NULL;
       if (!font_renderer_create_default(&v->font_driver, &v->font,
-               (settings && *settings->paths.path_font)
-               ? settings->paths.path_font : NULL,
+               *v->font_path ? v->font_path : NULL,
                px, FONT_ATLAS_FORMAT_A8))
       {
          v->font_enable = false;
@@ -1769,14 +1770,14 @@ static bool drm_overlay_load(void *data, const void *image_data,
    return true;
 }
 
-static void drm_overlay_tex_geom(void *data, unsigned i,
+static void drm_overlay_tex_geom(void *data, unsigned index,
       float x, float y, float w, float h)
 {
    struct drm_video *v = (struct drm_video*)data;
    float *t;
-   if (!v || i >= v->ov.count)
+   if (!v || index >= v->ov.count)
       return;
-   t = v->ov.img[i].tex;
+   t = v->ov.img[index].tex;
    if (t[0] != x || t[1] != y || t[2] != w || t[3] != h)
    {
       t[0] = x; t[1] = y; t[2] = w; t[3] = h;
@@ -1784,14 +1785,14 @@ static void drm_overlay_tex_geom(void *data, unsigned i,
    }
 }
 
-static void drm_overlay_vertex_geom(void *data, unsigned i,
+static void drm_overlay_vertex_geom(void *data, unsigned index,
       float x, float y, float w, float h)
 {
    struct drm_video *v = (struct drm_video*)data;
    float *t;
-   if (!v || i >= v->ov.count)
+   if (!v || index >= v->ov.count)
       return;
-   t = v->ov.img[i].vert;
+   t = v->ov.img[index].vert;
    if (t[0] != x || t[1] != y || t[2] != w || t[3] != h)
    {
       t[0] = x; t[1] = y; t[2] = w; t[3] = h;
@@ -1809,12 +1810,12 @@ static void drm_overlay_full_screen(void *data, bool enable)
    }
 }
 
-static void drm_overlay_set_alpha(void *data, unsigned i, float mod)
+static void drm_overlay_set_alpha(void *data, unsigned index, float mod)
 {
    struct drm_video *v = (struct drm_video*)data;
-   if (v && i < v->ov.count && v->ov.img[i].alpha != mod)
+   if (v && index < v->ov.count && v->ov.img[index].alpha != mod)
    {
-      v->ov.img[i].alpha  = mod;
+      v->ov.img[index].alpha  = mod;
       v->ov.layer_dirty   = true;
    }
 }
@@ -2241,6 +2242,9 @@ static void *drm_init(const video_info_t *video)
     * before we get to gfx_frame(). */
    _drmvars->current_aspect = video_driver_get_aspect_ratio();
    _drmvars->font_enable    = video->font_enable;
+   if (video->path_font)
+      strlcpy(_drmvars->font_path, video->path_font,
+            sizeof(_drmvars->font_path));
 
    /* Initialize the rest of the mutexes and conditions. */
    _drmvars->vsync_condition  = scond_new();
