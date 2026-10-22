@@ -28,10 +28,12 @@ jobs:
         cc: [gcc, clang]
     steps:
       - uses: actions/checkout@v6
-      - name: Install VA-API SDK headers
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq libva-dev libdrm-dev
+      - name: Install VA-API and Vulkan oracle dependencies
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq libva-dev libdrm-dev libvulkan-dev mesa-vulkan-drivers vulkan-validationlayers
       - name: Strict C89 HEVC buffer ABI and cold session ownership
         run: make -C samples/gfx/vaapi_hevc clean check CC=${{ matrix.cc }} SANITIZER=address,undefined
+      - name: Execute sampled-plane conversion, foreign ownership and native pixel oracle
+        run: ASAN_OPTIONS=detect_leaks=0 make -C samples/gfx/vaapi_hevc gpu-check CC=${{ matrix.cc }} SANITIZER=address,undefined
 
   metal-frame-lease:
     runs-on: ubuntu-latest

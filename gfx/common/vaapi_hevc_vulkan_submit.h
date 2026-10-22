@@ -46,7 +46,7 @@ typedef struct vaapi_hevc_vulkan_submission
 bool vaapi_hevc_vulkan_submission_configure(vaapi_hevc_vulkan_submission_t *entry,
       vaapi_hevc_vulkan_frame_t *frame, unsigned x, unsigned y, unsigned width,
       unsigned height, unsigned yuv, const video_color_metadata_t *color, bool fp16);
-/* Renderer owner, warm resources only. Destination is a matching STORAGE image
+/* Renderer owner, warm resources only. Destination is a matching SAMPLED|STORAGE image
  * and view; layout is its tracked current layout. Ends SHADER_READ_ONLY after
  * conversion. 1 queued, 0 busy, -1 refused before GPU submission, -2 uncertain
  * submission failure: source/destination must survive exact device retirement.
