@@ -30,11 +30,11 @@ S_STRING_H(audio_device, AUDIO_DEVICE,
                   #ifdef HAVE_MICROPHONE
                   SDESC_STRING_ROW(microphone_device, MICROPHONE_DEVICE,
                      "", SD_FLAG_ALLOW_INPUT, 0,
-                     setting_string_action_ok_microphone_device,
+                     SDX_OK_setting_string_action_ok_microphone_device,
                      setting_get_string_representation_string_audio_device,
-                     setting_string_action_start_microphone_device, NULL,
-                     setting_string_action_left_microphone_device,
-                     setting_string_action_right_microphone_device,
+                     SDX_START_setting_string_action_start_microphone_device, SDX_SELECT_NULL,
+                     SDX_LEFT_setting_string_action_left_microphone_device,
+                     SDX_RIGHT_setting_string_action_right_microphone_device,
                      ST_UI_TYPE_STRING_LINE_EDIT),
 #endif
 #endif
@@ -55,7 +55,7 @@ S_UINT_EX(audio_output_sample_rate, AUDIO_OUTPUT_RATE,
                      DEFAULT_INPUT_RATE,
                      SD_FLAG_ADVANCED, SDESC_RANGE_MINMAX, 0,
                      1000, 192000, 100.0, 0,
-                     setting_action_ok_uint_special, NULL,
-                     NULL, NULL, NULL, NULL, 0),
+                     SDX_OK_setting_action_ok_uint_special, NULL,
+                     SDX_START_NULL, SDX_SELECT_NULL, SDX_LEFT_NULL, SDX_RIGHT_NULL, 0),
 #endif
 #endif

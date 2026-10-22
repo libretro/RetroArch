@@ -10,6 +10,6 @@ SDESC_INT_ROW_EX(gl_gpu_index, VIDEO_GPU_INDEX,
                      0,
                      SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
                      0, 15, 1, 0,
-                     setting_action_ok_uint, setting_get_string_representation_int_gpu_index,
-                     NULL, NULL, NULL, NULL, 0),
+                     SDX_OK_setting_action_ok_uint, setting_get_string_representation_int_gpu_index,
+                     SDX_START_NULL, SDX_SELECT_NULL, SDX_LEFT_NULL, SDX_RIGHT_NULL, 0),
 #endif
