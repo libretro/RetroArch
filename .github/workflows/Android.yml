@@ -93,7 +93,8 @@ jobs:
                 CC="$bin/$target$api-clang $extra" python3 libretro-common/samples/formats/vp9/check_stack.py
                 for source in android_image_queue android_image_ndk mediacodec_session android_frame \
                     mediacodec_color mediacodec_frame_export vulkan_android_device \
-                    vulkan_android_image vulkan_android_pipeline; do
+                    vulkan_android_image vulkan_android_pipeline vulkan_android_sync \
+                    vulkan_android_submit vulkan_android_cache_entry vulkan_android_cache; do
                   "$bin/$target$api-clang" $extra -O1 -std=c89 -pedantic -Wall -Wextra -Werror \
                     -Wno-long-long -Wno-c99-extensions -Wframe-larger-than=2048 \
                     -DHAVE_THREADS -DHAVE_DYLIB -Ilibretro-common/include -Igfx/include \
@@ -155,6 +156,12 @@ jobs:
       APT_PKGS: libvulkan-dev mesa-vulkan-drivers glslc spirv-tools
     steps:
       - uses: actions/checkout@v6
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: FD ownership, warm submission and cache retirement contracts
+        run: make -C samples/gfx/mediacodec_session warm-check CC=${{ matrix.cc }} SANITIZER=address,undefined
       - name: Modeled image resources, device admission and pipeline contracts
         run: make -C samples/gfx/mediacodec_session vulkan-check CC=${{ matrix.cc }} SANITIZER=address,undefined
       - name: Apt cache key
