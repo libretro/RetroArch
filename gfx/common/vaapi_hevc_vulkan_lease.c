@@ -56,6 +56,7 @@ int vaapi_hevc_vulkan_lease_present(vaapi_hevc_vulkan_lease_t *l,
       VkFormat format, unsigned width, unsigned height, VkImageLayout layout)
 {
    vaapi_frame_view_t source;
+   unsigned i, yuv;
    int result = vaapi_hevc_vulkan_lease_poll(l);
    if (result <= 0)
       return result;
@@ -63,10 +64,12 @@ int vaapi_hevc_vulkan_lease_present(vaapi_hevc_vulkan_lease_t *l,
          || !vaapi_frame_claim(frame->owner, frame->done, frame->done_value,
                frame->image, &source))
       return -1;
-   if (frame->width != source.width || frame->height != source.height
-         || frame->crop_x != source.x || frame->crop_y != source.y
-         || frame->pixfmt != source.pixfmt || width != source.width
-         || height != source.height
+   if (!frame->width || !frame->height || frame->width > source.width
+         || frame->height > source.height || frame->crop_x != source.x
+         || frame->crop_y != source.y || frame->pixfmt != source.pixfmt
+         || width != frame->width || height != frame->height
+         || ((frame->yuv | source.yuv)
+               & ~(IMAGE_YUV_FLAG_FULL_RANGE | IMAGE_YUV_FLAG_BT709))
          || !vaapi_hevc_vulkan_frame_matches(l->entry->frame, source.source))
    {
       if (vaapi_frame_unclaim(
@@ -78,6 +81,30 @@ int vaapi_hevc_vulkan_lease_present(vaapi_hevc_vulkan_lease_t *l,
       l->broken     = true;
       return -2;
    }
+   yuv = source.yuv | frame->yuv;
+   if (!source.color.primaries || source.color.primaries == 2)
+      source.color.primaries = frame->color.primaries;
+   if (!source.color.transfer || source.color.transfer == 2)
+      source.color.transfer = frame->color.transfer;
+   if (!source.color.matrix || source.color.matrix == 2)
+      source.color.matrix = frame->color.matrix;
+   if (!source.color.range)
+      source.color.range = frame->color.range;
+   for (i = 0; i < 8; i++)
+      if (frame->color.mastering.present & (1u << i))
+         source.color.mastering.chromaticity[i] =
+               frame->color.mastering.chromaticity[i];
+   if (frame->color.mastering.present & 0x100u)
+      source.color.mastering.luminance_max =
+            frame->color.mastering.luminance_max;
+   if (frame->color.mastering.present & 0x200u)
+      source.color.mastering.luminance_min =
+            frame->color.mastering.luminance_min;
+   source.color.mastering.present |= frame->color.mastering.present;
+   if (frame->color.max_cll)
+      source.color.max_cll = frame->color.max_cll;
+   if (frame->color.max_fall)
+      source.color.max_fall = frame->color.max_fall;
    l->owner      = frame->owner;
    l->index      = frame->done;
    l->generation = frame->done_value;
@@ -94,7 +121,7 @@ int vaapi_hevc_vulkan_lease_present(vaapi_hevc_vulkan_lease_t *l,
    }
    if (!vaapi_hevc_vulkan_frame_adopt(l->entry->frame, &l->returned)
          || !vaapi_hevc_vulkan_submission_configure(l->entry, l->entry->frame,
-               source.x, source.y, source.width, source.height, source.yuv,
+               source.x, source.y, frame->width, frame->height, yuv,
                &source.color, l->fp16))
       result = -1;
    else

@@ -1,6 +1,7 @@
 /* Copyright (C) 2026 The RetroArch team.
  * SPDX-License-Identifier: GPL-3.0-or-later */
 #include "../../../gfx/common/vaapi_hevc_runtime.h"
+#include <formats/image_yuv_blit.h>
 static vaapi_hevc_runtime_t *owner_test_runtime;
 #define VAAPI_RUNTIME_TEST_MAIN runtime_unit_main
 #define VAAPI_RUNTIME_TEST_CONTEXT owner_test_runtime
@@ -34,6 +35,7 @@ static rh265_hw_ops_t owner_ops;
 static rh265_video_params_t owner_params;
 static video_color_metadata_t owner_color;
 static unsigned owner_fds, owner_fd_closes;
+static unsigned owner_yuv;
 
 static int owner_node_open(
       const char *path, unsigned major_id, unsigned minor_id)
@@ -109,6 +111,7 @@ static const vaapi_hevc_runtime_io_t owner_io = {
 
 static void owner_reset(unsigned bits)
 {
+   owner_yuv          = 0;
    owner_test_runtime = &owner_dummy;
    runtime_reset();
    depth = bits;
@@ -130,8 +133,8 @@ static void owner_reset(unsigned bits)
 static bool owner_open(void)
 {
    return vaapi_hevc_owner_open_with_io(&test_owner, "/render-test", 226, 128,
-         &owner_params, &owner_color, 0, 4, 4096, &owner_io, &owner_exports,
-         &owner_ops);
+         &owner_params, &owner_color, owner_yuv, 4, 4096, &owner_io,
+         &owner_exports, &owner_ops);
 }
 
 static void owner_failures(unsigned bits)
@@ -171,6 +174,11 @@ static void owner_failures(unsigned bits)
    assert(!owner_open() && test_owner && !owner_ops.decoder && loads == 3);
    assert(vaapi_hevc_owner_retire(test_owner) && !fd_live && !driver_live);
    owner_reset(bits);
+   owner_yuv = IMAGE_YUV_FLAG_VU;
+   assert(!owner_open() && !test_owner && !owner_ops.decoder && !loads);
+   owner_yuv = IMAGE_YUV_FLAG_RGBA;
+   assert(!owner_open() && !test_owner && !owner_ops.decoder && !loads);
+   owner_reset(bits);
    owner_params.width = 7;
    assert(!owner_open() && !test_owner && !owner_ops.decoder && !loads);
    assert(vaapi_hevc_owner_retire(NULL));
@@ -183,6 +191,7 @@ static void owner_lifetime(unsigned bits, bool claimed)
    vaapi_hevc_export_t taken;
    unsigned native_calls;
    owner_reset(bits);
+   owner_yuv = IMAGE_YUV_FLAG_FULL_RANGE | IMAGE_YUV_FLAG_BT709;
    assert(owner_open() && owner_ops.decoder == test_owner);
    assert(!vaapi_hevc_owner_retire(test_owner));
    assert(!owner_ops.drain(owner_ops.decoder));
@@ -190,6 +199,7 @@ static void owner_lifetime(unsigned bits, bool claimed)
    test_owner->pool.generation[0]                  = 1;
    assert(!owner_ops.output(owner_ops.decoder, 0, &frame));
    assert(owner_fds && frame.width == 64 && frame.height == 64);
+   assert(frame.yuv == owner_yuv);
    memset(&taken, 0, sizeof(taken));
    if (claimed)
    {

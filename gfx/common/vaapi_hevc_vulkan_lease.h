@@ -25,8 +25,10 @@ bool vaapi_hevc_vulkan_lease_bind(vaapi_hevc_vulkan_lease_t *lease,
 int vaapi_hevc_vulkan_lease_poll(vaapi_hevc_vulkan_lease_t *lease);
 /* Warm renderer owner. 1 consumes the opaque lease, 0 busy/-1 refusal leave
  * it pending, -2 retains a claimed lease after an uncertain failure. No native
- * FD/VA call, resource creation/destruction or wait. Source metadata comes
- * from the claimed carrier; destination format/dimensions must match. */
+ * FD/VA call, resource creation/destruction or wait. Track metadata supplies
+ * unspecified coded color and present HDR light levels. The visible frame
+ * stays within the claimed carrier at its original crop origin; destination
+ * format/dimensions must match that visible frame. */
 int vaapi_hevc_vulkan_lease_present(vaapi_hevc_vulkan_lease_t *lease,
       const video_hw_frame_t *frame, VkImage destination, VkImageView view,
       VkFormat format, unsigned width, unsigned height, VkImageLayout layout);

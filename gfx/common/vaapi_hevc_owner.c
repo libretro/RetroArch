@@ -1,6 +1,7 @@
 /* Copyright (C) 2026 The RetroArch team.
  * SPDX-License-Identifier: GPL-3.0-or-later */
 #include "vaapi_hevc_owner.h"
+#include <formats/image_yuv_blit.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -53,7 +54,9 @@ bool vaapi_hevc_owner_open_with_io(vaapi_hevc_owner_t **out, const char *path,
    vaapi_hevc_export_ops_t native_exports;
    bool opened;
    if (!out || *out || !ops || ops->decoder || !path || !*path || !params
-         || !color || yuv > 2 || slots < 2 || slots > 32 || max_input < 128
+         || !color
+         || (yuv & ~(IMAGE_YUV_FLAG_FULL_RANGE | IMAGE_YUV_FLAG_BT709))
+         || slots < 2 || slots > 32 || max_input < 128
          || max_input > 64u * 1024u * 1024u || params->width < 8
          || params->height < 8 || params->width > 65535
          || params->height > 65535 || ((params->width | params->height) & 1)

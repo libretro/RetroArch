@@ -1,6 +1,7 @@
 /* Copyright (C) 2026 The RetroArch team.
  * SPDX-License-Identifier: GPL-3.0-or-later */
 #include "vaapi_hevc_decoder.h"
+#include <formats/image_yuv_blit.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -105,7 +106,8 @@ bool vaapi_hevc_decoder_open(vaapi_hevc_pool_t *pool,
    const vaapi_hevc_session_t *session;
    if (!pool || !pool->active || pool->broken || !params || !color || !ops
          || ops->decoder || !exports || !exports->surface || !exports->cloexec
-         || !exports->close || !exports->identity || yuv > 2)
+         || !exports->close || !exports->identity
+         || (yuv & ~(IMAGE_YUV_FLAG_FULL_RANGE | IMAGE_YUV_FLAG_BT709)))
       return false;
    session = pool->session;
    if (!session || !session->ready || session->closing

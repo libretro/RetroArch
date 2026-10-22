@@ -4,6 +4,7 @@
 #include "pool_test.c"
 #undef VAAPI_POOL_TEST_MAIN
 #include "../../../gfx/common/vaapi_hevc_decoder.h"
+#include <formats/image_yuv_blit.h>
 static unsigned decoder_fds, decoder_closes;
 static bool decoder_fault;
 
@@ -68,7 +69,8 @@ static video_hw_frame_t decoder_frame, decoder_before;
 static rh265_hw_state_t decoder_state;
 static video_color_metadata_t decoder_color;
 
-static void decoder_case(const sequence_case_t *fixture, bool claimed, bool failed)
+static void decoder_case(
+      const sequence_case_t *fixture, bool claimed, bool failed, unsigned yuv)
 {
    rh265_video *source = rh265_video_open();
    vaapi_hevc_decoder_t *decoder;
@@ -92,11 +94,11 @@ static void decoder_case(const sequence_case_t *fixture, bool claimed, bool fail
    decoder_color.transfer                         = 13;
    decoder_color.range                            = 2;
    decoder_closes                                 = 0;
-   assert(vaapi_hevc_decoder_open(&po_pool, &po_params, &decoder_color, 0,
+   assert(vaapi_hevc_decoder_open(&po_pool, &po_params, &decoder_color, yuv,
          &decoder_exports, &decoder_ops));
    decoder = (vaapi_hevc_decoder_t *)decoder_ops.decoder;
    assert(!vaapi_hevc_decoder_retire(decoder));
-   assert(!vaapi_hevc_decoder_open(&po_pool, &po_params, &decoder_color, 0,
+   assert(!vaapi_hevc_decoder_open(&po_pool, &po_params, &decoder_color, yuv,
          &decoder_exports, &decoder_ops));
    assert(rh265_hw_state_init(&decoder_state, 32));
    assert(!rh265_hw_prepare(&decoder_state, &po_params, &po_au, &po_picture));
@@ -128,6 +130,7 @@ static void decoder_case(const sequence_case_t *fixture, bool claimed, bool fail
    }
    assert(!decoder_ops.output(decoder, po_picture.slot, &decoder_frame));
    assert(decoder_fds && !decoder_closes && po_pool.exports);
+   assert(decoder_frame.yuv == yuv);
    assert(decoder_frame.width
           == (unsigned)(po_params.width - po_params.crop_left
                         - po_params.crop_right));
@@ -175,9 +178,13 @@ int main(void)
    assert(!pool_unit_main());
    for (i = 0; i < sizeof(sequence_cases) / sizeof(sequence_cases[0]); i++)
    {
-      decoder_case(&sequence_cases[i], false, false);
-      decoder_case(&sequence_cases[i], true, false);
-      decoder_case(&sequence_cases[i], false, true);
+      decoder_case(&sequence_cases[i], false, false, 0);
+      decoder_case(&sequence_cases[i], false, false, IMAGE_YUV_FLAG_FULL_RANGE);
+      decoder_case(&sequence_cases[i], true, false, IMAGE_YUV_FLAG_BT709);
+      decoder_case(&sequence_cases[i], false, true,
+            IMAGE_YUV_FLAG_FULL_RANGE | IMAGE_YUV_FLAG_BT709);
+      decoder_case(&sequence_cases[i], false, false,
+            IMAGE_YUV_FLAG_FULL_RANGE | IMAGE_YUV_FLAG_BT709);
    }
    assert(!vaapi_hevc_decoder_detach(NULL));
    assert(vaapi_hevc_decoder_retire(NULL));

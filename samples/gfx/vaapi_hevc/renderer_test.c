@@ -242,7 +242,33 @@ static void renderer_setup(bool fp16, video_frame_import_t *input)
    carrier                                  = vaapi_frame_pool_new(1);
    assert(carrier);
    cache_publish();
+   video_hw_frame_abandon(&picture);
+   assert(vaapi_frame_collect(carrier) == 1);
+   ex_pool.ready = 1;
+   ex_pool.generation[0]++;
+   ex_closes = 0;
+   assert(vaapi_hevc_export_open(&ex_frame, &ex_pool, 0, &ex_ops));
+   {
+      video_color_metadata_t unknown;
+      vaapi_frame_view_t source;
+      memset(&unknown, 0, sizeof(unknown));
+      assert(!vaapi_frame_export(
+            carrier, &ex_frame, 2, 2, 60, 58, 0, &unknown, &picture));
+      assert(vaapi_frame_claim(picture.owner, picture.done, picture.done_value,
+            picture.image, &source));
+      vf_export_source = source.source;
+      assert(vaapi_frame_unclaim(
+            picture.owner, picture.done, picture.done_value, NULL));
+   }
    memset(input, 0, sizeof(*input));
+   input->color.primaries = input->color.matrix = 9;
+   input->color.transfer                        = 16;
+   input->color.range                           = 2;
+   input->color.max_cll                         = 4000;
+   input->color.max_fall                        = 350;
+   input->color.mastering.present               = 0x100u;
+   input->color.mastering.luminance_max         = 60000000;
+   input->yuv           = IMAGE_YUV_FLAG_FULL_RANGE | IMAGE_YUV_FLAG_BT709;
    input->image         = picture.image;
    input->done          = picture.done;
    input->done_value    = picture.done_value;
@@ -259,6 +285,8 @@ int main(void)
 {
    video_frame_import_t input;
    unsigned depth, fp16, lost;
+   vulkan_video_layout_t expected;
+   float linear = -1.0f;
    assert(!cache_unit_main());
    for (depth = 8; depth <= 10; depth += 2)
       for (fp16 = 0; fp16 < 2; fp16++)
@@ -298,6 +326,13 @@ int main(void)
                    == (lost ? VIDEO_TEXTURE_UPDATE_DROPPED
                             : VIDEO_TEXTURE_UPDATE_DONE));
             cache = renderer_texture->vaapi_cache;
+            assert(vulkan_video_layout(
+                  &expected, 60, 58, input.pixfmt, input.yuv));
+            assert(vulkan_video_color(&expected, input.yuv, &input.color));
+            if (fp16)
+               memcpy(&expected.header[19], &linear, sizeof(linear));
+            assert(!memcmp(cache->entries[0].submission.header + 8,
+                  expected.header + 8, 12 * sizeof(uint32_t)));
             assert(cache && renderer.vaapi_textures == renderer_texture
                    && phase == 14 && renderer_submits == 1 && !renderer_locked);
             assert(renderer_texture->layout

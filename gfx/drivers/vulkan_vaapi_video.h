@@ -108,6 +108,8 @@ static enum video_texture_update vulkan_vaapi_renderer_import(
                   != (input->output_pixfmt == IMAGE_PIXFMT_FP16))
       return VIDEO_TEXTURE_UPDATE_REFUSED;
    memset(&frame, 0, sizeof(frame));
+   frame.color      = input->color;
+   frame.yuv        = input->yuv;
    frame.owner      = input->owner;
    frame.abandon    = input->abandon;
    frame.image      = input->image;

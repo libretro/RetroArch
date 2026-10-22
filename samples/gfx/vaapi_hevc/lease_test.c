@@ -158,6 +158,94 @@ static void lease_hdr(void)
          lease_cleanup();
       }
 }
+
+static VKAPI_ATTR void VKAPI_CALL lease_trim_push(VkCommandBuffer command,
+      VkPipelineLayout layout, VkShaderStageFlags flags, uint32_t offset,
+      uint32_t size, const void *data)
+{
+   const uint32_t *words = (const uint32_t *)data;
+   assert(command == sub.command && layout == sub.layout
+          && flags == VK_SHADER_STAGE_COMPUTE_BIT && !offset && size == 80
+          && phase++ == 7);
+   assert(words[0] == 58 && words[1] == 56 && words[2] == 2 && words[3] == 2);
+}
+
+static VKAPI_ATTR void VKAPI_CALL lease_trim_dispatch(
+      VkCommandBuffer command, uint32_t x, uint32_t y, uint32_t z)
+{
+   assert(command == sub.command && x == 8 && y == 7 && z == 1 && phase++ == 8);
+}
+
+static void lease_track_metadata(void)
+{
+   vaapi_frame_view_t original;
+   video_color_metadata_t coded, expected;
+   vulkan_video_layout_t reference;
+   unsigned unknown, transfer;
+   float value;
+   for (unknown = 0; unknown < 2; unknown++)
+      for (transfer = 16; transfer <= 18; transfer += 2)
+      {
+         lease_setup();
+         video_hw_frame_abandon(&lease_frame);
+         assert(vaapi_frame_collect(lease_pool) == 1);
+         ex_reset();
+         assert(vaapi_hevc_export_open(&ex_frame, &ex_pool, 0, &ex_ops));
+         memset(&coded, 0, sizeof(coded));
+         if (!unknown)
+         {
+            coded.primaries = coded.matrix = 9;
+            coded.transfer                 = transfer;
+            coded.range                    = 2;
+            coded.max_cll                  = 1000;
+         }
+         assert(!vaapi_frame_export(
+               lease_pool, &ex_frame, 2, 2, 60, 58, 0, &coded, &lease_frame));
+         lease_frame.yuv = IMAGE_YUV_FLAG_BT709 | IMAGE_YUV_FLAG_FULL_RANGE;
+         lease_frame.color.primaries = lease_frame.color.matrix = 9;
+         lease_frame.color.transfer                             = transfer;
+         lease_frame.color.range                                = 2;
+         lease_frame.color.max_cll                              = 4000;
+         lease_frame.color.max_fall                             = 350;
+         lease_frame.color.mastering.present = VIDEO_MASTERING_DISPLAY_COMPLETE;
+         lease_frame.color.mastering.luminance_max   = 60000000;
+         lease_frame.color.mastering.luminance_min   = 1;
+         lease_frame.color.mastering.chromaticity[0] = 35400;
+         expected                                    = lease_frame.color;
+         assert(vaapi_frame_claim(lease_frame.owner, lease_frame.done,
+               lease_frame.done_value, lease_frame.image, &original));
+         assert(!memcmp(&original.color, &coded, sizeof(coded)));
+         assert(vaapi_frame_unclaim(lease_frame.owner, lease_frame.done,
+               lease_frame.done_value, NULL));
+         memset(&lease, 0, sizeof(lease));
+         assert(vaapi_hevc_vulkan_lease_bind(&lease, &sub, false));
+         assert(lease_present() == 1);
+         assert(vulkan_video_layout(
+               &reference, 60, 58, lease_frame.pixfmt, lease_frame.yuv));
+         assert(vulkan_video_color(&reference, lease_frame.yuv, &expected));
+         assert(!memcmp(
+               sub.header + 8, reference.header + 8, 12 * sizeof(uint32_t)));
+         memcpy(&value, sub.header + 16, sizeof(value));
+         assert(value == (float)transfer);
+         vf_fence_result = VK_SUCCESS;
+         assert(vaapi_hevc_vulkan_lease_poll(&lease) == 1);
+         lease_cleanup();
+      }
+   lease_setup();
+   lease_frame.width  = 58;
+   lease_frame.height = 56;
+   sub.ops.push       = lease_trim_push;
+   sub.ops.dispatch   = lease_trim_dispatch;
+   assert(vaapi_hevc_vulkan_lease_present(&lease, &lease_frame,
+                (VkImage)(uintptr_t)500, (VkImageView)(uintptr_t)501,
+                VK_FORMAT_R8G8B8A8_UNORM, 58, 56, VK_IMAGE_LAYOUT_UNDEFINED)
+          == 1);
+   assert(phase == 14 && vf.pending);
+   vf_fence_result = VK_SUCCESS;
+   assert(vaapi_hevc_vulkan_lease_poll(&lease) == 1);
+   lease_cleanup();
+}
+
 #if defined(__linux__)
 static pthread_t lease_producer;
 static retro_spsc_t lease_relay;
@@ -277,6 +365,7 @@ int main(void)
    ex_mode  = 2;
    lease_faults();
    lease_hdr();
+   lease_track_metadata();
    for (i = 0; i < 2; i++)
    {
       lease_setup();
