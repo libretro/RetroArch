@@ -91,10 +91,12 @@ jobs:
                 extra=""
                 if [ "$offset" = 64 ]; then extra="-D_FILE_OFFSET_BITS=64"; fi
                 CC="$bin/$target$api-clang $extra" python3 libretro-common/samples/formats/vp9/check_stack.py
-                for source in android_image_queue android_image_ndk mediacodec_session android_frame mediacodec_color mediacodec_frame_export; do
+                for source in android_image_queue android_image_ndk mediacodec_session android_frame \
+                    mediacodec_color mediacodec_frame_export vulkan_android_device \
+                    vulkan_android_image vulkan_android_pipeline; do
                   "$bin/$target$api-clang" $extra -O1 -std=c89 -pedantic -Wall -Wextra -Werror \
                     -Wno-long-long -Wno-c99-extensions -Wframe-larger-than=2048 \
-                    -DHAVE_THREADS -DHAVE_DYLIB -Ilibretro-common/include \
+                    -DHAVE_THREADS -DHAVE_DYLIB -Ilibretro-common/include -Igfx/include \
                     -c "gfx/common/$source.c" -o "$RUNNER_TEMP/$source-$target-$api-$offset.o"
                 done
               done
@@ -142,3 +144,36 @@ jobs:
         run: make -C samples/gfx/mediacodec_session frame-check CC=${{ matrix.cc }} SANITIZER=address,undefined
       - name: HEVC VP9 AV1 color intersection and renderer export contracts
         run: make -C samples/gfx/mediacodec_session export-check CC=${{ matrix.cc }} SANITIZER=address,undefined
+
+  vulkan-import-resources:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        cc: [gcc, clang]
+    env:
+      APT_PKGS: libvulkan-dev mesa-vulkan-drivers glslc spirv-tools
+    steps:
+      - uses: actions/checkout@v6
+      - name: Modeled image resources, device admission and pipeline contracts
+        run: make -C samples/gfx/mediacodec_session vulkan-check CC=${{ matrix.cc }} SANITIZER=address,undefined
+      - name: Apt cache key
+        id: apt
+        run: sh .github/workflows/scripts/apt-cache-key.sh "$APT_PKGS"
+      - name: Restore apt cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+          restore-keys: ${{ steps.apt.outputs.prefix }}
+      - name: Install pixel oracle and shader validation dependencies
+        timeout-minutes: 20
+        run: sh .github/workflows/scripts/apt-install.sh $APT_PKGS
+      - name: Save apt cache
+        if: env.APT_CACHE_SAVE == '1'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+      - name: Execute embedded and freshly compiled SDR PQ HLG cropped pixels
+        run: make -C samples/gfx/mediacodec_session vulkan-gpu-check CC=${{ matrix.cc }} SANITIZER=

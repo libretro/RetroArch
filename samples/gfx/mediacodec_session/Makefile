@@ -1,6 +1,6 @@
 CC ?= cc
 export CC SANITIZER
-all check: session-check frame-check export-check
+all check: session-check frame-check export-check vulkan-check
 session-check:
 	python3 session_run.py
 clean:
@@ -14,3 +14,10 @@ frame-check:
 export-check:
 	python3 export_run.py
 .PHONY: export-check
+
+vulkan-check:
+	python3 vulkan_run.py
+vulkan-gpu-check:
+	python3 vulkan_run.py --gpu
+	python3 vulkan_run.py --gpu --compile-shaders
+.PHONY: vulkan-check vulkan-gpu-check
