@@ -2178,6 +2178,8 @@ DEVICE_LEFT_RE = re.compile(r'\[Input\] Device \d+, "([^"]+)": '
 # The test joypad driver's pad in slot 0, from the start or later.
 PAD_FIRST = os.path.join(HERE, 'pad-first.ratst')
 PAD_LATER = os.path.join(HERE, 'pad-later.ratst')
+# The same pad turned on in slot 7, the headset's.
+PAD_LATER_7 = os.path.join(HERE, 'pad-later-7.ratst')
 # RGUI, OK and Cancel unswapped, from the Quick Menu: back to the Main
 # Menu, Settings (row 5), Input (3), RetroPad Binds, Port 1 Controls, and
 # B Button (row 14), whose OK starts the capture.
@@ -2206,22 +2208,23 @@ def device_lines(res):
 
 
 def check_input_device(res):
-    """The session's controllers are one controller, in slot 0 and on
-    port 1, read through the port, and gone with the session."""
+    """The session's controllers are one controller, in the highest
+    slot and port, 7 and 8, sharing player 1, and gone with the
+    session."""
     errors = []
-    if '[Autoconf] OpenXR Controllers configured in port 1.' not in res.log:
-        errors.append('no "OpenXR Controllers configured in port 1" in the '
+    if '[Autoconf] OpenXR Controllers configured in port 8.' not in res.log:
+        errors.append('no "OpenXR Controllers configured in port 8" in the '
                       'log')
     seq = [l for l in device_lines(res) if l[1] != 'pad']
-    if seq[:1] != [('in', 'OpenXR Controllers', 0)]:
-        errors.append('the device lines start %s, want the device in slot 0'
+    if seq[:1] != [('in', 'OpenXR Controllers', 7)]:
+        errors.append('the device lines start %s, want the device in slot 7'
                       % seq[:2])
-    elif ('left', 'OpenXR Controllers', 0) not in seq[1:]:
-        errors.append('the device never left slot 0 when the session ended: '
+    elif ('left', 'OpenXR Controllers', 7) not in seq[1:]:
+        errors.append('the device never left slot 7 when the session ended: '
                       '%s' % seq)
-    if ('[Autoconf] OpenXR Controllers disconnected from port 1.'
+    if ('[Autoconf] OpenXR Controllers disconnected from port 8.'
             not in res.log):
-        errors.append('no "OpenXR Controllers disconnected from port 1" in '
+        errors.append('no "OpenXR Controllers disconnected from port 8" in '
                       'the log')
     if find(pads(res, 0), 0, lambda f: f['buttons'] == RP['A']) < 0:
         errors.append('A never reached player 1 through the device')
@@ -2229,32 +2232,51 @@ def check_input_device(res):
 
 
 def check_input_device_second(res):
-    """A pad in slot 0 from the start: the headset is the next controller,
-    slot 1 and port 2, which is the core's player 2."""
+    """A pad in slot 0 from the start: the headset takes slot 7 and port
+    8, and shares the pad's player 1."""
     errors = []
     if device_lines(res)[:2] != [('in', 'pad', 0),
-                                 ('in', 'OpenXR Controllers', 1)]:
+                                 ('in', 'OpenXR Controllers', 7)]:
         errors.append('the device lines start %s, want the pad in slot 0 '
-                      'and the headset in slot 1' % device_lines(res)[:3])
-    if '[Autoconf] OpenXR Controllers configured in port 2.' not in res.log:
-        errors.append('no "OpenXR Controllers configured in port 2" in the '
+                      'and the headset in slot 7' % device_lines(res)[:3])
+    if '[Autoconf] OpenXR Controllers configured in port 8.' not in res.log:
+        errors.append('no "OpenXR Controllers configured in port 8" in the '
                       'log')
-    if find(pads(res, 1), 0, lambda f: f['buttons'] == RP['A']) < 0:
-        errors.append('A never reached player 2')
-    if any(f['buttons'] for f in pads(res, 0)):
-        errors.append('the headset reached player 1')
+    if find(pads(res, 0), 0, lambda f: f['buttons'] == RP['A']) < 0:
+        errors.append('A never reached player 1')
+    if any(f['buttons'] for f in pads(res, 1)):
+        errors.append('the headset reached player 2')
     return errors
 
 
 def check_input_device_taken(res):
-    """A pad the driver puts in the headset's slot takes it; the headset
-    moves to slot 1 and keeps player 1."""
+    """A pad turned on later lands in slot 0, which the headset in slot 7
+    does not hold: nothing moves, and both play as player 1."""
     errors = []
     seq = [l for l in device_lines(res) if l[0] == 'in']
-    if seq[:3] != [('in', 'OpenXR Controllers', 0), ('in', 'pad', 0),
-                   ('in', 'OpenXR Controllers', 1)]:
+    if seq != [('in', 'OpenXR Controllers', 7), ('in', 'pad', 0)]:
         errors.append('the device lines are %s, want the headset in slot '
-                      '0, the pad there, the headset in slot 1' % seq[:4])
+                      '7 and the pad in slot 0' % seq[:4])
+    if find(pads(res, 0), 0, lambda f: f['buttons'] == RP['A']) < 0:
+        errors.append('A never reached player 1')
+    if any(f['buttons'] for f in pads(res, 1)):
+        errors.append('the headset reached player 2')
+    return errors
+
+
+def check_input_device_displaced(res):
+    """A pad turned on later lands in slot 7, the headset's: the headset
+    moves to the highest free slot, 6, and port 7, and still plays as
+    player 1."""
+    errors = []
+    seq = [l for l in device_lines(res) if l[0] == 'in']
+    if seq != [('in', 'OpenXR Controllers', 7), ('in', 'pad', 7),
+               ('in', 'OpenXR Controllers', 6)]:
+        errors.append('the device lines are %s, want the headset in slot '
+                      '7, the pad there, the headset in slot 6' % seq[:4])
+    if '[Autoconf] OpenXR Controllers configured in port 7.' not in res.log:
+        errors.append('no "OpenXR Controllers configured in port 7" in the '
+                      'log')
     if find(pads(res, 0), 0, lambda f: f['buttons'] == RP['A']) < 0:
         errors.append('A never reached player 1 after the move')
     if any(f['buttons'] for f in pads(res, 1)):
@@ -2263,8 +2285,9 @@ def check_input_device_taken(res):
 
 
 def check_input_hotkeys(res):
-    """Hotkey Enable on L3 and Screenshot on X: X alone reaches the core
-    and takes no screenshot; with L3 held it takes one."""
+    """The headset's own Hotkey Enable on L3 and Screenshot on X: X
+    alone reaches the core and takes no screenshot; with L3 held it
+    takes one."""
     errors = []
     if find(pads(res, 0), 0, lambda f: f['buttons'] == RP['X']) < 0:
         errors.append('X alone never reached player 1')
@@ -2282,11 +2305,11 @@ def check_input_hotkeys(res):
 
 
 def check_input_hotkeys_separate(res):
-    """Separate, Menu Toggle on R: the right hand is port 2 and opens
-    nothing; the left hand is port 1, the hotkey port, and opens the
-    menu."""
+    """Separate, the left hand's own Menu Toggle on R: the hands are on
+    ports 8 and 7; R on the right hand opens nothing, R on the left
+    opens the menu."""
     errors = []
-    for name, port in (('Left', 1), ('Right', 2)):
+    for name, port in (('Left', 8), ('Right', 7)):
         if ('[Autoconf] OpenXR %s Controller configured in port %d.'
                 % (name, port)) not in res.log:
             errors.append('no "OpenXR %s Controller configured in port %d" '
@@ -2301,8 +2324,9 @@ def check_input_hotkeys_separate(res):
 
 
 def check_input_port_binds(res):
-    """Port 1's own binds with A and B swapped apply to the headset: its
-    A press, then its B press, reach player 1 as B, then A."""
+    """Port 8's binds with A and B swapped apply to the headset, which
+    shares player 1 from port 8: its A press, then its B press, reach
+    player 1 as B, then A."""
     presses = []
     for f in pads(res, 0):
         if not presses or presses[-1] != f['buttons']:
@@ -2437,8 +2461,9 @@ def check_input_unfocused(res):
 
 
 def check_input_dpad(res):
-    """Forced Left Analog on player 1: the left stick is the D-pad and
-    reads centred, the right stays analog."""
+    """Forced Left Analog on port 8, the headset's, sharing player 1: the
+    left stick is the D-pad and reads centred, the right stays
+    analog."""
     p0 = pads(res, 0)
     i = find(p0, 0, lambda f: f['buttons'] == RP['UP'] | RP['RIGHT']
              and (f['lx'], f['ly']) == (0, 0)
@@ -3388,11 +3413,12 @@ def check_rumble_gain(res):
 
 
 def check_rumble_separate(res):
-    errors = rumble_errors(res, {'left': 0.75, 'right': 0.5})
-    left = [e for e in haptics(res, 'left') if e['ev'] == 'haptic']
+    """Separate on Auto: both hands play as player 1, so its rumble
+    reaches both, from the left hand's Start on."""
+    errors = rumble_errors(res, {'left': 0.75, 'right': 0.75})
     right = [e for e in haptics(res, 'right') if e['ev'] == 'haptic']
-    if left and right and right[0]['t_us'] < left[0]['t_us']:
-        errors.append('the right hand rumbled before player 2 pressed Start')
+    if right and right[0]['t_us'] > res.marks['right'] * 1e6:
+        errors.append('the right hand did not rumble with player 1')
     return errors
 
 
@@ -4000,7 +4026,9 @@ CASES = [
                ('script', ''), ('wait', 3)],
      'check': check_combined},
     {'name': 'input-separate', 'map': '3ds',
-     'settings': {'video_openxr_controllers': '1'},
+     'settings': {'video_openxr_controllers': '1',
+                  'input_plays_as_device_1': 'OpenXR Right Controller',
+                  'input_plays_as_player_1': '2'},
      'steps': [('wait', 6), ('script', SEPARATE), ('wait', 2),
                ('script', ''), ('wait', 2)],
      'check': check_separate},
@@ -4036,7 +4064,7 @@ CASES = [
      'steps': [('wait', 6)],
      'check': check_no_frame_profile},
     {'name': 'input-dpad', 'map': '3ds',
-     'settings': {'input_player1_analog_dpad_mode': '3'},
+     'settings': {'input_player8_analog_dpad_mode': '3'},
      'steps': [('wait', 6), ('script', DPAD), ('wait', 2), ('script', ''),
                ('wait', 2)],
      'check': check_input_dpad},
@@ -4350,7 +4378,8 @@ CASES = [
     {'name': 'input-rumble-separate', 'map': '3ds',
      'settings': {'video_openxr_controllers': '1'},
      'steps': [('wait', 6), ('script', 'action separate/start@left 1'),
-               ('wait', 2), ('script', 'action separate/start@right 1'),
+               ('wait', 2), ('mark', 'right'),
+               ('script', 'action separate/start@right 1'),
                ('wait', 2), ('script', ''), ('wait', 2)],
      'check': check_rumble_separate},
     # Monado's 20 Hz, then the layer's divide 2 for a 10 Hz headset.
@@ -4628,9 +4657,16 @@ CASES = [
      'steps': [('wait', 14), ('script', 'action combined/a 1'), ('wait', 1),
                ('script', ''), ('wait', 1)],
      'check': check_input_device_taken},
+    {'name': 'input-device-displaced', 'map': '3ds',
+     'settings': {'test_input_file_joypad': PAD_LATER_7},
+     'steps': [('wait', 14), ('script', 'action combined/a 1'), ('wait', 1),
+               ('script', ''), ('wait', 1)],
+     'check': check_input_device_displaced},
     {'name': 'input-hotkeys', 'map': '3ds',
-     'settings': {'input_enable_hotkey_btn': '14',
-                  'input_screenshot_btn': '9'},
+     'settings': {'input_plays_as_device_1': 'OpenXR Controllers',
+                  'input_plays_as_player_1': '0',
+                  'input_plays_as_enable_hotkey_btn_1': '14',
+                  'input_plays_as_screenshot_btn_1': '9'},
      'steps': [('wait', 6), ('script', 'action combined/x 1'), ('wait', 2),
                ('script', ''), ('wait', 1),
                ('script', 'action combined/l3 1'), ('wait', 1),
@@ -4641,14 +4677,16 @@ CASES = [
      'check': check_input_hotkeys},
     {'name': 'input-hotkeys-separate', 'map': '3ds',
      'settings': {'video_openxr_controllers': '1', 'menu_driver': 'ozone',
-                  'input_menu_toggle_btn': '11'},
+                  'input_plays_as_device_1': 'OpenXR Left Controller',
+                  'input_plays_as_player_1': '0',
+                  'input_plays_as_menu_toggle_btn_1': '11'},
      'steps': [('wait', 6), ('script', 'action separate/r@right 1'),
                ('wait', 1), ('script', ''), ('wait', 2), ('mark', 'left'),
                ('script', 'action separate/r@left 1'), ('wait', 0.5),
                ('script', ''), ('wait', 3)],
      'check': check_input_hotkeys_separate},
     {'name': 'input-port-binds', 'map': '3ds',
-     'settings': {'input_player1_b_btn': '8', 'input_player1_a_btn': '0'},
+     'settings': {'input_player8_b_btn': '8', 'input_player8_a_btn': '0'},
      'steps': [('wait', 6), ('script', 'action combined/a 1'), ('wait', 2),
                ('script', ''), ('wait', 1),
                ('script', 'action combined/b 1'), ('wait', 2),

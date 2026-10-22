@@ -4755,12 +4755,6 @@ static int16_t input_state_device(
       case RETRO_DEVICE_LIGHTGUN:
       case RETRO_DEVICE_POINTER:
 
-#ifdef HAVE_OPENXR
-         /* The headset's laser, ahead of the overlay and the mouse. */
-         if (input_openxr_pointer(port, device, idx, id, &res))
-            break;
-#endif
-
 #ifdef HAVE_VIDEO_WINDOWS
          if (     device == RETRO_DEVICE_POINTER
                && input_state_pointer_second(input_st, settings, port,
@@ -5353,6 +5347,27 @@ static int16_t input_state_internal(
    bitmask_enabled                         =    (device == RETRO_DEVICE_JOYPAD)
                                              && (id == RETRO_DEVICE_ID_JOYPAD_MASK);
    joypad_info.axis_threshold              = settings->floats.input_axis_threshold;
+
+#ifdef HAVE_OPENXR
+   /* The headset's laser is the whole of each core port its
+    * controllers play on: OR'd with a sharer's mouse it would point
+    * nowhere. */
+   if (device == RETRO_DEVICE_POINTER || device == RETRO_DEVICE_LIGHTGUN)
+   {
+      unsigned i;
+      int16_t res    = 0;
+      uint32_t slots = 0;
+      for (i = 0; input_remap_port_map[i] < MAX_USERS; i++)
+      {
+         unsigned user = input_remap_port_map[i];
+         unsigned slot = settings->uints.input_joypad_index[user];
+         if (user < max_users && slot < 32)
+            slots |= 1u << slot;
+      }
+      if (input_openxr_pointer(slots, device, idx, id, &res))
+         return input_blocked ? 0 : res;
+   }
+#endif
 
    /* Cache once; flag does not change during this function */
    {
@@ -10946,6 +10961,11 @@ typedef struct
 static input_plays_as_entry_t input_plays_as[MAX_USERS];
 /* by slot: the entry its controller took, and one; 0 for none */
 static uint8_t input_plays_as_claim[MAX_INPUT_DEVICES];
+/* by slot: the player Auto gives its controller, set as it connects:
+ * 1 for the headset's that no reservation names, else 0 */
+static uint8_t input_plays_as_auto[MAX_INPUT_DEVICES];
+/* moves on whenever an entry's controller or player may have */
+static unsigned input_plays_as_gen;
 /* by slot: for an Auto controller placed to share with the user whose
  * reservation names it, that user and one, kept while it stays
  * connected; 0 for none */
@@ -11036,6 +11056,27 @@ static bool input_plays_as_same(const char *a, const char *b)
    if (ida || idb)
       return ida && idb && va == vb && pa == pb;
    return string_is_equal(na, nb);
+}
+
+/* Whether @name is one of the headset's controllers. */
+static bool input_plays_as_headset(const char *name)
+{
+#ifdef HAVE_OPENXR
+   if (     string_is_equal(name, INPUT_OPENXR_JOYPAD_COMBINED)
+         || string_is_equal(name, INPUT_OPENXR_JOYPAD_LEFT)
+         || string_is_equal(name, INPUT_OPENXR_JOYPAD_RIGHT))
+      return true;
+#endif
+   (void)name;
+   return false;
+}
+
+/* The player the connected controller in @slot plays as on Auto. */
+static unsigned input_plays_as_auto_player(unsigned slot)
+{
+   return (     slot < MAX_INPUT_DEVICES
+            && *input_driver_st.input_device_info[slot].name)
+      ? input_plays_as_auto[slot] : 0;
 }
 
 int input_config_plays_as_entry(unsigned slot)
@@ -11188,7 +11229,9 @@ static void input_plays_as_hot_count(unsigned e)
  * have without it. */
 static void input_plays_as_tidy(unsigned e)
 {
-   if (!input_plays_as[e].player && !input_plays_as[e].own_hot)
+   /* the headset's cached players are looked up again */
+   input_plays_as_gen++;
+   if (!input_plays_as[e].own_hot && !input_plays_as[e].player)
       input_plays_as_drop(e);
 }
 
@@ -11197,6 +11240,10 @@ bool input_config_plays_as_active(void)
    unsigned e;
    for (e = 0; e < MAX_USERS; e++)
       if (input_plays_as[e].player)
+         return true;
+   /* a headset on Auto plays as player 1 */
+   for (e = 0; e < MAX_INPUT_DEVICES; e++)
+      if (input_plays_as_auto_player(e))
          return true;
    return false;
 }
@@ -11209,6 +11256,10 @@ bool input_config_plays_as_any_player(void)
       if (     input_plays_as[e].player
             && input_plays_as[e].player <= max_users)
          return true;
+   /* a headset on Auto plays as player 1 */
+   for (e = 0; e < MAX_INPUT_DEVICES; e++)
+      if (input_plays_as_auto_player(e))
+         return true;
    return false;
 }
 
@@ -11216,6 +11267,25 @@ unsigned input_config_plays_as_player(unsigned slot)
 {
    int e = input_config_plays_as_entry(slot);
    return (e >= 0) ? input_plays_as[e].player : 0;
+}
+
+unsigned input_config_plays_as_named(const char *name)
+{
+   unsigned e;
+   for (e = 0; e < MAX_USERS; e++)
+      if (     *input_plays_as[e].device
+            && input_plays_as_names(input_plays_as[e].device, true, name,
+               NULL, 0, 0))
+         break;
+   if (e < MAX_USERS && input_plays_as[e].player)
+      return input_plays_as[e].player;
+   /* Auto: the headset's play as player 1 */
+   return input_plays_as_headset(name) ? 1 : 0;
+}
+
+unsigned input_config_plays_as_generation(void)
+{
+   return input_plays_as_gen;
 }
 
 /* A free entry naming the controller in @slot, at its player, which
@@ -11231,9 +11301,12 @@ static int input_plays_as_new(unsigned slot)
       return -1;
    /* no config read yet leaves it zeroed: button 0 for every hotkey */
    input_plays_as_drop((unsigned)e);
+   /* the headset's by the name OpenXR looks it up by, should a profile
+    * show another */
    snprintf(input_plays_as[e].device, sizeof(input_plays_as[e].device),
          "%04x:%04x %s", d->vid, d->pid,
-         *d->display_name ? d->display_name : d->name);
+         (*d->display_name && !input_plays_as_headset(d->name))
+         ? d->display_name : d->name);
    input_plays_as[e].player   = player;
    input_plays_as_claim[slot] = (uint8_t)(e + 1);
    return e;
@@ -11419,6 +11492,7 @@ void input_config_plays_as_release(unsigned slot)
    if (slot < MAX_INPUT_DEVICES)
    {
       input_plays_as_claim[slot]  = 0;
+      input_plays_as_auto[slot]   = 0;
       input_plays_as_shares[slot] = 0;
       input_plays_as_was[slot]    = 0;
    }
@@ -11633,6 +11707,7 @@ void input_plays_as_read(void *data)
       input_plays_as_hot_read(conf, e);
    }
    input_plays_as_reclaim();
+   input_plays_as_gen++;
    /* the hotkeys read through these */
    input_config_binds_changed();
 }
@@ -11772,6 +11847,8 @@ void input_plays_as_lay_out(void)
       if (input_plays_as_held[i])
          input_plays_as_held[i] = moved[input_plays_as_held[i] - 1];
    free(t);
+   /* the headset's cached players are looked up again */
+   input_plays_as_gen++;
 }
 
 void input_plays_as_write(void *data)
@@ -11812,11 +11889,13 @@ void input_plays_as_write(void *data)
    }
 }
 
-/* @slot's player, as it plays now: Auto past Max Users. */
+/* @slot's player, as it plays now: Auto past Max Users, and the
+ * headset's Auto player 1. */
 static unsigned input_plays_as_now(unsigned slot, unsigned max_users)
 {
    unsigned player = input_config_plays_as_player(slot);
-   return (player <= max_users) ? player : 0;
+   return (player && player <= max_users)
+      ? player : input_plays_as_auto_player(slot);
 }
 
 /* Whether user @u's reservation names the controller @d, as the
@@ -11841,6 +11920,18 @@ static bool input_plays_as_plays(const settings_t *settings,
       return player == user + 1;
    return input_plays_as_res_names(settings, user,
          &input_driver_st.input_device_info[slot]);
+}
+
+/* Whether a reservation names the controller in @slot. */
+static bool input_plays_as_reserved(const settings_t *settings,
+      unsigned slot)
+{
+   unsigned u;
+   for (u = 0; u < MAX_USERS; u++)
+      if (input_plays_as_res_names(settings, u,
+               &input_driver_st.input_device_info[slot]))
+         return true;
+   return false;
 }
 
 /* The user whose reservation names the controller in @slot, chosen as
@@ -11871,6 +11962,20 @@ static unsigned input_plays_as_reserved_held(const settings_t *settings,
       break;
    }
    return MAX_USERS;
+}
+
+/* Whether the controller in @slot is one of the headset's. */
+static bool input_plays_as_headset_slot(unsigned slot)
+{
+#ifdef HAVE_OPENXR
+   if (     slot < MAX_INPUT_DEVICES
+         && string_is_equal(
+            input_driver_st.input_device_info[slot].joypad_driver,
+            INPUT_OPENXR_JOYPAD))
+      return true;
+#endif
+   (void)slot;
+   return false;
 }
 
 /* The lowest (@last: highest) user below @max_users, but @skip, whose
@@ -11916,6 +12021,9 @@ bool input_config_plays_as_place(unsigned slot)
       max_users = MAX_USERS;
    input_plays_as_placed_max_users = max_users;
    input_plays_as_take(slot);
+   /* the headset's Auto is player 1's, unless a reservation names it */
+   input_plays_as_auto[slot]   = (uint8_t)(input_plays_as_headset_slot(slot)
+         && !input_plays_as_reserved(settings, slot));
    input_plays_as_shares[slot] = 0;
    was                         = input_plays_as_was[slot] != 0;
    input_plays_as_was[slot]    = 0;
@@ -11948,25 +12056,39 @@ bool input_config_plays_as_place(unsigned slot)
    }
 
    t    = player - 1;
+   /* the headset's controllers share their player whoever is there, or
+    * nobody, from the highest free port, and move no one */
+   if (input_plays_as_headset_slot(slot))
+   {
+      input_plays_as_move(settings,
+            input_plays_as_free(settings, max_users, slot, MAX_USERS, true),
+            slot);
+      return true;
+   }
    held = settings->uints.input_joypad_index[t];
    if (held == slot)
       return true;
    if (     held < MAX_INPUT_DEVICES
          && *input_driver_st.input_device_info[held].name)
    {
+      unsigned own = input_config_plays_as_player(held);
       /* another of the player's: this one shares, from the highest
-       * free port */
-      if (input_plays_as_plays(settings, held, t, max_users))
+       * free port; the headset's on Auto give way */
+      if (     input_plays_as_plays(settings, held, t, max_users)
+            && !(input_plays_as_auto_player(held)
+               && (!own || own > max_users)))
       {
          input_plays_as_move(settings,
                input_plays_as_free(settings, max_users, slot, t, true),
                slot);
          return true;
       }
-      /* an Auto one: it moves to the first free port */
+      /* one on Auto or another player: it moves to the first free
+       * port, the headset's to the highest */
       input_plays_as_move(settings, t, slot);
       input_plays_as_move(settings,
-            input_plays_as_free(settings, max_users, held, t, false),
+            input_plays_as_free(settings, max_users, held, t,
+               input_plays_as_headset_slot(held)),
             held);
       return true;
    }
@@ -11986,9 +12108,11 @@ void input_config_plays_as_max_users_changed(uint8_t *again)
    for (s = 0; s < MAX_USERS; s++)
    {
       unsigned player = input_config_plays_as_player(s);
+      /* the headset's take the highest free port at once */
       again[s] = *input_driver_st.input_device_info[s].name
          && (     input_config_slot_user(s) >= MAX_USERS
-               || (player > before && player <= max_users));
+               || (player > before && player <= max_users)
+               || input_plays_as_headset_slot(s));
       input_plays_as_was[s] = (uint8_t)(again[s] && player
             && player <= before);
    }

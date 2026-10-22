@@ -26,6 +26,7 @@
 #include "../../../input/input_driver.h"
 #include "../../../input/input_remapping.h"
 #include "../../../input/input_keymaps.h"
+#include "../../../input/common/input_openxr.h"
 #include "../../../menu/menu_driver.h"
 #include "../../../menu/menu_entries.h"
 #include "../../../menu/menu_input.h"
@@ -146,6 +147,57 @@ void runloop_msg_queue_push(const char *msg, size_t len,
 { (void)msg; (void)len; (void)prio; (void)duration; (void)flush;
   (void)title; (void)icon; (void)category; }
 
+#ifdef HAVE_OPENXR
+/* the headset's controllers, announced by the tests */
+void input_openxr_poll(unsigned max_users, unsigned controllers,
+      unsigned laser, float threshold)
+{ (void)max_users; (void)controllers; (void)laser; (void)threshold; }
+const input_device_driver_t *input_openxr_joypad(
+      const input_device_driver_t *joypad) { return joypad; }
+bool input_openxr_has_slot(unsigned slot) { (void)slot; return false; }
+bool input_openxr_hotkey(unsigned id) { (void)id; return false; }
+/* The laser as input_openxr.c answers it: on a core port reading a
+ * slot of t_laser_slots, aiming where it reads t_laser_aim's, offscreen
+ * with nothing pressed where not. */
+static uint32_t t_laser_slots;
+static uint32_t t_laser_aim;
+#define T_LASER_X 1000
+#define T_LASER_Y (-2000)
+bool input_openxr_pointer(uint32_t slots, unsigned device, unsigned idx,
+      unsigned id, int16_t *res)
+{
+   bool aims = (slots & t_laser_aim) != 0;
+   (void)idx;
+   if (!(slots & t_laser_slots))
+      return false;
+   if (device == RETRO_DEVICE_LIGHTGUN)
+   {
+      if (id == RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X)
+         id = RETRO_DEVICE_ID_POINTER_X;
+      else if (id == RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y)
+         id = RETRO_DEVICE_ID_POINTER_Y;
+      else if (  id != RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN
+              && id != RETRO_DEVICE_ID_LIGHTGUN_TRIGGER)
+         return false;
+   }
+   else if (device != RETRO_DEVICE_POINTER)
+      return false;
+   if (id == RETRO_DEVICE_ID_POINTER_X)
+      *res = aims ? T_LASER_X : -0x8000;
+   else if (id == RETRO_DEVICE_ID_POINTER_Y)
+      *res = aims ? T_LASER_Y : -0x8000;
+   else if (id == RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN)
+      *res = aims ? 0 : 1;
+   else
+      *res = aims ? 1 : 0;
+   return true;
+}
+bool input_openxr_can_rumble(void) { return false; }
+void input_openxr_slot_connected(unsigned slot, const char *provider)
+{ (void)slot; (void)provider; }
+void input_openxr_reannounce(void) { }
+#endif
+
 /* Slot n holds t_buttons[n] and pushes axis t_axis_held[n] all the
  * way; every slot's profile has the RetroPad's ids as its buttons and
  * L2 and R2 as axes 4 and 5, unless a test gives it another. */
@@ -261,6 +313,7 @@ static void t_reset(void)
    {
       input_config_clear_device_name(u);
       input_config_clear_device_display_name(u);
+      input_config_clear_device_joypad_driver(u);
       input_config_plays_as_release(u);
       input_config_set_device_vid(u, 0);
       input_config_set_device_pid(u, 0);
@@ -4132,6 +4185,636 @@ static void test_hotkey_own_binding(void)
          "the row shows a controller that is gone");
 }
 
+#ifdef HAVE_OPENXR
+/* The headset's controllers in slot @slot, as input_openxr.c announces
+ * them. */
+static void t_headset(unsigned slot, const char *name)
+{
+   t_dev(slot, name, 0, 0);
+   input_config_set_device_joypad_driver(slot, INPUT_OPENXR_JOYPAD);
+   input_config_plays_as_place(slot);
+}
+
+/* The headset on Auto shares player 1 with no entry, from the highest
+ * port, whoever is on port 1 or nobody, and moves no one; an Auto pad
+ * turned on later takes port 1 and shares with it. */
+static void test_headset_shares(void)
+{
+   t_reset();
+   t_headset(3, INPUT_OPENXR_JOYPAD_COMBINED);
+   input_driver_poll();
+   t_buttons[3] = T_B;
+   CHECK(input_config_plays_as_player(3) == 0
+         && input_config_plays_as_entry(3) < 0
+         && input_remapping_join_user(3) == 0,
+         "the headset on Auto with no entry does not share player 1");
+   CHECK(t_user_of(3) == 3 && t_read(0) == T_B,
+         "the headset alone does not feed player 1 from port 4");
+
+   t_connect(0, "Pad", 1, 1);
+   input_driver_poll();
+   t_buttons[0] = T_A;
+   CHECK(t_user_of(0) == 0 && t_read(0) == (T_A | T_B),
+         "a pad turned on later does not share port 1 with the headset");
+
+   /* a Player 1 pad on port 1 first: the headset still shares */
+   t_reset();
+   t_entries(
+         "input_plays_as_device_1 = \"0001:0001 Pad\"\n"
+         "input_plays_as_player_1 = \"1\"\n");
+   t_connect(0, "Pad", 1, 1);
+   t_headset(1, INPUT_OPENXR_JOYPAD_COMBINED);
+   CHECK(t_user_of(0) == 0 && t_user_of(1) == 3,
+         "the headset moved the pad off port 1 or did not take port 4");
+}
+
+/* The headset, sharing with no Hotkey Enable, opens no key's hotkey
+ * past the keyboard's Enable. */
+static void test_headset_keys(void)
+{
+   input_bits_t bits;
+   input_driver_state_t *st = input_state_get_ptr();
+
+   t_reset();
+   t_kb.input_state   = t_kb_state;
+   st->current_driver = &t_kb;
+   t_connect(0, "Pad", 1, 1);
+   t_headset(3, INPUT_OPENXR_JOYPAD_COMBINED);
+   input_driver_poll();
+   input_config_binds[0][RARCH_ENABLE_HOTKEY].attr =
+      RETRO_KEYBIND_ATTR(RETROK_TAB, NO_BTN, true);
+   input_config_binds[0][RARCH_FAST_FORWARD_KEY].attr =
+      RETRO_KEYBIND_ATTR(RETROK_f, NO_BTN, true);
+   input_config_binds_changed();
+
+   t_key = RETROK_f;
+   t_collect(&bits);
+   CHECK(!BIT256_GET(bits, RARCH_FAST_FORWARD_KEY),
+         "with the headset sharing, a key's hotkey fired with no Hotkey Enable");
+   t_key_too = RETROK_TAB;
+   t_collect(&bits);
+   CHECK(BIT256_GET(bits, RARCH_FAST_FORWARD_KEY),
+         "with the headset sharing, the keyboard's Hotkey Enable did not open a key's hotkey");
+   t_key              = 0;
+   t_key_too          = 0;
+   st->current_driver = NULL;
+}
+
+/* Separate on Auto: both hands share player 1 from the highest free
+ * ports. A hand set to 2 takes an entry and plays as player 2; back on
+ * Auto, the entry goes and it shares player 1 again. */
+static void test_headset_separate_number(void)
+{
+   t_reset();
+   t_connect(0, "Pad", 1, 1);
+   t_headset(3, INPUT_OPENXR_JOYPAD_LEFT);
+   t_headset(2, INPUT_OPENXR_JOYPAD_RIGHT);
+   input_driver_poll();
+   CHECK(t_user_of(3) == 3 && t_user_of(2) == 2
+         && input_remapping_join_user(3) == 0
+         && input_remapping_join_user(2) == 0,
+         "Separate on Auto: the hands do not share player 1 from ports 4 and 3");
+
+   CHECK(input_config_plays_as_set(3, 2)
+         && input_config_plays_as_entry(3) >= 0
+         && input_config_plays_as_player(3) == 2,
+         "the left hand set to 2 took no entry");
+   t_place_again(3);
+   input_driver_poll();
+   CHECK(input_remapping_join_user(3) == 1
+         && input_remapping_join_user(2) == 0,
+         "the left hand set to 2 does not play as player 2");
+
+   CHECK(input_config_plays_as_set(3, 0)
+         && input_config_plays_as_entry(3) < 0,
+         "the left hand back on Auto kept its entry");
+   t_place_again(3);
+   input_driver_poll();
+   CHECK(input_remapping_join_user(3) == 0,
+         "the left hand back on Auto does not share player 1");
+}
+
+/* The desktop's mouse off the window, as the x driver gives it to
+ * every user: a pointer and a gun offscreen at -0x7fff. */
+static int16_t t_mouse_state(void *data, const input_device_driver_t *joypad,
+      rarch_joypad_info_t *joypad_info, const retro_keybind_set *binds,
+      unsigned port, unsigned device, unsigned idx, unsigned id)
+{
+   (void)data;
+   (void)joypad;
+   (void)joypad_info;
+   (void)binds;
+   (void)port;
+   (void)idx;
+   if (device == RETRO_DEVICE_POINTER)
+      return (id == RETRO_DEVICE_ID_POINTER_X
+            || id == RETRO_DEVICE_ID_POINTER_Y) ? -0x7fff
+         : id == RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN;
+   if (device == RETRO_DEVICE_LIGHTGUN)
+      return (id == RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X
+            || id == RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y) ? -0x7fff
+         : id == RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN;
+   return 0;
+}
+static input_driver_t t_mouse;
+
+/* Core port @port's @device @id, as the core reads it. */
+static int16_t t_point(unsigned port, unsigned device, unsigned id)
+{
+   return input_driver_state_wrapper(port, device, 0, id);
+}
+
+/* The mouse on, every user's binds valid, a pad in slot 0. */
+static void t_laser_reset(void)
+{
+   unsigned u, i;
+   input_driver_state_t *st = input_state_get_ptr();
+   t_reset();
+   t_mouse.input_state = t_mouse_state;
+   st->current_driver  = &t_mouse;
+   for (u = 0; u < MAX_USERS; u++)
+      for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+         input_config_binds[u][i].attr =
+            RETRO_KEYBIND_ATTR(RETROK_UNKNOWN, NO_BTN, true);
+   t_connect(0, "Pad", 1, 1);
+}
+
+/* The headset's laser is the whole of each core port its controllers
+ * play on, not OR'd with a sharer's mouse; held back with the core's
+ * input. */
+static void test_headset_laser_shared(void)
+{
+   char msg[160];
+   int16_t x, y, off;
+   input_driver_state_t *st = input_state_get_ptr();
+
+   t_laser_reset();
+   t_headset(3, INPUT_OPENXR_JOYPAD_COMBINED);
+   input_driver_poll();
+   t_laser_slots = t_laser_aim = 1u << 3;
+   x   = t_point(0, RETRO_DEVICE_POINTER, RETRO_DEVICE_ID_POINTER_X);
+   y   = t_point(0, RETRO_DEVICE_POINTER, RETRO_DEVICE_ID_POINTER_Y);
+   off = t_point(0, RETRO_DEVICE_LIGHTGUN,
+         RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN);
+   snprintf(msg, sizeof(msg), "sharing player 1: port 1's pointer at "
+         "%d,%d, gun offscreen %d, want %d,%d and 0", x, y, off,
+         T_LASER_X, T_LASER_Y);
+   CHECK(x == T_LASER_X && y == T_LASER_Y && off == 0
+         && t_point(0, RETRO_DEVICE_LIGHTGUN,
+            RETRO_DEVICE_ID_LIGHTGUN_TRIGGER) == 1, msg);
+   st->flags |= INP_FLAG_BLOCK_LIBRETRO_INPUT;
+   CHECK(!t_point(0, RETRO_DEVICE_POINTER, RETRO_DEVICE_ID_POINTER_X),
+         "the laser was not held back with the core's input");
+   st->flags &= ~INP_FLAG_BLOCK_LIBRETRO_INPUT;
+
+   t_laser_slots      = 0;
+   t_laser_aim        = 0;
+   st->current_driver = NULL;
+}
+
+/* On Player 2 the laser is player 2's port; player 1's reads the
+ * mouse. */
+static void test_headset_laser_player_2(void)
+{
+   char msg[160];
+   int16_t x0, x1;
+   input_driver_state_t *st = input_state_get_ptr();
+
+   t_laser_reset();
+   t_headset(3, INPUT_OPENXR_JOYPAD_COMBINED);
+   input_config_plays_as_set(3, 2);
+   t_place_again(3);
+   input_driver_poll();
+   t_laser_slots = t_laser_aim = 1u << 3;
+   x0 = t_point(0, RETRO_DEVICE_LIGHTGUN, RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X);
+   x1 = t_point(1, RETRO_DEVICE_LIGHTGUN, RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X);
+   snprintf(msg, sizeof(msg), "Player 2: the gun at %d on port 1 and %d "
+         "on port 2, want -32767 and %d", x0, x1, T_LASER_X);
+   CHECK(input_remapping_join_user(3) == 1
+         && x0 == -0x7fff && x1 == T_LASER_X
+         && t_point(1, RETRO_DEVICE_LIGHTGUN,
+            RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN) == 0, msg);
+
+   t_laser_slots      = 0;
+   t_laser_aim        = 0;
+   st->current_driver = NULL;
+}
+
+/* Separate, the right hand on player 2 pointing: its port aims and
+ * fires, the left hand's player 1 reads offscreen, with no mouse in
+ * either. */
+static void test_headset_laser_hands(void)
+{
+   char msg[200];
+   int16_t x0, off0, trig0, x1, trig1;
+   input_driver_state_t *st = input_state_get_ptr();
+
+   t_laser_reset();
+   t_headset(3, INPUT_OPENXR_JOYPAD_LEFT);
+   t_headset(2, INPUT_OPENXR_JOYPAD_RIGHT);
+   input_config_plays_as_set(2, 2);
+   t_place_again(2);
+   input_driver_poll();
+   t_laser_slots = (1u << 3) | (1u << 2);
+   t_laser_aim   = 1u << 2;
+   x0    = t_point(0, RETRO_DEVICE_LIGHTGUN,
+         RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X);
+   off0  = t_point(0, RETRO_DEVICE_LIGHTGUN,
+         RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN);
+   trig0 = t_point(0, RETRO_DEVICE_LIGHTGUN,
+         RETRO_DEVICE_ID_LIGHTGUN_TRIGGER);
+   x1    = t_point(1, RETRO_DEVICE_LIGHTGUN,
+         RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X);
+   trig1 = t_point(1, RETRO_DEVICE_LIGHTGUN,
+         RETRO_DEVICE_ID_LIGHTGUN_TRIGGER);
+   snprintf(msg, sizeof(msg), "Separate: port 1's gun at %d offscreen %d "
+         "trigger %d, port 2's at %d trigger %d; want -32768 1 0, %d 1",
+         x0, off0, trig0, x1, trig1, T_LASER_X);
+   CHECK(input_remapping_join_user(3) == 0
+         && input_remapping_join_user(2) == 1
+         && x0 == -0x8000 && off0 == 1 && trig0 == 0
+         && x1 == T_LASER_X && trig1 == 1, msg);
+
+   t_laser_slots      = 0;
+   t_laser_aim        = 0;
+   st->current_driver = NULL;
+}
+
+/* The laser follows the slots a port's users read, not their numbers:
+ * the headset placed in slot 1 is read by user 4, which shares player
+ * 1. */
+static void test_headset_laser_device_index(void)
+{
+   char msg[160];
+   int16_t x;
+   input_driver_state_t *st = input_state_get_ptr();
+
+   t_laser_reset();
+   t_headset(1, INPUT_OPENXR_JOYPAD_COMBINED);
+   input_driver_poll();
+   t_laser_slots = t_laser_aim = 1u << 1;
+   x = t_point(0, RETRO_DEVICE_LIGHTGUN, RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X);
+   snprintf(msg, sizeof(msg), "the headset in slot 1 on port 4: port 1's "
+         "gun at %d, want %d", x, T_LASER_X);
+   CHECK(t_user_of(1) == 3 && input_remapping_join_user(3) == 0
+         && x == T_LASER_X, msg);
+
+   t_laser_slots      = 0;
+   t_laser_aim        = 0;
+   st->current_driver = NULL;
+}
+
+/* A headset slot that only a user at or past Max Users reads drives no
+ * core's pointer, though that user is mapped to the port: the port
+ * reads none of its buttons either. */
+static void test_headset_laser_past_max_users(void)
+{
+   char msg[160];
+   int16_t x, off;
+   input_driver_state_t *st = input_state_get_ptr();
+
+   t_laser_reset();
+   t_headset(3, INPUT_OPENXR_JOYPAD_COMBINED);
+   input_driver_poll();
+   settings.uints.input_max_users = 3;
+   t_map(3, 0);
+   t_laser_slots = t_laser_aim = 1u << 3;
+   x   = t_point(0, RETRO_DEVICE_LIGHTGUN, RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X);
+   off = t_point(0, RETRO_DEVICE_LIGHTGUN,
+         RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN);
+   snprintf(msg, sizeof(msg), "the headset's user past Max Users: port 1's "
+         "gun at %d offscreen %d, want the mouse's -32767 and 1", x, off);
+   CHECK(t_user_of(3) == MAX_USERS && x == -0x7fff && off == 1, msg);
+
+   t_laser_slots      = 0;
+   t_laser_aim        = 0;
+   st->current_driver = NULL;
+}
+
+/* First Press: the headset alone claims player 1's core port; a
+ * button bound on it makes an entry on Auto, still player 1's. */
+static void test_headset_first_press_and_hotkey(void)
+{
+   unsigned u;
+   input_driver_state_t *st = input_state_get_ptr();
+
+   t_reset();
+   for (u = 0; u < MAX_USERS; u++)
+      settings.uints.input_remap_ports[u] = MAX_USERS;
+   st->first_press_on = true;
+   t_headset(3, INPUT_OPENXR_JOYPAD_COMBINED);
+   input_remapping_update_port_map();
+   input_driver_poll();
+   t_buttons[3] = T_A;
+   input_driver_poll();
+   input_first_press_apply();
+   CHECK(settings.uints.input_remap_ports[0] == 0
+         && t_read(0) == T_A,
+         "the headset alone did not claim player 1");
+   st->first_press_on = false;
+
+   CHECK(input_config_plays_as_set_hotkey(3, RARCH_ENABLE_HOTKEY, 9,
+            AXIS_NONE)
+         && input_config_plays_as_entry(3) >= 0
+         && input_config_plays_as_player(3) == 0
+         && input_config_plays_as_named(INPUT_OPENXR_JOYPAD_COMBINED) == 1,
+         "a hotkey bound on the headset did not make an entry on Auto");
+   t_buttons[3] = 0;
+}
+
+/* The headset's player as input_openxr.c looks it up by its name:
+ * player 1 on Auto, then the entry's, the generation moving with each
+ * change; also when a profile gives it another display name. */
+static void test_headset_named(void)
+{
+   unsigned gen;
+   t_reset();
+   t_headset(3, INPUT_OPENXR_JOYPAD_COMBINED);
+   input_config_set_device_display_name(3, "Quest");
+   gen = input_config_plays_as_generation();
+   CHECK(input_config_plays_as_named(INPUT_OPENXR_JOYPAD_COMBINED) == 1,
+         "on Auto the headset is not player 1");
+   CHECK(input_config_plays_as_set(3, 2)
+         && input_config_plays_as_named(INPUT_OPENXR_JOYPAD_COMBINED) == 2
+         && input_config_plays_as_generation() != gen,
+         "the headset shown by another name was not set to 2");
+   gen = input_config_plays_as_generation();
+   CHECK(input_config_plays_as_set(3, 0)
+         && input_config_plays_as_entry(3) < 0
+         && input_config_plays_as_named(INPUT_OPENXR_JOYPAD_COMBINED) == 1
+         && input_config_plays_as_generation() != gen,
+         "the headset back on Auto is not player 1");
+
+   /* a main save putting a hand's Auto entry ahead of its other one */
+   t_reset();
+   t_entries(
+         "input_plays_as_device_1 = \"" INPUT_OPENXR_JOYPAD_LEFT "\"\n"
+         "input_plays_as_player_1 = \"2\"\n"
+         "input_plays_as_device_2 = \"" INPUT_OPENXR_JOYPAD_LEFT "\"\n"
+         "input_plays_as_player_2 = \"3\"\n");
+   t_headset(3, INPUT_OPENXR_JOYPAD_LEFT);
+   CHECK(input_config_plays_as_set(3, 0)
+         && input_config_plays_as_named(INPUT_OPENXR_JOYPAD_LEFT) == 3,
+         "fixture: the hand on Auto was not named by its other entry");
+   gen = input_config_plays_as_generation();
+   input_plays_as_lay_out();
+   CHECK(input_config_plays_as_named(INPUT_OPENXR_JOYPAD_LEFT) == 1
+         && input_config_plays_as_generation() != gen,
+         "a main save moved a hand's entries and kept the generation");
+}
+
+/* A connected headset puts Plays As in effect, on Auto as player 1,
+ * on a number past Max Users as Auto; gone, it does not. */
+static void test_headset_in_effect(void)
+{
+   t_reset();
+   t_headset(3, INPUT_OPENXR_JOYPAD_COMBINED);
+   CHECK(input_config_plays_as_active()
+         && input_config_plays_as_any_player(),
+         "the headset on Auto is not in effect as player 1");
+   CHECK(input_config_plays_as_set(3, 2)
+         && input_config_plays_as_any_player(),
+         "the headset on 2 is not in effect");
+   settings.uints.input_max_users = 1;
+   CHECK(input_config_plays_as_any_player(),
+         "the headset on 2 past Max Users 1 is not in effect as Auto");
+   settings.uints.input_max_users = 4;
+   CHECK(input_config_plays_as_set(3, 0)
+         && input_config_plays_as_active()
+         && input_config_plays_as_any_player(),
+         "the headset back on Auto is not in effect");
+   t_disconnect(3);
+   CHECK(!input_config_plays_as_active()
+         && !input_config_plays_as_any_player(),
+         "a headset gone is in effect");
+}
+
+/* A reservation naming the headset places it, Auto as it is, and puts
+ * no Plays As in effect; its own number beats the reservation. One
+ * naming another controller does not keep it from player 1. */
+static void test_headset_reserved(void)
+{
+   t_reset();
+   settings.uints.input_device_reservation_type[0] =
+      INPUT_DEVICE_RESERVATION_PREFERRED;
+   strlcpy(settings.arrays.input_reserved_devices[0], "0001:0001 Pad",
+         sizeof(settings.arrays.input_reserved_devices[0]));
+   t_headset(3, INPUT_OPENXR_JOYPAD_COMBINED);
+   input_driver_poll();
+   CHECK(t_user_of(3) == 3 && input_remapping_join_user(3) == 0,
+         "a reservation for another controller kept the headset off "
+         "player 1");
+   t_disconnect(3);
+
+   settings.uints.input_device_reservation_type[1] =
+      INPUT_DEVICE_RESERVATION_PREFERRED;
+   strlcpy(settings.arrays.input_reserved_devices[1],
+         INPUT_OPENXR_JOYPAD_COMBINED,
+         sizeof(settings.arrays.input_reserved_devices[1]));
+   t_dev(1, INPUT_OPENXR_JOYPAD_COMBINED, 0, 0);
+   input_config_set_device_joypad_driver(1, INPUT_OPENXR_JOYPAD);
+   CHECK(!input_config_plays_as_place(1),
+         "the headset a reservation names was not left to it");
+   CHECK(!input_config_plays_as_any_player(),
+         "the headset a reservation places put Plays As in effect");
+   CHECK(input_config_plays_as_set(1, 3)
+         && input_config_plays_as_place(1),
+         "the headset on 3 was left to the reservation");
+   input_driver_poll();
+   CHECK(t_user_of(1) == 3 && input_remapping_join_user(3) == 2,
+         "the headset on 3 does not share player 3 from port 4");
+}
+
+/* Saved: the headset on Auto has no entry, on 2 it has one, back on
+ * Auto none again. */
+static void test_headset_storage(void)
+{
+   config_file_t *conf;
+   t_reset();
+   t_headset(3, INPUT_OPENXR_JOYPAD_COMBINED);
+   conf = config_file_new_alloc();
+   input_plays_as_write(conf);
+   CHECK(!t_conf_is(conf, "input_plays_as_device_1", NULL),
+         "the headset on Auto was written");
+   CHECK(input_config_plays_as_set(3, 2), "2 was refused");
+   input_plays_as_write(conf);
+   CHECK(t_conf_is(conf, "input_plays_as_device_1",
+            "0000:0000 " INPUT_OPENXR_JOYPAD_COMBINED)
+         && t_conf_is(conf, "input_plays_as_player_1", "2"),
+         "the headset on 2 was not written");
+   CHECK(input_config_plays_as_set(3, 0), "Auto was refused");
+   input_plays_as_write(conf);
+   CHECK(!t_conf_is(conf, "input_plays_as_device_1", NULL),
+         "the headset back on Auto was written");
+   config_file_free(conf);
+}
+
+/* Any Max Users change places the headset again at once on the
+ * highest free port: a raise moves it up, a lower to the highest port
+ * free below it. */
+static void test_headset_max_users(void)
+{
+   t_reset();
+   t_connect(0, "Pad", 1, 1);
+   t_headset(3, INPUT_OPENXR_JOYPAD_COMBINED);
+   CHECK(t_user_of(3) == 3, "the headset is not on port 4");
+   settings.uints.input_max_users = 8;
+   t_place_again(MAX_USERS);
+   input_driver_poll();
+   CHECK(t_user_of(3) == 7, "Max Users 8 left the headset below port 8");
+   CHECK(t_user_of(0) == 0 && input_remapping_join_user(7) == 0,
+         "after Max Users 8 the pad left port 1 or the headset does not "
+         "share player 1");
+
+   /* lowered below the headset's port */
+   t_reset();
+   t_connect(0, "Pad", 1, 1);
+   t_headset(3, INPUT_OPENXR_JOYPAD_COMBINED);
+   settings.uints.input_max_users = 2;
+   t_place_again(MAX_USERS);
+   input_driver_poll();
+   CHECK(t_user_of(0) == 0 && t_user_of(3) == 1
+         && input_remapping_join_user(1) == 0,
+         "Max Users 2 did not move the headset from port 4 to share "
+         "player 1 from port 2");
+
+   /* Separate: both hands go up and still share player 1 */
+   t_reset();
+   t_connect(0, "Pad", 1, 1);
+   t_headset(3, INPUT_OPENXR_JOYPAD_LEFT);
+   t_headset(2, INPUT_OPENXR_JOYPAD_RIGHT);
+   settings.uints.input_max_users = 6;
+   t_place_again(MAX_USERS);
+   input_driver_poll();
+   CHECK(t_user_of(0) == 0 && t_user_of(2) == 5 && t_user_of(3) == 4
+         && input_remapping_join_user(5) == 0
+         && input_remapping_join_user(4) == 0,
+         "Max Users 6 did not put the hands on ports 6 and 5 sharing "
+         "player 1");
+
+   t_reset();
+   settings.uints.input_max_users = 6;
+   t_connect(0, "A", 1, 1);
+   t_connect(4, "E", 5, 5);
+   t_connect(5, "F", 6, 6);
+   t_headset(3, INPUT_OPENXR_JOYPAD_COMBINED);
+   CHECK(t_user_of(3) == 3, "the headset is not on port 4 below two pads");
+   t_disconnect(4);
+   t_disconnect(5);
+   settings.uints.input_max_users = 5;
+   t_place_again(MAX_USERS);
+   CHECK(t_user_of(3) == 4, "Max Users 5 left the headset below port 5");
+}
+
+/* A pad set to Player 4 takes port 4 from the headset: the headset
+ * goes to the highest free port, not the first. */
+static void test_headset_displaced(void)
+{
+   t_reset();
+   t_entries(
+         "input_plays_as_device_1 = \"0002:0002 B\"\n"
+         "input_plays_as_player_1 = \"4\"\n");
+   t_connect(0, "A", 1, 1);
+   t_headset(3, INPUT_OPENXR_JOYPAD_COMBINED);
+   t_connect(1, "B", 2, 2);
+   CHECK(t_user_of(1) == 3 && t_user_of(3) == 2,
+         "the pad on port 4 did not send the headset to port 3");
+}
+
+/* A pad set to Player 1 takes port 1 from the headset on Auto, even
+ * with no port free: the headset then has none. Connected after it or
+ * set from the menu; with a port free the headset shares Player 1 from
+ * the highest. The headset on its own 1 keeps the port. */
+static void test_headset_displaced_full(void)
+{
+   t_reset();
+   settings.uints.input_max_users = 1;
+   t_entries(
+         "input_plays_as_device_1 = \"0001:0001 Pad\"\n"
+         "input_plays_as_player_1 = \"1\"\n");
+   t_headset(1, INPUT_OPENXR_JOYPAD_COMBINED);
+   CHECK(t_user_of(1) == 0, "fixture: the headset is not on port 1");
+   t_connect(0, "Pad", 1, 1);
+   CHECK(t_user_of(0) == 0 && t_user_of(1) == MAX_USERS,
+         "Max Users 1: the pad set to 1 did not take port 1 from the "
+         "headset");
+
+   t_reset();
+   settings.uints.input_max_users = 1;
+   t_headset(1, INPUT_OPENXR_JOYPAD_COMBINED);
+   t_connect(0, "Pad", 1, 1);
+   CHECK(t_user_of(0) == MAX_USERS && t_user_of(1) == 0,
+         "fixture: the Auto pad took port 1 from the headset");
+   CHECK(input_config_plays_as_set(0, 1), "Player 1 was refused");
+   t_place_again(0);
+   CHECK(t_user_of(0) == 0 && t_user_of(1) == MAX_USERS,
+         "Max Users 1: the pad set to 1 from the menu did not take port "
+         "1 from the headset");
+
+   t_reset();
+   settings.uints.input_max_users = 2;
+   t_entries(
+         "input_plays_as_device_1 = \"0001:0001 X\"\n"
+         "input_plays_as_player_1 = \"2\"\n"
+         "input_plays_as_device_2 = \"0002:0002 Y\"\n"
+         "input_plays_as_player_2 = \"1\"\n");
+   t_connect(0, "X", 1, 1);
+   t_headset(2, INPUT_OPENXR_JOYPAD_COMBINED);
+   CHECK(t_user_of(0) == 1 && t_user_of(2) == 0,
+         "fixture: X is not on port 2 and the headset on port 1");
+   t_connect(1, "Y", 2, 2);
+   CHECK(t_user_of(1) == 0 && t_user_of(0) == 1
+         && t_user_of(2) == MAX_USERS,
+         "Max Users 2: the pad set to 1 did not take port 1 from the "
+         "headset");
+
+   /* X gone before Y connects: port 2 is free */
+   t_disconnect(1);
+   t_disconnect(2);
+   t_headset(2, INPUT_OPENXR_JOYPAD_COMBINED);
+   CHECK(t_user_of(0) == 1 && t_user_of(2) == 0,
+         "fixture: X is not on port 2 and the headset on port 1 again");
+   t_disconnect(0);
+   t_connect(1, "Y", 2, 2);
+   input_driver_poll();
+   CHECK(t_user_of(1) == 0 && t_user_of(2) == 1
+         && input_remapping_join_user(1) == 0,
+         "the headset sent from port 1 does not share Player 1 from "
+         "port 2");
+
+   t_reset();
+   settings.uints.input_max_users = 1;
+   t_entries(
+         "input_plays_as_device_1 = \"0001:0001 Pad\"\n"
+         "input_plays_as_player_1 = \"1\"\n"
+         "input_plays_as_device_2 = \"0000:0000 "
+         INPUT_OPENXR_JOYPAD_COMBINED "\"\n"
+         "input_plays_as_player_2 = \"1\"\n");
+   t_headset(1, INPUT_OPENXR_JOYPAD_COMBINED);
+   t_connect(0, "Pad", 1, 1);
+   CHECK(t_user_of(1) == 0 && t_user_of(0) == MAX_USERS,
+         "the headset on its own 1 gave port 1 to a pad set to 1");
+}
+
+/* The headset joining on a number above Max Users plays Auto: it
+ * shares player 1 from the highest free port. */
+static void test_headset_above_max_users(void)
+{
+   t_reset();
+   t_entries(
+         "input_plays_as_device_1 = \"0000:0000 "
+         INPUT_OPENXR_JOYPAD_COMBINED "\"\n"
+         "input_plays_as_player_1 = \"6\"\n");
+   t_connect(0, "Pad", 1, 1);
+   t_headset(1, INPUT_OPENXR_JOYPAD_COMBINED);
+   input_driver_poll();
+   CHECK(input_config_plays_as_player(1) == 6
+         && t_user_of(0) == 0 && t_user_of(1) == 3
+         && input_remapping_join_user(3) == 0,
+         "the headset joining on 6 does not share player 1 from port 4");
+}
+#endif
+
 int main(void)
 {
    test_identity();
@@ -4221,6 +4904,25 @@ int main(void)
    test_hotkey_prompt_player();
    test_hotkey_listen_live();
    test_hotkey_own_binding();
+#ifdef HAVE_OPENXR
+   test_headset_shares();
+   test_headset_keys();
+   test_headset_separate_number();
+   test_headset_laser_shared();
+   test_headset_laser_player_2();
+   test_headset_laser_hands();
+   test_headset_laser_device_index();
+   test_headset_laser_past_max_users();
+   test_headset_first_press_and_hotkey();
+   test_headset_in_effect();
+   test_headset_named();
+   test_headset_reserved();
+   test_headset_storage();
+   test_headset_max_users();
+   test_headset_displaced();
+   test_headset_displaced_full();
+   test_headset_above_max_users();
+#endif
    test_hotkey_enable_own_delay();
    test_hotkey_enable_own_game_focus();
    test_hotkey_enable_own_menu_tap();
@@ -4231,6 +4933,10 @@ int main(void)
       printf("%d failure(s)\n", failures);
       return 1;
    }
+#ifdef HAVE_OPENXR
+   printf("PASS mapped_port_openxr_test\n");
+#else
    printf("PASS mapped_port_test\n");
+#endif
    return 0;
 }

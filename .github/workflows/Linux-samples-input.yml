@@ -565,7 +565,7 @@ jobs:
           make -C samples/frontend/android_second_surface clean check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
           make -C samples/frontend/android_second_surface clean
 
-      - name: Build and run mapped_port_test (ASan + UBSan, mingw + Wine)
+      - name: Build and run mapped_port_test and mapped_port_openxr_test (ASan + UBSan, mingw + Wine)
         shell: bash
         working-directory: samples/input/mapped_port
         run: |
@@ -573,11 +573,17 @@ jobs:
           . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           # input/input_driver.c's Mapped Port sharing and Plays As
           # against a stand-in frontend. Users mapped to one core port:
-          # its rumble, the menu, the hotkeys; controllers' own players.
+          # its rumble, the menu, the hotkeys; controllers placed by
+          # their own player, sharing it, and their own hotkey buttons;
+          # the headset's controllers as player 1's; built with and
+          # without OpenXR.
           make clean && make SANITIZER=address,undefined all
-          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
-            ./mapped_port_test | tee mapped_port.log
+          for t in mapped_port_test mapped_port_openxr_test; do
+            ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+              ./$t | tee -a mapped_port.log
+          done
           grep -q "^PASS mapped_port_test$" mapped_port.log
+          grep -q "^PASS mapped_port_openxr_test$" mapped_port.log
           make clean
           make CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine check
           make clean

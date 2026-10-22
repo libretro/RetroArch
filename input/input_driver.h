@@ -2021,17 +2021,25 @@ const char *input_config_plays_as_entry_name(unsigned e);
 unsigned input_config_plays_as_entry_player(unsigned e);
 bool input_config_plays_as_entry_taken(unsigned e);
 void input_config_plays_as_set_entry(unsigned e, unsigned player);
-/* Whether any entry gives a player, within Max Users or past it. */
+/* Whether any entry gives a player, within Max Users or past it, or a
+ * headset controller is connected on Auto (player 1). */
 bool input_config_plays_as_active(void);
-/* Whether any entry gives a player within Max Users. */
+/* Whether any entry gives a player within Max Users, or a headset
+ * controller is connected on Auto (player 1). */
 bool input_config_plays_as_any_player(void);
+/* The player of a controller called @name, which has no vid:pid: the
+ * first entry naming it, on Auto 1 for the headset's, else 0. */
+unsigned input_config_plays_as_named(const char *name);
+/* Moves on whenever an entry's controller or player may have: a cache
+ * of input_config_plays_as_named() looks again when it does. */
+unsigned input_config_plays_as_generation(void);
 /* The controller just connected in @slot takes its entry and its port:
  * true when it was placed, false for one the reservations place. */
 bool input_config_plays_as_place(unsigned slot);
 /* Max Users has changed: @again gets, for each of the MAX_USERS slots,
  * whether its controller is placed again - one with no port below Max
- * Users now, or one whose player was above Max Users when controllers
- * were last placed and is within it now. */
+ * Users now, one whose player was above Max Users when controllers
+ * were last placed and is within it now, and the headset's. */
 void input_config_plays_as_max_users_changed(uint8_t *again);
 /* The controller in @slot is gone. */
 void input_config_plays_as_release(unsigned slot);
