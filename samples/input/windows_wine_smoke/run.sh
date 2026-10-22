@@ -85,6 +85,11 @@
 #
 # ONLY=<part of a scenario's name> runs just the scenarios that match.
 #
+# The scenarios run in lanes side by side - LANES of them, by default
+# the CPUs less one, three at most - each lane with its own X display,
+# Wine prefix and work directory, taking every LANES-th scenario in
+# turn. Each lane's report is printed whole once all are done.
+#
 # And the window. In every scenario above it is left up across both
 # restarts and taken back by the driver that comes next - with
 # threaded video, where the video thread is held for it, and without.
@@ -114,6 +119,7 @@ set -u
 here=$(cd "$(dirname "$0")" && pwd)
 root=${1:-$(cd "$here/../../.." && pwd)}
 work=$(mktemp -d)
+XVFB=
 trap 'kill $XVFB 2>/dev/null; timeout 10 wineserver -k 2>/dev/null; rm -rf "$work"' EXIT
 
 WINE=
@@ -125,6 +131,44 @@ for t in Xvfb xdotool; do
    command -v $t >/dev/null 2>&1 || { echo "no $t" >&2; exit 1; }
 done
 [ -f "$root/retroarch.exe" ] || { echo "no retroarch.exe in $root" >&2; exit 1; }
+
+lanes=${LANES:-$(( $(nproc 2>/dev/null || echo 2) - 1 ))}
+[ "$lanes" -gt 3 ] && lanes=3
+[ "$lanes" -lt 1 ] && lanes=1
+if [ -z "${LANE:-}" ] && [ "$lanes" -gt 1 ]; then
+   pids=
+   for k in $(seq 0 $((lanes - 1))); do
+      LANE=$k LANES=$lanes "$0" "$root" > "$work/lane$k.out" 2>&1 &
+      pids="$pids $!"
+   done
+   wait $pids
+   failures=0
+   for k in $(seq 0 $((lanes - 1))); do
+      grep -av '^PASS windows_wine_smoke\|^FAIL windows_wine_smoke' \
+         "$work/lane$k.out"
+      failures=$((failures + $(grep -ac '^\[FAIL\]' "$work/lane$k.out")))
+      # a lane that stopped before its end
+      grep -aq '^PASS windows_wine_smoke\|^FAIL windows_wine_smoke' \
+         "$work/lane$k.out" || { echo "[FAIL] lane $k did not finish";
+            failures=$((failures + 1)); }
+   done
+   if [ "$failures" != 0 ]; then
+      echo "FAIL windows_wine_smoke: $failures"
+      exit 1
+   fi
+   echo "PASS windows_wine_smoke"
+   exit 0
+fi
+lane=${LANE:-0}
+turn=0
+# a lane of several: a prefix of its own, so its wineserver and
+# windows are its own
+if [ "$lanes" -gt 1 ]; then
+   export WINEPREFIX="$work/prefix"
+   WINEDEBUG=-all WINEDLLOVERRIDES="mscoree=;mshtml=" $WINE wineboot -i \
+      >/dev/null 2>&1
+   timeout 60 wineserver -w 2>/dev/null
+fi
 
 ${MINGW_CC:-x86_64-w64-mingw32-gcc} -shared -O1 -Wall \
    -I"$here/../../../libretro-common/include" \
@@ -182,8 +226,8 @@ CLOSE
 ${MINGW_CC:-x86_64-w64-mingw32-gcc} -O1 -o "$work/close.exe" "$work/close.c" \
    || { echo "the close helper did not build" >&2; exit 1; }
 
-export DISPLAY=:98
-Xvfb :98 -screen 0 1280x720x24 > "$work/xvfb.log" 2>&1 &
+export DISPLAY=:$((98 - lane))
+Xvfb "$DISPLAY" -screen 0 1280x720x24 > "$work/xvfb.log" 2>&1 &
 XVFB=$!
 # The X server is up when something can connect to it and be answered.
 # A fixed wait was here, and on a loaded machine it was too short.
@@ -286,6 +330,8 @@ scenario() {
          *) return ;;
       esac
    fi
+   turn=$((turn + 1))
+   [ $(( (turn - 1) % lanes )) = "$lane" ] || return
    write_cfg "$threaded" "${6:-raw}" "${7:-winraw_joypad}"
    # key delivery on a virtual display with no window manager is not
    # exact: a scenario gets a second go before it counts as failed
@@ -448,6 +494,8 @@ focus_lost() {
    if [ -n "${ONLY:-}" ]; then
       case "focus lost: $name" in *"$ONLY"*) ;; *) return ;; esac
    fi
+   turn=$((turn + 1))
+   [ $(( (turn - 1) % lanes )) = "$lane" ] || return
    write_cfg true "$2" "$2"
    ( cd "$root" && WINEDEBUG=-all exec $WINE ./retroarch.exe --verbose \
         -c "Z:$(echo "$work/retroarch.cfg" | sed 's|/|\\|g')" \
