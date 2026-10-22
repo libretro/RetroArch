@@ -4,7 +4,8 @@
 # from under it; a core's views composed into a surface of their
 # own for the plane; padded rows, lent pages and dupes; the menu in
 # RGUI's own format, lent, and resized; the input overlay on a plane of
-# its own, or blended into the frame.
+# its own, or blended into the frame; the frame turned by the plane, or
+# by the copy, and read back as it is shown.
 
 TARGET    := drm_surface_lifetime_test
 REPO_ROOT := ../../..

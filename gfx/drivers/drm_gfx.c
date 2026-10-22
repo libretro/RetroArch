@@ -109,6 +109,10 @@ struct drm_surface
    int pitch;
 
    float aspect;
+   /* Quarter turns counter-clockwise: rot written into the pages by the
+    * CPU, hw_rot made by the plane */
+   unsigned rot;
+   unsigned hw_rot;
    bool flip_page;
    /* A page went to the core to render into */
    bool lent;
@@ -137,6 +141,11 @@ struct drm_struct
    unsigned vp_h;
 
    drmModeRes *resources;
+   /* The frame plane's rotation property, the plane it was asked of and
+    * the quarter turns it takes, one bit each */
+   uint32_t rot_prop;
+   uint32_t rot_plane;
+   unsigned rot_turns;
    /* Flips are atomic commits; legacy plane updates without them */
    bool atomic;
 } drm = { -1 };
@@ -218,6 +227,10 @@ struct drm_video
    /* The plane last asked whether it takes RGUI's format, and its answer */
    uint32_t menu_probed_plane;
 
+   /* Quarter turns counter-clockwise the frame is shown at */
+   unsigned rotation;
+   bool rotation_dirty;
+
    /* Menu */
    bool menu_active;
    bool menu_probed;
@@ -254,6 +267,10 @@ static void deinit_drm(void)
    if (drm.plane_id)
       drmModeSetPlane(drm.fd, drm.plane_id, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0);
+   /* The next to use the plane finds it unturned */
+   if (drm.rot_prop)
+      drmModeObjectSetProperty(drm.fd, drm.rot_plane, DRM_MODE_OBJECT_PLANE,
+            drm.rot_prop, DRM_MODE_ROTATE_0);
    drm_restore_crtc();
    modeset_destroy_dumbfb(&drm.console);
    if (drm.flip_req)
@@ -417,7 +434,8 @@ static void drm_page_flip(struct drm_surface *surface)
                VIDEO_SCALE_W(surface->src_dims) << 16,
                VIDEO_SCALE_H(surface->src_dims) << 16))
          RARCH_ERR("[DRM] Failed to flip the plane.\n");
-      surface->flip_page = !(surface->flip_page);
+      surface->current_page = &surface->pages[surface->flip_page];
+      surface->flip_page    = !(surface->flip_page);
       return;
    }
 
@@ -455,7 +473,62 @@ static void drm_page_flip(struct drm_surface *surface)
 #ifdef HAVE_OVERLAY
    drm_overlay_flipped(v);
 #endif
-   surface->flip_page = !(surface->flip_page);
+   surface->current_page = &surface->pages[surface->flip_page];
+   surface->flip_page    = !(surface->flip_page);
+}
+
+/* Where output row @oy of @w x @h pixels turned @rot quarter turns
+ * counter-clockwise starts in the source, and the step to the next
+ * pixel of that row, in bytes */
+static const uint8_t *drm_turned_row(const uint8_t *src, size_t pitch,
+      unsigned w, unsigned h, unsigned bpp, unsigned rot, unsigned oy,
+      ptrdiff_t *step)
+{
+   switch (rot & 3)
+   {
+      case 1:
+         *step = (ptrdiff_t)pitch;
+         return src + (size_t)(w - 1 - oy) * bpp;
+      case 2:
+         *step = -(ptrdiff_t)bpp;
+         return src + (size_t)(h - 1 - oy) * pitch + (size_t)(w - 1) * bpp;
+      case 3:
+         *step = -(ptrdiff_t)pitch;
+         return src + (size_t)(h - 1) * pitch + (size_t)oy * bpp;
+      default:
+         break;
+   }
+   *step = (ptrdiff_t)bpp;
+   return src + (size_t)oy * pitch;
+}
+
+/* @w x @h pixels of @src turned @rot quarter turns counter-clockwise
+ * into @dst, written in order */
+static void drm_turn_copy(uint8_t *dst, size_t stride, const uint8_t *src,
+      size_t pitch, unsigned w, unsigned h, unsigned bpp, unsigned rot)
+{
+   unsigned ox, oy;
+   unsigned ow = (rot & 1) ? h : w;
+   unsigned oh = (rot & 1) ? w : h;
+
+   for (oy = 0; oy < oh; oy++, dst += stride)
+   {
+      ptrdiff_t step;
+      const uint8_t *in = drm_turned_row(src, pitch, w, h, bpp, rot, oy,
+            &step);
+      if (bpp == 4)
+      {
+         uint32_t *out = (uint32_t*)dst;
+         for (ox = 0; ox < ow; ox++, in += step)
+            out[ox] = *(const uint32_t*)in;
+      }
+      else
+      {
+         uint16_t *out = (uint16_t*)dst;
+         for (ox = 0; ox < ow; ox++, in += step)
+            out[ox] = *(const uint16_t*)in;
+      }
+   }
 }
 
 static void drm_surface_update(void *data, const void *frame,
@@ -463,8 +536,21 @@ static void drm_surface_update(void *data, const void *frame,
 {
    struct modeset_buf *buf = &surface->pages[surface->flip_page].buf;
 
+   if (surface->rot)
+   {
+      unsigned w = VIDEO_SCALE_W(surface->src_dims);
+      unsigned h = VIDEO_SCALE_H(surface->src_dims);
+      if (surface->rot & 1)
+      {
+         unsigned t = w;
+         w          = h;
+         h          = t;
+      }
+      drm_turn_copy(buf->map, buf->stride, (const uint8_t*)frame, pitch,
+            w, h, surface->bpp, surface->rot);
+   }
    /* A lent page holds the frame already */
-   if ((const uint8_t*)frame != buf->map)
+   else if ((const uint8_t*)frame != buf->map)
    {
       int line;
       const uint8_t *src = (const uint8_t*)frame;
@@ -573,13 +659,13 @@ static uint64_t drm_plane_type(drmModePlane *plane)
    return type;
 }
 
-/* Whether the plane in use, or the one setup would pick when none is,
- * scans out @fmt */
-static bool drm_plane_takes(uint32_t fmt)
+/* The plane in use when it scans out @fmt, or with none in use the
+ * first overlay on the CRTC that does; 0 when there is none */
+static uint32_t drm_plane_takes(uint32_t fmt)
 {
    int i;
    unsigned crtc_index = 0;
-   bool takes          = false;
+   uint32_t takes      = 0;
    drmModePlaneRes *res;
 
    if (drm.plane_id)
@@ -587,7 +673,7 @@ static bool drm_plane_takes(uint32_t fmt)
       drmModePlane *plane = drmModeGetPlane(drm.fd, drm.plane_id);
       if (plane)
       {
-         takes = format_support(plane, fmt);
+         takes = format_support(plane, fmt) ? drm.plane_id : 0;
          drmModeFreePlane(plane);
       }
       return takes;
@@ -603,13 +689,50 @@ static bool drm_plane_takes(uint32_t fmt)
       drmModePlane *plane = drmModeGetPlane(drm.fd, res->planes[i]);
       if (!plane)
          continue;
-      takes = (plane->possible_crtcs & (1 << crtc_index))
-         && drm_plane_type(plane) == DRM_PLANE_TYPE_OVERLAY
-         && format_support(plane, fmt);
+      if (     (plane->possible_crtcs & (1 << crtc_index))
+            && drm_plane_type(plane) == DRM_PLANE_TYPE_OVERLAY
+            && format_support(plane, fmt))
+         takes = plane->plane_id;
       drmModeFreePlane(plane);
    }
    drmModeFreePlaneResources(res);
    return takes;
+}
+
+/* The quarter turns plane @id can make, bit n for n turns */
+static unsigned drm_plane_turns(uint32_t id)
+{
+   drmModeObjectProperties *props;
+   int i, j;
+
+   if (!id)
+      return 1;
+   if (drm.rot_plane == id)
+      return drm.rot_turns;
+   drm.rot_plane = id;
+   drm.rot_prop  = 0;
+   drm.rot_turns = 1;
+   if (!(props = drmModeObjectGetProperties(drm.fd, id, DRM_MODE_OBJECT_PLANE)))
+      return 1;
+   for (i = 0; i < (int)props->count_props && !drm.rot_prop; i++)
+   {
+      drmModePropertyRes *prop = drmModeGetProperty(drm.fd, props->props[i]);
+      if (!prop)
+         continue;
+      if (string_is_equal(prop->name, "rotation"))
+      {
+         drm.rot_prop = prop->prop_id;
+         for (j = 0; j < prop->count_enums; j++)
+         {
+            /* Bit numbers: 0 to 3 are rotate-0 to rotate-270 */
+            if (prop->enums[j].value < 4)
+               drm.rot_turns |= 1u << prop->enums[j].value;
+         }
+      }
+      drmModeFreeProperty(prop);
+   }
+   drmModeFreeObjectProperties(props);
+   return drm.rot_turns;
 }
 
 /* This configures our only overlay plane to render the given surface. */
@@ -740,6 +863,15 @@ static bool drm_plane_setup(struct drm_surface *surface)
 #endif
    }
 
+   /* The plane turns this surface, or shows it as it is */
+   if (     (drm_plane_turns(drm.plane_id) & (1u << surface->hw_rot))
+         && drm.rot_prop
+         && drmModeObjectSetProperty(drm.fd, drm.plane_id,
+               DRM_MODE_OBJECT_PLANE, drm.rot_prop,
+               DRM_MODE_ROTATE_0 << surface->hw_rot)
+         && surface->hw_rot)
+      RARCH_WARN("[DRM] The plane would not turn the frame.\n");
+
    /* We have to set a buffer for the plane, whatever buffer we want,
     * but we must set a buffer so the plane starts reading from it now. */
    if (drmModeSetPlane(drm.fd, drm.plane_id, drm.crtc_id,
@@ -831,7 +963,7 @@ error_destroy:
    return -1;
 }
 
-static bool drm_plane_takes(uint32_t fmt);
+static uint32_t drm_plane_takes(uint32_t fmt);
 
 /* @path, if it drives a connected display the monitor index names that a
  * plane can show frames on */
@@ -857,7 +989,8 @@ static bool init_drm_card(const char *path, unsigned monitor_index)
       goto fail;
    drm.crtc_id      = g_crtc_id;
    drm.connector_id = g_connector_id;
-   if (!drm_plane_takes(DRM_FORMAT_XRGB8888))
+   /* Picked now, so what it can do is known before the first frame */
+   if (!(drm.plane_id = drm_plane_takes(DRM_FORMAT_XRGB8888)))
    {
       RARCH_WARN("[DRM] %s has no overlay plane for frames.\n", path);
       goto fail;
@@ -1539,6 +1672,13 @@ static void drm_overlay_blend(struct drm_video *v, struct drm_surface *s)
    if (     ov->mode != DRM_OVERLAY_BLEND || !ov->enabled || !ov->layer
          || !ov->lw || !ov->lh)
       return;
+   /* The plane would turn the layer with the frame: the next frame is
+    * turned before it is blended instead */
+   if (s->hw_rot)
+   {
+      v->rotation_dirty = true;
+      return;
+   }
    buf = &s->pages[s->flip_page].buf;
    for (y = 0; y < (int)ov->lh; y++)
    {
@@ -1733,28 +1873,50 @@ static bool drm_frame(void *data, const void *frame,
 #endif
 
    /* A dupe leaves the plane on the frame it shows */
-   if (frame && _drmvars->core_dims != dims)
+   if (frame && (_drmvars->core_dims != dims || _drmvars->rotation_dirty))
    {
       /* The plane reads from the old surface until it is moved to the
        * new one, so the old one goes only after that. */
       struct drm_surface *old_surface = NULL;
+      uint32_t fmt = _drmvars->rgb32 ? DRM_FORMAT_XRGB8888
+         : DRM_FORMAT_RGB565;
+      unsigned rot = _drmvars->rotation & 3;
+      unsigned hw  = 0;
+      unsigned sdims = dims;
 
       /* Sanity check. */
       if (width == 0 || height == 0)
          return true;
 
-      _drmvars->core_dims   = dims;
-      _drmvars->core_pitch  = pitch;
+      _drmvars->core_dims      = dims;
+      _drmvars->core_pitch     = pitch;
+      _drmvars->rotation_dirty = false;
+
+      /* The plane turns the frame when it can; the copy does otherwise,
+       * and where the overlay is blended into the frame it is turned */
+      if (     rot
+            && (drm_plane_turns(drm_plane_takes(fmt)) & (1u << rot))
+#ifdef HAVE_OVERLAY
+            && !(_drmvars->ov.enabled && _drmvars->ov.count
+               && _drmvars->ov.mode == DRM_OVERLAY_BLEND)
+#endif
+         )
+      {
+         hw  = rot;
+         rot = 0;
+      }
+      if (rot & 1)
+         sdims = VIDEO_SCALE_PACK(height, width);
 
       old_surface            = _drmvars->main_surface;
       _drmvars->main_surface = NULL;
 
       /* We need to recreate the main surface and it's pages (buffers). */
       if (!drm_surface_setup(_drmvars,
-            dims,
+            sdims,
             pitch,
             _drmvars->rgb32 ? 4 : 2,
-            _drmvars->rgb32 ? DRM_FORMAT_XRGB8888 : DRM_FORMAT_RGB565,
+            fmt,
             255,
             _drmvars->current_aspect,
             3,
@@ -1765,6 +1927,11 @@ static bool drm_frame(void *data, const void *frame,
          _drmvars->core_dims = 0;
          return false;
       }
+      _drmvars->main_surface->rot    = rot;
+      _drmvars->main_surface->hw_rot = hw;
+      if (rot || hw)
+         RARCH_LOG("[DRM] Frame turned %u degrees by the %s.\n",
+               90 * (rot | hw), hw ? "plane" : "CPU");
 
       /* We need to change the plane to read from the main surface */
       if (     !_drmvars->views_surface
@@ -1772,7 +1939,9 @@ static bool drm_frame(void *data, const void *frame,
       {
          drm_surface_free(_drmvars, &_drmvars->main_surface);
          _drmvars->main_surface = old_surface;
-         _drmvars->core_dims    = old_surface ? old_surface->src_dims : 0;
+         /* Not the old surface's size: it may be turned, and the next
+          * frame tries again */
+         _drmvars->core_dims    = 0;
          return false;
       }
       /* The cached frame can point into a page the core rendered to */
@@ -1951,7 +2120,9 @@ static bool drm_get_current_software_framebuffer(void *data,
    struct drm_surface *s;
    struct modeset_buf *buf;
 
-   if (     !v || !fb || !(s = v->main_surface) || v->views_surface
+   /* Nor while the copy turns the frame */
+   if (     !v || !fb || !(s = v->main_surface) || v->views_surface || s->rot
+         || v->rotation_dirty
          || (fb->access_flags & RETRO_MEMORY_ACCESS_READ)
          || s->src_dims != VIDEO_SCALE_PACK(fb->width, fb->height))
       return false;
@@ -2013,9 +2184,76 @@ static void drm_viewport_info(void *data, struct video_viewport *vp)
 
    vp->pos = VIDEO_POS_PACK(0, 0);
 
-   /* The whole screen while views draw */
-   vp->dims   = vp->full_dims   = vid->views_surface
-      ? vid->kms_dims : vid->core_dims;
+   /* The whole screen while views draw, else the frame as it is shown */
+   if (vid->views_surface)
+      vp->dims = vid->kms_dims;
+   else if (vid->main_surface)
+      vp->dims = (vid->main_surface->hw_rot & 1)
+         ? VIDEO_SCALE_PACK(VIDEO_SCALE_H(vid->main_surface->src_dims),
+               VIDEO_SCALE_W(vid->main_surface->src_dims))
+         : vid->main_surface->src_dims;
+   else
+      vp->dims = (vid->rotation & 1)
+         ? VIDEO_SCALE_PACK(VIDEO_SCALE_H(vid->core_dims),
+               VIDEO_SCALE_W(vid->core_dims))
+         : vid->core_dims;
+   vp->full_dims = vp->dims;
+}
+
+/* Taken up when the next frame comes, where the surfaces are made */
+static void drm_set_rotation(void *data, unsigned rotation)
+{
+   struct drm_video *v = (struct drm_video*)data;
+   if (v && (rotation & 3) != v->rotation)
+   {
+      v->rotation       = rotation & 3;
+      v->rotation_dirty = true;
+   }
+}
+
+/* The frame on screen, as viewport_info gives its size: BGR24, bottom
+ * row first. Not the views, which the plane enlarges past it. */
+static bool drm_read_viewport(void *data, uint8_t *buffer, bool is_idle)
+{
+   unsigned ox, oy, w, h, ow, oh;
+   const struct modeset_buf *buf;
+   struct drm_video *v = (struct drm_video*)data;
+   struct drm_surface *s;
+
+   if (     !v || !buffer || v->views_surface || !(s = v->main_surface)
+         || !s->current_page)
+      return false;
+   buf = &s->current_page->buf;
+   w   = VIDEO_SCALE_W(s->src_dims);
+   h   = VIDEO_SCALE_H(s->src_dims);
+   ow  = (s->hw_rot & 1) ? h : w;
+   oh  = (s->hw_rot & 1) ? w : h;
+   for (oy = 0; oy < oh; oy++)
+   {
+      ptrdiff_t step;
+      uint8_t *out      = buffer + (size_t)(oh - 1 - oy) * ow * 3;
+      const uint8_t *in = drm_turned_row(buf->map, buf->stride, w, h,
+            s->bpp, s->hw_rot, oy, &step);
+      for (ox = 0; ox < ow; ox++, in += step, out += 3)
+      {
+         if (s->bpp == 4)
+         {
+            uint32_t p = *(const uint32_t*)in;
+            out[0]     = (uint8_t)p;
+            out[1]     = (uint8_t)(p >> 8);
+            out[2]     = (uint8_t)(p >> 16);
+         }
+         else
+         {
+            uint32_t p = *(const uint16_t*)in;
+            uint32_t r = (p >> 11) & 0x1f, g = (p >> 5) & 0x3f, b = p & 0x1f;
+            out[0]     = (uint8_t)((b << 3) | (b >> 2));
+            out[1]     = (uint8_t)((g << 2) | (g >> 4));
+            out[2]     = (uint8_t)((r << 3) | (r >> 2));
+         }
+      }
+   }
+   return true;
 }
 
 static bool drm_suppress_screensaver(void *a, bool b) { return false; }
@@ -2166,9 +2404,9 @@ video_driver_t video_drm = {
    drm_gfx_free,
    "drm",
    NULL, /* set_viewport */
-   NULL, /* set_rotation */
+   drm_set_rotation,
    drm_viewport_info,
-   NULL, /* read_viewport */
+   drm_read_viewport,
 #ifdef HAVE_OVERLAY
    drm_get_overlay_interface,
 #endif

@@ -1719,7 +1719,12 @@ jobs:
           # switches mode with the planes, flips without atomic commits
           # where the card has none, fails cleanly with no plane for
           # frames, and the free turns the plane off and gives the
-          # console back its framebuffer and mode.
+          # console back its framebuffer and mode. A core's rotation is
+          # made by the plane where its rotation property takes it, and
+          # the frame still lent; otherwise, or under a blended overlay,
+          # the copy turns it and nothing is lent. The menu is shown
+          # unturned, the plane is left unturned, and a screenshot reads
+          # the frame back as it is shown.
           make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
              timeout 60 ./drm_surface_lifetime_test

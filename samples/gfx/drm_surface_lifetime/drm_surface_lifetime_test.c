@@ -181,6 +181,8 @@ int __wrap_munmap(void *addr, size_t len)
 static uint32_t ov_fb;                 /* the fb the overlay plane scans out */
 static int32_t  ov_x, ov_y;
 static uint32_t ov_w, ov_h;
+/* The size the frame's plane reads from its fb */
+static uint32_t plane_sw, plane_sh;
 static unsigned ov_blanks, ov_setplanes;
 
 int drmModeRmFB(int fd, uint32_t fb)
@@ -206,7 +208,7 @@ int drmModeSetPlane(int fd, uint32_t plane, uint32_t crtc, uint32_t fb,
       uint32_t flags, int32_t cx, int32_t cy, uint32_t cw, uint32_t ch,
       uint32_t sx, uint32_t sy, uint32_t sw, uint32_t sh)
 {
-   (void)fd; (void)crtc; (void)flags; (void)sx; (void)sy; (void)sw; (void)sh;
+   (void)fd; (void)crtc; (void)flags; (void)sx; (void)sy;
    if (plane == PLANE2_ID)
    {
       ov_setplanes++;
@@ -215,6 +217,8 @@ int drmModeSetPlane(int fd, uint32_t plane, uint32_t crtc, uint32_t fb,
       return 0;
    }
    plane_fb = fb;
+   plane_sw = sw >> 16;
+   plane_sh = sh >> 16;
    return 0;
 }
 
@@ -230,16 +234,18 @@ static drmModePlaneRes  plane_res  = { 1, plane_ids };
 static drmModePlane     plane      = { 2, formats, PLANE_ID, CRTC_ID, 0, 0, 0, 0, 0, 1, 0 };
 static drmModePlane     plane2     = { 1, formats2, PLANE2_ID, 0, 0, 0, 0, 0, 0, 1, 0 };
 
-/* Per plane: FB_ID, type, zpos, pixel blend mode; the frame's from 51,
- * the overlay's from 71 */
+/* Per plane: FB_ID, type, zpos, pixel blend mode and rotation; the
+ * frame's from 51, the overlay's from 71. Rotation is a bitmask whose
+ * enums name bits: rot_bits the ones the plane takes, rot set now. */
 #define PROP_FB    0
 #define PROP_TYPE  1
 #define PROP_ZPOS  2
 #define PROP_BLEND 3
+#define PROP_ROT   4
 typedef struct
 {
-   uint64_t zpos, zpos_max, blend;
-   int has_zpos, zpos_fixed, has_blend;
+   uint64_t zpos, zpos_max, blend, rot, rot_bits;
+   int has_zpos, zpos_fixed, has_blend, has_rot;
 } fake_plane_props_t;
 static fake_plane_props_t pp[2];
 #define PROP_BASE(i) ((i) ? 71u : 51u)
@@ -274,10 +280,10 @@ drmModeObjectPropertiesPtr drmModeObjectGetProperties(int fd, uint32_t id, uint3
    int i = plane_index(id);
    uint32_t n = 2;
    drmModeObjectPropertiesPtr o = (drmModeObjectPropertiesPtr)calloc(1,
-         sizeof(*o) + 4 * (sizeof(uint32_t) + sizeof(uint64_t)));
+         sizeof(*o) + 5 * (sizeof(uint32_t) + sizeof(uint64_t)));
    (void)fd; (void)type;
    o->prop_values = (uint64_t*)(o + 1);
-   o->props       = (uint32_t*)(o->prop_values + 4);
+   o->props       = (uint32_t*)(o->prop_values + 5);
    o->props[0] = PROP_BASE(i) + PROP_FB;   o->prop_values[0] = 0;
    o->props[1] = PROP_BASE(i) + PROP_TYPE; o->prop_values[1] = DRM_PLANE_TYPE_OVERLAY;
    if (pp[i].has_zpos)
@@ -288,6 +294,10 @@ drmModeObjectPropertiesPtr drmModeObjectGetProperties(int fd, uint32_t id, uint3
    {
       o->props[n] = PROP_BASE(i) + PROP_BLEND; o->prop_values[n++] = pp[i].blend;
    }
+   if (pp[i].has_rot)
+   {
+      o->props[n] = PROP_BASE(i) + PROP_ROT; o->prop_values[n++] = pp[i].rot;
+   }
    o->count_props = n;
    return o;
 }
@@ -295,10 +305,12 @@ void drmModeFreeObjectProperties(drmModeObjectPropertiesPtr p) { free(p); }
 drmModePropertyPtr drmModeGetProperty(int fd, uint32_t id)
 {
    static const char *blend_names[3] = { "None", "Pre-multiplied", "Coverage" };
+   static const char *rot_names[6]   = { "rotate-0", "rotate-90",
+      "rotate-180", "rotate-270", "reflect-x", "reflect-y" };
    int i     = (id >= 71) ? 1 : 0;
    int which = (int)(id - PROP_BASE(i));
    drmModePropertyPtr r = (drmModePropertyPtr)calloc(1, sizeof(*r)
-         + 2 * sizeof(uint64_t) + 3 * sizeof(struct drm_mode_property_enum));
+         + 2 * sizeof(uint64_t) + 6 * sizeof(struct drm_mode_property_enum));
    (void)fd;
    r->prop_id = id;
    switch (which)
@@ -329,6 +341,23 @@ drmModePropertyPtr drmModeGetProperty(int fd, uint32_t id)
          }
          break;
       }
+      case PROP_ROT:
+      {
+         int k;
+         strlcpy(r->name, "rotation", sizeof(r->name));
+         r->flags = DRM_MODE_PROP_BITMASK;
+         r->enums = (struct drm_mode_property_enum*)((uint64_t*)(r + 1) + 2);
+         for (k = 0; k < 6; k++)
+         {
+            if (!(pp[i].rot_bits & (1u << k)))
+               continue;
+            r->enums[r->count_enums].value = (uint64_t)k;
+            strlcpy(r->enums[r->count_enums].name, rot_names[k],
+                  sizeof(r->enums[0].name));
+            r->count_enums++;
+         }
+         break;
+      }
    }
    return r;
 }
@@ -348,6 +377,13 @@ int drmModeObjectSetProperty(int fd, uint32_t obj, uint32_t type,
    if (prop == PROP_BASE(i) + PROP_BLEND)
    {
       pp[i].blend = v;
+      return 0;
+   }
+   if (prop == PROP_BASE(i) + PROP_ROT && pp[i].has_rot)
+   {
+      if (v & ~pp[i].rot_bits)
+         return -1;
+      pp[i].rot = v;
       return 0;
    }
    return -1;
@@ -497,6 +533,69 @@ static uint32_t frame_px[640 * 480];
 static void core_frame(struct drm_video *v, unsigned w, unsigned h)
 {
    drm_frame(v, frame_px, VIDEO_SCALE_PACK(w, h), 0, w * 4, NULL, NULL);
+}
+
+/* The source pixel shown at (ox, oy) of a @w x @h frame turned @rot
+ * quarter turns counter-clockwise */
+static uint32_t turned_px(unsigned rot, unsigned w, unsigned h,
+      unsigned ox, unsigned oy)
+{
+   unsigned x = ox, y = oy;
+   switch (rot)
+   {
+      case 1: x = w - 1 - oy; y = ox;          break;
+      case 2: x = w - 1 - ox; y = h - 1 - oy;  break;
+      case 3: x = oy;         y = h - 1 - ox;  break;
+   }
+   return frame_px[y * w + x];
+}
+
+/* A frame told apart pixel by pixel */
+static void pattern(unsigned w, unsigned h)
+{
+   unsigned x, y;
+   for (y = 0; y < h; y++)
+      for (x = 0; x < w; x++)
+         frame_px[y * w + x] = 0x5a0000u | (y << 8) | x;
+}
+
+/* The page the plane scans out shows the frame turned @rot, and the
+ * screenshot read back from it the frame turned @shown */
+static int page_turned(struct drm_video *v, unsigned rot, unsigned shown,
+      unsigned w, unsigned h)
+{
+   static uint8_t bgr[64 * 64 * 3];
+   struct drm_surface *s = v->main_surface;
+   struct video_viewport vp;
+   const struct modeset_buf *buf;
+   unsigned ox, oy;
+   unsigned ow = (rot & 1) ? h : w, oh = (rot & 1) ? w : h;
+   unsigned sw = (shown & 1) ? h : w, sh = (shown & 1) ? w : h;
+
+   if (!s || !s->current_page || s->current_page->buf.fb_id != plane_fb)
+      return 0;
+   buf = &s->current_page->buf;
+   if (VIDEO_SCALE_W(s->src_dims) != ow || VIDEO_SCALE_H(s->src_dims) != oh)
+      return 0;
+   for (oy = 0; oy < oh; oy++)
+      for (ox = 0; ox < ow; ox++)
+         if (((const uint32_t*)(buf->map + oy * buf->stride))[ox]
+               != turned_px(rot, w, h, ox, oy))
+            return 0;
+   memset(&vp, 0, sizeof(vp));
+   drm_viewport_info(v, &vp);
+   if (vp.dims != VIDEO_SCALE_PACK(sw, sh) || !drm_read_viewport(v, bgr, false))
+      return 0;
+   for (oy = 0; oy < sh; oy++)
+      for (ox = 0; ox < sw; ox++)
+      {
+         uint32_t p       = turned_px(shown, w, h, ox, oy);
+         const uint8_t *q = bgr + ((sh - 1 - oy) * sw + ox) * 3;
+         if (q[0] != (p & 0xff) || q[1] != ((p >> 8) & 0xff)
+               || q[2] != ((p >> 16) & 0xff))
+            return 0;
+      }
+   return 1;
 }
 
 static void menu_open_close(struct drm_video *v)
@@ -948,6 +1047,30 @@ int main(void)
          CHECK((px & 0xffffff) == 0, "the frame elsewhere as it was (%08x)", px);
       }
 
+      /* Blended, the overlay is not turned with the frame: the frame is
+       * turned by the copy, even where the plane could, and the layer
+       * blended upright */
+      pp[0].has_rot  = 1;
+      pp[0].rot_bits = 0x3f;
+      drm.rot_plane  = 0;
+      drm_set_rotation(v, 1);
+      memset(frame_px, 0, sizeof(frame_px));
+      core_frame(v, 320, 240);
+      CHECK(v->main_surface && v->main_surface->rot == 1
+            && !v->main_surface->hw_rot && pp[0].rot == DRM_MODE_ROTATE_0,
+            "a blended overlay: the copy turns the frame");
+      {
+         struct modeset_buf *pg = &v->main_surface->pages[!v->main_surface->flip_page].buf;
+         px = ((const uint32_t*)(pg->map + (size_t)10 * pg->stride))[10];
+         CHECK(VIDEO_SCALE_W(v->main_surface->src_dims) == 240
+               && (px & 0xffffff) == 0xff0000,
+               "and the overlay blended upright into it (%08x)", px);
+      }
+      drm_set_rotation(v, 0);
+      core_frame(v, 320, 240);
+      pp[0].has_rot = 0;
+      drm.rot_plane = 0;
+
       /* No zpos at all: a later plane is taken as drawn over */
       drm_overlay_free(&v->ov);
       memset(&v->ov, 0, sizeof(v->ov));
@@ -1070,6 +1193,97 @@ int main(void)
    CHECK(fds_open == 0 && !count(dumb_alive), "and leaves nothing");
    if (failures == before)
       printf("   ok   init without a plane fails cleanly; the menu alone closes cleanly\n");
+   before = failures;
+
+   /* Rotation: by the plane where it turns that far, the frame lent and
+    * read back turned; the menu shown unturned */
+   pp[0].has_rot  = 1;
+   pp[0].rot_bits = 0x3f;
+   pp[0].rot      = DRM_MODE_ROTATE_0;
+   v = (struct drm_video*)drm_init(&info);
+   if (v)
+   {
+      struct retro_framebuffer fb;
+      pattern(64, 32);
+      core_frame(v, 64, 32);
+      CHECK(page_turned(v, 0, 0, 64, 32) && pp[0].rot == DRM_MODE_ROTATE_0,
+            "unturned, the frame as it is");
+      drm_set_rotation(v, 1);
+      core_frame(v, 64, 32);
+      CHECK(v->main_surface && v->main_surface->hw_rot == 1
+            && !v->main_surface->rot && pp[0].rot == DRM_MODE_ROTATE_90,
+            "a quarter turn by the plane (rotation %llx)",
+            (unsigned long long)pp[0].rot);
+      CHECK(page_turned(v, 0, 1, 64, 32) && plane_sw == 64 && plane_sh == 32,
+            "the page holds the frame as it is, read back turned");
+      memset(&fb, 0, sizeof(fb));
+      fb.width = 64; fb.height = 32;
+      CHECK(drm_get_current_software_framebuffer(v, &fb),
+            "a frame the plane turns is still lent");
+      drm_set_rotation(v, 2);
+      core_frame(v, 64, 32);
+      CHECK(pp[0].rot == DRM_MODE_ROTATE_180 && page_turned(v, 0, 2, 64, 32),
+            "half a turn by the plane");
+      drm_set_texture_enable(v, true, false);
+      drm_set_texture_frame(v, frame_px, true, VIDEO_SCALE_PACK(32, 24), 1.0f);
+      CHECK(pp[0].rot == DRM_MODE_ROTATE_0, "the menu is shown unturned");
+      drm_set_texture_enable(v, false, false);
+      CHECK(pp[0].rot == DRM_MODE_ROTATE_180, "and the frame turned after it");
+      drm_frame(v, NULL, VIDEO_SCALE_PACK(64, 32), 0, 256, NULL, NULL);
+      drm_gfx_free(v);
+   }
+   CHECK(pp[0].rot == DRM_MODE_ROTATE_0, "the plane is left unturned");
+
+   /* A plane that turns only a quarter: the rest turned by the copy,
+    * never lent; a plane that cannot turn at all */
+   pp[0].rot_bits = 0x3;
+   v = (struct drm_video*)drm_init(&info);
+   if (v)
+   {
+      struct retro_framebuffer fb;
+      unsigned r;
+      pattern(64, 32);
+      for (r = 2; r <= 3; r++)
+      {
+         drm_set_rotation(v, r);
+         core_frame(v, 64, 32);
+         CHECK(v->main_surface && v->main_surface->rot == r
+               && !v->main_surface->hw_rot && pp[0].rot == DRM_MODE_ROTATE_0,
+               "%u quarter turns by the copy", r);
+         CHECK(page_turned(v, r, r, 64, 32)
+               && plane_sw == ((r & 1) ? 32u : 64u),
+               "%u quarter turns: the page holds the frame turned", r);
+         memset(&fb, 0, sizeof(fb));
+         fb.width = 64; fb.height = 32;
+         CHECK(!drm_get_current_software_framebuffer(v, &fb),
+               "a frame the copy turns is not lent");
+         /* The next frame is turned too, at the pitch it comes with */
+         pattern(64, 32);
+         frame_px[0] ^= 0xff;
+         core_frame(v, 64, 32);
+         CHECK(page_turned(v, r, r, 64, 32), "and each frame after it");
+      }
+      drm_set_rotation(v, 0);
+      core_frame(v, 64, 32);
+      CHECK(v->main_surface && !v->main_surface->rot
+            && page_turned(v, 0, 0, 64, 32), "and back unturned");
+      drm_gfx_free(v);
+   }
+   pp[0].has_rot = 0;
+   v = (struct drm_video*)drm_init(&info);
+   if (v)
+   {
+      pattern(64, 32);
+      drm_set_rotation(v, 1);
+      core_frame(v, 64, 32);
+      CHECK(v->main_surface && v->main_surface->rot == 1
+            && page_turned(v, 1, 1, 64, 32),
+            "no rotation property: the copy turns the frame");
+      drm_gfx_free(v);
+   }
+   CHECK(fds_open == 0 && !count(dumb_alive), "and leaves nothing");
+   if (failures == before)
+      printf("   ok   the frame turned by the plane, or by the copy; read back as shown\n");
 
 
    if (failures)
