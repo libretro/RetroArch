@@ -1742,7 +1742,9 @@ jobs:
           # drawn into the frame where they are seen, at the size the
           # screen shows, upright on a frame the plane turns, and a frame
           # in the wrapper's memory is copied to be drawn on. A blended
-          # overlay is blended into a core's views as into a frame.
+          # overlay is blended into a core's views as into a frame. The
+          # driver is built with sign-compare as an error and linked
+          # without rthreads, so it stays clean of both.
           make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
              timeout 60 ./drm_surface_lifetime_test

@@ -30,7 +30,6 @@
 #include <file/file_path.h>
 #include <lists/dir_list.h>
 #include <retro_atomic.h>
-#include <rthreads/rthreads.h>
 #include <string/stdstring.h>
 #include <encodings/utf.h>
 
@@ -68,21 +67,12 @@ struct modeset_buf
 	uint32_t pixel_format;
 };
 
-/* Pages are abstractions of buffers, encapsulated together with more
-   data for multiple buffering: to know if it's used, etc.
-   Hence, each page will have ONE buffer. No more, no less.*/
-
+/* One buffer each; whether it is on screen, on its way there or free
+ * is told by the surface's current_page and drm.pending */
 struct drm_page
 {
    struct modeset_buf buf;
-   bool used;
 
-   /* Each page has it's own mutex for
-    * isolating it's used flag access. */
-   slock_t *page_used_mutex;
-
-   /* This field will allow us to access the
-    * main _dispvars struct from the vsync CB function */
    struct drm_video *drmvars;
 
    /* This field will allow us to access the
@@ -256,11 +246,6 @@ struct drm_video
    /* The mode the display is running, packed. */
    unsigned kms_dims;
 
-   /* For threading */
-   scond_t *vsync_condition;
-   slock_t *vsync_cond_mutex;
-   slock_t *pending_mutex;
-
    /* The plane last asked whether it takes RGUI's format, and its answer */
    uint32_t menu_probed_plane;
 
@@ -429,7 +414,7 @@ static void modeset_destroy_dumbfb(struct modeset_buf *buf)
  * a plane off when the framebuffer it scans out is removed. */
 static void drm_surface_free(void *data, struct drm_surface **sp)
 {
-   int i;
+   unsigned i;
    struct drm_surface *surface;
 
    if (!sp || !(surface = *sp))
@@ -438,11 +423,7 @@ static void drm_surface_free(void *data, struct drm_surface **sp)
       drm_flip_wait();
 
    for (i = 0; i < surface->numpages; i++)
-   {
       modeset_destroy_dumbfb(&surface->pages[i].buf);
-      if (surface->pages[i].page_used_mutex)
-         slock_free(surface->pages[i].page_used_mutex);
-   }
 
    free(surface->pages);
    free(surface);
@@ -462,7 +443,7 @@ static bool drm_surface_setup(void *data, unsigned src_dims,
       struct drm_surface **sp)
 {
    struct drm_video *_drmvars = data;
-   int i;
+   unsigned i;
    int ret;
    struct drm_surface *surface = NULL;
 
@@ -503,10 +484,8 @@ static bool drm_surface_setup(void *data, unsigned src_dims,
 
    for (i = 0; i < surface->numpages; i++)
    {
-      surface->pages[i].used            = false;
-      surface->pages[i].surface         = surface;
-      surface->pages[i].drmvars         = _drmvars;
-      surface->pages[i].page_used_mutex = slock_new();
+      surface->pages[i].surface = surface;
+      surface->pages[i].drmvars = _drmvars;
    }
 
    /* Create the framebuffer for each one of the pages of the surface. */
@@ -1215,7 +1194,7 @@ static unsigned drm_plane_turns(uint32_t id)
 /* This configures our only overlay plane to render the given surface. */
 static bool drm_plane_setup(struct drm_surface *surface)
 {
-   int i;
+   unsigned i;
    char fmt_name[5];
    unsigned int crtc_index = 0;
    uint32_t plane_flags = 0;
@@ -2246,10 +2225,6 @@ static void *drm_init(const video_info_t *video)
       strlcpy(_drmvars->font_path, video->path_font,
             sizeof(_drmvars->font_path));
 
-   /* Initialize the rest of the mutexes and conditions. */
-   _drmvars->vsync_condition  = scond_new();
-   _drmvars->vsync_cond_mutex = slock_new();
-   _drmvars->pending_mutex    = slock_new();
    _drmvars->core_dims        = 0;
 
    _drmvars->main_surface     = NULL;
@@ -2260,9 +2235,6 @@ static void *drm_init(const video_info_t *video)
    if (!init_drm(video))
    {
       RARCH_ERR("[DRM] Failed to initialize DRM.\n");
-      slock_free(_drmvars->pending_mutex);
-      slock_free(_drmvars->vsync_cond_mutex);
-      scond_free(_drmvars->vsync_condition);
       free(_drmvars);
       return NULL;
    }
@@ -2964,11 +2936,6 @@ static void drm_gfx_free(void *data)
    free(_drmvars->views_canvas);
    if (_drmvars->font)
       _drmvars->font_driver->free(_drmvars->font);
-
-   /* Destroy mutexes and conditions. */
-   slock_free(_drmvars->pending_mutex);
-   slock_free(_drmvars->vsync_cond_mutex);
-   scond_free(_drmvars->vsync_condition);
 
    deinit_drm();
 
