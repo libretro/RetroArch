@@ -61,7 +61,16 @@ void drm_setup(int fd);
 
 void drm_free(void);
 
+#define DRM_CONNECTOR_USABLE(conn) \
+   ((conn)->connection == DRM_MODE_CONNECTED && (conn)->count_modes > 0)
+
 bool drm_get_connector(int fd, unsigned monitor_index);
+
+#ifdef HAVE_UDEV
+/* After a hotplug: true when the display in use went and the monitor
+ * index now picks another, or came back after going. */
+bool drm_hotplug_needs_restart(int fd, unsigned monitor_index, bool *lost);
+#endif
 
 float drm_get_refresh_rate(void *data);
 

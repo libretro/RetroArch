@@ -43,6 +43,10 @@
 #include "../../config.h"
 #endif
 
+#ifdef HAVE_UDEV
+#include <libudev.h>
+#endif
+
 #include "../../configuration.h"
 #include "../../verbosity.h"
 #include "../../frontend/frontend_driver.h"
@@ -74,6 +78,11 @@ typedef struct gfx_ctx_drm_data
 {
 #ifdef HAVE_EGL
    egl_ctx_data_t egl;
+#endif
+#ifdef HAVE_UDEV
+   struct udev *udev;
+   struct udev_monitor *hotplug;
+   dev_t hotplug_dev;
 #endif
    struct gbm_bo *bo;
    struct gbm_bo *next_bo;
@@ -110,6 +119,9 @@ typedef struct gfx_ctx_drm_data
    bool hdr_capable;
    bool hdr10;
    bool hdr_props_set;
+#ifdef HAVE_UDEV
+   bool display_lost;
+#endif
 } gfx_ctx_drm_data_t;
 
 struct drm_fb
@@ -571,12 +583,82 @@ static void gfx_ctx_drm_swap_interval(void *data, int interval)
       RARCH_WARN("[KMS] Swap intervals > 1 currently not supported. Will use swap interval of 1.\n");
 }
 
+#ifdef HAVE_UDEV
+static void gfx_ctx_drm_hotplug_init(gfx_ctx_drm_data_t *drm, int fd)
+{
+   struct stat st;
+
+   if (fstat(fd, &st) != 0 || !(drm->udev = udev_new()))
+      return;
+   drm->hotplug_dev = st.st_rdev;
+
+   if (!(drm->hotplug = udev_monitor_new_from_netlink(drm->udev, "udev")))
+      return;
+   if (     udev_monitor_filter_add_match_subsystem_devtype(drm->hotplug,
+               "drm", "drm_minor") < 0
+         || udev_monitor_enable_receiving(drm->hotplug) < 0)
+   {
+      udev_monitor_unref(drm->hotplug);
+      drm->hotplug = NULL;
+   }
+}
+
+static void gfx_ctx_drm_hotplug_deinit(gfx_ctx_drm_data_t *drm)
+{
+   if (drm->hotplug)
+      udev_monitor_unref(drm->hotplug);
+   if (drm->udev)
+      udev_unref(drm->udev);
+   drm->hotplug = NULL;
+   drm->udev    = NULL;
+}
+
+static void gfx_ctx_drm_hotplug_poll(gfx_ctx_drm_data_t *drm)
+{
+   struct pollfd fds;
+   bool changed = false;
+
+   if (!drm->hotplug)
+      return;
+
+   fds.fd      = udev_monitor_get_fd(drm->hotplug);
+   fds.events  = POLLIN;
+   fds.revents = 0;
+
+   while (poll(&fds, 1, 0) == 1 && (fds.revents & POLLIN))
+   {
+      struct udev_device *dev = udev_monitor_receive_device(drm->hotplug);
+      const char *val;
+
+      if (!dev)
+         break;
+      if (     udev_device_get_devnum(dev) == drm->hotplug_dev
+            && (val = udev_device_get_property_value(dev, "HOTPLUG"))
+            && string_is_equal(val, "1"))
+         changed = true;
+      udev_device_unref(dev);
+   }
+
+   if (     changed
+         && drm_hotplug_needs_restart(g_drm_fd,
+               config_get_ptr()->uints.video_monitor_index,
+               &drm->display_lost))
+   {
+      RARCH_LOG("[KMS] Display changed, restarting the video driver.\n");
+      video_driver_modify_disp_flags(VIDEO_FLAG_DRIVER_REINIT, 0);
+   }
+}
+#endif
+
 static void gfx_ctx_drm_check_window(void *data, bool *quit,
       bool *resize, unsigned *dims)
 {
    *resize = false;
    *quit   = (bool)frontend_driver_get_signal_handler_state();
    *dims = VIDEO_SCALE_PACK(g_drm_mode->hdisplay, g_drm_mode->vdisplay);
+#ifdef HAVE_UDEV
+   gfx_ctx_drm_hotplug_poll((gfx_ctx_drm_data_t*)data);
+#endif
 }
 
 static void drm_flip_handler(int fd, unsigned frame,
@@ -988,6 +1070,10 @@ static void gfx_ctx_drm_destroy_resources(gfx_ctx_drm_data_t *drm)
          | VIDEO_FLAG_HDR10_SUPPORT
          | VIDEO_FLAG_SCRGB_SUPPORT);
 
+#ifdef HAVE_UDEV
+   gfx_ctx_drm_hotplug_deinit(drm);
+#endif
+
 #ifdef HAVE_EGL
    egl_destroy(&drm->egl);
 #endif
@@ -1176,6 +1262,12 @@ have_device:
    g_drm_evctx.page_flip_handler  = drm_flip_handler;
 
    g_drm_fd                       = fd;
+
+#ifdef HAVE_UDEV
+   /* A lease is for one connector */
+   if (!drm->leased)
+      gfx_ctx_drm_hotplug_init(drm, fd);
+#endif
 
    {
       uint64_t cap                = 0;

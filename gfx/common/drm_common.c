@@ -90,7 +90,7 @@ bool drm_get_connector(int fd, unsigned monitor_index)
          bool connected = conn->connection == DRM_MODE_CONNECTED;
          RARCH_LOG("[DRM] Connector %d connected: %s\n", i, connected ? "yes" : "no");
          RARCH_LOG("[DRM] Connector %d has %d modes.\n", i, conn->count_modes);
-         if (connected && conn->count_modes > 0)
+         if (DRM_CONNECTOR_USABLE(conn))
          {
             monitor_index_count++;
             RARCH_LOG("[DRM] Connector %d assigned to monitor index: #%u.\n", i, monitor_index_count);
@@ -108,8 +108,7 @@ bool drm_get_connector(int fd, unsigned monitor_index)
 
       if (!g_drm_connector)
          continue;
-      if (g_drm_connector->connection == DRM_MODE_CONNECTED
-            && g_drm_connector->count_modes > 0)
+      if (DRM_CONNECTOR_USABLE(g_drm_connector))
       {
          monitor_index_count++;
          if (monitor_index_count == monitor)
@@ -127,6 +126,59 @@ bool drm_get_connector(int fd, unsigned monitor_index)
    }
    return true;
 }
+
+#ifdef HAVE_UDEV
+bool drm_hotplug_needs_restart(int fd, unsigned monitor_index, bool *lost)
+{
+   int i;
+   unsigned count     = 0;
+   unsigned monitor   = MAX(monitor_index, 1);
+   uint32_t candidate = 0;
+   bool usable        = false;
+   drmModeRes *res    = drmModeGetResources(fd);
+
+   if (!res)
+      return false;
+
+   /* Cached state only: the kernel probed before it sent the event */
+   for (i = 0; i < res->count_connectors; i++)
+   {
+      drmModeConnector *conn = drmModeGetConnectorCurrent(fd,
+            res->connectors[i]);
+
+      if (!conn)
+         continue;
+      if (DRM_CONNECTOR_USABLE(conn))
+      {
+         if (conn->connector_id == g_connector_id)
+            usable = true;
+         if (++count == monitor)
+            candidate = conn->connector_id;
+      }
+      drmModeFreeConnector(conn);
+   }
+   drmModeFreeResources(res);
+
+   if (usable)
+   {
+      /* Back after going: maybe another display, which wants its own mode */
+      if (*lost)
+      {
+         *lost = false;
+         return true;
+      }
+      return false;
+   }
+
+   *lost = true;
+   if (candidate && candidate != g_connector_id)
+   {
+      *lost = false;
+      return true;
+   }
+   return false;
+}
+#endif
 
 float drm_calc_refresh_rate(drmModeModeInfo *mode)
 {

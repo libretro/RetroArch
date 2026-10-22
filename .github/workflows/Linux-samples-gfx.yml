@@ -1717,8 +1717,9 @@ jobs:
           # gfx/common/drm_common.c against a fake kernel: a connector
           # nothing drives yet (a display plugged in after boot) gets an
           # encoder and a CRTC that is off, a CRTC that was off is
-          # switched off again on restore, and a size the display lacks
-          # falls back to mode 0.
+          # switched off again on restore, a size the display lacks falls
+          # back to mode 0, and only a display in use going away (or
+          # coming back) restarts the video driver on a hotplug.
           make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
              timeout 60 ./drm_crtc_pick_test

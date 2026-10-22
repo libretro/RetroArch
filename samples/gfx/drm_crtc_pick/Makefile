@@ -1,13 +1,15 @@
 # gfx/common/drm_common.c against a fake kernel: an undriven connector
 # gets an encoder and a free CRTC, a CRTC that was off is switched off
-# again on restore, and a missing size falls back to mode 0.
+# again on restore, a missing size falls back to mode 0, and which
+# hotplugs restart the video driver.
 
 TARGET    := drm_crtc_pick_test
 REPO_ROOT := ../../..
 LRC       := $(REPO_ROOT)/libretro-common
 SOURCES   := drm_crtc_pick_test.c $(LRC)/compat/compat_strl.c
 DRM_CFLAGS ?= $(shell pkg-config --cflags libdrm 2>/dev/null || echo -I/usr/include/libdrm)
-CFLAGS    += -Wall -std=gnu99 -g1 -O0 -I$(REPO_ROOT) -I$(LRC)/include $(DRM_CFLAGS)
+CFLAGS    += -Wall -std=gnu99 -g1 -O0 -I$(REPO_ROOT) -I$(LRC)/include \
+             -DHAVE_UDEV $(DRM_CFLAGS)
 LDFLAGS   += -lm
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)

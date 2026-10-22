@@ -2,7 +2,7 @@
  * drives yet, as with a display plugged in after boot, gets an encoder
  * and a CRTC that is off rather than failing; a CRTC that was off is
  * switched off again on restore; a size the connector lacks falls back
- * to its default mode. */
+ * to its default mode; and which hotplugs restart the video driver. */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -165,6 +165,12 @@ drmModeConnectorPtr drmModeGetConnector(int fd, uint32_t id)
          c->count_modes    = conns[i].n_modes;
    }
    return c;
+}
+
+/* Probes nothing, here as in the kernel */
+drmModeConnectorPtr drmModeGetConnectorCurrent(int fd, uint32_t id)
+{
+   return drmModeGetConnector(fd, id);
 }
 
 void drmModeFreeConnector(drmModeConnectorPtr c)
@@ -347,6 +353,57 @@ int main(void)
       CHECK(!drm_find_mode(c, 640, 480, 1.0f, 60.0f), "no modes, no mode");
       CHECK(!drm_find_mode(NULL, 640, 480, 1.0f, 60.0f), "no connector, no mode");
       drmModeFreeConnector(c);
+   }
+
+   /* Hotplug, with the display in use on connector 90 */
+   {
+      bool lost = false;
+
+      fake_reset();
+      add_mode(1920, 1080, 60);
+      conns[1].id = 91; conns[1].connected = 0; conns[1].n_modes = 0;
+      n_conns     = 2;
+      g_connector_id = 90;
+
+      conns[1].connected = 1; conns[1].n_modes = 2;
+      CHECK(!drm_hotplug_needs_restart(FAKE_FD, 0, &lost),
+            "a second display plugged in leaves the output where it is");
+      CHECK(!drm_hotplug_needs_restart(FAKE_FD, 2, &lost),
+            "even when it is the one the monitor index names");
+
+      conns[0].connected = 0;
+      CHECK(drm_hotplug_needs_restart(FAKE_FD, 0, &lost),
+            "the display in use unplugged moves to the one left");
+      CHECK(!lost, "a move is not a loss");
+
+      /* Only display unplugged: nowhere to go */
+      g_connector_id     = 90;
+      conns[1].connected = 0;
+      CHECK(!drm_hotplug_needs_restart(FAKE_FD, 0, &lost),
+            "no display left, no restart");
+      CHECK(lost, "the loss is remembered");
+      CHECK(!drm_hotplug_needs_restart(FAKE_FD, 0, &lost),
+            "nor on a second event while still gone");
+
+      conns[0].connected = 1;
+      CHECK(drm_hotplug_needs_restart(FAKE_FD, 0, &lost),
+            "a display back on the port restarts for its own mode");
+      CHECK(!lost, "and clears the loss");
+      CHECK(!drm_hotplug_needs_restart(FAKE_FD, 0, &lost),
+            "a later unrelated event changes nothing");
+
+      /* Connected but no modes yet does not count */
+      conns[0].connected = 0;
+      conns[1].connected = 1; conns[1].n_modes = 0;
+      CHECK(!drm_hotplug_needs_restart(FAKE_FD, 0, &lost),
+            "a connector without modes is not a display to move to");
+
+      /* The index names a display that is gone */
+      lost = false;
+      conns[0].connected = 0;
+      conns[1].connected = 1; conns[1].n_modes = 2;
+      CHECK(!drm_hotplug_needs_restart(FAKE_FD, 2, &lost),
+            "an index past the displays left does not restart");
    }
 
    if (failures)
