@@ -2,7 +2,8 @@
 # buffer, framebuffer and mapping a surface makes is taken down when
 # the surface goes, and the one the plane scans out is never removed
 # from under it; a core's views composed into a surface of their
-# own for the plane; padded rows, lent pages and dupes.
+# own for the plane; padded rows, lent pages and dupes; the menu in
+# RGUI's own format, lent, and resized.
 
 TARGET    := drm_surface_lifetime_test
 REPO_ROOT := ../../..

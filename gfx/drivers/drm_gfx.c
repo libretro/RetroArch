@@ -151,8 +151,13 @@ struct drm_video
    slock_t *vsync_cond_mutex;
    slock_t *pending_mutex;
 
+   /* The plane last asked whether it takes RGUI's format, and its answer */
+   uint32_t menu_probed_plane;
+
    /* Menu */
    bool menu_active;
+   bool menu_probed;
+   bool menu_rgbx4444;
 
    bool rgb32;
 
@@ -468,6 +473,45 @@ static uint64_t drm_plane_type(drmModePlane *plane)
    return type;
 }
 
+/* Whether the plane in use, or the one setup would pick when none is,
+ * scans out @fmt */
+static bool drm_plane_takes(uint32_t fmt)
+{
+   int i;
+   unsigned crtc_index = 0;
+   bool takes          = false;
+   drmModePlaneRes *res;
+
+   if (drm.plane_id)
+   {
+      drmModePlane *plane = drmModeGetPlane(drm.fd, drm.plane_id);
+      if (plane)
+      {
+         takes = format_support(plane, fmt);
+         drmModeFreePlane(plane);
+      }
+      return takes;
+   }
+
+   if (!(res = drmModeGetPlaneResources(drm.fd)))
+      return false;
+   for (i = 0; i < drm.resources->count_crtcs; i++)
+      if (drm.crtc_id == drm.resources->crtcs[i])
+         crtc_index = i;
+   for (i = 0; i < (int)res->count_planes && !takes; i++)
+   {
+      drmModePlane *plane = drmModeGetPlane(drm.fd, res->planes[i]);
+      if (!plane)
+         continue;
+      takes = (plane->possible_crtcs & (1 << crtc_index))
+         && drm_plane_type(plane) == DRM_PLANE_TYPE_OVERLAY
+         && format_support(plane, fmt);
+      drmModeFreePlane(plane);
+   }
+   drmModeFreePlaneResources(res);
+   return takes;
+}
+
 /* This configures our only overlay plane to render the given surface. */
 static void drm_plane_setup(struct drm_surface *surface)
 {
@@ -487,6 +531,8 @@ static void drm_plane_setup(struct drm_surface *surface)
    /* Get plane resources */
    drmModePlane *plane;
    drmModePlaneRes *plane_resources;
+   uint32_t in_use = drm.plane_id;
+   uint32_t found  = 0;
    plane_resources = drmModeGetPlaneResources(drm.fd);
    if (!plane_resources)
    {
@@ -535,12 +581,16 @@ static void drm_plane_setup(struct drm_surface *surface)
                plane->plane_id);
       else if (!format_support(plane, surface->pixformat))
          RARCH_LOG("[DRM] Plane with ID %d does not support framebuffer format.\n", plane->plane_id);
-      else
-         drm.plane_id = plane->plane_id;
+      /* The plane in use stays, or it would go on showing its frame */
+      else if (!found || found != in_use)
+         found = plane->plane_id;
 
       drmModeFreePlane(plane);
    }
    drmModeFreePlaneResources(plane_resources);
+
+   if (found)
+      drm.plane_id = found;
 
    if (!drm.plane_id)
    {
@@ -977,6 +1027,57 @@ static void drm_set_texture_enable(void *data, bool state, bool full_screen)
    _drmvars->menu_active = state;
 }
 
+/* The menu's surface for frames of @dims: XRGB8888, or RGUI's own
+ * RGBA4444 where the plane scans that out, alpha ignored as before */
+static struct drm_surface *drm_menu_surface(struct drm_video *v,
+      bool rgb32, unsigned dims)
+{
+   struct drm_surface *old = v->menu_surface;
+   uint32_t fmt            = DRM_FORMAT_XRGB8888;
+   unsigned bpp            = 4;
+
+   if (!v->menu_probed || v->menu_probed_plane != drm.plane_id)
+   {
+      v->menu_rgbx4444     = drm_plane_takes(DRM_FORMAT_RGBX4444);
+      v->menu_probed_plane = drm.plane_id;
+      v->menu_probed       = true;
+   }
+   if (!rgb32 && v->menu_rgbx4444)
+   {
+      fmt = DRM_FORMAT_RGBX4444;
+      bpp = 2;
+   }
+   if (old && old->src_dims == dims && old->pixformat == fmt)
+      return old;
+
+   v->menu_surface = NULL;
+   if (!drm_surface_setup(v, dims, VIDEO_SCALE_W(dims) * bpp, bpp, fmt,
+            210, v->current_aspect, 2, 0, &v->menu_surface))
+   {
+      v->menu_surface = old;
+      return NULL;
+   }
+   /* The plane moves to the new surface before the old one goes */
+   drm_plane_setup(v->menu_surface);
+   drm_surface_free(v, &old);
+   return v->menu_surface;
+}
+
+/* RGUI renders into the page the next flip shows */
+static void *drm_get_menu_framebuffer(void *data, bool rgb32,
+      unsigned dims, size_t *pitch)
+{
+   struct drm_video *v = (struct drm_video*)data;
+   struct drm_surface *s;
+
+   if (     !v || !pitch || !v->menu_active
+         || !(s = drm_menu_surface(v, rgb32, dims))
+         || s->bpp != (rgb32 ? 4u : 2u))
+      return NULL;
+   *pitch = s->pages[s->flip_page].buf.stride;
+   return s->pages[s->flip_page].buf.map;
+}
+
 static void drm_set_texture_frame(void *data, const void *frame, bool rgb32,
       unsigned dims, float alpha)
 {
@@ -988,79 +1089,46 @@ static void drm_set_texture_frame(void *data, const void *frame, bool rgb32,
    uint8_t             *dst_base = NULL;
    unsigned int         dst_pitch;
 
-   if (!_drmvars->menu_active)
+   if (!_drmvars->menu_active || !frame)
+      return;
+   if (!(surface = drm_menu_surface(_drmvars, rgb32, dims)))
       return;
 
-   /* If menu is active in this frame but the
-    * menu surface is NULL, we allocate a new one.*/
-   if (!_drmvars->menu_surface)
-   {
-      if (!drm_surface_setup(_drmvars,
-            dims,
-            width * 4,
-            4,
-            DRM_FORMAT_XRGB8888,
-            210,
-            _drmvars->current_aspect,
-            2,
-            0,
-            &_drmvars->menu_surface))
-         return;
-
-      /* We need to re-setup the ONLY plane as the setup
-       * depends on input buffers dimensions. */
-      drm_plane_setup(_drmvars->menu_surface);
-   }
-
-   surface   = _drmvars->menu_surface;
    dst_base  = (uint8_t*)surface->pages[surface->flip_page].buf.map;
    dst_pitch = surface->pages[surface->flip_page].buf.stride;
 
-   /* Defensive clamps: the dumb buffer was sized at the first
-    * menu frame's dimensions and is never resized within an
-    * active menu session. If the caller hands us something
-    * bigger anyway, write only what fits rather than running
-    * off the end of the mapped region. */
+   /* A loaned page holds the frame already */
+   if ((const uint8_t*)frame != dst_base)
    {
-      unsigned int max_w = VIDEO_SCALE_W(surface->src_dims);
-      unsigned int max_h = VIDEO_SCALE_H(surface->src_dims);
-      if (width  > max_w) VIDEO_SCALE_PUT_W(dims, max_w);
-      if (height > max_h) VIDEO_SCALE_PUT_H(dims, max_h);
-   }
-
-   if (rgb32)
-   {
-      /* Source is already XRGB8888 -- just copy row by row to handle
-       * any difference between source stride and dst stride. */
-      const uint8_t *src      = (const uint8_t*)frame;
-      unsigned int   src_pitch = width * 4;
-      unsigned int   row_bytes = (src_pitch < dst_pitch) ? src_pitch : dst_pitch;
-
-      for (i = 0; i < height; i++)
-         memcpy(dst_base + (dst_pitch * i), src + (src_pitch * i), row_bytes);
-   }
-   else
-   {
-      /* RGUI default output is RGBA4444 with channel layout
-       *   R = bits 15..12, G = 11..8, B = 7..4, A = 3..0
-       * Expand each 4-bit channel to 8 bits via nibble replication
-       * (x | (x << 4)) and pack into XRGB8888 for the dumb buffer. */
-      for (i = 0; i < height; i++)
+      if (rgb32 || surface->bpp == 2)
       {
-         const uint16_t *src_row = (const uint16_t*)frame + (width * i);
-         uint32_t       *dst_row = (uint32_t*)(dst_base + (dst_pitch * i));
-         unsigned int    j;
+         /* The surface's own format: row by row, for the stride */
+         const uint8_t *src      = (const uint8_t*)frame;
+         unsigned int   row_bytes = width * surface->bpp;
 
-         for (j = 0; j < width; j++)
+         for (i = 0; i < height; i++)
+            memcpy(dst_base + (dst_pitch * i), src + (row_bytes * i),
+                  row_bytes);
+      }
+      else
+      {
+         /* RGUI's RGBA4444 (R = bits 15..12 down to A = 3..0) into
+          * XRGB8888, each nibble replicated to 8 bits */
+         for (i = 0; i < height; i++)
          {
-            uint16_t src_pix = src_row[j];
-            uint32_t r4      = (src_pix >> 12) & 0xF;
-            uint32_t g4      = (src_pix >>  8) & 0xF;
-            uint32_t b4      = (src_pix >>  4) & 0xF;
-            uint32_t r8      = (r4 << 4) | r4;
-            uint32_t g8      = (g4 << 4) | g4;
-            uint32_t b8      = (b4 << 4) | b4;
-            dst_row[j]       = (r8 << 16) | (g8 << 8) | b8;
+            const uint16_t *src_row = (const uint16_t*)frame + (width * i);
+            uint32_t       *dst_row = (uint32_t*)(dst_base + (dst_pitch * i));
+            unsigned int    j;
+
+            for (j = 0; j < width; j++)
+            {
+               uint16_t src_pix = src_row[j];
+               uint32_t r4      = (src_pix >> 12) & 0xF;
+               uint32_t g4      = (src_pix >>  8) & 0xF;
+               uint32_t b4      = (src_pix >>  4) & 0xF;
+               dst_row[j]       = (((r4 << 4) | r4) << 16)
+                  | (((g4 << 4) | g4) << 8) | ((b4 << 4) | b4);
+            }
          }
       }
    }
@@ -1173,7 +1241,39 @@ static const video_poke_interface_t drm_poke_interface = {
    NULL, /* set_hdr_paper_white_nits */
    NULL, /* set_hdr_expand_gamut */
    NULL, /* set_hdr_scanlines */
-   NULL  /* set_hdr_subpixel_layout */
+   NULL, /* set_hdr_subpixel_layout */
+   NULL, /* supports_texture_format */
+   NULL, /* load_texture_compressed */
+   NULL, /* present_last */
+   NULL, /* get_last_present_time */
+   NULL, /* hw_ring_install */
+   NULL, /* hw_ring_fence_new */
+   NULL, /* hw_ring_fence_free */
+   NULL, /* hw_ring_fence_signal */
+   NULL, /* hw_ring_fence_wait */
+   NULL, /* hw_ring_capture */
+   NULL, /* hw_ring_present_slot */
+   NULL, /* hw_ring_context_new */
+   NULL, /* hw_ring_context_free */
+   NULL, /* hw_ring_framebuffer */
+   NULL, /* update_texture */
+   NULL, /* get_swap_interval_cap */
+   NULL, /* texture_lend */
+   NULL, /* texture_lend_ready */
+   NULL, /* get_last_present_wait */
+   NULL, /* set_view_count */
+   NULL, /* hw_context_destroying */
+   NULL, /* get_headset_refresh */
+   NULL, /* set_frame_format */
+   NULL, /* frame_mem_alloc */
+   NULL, /* frame_mem_ready */
+   NULL, /* frame_mem_free */
+   NULL, /* get_device */
+   NULL, /* import_texture */
+   NULL, /* get_last_present_sync */
+   NULL, /* record_read */
+   NULL, /* import_movie_frame */
+   drm_get_menu_framebuffer
 };
 
 static void drm_get_poke_interface(void *data,

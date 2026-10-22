@@ -1705,7 +1705,10 @@ jobs:
           # holds the plane queries' libdrm objects to the same. Rows the
           # kernel pads are written at its stride, each frame read at its
           # own pitch, the next page lent to the core and flipped without
-          # a copy, a dupe survived, and no allocation made per flip.
+          # a copy, a dupe survived, and no allocation made per flip. The
+          # menu scans out RGUI's RGBA4444 as it is where the plane takes
+          # it, is lent to RGUI, follows the frame's size, and asks the
+          # plane once rather than every menu frame.
           make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
              timeout 60 ./drm_surface_lifetime_test

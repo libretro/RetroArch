@@ -147,9 +147,11 @@ int drmModeSetPlane(int fd, uint32_t plane, uint32_t crtc, uint32_t fb,
    return 0;
 }
 
-/* One plane, an overlay on the CRTC, reading XRGB8888 and RGB565 */
+/* One plane, an overlay on the CRTC, reading XRGB8888 and RGB565, and
+ * RGBX4444 when count_formats says so */
 static uint32_t       plane_ids[1] = { PLANE_ID };
-static uint32_t       formats[2]   = { DRM_FORMAT_XRGB8888, DRM_FORMAT_RGB565 };
+static uint32_t       formats[3]   = { DRM_FORMAT_XRGB8888, DRM_FORMAT_RGB565,
+   DRM_FORMAT_RGBX4444 };
 static uint32_t       prop_ids[2]  = { FB_PROP_ID, TYPE_PROP_ID };
 static uint64_t       prop_vals[2] = { 0, DRM_PLANE_TYPE_OVERLAY };
 static drmModePlaneRes  plane_res  = { 1, plane_ids };
@@ -169,8 +171,9 @@ static void *dup_obj(const void *p, size_t n)
 drmModePlaneResPtr drmModeGetPlaneResources(int fd)
 { (void)fd; return (drmModePlaneResPtr)dup_obj(&plane_res, sizeof(plane_res)); }
 void drmModeFreePlaneResources(drmModePlaneResPtr p) { free(p); }
+static unsigned plane_queries;
 drmModePlanePtr drmModeGetPlane(int fd, uint32_t id)
-{ (void)fd; (void)id; return (drmModePlanePtr)dup_obj(&plane, sizeof(plane)); }
+{ (void)fd; (void)id; plane_queries++; return (drmModePlanePtr)dup_obj(&plane, sizeof(plane)); }
 void drmModeFreePlane(drmModePlanePtr p) { free(p); }
 drmModeObjectPropertiesPtr drmModeObjectGetProperties(int fd, uint32_t id, uint32_t type)
 { (void)fd; (void)id; (void)type; return (drmModeObjectPropertiesPtr)dup_obj(&props, sizeof(props)); }
@@ -462,6 +465,97 @@ int main(void)
          printf("   ok   padded rows, lending, dupes, and no allocation per flip\n");
       before = failures;
       core_frame(v, 320, 240);
+   }
+
+   /* The menu: RGUI's RGBA4444 converted, or scanned out as it is where
+    * the plane takes it, and rendered straight into the next page */
+   {
+      static uint16_t rgui[640 * 480];
+      struct drm_surface *s;
+      const uint8_t *row;
+      size_t pitch = 0;
+      uint16_t *loan;
+      uint32_t loan_fb;
+      unsigned x, y, queries;
+      bool same = true;
+
+      for (i = 0; i < 640 * 480; i++)
+         rgui[i] = (uint16_t)(0x1230u + i * 0x10u) | 0x5;
+
+      CHECK(!drm_get_menu_framebuffer(v, false, VIDEO_SCALE_PACK(320, 240), &pitch),
+            "nothing is lent while the menu is closed");
+
+      /* A plane without RGBX4444: converted, and nothing lent */
+      plane.count_formats = 2;
+      drm_set_texture_enable(v, true, false);
+      CHECK(!drm_get_menu_framebuffer(v, false, VIDEO_SCALE_PACK(320, 240), &pitch),
+            "RGBA4444 is not lent into an XRGB8888 page");
+      drm_set_texture_frame(v, rgui, false, VIDEO_SCALE_PACK(320, 240), 1.0f);
+      s = v->menu_surface;
+      CHECK(s && s->pixformat == DRM_FORMAT_XRGB8888, "the menu converts to XRGB8888");
+      if (s)
+      {
+         uint32_t px = ((const uint32_t*)s->pages[!s->flip_page].buf.map)[7];
+         uint16_t in = rgui[7];
+         CHECK(px == ((((in >> 12) & 0xF) * 0x11u) << 16
+                  | (((in >> 8) & 0xF) * 0x11u) << 8 | ((in >> 4) & 0xF) * 0x11u),
+               "a converted pixel is %08x", px);
+      }
+      drm_set_texture_enable(v, false, false);
+
+      /* A plane that takes it: copied as is, and lent */
+      plane.count_formats = 3;
+      v->menu_probed      = false;
+      drm_set_texture_enable(v, true, false);
+      loan = (uint16_t*)drm_get_menu_framebuffer(v, false,
+            VIDEO_SCALE_PACK(320, 240), &pitch);
+      s = v->menu_surface;
+      CHECK(loan && s && s->pixformat == DRM_FORMAT_RGBX4444
+            && pitch == s->pages[s->flip_page].buf.stride,
+            "the next RGBX4444 page is lent, at its stride");
+      if (loan && s)
+      {
+         loan_fb = s->pages[s->flip_page].buf.fb_id;
+         for (y = 0; y < 240; y++)
+            for (x = 0; x < 320; x++)
+               ((uint16_t*)((uint8_t*)loan + y * pitch))[x] = rgui[y * 320 + x];
+         drm_set_texture_frame(v, loan, false, VIDEO_SCALE_PACK(320, 240), 1.0f);
+         CHECK(plane_fb == loan_fb, "the lent page goes to the plane");
+         CHECK(((uint16_t*)((uint8_t*)loan + 9 * pitch))[11] == rgui[9 * 320 + 11],
+               "what RGUI rendered is what is shown");
+
+         /* From RGUI's own buffer: rows as they are */
+         drm_set_texture_frame(v, rgui, false, VIDEO_SCALE_PACK(320, 240), 1.0f);
+         row = s->pages[!s->flip_page].buf.map;
+         for (y = 0; y < 240; y += 11, row += 11 * s->pages[0].buf.stride)
+            for (x = 0; x < 320; x += 17)
+               if (((const uint16_t*)row)[x] != rgui[y * 320 + x])
+                  same = false;
+         CHECK(same, "RGBA4444 rows reach the page unconverted");
+      }
+
+      /* The plane is asked once, not every menu frame */
+      queries = plane_queries;
+      for (i = 0; i < 20; i++)
+         drm_set_texture_frame(v, rgui, false, VIDEO_SCALE_PACK(320, 240), 1.0f);
+      CHECK(plane_queries == queries, "%u plane queries over 20 menu frames, want none",
+            plane_queries - queries);
+
+      /* Another size in the same session: a surface of that size */
+      drm_set_texture_frame(v, rgui, false, VIDEO_SCALE_PACK(640, 480), 1.0f);
+      CHECK(v->menu_surface
+            && v->menu_surface->src_dims == VIDEO_SCALE_PACK(640, 480),
+            "the menu surface follows the frame's size");
+      CHECK(count(dumb_alive) == 5 && count(fb_alive) == 5,
+            "the frame's surface and the menu's: %u buffers, %u fbs",
+            count(dumb_alive), count(fb_alive));
+      drm_set_texture_enable(v, false, false);
+      CHECK(!v->menu_surface && count(dumb_alive) == 3,
+            "closing the menu leaves %u buffers", count(dumb_alive));
+      CHECK(blanks == 0, "the plane's fb was removed from under it %u time(s)", blanks);
+      if (failures == before)
+         printf("   ok   the menu in RGUI's own format, lent, and resized\n");
+      before = failures;
    }
 
    drm_gfx_free(v);
