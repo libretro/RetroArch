@@ -544,7 +544,6 @@ static void lane_retire(const char *path)
    gfx_surface_player_t *player;
    sthread_t *watchdog;
    int64_t start, deadline;
-   bool retained;
    int unloads;
    if (!th)
    {
@@ -570,9 +569,22 @@ static void lane_retire(const char *path)
    deadline = cpu_features_get_time_usec() + 5000000;
    while (!retro_atomic_load_acquire_int(&retire_entered)
          && cpu_features_get_time_usec() < deadline)
+   {
+      gfx_thumbnail_animate(th, cpu_features_get_time_usec());
       retro_sleep(1);
+   }
    check("retire", "worker entered blocked feeder",
          retro_atomic_load_acquire_int(&retire_entered));
+   if (!retro_atomic_load_acquire_int(&retire_entered))
+   {
+      retro_atomic_store_release_int(&retire_released, 1);
+      retro_eventcount_notify(&retire_wake);
+      gfx_thumbnail_reset(th);
+      free(th);
+      gfx_thumbnail_anim_worker_deinit();
+      retro_eventcount_free(&retire_wake);
+      return;
+   }
    {
       gfx_surface_t *surface = (gfx_surface_t*)th->anim_surface;
       check("retire", "producer surface remains available", surface != NULL);
@@ -599,23 +611,20 @@ static void lane_retire(const char *path)
          !th->anim_player && !th->anim_surface && !th->anim_lifetime);
    check("retire", "reset retains the producer texture",
          hp.texture_unloads == unloads);
-   retained = !retro_atomic_load_acquire_int(&retire_released);
    free(th);
    retro_atomic_store_release_int(&retire_released, 1);
    retro_eventcount_notify(&retire_wake);
    if (watchdog)
       sthread_join(watchdog);
-   if (retained)
+   deadline = cpu_features_get_time_usec() + 5000000;
+   do
    {
-      deadline = cpu_features_get_time_usec() + 5000000;
-      while (!video_player_stop(player->vp)
-            && cpu_features_get_time_usec() < deadline)
-         retro_sleep(1);
-      check("retire", "retired worker acknowledges completion",
-            video_player_stop(player->vp));
-   }
-   gfx_thumbnail_flush_requests();
-   check("retire", "polling reclaims the retired texture",
+      gfx_thumbnail_flush_requests();
+      if (hp.texture_unloads != unloads)
+         break;
+      retro_sleep(1);
+   } while (cpu_features_get_time_usec() < deadline);
+   check("retire", "completed worker and polling reclaim the retired texture",
          hp.texture_unloads == unloads + 1);
    gfx_thumbnail_anim_worker_deinit();
    retro_eventcount_free(&retire_wake);
