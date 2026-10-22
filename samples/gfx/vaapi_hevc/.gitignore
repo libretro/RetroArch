@@ -31,3 +31,8 @@
 /frame_test.exe
 /frame_tsan_test
 /frame_tsan_test.exe
+/lease_test
+/lease_test.exe
+
+/lease_tsan_test
+/lease_tsan_test.exe

@@ -1,7 +1,7 @@
 /* Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier: GPL-3.0-or-later */
 #include "vaapi_hevc_vulkan_frame.h"
-bool vaapi_hevc_vulkan_frame_create(vaapi_hevc_vulkan_frame_t *out,
-      vaapi_hevc_export_t *source, VkPhysicalDevice gpu, VkDevice device,
+bool vaapi_hevc_vulkan_frame_prepare(vaapi_hevc_vulkan_frame_t *out,
+      const vaapi_hevc_export_t *source, VkPhysicalDevice gpu, VkDevice device,
       bool prime_device, const VkPhysicalDeviceMemoryProperties *memory,
       const vulkan_prime_image_ops_t *ops, PFN_vkGetPhysicalDeviceFormatProperties2 get_format,
       PFN_vkGetPhysicalDeviceImageFormatProperties2 get_image)
@@ -38,7 +38,6 @@ bool vaapi_hevc_vulkan_frame_create(vaapi_hevc_vulkan_frame_t *out,
          return false;
       }
    }
-   out->source = *source;
    out->descriptor = source->descriptor;
    out->pool = source->pool;
    out->slot = source->slot;
@@ -51,6 +50,18 @@ bool vaapi_hevc_vulkan_frame_create(vaapi_hevc_vulkan_frame_t *out,
    out->ops = *ops;
    out->device = device;
    out->active = true;
+   return true;
+}
+bool vaapi_hevc_vulkan_frame_create(vaapi_hevc_vulkan_frame_t *out,
+      vaapi_hevc_export_t *source, VkPhysicalDevice gpu, VkDevice device,
+      bool prime_device, const VkPhysicalDeviceMemoryProperties *memory,
+      const vulkan_prime_image_ops_t *ops, PFN_vkGetPhysicalDeviceFormatProperties2 get_format,
+      PFN_vkGetPhysicalDeviceImageFormatProperties2 get_image)
+{
+   if (!vaapi_hevc_vulkan_frame_prepare(out, source, gpu, device, prime_device,
+            memory, ops, get_format, get_image))
+      return false;
+   out->source = *source;
    memset(source, 0, sizeof(*source));
    return true;
 }
@@ -101,12 +112,12 @@ bool vaapi_hevc_vulkan_frame_detach(vaapi_hevc_vulkan_frame_t *frame,
    memset(&frame->source, 0, sizeof(frame->source));
    return true;
 }
-bool vaapi_hevc_vulkan_frame_adopt(vaapi_hevc_vulkan_frame_t *frame,
-      vaapi_hevc_export_t *source)
+bool vaapi_hevc_vulkan_frame_matches(const vaapi_hevc_vulkan_frame_t *frame,
+      const vaapi_hevc_export_t *source)
 {
    const VADRMPRIMESurfaceDescriptor *a, *b;
    unsigned i, j;
-   if (!frame || !frame->active || frame->source.active || frame->pending || frame->broken
+   if (!frame || !frame->active || frame->broken
          || !source || !source->active || !source->ready || source == &frame->source
          || source->pool != frame->pool || source->slot != frame->slot
          || !source->pool || source->slot >= 32 || !source->ticket)
@@ -136,6 +147,14 @@ bool vaapi_hevc_vulkan_frame_adopt(vaapi_hevc_vulkan_frame_t *frame,
                || a->layers[i].pitch[j] != b->layers[i].pitch[j])
             return false;
    }
+   return true;
+}
+bool vaapi_hevc_vulkan_frame_adopt(vaapi_hevc_vulkan_frame_t *frame,
+      vaapi_hevc_export_t *source)
+{
+   if (!frame || frame->source.active || frame->pending
+         || !vaapi_hevc_vulkan_frame_matches(frame, source))
+      return false;
    frame->source = *source;
    memset(source, 0, sizeof(*source));
    return true;

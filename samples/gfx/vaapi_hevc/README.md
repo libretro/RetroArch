@@ -17,6 +17,12 @@ DMA-BUF device/inode identities, layout and decoder slot, followed by
 crop/color and ticket reconfiguration. FD numbers are never cache keys.
 Native identity capture refuses legacy non-DMA-BUF anonymous inodes.
 
+The renderer lease bridge claims the opaque carrier, adopts a matching
+prepared import, configures the picture and submits conversion. Refusal
+restores the pending lease; completion publishes its return for decoder
+collection. Uncertain work retains ownership until exact device teardown.
+`lease_test` covers this path with the typed Vulkan command fixture.
+
 `make gpu-check SANITIZER=address,undefined` additionally needs the Vulkan
 loader, development library, validation layer and a device supporting
 Vulkan 1.1, external-memory FD and foreign queue ownership. Mesa lavapipe

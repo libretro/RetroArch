@@ -17,6 +17,13 @@ typedef struct vaapi_hevc_vulkan_frame
    unsigned slot;
    bool active, pending, broken;
 } vaapi_hevc_vulkan_frame_t;
+/* Cold cache preparation borrowing an intact claimed source. Imports retain
+ * their own references; no export or decoder ticket is taken. */
+bool vaapi_hevc_vulkan_frame_prepare(vaapi_hevc_vulkan_frame_t *out,
+      const vaapi_hevc_export_t *source, VkPhysicalDevice gpu, VkDevice device,
+      bool prime_device, const VkPhysicalDeviceMemoryProperties *memory,
+      const vulkan_prime_image_ops_t *ops, PFN_vkGetPhysicalDeviceFormatProperties2 get_format,
+      PFN_vkGetPhysicalDeviceImageFormatProperties2 get_image);
 /* Cold cache population, zeroed out. Both imports must succeed before moving
  * source's export/FDs/ticket into this owner. Failure consumes nothing. VA has
  * completed the source picture; matching physical-device identity is required.
@@ -48,6 +55,9 @@ bool vaapi_hevc_vulkan_frame_detach(vaapi_hevc_vulkan_frame_t *frame,
  * and submission ticket for each newly adopted picture. */
 bool vaapi_hevc_vulkan_frame_adopt(vaapi_hevc_vulkan_frame_t *frame,
       vaapi_hevc_export_t *source);
+/* Immutable cache-key comparison; source remains borrowed and unchanged. */
+bool vaapi_hevc_vulkan_frame_matches(const vaapi_hevc_vulkan_frame_t *frame,
+      const vaapi_hevc_export_t *source);
 /* One zero-timeout status query. 1 complete, 0 pending, -1 sticky error. */
 int vaapi_hevc_vulkan_frame_poll(vaapi_hevc_vulkan_frame_t *frame, PFN_vkGetFenceStatus status);
 /* Renderer owner, after final GPU and descriptor references retire. Destroy

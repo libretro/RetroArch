@@ -117,7 +117,10 @@ static int sub_present(void)
    return vaapi_hevc_vulkan_submission_present(&sub, (VkImage)(uintptr_t)500,
          (VkImageView)(uintptr_t)501, VK_FORMAT_R8G8B8A8_UNORM, 60, 58, destination_layout);
 }
-int main(void)
+#ifndef VAAPI_PRIME_SUBMIT_TEST_MAIN
+#define VAAPI_PRIME_SUBMIT_TEST_MAIN main
+#endif
+int VAAPI_PRIME_SUBMIT_TEST_MAIN(void)
 {
    static const VkImageLayout layouts[] = { VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
    video_color_metadata_t color;
