@@ -254,6 +254,7 @@ bool mediacodec_av1_backend_init(mediacodec_av1_backend_t *backend,
    retro_atomic_int_init(&backend->active, 0);
    backend->offer.user           = backend;
    backend->offer.open_config    = mediacodec_av1_backend_open;
+   backend->offer.drain = mediacodec_av1_decoder_finish;
    backend->offer.packet_decoder = true;
    backend->offer.close          = mediacodec_av1_decoder_close;
    return true;

@@ -149,6 +149,8 @@ static int export_image(void *context, const android_image_view_t *image,
    assert(context == &native && fmt->serial
           && sequence->bit_depth == (unsigned)depth);
    assert(color && color->transfer == (expected_eotf ? expected_eotf : 1));
+   assert(fmt->right - fmt->left == image->right - image->left
+         && fmt->bottom - fmt->top == image->bottom - image->top);
    if (export_busy)
    {
       export_busy--;
@@ -368,6 +370,20 @@ static void execute(unsigned bits)
    assert(mediacodec_av1_decoder_retire_poll(retired));
    picture.setup.size.upscaled_width = picture.setup.size.width = 64;
    picture.setup.size.height                                    = 64;
+   reset();
+   assert(open_owner(NULL));
+   assert(!ops.decode(ops.decoder, packet, sizeof(packet), &sequence, &picture));
+   queued_tag = rendered_tag = 1;
+   export_busy = 1;
+   assert(ops.output(ops.decoder, 1, &picture.grain.params, &frame) == 1);
+   format.right = format.bottom = 32;
+   format.serial = 0;
+   assert(!ops.output(ops.decoder, 1, &picture.grain.params, &frame));
+   assert(frame.width == 64 && frame.height == 64);
+   mediacodec_av1_decoder_close(&ops);
+   assert(!mediacodec_av1_decoder_retire_poll(retired));
+   assert(android_image_queue_return(held.ticket, held.generation, -1));
+   assert(mediacodec_av1_decoder_retire_poll(retired));
    for (fault = 16; fault <= 18; fault += 2)
    {
       reset();

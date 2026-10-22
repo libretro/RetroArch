@@ -54,6 +54,8 @@ typedef struct rav1_hw_backend
    bool (*open_config)(void *user, const rav1_sequence_t *sequence,
          const rav1_obu_t *sequence_obu, const video_color_metadata_t *color,
          unsigned slots, rav1_hw_ops_t *ops);
+   /* Packet decoders: 0 terminal completion, 1 pending, negative failure. */
+   int (*drain)(void *decoder, bool discard);
    /* Opaque bitstream decoders also consume show-existing header OBUs. */
    bool packet_decoder;
 } rav1_hw_backend_t;
@@ -167,7 +169,8 @@ static INLINE bool rav1_hw_session_cancel(rav1_hw_session_t *s)
 }
 
 /* 0 consumed, 1 BUSY, negative invalid/backend failure (-2 unsupported).
- * Drain/discard display before the next packet. Retain immutable input on BUSY
+ * Packet decoders may submit hidden frames behind pending display output.
+ * Drain/discard display before another visible packet. Retain input on BUSY
  * and retry the same pointer/size. One decode callback per call, no waiting. */
 static INLINE int rav1_hw_session_submit(rav1_hw_session_t *s,
                                          const uint8_t *packet, size_t size)
@@ -190,7 +193,7 @@ static INLINE int rav1_hw_session_submit(rav1_hw_session_t *s,
    }
    else
    {
-      if (s->output_slot >= 0)
+      if (s->output_slot >= 0 && !s->packet_decoder)
          return 1;
       if (rav1_obu_next(&obu, packet, size, &offset, true) != 1 ||
           offset != size)
@@ -203,9 +206,13 @@ static INLINE int rav1_hw_session_submit(rav1_hw_session_t *s,
       bits.byte = 0;
       bits.bit = bits.failed = 0;
       if (!rav1_frame_prefix_parse(&s->pending.header, &bits, &s->sequence, 0,
-                                   0, obu.type == 6) ||
-          !rav1_reference_prepare(&s->transaction, &s->state, &s->sequence,
-                                  &s->pending.header))
+                                   0, obu.type == 6))
+         return -1;
+      if (s->output_slot >= 0 && (s->pending.header.show_existing
+               || s->pending.header.show_frame))
+         return 1;
+      if (!rav1_reference_prepare(&s->transaction, &s->state, &s->sequence,
+               &s->pending.header))
          return -1;
       if (s->pending.header.show_existing)
       {

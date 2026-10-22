@@ -68,6 +68,13 @@ static bool open_config(void *user, const rav1_sequence_t *seq,
    return open_backend(user, seq, slots, result);
 }
 
+static int drain_backend(void *decoder, bool discard)
+{
+   (void)decoder;
+   (void)discard;
+   return 0;
+}
+
 int main(void)
 {
    rav1_set_hw_backend(NULL);
@@ -82,6 +89,12 @@ int main(void)
    CHECK(!rav1_hw_backend_open(&sequence, 9, NULL, &retained));
    CHECK(!rav1_hw_backend_open(&sequence, 9, &ops, NULL));
    CHECK(!opens && !closes);
+   factory.drain = drain_backend;
+   CHECK(!rav1_hw_backend_open(&sequence, 9, &ops, &retained));
+   CHECK(!opens && !closes);
+   CHECK(!memcmp(&ops, &empty_ops, sizeof(ops)));
+   CHECK(!memcmp(&retained, &empty_backend, sizeof(retained)));
+   factory.drain = NULL;
    for (mode = 1; mode <= 3; mode++)
    {
       CHECK(!rav1_hw_backend_open(&sequence, 9, &ops, &retained));

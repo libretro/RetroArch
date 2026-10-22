@@ -47,6 +47,8 @@ bool rav1_hw_backend_open_config(const rav1_sequence_t *sequence,
    if (!sequence || slots < 9 || slots > 32 || !factory
          || (!factory->open && !factory->open_config) || !factory->close)
       return false;
+   if (factory->drain && !factory->packet_decoder)
+      return false;
    opened = factory->open_config
                   ? factory->open_config(factory->user, sequence, sequence_obu,
                           color, slots, ops)

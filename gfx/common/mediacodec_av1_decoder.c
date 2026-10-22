@@ -16,7 +16,7 @@ struct mediacodec_av1_decoder
    rav1_sequence_t sequence;
    rav1_grain_t grain;
    video_color_metadata_t color;
-   mediacodec_output_format_t format;
+   mediacodec_output_format_t format, display_format;
    unsigned slots, capacity, output_slot, output_width, output_height;
    bool failed, closed, eos, output_eos, rendered;
 };
@@ -49,7 +49,10 @@ static int mediacodec_av1_service(mediacodec_av1_decoder_t *d)
       if (pts <= 0 || (uint64_t)pts > d->serial)
          goto fail;
       if ((uint64_t)pts == d->tag)
+      {
          d->rendered = true;
+         if (!d->display_format.serial) d->display_format = d->format;
+      }
    }
    if (status == 3)
    {
@@ -90,6 +93,7 @@ static int mediacodec_av1_service(mediacodec_av1_decoder_t *d)
       mediacodec_av1_discard(&image);
       goto fail;
    }
+   if (!d->display_format.serial) d->display_format = d->format;
    d->image = image;
    return 0;
 fail:
@@ -137,6 +141,7 @@ static int mediacodec_av1_decode(void *opaque, const uint8_t *packet,
       d->tag         = d->serial;
       d->output_slot = (unsigned)picture->slot;
       d->rendered    = false;
+      memset(&d->display_format, 0, sizeof(d->display_format));
    }
    if (show)
    {
@@ -168,13 +173,13 @@ static int mediacodec_av1_output(void *opaque, unsigned slot,
    }
    if (d->image.right - d->image.left != d->output_width
          || d->image.bottom - d->image.top != d->output_height
-         || d->format.right - d->format.left != d->output_width
-         || d->format.bottom - d->format.top != d->output_height)
+         || d->display_format.right - d->display_format.left != d->output_width
+         || d->display_format.bottom - d->display_format.top != d->output_height)
    {
       d->failed = true;
       return -1;
    }
-   status = d->importer.export_image(d->importer.context, &d->image, &d->format,
+   status = d->importer.export_image(d->importer.context, &d->image, &d->display_format,
          &d->sequence, &d->color, out);
    if (!status)
    {

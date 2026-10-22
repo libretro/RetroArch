@@ -1057,6 +1057,51 @@ static int rmp4_video_av1_learn_hdr(rmp4_video_stream_t *s)
    return 1;
 }
 
+static int rmp4_video_av1_result(rmp4_video_stream_t *s,
+      int ret, video_hw_frame_t *frame)
+{
+   if (ret == RAV1_HW_STREAM_FRAME)
+   {
+      if (frame->width != s->width || frame->height != s->height)
+      {
+         video_hw_frame_abandon(frame);
+         return -1;
+      }
+      if (s->matrix == 1)
+         frame->yuv |= IMAGE_YUV_FLAG_BT709;
+      else
+         frame->yuv &= ~IMAGE_YUV_FLAG_BT709;
+      frame->color.mastering = s->mastering;
+      frame->color.max_cll = s->max_cll;
+      frame->color.max_fall = s->max_fall;
+      frame->color.primaries = s->primaries;
+      frame->color.transfer = s->transfer;
+      frame->color.matrix = s->matrix;
+      frame->color.range = s->range ? 2 : 1;
+      if (!rav1_hdr_metadata_merge(&frame->color, &s->av1->output_hdr))
+      {
+         video_hw_frame_abandon(frame);
+         s->av1->error = -1;
+         return -1;
+      }
+      rmp4_video_hwf_drop(s);
+      s->hwf = *frame;
+      s->hwf_untaken = 1;
+      s->rndr_kind = 5;
+      return 3;
+   }
+   if (ret == RAV1_HW_STREAM_DISCARDED)
+   {
+      rmp4_video_hwf_drop(s);
+      s->rndr_kind = 0;
+      return 3;
+   }
+   if (ret == RAV1_HW_STREAM_PROGRESS || ret == RAV1_HW_STREAM_PENDING)
+      return 4;
+   if (ret == RAV1_HW_STREAM_BUSY)
+      return 2;
+   return ret;
+}
 static int rmp4_video_av1_packet(rmp4_video_stream_t *s, const rmp4_packet *pkt,
                                  int discard)
 {
@@ -1077,53 +1122,23 @@ static int rmp4_video_av1_packet(rmp4_video_stream_t *s, const rmp4_packet *pkt,
       s->av1_decode_sample++;
    }
    if (!s->av1_hdr_initial_set &&
-       (ret == RAV1_HW_STREAM_FRAME || ret == RAV1_HW_STREAM_DISCARDED))
+       (ret == RAV1_HW_STREAM_FRAME || ret == RAV1_HW_STREAM_DISCARDED
+             || ret == RAV1_HW_STREAM_PENDING))
    {
-      s->av1_hdr_initial = s->av1->hdr;
+      s->av1_hdr_initial = s->av1->output_hdr;
       s->av1_hdr_initial_set = 1;
    }
-   if (ret == RAV1_HW_STREAM_FRAME)
-   {
-      if (frame.width != s->width || frame.height != s->height)
-      {
-         video_hw_frame_abandon(&frame);
-         return -1;
-      }
-      if (s->matrix == 1)
-         frame.yuv |= IMAGE_YUV_FLAG_BT709;
-      else
-         frame.yuv &= ~IMAGE_YUV_FLAG_BT709;
-      frame.color.mastering = s->mastering;
-      frame.color.max_cll = s->max_cll;
-      frame.color.max_fall = s->max_fall;
-      frame.color.primaries = s->primaries;
-      frame.color.transfer = s->transfer;
-      frame.color.matrix = s->matrix;
-      frame.color.range = s->range ? 2 : 1;
-      if (!rav1_hdr_metadata_merge(&frame.color, &s->av1->hdr))
-      {
-         video_hw_frame_abandon(&frame);
-         s->av1->error = -1;
-         return -1;
-      }
-      rmp4_video_hwf_drop(s);
-      s->hwf = frame;
-      s->hwf_untaken = 1;
-      s->rndr_kind = 5;
-      return 3;
-   }
-   if (ret == RAV1_HW_STREAM_DISCARDED)
-   {
-      rmp4_video_hwf_drop(s);
-      s->rndr_kind = 0;
-      return 3;
-   }
-   if (ret == RAV1_HW_STREAM_PROGRESS)
-      return 4;
-   if (ret == RAV1_HW_STREAM_BUSY)
-      return 2;
-   return ret;
+   return rmp4_video_av1_result(s, ret, &frame);
 }
+
+static int rmp4_video_av1_output(rmp4_video_stream_t *s, int discard, int terminal)
+{
+   video_hw_frame_t frame;
+   int ret = terminal ? rav1_hw_stream_finish(s->av1, &frame, discard != 0)
+                      : rav1_hw_stream_output(s->av1, &frame, discard != 0);
+   return rmp4_video_av1_result(s, ret, &frame);
+}
+
 #endif
 
 /* Decode one demuxed packet into s->frame. Returns 1 when a picture was
@@ -1293,6 +1308,9 @@ static int rmp4_video_stream_step(rmp4_video_stream_t *s,
 {
    rmp4_packet pkt;
    int drained = -1;
+#ifdef HAVE_RAV1
+   int av1_eof = 0;
+#endif
 
    for (;;)
    {
@@ -1313,11 +1331,29 @@ static int rmp4_video_stream_step(rmp4_video_stream_t *s,
           * the H.264 reorder queue now would present its held
           * pictures early and out of order. */
       {
+#ifdef HAVE_RAV1
+         if (s->av1 && s->av1->backend.drain)
+         {
+            int output = rmp4_video_av1_output(s, discard, 0);
+            if (output < 0) return -1;
+            if (output == 3)
+            {
+               if (duration_ms) *duration_ms = rmp4_video_duration_ms(s, s->disp_idx);
+               s->disp_idx++;
+               return 1;
+            }
+         }
+#endif
          s->waiting = RMP4_VIDEO_WAIT_INPUT;
          return 2;
       }
       if (r != 1)
+      {
+#ifdef HAVE_RAV1
+         av1_eof = r == 0;
+#endif
          break;
+      }
       if (pkt.track != s->track)
          continue;
       r = rmp4_video_decode_packet(s, &pkt, discard);
@@ -1346,6 +1382,26 @@ static int rmp4_video_stream_step(rmp4_video_stream_t *s,
       s->disp_idx++;
       return 1;
    }
+#ifdef HAVE_RAV1
+   if (s->av1)
+   {
+      int output;
+      if (!av1_eof) return -1;
+      output = rmp4_video_av1_output(s, discard, 1);
+      if (output == 2)
+      {
+         s->waiting = RMP4_VIDEO_WAIT_DECODER;
+         return 2;
+      }
+      if (output == 3)
+      {
+         if (duration_ms) *duration_ms = rmp4_video_duration_ms(s, s->disp_idx);
+         s->disp_idx++;
+         return 1;
+      }
+      return -1;
+   }
+#endif
    /* Out of packets. Display reordering can leave the last few pictures
     * queued inside the H.264 decoder; hand them out before ending the
     * pass, one per call, on the same presentation clock. */

@@ -23,7 +23,7 @@ CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
 
-all: $(HDR) $(TARGET) $(CONTAINER) $(SEQUENCE) $(TILES) $(TILE_INFO) $(FRAME) $(PICTURE) $(REFERENCE) $(MOTION) $(GRAIN) $(STATE) $(HW) $(BACKEND) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3)
+all: rav1_mp4_terminal_test$(EXE) rav1_webm_terminal_test$(EXE) rav1_hw_terminal_test$(EXE) $(HDR) $(TARGET) $(CONTAINER) $(SEQUENCE) $(TILES) $(TILE_INFO) $(FRAME) $(PICTURE) $(REFERENCE) $(MOTION) $(GRAIN) $(STATE) $(HW) $(BACKEND) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3)
 
 $(HDR): rav1_hdr_test.c $(COMMON)/include/formats/rav1_hdr.h
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
@@ -44,7 +44,16 @@ WEBM_SOURCES := $(COMMON)/formats/webm/rwebm.c $(COMMON)/formats/webm/rwebm_vide
 $(TARGET_TEST3): rav1_webm_stream_test.c rav1_webm_fixture.h rav1_mp4_fixture.h $(MP4_SOURCES) $(WEBM_SOURCES) $(wildcard $(COMMON)/include/formats/rav1*.h) $(COMMON)/include/formats/rwebm_video.h Makefile
 	$(CC) $(CFLAGS) -DHAVE_RAV1 -DRWEBM_VIDEO_MAX_TS=4 -ffunction-sections -fdata-sections -o $@ $< $(MP4_SOURCES) $(WEBM_SOURCES) $(LDFLAGS) -Wl,--gc-sections -lm
 
+rav1_mp4_terminal_test$(EXE): rav1_terminal_container_test.c rav1_mp4_stream_test.c rav1_mp4_fixture.h $(MP4_SOURCES) $(wildcard $(COMMON)/include/formats/rav1*.h)
+	$(CC) $(CFLAGS) -DHAVE_RAV1 -DHAVE_RMP4 -ffunction-sections -fdata-sections -o $@ $< $(MP4_SOURCES) $(LDFLAGS) -Wl,--gc-sections -lm
+
+rav1_webm_terminal_test$(EXE): rav1_terminal_container_test.c rav1_webm_stream_test.c rav1_webm_fixture.h rav1_mp4_fixture.h $(MP4_SOURCES) $(WEBM_SOURCES) $(wildcard $(COMMON)/include/formats/rav1*.h)
+	$(CC) $(CFLAGS) -DTERMINAL_WEBM -DHAVE_RAV1 -DRWEBM_VIDEO_MAX_TS=4 -ffunction-sections -fdata-sections -o $@ $< $(MP4_SOURCES) $(WEBM_SOURCES) $(LDFLAGS) -Wl,--gc-sections -lm
+
 $(TARGET_TEST): rav1_hw_stream_test.c $(COMMON)/formats/av1/rav1_hw.c $(wildcard $(COMMON)/include/formats/rav1*.h)
+	$(CC) $(CFLAGS) -o $@ $< $(COMMON)/formats/av1/rav1_hw.c $(LDFLAGS)
+
+rav1_hw_terminal_test$(EXE): rav1_hw_terminal_test.c rav1_hw_stream_test.c $(COMMON)/formats/av1/rav1_hw.c $(wildcard $(COMMON)/include/formats/rav1*.h)
 	$(CC) $(CFLAGS) -o $@ $< $(COMMON)/formats/av1/rav1_hw.c $(LDFLAGS)
 
 $(BACKEND): rav1_hw_backend_test.c $(COMMON)/formats/av1/rav1_hw.c $(COMMON)/include/formats/rav1_hw.h
@@ -88,6 +97,9 @@ $(CONTAINER): rav1_container_test.c $(COMMON)/include/formats/rav1.h \
 	   $(COMMON)/formats/mp4/rmp4.c $(COMMON)/formats/webm/rwebm.c $(LDFLAGS) -lm
 
 check: all
+	$(RUNNER) ./rav1_mp4_terminal_test$(EXE)
+	$(RUNNER) ./rav1_webm_terminal_test$(EXE)
+	$(RUNNER) ./rav1_hw_terminal_test$(EXE)
 	$(RUNNER) ./$(HDR)
 	$(RUNNER) ./$(TARGET)
 	$(RUNNER) ./$(CONTAINER)
@@ -109,6 +121,8 @@ check: all
 	$(RUNNER) ./$(BACKEND)
 
 clean:
+	rm -f rav1_mp4_terminal_test rav1_mp4_terminal_test.exe rav1_webm_terminal_test rav1_webm_terminal_test.exe
+	rm -f rav1_hw_terminal_test rav1_hw_terminal_test.exe
 	rm -f rav1_hdr_test rav1_hdr_test.exe
 	rm -f rav1_webm_stream_test rav1_webm_stream_test.exe
 	rm -f rav1_mp4_stream_test rav1_mp4_stream_test.exe

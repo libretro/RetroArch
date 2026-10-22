@@ -11,7 +11,9 @@ enum rav1_hw_stream_result
    RAV1_HW_STREAM_FRAME = 1,
    RAV1_HW_STREAM_PROGRESS = 2,
    RAV1_HW_STREAM_BUSY = 3,
-   RAV1_HW_STREAM_DISCARDED = 4
+   RAV1_HW_STREAM_DISCARDED = 4,
+   /* Visible input accepted; retain its presentation info until FRAME. */
+   RAV1_HW_STREAM_PENDING = 5
 };
 
 /* Persistent caller-owned storage, confined to the decoder thread. */
@@ -23,9 +25,9 @@ typedef struct rav1_hw_stream
    const uint8_t *packet;
    size_t size, offset, next;
    rav1_sequence_t sequence;
-   rav1_hdr_metadata_t hdr;
+   rav1_hdr_metadata_t hdr, output_hdr;
    video_color_metadata_t color;
-   int opened, submitted, started, error;
+   int opened, submitted, started, error, ending;
 } rav1_hw_stream_t;
 
 static INLINE bool rav1_hw_stream_open_sequence(rav1_hw_stream_t *s)
@@ -36,7 +38,10 @@ static INLINE bool rav1_hw_stream_open_sequence(rav1_hw_stream_t *s)
       const rav1_sequence_t *old = &s->session.sequence;
       const rav1_sequence_t *seq = &s->sequence;
       if (!memcmp(seq, old, sizeof(*seq)))
+      {
+         memset(&s->sequence_obu, 0, sizeof(s->sequence_obu));
          return true;
+      }
       /* av1C is provisional until the first frame, but its output
        * geometry and color have already been admitted by the caller. */
       if (s->started || seq->max_width != old->max_width ||
@@ -104,7 +109,7 @@ static INLINE void rav1_hw_stream_close(rav1_hw_stream_t *s)
 static INLINE int rav1_hw_stream_begin(rav1_hw_stream_t *s,
                                        const uint8_t *packet, size_t size)
 {
-   if (!s || s->error || !packet || !size)
+   if (!s || s->error || s->ending || !packet || !size)
       return s && s->error ? s->error : -1;
    if (s->packet)
       return 1;
@@ -116,8 +121,71 @@ static INLINE int rav1_hw_stream_begin(rav1_hw_stream_t *s,
    return 0;
 }
 
-/* Release the previous out before stepping again. One OBU per call; BUSY
- * retries submission/export without advancing input.
+/* Export only the retained display; accepted input can already be retired. */
+static INLINE int rav1_hw_stream_output(rav1_hw_stream_t *s,
+      video_hw_frame_t *out, bool discard)
+{
+   int ret;
+   if (!out)
+      return -1;
+   memset(out, 0, sizeof(*out));
+   if (!s || s->error)
+      return s ? s->error : -1;
+   if (s->session.output_slot < 0)
+      return RAV1_HW_STREAM_END;
+   if (discard)
+   {
+      rav1_hw_session_discard_output(&s->session);
+      return RAV1_HW_STREAM_DISCARDED;
+   }
+   ret = rav1_hw_session_output(&s->session, out);
+   if (ret > 0)
+      return RAV1_HW_STREAM_BUSY;
+   if (ret < 0)
+   {
+      rav1_hw_session_cancel(&s->session);
+      s->packet = NULL;
+      memset(&s->obu, 0, sizeof(s->obu));
+      s->error = ret;
+      return ret;
+   }
+   rav1_hdr_metadata_apply(&out->color, &s->output_hdr);
+   return RAV1_HW_STREAM_FRAME;
+}
+
+/* Terminal input only, after packet END. One drain and at most one export;
+ * pending native delivery returns BUSY without waiting. */
+static INLINE int rav1_hw_stream_finish(rav1_hw_stream_t *s,
+      video_hw_frame_t *out, bool discard)
+{
+   int ret, output;
+   if (!out)
+      return -1;
+   memset(out, 0, sizeof(*out));
+   if (!s || s->error || s->packet)
+      return s && s->error ? s->error : -1;
+   s->ending = 1;
+   if (!s->opened || !s->backend.drain)
+      return RAV1_HW_STREAM_END;
+   ret = s->backend.drain(s->session.ops.decoder, discard);
+   if (ret < 0)
+   {
+      rav1_hw_session_cancel(&s->session);
+      s->packet = NULL;
+      memset(&s->obu, 0, sizeof(s->obu));
+      s->error = ret;
+      return ret;
+   }
+   output = rav1_hw_stream_output(s, out, discard);
+   if (output != RAV1_HW_STREAM_END)
+      return output;
+   return ret ? RAV1_HW_STREAM_BUSY : RAV1_HW_STREAM_END;
+}
+
+/* Release the previous out before stepping again. One OBU or retained display
+ * per call; BUSY retries without advancing input. Packet/drain mode reports
+ * PENDING after visible acceptance. END releases only the current input span;
+ * finish is required at actual container EOF.
  * FRAME transfers a GPU lease; DISCARDED consumes display without export.
  * Sequence changes after frame acceptance and split FRAME_HEADER/TILE_GROUP
  * coding are unsupported.
@@ -126,7 +194,7 @@ static INLINE int rav1_hw_stream_begin(rav1_hw_stream_t *s,
 static INLINE int rav1_hw_stream_step(rav1_hw_stream_t *s,
                                       video_hw_frame_t *out, bool discard)
 {
-   int ret, result = RAV1_HW_STREAM_PROGRESS;
+   int ret, previous, result = RAV1_HW_STREAM_PROGRESS;
    if (!out)
       return -1;
    memset(out, 0, sizeof(*out));
@@ -136,6 +204,12 @@ static INLINE int rav1_hw_stream_step(rav1_hw_stream_t *s,
       return RAV1_HW_STREAM_END;
    if (s->offset == s->size)
    {
+      if (s->backend.drain && s->session.output_slot >= 0)
+      {
+         ret = rav1_hw_stream_output(s, out, discard);
+         if (ret != RAV1_HW_STREAM_BUSY)
+            return ret;
+      }
       s->packet = NULL;
       s->size = s->offset = s->next = 0;
       return RAV1_HW_STREAM_END;
@@ -194,31 +268,37 @@ static INLINE int rav1_hw_stream_step(rav1_hw_stream_t *s,
          ret = -2;
          goto fail;
       }
+      previous = s->session.output_slot;
       if (!s->submitted)
       {
          ret = rav1_hw_session_submit(&s->session, s->obu.data, s->obu.size);
          if (ret > 0)
+         {
+            if (s->backend.drain && previous >= 0)
+               return rav1_hw_stream_output(s, out, discard);
             return RAV1_HW_STREAM_BUSY;
+         }
          if (ret < 0)
             goto fail;
          s->submitted = s->started = 1;
+         if (previous < 0 && s->session.output_slot >= 0)
+            s->output_hdr = s->hdr;
       }
-      if (s->session.output_slot >= 0)
+      if (s->backend.drain)
       {
-         if (discard)
+         if (previous < 0 && s->session.output_slot >= 0)
+            result = discard ? rav1_hw_stream_output(s, out, true)
+                             : RAV1_HW_STREAM_PENDING;
+      }
+      else if (s->session.output_slot >= 0)
+      {
+         result = rav1_hw_stream_output(s, out, discard);
+         if (result == RAV1_HW_STREAM_BUSY)
+            return result;
+         if (result < 0)
          {
-            rav1_hw_session_discard_output(&s->session);
-            result = RAV1_HW_STREAM_DISCARDED;
-         }
-         else
-         {
-            ret = rav1_hw_session_output(&s->session, out);
-            if (ret > 0)
-               return RAV1_HW_STREAM_BUSY;
-            if (ret < 0)
-               goto fail;
-            rav1_hdr_metadata_apply(&out->color, &s->hdr);
-            result = RAV1_HW_STREAM_FRAME;
+            ret = result;
+            goto fail;
          }
       }
       break;
