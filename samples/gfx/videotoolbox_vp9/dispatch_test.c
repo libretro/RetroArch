@@ -152,7 +152,10 @@ static bool open_dispatch(rvp9_hw_ops_t *ops)
          &header, &color, 1, 10, 64, &pool, NULL, ops);
 }
 
-int main(void)
+#ifndef DISPATCH_MAIN_NAME
+#define DISPATCH_MAIN_NAME main
+#endif
+int DISPATCH_MAIN_NAME(void)
 {
    videotoolbox_vp9_owner_t *init = open_owner();
    videotoolbox_vp9_decoder_t *d;

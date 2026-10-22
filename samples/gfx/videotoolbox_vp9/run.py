@@ -66,28 +66,13 @@ with tempfile.TemporaryDirectory(prefix="vt-vp9-setup-") as directory:
     subprocess.run(shlex.split(os.environ.get("RUNNER", "")) + [str(binary)], check=True, timeout=90)
 
     if not args.native:
-        command = compiler + flags + [str(here / "owner_test.c"), str(thread_object),
-            str(queue_object), "-o", str(binary)] + libraries
-        print("+", shlex.join(command), flush=True)
-        subprocess.run(command, check=True)
-        subprocess.run(shlex.split(os.environ.get("RUNNER", "")) + [str(binary)],
-                       check=True, timeout=90)
-
-    if not args.native:
-        command = compiler + flags + [str(here / "decoder_test.c"), str(thread_object),
-            str(queue_object), "-o", str(binary)] + libraries
-        print("+", shlex.join(command), flush=True)
-        subprocess.run(command, check=True)
-        subprocess.run(shlex.split(os.environ.get("RUNNER", "")) + [str(binary)],
-                       check=True, timeout=90)
-
-    if not args.native:
-        command = compiler + flags + [str(here / "dispatch_test.c"), str(thread_object),
-            str(queue_object), "-o", str(binary)] + libraries
-        print("+", shlex.join(command), flush=True)
-        subprocess.run(command, check=True)
-        subprocess.run(shlex.split(os.environ.get("RUNNER", "")) + [str(binary)],
-                       check=True, timeout=90)
+        for name in ("owner_test.c", "decoder_test.c", "dispatch_test.c", "backend_test.c"):
+            command = compiler + flags + [str(here / name), str(thread_object),
+                str(queue_object), "-o", str(binary)] + libraries
+            print("+", shlex.join(command), flush=True)
+            subprocess.run(command, check=True)
+            subprocess.run(shlex.split(os.environ.get("RUNNER", "")) + [str(binary)],
+                           check=True, timeout=90)
     else:
         unit = path / "native_setup.m"
         unit.write_text('#include "' + (here / "setup_test.c").as_posix() + '"\n',
