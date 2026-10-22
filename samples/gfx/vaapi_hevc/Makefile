@@ -98,6 +98,7 @@ all: long_slice_test$(EXE) long_packet_test$(EXE)
 test$(EXE): ../../../gfx/common/vaapi_hevc_slice.h
 test$(EXE): ../../../gfx/common/vaapi_hevc_long_packet.h
 check: all
+	$(RUNNER) ./weighted_test$(EXE)
 	$(RUNNER) ./native_pixels_test$(EXE)
 	$(RUNNER) ./long_packet_test$(EXE)
 	$(RUNNER) ./long_slice_test$(EXE)
@@ -129,6 +130,7 @@ ifneq ($(NATIVE_PROBE),)
 	./native_probe
 endif
 clean:
+	rm -f weighted_test weighted_test.exe
 	rm -f native_decode native_pixels_test native_pixels_test.exe
 	rm -f rh265_test.o rh265_tsan.o
 	rm -f long_packet_test long_packet_test.exe
@@ -155,3 +157,7 @@ native_decode: $(NATIVE_DECODE_SOURCES) rh265_test.o native_pixels.h ../videotoo
 native-decode-check: native_decode
 	./native_decode "$(VAAPI_RENDER_NODE)"
 .PHONY: native-decode-check
+weighted_test$(EXE): weighted_test.c test.c weighted_data.h native_pixels.h rh265_test.o
+	$(CC) $(CFLAGS) -Wno-unused-parameter weighted_test.c rh265_test.o -o $@ $(LDFLAGS) -lm
+all: weighted_test$(EXE)
+native_decode: weighted_data.h

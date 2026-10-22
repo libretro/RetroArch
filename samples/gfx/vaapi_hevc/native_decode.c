@@ -46,6 +46,7 @@ typedef struct sequence_case
 
 #include "../videotoolbox_hevc/sequence_data.h"
 #include "../videotoolbox_hevc/reorder_data.h"
+#include "weighted_data.h"
 
 #define VA_OK(call)                                                            \
    do                                                                          \
@@ -58,6 +59,8 @@ typedef struct sequence_case
 
 static const char *node;
 static unsigned major_id, minor_id, shown, modes, total, selected_mode;
+static unsigned visible_width, visible_height;
+static bool requires_wpp;
 static const sequence_case_t *active;
 static vaapi_hevc_owner_t *opened, *retired;
 static video_hw_frame_t held;
@@ -106,6 +109,10 @@ static bool open_owner(void *user, const rh265_video *source,
    unsigned yuv = IMAGE_YUV_FLAG_BT709;
    (void)user;
    assert(!opened && !retired);
+   visible_width =
+         (unsigned)(params->width - params->crop_left - params->crop_right);
+   visible_height =
+         (unsigned)(params->height - params->crop_top - params->crop_bottom);
    memset(&color, 0, sizeof(color));
    color.primaries = color.matrix = 1;
    color.transfer                 = 1;
@@ -113,7 +120,7 @@ static bool open_owner(void *user, const rh265_video *source,
    if (active->picture.full)
       yuv |= IMAGE_YUV_FLAG_FULL_RANGE;
    if (!vaapi_hevc_owner_open_source(&opened, source, node, major_id, minor_id,
-            params, &color, yuv, slots, 65536, ops))
+             params, &color, yuv, slots, 65536, ops))
    {
       retired = opened;
       opened  = NULL;
@@ -183,8 +190,11 @@ static void compare_pixels(const vaapi_frame_view_t *view,
             (unsigned)expected[1], (unsigned)expected[2]);
    assert(!memcmp(crc, expected, sizeof(crc)));
    assert(session->slice_mode == VA_DEC_SLICE_MODE_NORMAL
-         || session->slice_mode == VA_DEC_SLICE_MODE_BASE);
+          || session->slice_mode == VA_DEC_SLICE_MODE_BASE);
    modes |= session->slice_mode;
+   if (requires_wpp && session->slice_mode == VA_DEC_SLICE_MODE_NORMAL)
+      assert(source->pool->long_work
+             && source->pool->long_work->num_entries > 0);
    if (selected_mode)
       assert(selected_mode == session->slice_mode);
    selected_mode = session->slice_mode;
@@ -208,7 +218,7 @@ static void output_picture(rh265_video *source)
    assert(vaapi_frame_callback(frame.abandon));
    assert(vaapi_frame_claim(
          frame.owner, frame.done, frame.done_value, frame.image, &view));
-   assert(frame.width == 64 && frame.height == 64);
+   assert(frame.width == visible_width && frame.height == visible_height);
    compare_pixels(&view, display_crc(shown), shown);
    if (shown == 7)
    {
@@ -225,19 +235,20 @@ static void output_picture(rh265_video *source)
    total++;
 }
 
-static bool execute(const sequence_case_t *fixture)
+static bool execute(const sequence_case_t *fixture, bool wpp)
 {
    rh265_video *source;
    uint64_t deadline;
    unsigned packet, before = fd_count();
    int result;
+   requires_wpp  = wpp;
    active        = fixture;
    shown         = 0;
    selected_mode = 0;
    source        = rh265_video_open();
    assert(source
-         && !rh265_video_set_extradata(
-               source, fixture->picture.hvcc, fixture->picture.hvcc_size));
+          && !rh265_video_set_extradata(
+                source, fixture->picture.hvcc, fixture->picture.hvcc_size));
    if (!rh265_video_set_hw(source, 1))
    {
       rh265_video_close(source);
@@ -305,19 +316,25 @@ int main(int argc, char **argv)
    for (round = 0; round < 2; round++)
    {
       for (i = 0; i < sizeof(sequence_cases) / sizeof(sequence_cases[0]); i++)
-         if (!execute(&sequence_cases[i]))
+         if (!execute(&sequence_cases[i], false))
          {
             assert(rh265_unset_hw_backend(&backend));
             return 2;
          }
       for (i = 0; i < sizeof(reorder_cases) / sizeof(reorder_cases[0]); i++)
-         if (!execute(&reorder_cases[i]))
+         if (!execute(&reorder_cases[i], false))
+         {
+            assert(rh265_unset_hw_backend(&backend));
+            return 2;
+         }
+      for (i = 0; i < sizeof(weighted_cases) / sizeof(weighted_cases[0]); i++)
+         if (!execute(&weighted_cases[i], true))
          {
             assert(rh265_unset_hw_backend(&backend));
             return 2;
          }
    }
-   assert(total == 128 && rh265_unset_hw_backend(&backend));
+   assert(total == 192 && rh265_unset_hw_backend(&backend));
    printf(
          "PASS native VA oracle: %u pictures, selected slice-mode mask %u; Vulkan modifier import remains separate\n",
          total, modes);
