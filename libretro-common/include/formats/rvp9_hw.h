@@ -41,6 +41,9 @@ typedef struct rvp9_hw_backend
    bool (*open_color)(void *user, const rvp9_hdr *header,
          const video_color_metadata_t *color, unsigned slots,
          rvp9_hw_ops_t *ops);
+   /* Packet decoders only. Terminal input: 0 complete, 1 pending, negative failure.
+    * discard drops pending display output. Exported leases remain valid. */
+   int (*drain)(void *decoder, bool discard);
    /* Opaque bitstream decoders also consume show_existing_frame packets. */
    bool packet_decoder;
 } rvp9_hw_backend_t;
@@ -151,51 +154,59 @@ static INLINE void rvp9_hw_inherit(rvp9_hdr *h, const rvp9_hdr *prev)
 }
 
 /* 0 consumed, 1 busy, negative invalid/backend failure (-2 unsupported).
- * Drain pending display output before submitting another packet. On backend
+ * Packet decoders may consume hidden frames behind pending display output.
+ * Drain pending display output before another visible packet. On backend
  * busy retain immutable packet storage and retry the same pointer and size.
  * One decode callback per call; no allocation, pixel copies or waiting. */
-static INLINE int rvp9_hw_session_submit(rvp9_hw_session_t *s,
-      const uint8_t *packet, size_t size)
+static INLINE int rvp9_hw_session_submit(
+      rvp9_hw_session_t *s, const uint8_t *packet, size_t size)
 {
    rvp9_hdr *h;
    uint32_t occupied;
    unsigned i;
    int ret, dims[RVP9_REF_FRAMES * 2];
-   if (!s || s->broken || !s->ops.decode || !packet || !size) return -1;
+   if (!s || s->broken || !s->ops.decode || !packet || !size)
+      return -1;
    if (s->phase)
    {
-      if (packet != s->packet || size != s->packet_size) return -1;
+      if (packet != s->packet || size != s->packet_size)
+         return -1;
    }
    else
    {
-      if (s->output_slot >= 0) return 1;
+      if (s->output_slot >= 0 && !s->packet_decoder)
+         return 1;
       for (i = 0; i < RVP9_REF_FRAMES; i++)
       {
-         dims[i * 2] = s->reference_slots[i] >= 0 ? s->header.w : 0;
+         dims[i * 2]     = s->reference_slots[i] >= 0 ? s->header.w : 0;
          dims[i * 2 + 1] = s->reference_slots[i] >= 0 ? s->header.h : 0;
       }
       memset(&s->pending, 0, sizeof(s->pending));
-      h = &s->pending.header;
+      h   = &s->pending.header;
       ret = rvp9_parse_frame_header(packet, size, &s->header, dims, h);
-      if (ret < 0) return ret;
+      if (ret < 0)
+         return ret;
+      if (s->output_slot >= 0 && (ret == 1 || h->show_frame))
+         return 1;
       if (ret == 1)
       {
          if (!s->started || h->profile != s->header.profile
-               || s->reference_slots[h->frame_to_show] < 0) return -1;
+               || s->reference_slots[h->frame_to_show] < 0)
+            return -1;
          if (s->packet_decoder)
          {
-            h->w = s->header.w;
-            h->h = s->header.h;
-            h->show_frame = 1;
-            s->pending.slot = s->reference_slots[h->frame_to_show];
+            h->w                     = s->header.w;
+            h->h                     = s->header.h;
+            h->show_frame            = 1;
+            s->pending.slot          = s->reference_slots[h->frame_to_show];
             s->pending.previous_slot = s->previous_slot;
             for (i = 0; i < RVP9_REF_FRAMES; i++)
                s->pending.reference_slots[i] = s->reference_slots[i];
             for (i = 0; i < RVP9_REFS_PER_FRAME; i++)
                s->pending.named_slots[i] = -1;
-            s->packet = packet;
+            s->packet      = packet;
             s->packet_size = size;
-            s->phase = 2;
+            s->phase       = 2;
             goto submit;
          }
          s->output_slot = s->reference_slots[h->frame_to_show];
@@ -205,39 +216,50 @@ static INLINE int rvp9_hw_session_submit(rvp9_hw_session_t *s,
             || (h->bit_depth != 8 && h->bit_depth != 10)
             || h->subsampling_x != 1 || h->subsampling_y != 1
             || (!s->started && h->frame_type)
-            || (s->started && (h->profile != s->header.profile
-                  || h->bit_depth != s->header.bit_depth
-                  || h->w != s->header.w || h->h != s->header.h)))
+            || (s->started
+                  && (h->profile != s->header.profile
+                        || h->bit_depth != s->header.bit_depth
+                        || h->w != s->header.w || h->h != s->header.h)))
          return -2;
       occupied = 0;
       for (i = 0; i < RVP9_REF_FRAMES; i++)
       {
-         int slot = s->reference_slots[i];
+         int slot                      = s->reference_slots[i];
          s->pending.reference_slots[i] = slot;
-         if (slot >= 0) occupied |= UINT32_C(1) << slot;
+         if (slot >= 0)
+            occupied |= UINT32_C(1) << slot;
       }
       for (i = 0; i < RVP9_REFS_PER_FRAME; i++)
       {
          int slot = h->frame_type && !h->intra_only
-               ? s->reference_slots[h->ref_idx[i]] : -1;
-         if (h->frame_type && !h->intra_only && slot < 0) return -1;
+                          ? s->reference_slots[h->ref_idx[i]]
+                          : -1;
+         if (h->frame_type && !h->intra_only && slot < 0)
+            return -1;
          s->pending.named_slots[i] = slot;
       }
-      if (s->previous_slot >= 0) occupied |= UINT32_C(1) << s->previous_slot;
+      if (s->previous_slot >= 0)
+         occupied |= UINT32_C(1) << s->previous_slot;
       for (i = 0; i < s->slots; i++)
-         if (!(occupied & (UINT32_C(1) << i))) break;
-      if (i == s->slots) return -1;
-      s->pending.slot = (int)i;
+         if (!(occupied & (UINT32_C(1) << i)))
+            break;
+      if (i == s->slots)
+         return -1;
+      s->pending.slot          = (int)i;
       s->pending.previous_slot = s->previous_slot;
-      s->pending.use_prev_frame_mvs = s->started && !h->error_resilient
-            && h->frame_type && !h->intra_only && s->header.show_frame
-            && s->header.frame_type && !s->header.intra_only;
+      s->pending.use_prev_frame_mvs =
+            s->started && !h->error_resilient && h->frame_type && !h->intra_only
+            && s->header.show_frame && s->header.frame_type
+            && !s->header.intra_only;
       rvp9_hw_inherit(h, &s->header);
-      s->packet = packet; s->packet_size = size; s->phase = 1;
+      s->packet      = packet;
+      s->packet_size = size;
+      s->phase       = 1;
    }
 submit:
    ret = s->ops.decode(s->ops.decoder, s->packet, s->packet_size, &s->pending);
-   if (ret > 0) return 1;
+   if (ret > 0)
+      return 1;
    if (ret < 0)
    {
       s->broken = 1;
@@ -255,8 +277,9 @@ submit:
       if (h->refresh_frame_flags & (1 << i))
          s->reference_slots[i] = s->pending.slot;
    s->previous_slot = s->pending.slot;
-   if (h->show_frame) s->output_slot = s->pending.slot;
-   s->header = *h;
+   if (h->show_frame)
+      s->output_slot = s->pending.slot;
+   s->header  = *h;
    s->started = 1;
    rvp9_hw_session_clear_packet(s);
    return 0;

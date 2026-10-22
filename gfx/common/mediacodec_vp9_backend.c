@@ -205,6 +205,7 @@ bool mediacodec_vp9_backend_init(mediacodec_vp9_backend_t *backend,
    retro_atomic_int_init(&backend->active, 0);
    backend->offer.user           = backend;
    backend->offer.open_color     = mediacodec_vp9_backend_open;
+   backend->offer.drain          = mediacodec_vp9_decoder_finish;
    backend->offer.packet_decoder = true;
    backend->offer.close          = mediacodec_vp9_decoder_close;
    return true;

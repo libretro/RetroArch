@@ -30,6 +30,8 @@ bool mediacodec_vp9_decoder_open_color(JNIEnv *, const rvp9_hdr *,
       const video_color_metadata_t *, unsigned slots, unsigned max_input,
       const mediacodec_vp9_import_t *, rvp9_hw_ops_t *);
 int mediacodec_vp9_decoder_drain(void *);
+/* Nonblocking terminal service; 0 complete, 1 pending, negative failure. */
+int mediacodec_vp9_decoder_finish(void *, bool discard);
 void mediacodec_vp9_decoder_close(rvp9_hw_ops_t *);
 bool mediacodec_vp9_decoder_retire_poll(mediacodec_vp9_decoder_t *);
 RETRO_END_DECLS

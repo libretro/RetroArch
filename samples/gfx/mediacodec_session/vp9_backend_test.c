@@ -146,6 +146,13 @@ void mediacodec_vp9_decoder_close(rvp9_hw_ops_t *ops)
    decoder->importer.enqueue(decoder->importer.context, decoder);
 }
 
+int mediacodec_vp9_decoder_finish(void *decoder, bool discard)
+{
+   assert(decoder);
+   (void)discard;
+   return 0;
+}
+
 bool mediacodec_vp9_decoder_retire_poll(mediacodec_vp9_decoder_t *decoder)
 {
    assert(sthread_get_current_thread_id() != caller_thread);

@@ -125,16 +125,19 @@ static int mediacodec_vp9_decode(void *opaque, const uint8_t *packet,
    }
    if (!status)
       return 1;
-   if (!mediacodec_vp9_discard(&d->image))
+   if (h->show_frame && !mediacodec_vp9_discard(&d->image))
    {
       d->failed = true;
       return -1;
    }
    d->serial++;
-   d->tag         = h->show_frame ? d->serial : 0;
-   d->output_slot = (unsigned)picture->slot;
-   d->rendered    = false;
-   d->header      = *h;
+   if (h->show_frame)
+   {
+      d->tag         = d->serial;
+      d->output_slot = (unsigned)picture->slot;
+      d->rendered    = false;
+   }
+   d->header = *h;
    return 0;
 }
 
@@ -186,6 +189,29 @@ int mediacodec_vp9_decoder_drain(void *opaque)
       return 1;
    d->eos = true;
    return 0;
+}
+
+int mediacodec_vp9_decoder_finish(void *opaque, bool discard)
+{
+   mediacodec_vp9_decoder_t *d = (mediacodec_vp9_decoder_t *)opaque;
+   int status;
+   if (!d || d->closed)
+      return -1;
+   if (discard)
+   {
+      if (!mediacodec_vp9_discard(&d->image))
+         return -1;
+      d->tag = 0;
+   }
+   status = mediacodec_vp9_decoder_drain(d);
+   if (status)
+      return status;
+   if (d->output_eos && d->tag && !d->rendered && !d->image.ticket)
+   {
+      d->failed = true;
+      return -1;
+   }
+   return d->output_eos && !d->tag ? 0 : 1;
 }
 
 bool mediacodec_vp9_decoder_retire_poll(mediacodec_vp9_decoder_t *d)

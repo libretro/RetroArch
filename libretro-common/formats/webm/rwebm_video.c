@@ -79,7 +79,7 @@ struct rwebm_video_stream
    int lookahead_ready;
    rwebm_packet soft_packet;
    size_t soft_floor;
-   int soft_pending, timing_active, timing_ready, timing_duration;
+   int soft_pending, timing_active, timing_ready, timing_duration, timing_eof;
    rwebm_t     *demux;
    rvp8_video  *vp8;
 #ifdef HAVE_RVP9
@@ -1097,49 +1097,57 @@ static int rwebm_video_read_packet(rwebm_video_stream_t *s,
  * length. Beyond it, look ahead with a separate preallocated cursor. A
  * bounded header slice can yield without consuming or decoding the held
  * video packet. Resident-wall retries keep the same two cursor positions. */
-static int rwebm_video_packet_duration(rwebm_video_stream_t *s, int index,
-      int64_t timestamp, int *duration)
+static int rwebm_video_packet_duration(
+      rwebm_video_stream_t *s, int index, int64_t timestamp, int *duration)
 {
    int walked;
    if (index + 1 < s->ts_count)
    {
+      s->timing_eof = 0;
       *duration = rwebm_video_duration_ms(s, index);
       return 1;
    }
-   if (s->timing_ready) { *duration = s->timing_duration; return 1; }
+   if (s->timing_ready)
+   {
+      *duration = s->timing_duration;
+      return 1;
+   }
    if (!s->timing_active)
    {
       rwebm_cursor_copy(s->timing, s->demux);
       s->timing_active = 1;
+      s->timing_eof    = 0;
    }
    for (walked = 0; walked < 256; walked++)
    {
       rwebm_packet next;
       int ret = rwebm_read_packet(s->timing, &next);
-      if (ret == RWEBM_READ_AGAIN) return 2;
-      if (ret < 0) return -1;
+      if (ret == RWEBM_READ_AGAIN)
+         return 2;
+      if (ret < 0)
+         return -1;
       if (!ret)
       {
          rwebm_cursor_copy(s->demux, s->timing);
-         *duration = rwebm_video_duration_ms(s, index);
+         *duration          = rwebm_video_duration_ms(s, index);
          s->timing_duration = *duration;
-         s->timing_ready = 1;
+         s->timing_ready    = 1;
+         s->timing_eof      = 1;
          return 1;
       }
       if (next.track == s->track)
       {
-         int64_t delta = next.timestamp / 1000000
-            - timestamp / 1000000;
+         int64_t delta = next.timestamp / 1000000 - timestamp / 1000000;
          /* Keep the found packet, not the headers between it and the
           * held picture. Playback can then move its window without ever
           * revisiting the old interleaved/padding region. */
          s->lookahead_packet = next;
-         s->lookahead_floor = (size_t)(next.data - s->buf);
-         s->lookahead_ready = 1;
+         s->lookahead_floor  = (size_t)(next.data - s->buf);
+         s->lookahead_ready  = 1;
          rwebm_cursor_copy(s->demux, s->timing);
-         *duration = delta > 0 && delta <= 0x7fffffff ? (int)delta : 0;
+         *duration          = delta > 0 && delta <= 0x7fffffff ? (int)delta : 0;
          s->timing_duration = *duration;
-         s->timing_ready = 1;
+         s->timing_ready    = 1;
          return 1;
       }
    }
@@ -1554,16 +1562,19 @@ int rwebm_video_stream_waiting(const rwebm_video_stream_t *s)
 }
 
 #ifdef HAVE_RVP9
-static int rwebm_video_hw_step(rwebm_video_stream_t *s, int *duration_ms, int discard)
+static int rwebm_video_hw_step(
+      rwebm_video_stream_t *s, int *duration_ms, int discard)
 {
    int ret, duration;
    s->waiting = 0;
-   if (s->pending && s->hw_skip != discard) return -1;
+   if (s->pending && s->hw_skip != discard)
+      return -1;
    if (!s->pending)
    {
       size_t offset;
       int i;
-      if (s->hw_untaken) video_hw_frame_abandon(&s->hw_frame);
+      if (s->hw_untaken)
+         video_hw_frame_abandon(&s->hw_frame);
       s->hw_untaken = 0;
       memset(&s->hw_frame, 0, sizeof(s->hw_frame));
       for (;;)
@@ -1572,72 +1583,139 @@ static int rwebm_video_hw_step(rwebm_video_stream_t *s, int *duration_ms, int di
          if (s->seek_ready)
          {
             s->pending_packet = s->seek_packet;
-            floor = s->seek_floor;
-            s->seek_ready = 0;
-            ret = 1;
+            floor             = s->seek_floor;
+            s->seek_ready     = 0;
+            ret               = 1;
          }
          else
             ret = rwebm_video_read_packet(s, &s->pending_packet, &floor);
-         if (ret == RWEBM_READ_AGAIN) { s->waiting = 1; return 2; }
-         if (ret != 1) return -1;
-         if (s->pending_packet.track != s->track) continue;
+         if (ret == RWEBM_READ_AGAIN)
+         {
+            s->waiting = 1;
+            return 2;
+         }
+         if (ret != 1)
+         {
+            if (!ret && s->hw_backend.drain)
+            {
+               ret = s->hw_backend.drain(s->hw->ops.decoder, discard != 0);
+               if (ret > 0)
+               {
+                  s->waiting = 1;
+                  return 2;
+               }
+            }
+            return -1;
+         }
+         if (s->pending_packet.track != s->track)
+            continue;
          s->pending_floor = (size_t)(s->pending_packet.data - s->buf);
-         if (floor < s->pending_floor) s->pending_floor = floor;
+         if (floor < s->pending_floor)
+            s->pending_floor = floor;
          break;
       }
       s->super_count = rwebm_video_vp9_superframe(s->pending_packet.data,
             s->pending_packet.size, s->super_sizes, RWEBM_VIDEO_MAX_SUPER);
-      s->last_show = -1;
+      s->last_show   = -1;
       for (i = 0, offset = 0; i < s->super_count; i++)
       {
-         if (!s->super_sizes[i] || s->super_sizes[i] > s->pending_packet.size - offset)
+         if (!s->super_sizes[i]
+               || s->super_sizes[i] > s->pending_packet.size - offset)
             return -1;
          /* Profile 0/2: show-existing and show-frame are in the first byte. */
-         if (s->pending_packet.data[offset] & 0x0a) s->last_show = i;
+         if (s->pending_packet.data[offset] & 0x0a)
+            s->last_show = i;
          offset += s->super_sizes[i];
       }
       s->pending_idx = s->pkt_idx++;
-      s->hw_skip = discard;
-      s->super_index = s->submitted = 0; s->super_offset = 0;
-      s->pending = 1;
+      s->hw_skip     = discard;
+      s->super_index = s->submitted = 0;
+      s->super_offset               = 0;
+      s->pending                    = 1;
       s->timing_active = s->timing_ready = 0;
    }
-   ret = rwebm_video_packet_duration(s, s->pending_idx,
-         s->pending_packet.timestamp, &duration);
-   if (ret == 2) { s->waiting = 1; return 2; }
-   if (ret < 0) return -1;
+   ret = rwebm_video_packet_duration(
+         s, s->pending_idx, s->pending_packet.timestamp, &duration);
+   if (ret == 2)
+   {
+      s->waiting = 1;
+      return 2;
+   }
+   if (ret < 0)
+      return -1;
    while (s->super_index < s->super_count)
    {
       if (!s->submitted)
       {
-         ret = rvp9_hw_session_submit(s->hw, s->pending_packet.data + s->super_offset,
+         ret = rvp9_hw_session_submit(s->hw,
+               s->pending_packet.data + s->super_offset,
                s->super_sizes[s->super_index]);
-         if (ret == 1) { s->waiting = 1; return 2; }
-         if (ret < 0) return -1;
+         if (ret == 1)
+         {
+            s->waiting = 1;
+            return 2;
+         }
+         if (ret < 0)
+            return -1;
          s->submitted = 1;
       }
       if (s->hw->output_slot >= 0)
       {
-         if (discard || s->super_index != s->last_show)
+         if (discard || s->super_index < s->last_show)
             rvp9_hw_session_discard_output(s->hw);
-         else
+         else if (!s->hw_backend.drain)
          {
             ret = rvp9_hw_session_output(s->hw, &s->hw_frame);
-            if (ret == 1) { s->waiting = 1; return 2; }
-            if (ret < 0) return -1;
-            s->hw_frame.yuv = (s->hw_frame.yuv & ~s->hw_yuv_mask) | s->hw_yuv;
+            if (ret == 1)
+            {
+               s->waiting = 1;
+               return 2;
+            }
+            if (ret < 0)
+               return -1;
+            s->hw_frame.yuv   = (s->hw_frame.yuv & ~s->hw_yuv_mask) | s->hw_yuv;
             s->hw_frame.color = s->hw_color;
-            s->hw_untaken = 1;
+            s->hw_untaken     = 1;
          }
       }
       s->super_offset += s->super_sizes[s->super_index++];
       s->submitted = 0;
    }
+   if (s->hw_backend.drain)
+   {
+      int drained = 0;
+      if (s->timing_eof)
+      {
+         drained = s->hw_backend.drain(s->hw->ops.decoder, discard != 0);
+         if (drained < 0)
+            return -1;
+      }
+      if (s->hw->output_slot >= 0)
+      {
+         ret = rvp9_hw_session_output(s->hw, &s->hw_frame);
+         if (ret > 0)
+         {
+            s->waiting = 1;
+            return 2;
+         }
+         if (ret < 0)
+            return -1;
+         s->hw_frame.yuv   = (s->hw_frame.yuv & ~s->hw_yuv_mask) | s->hw_yuv;
+         s->hw_frame.color = s->hw_color;
+         s->hw_untaken     = 1;
+      }
+      else if (drained > 0)
+      {
+         s->waiting = 1;
+         return 2;
+      }
+   }
    s->pending = 0;
-   if (duration_ms) *duration_ms = duration;
+   if (duration_ms)
+      *duration_ms = duration;
    if (s->last_show >= 0)
    {
-      s->frame_time_ns = s->pending_packet.timestamp;
+      s->frame_time_ns   = s->pending_packet.timestamp;
       s->have_frame_time = 1;
    }
    return s->last_show >= 0 ? 1 : 0;

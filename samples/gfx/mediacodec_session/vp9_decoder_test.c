@@ -253,11 +253,44 @@ static void execute(unsigned bits)
    assert(mediacodec_vp9_decoder_open(
          (JNIEnv *)&native, &header, 10, 1024, &importer, &ops));
    picture.header = header;
+   picture.slot = 1;
+   assert(!ops.decode(ops.decoder, packet, sizeof(packet), &picture));
+   queued_tag = rendered_tag = 1;
+   picture.header.show_frame = 0;
+   picture.slot = 2;
+   assert(!ops.decode(ops.decoder, packet, sizeof(packet), &picture));
+   assert(mediacodec_vp9_decoder_finish(ops.decoder, false) == 1 && eos == 1);
+   pump_status = 3;
+   assert(mediacodec_vp9_decoder_finish(ops.decoder, false) == 1);
+   assert(!ops.output(ops.decoder, 1, &frame) && held.timestamp_ns == 1000);
+   assert(!mediacodec_vp9_decoder_finish(ops.decoder, false));
+   mediacodec_vp9_decoder_close(&ops);
+   assert(!mediacodec_vp9_decoder_retire_poll(retired));
+   assert(android_image_queue_return(held.ticket, held.generation, -1));
+   assert(mediacodec_vp9_decoder_retire_poll(retired));
+   reset();
+   assert(mediacodec_vp9_decoder_open(
+         (JNIEnv *)&native, &header, 10, 1024, &importer, &ops));
+   picture.header = header;
+   picture.slot = 1;
+   assert(!ops.decode(ops.decoder, packet, sizeof(packet), &picture));
+   busy = 1;
+   assert(mediacodec_vp9_decoder_finish(ops.decoder, true) == 1 && !eos);
+   assert(mediacodec_vp9_decoder_finish(ops.decoder, true) == 1 && eos == 1);
+   pump_status = 3;
+   assert(!mediacodec_vp9_decoder_finish(ops.decoder, true));
+   mediacodec_vp9_decoder_close(&ops);
+   assert(mediacodec_vp9_decoder_retire_poll(retired));
+   reset();
+   assert(mediacodec_vp9_decoder_open(
+         (JNIEnv *)&native, &header, 10, 1024, &importer, &ops));
+   picture.header = header;
    assert(!ops.decode(ops.decoder, packet, sizeof(packet), &picture));
    busy = 1;
    assert(mediacodec_vp9_decoder_drain(ops.decoder) == 1 && !eos);
    assert(!mediacodec_vp9_decoder_drain(ops.decoder) && eos == 1);
    pump_status = 3;
+   assert(mediacodec_vp9_decoder_finish(ops.decoder, false) < 0);
    assert(ops.output(ops.decoder, 1, &frame) < 0);
    mediacodec_vp9_decoder_close(&ops);
    assert(mediacodec_vp9_decoder_retire_poll(retired));

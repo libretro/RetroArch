@@ -58,6 +58,7 @@ static INLINE bool mediacodec_vp9_registry_init(mediacodec_vp9_registry_t *r,
    r->offer.user           = r;
    r->offer.open_color     = mediacodec_vp9_registry_open;
    r->offer.close          = r->backend.offer.close;
+   r->offer.drain          = r->backend.offer.drain;
    r->offer.packet_decoder = true;
    return true;
 }
