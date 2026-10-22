@@ -1714,7 +1714,12 @@ jobs:
           # raised above the frame's and blending premultiplied, covering
           # only its images, composed when something changes and flipped
           # in the frame's own commit; where no plane can take it, it is
-          # blended into the frame.
+          # blended into the frame. Init passes over a card with no
+          # display, keeps the console's mode or a fullscreen size's,
+          # switches mode with the planes, flips without atomic commits
+          # where the card has none, fails cleanly with no plane for
+          # frames, and the free turns the plane off and gives the
+          # console back its framebuffer and mode.
           make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
              timeout 60 ./drm_surface_lifetime_test

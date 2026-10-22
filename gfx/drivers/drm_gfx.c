@@ -21,9 +21,12 @@
 #include <xf86drmMode.h>
 #include <libdrm/drm_fourcc.h>
 #include <fcntl.h>
+#include <unistd.h>
 #include <sys/mman.h>
 
 #include <compat/strl.h>
+#include <file/file_path.h>
+#include <lists/dir_list.h>
 #include <retro_atomic.h>
 #include <rthreads/rthreads.h>
 #include <string/stdstring.h>
@@ -36,6 +39,7 @@
 #include "../../menu/menu_driver.h"
 #endif
 
+#include "../../configuration.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../common/drm_common.h"
@@ -118,7 +122,9 @@ struct drm_struct
    uint32_t crtc_id;
    uint32_t connector_id;
 
-   drmModeCrtcPtr orig_crtc;
+   /* What the CRTC shows below the planes, at the mode it runs */
+   struct modeset_buf console;
+   drmModeModeInfo mode;
 
    uint32_t plane_id;
    uint32_t plane_fb_prop_id;
@@ -130,9 +136,10 @@ struct drm_struct
    unsigned vp_w;
    unsigned vp_h;
 
-   drmModeEncoder *encoder;
    drmModeRes *resources;
-} drm;
+   /* Flips are atomic commits; legacy plane updates without them */
+   bool atomic;
+} drm = { -1 };
 
 #ifdef HAVE_OVERLAY
 struct drm_overlay_image
@@ -237,25 +244,28 @@ struct drm_video
 static int modeset_create_dumbfb(int fd,
       struct modeset_buf *buf, int bpp, uint32_t pixformat);
 
+static void modeset_destroy_dumbfb(struct modeset_buf *buf);
+
+/* The planes off and the CRTC as it was found, then the device let go */
 static void deinit_drm(void)
 {
-   /* Restore the original videomode/connector/scanoutbuffer(fb)
-    * combination (the original CRTC, that is). */
-   drmModeSetCrtc(drm.fd, drm.orig_crtc->crtc_id,
-         drm.orig_crtc->buffer_id,
-         drm.orig_crtc->x, drm.orig_crtc->y,
-         &drm.connector_id, 1, &drm.orig_crtc->mode);
-
-#if 0
-   /* TODO: Free surfaces here along
-    * with their pages (framebuffers)! */
-
-   if (bufs[0].fb_id)
-   {
-      drmModeRmFB(drm.fd, bufs[0].fb_id);
-      drmModeRmFB(drm.fd, bufs[1].fb_id);
-   }
-#endif
+   if (drm.fd < 0)
+      return;
+   if (drm.plane_id)
+      drmModeSetPlane(drm.fd, drm.plane_id, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0);
+   drm_restore_crtc();
+   modeset_destroy_dumbfb(&drm.console);
+   if (drm.flip_req)
+      drmModeAtomicFree(drm.flip_req);
+   if (drm.resources)
+      drmModeFreeResources(drm.resources);
+   drm_free();
+   close(drm.fd);
+   memset(&drm, 0, sizeof(drm));
+   drm.fd     = -1;
+   g_drm_fd   = -1;
+   g_drm_mode = NULL;
 }
 
 /* Takes down what modeset_create_dumbfb() made: the mapping, the
@@ -397,6 +407,19 @@ static void drm_page_flip(struct drm_surface *surface)
     * the plane on which we are going to do a pageflip:
     * we got it back in drm_plane_setup()  */
    drmModeAtomicReqPtr req = drm.flip_req;
+
+   if (!drm.atomic)
+   {
+      /* The plane's update waits for the vblank, as the commit does */
+      if (drmModeSetPlane(drm.fd, drm.plane_id, drm.crtc_id,
+               surface->pages[surface->flip_page].buf.fb_id, 0,
+               drm.vp_x, drm.vp_y, drm.vp_w, drm.vp_h, 0, 0,
+               VIDEO_SCALE_W(surface->src_dims) << 16,
+               VIDEO_SCALE_H(surface->src_dims) << 16))
+         RARCH_ERR("[DRM] Failed to flip the plane.\n");
+      surface->flip_page = !(surface->flip_page);
+      return;
+   }
 
    if (req)
       drmModeAtomicSetCursor(req, 0);
@@ -590,7 +613,7 @@ static bool drm_plane_takes(uint32_t fmt)
 }
 
 /* This configures our only overlay plane to render the given surface. */
-static void drm_plane_setup(struct drm_surface *surface)
+static bool drm_plane_setup(struct drm_surface *surface)
 {
    int i;
    char fmt_name[5];
@@ -614,7 +637,7 @@ static void drm_plane_setup(struct drm_surface *surface)
    if (!plane_resources)
    {
       RARCH_ERR("[DRM] No scaling planes available.\n");
-      return;
+      return false;
    }
 
    RARCH_LOG("[DRM] Number of planes on FD %d is %d.\n",
@@ -671,9 +694,8 @@ static void drm_plane_setup(struct drm_surface *surface)
 
    if (!drm.plane_id)
    {
-      RARCH_LOG("[DRM] Couldn't find an usable overlay plane for current CRTC and framebuffer pixel format.\n");
-      deinit_drm();
-      exit (0);
+      RARCH_ERR("[DRM] Couldn't find an usable overlay plane for current CRTC and framebuffer pixel format.\n");
+      return false;
    }
    else
    {
@@ -726,6 +748,7 @@ static void drm_plane_setup(struct drm_surface *surface)
             src_x<<16, src_y<<16, src_w<<16, src_h<<16))
    {
       RARCH_ERR("[DRM] Failed to enable plane.\n");
+      return false;
    }
 
    RARCH_DBG("[DRM] src_w %d, src_h %d, plane_w %d, plane_h %d\n",
@@ -735,6 +758,7 @@ static void drm_plane_setup(struct drm_surface *surface)
    drm_format_name(surface->pixformat, fmt_name);
    RARCH_LOG("[DRM] Using plane with ID %d on CRTC ID %d format %s.\n",
          drm.plane_id, drm.crtc_id, fmt_name);
+   return true;
 }
 
 static int modeset_create_dumbfb(int fd, struct modeset_buf *buf,
@@ -807,102 +831,116 @@ error_destroy:
    return -1;
 }
 
-static bool init_drm(void)
+static bool drm_plane_takes(uint32_t fmt);
+
+/* @path, if it drives a connected display the monitor index names that a
+ * plane can show frames on */
+static bool init_drm_card(const char *path, unsigned monitor_index)
 {
-   uint i;
-   drmModeConnector *connector = NULL;
-   struct modeset_buf buf;
+   int fd = open(path, O_RDWR | O_CLOEXEC);
 
-   drm.fd = open("/dev/dri/card0", O_RDWR);
+   if (fd < 0)
+      return false;
+   /* Universal planes, or the overlays are not listed */
+   drmSetClientCap(fd, DRM_CLIENT_CAP_UNIVERSAL_PLANES, 1);
+   drm.atomic = !drmSetClientCap(fd, DRM_CLIENT_CAP_ATOMIC, 1);
+   drm.fd     = fd;
+   g_drm_fd   = fd;
 
-   if (drm.fd < 0)
+   if (     !drm_get_resources(fd)
+         || !drm_get_connector(fd, monitor_index)
+         || !drm_get_encoder(fd))
+      goto fail;
+   drm_setup(fd);
+   if (     !g_orig_crtc || !g_crtc_id
+         || !(drm.resources = drmModeGetResources(fd)))
+      goto fail;
+   drm.crtc_id      = g_crtc_id;
+   drm.connector_id = g_connector_id;
+   if (!drm_plane_takes(DRM_FORMAT_XRGB8888))
    {
-      RARCH_ERR("[DRM] Could not open DRM device.\n");
+      RARCH_WARN("[DRM] %s has no overlay plane for frames.\n", path);
+      goto fail;
+   }
+   return true;
+
+fail:
+   if (drm.resources)
+      drmModeFreeResources(drm.resources);
+   drm.resources = NULL;
+   if (g_orig_crtc)
+      drmModeFreeCrtc(g_orig_crtc);
+   g_orig_crtc = NULL;
+   drm_free();
+   close(fd);
+   drm.fd   = -1;
+   g_drm_fd = -1;
+   return false;
+}
+
+/* The CRTC at @mode, showing a blank frame below the planes */
+static bool drm_set_mode(const drmModeModeInfo *mode)
+{
+   struct modeset_buf old = drm.console;
+
+   memset(&drm.console, 0, sizeof(drm.console));
+   drm.console.dims = VIDEO_SCALE_PACK(mode->hdisplay, mode->vdisplay);
+   if (     modeset_create_dumbfb(drm.fd, &drm.console, 4,
+               DRM_FORMAT_XRGB8888)
+         || drmModeSetCrtc(drm.fd, drm.crtc_id, drm.console.fb_id, 0, 0,
+               &drm.connector_id, 1, (drmModeModeInfo*)mode))
+   {
+      modeset_destroy_dumbfb(&drm.console);
+      drm.console = old;
       return false;
    }
+   modeset_destroy_dumbfb(&old);
+   drm.mode         = *mode;
+   drm.current_mode = &drm.mode;
+   g_drm_mode       = &drm.mode;
+   return true;
+}
 
-   /* Programmer!! Save your sanity!!
-    * VERY important or we won't get all the available planes on drmGetPlaneResources()!
-    * We also need to enable the ATOMIC cap to see the atomic properties in objects!! */
-   if (drmSetClientCap(drm.fd, DRM_CLIENT_CAP_UNIVERSAL_PLANES, 1))
-      RARCH_ERR("[DRM] Can't set UNIVERSAL PLANES cap.\n");
-   else
-      RARCH_LOG("[DRM] UNIVERSAL PLANES cap set.\n");
+/* The first card with a display for the monitor index, at the size a
+ * fullscreen video asks for, else the mode it runs, else its first */
+static bool init_drm(const video_info_t *video)
+{
+   size_t i;
+   settings_t *settings     = config_get_ptr();
+   unsigned monitor         = settings ? settings->uints.video_monitor_index : 0;
+   const drmModeModeInfo *m = NULL;
+   struct string_list *cards = dir_list_new("/dev/dri", NULL, false, true,
+         false, false);
 
-   if (drmSetClientCap(drm.fd, DRM_CLIENT_CAP_ATOMIC, 1))
-   {
-      /*If this happens, check kernel support and kernel parameters
-       * (add i915.nuclear_pageflip=y to the kernel boot line for example) */
-      RARCH_ERR("[DRM] Can't set ATOMIC caps.\n");
-   }
-   else
-      RARCH_LOG("[DRM] ATOMIC caps set.\n");
-
-   drm.resources = drmModeGetResources(drm.fd);
-   if (!drm.resources)
-   {
-      RARCH_ERR("[DRM] drmModeGetResources failed.\n");
-      return false;
-   }
-
-   /* Find a connected connector. */
-   for (i = 0; i < (uint)drm.resources->count_connectors; i++)
-   {
-      connector = drmModeGetConnector(drm.fd, drm.resources->connectors[i]);
-      /* It's connected, let's use it. */
-      if (connector->connection == DRM_MODE_CONNECTED)
+   for (i = 0; cards && i < cards->size; i++)
+      if (     strstr(path_basename_nocompression(cards->elems[i].data), "card")
+            && init_drm_card(cards->elems[i].data, monitor))
          break;
-      drmModeFreeConnector(connector);
-      connector = NULL;
-   }
-
-   if (!connector)
+   if (!cards || i == cards->size)
    {
-      RARCH_ERR("[DRM] No connected connector found.\n");
+      dir_list_free(cards);
+      RARCH_ERR("[DRM] No card drives a display with a plane for frames.\n");
       return false;
    }
+   RARCH_LOG("[DRM] Using %s%s.\n", cards->elems[i].data,
+         drm.atomic ? "" : ", without atomic commits");
+   dir_list_free(cards);
 
-   /* Find encoder */
-   for (i = 0; i < (uint)drm.resources->count_encoders; i++)
-   {
-      drm.encoder = drmModeGetEncoder(drm.fd, drm.resources->encoders[i]);
-      if (drm.encoder->encoder_id == connector->encoder_id)
-         break;
-      drmModeFreeEncoder(drm.encoder);
-      drm.encoder = NULL;
-   }
-
-   if (!drm.encoder)
-   {
-      RARCH_ERR("[DRM] No encoder found.\n");
-      return false;
-   }
-
-   drm.crtc_id = drm.encoder->crtc_id;
-   drm.connector_id = connector->connector_id;
-
-   /* Backup original crtc and it's mode, so we can restore the original video mode
-    * on exit in case we change it. */
-   drm.orig_crtc = drmModeGetCrtc(drm.fd, drm.encoder->crtc_id);
-   drm.current_mode = &(drm.orig_crtc->mode);
-   g_drm_mode = drm.current_mode;
-
-   /* Set mode physical video mode. Not really needed, but clears TTY console. */
-   buf.dims = VIDEO_SCALE_PACK(drm.current_mode->hdisplay,
-         drm.current_mode->vdisplay);
-   if (modeset_create_dumbfb(drm.fd, &buf, 4, DRM_FORMAT_XRGB8888))
-   {
-      RARCH_ERR("[DRM] Can't create dumb fb.\n");
-      return false;
-   }
-
-   if (drmModeSetCrtc(drm.fd, drm.crtc_id, buf.fb_id, 0, 0,
-            &drm.connector_id, 1, drm.current_mode))
+   if (     video && video->fullscreen
+         && VIDEO_SCALE_W(video->dims) && VIDEO_SCALE_H(video->dims))
+      m = drm_find_mode(g_drm_connector, VIDEO_SCALE_W(video->dims),
+            VIDEO_SCALE_H(video->dims), 1.0f,
+            settings ? settings->floats.video_refresh_rate : 60.0f);
+   if (!m && g_orig_crtc->mode_valid)
+      m = &g_orig_crtc->mode;
+   if (!m && g_drm_connector->count_modes > 0)
+      m = &g_drm_connector->modes[0];
+   if (!m || !drm_set_mode(m))
    {
       RARCH_ERR("[DRM] Failed to set mode.\n");
+      deinit_drm();
       return false;
    }
-
    return true;
 }
 
@@ -1448,8 +1486,10 @@ static void drm_overlay_prepare(struct drm_video *v, struct drm_surface *frame)
       }
    }
 
-   /* Placed once; after that its pages change with the frame's flips */
-   if (     ov->mode == DRM_OVERLAY_PLANE && ov->pending && !ov->shown
+   /* Placed once; after that its pages change with the frame's flips,
+    * or on their own without atomic commits */
+   if (     ov->mode == DRM_OVERLAY_PLANE && ov->pending
+         && (!ov->shown || !drm.atomic)
          && !drmModeSetPlane(drm.fd, ov->plane_id, drm.crtc_id,
                ov->page[ov->back].fb_id, 0, ov->lx, ov->ly, ov->lw, ov->lh,
                0, 0, ov->lw << 16, ov->lh << 16))
@@ -1466,7 +1506,8 @@ static void drm_overlay_flip_add(struct drm_video *v, drmModeAtomicReqPtr req)
    if (!v)
       return;
    ov = &v->ov;
-   if (     ov->mode == DRM_OVERLAY_PLANE && ov->shown && ov->pending
+   if (     drm.atomic && ov->mode == DRM_OVERLAY_PLANE && ov->shown
+         && ov->pending
          && drmModeAtomicAddProperty(req, ov->plane_id, ov->fb_prop,
                ov->page[ov->back].fb_id) < 0)
       ov->pending = false;
@@ -1478,7 +1519,7 @@ static void drm_overlay_flipped(struct drm_video *v)
    if (!v)
       return;
    ov = &v->ov;
-   if (ov->mode == DRM_OVERLAY_PLANE && ov->shown && ov->pending)
+   if (drm.atomic && ov->mode == DRM_OVERLAY_PLANE && ov->shown && ov->pending)
    {
       ov->pending = false;
       ov->back   ^= 1;
@@ -1576,12 +1617,17 @@ static void *drm_init(const video_info_t *video)
 
 
    /* DRM Init */
-   if (!init_drm())
+   if (!init_drm(video))
    {
       RARCH_ERR("[DRM] Failed to initialize DRM.\n");
+      slock_free(_drmvars->pending_mutex);
+      slock_free(_drmvars->vsync_cond_mutex);
+      scond_free(_drmvars->vsync_condition);
       free(_drmvars);
       return NULL;
    }
+   /* Refresh rate, resolutions and switching through the KMS display server */
+   video_driver_display_type_set(RARCH_DISPLAY_KMS);
 
    RARCH_LOG ("[DRM] Init successful.\n");
 
@@ -1636,8 +1682,12 @@ static bool drm_views_frame(struct drm_video *v, const void *frame,
          v->views_surface = old;
          return false;
       }
-      if (!v->menu_active)
-         drm_plane_setup(v->views_surface);
+      if (!v->menu_active && !drm_plane_setup(v->views_surface))
+      {
+         drm_surface_free(v, &v->views_surface);
+         v->views_surface = old;
+         return false;
+      }
       drm_surface_free(v, &old);
    }
    if (layout->offscreen)
@@ -1717,8 +1767,14 @@ static bool drm_frame(void *data, const void *frame,
       }
 
       /* We need to change the plane to read from the main surface */
-      if (!_drmvars->views_surface)
-         drm_plane_setup(_drmvars->main_surface);
+      if (     !_drmvars->views_surface
+            && !drm_plane_setup(_drmvars->main_surface))
+      {
+         drm_surface_free(_drmvars, &_drmvars->main_surface);
+         _drmvars->main_surface = old_surface;
+         _drmvars->core_dims    = old_surface ? old_surface->src_dims : 0;
+         return false;
+      }
       /* The cached frame can point into a page the core rendered to */
       if (old_surface && old_surface->lent)
          video_driver_cached_frame_retire();
@@ -1753,8 +1809,13 @@ static void drm_set_texture_enable(void *data, bool state, bool full_screen)
    {
       /* We tell only the plane we have to read from the main surface
        * again, or the views' */
-      drm_plane_setup(_drmvars->views_surface
-            ? _drmvars->views_surface : _drmvars->main_surface);
+      struct drm_surface *s = _drmvars->views_surface
+         ? _drmvars->views_surface : _drmvars->main_surface;
+      /* With nothing to show, the plane goes off before the menu's
+       * buffers do */
+      if (!s || !drm_plane_setup(s))
+         drmModeSetPlane(drm.fd, drm.plane_id, 0, 0, 0, 0, 0, 0, 0,
+               0, 0, 0, 0);
       /* We free the menu surface buffers */
       drm_surface_free(_drmvars, &_drmvars->menu_surface);
    }
@@ -1793,7 +1854,12 @@ static struct drm_surface *drm_menu_surface(struct drm_video *v,
       return NULL;
    }
    /* The plane moves to the new surface before the old one goes */
-   drm_plane_setup(v->menu_surface);
+   if (!drm_plane_setup(v->menu_surface))
+   {
+      drm_surface_free(v, &v->menu_surface);
+      v->menu_surface = old;
+      return NULL;
+   }
    drm_surface_free(v, &old);
    return v->menu_surface;
 }
@@ -1900,6 +1966,40 @@ static bool drm_get_current_software_framebuffer(void *data,
    return true;
 }
 
+/* The connector's mode closest to @dims at the refresh rate set: the
+ * planes come off for the switch and go back on at the new size */
+static void drm_set_video_mode(void *data, unsigned dims, bool fullscreen)
+{
+   struct drm_video *v        = (struct drm_video*)data;
+   settings_t *settings       = config_get_ptr();
+   const drmModeModeInfo *m;
+   struct drm_surface *s;
+
+   if (!v || !g_drm_connector || drm.fd < 0)
+      return;
+   if (!(m = drm_find_mode(g_drm_connector, VIDEO_SCALE_W(dims),
+               VIDEO_SCALE_H(dims), 1.0f,
+               settings ? settings->floats.video_refresh_rate : 60.0f)))
+      return;
+   if (     m->hdisplay == drm.mode.hdisplay && m->vdisplay == drm.mode.vdisplay
+         && m->clock == drm.mode.clock && m->vrefresh == drm.mode.vrefresh)
+      return;
+
+   drmModeSetPlane(drm.fd, drm.plane_id, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+#ifdef HAVE_OVERLAY
+   drm_overlay_hide(&v->ov);
+   v->ov.geom_dirty = true;
+#endif
+   if (!drm_set_mode(m))
+      RARCH_ERR("[DRM] Failed to set %ux%u.\n", m->hdisplay, m->vdisplay);
+   v->kms_dims = VIDEO_SCALE_PACK(drm.mode.hdisplay, drm.mode.vdisplay);
+   video_driver_set_output_dims(v->kms_dims);
+   s = (v->menu_active && v->menu_surface) ? v->menu_surface
+      : (v->views_surface ? v->views_surface : v->main_surface);
+   if (s)
+      drm_plane_setup(s);
+}
+
 static void drm_set_nonblock_state(void *a, bool b, bool c, unsigned d) { }
 static bool drm_alive(void *data) { return true; }
 static bool drm_focus(void *data) { return true; }
@@ -1957,7 +2057,7 @@ static const video_poke_interface_t drm_poke_interface = {
    drm_get_flags,
    NULL, /* load_texture */
    NULL, /* unload_texture */
-   NULL, /* set_video_mode */
+   drm_set_video_mode,
    NULL, /* refresh_rate - handled by display server */
    NULL, /* set_filtering */
    NULL, /* get_video_output_size */
@@ -2030,6 +2130,10 @@ static void drm_gfx_free(void *data)
 #ifdef HAVE_OVERLAY
    drm_overlay_free(&_drmvars->ov);
 #endif
+   /* Off before the buffers it scans out go */
+   if (drm.fd >= 0 && drm.plane_id)
+      drmModeSetPlane(drm.fd, drm.plane_id, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0);
    if (_drmvars->main_surface && _drmvars->main_surface->lent)
       video_driver_cached_frame_retire();
    drm_surface_free(_drmvars, &_drmvars->main_surface);
@@ -2045,13 +2149,7 @@ static void drm_gfx_free(void *data)
    slock_free(_drmvars->vsync_cond_mutex);
    scond_free(_drmvars->vsync_condition);
 
-   g_drm_mode = NULL;
-
-   if (drm.flip_req)
-   {
-      drmModeAtomicFree(drm.flip_req);
-      drm.flip_req = NULL;
-   }
+   deinit_drm();
 
    free(_drmvars);
 }

@@ -17,8 +17,11 @@
 #include <stdarg.h>
 #include <stdint.h>
 #include <sys/mman.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 #include "../../../gfx/drivers/drm_gfx.c"
+#include "../../../gfx/common/drm_common.c"
 
 /* ---- frontend pieces the driver reaches ------------------------------ */
 
@@ -26,16 +29,53 @@ void RARCH_LOG(const char *fmt, ...) { (void)fmt; }
 void RARCH_DBG(const char *fmt, ...) { (void)fmt; }
 void RARCH_WARN(const char *fmt, ...) { (void)fmt; }
 void RARCH_ERR(const char *fmt, ...) { (void)fmt; }
-drmModeModeInfo *g_drm_mode;
 struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END];
 float video_driver_get_aspect_ratio(void) { return 4.0f / 3.0f; }
 static unsigned retires;
 void video_driver_cached_frame_retire(void) { retires++; }
-void video_driver_set_output_dims(unsigned dims) { (void)dims; }
+static unsigned output_dims;
+void video_driver_set_output_dims(unsigned dims) { output_dims = dims; }
+static enum rarch_display_type display_type;
+void video_driver_display_type_set(enum rarch_display_type t) { display_type = t; }
+static settings_t settings;
+settings_t *config_get_ptr(void) { return &settings; }
+
+/* /dev/dri: a card with no display, a render node, a card with one */
+static const char *dri_names[3] = { "/dev/dri/card0", "/dev/dri/renderD128",
+   "/dev/dri/card1" };
+struct string_list *dir_list_new(const char *dir, const char *ext,
+      bool a, bool b, bool c, bool d)
+{
+   unsigned i;
+   struct string_list *l = (struct string_list*)calloc(1, sizeof(*l));
+   (void)dir; (void)ext; (void)a; (void)b; (void)c; (void)d;
+   l->elems = (struct string_list_elem*)calloc(3, sizeof(*l->elems));
+   for (i = 0; i < 3; i++)
+      l->elems[i].data = strdup(dri_names[i]);
+   l->size = l->cap = 3;
+   return l;
+}
+void dir_list_free(struct string_list *l)
+{
+   unsigned i;
+   if (!l)
+      return;
+   for (i = 0; i < l->size; i++)
+      free(l->elems[i].data);
+   free(l->elems);
+   free(l);
+}
+const char *path_basename_nocompression(const char *path)
+{
+   const char *s = strrchr(path, '/');
+   return s ? s + 1 : path;
+}
 
 /* ---- the fake kernel ------------------------------------------------- */
 
 #define FAKE_FD      7
+#define BARE_FD      6   /* the card with no display */
+#define CONSOLE      1   /* the blank frame under the planes */
 #define PLANE_ID     31
 #define CRTC_ID      41
 #define FB_PROP_ID   51
@@ -329,9 +369,11 @@ int drmModeAtomicAddProperty(drmModeAtomicReqPtr r, uint32_t obj, uint32_t prop,
       pending_fb = (uint32_t)v;
    return 0;
 }
+static unsigned commits;
 int drmModeAtomicCommit(int fd, drmModeAtomicReqPtr r, uint32_t f, void *u)
 {
    (void)fd; (void)r; (void)f; (void)u;
+   commits++;
    if (     !pending_fb || !fb_alive[pending_fb]
          || (pending_ov_fb && !fb_alive[pending_ov_fb]))
       return -1;
@@ -345,17 +387,104 @@ int drmModeAtomicCommit(int fd, drmModeAtomicReqPtr r, uint32_t f, void *u)
    return 0;
 }
 
-/* Reached only by the init path, which this test does not take */
-int drmSetClientCap(int fd, uint64_t c, uint64_t v) { (void)fd; (void)c; (void)v; return -1; }
-drmModeResPtr drmModeGetResources(int fd) { (void)fd; return NULL; }
-drmModeConnectorPtr drmModeGetConnector(int fd, uint32_t id) { (void)fd; (void)id; return NULL; }
-void drmModeFreeConnector(drmModeConnectorPtr p) { (void)p; }
-drmModeEncoderPtr drmModeGetEncoder(int fd, uint32_t id) { (void)fd; (void)id; return NULL; }
-void drmModeFreeEncoder(drmModeEncoderPtr p) { (void)p; }
-drmModeCrtcPtr drmModeGetCrtc(int fd, uint32_t id) { (void)fd; (void)id; return NULL; }
+/* The device: one CRTC lit at 1920x1080 by the console, one encoder on
+ * it, one connector with three modes; BARE_FD's connector is not
+ * connected. Opens and closes of the fake cards are counted. */
+#define CONN_ID 90
+#define ENC_ID  61
+static drmModeModeInfo modes[3];
+static int      atomic_ok = 1, fds_open;
+static uint32_t crtc_fb = 9, crtc_conns;
+static drmModeModeInfo crtc_mode;
+static int      crtc_mode_valid = 1;
+
+int __real_open(const char *path, int flags, ...);
+int __wrap_open(const char *path, int flags, ...)
+{
+   if (!strcmp(path, "/dev/dri/card1")) { fds_open++; return FAKE_FD; }
+   if (!strcmp(path, "/dev/dri/card0")) { fds_open++; return BARE_FD; }
+   if (!strncmp(path, "/dev/dri/", 9))  return -1;
+   return __real_open(path, flags, 0644);
+}
+int __real_close(int fd);
+int __wrap_close(int fd)
+{
+   if (fd == FAKE_FD || fd == BARE_FD) { fds_open--; return 0; }
+   return __real_close(fd);
+}
+
+int drmSetClientCap(int fd, uint64_t c, uint64_t v)
+{ (void)fd; (void)v; return (c == DRM_CLIENT_CAP_ATOMIC && !atomic_ok) ? -1 : 0; }
+static uint32_t res_crtcs[1] = { CRTC_ID }, res_conns[1] = { CONN_ID },
+                res_encs[1]  = { ENC_ID };
+drmModeResPtr drmModeGetResources(int fd)
+{
+   drmModeResPtr r = (drmModeResPtr)calloc(1, sizeof(*r));
+   (void)fd;
+   r->count_crtcs = 1;      r->crtcs      = res_crtcs;
+   r->count_connectors = 1; r->connectors = res_conns;
+   r->count_encoders = 1;   r->encoders   = res_encs;
+   return r;
+}
+void drmModeFreeResources(drmModeResPtr p) { free(p); }
+drmModeConnectorPtr drmModeGetConnector(int fd, uint32_t id)
+{
+   drmModeConnectorPtr c = (drmModeConnectorPtr)calloc(1, sizeof(*c));
+   c->connector_id   = id;
+   c->connection     = fd == BARE_FD ? DRM_MODE_DISCONNECTED : DRM_MODE_CONNECTED;
+   c->encoder_id     = ENC_ID;
+   c->count_modes    = fd == BARE_FD ? 0 : 3;
+   c->modes          = (drmModeModeInfo*)malloc(sizeof(modes));
+   memcpy(c->modes, modes, sizeof(modes));
+   c->count_encoders = 1;
+   c->encoders       = (uint32_t*)malloc(sizeof(uint32_t));
+   c->encoders[0]    = ENC_ID;
+   return c;
+}
+void drmModeFreeConnector(drmModeConnectorPtr p)
+{ if (p) { free(p->modes); free(p->encoders); free(p); } }
+drmModeEncoderPtr drmModeGetEncoder(int fd, uint32_t id)
+{
+   drmModeEncoderPtr e = (drmModeEncoderPtr)calloc(1, sizeof(*e));
+   (void)fd;
+   e->encoder_id     = id;
+   e->crtc_id        = CRTC_ID;
+   e->possible_crtcs = 1;
+   return e;
+}
+void drmModeFreeEncoder(drmModeEncoderPtr p) { free(p); }
+drmModeCrtcPtr drmModeGetCrtc(int fd, uint32_t id)
+{
+   drmModeCrtcPtr c = (drmModeCrtcPtr)calloc(1, sizeof(*c));
+   (void)fd;
+   c->crtc_id    = id;
+   c->buffer_id  = crtc_fb;
+   c->mode_valid = crtc_mode_valid;
+   c->mode       = modes[0];
+   return c;
+}
+void drmModeFreeCrtc(drmModeCrtcPtr p) { free(p); }
 int drmModeSetCrtc(int fd, uint32_t c, uint32_t b, uint32_t x, uint32_t y,
       uint32_t *conn, int n, drmModeModeInfoPtr m)
-{ (void)fd; (void)c; (void)b; (void)x; (void)y; (void)conn; (void)n; (void)m; return 0; }
+{
+   (void)fd; (void)c; (void)x; (void)y; (void)conn;
+   crtc_fb    = b;
+   crtc_conns = (uint32_t)n;
+   if (m)
+      crtc_mode = *m;
+   return 0;
+}
+int drmHandleEvent(int fd, drmEventContextPtr ev) { (void)fd; (void)ev; return 0; }
+
+static void set_mode(drmModeModeInfo *m, unsigned w, unsigned h, unsigned hz)
+{
+   m->hdisplay = (uint16_t)w;
+   m->vdisplay = (uint16_t)h;
+   m->htotal   = (uint16_t)w;
+   m->vtotal   = (uint16_t)h;
+   m->clock    = w * h * hz / 1000;
+   m->vrefresh = hz;
+}
 
 /* ---- the test -------------------------------------------------------- */
 
@@ -379,31 +508,34 @@ static void menu_open_close(struct drm_video *v)
 
 int main(void)
 {
-   static drmModeModeInfo mode;
-   static uint32_t        crtcs[1] = { CRTC_ID };
-   static drmModeRes      res;
+   static video_info_t info;
    struct drm_video      *v;
    unsigned               i, before;
 
    setvbuf(stdout, NULL, _IONBF, 0);
-   mode.hdisplay = 1920;
-   mode.vdisplay = 1080;
-   res.count_crtcs = 1;
-   res.crtcs       = crtcs;
-   drm.fd           = FAKE_FD;
-   drm.crtc_id      = CRTC_ID;
-   drm.current_mode = &mode;
-   drm.resources    = &res;
+   set_mode(&modes[0], 1920, 1080, 60);
+   set_mode(&modes[1], 1280, 720, 60);
+   set_mode(&modes[2], 640, 480, 60);
+   settings.floats.video_refresh_rate = 60.0f;
 
-   v = (struct drm_video*)calloc(1, sizeof(*v));
-   v->rgb32          = true;
+   /* Init: the card with no display passed over, the render node never
+    * opened, the console's mode kept and a blank frame under the planes */
+   info.rgb32 = true;
+   v = (struct drm_video*)drm_init(&info);
+   CHECK(v && drm.fd == FAKE_FD && fds_open == 1,
+         "the card with a display is the one kept (%d open)", fds_open);
+   CHECK(v && drm.mode.hdisplay == 1920 && crtc_mode.hdisplay == 1920
+         && crtc_fb && fb_alive[crtc_fb] && crtc_fb == drm.console.fb_id,
+         "the mode the console ran, with a blank frame under the planes");
+   CHECK(display_type == RARCH_DISPLAY_KMS && g_drm_mode == &drm.mode
+         && output_dims == VIDEO_SCALE_PACK(1920, 1080),
+         "the KMS display server is given the mode");
+   if (!v)
+      return 1;
    v->current_aspect = 4.0f / 3.0f;
-   v->pending_mutex    = slock_new();
-   v->vsync_cond_mutex = slock_new();
-   v->vsync_condition  = scond_new();
 
    core_frame(v, 320, 240);
-   CHECK(count(dumb_alive) == 3 && count(fb_alive) == 3 && maps_alive == 3,
+   CHECK(count(dumb_alive) == 3 + CONSOLE && count(fb_alive) == 3 + CONSOLE && maps_alive == 3 + CONSOLE,
          "a 3-page surface: %u buffers, %u fbs, %u maps",
          count(dumb_alive), count(fb_alive), maps_alive);
    CHECK(v->main_surface
@@ -424,7 +556,7 @@ int main(void)
    /* the core changes resolution, again and again */
    for (i = 0; i < 6; i++)
       core_frame(v, (i & 1) ? 320 : 640, (i & 1) ? 240 : 480);
-   CHECK(count(dumb_alive) == 3 && count(fb_alive) == 3 && maps_alive == 3,
+   CHECK(count(dumb_alive) == 3 + CONSOLE && count(fb_alive) == 3 + CONSOLE && maps_alive == 3 + CONSOLE,
          "after 6 resolution changes: %u buffers, %u fbs, %u maps, want 3 each",
          count(dumb_alive), count(fb_alive), maps_alive);
    CHECK(blanks == 0, "the plane's fb was removed from under it %u time(s)", blanks);
@@ -438,7 +570,7 @@ int main(void)
       menu_open_close(v);
       core_frame(v, 320, 240);
    }
-   CHECK(count(dumb_alive) == 3 && count(fb_alive) == 3 && maps_alive == 3,
+   CHECK(count(dumb_alive) == 3 + CONSOLE && count(fb_alive) == 3 + CONSOLE && maps_alive == 3 + CONSOLE,
          "after 5 menu sessions: %u buffers, %u fbs, %u maps, want 3 each",
          count(dumb_alive), count(fb_alive), maps_alive);
    CHECK(blanks == 0, "the plane's fb was removed from under it %u time(s)", blanks);
@@ -496,7 +628,7 @@ int main(void)
             }
          CHECK(same, "the composed views differ from the frame's");
       }
-      CHECK(count(dumb_alive) == 6 && count(fb_alive) == 6,
+      CHECK(count(dumb_alive) == 6 + CONSOLE && count(fb_alive) == 6 + CONSOLE,
             "the frame's surface and the views': %u buffers, %u fbs",
             count(dumb_alive), count(fb_alive));
 
@@ -504,7 +636,7 @@ int main(void)
       memset(&info.views, 0, sizeof(info.views));
       drm_frame(v, frame_px, VIDEO_SCALE_PACK(256, 384), 0, 256 * 4, NULL,
             &info);
-      CHECK(!v->views_surface && count(dumb_alive) == 3,
+      CHECK(!v->views_surface && count(dumb_alive) == 3 + CONSOLE,
             "the views' surface outlives the map: %u buffers",
             count(dumb_alive));
       CHECK(blanks == 0, "the plane's fb was removed from under it %u time(s)", blanks);
@@ -698,11 +830,11 @@ int main(void)
       CHECK(v->menu_surface
             && v->menu_surface->src_dims == VIDEO_SCALE_PACK(640, 480),
             "the menu surface follows the frame's size");
-      CHECK(count(dumb_alive) == 5 && count(fb_alive) == 5,
+      CHECK(count(dumb_alive) == 5 + CONSOLE && count(fb_alive) == 5 + CONSOLE,
             "the frame's surface and the menu's: %u buffers, %u fbs",
             count(dumb_alive), count(fb_alive));
       drm_set_texture_enable(v, false, false);
-      CHECK(!v->menu_surface && count(dumb_alive) == 3,
+      CHECK(!v->menu_surface && count(dumb_alive) == 3 + CONSOLE,
             "closing the menu leaves %u buffers", count(dumb_alive));
       CHECK(blanks == 0, "the plane's fb was removed from under it %u time(s)", blanks);
       if (failures == before)
@@ -856,6 +988,89 @@ int main(void)
    CHECK(!ov_fb && !ov_blanks, "the overlay plane let go before its pages went");
    if (failures == before)
       printf("   ok   the driver's free leaves nothing behind\n");
+   before = failures;
+   CHECK(crtc_fb == 9 && crtc_mode.hdisplay == 1920 && crtc_conns == 1,
+         "the CRTC is given back the console's framebuffer and mode");
+   CHECK(!plane_fb && fds_open == 0 && drm.fd == -1,
+         "the plane is off and the card closed (%d open)", fds_open);
+   if (failures == before)
+      printf("   ok   init keeps the card with a display; free puts the console back\n");
+   before = failures;
+
+   /* A fullscreen size picks its mode; a switch takes the planes along */
+   info.fullscreen = true;
+   info.dims       = VIDEO_SCALE_PACK(1280, 720);
+   v = (struct drm_video*)drm_init(&info);
+   CHECK(v && drm.mode.hdisplay == 1280 && crtc_mode.hdisplay == 1280,
+         "fullscreen at 1280x720 sets that mode");
+   if (v)
+   {
+      v->current_aspect = 4.0f / 3.0f;
+      core_frame(v, 320, 240);
+      drm_poke_interface.set_video_mode(v, VIDEO_SCALE_PACK(640, 480), true);
+      CHECK(crtc_mode.hdisplay == 640 && v->kms_dims == VIDEO_SCALE_PACK(640, 480)
+            && output_dims == VIDEO_SCALE_PACK(640, 480),
+            "switched to 640x480, and told so");
+      CHECK(plane_fb && fb_alive[plane_fb] && drm.vp_h == 480,
+            "the frame's plane is back, laid out on the new mode");
+      CHECK(count(dumb_alive) == 3 + CONSOLE, "the old blank frame went: %u buffers",
+            count(dumb_alive));
+      drm_gfx_free(v);
+   }
+   CHECK(crtc_fb == 9 && crtc_mode.hdisplay == 1920 && !count(dumb_alive)
+         && fds_open == 0, "and the console is back as it was");
+   if (failures == before)
+      printf("   ok   a fullscreen size and a resolution switch set the mode\n");
+   before = failures;
+
+   /* No atomic commits: the plane is flipped on its own */
+   atomic_ok       = 0;
+   info.fullscreen = false;
+   v = (struct drm_video*)drm_init(&info);
+   CHECK(v && !drm.atomic, "a card without atomic commits is taken");
+   if (v)
+   {
+      uint32_t fb0;
+      unsigned c0 = commits;
+      v->current_aspect = 4.0f / 3.0f;
+      core_frame(v, 320, 240);
+      fb0 = plane_fb;
+      core_frame(v, 320, 240);
+      CHECK(commits == c0 && plane_fb && plane_fb != fb0 && fb_alive[plane_fb],
+            "frames flip by plane updates, no commit");
+      drm_gfx_free(v);
+   }
+   atomic_ok = 1;
+   CHECK(fds_open == 0 && !count(dumb_alive), "and leave nothing");
+   if (failures == before)
+      printf("   ok   without atomic commits the plane is flipped on its own\n");
+   before = failures;
+
+   /* No plane shows frames: init fails, without exiting and leaving nothing */
+   plane.count_formats = 0;
+   v = (struct drm_video*)drm_init(&info);
+   CHECK(!v && fds_open == 0 && !count(dumb_alive) && !count(fb_alive),
+         "no plane for frames: init fails and leaves nothing open");
+   plane.count_formats = 2;
+
+   /* The menu with no content, opened and closed */
+   v = (struct drm_video*)drm_init(&info);
+   if (v)
+   {
+      static uint16_t rgui[320 * 240];
+      drm_set_texture_enable(v, true, false);
+      drm_set_texture_frame(v, rgui, false, VIDEO_SCALE_PACK(320, 240), 1.0f);
+      drm_set_texture_enable(v, false, false);
+      CHECK(!plane_fb && !v->menu_surface && !blanks,
+            "closing the menu with nothing behind it turns the plane off first"
+            " (fb %u, menu %p, blanks %u, plane %u)", plane_fb,
+            (void*)v->menu_surface, blanks, drm.plane_id);
+      drm_gfx_free(v);
+   }
+   CHECK(fds_open == 0 && !count(dumb_alive), "and leaves nothing");
+   if (failures == before)
+      printf("   ok   init without a plane fails cleanly; the menu alone closes cleanly\n");
+
 
    if (failures)
    {
