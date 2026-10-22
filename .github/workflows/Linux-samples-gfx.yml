@@ -1709,6 +1709,22 @@ jobs:
           make clean
           echo "[pass] drm_surface_lifetime_test"
 
+      - name: Build and run drm_crtc_pick_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/drm_crtc_pick
+        run: |
+          set -eu
+          # gfx/common/drm_common.c against a fake kernel: a connector
+          # nothing drives yet (a display plugged in after boot) gets an
+          # encoder and a CRTC that is off, a CRTC that was off is
+          # switched off again on restore, and a size the display lacks
+          # falls back to mode 0.
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 60 ./drm_crtc_pick_test
+          make clean
+          echo "[pass] drm_crtc_pick_test"
+
       - name: Build and run wayland_wlr_output_test (ASan + UBSan)
         shell: bash
         working-directory: samples/gfx/wayland_wlr_output

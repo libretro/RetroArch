@@ -1205,7 +1205,7 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
    unsigned width  = VIDEO_SCALE_W(dims);
    unsigned height = VIDEO_SCALE_H(dims);
    float refresh_mod;
-   int i, ret                      = 0;
+   int ret                         = 0;
    struct drm_fb *fb               = NULL;
    struct gbm_bo *bo               = NULL;
    gfx_ctx_drm_data_t *drm         = (gfx_ctx_drm_data_t*)data;
@@ -1250,35 +1250,8 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
       }
       else
       {
-         /* Try to match refresh_rate as closely as possible.
-          *
-          * Lower resolutions tend to have multiple supported
-          * refresh rates as well.
-          */
-         drmModeModeInfo *mode     = NULL;
-         float minimum_fps_diff    = 0.0f;
-         float mode_vrefresh       = 0.0f;
-         g_drm_mode                = 0;
-
-         /* Find best match. */
-         for (i = 0; i < g_drm_connector->count_modes; i++)
-         {
-            float diff;
-            mode                   = &g_drm_connector->modes[i];
-
-            if (   (width  != mode->hdisplay)
-                || (height != mode->vdisplay))
-               continue;
-
-            mode_vrefresh          = drm_calc_refresh_rate(mode);
-            diff                   = fabsf(refresh_mod * mode_vrefresh - video_refresh_rate);
-
-            if (!g_drm_mode || diff < minimum_fps_diff)
-            {
-               g_drm_mode          = mode;
-               minimum_fps_diff    = diff;
-            }
-         }
+         g_drm_mode = drm_find_mode(g_drm_connector, width, height,
+               refresh_mod, video_refresh_rate);
       }
    }
 

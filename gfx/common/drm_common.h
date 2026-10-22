@@ -47,6 +47,11 @@ float drm_calc_refresh_rate(drmModeModeInfo *mode);
 
 bool drm_get_encoder(int fd);
 
+/* The mode of that size closest to the rate, else mode 0 */
+drmModeModeInfo *drm_find_mode(drmModeConnector *conn,
+      unsigned width, unsigned height,
+      float refresh_mod, float refresh_rate);
+
 /* Restore the original CRTC. */
 void drm_restore_crtc(void);
 
