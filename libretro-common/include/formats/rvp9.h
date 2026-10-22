@@ -275,7 +275,8 @@ typedef struct
     * 8 KiB thread stacks.  mc_scratch is the motion-compensation
     * edge-emulation buffer (worst case is the 10-bit path: a
     * 160x160 block of uint16 pixels, 50 KiB); iht_scratch holds the
-    * inverse-transform row-pass output for the largest transform. */
+    * inverse-transform row-pass output for the largest transform;
+    * coefficient decoding reuses it before each inverse transform. */
    uint16_t  mc_scratch[80 * 2 * 80 * 2];
    rvp9_tran iht_scratch[32 * 32];
    /* rvp9_convolve8's horizontal-pass intermediate; separate from

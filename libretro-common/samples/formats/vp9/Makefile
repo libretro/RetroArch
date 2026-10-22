@@ -2,6 +2,13 @@ CC ?= cc
 CFLAGS ?= -O2 -Wall -Wextra -std=c89
 CFLAGS += -I../../../include
 TARGETS := rvp9_config_test rvp9_reference_test rvp9_hw_session_test rwebm_hw_stream_test
+THREADS ?= 1
+PIXEL_FLAGS :=
+PIXEL_SOURCES :=
+ifeq ($(THREADS),1)
+PIXEL_FLAGS += -DHAVE_THREADS -D_POSIX_C_SOURCE=200809L -pthread
+PIXEL_SOURCES += ../../../rthreads/rthreads.c ../../../rthreads/retro_eventcount.c ../../../rthreads/tpool.c
+endif
 
 WEBM_SOURCES := ../../../formats/vp9/rvp9.c ../../../formats/webm/rwebm.c \
  ../../../formats/video_player.c \
@@ -39,7 +46,17 @@ check: $(TARGETS)
 stream-check: rvp9_hw_session_test
 	python3 check_streams.py ./rvp9_hw_session_test
 
+stack-check:
+	CC="$(CC)" python3 check_stack.py
+
+pixel-check: rvp9_pixel_test
+	python3 check_pixels.py ./rvp9_pixel_test
+
+rvp9_pixel_test: rvp9_pixel_test.c ../../../formats/vp9/rvp9.c ../../../formats/vp9/rvp9_recon.inc ../../../include/formats/rvp9.h $(PIXEL_SOURCES)
+	$(CC) $(CFLAGS) $(PIXEL_FLAGS) rvp9_pixel_test.c ../../../formats/vp9/rvp9.c $(PIXEL_SOURCES) -o $@ $(LDFLAGS)
+
 clean:
+	rm -f rvp9_pixel_test rvp9_pixel_test.exe
 	rm -f $(TARGETS) $(addsuffix .exe,$(TARGETS))
 
-.PHONY: all check stream-check clean
+.PHONY: all check stream-check pixel-check stack-check clean

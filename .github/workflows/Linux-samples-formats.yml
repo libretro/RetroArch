@@ -29,7 +29,7 @@ jobs:
       - name: Install dependencies
         timeout-minutes: 20
         run: |
-          pkgs="build-essential ffmpeg"
+          pkgs="build-essential ffmpeg clang"
           if dpkg -s $pkgs >/dev/null 2>&1; then
             echo "All packages already present on runner image; skipping apt."
             exit 0
@@ -267,7 +267,10 @@ jobs:
 
       - name: VP9 sessions and WebM GPU dispatch (ASan + UBSan)
         working-directory: libretro-common/samples/formats/vp9
-        run: make check stream-check SANITIZER=address,undefined
+        run: |
+          make check stream-check pixel-check SANITIZER=address,undefined
+          make stack-check CC=gcc
+          make stack-check CC=clang
 
       - name: Build and run video_hdr_fp16_test (ASan + UBSan + LSan)
         shell: bash

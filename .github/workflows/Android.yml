@@ -68,3 +68,29 @@ jobs:
           pkg/android/phoenix/build/outputs/apk/normal/debug/phoenix-normal-debug.apk
           pkg/android/phoenix/build/outputs/apk/aarch64/debug/phoenix-aarch64-debug.apk
           pkg/android/phoenix/build/outputs/apk/quest/debug/phoenix-quest-debug.apk
+
+  vp9-stack-abi:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - name: Use the Android project NDK version
+        run: |
+          set -eu
+          version=$(sed -n 's/.*ndkVersion "\([^"]*\)".*/\1/p' pkg/android/phoenix/build.gradle)
+          test -n "$version"
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;$version"
+          echo "MEDIA_NDK=$ANDROID_HOME/ndk/$version" >> "$GITHUB_ENV"
+      - name: VP9 C89 stack ceiling on both Android ABIs and file-offset modes
+        run: |
+          set -eu
+          bin="$MEDIA_NDK/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          for target in armv7a-linux-androideabi aarch64-linux-android; do
+            for api in 21 29; do
+              for offset in default 64; do
+                extra=""
+                if [ "$offset" = 64 ]; then extra="-D_FILE_OFFSET_BITS=64"; fi
+                CC="$bin/$target$api-clang $extra" python3 libretro-common/samples/formats/vp9/check_stack.py
+              done
+            done
+          done
