@@ -367,7 +367,7 @@ jobs:
         run: |
           pkgs="build-essential libx11-dev libxrandr-dev libdrm-dev"
           pkgs="$pkgs xserver-xorg-core xserver-xorg-video-dummy x11-xserver-utils libsdl2-dev libxinerama-dev"
-          pkgs="$pkgs libwayland-dev libegl-dev libgles-dev"
+          pkgs="$pkgs libwayland-dev libegl-dev libgles-dev libgbm-dev"
           pkgs="$pkgs gcc-mingw-w64-x86-64 wine64 openbox cmake ninja-build"
           if dpkg -s $pkgs >/dev/null 2>&1; then
             echo "All packages already present on runner image; skipping apt."
@@ -1739,6 +1739,76 @@ jobs:
              timeout 60 ./drm_crtc_pick_test
           make clean
           echo "[pass] drm_crtc_pick_test"
+
+      - name: Build and run egl_gbm_frames_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/egl_gbm_frames
+        run: |
+          set -eu
+          # gfx/common/egl_gbm_frames.c against a fake GBM, EGL and GPU:
+          # a format the GPU samples where the CPU writes it is taken, one
+          # mapped through staging memory refused for the rest of the run;
+          # a buffer a texture holds, one a draw may still read and the
+          # last frame's are never lent; the check puts the GL state back,
+          # and the free leaves no buffer, map, image, fence or fd.
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 60 ./egl_gbm_frames_test
+          make clean
+          echo "[pass] egl_gbm_frames_test"
+
+      - name: egl_gbm_frames check on a real GL (Mesa EGL, GLES 2 and desktop GL)
+        shell: bash
+        run: |
+          set -eu
+          sudo apt-get install -y -qq libgl-dev
+          # The check gfx/common/egl_gbm_frames.c runs before a format is
+          # first used, on llvmpipe: GBM and the dma-buf import are
+          # stand-ins, the shader, target, draw and readback the GL's own.
+          # A buffer sampled as written passes in both formats; one whose
+          # writes are never seen fails, and is not tried again.
+          T=$(mktemp -d)
+          for api in es2 gl; do
+             if [ $api = es2 ]; then
+                D="-DHAVE_OPENGLES -DHAVE_OPENGLES2"
+                L="libretro-common/glsym/glsym_es2.c -lEGL -lGLESv2"
+             else
+                D="-DHAVE_OPENGL"
+                L="libretro-common/glsym/glsym_gl.c -lEGL -lGL"
+             fi
+             cc -std=gnu89 -O1 -g1 -Wall -Werror=implicit-function-declaration \
+                -fsanitize=address,undefined -fno-omit-frame-pointer \
+                -DHAVE_KMS -DHAVE_EGL $D -I. -Ilibretro-common/include \
+                -Igfx/include $(pkg-config --cflags libdrm) \
+                samples/gfx/egl_gbm_frames/mesa_check.c gfx/common/egl_gbm_frames.c \
+                libretro-common/glsym/rglgen.c $L \
+                -Wl,--wrap=eglGetProcAddress,--wrap=eglQueryString,--wrap=glDrawArrays \
+                -o "$T/check_$api"
+             for mode in seen blind; do
+                EGL_PLATFORM=surfaceless LIBGL_ALWAYS_SOFTWARE=1 \
+                   ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=halt_on_error=1 \
+                   "$T/check_$api" $mode
+             done
+          done
+          rm -rf "$T"
+
+      - name: Build and run gl2_kms_frames_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/gl2_kms_frames
+        run: |
+          set -eu
+          sudo apt-get install -y -qq libgl-dev
+          # gfx/drivers/gl2.c's frames in scanout memory against a
+          # scripted egl_gbm_frames: on KMS a plain software frame is lent
+          # from the buffers, never to a core that reads it back, a
+          # hardware core, mipmaps or a 10-bit source; a lent frame becomes
+          # the frame texture's storage with no upload, and any other gets
+          # the texture's own storage back before it goes up.
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 60 ./gl2_kms_frames_test
+          make clean
+          echo "[pass] gl2_kms_frames_test"
 
       - name: Build and run wayland_wlr_output_test (ASan + UBSan)
         shell: bash

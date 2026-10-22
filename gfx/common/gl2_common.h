@@ -35,6 +35,12 @@
 #include "../video_driver.h"
 #include "gl_common.h"
 
+/* A software core's frames sampled where it writes them, on KMS */
+#if defined(HAVE_KMS) && defined(HAVE_EGL) && !defined(HAVE_PSGL)
+#define GL2_KMS_FRAMES
+#include "egl_gbm_frames.h"
+#endif
+
 /* The hardware ring's per-slot sync, handed from the core's thread to
  * the video thread by exchange so that one thread waits and deletes
  * each. A backend without pointer atomics only serves single-core
@@ -238,6 +244,11 @@ struct gl2
 #ifdef HAVE_GL_FRAME_MEM
    gl_frame_mem_t *frame_mem;
    gl_sw_fb_t sw_fb;
+#endif
+#ifdef GL2_KMS_FRAMES
+   egl_gbm_frames_t *kms_frames;
+   /* Could not be made: frames are uploaded */
+   bool kms_frames_off;
 #endif
 #ifdef HAVE_GL_PLANAR
    gl_planar_t planar;

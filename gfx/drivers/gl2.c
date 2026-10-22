@@ -63,6 +63,9 @@
 #include "../../record/record_driver.h"
 #include "../../verbosity.h"
 #include "../common/gl2_common.h"
+#ifdef GL2_KMS_FRAMES
+#include "../common/drm_common.h"
+#endif
 
 #ifdef HAVE_THREADS
 #include "../video_thread_wrapper.h"
@@ -2824,6 +2827,18 @@ error:
    glDisable(GL_DITHER)
 #endif
 
+#ifdef GL2_KMS_FRAMES
+/* The frame textures go: their buffers with them */
+static void gl2_kms_frames_drop(gl2_t *gl)
+{
+   if (!gl->kms_frames)
+      return;
+   /* The cached frame may name one of them */
+   video_driver_cached_frame_retire();
+   egl_gbm_frames_free(&gl->kms_frames);
+}
+#endif
+
 static void gl2_renderchain_copy_frame(
       gl2_t *gl,
       gl2_renderchain_data_t *chain,
@@ -2831,6 +2846,19 @@ static void gl2_renderchain_copy_frame(
       const void *frame,
       unsigned width, unsigned height, unsigned pitch)
 {
+#ifdef GL2_KMS_FRAMES
+   if (gl->kms_frames)
+   {
+      /* Lent and written: the texture takes the buffer, nothing moves */
+      if (egl_gbm_frames_attach(gl->kms_frames, frame, gl->tex_index))
+         return;
+      /* Any other frame goes up into storage of the texture's own */
+      if (egl_gbm_frames_detach(gl->kms_frames, gl->tex_index))
+         gl2_load_texture_image(GL_TEXTURE_2D, 0, gl->internal_fmt,
+               VIDEO_SCALE_W(gl->tex_dims), VIDEO_SCALE_H(gl->tex_dims), 0,
+               gl->texture_type, gl->texture_fmt, gl->empty_buf);
+   }
+#endif
 #if defined(HAVE_PSGL)
    {
       int h;
@@ -5405,6 +5433,9 @@ static void gl2_frame_textures_remake(gl2_t *gl)
    if (gl->flags & GL2_FLAG_FBO_INITED)
       gl2_renderchain_deinit_fbo(gl,
             (gl2_renderchain_data_t*)gl->renderchain_data);
+#ifdef GL2_KMS_FRAMES
+   gl2_kms_frames_drop(gl);
+#endif
    glDeleteTextures(gl->textures, gl->texture);
    gl->tex_index = 0;
    gl2_init_textures(gl);
@@ -7332,6 +7363,9 @@ static void gl2_free(void *data)
    gl_sw_fb_free(gl->frame_mem, &gl->sw_fb);
    gl_frame_mem_destroy(&gl->frame_mem);
 #endif
+#ifdef GL2_KMS_FRAMES
+   gl2_kms_frames_drop(gl);
+#endif
 
    glDeleteTextures(gl->textures, gl->texture);
 #if defined(HAVE_OPENXR) && defined(ANDROID) && defined(HAVE_OPENGLES3)
@@ -8552,6 +8586,9 @@ static bool gl2_set_shader(void *data,
       if ((gl->flags & GL2_FLAG_HW_RENDER_USE) && (gl->flags & GL2_FLAG_FBO_INITED))
          video_thread_call_on_waiter(gl2_deinit_hw_render_cb, gl);
 
+#ifdef GL2_KMS_FRAMES
+      gl2_kms_frames_drop(gl);
+#endif
       glDeleteTextures(gl->textures, gl->texture);
 #if defined(HAVE_PSGL)
       /* gl2_init_textures generates the buffer again */
@@ -9218,16 +9255,11 @@ static void *gl2_frame_mem_alloc(void *data, size_t size, uintptr_t *id,
 
 /* The frame lent to the core, unthreaded: frame memory the GL uploads
  * the pushed frame out of (gl2_renderchain_copy_frame), where that
- * upload reads it as it is (gl2_frame_mem_uploads). Not to a core that
- * reads its frame, since the GL may keep a persistent mapping
- * write-combined. */
-static bool gl2_get_current_software_framebuffer(void *data,
-      struct retro_framebuffer *fb)
+ * upload reads it as it is (gl2_frame_mem_uploads). */
+static bool gl2_frame_mem_lend_fb(gl2_t *gl, struct retro_framebuffer *fb)
 {
-   gl2_t   *gl = (gl2_t*)data;
    void    *p;
-   if (     !gl || !fb || !gl2_frame_mem_uploads(gl)
-         || (fb->access_flags & RETRO_MEMORY_ACCESS_READ))
+   if (!gl2_frame_mem_uploads(gl))
       return false;
    /* Remade at a new size: the cached frame may name the old ones */
    if (!gl_sw_fb_fits(&gl->sw_fb, fb->width, fb->height, gl->base_size))
@@ -9258,6 +9290,75 @@ static void gl2_frame_mem_free(void *data, uintptr_t id)
       gl_frame_mem_free(gl->frame_mem, id);
 }
 #endif
+
+#ifdef GL2_KMS_FRAMES
+/* A buffer the GPU samples as the core writes it, the frame texture
+ * taking it as storage: KMS only, a plain 8-bit frame in one texture
+ * level, as large as the frame textures; one per texture, and three
+ * more for the core to write into while those and the frames before
+ * them are read */
+static void *gl2_kms_frames_lend(gl2_t *gl, unsigned width,
+      unsigned height, size_t *pitch)
+{
+   unsigned tw    = VIDEO_SCALE_W(gl->tex_dims);
+   unsigned th    = VIDEO_SCALE_H(gl->tex_dims);
+   unsigned count = gl->textures + 3;
+   gl2_renderchain_data_t *chain = (gl2_renderchain_data_t*)
+      gl->renderchain_data;
+
+   if (     gl->kms_frames_off
+         || video_driver_display_type_get() != RARCH_DISPLAY_KMS
+         || (gl->flags & (GL2_FLAG_HW_RENDER_USE | GL2_FLAG_TEXTURE_MIPMAP))
+         || (chain && (chain->flags & GL2_CHAIN_FLAG_EGL_IMAGES))
+         || gl->video_info.source_10bit || gl->video_info.source_hdr10
+         || count > EGL_GBM_FRAMES_MAX
+         || !width || !height || width > tw || height > th)
+      return NULL;
+   if (!egl_gbm_frames_fits(gl->kms_frames, tw, th, gl->base_size, count))
+   {
+      gl2_kms_frames_drop(gl);
+      if (!(gl->kms_frames = egl_gbm_frames_new(g_drm_fd, tw, th,
+                  gl->base_size, count)))
+      {
+         gl->kms_frames_off = true;
+         return NULL;
+      }
+   }
+   return egl_gbm_frames_lend(gl->kms_frames, width, height, pitch);
+}
+#endif
+
+#if defined(HAVE_GL_FRAME_MEM) || defined(GL2_KMS_FRAMES)
+/* Not to a core that reads its frame: the memory may be write-combined */
+static bool gl2_get_current_software_framebuffer(void *data,
+      struct retro_framebuffer *fb)
+{
+   gl2_t *gl = (gl2_t*)data;
+#ifdef GL2_KMS_FRAMES
+   size_t pitch = 0;
+   void *p;
+#endif
+   if (!gl || !fb || (fb->access_flags & RETRO_MEMORY_ACCESS_READ))
+      return false;
+#ifdef GL2_KMS_FRAMES
+   if ((p = gl2_kms_frames_lend(gl, fb->width, fb->height, &pitch)))
+   {
+      fb->data         = p;
+      fb->pitch        = pitch;
+      fb->format       = (gl->base_size == 4)
+         ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565;
+      fb->memory_flags = 0;
+      return true;
+   }
+#endif
+#ifdef HAVE_GL_FRAME_MEM
+   return gl2_frame_mem_lend_fb(gl, fb);
+#else
+   return false;
+#endif
+}
+#endif
+
 
 #ifdef GL2_VIEWS
 static void gl2_set_view_count(void *data, unsigned count)
@@ -9539,7 +9640,7 @@ static const video_poke_interface_t gl2_poke_interface = {
    gl2_show_mouse,
    NULL, /* grab_mouse_toggle */
    gl2_get_current_shader,
-#ifdef HAVE_GL_FRAME_MEM
+#if defined(HAVE_GL_FRAME_MEM) || defined(GL2_KMS_FRAMES)
    gl2_get_current_software_framebuffer,
 #else
    NULL, /* get_current_software_framebuffer */

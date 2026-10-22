@@ -584,6 +584,18 @@ check "gl2: GLES3" \
    "$GLDEFS -DHAVE_OPENGLES -DHAVE_OPENGLES3 -DHAVE_EGL $GLINC" gfx/drivers/gl2.c
 check "gl2: desktop" \
    "$GLDEFS $GLINC" gfx/drivers/gl2.c
+# On KMS, gl2 samples a software core's frames from GBM buffers
+# (gfx/common/egl_gbm_frames.c): its own path, in GLES and desktop GL
+KMSINC="$(pkg-config --cflags libdrm 2>/dev/null || echo -I/usr/include/libdrm)"
+check "gl2: GLES2 on KMS" \
+   "$GLDEFS -DHAVE_OPENGLES -DHAVE_OPENGLES2 -DHAVE_EGL -DHAVE_KMS $GLINC $KMSINC" \
+   gfx/drivers/gl2.c gfx/common/egl_gbm_frames.c
+check "gl2: GLES3 on KMS" \
+   "$GLDEFS -DHAVE_OPENGLES -DHAVE_OPENGLES3 -DHAVE_EGL -DHAVE_KMS $GLINC $KMSINC" \
+   gfx/drivers/gl2.c gfx/common/egl_gbm_frames.c
+check "gl2: desktop on KMS" \
+   "$GLDEFS -DHAVE_EGL -DHAVE_KMS $GLINC $KMSINC" \
+   gfx/drivers/gl2.c gfx/common/egl_gbm_frames.c
 GL3DEFS="-DHAVE_OPENGL -DHAVE_OPENGL_CORE -DHAVE_SLANG -DHAVE_GLSLANG -DHAVE_SPIRV_CROSS -DHAVE_REWIND -DHAVE_OVERLAY -Ideps/SPIRV-Cross"
 check "gl3: desktop" \
    "$GL3DEFS $GLINC" gfx/drivers/gl3.c

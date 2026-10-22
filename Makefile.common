@@ -1510,7 +1510,8 @@ ifeq ($(HAVE_KMS), 1)
    HAVE_AND_WILL_USE_DRM = 1
    OBJ += gfx/drivers_context/drm_ctx.o \
 		  gfx/display_servers/dispserv_kms.o \
-		  gfx/common/drm_hdr.o
+		  gfx/common/drm_hdr.o \
+		  gfx/common/egl_gbm_frames.o
 
 ifeq ($(HAVE_ODROIDGO2), 1)
    OBJ += gfx/drivers_context/drm_go2_ctx.o
