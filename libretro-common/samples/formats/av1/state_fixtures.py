@@ -93,6 +93,8 @@ with tempfile.TemporaryDirectory(prefix='rav1-state-') as directory:
                             assert result.returncode != 0
                             result = subprocess.run([hw_exe, str(bad)], stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
                             assert result.returncode != 0
+                            result = subprocess.run([hw_exe, str(bad), '--packet'], stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+                            assert result.returncode != 0
                             rejected += 1
                     if kind == 0:
                         slots = [(identity, kind, False)] * 8
@@ -114,7 +116,9 @@ with tempfile.TemporaryDirectory(prefix='rav1-state-') as directory:
             assert actual == expected, (depth, mode, actual, expected)
             hardware = subprocess.check_output([hw_exe, str(path)], text=True).strip()
             assert hardware == f'HW {len(expected)} {coded} {shown} {shown}', hardware
+            packet_hw = subprocess.check_output([hw_exe, str(path), '--packet'], text=True).strip()
+            assert packet_hw == f'HW {len(expected)} {len(expected)} {shown} {shown}', packet_hw
             if mode == 'reorder':
                 assert replays and rejected
             print(f'AV1 {depth}-bit {mode}: {len(expected)} transactions, {replays} replays, '
-                  f'{rejected} invalid replay rejected; identities/refresh masks/epochs and mocked HW submission/output match')
+                  f'{rejected} invalid replay rejected; identities/refresh masks/epochs and surface/packet HW submission/output match')

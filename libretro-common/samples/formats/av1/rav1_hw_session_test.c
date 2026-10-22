@@ -42,6 +42,29 @@ static int decode(void *owner, const uint8_t *bytes, size_t size,
    int ret;
    CHECK(owner == &session && seq == &session.sequence);
    CHECK(bytes == session.packet && size == session.packet_size);
+   if (picture->header.show_existing)
+   {
+      CHECK(session.packet_decoder && picture->slot ==
+            session.reference_slots[picture->header.frame_to_show]);
+      CHECK(picture->setup.size.upscaled_width == widths[picture->slot]);
+      CHECK(picture->setup.size.height == heights[picture->slot]);
+      CHECK(!memcmp(&picture->grain.params, &saved_grains[picture->slot],
+            sizeof(picture->grain.params)));
+      if (verify_retry)
+         CHECK(!memcmp(&snapshot, picture, sizeof(snapshot)));
+      decode_calls++;
+      if (decode_result > 0)
+      {
+         snapshot = *picture;
+         verify_retry = 1;
+      }
+      if (!decode_result)
+      {
+         accepted++;
+         verify_retry = 0;
+      }
+      return decode_result;
+   }
    CHECK(group.data >= bytes && group.data + group.size <= bytes + size);
    CHECK(picture->slot >= 0 && picture->slot < (int)session.slots);
    for (i = 0; i < 8; i++)
@@ -119,13 +142,18 @@ static int export_frame(void *owner, unsigned slot, const rav1_grain_t *grain,
    return 0;
 }
 
-static bool initialize(unsigned slots)
+static bool initialize_mode(unsigned slots, bool packet_decoder)
 {
    rav1_hw_ops_t ops;
    ops.decoder = &session;
    ops.decode = decode;
    ops.output = export_frame;
-   return rav1_hw_session_init(&session, &sequence, &ops, slots);
+   return rav1_hw_session_init_mode(&session, &sequence, &ops, slots, packet_decoder);
+}
+
+static bool initialize(unsigned slots)
+{
+   return initialize_mode(slots, false);
 }
 
 static void reset(void)
@@ -262,6 +290,57 @@ static void test_replay_and_cancel(void)
    CHECK(exports == 1);
 }
 
+static void test_packet_repeat(void)
+{
+   static const uint8_t replay[] = {0x1a, 1, 0x88};
+   unsigned depth;
+   for (depth = 8; depth <= 10; depth += 2)
+   {
+      rav1_hw_ops_t ops;
+      unsigned before;
+      reset();
+      sequence.bit_depth = depth;
+      ops = session.ops;
+      CHECK(rav1_hw_session_init_mode(&session, &sequence, &ops, 9, true));
+      make_packet(0, 0, 255);
+      CHECK(rav1_hw_session_submit(&session, packet, packet_size) == 0);
+      saved = session.state;
+      before = decode_calls;
+      decode_result = 1;
+      CHECK(rav1_hw_session_submit(&session, replay, sizeof(replay)) == 1);
+      CHECK(session.phase == 2 && session.output_slot < 0);
+      CHECK(!memcmp(&saved, &session.state, sizeof(saved)));
+      memcpy(different, replay, sizeof(replay));
+      CHECK(rav1_hw_session_submit(&session, different, sizeof(replay)) == -1);
+      CHECK(rav1_hw_session_submit(&session, replay, sizeof(replay) - 1) == -1);
+      CHECK(decode_calls == before + 1);
+      CHECK(rav1_hw_session_cancel(&session));
+      CHECK(!memcmp(&saved, &session.state, sizeof(saved)));
+      verify_retry = 0;
+      CHECK(rav1_hw_session_submit(&session, replay, sizeof(replay)) == 1);
+      CHECK(!memcmp(&saved, &session.state, sizeof(saved)));
+      decode_result = 0;
+      CHECK(rav1_hw_session_submit(&session, replay, sizeof(replay)) == 0);
+      CHECK(accepted == 2 && session.output_slot >= 0 && !session.phase);
+      CHECK(memcmp(&saved, &session.state, sizeof(saved)));
+      output_result = 1;
+      CHECK(rav1_hw_session_output(&session, &output) == 1);
+      CHECK(rav1_hw_session_submit(&session, replay, sizeof(replay)) == 1);
+      output_result = 0;
+      CHECK(rav1_hw_session_output(&session, &held) == 0);
+      CHECK(held.pixfmt == (depth == 8 ? IMAGE_PIXFMT_NV12 : IMAGE_PIXFMT_P010));
+      CHECK(rav1_hw_session_submit(&session, replay, sizeof(replay)) < 0);
+      video_hw_frame_abandon(&held);
+      make_packet(0, 0, 255);
+      CHECK(rav1_hw_session_submit(&session, packet, packet_size) == 0);
+      saved = session.state;
+      decode_result = -2;
+      CHECK(rav1_hw_session_submit(&session, replay, sizeof(replay)) == -2);
+      CHECK(session.broken && !memcmp(&saved, &session.state, sizeof(saved)));
+      CHECK(rav1_hw_session_submit(&session, replay, sizeof(replay)) == -1);
+   }
+}
+
 static void test_unsized(void)
 {
    static const uint8_t replay[] = {0x18, 0x88};
@@ -365,7 +444,7 @@ static void test_output_formats(void)
       }
 }
 
-static int inspect(const char *path)
+static int inspect(const char *path, bool packet_decoder)
 {
    FILE *file = fopen(path, "rb");
    uint8_t *data = NULL;
@@ -392,7 +471,7 @@ static int inspect(const char *path)
             goto done;
          if (!initialized)
          {
-            if (!initialize(9))
+            if (!initialize_mode(9, packet_decoder))
                goto done;
             initialized = true;
          }
@@ -439,9 +518,12 @@ done:
 int main(int argc, char **argv)
 {
    if (argc == 2)
-      return inspect(argv[1]);
+      return inspect(argv[1], false);
+   if (argc == 3 && !strcmp(argv[2], "--packet"))
+      return inspect(argv[1], true);
    test_busy_and_output();
    test_replay_and_cancel();
+   test_packet_repeat();
    test_failures();
    test_output_formats();
    test_unsized();

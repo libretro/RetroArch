@@ -54,7 +54,8 @@ static INLINE bool rav1_hw_stream_open_sequence(rav1_hw_stream_t *s)
    }
    if (!rav1_hw_backend_open(&s->sequence, 9, &ops, &s->backend))
       return false;
-   if (!rav1_hw_session_init(&s->session, &s->sequence, &ops, 9))
+   if (!rav1_hw_session_init_mode(&s->session, &s->sequence, &ops, 9,
+            s->backend.packet_decoder))
    {
       s->backend.close(&ops);
       memset(&s->backend, 0, sizeof(s->backend));

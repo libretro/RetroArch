@@ -112,7 +112,7 @@ static void close_backend(rav1_hw_ops_t *ops)
    closed++;
    release((mock_t *)ops->decoder);
 }
-static const rav1_hw_backend_t backend = {NULL, open_backend, close_backend};
+static const rav1_hw_backend_t backend = {NULL, open_backend, close_backend, false};
 
 static bool sink(void *user, const video_hw_frame_t *frame)
 {
