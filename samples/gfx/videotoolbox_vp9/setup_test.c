@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../../../gfx/common/videotoolbox_vp9_slots.h"
+#include "../../../gfx/common/videotoolbox_vp9_owner.h"
 
 static rvp9_hdr header;
 static video_color_metadata_t color;
@@ -40,10 +40,12 @@ struct object
    CMSampleTimingInfo timing;
    VTDecompressionOutputCallbackRecord callback;
    uint8_t bytes[12];
-   int kind, refs, count, value, invalidated;
+   retro_atomic_int_t refs;
+   int kind, count, value, invalidated;
 };
 
-static int objects, step, fail_step, format_error, session_error, registers;
+static retro_atomic_int_t objects;
+static int step, fail_step, format_error, session_error, registers;
 static int expected_pixel;
 #ifdef VIDEOTOOLBOX_VP9_SAMPLE
 static CMSampleBufferRef delayed_sample;
@@ -59,23 +61,23 @@ static struct object *new_object(int kind)
    p = (struct object *)calloc(1, sizeof(*p));
    assert(p);
    p->kind = kind;
-   p->refs = 1;
-   objects++;
+   retro_atomic_int_init(&p->refs, 1);
+   retro_atomic_fetch_add_int(&objects, 1);
    return p;
 }
 
 static void retain(const void *value)
 {
    if (value != kCFBooleanTrue)
-      ((struct object *)value)->refs++;
+      retro_atomic_fetch_add_int(&((struct object *)value)->refs, 1);
 }
 
 void CFRelease(void *value)
 {
    struct object *p = (struct object *)value;
    int i;
-   assert(p && p->refs > 0);
-   if (--p->refs)
+   assert(p && retro_atomic_load_acquire_int(&p->refs) > 0);
+   if (retro_atomic_fetch_sub_int(&p->refs, 1) != 1)
       return;
    if (p->kind == 3)
       for (i = 0; i < p->count; i++)
@@ -86,7 +88,7 @@ void CFRelease(void *value)
    if (p->kind == 6)
       p->source.FreeBlock(p->source.refCon, p->data, p->size);
    assert(p->kind != 5 || p->invalidated);
-   objects--;
+   retro_atomic_fetch_sub_int(&objects, 1);
    free(p);
 }
 
@@ -179,9 +181,14 @@ OSStatus VTDecompressionSessionCreate(void *allocator,
       CFDictionaryRef attributes, const VTDecompressionOutputCallbackRecord *cb,
       VTDecompressionSessionRef *out)
 {
-   assert(!allocator && format->kind == 4
-          && cb->decompressionOutputCallback == callback);
+   assert(!allocator && format->kind == 4);
+#ifdef VT_VP9_OWNER_TEST
+   assert(cb->decompressionOutputCallback == videotoolbox_vp9_owner_output);
+   assert(cb->decompressionOutputRefCon);
+#else
+   assert(cb->decompressionOutputCallback == callback);
    assert(cb->decompressionOutputRefCon == &callback_token);
+#endif
    assert((void *)get(specification, "hardware") == kCFBooleanTrue);
    assert((void *)get(attributes, "metal") == kCFBooleanTrue);
    assert(get(attributes, "surface")->kind == 3
@@ -212,8 +219,12 @@ OSStatus CMBlockBufferCreateWithMemoryBlock(void *allocator, void *data,
    assert(!allocator && block_allocator == kCFAllocatorNull && !offset
           && !flags);
    assert(source->version == 0 && !source->AllocateBlock && source->FreeBlock);
+#ifdef VT_VP9_OWNER_TEST
+   assert(data && size == length && size <= 64);
+#else
    assert(data == sample_packet.data && size == length
           && size == sample_packet.size);
+#endif
    *out = new_object(6);
    if (*out)
    {
@@ -230,8 +241,12 @@ OSStatus CMSampleBufferCreateReady(void *allocator, CMBlockBufferRef block,
       CMSampleBufferRef *out)
 {
    assert(!allocator && format && samples == 1 && sizes == 1);
-   assert(
-         *size == sample_packet.size && (times == 0 || (times == 1 && timing)));
+#ifdef VT_VP9_OWNER_TEST
+   assert(*size == block->size);
+#else
+   assert(*size == sample_packet.size);
+#endif
+   assert(times == 0 || (times == 1 && timing));
    *out = new_object(7);
    if (*out)
    {
@@ -247,6 +262,32 @@ OSStatus VTDecompressionSessionDecodeFrame(VTDecompressionSessionRef session,
       CMSampleBufferRef sample, VTDecodeFrameFlags flags, void *ref,
       VTDecodeInfoFlags *info)
 {
+#ifdef VT_VP9_OWNER_TEST
+   CVPixelBufferRef image = NULL;
+   assert(session && ref
+          && (flags & kVTDecodeFrame_EnableAsynchronousDecompression));
+   if (info)
+      *info = 0;
+   if (decode_error)
+      return decode_error;
+   if (owner_delay)
+   {
+      assert(!delayed_sample);
+      retain(sample);
+      delayed_sample        = sample;
+      owner_delayed_cookie  = ref;
+      owner_delayed_session = session;
+      return 0;
+   }
+   if (!(flags & kVTDecodeFrame_DoNotOutputFrame))
+      image = new_object(8);
+   session->callback.decompressionOutputCallback(
+         session->callback.decompressionOutputRefCon, ref, 0, 0, image,
+         kCMTimeInvalid, kCMTimeInvalid);
+   if (image)
+      CVPixelBufferRelease(image);
+   return 0;
+#else
    assert(session && ref == &callback_token && flags == expected_flags);
    assert(!delayed_sample);
    if (!decode_error)
@@ -257,6 +298,17 @@ OSStatus VTDecompressionSessionDecodeFrame(VTDecompressionSessionRef session,
    if (info)
       *info = 0;
    return decode_error;
+#endif
+}
+
+OSStatus VTDecompressionSessionWaitForAsynchronousFrames(
+      VTDecompressionSessionRef session)
+{
+   assert(session && session->kind == 5);
+#ifdef VT_VP9_OWNER_TEST
+   owner_waits++;
+#endif
+   return 0;
 }
 
 #endif
@@ -498,7 +550,7 @@ int main(void)
          status = videotoolbox_vp9_session_create(
                &header, &color, 1, register_decoder, &cb, &format, &session);
          assert(!status && format && session && registers == before + 1);
-         assert(objects == 6);
+         assert(retro_atomic_load_acquire_int(&objects) == 6);
 #ifdef VIDEOTOOLBOX_VP9_SAMPLE
          expected_flags = kVTDecodeFrame_EnableAsynchronousDecompression;
          assert(!videotoolbox_vp9_decode_worker(session, format, &sample_packet,
@@ -524,7 +576,7 @@ int main(void)
          VTDecompressionSessionInvalidate(session);
          CFRelease(session);
          CFRelease(format);
-         assert(!objects);
+         assert(!retro_atomic_load_acquire_int(&objects));
          before = registers;
          assert(!videotoolbox_vp9_session_create(
                &header, &color, 1, NULL, &cb, &format, &session));
@@ -532,27 +584,30 @@ int main(void)
          VTDecompressionSessionInvalidate(session);
          CFRelease(session);
          CFRelease(format);
-         assert(!objects);
+         assert(!retro_atomic_load_acquire_int(&objects));
          for (failure = 1; failure <= 10; failure++)
          {
             step      = 0;
             fail_step = failure;
             status    = videotoolbox_vp9_session_create(
                   &header, &color, 1, NULL, &cb, &format, &session);
-            assert(status && !format && !session && !objects);
+            assert(status && !format && !session
+                   && !retro_atomic_load_acquire_int(&objects));
          }
          step = fail_step = 0;
          format_error     = -200;
          assert(videotoolbox_vp9_session_create(
                       &header, &color, 1, NULL, &cb, &format, &session)
                 == -200);
-         assert(!format && !session && !objects);
+         assert(
+               !format && !session && !retro_atomic_load_acquire_int(&objects));
          format_error  = 0;
          session_error = -201;
          assert(videotoolbox_vp9_session_create(
                       &header, &color, 1, NULL, &cb, &format, &session)
                 == -201);
-         assert(!format && !session && !objects);
+         assert(
+               !format && !session && !retro_atomic_load_acquire_int(&objects));
          session_error = 0;
 #endif
       }

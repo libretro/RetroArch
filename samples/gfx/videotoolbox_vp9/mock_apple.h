@@ -96,4 +96,6 @@ OSStatus VTDecompressionSessionCreate(void *, CMVideoFormatDescriptionRef,
       CFDictionaryRef, CFDictionaryRef,
       const VTDecompressionOutputCallbackRecord *, VTDecompressionSessionRef *);
 void VTDecompressionSessionInvalidate(VTDecompressionSessionRef);
+OSStatus VTDecompressionSessionWaitForAsynchronousFrames(
+      VTDecompressionSessionRef);
 #endif
