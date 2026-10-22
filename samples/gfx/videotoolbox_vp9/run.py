@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Exercise shipping VP9 setup with mocks, or native CoreMedia formats only."""
+"""Exercise VP9 setup, native decoder pixels and the Metal playback pipeline."""
 import argparse
 import os
 from pathlib import Path
@@ -12,7 +12,10 @@ root = here.parents[2]
 parser = argparse.ArgumentParser()
 parser.add_argument("--native", action="store_true")
 parser.add_argument("--pixels", action="store_true")
+parser.add_argument("--pipeline", action="store_true")
 args = parser.parse_args()
+if args.pipeline:
+    args.pixels = True
 if args.pixels and not args.native:
     parser.error("--pixels requires --native")
 compiler = shlex.split(os.environ.get("CC", "cc"))
@@ -130,4 +133,48 @@ with tempfile.TemporaryDirectory(prefix="vt-vp9-setup-") as directory:
             print("+", shlex.join(command), flush=True)
             subprocess.run(command, check=True)
             result = subprocess.run([str(binary)], check=False, timeout=90)
+            if result.returncode or not args.pipeline:
+                raise SystemExit(result.returncode)
+
+
+        if args.pipeline:
+            import importlib.util
+            specification = importlib.util.spec_from_file_location(
+                "hevc_metal_fixture", here.parent / "videotoolbox_hevc/run.py")
+            helper = importlib.util.module_from_spec(specification)
+            specification.loader.exec_module(helper)
+            unit = path / "vp9_metal.m"
+            text = helper.metal_test_source().replace(
+                "VideoToolbox native adapter: exported pixels survive decoder, session and pool teardown",
+                "VP9 stream export: decoded planes and FrameView pixels survive stream/pool close")
+            unit.write_text(text, encoding="utf-8")
+            metal_object = path / "vp9_metal.o"
+            command = compiler + ["-DHAVE_THREADS", "-DHAVE_RVP9", "-O2",
+                "-fobjc-arc", "-fblocks", "-Wall", "-Wextra", "-Werror",
+                "-Wno-unused-function", "-Wframe-larger-than=4096",
+                "-mmacosx-version-min=10.14", "-I" + str(root / "libretro-common/include"),
+                "-c", str(unit), "-o", str(metal_object)]
+            print("+", shlex.join(command), flush=True)
+            subprocess.run(command, check=True)
+            objects = [str(thread_object), str(queue_object), str(feature_object),
+                       codec_objects["vp9"], codec_objects["hevc"], str(metal_object)]
+            sources = ["mp4/rmp4.c", "mp4/rmp4_video.c", "webm/rwebm.c",
+                "webm/rwebm_video.c", "vp8/rvp8.c", "h264/rh264.c",
+                "image/image_blit_bands.c", "image/image_hdr_blit.c", "../time/rtime.c"]
+            for index, source in enumerate(sources):
+                obj = path / ("stream-" + str(index) + ".o")
+                command = compiler + ["-O2", "-std=c89", "-pedantic", "-Wall",
+                    "-Wextra", "-Werror", "-Wno-unused-parameter", "-Wno-long-long",
+                    "-Wno-c99-extensions", "-Wframe-larger-than=2048", "-fstack-usage",
+                    "-DHAVE_RMP4", "-DHAVE_RWEBM", "-DHAVE_RVP9",
+                    "-mmacosx-version-min=10.14", "-I" + str(root / "libretro-common/include"),
+                    "-c", str(root / "libretro-common/formats" / source), "-o", str(obj)]
+                subprocess.run(command, check=True)
+                objects.append(str(obj))
+            command = compiler + flags + [str(here / "native_pipeline_test.c"),
+                *objects, "-o", str(binary), "-framework", "Foundation",
+                "-framework", "Metal", "-lm"] + libraries
+            print("+", shlex.join(command), flush=True)
+            subprocess.run(command, check=True)
+            result = subprocess.run([str(binary)], check=False, timeout=180)
             raise SystemExit(result.returncode)
