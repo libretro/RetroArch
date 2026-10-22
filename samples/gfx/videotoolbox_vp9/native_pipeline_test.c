@@ -19,6 +19,16 @@ extern void videotoolbox_hevc_test_movie_reset(void);
 extern void videotoolbox_vp9_test_mp4_state(rmp4_video_stream_t *, unsigned [4]);
 extern unsigned videotoolbox_vp9_test_session_opens(void);
 
+static int playback_step(rmp4_video_stream_t *mp4,
+      rwebm_video_stream_t *webm, int *duration)
+{
+   if (!webm)
+      return rmp4_video_stream_skip(mp4, duration);
+   if (rwebm_video_stream_next(webm, duration))
+      return 1;
+   return rwebm_video_stream_waiting(webm) ? 2 : -1;
+}
+
 static void run(const vp9_pipeline_fixture_t *fixture, void *device)
 {
    rmp4_video_stream_t *mp4 = NULL;
@@ -47,8 +57,7 @@ static void run(const vp9_pipeline_fixture_t *fixture, void *device)
    deadline = cpu_features_get_time_usec() + 10000000;
    for (;;)
    {
-      ret = fixture->webm ? rwebm_video_stream_skip(webm, &duration)
-         : rmp4_video_stream_skip(mp4, &duration);
+      ret = playback_step(mp4, webm, &duration);
       assert(cpu_features_get_time_usec() < deadline);
       if (ret == 2)
       {
@@ -97,8 +106,7 @@ static void run(const vp9_pipeline_fixture_t *fixture, void *device)
       assert(position == (int64_t)target * 250000);
       do
       {
-         ret = fixture->webm ? rwebm_video_stream_skip(webm, &duration)
-            : rmp4_video_stream_skip(mp4, &duration);
+         ret = playback_step(mp4, webm, &duration);
          assert(ret >= 0 && cpu_features_get_time_usec() < deadline);
          if (ret == 2)
             sthread_yield();
