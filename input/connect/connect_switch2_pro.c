@@ -20,7 +20,8 @@
  * report every few milliseconds: from byte 5, the buttons - Y X B A,
  * -, -, R, ZR; then -, +, R3, L3, Home, Capture, C; then down, up,
  * right, left, -, -, L, ZL; then the grips, right and left - and from
- * byte 11 the sticks, 12 bits an axis, up positive.
+ * byte 11 the sticks, 12 bits an axis, up positive. From byte 0x2b a
+ * sensor clock, and from 0x31 the accelerometer and gyroscope, x y z each.
  *
  * Rumble is output report 0x02: a sequence number, then each hand's
  * actuator, a high and a low band, kept up while it lasts. */
@@ -33,6 +34,7 @@
 #include <retro_miscellaneous.h>
 
 #include "joypad_connection.h"
+#include "../common/pad_motion.h"
 #include "../input_defines.h"
 
 #define SWITCH2_PRO_REPORT_LEN   64
@@ -40,6 +42,8 @@
 #define SWITCH2_PRO_RUMBLE_HOLD  3
 /* past this the actuators are only louder, and worn */
 #define SWITCH2_PRO_RUMBLE_MAX   29000
+/* sensor clock samples timed before the gyroscope's range is known */
+#define SWITCH2_PRO_CLOCK_SAMPLES 100
 
 struct hidpad_switch2_pro_data
 {
@@ -56,6 +60,12 @@ struct hidpad_switch2_pro_data
    uint8_t sequence;
    uint8_t since_sent;  /* reports since rumble last went */
    bool motors_due;
+   int16_t imu[6];      /* accel x y z, gyro x y z, as sent */
+   uint32_t clock_first;
+   uint8_t clock_count;
+   uint8_t imu_want;    /* PAD_MOTION_* a core asked for */
+   bool imu_seen;
+   float gyro_range;    /* full scale, radians a second */
 };
 
 static void *hidpad_switch2_pro_init(void *data, uint32_t slot,
@@ -148,6 +158,44 @@ static void hidpad_switch2_pro_decode(struct hidpad_switch2_pro_data *device,
    pad_view_set_buttons(&device->view, b, (r[6] & 0x10) != 0);
 }
 
+/* As SDL: the sensor clock ticks microseconds on most pads, and the
+ * gyroscope then reaches 34.8 rad/s; on the others it does not, and
+ * the gyroscope reaches 40. */
+static void hidpad_switch2_pro_motion(struct hidpad_switch2_pro_data *device,
+      const uint8_t *r)
+{
+   unsigned i;
+   uint32_t clock = (uint32_t)r[0x2b] | ((uint32_t)r[0x2c] << 8)
+      | ((uint32_t)r[0x2d] << 16) | ((uint32_t)r[0x2e] << 24);
+
+   if (!clock)
+      return;
+   if (device->gyro_range == 0.0f)
+   {
+      device->clock_count++;
+      if (device->clock_count >= 5 && !device->clock_first)
+      {
+         device->clock_first = clock;
+         device->clock_count = 0;
+      }
+      else if (device->clock_count == SWITCH2_PRO_CLOCK_SAMPLES)
+      {
+         uint64_t coeff = (uint64_t)(uint32_t)(clock - device->clock_first)
+               * 1000 / (SWITCH2_PRO_CLOCK_SAMPLES * 4);
+         if ((coeff + 100000) / 200000 == 5)
+            device->gyro_range = 34.8f;
+         else if (coeff)
+            device->gyro_range = 40.0f;
+         device->clock_first = 0;
+         device->clock_count = 0;
+      }
+      return;
+   }
+   for (i = 0; i < 6; i++)
+      device->imu[i] = (int16_t)(r[0x31 + i * 2] | (r[0x32 + i * 2] << 8));
+   device->imu_seen = true;
+}
+
 /* Both hands' actuators alike: the weak motor the high band at about
  * 320 Hz, the strong the low at about 160 Hz. */
 static void hidpad_switch2_pro_send_rumble(
@@ -186,6 +234,7 @@ static void hidpad_switch2_pro_packet_handler(void *data,
    if (!device || !packet || size < SWITCH2_PRO_REPORT_LEN)
       return;
    hidpad_switch2_pro_decode(device, packet);
+   hidpad_switch2_pro_motion(device, packet);
 
    if (device->since_sent < 0xff)
       device->since_sent++;
@@ -248,6 +297,37 @@ static const input_pad_view_t *hidpad_switch2_pro_view(void *data)
    return &((struct hidpad_switch2_pro_data*)data)->view;
 }
 
+/* The pad always sends its sensors; only what a core sees changes. */
+static bool hidpad_switch2_pro_set_sensor(void *data,
+      enum retro_sensor_action action)
+{
+   struct hidpad_switch2_pro_data *device =
+      (struct hidpad_switch2_pro_data*)data;
+   return device && pad_motion_want(&device->imu_want, action);
+}
+
+/* SDL's axes, as SDL turns the pad's, without the gyroscope's flash
+ * biases, which only the bulk endpoint reads. */
+static bool hidpad_switch2_pro_sensor(void *data, unsigned id, float *value)
+{
+   struct hidpad_switch2_pro_data *device =
+      (struct hidpad_switch2_pro_data*)data;
+   float accel[3], gyro[3];
+   float a, g;
+
+   if (!device || !device->imu_seen)
+      return false;
+   a        = 8.0f / 32767.0f;
+   g        = device->gyro_range / 32767.0f;
+   accel[0] =   a * device->imu[0];
+   accel[1] =   a * device->imu[2];
+   accel[2] = -(a * device->imu[1]);
+   gyro[0]  =   g * device->imu[3];
+   gyro[1]  =   g * device->imu[5];
+   gyro[2]  = -(g * device->imu[4]);
+   return pad_motion_value(accel, gyro, device->imu_want, id, value);
+}
+
 pad_connection_interface_t pad_connection_switch2_pro = {
    hidpad_switch2_pro_init,
    hidpad_switch2_pro_deinit,
@@ -264,5 +344,8 @@ pad_connection_interface_t pad_connection_switch2_pro = {
    NULL,  /* status */
    NULL,  /* joypad */
    NULL,  /* set_player */
-   hidpad_switch2_pro_view
+   hidpad_switch2_pro_view,
+   NULL,  /* idle */
+   hidpad_switch2_pro_set_sensor,
+   hidpad_switch2_pro_sensor
 };

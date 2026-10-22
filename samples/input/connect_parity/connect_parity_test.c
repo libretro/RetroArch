@@ -2355,6 +2355,43 @@ static void test_motion(void)
          "motion: the DualSense's over Bluetooth misread");
    pad_connection_ps5.deinit(dev);
 
+   /* Switch 2 Pro: from 0x31, once the sensor clock tells the
+    * gyroscope's range: 34.8 rad/s on a microsecond clock, else 40 */
+   for (k = 0; k < 2; k++)
+   {
+      const pad_connection_interface_t *ifc = &pad_connection_switch2_pro;
+      float range = k ? 40.0f : 34.8f;
+      uint32_t clock = 1000;
+      unsigned n, i;
+
+      dev = ifc->init(&dummy_connection, 0, &stub_hid);
+      ifc->set_sensor(dev, RETRO_SENSOR_ACCELEROMETER_ENABLE);
+      ifc->set_sensor(dev, RETRO_SENSOR_GYROSCOPE_ENABLE);
+      memset(p, 0, sizeof(p));
+      for (i = 0; i < 6; i++)
+         put_le16(p + 0x31 + 2 * i, imu[i]);
+      for (n = 0; n < 104; n++)
+      {
+         p[0x2b] = (uint8_t)clock;         p[0x2c] = (uint8_t)(clock >> 8);
+         p[0x2d] = (uint8_t)(clock >> 16); p[0x2e] = (uint8_t)(clock >> 24);
+         deliver(ifc, dev, p, 64);
+         clock += k ? 5000 : 4000;
+      }
+      CHECK(!ifc->sensor(dev, RETRO_SENSOR_ACCELEROMETER_X, &v),
+            "motion: the Switch 2 Pro's given before its clock was timed");
+      deliver(ifc, dev, p, 64);
+      deliver(ifc, dev, p, 64);
+      want[0] =   imu[0] * 8.0f / 32767.0f;
+      want[1] = -(imu[1] * 8.0f / 32767.0f);
+      want[2] =   imu[2] * 8.0f / 32767.0f;
+      want[3] =   imu[3] * range / 32767.0f;
+      want[4] =   imu[4] * range / 32767.0f;
+      want[5] =   imu[5] * range / 32767.0f;
+      CHECK(!motion_mismatches(ifc, dev, want, true),
+            "motion: the Switch 2 Pro's misread at %.1f rad/s", range);
+      ifc->deinit(dev);
+   }
+
    /* DualShock 3: the accelerometer alone, big-endian from 41, 113 a g
     * about 511, on SDL's axes */
    stub_hid.get_report = stub_ds3_get_report;
@@ -2374,7 +2411,7 @@ static void test_motion(void)
          "motion: the DualShock 3's misread");
    pad_connection_ps3.deinit(dev);
 
-   printf("[%s] motion: DualShock 4 over USB and Bluetooth, DualSense over USB and Bluetooth, DualShock 3's accelerometer, only while asked for\n",
+   printf("[%s] motion: DualShock 4 over USB and Bluetooth, DualSense over USB and Bluetooth, Switch 2 Pro on either clock, DualShock 3's accelerometer, only while asked for\n",
          failures == had ? "pass" : "fail");
 }
 
