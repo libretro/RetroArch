@@ -147,6 +147,30 @@ with tempfile.TemporaryDirectory(prefix="vt-vp9-setup-") as directory:
             text = helper.metal_test_source().replace(
                 "VideoToolbox native adapter: exported pixels survive decoder, session and pool teardown",
                 "VP9 stream export: decoded planes and FrameView pixels survive stream/pool close")
+            export = "if (!metal_frame_create_cv(&source, image, (void*)pool->cache, out)) return -1;"
+            if text.count(export) != 1:
+                raise RuntimeError("shipping Metal export diagnostic anchor changed")
+            text = text.replace(export, """if (!metal_frame_create_cv(&source, image, (void*)pool->cache, out))
+      {
+         CFStringRef keys[3] = { kCVImageBufferColorPrimariesKey,
+            kCVImageBufferTransferFunctionKey, kCVImageBufferYCbCrMatrixKey };
+         unsigned tag;
+         fprintf(stderr, "VP9 test-only Metal CV export refused: source %u %ux%u color %u/%u/%u range %u; native format %lu planes %lu\\n",
+               source.pixfmt, source.width, source.height, source.color.primaries,
+               source.color.transfer, source.color.matrix, source.color.range,
+               (unsigned long)CVPixelBufferGetPixelFormatType(image),
+               (unsigned long)CVPixelBufferGetPlaneCount(image));
+         for (tag = 0; tag < 3; tag++)
+         {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+            CFTypeRef value = CVBufferGetAttachment(image, keys[tag], NULL);
+#pragma clang diagnostic pop
+            if (value) CFShow(value);
+         }
+         fflush(stderr);
+         return -1;
+      }""")
             unit.write_text(text, encoding="utf-8")
             metal_object = path / "vp9_metal.o"
             command = compiler + ["-DHAVE_THREADS", "-DHAVE_RVP9", "-O2",
