@@ -1,10 +1,11 @@
-# input/input_driver.c's Mapped Port sharing against a stand-in
-# frontend.
+# input/input_driver.c's Mapped Port sharing and Plays As against a
+# stand-in frontend.
 # Only what the tests reach is linked (-flto, --gc-sections).
 CC     ?= cc
 ROOT   := ../../..
 TARGET := mapped_port_test$(EXE)
 SOURCES := mapped_port_test.c $(ROOT)/input/input_driver.c \
+   $(ROOT)/libretro-common/file/config_file.c \
    $(ROOT)/libretro-common/string/stdstring.c \
    $(ROOT)/libretro-common/encodings/encoding_utf.c \
    $(ROOT)/libretro-common/compat/compat_strl.c \

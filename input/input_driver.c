@@ -9469,6 +9469,8 @@ const struct input_registry *input_driver_get_registry(void)
    return &input_registry;
 }
 
+static void input_plays_as_hold(void);
+
 /* Ports put back after a driver restart are a runtime matter. The
  * setting they are written to, input_joypad_index, is also what the
  * config file saves, and a saved exchange would outlive the session
@@ -9478,7 +9480,8 @@ const struct input_registry *input_driver_get_registry(void)
  *
  * input_ports_runtime is the setting as the last restore left it. If
  * the setting no longer matches, something else has written it since -
- * the menu, a reserved device - and what it holds is the user's again. */
+ * the menu, a reserved device - and what it holds is the user's again;
+ * but a reserved device placed over runtime moves is runtime too. */
 static unsigned input_ports_configured[MAX_USERS];
 static unsigned input_ports_runtime[MAX_USERS];
 static bool     input_ports_runtime_active;
@@ -9513,6 +9516,18 @@ void input_driver_registry_restart(void)
    input_driver_device_pool()->driver = 0;
    input_player_lights_tick           = 0;
    input_player_lights_told           = false;
+   /* pads can come back in other slots with no disconnect between:
+    * each takes its entry afresh, not by the slot it had, but for one
+    * known by where it is plugged in */
+   input_plays_as_hold();
+   for (i = 0; i < MAX_INPUT_DEVICES; i++)
+      input_config_plays_as_release(i);
+   /* runtime moves the setting no longer holds are over: the next
+    * video restart need not start the driver again for them */
+   if (     input_ports_runtime_active
+         && memcmp(settings->uints.input_joypad_index,
+               input_ports_runtime, sizeof(input_ports_runtime)))
+      input_ports_runtime_active = false;
 
    /* the lowest port on a pad: the ports sharing it follow that one */
    memset(port_of_slot, INPUT_REGISTRY_NO_PORT, sizeof(port_of_slot));
@@ -9547,6 +9562,12 @@ static void input_driver_registry_restore_ports(void)
          return;
       }
    }
+   /* and so are the controllers' own players */
+   if (input_config_plays_as_any_player())
+   {
+      input_registry_restart_cancel(&input_registry);
+      return;
+   }
 
    input_config_sanitize_joypad_indices();
 
@@ -9580,9 +9601,8 @@ static void input_driver_registry_restore_ports(void)
             " had.\n");
 }
 
-#ifdef HAVE_OPENXR
 /* For the headset's controllers, moved on by a pad that took their
- * slot: a runtime matter, as a restart's is. */
+ * slot, and for Plays As: a runtime matter, as a restart's is. */
 void input_driver_exchange_ports(unsigned a, unsigned b)
 {
    unsigned i;
@@ -9606,7 +9626,21 @@ void input_driver_exchange_ports(unsigned a, unsigned b)
          input_ports_configured, sizeof(input_ports_runtime)) != 0;
    input_driver_deadzones_refresh();
 }
-#endif
+
+bool input_driver_ports_runtime(void)
+{
+   return input_ports_runtime_active
+      && !memcmp(config_get_ptr()->uints.input_joypad_index,
+            input_ports_runtime, sizeof(input_ports_runtime));
+}
+
+void input_driver_ports_runtime_moved(void)
+{
+   memcpy(input_ports_runtime, config_get_ptr()->uints.input_joypad_index,
+         sizeof(input_ports_runtime));
+   input_ports_runtime_active = memcmp(input_ports_runtime,
+         input_ports_configured, sizeof(input_ports_runtime)) != 0;
+}
 
 void input_driver_registry_connect(unsigned slot, const char *provider,
       const char *name, const char *phys, uint16_t vid, uint16_t pid)
@@ -10043,12 +10077,15 @@ uint64_t input_driver_get_capabilities(void)
    return caps;
 }
 
+static uint32_t input_plays_as_mix(uint32_t h);
+
 /* The settings read when a controller is reported and given a port:
  * whether controllers are configured at all, where their profiles
- * are, how many ports there are, and which controller each port is
- * reserved for. A joypad driver reports its controllers when it
- * starts, so a change to any of these is applied by starting it
- * again. One number for the lot, to tell a change by. */
+ * are, how many ports there are, which controller each port is
+ * reserved for, and the controllers' own players. A joypad driver
+ * reports its controllers when it starts, so a change to any of these
+ * is applied by starting it again. One number for the lot, to tell a
+ * change by. */
 static uint32_t input_driver_detect_settings(const settings_t *settings)
 {
    unsigned i;
@@ -10067,7 +10104,7 @@ static uint32_t input_driver_detect_settings(const settings_t *settings)
       DETECT_MIX(0xff);
    }
 #undef DETECT_MIX
-   return h;
+   return input_plays_as_mix(h);
 }
 
 void input_driver_init_joypads(void)
@@ -10214,6 +10251,7 @@ bool input_driver_is_sdl3(void)
  * restarted; when the input or the joypad driver setting, or a
  * setting that decides which port a controller gets, has changed
  * since it started, since a restart is how such a change is applied;
+ * when a config reload has undone the ports' runtime moves;
  * when its data is the video driver's own; once, after the
  * controllers' configuration has been reset while running
  * (input_driver_restart_with_next_video_restart()); or with
@@ -10266,6 +10304,13 @@ void input_driver_keep_for_video_restart(bool restart,
             " driver.\n");
       return;
    }
+   /* A config reload read the configured ports over runtime moves
+    * (Plays As, the headset's, a restart's): only placing the
+    * controllers again puts them back. */
+   if (     input_ports_runtime_active
+         && memcmp(settings->uints.input_joypad_index,
+               input_ports_runtime, sizeof(input_ports_runtime)))
+      return;
    if (     !drv->survives_video(data)
          || !input_st->primary_joypad->survives_video
          || !input_st->primary_joypad->survives_video())
@@ -10876,6 +10921,721 @@ void input_config_follow_shared_ports(const uint8_t *leader)
          idx[i] = idx[leader[i]];
 }
 
+/* Plays As: a controller's own player, kept by the controller as a
+ * reservation names one, "vid:pid name". A connected controller takes
+ * the first entry naming it that no other connected controller has
+ * taken; one with none plays Auto. */
+typedef struct
+{
+   char device[NAME_MAX_LENGTH]; /* "" for a free entry */
+   unsigned player;              /* 0 Auto, else 1 and up */
+} input_plays_as_entry_t;
+
+static input_plays_as_entry_t input_plays_as[MAX_USERS];
+/* by slot: the entry its controller took, and one; 0 for none */
+static uint8_t input_plays_as_claim[MAX_INPUT_DEVICES];
+
+/* @h with each entry's controller and player mixed in, as
+ * input_driver_detect_settings() mixes the reservations */
+static uint32_t input_plays_as_mix(uint32_t h)
+{
+   unsigned e;
+   const char *p;
+   for (e = 0; e < MAX_USERS; e++)
+   {
+      for (p = input_plays_as[e].device; *p; p++)
+      {
+         h ^= (unsigned char)*p;
+         h *= 16777619u;
+      }
+      h ^= input_plays_as[e].player;
+      h *= 16777619u;
+   }
+   return h;
+}
+
+bool input_config_parse_vid_pid(const char *s, unsigned long *vid,
+      unsigned long *pid, const char **name)
+{
+   char *end;
+   unsigned long p;
+   const char *colon = strchr(s, ':');
+   unsigned long v   = strtoul(s, &end, 16);
+
+   if (!colon || end != colon)
+      return false;
+   p = strtoul(colon + 1, &end, 16);
+   if (end == colon + 1 || (*end != ' ' && *end != '\0'))
+      return false;
+   *vid = v;
+   *pid = p;
+   if (name)
+      *name = (*end == ' ') ? end + 1 : end;
+   return true;
+}
+
+/* Whether @entry names the controller called @name or @display with
+ * @vid and @pid: by vid:pid where it starts with one, by name where it
+ * starts with none. @zero_by_name: a 0000:0000, which every unnumbered
+ * controller has, names by the name after it (Plays As), not every
+ * such controller (a reservation). */
+static bool input_plays_as_names(const char *entry, bool zero_by_name,
+      const char *name, const char *display, uint16_t vid, uint16_t pid)
+{
+   unsigned long v;
+   unsigned long p;
+   const char *n = entry;
+
+   if (     input_config_parse_vid_pid(entry, &v, &p, &n)
+         && (v || p || !zero_by_name))
+      return v == vid && p == pid;
+   return (name && *name && string_is_equal(name, n))
+      || (display && *display && string_is_equal(display, n));
+}
+
+/* Whether entries @a and @b name one controller, as entries are matched
+ * to controllers: by vid:pid where both have one other than 0000:0000,
+ * by name where neither has. */
+static bool input_plays_as_same(const char *a, const char *b)
+{
+   unsigned long va = 0;
+   unsigned long pa = 0;
+   unsigned long vb = 0;
+   unsigned long pb = 0;
+   const char *na   = a;
+   const char *nb   = b;
+   bool ida         = input_config_parse_vid_pid(a, &va, &pa, &na)
+      && (va || pa);
+   bool idb         = input_config_parse_vid_pid(b, &vb, &pb, &nb)
+      && (vb || pb);
+
+   if (ida || idb)
+      return ida && idb && va == vb && pa == pb;
+   return string_is_equal(na, nb);
+}
+
+int input_config_plays_as_entry(unsigned slot)
+{
+   if (     slot >= MAX_INPUT_DEVICES
+         || !input_plays_as_claim[slot]
+         || !*input_driver_st.input_device_info[slot].name)
+      return -1;
+   return input_plays_as_claim[slot] - 1;
+}
+
+/* by registry record: the entry its controller had when the joypad
+ * driver last restarted, and one; 0 for none */
+static uint8_t input_plays_as_held[INPUT_REGISTRY_RECORDS];
+
+/* The joypad driver restarts: a controller known by where it is
+ * plugged in keeps its entry for when it is reported there again. */
+static void input_plays_as_hold(void)
+{
+   unsigned i;
+   for (i = 0; i < INPUT_REGISTRY_RECORDS; i++)
+   {
+      const input_device_record_t *rec = &input_registry.records[i];
+      if (rec->present)
+         input_plays_as_held[i] = (*rec->phys
+               && rec->slot < MAX_INPUT_DEVICES)
+            ? input_plays_as_claim[rec->slot] : 0;
+      else if (!rec->expected)
+         input_plays_as_held[i] = 0;
+   }
+}
+
+/* Whether a restarted joypad driver may still be reporting its
+ * controllers again. */
+static bool input_plays_as_reporting(void)
+{
+   return input_registry.restarting
+         && cpu_features_get_time_usec() - input_registry_restart_time
+               <= INPUT_REGISTRY_RESTART_USEC;
+}
+
+/* The controller in @slot takes the first entry naming it that no
+ * other connected controller has taken. During a joypad driver
+ * restart, one reported again where it was plugged in takes back the
+ * entry it had, and those not reported yet keep theirs. */
+static void input_plays_as_take(unsigned slot)
+{
+   unsigned e, s;
+   int held                      = -1;
+   uint32_t taken                = 0;
+   const input_device_info_t *d  = &input_driver_st.input_device_info[slot];
+
+   input_plays_as_claim[slot]    = 0;
+   if (!*d->name)
+      return;
+   for (s = 0; s < MAX_INPUT_DEVICES; s++)
+   {
+      int t = input_config_plays_as_entry(s);
+      if (t >= 0)
+         taken |= 1U << t;
+   }
+   if (input_plays_as_reporting())
+      for (s = 0; s < INPUT_REGISTRY_RECORDS; s++)
+      {
+         const input_device_record_t *rec = &input_registry.records[s];
+         unsigned h                       = input_plays_as_held[s];
+         if (!h || !rec->expected)
+            continue;
+         /* as the registry matches: by as much as it keeps */
+         if (     *d->phys
+               && !strncmp(rec->phys, d->phys, sizeof(rec->phys) - 1))
+            held = (int)h - 1;
+         else
+            taken |= 1U << (h - 1);
+      }
+   if (     held >= 0
+         && !(taken & (1U << held))
+         && *input_plays_as[held].device
+         && input_plays_as_names(input_plays_as[held].device, true,
+               d->name, d->display_name, d->vid, d->pid))
+   {
+      input_plays_as_claim[slot] = (uint8_t)(held + 1);
+      return;
+   }
+   for (e = 0; e < MAX_USERS; e++)
+      if (     *input_plays_as[e].device
+            && !(taken & (1U << e))
+            && input_plays_as_names(input_plays_as[e].device, true,
+                  d->name, d->display_name, d->vid, d->pid))
+      {
+         input_plays_as_claim[slot] = (uint8_t)(e + 1);
+         return;
+      }
+}
+
+/* Every connected controller takes its entry again, the entries
+ * having changed under them: the one it had where that still names
+ * it, so two of a model keep theirs; else as on connect, lowest slot
+ * first. */
+static void input_plays_as_reclaim(void)
+{
+   unsigned s;
+   uint8_t had[MAX_INPUT_DEVICES];
+   memcpy(had, input_plays_as_claim, sizeof(had));
+   memset(input_plays_as_claim, 0, sizeof(input_plays_as_claim));
+   for (s = 0; s < MAX_INPUT_DEVICES; s++)
+   {
+      const input_device_info_t *d = &input_driver_st.input_device_info[s];
+      if (     had[s]
+            && *d->name
+            && *input_plays_as[had[s] - 1].device
+            && input_plays_as_names(input_plays_as[had[s] - 1].device,
+                  true, d->name, d->display_name, d->vid, d->pid))
+         input_plays_as_claim[s] = had[s];
+   }
+   for (s = 0; s < MAX_INPUT_DEVICES; s++)
+      if (!input_plays_as_claim[s])
+         input_plays_as_take(s);
+}
+
+/* Entry @e free, and no controller's. */
+static void input_plays_as_drop(unsigned e)
+{
+   unsigned s;
+   input_plays_as[e].device[0] = '\0';
+   input_plays_as[e].player    = 0;
+   for (s = 0; s < MAX_INPUT_DEVICES; s++)
+      if (input_plays_as_claim[s] == e + 1)
+         input_plays_as_claim[s] = 0;
+}
+
+/* Entry @e is let go once it holds nothing a controller would not
+ * have without it. */
+static void input_plays_as_tidy(unsigned e)
+{
+   if (!input_plays_as[e].player)
+      input_plays_as_drop(e);
+}
+
+bool input_config_plays_as_active(void)
+{
+   unsigned e;
+   for (e = 0; e < MAX_USERS; e++)
+      if (*input_plays_as[e].device)
+         return true;
+   return false;
+}
+
+bool input_config_plays_as_any_player(void)
+{
+   unsigned e;
+   unsigned max_users = config_get_ptr()->uints.input_max_users;
+   for (e = 0; e < MAX_USERS; e++)
+      if (     input_plays_as[e].player
+            && input_plays_as[e].player <= max_users)
+         return true;
+   return false;
+}
+
+unsigned input_config_plays_as_player(unsigned slot)
+{
+   int e = input_config_plays_as_entry(slot);
+   return (e >= 0) ? input_plays_as[e].player : 0;
+}
+
+/* A free entry naming the controller in @slot, at its player, which
+ * the controller takes; -1 with none free. */
+static int input_plays_as_new(unsigned slot)
+{
+   int e;
+   unsigned player              = input_config_plays_as_player(slot);
+   const input_device_info_t *d = &input_driver_st.input_device_info[slot];
+
+   for (e = 0; e < MAX_USERS && *input_plays_as[e].device; e++) { }
+   if (e >= MAX_USERS)
+      return -1;
+   snprintf(input_plays_as[e].device, sizeof(input_plays_as[e].device),
+         "%04x:%04x %s", d->vid, d->pid,
+         *d->display_name ? d->display_name : d->name);
+   input_plays_as[e].player   = player;
+   input_plays_as_claim[slot] = (uint8_t)(e + 1);
+   return e;
+}
+
+bool input_config_plays_as_set(unsigned slot, unsigned player)
+{
+   int e;
+
+   if (     slot >= MAX_INPUT_DEVICES
+         || !*input_driver_st.input_device_info[slot].name)
+      return false;
+   if ((e = input_config_plays_as_entry(slot)) < 0)
+   {
+      if (player == input_config_plays_as_player(slot))
+         return true;
+      if ((e = input_plays_as_new(slot)) < 0)
+         return false;
+   }
+   input_plays_as[e].player = player;
+   input_plays_as_tidy((unsigned)e);
+   return true;
+}
+
+const char *input_config_plays_as_entry_name(unsigned e)
+{
+   unsigned long vid, pid;
+   const char *name;
+   if (e >= MAX_USERS || !*input_plays_as[e].device)
+      return NULL;
+   /* "vid:pid name" shows its name */
+   if (     input_config_parse_vid_pid(input_plays_as[e].device,
+               &vid, &pid, &name)
+         && *name)
+      return name;
+   return input_plays_as[e].device;
+}
+
+unsigned input_config_plays_as_entry_player(unsigned e)
+{
+   return (e < MAX_USERS) ? input_plays_as[e].player : 0;
+}
+
+bool input_config_plays_as_entry_taken(unsigned e)
+{
+   unsigned s;
+   for (s = 0; s < MAX_INPUT_DEVICES; s++)
+      if (input_config_plays_as_entry(s) == (int)e)
+         return true;
+   return false;
+}
+
+void input_config_plays_as_set_entry(unsigned e, unsigned player)
+{
+   if (e >= MAX_USERS || !*input_plays_as[e].device)
+      return;
+   input_plays_as[e].player = player;
+   input_plays_as_tidy(e);
+}
+
+void input_config_plays_as_release(unsigned slot)
+{
+   if (slot < MAX_INPUT_DEVICES)
+      input_plays_as_claim[slot] = 0;
+}
+
+void input_plays_as_read(void *data)
+{
+   unsigned e;
+   char key[48];
+   uint8_t had[MAX_INPUT_DEVICES];
+   config_file_t *conf = (config_file_t*)data;
+
+   memcpy(had, input_plays_as_claim, sizeof(had));
+   for (e = 0; e < MAX_USERS; e++)
+      input_plays_as_drop(e);
+   /* for input_plays_as_reclaim() to keep those still named */
+   memcpy(input_plays_as_claim, had, sizeof(had));
+   for (e = 0; conf && e < MAX_USERS; e++)
+   {
+      unsigned player = 0;
+      snprintf(key, sizeof(key), "input_plays_as_device_%u", e + 1);
+      if (!config_get_array(conf, key, input_plays_as[e].device,
+               sizeof(input_plays_as[e].device)))
+         continue;
+      snprintf(key, sizeof(key), "input_plays_as_player_%u", e + 1);
+      if (config_get_uint(conf, key, &player) && player <= MAX_USERS)
+         input_plays_as[e].player = player;
+   }
+   input_plays_as_reclaim();
+}
+
+/* @device's model in @t as a start hands it out, lowest slot first.
+ * @e: the holders' own entries in slot order at the held places, a
+ * gone pad's in its own, -1 for an Auto pad before the next holder
+ * (with none left, before the next gone entry; else last). @slot: the
+ * pad, -1 for gone. @claim NULL: @t as read. Returns how many. */
+static unsigned input_plays_as_order(const input_plays_as_entry_t *t,
+      const uint8_t *claim, const char *device, int *e, int *slot)
+{
+   unsigned i, s;
+   int v[MAX_INPUT_DEVICES];
+   unsigned n      = 0;
+   unsigned m      = 0;
+   unsigned k      = 0;
+   unsigned left   = 0;
+   uint32_t held   = 0;
+   /* one with no entry yet may still take its own back */
+   bool reporting  = input_plays_as_reporting();
+
+   for (s = 0; claim && s < MAX_INPUT_DEVICES; s++)
+   {
+      const input_device_info_t *d = &input_driver_st.input_device_info[s];
+      if (!*d->name)
+         continue;
+      if (claim[s])
+      {
+         if (!input_plays_as_same(t[claim[s] - 1].device, device))
+            continue;
+         held |= 1U << (claim[s] - 1);
+         left++;
+      }
+      else if (reporting || !input_plays_as_names(device, true, d->name,
+               d->display_name, d->vid, d->pid))
+         continue;
+      v[m++] = (int)s;
+   }
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      if (!*t[i].device || !input_plays_as_same(t[i].device, device))
+         continue;
+      if (!(held & (1U << i)))
+      {
+         for (; !left && k < m; k++)
+         {
+            e[n]      = -1;
+            slot[n++] = v[k];
+         }
+         e[n]      = (int)i;
+         slot[n++] = -1;
+         continue;
+      }
+      for (; !claim[v[k]]; k++)
+      {
+         e[n]      = -1;
+         slot[n++] = v[k];
+      }
+      e[n]      = claim[v[k]] - 1;
+      slot[n++] = v[k++];
+      left--;
+   }
+   for (; k < m; k++)
+   {
+      e[n]      = -1;
+      slot[n++] = v[k];
+   }
+   return n;
+}
+
+void input_plays_as_lay_out(void)
+{
+   unsigned i, j, k, n, r;
+   int e[MAX_USERS + MAX_INPUT_DEVICES];
+   int slot[MAX_USERS + MAX_INPUT_DEVICES];
+   uint8_t had[MAX_INPUT_DEVICES];
+   uint8_t claim[MAX_INPUT_DEVICES];
+   /* by entry: where it went, and one */
+   uint8_t moved[MAX_USERS];
+   unsigned count            = 0;
+   unsigned room             = MAX_USERS;
+   /* sixteen entries are several KiB: off the stack */
+   input_plays_as_entry_t *t = (input_plays_as_entry_t*)
+      malloc(sizeof(input_plays_as));
+
+   if (!t)
+      return;
+   memcpy(t, input_plays_as, sizeof(input_plays_as));
+   memcpy(had, input_plays_as_claim, sizeof(had));
+   memset(claim, 0, sizeof(claim));
+   memset(moved, 0, sizeof(moved));
+   for (i = 0; i < MAX_USERS; i++)
+      if (*t[i].device)
+         room--;
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      if (!*t[i].device)
+         continue;
+      /* entry i's place takes the r-th of its model's in start order,
+       * after the Auto pads just before that one */
+      r = 0;
+      for (j = 0; j < i; j++)
+         if (*t[j].device && input_plays_as_same(t[j].device, t[i].device))
+            r++;
+      n = input_plays_as_order(t, had, t[i].device, e, slot);
+      k = 0;
+      for (j = 0; j < n; j++)
+      {
+         if (e[j] >= 0)
+         {
+            if (k++ != r)
+               continue;
+            moved[e[j]]           = (uint8_t)(count + 1);
+            input_plays_as[count] = t[e[j]];
+         }
+         /* one another model's entries also name has one already */
+         else if (k == r && room && !claim[slot[j]])
+         {
+            room--;
+            input_plays_as_drop(count);
+            strlcpy(input_plays_as[count].device, t[i].device,
+                  sizeof(input_plays_as[count].device));
+         }
+         else
+            continue;
+         if (slot[j] >= 0)
+            claim[slot[j]] = (uint8_t)(count + 1);
+         count++;
+      }
+   }
+   for (i = count; i < MAX_USERS; i++)
+      input_plays_as_drop(i);
+   memcpy(input_plays_as_claim, claim, sizeof(claim));
+   /* and those kept over a joypad driver restart */
+   for (i = 0; i < INPUT_REGISTRY_RECORDS; i++)
+      if (input_plays_as_held[i])
+         input_plays_as_held[i] = moved[input_plays_as_held[i] - 1];
+   free(t);
+}
+
+void input_plays_as_write(void *data)
+{
+   unsigned e;
+   char key[48];
+   uint8_t held[INPUT_REGISTRY_RECORDS];
+   input_plays_as_copy_t *was;
+   config_file_t *conf = (config_file_t*)data;
+
+   if (!conf)
+      return;
+   /* written laid out; the session's are put back, to be laid out only
+    * once the main config is saved */
+   memcpy(held, input_plays_as_held, sizeof(held));
+   was = input_plays_as_copy_new();
+   input_plays_as_lay_out();
+   for (e = 0; e < MAX_USERS; e++)
+   {
+      bool used = *input_plays_as[e].device != '\0';
+      snprintf(key, sizeof(key), "input_plays_as_device_%u", e + 1);
+      if (used)
+         config_set_string(conf, key, input_plays_as[e].device);
+      else
+         config_unset(conf, key);
+      snprintf(key, sizeof(key), "input_plays_as_player_%u", e + 1);
+      if (used)
+         config_set_uint(conf, key, input_plays_as[e].player);
+      else
+         config_unset(conf, key);
+   }
+   if (was)
+   {
+      input_plays_as_copy_restore(was);
+      input_plays_as_copy_free(was);
+      memcpy(input_plays_as_held, held, sizeof(held));
+   }
+}
+
+/* @slot's player, as it plays now: Auto past Max Users. */
+static unsigned input_plays_as_now(unsigned slot, unsigned max_users)
+{
+   unsigned player = input_config_plays_as_player(slot);
+   return (player <= max_users) ? player : 0;
+}
+
+/* Whether the controller in @slot plays as user @user's player: by its
+ * own player, which beats any reservation; playing Auto, by @user's
+ * reservation naming it, as the reservation reads its string. */
+static bool input_plays_as_plays(const settings_t *settings,
+      unsigned slot, unsigned user, unsigned max_users)
+{
+   const input_device_info_t *d = &input_driver_st.input_device_info[slot];
+   unsigned player              = input_plays_as_now(slot, max_users);
+   if (player)
+      return player == user + 1;
+   return settings->uints.input_device_reservation_type[user]
+            != INPUT_DEVICE_RESERVATION_NONE
+      && input_plays_as_names(settings->arrays.input_reserved_devices[user],
+            false, d->name, d->display_name, d->vid, d->pid);
+}
+
+/* The user whose reservation names the controller in @slot, chosen as
+ * the reservation code chooses, if that user's controller plays as its
+ * player by its own; else MAX_USERS. Placed second, either one shares. */
+static unsigned input_plays_as_reserved_held(const settings_t *settings,
+      unsigned slot, unsigned max_users)
+{
+   unsigned u;
+   const input_device_info_t *d = &input_driver_st.input_device_info[slot];
+   for (u = 0; u < MAX_USERS; u++)
+   {
+      const char *res = settings->arrays.input_reserved_devices[u];
+      unsigned held   = settings->uints.input_joypad_index[u];
+      const input_device_info_t *h;
+      if (     settings->uints.input_device_reservation_type[u]
+               == INPUT_DEVICE_RESERVATION_NONE
+            || !input_plays_as_names(res, false,
+               d->name, d->display_name, d->vid, d->pid))
+         continue;
+      if (held == slot || held >= MAX_INPUT_DEVICES)
+         break;
+      h = &input_driver_st.input_device_info[held];
+      if (!*h->name)
+         break;
+      /* a twin it also names has this port: the reservations look on */
+      if (input_plays_as_names(res, false,
+               h->name, h->display_name, h->vid, h->pid))
+         continue;
+      if (input_plays_as_now(held, max_users) == u + 1)
+         return u;
+      break;
+   }
+   return MAX_USERS;
+}
+
+/* The lowest (@last: highest) user below @max_users, but @skip, whose
+ * slot is @slot or has no controller, and that no reservation keeps
+ * for another; MAX_USERS for none. */
+static unsigned input_plays_as_free(const settings_t *settings,
+      unsigned max_users, unsigned slot, unsigned skip, bool last)
+{
+   unsigned i;
+   for (i = 0; i < max_users; i++)
+   {
+      unsigned u = last ? max_users - 1 - i : i;
+      unsigned s = settings->uints.input_joypad_index[u];
+      if (     u != skip
+            && (s == slot || s >= MAX_INPUT_DEVICES
+               || !*input_driver_st.input_device_info[s].name)
+            && settings->uints.input_device_reservation_type[u]
+               != INPUT_DEVICE_RESERVATION_RESERVED)
+         return u;
+   }
+   return MAX_USERS;
+}
+
+/* User @user reads @slot, for this run. */
+static void input_plays_as_move(const settings_t *settings,
+      unsigned user, unsigned slot)
+{
+   if (user < MAX_USERS)
+      input_driver_exchange_ports(
+            settings->uints.input_joypad_index[user], slot);
+}
+
+bool input_config_plays_as_place(unsigned slot)
+{
+   unsigned u, t, held, player;
+   settings_t *settings = config_get_ptr();
+   unsigned max_users   = settings->uints.input_max_users;
+
+   if (slot >= MAX_INPUT_DEVICES)
+      return false;
+   if (max_users > MAX_USERS)
+      max_users = MAX_USERS;
+   input_plays_as_take(slot);
+
+   if (!(player = input_plays_as_now(slot, max_users)))
+   {
+      /* Auto: the first free port; the reservations' to give where
+       * any is set, but beside the player a reservation names */
+      if ((t = input_plays_as_reserved_held(settings, slot, max_users))
+            < MAX_USERS)
+      {
+         input_plays_as_move(settings,
+               input_plays_as_free(settings, max_users, slot, t, true),
+               slot);
+         return true;
+      }
+      for (u = 0; u < MAX_USERS; u++)
+         if (settings->uints.input_device_reservation_type[u]
+               != INPUT_DEVICE_RESERVATION_NONE)
+            return false;
+      if (!input_config_plays_as_any_player())
+         return false;
+      input_plays_as_move(settings,
+            input_plays_as_free(settings, max_users, slot, MAX_USERS, false),
+            slot);
+      return true;
+   }
+
+   t    = player - 1;
+   held = settings->uints.input_joypad_index[t];
+   if (held == slot)
+      return true;
+   if (     held < MAX_INPUT_DEVICES
+         && *input_driver_st.input_device_info[held].name)
+   {
+      /* another of the player's: this one shares, from the highest
+       * free port */
+      if (input_plays_as_plays(settings, held, t, max_users))
+      {
+         input_plays_as_move(settings,
+               input_plays_as_free(settings, max_users, slot, t, true),
+               slot);
+         return true;
+      }
+      /* an Auto one: it moves to the first free port */
+      input_plays_as_move(settings, t, slot);
+      input_plays_as_move(settings,
+            input_plays_as_free(settings, max_users, held, t, false),
+            held);
+      return true;
+   }
+   input_plays_as_move(settings, t, slot);
+   return true;
+}
+
+struct input_plays_as_copy
+{
+   input_plays_as_entry_t entries[MAX_USERS];
+   uint8_t claim[MAX_INPUT_DEVICES];
+};
+
+input_plays_as_copy_t *input_plays_as_copy_new(void)
+{
+   input_plays_as_copy_t *copy =
+      (input_plays_as_copy_t*)malloc(sizeof(*copy));
+   if (copy)
+   {
+      memcpy(copy->entries, input_plays_as, sizeof(copy->entries));
+      memcpy(copy->claim, input_plays_as_claim, sizeof(copy->claim));
+   }
+   return copy;
+}
+
+void input_plays_as_copy_restore(const input_plays_as_copy_t *copy)
+{
+   memcpy(input_plays_as, copy->entries, sizeof(input_plays_as));
+   memcpy(input_plays_as_claim, copy->claim, sizeof(input_plays_as_claim));
+}
+
+void input_plays_as_copy_free(input_plays_as_copy_t *copy)
+{
+   free(copy);
+}
+
 /* Adds an index to devices with the same name,
  * so they can be uniquely identified in the
  * frontend */
@@ -11432,6 +12192,8 @@ void config_read_keybinds_conf(void *data)
 
    /* and the entries, input_combo_1 and up */
    input_entries_read(conf);
+   /* and the controllers' own players */
+   input_plays_as_read(conf);
 }
 
 #ifdef HAVE_COMMAND

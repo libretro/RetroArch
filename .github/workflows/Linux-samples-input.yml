@@ -571,9 +571,9 @@ jobs:
         run: |
           set -euo pipefail
           . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
-          # input/input_driver.c's Mapped Port sharing against a stand-in
-          # frontend. Users mapped to one core port: its rumble, the menu,
-          # the hotkeys.
+          # input/input_driver.c's Mapped Port sharing and Plays As
+          # against a stand-in frontend. Users mapped to one core port:
+          # its rumble, the menu, the hotkeys; controllers' own players.
           make clean && make SANITIZER=address,undefined all
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
             ./mapped_port_test | tee mapped_port.log

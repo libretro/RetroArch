@@ -1996,6 +1996,40 @@ bool input_config_sanitize_joypad_indices(void);
 unsigned input_config_shared_ports(uint8_t *leader);
 void input_config_follow_shared_ports(const uint8_t *leader);
 
+/* Whether @s, a device as reservations and Plays As name one, starts
+ * with a hex "vid:pid" and then a space or its end: then @vid, @pid
+ * and, where not NULL, @name (what follows the space) are set. */
+bool input_config_parse_vid_pid(const char *s, unsigned long *vid,
+      unsigned long *pid, const char **name);
+
+/* Plays As: a controller's own player. MAX_USERS entries, each naming
+ * a controller as a reservation does ("vid:pid name") with its player,
+ * 0 for Auto; a connected controller takes the first entry naming it
+ * that no other has taken. Main thread. */
+/* The entry the controller in @slot took, or -1. */
+int input_config_plays_as_entry(unsigned slot);
+/* The controller in @slot's player: 0 Auto, else 1 and up. */
+unsigned input_config_plays_as_player(unsigned slot);
+/* Gives the controller in @slot player @player (0 Auto), taking an
+ * entry for it if it has none. False, with nothing changed, when it
+ * needs one and every entry is taken. */
+bool input_config_plays_as_set(unsigned slot, unsigned player);
+/* Entry @e's controller name, or NULL for a free entry; its player;
+ * whether a connected controller has taken it; and its player set. */
+const char *input_config_plays_as_entry_name(unsigned e);
+unsigned input_config_plays_as_entry_player(unsigned e);
+bool input_config_plays_as_entry_taken(unsigned e);
+void input_config_plays_as_set_entry(unsigned e, unsigned player);
+/* Whether any entry is in use. */
+bool input_config_plays_as_active(void);
+/* Whether any entry gives a player within Max Users. */
+bool input_config_plays_as_any_player(void);
+/* The controller just connected in @slot takes its entry and its port:
+ * true when it was placed, false for one the reservations place. */
+bool input_config_plays_as_place(unsigned slot);
+/* The controller in @slot is gone. */
+void input_config_plays_as_release(unsigned slot);
+
 unsigned *input_config_get_device_ptr(unsigned port);
 
 unsigned input_config_get_device(unsigned port);
@@ -2081,11 +2115,14 @@ size_t input_config_get_device_name_size(unsigned port);
 
 unsigned input_driver_lightgun_id_convert(unsigned id);
 
-#ifdef HAVE_OPENXR
 /* The ports that read slot @a read slot @b, and the other way round,
  * for this run only: the config file keeps what the user set. */
 void input_driver_exchange_ports(unsigned a, unsigned b);
-#endif
+/* Whether the ports are as runtime moves left them; and, written
+ * directly since (a reserved device's placement), that they still are,
+ * so the config file keeps what the user set. */
+bool input_driver_ports_runtime(void);
+void input_driver_ports_runtime_moved(void);
 
 bool input_driver_pointer_is_offscreen(int16_t x, int16_t y);
 
@@ -2509,6 +2546,25 @@ bool input_entry_set_depth(unsigned number, unsigned percent);
 size_t input_entry_spec(unsigned number, char *s, size_t len);
 /* The entries and macros written into a configuration to be saved. */
 void input_entries_write(void *conf);
+
+/* input_plays_as_device_N and input_plays_as_player_N, N from 1: the
+ * file's entries in place of the ones there are, and the ones there
+ * are written, keys an entry has no value for taken out. */
+void input_plays_as_read(void *conf);
+void input_plays_as_write(void *conf);
+/* A copy of the entries and the claims on them, put back after a load
+ * made only to compare against, as the binds' copy is. NULL if there
+ * is no memory for it. */
+typedef struct input_plays_as_copy input_plays_as_copy_t;
+input_plays_as_copy_t *input_plays_as_copy_new(void);
+void input_plays_as_copy_restore(const input_plays_as_copy_t *copy);
+void input_plays_as_copy_free(input_plays_as_copy_t *copy);
+
+/* The Plays As entries laid out as input_plays_as_write() writes them:
+ * each model's in start order at its own entries' places, with an Auto
+ * entry for an Auto pad ahead of another of its model. Called once the
+ * main configuration is saved, so reading it again gives each its own. */
+void input_plays_as_lay_out(void);
 
 /* Macros: buttons of the RetroPad pressed for a user a step at a time,
  * a step lasting a number of the core's frames; read from the
