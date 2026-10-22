@@ -193,8 +193,14 @@ struct menu_bind_state
    unsigned order;
    unsigned user;
    unsigned port;
+   /* a hotkey's: the sharing controllers' slots listened to as well,
+    * as bits, and the slot the press came from */
+   uint32_t listen;
+   unsigned from;
 
    bool skip;
+   /* the press was a key's or a mouse button's, not the pad's */
+   bool from_keys;
 };
 
 enum menu_inp_ptr_hwst_flags
