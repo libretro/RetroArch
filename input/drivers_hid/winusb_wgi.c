@@ -48,10 +48,6 @@
 
 typedef __x_ABI_CWindows_CGaming_CInput_CIGamepad wgi_gamepad_t;
 typedef __x_ABI_CWindows_CGaming_CInput_CIGamepadStatics wgi_statics_t;
-typedef __x_ABI_CWindows_CGaming_CInput_CIRawGameControllerStatics
-   wgi_raw_statics_t;
-typedef __x_ABI_CWindows_CGaming_CInput_CIRawGameController wgi_raw_t;
-typedef __x_ABI_CWindows_CGaming_CInput_CIGameController wgi_controller_t;
 typedef __FIVectorView_1_Windows__CGaming__CInput__CGamepad wgi_list_t;
 typedef __x_ABI_CWindows_CGaming_CInput_CGamepadReading wgi_reading_t;
 typedef __x_ABI_CWindows_CGaming_CInput_CGamepadVibration wgi_vibration_t;
@@ -72,10 +68,6 @@ struct winusb_wgi_pad
 
 static const GUID wgi_iid_statics = { 0x8bbce529, 0xd49c, 0x39e9,
    { 0x95, 0x60, 0xe4, 0x7d, 0xde, 0x96, 0xb7, 0xc8 } };
-static const GUID wgi_iid_raw_statics = { 0xeb8d0792, 0xe95a, 0x4b19,
-   { 0xaf, 0xc7, 0x0a, 0x59, 0xf8, 0xbf, 0x75, 0x9e } };
-static const GUID wgi_iid_controller = { 0x1baf6522, 0x5f64, 0x42c5,
-   { 0x82, 0x67, 0xb9, 0xfe, 0x22, 0x15, 0xbf, 0xbd } };
 static const GUID wgi_iid_unknown = { 0x00000000, 0x0000, 0x0000,
    { 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 } };
 
@@ -84,7 +76,6 @@ static struct
    HMODULE combase;
    HANDLE mta;
    wgi_statics_t *statics;
-   wgi_raw_statics_t *raw_statics;
    HANDLE wake;
    sthread_t *thread;
    retro_atomic_int_t quit;
@@ -152,8 +143,6 @@ static HRESULT wgi_factory(wgi_factory_t get, wgi_string_t make,
 bool winusb_wgi_start(void)
 {
    static const wchar_t gamepad[] = L"Windows.Gaming.Input.Gamepad";
-   static const wchar_t raw[]     =
-      L"Windows.Gaming.Input.RawGameController";
    wgi_mta_usage_t mta_usage;
    wgi_factory_t get;
    wgi_string_t make;
@@ -180,11 +169,6 @@ bool winusb_wgi_start(void)
       wgi.combase = NULL;
       return false;
    }
-   /* for the pads' ids: without it, the first alike is taken */
-   if (FAILED(wgi_factory(get, make, raw,
-               (UINT32)(sizeof(raw) / sizeof(raw[0]) - 1),
-               &wgi_iid_raw_statics, (void**)&wgi.raw_statics)))
-      wgi.raw_statics = NULL;
    for (i = 0; i < WGI_PADS; i++)
    {
       retro_atomic_int_init(&wgi.pads[i].state, WGI_FREE);
@@ -217,44 +201,14 @@ void winusb_wgi_stop(void)
    if (wgi.wake)
       CloseHandle(wgi.wake);
    wgi.wake = NULL;
-   if (wgi.raw_statics)
-      __x_ABI_CWindows_CGaming_CInput_CIRawGameControllerStatics_Release(
-            wgi.raw_statics);
    if (wgi.statics)
       __x_ABI_CWindows_CGaming_CInput_CIGamepadStatics_Release(wgi.statics);
-   wgi.raw_statics = NULL;
-   wgi.statics     = NULL;
+   wgi.statics = NULL;
    /* the process's hold on the multithreaded apartment stays: COM is
     * not to be left by a library that did not join it */
    if (wgi.combase)
       FreeLibrary(wgi.combase);
    wgi.combase = NULL;
-}
-
-/* The gamepad's maker and model; true where they are not known. */
-static bool wgi_ids_match(wgi_gamepad_t *pad, uint16_t vid, uint16_t pid)
-{
-   wgi_controller_t *ctl = NULL;
-   wgi_raw_t *raw        = NULL;
-   UINT16 v = 0, p = 0;
-   bool match = true;
-
-   if (!wgi.raw_statics)
-      return true;
-   if (FAILED(__x_ABI_CWindows_CGaming_CInput_CIGamepad_QueryInterface(pad,
-               &wgi_iid_controller, (void**)&ctl)))
-      return true;
-   if (SUCCEEDED(
-         __x_ABI_CWindows_CGaming_CInput_CIRawGameControllerStatics_FromGameController(
-            wgi.raw_statics, ctl, &raw)) && raw)
-   {
-      if (     SUCCEEDED(__x_ABI_CWindows_CGaming_CInput_CIRawGameController_get_HardwareVendorId(raw, &v))
-            && SUCCEEDED(__x_ABI_CWindows_CGaming_CInput_CIRawGameController_get_HardwareProductId(raw, &p)))
-         match = (v == vid && p == pid);
-      __x_ABI_CWindows_CGaming_CInput_CIRawGameController_Release(raw);
-   }
-   __x_ABI_CWindows_CGaming_CInput_CIGameController_Release(ctl);
-   return match;
 }
 
 static void wgi_look(const wgi_reading_t *r, winusb_wgi_look_t *look)
@@ -285,8 +239,7 @@ static bool wgi_taken(IUnknown *id)
    return false;
 }
 
-winusb_wgi_pad_t *winusb_wgi_pair(uint16_t vid, uint16_t pid,
-      const int16_t *axes, uint16_t buttons)
+winusb_wgi_pad_t *winusb_wgi_pair(const int16_t *axes, uint16_t buttons)
 {
    wgi_list_t *list = NULL;
    wgi_gamepad_t *found = NULL;
@@ -318,7 +271,6 @@ winusb_wgi_pad_t *winusb_wgi_pair(uint16_t vid, uint16_t pid,
       if (     SUCCEEDED(__x_ABI_CWindows_CGaming_CInput_CIGamepad_QueryInterface(
                   pad, &wgi_iid_unknown, (void**)&id))
             && !wgi_taken(id)
-            && wgi_ids_match(pad, vid, pid)
             && SUCCEEDED(__x_ABI_CWindows_CGaming_CInput_CIGamepad_GetCurrentReading(
                   pad, &r)))
       {

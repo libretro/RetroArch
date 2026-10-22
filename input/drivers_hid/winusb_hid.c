@@ -771,6 +771,10 @@ static void winusb_generic_setup(winusb_generic_t *gen,
       v->min   = vcaps[i].LogicalMin;
       v->max   = vcaps[i].LogicalMax;
       v->bits  = vcaps[i].BitSize;
+      /* a maximum written with its top bit set, as an Xbox pad's 65535
+       * is, comes negative: unsigned, as hid_report_desc.h reads it */
+      if (v->min >= 0 && v->max < 0 && v->bits > 0 && v->bits < 32)
+         v->max = (LONG)((1UL << v->bits) - 1);
       if (v->page == 0x01 && usage == 0x39)
       {
          if (hat)
@@ -1731,8 +1735,7 @@ static void winusb_hid_wgi(winusb_device_t *dev)
       for (i = 0; i < 10; i++)
          if (BIT256_GET(gen->view.buttons, i))
             buttons |= (uint16_t)(1u << i);
-      if (!(gen->wgi = winusb_wgi_pair(dev->vid, dev->pid,
-                  gen->view.axes, buttons)))
+      if (!(gen->wgi = winusb_wgi_pair(gen->view.axes, buttons)))
          return;
       RARCH_LOG("%s \"%s\": triggers and rumble through"
             " Windows.Gaming.Input.\n", dev->tag, dev->name);

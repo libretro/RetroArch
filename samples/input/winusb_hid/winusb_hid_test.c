@@ -377,7 +377,9 @@ static NTSTATUS WINAPI h_vcaps(HIDP_REPORT_TYPE t, PHIDP_VALUE_CAPS c,
          c[i].NotRange.Usage = xbox[i];
          c[i].BitSize        = 16;
          c[i].LogicalMin     = 0;
-         c[i].LogicalMax     = 65535;
+         /* 65535 as Windows gives it: its descriptor's two bytes,
+          * signed */
+         c[i].LogicalMax     = -1;
       }
       *n = i;
       return HIDP_STATUS_SUCCESS;
@@ -816,6 +818,16 @@ static void test_hidclass(const char *path)
    CHECK(   winusb_hid.axis(hid, 0, AXIS_POS(4)) == 0
          && winusb_hid.axis(hid, 0, AXIS_POS(5)) == 0,
          "hid class: an Xbox pad's triggers not at rest");
+   g_value[0x30] = 65535;   /* left stick right, right stick up */
+   g_value[0x34] = 0;
+   push_hreport(r, 9);
+   wait_hreader();
+   winusb_hid.poll(hid);
+   CHECK(   winusb_hid.axis(hid, 0, AXIS_POS(0)) == 32767
+         && winusb_hid.axis(hid, 0, AXIS_NEG(3)) == -32767
+         && winusb_hid.axis(hid, 0, AXIS_POS(1)) <= 1,
+         "hid class: an Xbox pad's sticks dead, its maximum taken as -1");
+   g_value[0x30] = g_value[0x34] = 32768;
    g_value[0x32] = 65535;   /* the left pulled */
    push_hreport(r, 9);
    wait_hreader();

@@ -61,10 +61,10 @@ static INLINE bool winusb_wgi_alike(const winusb_wgi_look_t *look,
 #ifdef HAVE_WGI
 bool winusb_wgi_start(void);
 void winusb_wgi_stop(void);
-/* The one gamepad, of @vid and @pid, not yet paired, that is alike;
- * NULL while none or more than one is. */
-winusb_wgi_pad_t *winusb_wgi_pair(uint16_t vid, uint16_t pid,
-      const int16_t *axes, uint16_t buttons);
+/* The one gamepad not yet paired that is alike; NULL while none or
+ * more than one is. Not by its ids: Windows gives every Xbox One pad's
+ * HID collection 045e:02ff, and the gamepad its own. */
+winusb_wgi_pad_t *winusb_wgi_pair(const int16_t *axes, uint16_t buttons);
 /* Its triggers, 0 to 32767; false if it could not be read. */
 bool winusb_wgi_triggers(winusb_wgi_pad_t *pad, int16_t *left,
       int16_t *right);
@@ -75,8 +75,8 @@ void winusb_wgi_unpair(winusb_wgi_pad_t *pad);
 #else
 static INLINE bool winusb_wgi_start(void) { return false; }
 static INLINE void winusb_wgi_stop(void) { }
-static INLINE winusb_wgi_pad_t *winusb_wgi_pair(uint16_t vid, uint16_t pid,
-      const int16_t *axes, uint16_t buttons) { return NULL; }
+static INLINE winusb_wgi_pad_t *winusb_wgi_pair(const int16_t *axes,
+      uint16_t buttons) { return NULL; }
 static INLINE bool winusb_wgi_triggers(winusb_wgi_pad_t *pad,
       int16_t *left, int16_t *right) { return false; }
 static INLINE void winusb_wgi_rumble(winusb_wgi_pad_t *pad,
