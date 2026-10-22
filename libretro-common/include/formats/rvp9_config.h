@@ -6,6 +6,7 @@
 #include <string.h>
 #include <boolean.h>
 #include <retro_inline.h>
+#include <formats/video_color.h>
 
 typedef struct rvp9_config
 {
@@ -64,5 +65,41 @@ static INLINE bool rvp9_config_parse(const uint8_t *data, size_t size,
 invalid:
    memset(out, 0, sizeof(*out));
    return false;
+}
+
+static INLINE bool rvp9_config_merge_value(unsigned *out, unsigned value)
+{
+   if (value == 2)
+      return true;
+   if (*out && *out != 2 && *out != value)
+      return false;
+   *out = value;
+   return true;
+}
+
+/* Preserve mastering/light metadata and reject contradictory descriptions. */
+static INLINE bool rvp9_config_apply_color(const rvp9_config_t *config,
+      const video_color_metadata_t *container, video_color_metadata_t *out)
+{
+   video_color_metadata_t color;
+   unsigned range;
+   if (!out)
+      return false;
+   memset(&color, 0, sizeof(color));
+   if (container)
+      color = *container;
+   memset(out, 0, sizeof(*out));
+   if (!config || !config->primaries || !config->transfer
+         || config->full_range > 1 || color.range > 2)
+      return false;
+   range = config->full_range ? 2 : 1;
+   if ((color.range && color.range != range)
+         || !rvp9_config_merge_value(&color.primaries, config->primaries)
+         || !rvp9_config_merge_value(&color.transfer, config->transfer)
+         || !rvp9_config_merge_value(&color.matrix, config->matrix))
+      return false;
+   color.range = range;
+   *out = color;
+   return true;
 }
 #endif

@@ -6,6 +6,7 @@
 #include <boolean.h>
 #include <retro_inline.h>
 #include <formats/rvp9.h>
+#include <formats/rvp9_config.h>
 #include <formats/image.h>
 #include <formats/video_hw_frame.h>
 
@@ -46,6 +47,10 @@ typedef struct rvp9_hw_backend
    int (*drain)(void *decoder, bool discard);
    /* Opaque bitstream decoders also consume show_existing_frame packets. */
    bool packet_decoder;
+   /* Append-only extension; config may be NULL and arguments are borrowed. */
+   bool (*open_config)(void *user, const rvp9_hdr *header,
+         const video_color_metadata_t *color, const rvp9_config_t *config,
+         unsigned slots, rvp9_hw_ops_t *ops);
 } rvp9_hw_backend_t;
 
 RETRO_BEGIN_DECLS
@@ -56,6 +61,9 @@ void rvp9_set_hw_backend(const rvp9_hw_backend_t *backend);
 int rvp9_unset_hw_backend(const rvp9_hw_backend_t *backend);
 bool rvp9_hw_backend_open(const rvp9_hdr *header, unsigned slots,
       rvp9_hw_ops_t *ops, rvp9_hw_backend_t *backend);
+bool rvp9_hw_backend_open_config(const rvp9_hdr *header,
+      const video_color_metadata_t *color, const rvp9_config_t *config,
+      unsigned slots, rvp9_hw_ops_t *ops, rvp9_hw_backend_t *backend);
 bool rvp9_hw_backend_open_color(const rvp9_hdr *header,
       const video_color_metadata_t *color, unsigned slots,
       rvp9_hw_ops_t *ops, rvp9_hw_backend_t *backend);

@@ -47,6 +47,7 @@ struct object
 static retro_atomic_int_t objects;
 static int step, fail_step, format_error, session_error, registers;
 static int expected_pixel;
+static uint8_t recorded_configuration[12];
 #ifdef VIDEOTOOLBOX_VP9_SAMPLE
 static CMSampleBufferRef delayed_sample;
 static int block_error, sample_error, decode_error;
@@ -112,7 +113,10 @@ CFDataRef CFDataCreate(void *allocator, const uint8_t *bytes, long size)
    struct object *p = new_object(1);
    assert(!allocator && size == 12);
    if (p)
+   {
       memcpy(p->bytes, bytes, 12);
+      memcpy(recorded_configuration, bytes, 12);
+   }
    return p;
 }
 
@@ -496,7 +500,7 @@ int main(void)
    VTDecompressionSessionRef session;
    VTDecompressionOutputCallbackRecord cb;
    OSStatus status;
-   unsigned depth, range;
+   unsigned depth, range, chroma;
 #ifndef VT_VP9_NATIVE
    int failure, before;
 #endif
@@ -520,28 +524,32 @@ int main(void)
       for (range = 0; range < 2; range++)
       {
          header.color_range = (int)range;
-         status = videotoolbox_vp9_format_create(&header, &color, 1, &format);
-         assert(!status && format);
-#ifdef VT_VP9_NATIVE
+         for (chroma = 0; chroma < 2; chroma++)
          {
-            CFDictionaryRef atoms = (CFDictionaryRef)CMFormatDescriptionGetExtension(
-                  format,
-                  kCMFormatDescriptionExtension_SampleDescriptionExtensionAtoms);
-            CFDataRef data =
-                  (CFDataRef)CFDictionaryGetValue(atoms, CFSTR("vpcC"));
-            const UInt8 *bytes = CFDataGetBytePtr(data);
-            CMVideoDimensions dimensions =
-                  CMVideoFormatDescriptionGetDimensions(format);
-            assert(dimensions.width == 1920 && dimensions.height == 1080);
-            assert(CFDataGetLength(data) == 12 && bytes[0] == 1
-                   && bytes[4] == header.profile);
-            assert(bytes[8] == color.transfer && (bytes[6] & 1) == range);
-         }
+            status = videotoolbox_vp9_format_create(&header, &color, chroma, &format);
+            assert(!status && format);
+#ifdef VT_VP9_NATIVE
+            {
+               CFDictionaryRef atoms = (CFDictionaryRef)CMFormatDescriptionGetExtension(
+                     format,
+                     kCMFormatDescriptionExtension_SampleDescriptionExtensionAtoms);
+               CFDataRef data =
+                     (CFDataRef)CFDictionaryGetValue(atoms, CFSTR("vpcC"));
+               const UInt8 *bytes = CFDataGetBytePtr(data);
+               CMVideoDimensions dimensions =
+                     CMVideoFormatDescriptionGetDimensions(format);
+               assert(dimensions.width == 1920 && dimensions.height == 1080);
+               assert(CFDataGetLength(data) == 12 && bytes[0] == 1
+                      && bytes[4] == header.profile);
+               assert(bytes[8] == color.transfer && (bytes[6] & 1) == range
+                      && ((bytes[6] >> 1) & 7) == chroma);
+            }
 #endif
 #ifdef VIDEOTOOLBOX_VP9_SAMPLE
-         test_sample(format);
+            test_sample(format);
 #endif
-         CFRelease(format);
+            CFRelease(format);
+         }
 #ifndef VT_VP9_NATIVE
          expected_pixel = depth == 10 ? (range ? 0x78663230 : 0x78343230)
                                       : (range ? 0x34323066 : 0x34323076);

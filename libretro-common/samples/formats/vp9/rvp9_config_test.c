@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <formats/rvp9_config.h>
+#include <formats/rvp9_color.h>
 
 static const uint8_t original[12] = {1, 0, 0, 0, 0, 0, 0x82, 1, 13, 1, 0, 0};
 static rvp9_config_t config, empty;
@@ -21,6 +22,8 @@ int main(void)
    static const unsigned depth_masks[] = {1, 1, 6, 6};
    static const unsigned chroma_masks[] = {3, 12, 3, 12};
    uint8_t bytes[13];
+   video_color_metadata_t color, merged, no_color;
+   rvp9_hdr header;
    unsigned i, j, profile, depth, chroma;
    bool allowed;
    memcpy(bytes, original, sizeof(original));
@@ -79,6 +82,42 @@ int main(void)
    bytes[9] = 0;
    bytes[6] = 0x84;
    refuse(bytes, 12);
+   memset(&color, 0, sizeof(color));
+   memset(&no_color, 0, sizeof(no_color));
+   color.max_cll = 1000;
+   color.mastering.present = VIDEO_MASTERING_DISPLAY_COMPLETE;
+   color.mastering.luminance_max = 10000000;
+   assert(rvp9_config_parse(original, sizeof(original), &config));
+   assert(rvp9_config_apply_color(&config, &color, &merged));
+   assert(merged.transfer == 13 && merged.primaries == 1 && merged.matrix == 1
+         && merged.range == 1 && merged.max_cll == 1000
+         && merged.mastering.luminance_max == 10000000);
+   color.transfer = 16;
+   assert(!rvp9_config_apply_color(&config, &color, &merged));
+   assert(!memcmp(&merged, &no_color, sizeof(merged)));
+   config.transfer = 2;
+   assert(rvp9_config_apply_color(&config, &color, &color));
+   assert(color.transfer == 16 && color.max_cll == 1000);
+   config.primaries = 0;
+   assert(!rvp9_config_apply_color(&config, &color, &merged));
+   assert(!memcmp(&merged, &no_color, sizeof(merged)));
+   memset(&header, 0, sizeof(header));
+   memset(&color, 0, sizeof(color));
+   header.profile = 2;
+   header.bit_depth = 10;
+   header.subsampling_x = header.subsampling_y = 1;
+   header.color_space = 5;
+   header.color_range = 1;
+   assert(rvp9_color_resolve(&header, &color, &merged));
+   assert(merged.primaries == 9 && merged.matrix == 9 && merged.range == 2
+         && !merged.transfer);
+   color.transfer = 16;
+   color.max_cll = 1200;
+   assert(rvp9_color_resolve(&header, &color, &color));
+   assert(color.transfer == 16 && color.max_cll == 1200 && color.primaries == 9);
+   color.primaries = 1;
+   assert(!rvp9_color_resolve(&header, &color, &merged));
+   assert(!memcmp(&merged, &no_color, sizeof(merged)));
    puts("PASS: VP9 vpcC FullBox bounds, profiles/depths/chroma, levels and raw CICP preservation");
    return 0;
 }

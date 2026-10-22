@@ -22,7 +22,7 @@ endif
 
 all: $(TARGETS)
 
-rvp9_config_test: rvp9_config_test.c ../../../include/formats/rvp9_config.h
+rvp9_config_test: rvp9_config_test.c ../../../include/formats/rvp9_config.h ../../../include/formats/rvp9_color.h
 	$(CC) $(CFLAGS) $< -o $@ $(LDFLAGS)
 
 rvp9_reference_test: rvp9_reference_test.c ../../../formats/vp9/rvp9.c ../../../formats/vp9/rvp9_recon.inc ../../../include/formats/rvp9.h
@@ -32,7 +32,7 @@ rvp9_hw_session_test: rvp9_hw_session_test.c ../../../formats/vp9/rvp9.c ../../.
 	$(CC) $(CFLAGS) rvp9_hw_session_test.c ../../../formats/vp9/rvp9.c -o $@ $(LDFLAGS)
 
 rwebm_hw_stream_test: rwebm_hw_stream_test.c $(WEBM_SOURCES) ../../../formats/webm/rwebm_video.c \
- ../../../include/formats/rvp9_hw.h ../../../include/formats/rwebm_video.h
+ ../../../include/formats/rvp9_hw.h ../../../include/formats/rwebm_video.h ../../../include/formats/rvp9_color.h
 	$(CC) $(CFLAGS) -D_POSIX_C_SOURCE=200809L -DHAVE_RWEBM -DHAVE_RVP9 -ffunction-sections -fdata-sections \
 	 rwebm_hw_stream_test.c $(WEBM_SOURCES) -o $@ $(LDFLAGS) -Wl,--gc-sections -lm
 

@@ -65,6 +65,8 @@ int main(void)
    videotoolbox_vp9_owner_t *init = open_owner();
    videotoolbox_vp9_backend_t b;
    rvp9_hw_ops_t ops;
+   rvp9_config_t record;
+   static const uint8_t bytes[12] = {1, 0, 0, 0, 0, 0, 0x80, 1, 1, 1, 0, 0};
    unsigned before;
    close_owner(&init);
    assert(videotoolbox_vp9_backend_init(
@@ -104,6 +106,18 @@ int main(void)
    turn(false);
    assert(!dispatch_objects && !retro_atomic_load_acquire_int(&objects));
    replace_during_pool = false;
+   assert(rvp9_config_parse(bytes, sizeof(bytes), &record));
+   assert(b.offer.open_config(b.offer.user, &header, &color, &record, 10, &ops));
+   assert(recorded_configuration[6] == 0x80);
+   finish_close(&b, &ops);
+   before = pools;
+   record.profile = 2;
+   assert(!b.offer.open_config(b.offer.user, &header, &color, &record, 10, &ops));
+   assert(pools == before && !device_refs);
+   record.profile = 0;
+   record.transfer = 16;
+   assert(!b.offer.open_config(b.offer.user, &header, &color, &record, 10, &ops));
+   assert(pools == before && !device_refs);
    header.profile      = 2;
    header.bit_depth    = 10;
    header.color_space  = 5;

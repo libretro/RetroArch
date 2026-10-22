@@ -22,9 +22,9 @@ typedef struct videotoolbox_vp9_backend
    unsigned chroma;
 } videotoolbox_vp9_backend_t;
 
-static bool videotoolbox_vp9_backend_open_color(void *opaque,
+static bool videotoolbox_vp9_backend_open_config(void *opaque,
       const rvp9_hdr *header, const video_color_metadata_t *color,
-      unsigned count, rvp9_hw_ops_t *ops)
+      const rvp9_config_t *record, unsigned count, rvp9_hw_ops_t *ops)
 {
    videotoolbox_vp9_backend_t *b = (videotoolbox_vp9_backend_t *)opaque;
    videotoolbox_vp9_device_t snapshot;
@@ -32,6 +32,8 @@ static bool videotoolbox_vp9_backend_open_color(void *opaque,
    metal_frame_view_t view;
    metal_frame_sdr_params_t conversion;
    metal_frame_cv_pool_t *pool;
+   video_color_metadata_t resolved;
+   unsigned chroma;
    bool opened;
    if (!ops)
       return false;
@@ -40,8 +42,18 @@ static bool videotoolbox_vp9_backend_open_color(void *opaque,
          || count > 32 || b->capacity <= 34
          || b->capacity > 256u * 1024 * 1024 / count
          || (b->enabled && !b->enabled(b->user)) || !header
-         || header->show_existing_frame
-         || !videotoolbox_vp9_configure(header, color, b->chroma, &config))
+         || header->show_existing_frame)
+      return false;
+   chroma = record ? record->chroma : b->chroma;
+   if (record)
+   {
+      if (record->profile != header->profile
+            || record->bit_depth != header->bit_depth
+            || !rvp9_config_apply_color(record, color, &resolved))
+         return false;
+      color = &resolved;
+   }
+   if (!videotoolbox_vp9_configure(header, color, chroma, &config))
       return false;
    memset(&snapshot, 0, sizeof(snapshot));
    if (!b->acquire(b->user, &snapshot) || !snapshot.device)
@@ -66,7 +78,7 @@ static bool videotoolbox_vp9_backend_open_color(void *opaque,
    b->release(snapshot.device);
    if (!pool)
       return false;
-   opened = videotoolbox_vp9_dispatch_open(header, color, b->chroma, count,
+   opened = videotoolbox_vp9_dispatch_open(header, color, chroma, count,
          b->capacity, pool, b->registration, ops);
    if (!opened)
       metal_frame_cv_pool_free(pool);
@@ -76,6 +88,14 @@ static bool videotoolbox_vp9_backend_open_color(void *opaque,
       return false;
    }
    return opened;
+}
+
+static bool videotoolbox_vp9_backend_open_color(void *opaque,
+      const rvp9_hdr *header, const video_color_metadata_t *color,
+      unsigned count, rvp9_hw_ops_t *ops)
+{
+   return videotoolbox_vp9_backend_open_config(opaque, header, color,
+         NULL, count, ops);
 }
 
 static bool videotoolbox_vp9_backend_open(
@@ -111,6 +131,7 @@ static INLINE bool videotoolbox_vp9_backend_init(videotoolbox_vp9_backend_t *b,
    b->offer.open_color     = videotoolbox_vp9_backend_open_color;
    b->offer.close          = videotoolbox_vp9_decoder_close;
    b->offer.drain          = videotoolbox_vp9_decoder_finish;
+   b->offer.open_config    = videotoolbox_vp9_backend_open_config;
    b->offer.packet_decoder = true;
    return true;
 }
