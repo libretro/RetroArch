@@ -10398,6 +10398,10 @@ static void general_write_handler(rarch_setting_t *setting)
 
    switch (setting->enum_idx)
    {
+      case MENU_ENUM_LABEL_VIDEO_GPU_INDEX:
+         video_driver_gpu_index_select(video_context_driver_get_api(),
+               *setting->value.target.integer);
+         break;
       case MENU_ENUM_LABEL_VIDEO_SHADERS_ENABLE:
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
          video_shader_toggle(settings, true);

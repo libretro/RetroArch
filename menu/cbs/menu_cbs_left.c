@@ -1012,7 +1012,7 @@ static int action_left_video_gpu_index(unsigned type, const char *label,
       {
          struct string_list *list = video_driver_get_gpu_api_devices(api);
 
-         if (list)
+         if (list && list->size)
          {
             settings_t *settings = config_get_ptr();
             int vulkan_gpu_index = settings->ints.vulkan_gpu_index;
@@ -1029,6 +1029,8 @@ static int action_left_video_gpu_index(unsigned type, const char *label,
                      settings->ints.vulkan_gpu_index,
                      (int)list->size - 1);
             }
+            video_driver_gpu_index_select(api,
+                  settings->ints.vulkan_gpu_index);
          }
 
          break;
@@ -1040,13 +1042,15 @@ static int action_left_video_gpu_index(unsigned type, const char *label,
       {
          struct string_list *list = video_driver_get_gpu_api_devices(api);
 
-         if (list)
+         if (list && list->size)
          {
             settings_t *settings = config_get_ptr();
             int gl_gpu_index     = settings->ints.gl_gpu_index;
             configuration_set_int(settings,
                   settings->ints.gl_gpu_index,
                   gl_gpu_index > 0 ? gl_gpu_index - 1 : (int)list->size - 1);
+            video_driver_gpu_index_select(api,
+                  settings->ints.gl_gpu_index);
          }
 
          break;
@@ -1057,7 +1061,7 @@ static int action_left_video_gpu_index(unsigned type, const char *label,
       {
          struct string_list *list = video_driver_get_gpu_api_devices(api);
 
-         if (list)
+         if (list && list->size)
          {
             settings_t *settings = config_get_ptr();
             int d3d10_gpu_index  = settings->ints.d3d10_gpu_index;
@@ -1073,6 +1077,8 @@ static int action_left_video_gpu_index(unsigned type, const char *label,
                      settings->ints.d3d10_gpu_index,
                      list->size - 1);
             }
+            video_driver_gpu_index_select(api,
+                  settings->ints.d3d10_gpu_index);
          }
 
          break;
@@ -1083,7 +1089,7 @@ static int action_left_video_gpu_index(unsigned type, const char *label,
       {
          struct string_list *list = video_driver_get_gpu_api_devices(api);
 
-         if (list)
+         if (list && list->size)
          {
             settings_t *settings = config_get_ptr();
             int d3d11_gpu_index  = settings->ints.d3d11_gpu_index;
@@ -1099,6 +1105,8 @@ static int action_left_video_gpu_index(unsigned type, const char *label,
                      settings->ints.d3d11_gpu_index,
                      list->size - 1);
             }
+            video_driver_gpu_index_select(api,
+                  settings->ints.d3d11_gpu_index);
          }
 
          break;
@@ -1109,7 +1117,7 @@ static int action_left_video_gpu_index(unsigned type, const char *label,
       {
          struct string_list *list = video_driver_get_gpu_api_devices(api);
 
-         if (list)
+         if (list && list->size)
          {
             settings_t *settings = config_get_ptr();
             int d3d12_gpu_index  = settings->ints.d3d12_gpu_index;
@@ -1125,6 +1133,8 @@ static int action_left_video_gpu_index(unsigned type, const char *label,
                      settings->ints.d3d12_gpu_index,
                      list->size - 1);
             }
+            video_driver_gpu_index_select(api,
+                  settings->ints.d3d12_gpu_index);
          }
 
          break;
@@ -1135,7 +1145,7 @@ static int action_left_video_gpu_index(unsigned type, const char *label,
       {
          struct string_list *list = video_driver_get_gpu_api_devices(api);
 
-         if (list)
+         if (list && list->size)
          {
             settings_t *settings = config_get_ptr();
             int metal_gpu_index  = settings->ints.metal_gpu_index;
@@ -1151,6 +1161,8 @@ static int action_left_video_gpu_index(unsigned type, const char *label,
                      settings->ints.metal_gpu_index,
                      (int)list->size - 1);
             }
+            video_driver_gpu_index_select(api,
+                  settings->ints.metal_gpu_index);
          }
 
          break;

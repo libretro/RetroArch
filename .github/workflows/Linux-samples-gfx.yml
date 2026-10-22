@@ -1856,6 +1856,14 @@ jobs:
           CFLAGS="-O1 -g -std=c89 -Wall -Wextra -fsanitize=address,undefined -fno-omit-frame-pointer" python3 samples/gfx/d3d9_failed_lock/run.py
           CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/d3d9_failed_lock/run.py
 
+      - name: GPU selection identity (Linux and mingw + Wine)
+        shell: bash
+        run: |
+          set -eu
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
+          CFLAGS="-O1 -g -std=c89 -Wall -Wextra -Werror=declaration-after-statement -fsanitize=address,undefined -fno-omit-frame-pointer" python3 samples/gfx/gpu_index/run.py
+          CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/gpu_index/run.py
+
       - name: Vulkan video negotiation and HEVC parameters (Linux and mingw + Wine)
         shell: bash
         run: |
