@@ -7241,6 +7241,15 @@ static bool config_load_file(const char *path, settings_t *settings)
    }
 #endif
 
+#if defined(HAVE_BLUETOOTH) && defined(_WIN32)
+   /* "null" was the only Bluetooth driver a Windows build had, so a
+    * saved one was never chosen: Windows' own is the default now */
+   if (string_is_equal(settings->arrays.bluetooth_driver, "null"))
+      configuration_set_string(settings,
+            settings->arrays.bluetooth_driver,
+            config_get_default_bluetooth());
+#endif
+
    /* MIDI fallback for old OFF-string */
    if (string_is_equal(settings->arrays.midi_input, "Off"))
       configuration_set_string(settings,
