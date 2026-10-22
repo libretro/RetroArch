@@ -13842,6 +13842,36 @@ static bool input_hotkey_uses_enable(input_hotkey_block_t *b,
    return true;
 }
 
+/* As input_hotkey_uses_enable(), for hotkey @i pressed only on the
+ * sharers in @pressed: by each one's own button and axis. */
+static bool input_share_uses_enable(const input_hotkey_block_t *b,
+      uint32_t pressed, unsigned i)
+{
+   const unsigned h = i - RARCH_FIRST_META_KEY;
+   const unsigned e = RARCH_ENABLE_HOTKEY - RARCH_FIRST_META_KEY;
+   for (; pressed; pressed &= pressed - 1)
+   {
+      rarch_joypad_info_t info;
+      const input_share_hot_t *t;
+      bool shared_pad, shared_axis;
+      unsigned user = (unsigned)compat_ctz(pressed);
+      input_user_joypad_info(&info, user, b->joypad_info->axis_threshold);
+      t           = input_share_hot_get(user, info.auto_binds);
+      shared_pad  = t->key[h]  != NO_BTN    && t->key[h]  == t->key[e];
+      shared_axis = t->axis[h] != AXIS_NONE && t->axis[h] == t->axis[e];
+      if (!shared_pad && !shared_axis)
+         return false;
+      if (     b->joypad && t->key[h] != NO_BTN && !shared_pad
+            && b->joypad->button(info.joy_idx, t->key[h]))
+         return false;
+      if (     b->joypad && t->axis[h] != AXIS_NONE && !shared_axis
+            && (float)abs(b->joypad->axis(info.joy_idx, t->axis[h]))
+                  * INV_0x8000 > info.axis_threshold)
+         return false;
+   }
+   return true;
+}
+
 /* Hotkey @i, read on @b's controller. */
 static bool input_hotkey_block_pad(const input_hotkey_block_t *b,
       bool kb_blocked, unsigned i)
@@ -14040,11 +14070,30 @@ static uint32_t input_users_pad_idle(input_driver_state_t *input_st,
    return idle;
 }
 
+/* Of the users in @share, those whose controller has a Hotkey Enable
+ * of its own: its bind or its profile's. */
+static uint32_t input_share_enablers(uint32_t share)
+{
+   uint32_t has = 0;
+   for (; share; share &= share - 1)
+   {
+      rarch_joypad_info_t info;
+      const input_share_hot_t *t;
+      unsigned user = (unsigned)compat_ctz(share);
+      input_user_joypad_info(&info, user, 0.0f);
+      t             = input_share_hot_get(user, info.auto_binds);
+      if (     t->key[RARCH_ENABLE_HOTKEY - RARCH_FIRST_META_KEY]  != NO_BTN
+            || t->axis[RARCH_ENABLE_HOTKEY - RARCH_FIRST_META_KEY] != AXIS_NONE)
+         has |= 1U << user;
+   }
+   return has;
+}
+
 /* Whether hotkey @i, pressed on the controllers in @pressed, gets past
- * any of their own Hotkey Enables: @open holds those it does not block,
- * the rest go by @mode. */
+ * any of their own Hotkey Enables: @open holds those it does not block;
+ * the rest, which have one (@enablers), go by it and the keyboard's. */
 static bool input_hotkey_shared_passes(const input_hotkey_block_t *blk,
-      uint32_t pressed, uint32_t open, uint8_t mode, unsigned i)
+      uint32_t pressed, uint32_t open, uint32_t enablers, unsigned i)
 {
    for (; pressed; pressed &= pressed - 1)
    {
@@ -14055,7 +14104,9 @@ static bool input_hotkey_shared_passes(const input_hotkey_block_t *blk,
       b.joypad_info          = &info;
       b.user                 = user;
       b.enable_blocked       = -1;
-      b.mode                 = (open & (1U << user)) ? 0 : mode;
+      b.libretro_hotkey_set  = ((enablers >> user) & 1) != 0;
+      b.mode                 = ((open >> user) & 1) ? 0
+         : (b.libretro_hotkey_set && b.keyboard_hotkey_set) ? 1 : 2;
       if (!input_hotkey_blocked(&b, i))
          return true;
    }
@@ -15251,6 +15302,11 @@ void input_entries_read(void *data)
    }
 }
 
+/* This frame's Hotkey Enable is held on a sharer only: the hotkeys'
+ * block is lifted for its own pad, and an entry with a key is still
+ * held back, as with nobody sharing. Made by the hotkey pass. */
+static bool input_hotkey_share_only;
+
 /* The entries gone through, once a frame, after the ports have been:
  * with what is held of the RetroPad as the hotkeys' combinations have
  * always had it - the buttons delivered this frame - and the keys of
@@ -15347,7 +15403,8 @@ INPUT_NOINLINE static void input_entries_frame(
          continue;
       /* held back with the hotkeys: by the enabler of its kind of
        * source not being held ... */
-      if (     no_enabler
+      if (     (   no_enabler
+                || (e->key != RETROK_UNKNOWN && input_hotkey_share_only))
             && (   (e->pad && pad_enabler)
                 || (e->key != RETROK_UNKNOWN && key_enabler)))
          continue;
@@ -15465,10 +15522,11 @@ static void input_keys_pressed(
    bool enable_hotkey_pressed     = false;
    bool own_enabled               = false;
    /* of @share, those holding Hotkey Enable (and on their own pad),
-    * and those it lets through */
+    * those it lets through, and those with one of their own */
    uint32_t share_enabled         = 0;
    uint32_t share_pad             = 0;
    uint32_t share_open            = 0;
+   uint32_t share_enablers        = 0;
    uint8_t block_mode;
    bool any_pressed               = false;
    /* what the tables say of this port's hotkeys, as of the last
@@ -15493,10 +15551,19 @@ static void input_keys_pressed(
    {
       bool kb_blocked = !!(input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED);
 
-   if (     (port == hotkey_port)
-         && (hk->flags & INPUT_HK_ENABLER))
+   if (share && port == hotkey_port)
    {
-      own_enabled      = input_state_wrap(
+      share_enablers   = input_share_enablers(share);
+      /* Device Merge: a sharer with none waits for the keyboard's */
+      if (     input_hotkey_device_merge
+            && (hk->flags & INPUT_HK_KEY_ENABLER))
+         share_enablers = share;
+   }
+   if (     (port == hotkey_port)
+         && ((hk->flags & INPUT_HK_ENABLER) || share_enablers))
+   {
+      own_enabled      = (hk->flags & INPUT_HK_ENABLER)
+         && input_state_wrap(
             input_st->current_driver,
             input_st->current_data,
             joypad,
@@ -15509,7 +15576,10 @@ static void input_keys_pressed(
          share_enabled = input_hotkey_shared_held(input_st, joypad, binds,
                joypad_info->axis_threshold, port, share,
                RARCH_ENABLE_HOTKEY, kb_blocked);
-      input_enabler_tap.read = (1U << port) | share;
+      input_enabler_tap.read = ((hk->flags & INPUT_HK_ENABLER)
+            ? 1U << port : 0) | share;
+      input_hotkey_share_only = share_enabled && !own_enabled
+         && (hk->flags & INPUT_HK_ENABLER);
       if (own_enabled || share_enabled)
       {
          enable_hotkey_pressed = true;
@@ -15528,7 +15598,7 @@ static void input_keys_pressed(
                   || (input_enabler_tap.down & ~input_enabler_tap.pass))
             input_st->flags |= INP_FLAG_BLOCK_LIBRETRO_INPUT;
       }
-      else
+      else if (hk->flags & INPUT_HK_ENABLER)
          input_st->flags |= INP_FLAG_BLOCK_HOTKEY;
    }
 
@@ -15629,14 +15699,15 @@ static void input_keys_pressed(
          if (bit_pressed && share_enabled && !own_enabled)
             bit_pressed = input_users_pad_idle(input_st, joypad, binds,
                   joypad_info->axis_threshold, 1U << port, kb_blocked) != 0;
+         /* a sharer's only where it has no Hotkey Enable of its own */
          if (     !bit_pressed
-               && share
+               && (share & ~share_enablers)
                && (hk->flags & INPUT_HK_MENU_VALID))
             bit_pressed = input_users_pad_idle(input_st, joypad, binds,
                   joypad_info->axis_threshold,
                   input_hotkey_shared_held(input_st, joypad, binds,
-                     joypad_info->axis_threshold, port, share, i,
-                     kb_blocked),
+                     joypad_info->axis_threshold, port,
+                     share & ~share_enablers, i, kb_blocked),
                   kb_blocked) != 0;
 
          if (     bit_pressed
@@ -15709,11 +15780,16 @@ static void input_keys_pressed(
    block_mode              = (libretro_hotkey_set && keyboard_hotkey_set) ? 1 : 2;
    blk.mode                = !(input_st->flags & INP_FLAG_BLOCK_HOTKEY) ? 0
       : block_mode;
-   /* each controller's hotkeys go by its own Hotkey Enable */
-   if (!blk.mode && enable_hotkey_pressed && !own_enabled)
+   /* each controller's hotkeys go by its own Hotkey Enable: a sharer's
+    * are let through while it holds its own, or where it has none (but
+    * see Device Merge) */
+   if (     !blk.mode && enable_hotkey_pressed && !own_enabled
+         && (hk->flags & INPUT_HK_ENABLER))
       blk.mode             = block_mode;
-   if (!(input_st->flags & INP_FLAG_BLOCK_HOTKEY))
-      share_open           = enable_hotkey_pressed ? share_enabled : share;
+   share_open              = share_enabled | (share & ~share_enablers);
+   /* no enabler of its own: nothing blocks the port's, Game Focus too */
+   if (!libretro_hotkey_set && !keyboard_hotkey_set)
+      blk.mode             = 0;
 
    /* Which hotkeys anything could be holding: all that is gone through
     * below. The rest have nothing to do here - but for the menu toggle,
@@ -15784,14 +15860,14 @@ static void input_keys_pressed(
                continue;
             }
 
-            if (libretro_hotkey_set || keyboard_hotkey_set)
+            if (libretro_hotkey_set || keyboard_hotkey_set || share_enablers)
             {
                /* Do not block "other source" (input overlay) presses */
                if (     !other_pressed
                      && (   (shared_pressed && !bit_pressed)
                          || input_hotkey_blocked(&blk, i))
                      && !input_hotkey_shared_passes(&blk, shared_pressed,
-                           share_open, block_mode, i))
+                           share_open, share_enablers, i))
                   continue;
             }
 
@@ -15810,7 +15886,9 @@ static void input_keys_pressed(
                if ((input_st->flags & (INP_FLAG_MENU_PRESS_PENDING
                         | INP_FLAG_MENU_PRESS_CANCEL)) != INP_FLAG_MENU_PRESS_PENDING
                      || other_pressed
-                     || !input_hotkey_uses_enable(&blk, i, kb_blocked))
+                     || !((shared_pressed && !bit_pressed)
+                        ? input_share_uses_enable(&blk, shared_pressed, i)
+                        : input_hotkey_uses_enable(&blk, i, kb_blocked)))
                   input_st->flags |= INP_FLAG_MENU_PRESS_CANCEL;
 
                /* Game Focus toggle is always allowed, so it must clear menu cancel */
@@ -15826,7 +15904,7 @@ static void input_keys_pressed(
                uint32_t fired = shared_pressed & share_open;
                input_enabler_tap.hot |= fired;
                /* the keyboard's Enable opened it: its tap too */
-               if (fired & share_enabled & ~share_pad)
+               if (fired & share_enablers & ~share_pad)
                   input_enabler_tap.hot |= 1U << port;
                if (shared_pressed && !bit_pressed && !other_pressed)
                   BIT256_SET(input_enabler_tap.solo, i);
@@ -15862,7 +15940,8 @@ static void input_keys_pressed(
          && !input_st->wait_release_mask[port])
       input_st->flags &= ~INP_FLAG_WAIT_INPUT_RELEASE;
 
-   if (input_st->flags & INP_FLAG_BLOCK_HOTKEY && !enable_hotkey_pressed)
+   if (     ((input_st->flags & INP_FLAG_BLOCK_HOTKEY) || share_enablers)
+         && !enable_hotkey_pressed)
       input_st->input_hotkey_block_counter = 0;
 
    } /* kb_blocked scope */
@@ -19448,6 +19527,7 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
     * controllers' hotkeys */
    hotkey_share = input_port_sharers(settings, hotkey_port)
       & ~(1U << hotkey_port) & ((1U << max_users) - 1);
+   input_hotkey_share_only = false;
 #ifdef HAVE_MENU
    if (menu_is_alive && !all_users_control_menu)
       menu_users = input_port_sharers(settings, 0);

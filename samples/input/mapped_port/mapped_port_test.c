@@ -25,6 +25,7 @@
 #include "../../../gfx/video_driver.h"
 #include "../../../input/input_driver.h"
 #include "../../../input/input_remapping.h"
+#include "../../../input/input_keymaps.h"
 #include "../../../menu/menu_driver.h"
 #include "../../../menu/menu_entries.h"
 #include "../../../menu/menu_input.h"
@@ -98,6 +99,8 @@ const char *input_config_bind_map_get_base(unsigned i)
       case RARCH_ENABLE_HOTKEY:    return "enable_hotkey";
       case RARCH_FAST_FORWARD_KEY: return "toggle_fast_forward";
       case RARCH_MENU_TOGGLE:      return "menu_toggle";
+      case RETRO_DEVICE_ID_JOYPAD_L3: return "l3";
+      case RETRO_DEVICE_ID_JOYPAD_R3: return "r3";
       default:                     break;
    }
    return NULL;
@@ -121,6 +124,10 @@ bool video_driver_translate_coord_viewport(struct video_viewport *vp,
 { (void)vp; (void)x; (void)y; (void)pos; (void)screen_pos; (void)oob;
   return false; }
 struct menu_state *menu_state_get_ptr(void) { return &t_menu_st; }
+/* input_keymaps.c is not linked: the keys the entries here name */
+const struct input_key_map input_config_key_map[] = {
+   { "f", RETROK_f },
+   { NULL, RETROK_UNKNOWN } };
 bool menu_input_dialog_get_display_kb(void) { return false; }
 void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
       size_t i, void *userdata, bool use_representation)
@@ -213,6 +220,9 @@ static void t_reset(void)
 
    memset(&st->mapper, 0, sizeof(st->mapper));
    st->remap_worked = 0;
+   /* a test that ends with Hotkey Enable held leaves input held back */
+   st->flags       &= ~(INP_FLAG_BLOCK_LIBRETRO_INPUT | INP_FLAG_BLOCK_HOTKEY);
+   st->input_hotkey_block_counter = 0;
    t_rumble_refused = 0;
    t_inits          = 0;
    runloop_st.system.ports.data = t_core_ports;
@@ -278,6 +288,7 @@ static void t_reset(void)
    settings.uints.input_menu_toggle_gamepad_combo = INPUT_COMBO_NONE;
    settings.floats.input_axis_threshold           = 0.5f;
    settings.bools.input_hotkey_follows_player1    = false;
+   settings.bools.input_hotkey_device_merge       = false;
    settings.bools.input_all_users_control_menu    = false;
    settings.bools.input_remap_binds_enable        = false;
    st->primary_joypad                             = &t_joypad;
@@ -2025,12 +2036,14 @@ static void test_plays_as_write_twins_full(void)
 #define T_MENU   22
 #define T_Y      T_BIT(RETRO_DEVICE_ID_JOYPAD_Y)
 
-/* A frame's system input, the block flags cleared first as the run
- * loop clears them. */
+/* A frame's system input, the block flags cleared first, and set
+ * under Game Focus, as the run loop does. */
 static void t_collect(input_bits_t *bits)
 {
    input_driver_state_t *st = input_state_get_ptr();
    st->flags &= ~(INP_FLAG_BLOCK_LIBRETRO_INPUT | INP_FLAG_BLOCK_HOTKEY);
+   if (st->flags & INP_FLAG_KB_MAPPING_BLOCKED)
+      st->flags |= INP_FLAG_BLOCK_HOTKEY;
    memset(bits, 0, sizeof(*bits));
    input_driver_collect_system_input(st, &settings, bits);
 }
@@ -2041,6 +2054,15 @@ static void t_bind(unsigned id, uint16_t joykey)
 {
    input_config_binds[0][id].joykey = joykey;
    input_config_binds[0][id].attr   =
+      RETRO_KEYBIND_ATTR(RETROK_UNKNOWN, NO_BTN, true);
+   input_config_binds_changed();
+}
+
+/* User 1's hotkey @id usable with nothing bound, as a configuration
+ * has every hotkey: a profile's then counts. */
+static void t_valid(unsigned id)
+{
+   input_config_binds[0][id].attr =
       RETRO_KEYBIND_ATTR(RETROK_UNKNOWN, NO_BTN, true);
    input_config_binds_changed();
 }
@@ -2211,6 +2233,33 @@ static void test_hotkey_enable_shared(void)
    t_collect(&bits);
    CHECK(!BIT256_GET(bits, RARCH_FAST_FORWARD_KEY),
          "Hotkey Enable on user 2's pad fires user 1's hotkey");
+}
+
+/* A sharer with no Hotkey Enable of its own fires its hotkeys without
+ * one, though user 1's pad has one; user 1's still wait for it. */
+static void test_hotkey_sharer_no_enable(void)
+{
+   input_bits_t bits;
+   t_reset();
+   input_autoconf_binds[1] = t_auto_own;
+   t_bind(RARCH_ENABLE_HOTKEY, T_ENABLE);
+   t_bind(RARCH_FAST_FORWARD_KEY, T_FF);
+   t_map(1, 0);
+
+   t_buttons[1] = T_BIT(T_OWN_FF);
+   t_collect(&bits);
+   CHECK(BIT256_GET(bits, RARCH_FAST_FORWARD_KEY),
+         "a sharer with no Hotkey Enable waited for user 1's");
+   t_buttons[1] = 0;
+   t_buttons[0] = T_BIT(T_FF);
+   t_collect(&bits);
+   CHECK(!BIT256_GET(bits, RARCH_FAST_FORWARD_KEY),
+         "user 1's hotkey fired without its Hotkey Enable");
+   t_buttons[0] = T_BIT(T_ENABLE) | T_BIT(T_FF);
+   t_collect(&bits);
+   CHECK(BIT256_GET(bits, RARCH_FAST_FORWARD_KEY),
+         "user 1's hotkey with its Hotkey Enable held did not fire");
+   t_buttons[0] = 0;
 }
 
 /* The menu toggle's button, which acts on being let go, and its
@@ -2450,8 +2499,13 @@ static void test_hotkeys_shared_menu(void)
    t_menu_st.flags &= ~MENU_ST_FLAG_ALIVE;
 }
 
-/* the key held on the keyboard, or 0 */
+/* the keys held on the keyboard, or 0 */
 static unsigned t_key;
+static unsigned t_key_too;
+static bool t_key_held(unsigned key)
+{
+   return key && (key == t_key || key == t_key_too);
+}
 /* A keyboard driver asked for each bind; @binds is input_config_binds,
  * its pointers cast. */
 static int16_t t_kb_state(void *data, const input_device_driver_t *joypad,
@@ -2463,12 +2517,12 @@ static int16_t t_kb_state(void *data, const input_device_driver_t *joypad,
    (void)joypad_info;
    (void)binds;
    (void)idx;
-   if (!t_key || port >= MAX_USERS)
+   if (port >= MAX_USERS)
       return 0;
    if (device == RETRO_DEVICE_KEYBOARD)
-      return id == t_key;
+      return t_key_held(id);
    return device == RETRO_DEVICE_JOYPAD && id < RARCH_BIND_LIST_END
-      && RETRO_KEYBIND_KEY(&input_config_binds[port][id]) == t_key;
+      && t_key_held(RETRO_KEYBIND_KEY(&input_config_binds[port][id]));
 }
 static input_driver_t t_kb;
 
@@ -2989,6 +3043,22 @@ static void test_tap_sharer_opens_own(void)
    t_tap_done();
 }
 
+/* A sharer with no Enable of its own fires without the keyboard's, so
+ * its hotkey leaves the keyboard's tap alone. */
+static void test_tap_sharer_free_keyboard(void)
+{
+   static const struct t_hold h[] = {
+      { 1, T_BIT(T_OWN_FF), 2, 5 } };
+   unsigned seen[T_TAP_FRAMES];
+   bool ff;
+   t_tap_setup(100000);
+   input_autoconf_binds[1] = t_auto_own;
+   ff = t_tap_tab_holds(h, 1, seen);
+   CHECK(ff && t_tap_frames(seen, T_SELECT) == T_FRAMES(5, 10),
+         "tap delay: the hotkey of a sharer with no Enable swallowed the keyboard's tap");
+   t_tap_done();
+}
+
 /* Enables pressed with the delay off are not played once it is turned
  * on outside the menu. */
 static void test_tap_turned_on(void)
@@ -3017,6 +3087,221 @@ static void test_tap_off(void)
    CHECK(during[1] == 1 && !after[1] && !after[0],
          "tap delay off: user 1's Enable was kept or played");
    t_tap_done();
+}
+
+/* A key's hotkey goes by the keyboard's Hotkey Enable or user 1's pad's,
+ * as with nobody sharing: a sharer with no Enable, or one holding its
+ * own, opens none of them. */
+static void test_hotkey_keys_sharer(void)
+{
+   static const char *const names[3] = { "Enable on a key",
+      "Enable on a key and a button", "Enable on a button, Device Merge" };
+   unsigned s, shared;
+   input_bits_t bits;
+   input_driver_state_t *st = input_state_get_ptr();
+
+   for (s = 0; s < 3; s++)
+      for (shared = 0; shared < 2; shared++)
+      {
+         int before = failures;
+         t_reset();
+         t_kb.input_state   = t_kb_state;
+         st->current_driver = &t_kb;
+         settings.bools.input_hotkey_device_merge = (s == 2);
+         if (s >= 1)
+            t_bind(RARCH_ENABLE_HOTKEY, RETRO_DEVICE_ID_JOYPAD_SELECT);
+         if (s <= 1)
+            input_config_binds[0][RARCH_ENABLE_HOTKEY].attr =
+               RETRO_KEYBIND_ATTR(RETROK_TAB, NO_BTN, true);
+         input_config_binds[0][RARCH_FAST_FORWARD_KEY].attr =
+            RETRO_KEYBIND_ATTR(RETROK_f, NO_BTN, true);
+         input_config_binds_changed();
+         if (shared)
+            t_map(1, 0);
+
+         t_key = RETROK_f;
+         t_collect(&bits);
+         CHECK(!BIT256_GET(bits, RARCH_FAST_FORWARD_KEY),
+               "a key's hotkey fired with no Hotkey Enable held");
+         if (s <= 1)
+         {
+            t_key_too = RETROK_TAB;
+            t_collect(&bits);
+            CHECK(BIT256_GET(bits, RARCH_FAST_FORWARD_KEY),
+                  "the keyboard's Hotkey Enable did not open a key's hotkey");
+            t_key_too = 0;
+         }
+         if (s >= 1)
+         {
+            t_buttons[0] = T_SELECT;
+            t_collect(&bits);
+            CHECK(BIT256_GET(bits, RARCH_FAST_FORWARD_KEY),
+                  "user 1's Hotkey Enable did not open a key's hotkey");
+            t_buttons[0] = 0;
+         }
+         if (shared)
+         {
+            input_autoconf_binds[1] = t_auto_en;
+            input_config_binds_changed();
+            t_buttons[1] = T_BIT(T_OWN_EN);
+            t_collect(&bits);
+            CHECK(!BIT256_GET(bits, RARCH_FAST_FORWARD_KEY),
+                  "a sharer's own Hotkey Enable opened a key's hotkey");
+            t_buttons[1] = 0;
+         }
+         t_key = 0;
+         if (failures != before)
+            printf("  (%s, %s)\n", names[s],
+                  shared ? "user 2 sharing" : "nobody sharing");
+      }
+   st->current_driver = NULL;
+}
+
+/* Whether a sharer's menu toggle needs Hotkey Enable goes by its own
+ * binds: user 1's menu button needing none does not let a sharer's
+ * skip the sharer's own Enable. */
+static void test_menu_bypass_shared(void)
+{
+   t_reset();
+   input_autoconf_binds[1] = t_auto_en;
+   t_bind(RARCH_ENABLE_HOTKEY, T_ENABLE);
+   t_bind(RARCH_MENU_TOGGLE, T_MENU);
+   t_map(1, 0);
+
+   t_buttons[0] = T_BIT(T_MENU);
+   CHECK(t_menu_tap(), "user 1's menu button waits for Hotkey Enable");
+   t_buttons[1] = T_BIT(T_OWN_MENU);
+   CHECK(!t_menu_tap(), "a sharer's menu toggle skipped its Hotkey Enable");
+   t_buttons[1] = T_BIT(T_OWN_EN) | T_BIT(T_OWN_MENU);
+   CHECK(t_menu_tap(),
+         "a sharer's menu toggle with its Hotkey Enable did not open the menu");
+}
+
+/* An input_combo_N entry with a key, with buttons or without, goes by
+ * the keyboard's Hotkey Enable or user 1's, as with nobody sharing,
+ * Device Merge included: a sharer holding its own does not open it. A
+ * RetroPad-only one it does open: those buttons are every port's. */
+static void test_entries_sharer_enable(void)
+{
+   unsigned shared;
+   input_bits_t bits;
+   input_driver_state_t *st = input_state_get_ptr();
+   const uint32_t l3r3      = T_BIT(RETRO_DEVICE_ID_JOYPAD_L3)
+      | T_BIT(RETRO_DEVICE_ID_JOYPAD_R3);
+
+   for (shared = 0; shared < 2; shared++)
+   {
+      int before = failures;
+      t_reset();
+      input_entries_clear();
+      t_kb.input_state   = t_kb_state;
+      st->current_driver = &t_kb;
+      settings.uints.input_hotkey_block_delay = 5;
+      input_autoconf_binds[1] = t_auto_en;
+      t_bind(RARCH_ENABLE_HOTKEY, RETRO_DEVICE_ID_JOYPAD_SELECT);
+      input_config_binds[0][RARCH_ENABLE_HOTKEY].attr =
+         RETRO_KEYBIND_ATTR(RETROK_TAB, NO_BTN, true);
+      input_config_binds_changed();
+      if (shared)
+         t_map(1, 0);
+      CHECK(input_entry_add(1, "key_f : toggle_fast_forward")
+            && input_entry_add(2, "l3+r3 : toggle_fast_forward"),
+            "the entries were not taken");
+
+      t_key = RETROK_f;
+      t_collect(&bits);
+      CHECK(!BIT256_GET(bits, RARCH_FAST_FORWARD_KEY),
+            "a key's entry fired with no Hotkey Enable held");
+      t_buttons[1] = T_BIT(T_OWN_EN);
+      t_collect(&bits);
+      CHECK(!BIT256_GET(bits, RARCH_FAST_FORWARD_KEY),
+            "a key's entry fired with only user 2's Hotkey Enable held");
+      t_buttons[1] = 0;
+      t_key_too    = RETROK_TAB;
+      t_collect(&bits);
+      CHECK(BIT256_GET(bits, RARCH_FAST_FORWARD_KEY),
+            "the keyboard's Hotkey Enable did not open a key's entry");
+      t_key_too    = 0;
+      t_buttons[0] = T_SELECT;
+      t_collect(&bits);
+      CHECK(BIT256_GET(bits, RARCH_FAST_FORWARD_KEY),
+            "user 1's Hotkey Enable did not open a key's entry");
+      t_buttons[0] = 0;
+      t_key        = 0;
+
+      t_buttons[1] = l3r3;
+      t_collect(&bits);
+      CHECK(!BIT256_GET(bits, RARCH_FAST_FORWARD_KEY),
+            "a pad entry fired with no Hotkey Enable held");
+      t_buttons[1] = l3r3 | T_BIT(T_OWN_EN);
+      t_collect(&bits);
+      CHECK(shared ? BIT256_GET(bits, RARCH_FAST_FORWARD_KEY) != 0
+            : !BIT256_GET(bits, RARCH_FAST_FORWARD_KEY), shared
+            ? "a sharer's own Hotkey Enable did not open a pad entry"
+            : "user 2's Hotkey Enable, not sharing, opened a pad entry");
+      t_buttons[1] = l3r3;
+      t_buttons[0] = T_SELECT;
+      t_collect(&bits);
+      CHECK(BIT256_GET(bits, RARCH_FAST_FORWARD_KEY),
+            "user 1's Hotkey Enable did not open a pad entry");
+      t_buttons[0] = 0;
+      t_buttons[1] = 0;
+
+      input_entries_clear();
+      CHECK(input_entry_add(1, "l3+key_f : toggle_fast_forward"),
+            "the mixed entry was not taken");
+      t_key        = RETROK_f;
+      t_buttons[1] = T_BIT(RETRO_DEVICE_ID_JOYPAD_L3);
+      t_collect(&bits);
+      CHECK(!BIT256_GET(bits, RARCH_FAST_FORWARD_KEY),
+            "a mixed entry fired with no Hotkey Enable held");
+      t_buttons[1] = T_BIT(RETRO_DEVICE_ID_JOYPAD_L3) | T_BIT(T_OWN_EN);
+      t_collect(&bits);
+      CHECK(!BIT256_GET(bits, RARCH_FAST_FORWARD_KEY),
+            "a mixed entry fired with only user 2's Hotkey Enable held");
+      t_buttons[1] = T_BIT(RETRO_DEVICE_ID_JOYPAD_L3);
+      t_key_too    = RETROK_TAB;
+      t_collect(&bits);
+      CHECK(BIT256_GET(bits, RARCH_FAST_FORWARD_KEY),
+            "the keyboard's Hotkey Enable did not open a mixed entry");
+      t_key_too    = 0;
+      t_buttons[0] = T_SELECT;
+      t_collect(&bits);
+      CHECK(BIT256_GET(bits, RARCH_FAST_FORWARD_KEY),
+            "user 1's Hotkey Enable did not open a mixed entry");
+      t_buttons[0] = 0;
+      t_buttons[1] = 0;
+
+      /* Enable on Select only: Device Merge makes it the keys' too */
+      input_entries_clear();
+      settings.bools.input_hotkey_device_merge = true;
+      input_config_binds[0][RARCH_ENABLE_HOTKEY].attr =
+         RETRO_KEYBIND_ATTR(RETROK_UNKNOWN, NO_BTN, true);
+      input_config_binds_changed();
+      CHECK(input_entry_add(1, "key_f : toggle_fast_forward"),
+            "the entry was not taken (Device Merge)");
+      t_collect(&bits);
+      CHECK(!BIT256_GET(bits, RARCH_FAST_FORWARD_KEY),
+            "a key's entry fired with no Hotkey Enable held (Device Merge)");
+      t_buttons[1] = T_BIT(T_OWN_EN);
+      t_collect(&bits);
+      CHECK(!BIT256_GET(bits, RARCH_FAST_FORWARD_KEY),
+            "a key's entry fired with only user 2's Hotkey Enable held"
+            " (Device Merge)");
+      t_buttons[1] = 0;
+      t_buttons[0] = T_SELECT;
+      t_collect(&bits);
+      CHECK(BIT256_GET(bits, RARCH_FAST_FORWARD_KEY),
+            "user 1's Hotkey Enable did not open a key's entry"
+            " (Device Merge)");
+      t_buttons[0] = 0;
+      t_key        = 0;
+      if (failures != before)
+         printf("  (%s)\n", shared ? "user 2 sharing" : "nobody sharing");
+   }
+   input_entries_clear();
+   settings.uints.input_hotkey_block_delay = 0;
+   st->current_driver = NULL;
 }
 
 #define T_XPAD_SELECT 6
@@ -3388,6 +3673,277 @@ static void test_hotkey_own_storage(void)
    config_file_free(conf);
 }
 
+/* A sharer's own Hotkey Enable: its hotkeys need it held, though user
+ * 1's pad has none; held, it holds game input back; it does not hold
+ * back user 1's pad's hotkeys, set or profile ones. */
+static void test_hotkey_enable_own(void)
+{
+   input_bits_t bits;
+   input_driver_state_t *st = input_state_get_ptr();
+
+   t_reset();
+   t_two_player_1();
+   input_driver_poll();
+   t_bind(RARCH_FAST_FORWARD_KEY, T_FF);
+   input_config_plays_as_set_hotkey(1, RARCH_ENABLE_HOTKEY, T_ENABLE,
+         AXIS_NONE);
+   input_config_plays_as_set_hotkey(1, RARCH_FAST_FORWARD_KEY, T_OWN_KEY,
+         AXIS_NONE);
+
+   t_buttons[1] = T_BIT(T_OWN_KEY);
+   t_collect(&bits);
+   CHECK(!BIT256_GET(bits, RARCH_FAST_FORWARD_KEY),
+         "a sharer's hotkey fired without its own Hotkey Enable");
+   t_buttons[1] = T_BIT(T_ENABLE) | T_BIT(T_OWN_KEY);
+   t_collect(&bits);
+   CHECK(BIT256_GET(bits, RARCH_FAST_FORWARD_KEY),
+         "a sharer's hotkey with its own Hotkey Enable held did not fire");
+   CHECK(st->flags & INP_FLAG_BLOCK_LIBRETRO_INPUT,
+         "a sharer's own Hotkey Enable does not hold game input back");
+
+   t_buttons[1] = 0;
+   t_buttons[0] = T_BIT(T_FF);
+   t_collect(&bits);
+   CHECK(BIT256_GET(bits, RARCH_FAST_FORWARD_KEY),
+         "user 1's pad, with no Hotkey Enable, lost its hotkey");
+   t_buttons[1] = T_BIT(T_ENABLE);
+   t_collect(&bits);
+   CHECK(BIT256_GET(bits, RARCH_FAST_FORWARD_KEY),
+         "the sharer's Hotkey Enable held back user 1's pad's hotkey");
+
+   /* user 1's pad's hotkey from its profile */
+   t_bind(RARCH_FAST_FORWARD_KEY, NO_BTN);
+   input_autoconf_binds[0] = t_auto_own;
+   t_buttons[0] = T_BIT(T_OWN_FF);
+   t_collect(&bits);
+   CHECK(BIT256_GET(bits, RARCH_FAST_FORWARD_KEY),
+         "the sharer's Hotkey Enable held back user 1's profile hotkey");
+   t_buttons[0] = 0;
+   t_buttons[1] = 0;
+}
+
+/* A sharer's own Hotkey Enable, with user 1's pad having none: let go
+ * after a long hold, its next press waits out the delay again. */
+static void test_hotkey_enable_own_delay(void)
+{
+   unsigned f;
+   input_bits_t bits;
+   input_driver_state_t *st = input_state_get_ptr();
+
+   t_reset();
+   settings.uints.input_hotkey_block_delay = 5;
+   t_two_player_1();
+   input_driver_poll();
+   input_config_plays_as_set_hotkey(1, RARCH_ENABLE_HOTKEY, T_ENABLE,
+         AXIS_NONE);
+
+   t_buttons[1] = T_BIT(T_ENABLE);
+   for (f = 0; f < 10; f++)
+      t_collect(&bits);
+   CHECK(st->flags & INP_FLAG_BLOCK_LIBRETRO_INPUT,
+         "a sharer's own Hotkey Enable held past the delay held nothing back");
+   t_buttons[1] = 0;
+   t_collect(&bits);
+   t_buttons[1] = T_BIT(T_ENABLE);
+   t_collect(&bits);
+   CHECK(!(st->flags & INP_FLAG_BLOCK_LIBRETRO_INPUT),
+         "a sharer's own Hotkey Enable, pressed again, skipped the delay");
+   t_buttons[1] = 0;
+   settings.uints.input_hotkey_block_delay = 0;
+}
+
+/* Game Focus, with a sharer's own Hotkey Enable held or not: user 1's
+ * pad, with none, keeps its hotkeys, one with a key as well and one
+ * from its profile. */
+static void test_hotkey_enable_own_game_focus(void)
+{
+   unsigned held;
+   input_bits_t bits;
+   input_driver_state_t *st = input_state_get_ptr();
+
+   t_reset();
+   t_two_player_1();
+   input_driver_poll();
+   input_config_plays_as_set_hotkey(1, RARCH_ENABLE_HOTKEY, T_ENABLE,
+         AXIS_NONE);
+   st->flags |= INP_FLAG_KB_MAPPING_BLOCKED;
+
+   for (held = 0; held < 2; held++)
+   {
+      t_buttons[1] = held ? T_BIT(T_ENABLE) : 0;
+
+      t_bind(RARCH_FAST_FORWARD_KEY, T_FF);
+      input_config_binds[0][RARCH_FAST_FORWARD_KEY].attr =
+         RETRO_KEYBIND_ATTR(RETROK_SPACE, NO_BTN, true);
+      input_config_binds_changed();
+      input_autoconf_binds[0] = t_auto;
+      t_buttons[0] = T_BIT(T_FF);
+      t_collect(&bits);
+      CHECK(BIT256_GET(bits, RARCH_FAST_FORWARD_KEY), held
+            ? "Game Focus: a sharer's held Hotkey Enable blocked user 1's keyed hotkey"
+            : "Game Focus: a sharer's Hotkey Enable blocked user 1's keyed hotkey");
+
+      t_bind(RARCH_FAST_FORWARD_KEY, NO_BTN);
+      input_autoconf_binds[0] = t_auto_own;
+      t_buttons[0] = T_BIT(T_OWN_FF);
+      t_collect(&bits);
+      CHECK(BIT256_GET(bits, RARCH_FAST_FORWARD_KEY), held
+            ? "Game Focus: a sharer's held Hotkey Enable blocked user 1's profile hotkey"
+            : "Game Focus: a sharer's Hotkey Enable blocked user 1's profile hotkey");
+   }
+   t_buttons[0] = 0;
+   t_buttons[1] = 0;
+   st->flags   &= ~INP_FLAG_KB_MAPPING_BLOCKED;
+}
+
+/* Hotkey Enable and the menu toggle on a sharer, let go together, open
+ * the menu when held past the delay and not when tapped within it:
+ * with its profile's Hotkey Enable, and with its own. */
+static void test_hotkey_enable_own_menu_tap(void)
+{
+   unsigned own, f, en;
+   input_bits_t bits;
+
+   for (own = 0; own < 2; own++)
+   {
+      t_reset();
+      settings.uints.input_hotkey_block_delay = 5;
+      t_two_player_1();
+      input_driver_poll();
+      if (own)
+         input_config_plays_as_set_hotkey(1, RARCH_ENABLE_HOTKEY,
+               T_ENABLE, AXIS_NONE);
+      else
+      {
+         input_autoconf_binds[1] = t_auto_en;
+         t_valid(RARCH_ENABLE_HOTKEY);
+      }
+      en = own ? T_ENABLE : T_OWN_EN;
+      /* a key only: a button would let it bypass Hotkey Enable */
+      input_config_binds[0][RARCH_MENU_TOGGLE].attr =
+         RETRO_KEYBIND_ATTR(RETROK_F1, NO_BTN, true);
+      input_config_binds_changed();
+      input_config_plays_as_set_hotkey(1, RARCH_MENU_TOGGLE, T_MENU,
+            AXIS_NONE);
+
+      t_buttons[1] = T_BIT(en) | T_BIT(T_MENU);
+      for (f = 0; f < 10; f++)
+         t_collect(&bits);
+      t_buttons[1] = 0;
+      t_collect(&bits);
+      CHECK(BIT256_GET(bits, RARCH_MENU_TOGGLE), own
+            ? "a sharer's own Hotkey Enable and menu toggle, held, did not open the menu"
+            : "a sharer's profile Hotkey Enable and menu toggle, held, did not open the menu");
+
+      t_buttons[1] = T_BIT(en) | T_BIT(T_MENU);
+      for (f = 0; f < 2; f++)
+         t_collect(&bits);
+      t_buttons[1] = 0;
+      t_collect(&bits);
+      CHECK(!BIT256_GET(bits, RARCH_MENU_TOGGLE), own
+            ? "a short tap of a sharer's own Hotkey Enable and menu toggle opened the menu"
+            : "a short tap of a sharer's profile Hotkey Enable and menu toggle opened the menu");
+   }
+   settings.uints.input_hotkey_block_delay = 0;
+}
+
+/* Hotkey Enable on the keyboard only. With Hotkey Device Merge a
+ * sharer with no Hotkey Enable of its own waits for the keyboard's, as
+ * user 1's pad does; without, both fire freely. A sharer with one of
+ * its own goes by it or the keyboard's. */
+static void test_hotkey_device_merge_shared(void)
+{
+   unsigned merge;
+   input_bits_t bits;
+   input_driver_state_t *st = input_state_get_ptr();
+
+   for (merge = 0; merge < 2; merge++)
+   {
+      t_reset();
+      t_kb.input_state   = t_kb_state;
+      st->current_driver = &t_kb;
+      settings.bools.input_hotkey_device_merge = (merge != 0);
+      t_two_player_1();
+      input_driver_poll();
+      input_config_binds[0][RARCH_ENABLE_HOTKEY].attr =
+         RETRO_KEYBIND_ATTR(RETROK_TAB, NO_BTN, true);
+      t_bind(RARCH_FAST_FORWARD_KEY, T_FF);
+      input_config_plays_as_set_hotkey(1, RARCH_FAST_FORWARD_KEY,
+            T_OWN_KEY, AXIS_NONE);
+
+      t_buttons[1] = T_BIT(T_OWN_KEY);
+      t_collect(&bits);
+      CHECK(merge ? !BIT256_GET(bits, RARCH_FAST_FORWARD_KEY)
+            : BIT256_GET(bits, RARCH_FAST_FORWARD_KEY) != 0, merge
+            ? "Device Merge: a sharer with no Hotkey Enable fired without the keyboard's"
+            : "a sharer with no Hotkey Enable waited for the keyboard's");
+      t_key = RETROK_TAB;
+      t_collect(&bits);
+      CHECK(BIT256_GET(bits, RARCH_FAST_FORWARD_KEY),
+            "the keyboard's Hotkey Enable did not open a sharer's hotkey");
+      t_key        = 0;
+      t_buttons[1] = 0;
+
+      t_buttons[0] = T_BIT(T_FF);
+      t_collect(&bits);
+      CHECK(merge ? !BIT256_GET(bits, RARCH_FAST_FORWARD_KEY)
+            : BIT256_GET(bits, RARCH_FAST_FORWARD_KEY) != 0, merge
+            ? "Device Merge: user 1's pad fired without the keyboard's Hotkey Enable"
+            : "user 1's pad waited for the keyboard's Hotkey Enable");
+      t_key = RETROK_TAB;
+      t_collect(&bits);
+      CHECK(BIT256_GET(bits, RARCH_FAST_FORWARD_KEY),
+            "the keyboard's Hotkey Enable did not open user 1's pad");
+      t_key        = 0;
+      t_buttons[0] = 0;
+
+      input_config_plays_as_set_hotkey(1, RARCH_ENABLE_HOTKEY, T_ENABLE,
+            AXIS_NONE);
+      t_buttons[1] = T_BIT(T_OWN_KEY);
+      t_collect(&bits);
+      CHECK(!BIT256_GET(bits, RARCH_FAST_FORWARD_KEY),
+            "a sharer's hotkey fired without its own Hotkey Enable");
+      t_buttons[1] = T_BIT(T_ENABLE) | T_BIT(T_OWN_KEY);
+      t_collect(&bits);
+      CHECK(BIT256_GET(bits, RARCH_FAST_FORWARD_KEY),
+            "a sharer's own Hotkey Enable did not open its hotkey");
+      t_buttons[1] = T_BIT(T_OWN_KEY);
+      t_key        = RETROK_TAB;
+      t_collect(&bits);
+      CHECK(BIT256_GET(bits, RARCH_FAST_FORWARD_KEY),
+            "the keyboard's Hotkey Enable did not open a sharer with its own");
+      t_key        = 0;
+      t_buttons[1] = 0;
+   }
+   st->current_driver = NULL;
+}
+
+/* A sharer's hotkey on its Hotkey Enable's button, held with its menu
+ * toggle, is held as the Enable: the menu still opens. */
+static void test_hotkey_enable_own_menu_same_button(void)
+{
+   unsigned f;
+   input_bits_t bits;
+
+   t_reset();
+   t_two_player_1();
+   input_driver_poll();
+   input_autoconf_binds[1] = t_auto_en;
+   t_valid(RARCH_ENABLE_HOTKEY);
+   t_valid(RARCH_MENU_TOGGLE);
+   t_valid(RARCH_FAST_FORWARD_KEY);
+   input_config_plays_as_set_hotkey(1, RARCH_FAST_FORWARD_KEY, T_OWN_EN,
+         AXIS_NONE);
+
+   t_buttons[1] = T_BIT(T_OWN_EN) | T_BIT(T_OWN_MENU);
+   for (f = 0; f < 3; f++)
+      t_collect(&bits);
+   t_buttons[1] = 0;
+   t_collect(&bits);
+   CHECK(BIT256_GET(bits, RARCH_MENU_TOGGLE),
+         "a sharer's hotkey on its Hotkey Enable's button cancelled its menu toggle");
+}
+
 int main(void)
 {
    test_identity();
@@ -3455,9 +4011,14 @@ int main(void)
    test_tap_enable_blocks();
    test_tap_keyboard_opens_sharer();
    test_tap_sharer_opens_own();
+   test_tap_sharer_free_keyboard();
    test_tap_turned_on();
    test_tap_off();
+   test_hotkey_keys_sharer();
+   test_menu_bypass_shared();
+   test_entries_sharer_enable();
    test_none_player1();
+   test_hotkey_sharer_no_enable();
    test_hotkeys_sharer_not_set();
    test_hotkey_game_focus_shared();
    test_hotkey_axis_shared();
@@ -3466,6 +4027,12 @@ int main(void)
    test_hotkey_own_lookup();
    test_place_again_own_hotkeys();
    test_hotkey_own_storage();
+   test_hotkey_enable_own();
+   test_hotkey_enable_own_delay();
+   test_hotkey_enable_own_game_focus();
+   test_hotkey_enable_own_menu_tap();
+   test_hotkey_device_merge_shared();
+   test_hotkey_enable_own_menu_same_button();
    if (failures)
    {
       printf("%d failure(s)\n", failures);
