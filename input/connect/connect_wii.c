@@ -150,6 +150,7 @@ typedef struct connect_wii_wiimote_t
 
    struct pad_connection* connection;
    hid_driver_t *driver;
+   bool ids_first;      /* the driver wants no HIDP header: see wiimote_send */
 
    /* Various state flags. */
    uint32_t state;
@@ -195,7 +196,10 @@ static int wiimote_send(struct connect_wii_wiimote_t* wm,
 
    memcpy(buf+2, msg, len);
 
-   wm->driver->send_control(wm->connection, buf, len + 2);
+   if (wm->ids_first)
+      wm->driver->send_control(wm->connection, buf + 1, len + 1);
+   else
+      wm->driver->send_control(wm->connection, buf, len + 2);
    return 1;
 }
 
@@ -645,6 +649,7 @@ static void* hidpad_wii_init(void *data, uint32_t slot,
    device->state      = WIIMOTE_STATE_CONNECTED;
    device->exp.type   = EXP_NONE;
    device->driver     = driver;
+   device->ids_first  = PAD_CONNECTION_IDS_FIRST(driver);
 
    wiimote_handshake(device, -1, NULL, -1);
 
@@ -700,10 +705,19 @@ static void hidpad_wii_packet_handler(void *data,
       uint8_t *packet, uint16_t size)
 {
    struct connect_wii_wiimote_t* device = (struct connect_wii_wiimote_t*)data;
-   uint8_t             *msg = packet + 1;
+   uint8_t             *msg;
 
-   if (!device)
+   if (!device || !packet)
       return;
+   /* a Bluetooth stack's DATA | INPUT header */
+   if (size && packet[0] == 0xa1)
+   {
+      packet++;
+      size--;
+   }
+   if (!size)
+      return;
+   msg = packet + 1;
 
    if (     device->leds_due
          && WIIMOTE_IS_SET(device, WIIMOTE_STATE_HANDSHAKE_COMPLETE))

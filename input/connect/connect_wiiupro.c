@@ -24,8 +24,10 @@
 #include "../input_defines.h"
 #include "../../driver.h"
 
-/* the report's length: its buttons end at 0x0E */
-#define WIIUPRO_REPORT_MIN 0x0F
+/* report 0x34, its ID first: the sticks from 3, the buttons from 0x0B
+ * to 0x0D */
+#define WIIUPRO_REPORT_ID  0x34
+#define WIIUPRO_REPORT_MIN 0x0E
 
 struct wiiupro
 {
@@ -39,6 +41,7 @@ struct hidpad_wiiupro_data
    struct wiiupro data;
    input_pad_view_t view;  /* the buttons, which the getters answer */
    uint32_t slot;
+   bool ids_first;      /* the driver wants no HIDP header */
    bool have_led;
    uint16_t motors[2];
    struct
@@ -50,10 +53,15 @@ struct hidpad_wiiupro_data
 
 static void hidpad_wiiupro_send_control(struct hidpad_wiiupro_data* device)
 {
-   /* 0x12 = Set data report; 0x34 = All buttons and analogs */
+   /* 0x12 = Set data report; 0x34 = All buttons and analogs; after the
+    * HIDP header where the driver takes one */
    static uint8_t report_buffer[4] = { 0xA2, 0x12, 0x00, 0x34 };
-   device->driver->send_control(device->connection,
-         report_buffer, sizeof(report_buffer));
+   if (device->ids_first)
+      device->driver->send_control(device->connection,
+            report_buffer + 1, sizeof(report_buffer) - 1);
+   else
+      device->driver->send_control(device->connection,
+            report_buffer, sizeof(report_buffer));
 }
 
 static void* hidpad_wiiupro_init(void *data,
@@ -75,6 +83,7 @@ static void* hidpad_wiiupro_init(void *data,
    device->connection        = connection;
    device->slot              = slot;
    device->driver            = driver;
+   device->ids_first         = PAD_CONNECTION_IDS_FIRST(driver);
 
    device->calib.calib_round = 0;
    /* Without this, the digital buttons won't be reported. */
@@ -120,7 +129,15 @@ static void hidpad_wiiupro_packet_handler(void *data,
 {
    struct hidpad_wiiupro_data *device = (struct hidpad_wiiupro_data*)data;
 
-   if (!device || !packet || size < WIIUPRO_REPORT_MIN)
+   if (!device || !packet)
+      return;
+   /* a Bluetooth stack's DATA | INPUT header */
+   if (size && packet[0] == 0xa1)
+   {
+      packet++;
+      size--;
+   }
+   if (size < WIIUPRO_REPORT_MIN || packet[0] != WIIUPRO_REPORT_ID)
       return;
 
 #if 0
@@ -134,9 +151,9 @@ static void hidpad_wiiupro_packet_handler(void *data,
    /* the buttons are low when held; read where they lie, the report
     * left as it was given */
    {
-      uint8_t c       = (uint8_t)~packet[0x0C];
-      uint8_t d       = (uint8_t)~packet[0x0D];
-      uint8_t e       = (uint8_t)~packet[0x0E];
+      uint8_t c       = (uint8_t)~packet[0x0B];
+      uint8_t d       = (uint8_t)~packet[0x0C];
+      uint8_t e       = (uint8_t)~packet[0x0D];
       uint32_t b      = 0;
       if (d & 0x40) b |= 1u << RETRO_DEVICE_ID_JOYPAD_B;
       if (d & 0x10) b |= 1u << RETRO_DEVICE_ID_JOYPAD_A;
@@ -159,22 +176,22 @@ static void hidpad_wiiupro_packet_handler(void *data,
 
    if (device->calib.calib_round < 5)
    {
-       device->calib.hatvalue_calib[0] = (packet[4] |  (packet[4 + 1] << 8));
-       device->calib.hatvalue_calib[1] = (packet[8] |  (packet[8 + 1] << 8));
-       device->calib.hatvalue_calib[2] = (packet[6] |  (packet[6 + 1] << 8));
-       device->calib.hatvalue_calib[3] = (packet[10] | (packet[10 + 1] << 8));
+       device->calib.hatvalue_calib[0] = (packet[3] |  (packet[3 + 1] << 8));
+       device->calib.hatvalue_calib[1] = (packet[7] |  (packet[7 + 1] << 8));
+       device->calib.hatvalue_calib[2] = (packet[5] |  (packet[5 + 1] << 8));
+       device->calib.hatvalue_calib[3] = (packet[9] |  (packet[9 + 1] << 8));
 
        device->calib.calib_round++;
    }
    else
    {
-       device->data.hatvalue[0] = (packet[4] |  (packet[4 + 1] << 8))
+       device->data.hatvalue[0] = (packet[3] |  (packet[3 + 1] << 8))
           - device->calib.hatvalue_calib[0];
-       device->data.hatvalue[1] = (packet[8] |  (packet[8 + 1] << 8))
+       device->data.hatvalue[1] = (packet[7] |  (packet[7 + 1] << 8))
           - device->calib.hatvalue_calib[1];
-       device->data.hatvalue[2] = (packet[6] |  (packet[6 + 1] << 8))
+       device->data.hatvalue[2] = (packet[5] |  (packet[5 + 1] << 8))
           - device->calib.hatvalue_calib[2];
-       device->data.hatvalue[3] = (packet[10] | (packet[10 + 1] << 8))
+       device->data.hatvalue[3] = (packet[9] |  (packet[9 + 1] << 8))
           - device->calib.hatvalue_calib[3];
    }
 }

@@ -182,6 +182,28 @@ int main(void)
 
    check(worst_ms < 5.0, "no packet blocks the thread that delivers it");
 
+   printf("a driver that takes reports with their ID first\n");
+   fake_driver.ident = "hidraw";
+   wm   = new_remote(4);
+   base = nsent;
+   feed(wm, status, sizeof(status));
+   check(nsent == base + 1 && sent[base][0] == WM_CMD_WRITE_DATA,
+         "the write goes as its report, with no HIDP header");
+   pad_connection_wii.deinit(wm);
+   fake_driver.ident = NULL;
+
+   printf("a report behind a Bluetooth stack's header\n");
+   {
+      uint8_t hdr[9] = { 0xa1, WM_RPT_CTRL_STATUS, 0, 0,
+         WM_CTRL_STATUS_BYTE1_ATTACHMENT, 0, 0, 0, 0 };
+      wm   = new_remote(5);
+      base = nsent;
+      feed(wm, hdr, sizeof(hdr));
+      check(nsent == base + 1 && sent[base][1] == WM_CMD_WRITE_DATA,
+            "is read as the report after it");
+      pad_connection_wii.deinit(wm);
+   }
+
    printf("the view\n");
    {
       struct connect_wii_wiimote_t *rm;

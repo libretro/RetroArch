@@ -299,9 +299,26 @@ int main(void)
       printf("FAIL: the readers never reached a pad\n");
       failures++;
    }
+   /* the table: Wii remotes on 057e:0330 by the name they give */
+   {
+      static const struct { const char *name; pad_connection_interface_t *iface; } t[3] = {
+         { "Nintendo RVL-CNT-01",    &pad_connection_wii },
+         { "Nintendo RVL-CNT-01-TR", &pad_connection_wii },
+         { "Nintendo RVL-CNT-01-UC", &pad_connection_wiiupro } };
+      for (i = 0; i < 3; i++)
+      {
+         joypad_connection_entry_t *e = find_connection_entry(
+               SWAP_IF_BIG(0x057e), SWAP_IF_BIG(0x0330), t[i].name);
+         if (!e || e->iface != t[i].iface)
+         {
+            printf("FAIL: \"%s\" on 057e:0330 not given its handler\n", t[i].name);
+            failures++;
+         }
+      }
+   }
    if (failures)
       return 1;
-   printf("[pass] joypad_slots_test: %u plug cycles each way, %d calls into live pads\n",
+   printf("[pass] joypad_slots_test: %u plug cycles each way, %d calls into live pads; Wii remotes on 057e:0330 by name\n",
          CYCLES, retro_atomic_load_acquire_int(&calls));
    return 0;
 }

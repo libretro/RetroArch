@@ -86,6 +86,12 @@ static joypad_connection_entry_t pad_map[] = {
       PID_NINTENDO_PRO,
       &pad_connection_wiiupro
    },
+   /* the Wii Remote Plus, and the clones that give its name */
+   { "Nintendo RVL-CNT-01-TR",
+      VID_NINTENDO,
+      PID_NINTENDO_PRO,
+      &pad_connection_wii
+   },
    { "Wireless Controller",
       VID_SONY,
       PID_SONY_DS4,

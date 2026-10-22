@@ -1743,8 +1743,15 @@ static void test_wiiupro(void)
       input_bits_t bits;
       for (k = 0; k < sizeof(p); k++)
          p[k] = (uint8_t)rand();
+      /* report 0x34, as a Bluetooth stack gives it with its header,
+       * or with its ID first as the other drivers do */
+      p[0] = 0xa1;
+      p[1] = 0x34;
       memcpy(before, p, sizeof(p));
-      deliver(ifc, dev, p, 22);
+      if (i & 1)
+         deliver(ifc, dev, p, 22);
+      else
+         deliver(ifc, dev, p + 1, 21);
       if (memcmp(before, p, sizeof(p)))
          touched++;
       ifc->get_buttons(dev, &bits);
@@ -1758,13 +1765,34 @@ static void test_wiiupro(void)
    }
    CHECK(!bad, "wiiupro: %u reads disagree with the old handler", bad);
    CHECK(!touched, "wiiupro: the report was changed in %u of the handler's reads", touched);
-   /* a report too short to hold the buttons is not read */
+   /* a report too short to hold the buttons is not read, nor another
+    * report */
    memset(p, 0, sizeof(p));
+   p[0] = 0xa1;
+   p[1] = 0x34;
    deliver(ifc, dev, p, WIIUPRO_SHORT);
    CHECK(ifc->button(dev, RETRO_DEVICE_ID_JOYPAD_UP) == ref_wiiupro_button(before, RETRO_DEVICE_ID_JOYPAD_UP),
          "wiiupro: a short report was read");
+   p[1] = 0x30;
+   deliver(ifc, dev, p, 22);
+   CHECK(ifc->button(dev, RETRO_DEVICE_ID_JOYPAD_UP) == ref_wiiupro_button(before, RETRO_DEVICE_ID_JOYPAD_UP),
+         "wiiupro: a report other than 0x34 was read");
    ifc->deinit(dev);
-   printf("[%s] wiiupro: every button and the set as the old handler, on 20000 reports, the report left as it came; a short one not read\n",
+
+   /* its mode asked for with the HIDP header for a Bluetooth stack, and
+    * as report 0x12 alone for a driver that takes the ID first */
+   sent_len = 0;
+   dev = ifc->init(&dummy_connection, 0, &stub_hid);
+   CHECK(sent_len == 4 && sent[0] == 0xa2 && sent[1] == 0x12 && sent[3] == 0x34,
+         "wiiupro: mode not asked for after the header");
+   ifc->deinit(dev);
+   stub_hid.ident = "hidraw";
+   dev = ifc->init(&dummy_connection, 0, &stub_hid);
+   CHECK(sent_len == 3 && sent[0] == 0x12 && sent[2] == 0x34,
+         "wiiupro: mode not asked for as report 0x12 alone");
+   ifc->deinit(dev);
+   stub_hid.ident = NULL;
+   printf("[%s] wiiupro: every button and the set as the old handler, on 20000 reports with and without a stack's header, the report left as it came; a short one or another report not read; its mode asked for as the driver frames reports\n",
          failures == had ? "pass" : "fail");
 }
 

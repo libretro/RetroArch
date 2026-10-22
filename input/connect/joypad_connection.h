@@ -19,6 +19,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <string.h>
 
 #include <libretro.h>
 #include <retro_miscellaneous.h>
@@ -102,6 +103,17 @@ struct joypad_connection
 #define SLOT_AUTO -1
 
 struct input_pad_view;
+
+/* Whether @driver sends a handler's report as given, its ID first.
+ * btstack writes a Bluetooth HIDP header byte (0xA2, 0x52) before the
+ * report onto its channel, and iohidmanager takes the first byte off,
+ * so handlers written for them put that byte first; the rest want the
+ * report alone. */
+#define PAD_CONNECTION_IDS_FIRST(driver) ((driver) && (driver)->ident \
+      && (  !strcmp((driver)->ident, "hidraw") \
+         || !strcmp((driver)->ident, "winusb") \
+         || !strcmp((driver)->ident, "libusb") \
+         || !strcmp((driver)->ident, "wiiu")))
 
 typedef struct pad_connection_interface
 {
