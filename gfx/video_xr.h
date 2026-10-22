@@ -346,6 +346,58 @@ unsigned video_xr_snap_hinge(const video_xr_quad_set_t *set, unsigned slot,
 float video_xr_hinge_angle(const video_xr_hinge_t *h,
       const video_xr_quat_t *q);
 
+/* video_xr_grab_pose with targets and no settings, also giving the
+ * hinge it holds (VIDEO_XR_SNAP_HINGE in the snaps returned, never
+ * with a clamp holding it back, nor unless the item's own edge is
+ * within VIDEO_XR_SNAP_DIST metres and VIDEO_XR_SNAP_ANGLE degrees of
+ * the hinge's line). */
+unsigned video_xr_grab_hinge(const video_xr_grab_t *g,
+      const video_xr_pose_t *aim, const video_xr_quad_set_t *targets,
+      unsigned skip, const video_xr_pose_t *start, video_xr_pose_t *pose,
+      video_xr_hinge_t *hinge);
+
+/* g holds its item at pose for aim, its place and its turn. */
+void video_xr_grab_put(video_xr_grab_t *g, const video_xr_pose_t *aim,
+      const video_xr_pose_t *pose);
+
+/* g holds its item on h's line as video_xr_grab_put_line, at its own
+ * angles, or turned (an engaged turn to flat or square) at those of
+ * pose, the shown pose h came with, about its edge h->edge's middle:
+ * only what the snap holds whole, so it still shows as pose. */
+void video_xr_grab_put_hinge(video_xr_grab_t *g, const video_xr_pose_t *aim,
+      const video_xr_hinge_t *h, const video_xr_pose_t *pose, bool turned);
+
+/* g holds its item where it is with no snap, moved straight across h's
+ * line until the middle of its edge h->edge is on it: its turn kept. */
+void video_xr_grab_put_line(video_xr_grab_t *g, const video_xr_pose_t *aim,
+      const video_xr_hinge_t *h);
+
+/* g's item, where it is with no snap, turned deg degrees about h's line
+ * (about h->dir, its angle from flat growing by deg). */
+void video_xr_grab_swing(video_xr_grab_t *g, const video_xr_pose_t *aim,
+      const video_xr_hinge_t *h, double deg);
+
+/* video_xr_grab_turn, but with h (unless NULL) its axis h->axis swings
+ * the item about h's line instead, as far, keeping it on the line. */
+unsigned video_xr_grab_turn_hinge(video_xr_grab_t *g,
+      const video_xr_pose_t *aim, const video_xr_hinge_t *h, float x,
+      float y, double dt);
+
+/* video_xr_grab_step for an item hinged by h: h->axis holds at a step
+ * of the angle from flat, every size degrees; the other axis holds at
+ * none, the hinge's snap winning; a turn to flat or square that would
+ * engage wins over both. */
+unsigned video_xr_grab_step_hinge(video_xr_grab_t *g,
+      const video_xr_pose_t *aim, const video_xr_hinge_t *h, float size,
+      unsigned axes, float *rest, const video_xr_quad_set_t *targets,
+      unsigned skip, const video_xr_pose_t *start);
+
+/* h->axis if g's item, rest as video_xr_grab_step_hinge keeps it, is
+ * outside every step's hold of its angle from flat; else 0. */
+unsigned video_xr_grab_off_hinge(const video_xr_grab_t *g,
+      const video_xr_pose_t *aim, const video_xr_hinge_t *h, float size,
+      const float *rest);
+
 /* Snapping fades in from a grab: 0 at start, the item's pose as it was
  * grabbed, rising evenly to 1 once pose is VIDEO_XR_SNAP_FADE_DIST
  * metres or VIDEO_XR_SNAP_FADE_ANGLE degrees from it, whichever comes

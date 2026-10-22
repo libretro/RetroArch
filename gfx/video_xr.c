@@ -2057,10 +2057,11 @@ void video_xr_grab_hold(video_xr_grab_t *g, const video_xr_pose_t *aim,
    g->turn = turn.orientation;
 }
 
-bool video_xr_grab_pose(const video_xr_grab_t *g, const video_xr_pose_t *aim,
-      const video_xr_quad_set_t *targets, unsigned skip,
-      const video_xr_pose_t *start, video_xr_pose_t *pose,
-      video_screen_xr_t *out, unsigned *snapped)
+/* video_xr_grab_pose, and the hinge the snap holds unless NULL. */
+static bool video_xr_grab_snapped(const video_xr_grab_t *g,
+      const video_xr_pose_t *aim, const video_xr_quad_set_t *targets,
+      unsigned skip, const video_xr_pose_t *start, video_xr_pose_t *pose,
+      video_screen_xr_t *out, unsigned *snapped, video_xr_hinge_t *hinge)
 {
    video_screen_xr_t s, c;
    bool clamped;
@@ -2076,8 +2077,8 @@ bool video_xr_grab_pose(const video_xr_grab_t *g, const video_xr_pose_t *aim,
       pose->orientation = turn.orientation;
    }
    if (targets)
-      snaps = video_xr_snap(targets, g->slot, skip, g->width, g->height,
-            video_xr_snap_fade(start, pose), pose);
+      snaps = video_xr_snap_hinge(targets, g->slot, skip, g->width,
+            g->height, video_xr_snap_fade(start, pose), pose, hinge);
    if (snapped)
       *snapped = snaps;
    video_views_xr_reset(&s, 1);
@@ -2101,6 +2102,15 @@ bool video_xr_grab_pose(const video_xr_grab_t *g, const video_xr_pose_t *aim,
       out->roll  = c.roll;
    }
    return clamped;
+}
+
+bool video_xr_grab_pose(const video_xr_grab_t *g, const video_xr_pose_t *aim,
+      const video_xr_quad_set_t *targets, unsigned skip,
+      const video_xr_pose_t *start, video_xr_pose_t *pose,
+      video_screen_xr_t *out, unsigned *snapped)
+{
+   return video_xr_grab_snapped(g, aim, targets, skip, start, pose, out,
+         snapped, NULL);
 }
 
 /* A stick axis past the deadzone, as a fraction of the travel left. */
@@ -2348,6 +2358,246 @@ unsigned video_xr_grab_off_step(const video_xr_grab_t *g,
          && !video_xr_step_near(deg + rest[0], size, &step))
       off |= VIDEO_XR_STEP_TURN;
    return off;
+}
+
+/* g's item where it is with no snap, in pose, and in m the middle of
+ * its edge h->edge from h's line, straight across it. Returns the
+ * edge's way, as video_xr_snap_edge. */
+static unsigned video_xr_hinge_across(const video_xr_grab_t *g,
+      const video_xr_pose_t *aim, const video_xr_hinge_t *h,
+      video_xr_pose_t *pose, double *m)
+{
+   double half;
+   double d[3];
+   video_xr_vec3_t mid, out, v;
+   unsigned run = video_xr_snap_edge(h->edge, g->width * 0.5,
+         g->height * 0.5, &mid, &out, &half);
+   video_xr_grab_pose(g, aim, NULL, 0, NULL, pose, NULL, NULL);
+   video_xr_rotate(&pose->orientation, &mid, &v);
+   m[0] = (double)pose->position.x + v.x - h->point.x;
+   m[1] = (double)pose->position.y + v.y - h->point.y;
+   m[2] = (double)pose->position.z + v.z - h->point.z;
+   d[0] = h->dir.x;
+   d[1] = h->dir.y;
+   d[2] = h->dir.z;
+   video_xr_snap_across(m, d);
+   return run;
+}
+
+/* Whether g's item, where it is with no snap, has its edge h->edge
+ * within VIDEO_XR_SNAP_DIST metres of h's line and VIDEO_XR_SNAP_ANGLE
+ * degrees of its way. */
+static bool video_xr_hinge_whole(const video_xr_grab_t *g,
+      const video_xr_pose_t *aim, const video_xr_hinge_t *h)
+{
+   double m[3], d[3], e[3];
+   video_xr_pose_t pose;
+   video_xr_vec3_t mid, v;
+   unsigned run = video_xr_hinge_across(g, aim, h, &pose, m);
+   d[0]  = h->dir.x;
+   d[1]  = h->dir.y;
+   d[2]  = h->dir.z;
+   mid.x = run ? 0.0f : 1.0f;
+   mid.y = run ? 1.0f : 0.0f;
+   mid.z = 0.0f;
+   video_xr_rotate(&pose.orientation, &mid, &v);
+   e[0]  = v.x;
+   e[1]  = v.y;
+   e[2]  = v.z;
+   return video_xr_snap_dot(m, m)
+         <= (double)VIDEO_XR_SNAP_DIST * VIDEO_XR_SNAP_DIST
+      && fabs(video_xr_snap_dot(e, d))
+         >= cos(VIDEO_XR_SNAP_ANGLE * VIDEO_XR_PI / 180.0);
+}
+
+unsigned video_xr_grab_hinge(const video_xr_grab_t *g,
+      const video_xr_pose_t *aim, const video_xr_quad_set_t *targets,
+      unsigned skip, const video_xr_pose_t *start, video_xr_pose_t *pose,
+      video_xr_hinge_t *hinge)
+{
+   unsigned snaps = 0;
+   video_xr_hinge_t own;
+   if (!hinge)
+      hinge = &own;
+   /* Not a hinge only other pulls put it on: a swing about a line its
+    * own edge is far from would carry it round. */
+   if (     video_xr_grab_snapped(g, aim, targets, skip, start, pose, NULL,
+               &snaps, hinge)
+         || (     (snaps & VIDEO_XR_SNAP_HINGE)
+               && !video_xr_hinge_whole(g, aim, hinge)))
+      snaps &= ~VIDEO_XR_SNAP_HINGE;
+   return snaps;
+}
+
+void video_xr_grab_put(video_xr_grab_t *g, const video_xr_pose_t *aim,
+      const video_xr_pose_t *pose)
+{
+   video_xr_pose_t inv, rel;
+   video_xr_pose_invert(aim, &inv);
+   video_xr_compose(&inv, pose, &rel);
+   g->rel.position = rel.position;
+   if (g->tilt)
+      g->rel.orientation = rel.orientation;
+   else
+      video_xr_grab_hold(g, aim, &pose->orientation);
+}
+
+void video_xr_grab_swing(video_xr_grab_t *g, const video_xr_pose_t *aim,
+      const video_xr_hinge_t *h, double deg)
+{
+   double s;
+   video_xr_pose_t pose, by, at;
+   if (deg == 0.0)
+      return;
+   video_xr_grab_pose(g, aim, NULL, 0, NULL, &pose, NULL, NULL);
+   s = sin(deg * VIDEO_XR_PI / 360.0);
+   video_xr_pose_identity(&by);
+   by.orientation.x = (float)(h->dir.x * s);
+   by.orientation.y = (float)(h->dir.y * s);
+   by.orientation.z = (float)(h->dir.z * s);
+   by.orientation.w = (float)cos(deg * VIDEO_XR_PI / 360.0);
+   /* About the line through h->point: there, turned, and back. */
+   video_xr_pose_identity(&at);
+   at.position.x = -h->point.x;
+   at.position.y = -h->point.y;
+   at.position.z = -h->point.z;
+   video_xr_compose(&at, &pose, &pose);
+   video_xr_compose(&by, &pose, &pose);
+   pose.position.x += h->point.x;
+   pose.position.y += h->point.y;
+   pose.position.z += h->point.z;
+   video_xr_grab_put(g, aim, &pose);
+}
+
+void video_xr_grab_put_hinge(video_xr_grab_t *g, const video_xr_pose_t *aim,
+      const video_xr_hinge_t *h, const video_xr_pose_t *pose, bool turned)
+{
+   if (turned)
+   {
+      double half;
+      video_xr_pose_t under, at;
+      video_xr_vec3_t mid, out, e, f;
+      video_xr_snap_edge(h->edge, g->width * 0.5, g->height * 0.5, &mid,
+            &out, &half);
+      video_xr_grab_pose(g, aim, NULL, 0, NULL, &under, NULL, NULL);
+      video_xr_rotate(&under.orientation, &mid, &e);
+      video_xr_rotate(&pose->orientation, &mid, &f);
+      at             = under;
+      at.orientation = pose->orientation;
+      at.position.x += e.x - f.x;
+      at.position.y += e.y - f.y;
+      at.position.z += e.z - f.z;
+      video_xr_grab_put(g, aim, &at);
+   }
+   video_xr_grab_put_line(g, aim, h);
+}
+
+void video_xr_grab_put_line(video_xr_grab_t *g, const video_xr_pose_t *aim,
+      const video_xr_hinge_t *h)
+{
+   double m[3];
+   video_xr_pose_t pose;
+   video_xr_hinge_across(g, aim, h, &pose, m);
+   pose.position.x -= (float)m[0];
+   pose.position.y -= (float)m[1];
+   pose.position.z -= (float)m[2];
+   video_xr_grab_put(g, aim, &pose);
+}
+
+unsigned video_xr_grab_turn_hinge(video_xr_grab_t *g,
+      const video_xr_pose_t *aim, const video_xr_hinge_t *h, float x,
+      float y, double dt)
+{
+   double deg, s;
+   unsigned acted;
+   video_xr_vec3_t v, w;
+   double lock = tan(VIDEO_XR_EDIT_TURN_LOCK * VIDEO_XR_PI / 180.0);
+   if (!h)
+      return video_xr_grab_turn(g, aim, x, y, dt);
+   if (fabs(y) < fabs(x) * lock)
+      y = 0.0f;
+   else if (fabs(x) < fabs(y) * lock)
+      x = 0.0f;
+   /* The turn's own way, about the vertical, or the tilt's, about the
+    * item's own X with up tipping its top back: along the line. */
+   if (h->axis == VIDEO_XR_STEP_TILT)
+   {
+      video_xr_pose_t pose;
+      video_xr_grab_pose(g, aim, NULL, 0, NULL, &pose, NULL, NULL);
+      v.x = 1.0f;
+      v.y = 0.0f;
+      v.z = 0.0f;
+      video_xr_rotate(&pose.orientation, &v, &w);
+      deg = -video_xr_deflection(y);
+      y   = 0.0f;
+   }
+   else
+   {
+      w.x = 0.0f;
+      w.y = 1.0f;
+      w.z = 0.0f;
+      deg = video_xr_deflection(x);
+      x   = 0.0f;
+   }
+   s      = (double)w.x * h->dir.x + (double)w.y * h->dir.y
+      + (double)w.z * h->dir.z;
+   deg   *= VIDEO_XR_EDIT_TURN_RATE * dt * ((s < 0.0) ? -1.0 : 1.0);
+   acted  = video_xr_grab_turn(g, aim, x, y, dt);
+   video_xr_grab_swing(g, aim, h, deg);
+   return acted | ((deg != 0.0) ? h->axis : 0u);
+}
+
+/* Which of rest the hinge's axis keeps. */
+static unsigned video_xr_hinge_rest(const video_xr_hinge_t *h)
+{
+   return (h->axis == VIDEO_XR_STEP_TURN) ? 0 : 1;
+}
+
+unsigned video_xr_grab_step_hinge(video_xr_grab_t *g,
+      const video_xr_pose_t *aim, const video_xr_hinge_t *h, float size,
+      unsigned axes, float *rest, const video_xr_quad_set_t *targets,
+      unsigned skip, const video_xr_pose_t *start)
+{
+   double deg, step;
+   video_xr_pose_t pose;
+   unsigned k     = video_xr_hinge_rest(h);
+   unsigned other = h->axis ^ (VIDEO_XR_STEP_TURN | VIDEO_XR_STEP_TILT);
+   /* Where the stick alone has taken it. */
+   if (axes & other)
+   {
+      video_xr_grab_rotate(g, aim,
+            (other & VIDEO_XR_STEP_TURN) ? rest[0] * VIDEO_XR_PI / 360.0
+            : 0.0,
+            (other & VIDEO_XR_STEP_TILT) ? rest[1] * VIDEO_XR_PI / 360.0
+            : 0.0);
+      rest[k ^ 1] = 0.0f;
+   }
+   if (!(axes & h->axis))
+      return 0;
+   video_xr_grab_swing(g, aim, h, rest[k]);
+   rest[k] = 0.0f;
+   if (     targets
+         && (video_xr_grab_hinge(g, aim, targets, skip, start, &pose, NULL)
+            & VIDEO_XR_SNAP_TURN))
+      return 0;
+   video_xr_grab_pose(g, aim, NULL, 0, NULL, &pose, NULL, NULL);
+   deg = video_xr_hinge_angle(h, &pose.orientation);
+   if (!video_xr_step_near(deg, size, &step))
+      return 0;
+   video_xr_grab_swing(g, aim, h, step - deg);
+   rest[k] = (float)(deg - step);
+   return h->axis;
+}
+
+unsigned video_xr_grab_off_hinge(const video_xr_grab_t *g,
+      const video_xr_pose_t *aim, const video_xr_hinge_t *h, float size,
+      const float *rest)
+{
+   double step;
+   video_xr_pose_t pose;
+   video_xr_grab_pose(g, aim, NULL, 0, NULL, &pose, NULL, NULL);
+   return video_xr_step_near(video_xr_hinge_angle(h, &pose.orientation)
+         + rest[video_xr_hinge_rest(h)], size, &step) ? 0u : h->axis;
 }
 
 /* A grey premultiplied texel of the laser's image. */

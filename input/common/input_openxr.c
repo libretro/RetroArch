@@ -561,8 +561,8 @@ static input_openxr_t input_openxr_st;
  * scale of what it holds now and at the grab with its size then, the
  * snaps whose buzz may still fire, the free hand's turn and tilt past
  * the steps they hold at (video_xr_grab_step) and the steps whose buzz
- * may still fire, and last poll's free stick past its deadzone, grip
- * and reset, for their changes. */
+ * may still fire, and last poll's free stick past its deadzone, hinge,
+ * grip and reset, for their changes. */
 typedef struct input_openxr_hold
 {
    video_xr_grab_t g;
@@ -575,6 +575,7 @@ typedef struct input_openxr_hold
    unsigned armed;
    unsigned steps;
    bool pushed;
+   bool hinged;
    bool grip;
    bool reset;
 } input_openxr_hold_t;
@@ -2418,6 +2419,7 @@ static void input_openxr_edit_grab(input_openxr_t *st,
    hold->rest[1]  = 0.0f;
    hold->steps    = 0;
    hold->pushed   = false;
+   hold->hinged   = false;
    if (q->slot != VIDEO_XR_MENU_SLOT)
       config_get_video_screen_xr(q->slot, &now);
    else if (!config_get_video_menu_xr(&now))
@@ -2440,6 +2442,7 @@ static void input_openxr_edit_grab(input_openxr_t *st,
 
 /* A held item to where the hand puts it now, turned and tilted by the
  * free hand's stick in steps, the turn's from facing head (NULL: none),
+ * or swung about a hinge's edge in steps from flat,
  * snapped to targets' screens unless NULL, keeping an engaged snap's
  * turn as that stick lets go or starts a push,
  * fading in from where it was taken, its settings with it. The trigger
@@ -2456,6 +2459,8 @@ static unsigned input_openxr_edit_move(input_openxr_edit_t *e,
    unsigned snapped, axes, held;
    video_xr_pose_t inv, pose;
    video_screen_xr_t values;
+   video_xr_hinge_t hinge;
+   bool hinged = false;
    float x = (float)free_stick[0] / 32767.0f;
    float y = -(float)free_stick[1] / 32767.0f;
    bool pushed = x * x + y * y
@@ -2478,33 +2483,69 @@ static unsigned input_openxr_edit_move(input_openxr_edit_t *e,
       hold->rest[0] = 0.0f;
       hold->rest[1] = 0.0f;
    }
-   /* So does an engaged screen snap's turn, and as a push starts, so
-    * the turn goes on from it; never by carrying alone, which can pull
+   /* A hinge the snap holds now: the stick swings about its edge. An
+    * engaged turn's angle sticks as that stick lets go or starts a
+    * push, and a hinge's place on its line with it, so the turn or
+    * swing goes on from there; never by carrying alone, which can pull
     * it out, nor a fading pull, which would hop it into the snap. */
-   if (targets && pushed != hold->pushed)
+   if (targets)
    {
-      video_xr_grab_pose(&hold->g, aim, targets,
-            input_openxr_edit_holding(e), &hold->start, &pose, NULL,
-            &snapped);
-      if (snapped & VIDEO_XR_SNAP_TURN)
+      snapped = video_xr_grab_hinge(&hold->g, aim, targets,
+            input_openxr_edit_holding(e), &hold->start, &pose, &hinge);
+      hinged  = (snapped & VIDEO_XR_SNAP_HINGE) != 0;
+      if (pushed != hold->pushed)
       {
-         if (hold->g.tilt)
+         if (hinged)
+            video_xr_grab_put_hinge(&hold->g, aim, &hinge, &pose,
+                  (snapped & VIDEO_XR_SNAP_TURN) != 0);
+         else if (snapped & VIDEO_XR_SNAP_TURN)
          {
-            video_xr_compose(&inv, &pose, &pose);
-            hold->g.rel.orientation = pose.orientation;
+            if (hold->g.tilt)
+            {
+               video_xr_compose(&inv, &pose, &pose);
+               hold->g.rel.orientation = pose.orientation;
+            }
+            else
+               video_xr_grab_hold(&hold->g, aim, &pose.orientation);
          }
-         else
-            video_xr_grab_hold(&hold->g, aim, &pose.orientation);
       }
+      /* Mid-push, a hinge taking hold puts its edge on the line, its
+       * angles the hand's: the turn about the middle when it drops
+       * would carry it off. */
+      else if (pushed && hinged && !hold->hinged)
+         video_xr_grab_put_line(&hold->g, aim, &hinge);
    }
    hold->pushed = pushed;
+   /* Hinged, the steps count from flat: across a change, the stick's
+    * carry over a step counts no more. */
+   if (hinged != hold->hinged)
+   {
+      hold->rest[0] = 0.0f;
+      hold->rest[1] = 0.0f;
+      hold->hinged  = hinged;
+   }
    /* As the snaps' buzz, armed by where the item is, however it got
     * there. */
-   hold->steps   |= video_xr_grab_off_step(&hold->g, aim, head, e->step,
-         hold->rest);
-   axes           = video_xr_grab_turn(&hold->g, aim, x, y, dt);
-   held           = video_xr_grab_step(&hold->g, aim, head, e->step, axes,
-         hold->rest, targets, input_openxr_edit_holding(e), &hold->start);
+   if (hinged)
+   {
+      hold->steps |= (video_xr_grab_off_step(&hold->g, aim, head, e->step,
+               hold->rest) & ~hinge.axis)
+         | video_xr_grab_off_hinge(&hold->g, aim, &hinge, e->step,
+               hold->rest);
+      axes = video_xr_grab_turn_hinge(&hold->g, aim, &hinge, x, y, dt);
+      held = video_xr_grab_step_hinge(&hold->g, aim, &hinge, e->step,
+            axes, hold->rest, targets, input_openxr_edit_holding(e),
+            &hold->start);
+   }
+   else
+   {
+      hold->steps |= video_xr_grab_off_step(&hold->g, aim, head, e->step,
+            hold->rest);
+      axes = video_xr_grab_turn(&hold->g, aim, x, y, dt);
+      held = video_xr_grab_step(&hold->g, aim, head, e->step, axes,
+            hold->rest, targets, input_openxr_edit_holding(e),
+            &hold->start);
+   }
    *stepped       = (held & hold->steps) != 0;
    hold->steps   &= ~held;
    video_views_xr_reset(&values, 1);

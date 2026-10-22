@@ -63,7 +63,7 @@ S_UINT_EX(video_openxr_edit_snap_angles, VIDEO_OPENXR_EDIT_SNAP_ANGLES,
       "video_openxr_edit_snap_angles",
       1, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, 4, 1, 0, setting_action_ok_uint, setting_get_string_representation_video_openxr_edit_snap_angles, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,
       "Snap to Angles",
-      "Stops a screen the other hand's stick turns or tilts at every step of this angle, with a buzz: turns count from facing you, tilts from upright. Snap to Screens wins near another screen. Off: the stick turns and tilts smoothly.")
+      "Stops a screen the other hand's stick turns or tilts at every step of this angle, with a buzz: turns count from facing you, tilts from upright, and a hinged screen from flat with its neighbour. Snap to Screens wins near another screen. Off: the stick turns and tilts smoothly.")
 S_UINT_EX(video_openxr_edit_smoothing, VIDEO_OPENXR_EDIT_SMOOTHING,
       "video_openxr_edit_smoothing",
       2, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, 3, 1, 0, setting_action_ok_uint, setting_get_string_representation_video_openxr_edit_smoothing, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,

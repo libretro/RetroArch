@@ -4069,6 +4069,279 @@ static void test_hinge_roll_band(void)
    }
 }
 
+/* The 3DS pair held: screen 2 flat under screen 1, its top edge on
+ * screen 1's bottom edge, taken a metre away so its snaps are whole,
+ * carried or tilting. */
+static void hinge_grab(video_xr_quad_set_t *set, video_xr_grab_t *g,
+      video_xr_pose_t *start, bool tilt)
+{
+   hinge_set(set);
+   memset(g, 0, sizeof(*g));
+   video_xr_pose_identity(&g->rel);
+   g->turn           = g->rel.orientation;
+   g->rel.position.y = -0.96f;
+   g->rel.position.z = -1.8f;
+   g->base.y         = -0.992f;
+   g->base.z         = -1.8f;
+   g->width          = 1.28f;
+   g->height         = 0.96f;
+   g->slot           = 1;
+   g->state          = VIDEO_XR_GRAB_HELD;
+   g->tilt           = tilt;
+   video_xr_pose_identity(start);
+   start->position.x = 1.0f;
+}
+
+/* Metres from screen 2's top edge middle to screen 1's bottom edge. */
+static double hinge_off_line(const video_xr_pose_t *p)
+{
+   double dy, dz;
+   video_xr_vec3_t m, w;
+   m.x = 0.0f;
+   m.y = 0.48f;
+   m.z = 0.0f;
+   video_xr_rotate(&p->orientation, &m, &w);
+   dy  = (double)p->position.y + w.y + 0.48;
+   dz  = (double)p->position.z + w.z + 1.8;
+   return sqrt(dy * dy + dz * dz);
+}
+
+/* The hinge a grab holds is whole, its own edge in the hinge's range,
+ * not only put on the line by the flat snap's lines: screen 2 flat,
+ * 2 cm under screen 1's bottom edge and 2.5 cm in front, snaps flush, a
+ * hinge at 0, its own edge 3.2 cm off; 1.5 cm in front, 2.5 cm off. */
+static void test_hinge_whole(void)
+{
+   video_xr_quad_set_t set;
+   video_xr_grab_t g;
+   video_xr_pose_t aim, start, pose;
+   video_xr_hinge_t h;
+   hinge_grab(&set, &g, &start, false);
+   video_xr_pose_identity(&aim);
+   g.rel.position.y = -0.98f;
+   g.rel.position.z = -1.775f;
+   video_xr_grab_pose(&g, &aim, NULL, 0, NULL, &pose, NULL, NULL);
+   CHECK(video_xr_snap_hinge(&set, g.slot, 2u, g.width, g.height, 1.0f,
+            &pose, &h) & VIDEO_XR_SNAP_HINGE);
+   CHECK(!(video_xr_grab_hinge(&g, &aim, &set, 2u, &start, &pose, &h)
+            & VIDEO_XR_SNAP_HINGE));
+   g.rel.position.z = -1.785f;
+   CHECK(video_xr_grab_hinge(&g, &aim, &set, 2u, &start, &pose, &h)
+         & VIDEO_XR_SNAP_HINGE);
+}
+
+/* The free stick down at full travel, polls 10 ms apart, swings the
+ * hinged screen about the shared edge, never off it: flat until 5
+ * degrees, then catching up, held at each 15 degree step from flat
+ * over its 2 degree window, to 90, past which it lets go; carried or
+ * tilting alike. */
+static void test_hinge_swing(void)
+{
+   unsigned i, t, bits, axes, held;
+   float rest[2];
+   video_xr_quad_set_t set;
+   video_xr_grab_t g;
+   video_xr_pose_t aim, start, pose;
+   video_xr_hinge_t h;
+   for (t = 0; t < 2; t++)
+   {
+      double worst = 0.0;
+      hinge_grab(&set, &g, &start, t != 0);
+      video_xr_pose_identity(&aim);
+      rest[0] = 0.0f;
+      rest[1] = 0.0f;
+      bits    = video_xr_grab_hinge(&g, &aim, &set, 2u, &start, &pose, &h);
+      CHECK((bits & VIDEO_XR_SNAP_HINGE) && h.axis == VIDEO_XR_STEP_TILT
+            && fabs(h.angle) < 1e-3);
+      video_xr_grab_put(&g, &aim, &pose);
+      for (i = 1; i <= 106; i++)
+      {
+         bits = video_xr_grab_hinge(&g, &aim, &set, 2u, &start, &pose, &h);
+         if (!(bits & VIDEO_XR_SNAP_HINGE))
+            break;
+         axes = video_xr_grab_turn_hinge(&g, &aim, &h, 0.0f, -1.0f, 0.01);
+         held = video_xr_grab_step_hinge(&g, &aim, &h, 15.0f, axes, rest,
+               &set, 2u, &start);
+         bits = video_xr_grab_hinge(&g, &aim, &set, 2u, &start, &pose, &h);
+         if ((bits & VIDEO_XR_SNAP_HINGE) && hinge_off_line(&pose) > worst)
+            worst = hinge_off_line(&pose);
+         if (i == 6)
+            CHECK(fabs(h.angle - 0.8) < 0.05);
+         if (i == 12)
+            CHECK(fabs(h.angle - 10.8) < 0.05 && !held);
+         if (i >= 15 && i <= 18)
+            CHECK(fabs(h.angle - 15.0) < 0.01 && held == VIDEO_XR_STEP_TILT);
+         if (i == 24)
+            CHECK(fabs(h.angle - 21.6) < 0.05 && !held);
+         if (i >= 32 && i <= 35)
+            CHECK(fabs(h.angle - 30.0) < 0.01 && held == VIDEO_XR_STEP_TILT);
+         if (i >= 98 && i <= 102)
+            CHECK(fabs(h.angle - 90.0) < 0.01);
+      }
+      CHECK(i == 104 && worst < 1e-4);
+   }
+}
+
+/* The other axis acts as before: the turn about the vertical through
+ * screen 2's middle, hinged at 30 degrees, twists its edge off the
+ * line's way, and past the snap's 5 degrees it is no longer hinged. */
+static void test_hinge_other_axis(void)
+{
+   unsigned i, bits = 0;
+   video_xr_quad_set_t set;
+   video_xr_grab_t g;
+   video_xr_pose_t aim, start, pose;
+   video_xr_hinge_t h;
+   hinge_grab(&set, &g, &start, false);
+   video_xr_pose_identity(&aim);
+   video_xr_grab_hinge(&g, &aim, &set, 2u, &start, &pose, &h);
+   video_xr_grab_put(&g, &aim, &pose);
+   video_xr_grab_swing(&g, &aim, &h, 30.0);
+   for (i = 0; i < 7; i++)
+   {
+      bits = video_xr_grab_hinge(&g, &aim, &set, 2u, &start, &pose, &h);
+      if (i == 5)
+         CHECK(bits & VIDEO_XR_SNAP_HINGE);
+      if (bits & VIDEO_XR_SNAP_HINGE)
+         CHECK(video_xr_grab_turn_hinge(&g, &aim, &h, 1.0f, 0.0f, 0.01)
+               == VIDEO_XR_STEP_TURN);
+   }
+   CHECK(!(bits & VIDEO_XR_SNAP_HINGE));
+}
+
+/* A step's buzz arms by the angle from flat: inside 15's window not,
+ * outside it, and back in by the stick's rest. A commit keeps the
+ * screen's own angle from flat where the flat snap only fades (shown
+ * 4, its own 7), the snap's where it is whole. */
+static void test_hinge_step_put(void)
+{
+   float rest[2];
+   video_xr_quad_set_t set;
+   video_xr_grab_t g;
+   video_xr_pose_t aim, start, pose, under;
+   video_xr_hinge_t h, at;
+   hinge_grab(&set, &g, &start, false);
+   video_xr_pose_identity(&aim);
+   video_xr_grab_hinge(&g, &aim, &set, 2u, &start, &pose, &h);
+   video_xr_grab_put(&g, &aim, &pose);
+   rest[0] = 0.0f;
+   rest[1] = 0.0f;
+   video_xr_grab_swing(&g, &aim, &h, 15.0);
+   CHECK(video_xr_grab_off_hinge(&g, &aim, &h, 15.0f, rest) == 0);
+   video_xr_grab_swing(&g, &aim, &h, 3.0);
+   CHECK(video_xr_grab_off_hinge(&g, &aim, &h, 15.0f, rest)
+         == VIDEO_XR_STEP_TILT);
+   rest[1] = -3.0f;
+   CHECK(video_xr_grab_off_hinge(&g, &aim, &h, 15.0f, rest) == 0);
+   CHECK(video_xr_grab_off_hinge(&g, &aim, &h, 0.0f, rest)
+         == VIDEO_XR_STEP_TILT);
+   hinge_grab(&set, &g, &start, false);
+   video_xr_grab_hinge(&g, &aim, &set, 2u, &start, &pose, &h);
+   video_xr_grab_put(&g, &aim, &pose);
+   video_xr_grab_swing(&g, &aim, &h, 7.0);
+   CHECK(video_xr_grab_hinge(&g, &aim, &set, 2u, &start, &pose, &at)
+         & VIDEO_XR_SNAP_HINGE);
+   CHECK(fabs(at.angle - 4.0) < 0.05);
+   video_xr_grab_put_hinge(&g, &aim, &at, &pose, false);
+   video_xr_grab_pose(&g, &aim, NULL, 0, NULL, &under, NULL, NULL);
+   CHECK(fabs(video_xr_hinge_angle(&at, &under.orientation) - 7.0) < 0.01
+         && hinge_off_line(&under) < 1e-4);
+   video_xr_grab_put_hinge(&g, &aim, &at, &pose, true);
+   video_xr_grab_pose(&g, &aim, NULL, 0, NULL, &under, NULL, NULL);
+   CHECK(fabs(video_xr_hinge_angle(&at, &under.orientation) - 4.0) < 0.01);
+}
+
+/* Neither commit moves the shown screen, so a stick push or let-go
+ * never hops it: screen 2 hinged under screen 1 near flat, at 30
+ * either way and near square, or beside it near square, rolled up to
+ * 4.8 degrees, its edge 1.2 or 2.8 cm off the line and 0 to 8 cm along
+ * it from the centres' level, carried or tilting, turned or not.
+ * put_line keeps the angle from flat. */
+static void test_hinge_put_still(void)
+{
+   static const double tips[]  = { 2.0, 7.0, -30.0, 30.0, -86.0, -88.0,
+      -83.0 };
+   static const double rolls[] = { 0.0, 2.0, 4.0, 4.8 };
+   static const double xs[]    = { 0.0, 0.02, 0.035, 0.045, 0.055, 0.06,
+      0.08 };
+   static const double gaps[]  = { 0.012, 0.028 };
+   unsigned t, ti, ri, xi, gi, k;
+   unsigned n[2];
+   double moved[2], turned[2], flat = 0.0;
+   n[0] = n[1] = 0;
+   moved[0] = moved[1] = turned[0] = turned[1] = 0.0;
+   for (t = 0; t < 2; t++)
+   for (ti = 0; ti < 7; ti++)
+   for (ri = 0; ri < 4; ri++)
+   for (xi = 0; xi < 7; xi++)
+   for (gi = 0; gi < 2; gi++)
+   {
+      video_xr_quad_set_t set;
+      video_xr_grab_t g, was;
+      video_xr_pose_t aim, start, want, shown, now, under;
+      video_xr_quat_t a, b, q;
+      video_xr_hinge_t h;
+      unsigned bits;
+      double gp = gaps[gi] / sqrt(2.0);
+      hinge_grab(&set, &g, &start, t != 0);
+      hinge_turn(&b, 0.0, 0.0, 1.0, rolls[ri]);
+      if (ti >= 5)
+      {
+         hinge_turn(&a, 0.0, 1.0, 0.0, tips[ti]);
+         hinge_then(&a, &b, &q);
+         hinge_place(&want, &q, -0.64, 0.0, 0.8 + gp, xs[xi], -1.8 + gp);
+      }
+      else
+      {
+         hinge_turn(&a, 1.0, 0.0, 0.0, tips[ti]);
+         hinge_then(&b, &a, &q);
+         hinge_place(&want, &q, 0.0, 0.48, xs[xi], -0.48 - gp, -1.8 + gp);
+      }
+      video_xr_pose_identity(&aim);
+      hinge_turn(&aim.orientation, 0.0, 1.0, 0.0, 20.0);
+      aim.position.x = 0.1f;
+      aim.position.z = 0.2f;
+      video_xr_grab_put(&g, &aim, &want);
+      bits = video_xr_grab_hinge(&g, &aim, &set, 2u, &start, &shown, &h);
+      if (!(bits & VIDEO_XR_SNAP_HINGE))
+         continue;
+      n[(bits & VIDEO_XR_SNAP_TURN) != 0]++;
+      was = g;
+      for (k = 0; k < 2; k++)
+      {
+         g = was;
+         if (k)
+            video_xr_grab_put_hinge(&g, &aim, &h, &shown,
+                  (bits & VIDEO_XR_SNAP_TURN) != 0);
+         else
+            video_xr_grab_put_line(&g, &aim, &h);
+         CHECK(video_xr_grab_hinge(&g, &aim, &set, 2u, &start, &now, NULL)
+               & VIDEO_XR_SNAP_HINGE);
+         if (pose_gap(&now, &shown) > moved[k])
+            moved[k] = pose_gap(&now, &shown);
+         if (turn_apart(&now.orientation, &shown.orientation) > turned[k])
+            turned[k] = turn_apart(&now.orientation, &shown.orientation);
+      }
+      g = was;
+      video_xr_grab_pose(&g, &aim, NULL, 0, NULL, &under, NULL, NULL);
+      video_xr_grab_put_line(&g, &aim, &h);
+      video_xr_grab_pose(&g, &aim, NULL, 0, NULL, &now, NULL, NULL);
+      if (fabs(video_xr_hinge_angle(&h, &now.orientation)
+               - video_xr_hinge_angle(&h, &under.orientation)) > flat)
+         flat = fabs(video_xr_hinge_angle(&h, &now.orientation)
+               - video_xr_hinge_angle(&h, &under.orientation));
+   }
+   CHECK(n[0] >= 200 && n[1] >= 80);
+   if (     moved[0] > 1e-4 || turned[0] > 0.01 || moved[1] > 1e-4
+         || turned[1] > 0.01 || flat > 0.01)
+   {
+      printf("  FAIL %s:%d: put_line moved %.4f m %.3f deg, put_hinge"
+            " %.4f m %.3f deg, angle from flat %.3f\n", __FILE__,
+            __LINE__, moved[0], turned[0], moved[1], turned[1], flat);
+      failures++;
+   }
+}
+
 /* In the grab: snapped after levelling, its settings from the snapped
  * pose, no clamp for a snap, the clamp still winning; the XR thread's
  * call shape (no settings, no snaps) gives the same pose. Taken 12 cm
@@ -5108,6 +5381,11 @@ int main(void)
    test_hinge_outranked();
    test_hinge_continuous();
    test_hinge_roll_band();
+   test_hinge_whole();
+   test_hinge_swing();
+   test_hinge_other_axis();
+   test_hinge_step_put();
+   test_hinge_put_still();
    test_grab_snap();
    test_turn_snap();
    test_tilt_snap();

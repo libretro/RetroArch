@@ -188,6 +188,38 @@ unsigned video_xr_grab_step(video_xr_grab_t *g, const video_xr_pose_t *aim,
    (void)targets; (void)skip; (void)start;
    return 0;
 }
+unsigned video_xr_grab_hinge(const video_xr_grab_t *g,
+      const video_xr_pose_t *aim, const video_xr_quad_set_t *targets,
+      unsigned skip, const video_xr_pose_t *start, video_xr_pose_t *pose,
+      video_xr_hinge_t *hinge)
+{
+   (void)g; (void)targets; (void)skip; (void)start; (void)hinge;
+   *pose = *aim;
+   return 0;
+}
+void video_xr_grab_put_hinge(video_xr_grab_t *g, const video_xr_pose_t *aim,
+      const video_xr_hinge_t *h, const video_xr_pose_t *pose, bool turned)
+{ (void)g; (void)aim; (void)h; (void)pose; (void)turned; }
+void video_xr_grab_put_line(video_xr_grab_t *g, const video_xr_pose_t *aim,
+      const video_xr_hinge_t *h)
+{ (void)g; (void)aim; (void)h; }
+unsigned video_xr_grab_turn_hinge(video_xr_grab_t *g,
+      const video_xr_pose_t *aim, const video_xr_hinge_t *h, float x,
+      float y, double dt)
+{ (void)g; (void)aim; (void)h; (void)x; (void)y; (void)dt; return 0; }
+unsigned video_xr_grab_step_hinge(video_xr_grab_t *g,
+      const video_xr_pose_t *aim, const video_xr_hinge_t *h, float size,
+      unsigned axes, float *rest, const video_xr_quad_set_t *targets,
+      unsigned skip, const video_xr_pose_t *start)
+{
+   (void)g; (void)aim; (void)h; (void)size; (void)axes; (void)rest;
+   (void)targets; (void)skip; (void)start;
+   return 0;
+}
+unsigned video_xr_grab_off_hinge(const video_xr_grab_t *g,
+      const video_xr_pose_t *aim, const video_xr_hinge_t *h, float size,
+      const float *rest)
+{ (void)g; (void)aim; (void)h; (void)size; (void)rest; return 0; }
 void video_xr_turn_back(video_xr_pose_t *pose) { (void)pose; }
 void video_xr_menu_handle(const video_xr_quad_t *menu, video_xr_quad_t *out)
 { *out = *menu; }

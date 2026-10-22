@@ -5858,6 +5858,73 @@ SQUARE = dict(SAVE, video_openxr_edit_snap='true',
 SQUARED = (0.8, 0.0, -1.16)
 YAW_M90 = (0.0, -math.sqrt(0.5), 0.0, math.sqrt(0.5))
 
+# Screen 2 swung back 16 degrees from square about screen 1's right
+# edge, the corner's shared edge: its middle on the circle round it.
+SWUNG_74 = (0.8 + 0.64 * math.cos(math.radians(74.0)), 0.0,
+            -1.8 + 0.64 * math.sin(math.radians(74.0)))
+
+# Screen 2 raised 2.2 cm, its top edge 1 cm under screen 1's bottom
+# edge, Snap to Angles at 30 degrees.
+HINGE_3DS = dict(SAVE, video_openxr_edit_snap='true',
+                 video_openxr_edit_snap_angles='2',
+                 video_screen2_xr_y='0.022')
+
+
+def quad_point(q, x, y):
+    """Where the point x, y of quad q's own plane is."""
+    qx, qy, qz, qw = q['pose'][3:]
+    tx = 2.0 * (qy * 0.0 - qz * y)
+    ty = 2.0 * (qz * x - qx * 0.0)
+    tz = 2.0 * (qx * y - qy * x)
+    return (q['pose'][0] + x + qw * tx + (qy * tz - qz * ty),
+            q['pose'][1] + y + qw * ty + (qz * tx - qx * tz),
+            q['pose'][2] + qw * tz + (qx * ty - qy * tx))
+
+
+def screen2_at_pitch(deg):
+    """A pick: screen 2 where it shows exactly deg from flat, either
+    way."""
+    def pick(frame):
+        q = screen2(frame)
+        if q and abs(abs(euler(tuple(q['pose'][3:]))[1]) - deg) <= 0.05:
+            return q
+        return None
+    return pick
+
+
+def check_edit_hinge_3ds(res):
+    """Screen 2, taken under screen 1 and carried 6 cm along its edge
+    so its snaps are whole, hinges flat on screen 1's bottom edge; the
+    left stick, held at an eighth of full speed until a frame shows it
+    30 degrees from flat, swings it about that edge into the 30 step's
+    hold: it shows and is saved there, its top edge on screen 1's
+    bottom edge, and the right hand buzzes once for the step. Not a set
+    time: stalled polls cut the swing short."""
+    errors = edit_log_errors(res, ['on', 'off'])
+    q = last_before(res, 'swung', screen2)
+    if not q:
+        return errors + ['no frame of screen 2 before the stick let go']
+    yaw, pitch, roll = euler(tuple(q['pose'][3:]))
+    if abs(abs(pitch) - 30.0) > 0.05 or abs(yaw) > 0.05 or abs(roll) > 0.05:
+        errors.append('screen 2 swung to yaw %.3f pitch %.3f roll %.3f, '
+                      'want 0, +-30, 0' % (yaw, pitch, roll))
+    edge = quad_point(q, 0.0, 0.48)
+    if abs(edge[1] + 0.48) > EDIT_POS or abs(edge[2] + 1.8) > EDIT_POS:
+        errors.append('screen 2 top edge at %s, want on y -0.48, z -1.8'
+                      % [round(v, 4) for v in edge])
+    ticks = [e for e in haptics(res, 'right') if e['ev'] == 'haptic'
+             and res.marks['held'] * 1e6 < e['t_us']
+             < res.marks['swung'] * 1e6
+             and abs(e['amplitude'] - SNAP_TICK[0]) < 1e-3
+             and e['duration_ns'] == SNAP_TICK[1]]
+    if len(ticks) != 1:
+        errors.append('%d buzzes on the right hand in the swing, want 1: %s'
+                      % (len(ticks), ticks))
+    return errors + saved_errors(res, 'screen 2', 'video_screen2_xr_', S1,
+                                 (tuple(q['pose'][:3]),
+                                  tuple(q['pose'][3:])), (1.28, 0.96),
+                                 last_before(res, 'off', screen2))
+
 
 def check_edit_snap_square(res):
     """Screen 2, turned by the left stick from 18 degrees short of
@@ -5885,10 +5952,11 @@ def check_edit_snap_sticks(res):
     """Screen 2, turned by the left stick from 18 degrees short of
     square at screen 1's right corner until it shows square, stays
     square once the stick is let go; pushed back the other way at the
-    same speed until it shows -74, it turns on from square, not from
-    where the stick stopped, and is saved there. The head is held at
-    the anchor, so no step holds either. Not a set time: stalled polls
-    cut the stick's turn short."""
+    same speed until it shows -74, it swings on from square about the
+    corner's shared edge, not from where the stick stopped (Snap to
+    Angles Off, so no step at 75 holds it), and is saved there. The
+    head is held at the anchor. Not a set time: stalled polls cut the
+    stick's turn short."""
     errors = edit_log_errors(res, ['on', 'off'])
     errors += pose_errors('screen 2 square, the stick let go',
                           [screen2(f) for f in
@@ -5901,7 +5969,7 @@ def check_edit_snap_sticks(res):
     if abs(yaw + 74.0) > 1.5:
         errors.append('screen 2 pushed back to yaw %.2f, want -74, 16 on '
                       'from square' % yaw)
-    errors += pose_errors('screen 2 pushed back', [q], SQUARED)
+    errors += pose_errors('screen 2 swung back', [q], SWUNG_74)
     return errors + saved_errors(res, 'screen 2', 'video_screen2_xr_', S1,
                                  (tuple(q['pose'][:3]),
                                   tuple(q['pose'][3:])), (1.28, 0.96),
@@ -6579,7 +6647,8 @@ EDIT_CASES += [
          ('script', edit_aim()), ('mark', 'released'), ('wait', 1),
          ('send', EDIT), ('wait', 2), ('mark', 'off'), ('wait', 1)],
      'check': check_edit_snap_square},
-    {'name': 'edit-snap-sticks', 'map': '3ds', 'settings': SQUARE,
+    {'name': 'edit-snap-sticks', 'map': '3ds',
+     'settings': dict(SQUARE, video_openxr_edit_snap_angles='0'),
      'script': HEAD_AT_ORIGIN,
      'steps': edit_start(edit_aim()) + edit_tap(EDIT_NEXT, edit_aim())
      + edit_tap(EDIT_NEXT, edit_aim()) + [
@@ -6598,6 +6667,21 @@ EDIT_CASES += [
          ('wait', 1), ('send', EDIT), ('wait', 2), ('mark', 'off'),
          ('wait', 1)],
      'check': check_edit_snap_sticks},
+    {'name': 'edit-hinge-3ds', 'map': '3ds', 'settings': HINGE_3DS,
+     'script': HEAD_AT_ORIGIN,
+     'steps': edit_start(edit_aim()) + edit_tap(EDIT_NEXT, edit_aim())
+     + edit_tap(EDIT_NEXT, edit_aim()) + [
+         ('script', script(edit_aim(), EDIT_GRIP)), ('wait', 1),
+         ('script', script(edit_aim(x=0.06), EDIT_GRIP)), ('wait', 1),
+         ('mark', 'held'),
+         ('script', script(edit_aim(x=0.06), EDIT_GRIP,
+                           'action edit/stick@left 0 -0.3')),
+         ('until', ('screen 2 at 30', screen2_at_pitch(30.0), 10)),
+         ('script', script(edit_aim(x=0.06), EDIT_GRIP)),
+         ('wait', 1), ('mark', 'swung'), ('script', edit_aim(x=0.06)),
+         ('wait', 1), ('send', EDIT), ('wait', 2), ('mark', 'off'),
+         ('wait', 1)],
+     'check': check_edit_hinge_3ds},
     {'name': 'edit-smooth', 'map': '3ds',
      'settings': dict(SAVE, video_openxr_edit_smoothing='2'),
      'steps': EDIT_SWAY_STEPS, 'check': check_edit_sway(True)},

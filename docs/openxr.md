@@ -212,18 +212,24 @@ the two overlap along it, top, bottom or side, within 5 degrees of
 parallel and 3 cm: it turns exactly
 parallel to that edge and moves onto it, centres or ends level along
 it, keeping its angle, like the two halves of a DS. Screens that would
-overlap do not hinge. Past each range the pull
-fades out over as far again, and from 30 to 60 cm away every pull
-fades, so the screen catches up with the hand instead of jumping. A
-screen just taken does not move: snapping fades in as it is carried,
-whole once it is 5 cm or 10 degrees from where it was taken. The
-holding hand gets a short buzz as a snap takes hold, and none again
-from that snap until the screen has left its pull. The menu neither
-snaps nor is snapped to. Where it is let go is where it is saved.
+overlap do not hinge. While a screen is hinged, the other hand's stick
+swings it about the shared edge, the tilt for a top or bottom edge and
+the turn for a side one, and it stays where the swing leaves it; the
+swing lets go just past square, and the stick's other axis turns or
+tilts it as before and can pull it off.
+Past each range the pull fades out over as far again, and from 30 to
+60 cm away every pull fades, so the screen catches up with the hand
+instead of jumping. A screen just taken does not move: snapping fades in
+as it is carried, whole once it is 5 cm or 10 degrees from where it was
+taken. The holding hand gets a short buzz as a snap takes hold, and none
+again from that snap until the screen has left its pull. The menu
+neither snaps nor is snapped to. Where it is let go is where it is
+saved.
 
 **Snap to Angles** (15 degrees by default) is the step the other hand's
-stick turns and tilts a held item in: 15, 30, 45 or 90 degrees. Off
-turns and tilts it smoothly, with no steps and no buzz.
+stick turns and tilts a held item in: 15, 30, 45 or 90 degrees. A
+hinged screen's steps count from flat with the other screen, both ways.
+Off turns and tilts it smoothly, with no steps and no buzz.
 
 **Edit Smoothing** (Medium by default) steadies the controllers' aim
 while editing, so a screen held far out on the laser does not shake

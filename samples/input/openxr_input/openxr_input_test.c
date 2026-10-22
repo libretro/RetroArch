@@ -4996,6 +4996,66 @@ static void t_point(double deg)
    t_aim[2].position.z    = (float)(-1.4 + 1.4 * cos(r));
 }
 
+/* Screen 2's hinged edge at pose: metres off screen 1's edge line, at
+ * the farther of its ends. Its near edge, its own -X side 0.4 m from
+ * its middle, off screen 1's right edge line, x 0.8, z -1.8; or under,
+ * its top edge, 0.3 m up, off screen 1's bottom edge line, y -0.48,
+ * z -1.8. */
+static double t_edge_off(const video_xr_pose_t *pose, bool under)
+{
+   unsigned i;
+   double worst = 0.0;
+   video_xr_vec3_t m, w;
+   for (i = 0; i < 2; i++)
+   {
+      double d[3];
+      m.x  = (under && i) ? 0.4f : -0.4f;
+      m.y  = under ? 0.3f : (i ? 0.3f : -0.3f);
+      m.z  = 0.0f;
+      video_xr_rotate(&pose->orientation, &m, &w);
+      d[0] = under ? 0.0 : (double)pose->position.x + w.x - 0.8;
+      d[1] = under ? (double)pose->position.y + w.y + 0.48 : 0.0;
+      d[2] = (double)pose->position.z + w.z + 1.8;
+      if (sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]) > worst)
+         worst = sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
+   }
+   return worst;
+}
+
+/* Screen 2's near edge off the line as edit mode last wrote it. */
+static double t_hinge_off(void)
+{
+   video_xr_pose_t pose;
+   video_xr_item_pose(&t_quads.slots[1].base, &t_xr[1], &pose);
+   return t_edge_off(&pose, false);
+}
+
+/* Screen 2's top edge off the line under screen 1 as edit mode last
+ * wrote it. */
+static double t_under_off(void)
+{
+   video_xr_pose_t pose;
+   video_xr_item_pose(&t_quads.slots[1].base, &t_xr[1], &pose);
+   return t_edge_off(&pose, true);
+}
+
+/* Screen 2's hinged edge off the line where the right hand holds it,
+ * with no snap. */
+static double t_held_off(bool under)
+{
+   video_xr_pose_t aim, pose;
+   aim.orientation.x = t_aim[2].orientation.x;
+   aim.orientation.y = t_aim[2].orientation.y;
+   aim.orientation.z = t_aim[2].orientation.z;
+   aim.orientation.w = t_aim[2].orientation.w;
+   aim.position.x    = t_aim[2].position.x;
+   aim.position.y    = t_aim[2].position.y;
+   aim.position.z    = t_aim[2].position.z;
+   video_xr_grab_pose(&input_openxr_edit.hand[1].g, &aim, NULL, 0, NULL,
+         &pose, NULL, NULL);
+   return t_edge_off(&pose, under);
+}
+
 /* An engaged screen snap's turn sticks as the free hand's stick lets
  * go or starts a push, carried or tilting: turned on, the screen moves
  * on from the angle it showed, and its place is still the hand's. Where
@@ -5021,8 +5081,8 @@ static void t_snap_commit(bool tilt)
    CHECK(t_deg_near(t_xr[1].yaw, -82.0), "%s, pushed out: yaw %.3f", how,
          t_xr[1].yaw);
    t_turn_polls(1, 1.0f, 100000, tilt);
-   CHECK(t_deg_near(t_xr[1].yaw, -72.0) && t_near(t_xr[1].x, 0.0f)
-         && t_near(t_xr[1].y, 0.07f),
+   CHECK(t_deg_near(t_xr[1].yaw, -72.0) && t_near(t_xr[1].x, 0.1036f)
+         && t_hinge_off() < 1e-3 && t_near(t_xr[1].y, 0.07f),
          "%s, pushed on: yaw %.3f at %.4f,%.4f", how, t_xr[1].yaw,
          t_xr[1].x, t_xr[1].y);
    t_take_end();
@@ -5119,6 +5179,411 @@ static void test_edit_snap_commit(void)
    CHECK(t_deg_near(t_xr[1].yaw, -76.5), "off, pushed: yaw %.3f",
          t_xr[1].yaw);
    t_take_end();
+}
+
+/* Square at screen 1's right corner, screen 2 is hinged 90 degrees from
+ * flat: the turn stick swings it about the shared edge, which stays on
+ * the line all the way to flat beside screen 1, carried or tilting.
+ * Snap to Angles holds it at 75 with one buzz and at 60 with the next;
+ * Off, it swings through with none. */
+static void t_hinge_sweep(bool tilt, unsigned angles)
+{
+   unsigned i, n;
+   double worst = 0.0;
+   unsigned held75 = 0;
+   t_angles = angles;
+   t_take_square(true, tilt);
+   t_turn_polls(15, -1.0f, 10000, tilt);
+   CHECK(t_deg_near(t_xr[1].yaw, -90.0) && t_hinge_off() < 1e-3,
+         "square: yaw %.3f, %.4f off the line", t_xr[1].yaw, t_hinge_off());
+   n = t_applies[2];
+   for (i = 0; i < 84; i++)
+   {
+      t_turn_polls(1, 1.0f, 10000, tilt);
+      if (t_hinge_off() > worst)
+         worst = t_hinge_off();
+      if (t_deg_near(t_xr[1].yaw, -75.0))
+         held75++;
+      if (i == 30)
+         CHECK(t_applies[2] - n == (angles ? 2u : 0u),
+               "%u step buzzes by 60", t_applies[2] - n);
+   }
+   CHECK(worst < 1e-3, "%.4f off the line in the sweep", worst);
+   CHECK(angles ? held75 >= 3 : held75 <= 1, "held at 75 for %u polls",
+         held75);
+   t_take_end();
+   t_angles = VIDEO_OPENXR_EDIT_SNAP_ANGLES_15;
+}
+
+static void test_edit_hinge_swing(void)
+{
+   t_hinge_sweep(false, VIDEO_OPENXR_EDIT_SNAP_ANGLES_15);
+   t_hinge_sweep(true, VIDEO_OPENXR_EDIT_SNAP_ANGLES_15);
+   t_hinge_sweep(false, VIDEO_OPENXR_EDIT_SNAP_ANGLES_OFF);
+}
+
+/* Swung to 67.5 from flat and let go, screen 2 stays there, on the line,
+ * and stays so carried 1 cm up along the edge. The tilt stick, the
+ * other axis, pulls it off the line: 10.8 degrees of it leave the edge
+ * twisted out of the hinge's reach. Snap to Screens off: no hinge, the
+ * turn stick turns it about its own middle. */
+static void test_edit_hinge_hold(void)
+{
+   unsigned i;
+   t_take_square(true, false);
+   t_turn_polls(15, -1.0f, 10000, false);
+   t_turn_polls(20, 1.0f, 10000, false);
+   t_turn_polls(1, 0.0f, 10000, false);
+   CHECK(t_deg_near(t_xr[1].yaw, -67.5) && t_hinge_off() < 1e-3,
+         "let go at yaw %.3f, %.4f off", t_xr[1].yaw, t_hinge_off());
+   t_aim[2].position.y += 0.01f;
+   t_turn_polls(1, 0.0f, 10000, false);
+   CHECK(t_deg_near(t_xr[1].yaw, -67.5) && t_hinge_off() < 1e-3,
+         "carried up: yaw %.3f, %.4f off", t_xr[1].yaw, t_hinge_off());
+   t_let_go();
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_hold("edit/stick", 1, 0.0f, 1.0f);
+   for (i = 0; i < 12; i++)
+   {
+      t_clock += 10000;
+      t_edit_poll();
+   }
+   CHECK(t_hinge_off() > 0.005, "tilted 10.8: %.4f off", t_hinge_off());
+   t_take_end();
+   t_take_square(false, false);
+   t_turn_polls(10, -1.0f, 10000, false);
+   CHECK(t_near(t_xr[1].x, 0.0f), "snap off: x %.4f", t_xr[1].x);
+   t_take_end();
+}
+
+/* Hinged at square and swung toward flat, the step at 75 buzzes once:
+ * a wiggle inside its hold buzzes no more, whatever the head sees; out
+ * of the hold and back, it buzzes again. */
+static void test_edit_hinge_rearm(void)
+{
+   unsigned n;
+   t_head_tracked    = true;
+   t_head.position.x = 0.3f;
+   t_take_square(true, false);
+   t_turn_polls(15, -1.0f, 10000, false);
+   t_turn_polls(1, 0.0f, 10000, false);
+   n = t_applies[2];
+   t_turn_polls(15, 1.0f, 10000, false);
+   CHECK(t_deg_near(t_xr[1].yaw, -75.0) && t_applies[2] == n + 1,
+         "at 76.5: yaw %.3f, %u buzzes", t_xr[1].yaw, t_applies[2] - n);
+   t_turn_polls(1, -1.0f, 5000, false);
+   t_turn_polls(1, 1.0f, 5000, false);
+   CHECK(t_deg_near(t_xr[1].yaw, -75.0) && t_applies[2] == n + 1,
+         "wiggled in the hold: yaw %.3f, %u buzzes", t_xr[1].yaw,
+         t_applies[2] - n);
+   t_turn_polls(3, -1.0f, 10000, false);
+   t_turn_polls(3, 1.0f, 10000, false);
+   CHECK(t_deg_near(t_xr[1].yaw, -75.0) && t_applies[2] == n + 2,
+         "out of the hold and back: yaw %.3f, %u buzzes", t_xr[1].yaw,
+         t_applies[2] - n);
+   t_take_end();
+   t_head.position.x = 0.0f;
+   t_head_tracked    = false;
+}
+
+/* Held in the 75 step's hold, the stick still pushed, then carried
+ * 4 cm off the line so the hinge lets go: the turn goes on from 75 by
+ * one poll's worth, without the hold's carry. */
+static void test_edit_hinge_drop(void)
+{
+   t_take_square(true, false);
+   t_turn_polls(15, -1.0f, 10000, false);
+   t_turn_polls(1, 0.0f, 10000, false);
+   t_turn_polls(15, 1.0f, 10000, false);
+   CHECK(t_deg_near(t_xr[1].yaw, -75.0), "held at 75: yaw %.3f",
+         t_xr[1].yaw);
+   t_aim[2].position.z += 0.04f;
+   t_turn_polls(1, 1.0f, 10000, false);
+   CHECK(!input_openxr_edit.hand[1].hinged
+         && t_deg_near(t_xr[1].yaw, -74.1),
+         "carried off: yaw %.3f, hinged %d", t_xr[1].yaw,
+         input_openxr_edit.hand[1].hinged);
+   t_take_end();
+}
+
+/* Screen 2 under screen 1, its top edge on screen 1's bottom edge,
+ * folded fold degrees from flat toward the viewer: the 3DS layout. */
+static void t_snap_under(double fold)
+{
+   double r = fold * M_PI / 180.0;
+   video_xr_quad_t *q = &t_quads.quads[t_quads.num_quads++];
+   memset(q, 0, sizeof(*q));
+   q->pose.orientation.x   = (float)-sin(r / 2.0);
+   q->pose.orientation.w   = (float)cos(r / 2.0);
+   q->pose.position.y      = (float)(-0.48 - 0.3 * cos(r));
+   q->pose.position.z      = (float)(-1.8 + 0.3 * sin(r));
+   q->width                = 0.8f;
+   q->height               = 0.6f;
+   q->kind                 = VIDEO_XR_QUAD_SCREEN;
+   q->screen               = 1;
+   q->slot                 = 1;
+   t_quads.slots[1].base.y = q->pose.position.y;
+   t_quads.slots[1].base.z = q->pose.position.z;
+   t_aim[2].position.y     = q->pose.position.y;
+}
+
+/* n polls 10 ms apart, the right hand gripping, its trigger held if
+ * tilt, and the left stick at y. */
+static void t_tilt_polls(unsigned n, float y, bool tilt)
+{
+   unsigned i;
+   t_let_go();
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   if (tilt)
+      t_hold("edit/tilt", 2, 1.0f, 0.0f);
+   t_hold("edit/stick", 1, 0.0f, y);
+   for (i = 0; i < n; i++)
+   {
+      t_clock += 10000;
+      t_edit_poll();
+   }
+}
+
+/* Edit mode with Snap to Screens on, screen 2 taken under screen 1
+ * folded fold degrees and carried 7 cm along the edge, so its snaps
+ * are whole. */
+static void t_take_under(double fold, bool tilt)
+{
+   t_snap = true;
+   t_edit_start();
+   t_snap_under(fold);
+   t_tilt_polls(1, 0.0f, tilt);
+   CHECK(     input_openxr_edit.hand[1].g.state == VIDEO_XR_GRAB_HELD
+         && input_openxr_edit.hand[1].g.slot == 1,
+         "took slot %u under", input_openxr_edit.hand[1].g.slot);
+   t_aim[2].position.x = 0.07f;
+   t_tilt_polls(1, 0.0f, tilt);
+}
+
+/* Flat under screen 1, screen 2 is hinged on screen 1's bottom edge:
+ * the tilt stick swings it about that edge, which stays on the line,
+ * carried or tilting, with a buzz at 15 and at 30. */
+static void t_hinge_under(bool tilt)
+{
+   unsigned i, n;
+   double worst = 0.0;
+   const char *how = tilt ? "tilting" : "carried";
+   t_take_under(0.0, tilt);
+   n = t_applies[2];
+   for (i = 0; i < 42; i++)
+   {
+      t_tilt_polls(1, 1.0f, tilt);
+      if (t_under_off() > worst)
+         worst = t_under_off();
+   }
+   CHECK(     worst < 1e-3 && t_applies[2] - n == 2
+         && t_xr[1].pitch < -30.0f && t_deg_near(t_xr[1].yaw, 0.0),
+         "%s under: %.4f off the line, %u buzzes, pitch %.3f yaw %.3f",
+         how, worst, t_applies[2] - n, t_xr[1].pitch, t_xr[1].yaw);
+   t_take_end();
+}
+
+static void test_edit_hinge_under(void)
+{
+   t_hinge_under(false);
+   t_hinge_under(true);
+}
+
+/* Flicked past where the hinge lets go and back, over and over with no
+ * let-go, screen 2 keeps its edge on the line: back each time, the
+ * hinge holds it whole, and swung on from there the edge stays on the
+ * line. At screen 1's right corner past square; under it past 90. */
+static void t_hinge_flick(bool under, unsigned angles)
+{
+   unsigned i, n = under ? 18 : 6;
+   double off, worst = 0.0;
+   const char *how = !under ? "corner" : angles ? "under" : "under, Off";
+   float in = under ? 1.0f : -1.0f;
+   t_angles = angles;
+   if (under)
+      t_take_under(80.0, false);
+   else
+   {
+      t_take_square(true, false);
+      t_turn_polls(23, in, 10000, false);
+   }
+   for (i = 0; i < 8; i++)
+   {
+      if (under)
+      {
+         t_tilt_polls(n, in, false);
+         t_tilt_polls(n, -in, false);
+      }
+      else
+      {
+         t_turn_polls(n, in, 10000, false);
+         t_turn_polls(n, -in, 10000, false);
+      }
+      off = under ? t_under_off() : t_hinge_off();
+      CHECK(     input_openxr_edit.hand[1].hinged && off < 1e-3
+            && t_held_off(under) <= VIDEO_XR_SNAP_DIST,
+            "%s, flick %u: hinged %d, %.4f off, held %.4f off", how, i + 1,
+            input_openxr_edit.hand[1].hinged, off, t_held_off(under));
+   }
+   for (i = 0; i < 20; i++)
+   {
+      if (under)
+         t_tilt_polls(1, -in, false);
+      else
+         t_turn_polls(1, -in, 10000, false);
+      off = under ? t_under_off() : t_hinge_off();
+      if (off > worst)
+         worst = off;
+   }
+   CHECK(worst < 1e-3, "%s, swung on: %.4f off the line", how, worst);
+   t_take_end();
+   t_angles = VIDEO_OPENXR_EDIT_SNAP_ANGLES_15;
+}
+
+static void test_edit_hinge_flick(void)
+{
+   t_hinge_flick(false, VIDEO_OPENXR_EDIT_SNAP_ANGLES_15);
+   t_hinge_flick(true, VIDEO_OPENXR_EDIT_SNAP_ANGLES_15);
+   t_hinge_flick(true, VIDEO_OPENXR_EDIT_SNAP_ANGLES_OFF);
+}
+
+/* Swung to 75, then the stick pushed back and forth on a diagonal past
+ * the axis lock, with no let-go: the tilt takes screen 2 off the hinge
+ * and back each time, and it comes back level and on the line, the
+ * hand's own tilt never traded for the pull's. */
+static void test_edit_hinge_diagonal(void)
+{
+   unsigned i, j, k;
+   for (k = 0; k < 2; k++)
+   {
+      float y = k ? -1.0f : 1.0f;
+      t_take_square(true, false);
+      t_turn_polls(15, -1.0f, 10000, false);
+      t_turn_polls(10, 1.0f, 10000, false);
+      for (i = 0; i < 6; i++)
+      {
+         for (j = 0; j < 24; j++)
+            t_step_polls(1, j < 12 ? 1.0f : -1.0f, j < 12 ? y : -y);
+         CHECK(     input_openxr_edit.hand[1].hinged
+               && t_deg_near(t_xr[1].pitch, 0.0) && t_hinge_off() < 1e-3
+               && t_held_off(false) <= VIDEO_XR_SNAP_DIST,
+               "diagonal %u, %u: hinged %d, pitch %.3f, %.4f off, held %.4f"
+               " off",
+               k, i + 1, input_openxr_edit.hand[1].hinged, t_xr[1].pitch,
+               t_hinge_off(), t_held_off(false));
+      }
+      t_take_end();
+   }
+}
+
+/* Under screen 1 at 30 from flat, taken 4 cm left of the centres'
+ * level and carried 3.5 to 5.5 cm right of it, where its pull fades:
+ * pushed, swung and let go, screen 2 never moves along the edge,
+ * carried or tilting. */
+static void test_edit_hinge_level(void)
+{
+   static const float xs[] = { 0.035f, 0.045f, 0.055f };
+   unsigned i, j, k;
+   for (k = 0; k < 2; k++)
+   {
+      for (j = 0; j < 3; j++)
+      {
+         float x0, pitch0;
+         double worst = 0.0;
+         t_snap = true;
+         t_edit_start();
+         t_snap_under(30.0);
+         t_quads.quads[t_quads.num_quads - 1].pose.position.x = -0.04f;
+         t_quads.slots[1].base.x = -0.04f;
+         t_aim[2].position.x     = -0.04f;
+         t_tilt_polls(1, 0.0f, k != 0);
+         t_aim[2].position.x     = xs[j];
+         t_tilt_polls(3, 0.0f, k != 0);
+         x0     = t_xr[1].x;
+         pitch0 = t_xr[1].pitch;
+         for (i = 0; i < 26; i++)
+         {
+            t_tilt_polls(1, (i >= 3 && i < 23) ? 1.0f : 0.0f, k != 0);
+            if (fabs(t_xr[1].x - x0) > worst)
+               worst = fabs(t_xr[1].x - x0);
+         }
+         CHECK(     input_openxr_edit.hand[1].hinged && worst < 1e-4
+               && t_under_off() < 1e-3
+               && fabs(t_xr[1].pitch - pitch0) > 5.0f,
+               "%s %.3f along: hinged %d, %.4f along, %.4f off, pitch %.3f"
+               " from %.3f", k ? "tilting" : "carried", xs[j],
+               input_openxr_edit.hand[1].hinged, worst, t_under_off(),
+               t_xr[1].pitch, pitch0);
+         t_take_end();
+      }
+   }
+}
+
+/* Screen 2's hinged edge's middle as edit mode last wrote it: its place
+ * along the line, x under screen 1, y beside it. */
+static double t_edge_along(bool under)
+{
+   video_xr_pose_t pose;
+   video_xr_vec3_t m, w;
+   video_xr_item_pose(&t_quads.slots[1].base, &t_xr[1], &pose);
+   m.x = under ? 0.0f : -0.4f;
+   m.y = under ? 0.3f : 0.0f;
+   m.z = 0.0f;
+   video_xr_rotate(&pose.orientation, &m, &w);
+   return under ? (double)pose.position.x + w.x
+      : (double)pose.position.y + w.y;
+}
+
+/* Tilting with the hand rolled 1 to 4 degrees, the stick swings screen
+ * 2 from 12 degrees through flat's fade band under screen 1, or from
+ * about 12 short through square's at its corner: its hinged edge never
+ * slides along the line. */
+static void test_edit_hinge_rolled(void)
+{
+   static const double rolls[] = { 1.0, 2.0, 4.0 };
+   unsigned i, j, k;
+   for (k = 0; k < 2; k++)
+   {
+      for (j = 0; j < 3; j++)
+      {
+         double r = rolls[j] * M_PI / 180.0;
+         double last, worst = 0.0;
+         if (k)
+         {
+            t_take_square(true, true);
+            t_turn_polls(15, -1.0f, 10000, true);
+            t_turn_polls(12, 1.0f, 10000, true);
+            t_turn_polls(1, 0.0f, 10000, true);
+         }
+         else
+            t_take_under(12.0, true);
+         t_aim[2].orientation.z = (float)sin(r / 2.0);
+         t_aim[2].orientation.w = (float)cos(r / 2.0);
+         if (k)
+            t_turn_polls(2, 0.0f, 10000, true);
+         else
+            t_tilt_polls(2, 0.0f, true);
+         last = t_edge_along(!k);
+         for (i = 0; i < 16; i++)
+         {
+            if (k)
+               t_turn_polls(1, -1.0f, 10000, true);
+            else
+               t_tilt_polls(1, -1.0f, true);
+            if (fabs(t_edge_along(!k) - last) > worst)
+               worst = fabs(t_edge_along(!k) - last);
+            last = t_edge_along(!k);
+         }
+         CHECK(     input_openxr_edit.hand[1].hinged && worst < 1e-4
+               && (k ? t_deg_near(t_xr[1].yaw, -90.0)
+                     : fabs(t_xr[1].pitch) < 1.0f),
+               "%s rolled %.0f: hinged %d, %.4f along a poll, yaw %.3f"
+               " pitch %.3f", k ? "square" : "flat", rolls[j],
+               input_openxr_edit.hand[1].hinged, worst, t_xr[1].yaw,
+               t_xr[1].pitch);
+         t_take_end();
+      }
+   }
 }
 
 /* Edit Smoothing: the frame loop steps each hand's aim once a frame,
@@ -5425,6 +5890,15 @@ int main(void)
    test_edit_step_snap();
    test_edit_snap_edge();
    test_edit_snap_commit();
+   test_edit_hinge_swing();
+   test_edit_hinge_hold();
+   test_edit_hinge_rearm();
+   test_edit_hinge_drop();
+   test_edit_hinge_under();
+   test_edit_hinge_flick();
+   test_edit_hinge_diagonal();
+   test_edit_hinge_level();
+   test_edit_hinge_rolled();
    test_edit_smoothing();
    test_edit_room();
    if (failures)
