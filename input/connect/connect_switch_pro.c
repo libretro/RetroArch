@@ -52,6 +52,7 @@
 #include "joypad_connection.h"
 #include "../input_defines.h"
 #include "../../verbosity.h"
+#include "../common/pad_motion.h"
 
 #define SWITCH_PRO_FULL_LEN      12
 #define SWITCH_PRO_SIMPLE_LEN    12
@@ -841,65 +842,30 @@ static bool hidpad_switch_pro_set_sensor(void *data,
 {
    struct hidpad_switch_pro_data *device =
       (struct hidpad_switch_pro_data*)data;
-   if (!device)
+   if (!device || !pad_motion_want(&device->imu_want, action))
       return false;
-   switch (action)
-   {
-      case RETRO_SENSOR_ACCELEROMETER_ENABLE:
-         device->imu_want |= 1;
-         break;
-      case RETRO_SENSOR_GYROSCOPE_ENABLE:
-         device->imu_want |= 2;
-         break;
-      case RETRO_SENSOR_ACCELEROMETER_DISABLE:
-         device->imu_want &= (uint8_t)~1;
-         break;
-      case RETRO_SENSOR_GYROSCOPE_DISABLE:
-         device->imu_want &= (uint8_t)~2;
-         break;
-      default:
-         return false;
-   }
    if (!device->imu_want)
       device->imu_seen = false;
    return true;
 }
 
-/* One value, in g or radians a second; the pad's axes turned into the
- * DualShock 4's as SDL does, then into libretro's as that pad's are. */
+/* One value: the pad's axes turned into SDL's as SDL turns them, in g
+ * and radians a second, then into libretro's (pad_motion.h). */
 static bool hidpad_switch_pro_sensor(void *data, unsigned id, float *value)
 {
    struct hidpad_switch_pro_data *device =
       (struct hidpad_switch_pro_data*)data;
-   float ps[3];
+   float accel[3], gyro[3];
 
    if (!device || !device->imu_seen)
       return false;
-   if (id <= RETRO_SENSOR_ACCELEROMETER_Z)
-   {
-      if (!(device->imu_want & 1))
-         return false;
-      ps[0] = -(device->accel_scale[1] * device->imu[1]);
-      ps[1] =   device->accel_scale[2] * device->imu[2];
-      ps[2] = -(device->accel_scale[0] * device->imu[0]);
-      switch (id)
-      {
-         case RETRO_SENSOR_ACCELEROMETER_X: *value = ps[0]; return true;
-         case RETRO_SENSOR_ACCELEROMETER_Y: *value = ps[2]; return true;
-         default:                           *value = ps[1]; return true;
-      }
-   }
-   if (id > RETRO_SENSOR_GYROSCOPE_Z || !(device->imu_want & 2))
-      return false;
-   ps[0] = -(device->gyro_scale[1] * (device->imu[4] - device->gyro_rest[1]));
-   ps[1] =   device->gyro_scale[2] * (device->imu[5] - device->gyro_rest[2]);
-   ps[2] = -(device->gyro_scale[0] * (device->imu[3] - device->gyro_rest[0]));
-   switch (id)
-   {
-      case RETRO_SENSOR_GYROSCOPE_X: *value =  ps[0]; return true;
-      case RETRO_SENSOR_GYROSCOPE_Y: *value = -ps[2]; return true;
-      default:                       *value =  ps[1]; return true;
-   }
+   accel[0] = -(device->accel_scale[1] * device->imu[1]);
+   accel[1] =   device->accel_scale[2] * device->imu[2];
+   accel[2] = -(device->accel_scale[0] * device->imu[0]);
+   gyro[0]  = -(device->gyro_scale[1] * (device->imu[4] - device->gyro_rest[1]));
+   gyro[1]  =   device->gyro_scale[2] * (device->imu[5] - device->gyro_rest[2]);
+   gyro[2]  = -(device->gyro_scale[0] * (device->imu[3] - device->gyro_rest[0]));
+   return pad_motion_value(accel, gyro, device->imu_want, id, value);
 }
 
 static void hidpad_switch_pro_set_player(void *data, unsigned player)

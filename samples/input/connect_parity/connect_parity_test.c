@@ -20,6 +20,7 @@
 #include "input/connect/joypad_connection.h"
 #include "input/include/gamepad.h"
 #include "input/common/sony_pad_output.h"
+#include "input/common/sony_pad_motion.h"
 #include <retro_timers.h>
 
 /* shorter than the Wii U Pro's buttons, which end at 0x0E */
@@ -2201,6 +2202,133 @@ static void test_8bitdo(void)
          failures == had ? "pass" : "fail");
 }
 
+/* ---- motion: DualShock 4, DualSense, DualShock 3 ---------------- */
+
+/* the sensors from @ifc's @dev against @want: nothing before a core
+ * asks; then each of the six as wanted, within @tol */
+static unsigned motion_mismatches(const pad_connection_interface_t *ifc,
+      void *dev, const float *want, bool gyro)
+{
+   unsigned k, bad = 0;
+   for (k = 0; k < 6; k++)
+   {
+      float v = 0;
+      bool got = ifc->sensor(dev, RETRO_SENSOR_ACCELEROMETER_X + k, &v);
+      if (k >= 3 && !gyro)
+      {
+         if (got)
+            bad++;
+         continue;
+      }
+      if (!got || fabsf(v - want[k]) > 1e-4f)
+         bad++;
+   }
+   return bad;
+}
+
+static void put_le16(uint8_t *p, int16_t v)
+{
+   p[0] = (uint8_t)(v & 0xff);
+   p[1] = (uint8_t)((uint16_t)v >> 8);
+}
+
+static void test_motion(void)
+{
+   static const int16_t imu[6] = { 100, -200, 300, 4096, -8192, 2048 };
+   sony_pad_motion_t m;
+   float want[6];
+   uint8_t p[80];
+   unsigned k, had = failures;
+   int dummy_connection;
+   void *dev;
+   float v;
+
+   for (k = 0; k < 3; k++)
+   {
+      m.gyro[k]  = imu[k];
+      m.accel[k] = imu[3 + k];
+   }
+   for (k = 0; k < 6; k++)
+      sony_pad_motion_value(&m, RETRO_SENSOR_ACCELEROMETER_X + k, &want[k]);
+
+   /* DualShock 4: report 0x01 over USB from 13, report 0x11 two on */
+   dev = pad_connection_ps4.init(&dummy_connection, 0, &stub_hid);
+   memset(p, 0, sizeof(p));
+   p[0] = 0x01; p[5] = 8;
+   for (k = 0; k < 6; k++)
+      put_le16(p + 13 + 2 * k, imu[k]);
+   deliver(&pad_connection_ps4, dev, p, 64);
+   CHECK(!pad_connection_ps4.sensor(dev, RETRO_SENSOR_GYROSCOPE_X, &v),
+         "motion: the DualShock 4's given before a core asked");
+   pad_connection_ps4.set_sensor(dev, RETRO_SENSOR_ACCELEROMETER_ENABLE);
+   pad_connection_ps4.set_sensor(dev, RETRO_SENSOR_GYROSCOPE_ENABLE);
+   deliver(&pad_connection_ps4, dev, p, 64);
+   CHECK(!motion_mismatches(&pad_connection_ps4, dev, want, true),
+         "motion: the DualShock 4's over USB misread");
+   memmove(p + 3, p + 1, 70);
+   p[0] = 0x11; p[1] = 0xc0; p[2] = 0;
+   memset(p + 13 + 2, 0, 12);
+   deliver(&pad_connection_ps4, dev, p, 78);
+   for (k = 0; k < 6; k++)
+      put_le16(p + 15 + 2 * k, imu[k]);
+   deliver(&pad_connection_ps4, dev, p, 78);
+   CHECK(!motion_mismatches(&pad_connection_ps4, dev, want, true),
+         "motion: the DualShock 4's over Bluetooth misread");
+   pad_connection_ps4.set_sensor(dev, RETRO_SENSOR_GYROSCOPE_DISABLE);
+   CHECK(!pad_connection_ps4.sensor(dev, RETRO_SENSOR_GYROSCOPE_X, &v)
+         && pad_connection_ps4.sensor(dev, RETRO_SENSOR_ACCELEROMETER_X, &v),
+         "motion: the DualShock 4's gyroscope given after the core was done");
+   pad_connection_ps4.deinit(dev);
+
+   /* DualSense: from 16 over USB; report 0x31 one on */
+   dev = pad_connection_ps5.init(&dummy_connection, 0, &stub_hid);
+   pad_connection_ps5.set_sensor(dev, RETRO_SENSOR_ACCELEROMETER_ENABLE);
+   pad_connection_ps5.set_sensor(dev, RETRO_SENSOR_GYROSCOPE_ENABLE);
+   memset(p, 0, sizeof(p));
+   p[0] = 0x01; p[8] = 8;
+   for (k = 0; k < 6; k++)
+      put_le16(p + 16 + 2 * k, imu[k]);
+   deliver(&pad_connection_ps5, dev, p, 64);
+   CHECK(!motion_mismatches(&pad_connection_ps5, dev, want, true),
+         "motion: the DualSense's over USB misread");
+   pad_connection_ps5.deinit(dev);
+   stub_hid.is_bluetooth = stub_is_bluetooth;
+   dev = pad_connection_ps5.init(&dummy_connection, 0, &stub_hid);
+   stub_hid.is_bluetooth = NULL;
+   pad_connection_ps5.set_sensor(dev, RETRO_SENSOR_ACCELEROMETER_ENABLE);
+   pad_connection_ps5.set_sensor(dev, RETRO_SENSOR_GYROSCOPE_ENABLE);
+   memset(p, 0, sizeof(p));
+   p[0] = 0x31; p[9] = 8;
+   for (k = 0; k < 6; k++)
+      put_le16(p + 17 + 2 * k, imu[k]);
+   deliver(&pad_connection_ps5, dev, p, 78);
+   CHECK(!motion_mismatches(&pad_connection_ps5, dev, want, true),
+         "motion: the DualSense's over Bluetooth misread");
+   pad_connection_ps5.deinit(dev);
+
+   /* DualShock 3: the accelerometer alone, big-endian from 41, 113 a g
+    * about 511, on SDL's axes */
+   stub_hid.get_report = stub_ds3_get_report;
+   dev = pad_connection_ps3.init(&dummy_connection, 0, &stub_hid);
+   stub_hid.get_report = NULL;
+   CHECK(!pad_connection_ps3.set_sensor(dev, RETRO_SENSOR_GYROSCOPE_ENABLE),
+         "motion: a gyroscope taken for the DualShock 3");
+   pad_connection_ps3.set_sensor(dev, RETRO_SENSOR_ACCELEROMETER_ENABLE);
+   memset(p, 0, sizeof(p));
+   p[0] = 0x01;
+   p[41] = 0x02; p[42] = 0x70;  /* X 624: 1 g */
+   p[43] = 0x01; p[44] = 0xff;  /* Y 511: none */
+   p[45] = 0x01; p[46] = 0x8e;  /* Z 398: -1 g */
+   deliver(&pad_connection_ps3, dev, p, 49);
+   want[0] = 1.0f; want[1] = 0.0f; want[2] = 1.0f;
+   CHECK(!motion_mismatches(&pad_connection_ps3, dev, want, false),
+         "motion: the DualShock 3's misread");
+   pad_connection_ps3.deinit(dev);
+
+   printf("[%s] motion: DualShock 4 over USB and Bluetooth, DualSense over USB and Bluetooth, DualShock 3's accelerometer, only while asked for\n",
+         failures == had ? "pass" : "fail");
+}
+
 int main(void)
 {
    stub_hid.send_control = stub_send_control;
@@ -2224,6 +2352,7 @@ int main(void)
    test_ds3();
    test_wiiupro();
    test_8bitdo();
+   test_motion();
    CHECK(view_reads && !view_bad,
          "views: %u of %u reports' views disagree with the getters",
          view_bad, view_reads);

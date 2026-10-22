@@ -26,6 +26,8 @@
 #include "../input_defines.h"
 #include "../../driver.h"
 #include "../common/sony_pad_output.h"
+#include "../common/sony_pad_motion.h"
+#include "../common/pad_motion.h"
 
 /* The DualShock 4 and its USB wireless adaptor.
  *
@@ -59,6 +61,10 @@ struct hidpad_ps4_data
    bool stack;          /* behind a Bluetooth stack's header */
    bool lights_sent;
    bool motors_due;
+   /* motion: in the full reports, after the triggers */
+   sony_pad_motion_t motion;
+   uint8_t motion_want; /* pad_motion.h's bits */
+   bool motion_seen;
 };
 
 /* One output report: the motors, and the first time the light bar. */
@@ -178,7 +184,7 @@ static void hidpad_ps4_packet_handler(void *data,
 {
    struct hidpad_ps4_data *device = (struct hidpad_ps4_data*)data;
    const uint8_t *r;
-   unsigned i;
+   unsigned i, rest;
 
    if (!device || !packet)
       return;
@@ -210,6 +216,18 @@ static void hidpad_ps4_packet_handler(void *data,
       device->view.axes[4 + i] = (int16_t)((r[7 + i] << 7) | (r[7 + i] >> 1));
    pad_view_set_buttons(&device->view, hidpad_ps4_decode(r),
          (r[6] & 0x01) != 0);
+   /* a timestamp and the temperature, then the gyroscope and the
+    * accelerometer; not in Bluetooth's short report */
+   rest = size - (unsigned)(r - packet);
+   if (device->motion_want && rest >= 24)
+   {
+      for (i = 0; i < 3; i++)
+      {
+         device->motion.gyro[i]  = sony_pad_le16(r + 12 + 2 * i);
+         device->motion.accel[i] = sony_pad_le16(r + 18 + 2 * i);
+      }
+      device->motion_seen = true;
+   }
 
    if (!device->stack && (!device->lights_sent || device->motors_due))
       hidpad_ps4_send(device);
@@ -247,6 +265,30 @@ static int32_t hidpad_ps4_button(void *data, uint16_t joykey)
    return BIT256_GET(device->view.buttons, joykey) ? 1 : 0;
 }
 
+static bool hidpad_ps4_set_sensor(void *data,
+      enum retro_sensor_action action)
+{
+   struct hidpad_ps4_data *device = (struct hidpad_ps4_data*)data;
+   if (!device || !pad_motion_want(&device->motion_want, action))
+      return false;
+   if (!device->motion_want)
+      device->motion_seen = false;
+   return true;
+}
+
+/* at the pad's nominal scale, as winraw reads it */
+static bool hidpad_ps4_sensor(void *data, unsigned id, float *value)
+{
+   struct hidpad_ps4_data *device = (struct hidpad_ps4_data*)data;
+   if (!device || !device->motion_seen)
+      return false;
+   if (id <= RETRO_SENSOR_ACCELEROMETER_Z
+         ? !(device->motion_want & PAD_MOTION_ACCEL)
+         : !(device->motion_want & PAD_MOTION_GYRO))
+      return false;
+   return sony_pad_motion_value(&device->motion, id, value);
+}
+
 static const input_pad_view_t *hidpad_ps4_view(void *data)
 {
    return &((struct hidpad_ps4_data*)data)->view;
@@ -268,5 +310,8 @@ pad_connection_interface_t pad_connection_ps4 = {
    NULL,  /* status */
    NULL,  /* joypad */
    hidpad_ps4_set_player,
-   hidpad_ps4_view
+   hidpad_ps4_view,
+   NULL,  /* idle */
+   hidpad_ps4_set_sensor,
+   hidpad_ps4_sensor
 };

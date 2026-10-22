@@ -22,6 +22,7 @@
 #include "joypad_connection.h"
 #include "../input_defines.h"
 #include "../../verbosity.h"
+#include "../common/pad_motion.h"
 
 #define DS3_ACTIVATION_REPORT_ID 0xf4
 
@@ -36,6 +37,8 @@ typedef struct ds3_instance
    int player;     /* told: from 1, -1 for none; 0 not yet */
    bool led_set;
    bool motors_due;
+   uint8_t motion_want; /* pad_motion.h's bits: the accelerometer alone */
+   uint16_t accel[3];   /* as the report has them, 511 at rest */
    /* the RetroPad's buttons and PS as 16; the sticks as 0 to 3, the
     * pressures 4 to 15 */
    input_pad_view_t view;
@@ -329,7 +332,35 @@ static void ds3_packet_handler(void *device_data,
          unsigned b = packet[ds3_pressure_byte[i]];
          device->view.axes[4 + i] = (int16_t)((b << 7) | (b >> 1));
       }
+      /* the accelerometer, big-endian, X then Y then Z from 41 */
+      for (i = 0; i < 3; i++)
+         device->accel[i] = (uint16_t)((packet[41 + 2 * i] << 8)
+               | packet[42 + 2 * i]);
    }
+}
+
+/* The accelerometer, as SDL reads it: 113 counts a g about 511, on
+ * SDL's axes; the pad's one-axis gyroscope is not given. */
+static bool ds3_set_sensor(void *device_data, enum retro_sensor_action action)
+{
+   ds3_instance_t *device = (ds3_instance_t *)device_data;
+   if (     !device
+         || action == RETRO_SENSOR_GYROSCOPE_ENABLE
+         || !pad_motion_want(&device->motion_want, action))
+      return false;
+   return true;
+}
+
+static bool ds3_sensor(void *device_data, unsigned id, float *value)
+{
+   ds3_instance_t *device = (ds3_instance_t *)device_data;
+   float accel[3];
+   if (!device || !device->accel[0])
+      return false;
+   accel[0] =  ((float)device->accel[0] - 511.0f) / 113.0f;
+   accel[1] = -((float)device->accel[2] - 511.0f) / 113.0f;
+   accel[2] = -((float)device->accel[1] - 511.0f) / 113.0f;
+   return pad_motion_value(accel, NULL, device->motion_want, id, value);
 }
 
 static void ds3_set_rumble(void *device_data,
@@ -417,5 +448,8 @@ pad_connection_interface_t pad_connection_ps3 = {
    NULL,  /* status */
    NULL,  /* joypad */
    ds3_set_player,
-   ds3_view
+   ds3_view,
+   NULL,  /* idle */
+   ds3_set_sensor,
+   ds3_sensor
 };

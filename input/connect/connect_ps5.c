@@ -40,6 +40,8 @@
 #include "joypad_connection.h"
 #include "../input_defines.h"
 #include "../common/sony_pad_output.h"
+#include "../common/sony_pad_motion.h"
+#include "../common/pad_motion.h"
 
 #define PS5_USB_REPORT_LEN    64
 #define PS5_BT_SHORT_LEN      10
@@ -67,6 +69,10 @@ struct hidpad_ps5_data
    bool vibration_v2;   /* the newer way of driving the motors */
    bool lights_sent;
    bool motors_due;
+   /* motion: in the USB report and Bluetooth's full one, from 16 */
+   sony_pad_motion_t motion;
+   uint8_t motion_want; /* pad_motion.h's bits */
+   bool motion_seen;
 };
 
 static void *hidpad_ps5_start(void *data, uint32_t slot,
@@ -175,6 +181,7 @@ static void hidpad_ps5_packet_handler(void *data,
    const uint8_t *r               = packet;
    const uint8_t *buttons, *triggers;
    unsigned len                   = size;
+   unsigned motion_len            = 0; /* what of the report after r */
    unsigned i;
    uint8_t link                   = PS5_LINK_NONE;
 
@@ -195,6 +202,7 @@ static void hidpad_ps5_packet_handler(void *data,
    {
       triggers    = r + 5;
       buttons     = r + 8;
+      motion_len  = len;
       if (!link)
          link     = PS5_LINK_USB;
    }
@@ -208,6 +216,7 @@ static void hidpad_ps5_packet_handler(void *data,
       r++;        /* the report's sequence byte */
       triggers    = r + 5;
       buttons     = r + 8;
+      motion_len  = len - 1;
    }
    else
       return;
@@ -220,6 +229,15 @@ static void hidpad_ps5_packet_handler(void *data,
             | (triggers[i] >> 1));
    pad_view_set_buttons(&device->view, hidpad_ps5_decode(buttons),
          (buttons[2] & 0x01) != 0);
+   if (device->motion_want && motion_len >= 16 + 12)
+   {
+      for (i = 0; i < 3; i++)
+      {
+         device->motion.gyro[i]  = sony_pad_le16(r + 16 + 2 * i);
+         device->motion.accel[i] = sony_pad_le16(r + 22 + 2 * i);
+      }
+      device->motion_seen = true;
+   }
 
    if (     device->link != PS5_LINK_STACK
          && (!device->lights_sent || device->motors_due))
@@ -287,6 +305,30 @@ static int32_t hidpad_ps5_button(void *data, uint16_t joykey)
    return BIT256_GET(device->view.buttons, joykey) ? 1 : 0;
 }
 
+static bool hidpad_ps5_set_sensor(void *data,
+      enum retro_sensor_action action)
+{
+   struct hidpad_ps5_data *device = (struct hidpad_ps5_data*)data;
+   if (!device || !pad_motion_want(&device->motion_want, action))
+      return false;
+   if (!device->motion_want)
+      device->motion_seen = false;
+   return true;
+}
+
+/* at the pads' nominal scale, as winraw reads them */
+static bool hidpad_ps5_sensor(void *data, unsigned id, float *value)
+{
+   struct hidpad_ps5_data *device = (struct hidpad_ps5_data*)data;
+   if (!device || !device->motion_seen)
+      return false;
+   if (id <= RETRO_SENSOR_ACCELEROMETER_Z
+         ? !(device->motion_want & PAD_MOTION_ACCEL)
+         : !(device->motion_want & PAD_MOTION_GYRO))
+      return false;
+   return sony_pad_motion_value(&device->motion, id, value);
+}
+
 static const input_pad_view_t *hidpad_ps5_view(void *data)
 {
    return &((struct hidpad_ps5_data*)data)->view;
@@ -308,7 +350,10 @@ pad_connection_interface_t pad_connection_ps5 = {
    NULL,  /* status */
    NULL,  /* joypad */
    hidpad_ps5_set_player,
-   hidpad_ps5_view
+   hidpad_ps5_view,
+   NULL,  /* idle */
+   hidpad_ps5_set_sensor,
+   hidpad_ps5_sensor
 };
 
 pad_connection_interface_t pad_connection_ps5_edge = {
@@ -327,5 +372,8 @@ pad_connection_interface_t pad_connection_ps5_edge = {
    NULL,  /* status */
    NULL,  /* joypad */
    hidpad_ps5_set_player,
-   hidpad_ps5_view
+   hidpad_ps5_view,
+   NULL,  /* idle */
+   hidpad_ps5_set_sensor,
+   hidpad_ps5_sensor
 };
