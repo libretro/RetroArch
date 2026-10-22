@@ -22,7 +22,9 @@ typedef struct rvp9_hw_ops
    void *decoder;
    /* 0 accepted, 1 busy without submission, negative failure.
     * Acceptance ends borrowed CPU reads; asynchronous work owns its input.
-    * Reusing a DPB slot must not invalidate previously exported leases. */
+    * Reusing a DPB slot must not invalidate previously exported leases.
+    * Packet decoders receive show_existing_frame with its referenced slot,
+    * inherited geometry and show_frame set; no reference state is committed. */
    int (*decode)(void *decoder, const uint8_t *packet, size_t size,
          const rvp9_hw_picture_t *picture);
    /* 0 independent NV12/P010 GPU lease, 1 busy without lease, negative failure. */
@@ -35,6 +37,8 @@ typedef struct rvp9_hw_backend
    bool (*open)(void *user, const rvp9_hdr *header, unsigned slots,
          rvp9_hw_ops_t *ops);
    void (*close)(rvp9_hw_ops_t *ops);
+   /* Opaque bitstream decoders also consume show_existing_frame packets. */
+   bool packet_decoder;
 } rvp9_hw_backend_t;
 
 RETRO_BEGIN_DECLS
@@ -59,13 +63,13 @@ typedef struct rvp9_hw_session
    int reference_slots[RVP9_REF_FRAMES];
    int previous_slot, output_slot;
    unsigned slots;
-   int started, phase, broken;
+   int started, phase, broken, packet_decoder;
 } rvp9_hw_session_t;
 
 /* Caller owns storage/backend. Reset only after pending calls are cancelled;
  * exported leases remain the backend's responsibility, including after close. */
-static INLINE bool rvp9_hw_session_init(rvp9_hw_session_t *s,
-      const rvp9_hw_ops_t *ops, unsigned slots)
+static INLINE bool rvp9_hw_session_init_mode(rvp9_hw_session_t *s,
+      const rvp9_hw_ops_t *ops, unsigned slots, bool packet_decoder)
 {
    unsigned i;
    if (!s) return false;
@@ -76,7 +80,14 @@ static INLINE bool rvp9_hw_session_init(rvp9_hw_session_t *s,
       return false;
    s->ops = *ops;
    s->slots = slots;
+   s->packet_decoder = packet_decoder;
    return true;
+}
+
+static INLINE bool rvp9_hw_session_init(rvp9_hw_session_t *s,
+      const rvp9_hw_ops_t *ops, unsigned slots)
+{
+   return rvp9_hw_session_init_mode(s, ops, slots, false);
 }
 
 static INLINE void rvp9_hw_session_clear_packet(rvp9_hw_session_t *s)
@@ -162,6 +173,22 @@ static INLINE int rvp9_hw_session_submit(rvp9_hw_session_t *s,
       {
          if (!s->started || h->profile != s->header.profile
                || s->reference_slots[h->frame_to_show] < 0) return -1;
+         if (s->packet_decoder)
+         {
+            h->w = s->header.w;
+            h->h = s->header.h;
+            h->show_frame = 1;
+            s->pending.slot = s->reference_slots[h->frame_to_show];
+            s->pending.previous_slot = s->previous_slot;
+            for (i = 0; i < RVP9_REF_FRAMES; i++)
+               s->pending.reference_slots[i] = s->reference_slots[i];
+            for (i = 0; i < RVP9_REFS_PER_FRAME; i++)
+               s->pending.named_slots[i] = -1;
+            s->packet = packet;
+            s->packet_size = size;
+            s->phase = 2;
+            goto submit;
+         }
          s->output_slot = s->reference_slots[h->frame_to_show];
          return 0;
       }
@@ -199,6 +226,7 @@ static INLINE int rvp9_hw_session_submit(rvp9_hw_session_t *s,
       rvp9_hw_inherit(h, &s->header);
       s->packet = packet; s->packet_size = size; s->phase = 1;
    }
+submit:
    ret = s->ops.decode(s->ops.decoder, s->packet, s->packet_size, &s->pending);
    if (ret > 0) return 1;
    if (ret < 0)
@@ -206,6 +234,12 @@ static INLINE int rvp9_hw_session_submit(rvp9_hw_session_t *s,
       s->broken = 1;
       rvp9_hw_session_clear_packet(s);
       return -1;
+   }
+   if (s->phase == 2)
+   {
+      s->output_slot = s->pending.slot;
+      rvp9_hw_session_clear_packet(s);
+      return 0;
    }
    h = &s->pending.header;
    for (i = 0; i < RVP9_REF_FRAMES; i++)
@@ -221,7 +255,8 @@ static INLINE int rvp9_hw_session_submit(rvp9_hw_session_t *s,
 
 /* 0 caller-owned GPU frame, 1 unavailable/busy, negative failure.
  * Release/abandon the previous out before calling. No lease on busy/error.
- * show_existing_frame uses output alone, without a decode submission. */
+ * Surface backends repeat output alone; packet decoders first consume the
+ * show_existing_frame packet without changing reference-slot state. */
 static INLINE int rvp9_hw_session_output(rvp9_hw_session_t *s,
       video_hw_frame_t *out)
 {

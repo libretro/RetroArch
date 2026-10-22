@@ -1297,6 +1297,7 @@ static bool d3d11vd_init_adapter(void *adapter, unsigned formats, bool av1_only)
    d3d11vd.vp9.user = NULL;
    d3d11vd.vp9.open = d3d11vd_vp9_open;
    d3d11vd.vp9.close = d3d11_video_decode_vp9_close;
+   d3d11vd.vp9.packet_decoder = false;
    if (!av1_only) rvp9_set_hw_backend(&d3d11vd.vp9);
 #endif
 #ifdef HAVE_RAV1

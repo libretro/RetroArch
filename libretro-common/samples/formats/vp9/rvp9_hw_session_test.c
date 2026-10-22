@@ -252,6 +252,56 @@ static int run(int depth)
    return 0;
 }
 
+static int packet_mode(int depth)
+{
+   rvp9_hw_session_t *s = (rvp9_hw_session_t*)calloc(1, sizeof(*s));
+   mock_t *m = (mock_t*)calloc(1, sizeof(*m));
+   rvp9_hdr *saved = (rvp9_hdr*)calloc(1, sizeof(*saved));
+   rvp9_hw_ops_t ops;
+   video_hw_frame_t frame;
+   size_t len;
+   int map[RVP9_REF_FRAMES], last;
+   unsigned calls;
+   CHECK(s && m && saved);
+   ops.decoder = m; ops.decode = decode; ops.output = output;
+   CHECK(rvp9_hw_session_init_mode(s, &ops, 10, true));
+   len = coded(1, 1, 255, 0, depth, 0, 0);
+   CHECK(!rvp9_hw_session_submit(s, packet, len));
+   CHECK(!rvp9_hw_session_output(s, &frame));
+   video_hw_frame_abandon(&frame);
+   len = coded(0, 0, 128, 0, depth, 0, 0);
+   CHECK(!rvp9_hw_session_submit(s, packet, len));
+   CHECK(rvp9_hw_session_output(s, &frame) == 1);
+   *saved = s->header;
+   memcpy(map, s->reference_slots, sizeof(map));
+   last = s->previous_slot;
+   len = existing(7, depth);
+   memcpy(other, packet, len);
+   m->busy = 2;
+   CHECK(rvp9_hw_session_submit(s, packet, len) == 1 && s->phase == 2);
+   calls = m->decodes;
+   CHECK(rvp9_hw_session_submit(s, other, len) < 0 && m->decodes == calls);
+   CHECK(rvp9_hw_session_submit(s, packet, len + 1) < 0 && m->decodes == calls);
+   CHECK(rvp9_hw_session_cancel(s) && !s->phase && s->output_slot < 0);
+   CHECK(rvp9_hw_session_submit(s, packet, len) == 1);
+   CHECK(!rvp9_hw_session_submit(s, packet, len));
+   CHECK(m->picture.header.show_existing_frame && m->picture.header.show_frame);
+   CHECK(m->picture.header.w == saved->w && m->picture.header.h == saved->h
+         && m->picture.header.bit_depth == depth && m->picture.slot == map[7]);
+   CHECK(!memcmp(saved, &s->header, sizeof(*saved))
+         && !memcmp(map, s->reference_slots, sizeof(map)) && s->previous_slot == last);
+   m->output_busy = 1;
+   CHECK(rvp9_hw_session_output(s, &frame) == 1 && !frame.image);
+   CHECK(!rvp9_hw_session_output(s, &frame) && frame.image == (uint64_t)map[7] + 1);
+   video_hw_frame_abandon(&frame);
+   m->fail = 1;
+   CHECK(rvp9_hw_session_submit(s, packet, len) < 0 && s->broken && !s->phase);
+   CHECK(!memcmp(saved, &s->header, sizeof(*saved))
+         && !memcmp(map, s->reference_slots, sizeof(map)));
+   free(saved); free(m); free(s);
+   return 0;
+}
+
 static unsigned read32(const uint8_t *p)
 {
    return (unsigned)p[0] | ((unsigned)p[1] << 8)
@@ -298,7 +348,7 @@ static int stream(const char *path)
 int main(int argc, char **argv)
 {
    if (argc == 2) return stream(argv[1]);
-   if (run(8) || run(10)) return 1;
+   if (run(8) || run(10) || packet_mode(8) || packet_mode(10)) return 1;
    puts("VP9 hardware-session metadata, retries and lease tests passed (8/10-bit)");
    return 0;
 }

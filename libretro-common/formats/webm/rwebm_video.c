@@ -1456,7 +1456,7 @@ int rwebm_video_stream_set_hw(rwebm_video_stream_t *s, int enable)
          || candidate->pending.header.h != (int)s->height
          || !rvp9_hw_backend_open(&candidate->pending.header, 10, &ops, &backend))
    { free(candidate); return 0; }
-   if (!rvp9_hw_session_init(candidate, &ops, 10))
+   if (!rvp9_hw_session_init_mode(candidate, &ops, 10, backend.packet_decoder))
    { backend.close(&ops); free(candidate); return 0; }
    if (s->vp9) { rvp9_free(s->vp9); free(s->vp9); s->vp9 = NULL; }
    s->hw = candidate; s->hw_backend = backend; s->hw_want = 1;
