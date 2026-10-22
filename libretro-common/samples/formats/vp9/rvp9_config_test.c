@@ -1,0 +1,84 @@
+/* Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier: MIT */
+#include <assert.h>
+#include <stdio.h>
+#include <formats/rvp9_config.h>
+
+static const uint8_t original[12] = {1, 0, 0, 0, 0, 0, 0x82, 1, 13, 1, 0, 0};
+static rvp9_config_t config, empty;
+
+static void refuse(uint8_t *bytes, size_t size)
+{
+   memset(&config, 0xff, sizeof(config));
+   assert(!rvp9_config_parse(bytes, size, &config));
+   assert(!memcmp(&config, &empty, sizeof(config)));
+}
+
+int main(void)
+{
+   static const unsigned levels[] =
+         {0, 10, 11, 20, 21, 30, 31, 40, 41, 50, 51, 52, 60, 61, 62};
+   static const unsigned depths[] = {8, 10, 12};
+   static const unsigned depth_masks[] = {1, 1, 6, 6};
+   static const unsigned chroma_masks[] = {3, 12, 3, 12};
+   uint8_t bytes[13];
+   unsigned i, j, profile, depth, chroma;
+   bool allowed;
+   memcpy(bytes, original, sizeof(original));
+   assert(rvp9_config_parse(bytes, 12, &config));
+   assert(config.profile == 0 && config.level == 0 && config.bit_depth == 8
+         && config.chroma == 1 && !config.full_range && config.primaries == 1
+         && config.transfer == 13 && config.matrix == 1);
+   assert(!rvp9_config_parse(bytes, 12, NULL));
+   refuse(NULL, 12);
+   for (i = 0; i < 12; i++)
+      refuse(bytes, i);
+   refuse(bytes, 13);
+   for (i = 0; i < 12; i++)
+   {
+      if (i == 0 || (i > 0 && i < 4) || i > 9)
+      {
+         memcpy(bytes, original, sizeof(original));
+         bytes[i] = i ? 1 : 0;
+         refuse(bytes, 12);
+      }
+   }
+   memcpy(bytes, original, sizeof(original));
+   for (i = 0; i < 256; i++)
+   {
+      allowed = false;
+      for (j = 0; j < sizeof(levels) / sizeof(levels[0]); j++)
+         if (i == levels[j])
+            allowed = true;
+      bytes[5] = (uint8_t)i;
+      assert(rvp9_config_parse(bytes, 12, &config) == allowed);
+   }
+   for (profile = 0; profile < 5; profile++)
+      for (depth = 0; depth < 3; depth++)
+         for (chroma = 0; chroma < 8; chroma++)
+         {
+            memcpy(bytes, original, sizeof(original));
+            bytes[4] = (uint8_t)profile;
+            bytes[6] = (uint8_t)((depths[depth] << 4) | (chroma << 1) | 1);
+            allowed = profile < 4
+                  && (depth_masks[profile] & (1u << depth)) != 0
+                  && (chroma_masks[profile] & (1u << chroma)) != 0;
+            assert(rvp9_config_parse(bytes, 12, &config) == allowed);
+            if (allowed)
+               assert(config.chroma == chroma && config.full_range == 1
+                     && config.bit_depth == depths[depth]);
+         }
+   memcpy(bytes, original, sizeof(original));
+   bytes[4] = 1;
+   bytes[6] = 0x86;
+   for (i = 0; i < 256; i++)
+   {
+      bytes[7] = bytes[8] = bytes[9] = (uint8_t)i;
+      assert(rvp9_config_parse(bytes, 12, &config));
+      assert(config.primaries == i && config.transfer == i && config.matrix == i);
+   }
+   bytes[9] = 0;
+   bytes[6] = 0x84;
+   refuse(bytes, 12);
+   puts("PASS: VP9 vpcC FullBox bounds, profiles/depths/chroma, levels and raw CICP preservation");
+   return 0;
+}

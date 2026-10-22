@@ -1,7 +1,8 @@
 CC ?= cc
 CFLAGS ?= -O2 -Wall -Wextra -std=c89
 CFLAGS += -I../../../include
-TARGETS := rvp9_reference_test rvp9_hw_session_test rwebm_hw_stream_test
+TARGETS := rvp9_config_test rvp9_reference_test rvp9_hw_session_test rwebm_hw_stream_test
+
 WEBM_SOURCES := ../../../formats/vp9/rvp9.c ../../../formats/webm/rwebm.c \
  ../../../formats/video_player.c \
  ../../../formats/image_transfer.c ../../../formats/vp8/rvp8.c \
@@ -15,6 +16,9 @@ endif
 
 all: $(TARGETS)
 
+rvp9_config_test: rvp9_config_test.c ../../../include/formats/rvp9_config.h
+	$(CC) $(CFLAGS) $< -o $@ $(LDFLAGS)
+
 rvp9_reference_test: rvp9_reference_test.c ../../../formats/vp9/rvp9.c ../../../formats/vp9/rvp9_recon.inc ../../../include/formats/rvp9.h
 	$(CC) $(CFLAGS) rvp9_reference_test.c -o $@ $(LDFLAGS)
 
@@ -27,6 +31,7 @@ rwebm_hw_stream_test: rwebm_hw_stream_test.c $(WEBM_SOURCES) ../../../formats/we
 	 rwebm_hw_stream_test.c $(WEBM_SOURCES) -o $@ $(LDFLAGS) -Wl,--gc-sections -lm
 
 check: $(TARGETS)
+	./rvp9_config_test
 	./rvp9_reference_test
 	./rvp9_hw_session_test
 	./rwebm_hw_stream_test
