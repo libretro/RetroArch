@@ -18,9 +18,9 @@
  * build may define RSLC_NO_TEXT and leave rslc_emit.c out. */
 
 #ifdef HAVE_RSLC
-#include "../libretro-common/glsl/rslc_front.c"
-#include "../libretro-common/glsl/rslc_ir.c"
+#include "../libretro-common/gfx/shaders/rslc_front.c"
+#include "../libretro-common/gfx/shaders/rslc_ir.c"
 #ifndef RSLC_NO_TEXT
-#include "../libretro-common/glsl/rslc_emit.c"
+#include "../libretro-common/gfx/shaders/rslc_emit.c"
 #endif
 #endif

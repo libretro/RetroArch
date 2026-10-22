@@ -2014,7 +2014,9 @@ endif
 
 ifeq ($(HAVE_RSLC),1)
    DEFINES += -DHAVE_RSLC
-   OBJ += $(LIBRETRO_COMM_DIR)/glsl/rslc_front.o           $(LIBRETRO_COMM_DIR)/glsl/rslc_ir.o           $(LIBRETRO_COMM_DIR)/glsl/rslc_emit.o
+   OBJ += $(LIBRETRO_COMM_DIR)/gfx/shaders/rslc_front.o \
+          $(LIBRETRO_COMM_DIR)/gfx/shaders/rslc_ir.o \
+          $(LIBRETRO_COMM_DIR)/gfx/shaders/rslc_emit.o
 endif
 
 ifeq ($(HAVE_SHADERS_COMMON), 1)

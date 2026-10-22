@@ -35,7 +35,7 @@
  * under opts->arena_cap.  The implementations live in rslc_ir.c so
  * each TU carries one copy of the code, not three. */
 
-#include <rslc.h>
+#include <gfx/shaders/rslc.h>
 
 RETRO_BEGIN_DECLS
 

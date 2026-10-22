@@ -7,7 +7,7 @@
 # unit compiled the way libretro-common ships it (C89, -O2), summed
 # for the two build shapes: Vulkan-only (TU 1 + TU 2) and full (all
 # three). Run by hand before delivering a change under
-# libretro-common/glsl/. When a change means to grow a unit, the
+# libretro-common/gfx/shaders/. When a change means to grow a unit, the
 # reference moves with it in the same commit, with the reason in the
 # message.
 #
@@ -25,8 +25,8 @@ tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 
 measure() {
-   "$cc" -std=c89 -O2 -Wall -I"$inc" -Ilibretro-common/glsl \
-      -c "libretro-common/glsl/$1.c" -o "$tmp/$1.o"
+   "$cc" -std=c89 -O2 -Wall -I"$inc" -Ilibretro-common/gfx/shaders \
+      -c "libretro-common/gfx/shaders/$1.c" -o "$tmp/$1.o"
    size "$tmp/$1.o" | awk 'NR == 2 { print $1 }'
 }
 

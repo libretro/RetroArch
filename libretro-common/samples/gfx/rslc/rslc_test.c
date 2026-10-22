@@ -29,7 +29,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <rslc.h>
+#include <gfx/shaders/rslc.h>
 #include "rslc_share.h"
 
 static int fails;

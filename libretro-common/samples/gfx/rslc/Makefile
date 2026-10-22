@@ -6,9 +6,9 @@ LIBRETRO_COMM_DIR := ../../..
 
 SOURCES := \
 	rslc_test.c \
-	$(LIBRETRO_COMM_DIR)/glsl/rslc_front.c \
-	$(LIBRETRO_COMM_DIR)/glsl/rslc_ir.c \
-	$(LIBRETRO_COMM_DIR)/glsl/rslc_emit.c
+	$(LIBRETRO_COMM_DIR)/gfx/shaders/rslc_front.c \
+	$(LIBRETRO_COMM_DIR)/gfx/shaders/rslc_ir.c \
+	$(LIBRETRO_COMM_DIR)/gfx/shaders/rslc_emit.c
 
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
@@ -16,7 +16,7 @@ OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 # same flags so a C99-ism cannot hide in it.
 CFLAGS  += -Wall -Wextra -pedantic -std=c89 -Wno-long-long \
 	-Werror=implicit-function-declaration -g1 \
-	-I$(LIBRETRO_COMM_DIR)/include -I$(LIBRETRO_COMM_DIR)/glsl
+	-I$(LIBRETRO_COMM_DIR)/include -I$(LIBRETRO_COMM_DIR)/gfx/shaders
 
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)
