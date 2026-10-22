@@ -31,7 +31,9 @@ static INLINE OSStatus videotoolbox_vp9_format_create(const rvp9_hdr *header,
    CFDataRef data        = NULL;
    CFDictionaryRef atoms = NULL, extensions = NULL;
    CFNumberRef depth = NULL;
-   const void *keys[2], *values[2];
+   const void *keys[6], *values[6];
+   CFStringRef primaries = NULL, transfer = NULL, matrix = NULL;
+   unsigned count = 3;
    int32_t bits;
    OSStatus status = kCMFormatDescriptionError_AllocationFailed;
    if (!out)
@@ -56,7 +58,40 @@ static INLINE OSStatus videotoolbox_vp9_format_create(const rvp9_hdr *header,
    keys[1]    = CFSTR("BitsPerComponent");
    values[0]  = atoms;
    values[1]  = depth;
-   extensions = CFDictionaryCreate(kCFAllocatorDefault, keys, values, 2,
+   /* vpcC alone does not prevent size-based CoreVideo color defaults. */
+   keys[2] = kCMFormatDescriptionExtension_FullRangeVideo;
+   values[2] = config.color.range == 2 ? kCFBooleanTrue : kCFBooleanFalse;
+   if (config.color.primaries == 1)
+      primaries = kCVImageBufferColorPrimaries_ITU_R_709_2;
+   else if (config.color.primaries == 9)
+      primaries = kCVImageBufferColorPrimaries_ITU_R_2020;
+   switch (config.color.transfer)
+   {
+      case 1: transfer = kCVImageBufferTransferFunction_ITU_R_709_2; break;
+      case 13: transfer = kCVImageBufferTransferFunction_sRGB; break;
+      case 16: transfer = kCVImageBufferTransferFunction_SMPTE_ST_2084_PQ; break;
+      case 18: transfer = kCVImageBufferTransferFunction_ITU_R_2100_HLG; break;
+   }
+   if (config.color.matrix == 1)
+      matrix = kCVImageBufferYCbCrMatrix_ITU_R_709_2;
+   else if (config.color.matrix == 9)
+      matrix = kCVImageBufferYCbCrMatrix_ITU_R_2020;
+   if (primaries)
+   {
+      keys[count] = kCMFormatDescriptionExtension_ColorPrimaries;
+      values[count++] = primaries;
+   }
+   if (transfer)
+   {
+      keys[count] = kCMFormatDescriptionExtension_TransferFunction;
+      values[count++] = transfer;
+   }
+   if (matrix)
+   {
+      keys[count] = kCMFormatDescriptionExtension_YCbCrMatrix;
+      values[count++] = matrix;
+   }
+   extensions = CFDictionaryCreate(kCFAllocatorDefault, keys, values, count,
          &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
    if (!extensions)
       goto done;

@@ -30,9 +30,17 @@ static void callback(void *user, void *frame, OSStatus status,
 }
 
 #ifndef VT_VP9_NATIVE
+const char kCVImageBufferColorPrimaries_ITU_R_709_2[] = "0";
+const char kCVImageBufferColorPrimaries_ITU_R_2020[] = "1";
+const char kCVImageBufferTransferFunction_ITU_R_709_2[] = "2";
+const char kCVImageBufferTransferFunction_sRGB[] = "3";
+const char kCVImageBufferTransferFunction_SMPTE_ST_2084_PQ[] = "4";
+const char kCVImageBufferTransferFunction_ITU_R_2100_HLG[] = "5";
+const char kCVImageBufferYCbCrMatrix_ITU_R_709_2[] = "6";
+const char kCVImageBufferYCbCrMatrix_ITU_R_2020[] = "7";
 struct object
 {
-   const void *keys[3], *values[3];
+   const void *keys[6], *values[6];
    struct object *format;
    CMBlockBufferCustomBlockSource source;
    void *data;
@@ -67,9 +75,22 @@ static struct object *new_object(int kind)
    return p;
 }
 
+static bool mock_constant_value(const void *value)
+{
+   return value == kCFBooleanTrue || value == kCFBooleanFalse
+      || value == kCVImageBufferColorPrimaries_ITU_R_709_2
+      || value == kCVImageBufferColorPrimaries_ITU_R_2020
+      || value == kCVImageBufferTransferFunction_ITU_R_709_2
+      || value == kCVImageBufferTransferFunction_sRGB
+      || value == kCVImageBufferTransferFunction_SMPTE_ST_2084_PQ
+      || value == kCVImageBufferTransferFunction_ITU_R_2100_HLG
+      || value == kCVImageBufferYCbCrMatrix_ITU_R_709_2
+      || value == kCVImageBufferYCbCrMatrix_ITU_R_2020;
+}
+
 static void retain(const void *value)
 {
-   if (value != kCFBooleanTrue)
+   if (!mock_constant_value(value))
       retro_atomic_fetch_add_int(&((struct object *)value)->refs, 1);
 }
 
@@ -82,7 +103,7 @@ void CFRelease(void *value)
       return;
    if (p->kind == 3)
       for (i = 0; i < p->count; i++)
-         if (p->values[i] != kCFBooleanTrue)
+         if (!mock_constant_value(p->values[i]))
             CFRelease((void *)p->values[i]);
    if (p->format)
       CFRelease(p->format);
@@ -134,7 +155,7 @@ CFDictionaryRef CFDictionaryCreate(void *allocator, const void **keys,
 {
    struct object *p = new_object(3);
    long i;
-   assert(!allocator && kc && vc && count >= 0 && count <= 3);
+   assert(!allocator && kc && vc && count >= 0 && count <= 6);
    if (!p)
       return NULL;
    p->count = (int)count;
@@ -170,6 +191,35 @@ OSStatus CMVideoFormatDescriptionCreate(void *allocator, CMVideoCodecType codec,
    assert(data->bytes[0] == 1 && data->bytes[4] == header.profile);
    assert(data->bytes[8] == color.transfer && !data->bytes[10]
           && !data->bytes[11]);
+   assert(get(extensions, "FullRangeVideo")
+         == (data->bytes[6] & 1 ? kCFBooleanTrue : kCFBooleanFalse));
+   if (data->bytes[7] == 1 || data->bytes[7] == 9)
+      assert((const void*)get(extensions, "ColorPrimaries")
+            == (data->bytes[7] == 9 ? (const void*)kCVImageBufferColorPrimaries_ITU_R_2020
+               : (const void*)kCVImageBufferColorPrimaries_ITU_R_709_2));
+   if (data->bytes[9] == 1 || data->bytes[9] == 9)
+      assert((const void*)get(extensions, "YCbCrMatrix")
+            == (data->bytes[9] == 9 ? (const void*)kCVImageBufferYCbCrMatrix_ITU_R_2020
+               : (const void*)kCVImageBufferYCbCrMatrix_ITU_R_709_2));
+   switch (data->bytes[8])
+   {
+      case 1:
+         assert((const void*)get(extensions, "TransferFunction")
+               == kCVImageBufferTransferFunction_ITU_R_709_2);
+         break;
+      case 13:
+         assert((const void*)get(extensions, "TransferFunction")
+               == kCVImageBufferTransferFunction_sRGB);
+         break;
+      case 16:
+         assert((const void*)get(extensions, "TransferFunction")
+               == kCVImageBufferTransferFunction_SMPTE_ST_2084_PQ);
+         break;
+      case 18:
+         assert((const void*)get(extensions, "TransferFunction")
+               == kCVImageBufferTransferFunction_ITU_R_2100_HLG);
+         break;
+   }
    *out = new_object(4);
    if (*out)
    {
@@ -500,7 +550,7 @@ int main(void)
    VTDecompressionSessionRef session;
    VTDecompressionOutputCallbackRecord cb;
    OSStatus status;
-   unsigned depth, range, chroma;
+   unsigned depth, range, chroma, transfer_case;
 #ifndef VT_VP9_NATIVE
    int failure, before;
 #endif
@@ -515,12 +565,14 @@ int main(void)
    header.subsampling_x = header.subsampling_y = 1;
    cb.decompressionOutputCallback              = callback;
    cb.decompressionOutputRefCon                = &callback_token;
-   for (depth = 8; depth <= 10; depth += 2)
+   for (transfer_case = 0; transfer_case < 4; transfer_case++)
    {
+      depth = transfer_case < 2 ? 8 : 10;
       header.bit_depth   = (int)depth;
       header.profile     = depth == 10 ? 2 : 0;
       header.color_space = depth == 10 ? 5 : 2;
-      color.transfer     = depth == 10 ? 16 : 1;
+      color.transfer     = depth == 10 ? (transfer_case & 1 ? 18 : 16)
+                                     : (transfer_case & 1 ? 13 : 1);
       for (range = 0; range < 2; range++)
       {
          header.color_range = (int)range;
@@ -543,6 +595,17 @@ int main(void)
                       && bytes[4] == header.profile);
                assert(bytes[8] == color.transfer && (bytes[6] & 1) == range
                       && ((bytes[6] >> 1) & 7) == chroma);
+               assert(CFEqual(CMFormatDescriptionGetExtension(format,
+                        kCMFormatDescriptionExtension_ColorPrimaries),
+                     depth == 10 ? kCVImageBufferColorPrimaries_ITU_R_2020
+                        : kCVImageBufferColorPrimaries_ITU_R_709_2));
+               assert(CFEqual(CMFormatDescriptionGetExtension(format,
+                        kCMFormatDescriptionExtension_YCbCrMatrix),
+                     depth == 10 ? kCVImageBufferYCbCrMatrix_ITU_R_2020
+                        : kCVImageBufferYCbCrMatrix_ITU_R_709_2));
+               assert(CFEqual(CMFormatDescriptionGetExtension(format,
+                        kCMFormatDescriptionExtension_FullRangeVideo),
+                     range ? kCFBooleanTrue : kCFBooleanFalse));
             }
 #endif
 #ifdef VIDEOTOOLBOX_VP9_SAMPLE

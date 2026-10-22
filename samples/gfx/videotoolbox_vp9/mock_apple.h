@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 typedef int32_t OSStatus;
+typedef const char *CFStringRef;
 typedef uint32_t CMVideoCodecType;
 typedef struct object *CFDataRef;
 typedef struct object *CFDictionaryRef;
@@ -72,10 +73,23 @@ typedef struct
 #define CFSTR(s) (s)
 #define kCFAllocatorDefault NULL
 #define kCFBooleanTrue ((void *)1)
+#define kCFBooleanFalse ((void *)2)
 #define kCFNumberSInt32Type 3
 #define kCMFormatDescriptionError_InvalidParameter (-12710)
 #define kCMFormatDescriptionError_AllocationFailed (-12711)
 #define kCMFormatDescriptionExtension_SampleDescriptionExtensionAtoms "atoms"
+#define kCMFormatDescriptionExtension_ColorPrimaries "ColorPrimaries"
+#define kCMFormatDescriptionExtension_TransferFunction "TransferFunction"
+#define kCMFormatDescriptionExtension_YCbCrMatrix "YCbCrMatrix"
+#define kCMFormatDescriptionExtension_FullRangeVideo "FullRangeVideo"
+extern const char kCVImageBufferColorPrimaries_ITU_R_709_2[];
+extern const char kCVImageBufferColorPrimaries_ITU_R_2020[];
+extern const char kCVImageBufferTransferFunction_ITU_R_709_2[];
+extern const char kCVImageBufferTransferFunction_sRGB[];
+extern const char kCVImageBufferTransferFunction_SMPTE_ST_2084_PQ[];
+extern const char kCVImageBufferTransferFunction_ITU_R_2100_HLG[];
+extern const char kCVImageBufferYCbCrMatrix_ITU_R_709_2[];
+extern const char kCVImageBufferYCbCrMatrix_ITU_R_2020[];
 #define kVTVideoDecoderSpecification_RequireHardwareAcceleratedVideoDecoder    \
    "hardware"
 #define kCVPixelBufferPixelFormatTypeKey "pixel"
