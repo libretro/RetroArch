@@ -671,27 +671,27 @@ cfg = cfg.replace('#include "settings/settings_def_video_sync.h"',
 open('configuration.c','w').write(cfg)
 ms = open('menu/menu_setting.c').read()
 tm = re.search(r'static const setting_desc_t %s\[\] = \{\n(.*?)\n( *)\};' % TABLE, ms, re.S)
-MENU_EMIT = {'S_BOOL_EX':'SDESC_BOOL_ROW_EX(f, T, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui),',
-             'S_UINT_EX':'SDESC_UINT_ROW_EX(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui),',
-             'S_INT_EX':'SDESC_INT_ROW_EX(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui),',
-             'S_FLOAT_EX':'SDESC_FLOAT_ROW_EX(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui),',
-             'S_ACTION_EX':'SDESC_ACTION_ROW_EX(T, sd, ok, rp, c),',
+MENU_EMIT = {'S_BOOL_EX':'SDESC_BOOL_ROW_EX(f, T, d, sd, df, c, SDX_OK_##ok, rp, SDX_START_##sta, SDX_SELECT_##sel, SDX_LEFT_##lf, SDX_RIGHT_##rt, ui),',
+             'S_UINT_EX':'SDESC_UINT_ROW_EX(f, T, d, sd, df, c, mn, mx, st, ob, SDX_OK_##ok, rp, SDX_START_##sta, SDX_SELECT_##sel, SDX_LEFT_##lf, SDX_RIGHT_##rt, ui),',
+             'S_INT_EX':'SDESC_INT_ROW_EX(f, T, d, sd, df, c, mn, mx, st, ob, SDX_OK_##ok, rp, SDX_START_##sta, SDX_SELECT_##sel, SDX_LEFT_##lf, SDX_RIGHT_##rt, ui),',
+             'S_FLOAT_EX':'SDESC_FLOAT_ROW_EX(f, T, d, rnd, sd, df, c, mn, mx, st, SDX_OK_##ok, rp, SDX_START_##sta, SDX_SELECT_##sel, SDX_LEFT_##lf, SDX_RIGHT_##rt, ui),',
+             'S_ACTION_EX':'SDESC_ACTION_ROW_EX(T, sd, SDX_OK_##ok, rp, c),',
              'S_ACTION':'SDESC_ACTION_ROW(T),',
-             'S_STRING_P':'SDESC_STRING_ROW_P(f, T, d, sd, c, ok, rp, sta, sel, lf, rt, ui),',
+             'S_STRING_P':'SDESC_STRING_ROW_P(f, T, d, sd, c, SDX_OK_##ok, rp, SDX_START_##sta, SDX_SELECT_##sel, SDX_LEFT_##lf, SDX_RIGHT_##rt, ui),',
              'S_PATH':'SDESC_PATH_ROW(f, T, d, sd, c, vals, rp, ui),',
              'S_PATH_DS':'SDESC_PATH_ROW_DS(f, T, df2, sd, c, vals, rp, ui),',
-             'S_DIR':'SDESC_DIR_ROW(f, T, d, el, sd, c, sta),',
-             'S_STRING':'SDESC_STRING_ROW(f, T, d, sd, c, ok, rp, sta, sel, lf, rt, ui),',
+             'S_DIR':'SDESC_DIR_ROW(f, T, d, el, sd, c, SDX_START_##sta),',
+             'S_STRING':'SDESC_STRING_ROW(f, T, d, sd, c, SDX_OK_##ok, rp, SDX_START_##sta, SDX_SELECT_##sel, SDX_LEFT_##lf, SDX_RIGHT_##rt, ui),',
              'S_BOOL':'SDESC_BOOL_ROW(f, T, d, sd, df, c),',
-             'S_UINT':'SDESC_UINT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),',
-             'S_INT': 'SDESC_INT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, ok, rp),',
-             'S_FLOAT':'SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, ok, rp),',
+             'S_UINT':'SDESC_UINT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, SDX_OK_##ok, rp),',
+             'S_INT': 'SDESC_INT_ROW(f, T, d, sd, df, c, mn, mx, st, ob, SDX_OK_##ok, rp),',
+             'S_FLOAT':'SDESC_FLOAT_ROW(f, T, d, rnd, sd, df, c, mn, mx, st, SDX_OK_##ok, rp),',
              'S_BOOL_LV':'SDESC_BOOL_ROW_LV(f, T, TV, d, sd, df, c),',
              'S_FLOAT_LV':'SDESC_FLOAT_ROW_LV(f, T, TV, d, rnd, sd, df, c),',
-             'S_STRING_LV':'SDESC_STRING_ROW_LV(f, T, TV, d, sd, c, ok, rp, sta, sel, lf, rt, ui),',
-             'S_ACTION_LV':'SDESC_ACTION_ROW_LV(T, TV, sd, ok, rp, c),',
-             'S_INT_AT':'SDESC_INT_ROW_AT(offs, T, d, sd, df, c, mn, mx, st, ob, ok, rp),',
-             'S_UINT_AT_EX':'SDESC_UINT_ROW_AT_EX(offs, T, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui),'}
+             'S_STRING_LV':'SDESC_STRING_ROW_LV(f, T, TV, d, sd, c, SDX_OK_##ok, rp, SDX_START_##sta, SDX_SELECT_##sel, SDX_LEFT_##lf, SDX_RIGHT_##rt, ui),',
+             'S_ACTION_LV':'SDESC_ACTION_ROW_LV(T, TV, sd, SDX_OK_##ok, rp, c),',
+             'S_INT_AT':'SDESC_INT_ROW_AT(offs, T, d, sd, df, c, mn, mx, st, ob, SDX_OK_##ok, rp),',
+             'S_UINT_AT_EX':'SDESC_UINT_ROW_AT_EX(offs, T, d, sd, df, c, mn, mx, st, ob, SDX_OK_##ok, rp, SDX_START_##sta, SDX_SELECT_##sel, SDX_LEFT_##lf, SDX_RIGHT_##rt, ui),'}
 mk_menu = lambda b, _s: ' \\\n                  ' + MENU_EMIT[b]
 new_body = ('/* GENERATED: rows come from %s in order. */\n' % DEF
             + '\n#include "../settings/%s"' % DEF)

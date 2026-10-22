@@ -335,11 +335,28 @@ static const setting_actions_t *settings_actions_intern(
    return &settings_actions_pool[settings_actions_pool_n++];
 }
 
+/* One out-of-line setter per field keeps each call site to a call. */
+#define SETTINGS_ACTION_SETTER(field, type) \
+static void settings_action_set_##field(rarch_setting_t *s, type fn) \
+{ \
+   setting_actions_t _t = *s->actions; \
+   _t.field             = fn; \
+   s->actions           = settings_actions_intern(&_t); \
+}
+SETTINGS_ACTION_SETTER(ok, action_ok_handler_t)
+SETTINGS_ACTION_SETTER(start, action_start_handler_t)
+SETTINGS_ACTION_SETTER(sel, action_select_handler_t)
+SETTINGS_ACTION_SETTER(left, action_left_handler_t)
+SETTINGS_ACTION_SETTER(right, action_right_handler_t)
+SETTINGS_ACTION_SETTER(change, change_handler_t)
+#ifdef ANDROID
+SETTINGS_ACTION_SETTER(read, change_handler_t)
+#endif
+SETTINGS_ACTION_SETTER(repr, get_string_representation_t)
+
 #define SETTINGS_ACTION_SET(field, s, fn) \
 { \
-   setting_actions_t _t = *((s)->actions); \
-   _t.field             = (fn); \
-   (s)->actions         = settings_actions_intern(&_t); \
+   settings_action_set_##field((s), (fn)); \
 }
 
 
@@ -11621,228 +11638,202 @@ typedef struct setting_desc
     * rather than a value of its own. settings_t is nowhere near 2^30
     * bytes, so those bits are free. */
    uint32_t                    value_offset;
-   uint32_t                    flags;          /* SD_FLAG_*               */
-   enum msg_hash_enums         name_enum;
-   enum msg_hash_enums         short_enum;
    float                       min;
    float                       max;
    float                       step;
    uint32_t                    def_offset;     /* with SDESC_FLG_DEF_SETTINGS:
                                                   offsetof of the settings_t
                                                   field holding the default */
+   int32_t                     def_i;          /* bool/int/uint default   */
+   float                       def_f;          /* float default           */
+   uint16_t                    flags;          /* SD_FLAG_*               */
+   int16_t                     offset_by;
    const char                 *rounding;      /* float rows: printf rounding
                                                  string rows: default value  */
    get_string_representation_t repr;           /* NULL = class default    */
-   action_ok_handler_t         action_ok;      /* NULL = class default    */
-   int32_t                     def_i;          /* bool/int/uint default   */
-   float                       def_f;          /* float default           */
-   action_start_handler_t      action_start;   /* NULL = class default    */
-   action_select_handler_t     action_select;  /* NULL = class default    */
-   action_left_handler_t       action_left;    /* NULL = class default    */
-   action_right_handler_t      action_right;   /* NULL = class default    */
+   const char                 *values;         /* browser extension filter */
+   msg_hash_id_t               name_enum;
+   msg_hash_id_t               short_enum;
    uint16_t                    cmd_trigger;    /* enum event_command      */
-   int16_t                     offset_by;
    uint8_t                     type;           /* enum setting_desc_class */
    uint8_t                     desc_flags;     /* SDESC_FLG_*             */
    uint8_t                     ui_type;        /* 0 = class default       */
-   uint8_t                     pad;
-   /* Fields below are absent from older row macros and zero-initialize
-    * under C89 partial aggregate initialization. */
-   const char                 *values;         /* browser extension filter */
-   change_handler_t            action_change;  /* NULL = none; a change
-                                                  handler poked into the
-                                                  actions tuple after build */
-   int32_t                   (*def_resolver)(void); /* SDESC_FLG_DEF_FUNC:
+   /* SDX_* indices; 0 = class default, or none for change */
+   uint8_t                     action_ok;
+   uint8_t                     action_start;
+   uint8_t                     action_select;
+   uint8_t                     action_left;
+   uint8_t                     action_right;
+   uint8_t                     action_change;
+   uint8_t                     def_resolver;   /* SDESC_FLG_DEF_FUNC:
                                                   build-time default value */
 } setting_desc_t;
 
 /* Row builders.  Field order must match setting_desc_t. */
 #define SDESC_BOOL_ROW(field, label, def, sd_flags, dflags, cmd) \
-   { (uint32_t)offsetof(settings_t, bools.field), (sd_flags), \
-     MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
-     0.0f, 0.0f, 0.0f, 0, NULL, NULL, NULL, \
-     (int32_t)(def), 0.0f, NULL, NULL, NULL, NULL, (uint16_t)(cmd), 0, SDESC_BOOL, (dflags), 0, 0 }
+   { (uint32_t)offsetof(settings_t, bools.field), 0.0f, 0.0f, 0.0f, 0, (int32_t)(def), 0.0f, \
+     (uint16_t)(sd_flags), 0, NULL, NULL, NULL, \
+     (msg_hash_id_t)MENU_ENUM_LABEL_##label, (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_##label, (uint16_t)(cmd), SDESC_BOOL, (dflags), 0, \
+     0, 0, 0, 0, 0, 0, 0 }
 #define SDESC_BOOL_ROW_EX(field, label, def, sd_flags, dflags, cmd, ok, _repr, _start, _select, _left, _right, _uitype) \
-   { (uint32_t)offsetof(settings_t, bools.field), (sd_flags), \
-     MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
-     0.0f, 0.0f, 0.0f, 0, NULL, (_repr), (ok), \
-     (int32_t)(def), 0.0f, (_start), (_select), (_left), (_right), \
-     (uint16_t)(cmd), 0, SDESC_BOOL, (dflags), (uint8_t)(_uitype), 0 }
+   { (uint32_t)offsetof(settings_t, bools.field), 0.0f, 0.0f, 0.0f, 0, (int32_t)(def), 0.0f, \
+     (uint16_t)(sd_flags), 0, NULL, (_repr), NULL, \
+     (msg_hash_id_t)MENU_ENUM_LABEL_##label, (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_##label, (uint16_t)(cmd), SDESC_BOOL, (dflags), (uint8_t)(_uitype), \
+     (ok), (_start), (_select), (_left), (_right), 0, 0 }
 
 /* _CH variant: like _EX but supplies the trailing change-handler
  * slot, for toggles that repaint or reinit on change. */
 #define SDESC_BOOL_ROW_CH(field, label, def, sd_flags, dflags, cmd, ok, _repr, _start, _select, _left, _right, _uitype, chg) \
-   { (uint32_t)offsetof(settings_t, bools.field), (sd_flags), \
-     MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
-     0.0f, 0.0f, 0.0f, 0, NULL, (_repr), (ok), \
-     (int32_t)(def), 0.0f, (_start), (_select), (_left), (_right), \
-     (uint16_t)(cmd), 0, SDESC_BOOL, (dflags), (uint8_t)(_uitype), 0, \
-     NULL, (chg) }
+   { (uint32_t)offsetof(settings_t, bools.field), 0.0f, 0.0f, 0.0f, 0, (int32_t)(def), 0.0f, \
+     (uint16_t)(sd_flags), 0, NULL, (_repr), NULL, \
+     (msg_hash_id_t)MENU_ENUM_LABEL_##label, (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_##label, (uint16_t)(cmd), SDESC_BOOL, (dflags), (uint8_t)(_uitype), \
+     (ok), (_start), (_select), (_left), (_right), (chg), 0 }
 
 /* _DF variant: bool default resolved by a function at build time. */
 #define SDESC_BOOL_ROW_DF(field, label, resolver, sd_flags, dflags, cmd, ok, _repr, _start, _select, _left, _right, _uitype) \
-   { (uint32_t)offsetof(settings_t, bools.field), (sd_flags), \
-     MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
-     0.0f, 0.0f, 0.0f, 0, NULL, (_repr), (ok), \
-     0, 0.0f, (_start), (_select), (_left), (_right), \
-     (uint16_t)(cmd), 0, SDESC_BOOL, ((dflags) | SDESC_FLG_DEF_FUNC), (uint8_t)(_uitype), 0, \
-     NULL, NULL, (resolver) }
+   { (uint32_t)offsetof(settings_t, bools.field), 0.0f, 0.0f, 0.0f, 0, 0, 0.0f, \
+     (uint16_t)(sd_flags), 0, NULL, (_repr), NULL, \
+     (msg_hash_id_t)MENU_ENUM_LABEL_##label, (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_##label, (uint16_t)(cmd), SDESC_BOOL, ((dflags) | SDESC_FLG_DEF_FUNC), (uint8_t)(_uitype), \
+     (ok), (_start), (_select), (_left), (_right), 0, (resolver) }
 
 /* _LV variants take the label and value enums as separate tokens for
  * the few registrations whose pair is mismatched. */
 #define SDESC_BOOL_ROW_LV(field, label, value, def, sd_flags, dflags, cmd) \
-   { (uint32_t)offsetof(settings_t, bools.field), (sd_flags), \
-     MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##value, \
-     0.0f, 0.0f, 0.0f, 0, NULL, NULL, NULL, \
-     (int32_t)(def), 0.0f, NULL, NULL, NULL, NULL, \
-     (uint16_t)(cmd), 0, SDESC_BOOL, (dflags), 0, 0 }
+   { (uint32_t)offsetof(settings_t, bools.field), 0.0f, 0.0f, 0.0f, 0, (int32_t)(def), 0.0f, \
+     (uint16_t)(sd_flags), 0, NULL, NULL, NULL, \
+     (msg_hash_id_t)MENU_ENUM_LABEL_##label, (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_##value, (uint16_t)(cmd), SDESC_BOOL, (dflags), 0, \
+     0, 0, 0, 0, 0, 0, 0 }
 #define SDESC_FLOAT_ROW_LV(field, label, value, def, _rounding, sd_flags, dflags, cmd) \
-   { (uint32_t)offsetof(settings_t, floats.field), (sd_flags), \
-     MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##value, \
-     0.0f, 0.0f, 0.0f, 0, (_rounding), NULL, NULL, \
-     0, (float)(def), NULL, NULL, NULL, NULL, \
-     (uint16_t)(cmd), 0, SDESC_FLOAT, (dflags), 0, 0 }
+   { (uint32_t)offsetof(settings_t, floats.field), 0.0f, 0.0f, 0.0f, 0, 0, (float)(def), \
+     (uint16_t)(sd_flags), 0, (_rounding), NULL, NULL, \
+     (msg_hash_id_t)MENU_ENUM_LABEL_##label, (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_##value, (uint16_t)(cmd), SDESC_FLOAT, (dflags), 0, \
+     0, 0, 0, 0, 0, 0, 0 }
 #define SDESC_STRING_ROW_LV(field, label, value, def, sd_flags, cmd, ok, _repr, _start, _select, _left, _right, _uitype) \
-   { (uint32_t)offsetof(settings_t, arrays.field), (sd_flags), \
-     MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##value, \
-     0.0f, 0.0f, 0.0f, 0, (def), (_repr), (ok), \
-     (int32_t)sizeof(((settings_t*)0)->arrays.field), 0.0f, \
-     (_start), (_select), (_left), (_right), (uint16_t)(cmd), 0, SDESC_STRING, 0, (uint8_t)(_uitype), 0 }
+   { (uint32_t)offsetof(settings_t, arrays.field), 0.0f, 0.0f, 0.0f, 0, (int32_t)sizeof(((settings_t*)0)->arrays.field), 0.0f, \
+     (uint16_t)(sd_flags), 0, (def), (_repr), NULL, \
+     (msg_hash_id_t)MENU_ENUM_LABEL_##label, (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_##value, (uint16_t)(cmd), SDESC_STRING, 0, (uint8_t)(_uitype), \
+     (ok), (_start), (_select), (_left), (_right), 0, 0 }
 #define SDESC_ACTION_ROW_LV(label, value, sd_flags, ok, _repr, cmd) \
-   { 0, (sd_flags), \
-     MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##value, \
-     0.0f, 0.0f, 0.0f, 0, NULL, (_repr), (ok), \
-     0, 0.0f, NULL, NULL, NULL, NULL, (uint16_t)(cmd), 0, SDESC_ACTION, 0, 0, 0 }
+   { 0, 0.0f, 0.0f, 0.0f, 0, 0, 0.0f, \
+     (uint16_t)(sd_flags), 0, NULL, (_repr), NULL, \
+     (msg_hash_id_t)MENU_ENUM_LABEL_##label, (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_##value, (uint16_t)(cmd), SDESC_ACTION, 0, 0, \
+     (ok), 0, 0, 0, 0, 0, 0 }
 
 /* String rows whose value target lives in settings_t.paths rather
  * than settings_t.arrays (streaming title/url and friends). */
 #define SDESC_STRING_ROW_P(field, label, def, sd_flags, cmd, ok, _repr, _start, _select, _left, _right, _uitype) \
-   { (uint32_t)offsetof(settings_t, paths.field), (sd_flags), \
-     MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
-     0.0f, 0.0f, 0.0f, 0, (def), (_repr), (ok), \
-     (int32_t)sizeof(((settings_t*)0)->paths.field), 0.0f, \
-     (_start), (_select), (_left), (_right), (uint16_t)(cmd), 0, SDESC_STRING, 0, (uint8_t)(_uitype), 0 }
+   { (uint32_t)offsetof(settings_t, paths.field), 0.0f, 0.0f, 0.0f, 0, (int32_t)sizeof(((settings_t*)0)->paths.field), 0.0f, \
+     (uint16_t)(sd_flags), 0, (def), (_repr), NULL, \
+     (msg_hash_id_t)MENU_ENUM_LABEL_##label, (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_##label, (uint16_t)(cmd), SDESC_STRING, 0, (uint8_t)(_uitype), \
+     (ok), (_start), (_select), (_left), (_right), 0, 0 }
 
 #define SDESC_UINT_ROW(field, label, def, sd_flags, dflags, cmd, _min, _max, _step, offby, ok, _repr) \
-   { (uint32_t)offsetof(settings_t, uints.field), (sd_flags), \
-     MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
-     (float)(_min), (float)(_max), (float)(_step), 0, NULL, (_repr), (ok), \
-     (int32_t)(def), 0.0f, NULL, NULL, NULL, NULL, (uint16_t)(cmd), (int16_t)(offby), SDESC_UINT, (dflags), 0, 0 }
+   { (uint32_t)offsetof(settings_t, uints.field), (float)(_min), (float)(_max), (float)(_step), 0, (int32_t)(def), 0.0f, \
+     (uint16_t)(sd_flags), (int16_t)(offby), NULL, (_repr), NULL, \
+     (msg_hash_id_t)MENU_ENUM_LABEL_##label, (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_##label, (uint16_t)(cmd), SDESC_UINT, (dflags), 0, \
+     (ok), 0, 0, 0, 0, 0, 0 }
 
 #define SDESC_INT_ROW(field, label, def, sd_flags, dflags, cmd, _min, _max, _step, offby, ok, _repr) \
-   { (uint32_t)offsetof(settings_t, ints.field), (sd_flags), \
-     MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
-     (float)(_min), (float)(_max), (float)(_step), 0, NULL, (_repr), (ok), \
-     (int32_t)(def), 0.0f, NULL, NULL, NULL, NULL, (uint16_t)(cmd), (int16_t)(offby), SDESC_INT, (dflags), 0, 0 }
+   { (uint32_t)offsetof(settings_t, ints.field), (float)(_min), (float)(_max), (float)(_step), 0, (int32_t)(def), 0.0f, \
+     (uint16_t)(sd_flags), (int16_t)(offby), NULL, (_repr), NULL, \
+     (msg_hash_id_t)MENU_ENUM_LABEL_##label, (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_##label, (uint16_t)(cmd), SDESC_INT, (dflags), 0, \
+     (ok), 0, 0, 0, 0, 0, 0 }
 
 #define SDESC_FLOAT_ROW(field, label, def, _rounding, sd_flags, dflags, cmd, _min, _max, _step, ok, _repr) \
-   { (uint32_t)offsetof(settings_t, floats.field), (sd_flags), \
-     MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
-     (float)(_min), (float)(_max), (float)(_step), 0, (_rounding), (_repr), (ok), \
-     0, (float)(def), NULL, NULL, NULL, NULL, (uint16_t)(cmd), 0, SDESC_FLOAT, (dflags), 0, 0 }
+   { (uint32_t)offsetof(settings_t, floats.field), (float)(_min), (float)(_max), (float)(_step), 0, 0, (float)(def), \
+     (uint16_t)(sd_flags), 0, (_rounding), (_repr), NULL, \
+     (msg_hash_id_t)MENU_ENUM_LABEL_##label, (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_##label, (uint16_t)(cmd), SDESC_FLOAT, (dflags), 0, \
+     (ok), 0, 0, 0, 0, 0, 0 }
 
 #define SDESC_ACTION_ROW(label) \
-   { 0, 0, \
-     MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
-     0.0f, 0.0f, 0.0f, 0, NULL, NULL, NULL, \
-     0, 0.0f, NULL, NULL, NULL, NULL, 0, 0, SDESC_ACTION, 0, 0, 0 }
+   { 0, 0.0f, 0.0f, 0.0f, 0, 0, 0.0f, \
+     0, 0, NULL, NULL, NULL, \
+     (msg_hash_id_t)MENU_ENUM_LABEL_##label, (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_##label, 0, SDESC_ACTION, 0, 0, \
+     0, 0, 0, 0, 0, 0, 0 }
 #define SDESC_ACTION_ROW_EX(label, sd_flags, ok, _repr, cmd) \
-   { 0, (sd_flags), \
-     MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
-     0.0f, 0.0f, 0.0f, 0, NULL, (_repr), (ok), \
-     0, 0.0f, NULL, NULL, NULL, NULL, (uint16_t)(cmd), 0, SDESC_ACTION, 0, 0, 0 }
+   { 0, 0.0f, 0.0f, 0.0f, 0, 0, 0.0f, \
+     (uint16_t)(sd_flags), 0, NULL, (_repr), NULL, \
+     (msg_hash_id_t)MENU_ENUM_LABEL_##label, (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_##label, (uint16_t)(cmd), SDESC_ACTION, 0, 0, \
+     (ok), 0, 0, 0, 0, 0, 0 }
 
 /* _EX variants add action_start / action_select / ui_type overrides
  * (0 / NULL keeps the class default). */
 #define SDESC_UINT_ROW_EX(field, label, def, sd_flags, dflags, cmd, _min, _max, _step, offby, ok, _repr, _start, _select, _left, _right, _uitype) \
    SDESC_UINT_ROW_AT_EX(offsetof(settings_t, uints.field), label, def, sd_flags, dflags, cmd, _min, _max, _step, offby, ok, _repr, _start, _select, _left, _right, _uitype)
 #define SDESC_INT_ROW_EX(field, label, def, sd_flags, dflags, cmd, _min, _max, _step, offby, ok, _repr, _start, _select, _left, _right, _uitype) \
-   { (uint32_t)offsetof(settings_t, ints.field), (sd_flags), \
-     MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
-     (float)(_min), (float)(_max), (float)(_step), 0, NULL, (_repr), (ok), \
-     (int32_t)(def), 0.0f, (_start), (_select), (_left), (_right), \
-     (uint16_t)(cmd), (int16_t)(offby), SDESC_INT, (dflags), (uint8_t)(_uitype), 0 }
+   { (uint32_t)offsetof(settings_t, ints.field), (float)(_min), (float)(_max), (float)(_step), 0, (int32_t)(def), 0.0f, \
+     (uint16_t)(sd_flags), (int16_t)(offby), NULL, (_repr), NULL, \
+     (msg_hash_id_t)MENU_ENUM_LABEL_##label, (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_##label, (uint16_t)(cmd), SDESC_INT, (dflags), (uint8_t)(_uitype), \
+     (ok), (_start), (_select), (_left), (_right), 0, 0 }
 
 /* _AT variants take the settings_t offset expression directly, for
  * value targets that are inside settings_t but not under the plain
  * bools/ints/uints/floats structs (e.g. video_vp_custom members). */
 #define SDESC_UINT_ROW_AT_EX(offs, label, def, sd_flags, dflags, cmd, _min, _max, _step, offby, ok, _repr, _start, _select, _left, _right, _uitype) \
-   { (uint32_t)(offs), (sd_flags), \
-     MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
-     (float)(_min), (float)(_max), (float)(_step), 0, NULL, (_repr), (ok), \
-     (int32_t)(def), 0.0f, (_start), (_select), (_left), (_right), (uint16_t)(cmd), (int16_t)(offby), SDESC_UINT, (dflags), (uint8_t)(_uitype), 0 }
+   { (uint32_t)(offs), (float)(_min), (float)(_max), (float)(_step), 0, (int32_t)(def), 0.0f, \
+     (uint16_t)(sd_flags), (int16_t)(offby), NULL, (_repr), NULL, \
+     (msg_hash_id_t)MENU_ENUM_LABEL_##label, (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_##label, (uint16_t)(cmd), SDESC_UINT, (dflags), (uint8_t)(_uitype), \
+     (ok), (_start), (_select), (_left), (_right), 0, 0 }
 
 /* _CH variant: UINT with a change handler in the trailing slot. */
 #define SDESC_UINT_ROW_CH(field, label, def, sd_flags, dflags, cmd, _min, _max, _step, offby, ok, _repr, _uitype, chg) \
-   { (uint32_t)offsetof(settings_t, uints.field), (sd_flags), \
-     MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
-     (float)(_min), (float)(_max), (float)(_step), 0, NULL, (_repr), (ok), \
-     (int32_t)(def), 0.0f, NULL, NULL, NULL, NULL, (uint16_t)(cmd), (int16_t)(offby), SDESC_UINT, \
-     (dflags), (uint8_t)(_uitype), 0, \
-     NULL, (chg) }
+   { (uint32_t)offsetof(settings_t, uints.field), (float)(_min), (float)(_max), (float)(_step), 0, (int32_t)(def), 0.0f, \
+     (uint16_t)(sd_flags), (int16_t)(offby), NULL, (_repr), NULL, \
+     (msg_hash_id_t)MENU_ENUM_LABEL_##label, (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_##label, (uint16_t)(cmd), SDESC_UINT, (dflags), (uint8_t)(_uitype), \
+     (ok), 0, 0, 0, 0, (chg), 0 }
 
 /* _DF variant: default is resolved by a function at build time
  * (SDESC_FLG_DEF_FUNC), for the settings whose default depends on
  * frontend-provided values. */
 #define SDESC_UINT_ROW_DF(field, label, resolver, sd_flags, dflags, cmd, _min, _max, _step, offby, ok, _repr, _uitype) \
-   { (uint32_t)offsetof(settings_t, uints.field), (sd_flags), \
-     MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
-     (float)(_min), (float)(_max), (float)(_step), 0, NULL, (_repr), (ok), \
-     0, 0.0f, NULL, NULL, NULL, NULL, (uint16_t)(cmd), (int16_t)(offby), SDESC_UINT, \
-     ((dflags) | SDESC_FLG_DEF_FUNC), (uint8_t)(_uitype), 0, \
-     NULL, NULL, (resolver) }
+   { (uint32_t)offsetof(settings_t, uints.field), (float)(_min), (float)(_max), (float)(_step), 0, 0, 0.0f, \
+     (uint16_t)(sd_flags), (int16_t)(offby), NULL, (_repr), NULL, \
+     (msg_hash_id_t)MENU_ENUM_LABEL_##label, (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_##label, (uint16_t)(cmd), SDESC_UINT, ((dflags) | SDESC_FLG_DEF_FUNC), (uint8_t)(_uitype), \
+     (ok), 0, 0, 0, 0, 0, (resolver) }
 
 #define SDESC_INT_ROW_AT(offs, label, def, sd_flags, dflags, cmd, _min, _max, _step, offby, ok, _repr) \
-   { (uint32_t)(offs), (sd_flags), \
-     MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
-     (float)(_min), (float)(_max), (float)(_step), 0, NULL, (_repr), (ok), \
-     (int32_t)(def), 0.0f, NULL, NULL, NULL, NULL, (uint16_t)(cmd), (int16_t)(offby), SDESC_INT, (dflags), 0, 0 }
+   { (uint32_t)(offs), (float)(_min), (float)(_max), (float)(_step), 0, (int32_t)(def), 0.0f, \
+     (uint16_t)(sd_flags), (int16_t)(offby), NULL, (_repr), NULL, \
+     (msg_hash_id_t)MENU_ENUM_LABEL_##label, (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_##label, (uint16_t)(cmd), SDESC_INT, (dflags), 0, \
+     (ok), 0, 0, 0, 0, 0, 0 }
 
 #define SDESC_FLOAT_ROW_EX(field, label, def, _rounding, sd_flags, dflags, cmd, _min, _max, _step, ok, _repr, _start, _select, _left, _right, _uitype) \
-   { (uint32_t)offsetof(settings_t, floats.field), (sd_flags), \
-     MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
-     (float)(_min), (float)(_max), (float)(_step), 0, (_rounding), (_repr), (ok), \
-     0, (float)(def), (_start), (_select), (_left), (_right), (uint16_t)(cmd), 0, SDESC_FLOAT, (dflags), (uint8_t)(_uitype), 0 }
+   { (uint32_t)offsetof(settings_t, floats.field), (float)(_min), (float)(_max), (float)(_step), 0, 0, (float)(def), \
+     (uint16_t)(sd_flags), 0, (_rounding), (_repr), NULL, \
+     (msg_hash_id_t)MENU_ENUM_LABEL_##label, (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_##label, (uint16_t)(cmd), SDESC_FLOAT, (dflags), (uint8_t)(_uitype), \
+     (ok), (_start), (_select), (_left), (_right), 0, 0 }
 
 /* String rows: value target is a char array inside settings_t;
  * def_i carries the buffer size and the rounding slot carries the
  * default string (see the field comment). */
 #define SDESC_STRING_ROW(field, label, def, sd_flags, cmd, ok, _repr, _start, _select, _left, _right, _uitype) \
-   { (uint32_t)offsetof(settings_t, arrays.field), (sd_flags), \
-     MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
-     0.0f, 0.0f, 0.0f, 0, (def), (_repr), (ok), \
-     (int32_t)sizeof(((settings_t*)0)->arrays.field), 0.0f, \
-     (_start), (_select), (_left), (_right), (uint16_t)(cmd), 0, SDESC_STRING, 0, (uint8_t)(_uitype), 0 }
+   { (uint32_t)offsetof(settings_t, arrays.field), 0.0f, 0.0f, 0.0f, 0, (int32_t)sizeof(((settings_t*)0)->arrays.field), 0.0f, \
+     (uint16_t)(sd_flags), 0, (def), (_repr), NULL, \
+     (msg_hash_id_t)MENU_ENUM_LABEL_##label, (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_##label, (uint16_t)(cmd), SDESC_STRING, 0, (uint8_t)(_uitype), \
+     (ok), (_start), (_select), (_left), (_right), 0, 0 }
 
 /* Path rows: value target lives in settings_t.paths; def is a static
  * default string.  The _DS variant takes another settings_t.paths field
  * as the runtime default (the dominant pattern: filter/asset dirs). */
 #define SDESC_PATH_ROW(field, label, def, sd_flags, cmd, vals, _repr, _uitype) \
-   { (uint32_t)offsetof(settings_t, paths.field), (sd_flags), \
-     MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
-     0.0f, 0.0f, 0.0f, 0, (def), (_repr), NULL, \
-     (int32_t)sizeof(((settings_t*)0)->paths.field), 0.0f, \
-     NULL, NULL, NULL, NULL, (uint16_t)(cmd), 0, SDESC_PATH, 0, (uint8_t)(_uitype), 0, \
-     (vals) }
+   { (uint32_t)offsetof(settings_t, paths.field), 0.0f, 0.0f, 0.0f, 0, (int32_t)sizeof(((settings_t*)0)->paths.field), 0.0f, \
+     (uint16_t)(sd_flags), 0, (def), (_repr), (vals), \
+     (msg_hash_id_t)MENU_ENUM_LABEL_##label, (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_##label, (uint16_t)(cmd), SDESC_PATH, 0, (uint8_t)(_uitype), \
+     0, 0, 0, 0, 0, 0, 0 }
 #define SDESC_PATH_ROW_DS(field, label, def_field, sd_flags, cmd, vals, _repr, _uitype) \
-   { (uint32_t)offsetof(settings_t, paths.field), (sd_flags), \
-     MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
-     0.0f, 0.0f, 0.0f, (uint32_t)offsetof(settings_t, paths.def_field), NULL, (_repr), NULL, \
-     (int32_t)sizeof(((settings_t*)0)->paths.field), 0.0f, \
-     NULL, NULL, NULL, NULL, (uint16_t)(cmd), 0, SDESC_PATH, \
-     SDESC_FLG_DEF_SETTINGS, (uint8_t)(_uitype), 0, \
-     (vals) }
+   { (uint32_t)offsetof(settings_t, paths.field), 0.0f, 0.0f, 0.0f, (uint32_t)offsetof(settings_t, paths.def_field), (int32_t)sizeof(((settings_t*)0)->paths.field), 0.0f, \
+     (uint16_t)(sd_flags), 0, NULL, (_repr), (vals), \
+     (msg_hash_id_t)MENU_ENUM_LABEL_##label, (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_##label, (uint16_t)(cmd), SDESC_PATH, SDESC_FLG_DEF_SETTINGS, (uint8_t)(_uitype), \
+     0, 0, 0, 0, 0, 0, 0 }
 
 /* Directory rows: like path rows.  Defaults are address constants
  * such as g_defaults.dirs[x], legal in static initializers, carried
  * in the rounding slot.  The def files' empty label is not stored. */
 #define SDESC_DIR_ROW(field, label, def, empty_label, sd_flags, cmd, _start) \
-   { (uint32_t)offsetof(settings_t, paths.field), (sd_flags), \
-     MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
-     0.0f, 0.0f, 0.0f, 0, (def), NULL, NULL, \
-     (int32_t)sizeof(((settings_t*)0)->paths.field), 0.0f, \
-     (_start), NULL, NULL, NULL, (uint16_t)(cmd), \
-     0, SDESC_DIR, 0, 0, 0 }
+   { (uint32_t)offsetof(settings_t, paths.field), 0.0f, 0.0f, 0.0f, 0, (int32_t)sizeof(((settings_t*)0)->paths.field), 0.0f, \
+     (uint16_t)(sd_flags), 0, (def), NULL, NULL, \
+     (msg_hash_id_t)MENU_ENUM_LABEL_##label, (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_##label, (uint16_t)(cmd), SDESC_DIR, 0, 0, \
+     0, (_start), 0, 0, 0, 0, 0 }
 
 #define SDESC_RANGE_MINMAX \
    (SDESC_FLG_HAS_RANGE | SDESC_FLG_ENFORCE_MIN | SDESC_FLG_ENFORCE_MAX)
@@ -11877,6 +11868,55 @@ static int32_t settings_def_metal_arg_buffers(void)
 }
 #endif
 
+/* Handlers a row may name. A row stores each as an index into
+ * setting_desc_handlers[]; the index is SDX_<slot>_<function>, or
+ * SDX_<slot>_NULL for none. */
+typedef void (*setting_desc_fn_t)(void);
+
+static int directory_action_start_generic(rarch_setting_t *setting);
+#if defined(HAVE_KEYCHAIN) && defined(HAVE_CRYPTO) && defined(HAVE_CONFIGFILE)
+static int setting_action_keychain_passphrase(rarch_setting_t *setting,
+      size_t idx, bool wraparound);
+#endif
+
+enum setting_desc_handler
+{
+   SDX_NONE = 0,
+#define SDX(slot, fn) SDX_##slot##_##fn,
+#include "menu_setting_handlers.h"
+#undef SDX
+   SDX_LAST,
+   SDX_OK_NULL       = 0,
+   SDX_START_NULL    = 0,
+   SDX_SELECT_NULL   = 0,
+   SDX_LEFT_NULL     = 0,
+   SDX_RIGHT_NULL    = 0,
+   SDX_CHANGE_NULL   = 0,
+   SDX_RESOLVER_NULL = 0
+};
+
+typedef char setting_desc_handler_fits[(SDX_LAST <= 256) ? 1 : -1];
+typedef char setting_desc_flags_fit[(SD_FLAG_DEFAULT_VALUE <= 0x8000) ? 1 : -1];
+
+/* Each listed handler has its slot's type. */
+#define SDX_T_OK       ((action_ok_handler_t)0)
+#define SDX_T_START    ((action_start_handler_t)0)
+#define SDX_T_SELECT   ((action_select_handler_t)0)
+#define SDX_T_LEFT     ((action_left_handler_t)0)
+#define SDX_T_RIGHT    ((action_right_handler_t)0)
+#define SDX_T_CHANGE   ((change_handler_t)0)
+#define SDX_T_RESOLVER ((int32_t (*)(void))0)
+#define SDX(slot, fn) typedef char sdx_##slot##_##fn[sizeof(SDX_T_##slot == fn)];
+#include "menu_setting_handlers.h"
+#undef SDX
+
+static const setting_desc_fn_t setting_desc_handlers[] = {
+   NULL,
+#define SDX(slot, fn) (setting_desc_fn_t)fn,
+#include "menu_setting_handlers.h"
+#undef SDX
+};
+
 static void settings_list_add_desc(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
@@ -11900,7 +11940,9 @@ static void settings_list_add_desc(
       void *target            = (void*)((uint8_t*)settings + offs);
       int32_t eff_def_i       = (d->desc_flags & SDESC_FLG_DEF_FUNC)
                                  && d->def_resolver
-                              ? d->def_resolver() : d->def_i;
+                              ? ((int32_t (*)(void))
+                                 setting_desc_handlers[d->def_resolver])()
+                              : d->def_i;
 
       switch (d->type)
       {
@@ -12042,20 +12084,35 @@ static void settings_list_add_desc(
             break;
       }
 
-      if (d->action_ok)
-         SETTINGS_ACTION_SET(ok, &(*list)[list_info->index - 1], d->action_ok)
-      if (d->action_start)
-         SETTINGS_ACTION_SET(start, &(*list)[list_info->index - 1], d->action_start)
-      if (d->action_select)
-         SETTINGS_ACTION_SET(sel, &(*list)[list_info->index - 1], d->action_select)
-      if (d->action_left)
-         SETTINGS_ACTION_SET(left, &(*list)[list_info->index - 1], d->action_left)
-      if (d->action_right)
-         SETTINGS_ACTION_SET(right, &(*list)[list_info->index - 1], d->action_right)
-      if (d->action_change)
-         SETTINGS_ACTION_SET(change, &(*list)[list_info->index - 1], d->action_change)
-      if (d->repr)
-         SETTINGS_ACTION_SET(repr, &(*list)[list_info->index - 1], d->repr)
+      /* One tuple per row, interned once. */
+      if (     d->action_ok   || d->action_start || d->action_select
+            || d->action_left || d->action_right || d->action_change
+            || d->repr)
+      {
+         rarch_setting_t *s  = &(*list)[list_info->index - 1];
+         setting_actions_t t = *s->actions;
+         if (d->action_ok)
+            t.ok     = (action_ok_handler_t)
+               setting_desc_handlers[d->action_ok];
+         if (d->action_start)
+            t.start  = (action_start_handler_t)
+               setting_desc_handlers[d->action_start];
+         if (d->action_select)
+            t.sel    = (action_select_handler_t)
+               setting_desc_handlers[d->action_select];
+         if (d->action_left)
+            t.left   = (action_left_handler_t)
+               setting_desc_handlers[d->action_left];
+         if (d->action_right)
+            t.right  = (action_right_handler_t)
+               setting_desc_handlers[d->action_right];
+         if (d->action_change)
+            t.change = (change_handler_t)
+               setting_desc_handlers[d->action_change];
+         if (d->repr)
+            t.repr   = d->repr;
+         s->actions  = settings_actions_intern(&t);
+      }
       if (d->offset_by != 0)
          (*list)[list_info->index - 1].offset_by = d->offset_by;
       if (d->desc_flags & SDESC_FLG_HAS_RANGE)
@@ -13165,7 +13222,7 @@ static const setting_desc_t audio_skew_desc[] = {
       #ifdef HAVE_MICROPHONE
       SDESC_UINT_ROW(microphone_block_frames, MICROPHONE_BLOCK_FRAMES,
          0, SD_FLAG_ADVANCED, 0, 0,
-         0, 0, 0, 0, NULL, NULL),
+         0, 0, 0, 0, SDX_OK_NULL, NULL),
 #endif
 #endif
 };
@@ -17493,8 +17550,8 @@ static void settings_build_user_interface(
                   DEFAULT_VIDEO_3DS_DISPLAY_MODE,
                   SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
                   0, CTR_VIDEO_MODE_LAST - ((device_model != 3) ? 1 : 3), 1, 0,
-                  setting_action_ok_uint, setting_get_string_representation_uint_video_3ds_display_mode,
-                  NULL, NULL, NULL, NULL, 0),
+                  SDX_OK_setting_action_ok_uint, setting_get_string_representation_uint_video_3ds_display_mode,
+                  SDX_START_NULL, SDX_SELECT_NULL, SDX_LEFT_NULL, SDX_RIGHT_NULL, 0),
          };
          ADD_DESC(ui_desc_1);
       }
