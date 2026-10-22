@@ -33,7 +33,7 @@ def metal_test_source():
     frame_view = (HERE.parent / 'metal_frame/frame_view_fixture.m').read_text(encoding='utf8')
     movie = movie.replace('#include "movie_reference.h"', '#include "' + (HERE / 'movie_reference.h').as_posix() + '"')
     text += movie.replace('/* SHIPPING_FRAME_VIEW */', frame_view.replace('/* SHIPPING_FRAME_METHODS */', methods))
-    text += '#include "' + (ROOT / 'gfx/common/metal_hevc_driver.h').as_posix() + '"\n'
+    text += '#define HAVE_RMP4 1\n#include "' + (ROOT / 'gfx/common/metal_video_decoder_driver.h').as_posix() + '"\n'
     text += (HERE.parent / 'metal_frame/pool_test.m').read_text(encoding='utf8')
     return (HERE / 'metal_test.m').read_text(encoding='utf8').replace('/* SHIPPING_METAL */', text)
 
@@ -130,9 +130,9 @@ def main():
         if args.metal:
             # Verify startup remains legal below the shared-event OS gate.
             probe = tmp / 'bootstrap.m'
-            probe.write_text('#include "' + (ROOT / 'gfx/common/metal_hevc_driver.h').as_posix()
-                + '"\nstatic bool metal_hevc_decode_enabled(void *p) { (void)p; return true; }\n'
-                  'int bootstrap_probe(void *o, void *d, void *p) { return metal_hevc_start(o, d, p); }\n', encoding='utf8')
+            probe.write_text('#define HAVE_RMP4 1\n#include "' + (ROOT / 'gfx/common/metal_video_decoder_driver.h').as_posix()
+                + '"\nstatic bool metal_video_decoder_enabled(void *p) { (void)p; return true; }\n'
+                  'int bootstrap_probe(void *o, void *d, void *p) { return metal_video_decoder_start_supported(o, d, p, false); }\n', encoding='utf8')
             cmd = compiler + ['-DHAVE_THREADS', '-fobjc-arc', '-fblocks', '-Wall', '-Wextra',
                 '-Werror', '-Wno-unused-function', '-Werror=unguarded-availability',
                 '-mmacosx-version-min=10.13', '-I' + str(ROOT / 'libretro-common/include'),

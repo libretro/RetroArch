@@ -1287,13 +1287,13 @@ done:
 }
 /* METAL_FRAME_CV_POOL_SETUP_END */
 
-#if defined(HAVE_RMP4) && defined(HAVE_THREADS) \
+#if (defined(HAVE_RMP4) || defined(HAVE_RVP9)) && defined(HAVE_THREADS) \
       && ((defined(__MAC_OS_X_VERSION_MAX_ALLOWED) && __MAC_OS_X_VERSION_MAX_ALLOWED >= 101300) \
          || (defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= 110000) \
          || (defined(__TV_OS_VERSION_MAX_ALLOWED) && __TV_OS_VERSION_MAX_ALLOWED >= 110000))
-#include "../common/metal_hevc_driver.h"
-#ifdef METAL_HEVC_DRIVER
-static bool metal_hevc_decode_enabled(void *unused)
+#include "../common/metal_video_decoder_driver.h"
+#ifdef METAL_VIDEO_DECODER_DRIVER
+static bool metal_video_decoder_enabled(void *unused)
 {
    const settings_t *settings = config_get_ptr();
    (void)unused;
@@ -9336,8 +9336,8 @@ static void metal_init_mainthread(void *userdata)
 
    /* Store reference for context swap_buffers calls */
    metal_ctx_data = (__bridge void *)md;
-#ifdef METAL_HEVC_DRIVER
-   metal_hevc_start_supported((__bridge void*)md, (__bridge void*)md.context.device,
+#ifdef METAL_VIDEO_DECODER_DRIVER
+   metal_video_decoder_start_supported((__bridge void*)md, (__bridge void*)md.context.device,
          md.context.frameSDRPipeline, md.context.movieHDRSupported);
 #endif
 
@@ -9521,8 +9521,8 @@ static void metal_free(void *data)
    @autoreleasepool
    {
       __attribute__((unused)) MetalDriver *md = RARCH_BRIDGE_TRANSFER(MetalDriver *, data);
-#ifdef METAL_HEVC_DRIVER
-      metal_hevc_stop((__bridge void*)md);
+#ifdef METAL_VIDEO_DECODER_DRIVER
+      metal_video_decoder_stop((__bridge void*)md);
 #endif
       metal_ctx_data = NULL;
       md = nil;
@@ -10470,8 +10470,8 @@ static bool metal_get_device(void *data, video_device_info_t *info)
    info->get_instance_proc_addr  = NULL;
    info->queue_family           = 0;
    info->import_formats         = 0;
-#ifdef METAL_HEVC_DRIVER
-   if (metal_hevc_owns((__bridge void*)md))
+#ifdef METAL_VIDEO_DECODER_DRIVER
+   if (metal_video_decoder_owns((__bridge void*)md))
       info->import_formats = IMAGE_PIXFMT_NV12 | IMAGE_PIXFMT_P010;
 #endif
    return true;

@@ -90,3 +90,25 @@ with tempfile.TemporaryDirectory(prefix="vt-vp9-setup-") as directory:
             print("+", shlex.join(command), flush=True)
             subprocess.run(command, check=True)
             subprocess.run([str(binary)], check=True, timeout=90)
+
+        codec_objects = {}
+        for codec, source in (("vp9", "vp9/rvp9.c"), ("hevc", "h265/rh265.c")):
+            obj = path / (codec + ".o")
+            command = compiler + ["-O2", "-Wno-unused-parameter",
+                "-I" + str(root / "libretro-common/include"),
+                "-mmacosx-version-min=10.14", "-c",
+                str(root / "libretro-common/formats" / source), "-o", str(obj)]
+            subprocess.run(command, check=True)
+            codec_objects[codec] = str(obj)
+        for features, codecs in ((["-DHAVE_RVP9"], ["vp9"]),
+                (["-DHAVE_RMP4"], ["hevc"]),
+                (["-DHAVE_RMP4", "-DHAVE_RVP9"], ["hevc", "vp9"])):
+            for mode in ("-fobjc-arc", "-fno-objc-arc"):
+                command = compiler + flags + features + [mode, "-fblocks",
+                    "-Wno-unused-function", str(here / "lifecycle_test.m"),
+                    str(thread_object), str(queue_object)]
+                command += [codec_objects[codec] for codec in codecs]
+                command += ["-o", str(binary)] + libraries
+                print("+", shlex.join(command), flush=True)
+                subprocess.run(command, check=True)
+                subprocess.run([str(binary)], check=True, timeout=90)

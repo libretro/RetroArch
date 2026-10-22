@@ -9,25 +9,25 @@
 
 /* SHIPPING_METAL */
 
-static bool metal_hevc_decode_enabled(void *unused) { (void)unused; return true; }
+static bool metal_video_decoder_enabled(void *unused) { (void)unused; return true; }
 static void hevc_test_barrier(void *unused) { (void)unused; }
 int videotoolbox_hevc_test_start(void *owner, void *device, int hdr)
 {
    void *pipeline = metal_frame_sdr_pipeline_create(device);
    bool started;
-   assert(!metal_hevc_start(NULL, device, pipeline));
-   assert(!metal_hevc_start(owner, NULL, pipeline));
-   assert(!metal_hevc_start(owner, device, NULL));
-   started = metal_hevc_start_supported(owner, device, pipeline, hdr != 0);
+   assert(!metal_video_decoder_start_supported(NULL, device, pipeline, false));
+   assert(!metal_video_decoder_start_supported(owner, NULL, pipeline, false));
+   assert(!metal_video_decoder_start_supported(owner, device, NULL, false));
+   started = metal_video_decoder_start_supported(owner, device, pipeline, hdr != 0);
    if (pipeline) CFRelease(pipeline);
    return started;
 }
-void videotoolbox_hevc_test_stop(void *owner) { metal_hevc_stop(owner); }
-int videotoolbox_hevc_test_owns(void *owner) { return metal_hevc_owns(owner); }
+void videotoolbox_hevc_test_stop(void *owner) { metal_video_decoder_stop(owner); }
+int videotoolbox_hevc_test_owns(void *owner) { return metal_video_decoder_owns(owner); }
 void videotoolbox_hevc_test_retired(void)
 {
    /* Fixture-only barrier: production retirement remains asynchronous. */
-   dispatch_sync_f(metal_hevc_retirement_queue, NULL, hevc_test_barrier);
+   dispatch_sync_f(metal_video_decoder_retirement_queue, NULL, hevc_test_barrier);
 }
 
 
