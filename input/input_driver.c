@@ -12367,6 +12367,104 @@ static unsigned input_pad_buttons_other_sources(
    return held;
 }
 
+/* User @user's controller, read with another user's binds. */
+static void input_user_joypad_info(rarch_joypad_info_t *info,
+      unsigned user, float axis_threshold)
+{
+   info->axis_threshold = axis_threshold;
+   info->joy_idx        = config_get_ptr()->uints.input_joypad_index[user];
+   if (info->joy_idx >= MAX_USERS)
+      info->joy_idx     = 0;
+   info->auto_binds     = input_autoconf_binds[info->joy_idx];
+}
+
+/* A hotkey's button and axis on a controller sharing the hotkeys' core
+ * port, by user: its profile's, never the set's. Made when a bind
+ * changes. */
+typedef struct
+{
+   unsigned gen;                      /* the change count + 1 it was made at */
+   const struct retro_keybind *autob; /* the sharer's profile it was made for */
+   uint32_t has_pad[(RARCH_BIND_LIST_END + 31) / 32];
+   uint32_t axis[RARCH_BIND_LIST_END - RARCH_FIRST_META_KEY];
+   uint16_t key[RARCH_BIND_LIST_END - RARCH_FIRST_META_KEY];
+} input_share_hot_t;
+
+static input_share_hot_t input_share_hot[MAX_USERS];
+
+INPUT_NOINLINE static void input_share_hot_make(unsigned user,
+      const struct retro_keybind *autob, unsigned gen)
+{
+   unsigned i;
+   input_share_hot_t *t = &input_share_hot[user];
+
+   memset(t->has_pad, 0, sizeof(t->has_pad));
+   for (i = RARCH_FIRST_META_KEY; i < RARCH_BIND_LIST_END; i++)
+   {
+      uint16_t key  = NO_BTN;
+      uint32_t axis = AXIS_NONE;
+      if (RETRO_KEYBIND_VALID(&input_config_binds[0][i]))
+      {
+         key  = autob[i].joykey;
+         axis = autob[i].joyaxis;
+      }
+      t->key[i - RARCH_FIRST_META_KEY]  = key;
+      t->axis[i - RARCH_FIRST_META_KEY] = axis;
+      if (key != NO_BTN || axis != AXIS_NONE)
+         t->has_pad[i >> 5] |= (1u << (i & 31));
+   }
+   t->autob = autob;
+   t->gen   = gen;
+}
+
+/* User @user's, read by its profile @autob. */
+static INLINE const input_share_hot_t *input_share_hot_get(unsigned user,
+      const struct retro_keybind *autob)
+{
+   input_share_hot_t *t = &input_share_hot[user];
+   if (!t->gen || t->autob != autob)
+   {
+      unsigned gen = input_config_binds_generation() + 1;
+      input_share_hot_make(user, autob, gen);
+      if (input_config_binds_generation() + 1 != gen)
+         t->gen = 0;
+   }
+   return t;
+}
+
+/* Hotkey @id on user @user's controller (@info): its button or axis. */
+static bool input_hotkey_share_pad(const input_device_driver_t *joypad,
+      rarch_joypad_info_t *info, unsigned user, unsigned id)
+{
+   const input_share_hot_t *t = input_share_hot_get(user,
+         info->auto_binds);
+   uint16_t key               = t->key[id - RARCH_FIRST_META_KEY];
+   uint32_t axis              = t->axis[id - RARCH_FIRST_META_KEY];
+
+   if (!joypad)
+      return false;
+   if (key != NO_BTN && joypad->button(info->joy_idx, key))
+      return true;
+   return axis != AXIS_NONE
+      && ((float)abs(joypad->axis(info->joy_idx, axis)) * INV_0x8000)
+         > info->axis_threshold;
+}
+
+/* Hotkey @id on user @user's controller (@info): its button and axis
+ * there; Hotkey Enable also on hotkey port @port's keys and mouse. The
+ * other keys and mouse buttons are the hotkey port's alone. */
+static bool input_hotkey_share_read(input_driver_state_t *input_st,
+      const input_device_driver_t *joypad, rarch_joypad_info_t *info,
+      const retro_keybind_set *binds, bool kb_blocked, unsigned port,
+      unsigned user, unsigned id)
+{
+   return input_hotkey_share_pad(joypad, info, user, id)
+      || (id == RARCH_ENABLE_HOTKEY
+         && input_state_wrap(input_st->current_driver,
+            input_st->current_data, NULL, info, binds, kb_blocked,
+            port, RETRO_DEVICE_JOYPAD, 0, id) != 0);
+}
+
 /* By bind: what something could be holding this frame. A bind is in it
  * if its key is down, if a mouse button or a pad may be behind it, or
  * if the overlay holds it; a bind that is not is held by nothing, and
@@ -12375,7 +12473,8 @@ static unsigned input_pad_buttons_other_sources(
  * frontend's to know (a driver that does not give it its keys) or a
  * command interface is open, whose presses are not kept as bits. */
 static void input_hotkeys_maybe_held(input_driver_state_t *input_st,
-      unsigned port, const rarch_joypad_info_t *joypad_info, uint32_t *maybe)
+      unsigned port, const rarch_joypad_info_t *joypad_info, uint32_t share,
+      uint32_t *maybe)
 {
    unsigned w;
    const unsigned words          = (RARCH_BIND_LIST_END + 31) / 32;
@@ -12418,6 +12517,17 @@ static void input_hotkeys_maybe_held(input_driver_state_t *input_st,
       if (input_st->overlay_ptr)
          maybe[w] |= INPUT_OVERLAY_ST(input_st->overlay_ptr)->buttons.data[w];
 #endif
+   }
+   /* what the controllers sharing the port have behind them */
+   for (; share; share &= share - 1)
+   {
+      rarch_joypad_info_t info;
+      const input_share_hot_t *t;
+      unsigned user = (unsigned)compat_ctz(share);
+      input_user_joypad_info(&info, user, 0.0f);
+      t             = input_share_hot_get(user, info.auto_binds);
+      for (w = 0; w < words; w++)
+         maybe[w] |= t->has_pad[w];
    }
    maybe[RARCH_MENU_TOGGLE >> 5] |= (1u << (RARCH_MENU_TOGGLE & 31));
 #ifdef HAVE_OPENXR
@@ -12469,6 +12579,7 @@ typedef struct
    const input_device_driver_t *joypad;
    rarch_joypad_info_t *joypad_info;
    unsigned port;
+   unsigned user;             /* a sharer's controller; MAX_USERS: the port's */
    uint8_t mode;              /* 0: none blocked, 1: all, 2: one by one */
    int8_t  enable_blocked;    /* the enabler's own answer; -1 not asked yet */
    bool    libretro_hotkey_set;
@@ -12519,6 +12630,18 @@ static bool input_hotkey_uses_enable(input_hotkey_block_t *b,
                b->binds, false, b->port, RETRO_DEVICE_MOUSE, 0, mbutton))
       return false;
    return true;
+}
+
+/* Hotkey @i, read on @b's controller. */
+static bool input_hotkey_block_pad(const input_hotkey_block_t *b,
+      bool kb_blocked, unsigned i)
+{
+   if (b->user < MAX_USERS)
+      return input_hotkey_share_read(b->input_st, b->joypad,
+            b->joypad_info, b->binds, kb_blocked, b->port, b->user, i);
+   return input_state_wrap(b->input_st->current_driver,
+         b->input_st->current_data, b->joypad, b->joypad_info, b->binds,
+         kb_blocked, b->port, RETRO_DEVICE_JOYPAD, 0, i) != 0;
 }
 
 /* Whether hotkey @i is blocked, for one that is pressed.
@@ -12576,15 +12699,8 @@ static bool input_hotkey_blocked(input_hotkey_block_t *b, unsigned i)
             }
 
             /* Deny blocking if joypad hotkey is pressed */
-            if (input_state_wrap(
-                  b->input_st->current_driver,
-                  b->input_st->current_data,
-                  joypad,
-                  joypad_info,
-                  binds,
-                  !!(b->input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED),
-                  port, RETRO_DEVICE_JOYPAD, 0,
-                  i))
+            if (input_hotkey_block_pad(b,
+                  !!(b->input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED), i))
             {
                libretro_hotkey_pressed = true;
 
@@ -12619,15 +12735,8 @@ static bool input_hotkey_blocked(input_hotkey_block_t *b, unsigned i)
             }
 
             /* Allow blocking if joypad hotkey is pressed */
-            if (input_state_wrap(
-                  b->input_st->current_driver,
-                  b->input_st->current_data,
-                  joypad,
-                  joypad_info,
-                  binds,
-                  !!(b->input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED),
-                  port, RETRO_DEVICE_JOYPAD, 0,
-                  i))
+            if (input_hotkey_block_pad(b,
+                  !!(b->input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED), i))
             {
                /* Only block if keyboard is not pressed */
                if (!keyboard_hotkey_pressed)
@@ -12649,15 +12758,7 @@ static bool input_hotkey_blocked(input_hotkey_block_t *b, unsigned i)
             enabler_open = !b->enable_blocked;
          }
          if (     enabler_open
-               && input_state_wrap(
-                  b->input_st->current_driver,
-                  b->input_st->current_data,
-                  joypad,
-                  joypad_info,
-                  binds,
-                  true,
-                  port, RETRO_DEVICE_JOYPAD, 0,
-                  i))
+               && input_hotkey_block_pad(b, true, i))
             blocked = false;
       }
    }
@@ -12669,6 +12770,86 @@ static bool input_hotkey_blocked(input_hotkey_block_t *b, unsigned i)
       blocked = false;
 
    return blocked;
+}
+
+/* Of the users in @share, those whose controller holds hotkey @id
+ * (Hotkey Enable: or hotkey port @port's keys or mouse do). */
+static uint32_t input_hotkey_shared_held(input_driver_state_t *input_st,
+      const input_device_driver_t *joypad, const retro_keybind_set *binds,
+      float axis_threshold, unsigned port, uint32_t share, unsigned id,
+      bool kb_blocked)
+{
+   uint32_t held = 0;
+   for (; share; share &= share - 1)
+   {
+      rarch_joypad_info_t info;
+      unsigned user = (unsigned)compat_ctz(share);
+      input_user_joypad_info(&info, user, axis_threshold);
+      if (input_hotkey_share_read(input_st, joypad, &info, binds,
+               kb_blocked, port, user, id))
+         held |= 1U << user;
+   }
+   return held;
+}
+
+/* Of the users in @share, those holding Hotkey Enable on their own
+ * controller, not on the keyboard. */
+static uint32_t input_hotkey_shared_pad_enabled(
+      const input_device_driver_t *joypad, float axis_threshold,
+      uint32_t share)
+{
+   uint32_t held = 0;
+   for (; share; share &= share - 1)
+   {
+      rarch_joypad_info_t info;
+      unsigned user = (unsigned)compat_ctz(share);
+      input_user_joypad_info(&info, user, axis_threshold);
+      if (input_hotkey_share_pad(joypad, &info, user, RARCH_ENABLE_HOTKEY))
+         held |= 1U << user;
+   }
+   return held;
+}
+
+/* Of @users, those whose own RetroPad holds nothing. */
+static uint32_t input_users_pad_idle(input_driver_state_t *input_st,
+      const input_device_driver_t *joypad, const retro_keybind_set *binds,
+      float axis_threshold, uint32_t users, bool kb_blocked)
+{
+   uint32_t idle = users;
+   for (; users; users &= users - 1)
+   {
+      rarch_joypad_info_t info;
+      unsigned user = (unsigned)compat_ctz(users);
+      input_user_joypad_info(&info, user, axis_threshold);
+      if (input_state_wrap(input_st->current_driver,
+               input_st->current_data, joypad, &info, binds, kb_blocked,
+               user, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_MASK)
+            & 0xffff)
+         idle &= ~(1U << user);
+   }
+   return idle;
+}
+
+/* Whether hotkey @i, pressed on the controllers in @pressed, gets past
+ * any of their own Hotkey Enables: @open holds those it does not block,
+ * the rest go by @mode. */
+static bool input_hotkey_shared_passes(const input_hotkey_block_t *blk,
+      uint32_t pressed, uint32_t open, uint8_t mode, unsigned i)
+{
+   for (; pressed; pressed &= pressed - 1)
+   {
+      rarch_joypad_info_t info;
+      input_hotkey_block_t b = *blk;
+      unsigned user          = (unsigned)compat_ctz(pressed);
+      input_user_joypad_info(&info, user, blk->joypad_info->axis_threshold);
+      b.joypad_info          = &info;
+      b.user                 = user;
+      b.enable_blocked       = -1;
+      b.mode                 = (open & (1U << user)) ? 0 : mode;
+      if (!input_hotkey_blocked(&b, i))
+         return true;
+   }
+   return false;
 }
 
 /**
@@ -12784,6 +12965,7 @@ void input_binds_kept_invalidate(void)
    {
       input_port_pads[port].gen     = 0;
       input_port_hotkeys[port].gen  = 0;
+      input_share_hot[port].gen     = 0;
    }
 }
 
@@ -14023,20 +14205,30 @@ enum
    ENABLER_TAP_PLAY
 };
 
-static struct
+typedef struct
 {
    retro_time_t since;
+   uint16_t     frames;   /* held; then left to play */
+   uint8_t      state;
+} input_enabler_tap_user_t;
+
+static struct
+{
+   input_enabler_tap_user_t user[MAX_USERS]; /* each taps its own */
+   retro_bits_t solo;     /* hotkeys only sharers fired */
    unsigned     gen;      /* binds generation + 1 the mask was made at */
-   uint16_t     mask;
+   uint32_t     down;     /* users holding their own enabler, by bit */
+   uint32_t     hot;      /* users whose tap a hotkey swallows */
+   uint32_t     busy;     /* users not idle */
+   uint32_t     pass;     /* users whose hold is the game's */
+   uint32_t     read;     /* users whose enabler the hotkey pass read */
+   uint32_t     idle;     /* of those, the idle ones */
+   uint16_t     mask;     /* the hotkey port's */
    uint16_t     withhold;
    uint16_t     force;
-   uint16_t     idle_mask; /* the mask, when idle and read */
-   uint16_t     frames;   /* held; then left to play */
+   uint16_t     idle_mask; /* the idle ones' */
    uint8_t      port;     /* core port */
    uint8_t      hotkey_port;
-   uint8_t      state;
-   bool         down;
-   bool         read;     /* the hotkey pass read the enabler */
 } input_enabler_tap;
 
 static void input_keys_pressed(
@@ -14049,6 +14241,7 @@ static void input_keys_pressed(
       const retro_keybind_set *binds,
       const input_device_driver_t *joypad,
       rarch_joypad_info_t *joypad_info,
+      uint32_t share,
       bool input_hotkey_device_merge)
 {
    uint32_t maybe_held[(RARCH_BIND_LIST_END + 31) / 32];
@@ -14060,6 +14253,13 @@ static void input_keys_pressed(
    uint16_t held_now              = 0;
    input_hotkey_block_t blk;
    bool enable_hotkey_pressed     = false;
+   bool own_enabled               = false;
+   /* of @share, those holding Hotkey Enable (and on their own pad),
+    * and those it lets through */
+   uint32_t share_enabled         = 0;
+   uint32_t share_pad             = 0;
+   uint32_t share_open            = 0;
+   uint8_t block_mode;
    bool any_pressed               = false;
    /* what the tables say of this port's hotkeys, as of the last
     * change to a bind (input_port_hotkeys_t) */
@@ -14086,8 +14286,7 @@ static void input_keys_pressed(
    if (     (port == hotkey_port)
          && (hk->flags & INPUT_HK_ENABLER))
    {
-      input_enabler_tap.read = true;
-      if (input_state_wrap(
+      own_enabled      = input_state_wrap(
             input_st->current_driver,
             input_st->current_data,
             joypad,
@@ -14095,14 +14294,28 @@ static void input_keys_pressed(
             binds,
             kb_blocked,
             port, RETRO_DEVICE_JOYPAD, 0,
-            RARCH_ENABLE_HOTKEY))
+            RARCH_ENABLE_HOTKEY) != 0;
+      if (share)
+         share_enabled = input_hotkey_shared_held(input_st, joypad, binds,
+               joypad_info->axis_threshold, port, share,
+               RARCH_ENABLE_HOTKEY, kb_blocked);
+      input_enabler_tap.read = (1U << port) | share;
+      if (own_enabled || share_enabled)
       {
          enable_hotkey_pressed = true;
-         input_enabler_tap.down = true;
+         if (own_enabled)
+            input_enabler_tap.down |= 1U << port;
+         if (share_enabled)
+         {
+            share_pad = input_hotkey_shared_pad_enabled(
+                  joypad, joypad_info->axis_threshold, share_enabled);
+            input_enabler_tap.down |= share_pad;
+         }
          if (input_st->input_hotkey_block_counter < input_hotkey_block_delay)
             input_st->input_hotkey_block_counter++;
          /* held past the tap delay, it is the game's button */
-         else if (input_enabler_tap.state != ENABLER_TAP_PASS)
+         else if (   !input_enabler_tap.down
+                  || (input_enabler_tap.down & ~input_enabler_tap.pass))
             input_st->flags |= INP_FLAG_BLOCK_LIBRETRO_INPUT;
       }
       else
@@ -14200,6 +14413,22 @@ static void input_keys_pressed(
                      !!(input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED),
                      port, RETRO_DEVICE_JOYPAD, 0, i);
 
+         /* Bypass only from an idle pad: with another pad's Hotkey
+          * Enable held, the hotkey user's buttons were not read for
+          * any_pressed. */
+         if (bit_pressed && share_enabled && !own_enabled)
+            bit_pressed = input_users_pad_idle(input_st, joypad, binds,
+                  joypad_info->axis_threshold, 1U << port, kb_blocked) != 0;
+         if (     !bit_pressed
+               && share
+               && (hk->flags & INPUT_HK_MENU_VALID))
+            bit_pressed = input_users_pad_idle(input_st, joypad, binds,
+                  joypad_info->axis_threshold,
+                  input_hotkey_shared_held(input_st, joypad, binds,
+                     joypad_info->axis_threshold, port, share, i,
+                     kb_blocked),
+                  kb_blocked) != 0;
+
          if (     bit_pressed
                || (i == RARCH_MENU_TOGGLE && input_st->platform_menu_button)
                || input_keys_pressed_other_sources(input_st, i, p_new_state))
@@ -14262,17 +14491,24 @@ static void input_keys_pressed(
    blk.joypad              = joypad;
    blk.joypad_info         = joypad_info;
    blk.port                = port;
+   blk.user                = MAX_USERS;
    blk.enable_blocked      = -1;
    blk.libretro_hotkey_set = libretro_hotkey_set;
    blk.keyboard_hotkey_set = keyboard_hotkey_set;
    blk.is_menu             = is_menu;
+   block_mode              = (libretro_hotkey_set && keyboard_hotkey_set) ? 1 : 2;
    blk.mode                = !(input_st->flags & INP_FLAG_BLOCK_HOTKEY) ? 0
-      : (libretro_hotkey_set && keyboard_hotkey_set) ? 1 : 2;
+      : block_mode;
+   /* each controller's hotkeys go by its own Hotkey Enable */
+   if (!blk.mode && enable_hotkey_pressed && !own_enabled)
+      blk.mode             = block_mode;
+   if (!(input_st->flags & INP_FLAG_BLOCK_HOTKEY))
+      share_open           = enable_hotkey_pressed ? share_enabled : share;
 
    /* Which hotkeys anything could be holding: all that is gone through
     * below. The rest have nothing to do here - but for the menu toggle,
     * which acts on being let go and is always among them. */
-   input_hotkeys_maybe_held(input_st, port, joypad_info, maybe_held);
+   input_hotkeys_maybe_held(input_st, port, joypad_info, share, maybe_held);
 
    /* Only the hotkeys in it are gone through, lowest first as before:
     * a word of it at a time, a set bit at a time. Going through all
@@ -14292,6 +14528,7 @@ static void input_keys_pressed(
       {
          bool other_pressed;
          bool bit_pressed;
+         uint32_t shared_pressed;
 
          i = (hot_word << 5) + (unsigned)compat_ctz(hot);
 
@@ -14306,8 +14543,14 @@ static void input_keys_pressed(
                      kb_blocked,
                      port, RETRO_DEVICE_JOYPAD, 0,
                      i);
+         shared_pressed = (share && INPUT_HOT_BIT(input_hotkey_set.valid, i))
+               ? input_hotkey_shared_held(input_st, joypad, binds,
+                     joypad_info->axis_threshold, port, share, i,
+                     kb_blocked)
+               : 0;
 
          if (     bit_pressed
+               || shared_pressed
                || other_pressed
                || (i == RARCH_MENU_TOGGLE && input_st->platform_menu_button))
          {
@@ -14334,7 +14577,11 @@ static void input_keys_pressed(
             if (libretro_hotkey_set || keyboard_hotkey_set)
             {
                /* Do not block "other source" (input overlay) presses */
-               if (!other_pressed && input_hotkey_blocked(&blk, i))
+               if (     !other_pressed
+                     && (   (shared_pressed && !bit_pressed)
+                         || input_hotkey_blocked(&blk, i))
+                     && !input_hotkey_shared_passes(&blk, shared_pressed,
+                           share_open, block_mode, i))
                   continue;
             }
 
@@ -14362,6 +14609,18 @@ static void input_keys_pressed(
             }
 
             BIT256_SET_PTR(p_new_state, i);
+
+            /* for Tap Delay: whose tap it swallows */
+            if (i != RARCH_ENABLE_HOTKEY)
+            {
+               uint32_t fired = shared_pressed & share_open;
+               input_enabler_tap.hot |= fired;
+               /* the keyboard's Enable opened it: its tap too */
+               if (fired & share_enabled & ~share_pad)
+                  input_enabler_tap.hot |= 1U << port;
+               if (shared_pressed && !bit_pressed && !other_pressed)
+                  BIT256_SET(input_enabler_tap.solo, i);
+            }
          }
          else
          {
@@ -17501,6 +17760,27 @@ void input_remapping_update_port_map(void)
    input_st->first_press_live = unmapped && input_st->first_press_on;
 }
 
+/* The users on @user's core port, as bits, @user among them; @user
+ * alone on None, but for user 1, with core port 1's users. */
+static uint32_t input_port_sharers(const settings_t *settings,
+      unsigned user)
+{
+   unsigned port;
+   uint32_t first = 0;
+   for (port = 0; port < MAX_USERS; port++)
+   {
+      const unsigned *u = settings->uints.input_remap_port_map[port];
+      uint32_t users    = 0;
+      for (; *u < MAX_USERS; u++)
+         users |= 1U << *u;
+      if (users & (1U << user))
+         return users;
+      if (!port && !user)
+         first = users;
+   }
+   return first | (1U << user);
+}
+
 void input_remapping_deinit(bool save_remap)
 {
    runloop_state_t *runloop_st  = runloop_state_get_ptr();
@@ -17614,6 +17894,32 @@ INPUT_NOINLINE static void input_entries_work_frame(
    }
 }
 
+/* Of @users, each one's RetroPad buttons on its own enabler's button */
+static uint16_t input_enabler_tap_sharers(uint32_t users)
+{
+   uint16_t mask = 0;
+   for (; users; users &= users - 1)
+   {
+      rarch_joypad_info_t info;
+      const input_share_hot_t *t;
+      uint16_t en;
+      unsigned id;
+      unsigned user = (unsigned)compat_ctz(users);
+      input_user_joypad_info(&info, user, 0.0f);
+      t  = input_share_hot_get(user, info.auto_binds);
+      en = t->key[RARCH_ENABLE_HOTKEY - RARCH_FIRST_META_KEY];
+      if (en == NO_BTN)
+         continue;
+      for (id = 0; id < RARCH_FIRST_CUSTOM_BIND; id++)
+      {
+         const struct retro_keybind *b = &input_config_binds[user][id];
+         if ((b->joykey != NO_BTN ? b->joykey : info.auto_binds[id].joykey) == en)
+            mask |= (uint16_t)(1u << id);
+      }
+   }
+   return mask;
+}
+
 /* The hotkey port's RetroPad buttons sharing the enabler's button or key */
 INPUT_NOINLINE static void input_enabler_tap_mask(unsigned hotkey_port)
 {
@@ -17647,121 +17953,178 @@ INPUT_NOINLINE static void input_enabler_tap_mask(unsigned hotkey_port)
    input_enabler_tap.gen  = gen;
 }
 
+static void input_enabler_tap_idle(input_driver_state_t *input_st)
+{
+   memset(input_enabler_tap.user, 0, sizeof(input_enabler_tap.user));
+   BIT256_CLEAR_ALL(input_enabler_tap.solo);
+   input_enabler_tap.busy       = input_enabler_tap.pass  = 0;
+   input_enabler_tap.withhold   = input_enabler_tap.force = 0;
+   input_enabler_tap.idle       = input_enabler_tap.idle_mask = 0;
+   input_st->enabler_tap_active = false;
+}
+
 /* The core's poll comes after the hotkey pass, so it has an enabler's
- * press a frame before the tap does: the enabler buttons, if it has
- * the enabler held. */
+ * press a frame before the tap does: of the idle users, the enabler
+ * buttons of those it has holding theirs. */
 INPUT_NOINLINE static uint16_t input_enabler_tap_first(
       input_driver_state_t *input_st)
 {
-   settings_t *settings = config_get_ptr();
-   unsigned user        = input_enabler_tap.hotkey_port;
-   rarch_joypad_info_t joypad_info;
-   joypad_info.axis_threshold = settings->floats.input_axis_threshold;
-   joypad_info.joy_idx        = settings->uints.input_joypad_index[user];
-   if (joypad_info.joy_idx >= MAX_USERS)
-      joypad_info.joy_idx     = 0;
-   joypad_info.auto_binds     = input_autoconf_binds[joypad_info.joy_idx];
-   return input_state_wrap(input_st->current_driver,
-         input_st->current_data,
-         INPUT_JOYPAD_FOR_READ(input_st, input_st->primary_joypad),
-         &joypad_info, (const retro_keybind_set *)input_config_binds,
-         (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) != 0,
-         user, RETRO_DEVICE_JOYPAD, 0, RARCH_ENABLE_HOTKEY)
-      ? input_enabler_tap.idle_mask : 0;
+   const input_device_driver_t *joypad = INPUT_JOYPAD_FOR_READ(
+         input_st, input_st->primary_joypad);
+   float axis_threshold = config_get_ptr()->floats.input_axis_threshold;
+   uint32_t users       = input_enabler_tap.idle;
+   uint16_t first       = 0;
+   for (; users; users &= users - 1)
+   {
+      rarch_joypad_info_t info;
+      unsigned user = (unsigned)compat_ctz(users);
+      input_user_joypad_info(&info, user, axis_threshold);
+      if (user != input_enabler_tap.hotkey_port)
+      {
+         if (input_hotkey_share_pad(joypad, &info, user,
+                  RARCH_ENABLE_HOTKEY))
+            first |= input_enabler_tap_sharers(1U << user);
+      }
+      else if (input_state_wrap(input_st->current_driver,
+               input_st->current_data, joypad, &info,
+               (const retro_keybind_set *)input_config_binds,
+               (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) != 0,
+               user, RETRO_DEVICE_JOYPAD, 0, RARCH_ENABLE_HOTKEY))
+         first |= input_enabler_tap.mask;
+   }
+   return first & input_enabler_tap.idle_mask;
 }
 
 INPUT_NOINLINE static void input_enabler_tap_frame(
       input_driver_state_t *input_st, unsigned delay_ms,
       unsigned hotkey_port, bool menu_alive, const input_bits_t *bits)
 {
-   bool down    = input_enabler_tap.down;
-   bool read    = input_enabler_tap.read;
-   bool hotkey  = false;
+   uint32_t down     = input_enabler_tap.down;
+   uint32_t hot      = input_enabler_tap.hot;
+   uint32_t read     = input_enabler_tap.read;
+   uint32_t busy     = 0;
+   uint32_t pass     = 0;
+   uint32_t todo;
+   uint16_t withhold = 0;
+   uint16_t force    = 0;
+   uint16_t passing  = 0;
    unsigned w;
 
-   input_enabler_tap.down = false;
-   input_enabler_tap.read = false;
+   input_enabler_tap.down = 0;
+   input_enabler_tap.hot  = 0;
+   input_enabler_tap.read = 0;
    if (     !menu_alive
          && input_enabler_tap.gen != input_config_binds_generation() + 1)
       input_enabler_tap_mask(hotkey_port);
-   if (menu_alive || !input_enabler_tap.mask)
+   if (menu_alive)
    {
-      input_enabler_tap.state    = ENABLER_TAP_IDLE;
-      input_enabler_tap.withhold = input_enabler_tap.force = 0;
-      input_enabler_tap.idle_mask  = 0;
-      input_st->enabler_tap_active = false;
+      input_enabler_tap_idle(input_st);
       return;
    }
-   /* any hotkey other than the enabler */
+   /* the hotkey port's: any hotkey other than the enabler */
    for (w = RARCH_FIRST_META_KEY >> 5; w < ARRAY_SIZE(bits->data); w++)
    {
-      uint32_t word = bits->data[w];
+      uint32_t word = bits->data[w] & ~input_enabler_tap.solo.data[w];
       if (w == (RARCH_FIRST_META_KEY >> 5))
          word &= ~((1u << (RARCH_FIRST_META_KEY & 31)) - 1);
       if (w == (RARCH_ENABLE_HOTKEY >> 5))
          word &= ~(1u << (RARCH_ENABLE_HOTKEY & 31));
       if (word)
-         hotkey = true;
+         hot |= 1U << hotkey_port;
    }
+   BIT256_CLEAR_ALL(input_enabler_tap.solo);
 
-   switch (input_enabler_tap.state)
+   for (todo = down | input_enabler_tap.busy; todo; todo &= todo - 1)
    {
-      case ENABLER_TAP_PLAY:
-         if (input_enabler_tap.frames && --input_enabler_tap.frames)
+      unsigned user               = (unsigned)compat_ctz(todo);
+      uint32_t bit                = 1U << user;
+      input_enabler_tap_user_t *t = &input_enabler_tap.user[user];
+      uint16_t mask               = 0;
+
+      switch (t->state)
+      {
+         case ENABLER_TAP_PLAY:
+            if (t->frames && --t->frames)
+               break;
+            t->state = ENABLER_TAP_IDLE;
+            /* fall through: a new press as it ends */
+         case ENABLER_TAP_IDLE:
+            if (down & bit)
+            {
+               t->state  = ENABLER_TAP_HELD;
+               t->since  = cpu_features_get_time_usec();
+               t->frames = 1;
+            }
             break;
-         input_enabler_tap.state = ENABLER_TAP_IDLE;
-         /* fall through: a new press as it ends */
-      case ENABLER_TAP_IDLE:
-         if (down)
-         {
-            input_enabler_tap.state  = ENABLER_TAP_HELD;
-            input_enabler_tap.since  = cpu_features_get_time_usec();
-            input_enabler_tap.frames = 1;
-         }
-         break;
-      case ENABLER_TAP_HELD:
-         if (hotkey)
-            input_enabler_tap.state = ENABLER_TAP_SWALLOW;
-         else if (!down)
-         {
-            /* two frames at least, for a core that polls late */
-            input_enabler_tap.state  = ENABLER_TAP_PLAY;
-            if (input_enabler_tap.frames < 2)
-               input_enabler_tap.frames = 2;
-         }
-         else
-         {
-            if (input_enabler_tap.frames < 0xffff)
-               input_enabler_tap.frames++;
-            if (cpu_features_get_time_usec() - input_enabler_tap.since
-                  >= (retro_time_t)delay_ms * 1000)
-               input_enabler_tap.state = ENABLER_TAP_PASS;
-         }
-         break;
-      case ENABLER_TAP_PASS:
-         if (!down)
-            input_enabler_tap.state = ENABLER_TAP_IDLE;
-         else if (hotkey)
-            input_enabler_tap.state = ENABLER_TAP_SWALLOW;
-         break;
-      case ENABLER_TAP_SWALLOW:
-         if (!down)
-            input_enabler_tap.state = ENABLER_TAP_IDLE;
-         break;
+         case ENABLER_TAP_HELD:
+            if (hot & bit)
+               t->state = ENABLER_TAP_SWALLOW;
+            else if (!(down & bit))
+            {
+               /* two frames at least, for a core that polls late */
+               t->state  = ENABLER_TAP_PLAY;
+               if (t->frames < 2)
+                  t->frames = 2;
+            }
+            else
+            {
+               if (t->frames < 0xffff)
+                  t->frames++;
+               if (cpu_features_get_time_usec() - t->since
+                     >= (retro_time_t)delay_ms * 1000)
+                  t->state = ENABLER_TAP_PASS;
+            }
+            break;
+         case ENABLER_TAP_PASS:
+            if (!(down & bit))
+               t->state = ENABLER_TAP_IDLE;
+            else if (hot & bit)
+               t->state = ENABLER_TAP_SWALLOW;
+            break;
+         case ENABLER_TAP_SWALLOW:
+            if (!(down & bit))
+               t->state = ENABLER_TAP_IDLE;
+            break;
+      }
+
+      if (t->state)
+      {
+         mask = (user == hotkey_port) ? input_enabler_tap.mask
+            : input_enabler_tap_sharers(bit);
+         if (!mask)
+            t->state = ENABLER_TAP_IDLE;
+      }
+      switch (t->state)
+      {
+         case ENABLER_TAP_HELD:
+         case ENABLER_TAP_SWALLOW:
+            withhold |= mask;
+            break;
+         case ENABLER_TAP_PLAY:
+            force    |= mask;
+            break;
+         case ENABLER_TAP_PASS:
+            passing  |= mask;
+            pass     |= bit;
+            break;
+      }
+      if (t->state)
+         busy |= bit;
    }
 
-   input_enabler_tap.withhold =
-         (   input_enabler_tap.state == ENABLER_TAP_HELD
-          || input_enabler_tap.state == ENABLER_TAP_SWALLOW)
-      ? input_enabler_tap.mask : 0;
-   input_enabler_tap.force    = (input_enabler_tap.state == ENABLER_TAP_PLAY)
-      ? input_enabler_tap.mask : 0;
-   input_st->enabler_tap_active = input_enabler_tap.state != ENABLER_TAP_IDLE
-                               && input_enabler_tap.state != ENABLER_TAP_PASS;
+   input_enabler_tap.busy       = busy;
+   input_enabler_tap.pass       = pass;
+   /* a button another controller's hold has made the game's */
+   input_enabler_tap.withhold   = withhold & ~passing;
+   input_enabler_tap.force      = force;
+   input_st->enabler_tap_active = (withhold | force) != 0;
    input_enabler_tap.hotkey_port = (uint8_t)hotkey_port;
-   input_enabler_tap.idle_mask  = (read
-         && input_enabler_tap.state == ENABLER_TAP_IDLE)
-      ? input_enabler_tap.mask : 0;
+   input_enabler_tap.idle       = read & ~busy;
+   input_enabler_tap.idle_mask  = (uint16_t)(~passing
+      & (  ((input_enabler_tap.idle & (1U << hotkey_port))
+            ? input_enabler_tap.mask : 0)
+         | input_enabler_tap_sharers(
+            input_enabler_tap.idle & ~(1U << hotkey_port))));
 }
 
 void input_driver_collect_system_input(input_driver_state_t *input_st,
@@ -17778,7 +18141,9 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
          : (uint8_t)settings->uints.input_max_users;
    uint8_t port                        = 0;
    uint8_t hotkey_port                 = 0;
+   uint32_t hotkey_share;
 #ifdef HAVE_MENU
+   uint32_t menu_users                 = 0;
    bool all_users_control_menu         = settings->bools.input_all_users_control_menu;
    bool display_kb                     = menu_input_dialog_get_display_kb();
    bool menu_is_alive                  = (menu_state_get_ptr()->flags &
@@ -17828,8 +18193,25 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
       }
    }
 
+   /* the other users on the hotkey user's core port fire their
+    * controllers' hotkeys */
+   hotkey_share = input_port_sharers(settings, hotkey_port)
+      & ~(1U << hotkey_port) & ((1U << max_users) - 1);
+#ifdef HAVE_MENU
+   if (menu_is_alive && !all_users_control_menu)
+      menu_users = input_port_sharers(settings, 0);
+#endif
+
    for (port = 0; port < (int)max_users; port++)
    {
+#ifdef HAVE_MENU
+      /* the menu is user 1's and its core port's, unless every user
+       * controls it */
+      if (     menu_is_alive
+            && !all_users_control_menu
+            && !(menu_users & (1U << port)))
+         continue;
+#endif
       joypad_info.joy_idx                    = settings->uints.input_joypad_index[port];
       /* input_autoconf_binds is [MAX_USERS] and joy_idx comes from the
        * config file, so it can point past the end - the same bound the
@@ -17934,15 +18316,8 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
             (const retro_keybind_set *)input_config_binds,
             joypad,
             &joypad_info,
+            (port == hotkey_port) ? hotkey_share : 0,
             settings->bools.input_hotkey_device_merge);
-
-#ifdef HAVE_MENU
-      if (menu_is_alive)
-      {
-         if (!all_users_control_menu)
-            break;
-      }
-#endif /* HAVE_MENU */
    }
 
 #ifdef HAVE_MENU
@@ -18127,11 +18502,14 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
             false,
 #endif
             current_bits);
-   else if (input_enabler_tap.state | input_enabler_tap.idle_mask)
+   else
    {
-      input_enabler_tap.state      = ENABLER_TAP_IDLE;
-      input_enabler_tap.idle_mask  = 0;
-      input_st->enabler_tap_active = false;
+      /* nothing kept for when it is turned on */
+      input_enabler_tap.down = input_enabler_tap.hot = 0;
+      input_enabler_tap.read = input_enabler_tap.idle_mask = 0;
+      BIT256_CLEAR_ALL(input_enabler_tap.solo);
+      if (input_enabler_tap.busy)
+         input_enabler_tap_idle(input_st);
    }
 }
 
