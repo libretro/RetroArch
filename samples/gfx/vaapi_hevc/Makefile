@@ -171,6 +171,6 @@ native_import: $(NATIVE_DECODE_SOURCES) $(NATIVE_IMPORT_SOURCES) native_import.h
 native-import-check: native_import
 	./native_import "$(VAAPI_RENDER_NODE)"
 .PHONY: native-import-check
-native_import_gpu_test$(EXE): native_import_gpu_test.c native_import_gpu.h native_rgb.h prime_gpu_test$(EXE)
-	$(CC) $(CFLAGS) native_import_gpu_test.c $(NATIVE_IMPORT_SOURCES) -o $@ $(LDFLAGS) -lvulkan -lm
+native_import_gpu_test$(EXE): native_import_gpu_test.c native_import_gpu.h native_rgb.h prime_gpu_test.c prime_gpu_test$(EXE) ../../../gfx/common/vulkan_android_queue.c ../../../gfx/common/vulkan_android_queue.h
+	$(CC) $(CFLAGS) native_import_gpu_test.c ../../../gfx/common/vulkan_android_queue.c $(NATIVE_IMPORT_SOURCES) -o $@ $(LDFLAGS) -lvulkan -lm
 gpu-check: native_import_gpu_test$(EXE)

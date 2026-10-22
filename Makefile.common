@@ -1822,6 +1822,14 @@ ifeq ($(HAVE_VULKAN), 1)
          ifneq ($(ANDROID), 1)
             OBJ += gfx/common/vulkan_android_queue.o
          endif
+         ifeq ($(HAVE_RVP9), 1)
+            OBJ += gfx/common/vaapi_vp9_decoder.o \
+                   gfx/common/vaapi_vp9_owner.o \
+                   gfx/common/vaapi_vp9_backend.o \
+                   gfx/common/vaapi_vp9_pool.o \
+                   gfx/common/vaapi_vp9_submit.o \
+                   gfx/common/vaapi_vp9_export.o
+         endif
          OBJ += gfx/common/vaapi_frame.o \
                 gfx/common/vaapi_hevc_decoder.o \
                 gfx/common/vaapi_hevc_owner.o \

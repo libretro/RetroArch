@@ -934,6 +934,9 @@ int main(void) { return drmGetNodeTypeFromFd(-1); }'
    check_enabled VAAPI_DRM VAAPI 'VA-API' 'libdrm is' false
 fi
 check_header '' VAAPI va/va.h va/va_dec_hevc.h va/va_drmcommon.h
+if [ "$HAVE_RVP9" != 'no' ]; then
+   check_header '' VAAPI va/va.h va/va_dec_vp9.h
+fi
 check_macro VAAPI VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME_2 va/va_drmcommon.h
 
 check_platform Linux OPENXR 'OpenXR is' true
