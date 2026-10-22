@@ -78,8 +78,12 @@ int main(void)
       CHECK(opens == (unsigned)mode && closes == (unsigned)mode);
    }
    mode = 0;
+   factory.packet_decoder = true;
    CHECK(rav1_hw_backend_open(&sequence, 9, &ops, &retained));
-   CHECK(ops.decoder == &sequence && retained.close == close_backend);
+   CHECK(ops.decoder == &sequence && retained.close == close_backend
+         && retained.packet_decoder);
+   factory.packet_decoder = false;
+   CHECK(retained.packet_decoder);
    rav1_set_hw_backend(NULL);
    retained.close(&ops);
    CHECK(opens == 4 && closes == 4 && !ops.decoder);

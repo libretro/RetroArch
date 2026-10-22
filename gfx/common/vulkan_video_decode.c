@@ -1841,6 +1841,7 @@ bool vulkan_video_decode_init(const vulkan_context_t *ctx)
       rvp9_set_hw_backend(&vvd.vp9);
 #endif
 #ifdef HAVE_RAV1
+   vvd.av1.packet_decoder = false;
    vvd.av1.user = NULL;
    vvd.av1.open = vvd_av1_open;
    vvd.av1.close = vvd_av1_close;
