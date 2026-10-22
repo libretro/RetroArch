@@ -66,6 +66,7 @@ RetroArch has been ported to the following platforms:
    - Apple iOS
    - Apple macOS (PPC, x86-32 and x86-64)
    - Apple tvOS
+   - ArmSoM CM5 (Rockchip RK3576, Linux/AArch64)
    - Blackberry
    - DOS
    - Emscripten (WebAssembly and JavaScript)
