@@ -25,8 +25,21 @@
 #include "joypad_connection.h"
 #include "../input_defines.h"
 #include "../../driver.h"
+#include "../common/sony_pad_output.h"
 
-/* The input report after its ID: the sticks' four bytes, then
+/* The DualShock 4 and its USB wireless adaptor.
+ *
+ * Over USB, and over Bluetooth until it is woken, its report is 0x01;
+ * woken over Bluetooth - by a read of its feature report 0x05, as SDL
+ * does - it is 0x11, the same two bytes further on. Over USB, feature
+ * report 0x02 is read the same way. A Bluetooth stack's header is
+ * skipped where there is one.
+ *
+ * Rumble and the light bar - the player's colour, once - go as one
+ * output report built by sony_pad_output.h, from the poll, when they
+ * change; nothing is sent behind a stack's header.
+ *
+ * The input report after its ID: the sticks' four bytes, then
  * - byte 4: the hat in the low four bits, then square, cross, circle
  *   and triangle;
  * - byte 5: L1, R1, L2, R2, share, options, L3, R3, from bit 0;
@@ -40,33 +53,31 @@ struct hidpad_ps4_data
    hid_driver_t *driver;
    uint32_t slot;
    input_pad_view_t view; /* the RetroPad's buttons and the sticks */
-   uint16_t motors[2];
-   bool have_led;
+   uint8_t motors[2];   /* strong, weak: what the core asked last */
+   int player;          /* told: from 1, -1 for none; 0 not yet */
+   bool bluetooth;      /* the driver says so, or report 0x11 does */
+   bool stack;          /* behind a Bluetooth stack's header */
+   bool lights_sent;
+   bool motors_due;
 };
 
-static void hidpad_ps4_send_control(struct hidpad_ps4_data* device)
+/* One output report: the motors, and the first time the light bar. */
+static void hidpad_ps4_send(struct hidpad_ps4_data *device)
 {
-   /* TODO: Can this be modified to turn off motion tracking? */
-   static uint8_t report_buffer[79] = {
-      0x52, 0x11, 0xB0, 0x00, 0x0F
-   };
+   uint8_t r[SONY_PAD_REPORT_MAX];
+   size_t len = sony_pad_output_report(r, sizeof(r), SONY_PAD_DS4,
+         device->bluetooth, false, device->motors[0], device->motors[1],
+         device->lights_sent ? 0 : device->player ? device->player
+         : (int)(device->slot % 4) + 1);
 
-#if 0
-   uint8_t rgb[4][3] = { { 0xFF, 0, 0 }, { 0, 0xFF, 0 }, { 0, 0, 0xFF }, { 0xFF, 0xFF, 0xFF } };
-   report_buffer[ 9] = rgb[(device->slot % 4)][0];
-   report_buffer[10] = rgb[(device->slot % 4)][1];
-   report_buffer[11] = rgb[(device->slot % 4)][2];
-#endif
-
-   device->driver->send_control(device->connection,
-         report_buffer, sizeof(report_buffer));
+   if (len && device->driver && device->driver->send_control)
+      device->driver->send_control(device->connection, r, len);
+   device->lights_sent = true;
+   device->motors_due  = false;
 }
 
 static void* hidpad_ps4_init(void *data, uint32_t slot, hid_driver_t *driver)
 {
-#if 0
-   uint8_t magic_data[0x25];
-#endif
    struct pad_connection* connection = (struct pad_connection*)data;
    struct hidpad_ps4_data* device    = (struct hidpad_ps4_data*)
       calloc(1, sizeof(struct hidpad_ps4_data));
@@ -83,16 +94,18 @@ static void* hidpad_ps4_init(void *data, uint32_t slot, hid_driver_t *driver)
    device->connection = connection;
    device->driver     = driver;
    device->slot       = slot;
+   device->bluetooth  = driver && driver->is_bluetooth
+      && driver->is_bluetooth(connection);
 
-#if 0
-   /* TODO - unsure of this */
-   /* This is needed to get full input packet over bluetooth. */
-   device->driver->send_control(device->connection, magic_data, 0x2);
-   (void)magic_data;
-#endif
-
-   /* Without this, the digital buttons won't be reported. */
-   hidpad_ps4_send_control(device);
+   /* the calibration's feature report: read, it wakes the full report
+    * over Bluetooth */
+   if (driver && driver->get_report)
+   {
+      uint8_t feature[64];
+      memset(feature, 0, sizeof(feature));
+      driver->get_report(connection, HID_REPORT_FEATURE,
+            device->bluetooth ? 0x05 : 0x02, feature, 41);
+   }
 
    return device;
 }
@@ -164,46 +177,66 @@ static void hidpad_ps4_packet_handler(void *data,
       uint8_t *packet, uint16_t size)
 {
    struct hidpad_ps4_data *device = (struct hidpad_ps4_data*)data;
+   const uint8_t *r;
    unsigned i;
 
-   if (!device)
+   if (!device || !packet)
       return;
 
-#if 0
-   if (!device->have_led)
+   /* a Bluetooth stack's DATA | INPUT header */
+   if (size && packet[0] == 0xa1)
    {
-      hidpad_ps4_send_control(device);
-      device->have_led = true;
+      packet++;
+      size--;
+      device->stack = true;
    }
-#endif
-
    /* read where it lies: the buttons decoded and the sticks kept, not
     * the report */
-   if (size < 1 + PS4_REPORT_LEN)
+   if (size >= 1 + PS4_REPORT_LEN && packet[0] == 0x01)
+      r = packet + 1;
+   else if (size >= 3 + PS4_REPORT_LEN && packet[0] == 0x11)
+   {
+      r = packet + 3;
+      device->bluetooth = true;
+   }
+   else
       return;
    for (i = 0; i < 4; i++)
    {
-      int val = ((int)packet[1 + i] << 8) - 0x8000;
+      int val = ((int)r[i] << 8) - 0x8000;
       device->view.axes[i] = (int16_t)((abs(val) > 0x1000) ? val : 0);
    }
-   pad_view_set_buttons(&device->view, hidpad_ps4_decode(packet + 1),
-         (packet[1 + 6] & 0x01) != 0);
+   for (i = 0; i < 2; i++)
+      device->view.axes[4 + i] = (int16_t)((r[7 + i] << 7) | (r[7 + i] >> 1));
+   pad_view_set_buttons(&device->view, hidpad_ps4_decode(r),
+         (r[6] & 0x01) != 0);
+
+   if (!device->stack && (!device->lights_sent || device->motors_due))
+      hidpad_ps4_send(device);
 }
 
 static void hidpad_ps4_set_rumble(void *data,
       enum retro_rumble_effect effect, uint16_t strength)
 {
-   /* TODO */
-#if 0
    struct hidpad_ps4_data *device = (struct hidpad_ps4_data*)data;
-   unsigned idx = (effect == RETRO_RUMBLE_STRONG) ? 0 : 1;
+   unsigned idx  = (effect == RETRO_RUMBLE_STRONG) ? 0 : 1;
+   uint8_t motor = (uint8_t)(strength >> 8);
 
-   if (device && (device->motors[idx] != strength))
+   if (device && device->motors[idx] != motor)
    {
-      device->motors[idx] = strength;
-      hidpad_ps4_send_control(device);
+      device->motors[idx] = motor;
+      device->motors_due  = true;
    }
-#endif
+}
+
+static void hidpad_ps4_set_player(void *data, unsigned player)
+{
+   struct hidpad_ps4_data *device = (struct hidpad_ps4_data*)data;
+   if (device)
+   {
+      device->player      = player ? (int)player : -1;
+      device->lights_sent = false;
+   }
 }
 
 static int32_t hidpad_ps4_button(void *data, uint16_t joykey)
@@ -234,6 +267,6 @@ pad_connection_interface_t pad_connection_ps4 = {
    NULL,  /* pad_deinit */
    NULL,  /* status */
    NULL,  /* joypad */
-   NULL,  /* set_player */
+   hidpad_ps4_set_player,
    hidpad_ps4_view
 };

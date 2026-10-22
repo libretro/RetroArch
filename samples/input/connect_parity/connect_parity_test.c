@@ -117,6 +117,7 @@ struct ref_ps4
    unsigned dpad : 4, square : 1, cross : 1, circle : 1, triangle : 1;
    unsigned l1 : 1, r1 : 1, l2 : 1, r2 : 1, share : 1, options : 1, l3 : 1, r3 : 1;
    unsigned ps : 1, touchpad : 1, reportcounter : 6;
+   uint8_t trigger[2]; /* L2 and R2's travel, new */
 };
 
 static void ref_ps4_take(struct ref_ps4 *r, const uint8_t *p)
@@ -136,6 +137,8 @@ static void ref_ps4_take(struct ref_ps4 *r, const uint8_t *p)
    r->l3       = (p[6] >> 6) & 1;
    r->r3       = (p[6] >> 7) & 1;
    r->ps       =  p[7]       & 1;
+   r->trigger[0] = p[8];
+   r->trigger[1] = p[9];
 }
 
 static int ref_ps4_dpad(const struct ref_ps4 *r, unsigned id)
@@ -178,6 +181,8 @@ static int ref_ps4_button(const struct ref_ps4 *r, unsigned k)
 static int16_t ref_ps4_axis(const struct ref_ps4 *r, unsigned axis)
 {
    int val;
+   if (axis == 4 || axis == 5)
+      return (int16_t)((r->trigger[axis - 4] << 7) | (r->trigger[axis - 4] >> 1));
    if (axis >= 4)
       return 0;
    val = (r->hatvalue[axis] << 8) - 0x8000;
@@ -205,6 +210,8 @@ static unsigned ps4_mismatches(void *dev, const struct ref_ps4 *r)
    return bad;
 }
 
+static bool stub_is_bluetooth(void *handle) { (void)handle; return true; }
+
 static void test_ps4(void)
 {
    uint8_t p[64];
@@ -225,6 +232,7 @@ static void test_ps4(void)
       unsigned j;
       for (j = 0; j < sizeof(p); j++)
          p[j] = (uint8_t)rand();
+      p[0] = 0x01;
       if (i < 16)
          p[5] = (uint8_t)i;
       else if (i < 40)
@@ -233,7 +241,16 @@ static void test_ps4(void)
          p[6] = p[7] = 0;
          p[5 + (i - 16) / 8] |= (uint8_t)(1u << ((i - 16) % 8));
       }
-      deliver(ifc, dev, p, 10);
+      if ((i & 3) == 3)
+      {
+         /* woken over Bluetooth: report 0x11, two bytes further on */
+         uint8_t bt[66];
+         bt[0] = 0x11; bt[1] = 0xc0; bt[2] = 0;
+         memcpy(bt + 3, p + 1, 63);
+         deliver(ifc, dev, bt, 12);
+      }
+      else
+         deliver(ifc, dev, p, 10);
       ref_ps4_take(&ref, p);
       bad += ps4_mismatches(dev, &ref);
    }
@@ -242,8 +259,53 @@ static void test_ps4(void)
    memset(p, 0xff, sizeof(p));
    deliver(ifc, dev, p, 9);
    CHECK(!ps4_mismatches(dev, &ref), "ps4: a short report was taken");
+   p[0] = 0x05;
+   deliver(ifc, dev, p, 64);
+   CHECK(!ps4_mismatches(dev, &ref), "ps4: a report other than 0x01 or 0x11 was taken");
    ifc->deinit(dev);
-   printf("[%s] ps4: every button, the set and the axes as the copying handler, on 20040 reports\n",
+
+   /* over USB: the light bar for its slot with the first report, then
+    * rumble from the poll, as report 0x05 */
+   {
+      unsigned count;
+      dev = ifc->init(&dummy_connection, 1, &stub_hid);
+      memset(p, 0, sizeof(p));
+      p[0] = 0x01; p[5] = 8;
+      count = sent_count;
+      deliver(ifc, dev, p, 64);
+      CHECK(sent_count == count + 1 && sent[0] == 0x05 && sent_len == 32
+            && (sent[1] & 0x02) && sent[6] == 0x40 && !sent[7] && !sent[8],
+            "ps4: the light bar not lit red for the second slot");
+      ifc->set_rumble(dev, RETRO_RUMBLE_STRONG, 0xc000);
+      ifc->set_rumble(dev, RETRO_RUMBLE_WEAK, 0x4000);
+      CHECK(sent_count == count + 1, "ps4: rumble sent outside the poll");
+      deliver(ifc, dev, p, 64);
+      CHECK(sent_count == count + 2 && sent[0] == 0x05 && sent[4] == 0x40
+            && sent[5] == 0xc0 && !(sent[1] & 0x02),
+            "ps4: rumble not sent as report 0x05");
+      deliver(ifc, dev, p, 64);
+      CHECK(sent_count == count + 2, "ps4: rumble sent again unchanged");
+      ifc->deinit(dev);
+
+      /* over Bluetooth: report 0x11, with its CRC; behind a stack's
+       * header, nothing */
+      stub_hid.is_bluetooth = stub_is_bluetooth;
+      dev = ifc->init(&dummy_connection, 0, &stub_hid);
+      count = sent_count;
+      deliver(ifc, dev, p, 10);
+      CHECK(sent_count == count + 1 && sent[0] == 0x11 && sent_len == 78,
+            "ps4: Bluetooth output not report 0x11");
+      ifc->deinit(dev);
+      stub_hid.is_bluetooth = NULL;
+      dev = ifc->init(&dummy_connection, 0, &stub_hid);
+      count = sent_count;
+      memset(p, 0, sizeof(p));
+      p[0] = 0xa1; p[1] = 0x01; p[6] = 8;
+      deliver(ifc, dev, p, 11);
+      CHECK(sent_count == count, "ps4: sent behind a stack's header");
+      ifc->deinit(dev);
+   }
+   printf("[%s] ps4: every button, the set, the sticks and the triggers as the copying handler, from reports 0x01 and 0x11, on 20040 reports; the light bar and rumble as report 0x05 or 0x11\n",
          failures == had ? "pass" : "fail");
 }
 
@@ -1000,7 +1062,6 @@ static int32_t stub_get_report(void *handle, uint8_t type, uint8_t id,
    return 64;
 }
 
-static bool stub_is_bluetooth(void *handle) { (void)handle; return true; }
 
 /* the last report sent is the shared builder's for this state */
 static bool ps5_sent_is(bool bluetooth, bool v2, uint8_t strong,
