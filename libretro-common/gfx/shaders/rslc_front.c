@@ -43,6 +43,7 @@
  * expands into hundreds of thousands of tokens costs the tokens and
  * nothing else. */
 
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 #ifdef RSLC_SPV_TRACE
@@ -1998,16 +1999,24 @@ static uint32_t rslc_float_bits(float f)
    return u;
 }
 
-static float rslc_bits_float(uint32_t u)
+/* Float constants keep their double value in b / c beside the float
+ * bits in a: glslang folds constant expressions in double and rounds
+ * once at emission, so (0.587/0.299) must be 1.9632107, not the float
+ * quotient 1.96321082, for the module to be the same module. */
+static uint32_t rslc_p_const_float(struct rslc_parser *p, double v, uint32_t line)
 {
-   float f;
-   memcpy(&f, &u, sizeof(f));
-   return f;
+   uint64_t bits;
+   memcpy(&bits, &v, sizeof(bits));
+   return rslc_p_mk(p, RSLC_OP_CONST, p->t_float, rslc_float_bits((float)v),
+         (uint32_t)bits, (uint32_t)(bits >> 32), 0, line, 0);
 }
 
-static uint32_t rslc_p_const_float(struct rslc_parser *p, float v, uint32_t line)
+static double rslc_p_const_double(const struct rslc_node *n)
 {
-   return rslc_p_mk(p, RSLC_OP_CONST, p->t_float, rslc_float_bits(v), 0, 0, 0, line, 0);
+   uint64_t bits = ((uint64_t)n->c << 32) | n->b;
+   double   d;
+   memcpy(&d, &bits, sizeof(d));
+   return d;
 }
 
 /* Wraps e in an implicit conversion to type when needed. */
@@ -2022,7 +2031,7 @@ static uint32_t rslc_p_convert(struct rslc_parser *p, uint32_t e,
       /* Fold a scalar literal. */
       if (to->base == RSLC_BASE_FLOAT)
       {
-         float f = n->type->base == RSLC_BASE_INT ? (float)(int32_t)n->a : (float)n->a;
+         double f = n->type->base == RSLC_BASE_INT ? (double)(int32_t)n->a : (double)n->a;
          return rslc_p_const_float(p, f, n->line);
       }
       if (to->base == RSLC_BASE_UINT)
@@ -2070,18 +2079,20 @@ static bool rslc_p_eval_int(struct rslc_parser *p, uint32_t e, int32_t *out)
    return true;
 }
 
+/* Float folding runs in double, as glslang's does; *d receives the
+ * double result and the return is its float bits (or the bool). */
 static uint32_t rslc_fold_scalar(enum rslc_base base, uint16_t op, uint32_t a, uint32_t b,
-      bool *ok)
+      double x, double y, double *d, bool *ok)
 {
    if (base == RSLC_BASE_FLOAT)
    {
-      float x = rslc_bits_float(a), y = rslc_bits_float(b), r = 0;
+      double r = 0;
       switch (op)
       {
          case RSLC_BIN_ADD: r = x + y; break;
          case RSLC_BIN_SUB: r = x - y; break;
          case RSLC_BIN_MUL: r = x * y; break;
-         case RSLC_BIN_DIV: r = y != 0.0f ? x / y : 0.0f; break;
+         case RSLC_BIN_DIV: r = y != 0.0 ? x / y : 0.0; break;
          case RSLC_BIN_LT:  return x < y;
          case RSLC_BIN_GT:  return x > y;
          case RSLC_BIN_LE:  return x <= y;
@@ -2090,7 +2101,8 @@ static uint32_t rslc_fold_scalar(enum rslc_base base, uint16_t op, uint32_t a, u
          case RSLC_BIN_NE:  return x != y;
          default: *ok = false; return 0;
       }
-      return rslc_float_bits(r);
+      *d = r;
+      return rslc_float_bits((float)r);
    }
    if (base == RSLC_BASE_BOOL)
    {
@@ -2150,6 +2162,538 @@ static uint32_t rslc_fold_scalar(enum rslc_base base, uint16_t op, uint32_t a, u
    }
 }
 
+/* ---- builtin folding ----
+ *
+ * glslang folds a builtin call whose arguments are all constant, in
+ * double, by the GLSL definitions; a module that leaves such a call
+ * to the GPU returns different bits, so the same calls fold here.
+ * C89 libm lacks a few of the functions, which are written out. */
+
+static double rslc_fexp2(double x) { return pow(2.0, x); }
+static double rslc_flog2(double x) { return log(x) / log(2.0); }
+static double rslc_ftrunc(double x) { return x < 0.0 ? ceil(x) : floor(x); }
+static double rslc_fround(double x) { return x < 0.0 ? ceil(x - 0.5) : floor(x + 0.5); }
+static double rslc_fasinh(double x) { return log(x + sqrt(x * x + 1.0)); }
+static double rslc_facosh(double x) { return log(x + sqrt(x * x - 1.0)); }
+static double rslc_fatanh(double x) { return 0.5 * log((1.0 + x) / (1.0 - x)); }
+static double rslc_fsign(double x) { return x > 0.0 ? 1.0 : x < 0.0 ? -1.0 : 0.0; }
+static double rslc_ffract(double x) { return x - floor(x); }
+static double rslc_fisqrt(double x) { return 1.0 / sqrt(x); }
+static double rslc_fradians(double x) { return x * (3.14159265358979323846 / 180.0); }
+static double rslc_fdegrees(double x) { return x * (180.0 / 3.14159265358979323846); }
+
+static double rslc_froundeven(double x)
+{
+   double f = floor(x);
+   double r = x - f;
+   if (r < 0.5)
+      return f;
+   if (r > 0.5)
+      return f + 1.0;
+   return fmod(f, 2.0) == 0.0 ? f : f + 1.0;
+}
+
+static double rslc_fmin(double a, double b) { return b < a ? b : a; }
+static double rslc_fmax(double a, double b) { return a < b ? b : a; }
+static double rslc_fstep(double edge, double x) { return x < edge ? 0.0 : 1.0; }
+static double rslc_fmod(double x, double y) { return x - y * floor(x / y); }
+
+static double rslc_fclamp(double x, double lo, double hi)
+{
+   return rslc_fmin(rslc_fmax(x, lo), hi);
+}
+
+static double rslc_fmix(double x, double y, double a)
+{
+   return x * (1.0 - a) + y * a;
+}
+
+static double rslc_fsmoothstep(double e0, double e1, double x)
+{
+   double t = rslc_fclamp((x - e0) / (e1 - e0), 0.0, 1.0);
+   return t * t * (3.0 - 2.0 * t);
+}
+
+static double rslc_ffma(double a, double b, double c) { return a * b + c; }
+
+static void rslc_cval_set_float(struct rslc_cval *v, unsigned i, double d)
+{
+   v->d[i] = d;
+   v->v[i] = rslc_float_bits((float)d);
+}
+
+static double rslc_cval_dot(const struct rslc_cval *a, const struct rslc_cval *b, unsigned n)
+{
+   double   r = 0.0;
+   unsigned i;
+   for (i = 0; i < n; i++)
+      r += a->d[i] * b->d[i];
+   return r;
+}
+
+static void rslc_cval_set_float(struct rslc_cval *v, unsigned i, double d);
+
+/* ---- matrix folding (column-major, d[col * rows + row]) ---- */
+
+static double rslc_mat_det(const double *m, unsigned n)
+{
+   if (n == 2)
+      return m[0] * m[3] - m[2] * m[1];
+   if (n == 3)
+      return m[0] * (m[4] * m[8] - m[7] * m[5])
+           - m[3] * (m[1] * m[8] - m[7] * m[2])
+           + m[6] * (m[1] * m[5] - m[4] * m[2]);
+   {
+      /* 4x4 by expansion along the first row of the transpose, which
+       * is the first column here */
+      double   det = 0.0;
+      unsigned c;
+      for (c = 0; c < 4; c++)
+      {
+         double   sub[9];
+         unsigned sc, sr, k = 0;
+         for (sc = 0; sc < 4; sc++)
+         {
+            if (sc == c)
+               continue;
+            for (sr = 1; sr < 4; sr++)
+               sub[k++] = m[sc * 4 + sr];
+         }
+         det += (c & 1 ? -1.0 : 1.0) * m[c * 4] * rslc_mat_det(sub, 3);
+      }
+      return det;
+   }
+}
+
+static bool rslc_p_eval_matrix_binary(const struct rslc_node *n,
+      const struct rslc_cval *a, const struct rslc_cval *b, struct rslc_cval *out)
+{
+   const struct rslc_type *ta = a->type, *tb = b->type;
+   unsigned i, r, c, k;
+   out->type = n->type;
+   if (n->aux == RSLC_BIN_MUL)
+   {
+      if (ta->kind == RSLC_TY_MAT && tb->kind == RSLC_TY_MAT)
+      {
+         /* (rows_a x cols_a) * (rows_b x cols_b), cols_a == rows_b */
+         for (c = 0; c < tb->cols; c++)
+            for (r = 0; r < ta->rows; r++)
+            {
+               double sum = 0.0;
+               for (k = 0; k < ta->cols; k++)
+                  sum += a->d[k * ta->rows + r] * b->d[c * tb->rows + k];
+               rslc_cval_set_float(out, c * ta->rows + r, sum);
+            }
+         return true;
+      }
+      if (ta->kind == RSLC_TY_MAT && tb->kind == RSLC_TY_VEC)
+      {
+         for (r = 0; r < ta->rows; r++)
+         {
+            double sum = 0.0;
+            for (k = 0; k < ta->cols; k++)
+               sum += a->d[k * ta->rows + r] * b->d[k];
+            rslc_cval_set_float(out, r, sum);
+         }
+         return true;
+      }
+      if (ta->kind == RSLC_TY_VEC && tb->kind == RSLC_TY_MAT)
+      {
+         for (c = 0; c < tb->cols; c++)
+         {
+            double sum = 0.0;
+            for (k = 0; k < tb->rows; k++)
+               sum += a->d[k] * b->d[c * tb->rows + k];
+            rslc_cval_set_float(out, c, sum);
+         }
+         return true;
+      }
+   }
+   if (n->aux == RSLC_BIN_EQ || n->aux == RSLC_BIN_NE)
+   {
+      bool eq = true;
+      for (i = 0; i < rslc_ty_components(ta); i++)
+         eq = eq && a->d[i] == b->d[i];
+      out->v[0] = n->aux == RSLC_BIN_EQ ? eq : !eq;
+      return true;
+   }
+   {
+      /* component-wise with a scalar broadcast */
+      unsigned na = rslc_ty_components(ta), nb = rslc_ty_components(tb);
+      unsigned nc = na > nb ? na : nb;
+      for (i = 0; i < nc; i++)
+      {
+         double x = a->d[na == 1 ? 0 : i], y = b->d[nb == 1 ? 0 : i], d;
+         switch (n->aux)
+         {
+            case RSLC_BIN_ADD: d = x + y; break;
+            case RSLC_BIN_SUB: d = x - y; break;
+            case RSLC_BIN_MUL: d = x * y; break;
+            case RSLC_BIN_DIV: d = y != 0.0 ? x / y : 0.0; break;
+            default: return false;
+         }
+         rslc_cval_set_float(out, i, d);
+      }
+      return true;
+   }
+}
+
+static bool rslc_p_eval_matrix_construct(struct rslc_parser *p, const struct rslc_node *n,
+      struct rslc_cval *out)
+{
+   uint32_t nargs = rslc_list_len(p->c, n->b);
+   unsigned rows  = n->type->rows, cols = n->type->cols;
+   unsigned at    = 0, nc = rows * cols;
+   unsigned r, c, k;
+   struct rslc_cval a;
+
+   out->type = n->type;
+   if (nargs == 1)
+   {
+      if (!rslc_p_eval(p, rslc_list_item(p->c, n->b, 0), &a))
+         return false;
+      if (a.type->kind == RSLC_TY_SCALAR)
+      {
+         double d = a.type->base == RSLC_BASE_FLOAT ? a.d[0]
+            : a.type->base == RSLC_BASE_INT ? (double)(int32_t)a.v[0] : (double)a.v[0];
+         for (c = 0; c < cols; c++)
+            for (r = 0; r < rows; r++)
+               rslc_cval_set_float(out, c * rows + r, r == c ? d : 0.0);
+         return true;
+      }
+      if (a.type->kind == RSLC_TY_MAT)
+      {
+         for (c = 0; c < cols; c++)
+            for (r = 0; r < rows; r++)
+               rslc_cval_set_float(out, c * rows + r,
+                     (c < a.type->cols && r < a.type->rows) ? a.d[c * a.type->rows + r]
+                     : r == c ? 1.0 : 0.0);
+         return true;
+      }
+   }
+   for (k = 0; k < nargs && at < nc; k++)
+   {
+      unsigned na, j;
+      if (!rslc_p_eval(p, rslc_list_item(p->c, n->b, k), &a))
+         return false;
+      na = rslc_ty_components(a.type);
+      for (j = 0; j < na && at < nc; j++)
+      {
+         double d = a.type->base == RSLC_BASE_FLOAT ? a.d[j]
+            : a.type->base == RSLC_BASE_INT ? (double)(int32_t)a.v[j] : (double)a.v[j];
+         rslc_cval_set_float(out, at++, d);
+      }
+   }
+   return at == nc;
+}
+
+static bool rslc_p_eval_builtin(struct rslc_parser *p, const struct rslc_node *n,
+      struct rslc_cval *out)
+{
+   struct rslc_cval a[3];
+   unsigned na[3];
+   uint32_t nargs = rslc_list_len(p->c, n->b);
+   unsigned nc, i, k;
+   bool     is_float;
+
+   if (nargs < 1 || nargs > 3)
+      return false;
+   /* glslang leaves inverse() to the GPU; the module must as well */
+   if (n->a == RSLC_BFN_TRANSPOSE || n->a == RSLC_BFN_DETERMINANT
+         || n->a == RSLC_BFN_MATRIXCOMPMULT)
+   {
+      const struct rslc_type *mt;
+      unsigned r, c;
+      if (!rslc_p_eval(p, rslc_list_item(p->c, n->b, 0), &a[0]))
+         return false;
+      mt        = a[0].type;
+      out->type = n->type;
+      switch (n->a)
+      {
+         case RSLC_BFN_TRANSPOSE:
+            for (c = 0; c < mt->cols; c++)
+               for (r = 0; r < mt->rows; r++)
+                  rslc_cval_set_float(out, r * mt->cols + c, a[0].d[c * mt->rows + r]);
+            return true;
+         case RSLC_BFN_DETERMINANT:
+            rslc_cval_set_float(out, 0, rslc_mat_det(a[0].d, mt->rows));
+            return true;
+         default:
+            if (nargs != 2 || !rslc_p_eval(p, rslc_list_item(p->c, n->b, 1), &a[1]))
+               return false;
+            for (i = 0; i < mt->rows * mt->cols; i++)
+               rslc_cval_set_float(out, i, a[0].d[i] * a[1].d[i]);
+            return true;
+      }
+   }
+   if (n->type->kind != RSLC_TY_SCALAR && n->type->kind != RSLC_TY_VEC)
+      return false;
+   for (k = 0; k < nargs; k++)
+   {
+      const struct rslc_node *an = rslc_p_node(p, rslc_list_item(p->c, n->b, k));
+      if (an->type->kind != RSLC_TY_SCALAR && an->type->kind != RSLC_TY_VEC)
+         return false;
+      if (!rslc_p_eval(p, rslc_list_item(p->c, n->b, k), &a[k]))
+         return false;
+      na[k] = rslc_ty_components(a[k].type);
+   }
+   nc        = rslc_ty_components(n->type);
+   out->type = n->type;
+   is_float  = a[0].type->base == RSLC_BASE_FLOAT;
+
+#define RSLC_ARG(k, i) a[k].d[na[k] == 1 ? 0 : (i)]
+#define RSLC_FOLD1(fn) \
+   do { if (!is_float || nargs != 1) return false; \
+        for (i = 0; i < nc; i++) rslc_cval_set_float(out, i, fn(RSLC_ARG(0, i))); \
+        return true; } while (0)
+#define RSLC_FOLD2(fn) \
+   do { if (!is_float || nargs != 2) return false; \
+        for (i = 0; i < nc; i++) rslc_cval_set_float(out, i, fn(RSLC_ARG(0, i), RSLC_ARG(1, i))); \
+        return true; } while (0)
+#define RSLC_FOLD3(fn) \
+   do { if (!is_float || nargs != 3) return false; \
+        for (i = 0; i < nc; i++) rslc_cval_set_float(out, i, fn(RSLC_ARG(0, i), RSLC_ARG(1, i), RSLC_ARG(2, i))); \
+        return true; } while (0)
+
+   switch (n->a)
+   {
+      case RSLC_BFN_RADIANS:     RSLC_FOLD1(rslc_fradians);
+      case RSLC_BFN_DEGREES:     RSLC_FOLD1(rslc_fdegrees);
+      case RSLC_BFN_SIN:         RSLC_FOLD1(sin);
+      case RSLC_BFN_COS:         RSLC_FOLD1(cos);
+      case RSLC_BFN_TAN:         RSLC_FOLD1(tan);
+      case RSLC_BFN_ASIN:        RSLC_FOLD1(asin);
+      case RSLC_BFN_ACOS:        RSLC_FOLD1(acos);
+      case RSLC_BFN_ATAN:
+         if (nargs == 2)
+            RSLC_FOLD2(atan2);
+         RSLC_FOLD1(atan);
+      case RSLC_BFN_SINH:        RSLC_FOLD1(sinh);
+      case RSLC_BFN_COSH:        RSLC_FOLD1(cosh);
+      case RSLC_BFN_TANH:        RSLC_FOLD1(tanh);
+      case RSLC_BFN_ASINH:       RSLC_FOLD1(rslc_fasinh);
+      case RSLC_BFN_ACOSH:       RSLC_FOLD1(rslc_facosh);
+      case RSLC_BFN_ATANH:       RSLC_FOLD1(rslc_fatanh);
+      case RSLC_BFN_POW:         RSLC_FOLD2(pow);
+      case RSLC_BFN_EXP:         RSLC_FOLD1(exp);
+      case RSLC_BFN_LOG:         RSLC_FOLD1(log);
+      case RSLC_BFN_EXP2:        RSLC_FOLD1(rslc_fexp2);
+      case RSLC_BFN_LOG2:        RSLC_FOLD1(rslc_flog2);
+      case RSLC_BFN_SQRT:        RSLC_FOLD1(sqrt);
+      case RSLC_BFN_INVERSESQRT: RSLC_FOLD1(rslc_fisqrt);
+      case RSLC_BFN_FLOOR:       RSLC_FOLD1(floor);
+      case RSLC_BFN_TRUNC:       RSLC_FOLD1(rslc_ftrunc);
+      case RSLC_BFN_ROUND:       RSLC_FOLD1(rslc_fround);
+      case RSLC_BFN_ROUNDEVEN:   RSLC_FOLD1(rslc_froundeven);
+      case RSLC_BFN_CEIL:        RSLC_FOLD1(ceil);
+      case RSLC_BFN_FRACT:       RSLC_FOLD1(rslc_ffract);
+      case RSLC_BFN_MOD:         RSLC_FOLD2(rslc_fmod);
+      case RSLC_BFN_STEP:        RSLC_FOLD2(rslc_fstep);
+      case RSLC_BFN_SMOOTHSTEP:  RSLC_FOLD3(rslc_fsmoothstep);
+      case RSLC_BFN_FMA:         RSLC_FOLD3(rslc_ffma);
+      case RSLC_BFN_MIX:
+         if (nargs == 3 && a[2].type->base == RSLC_BASE_BOOL)
+         {
+            if (!is_float)
+               return false;
+            for (i = 0; i < nc; i++)
+               rslc_cval_set_float(out, i, a[2].v[na[2] == 1 ? 0 : i] ? RSLC_ARG(1, i) : RSLC_ARG(0, i));
+            return true;
+         }
+         RSLC_FOLD3(rslc_fmix);
+      case RSLC_BFN_ABS:
+      case RSLC_BFN_SIGN:
+      case RSLC_BFN_MIN:
+      case RSLC_BFN_MAX:
+      case RSLC_BFN_CLAMP:
+         if (is_float)
+         {
+            switch (n->a)
+            {
+               case RSLC_BFN_ABS:  RSLC_FOLD1(fabs);
+               case RSLC_BFN_SIGN: RSLC_FOLD1(rslc_fsign);
+               case RSLC_BFN_MIN:  RSLC_FOLD2(rslc_fmin);
+               case RSLC_BFN_MAX:  RSLC_FOLD2(rslc_fmax);
+               default:            RSLC_FOLD3(rslc_fclamp);
+            }
+         }
+         for (i = 0; i < nc; i++)
+         {
+            uint32_t x = a[0].v[na[0] == 1 ? 0 : i];
+            uint32_t y = nargs > 1 ? a[1].v[na[1] == 1 ? 0 : i] : 0;
+            uint32_t z = nargs > 2 ? a[2].v[na[2] == 1 ? 0 : i] : 0;
+            if (a[0].type->base == RSLC_BASE_INT)
+            {
+               int32_t sx = (int32_t)x, sy = (int32_t)y, sz = (int32_t)z, r;
+               switch (n->a)
+               {
+                  case RSLC_BFN_ABS:  r = sx < 0 ? -sx : sx; break;
+                  case RSLC_BFN_SIGN: r = sx > 0 ? 1 : sx < 0 ? -1 : 0; break;
+                  case RSLC_BFN_MIN:  r = sy < sx ? sy : sx; break;
+                  case RSLC_BFN_MAX:  r = sx < sy ? sy : sx; break;
+                  default:            r = sx < sy ? sy : sx; r = sz < r ? sz : r; break;
+               }
+               out->v[i] = (uint32_t)r;
+            }
+            else
+            {
+               uint32_t r;
+               switch (n->a)
+               {
+                  case RSLC_BFN_ABS:  r = x; break;
+                  case RSLC_BFN_SIGN: r = x ? 1 : 0; break;
+                  case RSLC_BFN_MIN:  r = y < x ? y : x; break;
+                  case RSLC_BFN_MAX:  r = x < y ? y : x; break;
+                  default:            r = x < y ? y : x; r = z < r ? z : r; break;
+               }
+               out->v[i] = r;
+            }
+         }
+         return true;
+      case RSLC_BFN_LENGTH:
+         if (!is_float || nargs != 1)
+            return false;
+         rslc_cval_set_float(out, 0, sqrt(rslc_cval_dot(&a[0], &a[0], na[0])));
+         return true;
+      case RSLC_BFN_DISTANCE:
+      {
+         struct rslc_cval d;
+         if (!is_float || nargs != 2)
+            return false;
+         for (i = 0; i < na[0]; i++)
+            d.d[i] = a[0].d[i] - a[1].d[i];
+         rslc_cval_set_float(out, 0, sqrt(rslc_cval_dot(&d, &d, na[0])));
+         return true;
+      }
+      case RSLC_BFN_DOT:
+         if (!is_float || nargs != 2)
+            return false;
+         rslc_cval_set_float(out, 0, rslc_cval_dot(&a[0], &a[1], na[0]));
+         return true;
+      case RSLC_BFN_CROSS:
+         if (!is_float || nargs != 2 || na[0] != 3)
+            return false;
+         rslc_cval_set_float(out, 0, a[0].d[1] * a[1].d[2] - a[1].d[1] * a[0].d[2]);
+         rslc_cval_set_float(out, 1, a[0].d[2] * a[1].d[0] - a[1].d[2] * a[0].d[0]);
+         rslc_cval_set_float(out, 2, a[0].d[0] * a[1].d[1] - a[1].d[0] * a[0].d[1]);
+         return true;
+      case RSLC_BFN_NORMALIZE:
+      {
+         double len;
+         if (!is_float || nargs != 1)
+            return false;
+         len = sqrt(rslc_cval_dot(&a[0], &a[0], na[0]));
+         for (i = 0; i < nc; i++)
+            rslc_cval_set_float(out, i, a[0].d[i] / len);
+         return true;
+      }
+      case RSLC_BFN_REFLECT:
+      {
+         double d2;
+         if (!is_float || nargs != 2)
+            return false;
+         d2 = 2.0 * rslc_cval_dot(&a[1], &a[0], na[0]);
+         for (i = 0; i < nc; i++)
+            rslc_cval_set_float(out, i, a[0].d[i] - d2 * a[1].d[i]);
+         return true;
+      }
+      case RSLC_BFN_REFRACT:
+      {
+         double eta, dn, k;
+         if (!is_float || nargs != 3)
+            return false;
+         eta = a[2].d[0];
+         dn  = rslc_cval_dot(&a[1], &a[0], na[0]);
+         k   = 1.0 - eta * eta * (1.0 - dn * dn);
+         for (i = 0; i < nc; i++)
+            rslc_cval_set_float(out, i, k < 0.0 ? 0.0
+                  : eta * a[0].d[i] - (eta * dn + sqrt(k)) * a[1].d[i]);
+         return true;
+      }
+      case RSLC_BFN_FACEFORWARD:
+      {
+         bool flip;
+         if (!is_float || nargs != 3)
+            return false;
+         flip = rslc_cval_dot(&a[2], &a[1], na[0]) >= 0.0;
+         for (i = 0; i < nc; i++)
+            rslc_cval_set_float(out, i, flip ? -a[0].d[i] : a[0].d[i]);
+         return true;
+      }
+      case RSLC_BFN_LESSTHAN: case RSLC_BFN_LESSTHANEQUAL: case RSLC_BFN_GREATERTHAN:
+      case RSLC_BFN_GREATERTHANEQUAL: case RSLC_BFN_EQUAL: case RSLC_BFN_NOTEQUAL:
+      {
+         uint16_t op = n->a == RSLC_BFN_LESSTHAN ? RSLC_BIN_LT
+            : n->a == RSLC_BFN_LESSTHANEQUAL ? RSLC_BIN_LE
+            : n->a == RSLC_BFN_GREATERTHAN ? RSLC_BIN_GT
+            : n->a == RSLC_BFN_GREATERTHANEQUAL ? RSLC_BIN_GE
+            : n->a == RSLC_BFN_EQUAL ? RSLC_BIN_EQ : RSLC_BIN_NE;
+         bool ok = true;
+         if (nargs != 2)
+            return false;
+         for (i = 0; i < nc; i++)
+         {
+            double dd;
+            out->v[i] = rslc_fold_scalar(a[0].type->base, op, a[0].v[i], a[1].v[i],
+                  a[0].d[i], a[1].d[i], &dd, &ok);
+         }
+         return ok;
+      }
+      case RSLC_BFN_ANY: case RSLC_BFN_ALL:
+      {
+         bool r = n->a == RSLC_BFN_ALL;
+         if (nargs != 1)
+            return false;
+         for (i = 0; i < na[0]; i++)
+            r = n->a == RSLC_BFN_ALL ? (r && a[0].v[i]) : (r || a[0].v[i]);
+         out->v[0] = r;
+         return true;
+      }
+      case RSLC_BFN_NOT:
+         if (nargs != 1)
+            return false;
+         for (i = 0; i < nc; i++)
+            out->v[i] = !a[0].v[i];
+         return true;
+      case RSLC_BFN_ISNAN:
+         if (!is_float || nargs != 1)
+            return false;
+         for (i = 0; i < nc; i++)
+            out->v[i] = a[0].d[i] != a[0].d[i];
+         return true;
+      case RSLC_BFN_ISINF:
+         if (!is_float || nargs != 1)
+            return false;
+         for (i = 0; i < nc; i++)
+            out->v[i] = a[0].d[i] == a[0].d[i] && a[0].d[i] - a[0].d[i] != 0.0;
+         return true;
+      default:
+         return false;
+   }
+#undef RSLC_ARG
+#undef RSLC_FOLD1
+#undef RSLC_FOLD2
+#undef RSLC_FOLD3
+}
+
+/* Item k of a const struct or array: the node is a const variable
+ * initialised by a constructor, or the constructor itself, and the
+ * item is that constructor's k-th argument; 0 otherwise. */
+static uint32_t rslc_p_const_aggregate_item(struct rslc_parser *p, uint32_t e, uint32_t k)
+{
+   const struct rslc_node *n = rslc_p_node(p, e);
+   if (n->op == RSLC_OP_VAR)
+   {
+      const struct rslc_var *v = p->c->prog.vars[n->a];
+      if (v->storage != RSLC_ST_CONST || !v->init)
+         return 0;
+      n = rslc_p_node(p, v->init);
+   }
+   if (n->op != RSLC_OP_CONSTRUCT || !n->b || k >= rslc_list_len(p->c, n->b))
+      return 0;
+   return rslc_list_item(p->c, n->b, k);
+}
+
 /* Evaluates a constant expression over scalars and vectors; false when
  * it is not one.  Enough for array sizes, case labels, const
  * initialisers and layout values. */
@@ -2166,6 +2710,8 @@ static bool rslc_p_eval(struct rslc_parser *p, uint32_t e, struct rslc_cval *out
       case RSLC_OP_CONST:
          out->type = n->type;
          out->v[0] = n->a;
+         if (n->type->base == RSLC_BASE_FLOAT)
+            out->d[0] = rslc_p_const_double(n);
          return true;
       case RSLC_OP_VAR:
       {
@@ -2184,8 +2730,11 @@ static bool rslc_p_eval(struct rslc_parser *p, uint32_t e, struct rslc_cval *out
          for (i = 0; i < nc; i++)
          {
             if (n->type->base == RSLC_BASE_FLOAT)
-               out->v[i] = rslc_float_bits(in.type->base == RSLC_BASE_INT
-                     ? (float)(int32_t)in.v[i] : (float)in.v[i]);
+            {
+               out->d[i] = in.type->base == RSLC_BASE_INT
+                     ? (double)(int32_t)in.v[i] : (double)in.v[i];
+               out->v[i] = rslc_float_bits((float)out->d[i]);
+            }
             else
                out->v[i] = in.v[i];
          }
@@ -2204,7 +2753,10 @@ static bool rslc_p_eval(struct rslc_parser *p, uint32_t e, struct rslc_cval *out
             {
                case RSLC_UN_NEG:
                   if (n->type->base == RSLC_BASE_FLOAT)
-                     out->v[i] = rslc_float_bits(-rslc_bits_float(in.v[i]));
+                  {
+                     out->d[i] = -in.d[i];
+                     out->v[i] = rslc_float_bits((float)out->d[i]);
+                  }
                   else
                      out->v[i] = (uint32_t)(-(int32_t)in.v[i]);
                   break;
@@ -2223,14 +2775,15 @@ static bool rslc_p_eval(struct rslc_parser *p, uint32_t e, struct rslc_cval *out
          if (!rslc_p_eval(p, n->a, &a) || !rslc_p_eval(p, n->b, &b))
             return false;
          if (a.type->kind == RSLC_TY_MAT || b.type->kind == RSLC_TY_MAT)
-            return false;
+            return rslc_p_eval_matrix_binary(n, &a, &b, out);
          na = rslc_ty_components(a.type);
          nb = rslc_ty_components(b.type);
          nc = na > nb ? na : nb;
          out->type = n->type;
          for (i = 0; i < nc; i++)
             out->v[i] = rslc_fold_scalar(a.type->base, n->aux,
-                  a.v[na == 1 ? 0 : i], b.v[nb == 1 ? 0 : i], &ok);
+                  a.v[na == 1 ? 0 : i], b.v[nb == 1 ? 0 : i],
+                  a.d[na == 1 ? 0 : i], b.d[nb == 1 ? 0 : i], &out->d[i], &ok);
          return ok;
       }
       case RSLC_OP_TERNARY:
@@ -2250,7 +2803,10 @@ static bool rslc_p_eval(struct rslc_parser *p, uint32_t e, struct rslc_cval *out
             cnt = 4;
          out->type = n->type;
          for (i = 0; i < cnt; i++)
+         {
             out->v[i] = in.v[(n->aux >> (2 + 2 * i)) & 3u];
+            out->d[i] = in.d[(n->aux >> (2 + 2 * i)) & 3u];
+         }
          return true;
       }
       case RSLC_OP_CONSTRUCT:
@@ -2258,6 +2814,8 @@ static bool rslc_p_eval(struct rslc_parser *p, uint32_t e, struct rslc_cval *out
          uint32_t nargs = rslc_list_len(p->c, n->b);
          unsigned at    = 0;
          uint32_t k;
+         if (n->type->kind == RSLC_TY_MAT)
+            return rslc_p_eval_matrix_construct(p, n, out);
          if (n->type->kind != RSLC_TY_SCALAR && n->type->kind != RSLC_TY_VEC)
             return false;
          nc = rslc_ty_components(n->type);
@@ -2268,35 +2826,81 @@ static bool rslc_p_eval(struct rslc_parser *p, uint32_t e, struct rslc_cval *out
             unsigned na, j;
             if (!rslc_p_eval(p, rslc_list_item(p->c, n->b, k), &a))
                return false;
-            na = rslc_ty_components(a.type);
-            if (nargs == 1 && na == 1)
+            if (a.type->kind == RSLC_TY_MAT && nargs == 1 && n->type->kind == RSLC_TY_SCALAR)
             {
-               /* scalar splat */
-               for (j = 0; j < nc; j++)
-                  out->v[j] = a.v[0];
-               at = nc;
-               break;
+               rslc_cval_set_float(out, 0, a.d[0]);
+               return true;
             }
-            for (j = 0; j < na && at < nc; j++)
+            na = rslc_ty_components(a.type);
+            for (j = 0; j < (nargs == 1 && na == 1 ? nc : na) && at < nc; j++)
             {
-               uint32_t bits = a.v[j];
+               unsigned src  = nargs == 1 && na == 1 ? 0 : j;   /* scalar splat */
+               uint32_t bits = a.v[src];
+               double   d    = a.d[src];
                if (n->type->base != a.type->base)
                {
                   if (n->type->base == RSLC_BASE_FLOAT)
-                     bits = rslc_float_bits(a.type->base == RSLC_BASE_INT
-                           ? (float)(int32_t)bits : a.type->base == RSLC_BASE_FLOAT
-                           ? rslc_bits_float(bits) : (float)bits);
+                  {
+                     if (a.type->base == RSLC_BASE_INT)
+                        d = (double)(int32_t)bits;
+                     else if (a.type->base != RSLC_BASE_FLOAT)
+                        d = (double)bits;
+                     bits = rslc_float_bits((float)d);
+                  }
                   else if (a.type->base == RSLC_BASE_FLOAT)
                      bits = n->type->base == RSLC_BASE_INT
-                        ? (uint32_t)(int32_t)rslc_bits_float(bits)
-                        : (uint32_t)rslc_bits_float(bits);
+                        ? (uint32_t)(int32_t)d : (uint32_t)d;
                   if (n->type->base == RSLC_BASE_BOOL)
                      bits = bits != 0;
                }
+               out->d[at]   = d;
                out->v[at++] = bits;
             }
          }
          return at == nc;
+      }
+      case RSLC_OP_BUILTIN:
+         return rslc_p_eval_builtin(p, n, out);
+      case RSLC_OP_MEMBER:
+      {
+         /* field of a const struct: the initialiser's argument */
+         uint32_t arg = rslc_p_const_aggregate_item(p, n->a, n->b);
+         return arg && rslc_p_eval(p, arg, out);
+      }
+      case RSLC_OP_INDEX:
+      {
+         struct rslc_cval base, idx;
+         unsigned k, rows;
+         if (!rslc_p_eval(p, n->b, &idx))
+            return false;
+         if (rslc_p_node(p, n->a)->type->kind == RSLC_TY_ARRAY)
+         {
+            uint32_t arg = rslc_p_const_aggregate_item(p, n->a, idx.v[0]);
+            return arg && rslc_p_eval(p, arg, out);
+         }
+         if (!rslc_p_eval(p, n->a, &base))
+            return false;
+         if (base.type->kind != RSLC_TY_VEC && base.type->kind != RSLC_TY_MAT)
+            return false;
+         k = idx.v[0];
+         out->type = n->type;
+         if (base.type->kind == RSLC_TY_VEC)
+         {
+            if (k >= base.type->rows)
+               return false;
+            out->v[0] = base.v[k];
+            out->d[0] = base.d[k];
+            return true;
+         }
+         rows = base.type->rows;
+         if (k >= base.type->cols)
+            return false;
+         for (i = 0; i < rows; i++)
+         {
+            out->v[i] = base.v[k * rows + i];
+            out->d[i] = base.d[k * rows + i];
+         }
+         return true;
       }
       default:
          return false;
@@ -2560,6 +3164,65 @@ static const struct rslc_type *rslc_bsig_param_type(struct rslc_parser *p,
 
 /* Resolves a builtin call.  args are node ids; on success the out
  * types are written and arguments converted. */
+/* Binds one signature: converts the arguments to its parameter types
+ * and derives the result type. */
+static bool rslc_p_apply_sig(struct rslc_parser *p, const struct rslc_bsig *bs,
+      const char *sig, uint32_t *args, uint32_t nargs, bool allow_conv,
+      const struct rslc_type **ret)
+{
+   const char *q = sig;
+   unsigned    n = 0, m = 0, conv = 0, sbase = 0;
+   const struct rslc_type *x = NULL;
+   const struct rslc_type *ptypes[8];
+   bool        outp[8];
+   unsigned    np = 0, k;
+   const char *rtok;
+   unsigned    rlen;
+
+   while (*q && *q != ':')
+   {
+      const char *tok;
+      unsigned    len;
+      bool        is_out = false;
+      const struct rslc_type *at;
+      while (*q == ' ')
+         q++;
+      if (*q == 'o')
+      {
+         is_out = true;
+         q++;
+      }
+      tok = q;
+      while (*q && *q != ' ' && *q != ':')
+         q++;
+      len = (unsigned)(q - tok);
+      if (!len)
+         break;
+      if (np >= nargs || np >= 8)
+         return false;
+      at = rslc_p_node(p, args[np])->type;
+      if (!rslc_bsig_match_tok(p, tok, len, at, &n, &m, &x, &conv, allow_conv && !is_out, &sbase))
+         return false;
+      ptypes[np] = rslc_bsig_param_type(p, tok, len, n, m, x, at);
+      outp[np]   = is_out;
+      np++;
+   }
+   if (*q != ':')
+      return false;
+   q++;
+   rtok = q;
+   while (*q && *q != ';')
+      q++;
+   rlen = (unsigned)(q - rtok);
+   for (k = 0; k < np; k++)
+      if (!outp[k] && !rslc_p_coerce(p, &args[k], ptypes[k], bs->name))
+         return false;
+   *ret = rslc_bsig_result(p, rtok, rlen, n, m, x, sbase);
+   if (!*ret)
+      return rslc_p_fail(p, "internal: result of ", bs->name);
+   return true;
+}
+
 static bool rslc_p_resolve_builtin(struct rslc_parser *p, const struct rslc_bsig *bs,
       uint32_t *args, uint32_t nargs, const struct rslc_type **ret, uint32_t line)
 {
@@ -2581,8 +3244,15 @@ static bool rslc_p_resolve_builtin(struct rslc_parser *p, const struct rslc_bsig
       return true;
    }
 
+   /* Pass 0 wants an exact match.  Pass 1 admits implicit conversions
+    * and, among the viable signatures, keeps the one no other beats:
+    * A beats B when A converts a subset of the arguments B converts
+    * (max(uint, int) is max(uint, uint), not max(float, float)); the
+    * first viable signature stands when none dominates. */
    for (pass = 0; pass < 2; pass++)
    {
+      const char *best      = NULL;
+      uint32_t    best_mask = 0;
       s = bs->sigs;
       while (*s)
       {
@@ -2591,11 +3261,7 @@ static bool rslc_p_resolve_builtin(struct rslc_parser *p, const struct rslc_bsig
          const struct rslc_type *x = NULL;
          uint32_t    ai = 0;
          bool        ok = true;
-         const struct rslc_type *ptypes[8];
-         bool        outp[8];
-         unsigned    np = 0;
-         const char *rtok = NULL;
-         unsigned    rlen = 0;
+         uint32_t    mask = 0;
 
          /* parameters */
          while (*q && *q != ':')
@@ -2616,54 +3282,35 @@ static bool rslc_p_resolve_builtin(struct rslc_parser *p, const struct rslc_bsig
             len = (unsigned)(q - tok);
             if (!len)
                break;
-            if (ai >= nargs || np >= 8)
-            {
+            if (ai >= nargs || ai >= 8)
                ok = false;
-            }
             else if (ok)
             {
                const struct rslc_type *at = rslc_p_node(p, args[ai])->type;
+               unsigned before = conv;
                if (!rslc_bsig_match_tok(p, tok, len, at, &n, &m, &x, &conv, pass == 1 && !is_out, &sbase))
                   ok = false;
-               else
-               {
-                  ptypes[np] = rslc_bsig_param_type(p, tok, len, n, m, x, at);
-                  outp[np]   = is_out;
-                  np++;
-               }
+               else if (conv != before)
+                  mask |= 1u << ai;
             }
             ai++;
          }
-         if (*q == ':')
-         {
-            q++;
-            rtok = q;
-            while (*q && *q != ';')
-               q++;
-            rlen = (unsigned)(q - rtok);
-         }
          if (ok && ai == nargs)
          {
-            uint32_t k;
-            for (k = 0; k < np; k++)
+            if (!best || ((mask & ~best_mask) == 0 && mask != best_mask))
             {
-               if (outp[k])
-               {
-                  struct rslc_node *an = rslc_p_node(p, args[k]);
-                  (void)an;
-               }
-               else if (!rslc_p_coerce(p, &args[k], ptypes[k], bs->name))
-                  return false;
+               best      = s;
+               best_mask = mask;
             }
-            *ret = rslc_bsig_result(p, rtok, rlen, n, m, x, sbase);
-            if (!*ret)
-               return rslc_p_fail(p, "internal: result of ", bs->name);
-            return true;
          }
+         while (*q && *q != ';')
+            q++;
          if (*q == ';')
             q++;
          s = q;
       }
+      if (best)
+         return rslc_p_apply_sig(p, bs, best, args, nargs, pass == 1, ret);
    }
    rslc_err(p->c, "no matching overload for ", bs->name, line);
    return false;
@@ -2762,7 +3409,7 @@ static uint32_t rslc_p_number(struct rslc_parser *p)
          rslc_err(p->c, "bad float literal ", rslc_intern(p->c, s, n), line);
          return 0;
       }
-      return rslc_p_const_float(p, (float)d, line);
+      return rslc_p_const_float(p, d, line);
    }
    else
    {
@@ -3002,7 +3649,7 @@ static uint32_t rslc_p_call(struct rslc_parser *p, struct rslc_sym *name, uint32
    if (name->bfn)
    {
       const struct rslc_bsig *bs = rslc_bsig_by_id(name->bfn);
-      const struct rslc_type *ret;
+      const struct rslc_type *ret = NULL;
       uint8_t  prec = 0;
       uint32_t i;
       if (!rslc_p_resolve_builtin(p, bs, args, nargs, &ret, line))
@@ -3257,7 +3904,7 @@ static uint32_t rslc_p_unary(struct rslc_parser *p)
             if (n->op == RSLC_OP_CONST && n->type->kind == RSLC_TY_SCALAR)
             {
                if (n->type->base == RSLC_BASE_FLOAT)
-                  return rslc_p_const_float(p, -rslc_bits_float(n->a), line);
+                  return rslc_p_const_float(p, -rslc_p_const_double(n), line);
                if (n->type->base == RSLC_BASE_INT)
                   return rslc_p_const_int(p, -(int32_t)n->a, line);
                return rslc_p_const_uint(p, (uint32_t)(-(int32_t)n->a), line);
@@ -3414,6 +4061,8 @@ static uint32_t rslc_p_fold_binary(struct rslc_parser *p, uint32_t e)
       return e;
    if (!rslc_p_eval(p, e, &v))
       return e;
+   if (n->type->base == RSLC_BASE_FLOAT)
+      return rslc_p_const_float(p, v.d[0], n->line);
    return rslc_p_mk(p, RSLC_OP_CONST, n->type, v.v[0], 0, 0, 0, n->line, 0);
 }
 

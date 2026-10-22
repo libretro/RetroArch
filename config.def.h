@@ -631,6 +631,12 @@
 /* Enable use of shaders */
 #define DEFAULT_SHADER_ENABLE true
 
+/* Which compiler builds slang passes when a build carries both: 0
+ * picks per driver (glslang until that driver's rslc corpus gate is
+ * met, rslc after), 1 forces glslang, 2 forces rslc.  A build with one
+ * compiler ignores it.  Config-only; no menu entry. */
+#define DEFAULT_VIDEO_SHADER_COMPILER 0
+
 /* When enabled, shaders compile one pass per frame instead of
  * stalling for the entire preset.  Disable to force the legacy
  * synchronous (blocking) shader load path. */

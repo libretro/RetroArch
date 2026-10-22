@@ -618,7 +618,8 @@ uint32_t rslc_list_new(struct rslc_ctx *c, const uint32_t *items, uint32_t n);
 struct rslc_cval
 {
    const struct rslc_type *type;
-   uint32_t                v[16];
+   uint32_t                v[16];   /* component bits, floats rounded */
+   double                  d[16];   /* float components, as folded */
 };
 bool     rslc_const_eval(struct rslc_ctx *c, uint32_t node, struct rslc_cval *out);
 unsigned rslc_ty_components(const struct rslc_type *t);

@@ -13,14 +13,18 @@ extern "C" {
 struct glslang_output;
 
 /**
- * Compute SHA256 hash of preprocessed shader source code
+ * Name the cache entry for a pair of preprocessed stage sources
  *
  * @param vertex_source   Preprocessed vertex stage source (null-terminated string)
  * @param fragment_source Preprocessed fragment stage source (null-terminated string)
+ * @param compiler        Which compiler's words the entry holds ("glslang", "rslc"):
+ *                        the two produce different modules for the same source
+ *                        and must not answer for each other
  * @param hash_out        Output buffer for the hex-encoded name (must be at least 33 bytes: 32 hex chars + null terminator)
  * @return true on success, false on error
  */
-bool spirv_cache_compute_hash(const char *vertex_source, const char *fragment_source, char *hash_out);
+bool spirv_cache_compute_hash(const char *vertex_source, const char *fragment_source,
+      const char *compiler, char *hash_out);
 
 /**
  * Load cached SPIR-V output from disk

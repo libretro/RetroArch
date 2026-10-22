@@ -99,7 +99,9 @@ struct rslc_member
    uint8_t     base;     /* enum rslc_base */
    uint8_t     cols;     /* 1 for scalars and vectors */
    uint8_t     rows;     /* vector width or matrix rows */
-   uint8_t     pad;
+   uint8_t     active;   /* read or written by code main reaches: what
+                            SPIRV-Cross's active buffer ranges list,
+                            and what a chain needs to upload */
 };
 
 struct rslc_block
