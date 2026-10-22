@@ -1179,8 +1179,19 @@ static bool audio_driver_take_kept(audio_driver_state_t *audio_st,
    audio_st->device_latency_frames = audio_driver_kept.device_latency_frames;
    audio_driver_kept.driver        = NULL;
    audio_driver_kept.data          = NULL;
-   if (!wrapper)
-      audio_st->current_audio->start(audio_st->context_audio_data, false);
+   /* A synchronous device that will not run again is closed here, so
+    * init opens it afresh. The wrapper starts from init, which checks. */
+   if (     !wrapper
+         && !audio_st->current_audio->start(audio_st->context_audio_data, false))
+   {
+      RARCH_WARN("[Audio] Kept driver \"%s\" did not restart; opening it again.\n",
+            audio_st->current_audio->ident);
+      if (audio_st->current_audio->free)
+         audio_st->current_audio->free(audio_st->context_audio_data);
+      audio_st->context_audio_data    = NULL;
+      audio_st->device_latency_frames = 0;
+      return false;
+   }
    RARCH_LOG("[Audio] Kept driver \"%s\" taken back; the device stays open.\n",
          audio_st->current_audio->ident);
    return true;

@@ -11,7 +11,8 @@
  * retro_load_game, which brings audio up before drivers_init() does
  * it again, must leave one instance: the first freed, not orphaned.
  * Across a content switch the device is kept and taken back when the
- * next init would open the same one, and freed when it would not. */
+ * next init would open the same one, and freed when it would not; one
+ * that will not start again is closed and opened afresh. */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -29,6 +30,7 @@ static float   feed_f[FEED_MAX * 2];
 static int16_t feed_i[FEED_MAX * 2];
 static size_t  captured_frames, device_bytes;
 static unsigned device_opens, device_frees, device_stops, device_starts, failures;
+static unsigned start_refusals, open_refusals;
 extern unsigned pipeline_control_calls;
 
 static void *test_init(const char *device, unsigned rate, unsigned latency,
@@ -36,6 +38,11 @@ static void *test_init(const char *device, unsigned rate, unsigned latency,
 {
    (void)device;
    device_opens++;
+   if (open_refusals)
+   {
+      open_refusals--;
+      return NULL;
+   }
    device_bytes = (size_t)latency * rate / 1000 * 2 * sizeof(float);
    *new_rate    = rate;
    return &device_bytes;
@@ -57,7 +64,16 @@ static size_t test_wait(void *data, size_t len)
 { (void)data; (void)len; return device_bytes; }
 static bool test_float(void *data) { (void)data; return true; }
 static bool test_start(void *data, bool shutdown)
-{ (void)data; (void)shutdown; device_starts++; return true; }
+{
+   (void)data; (void)shutdown;
+   device_starts++;
+   if (start_refusals)
+   {
+      start_refusals--;
+      return false;
+   }
+   return true;
+}
 static bool test_stop(void *data) { (void)data; device_stops++; return true; }
 static void test_free(void *data) { (void)data; device_frees++; }
 
@@ -371,6 +387,40 @@ static void keep_case(bool threaded)
       failures++;
 }
 
+/* A kept device that will not start again is closed and opened afresh,
+ * and when that open fails too, init goes on without audio. */
+static void keep_restart_refused_case(bool reopen_fails)
+{
+   audio_driver_state_t *st = &audio_driver_st;
+   bool active;
+
+   device_opens = device_frees = device_stops = 0;
+   setup(true, false, false, 22050.0);
+   audio_driver_keep_device(true);
+   audio_driver_deinit();
+
+   start_refusals = 1;
+   open_refusals  = reopen_fails ? 1 : 0;
+   if (!audio_driver_init_internal(config_get_ptr(), false))
+      abort();
+   active = (AUDIO_FLAGS_GET(st) & AUDIO_FLAG_ACTIVE) != 0;
+
+   printf("kept, restart refused%s: opens=%u frees=%u active=%d\n",
+         reopen_fails ? ", reopen refused" : "", device_opens, device_frees,
+         (int)active);
+   if (     start_refusals
+         || open_refusals
+         || device_opens != 2
+         || device_frees != 1
+         || audio_driver_kept.driver
+         || active == reopen_fails
+         || (reopen_fails != (st->context_audio_data == NULL)))
+      failures++;
+   audio_driver_deinit();
+   if (device_frees != (reopen_fails ? 1u : 2u))
+      failures++;
+}
+
 /* What is not taken back is freed: a device the next init would open
  * differently, one nobody takes, and one not asked to be kept. */
 static void keep_refused_case(void)
@@ -455,6 +505,8 @@ int main(void)
    keep_case(false);
    keep_case(true);
    keep_refused_case();
+   keep_restart_refused_case(false);
+   keep_restart_refused_case(true);
 
    second_init_case(false);
    second_init_case(true);
