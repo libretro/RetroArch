@@ -18,6 +18,9 @@ CFLAGS  += -Wall -Wextra -pedantic -std=c89 -Wno-long-long -Wno-overlength-strin
 	-Werror=implicit-function-declaration -g1 \
 	-I$(LIBRETRO_COMM_DIR)/include -I$(LIBRETRO_COMM_DIR)/gfx/shaders
 
+# Constant folding of the GLSL math builtins runs on libm.
+LDLIBS  += -lm
+
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)

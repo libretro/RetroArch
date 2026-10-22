@@ -1097,6 +1097,7 @@ struct spv_const
 struct spv_var
 {
    uint32_t id;        /* the OpVariable, or the constant for a folded const */
+   uint32_t ptr;       /* folded const indexed dynamically: a variable holding it */
    uint32_t tid;       /* type id of the variable's value */
    uint8_t  sc;        /* storage class */
    bool     is_const;  /* id is a constant value, not a pointer */
@@ -1130,6 +1131,7 @@ struct spv_emit
    uint32_t             void_id, bool_id, int_id, uint_id, float_id;
    uint32_t             pervertex_var;/* vertex: the gl_PerVertex block variable */
    uint32_t             block_var[2]; /* uniform / push block variables */
+   uint8_t             *member_active[2]; /* per block member, set on use */
    uint32_t             cur_fn;       /* rslc func id being emitted */
    uint32_t             cur_label;    /* current block's label, 0 = terminated */
    uint32_t             entry_label;
@@ -1631,6 +1633,82 @@ static uint32_t spv_const_composite(struct spv_emit *e, const struct rslc_type *
    return id;
 }
 
+/* Whether node is a constant: a foldable scalar / vector / matrix
+ * expression, or a struct / array constructor of constants. */
+static bool spv_node_is_const(struct spv_emit *e, uint32_t node)
+{
+   const struct rslc_node *n = rslc_node_at(e->c, node);
+   struct rslc_cval cv;
+   if (!n->type)
+      return false;
+   if (n->type->kind == RSLC_TY_SCALAR || n->type->kind == RSLC_TY_VEC || n->type->kind == RSLC_TY_MAT)
+      return rslc_const_eval(e->c, node, &cv);
+   if (n->op == RSLC_OP_CONSTRUCT && (n->type->kind == RSLC_TY_STRUCT || n->type->kind == RSLC_TY_ARRAY))
+   {
+      uint32_t i, cnt = rslc_list_len(e->c, n->b);
+      for (i = 0; i < cnt; i++)
+         if (!spv_node_is_const(e, rslc_list_item(e->c, n->b, i)))
+            return false;
+      return true;
+   }
+   if (n->op == RSLC_OP_VAR)
+   {
+      const struct rslc_var *v = e->c->prog.vars[n->a];
+      return v->storage == RSLC_ST_CONST && v->init && spv_node_is_const(e, v->init);
+   }
+   return false;
+}
+
+/* The constant for a node spv_node_is_const accepted. */
+static uint32_t spv_const_node(struct spv_emit *e, uint32_t node)
+{
+   const struct rslc_node *n = rslc_node_at(e->c, node);
+   struct rslc_cval cv;
+   uint32_t consumed;
+   if (n->type->kind == RSLC_TY_SCALAR || n->type->kind == RSLC_TY_VEC || n->type->kind == RSLC_TY_MAT)
+   {
+      if (!rslc_const_eval(e->c, node, &cv))
+         return 0;
+      return spv_const_composite(e, n->type, cv.v, &consumed);
+   }
+   if (n->op == RSLC_OP_VAR)
+      return spv_const_node(e, e->c->prog.vars[n->a]->init);
+   {
+      uint32_t  cnt   = rslc_list_len(e->c, n->b);
+      uint32_t *words = (uint32_t*)rslc_scratch_alloc(e->c, (cnt + 2) * sizeof(*words));
+      uint32_t  i, tid;
+      if (!words)
+         return 0;
+      for (i = 0; i < cnt; i++)
+      {
+         words[2 + i] = spv_const_node(e, rslc_list_item(e->c, n->b, i));
+         if (!words[2 + i])
+            return 0;
+      }
+      tid = spv_type(e, n->type);
+      if (!tid)
+         return 0;
+      words[0] = tid;
+      words[1] = spv_id(e);
+      if (!spv_inst(e, SPV_SEC_TYPES, SpvOpConstantComposite, words, cnt + 2))
+         return 0;
+      return words[1];
+   }
+}
+
+/* A const variable with a constant initialiser is its constant,
+ * made on first use so an unreferenced one leaves nothing behind. */
+static uint32_t spv_const_var(struct spv_emit *e, const struct rslc_var *v)
+{
+   struct spv_var *sv = &e->vars[v->id];
+   if (sv->id)
+      return sv->id;
+   sv->id = spv_const_node(e, v->init);
+   if (sv->id && v->name && v->type->kind != RSLC_TY_SCALAR && !spv_name(e, sv->id, v->name->str))
+      return 0;
+   return sv->id;
+}
+
 /* ---- function body emission ---- */
 
 static bool spv_begin_block(struct spv_emit *e, uint32_t label)
@@ -1970,6 +2048,7 @@ static uint32_t spv_var_ptr(struct spv_emit *e, const struct rslc_var *v, unsign
       *sc     = b->push ? SPV_SC_PUSHCONSTANT : SPV_SC_UNIFORM;
       *laid   = true;
       *std140 = l140;
+      e->member_active[v->block][v->member] = 1;
       ftid = spv_type_laid(e, ft, l140);
       if (!ftid || !idx)
          return 0;
@@ -1991,6 +2070,8 @@ static uint32_t spv_var_ptr(struct spv_emit *e, const struct rslc_var *v, unsign
       *sc     = b->push ? SPV_SC_PUSHCONSTANT : SPV_SC_UNIFORM;
       *laid   = true;
       *std140 = b->std140;
+      /* the whole block as a value: every member is live */
+      memset(e->member_active[v->block], 1, b->type->nfields);
       return e->block_var[v->block];
    }
    if (v->storage == RSLC_ST_BUILTIN && !sv->id)
@@ -2049,20 +2130,59 @@ static uint32_t spv_lvalue(struct spv_emit *e, uint32_t node, unsigned *sc, bool
          const struct rslc_var *v = e->c->prog.vars[n->a];
          if (e->vars[v->id].is_const)
          {
-            /* A folded constant indexed dynamically: through a temp. */
-            uint32_t tmp = spv_temp_of(e, e->vars[v->id].id, v->type);
-            *sc = SPV_SC_FUNCTION; *laid = false; *std140 = false;
-            return tmp;
+            /* A folded constant indexed dynamically lives in one
+             * variable initialised with the constant: Private for a
+             * global, Function for a local. */
+            struct spv_var *sv = &e->vars[v->id];
+            uint32_t cid = spv_const_var(e, v);
+            unsigned vsc = v->global ? SPV_SC_PRIVATE : SPV_SC_FUNCTION;
+            *sc = vsc; *laid = false; *std140 = false;
+            if (!cid)
+               return 0;
+            if (!sv->ptr)
+            {
+               uint32_t ptrt = spv_ptr_to(e, v->type, vsc);
+               if (!ptrt)
+                  return 0;
+               sv->ptr = spv_id(e);
+               if (v->global)
+               {
+                  if (!spv_inst4(e, SPV_SEC_TYPES, SpvOpVariable, ptrt, sv->ptr, vsc, cid))
+                     return 0;
+               }
+               else if (!spv_w(e, &e->func_vars, (5u << 16) | SpvOpVariable)
+                     || !spv_w(e, &e->func_vars, ptrt) || !spv_w(e, &e->func_vars, sv->ptr)
+                     || !spv_w(e, &e->func_vars, vsc) || !spv_w(e, &e->func_vars, cid))
+                  return 0;
+               if (v->name && !spv_name(e, sv->ptr, v->name->str))
+                  return 0;
+            }
+            return sv->ptr;
          }
          return spv_var_ptr(e, v, sc, laid, std140);
       }
       case RSLC_OP_MEMBER:
       case RSLC_OP_INDEX:
       {
-         uint32_t base = spv_lvalue(e, n->a, sc, laid, std140);
+         const struct rslc_node *bn = rslc_node_at(e->c, n->a);
+         uint32_t base;
          uint32_t idx;
          uint32_t tid, ptrt, id;
          uint32_t w[4];
+         if (n->op == RSLC_OP_MEMBER && bn->op == RSLC_OP_VAR
+               && e->c->prog.vars[bn->a]->storage == RSLC_ST_BLOCK)
+         {
+            /* instance.member: only that member is live */
+            const struct rslc_var *bv = e->c->prog.vars[bn->a];
+            const struct rslc_blockdecl *b = &e->c->prog.blocks[bv->block];
+            *sc     = b->push ? SPV_SC_PUSHCONSTANT : SPV_SC_UNIFORM;
+            *laid   = true;
+            *std140 = b->std140;
+            base    = e->block_var[bv->block];
+            e->member_active[bv->block][n->b] = 1;
+         }
+         else
+            base = spv_lvalue(e, n->a, sc, laid, std140);
          if (!base)
             return 0;
          if (n->op == RSLC_OP_MEMBER)
@@ -2273,13 +2393,35 @@ static uint32_t spv_flatten(struct spv_emit *e, uint32_t node, const struct rslc
 {
    const struct rslc_node *n = rslc_node_at(e->c, node);
    const struct rslc_type *t = n->type;
-   uint32_t v = spv_rvalue(e, node);
+   uint32_t v;
    uint32_t i, k = 0;
+   if (!max)
+      return 0;
+   if (t->kind == RSLC_TY_SCALAR && n->op == RSLC_OP_CONST && t->base != want->base)
+   {
+      /* a literal of another base converts at compile time, as
+       * glslang converts it: vec4(x, 0, 1) carries float 0 and 1 */
+      struct rslc_cval cv;
+      double d;
+      if (!rslc_const_eval(e->c, node, &cv))
+         return 0;
+      d = t->base == RSLC_BASE_FLOAT ? cv.d[0]
+         : t->base == RSLC_BASE_INT ? (double)(int32_t)cv.v[0] : (double)cv.v[0];
+      if (want->base == RSLC_BASE_FLOAT)
+         out[0] = spv_const_float(e, (float)d);
+      else if (want->base == RSLC_BASE_BOOL)
+         out[0] = spv_const_bits(e, want, d != 0.0);
+      else if (want->base == RSLC_BASE_INT)
+         out[0] = spv_const_int(e, t->base == RSLC_BASE_FLOAT ? (int32_t)d : (int32_t)cv.v[0]);
+      else
+         out[0] = spv_const_uint(e, t->base == RSLC_BASE_FLOAT ? (uint32_t)(int32_t)d : cv.v[0]);
+      return out[0] ? 1 : 0;
+   }
+   v = spv_rvalue(e, node);
    if (!v)
       return 0;
    if (t->kind == RSLC_TY_SCALAR)
    {
-      if (k >= max) return 0;
       out[k++] = spv_cast(e, v, t, want, prec);
       return out[k - 1] ? k : 0;
    }
@@ -2650,8 +2792,8 @@ static uint32_t spv_builtin_node(struct spv_emit *e, const struct rslc_node *n)
       uint32_t stid = spv_type(e, st);
       uint32_t imgt;
       bool     implicit_ok = e->c->stage == RSLC_STAGE_FRAGMENT;
-      uint32_t lod0 = spv_const_float(e, 0.0f);
-      if (!stid || !lod0)
+      uint32_t lod0 = implicit_ok ? 0 : spv_const_float(e, 0.0f);
+      if (!stid || (!implicit_ok && !lod0))
          return 0;
       /* image type id: the OpTypeImage made with the sampled image */
       imgt = e->tinfo[t0->id].img;
@@ -3057,7 +3199,8 @@ static uint32_t spv_rvalue_impl(struct spv_emit *e, uint32_t node)
     * offsets in particular must be constant objects. */
    if (n->type && n->op != RSLC_OP_CONST && n->op != RSLC_OP_VAR
          && (n->op == RSLC_OP_CONSTRUCT || n->op == RSLC_OP_UNARY || n->op == RSLC_OP_BINARY
-            || n->op == RSLC_OP_SWIZZLE || n->op == RSLC_OP_CONVERT || n->op == RSLC_OP_BUILTIN)
+            || n->op == RSLC_OP_SWIZZLE || n->op == RSLC_OP_CONVERT || n->op == RSLC_OP_BUILTIN
+            || n->op == RSLC_OP_MEMBER || n->op == RSLC_OP_INDEX)
          && (n->type->kind == RSLC_TY_SCALAR || n->type->kind == RSLC_TY_VEC || n->type->kind == RSLC_TY_MAT))
    {
       struct rslc_cval cv;
@@ -3078,7 +3221,7 @@ static uint32_t spv_rvalue_impl(struct spv_emit *e, uint32_t node)
          unsigned sc; bool laid, std140;
          uint32_t ptr;
          if (e->vars[v->id].is_const)
-            return e->vars[v->id].id;
+            return spv_const_var(e, v);
          ptr = spv_var_ptr(e, v, &sc, &laid, &std140);
          if (!ptr)
             return 0;
@@ -3417,6 +3560,14 @@ static bool spv_stmt(struct spv_emit *e, uint32_t node)
          ok = true;
          if (sv->is_const)
             break;   /* a folded local const needs no storage */
+         if (v->storage == RSLC_ST_CONST && v->init && !sv->id && spv_node_is_const(e, v->init))
+         {
+            /* a local const with a constant initialiser is the
+             * constant, as glslang treats it: no variable, no store,
+             * and nothing at all when it is never read */
+            sv->is_const = true;
+            break;
+         }
          if (!sv->id)
          {
             sv->id = spv_local(e, v->type, v->name ? v->name->str : NULL, v->precision);
@@ -3889,18 +4040,12 @@ static bool spv_global_var(struct spv_emit *e, const struct rslc_var *v)
       case RSLC_ST_CONST:
       {
          /* fold to a constant when possible */
-         struct rslc_cval cv;
-         if (v->init && rslc_const_eval(e->c, v->init, &cv)
-               && (v->type->kind == RSLC_TY_SCALAR || v->type->kind == RSLC_TY_VEC || v->type->kind == RSLC_TY_MAT))
+         if (v->init && spv_node_is_const(e, v->init))
          {
-            uint32_t consumed;
-            sv->id = spv_const_composite(e, v->type, cv.v, &consumed);
+            /* a global const is emitted whether or not it is used, as
+             * glslang emits it; a local one waits for its first use */
             sv->is_const = true;
-            if (!sv->id)
-               return false;
-            if (v->name && v->type->kind != RSLC_TY_SCALAR && !spv_name(e, sv->id, v->name->str))
-               return false;
-            return true;
+            return spv_const_var(e, v) != 0;
          }
          sc = SPV_SC_PRIVATE;
          break;
@@ -3996,6 +4141,9 @@ static bool spv_block(struct spv_emit *e, unsigned idx)
    if (!spv_inst3(e, SPV_SEC_TYPES, SpvOpVariable, ptr, id, sc))
       return false;
    e->block_var[idx] = id;
+   e->member_active[idx] = (uint8_t*)rslc_arena_zalloc(e->c, b->type->nfields ? b->type->nfields : 1);
+   if (!e->member_active[idx])
+      return false;
    if (!spv_name(e, id, b->instance ? b->instance->str : ""))
       return false;
    if (!b->push)
@@ -4115,8 +4263,9 @@ static void refl_fill_member(struct rslc_member *m, const struct rslc_type *t)
 }
 
 /* Writes the reflection section at blob + off; returns bytes used. */
-static uint32_t spv_write_reflect(struct rslc_ctx *c, uint8_t *blob, uint32_t off, uint32_t strings_len)
+static uint32_t spv_write_reflect(struct spv_emit *e, uint8_t *blob, uint32_t off, uint32_t strings_len)
 {
+   struct rslc_ctx *c = e->c;
    const struct rslc_prog *pr = &c->prog;
    struct rslc_reflect *r = (struct rslc_reflect*)(blob + off);
    uint32_t at = off + sizeof(*r);
@@ -4165,7 +4314,7 @@ static uint32_t spv_write_reflect(struct rslc_ctx *c, uint8_t *blob, uint32_t of
          m[i].offset = rslc_layout_field_offset(bd->type, i, std140);
          m[i].size   = fs;
          refl_fill_member(&m[i], f->type);
-         m[i].pad = 0;
+         m[i].active = e->member_active[k] ? e->member_active[k][i] : 0;
          /* as SPIRV-Cross's get_declared_struct_size: no tail padding */
          b->size     = m[i].offset + fs;
       }
@@ -4324,7 +4473,7 @@ static bool rslc_emit_spirv(struct rslc_ctx *c, struct rslc_result *result)
       if (!rslc_pbuf_init(c, &pb, payload_off, words * 4))
          return false;
       memset(pb.data, 0, payload_off);
-      spv_write_reflect(c, pb.data, refl_off, strings_len);
+      spv_write_reflect(e, pb.data, refl_off, strings_len);
       out = (uint32_t*)(pb.data + payload_off);
       out[0] = SPV_MAGIC;
       out[1] = SPV_VERSION_1_0;

@@ -9,12 +9,14 @@ decoration that a driver or reflection reads (Location, Binding,
 DescriptorSet, BuiltIn, Block, Flat, NoPerspective, Centroid,
 RelaxedPrecision on interface variables), member Offset, MatrixStride
 and ArrayStride of block members, capabilities and execution modes.
-Instruction streams are not compared: the gate is that a Vulkan driver
-and SPIRV-Cross see the same shader interface.
+Instruction streams are not compared beyond the float constants: the gate is that a Vulkan driver
+and SPIRV-Cross see the same shader interface, and that every constant
+expression folded to the same bits.
 
-  tools/rslc-corpus-check.py <dumpdir> <path to rslc_test> [-v] [-k]
+  tools/rslc-corpus-check.py <dumpdir> <path to rslc_test> [-v] [-k] [-C]
 
 -k keeps the rslc modules next to the glslang ones as *.rslc.spv.
+-C leaves the float constant sets out of the comparison.
 Exit status is 1 when any stage differs or fails.
 """
 import os
@@ -36,8 +38,11 @@ def disasm(path):
     return r.stdout
 
 
-def interface(dis):
-    """A canonical, order-free description of a module's interface."""
+def interface(dis, no_consts=False):
+    """A canonical, order-free description of a module's interface,
+    plus the set of float constants unless no_consts: glslang folds
+    constant expressions in double precision, and a module that folds
+    differently is a different shader."""
     names = {}
     member_names = {}
     types = {}       # id -> (kind, operands)
@@ -47,8 +52,19 @@ def interface(dis):
     tdecs = {}       # type id -> set((dec, value))  (ArrayStride)
     caps = set()
     modes = set()
+    consts = {}      # id -> float constant value: folding must round as glslang does
+    used = set()     # ids any instruction reads; glslang leaves a few constants dead
     for line in dis.splitlines():
         line = line.strip()
+        m = re.match(r'%\d+ = OpConstant %(\d+) (\S+)', line)
+        if m:
+            if types.get(m.group(1), ('',))[0] == 'Float':
+                consts[line.split()[0].lstrip('%')] = m.group(2)
+            continue
+        if line.startswith('OpName') or line.startswith('OpDecorate'):
+            continue
+        for ref in re.findall(r'%(\d+)', line.split('=', 1)[-1] if '=' in line else line):
+            used.add(ref)
         m = re.match(r'OpName %(\d+) "(.*)"', line)
         if m:
             names[m.group(1)] = m.group(2)
@@ -130,6 +146,10 @@ def interface(dis):
                     out.add(('mstride', sname, i, mname, depth, stride))
     for c in caps:
         out.add(('cap', c))
+    if not no_consts:
+        for cid, c in consts.items():
+            if cid in used:
+                out.add(('const', c))
     for mo in modes:
         out.add(('mode', mo))
     return out
@@ -142,6 +162,7 @@ def main(argv):
     dumpdir, rslc_test = argv[1], argv[2]
     verbose = '-v' in argv
     keep = '-k' in argv
+    no_consts = '-C' in argv
     stages = sorted(f for f in os.listdir(dumpdir) if f.endswith('.glsl'))
     same = diff = fail = skipped = 0
     tmp = tempfile.mkdtemp(prefix='rslc-check-')
@@ -168,8 +189,8 @@ def main(argv):
             fail += 1
             print('FAIL %s: spirv-dis' % f)
             continue
-        ia = interface(a)
-        ib = interface(b)
+        ia = interface(a, no_consts)
+        ib = interface(b, no_consts)
         if ia != ib:
             diff += 1
             print('DIFF %s' % f)

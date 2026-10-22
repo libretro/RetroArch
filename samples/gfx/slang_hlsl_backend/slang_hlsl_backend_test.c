@@ -93,10 +93,11 @@ bool glslang_compile_spirv(const char *source,
 /* --- the SPIR-V cache: always a miss, nothing kept ------------------ */
 
 bool spirv_cache_compute_hash(const char *vertex_source,
-      const char *fragment_source, char *hash_out)
+      const char *fragment_source, const char *compiler, char *hash_out)
 {
    (void)vertex_source;
    (void)fragment_source;
+   (void)compiler;
    strcpy(hash_out, "0");
    return true;
 }

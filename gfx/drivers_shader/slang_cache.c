@@ -95,12 +95,19 @@ extern "C" {
 #endif
 
 bool spirv_cache_compute_hash(const char *vertex_source,
-      const char *fragment_source, char *hash_out)
+      const char *fragment_source, const char *compiler, char *hash_out)
 {
    size_t vertex_len, fragment_len;
+   uint32_t seed;
 
-   if (!vertex_source || !fragment_source || !hash_out)
+   if (!vertex_source || !fragment_source || !compiler || !hash_out)
       return false;
+
+   /* The compiler's name seeds the vertex sum, so glslang's and rslc's
+    * modules for one source live in different entries; glslang keeps
+    * the unseeded names, so the caches users already have stay hits. */
+   seed = !strcmp(compiler, "glslang") ? 0
+      : encoding_crc32(0, (const uint8_t*)compiler, strlen(compiler));
 
    vertex_len   = strlen(vertex_source);
    fragment_len = strlen(fragment_source);
@@ -119,7 +126,7 @@ bool spirv_cache_compute_hash(const char *vertex_source,
       return false;
 
    snprintf(hash_out, 33, "%08x%08x%08x%08x",
-         (unsigned)encoding_crc32(0, (const uint8_t*)vertex_source,
+         (unsigned)encoding_crc32(seed, (const uint8_t*)vertex_source,
             vertex_len),
          (unsigned)encoding_crc32(0, (const uint8_t*)fragment_source,
             fragment_len),

@@ -22,8 +22,11 @@
 /* Names the reflection table below needs in every build, with or
  * without the compiler. */
 #include "slang_rect.h"
-#if defined(HAVE_GLSLANG)
+#if defined(HAVE_GLSLANG) || defined(HAVE_RSLC)
 #include "slang_cache.h"
+#endif
+#if defined(HAVE_RSLC)
+#include <gfx/shaders/rslc.h>
 #endif
 /* The vendored SPIRV-Cross headers end their enumerator lists with a
  * comma, which the C89 lane rejects under -pedantic; they are upstream
@@ -1116,6 +1119,103 @@ static bool glslang_parse_meta(const struct shader_line_buf *lines,
 }
 
 /* -----------------------------------------------------------------------
+ * Stage compilation.  A build with one compiler uses it.  A build with
+ * both follows video_shader_compiler: 1 glslang, 2 rslc, 0 the
+ * per-driver default, which is glslang until a driver's rslc corpus
+ * gate (zero reflection and pixel diffs against glslang+Cross) is met
+ * and rslc after; glslang stays behind rslc as the fallback for a
+ * stage rslc rejects until every driver is there.
+ * ----------------------------------------------------------------------- */
+#if defined(HAVE_RSLC) && defined(HAVE_GLSLANG)
+#include "../../configuration.h"
+
+#define SLANG_COMPILER_AUTO    0
+#define SLANG_COMPILER_GLSLANG 1
+#define SLANG_COMPILER_RSLC    2
+
+/* No driver has met its gate yet: auto is glslang everywhere. */
+static bool slang_prefer_rslc(void)
+{
+   const settings_t *settings = config_get_ptr();
+   unsigned choice            = settings
+      ? settings->uints.video_shader_compiler : SLANG_COMPILER_AUTO;
+   return choice == SLANG_COMPILER_RSLC;
+}
+#endif
+
+#if defined(HAVE_RSLC)
+/* rslc builds the stage in its own arena and returns one blob holding
+ * the words and the reflection tables.  glslang_output owns a malloc'd
+ * word array per stage, so the words are copied out of the blob here;
+ * the blob becomes the unit of ownership when the shader task graph
+ * lands and this copy goes with it. */
+static bool slang_rslc_compile_stage(const char *source,
+      enum glslang_compile_stage stage,
+      uint32_t **spirv, size_t *spirv_len)
+{
+   struct rslc_opts   opts;
+   struct rslc_result res;
+   uint32_t          *words;
+   char               err[256];
+
+   memset(&opts, 0, sizeof(opts));
+   opts.dst     = RSLC_DST_SPIRV;
+   opts.err     = err;
+   opts.err_cap = sizeof(err);
+   err[0]       = '\0';
+
+   if (!rslc_compile(source, strlen(source),
+            stage == GLSLANG_COMPILE_STAGE_VERTEX
+            ? RSLC_STAGE_VERTEX : RSLC_STAGE_FRAGMENT, &opts, &res))
+   {
+      RARCH_ERR("[Slang] %s\n", err);
+      return false;
+   }
+   words = (uint32_t*)malloc(res.spirv_len * sizeof(*words));
+   if (words)
+      memcpy(words, res.spirv, res.spirv_len * sizeof(*words));
+   *spirv     = words;
+   *spirv_len = words ? res.spirv_len : 0;
+   rslc_result_free(&res, &opts);
+   return words != NULL;
+}
+#endif
+
+/* Compiles one stage; *compiler names what produced the words, for
+ * the cache entry's key. */
+static bool slang_compile_stage(const char *source,
+      enum glslang_compile_stage stage,
+      uint32_t **spirv, size_t *spirv_len, const char **compiler)
+{
+#if defined(HAVE_RSLC)
+#if defined(HAVE_GLSLANG)
+   if (slang_prefer_rslc())
+#endif
+   {
+      if (slang_rslc_compile_stage(source, stage, spirv, spirv_len))
+      {
+         *compiler = "rslc";
+         return true;
+      }
+#if defined(HAVE_GLSLANG)
+      RARCH_WARN("[Slang] rslc rejected the stage; compiling it with glslang.\n");
+#endif
+   }
+#endif
+#if defined(HAVE_GLSLANG)
+   *compiler = "glslang";
+   return glslang_compile_spirv(source, stage, spirv, spirv_len);
+#else
+   (void)source;
+   (void)stage;
+   (void)spirv;
+   (void)spirv_len;
+   (void)compiler;
+   return false;
+#endif
+}
+
+/* -----------------------------------------------------------------------
  * glslang_compile_shader — now uses shader_line_buf
  * ----------------------------------------------------------------------- */
 bool glslang_compile_shader(const char *shader_path, glslang_output *output)
@@ -1128,12 +1228,24 @@ bool glslang_compile_shader_cached(const char *shader_path,
 {
    glslang_output_init(output);
 
-#if defined(HAVE_GLSLANG)
+#if defined(HAVE_GLSLANG) || defined(HAVE_RSLC)
    {
       struct shader_line_buf lines;
       char cache_filename[PATH_MAX_LENGTH];
+#if defined(HAVE_RSLC) && defined(HAVE_GLSLANG)
+      char fallback_filename[PATH_MAX_LENGTH];
+#endif
       char *vertex_source   = NULL;
       char *fragment_source = NULL;
+      const char *compiler  =
+#if defined(HAVE_RSLC) && defined(HAVE_GLSLANG)
+         slang_prefer_rslc() ? "rslc" : "glslang";
+#elif defined(HAVE_RSLC)
+         "rslc";
+#else
+         "glslang";
+#endif
+      const char *used      = compiler;
 
       if (!shader_line_buf_init(&lines))
          return false;
@@ -1151,8 +1263,12 @@ bool glslang_compile_shader_cached(const char *shader_path,
       if (!vertex_source || !fragment_source)
          goto error;
 
-      spirv_cache_compute_hash(vertex_source, fragment_source,
+      spirv_cache_compute_hash(vertex_source, fragment_source, compiler,
             cache_filename);
+#if defined(HAVE_RSLC) && defined(HAVE_GLSLANG)
+      spirv_cache_compute_hash(vertex_source, fragment_source, "glslang",
+            fallback_filename);
+#endif
 
       /* Try to load from cache */
       if (spirv_cache_load(cache_filename, output))
@@ -1167,9 +1283,9 @@ bool glslang_compile_shader_cached(const char *shader_path,
       if (!glslang_parse_meta(&lines, &output->meta))
          goto error;
 
-      if (!glslang_compile_spirv(vertex_source,
+      if (!slang_compile_stage(vertex_source,
                GLSLANG_COMPILE_STAGE_VERTEX,
-               &output->vertex, &output->vertex_len))
+               &output->vertex, &output->vertex_len, &used))
       {
          RARCH_ERR("[Slang] Failed to compile vertex shader stage.\n");
          goto error;
@@ -1180,16 +1296,25 @@ bool glslang_compile_shader_cached(const char *shader_path,
       free(vertex_source);
       vertex_source = NULL;
 
-      if (!glslang_compile_spirv(fragment_source,
+      if (!slang_compile_stage(fragment_source,
                GLSLANG_COMPILE_STAGE_FRAGMENT,
-               &output->fragment, &output->fragment_len))
+               &output->fragment, &output->fragment_len, &used))
       {
          RARCH_ERR("[Slang] Failed to compile fragment shader stage.\n");
          goto error;
       }
 
-      /* Save to cache */
+      RARCH_LOG("[Slang] Compiled \"%s\" with %s.\n", shader_path, used);
+
+      /* Save to cache under the compiler that produced the words, so a
+       * fallback compile never answers for the other one. */
+#if defined(HAVE_RSLC) && defined(HAVE_GLSLANG)
+      spirv_cache_save(used != compiler ? fallback_filename : cache_filename,
+            output);
+#else
+      (void)used;
       spirv_cache_save(cache_filename, output);
+#endif
 
       free(vertex_source);
       free(fragment_source);

@@ -3674,6 +3674,7 @@ static struct config_uint_setting *populate_settings_uint(
       return NULL;
 
    SETTING_UINT("frontend_log_level",            &settings->uints.frontend_log_level, true, DEFAULT_FRONTEND_LOG_LEVEL, false);
+   SETTING_UINT("video_shader_compiler",         &settings->uints.video_shader_compiler, true, DEFAULT_VIDEO_SHADER_COMPILER, false);
 #ifdef HAVE_NFSCLIENT
    SETTING_UINT("nfs_timeout",                   &settings->uints.nfs_timeout, true, DEFAULT_NFS_TIMEOUT, false);
    SETTING_UINT("nfs_num_contexts",              &settings->uints.nfs_num_contexts, true, DEFAULT_NFS_NUM_CONTEXTS, false);

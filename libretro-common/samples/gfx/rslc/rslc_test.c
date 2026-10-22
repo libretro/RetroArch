@@ -882,6 +882,8 @@ static void test_spirv(void)
    CHECK(!strcmp(RSLC_STR(blob, m[2].name), "m") && m[2].offset == 32 && m[2].size == 48 && m[2].cols == 3 && m[2].rows == 3);
    CHECK(!strcmp(RSLC_STR(blob, m[3].name), "FrameCount") && m[3].offset == 80 && m[3].base == RSLC_BASE_UINT);
    CHECK(rf->push.size == 84);
+   /* only params.f is read: the active set is what the chain uploads */
+   CHECK(!m[0].active && m[1].active && !m[2].active && !m[3].active);
 
    /* UBO, std140: mat4 @0 size 64, vec2[2] stride 16 @64 size 32,
     * float @96; declared size 100 (no tail padding, as SPIRV-Cross) */
@@ -891,6 +893,7 @@ static void test_spirv(void)
    CHECK(m[1].offset == 64 && m[1].size == 32 && m[1].array_len == 2 && m[1].rows == 2);
    CHECK(m[2].offset == 96 && m[2].size == 4);
    CHECK(rf->ubo.size == 100);
+   CHECK(!m[0].active && m[1].active && !m[2].active);
 
    CHECK(rf->sampler_count == 2);
    smp = (const struct rslc_sampler*)(blob + rf->samplers);
@@ -914,6 +917,61 @@ static void test_spirv(void)
       CHECK(r2.refl->push.size == 84 && r2.refl->sampler_count == 2);
       free(copy);
    }
+   rslc_result_free(&r, &o);
+   CHECK(alloc_live == 0);
+}
+
+/* Whether the module holds OpConstant of 32-bit scalar type tid... :
+ * scans for an OpConstant whose value word is v. */
+static bool spirv_has_const(const uint32_t *w, size_t n, uint32_t v)
+{
+   size_t i = 5;
+   while (i < n)
+   {
+      uint32_t len = w[i] >> 16, op = w[i] & 0xffffu;
+      if (!len)
+         return false;
+      if (op == 43 && len == 4 && w[i + 3] == v)   /* OpConstant */
+         return true;
+      i += len;
+   }
+   return false;
+}
+
+/* Constant folding runs in double and rounds once, as glslang's does,
+ * and overload choice prefers the fewest conversions: the module's
+ * constants are glslang's constants. */
+static void test_folding(void)
+{
+   struct rslc_opts   o;
+   struct rslc_result r;
+   char               err[128];
+   static const char  frag[] =
+      "#version 450\n"
+      "layout(push_constant) uniform Push { uint FrameCount; } params;\n"
+      "layout(location = 0) in vec2 vTexCoord;\n"
+      "layout(location = 0) out vec4 FragColor;\n"
+      "const vec3 Y = vec3(0.299, 0.587, 0.114);\n"
+      "float luma(vec3 c) { return c.y * (0.587/0.299) + c.x; }\n"
+      "void main() {\n"
+      "  const float arr[3] = float[](0.35, 0.518, 0.962);\n"
+      "  const float unused = 10000.0;\n"
+      "  float f = float(max(params.FrameCount, 8000));\n"
+      "  FragColor = vec4(luma(vec3(vTexCoord, arr[1])), f, radians(-15.0), 1);\n"
+      "}\n";
+
+   opts_default(&o, err, sizeof(err));
+   o.dst = RSLC_DST_SPIRV;
+   CHECK(rslc_compile(frag, sizeof(frag) - 1, RSLC_STAGE_FRAGMENT, &o, &r));
+   if (!r.blob)
+      return;
+   CHECK(spirv_has_const(r.spirv, r.spirv_len, 0x3ffb4a7du));    /* 0.587/0.299 in double */
+   CHECK(!spirv_has_const(r.spirv, r.spirv_len, 0x3ffb4a7eu));   /* not the float quotient */
+   CHECK(spirv_has_const(r.spirv, r.spirv_len, 0x3f049ba6u));    /* arr[1] = 0.518 folded */
+   CHECK(!spirv_has_const(r.spirv, r.spirv_len, 0x461c4000u));   /* unused const: nothing emitted */
+   CHECK(spirv_has_const(r.spirv, r.spirv_len, 8000u));          /* max(uint, int) is max(uint, uint) */
+   CHECK(!spirv_has_const(r.spirv, r.spirv_len, 0x45fa0000u));   /* ... not max(float, float) */
+   CHECK(spirv_has_const(r.spirv, r.spirv_len, 0xbe860a92u));    /* radians(-15.0) folded */
    rslc_result_free(&r, &o);
    CHECK(alloc_live == 0);
 }
@@ -1168,6 +1226,7 @@ int main(int argc, char **argv)
    test_front();
    test_blob();
    test_spirv();
+   test_folding();
 
    if (fails)
    {

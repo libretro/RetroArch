@@ -314,6 +314,7 @@ typedef struct settings
       unsigned video_overscan_correction_bottom;
 #endif
       unsigned video_shader_delay;
+      unsigned video_shader_compiler;
 #ifdef HAVE_SCREENSHOTS
       unsigned notification_show_screenshot_duration;
       unsigned notification_show_screenshot_flash;
