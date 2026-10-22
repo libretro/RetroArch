@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include "../../../gfx/common/vaapi_hevc.h"
 #include "../../../gfx/common/vaapi_hevc_packet.h"
+#include "../../../gfx/common/vaapi_hevc_slice.h"
 #include "../../../gfx/common/vaapi_hevc_submit.c"
 typedef struct codec_case {
  const char *name; const uint8_t *hvcc; size_t hvcc_size;
@@ -30,6 +31,9 @@ static unsigned packed_size,packet_creates,packet_drops,packet_polls;
 static vaapi_hevc_submit_t packet_tx;
 static vaapi_hevc_session_t packet_session;
 static vaapi_hevc_short_work_t packet_work;
+static rh265_slice_decode_t long_info;
+static uint32_t long_entries[RH265_SLICE_ENTRY_POINTS_MAX];
+static VASliceParameterBufferHEVC long_native;
 static VAStatus packet_create(VADisplay d,VAContextID c,VABufferType type,
  unsigned bytes,unsigned elements,void *data,VABufferID *id)
 {
@@ -133,44 +137,66 @@ static void packet_check(rh265_video *source,const rh265_nal_t *slices)
  assert(!vaapi_hevc_submit_poll(&packet_tx) && vaapi_hevc_submit_retire(&packet_tx));
  assert(packet_creates==packet_drops);
 }
+
 static void sequence(const sequence_case_t *c)
 {
- rh265_video *source=rh265_video_open();
- rh265_hw_state_t state;
- rh265_nal_t slices[8];
- unsigned frame,i;
- assert(source && !rh265_video_set_extradata(source,c->picture.hvcc,c->picture.hvcc_size));
- assert(rh265_hw_state_init(&state,32));
- for(frame=0;frame<8;frame++) {
-  const sequence_packet_t *packet=&c->packets[frame];
-  assert(!rh265_video_get_access_unit(source,packet->data,packet->size,4,slices,8,&au));
-  assert(au.slice_types==(1u<<packet->slice_type));
-  assert(!rh265_video_get_params(source,(unsigned)au.first.pps_id,&params));
-  assert(!rh265_hw_prepare(&state,&params,&au,&picture));
-  assert(vaapi_hevc_picture(&native,&params,&au,&picture,surfaces,32));
-  packet_check(source,slices);
-  assert(native.CurrPic.picture_id==surfaces[picture.slot]);
-  assert(native.CurrPic.pic_order_cnt==(int32_t)packet->display_index);
-  assert(native.bit_depth_luma_minus8==c->picture.depth-8);
-  assert(native.pic_fields.bits.NoBiPredFlag==(packet->slice_type!=0));
-  assert(native.slice_parsing_fields.bits.IntraPicFlag==(frame==0));
-  assert(native.slice_parsing_fields.bits.IdrPicFlag==(frame==0));
-  assert(native.st_rps_bits==au.first.short_term_rps_bits);
-  for(i=0;i<picture.num_refs;i++) {
-   assert(native.ReferenceFrames[i].picture_id==surfaces[picture.refs[i].slot]);
-   assert(native.ReferenceFrames[i].pic_order_cnt==picture.refs[i].poc);
-  }
-  for(i=picture.num_refs;i<15;i++)
-   assert(native.ReferenceFrames[i].picture_id==VA_INVALID_SURFACE
-      && native.ReferenceFrames[i].flags==VA_PICTURE_HEVC_INVALID);
-  assert(rh265_hw_commit(&state,&picture));
-  state.outputs=0;
-  parsed++;
- }
- memset(&au,0xa5,sizeof(au));
- assert(rh265_video_get_access_unit(source,c->packets[0].data,1,4,slices,8,&au)<0);
- assert(!au.slice_types && !au.num_slices);
- rh265_video_close(source);
+   rh265_video *source = rh265_video_open();
+   static rh265_hw_state_t state;
+   rh265_nal_t slices[8];
+   unsigned frame, i;
+   assert(source
+          && !rh265_video_set_extradata(
+                source, c->picture.hvcc, c->picture.hvcc_size));
+   assert(rh265_hw_state_init(&state, 32));
+   for (frame = 0; frame < 8; frame++)
+   {
+      const sequence_packet_t *packet = &c->packets[frame];
+      assert(!rh265_video_get_access_unit(
+            source, packet->data, packet->size, 4, slices, 8, &au));
+      assert(au.slice_types == (1u << packet->slice_type));
+      assert(!rh265_video_get_params(
+            source, (unsigned)au.first.pps_id, &params));
+      assert(!rh265_hw_prepare(&state, &params, &au, &picture));
+      assert(vaapi_hevc_picture(&native, &params, &au, &picture, surfaces, 32));
+      for (i = 0; i < au.num_slices; i++)
+      {
+         assert(!rh265_video_get_slice_decode(source, slices[i].data,
+               slices[i].size, &long_info, long_entries,
+               RH265_SLICE_ENTRY_POINTS_MAX));
+         assert(vaapi_hevc_long_slice(&long_native, &params, &long_info,
+               &native, slices[i].size, 0, i + 1 == au.num_slices));
+         assert(long_native.LongSliceFlags.fields.slice_type
+                == packet->slice_type);
+         assert(long_native.num_entry_point_offsets
+                == long_info.num_entry_points);
+      }
+      packet_check(source, slices);
+      assert(native.CurrPic.picture_id == surfaces[picture.slot]);
+      assert(native.CurrPic.pic_order_cnt == (int32_t)packet->display_index);
+      assert(native.bit_depth_luma_minus8 == c->picture.depth - 8);
+      assert(native.pic_fields.bits.NoBiPredFlag == (packet->slice_type != 0));
+      assert(native.slice_parsing_fields.bits.IntraPicFlag == (frame == 0));
+      assert(native.slice_parsing_fields.bits.IdrPicFlag == (frame == 0));
+      assert(native.st_rps_bits == au.first.short_term_rps_bits);
+      for (i = 0; i < picture.num_refs; i++)
+      {
+         assert(native.ReferenceFrames[i].picture_id
+                == surfaces[picture.refs[i].slot]);
+         assert(native.ReferenceFrames[i].pic_order_cnt == picture.refs[i].poc);
+      }
+      for (i = picture.num_refs; i < 15; i++)
+         assert(native.ReferenceFrames[i].picture_id == VA_INVALID_SURFACE
+                && native.ReferenceFrames[i].flags == VA_PICTURE_HEVC_INVALID);
+      assert(rh265_hw_commit(&state, &picture));
+      state.outputs = 0;
+      parsed++;
+   }
+   memset(&au, 0xa5, sizeof(au));
+   assert(rh265_video_get_access_unit(
+                source, c->packets[0].data, 1, 4, slices, 8, &au)
+          < 0);
+   assert(!au.slice_types && !au.num_slices);
+   rh265_video_close(source);
 }
 static void references(void)
 {

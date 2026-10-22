@@ -72,7 +72,14 @@ native setup across renderer replacement. It tests publisher notification
 lifetime and epoch exhaustion. `make tsan-check` additionally executes its
 worker and setup/withdrawal lanes. Native factory registration does not prove
 actual VA decode, DRM modifier import pixels, seeks or shutdown acceptance.
-The adapter still requires BASE mode; NORMAL long-format slices remain open.
+The adapter still requires BASE mode; NORMAL long-format submission remains
+open. The long-slice mapper is exercised separately by `long_slice_test` and
+the parsed Main8/Main10 I/P/B sequence fixtures. It maps coded short/long-term
+reference order and list modifications to picture-buffer indices, effective
+weights to VA deltas/offsets, filtering flags and escaped-header accounting.
+It preserves output on refusal and performs no native calls or allocation.
+Packing WPP subset entries and connecting this mapper to the owner/pool are
+still required; these parameter tests do not establish native NORMAL decode.
 
 `make gpu-check SANITIZER=address,undefined` additionally needs the Vulkan
 loader, development library, validation layer and a device supporting
