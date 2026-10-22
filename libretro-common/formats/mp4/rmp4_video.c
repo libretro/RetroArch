@@ -43,6 +43,8 @@
 #include <formats/rvp8.h>
 #ifdef HAVE_RVP9
 #include <formats/rvp9.h>
+#include <formats/rvp9_config.h>
+#include <formats/rvp9_color.h>
 #endif
 /* The 10-bit / HDR I420->RGB blits are shared (image_hdr_blit.c) but still
  * declared in rwebm_video.h; the implementation is demuxer-independent.
@@ -83,6 +85,9 @@ struct rmp4_video_stream
    rvp8_video  *vp8;
 #ifdef HAVE_RVP9
    rvp9_dec    *vp9;
+   video_color_metadata_t vp9_color;
+   int vp9_have_config;
+   rvp9_config_t vp9_config;
 #endif
    rh264_video *h264;
    rh265_video *h265;
@@ -666,6 +671,60 @@ fail:
 }
 #endif
 
+#ifdef HAVE_RVP9
+static bool rmp4_video_vp9_configure(rmp4_video_stream_t *s,
+      const rmp4_track *track)
+{
+   video_color_metadata_t color;
+   memset(&color, 0, sizeof(color));
+   color.primaries = track->color_primaries;
+   color.transfer = track->transfer_characteristics;
+   color.matrix = track->matrix_coefficients;
+   color.range = track->range_present ? (track->full_range ? 2 : 1) : 0;
+   color.mastering = track->mastering;
+   color.max_cll = track->max_cll;
+   color.max_fall = track->max_fall;
+   if (track->codec_private_size)
+   {
+      if (!rvp9_config_parse(track->codec_private, track->codec_private_size,
+               &s->vp9_config)
+            || !rvp9_config_apply_color(&s->vp9_config, &color, &color))
+         return false;
+      s->vp9_have_config = 1;
+   }
+   if (s->vp9_have_config && s->vp9_config.bit_depth != 10
+         && (color.transfer == 16 || color.transfer == 18))
+      return false;
+   s->vp9_color = color;
+   s->primaries = color.primaries;
+   s->transfer = color.transfer;
+   s->matrix = color.matrix;
+   s->range = color.range == 2;
+   return true;
+}
+
+static bool rmp4_video_vp9_color(rmp4_video_stream_t *s)
+{
+   const rvp9_hdr *header = &s->vp9->hd;
+   const rvp9_config_t *config = &s->vp9_config;
+   video_color_metadata_t color;
+   if (s->vp9_have_config
+         && (config->profile != header->profile
+               || config->bit_depth != header->bit_depth
+               || config->full_range != header->color_range
+               || header->subsampling_x != (config->chroma != 3)
+               || header->subsampling_y != (config->chroma < 2)))
+      return false;
+   if (!rvp9_color_resolve(header, &s->vp9_color, &color))
+      return false;
+   s->primaries = color.primaries;
+   s->transfer = color.transfer;
+   s->matrix = color.matrix;
+   s->range = color.range == 2;
+   return true;
+}
+#endif
+
 static bool rmp4_video_stream_open_decoder(rmp4_video_stream_t *s)
 {
    switch (s->codec)
@@ -873,6 +932,10 @@ static rmp4_video_stream_t *rmp4_video_stream_open_begin(
    }
    if (s->track < 0)
       goto fail;
+#ifdef HAVE_RVP9
+   if (s->codec == RMP4_CODEC_VP9 && !rmp4_video_vp9_configure(s, trk))
+      goto fail;
+#endif
 
    s->width  = trk->width;
    s->height = trk->height;
@@ -1198,7 +1261,7 @@ static int rmp4_video_decode_packet(rmp4_video_stream_t *s,
       for (i = 0; i < nf; i++)
       {
          r = rvp9_decode_frame(s->vp9, frame, sizes[i], &show);
-         if (r < 0)
+         if (r < 0 || !rmp4_video_vp9_color(s))
             return -1;
          if (show >= 0)
             last_show = show;
@@ -1867,8 +1930,8 @@ const uint32_t *rmp4_video_stream_render(rmp4_video_stream_t *s)
          unsigned h = (unsigned)fb->h < s->height ? (unsigned)fb->h : s->height;
          if (s->vp9->hd.bit_depth == 10)
          {
-            /* Colour metadata comes from the sample entry's colr box when
-             * present; untagged files pass zeros and the shared blit picks
+            /* Colour metadata comes from the sample entry and coded header;
+             * untagged files pass zeros and the shared blit picks
              * HD-appropriate defaults (BT.2020-ncl for PQ, BT.709/601 by
              * resolution), matching untagged webm content. Without this
              * branch the 10-bit (uint16) planes were handed to the 8-bit

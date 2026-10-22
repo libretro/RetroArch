@@ -85,7 +85,7 @@ typedef struct
    uint64_t               media_skip;
    /* Decoder setup data, owned by the demuxer until rmp4_close.
     * Opus: repacked OpusHead; Vorbis: xiph-laced headers from esds;
-    * H.264/HEVC/AV1: avcC/hvcC/av1C. VP8/VP9: usually empty. */
+    * H.264/HEVC/AV1: avcC/hvcC/av1C. VP8/VP9: vpcC. */
    const uint8_t         *codec_private;
    size_t                 codec_private_size;
    /* Sample-entry fourcc, NUL-terminated (e.g. "vp09", "avc1"). */
