@@ -12,6 +12,7 @@ config_test$(EXE): config_test.c ../../../gfx/common/videotoolbox_vp9_config.h .
 	$(CC) $(CFLAGS) $< -o $@ $(LDFLAGS)
 check: all
 	./config_test$(EXE)
+	CC="$(CC)" CFLAGS="$(CFLAGS) $(LDFLAGS)" python3 run.py
 clean:
 	rm -f config_test config_test.exe *.su
 .PHONY: all check clean

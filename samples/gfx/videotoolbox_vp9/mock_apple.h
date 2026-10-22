@@ -1,0 +1,65 @@
+/* Minimal CoreMedia/CoreVideo/VideoToolbox declarations for setup tests. */
+#ifndef VT_VP9_MOCK_APPLE_H
+#define VT_VP9_MOCK_APPLE_H
+#include <stddef.h>
+#include <stdint.h>
+typedef int32_t OSStatus;
+typedef uint32_t CMVideoCodecType;
+typedef struct object *CFDataRef;
+typedef struct object *CFDictionaryRef;
+typedef struct object *CFNumberRef;
+typedef struct object *CMVideoFormatDescriptionRef;
+typedef struct object *VTDecompressionSessionRef;
+typedef void *CVImageBufferRef;
+typedef unsigned VTDecodeInfoFlags;
+
+typedef struct
+{
+   int64_t value;
+   int32_t timescale;
+   uint32_t flags;
+   int64_t epoch;
+} CMTime;
+
+typedef struct
+{
+   int32_t width, height;
+} CMVideoDimensions;
+
+typedef void (*VTDecompressionOutputCallback)(void *, void *, OSStatus,
+      VTDecodeInfoFlags, CVImageBufferRef, CMTime, CMTime);
+
+typedef struct
+{
+   VTDecompressionOutputCallback decompressionOutputCallback;
+   void *decompressionOutputRefCon;
+} VTDecompressionOutputCallbackRecord;
+
+#define CFSTR(s) (s)
+#define kCFAllocatorDefault NULL
+#define kCFBooleanTrue ((void *)1)
+#define kCFNumberSInt32Type 3
+#define kCMFormatDescriptionError_InvalidParameter (-12710)
+#define kCMFormatDescriptionError_AllocationFailed (-12711)
+#define kCMFormatDescriptionExtension_SampleDescriptionExtensionAtoms "atoms"
+#define kVTVideoDecoderSpecification_RequireHardwareAcceleratedVideoDecoder    \
+   "hardware"
+#define kCVPixelBufferPixelFormatTypeKey "pixel"
+#define kCVPixelBufferMetalCompatibilityKey "metal"
+#define kCVPixelBufferIOSurfacePropertiesKey "surface"
+#define kCVPixelFormatType_420YpCbCr8BiPlanarFullRange 0x34323066
+#define kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange 0x34323076
+static const int kCFTypeDictionaryKeyCallBacks   = 0;
+static const int kCFTypeDictionaryValueCallBacks = 0;
+CFDataRef CFDataCreate(void *, const uint8_t *, long);
+CFNumberRef CFNumberCreate(void *, int, const void *);
+CFDictionaryRef CFDictionaryCreate(
+      void *, const void **, const void **, long, const void *, const void *);
+void CFRelease(void *);
+OSStatus CMVideoFormatDescriptionCreate(void *, CMVideoCodecType, int32_t,
+      int32_t, CFDictionaryRef, CMVideoFormatDescriptionRef *);
+OSStatus VTDecompressionSessionCreate(void *, CMVideoFormatDescriptionRef,
+      CFDictionaryRef, CFDictionaryRef,
+      const VTDecompressionOutputCallbackRecord *, VTDecompressionSessionRef *);
+void VTDecompressionSessionInvalidate(VTDecompressionSessionRef);
+#endif

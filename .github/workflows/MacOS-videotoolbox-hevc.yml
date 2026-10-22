@@ -62,7 +62,9 @@ jobs:
           libretro-common/samples/formats/video_player/video_player_test
         done
     - name: VideoToolbox VP9 configuration conformance (no device claim)
-      run: make -C samples/gfx/videotoolbox_vp9 check CC=clang SANITIZER=address,undefined
+      run: |
+        make -C samples/gfx/videotoolbox_vp9 check CC=clang SANITIZER=address,undefined
+        CC=clang python3 samples/gfx/videotoolbox_vp9/run.py --native
     - name: VideoToolbox HEVC hardware decode and pixel ownership
       run: |
         rc=0
