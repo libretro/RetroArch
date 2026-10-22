@@ -34,6 +34,9 @@
 #include "vulkan_android_cache.h"
 #endif
 #include "vulkan_video_caps.h"
+#if defined(__linux__) && !defined(ANDROID) && defined(HAVE_RMP4)
+#include "vulkan_prime_device.h"
+#endif
 #include "vulkan_memory_type.h"
 #include "vulkan_surface_format.h"
 #include "vulkan_swapchain_extent.h"
@@ -93,6 +96,7 @@ static dylib_t                       vulkan_library;
 static VkInstance                    cached_instance_vk;
 static uint32_t                      cached_instance_api_vk;
 static bool                          cached_instance_properties2_vk;
+static bool                          cached_prime_import_vk;
 #if defined(_WIN32) && !defined(__WINRT__)
 #include "win_vulkan_dxgi.h"
 #endif
@@ -921,6 +925,13 @@ static const char *vulkan_optional_device_extensions[] = {
     * HDR still works via the colour space alone. */
    , "VK_EXT_hdr_metadata"
 #endif
+#if defined(__linux__) && !defined(ANDROID) && defined(HAVE_RMP4)
+   , "VK_KHR_external_memory_fd"
+   , "VK_EXT_external_memory_dma_buf"
+   , "VK_EXT_image_drm_format_modifier"
+   , "VK_EXT_queue_family_foreign"
+   , "VK_KHR_image_format_list"
+#endif
 #if defined(ANDROID) && defined(HAVE_RMP4)
    , "VK_ANDROID_external_memory_android_hardware_buffer"
    , "VK_EXT_queue_family_foreign"
@@ -1125,6 +1136,10 @@ static unsigned vulkan_optional_device_count(const gfx_ctx_vulkan_data_t *vk, bo
 #if defined(ANDROID) && defined(HAVE_RMP4)
    if (!own_device)
       while (count && vulkan_android_device_extension(vulkan_optional_device_extensions[count - 1]))
+         count--;
+#elif defined(__linux__) && defined(HAVE_RMP4)
+   if (!own_device || vk->context.xr)
+      while (count && vulkan_prime_device_extension(vulkan_optional_device_extensions[count - 1]))
          count--;
 #else
    (void)own_device;
@@ -1435,6 +1450,25 @@ static VkDevice vulkan_context_create_device_wrapper(
    return device;
 }
 
+#if defined(__linux__) && !defined(ANDROID) && defined(HAVE_RMP4)
+static VkResult vulkan_prime_create_device(void *user, VkPhysicalDevice gpu,
+      const VkDeviceCreateInfo *info, VkDevice *device)
+{
+   return vulkan_context_create_device((gfx_ctx_vulkan_data_t*)user, gpu, info, device);
+}
+#endif
+
+static VkResult vulkan_context_create_own_device(gfx_ctx_vulkan_data_t *vk,
+      VkPhysicalDevice gpu, const VkDeviceCreateInfo *info, VkDevice *device)
+{
+#if defined(__linux__) && !defined(ANDROID) && defined(HAVE_RMP4)
+   return vulkan_prime_device_create(vk, gpu, info, device,
+         &vk->context.prime_import_device, vulkan_prime_create_device);
+#else
+   return vulkan_context_create_device(vk, gpu, info, device);
+#endif
+}
+
 static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
 {
    uint32_t queue_count;
@@ -1508,6 +1542,7 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
 
    /* Set below for a device made here; a core's has none of ours */
    vk->context.flags &= ~VK_CTX_FLAG_TIMELINE_SEMAPHORE;
+   vk->context.prime_import_device = false;
    vk->context.video_lanes         = 0;
    vk->context.video_codec_operations = 0;
    vk->context.video_decode_family = 0;
@@ -1844,6 +1879,12 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
             device_info.pNext = vulkan_android_device_plan_chain(&android_plan, device_info.pNext);
       }
 #endif
+#if defined(__linux__) && !defined(ANDROID) && defined(HAVE_RMP4)
+      vk->context.prime_import_device = vulkan_prime_device_filter(
+            vk->context.gpu_properties.apiVersion, vk->context.instance_api_version,
+            true, vk->context.drm_identity.valid && !vk->context.xr, enabled_device_extensions,
+            &enabled_device_extension_count);
+#endif
       device_info.pNext = vulkan_anti_lag_chain(vk, vk->context.gpu,
             &anti_lag_features, device_info.pNext);
 
@@ -1857,6 +1898,7 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
       {
          vk->context.device = cached_device_vk;
          cached_device_vk   = NULL;
+         vk->context.prime_import_device = cached_prime_import_vk;
          if (cached_timeline_vk)
             vk->context.flags |=  VK_CTX_FLAG_TIMELINE_SEMAPHORE;
          else
@@ -1932,7 +1974,7 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
             vinfo.queueCreateInfoCount    = nq;
             vinfo.pQueueCreateInfos       = qi;
             vinfo.enabledExtensionCount   = next;
-            if (vulkan_context_create_device(vk, vk->context.gpu,
+            if (vulkan_context_create_own_device(vk, vk->context.gpu,
                      &vinfo, &dev) == VK_SUCCESS)
             {
                vk->context.video_decode_family = video.decode_family;
@@ -1951,7 +1993,7 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
             }
          }
          if (     dev == VK_NULL_HANDLE
-               && vulkan_context_create_device(vk, vk->context.gpu,
+               && vulkan_context_create_own_device(vk, vk->context.gpu,
                   &device_info, &dev) != VK_SUCCESS)
          {
             dev = VK_NULL_HANDLE;
@@ -1961,7 +2003,7 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
                      enabled_device_extensions, &enabled_device_extension_count))
             {
                device_info.enabledExtensionCount = enabled_device_extension_count;
-               if (vulkan_context_create_device(vk, vk->context.gpu,
+               if (vulkan_context_create_own_device(vk, vk->context.gpu,
                         &device_info, &dev) != VK_SUCCESS)
                   dev = VK_NULL_HANDLE;
             }
@@ -4915,6 +4957,7 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
       cached_gpu_vk            = vk->context.gpu;
       cached_gpu_index_vk      = vk->context.gpu_index;
       cached_instance_vk       = vk->context.instance;
+      cached_prime_import_vk   = vk->context.prime_import_device;
       cached_instance_api_vk   = vk->context.properties2_instance == vk->context.instance
          ? vk->context.instance_api_version : 0;
       cached_instance_properties2_vk = vk->context.properties2_instance == vk->context.instance

@@ -277,6 +277,7 @@ typedef struct vulkan_context
    vulkan_drm_identity_t drm_identity;
    uint32_t instance_api_version;
    bool instance_properties2;
+   bool prime_import_device; /* Enabled prerequisites, not surface admission. */
    VkPhysicalDeviceMemoryProperties memory_properties;
    unsigned android_sampler_descriptors;
    bool android_legacy_descriptor_budget;
