@@ -1520,8 +1520,8 @@ int rwebm_video_stream_set_hw(rwebm_video_stream_t *s, int enable)
    if (!enable || s->hw)
       return s->hw != NULL;
    t = rwebm_get_track(s->demux, s->track);
-   if (!t || t->colour_range > 2 || t->chroma_siting_horz > 2
-         || t->chroma_siting_vert > 1)
+   if (!t || t->colour_range > 2 || t->chroma_siting_horz > 1
+         || t->chroma_siting_vert > 2)
       return 0;
    if (rwebm_video_stream_is_hdr(s))
    {
@@ -1583,7 +1583,9 @@ int rwebm_video_stream_set_hw(rwebm_video_stream_t *s, int enable)
       config.profile = (uint8_t)candidate->pending.header.profile;
       config.bit_depth = (uint8_t)candidate->pending.header.bit_depth;
       config.full_range = (uint8_t)candidate->pending.header.color_range;
-      config.chroma = t->chroma_siting_horz == 2 ? 0 : 1;
+      /* VPCC 0 is left/half-row; 1 is top-left. Horizontal half
+       * siting has no representation in either supported 4:2:0 code. */
+      config.chroma = t->chroma_siting_vert == 2 ? 0 : 1;
       config.primaries = (uint8_t)(color.primaries ? color.primaries : 2);
       config.transfer = (uint8_t)(color.transfer ? color.transfer : 2);
       config.matrix = (uint8_t)(color.matrix ? color.matrix : 2);
