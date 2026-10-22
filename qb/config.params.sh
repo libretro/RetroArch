@@ -211,6 +211,7 @@ HAVE_PARPORT=auto          # Parallel port joypad support
 HAVE_HID=no                # Low-level HID (Human Interface Device) support
 HAVE_HIDRAW=auto           # Linux hidraw HID support
 HAVE_WINUSB=auto           # Windows WinUSB HID support
+HAVE_WGI=auto              # Windows.Gaming.Input for Xbox pads on the HID driver
 HAVE_LIBUSB=auto           # Libusb HID support
 C89_LIBUSB=no
 HAVE_BLISSBOX=auto         # Blissbox support

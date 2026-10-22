@@ -647,6 +647,10 @@ check_enabled THREADS WINUSB WinUSB 'Threads are' false
 check_platform Win32 WINUSB 'WinUSB is' true
 if [ "$HAVE_WINUSB" = 'yes' ]; then
    add_opt HID yes
+   # Xbox pads' triggers and rumble, where the header is
+   check_header '' WGI windows.gaming.input.h
+else
+   HAVE_WGI=no
 fi
 
 check_lib '' DINPUT -ldinput8

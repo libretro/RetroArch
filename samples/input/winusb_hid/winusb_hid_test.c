@@ -823,6 +823,25 @@ static void test_hidclass(const char *path)
    CHECK(   winusb_hid.axis(hid, 0, AXIS_POS(4)) == 32767
          && winusb_hid.axis(hid, 0, AXIS_POS(5)) == 0,
          "hid class: an Xbox pad's left trigger not on axis 4");
+   /* without Windows.Gaming.Input, rumble asked of it goes nowhere */
+   CHECK(hid->devices && hid->devices->gen.xbox && !hid->devices->gen.wgi,
+         "hid class: an Xbox pad not known for one, or paired with nothing");
+   winusb_hid.set_rumble(hid, 0, RETRO_RUMBLE_STRONG, 0xffff);
+   winusb_hid.poll(hid);
+   {
+      /* paired by its look: buttons and sticks alike, near enough */
+      winusb_wgi_look_t look;
+      int16_t axes[4] = { 0, 0, 1000, -1000 };
+      look.sticks[0] = 2000; look.sticks[1] = -2000;
+      look.sticks[2] = 1000; look.sticks[3] = -1000;
+      look.buttons   = 0x5;
+      CHECK(winusb_wgi_alike(&look, axes, 0x5)
+            && !winusb_wgi_alike(&look, axes, 0x4),
+            "hid class: a gamepad told from its HID collection by its buttons");
+      axes[0] = 9000;
+      CHECK(!winusb_wgi_alike(&look, axes, 0x5),
+            "hid class: a gamepad taken for one whose stick is elsewhere");
+   }
    g_value[0x32] = 0;       /* the right pulled */
    push_hreport(r, 9);
    wait_hreader();

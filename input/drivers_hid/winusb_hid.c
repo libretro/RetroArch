@@ -57,6 +57,7 @@
 #include "../connect/joypad_connection.h"
 #include "../common/hid_report_desc.h"
 #include "../common/hid_sjoy_output.h"
+#include "winusb_wgi.h"
 #include "../input_defines.h"
 #include "../../tasks/tasks_internal.h"
 #include "../input_driver.h"
@@ -196,7 +197,9 @@ typedef DWORD (WINAPI *winusb_cm_parent_t)(DWORD*, DWORD, ULONG);
  *
  * An Xbox pad on Windows' HID driver - "IG_" in its instance - has both
  * triggers on Z, the left above its middle and the right below; they
- * are split onto axes 4 and 5, 0 at rest, as SDL splits them. */
+ * are split onto axes 4 and 5, 0 at rest, as SDL splits them; once
+ * it is paired with its gamepad in Windows.Gaming.Input, they and its
+ * rumble are that gamepad's (winusb_wgi.h). */
 #define WINUSB_GEN_AXES    11
 #define WINUSB_GEN_VALUES  16
 #define WINUSB_GEN_HAT     0xff
@@ -225,6 +228,9 @@ typedef struct winusb_generic
    hid_sjoy_output_t out; /* a PlayStation adapter's rumble */
    uint8_t motors[2];     /* strong, weak: what the core asked last */
    bool motors_due;
+   bool xbox;             /* an Xbox pad: see above */
+   winusb_wgi_pad_t *wgi; /* its gamepad, once paired */
+   retro_time_t wgi_tried;
 } winusb_generic_t;
 
 typedef struct winusb_device
@@ -303,6 +309,7 @@ typedef struct winusb_hid
    winusb_cm_parent_t cm_parent;
    HANDLE notification;
    retro_atomic_int_t rescan;
+   bool wgi;            /* Windows.Gaming.Input is there */
 } winusb_hid_t;
 
 extern hid_driver_t winusb_hid;
@@ -668,6 +675,7 @@ static void winusb_hid_close(winusb_device_t *dev)
       winusb_hidclass_api.Cancel(dev->file);
       winusb_hidclass_api.Result(dev->file, &dev->out_ov, &n, TRUE);
    }
+   winusb_wgi_unpair(dev->gen.wgi);
    if (dev->gen.pp)
       winusb_hidclass_api.FreePreparsedData(dev->gen.pp);
    if (dev->usb)
@@ -738,6 +746,8 @@ static void winusb_generic_setup(winusb_generic_t *gen,
    memset(&gen->view, 0, sizeof(gen->view));
    for (a = 0; a < WINUSB_GEN_AXES; a++)
       taken[a]      = false;
+   gen->xbox     = xinput;
+   gen->wgi      = NULL;
    if (xinput)
       taken[4] = taken[5] = true;
    gen->btn_page = 0;
@@ -892,7 +902,7 @@ static void winusb_generic_packet(void *data, uint8_t *report,
          gen->view.hats = (val < v->min || val > v->max || way < 0 || way > 7)
             ? 0 : hat[way];
       }
-      else if (v->id == WINUSB_GEN_TRIGGERS)
+      else if (v->id == WINUSB_GEN_TRIGGERS && !gen->wgi)
       {
          LONG mid = v->min + (v->max - v->min + 1) / 2;
          LONG d   = val - mid;
@@ -901,7 +911,7 @@ static void winusb_generic_packet(void *data, uint8_t *report,
          gen->view.axes[5] = (int16_t)(d < 0 && mid > v->min
                ? (int64_t)-d * 32767 / (mid - v->min) : 0);
       }
-      else
+      else if (v->id < WINUSB_GEN_AXES)
          gen->view.axes[v->id] = winusb_generic_scale(val, v->min, v->max);
    }
    if (gen->motors_due && gen->out.fields)
@@ -924,7 +934,7 @@ static void winusb_generic_rumble(void *data,
    winusb_generic_t *gen = (winusb_generic_t*)data;
    unsigned idx          = (effect == RETRO_RUMBLE_STRONG) ? 0 : 1;
    uint8_t motor         = (uint8_t)(strength >> 8);
-   if (gen && gen->out.fields && gen->motors[idx] != motor)
+   if (gen && (gen->out.fields || gen->xbox) && gen->motors[idx] != motor)
    {
       gen->motors[idx] = motor;
       gen->motors_due  = true;
@@ -1575,6 +1585,8 @@ static void winusb_hid_free(const void *data)
       FreeLibrary(hid->cfgmgr);
    while (hid->devices)
       winusb_hid_remove(hid, hid->devices, false);
+   if (hid->wgi)
+      winusb_wgi_stop();
    if (hid->slots)
       pad_connection_destroy(hid->slots);
    free(hid);
@@ -1598,6 +1610,7 @@ static void *winusb_hid_init(void)
       return NULL;
    }
    retro_atomic_int_init(&hid->rescan, 0);
+   hid->wgi = hid_ok && winusb_wgi_start();
 
    /* listening before the scan, so a pad bound during it is not
     * missed; without it (before Windows 8) the pads bound at start */
@@ -1699,6 +1712,40 @@ static void winusb_hidclass_write(winusb_device_t *dev,
    winusb_hidclass_start_write(dev);
 }
 
+/* An Xbox pad's gamepad in Windows.Gaming.Input: looked for while it
+ * has none, at most every 100 ms - two alike are told apart once one
+ * moves - then its triggers read there at each poll, and its rumble
+ * sent there. */
+static void winusb_hid_wgi(winusb_device_t *dev)
+{
+   winusb_generic_t *gen = &dev->gen;
+
+   if (!gen->wgi)
+   {
+      retro_time_t now = cpu_features_get_time_usec();
+      uint16_t buttons = 0;
+      unsigned i;
+      if (gen->wgi_tried && now - gen->wgi_tried < 100000)
+         return;
+      gen->wgi_tried = now;
+      for (i = 0; i < 10; i++)
+         if (BIT256_GET(gen->view.buttons, i))
+            buttons |= (uint16_t)(1u << i);
+      if (!(gen->wgi = winusb_wgi_pair(dev->vid, dev->pid,
+                  gen->view.axes, buttons)))
+         return;
+      RARCH_LOG("%s \"%s\": triggers and rumble through"
+            " Windows.Gaming.Input.\n", dev->tag, dev->name);
+      gen->motors_due = gen->motors[0] || gen->motors[1];
+   }
+   winusb_wgi_triggers(gen->wgi, &gen->view.axes[4], &gen->view.axes[5]);
+   if (gen->motors_due)
+   {
+      winusb_wgi_rumble(gen->wgi, gen->motors[0], gen->motors[1]);
+      gen->motors_due = false;
+   }
+}
+
 static void winusb_hid_poll(void *data)
 {
    winusb_hid_t *hid = (winusb_hid_t*)data;
@@ -1726,6 +1773,8 @@ static void winusb_hid_poll(void *data)
       }
       else
          pad_connection_idle(&hid->slots[dev->slot]);
+      if (dev->gen.xbox && hid->wgi)
+         winusb_hid_wgi(dev);
       if (dev->out_waiting)
          winusb_hidclass_flush(dev);
       if (retro_atomic_load_acquire_int(&dev->gone))
