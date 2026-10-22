@@ -653,6 +653,13 @@ else
    HAVE_WGI=no
 fi
 
+# Windows' own Bluetooth stack, loaded when used: the menu's pairing,
+# Wii controllers' too, which Windows' settings often cannot pair
+if [ "$OS" = 'Win32' ] && [ "$HAVE_BLUETOOTH" = 'no' ] \
+      && [ "${USER_BLUETOOTH:-auto}" = 'auto' ] && [ "$HAVE_THREADS" != 'no' ]; then
+   HAVE_BLUETOOTH=yes
+fi
+
 check_lib '' DINPUT -ldinput8
 check_lib '' D3D9 -ld3d9
 check_lib '' DSOUND -ldsound

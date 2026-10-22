@@ -50,6 +50,11 @@
 
 RETRO_BEGIN_DECLS
 
+#ifdef HAVE_BLUETOOTH
+bool task_push_bluetooth_scan(retro_task_callback_t cb);
+#endif
+
+
 typedef struct nbio_buf
 {
    void *buf;
@@ -148,9 +153,6 @@ void *task_push_webdav_move(const char *url, const char *dest, bool mute, const 
       retro_task_callback_t cb, void *userdata);
 void *task_push_webdav_copy(const char *url, const char *dest, bool mute, const char *headers,
       retro_task_callback_t cb, void *userdata);
-
-bool task_push_bluetooth_scan(retro_task_callback_t cb);
-
 
 bool task_push_wifi_scan(retro_task_callback_t cb);
 bool task_push_wifi_enable(retro_task_callback_t cb);

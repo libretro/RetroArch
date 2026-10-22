@@ -292,6 +292,7 @@ enum bluetooth_driver_enum
 {
    BLUETOOTH_BLUETOOTHCTL   = CAMERA_NULL + 1,
    BLUETOOTH_BLUEZ,
+   BLUETOOTH_WINDOWS,
    BLUETOOTH_NULL
 };
 
@@ -806,7 +807,9 @@ static const enum camera_driver_enum CAMERA_DEFAULT_DRIVER = CAMERA_NULL;
 #endif
 
 #if defined(HAVE_BLUETOOTH)
-# if defined(HAVE_DBUS)
+# if defined(_WIN32)
+static const enum bluetooth_driver_enum BLUETOOTH_DEFAULT_DRIVER = BLUETOOTH_WINDOWS;
+# elif defined(HAVE_DBUS)
 static const enum bluetooth_driver_enum BLUETOOTH_DEFAULT_DRIVER = BLUETOOTH_BLUEZ;
 # else
 static const enum bluetooth_driver_enum BLUETOOTH_DEFAULT_DRIVER = BLUETOOTH_BLUETOOTHCTL;
@@ -1708,6 +1711,8 @@ const char *config_get_default_bluetooth(void)
          return "bluetoothctl";
       case BLUETOOTH_BLUEZ:
          return "bluez";
+      case BLUETOOTH_WINDOWS:
+         return "windows";
       case BLUETOOTH_NULL:
          break;
    }

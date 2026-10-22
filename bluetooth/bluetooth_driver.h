@@ -55,6 +55,7 @@ typedef struct bluetooth_driver
 } bluetooth_driver_t;
 
 extern bluetooth_driver_t bluetooth_bluetoothctl;
+extern bluetooth_driver_t bluetooth_windows;
 extern bluetooth_driver_t bluetooth_bluez;
 
 typedef struct

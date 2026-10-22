@@ -672,8 +672,12 @@ endif
 
 ifeq ($(HAVE_BLUETOOTH), 1)
    OBJ += bluetooth/bluetooth_driver.o
-   OBJ += bluetooth/drivers/bluetoothctl.o
    OBJ += tasks/task_bluetooth.o
+   ifneq ($(findstring Win32,$(OS)),)
+      OBJ += bluetooth/drivers/windows_bt.o
+   else
+      OBJ += bluetooth/drivers/bluetoothctl.o
+   endif
    ifeq ($(HAVE_DBUS), 1)
       OBJ += bluetooth/drivers/bluez.o
    endif

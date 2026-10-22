@@ -9555,9 +9555,9 @@ unsigned menu_displaylist_build_list(
                struct string_list *device_list = string_list_new();
                driver_bluetooth_get_devices(device_list);
 
-               if (device_list->size == 0)
-                  task_push_bluetooth_scan(bluetooth_scan_callback);
-               else
+               /* looked for again each time, the last scan's list shown
+                * meanwhile: a pad put in pairing mode since is found */
+               task_push_bluetooth_scan(bluetooth_scan_callback);
                {
                   unsigned i;
                   for (i = 0; i < device_list->size; i++)
@@ -9572,6 +9572,7 @@ unsigned menu_displaylist_build_list(
                         count++;
                   }
                }
+               string_list_free(device_list);
             }
          }
 #endif
