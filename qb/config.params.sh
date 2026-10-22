@@ -177,6 +177,7 @@ HAVE_SPIRV_CROSS=auto      # SPIRV-Cross support (requires C++11)
 C89_SPIRV_CROSS=no
 HAVE_BUILTINSPIRV_CROSS=auto # Bake in SPIRV-Cross support
 C89_BUILTINSPIRV_CROSS=no
+HAVE_RSLC=no               # rslc clean-room slang compiler (C89, libretro-common)
 
 # Audio drivers and resamplers
 HAVE_ALSA=auto             # ALSA support

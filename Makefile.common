@@ -2012,6 +2012,11 @@ ifeq ($(HAVE_SLANG),1)
    OBJ += gfx/drivers_shader/slang_rect.o
 endif
 
+ifeq ($(HAVE_RSLC),1)
+   DEFINES += -DHAVE_RSLC
+   OBJ += $(LIBRETRO_COMM_DIR)/glsl/rslc_front.o           $(LIBRETRO_COMM_DIR)/glsl/rslc_ir.o           $(LIBRETRO_COMM_DIR)/glsl/rslc_emit.o
+endif
+
 ifeq ($(HAVE_SHADERS_COMMON), 1)
    OBJ += gfx/video_shader_parse.o
 endif
