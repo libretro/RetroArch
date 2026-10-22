@@ -442,6 +442,8 @@ int main(void)
    test_private("avc1", "avcC", RMP4_CODEC_H264);
    test_private("hvc1", "hvcC", RMP4_CODEC_H265);
    test_private("av01", "av1C", RMP4_CODEC_AV1);
+   test_private("vp08", "vpcC", RMP4_CODEC_VP8);
+   test_private("vp09", "vpcC", RMP4_CODEC_VP9);
    if (failures)
    {
       printf("%d failure(s)\n", failures);
