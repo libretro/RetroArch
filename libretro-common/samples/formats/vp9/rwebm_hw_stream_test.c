@@ -725,6 +725,10 @@ int main(void)
    for (tries = 0; tries < 30; tries++)
       if (rwebm_video_stream_next(s, NULL)) break;
    CHECK(tries < 30 && s->hw_untaken && held.image);
+   CHECK(image_transfer_anim_stream_stop_hw(s, IMAGE_TYPE_WEBM));
+   CHECK(!s->hw && s->vp9 && !s->hw_want && !s->pkt_idx && closes == 2 && lives == 1);
+   /* Old exported output survives a fresh software stream epoch. */
+   CHECK(!image_transfer_anim_stream_set_hw(s, IMAGE_TYPE_WEBM, false) && opens == 2);
    rwebm_video_stream_close(s);
    CHECK(closes == 2 && lives == 1);
    video_hw_frame_abandon(&held);

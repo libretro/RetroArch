@@ -51,6 +51,7 @@ static void setup(unsigned slots)
 {
    rh265_hw_ops_t ops;
    memset(&mock, 0, sizeof(mock)); memset(&params, 0, sizeof(params)); memset(&au, 0, sizeof(au));
+   memset(&ops, 0, sizeof(ops));
    ops.decoder = &mock; ops.decode = decode; ops.output = output;
    CHECK(rh265_hw_session_init(&session, &ops, slots));
    params.width = params.height = 64; params.bit_depth = 8; params.chroma_format_idc = 1;
@@ -137,9 +138,43 @@ static void test_errors(void)
    CHECK(rh265_hw_session_submit(NULL, packet, sizeof(packet), &params, &au, slices) == -1);
    CHECK(rh265_hw_session_output(NULL, false, &frame) == -1);
 }
+static int drain_calls, drain_result;
+static int drain_backend(void *decoder)
+{
+   CHECK(decoder == &mock);
+   drain_calls++;
+   return drain_result;
+}
+static void test_explicit_drain(void)
+{
+   video_hw_frame_t frame;
+   setup(4); drain_calls = 0; drain_result = 1;
+   session.ops.drain = drain_backend;
+   CHECK(!submit());
+   session.pressure = 1;
+   CHECK(!rh265_hw_session_output(&session, false, &frame));
+   CHECK(!drain_calls);
+   video_hw_frame_abandon(&frame);
+   next_frame(); mock.decode_busy = 1;
+   CHECK(submit() == 1);
+   CHECK(rh265_hw_session_output(&session, true, &frame) == 1);
+   CHECK(!drain_calls && !frame.image);
+   CHECK(!submit());
+   CHECK(rh265_hw_session_output(&session, true, &frame) == 1);
+   CHECK(drain_calls == 1 && !frame.image && !session.broken);
+   drain_result = 0;
+   CHECK(!rh265_hw_session_output(&session, true, &frame));
+   CHECK(drain_calls == 2);
+   video_hw_frame_abandon(&frame);
+   drain_result = -1;
+   CHECK(rh265_hw_session_output(&session, true, &frame) == -1);
+   CHECK(drain_calls == 3 && session.broken && !frame.image);
+   CHECK(rh265_hw_session_output(&session, true, &frame) == -1);
+   CHECK(drain_calls == 3);
+}
 int main(void)
 {
-   test_retry_and_lease(); test_pressure_and_cancel(); test_errors();
+   test_explicit_drain(); test_retry_and_lease(); test_pressure_and_cancel(); test_errors();
    printf("HEVC hardware callback session: %u failures\n", failures);
    return failures ? 1 : 0;
 }

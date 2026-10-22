@@ -11,6 +11,8 @@
 
 static unsigned failures, opened, closed, accepted, calls, abandoned, exported;
 static int decode_busy, output_busy, refuse, require_sets;
+static int drain_busy,drain_fail;
+static unsigned drain_calls;
 #define CHECK(c) do { if (!(c)) { fprintf(stderr, "line %u: %s\n", \
       (unsigned)__LINE__, #c); failures++; } } while (0)
 
@@ -69,6 +71,7 @@ static bool open_backend(void *user, const rh265_video *source, const rh265_vide
    d->width = params->width - params->crop_left - params->crop_right;
    d->height = params->height - params->crop_top - params->crop_bottom;
    d->bit_depth = params->bit_depth;
+   memset(ops, 0, sizeof(*ops));
    ops->decoder = d; ops->decode = decode; ops->output = output;
    opened++;
    return true;
@@ -249,8 +252,34 @@ static void check_mp4(void)
    free(bytes);
 }
 
+static int drain_empty(void *decoder)
+{
+   CHECK(decoder != NULL);drain_calls++;
+   if(drain_fail)return -1;
+   if(drain_busy){drain_busy--;return 1;}
+   return 0;
+}
+static void check_empty_drain(void)
+{
+   rh265_video *v;
+   rh265_set_hw_backend(&backend);v=start();if(!v)return;
+   v->hw->session.ops.drain=drain_empty;drain_calls=0;drain_busy=1;
+   CHECK(rh265_hw_show(v->hw,false)==0 && drain_calls==0);
+   v->hw->session.pressure=1;
+   CHECK(rh265_hw_show(v->hw,false)==0 && drain_calls==0);
+   CHECK(rh265_video_drain(v)==2 && drain_calls==1);
+   CHECK(rh265_video_drain(v)==-1 && drain_calls==2);
+   rh265_video_close(v);
+   v=start();if(!v)return;
+   v->hw->session.ops.drain=drain_empty;drain_calls=0;drain_fail=1;
+   CHECK(rh265_video_drain(v)==-1 && drain_calls==1);
+   CHECK(rh265_video_drain(v)==-1 && drain_calls==1);
+   drain_fail=0;rh265_video_close(v);
+}
+
 int main(void)
 {
+   check_empty_drain();
    check_decoder();
    check_pressure();
    check_mp4();

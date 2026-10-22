@@ -48,7 +48,9 @@
  * These fields are zero for standalone output textures.
  *
  * Metal: @image is an opaque retained lease from metal_frame_create,
- * identified by its abandon callback, never a raw MTLTexture pointer. */
+ * identified by its abandon callback, never a raw MTLTexture pointer.
+ * VA-API: @image is an opaque slot key identified by vaapi_frame_callback;
+ * it is never a raw VkImage or file descriptor. */
 
 #include <stdint.h>
 #include <stddef.h>

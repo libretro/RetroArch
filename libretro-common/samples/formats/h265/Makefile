@@ -9,6 +9,7 @@ TARGET_TEST := rh265_lossless_test_nothreads
 TARGET_VOLATILE := rh265_lossless_test_volatile
 # Parameter sets with ue(v) codes past what any field holds
 TARGET_MALFORMED := rh265_malformed_test
+TARGET_SLICE := rh265_slice_info_test
 
 LIBRETRO_COMM_DIR := ../../..
 
@@ -43,7 +44,7 @@ endif
 
 LDLIBS += -lm -lpthread
 
-all: $(TARGET) $(TARGET_TEST) $(TARGET_VOLATILE) $(TARGET_MALFORMED)
+all: $(TARGET) $(TARGET_TEST) $(TARGET_VOLATILE) $(TARGET_MALFORMED) $(TARGET_SLICE)
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -81,10 +82,18 @@ MALFORMED_OBJS := rh265_malformed_test.o $(filter-out rh265_lossless_test.o,$(OB
 $(TARGET_MALFORMED): $(MALFORMED_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
+SLICE_C89_FLAGS := -std=c89 -pedantic -Wextra -Werror -Wno-long-long -Wno-unused-parameter -Wframe-larger-than=2048
+ifneq ($(findstring clang,$(shell $(CC) --version 2>/dev/null)),)
+SLICE_C89_FLAGS += -Wno-c99-extensions
+endif
+
+$(TARGET_SLICE): rh265_slice_info_test.c $(LIBRETRO_COMM_DIR)/formats/h265/rh265.c $(LIBRETRO_COMM_DIR)/formats/h265/rh265_bd.inc $(LIBRETRO_COMM_DIR)/include/formats/rh265.h
+	$(CC) $(filter-out -std=% -DHAVE_THREADS,$(CFLAGS)) $(SLICE_C89_FLAGS) rh265_slice_info_test.c -o $@ $(LDFLAGS) -lm
+
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(TARGET) $(OBJS) $(TARGET_TEST) $(NOTHREADS_OBJS) \
 	   $(TARGET_VOLATILE) $(VOLATILE_OBJS) \
-	   $(TARGET_MALFORMED) rh265_malformed_test.o
+	   $(TARGET_MALFORMED) rh265_malformed_test.o $(TARGET_SLICE)
 
 .PHONY: clean

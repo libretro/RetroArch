@@ -6,32 +6,52 @@ on:
     paths:
     - '.github/workflows/MacOS-videotoolbox-hevc.yml'
     - 'samples/gfx/videotoolbox_hevc/**'
+    - 'samples/gfx/videotoolbox_vp9/**'
+    - 'gfx/common/videotoolbox_vp9*.h'
+    - 'gfx/common/vp9_color.h'
+    - 'libretro-common/include/formats/rvp9*.h'
+    - 'libretro-common/include/formats/rwebm*.h'
+    - 'libretro-common/formats/vp9/**'
+    - 'libretro-common/formats/webm/**'
     - 'samples/gfx/metal_frame/**'
     - 'gfx/common/videotoolbox_hevc*.h'
     - 'gfx/common/metal_frame*.h'
-    - 'gfx/common/metal_hevc_driver.h'
+    - 'gfx/common/metal_video_decoder_driver.h'
+    - 'gfx/common/metal_decoder_snapshot.h'
     - 'gfx/drivers/metal.m'
     - 'gfx/drivers/metal.h'
     - 'gfx/drivers/metal_shaders/Shaders.metal'
     - 'gfx/video_driver.h'
     - 'gfx/video_defines.h'
     - 'libretro-common/formats/h265/**'
+    - 'libretro-common/formats/video_player.c'
+    - 'libretro-common/samples/formats/video_player/**'
     - 'libretro-common/rthreads/**'
     - 'libretro-common/include/**'
   pull_request:
     paths:
     - '.github/workflows/MacOS-videotoolbox-hevc.yml'
     - 'samples/gfx/videotoolbox_hevc/**'
+    - 'samples/gfx/videotoolbox_vp9/**'
+    - 'gfx/common/videotoolbox_vp9*.h'
+    - 'gfx/common/vp9_color.h'
+    - 'libretro-common/include/formats/rvp9*.h'
+    - 'libretro-common/include/formats/rwebm*.h'
+    - 'libretro-common/formats/vp9/**'
+    - 'libretro-common/formats/webm/**'
     - 'samples/gfx/metal_frame/**'
     - 'gfx/common/videotoolbox_hevc*.h'
     - 'gfx/common/metal_frame*.h'
-    - 'gfx/common/metal_hevc_driver.h'
+    - 'gfx/common/metal_video_decoder_driver.h'
+    - 'gfx/common/metal_decoder_snapshot.h'
     - 'gfx/drivers/metal.m'
     - 'gfx/drivers/metal.h'
     - 'gfx/drivers/metal_shaders/Shaders.metal'
     - 'gfx/video_driver.h'
     - 'gfx/video_defines.h'
     - 'libretro-common/formats/h265/**'
+    - 'libretro-common/formats/video_player.c'
+    - 'libretro-common/samples/formats/video_player/**'
     - 'libretro-common/rthreads/**'
     - 'libretro-common/include/**'
   workflow_dispatch:
@@ -45,6 +65,25 @@ jobs:
     timeout-minutes: 10
     steps:
     - uses: actions/checkout@v6
+    - name: Player cold hardware startup and cancellation
+      run: |
+        for threads in 0 1; do
+          make -C libretro-common/samples/formats/video_player clean all THREADS="$threads" SANITIZER=address,undefined
+          libretro-common/samples/formats/video_player/video_player_test
+        done
+    - name: VideoToolbox VP9 configuration conformance (no device claim)
+      run: |
+        make -C samples/gfx/videotoolbox_vp9 check CC=clang SANITIZER=address,undefined
+        CC=clang python3 samples/gfx/videotoolbox_vp9/run.py --native
+    - name: VideoToolbox VP9 native pixels, Metal playback and retained output
+      run: |
+        rc=0
+        CC=clang python3 samples/gfx/videotoolbox_vp9/run.py --native --pixels --pipeline || rc=$?
+        if [ "$rc" = 77 ]; then
+          echo "::warning::VP9 hardware or Metal device unavailable; native VP9 playback acceptance remains incomplete"
+          exit 0
+        fi
+        exit "$rc"
     - name: VideoToolbox HEVC hardware decode and pixel ownership
       run: |
         rc=0

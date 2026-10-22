@@ -31,7 +31,8 @@
  * and the decode: on a shared worker thread with two jobs, so one
  * frame is decoded while the one before it waits to be shown, or on
  * the polling thread (VIDEO_PLAYER_INLINE, or a build or run without
- * the worker). The sink owns where frames go: the buffers they are
+ * the worker). Hardware setup uses the worker when available.
+ * The sink owns where frames go: the buffers they are
  * decoded into, and showing them.
  *
  * video_player_poll() is called once a tick by one thread; the sink's
@@ -63,7 +64,7 @@ enum video_player_flags
     * the stream decodes into the slot itself can be one: any other
     * ends the playback on the last good frame. */
    VIDEO_PLAYER_FP16   = (1 << 1),
-   /* Decode on the polling thread, never the worker. */
+   /* Decode frames on the polling thread; cold hardware setup may use the worker. */
    VIDEO_PLAYER_INLINE = (1 << 2)
 };
 
@@ -84,6 +85,8 @@ enum video_player_present
    VIDEO_PLAYER_PRESENT_BUSY,     /* not now: offered again next poll    */
    VIDEO_PLAYER_PRESENT_FAILED    /* the playback ends                   */
 };
+
+#define VIDEO_PLAYER_HW_REFUSED (-2)
 
 enum video_player_state
 {
@@ -140,6 +143,8 @@ typedef struct video_player_sink
     * frames then come as video_player_frame_t::hw, into no slot;
     * @jobs is 2 when they are decoded on the worker, a frame ahead,
     * and 1 in line. As start returns. */
+   /* VIDEO_PLAYER_HW_REFUSED permanently refuses hardware;
+    * -1 retains the existing retry-later contract. */
    int (*start_hw)(void *user, unsigned width, unsigned height,
          unsigned jobs);
    /* Optional, after slot_begin: row stride in pixels for that buffer.
@@ -152,11 +157,11 @@ typedef struct video_player_sink
 video_player_t *video_player_new(void *stream, enum image_type_enum type,
       int loop_count, const video_player_sink_t *sink, unsigned flags);
 
-/* Stops the playback: a queued decode will not run, a running one is
- * waited out. Every slot is ended. */
+/* Stops playback: queued work will not run; running decode/setup is
+ * waited out. Every started slot is ended. */
 void video_player_free(video_player_t *p);
 
-/* Cancels queued work without waiting. False: a running decode still
+/* Cancels queued work without waiting. False: running decode/setup still
  * borrows the player, stream and sink; retain them and poll stop again.
  * True: free() will not wait. A stopped player cannot resume. */
 bool video_player_stop(video_player_t *p);
@@ -181,6 +186,19 @@ bool video_player_has_presented(const video_player_t *p);
 /* Sink resources are ready. Audio may start at the movie origin before
  * a delayed first video picture is due. Polling thread only. */
 bool video_player_started(const video_player_t *p);
+
+/* Optional first-frame hardware recovery. Installed before startup. Called on
+ * the exclusive decode owner after decode jobs and sink slots have settled:
+ * -1 cannot recover, 0 another bounded step, 1 software stream rewound/ready.
+ * The callback must not re-enable hardware or wait on renderer completion.
+ * Returning ready restarts sink.start, without calling sink.start_hw again. */
+typedef int (*video_player_hw_restart_t)(void *user);
+bool video_player_set_hw_fallback(video_player_t *p,
+      video_player_hw_restart_t restart, void *user);
+/* Polling-thread renderer refusal notification (including a failed first async
+ * import). Idempotent while recovery is pending; does not wait or run restart.
+ * The sink must settle/release its queued slots normally before restart runs. */
+bool video_player_request_software(video_player_t *p);
 
 /* One bounded seek step on the decoding thread: -1 failed, 0 needs
  * another step, 1 positioned for the next frame. restart begins a new

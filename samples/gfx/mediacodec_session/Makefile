@@ -1,0 +1,114 @@
+CC ?= cc
+ifeq ($(OS),Windows_NT)
+BACKEND_HOST_FLAGS := -DANDROID_IMAGE_QUEUE_TEST_NO_FENCES -Wno-unused-parameter
+endif
+JAVA_HOME ?= $(shell dirname $$(dirname $$(readlink -f $$(command -v javac))))
+CFLAGS += -DHAVE_DYLIB -DMEDIACODEC_SESSION_TEST -O1 -g1 -std=c89 -pedantic -Wall -Wextra -Werror -Wno-long-long -Wframe-larger-than=2048 -I. -I../../../libretro-common/include -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux
+ifneq ($(findstring clang,$(shell $(CC) --version 2>/dev/null)),)
+CFLAGS += -Wno-c99-extensions
+endif
+ifneq ($(SANITIZER),)
+CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
+LDFLAGS += -fsanitize=$(SANITIZER)
+endif
+all: renderer_backend_test vp9_backend_test color_refine_test test hevc_backend_test hevc_decoder_test vulkan_image_test vulkan_sync_test vulkan_pipeline_test android_frame_test frame_export_test vulkan_submit_test vulkan_entry_test vulkan_cache_test vulkan_renderer_test vulkan_device_test
+all: vp9_decoder_test av1_decoder_test av1_backend_test
+all: vp9_color_test av1_color_test
+vp9_decoder_test: vp9_decoder_test.c ../../../gfx/common/mediacodec_vp9_decoder.c ../../../gfx/common/mediacodec_vp9_decoder.h ../../../gfx/common/mediacodec_color.c ../../../gfx/common/mediacodec_color.h ../../../gfx/common/android_image_queue.c ../../../libretro-common/include/formats/rvp9_hw.h ../../../gfx/common/vp9_color.h
+	$(CC) $(CFLAGS) $(BACKEND_HOST_FLAGS) -DHAVE_THREADS vp9_decoder_test.c ../../../gfx/common/mediacodec_vp9_decoder.c ../../../gfx/common/mediacodec_color.c ../../../gfx/common/android_image_queue.c -o $@ $(LDFLAGS)
+av1_decoder_test: av1_decoder_test.c av1_config_test.h ../../../gfx/common/mediacodec_av1_decoder.c ../../../gfx/common/mediacodec_av1_decoder.h ../../../gfx/common/mediacodec_color.c ../../../gfx/common/android_image_queue.c $(wildcard ../../../libretro-common/include/formats/rav1*.h) ../../../gfx/common/vp9_color.h
+	$(CC) $(CFLAGS) $(BACKEND_HOST_FLAGS) -DHAVE_THREADS av1_decoder_test.c ../../../gfx/common/mediacodec_av1_decoder.c ../../../gfx/common/mediacodec_color.c ../../../gfx/common/android_image_queue.c -o $@ $(LDFLAGS)
+color_refine_test: color_refine_test.c ../../../gfx/common/android_frame.h
+	$(CC) $(CFLAGS) color_refine_test.c -o $@ $(LDFLAGS)
+
+test: test.c mediacodec_session_test_types.h ../../../gfx/common/mediacodec_session.c
+	$(CC) $(CFLAGS) test.c ../../../gfx/common/mediacodec_session.c -o $@ $(LDFLAGS)
+HEVC_SOURCES := ../../../gfx/common/mediacodec_hevc_decoder.c \
+ ../../../gfx/common/mediacodec_hevc_packet.c ../../../gfx/common/android_image_queue.c
+hevc_decoder_test: hevc_decoder_test.c $(HEVC_SOURCES) \
+ ../../../gfx/common/mediacodec_hevc_decoder.h ../../../gfx/common/android_image_queue.h \
+ ../../../libretro-common/include/formats/rh265_hw.h
+	$(CC) $(CFLAGS) -DHAVE_THREADS hevc_decoder_test.c $(HEVC_SOURCES) -o $@ $(LDFLAGS)
+vulkan_image_test: vulkan_image_test.c ../../../gfx/common/vulkan_android_image.c ../../../gfx/common/vulkan_android_image.h
+	$(CC) $(CFLAGS) -I../../../gfx/include vulkan_image_test.c ../../../gfx/common/vulkan_android_image.c -o $@ $(LDFLAGS)
+vulkan_sync_test: vulkan_sync_test.c ../../../gfx/common/vulkan_android_sync.c ../../../gfx/common/vulkan_android_sync.h
+	$(CC) $(CFLAGS) -I../../../gfx/include vulkan_sync_test.c ../../../gfx/common/vulkan_android_sync.c -o $@ $(LDFLAGS)
+vulkan_pipeline_test: vulkan_pipeline_test.c ../../../gfx/common/vulkan_android_pipeline.c ../../../gfx/common/vulkan_android_pipeline.h
+	$(CC) $(CFLAGS) -I../../../gfx/include vulkan_pipeline_test.c ../../../gfx/common/vulkan_android_pipeline.c -o $@ $(LDFLAGS)
+vulkan_rgb_gpu_test: vulkan_rgb_gpu_test.c ../../../gfx/common/vulkan_android_pipeline.c ../../../gfx/common/vulkan_android_pipeline.h \
+ ../../../gfx/drivers/vulkan_shaders/external_rgb_to_rgba8888.comp.inc ../../../gfx/drivers/vulkan_shaders/external_rgb_to_rgba16f.comp.inc
+	$(CC) $(CFLAGS) -I../../../gfx/include vulkan_rgb_gpu_test.c ../../../gfx/common/vulkan_android_pipeline.c -o $@ $(LDFLAGS) -lvulkan -lm
+gpu-check: vulkan_rgb_gpu_test
+	./vulkan_rgb_gpu_test
+android_frame_test: android_frame_test.c ../../../gfx/common/android_frame.c ../../../gfx/common/android_frame.h ../../../gfx/common/android_image_queue.c
+	$(CC) $(CFLAGS) -DHAVE_THREADS -pthread android_frame_test.c ../../../gfx/common/android_frame.c ../../../gfx/common/android_image_queue.c -o $@ $(LDFLAGS)
+EXPORT_SOURCES := ../../../gfx/common/mediacodec_frame_export.c ../../../gfx/common/mediacodec_color.c \
+ ../../../gfx/common/android_frame.c ../../../gfx/common/android_image_queue.c
+frame_export_test: frame_export_test.c $(EXPORT_SOURCES) ../../../gfx/common/mediacodec_frame_export.h ../../../gfx/common/mediacodec_color.h ../../../gfx/common/vp9_color.h
+	$(CC) $(CFLAGS) -DHAVE_THREADS frame_export_test.c $(EXPORT_SOURCES) -o $@ $(LDFLAGS)
+vp9_color_test: vp9_color_test.c frame_export_test.c $(EXPORT_SOURCES) ../../../gfx/common/mediacodec_frame_export.h ../../../gfx/common/mediacodec_color.h ../../../gfx/common/vp9_color.h
+	$(CC) $(CFLAGS) $(BACKEND_HOST_FLAGS) -DHAVE_THREADS vp9_color_test.c $(EXPORT_SOURCES) -o $@ $(LDFLAGS)
+av1_color_test: av1_color_test.c frame_export_test.c $(EXPORT_SOURCES) ../../../gfx/common/mediacodec_frame_export.h ../../../gfx/common/mediacodec_color.h ../../../gfx/common/vp9_color.h
+	$(CC) $(CFLAGS) $(BACKEND_HOST_FLAGS) -DHAVE_THREADS av1_color_test.c $(EXPORT_SOURCES) -o $@ $(LDFLAGS)
+SUBMIT_SOURCES := ../../../gfx/common/vulkan_android_submit.c ../../../gfx/common/vulkan_android_image.c \
+ ../../../gfx/common/vulkan_android_sync.c ../../../gfx/common/vulkan_android_pipeline.c \
+ ../../../gfx/common/android_frame.c ../../../gfx/common/android_image_queue.c \
+ ../../../libretro-common/formats/image/image_yuv_blit.c
+vulkan_submit_test: vulkan_submit_test.c $(SUBMIT_SOURCES) ../../../gfx/common/vulkan_android_submit.h
+	$(CC) $(CFLAGS) -DHAVE_THREADS -I../../../gfx/include vulkan_submit_test.c $(SUBMIT_SOURCES) -o $@ $(LDFLAGS) -lm
+vulkan_entry_test: vulkan_entry_test.c vulkan_submit_test.c $(SUBMIT_SOURCES) ../../../gfx/common/vulkan_android_cache_entry.c ../../../gfx/common/vulkan_android_cache_entry.h
+	$(CC) $(CFLAGS) -DHAVE_THREADS -I../../../gfx/include vulkan_entry_test.c $(SUBMIT_SOURCES) ../../../gfx/common/vulkan_android_cache_entry.c -o $@ $(LDFLAGS) -lm
+vulkan_cache_test: vulkan_cache_test.c vulkan_entry_test.c vulkan_submit_test.c $(SUBMIT_SOURCES) ../../../gfx/common/vulkan_android_cache_entry.c ../../../gfx/common/vulkan_android_cache.c ../../../gfx/common/vulkan_android_cache.h
+	$(CC) $(CFLAGS) -DHAVE_THREADS -I../../../gfx/include vulkan_cache_test.c $(SUBMIT_SOURCES) ../../../gfx/common/vulkan_android_cache_entry.c ../../../gfx/common/vulkan_android_cache.c -o $@ $(LDFLAGS) -lm
+vulkan_renderer_test: vulkan_renderer_test.c ../../../gfx/drivers/vulkan_android_video.h vulkan_cache_test.c vulkan_entry_test.c vulkan_submit_test.c $(SUBMIT_SOURCES) ../../../gfx/common/vulkan_android_cache_entry.c ../../../gfx/common/vulkan_android_cache.c ../../../gfx/common/vulkan_android_cache.h
+	$(CC) $(CFLAGS) -DHAVE_THREADS -I../../../gfx/include vulkan_renderer_test.c $(SUBMIT_SOURCES) ../../../gfx/common/vulkan_android_cache_entry.c ../../../gfx/common/vulkan_android_cache.c -o $@ $(LDFLAGS) -lm
+vulkan_device_test: vulkan_device_test.c ../../../gfx/common/vulkan_android_device.c ../../../gfx/common/vulkan_android_device.h
+	$(CC) $(CFLAGS) -I../../../gfx/include vulkan_device_test.c ../../../gfx/common/vulkan_android_device.c -o $@ $(LDFLAGS)
+check: all
+	./renderer_backend_test
+	SANITIZER="$(SANITIZER)" CC="$(CC)" python3 renderer_sources_test.py
+	./vp9_backend_test
+	./vp9_color_test
+	./vp9_decoder_test
+	./av1_decoder_test
+	./av1_backend_test
+	./av1_color_test
+	./color_refine_test
+	./test
+	./hevc_backend_test
+	./hevc_decoder_test
+	./vulkan_image_test
+	./vulkan_sync_test
+	./vulkan_pipeline_test
+	./android_frame_test
+	./frame_export_test
+	./vulkan_submit_test
+	./vulkan_entry_test
+	./vulkan_cache_test
+	./vulkan_renderer_test
+	./vulkan_device_test
+	CC="$(CC)" python3 root_optional_test.py
+clean:
+	rm -f av1_color_test av1_color_test.exe
+	rm -f av1_backend_test av1_backend_test.exe
+	rm -f av1_decoder_test av1_decoder_test.exe
+	rm -f renderer_backend_test renderer_backend_test.exe
+	rm -f vp9_backend_test vp9_backend_test.exe
+	rm -f vp9_color_test vp9_color_test.exe
+	rm -f vp9_decoder_test vp9_decoder_test.exe
+	rm -f color_refine_test test hevc_backend_test hevc_decoder_test vulkan_image_test vulkan_sync_test vulkan_pipeline_test vulkan_rgb_gpu_test android_frame_test frame_export_test vulkan_submit_test vulkan_entry_test vulkan_cache_test vulkan_renderer_test vulkan_device_test
+.PHONY: all check clean gpu-check
+
+hevc_backend_test: hevc_backend_test.c registry_test.h ../../../gfx/common/mediacodec_hevc_registry.h ../../../gfx/common/mediacodec_hevc_backend.c ../../../gfx/common/mediacodec_hevc_backend.h
+	$(CC) $(CFLAGS) $(BACKEND_HOST_FLAGS) -D_DEFAULT_SOURCE -DHAVE_THREADS -pthread hevc_backend_test.c ../../../gfx/common/mediacodec_frame_export.c ../../../gfx/common/mediacodec_color.c ../../../gfx/common/android_frame.c ../../../gfx/common/android_image_queue.c ../../../libretro-common/rthreads/rthreads.c ../../../libretro-common/rthreads/retro_eventcount.c -o $@ $(LDFLAGS) -lm
+
+vp9_backend_test: vp9_backend_test.c vp9_registry_test.h ../../../gfx/common/mediacodec_vp9_registry.h ../../../gfx/common/mediacodec_vp9_backend.c ../../../gfx/common/mediacodec_vp9_backend.h
+	$(CC) $(CFLAGS) $(BACKEND_HOST_FLAGS) -D_DEFAULT_SOURCE -DHAVE_THREADS -pthread vp9_backend_test.c $(EXPORT_SOURCES) ../../../libretro-common/rthreads/rthreads.c ../../../libretro-common/rthreads/retro_eventcount.c -o $@ $(LDFLAGS) -lm
+
+av1_backend_test: av1_backend_test.c av1_registry_test.h av1_config_test.h ../../../gfx/common/mediacodec_av1_registry.h ../../../gfx/common/mediacodec_av1_backend.c ../../../gfx/common/mediacodec_av1_backend.h
+	$(CC) $(CFLAGS) $(BACKEND_HOST_FLAGS) -D_DEFAULT_SOURCE -DHAVE_THREADS -pthread av1_backend_test.c $(EXPORT_SOURCES) ../../../libretro-common/rthreads/rthreads.c ../../../libretro-common/rthreads/retro_eventcount.c -o $@ $(LDFLAGS) -lm
+
+renderer_backend_test: renderer_backend_test.c ../../../gfx/drivers/vulkan_android_backend.h ../../../gfx/common/mediacodec_hevc_registry.h ../../../gfx/common/mediacodec_vp9_registry.h ../../../gfx/common/mediacodec_av1_registry.h
+	$(CC) $(CFLAGS) -DHAVE_THREADS -DHAVE_RMP4 -DHAVE_RVP9 -DHAVE_RAV1 -I../../../gfx/include renderer_backend_test.c -o $@ $(LDFLAGS)
+
+hevc_backend_test vp9_backend_test av1_backend_test: ../../../gfx/common/vp9_color.h

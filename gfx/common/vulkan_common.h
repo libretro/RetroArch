@@ -31,6 +31,9 @@
 
 #define VULKAN_DIRTY_DYNAMIC_BIT                0x0001
 
+#ifdef ANDROID
+#include <compat/android_native_window.h>
+#endif
 #include "vksym.h"
 
 #include <stddef.h>
@@ -48,6 +51,7 @@
 #include "../font_driver.h"
 #include "../drivers_shader/shader_vulkan.h"
 #include "../include/vulkan/vulkan.h"
+#include "vulkan_drm_identity.h"
 
 #ifndef VK_KHR_unified_image_layouts
 #define VK_KHR_unified_image_layouts 1
@@ -208,7 +212,9 @@ enum vulkan_context_flags
     * present from it is the surface's standing answer, not a request
     * to rebuild again. */
    VK_CTX_FLAG_SUBOPTIMAL_REBUILT           = (1 << 8),
-   VK_CTX_FLAG_VIDEO_GENERAL                = (1 << 9)
+   VK_CTX_FLAG_VIDEO_GENERAL                = (1 << 9),
+   /* Own-device AHB conversion and binary SYNC_FD prerequisites enabled. */
+   VK_CTX_FLAG_ANDROID_IMAGES               = (1 << 10)
 };
 
 enum gfx_ctx_vulkan_data_flags
@@ -267,7 +273,14 @@ typedef struct vulkan_context
    VkQueue queue;
 
    VkPhysicalDeviceProperties gpu_properties;
+   VkInstance properties2_instance;
+   vulkan_drm_identity_t drm_identity;
+   uint32_t instance_api_version;
+   bool instance_properties2;
+   bool prime_import_device; /* Enabled prerequisites, not surface admission. */
    VkPhysicalDeviceMemoryProperties memory_properties;
+   unsigned android_sampler_descriptors;
+   bool android_legacy_descriptor_budget;
 
    VkPresentModeKHR present_modes[16];
    /* Whether the surface offers FIFO_RELAXED, which is what the

@@ -922,6 +922,13 @@ else
    check_lib '' VULKAN -lvulkan vkCreateInstance
 fi
 
+check_platform Linux VAAPI 'VA-API' true
+check_enabled VULKAN VAAPI 'VA-API' 'Vulkan is' false
+check_enabled RMP4 VAAPI 'VA-API' 'RMP4 is' false
+check_enabled 'DYLIB DYNAMIC' VAAPI 'VA-API' 'Dynamic loading is' false
+check_header '' VAAPI va/va.h va/va_dec_hevc.h va/va_drmcommon.h
+check_macro VAAPI VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME_2 va/va_drmcommon.h
+
 check_platform Linux OPENXR 'OpenXR is' true
 check_enabled 'VULKAN OPENGL OPENGL_CORE' OPENXR OpenXR 'Vulkan and OpenGL are' false
 check_enabled THREADS OPENXR OpenXR 'Threads are' false

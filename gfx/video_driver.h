@@ -1053,6 +1053,9 @@ typedef struct video_device_info
    unsigned queue_family;
    /* image_pixfmt bits import_texture takes; 0 when it takes none. */
    uint32_t import_formats;
+   /* Cached render-node identity; does not imply PRIME import support. */
+   uint32_t drm_render_major, drm_render_minor;
+   bool drm_render_valid;
 } video_device_info_t;
 
 /* A frame that lives on the driver's device; handles are given as

@@ -164,6 +164,30 @@ typedef struct rh265_slice_info
 int rh265_video_get_slice(rh265_video *v, const uint8_t *nal, size_t len,
       rh265_slice_info_t *out);
 
+#define RH265_SLICE_ENTRY_POINTS_MAX 1056
+
+typedef struct rh265_slice_decode
+{
+   rh265_slice_info_t picture;
+   int qp, cb_qp_offset, cr_qp_offset;
+   int deblocking_filter_disabled, beta_offset_div2, tc_offset_div2;
+   int loop_filter_across_slices, sao_luma, sao_chroma, temporal_mvp;
+   int num_refs[2], list_modified[2], mvd_l1_zero, cabac_init;
+   int collocated_from_l0, collocated_ref_idx, max_merge;
+   int weighted, luma_log2_denom, chroma_log2_denom;
+   unsigned num_entry_points;
+   int16_t luma_weight[2][16], luma_offset[2][16];
+   int16_t chroma_weight[2][16][2], chroma_offset[2][16][2];
+   uint8_t list_entry[2][16];
+} rh265_slice_decode_t;
+
+/* Owner-thread slice metadata; no allocation, pixels or DPB advancement.
+ * Outputs must not overlap the NAL or each other. Entry values are escaped-byte
+ * lengths between substreams. Same status as get_slice: failure clears out and
+ * leaves entries unchanged. Header validity does not validate CABAC payload. */
+int rh265_video_get_slice_decode(rh265_video *v, const uint8_t *nal, size_t len,
+      rh265_slice_decode_t *out, uint32_t *entries, unsigned capacity);
+
 typedef struct rh265_nal
 {
    const uint8_t *data;
@@ -182,6 +206,7 @@ typedef struct rh265_access_unit
    rh265_slice_info_t first;
    size_t coded_bytes;
    unsigned num_slices;
+   unsigned slice_types; /* Bit 0 B, bit 1 P, bit 2 I; all slices. */
    int intra;
 } rh265_access_unit_t;
 

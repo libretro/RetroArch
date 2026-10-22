@@ -224,6 +224,8 @@ int rwebm_video_stream_skip(rwebm_video_stream_t *stream, int *duration_ms);
  * GPU next returns a non-pixel token; take the lease with hw_frame.
  * A NULL next while waiting is a retry, not EOS. Owner-thread calls. */
 int rwebm_video_stream_set_hw(rwebm_video_stream_t *stream, int enable);
+/* Exclusive owner; withdraw hardware preference and restart fresh. */
+void rwebm_video_stream_stop_hw(rwebm_video_stream_t *stream);
 int rwebm_video_stream_hw_frame(rwebm_video_stream_t *stream,
       video_hw_frame_t *out);
 int rwebm_video_stream_waiting(const rwebm_video_stream_t *stream);

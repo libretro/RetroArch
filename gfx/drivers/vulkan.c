@@ -60,6 +60,14 @@
 #include "../common/vulkan_memory_type.h"
 #ifdef HAVE_RMP4
 #include "../common/vulkan_video_decode.h"
+#ifdef HAVE_VAAPI
+#include "../common/vaapi_hevc_vulkan_cache.h"
+#include "../common/vaapi_hevc_backend.h"
+#endif
+#endif
+#if defined(ANDROID) \
+   && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1))
+#include "../common/vulkan_android_cache.h"
 #endif
 #include "../common/rgba16_pack.h"
 #ifdef HAVE_OPENXR
@@ -199,6 +207,14 @@ struct vk_image
 
 struct vk_texture
 {
+#ifdef HAVE_VAAPI
+   vaapi_hevc_vulkan_cache_t *vaapi_cache;
+   struct vk_texture *vaapi_next;
+#endif
+#if defined(ANDROID) \
+   && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1))
+   vulkan_android_cache_t *android_cache;
+#endif
    VkDeviceSize memory_size;     /* uint64_t alignment */
 
    void *mapped;
@@ -705,6 +721,9 @@ typedef struct vk
     * pair and fences each one streams through. Frame-recording thread
     * only, like the two lists above. */
    struct vk_stream_state *stream_states;
+#ifdef HAVE_VAAPI
+   struct vk_texture *vaapi_textures;
+#endif
    uintptr_t movie_texture;
    bool movie_pending;
    /* The threaded wrapper's frame buffers (frame_mem_alloc): mapped
@@ -730,6 +749,14 @@ typedef struct vk
    } tracker;
    uint32_t flags;
 } vk_t;
+
+#if defined(HAVE_RMP4) && defined(HAVE_VAAPI)
+#include "vulkan_vaapi_backend.h"
+#endif
+#if defined(ANDROID) && defined(HAVE_THREADS) \
+   && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1))
+#include "vulkan_android_backend.h"
+#endif
 
 typedef struct
 {
@@ -1853,6 +1880,40 @@ static void vulkan_stream_states_flush(vk_t *vk)
 static void vulkan_texture_retire(vk_t *vk, struct vk_texture *texture)
 {
    struct vk_stream_state **cur = &vk->stream_states;
+#if defined(ANDROID) \
+   && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1))
+   if (texture->android_cache)
+   {
+      vulkan_android_cache_close(texture->android_cache);
+      if (!vulkan_android_cache_free(texture->android_cache))
+      {
+         /* Both source and destination may still be in use. Native children
+          * stay on the device until context destruction, without a new wait. */
+         vulkan_android_cache_defer(texture->android_cache);
+         return;
+      }
+      texture->android_cache = NULL;
+   }
+#endif
+#ifdef HAVE_VAAPI
+   if (texture->vaapi_cache)
+   {
+      struct vk_texture **link = &vk->vaapi_textures;
+      vaapi_hevc_vulkan_cache_t *cache = texture->vaapi_cache;
+      while (*link && *link != texture)
+         link = &(*link)->vaapi_next;
+      if (*link)
+         *link = texture->vaapi_next;
+      texture->vaapi_next  = NULL;
+      texture->vaapi_cache = NULL;
+      vaapi_hevc_vulkan_cache_close(cache);
+      if (!vaapi_hevc_vulkan_cache_free(cache))
+      {
+         vaapi_hevc_vulkan_cache_defer(cache);
+         return;
+      }
+   }
+#endif
    while (*cur)
    {
       struct vk_stream_state *st = *cur;
@@ -1887,6 +1948,13 @@ static void vulkan_deferred_cmds_tick(vk_t *vk)
       else
          cur = &node->next;
    }
+#ifdef HAVE_VAAPI
+   {
+      struct vk_texture *texture;
+      for (texture = vk->vaapi_textures; texture; texture = texture->vaapi_next)
+         vaapi_hevc_vulkan_cache_poll(texture->vaapi_cache);
+   }
+#endif
 }
 
 /* Release every deferred staging command buffer immediately. Callers
@@ -7321,6 +7389,12 @@ static void vulkan_free(void *data)
    vk_t *vk = (vk_t*)data;
    if (!vk)
       return;
+#ifdef VULKAN_ANDROID_DECODERS
+   vulkan_android_decoder_withdraw(vk);
+#endif
+#if defined(HAVE_RMP4) && defined(HAVE_VAAPI)
+   vaapi_hevc_backend_withdraw(&vulkan_vaapi_backend, vk);
+#endif
 
    if (vk->context && vk->context->device)
    {
@@ -8044,7 +8118,13 @@ static void *vulkan_init(const video_info_t *video)
 
 #ifdef HAVE_RMP4
       /* previews decoded on the GPU, where the device can */
+#ifdef HAVE_VAAPI
+      vulkan_vaapi_decoder_publish(vk, vulkan_video_decode_init(vk->context));
+#elif defined(VULKAN_ANDROID_DECODERS)
+      vulkan_android_decoder_publish(vk, vulkan_video_decode_init(vk->context));
+#else
       vulkan_video_decode_init(vk->context);
+#endif
 #if defined(_WIN32) && !defined(__WINRT__) && defined(HAVE_RAV1) \
    && (defined(HAVE_D3D11) || defined(HAVE_D3D12))
       if (vk->pipelines.yuv_packed_to_rgba8888 != VK_NULL_HANDLE
@@ -8052,6 +8132,9 @@ static void *vulkan_init(const video_info_t *video)
          vulkan_video_decode_av1_fallback_init(vk->context,
                IMAGE_PIXFMT_YUV8_FP16 | IMAGE_PIXFMT_YUV10_FP16);
 #endif
+#endif
+#if defined(VULKAN_ANDROID_DECODERS) && !defined(HAVE_RMP4)
+      vulkan_android_decoder_publish(vk, false);
 #endif
    }
 
@@ -14186,6 +14269,14 @@ static struct vk_stream_state *vulkan_import_state_get(vk_t *vk,
 
 /* Sample exported planes directly, or copy into a buffer when no views
  * are available. Both paths preserve the producer's layout and lease. */
+#if defined(ANDROID) \
+   && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1))
+#include "vulkan_android_video.h"
+#endif
+#ifdef HAVE_VAAPI
+#include "vulkan_vaapi_video.h"
+#endif
+
 static enum video_texture_update vulkan_import_convert(vk_t *vk,
       struct vk_texture *texture, const video_frame_import_t *f)
 {
@@ -14237,6 +14328,18 @@ static enum video_texture_update vulkan_import_convert(vk_t *vk,
       transfer_layout = VK_IMAGE_LAYOUT_GENERAL;
       sampled_layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
    }
+#endif
+
+#if defined(ANDROID) \
+   && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1))
+   /* Opaque Android image leases are never raw VkImage/timeline handles. */
+   if (android_frame_callback(f->abandon))
+      return vulkan_android_renderer_import(vk, texture, f);
+#endif
+
+#ifdef HAVE_VAAPI
+   if (vaapi_frame_callback(f->abandon))
+      return vulkan_vaapi_renderer_import(vk, texture, f);
 #endif
 
    if (     !vulkan_video_layout(&layout, w, h, source_pixfmt, f->yuv)
@@ -14471,10 +14574,18 @@ static enum video_texture_update vulkan_import_texture(void *data,
    struct vk_texture *texture;
    enum video_texture_update r;
    VkFormat output_format;
+   bool opaque_input = false;
+#if defined(ANDROID) \
+   && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1))
+   opaque_input = f && android_frame_callback(f->abandon);
+#endif
+#ifdef HAVE_VAAPI
+   opaque_input = opaque_input || (f && vaapi_frame_callback(f->abandon));
+#endif
 
    if (     !vk || !vk->context || !id || !f
-         || !(vk->context->flags & VK_CTX_FLAG_TIMELINE_SEMAPHORE)
-         || vk->pipelines.yuv420_to_rgba8888 == VK_NULL_HANDLE
+         || (!opaque_input && !(vk->context->flags & VK_CTX_FLAG_TIMELINE_SEMAPHORE))
+         || (!opaque_input && vk->pipelines.yuv420_to_rgba8888 == VK_NULL_HANDLE)
          || !VIDEO_SCALE_W(f->dims) || !VIDEO_SCALE_H(f->dims))
       return VIDEO_TEXTURE_UPDATE_REFUSED;
    if (f->output_pixfmt && f->output_pixfmt != IMAGE_PIXFMT_8888
@@ -14488,7 +14599,7 @@ static enum video_texture_update vulkan_import_texture(void *data,
       vkGetPhysicalDeviceFormatProperties(vk->context->gpu, output_format, &props);
       if (!(props.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT)
             || !(props.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT)
-            || vk->pipelines.yuv420_to_rgba16f == VK_NULL_HANDLE)
+            || (!opaque_input && vk->pipelines.yuv420_to_rgba16f == VK_NULL_HANDLE))
          return VIDEO_TEXTURE_UPDATE_REFUSED;
    }
    if (*id)
@@ -14564,6 +14675,9 @@ static bool vulkan_get_device(void *data, video_device_info_t *info)
    info->get_instance_proc_addr = (retro_proc_address_t)
       vulkan_symbol_wrapper_instance_proc_addr();
    info->queue_family           = vk->context->graphics_queue_index;
+   info->drm_render_major       = vk->context->drm_identity.major_id;
+   info->drm_render_minor       = vk->context->drm_identity.minor_id;
+   info->drm_render_valid       = vk->context->drm_identity.valid;
    info->import_formats         =
          (     (vk->context->flags & VK_CTX_FLAG_TIMELINE_SEMAPHORE)
             && vk->pipelines.yuv420_to_rgba8888 != VK_NULL_HANDLE)
