@@ -5,6 +5,7 @@
 #include "../../../gfx/common/vaapi_hevc_vulkan_frame.h"
 static vaapi_hevc_vulkan_frame_t vf;
 static vaapi_hevc_export_t vf_returned, vf_snapshot;
+static const vaapi_hevc_export_t *vf_export_source;
 static VkPhysicalDeviceMemoryProperties vf_memory;
 static unsigned vf_fault, vf_layer, vf_plane, vf_images, vf_views, vf_allocations;
 static unsigned vf_fds, vf_calls, vf_fence_calls, vf_barriers, vf_consumed, vf_closed;
@@ -28,7 +29,7 @@ static VKAPI_ATTR void VKAPI_CALL vf_format(VkPhysicalDevice gpu, VkFormat forma
    if (!list->pDrmFormatModifierProperties) { list->drmFormatModifierCount = 1; return; }
    assert(list->drmFormatModifierCount == 1);
    list->pDrmFormatModifierProperties[0].drmFormatModifier = ex_mode == 2 ? ((uint64_t)1<<56)|7 : 0;
-   list->pDrmFormatModifierProperties[0].drmFormatModifierPlaneCount = ex_frame.descriptor.layers[layer].num_planes;
+   list->pDrmFormatModifierProperties[0].drmFormatModifierPlaneCount = vf_export_source->descriptor.layers[layer].num_planes;
    list->pDrmFormatModifierProperties[0].drmFormatModifierTilingFeatures =
       VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT | VK_FORMAT_FEATURE_DISJOINT_BIT;
 }
@@ -86,10 +87,10 @@ static int vf_duplicate(int fd)
 {
    unsigned index = 4*vf_layer+vf_plane, i;
    assert(fd >= 0 && fd < 4 && ex_live[fd] && !(vf_fds & (1u << index)));
-   for (i = 0; i < ex_frame.descriptor.num_objects; i++)
-      if (ex_frame.descriptor.objects[i].fd == fd) break;
-   assert(i < ex_frame.descriptor.num_objects);
-   vf_sizes[index] = ex_frame.descriptor.objects[i].size;
+   for (i = 0; i < vf_export_source->descriptor.num_objects; i++)
+      if (vf_export_source->descriptor.objects[i].fd == fd) break;
+   assert(i < vf_export_source->descriptor.num_objects);
+   vf_sizes[index] = vf_export_source->descriptor.objects[i].size;
    vf_fds |= 1u << index;
    return (int)index+16;
 }
@@ -179,7 +180,7 @@ static void vf_reset(void)
 {
    assert(!vf.active && !vf_returned.active && !vf_images && !vf_views && !vf_allocations && !vf_fds);
    ex_reset(); assert(vaapi_hevc_export_open(&ex_frame, &ex_pool, 0, &ex_ops));
-   vf_snapshot = ex_frame; vf_device = (VkDevice)(uintptr_t)1;
+   vf_snapshot = ex_frame; vf_export_source = &ex_frame; vf_device = (VkDevice)(uintptr_t)1;
    memset(&vf_memory, 0, sizeof(vf_memory)); vf_memory.memoryTypeCount = vf_memory.memoryHeapCount = 1;
    vf_memory.memoryHeaps[0].size = 65536;
    vf_fault = vf_calls = vf_fence_calls = vf_barriers = vf_consumed = vf_closed = 0;

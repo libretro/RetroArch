@@ -27,3 +27,7 @@
 /prime_submit_test.exe
 /prime_gpu_test
 /prime_gpu_test.exe
+/frame_test
+/frame_test.exe
+/frame_tsan_test
+/frame_tsan_test.exe

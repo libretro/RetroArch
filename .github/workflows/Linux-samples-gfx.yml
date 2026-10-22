@@ -34,6 +34,10 @@ jobs:
         run: make -C samples/gfx/vaapi_hevc clean check CC=${{ matrix.cc }} SANITIZER=address,undefined
       - name: Execute sampled-plane conversion, foreign ownership and native pixel oracle
         run: ASAN_OPTIONS=detect_leaks=0 make -C samples/gfx/vaapi_hevc gpu-check CC=${{ matrix.cc }} SANITIZER=address,undefined
+      - name: Opaque VA producer and renderer return publication under TSan
+        if: matrix.cc == 'gcc'
+        run: |
+          make -C samples/gfx/vaapi_hevc tsan-check CC=gcc RUNNER="setarch $(uname -m) -R"
 
   metal-frame-lease:
     runs-on: ubuntu-latest

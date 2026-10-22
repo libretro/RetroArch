@@ -1,10 +1,15 @@
 VA HEVC ownership and Vulkan conversion checks
 ============================================
 
-`make check SANITIZER=address,undefined` runs the portable parameter,
+`make clean check SANITIZER=address,undefined` runs the portable parameter,
 submission, surface-pool, PRIME export/import and lifetime fault checks.
 Linux needs libva/libdrm development headers. The native binding probe
 does not decode or export a hardware surface.
+
+Opaque VA leases also test stale keys, abandonment, take/restore, GPU
+retirement and producer-only native returns. Linux runs 10000 handoffs
+through the existing SPSC queue. `make tsan-check CC=gcc` uses a separate
+race-detection binary; set RUNNER to the host ASLR wrapper when needed.
 
 `make gpu-check SANITIZER=address,undefined` additionally needs the Vulkan
 loader, development library, validation layer and a device supporting

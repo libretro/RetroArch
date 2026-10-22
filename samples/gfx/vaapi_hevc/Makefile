@@ -11,8 +11,10 @@ LDFLAGS += -fsanitize=$(SANITIZER)
 endif
 ifeq ($(shell uname -s),Linux)
 NATIVE_PROBE = native_probe
+FRAME_THREAD_SOURCES = ../../../libretro-common/queues/retro_spsc.c
+FRAME_THREAD_FLAGS = -pthread
 endif
-all: test$(EXE) session_test$(EXE) runtime_test$(EXE) submit_test$(EXE) pool_test$(EXE) export_test$(EXE) identity_test$(EXE) prime_device_test$(EXE) prime_format_test$(EXE) prime_surface_test$(EXE) prime_image_test$(EXE) prime_frame_test$(EXE) prime_submit_test$(EXE) abi-check $(NATIVE_PROBE)
+all: test$(EXE) session_test$(EXE) runtime_test$(EXE) submit_test$(EXE) pool_test$(EXE) export_test$(EXE) identity_test$(EXE) prime_device_test$(EXE) prime_format_test$(EXE) prime_surface_test$(EXE) prime_image_test$(EXE) prime_frame_test$(EXE) prime_submit_test$(EXE) frame_test$(EXE) abi-check $(NATIVE_PROBE)
 runtime_test$(EXE): runtime_test.c session_test.c submit_test.c ../../../gfx/common/vaapi_hevc_submit.c ../../../gfx/common/vaapi_hevc_submit.h ../../../gfx/common/vaapi_hevc_runtime.c ../../../gfx/common/vaapi_hevc_runtime.h ../../../gfx/common/vaapi_hevc_session.c ../../../gfx/common/vaapi_hevc_session.h
 	$(CC) $(CFLAGS) runtime_test.c -o $@ $(LDFLAGS)
 submit_test$(EXE): submit_test.c ../../../gfx/common/vaapi_hevc_submit.c ../../../gfx/common/vaapi_hevc_submit.h
@@ -39,6 +41,12 @@ prime_gpu_test$(EXE): prime_gpu_test.c ../../../gfx/common/vaapi_hevc_vulkan_sub
 	$(CC) $(CFLAGS) prime_gpu_test.c ../../../gfx/common/vulkan_prime_image.c ../../../gfx/common/vaapi_hevc_vulkan_frame.c ../../../gfx/common/vaapi_hevc_vulkan_submit.c ../../../libretro-common/formats/image/image_yuv_blit.c -o $@ $(LDFLAGS) -lvulkan -lm
 gpu-check: prime_gpu_test$(EXE)
 	$(RUNNER) ./prime_gpu_test$(EXE)
+frame_test$(EXE): frame_test.c prime_frame_test.c export_test.c ../../../gfx/common/vaapi_frame.c ../../../gfx/common/vaapi_frame.h ../../../gfx/common/vaapi_hevc_vulkan_frame.c ../../../gfx/common/vaapi_hevc_vulkan_frame.h ../../../gfx/common/vulkan_prime_image.c ../../../gfx/common/vulkan_prime_image.h $(FRAME_THREAD_SOURCES)
+	$(CC) $(CFLAGS) frame_test.c ../../../gfx/common/vaapi_frame.c ../../../gfx/common/vulkan_prime_image.c ../../../gfx/common/vaapi_hevc_vulkan_frame.c $(FRAME_THREAD_SOURCES) -o $@ $(LDFLAGS) $(FRAME_THREAD_FLAGS)
+frame_tsan_test$(EXE): frame_test.c prime_frame_test.c export_test.c ../../../gfx/common/vaapi_frame.c ../../../gfx/common/vaapi_frame.h ../../../gfx/common/vaapi_hevc_vulkan_frame.c ../../../gfx/common/vaapi_hevc_vulkan_frame.h ../../../gfx/common/vulkan_prime_image.c ../../../gfx/common/vulkan_prime_image.h $(FRAME_THREAD_SOURCES)
+	$(CC) $(filter-out -fsanitize=%,$(CFLAGS)) -fsanitize=thread -fno-omit-frame-pointer frame_test.c ../../../gfx/common/vaapi_frame.c ../../../gfx/common/vulkan_prime_image.c ../../../gfx/common/vaapi_hevc_vulkan_frame.c $(FRAME_THREAD_SOURCES) -o $@ $(filter-out -fsanitize=%,$(LDFLAGS)) -fsanitize=thread $(FRAME_THREAD_FLAGS)
+tsan-check: frame_tsan_test$(EXE)
+	TSAN_OPTIONS=halt_on_error=1 $(RUNNER) ./frame_tsan_test$(EXE)
 native_probe: native_probe.c ../../../gfx/common/vaapi_hevc_export.c ../../../gfx/common/vaapi_hevc_pool.c ../../../gfx/common/vaapi_hevc_submit.c ../../../gfx/common/vaapi_hevc_runtime.c ../../../gfx/common/vaapi_hevc_session.c ../../../libretro-common/dynamic/dylib.c
 	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS) -ldl
 session_test$(EXE): session_test.c ../../../gfx/common/vaapi_hevc_session.c ../../../gfx/common/vaapi_hevc_session.h
@@ -64,9 +72,10 @@ check: all
 	$(RUNNER) ./prime_image_test$(EXE)
 	$(RUNNER) ./prime_frame_test$(EXE)
 	$(RUNNER) ./prime_submit_test$(EXE)
+	$(RUNNER) ./frame_test$(EXE)
 ifneq ($(NATIVE_PROBE),)
 	./native_probe
 endif
 clean:
-	rm -f test test.exe session_test session_test.exe runtime_test runtime_test.exe submit_test submit_test.exe pool_test pool_test.exe export_test export_test.exe identity_test identity_test.exe prime_device_test prime_device_test.exe prime_format_test prime_format_test.exe prime_surface_test prime_surface_test.exe prime_image_test prime_image_test.exe prime_frame_test prime_frame_test.exe prime_submit_test prime_submit_test.exe prime_gpu_test prime_gpu_test.exe native_probe
-.PHONY: all check gpu-check clean abi-check
+	rm -f test test.exe session_test session_test.exe runtime_test runtime_test.exe submit_test submit_test.exe pool_test pool_test.exe export_test export_test.exe identity_test identity_test.exe prime_device_test prime_device_test.exe prime_format_test prime_format_test.exe prime_surface_test prime_surface_test.exe prime_image_test prime_image_test.exe prime_frame_test prime_frame_test.exe prime_submit_test prime_submit_test.exe frame_test frame_test.exe frame_tsan_test frame_tsan_test.exe prime_gpu_test prime_gpu_test.exe native_probe
+.PHONY: all check gpu-check tsan-check clean abi-check
