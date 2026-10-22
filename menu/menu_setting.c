@@ -10945,6 +10945,10 @@ static void general_write_handler(rarch_setting_t *setting)
    if (     setting->enum_idx >= MENU_ENUM_LABEL_INPUT_KEYBOARD_INDEX
          && setting->enum_idx <= MENU_ENUM_LABEL_INPUT_KEYBOARD_INDEX_LAST)
       input_keyboard_pin_from_index(setting->index_offset);
+   /* and a controller, over Plays As moves or the headset's */
+   if (     setting->enum_idx >= MENU_ENUM_LABEL_INPUT_DEVICE_INDEX
+         && setting->enum_idx <= MENU_ENUM_LABEL_INPUT_DEVICE_INDEX_LAST)
+      input_driver_ports_user_set(setting->index_offset);
 #ifdef HAVE_VIDEO_WINDOWS
    /* a screen sent back to the main window gets another try at the
     * window or display it is now given */
