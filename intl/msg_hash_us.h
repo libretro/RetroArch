@@ -25911,6 +25911,10 @@ MSG_HASH(
    "No Bluetooth Devices Found"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BLUETOOTH_SCAN,
+   "Scan for Devices"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_NETWORKS_FOUND,
    "No Networks Found"
    )

@@ -395,6 +395,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
 
 bool menu_displaylist_has_subsystems(void);
 
+#ifdef HAVE_BLUETOOTH
+/* A Bluetooth scan, its list shown again when it ends. */
+bool menu_displaylist_bluetooth_scan(void);
+#endif
+
 #if defined(HAVE_LIBRETRODB)
 unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings);
 #endif

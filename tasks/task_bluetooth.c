@@ -24,31 +24,42 @@
 #include "../msg_hash.h"
 #include "../bluetooth/bluetooth_driver.h"
 
-/* Two steps, BLUETOOTH_SCAN_WINDOW_US apart. The first starts
- * discovery and reschedules the task for the end of the window; the
- * task queue keeps a scheduled task behind the ready ones, so other
- * tasks run in the meantime. The scan used to sleep through the window
- * inside one call, holding the task thread - and every download,
- * thumbnail and sync queued behind it - for ten seconds. A cancel ends
- * the window early. */
+/* The first step starts discovery; the task is then parked, so other
+ * tasks run in the meantime, and looked at every BLUETOOTH_SCAN_POLL_US
+ * until the driver says it has found all it will or the window,
+ * BLUETOOTH_SCAN_WINDOW_US, is out. The scan used to sleep through the
+ * window inside one call, holding the task thread - and every
+ * download, thumbnail and sync queued behind it - for ten seconds. A
+ * cancel ends the window early. */
+/* the window's end: the task is blocking, so there is one scan at
+ * a time */
+static retro_time_t task_bluetooth_scan_deadline;
+
 static void task_bluetooth_scan_handler(retro_task_t *task)
 {
    if (!task->state)
    {
       driver_bluetooth_scan_begin();
       task->state = (void*)(uintptr_t)1;
-      task->when  = cpu_features_get_time_usec() + BLUETOOTH_SCAN_WINDOW_US;
+      task_bluetooth_scan_deadline = cpu_features_get_time_usec()
+         + BLUETOOTH_SCAN_WINDOW_US;
+      task_queue_park(task, BLUETOOTH_SCAN_POLL_US);
       return;
    }
 
-   /* The queue may run a timed task a little early: wait out the rest
-    * of the window parked.  A cancel wakes it and ends the window. */
-   if (!(task_get_flags(task) & RETRO_TASK_FLG_CANCELLED))
+   /* The rest of the window waited out parked, looked at every
+    * BLUETOOTH_SCAN_POLL_US where the driver can say it has found all
+    * it will.  A cancel wakes it and ends the window. */
+   if (     !(task_get_flags(task) & RETRO_TASK_FLG_CANCELLED)
+         && !driver_bluetooth_scan_done())
    {
       retro_time_t now = cpu_features_get_time_usec();
-      if (now < task->when)
+      if (now < task_bluetooth_scan_deadline)
       {
-         task_queue_park(task, task->when - now);
+         retro_time_t wait = task_bluetooth_scan_deadline - now;
+         if (wait > BLUETOOTH_SCAN_POLL_US)
+            wait = BLUETOOTH_SCAN_POLL_US;
+         task_queue_park(task, wait);
          return;
       }
    }

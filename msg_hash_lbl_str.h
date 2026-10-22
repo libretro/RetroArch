@@ -449,6 +449,7 @@
 #define MENU_ENUM_LABEL_NO_NETPLAY_HOSTS_FOUND_STR "no_netplay_hosts_found"
 #define MENU_ENUM_LABEL_NO_NETPLAY_CLIENTS_FOUND_STR "no_netplay_clients_found"
 #define MENU_ENUM_LABEL_NO_BT_DEVICES_FOUND_STR "no_bt_devices_found"
+#define MENU_ENUM_LABEL_BLUETOOTH_SCAN_STR "bluetooth_scan"
 #define MENU_ENUM_LABEL_NO_NETWORKS_FOUND_STR "no_networks_found"
 #define MENU_ENUM_LABEL_NO_PERFORMANCE_COUNTERS_STR "no_performance_counters"
 #define MENU_ENUM_LABEL_NO_PLAYLISTS_STR "no_playlists"

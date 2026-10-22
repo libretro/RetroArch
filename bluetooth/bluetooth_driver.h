@@ -52,6 +52,11 @@ typedef struct bluetooth_driver
    bool (*remove_device)(void *data, unsigned i);
 
    const char *ident;
+
+   /* Whether a scan begun has found all it will before the window is
+    * out, so it can be ended early; NULL for a driver that cannot
+    * tell. */
+   bool (*scan_done)(void *data);
 } bluetooth_driver_t;
 
 extern bluetooth_driver_t bluetooth_bluetoothctl;
@@ -81,9 +86,14 @@ const char* config_get_bluetooth_driver_options(void);
 #ifndef BLUETOOTH_SCAN_WINDOW_US
 #define BLUETOOTH_SCAN_WINDOW_US 10000000
 #endif
+/* how often a scan looks whether the driver is done before that */
+#ifndef BLUETOOTH_SCAN_POLL_US
+#define BLUETOOTH_SCAN_POLL_US 100000
+#endif
 
 void driver_bluetooth_scan_begin(void);
 void driver_bluetooth_scan_end(void);
+bool driver_bluetooth_scan_done(void);
 
 void driver_bluetooth_get_devices(struct string_list *list);
 

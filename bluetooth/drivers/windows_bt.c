@@ -49,8 +49,9 @@
 #ifndef BLUETOOTH_SERVICE_ENABLE
 #define BLUETOOTH_SERVICE_ENABLE 0x01
 #endif
-/* the inquiry, in units of 1.28 s: within the scan window */
-#define WINBT_INQUIRY     6
+/* the inquiry, in units of 1.28 s: a controller in pairing mode
+ * answers within the first */
+#define WINBT_INQUIRY     4
 
 typedef HBLUETOOTH_RADIO_FIND (WINAPI *winbt_find_radio_t)(
       const BLUETOOTH_FIND_RADIO_PARAMS*, HANDLE*);
@@ -90,6 +91,7 @@ typedef struct
 
    /* the scan thread's until it is joined */
    sthread_t *scan;
+   retro_atomic_int_t scan_done;
    BLUETOOTH_DEVICE_INFO found[WINBT_MAX_DEVICES];
    unsigned found_count;
 
@@ -132,6 +134,7 @@ static void winbt_scan_thread(void *data)
    if (!(radio = winbt_radio(bt)))
    {
       RARCH_WARN("[Bluetooth] No Bluetooth radio.\n");
+      retro_atomic_store_release_int(&bt->scan_done, 1);
       return;
    }
    memset(&p, 0, sizeof(p));
@@ -149,14 +152,18 @@ static void winbt_scan_thread(void *data)
    {
       do
       {
-         if (bt->found_count < WINBT_MAX_DEVICES && d.szName[0])
+         if (bt->found_count < WINBT_MAX_DEVICES)
             bt->found[bt->found_count++] = d;
          memset(&d, 0, sizeof(d));
          d.dwSize = sizeof(d);
       } while (bt->find_next(find, &d));
       bt->find_close(find);
    }
+   else
+      RARCH_DBG("[Bluetooth] The search found nothing (error %lu).\n",
+            (unsigned long)GetLastError());
    CloseHandle(radio);
+   retro_atomic_store_release_int(&bt->scan_done, 1);
 }
 
 static void winbt_action_thread(void *data)
@@ -268,6 +275,7 @@ static void *winbt_init(void)
       return NULL;
    }
    retro_atomic_int_init(&bt->action_busy, 0);
+   retro_atomic_int_init(&bt->scan_done, 1);
    return bt;
 }
 
@@ -288,7 +296,9 @@ static void winbt_scan_begin(void *data)
    winbt_t *bt = (winbt_t*)data;
    if (!bt || bt->scan)
       return;
-   bt->scan = sthread_create(winbt_scan_thread, bt);
+   retro_atomic_store_release_int(&bt->scan_done, 0);
+   if (!(bt->scan = sthread_create(winbt_scan_thread, bt)))
+      retro_atomic_store_release_int(&bt->scan_done, 1);
 }
 
 static void winbt_scan_end(void *data)
@@ -302,6 +312,15 @@ static void winbt_scan_end(void *data)
    bt->count = bt->found_count;
    RARCH_LOG("[Bluetooth] Scan found %u device%s.\n", bt->count,
          bt->count == 1 ? "" : "s");
+}
+
+static void winbt_device_get_sublabel(void *data, char *s, unsigned i,
+      size_t len);
+
+static bool winbt_scan_done(void *data)
+{
+   winbt_t *bt = (winbt_t*)data;
+   return !bt || retro_atomic_load_acquire_int(&bt->scan_done);
 }
 
 static void winbt_get_devices(void *data, struct string_list *list)
@@ -319,6 +338,9 @@ static void winbt_get_devices(void *data, struct string_list *list)
       WideCharToMultiByte(CP_UTF8, 0, bt->devices[i].szName, -1, name,
             sizeof(name), NULL, NULL);
       name[sizeof(name) - 1] = '\0';
+      /* one that has not said its name yet: by its address */
+      if (!name[0])
+         winbt_device_get_sublabel(bt, name, i, sizeof(name));
       string_list_append(list, name, attr);
    }
 }
@@ -380,4 +402,5 @@ bluetooth_driver_t bluetooth_windows = {
    winbt_connect_device,
    winbt_remove_device,
    "windows",
+   winbt_scan_done
 };

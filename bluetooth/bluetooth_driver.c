@@ -95,6 +95,14 @@ void driver_bluetooth_scan_end(void)
       bt_st->drv->scan_end(bt_st->data);
 }
 
+bool driver_bluetooth_scan_done(void)
+{
+   bluetooth_driver_state_t *bt_st = &bluetooth_driver_st;
+   return      bt_st->active
+           &&  bt_st->drv->scan_done
+           &&  bt_st->drv->scan_done(bt_st->data);
+}
+
 void driver_bluetooth_get_devices(struct string_list* devices)
 {
    bluetooth_driver_state_t *bt_st = &bluetooth_driver_st;

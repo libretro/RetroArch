@@ -7662,13 +7662,43 @@ static int menu_displaylist_parse_playlist_generic(
 }
 
 #ifdef HAVE_BLUETOOTH
+/* The devices the last scan found - their places in the list are the
+ * driver's numbers for them - or that none were; then a scan again. */
+static unsigned bluetooth_list_fill(file_list_t *list)
+{
+   unsigned i, count;
+   struct string_list *device_list = string_list_new();
+   const char *msg_connect_bluetooth =
+      msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_BLUETOOTH);
+
+   if (!device_list)
+      return 0;
+   driver_bluetooth_get_devices(device_list);
+   for (i = 0; i < device_list->size; i++)
+      menu_entries_append(list,
+            device_list->elems[i].data, msg_connect_bluetooth,
+            MENU_ENUM_LABEL_CONNECT_BLUETOOTH,
+            MENU_BLUETOOTH, 0, 0, NULL);
+   /* never left empty: a list with nothing in it cannot be left */
+   if (device_list->size == 0)
+      menu_entries_append(list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_BT_DEVICES_FOUND),
+            MENU_ENUM_LABEL_NO_BT_DEVICES_FOUND_STR,
+            MENU_ENUM_LABEL_NO_BT_DEVICES_FOUND,
+            0, 0, 0, NULL);
+   menu_entries_append(list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BLUETOOTH_SCAN),
+         MENU_ENUM_LABEL_BLUETOOTH_SCAN_STR,
+         MENU_ENUM_LABEL_BLUETOOTH_SCAN,
+         0, 0, 0, NULL);
+   count = (unsigned)device_list->size + (device_list->size ? 1 : 2);
+   string_list_free(device_list);
+   return count;
+}
+
 static void bluetooth_scan_callback(retro_task_t *task,
       void *task_data, void *user_data, const char *err)
 {
-   unsigned i;
-   struct string_list *device_list   = NULL;
-   const char *msg_connect_bluetooth =
-      msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_BLUETOOTH);
    const char *path                  = NULL;
    const char *label                 = NULL;
    unsigned menu_type                = 0;
@@ -7679,33 +7709,18 @@ static void bluetooth_scan_callback(retro_task_t *task,
    menu_entries_get_last_stack(&path, &label, &menu_type, NULL, NULL);
 
    /* Don't push the results if we left the bluetooth menu */
-   if (!string_is_equal(label,
-         MENU_ENUM_LABEL_DEFERRED_BLUETOOTH_SETTINGS_LIST_STR))
+   if (     !selection_buf
+         || !string_is_equal(label,
+            MENU_ENUM_LABEL_DEFERRED_BLUETOOTH_SETTINGS_LIST_STR))
       return;
 
    menu_entries_clear(selection_buf);
+   bluetooth_list_fill(selection_buf);
+}
 
-   device_list = string_list_new();
-
-   driver_bluetooth_get_devices(device_list);
-
-   for (i = 0; i < device_list->size; i++)
-   {
-      const char *device = device_list->elems[i].data;
-      menu_entries_append(selection_buf,
-            device, msg_connect_bluetooth,
-            MENU_ENUM_LABEL_CONNECT_BLUETOOTH,
-            MENU_BLUETOOTH, 0, 0, NULL);
-   }
-   /* never left empty: a list with nothing in it cannot be left */
-   if (device_list->size == 0)
-      menu_entries_append(selection_buf,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_BT_DEVICES_FOUND),
-            MENU_ENUM_LABEL_NO_BT_DEVICES_FOUND_STR,
-            MENU_ENUM_LABEL_NO_BT_DEVICES_FOUND,
-            0, 0, 0, NULL);
-
-   string_list_free(device_list);
+bool menu_displaylist_bluetooth_scan(void)
+{
+   return task_push_bluetooth_scan(bluetooth_scan_callback);
 }
 #endif
 
@@ -9559,27 +9574,10 @@ unsigned menu_displaylist_build_list(
          {
             if (!string_is_equal(settings->arrays.bluetooth_driver, "null"))
             {
-               struct string_list *device_list = string_list_new();
-               driver_bluetooth_get_devices(device_list);
-
                /* looked for again each time, the last scan's list shown
                 * meanwhile: a pad put in pairing mode since is found */
                task_push_bluetooth_scan(bluetooth_scan_callback);
-               {
-                  unsigned i;
-                  for (i = 0; i < device_list->size; i++)
-                  {
-                     const char *device = device_list->elems[i].data;
-                     if (menu_entries_append(list,
-                              device,
-                              msg_hash_to_str(
-                                 MENU_ENUM_LABEL_CONNECT_BLUETOOTH),
-                              MENU_ENUM_LABEL_CONNECT_BLUETOOTH,
-                              MENU_BLUETOOTH, 0, 0, NULL))
-                        count++;
-                  }
-               }
-               string_list_free(device_list);
+               count += bluetooth_list_fill(list);
             }
          }
 #endif
