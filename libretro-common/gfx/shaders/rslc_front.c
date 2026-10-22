@@ -45,6 +45,9 @@
 
 #include <stdlib.h>
 #include <string.h>
+#ifdef RSLC_SPV_TRACE
+#include <stdio.h>
+#endif
 
 #include "rslc_share.h"
 
@@ -1860,6 +1863,7 @@ static struct rslc_var *rslc_p_new_var(struct rslc_parser *p, struct rslc_sym *n
    v->line     = line;
    v->id       = pr->nvars;
    v->location = v->binding = v->set = RSLC_UNSET;
+   v->global   = p->scope && !p->scope->parent;
    pr->vars[pr->nvars++] = v;
    return v;
 }
@@ -1900,7 +1904,7 @@ static bool rslc_ty_is_integer(const struct rslc_type *t)
       && (t->base == RSLC_BASE_INT || t->base == RSLC_BASE_UINT);
 }
 
-static unsigned rslc_ty_components(const struct rslc_type *t)
+unsigned rslc_ty_components(const struct rslc_type *t)
 {
    switch (t->kind)
    {
@@ -2045,13 +2049,15 @@ static bool rslc_p_coerce(struct rslc_parser *p, uint32_t *e, const struct rslc_
 
 /* ---- constant folding ---- */
 
-struct rslc_cval
-{
-   const struct rslc_type *type;
-   uint32_t                v[16];   /* component bits */
-};
-
 static bool rslc_p_eval(struct rslc_parser *p, uint32_t e, struct rslc_cval *out);
+
+bool rslc_const_eval(struct rslc_ctx *c, uint32_t node, struct rslc_cval *out)
+{
+   struct rslc_parser p;
+   memset(&p, 0, sizeof(p));
+   p.c = c;
+   return rslc_p_eval(&p, node, out);
+}
 
 static bool rslc_p_eval_int(struct rslc_parser *p, uint32_t e, int32_t *out)
 {
@@ -3026,6 +3032,9 @@ static unsigned rslc_swizzle_index(char ch)
 
 static uint32_t rslc_p_postfix_ops(struct rslc_parser *p, uint32_t e);
 
+static uint8_t rslc_p_default_prec(struct rslc_parser *p, const struct rslc_type *t,
+      uint8_t explicit_prec);
+
 static uint32_t rslc_p_primary(struct rslc_parser *p)
 {
    const struct rslc_tok *t    = P_TOK(p);
@@ -3081,7 +3090,10 @@ static uint32_t rslc_p_primary(struct rslc_parser *p)
       if (sym->decl && sym->decl->kind == RSLC_DK_VAR)
       {
          struct rslc_var *v = (struct rslc_var*)sym->decl->ptr;
-         uint32_t e = rslc_p_mk(p, RSLC_OP_VAR, v->type, v->id, 0, 0, 0, line, v->precision);
+         uint32_t e;
+         if (v->storage == RSLC_ST_BUILTIN && !v->precision)
+            v->precision = rslc_p_default_prec(p, v->type, 0);   /* as glslang: the default applies */
+         e = rslc_p_mk(p, RSLC_OP_VAR, v->type, v->id, 0, 0, 0, line, v->precision);
          if (v->storage == RSLC_ST_MEMBER)
          {
             /* A bare block member reads through the block. */
@@ -3608,7 +3620,7 @@ static bool rslc_p_layout(struct rslc_parser *p, struct rslc_quals *q)
       else if (len == 6 && !memcmp(s, "offset", 6))   slot = &q->offset;
       else if (len == 13 && !memcmp(s, "push_constant", 13)) q->push_constant = true;
       else if (len == 6 && !memcmp(s, "std140", 6))   q->std140 = true;
-      else if (len == 6 && !memcmp(s, "std430", 6))   q->std140 = true;
+      else if (len == 6 && !memcmp(s, "std430", 6))   { }
       else if (len == 12 && !memcmp(s, "column_major", 12)) { }
       else if (len == 9 && !memcmp(s, "row_major", 9))
          return rslc_p_fail(p, "row_major is not supported", NULL);
@@ -4189,6 +4201,8 @@ static uint8_t rslc_p_default_prec(struct rslc_parser *p, const struct rslc_type
       return explicit_prec;
    if (t->kind == RSLC_TY_ARRAY)
       return rslc_p_default_prec(p, t->elem, 0);
+   if (t->kind == RSLC_TY_SAMPLER2D)
+      return 0;   /* sampler precision is its own default, never float's */
    if (t->kind == RSLC_TY_MAT || t->base == RSLC_BASE_FLOAT)
       return p->scope->prec_float;
    if (t->base == RSLC_BASE_INT || t->base == RSLC_BASE_UINT)
@@ -4380,9 +4394,13 @@ static uint32_t rslc_p_function(struct rslc_parser *p, struct rslc_quals *q,
          return 0;
       }
       /* Reuse the earlier record; the new parameter vars replace the
-       * prototype's so the body refers to names. */
-      existing->params  = f->params;
-      existing->nparams = f->nparams;
+       * prototype's so the body refers to names.  A prototype that
+       * follows the definition leaves the body's params alone. */
+      if (!existing->body)
+      {
+         existing->params  = f->params;
+         existing->nparams = f->nparams;
+      }
       f = existing;
    }
    else if (d && d->kind == RSLC_DK_FUNC)
@@ -4513,6 +4531,7 @@ static bool rslc_p_block_decl(struct rslc_parser *p, struct rslc_quals *q,
    b->set      = q->set;
    b->line     = line;
    b->push     = idx == 1;
+   b->std140   = idx == 0 || q->std140;
    pr->has_block[idx] = true;
 
    if (instance)
@@ -4846,8 +4865,19 @@ bool rslc_compile(const char *glsl, size_t len,
       return false;
 
    ok = rslc_front_compile(&c, glsl, len);
+#ifdef RSLC_SPV_TRACE
+   fprintf(stderr, "front: arena used %lu held %lu scratch used %lu held %lu toks %u nodes %u lists %u syms %u types %u synth %u\n",
+         (unsigned long)c.arena.used, (unsigned long)c.arena.held,
+         (unsigned long)c.scratch.used, (unsigned long)c.scratch.held,
+         c.ntoks, c.nnodes, c.nlists, c.nsyms, c.ntypes, c.nsynth);
+#endif
    if (ok)
       ok = rslc_emit_dst(&c, result);
+#ifdef RSLC_SPV_TRACE
+   fprintf(stderr, "emit: arena used %lu held %lu scratch used %lu held %lu\n",
+         (unsigned long)c.arena.used, (unsigned long)c.arena.held,
+         (unsigned long)c.scratch.used, (unsigned long)c.scratch.held);
+#endif
 
    rslc_ctx_close(&c);
    return ok;

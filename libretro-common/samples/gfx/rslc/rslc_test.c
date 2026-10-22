@@ -90,8 +90,10 @@ static void test_abi_rejects(void)
 
    opts_default(&o, err, sizeof(err));
    err[0] = 0;
-   CHECK(!rslc_compile(src, sizeof(src) - 1, RSLC_STAGE_VERTEX, &o, &r));
-   CHECK(!strcmp(err, "rslc: SPIR-V emitter not implemented"));
+   CHECK(rslc_compile(src, sizeof(src) - 1, RSLC_STAGE_VERTEX, &o, &r));
+   CHECK(r.spirv && r.spirv_len > 5 && r.spirv[0] == 0x07230203u);
+   CHECK(r.blob && r.blob_len == ((const struct rslc_blob_hdr*)r.blob)->total_len);
+   rslc_result_free(&r, &o);
    CHECK(alloc_live == 0);
 
    err[0] = 0;
@@ -779,6 +781,143 @@ static int front_file(const char *path, int mode)
    return 0;
 }
 
+/* --spirv <in> <out.spv>: compile a stage to SPIR-V and write the
+ * words, for spirv-val and the corpus check. */
+static int spirv_file(const char *path, const char *out)
+{
+   char  err[256];
+   FILE *f = fopen(path, "rb");
+   char *src;
+   long  n;
+   bool  ok;
+   struct rslc_opts   opts;
+   struct rslc_result res;
+   enum rslc_stage stage = strstr(path, ".vert") ? RSLC_STAGE_VERTEX : RSLC_STAGE_FRAGMENT;
+
+   if (!f)
+   {
+      fprintf(stderr, "cannot open %s\n", path);
+      return 2;
+   }
+   fseek(f, 0, SEEK_END);
+   n = ftell(f);
+   fseek(f, 0, SEEK_SET);
+   src = (char*)malloc((size_t)n + 1);
+   if (!src || fread(src, 1, (size_t)n, f) != (size_t)n)
+   {
+      fclose(f);
+      free(src);
+      return 2;
+   }
+   fclose(f);
+   src[n] = '\0';
+   memset(&opts, 0, sizeof(opts));
+   opts.dst     = RSLC_DST_SPIRV;
+   opts.err     = err;
+   opts.err_cap = sizeof(err);
+   err[0]       = '\0';
+   ok = rslc_compile(src, (size_t)n, stage, &opts, &res);
+   free(src);
+   if (!ok)
+   {
+      fprintf(stderr, "%s: %s\n", path, err);
+      return 1;
+   }
+   f = fopen(out, "wb");
+   if (!f)
+   {
+      rslc_result_free(&res, &opts);
+      return 2;
+   }
+   fwrite(res.spirv, 4, res.spirv_len, f);
+   fclose(f);
+   rslc_result_free(&res, &opts);
+   return 0;
+}
+
+/* SPIR-V emission: a stock-shaped fragment stage compiles to a module
+ * whose reflection carries glslang's layout (push std430, UBO
+ * std140), and the blob re-opens as bytes. */
+static void test_spirv(void)
+{
+   struct rslc_opts   o;
+   struct rslc_result r, r2;
+   char               err[128];
+   static const char  frag[] =
+      "#version 450\n"
+      "layout(push_constant) uniform Push { vec4 SourceSize; float f[3]; mat3 m; uint FrameCount; } params;\n"
+      "layout(std140, set = 0, binding = 0) uniform UBO { mat4 MVP; vec2 v2[2]; float x; } global;\n"
+      "layout(location = 0) in vec2 vTexCoord;\n"
+      "layout(location = 1) flat in int idx;\n"
+      "layout(location = 0) out vec4 FragColor;\n"
+      "layout(set = 0, binding = 3) uniform sampler2D Source;\n"
+      "layout(set = 0, binding = 4) uniform sampler2D Other;\n"
+      "void main() { FragColor = texture(Source, vTexCoord) * params.f[idx] + global.v2[1].xyxy; }\n";
+   const struct rslc_reflect *rf;
+   const struct rslc_member  *m;
+   const struct rslc_sampler *smp;
+   const struct rslc_io      *io;
+   const uint8_t             *blob;
+   void                      *copy;
+
+   opts_default(&o, err, sizeof(err));
+   o.dst = RSLC_DST_SPIRV;
+   CHECK(rslc_compile(frag, sizeof(frag) - 1, RSLC_STAGE_FRAGMENT, &o, &r));
+   if (!r.blob)
+      return;
+   blob = (const uint8_t*)r.blob;
+   rf   = r.refl;
+   CHECK(r.spirv_len > 5 && r.spirv[0] == 0x07230203u && r.spirv[3] > 10);
+   CHECK(((uintptr_t)r.spirv & 3) == 0);
+
+   /* push block, std430: vec4 @0, float[3] stride 4 @16 size 12,
+    * mat3 @32 (col stride 16) size 48, uint @80; declared size 84 */
+   CHECK(rf->push.present && rf->push.member_count == 4);
+   CHECK(!strcmp(RSLC_STR(blob, rf->push.name), "Push"));
+   CHECK(!strcmp(RSLC_STR(blob, rf->push.instance), "params"));
+   m = (const struct rslc_member*)(blob + rf->push.members);
+   CHECK(!strcmp(RSLC_STR(blob, m[0].name), "SourceSize") && m[0].offset == 0 && m[0].size == 16);
+   CHECK(m[0].base == RSLC_BASE_FLOAT && m[0].cols == 1 && m[0].rows == 4 && m[0].array_len == 0);
+   CHECK(!strcmp(RSLC_STR(blob, m[1].name), "f") && m[1].offset == 16 && m[1].size == 12 && m[1].array_len == 3);
+   CHECK(!strcmp(RSLC_STR(blob, m[2].name), "m") && m[2].offset == 32 && m[2].size == 48 && m[2].cols == 3 && m[2].rows == 3);
+   CHECK(!strcmp(RSLC_STR(blob, m[3].name), "FrameCount") && m[3].offset == 80 && m[3].base == RSLC_BASE_UINT);
+   CHECK(rf->push.size == 84);
+
+   /* UBO, std140: mat4 @0 size 64, vec2[2] stride 16 @64 size 32,
+    * float @96; declared size 100 (no tail padding, as SPIRV-Cross) */
+   CHECK(rf->ubo.present && rf->ubo.member_count == 3 && rf->ubo.binding == 0);
+   m = (const struct rslc_member*)(blob + rf->ubo.members);
+   CHECK(m[0].offset == 0 && m[0].size == 64 && m[0].cols == 4 && m[0].rows == 4);
+   CHECK(m[1].offset == 64 && m[1].size == 32 && m[1].array_len == 2 && m[1].rows == 2);
+   CHECK(m[2].offset == 96 && m[2].size == 4);
+   CHECK(rf->ubo.size == 100);
+
+   CHECK(rf->sampler_count == 2);
+   smp = (const struct rslc_sampler*)(blob + rf->samplers);
+   CHECK(!strcmp(RSLC_STR(blob, smp[0].name), "Source") && smp[0].binding == 3);
+   CHECK(!strcmp(RSLC_STR(blob, smp[1].name), "Other") && smp[1].binding == 4);
+   CHECK(rf->input_count == 2 && rf->output_count == 1);
+   io = (const struct rslc_io*)(blob + rf->inputs);
+   CHECK(!strcmp(RSLC_STR(blob, io[0].name), "vTexCoord") && io[0].location == 0 && io[0].rows == 2 && !io[0].flat);
+   CHECK(!strcmp(RSLC_STR(blob, io[1].name), "idx") && io[1].location == 1 && io[1].base == RSLC_BASE_INT && io[1].flat);
+   io = (const struct rslc_io*)(blob + rf->outputs);
+   CHECK(!strcmp(RSLC_STR(blob, io[0].name), "FragColor") && io[0].rows == 4);
+
+   /* the blob is self-contained: a byte copy re-opens to the same view */
+   copy = malloc(r.blob_len);
+   CHECK(copy != NULL);
+   if (copy)
+   {
+      memcpy(copy, r.blob, r.blob_len);
+      CHECK(rslc_blob_open(copy, r.blob_len, &r2));
+      CHECK(r2.spirv_len == r.spirv_len && !memcmp(r2.spirv, r.spirv, r.spirv_len * 4));
+      CHECK(r2.refl->push.size == 84 && r2.refl->sampler_count == 2);
+      free(copy);
+   }
+   rslc_result_free(&r, &o);
+   CHECK(alloc_live == 0);
+}
+
 static void test_front(void)
 {
    char err[256];
@@ -1018,6 +1157,8 @@ int main(int argc, char **argv)
       return front_file(argv[2], 0);
    if (argc == 3 && !strcmp(argv[1], "--ir"))
       return front_file(argv[2], 1);
+   if (argc == 4 && !strcmp(argv[1], "--spirv"))
+      return spirv_file(argv[2], argv[3]);
 
    test_abi_rejects();
    test_arena();
@@ -1026,6 +1167,7 @@ int main(int argc, char **argv)
    test_pp();
    test_front();
    test_blob();
+   test_spirv();
 
    if (fails)
    {
