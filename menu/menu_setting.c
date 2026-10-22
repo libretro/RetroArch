@@ -335,11 +335,28 @@ static const setting_actions_t *settings_actions_intern(
    return &settings_actions_pool[settings_actions_pool_n++];
 }
 
+/* One out-of-line setter per field keeps each call site to a call. */
+#define SETTINGS_ACTION_SETTER(field, type) \
+static void settings_action_set_##field(rarch_setting_t *s, type fn) \
+{ \
+   setting_actions_t _t = *s->actions; \
+   _t.field             = fn; \
+   s->actions           = settings_actions_intern(&_t); \
+}
+SETTINGS_ACTION_SETTER(ok, action_ok_handler_t)
+SETTINGS_ACTION_SETTER(start, action_start_handler_t)
+SETTINGS_ACTION_SETTER(sel, action_select_handler_t)
+SETTINGS_ACTION_SETTER(left, action_left_handler_t)
+SETTINGS_ACTION_SETTER(right, action_right_handler_t)
+SETTINGS_ACTION_SETTER(change, change_handler_t)
+#ifdef ANDROID
+SETTINGS_ACTION_SETTER(read, change_handler_t)
+#endif
+SETTINGS_ACTION_SETTER(repr, get_string_representation_t)
+
 #define SETTINGS_ACTION_SET(field, s, fn) \
 { \
-   setting_actions_t _t = *((s)->actions); \
-   _t.field             = (fn); \
-   (s)->actions         = settings_actions_intern(&_t); \
+   settings_action_set_##field((s), (fn)); \
 }
 
 
