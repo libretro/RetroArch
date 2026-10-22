@@ -1890,24 +1890,18 @@ static size_t rvp8_arena_carve(rvp8_dec *s, uint8_t *base,
    return cur;
 }
 
-/* Parse the frame + picture headers, size all buffers, initialize the
- * token partitions and probability tables. Returns 0 on success; on
- * failure the state needs no cleanup. */
-int rvp8_begin(const uint8_t *data, size_t len, rvp8_dec *s)
-{
-   uint32_t ft;
-   int kf, w, h, mbw, mbh, i;
-   uint32_t p0s;
-   int base_qp, y1dc_dq, y2dc_dq, y2ac_dq, uvdc_dq, uvac_dq;
-   int skip_enabled, prob_skip, log2parts, num_parts;
-   int filter_type, lf_level, sharpness;
-   int lf_delta_enabled = 0;
-   int ref_lf_delta[4] = {0,0,0,0}, mode_lf_delta[4] = {0,0,0,0};
-   int seg_enabled, seg_abs, seg_qp[4], seg_lf[4], seg_prob[3];
-   rvp8_bool br;
-   rvp8_bool tbr[8]; /* up to 8 token partitions */
-   const uint8_t *p0;
+#if defined(__GNUC__) || defined(__clang__)
+#define RVP8_NOINLINE __attribute__((noinline))
+#elif defined(_MSC_VER) && _MSC_VER >= 1300
+#define RVP8_NOINLINE __declspec(noinline)
+#else
+#define RVP8_NOINLINE
+#endif
 
+/* Keep inherited probability storage out of the picture-header parser frame.
+ * No allocation is needed: preserve the same state across its reset. */
+static RVP8_NOINLINE void rvp8_reset(rvp8_dec *s)
+{
    /* Preserve caller-supplied inter setup across the state reset: for an
     * inter frame the persistent decoder fills in dimensions, reference
     * planes and the inherited probability context before calling begin. */
@@ -1920,7 +1914,7 @@ int rvp8_begin(const uint8_t *data, size_t len, rvp8_dec *s)
    int      save_reflfd[4], save_modelfd[4];
    void    *save_mbinfo;
    uint8_t *save_arena;
-   size_t   save_arena_len, arena_len, zero_len;
+   size_t   save_arena_len;
 
    /* The per-frame scratch arena of a previous decode on this state (the
     * persistent video decoder reuses one rvp8_dec across frames) is kept
@@ -1975,6 +1969,30 @@ int rvp8_begin(const uint8_t *data, size_t len, rvp8_dec *s)
       memcpy(s->ref_lf_delta, save_reflfd, sizeof(save_reflfd));
       memcpy(s->mode_lf_delta, save_modelfd, sizeof(save_modelfd));
    }
+
+}
+
+/* Parse the frame + picture headers, size all buffers, initialize the
+ * token partitions and probability tables. Returns 0 on success; on
+ * failure the state needs no cleanup. */
+int rvp8_begin(const uint8_t *data, size_t len, rvp8_dec *s)
+{
+   uint32_t ft;
+   int kf, w, h, mbw, mbh, i;
+   uint32_t p0s;
+   int base_qp, y1dc_dq, y2dc_dq, y2ac_dq, uvdc_dq, uvac_dq;
+   int skip_enabled, prob_skip, log2parts, num_parts;
+   int filter_type, lf_level, sharpness;
+   int lf_delta_enabled = 0;
+   int ref_lf_delta[4] = {0,0,0,0}, mode_lf_delta[4] = {0,0,0,0};
+   int seg_enabled, seg_abs, seg_qp[4], seg_lf[4], seg_prob[3];
+   rvp8_bool br;
+   rvp8_bool tbr[8]; /* up to 8 token partitions */
+   const uint8_t *p0;
+
+   size_t arena_len, zero_len;
+
+   rvp8_reset(s);
 
    if (len < 3) return -1;
    ft = (uint32_t)data[0] | ((uint32_t)data[1]<<8) | ((uint32_t)data[2]<<16);
