@@ -252,6 +252,7 @@ typedef struct winusb_device
    /* writes, the frontend's: one in flight, the newest waiting behind */
    OVERLAPPED out_ov;
    bool out_busy;
+   bool out_failed;     /* a write refused, said once */
    bool out_waiting;
    uint8_t out[2][WINUSB_OUT_MAX];
    sthread_t *reader;
@@ -1627,6 +1628,13 @@ static void winusb_hidclass_start_write(winusb_device_t *dev)
                NULL, &dev->out_ov)
          || GetLastError() == ERROR_IO_PENDING)
       dev->out_busy = true;
+   else if (!dev->out_failed)
+   {
+      dev->out_failed = true;
+      RARCH_DBG("%s \"%s\": output report 0x%02x refused (error %lu).\n",
+            dev->tag, dev->name, dev->out[0][0],
+            (unsigned long)GetLastError());
+   }
 }
 
 static void winusb_hidclass_flush(winusb_device_t *dev)
@@ -1641,8 +1649,20 @@ static void winusb_hidclass_flush(winusb_device_t *dev)
 static void winusb_hidclass_write(winusb_device_t *dev,
       const uint8_t *s, size_t len)
 {
+   /* longer than the device's reports only by noughts - a handler's
+    * fixed-size buffer - it goes at the device's length */
+   while (len > dev->out_len && !s[len - 1])
+      len--;
    if (!dev->out_len || len > dev->out_len)
+   {
+      if (!dev->out_failed)
+      {
+         dev->out_failed = true;
+         RARCH_DBG("%s \"%s\": output report 0x%02x longer than its %u bytes.\n",
+               dev->tag, dev->name, len ? s[0] : 0, (unsigned)dev->out_len);
+      }
       return;
+   }
    if (winusb_hidclass_in_flight(dev))
    {
       memcpy(dev->out[1], s, len);

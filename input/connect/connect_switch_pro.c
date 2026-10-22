@@ -45,6 +45,7 @@
 
 #include "joypad_connection.h"
 #include "../input_defines.h"
+#include "../../verbosity.h"
 
 #define SWITCH_PRO_FULL_LEN      12
 #define SWITCH_PRO_SIMPLE_LEN    12
@@ -68,7 +69,7 @@
 #define SWITCH_PRO_COMMANDS      3
 #define SWITCH_PRO_READY         4
 
-/* the commands, in order; USB starts at the second */
+/* the commands, in order */
 #define SWITCH_PRO_CMD_MODE      0
 #define SWITCH_PRO_CMD_RUMBLE    1
 #define SWITCH_PRO_CMD_LIGHTS    2
@@ -100,6 +101,7 @@ struct hidpad_switch_pro_data
    uint8_t tries;
    uint8_t number;      /* the output's packet number */
    uint8_t since_sent;  /* reports since output last went */
+   bool heard;          /* a report has come: the first is logged */
    retro_time_t quiet_since; /* the first poll without a report; 0: one came */
    int player;          /* told: from 1, -1 for none; 0 not yet */
    bool lights_due;     /* told another once its commands are done */
@@ -180,19 +182,24 @@ static void hidpad_switch_pro_send_command(
    hidpad_switch_pro_write(device, r, sizeof(r));
 }
 
+/* The full report is asked for on USB too, as SDL does: a pad that
+ * passes for one may speak the Bluetooth protocol over its cable, and
+ * send nothing until it is asked. */
 static void hidpad_switch_pro_commands(struct hidpad_switch_pro_data *device)
 {
    device->state   = SWITCH_PRO_COMMANDS;
-   device->command = device->bluetooth
-      ? SWITCH_PRO_CMD_MODE : SWITCH_PRO_CMD_RUMBLE;
+   device->command = SWITCH_PRO_CMD_MODE;
    device->tries   = 1;
    hidpad_switch_pro_send_command(device);
 }
 
 /* The greeting done, answered or not: 0x80 0x04 starts the reports,
  * and the commands follow. */
-static void hidpad_switch_pro_start(struct hidpad_switch_pro_data *device)
+static void hidpad_switch_pro_start(struct hidpad_switch_pro_data *device,
+      bool answered)
 {
+   RARCH_DBG("[Switch Pro] Starting the reports%s.\n",
+         answered ? "" : ", the greeting unanswered");
    hidpad_switch_pro_usb_command(device, 0x04);
    hidpad_switch_pro_commands(device);
 }
@@ -209,7 +216,10 @@ static void hidpad_switch_pro_next_command(
 {
    device->tries = 1;
    if (++device->command >= SWITCH_PRO_CMD_COUNT)
+   {
       device->state = SWITCH_PRO_READY;
+      RARCH_DBG("[Switch Pro] Ready.\n");
+   }
    else
       hidpad_switch_pro_send_command(device);
 }
@@ -505,7 +515,7 @@ static void hidpad_switch_pro_usb_reply(struct hidpad_switch_pro_data *device,
          if (command != 0x02)
             return;
          /* not answered: the reports start */
-         hidpad_switch_pro_start(device);
+         hidpad_switch_pro_start(device, true);
          return;
       default:
          return;
@@ -543,6 +553,7 @@ static void hidpad_switch_pro_retry(struct hidpad_switch_pro_data *device)
       return;
    if (device->state == SWITCH_PRO_USB_BAUD)
    {
+      RARCH_DBG("[Switch Pro] Faster link not answered: going on without it.\n");
       hidpad_switch_pro_hello2(device);
       return;
    }
@@ -551,7 +562,7 @@ static void hidpad_switch_pro_retry(struct hidpad_switch_pro_data *device)
       if (device->state == SWITCH_PRO_COMMANDS)
          hidpad_switch_pro_next_command(device);
       else
-         hidpad_switch_pro_start(device);
+         hidpad_switch_pro_start(device, false);
       return;
    }
    switch (device->state)
@@ -587,6 +598,12 @@ static void hidpad_switch_pro_packet_handler(void *data,
    if (!len)
       return;
    device->quiet_since = 0;
+   if (!device->heard)
+   {
+      device->heard = true;
+      RARCH_DBG("[Switch Pro] First report: 0x%02x, %u bytes%s.\n",
+            r[0], len, device->stack ? ", behind a stack's header" : "");
+   }
 
    switch (r[0])
    {

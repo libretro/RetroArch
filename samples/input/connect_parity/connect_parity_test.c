@@ -1378,11 +1378,14 @@ static void test_switch_pro(void)
    CHECK(sent_count == 3 && sp_sent(0, hello, 2), "switch_pro: not greeted again");
    p[1] = 0x02;
    deliver(ifc, dev, p, 64);
-   CHECK(sent_count == 5 && sp_sent(1, start, 2) && sp_sent_command(0, 0x48, 0x01),
-         "switch_pro: the reports not started, or rumble not turned on");
+   CHECK(sent_count == 5 && sp_sent(1, start, 2) && sp_sent_command(0, 0x03, 0x30),
+         "switch_pro: the reports not started, or the full report not asked for");
    CHECK(!memcmp(sent + 2, neutral, 8), "switch_pro: a command's rumble is not at rest");
 
-   /* the commands, each on its answer: lights for player 3, the flash */
+   /* the commands, each on its answer: rumble on, lights for player 3,
+    * the flash */
+   deliver(ifc, dev, p, (uint16_t)sp_reply(p, &st, 0x03, NULL, 0));
+   CHECK(sp_sent_command(0, 0x48, 0x01), "switch_pro: rumble not turned on");
    deliver(ifc, dev, p, (uint16_t)sp_reply(p, &st, 0x48, NULL, 0));
    CHECK(sp_sent_command(0, 0x30, 0x07), "switch_pro: player 3's lights not set");
    deliver(ifc, dev, p, (uint16_t)sp_reply(p, &st, 0x30, NULL, 0));
@@ -1510,8 +1513,8 @@ static void test_switch_pro(void)
    count = sent_count;
    for (n = 0; n < 32 * 4; n++)
       deliver(ifc, dev, p, (uint16_t)sp_report(p, 0x30, &st));
-   CHECK(sent_count == count + 4 && sp_sent_command(0, 0x30, 0x01)
-         && sp_sent_command(1, 0x48, 0x01),
+   CHECK(sent_count == count + 4 && sp_sent_command(0, 0x48, 0x01)
+         && sp_sent_command(1, 0x03, 0x30),
          "switch_pro: an unanswered command not sent again, then given up");
    ifc->deinit(dev);
 
@@ -1520,7 +1523,7 @@ static void test_switch_pro(void)
    dev = ifc->init(&dummy_connection, 0, &stub_hid);
    for (n = 0; n < 32 * 4; n++)
       deliver(ifc, dev, p, (uint16_t)sp_report(p, 0x30, &st));
-   CHECK(sp_sent_command(0, 0x48, 0x01), "switch_pro: stuck on an unanswered greeting");
+   CHECK(sp_sent_command(0, 0x03, 0x30), "switch_pro: stuck on an unanswered greeting");
    ifc->deinit(dev);
 
    /* a pad that passes for one, as 8BitDo's do: the faster link not
@@ -1540,8 +1543,9 @@ static void test_switch_pro(void)
    CHECK(sent_count == count + 1 && sp_sent(0, hello, 2),
          "switch_pro: an unanswered faster link not gone past");
    p[1] = 0x02; deliver(ifc, dev, p, 64);
-   CHECK(sp_sent(1, start, 2) && sp_sent_command(0, 0x48, 0x01),
+   CHECK(sp_sent(1, start, 2) && sp_sent_command(0, 0x03, 0x30),
          "switch_pro: the reports not started after the second greeting");
+   deliver(ifc, dev, p, (uint16_t)sp_reply(p, &st, 0x03, NULL, 0));
    deliver(ifc, dev, p, (uint16_t)sp_reply(p, &st, 0x48, NULL, 0));
    deliver(ifc, dev, p, (uint16_t)sp_reply(p, &st, 0x30, NULL, 0));
    deliver(ifc, dev, p, (uint16_t)sp_reply(p, &st, 0x10, NULL, 0));
@@ -1568,7 +1572,7 @@ static void test_switch_pro(void)
       retro_sleep(110);
       ifc->idle(dev);
    }
-   CHECK(sp_sent(1, start, 2) && sp_sent_command(0, 0x48, 0x01),
+   CHECK(sp_sent(1, start, 2) && sp_sent_command(0, 0x03, 0x30),
          "switch_pro: a silent pad's reports never started");
    ifc->deinit(dev);
 
