@@ -12,11 +12,13 @@ endif
 ifeq ($(shell uname -s),Linux)
 NATIVE_PROBE = native_probe
 endif
-all: test$(EXE) session_test$(EXE) runtime_test$(EXE) submit_test$(EXE) abi-check $(NATIVE_PROBE)
+all: test$(EXE) session_test$(EXE) runtime_test$(EXE) submit_test$(EXE) pool_test$(EXE) abi-check $(NATIVE_PROBE)
 runtime_test$(EXE): runtime_test.c session_test.c submit_test.c ../../../gfx/common/vaapi_hevc_submit.c ../../../gfx/common/vaapi_hevc_submit.h ../../../gfx/common/vaapi_hevc_runtime.c ../../../gfx/common/vaapi_hevc_runtime.h ../../../gfx/common/vaapi_hevc_session.c ../../../gfx/common/vaapi_hevc_session.h
 	$(CC) $(CFLAGS) runtime_test.c -o $@ $(LDFLAGS)
 submit_test$(EXE): submit_test.c ../../../gfx/common/vaapi_hevc_submit.c ../../../gfx/common/vaapi_hevc_submit.h
 	$(CC) $(CFLAGS) submit_test.c -o $@ $(LDFLAGS)
+pool_test$(EXE): pool_test.c test.c ../../../gfx/common/vaapi_hevc_pool.c ../../../gfx/common/vaapi_hevc_pool.h ../../../gfx/common/vaapi_hevc_packet.h ../../../gfx/common/vaapi_hevc_submit.c ../../../gfx/common/vaapi_hevc_submit.h ../../../libretro-common/formats/h265/rh265.c
+	$(CC) $(CFLAGS) -Wno-unused-parameter pool_test.c ../../../libretro-common/formats/h265/rh265.c -o $@ $(LDFLAGS) -lm
 native_probe: native_probe.c ../../../gfx/common/vaapi_hevc_runtime.c ../../../gfx/common/vaapi_hevc_session.c ../../../libretro-common/dynamic/dylib.c
 	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS) -ldl
 session_test$(EXE): session_test.c ../../../gfx/common/vaapi_hevc_session.c ../../../gfx/common/vaapi_hevc_session.h
@@ -33,9 +35,10 @@ check: all
 	$(RUNNER) ./session_test$(EXE)
 	$(RUNNER) ./runtime_test$(EXE)
 	$(RUNNER) ./submit_test$(EXE)
+	$(RUNNER) ./pool_test$(EXE)
 ifneq ($(NATIVE_PROBE),)
 	./native_probe
 endif
 clean:
-	rm -f test test.exe session_test session_test.exe runtime_test runtime_test.exe submit_test submit_test.exe native_probe
+	rm -f test test.exe session_test session_test.exe runtime_test runtime_test.exe submit_test submit_test.exe pool_test pool_test.exe native_probe
 .PHONY: all check clean abi-check
