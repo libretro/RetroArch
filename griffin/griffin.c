@@ -378,6 +378,7 @@ VIDEO CONTEXT
 #include "../gfx/common/vulkan_android_sync.c"
 #include "../gfx/common/vulkan_android_pipeline.c"
 #include "../gfx/common/vulkan_android_submit.c"
+#include "../gfx/common/vulkan_android_queue.c"
 #include "../gfx/common/vulkan_android_cache_entry.c"
 #include "../gfx/common/vulkan_android_cache.c"
 #ifdef HAVE_THREADS

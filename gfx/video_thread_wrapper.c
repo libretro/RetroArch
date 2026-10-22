@@ -1906,8 +1906,15 @@ static void video_thread_async_run(thread_video_t *thr)
          enum video_texture_update r = VIDEO_TEXTURE_UPDATE_REFUSED;
          uintptr_t id                = n->handle;
          if (driver_data && poke && poke->import_texture)
-            r = poke->import_texture(driver_data, &id,
-                  (const video_frame_import_t*)n->img, n->filter);
+         {
+            r = VIDEO_TEXTURE_UPDATE_DONE;
+            if (id && poke->prepare_import_texture)
+               r = poke->prepare_import_texture(driver_data, id,
+                     (const video_frame_import_t*)n->img);
+            if (r == VIDEO_TEXTURE_UPDATE_DONE)
+               r = poke->import_texture(driver_data, &id,
+                     (const video_frame_import_t*)n->img, n->filter);
+         }
          n->made    = (!n->handle && id && r != VIDEO_TEXTURE_UPDATE_REFUSED);
          n->dropped = (r == VIDEO_TEXTURE_UPDATE_DROPPED);
          n->handle  = (r == VIDEO_TEXTURE_UPDATE_REFUSED) ? 0 : id;

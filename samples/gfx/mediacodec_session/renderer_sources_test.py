@@ -21,7 +21,7 @@ if os.environ.get("SANITIZER"):
 shared = [
     "vulkan_android_device", "android_image_queue", "android_frame",
     "vulkan_android_image", "vulkan_android_sync", "vulkan_android_pipeline",
-    "vulkan_android_submit", "vulkan_android_cache_entry", "vulkan_android_cache",
+    "vulkan_android_submit", "vulkan_android_queue", "vulkan_android_cache_entry", "vulkan_android_cache",
 ]
 native = [
     "mediacodec_inventory", "android_image_ndk", "mediacodec_session",

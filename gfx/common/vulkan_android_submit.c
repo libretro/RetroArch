@@ -136,6 +136,7 @@ int vulkan_android_submission_present(vulkan_android_submission_t *e,
    VkCommandBufferBeginInfo begin;
    VkSubmitInfo submit;
    VkPipelineStageFlags wait_stage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+   VkResult result;
    int status, fd;
    if (!e || !frame || !android_frame_callback(frame->abandon) || !destination
          || !view
@@ -210,8 +211,22 @@ int vulkan_android_submission_present(vulkan_android_submission_t *e,
    e->held_slot = frame->done;
    e->held_generation = frame->done_value;
    e->inflight = 1;
-   if (e->ops.submit(e->ops.submit_context, e->queue, 1, &submit, e->fence)
-         != VK_SUCCESS)
+   result = e->ops.submit(
+         e->ops.submit_context, e->queue, 1, &submit, e->fence);
+   if (result == VK_NOT_READY)
+      return 1;
+   if (result == VK_TIMEOUT)
+   {
+      e->held_owner = NULL;
+      e->inflight = 0;
+      if (!android_frame_unclaim(frame->owner, frame->done, frame->done_value))
+      {
+         e->broken = 1;
+         return -2;
+      }
+      return 0;
+   }
+   if (result != VK_SUCCESS)
    {
       e->broken = 1;
       return -2;

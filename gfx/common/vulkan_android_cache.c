@@ -126,6 +126,21 @@ int vulkan_android_cache_present(vulkan_android_cache_t *cache,
    return vulkan_android_submission_present(
          &cache->entry[i].submission, frame, destination, image_view, layout);
 }
+int vulkan_android_cache_poll(vulkan_android_cache_t *cache)
+{
+   unsigned i;
+   int result = 1;
+   if (!cache || cache->closed)
+      return -1;
+   for (i = 0; i < cache->count; i++)
+      if (cache->occupied[i])
+      {
+         int status = vulkan_android_submission_poll(&cache->entry[i].submission);
+         if (status < result)
+            result = status;
+      }
+   return result;
+}
 void vulkan_android_cache_close(vulkan_android_cache_t *cache)
 {
    if (cache)

@@ -37,14 +37,18 @@ with tempfile.TemporaryDirectory(prefix="android-vulkan-warm-") as directory:
         print("Windows CRT pipe ownership model; no native SYNC_FD device import", flush=True)
     common = ["vulkan_android_submit.c", "vulkan_android_image.c", "vulkan_android_sync.c",
               "vulkan_android_pipeline.c", "android_frame.c", "android_image_queue.c"]
-    for name in ("sync", "submit", "entry", "cache"):
+    for name in ("queue", "sync", "submit", "entry", "cache", "renderer"):
         sources = ["vulkan_android_sync.c"] if name == "sync" else list(common)
-        if name in ("entry", "cache"):
+        if name == "queue":
+            sources = ["vulkan_android_queue.c"]
+        if name in ("entry", "cache", "renderer"):
             sources += ["vulkan_android_cache_entry.c"]
-        if name == "cache":
+        if name in ("cache", "renderer"):
             sources += ["vulkan_android_cache.c"]
+        if name == "renderer":
+            sources += ["vulkan_android_queue.c"]
         sources = [str(root / "gfx/common" / p) for p in sources]
-        if name != "sync":
+        if name not in ("sync", "queue"):
             sources += [str(root / "libretro-common/formats/image/image_yuv_blit.c")]
         binary = Path(directory) / (name + (".exe" if os.name == "nt" else ""))
         command = compiler + flags + [str(here / ("vulkan_" + name + "_test.c"))] + sources + helper + ["-o", str(binary), "-lm"]

@@ -65,8 +65,8 @@ vulkan_entry_test: vulkan_entry_test.c vulkan_submit_test.c $(SUBMIT_SOURCES) ..
 	$(CC) $(CFLAGS) -DHAVE_THREADS -I../../../gfx/include vulkan_entry_test.c $(SUBMIT_SOURCES) ../../../gfx/common/vulkan_android_cache_entry.c -o $@ $(LDFLAGS) -lm
 vulkan_cache_test: vulkan_cache_test.c vulkan_entry_test.c vulkan_submit_test.c $(SUBMIT_SOURCES) ../../../gfx/common/vulkan_android_cache_entry.c ../../../gfx/common/vulkan_android_cache.c ../../../gfx/common/vulkan_android_cache.h
 	$(CC) $(CFLAGS) -DHAVE_THREADS -I../../../gfx/include vulkan_cache_test.c $(SUBMIT_SOURCES) ../../../gfx/common/vulkan_android_cache_entry.c ../../../gfx/common/vulkan_android_cache.c -o $@ $(LDFLAGS) -lm
-vulkan_renderer_test: vulkan_renderer_test.c ../../../gfx/drivers/vulkan_android_video.h vulkan_cache_test.c vulkan_entry_test.c vulkan_submit_test.c $(SUBMIT_SOURCES) ../../../gfx/common/vulkan_android_cache_entry.c ../../../gfx/common/vulkan_android_cache.c ../../../gfx/common/vulkan_android_cache.h
-	$(CC) $(CFLAGS) -DHAVE_THREADS -I../../../gfx/include vulkan_renderer_test.c $(SUBMIT_SOURCES) ../../../gfx/common/vulkan_android_cache_entry.c ../../../gfx/common/vulkan_android_cache.c -o $@ $(LDFLAGS) -lm
+vulkan_renderer_test: ../../../gfx/common/vulkan_android_queue.c ../../../gfx/common/vulkan_android_queue.h vulkan_renderer_test.c ../../../gfx/drivers/vulkan_android_video.h vulkan_cache_test.c vulkan_entry_test.c vulkan_submit_test.c $(SUBMIT_SOURCES) ../../../gfx/common/vulkan_android_cache_entry.c ../../../gfx/common/vulkan_android_cache.c ../../../gfx/common/vulkan_android_cache.h
+	$(CC) $(CFLAGS) -DHAVE_THREADS -I../../../gfx/include vulkan_renderer_test.c $(SUBMIT_SOURCES) ../../../gfx/common/vulkan_android_queue.c ../../../gfx/common/vulkan_android_cache_entry.c ../../../gfx/common/vulkan_android_cache.c -o $@ $(LDFLAGS) -lm
 vulkan_device_test: vulkan_device_test.c ../../../gfx/common/vulkan_android_device.c ../../../gfx/common/vulkan_android_device.h
 	$(CC) $(CFLAGS) -I../../../gfx/include vulkan_device_test.c ../../../gfx/common/vulkan_android_device.c -o $@ $(LDFLAGS)
 check: all

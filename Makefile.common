@@ -1845,6 +1845,7 @@ ifeq ($(HAVE_VULKAN), 1)
                 gfx/common/vulkan_android_sync.o \
                 gfx/common/vulkan_android_pipeline.o \
                 gfx/common/vulkan_android_submit.o \
+                gfx/common/vulkan_android_queue.o \
                 gfx/common/vulkan_android_cache_entry.o \
                 gfx/common/vulkan_android_cache.o
          ifeq ($(HAVE_THREADS), 1)

@@ -19,8 +19,10 @@ typedef struct vulkan_android_submit_ops
    PFN_vkCmdBindDescriptorSets bind_sets;
    PFN_vkCmdPushConstants push;
    PFN_vkCmdDispatch dispatch;
-   /* The renderer supplies its existing queue-serialization wrapper. The
-    * helper must never submit directly to a queue shared with presentation. */
+   /* SUCCESS means submitted; NOT_READY means queued for the renderer's
+    * existing submission lock. TIMEOUT refuses without submitting or retaining
+    * pointers. A queued submission retains its frame until fence completion.
+    * The callback must copy submit data before returning NOT_READY. */
    VkResult (*submit)(void *context, VkQueue queue, uint32_t count,
          const VkSubmitInfo *submits, VkFence fence);
    void *submit_context;

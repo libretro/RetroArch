@@ -7,6 +7,8 @@
 #include <formats/image.h>
 #include "../../../gfx/common/vulkan_android_submit.h"
 #define H(t, n) ((t)(uintptr_t)(n))
+static VkResult submit_result = VK_SUCCESS;
+static int exports;
 static int native, deleted, submits, barriers, export_fail, end_fail,
       submit_fail, done_fd = -1;
 static VkResult fence_status = VK_SUCCESS;
@@ -112,6 +114,7 @@ static VKAPI_ATTR VkResult VKAPI_CALL export_fd(
       VkDevice d, const VkSemaphoreGetFdInfoKHR *p, int *fd)
 {
    assert(d && p);
+   exports++;
    if (export_fail)
       return VK_ERROR_TOO_MANY_OBJECTS;
    *fd = done_fd;
@@ -127,7 +130,7 @@ static VkResult submit(
    assert(*p->pWaitDstStageMask == VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
    submits++;
    fence_status = VK_NOT_READY;
-   return submit_fail ? VK_ERROR_DEVICE_LOST : VK_SUCCESS;
+   return submit_fail ? VK_ERROR_DEVICE_LOST : submit_result;
 }
 static vulkan_android_submission_t entry;
 static void setup(const android_frame_view_t *v)
@@ -248,6 +251,26 @@ int main(void)
    assert(vulkan_android_submission_after_device_destroy(&entry));
    assert(!entry.device && !entry.held_owner);
    assert(android_image_queue_poll(queue) == 1 && deleted == 4);
+   assert(android_image_queue_acquire(queue, &v.image) == 1);
+   assert(!android_frame_export(pool, &v, &f));
+   setup(&v);
+   submit_fail = export_fail = 0;
+   submit_result = VK_TIMEOUT;
+   exports = 0;
+   assert(vulkan_android_submission_present(&entry, &f, H(VkImage, 9),
+                H(VkImageView, 9), VK_IMAGE_LAYOUT_UNDEFINED) == 0);
+   assert(!entry.held_owner && !entry.inflight && !entry.broken && !exports);
+   submit_result = VK_NOT_READY;
+   assert(vulkan_android_submission_present(&entry, &f, H(VkImage, 9),
+                H(VkImageView, 9), VK_IMAGE_LAYOUT_UNDEFINED) == 1);
+   assert(entry.held_owner && entry.inflight && !exports);
+   video_hw_frame_abandon(&f);
+   assert(vulkan_android_submission_poll(&entry) == 0 && !exports);
+   assert(!android_image_queue_poll(queue));
+   fence_status = VK_SUCCESS;
+   assert(vulkan_android_submission_poll(&entry) == 1 && exports == 1);
+   assert(!entry.held_owner && android_image_queue_poll(queue) == 1);
+   submit_result = VK_SUCCESS;
    android_frame_pool_close(pool);
    assert(android_frame_pool_free(pool));
    android_image_queue_close(queue);
