@@ -851,6 +851,40 @@ static size_t menu_action_setting_disp_set_label_input_desc(
    return strlcpy(s, RARCH_NO_BIND, len);
 }
 
+/* Settings > Input > Controllers: a controller's player, or the one
+ * Auto gave it. */
+static size_t menu_action_setting_disp_set_label_input_plays_as(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *path,
+      char *s2, size_t len2)
+{
+   unsigned player, port;
+   unsigned row = type - MENU_SETTINGS_INPUT_PLAYS_AS_BEGIN;
+
+   *w = 19;
+   if (path && *path)
+      strlcpy(s2, path, len2);
+   player = (row < MAX_INPUT_DEVICES)
+      ? input_config_plays_as_player(row)
+      : input_config_plays_as_entry_player(row - MAX_INPUT_DEVICES);
+   if (player)
+      return snprintf(s, len, "%u", player);
+   switch (input_config_plays_as_where(row, &player, &port))
+   {
+      case INPUT_PLAYS_AS_SHARING:
+      case INPUT_PLAYS_AS_OWN_PORT:
+         return snprintf(s, len,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_PLAYS_AS_AUTO_PLAYER),
+               player);
+      default:
+         break;
+   }
+   return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUTO), len);
+}
+
 static size_t menu_action_setting_disp_set_label_input_desc_kbd(
    file_list_t* list,
    unsigned *w, unsigned type, unsigned i,
@@ -2358,6 +2392,11 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
          MENU_SETTINGS_REMAPPING_PORT_BEGIN,
          MENU_SETTINGS_REMAPPING_PORT_END,
          menu_action_setting_disp_set_label_menu_more
+      },
+      {
+         MENU_SETTINGS_INPUT_PLAYS_AS_BEGIN,
+         MENU_SETTINGS_INPUT_PLAYS_AS_END,
+         menu_action_setting_disp_set_label_input_plays_as
       },
    };
 
