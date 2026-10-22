@@ -16,7 +16,8 @@ enum gfx_media_action
 {
    GFX_MEDIA_ACTIVATE, GFX_MEDIA_PREVIOUS, GFX_MEDIA_NEXT,
    GFX_MEDIA_FOCUS, GFX_MEDIA_UNFOCUS, GFX_MEDIA_STOP,
-   GFX_MEDIA_SEEK_BACK, GFX_MEDIA_SEEK_FORWARD
+   GFX_MEDIA_SEEK_BACK, GFX_MEDIA_SEEK_FORWARD,
+   GFX_MEDIA_PLAY, GFX_MEDIA_PAUSE
 };
 /* A framebuffer player and a texture player provide the same transport
  * interface. identity changes when their underlying session changes. */
