@@ -94,6 +94,10 @@ static unsigned fd_count(void)
    return count;
 }
 
+#ifdef NATIVE_VULKAN_IMPORT
+#include "native_import.h"
+#endif
+
 static void retire_owner(void)
 {
    uint64_t deadline = now_usec() + 10000000u;
@@ -189,6 +193,9 @@ static void compare_pixels(const vaapi_frame_view_t *view,
             (unsigned)crc[1], (unsigned)crc[2], (unsigned)expected[0],
             (unsigned)expected[1], (unsigned)expected[2]);
    assert(!memcmp(crc, expected, sizeof(crc)));
+#ifdef NATIVE_VULKAN_IMPORT
+   native_import_check(source);
+#endif
    assert(session->slice_mode == VA_DEC_SLICE_MODE_NORMAL
           || session->slice_mode == VA_DEC_SLICE_MODE_BASE);
    modes |= session->slice_mode;
@@ -309,6 +316,15 @@ int main(int argc, char **argv)
    node          = argv[1];
    major_id      = major(status.st_rdev);
    minor_id      = minor(status.st_rdev);
+#ifdef NATIVE_VULKAN_IMPORT
+   if (!native_import_open(major_id, minor_id))
+   {
+      native_import_close();
+      fputs("UNAVAILABLE: no matching Vulkan DRM modifier import device\n",
+            stderr);
+      return 2;
+   }
+#endif
    backend.user  = NULL;
    backend.open  = open_owner;
    backend.close = close_owner;
@@ -319,22 +335,37 @@ int main(int argc, char **argv)
          if (!execute(&sequence_cases[i], false))
          {
             assert(rh265_unset_hw_backend(&backend));
+#ifdef NATIVE_VULKAN_IMPORT
+            native_import_close();
+#endif
             return 2;
          }
       for (i = 0; i < sizeof(reorder_cases) / sizeof(reorder_cases[0]); i++)
          if (!execute(&reorder_cases[i], false))
          {
             assert(rh265_unset_hw_backend(&backend));
+#ifdef NATIVE_VULKAN_IMPORT
+            native_import_close();
+#endif
             return 2;
          }
       for (i = 0; i < sizeof(weighted_cases) / sizeof(weighted_cases[0]); i++)
          if (!execute(&weighted_cases[i], true))
          {
             assert(rh265_unset_hw_backend(&backend));
+#ifdef NATIVE_VULKAN_IMPORT
+            native_import_close();
+#endif
             return 2;
          }
    }
    assert(total == 192 && rh265_unset_hw_backend(&backend));
+#ifdef NATIVE_VULKAN_IMPORT
+   assert(imported == 216);
+   native_import_close();
+   puts("PASS: 216 real VA modifier allocation/import/retirement checks; "
+        "GPU sampling/pixel comparison remains separate");
+#endif
    printf(
          "PASS native VA oracle: %u pictures, selected slice-mode mask %u; Vulkan modifier import remains separate\n",
          total, modes);

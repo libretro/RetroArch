@@ -138,3 +138,14 @@ each stream exercises nondefault L1 weights. CRCs come from FFmpeg with matching
 full/limited input and output range, preventing implicit range conversion in the
 reference. `python3 weighted_fixtures.py --trace-dir /tmp/hevc-traces` regenerates
 the data and manifest, with optional syntax-trace evidence outside the checkout.
+
+`make native-import-check VAAPI_RENDER_NODE=/dev/dri/renderD128` additionally
+selects a Vulkan physical device by its reported DRM render-node identity and
+requires the DMA-BUF/modifier/foreign-queue extensions. Every decoded export,
+including each retained output after parser close, passes the production
+two-layer modifier importer and retires its Vulkan images/views/memory before
+the VA claim is returned. Each of the 216 import checks restores its FD baseline.
+No queue submission or GPU pixel readback is performed by this allocation gate;
+successful allocation alone does not establish GPU sampling or conversion pixels.
+Missing matching hardware returns nonzero UNAVAILABLE. Compile coverage does not
+establish that any of these native import checks executed.

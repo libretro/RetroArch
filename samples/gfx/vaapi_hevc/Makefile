@@ -15,6 +15,7 @@ endif
 ifeq ($(shell uname -s),Linux)
 NATIVE_PROBE = native_probe
 NATIVE_DECODE = native_decode
+NATIVE_IMPORT = native_import
 FRAME_THREAD_SOURCES = ../../../libretro-common/queues/retro_spsc.c
 FRAME_THREAD_FLAGS = -pthread
 endif
@@ -131,7 +132,7 @@ ifneq ($(NATIVE_PROBE),)
 endif
 clean:
 	rm -f weighted_test weighted_test.exe
-	rm -f native_decode native_pixels_test native_pixels_test.exe
+	rm -f native_import native_decode native_pixels_test native_pixels_test.exe
 	rm -f rh265_test.o rh265_tsan.o
 	rm -f long_packet_test long_packet_test.exe
 	rm -f long_slice_test long_slice_test.exe
@@ -150,7 +151,7 @@ frame_tsan_test$(EXE) lease_tsan_test$(EXE): rh265_tsan.o
 
 native_pixels_test$(EXE): native_pixels_test.c native_pixels.h
 	$(CC) $(CFLAGS) native_pixels_test.c -o $@ $(LDFLAGS)
-all: native_pixels_test$(EXE) $(NATIVE_DECODE)
+all: native_pixels_test$(EXE) $(NATIVE_DECODE) $(NATIVE_IMPORT)
 NATIVE_DECODE_SOURCES := native_decode.c ../../../gfx/common/vaapi_hevc_owner.c ../../../gfx/common/vaapi_hevc_decoder.c ../../../gfx/common/vaapi_frame.c ../../../gfx/common/vaapi_hevc_pool.c ../../../gfx/common/vaapi_hevc_export.c ../../../gfx/common/vaapi_hevc_runtime.c ../../../gfx/common/vaapi_hevc_session.c ../../../gfx/common/vaapi_hevc_submit.c ../../../libretro-common/dynamic/dylib.c
 native_decode: $(NATIVE_DECODE_SOURCES) rh265_test.o native_pixels.h ../videotoolbox_hevc/sequence_data.h ../videotoolbox_hevc/reorder_data.h
 	$(CC) $(CFLAGS) $(NATIVE_DECODE_SOURCES) rh265_test.o -o $@ $(LDFLAGS) -ldl -lva
@@ -161,3 +162,10 @@ weighted_test$(EXE): weighted_test.c test.c weighted_data.h native_pixels.h rh26
 	$(CC) $(CFLAGS) -Wno-unused-parameter weighted_test.c rh265_test.o -o $@ $(LDFLAGS) -lm
 all: weighted_test$(EXE)
 native_decode: weighted_data.h
+
+NATIVE_IMPORT_SOURCES := ../../../gfx/common/vulkan_prime_image.c ../../../gfx/common/vaapi_hevc_vulkan_frame.c
+native_import: $(NATIVE_DECODE_SOURCES) $(NATIVE_IMPORT_SOURCES) native_import.h native_pixels.h weighted_data.h rh265_test.o
+	$(CC) $(CFLAGS) -DNATIVE_VULKAN_IMPORT $(NATIVE_DECODE_SOURCES) $(NATIVE_IMPORT_SOURCES) rh265_test.o -o $@ $(LDFLAGS) -ldl -lva -lvulkan -ldrm
+native-import-check: native_import
+	./native_import "$(VAAPI_RENDER_NODE)"
+.PHONY: native-import-check
