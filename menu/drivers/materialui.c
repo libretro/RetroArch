@@ -2019,10 +2019,57 @@ static const materialui_theme_t *materialui_get_theme(enum materialui_color_them
    return &materialui_theme_blue;
 }
 
+typedef struct
+{
+   uint16_t dst;   /* byte offset into materialui_colors_t */
+   uint8_t  src;   /* byte offset into materialui_theme_t  */
+   uint8_t  alpha;
+} materialui_color_map_t;
+
+#define MUI_COLOR_MAP(s, d, a) \
+   { (uint16_t)offsetof(materialui_colors_t, d), \
+     (uint8_t)offsetof(materialui_theme_t, s), (a) }
+
+typedef char materialui_color_map_src_check[
+   (sizeof(materialui_theme_t) <= 256) ? 1 : -1];
+
+static const materialui_color_map_t materialui_color_map[] = {
+   MUI_COLOR_MAP(sys_bar_background, sys_bar_background, 1),
+   MUI_COLOR_MAP(title_bar_background, title_bar_background, 1),
+   MUI_COLOR_MAP(list_background, list_background, 1),
+   MUI_COLOR_MAP(list_highlighted_background, list_highlighted_background, 1),
+   MUI_COLOR_MAP(nav_bar_background, nav_bar_background, 1),
+   MUI_COLOR_MAP(surface_background, surface_background, 1),
+   MUI_COLOR_MAP(thumbnail_background, thumbnail_background, 1),
+   MUI_COLOR_MAP(side_bar_background, side_bar_background, 1),
+   MUI_COLOR_MAP(status_bar_background, status_bar_background, 1),
+   MUI_COLOR_MAP(on_sys_bar, sys_bar_icon, 1),
+   MUI_COLOR_MAP(on_header, header_icon, 1),
+   MUI_COLOR_MAP(list_icon, list_icon, 1),
+   MUI_COLOR_MAP(list_switch_on, list_switch_on, 1),
+   MUI_COLOR_MAP(list_switch_on_background, list_switch_on_background, 1),
+   MUI_COLOR_MAP(list_switch_off, list_switch_off, 1),
+   MUI_COLOR_MAP(list_switch_off_background, list_switch_off_background, 1),
+   MUI_COLOR_MAP(nav_bar_icon_active, nav_bar_icon_active, 1),
+   MUI_COLOR_MAP(nav_bar_icon_passive, nav_bar_icon_passive, 1),
+   MUI_COLOR_MAP(nav_bar_icon_disabled, nav_bar_icon_disabled, 1),
+   MUI_COLOR_MAP(header_shadow, header_shadow, 0),
+   MUI_COLOR_MAP(landscape_border_shadow, landscape_border_shadow_left, 0),
+   MUI_COLOR_MAP(landscape_border_shadow, landscape_border_shadow_right, 0),
+   MUI_COLOR_MAP(status_bar_shadow, status_bar_shadow, 0),
+   MUI_COLOR_MAP(selection_marker_shadow, selection_marker_shadow_top, 0),
+   MUI_COLOR_MAP(selection_marker_shadow, selection_marker_shadow_bottom, 0),
+   MUI_COLOR_MAP(scrollbar, scrollbar, 1),
+   MUI_COLOR_MAP(divider, divider, 1),
+   MUI_COLOR_MAP(divider, entry_divider, 1),
+   MUI_COLOR_MAP(missing_thumbnail_icon, missing_thumbnail_icon, 1),
+};
+
 static void materialui_prepare_colors(
       materialui_handle_t *mui, enum materialui_color_theme color_theme)
 {
    const materialui_theme_t *current_theme = materialui_get_theme(color_theme);
+   size_t i;
 
    /* Parse theme colours */
 
@@ -2037,102 +2084,14 @@ static void materialui_prepare_colors(
    /* Disabled color */
    mui->colors.disabled_text              = (current_theme->list_text                  << 8) | 0x7F;
 
-   /* > Background colours */
-   hex32_to_rgba_normalized(
-            current_theme->sys_bar_background,
-            mui->colors.sys_bar_background, 1.0f);
-   hex32_to_rgba_normalized(
-            current_theme->title_bar_background,
-            mui->colors.title_bar_background, 1.0f);
-   hex32_to_rgba_normalized(
-            current_theme->list_background,
-            mui->colors.list_background, 1.0f);
-   hex32_to_rgba_normalized(
-            current_theme->list_highlighted_background,
-            mui->colors.list_highlighted_background, 1.0f);
-   hex32_to_rgba_normalized(
-            current_theme->nav_bar_background,
-            mui->colors.nav_bar_background, 1.0f);
-   hex32_to_rgba_normalized(
-            current_theme->surface_background,
-            mui->colors.surface_background, 1.0f);
-   hex32_to_rgba_normalized(
-            current_theme->thumbnail_background,
-            mui->colors.thumbnail_background, 1.0f);
-   hex32_to_rgba_normalized(
-            current_theme->side_bar_background,
-            mui->colors.side_bar_background, 1.0f);
-   hex32_to_rgba_normalized(
-            current_theme->status_bar_background,
-            mui->colors.status_bar_background, 1.0f);
-
-   /* > System bar + header icon colours */
-   hex32_to_rgba_normalized(
-            current_theme->on_sys_bar,
-            mui->colors.sys_bar_icon, 1.0f);
-   hex32_to_rgba_normalized(
-            current_theme->on_header,
-            mui->colors.header_icon, 1.0f);
-
-   /* > List icon colours */
-   hex32_to_rgba_normalized(
-            current_theme->list_icon,
-            mui->colors.list_icon, 1.0f);
-   hex32_to_rgba_normalized(
-            current_theme->list_switch_on,
-            mui->colors.list_switch_on, 1.0f);
-   hex32_to_rgba_normalized(
-            current_theme->list_switch_on_background,
-            mui->colors.list_switch_on_background, 1.0f);
-   hex32_to_rgba_normalized(
-            current_theme->list_switch_off,
-            mui->colors.list_switch_off, 1.0f);
-   hex32_to_rgba_normalized(
-            current_theme->list_switch_off_background,
-            mui->colors.list_switch_off_background, 1.0f);
-
-   /* > Navigation bar icon colours */
-   hex32_to_rgba_normalized(
-            current_theme->nav_bar_icon_active,
-            mui->colors.nav_bar_icon_active, 1.0f);
-   hex32_to_rgba_normalized(
-            current_theme->nav_bar_icon_passive,
-            mui->colors.nav_bar_icon_passive, 1.0f);
-   hex32_to_rgba_normalized(
-            current_theme->nav_bar_icon_disabled,
-            mui->colors.nav_bar_icon_disabled, 1.0f);
-
-   /* > Misc. colours */
-   hex32_to_rgba_normalized(
-            current_theme->header_shadow,
-            mui->colors.header_shadow, 0.0f);
-   hex32_to_rgba_normalized(
-            current_theme->landscape_border_shadow,
-            mui->colors.landscape_border_shadow_left, 0.0f);
-   hex32_to_rgba_normalized(
-            current_theme->landscape_border_shadow,
-            mui->colors.landscape_border_shadow_right, 0.0f);
-   hex32_to_rgba_normalized(
-            current_theme->status_bar_shadow,
-            mui->colors.status_bar_shadow, 0.0f);
-   hex32_to_rgba_normalized(
-            current_theme->selection_marker_shadow,
-            mui->colors.selection_marker_shadow_top, 0.0f);
-   hex32_to_rgba_normalized(
-            current_theme->selection_marker_shadow,
-            mui->colors.selection_marker_shadow_bottom, 0.0f);
-   hex32_to_rgba_normalized(
-            current_theme->scrollbar,
-            mui->colors.scrollbar, 1.0f);
-   hex32_to_rgba_normalized(
-            current_theme->divider,
-            mui->colors.divider, 1.0f);
-   hex32_to_rgba_normalized(
-            current_theme->divider,
-            mui->colors.entry_divider, 1.0f);
-   hex32_to_rgba_normalized(
-            current_theme->missing_thumbnail_icon,
-            mui->colors.missing_thumbnail_icon, 1.0f);
+   for (i = 0; i < ARRAY_SIZE(materialui_color_map); i++)
+   {
+      const materialui_color_map_t *m = &materialui_color_map[i];
+      hex32_to_rgba_normalized(
+            *(const uint32_t*)((const char*)current_theme + m->src),
+            (float*)((char*)&mui->colors + m->dst),
+            (float)m->alpha);
+   }
 
    /* Have to record nominal screen fade opacity,
     * since the actual value is set dynamically
