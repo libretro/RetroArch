@@ -90,6 +90,9 @@ static bool mock_constant_value(const void *value)
 
 static void retain(const void *value)
 {
+   assert(value);
+   if (value == kCFBooleanTrue || value == kCFBooleanFalse)
+      return;
    if (!mock_constant_value(value))
       retro_atomic_fetch_add_int(&((struct object *)value)->refs, 1);
 }
