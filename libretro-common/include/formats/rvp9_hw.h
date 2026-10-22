@@ -49,6 +49,8 @@ RETRO_BEGIN_DECLS
 /* Publish immutable backend storage before opening streams; NULL withdraws it.
  * The backend/user must outlive its open decoders. Existing sessions keep close. */
 void rvp9_set_hw_backend(const rvp9_hw_backend_t *backend);
+/* Withdraw only this offer; leave a replacement backend registered. */
+int rvp9_unset_hw_backend(const rvp9_hw_backend_t *backend);
 bool rvp9_hw_backend_open(const rvp9_hdr *header, unsigned slots,
       rvp9_hw_ops_t *ops, rvp9_hw_backend_t *backend);
 bool rvp9_hw_backend_open_color(const rvp9_hdr *header,

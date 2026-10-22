@@ -11,7 +11,7 @@ ifneq ($(SANITIZER),)
 CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
-all: color_refine_test test hevc_backend_test hevc_decoder_test vulkan_image_test vulkan_sync_test vulkan_pipeline_test android_frame_test frame_export_test vulkan_submit_test vulkan_entry_test vulkan_cache_test vulkan_renderer_test vulkan_device_test
+all: vp9_backend_test color_refine_test test hevc_backend_test hevc_decoder_test vulkan_image_test vulkan_sync_test vulkan_pipeline_test android_frame_test frame_export_test vulkan_submit_test vulkan_entry_test vulkan_cache_test vulkan_renderer_test vulkan_device_test
 all: vp9_decoder_test
 all: vp9_color_test
 vp9_decoder_test: vp9_decoder_test.c ../../../gfx/common/mediacodec_vp9_decoder.c ../../../gfx/common/mediacodec_vp9_decoder.h ../../../gfx/common/mediacodec_color.c ../../../gfx/common/mediacodec_color.h ../../../gfx/common/android_image_queue.c ../../../libretro-common/include/formats/rvp9_hw.h
@@ -61,6 +61,7 @@ vulkan_renderer_test: vulkan_renderer_test.c ../../../gfx/drivers/vulkan_android
 vulkan_device_test: vulkan_device_test.c ../../../gfx/common/vulkan_android_device.c ../../../gfx/common/vulkan_android_device.h
 	$(CC) $(CFLAGS) -I../../../gfx/include vulkan_device_test.c ../../../gfx/common/vulkan_android_device.c -o $@ $(LDFLAGS)
 check: all
+	./vp9_backend_test
 	./vp9_color_test
 	./vp9_decoder_test
 	./color_refine_test
@@ -79,6 +80,7 @@ check: all
 	./vulkan_device_test
 	CC="$(CC)" python3 root_optional_test.py
 clean:
+	rm -f vp9_backend_test vp9_backend_test.exe
 	rm -f vp9_color_test vp9_color_test.exe
 	rm -f vp9_decoder_test vp9_decoder_test.exe
 	rm -f color_refine_test test hevc_backend_test hevc_decoder_test vulkan_image_test vulkan_sync_test vulkan_pipeline_test vulkan_rgb_gpu_test android_frame_test frame_export_test vulkan_submit_test vulkan_entry_test vulkan_cache_test vulkan_renderer_test vulkan_device_test
@@ -86,3 +88,6 @@ clean:
 
 hevc_backend_test: hevc_backend_test.c registry_test.h ../../../gfx/common/mediacodec_hevc_registry.h ../../../gfx/common/mediacodec_hevc_backend.c ../../../gfx/common/mediacodec_hevc_backend.h
 	$(CC) $(CFLAGS) $(BACKEND_HOST_FLAGS) -D_DEFAULT_SOURCE -DHAVE_THREADS -pthread hevc_backend_test.c ../../../gfx/common/mediacodec_frame_export.c ../../../gfx/common/mediacodec_color.c ../../../gfx/common/android_frame.c ../../../gfx/common/android_image_queue.c ../../../libretro-common/rthreads/rthreads.c ../../../libretro-common/rthreads/retro_eventcount.c -o $@ $(LDFLAGS) -lm
+
+vp9_backend_test: vp9_backend_test.c vp9_registry_test.h ../../../gfx/common/mediacodec_vp9_registry.h ../../../gfx/common/mediacodec_vp9_backend.c ../../../gfx/common/mediacodec_vp9_backend.h
+	$(CC) $(CFLAGS) $(BACKEND_HOST_FLAGS) -D_DEFAULT_SOURCE -DHAVE_THREADS -pthread vp9_backend_test.c $(EXPORT_SOURCES) ../../../libretro-common/rthreads/rthreads.c ../../../libretro-common/rthreads/retro_eventcount.c -o $@ $(LDFLAGS) -lm

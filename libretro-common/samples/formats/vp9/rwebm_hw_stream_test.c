@@ -204,6 +204,12 @@ static int color_admission(void)
    header.bit_depth = 8;
    header.w = 64;
    header.h = 48;
+   rvp9_set_hw_backend(&backend);
+   CHECK(!rvp9_unset_hw_backend(NULL) && !rvp9_unset_hw_backend(&colors));
+   CHECK(rvp9_hw_backend_open(&header, 10, &ops, &snapshot));
+   snapshot.close(&ops);
+   CHECK(rvp9_unset_hw_backend(&backend) && !rvp9_unset_hw_backend(&backend));
+   CHECK(!rvp9_hw_backend_open(&header, 10, &ops, &snapshot));
    color_only.open = NULL;
    rvp9_set_hw_backend(&color_only);
    CHECK(rvp9_hw_backend_open(&header, 10, &ops, &snapshot));

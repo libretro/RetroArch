@@ -50,6 +50,20 @@ void rvp9_set_hw_backend(const rvp9_hw_backend_t *backend)
 #endif
 }
 
+int rvp9_unset_hw_backend(const rvp9_hw_backend_t *backend)
+{
+   if (!backend)
+      return 0;
+#ifdef RETRO_ATOMIC_HAS_PTR
+   return retro_atomic_cas_ptr(&rvp9_backend, (void*)backend, NULL);
+#else
+   if (rvp9_backend != backend)
+      return 0;
+   rvp9_backend = NULL;
+   return 1;
+#endif
+}
+
 bool rvp9_hw_backend_open_color(const rvp9_hdr *header,
       const video_color_metadata_t *color, unsigned slots,
       rvp9_hw_ops_t *ops, rvp9_hw_backend_t *backend)
