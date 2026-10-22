@@ -181,9 +181,11 @@ static uint8_t *spsc_mirror_alloc(size_t size)
    for (tries = 0; tries < 8 && !base; tries++)
    {
       char name[48];
-      int  fd;
-      sprintf(name, "/retro_spsc.%lu.%u", (unsigned long)getpid(),
-            serial++);
+      int  fd, length;
+      length = snprintf(name, sizeof(name), "/retro_spsc.%lu.%u",
+            (unsigned long)getpid(), serial++);
+      if (length < 0 || (size_t)length >= sizeof(name))
+         continue;
       if ((fd = shm_open(name, O_RDWR | O_CREAT | O_EXCL, 0600)) < 0)
          continue;
       shm_unlink(name);
