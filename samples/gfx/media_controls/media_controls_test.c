@@ -14,12 +14,19 @@ typedef struct fake_player
    gfx_thumbnail_playback_state_t state;
    int64_t last_seek;
    unsigned seeks, pauses;
-   bool available;
+   bool available, pause_refused;
 } fake_player_t;
 static bool fake_state(void *p, int64_t now, gfx_thumbnail_playback_state_t *out)
 { CHECK(!drawing); (void)now; *out = ((fake_player_t*)p)->state; return ((fake_player_t*)p)->available; }
 static bool fake_pause(void *p, bool paused, int64_t now)
-{ fake_player_t *f = (fake_player_t*)p; (void)now; f->state.paused = paused; f->pauses++; return true; }
+{
+   fake_player_t *f = (fake_player_t*)p;
+   (void)now;
+   f->pauses++;
+   if (f->pause_refused) return false;
+   f->state.paused = paused;
+   return true;
+}
 static bool fake_seek(void *p, int64_t target, int64_t now)
 { fake_player_t *f = (fake_player_t*)p; (void)now; f->last_seek = target; f->state.position_us = target; f->seeks++; return true; }
 /* The thumbnail adapter is not used by this CPU/texture-neutral oracle. */
@@ -56,6 +63,41 @@ void gfx_display_draw_text(const font_data_t *font, const char *text,
    CHECK(x >= 0.0f && x <= VIDEO_SCALE_W(dims));
    CHECK(y >= 0.0f && y <= VIDEO_SCALE_H(dims));
    captions++;
+}
+
+static void explicit_playback(void)
+{
+   gfx_media_controls_t c;
+   gfx_media_target_t target;
+   fake_player_t f;
+   memset(&c, 0, sizeof(c));
+   memset(&target, 0, sizeof(target));
+   memset(&f, 0, sizeof(f));
+   f.available = true;
+   target.user = &f;
+   target.identity = &f;
+   target.state = fake_state;
+   target.pause = fake_pause;
+   target.seek = fake_seek;
+   CHECK(gfx_media_controls_update(&c, &target, 640, 480, 1));
+   CHECK(gfx_media_controls_action(&c, GFX_MEDIA_FOCUS, 2));
+   c.focus = 3;
+   CHECK(gfx_media_controls_action(&c, GFX_MEDIA_PLAY, 3));
+   CHECK(!f.state.paused && !f.pauses && !f.seeks);
+   CHECK(gfx_media_controls_action(&c, GFX_MEDIA_PAUSE, 4));
+   CHECK(gfx_media_controls_action(&c, GFX_MEDIA_PAUSE, 5));
+   CHECK(f.state.paused && f.pauses == 1 && !f.seeks);
+   f.pause_refused = true;
+   CHECK(!gfx_media_controls_action(&c, GFX_MEDIA_PLAY, 6));
+   CHECK(f.state.paused && f.pauses == 2);
+   f.pause_refused = false;
+   CHECK(gfx_media_controls_action(&c, GFX_MEDIA_PLAY, 7));
+   CHECK(gfx_media_controls_action(&c, GFX_MEDIA_PLAY, 8));
+   CHECK(!f.state.paused && f.pauses == 3 && !f.seeks);
+   CHECK(c.row_focus && c.focus == 3);
+   f.available = false;
+   CHECK(!gfx_media_controls_action(&c, GFX_MEDIA_PAUSE, 9));
+   CHECK(f.pauses == 3 && !c.target.user);
 }
 
 static void failed_seek_transport(void)
@@ -288,6 +330,7 @@ static void mailbox_races(void)
 int main(void)
 {
    transport();
+   explicit_playback();
    failed_seek_transport();
    menu_transport();
 #ifdef HAVE_THREADS

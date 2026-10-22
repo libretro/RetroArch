@@ -131,6 +131,10 @@ bool gfx_media_controls_action(gfx_media_controls_t *c,
          }
          return gfx_media_button(c, action == GFX_MEDIA_PREVIOUS ? 1 : 2, now);
       case GFX_MEDIA_ACTIVATE: return gfx_media_button(c, c->row_focus ? c->focus : 0, now);
+      case GFX_MEDIA_PLAY:
+         return !c->playback.paused || c->target.pause(c->target.user, false, now);
+      case GFX_MEDIA_PAUSE:
+         return c->playback.paused || c->target.pause(c->target.user, true, now);
       case GFX_MEDIA_STOP: return gfx_media_button(c, 3, now);
       case GFX_MEDIA_SEEK_BACK: return gfx_media_button(c, 1, now);
       case GFX_MEDIA_SEEK_FORWARD: return gfx_media_button(c, 2, now);
