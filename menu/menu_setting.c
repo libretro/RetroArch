@@ -3102,7 +3102,6 @@ static int setting_action_ok_bind_all_save_autoconfig(
          && *name
          && config_save_autoconf_profile(name, index_offset))
    {
-      int i;
       size_t _len;
       char buf[128];
       char msg[NAME_MAX_LENGTH];
@@ -3110,22 +3109,9 @@ static int setting_action_ok_bind_all_save_autoconfig(
       config_get_autoconf_profile_filename(name, map, buf, sizeof(buf));
       _len = snprintf(msg, sizeof(msg),
             msg_hash_to_str(MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED), buf);
+      /* only the file: the pad and its binds are left as they are */
       runloop_msg_queue_push(msg, _len, 1, 180, true,
             NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_SUCCESS);
-
-      /* Clear manual controller binds */
-      for ( i  = MENU_SETTINGS_BIND_BEGIN;
-            i <= MENU_SETTINGS_BIND_LAST; i++)
-      {
-         /* each bind by its number, not by stepping along the row */
-         struct retro_keybind *target = input_config_bind_edit(
-               index_offset, i - MENU_SETTINGS_BIND_BEGIN);
-         target->joykey  = NO_BTN;
-         target->joyaxis = AXIS_NONE;
-      }
-
-      /* Load and activate saved profile */
-      input_driver_autoconfigure_pad(map);
    }
    else
    {
