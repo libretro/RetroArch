@@ -7,7 +7,12 @@
 #undef main
 #define VAAPI_HEVC_RUNTIME_TEST
 #include "../../../gfx/common/vaapi_hevc_runtime.c"
-static vaapi_hevc_runtime_t runtime,exports;
+#ifndef VAAPI_RUNTIME_TEST_CONTEXT
+static vaapi_hevc_runtime_t runtime;
+#else
+#define runtime (*VAAPI_RUNTIME_TEST_CONTEXT)
+#endif
+static vaapi_hevc_runtime_t exports;
 static unsigned loads,unloads,lookups,fd_closes,display_calls,init_calls,term_calls;
 static unsigned missing_symbol,failed_load,term_failures;
 static int fd_live,display_live,driver_live,node_kind,display_fail,init_fail,bad_version,fd_value;
@@ -144,7 +149,10 @@ static void runtime_cases(void)
  runtime_reset();assert(!vaapi_hevc_runtime_open_with_io(&runtime,"/render-test",226,129,64,64,depth,4,mode,&io));
  assert(vaapi_hevc_runtime_close(&runtime) && !loads && !fd_closes);
 }
-int main(void)
+#ifndef VAAPI_RUNTIME_TEST_MAIN
+#define VAAPI_RUNTIME_TEST_MAIN main
+#endif
+int VAAPI_RUNTIME_TEST_MAIN(void)
 {
  for(depth=8;depth<=10;depth+=2)
   for(mode=VA_DEC_SLICE_MODE_NORMAL;mode<=VA_DEC_SLICE_MODE_BASE;mode++)runtime_cases();

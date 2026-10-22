@@ -38,7 +38,8 @@ bool vaapi_hevc_runtime_open(vaapi_hevc_runtime_t *r,const char *path,
 bool vaapi_hevc_runtime_open_with_io(vaapi_hevc_runtime_t *r,const char *path,
       unsigned major_id,unsigned minor_id,unsigned width,unsigned height,
       unsigned depth,unsigned slots,unsigned slice_mode,const vaapi_hevc_runtime_io_t *io);
-/* Cold executor, after native/GPU work and exports retire. False retains the
+/* Cold executor, after exports retire and native work completes, or to recover
+ * a poisoned pool whose decoder has stopped. False retains the
  * libraries, display and FD. Once termination begins, only vaTerminate may be
  * retried: an unsuccessful termination can already invalidate the driver. */
 bool vaapi_hevc_runtime_close(vaapi_hevc_runtime_t *r);

@@ -48,6 +48,13 @@ The adapter borrows its native pool; the factory must keep that pool, session
 and runtime alive through deferred retirement and drive collection on owner
 ticks. Native factory registration and device acceptance remain open.
 
+`owner_test` composes the cold runtime, native pool, packet workspace and
+decoder adapter. It faults allocations, native symbols/libraries and adapter
+setup, retains exports across detach, polls pending work once per pass and
+retries termination without further decoder calls. Cleanup belongs on the
+existing cold retirement executor; the owner is not itself an executor or a
+registered decoder factory. Native device acceptance remains separate.
+
 `make gpu-check SANITIZER=address,undefined` additionally needs the Vulkan
 loader, development library, validation layer and a device supporting
 Vulkan 1.1, external-memory FD and foreign queue ownership. Mesa lavapipe
