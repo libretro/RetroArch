@@ -65,6 +65,13 @@ with tempfile.TemporaryDirectory(prefix="vt-vp9-setup-") as directory:
     subprocess.run(command, check=True)
     subprocess.run(shlex.split(os.environ.get("RUNNER", "")) + [str(binary)], check=True, timeout=90)
 
+    command = compiler + flags + [str(here / "snapshot_test.c"), str(thread_object),
+        "-o", str(binary)] + libraries
+    print("+", shlex.join(command), flush=True)
+    subprocess.run(command, check=True)
+    subprocess.run(shlex.split(os.environ.get("RUNNER", "")) + [str(binary)],
+                   check=True, timeout=90)
+
     if not args.native:
         for name in ("owner_test.c", "decoder_test.c", "dispatch_test.c", "backend_test.c"):
             command = compiler + flags + [str(here / name), str(thread_object),

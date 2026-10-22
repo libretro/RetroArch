@@ -4,14 +4,10 @@
 #define RETROARCH_VIDEOTOOLBOX_VP9_BACKEND_H
 #include "videotoolbox_vp9_dispatch.h"
 #include "metal_frame_convert.h"
+#include "metal_decoder_snapshot.h"
 #ifdef VIDEOTOOLBOX_VP9_OWNER
 
-typedef struct videotoolbox_vp9_device
-{
-   void *device;
-   uintptr_t generation;
-   bool hdr;
-} videotoolbox_vp9_device_t;
+typedef metal_decoder_snapshot_view_t videotoolbox_vp9_device_t;
 
 typedef struct videotoolbox_vp9_backend
 {
