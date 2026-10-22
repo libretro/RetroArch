@@ -3,6 +3,8 @@
 #define RVP9_MP4_FIXTURE_H
 static uint8_t clip[4096];
 static size_t clip_size, config_at, colr_at;
+static const uint8_t *sample_data[2];
+static size_t sample_size[2];
 static void put(unsigned v)
 {
    clip[clip_size++] = (uint8_t)v;
@@ -130,8 +132,10 @@ static void fixture(const uint8_t *config, int with_colr)
    end(b);
    b = box("stsz");
    be32(0);
-   be32(1);
+   be32(0);
    be32(2);
+   be32((uint32_t)(sample_size[0] ? sample_size[0] : 1));
+   be32((uint32_t)(sample_size[1] ? sample_size[1] : 1));
    end(b);
    b = box("stco");
    be32(0);
@@ -151,8 +155,16 @@ static void fixture(const uint8_t *config, int with_colr)
    end(moov);
    b = box("mdat");
    patch(chunk, (uint32_t)clip_size);
-   put(0);
-   put(0);
+   for (i = 0; i < 2; i++)
+   {
+      if (sample_data[i] && sample_size[i])
+      {
+         memcpy(clip + clip_size, sample_data[i], sample_size[i]);
+         clip_size += sample_size[i];
+      }
+      else
+         put(0);
+   }
    end(b);
 }
 #endif

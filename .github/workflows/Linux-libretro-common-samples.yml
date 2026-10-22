@@ -351,6 +351,7 @@ jobs:
             # VP9 reference-slot sizing, the hardware session's
             # metadata, retries and frame leases, and WebM dispatch
             # into it.
+            rmp4_vp9_hw_stream_test
             rmp4_vp9_config_test
             rvp9_config_test
             rvp9_reference_test
