@@ -294,7 +294,7 @@ static int rh265_bits_overrun(const rh265_bits *b)
 #define RH265_MAX_PPS       64
 #define RH265_MAX_ST_RPS    65
 /* one substream per CTB row: 16888 / 16 rows at the smallest CTB */
-#define RH265_MAX_ENTRY_POINTS 1056
+#define RH265_MAX_ENTRY_POINTS RH265_SLICE_ENTRY_POINTS_MAX
 #define RH265_MAX_REFS      16
 #define RH265_MAX_TB        32   /* MaxTbSizeY */
 
@@ -5666,6 +5666,68 @@ int rh265_video_get_slice(rh265_video *v, const uint8_t *nal, size_t len,
       out->delta_poc_after[i] = sh->rps.delta_poc_s1[i];
       out->used_after[i] = sh->rps.used_s1[i];
    }
+   return 0;
+}
+
+int rh265_video_get_slice_decode(rh265_video *v, const uint8_t *nal, size_t len,
+      rh265_slice_decode_t *out, uint32_t *entries, unsigned capacity)
+{
+   const rh265_shdr *sh;
+   const rh265_pps *pps;
+   int result;
+   unsigned list, i;
+   if (!out)
+      return -1;
+   memset(out, 0, sizeof(*out));
+   result = rh265_video_get_slice(v, nal, len, &out->picture);
+   if (result)
+      return result;
+   sh = &v->sh_tmp;
+   if ((unsigned)sh->num_entry_points > capacity
+         || (sh->num_entry_points && !entries))
+   {
+      memset(out, 0, sizeof(*out));
+      return -1;
+   }
+   pps                             = &v->pps[sh->pps_id];
+   out->qp                         = sh->slice_qp;
+   out->cb_qp_offset               = sh->cb_qp_offset;
+   out->cr_qp_offset               = sh->cr_qp_offset;
+   out->deblocking_filter_disabled = sh->deblocking_filter_disabled;
+   out->beta_offset_div2           = sh->beta_offset_div2;
+   out->tc_offset_div2             = sh->tc_offset_div2;
+   out->loop_filter_across_slices  = sh->loop_filter_across_slices;
+   out->sao_luma                   = sh->sao_luma;
+   out->sao_chroma                 = sh->sao_chroma;
+   out->temporal_mvp               = sh->slice_tmvp;
+   memcpy(out->num_refs, sh->nb_refs, sizeof(out->num_refs));
+   memcpy(out->list_modified, sh->rpl_mod, sizeof(out->list_modified));
+   memcpy(out->list_entry, sh->list_entry, sizeof(out->list_entry));
+   out->mvd_l1_zero        = sh->mvd_l1_zero;
+   out->cabac_init         = sh->cabac_init;
+   out->collocated_from_l0 = sh->collocated_from_l0;
+   out->collocated_ref_idx = sh->collocated_ref_idx;
+   out->max_merge          = sh->max_merge;
+   out->weighted = (sh->slice_type == RH265_SLICE_P && pps->weighted_pred)
+         || (sh->slice_type == RH265_SLICE_B && pps->weighted_bipred);
+   out->luma_log2_denom   = sh->luma_log2_denom;
+   out->chroma_log2_denom = sh->chroma_log2_denom;
+   memcpy(out->luma_weight, sh->luma_w, sizeof(out->luma_weight));
+   memcpy(out->luma_offset, sh->luma_o, sizeof(out->luma_offset));
+   memcpy(out->chroma_weight, sh->chroma_w, sizeof(out->chroma_weight));
+   memcpy(out->chroma_offset, sh->chroma_o, sizeof(out->chroma_offset));
+   if (!out->weighted)
+      for (list = 0; list < 2; list++)
+         for (i = 0; i < (unsigned)out->num_refs[list]; i++)
+         {
+            out->luma_weight[list][i]      = 1;
+            out->chroma_weight[list][i][0] = 1;
+            out->chroma_weight[list][i][1] = 1;
+         }
+   out->num_entry_points = (unsigned)sh->num_entry_points;
+   if (sh->num_entry_points)
+      memcpy(entries, sh->entry_point,
+            (size_t)sh->num_entry_points * sizeof(*entries));
    return 0;
 }
 
