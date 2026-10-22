@@ -92,10 +92,14 @@ void input_openxr_edit_end(void);
  * recenter. Edit mode stays on. */
 void input_openxr_edit_release(void);
 
-/* The laser as RETRO_DEVICE_POINTER or RETRO_DEVICE_LIGHTGUN on port 0,
- * while it can point (the headset focused, a screen live for the
- * laser): true, with *res set. A miss reads as offscreen. */
-bool input_openxr_pointer(unsigned port, unsigned device, unsigned idx,
+/* The laser as RETRO_DEVICE_POINTER or RETRO_DEVICE_LIGHTGUN on a core
+ * port whose users read @slots (a bit per slot), while it can point
+ * (the headset focused, a screen live for the laser) and a controller
+ * of the headset's is in one of those slots: true, with *res set. The
+ * pointing hand's port aims and fires; another hand's reads offscreen,
+ * as a miss does. A controller no user reads drives no core's
+ * pointer. */
+bool input_openxr_pointer(uint32_t slots, unsigned device, unsigned idx,
       unsigned id, int16_t *res);
 
 /* The laser on the menu quad: where, from 0 to 1 across and down, and
