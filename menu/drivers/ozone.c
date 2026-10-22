@@ -9286,10 +9286,26 @@ static enum menu_action ozone_parse_menu_entry_action(
             size_t tab_selection  = (ozone->flags & OZONE_FLAG_CURSOR_MODE)
                   ? ozone_get_onscreen_category_selection(ozone)
                   : ozone->categories_selection_ptr;
+            size_t first_tab      = ozone->system_tab_end + 1;
+            bool on_playlist_tab  = (tab_selection >= first_tab);
+            size_t others         = horizontal_list_size;
+            size_t pick;
 
-            new_selection = random_range((unsigned)(ozone->system_tab_end + 1), (unsigned)(ozone->system_tab_end + horizontal_list_size));
-            while (new_selection == tab_selection)
-               new_selection = random_range((unsigned)(ozone->system_tab_end + 1), (unsigned)(ozone->system_tab_end + horizontal_list_size));
+            /* Jump to a playlist tab other than the current one, each
+             * with equal chance; with none, do nothing */
+            if (on_playlist_tab && others)
+               others--;
+            new_selection = tab_selection;
+            if (others)
+            {
+               pick = random_range(0, (unsigned)(others - 1));
+               /* random_range() returns one past max when rand() == RAND_MAX */
+               if (pick >= others)
+                  pick = others - 1;
+               new_selection = first_tab + pick;
+               if (on_playlist_tab && new_selection >= tab_selection)
+                  new_selection++;
+            }
 
             if (new_selection != tab_selection)
                ozone_sidebar_goto(ozone, new_selection);

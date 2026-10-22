@@ -9,7 +9,13 @@
  * replaced (see build.sh), so Scan goes through the menu driver's own
  * action handler.  A watchdog turns a freeze into a failure.
  *
+ * Ozone also offers Scan in its sidebar, where each playlist is a tab,
+ * and drew tabs the same way: one playlist tab, already selected, froze
+ * it; with none, it jumped to a tab past the end.  Ozone builds those
+ * tabs at start-up, so each count is its own run.
+ *
  * Usage: playlists_scan_test [menu_driver]   (default rgui)
+ *        playlists_scan_test ozone sidebar<N>   (N playlist tabs, 0-2)
  */
 
 #include <signal.h>
@@ -69,11 +75,13 @@ static bool write_playlist(const char *dir, const char *name)
    snprintf(path, sizeof(path), "%s/%s", dir, name);
    if (!(f = fopen(path, "wb")))
       return false;
+   /* The game path carries the playlist's name, so a list shows
+    * which playlist it came from. */
    fprintf(f, "{\n  \"version\": \"1.5\",\n  \"items\": [\n"
-              "    { \"path\": \"/games/a.bin\", \"label\": \"a\","
+              "    { \"path\": \"/games/%s.bin\", \"label\": \"a\","
               " \"core_path\": \"DETECT\", \"core_name\": \"DETECT\","
               " \"crc32\": \"00000000|crc\", \"db_name\": \"t.lpl\" }\n"
-              "  ]\n}\n");
+              "  ]\n}\n", name);
    fclose(f);
    return true;
 }
@@ -246,6 +254,73 @@ static void lane_two_playlists_alternate(void)
    }
 }
 
+/* Names the open Ozone tab: the label on top of the menu stack, and
+ * for a playlist tab the game path of its first row, which names the
+ * playlist (see write_playlist). */
+static void open_tab(char *s, size_t len)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   file_list_t *menu_stack    = MENU_LIST_GET(menu_st->entries.list, 0);
+   file_list_t *buf           = selection_buf();
+   const char *top            = "";
+   const char *row            = "";
+
+   if (menu_stack && menu_stack->size
+         && menu_stack->list[menu_stack->size - 1].label)
+      top = menu_stack->list[menu_stack->size - 1].label;
+   if (buf && buf->size && buf->list[0].label)
+      row = buf->list[0].label;
+   snprintf(s, len, "%s %s", top, row);
+}
+
+static void press(enum menu_action action)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   size_t selection           = menu_st->selection_ptr;
+   menu_entry_t entry;
+
+   MENU_ENTRY_INITIALIZE(entry);
+   menu_entry_get(&entry, 0, selection, NULL, true);
+
+   alarm(SCAN_WATCHDOG_S);
+   menu_entry_action(&entry, selection, action);
+   alarm(0);
+}
+
+/* Ozone's sidebar, with @tabs playlist tabs: Left enters it on the
+ * first tab, and Up wraps to the last tab, which is a playlist tab when
+ * there is one.  Scan must land on another playlist tab or do nothing.
+ * With no playlist tabs the cursor stays on the first tab: on the last
+ * system tab, a wrong pick can land back where it started. */
+static void lane_ozone_sidebar(unsigned tabs)
+{
+   char before[700];
+   char after[700];
+   unsigned k;
+
+   current_lane = "ozone-sidebar";
+   press(MENU_ACTION_LEFT);
+   if (tabs)
+      press(MENU_ACTION_UP);
+   open_tab(before, sizeof(before));
+
+   for (k = 0; k < 10; k++)
+   {
+      press(MENU_ACTION_SCAN);
+      open_tab(after, sizeof(after));
+      if (tabs < 2)
+         CHECK(string_is_equal(before, after),
+               "Scan with %u playlist tab(s) moved from '%s' to '%s'",
+               tabs, before, after);
+      else
+         CHECK(   !string_is_equal(before, after)
+               && strstr(after, ".lpl.bin"),
+               "Scan %u moved from '%s' to '%s', not to the other "
+               "playlist tab", k, before, after);
+      strlcpy(before, after, sizeof(before));
+   }
+}
+
 int main(int argc, char *argv[])
 {
    char cmd[700];
@@ -253,6 +328,7 @@ int main(int argc, char *argv[])
    char *rarch_argv[8];
    int rarch_argc         = 0;
    const char *menu_drv   = (argc > 1) ? argv[1] : "rgui";
+   int sidebar_tabs       = -1;
 
    signal(SIGALRM, watchdog);
 
@@ -261,6 +337,14 @@ int main(int argc, char *argv[])
    snprintf(cmd, sizeof(cmd), "mkdir -p %s", fixture_dir);
    if (system(cmd) != 0)
       return 1;
+
+   if (argc > 2 && !strncmp(argv[2], "sidebar", 7))
+   {
+      sidebar_tabs = atoi(argv[2] + 7);
+      if (   (sidebar_tabs > 0 && !write_playlist(fixture_dir, "a.lpl"))
+          || (sidebar_tabs > 1 && !write_playlist(fixture_dir, "b.lpl")))
+         return 1;
+   }
 
    rarch_argv[rarch_argc++] = (char*)"retroarch";
    rarch_argv[rarch_argc++] = (char*)"--menu";
@@ -286,6 +370,7 @@ int main(int argc, char *argv[])
          fprintf(cfg, "menu_driver = \"%s\"\n", menu_drv);
          fprintf(cfg, "video_threaded = \"false\"\n");
          fprintf(cfg, "history_list_enable = \"false\"\n");
+         fprintf(cfg, "menu_navigation_wraparound_enable = \"true\"\n");
          fprintf(cfg, "playlist_directory = \"%s\"\n", fixture_dir);
          fprintf(cfg, "savefile_directory = \"%s\"\n", fixture_dir);
          fprintf(cfg, "savestate_directory = \"%s\"\n", fixture_dir);
@@ -311,9 +396,14 @@ int main(int argc, char *argv[])
       return 1;
    }
 
-   lane_two_playlists_alternate();
-   lane_one_playlist_selected();
-   lane_no_playlists();
+   if (sidebar_tabs >= 0)
+      lane_ozone_sidebar((unsigned)sidebar_tabs);
+   else
+   {
+      lane_two_playlists_alternate();
+      lane_one_playlist_selected();
+      lane_no_playlists();
+   }
 
    snprintf(cmd, sizeof(cmd), "rm -rf %s", fixture_dir);
    if (system(cmd) != 0) { }
