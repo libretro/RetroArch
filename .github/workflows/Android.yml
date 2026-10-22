@@ -95,6 +95,20 @@ jobs:
             done
           done
 
+  codec-inventory:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        cc: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Real JNI codec admission and exception contracts
+        run: make -C samples/gfx/mediacodec_inventory clean all check CC=${{ matrix.cc }} SANITIZER=undefined
+
   jni-contract:
     runs-on: ubuntu-latest
     strategy:
@@ -106,8 +120,6 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-      - name: Real JNI with synthetic Android codec inventory and exception faults
-        run: make -C samples/gfx/mediacodec_inventory clean all check CC=${{ matrix.cc }} SANITIZER=undefined
       - name: Image ownership and runtime reader fault contracts
         run: make -C samples/gfx/android_image_queue clean all check CC=${{ matrix.cc }} SANITIZER=address,undefined
       - name: Native decoder session failure and Surface timestamp contracts

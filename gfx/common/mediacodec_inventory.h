@@ -1,4 +1,5 @@
-/* Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier: GPL-3.0-or-later */
+/* Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier:
+ * GPL-3.0-or-later */
 #ifndef MEDIACODEC_INVENTORY_H
 #define MEDIACODEC_INVENTORY_H
 #include <jni.h>
@@ -11,7 +12,8 @@ RETRO_BEGIN_DECLS
  * profile is an Android CodecProfileLevel value, not a codec bitstream value.
  * Output is cleared on every non-success result. An incoming JNI exception is
  * left untouched; exceptions raised by this operation are cleared. */
-int mediacodec_inventory_select(JNIEnv *env,const char *mime,int encoder,
-      unsigned width,unsigned height,int profile,char *name,size_t capacity);
+int mediacodec_inventory_select(JNIEnv *env, const char *mime, int encoder,
+      unsigned width, unsigned height, int profile, char *name,
+      size_t capacity);
 RETRO_END_DECLS
 #endif
