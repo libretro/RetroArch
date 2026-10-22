@@ -870,6 +870,34 @@ DECL_AXIS(r_y_minus, -5)
 /* The hid joypad driver's pads that give the RetroPad's own buttons -
  * the DualSense's handler, for the pads that pass for one, and the
  * GameCube adapters' in their PC mode */
+/* An Xbox pad on Windows' HID driver, as winusb reads it: A, B, X, Y,
+ * LB, RB, View, Menu, LS, RS; the triggers on 4 and 5 */
+#define HID_XBOX_BINDS \
+DECL_BTN(a, 1) \
+DECL_BTN(b, 0) \
+DECL_BTN(x, 3) \
+DECL_BTN(y, 2) \
+DECL_BTN(l, 4) \
+DECL_BTN(r, 5) \
+DECL_BTN(select, 6) \
+DECL_BTN(start, 7) \
+DECL_BTN(l3, 8) \
+DECL_BTN(r3, 9) \
+DECL_BTN(up, h0up) \
+DECL_BTN(down, h0down) \
+DECL_BTN(left, h0left) \
+DECL_BTN(right, h0right) \
+DECL_AXIS(l2, +4) \
+DECL_AXIS(r2, +5) \
+DECL_AXIS(l_x_plus,  +0) \
+DECL_AXIS(l_x_minus, -0) \
+DECL_AXIS(l_y_plus,  +1) \
+DECL_AXIS(l_y_minus, -1) \
+DECL_AXIS(r_x_plus,  +2) \
+DECL_AXIS(r_x_minus, -2) \
+DECL_AXIS(r_y_plus,  +3) \
+DECL_AXIS(r_y_minus, -3)
+
 #define HID_RETROPAD_BINDS \
 DECL_BTN(b, 0) \
 DECL_BTN(y, 1) \
@@ -906,6 +934,11 @@ const char* const input_builtin_autoconfs[] =
    DECL_AUTOCONF_DEVICE("8BitDo Ultimate 2C Wireless", "hid", HID_8BITDO_BINDS),
    DECL_AUTOCONF_DEVICE("8BitDo Ultimate 3", "hid", HID_8BITDO_BINDS),
    DECL_AUTOCONF_DEVICE("DualSense Wireless Controller", "hid", HID_RETROPAD_BINDS),
+#ifdef _WIN32
+   DECL_AUTOCONF_DEVICE("Controller (Xbox One For Windows)", "hid", HID_XBOX_BINDS),
+   DECL_AUTOCONF_DEVICE("Controller (Xbox 360 For Windows)", "hid", HID_XBOX_BINDS),
+   DECL_AUTOCONF_DEVICE("Controller (XBOX 360 For Windows)", "hid", HID_XBOX_BINDS),
+#endif
    DECL_AUTOCONF_PID(0x1843, 0x0079, "hid", HID_RETROPAD_BINDS),
    DECL_AUTOCONF_PID(0x1844, 0x0079, "hid", HID_RETROPAD_BINDS),
    DECL_AUTOCONF_PID(0x1846, 0x0079, "hid", HID_RETROPAD_BINDS),

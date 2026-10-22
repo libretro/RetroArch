@@ -301,6 +301,7 @@ static BOOLEAN WINAPI h_pp(HANDLE h, PHIDP_PREPARSED_DATA *pp)
 static BOOLEAN WINAPI h_free_pp(PHIDP_PREPARSED_DATA pp) { return TRUE; }
 static bool generic_mode;
 static bool generic_dup; /* X named twice */
+static bool generic_xbox; /* an Xbox pad: both triggers on Z */
 static bool sjoy_mode;   /* an MP-8866: one output field of three bytes */
 static NTSTATUS WINAPI h_caps(PHIDP_PREPARSED_DATA pp, PHIDP_CAPS c)
 {
@@ -365,6 +366,20 @@ static NTSTATUS WINAPI h_vcaps(HIDP_REPORT_TYPE t, PHIDP_VALUE_CAPS c,
    {
       *n          = 1;
       c->ReportID = caps_id;
+      return HIDP_STATUS_SUCCESS;
+   }
+   if (generic_xbox)
+   {
+      static const USAGE xbox[5] = { 0x30, 0x31, 0x33, 0x34, 0x32 };
+      for (i = 0; i < 5 && i < *n; i++)
+      {
+         c[i].UsagePage      = 0x01;
+         c[i].NotRange.Usage = xbox[i];
+         c[i].BitSize        = 16;
+         c[i].LogicalMin     = 0;
+         c[i].LogicalMax     = 65535;
+      }
+      *n = i;
       return HIDP_STATUS_SUCCESS;
    }
    for (i = 0; i < 5 && i < *n; i++)
@@ -786,6 +801,45 @@ static void test_hidclass(const char *path)
    winusb_hid.poll(hid);
    h_unplugged = false;
    generic_dup  = false;
+
+   /* an Xbox pad on Windows' HID driver: its triggers, both on Z, split
+    * onto axes 4 and 5, 0 at rest, as SDL splits them */
+   generic_xbox = true;
+   winusb_hid_open(hid, path, "HID\\VID_045E&PID_02FF&IG_00\\1",
+         0x045e, 0x02ff, true);
+   g_npressed    = 0;
+   g_value[0x30] = g_value[0x31] = g_value[0x33] = g_value[0x34] = 32768;
+   g_value[0x32] = 32768;   /* both at rest */
+   push_hreport(r, 9);
+   wait_hreader();
+   winusb_hid.poll(hid);
+   CHECK(   winusb_hid.axis(hid, 0, AXIS_POS(4)) == 0
+         && winusb_hid.axis(hid, 0, AXIS_POS(5)) == 0,
+         "hid class: an Xbox pad's triggers not at rest");
+   g_value[0x32] = 65535;   /* the left pulled */
+   push_hreport(r, 9);
+   wait_hreader();
+   winusb_hid.poll(hid);
+   CHECK(   winusb_hid.axis(hid, 0, AXIS_POS(4)) == 32767
+         && winusb_hid.axis(hid, 0, AXIS_POS(5)) == 0,
+         "hid class: an Xbox pad's left trigger not on axis 4");
+   g_value[0x32] = 0;       /* the right pulled */
+   push_hreport(r, 9);
+   wait_hreader();
+   winusb_hid.poll(hid);
+   CHECK(   winusb_hid.axis(hid, 0, AXIS_POS(4)) == 0
+         && winusb_hid.axis(hid, 0, AXIS_POS(5)) == 32767,
+         "hid class: an Xbox pad's right trigger not on axis 5");
+   dev = hid->devices;
+   EnterCriticalSection(&q_lock);
+   h_unplugged = true;
+   h_complete();
+   LeaveCriticalSection(&q_lock);
+   for (i = 0; i < 2000 && !retro_atomic_load_acquire_int(&dev->gone); i++)
+      Sleep(1);
+   winusb_hid.poll(hid);
+   h_unplugged  = false;
+   generic_xbox = false;
 
    /* an MP-8866's port: rumbled at the poll, through its output
     * report's three values - on, the small motor, the large one */

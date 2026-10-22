@@ -192,11 +192,16 @@ typedef DWORD (WINAPI *winusb_cm_parent_t)(DWORD*, DWORD, ULONG);
  * and numbered as it does, so a profile made there serves here: its
  * buttons in usage order, its axes X, Y, Rx, Ry, Z, Rz then rudder,
  * throttle, steering, accelerator and brake, its first hat as the
- * D-pad. Windows parses the descriptor; nothing here does. */
+ * D-pad. Windows parses the descriptor; nothing here does.
+ *
+ * An Xbox pad on Windows' HID driver - "IG_" in its instance - has both
+ * triggers on Z, the left above its middle and the right below; they
+ * are split onto axes 4 and 5, 0 at rest, as SDL splits them. */
 #define WINUSB_GEN_AXES    11
 #define WINUSB_GEN_VALUES  16
 #define WINUSB_GEN_HAT     0xff
 #define WINUSB_GEN_LATER   0xfe /* an axis named twice, not yet placed */
+#define WINUSB_GEN_TRIGGERS 0xfd
 
 typedef struct
 {
@@ -721,7 +726,7 @@ static void winusb_hid_busy_drop(winusb_hid_t *hid, unsigned i)
  * values are axes, in the Mac's order, and its hat. */
 static void winusb_generic_setup(winusb_generic_t *gen,
       PHIDP_PREPARSED_DATA pp, const HIDP_BUTTON_CAPS *bcaps, USHORT nb,
-      const HIDP_VALUE_CAPS *vcaps, USHORT nv)
+      const HIDP_VALUE_CAPS *vcaps, USHORT nv, bool xinput)
 {
    bool taken[WINUSB_GEN_AXES];
    bool hat = false;
@@ -733,6 +738,8 @@ static void winusb_generic_setup(winusb_generic_t *gen,
    memset(&gen->view, 0, sizeof(gen->view));
    for (a = 0; a < WINUSB_GEN_AXES; a++)
       taken[a]      = false;
+   if (xinput)
+      taken[4] = taken[5] = true;
    gen->btn_page = 0;
    for (i = 0; i < nb && !gen->btn_page; i++)
    {
@@ -760,6 +767,12 @@ static void winusb_generic_setup(winusb_generic_t *gen,
             continue;
          hat   = true;
          v->id = WINUSB_GEN_HAT;
+         gen->values++;
+         continue;
+      }
+      if (xinput && v->page == 0x01 && usage == 0x32)
+      {
+         v->id = WINUSB_GEN_TRIGGERS;
          gen->values++;
          continue;
       }
@@ -878,6 +891,15 @@ static void winusb_generic_packet(void *data, uint8_t *report,
             way *= 2;
          gen->view.hats = (val < v->min || val > v->max || way < 0 || way > 7)
             ? 0 : hat[way];
+      }
+      else if (v->id == WINUSB_GEN_TRIGGERS)
+      {
+         LONG mid = v->min + (v->max - v->min + 1) / 2;
+         LONG d   = val - mid;
+         gen->view.axes[4] = (int16_t)(d > 0 && v->max > mid
+               ? (int64_t)d * 32767 / (v->max - mid) : 0);
+         gen->view.axes[5] = (int16_t)(d < 0 && mid > v->min
+               ? (int64_t)-d * 32767 / (mid - v->min) : 0);
       }
       else
          gen->view.axes[v->id] = winusb_generic_scale(val, v->min, v->max);
@@ -1002,7 +1024,8 @@ static bool winusb_hidclass_setup(winusb_device_t *dev)
                       && dev->out_len <= WINUSB_OUT_MAX;
       if (ok && dev->generic)
       {
-         winusb_generic_setup(&dev->gen, pp, bcaps, nb, vcaps, nv);
+         winusb_generic_setup(&dev->gen, pp, bcaps, nb, vcaps, nv,
+               compat_strcasestr(dev->instance, "&IG_") != NULL);
          if (hid_sjoy_rumbles(dev->vid, dev->pid))
             RARCH_LOG("%s %04x:%04x: %s (%u output values, %u bytes).\n",
                   dev->tag, dev->vid, dev->pid,
