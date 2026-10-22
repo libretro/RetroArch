@@ -96,7 +96,7 @@ struct rmp4_video_stream
    size_t vp9_sizes[RMP4_VIDEO_MAX_SUPER], vp9_offset;
    uint32_t vp9_sample;
    int vp9_active, vp9_count, vp9_index, vp9_last_show;
-   int vp9_submitted, vp9_discard;
+   int vp9_submitted, vp9_discard, vp9_restart;
    video_color_metadata_t vp9_color;
    int vp9_have_config;
    rvp9_config_t vp9_config;
@@ -932,6 +932,7 @@ static void rmp4_video_stream_close_decoder(rmp4_video_stream_t *s)
 #ifdef HAVE_RVP9
    s->vp9_active = 0;
    s->vp9_sample = 0;
+   s->vp9_restart = 0;
    if (s->vp9_hw)
    {
       rvp9_hw_session_cancel(s->vp9_hw);
@@ -1328,6 +1329,12 @@ static int rmp4_video_vp9_hw_packet(rmp4_video_stream_t *s,
       const rmp4_packet *packet, int discard)
 {
    int ret;
+   if (s->vp9_restart)
+   {
+      ret = s->vp9_backend.restart(s->vp9_hw->ops.decoder);
+      if (ret) return ret > 0 ? 2 : -1;
+      s->vp9_restart = 0;
+   }
    if (!s->vp9_active)
    {
       size_t offset = 0;
@@ -2349,6 +2356,16 @@ void rmp4_video_stream_rewind(rmp4_video_stream_t *s)
    rmp4_rewind(s->demux);
    s->disp_idx = 0;
    s->wait_key = 0;
+#ifdef HAVE_RVP9
+   if (s->vp9_hw && s->want_hw && s->vp9_backend.restart)
+   {
+      rvp9_hw_session_restart(s->vp9_hw);
+      s->vp9_restart = 1;
+      s->vp9_active = 0;
+      s->vp9_sample = 0;
+      return;
+   }
+#endif
    /* The stream restarts at a key frame, so a fresh decoder (empty
     * reference chain, default probabilities) is the correct state. */
    rmp4_video_stream_close_decoder(s);

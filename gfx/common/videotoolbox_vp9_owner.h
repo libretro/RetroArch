@@ -288,6 +288,16 @@ static INLINE int videotoolbox_vp9_owner_finish(
    return 0;
 }
 
+static INLINE int videotoolbox_vp9_owner_restart(videotoolbox_vp9_owner_t *o)
+{
+   int result = videotoolbox_vp9_owner_finish(o, true);
+   if (result) return result;
+   o->terminal = 0;
+   o->building = -1;
+   o->latest_display = NULL;
+   return 0;
+}
+
 static INLINE void videotoolbox_vp9_owner_close(videotoolbox_vp9_owner_t *o)
 {
    if (!o)

@@ -1300,6 +1300,7 @@ static bool d3d11vd_init_adapter(void *adapter, unsigned formats, bool av1_only)
    d3d11vd.vp9.packet_decoder = false;
    d3d11vd.vp9.open_color = NULL;
    d3d11vd.vp9.open_config = NULL;
+   d3d11vd.vp9.restart = NULL;
    d3d11vd.vp9.drain = NULL;
    if (!av1_only) rvp9_set_hw_backend(&d3d11vd.vp9);
 #endif

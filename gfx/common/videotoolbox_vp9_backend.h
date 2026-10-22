@@ -133,6 +133,7 @@ static INLINE bool videotoolbox_vp9_backend_init(videotoolbox_vp9_backend_t *b,
    b->offer.drain          = videotoolbox_vp9_decoder_finish;
    b->offer.open_config    = videotoolbox_vp9_backend_open_config;
    b->offer.packet_decoder = true;
+   b->offer.restart        = videotoolbox_vp9_decoder_restart;
    return true;
 }
 #endif

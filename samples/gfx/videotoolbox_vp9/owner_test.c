@@ -182,6 +182,7 @@ int OWNER_MAIN_NAME(void)
    assert(!videotoolbox_vp9_owner_take(o, 0, &result));
    CVPixelBufferRelease(result.image);
    assert(videotoolbox_vp9_owner_finish(o, false) == 1);
+   assert(videotoolbox_vp9_owner_restart(o) == 1);
    videotoolbox_vp9_owner_close(o);
    assert(!videotoolbox_vp9_owner_retire_poll(&o) && o);
    CFRelease(delayed_sample);
@@ -195,6 +196,7 @@ int OWNER_MAIN_NAME(void)
    assert(!videotoolbox_vp9_owner_append(o, input, 3, true, 0));
    assert(videotoolbox_vp9_owner_worker(o) == 1);
    assert(videotoolbox_vp9_owner_take(o, 0, &result) < 0);
+   assert(videotoolbox_vp9_owner_restart(o) < 0);
    assert(videotoolbox_vp9_owner_append(o, input, 3, false, -1) < 0);
    close_owner(&o);
    decode_error = 0;

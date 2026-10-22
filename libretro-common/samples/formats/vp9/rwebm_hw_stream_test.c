@@ -21,6 +21,9 @@ typedef char rvp9_backend_mode_offset_preserved[
       == offsetof(rvp9_backend_v1_t, packet_decoder) ? 1 : -1];
 typedef char rvp9_backend_callback_appended[
    offsetof(rvp9_hw_backend_t, open_color) >= sizeof(rvp9_backend_v1_t) ? 1 : -1];
+typedef char rvp9_backend_restart_appended[
+   offsetof(rvp9_hw_backend_t, restart) >= offsetof(rvp9_hw_backend_t, open_config)
+      + sizeof(((rvp9_hw_backend_t *)0)->open_config) ? 1 : -1];
 
 #define CHECK(x) do { if (!(x)) { fprintf(stderr, "line %d: %s\n", __LINE__, #x); return 1; } } while (0)
 static uint8_t file[4096], packet[64], key[64], hidden[64], shown[64];
@@ -167,7 +170,7 @@ typedef struct mock
    size_t size;
    unsigned refs, width, height;
    int output_busy;
-   unsigned native_count, eos_attempts, eos_accepted, shown;
+   unsigned native_count, eos_attempts, eos_accepted, shown, restarts;
 } mock_t;
 static void release(mock_t *m)
 {
@@ -211,7 +214,19 @@ static void close_backend(rvp9_hw_ops_t *ops)
 {
    closes++; release((mock_t*)ops->decoder); memset(ops, 0, sizeof(*ops));
 }
-static const rvp9_hw_backend_t backend = {NULL, open_backend, close_backend, false, NULL, NULL, NULL};
+static int restart_backend(void *owner)
+{
+   mock_t *m = (mock_t *)owner;
+   if (++m->restarts & 1) return 1;
+   m->retry = NULL;
+   m->size = 0;
+   m->output_busy = 0;
+   m->native_count = m->eos_attempts = m->eos_accepted = m->shown = 0;
+   return 0;
+}
+static const rvp9_hw_backend_t backend = {
+   NULL, open_backend, close_backend, false, NULL, NULL, NULL, NULL
+};
 static video_color_metadata_t admitted_color;
 static unsigned color_opens, color_refuse, color_partial;
 
@@ -235,7 +250,7 @@ static bool open_color_backend(void *user, const rvp9_hdr *h,
 static int color_admission(void)
 {
    static const rvp9_hw_backend_t colors = {
-      NULL, open_backend, close_backend, true, open_color_backend, NULL, NULL
+      NULL, open_backend, close_backend, true, open_color_backend, NULL, NULL, NULL
    };
    rwebm_video_stream_t *s;
    rvp9_hw_ops_t ops;
@@ -448,15 +463,19 @@ static enum video_player_present present(void *user, const video_player_frame_t 
    presents++; video_hw_frame_abandon(f->hw); return VIDEO_PLAYER_PRESENT_DONE;
 }
 
-static int seek_hardware(void)
+static int seek_hardware(int reuse)
 {
    static const int64_t targets[] = {40000000, 80000000, 0, 60000000};
+   rvp9_hw_backend_t offer = backend;
    rwebm_video_stream_t *s;
    video_hw_frame_t frame, held;
    unsigned i, tries, before, decoded;
+   unsigned started = opens;
    int result, need_more;
    int64_t position;
    tail_hidden = 0;
+   offer.restart = reuse ? restart_backend : NULL;
+   rvp9_set_hw_backend(&offer);
    fixture(1, 2, 1);
    s = rwebm_video_stream_open_avail(file, used, prefix, &need_more);
    CHECK(s && rwebm_video_stream_set_hw(s, 1));
@@ -496,16 +515,20 @@ static int seek_hardware(void)
    for (tries = 0; tries < 100; tries++)
       if (rwebm_video_stream_seek_step(s, &position) == 1) break;
    CHECK(tries < 100 && position == 0 && held.image);
+   CHECK(!reuse || opens == started + 1);
    rwebm_video_stream_close(s);
    CHECK(lives == 1);
    video_hw_frame_abandon(&held);
    CHECK(!lives && opens == closes && abandoned == exports);
+   rvp9_set_hw_backend(&backend);
    return 0;
 }
 
 static int packet_stream(void)
 {
-   static const rvp9_hw_backend_t packets = {NULL, open_backend, close_backend, true, NULL, NULL, NULL};
+   static const rvp9_hw_backend_t packets = {
+      NULL, open_backend, close_backend, true, NULL, NULL, NULL, NULL
+   };
    rwebm_video_stream_t *s;
    video_hw_frame_t frame, held;
    unsigned before = decodes, submitted = calls, shown = 0, tries;
@@ -551,7 +574,8 @@ static int drain_backend(void *owner, bool discard)
 static int terminal_stream(void)
 {
    static const rvp9_hw_backend_t terminal = {
-         NULL, open_backend, close_backend, true, NULL, drain_backend, NULL};
+      NULL, open_backend, close_backend, true, NULL, drain_backend, NULL, NULL
+   };
    rwebm_video_stream_t *s;
    video_hw_frame_t frame, held;
    mock_t *m;
@@ -795,7 +819,8 @@ int main(void)
    CHECK(lives == 1 && held.image);
    video_hw_frame_abandon(&held);
    CHECK(!lives && opens == closes && abandoned == exports);
-   CHECK(!seek_hardware());
+   CHECK(!seek_hardware(0));
+   CHECK(!seek_hardware(1));
    rvp9_set_hw_backend(NULL);
    CHECK(!packet_stream());
    CHECK(!color_admission());

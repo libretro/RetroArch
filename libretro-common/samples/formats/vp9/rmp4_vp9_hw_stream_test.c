@@ -6,7 +6,7 @@
 
 static uint8_t packet[96], superframe[288];
 static unsigned bitpos, lives, opens, closes, submitted, exported, released;
-static int packet_mode, terminal_mode, partial_open;
+static int packet_mode, terminal_mode, partial_open, restart_error;
 
 static void bits(unsigned value, unsigned count)
 {
@@ -72,7 +72,7 @@ typedef struct mock
 {
    const uint8_t *retry;
    size_t size;
-   unsigned refs, calls, pictures, drains;
+   unsigned refs, calls, pictures, drains, restarts;
    int output_busy;
 } mock_t;
 
@@ -169,6 +169,18 @@ static int drain(void *owner, bool discard)
    return m->drains < 2;
 }
 
+static int restart(void *owner)
+{
+   mock_t *m = (mock_t *)owner;
+   if (restart_error) return -1;
+   if (++m->restarts & 1) return 1;
+   m->retry = NULL;
+   m->size = 0;
+   m->pictures = m->drains = 0;
+   m->output_busy = 0;
+   return 0;
+}
+
 static void make_fixture(void)
 {
    static const uint8_t config[12] = {1, 0, 0, 0, 0, 0, 0x80, 1, 13, 1, 0, 0};
@@ -192,12 +204,13 @@ static void make_fixture(void)
    fixture(config, 1);
 }
 
-static void run(int native_packets, int terminal)
+static void run(int native_packets, int terminal, int reuse)
 {
    rvp9_hw_backend_t backend;
    rmp4_video_stream_t *stream;
    video_hw_frame_t held, frame;
    unsigned frames = 0, attempts = 0, count = submitted, seeks, input_wait = 0;
+   unsigned started = opens;
    int64_t position;
    int ret, duration;
    memset(&backend, 0, sizeof(backend));
@@ -207,6 +220,7 @@ static void run(int native_packets, int terminal)
    backend.open_config = open_config;
    backend.packet_decoder = packet_mode != 0;
    backend.drain = terminal ? drain : NULL;
+   backend.restart = reuse ? restart : NULL;
    rvp9_set_hw_backend(&backend);
    make_fixture();
    stream = rmp4_video_stream_open(clip, clip_size);
@@ -270,6 +284,14 @@ static void run(int native_packets, int terminal)
       assert(ret == 1 && rmp4_video_stream_hw_frame(stream, &frame));
       video_hw_frame_abandon(&frame);
    }
+   if (reuse)
+   {
+      assert(opens == started + 1);
+      restart_error = 1;
+      rmp4_video_stream_rewind(stream);
+      assert(rmp4_video_stream_skip(stream, NULL) < 0);
+      restart_error = 0;
+   }
    rmp4_video_stream_rewind(stream);
    attempts = 0;
    do
@@ -289,9 +311,11 @@ int main(void)
 {
    rvp9_hw_backend_t backend;
    rmp4_video_stream_t *stream;
-   run(0, 0);
-   run(1, 0);
-   run(1, 1);
+   run(0, 0, 0);
+   run(1, 0, 0);
+   run(1, 1, 0);
+   run(1, 0, 1);
+   run(1, 1, 1);
    make_fixture();
    memset(&backend, 0, sizeof(backend));
    backend.open_config = open_config;

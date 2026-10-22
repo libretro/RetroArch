@@ -60,8 +60,9 @@ int DECODER_MAIN_NAME(void)
    videotoolbox_vp9_owner_t *init = open_owner();
    videotoolbox_vp9_decoder_t *d;
    rvp9_hw_ops_t ops;
-   video_hw_frame_t first, second;
+   video_hw_frame_t first, second, third;
    CVPixelBufferRef old;
+   VTDecompressionSessionRef native;
    close_owner(&init);
    assert(videotoolbox_vp9_decoder_open(
          &header, &color, 1, 10, 64, &pool, NULL, wake, retire, &wakes, &ops));
@@ -90,12 +91,24 @@ int DECODER_MAIN_NAME(void)
    assert(videotoolbox_vp9_owner_worker(d->owner) == 1);
    assert(!ops.output(d, 0, &second));
    assert(!videotoolbox_vp9_decoder_finish(d, false));
+   native = d->owner->session;
+   assert(!videotoolbox_vp9_decoder_restart(d));
+   picture.header.show_existing_frame = 0;
+   assert(!ops.decode(d, (const uint8_t *)"new", 3, &picture));
+   assert(videotoolbox_vp9_decoder_restart(d) == 1);
+   assert(videotoolbox_vp9_owner_worker(d->owner) == 1);
+   assert(!videotoolbox_vp9_decoder_restart(d));
+   assert(d->owner->session == native && !pool.freed);
+   assert(!ops.decode(d, (const uint8_t *)"key", 3, &picture));
+   assert(videotoolbox_vp9_owner_worker(d->owner) == 1);
+   assert(!ops.output(d, 0, &third));
    videotoolbox_vp9_decoder_close(&ops);
    assert(!ops.decoder && retired == d && pool.freed);
    assert(videotoolbox_vp9_decoder_retire_poll(&retired) && !retired);
-   assert(retro_atomic_load_acquire_int(&objects) == 2);
+   assert(retro_atomic_load_acquire_int(&objects) == 3);
    video_hw_frame_abandon(&first);
    video_hw_frame_abandon(&second);
+   video_hw_frame_abandon(&third);
    assert(!retro_atomic_load_acquire_int(&objects));
    pool.freed         = 0;
    header.profile     = 2;

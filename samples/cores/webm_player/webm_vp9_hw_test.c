@@ -88,7 +88,9 @@ static void close_backend(rvp9_hw_ops_t *ops)
    closes++;
    release((mock_t*)ops->decoder);
 }
-static const rvp9_hw_backend_t backend = {NULL, open_backend, close_backend, false, NULL, NULL, NULL};
+static const rvp9_hw_backend_t backend = {
+   NULL, open_backend, close_backend, false, NULL, NULL, NULL, NULL
+};
 
 static bool sink(void *user, const video_hw_frame_t *frame)
 {

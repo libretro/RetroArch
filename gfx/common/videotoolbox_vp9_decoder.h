@@ -96,6 +96,18 @@ static INLINE int videotoolbox_vp9_decoder_finish(void *opaque, bool discard)
    return videotoolbox_vp9_owner_finish(d->owner, discard);
 }
 
+static INLINE int videotoolbox_vp9_decoder_restart(void *opaque)
+{
+   videotoolbox_vp9_decoder_t *d = (videotoolbox_vp9_decoder_t *)opaque;
+   int result;
+   if (!d) return -1;
+   if (d->image) CVPixelBufferRelease(d->image);
+   d->image = NULL;
+   result = videotoolbox_vp9_owner_restart(d->owner);
+   if (!result) d->output_slot = (unsigned)-1;
+   return result;
+}
+
 static INLINE bool videotoolbox_vp9_decoder_retire_poll(
       videotoolbox_vp9_decoder_t **handle)
 {

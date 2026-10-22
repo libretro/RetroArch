@@ -17,6 +17,7 @@ extern void videotoolbox_hevc_test_export(video_hw_frame_t *, unsigned,
       unsigned, const uint32_t [3]);
 extern void videotoolbox_hevc_test_movie_reset(void);
 extern void videotoolbox_vp9_test_mp4_state(rmp4_video_stream_t *, unsigned [4]);
+extern unsigned videotoolbox_vp9_test_session_opens(void);
 
 static void run(const vp9_pipeline_fixture_t *fixture, void *device)
 {
@@ -25,6 +26,7 @@ static void run(const vp9_pipeline_fixture_t *fixture, void *device)
    video_hw_frame_t frame, held;
    int owner, ret, duration;
    unsigned count = 0, seek;
+   unsigned opens = videotoolbox_vp9_test_session_opens();
    int64_t deadline, position;
    printf("VP9 pipeline case: %s depth %u range %u transfer %u hidden/repeat %u\n",
          fixture->webm ? "WebM" : "MP4", fixture->depth,
@@ -119,6 +121,7 @@ static void run(const vp9_pipeline_fixture_t *fixture, void *device)
       videotoolbox_hevc_test_export(&frame, fixture->depth,
             fixture->full, fixture->crc[target]);
    }
+   assert(videotoolbox_vp9_test_session_opens() == opens + 1);
    if (webm)
       rwebm_video_stream_close(webm);
    if (mp4)

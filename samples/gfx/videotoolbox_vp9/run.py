@@ -149,16 +149,17 @@ with tempfile.TemporaryDirectory(prefix="vt-vp9-setup-") as directory:
                 "VP9 stream export: decoded planes and FrameView pixels survive stream/pool close")
             text = """#import <VideoToolbox/VideoToolbox.h>
 #include <stdio.h>
+static unsigned vp9_test_opens;
+unsigned videotoolbox_vp9_test_session_opens(void) { return vp9_test_opens; }
 static OSStatus vp9_test_session_create(CFAllocatorRef allocator,
       CMVideoFormatDescriptionRef format, CFDictionaryRef specification,
       CFDictionaryRef attributes, const VTDecompressionOutputCallbackRecord *callback,
       VTDecompressionSessionRef *session)
 {
-   static unsigned calls;
    OSStatus status = VTDecompressionSessionCreate(allocator, format,
          specification, attributes, callback, session);
    fprintf(stderr, "VP9 test-only native session open %u: status %ld\\n",
-         ++calls, (long)status);
+         ++vp9_test_opens, (long)status);
    return status;
 }
 #define VTDecompressionSessionCreate vp9_test_session_create
