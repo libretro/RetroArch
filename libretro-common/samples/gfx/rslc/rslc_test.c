@@ -91,7 +91,7 @@ static void test_abi_rejects(void)
    opts_default(&o, err, sizeof(err));
    err[0] = 0;
    CHECK(!rslc_compile(src, sizeof(src) - 1, RSLC_STAGE_VERTEX, &o, &r));
-   CHECK(!strcmp(err, "rslc: front end not implemented"));
+   CHECK(!strcmp(err, "rslc: parser not implemented"));
    CHECK(alloc_live == 0);
 
    err[0] = 0;
@@ -183,9 +183,15 @@ static void test_arena(void)
    o.arena     = NULL;
    o.arena_len = 0;
 
-   /* Too small for the intern seed table. */
+   /* Too small to hold anything. */
    o.arena     = block;
    o.arena_len = 64;
+   err[0] = 0;
+   CHECK(!rslc_ctx_init(&c, &o, RSLC_STAGE_VERTEX));
+   CHECK(!strcmp(err, "rslc: caller arena too small"));
+   rslc_ctx_close(&c);
+   /* Big enough to start, too small for the keyword seed. */
+   o.arena_len = 4200;
    err[0] = 0;
    CHECK(!rslc_ctx_init(&c, &o, RSLC_STAGE_VERTEX));
    CHECK(!strcmp(err, "rslc: caller arena exhausted"));
@@ -201,9 +207,16 @@ static void test_intern(void)
    const char      *b;
    char             name[16];
    unsigned         i;
+   uint32_t         base;
 
    opts_default(&o, err, sizeof(err));
    CHECK(rslc_ctx_init(&c, &o, RSLC_STAGE_VERTEX));
+   base = c.intern.count;   /* the seeded keywords */
+   CHECK(rslc_sym(&c, "vec4", 4) != NULL);
+   CHECK(rslc_sym(&c, "vec4", 4)->kw == RSLC_KW_VEC4);
+   CHECK(rslc_sym(&c, "vec4x", 5)->kw == RSLC_KW_NONE);
+   CHECK(c.intern.count == base + 1);
+   base = c.intern.count;
 
    a = rslc_intern(&c, "vTexCoordXYZ", 9);
    b = rslc_intern_cstr(&c, "vTexCoord");
@@ -219,10 +232,10 @@ static void test_intern(void)
       sprintf(name, "id%u", i);
       CHECK(rslc_intern_cstr(&c, name) != NULL);
    }
-   CHECK(c.intern.count == 5003);
+   CHECK(c.intern.count == base + 5003);
    CHECK(rslc_intern_cstr(&c, "vTexCoord") == a);
    CHECK(rslc_intern_cstr(&c, "id4999") == rslc_intern_cstr(&c, "id4999"));
-   CHECK(c.intern.count == 5003);
+   CHECK(c.intern.count == base + 5003);
 
    rslc_ctx_close(&c);
    CHECK(alloc_live == 0);
@@ -265,6 +278,212 @@ static void test_pbuf(void)
    CHECK(b.data == NULL);
 
    rslc_ctx_close(&c);
+   CHECK(alloc_live == 0);
+}
+
+
+/* Runs the preprocessor over src and renders the token stream as one
+ * line per token: "<line> <text>".  Returns false with err set when
+ * preprocessing fails. */
+static bool pp_dump(const char *src, char *out, size_t cap, char *err, size_t errcap)
+{
+   struct rslc_opts o;
+   struct rslc_ctx  c;
+   size_t           at = 0;
+   uint32_t         i;
+   bool             ok;
+
+   opts_default(&o, err, errcap);
+   err[0] = 0;
+   if (!rslc_ctx_init(&c, &o, RSLC_STAGE_FRAGMENT))
+      return false;
+   ok = rslc_pp_run(&c, src, strlen(src));
+   if (ok)
+   {
+      /* Nothing of the expansion machinery outlives the run. */
+      if (c.scratch.used != 0)
+      {
+         strncpy(err, "scratch not released", errcap - 1);
+         err[errcap - 1] = 0;
+         ok = false;
+      }
+      for (i = 0; ok && i < c.ntoks && rslc_tok_at(&c, i)->kind != RSLC_TK_EOF; i++)
+      {
+         const struct rslc_tok *t = rslc_tok_at(&c, i);
+         int n = snprintf(out + at, cap - at, "%u %.*s\n", t->line,
+               (int)t->len, rslc_tok_text(&c, t));
+         if (n < 0 || (size_t)n >= cap - at)
+         {
+            ok = false;
+            break;
+         }
+         at += (size_t)n;
+      }
+   }
+   out[at < cap ? at : cap - 1] = '\0';
+   rslc_ctx_close(&c);
+   return ok;
+}
+
+/* The token text only, space separated, for comparisons that do not
+ * care about line numbers. */
+static void pp_flat(const char *dump, char *out, size_t cap)
+{
+   size_t at = 0;
+   const char *p = dump;
+   while (*p && at + 1 < cap)
+   {
+      const char *sp = strchr(p, ' ');
+      const char *nl = strchr(p, '\n');
+      if (!sp || !nl || sp > nl)
+         break;
+      sp++;
+      if (at)
+         out[at++] = ' ';
+      while (sp < nl && at + 1 < cap)
+         out[at++] = *sp++;
+      p = nl + 1;
+   }
+   out[at] = '\0';
+}
+
+static void test_pp(void)
+{
+   static char dump[65536];
+   static char flat[65536];
+   char        err[160];
+   bool        ok;
+
+   /* Object-like, function-like, nesting, prescan, painting. */
+   ok = pp_dump(
+      "#version 450\n"
+      "#define A 1\n"
+      "#define B A + A\n"
+      "#define F(x, y) ((x) * (y) + B)\n"
+      "#define G(x) F(x, A)\n"
+      "#define REC REC + 1\n"
+      "int v = G(B);\n"
+      "int w = REC;\n"
+      "int z = F((1,2), 3);\n",
+      dump, sizeof(dump), err, sizeof(err));
+   CHECK(ok);
+   pp_flat(dump, flat, sizeof(flat));
+   CHECK(!strcmp(flat,
+      "int v = ( ( 1 + 1 ) * ( 1 ) + 1 + 1 ) ; "
+      "int w = REC + 1 ; "
+      "int z = ( ( ( 1 , 2 ) ) * ( 3 ) + 1 + 1 ) ;"));
+
+   /* A function-like name without '(' is left alone; "f()" is one
+    * empty argument for a one-parameter macro. */
+   ok = pp_dump(
+      "#version 450\n#define F(x) [x]\n#define E() 7\nint a = F; int b = F(); int c = E();\n",
+      dump, sizeof(dump), err, sizeof(err));
+   CHECK(ok);
+   pp_flat(dump, flat, sizeof(flat));
+   CHECK(!strcmp(flat, "int a = F ; int b = [ ] ; int c = 7 ;"));
+
+   /* Conditionals: arithmetic, defined, nesting, elif, undef, inactive
+    * branches with unknown directives and unbalanced tokens. */
+   ok = pp_dump(
+      "#version 450\n"
+      "#define LEVEL 3\n"
+      "#if (LEVEL * 2 > 5) && defined(LEVEL) && !defined NOPE\n"
+      "int a;\n"
+      "#else\n"
+      "#def garbage (((\n"
+      "int b;\n"
+      "#endif\n"
+      "#ifdef NOPE\n"
+      "#if 1/0\n"
+      "#endif\n"
+      "#elif LEVEL == 2\n"
+      "int c;\n"
+      "#elif LEVEL == 3\n"
+      "int d;\n"
+      "#else\n"
+      "int e;\n"
+      "#endif\n"
+      "#undef LEVEL\n"
+      "#ifndef LEVEL\nint f;\n#endif\n"
+      "#if UNDEFINED_NAME\nint g;\n#endif\n"
+      "#if 0x10 == 16 && 010 == 8 && (1 ? 2 : 3) == 2 && (7 % 4) == 3 && (1 << 3) == 8\nint h;\n#endif\n",
+      dump, sizeof(dump), err, sizeof(err));
+   CHECK(ok);
+   pp_flat(dump, flat, sizeof(flat));
+   CHECK(!strcmp(flat, "int a ; int d ; int f ; int h ;"));
+
+   /* Line tracking: continuations, block comments spanning lines,
+    * #line with a file string, __LINE__. */
+   ok = pp_dump(
+      "#version 450\n"
+      "#define M(a) a + \\\n"
+      "   a\n"
+      "int a; /* two\nlines */ int b;\n"
+      "#line 100 \"inc.inc\"\n"
+      "int c = __LINE__;\n"
+      "int d = M(__LINE__);\n",
+      dump, sizeof(dump), err, sizeof(err));
+   CHECK(ok);
+   CHECK(!strcmp(dump,
+      "4 int\n4 a\n4 ;\n5 int\n5 b\n5 ;\n"
+      "100 int\n100 c\n100 =\n100 100\n100 ;\n"
+      "101 int\n101 d\n101 =\n101 101\n101 +\n101 101\n101 ;\n"));
+
+   /* Token paste: argument operands go in unexpanded, the pasted
+    * token is one identifier, and an identifier made by pasting is
+    * itself subject to expansion. */
+   ok = pp_dump(
+      "#version 450\n"
+      "#define CAT(a, b) a##b\n"
+      "#define ROW(n) level##n[0] = CAT(x, n);\n"
+      "#define x1 ONE\n"
+      "ROW(1) ROW(2)\n"
+      "#define LVL 7\n"
+      "int q = CAT(LV, L);\n",
+      dump, sizeof(dump), err, sizeof(err));
+   CHECK(ok);
+   pp_flat(dump, flat, sizeof(flat));
+   CHECK(!strcmp(flat, "level1 [ 0 ] = ONE ; level2 [ 0 ] = x2 ; int q = 7 ;"));
+
+   /* Inactive branches: glslang reads "##else" as "#else" there and
+    * refuses it in an active branch. */
+   ok = pp_dump("#version 450\n#ifdef NOPE\nint a;\n##else\nint b;\n#endif\n",
+      dump, sizeof(dump), err, sizeof(err));
+   CHECK(ok);
+   pp_flat(dump, flat, sizeof(flat));
+   CHECK(!strcmp(flat, "int b ;"));
+   CHECK(!pp_dump("#version 450\n#define NOPE\n#ifdef NOPE\nint a;\n##else\nint b;\n#endif\n",
+      dump, sizeof(dump), err, sizeof(err)));
+
+   /* Predefined macros and #extension / #pragma pass-through. */
+   ok = pp_dump(
+      "#version 450\n#extension GL_GOOGLE_cpp_style_line_directive : require\n"
+      "#pragma parameter X \"x\" 1.0 0.0 1.0\n"
+      "#ifdef VULKAN\nint v = VULKAN + __VERSION__ + GL_core_profile;\n#endif\n",
+      dump, sizeof(dump), err, sizeof(err));
+   CHECK(ok);
+   pp_flat(dump, flat, sizeof(flat));
+   CHECK(!strcmp(flat, "int v = 100 + 450 + 1 ;"));
+
+   /* Refusals. */
+   CHECK(!pp_dump("int a;\n#version 450\n", dump, sizeof(dump), err, sizeof(err)));
+   CHECK(!strcmp(err, "rslc: first line must be #version (line 1)"));
+   CHECK(!pp_dump("#version 450\n#include \"x.inc\"\n", dump, sizeof(dump), err, sizeof(err)));
+   CHECK(strstr(err, "#include") != NULL);
+   CHECK(!pp_dump("#version 450\n#define S(x) #x\n", dump, sizeof(dump), err, sizeof(err)));
+   CHECK(strstr(err, "not supported") != NULL);
+   CHECK(!pp_dump("#version 450\n#define P(x) x##\n", dump, sizeof(dump), err, sizeof(err)));
+   CHECK(strstr(err, "edge") != NULL);
+   CHECK(!pp_dump("#version 450\n#if 1\nint a;\n", dump, sizeof(dump), err, sizeof(err)));
+   CHECK(!strcmp(err, "rslc: unterminated #if (line 4)"));
+   CHECK(!pp_dump("#version 450\n#error custom message here\n", dump, sizeof(dump), err, sizeof(err)));
+   CHECK(!strcmp(err, "rslc: #error custom message here (line 2)"));
+   CHECK(!pp_dump("#version 450\n#frobnicate\n", dump, sizeof(dump), err, sizeof(err)));
+   CHECK(!strcmp(err, "rslc: unknown directive #frobnicate (line 2)"));
+   CHECK(!pp_dump("#version 450\n#define F(a,b) a\nint x = F(1);\n", dump, sizeof(dump), err, sizeof(err)));
+   CHECK(strstr(err, "wrong number of arguments") != NULL);
+   CHECK(!pp_dump("#version 100\nvoid main(){}\n", dump, sizeof(dump), err, sizeof(err)));
+   CHECK(!strcmp(err, "rslc: unsupported #version (line 1)"));
    CHECK(alloc_live == 0);
 }
 
@@ -398,12 +617,56 @@ static void test_blob(void)
    CHECK(!rslc_blob_open(NULL, 0, &r));
 }
 
-int main(void)
+/* rslc_test --pp <file>: preprocess a stage source and print the token
+ * stream, for the comparison against glslangValidator -E that the
+ * corpus check runs. */
+static int pp_file(const char *path)
 {
+   static char out[4 << 20];
+   char        err[256];
+   FILE       *f = fopen(path, "rb");
+   char       *src;
+   long        n;
+   bool        ok;
+
+   if (!f)
+   {
+      fprintf(stderr, "cannot open %s\n", path);
+      return 2;
+   }
+   fseek(f, 0, SEEK_END);
+   n = ftell(f);
+   fseek(f, 0, SEEK_SET);
+   src = (char*)malloc((size_t)n + 1);
+   if (!src || fread(src, 1, (size_t)n, f) != (size_t)n)
+   {
+      fclose(f);
+      free(src);
+      return 2;
+   }
+   fclose(f);
+   src[n] = '\0';
+   ok = pp_dump(src, out, sizeof(out), err, sizeof(err));
+   free(src);
+   if (!ok)
+   {
+      fprintf(stderr, "%s: %s\n", path, err);
+      return 1;
+   }
+   fputs(out, stdout);
+   return 0;
+}
+
+int main(int argc, char **argv)
+{
+   if (argc == 3 && !strcmp(argv[1], "--pp"))
+      return pp_file(argv[2]);
+
    test_abi_rejects();
    test_arena();
    test_intern();
    test_pbuf();
+   test_pp();
    test_blob();
 
    if (fails)

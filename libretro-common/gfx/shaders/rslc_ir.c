@@ -101,9 +101,11 @@ void rslc_err(struct rslc_ctx *c, const char *a, const char *b, unsigned line)
 
 /* Arena */
 
-static bool rslc_arena_grow(struct rslc_ctx *c, size_t need)
+/* Both arenas draw on one cap: held counts bytes taken from the caller
+ * across them. */
+static bool rslc_arena_grow(struct rslc_ctx *c, struct rslc_arena *a,
+      size_t need)
 {
-   struct rslc_arena *a = &c->arena;
    struct rslc_chunk *k;
    size_t             len;
 
@@ -116,7 +118,28 @@ static bool rslc_arena_grow(struct rslc_ctx *c, size_t need)
    len = RSLC_ARENA_CHUNK;
    if (need + sizeof(*k) > len)
       len = need + sizeof(*k);
-   if (a->held + len > a->cap)
+
+   /* A released scratch chunk of enough size is reused first. */
+   if (a->spare)
+   {
+      struct rslc_chunk **pk = &a->spare;
+      while (*pk)
+      {
+         if ((*pk)->len >= need)
+         {
+            k   = *pk;
+            *pk = k->next;
+            k->next   = a->chunks;
+            a->chunks = k;
+            a->cur    = (uint8_t*)(k + 1);
+            a->end    = a->cur + k->len;
+            return true;
+         }
+         pk = &(*pk)->next;
+      }
+   }
+
+   if (c->arena.held + c->scratch.held + len > c->arena.cap)
    {
       rslc_err(c, "arena cap exceeded", NULL, 0);
       return false;
@@ -137,21 +160,26 @@ static bool rslc_arena_grow(struct rslc_ctx *c, size_t need)
    return true;
 }
 
-void *rslc_arena_alloc(struct rslc_ctx *c, size_t len)
+static void *rslc_arena_take(struct rslc_ctx *c, struct rslc_arena *a,
+      size_t len)
 {
-   struct rslc_arena *a = &c->arena;
-   void              *p;
+   void *p;
 
    if (c->failed)
       return NULL;
    len = (len + (RSLC_ARENA_ALIGN - 1)) & ~(size_t)(RSLC_ARENA_ALIGN - 1);
    if ((size_t)(a->end - a->cur) < len)
-      if (!rslc_arena_grow(c, len))
+      if (!rslc_arena_grow(c, a, len))
          return NULL;
    p        = a->cur;
    a->cur  += len;
    a->used += len;
    return p;
+}
+
+void *rslc_arena_alloc(struct rslc_ctx *c, size_t len)
+{
+   return rslc_arena_take(c, &c->arena, len);
 }
 
 void *rslc_arena_zalloc(struct rslc_ctx *c, size_t len)
@@ -160,6 +188,81 @@ void *rslc_arena_zalloc(struct rslc_ctx *c, size_t len)
    if (p)
       memset(p, 0, len);
    return p;
+}
+
+void *rslc_scratch_alloc(struct rslc_ctx *c, size_t len)
+{
+   return rslc_arena_take(c, &c->scratch, len);
+}
+
+void rslc_scratch_mark(struct rslc_ctx *c, struct rslc_mark *m)
+{
+   m->chunk = c->scratch.chunks;
+   m->cur   = c->scratch.cur;
+   m->used  = c->scratch.used;
+}
+
+/* Chunks taken since the mark go to the spare list; the marked chunk
+ * is rewound.  Nothing is returned to the allocator until close. */
+void rslc_scratch_release(struct rslc_ctx *c, const struct rslc_mark *m)
+{
+   struct rslc_arena *a = &c->scratch;
+   while (a->chunks && a->chunks != m->chunk)
+   {
+      struct rslc_chunk *k = a->chunks;
+      a->chunks = k->next;
+      k->next   = a->spare;
+      a->spare  = k;
+   }
+   if (a->chunks)
+   {
+      a->cur = m->cur;
+      a->end = (uint8_t*)(a->chunks + 1) + a->chunks->len;
+   }
+   else
+   {
+      a->cur = a->end = NULL;
+   }
+   a->used = m->used;
+}
+
+static void rslc_arena_free_all(struct rslc_ctx *c, struct rslc_arena *a)
+{
+   struct rslc_chunk *k;
+   if (a->fixed)
+      return;
+   k = a->chunks;
+   while (k)
+   {
+      struct rslc_chunk *next = k->next;
+      rslc_mem_free(c->opts, k);
+      k = next;
+   }
+   k = a->spare;
+   while (k)
+   {
+      struct rslc_chunk *next = k->next;
+      rslc_mem_free(c->opts, k);
+      k = next;
+   }
+   a->chunks = a->spare = NULL;
+   a->cur    = a->end   = NULL;
+}
+
+/* Token text and symbol */
+
+const char *rslc_tok_text(const struct rslc_ctx *c, const struct rslc_tok *t)
+{
+   if (t->kind == RSLC_TK_IDENT)
+      return c->syms[t->ref]->str;
+   if (t->flags & RSLC_TF_SYNTH)
+      return c->synth + t->ref;
+   return c->src + t->ref;
+}
+
+struct rslc_sym *rslc_tok_sym(const struct rslc_ctx *c, const struct rslc_tok *t)
+{
+   return t->kind == RSLC_TK_IDENT ? c->syms[t->ref] : NULL;
 }
 
 /* Intern */
@@ -179,23 +282,23 @@ uint32_t rslc_hash(const char *s, size_t len)
 
 static bool rslc_intern_rehash(struct rslc_ctx *c)
 {
-   struct rslc_intern       *t    = &c->intern;
-   uint32_t                  n    = t->mask ? (t->mask + 1) * 2 : RSLC_INTERN_INITIAL;
-   struct rslc_intern_entry *old  = t->slots;
-   uint32_t                  oldn = t->mask ? t->mask + 1 : 0;
-   struct rslc_intern_entry *nw;
-   uint32_t                  i;
+   struct rslc_intern *t    = &c->intern;
+   uint32_t            n    = t->mask ? (t->mask + 1) * 2 : RSLC_INTERN_INITIAL;
+   struct rslc_sym   **old  = t->slots;
+   uint32_t            oldn = t->mask ? t->mask + 1 : 0;
+   struct rslc_sym   **nw;
+   uint32_t            i;
 
-   nw = (struct rslc_intern_entry*)rslc_arena_zalloc(c, n * sizeof(*nw));
+   nw = (struct rslc_sym**)rslc_arena_zalloc(c, n * sizeof(*nw));
    if (!nw)
       return false;
    for (i = 0; i < oldn; i++)
    {
       uint32_t j;
-      if (!old[i].str)
+      if (!old[i])
          continue;
-      j = old[i].hash & (n - 1);
-      while (nw[j].str)
+      j = old[i]->hash & (n - 1);
+      while (nw[j])
          j = (j + 1) & (n - 1);
       nw[j] = old[i];
    }
@@ -204,12 +307,13 @@ static bool rslc_intern_rehash(struct rslc_ctx *c)
    return true;
 }
 
-const char *rslc_intern(struct rslc_ctx *c, const char *s, size_t len)
+struct rslc_sym *rslc_sym(struct rslc_ctx *c, const char *s, size_t len)
 {
    struct rslc_intern *t = &c->intern;
    uint32_t            h = rslc_hash(s, len);
    uint32_t            j;
    char               *copy;
+   struct rslc_sym    *e;
 
    if (c->failed)
       return NULL;
@@ -220,29 +324,90 @@ const char *rslc_intern(struct rslc_ctx *c, const char *s, size_t len)
    j = h & t->mask;
    for (;;)
    {
-      struct rslc_intern_entry *e = &t->slots[j];
-      if (!e->str)
+      e = t->slots[j];
+      if (!e)
          break;
       if (e->hash == h && e->len == len && !memcmp(e->str, s, len))
-         return e->str;
+         return e;
       j = (j + 1) & t->mask;
    }
 
+   if (c->nsyms == c->syms_cap)
+   {
+      uint32_t          ncap = c->syms_cap ? c->syms_cap * 2 : 512;
+      struct rslc_sym **nv   = (struct rslc_sym**)rslc_arena_alloc(c,
+            ncap * sizeof(*nv));
+      if (!nv)
+         return NULL;
+      if (c->nsyms)
+         memcpy(nv, c->syms, c->nsyms * sizeof(*nv));
+      c->syms     = nv;
+      c->syms_cap = ncap;
+   }
+   e = (struct rslc_sym*)rslc_arena_zalloc(c, sizeof(*e));
+   if (!e)
+      return NULL;
    copy = (char*)rslc_arena_alloc(c, len + 1);
    if (!copy)
       return NULL;
    memcpy(copy, s, len);
-   copy[len]         = '\0';
-   t->slots[j].str   = copy;
-   t->slots[j].hash  = h;
-   t->slots[j].len   = (uint32_t)len;
+   copy[len]   = '\0';
+   e->str      = copy;
+   e->hash     = h;
+   e->len      = (uint32_t)len;
+   e->index    = c->nsyms;
+   c->syms[c->nsyms++] = e;
+   t->slots[j] = e;
    t->count++;
-   return copy;
+   return e;
+}
+
+const char *rslc_intern(struct rslc_ctx *c, const char *s, size_t len)
+{
+   struct rslc_sym *e = rslc_sym(c, s, len);
+   return e ? e->str : NULL;
 }
 
 const char *rslc_intern_cstr(struct rslc_ctx *c, const char *s)
 {
    return rslc_intern(c, s, strlen(s));
+}
+
+/* Keywords, in enum rslc_kw order from RSLC_KW_CONST. */
+static const char *const rslc_keywords[] = {
+   "const", "in", "out", "inout", "uniform",
+   "flat", "smooth", "noperspective", "centroid",
+   "sample", "invariant", "precise", "layout",
+   "precision", "lowp", "mediump", "highp",
+   "struct",
+   "if", "else", "for", "while", "do",
+   "switch", "case", "default", "break",
+   "continue", "return", "discard",
+   "true", "false",
+   "void", "bool", "int", "uint", "float",
+   "bvec2", "bvec3", "bvec4",
+   "ivec2", "ivec3", "ivec4",
+   "uvec2", "uvec3", "uvec4",
+   "vec2", "vec3", "vec4",
+   "mat2", "mat3", "mat4",
+   "mat2x2", "mat2x3", "mat2x4",
+   "mat3x2", "mat3x3", "mat3x4",
+   "mat4x2", "mat4x3", "mat4x4",
+   "sampler2D"
+};
+
+static bool rslc_seed_keywords(struct rslc_ctx *c)
+{
+   unsigned i;
+   for (i = 0; i < sizeof(rslc_keywords) / sizeof(rslc_keywords[0]); i++)
+   {
+      struct rslc_sym *e = rslc_sym(c, rslc_keywords[i],
+            strlen(rslc_keywords[i]));
+      if (!e)
+         return false;
+      e->kw = (uint16_t)(RSLC_KW_CONST + i);
+   }
+   return true;
 }
 
 /* Print buffer */
@@ -364,39 +529,43 @@ bool rslc_ctx_init(struct rslc_ctx *c, const struct rslc_opts *opts,
 
    if (opts->arena)
    {
+      /* The caller's block is split: the top quarter is scratch. */
       uintptr_t p   = (uintptr_t)opts->arena;
       uintptr_t pad = (RSLC_ARENA_ALIGN - (p & (RSLC_ARENA_ALIGN - 1)))
          & (RSLC_ARENA_ALIGN - 1);
-      if (opts->arena_len <= pad)
+      size_t    main_len;
+      if (opts->arena_len <= pad + 4096)
       {
          rslc_err(c, "caller arena too small", NULL, 0);
          return false;
       }
-      c->arena.fixed = true;
-      c->arena.cur   = (uint8_t*)opts->arena + pad;
-      c->arena.end   = (uint8_t*)opts->arena + opts->arena_len;
-      c->arena.cap   = opts->arena_len;
+      main_len = ((opts->arena_len - pad) / 4 * 3) & ~(size_t)(RSLC_ARENA_ALIGN - 1);
+      c->arena.fixed   = true;
+      c->arena.cur     = (uint8_t*)opts->arena + pad;
+      c->arena.end     = c->arena.cur + main_len;
+      c->arena.cap     = opts->arena_len;
+      c->scratch.fixed = true;
+      c->scratch.cur   = c->arena.end;
+      c->scratch.end   = (uint8_t*)opts->arena + opts->arena_len;
+      c->scratch.cap   = opts->arena_len;
    }
    else
+   {
       c->arena.cap   = opts->arena_cap ? opts->arena_cap : RSLC_ARENA_CAP_DEFAULT;
+      c->scratch.cap = c->arena.cap;
+   }
 
-   /* Seed the intern table so the first identifier never rehashes. */
+   /* Seed the intern table with the keywords; the first rehash happens
+    * here, not on the first identifier. */
    if (!rslc_intern_rehash(c))
       return false;
-   return true;
+   return rslc_seed_keywords(c);
 }
 
 void rslc_ctx_close(struct rslc_ctx *c)
 {
-   struct rslc_chunk *k = c->arena.chunks;
-   while (k)
-   {
-      struct rslc_chunk *next = k->next;
-      rslc_mem_free(c->opts, k);
-      k = next;
-   }
-   c->arena.chunks = NULL;
-   c->arena.cur    = c->arena.end = NULL;
+   rslc_arena_free_all(c, &c->arena);
+   rslc_arena_free_all(c, &c->scratch);
 }
 
 /* Blob */
