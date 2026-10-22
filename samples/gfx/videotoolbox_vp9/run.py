@@ -35,7 +35,17 @@ with tempfile.TemporaryDirectory(prefix="vt-vp9-setup-") as directory:
         flags += ["-I" + str(path)]
     flags += shlex.split(os.environ.get("CFLAGS", ""))
     binary = path / ("setup.exe" if os.name == "nt" else "setup")
-    command = compiler + flags + [str(here / "setup_test.c"), "-o", str(binary)] + libraries
+    thread_object = path / "rthreads.o"
+    thread_command = compiler + ["-O2", "-DHAVE_THREADS",
+        "-I" + str(root / "libretro-common/include")]
+    thread_command += shlex.split(os.environ.get("CFLAGS", ""))
+    thread_command += ["-c", str(root / "libretro-common/rthreads/rthreads.c"),
+                      "-o", str(thread_object)]
+    subprocess.run(thread_command, check=True)
+    if os.name != "nt":
+        libraries += ["-pthread"]
+    command = compiler + flags + [str(here / "setup_test.c"), str(thread_object),
+                                  "-o", str(binary)] + libraries
     print("+", shlex.join(command), flush=True)
     subprocess.run(command, check=True)
-    subprocess.run(shlex.split(os.environ.get("RUNNER", "")) + [str(binary)], check=True)
+    subprocess.run(shlex.split(os.environ.get("RUNNER", "")) + [str(binary)], check=True, timeout=90)

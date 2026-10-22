@@ -11,6 +11,9 @@ typedef struct object *CFNumberRef;
 typedef struct object *CMVideoFormatDescriptionRef;
 typedef struct object *VTDecompressionSessionRef;
 typedef void *CVImageBufferRef;
+typedef struct object *CVPixelBufferRef;
+CVPixelBufferRef CVPixelBufferRetain(CVPixelBufferRef);
+void CVPixelBufferRelease(CVPixelBufferRef);
 typedef unsigned VTDecodeInfoFlags;
 typedef unsigned VTDecodeFrameFlags;
 typedef struct object *CMBlockBufferRef;
@@ -41,6 +44,8 @@ typedef struct
 #define kCMBlockBufferCustomBlockSourceVersion 0
 #define kVTDecodeFrame_EnableAsynchronousDecompression 1
 #define kVTDecodeFrame_DoNotOutputFrame 2
+#define kVTDecodeInfo_FrameDropped 2
+static const CMTime kCMTimeInvalid = {0, 0, 0, 0};
 OSStatus CMBlockBufferCreateWithMemoryBlock(void *, void *, size_t, void *,
       const CMBlockBufferCustomBlockSource *, size_t, size_t, unsigned,
       CMBlockBufferRef *);

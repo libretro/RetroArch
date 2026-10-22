@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../../../gfx/common/videotoolbox_vp9_sample.h"
+#include "../../../gfx/common/videotoolbox_vp9_slots.h"
 
 static rvp9_hdr header;
 static video_color_metadata_t color;
@@ -89,6 +89,21 @@ void CFRelease(void *value)
    objects--;
    free(p);
 }
+
+#ifdef VIDEOTOOLBOX_VP9_SLOTS
+CVPixelBufferRef CVPixelBufferRetain(CVPixelBufferRef image)
+{
+   assert(image->kind == 8);
+   retain(image);
+   return image;
+}
+
+void CVPixelBufferRelease(CVPixelBufferRef image)
+{
+   assert(image->kind == 8);
+   CFRelease(image);
+}
+#endif
 
 CFDataRef CFDataCreate(void *allocator, const uint8_t *bytes, long size)
 {
@@ -276,12 +291,14 @@ static void test_sample(CMVideoFormatDescriptionRef format)
    assert(!videotoolbox_vp9_sample_create_worker(
          format, &sample_packet, &sample_ticket, &timing, &sample));
    assert(sample && retro_atomic_load_acquire_int(&sample_ticket.held));
-   assert(videotoolbox_vp9_sample_create_worker(format, &sample_packet,
-         &sample_ticket, NULL, &busy) == 1 && !busy);
+   assert(videotoolbox_vp9_sample_create_worker(
+                format, &sample_packet, &sample_ticket, NULL, &busy)
+                == 1
+          && !busy);
 #ifndef VT_VP9_NATIVE
    timing.presentationTimeStamp.value = 999;
    assert(sample->timing.presentationTimeStamp.value == 48
-         && sample->timing.duration.timescale == 24);
+          && sample->timing.duration.timescale == 24);
 #endif
    CFRelease(sample);
    assert(!retro_atomic_load_acquire_int(&sample_ticket.held));
@@ -311,6 +328,116 @@ static void test_sample(CMVideoFormatDescriptionRef format)
 }
 #endif
 
+#ifdef VIDEOTOOLBOX_VP9_SLOTS
+#include <rthreads/rthreads.h>
+static videotoolbox_vp9_slots_t *race_slots;
+static retro_atomic_ptr_t race_cookie;
+static retro_atomic_int_t race_stop;
+
+static void race_callback(void *user)
+{
+   (void)user;
+   while (!retro_atomic_load_acquire_int(&race_stop))
+   {
+      void *cookie = retro_atomic_load_acquire_ptr(&race_cookie);
+      if (cookie)
+         videotoolbox_vp9_slots_output(race_slots, cookie,
+               (OSStatus)((uintptr_t)cookie >> 7), 0, NULL, kCMTimeInvalid,
+               kCMTimeInvalid);
+      sthread_yield();
+   }
+}
+
+static void test_slot_races(void)
+{
+   sthread_t *one, *two;
+   videotoolbox_vp9_result_t result;
+   unsigned iteration, retry;
+   int status;
+   void *cookie;
+   race_slots = videotoolbox_vp9_slots_new(1);
+   assert(race_slots);
+   retro_atomic_ptr_init(&race_cookie, NULL);
+   retro_atomic_int_init(&race_stop, 0);
+   one = sthread_create(race_callback, NULL);
+   two = sthread_create(race_callback, NULL);
+   assert(one && two);
+   for (iteration = 0; iteration < 2000; iteration++)
+   {
+      cookie = videotoolbox_vp9_slots_begin(race_slots, 0);
+      assert(cookie);
+      retro_atomic_store_release_ptr(&race_cookie, cookie);
+      status = 0;
+      for (retry = 0; retry < 1000000 && !status; retry++)
+      {
+         status = videotoolbox_vp9_slots_take(race_slots, 0, &result);
+         if (!status)
+            sthread_yield();
+      }
+      assert(
+            status == 1 && result.status == (OSStatus)((uintptr_t)cookie >> 7));
+   }
+   retro_atomic_store_release_int(&race_stop, 1);
+   sthread_join(one);
+   sthread_join(two);
+   videotoolbox_vp9_slots_free_quiesced(race_slots);
+}
+#endif
+
+#ifdef VIDEOTOOLBOX_VP9_SLOTS
+static void test_slots(void)
+{
+   videotoolbox_vp9_slots_t *slots = videotoolbox_vp9_slots_new(2);
+   videotoolbox_vp9_result_t result;
+   CVPixelBufferRef image;
+   CMTime pts = kCMTimeInvalid;
+   void *first, *next;
+   assert(slots && !videotoolbox_vp9_slots_new(33));
+#ifdef VT_VP9_NATIVE
+   assert(CVPixelBufferCreate(kCFAllocatorDefault, 16, 16,
+                kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange, NULL, &image)
+          == kCVReturnSuccess);
+#else
+   image = new_object(8);
+   assert(image);
+#endif
+   pts.value     = 99;
+   pts.timescale = 24;
+   pts.flags     = 1;
+   first         = videotoolbox_vp9_slots_begin(slots, 1);
+   assert(first && !videotoolbox_vp9_slots_begin(slots, 1));
+   videotoolbox_vp9_slots_output(slots, first, 0, 0, NULL, pts, pts);
+   assert(!videotoolbox_vp9_slots_take(slots, 1, &result));
+   videotoolbox_vp9_slots_output(slots, first, 0, 0, image, pts, pts);
+   videotoolbox_vp9_slots_output(slots, first, 0, 0, image, pts, pts);
+   assert(videotoolbox_vp9_slots_take(slots, 1, &result) == 1);
+   assert(result.image == image && result.pts.value == 99
+          && result.pts.timescale == 24);
+   CVPixelBufferRelease(result.image);
+   next = videotoolbox_vp9_slots_begin(slots, 1);
+   assert(next && next != first);
+   videotoolbox_vp9_slots_output(slots, first, -900, 0, image, pts, pts);
+   assert(!videotoolbox_vp9_slots_take(slots, 1, &result));
+   videotoolbox_vp9_slots_output(slots, next, -901, 0, image, pts, pts);
+   assert(videotoolbox_vp9_slots_take(slots, 1, &result) == 1);
+   assert(!result.image && result.status == -901);
+   next = videotoolbox_vp9_slots_begin(slots, 0);
+   videotoolbox_vp9_slots_complete(slots, next, 0);
+   assert(videotoolbox_vp9_slots_take(slots, 0, &result) == 1 && !result.image);
+   videotoolbox_vp9_slots_output(slots, next, 0, 0, image, pts, pts);
+   assert(!videotoolbox_vp9_slots_take(slots, 0, &result));
+   next = videotoolbox_vp9_slots_begin(slots, 0);
+   videotoolbox_vp9_slots_output(slots, next, 0, 0, image, pts, pts);
+   slots->closed = 1;
+   assert(!videotoolbox_vp9_slots_begin(slots, 1));
+   slots->closed = 0;
+   slots->serial = (uintptr_t)-1 >> 7;
+   assert(!videotoolbox_vp9_slots_begin(slots, 1));
+   CVPixelBufferRelease(image);
+   videotoolbox_vp9_slots_free_quiesced(slots);
+}
+#endif
+
 int main(void)
 {
    CMVideoFormatDescriptionRef format;
@@ -320,6 +447,10 @@ int main(void)
    unsigned depth, range;
 #ifndef VT_VP9_NATIVE
    int failure, before;
+#endif
+#ifdef VIDEOTOOLBOX_VP9_SLOTS
+   test_slots();
+   test_slot_races();
 #endif
    memset(&header, 0, sizeof(header));
    memset(&color, 0, sizeof(color));
@@ -437,7 +568,7 @@ int main(void)
 #ifdef VT_VP9_NATIVE
    puts("PASS: native CoreMedia VP9 formats/samples, storage release and SDK signatures; no hardware decode execution");
 #elif defined(VIDEOTOOLBOX_VP9_SAMPLE)
-   puts("PASS: VP9 setup/sample contracts, delayed storage release, busy/rejected submission and allocation cleanup; no Apple device execution");
+   puts("PASS: VP9 setup/sample/slot contracts, stale/duplicate callbacks, retained images and delayed storage release; no Apple device execution");
 #else
    puts("PASS: VP9 setup; threadless excludes native sample/decode helpers");
 #endif
