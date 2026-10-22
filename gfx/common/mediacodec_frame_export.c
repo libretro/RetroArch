@@ -1,27 +1,42 @@
-/* Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier: GPL-3.0-or-later */
+/* Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier:
+ * GPL-3.0-or-later */
 #include "mediacodec_frame_export.h"
 #include "mediacodec_color.h"
 #include <formats/image.h>
 #include <stdlib.h>
 #include <string.h>
-struct mediacodec_frame_exporter {
- android_frame_pool_t *pool;
- unsigned pixfmt;
-};
-mediacodec_frame_exporter_t *mediacodec_frame_exporter_new(unsigned slots,unsigned pixfmt)
+struct mediacodec_frame_exporter
 {
- mediacodec_frame_exporter_t *e;
- if(pixfmt!=IMAGE_PIXFMT_NV12 && pixfmt!=IMAGE_PIXFMT_P010)return NULL;
- e=(mediacodec_frame_exporter_t*)calloc(1,sizeof(*e));if(!e)return NULL;
- e->pool=android_frame_pool_new(slots);e->pixfmt=pixfmt;
- if(!e->pool){free(e);return NULL;}return e;
+   android_frame_pool_t *pool;
+   unsigned pixfmt;
+};
+mediacodec_frame_exporter_t *mediacodec_frame_exporter_new(
+      unsigned slots, unsigned pixfmt)
+{
+   mediacodec_frame_exporter_t *e;
+   if (pixfmt != IMAGE_PIXFMT_NV12 && pixfmt != IMAGE_PIXFMT_P010)
+      return NULL;
+   e = (mediacodec_frame_exporter_t *)calloc(1, sizeof(*e));
+   if (!e)
+      return NULL;
+   e->pool = android_frame_pool_new(slots);
+   e->pixfmt = pixfmt;
+   if (!e->pool)
+   {
+      free(e);
+      return NULL;
+   }
+   return e;
 }
 bool mediacodec_frame_exporter_free(mediacodec_frame_exporter_t *e)
 {
- if(!e)return true;
- android_frame_pool_close(e->pool);
- if(!android_frame_pool_free(e->pool))return false;
- free(e);return true;
+   if (!e)
+      return true;
+   android_frame_pool_close(e->pool);
+   if (!android_frame_pool_free(e->pool))
+      return false;
+   free(e);
+   return true;
 }
 
 int mediacodec_frame_export_color(void *opaque,
@@ -39,7 +54,7 @@ int mediacodec_frame_export_color(void *opaque,
          || !view.color.transfer || view.color.transfer == 2
          || !view.color.primaries || view.color.primaries == 2)
       return -1;
-   view.image  = *image;
+   view.image = *image;
    view.format = *format;
    view.pixfmt = e->pixfmt;
    return android_frame_export(e->pool, &view, frame);
@@ -57,8 +72,8 @@ int mediacodec_hevc_frame_export(void *opaque,
    if (coded->description_present)
    {
       color.primaries = coded->primaries;
-      color.transfer  = coded->transfer;
-      color.matrix    = coded->matrix;
+      color.transfer = coded->transfer;
+      color.matrix = coded->matrix;
    }
    if (coded->video_signal_present)
       color.range = coded->full_range ? 2 : 1;
@@ -75,8 +90,8 @@ int mediacodec_vp9_frame_export(void *opaque, const android_image_view_t *image,
       return -1;
    if (!e
          || e->pixfmt
-                  != (header->bit_depth == 10 ? IMAGE_PIXFMT_P010
-                                              : IMAGE_PIXFMT_NV12))
+               != (header->bit_depth == 10 ? IMAGE_PIXFMT_P010
+                                           : IMAGE_PIXFMT_NV12))
       return -1;
    return mediacodec_frame_export_color(opaque, image, format, &color, frame);
 }
@@ -89,8 +104,8 @@ int mediacodec_av1_frame_export(void *opaque, const android_image_view_t *image,
    video_color_metadata_t color;
    if (!mediacodec_av1_color(sequence, container, &color) || !e
          || e->pixfmt
-                  != (sequence->bit_depth == 10 ? IMAGE_PIXFMT_P010
-                                                : IMAGE_PIXFMT_NV12))
+               != (sequence->bit_depth == 10 ? IMAGE_PIXFMT_P010
+                                             : IMAGE_PIXFMT_NV12))
       return -1;
    return mediacodec_frame_export_color(opaque, image, format, &color, frame);
 }

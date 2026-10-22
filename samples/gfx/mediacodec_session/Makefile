@@ -49,11 +49,11 @@ android_frame_test: android_frame_test.c ../../../gfx/common/android_frame.c ../
 	$(CC) $(CFLAGS) $(BACKEND_HOST_FLAGS) -DHAVE_THREADS -pthread android_frame_test.c ../../../gfx/common/android_frame.c ../../../gfx/common/android_image_queue.c rthreads.o -o $@ $(LDFLAGS)
 EXPORT_SOURCES := ../../../gfx/common/mediacodec_frame_export.c ../../../gfx/common/mediacodec_color.c \
  ../../../gfx/common/android_frame.c ../../../gfx/common/android_image_queue.c
-frame_export_test: frame_export_test.c $(EXPORT_SOURCES) ../../../gfx/common/mediacodec_frame_export.h ../../../gfx/common/mediacodec_color.h ../../../gfx/common/vp9_color.h
+frame_export_test: frame_export_test.c $(EXPORT_SOURCES) ../../../gfx/common/mediacodec_frame_export.h ../../../gfx/common/mediacodec_color.h ../../../libretro-common/include/formats/rvp9_color.h
 	$(CC) $(CFLAGS) -DHAVE_THREADS frame_export_test.c $(EXPORT_SOURCES) -o $@ $(LDFLAGS)
-vp9_color_test: vp9_color_test.c frame_export_test.c $(EXPORT_SOURCES) ../../../gfx/common/mediacodec_frame_export.h ../../../gfx/common/mediacodec_color.h ../../../gfx/common/vp9_color.h
+vp9_color_test: vp9_color_test.c frame_export_test.c $(EXPORT_SOURCES) ../../../gfx/common/mediacodec_frame_export.h ../../../gfx/common/mediacodec_color.h ../../../libretro-common/include/formats/rvp9_color.h
 	$(CC) $(CFLAGS) $(BACKEND_HOST_FLAGS) -DHAVE_THREADS vp9_color_test.c $(EXPORT_SOURCES) -o $@ $(LDFLAGS)
-av1_color_test: av1_color_test.c frame_export_test.c $(EXPORT_SOURCES) ../../../gfx/common/mediacodec_frame_export.h ../../../gfx/common/mediacodec_color.h ../../../gfx/common/vp9_color.h
+av1_color_test: av1_color_test.c frame_export_test.c $(EXPORT_SOURCES) ../../../gfx/common/mediacodec_frame_export.h ../../../gfx/common/mediacodec_color.h ../../../libretro-common/include/formats/rvp9_color.h
 	$(CC) $(CFLAGS) $(BACKEND_HOST_FLAGS) -DHAVE_THREADS av1_color_test.c $(EXPORT_SOURCES) -o $@ $(LDFLAGS)
 SUBMIT_SOURCES := ../../../gfx/common/vulkan_android_submit.c ../../../gfx/common/vulkan_android_image.c \
  ../../../gfx/common/vulkan_android_sync.c ../../../gfx/common/vulkan_android_pipeline.c \
@@ -126,3 +126,7 @@ session-check:
 frame-check:
 	python3 frame_run.py
 .PHONY: frame-check
+
+export-check:
+	python3 export_run.py
+.PHONY: export-check

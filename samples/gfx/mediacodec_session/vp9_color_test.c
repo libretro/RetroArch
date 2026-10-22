@@ -13,50 +13,50 @@ static void colors(unsigned depth)
    video_color_metadata_t container, result;
    mediacodec_output_format_t format;
    memset(&header, 0, sizeof(header));
-   header.profile       = depth == 10 ? 2 : 0;
-   header.bit_depth     = (int)depth;
+   header.profile = depth == 10 ? 2 : 0;
+   header.bit_depth = (int)depth;
    header.subsampling_x = header.subsampling_y = 1;
-   header.color_space                          = 5;
+   header.color_space = 5;
    memset(&container, 0, sizeof(container));
    container.primaries = container.matrix = 9;
-   container.transfer                     = 16;
-   container.range                        = 1;
-   container.max_cll                      = 4000;
-   container.max_fall                     = 700;
-   container.mastering.present            = 0x303;
-   container.mastering.chromaticity[0]    = 15000;
-   container.mastering.luminance_max      = 20000000;
+   container.transfer = 16;
+   container.range = 1;
+   container.max_cll = 4000;
+   container.max_fall = 700;
+   container.mastering.present = 0x303;
+   container.mastering.chromaticity[0] = 15000;
+   container.mastering.luminance_max = 20000000;
    assert(mediacodec_vp9_color(&header, &container, &result));
    assert(result.transfer == 16 && result.range == 1 && result.max_cll == 4000
-          && result.mastering.chromaticity[0] == 15000
-          && result.mastering.present == 0x303);
+         && result.mastering.chromaticity[0] == 15000
+         && result.mastering.present == 0x303);
    assert(mediacodec_vp9_color(&header, &container, &container));
    assert(container.max_fall == 700
-          && container.mastering.luminance_max == 20000000);
+         && container.mastering.luminance_max == 20000000);
    assert(mediacodec_vp9_color(&header, NULL, &result));
    assert(result.primaries == 9 && result.matrix == 9 && !result.transfer
-          && result.range == 1);
+         && result.range == 1);
    container.transfer = 18;
    memset(&format, 0, sizeof(format));
    format.color_standard = 6;
    format.color_transfer = 7;
-   format.color_range    = 2;
+   format.color_range = 2;
    assert(mediacodec_vp9_color(&header, &container, &result));
    assert(mediacodec_color_resolve(&format, &result, &result)
-          && result.transfer == 18);
+         && result.transfer == 18);
    format.color_transfer = 6;
    assert(!mediacodec_color_resolve(&format, &result, &result)
-          && !result.transfer);
+         && !result.transfer);
    header.color_space = 2;
    assert(!mediacodec_vp9_color(&header, &container, &result)
-          && !result.primaries);
+         && !result.primaries);
    header.color_space = 5;
-   container.range    = 2;
+   container.range = 2;
    assert(!mediacodec_vp9_color(&header, &container, &result) && !result.range);
    memset(&container, 0, sizeof(container));
-   header.color_space  = 1;
+   header.color_space = 1;
    container.primaries = container.matrix = 5;
-   container.transfer                     = 6;
+   container.transfer = 6;
    assert(mediacodec_vp9_color(&header, &container, &result));
    assert(result.primaries == 5 && result.matrix == 5 && result.transfer == 6);
    assert(mediacodec_vp9_color(&header, NULL, &result));
@@ -65,14 +65,14 @@ static void colors(unsigned depth)
    assert(!mediacodec_vp9_color(&header, &container, &result));
    header.color_space = 3;
    assert(mediacodec_vp9_color(&header, NULL, &result) && result.primaries == 6
-          && result.matrix == 6);
+         && result.matrix == 6);
    header.color_space = 4;
    assert(mediacodec_vp9_color(&header, NULL, &result) && result.primaries == 7
-          && result.matrix == 7);
+         && result.matrix == 7);
    header.color_space = 0;
    container.transfer = 16;
    assert(mediacodec_vp9_color(&header, &container, &result)
-          && result.transfer == 16 && result.matrix == 9);
+         && result.transfer == 16 && result.matrix == 9);
    header.color_space = 6;
    assert(!mediacodec_vp9_color(&header, NULL, &result));
    header.color_space = 7;
@@ -91,32 +91,32 @@ static void input_colors(void)
    memset(&color, 0, sizeof(color));
    memset(&config, 0x55, sizeof(config));
    color.primaries = color.matrix = 9;
-   color.transfer                 = 16;
-   color.range                    = 1;
+   color.transfer = 16;
+   color.range = 1;
    assert(mediacodec_color_configure(&color, &config));
    assert(config.color_standard == 6 && config.color_transfer == 6
-          && config.color_range == 2 && config.profile == 0x55555555);
-   unchanged       = config;
+         && config.color_range == 2 && config.profile == 0x55555555);
+   unchanged = config;
    color.primaries = 1;
    assert(!mediacodec_color_configure(&color, &config));
    assert(!memcmp(&config, &unchanged, sizeof(config)));
    color.primaries = 9;
-   color.transfer  = 13;
+   color.transfer = 13;
    assert(!mediacodec_color_configure(&color, &config));
    color.transfer = 18;
-   color.range    = 2;
+   color.range = 2;
    assert(mediacodec_color_configure(&color, &config));
    assert(config.color_transfer == 7 && config.color_range == 1);
    color.range = 3;
-   unchanged   = config;
+   unchanged = config;
    assert(!mediacodec_color_configure(&color, &config));
    assert(!memcmp(&config, &unchanged, sizeof(config)));
-   color.range     = 0;
+   color.range = 0;
    color.primaries = 0;
-   color.transfer  = 2;
+   color.transfer = 2;
    assert(mediacodec_color_configure(&color, &config));
    assert(!config.color_standard && !config.color_transfer
-          && !config.color_range);
+         && !config.color_range);
    assert(!mediacodec_color_configure(NULL, &config));
    assert(!mediacodec_color_configure(&color, NULL));
 }
@@ -130,7 +130,7 @@ static int acquire_color(void *native_reader, void **image, int *fd)
    if (produced == 2)
       return 0;
    *image = &tokens[produced++];
-   *fd    = -1;
+   *fd = -1;
    return 1;
 }
 
@@ -166,32 +166,32 @@ static void leases(void)
    android_image_view_t first, second;
    video_hw_frame_t frame, pending;
    memset(&header, 0, sizeof(header));
-   header.profile       = 2;
-   header.bit_depth     = 10;
+   header.profile = 2;
+   header.bit_depth = 10;
    header.subsampling_x = header.subsampling_y = 1;
-   header.color_space                          = 5;
+   header.color_space = 5;
    memset(&container, 0, sizeof(container));
    container.primaries = container.matrix = 9;
-   container.transfer                     = 16;
-   container.range                        = 1;
-   container.max_cll                      = 4000;
-   container.max_fall                     = 700;
-   container.mastering.present            = 0x101;
-   container.mastering.chromaticity[0]    = 15000;
-   container.mastering.luminance_max      = 20000000;
+   container.transfer = 16;
+   container.range = 1;
+   container.max_cll = 4000;
+   container.max_fall = 700;
+   container.mastering.present = 0x101;
+   container.mastering.chromaticity[0] = 15000;
+   container.mastering.luminance_max = 20000000;
    memset(&format, 0, sizeof(format));
    format.width = format.right = 64;
    format.height = format.bottom = 32;
-   format.serial                 = 1;
-   format.color_standard         = 6;
-   format.color_transfer         = 3;
-   format.color_range            = 2;
+   format.serial = 1;
+   format.color_standard = 6;
+   format.color_transfer = 3;
+   format.color_range = 2;
    memset(&ops, 0, sizeof(ops));
-   ops.acquire       = acquire_color;
-   ops.describe      = describe_color;
-   ops.delete_image  = delete_color;
+   ops.acquire = acquire_color;
+   ops.describe = describe_color;
+   ops.delete_image = delete_color;
    ops.delete_reader = close_reader;
-   queue             = android_image_queue_new(&reader, 2, &ops);
+   queue = android_image_queue_new(&reader, 2, &ops);
    assert(queue);
    exporter = mediacodec_frame_exporter_new(1, IMAGE_PIXFMT_P010);
    assert(exporter);
@@ -199,43 +199,43 @@ static void leases(void)
    memset(&frame, 0x55, sizeof(frame));
    assert(mediacodec_vp9_frame_export(
                 exporter, &first, &format, &header, &container, &frame)
-          == -1);
+         == -1);
    assert(frame.width == 0x55555555 && !android_image_queue_poll(queue));
    format.color_transfer = 6;
-   header.profile        = 0;
-   header.bit_depth      = 8;
+   header.profile = 0;
+   header.bit_depth = 8;
    assert(mediacodec_vp9_frame_export(
                 exporter, &first, &format, &header, &container, &frame)
-          == -1);
+         == -1);
    assert(frame.width == 0x55555555 && !android_image_queue_poll(queue));
-   header.profile   = 2;
+   header.profile = 2;
    header.bit_depth = 10;
    assert(!mediacodec_vp9_frame_export(
          exporter, &first, &format, &header, &container, &frame));
    assert(frame.color.transfer == 16 && frame.color.max_cll == 4000
-          && frame.pixfmt == IMAGE_PIXFMT_P010);
+         && frame.pixfmt == IMAGE_PIXFMT_P010);
    assert(android_image_queue_acquire(queue, &second) == 1);
    memset(&pending, 0x55, sizeof(pending));
    assert(mediacodec_vp9_frame_export(
                 exporter, &second, &format, &header, &container, &pending)
-          == 1);
+         == 1);
    assert(pending.width == 0x55555555 && !android_image_queue_poll(queue));
    assert(android_frame_claim(
          frame.owner, frame.done, frame.done_value, frame.image, &pq));
    assert(pq.color.transfer == 16 && pq.color.max_fall == 700
-          && pq.color.mastering.chromaticity[0] == 15000);
+         && pq.color.mastering.chromaticity[0] == 15000);
    memset(&refinement, 0, sizeof(refinement));
    refinement.transfer = 18;
    assert(!android_frame_resolve_color(&pq, &refinement)
-          && pq.color.transfer == 16);
+         && pq.color.transfer == 16);
    refinement.transfer = 0;
-   refinement.max_cll  = 1000;
+   refinement.max_cll = 1000;
    assert(android_frame_resolve_color(&pq, &refinement));
    assert(pq.color.transfer == 16 && pq.color.max_cll == 1000
-          && pq.color.mastering.present == 0x101);
+         && pq.color.mastering.present == 0x101);
    assert(android_frame_finish(frame.owner, frame.done, frame.done_value, -1));
    assert(android_image_queue_poll(queue) == 1);
-   container.transfer    = 18;
+   container.transfer = 18;
    format.color_transfer = 7;
    assert(!mediacodec_vp9_frame_export(
          exporter, &second, &format, &header, &container, &frame));
@@ -257,6 +257,8 @@ int main(void)
    colors(10);
    input_colors();
    leases();
-   puts("PASS: VP9 coded/container/native color conflicts, PQ/HLG lease metadata, mastering/light refinement and retirement; no device pixels");
+   puts("PASS: VP9 coded/container/native color conflicts, PQ/HLG lease "
+        "metadata, mastering/light refinement and retirement; no device "
+        "pixels");
    return 0;
 }
