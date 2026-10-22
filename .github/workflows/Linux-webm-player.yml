@@ -28,12 +28,30 @@ jobs:
   player:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      APT_PKGS: build-essential ffmpeg gcc-mingw-w64-x86-64 wine64
     steps:
       - uses: actions/checkout@v5
+      - name: Apt cache key
+        id: apt
+        run: sh .github/workflows/scripts/apt-cache-key.sh "$APT_PKGS"
+      - name: Restore apt cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+          restore-keys: ${{ steps.apt.outputs.prefix }}
+      # Bounded, with the main archive tried when the mirror stalls: a
+      # plain apt-get install stalled on it took the job's 15 minutes
       - name: Install dependencies
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y build-essential ffmpeg gcc-mingw-w64-x86-64 wine64
+        timeout-minutes: 10
+        run: sh .github/workflows/scripts/apt-install.sh $APT_PKGS
+      - name: Save apt cache
+        if: env.APT_CACHE_SAVE == '1'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
       - name: Generate media
         working-directory: samples/cores/webm_player
         run: python3 mkfixtures.py
