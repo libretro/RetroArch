@@ -25,6 +25,10 @@ static void run(const vp9_pipeline_fixture_t *fixture, void *device)
    int owner, ret, duration;
    unsigned count = 0, seek;
    int64_t deadline, position;
+   printf("VP9 pipeline case: %s depth %u range %u transfer %u hidden/repeat %u\n",
+         fixture->webm ? "WebM" : "MP4", fixture->depth,
+         fixture->full, fixture->transfer, fixture->hidden_repeat);
+   fflush(stdout);
    assert(videotoolbox_hevc_test_start(&owner, device, 1));
    if (fixture->webm)
    {
@@ -63,6 +67,12 @@ static void run(const vp9_pipeline_fixture_t *fixture, void *device)
          videotoolbox_hevc_test_export(&frame, fixture->depth,
                fixture->full, fixture->crc[count]);
       count++;
+   }
+   if (count != 4 || !held.owner)
+   {
+      fprintf(stderr, "VP9 pipeline stopped: result %d, visible frames %u/4, retained owner %u\n",
+            ret, count, held.owner != NULL);
+      fflush(stderr);
    }
    assert(count == 4 && held.owner);
    for (seek = 0; seek < 4; seek++)
