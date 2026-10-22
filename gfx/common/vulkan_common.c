@@ -33,6 +33,9 @@
 #include "vulkan_android_device.h"
 #include "vulkan_android_cache.h"
 #endif
+#ifdef HAVE_VAAPI
+#include "vaapi_hevc_vulkan_cache.h"
+#endif
 #include "vulkan_video_caps.h"
 #if defined(__linux__) && !defined(ANDROID) && defined(HAVE_RMP4)
 #include "vulkan_prime_device.h"
@@ -4951,6 +4954,10 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
    if (vulkan_android_cache_device_pending(vk->context.device))
       video_st_flags &= ~VIDEO_FLAG_CACHE_CONTEXT;
 #endif
+#ifdef HAVE_VAAPI
+   if (vaapi_hevc_vulkan_cache_device_pending(vk->context.device))
+      video_st_flags &= ~VIDEO_FLAG_CACHE_CONTEXT;
+#endif
    if (video_st_flags & VIDEO_FLAG_CACHE_CONTEXT)
    {
       cached_device_vk         = vk->context.device;
@@ -5005,7 +5012,13 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
 #if defined(ANDROID) && defined(HAVE_RMP4)
          vulkan_android_cache_device_destroying(vk->context.device);
 #endif
+#ifdef HAVE_VAAPI
+         vaapi_hevc_vulkan_cache_device_destroying(vk->context.device);
+#endif
          vkDestroyDevice(vk->context.device, NULL);
+#ifdef HAVE_VAAPI
+         vaapi_hevc_vulkan_cache_device_destroyed(vk->context.device);
+#endif
 #if defined(ANDROID) && defined(HAVE_RMP4)
          vulkan_android_cache_device_destroyed(vk->context.device);
 #endif

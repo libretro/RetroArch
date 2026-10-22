@@ -63,6 +63,9 @@
 #ifdef ANDROID
 #include "../common/vulkan_android_cache.h"
 #endif
+#ifdef HAVE_VAAPI
+#include "../common/vaapi_hevc_vulkan_cache.h"
+#endif
 #endif
 #include "../common/rgba16_pack.h"
 #ifdef HAVE_OPENXR
@@ -202,6 +205,10 @@ struct vk_image
 
 struct vk_texture
 {
+#ifdef HAVE_VAAPI
+   vaapi_hevc_vulkan_cache_t *vaapi_cache;
+   struct vk_texture *vaapi_next;
+#endif
 #if defined(ANDROID) && defined(HAVE_RMP4)
    vulkan_android_cache_t *android_cache;
 #endif
@@ -711,6 +718,9 @@ typedef struct vk
     * pair and fences each one streams through. Frame-recording thread
     * only, like the two lists above. */
    struct vk_stream_state *stream_states;
+#ifdef HAVE_VAAPI
+   struct vk_texture *vaapi_textures;
+#endif
    uintptr_t movie_texture;
    bool movie_pending;
    /* The threaded wrapper's frame buffers (frame_mem_alloc): mapped
@@ -1873,6 +1883,25 @@ static void vulkan_texture_retire(vk_t *vk, struct vk_texture *texture)
       texture->android_cache = NULL;
    }
 #endif
+#ifdef HAVE_VAAPI
+   if (texture->vaapi_cache)
+   {
+      struct vk_texture **link = &vk->vaapi_textures;
+      vaapi_hevc_vulkan_cache_t *cache = texture->vaapi_cache;
+      while (*link && *link != texture)
+         link = &(*link)->vaapi_next;
+      if (*link)
+         *link = texture->vaapi_next;
+      texture->vaapi_next  = NULL;
+      texture->vaapi_cache = NULL;
+      vaapi_hevc_vulkan_cache_close(cache);
+      if (!vaapi_hevc_vulkan_cache_free(cache))
+      {
+         vaapi_hevc_vulkan_cache_defer(cache);
+         return;
+      }
+   }
+#endif
    while (*cur)
    {
       struct vk_stream_state *st = *cur;
@@ -1907,6 +1936,13 @@ static void vulkan_deferred_cmds_tick(vk_t *vk)
       else
          cur = &node->next;
    }
+#ifdef HAVE_VAAPI
+   {
+      struct vk_texture *texture;
+      for (texture = vk->vaapi_textures; texture; texture = texture->vaapi_next)
+         vaapi_hevc_vulkan_cache_poll(texture->vaapi_cache);
+   }
+#endif
 }
 
 /* Release every deferred staging command buffer immediately. Callers
@@ -14209,6 +14245,9 @@ static struct vk_stream_state *vulkan_import_state_get(vk_t *vk,
 #if defined(ANDROID) && defined(HAVE_RMP4)
 #include "vulkan_android_video.h"
 #endif
+#ifdef HAVE_VAAPI
+#include "vulkan_vaapi_video.h"
+#endif
 
 static enum video_texture_update vulkan_import_convert(vk_t *vk,
       struct vk_texture *texture, const video_frame_import_t *f)
@@ -14267,6 +14306,11 @@ static enum video_texture_update vulkan_import_convert(vk_t *vk,
    /* Opaque Android image leases are never raw VkImage/timeline handles. */
    if (android_frame_callback(f->abandon))
       return vulkan_android_renderer_import(vk, texture, f);
+#endif
+
+#ifdef HAVE_VAAPI
+   if (vaapi_frame_callback(f->abandon))
+      return vulkan_vaapi_renderer_import(vk, texture, f);
 #endif
 
    if (     !vulkan_video_layout(&layout, w, h, source_pixfmt, f->yuv)
@@ -14501,14 +14545,17 @@ static enum video_texture_update vulkan_import_texture(void *data,
    struct vk_texture *texture;
    enum video_texture_update r;
    VkFormat output_format;
-   bool android_input = false;
+   bool opaque_input = false;
 #if defined(ANDROID) && defined(HAVE_RMP4)
-   android_input = f && android_frame_callback(f->abandon);
+   opaque_input = f && android_frame_callback(f->abandon);
+#endif
+#ifdef HAVE_VAAPI
+   opaque_input = opaque_input || (f && vaapi_frame_callback(f->abandon));
 #endif
 
    if (     !vk || !vk->context || !id || !f
-         || (!android_input && !(vk->context->flags & VK_CTX_FLAG_TIMELINE_SEMAPHORE))
-         || (!android_input && vk->pipelines.yuv420_to_rgba8888 == VK_NULL_HANDLE)
+         || (!opaque_input && !(vk->context->flags & VK_CTX_FLAG_TIMELINE_SEMAPHORE))
+         || (!opaque_input && vk->pipelines.yuv420_to_rgba8888 == VK_NULL_HANDLE)
          || !VIDEO_SCALE_W(f->dims) || !VIDEO_SCALE_H(f->dims))
       return VIDEO_TEXTURE_UPDATE_REFUSED;
    if (f->output_pixfmt && f->output_pixfmt != IMAGE_PIXFMT_8888
@@ -14522,7 +14569,7 @@ static enum video_texture_update vulkan_import_texture(void *data,
       vkGetPhysicalDeviceFormatProperties(vk->context->gpu, output_format, &props);
       if (!(props.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT)
             || !(props.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT)
-            || (!android_input && vk->pipelines.yuv420_to_rgba16f == VK_NULL_HANDLE))
+            || (!opaque_input && vk->pipelines.yuv420_to_rgba16f == VK_NULL_HANDLE))
          return VIDEO_TEXTURE_UPDATE_REFUSED;
    }
    if (*id)

@@ -1815,6 +1815,21 @@ ifeq ($(HAVE_VULKAN), 1)
    # H.264/HEVC previews decoded on the GPU
    ifeq ($(HAVE_RMP4), 1)
       OBJ += gfx/common/vulkan_video_decode.o
+      ifeq ($(HAVE_VAAPI), 1)
+         DEFINES += -DHAVE_VAAPI
+         OBJ += gfx/common/vaapi_frame.o \
+                gfx/common/vaapi_hevc_session.o \
+                gfx/common/vaapi_hevc_runtime.o \
+                gfx/common/vaapi_hevc_submit.o \
+                gfx/common/vaapi_hevc_pool.o \
+                gfx/common/vaapi_hevc_export.o \
+                gfx/common/vulkan_prime_image.o \
+                gfx/common/vaapi_hevc_vulkan_frame.o \
+                gfx/common/vaapi_hevc_vulkan_submit.o \
+                gfx/common/vaapi_hevc_vulkan_lease.o \
+                gfx/common/vaapi_hevc_vulkan_resources.o \
+                gfx/common/vaapi_hevc_vulkan_cache.o
+      endif
       ifeq ($(ANDROID), 1)
          OBJ += gfx/common/vulkan_android_device.o \
                 gfx/common/android_image_queue.o \

@@ -32,7 +32,13 @@ creation, paused-tick returns, identity-change eviction, cold allocation
 faults, refusal recovery and deferred exact-device teardown. Deferred caches
 retain external leases until actual device destruction and retry failed return
 publication. Creation covers capacities one and thirty-two; imported-image
-cache scenarios use one slot. Shipping driver/factory integration remains open.
+cache scenarios use one slot. Native decoder factory integration remains open.
+
+`renderer_test` executes the shipping Vulkan adapter with typed native
+operations, including loader/prerequisite refusal, crop validation, queue
+serialization and uncertain destination retention. Configure detects optional
+Linux VA headers; --disable-vaapi omits these frontend objects. Runtime VA
+libraries remain dynamically loaded. No native decoder factory is registered yet.
 
 `make gpu-check SANITIZER=address,undefined` additionally needs the Vulkan
 loader, development library, validation layer and a device supporting

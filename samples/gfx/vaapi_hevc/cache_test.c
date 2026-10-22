@@ -295,7 +295,10 @@ static void cache_evict(void)
    cache_collect();
 }
 
-int main(void)
+#ifndef VAAPI_CACHE_TEST_MAIN
+#define VAAPI_CACHE_TEST_MAIN main
+#endif
+int VAAPI_CACHE_TEST_MAIN(void)
 {
    unsigned depth, mode;
    assert(!resources_unit_main());

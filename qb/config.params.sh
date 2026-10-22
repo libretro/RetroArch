@@ -260,6 +260,7 @@ HAVE_FLAC=no               # Link against libFLAC (unused by default; FLAC decod
 HAVE_RMODTRACKER=yes       # rmodtracker MOD/S3M/XM support
 HAVE_RWEBM=yes             # RWEBM (WebM/Matroska demuxer) support
 HAVE_RMP4=yes              # RMP4 (MP4/ISO-BMFF demuxer) support
+HAVE_VAAPI=auto            # VA-API HEVC decode and Vulkan imports (Linux, optional SDK)
 HAVE_RAV1=yes              # AV1 hardware decoding support
 HAVE_RVP9=yes              # RVP9 (VP9 video decoder) support
 HAVE_RMPEG1=yes            # RMPEG1 (MPEG-1 program stream / video) support
