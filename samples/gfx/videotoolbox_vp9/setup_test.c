@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../../../gfx/common/videotoolbox_vp9_decoder.h"
+#include "../../../gfx/common/videotoolbox_vp9_dispatch.h"
 
 static rvp9_hdr header;
 static video_color_metadata_t color;

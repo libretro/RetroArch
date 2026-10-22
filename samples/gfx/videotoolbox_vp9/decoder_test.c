@@ -52,7 +52,10 @@ static void retire(void *user, videotoolbox_vp9_decoder_t *d)
    retired = d;
 }
 
-int main(void)
+#ifndef DECODER_MAIN_NAME
+#define DECODER_MAIN_NAME main
+#endif
+int DECODER_MAIN_NAME(void)
 {
    videotoolbox_vp9_owner_t *init = open_owner();
    videotoolbox_vp9_decoder_t *d;

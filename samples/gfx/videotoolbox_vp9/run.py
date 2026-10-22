@@ -32,6 +32,10 @@ with tempfile.TemporaryDirectory(prefix="vt-vp9-setup-") as directory:
             (folder / (framework + ".h")).write_text(
                 '#include "' + (here / "mock_apple.h").as_posix() + '"\n',
                 encoding="utf-8")
+        dispatch_headers = path / "dispatch"
+        dispatch_headers.mkdir()
+        (dispatch_headers / "dispatch.h").write_text(
+            '#include "' + (here / "mock_dispatch.h").as_posix() + '"\n', encoding="utf-8")
         flags += ["-I" + str(path)]
     flags += shlex.split(os.environ.get("CFLAGS", ""))
     binary = path / ("setup.exe" if os.name == "nt" else "setup")
@@ -76,3 +80,21 @@ with tempfile.TemporaryDirectory(prefix="vt-vp9-setup-") as directory:
         subprocess.run(command, check=True)
         subprocess.run(shlex.split(os.environ.get("RUNNER", "")) + [str(binary)],
                        check=True, timeout=90)
+
+    if not args.native:
+        command = compiler + flags + [str(here / "dispatch_test.c"), str(thread_object),
+            str(queue_object), "-o", str(binary)] + libraries
+        print("+", shlex.join(command), flush=True)
+        subprocess.run(command, check=True)
+        subprocess.run(shlex.split(os.environ.get("RUNNER", "")) + [str(binary)],
+                       check=True, timeout=90)
+    else:
+        unit = path / "native_setup.m"
+        unit.write_text('#include "' + (here / "setup_test.c").as_posix() + '"\n',
+                        encoding="utf-8")
+        for mode in ("-fobjc-arc", "-fno-objc-arc"):
+            command = compiler + flags + [mode, str(unit), str(thread_object),
+                str(queue_object), "-o", str(binary)] + libraries
+            print("+", shlex.join(command), flush=True)
+            subprocess.run(command, check=True)
+            subprocess.run([str(binary)], check=True, timeout=90)
