@@ -498,6 +498,17 @@ jobs:
           make -C samples/input/pointer_second clean check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
           make -C samples/input/pointer_second clean
 
+      - name: Build and run android_focus_test (ASan + UBSan, mingw + Wine)
+        shell: bash
+        run: |
+          set -eu
+          # RetroArch's focus on Android from its two windows, the
+          # Activity's and the second display's, through the sequences
+          # the AYN Thor's focus modes and a one-focus system produce.
+          make -C samples/input/android_focus clean check SANITIZER=address,undefined
+          make -C samples/input/android_focus clean check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
+          make -C samples/input/android_focus clean
+
       - name: Build and run key_lane_test (plain, ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/input/key_lane
