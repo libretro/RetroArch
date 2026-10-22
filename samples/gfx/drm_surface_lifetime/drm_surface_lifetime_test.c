@@ -311,6 +311,12 @@ static drmModePlane     plane2     = { 1, formats2, PLANE2_ID, 0, 0, 0, 0, 0, 0,
 #define PROP_ZPOS  2
 #define PROP_BLEND 3
 #define PROP_ROT   4
+/* The frame plane's place, which a driver with atomic commits sets in
+ * one commit with its buffer: CRTC_ID, CRTC_X..H, SRC_X..H */
+#define PROP_PLACE 5
+#define PLACE_PROPS 9
+static const char *const place_names[PLACE_PROPS] = { "CRTC_ID", "CRTC_X",
+   "CRTC_Y", "CRTC_W", "CRTC_H", "SRC_X", "SRC_Y", "SRC_W", "SRC_H" };
 typedef struct
 {
    uint64_t zpos, zpos_max, blend, rot, rot_bits;
@@ -349,10 +355,10 @@ drmModeObjectPropertiesPtr drmModeObjectGetProperties(int fd, uint32_t id, uint3
    int i = plane_index(id);
    uint32_t n = 2;
    drmModeObjectPropertiesPtr o = (drmModeObjectPropertiesPtr)calloc(1,
-         sizeof(*o) + 5 * (sizeof(uint32_t) + sizeof(uint64_t)));
+         sizeof(*o) + 14 * (sizeof(uint32_t) + sizeof(uint64_t)));
    (void)fd; (void)type;
    o->prop_values = (uint64_t*)(o + 1);
-   o->props       = (uint32_t*)(o->prop_values + 5);
+   o->props       = (uint32_t*)(o->prop_values + 14);
    o->props[0] = PROP_BASE(i) + PROP_FB;   o->prop_values[0] = 0;
    o->props[1] = PROP_BASE(i) + PROP_TYPE; o->prop_values[1] = DRM_PLANE_TYPE_OVERLAY;
    if (pp[i].has_zpos)
@@ -366,6 +372,15 @@ drmModeObjectPropertiesPtr drmModeObjectGetProperties(int fd, uint32_t id, uint3
    if (pp[i].has_rot)
    {
       o->props[n] = PROP_BASE(i) + PROP_ROT; o->prop_values[n++] = pp[i].rot;
+   }
+   if (!i)
+   {
+      unsigned k;
+      for (k = 0; k < PLACE_PROPS; k++)
+      {
+         o->props[n] = PROP_BASE(0) + PROP_PLACE + k;
+         o->prop_values[n++] = 0;
+      }
    }
    o->count_props = n;
    return o;
@@ -385,6 +400,11 @@ drmModePropertyPtr drmModeGetProperty(int fd, uint32_t id)
    switch (which)
    {
       case PROP_FB:   strlcpy(r->name, "FB_ID", sizeof(r->name)); break;
+      case PROP_PLACE: case PROP_PLACE + 1: case PROP_PLACE + 2:
+      case PROP_PLACE + 3: case PROP_PLACE + 4: case PROP_PLACE + 5:
+      case PROP_PLACE + 6: case PROP_PLACE + 7: case PROP_PLACE + 8:
+         strlcpy(r->name, place_names[which - PROP_PLACE], sizeof(r->name));
+         break;
       case PROP_TYPE: strlcpy(r->name, "type", sizeof(r->name)); break;
       case PROP_ZPOS:
          strlcpy(r->name, "zpos", sizeof(r->name));
@@ -431,6 +451,10 @@ drmModePropertyPtr drmModeGetProperty(int fd, uint32_t id)
    return r;
 }
 void drmModeFreeProperty(drmModePropertyPtr p) { free(p); }
+/* A turn set on the frame plane on its own, which a kernel that checks
+ * it against the plane's old place refuses when it does not fit */
+static unsigned rot_alone;
+static int      atomic_ok = 1;
 int drmModeObjectSetProperty(int fd, uint32_t obj, uint32_t type,
       uint32_t prop, uint64_t v)
 {
@@ -450,6 +474,8 @@ int drmModeObjectSetProperty(int fd, uint32_t obj, uint32_t type,
    }
    if (prop == PROP_BASE(i) + PROP_ROT && pp[i].has_rot)
    {
+      if (!i && atomic_ok)
+         rot_alone++;
       if (v & ~pp[i].rot_bits)
          return -1;
       pp[i].rot = v;
@@ -465,11 +491,26 @@ drmModeAtomicReqPtr drmModeAtomicAlloc(void)
 { atomic_allocs++; return (drmModeAtomicReqPtr)calloc(1, 16); }
 void drmModeAtomicSetCursor(drmModeAtomicReqPtr r, int c) { (void)r; (void)c; }
 void drmModeAtomicFree(drmModeAtomicReqPtr r) { free(r); }
+/* A placement in the commit being built: its values, and a rotation */
+static uint64_t pend_place[PLACE_PROPS], pend_rot;
+static int      pend_placed, pend_rotated;
+static unsigned placements;
 int drmModeAtomicAddProperty(drmModeAtomicReqPtr r, uint32_t obj, uint32_t prop, uint64_t v)
 {
    (void)r;
    if (obj == PLANE2_ID && prop == PROP_BASE(1) + PROP_FB)
       pending_ov_fb = (uint32_t)v;
+   else if (obj == PLANE_ID && prop >= PROP_BASE(0) + PROP_PLACE
+         && prop < PROP_BASE(0) + PROP_PLACE + PLACE_PROPS)
+   {
+      pend_place[prop - PROP_BASE(0) - PROP_PLACE] = v;
+      pend_placed = 1;
+   }
+   else if (obj == PLANE_ID && prop == PROP_BASE(0) + PROP_ROT)
+   {
+      pend_rot     = v;
+      pend_rotated = 1;
+   }
    else
       pending_fb = (uint32_t)v;
    return 0;
@@ -478,6 +519,29 @@ static unsigned commits;
 int drmModeAtomicCommit(int fd, drmModeAtomicReqPtr r, uint32_t f, void *u)
 {
    (void)fd; (void)r; (void)u;
+   if (pend_placed)
+   {
+      /* The plane placed, turned, and given its buffer, in one */
+      int bad = flight || !pending_fb || !fb_alive[pending_fb]
+         || (pend_rotated && (!pp[0].has_rot || (pend_rot & ~pp[0].rot_bits)));
+      pend_placed = 0;
+      if (flight)
+         busy++;
+      if (bad)
+      {
+         pend_rotated = 0;
+         return -22;
+      }
+      placements++;
+      if (pend_rotated)
+         pp[0].rot = pend_rot;
+      pend_rotated = 0;
+      plane_fb = pending_fb;
+      plane_cw = (uint32_t)pend_place[3];
+      plane_sw = (uint32_t)(pend_place[7] >> 16);
+      plane_sh = (uint32_t)(pend_place[8] >> 16);
+      return 0;
+   }
    commits++;
    if (flight)
    {
@@ -516,7 +580,7 @@ int drmModeAtomicCommit(int fd, drmModeAtomicReqPtr r, uint32_t f, void *u)
 #define CONN_ID 90
 #define ENC_ID  61
 static drmModeModeInfo modes[3];
-static int      atomic_ok = 1, fds_open;
+static int      fds_open;
 static uint32_t crtc_fb = 9, crtc_conns;
 static drmModeModeInfo crtc_mode;
 static int      crtc_mode_valid = 1;
@@ -1381,6 +1445,8 @@ int main(void)
       core_frame(v, 64, 32);
       CHECK(pp[0].rot == DRM_MODE_ROTATE_180 && page_turned(v, 0, 2, 64, 32),
             "half a turn by the plane");
+      CHECK(!rot_alone, "the turn set on its own %u time(s), not in the commit"
+            " that places the plane", rot_alone);
       drm_set_texture_enable(v, true, false);
       drm_set_texture_frame(v, frame_px, true, VIDEO_SCALE_PACK(32, 24), 1.0f);
       CHECK(pp[0].rot == DRM_MODE_ROTATE_0, "the menu is shown unturned");
@@ -1563,6 +1629,19 @@ int main(void)
       CHECK(fb_offset[plane_fb] == fp && v->main_surface->current_page
             && v->main_surface->current_page->buf.map == mem[1] + fp,
             "a frame inside a buffer is scanned out from its start");
+      /* The shown buffer placed otherwise: its framebuffer stays, the
+       * frame is copied */
+      {
+         uint32_t shown_fb = plane_fb;
+         unsigned b0       = blanks;
+         drm_frame(v, mem[1], VIDEO_SCALE_PACK(w, h - 1), 0, fp, NULL, NULL);
+         CHECK(blanks == b0 && fb_alive[shown_fb]
+               && v->main_surface->current_page->buf.map != mem[1],
+               "the framebuffer shown was removed for a frame placed otherwise"
+               " in its buffer (%u blanks)", blanks - b0);
+         drm_frame(v, mem[1] + fp, VIDEO_SCALE_PACK(w, h - 1), 0, fp, NULL,
+               NULL);
+      }
       /* Freed while shown: kept until the plane leaves it */
       drm_frame_mem_free(v, id[1]);
       CHECK(fb_alive[plane_fb] && !blanks, "freed while shown, it stays");

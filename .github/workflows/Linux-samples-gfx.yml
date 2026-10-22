@@ -81,6 +81,40 @@ jobs:
           # one of them stops doing it.
           tools/check.sh tools/video_thread_state_check.c
 
+  drm-vkms-live:
+    name: The DRM driver on a real kernel (vkms)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libdrm-dev qemu-system-x86 \
+             busybox-static zstd cpio
+
+      - name: Build and run drm_vkms_live_test in a VM
+        shell: bash
+        working-directory: samples/gfx/drm_vkms_live
+        run: |
+          set -eu
+          # gfx/drivers/drm_gfx.c against the kernel itself: Ubuntu's
+          # current HWE kernel boots in qemu with vkms, its overlay
+          # planes and its writeback connector, and what the CRTC
+          # composes is read back and compared with the frame - as it
+          # is, turned each way, scanned out of the threaded wrapper's
+          # frame memory, flipped without vsync, under the input overlay
+          # on a plane of its own, at a CRT modeline, and in RGB565 -
+          # and with the screenshot readback. The fake kernel in
+          # drm_surface_lifetime cannot say what a kernel refuses: a
+          # turn set on its own, outside the commit that places the
+          # plane, was refused here.
+          make SANITIZER=address,undefined
+          make check SANITIZER=address,undefined
+
   surface-requirements:
     name: Producers ask the surface layer
     runs-on: ubuntu-latest
@@ -1744,7 +1778,10 @@ jobs:
           # in the wrapper's memory is copied to be drawn on. A blended
           # overlay is blended into a core's views as into a frame. The
           # driver is built with sign-compare as an error and linked
-          # without rthreads, so it stays clean of both.
+          # without rthreads, so it stays clean of both. A turn goes in
+          # the commit that places the plane, never on its own, and a
+          # frame placed otherwise in a frame memory buffer still shown
+          # is copied rather than its framebuffer removed.
           make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
              timeout 60 ./drm_surface_lifetime_test

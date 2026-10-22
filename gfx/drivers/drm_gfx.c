@@ -738,7 +738,11 @@ static struct drm_page *drm_fmem_page(struct drm_video *v,
       if (     m->refused && m->dims == dims && m->pitch == pitch
             && m->offset == off && m->fmt == fmt)
          return NULL;
-      /* Written again, so not shown: its old framebuffer can go */
+      /* Its framebuffer can go only off the screen: the kernel turns a
+       * plane off when the one it shows is removed. A frame placed
+       * otherwise in a buffer still shown is copied. */
+      if (m->page.buf.fb_id && drm_fmem_busy(v, m))
+         return NULL;
       if (m->page.buf.fb_id)
       {
          drmModeRmFB(drm.fd, m->page.buf.fb_id);
@@ -1206,6 +1210,7 @@ static bool drm_plane_setup(struct drm_surface *surface)
    uint32_t src_h;
    uint32_t src_x = 0;
    uint32_t src_y = 0;
+   uint64_t rotation;
 
    /* Get plane resources */
    drmModePlane *plane;
@@ -1319,24 +1324,63 @@ static bool drm_plane_setup(struct drm_surface *surface)
 #endif
    }
 
-   /* The plane turns this surface, or shows it as it is */
-   if (     (drm_plane_turns(drm.plane_id) & (1u << surface->hw_rot))
-         && drm.rot_prop
-         && drmModeObjectSetProperty(drm.fd, drm.plane_id,
-               DRM_MODE_OBJECT_PLANE, drm.rot_prop,
-               DRM_MODE_ROTATE_0 << surface->hw_rot)
-         && surface->hw_rot)
-      RARCH_WARN("[DRM] The plane would not turn the frame.\n");
-
-   /* We have to set a buffer for the plane, whatever buffer we want,
-    * but we must set a buffer so the plane starts reading from it now. */
-   if (drm_set_plane(drm.plane_id, drm.crtc_id,
-            surface->pages[surface->flip_page].buf.fb_id,
-            plane_flags, plane_x, plane_y, plane_w, plane_h,
-            src_x<<16, src_y<<16, src_w<<16, src_h<<16))
+   /* The plane turns this surface, or shows it as it is: in the same
+    * commit as its buffer and place, as a turn the old buffer's place
+    * does not fit is refused by a kernel that checks it on its own */
+   rotation = (drm_plane_turns(drm.plane_id) & (1u << surface->hw_rot))
+      && drm.rot_prop ? DRM_MODE_ROTATE_0 << surface->hw_rot : 0;
+   if (drm.atomic)
    {
-      RARCH_ERR("[DRM] Failed to enable plane.\n");
-      return false;
+      static const char *const names[11] = { "FB_ID", "CRTC_ID", "CRTC_X",
+         "CRTC_Y", "CRTC_W", "CRTC_H", "SRC_X", "SRC_Y", "SRC_W", "SRC_H",
+         "rotation" };
+      uint64_t vals[11];
+      drmModeAtomicReqPtr req = drmModeAtomicAlloc();
+      int ok                  = req != NULL;
+      vals[0]  = surface->pages[surface->flip_page].buf.fb_id;
+      vals[1]  = drm.crtc_id;
+      vals[2]  = plane_x;
+      vals[3]  = plane_y;
+      vals[4]  = plane_w;
+      vals[5]  = plane_h;
+      vals[6]  = (uint64_t)src_x << 16;
+      vals[7]  = (uint64_t)src_y << 16;
+      vals[8]  = (uint64_t)src_w << 16;
+      vals[9]  = (uint64_t)src_h << 16;
+      vals[10] = rotation;
+      for (i = 0; ok && i < (rotation ? 11u : 10u); i++)
+      {
+         uint32_t prop = i == 10 ? drm.rot_prop
+            : get_plane_prop_id(drm.plane_id, names[i]);
+         ok = prop && drmModeAtomicAddProperty(req, drm.plane_id, prop,
+               vals[i]) >= 0;
+      }
+      drm_flip_wait();
+      if (!ok || drmModeAtomicCommit(drm.fd, req, 0, NULL))
+      {
+         if (req)
+            drmModeAtomicFree(req);
+         RARCH_ERR("[DRM] Failed to enable plane.\n");
+         return false;
+      }
+      drmModeAtomicFree(req);
+   }
+   else
+   {
+      if (     rotation && drmModeObjectSetProperty(drm.fd, drm.plane_id,
+                  DRM_MODE_OBJECT_PLANE, drm.rot_prop, rotation)
+            && surface->hw_rot)
+         RARCH_WARN("[DRM] The plane would not turn the frame.\n");
+      /* We have to set a buffer for the plane, whatever buffer we want,
+       * but we must set a buffer so the plane starts reading from it now. */
+      if (drm_set_plane(drm.plane_id, drm.crtc_id,
+               surface->pages[surface->flip_page].buf.fb_id,
+               plane_flags, plane_x, plane_y, plane_w, plane_h,
+               src_x<<16, src_y<<16, src_w<<16, src_h<<16))
+      {
+         RARCH_ERR("[DRM] Failed to enable plane.\n");
+         return false;
+      }
    }
    surface->current_page = &surface->pages[surface->flip_page];
    surface->flip_page    = drm_next_page(surface);
