@@ -98,13 +98,13 @@ struct drm_surface
     * the ones with lower. Default is 0. */
    int layer;
 
-   /* We need to keep this value for the blitting on
-    * the surface_update function. */
+   /* The visible row in bytes */
    int pitch;
-   int total_pitch;
 
    float aspect;
    bool flip_page;
+   /* A page went to the core to render into */
+   bool lent;
 };
 
 struct drm_struct
@@ -119,6 +119,8 @@ struct drm_struct
 
    uint32_t plane_id;
    uint32_t plane_fb_prop_id;
+   /* Reused by every flip */
+   drmModeAtomicReqPtr flip_req;
 
    drmModeEncoder *encoder;
    drmModeRes *resources;
@@ -270,12 +272,6 @@ static bool drm_surface_setup(void *data, unsigned src_dims,
 
    /* Setup surface parameters */
    surface->numpages = numpages;
-   /* We receive the total pitch, including things that are
-    * between scanlines and we calculate the visible pitch
-    * from the visible width.
-    *
-    * These will be used to increase the offsets for blitting. */
-   surface->total_pitch = pitch;
    surface->pitch       = VIDEO_SCALE_W(src_dims) * bpp;
    surface->bpp         = bpp;
    surface->pixformat   = pixformat;
@@ -329,9 +325,12 @@ static void drm_page_flip(struct drm_surface *surface)
    /* We already have the id of the FB_ID property of
     * the plane on which we are going to do a pageflip:
     * we got it back in drm_plane_setup()  */
-   static drmModeAtomicReqPtr req = NULL;
+   drmModeAtomicReqPtr req = drm.flip_req;
 
-   req = drmModeAtomicAlloc();
+   if (req)
+      drmModeAtomicSetCursor(req, 0);
+   else if (!(req = drm.flip_req = drmModeAtomicAlloc()))
+      return;
 
    /* We add the buffer to the plane properties we want to
     * set on an atomically, in a single step.
@@ -356,26 +355,26 @@ static void drm_page_flip(struct drm_surface *surface)
    }
 
    surface->flip_page = !(surface->flip_page);
-
-   drmModeAtomicFree(req);
 }
 
 static void drm_surface_update(void *data, const void *frame,
-      struct drm_surface *surface)
+      unsigned pitch, struct drm_surface *surface)
 {
-   /* Frame blitting */
-   int line                    = 0;
-   int src_offset              = 0;
-   int dst_offset              = 0;
+   struct modeset_buf *buf = &surface->pages[surface->flip_page].buf;
 
-   for (line = 0; line < (int)VIDEO_SCALE_H(surface->src_dims); line++)
+   /* A lent page holds the frame already */
+   if ((const uint8_t*)frame != buf->map)
    {
-      memcpy (
-            surface->pages[surface->flip_page].buf.map + dst_offset,
-            (uint8_t*)frame + src_offset,
-            surface->pitch);
-      src_offset += surface->total_pitch;
-      dst_offset += surface->pitch;
+      int line;
+      const uint8_t *src = (const uint8_t*)frame;
+      uint8_t *dst       = buf->map;
+
+      for (line = 0; line < (int)VIDEO_SCALE_H(surface->src_dims); line++)
+      {
+         memcpy(dst, src, surface->pitch);
+         src += pitch;
+         dst += buf->stride;
+      }
    }
 
    /* Page flipping */
@@ -902,7 +901,8 @@ static bool drm_frame(void *data, const void *frame,
    bool menu_is_alive         = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
 
-   if (_drmvars->core_dims != dims)
+   /* A dupe leaves the plane on the frame it shows */
+   if (frame && _drmvars->core_dims != dims)
    {
       /* The plane reads from the old surface until it is moved to the
        * new one, so the old one goes only after that. */
@@ -938,6 +938,9 @@ static bool drm_frame(void *data, const void *frame,
       /* We need to change the plane to read from the main surface */
       if (!_drmvars->views_surface)
          drm_plane_setup(_drmvars->main_surface);
+      /* The cached frame can point into a page the core rendered to */
+      if (old_surface && old_surface->lent)
+         video_driver_cached_frame_retire();
       drm_surface_free(_drmvars, &old_surface);
    }
 
@@ -945,11 +948,14 @@ static bool drm_frame(void *data, const void *frame,
    menu_driver_frame(menu_is_alive, video_info);
 #endif
 
+   if (!frame || !_drmvars->main_surface)
+      return true;
+
    if (drm_views_frame(_drmvars, frame, dims, pitch, video_info))
       return true;
 
    /* Update main surface: locate free page, blit and flip. */
-   drm_surface_update(_drmvars, frame, _drmvars->main_surface);
+   drm_surface_update(_drmvars, frame, pitch, _drmvars->main_surface);
    return true;
 }
 
@@ -1008,7 +1014,7 @@ static void drm_set_texture_frame(void *data, const void *frame, bool rgb32,
 
    surface   = _drmvars->menu_surface;
    dst_base  = (uint8_t*)surface->pages[surface->flip_page].buf.map;
-   dst_pitch = surface->pitch;
+   dst_pitch = surface->pages[surface->flip_page].buf.stride;
 
    /* Defensive clamps: the dumb buffer was sized at the first
     * menu frame's dimensions and is never resized within an
@@ -1061,6 +1067,31 @@ static void drm_set_texture_frame(void *data, const void *frame, bool rgb32,
 
    /* The bytes are in place in the dumb buffer; commit the page flip. */
    drm_page_flip(surface);
+}
+
+/* The page the next flip shows, for the core to render into: the frame
+ * then goes to the screen without a copy. Not while views compose from
+ * the frame, which would read it back from uncached memory. */
+static bool drm_get_current_software_framebuffer(void *data,
+      struct retro_framebuffer *fb)
+{
+   struct drm_video *v = (struct drm_video*)data;
+   struct drm_surface *s;
+   struct modeset_buf *buf;
+
+   if (     !v || !fb || !(s = v->main_surface) || v->views_surface
+         || (fb->access_flags & RETRO_MEMORY_ACCESS_READ)
+         || s->src_dims != VIDEO_SCALE_PACK(fb->width, fb->height))
+      return false;
+
+   buf              = &s->pages[s->flip_page].buf;
+   s->lent          = true;
+   fb->data         = buf->map;
+   fb->pitch        = buf->stride;
+   fb->format       = v->rgb32
+      ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565;
+   fb->memory_flags = 0;
+   return true;
 }
 
 static void drm_set_nonblock_state(void *a, bool b, bool c, unsigned d) { }
@@ -1136,7 +1167,7 @@ static const video_poke_interface_t drm_poke_interface = {
    NULL, /* drm_show_mouse */
    NULL, /* grab_mouse_toggle */
    NULL, /* get_current_shader */
-   NULL, /* get_current_software_framebuffer */
+   drm_get_current_software_framebuffer,
    NULL, /* get_hw_render_interface */
    NULL, /* set_hdr_menu_nits */
    NULL, /* set_hdr_paper_white_nits */
@@ -1158,6 +1189,8 @@ static void drm_gfx_free(void *data)
    if (!_drmvars)
       return;
 
+   if (_drmvars->main_surface && _drmvars->main_surface->lent)
+      video_driver_cached_frame_retire();
    drm_surface_free(_drmvars, &_drmvars->main_surface);
 
    if (_drmvars->menu_surface)
@@ -1172,6 +1205,12 @@ static void drm_gfx_free(void *data)
    scond_free(_drmvars->vsync_condition);
 
    g_drm_mode = NULL;
+
+   if (drm.flip_req)
+   {
+      drmModeAtomicFree(drm.flip_req);
+      drm.flip_req = NULL;
+   }
 
    free(_drmvars);
 }

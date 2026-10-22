@@ -29,6 +29,8 @@ void RARCH_ERR(const char *fmt, ...) { (void)fmt; }
 drmModeModeInfo *g_drm_mode;
 struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END];
 float video_driver_get_aspect_ratio(void) { return 4.0f / 3.0f; }
+static unsigned retires;
+void video_driver_cached_frame_retire(void) { retires++; }
 void video_driver_set_output_dims(unsigned dims) { (void)dims; }
 
 /* ---- the fake kernel ------------------------------------------------- */
@@ -48,6 +50,9 @@ static uint32_t plane_fb;              /* the fb the plane scans out */
 static unsigned blanks;                /* times it was removed from under the plane */
 static uint32_t next_handle = 1, next_fb = 1;
 
+/* Row alignment the kernel gives dumb buffers */
+static uint32_t pitch_align = 1;
+
 static unsigned count(const int *a)
 {
    unsigned i, n = 0;
@@ -65,7 +70,8 @@ int drmIoctl(int fd, unsigned long request, void *arg)
       if (next_handle >= MAX_OBJ)
          return -1;
       c->handle = next_handle++;
-      c->pitch  = c->width * (c->bpp / 8);
+      c->pitch  = (c->width * (c->bpp / 8) + pitch_align - 1)
+         / pitch_align * pitch_align;
       c->size   = (uint64_t)c->pitch * c->height;
       dumb_alive[c->handle] = 1;
       dumb_size[c->handle]  = (uint32_t)c->size;
@@ -179,7 +185,10 @@ void drmModeFreeProperty(drmModePropertyPtr p) { free(p); }
 
 /* The flip: the atomic request carries the new fb for the plane */
 static uint32_t pending_fb;
-drmModeAtomicReqPtr drmModeAtomicAlloc(void) { return (drmModeAtomicReqPtr)calloc(1, 16); }
+static unsigned atomic_allocs;
+drmModeAtomicReqPtr drmModeAtomicAlloc(void)
+{ atomic_allocs++; return (drmModeAtomicReqPtr)calloc(1, 16); }
+void drmModeAtomicSetCursor(drmModeAtomicReqPtr r, int c) { (void)r; (void)c; }
 void drmModeAtomicFree(drmModeAtomicReqPtr r) { free(r); }
 int drmModeAtomicAddProperty(drmModeAtomicReqPtr r, uint32_t obj, uint32_t prop, uint64_t v)
 { (void)r; (void)obj; (void)prop; pending_fb = (uint32_t)v; return 0; }
@@ -350,6 +359,109 @@ int main(void)
       if (failures == before)
          printf("   ok   views composed for the plane, and given back to the frame\n");
       before = failures;
+   }
+
+   /* Rows the kernel pads; frames handed over, lent, and duped */
+   {
+      struct retro_framebuffer fb;
+      struct drm_surface *s;
+      const uint8_t *row;
+      uint32_t lent_fb;
+      unsigned allocs, w = 349, h = 200, x, y;
+      bool same = true;
+
+      pitch_align = 64;
+      for (i = 0; i < w * h; i++)
+         frame_px[i] = 0x00010203u * (i % 61) + i / w;
+      core_frame(v, w, h);
+      s = v->main_surface;
+      CHECK(s && s->pages[0].buf.stride == 1408,
+            "the fake kernel pads 349-pixel rows to 1408 bytes");
+      /* The page just shown holds the frame, row by row at its stride */
+      if (s)
+      {
+         row = s->pages[!s->flip_page].buf.map;
+         for (y = 0; y < h; y += 7, row += 7 * s->pages[0].buf.stride)
+            for (x = 0; x < w; x += 13)
+               if (((const uint32_t*)row)[x] != frame_px[y * w + x])
+                  same = false;
+         CHECK(same, "a padded row is copied at the buffer's stride");
+      }
+
+      /* A frame from a buffer with a pitch of its own */
+      {
+         static uint32_t wide[360 * 200];
+         same = true;
+         for (y = 0; y < h; y++)
+            for (x = 0; x < w; x++)
+               wide[y * 360 + x] = frame_px[y * w + x] ^ 0xffffffu;
+         drm_frame(v, wide, VIDEO_SCALE_PACK(w, h), 0, 360 * 4, NULL, NULL);
+         row = s->pages[!s->flip_page].buf.map;
+         for (y = 0; y < h; y += 7, row += 7 * s->pages[0].buf.stride)
+            for (x = 0; x < w; x += 13)
+               if (((const uint32_t*)row)[x] != wide[y * 360 + x])
+                  same = false;
+         CHECK(same, "each frame is read at the pitch it comes with");
+      }
+
+      /* Lent: the core renders into the next page, which is flipped as is */
+      memset(&fb, 0, sizeof(fb));
+      fb.width        = w;
+      fb.height       = h;
+      fb.access_flags = RETRO_MEMORY_ACCESS_WRITE;
+      CHECK(drm_get_current_software_framebuffer(v, &fb),
+            "the next page is lent");
+      CHECK(fb.data == s->pages[s->flip_page].buf.map
+            && fb.pitch == s->pages[s->flip_page].buf.stride
+            && fb.format == RETRO_PIXEL_FORMAT_XRGB8888,
+            "the lent page is the next one, at its stride and format");
+      lent_fb = s->pages[s->flip_page].buf.fb_id;
+      for (y = 0; y < h; y++)
+         ((uint32_t*)((uint8_t*)fb.data + y * fb.pitch))[0] = 0xabcdefu + y;
+      drm_frame(v, fb.data, VIDEO_SCALE_PACK(w, h), 0, (unsigned)fb.pitch,
+            NULL, NULL);
+      CHECK(plane_fb == lent_fb, "the lent page goes to the plane");
+      CHECK(((uint32_t*)((uint8_t*)fb.data + 5 * fb.pitch))[0] == 0xabcdefu + 5,
+            "what the core rendered is what is shown");
+
+      /* Refused: read access, another size */
+      fb.access_flags = RETRO_MEMORY_ACCESS_WRITE | RETRO_MEMORY_ACCESS_READ;
+      CHECK(!drm_get_current_software_framebuffer(v, &fb),
+            "a core reading its frame back is not given uncached memory");
+      fb.access_flags = RETRO_MEMORY_ACCESS_WRITE;
+      fb.width        = w + 1;
+      CHECK(!drm_get_current_software_framebuffer(v, &fb),
+            "a size the surface is not is refused");
+      fb.width        = w;
+
+      /* A dupe changes nothing and does not crash */
+      lent_fb = plane_fb;
+      drm_frame(v, NULL, VIDEO_SCALE_PACK(w, h), 0, 0, NULL, NULL);
+      CHECK(plane_fb == lent_fb && v->main_surface == s,
+            "a duped frame leaves the plane on the frame it shows");
+
+      /* No allocation per flip */
+      allocs = atomic_allocs;
+      for (i = 0; i < 30; i++)
+         core_frame(v, w, h);
+      CHECK(atomic_allocs == allocs,
+            "%u atomic requests made over 30 flips, want none",
+            atomic_allocs - allocs);
+
+      /* A resize after lending retires the cached frame first */
+      retires = 0;
+      pitch_align = 1;
+      core_frame(v, 320, 240);
+      CHECK(retires == 1, "the cache was retired %u times before the lent pages went",
+            retires);
+      retires = 0;
+      core_frame(v, 640, 480);
+      CHECK(retires == 0, "a surface never lent retires nothing (%u)", retires);
+      CHECK(blanks == 0, "the plane's fb was removed from under it %u time(s)", blanks);
+      if (failures == before)
+         printf("   ok   padded rows, lending, dupes, and no allocation per flip\n");
+      before = failures;
+      core_frame(v, 320, 240);
    }
 
    drm_gfx_free(v);

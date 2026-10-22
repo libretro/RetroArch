@@ -1702,7 +1702,10 @@ jobs:
           # the live surface's dumb buffers, framebuffers and mappings,
           # the framebuffer the plane scans out is never removed from
           # under it, and the driver's free leaves nothing - LeakSanitizer
-          # holds the plane queries' libdrm objects to the same.
+          # holds the plane queries' libdrm objects to the same. Rows the
+          # kernel pads are written at its stride, each frame read at its
+          # own pitch, the next page lent to the core and flipped without
+          # a copy, a dupe survived, and no allocation made per flip.
           make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
              timeout 60 ./drm_surface_lifetime_test

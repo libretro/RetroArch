@@ -1,8 +1,8 @@
 # gfx/drivers/drm_gfx.c's surfaces against a fake kernel: every dumb
 # buffer, framebuffer and mapping a surface makes is taken down when
 # the surface goes, and the one the plane scans out is never removed
-# from under it; and a core's views composed into a surface of their
-# own for the plane.
+# from under it; a core's views composed into a surface of their
+# own for the plane; padded rows, lent pages and dupes.
 
 TARGET    := drm_surface_lifetime_test
 REPO_ROOT := ../../..
