@@ -89,6 +89,10 @@ void fill_pathname_resolve_relative(char *s, const char *ref,
 size_t fill_pathname_abbreviated_or_relative(char *s, const char *ref,
       const char *in, size_t len)
 { (void)ref; return strlcpy(s, in, len); }
+/* file_path.c's, for a bind's label and its suffix */
+size_t fill_pathname_join_delim(char *s, const char *dir,
+      const char *path, const char delim, size_t len)
+{ return (size_t)snprintf(s, len, "%s%c%s", dir, delim, path); }
 /* configuration.c's bind names, for the hotkeys the tests name */
 bool input_config_bind_map_get_valid(unsigned i)
 { return i < RARCH_BIND_LIST_END; }
@@ -133,8 +137,9 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
       size_t i, void *userdata, bool use_representation)
 { (void)entry; (void)stack_idx; (void)i; (void)userdata;
   (void)use_representation; }
+/* the own hotkeys' row text, to read it back */
 const char *msg_hash_to_str(enum msg_hash_enums msg)
-{ (void)msg; return ""; }
+{ return (msg == MSG_INPUT_PLAYS_AS_OWN_BIND) ? " | %s: %s" : ""; }
 void runloop_msg_queue_push(const char *msg, size_t len,
       unsigned prio, unsigned duration, bool flush, char *title,
       enum message_queue_icon icon, enum message_queue_category category)
@@ -3944,6 +3949,189 @@ static void test_hotkey_enable_own_menu_same_button(void)
          "a sharer's hotkey on its Hotkey Enable's button cancelled its menu toggle");
 }
 
+/* A pad's press on @slot, binding @id for user @user, written where
+ * the bind capture (menu_input_key_bind_iterate()) writes it. */
+static void t_bind_press(unsigned user, unsigned slot, unsigned id,
+      uint16_t joykey)
+{
+   if (input_config_hotkey_bind_own(slot, id))
+      input_config_plays_as_set_hotkey(slot, id, joykey, AXIS_NONE);
+   else
+   {
+      input_config_binds[user][id].joykey  = joykey;
+      input_config_binds[user][id].joyaxis = AXIS_NONE;
+   }
+}
+
+/* Binding with a pad: a RetroPad bind is its user's, in the set, from
+ * user 1's pad or any other; a hotkey goes to the pressing
+ * controller's own bind when it is a sharer's or that controller has
+ * one already, else to the set. */
+static void test_bind_press_routing(void)
+{
+   uint16_t k;
+   uint32_t a;
+   const unsigned b  = RETRO_DEVICE_ID_JOYPAD_B;
+   const unsigned ff = RARCH_FAST_FORWARD_KEY;
+
+   t_reset();
+   t_dev(0, "A", 1, 1);
+   t_dev(1, "B", 2, 2);
+   t_dev(2, "C", 3, 3);
+   t_map(2, 0);
+   t_bind_press(0, 0, b, 5);
+   t_bind_press(1, 1, b, 6);
+   CHECK(input_config_binds[0][b].joykey == 5
+         && input_config_binds[1][b].joykey == 6
+         && input_config_plays_as_entry(0) == -1
+         && input_config_plays_as_entry(1) == -1,
+         "a RetroPad bind from a pad was not written to its user's set");
+
+   t_bind_press(0, 0, ff, 7);
+   input_config_plays_as_hotkey(0, ff, &k, &a);
+   CHECK(input_config_binds[0][ff].joykey == 7 && k == NO_BTN
+         && input_config_plays_as_entry(0) == -1,
+         "user 1's pad with no own bind did not bind the set");
+   t_bind_press(0, 2, ff, 9);
+   input_config_plays_as_hotkey(2, ff, &k, &a);
+   CHECK(k == 9 && input_config_binds[0][ff].joykey == 7,
+         "a sharer's press did not bind its own");
+   input_config_plays_as_set_hotkey(0, ff, T_OWN_KEY, AXIS_NONE);
+   t_bind_press(0, 0, ff, 10);
+   input_config_plays_as_hotkey(0, ff, &k, &a);
+   CHECK(k == 10 && input_config_binds[0][ff].joykey == 7,
+         "user 1's pad with its own bind bound the set");
+}
+
+/* With Hotkeys Follow Player 1 on and user 1 mapped off core port 1,
+ * binding a hotkey listens to who fires them: the first user on core
+ * port 1 and the users sharing it, not user 1's core port. */
+static void test_hotkey_listen_follows(void)
+{
+   t_reset();
+   settings.bools.input_hotkey_follows_player1 = true;
+   settings.uints.input_remap_ports[0] = 1;
+   settings.uints.input_remap_ports[1] = 0;
+   settings.uints.input_remap_ports[2] = 0;
+   settings.uints.input_remap_ports[3] = 1;
+   input_remapping_update_port_map();
+   CHECK(input_config_hotkey_listen_slots() == ((1u << 1) | (1u << 2)),
+         "binding a hotkey does not listen to who fires them");
+   /* the hotkey user's pad binds the set, as user 1's does, until it
+    * has its own; a sharer's binds its own */
+   t_dev(0, "A", 1, 1);
+   t_dev(1, "B", 2, 2);
+   t_dev(2, "C", 3, 3);
+   CHECK(!input_config_hotkey_bind_own(1, RARCH_FAST_FORWARD_KEY)
+         && !input_config_hotkey_bind_own(0, RARCH_FAST_FORWARD_KEY)
+         && input_config_hotkey_bind_own(2, RARCH_FAST_FORWARD_KEY),
+         "the hotkey user's pad binds its own, or a sharer's the set");
+   input_config_plays_as_set_hotkey(1, RARCH_FAST_FORWARD_KEY, T_OWN_KEY,
+         AXIS_NONE);
+   CHECK(input_config_hotkey_bind_own(1, RARCH_FAST_FORWARD_KEY),
+         "the hotkey user's pad with its own bind binds the set");
+   settings.bools.input_hotkey_follows_player1 = false;
+}
+
+/* The hotkey bind prompt names the player the hotkey user plays as:
+ * Player 1, the player user 1's controller shares, or with Hotkeys
+ * Follow Player 1 the first user on core port 1's own. */
+static void test_hotkey_prompt_player(void)
+{
+   t_reset();
+   CHECK(input_config_hotkey_user() == 0
+         && input_config_user_player(input_config_hotkey_user()) == 0,
+         "the prompt does not name Player 1");
+
+   /* port 1's controller shares Player 2 */
+   settings.uints.input_max_users = 2;
+   t_entries(
+         "input_plays_as_device_1 = \"0001:0001 A\"\n"
+         "input_plays_as_player_1 = \"2\"\n"
+         "input_plays_as_device_2 = \"0003:0003 C\"\n"
+         "input_plays_as_player_2 = \"2\"\n");
+   t_connect(0, "A", 1, 1);
+   t_connect(1, "C", 3, 3);
+   CHECK(t_user_of(1) == 0 && input_config_hotkey_user() == 0
+         && input_config_user_player(input_config_hotkey_user()) == 1,
+         "port 1's controller shares Player 2, the prompt does not say so");
+
+   t_reset();
+   t_dev(0, "A", 1, 1);
+   t_dev(1, "B", 2, 2);
+   settings.bools.input_hotkey_follows_player1 = true;
+   settings.uints.input_remap_ports[0] = 1;
+   settings.uints.input_remap_ports[1] = 0;
+   input_remapping_update_port_map();
+   CHECK(input_config_hotkey_user() == 1
+         && input_config_user_player(input_config_hotkey_user()) == 1,
+         "with Hotkeys Follow Player 1 the prompt does not name Player 2");
+   settings.bools.input_hotkey_follows_player1 = false;
+}
+
+/* With no core running the port map is not made again: right after
+ * port 1's controller turns to share Player 2, binding a hotkey
+ * listens to Player 2's controllers, as the prompt says, and not to
+ * Player 3's. */
+static void test_hotkey_listen_live(void)
+{
+   t_reset();
+   settings.uints.input_max_users = 3;
+   t_entries(
+         "input_plays_as_device_1 = \"0002:0002 B\"\n"
+         "input_plays_as_player_1 = \"2\"\n");
+   t_connect(0, "A", 1, 1);
+   t_connect(1, "B", 2, 2);
+   t_connect(2, "C", 3, 3);
+   CHECK(t_user_of(0) == 0 && t_user_of(1) == 1 && t_user_of(2) == 2,
+         "fixture: A, B and C are not on ports 1 to 3");
+   CHECK(input_config_hotkey_listen_slots() == 0,
+         "fixture: binding a hotkey listens to another player");
+   CHECK(input_config_plays_as_set(0, 2), "Player 2 was refused");
+   t_place_again(0);
+   CHECK(t_user_of(0) == 0
+         && input_config_user_player(input_config_hotkey_user()) == 1,
+         "fixture: the prompt does not name Player 2");
+   CHECK(input_config_hotkey_listen_slots() == (1u << 1),
+         "right after a sharing change, binding a hotkey does not "
+         "listen to Player 2's B alone");
+}
+
+/* Binding a hotkey listens to the controllers sharing user 1's core
+ * port, not to other players'; its row shows each connected
+ * controller's own. */
+static void test_hotkey_own_binding(void)
+{
+   char row[128];
+   size_t n;
+   t_reset();
+   CHECK(input_config_hotkey_listen_slots() == 0,
+         "the identity map: binding a hotkey listens to another player");
+   t_two_player_1();
+   t_connect(2, "C", 3, 3);
+   input_driver_poll();
+   CHECK(input_config_hotkey_listen_slots() == (1u << 1),
+         "binding a hotkey does not listen to the sharer alone");
+
+   input_config_plays_as_set_hotkey(1, RARCH_FAST_FORWARD_KEY, T_OWN_KEY,
+         AXIS_NONE);
+   input_config_plays_as_set_hotkey(0, RARCH_FAST_FORWARD_KEY, NO_BTN,
+         AXIS_NEG(2));
+   input_config_plays_as_hotkey_string(RARCH_FAST_FORWARD_KEY, row,
+         sizeof(row));
+   CHECK(!strcmp(row, " | A: Axis -2 | B: Button 24"),
+         "the row does not show each controller's own hotkey");
+   n = input_config_plays_as_hotkey_string(RARCH_FAST_FORWARD_KEY, row,
+         16);
+   CHECK(n == strlen(row) && n < 16,
+         "a row cut short gives a length past its buffer");
+   t_disconnect(1);
+   input_config_plays_as_hotkey_string(RARCH_FAST_FORWARD_KEY, row,
+         sizeof(row));
+   CHECK(!strcmp(row, " | A: Axis -2"),
+         "the row shows a controller that is gone");
+}
+
 int main(void)
 {
    test_identity();
@@ -4028,6 +4216,11 @@ int main(void)
    test_place_again_own_hotkeys();
    test_hotkey_own_storage();
    test_hotkey_enable_own();
+   test_bind_press_routing();
+   test_hotkey_listen_follows();
+   test_hotkey_prompt_player();
+   test_hotkey_listen_live();
+   test_hotkey_own_binding();
    test_hotkey_enable_own_delay();
    test_hotkey_enable_own_game_focus();
    test_hotkey_enable_own_menu_tap();

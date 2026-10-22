@@ -1432,6 +1432,45 @@ static void lane_port_controls_add_full(void)
          input_config_plays_as_set_entry(e, 0);
    t_forget_pads();
 }
+
+/* Ends the bind in progress as its timeout would. */
+static void end_bind(void)
+{
+   menu_state_get_ptr()->input_binds.timer_timeout.timeout_end = 0;
+   run_frame();
+}
+
+/* A hotkey's bind prompt says whose controllers it hears; a RetroPad
+ * bind's does not. */
+static void lane_bind_prompt(void)
+{
+   static const char line[]   = "Listening to Player 1's controllers";
+   struct menu_state *menu_st = menu_state_get_ptr();
+   rarch_setting_t *hotkey    = menu_setting_find_enum(
+         (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN
+            + RARCH_ENABLE_HOTKEY));
+   rarch_setting_t *pad       = menu_setting_find("p1_b");
+
+   CHECK(hotkey && pad && menu_st->driver_data,
+         "fixture: no Hotkey Enable or Port 1 B bind");
+   if (!hotkey || !pad || !menu_st->driver_data)
+      return;
+   menu_st->driver_data->menu_state_msg[0] = '\0';
+   hotkey->actions->ok(hotkey, 0, false);
+   run_frame();
+   CHECK(strstr(menu_st->driver_data->menu_state_msg, line) != NULL,
+         "Hotkey Enable's prompt does not say \"%s\": \"%s\"", line,
+         menu_st->driver_data->menu_state_msg);
+   end_bind();
+
+   menu_st->driver_data->menu_state_msg[0] = '\0';
+   pad->actions->ok(pad, 0, false);
+   run_frame();
+   CHECK(strstr(menu_st->driver_data->menu_state_msg, "Press")
+         && !strstr(menu_st->driver_data->menu_state_msg, "Listening to"),
+         "Port 1 B's prompt is \"%s\"", menu_st->driver_data->menu_state_msg);
+   end_bind();
+}
 #endif
 
 int main(int argc, char *argv[])
@@ -1523,6 +1562,7 @@ int main(int argc, char *argv[])
    lane_port_controls_add();
    lane_port_controls_add_items();
    lane_port_controls_add_full();
+   lane_bind_prompt();
 
    set_driver("null");
    snprintf(cmd, sizeof(cmd), "rm -rf %s", fixture_dir);

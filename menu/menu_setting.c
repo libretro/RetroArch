@@ -1210,6 +1210,13 @@ static int setting_bind_action_start(rarch_setting_t *setting)
 
    keybind->joykey  = NO_BTN;
    keybind->joyaxis = AXIS_NONE;
+   /* a hotkey's: the controllers' own go with it */
+   if (bind_type - MENU_SETTINGS_BIND_BEGIN >= RARCH_FIRST_META_KEY)
+   {
+      input_config_plays_as_clear_hotkey(
+            bind_type - MENU_SETTINGS_BIND_BEGIN);
+      config_get_ptr()->flags |= SETTINGS_FLG_MODIFIED;
+   }
 
    /* Clear old mapping bit */
    input_keyboard_mapping_bits(0, RETRO_KEYBIND_KEY(keybind));
@@ -1774,6 +1781,7 @@ static size_t setting_get_string_representation_st_string(rarch_setting_t *setti
 static size_t setting_get_string_representation_st_bind(rarch_setting_t *setting,
       char *s, size_t len)
 {
+   size_t _len;
    unsigned index_offset                 = 0;
    unsigned id                           = 0;
    const struct retro_keybind* keybind   = NULL;
@@ -1787,9 +1795,14 @@ static size_t setting_get_string_representation_st_bind(rarch_setting_t *setting
    keybind      = input_config_bind(index_offset, id);
    auto_bind    = (const struct retro_keybind*)
       input_config_get_bind_auto(index_offset, id);
-   return input_config_get_bind_string(settings, s, keybind, auto_bind,
-         input_config_bind_names(index_offset, id),
+   _len         = input_config_get_bind_string(settings, s, keybind,
+         auto_bind, input_config_bind_names(index_offset, id),
          input_autoconf_bind_names(index_offset, id), len);
+   /* a hotkey's, then the controllers' own */
+   if (id >= RARCH_FIRST_META_KEY && _len < len)
+      _len     += input_config_plays_as_hotkey_string(id, s + _len,
+            len - _len);
+   return _len;
 }
 
 static int setting_action_action_ok(

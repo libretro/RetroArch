@@ -11312,6 +11312,47 @@ void input_config_plays_as_clear_hotkey(unsigned id)
    input_config_binds_changed();
 }
 
+size_t input_config_plays_as_hotkey_string(unsigned id, char *s,
+      size_t len)
+{
+   unsigned slot, r;
+   size_t _len = 0;
+   bool show   = config_get_ptr()->bools.input_descriptor_label_show;
+
+   if (len)
+      *s = '\0';
+   for (slot = 0; slot < MAX_INPUT_DEVICES && _len + 1 < len; slot++)
+   {
+      char bind[64];
+      struct retro_keybind own;
+      const struct input_bind_label *label = NULL;
+      const char *name;
+
+      input_config_plays_as_hotkey(slot, id, &own.joykey, &own.joyaxis);
+      if (own.joykey == NO_BTN && own.joyaxis == AXIS_NONE)
+         continue;
+      if (!(name = input_config_get_device_display_name(slot)))
+         name = input_config_get_device_name(slot);
+      own.attr = RETRO_KEYBIND_ATTR(RETROK_UNKNOWN, NO_BTN, true);
+      /* named as its profile names that button, if it does */
+      for (r = 0; r < RARCH_FIRST_META_KEY && !label; r++)
+         if (     (own.joykey != NO_BTN
+                  && input_autoconf_binds[slot][r].joykey == own.joykey)
+               || (own.joyaxis != AXIS_NONE
+                  && input_autoconf_binds[slot][r].joyaxis == own.joyaxis))
+            label = input_autoconf_bind_names(slot, r);
+      if (own.joykey != NO_BTN)
+         input_config_get_bind_string_joykey(show, bind, "", &own, label,
+               sizeof(bind));
+      else
+         input_config_get_bind_string_joyaxis(show, bind, "", &own, label,
+               sizeof(bind));
+      _len = BIND_STR_CLAMP(_len + snprintf(s + _len, len - _len,
+            msg_hash_to_str(MSG_INPUT_PLAYS_AS_OWN_BIND), name, bind), len);
+   }
+   return _len;
+}
+
 /* The entry of the controller in @slot when it has a hotkey of its
  * own, else -1. */
 static int input_plays_as_own(unsigned slot)
@@ -19081,6 +19122,84 @@ void input_remapping_update_port_map(void)
 
 /* The users on @user's core port, as bits, @user among them; @user
  * alone on None, but for user 1, with core port 1's users. */
+static uint32_t input_port_sharers(const settings_t *settings,
+      unsigned user);
+
+/* The user the hotkeys are read on, as
+ * input_driver_collect_system_input() works it out: user 1, or with
+ * Hotkeys Follow Player 1 the first user on core port 1. */
+static unsigned input_hotkey_user(const settings_t *settings)
+{
+   unsigned user;
+   if (!settings->bools.input_hotkey_follows_player1)
+      return 0;
+   user = settings->uints.input_remap_port_map[0][0];
+   return (user < MAX_USERS) ? user : 0;
+}
+
+unsigned input_config_hotkey_user(void)
+{
+   return input_hotkey_user(config_get_ptr());
+}
+
+/* As input_port_sharers(), by the join the poll will make: the menu
+ * shows a change before any core runs. */
+static uint32_t input_port_sharers_live(const settings_t *settings,
+      unsigned user)
+{
+   unsigned u;
+   uint32_t users        = 0;
+   const unsigned *ports = settings->uints.input_remap_ports;
+   unsigned port         = ports[input_config_user_player(user)];
+   if (port >= MAX_USERS && !user)
+      port = 0;
+   if (port < MAX_USERS)
+      for (u = 0; u < MAX_USERS; u++)
+         if (ports[input_config_user_player(u)] == port)
+            users |= 1U << u;
+   return users | (1U << user);
+}
+
+uint32_t input_config_hotkey_listen_slots(void)
+{
+   unsigned u;
+   uint32_t slots             = 0;
+   const settings_t *settings = config_get_ptr();
+   unsigned max_users         = settings->uints.input_max_users;
+   /* who fires the hotkeys: the users on the hotkey user's core port */
+   uint32_t users             = input_port_sharers_live(settings,
+         input_hotkey_user(settings));
+
+   if (max_users > MAX_USERS)
+      max_users = MAX_USERS;
+   for (u = 1; u < max_users; u++)
+   {
+      unsigned s = settings->uints.input_joypad_index[u];
+      if (     (users & (1U << u))
+            && s < MAX_INPUT_DEVICES
+            && s != settings->uints.input_joypad_index[0])
+         slots |= 1U << s;
+   }
+   return slots;
+}
+
+bool input_config_hotkey_bind_own(unsigned slot, unsigned id)
+{
+   uint16_t joykey;
+   uint32_t joyaxis;
+   const settings_t *settings = config_get_ptr();
+
+   /* a RetroPad bind is always its user's, in the set */
+   if (id < RARCH_FIRST_META_KEY || id >= RARCH_BIND_LIST_END)
+      return false;
+   input_config_plays_as_hotkey(slot, id, &joykey, &joyaxis);
+   if (joykey != NO_BTN || joyaxis != AXIS_NONE)
+      return true;
+   return slot != settings->uints.input_joypad_index[0]
+      && slot != settings->uints.input_joypad_index[
+            input_hotkey_user(settings)];
+}
+
 static uint32_t input_port_sharers(const settings_t *settings,
       unsigned user)
 {
