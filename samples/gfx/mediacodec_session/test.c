@@ -37,7 +37,18 @@ static AMediaFormat *get_format(AMediaCodec *c){assert(c==&codec);formats++;retu
 static AMediaFormat *format_new(void){if(stage==3)return NULL;formats++;return &config_format;}
 static media_status_t format_free(AMediaFormat *f){assert(f==&config_format || f==&output_format);formats--;return 0;}
 static void set_string(AMediaFormat *f,const char *key,const char *value){assert(f==&config_format && !strcmp(key,"mime") && !strcmp(value,"video/hevc"));}
-static void set_integer(AMediaFormat *f,const char *key,int32_t value){assert(f==&config_format && key && value>0);}
+static int configured_standard, configured_transfer, configured_range;
+
+static void set_integer(AMediaFormat *f, const char *key, int32_t value)
+{
+   assert(f == &config_format && key && value > 0);
+   if (!strcmp(key, "color-standard"))
+      configured_standard = value;
+   if (!strcmp(key, "color-transfer"))
+      configured_transfer = value;
+   if (!strcmp(key, "color-range"))
+      configured_range = value;
+}
 static void set_buffer(AMediaFormat *f,const char *key,const void *data,size_t size){assert(f==&config_format && !strcmp(key,"csd-0") && data && size==4);}
 static bool get_integer(AMediaFormat *f,const char *key,int32_t *value)
 {
@@ -63,32 +74,115 @@ function_t dylib_proc(dylib_t lib,const char *symbol)
 #undef FN
  assert(0);return NULL;
 }
-static void balanced(void){assert(!libs && !codecs && !formats && !names);}
+static void balanced(void){assert(!libs && !codecs && !formats && !names);
+}
+
 int main(void)
 {
- mediacodec_config_t config;mediacodec_session_t *s;int i;int64_t pts;
- static const uint8_t csd[]={0,0,0,1};
- memset(&config,0,sizeof(config));config.mime="video/hevc";config.width=320;config.height=192;
- config.profile=2;config.max_input=1024;config.csd[0]=csd;config.csd_size[0]=sizeof(csd);
- for(i=1;i<=20;i++){missing=i;assert(!mediacodec_session_new(NULL,&config,&window));balanced();}missing=0;
- for(i=1;i<=9;i++)if(i!=6 && i!=7){stage=i;assert(!mediacodec_session_new(NULL,&config,&window));balanced();}
- stage=0;
- s=mediacodec_session_new(NULL,&config,&window);assert(s);input_busy=1;
- assert(!mediacodec_session_submit(s,csd,sizeof(csd),99,false));input_busy=0;
- assert(mediacodec_session_submit(s,csd,sizeof(csd),99,false)==1 && queued_pts==99 && !queued_flags && !memcmp(bytes,csd,4));
- assert(!mediacodec_session_pump(s,&pts));output_mode=1;assert(mediacodec_session_pump(s,&pts)==2);
- assert(mediacodec_session_format(s)->right==320 && mediacodec_session_format(s)->serial==1 && !mediacodec_session_format(s)->color_transfer);
- output_mode=3;assert(mediacodec_session_pump(s,&pts)==1 && pts==12345 && rendered==1);
- assert(mediacodec_session_submit(s,NULL,0,100,true)==1 && queued_flags==4);
- output_mode=5;assert(mediacodec_session_pump(s,&pts)==1);assert(mediacodec_session_pump(s,&pts)==3);
- mediacodec_session_free(s);balanced();
- s=mediacodec_session_new(NULL,&config,&window);assert(s);output_mode=4;
- assert(mediacodec_session_pump(s,&pts)==3 && released==1);mediacodec_session_free(s);balanced();
- s=mediacodec_session_new(NULL,&config,&window);assert(s);output_mode=6;
- assert(mediacodec_session_pump(s,&pts)==-1 && released==2);assert(mediacodec_session_pump(s,&pts)==-1);mediacodec_session_free(s);balanced();
- s=mediacodec_session_new(NULL,&config,&window);assert(s);bad_crop=1;output_mode=1;
- assert(mediacodec_session_pump(s,&pts)==-1);mediacodec_session_free(s);balanced();
- s=mediacodec_session_new(NULL,&config,&window);assert(s);
- assert(mediacodec_session_submit(s,csd,9,1,false)==-1);assert(mediacodec_session_pump(s,&pts)==-1);mediacodec_session_free(s);balanced();
- puts("PASS: MediaCodec startup faults, exact identity, zero-timeout input, format crop, Surface PTS, EOS and sticky errors");return 0;
+   mediacodec_config_t config;
+   mediacodec_session_t *s;
+   int i;
+   int64_t pts;
+   static const uint8_t csd[] = {0, 0, 0, 1};
+   memset(&config, 0, sizeof(config));
+   config.mime        = "video/hevc";
+   config.width       = 320;
+   config.height      = 192;
+   config.profile     = 2;
+   config.max_input   = 1024;
+   config.csd[0]      = csd;
+   config.csd_size[0] = sizeof(csd);
+   for (i = 1; i <= 20; i++)
+   {
+      missing = i;
+      assert(!mediacodec_session_new(NULL, &config, &window));
+      balanced();
+   }
+   missing = 0;
+   for (i = 1; i <= 9; i++)
+      if (i != 6 && i != 7)
+      {
+         stage = i;
+         assert(!mediacodec_session_new(NULL, &config, &window));
+         balanced();
+      }
+   stage = 0;
+   s     = mediacodec_session_new(NULL, &config, &window);
+   assert(s);
+   input_busy = 1;
+   assert(!mediacodec_session_submit(s, csd, sizeof(csd), 99, false));
+   input_busy = 0;
+   assert(mediacodec_session_submit(s, csd, sizeof(csd), 99, false) == 1
+          && queued_pts == 99 && !queued_flags && !memcmp(bytes, csd, 4));
+   assert(!mediacodec_session_pump(s, &pts));
+   output_mode = 1;
+   assert(mediacodec_session_pump(s, &pts) == 2);
+   assert(mediacodec_session_format(s)->right == 320
+          && mediacodec_session_format(s)->serial == 1
+          && !mediacodec_session_format(s)->color_transfer);
+   output_mode = 3;
+   assert(mediacodec_session_pump(s, &pts) == 1 && pts == 12345
+          && rendered == 1);
+   assert(mediacodec_session_submit(s, NULL, 0, 100, true) == 1
+          && queued_flags == 4);
+   output_mode = 5;
+   assert(mediacodec_session_pump(s, &pts) == 1);
+   assert(mediacodec_session_pump(s, &pts) == 3);
+   mediacodec_session_free(s);
+   balanced();
+   s = mediacodec_session_new(NULL, &config, &window);
+   assert(s);
+   output_mode = 4;
+   assert(mediacodec_session_pump(s, &pts) == 3 && released == 1);
+   mediacodec_session_free(s);
+   balanced();
+   s = mediacodec_session_new(NULL, &config, &window);
+   assert(s);
+   output_mode = 6;
+   assert(mediacodec_session_pump(s, &pts) == -1 && released == 2);
+   assert(mediacodec_session_pump(s, &pts) == -1);
+   mediacodec_session_free(s);
+   balanced();
+   s = mediacodec_session_new(NULL, &config, &window);
+   assert(s);
+   bad_crop    = 1;
+   output_mode = 1;
+   assert(mediacodec_session_pump(s, &pts) == -1);
+   mediacodec_session_free(s);
+   balanced();
+   s = mediacodec_session_new(NULL, &config, &window);
+   assert(s);
+   assert(mediacodec_session_submit(s, csd, 9, 1, false) == -1);
+   assert(mediacodec_session_pump(s, &pts) == -1);
+   mediacodec_session_free(s);
+   balanced();
+   config.color_standard = 6;
+   config.color_transfer = 6;
+   config.color_range    = 2;
+   s                     = mediacodec_session_new(NULL, &config, &window);
+   assert(s);
+   assert(configured_standard == 6 && configured_transfer == 6
+          && configured_range == 2);
+   mediacodec_session_free(s);
+   balanced();
+   config.color_transfer = 7;
+   config.color_range    = 1;
+   s                     = mediacodec_session_new(NULL, &config, &window);
+   assert(s);
+   assert(configured_transfer == 7 && configured_range == 1);
+   mediacodec_session_free(s);
+   balanced();
+   config.color_standard = 3;
+   assert(!mediacodec_session_new(NULL, &config, &window));
+   balanced();
+   config.color_standard = 6;
+   config.color_transfer = 5;
+   assert(!mediacodec_session_new(NULL, &config, &window));
+   balanced();
+   config.color_transfer = 6;
+   config.color_range    = 3;
+   assert(!mediacodec_session_new(NULL, &config, &window));
+   balanced();
+   puts("PASS: MediaCodec startup faults, exact identity, zero-timeout input, format crop, Surface PTS, EOS, color hints and sticky errors");
+   return 0;
 }

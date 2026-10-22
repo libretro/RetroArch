@@ -79,58 +79,120 @@ void mediacodec_session_free(mediacodec_session_t *s)
  if(s->library)dylib_close(s->library);
  free(s);
 }
-mediacodec_session_t *mediacodec_session_new(JNIEnv *env,const mediacodec_config_t *config,void *window)
+
+mediacodec_session_t *mediacodec_session_new(
+      JNIEnv *env, const mediacodec_config_t *config, void *window)
 {
- mediacodec_session_t *s;char selected[256],*actual=NULL;unsigned i;
- codec_new_fn make;codec_config_fn configure;codec_action_fn start;
- codec_name_fn name;codec_name_free_fn release_name;
- format_new_fn format_new;format_string_fn set_string;
- format_integer_fn set_integer;format_buffer_fn set_buffer;
- if(!config || !window || !config->max_input || config->max_input>64u*1024u*1024u)return NULL;
- for(i=0;i<3;i++)if(config->csd_size[i]>1024u*1024u || (config->csd_size[i] && !config->csd[i]))return NULL;
- if(mediacodec_inventory_select(env,config->mime,0,config->width,config->height,
-          config->profile,selected,sizeof(selected))!=1)return NULL;
- s=(mediacodec_session_t*)calloc(1,sizeof(*s));if(!s)return NULL;
- s->library=dylib_load("libmediandk.so");if(!s->library)goto failed;
-#define LOAD(target,type,symbol) do{target=(type)dylib_proc(s->library,symbol);if(!target)goto failed;}while(0)
- LOAD(make,codec_new_fn,"AMediaCodec_createCodecByName");
- LOAD(configure,codec_config_fn,"AMediaCodec_configure");
- LOAD(start,codec_action_fn,"AMediaCodec_start");
- LOAD(s->stop,codec_action_fn,"AMediaCodec_stop");
- LOAD(s->delete_codec,codec_action_fn,"AMediaCodec_delete");
- LOAD(name,codec_name_fn,"AMediaCodec_getName");
- LOAD(release_name,codec_name_free_fn,"AMediaCodec_releaseName");
- LOAD(s->input,codec_input_fn,"AMediaCodec_dequeueInputBuffer");
- LOAD(s->buffer,codec_buffer_fn,"AMediaCodec_getInputBuffer");
- LOAD(s->queue,codec_queue_fn,"AMediaCodec_queueInputBuffer");
- LOAD(s->output,codec_output_fn,"AMediaCodec_dequeueOutputBuffer");
- LOAD(s->release,codec_release_fn,"AMediaCodec_releaseOutputBuffer");
- LOAD(s->render,codec_render_fn,"AMediaCodec_releaseOutputBufferAtTime");
- LOAD(s->get_format,codec_format_fn,"AMediaCodec_getOutputFormat");
- LOAD(format_new,format_new_fn,"AMediaFormat_new");
- LOAD(s->delete_format,format_free_fn,"AMediaFormat_delete");
- LOAD(set_string,format_string_fn,"AMediaFormat_setString");
- LOAD(set_integer,format_integer_fn,"AMediaFormat_setInt32");
- LOAD(set_buffer,format_buffer_fn,"AMediaFormat_setBuffer");
- LOAD(s->get_integer,format_get_fn,"AMediaFormat_getInt32");
+   mediacodec_session_t *s;
+   char selected[256], *actual = NULL;
+   unsigned i;
+   codec_new_fn make;
+   codec_config_fn configure;
+   codec_action_fn start;
+   codec_name_fn name;
+   codec_name_free_fn release_name;
+   format_new_fn format_new;
+   format_string_fn set_string;
+   format_integer_fn set_integer;
+   format_buffer_fn set_buffer;
+   if (!config || !window || !config->max_input
+         || config->max_input > 64u * 1024u * 1024u)
+      return NULL;
+   if ((config->color_standard && config->color_standard != 1
+             && config->color_standard != 2 && config->color_standard != 4
+             && config->color_standard != 6)
+         || (config->color_transfer && config->color_transfer != 1
+               && config->color_transfer != 3 && config->color_transfer != 6
+               && config->color_transfer != 7)
+         || config->color_range < 0 || config->color_range > 2)
+      return NULL;
+   for (i = 0; i < 3; i++)
+      if (config->csd_size[i] > 1024u * 1024u
+            || (config->csd_size[i] && !config->csd[i]))
+         return NULL;
+   if (mediacodec_inventory_select(env, config->mime, 0, config->width,
+             config->height, config->profile, selected, sizeof(selected))
+         != 1)
+      return NULL;
+   s = (mediacodec_session_t *)calloc(1, sizeof(*s));
+   if (!s)
+      return NULL;
+   s->library = dylib_load("libmediandk.so");
+   if (!s->library)
+      goto failed;
+#define LOAD(target, type, symbol)                                             \
+   do                                                                          \
+   {                                                                           \
+      target = (type)dylib_proc(s->library, symbol);                           \
+      if (!target)                                                             \
+         goto failed;                                                          \
+   } while (0)
+   LOAD(make, codec_new_fn, "AMediaCodec_createCodecByName");
+   LOAD(configure, codec_config_fn, "AMediaCodec_configure");
+   LOAD(start, codec_action_fn, "AMediaCodec_start");
+   LOAD(s->stop, codec_action_fn, "AMediaCodec_stop");
+   LOAD(s->delete_codec, codec_action_fn, "AMediaCodec_delete");
+   LOAD(name, codec_name_fn, "AMediaCodec_getName");
+   LOAD(release_name, codec_name_free_fn, "AMediaCodec_releaseName");
+   LOAD(s->input, codec_input_fn, "AMediaCodec_dequeueInputBuffer");
+   LOAD(s->buffer, codec_buffer_fn, "AMediaCodec_getInputBuffer");
+   LOAD(s->queue, codec_queue_fn, "AMediaCodec_queueInputBuffer");
+   LOAD(s->output, codec_output_fn, "AMediaCodec_dequeueOutputBuffer");
+   LOAD(s->release, codec_release_fn, "AMediaCodec_releaseOutputBuffer");
+   LOAD(s->render, codec_render_fn, "AMediaCodec_releaseOutputBufferAtTime");
+   LOAD(s->get_format, codec_format_fn, "AMediaCodec_getOutputFormat");
+   LOAD(format_new, format_new_fn, "AMediaFormat_new");
+   LOAD(s->delete_format, format_free_fn, "AMediaFormat_delete");
+   LOAD(set_string, format_string_fn, "AMediaFormat_setString");
+   LOAD(set_integer, format_integer_fn, "AMediaFormat_setInt32");
+   LOAD(set_buffer, format_buffer_fn, "AMediaFormat_setBuffer");
+   LOAD(s->get_integer, format_get_fn, "AMediaFormat_getInt32");
 #undef LOAD
- s->codec=make(selected);if(!s->codec)goto failed;
- if(name(s->codec,&actual)!=AMEDIA_OK || !actual){if(actual)release_name(s->codec,actual);goto failed;}
- i=strcmp(actual,selected)==0;release_name(s->codec,actual);if(!i)goto failed;
- s->config=format_new();if(!s->config)goto failed;
- set_string(s->config,"mime",config->mime);
- set_integer(s->config,"width",(int32_t)config->width);set_integer(s->config,"height",(int32_t)config->height);
- set_integer(s->config,"profile",config->profile);set_integer(s->config,"max-input-size",(int32_t)config->max_input);
- for(i=0;i<3;i++)if(config->csd_size[i]) {
-  static const char *keys[]={"csd-0","csd-1","csd-2"};
-  set_buffer(s->config,keys[i],config->csd[i],config->csd_size[i]);
- }
- if(configure(s->codec,s->config,(ANativeWindow*)window,NULL,0)!=AMEDIA_OK)goto failed;
- s->started=true;if(start(s->codec)!=AMEDIA_OK)goto failed;
- s->format.width=s->format.right=config->width;s->format.height=s->format.bottom=config->height;
- return s;
+   s->codec = make(selected);
+   if (!s->codec)
+      goto failed;
+   if (name(s->codec, &actual) != AMEDIA_OK || !actual)
+   {
+      if (actual)
+         release_name(s->codec, actual);
+      goto failed;
+   }
+   i = strcmp(actual, selected) == 0;
+   release_name(s->codec, actual);
+   if (!i)
+      goto failed;
+   s->config = format_new();
+   if (!s->config)
+      goto failed;
+   set_string(s->config, "mime", config->mime);
+   set_integer(s->config, "width", (int32_t)config->width);
+   set_integer(s->config, "height", (int32_t)config->height);
+   set_integer(s->config, "profile", config->profile);
+   set_integer(s->config, "max-input-size", (int32_t)config->max_input);
+   if (config->color_standard)
+      set_integer(s->config, "color-standard", config->color_standard);
+   if (config->color_transfer)
+      set_integer(s->config, "color-transfer", config->color_transfer);
+   if (config->color_range)
+      set_integer(s->config, "color-range", config->color_range);
+   for (i = 0; i < 3; i++)
+      if (config->csd_size[i])
+      {
+         static const char *keys[] = {"csd-0", "csd-1", "csd-2"};
+         set_buffer(s->config, keys[i], config->csd[i], config->csd_size[i]);
+      }
+   if (configure(s->codec, s->config, (ANativeWindow *)window, NULL, 0)
+         != AMEDIA_OK)
+      goto failed;
+   s->started = true;
+   if (start(s->codec) != AMEDIA_OK)
+      goto failed;
+   s->format.width = s->format.right = config->width;
+   s->format.height = s->format.bottom = config->height;
+   return s;
 failed:
- mediacodec_session_free(s);return NULL;
+   mediacodec_session_free(s);
+   return NULL;
 }
 int mediacodec_session_submit(mediacodec_session_t *s,const void *data,size_t bytes,int64_t pts_us,bool eos)
 {

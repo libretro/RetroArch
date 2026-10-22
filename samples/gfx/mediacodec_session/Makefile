@@ -13,8 +13,9 @@ LDFLAGS += -fsanitize=$(SANITIZER)
 endif
 all: color_refine_test test hevc_backend_test hevc_decoder_test vulkan_image_test vulkan_sync_test vulkan_pipeline_test android_frame_test frame_export_test vulkan_submit_test vulkan_entry_test vulkan_cache_test vulkan_renderer_test vulkan_device_test
 all: vp9_decoder_test
-vp9_decoder_test: vp9_decoder_test.c ../../../gfx/common/mediacodec_vp9_decoder.c ../../../gfx/common/mediacodec_vp9_decoder.h ../../../gfx/common/android_image_queue.c ../../../libretro-common/include/formats/rvp9_hw.h
-	$(CC) $(CFLAGS) $(BACKEND_HOST_FLAGS) -DHAVE_THREADS vp9_decoder_test.c ../../../gfx/common/mediacodec_vp9_decoder.c ../../../gfx/common/android_image_queue.c -o $@ $(LDFLAGS)
+all: vp9_color_test
+vp9_decoder_test: vp9_decoder_test.c ../../../gfx/common/mediacodec_vp9_decoder.c ../../../gfx/common/mediacodec_vp9_decoder.h ../../../gfx/common/mediacodec_color.c ../../../gfx/common/mediacodec_color.h ../../../gfx/common/android_image_queue.c ../../../libretro-common/include/formats/rvp9_hw.h
+	$(CC) $(CFLAGS) $(BACKEND_HOST_FLAGS) -DHAVE_THREADS vp9_decoder_test.c ../../../gfx/common/mediacodec_vp9_decoder.c ../../../gfx/common/mediacodec_color.c ../../../gfx/common/android_image_queue.c -o $@ $(LDFLAGS)
 color_refine_test: color_refine_test.c ../../../gfx/common/android_frame.h
 	$(CC) $(CFLAGS) color_refine_test.c -o $@ $(LDFLAGS)
 
@@ -43,6 +44,8 @@ EXPORT_SOURCES := ../../../gfx/common/mediacodec_frame_export.c ../../../gfx/com
  ../../../gfx/common/android_frame.c ../../../gfx/common/android_image_queue.c
 frame_export_test: frame_export_test.c $(EXPORT_SOURCES) ../../../gfx/common/mediacodec_frame_export.h ../../../gfx/common/mediacodec_color.h
 	$(CC) $(CFLAGS) -DHAVE_THREADS frame_export_test.c $(EXPORT_SOURCES) -o $@ $(LDFLAGS)
+vp9_color_test: vp9_color_test.c frame_export_test.c $(EXPORT_SOURCES) ../../../gfx/common/mediacodec_frame_export.h ../../../gfx/common/mediacodec_color.h
+	$(CC) $(CFLAGS) $(BACKEND_HOST_FLAGS) -DHAVE_THREADS vp9_color_test.c $(EXPORT_SOURCES) -o $@ $(LDFLAGS)
 SUBMIT_SOURCES := ../../../gfx/common/vulkan_android_submit.c ../../../gfx/common/vulkan_android_image.c \
  ../../../gfx/common/vulkan_android_sync.c ../../../gfx/common/vulkan_android_pipeline.c \
  ../../../gfx/common/android_frame.c ../../../gfx/common/android_image_queue.c \
@@ -58,6 +61,7 @@ vulkan_renderer_test: vulkan_renderer_test.c ../../../gfx/drivers/vulkan_android
 vulkan_device_test: vulkan_device_test.c ../../../gfx/common/vulkan_android_device.c ../../../gfx/common/vulkan_android_device.h
 	$(CC) $(CFLAGS) -I../../../gfx/include vulkan_device_test.c ../../../gfx/common/vulkan_android_device.c -o $@ $(LDFLAGS)
 check: all
+	./vp9_color_test
 	./vp9_decoder_test
 	./color_refine_test
 	./test
@@ -75,6 +79,7 @@ check: all
 	./vulkan_device_test
 	CC="$(CC)" python3 root_optional_test.py
 clean:
+	rm -f vp9_color_test vp9_color_test.exe
 	rm -f vp9_decoder_test vp9_decoder_test.exe
 	rm -f color_refine_test test hevc_backend_test hevc_decoder_test vulkan_image_test vulkan_sync_test vulkan_pipeline_test vulkan_rgb_gpu_test android_frame_test frame_export_test vulkan_submit_test vulkan_entry_test vulkan_cache_test vulkan_renderer_test vulkan_device_test
 .PHONY: all check clean gpu-check

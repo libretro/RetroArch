@@ -23,24 +23,60 @@ bool mediacodec_frame_exporter_free(mediacodec_frame_exporter_t *e)
  if(!android_frame_pool_free(e->pool))return false;
  free(e);return true;
 }
-int mediacodec_hevc_frame_export(void *opaque,const android_image_view_t *image,
-      const mediacodec_output_format_t *format,const rh265_video_color_t *coded,
-      video_hw_frame_t *frame)
+
+int mediacodec_frame_export_color(void *opaque,
+      const android_image_view_t *image,
+      const mediacodec_output_format_t *format,
+      const video_color_metadata_t *coded, video_hw_frame_t *frame)
 {
- mediacodec_frame_exporter_t *e=(mediacodec_frame_exporter_t*)opaque;
- android_frame_view_t view;
- video_color_metadata_t color;
- if(!e || !image || !format || !coded || !frame)return -1;
- memset(&color,0,sizeof(color));
- if(coded->description_present) {
-  color.primaries=coded->primaries;color.transfer=coded->transfer;color.matrix=coded->matrix;
- }
- if(coded->video_signal_present)color.range=coded->full_range?2:1;
- memset(&view,0,sizeof(view));
- if(!mediacodec_color_resolve(format,&color,&view.color)
-       || !view.color.range || !view.color.matrix || view.color.matrix==2
-       || !view.color.transfer || view.color.transfer==2
-       || !view.color.primaries || view.color.primaries==2)return -1;
- view.image=*image;view.format=*format;view.pixfmt=e->pixfmt;
- return android_frame_export(e->pool,&view,frame);
+   mediacodec_frame_exporter_t *e = (mediacodec_frame_exporter_t *)opaque;
+   android_frame_view_t view;
+   if (!e || !image || !format || !coded || !frame)
+      return -1;
+   memset(&view, 0, sizeof(view));
+   if (!mediacodec_color_resolve(format, coded, &view.color)
+         || !view.color.range || !view.color.matrix || view.color.matrix == 2
+         || !view.color.transfer || view.color.transfer == 2
+         || !view.color.primaries || view.color.primaries == 2)
+      return -1;
+   view.image  = *image;
+   view.format = *format;
+   view.pixfmt = e->pixfmt;
+   return android_frame_export(e->pool, &view, frame);
+}
+
+int mediacodec_hevc_frame_export(void *opaque,
+      const android_image_view_t *image,
+      const mediacodec_output_format_t *format,
+      const rh265_video_color_t *coded, video_hw_frame_t *frame)
+{
+   video_color_metadata_t color;
+   if (!coded)
+      return -1;
+   memset(&color, 0, sizeof(color));
+   if (coded->description_present)
+   {
+      color.primaries = coded->primaries;
+      color.transfer  = coded->transfer;
+      color.matrix    = coded->matrix;
+   }
+   if (coded->video_signal_present)
+      color.range = coded->full_range ? 2 : 1;
+   return mediacodec_frame_export_color(opaque, image, format, &color, frame);
+}
+
+int mediacodec_vp9_frame_export(void *opaque, const android_image_view_t *image,
+      const mediacodec_output_format_t *format, const rvp9_hdr *header,
+      const video_color_metadata_t *container, video_hw_frame_t *frame)
+{
+   mediacodec_frame_exporter_t *e = (mediacodec_frame_exporter_t *)opaque;
+   video_color_metadata_t color;
+   if (!mediacodec_vp9_color(header, container, &color))
+      return -1;
+   if (!e
+         || e->pixfmt
+                  != (header->bit_depth == 10 ? IMAGE_PIXFMT_P010
+                                              : IMAGE_PIXFMT_NV12))
+      return -1;
+   return mediacodec_frame_export_color(opaque, image, format, &color, frame);
 }

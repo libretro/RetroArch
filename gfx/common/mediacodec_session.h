@@ -10,6 +10,8 @@ typedef struct mediacodec_config {
  const char *mime;
  unsigned width,height,max_input;
  int profile;
+ /* Android input-format constants; zero leaves a key unset. */
+ int color_standard,color_transfer,color_range;
  const void *csd[3];size_t csd_size[3];
 } mediacodec_config_t;
 typedef struct mediacodec_output_format {

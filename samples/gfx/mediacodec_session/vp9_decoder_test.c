@@ -12,6 +12,7 @@ static int native, depth, startup_fail, busy, freed, reader_freed, deleted;
 static int release_busy, released, export_busy, eos, pump_status,
       timestamp_extra;
 static int64_t queued_tag, rendered_tag, last_pts;
+static unsigned expected_eotf;
 static android_image_view_t held;
 static mediacodec_vp9_decoder_t *retired;
 static mediacodec_output_format_t format;
@@ -70,8 +71,17 @@ mediacodec_session_t *mediacodec_session_new(
    assert(env && window == &native && config->width == 64
           && config->height == 64);
    assert(!strcmp(config->mime, "video/x-vnd.on2.vp9")
-          && config->profile == (depth == 10 ? 4 : 1)
+          && config->profile
+                   == (expected_eotf   ? 4096
+                         : depth == 10 ? 4
+                                       : 1)
           && config->max_input == 1024);
+   assert(config->color_standard == (expected_eotf ? 6 : 0)
+          && config->color_transfer
+                   == (expected_eotf == 16     ? 6
+                         : expected_eotf == 18 ? 7
+                                               : 0)
+          && config->color_range == 2);
    for (i = 0; i < 3; i++)
       assert(!config->csd[i] && !config->csd_size[i]);
    last_pts = 0;
@@ -129,9 +139,10 @@ void mediacodec_session_free(mediacodec_session_t *s)
 
 static int export_image(void *context, const android_image_view_t *image,
       const mediacodec_output_format_t *fmt, const rvp9_hdr *header,
-      video_hw_frame_t *out)
+      const video_color_metadata_t *color, video_hw_frame_t *out)
 {
    assert(context == &native && fmt->serial && header->bit_depth == depth);
+   assert(color && color->transfer == expected_eotf);
    if (export_busy)
    {
       export_busy--;
@@ -140,6 +151,7 @@ static int export_image(void *context, const android_image_view_t *image,
    held       = *image;
    out->image = 1;
    out->width = out->height = 64;
+   out->color               = *color;
    return 0;
 }
 
@@ -167,6 +179,7 @@ static void reset(void)
    release_busy = released = export_busy = eos = pump_status = timestamp_extra =
          0;
    queued_tag = rendered_tag = last_pts = 0;
+   expected_eotf                        = 0;
    retired                              = NULL;
    memset(&held, 0, sizeof(held));
    memset(&format, 0, sizeof(format));
@@ -180,6 +193,7 @@ static void execute(unsigned bits)
    mediacodec_vp9_import_t importer;
    rvp9_hw_ops_t ops;
    video_hw_frame_t frame;
+   video_color_metadata_t container;
    unsigned fault;
    depth = (int)bits;
    reset();
@@ -196,7 +210,7 @@ static void execute(unsigned bits)
    assert(!mediacodec_vp9_decoder_open(
          (JNIEnv *)&native, &header, 9, 1024, &importer, &ops));
    assert(!ops.decoder && !reader_freed);
-   startup_fail          = 1;
+   startup_fail = 1;
    assert(!mediacodec_vp9_decoder_open(
          (JNIEnv *)&native, &header, 10, 1024, &importer, &ops));
    assert(!ops.decoder && reader_freed == 1 && !freed && !released && !retired);
@@ -278,13 +292,42 @@ static void execute(unsigned bits)
       assert(!ops.decode(ops.decoder, packet, sizeof(packet), &picture));
       if (fault)
       {
-         format.width = 65;
+         format.width  = 65;
          format.serial = 0;
       }
       else
          queued_tag = 2;
       assert(ops.output(ops.decoder, 1, &frame) < 0);
       mediacodec_vp9_decoder_close(&ops);
+      assert(mediacodec_vp9_decoder_retire_poll(retired));
+   }
+   for (fault = 16; fault <= 18; fault += 2)
+   {
+      reset();
+      expected_eotf      = fault;
+      header.color_space = 5;
+      memset(&container, 0, sizeof(container));
+      container.primaries = container.matrix = 9;
+      container.transfer                     = fault;
+      container.range                        = 1;
+      container.max_cll                      = 1000;
+      if (depth == 8)
+      {
+         assert(!mediacodec_vp9_decoder_open_color((JNIEnv *)&native, &header,
+               &container, 10, 1024, &importer, &ops));
+         assert(!ops.decoder && !reader_freed && !freed);
+         continue;
+      }
+      assert(mediacodec_vp9_decoder_open_color(
+            (JNIEnv *)&native, &header, &container, 10, 1024, &importer, &ops));
+      picture.header = header;
+      assert(!ops.decode(ops.decoder, packet, sizeof(packet), &picture));
+      queued_tag = 1;
+      assert(!ops.output(ops.decoder, 1, &frame));
+      assert(frame.color.transfer == fault && frame.color.max_cll == 1000);
+      mediacodec_vp9_decoder_close(&ops);
+      assert(!mediacodec_vp9_decoder_retire_poll(retired));
+      assert(android_image_queue_return(held.ticket, held.generation, -1));
       assert(mediacodec_vp9_decoder_retire_poll(retired));
    }
 }

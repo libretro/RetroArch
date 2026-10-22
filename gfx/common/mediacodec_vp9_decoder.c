@@ -2,6 +2,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later */
 #include "mediacodec_vp9_decoder.h"
 #include "android_image_ndk.h"
+#include "mediacodec_color.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -13,6 +14,7 @@ struct mediacodec_vp9_decoder
    mediacodec_vp9_import_t importer;
    android_image_view_t image;
    rvp9_hdr header;
+   video_color_metadata_t color;
    mediacodec_output_format_t format;
    unsigned slots, capacity, output_slot;
    bool failed, closed, eos, output_eos, rendered;
@@ -107,6 +109,8 @@ static int mediacodec_vp9_decode(void *opaque, const uint8_t *packet,
    h = &picture->header;
    if (h->w != d->header.w || h->h != d->header.h
          || h->profile != d->header.profile
+         || h->color_space != d->header.color_space
+         || h->color_range != d->header.color_range
          || h->bit_depth != d->header.bit_depth || h->subsampling_x != 1
          || h->subsampling_y != 1)
       return -1;
@@ -152,8 +156,8 @@ static int mediacodec_vp9_output(
       }
       return 1;
    }
-   status = d->importer.export_image(
-         d->importer.context, &d->image, &d->format, &d->header, out);
+   status = d->importer.export_image(d->importer.context, &d->image, &d->format,
+         &d->header, &d->color, out);
    if (!status)
    {
       memset(&d->image, 0, sizeof(d->image));
@@ -222,8 +226,8 @@ void mediacodec_vp9_decoder_close(rvp9_hw_ops_t *ops)
    d->importer.enqueue(d->importer.context, d);
 }
 
-bool mediacodec_vp9_decoder_open(JNIEnv *env, const rvp9_hdr *header,
-      unsigned slots, unsigned max_input,
+bool mediacodec_vp9_decoder_open_color(JNIEnv *env, const rvp9_hdr *header,
+      const video_color_metadata_t *color, unsigned slots, unsigned max_input,
       const mediacodec_vp9_import_t *importer, rvp9_hw_ops_t *ops)
 {
    mediacodec_vp9_decoder_t *d;
@@ -232,9 +236,9 @@ bool mediacodec_vp9_decoder_open(JNIEnv *env, const rvp9_hdr *header,
    if (!ops)
       return false;
    memset(ops, 0, sizeof(*ops));
-   if (!env || !header || header->w <= 0 || header->h <= 0
-         || header->frame_type || header->show_existing_frame
-         || header->subsampling_x != 1 || header->subsampling_y != 1
+   if (!env || !header || header->w <= 0 || header->h <= 0 || header->frame_type
+         || header->show_existing_frame || header->subsampling_x != 1
+         || header->subsampling_y != 1
          || (header->profile != 0 && header->profile != 2)
          || header->bit_depth != (header->profile == 2 ? 10 : 8) || slots < 10
          || slots > 32 || !max_input || max_input > 64u * 1024u * 1024u
@@ -247,17 +251,25 @@ bool mediacodec_vp9_decoder_open(JNIEnv *env, const rvp9_hdr *header,
    d->header   = *header;
    d->slots    = slots;
    d->capacity = max_input;
-   d->images   = android_image_ndk_new(
-         (unsigned)header->w, (unsigned)header->h, slots, &window);
-   if (!d->images)
-      goto fail;
    memset(&config, 0, sizeof(config));
+   if (!mediacodec_vp9_color(header, color, &d->color)
+         || !mediacodec_color_configure(&d->color, &config))
+      goto fail;
+   if ((d->color.transfer == 16 || d->color.transfer == 18)
+         && header->bit_depth != 10)
+      goto fail;
    config.mime      = "video/x-vnd.on2.vp9";
    config.width     = (unsigned)header->w;
    config.height    = (unsigned)header->h;
    config.max_input = max_input;
    config.profile   = header->profile == 2 ? 4 : 1;
-   d->session       = mediacodec_session_new(env, &config, window);
+   if (d->color.transfer == 16 || d->color.transfer == 18)
+      config.profile = 4096;
+   d->images = android_image_ndk_new(
+         (unsigned)header->w, (unsigned)header->h, slots, &window);
+   if (!d->images)
+      goto fail;
+   d->session = mediacodec_session_new(env, &config, window);
    if (!d->session)
       goto fail;
    d->importer  = *importer;
@@ -273,4 +285,12 @@ fail:
    }
    free(d);
    return false;
+}
+
+bool mediacodec_vp9_decoder_open(JNIEnv *env, const rvp9_hdr *header,
+      unsigned slots, unsigned max_input,
+      const mediacodec_vp9_import_t *importer, rvp9_hw_ops_t *ops)
+{
+   return mediacodec_vp9_decoder_open_color(
+         env, header, NULL, slots, max_input, importer, ops);
 }
