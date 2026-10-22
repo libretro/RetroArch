@@ -78,8 +78,15 @@ the parsed Main8/Main10 I/P/B sequence fixtures. It maps coded short/long-term
 reference order and list modifications to picture-buffer indices, effective
 weights to VA deltas/offsets, filtering flags and escaped-header accounting.
 It preserves output on refusal and performs no native calls or allocation.
-Packing WPP subset entries and connecting this mapper to the owner/pool are
-still required; these parameter tests do not establish native NORMAL decode.
+The separate NORMAL packet helper packs escaped NALs without start codes,
+128-byte tail padding and coded WPP offsets in a preallocated owner workspace.
+All headers and subset extents pass before payload copy or native submission.
+Submission owns up to five buffers, including an optional subset array; failure
+and destruction retries retain the existing transaction ownership rules.
+`long_packet_test` checks synthetic Main8/Main10 I/P/B WPP headers and refusal
+without payload writes. The parsed sequence fixture also submits NORMAL layouts
+through typed callbacks. Connecting the packet workspace to the owner/pool is
+still required; these tests do not establish native NORMAL decode.
 
 `make gpu-check SANITIZER=address,undefined` additionally needs the Vulkan
 loader, development library, validation layer and a device supporting

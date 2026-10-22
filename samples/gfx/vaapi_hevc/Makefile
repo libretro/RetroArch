@@ -91,9 +91,13 @@ test$(EXE): test.c ../../../gfx/common/vaapi_hevc_packet.h ../../../gfx/common/v
 	$(CC) $(CFLAGS) -Wno-unused-parameter test.c ../../../libretro-common/formats/h265/rh265.c -o $@ $(LDFLAGS) -lm
 long_slice_test$(EXE): long_slice_test.c ../../../gfx/common/vaapi_hevc_slice.h ../../../gfx/common/vaapi_hevc.h
 	$(CC) $(CFLAGS) long_slice_test.c -o $@ $(LDFLAGS)
-all: long_slice_test$(EXE)
+long_packet_test$(EXE): long_packet_test.c ../../../gfx/common/vaapi_hevc_long_packet.h ../../../gfx/common/vaapi_hevc_slice.h ../../../libretro-common/samples/formats/h265/rh265_slice_info_test.c ../../../libretro-common/formats/h265/rh265.c
+	$(CC) $(CFLAGS) -Wno-unused-parameter long_packet_test.c -o $@ $(LDFLAGS) -lm
+all: long_slice_test$(EXE) long_packet_test$(EXE)
 test$(EXE): ../../../gfx/common/vaapi_hevc_slice.h
+test$(EXE): ../../../gfx/common/vaapi_hevc_long_packet.h
 check: all
+	$(RUNNER) ./long_packet_test$(EXE)
 	$(RUNNER) ./long_slice_test$(EXE)
 	$(RUNNER) ./backend_nothreads_test$(EXE)
 	$(RUNNER) ./backend_volatile_test$(EXE)
@@ -123,6 +127,7 @@ ifneq ($(NATIVE_PROBE),)
 	./native_probe
 endif
 clean:
+	rm -f long_packet_test long_packet_test.exe
 	rm -f long_slice_test long_slice_test.exe
 	rm -f backend_nothreads_test backend_nothreads_test.exe backend_volatile_test backend_volatile_test.exe node_test node_test.exe backend_test backend_test.exe backend_tsan_test backend_tsan_test.exe owner_test owner_test.exe decoder_test decoder_test.exe renderer_test renderer_test.exe cache_test cache_test.exe test test.exe session_test session_test.exe runtime_test runtime_test.exe submit_test submit_test.exe pool_test pool_test.exe export_test export_test.exe identity_test identity_test.exe prime_device_test prime_device_test.exe prime_format_test prime_format_test.exe prime_surface_test prime_surface_test.exe prime_image_test prime_image_test.exe prime_frame_test prime_frame_test.exe prime_submit_test prime_submit_test.exe frame_test frame_test.exe lease_test lease_test.exe resources_test resources_test.exe lease_tsan_test lease_tsan_test.exe frame_tsan_test frame_tsan_test.exe prime_gpu_test prime_gpu_test.exe native_probe
 .PHONY: all check gpu-check tsan-check clean abi-check
