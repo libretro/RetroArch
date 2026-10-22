@@ -75,6 +75,15 @@ jobs:
       run: |
         make -C samples/gfx/videotoolbox_vp9 check CC=clang SANITIZER=address,undefined
         CC=clang python3 samples/gfx/videotoolbox_vp9/run.py --native
+    - name: VideoToolbox VP9 native hardware pixels and retained output
+      run: |
+        rc=0
+        CC=clang python3 samples/gfx/videotoolbox_vp9/run.py --native --pixels || rc=$?
+        if [ "$rc" = 77 ]; then
+          echo "::warning::Required VP9 hardware unavailable; native VP9 pixel acceptance remains incomplete"
+          exit 0
+        fi
+        exit "$rc"
     - name: VideoToolbox HEVC hardware decode and pixel ownership
       run: |
         rc=0

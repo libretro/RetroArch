@@ -11,7 +11,10 @@ here = Path(__file__).resolve().parent
 root = here.parents[2]
 parser = argparse.ArgumentParser()
 parser.add_argument("--native", action="store_true")
+parser.add_argument("--pixels", action="store_true")
 args = parser.parse_args()
+if args.pixels and not args.native:
+    parser.error("--pixels requires --native")
 compiler = shlex.split(os.environ.get("CC", "cc"))
 flags = ["-DHAVE_THREADS", "-O2", "-std=c89", "-pedantic", "-Wall", "-Wextra", "-Werror",
          "-Wno-long-long", "-Wframe-larger-than=2048", "-fstack-usage",
@@ -112,3 +115,19 @@ with tempfile.TemporaryDirectory(prefix="vt-vp9-setup-") as directory:
                 print("+", shlex.join(command), flush=True)
                 subprocess.run(command, check=True)
                 subprocess.run([str(binary)], check=True, timeout=90)
+
+        if args.pixels:
+            feature_object = path / "features_cpu.o"
+            command = compiler + ["-O2", "-mmacosx-version-min=10.14",
+                "-I" + str(root / "libretro-common/include"), "-c",
+                str(root / "libretro-common/features/features_cpu.c"),
+                "-o", str(feature_object)]
+            subprocess.run(command, check=True)
+            command = compiler + flags + ["-Wno-unused-function",
+                str(here / "native_pixel_test.c"), str(thread_object),
+                str(queue_object), codec_objects["vp9"], str(feature_object),
+                "-o", str(binary)] + libraries
+            print("+", shlex.join(command), flush=True)
+            subprocess.run(command, check=True)
+            result = subprocess.run([str(binary)], check=False, timeout=90)
+            raise SystemExit(result.returncode)
