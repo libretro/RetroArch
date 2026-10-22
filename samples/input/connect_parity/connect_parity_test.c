@@ -2430,6 +2430,23 @@ static int32_t stub_ds5_caps(void *handle, uint8_t type, uint8_t id,
    return 48;
 }
 
+/* a pad that passes for a DualShock 4: sensors and rumble, its
+ * gyroscope at 1/32 of a degree a second */
+static int32_t stub_ds4_caps(void *handle, uint8_t type, uint8_t id,
+      uint8_t *data, size_t len)
+{
+   (void)handle;
+   if (type != HID_REPORT_FEATURE || id != 0x03 || len < 48)
+      return -1;
+   memset(data, 0, len);
+   data[0]  = 0x03;
+   data[2]  = 0x27;
+   data[4]  = 0x02 | 0x08;
+   data[10] = 1;
+   data[12] = 32;
+   return 48;
+}
+
 static void test_sdl_pads(void)
 {
    uint8_t p[80];
@@ -2508,6 +2525,49 @@ static void test_sdl_pads(void)
          "sdl pads: a pad that passes for a DualSense misnamed");
    pad_connection_ps5_third_party.deinit(dev);
 
+   /* pads that pass for a DualShock 4: nothing sent, and no motion,
+    * unless one says it has them; a Razer's rumble even so; never
+    * anything to a Victrix */
+   memset(p, 0, sizeof(p));
+   p[0] = 0x01; p[5] = 8;
+   count = sent_count;
+   dev = pad_connection_ps4_third_party.init(&dummy_connection, 0, &stub_hid);
+   deliver(&pad_connection_ps4_third_party, dev, p, 64);
+   CHECK(sent_count == count
+         && !pad_connection_ps4_third_party.set_sensor(dev,
+               RETRO_SENSOR_GYROSCOPE_ENABLE),
+         "sdl pads: output or motion for a DualShock 4 pad that did not answer");
+   pad_connection_ps4_third_party.deinit(dev);
+   dev = pad_connection_ps4_razer.init(&dummy_connection, 0, &stub_hid);
+   deliver(&pad_connection_ps4_razer, dev, p, 64);
+   CHECK(sent_count == count + 1 && sent[0] == 0x05 && sent[1] == 0x07,
+         "sdl pads: a Razer's rumble and light bar not sent together");
+   pad_connection_ps4_razer.deinit(dev);
+   stub_hid.get_report = stub_ds4_caps;
+   dev = pad_connection_ps4_no_output.init(&dummy_connection, 0, &stub_hid);
+   deliver(&pad_connection_ps4_no_output, dev, p, 64);
+   CHECK(sent_count == count + 1, "sdl pads: output sent to a Victrix");
+   pad_connection_ps4_no_output.deinit(dev);
+   dev = pad_connection_ps4_third_party.init(&dummy_connection, 0, &stub_hid);
+   stub_hid.get_report = NULL;
+   CHECK(pad_connection_ps4_third_party.set_sensor(dev,
+            RETRO_SENSOR_GYROSCOPE_ENABLE),
+         "sdl pads: a DualShock 4 pad's motion not taken");
+   put_le16(p + 13, 320);   /* 10 degrees a second at its scale */
+   deliver(&pad_connection_ps4_third_party, dev, p, 64);
+   CHECK(sent_count == count + 2 && sent[1] == 0x07,
+         "sdl pads: output not sent to a DualShock 4 pad that takes it");
+   v = 0;
+   CHECK(pad_connection_ps4_third_party.sensor(dev, RETRO_SENSOR_GYROSCOPE_X, &v)
+         && fabsf(v - 10.0f * 3.14159265f / 180.0f) < 1e-4f,
+         "sdl pads: a DualShock 4 pad's gyroscope not at its own scale (%f)", v);
+   pad_connection_ps4_third_party.set_rumble(dev, RETRO_RUMBLE_STRONG, 0xffff);
+   deliver(&pad_connection_ps4_third_party, dev, p, 64);
+   CHECK(sent_count == count + 3 && sent[1] == 0x07 && sent[5] == 0xff
+         && (sent[6] | sent[7] | sent[8]),
+         "sdl pads: a DualShock 4 pad's rumble sent without its light bar");
+   pad_connection_ps4_third_party.deinit(dev);
+
    /* the Switch Online N64 pad: at rest with no amplitude */
    sent_count = 0;
    stub_hid.is_bluetooth = stub_is_bluetooth;
@@ -2518,7 +2578,7 @@ static void test_sdl_pads(void)
          "sdl pads: the N64 pad's rest is not 00 00 01 40");
    pad_connection_switch_pro_n64.deinit(dev);
 
-   printf("[%s] sdl pads: 8BitDo Pro 2's paddles and motion, the Ultimates' rumble, third-party DualSense pads by what they say, the N64 pad's quiet rest\n",
+   printf("[%s] sdl pads: 8BitDo Pro 2's paddles and motion, the Ultimates' rumble, third-party DualSense and DualShock 4 pads by what they say, the N64 pad's quiet rest\n",
          failures == had ? "pass" : "fail");
 }
 

@@ -62,7 +62,8 @@ pad_connection_interface_t pad_connection_wii, pad_connection_wiiupro,
    pad_connection_8bitdo_pro_2, pad_connection_8bitdo_pro_3,
    pad_connection_8bitdo_ultimate_2, pad_connection_8bitdo_ultimate_2c,
    pad_connection_8bitdo_ultimate_3, pad_connection_ps5_third_party,
-   pad_connection_switch_pro_n64;
+   pad_connection_switch_pro_n64, pad_connection_ps4_third_party,
+   pad_connection_ps4_razer, pad_connection_ps4_no_output;
 
 /* ---- the fake pad ---- */
 
@@ -365,10 +366,28 @@ int main(void)
          printf("FAIL: a Razer Wolverine V2 Pro not given the DualSense handler\n");
          failures++;
       }
+      e = find_connection_entry(SWAP_IF_BIG(0x1532), SWAP_IF_BIG(0x1000), "");
+      if (!e || e->iface != &pad_connection_ps4_razer)
+      {
+         printf("FAIL: a Razer Raiju not given the DualShock 4 handler\n");
+         failures++;
+      }
+      e = find_connection_entry(SWAP_IF_BIG(0x0e6f), SWAP_IF_BIG(0x0203), "");
+      if (!e || e->iface != &pad_connection_ps4_no_output)
+      {
+         printf("FAIL: a Victrix Pro FS not kept from output\n");
+         failures++;
+      }
+      e = find_connection_entry(SWAP_IF_BIG(0x0f0d), SWAP_IF_BIG(0x0055), "");
+      if (!e || e->iface != &pad_connection_ps4_third_party)
+      {
+         printf("FAIL: a HORIPAD 4 not given the DualShock 4 handler\n");
+         failures++;
+      }
    }
    if (failures)
       return 1;
-   printf("[pass] joypad_slots_test: %u plug cycles each way, %d calls into live pads; Wii remotes on 057e:0330, DualShock 3s and Switch Online pads by name\n",
+   printf("[pass] joypad_slots_test: %u plug cycles each way, %d calls into live pads; Wii remotes on 057e:0330, DualShock 3s and Switch Online pads by name, third-party DualShock 4s by id\n",
          CYCLES, retro_atomic_load_acquire_int(&calls));
    return 0;
 }

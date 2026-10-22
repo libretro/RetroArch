@@ -41,6 +41,9 @@
  * output report built by sony_pad_output.h, from the poll, when they
  * change; nothing is sent behind a stack's header.
  *
+ * A pad that passes for one says what it has in feature report 0x03,
+ * as SDL reads it, and is sent its rumble and light bar together.
+ *
  * The input report after its ID: the sticks' four bytes, then
  * - byte 4: the hat in the low four bits, then square, cross, circle
  *   and triangle;
@@ -48,6 +51,16 @@
  * - byte 6: PS in bit 0, the touchpad's click in bit 1;
  * - bytes 7 and 8: L2 and R2's travel. */
 #define PS4_REPORT_LEN 9
+
+enum hidpad_ps4_make
+{
+   PS4_SONY = 0,
+   PS4_THIRD_PARTY,
+   /* Razer's: no answer to 0x03, but rumble */
+   PS4_RAZER,
+   /* Victrix's: hangs if sent the output report */
+   PS4_NO_OUTPUT
+};
 
 struct hidpad_ps4_data
 {
@@ -65,24 +78,67 @@ struct hidpad_ps4_data
    sony_pad_motion_t motion;
    uint8_t motion_want; /* pad_motion.h's bits */
    bool motion_seen;
+   bool third;          /* not Sony's */
+   bool effects;        /* it takes the output report */
+   bool sensors;        /* it has motion */
+   /* the pad's own scales, against the nominal: 1 for Sony's */
+   float accel_mul;
+   float gyro_mul;
 };
 
 /* One output report: the motors, and the first time the light bar. */
 static void hidpad_ps4_send(struct hidpad_ps4_data *device)
 {
    uint8_t r[SONY_PAD_REPORT_MAX];
+   int player = device->player ? device->player
+      : (int)(device->slot % 4) + 1;
    size_t len = sony_pad_output_report(r, sizeof(r), SONY_PAD_DS4,
          device->bluetooth, false, device->motors[0], device->motors[1],
-         device->lights_sent ? 0 : device->player ? device->player
-         : (int)(device->slot % 4) + 1);
+         device->lights_sent && !device->third ? 0 : player);
 
-   if (len && device->driver && device->driver->send_control)
+   /* and the light bar's blink, off */
+   if (device->third && !device->bluetooth)
+      r[1] |= 0x04;
+   if (     len && device->effects
+         && device->driver && device->driver->send_control)
       device->driver->send_control(device->connection, r, len);
    device->lights_sent = true;
    device->motors_due  = false;
 }
 
-static void* hidpad_ps4_init(void *data, uint32_t slot, hid_driver_t *driver)
+/* What a pad that passes for one has, from its feature report 0x03:
+ * 48 bytes, 0x27 in byte 2; in byte 4 the sensors (0x02), light bar
+ * (0x04) and rumble (0x08); from 10 its gyroscope's and accelerometer's
+ * scales, each a numerator and a denominator. */
+static void hidpad_ps4_third_party(struct hidpad_ps4_data *device,
+      enum hidpad_ps4_make make)
+{
+   uint8_t f[64];
+   unsigned num, den;
+
+   memset(f, 0, sizeof(f));
+   device->third   = true;
+   device->effects = (make == PS4_RAZER);
+   device->sensors = false;
+   if (     !device->driver || !device->driver->get_report
+         ||  device->driver->get_report(device->connection,
+               HID_REPORT_FEATURE, 0x03, f, 48) != 48
+         ||  f[2] != 0x27)
+      return;
+   device->sensors = (f[4] & 0x02) != 0;
+   device->effects = (f[4] & 0x0c) && make != PS4_NO_OUTPUT;
+   num = f[10] | (f[11] << 8);
+   den = f[12] | (f[13] << 8);
+   if (num && den)
+      device->gyro_mul  = (float)num / den * SONY_PAD_GYRO_PER_DPS;
+   num = f[14] | (f[15] << 8);
+   den = f[16] | (f[17] << 8);
+   if (num && den)
+      device->accel_mul = (float)num / den * SONY_PAD_ACCEL_PER_G;
+}
+
+static void* hidpad_ps4_start(void *data, uint32_t slot,
+      hid_driver_t *driver, enum hidpad_ps4_make make)
 {
    struct pad_connection* connection = (struct pad_connection*)data;
    struct hidpad_ps4_data* device    = (struct hidpad_ps4_data*)
@@ -102,10 +158,15 @@ static void* hidpad_ps4_init(void *data, uint32_t slot, hid_driver_t *driver)
    device->slot       = slot;
    device->bluetooth  = driver && driver->is_bluetooth
       && driver->is_bluetooth(connection);
-
-   /* the calibration's feature report: read, it wakes the full report
-    * over Bluetooth */
-   if (driver && driver->get_report)
+   device->effects    = true;
+   device->sensors    = true;
+   device->accel_mul  = 1.0f;
+   device->gyro_mul   = 1.0f;
+   /* Sony's: the calibration's feature report read, which wakes the
+    * full report over Bluetooth; the others are wired, as SDL has it */
+   if (make != PS4_SONY)
+      hidpad_ps4_third_party(device, make);
+   else if (driver && driver->get_report)
    {
       uint8_t feature[64];
       memset(feature, 0, sizeof(feature));
@@ -114,6 +175,29 @@ static void* hidpad_ps4_init(void *data, uint32_t slot, hid_driver_t *driver)
    }
 
    return device;
+}
+
+static void *hidpad_ps4_init(void *data, uint32_t slot, hid_driver_t *driver)
+{
+   return hidpad_ps4_start(data, slot, driver, PS4_SONY);
+}
+
+static void *hidpad_ps4_third_init(void *data, uint32_t slot,
+      hid_driver_t *driver)
+{
+   return hidpad_ps4_start(data, slot, driver, PS4_THIRD_PARTY);
+}
+
+static void *hidpad_ps4_razer_init(void *data, uint32_t slot,
+      hid_driver_t *driver)
+{
+   return hidpad_ps4_start(data, slot, driver, PS4_RAZER);
+}
+
+static void *hidpad_ps4_no_output_init(void *data, uint32_t slot,
+      hid_driver_t *driver)
+{
+   return hidpad_ps4_start(data, slot, driver, PS4_NO_OUTPUT);
 }
 
 static void hidpad_ps4_deinit(void *data)
@@ -219,7 +303,7 @@ static void hidpad_ps4_packet_handler(void *data,
    /* a timestamp and the temperature, then the gyroscope and the
     * accelerometer; not in Bluetooth's short report */
    rest = size - (unsigned)(r - packet);
-   if (device->motion_want && rest >= 24)
+   if (device->motion_want && device->sensors && rest >= 24)
    {
       for (i = 0; i < 3; i++)
       {
@@ -269,7 +353,8 @@ static bool hidpad_ps4_set_sensor(void *data,
       enum retro_sensor_action action)
 {
    struct hidpad_ps4_data *device = (struct hidpad_ps4_data*)data;
-   if (!device || !pad_motion_want(&device->motion_want, action))
+   if (     !device || !device->sensors
+         || !pad_motion_want(&device->motion_want, action))
       return false;
    if (!device->motion_want)
       device->motion_seen = false;
@@ -286,7 +371,11 @@ static bool hidpad_ps4_sensor(void *data, unsigned id, float *value)
          ? !(device->motion_want & PAD_MOTION_ACCEL)
          : !(device->motion_want & PAD_MOTION_GYRO))
       return false;
-   return sony_pad_motion_value(&device->motion, id, value);
+   if (!sony_pad_motion_value(&device->motion, id, value))
+      return false;
+   *value *= id <= RETRO_SENSOR_ACCELEROMETER_Z
+      ? device->accel_mul : device->gyro_mul;
+   return true;
 }
 
 static const input_pad_view_t *hidpad_ps4_view(void *data)
@@ -296,6 +385,71 @@ static const input_pad_view_t *hidpad_ps4_view(void *data)
 
 pad_connection_interface_t pad_connection_ps4 = {
    hidpad_ps4_init,
+   hidpad_ps4_deinit,
+   hidpad_ps4_packet_handler,
+   hidpad_ps4_set_rumble,
+   hidpad_ps4_get_buttons,
+   hidpad_ps4_get_axis,
+   NULL, /* get_name */
+   hidpad_ps4_button,
+   false, /* multi_pad */
+   0,     /* max_pad */
+   NULL,  /* pad_init */
+   NULL,  /* pad_deinit */
+   NULL,  /* status */
+   NULL,  /* joypad */
+   hidpad_ps4_set_player,
+   hidpad_ps4_view,
+   NULL,  /* idle */
+   hidpad_ps4_set_sensor,
+   hidpad_ps4_sensor
+};
+
+/* the pads that pass for one */
+pad_connection_interface_t pad_connection_ps4_third_party = {
+   hidpad_ps4_third_init,
+   hidpad_ps4_deinit,
+   hidpad_ps4_packet_handler,
+   hidpad_ps4_set_rumble,
+   hidpad_ps4_get_buttons,
+   hidpad_ps4_get_axis,
+   NULL, /* get_name */
+   hidpad_ps4_button,
+   false, /* multi_pad */
+   0,     /* max_pad */
+   NULL,  /* pad_init */
+   NULL,  /* pad_deinit */
+   NULL,  /* status */
+   NULL,  /* joypad */
+   hidpad_ps4_set_player,
+   hidpad_ps4_view,
+   NULL,  /* idle */
+   hidpad_ps4_set_sensor,
+   hidpad_ps4_sensor
+};
+pad_connection_interface_t pad_connection_ps4_razer = {
+   hidpad_ps4_razer_init,
+   hidpad_ps4_deinit,
+   hidpad_ps4_packet_handler,
+   hidpad_ps4_set_rumble,
+   hidpad_ps4_get_buttons,
+   hidpad_ps4_get_axis,
+   NULL, /* get_name */
+   hidpad_ps4_button,
+   false, /* multi_pad */
+   0,     /* max_pad */
+   NULL,  /* pad_init */
+   NULL,  /* pad_deinit */
+   NULL,  /* status */
+   NULL,  /* joypad */
+   hidpad_ps4_set_player,
+   hidpad_ps4_view,
+   NULL,  /* idle */
+   hidpad_ps4_set_sensor,
+   hidpad_ps4_sensor
+};
+pad_connection_interface_t pad_connection_ps4_no_output = {
+   hidpad_ps4_no_output_init,
    hidpad_ps4_deinit,
    hidpad_ps4_packet_handler,
    hidpad_ps4_set_rumble,

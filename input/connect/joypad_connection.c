@@ -112,6 +112,283 @@ static joypad_connection_entry_t pad_map[] = {
       PID_SONY_DS5_EDGE,
       &pad_connection_ps5_edge
    },
+   /* Sony's grip add-on, and its USB wireless adaptor */
+   { "STRIKEPAD PS4 Grip Add-on",
+      VID_SONY,
+      SWAP_IF_BIG(0x05c5),
+      &pad_connection_ps4
+   },
+   { "DUALSHOCK 4 USB Wireless Adaptor",
+      VID_SONY,
+      SWAP_IF_BIG(0x0ba0),
+      &pad_connection_ps4
+   },
+   /* pads that pass for a DualShock 4, as SDL lists them */
+   { "Venom Arcade Stick",
+      SWAP_IF_BIG(0x0079),
+      SWAP_IF_BIG(0x181b),
+      &pad_connection_ps4_third_party
+   },
+   { "Thrustmaster eSwap Pro",
+      SWAP_IF_BIG(0x044f),
+      SWAP_IF_BIG(0xd00e),
+      &pad_connection_ps4_third_party
+   },
+   { "Mad Catz FightPad Pro PS4",
+      SWAP_IF_BIG(0x0738),
+      SWAP_IF_BIG(0x8250),
+      &pad_connection_ps4_third_party
+   },
+   { "Mad Catz FightStick TE S+ PS4",
+      SWAP_IF_BIG(0x0738),
+      SWAP_IF_BIG(0x8384),
+      &pad_connection_ps4_third_party
+   },
+   { "Mad Catz FightStick TE 2 PS4",
+      SWAP_IF_BIG(0x0738),
+      SWAP_IF_BIG(0x8480),
+      &pad_connection_ps4_third_party
+   },
+   { "Mad Catz FightStick TE 2+ PS4",
+      SWAP_IF_BIG(0x0738),
+      SWAP_IF_BIG(0x8481),
+      &pad_connection_ps4_third_party
+   },
+   { "Armor 3 Pad PS4",
+      SWAP_IF_BIG(0x0c12),
+      SWAP_IF_BIG(0x0e10),
+      &pad_connection_ps4_third_party
+   },
+   { "ZEROPLUS P4 Wired Gamepad",
+      SWAP_IF_BIG(0x0c12),
+      SWAP_IF_BIG(0x0e13),
+      &pad_connection_ps4_third_party
+   },
+   { "Game:Pad 4",
+      SWAP_IF_BIG(0x0c12),
+      SWAP_IF_BIG(0x0e15),
+      &pad_connection_ps4_third_party
+   },
+   { "Brook Mars Controller",
+      SWAP_IF_BIG(0x0c12),
+      SWAP_IF_BIG(0x0e20),
+      &pad_connection_ps4_third_party
+   },
+   { "Hitbox Arcade Stick",
+      SWAP_IF_BIG(0x0c12),
+      SWAP_IF_BIG(0x0ef6),
+      &pad_connection_ps4_third_party
+   },
+   { "EMIO PS4 Elite Controller",
+      SWAP_IF_BIG(0x0c12),
+      SWAP_IF_BIG(0x1cf6),
+      &pad_connection_ps4_third_party
+   },
+   { "P4 Wired Gamepad",
+      SWAP_IF_BIG(0x0c12),
+      SWAP_IF_BIG(0x1e10),
+      &pad_connection_ps4_third_party
+   },
+   { "ZEROPLUS P4 Wired Gamepad",
+      SWAP_IF_BIG(0x0c12),
+      SWAP_IF_BIG(0x2e18),
+      &pad_connection_ps4_third_party
+   },
+   { "Victrix Pro FS",
+      SWAP_IF_BIG(0x0e6f),
+      SWAP_IF_BIG(0x0203),
+      &pad_connection_ps4_no_output
+   },
+   { "Victrix Pro FS V2",
+      SWAP_IF_BIG(0x0e6f),
+      SWAP_IF_BIG(0x0207),
+      &pad_connection_ps4_no_output
+   },
+   { "Victrix Pro FS PS4/PS5",
+      SWAP_IF_BIG(0x0e6f),
+      SWAP_IF_BIG(0x020a),
+      &pad_connection_ps4_third_party
+   },
+   { "HORIPAD 4 FPS",
+      SWAP_IF_BIG(0x0f0d),
+      SWAP_IF_BIG(0x0055),
+      &pad_connection_ps4_third_party
+   },
+   { "HORI Fighting Commander 4",
+      SWAP_IF_BIG(0x0f0d),
+      SWAP_IF_BIG(0x005e),
+      &pad_connection_ps4_third_party
+   },
+   { "HORIPAD 4 FPS Plus",
+      SWAP_IF_BIG(0x0f0d),
+      SWAP_IF_BIG(0x0066),
+      &pad_connection_ps4_third_party
+   },
+   { "HORI Fighting Commander",
+      SWAP_IF_BIG(0x0f0d),
+      SWAP_IF_BIG(0x0084),
+      &pad_connection_ps4_third_party
+   },
+   { "HORI Fighting Stick mini 4",
+      SWAP_IF_BIG(0x0f0d),
+      SWAP_IF_BIG(0x0087),
+      &pad_connection_ps4_third_party
+   },
+   { "HORI Real Arcade Pro 4",
+      SWAP_IF_BIG(0x0f0d),
+      SWAP_IF_BIG(0x008a),
+      &pad_connection_ps4_third_party
+   },
+   { "HORI TAC PRO",
+      SWAP_IF_BIG(0x0f0d),
+      SWAP_IF_BIG(0x009c),
+      &pad_connection_ps4_third_party
+   },
+   { "HORI TAC4",
+      SWAP_IF_BIG(0x0f0d),
+      SWAP_IF_BIG(0x00a0),
+      &pad_connection_ps4_third_party
+   },
+   { "HORI Fighting Stick alpha",
+      SWAP_IF_BIG(0x0f0d),
+      SWAP_IF_BIG(0x011c),
+      &pad_connection_ps4_third_party
+   },
+   { "HORI Wireless Controller Light",
+      SWAP_IF_BIG(0x0f0d),
+      SWAP_IF_BIG(0x0123),
+      &pad_connection_ps4_third_party
+   },
+   { "HORI Fighting Commander OCTA",
+      SWAP_IF_BIG(0x0f0d),
+      SWAP_IF_BIG(0x0162),
+      &pad_connection_ps4_third_party
+   },
+   { "PS4 Fun Controller",
+      SWAP_IF_BIG(0x11c0),
+      SWAP_IF_BIG(0x4001),
+      &pad_connection_ps4_third_party
+   },
+   { "Nacon Revolution Pro Controller",
+      SWAP_IF_BIG(0x146b),
+      SWAP_IF_BIG(0x0d01),
+      &pad_connection_ps4_third_party
+   },
+   { "Nacon Revolution Pro Controller 2",
+      SWAP_IF_BIG(0x146b),
+      SWAP_IF_BIG(0x0d02),
+      &pad_connection_ps4_third_party
+   },
+   { "Nacon Asymmetric Wireless Dongle",
+      SWAP_IF_BIG(0x146b),
+      SWAP_IF_BIG(0x0d06),
+      &pad_connection_ps4_third_party
+   },
+   { "Nacon Revolution Unlimited Dongle",
+      SWAP_IF_BIG(0x146b),
+      SWAP_IF_BIG(0x0d08),
+      &pad_connection_ps4_third_party
+   },
+   { "Nacon Daija Fight Stick",
+      SWAP_IF_BIG(0x146b),
+      SWAP_IF_BIG(0x0d09),
+      &pad_connection_ps4_third_party
+   },
+   { "Nacon Revolution Infinite",
+      SWAP_IF_BIG(0x146b),
+      SWAP_IF_BIG(0x0d10),
+      &pad_connection_ps4_third_party
+   },
+   { "Nacon Revolution Pro Controller 3",
+      SWAP_IF_BIG(0x146b),
+      SWAP_IF_BIG(0x0d13),
+      &pad_connection_ps4_third_party
+   },
+   { "Nacon Asymmetric Controller",
+      SWAP_IF_BIG(0x146b),
+      SWAP_IF_BIG(0x1103),
+      &pad_connection_ps4_third_party
+   },
+   { "Razer Panthera",
+      SWAP_IF_BIG(0x1532),
+      SWAP_IF_BIG(0x0401),
+      &pad_connection_ps4_razer
+   },
+   { "Razer Raiju",
+      SWAP_IF_BIG(0x1532),
+      SWAP_IF_BIG(0x1000),
+      &pad_connection_ps4_razer
+   },
+   { "Razer Raiju 2 Ultimate",
+      SWAP_IF_BIG(0x1532),
+      SWAP_IF_BIG(0x1004),
+      &pad_connection_ps4_razer
+   },
+   { "Razer Raiju 2 Tournament Edition",
+      SWAP_IF_BIG(0x1532),
+      SWAP_IF_BIG(0x1007),
+      &pad_connection_ps4_razer
+   },
+   { "Razer Panthera Evo",
+      SWAP_IF_BIG(0x1532),
+      SWAP_IF_BIG(0x1008),
+      &pad_connection_ps4_razer
+   },
+   { "Razer Raiju 2 Ultimate",
+      SWAP_IF_BIG(0x1532),
+      SWAP_IF_BIG(0x1009),
+      &pad_connection_ps4_razer
+   },
+   { "Razer Raiju 2 Tournament Edition",
+      SWAP_IF_BIG(0x1532),
+      SWAP_IF_BIG(0x100a),
+      &pad_connection_ps4_razer
+   },
+   { "Razer Raion",
+      SWAP_IF_BIG(0x1532),
+      SWAP_IF_BIG(0x1100),
+      &pad_connection_ps4_razer
+   },
+   { "PowerA Fusion Fight Pad",
+      SWAP_IF_BIG(0x20d6),
+      SWAP_IF_BIG(0x792a),
+      &pad_connection_ps4_third_party
+   },
+   { "Qanba Drone",
+      SWAP_IF_BIG(0x2c22),
+      SWAP_IF_BIG(0x2000),
+      &pad_connection_ps4_third_party
+   },
+   { "Qanba Obsidian",
+      SWAP_IF_BIG(0x2c22),
+      SWAP_IF_BIG(0x2300),
+      &pad_connection_ps4_third_party
+   },
+   { "Qanba Dragon",
+      SWAP_IF_BIG(0x2c22),
+      SWAP_IF_BIG(0x2500),
+      &pad_connection_ps4_third_party
+   },
+   { "Nacon Revolution 5 Pro",
+      SWAP_IF_BIG(0x3285),
+      SWAP_IF_BIG(0x0d16),
+      &pad_connection_ps4_third_party
+   },
+   { "Nacon Revolution 5 Pro",
+      SWAP_IF_BIG(0x3285),
+      SWAP_IF_BIG(0x0d17),
+      &pad_connection_ps4_third_party
+   },
+   { "Armor 3",
+      SWAP_IF_BIG(0x7545),
+      SWAP_IF_BIG(0x0104),
+      &pad_connection_ps4_third_party
+   },
+   { "Astro C40",
+      SWAP_IF_BIG(0x9886),
+      SWAP_IF_BIG(0x0025),
+      &pad_connection_ps4_third_party
+   },
    /* pads that pass for a DualSense, as SDL lists them */
    { "Victrix Pro FS",
       SWAP_IF_BIG(0x0e6f),
