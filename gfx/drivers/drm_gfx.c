@@ -31,6 +31,7 @@
 #include <retro_atomic.h>
 #include <rthreads/rthreads.h>
 #include <string/stdstring.h>
+#include <encodings/utf.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -46,6 +47,7 @@
 #include "../common/drm_common.h"
 #include "../video_views.h"
 #include "../video_views_cpu.h"
+#include "../font_driver.h"
 #ifdef HAVE_OVERLAY
 #include "../../input/input_overlay.h"
 #endif
@@ -284,6 +286,15 @@ struct drm_video
    unsigned core_dims;
    int core_pitch;
    struct drm_frame_mem fmem[DRM_FRAME_MEM];
+   /* On-screen messages, drawn into the frame at a size that comes out
+    * at the font size set once the plane has scaled the frame */
+   const font_renderer_driver_t *font_driver;
+   void *font;
+   unsigned font_px;
+   bool font_enable;
+   /* This frame's message, while it is drawn */
+   const char *msg;
+   const video_frame_info_t *msg_info;
    /* The row pitch multiple the kernel gives dumb buffers, 0 unasked */
    unsigned fmem_align;
    /* Both main and menu surfaces are going to have the same aspect,
@@ -865,6 +876,133 @@ static void drm_frame_mem_free(void *data, uintptr_t id)
       drm_fmem_destroy(m);
 }
 
+/* @msg drawn into @buf, @w x @h pixels the plane shows turned @rot
+ * quarter turns counter-clockwise, laid out as it is seen */
+static void drm_draw_msg(struct drm_video *v, struct modeset_buf *buf,
+      unsigned w, unsigned h, unsigned bpp, unsigned rot, const char *msg,
+      const video_frame_info_t *info)
+{
+   int x, y;
+   unsigned px, fr, fg, fb;
+   const struct font_atlas *atlas;
+   const struct font_glyph *(*get_glyph)(void*, uint32_t);
+   const struct font_glyph *glyph_q;
+   struct font_line_metrics *line_metrics = NULL;
+   void *font_data;
+   size_t msg_len;
+   int dw = (int)((rot & 1) ? h : w);
+   int dh = (int)((rot & 1) ? w : h);
+   int line_x, line_y, msg_base_x, msg_base_y, line_h = 0;
+   unsigned screen_h = VIDEO_SCALE_H(v->kms_dims);
+   settings_t *settings = config_get_ptr();
+
+   if (!v->font_enable || !msg || !*msg || !info || !dw || !dh)
+      return;
+   /* The font's size on the screen, in the frame's pixels */
+   px = (unsigned)(info->font_size * (float)dh
+         / (float)(screen_h ? screen_h : (unsigned)dh) + 0.5f);
+   if (px < 8)
+      px = 8;
+   if (!v->font || v->font_px != px)
+   {
+      if (v->font)
+         v->font_driver->free(v->font);
+      v->font = NULL;
+      if (!font_renderer_create_default(&v->font_driver, &v->font,
+               (settings && *settings->paths.path_font)
+               ? settings->paths.path_font : NULL,
+               px, FONT_ATLAS_FORMAT_A8))
+      {
+         v->font_enable = false;
+         return;
+      }
+      v->font_px = px;
+      /* Glyphs are read from the atlas in memory: it may grow */
+      v->font_driver->get_atlas(v->font)->max_dims
+         = VIDEO_SCALE_PACK(2048, 2048);
+   }
+
+   font_data  = v->font;
+   get_glyph  = v->font_driver->get_glyph;
+   glyph_q    = get_glyph(font_data, '?');
+   msg_len    = strlen(msg);
+   atlas      = v->font_driver->get_atlas(font_data);
+   fr         = (unsigned)(MAX(0.0f, MIN(info->font_msg_color_r, 1.0f)) * 255.0f);
+   fg         = (unsigned)(MAX(0.0f, MIN(info->font_msg_color_g, 1.0f)) * 255.0f);
+   fb         = (unsigned)(MAX(0.0f, MIN(info->font_msg_color_b, 1.0f)) * 255.0f);
+   msg_base_x = (int)(info->font_msg_pos_x * dw);
+   msg_base_y = (int)((1.0f - info->font_msg_pos_y) * dh);
+   line_x     = msg_base_x;
+   line_y     = msg_base_y;
+   if (v->font_driver->get_line_metrics)
+      v->font_driver->get_line_metrics(font_data, &line_metrics);
+   if (line_metrics)
+      line_h = (int)line_metrics->height;
+
+#define FONT_LAYOUT_ALIGNED 0
+#define FONT_LAYOUT_LINE(line, line_width, count, bytes) \
+   do \
+   { \
+      (void)(line_width); (void)(count); (void)(bytes); \
+      line_x = msg_base_x; \
+      line_y = msg_base_y + (line) * line_h; \
+   } while (0)
+#define FONT_LAYOUT_GLYPH(glyph, pen_x, pen_y) \
+   do \
+   { \
+      int gw = (int)VIDEO_SCALE_W((glyph)->dims); \
+      int gh = (int)VIDEO_SCALE_H((glyph)->dims); \
+      int bx = line_x + (pen_x) + (glyph)->draw_offset_x; \
+      int by = line_y + (pen_y) + (glyph)->draw_offset_y; \
+      const uint8_t *gsrc = atlas->buffer \
+         + VIDEO_SCALE_W((glyph)->atlas_pos) \
+         + (size_t)VIDEO_SCALE_H((glyph)->atlas_pos) * atlas->width; \
+      for (y = 0; y < gh; y++) \
+      { \
+         int oy = by + y; \
+         if (oy < 0 || oy >= dh) \
+            continue; \
+         for (x = 0; x < gw; x++) \
+         { \
+            unsigned a = gsrc[(size_t)y * atlas->width + x]; \
+            int ox = bx + x, sx, sy; \
+            uint8_t *d; \
+            if (!a || ox < 0 || ox >= dw) \
+               continue; \
+            switch (rot & 3) \
+            { \
+               case 1:  sx = (int)w - 1 - oy; sy = ox;              break; \
+               case 2:  sx = (int)w - 1 - ox; sy = (int)h - 1 - oy; break; \
+               case 3:  sx = oy;              sy = (int)h - 1 - ox; break; \
+               default: sx = ox;              sy = oy;              break; \
+            } \
+            d = buf->map + (size_t)sy * buf->stride + (size_t)sx * bpp; \
+            if (bpp == 4) \
+            { \
+               uint32_t q = *(uint32_t*)d; \
+               *(uint32_t*)d = \
+                    ((((q >> 16) & 0xff) * (255 - a) + fr * a) / 255) << 16 \
+                  | ((((q >> 8) & 0xff) * (255 - a) + fg * a) / 255) << 8 \
+                  |  (((q & 0xff) * (255 - a) + fb * a) / 255); \
+            } \
+            else \
+            { \
+               uint32_t q = *(uint16_t*)d; \
+               uint32_t r = ((q >> 11) & 0x1f) * 255 / 31; \
+               uint32_t g = ((q >> 5) & 0x3f) * 255 / 63; \
+               uint32_t b = (q & 0x1f) * 255 / 31; \
+               r = (r * (255 - a) + fr * a) / 255; \
+               g = (g * (255 - a) + fg * a) / 255; \
+               b = (b * (255 - a) + fb * a) / 255; \
+               *(uint16_t*)d = (uint16_t)(((r >> 3) << 11) \
+                     | ((g >> 2) << 5) | (b >> 3)); \
+            } \
+         } \
+      } \
+   } while (0)
+#include "../font_layout.h"
+}
+
 static void drm_surface_update(void *data, const void *frame,
       unsigned pitch, struct drm_surface *surface)
 {
@@ -901,6 +1039,13 @@ static void drm_surface_update(void *data, const void *frame,
 #ifdef HAVE_OVERLAY
    drm_overlay_blend(surface->pages[0].drmvars, surface);
 #endif
+   {
+      struct drm_video *v = surface->pages[0].drmvars;
+      if (v && v->msg)
+         drm_draw_msg(v, buf, VIDEO_SCALE_W(surface->src_dims),
+               VIDEO_SCALE_H(surface->src_dims), surface->bpp,
+               surface->hw_rot, v->msg, v->msg_info);
+   }
 }
 
 /* The ID of the plane's property called @name, 0 if it has none. */
@@ -2091,6 +2236,7 @@ static void *drm_init(const video_info_t *video)
     * and we don't want the main surface to be setup in set_aspect()
     * before we get to gfx_frame(). */
    _drmvars->current_aspect = video_driver_get_aspect_ratio();
+   _drmvars->font_enable    = video->font_enable;
 
    /* Initialize the rest of the mutexes and conditions. */
    _drmvars->vsync_condition  = scond_new();
@@ -2200,6 +2346,9 @@ static bool drm_views_frame(struct drm_video *v, const void *frame,
          info->video_smooth ? SCALER_TYPE_BILINEAR : SCALER_TYPE_POINT,
          scale, cdims, (uint32_t*)page->buf.map, page->buf.stride / 4,
          layout->offscreen ? v->views_canvas : NULL);
+   if (v->msg)
+      drm_draw_msg(v, &page->buf, VIDEO_SCALE_W(cdims), VIDEO_SCALE_H(cdims),
+            4, 0, v->msg, v->msg_info);
    /* Under the menu the page is not shown: the next is written over it,
     * and it goes up when the menu closes */
    if (!v->menu_active)
@@ -2304,18 +2453,24 @@ static bool drm_frame(void *data, const void *frame,
    if (!frame || !_drmvars->main_surface)
       return true;
 
+   _drmvars->msg      = (msg && *msg && !_drmvars->menu_active) ? msg : NULL;
+   _drmvars->msg_info = video_info;
+
 #ifdef HAVE_OVERLAY
    drm_overlay_prepare(_drmvars, _drmvars->main_surface);
 #endif
 
    if (drm_views_frame(_drmvars, frame, dims, pitch, video_info))
+   {
+      _drmvars->msg = NULL;
       return true;
+   }
 
    /* A frame in the threaded wrapper's frame memory goes up where it
     * lies, unless the copy turns it or blends the overlay into it, or it
     * waits under the menu or for the plane to be placed */
    if (     !_drmvars->main_surface->rot && !_drmvars->menu_active
-         && !_drmvars->plane_dirty
+         && !_drmvars->plane_dirty && !_drmvars->msg
 #ifdef HAVE_OVERLAY
          && !(_drmvars->ov.enabled && _drmvars->ov.count
             && _drmvars->ov.mode == DRM_OVERLAY_BLEND)
@@ -2346,6 +2501,7 @@ static bool drm_frame(void *data, const void *frame,
       else
          drm_page_flip(_drmvars->main_surface);
    }
+   _drmvars->msg = NULL;
    drm_fmem_sweep(_drmvars);
    return true;
 }
@@ -2793,6 +2949,8 @@ static void drm_gfx_free(void *data)
    drm_surface_free(_drmvars, &_drmvars->views_surface);
    video_views_cpu_free(&_drmvars->views_cpu);
    free(_drmvars->views_canvas);
+   if (_drmvars->font)
+      _drmvars->font_driver->free(_drmvars->font);
 
    /* Destroy mutexes and conditions. */
    slock_free(_drmvars->pending_mutex);

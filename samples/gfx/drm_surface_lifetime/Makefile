@@ -8,7 +8,7 @@
 # by the copy, and read back as it is shown; without vsync, flips that
 # do not wait and never write a page in use; the threaded wrapper's
 # frames scanned out where they lie; CRT modelines and HDMI timings;
-# content under the menu kept under it.
+# content under the menu kept under it; on-screen messages.
 
 TARGET    := drm_surface_lifetime_test
 REPO_ROOT := ../../..

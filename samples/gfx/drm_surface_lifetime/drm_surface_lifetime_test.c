@@ -43,6 +43,51 @@ void video_driver_display_type_set(enum rarch_display_type t) { display_type = t
 static settings_t settings;
 settings_t *config_get_ptr(void) { return &settings; }
 
+/* A font of one glyph, 'A': a solid 3x5 block, drawn from its top left
+ * at the pen (no offset), lines 10 high */
+static uint8_t           font_cov[16 * 16];
+static struct font_atlas font_atl;
+static struct font_glyph font_a;
+static unsigned          font_made, font_freed, font_asked;
+static void *fake_font_init(uint8_t *d, size_t l, unsigned f, float s,
+      enum font_atlas_format fmt)
+{ (void)d; (void)l; (void)f; (void)s; (void)fmt; return &font_atl; }
+static struct font_atlas *fake_font_atlas(void *d) { (void)d; return &font_atl; }
+static const struct font_glyph *fake_font_glyph(void *d, uint32_t c)
+{ (void)d; return c == 'A' ? &font_a : NULL; }
+static void fake_font_free(void *d) { (void)d; font_freed++; }
+static void fake_font_metrics(void *d, struct font_line_metrics **m)
+{
+   static struct font_line_metrics lm = { 10.0f, 8.0f, 2.0f };
+   (void)d;
+   *m = &lm;
+}
+static font_renderer_driver_t fake_font = { fake_font_init,
+   fake_font_atlas, fake_font_glyph, fake_font_free, NULL, "fake",
+   fake_font_metrics, false };
+int font_renderer_create_default(const font_renderer_driver_t **drv,
+      void **handle, const char *path, unsigned size,
+      enum font_atlas_format fmt)
+{
+   unsigned y, x;
+   (void)path; (void)fmt;
+   font_made++;
+   font_asked = size;
+   memset(font_cov, 0, sizeof(font_cov));
+   for (y = 0; y < 5; y++)
+      for (x = 0; x < 3; x++)
+         font_cov[y * 16 + x] = 255;
+   font_atl.buffer  = font_cov;
+   font_atl.width   = 16;
+   font_atl.height  = 16;
+   font_a.dims      = VIDEO_SCALE_PACK(3, 5);
+   font_a.atlas_pos = 0;
+   font_a.advance_x = 4;
+   *drv             = &fake_font;
+   *handle          = &font_atl;
+   return 1;
+}
+
 /* /dev/dri: a card with no display, a render node, a card with one */
 static const char *dri_names[3] = { "/dev/dri/card0", "/dev/dri/renderD128",
    "/dev/dri/card1" };
@@ -1639,6 +1684,101 @@ int main(void)
    }
    if (failures == before)
       printf("   ok   content under the menu stays under it\n");
+   before = failures;
+
+   /* On-screen messages: drawn into the frame at the font size the
+    * screen shows, where it is seen, upright when the plane turns the
+    * frame; a frame in the wrapper's memory is copied to draw on */
+   info.font_enable = true;
+   pp[0].has_rot    = 1;
+   pp[0].rot_bits   = 0x3f;
+   v = (struct drm_video*)drm_init(&info);
+   if (v)
+   {
+      static video_frame_info_t vi;
+      const struct modeset_buf *b;
+      uintptr_t id;
+      uint8_t *mem;
+      unsigned align = 0, x, y, lit = 0;
+      vi.font_size        = 72.0f;
+      vi.font_msg_pos_x   = 0.05f;
+      vi.font_msg_pos_y   = 0.95f;
+      vi.font_msg_color_r = 1.0f;
+      memset(frame_px, 0, sizeof(frame_px));
+      drm_frame(v, frame_px, VIDEO_SCALE_PACK(320, 240), 0, 320 * 4, "A",
+            &vi);
+      b = &v->main_surface->current_page->buf;
+      /* 72 on a 1080-line screen is 16 of the frame's 240 lines; the
+       * pen at 5% across and 5% down: (16, 12) */
+      for (y = 0; y < 240; y++)
+         for (x = 0; x < 320; x++)
+            lit += ((const uint32_t*)(b->map + y * b->stride))[x] != 0;
+      CHECK(font_asked == 16 && lit == 15
+            && ((const uint32_t*)(b->map + 12 * b->stride))[16] == 0xff0000u
+            && ((const uint32_t*)(b->map + 16 * b->stride))[18] == 0xff0000u,
+            "the message where it is seen, at the size seen (font %u, %u lit)",
+            font_asked, lit);
+      memset(frame_px, 0, sizeof(frame_px));
+      drm_frame(v, frame_px, VIDEO_SCALE_PACK(320, 240), 0, 320 * 4, NULL,
+            &vi);
+      b = &v->main_surface->current_page->buf;
+      CHECK(!((const uint32_t*)(b->map + 12 * b->stride))[16],
+            "gone with the message");
+      /* The plane turns the frame a quarter: drawn so it reads upright,
+       * the frame 240 wide as seen */
+      drm_set_rotation(v, 1);
+      drm_frame(v, frame_px, VIDEO_SCALE_PACK(320, 240), 0, 320 * 4, "A",
+            &vi);
+      b = &v->main_surface->current_page->buf;
+      CHECK(v->main_surface->hw_rot == 1
+            /* seen at (12, 16): page x = 319 - 16, y = 12 */
+            && ((const uint32_t*)(b->map + 12 * b->stride))[319 - 16]
+               == 0xff0000u
+            && ((const uint32_t*)(b->map + 14 * b->stride))[319 - 20]
+               == 0xff0000u,
+            "upright on a frame the plane turns");
+      drm_set_rotation(v, 0);
+      drm_frame(v, frame_px, VIDEO_SCALE_PACK(320, 240), 0, 320 * 4, NULL,
+            &vi);
+      /* A frame in the wrapper's memory is not drawn on there */
+      mem = (uint8_t*)drm_frame_mem_alloc(v, 320 * 4 * 240, &id, NULL,
+            &align);
+      if (mem)
+      {
+         memset(mem, 0, 320 * 4 * 240);
+         drm_frame(v, mem, VIDEO_SCALE_PACK(320, 240), 0, 320 * 4, "A", &vi);
+         b = &v->main_surface->current_page->buf;
+         CHECK(b->map != mem && !((uint32_t*)(mem + 12 * 1280))[16]
+               && ((const uint32_t*)(b->map + 12 * b->stride))[16]
+                  == 0xff0000u,
+               "a frame in the wrapper's memory is copied to be drawn on");
+         drm_frame(v, mem, VIDEO_SCALE_PACK(320, 240), 0, 320 * 4, NULL, &vi);
+         CHECK(v->main_surface->current_page->buf.map == mem,
+               "and scanned out where it lies again without one");
+      }
+      drm_gfx_free(v);
+      /* 16, 21 for the 320 lines seen turned, 16 again; the frames
+       * between at one size made none */
+      CHECK(font_made == 3 && font_freed == 3,
+            "the font made when the size changes, and freed (%u, %u)", font_made,
+            font_freed);
+   }
+   pp[0].has_rot    = 0;
+   info.font_enable = false;
+   v = (struct drm_video*)drm_init(&info);
+   if (v)
+   {
+      static video_frame_info_t vi;
+      unsigned made = font_made;
+      vi.font_size = 32.0f;
+      memset(frame_px, 0, sizeof(frame_px));
+      drm_frame(v, frame_px, VIDEO_SCALE_PACK(320, 240), 0, 320 * 4, "A",
+            &vi);
+      CHECK(font_made == made, "with fonts off, no message drawn");
+      drm_gfx_free(v);
+   }
+   if (failures == before)
+      printf("   ok   on-screen messages drawn where they are seen\n");
 
 
    if (failures)
