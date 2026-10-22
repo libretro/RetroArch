@@ -452,6 +452,85 @@ static int write_cue(const char *path, const char *track)
    return 1;
 }
 
+#define CTR_IMAGE_SIZE 0x8000
+/* Room for an NCCH at 1 << 25, where flags[6] = 16 would put one. */
+#define CTR_BIG_SIZE   0x2000200
+/* Ends 0x180 bytes into the NCCH header at 0x4000. */
+#define CTR_CUT_SIZE   0x4180
+
+static void put_le32(uint8_t *p, uint32_t v)
+{
+   p[0] = (uint8_t)v;         p[1] = (uint8_t)(v >> 8);
+   p[2] = (uint8_t)(v >> 16); p[3] = (uint8_t)(v >> 24);
+}
+
+/* A 3DS cart image (NCSD) whose partition 0 starts @part0 media units
+ * in, or a bare NCCH when @part0 is 0, with @code as its product code.
+ * A zero @ncch_magic leaves the partition without its magic. */
+static int write_ctr(const char *path, uint32_t part0, int ncch_magic,
+      const char *code, uint32_t crc)
+{
+   uint8_t *d = (uint8_t*)calloc(1, CTR_IMAGE_SIZE);
+   uint8_t *ncch;
+   int      ok;
+
+   if (!d)
+      return 0;
+   ncch = d + part0 * 0x200;
+   if (part0)
+   {
+      memcpy(d + 0x100, "NCSD", 4);
+      put_le32(d + 0x104, CTR_IMAGE_SIZE / 0x200);
+      put_le32(d + 0x120, part0);
+      put_le32(d + 0x124, CTR_IMAGE_SIZE / 0x200 - part0);
+   }
+   if (ncch_magic)
+      memcpy(ncch + 0x100, "NCCH", 4);
+   memcpy(ncch + 0x150, code, strlen(code));
+   ok = write_forced(path, d, CTR_IMAGE_SIZE, crc);
+   free(d);
+   return ok;
+}
+
+/* A cart image @size bytes long whose table puts partition 0 at @part0
+ * units of 0x200 << @shift, with an NCCH header at @ncch_at (where it
+ * fits) holding @len bytes of @code. */
+static int write_ctr_ncsd(const char *path, uint32_t size, uint8_t shift,
+      uint32_t part0, uint32_t ncch_at, const char *code, size_t len,
+      uint32_t crc)
+{
+   uint8_t *d = (uint8_t*)calloc(1, size);
+   int      ok;
+
+   if (!d)
+      return 0;
+   memcpy(d + 0x100, "NCSD", 4);
+   put_le32(d + 0x104, size / 0x200);
+   d[0x18E] = shift;
+   put_le32(d + 0x120, part0);
+   if (ncch_at + 0x104 <= size)
+      memcpy(d + ncch_at + 0x100, "NCCH", 4);
+   if (ncch_at + 0x150 + len <= size)
+      memcpy(d + ncch_at + 0x150, code, len);
+   ok = write_forced(path, d, size, crc);
+   free(d);
+   return ok;
+}
+
+/* A CIA: its header size word, and neither NCSD nor NCCH magic. */
+static int write_cia(const char *path, uint32_t crc)
+{
+   uint8_t *d = (uint8_t*)calloc(1, CTR_IMAGE_SIZE);
+   int      ok;
+
+   if (!d)
+      return 0;
+   put_le32(d, 0x2020);
+   ok = write_forced(path, d, CTR_IMAGE_SIZE, crc);
+   free(d);
+   return ok;
+}
+
 /* A one-entry zip using the stored method, so no compressor is needed
  * and the bytes are entirely predictable.  Written by hand because
  * the point is to exercise the scanner's archive handling, not to
@@ -745,6 +824,20 @@ int main(int argc, char **argv)
    }
    sprintf(p, "%s/ps1_libretro.so", core_dir);
    { FILE *f = fopen(p, "wb"); if (f) { fputs("\177ELF", f); fclose(f); } }
+   sprintf(p, "%s/ctr_libretro.info", info_dir);
+   {
+      FILE *f = fopen(p, "w");
+      if (!f)
+      { check(0, "fixture", "could not write core info"); return 1; }
+      fprintf(f,
+            "display_name = \"3DS Test\"\n"
+            "corename = \"CtrTest\"\n"
+            "supported_extensions = \"3ds|cci|cxi\"\n"
+            "database = \"Test 3DS|Test 3DS Strict\"\n");
+      fclose(f);
+   }
+   sprintf(p, "%s/ctr_libretro.so", core_dir);
+   { FILE *f = fopen(p, "wb"); if (f) { fputs("\177ELF", f); fclose(f); } }
 
 #ifdef HAVE_THREADS
    task_queue_init(true, msgq_push);
@@ -965,6 +1058,370 @@ int main(int argc, char **argv)
             && file_contains(p, "0B0071E8|crc")
             && !file_contains(p, "Decoy Lower Game"),
             "lowercase PSX.EXE BOOT falls to the crc", "0B0071E8|crc");
+   }
+
+   /* 3DS images match on the product code in their NCCH header.  A
+    * code several records share goes to the crc, and the first of them
+    * stands in when the crc matches none.  A code no record carries, a
+    * header without its magic, or a CIA, takes the crc path. */
+   {
+      static const db_rec_t ctr_recs[] = {
+         { "Unique The Game",    "CTR-P-UNIQ", 0x0BAD0001u, CTR_IMAGE_SIZE },
+         { "Shared Rev 0",       "CTR-P-SHRD", 0x5AD00000u, CTR_IMAGE_SIZE },
+         { "Shared Rev 1",       "CTR-P-SHRD", 0x5AD00001u, CTR_IMAGE_SIZE },
+         { "Fallback First",     "CTR-P-FALL", 0xFA110000u, CTR_IMAGE_SIZE },
+         { "Fallback Second",    "CTR-P-FALL", 0xFA110001u, CTR_IMAGE_SIZE },
+         { "Cia The Game",       NULL,         0xC1A00000u, CTR_IMAGE_SIZE },
+         { "Bad Magic The Game", NULL,         0xBAD0BAD0u, CTR_IMAGE_SIZE },
+         { "Bad Magic Decoy",    "CTR-P-BADM", 0xBAD00000u, CTR_IMAGE_SIZE },
+         { "Bare The Game",      "CTR-P-BARE", 0x0BAD0002u, CTR_IMAGE_SIZE },
+         /* LEGO Batman 2 (Canada) has its serial without the prefix. */
+         { "Miss The Game",      "MISS",       0x3155C0DEu, CTR_IMAGE_SIZE },
+         { "Unit Shift The Game", "CTR-P-UNIT", 0x0BAD0003u, CTR_IMAGE_SIZE },
+         { "Big Shift Owner",    NULL,         0xB16B0000u, CTR_BIG_SIZE },
+         { "Big Shift Decoy",    "CTR-P-BIGU", 0xB16B0001u, CTR_BIG_SIZE },
+         { "Cut Header Owner",   NULL,         0xC0700000u, CTR_CUT_SIZE },
+         { "Cut Header Decoy",   "CTR-P-CUTH", 0xC0700001u, CTR_CUT_SIZE },
+         { "Sixteen The Game",   "CTR-P-SIXTEEN-16", 0x0BAD0004u,
+                                                           CTR_IMAGE_SIZE },
+         { "Del Code Owner",     NULL,         0xDE100000u, CTR_IMAGE_SIZE },
+         { "Del Code Decoy",     "CTR-P-DEL\x7f", 0xDE100001u, CTR_IMAGE_SIZE }
+      };
+      char ctr_db[512], ctr_in[512];
+
+      sprintf(ctr_db, "%s/scan_db_3ds", root);
+      sprintf(ctr_in, "%s/scan_3ds",    root);
+      path_mkdir(ctr_db);
+      path_mkdir(ctr_in);
+
+      sprintf(p, "%s/Test 3DS.rdb", ctr_db);
+      if (!write_db_set(p, ctr_recs, ARRAY_SIZE(ctr_recs)))
+      { check(0, "fixture", "could not write database"); goto done; }
+      /* Partition 0 where carts have it, 0x4000. */
+      sprintf(p, "%s/10_unique.3ds", ctr_in);
+      if (!write_ctr(p, 0x20, 1, "CTR-P-UNIQ", 0x10101010u))
+      { check(0, "fixture", "could not write image"); goto done; }
+      /* Elsewhere, so the offset has to come from the table. */
+      sprintf(p, "%s/11_shared.3ds", ctr_in);
+      if (!write_ctr(p, 0x28, 1, "CTR-P-SHRD", 0x5AD00001u))
+      { check(0, "fixture", "could not write image"); goto done; }
+      sprintf(p, "%s/12_fallback.3ds", ctr_in);
+      if (!write_ctr(p, 0x20, 1, "CTR-P-FALL", 0x12121212u))
+      { check(0, "fixture", "could not write image"); goto done; }
+      sprintf(p, "%s/13_cia.cci", ctr_in);
+      if (!write_cia(p, 0xC1A00000u))
+      { check(0, "fixture", "could not write image"); goto done; }
+      sprintf(p, "%s/14_bad_magic.3ds", ctr_in);
+      if (!write_ctr(p, 0x20, 0, "CTR-P-BADM", 0xBAD0BAD0u))
+      { check(0, "fixture", "could not write image"); goto done; }
+      sprintf(p, "%s/15_bare.cxi", ctr_in);
+      if (!write_ctr(p, 0, 1, "CTR-P-BARE", 0x15151515u))
+      { check(0, "fixture", "could not write image"); goto done; }
+      sprintf(p, "%s/16_miss.3ds", ctr_in);
+      if (!write_ctr(p, 0x20, 1, "CTR-P-MISS", 0x3155C0DEu))
+      { check(0, "fixture", "could not write image"); goto done; }
+      /* Units of 0x400. */
+      sprintf(p, "%s/17_unit.3ds", ctr_in);
+      if (!write_ctr_ncsd(p, CTR_IMAGE_SIZE, 1, 0x10, 0x4000,
+               "CTR-P-UNIT", 10, 0x17171717u))
+      { check(0, "fixture", "could not write image"); goto done; }
+      sprintf(p, "%s/18_big_shift.3ds", ctr_in);
+      if (!write_ctr_ncsd(p, CTR_BIG_SIZE, 16, 1, 0x2000000,
+               "CTR-P-BIGU", 10, 0xB16B0000u))
+      { check(0, "fixture", "could not write image"); goto done; }
+      sprintf(p, "%s/19_cut.3ds", ctr_in);
+      if (!write_ctr_ncsd(p, CTR_CUT_SIZE, 0, 0x20, 0x4000,
+               "CTR-P-CUTH", 10, 0xC0700000u))
+      { check(0, "fixture", "could not write image"); goto done; }
+      /* No NUL: the next field follows. */
+      sprintf(p, "%s/1a_sixteen.3ds", ctr_in);
+      if (!write_ctr_ncsd(p, CTR_IMAGE_SIZE, 0, 0x20, 0x4000,
+               "CTR-P-SIXTEEN-16XYZ", 19, 0x1A1A1A1Au))
+      { check(0, "fixture", "could not write image"); goto done; }
+      sprintf(p, "%s/1b_del.3ds", ctr_in);
+      if (!write_ctr_ncsd(p, CTR_IMAGE_SIZE, 0, 0x20, 0x4000,
+               "CTR-P-DEL\x7f", 10, 0xDE100000u))
+      { check(0, "fixture", "could not write image"); goto done; }
+
+      strlcpy(config_get_ptr()->paths.path_content_database, ctr_db,
+            sizeof(config_get_ptr()->paths.path_content_database));
+      if (!run_scan(ctr_in))
+      {
+         check(0, "3DS scan started", "task_push_dbscan refused");
+         goto done;
+      }
+      strlcpy(config_get_ptr()->paths.path_content_database, db_dir,
+            sizeof(config_get_ptr()->paths.path_content_database));
+      check(scan_completed, "3DS scan completed",
+            scan_completed ? "callback fired" : "timed out");
+
+      sprintf(p, "%s/Test 3DS.lpl", pl_dir);
+      check(   file_contains(p, "Unique The Game")
+            && file_contains(p, "CTR-P-UNIQ|serial"),
+            "unique 3DS serial matched without the crc", "CTR-P-UNIQ|serial");
+      check(   file_contains(p, "Shared Rev 1")
+            && !file_contains(p, "Shared Rev 0")
+            && file_contains(p, "CTR-P-SHRD|serial"),
+            "shared 3DS serial resolved by the crc", "Shared Rev 1");
+      check(   file_contains(p, "Fallback First")
+            && !file_contains(p, "Fallback Second"),
+            "shared serial, no crc match: first record", "Fallback First");
+      check(   file_contains(p, "Cia The Game")
+            && file_contains(p, "C1A00000|crc"),
+            "CIA header in a .cci keeps the crc path", "C1A00000|crc");
+      check(   file_contains(p, "Bad Magic The Game")
+            && !file_contains(p, "Bad Magic Decoy"),
+            "partition without NCCH magic: crc path", "BAD0BAD0|crc");
+      check(   file_contains(p, "Bare The Game")
+            && file_contains(p, "CTR-P-BARE|serial"),
+            "bare .cxi matched on its serial", "CTR-P-BARE|serial");
+      check(   file_contains(p, "Miss The Game")
+            && file_contains(p, "3155C0DE|crc"),
+            "serial in no record falls back to the crc", "3155C0DE|crc");
+      check(   file_contains(p, "Unit Shift The Game")
+            && file_contains(p, "CTR-P-UNIT|serial"),
+            "partition offset in units of 0x200 << flags[6]",
+            "CTR-P-UNIT|serial");
+      check(   file_contains(p, "Big Shift Owner")
+            && !file_contains(p, "Big Shift Decoy"),
+            "flags[6] over 15: crc path", "B16B0000|crc");
+      check(   file_contains(p, "Cut Header Owner")
+            && !file_contains(p, "Cut Header Decoy"),
+            "NCCH header cut short by the end: crc path", "C0700000|crc");
+      check(   file_contains(p, "Sixteen The Game")
+            && file_contains(p, "CTR-P-SIXTEEN-16|serial"),
+            "16-byte code with no NUL ends at 16 bytes",
+            "CTR-P-SIXTEEN-16|serial");
+      check(   file_contains(p, "Del Code Owner")
+            && !file_contains(p, "Del Code Decoy"),
+            "code with a byte past '~': crc path", "DE100000|crc");
+   }
+
+   /* A 3DS database no installed core claims is passed over, as the crc
+    * lookup passes it over, unless Scan Without Core Match is on.  Its
+    * name must not start with "Test 3DS ": string_list_find_elem()
+    * takes a space for the end of a string, so the test core would
+    * claim it. */
+   {
+      static const db_rec_t uncl_recs[] = {
+         { "Unclaimed The Game", "CTR-P-UNCL", 0x0C1A0001u, CTR_IMAGE_SIZE }
+      };
+      char uncl_db[512], uncl_in[512];
+
+      sprintf(uncl_db, "%s/scan_db_3ds_unclaimed", root);
+      sprintf(uncl_in, "%s/scan_3ds_unclaimed",    root);
+      path_mkdir(uncl_db);
+      path_mkdir(uncl_in);
+
+      sprintf(p, "%s/Unclaimed 3DS.rdb", uncl_db);
+      if (!write_db_set(p, uncl_recs, ARRAY_SIZE(uncl_recs)))
+      { check(0, "fixture", "could not write database"); goto done; }
+      sprintf(p, "%s/40_unclaimed.3ds", uncl_in);
+      if (!write_ctr(p, 0x20, 1, "CTR-P-UNCL", 0x0C1A00FFu))
+      { check(0, "fixture", "could not write image"); goto done; }
+
+      strlcpy(config_get_ptr()->paths.path_content_database, uncl_db,
+            sizeof(config_get_ptr()->paths.path_content_database));
+      if (!run_scan(uncl_in))
+      {
+         check(0, "unclaimed 3DS scan started", "task_push_dbscan refused");
+         goto done;
+      }
+      sprintf(p, "%s/Unclaimed 3DS.lpl", pl_dir);
+      check(scan_completed && !path_is_valid(p),
+            "3DS database no core claims passed over", "no playlist");
+
+      filestream_delete(p);
+      config_get_ptr()->bools.scan_without_core_match = true;
+      if (!run_scan(uncl_in))
+      {
+         check(0, "unclaimed 3DS scan started", "task_push_dbscan refused");
+         goto done;
+      }
+      config_get_ptr()->bools.scan_without_core_match = false;
+      strlcpy(config_get_ptr()->paths.path_content_database, db_dir,
+            sizeof(config_get_ptr()->paths.path_content_database));
+      check(   scan_completed
+            && file_contains(p, "Unclaimed The Game")
+            && file_contains(p, "CTR-P-UNCL|serial"),
+            "Scan Without Core Match: unclaimed 3DS database",
+            "CTR-P-UNCL|serial");
+   }
+
+   /* scan_serial_and_crc makes the crc a requirement after a 3DS
+    * serial hit, as it is for PSP and Dreamcast.  A hit the crc turns
+    * down goes on to the crc lookup. */
+   {
+      static const db_rec_t strict_recs[] = {
+         { "Strict Hit",            "CTR-P-STHT", 0x57A1C001u, CTR_IMAGE_SIZE },
+         { "Strict Miss",           "CTR-P-STMS", 0x57A1C002u, CTR_IMAGE_SIZE },
+         { "Strict Code Elsewhere", "CTR-P-SCEL", 0x57A1C010u, CTR_IMAGE_SIZE },
+         { "Strict Crc Owner",      NULL,         0x57A1C011u, CTR_IMAGE_SIZE },
+         { "Strict Shared Rev 0",   "CTR-P-SSHR", 0x57A1C020u, CTR_IMAGE_SIZE },
+         { "Strict Shared Rev 1",   "CTR-P-SSHR", 0x57A1C021u, CTR_IMAGE_SIZE },
+         { "Strict Shared Owner",   "CTR-P-SOWN", 0x57A1C022u, CTR_IMAGE_SIZE },
+         { "Strict Nowhere Rev 0",  "CTR-P-SNOW", 0x57A1C030u, CTR_IMAGE_SIZE },
+         { "Strict Nowhere Rev 1",  "CTR-P-SNOW", 0x57A1C031u, CTR_IMAGE_SIZE }
+      };
+      char strict_db[512], strict_in[512];
+
+      sprintf(strict_db, "%s/scan_db_3ds_strict", root);
+      sprintf(strict_in, "%s/scan_3ds_strict",    root);
+      path_mkdir(strict_db);
+      path_mkdir(strict_in);
+
+      sprintf(p, "%s/Test 3DS Strict.rdb", strict_db);
+      if (!write_db_set(p, strict_recs, ARRAY_SIZE(strict_recs)))
+      { check(0, "fixture", "could not write database"); goto done; }
+      sprintf(p, "%s/20_strict_hit.3ds", strict_in);
+      if (!write_ctr(p, 0x20, 1, "CTR-P-STHT", 0x57A1C001u))
+      { check(0, "fixture", "could not write image"); goto done; }
+      sprintf(p, "%s/21_strict_miss.3ds", strict_in);
+      if (!write_ctr(p, 0x20, 1, "CTR-P-STMS", 0x57A1C0FFu))
+      { check(0, "fixture", "could not write image"); goto done; }
+      sprintf(p, "%s/22_strict_elsewhere.3ds", strict_in);
+      if (!write_ctr(p, 0x20, 1, "CTR-P-SCEL", 0x57A1C011u))
+      { check(0, "fixture", "could not write image"); goto done; }
+      sprintf(p, "%s/23_strict_shared_elsewhere.3ds", strict_in);
+      if (!write_ctr(p, 0x20, 1, "CTR-P-SSHR", 0x57A1C022u))
+      { check(0, "fixture", "could not write image"); goto done; }
+      sprintf(p, "%s/24_strict_nowhere.3ds", strict_in);
+      if (!write_ctr(p, 0x20, 1, "CTR-P-SNOW", 0x57A1C0EEu))
+      { check(0, "fixture", "could not write image"); goto done; }
+
+      config_get_ptr()->bools.scan_serial_and_crc = true;
+      strlcpy(config_get_ptr()->paths.path_content_database, strict_db,
+            sizeof(config_get_ptr()->paths.path_content_database));
+      if (!run_scan(strict_in))
+      {
+         check(0, "strict 3DS scan started", "task_push_dbscan refused");
+         goto done;
+      }
+      config_get_ptr()->bools.scan_serial_and_crc = false;
+      strlcpy(config_get_ptr()->paths.path_content_database, db_dir,
+            sizeof(config_get_ptr()->paths.path_content_database));
+      check(scan_completed, "strict 3DS scan completed",
+            scan_completed ? "callback fired" : "timed out");
+
+      sprintf(p, "%s/Test 3DS Strict.lpl", pl_dir);
+      check(   file_contains(p, "Strict Hit")
+            && file_contains(p, "CTR-P-STHT|serial"),
+            "scan_serial_and_crc: serial and crc match", "CTR-P-STHT|serial");
+      check(!file_contains(p, "Strict Miss"),
+            "scan_serial_and_crc: crc mismatch refused", "no Strict Miss");
+      check(   file_contains(p, "Strict Crc Owner")
+            && file_contains(p, "57A1C011|crc")
+            && !file_contains(p, "Strict Code Elsewhere"),
+            "scan_serial_and_crc: crc on another record", "57A1C011|crc");
+      check(   file_contains(p, "Strict Shared Owner")
+            && file_contains(p, "57A1C022|crc")
+            && !file_contains(p, "Strict Shared Rev"),
+            "scan_serial_and_crc: shared, crc elsewhere", "57A1C022|crc");
+      check(!file_contains(p, "24_strict_nowhere"),
+            "scan_serial_and_crc: shared, crc nowhere", "no 24_");
+   }
+
+   /* First-match selection moves a matched database to the front and
+    * stops the search there.  A 3DS code no record carries must still
+    * reach the crc: the first miss matches by crc and moves Test 3DS to
+    * the front, and the others meet it there.  The database list is in
+    * readdir order, so this bites only when Test 3DS is not listed
+    * first; the pads make that so in creation, reverse creation and
+    * name order.  A code the crc turns down reaches the crc too: of the
+    * two such files, whichever comes second meets Test 3DS there. */
+   {
+      static const db_rec_t first_recs[] = {
+         { "First Miss The Game", "FMIS", 0xF1157000u, CTR_IMAGE_SIZE },
+         { "First Strict Code",   "CTR-P-FSTR", 0xF1157001u, CTR_IMAGE_SIZE },
+         { "First Strict Owner A", NULL,  0xF1157002u, CTR_IMAGE_SIZE },
+         { "First Strict Owner B", NULL,  0xF1157003u, CTR_IMAGE_SIZE }
+      };
+      static const char *const first_files[] = {
+         "30_first_miss_a.3ds", "31_first_miss_b.3ds", "32_first_miss_c.3ds"
+      };
+      static const char *const strict_files[] = {
+         "33_first_strict_a.3ds", "34_first_strict_b.3ds"
+      };
+      char     first_db[512], first_in[512];
+      unsigned i;
+      int      all_matched = 1;
+
+      sprintf(first_db, "%s/scan_db_3ds_first", root);
+      sprintf(first_in, "%s/scan_3ds_first",    root);
+      path_mkdir(first_db);
+      path_mkdir(first_in);
+
+      for (i = 0; i < 6; i++)
+      {
+         if (i == 3)
+         {
+            sprintf(p, "%s/Test 3DS.rdb", first_db);
+            if (!write_db_set(p, first_recs, ARRAY_SIZE(first_recs)))
+            { check(0, "fixture", "could not write database"); goto done; }
+         }
+         sprintf(p, "%s/Test 3DS Pad %u.rdb", first_db, i);
+         if (!write_db(p, "Pad The Game", 0x9AD00000u + i, CTR_IMAGE_SIZE))
+         { check(0, "fixture", "could not write database"); goto done; }
+      }
+      for (i = 0; i < ARRAY_SIZE(first_files); i++)
+      {
+         sprintf(p, "%s/%s", first_in, first_files[i]);
+         if (!write_ctr(p, 0x20, 1, "CTR-P-FMIS", 0xF1157000u))
+         { check(0, "fixture", "could not write image"); goto done; }
+      }
+      for (i = 0; i < ARRAY_SIZE(strict_files); i++)
+      {
+         sprintf(p, "%s/%s", first_in, strict_files[i]);
+         if (!write_ctr(p, 0x20, 1, "CTR-P-FSTR", 0xF1157002u + i))
+         { check(0, "fixture", "could not write image"); goto done; }
+      }
+      {
+         struct string_list *dbs = dir_list_new(first_db, "rdb", false,
+               false, false, false);
+         if (dbs && dbs->size
+               && !strcmp(path_basename(dbs->elems[0].data),
+                  "Test 3DS.rdb"))
+            printf("  note  first match: Test 3DS lists first, so this "
+                  "lane cannot bite\n");
+         string_list_free(dbs);
+      }
+
+      manual_content_scan_set_menu_scan_method(
+            MANUAL_CONTENT_SCAN_METHOD_CUSTOM);
+      manual_content_scan_set_menu_scan_db_select(
+            MANUAL_CONTENT_SCAN_SELECT_DB_AUTO_FIRST_MATCH, NULL);
+      strlcpy(config_get_ptr()->paths.path_content_database, first_db,
+            sizeof(config_get_ptr()->paths.path_content_database));
+      config_get_ptr()->bools.scan_serial_and_crc = true;
+      if (!run_scan(first_in))
+      {
+         check(0, "first-match 3DS scan started", "task_push_dbscan refused");
+         goto done;
+      }
+      config_get_ptr()->bools.scan_serial_and_crc = false;
+      manual_content_scan_set_menu_scan_db_select(
+            MANUAL_CONTENT_SCAN_SELECT_DB_AUTO, NULL);
+      manual_content_scan_set_menu_scan_method(
+            MANUAL_CONTENT_SCAN_METHOD_AUTOMATIC);
+      strlcpy(config_get_ptr()->paths.path_content_database, db_dir,
+            sizeof(config_get_ptr()->paths.path_content_database));
+      check(scan_completed, "first-match 3DS scan completed",
+            scan_completed ? "callback fired" : "timed out");
+
+      sprintf(p, "%s/Test 3DS.lpl", pl_dir);
+      for (i = 0; i < ARRAY_SIZE(first_files); i++)
+         if (!file_contains(p, first_files[i]))
+            all_matched = 0;
+      check(all_matched && file_contains(p, "F1157000|crc"),
+            "first match: serial miss falls back to crc",
+            "30_, 31_ and 32_first_miss");
+      check(   file_contains(p, "33_first_strict_a.3ds")
+            && file_contains(p, "34_first_strict_b.3ds")
+            && file_contains(p, "F1157002|crc")
+            && file_contains(p, "F1157003|crc")
+            && !file_contains(p, "First Strict Code"),
+            "first match: strict rejection falls back to crc",
+            "33_ and 34_first_strict");
    }
 
    /* A strict scan hands every file to DATABASE_SCAN_ITERATE_NEXT.  32

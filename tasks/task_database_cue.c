@@ -771,6 +771,50 @@ int detect_pbp_game(intfstream_t *fd, char *s, size_t len,
 #undef PBP_SFO_MAX
 }
 
+/* detect_3ds_game:
+ *
+ * The product code ("CTR-P-AMKE") is at 0x150 of an NCCH header: the
+ * start of a bare .cxi, or partition 0 of a cart image (NCSD), whose
+ * partition table counts media units of 0x200 << flags[6].  Layouts
+ * from 3dbrew's NCSD and NCCH pages.  The NCCH header is plaintext in
+ * encrypted dumps too.
+ */
+int detect_3ds_game(intfstream_t *fd, char *s, size_t len)
+{
+   uint8_t hdr[0x200];
+   size_t  i;
+
+   if (   intfstream_seek(fd, 0, SEEK_SET) < 0
+       || intfstream_read(fd, hdr, sizeof(hdr)) != (int64_t)sizeof(hdr))
+      return 0;
+
+   if (memcmp(hdr + 0x100, "NCSD", 4) == 0)
+   {
+      uint64_t ncch;
+
+      if (hdr[0x18E] > 15)
+         return 0;
+      ncch = (uint64_t)pbp_read_u32(hdr + 0x120) << (9 + hdr[0x18E]);
+      if (   !ncch
+          || intfstream_seek(fd, (int64_t)ncch, SEEK_SET) < 0
+          || intfstream_read(fd, hdr, sizeof(hdr)) != (int64_t)sizeof(hdr))
+         return 0;
+   }
+
+   if (memcmp(hdr + 0x100, "NCCH", 4) != 0)
+      return 0;
+
+   for (i = 0; i < 0x10 && hdr[0x150 + i]; i++)
+      if (hdr[0x150 + i] <= ' ' || hdr[0x150 + i] > '~')
+         return 0;
+   if (!i || i >= len)
+      return 0;
+
+   memcpy(s, hdr + 0x150, i);
+   s[i] = '\0';
+   return 1;
+}
+
 size_t detect_gc_game(intfstream_t *fd, char *s, size_t len,
    const char *filename)
 {
@@ -2116,6 +2160,25 @@ int task_database_pbp_get_serial(const char *name, char *s, size_t len,
    }
 
    rv = detect_pbp_game(fd, s, len, name);
+   intfstream_close(fd);
+   free(fd);
+   return rv;
+}
+
+int task_database_3ds_get_serial(const char *name, char *s, size_t len,
+   uint64_t *filesize)
+{
+   int rv;
+   intfstream_t *fd = intfstream_open_file(name,
+         RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+
+   if (!fd)
+      return 0;
+
+   if (filesize && intfstream_seek(fd, 0, SEEK_END) != -1)
+      *filesize = (uint64_t)intfstream_tell(fd);
+
+   rv = detect_3ds_game(fd, s, len);
    intfstream_close(fd);
    free(fd);
    return rv;

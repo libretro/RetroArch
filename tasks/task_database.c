@@ -893,6 +893,12 @@ static enum msg_file_type extension_to_file_type(const char *ext)
       return FILE_TYPE_PBP;
    if (string_is_equal(ext_lower, "lutro"))
       return FILE_TYPE_LUTRO;
+   if (
+            string_is_equal(ext_lower, "3ds")
+         || string_is_equal(ext_lower, "cci")
+         || string_is_equal(ext_lower, "cxi")
+      )
+      return FILE_TYPE_3DS;
    return FILE_TYPE_NONE;
 }
 
@@ -975,6 +981,20 @@ static int task_database_iterate_playlist(
             db->type         = DATABASE_TYPE_CRC_LOOKUP;
             db_state->serial[0] = '\0';
             RARCH_DBG("[Scanner] PBP file serial not detected, fallback to crc.\n");
+            return intfstream_file_get_crc_and_size(name, 0, INT64_MAX, &db_state->crc, &db_state->size);
+         }
+         break;
+      case FILE_TYPE_3DS:
+         db_state->serial[0] = '\0';
+         /* The serial-miss fallback reuses a non-zero crc. */
+         db_state->crc       = 0;
+         if (task_database_3ds_get_serial(name, db_state->serial, sizeof(db_state->serial),&db_state->size))
+            db->type         = DATABASE_TYPE_SERIAL_LOOKUP;
+         else
+         {
+            db->type         = DATABASE_TYPE_CRC_LOOKUP;
+            db_state->serial[0] = '\0';
+            RARCH_DBG("[Scanner] 3DS file serial not detected, fallback to crc.\n");
             return intfstream_file_get_crc_and_size(name, 0, INT64_MAX, &db_state->crc, &db_state->size);
          }
          break;
@@ -1149,7 +1169,7 @@ static enum scan_verdict database_info_list_iterate_found_match(
     * db_info_entry likewise: taking the matched entry as
     * &info->list[entry_index] unconditionally reads info and indexes
     * list on nothing but the caller's word.  Every caller
-    * does test both - each of the four reaches this function from
+    * does test both - each reaches this function from
     * inside an "info && entry_index < info->count" - so this is the
     * invariant being stated where it is relied on rather than a
     * reachable fault.  It is the same shape as the two the callers
@@ -1486,6 +1506,32 @@ static void task_database_fill_db_min_max(database_state_handle_t *db_state)
    db_state->entry_index = 0;
 }
 
+/* Passes over the run of databases, from the current one, that no
+ * installed core claims @name for.  True when it passed over any. */
+static bool task_database_skip_unclaimed(database_state_handle_t *db_state,
+      const char *name, bool path_contains_compressed_file)
+{
+   /* Every database the gate refuses is passed over in this one
+    * step, so a file costs a handler call per database it can
+    * match rather than one per database in the directory - under
+    * the regular task queue that is a frame each. */
+   const char *ext = path_get_extension(name);
+   bool skipped    = false;
+
+   while (   db_state->list_index < db_state->list->size
+          && (   !string_list_find_elem(
+                     db_state->claim_exts[db_state->list_index], ext)
+              || (   !path_contains_compressed_file
+                  && (db_state->flags[db_state->list_index]
+                     & DB_STATE_FLAG_ARCHIVE_MEMBER))))
+   {
+      database_info_list_iterate_next(db_state);
+      skipped = true;
+   }
+
+   return skipped;
+}
+
 static enum scan_verdict task_database_iterate_crc_lookup(
       manual_scan_handle_t *_db,
       database_state_handle_t *db_state,
@@ -1528,29 +1574,10 @@ static enum scan_verdict task_database_iterate_crc_lookup(
     * including the ones no installed core claims and which can never
     * match - 200 MB of .rdb reads to scan a 70 MB set with the
     * shipped database directory.  Ask the cheap question first. */
-   if (!(_db->flags & DB_HANDLE_FLAG_SCAN_WITHOUT_CORE_MATCH))
-   {
-      /* Every database the gate refuses is passed over in this one
-       * step, so a file costs a handler call per database it can
-       * match rather than one per database in the directory - under
-       * the regular task queue that is a frame each. */
-      const char *ext = path_get_extension(name);
-      bool skipped    = false;
-
-      while (   db_state->list_index < db_state->list->size
-             && (   !string_list_find_elem(
-                        db_state->claim_exts[db_state->list_index], ext)
-                 || (   !path_contains_compressed_file
-                     && (db_state->flags[db_state->list_index]
-                        & DB_STATE_FLAG_ARCHIVE_MEMBER))))
-      {
-         database_info_list_iterate_next(db_state);
-         skipped = true;
-      }
-
-      if (skipped)
-         return SCAN_VERDICT_CONTINUE;
-   }
+   if (   !(_db->flags & DB_HANDLE_FLAG_SCAN_WITHOUT_CORE_MATCH)
+       && task_database_skip_unclaimed(db_state, name,
+            path_contains_compressed_file))
+      return SCAN_VERDICT_CONTINUE;
 
    /* If size boundaries are not filled for this DB, run the queries */
    if (!(db_state->flags[db_state->list_index] & DB_STATE_FLAG_SIZE_CHECKED))
@@ -1779,8 +1806,32 @@ static int task_database_iterate_serial_lookup(
          && db_state->list_index > 0 
          && db_state->flags[0] & DB_STATE_FLAG_MATCHED)
       )
+   {
+      /* A 3DS file the serial pass left unmatched goes to the crc
+       * lookup, reusing any crc the serial check computed. */
+      if (   db_state->list
+          && extension_to_file_type(path_get_extension(name)) == FILE_TYPE_3DS)
+      {
+         db_state->serial[0]   = '\0';
+         db_state->list_index  = 0;
+         db_state->entry_index = 0;
+         db->type              = DATABASE_TYPE_CRC_LOOKUP;
+         if (   !db_state->crc
+             && !intfstream_file_get_crc_and_size(name, 0, INT64_MAX,
+                  &db_state->crc, &db_state->size))
+            return SCAN_VERDICT_ERROR;
+         return SCAN_VERDICT_CONTINUE;
+      }
       return database_info_list_iterate_end_no_match(_db, db, db_state, name,
             path_contains_compressed_file);
+   }
+
+   /* 3DS images, unlike discs, keep the crc lookup's core gate. */
+   if (   !(_db->flags & DB_HANDLE_FLAG_SCAN_WITHOUT_CORE_MATCH)
+       && extension_to_file_type(path_get_extension(name)) == FILE_TYPE_3DS
+       && task_database_skip_unclaimed(db_state, name,
+            path_contains_compressed_file))
+      return SCAN_VERDICT_CONTINUE;
 
    /* If size boundaries are not filled for this DB, run the queries */
    if (!(db_state->flags[db_state->list_index] & DB_STATE_FLAG_SIZE_CHECKED))
@@ -1943,6 +1994,28 @@ serial_query_done:
 
    if (db_state->info)
    {
+      /* A 3DS product code is shared by a title's revisions and
+       * regions: the crc picks among them, and the first stands in
+       * when it matches none.  scan_serial_and_crc makes the crc a
+       * requirement, as it is for PSP and Dreamcast. */
+      size_t ctr_first = db_state->info->count;
+      size_t ctr_hits  = 0;
+      bool   ctr_crc   = false;
+
+      if (extension_to_file_type(path_get_extension(name)) == FILE_TYPE_3DS)
+      {
+         size_t i;
+         for (i = 0; i < db_state->info->count; i++)
+         {
+            const char *serial = db_state->info->list[i].serial;
+            if (!serial || !string_is_equal(db_state->serial, serial))
+               continue;
+            if (!ctr_hits++)
+               ctr_first = i;
+         }
+         ctr_crc = ctr_hits > 1 || _db->task_config->scan_serial_and_crc;
+      }
+
       /* "<=" walked one element past the end of the list and then
        * dereferenced it: db_info_entry->serial reads a pointer out of
        * whatever follows the allocation and hands it to
@@ -1960,7 +2033,8 @@ serial_query_done:
          {
             if (string_is_equal(db_state->serial, db_info_entry->serial))
             {
-               if (task_database_check_serial_and_crc(db_state,
+               if (   ctr_crc
+                   || task_database_check_serial_and_crc(db_state,
                      _db->task_config->scan_serial_and_crc))
                {
                   if (db_state->crc == 0)
@@ -1981,6 +2055,13 @@ serial_query_done:
             }
          }
          db_state->entry_index++;
+      }
+
+      if (ctr_hits > 1 && !_db->task_config->scan_serial_and_crc)
+      {
+         db_state->entry_index = ctr_first;
+         return database_info_list_iterate_found_match(_db,
+               db_state, db, NULL);
       }
    }
 
