@@ -1,9 +1,12 @@
 CC ?= cc
+JNI_PLATFORM := linux
+export CC SANITIZER
 ifeq ($(OS),Windows_NT)
+JNI_PLATFORM := win32
 BACKEND_HOST_FLAGS := -DANDROID_IMAGE_QUEUE_TEST_NO_FENCES -Wno-unused-parameter
 endif
 JAVA_HOME ?= $(shell dirname $$(dirname $$(readlink -f $$(command -v javac))))
-CFLAGS += -DHAVE_DYLIB -DMEDIACODEC_SESSION_TEST -O1 -g1 -std=c89 -pedantic -Wall -Wextra -Werror -Wno-long-long -Wframe-larger-than=2048 -I. -I../../../libretro-common/include -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux
+CFLAGS += -DHAVE_DYLIB -DMEDIACODEC_SESSION_TEST -O1 -g1 -std=c89 -pedantic -Wall -Wextra -Werror -Wno-long-long -Wframe-larger-than=2048 -I. -I../../../libretro-common/include -I"$(JAVA_HOME)/include" -I"$(JAVA_HOME)/include/$(JNI_PLATFORM)"
 ifneq ($(findstring clang,$(shell $(CC) --version 2>/dev/null)),)
 CFLAGS += -Wno-c99-extensions
 endif
@@ -112,3 +115,7 @@ renderer_backend_test: renderer_backend_test.c ../../../gfx/drivers/vulkan_andro
 	$(CC) $(CFLAGS) -DHAVE_THREADS -DHAVE_RMP4 -DHAVE_RVP9 -DHAVE_RAV1 -I../../../gfx/include renderer_backend_test.c -o $@ $(LDFLAGS)
 
 hevc_backend_test vp9_backend_test av1_backend_test: ../../../gfx/common/vp9_color.h
+
+session-check:
+	python3 session_run.py
+.PHONY: session-check
