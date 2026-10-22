@@ -15,3 +15,9 @@
 /identity_test.exe
 /prime_device_test
 /prime_device_test.exe
+/prime_format_test
+/prime_format_test.exe
+/prime_surface_test
+/prime_surface_test.exe
+/prime_image_test
+/prime_image_test.exe
