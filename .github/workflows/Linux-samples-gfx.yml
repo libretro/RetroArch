@@ -388,75 +388,45 @@ jobs:
   samples-gfx:
     name: Build and run samples/gfx
     runs-on: ubuntu-latest
-    # The gfx_thumbnail_preview step alone is ~5 min: two sanitizer
-    # builds, the video harness under each, and the windowed-animation
-    # harness under ASan over ~70 MB of lossless frames.  20 was cut
-    # too close once the animation harness joined; the run was
-    # cancelled mid-TSan pass.
+    # gfx_thumbnail_preview runs as its own job (thumbnail-preview):
+    # at 5-9 min it was the longest step here, and with package
+    # installation on a slow runner it took the job past 30 min.
     timeout-minutes: 30
+    env:
+      APT_PKGS: >-
+        build-essential libx11-dev libxrandr-dev libdrm-dev
+        xserver-xorg-core xserver-xorg-video-dummy x11-xserver-utils
+        libsdl2-dev libxinerama-dev libwayland-dev libegl-dev libgles-dev
+        libgbm-dev gcc-mingw-w64-x86-64 wine64 openbox cmake ninja-build
+        ccache libgl-dev xvfb libdbus-1-dev dbus python3-dbus python3-gi
+        weston xwayland mutter libvkd3d1 mesa-vulkan-drivers
+        fonts-dejavu-core
 
     steps:
-      - name: Install dependencies
-        timeout-minutes: 20
-        run: |
-          pkgs="build-essential libx11-dev libxrandr-dev libdrm-dev"
-          pkgs="$pkgs xserver-xorg-core xserver-xorg-video-dummy x11-xserver-utils libsdl2-dev libxinerama-dev"
-          pkgs="$pkgs libwayland-dev libegl-dev libgles-dev libgbm-dev"
-          pkgs="$pkgs gcc-mingw-w64-x86-64 wine64 openbox cmake ninja-build"
-          if dpkg -s $pkgs >/dev/null 2>&1; then
-            echo "All packages already present on runner image; skipping apt."
-            exit 0
-          fi
-          for i in 1 2 3; do
-            sudo timeout 90 apt-get update -y \
-              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
-            echo "apt-get update failed (attempt $i); retrying in 10s"
-            sleep 10
-          done
-          # Fetch first, under a bound: a download is safe to stop and
-          # resumes, an install is not. A mirror that stalls is left for
-          # the main archive on the next attempt.
-          for i in 1 2 3; do
-            sudo timeout 240 apt-get install -y --download-only \
-              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
-              $pkgs && break
-            [ $i = 3 ] && exit 1
-            echo "package download failed or stalled (attempt $i); retrying from archive.ubuntu.com"
-            if [ ! -d /etc/apt/ra-orig ]; then
-              sudo mkdir /etc/apt/ra-orig
-              sudo cp -a /etc/apt/sources.list.d /etc/apt/ra-orig/
-              [ ! -f /etc/apt/sources.list ] || sudo cp -a /etc/apt/sources.list /etc/apt/ra-orig/
-            fi
-            for f in /etc/apt/sources.list /etc/apt/sources.list.d/*; do
-              [ -f "$f" ] || continue
-              sudo sed -i -e 's#mirror+file:/etc/apt/apt-mirrors.txt#http://archive.ubuntu.com/ubuntu/#g' \
-                -e 's#http://azure\.archive\.ubuntu\.com/ubuntu#http://archive.ubuntu.com/ubuntu#g' "$f"
-            done
-            # A refresh cut short or refused leaves apt no package lists: it
-            # is retried, without translations or command-not-found data, and
-            # the mirror is put back when the archive will not answer either.
-            upd="-o Acquire::Retries=3 -o Acquire::http::Timeout=30
-              -o Acquire::Languages=none
-              -o Acquire::IndexTargets::deb::CNF::DefaultEnabled=false
-              -o APT::Update::Error-Mode=any"
-            ok=0
-            for j in 1 2; do
-              sudo timeout 120 apt-get update -y $upd && { ok=1; break; }
-            done
-            if [ $ok = 0 ]; then
-              sudo rm -rf /etc/apt/sources.list.d
-              sudo cp -a /etc/apt/ra-orig/sources.list.d /etc/apt/
-              [ ! -f /etc/apt/ra-orig/sources.list ] || sudo cp -a /etc/apt/ra-orig/sources.list /etc/apt/
-              sudo rm -rf /etc/apt/ra-orig
-              sudo timeout 120 apt-get update -y $upd || true
-            fi
-          done
-          sudo apt-get install -y \
-            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
-            $pkgs
-
       - name: Checkout
         uses: actions/checkout@v5
+
+      - name: Apt cache key
+        id: apt
+        run: sh .github/workflows/scripts/apt-cache-key.sh "$APT_PKGS"
+
+      - name: Restore apt cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+          restore-keys: ${{ steps.apt.outputs.prefix }}
+
+      - name: Install dependencies
+        timeout-minutes: 20
+        run: sh .github/workflows/scripts/apt-install.sh $APT_PKGS
+
+      - name: Save apt cache
+        if: env.APT_CACHE_SAVE == '1'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
 
       - name: Link with lld
         run: sh .github/workflows/scripts/use-lld.sh
@@ -2320,6 +2290,120 @@ jobs:
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1 make -B check SANITIZER=address,undefined
           TSAN_OPTIONS=halt_on_error=1 make -B check SANITIZER=thread
 
+      - name: MinGW strict C89 float math
+        run: CC=x86_64-w64-mingw32-gcc WINEDEBUG=-all python3 samples/gfx/mingw_c89_math/run.py
+
+      - name: Vulkan synchronous readback slot
+        run: python3 samples/gfx/vulkan_readback_slot/run.py
+
+      - name: D3D11 resized readback destination guard
+        run: python3 samples/gfx/d3d11_readback_resize/run.py
+
+      - name: Build and run hw_ring_fence_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/gfx/hw_ring_fence
+        run: |
+          set -u
+          set -o pipefail
+          # The hardware ring's fence handoff between the video thread
+          # and the core's thread (gfx/video_thread_hw_fence.h), the
+          # tree's own header, with two threads at one slot: a fence is
+          # signalled only while idle, waited only once signalled, and
+          # never inside two calls at once - with no lock. The single
+          # re-signalled fence it replaced is built too and must fail.
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
+          timeout 120 make check SANITIZER=address,undefined
+          echo "[pass] hw_ring_fence_test (ASan + UBSan)"
+          # The two threads share nothing but atomics, and TSan is
+          # what says so.
+          make clean SANITIZER=thread && make -j$(nproc) all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 120 make check SANITIZER=thread
+          echo "[pass] hw_ring_fence_test (TSan)"
+          make clean
+
+      - name: Build and run hw_ring_queue_test (ASan + UBSan, TSan)
+        working-directory: samples/gfx/hw_ring_queue
+        shell: bash
+        run: |
+          set -euo pipefail
+          make clean
+          make check SANITIZER=address,undefined
+          make clean
+          make check SANITIZER=thread
+          make clean
+
+      - name: ccache statistics
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        run: ccache -sv
+
+      - name: Save ccache
+        # Only master's pushes keep a cache: pull requests restore
+        # master's, so one push does not evict the next one's.
+        if: success() && github.event_name == 'push' && github.ref == 'refs/heads/master'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ github.workflow }}-${{ github.job }}-${{ github.sha }}
+
+  thumbnail-preview:
+    name: The file browser's video preview (gfx_thumbnail_preview)
+    runs-on: ubuntu-latest
+    # Two sanitizer builds, the video harness under each, and the
+    # windowed-animation harness under ASan over ~70 MB of lossless
+    # frames: 5 to 9 minutes, in parallel with samples-gfx rather than
+    # inside its budget.
+    timeout-minutes: 20
+    env:
+      APT_PKGS: ffmpeg ccache zlib1g-dev
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Apt cache key
+        id: apt
+        run: sh .github/workflows/scripts/apt-cache-key.sh "$APT_PKGS"
+
+      - name: Restore apt cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+          restore-keys: ${{ steps.apt.outputs.prefix }}
+
+      - name: Install dependencies
+        timeout-minutes: 15
+        run: sh .github/workflows/scripts/apt-install.sh $APT_PKGS
+
+      - name: Save apt cache
+        if: env.APT_CACHE_SAVE == '1'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+
+      - name: Link with lld
+        run: sh .github/workflows/scripts/use-lld.sh
+
+      - name: Restore ccache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ github.workflow }}-${{ github.job }}-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ github.workflow }}-${{ github.job }}-
+
+      - name: Enable ccache
+        run: |
+          set -eu
+          command -v ccache >/dev/null 2>&1 || sudo apt-get install -y -qq ccache
+          export CCACHE_DIR="$HOME/.ccache"
+          echo "CCACHE_DIR=$CCACHE_DIR" >> "$GITHUB_ENV"
+          echo "/usr/lib/ccache" >> "$GITHUB_PATH"
+          ccache -M 250M
+          ccache -z
+
       - name: Build and run gfx_thumbnail_preview_test (ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/gfx/gfx_thumbnail_preview
@@ -2561,56 +2645,8 @@ jobs:
              ./preview_audio_decode_test fixtures/trailing_large.mp4 262144 island'
           echo "[pass] preview_audio_decode_test (TSan)"
 
-      - name: MinGW strict C89 float math
-        run: CC=x86_64-w64-mingw32-gcc WINEDEBUG=-all python3 samples/gfx/mingw_c89_math/run.py
-
-      - name: Vulkan synchronous readback slot
-        run: python3 samples/gfx/vulkan_readback_slot/run.py
-
-      - name: D3D11 resized readback destination guard
-        run: python3 samples/gfx/d3d11_readback_resize/run.py
-
-      - name: Build and run hw_ring_fence_test (ASan + UBSan, TSan)
-        shell: bash
-        working-directory: samples/gfx/hw_ring_fence
-        run: |
-          set -u
-          set -o pipefail
-          # The hardware ring's fence handoff between the video thread
-          # and the core's thread (gfx/video_thread_hw_fence.h), the
-          # tree's own header, with two threads at one slot: a fence is
-          # signalled only while idle, waited only once signalled, and
-          # never inside two calls at once - with no lock. The single
-          # re-signalled fence it replaced is built too and must fail.
-          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
-          timeout 120 make check SANITIZER=address,undefined
-          echo "[pass] hw_ring_fence_test (ASan + UBSan)"
-          # The two threads share nothing but atomics, and TSan is
-          # what says so.
-          make clean SANITIZER=thread && make -j$(nproc) all SANITIZER=thread
-          TSAN_OPTIONS=halt_on_error=1 timeout 120 make check SANITIZER=thread
-          echo "[pass] hw_ring_fence_test (TSan)"
-          make clean
-
-      - name: Build and run hw_ring_queue_test (ASan + UBSan, TSan)
-        working-directory: samples/gfx/hw_ring_queue
-        shell: bash
-        run: |
-          set -euo pipefail
-          make clean
-          make check SANITIZER=address,undefined
-          make clean
-          make check SANITIZER=thread
-          make clean
-
-      - name: ccache statistics
-        if: ${{ !cancelled() }}
-        continue-on-error: true
-        run: ccache -sv
-
       - name: Save ccache
-        # Only master's pushes keep a cache: pull requests restore
-        # master's, so one push does not evict the next one's.
+        # Only master's pushes keep a cache, as in samples-gfx
         if: success() && github.event_name == 'push' && github.ref == 'refs/heads/master'
         uses: actions/cache/save@v4
         with:
