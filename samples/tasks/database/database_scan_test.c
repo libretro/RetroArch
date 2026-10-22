@@ -41,6 +41,7 @@
 #include <lists/dir_list.h>
 #include <retro_timers.h>
 #include <streams/file_stream.h>
+#include <compat/strl.h>
 
 #include "../../../core_info.h"
 #include "../../../tasks/tasks_internal.h"
