@@ -57,7 +57,8 @@ pad_connection_interface_t pad_connection_wii, pad_connection_wiiupro,
    pad_connection_ps2adapter, pad_connection_psxadapter,
    pad_connection_retrode, pad_connection_ps4_hori_mini,
    pad_connection_kade, pad_connection_dragonrise,
-   pad_connection_8bitdo_sn30_pro, pad_connection_8bitdo_sf30_pro;
+   pad_connection_8bitdo_sn30_pro, pad_connection_8bitdo_sf30_pro,
+   pad_connection_ps3_shanwan;
 
 /* ---- the fake pad ---- */
 
@@ -316,9 +317,30 @@ int main(void)
          }
       }
    }
+   /* a DualShock 3 on Sony's id: ShanWan's handler only for a pad
+    * named ShanWan's; on ShanWan's id, always */
+   {
+      static const struct { uint16_t vid, pid; const char *name;
+         pad_connection_interface_t *iface; } t[4] = {
+         { 0x054c, 0x0268, "PLAYSTATION(R)3 Controller", &pad_connection_ps3 },
+         { 0x054c, 0x0268, "ShanWan PS3/PC Gamepad",     &pad_connection_ps3_shanwan },
+         { 0x054c, 0x0268, "",                           &pad_connection_ps3 },
+         { 0x2563, 0x0523, "PS3 GamePad",                &pad_connection_ps3_shanwan } };
+      for (i = 0; i < 4; i++)
+      {
+         joypad_connection_entry_t *e = find_connection_entry(
+               SWAP_IF_BIG(t[i].vid), SWAP_IF_BIG(t[i].pid), t[i].name);
+         if (!e || e->iface != t[i].iface)
+         {
+            printf("FAIL: \"%s\" on %04x:%04x not given its handler\n",
+                  t[i].name, t[i].vid, t[i].pid);
+            failures++;
+         }
+      }
+   }
    if (failures)
       return 1;
-   printf("[pass] joypad_slots_test: %u plug cycles each way, %d calls into live pads; Wii remotes on 057e:0330 by name\n",
+   printf("[pass] joypad_slots_test: %u plug cycles each way, %d calls into live pads; Wii remotes on 057e:0330 and DualShock 3s by name\n",
          CYCLES, retro_atomic_load_acquire_int(&calls));
    return 0;
 }

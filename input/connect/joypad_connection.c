@@ -122,10 +122,21 @@ static joypad_connection_entry_t pad_map[] = {
       PID_NINTENDO_SWITCH2_PRO,
       &pad_connection_switch2_pro
    },
+   /* a ShanWan pad that gives Sony's id, known by its name */
+   { "ShanWan",
+      VID_SONY,
+      PID_SONY_DS3,
+      &pad_connection_ps3_shanwan
+   },
    { "PLAYSTATION(R)3 Controller",
       VID_SONY,
       PID_SONY_DS3,
       &pad_connection_ps3
+   },
+   { "PLAYSTATION(R)3 Controller",
+      VID_SHANWAN,
+      PID_SHANWAN_DS3,
+      &pad_connection_ps3_shanwan
    },
    { "PLAYSTATION(R)3 Controller",
       VID_PS3_CLONE,
@@ -352,6 +363,14 @@ joypad_connection_entry_t *find_connection_entry(uint16_t vid, uint16_t pid, con
             && has_name
             && !string_is_equal(name, pad_map[i].name)
             && !joypad_connection_is_nes_clone_name(name))
+         continue;
+
+      /* on Sony's id, ShanWan's own handler only for a pad that says
+       * it is ShanWan's, as SDL tells them */
+      if (     pad_map[i].iface == &pad_connection_ps3_shanwan
+            && pad_map[i].vid == VID_SONY
+            && (!has_name || !string_starts_with_case_insensitive(name,
+                  "ShanWan")))
          continue;
 
       if (name_match || (pad_map[i].vid == vid && pad_map[i].pid == pid))

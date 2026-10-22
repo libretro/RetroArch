@@ -1961,6 +1961,16 @@ static int16_t ref_ds3_axis(const uint8_t *report, uint32_t axis)
    return gamepad_get_axis_value_raw(analog_state, &ad, false);
 }
 
+static unsigned set_reports;
+static int32_t stub_count_set_report(void *handle, uint8_t type, uint8_t id,
+      uint8_t *data, size_t len)
+{
+   (void)handle; (void)id; (void)data;
+   if (type == HID_REPORT_OUTPUT)
+      set_reports++;
+   return (int32_t)len;
+}
+
 static void test_ds3(void)
 {
    static const unsigned map[17] = {
@@ -1993,6 +2003,8 @@ static void test_ds3(void)
       for (k = 0; k < sizeof(p); k++)
          p[k] = (uint8_t)rand();
       p[0] = 0x01;
+      if (p[1] == 0xff) /* not a state, as SDL found */
+         p[1] = 0;
       deliver(ifc, dev, p, 49);
       keys = p[2] | (p[3] << 8) | ((p[4] & 0x01) << 16);
       for (k = 0; k < 17; k++)
@@ -2009,7 +2021,44 @@ static void test_ds3(void)
    }
    CHECK(!bad, "ds3: %u reads disagree with the copying handler", bad);
    ifc->deinit(dev);
-   printf("[%s] ds3: every button and axis, plain and bound, as the copying handler, on 20000 reports\n",
+   /* ShanWan's: no output report at init; the converter's 7-byte
+    * report read as SDL reads it; a state of 0xFF not taken */
+   {
+      int32_t (*set)(void*, uint8_t, uint8_t, uint8_t*, size_t) = stub_hid.set_report;
+      stub_hid.get_report = stub_ds3_get_report;
+      stub_hid.set_report = stub_count_set_report;
+      set_reports = 0;
+      dev = pad_connection_ps3_shanwan.init(&dummy_connection, 0, &stub_hid);
+      stub_hid.get_report = NULL;
+      CHECK(dev && !set_reports, "ds3: an output report sent to a ShanWan pad at init");
+      memset(p, 0, sizeof(p));
+      p[0] = 0x00; p[1] = 0xff; p[2] = 0x80; p[3] = 0x7f;
+      p[4] = 0x02 | 0x40;  /* right, cross */
+      p[5] = 0x04 | 0x20;  /* L2, start */
+      deliver(&pad_connection_ps3_shanwan, dev, p, 7);
+      CHECK(dev
+            && pad_connection_ps3_shanwan.button(dev, RETRO_DEVICE_ID_JOYPAD_RIGHT)
+            && pad_connection_ps3_shanwan.button(dev, RETRO_DEVICE_ID_JOYPAD_B)
+            && pad_connection_ps3_shanwan.button(dev, RETRO_DEVICE_ID_JOYPAD_L2)
+            && pad_connection_ps3_shanwan.button(dev, RETRO_DEVICE_ID_JOYPAD_START)
+            && !pad_connection_ps3_shanwan.button(dev, RETRO_DEVICE_ID_JOYPAD_A)
+            && pad_connection_ps3_shanwan.get_axis(dev, 0) == 128 * 257 - 32768
+            && pad_connection_ps3_shanwan.get_axis(dev, 2) == -32768
+            && pad_connection_ps3_shanwan.get_axis(dev, 3) == 32767
+            && pad_connection_ps3_shanwan.get_axis(dev, 4) == 0x7fff
+            && pad_connection_ps3_shanwan.get_axis(dev, 6) == 0x7fff
+            && pad_connection_ps3_shanwan.get_axis(dev, 7) == 0,
+            "ds3: the converter's short report misread");
+      memset(p, 0, sizeof(p));
+      p[0] = 0x01; p[1] = 0xff; p[3] = 0xff;
+      deliver(&pad_connection_ps3_shanwan, dev, p, 49);
+      CHECK(dev && pad_connection_ps3_shanwan.button(dev, RETRO_DEVICE_ID_JOYPAD_B),
+            "ds3: a state of 0xFF taken");
+      if (dev)
+         pad_connection_ps3_shanwan.deinit(dev);
+      stub_hid.set_report = set;
+   }
+   printf("[%s] ds3: every button and axis, plain and bound, as the copying handler, on 20000 reports; ShanWan's pads and converter\n",
          failures == had ? "pass" : "fail");
 }
 

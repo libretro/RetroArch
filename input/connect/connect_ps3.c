@@ -37,6 +37,7 @@ typedef struct ds3_instance
    int player;     /* told: from 1, -1 for none; 0 not yet */
    bool led_set;
    bool motors_due;
+   bool shanwan;        /* ShanWan's: no output report at init */
    uint8_t motion_want; /* pad_motion.h's bits: the accelerometer alone */
    uint16_t accel[3];   /* as the report has them, 511 at rest */
    /* the RetroPad's buttons and PS as 16; the sticks as 0 to 3, the
@@ -255,7 +256,56 @@ static void ds3_update_analog_state(ds3_instance_t *instance,
 }
 
 
-static void *ds3_init(void *handle, uint32_t slot, hid_driver_t *driver)
+/* A ShanWan PS2-to-PS3 converter's 7-byte report, as SDL reads it:
+ * the right stick, the left, the hat and triangle, circle, cross and
+ * square, then L1, R1, L2, R2, select, start, L3 and R3. Its buttons
+ * have no pressure: a press is all of it. */
+static void ds3_mini_report(ds3_instance_t *instance, const uint8_t *r)
+{
+   static const uint8_t hat[16] = {
+      1, 1 | 8, 8, 8 | 2, 2, 2 | 4, 4, 4 | 1,
+      0, 0, 0, 0, 0, 0, 0, 0 };
+   static const uint32_t face[4] = {
+      RETRO_DEVICE_ID_JOYPAD_X, RETRO_DEVICE_ID_JOYPAD_A,
+      RETRO_DEVICE_ID_JOYPAD_B, RETRO_DEVICE_ID_JOYPAD_Y };
+   static const uint32_t rest[8] = {
+      RETRO_DEVICE_ID_JOYPAD_L,      RETRO_DEVICE_ID_JOYPAD_R,
+      RETRO_DEVICE_ID_JOYPAD_L2,     RETRO_DEVICE_ID_JOYPAD_R2,
+      RETRO_DEVICE_ID_JOYPAD_SELECT, RETRO_DEVICE_ID_JOYPAD_START,
+      RETRO_DEVICE_ID_JOYPAD_L3,     RETRO_DEVICE_ID_JOYPAD_R3 };
+   /* the pressure axes' buttons, in ds3_pressure_byte's order */
+   static const uint32_t pressed[12] = {
+      RETRO_DEVICE_ID_JOYPAD_L2, RETRO_DEVICE_ID_JOYPAD_R2,
+      RETRO_DEVICE_ID_JOYPAD_B,  RETRO_DEVICE_ID_JOYPAD_A,
+      RETRO_DEVICE_ID_JOYPAD_Y,  RETRO_DEVICE_ID_JOYPAD_X,
+      RETRO_DEVICE_ID_JOYPAD_L,  RETRO_DEVICE_ID_JOYPAD_R,
+      RETRO_DEVICE_ID_JOYPAD_UP, RETRO_DEVICE_ID_JOYPAD_DOWN,
+      RETRO_DEVICE_ID_JOYPAD_LEFT, RETRO_DEVICE_ID_JOYPAD_RIGHT };
+   uint32_t b = 0;
+   unsigned i, h = hat[r[4] & 0x0f];
+
+   if (h & 1) b |= 1u << RETRO_DEVICE_ID_JOYPAD_UP;
+   if (h & 2) b |= 1u << RETRO_DEVICE_ID_JOYPAD_DOWN;
+   if (h & 4) b |= 1u << RETRO_DEVICE_ID_JOYPAD_LEFT;
+   if (h & 8) b |= 1u << RETRO_DEVICE_ID_JOYPAD_RIGHT;
+   for (i = 0; i < 4; i++)
+      if (r[4] & (0x10 << i))
+         b |= 1u << face[i];
+   for (i = 0; i < 8; i++)
+      if (r[5] & (1 << i))
+         b |= 1u << rest[i];
+   pad_view_set_buttons(&instance->view, b, false);
+
+   instance->view.axes[0] = (int16_t)(r[2] * 257 - 32768);
+   instance->view.axes[1] = (int16_t)(r[3] * 257 - 32768);
+   instance->view.axes[2] = (int16_t)(r[0] * 257 - 32768);
+   instance->view.axes[3] = (int16_t)(r[1] * 257 - 32768);
+   for (i = 0; i < 12; i++)
+      instance->view.axes[4 + i] = (b & (1u << pressed[i])) ? 0x7fff : 0;
+}
+
+static void *ds3_start(void *handle, uint32_t slot, hid_driver_t *driver,
+      bool shanwan)
 {
    ds3_instance_t *instance = (ds3_instance_t *)
       calloc(1, sizeof(ds3_instance_t));
@@ -265,11 +315,13 @@ static void *ds3_init(void *handle, uint32_t slot, hid_driver_t *driver)
    instance->handle     = handle;
    instance->driver     = driver;
    instance->slot       = slot;
+   instance->shanwan    = shanwan;
 
    if (instance->driver->set_protocol)
       instance->driver->set_protocol(instance->handle, 1);
 
-   if (ds3_send_output_report(instance) < 0)
+   /* not to ShanWan's: as SDL found, it can rumble them non-stop */
+   if (!shanwan && ds3_send_output_report(instance) < 0)
    {
       RARCH_LOG("[Sixaxis] Failed to send output report.\n");
       goto error;
@@ -285,6 +337,17 @@ static void *ds3_init(void *handle, uint32_t slot, hid_driver_t *driver)
 error:
    free(instance);
    return NULL;
+}
+
+static void *ds3_init(void *handle, uint32_t slot, hid_driver_t *driver)
+{
+   return ds3_start(handle, slot, driver, false);
+}
+
+static void *ds3_shanwan_init(void *handle, uint32_t slot,
+      hid_driver_t *driver)
+{
+   return ds3_start(handle, slot, driver, true);
 }
 
 static void ds3_deinit(void *device_data)
@@ -320,7 +383,13 @@ static void ds3_packet_handler(void *device_data,
    /* the input report, whole; nothing else is the pad's state. It is
     * the backend's, read where it lies: what the getters answer from
     * is taken out of it here, not the report kept. */
-   if (size < 49 || packet[0] != 0x01)
+   if (size == 7)
+   {
+      ds3_mini_report(device, packet);
+      return;
+   }
+   /* 0xFF where its buttons begin: not a state, as SDL found */
+   if (size < 49 || packet[0] != 0x01 || packet[1] == 0xff)
       return;
 
    ds3_update_pad_state(device, packet);
@@ -434,6 +503,28 @@ static const input_pad_view_t *ds3_view(void *device_data)
 
 pad_connection_interface_t pad_connection_ps3 = {
    ds3_init,
+   ds3_deinit,
+   ds3_packet_handler,
+   ds3_set_rumble,
+   ds3_get_buttons,
+   ds3_get_axis,
+   ds3_get_name,
+   ds3_button,
+   false, /* multi_pad */
+   0,     /* max_pad */
+   NULL,  /* pad_init */
+   NULL,  /* pad_deinit */
+   NULL,  /* status */
+   NULL,  /* joypad */
+   ds3_set_player,
+   ds3_view,
+   NULL,  /* idle */
+   ds3_set_sensor,
+   ds3_sensor
+};
+
+pad_connection_interface_t pad_connection_ps3_shanwan = {
+   ds3_shanwan_init,
    ds3_deinit,
    ds3_packet_handler,
    ds3_set_rumble,
