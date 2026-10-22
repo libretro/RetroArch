@@ -2571,9 +2571,9 @@ static int rvp9_decode_frame_impl(rvp9_dec *d, const uint8_t *data,
       uvsz = (size_t)d->uvs * (d->mi_rows * 4 + 32);
       for (i = 0; i < RVP9_FRAME_BUFS; i++)
       {
-         d->fbs[i].y = (uint8_t*)calloc(sizeof(RVP9_PIXEL), ysz);
-         d->fbs[i].u = (uint8_t*)calloc(sizeof(RVP9_PIXEL), uvsz);
-         d->fbs[i].v = (uint8_t*)calloc(sizeof(RVP9_PIXEL), uvsz);
+         d->fbs[i].y = (uint8_t*)calloc(ysz, sizeof(RVP9_PIXEL));
+         d->fbs[i].u = (uint8_t*)calloc(uvsz, sizeof(RVP9_PIXEL));
+         d->fbs[i].v = (uint8_t*)calloc(uvsz, sizeof(RVP9_PIXEL));
          d->fb_bit_depth = RVP9_RECON_HBD ? 10 : 8;
          if (!d->fbs[i].y || !d->fbs[i].u || !d->fbs[i].v) return -7;
       }
