@@ -39,6 +39,11 @@ typedef struct rvp9_hw_backend
    void (*close)(rvp9_hw_ops_t *ops);
    /* Opaque bitstream decoders also consume show_existing_frame packets. */
    bool packet_decoder;
+   /* New callbacks follow the published user/open/close/mode prefix. */
+   /* Optional admission with container metadata, borrowed only during open. */
+   bool (*open_color)(void *user, const rvp9_hdr *header,
+         const video_color_metadata_t *color, unsigned slots,
+         rvp9_hw_ops_t *ops);
 } rvp9_hw_backend_t;
 
 RETRO_BEGIN_DECLS
@@ -46,6 +51,9 @@ RETRO_BEGIN_DECLS
  * The backend/user must outlive its open decoders. Existing sessions keep close. */
 void rvp9_set_hw_backend(const rvp9_hw_backend_t *backend);
 bool rvp9_hw_backend_open(const rvp9_hdr *header, unsigned slots,
+      rvp9_hw_ops_t *ops, rvp9_hw_backend_t *backend);
+bool rvp9_hw_backend_open_color(const rvp9_hdr *header,
+      const video_color_metadata_t *color, unsigned slots,
       rvp9_hw_ops_t *ops, rvp9_hw_backend_t *backend);
 RETRO_END_DECLS
 

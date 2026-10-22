@@ -1,11 +1,26 @@
 /* SPDX-License-Identifier: MIT */
 #include <stdio.h>
+#include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 #include <formats/image.h>
 #include <formats/rvp9_hw.h>
 #include <formats/video_player.h>
 #include "../../../formats/webm/rwebm_video.c"
+
+/* The extension must preserve the backend prefix already published. */
+typedef struct rvp9_backend_v1
+{
+   void *user;
+   bool (*open)(void *, const rvp9_hdr *, unsigned, rvp9_hw_ops_t *);
+   void (*close)(rvp9_hw_ops_t *);
+   bool packet_decoder;
+} rvp9_backend_v1_t;
+typedef char rvp9_backend_mode_offset_preserved[
+   offsetof(rvp9_hw_backend_t, packet_decoder)
+      == offsetof(rvp9_backend_v1_t, packet_decoder) ? 1 : -1];
+typedef char rvp9_backend_callback_appended[
+   offsetof(rvp9_hw_backend_t, open_color) >= sizeof(rvp9_backend_v1_t) ? 1 : -1];
 
 #define CHECK(x) do { if (!(x)) { fprintf(stderr, "line %d: %s\n", __LINE__, #x); return 1; } } while (0)
 static uint8_t file[4096], packet[64], key[64], hidden[64], shown[64];
@@ -168,7 +183,83 @@ static void close_backend(rvp9_hw_ops_t *ops)
 {
    closes++; release((mock_t*)ops->decoder); memset(ops, 0, sizeof(*ops));
 }
-static const rvp9_hw_backend_t backend = {NULL, open_backend, close_backend, false};
+static const rvp9_hw_backend_t backend = {NULL, open_backend, close_backend, false, NULL};
+static video_color_metadata_t admitted_color;
+static unsigned color_opens, color_refuse, color_partial;
+
+static bool open_color_backend(void *user, const rvp9_hdr *h,
+      const video_color_metadata_t *color, unsigned slots, rvp9_hw_ops_t *ops)
+{
+   color_opens++;
+   if (color)
+      admitted_color = *color;
+   else
+      memset(&admitted_color, 0, sizeof(admitted_color));
+   if (color_refuse && !color_partial)
+      return false;
+   if (!open_backend(user, h, slots, ops))
+      return false;
+   if (color_partial)
+      ops->output = NULL;
+   return !color_refuse;
+}
+
+static int color_admission(void)
+{
+   static const rvp9_hw_backend_t colors = {
+      NULL, open_backend, close_backend, true, open_color_backend
+   };
+   rwebm_video_stream_t *s;
+   rvp9_hw_ops_t ops;
+   rvp9_hw_backend_t snapshot;
+   rvp9_hdr header;
+   rvp9_hw_backend_t color_only = colors;
+   unsigned before, closed;
+   memset(&header, 0, sizeof(header));
+   header.bit_depth = 8;
+   header.w = 64;
+   header.h = 48;
+   color_only.open = NULL;
+   rvp9_set_hw_backend(&color_only);
+   CHECK(rvp9_hw_backend_open(&header, 10, &ops, &snapshot));
+   CHECK(!admitted_color.transfer && snapshot.open_color == open_color_backend);
+   snapshot.close(&ops);
+   tail_hidden = 0;
+   fixture(1, 2, 1);
+   s = rwebm_video_stream_open(file, used);
+   CHECK(s && rwebm_video_stream_set_hw(s, 1));
+   CHECK(admitted_color.primaries == 1 && admitted_color.matrix == 1
+         && admitted_color.transfer == 1 && admitted_color.range == 2
+         && admitted_color.max_cll == 200 && admitted_color.max_fall == 80
+         && admitted_color.mastering.present == VIDEO_MASTERING_DISPLAY_COMPLETE
+         && admitted_color.mastering.luminance_max == 10240000);
+   CHECK(s->hw->packet_decoder && !memcmp(&s->hw_color,
+         &admitted_color, sizeof(admitted_color)));
+   rvp9_set_hw_backend(NULL);
+   rwebm_video_stream_close(s);
+   CHECK(!lives);
+   rvp9_set_hw_backend(&colors);
+   for (color_partial = 0; color_partial < 2; color_partial++)
+   {
+      color_refuse = 1;
+      before = opens;
+      closed = closes;
+      s = rwebm_video_stream_open(file, used);
+      CHECK(s && !rwebm_video_stream_set_hw(s, 1) && s->vp9 && !s->hw);
+      CHECK(opens == before + color_partial && closes == closed + color_partial);
+      rwebm_video_stream_close(s);
+      CHECK(!lives);
+   }
+   color_refuse = 0;
+   color_partial = 1;
+   CHECK(!rvp9_hw_backend_open(&header, 10, &ops, &snapshot));
+   CHECK(!ops.decoder && !snapshot.close && !lives);
+   color_partial = 0;
+   CHECK(color_opens == 5);
+   rvp9_set_hw_backend(NULL);
+   return 0;
+}
+
 static unsigned gpu_starts, cpu_starts, presents;
 static int start_cpu(void *user, unsigned w, unsigned h, unsigned slots)
 {
@@ -245,7 +336,7 @@ static int seek_hardware(void)
 
 static int packet_stream(void)
 {
-   static const rvp9_hw_backend_t packets = {NULL, open_backend, close_backend, true};
+   static const rvp9_hw_backend_t packets = {NULL, open_backend, close_backend, true, NULL};
    rwebm_video_stream_t *s;
    video_hw_frame_t frame, held;
    unsigned before = decodes, submitted = calls, shown = 0, tries;
@@ -428,6 +519,7 @@ int main(void)
    CHECK(!seek_hardware());
    rvp9_set_hw_backend(NULL);
    CHECK(!packet_stream());
+   CHECK(!color_admission());
    puts("WebM hardware dispatch, seeks, superframe retries, lacing, partial input and leases passed");
    return 0;
 }

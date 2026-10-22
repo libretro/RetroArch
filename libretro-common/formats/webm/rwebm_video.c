@@ -1413,6 +1413,7 @@ int rwebm_video_stream_set_hw(rwebm_video_stream_t *s, int enable)
    rvp9_hw_session_t *candidate;
    rvp9_hw_backend_t backend;
    rvp9_hw_ops_t ops;
+   video_color_metadata_t color;
    size_t sizes[RWEBM_VIDEO_MAX_SUPER];
    unsigned walked;
    int found = 0;
@@ -1420,67 +1421,103 @@ int rwebm_video_stream_set_hw(rwebm_video_stream_t *s, int enable)
    if (s && s->codec == RWEBM_CODEC_AV1)
       return s->av1 ? 1 : (enable ? rwebm_video_av1_open(s) : 0);
 #endif
-   if (!s || s->codec != RWEBM_CODEC_VP9) return 0;
-   if (!enable || s->hw) return s->hw != NULL;
+   if (!s || s->codec != RWEBM_CODEC_VP9)
+      return 0;
+   if (!enable || s->hw)
+      return s->hw != NULL;
    t = rwebm_get_track(s->demux, s->track);
-   if (!t || t->colour_range > 2) return 0;
+   if (!t || t->colour_range > 2)
+      return 0;
    if (rwebm_video_stream_is_hdr(s))
    {
       /* HDR importers consume the source metadata attached below. */
       if (!(t->matrix_coefficients == 0 || t->matrix_coefficients == 2
-               || t->matrix_coefficients == 1 || t->matrix_coefficients == 9)
-            || !(t->primaries == 0 || t->primaries == 2
-               || t->primaries == 1 || t->primaries == 9)) return 0;
+                || t->matrix_coefficients == 1 || t->matrix_coefficients == 9)
+            || !(t->primaries == 0 || t->primaries == 2 || t->primaries == 1
+                  || t->primaries == 9))
+         return 0;
    }
    else if (!(t->matrix_coefficients == 0 || t->matrix_coefficients == 2
-            || t->matrix_coefficients == 1 || t->matrix_coefficients == 5
-            || t->matrix_coefficients == 6)) return 0;
+                  || t->matrix_coefficients == 1 || t->matrix_coefficients == 5
+                  || t->matrix_coefficients == 6))
+      return 0;
    probe = rwebm_open_memory_avail(s->buf, s->len, s->avail, NULL);
-   if (!probe) return 0;
-   candidate = (rvp9_hw_session_t*)calloc(1, sizeof(*candidate));
-   if (!candidate) { rwebm_close(probe); return 0; }
+   if (!probe)
+      return 0;
+   candidate = (rvp9_hw_session_t *)calloc(1, sizeof(*candidate));
+   if (!candidate)
+   {
+      rwebm_close(probe);
+      return 0;
+   }
    for (walked = 0; walked < RWEBM_VIDEO_MAX_TS; walked++)
    {
-      if (rwebm_read_packet(probe, &packet) != 1) break;
-      if (packet.track != s->track) continue;
-      rwebm_video_vp9_superframe(packet.data, packet.size, sizes, RWEBM_VIDEO_MAX_SUPER);
-      found = !rvp9_parse_frame_header(packet.data, sizes[0], NULL, NULL,
-            &candidate->pending.header);
+      if (rwebm_read_packet(probe, &packet) != 1)
+         break;
+      if (packet.track != s->track)
+         continue;
+      rwebm_video_vp9_superframe(
+            packet.data, packet.size, sizes, RWEBM_VIDEO_MAX_SUPER);
+      found = !rvp9_parse_frame_header(
+            packet.data, sizes[0], NULL, NULL, &candidate->pending.header);
       break;
    }
    rwebm_close(probe);
-   if (!found || candidate->pending.header.frame_type
+   memset(&color, 0, sizeof(color));
+   color.primaries = t->primaries;
+   color.transfer  = t->transfer_characteristics;
+   color.matrix    = t->matrix_coefficients;
+   color.range     = t->colour_range;
+   color.mastering = t->mastering;
+   color.max_cll   = t->max_cll;
+   color.max_fall  = t->max_fall;
+   if (!found
+         || candidate->pending.header.frame_type
          /* The software HDR fallback currently requires ten-bit planes. */
-         || (rwebm_video_stream_is_hdr(s) && candidate->pending.header.bit_depth != 10)
+         || (rwebm_video_stream_is_hdr(s)
+               && candidate->pending.header.bit_depth != 10)
          || candidate->pending.header.w != (int)s->width
          || candidate->pending.header.h != (int)s->height
-         || !rvp9_hw_backend_open(&candidate->pending.header, 10, &ops, &backend))
-   { free(candidate); return 0; }
+         || !rvp9_hw_backend_open_color(
+               &candidate->pending.header, &color, 10, &ops, &backend))
+   {
+      free(candidate);
+      return 0;
+   }
    if (!rvp9_hw_session_init_mode(candidate, &ops, 10, backend.packet_decoder))
-   { backend.close(&ops); free(candidate); return 0; }
-   if (s->vp9) { rvp9_free(s->vp9); free(s->vp9); s->vp9 = NULL; }
-   s->hw = candidate; s->hw_backend = backend; s->hw_want = 1;
-   s->hw_color.primaries = t->primaries;
-   s->hw_color.transfer = t->transfer_characteristics;
-   s->hw_color.matrix = t->matrix_coefficients;
-   s->hw_color.range = t->colour_range;
-   s->hw_color.mastering = t->mastering;
-   s->hw_color.max_cll = t->max_cll;
-   s->hw_color.max_fall = t->max_fall;
+   {
+      backend.close(&ops);
+      free(candidate);
+      return 0;
+   }
+   if (s->vp9)
+   {
+      rvp9_free(s->vp9);
+      free(s->vp9);
+      s->vp9 = NULL;
+   }
+   s->hw          = candidate;
+   s->hw_backend  = backend;
+   s->hw_want     = 1;
+   s->hw_color    = color;
    s->hw_yuv_mask = s->hw_yuv = 0;
-   if (t->matrix_coefficients == 1 || t->matrix_coefficients == 5 || t->matrix_coefficients == 6)
+   if (t->matrix_coefficients == 1 || t->matrix_coefficients == 5
+         || t->matrix_coefficients == 6)
    {
       s->hw_yuv_mask |= IMAGE_YUV_FLAG_BT709;
-      if (t->matrix_coefficients == 1) s->hw_yuv |= IMAGE_YUV_FLAG_BT709;
+      if (t->matrix_coefficients == 1)
+         s->hw_yuv |= IMAGE_YUV_FLAG_BT709;
    }
    if (t->colour_range)
    {
       s->hw_yuv_mask |= IMAGE_YUV_FLAG_FULL_RANGE;
-      if (t->colour_range == 2) s->hw_yuv |= IMAGE_YUV_FLAG_FULL_RANGE;
+      if (t->colour_range == 2)
+         s->hw_yuv |= IMAGE_YUV_FLAG_FULL_RANGE;
    }
    rwebm_rewind(s->demux);
    s->pkt_idx = s->pending = s->waiting = 0;
-   s->soft_pending = s->timing_active = s->timing_ready = s->lookahead_ready = 0;
+   s->soft_pending = s->timing_active = s->timing_ready = s->lookahead_ready =
+         0;
    s->seek_active = s->seek_ready = s->seek_key = s->seek_scan = 0;
 #ifdef HAVE_RAV1
    s->av1_hdr_active = 0;
@@ -1491,7 +1528,8 @@ int rwebm_video_stream_set_hw(rwebm_video_stream_t *s, int enable)
    if (s && s->codec == RWEBM_CODEC_AV1)
       return s->av1 ? 1 : (enable ? rwebm_video_av1_open(s) : 0);
 #endif
-   (void)s; (void)enable;
+   (void)s;
+   (void)enable;
    return 0;
 #endif
 }
