@@ -70,6 +70,8 @@ bool rvp9_hw_backend_open_color(const rvp9_hdr *header,
    if (!header || slots < 10 || slots > 32 || !factory
          || (!factory->open && !factory->open_color) || !factory->close)
       return false;
+   if (factory->drain && !factory->packet_decoder)
+      return false;
    opened = factory->open_color
       ? factory->open_color(factory->user, header, color, slots, ops)
       : factory->open(factory->user, header, slots, ops);

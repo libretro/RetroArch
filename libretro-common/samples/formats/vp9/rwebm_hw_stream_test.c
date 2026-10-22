@@ -25,7 +25,8 @@ typedef char rvp9_backend_callback_appended[
 #define CHECK(x) do { if (!(x)) { fprintf(stderr, "line %d: %s\n", __LINE__, #x); return 1; } } while (0)
 static uint8_t file[4096], packet[64], key[64], hidden[64], shown[64];
 static size_t used, prefix;
-static unsigned bitpos, tail_hidden;
+static unsigned bitpos, tail_hidden, terminal_mode;
+static unsigned terminal_packets = 7, terminal_shown = 3;
 static unsigned lives, opens, closes, calls, decodes, exports, abandoned;
 
 static void bits(unsigned v, unsigned n)
@@ -131,7 +132,8 @@ static void fixture(unsigned matrix, unsigned range, unsigned transfer)
    super[n++] = (uint8_t)(tail_hidden ? nh : ns); super[n++] = 0xc2;
    block(0, 0x80, super, n);
    block(40, 0, lace + 1, 1); prefix = used;
-   block(80, 4, lace, sizeof(lace));
+   if (terminal_mode) block(80, 0x80, super, n);
+   else block(80, 4, lace, sizeof(lace));
    finish(cluster); finish(segment);
 }
 
@@ -141,6 +143,7 @@ typedef struct mock
    size_t size;
    unsigned refs, width, height;
    int output_busy;
+   unsigned native_count, eos_attempts, eos_accepted, shown;
 } mock_t;
 static void release(mock_t *m)
 {
@@ -156,13 +159,14 @@ static int decode(void *owner, const uint8_t *data, size_t size, const rvp9_hw_p
    calls++;
    if (!m->retry) { m->retry = data; m->size = size; return 1; }
    if (data != m->retry || size != m->size || p->slot < 0) return -1;
-   m->retry = NULL; decodes++; return 0;
+   m->retry = NULL; decodes++; m->native_count++; return 0;
 }
 static int output(void *owner, unsigned slot, video_hw_frame_t *out)
 {
    mock_t *m = (mock_t*)owner;
+   if (terminal_mode && m->native_count >= terminal_packets - 1 && !m->eos_accepted) return 1;
    if (!m->output_busy) { m->output_busy = 1; return 1; }
-   m->output_busy = 0; m->refs++;
+   m->output_busy = 0; m->refs++; m->shown++;
    memset(out, 0, sizeof(*out)); out->image = ++exports; out->wait = slot + 1;
    out->width = m->width; out->height = m->height; out->pixfmt = IMAGE_PIXFMT_NV12;
    out->owner = m; out->abandon = abandon;
@@ -183,7 +187,7 @@ static void close_backend(rvp9_hw_ops_t *ops)
 {
    closes++; release((mock_t*)ops->decoder); memset(ops, 0, sizeof(*ops));
 }
-static const rvp9_hw_backend_t backend = {NULL, open_backend, close_backend, false, NULL};
+static const rvp9_hw_backend_t backend = {NULL, open_backend, close_backend, false, NULL, NULL};
 static video_color_metadata_t admitted_color;
 static unsigned color_opens, color_refuse, color_partial;
 
@@ -207,7 +211,7 @@ static bool open_color_backend(void *user, const rvp9_hdr *h,
 static int color_admission(void)
 {
    static const rvp9_hw_backend_t colors = {
-      NULL, open_backend, close_backend, true, open_color_backend
+      NULL, open_backend, close_backend, true, open_color_backend, NULL
    };
    rwebm_video_stream_t *s;
    rvp9_hw_ops_t ops;
@@ -336,7 +340,7 @@ static int seek_hardware(void)
 
 static int packet_stream(void)
 {
-   static const rvp9_hw_backend_t packets = {NULL, open_backend, close_backend, true, NULL};
+   static const rvp9_hw_backend_t packets = {NULL, open_backend, close_backend, true, NULL, NULL};
    rwebm_video_stream_t *s;
    video_hw_frame_t frame, held;
    unsigned before = decodes, submitted = calls, shown = 0, tries;
@@ -363,6 +367,112 @@ static int packet_stream(void)
    CHECK(lives == 1 && held.image);
    video_hw_frame_abandon(&held);
    CHECK(!lives && opens == closes && abandoned == exports);
+   rvp9_set_hw_backend(NULL);
+   return 0;
+}
+
+static int drain_backend(void *owner, bool discard)
+{
+   mock_t *m = (mock_t *)owner;
+   if (m->native_count != terminal_packets)
+      return -1;
+   m->eos_attempts++;
+   if (m->eos_attempts == 1)
+      return 1;
+   m->eos_accepted = 1;
+   return discard || m->shown == terminal_shown ? 0 : 1;
+}
+
+static int terminal_stream(void)
+{
+   static const rvp9_hw_backend_t terminal = {
+         NULL, open_backend, close_backend, true, NULL, drain_backend};
+   rwebm_video_stream_t *s;
+   video_hw_frame_t frame, held;
+   mock_t *m;
+   rvp9_hw_backend_t invalid = terminal, snapshot;
+   rvp9_hw_ops_t ops;
+   rvp9_hdr header;
+   int64_t position;
+   unsigned tries, shown = 0, before;
+   int need_more, status;
+   memset(&header, 0, sizeof(header));
+   invalid.packet_decoder = false;
+   rvp9_set_hw_backend(&invalid);
+   CHECK(!rvp9_hw_backend_open(&header, 10, &ops, &snapshot) && !ops.decoder);
+   terminal_mode = tail_hidden = 1;
+   fixture(1, 2, 1);
+   rvp9_set_hw_backend(&terminal);
+   s = rwebm_video_stream_open_avail(file, used, prefix, &need_more);
+   CHECK(s && rwebm_video_stream_set_hw(s, 1));
+   m = (mock_t *)s->hw->ops.decoder;
+   memset(&held, 0, sizeof(held));
+   for (tries = 0; tries < 100; tries++)
+   {
+      if (!rwebm_video_stream_next(s, NULL))
+      {
+         if (!rwebm_video_stream_waiting(s))
+            break;
+         if (s->avail < used)
+         {
+            CHECK(!m->eos_attempts);
+            rwebm_video_stream_set_avail(s, used);
+         }
+         continue;
+      }
+      CHECK(rwebm_video_stream_hw_frame(s, &frame));
+      if (!shown)
+         held = frame;
+      else
+         video_hw_frame_abandon(&frame);
+      shown++;
+   }
+   CHECK(tries < 100 && shown == 3 && m->eos_accepted && m->native_count == 7);
+   rwebm_video_stream_rewind(s);
+   CHECK(lives == 2 && held.image);
+   for (tries = 0; tries < 100; tries++)
+      if (rwebm_video_stream_next(s, NULL))
+         break;
+   CHECK(tries < 100 && rwebm_video_stream_hw_frame(s, &frame));
+   video_hw_frame_abandon(&frame);
+   rwebm_video_stream_close(s);
+   CHECK(lives == 1);
+   video_hw_frame_abandon(&held);
+   CHECK(!lives);
+   s = rwebm_video_stream_open(file, used);
+   CHECK(s && rwebm_video_stream_set_hw(s, 1));
+   before = exports;
+   for (tries = 0; tries < 100; tries++)
+   {
+      status = rwebm_video_stream_skip(s, NULL);
+      if (!status)
+         break;
+   }
+   m = (mock_t *)s->hw->ops.decoder;
+   CHECK(tries < 100 && m->eos_accepted && exports == before);
+   terminal_shown   = 1;
+   CHECK(rwebm_video_stream_seek_begin_ns(s, 80000000));
+   for (tries = 0; tries < 100; tries++)
+      if (rwebm_video_stream_seek_step(s, &position) == 1)
+         break;
+   CHECK(tries < 100 && position == 80000);
+   for (tries = 0; tries < 100; tries++)
+      if (rwebm_video_stream_next(s, NULL))
+         break;
+   CHECK(tries < 100 && rwebm_video_stream_hw_frame(s, &frame));
+   video_hw_frame_abandon(&frame);
+   for (tries = 0; tries < 100; tries++)
+   {
+      CHECK(!rwebm_video_stream_next(s, NULL));
+      if (!rwebm_video_stream_waiting(s))
+         break;
+   }
+   CHECK(tries < 100);
+   rwebm_video_stream_close(s);
+   CHECK(!lives && opens == closes && abandoned == exports);
+   terminal_packets = 7;
+   terminal_shown   = 3;
+   terminal_mode = tail_hidden = 0;
    rvp9_set_hw_backend(NULL);
    return 0;
 }
@@ -520,6 +630,7 @@ int main(void)
    rvp9_set_hw_backend(NULL);
    CHECK(!packet_stream());
    CHECK(!color_admission());
+   CHECK(!terminal_stream());
    puts("WebM hardware dispatch, seeks, superframe retries, lacing, partial input and leases passed");
    return 0;
 }
