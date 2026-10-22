@@ -129,9 +129,37 @@ def extract(text):
         defs = {}
         for m in ROW.finditer(body):
             defs[m.group(1)] = (m.group(3), ' '.join(m.group(4).split()))
-        for ident in BARE.findall(body):
-            enable, value = defs.get(ident, ('0', '-'))
-            rows.append((kind, ident, enable, value))
+        call = body.find('config_%s_rows_add(' % kind)
+        parts = [body] if call < 0 else [body[:call], None, body[call:]]
+        for part in parts:
+            if part is None:
+                rows += table_rows(text, kind)
+                continue
+            for ident in BARE.findall(part):
+                enable, value = defs.get(ident, ('0', '-'))
+                rows.append((kind, ident, enable, value))
+    return rows
+
+
+TABLE_ROW = re.compile(
+    r'\{\s*"([^"]*)"\s*,\s*\(uint32_t\)[^,]*\([^)]*\)\s*,\s*(.*?)\s*\},\s*(?=\{)',
+    re.S)
+
+
+def table_rows(text, kind):
+    """The literal-keyed rows of config_<kind>_rows[], which
+    config_<kind>_rows_add() adds where it is called."""
+    start = text.find('config_%s_rows[] = {' % kind)
+    if start < 0:
+        return []
+    end = text.find('{ 0 }', start)
+    body = text[start:end] + '{'
+    rows = []
+    for m in TABLE_ROW.finditer(body):
+        value = ' '.join(m.group(2).split())
+        if value.startswith('(') and value.endswith(')'):
+            value = value[1:-1]  # CFG_ROW brackets the default
+        rows.append((kind, m.group(1), '1', value))
     return rows
 
 
