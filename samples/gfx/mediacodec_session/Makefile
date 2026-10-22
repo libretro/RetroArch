@@ -43,8 +43,10 @@ vulkan_rgb_gpu_test: vulkan_rgb_gpu_test.c ../../../gfx/common/vulkan_android_pi
 	$(CC) $(CFLAGS) -I../../../gfx/include vulkan_rgb_gpu_test.c ../../../gfx/common/vulkan_android_pipeline.c -o $@ $(LDFLAGS) -lvulkan -lm
 gpu-check: vulkan_rgb_gpu_test
 	./vulkan_rgb_gpu_test
-android_frame_test: android_frame_test.c ../../../gfx/common/android_frame.c ../../../gfx/common/android_frame.h ../../../gfx/common/android_image_queue.c
-	$(CC) $(CFLAGS) -DHAVE_THREADS -pthread android_frame_test.c ../../../gfx/common/android_frame.c ../../../gfx/common/android_image_queue.c -o $@ $(LDFLAGS)
+rthreads.o: ../../../libretro-common/rthreads/rthreads.c
+	$(CC) -O1 -g1 -DHAVE_THREADS -D_POSIX_C_SOURCE=200809L -I../../../libretro-common/include $(LDFLAGS) -c $< -o $@
+android_frame_test: android_frame_test.c ../../../gfx/common/android_frame.c ../../../gfx/common/android_frame.h ../../../gfx/common/android_image_queue.c rthreads.o
+	$(CC) $(CFLAGS) $(BACKEND_HOST_FLAGS) -DHAVE_THREADS -pthread android_frame_test.c ../../../gfx/common/android_frame.c ../../../gfx/common/android_image_queue.c rthreads.o -o $@ $(LDFLAGS)
 EXPORT_SOURCES := ../../../gfx/common/mediacodec_frame_export.c ../../../gfx/common/mediacodec_color.c \
  ../../../gfx/common/android_frame.c ../../../gfx/common/android_image_queue.c
 frame_export_test: frame_export_test.c $(EXPORT_SOURCES) ../../../gfx/common/mediacodec_frame_export.h ../../../gfx/common/mediacodec_color.h ../../../gfx/common/vp9_color.h
@@ -92,6 +94,7 @@ check: all
 	./vulkan_device_test
 	CC="$(CC)" python3 root_optional_test.py
 clean:
+	rm -f rthreads.o
 	rm -f av1_color_test av1_color_test.exe
 	rm -f av1_backend_test av1_backend_test.exe
 	rm -f av1_decoder_test av1_decoder_test.exe
@@ -119,3 +122,7 @@ hevc_backend_test vp9_backend_test av1_backend_test: ../../../gfx/common/vp9_col
 session-check:
 	python3 session_run.py
 .PHONY: session-check
+
+frame-check:
+	python3 frame_run.py
+.PHONY: frame-check
