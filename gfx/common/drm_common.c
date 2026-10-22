@@ -180,6 +180,48 @@ bool drm_hotplug_needs_restart(int fd, unsigned monitor_index, bool *lost)
 }
 #endif
 
+bool drm_wait_flip_hotplug(int timeout, int hotplug_fd, short *hotplug)
+{
+   struct pollfd fds[2];
+   nfds_t n = 1;
+
+   fds[0]         = g_drm_fds;
+   fds[0].revents = 0;
+   if (hotplug_fd >= 0)
+   {
+      fds[1].fd      = hotplug_fd;
+      fds[1].events  = POLLIN;
+      fds[1].revents = 0;
+      n              = 2;
+   }
+
+   for (;;)
+   {
+      if (poll(fds, n, timeout) < 0)
+         return false;
+
+      /* Left queued for the caller: drop it from the set, or a
+       * blocking wait would spin on it */
+      if (n == 2 && fds[1].revents)
+      {
+         *hotplug = fds[1].revents;
+         n        = 1;
+      }
+
+      if (fds[0].revents & (POLLHUP | POLLERR))
+         return false;
+
+      if (fds[0].revents & POLLIN)
+      {
+         drmHandleEvent(g_drm_fd, &g_drm_evctx);
+         return true;
+      }
+
+      if (timeout >= 0)
+         return false;
+   }
+}
+
 float drm_calc_refresh_rate(drmModeModeInfo *mode)
 {
    unsigned int num, den;

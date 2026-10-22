@@ -2,12 +2,16 @@
  * drives yet, as with a display plugged in after boot, gets an encoder
  * and a CRTC that is off rather than failing; a CRTC that was off is
  * switched off again on restore; a size the connector lacks falls back
- * to its default mode; and which hotplugs restart the video driver. */
+ * to its default mode; which hotplugs restart the video driver; and
+ * the flip wait that watches the hotplug socket at no extra poll. */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
 #include <stdint.h>
+#include <unistd.h>
+#include <poll.h>
+#include <pthread.h>
 
 #include "../../../gfx/common/drm_common.c"
 
@@ -240,10 +244,99 @@ int drmModeSetCrtc(int fd, uint32_t crtc_id, uint32_t buffer_id,
    return 0;
 }
 
+static int flips_handled;
+
+/* Reads the flip off the card, as the kernel's event read would */
 int drmHandleEvent(int fd, drmEventContextPtr evctx)
 {
-   (void)fd; (void)evctx;
+   char c;
+   (void)evctx;
+   if (read(fd, &c, 1) == 1)
+      flips_handled++;
    return 0;
+}
+
+static int polls;
+
+int __real_poll(struct pollfd *fds, nfds_t n, int timeout);
+int __wrap_poll(struct pollfd *fds, nfds_t n, int timeout)
+{
+   polls++;
+   return __real_poll(fds, n, timeout);
+}
+
+static void *flip_later(void *fd)
+{
+   usleep(50 * 1000);
+   if (write(*(int*)fd, "f", 1) != 1)
+      return NULL;
+   return NULL;
+}
+
+static void check_flip_wait(void)
+{
+   int card[2], mon[2];
+   short revents;
+   char c;
+   pthread_t thr;
+
+   if (pipe(card) != 0 || pipe(mon) != 0)
+   {
+      CHECK(0, "pipes");
+      return;
+   }
+   g_drm_fd         = card[0];
+   g_drm_fds.fd     = card[0];
+   g_drm_fds.events = POLLIN;
+
+   /* No monitor: as drm_wait_flip() */
+   revents = 0; polls = 0; flips_handled = 0;
+   CHECK(write(card[1], "f", 1) == 1, "write");
+   CHECK(drm_wait_flip_hotplug(-1, -1, &revents), "a flip with no monitor is seen");
+   CHECK(polls == 1 && flips_handled == 1 && !revents, "one poll, no hotplug");
+
+   /* Nothing waiting on the card: a frame that does not block */
+   revents = 0; polls = 0;
+   CHECK(!drm_wait_flip_hotplug(0, mon[0], &revents), "nothing ready, no flip");
+   CHECK(polls == 1 && !revents, "one poll, nothing noted");
+
+   /* A hotplug while not blocking is noted, the flip still pending */
+   revents = 0; polls = 0;
+   CHECK(write(mon[1], "h", 1) == 1, "write");
+   CHECK(!drm_wait_flip_hotplug(0, mon[0], &revents), "a hotplug is not a flip");
+   CHECK(polls == 1 && (revents & POLLIN), "noted in the same poll");
+   CHECK(read(mon[0], &c, 1) == 1, "the event is left for the caller");
+
+   /* A hotplug while blocked: noted, and the wait goes on for the flip
+    * without spinning on the unread socket */
+   revents = 0; polls = 0; flips_handled = 0;
+   CHECK(write(mon[1], "h", 1) == 1, "write");
+   pthread_create(&thr, NULL, flip_later, &card[1]);
+   CHECK(drm_wait_flip_hotplug(-1, mon[0], &revents), "the flip after a hotplug is seen");
+   pthread_join(thr, NULL);
+   CHECK(flips_handled == 1 && (revents & POLLIN), "flip handled, hotplug noted");
+   CHECK(polls == 2, "one poll for the hotplug, one for the flip, got %d", polls);
+   CHECK(read(mon[0], &c, 1) == 1, "the event is still there to read");
+
+   /* Both at once: one poll */
+   revents = 0; polls = 0; flips_handled = 0;
+   CHECK(write(mon[1], "h", 1) == 1 && write(card[1], "f", 1) == 1, "write");
+   CHECK(drm_wait_flip_hotplug(-1, mon[0], &revents), "flip seen");
+   CHECK(polls == 1 && flips_handled == 1 && (revents & POLLIN), "both in one poll");
+   CHECK(read(mon[0], &c, 1) == 1, "read");
+
+   /* A dead socket is reported, not spun on */
+   revents = 0; polls = 0; flips_handled = 0;
+   close(mon[1]);
+   pthread_create(&thr, NULL, flip_later, &card[1]);
+   CHECK(drm_wait_flip_hotplug(-1, mon[0], &revents), "the flip after a hangup is seen");
+   pthread_join(thr, NULL);
+   CHECK((revents & POLLHUP) && polls == 2, "hangup reported in two polls, got %d", polls);
+
+   close(mon[0]);
+   close(card[0]);
+   close(card[1]);
+   memset(&g_drm_fds, 0, sizeof(g_drm_fds));
 }
 
 /* ---- the frontend's sequence ----------------------------------------- */
@@ -405,6 +498,8 @@ int main(void)
       CHECK(!drm_hotplug_needs_restart(FAKE_FD, 2, &lost),
             "an index past the displays left does not restart");
    }
+
+   check_flip_wait();
 
    if (failures)
    {

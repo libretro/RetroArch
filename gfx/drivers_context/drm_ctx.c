@@ -83,6 +83,10 @@ typedef struct gfx_ctx_drm_data
    struct udev *udev;
    struct udev_monitor *hotplug;
    dev_t hotplug_dev;
+   int hotplug_fd;
+   /* The monitor's revents from the flip wait, read in check_window,
+    * which runs on the same thread */
+   short hotplug_revents;
 #endif
    struct gbm_bo *bo;
    struct gbm_bo *next_bo;
@@ -587,6 +591,9 @@ static void gfx_ctx_drm_swap_interval(void *data, int interval)
 static void gfx_ctx_drm_hotplug_init(gfx_ctx_drm_data_t *drm, int fd)
 {
    struct stat st;
+   int flags;
+
+   drm->hotplug_fd = -1;
 
    if (fstat(fd, &st) != 0 || !(drm->udev = udev_new()))
       return;
@@ -596,10 +603,14 @@ static void gfx_ctx_drm_hotplug_init(gfx_ctx_drm_data_t *drm, int fd)
       return;
    if (     udev_monitor_filter_add_match_subsystem_devtype(drm->hotplug,
                "drm", "drm_minor") < 0
-         || udev_monitor_enable_receiving(drm->hotplug) < 0)
+         || udev_monitor_enable_receiving(drm->hotplug) < 0
+         || (drm->hotplug_fd = udev_monitor_get_fd(drm->hotplug)) < 0
+         || (flags = fcntl(drm->hotplug_fd, F_GETFL)) < 0
+         || fcntl(drm->hotplug_fd, F_SETFL, flags | O_NONBLOCK) < 0)
    {
       udev_monitor_unref(drm->hotplug);
-      drm->hotplug = NULL;
+      drm->hotplug    = NULL;
+      drm->hotplug_fd = -1;
    }
 }
 
@@ -609,29 +620,33 @@ static void gfx_ctx_drm_hotplug_deinit(gfx_ctx_drm_data_t *drm)
       udev_monitor_unref(drm->hotplug);
    if (drm->udev)
       udev_unref(drm->udev);
-   drm->hotplug = NULL;
-   drm->udev    = NULL;
+   drm->hotplug         = NULL;
+   drm->udev            = NULL;
+   drm->hotplug_fd      = -1;
+   drm->hotplug_revents = 0;
 }
 
-static void gfx_ctx_drm_hotplug_poll(gfx_ctx_drm_data_t *drm)
+/* The flip wait polls the monitor alongside the card, so a frame
+ * with nothing queued costs nothing here */
+static void gfx_ctx_drm_hotplug_read(gfx_ctx_drm_data_t *drm)
 {
-   struct pollfd fds;
-   bool changed = false;
+   struct udev_device *dev;
+   bool changed         = false;
+   short revents        = drm->hotplug_revents;
 
-   if (!drm->hotplug)
-      return;
+   drm->hotplug_revents = 0;
 
-   fds.fd      = udev_monitor_get_fd(drm->hotplug);
-   fds.events  = POLLIN;
-   fds.revents = 0;
-
-   while (poll(&fds, 1, 0) == 1 && (fds.revents & POLLIN))
+   if (revents & (POLLERR | POLLHUP | POLLNVAL))
    {
-      struct udev_device *dev = udev_monitor_receive_device(drm->hotplug);
+      RARCH_WARN("[KMS] Hotplug monitor failed, no longer watching.\n");
+      gfx_ctx_drm_hotplug_deinit(drm);
+      return;
+   }
+
+   while ((dev = udev_monitor_receive_device(drm->hotplug)))
+   {
       const char *val;
 
-      if (!dev)
-         break;
       if (     udev_device_get_devnum(dev) == drm->hotplug_dev
             && (val = udev_device_get_property_value(dev, "HOTPLUG"))
             && string_is_equal(val, "1"))
@@ -657,7 +672,8 @@ static void gfx_ctx_drm_check_window(void *data, bool *quit,
    *quit   = (bool)frontend_driver_get_signal_handler_state();
    *dims = VIDEO_SCALE_PACK(g_drm_mode->hdisplay, g_drm_mode->vdisplay);
 #ifdef HAVE_UDEV
-   gfx_ctx_drm_hotplug_poll((gfx_ctx_drm_data_t*)data);
+   if (((gfx_ctx_drm_data_t*)data)->hotplug_revents)
+      gfx_ctx_drm_hotplug_read((gfx_ctx_drm_data_t*)data);
 #endif
 }
 
@@ -679,7 +695,13 @@ static bool gfx_ctx_drm_wait_flip(gfx_ctx_drm_data_t *drm, bool block)
 
    while (drm->waiting_for_flip)
    {
+#ifdef HAVE_UDEV
+      if (!drm_wait_flip_hotplug(timeout,
+               drm->hotplug_revents ? -1 : drm->hotplug_fd,
+               &drm->hotplug_revents))
+#else
       if (!drm_wait_flip(timeout))
+#endif
          break;
    }
 
@@ -1115,6 +1137,9 @@ static void *gfx_ctx_drm_init(void *video_driver)
    if (!drm)
       return NULL;
    drm->fd                   = -1;
+#ifdef HAVE_UDEV
+   drm->hotplug_fd           = -1;
+#endif
    drm->max_swapchain_images = settings->uints.video_max_swapchain_images;
 
    gpu_descriptors = dir_list_new("/dev/dri", NULL, false, true, false, false);

@@ -74,6 +74,10 @@ bool drm_hotplug_needs_restart(int fd, unsigned monitor_index, bool *lost);
 
 float drm_get_refresh_rate(void *data);
 
+/* drm_wait_flip(), also watching hotplug_fd (-1 for none): its revents
+ * go to *hotplug when it wakes, and its data is left for the caller */
+bool drm_wait_flip_hotplug(int timeout, int hotplug_fd, short *hotplug);
+
 static INLINE bool drm_wait_flip(int timeout)
 {
    g_drm_fds.revents = 0;
