@@ -9680,10 +9680,14 @@ static retro_atomic_int_t input_rumble_answer[MAX_USERS * 2];
 static void input_rumble_write(unsigned slot, int value, void *userdata)
 {
    settings_t *settings = (settings_t*)userdata;
-   unsigned port        = slot / 2;
-   bool ok              = input_driver_set_rumble(port,
-         settings->uints.input_joypad_index[port],
-         (enum retro_rumble_effect)(slot & 1), (uint16_t)value);
+   const unsigned *user = settings->uints.input_remap_port_map[slot / 2];
+   bool ok              = false;
+
+   /* every user the core port is fed by */
+   for (; *user < MAX_USERS; user++)
+      ok = input_driver_set_rumble(*user,
+            settings->uints.input_joypad_index[*user],
+            (enum retro_rumble_effect)(slot & 1), (uint16_t)value) || ok;
 
    retro_atomic_store_release_int(&input_rumble_answer[slot], ok ? 2 : 1);
 }
@@ -9697,7 +9701,7 @@ static void input_rumble_write(unsigned slot, int value, void *userdata)
  * input_driver_flush_rumble() writes the frame's last value once the
  * core has run.
  *
- * @param port      User number.
+ * @param port      Core port.
  * @param effect    Rumble effect.
  * @param strength  Strength of rumble effect.
  *

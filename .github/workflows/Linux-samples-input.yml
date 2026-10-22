@@ -565,6 +565,23 @@ jobs:
           make -C samples/frontend/android_second_surface clean check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
           make -C samples/frontend/android_second_surface clean
 
+      - name: Build and run mapped_port_test (ASan + UBSan, mingw + Wine)
+        shell: bash
+        working-directory: samples/input/mapped_port
+        run: |
+          set -euo pipefail
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
+          # input/input_driver.c's Mapped Port sharing against a stand-in
+          # frontend. Users mapped to one core port: its rumble.
+          make clean && make SANITIZER=address,undefined all
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+            ./mapped_port_test | tee mapped_port.log
+          grep -q "^PASS mapped_port_test$" mapped_port.log
+          make clean
+          make CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine check
+          make clean
+          rm -f mapped_port.log
+
       - name: Build and run key_lane_test (plain, ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/input/key_lane
