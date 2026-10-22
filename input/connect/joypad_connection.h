@@ -206,6 +206,7 @@ extern pad_connection_interface_t pad_connection_8bitdo_ultimate_2;
 extern pad_connection_interface_t pad_connection_8bitdo_ultimate_2c;
 extern pad_connection_interface_t pad_connection_8bitdo_ultimate_3;
 extern pad_connection_interface_t pad_connection_dragonrise;
+extern pad_connection_interface_t pad_connection_gamecube_pc;
 
 int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
    const char* name, uint16_t vid, uint16_t pid,

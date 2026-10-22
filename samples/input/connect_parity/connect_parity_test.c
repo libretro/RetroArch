@@ -2568,6 +2568,62 @@ static void test_sdl_pads(void)
          "sdl pads: a DualShock 4 pad's rumble sent without its light bar");
    pad_connection_ps4_third_party.deinit(dev);
 
+   /* GameCube adapters in their PC mode: the older firmware's port
+    * first, the first port with a pad read, its C stick the other way;
+    * the newer's rumble, kept up */
+   dev = pad_connection_gamecube_pc.init(&dummy_connection, 0, &stub_hid);
+   memset(p, 0, sizeof(p));
+   p[0] = 2;
+   p[1] = 0x02 | 0x80;    /* A, Z */
+   p[2] = 0x02;           /* Start */
+   p[3] = 216; p[4] = 128; p[5] = 39; p[6] = 39;
+   p[7] = 40; p[8] = 216;
+   count = sent_count;
+   deliver(&pad_connection_gamecube_pc, dev, p, 10);
+   p[0] = 3; p[1] = 0x04; /* B on the next port */
+   deliver(&pad_connection_gamecube_pc, dev, p, 10);
+   CHECK(pad_connection_gamecube_pc.button(dev, RETRO_DEVICE_ID_JOYPAD_A)
+         && pad_connection_gamecube_pc.button(dev, RETRO_DEVICE_ID_JOYPAD_SELECT)
+         && pad_connection_gamecube_pc.button(dev, RETRO_DEVICE_ID_JOYPAD_START)
+         && !pad_connection_gamecube_pc.button(dev, RETRO_DEVICE_ID_JOYPAD_B),
+         "sdl pads: the GameCube adapter's first port not the one read");
+   CHECK(pad_connection_gamecube_pc.get_axis(dev, 0) == 32767
+         && abs(pad_connection_gamecube_pc.get_axis(dev, 1)) <= 1
+         && pad_connection_gamecube_pc.get_axis(dev, 2) == 32767
+         && pad_connection_gamecube_pc.get_axis(dev, 3) == -32767
+         && pad_connection_gamecube_pc.get_axis(dev, 4) == 0
+         && pad_connection_gamecube_pc.get_axis(dev, 5) == 32767,
+         "sdl pads: the older GameCube adapter's sticks misread (%d %d %d %d %d %d)",
+         pad_connection_gamecube_pc.get_axis(dev, 0),
+         pad_connection_gamecube_pc.get_axis(dev, 1),
+         pad_connection_gamecube_pc.get_axis(dev, 2),
+         pad_connection_gamecube_pc.get_axis(dev, 3),
+         pad_connection_gamecube_pc.get_axis(dev, 4),
+         pad_connection_gamecube_pc.get_axis(dev, 5));
+   pad_connection_gamecube_pc.set_rumble(dev, RETRO_RUMBLE_STRONG, 0xffff);
+   deliver(&pad_connection_gamecube_pc, dev, p, 10);
+   CHECK(sent_count == count, "sdl pads: the older GameCube adapter rumbled");
+   pad_connection_gamecube_pc.deinit(dev);
+   dev = pad_connection_gamecube_pc.init(&dummy_connection, 0, &stub_hid);
+   memmove(p, p + 1, 9);
+   deliver(&pad_connection_gamecube_pc, dev, p, 9);
+   CHECK(pad_connection_gamecube_pc.get_axis(dev, 2) == -32768
+         && pad_connection_gamecube_pc.get_axis(dev, 3) == 32767,
+         "sdl pads: the newer GameCube adapter's C stick misread");
+   pad_connection_gamecube_pc.set_rumble(dev, RETRO_RUMBLE_WEAK, 0x100);
+   deliver(&pad_connection_gamecube_pc, dev, p, 9);
+   deliver(&pad_connection_gamecube_pc, dev, p, 9);
+   CHECK(sent_count == count + 1 && sent_len == 3 && sent[0] == 0
+         && sent[1] == 0xff && sent[2] == 0xff,
+         "sdl pads: the newer GameCube adapter not rumbled once (%u)",
+         sent_count - count);
+   pad_connection_gamecube_pc.set_rumble(dev, RETRO_RUMBLE_WEAK, 0);
+   deliver(&pad_connection_gamecube_pc, dev, p, 9);
+   deliver(&pad_connection_gamecube_pc, dev, p, 9);
+   CHECK(sent_count == count + 2 && sent[1] == 0 && sent[2] == 0,
+         "sdl pads: the newer GameCube adapter's rumble not stopped once");
+   pad_connection_gamecube_pc.deinit(dev);
+
    /* the Switch Online N64 pad: at rest with no amplitude */
    sent_count = 0;
    stub_hid.is_bluetooth = stub_is_bluetooth;
@@ -2578,7 +2634,7 @@ static void test_sdl_pads(void)
          "sdl pads: the N64 pad's rest is not 00 00 01 40");
    pad_connection_switch_pro_n64.deinit(dev);
 
-   printf("[%s] sdl pads: 8BitDo Pro 2's paddles and motion, the Ultimates' rumble, third-party DualSense and DualShock 4 pads by what they say, the N64 pad's quiet rest\n",
+   printf("[%s] sdl pads: 8BitDo Pro 2's paddles and motion, the Ultimates' rumble, third-party DualSense and DualShock 4 pads by what they say, GameCube adapters in PC mode, the N64 pad's quiet rest\n",
          failures == had ? "pass" : "fail");
 }
 

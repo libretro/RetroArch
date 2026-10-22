@@ -1434,6 +1434,7 @@ ifeq ($(HAVE_HID), 1)
 	  input/connect/connect_kade.o \
 	  input/connect/connect_zerodelay_dragonrise.o \
 	  input/connect/connect_8bitdo.o \
+	  input/connect/connect_gamecube_pc.o \
           input/connect/connect_wiiugca.o
 endif
 

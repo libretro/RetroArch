@@ -570,6 +570,22 @@ static joypad_connection_entry_t pad_map[] = {
       PID_KADE,
       &pad_connection_kade
    },
+   /* GameCube adapters in their PC mode, as SDL lists them */
+   { "GameCube Controller Adapter",
+      VID_DRAGONRISE,
+      SWAP_IF_BIG(0x1843),
+      &pad_connection_gamecube_pc
+   },
+   { "GameCube Controller Adapter",
+      VID_DRAGONRISE,
+      SWAP_IF_BIG(0x1844),
+      &pad_connection_gamecube_pc
+   },
+   { "GameCube Controller Adapter",
+      VID_DRAGONRISE,
+      SWAP_IF_BIG(0x1846),
+      &pad_connection_gamecube_pc
+   },
    { "DragonRise ZeroDelay Encoder",
       VID_DRAGONRISE,
       PID_DRAGONRISE,

@@ -24,6 +24,7 @@ SOURCES := connect_parity_test.c \
            $(ROOT)/input/connect/connect_wiiupro.c \
            $(ROOT)/input/connect/connect_retrode.c \
            $(ROOT)/input/connect/connect_8bitdo.c \
+           $(ROOT)/input/connect/connect_gamecube_pc.c \
            $(ROOT)/input/common/input_hid_common.c \
            $(ROOT)/libretro-common/encodings/encoding_crc32.c \
            $(ROOT)/libretro-common/features/features_cpu.c \

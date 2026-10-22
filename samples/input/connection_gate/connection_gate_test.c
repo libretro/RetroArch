@@ -48,7 +48,8 @@ pad_connection_interface_t pad_connection_wii, pad_connection_wiiupro,
    pad_connection_8bitdo_ultimate_2, pad_connection_8bitdo_ultimate_2c,
    pad_connection_8bitdo_ultimate_3, pad_connection_ps5_third_party,
    pad_connection_switch_pro_n64, pad_connection_ps4_third_party,
-   pad_connection_ps4_razer, pad_connection_ps4_no_output;
+   pad_connection_ps4_razer, pad_connection_ps4_no_output,
+   pad_connection_gamecube_pc;
 
 static int payload;
 static retro_atomic_int_t destroyed, stop, bad_reads;
