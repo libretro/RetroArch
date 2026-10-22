@@ -498,8 +498,8 @@ typedef struct
    /* The Content Downloader directory the user last stepped into. */
    char core_content_dir[NAME_MAX_LENGTH];
    /* The Controllers row to put the cursor back on: a controller's
-    * row type less MENU_SETTINGS_INPUT_PLAYS_AS_BEGIN, and one; 0 for
-    * none. */
+    * row type less MENU_SETTINGS_INPUT_PLAYS_AS_BEGIN, and one, or
+    * PLAYS_AS_ROW_LAYOUT (menu_displaylist.c); 0 for none. */
    unsigned plays_as_row;
    /* Port N Controls as last made, N, its controller rows and its
     * links, while no other list was made since; N is 0 for none. */

@@ -37,8 +37,8 @@ S_BOOL(video_openxr_perf_boost, VIDEO_OPENXR_PERF_BOOST,
 S_UINT_EX(video_openxr_controllers, VIDEO_OPENXR_CONTROLLERS,
       "video_openxr_controllers",
       0, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, 1, 1, 0, setting_action_ok_uint, setting_get_string_representation_video_openxr_controllers, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,
-      "Headset Controllers",
-      "How the headset's controllers play. Combined makes both one gamepad for player 1. Separate makes the left controller player 1 and the right player 2.")
+      "OpenXR Controller Layout",
+      "How the headset's controllers appear. Combined makes both one gamepad. Separate makes each hand a gamepad of its own. Each plays as the player set for it above, player 1 unless set otherwise.")
 S_UINT_EX(video_openxr_laser, VIDEO_OPENXR_LASER,
       "video_openxr_laser",
       0, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, 2, 1, 0, setting_action_ok_uint, setting_get_string_representation_video_openxr_laser, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,

@@ -21,9 +21,10 @@ At run time an OpenXR runtime has to be active (SteamVR or Monado on
 Linux). Then turn on **Settings > Video > Stereo 3D & Screens > Headset
 Output (OpenXR)**. The other rows there are Headset Refresh Rate, Screen
 Distance, Screen Width, Screen Placement (Fixed in Room, Follow Head,
-Lazy Follow), Headset Controllers and Laser Pointer. The Recenter
-Headset Screens and Laser Pointer (Toggle) hotkeys are unbound by
-default.
+Lazy Follow) and Laser Pointer. OpenXR Controller Layout (Combined or
+Separate) is the last row of **Settings > Input > Controllers**. The
+Recenter Headset Screens and Laser Pointer (Toggle) hotkeys are unbound
+by default.
 
 Without a runtime or a headset, RetroArch says so once and shows its
 window as usual.
