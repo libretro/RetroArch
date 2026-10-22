@@ -1,6 +1,25 @@
 /* SPDX-License-Identifier: MIT */
 #include <stdio.h>
+#include <stddef.h>
 #include <formats/rav1_hw.h>
+
+typedef struct legacy_backend
+{
+   void *user;
+   bool (*open)(void *, const rav1_sequence_t *, unsigned, rav1_hw_ops_t *);
+   void (*close)(rav1_hw_ops_t *);
+   bool packet_decoder;
+} legacy_backend_t;
+
+typedef char backend_open_prefix[
+   offsetof(rav1_hw_backend_t, open) == offsetof(legacy_backend_t, open) ? 1 : -1];
+typedef char backend_close_prefix[
+   offsetof(rav1_hw_backend_t, close) == offsetof(legacy_backend_t, close) ? 1 : -1];
+typedef char backend_mode_prefix[
+   offsetof(rav1_hw_backend_t, packet_decoder)
+      == offsetof(legacy_backend_t, packet_decoder) ? 1 : -1];
+typedef char backend_config_suffix[
+   offsetof(rav1_hw_backend_t, open_config) >= sizeof(legacy_backend_t) ? 1 : -1];
 
 static rav1_sequence_t sequence;
 static rav1_hw_backend_t factory, retained, empty_backend, foreign;

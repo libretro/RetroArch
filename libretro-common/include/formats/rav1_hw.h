@@ -50,14 +50,14 @@ typedef struct rav1_hw_backend
    bool (*open)(void *user, const rav1_sequence_t *sequence, unsigned slots,
          rav1_hw_ops_t *ops);
    void (*close)(rav1_hw_ops_t *ops);
+   /* Opaque bitstream decoders also consume show-existing header OBUs. */
+   bool packet_decoder;
    /* Optional admission; all views are borrowed only during open. */
    bool (*open_config)(void *user, const rav1_sequence_t *sequence,
          const rav1_obu_t *sequence_obu, const video_color_metadata_t *color,
          unsigned slots, rav1_hw_ops_t *ops);
    /* Packet decoders: 0 terminal completion, 1 pending, negative failure. */
    int (*drain)(void *decoder, bool discard);
-   /* Opaque bitstream decoders also consume show-existing header OBUs. */
-   bool packet_decoder;
 } rav1_hw_backend_t;
 
 RETRO_BEGIN_DECLS
