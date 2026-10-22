@@ -2,6 +2,8 @@
 #include <assert.h>
 #include <stdio.h>
 #include "../../../gfx/common/vaapi_hevc.h"
+#include "../../../gfx/common/vaapi_hevc_packet.h"
+#include "../../../gfx/common/vaapi_hevc_submit.c"
 typedef struct codec_case {
  const char *name; const uint8_t *hvcc; size_t hvcc_size;
  const uint8_t *data; size_t size; unsigned depth,full; uint32_t crc[3];
@@ -22,6 +24,115 @@ static VAPictureParameterBufferHEVC native,saved;
 static VAIQMatrixBufferHEVC matrix;
 static VASurfaceID surfaces[32];
 static unsigned parsed;
+static uint8_t packed[65536],packet_saved[65536];
+static VASliceParameterBufferBase short_slices[8],short_saved[8];
+static unsigned packed_size,packet_creates,packet_drops,packet_polls;
+static vaapi_hevc_submit_t packet_tx;
+static vaapi_hevc_session_t packet_session;
+static vaapi_hevc_short_work_t packet_work;
+static VAStatus packet_create(VADisplay d,VAContextID c,VABufferType type,
+ unsigned bytes,unsigned elements,void *data,VABufferID *id)
+{
+ assert(d==packet_session.display && c==packet_session.context && data);
+ if(type==VAPictureParameterBufferType)assert(bytes==sizeof(native) && elements==1 && !memcmp(data,&native,bytes));
+ else if(type==VAIQMatrixBufferType)assert(bytes==sizeof(matrix) && elements==1 && !memcmp(data,&matrix,bytes));
+ else if(type==VASliceParameterBufferType)assert(bytes==sizeof(short_slices[0]) && elements==au.num_slices && !memcmp(data,short_slices,bytes*elements));
+ else assert(type==VASliceDataBufferType && bytes==packed_size && elements==1 && !memcmp(data,packed,bytes));
+ *id=1000+packet_creates++;return VA_STATUS_SUCCESS;
+}
+static VAStatus packet_destroy(VADisplay d,VABufferID id)
+{assert(d==packet_session.display && id==1000+packet_drops++ && packet_tx.complete);return VA_STATUS_SUCCESS;}
+static VAStatus packet_begin(VADisplay d,VAContextID c,VASurfaceID surface)
+{assert(d==packet_session.display && c==packet_session.context && surface==native.CurrPic.picture_id);return VA_STATUS_SUCCESS;}
+static VAStatus packet_render(VADisplay d,VAContextID c,VABufferID *ids,int count)
+{
+ unsigned i;assert(d==packet_session.display && c==packet_session.context && (unsigned)count==packet_creates);
+ for(i=0;i<(unsigned)count;i++)assert(ids[i]==1000+i);
+ return VA_STATUS_SUCCESS;
+}
+static VAStatus packet_end(VADisplay d,VAContextID c)
+{assert(d==packet_session.display && c==packet_session.context);return VA_STATUS_SUCCESS;}
+static VAStatus packet_sync(VADisplay d,VASurfaceID surface,uint64_t timeout)
+{assert(d==packet_session.display && surface==native.CurrPic.picture_id && !timeout);return packet_polls++<2?VA_STATUS_ERROR_TIMEDOUT:VA_STATUS_SUCCESS;}
+static const vaapi_hevc_submit_ops_t packet_ops={packet_create,packet_destroy,packet_begin,packet_render,packet_end,packet_sync};
+static rh265_nal_t many_slices[256];
+static VASliceParameterBufferBase many_short[256];
+static void packet_limits(void)
+{
+ uint8_t first[]={38,1,128},next[]={38,1,64};
+ rh265_nal_t slices[2];
+ unsigned i,size;
+ memset(&au,0,sizeof(au));au.num_slices=2;au.coded_bytes=6;au.first.nal_type=19;
+ slices[0].data=first;slices[1].data=next;slices[0].size=slices[1].size=3;
+ memset(packed,0xa5,sizeof(packed));memset(short_slices,0xa5,sizeof(short_slices));
+ memcpy(packet_saved,packed,sizeof(packed));memcpy(short_saved,short_slices,sizeof(short_slices));
+#define BAD_PACKET(expr,restore) do {expr;size=99; \
+ assert(!vaapi_hevc_short_packet(packed,sizeof(packed),short_slices,8,slices,&au,&size) && !size); \
+ assert(!memcmp(packed,packet_saved,sizeof(packed)) && !memcmp(short_slices,short_saved,sizeof(short_slices)));restore;} while(0)
+ BAD_PACKET(next[0]|=0x80,next[0]=38);
+ BAD_PACKET(next[0]=40,next[0]=38);
+ BAD_PACKET(next[1]=0,next[1]=1);
+ BAD_PACKET(next[1]=9,next[1]=1);
+ BAD_PACKET(next[2]=128,next[2]=64);
+ BAD_PACKET(first[2]=0,first[2]=128);
+ BAD_PACKET(slices[1].size=2,slices[1].size=3);
+ BAD_PACKET(slices[1].size=UINT_MAX,slices[1].size=3);
+ BAD_PACKET(slices[1].data=NULL,slices[1].data=next);
+ BAD_PACKET(au.coded_bytes=5,au.coded_bytes=6);
+ BAD_PACKET(au.num_slices=0,au.num_slices=2);
+ BAD_PACKET(au.num_slices=257,au.num_slices=2);
+ BAD_PACKET(au.first.nal_type=10,au.first.nal_type=19);
+ BAD_PACKET(au.first.temporal_id=7,au.first.temporal_id=0);
+#undef BAD_PACKET
+ assert(!vaapi_hevc_short_packet(packed,127,short_slices,8,slices,&au,&size));
+ assert(!vaapi_hevc_short_packet(packed,sizeof(packed),short_slices,1,slices,&au,&size));
+ memcpy(packed,next,3);memcpy(packet_saved,packed,sizeof(packed));
+ slices[1].data=packed;
+ assert(!vaapi_hevc_short_packet(packed,sizeof(packed),short_slices,8,slices,&au,&size));
+ assert(!memcmp(packed,packet_saved,sizeof(packed)) && !memcmp(short_slices,short_saved,sizeof(short_slices)));
+ slices[1].data=next;
+ assert(!vaapi_hevc_short_packet(packed,sizeof(packed),(VASliceParameterBufferBase*)packed,8,slices,&au,&size));
+ assert(!memcmp(packed,packet_saved,sizeof(packed)));
+ au.num_slices=256;au.coded_bytes=768;
+ for(i=0;i<256;i++){many_slices[i].data=i?next:first;many_slices[i].size=3;}
+ assert(vaapi_hevc_short_packet(packed,sizeof(packed),many_short,256,many_slices,&au,&size) && size==1792);
+ assert(many_short[255].slice_data_offset==1785 && many_short[255].slice_data_size==7);
+}
+static void packet_check(rh265_video *source,const rh265_nal_t *slices)
+{
+ rh265_nal_t roundtrip[8];
+ rh265_access_unit_t check;
+ unsigned i;
+ size_t end=0;
+ assert(vaapi_hevc_short_packet(packed,sizeof(packed),short_slices,8,slices,&au,&packed_size));
+ assert(packed_size && !(packed_size&127));
+ for(i=0;i<au.num_slices;i++) {
+  const VASliceParameterBufferBase *s=&short_slices[i];
+  assert(s->slice_data_offset==end && s->slice_data_size==slices[i].size+4 && !s->slice_data_flag);
+  assert(!packed[end] && !packed[end+1] && !packed[end+2] && packed[end+3]==1);
+  assert(!memcmp(packed+end+4,slices[i].data,slices[i].size));end+=s->slice_data_size;
+ }
+ for(;end<packed_size;end++)assert(!packed[end]);
+ assert(!rh265_video_get_access_unit(source,packed,packed_size,0,roundtrip,8,&check));
+ assert(check.num_slices==au.num_slices && check.slice_types==au.slice_types && check.coded_bytes==au.coded_bytes);
+ for(i=0;i<au.num_slices;i++)assert(roundtrip[i].size==slices[i].size && !memcmp(roundtrip[i].data,slices[i].data,slices[i].size));
+ memset(&packet_session,0,sizeof(packet_session));packet_session.display=(VADisplay)(uintptr_t)1;
+ packet_session.context=7;packet_session.ready=true;packet_session.slice_mode=VA_DEC_SLICE_MODE_BASE;
+ packet_session.width=picture.width;packet_session.height=picture.height;packet_session.depth=picture.bit_depth;
+ packet_session.slots=32;memcpy(packet_session.surfaces,surfaces,sizeof(surfaces));
+ packet_creates=packet_drops=packet_polls=0;
+ if(params.scaling_list_enabled)assert(vaapi_hevc_matrix(&matrix,&params));
+ packet_work.data=packed;packet_work.capacity=sizeof(packed);
+ packet_session.slice_mode=VA_DEC_SLICE_MODE_NORMAL;
+ assert(!vaapi_hevc_short_submit(&packet_tx,&packet_session,&packet_ops,&params,&au,&picture,slices,&packet_work));
+ assert(!packet_creates && !packet_tx.active);
+ packet_session.slice_mode=VA_DEC_SLICE_MODE_BASE;
+ assert(vaapi_hevc_short_submit(&packet_tx,&packet_session,&packet_ops,&params,&au,&picture,slices,&packet_work));
+ assert(!vaapi_hevc_submit_retire(&packet_tx));
+ assert(vaapi_hevc_submit_poll(&packet_tx)==1 && vaapi_hevc_submit_poll(&packet_tx)==1);
+ assert(!vaapi_hevc_submit_poll(&packet_tx) && vaapi_hevc_submit_retire(&packet_tx));
+ assert(packet_creates==packet_drops);
+}
 static void sequence(const sequence_case_t *c)
 {
  rh265_video *source=rh265_video_open();
@@ -37,6 +148,7 @@ static void sequence(const sequence_case_t *c)
   assert(!rh265_video_get_params(source,(unsigned)au.first.pps_id,&params));
   assert(!rh265_hw_prepare(&state,&params,&au,&picture));
   assert(vaapi_hevc_picture(&native,&params,&au,&picture,surfaces,32));
+  packet_check(source,slices);
   assert(native.CurrPic.picture_id==surfaces[picture.slot]);
   assert(native.CurrPic.pic_order_cnt==(int32_t)packet->display_index);
   assert(native.bit_depth_luma_minus8==c->picture.depth-8);
@@ -132,7 +244,7 @@ int main(void)
  for(i=0;i<32;i++)surfaces[i]=100+i;
  for(i=0;i<sizeof(sequence_cases)/sizeof(sequence_cases[0]);i++)sequence(&sequence_cases[i]);
  for(i=0;i<sizeof(reorder_cases)/sizeof(reorder_cases[0]);i++)sequence(&reorder_cases[i]);
- references(); matrices();
- printf("PASS: VA-API HEVC native picture/matrix buffers, %u parsed Main/Main10 I/P/B pictures; no device execution\n",parsed);
+ references(); matrices();packet_limits();
+ printf("PASS: VA-API HEVC picture/matrix/BASE packet and submission, %u parsed Main/Main10 I/P/B pictures; no device execution\n",parsed);
  return 0;
 }

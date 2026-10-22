@@ -23,7 +23,7 @@ session_test$(EXE): session_test.c ../../../gfx/common/vaapi_hevc_session.c ../.
 	$(CC) $(CFLAGS) session_test.c -o $@ $(LDFLAGS)
 abi-check: abi.c ../../../gfx/common/vaapi_hevc_session.h
 	$(CC) $(CFLAGS) -fsyntax-only abi.c
-test$(EXE): test.c ../../../gfx/common/vaapi_hevc.h \
+test$(EXE): test.c ../../../gfx/common/vaapi_hevc_packet.h ../../../gfx/common/vaapi_hevc_submit.c ../../../gfx/common/vaapi_hevc_submit.h ../../../gfx/common/vaapi_hevc.h \
  ../../../libretro-common/include/formats/rh265.h \
  ../../../libretro-common/formats/h265/rh265.c \
  ../videotoolbox_hevc/sequence_data.h ../videotoolbox_hevc/reorder_data.h
