@@ -7849,6 +7849,58 @@ static void test_frame_grabs_snap(void)
    t_grab_free(&rt, &s, &sc, &f);
 }
 
+/* Screen 0 pushed down past touching screen 1's top edge: the frame
+ * loop shows it touching, as the main thread's call does, 0.5 and 1 cm
+ * past at Hinge Gap 0, 2 and 10, and 0.5, 1 and 1.4 cm past at Hinge
+ * Gap 1, whose stop holds from where its click's fade shows touching;
+ * Snap to Screens off, where the hand has it. */
+static void test_frame_grabs_stop(void)
+{
+   static const unsigned char gaps[] = { 0, 0, 2, 2, 10, 10, 1, 1, 1, 2,
+      2 };
+   static const double past[] = { 0.005, 0.01, 0.005, 0.01, 0.005, 0.01,
+      0.005, 0.01, 0.014, 0.005, 0.01 };
+   unsigned i;
+   for (i = 0; i < 11; i++)
+   {
+      openxr_runtime_t rt;
+      openxr_session_t s;
+      openxr_swapchains_t sc;
+      openxr_frame_t f;
+      video_xr_quad_set_t set;
+      openxr_grabs_t grabs;
+      video_xr_pose_t want;
+      XrCompositionLayerQuad layers[VIDEO_XR_MAX_QUADS];
+      const XrCompositionLayerBaseHeader *ptrs[VIDEO_XR_MAX_QUADS];
+      double c    = past[i];
+      double y    = (i < 9) ? 0.08 : 0.08 - c;
+      t_grab_frame(&rt, &s, &sc, &f, &set);
+      t_grab_held(&grabs);
+      grabs.snap        = i < 9;
+      grabs.hand[1].gap = gaps[i];
+      video_xr_pose_identity(&t_aim_pose);
+      t_aim_pose.position.y = 0.08f;
+      t_aim_pose.position.z = -0.8f;
+      video_xr_grab_pose(&grabs.hand[1], &t_aim_pose, NULL, 0, NULL,
+            &grabs.start[1], NULL, NULL);
+      grabs.start[1].position.y -= 0.3f;
+      t_aim_pose.position.y     -= (float)c;
+      t_aim_ok                   = true;
+      openxr_frame_publish_grabs(&f, &grabs);
+      openxr_frame_place_screens(&f, 1000);
+      openxr_frame_layers(&f, 1000, layers, ptrs);
+      video_xr_grab_pose(&grabs.hand[1], &t_aim_pose,
+            grabs.snap ? &set : NULL, 1u, &grabs.start[1], &want, NULL,
+            NULL);
+      CHECK(     fabs(layers[0].pose.position.y - y) < 1e-5
+            && fabs(want.position.y - layers[0].pose.position.y) < 1e-6,
+            "gap %u, snap %d, %.3f past: the frame loop at %.5f, the main "
+            "thread at %.5f, want %.5f", gaps[i], (int)grabs.snap, c,
+            layers[0].pose.position.y, want.position.y, y);
+      t_grab_free(&rt, &s, &sc, &f);
+   }
+}
+
 /* Snapping on, each hand holding a screen: the frame loop snaps neither
  * to the other. Screen 0 held 1 cm above standing on screen 1, both
  * taken 10 cm off, so any pull would be whole. */
@@ -8418,6 +8470,7 @@ int main(void)
    test_frame_grabs_new_session();
    test_frame_grabs_lazy();
    test_frame_grabs_snap();
+   test_frame_grabs_stop();
    test_frame_grabs_snap_two();
    test_frame_grabs_threaded();
    test_frame_layer_budget();

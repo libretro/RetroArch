@@ -562,11 +562,14 @@ static input_openxr_t input_openxr_st;
  * snaps whose buzz may still fire, the free hand's turn and tilt past
  * the steps they hold at (video_xr_grab_step) and the steps whose buzz
  * may still fire, and last poll's free stick past its deadzone, hinge,
- * grip and reset, for their changes. */
+ * grip and reset, for their changes; the hinge it last swung on, if
+ * lidded, for the stick and the steps once that lets it go, until its
+ * edge leaves where that hinge could take it again. */
 typedef struct input_openxr_hold
 {
    video_xr_grab_t g;
    video_xr_pose_t start;
+   video_xr_hinge_t lid;
    float scale;
    float scale0;
    float width0;
@@ -576,6 +579,7 @@ typedef struct input_openxr_hold
    unsigned steps;
    bool pushed;
    bool hinged;
+   bool lidded;
    bool grip;
    bool reset;
 } input_openxr_hold_t;
@@ -2420,6 +2424,7 @@ static void input_openxr_edit_grab(input_openxr_t *st,
    hold->steps    = 0;
    hold->pushed   = false;
    hold->hinged   = false;
+   hold->lidded   = false;
    if (q->slot != VIDEO_XR_MENU_SLOT)
       config_get_video_screen_xr(q->slot, &now);
    else if (!config_get_video_menu_xr(&now))
@@ -2528,6 +2533,8 @@ static unsigned input_openxr_edit_move(input_openxr_edit_t *e,
     * there. */
    if (hinged)
    {
+      hold->lid    = hinge;
+      hold->lidded = true;
       hold->steps |= (video_xr_grab_off_step(&hold->g, aim, head, e->step,
                hold->rest) & ~hinge.axis)
          | video_xr_grab_off_hinge(&hold->g, aim, &hinge, e->step,
@@ -2539,12 +2546,20 @@ static unsigned input_openxr_edit_move(input_openxr_edit_t *e,
    }
    else
    {
+      const video_xr_hinge_t *lid = NULL;
+      /* Out of its hinge's reach, it turns as any free screen. */
+      if (     hold->lidded
+            && !video_xr_grab_near_hinge(&hold->g, aim, targets,
+               &hold->lid))
+         hold->lidded = false;
+      if (hold->lidded)
+         lid = &hold->lid;
       hold->steps |= video_xr_grab_off_step(&hold->g, aim, head, e->step,
             hold->rest);
-      axes = video_xr_grab_turn(&hold->g, aim, x, y, dt);
+      axes = video_xr_grab_turn_lid(&hold->g, aim, lid, x, y, dt);
       held = video_xr_grab_step(&hold->g, aim, head, e->step, axes,
             hold->rest, targets, input_openxr_edit_holding(e),
-            &hold->start);
+            &hold->start, lid);
    }
    *stepped       = (held & hold->steps) != 0;
    hold->steps   &= ~held;

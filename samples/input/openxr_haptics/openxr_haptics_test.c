@@ -172,9 +172,6 @@ bool video_xr_grab_pose(const video_xr_grab_t *g, const video_xr_pose_t *aim,
 void video_xr_grab_stick(video_xr_grab_t *g, float x, float y, double dt,
       float *scale)
 { (void)g; (void)x; (void)y; (void)dt; (void)scale; }
-unsigned video_xr_grab_turn(video_xr_grab_t *g, const video_xr_pose_t *aim,
-      float x, float y, double dt)
-{ (void)g; (void)aim; (void)x; (void)y; (void)dt; return 0; }
 unsigned video_xr_grab_off_step(const video_xr_grab_t *g,
       const video_xr_pose_t *aim, const video_xr_vec3_t *head, float step,
       const float *rest)
@@ -182,12 +179,20 @@ unsigned video_xr_grab_off_step(const video_xr_grab_t *g,
 unsigned video_xr_grab_step(video_xr_grab_t *g, const video_xr_pose_t *aim,
       const video_xr_vec3_t *head, float step, unsigned axes, float *rest,
       const video_xr_quad_set_t *targets, unsigned skip,
-      const video_xr_pose_t *start)
+      const video_xr_pose_t *start, const video_xr_hinge_t *lid)
 {
    (void)g; (void)aim; (void)head; (void)step; (void)axes; (void)rest;
-   (void)targets; (void)skip; (void)start;
+   (void)targets; (void)skip; (void)start; (void)lid;
    return 0;
 }
+unsigned video_xr_grab_turn_lid(video_xr_grab_t *g,
+      const video_xr_pose_t *aim, const video_xr_hinge_t *lid, float x,
+      float y, double dt)
+{ (void)g; (void)aim; (void)lid; (void)x; (void)y; (void)dt; return 0; }
+bool video_xr_grab_near_hinge(const video_xr_grab_t *g,
+      const video_xr_pose_t *aim, const video_xr_quad_set_t *targets,
+      const video_xr_hinge_t *h)
+{ (void)g; (void)aim; (void)targets; (void)h; return false; }
 unsigned video_xr_grab_hinge(const video_xr_grab_t *g,
       const video_xr_pose_t *aim, const video_xr_quad_set_t *targets,
       unsigned skip, const video_xr_pose_t *start, video_xr_pose_t *pose,
