@@ -242,6 +242,7 @@ static int color_admission(void)
    rvp9_hw_backend_t snapshot;
    rvp9_hdr header;
    rvp9_hw_backend_t color_only = colors;
+   rvp9_hw_backend_t replacement = backend;
    unsigned before, closed;
    memset(&header, 0, sizeof(header));
    header.bit_depth = 8;
@@ -253,6 +254,13 @@ static int color_admission(void)
    snapshot.close(&ops);
    CHECK(rvp9_unset_hw_backend(&backend) && !rvp9_unset_hw_backend(&backend));
    CHECK(!rvp9_hw_backend_open(&header, 10, &ops, &snapshot));
+   replacement.user = &header;
+   rvp9_set_hw_backend(&replacement);
+   CHECK(!rvp9_unset_hw_backend(&backend));
+   CHECK(rvp9_hw_backend_open(&header, 10, &ops, &snapshot));
+   CHECK(snapshot.user == &header);
+   snapshot.close(&ops);
+   CHECK(rvp9_unset_hw_backend(&replacement));
    color_only.open = NULL;
    rvp9_set_hw_backend(&color_only);
    CHECK(rvp9_hw_backend_open(&header, 10, &ops, &snapshot));

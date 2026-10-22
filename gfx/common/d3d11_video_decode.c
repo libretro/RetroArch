@@ -1369,7 +1369,7 @@ void d3d11_video_decode_deinit(void)
       rh265_unset_hw_backend(&d3d11vd.hevc);
    }
 #ifdef HAVE_RVP9
-   if (!d3d11vd.av1_only) rvp9_set_hw_backend(NULL);
+   if (!d3d11vd.av1_only) rvp9_unset_hw_backend(&d3d11vd.vp9);
 #endif
 #ifdef HAVE_RAV1
    rav1_set_hw_backend(NULL);
