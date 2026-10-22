@@ -168,7 +168,7 @@ static void close_backend(rvp9_hw_ops_t *ops)
 {
    closes++; release((mock_t*)ops->decoder); memset(ops, 0, sizeof(*ops));
 }
-static const rvp9_hw_backend_t backend = {NULL, open_backend, close_backend};
+static const rvp9_hw_backend_t backend = {NULL, open_backend, close_backend, false};
 static unsigned gpu_starts, cpu_starts, presents;
 static int start_cpu(void *user, unsigned w, unsigned h, unsigned slots)
 {
@@ -240,6 +240,39 @@ static int seek_hardware(void)
    CHECK(lives == 1);
    video_hw_frame_abandon(&held);
    CHECK(!lives && opens == closes && abandoned == exports);
+   return 0;
+}
+
+static int packet_stream(void)
+{
+   static const rvp9_hw_backend_t packets = {NULL, open_backend, close_backend, true};
+   rwebm_video_stream_t *s;
+   video_hw_frame_t frame, held;
+   unsigned before = decodes, submitted = calls, shown = 0, tries;
+   tail_hidden = 0;
+   fixture(1, 2, 1);
+   rvp9_set_hw_backend(&packets);
+   s = rwebm_video_stream_open(file, used);
+   CHECK(s && rwebm_video_stream_set_hw(s, 1) && s->hw->packet_decoder);
+   memset(&held, 0, sizeof(held));
+   for (tries = 0; tries < 64 && shown < 4; tries++)
+   {
+      if (!rwebm_video_stream_next(s, NULL))
+      {
+         CHECK(rwebm_video_stream_waiting(s));
+         continue;
+      }
+      CHECK(rwebm_video_stream_hw_frame(s, &frame));
+      if (!shown) held = frame;
+      else video_hw_frame_abandon(&frame);
+      shown++;
+   }
+   CHECK(shown == 4 && decodes - before == 6 && calls - submitted == 12);
+   rwebm_video_stream_close(s);
+   CHECK(lives == 1 && held.image);
+   video_hw_frame_abandon(&held);
+   CHECK(!lives && opens == closes && abandoned == exports);
+   rvp9_set_hw_backend(NULL);
    return 0;
 }
 
@@ -398,6 +431,7 @@ int main(void)
    CHECK(!lives && opens == closes && abandoned == exports);
    CHECK(!seek_hardware());
    rvp9_set_hw_backend(NULL);
+   CHECK(!packet_stream());
    puts("WebM hardware dispatch, seeks, superframe retries, lacing, partial input and leases passed");
    return 0;
 }
