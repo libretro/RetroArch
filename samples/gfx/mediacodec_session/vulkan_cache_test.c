@@ -3,7 +3,12 @@
 #define VULKAN_ENTRY_TEST_MAIN entry_fault_suite
 #include "vulkan_entry_test.c"
 #include "../../../gfx/common/vulkan_android_cache.h"
-static int owned_pool_destroyed;
+static int owned_pool_destroyed, destinations_destroyed;
+static void destroy_destination(VkDevice device, void *destination)
+{
+   assert(device && destination == &native && !entry_live);
+   destinations_destroyed++;
+}
 static VKAPI_ATTR void VKAPI_CALL destroy_owned_pool(VkDevice device,
       VkCommandPool pool, const VkAllocationCallbacks *allocator)
 {
@@ -74,6 +79,27 @@ int main(void)
    fence_status = VK_SUCCESS;
    assert(vulkan_android_cache_free(cache) && !entry_live);
    assert(android_image_queue_poll(q) == 1 && owned_pool_destroyed == 1);
+   entry_fixture_config.destroy_deferred_destination = destroy_destination;
+   entry_fixture_config.deferred_destination = &native;
+   cache = vulkan_android_cache_new(&entry_fixture_config, 1, false);
+   assert(cache);
+   assert(android_image_queue_acquire(q, &view.image) == 1);
+   assert(!android_frame_export(pool, &view, &frame));
+   assert(vulkan_android_cache_prepare(cache, &frame) == 1);
+   assert(vulkan_android_cache_present(cache, &frame, H(VkImage, 9),
+                H(VkImageView, 9), VK_IMAGE_LAYOUT_UNDEFINED, NULL) == 1);
+   vulkan_android_cache_close(cache);
+   assert(!vulkan_android_cache_free(cache));
+   vulkan_android_cache_defer(cache);
+   vulkan_android_cache_device_collect(H(VkDevice, 99));
+   vulkan_android_cache_device_collect(entry_fixture_config.device);
+   assert(entry_live && !destinations_destroyed && owned_pool_destroyed == 1);
+   fence_status = VK_SUCCESS;
+   vulkan_android_cache_device_collect(entry_fixture_config.device);
+   assert(!entry_live && destinations_destroyed == 1 && owned_pool_destroyed == 2);
+   assert(!vulkan_android_cache_device_pending(entry_fixture_config.device));
+   vulkan_android_cache_device_collect(entry_fixture_config.device);
+   assert(destinations_destroyed == 1 && android_image_queue_poll(q) == 1);
    /* A failed queue submission may have touched GPU input. Closing must keep
     * the lease until the renderer proves that its device has been destroyed. */
    cache = vulkan_android_cache_new(&entry_fixture_config, 1, false);
@@ -101,17 +127,19 @@ int main(void)
    assert(!android_image_queue_poll(q));
    vulkan_android_cache_device_destroyed(entry_fixture_config.device);
    assert(vulkan_android_cache_device_pending(entry_fixture_config.device));
+   vulkan_android_cache_device_collect(entry_fixture_config.device);
+   assert(entry_live && destinations_destroyed == 1);
    vulkan_android_cache_device_destroying(H(VkDevice, 99));
    assert(entry_live && !android_image_queue_poll(q));
    vulkan_android_cache_device_destroying(entry_fixture_config.device);
    vulkan_android_cache_device_destroying(entry_fixture_config.device);
-   assert(!entry_live && owned_pool_destroyed == 2
+   assert(!entry_live && owned_pool_destroyed == 3
          && !android_image_queue_poll(q));
    vulkan_android_cache_device_destroyed(entry_fixture_config.device);
    assert(!vulkan_android_cache_device_pending(entry_fixture_config.device));
    vulkan_android_cache_device_destroyed(entry_fixture_config.device);
    assert(android_image_queue_poll(q) == 1 && !entry_live
-         && entry_calls == count && owned_pool_destroyed == 2);
+         && entry_calls == count && owned_pool_destroyed == 3);
    submit_fail = 0;
    android_frame_pool_close(pool);
    assert(android_frame_pool_free(pool));

@@ -26,6 +26,9 @@ int vulkan_android_cache_prepare(
 int vulkan_android_cache_present(vulkan_android_cache_t *cache,
       const video_hw_frame_t *frame, VkImage destination, VkImageView view,
       VkImageLayout layout, bool *prepare_needed);
+/* Renderer-owner zero-timeout completion polling, including idle playback.
+ * 1 all idle; 0 pending; -1 at least one failed entry. */
+int vulkan_android_cache_poll(vulkan_android_cache_t *cache);
 void vulkan_android_cache_close(vulkan_android_cache_t *cache);
 /* Cold renderer owner, only after close. False retains pending entries/cache;
  * call again later. True consumes cache. No waits/device-idle. */
@@ -38,6 +41,9 @@ bool vulkan_android_cache_after_device_destroy(vulkan_android_cache_t *cache);
  * A pending device must not be cached: destroy it and notify afterward. */
 void vulkan_android_cache_defer(vulkan_android_cache_t *cache);
 bool vulkan_android_cache_device_pending(VkDevice device);
+/* Cold lifecycle owner. Collect only entries whose fences prove completion.
+ * Pending or ambiguous work remains retained; no waits. */
+void vulkan_android_cache_device_collect(VkDevice device);
 /* Cold context teardown after vkDeviceWaitIdle returned success/device-lost,
  * before vkDestroyDevice. Destroys Vulkan children while retaining image
  * leases. */

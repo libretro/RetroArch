@@ -126,6 +126,21 @@ int vulkan_android_cache_present(vulkan_android_cache_t *cache,
    return vulkan_android_submission_present(
          &cache->entry[i].submission, frame, destination, image_view, layout);
 }
+int vulkan_android_cache_poll(vulkan_android_cache_t *cache)
+{
+   unsigned i;
+   int result = 1;
+   if (!cache || cache->closed)
+      return -1;
+   for (i = 0; i < cache->count; i++)
+      if (cache->occupied[i])
+      {
+         int status = vulkan_android_submission_poll(&cache->entry[i].submission);
+         if (status < result)
+            result = status;
+      }
+   return result;
+}
 void vulkan_android_cache_close(vulkan_android_cache_t *cache)
 {
    if (cache)
@@ -192,6 +207,36 @@ bool vulkan_android_cache_device_pending(VkDevice device)
       if (cache->config.device == device)
          return true;
    return false;
+}
+void vulkan_android_cache_device_collect(VkDevice device)
+{
+   vulkan_android_cache_t **link = &vulkan_android_retired_caches;
+   if (!device)
+      return;
+   while (*link)
+   {
+      vulkan_android_cache_t *cache = *link;
+      vulkan_android_cache_t *next = cache->retired_next;
+      void (*destroy_destination)(VkDevice, void *);
+      void *destination;
+      if (cache->config.device != device || cache->children_destroyed)
+      {
+         link = &cache->retired_next;
+         continue;
+      }
+      destroy_destination = cache->config.destroy_deferred_destination;
+      destination = cache->config.deferred_destination;
+      cache->deferred = false;
+      if (!vulkan_android_cache_free(cache))
+      {
+         cache->deferred = true;
+         link = &cache->retired_next;
+         continue;
+      }
+      *link = next;
+      if (destroy_destination)
+         destroy_destination(device, destination);
+   }
 }
 void vulkan_android_cache_device_destroying(VkDevice device)
 {
