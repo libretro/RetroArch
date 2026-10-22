@@ -12,10 +12,12 @@ CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
 all: renderer_backend_test vp9_backend_test color_refine_test test hevc_backend_test hevc_decoder_test vulkan_image_test vulkan_sync_test vulkan_pipeline_test android_frame_test frame_export_test vulkan_submit_test vulkan_entry_test vulkan_cache_test vulkan_renderer_test vulkan_device_test
-all: vp9_decoder_test
+all: vp9_decoder_test av1_decoder_test
 all: vp9_color_test
 vp9_decoder_test: vp9_decoder_test.c ../../../gfx/common/mediacodec_vp9_decoder.c ../../../gfx/common/mediacodec_vp9_decoder.h ../../../gfx/common/mediacodec_color.c ../../../gfx/common/mediacodec_color.h ../../../gfx/common/android_image_queue.c ../../../libretro-common/include/formats/rvp9_hw.h
 	$(CC) $(CFLAGS) $(BACKEND_HOST_FLAGS) -DHAVE_THREADS vp9_decoder_test.c ../../../gfx/common/mediacodec_vp9_decoder.c ../../../gfx/common/mediacodec_color.c ../../../gfx/common/android_image_queue.c -o $@ $(LDFLAGS)
+av1_decoder_test: av1_decoder_test.c av1_config_test.h ../../../gfx/common/mediacodec_av1_decoder.c ../../../gfx/common/mediacodec_av1_decoder.h ../../../gfx/common/mediacodec_color.c ../../../gfx/common/android_image_queue.c $(wildcard ../../../libretro-common/include/formats/rav1*.h)
+	$(CC) $(CFLAGS) $(BACKEND_HOST_FLAGS) -DHAVE_THREADS av1_decoder_test.c ../../../gfx/common/mediacodec_av1_decoder.c ../../../gfx/common/mediacodec_color.c ../../../gfx/common/android_image_queue.c -o $@ $(LDFLAGS)
 color_refine_test: color_refine_test.c ../../../gfx/common/android_frame.h
 	$(CC) $(CFLAGS) color_refine_test.c -o $@ $(LDFLAGS)
 
@@ -66,6 +68,7 @@ check: all
 	./vp9_backend_test
 	./vp9_color_test
 	./vp9_decoder_test
+	./av1_decoder_test
 	./color_refine_test
 	./test
 	./hevc_backend_test
@@ -82,6 +85,7 @@ check: all
 	./vulkan_device_test
 	CC="$(CC)" python3 root_optional_test.py
 clean:
+	rm -f av1_decoder_test av1_decoder_test.exe
 	rm -f renderer_backend_test renderer_backend_test.exe
 	rm -f vp9_backend_test vp9_backend_test.exe
 	rm -f vp9_color_test vp9_color_test.exe

@@ -119,7 +119,7 @@ jobs:
         run: |
           set -euo pipefail
           bin="$MEDIA_NDK/toolchains/llvm/prebuilt/linux-x86_64/bin"
-          sources=(mediacodec_inventory android_image_queue android_image_ndk android_frame mediacodec_session mediacodec_color mediacodec_frame_export mediacodec_hevc_packet mediacodec_hevc_decoder mediacodec_hevc_backend mediacodec_vp9_decoder mediacodec_vp9_backend vulkan_android_image vulkan_android_sync vulkan_android_pipeline vulkan_android_submit vulkan_android_cache_entry vulkan_android_cache vulkan_android_device)
+          sources=(mediacodec_inventory android_image_queue android_image_ndk android_frame mediacodec_session mediacodec_color mediacodec_frame_export mediacodec_hevc_packet mediacodec_hevc_decoder mediacodec_hevc_backend mediacodec_vp9_decoder mediacodec_vp9_backend mediacodec_av1_decoder vulkan_android_image vulkan_android_sync vulkan_android_pipeline vulkan_android_submit vulkan_android_cache_entry vulkan_android_cache vulkan_android_device)
           unity="$RUNNER_TEMP/android-media-unity.c"
           printf '#include "%s/gfx/common/mediacodec_hevc_registry.h"\n' "$PWD" > "$unity"
           printf '#include "%s/gfx/common/mediacodec_vp9_registry.h"\n' "$PWD" >> "$unity"
