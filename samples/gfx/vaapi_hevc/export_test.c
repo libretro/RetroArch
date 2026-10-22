@@ -12,6 +12,12 @@ static void ex_close(int fd)
 {assert(fd>=0 && fd<4 && ex_live[fd]);ex_live[fd]=0;ex_closes++;}
 static bool ex_seal(int fd)
 {assert(fd>=0 && fd<4 && ex_live[fd]);ex_seals++;return (unsigned)fd+1!=ex_seal_fail;}
+static bool ex_identity(int fd,uint64_t *device,uint64_t *inode)
+{
+ assert(fd>=0 && fd<4 && ex_live[fd]);
+ if(ex_fault==20u+(unsigned)fd)return false;
+ *device=5;*inode=ex_fault==24?0:100u+(unsigned)fd;return true;
+}
 static VAStatus ex_surface(VADisplay display,VASurfaceID surface,uint32_t memory,uint32_t flags,void *out)
 {
  VADRMPRIMESurfaceDescriptor *d=(VADRMPRIMESurfaceDescriptor*)out;
@@ -54,7 +60,7 @@ static VAStatus ex_surface(VADisplay display,VASurfaceID surface,uint32_t memory
  for(i=0;i<4;i++)if(d->objects[i].fd>=0)ex_live[d->objects[i].fd]=1;
  return ex_fault==17?VA_STATUS_ERROR_OPERATION_FAILED:VA_STATUS_SUCCESS;
 }
-static const vaapi_hevc_export_ops_t ex_ops={ex_surface,ex_seal,ex_close};
+static const vaapi_hevc_export_ops_t ex_ops={ex_surface,ex_seal,ex_close,ex_identity};
 static void ex_reset(void)
 {
  unsigned i;
@@ -86,6 +92,11 @@ static void ex_cases(void)
  }
  for(i=1;i<=objects;i++) {
   ex_reset();ex_seal_fail=i;assert(!vaapi_hevc_export_open(&ex_frame,&ex_pool,0,&ex_ops));
+  assert(ex_closes==objects && !ex_pool.exports && !ex_frame.active);
+ }
+ for(i=0;i<=objects;i++) {
+  ex_reset();ex_fault=i==objects?24:20+i;
+  assert(!vaapi_hevc_export_open(&ex_frame,&ex_pool,0,&ex_ops));
   assert(ex_closes==objects && !ex_pool.exports && !ex_frame.active);
  }
  ex_reset();ex_pool.ready=0;assert(!vaapi_hevc_export_open(&ex_frame,&ex_pool,0,&ex_ops) && !ex_calls);

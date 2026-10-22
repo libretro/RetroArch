@@ -14,6 +14,7 @@ static VkResult vf_fence_result;
 static bool vf_acquire;
 static VkPipelineStageFlags vf_stage;
 static VkDevice vf_device;
+static bool vf_cache_released;
 static unsigned vf_format_layer(VkFormat format)
 {
    assert(format == VK_FORMAT_R8_UNORM || format == VK_FORMAT_R16_UNORM
@@ -65,7 +66,8 @@ static VKAPI_ATTR void VKAPI_CALL vf_destroy_image(VkDevice device, VkImage imag
 {
    unsigned layer = (unsigned)(uintptr_t)image - 100;
    assert(device == vf_device && !a && layer < 2 && (vf_images & (1u << layer))
-         && !(vf_views & (1u << layer)) && ex_pool.exports == 1 && !ex_closes);
+         && !(vf_views & (1u << layer))
+         && (vf_cache_released ? !ex_pool.exports : ex_pool.exports == 1 && !ex_closes));
    vf_calls++; vf_images &= ~(1u << layer);
 }
 static VKAPI_ATTR void VKAPI_CALL vf_requirements(VkDevice device, const VkImageMemoryRequirementsInfo2 *info,
@@ -124,7 +126,8 @@ static VKAPI_ATTR void VKAPI_CALL vf_free(VkDevice device, VkDeviceMemory memory
 {
    unsigned index = (unsigned)(uintptr_t)memory-200;
    assert(device == vf_device && !a && index < 8 && (vf_allocations & (1u << index)));
-   assert(!(vf_images & (1u << (index/4))) && ex_pool.exports == 1 && !ex_closes);
+   assert(!(vf_images & (1u << (index/4)))
+         && (vf_cache_released ? !ex_pool.exports : ex_pool.exports == 1 && !ex_closes));
    vf_allocations &= ~(1u << index); vf_calls++;
 }
 static VKAPI_ATTR VkResult VKAPI_CALL vf_bind(VkDevice device, uint32_t count, const VkBindImageMemoryInfo *info)
@@ -184,6 +187,7 @@ static void vf_reset(void)
    memset(&vf_memory, 0, sizeof(vf_memory)); vf_memory.memoryTypeCount = vf_memory.memoryHeapCount = 1;
    vf_memory.memoryHeaps[0].size = 65536;
    vf_fault = vf_calls = vf_fence_calls = vf_barriers = vf_consumed = vf_closed = 0;
+   vf_cache_released = false;
    vf_fence_result = VK_NOT_READY;
 }
 static bool vf_create(void)
@@ -198,6 +202,58 @@ static void vf_finish(void)
    assert(vaapi_hevc_export_close(&vf_returned) && !ex_pool.exports && ex_closes == (ex_mode == 2 ? 4u : ex_mode == 1 ? 2u : 1u));
    assert(vaapi_hevc_pool_close(&ex_pool));
 }
+static void vf_reuse(void)
+{
+   unsigned cycle, fault, calls, objects = ex_mode == 2 ? 4u : ex_mode == 1 ? 2u : 1u;
+   vf_reset(); assert(vf_create()); calls = vf_calls;
+   for (cycle = 0; cycle < 16; cycle++)
+   {
+      assert(vaapi_hevc_vulkan_frame_detach(&vf, &vf_returned));
+      assert(vf.active && !vf.source.active && vf_images == 3 && vf_views == 3 && vf_calls == calls);
+      assert(!vaapi_hevc_vulkan_frame_track(&vf, (VkFence)(uintptr_t)9));
+      assert(!vaapi_hevc_vulkan_frame_detach(&vf, &ex_frame));
+      assert(vaapi_hevc_export_close(&vf_returned) && !ex_pool.exports && ex_closes == objects);
+      ex_closes = 0; ex_pool.generation[0]++;
+      assert(vaapi_hevc_export_open(&ex_frame, &ex_pool, 0, &ex_ops));
+      vf_snapshot = ex_frame;
+      for (fault = 0; fault < 12; fault++)
+      {
+         switch (fault)
+         {
+            case 0: ex_frame.object_inode[0]++; break;
+            case 1: ex_frame.object_device[0]++; break;
+            case 2: ex_frame.descriptor.objects[0].size++; break;
+            case 3: ex_frame.descriptor.objects[0].drm_format_modifier++; break;
+            case 4: ex_frame.descriptor.width++; break;
+            case 5: ex_frame.descriptor.layers[0].offset[0]++; break;
+            case 6: ex_frame.descriptor.layers[1].pitch[0]++; break;
+            case 7: ex_frame.descriptor.layers[1].object_index[0]++; break;
+            case 8: ex_frame.descriptor.layers[1].drm_format++; break;
+            case 9: ex_frame.ticket = 0; break;
+            case 10: ex_frame.slot++; break;
+            case 11: ex_frame.descriptor.objects[0].fd = -1; break;
+         }
+         assert(!vaapi_hevc_vulkan_frame_adopt(&vf, &ex_frame) && ex_frame.active && !vf.source.active);
+         ex_frame = vf_snapshot;
+      }
+      /* A different FD number may refer to exactly the same retained object. */
+      ex_frame.descriptor.objects[0].fd += 10;
+      assert(vaapi_hevc_vulkan_frame_adopt(&vf, &ex_frame) && !ex_frame.active && vf_calls == calls);
+      vf.source.descriptor.objects[0].fd -= 10;
+      assert(!vaapi_hevc_vulkan_frame_adopt(&vf, &vf_snapshot));
+      assert(vaapi_hevc_vulkan_frame_track(&vf, (VkFence)(uintptr_t)9));
+      assert(!vaapi_hevc_vulkan_frame_detach(&vf, &vf_returned));
+      vf_fence_result = VK_SUCCESS;
+      assert(vaapi_hevc_vulkan_frame_poll(&vf, vf_status) == 1);
+   }
+   assert(vaapi_hevc_vulkan_frame_retire(&vf, &vf_returned)); vf_finish();
+   vf_reset(); assert(vf_create());
+   assert(vaapi_hevc_vulkan_frame_detach(&vf, &vf_returned));
+   assert(vaapi_hevc_export_close(&vf_returned) && vaapi_hevc_pool_close(&ex_pool));
+   vf_cache_released = true;
+   assert(vaapi_hevc_vulkan_frame_retire(&vf, &ex_frame) && !ex_frame.active);
+   assert(!vf.active && !vf_images && !vf_views && !vf_allocations && !vf_fds);
+}
 #ifndef VAAPI_PRIME_FRAME_TEST_MAIN
 #define VAAPI_PRIME_FRAME_TEST_MAIN main
 #endif
@@ -208,6 +264,7 @@ int VAAPI_PRIME_FRAME_TEST_MAIN(void)
    for (ex_depth = 8; ex_depth <= 10; ex_depth += 2)
       for (ex_mode = 0; ex_mode < 3; ex_mode++)
       {
+         vf_reuse();
          for (fault = 1; fault <= 4; fault++)
          {
             vf_reset(); vf_fault = fault; assert(!vf_create());
@@ -249,6 +306,7 @@ int VAAPI_PRIME_FRAME_TEST_MAIN(void)
          vf_fence_result = VK_SUCCESS;
          assert(vaapi_hevc_vulkan_frame_poll(&vf, vf_status) == -1 && vf_fence_calls == 1);
          assert(!vaapi_hevc_vulkan_frame_retire(&vf, &vf_returned)); calls = vf_calls;
+         assert(!vaapi_hevc_vulkan_frame_detach(&vf, &vf_returned));
          assert(!vaapi_hevc_vulkan_frame_after_device_destroy(&vf, (VkDevice)(uintptr_t)2, &vf_returned));
          /* Simulate the caller's completed vkDestroyDevice. */
          vf_images = vf_views = vf_allocations = 0;

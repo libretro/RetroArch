@@ -11,6 +11,12 @@ retirement and producer-only native returns. Linux runs 10000 handoffs
 through the existing SPSC queue. `make tsan-check CC=gcc` uses a separate
 race-detection binary; set RUNNER to the host ASLR wrapper when needed.
 
+Completed frame leases may return to the decoder while their imported
+images stay cached. Re-adoption requires identical worker-captured
+DMA-BUF device/inode identities, layout and decoder slot, followed by
+crop/color and ticket reconfiguration. FD numbers are never cache keys.
+Native identity capture refuses legacy non-DMA-BUF anonymous inodes.
+
 `make gpu-check SANITIZER=address,undefined` additionally needs the Vulkan
 loader, development library, validation layer and a device supporting
 Vulkan 1.1, external-memory FD and foreign queue ownership. Mesa lavapipe

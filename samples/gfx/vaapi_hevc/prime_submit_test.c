@@ -133,6 +133,18 @@ int main(void)
          vf_fence_result = VK_SUCCESS;
          assert(sub_present() == 1 && submissions == 2 && vf.pending);
          assert(vaapi_hevc_vulkan_frame_poll(&vf, vf_status) == 1);
+         assert(vaapi_hevc_vulkan_frame_detach(&vf, &vf_returned));
+         phase = 0; assert(sub_present() == -1 && !phase);
+         assert(vaapi_hevc_export_close(&vf_returned)); ex_closes = 0;
+         ex_pool.generation[0]++;
+         assert(vaapi_hevc_export_open(&ex_frame, &ex_pool, 0, &ex_ops));
+         assert(vaapi_hevc_vulkan_frame_adopt(&vf, &ex_frame));
+         assert(sub_present() == -1 && !phase);
+         memset(&color, 0, sizeof(color));
+         color.primaries = color.matrix = 1; color.transfer = 13; color.range = 2;
+         assert(vaapi_hevc_vulkan_submission_configure(&sub, &vf, 2, 2, 60, 58, 0, &color, false));
+         assert(sub_present() == 1 && submissions == 3 && vf.pending);
+         assert(vaapi_hevc_vulkan_frame_poll(&vf, vf_status) == 1);
          assert(vaapi_hevc_vulkan_frame_retire(&vf, &vf_returned)); vf_finish();
       }
    ex_depth = 10; ex_mode = 0;

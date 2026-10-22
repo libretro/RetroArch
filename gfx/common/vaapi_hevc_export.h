@@ -9,11 +9,13 @@ typedef struct vaapi_hevc_export_ops {
  VAStatus (*surface)(VADisplay,VASurfaceID,uint32_t,uint32_t,void*);
  bool (*cloexec)(int);
  void (*close)(int);
+ bool (*identity)(int,uint64_t*,uint64_t*);
 } vaapi_hevc_export_ops_t;
 typedef struct vaapi_hevc_export {
  vaapi_hevc_pool_t *pool;
  vaapi_hevc_export_ops_t ops;
  VADRMPRIMESurfaceDescriptor descriptor;
+ uint64_t object_device[4],object_inode[4];
  uint64_t ticket;
  unsigned slot;
  bool active,ready;
@@ -22,6 +24,7 @@ typedef struct vaapi_hevc_export {
  * and the pool must outlive every export. */
 bool vaapi_hevc_export_bind(vaapi_hevc_export_ops_t *ops,const vaapi_hevc_runtime_t *runtime);
 /* Owner thread, initially zeroed export storage. Only completed pool pictures.
+ * Capture unique DMA-BUF object identities here, never on the renderer.
  * Separate Y/UV layers retain all modifiers and auxiliary planes. Descriptor
  * validation is not renderer import admission. False still requires close. */
 bool vaapi_hevc_export_open(vaapi_hevc_export_t *e,vaapi_hevc_pool_t *pool,

@@ -39,6 +39,15 @@ bool vaapi_hevc_vulkan_frame_create(vaapi_hevc_vulkan_frame_t *out,
       }
    }
    out->source = *source;
+   out->descriptor = source->descriptor;
+   out->pool = source->pool;
+   out->slot = source->slot;
+   for (i = 0; i < 4; i++)
+   {
+      out->descriptor.objects[i].fd = -1;
+      out->object_device[i] = source->object_device[i];
+      out->object_inode[i] = source->object_inode[i];
+   }
    out->ops = *ops;
    out->device = device;
    out->active = true;
@@ -51,7 +60,7 @@ bool vaapi_hevc_vulkan_frame_barrier(const vaapi_hevc_vulkan_frame_t *frame,
 {
    VkImageMemoryBarrier images[2];
    unsigned i;
-   if (!frame || !frame->active || frame->pending || frame->broken || !command || !barrier
+   if (!frame || !frame->active || !frame->source.active || frame->pending || frame->broken || !command || !barrier
          || !frame->layers[0].image || !frame->layers[1].image
          || graphics_family >= VK_QUEUE_FAMILY_FOREIGN_EXT
          || (stage != VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT && stage != VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT))
@@ -76,10 +85,59 @@ bool vaapi_hevc_vulkan_frame_barrier(const vaapi_hevc_vulkan_frame_t *frame,
 }
 bool vaapi_hevc_vulkan_frame_track(vaapi_hevc_vulkan_frame_t *frame, VkFence fence)
 {
-   if (!frame || !frame->active || frame->pending || frame->broken || !fence)
+   if (!frame || !frame->active || !frame->source.active || frame->pending || frame->broken || !fence)
       return false;
    frame->fence = fence;
    frame->pending = true;
+   return true;
+}
+bool vaapi_hevc_vulkan_frame_detach(vaapi_hevc_vulkan_frame_t *frame,
+      vaapi_hevc_export_t *returned)
+{
+   if (!frame || !frame->active || !frame->source.active || frame->pending
+         || frame->broken || !returned || returned->active || returned == &frame->source)
+      return false;
+   *returned = frame->source;
+   memset(&frame->source, 0, sizeof(frame->source));
+   return true;
+}
+bool vaapi_hevc_vulkan_frame_adopt(vaapi_hevc_vulkan_frame_t *frame,
+      vaapi_hevc_export_t *source)
+{
+   const VADRMPRIMESurfaceDescriptor *a, *b;
+   unsigned i, j;
+   if (!frame || !frame->active || frame->source.active || frame->pending || frame->broken
+         || !source || !source->active || !source->ready || source == &frame->source
+         || source->pool != frame->pool || source->slot != frame->slot
+         || !source->pool || source->slot >= 32 || !source->ticket)
+      return false;
+   a = &frame->descriptor;
+   b = &source->descriptor;
+   if (!a->num_objects || a->num_objects > 4 || a->num_layers != 2
+         || a->fourcc != b->fourcc || a->width != b->width || a->height != b->height
+         || a->num_objects != b->num_objects || a->num_layers != b->num_layers)
+      return false;
+   for (i = 0; i < a->num_objects; i++)
+      if (b->objects[i].fd < 0 || !frame->object_inode[i]
+            || frame->object_device[i] != source->object_device[i]
+            || frame->object_inode[i] != source->object_inode[i]
+            || a->objects[i].size != b->objects[i].size
+            || a->objects[i].drm_format_modifier != b->objects[i].drm_format_modifier)
+         return false;
+   for (i = 0; i < 2; i++)
+   {
+      if (!a->layers[i].num_planes || a->layers[i].num_planes > 4
+            || a->layers[i].drm_format != b->layers[i].drm_format
+            || a->layers[i].num_planes != b->layers[i].num_planes)
+         return false;
+      for (j = 0; j < a->layers[i].num_planes; j++)
+         if (a->layers[i].object_index[j] != b->layers[i].object_index[j]
+               || a->layers[i].offset[j] != b->layers[i].offset[j]
+               || a->layers[i].pitch[j] != b->layers[i].pitch[j])
+            return false;
+   }
+   frame->source = *source;
+   memset(source, 0, sizeof(*source));
    return true;
 }
 int vaapi_hevc_vulkan_frame_poll(vaapi_hevc_vulkan_frame_t *frame, PFN_vkGetFenceStatus status)

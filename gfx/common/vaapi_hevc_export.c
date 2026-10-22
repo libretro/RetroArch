@@ -3,6 +3,16 @@
 #if defined(__linux__) && !defined(__ANDROID__)
 #include <fcntl.h>
 #include <unistd.h>
+#include <sys/stat.h>
+#include <sys/vfs.h>
+static bool vaapi_hevc_fd_identity(int fd,uint64_t *device,uint64_t *inode)
+{
+ struct stat st;
+ struct statfs fs;
+ /* Older anonymous-inode DMA-BUF exports have no unique buffer identity. */
+ if(fstatfs(fd,&fs)!=0 || fs.f_type!=0x444d4142 || fstat(fd,&st)!=0 || !st.st_ino)return false;
+ *device=(uint64_t)st.st_dev;*inode=(uint64_t)st.st_ino;return true;
+}
 static bool vaapi_hevc_fd_cloexec(int fd)
 {
  int flags=fcntl(fd,F_GETFD);
@@ -19,7 +29,7 @@ bool vaapi_hevc_export_bind(vaapi_hevc_export_ops_t *ops,const vaapi_hevc_runtim
  symbol=runtime->io.symbol(runtime->va,"vaExportSurfaceHandle");
  if(!symbol || sizeof(symbol)!=sizeof(native.surface))return false;
  memcpy(&native.surface,&symbol,sizeof(symbol));native.cloexec=vaapi_hevc_fd_cloexec;
- native.close=vaapi_hevc_fd_close;*ops=native;return true;
+ native.close=vaapi_hevc_fd_close;native.identity=vaapi_hevc_fd_identity;*ops=native;return true;
 #else
  (void)ops;(void)runtime;return false;
 #endif
@@ -68,7 +78,7 @@ bool vaapi_hevc_export_open(vaapi_hevc_export_t *e,vaapi_hevc_pool_t *pool,
  vaapi_hevc_export_ops_t native;
  uint64_t ticket;
  unsigned i;
- if(!e || e->active || !ops || !ops->surface || !ops->cloexec || !ops->close)return false;
+ if(!e || e->active || !ops || !ops->surface || !ops->cloexec || !ops->close || !ops->identity)return false;
  native=*ops;
  if(!vaapi_hevc_pool_acquire(pool,slot,&ticket))return false;
  memset(e,0,sizeof(*e));e->pool=pool;e->slot=slot;e->ticket=ticket;e->ops=native;e->active=true;
@@ -76,7 +86,10 @@ bool vaapi_hevc_export_open(vaapi_hevc_export_t *e,vaapi_hevc_pool_t *pool,
  if(e->ops.surface(pool->display,pool->session->surfaces[slot],VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME_2,
        VA_EXPORT_SURFACE_READ_ONLY|VA_EXPORT_SURFACE_SEPARATE_LAYERS,&e->descriptor)!=VA_STATUS_SUCCESS
        || !vaapi_hevc_export_valid(e))goto failed;
- for(i=0;i<e->descriptor.num_objects;i++)if(!e->ops.cloexec(e->descriptor.objects[i].fd))goto failed;
+ for(i=0;i<e->descriptor.num_objects;i++)
+  if(!e->ops.cloexec(e->descriptor.objects[i].fd)
+        || !e->ops.identity(e->descriptor.objects[i].fd,&e->object_device[i],&e->object_inode[i])
+        || !e->object_inode[i])goto failed;
  e->ready=true;return true;
 failed:
  vaapi_hevc_export_close(e);return false;

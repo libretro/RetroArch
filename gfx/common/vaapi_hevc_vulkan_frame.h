@@ -7,16 +7,20 @@ RETRO_BEGIN_DECLS
 typedef struct vaapi_hevc_vulkan_frame
 {
    vaapi_hevc_export_t source;
+   VADRMPRIMESurfaceDescriptor descriptor;
+   uint64_t object_device[4], object_inode[4];
+   vaapi_hevc_pool_t *pool;
    vulkan_prime_image_ops_t ops;
    vulkan_prime_image_t layers[2];
    VkDevice device;
    VkFence fence;
+   unsigned slot;
    bool active, pending, broken;
 } vaapi_hevc_vulkan_frame_t;
 /* Cold cache population, zeroed out. Both imports must succeed before moving
  * source's export/FDs/ticket into this owner. Failure consumes nothing. VA has
  * completed the source picture; matching physical-device identity is required.
- * VA pool/session/runtime outlive this frame and its eventual return handoff. */
+ * VA pool/session/runtime outlive its held export and eventual return handoff. */
 bool vaapi_hevc_vulkan_frame_create(vaapi_hevc_vulkan_frame_t *out,
       vaapi_hevc_export_t *source, VkPhysicalDevice gpu, VkDevice device,
       bool prime_device, const VkPhysicalDeviceMemoryProperties *memory,
@@ -34,10 +38,21 @@ bool vaapi_hevc_vulkan_frame_barrier(const vaapi_hevc_vulkan_frame_t *frame,
  * succeeds. Uncertain submission failure must retain the frame through device
  * destruction if fence completion cannot be proven. */
 bool vaapi_hevc_vulkan_frame_track(vaapi_hevc_vulkan_frame_t *frame, VkFence fence);
+/* Renderer owner, after GPU and descriptor references to the use retire.
+ * Return only its export; cached imports retain their independent BO references.
+ * No native VA/FD call, allocation, query or wait. */
+bool vaapi_hevc_vulkan_frame_detach(vaapi_hevc_vulkan_frame_t *frame,
+      vaapi_hevc_export_t *returned);
+/* Reuse imports only for the exact worker-captured buffer identities, layout
+ * and decoder slot. Refusal consumes nothing. Caller reconfigures crop/color
+ * and submission ticket for each newly adopted picture. */
+bool vaapi_hevc_vulkan_frame_adopt(vaapi_hevc_vulkan_frame_t *frame,
+      vaapi_hevc_export_t *source);
 /* One zero-timeout status query. 1 complete, 0 pending, -1 sticky error. */
 int vaapi_hevc_vulkan_frame_poll(vaapi_hevc_vulkan_frame_t *frame, PFN_vkGetFenceStatus status);
 /* Renderer owner, after final GPU and descriptor references retire. Destroy
- * Vulkan resources, then move the still-held export into empty returned.
+ * Vulkan resources, then move any still-held export into empty returned.
+ * An idle cache entry leaves returned empty.
  * Deliver returned through the existing lease-return mechanism; ONLY the VA
  * owner calls vaapi_hevc_export_close to release its pool ticket. */
 bool vaapi_hevc_vulkan_frame_retire(vaapi_hevc_vulkan_frame_t *frame,

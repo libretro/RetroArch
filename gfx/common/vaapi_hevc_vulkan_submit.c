@@ -6,7 +6,7 @@ bool vaapi_hevc_vulkan_submission_configure(vaapi_hevc_vulkan_submission_t *e,
 {
    vulkan_video_layout_t layout;
    unsigned pixfmt;
-   if (!e || !frame || !frame->active || frame->pending || frame->broken
+   if (!e || !frame || !frame->active || !frame->source.active || frame->pending || frame->broken
          || (e->frame && (e->frame->pending || e->frame->broken))
          || !width || !height || ((x | y) & 1)
          || x >= frame->source.descriptor.width || y >= frame->source.descriptor.height
@@ -62,7 +62,7 @@ int vaapi_hevc_vulkan_submission_present(vaapi_hevc_vulkan_submission_t *e,
    VkSubmitInfo submit;
    unsigned i;
    int status;
-   if (!e || !e->frame || !e->frame->active || !destination || !view
+   if (!e || !e->frame || !e->frame->active || !e->frame->source.active || !destination || !view
          || !e->device || e->device != e->frame->device || !e->queue || !e->command || !e->fence
          || !e->pipeline || !e->layout || !e->set || !e->sampler || e->family >= VK_QUEUE_FAMILY_FOREIGN_EXT
          || width != e->header[0] || height != e->header[1] || format != e->output_format

@@ -23,7 +23,14 @@ static void owner_close(int fd)
 #endif
    native_calls++; ex_close(fd);
 }
-static const vaapi_hevc_export_ops_t owner_ops = { ex_surface, ex_seal, owner_close };
+static bool owner_identity(int fd,uint64_t *device,uint64_t *inode)
+{
+#if defined(__linux__)
+   assert(pthread_equal(pthread_self(), producer));
+#endif
+   return ex_identity(fd,device,inode);
+}
+static const vaapi_hevc_export_ops_t owner_ops = { ex_surface, ex_seal, owner_close, owner_identity };
 static void produce(void)
 {
    ex_reset(); assert(vaapi_hevc_export_open(&ex_frame, &ex_pool, 0, &owner_ops));

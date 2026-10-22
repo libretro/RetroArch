@@ -23,6 +23,7 @@ int main(void)
  struct stat status;
  unsigned before,i;
  int fd;
+ uint64_t object_device=91,object_inode=92;
  before=fd_count();
  assert(!stat("/dev/null",&status));
  assert(!vaapi_hevc_runtime_open(&runtime,"/dev/null",major(status.st_rdev),minor(status.st_rdev),64,64,8,4,VA_DEC_SLICE_MODE_NORMAL));
@@ -32,7 +33,9 @@ int main(void)
  binding=runtime;binding.ready=true;
  assert(vaapi_hevc_export_bind(&export_ops,&binding));
  fd=open("/dev/null",O_RDONLY);assert(fd>=0 && !fcntl(fd,F_SETFD,0));
- assert(export_ops.cloexec(fd) && (fcntl(fd,F_GETFD)&FD_CLOEXEC));export_ops.close(fd);
+ assert(export_ops.cloexec(fd) && (fcntl(fd,F_GETFD)&FD_CLOEXEC));
+ assert(!export_ops.identity(fd,&object_device,&object_inode) && object_device==91 && object_inode==92);
+ export_ops.close(fd);
  assert(export_ops.surface(NULL,VA_INVALID_SURFACE,VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME_2,
        VA_EXPORT_SURFACE_READ_ONLY|VA_EXPORT_SURFACE_SEPARATE_LAYERS,&descriptor)==VA_STATUS_ERROR_INVALID_DISPLAY);
  assert(!vaapi_hevc_export_bind(&export_ops,&runtime));
