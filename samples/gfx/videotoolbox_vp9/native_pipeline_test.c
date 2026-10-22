@@ -106,9 +106,9 @@ static void run(const vp9_pipeline_fixture_t *fixture, void *device)
    videotoolbox_hevc_test_export(&held, fixture->depth,
          fixture->full, fixture->crc[0]);
    videotoolbox_hevc_test_movie_reset();
-   printf("PASS: native VP9 %s %u-bit range %u transfer %u: Metal decoded-plane CRC, FrameView pixels, repeated seeks and retained export after stream/pool close\n",
+   printf("PASS: native VP9 %s %u-bit range %u transfer %u: hidden/repeat %u: Metal decoded-plane CRC, FrameView pixels, repeated seeks and retained export after stream/pool close\n",
          fixture->webm ? "WebM" : "MP4", fixture->depth,
-         fixture->full, fixture->transfer);
+         fixture->full, fixture->transfer, fixture->hidden_repeat);
 }
 
 int main(void)
