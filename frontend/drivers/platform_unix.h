@@ -77,6 +77,25 @@ struct android_app;
 /* Fingers tracked on each display */
 #define MAX_TOUCH 16
 
+/* The joystick axes native input reads: X, Y, Z, RZ, HAT_X, HAT_Y,
+ * LTRIGGER, RTRIGGER, BRAKE, GAS */
+#define ANDROID_JOYSTICK_AXES 10
+
+/* What native input reads of a key or a joystick move, from the input
+ * queue or from the second display's window */
+typedef struct android_input_fields
+{
+   int64_t event_time; /* a key's, ns, AKeyEvent_getEventTime()'s clock */
+   int32_t type;       /* AINPUT_EVENT_TYPE_KEY or _MOTION */
+   int32_t device_id;
+   int32_t source;
+   int32_t action;     /* a key's */
+   int32_t keycode;
+   int32_t flags;
+   int32_t meta_state;
+   float axes[ANDROID_JOYSTICK_AXES]; /* a move's */
+} android_input_fields_t;
+
 /* A touch on the second display, UI thread to the input poll */
 typedef struct android_second_touch
 {

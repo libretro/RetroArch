@@ -1177,54 +1177,63 @@ static void android_input_poll_second_touches(android_input_t *android,
    }
 }
 
-static void engine_handle_dpad_default(struct android_app *android,
-      AInputEvent *event, int port, int source)
+/* A stick or hat move from its axes, in ANDROID_JOYSTICK_AXES' order;
+ * without AMotionEvent_getAxisValue only X and Y are read */
+static void android_input_dpad_fields(struct android_app *android,
+      int port, const float *axes, bool all_axes)
 {
-   size_t motion_ptr = AMotionEvent_getAction(event) >>
-      AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
-   float x           = AMotionEvent_getX(event, motion_ptr);
-   float y           = AMotionEvent_getY(event, motion_ptr);
-
    if (port < 0 || port >= DEFAULT_MAX_PADS)
       return;
 
-   android->analog_state[port][0] = (int16_t)(x * 32767.0f);
-   android->analog_state[port][1] = (int16_t)(y * 32767.0f);
+   android->analog_state[port][0] = (int16_t)(axes[0] * 32767.0f);
+   android->analog_state[port][1] = (int16_t)(axes[1] * 32767.0f);
+   if (!all_axes)
+      return;
+
+   android->hat_state[port][0]    = (int)axes[4];
+   android->hat_state[port][1]    = (int)axes[5];
+
+   /* XXX: this could be a loop instead, but do we really want to
+    * loop through every axis? */
+   android->analog_state[port][2] = (int16_t)(axes[2] * 32767.0f);
+   android->analog_state[port][3] = (int16_t)(axes[3] * 32767.0f);
+   android->analog_state[port][6] = (int16_t)(axes[6] * 32767.0f);
+   android->analog_state[port][7] = (int16_t)(axes[7] * 32767.0f);
+   android->analog_state[port][8] = (int16_t)(axes[8] * 32767.0f);
+   android->analog_state[port][9] = (int16_t)(axes[9] * 32767.0f);
+}
+
+static void engine_handle_dpad_default(struct android_app *android,
+      AInputEvent *event, int port, int source)
+{
+   float axes[ANDROID_JOYSTICK_AXES];
+   size_t motion_ptr = AMotionEvent_getAction(event) >>
+      AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
+
+   axes[0] = AMotionEvent_getX(event, motion_ptr);
+   axes[1] = AMotionEvent_getY(event, motion_ptr);
+   android_input_dpad_fields(android, port, axes, false);
 }
 
 #ifdef HAVE_DYLIB
 static void engine_handle_dpad_getaxisvalue(struct android_app *android,
       AInputEvent *event, int port, int source)
 {
+   float axes[ANDROID_JOYSTICK_AXES];
    size_t motion_ptr = AMotionEvent_getAction(event) >>
       AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
-   float x           = AMotionEvent_getAxisValue(event, AXIS_X, motion_ptr);
-   float y           = AMotionEvent_getAxisValue(event, AXIS_Y, motion_ptr);
-   float z           = AMotionEvent_getAxisValue(event, AXIS_Z, motion_ptr);
-   float rz          = AMotionEvent_getAxisValue(event, AXIS_RZ, motion_ptr);
-   float hatx        = AMotionEvent_getAxisValue(event, AXIS_HAT_X, motion_ptr);
-   float haty        = AMotionEvent_getAxisValue(event, AXIS_HAT_Y, motion_ptr);
-   float ltrig       = AMotionEvent_getAxisValue(event, AXIS_LTRIGGER, motion_ptr);
-   float rtrig       = AMotionEvent_getAxisValue(event, AXIS_RTRIGGER, motion_ptr);
-   float brake       = AMotionEvent_getAxisValue(event, AXIS_BRAKE, motion_ptr);
-   float gas         = AMotionEvent_getAxisValue(event, AXIS_GAS, motion_ptr);
 
-   if (port < 0 || port >= DEFAULT_MAX_PADS)
-      return;
-
-   android->hat_state[port][0]    = (int)hatx;
-   android->hat_state[port][1]    = (int)haty;
-
-   /* XXX: this could be a loop instead, but do we really want to
-    * loop through every axis? */
-   android->analog_state[port][0] = (int16_t)(x * 32767.0f);
-   android->analog_state[port][1] = (int16_t)(y * 32767.0f);
-   android->analog_state[port][2] = (int16_t)(z * 32767.0f);
-   android->analog_state[port][3] = (int16_t)(rz * 32767.0f);
-   android->analog_state[port][6] = (int16_t)(ltrig * 32767.0f);
-   android->analog_state[port][7] = (int16_t)(rtrig * 32767.0f);
-   android->analog_state[port][8] = (int16_t)(brake * 32767.0f);
-   android->analog_state[port][9] = (int16_t)(gas * 32767.0f);
+   axes[0] = AMotionEvent_getAxisValue(event, AXIS_X, motion_ptr);
+   axes[1] = AMotionEvent_getAxisValue(event, AXIS_Y, motion_ptr);
+   axes[2] = AMotionEvent_getAxisValue(event, AXIS_Z, motion_ptr);
+   axes[3] = AMotionEvent_getAxisValue(event, AXIS_RZ, motion_ptr);
+   axes[4] = AMotionEvent_getAxisValue(event, AXIS_HAT_X, motion_ptr);
+   axes[5] = AMotionEvent_getAxisValue(event, AXIS_HAT_Y, motion_ptr);
+   axes[6] = AMotionEvent_getAxisValue(event, AXIS_LTRIGGER, motion_ptr);
+   axes[7] = AMotionEvent_getAxisValue(event, AXIS_RTRIGGER, motion_ptr);
+   axes[8] = AMotionEvent_getAxisValue(event, AXIS_BRAKE, motion_ptr);
+   axes[9] = AMotionEvent_getAxisValue(event, AXIS_GAS, motion_ptr);
+   android_input_dpad_fields(android, port, axes, true);
 }
 #endif
 
@@ -1929,15 +1938,15 @@ static unsigned android_keycode_to_unicode(int device_id,
 }
 
 static INLINE void android_input_poll_event_type_keyboard(
-      AInputEvent *event, int keycode, int *handled)
+      const android_input_fields_t *key, int *handled)
 {
-   int keydown           = (AKeyEvent_getAction(event)
-         == AKEY_EVENT_ACTION_DOWN);
+   int keycode           = key->keycode;
+   int keydown           = (key->action == AKEY_EVENT_ACTION_DOWN);
    int keyboard_keycode  = android_keycode_for_keyboard(keycode);
    unsigned keyboardcode = input_keymaps_translate_keysym_to_rk(keyboard_keycode);
    /* Set keyboard modifier based on shift,ctrl and alt state */
    uint16_t mod          = 0;
-   int meta              = AKeyEvent_getMetaState(event);
+   int meta              = key->meta_state;
    uint32_t character    = 0;
 
    if (meta & AMETA_ALT_ON)
@@ -1960,7 +1969,7 @@ static INLINE void android_input_poll_event_type_keyboard(
     * symbols, and yields 0 for modifier/lock keys so they no longer leak
     * into menu text fields as '?'. */
    character = android_keycode_to_unicode(
-         AInputEvent_getDeviceId(event), keyboard_keycode, meta);
+         key->device_id, keyboard_keycode, meta);
 
    /* Fall back to the raw keysym for the plain ASCII range when the
     * platform could not resolve a character (e.g. JNI unavailable).
@@ -1987,12 +1996,11 @@ typedef char android_key_state_codes_check[
       && ANDROID_KEY_SOURCE_GAMEPAD  == AINPUT_SOURCE_GAMEPAD
       && ANDROID_KEY_SOURCE_JOYSTICK == AINPUT_SOURCE_JOYSTICK) ? 1 : -1];
 
-static INLINE void android_input_poll_event_type_key(
-      struct android_app *android_app,
-      AInputEvent *event, int port, int keycode, int source,
-      int type_event, int *handled)
+static INLINE void android_input_poll_event_type_key(int port,
+      const android_input_fields_t *key, int *handled)
 {
-   int action = AKeyEvent_getAction(event);
+   int action  = key->action;
+   int keycode = key->keycode;
 
    /* android_key_state[] has one row per pad slot plus the
     * dedicated keyboard row at ANDROID_KEYBOARD_PORT. */
@@ -2012,7 +2020,7 @@ static INLINE void android_input_poll_event_type_key(
       if (action == AKEY_EVENT_ACTION_DOWN)
       {
          android_press_group_down(&android_press_group[port], keycode,
-               (int64_t)AKeyEvent_getEventTime(event));
+               key->event_time);
          action = -1;
       }
       else if (action == AKEY_EVENT_ACTION_UP
@@ -2025,7 +2033,7 @@ static INLINE void android_input_poll_event_type_key(
       android_key_state_write(
             android_key_state[port],
             android_key_state[ANDROID_KEYBOARD_PORT],
-            LAST_KEYCODE, keycode, source,
+            LAST_KEYCODE, keycode, key->source,
             action == AKEY_EVENT_ACTION_DOWN);
 
    if ((keycode == AKEYCODE_VOLUME_UP || keycode == AKEYCODE_VOLUME_DOWN))
@@ -2534,12 +2542,33 @@ static void handle_hotplug(android_input_t *android,
    android->pads_connected++;
 }
 
-static int android_input_get_id(AInputEvent *event)
+/* A device id as the pad slots know it */
+static int android_input_map_id(int id)
 {
-   int id = AInputEvent_getDeviceId(event);
    if (id == pad_id2)
       return pad_id1;
    return id;
+}
+
+static int android_input_get_id(AInputEvent *event)
+{
+   return android_input_map_id(AInputEvent_getDeviceId(event));
+}
+
+/* An event's pad slot, plugging its device in if it is new */
+static int android_input_resolve_port(android_input_t *android,
+      struct android_app *android_app, int id, int source,
+      bool *is_keyboard)
+{
+   int port     = android_input_get_id_port(android, id, source);
+   *is_keyboard = android_input_event_is_keyboard(android, id, source);
+
+   if (port < 0 && !*is_keyboard)
+      port = android_input_recover_port(android, id);
+
+   if (port < 0 && !*is_keyboard)
+      handle_hotplug(android, android_app, &port, id, source);
+   return port;
 }
 
 struct TOUCHSTATE
@@ -2646,13 +2675,50 @@ static void engine_handle_touchpad(
  * from the soft keyboard carries AKEY_EVENT_FLAG_SOFT_KEYBOARD, the
  * virtual keyboard's device id (-1), or both, depending on how the
  * IME built it. */
-static bool android_kbd_takes_key(AInputEvent *event, int keycode)
+static bool android_kbd_takes_key(const android_input_fields_t *key)
 {
    return android_kbd_key_goes_to_ime(
          retro_atomic_load_relaxed_int(&android_kbd_open) != 0,
-            (AKeyEvent_getFlags(event) & AKEY_EVENT_FLAG_SOFT_KEYBOARD)
-         || AInputEvent_getDeviceId(event) == -1,
-         keycode == AKEYCODE_BACK);
+            (key->flags & AKEY_EVENT_FLAG_SOFT_KEYBOARD)
+         || key->device_id == -1,
+         key->keycode == AKEYCODE_BACK);
+}
+
+static void android_input_key_read(AInputEvent *event, int source,
+      android_input_fields_t *key)
+{
+   key->event_time = AKeyEvent_getEventTime(event);
+   key->type       = AINPUT_EVENT_TYPE_KEY;
+   key->device_id  = AInputEvent_getDeviceId(event);
+   key->source     = source;
+   key->action     = AKeyEvent_getAction(event);
+   key->keycode    = AKeyEvent_getKeyCode(event);
+   key->flags      = AKeyEvent_getFlags(event);
+   key->meta_state = AKeyEvent_getMetaState(event);
+}
+
+/* A key from the input queue or the second display's window; *handled
+ * is the queue's answer, which SecondDisplayController repeats */
+static void android_input_key_fields(int port, bool is_keyboard,
+      const android_input_fields_t *key, int *handled)
+{
+   if (!key->keycode)
+      return;
+
+   if (android_kbd_takes_key(key))
+   {
+      *handled = 0;
+      return;
+   }
+
+   if (is_keyboard)
+   {
+      android_input_poll_event_type_keyboard(key, handled);
+      android_input_poll_event_type_key(ANDROID_KEYBOARD_PORT, key,
+            handled);
+   }
+   else
+      android_input_poll_event_type_key(port, key, handled);
 }
 
 static void android_input_poll_input_gingerbread(
@@ -2706,25 +2772,23 @@ static void android_input_poll_input_gingerbread(
             break;
          case AINPUT_EVENT_TYPE_KEY:
             {
-               int keycode = AKeyEvent_getKeyCode(event);
+               android_input_fields_t key;
 
-               if (!keycode)
+               android_input_key_read(event, source, &key);
+               if (!key.keycode)
                   break;
 
-               if (android_kbd_takes_key(event, keycode))
+               if (android_kbd_takes_key(&key))
                   break;
 
                if (is_keyboard)
                {
-                  android_input_poll_event_type_keyboard(
-                        event, keycode, &handled);
-                  android_input_poll_event_type_key(
-                        android_app, event, ANDROID_KEYBOARD_PORT,
-                        keycode, source, type_event, &handled);
+                  android_input_poll_event_type_keyboard(&key, &handled);
+                  android_input_poll_event_type_key(ANDROID_KEYBOARD_PORT,
+                        &key, &handled);
                }
                else
-                  android_input_poll_event_type_key(android_app,
-                     event, port, keycode, source, type_event, &handled);
+                  android_input_poll_event_type_key(port, &key, &handled);
             }
             break;
       }
@@ -2752,7 +2816,7 @@ static void android_input_poll_input_default(android_input_t *android)
       while (AInputQueue_getEvent(android_app->inputQueue, &event) >= 0)
       {
          int32_t handled;
-         int source, type_event, id, port;
+         int source, type_event, port;
          bool is_keyboard;
 
          /* A pre-dispatched event belongs to the IME from here on and
@@ -2765,16 +2829,8 @@ static void android_input_poll_input_default(android_input_t *android)
          handled    = 1;
          source     = AInputEvent_getSource(event);
          type_event = AInputEvent_getType(event);
-         id         = android_input_get_id(event);
-         port       = android_input_get_id_port(android, id, source);
-         is_keyboard = android_input_event_is_keyboard(android, id, source);
-
-         if (port < 0 && !is_keyboard)
-            port = android_input_recover_port(android, id);
-
-         if (port < 0 && !is_keyboard)
-            handle_hotplug(android, android_app,
-                  &port, id, source);
+         port       = android_input_resolve_port(android, android_app,
+               android_input_get_id(event), source, &is_keyboard);
 
          switch (type_event)
          {
@@ -2800,28 +2856,11 @@ static void android_input_poll_input_default(android_input_t *android)
                break;
             case AINPUT_EVENT_TYPE_KEY:
                {
-                  int keycode = AKeyEvent_getKeyCode(event);
+                  android_input_fields_t key;
 
-                  if (!keycode)
-                     break;
-
-                  if (android_kbd_takes_key(event, keycode))
-                  {
-                     handled = 0;
-                     break;
-                  }
-
-                  if (is_keyboard)
-                  {
-                     android_input_poll_event_type_keyboard(
-                           event, keycode, &handled);
-                     android_input_poll_event_type_key(
-                           android_app, event, ANDROID_KEYBOARD_PORT,
-                           keycode, source, type_event, &handled);
-                  }
-                  else
-                     android_input_poll_event_type_key(android_app,
-                           event, port, keycode, source, type_event, &handled);
+                  android_input_key_read(event, source, &key);
+                  android_input_key_fields(port, is_keyboard, &key,
+                        &handled);
                }
                break;
          }
