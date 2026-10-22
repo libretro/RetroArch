@@ -73,10 +73,32 @@ struct hidpad_ps5_data
    sony_pad_motion_t motion;
    uint8_t motion_want; /* pad_motion.h's bits */
    bool motion_seen;
+   bool effects;        /* it takes the output report */
+   bool sensors;        /* it has motion */
 };
 
+/* A pad that passes for a DualSense says what it has in its feature
+ * report 0x03, as SDL reads it: 48 bytes, 0x28 in byte 2, then in
+ * byte 4 the sensors (0x02), light bar (0x04) and rumble (0x08), and
+ * in byte 20 the player lights (0x80). One that does not answer is sent
+ * nothing. */
+static void hidpad_ps5_third_party(struct hidpad_ps5_data *device)
+{
+   uint8_t feature[64];
+   memset(feature, 0, sizeof(feature));
+   device->effects = false;
+   device->sensors = false;
+   if (     !device->driver || !device->driver->get_report
+         ||  device->driver->get_report(device->connection,
+               HID_REPORT_FEATURE, 0x03, feature, 48) != 48
+         ||  feature[2] != 0x28)
+      return;
+   device->sensors = (feature[4] & 0x02) != 0;
+   device->effects = (feature[4] & 0x0c) || (feature[20] & 0x80);
+}
+
 static void *hidpad_ps5_start(void *data, uint32_t slot,
-      hid_driver_t *driver, bool edge)
+      hid_driver_t *driver, bool edge, bool third)
 {
    struct pad_connection *connection = (struct pad_connection*)data;
    struct hidpad_ps5_data *device;
@@ -96,7 +118,11 @@ static void *hidpad_ps5_start(void *data, uint32_t slot,
    /* the Edge drives its motors the newer way; a DualSense from
     * firmware 2.21, which its feature report 0x20 tells */
    device->vibration_v2 = edge;
-   if (!edge && driver && driver->get_report)
+   device->effects      = true;
+   device->sensors      = true;
+   if (third)
+      hidpad_ps5_third_party(device);
+   else if (!edge && driver && driver->get_report)
    {
       uint8_t feature[64];
       memset(feature, 0, sizeof(feature));
@@ -110,13 +136,19 @@ static void *hidpad_ps5_start(void *data, uint32_t slot,
 
 static void *hidpad_ps5_init(void *data, uint32_t slot, hid_driver_t *driver)
 {
-   return hidpad_ps5_start(data, slot, driver, false);
+   return hidpad_ps5_start(data, slot, driver, false, false);
+}
+
+static void *hidpad_ps5_third_init(void *data, uint32_t slot,
+      hid_driver_t *driver)
+{
+   return hidpad_ps5_start(data, slot, driver, false, true);
 }
 
 static void *hidpad_ps5_edge_init(void *data, uint32_t slot,
       hid_driver_t *driver)
 {
-   return hidpad_ps5_start(data, slot, driver, true);
+   return hidpad_ps5_start(data, slot, driver, true, false);
 }
 
 static void hidpad_ps5_deinit(void *data)
@@ -229,7 +261,7 @@ static void hidpad_ps5_packet_handler(void *data,
             | (triggers[i] >> 1));
    pad_view_set_buttons(&device->view, hidpad_ps5_decode(buttons),
          (buttons[2] & 0x01) != 0);
-   if (device->motion_want && motion_len >= 16 + 12)
+   if (device->motion_want && device->sensors && motion_len >= 16 + 12)
    {
       for (i = 0; i < 3; i++)
       {
@@ -239,7 +271,7 @@ static void hidpad_ps5_packet_handler(void *data,
       device->motion_seen = true;
    }
 
-   if (     device->link != PS5_LINK_STACK
+   if (     device->link != PS5_LINK_STACK && device->effects
          && (!device->lights_sent || device->motors_due))
       hidpad_ps5_send(device);
 }
@@ -358,6 +390,29 @@ pad_connection_interface_t pad_connection_ps5 = {
 
 pad_connection_interface_t pad_connection_ps5_edge = {
    hidpad_ps5_edge_init,
+   hidpad_ps5_deinit,
+   hidpad_ps5_packet_handler,
+   hidpad_ps5_set_rumble,
+   hidpad_ps5_get_buttons,
+   hidpad_ps5_get_axis,
+   hidpad_ps5_get_name,
+   hidpad_ps5_button,
+   false, /* multi_pad */
+   0,     /* max_pad */
+   NULL,  /* pad_init */
+   NULL,  /* pad_deinit */
+   NULL,  /* status */
+   NULL,  /* joypad */
+   hidpad_ps5_set_player,
+   hidpad_ps5_view,
+   NULL,  /* idle */
+   hidpad_ps5_set_sensor,
+   hidpad_ps5_sensor
+};
+
+/* the pads that pass for one */
+pad_connection_interface_t pad_connection_ps5_third_party = {
+   hidpad_ps5_third_init,
    hidpad_ps5_deinit,
    hidpad_ps5_packet_handler,
    hidpad_ps5_set_rumble,

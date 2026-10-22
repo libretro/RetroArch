@@ -112,9 +112,114 @@ static joypad_connection_entry_t pad_map[] = {
       PID_SONY_DS5_EDGE,
       &pad_connection_ps5_edge
    },
+   /* pads that pass for a DualSense, as SDL lists them */
+   { "Victrix Pro FS",
+      SWAP_IF_BIG(0x0e6f),
+      SWAP_IF_BIG(0x0209),
+      &pad_connection_ps5_third_party
+   },
+   { "HORI Fighting Commander OCTA",
+      SWAP_IF_BIG(0x0f0d),
+      SWAP_IF_BIG(0x0163),
+      &pad_connection_ps5_third_party
+   },
+   { "HORI Fighting Stick alpha",
+      SWAP_IF_BIG(0x0f0d),
+      SWAP_IF_BIG(0x0184),
+      &pad_connection_ps5_third_party
+   },
+   { "Razer Wolverine V2 Pro",
+      SWAP_IF_BIG(0x1532),
+      SWAP_IF_BIG(0x100b),
+      &pad_connection_ps5_third_party
+   },
+   { "Razer Wolverine V2 Pro",
+      SWAP_IF_BIG(0x1532),
+      SWAP_IF_BIG(0x100c),
+      &pad_connection_ps5_third_party
+   },
+   { "Razer Kitsune",
+      SWAP_IF_BIG(0x1532),
+      SWAP_IF_BIG(0x1012),
+      &pad_connection_ps5_third_party
+   },
+   { "Razer Raiju V3 Pro",
+      SWAP_IF_BIG(0x1532),
+      SWAP_IF_BIG(0x1024),
+      &pad_connection_ps5_third_party
+   },
+   { "Razer Raiju V3 Pro",
+      SWAP_IF_BIG(0x1532),
+      SWAP_IF_BIG(0x1026),
+      &pad_connection_ps5_third_party
+   },
+   { "NACON Revolution 5 Pro",
+      SWAP_IF_BIG(0x3285),
+      SWAP_IF_BIG(0x0d18),
+      &pad_connection_ps5_third_party
+   },
+   { "NACON Revolution 5 Pro",
+      SWAP_IF_BIG(0x3285),
+      SWAP_IF_BIG(0x0d19),
+      &pad_connection_ps5_third_party
+   },
+   { "Backbone One PlayStation Edition",
+      SWAP_IF_BIG(0x358a),
+      SWAP_IF_BIG(0x0104),
+      &pad_connection_ps5_third_party
+   },
+   { "Backbone One PlayStation Edition",
+      SWAP_IF_BIG(0x358a),
+      SWAP_IF_BIG(0x0304),
+      &pad_connection_ps5_third_party
+   },
    { "Pro Controller",
       VID_NINTENDO,
       PID_NINTENDO_SWITCH_PRO,
+      &pad_connection_switch_pro
+   },
+   /* the Switch Online pads, which speak as the Pro Controller does and
+    * are read by its handler, as SDL reads them; on the right Joy-Con's
+    * id, only the NES and Famicom pads, by their names */
+   { "SNES Controller",
+      VID_NINTENDO,
+      SWAP_IF_BIG(0x2017),
+      &pad_connection_switch_pro
+   },
+   { "N64 Controller",
+      VID_NINTENDO,
+      SWAP_IF_BIG(0x2019),
+      &pad_connection_switch_pro_n64
+   },
+   { "MD/Gen Control Pad",
+      VID_NINTENDO,
+      SWAP_IF_BIG(0x201e),
+      &pad_connection_switch_pro
+   },
+   { "NES Controller",
+      VID_NINTENDO,
+      SWAP_IF_BIG(0x2007),
+      &pad_connection_switch_pro
+   },
+   { "HVC Controller",
+      VID_NINTENDO,
+      SWAP_IF_BIG(0x2007),
+      &pad_connection_switch_pro
+   },
+   /* pads that pass for a Pro Controller on their own ids */
+   { "Pro Controller",
+      SWAP_IF_BIG(0x0e6f),
+      SWAP_IF_BIG(0x0186),
+      &pad_connection_switch_pro
+   },
+   { "Pro Controller",
+      SWAP_IF_BIG(0x0e6f),
+      SWAP_IF_BIG(0x018c),
+      &pad_connection_switch_pro
+   },
+   { "Pro Controller",
+      SWAP_IF_BIG(0x0f0d),
+      SWAP_IF_BIG(0x00f6),
       &pad_connection_switch_pro
    },
    { "Nintendo Switch 2 Pro Controller",
@@ -215,6 +320,36 @@ static joypad_connection_entry_t pad_map[] = {
       VID_8BITDO,
       PID_8BITDO_SF30_PRO_BT,
       &pad_connection_8bitdo_sf30_pro
+   },
+   { "8BitDo Pro 2",
+      VID_8BITDO,
+      PID_8BITDO_PRO_2,
+      &pad_connection_8bitdo_pro_2
+   },
+   { "8BitDo Pro 2",
+      VID_8BITDO,
+      PID_8BITDO_PRO_2_BT,
+      &pad_connection_8bitdo_pro_2
+   },
+   { "8BitDo Pro 3",
+      VID_8BITDO,
+      PID_8BITDO_PRO_3,
+      &pad_connection_8bitdo_pro_3
+   },
+   { "8BitDo Ultimate 2 Wireless",
+      VID_8BITDO,
+      PID_8BITDO_ULTIMATE_2,
+      &pad_connection_8bitdo_ultimate_2
+   },
+   { "8BitDo Ultimate 2C Wireless",
+      VID_8BITDO,
+      PID_8BITDO_ULTIMATE_2C,
+      &pad_connection_8bitdo_ultimate_2c
+   },
+   { "8BitDo Ultimate 3",
+      VID_8BITDO,
+      PID_8BITDO_ULTIMATE_3,
+      &pad_connection_8bitdo_ultimate_3
    },
 #endif
    { 0, 0}
@@ -363,6 +498,12 @@ joypad_connection_entry_t *find_connection_entry(uint16_t vid, uint16_t pid, con
             && has_name
             && !string_is_equal(name, pad_map[i].name)
             && !joypad_connection_is_nes_clone_name(name))
+         continue;
+
+      /* the right Joy-Con's id: a Switch Online pad by its name */
+      if (     pad_map[i].vid == VID_NINTENDO
+            && pad_map[i].pid == SWAP_IF_BIG(0x2007)
+            && (!has_name || !string_starts_with(name, pad_map[i].name)))
          continue;
 
       /* on Sony's id, ShanWan's own handler only for a pad that says

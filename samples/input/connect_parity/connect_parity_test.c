@@ -2415,6 +2415,113 @@ static void test_motion(void)
          failures == had ? "pass" : "fail");
 }
 
+/* ---- the pads SDL handles that were added with its ways --------- */
+
+static int32_t stub_ds5_caps(void *handle, uint8_t type, uint8_t id,
+      uint8_t *data, size_t len)
+{
+   (void)handle;
+   if (type != HID_REPORT_FEATURE || id != 0x03 || len < 48)
+      return -1;
+   memset(data, 0, len);
+   data[0] = 0x03;
+   data[2] = 0x28;
+   data[4] = 0x02 | 0x08;  /* sensors, rumble */
+   return 48;
+}
+
+static void test_sdl_pads(void)
+{
+   uint8_t p[80];
+   unsigned k, had = failures, count;
+   int dummy_connection;
+   void *dev;
+   float v;
+
+   /* 8BitDo Pro 2: L4 and R4 from byte 10; motion from 15 where its
+    * mode with rumble is on, as SDL turns it */
+   stub_hid.get_report = stub_8bitdo_feature;
+   dev = pad_connection_8bitdo_pro_2.init(&dummy_connection, 0, &stub_hid);
+   stub_hid.get_report = NULL;
+   CHECK(dev && !strcmp(pad_connection_8bitdo_pro_2.get_name(dev), "8BitDo Pro 2"),
+         "sdl pads: the Pro 2 misnamed");
+   pad_connection_8bitdo_pro_2.set_sensor(dev, RETRO_SENSOR_ACCELEROMETER_ENABLE);
+   pad_connection_8bitdo_pro_2.set_sensor(dev, RETRO_SENSOR_GYROSCOPE_ENABLE);
+   memset(p, 0, sizeof(p));
+   p[0] = 0x04; p[1] = 8; p[2] = p[3] = p[4] = p[5] = 0x7f;
+   p[8]  = 0x04 | 0x20;   /* the back paddles */
+   p[10] = 0x01 | 0x02;   /* L4, R4 */
+   p[15] = 0x00; p[16] = 0x10;   /* accelerometer X 4096: a g */
+   p[21] = 0xe8; p[22] = 0x03;   /* gyroscope X 1000 */
+   deliver(&pad_connection_8bitdo_pro_2, dev, p, 33);
+   CHECK(pad_connection_8bitdo_pro_2.button(dev, 2)
+         && pad_connection_8bitdo_pro_2.button(dev, 5)
+         && pad_connection_8bitdo_pro_2.button(dev, 16)
+         && pad_connection_8bitdo_pro_2.button(dev, 17),
+         "sdl pads: the Pro 2's paddles, L4 or R4 not read");
+   CHECK(pad_connection_8bitdo_pro_2.sensor(dev, RETRO_SENSOR_ACCELEROMETER_Y, &v)
+         && fabsf(v + 1.0f) < 1e-5f
+         && pad_connection_8bitdo_pro_2.sensor(dev, RETRO_SENSOR_GYROSCOPE_Y, &v)
+         && fabsf(v - 1000.0f * 2000.0f * 3.14159265f / 180.0f / 32767.0f) < 1e-4f,
+         "sdl pads: the Pro 2's motion misread");
+   pad_connection_8bitdo_pro_2.deinit(dev);
+
+   /* Ultimate 2C: no rumble, no motion; Ultimate 2 Wireless: rumble
+    * once its report is the long one */
+   dev = pad_connection_8bitdo_ultimate_2c.init(&dummy_connection, 0, &stub_hid);
+   pad_connection_8bitdo_ultimate_2c.set_rumble(dev, RETRO_RUMBLE_STRONG, 0xffff);
+   count = sent_count;
+   deliver(&pad_connection_8bitdo_ultimate_2c, dev, p, 11);
+   CHECK(sent_count == count, "sdl pads: the Ultimate 2C rumbled");
+   pad_connection_8bitdo_ultimate_2c.deinit(dev);
+   dev = pad_connection_8bitdo_ultimate_2.init(&dummy_connection, 0, &stub_hid);
+   pad_connection_8bitdo_ultimate_2.set_rumble(dev, RETRO_RUMBLE_STRONG, 0xffff);
+   deliver(&pad_connection_8bitdo_ultimate_2, dev, p, 12);
+   CHECK(sent_count == count, "sdl pads: the Ultimate 2 rumbled on its short report");
+   deliver(&pad_connection_8bitdo_ultimate_2, dev, p, 34);
+   CHECK(sent_count == count + 1 && sent[0] == 0x05,
+         "sdl pads: the Ultimate 2 not rumbled on its long report");
+   pad_connection_8bitdo_ultimate_2.deinit(dev);
+
+   /* a pad that passes for a DualSense: nothing sent unless it says it
+    * takes it; then rumble and motion as it says */
+   dev = pad_connection_ps5_third_party.init(&dummy_connection, 0, &stub_hid);
+   memset(p, 0, sizeof(p));
+   p[0] = 0x01; p[8] = 8;
+   count = sent_count;
+   deliver(&pad_connection_ps5_third_party, dev, p, 64);
+   CHECK(sent_count == count, "sdl pads: output sent to a pad that did not answer");
+   pad_connection_ps5_third_party.deinit(dev);
+   stub_hid.get_report = stub_ds5_caps;
+   dev = pad_connection_ps5_third_party.init(&dummy_connection, 0, &stub_hid);
+   stub_hid.get_report = NULL;
+   pad_connection_ps5_third_party.set_sensor(dev, RETRO_SENSOR_GYROSCOPE_ENABLE);
+   for (k = 0; k < 6; k++)
+      p[16 + 2 * k] = 1;
+   deliver(&pad_connection_ps5_third_party, dev, p, 64);
+   CHECK(sent_count == count + 1 && sent[0] == 0x02,
+         "sdl pads: output not sent to a pad that takes it");
+   CHECK(pad_connection_ps5_third_party.sensor(dev, RETRO_SENSOR_GYROSCOPE_X, &v),
+         "sdl pads: motion not read from a pad that has it");
+   CHECK(!strcmp(pad_connection_ps5_third_party.get_name(dev),
+            "DualSense Wireless Controller"),
+         "sdl pads: a pad that passes for a DualSense misnamed");
+   pad_connection_ps5_third_party.deinit(dev);
+
+   /* the Switch Online N64 pad: at rest with no amplitude */
+   sent_count = 0;
+   stub_hid.is_bluetooth = stub_is_bluetooth;
+   dev = pad_connection_switch_pro_n64.init(&dummy_connection, 0, &stub_hid);
+   stub_hid.is_bluetooth = NULL;
+   CHECK(sent_count == 1 && sent[0] == 0x01 && sent[2] == 0x00 && sent[3] == 0x00
+         && sent[4] == 0x01 && sent[5] == 0x40,
+         "sdl pads: the N64 pad's rest is not 00 00 01 40");
+   pad_connection_switch_pro_n64.deinit(dev);
+
+   printf("[%s] sdl pads: 8BitDo Pro 2's paddles and motion, the Ultimates' rumble, third-party DualSense pads by what they say, the N64 pad's quiet rest\n",
+         failures == had ? "pass" : "fail");
+}
+
 int main(void)
 {
    stub_hid.send_control = stub_send_control;
@@ -2439,6 +2546,7 @@ int main(void)
    test_wiiupro();
    test_8bitdo();
    test_motion();
+   test_sdl_pads();
    CHECK(view_reads && !view_bad,
          "views: %u of %u reports' views disagree with the getters",
          view_bad, view_reads);

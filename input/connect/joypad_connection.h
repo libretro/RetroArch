@@ -73,6 +73,12 @@
 #define PID_8BITDO_SN30_PRO    SWAP_IF_BIG(0x6001)
 #define PID_8BITDO_SF30_PRO_BT SWAP_IF_BIG(0x6100)
 #define PID_8BITDO_SN30_PRO_BT SWAP_IF_BIG(0x6101)
+#define PID_8BITDO_PRO_2       SWAP_IF_BIG(0x6003)
+#define PID_8BITDO_PRO_2_BT    SWAP_IF_BIG(0x6006)
+#define PID_8BITDO_PRO_3       SWAP_IF_BIG(0x6009)
+#define PID_8BITDO_ULTIMATE_2  SWAP_IF_BIG(0x6012)
+#define PID_8BITDO_ULTIMATE_2C SWAP_IF_BIG(0x301b)
+#define PID_8BITDO_ULTIMATE_3  SWAP_IF_BIG(0x202f)
 
 /* The HID owner publishes a slot and retires it before freeing the
  * pad. One word holds admission (bit 0) and readers (increments of 2)
@@ -187,8 +193,15 @@ extern pad_connection_interface_t pad_connection_retrode;
 extern pad_connection_interface_t pad_connection_ps4_hori_mini;
 extern pad_connection_interface_t pad_connection_kade;
 extern pad_connection_interface_t pad_connection_ps3_shanwan;
+extern pad_connection_interface_t pad_connection_ps5_third_party;
+extern pad_connection_interface_t pad_connection_switch_pro_n64;
 extern pad_connection_interface_t pad_connection_8bitdo_sn30_pro;
 extern pad_connection_interface_t pad_connection_8bitdo_sf30_pro;
+extern pad_connection_interface_t pad_connection_8bitdo_pro_2;
+extern pad_connection_interface_t pad_connection_8bitdo_pro_3;
+extern pad_connection_interface_t pad_connection_8bitdo_ultimate_2;
+extern pad_connection_interface_t pad_connection_8bitdo_ultimate_2c;
+extern pad_connection_interface_t pad_connection_8bitdo_ultimate_3;
 extern pad_connection_interface_t pad_connection_dragonrise;
 
 int32_t pad_connection_pad_init(joypad_connection_t *joyconn,

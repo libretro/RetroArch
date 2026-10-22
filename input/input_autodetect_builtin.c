@@ -837,8 +837,75 @@ DECL_AXIS(r_y_minus, +3) \
 DECL_AXIS(l2, +4) \
 DECL_AXIS(r2, +5)
 
+#ifdef HAVE_HID
+/* The hid joypad driver's 8BitDo pads, numbered as their reports number
+ * them (input/connect/connect_8bitdo.c), for the ones with no profile
+ * of their own */
+#define HID_8BITDO_BINDS \
+DECL_BTN(a, 0) \
+DECL_BTN(b, 1) \
+DECL_BTN(x, 3) \
+DECL_BTN(y, 4) \
+DECL_BTN(l, 6) \
+DECL_BTN(r, 7) \
+DECL_BTN(l2, 8) \
+DECL_BTN(r2, 9) \
+DECL_BTN(select, 10) \
+DECL_BTN(start, 11) \
+DECL_BTN(l3, 13) \
+DECL_BTN(r3, 14) \
+DECL_BTN(up, h0up) \
+DECL_BTN(down, h0down) \
+DECL_BTN(left, h0left) \
+DECL_BTN(right, h0right) \
+DECL_AXIS(l_x_plus,  +0) \
+DECL_AXIS(l_x_minus, -0) \
+DECL_AXIS(l_y_plus,  +1) \
+DECL_AXIS(l_y_minus, -1) \
+DECL_AXIS(r_x_plus,  +4) \
+DECL_AXIS(r_x_minus, -4) \
+DECL_AXIS(r_y_plus,  +5) \
+DECL_AXIS(r_y_minus, -5)
+
+/* The hid joypad driver's pads that give the RetroPad's own buttons -
+ * the DualSense's handler, for the pads that pass for one */
+#define HID_RETROPAD_BINDS \
+DECL_BTN(b, 0) \
+DECL_BTN(y, 1) \
+DECL_BTN(select, 2) \
+DECL_BTN(start, 3) \
+DECL_BTN(up, 4) \
+DECL_BTN(down, 5) \
+DECL_BTN(left, 6) \
+DECL_BTN(right, 7) \
+DECL_BTN(a, 8) \
+DECL_BTN(x, 9) \
+DECL_BTN(l, 10) \
+DECL_BTN(r, 11) \
+DECL_BTN(l2, 12) \
+DECL_BTN(r2, 13) \
+DECL_BTN(l3, 14) \
+DECL_BTN(r3, 15) \
+DECL_AXIS(l_x_plus,  +0) \
+DECL_AXIS(l_x_minus, -0) \
+DECL_AXIS(l_y_plus,  +1) \
+DECL_AXIS(l_y_minus, -1) \
+DECL_AXIS(r_x_plus,  +2) \
+DECL_AXIS(r_x_minus, -2) \
+DECL_AXIS(r_y_plus,  +3) \
+DECL_AXIS(r_y_minus, -3)
+#endif
+
 const char* const input_builtin_autoconfs[] =
 {
+#ifdef HAVE_HID
+   DECL_AUTOCONF_DEVICE("8BitDo Pro 2", "hid", HID_8BITDO_BINDS),
+   DECL_AUTOCONF_DEVICE("8BitDo Pro 3", "hid", HID_8BITDO_BINDS),
+   DECL_AUTOCONF_DEVICE("8BitDo Ultimate 2 Wireless", "hid", HID_8BITDO_BINDS),
+   DECL_AUTOCONF_DEVICE("8BitDo Ultimate 2C Wireless", "hid", HID_8BITDO_BINDS),
+   DECL_AUTOCONF_DEVICE("8BitDo Ultimate 3", "hid", HID_8BITDO_BINDS),
+   DECL_AUTOCONF_DEVICE("DualSense Wireless Controller", "hid", HID_RETROPAD_BINDS),
+#endif
 #if defined(_WIN32) && defined(_XBOX)
    DECL_AUTOCONF_DEVICE("XInput Controller (User 1)", "xdk", XINPUT_DEFAULT_BINDS),
    DECL_AUTOCONF_DEVICE("XInput Controller (User 2)", "xdk", XINPUT_DEFAULT_BINDS),

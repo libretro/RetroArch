@@ -118,6 +118,7 @@ struct hidpad_switch_pro_data
    uint8_t number;      /* the output's packet number */
    uint8_t since_sent;  /* reports since output last went */
    bool heard;          /* a report has come: the first is logged */
+   bool quiet_rest;     /* at rest with no amplitude: see the N64 pad's */
    /* motion: the newest sample as the pad sends it - accelerometer X Y
     * Z, then gyroscope X Y Z - and its calibration: counts to g and to
     * radians a second, and the gyroscope's reading at rest */
@@ -334,13 +335,14 @@ static void hidpad_switch_pro_imu_calibrate(
    device->imu_factory = true;
 }
 
-static void *hidpad_switch_pro_init(void *data, uint32_t slot,
-      hid_driver_t *driver)
+static void hidpad_switch_pro_encode(uint8_t *p, uint16_t strength,
+      bool quiet_rest);
+
+static void *hidpad_switch_pro_open(void *data, uint32_t slot,
+      hid_driver_t *driver, bool quiet_rest)
 {
    struct pad_connection *connection = (struct pad_connection*)data;
    struct hidpad_switch_pro_data *device;
-   static const uint8_t neutral[8] = {
-      0x00, 0x01, 0x40, 0x40, 0x00, 0x01, 0x40, 0x40 };
 
    if (!connection)
       return NULL;
@@ -353,7 +355,9 @@ static void *hidpad_switch_pro_init(void *data, uint32_t slot,
    device->slot       = slot;
    device->bluetooth  = driver && driver->is_bluetooth
       && driver->is_bluetooth(connection);
-   memcpy(device->rumble, neutral, sizeof(neutral));
+   device->quiet_rest = quiet_rest;
+   hidpad_switch_pro_encode(device->rumble,     0, quiet_rest);
+   hidpad_switch_pro_encode(device->rumble + 4, 0, quiet_rest);
    hidpad_switch_pro_default_calibration(device);
 
    /* Where the driver cannot say, the greeting goes anyway: on
@@ -367,6 +371,21 @@ static void *hidpad_switch_pro_init(void *data, uint32_t slot,
       hidpad_switch_pro_usb_command(device, 0x02);
    }
    return device;
+}
+
+static void *hidpad_switch_pro_init(void *data, uint32_t slot,
+      hid_driver_t *driver)
+{
+   return hidpad_switch_pro_open(data, slot, driver, false);
+}
+
+/* The Switch Online N64 controller - and 8BitDo's 64 pad, which passes
+ * for it - rumbles at the usual rest, as SDL found: its rest has no
+ * amplitude. */
+static void *hidpad_switch_pro_n64_init(void *data, uint32_t slot,
+      hid_driver_t *driver)
+{
+   return hidpad_switch_pro_open(data, slot, driver, true);
 }
 
 static void hidpad_switch_pro_deinit(void *data)
@@ -566,15 +585,16 @@ static const uint16_t hidpad_switch_pro_amplitude[99] = {
 
 /* One actuator's four bytes: 320 Hz and 160 Hz, both at the strength
  * asked; at rest, the pad's own neutral. */
-static void hidpad_switch_pro_encode(uint8_t *p, uint16_t strength)
+static void hidpad_switch_pro_encode(uint8_t *p, uint16_t strength,
+      bool quiet_rest)
 {
    unsigned amp = 1;
 
    if (!strength)
    {
       p[0] = 0x00;
-      p[1] = 0x01;
-      p[2] = 0x40;
+      p[1] = quiet_rest ? 0x00 : 0x01;
+      p[2] = quiet_rest ? 0x01 : 0x40;
       p[3] = 0x40;
       return;
    }
@@ -830,7 +850,8 @@ static void hidpad_switch_pro_set_rumble(void *data,
    {
       device->motors[idx] = strength;
       /* the strong motor is the left hand's, the weak the right's */
-      hidpad_switch_pro_encode(device->rumble + idx * 4, strength);
+      hidpad_switch_pro_encode(device->rumble + idx * 4, strength,
+            device->quiet_rest);
       device->motors_due  = true;
    }
 }
@@ -921,6 +942,28 @@ static const input_pad_view_t *hidpad_switch_pro_view(void *data)
 
 pad_connection_interface_t pad_connection_switch_pro = {
    hidpad_switch_pro_init,
+   hidpad_switch_pro_deinit,
+   hidpad_switch_pro_packet_handler,
+   hidpad_switch_pro_set_rumble,
+   hidpad_switch_pro_get_buttons,
+   hidpad_switch_pro_get_axis,
+   hidpad_switch_pro_get_name,
+   hidpad_switch_pro_button,
+   false, /* multi_pad */
+   0,     /* max_pad */
+   NULL,  /* pad_init */
+   NULL,  /* pad_deinit */
+   NULL,  /* status */
+   NULL,  /* joypad */
+   hidpad_switch_pro_set_player,
+   hidpad_switch_pro_view,
+   hidpad_switch_pro_idle,
+   hidpad_switch_pro_set_sensor,
+   hidpad_switch_pro_sensor
+};
+
+pad_connection_interface_t pad_connection_switch_pro_n64 = {
+   hidpad_switch_pro_n64_init,
    hidpad_switch_pro_deinit,
    hidpad_switch_pro_packet_handler,
    hidpad_switch_pro_set_rumble,

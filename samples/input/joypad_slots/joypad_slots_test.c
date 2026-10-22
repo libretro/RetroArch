@@ -58,7 +58,11 @@ pad_connection_interface_t pad_connection_wii, pad_connection_wiiupro,
    pad_connection_retrode, pad_connection_ps4_hori_mini,
    pad_connection_kade, pad_connection_dragonrise,
    pad_connection_8bitdo_sn30_pro, pad_connection_8bitdo_sf30_pro,
-   pad_connection_ps3_shanwan;
+   pad_connection_ps3_shanwan,
+   pad_connection_8bitdo_pro_2, pad_connection_8bitdo_pro_3,
+   pad_connection_8bitdo_ultimate_2, pad_connection_8bitdo_ultimate_2c,
+   pad_connection_8bitdo_ultimate_3, pad_connection_ps5_third_party,
+   pad_connection_switch_pro_n64;
 
 /* ---- the fake pad ---- */
 
@@ -338,9 +342,33 @@ int main(void)
          }
       }
    }
+   /* the right Joy-Con's id: only the NES and Famicom pads, by name */
+   {
+      joypad_connection_entry_t *e;
+      e = find_connection_entry(SWAP_IF_BIG(0x057e), SWAP_IF_BIG(0x2007),
+            "NES Controller (R)");
+      if (!e || e->iface != &pad_connection_switch_pro)
+      {
+         printf("FAIL: a Switch Online NES pad not given the Pro Controller's handler\n");
+         failures++;
+      }
+      e = find_connection_entry(SWAP_IF_BIG(0x057e), SWAP_IF_BIG(0x2007),
+            "Joy-Con (R)");
+      if (e)
+      {
+         printf("FAIL: a right Joy-Con given a handler\n");
+         failures++;
+      }
+      e = find_connection_entry(SWAP_IF_BIG(0x1532), SWAP_IF_BIG(0x100b), "");
+      if (!e || e->iface != &pad_connection_ps5_third_party)
+      {
+         printf("FAIL: a Razer Wolverine V2 Pro not given the DualSense handler\n");
+         failures++;
+      }
+   }
    if (failures)
       return 1;
-   printf("[pass] joypad_slots_test: %u plug cycles each way, %d calls into live pads; Wii remotes on 057e:0330 and DualShock 3s by name\n",
+   printf("[pass] joypad_slots_test: %u plug cycles each way, %d calls into live pads; Wii remotes on 057e:0330, DualShock 3s and Switch Online pads by name\n",
          CYCLES, retro_atomic_load_acquire_int(&calls));
    return 0;
 }
