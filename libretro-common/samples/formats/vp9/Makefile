@@ -23,7 +23,7 @@ endif
 
 all: $(TARGETS)
 
-rvp9_config_test: rvp9_config_test.c ../../../include/formats/rvp9_config.h
+rvp9_config_test: rvp9_config_test.c ../../../include/formats/rvp9_config.h ../../../include/formats/rvp9_color.h
 	$(CC) $(CFLAGS) $< -o $@ $(LDFLAGS)
 
 rvp9_reference_test: rvp9_reference_test.c ../../../formats/vp9/rvp9.c ../../../formats/vp9/rvp9_recon.inc ../../../include/formats/rvp9.h
