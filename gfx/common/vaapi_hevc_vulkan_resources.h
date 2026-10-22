@@ -1,10 +1,12 @@
-/* Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier: GPL-3.0-or-later */
+/* Copyright (C) 2026 The RetroArch team.
+ * SPDX-License-Identifier: GPL-3.0-or-later */
 #ifndef RARCH_VAAPI_HEVC_VULKAN_RESOURCES_H
 #define RARCH_VAAPI_HEVC_VULKAN_RESOURCES_H
 #include <vulkan/vulkan_core.h>
 #include <boolean.h>
 #include <retro_common_api.h>
 RETRO_BEGIN_DECLS
+
 typedef struct vaapi_hevc_vulkan_resource_ops
 {
    PFN_vkCreateSampler create_sampler;
@@ -26,6 +28,7 @@ typedef struct vaapi_hevc_vulkan_resource_ops
    PFN_vkCreateFence create_fence;
    PFN_vkDestroyFence destroy_fence;
 } vaapi_hevc_vulkan_resource_ops_t;
+
 typedef struct vaapi_hevc_vulkan_resources
 {
    vaapi_hevc_vulkan_resource_ops_t ops;
@@ -42,15 +45,19 @@ typedef struct vaapi_hevc_vulkan_resources
    VkFormat format;
    unsigned count;
 } vaapi_hevc_vulkan_resources_t;
+
 /* Cold renderer setup, zeroed storage; 1..32 independent descriptor/command/
  * fence slots sharing the existing sampled-YUV shader variant. Owns every
- * created Vulkan child. Refusal unwinds partial resources; no GPU submission. */
+ * created Vulkan child. Refusal unwinds partial resources; no GPU submission.
+ */
 bool vaapi_hevc_vulkan_resources_create(vaapi_hevc_vulkan_resources_t *out,
       VkDevice device, unsigned family, unsigned count, bool fp16,
       const vaapi_hevc_vulkan_resource_ops_t *ops);
 /* Cold renderer owner AFTER all command/descriptor/GPU use has retired.
- * Does not poll or wait. Destroy before imported source views or destination. */
-void vaapi_hevc_vulkan_resources_destroy(vaapi_hevc_vulkan_resources_t *resources);
+ * Does not poll or wait. Destroy before imported source views or destination.
+ */
+void vaapi_hevc_vulkan_resources_destroy(
+      vaapi_hevc_vulkan_resources_t *resources);
 /* Only AFTER destruction of the exact device. No Vulkan calls. */
 bool vaapi_hevc_vulkan_resources_after_device_destroy(
       vaapi_hevc_vulkan_resources_t *resources, VkDevice device);

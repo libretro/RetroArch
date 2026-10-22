@@ -1,9 +1,11 @@
-/* Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier: GPL-3.0-or-later */
+/* Copyright (C) 2026 The RetroArch team.
+ * SPDX-License-Identifier: GPL-3.0-or-later */
 #ifndef RARCH_VAAPI_HEVC_VULKAN_LEASE_H
 #define RARCH_VAAPI_HEVC_VULKAN_LEASE_H
 #include "vaapi_frame.h"
 #include "vaapi_hevc_vulkan_submit.h"
 RETRO_BEGIN_DECLS
+
 typedef struct vaapi_hevc_vulkan_lease
 {
    vaapi_hevc_vulkan_submission_t *entry;
@@ -12,6 +14,7 @@ typedef struct vaapi_hevc_vulkan_lease
    uint64_t index, generation;
    bool fp16, broken;
 } vaapi_hevc_vulkan_lease_t;
+
 /* Cold renderer owner, zeroed lease and an idle prepared import entry.
  * All entry resources outlive this bridge and any outstanding frame. */
 bool vaapi_hevc_vulkan_lease_bind(vaapi_hevc_vulkan_lease_t *lease,
@@ -30,7 +33,7 @@ int vaapi_hevc_vulkan_lease_present(vaapi_hevc_vulkan_lease_t *lease,
 /* ONLY after actual destruction of entry's exact device. Invalidates imported
  * handles and publishes the retained source without calling Vulkan or VA.
  * False retains ownership for a later valid return; caller must not free it. */
-bool vaapi_hevc_vulkan_lease_after_device_destroy(vaapi_hevc_vulkan_lease_t *lease,
-      VkDevice device);
+bool vaapi_hevc_vulkan_lease_after_device_destroy(
+      vaapi_hevc_vulkan_lease_t *lease, VkDevice device);
 RETRO_END_DECLS
 #endif
