@@ -8522,35 +8522,6 @@ static void config_parse_file(void)
    }
 }
 
-static void save_keybind_hat(config_file_t *conf, const char *key,
-      const struct retro_keybind *bind)
-{
-   size_t _len;
-   char s[16];
-   s[0]      = '\0';
-   _len      = snprintf(s, sizeof(s), "h%u", GET_HAT(bind->joykey));
-
-   switch (GET_HAT_DIR(bind->joykey))
-   {
-      case HAT_UP_MASK:
-         strlcpy_lit(s + _len, "up", sizeof(s) - _len);
-         break;
-      case HAT_DOWN_MASK:
-         strlcpy_lit(s + _len, "down", sizeof(s) - _len);
-         break;
-      case HAT_LEFT_MASK:
-         strlcpy_lit(s + _len, "left", sizeof(s) - _len);
-         break;
-      case HAT_RIGHT_MASK:
-         strlcpy_lit(s + _len, "right", sizeof(s) - _len);
-         break;
-      default:
-         break;
-   }
-
-   config_set_string(conf, key, s);
-}
-
 static void save_keybind_joykey(config_file_t *conf,
       const char *prefix,
       const char *base,
@@ -8558,19 +8529,15 @@ static void save_keybind_joykey(config_file_t *conf,
       bool save_empty)
 {
    char key[64];
+   char val[16];
    size_t _len = fill_pathname_join_delim(key, prefix,
          base, '_', sizeof(key));
    strlcpy_lit(key + _len, "_btn", sizeof(key) - _len);
 
-   if (bind->joykey == NO_BTN)
-   {
-       if (save_empty)
-         config_set_string(conf, key, "nul");
-   }
-   else if (GET_HAT_DIR(bind->joykey))
-      save_keybind_hat(conf, key, bind);
-   else
-      config_set_uint64(conf, key, bind->joykey);
+   if (bind->joykey == NO_BTN && !save_empty)
+      return;
+   input_config_format_joykey(val, sizeof(val), bind->joykey);
+   config_set_string(conf, key, val);
 }
 
 static void save_keybind_joykey_label(config_file_t *conf,
@@ -8600,23 +8567,9 @@ static void save_keybind_axis(config_file_t *conf,
    size_t _len = fill_pathname_join_delim(key, prefix, base, '_', sizeof(key));
    strlcpy_lit(key + _len, "_axis", sizeof(key) - _len);
 
-   if (bind->joyaxis == AXIS_NONE)
-   {
-      if (save_empty)
-         config_set_string(conf, key, "nul");
+   if (bind->joyaxis == AXIS_NONE && !save_empty)
       return;
-   }
-
-   if (AXIS_NEG_GET(bind->joyaxis) != AXIS_DIR_NONE)
-   {
-      snprintf(config, sizeof(config), "-%lu",
-            (unsigned long)AXIS_NEG_GET(bind->joyaxis));
-   }
-   else if (AXIS_POS_GET(bind->joyaxis) != AXIS_DIR_NONE)
-   {
-      snprintf(config, sizeof(config), "+%lu",
-            (unsigned long)AXIS_POS_GET(bind->joyaxis));
-   }
+   input_config_format_joyaxis(config, sizeof(config), bind->joyaxis);
    config_set_string(conf, key, config);
 }
 
@@ -11486,29 +11439,11 @@ void input_config_parse_joy_axis(char *s,
 
    fill_pathname_join_delim(key, s, "axis", '_', sizeof(key));
 
-   if (config_get_array(conf, key, tmp, sizeof(tmp)))
-   {
-      if (     tmp[0] == 'n'
-            && tmp[1] == 'u'
-            && tmp[2] == 'l'
-            && tmp[3] == '\0'
-         )
-         bind->joyaxis = AXIS_NONE;
-      else if
-         (     tmp[0] != '\0'
-          &&   tmp[1] != '\0'
-          && (*tmp    == '+'
-          ||  *tmp    == '-'))
-      {
-         int i_axis = (int)strtol(tmp + 1, NULL, 0);
-         if (*tmp == '+')
-            bind->joyaxis = AXIS_POS(i_axis);
-         else
-            bind->joyaxis = AXIS_NEG(i_axis);
-
-         RETRO_KEYBIND_SET_VALID(bind, true);
-      }
-   }
+   /* "nul" clears it; an axis read makes the bind a set one */
+   if (     config_get_array(conf, key, tmp, sizeof(tmp))
+         && input_config_parse_joyaxis(tmp, &bind->joyaxis)
+         && !string_is_equal(tmp, "nul"))
+      RETRO_KEYBIND_SET_VALID(bind, true);
 
    fill_pathname_join_delim(key, s,
          "axis_label", '_', sizeof(key));
@@ -11521,42 +11456,6 @@ void input_config_parse_joy_axis(char *s,
          free(label->joyaxis);
       label->joyaxis = strdup(tmp_a->value);
    }
-}
-
-static uint16_t input_config_parse_hat(const char *dir)
-{
-   if (     dir[0] == 'u'
-         && dir[1] == 'p'
-         && dir[2] == '\0'
-      )
-      return HAT_UP_MASK;
-   else if (
-            dir[0] == 'd'
-         && dir[1] == 'o'
-         && dir[2] == 'w'
-         && dir[3] == 'n'
-         && dir[4] == '\0'
-         )
-      return HAT_DOWN_MASK;
-   else if (
-            dir[0] == 'l'
-         && dir[1] == 'e'
-         && dir[2] == 'f'
-         && dir[3] == 't'
-         && dir[4] == '\0'
-         )
-      return HAT_LEFT_MASK;
-   else if (
-            dir[0] == 'r'
-         && dir[1] == 'i'
-         && dir[2] == 'g'
-         && dir[3] == 'h'
-         && dir[4] == 't'
-         && dir[5] == '\0'
-         )
-      return HAT_RIGHT_MASK;
-
-   return 0;
 }
 
 void input_config_parse_joy_button(
@@ -11573,32 +11472,10 @@ void input_config_parse_joy_button(
    fill_pathname_join_delim(key, s, "btn", '_', sizeof(key));
    if (config_get_array(conf, key, tmp, sizeof(tmp)))
    {
-      btn = tmp;
-      if (     btn[0] == 'n'
-            && btn[1] == 'u'
-            && btn[2] == 'l'
-            && btn[3] == '\0'
-         )
-         bind->joykey = NO_BTN;
-      else
-      {
-         if (*btn == 'h')
-         {
-            const char *str = btn + 1;
-            /* Parse hat? */
-            if (str && *str >= '0' && *str <= '9')
-            {
-               char        *dir = NULL;
-               uint16_t     hat = strtoul(str, &dir, 0);
-               uint16_t hat_dir = dir ? input_config_parse_hat(dir) : 0;
-               if (hat_dir)
-                  bind->joykey = HAT_MAP(hat, hat_dir);
-            }
-         }
-         else
-            bind->joykey = strtoull(tmp, NULL, 0);
+      input_config_parse_joykey(tmp, &bind->joykey);
+      /* any value but "nul" makes the bind a set one, read or not */
+      if (!string_is_equal(tmp, "nul"))
          RETRO_KEYBIND_SET_VALID(bind, true);
-      }
    }
    fill_pathname_join_delim(key, s,
          "btn_label", '_', sizeof(key));

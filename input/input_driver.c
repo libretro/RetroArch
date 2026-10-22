@@ -395,10 +395,16 @@ static const struct retro_keybind input_hotkey_bind_none = {
    AXIS_NONE, NO_BTN,
    RETRO_KEYBIND_ATTR(RETROK_UNKNOWN, NO_BTN, true) };
 
+/* That port's controller may have hotkey buttons of its own (Plays
+ * As): the Plays As entry they are in, or -1; set with the port. */
+static int input_hotkey_port_own = -1;
+static const struct retro_keybind *input_hotkey_bind_own(unsigned i);
+
 #define INPUT_CONFIG_BIND(port, i) \
    (  ((i) < RARCH_FIRST_META_KEY)           ? &input_config_binds[(port)][(i)] \
-    : ((port) == input_hotkey_port_seen)     ? &input_config_binds[0][(i)] \
-    :                                          &input_hotkey_bind_none)
+    : ((port) != input_hotkey_port_seen)     ? &input_hotkey_bind_none \
+    : (input_hotkey_port_own < 0)            ? &input_config_binds[0][(i)] \
+    :                                          input_hotkey_bind_own(i))
 struct retro_keybind *input_autoconf_binds[MAX_USERS] = {
    input_binds_no_profile, input_binds_no_profile, input_binds_no_profile,
    input_binds_no_profile, input_binds_no_profile, input_binds_no_profile,
@@ -10925,10 +10931,16 @@ void input_config_follow_shared_ports(const uint8_t *leader)
  * reservation names one, "vid:pid name". A connected controller takes
  * the first entry naming it that no other connected controller has
  * taken; one with none plays Auto. */
+#define INPUT_PLAYS_AS_HOTKEYS (RARCH_BIND_LIST_END - RARCH_FIRST_META_KEY)
+
 typedef struct
 {
    char device[NAME_MAX_LENGTH]; /* "" for a free entry */
    unsigned player;              /* 0 Auto, else 1 and up */
+   /* its own hotkey buttons and axes: NO_BTN and AXIS_NONE for none */
+   uint32_t hot_axis[INPUT_PLAYS_AS_HOTKEYS];
+   uint16_t hot_key[INPUT_PLAYS_AS_HOTKEYS];
+   bool own_hot;                 /* any of them */
 } input_plays_as_entry_t;
 
 static input_plays_as_entry_t input_plays_as[MAX_USERS];
@@ -10945,13 +10957,16 @@ static unsigned input_plays_as_placed_max_users;
 static uint8_t input_plays_as_was[MAX_INPUT_DEVICES];
 
 /* @h with each entry's controller and player mixed in, as
- * input_driver_detect_settings() mixes the reservations */
+ * input_driver_detect_settings() mixes the reservations; an entry
+ * with no player places no one */
 static uint32_t input_plays_as_mix(uint32_t h)
 {
    unsigned e;
    const char *p;
    for (e = 0; e < MAX_USERS; e++)
    {
+      if (!input_plays_as[e].player)
+         continue;
       for (p = input_plays_as[e].device; *p; p++)
       {
          h ^= (unsigned char)*p;
@@ -11147,16 +11162,33 @@ static void input_plays_as_drop(unsigned e)
    unsigned s;
    input_plays_as[e].device[0] = '\0';
    input_plays_as[e].player    = 0;
+   input_plays_as[e].own_hot   = false;
+   for (s = 0; s < INPUT_PLAYS_AS_HOTKEYS; s++)
+   {
+      input_plays_as[e].hot_key[s]  = NO_BTN;
+      input_plays_as[e].hot_axis[s] = AXIS_NONE;
+   }
    for (s = 0; s < MAX_INPUT_DEVICES; s++)
       if (input_plays_as_claim[s] == e + 1)
          input_plays_as_claim[s] = 0;
+}
+
+/* Whether entry @e still has a hotkey of its own. */
+static void input_plays_as_hot_count(unsigned e)
+{
+   unsigned h;
+   input_plays_as[e].own_hot = false;
+   for (h = 0; h < INPUT_PLAYS_AS_HOTKEYS; h++)
+      if (     input_plays_as[e].hot_key[h]  != NO_BTN
+            || input_plays_as[e].hot_axis[h] != AXIS_NONE)
+         input_plays_as[e].own_hot = true;
 }
 
 /* Entry @e is let go once it holds nothing a controller would not
  * have without it. */
 static void input_plays_as_tidy(unsigned e)
 {
-   if (!input_plays_as[e].player)
+   if (!input_plays_as[e].player && !input_plays_as[e].own_hot)
       input_plays_as_drop(e);
 }
 
@@ -11164,7 +11196,7 @@ bool input_config_plays_as_active(void)
 {
    unsigned e;
    for (e = 0; e < MAX_USERS; e++)
-      if (*input_plays_as[e].device)
+      if (input_plays_as[e].player)
          return true;
    return false;
 }
@@ -11197,6 +11229,8 @@ static int input_plays_as_new(unsigned slot)
    for (e = 0; e < MAX_USERS && *input_plays_as[e].device; e++) { }
    if (e >= MAX_USERS)
       return -1;
+   /* no config read yet leaves it zeroed: button 0 for every hotkey */
+   input_plays_as_drop((unsigned)e);
    snprintf(input_plays_as[e].device, sizeof(input_plays_as[e].device),
          "%04x:%04x %s", d->vid, d->pid,
          *d->display_name ? d->display_name : d->name);
@@ -11226,6 +11260,81 @@ bool input_config_plays_as_set(unsigned slot, unsigned player)
    input_plays_as[e].player = player;
    input_plays_as_tidy((unsigned)e);
    return true;
+}
+
+void input_config_plays_as_hotkey(unsigned slot, unsigned id,
+      uint16_t *joykey, uint32_t *joyaxis)
+{
+   int e     = input_config_plays_as_entry(slot);
+   bool hot  = e >= 0 && id >= RARCH_FIRST_META_KEY
+      && id < RARCH_BIND_LIST_END;
+   *joykey   = hot ? input_plays_as[e].hot_key[id - RARCH_FIRST_META_KEY]
+      : NO_BTN;
+   *joyaxis  = hot ? input_plays_as[e].hot_axis[id - RARCH_FIRST_META_KEY]
+      : AXIS_NONE;
+}
+
+bool input_config_plays_as_set_hotkey(unsigned slot, unsigned id,
+      uint16_t joykey, uint32_t joyaxis)
+{
+   int e;
+
+   if (     slot >= MAX_INPUT_DEVICES
+         || id < RARCH_FIRST_META_KEY || id >= RARCH_BIND_LIST_END
+         || !*input_driver_st.input_device_info[slot].name)
+      return false;
+   if (     (e = input_config_plays_as_entry(slot)) < 0
+         && (e = input_plays_as_new(slot)) < 0)
+      return false;
+   input_plays_as[e].hot_key[id - RARCH_FIRST_META_KEY]  = joykey;
+   input_plays_as[e].hot_axis[id - RARCH_FIRST_META_KEY] = joyaxis;
+   input_plays_as_hot_count((unsigned)e);
+   input_plays_as_tidy((unsigned)e);
+   input_config_binds_changed();
+   return true;
+}
+
+void input_config_plays_as_clear_hotkey(unsigned id)
+{
+   unsigned e;
+
+   if (id < RARCH_FIRST_META_KEY || id >= RARCH_BIND_LIST_END)
+      return;
+   for (e = 0; e < MAX_USERS; e++)
+   {
+      if (!*input_plays_as[e].device)
+         continue;
+      input_plays_as[e].hot_key[id - RARCH_FIRST_META_KEY]  = NO_BTN;
+      input_plays_as[e].hot_axis[id - RARCH_FIRST_META_KEY] = AXIS_NONE;
+      input_plays_as_hot_count(e);
+      input_plays_as_tidy(e);
+   }
+   input_config_binds_changed();
+}
+
+/* The entry of the controller in @slot when it has a hotkey of its
+ * own, else -1. */
+static int input_plays_as_own(unsigned slot)
+{
+   int e = input_config_plays_as_entry(slot);
+   return (e >= 0 && input_plays_as[e].own_hot) ? e : -1;
+}
+
+/* Hotkey @i on the hotkeys' port: the set's bind, with the port's
+ * controller's own button and axis over it. Each hotkey has its own
+ * place, so two can be held at once. */
+static const struct retro_keybind *input_hotkey_bind_own(unsigned i)
+{
+   static struct retro_keybind own[INPUT_PLAYS_AS_HOTKEYS];
+   const input_plays_as_entry_t *e = &input_plays_as[input_hotkey_port_own];
+   struct retro_keybind *b         = &own[i - RARCH_FIRST_META_KEY];
+
+   *b = input_config_binds[0][i];
+   if (e->hot_key[i - RARCH_FIRST_META_KEY] != NO_BTN)
+      b->joykey  = e->hot_key[i - RARCH_FIRST_META_KEY];
+   if (e->hot_axis[i - RARCH_FIRST_META_KEY] != AXIS_NONE)
+      b->joyaxis = e->hot_axis[i - RARCH_FIRST_META_KEY];
+   return b;
 }
 
 const char *input_config_plays_as_entry_name(unsigned e)
@@ -11274,6 +11383,190 @@ void input_config_plays_as_release(unsigned slot)
    }
 }
 
+/* A hat direction as the config file names it, or 0. */
+static uint16_t input_config_parse_hat(const char *dir)
+{
+   if (     dir[0] == 'u'
+         && dir[1] == 'p'
+         && dir[2] == '\0'
+      )
+      return HAT_UP_MASK;
+   else if (
+            dir[0] == 'd'
+         && dir[1] == 'o'
+         && dir[2] == 'w'
+         && dir[3] == 'n'
+         && dir[4] == '\0'
+         )
+      return HAT_DOWN_MASK;
+   else if (
+            dir[0] == 'l'
+         && dir[1] == 'e'
+         && dir[2] == 'f'
+         && dir[3] == 't'
+         && dir[4] == '\0'
+         )
+      return HAT_LEFT_MASK;
+   else if (
+            dir[0] == 'r'
+         && dir[1] == 'i'
+         && dir[2] == 'g'
+         && dir[3] == 'h'
+         && dir[4] == 't'
+         && dir[5] == '\0'
+         )
+      return HAT_RIGHT_MASK;
+
+   return 0;
+}
+
+bool input_config_parse_joykey(const char *s, uint16_t *joykey)
+{
+   if (string_is_equal(s, "nul"))
+      *joykey = NO_BTN;
+   else if (*s == 'h')
+   {
+      char *dir;
+      uint16_t hat;
+      uint16_t way;
+      if (s[1] < '0' || s[1] > '9')
+         return false;
+      hat = (uint16_t)strtoul(s + 1, &dir, 0);
+      if (!(way = input_config_parse_hat(dir)))
+         return false;
+      *joykey = HAT_MAP(hat, way);
+   }
+   else
+      *joykey = (uint16_t)strtoull(s, NULL, 0);
+   return true;
+}
+
+bool input_config_parse_joyaxis(const char *s, uint32_t *joyaxis)
+{
+   if (string_is_equal(s, "nul"))
+      *joyaxis = AXIS_NONE;
+   else if ((*s == '+' || *s == '-') && s[1])
+   {
+      int axis = (int)strtol(s + 1, NULL, 0);
+      if (*s == '+')
+         *joyaxis = AXIS_POS(axis);
+      else
+         *joyaxis = AXIS_NEG(axis);
+   }
+   else
+      return false;
+   return true;
+}
+
+void input_config_format_joykey(char *s, size_t len, uint16_t joykey)
+{
+   size_t _len;
+   if (len == 0)
+      return;
+   if (joykey == NO_BTN)
+   {
+      strlcpy(s, "nul", len);
+      return;
+   }
+   if (!GET_HAT_DIR(joykey))
+   {
+      snprintf(s, len, "%u", (unsigned)joykey);
+      return;
+   }
+   _len = BIND_STR_CLAMP((size_t)snprintf(s, len, "h%u",
+            (unsigned)GET_HAT(joykey)), len);
+   switch (GET_HAT_DIR(joykey))
+   {
+      case HAT_UP_MASK:
+         strlcpy_lit(s + _len, "up", len - _len);
+         break;
+      case HAT_DOWN_MASK:
+         strlcpy_lit(s + _len, "down", len - _len);
+         break;
+      case HAT_LEFT_MASK:
+         strlcpy_lit(s + _len, "left", len - _len);
+         break;
+      case HAT_RIGHT_MASK:
+         strlcpy_lit(s + _len, "right", len - _len);
+         break;
+      default:
+         break;
+   }
+}
+
+void input_config_format_joyaxis(char *s, size_t len, uint32_t joyaxis)
+{
+   if (joyaxis == AXIS_NONE)
+      strlcpy(s, "nul", len);
+   else if (AXIS_NEG_GET(joyaxis) != AXIS_DIR_NONE)
+      snprintf(s, len, "-%lu", (unsigned long)AXIS_NEG_GET(joyaxis));
+   else
+      snprintf(s, len, "+%lu", (unsigned long)AXIS_POS_GET(joyaxis));
+}
+
+/* Entry @e's own hotkeys, input_plays_as_<hotkey>_btn_N and _axis_N
+ * with N its number from 1, in the hotkeys' own form: "8", "h0up",
+ * "+1". */
+static void input_plays_as_hot_read(config_file_t *conf, unsigned e)
+{
+   unsigned i;
+   char key[96];
+   char val[16];
+
+   for (i = RARCH_FIRST_META_KEY; i < RARCH_BIND_LIST_END; i++)
+   {
+      unsigned h       = i - RARCH_FIRST_META_KEY;
+      const char *base = input_config_bind_map_get_base(i);
+      if (!base || !input_config_bind_map_get_valid(i))
+         continue;
+      snprintf(key, sizeof(key), "input_plays_as_%s_btn_%u", base, e + 1);
+      if (config_get_array(conf, key, val, sizeof(val)))
+         input_config_parse_joykey(val, &input_plays_as[e].hot_key[h]);
+      snprintf(key, sizeof(key), "input_plays_as_%s_axis_%u", base, e + 1);
+      if (config_get_array(conf, key, val, sizeof(val)))
+         input_config_parse_joyaxis(val, &input_plays_as[e].hot_axis[h]);
+   }
+   input_plays_as_hot_count(e);
+}
+
+/* Entry @e's own hotkeys written, each only where it has one: a key it
+ * no longer has is taken out. */
+static void input_plays_as_hot_write(config_file_t *conf, unsigned e)
+{
+   unsigned i;
+   char key[96];
+   char val[16];
+   /* an entry no config read has cleared is all zeroes: none */
+   bool own = input_plays_as[e].own_hot;
+
+   for (i = RARCH_FIRST_META_KEY; i < RARCH_BIND_LIST_END; i++)
+   {
+      uint16_t joykey  = own
+         ? input_plays_as[e].hot_key[i - RARCH_FIRST_META_KEY]  : NO_BTN;
+      uint32_t joyaxis = own
+         ? input_plays_as[e].hot_axis[i - RARCH_FIRST_META_KEY] : AXIS_NONE;
+      const char *base = input_config_bind_map_get_base(i);
+      if (!base || !input_config_bind_map_get_valid(i))
+         continue;
+      snprintf(key, sizeof(key), "input_plays_as_%s_btn_%u", base, e + 1);
+      if (joykey == NO_BTN)
+         config_unset(conf, key);
+      else
+      {
+         input_config_format_joykey(val, sizeof(val), joykey);
+         config_set_string(conf, key, val);
+      }
+      snprintf(key, sizeof(key), "input_plays_as_%s_axis_%u", base, e + 1);
+      if (joyaxis == AXIS_NONE)
+         config_unset(conf, key);
+      else
+      {
+         input_config_format_joyaxis(val, sizeof(val), joyaxis);
+         config_set_string(conf, key, val);
+      }
+   }
+}
+
 void input_plays_as_read(void *data)
 {
    unsigned e;
@@ -11296,8 +11589,11 @@ void input_plays_as_read(void *data)
       snprintf(key, sizeof(key), "input_plays_as_player_%u", e + 1);
       if (config_get_uint(conf, key, &player) && player <= MAX_USERS)
          input_plays_as[e].player = player;
+      input_plays_as_hot_read(conf, e);
    }
    input_plays_as_reclaim();
+   /* the hotkeys read through these */
+   input_config_binds_changed();
 }
 
 /* @device's model in @t as a start hands it out, lowest slot first.
@@ -11465,6 +11761,7 @@ void input_plays_as_write(void *data)
          config_set_uint(conf, key, input_plays_as[e].player);
       else
          config_unset(conf, key);
+      input_plays_as_hot_write(conf, e);
    }
    if (was)
    {
@@ -13281,8 +13578,8 @@ static void input_user_joypad_info(rarch_joypad_info_t *info,
 }
 
 /* A hotkey's button and axis on a controller sharing the hotkeys' core
- * port, by user: its profile's, never the set's. Made when a bind
- * changes. */
+ * port, by user: its own, then its profile's, never the set's. Made
+ * when a bind changes. */
 typedef struct
 {
    unsigned gen;                      /* the change count + 1 it was made at */
@@ -13299,17 +13596,28 @@ INPUT_NOINLINE static void input_share_hot_make(unsigned user,
 {
    unsigned i;
    input_share_hot_t *t = &input_share_hot[user];
+   unsigned idx         = config_get_ptr()->uints.input_joypad_index[user];
 
+   if (idx >= MAX_USERS)
+      idx = 0;
    memset(t->has_pad, 0, sizeof(t->has_pad));
    for (i = RARCH_FIRST_META_KEY; i < RARCH_BIND_LIST_END; i++)
    {
       uint16_t key  = NO_BTN;
       uint32_t axis = AXIS_NONE;
+      uint16_t own_key;
+      uint32_t own_axis;
       if (RETRO_KEYBIND_VALID(&input_config_binds[0][i]))
       {
          key  = autob[i].joykey;
          axis = autob[i].joyaxis;
       }
+      /* the sharer's own first */
+      input_config_plays_as_hotkey(idx, i, &own_key, &own_axis);
+      if (own_key != NO_BTN)
+         key  = own_key;
+      if (own_axis != AXIS_NONE)
+         axis = own_axis;
       t->key[i - RARCH_FIRST_META_KEY]  = key;
       t->axis[i - RARCH_FIRST_META_KEY] = axis;
       if (key != NO_BTN || axis != AXIS_NONE)
@@ -19121,6 +19429,17 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
       if (hotkey_port != input_hotkey_port_seen)
       {
          input_hotkey_port_seen = hotkey_port;
+         input_config_binds_changed();
+      }
+   }
+
+   {
+      /* the hotkey port's controller's own hotkey buttons */
+      int own = input_plays_as_own(
+            settings->uints.input_joypad_index[hotkey_port]);
+      if (own != input_hotkey_port_own)
+      {
+         input_hotkey_port_own = own;
          input_config_binds_changed();
       }
    }

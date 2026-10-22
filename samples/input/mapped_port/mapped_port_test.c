@@ -88,6 +88,20 @@ void fill_pathname_resolve_relative(char *s, const char *ref,
 size_t fill_pathname_abbreviated_or_relative(char *s, const char *ref,
       const char *in, size_t len)
 { (void)ref; return strlcpy(s, in, len); }
+/* configuration.c's bind names, for the hotkeys the tests name */
+bool input_config_bind_map_get_valid(unsigned i)
+{ return i < RARCH_BIND_LIST_END; }
+const char *input_config_bind_map_get_base(unsigned i)
+{
+   switch (i)
+   {
+      case RARCH_ENABLE_HOTKEY:    return "enable_hotkey";
+      case RARCH_FAST_FORWARD_KEY: return "toggle_fast_forward";
+      case RARCH_MENU_TOGGLE:      return "menu_toggle";
+      default:                     break;
+   }
+   return NULL;
+}
 bool video_driver_has_focus(void) { return true; }
 /* netplay on: the ports are the session's */
 static bool t_netplay;
@@ -1608,6 +1622,24 @@ static void test_place_reload_kept(void)
    st->current_data   = NULL;
 }
 
+/* An entry made only for a controller's own hotkeys places no one:
+ * the input driver is still kept across a video driver restart. */
+static void test_own_hotkey_kept(void)
+{
+   input_driver_state_t *st = input_state_get_ptr();
+
+   t_reset();
+   t_kv_start();
+   t_connect(0, "P", 1, 1);
+   CHECK(input_config_plays_as_set_hotkey(0, RARCH_FAST_FORWARD_KEY, 8,
+            AXIS_NONE) && input_config_plays_as_entry(0) >= 0,
+         "the controller took no entry for its own hotkey");
+   CHECK(t_kv_kept(),
+         "an entry kept only for an own hotkey restarted the driver");
+   st->current_driver = NULL;
+   st->current_data   = NULL;
+}
+
 /* A load made only to compare against, as saving an override makes
  * one: putting back the copy taken before it restores the entries and
  * claims. */
@@ -3079,6 +3111,39 @@ static void test_hotkey_game_focus_shared(void)
    st->flags   &= ~INP_FLAG_KB_MAPPING_BLOCKED;
 }
 
+/* A sharer's hotkey on an axis is its own, not the set's hand-set
+ * one. */
+static void test_hotkey_axis_shared(void)
+{
+   input_bits_t bits;
+   t_reset();
+   t_two_player_1();
+   input_driver_poll();
+   input_config_binds[0][RARCH_FAST_FORWARD_KEY].joyaxis = AXIS_POS(4);
+   input_config_binds[0][RARCH_FAST_FORWARD_KEY].attr    =
+      RETRO_KEYBIND_ATTR(RETROK_UNKNOWN, NO_BTN, true);
+   input_config_binds_changed();
+
+   t_axis_held[1] = AXIS_POS(4);
+   t_collect(&bits);
+   CHECK(!BIT256_GET(bits, RARCH_FAST_FORWARD_KEY),
+         "the set's axis fired a sharer's hotkey");
+   t_axis_held[1] = AXIS_NONE;
+   t_axis_held[0] = AXIS_POS(4);
+   t_collect(&bits);
+   CHECK(BIT256_GET(bits, RARCH_FAST_FORWARD_KEY),
+         "the set's axis stopped firing on user 1's pad");
+   t_axis_held[0] = AXIS_NONE;
+
+   CHECK(input_config_plays_as_set_hotkey(1, RARCH_FAST_FORWARD_KEY,
+            NO_BTN, AXIS_POS(2)), "the sharer's own axis was not kept");
+   t_axis_held[1] = AXIS_POS(2);
+   t_collect(&bits);
+   CHECK(BIT256_GET(bits, RARCH_FAST_FORWARD_KEY),
+         "a sharer's own axis did not fire its hotkey");
+   t_axis_held[1] = AXIS_NONE;
+}
+
 /* a driver that hands the frontend its keys: none down */
 static void t_keys_down(void *data, unsigned port, const uint16_t *keys,
       const uint8_t *bind, unsigned count, uint32_t *down)
@@ -3125,6 +3190,204 @@ static void test_hotkey_sharer_profile(void)
    st->current_driver = NULL;
 }
 
+/* The values configuration.c reads and writes binds as: a button, a
+ * hat, an axis each way, "nul"; and what is none of them. */
+static void test_bind_value_strings(void)
+{
+   char s[16];
+   uint16_t k = 7;
+   uint32_t a = 7;
+   CHECK(input_config_parse_joykey("12", &k) && k == 12
+         && input_config_parse_joykey("h1left", &k)
+         && k == HAT_MAP(1, HAT_LEFT_MASK)
+         && input_config_parse_joykey("nul", &k) && k == NO_BTN,
+         "a button, a hat or nul was not read");
+   k = 7;
+   CHECK(!input_config_parse_joykey("hx", &k)
+         && !input_config_parse_joykey("h1sideways", &k) && k == 7,
+         "a hat with no number or direction was read");
+   CHECK(input_config_parse_joyaxis("+3", &a) && a == AXIS_POS(3)
+         && input_config_parse_joyaxis("-0", &a) && a == AXIS_NEG(0)
+         && input_config_parse_joyaxis("nul", &a) && a == AXIS_NONE,
+         "an axis or nul was not read");
+   a = 7;
+   CHECK(!input_config_parse_joyaxis("3", &a)
+         && !input_config_parse_joyaxis("+", &a) && a == 7,
+         "an axis with no sign or number was read");
+
+   input_config_format_joykey(s, sizeof(s), HAT_MAP(2, HAT_RIGHT_MASK));
+   CHECK(!strcmp(s, "h2right"), "a hat was not written as h2right");
+   input_config_format_joykey(s, sizeof(s), 13);
+   CHECK(!strcmp(s, "13"), "a button was not written as 13");
+   input_config_format_joykey(s, sizeof(s), NO_BTN);
+   CHECK(!strcmp(s, "nul"), "no button was not written as nul");
+   input_config_format_joyaxis(s, sizeof(s), AXIS_POS(4));
+   CHECK(!strcmp(s, "+4"), "an axis was not written as +4");
+   input_config_format_joyaxis(s, sizeof(s), AXIS_NEG(0));
+   CHECK(!strcmp(s, "-0"), "an axis was not written as -0");
+   input_config_format_joyaxis(s, sizeof(s), AXIS_NONE);
+   CHECK(!strcmp(s, "nul"), "no axis was not written as nul");
+   {
+      struct { char s[1]; char after[7]; } b;
+      memset(&b, 'x', sizeof(b));
+      input_config_format_joykey(b.s, sizeof(b.s), HAT_MAP(0, HAT_UP_MASK));
+      CHECK(!b.s[0] && !memcmp(b.after, "xxxxxxx", sizeof(b.after)),
+            "a hat was written past a short buffer");
+   }
+}
+
+/* A button no profile in these tests has */
+#define T_OWN_KEY 24
+
+/* A controller's own hotkey button goes first. On the hotkey port's
+ * own controller the set's comes next, then its profile's; a sharer
+ * has its profile's next, and never the set's. */
+static void test_hotkey_own_lookup(void)
+{
+   input_bits_t bits;
+   t_reset();
+   t_two_player_1();
+   input_driver_poll();
+   t_bind(RARCH_FAST_FORWARD_KEY, T_FF);
+   t_buttons[1] = T_BIT(T_FF);
+   t_collect(&bits);
+   CHECK(!BIT256_GET(bits, RARCH_FAST_FORWARD_KEY),
+         "the set's button fired on a sharer with no button of its own");
+   CHECK(input_config_plays_as_set_hotkey(1, RARCH_FAST_FORWARD_KEY,
+            T_OWN_KEY, AXIS_NONE), "the sharer's own hotkey was not kept");
+
+   t_collect(&bits);
+   CHECK(!BIT256_GET(bits, RARCH_FAST_FORWARD_KEY),
+         "the set's button fired on a sharer with a button of its own");
+   t_buttons[1] = T_BIT(T_OWN_KEY);
+   t_collect(&bits);
+   CHECK(BIT256_GET(bits, RARCH_FAST_FORWARD_KEY),
+         "the sharer's own button did not fire its hotkey");
+   input_autoconf_binds[1] = t_auto_own;
+   input_config_binds_changed();
+   t_buttons[1] = T_BIT(T_OWN_FF);
+   t_collect(&bits);
+   CHECK(!BIT256_GET(bits, RARCH_FAST_FORWARD_KEY),
+         "the sharer's profile button fired over its own");
+   t_buttons[1] = 0;
+   t_buttons[0] = T_BIT(T_FF);
+   t_collect(&bits);
+   CHECK(BIT256_GET(bits, RARCH_FAST_FORWARD_KEY),
+         "the set's button stopped firing on user 1's pad");
+
+   CHECK(input_config_plays_as_set_hotkey(0, RARCH_FAST_FORWARD_KEY,
+            T_OWN_KEY, AXIS_NONE), "user 1's pad's own hotkey was not kept");
+   t_collect(&bits);
+   CHECK(!BIT256_GET(bits, RARCH_FAST_FORWARD_KEY),
+         "the set's button fired on user 1's pad with a button of its own");
+   t_buttons[0] = T_BIT(T_OWN_KEY);
+   t_collect(&bits);
+   CHECK(BIT256_GET(bits, RARCH_FAST_FORWARD_KEY),
+         "user 1's pad's own button did not fire its hotkey");
+
+   /* none of its own: a sharer's profile's, though the set has one */
+   input_config_plays_as_clear_hotkey(RARCH_FAST_FORWARD_KEY);
+   t_buttons[0] = 0;
+   t_buttons[1] = T_BIT(T_OWN_FF);
+   t_collect(&bits);
+   CHECK(BIT256_GET(bits, RARCH_FAST_FORWARD_KEY),
+         "a sharer's profile hotkey did not fire with the set bound");
+   t_buttons[1] = T_BIT(T_FF);
+   t_collect(&bits);
+   CHECK(!BIT256_GET(bits, RARCH_FAST_FORWARD_KEY),
+         "the set's button fired on a sharer with its own cleared");
+   t_buttons[1] = 0;
+   t_buttons[0] = T_BIT(T_FF);
+   t_collect(&bits);
+   CHECK(BIT256_GET(bits, RARCH_FAST_FORWARD_KEY),
+         "user 1's pad did not go back to the set with its own cleared");
+   t_buttons[0] = 0;
+}
+
+/* A sharer placed again on another controller's slot reads that
+ * controller's own hotkeys, not the one's it read before. */
+static void test_place_again_own_hotkeys(void)
+{
+   input_bits_t bits;
+
+   t_reset();
+   t_connect(0, "A", 1, 1);
+   t_connect(1, "C", 3, 3);
+   t_connect(2, "B", 2, 2);
+   t_map(1, 0);
+   t_bind(RARCH_FAST_FORWARD_KEY, T_FF);
+   CHECK(input_config_plays_as_set_hotkey(2, RARCH_FAST_FORWARD_KEY,
+            T_OWN_KEY, AXIS_NONE), "B's own hotkey was not kept");
+   t_buttons[1] = T_BIT(T_OWN_KEY);
+   t_collect(&bits);
+   CHECK(!BIT256_GET(bits, RARCH_FAST_FORWARD_KEY),
+         "the sharer fired another controller's own hotkey");
+   t_buttons[1] = 0;
+
+   CHECK(input_config_plays_as_set(2, 2), "Player 2 was refused");
+   t_place_again(2);
+   CHECK(t_user_of(2) == 1, "B is not user 2 after the re-place");
+   t_buttons[2] = T_BIT(T_OWN_KEY);
+   t_collect(&bits);
+   CHECK(BIT256_GET(bits, RARCH_FAST_FORWARD_KEY),
+         "after a re-place the sharer does not read B's own hotkey");
+   t_buttons[2] = 0;
+   t_buttons[1] = T_BIT(T_OWN_KEY);
+   t_collect(&bits);
+   CHECK(!BIT256_GET(bits, RARCH_FAST_FORWARD_KEY),
+         "after a re-place C fires B's own hotkey");
+   t_buttons[1] = 0;
+}
+
+/* Own hotkeys are written only where set, in the hotkeys' own form,
+ * read back, and taken out once cleared; an entry kept only for them
+ * goes with them. */
+static void test_hotkey_own_storage(void)
+{
+   uint16_t k;
+   uint32_t a;
+   config_file_t *conf;
+   t_reset();
+   t_dev(0, "Pad", 1, 1);
+   CHECK(input_config_plays_as_set_hotkey(0, RARCH_FAST_FORWARD_KEY, 8,
+            AXIS_NONE)
+         && input_config_plays_as_set_hotkey(0, RARCH_MENU_TOGGLE,
+            HAT_MAP(0, HAT_UP_MASK), AXIS_NEG(2)),
+         "an Auto controller took no entry for its own hotkeys");
+   CHECK(input_config_plays_as_entry(0) == 0
+         && input_config_plays_as_player(0) == 0,
+         "the entry was not made at the controller's player");
+   CHECK(!input_config_plays_as_active(),
+         "an entry kept only for its own hotkeys has Max Users place again");
+
+   conf = config_file_new_alloc();
+   input_plays_as_write(conf);
+   CHECK(t_conf_is(conf, "input_plays_as_toggle_fast_forward_btn_1", "8")
+         && t_conf_is(conf, "input_plays_as_menu_toggle_btn_1", "h0up")
+         && t_conf_is(conf, "input_plays_as_menu_toggle_axis_1", "-2"),
+         "own hotkeys were not written in the hotkeys' form");
+   CHECK(!t_conf_is(conf, "input_plays_as_toggle_fast_forward_axis_1", NULL)
+         && !t_conf_is(conf, "input_plays_as_enable_hotkey_btn_1", NULL),
+         "a hotkey the controller has none of its own for was written");
+
+   input_plays_as_read(NULL);
+   input_plays_as_read(conf);
+   input_config_plays_as_hotkey(0, RARCH_MENU_TOGGLE, &k, &a);
+   CHECK(k == HAT_MAP(0, HAT_UP_MASK) && a == AXIS_NEG(2),
+         "own hotkeys did not come back");
+
+   input_config_plays_as_clear_hotkey(RARCH_FAST_FORWARD_KEY);
+   input_config_plays_as_clear_hotkey(RARCH_MENU_TOGGLE);
+   CHECK(input_config_plays_as_entry(0) < 0,
+         "an entry kept only for its cleared hotkeys stayed");
+   input_plays_as_write(conf);
+   CHECK(!t_conf_is(conf, "input_plays_as_toggle_fast_forward_btn_1", NULL)
+         && !t_conf_is(conf, "input_plays_as_menu_toggle_axis_1", NULL)
+         && !t_conf_is(conf, "input_plays_as_device_1", NULL),
+         "a cleared hotkey's keys were kept");
+   config_file_free(conf);
+}
+
 int main(void)
 {
    test_identity();
@@ -3167,6 +3430,7 @@ int main(void)
    test_place_restart_twins();
    test_place_saved_ports();
    test_place_reload_kept();
+   test_own_hotkey_kept();
    test_plays_as_copy();
    test_plays_as_write_twins();
    test_plays_as_write_twins_full();
@@ -3196,7 +3460,12 @@ int main(void)
    test_none_player1();
    test_hotkeys_sharer_not_set();
    test_hotkey_game_focus_shared();
+   test_hotkey_axis_shared();
    test_hotkey_sharer_profile();
+   test_bind_value_strings();
+   test_hotkey_own_lookup();
+   test_place_again_own_hotkeys();
+   test_hotkey_own_storage();
    if (failures)
    {
       printf("%d failure(s)\n", failures);
