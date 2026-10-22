@@ -14,6 +14,7 @@ LDFLAGS += -fsanitize=$(SANITIZER)
 endif
 ifeq ($(shell uname -s),Linux)
 NATIVE_PROBE = native_probe
+NATIVE_DECODE = native_decode
 FRAME_THREAD_SOURCES = ../../../libretro-common/queues/retro_spsc.c
 FRAME_THREAD_FLAGS = -pthread
 endif
@@ -97,6 +98,7 @@ all: long_slice_test$(EXE) long_packet_test$(EXE)
 test$(EXE): ../../../gfx/common/vaapi_hevc_slice.h
 test$(EXE): ../../../gfx/common/vaapi_hevc_long_packet.h
 check: all
+	$(RUNNER) ./native_pixels_test$(EXE)
 	$(RUNNER) ./long_packet_test$(EXE)
 	$(RUNNER) ./long_slice_test$(EXE)
 	$(RUNNER) ./backend_nothreads_test$(EXE)
@@ -127,6 +129,7 @@ ifneq ($(NATIVE_PROBE),)
 	./native_probe
 endif
 clean:
+	rm -f native_decode native_pixels_test native_pixels_test.exe
 	rm -f rh265_test.o rh265_tsan.o
 	rm -f long_packet_test long_packet_test.exe
 	rm -f long_slice_test long_slice_test.exe
@@ -142,3 +145,13 @@ rh265_tsan.o: $(HEVC_PARSER_DEPS)
 test$(EXE) pool_test$(EXE) decoder_test$(EXE) owner_test$(EXE) export_test$(EXE) prime_frame_test$(EXE) prime_submit_test$(EXE) frame_test$(EXE) lease_test$(EXE) cache_test$(EXE) renderer_test$(EXE): rh265_test.o ../../../gfx/common/vaapi_hevc_long_packet.h ../../../gfx/common/vaapi_hevc_slice.h
 native_probe: rh265_test.o
 frame_tsan_test$(EXE) lease_tsan_test$(EXE): rh265_tsan.o
+
+native_pixels_test$(EXE): native_pixels_test.c native_pixels.h
+	$(CC) $(CFLAGS) native_pixels_test.c -o $@ $(LDFLAGS)
+all: native_pixels_test$(EXE) $(NATIVE_DECODE)
+NATIVE_DECODE_SOURCES := native_decode.c ../../../gfx/common/vaapi_hevc_owner.c ../../../gfx/common/vaapi_hevc_decoder.c ../../../gfx/common/vaapi_frame.c ../../../gfx/common/vaapi_hevc_pool.c ../../../gfx/common/vaapi_hevc_export.c ../../../gfx/common/vaapi_hevc_runtime.c ../../../gfx/common/vaapi_hevc_session.c ../../../gfx/common/vaapi_hevc_submit.c ../../../libretro-common/dynamic/dylib.c
+native_decode: $(NATIVE_DECODE_SOURCES) rh265_test.o native_pixels.h ../videotoolbox_hevc/sequence_data.h ../videotoolbox_hevc/reorder_data.h
+	$(CC) $(CFLAGS) $(NATIVE_DECODE_SOURCES) rh265_test.o -o $@ $(LDFLAGS) -ldl -lva
+native-decode-check: native_decode
+	./native_decode "$(VAAPI_RENDER_NODE)"
+.PHONY: native-decode-check

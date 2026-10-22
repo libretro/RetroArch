@@ -112,3 +112,20 @@ Ticket metadata is synthetic. No VA display, hardware decoder, DMA-BUF
 FD import or DRM modifier image is created by the GPU oracle. Actual
 VA decode/export/import pixels and native seek/shutdown acceptance
 remain separate device gates.
+
+`make native-decode-check VAAPI_RENDER_NODE=/dev/dri/renderD128` is an explicit
+native decode/export CRC gate on Linux. Supply the actual render node. Missing
+nodes or refused hardware admission return a nonzero unavailable result; the
+oracle never accepts software fallback. It runs the eight existing Main8/Main10
+full/limited I/P/B sequences twice, checks every display-order Y/U/V CRC against
+the FFmpeg fixture oracle, keeps the last export claimed across source close,
+reads that retained surface again, and requires retirement to restore the FD
+baseline. The selected NORMAL/BASE mask is reported rather than inferred.
+
+This executable alone uses VAImage CPU transfer, mapping and bounded polling
+delays. Production decoding/rendering does not gain readback or waits. The host
+`native_pixels_test` checks independent planar CRCs, padding/crop, P010 low bits,
+plane storage order and invalid image extents. Compiling the native executable
+or passing this host helper is not native-device acceptance. DRM-modifier Vulkan
+import pixels, actual WPP subset decoding, simultaneous imports, player seeks
+and native shutdown remain separate acceptance work.
