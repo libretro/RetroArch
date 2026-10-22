@@ -151,6 +151,22 @@ static void hid_joypad_set_player(unsigned pad, unsigned player)
 /* Kept across a video driver restart: a HID driver's pads are read on
  * its own threads, or at the poll, and nothing of it is the video
  * driver's. Stopping it would only close every pad and open it again. */
+static bool hid_joypad_set_sensor_state(unsigned port,
+      enum retro_sensor_action action, unsigned rate)
+{
+   return generic_hid && generic_hid->set_sensor_state
+      && generic_hid->set_sensor_state((void*)hid_driver_get_data(),
+            port, action, rate);
+}
+
+static bool hid_joypad_get_sensor_input(unsigned port, unsigned id,
+      float *value)
+{
+   return generic_hid && generic_hid->get_sensor_input
+      && generic_hid->get_sensor_input((void*)hid_driver_get_data(),
+            port, id, value);
+}
+
 static bool hid_joypad_survives_video(void)
 {
    return generic_hid != NULL;
@@ -167,8 +183,8 @@ input_device_driver_t hid_joypad = {
    hid_joypad_poll,
    hid_joypad_rumble,
    NULL, /* set_rumble_gain */
-   NULL, /* set_sensor_state */
-   NULL, /* get_sensor_input */
+   hid_joypad_set_sensor_state,
+   hid_joypad_get_sensor_input,
    hid_joypad_name,
    "hid",
    hid_joypad_get_bt_host,

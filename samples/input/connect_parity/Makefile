@@ -34,7 +34,7 @@ LDFLAGS += -fsanitize=$(SANITIZER)
 endif
 all: $(TARGET)
 $(TARGET): $(SOURCES)
-	$(CC) $(CFLAGS) -o $@ $(SOURCES) $(LDFLAGS)
+	$(CC) $(CFLAGS) -o $@ $(SOURCES) $(LDFLAGS) -lm
 check: all
 	./$(TARGET)
 clean:

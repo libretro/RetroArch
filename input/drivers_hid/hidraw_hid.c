@@ -697,6 +697,26 @@ static bool hidraw_hid_set_bt_host(void *data, unsigned pad,
    return ioctl(dev->fd, HIDIOCSFEATURE(sizeof(buf)), buf) >= 0;
 }
 
+/* A pad's motion sensors, where its handler reads them. */
+static bool hidraw_hid_set_sensor_state(void *data, unsigned pad,
+      enum retro_sensor_action action, unsigned rate)
+{
+   hidraw_hid_t *hid = (hidraw_hid_t*)data;
+   (void)rate;
+   if (!hid || pad >= MAX_USERS)
+      return false;
+   return pad_connection_set_sensor(&hid->slots[pad], action);
+}
+
+static bool hidraw_hid_get_sensor_input(void *data, unsigned pad,
+      unsigned id, float *value)
+{
+   hidraw_hid_t *hid = (hidraw_hid_t*)data;
+   if (!hid || pad >= MAX_USERS || !value)
+      return false;
+   return pad_connection_sensor(&hid->slots[pad], id, value);
+}
+
 hid_driver_t hidraw_hid = {
    hidraw_hid_init,
    hidraw_hid_joypad_query,
@@ -719,5 +739,7 @@ hid_driver_t hidraw_hid = {
    hidraw_hid_set_bt_host,
    hidraw_hid_is_bluetooth,
    hidraw_hid_set_player,
-   hidraw_hid_joypad_view
+   hidraw_hid_joypad_view,
+   hidraw_hid_set_sensor_state,
+   hidraw_hid_get_sensor_input
 };

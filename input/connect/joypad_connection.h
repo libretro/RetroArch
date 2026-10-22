@@ -145,6 +145,11 @@ typedef struct pad_connection_interface
    /* A poll that brought the pad no report, for a handler with steps
     * that go on by time, not by its reports. May be NULL. */
    void        (*idle)(void *device);
+   /* Motion: a core asks for a sensor, or is done with it - true where
+    * the pad has it - and one value, in g or radians a second, false
+    * where there is none yet. Both from the poll's thread. May be NULL. */
+   bool        (*set_sensor)(void *device, enum retro_sensor_action action);
+   bool        (*sensor)(void *device, unsigned id, float *value);
 } pad_connection_interface_t;
 
 /* A handler's buttons into its view: the 32 it decodes, and the menu
@@ -200,6 +205,13 @@ void pad_connection_packet(joypad_connection_t *joyconn,
 /* For a driver that hands its packets over in its own poll: the slot's
  * pad brought none this poll. */
 void pad_connection_idle(joypad_connection_t *joyconn);
+
+/* The slot's pad's motion sensors: as the interface's set_sensor and
+ * sensor; false where it has none. */
+bool pad_connection_set_sensor(joypad_connection_t *joyconn,
+      enum retro_sensor_action action);
+bool pad_connection_sensor(joypad_connection_t *joyconn, unsigned id,
+      float *value);
 
 void pad_connection_get_buttons(joypad_connection_t *joyconn,
    unsigned idx, input_bits_t* state);

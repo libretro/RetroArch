@@ -70,6 +70,12 @@ struct hid_driver
    /* as input_device_driver_t's: pad @pad's state, unchanged until the
     * next poll; NULL where it cannot be lent */
    const struct input_pad_view *(*view)(void *handle, unsigned pad);
+   /* as input_device_driver_t's: pad @pad's motion sensors; NULL where
+    * the driver reads none */
+   bool (*set_sensor_state)(void *handle, unsigned pad,
+         enum retro_sensor_action action, unsigned rate);
+   bool (*get_sensor_input)(void *handle, unsigned pad, unsigned id,
+         float *value);
 };
 
 #endif /* HID_DRIVER_H__ */

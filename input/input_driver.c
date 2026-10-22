@@ -8789,6 +8789,11 @@ static bool input_beside_set_rumble_gain(unsigned pad, unsigned gain)
 static bool input_beside_set_sensor_state(unsigned port,
       enum retro_sensor_action action, unsigned rate)
 {
+   unsigned slot;
+   if (input_beside_slot(port, &slot))
+      return input_beside.drv->set_sensor_state
+         && input_beside.drv->set_sensor_state(input_beside.data, slot,
+               action, rate);
    return input_beside.real->set_sensor_state
       && input_beside.real->set_sensor_state(port, action, rate);
 }
@@ -8796,6 +8801,11 @@ static bool input_beside_set_sensor_state(unsigned port,
 static bool input_beside_get_sensor_input(unsigned port, unsigned id,
       float *value)
 {
+   unsigned slot;
+   if (input_beside_slot(port, &slot))
+      return input_beside.drv->get_sensor_input
+         && input_beside.drv->get_sensor_input(input_beside.data, slot,
+               id, value);
    return input_beside.real->get_sensor_input
       && input_beside.real->get_sensor_input(port, id, value);
 }

@@ -1954,6 +1954,26 @@ static bool winusb_hid_set_bt_host(void *data, unsigned pad,
          sizeof(buf)) >= 0;
 }
 
+/* A pad's motion sensors, where its handler reads them. */
+static bool winusb_hid_set_sensor_state(void *data, unsigned pad,
+      enum retro_sensor_action action, unsigned rate)
+{
+   winusb_hid_t *hid = (winusb_hid_t*)data;
+   (void)rate;
+   if (!hid || pad >= MAX_USERS)
+      return false;
+   return pad_connection_set_sensor(&hid->slots[pad], action);
+}
+
+static bool winusb_hid_get_sensor_input(void *data, unsigned pad,
+      unsigned id, float *value)
+{
+   winusb_hid_t *hid = (winusb_hid_t*)data;
+   if (!hid || pad >= MAX_USERS || !value)
+      return false;
+   return pad_connection_sensor(&hid->slots[pad], id, value);
+}
+
 hid_driver_t winusb_hid = {
    winusb_hid_init,
    winusb_hid_joypad_query,
@@ -1976,5 +1996,7 @@ hid_driver_t winusb_hid = {
    winusb_hid_set_bt_host,
    winusb_hid_is_bluetooth,
    winusb_hid_set_player,
-   winusb_hid_joypad_view
+   winusb_hid_joypad_view,
+   winusb_hid_set_sensor_state,
+   winusb_hid_get_sensor_input
 };

@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <math.h>
 
 #include "input/connect/joypad_connection.h"
 #include "input/include/gamepad.h"
@@ -1350,7 +1351,7 @@ static void test_switch_pro(void)
    static const uint8_t neutral[8] = { 0x00, 0x01, 0x40, 0x40,
       0x00, 0x01, 0x40, 0x40 };
    const pad_connection_interface_t *ifc = &pad_connection_switch_pro;
-   uint8_t p[65], flash[5 + 22];
+   uint8_t p[65], flash[5 + 24];
    struct sp_state st;
    unsigned n, bad = 0, had = failures, count;
    int dummy_connection;
@@ -1413,8 +1414,33 @@ static void test_switch_pro(void)
    sp_put_pair(flash + 5 + 13, 0x900, 0x900);
    sp_put_pair(flash + 5 + 16, 0x300, 0x300);
    sp_put_pair(flash + 5 + 19, 0x300, 0x300);
-   count = sent_count;
    deliver(ifc, dev, p, (uint16_t)sp_reply(p, &st, 0x10, flash, 5 + 22));
+   CHECK(sp_sent_command(0, 0x10, 0x20) && sent[12] == 0x60 && sent[15] == 24,
+         "switch_pro: the motion sensors' calibration not read");
+
+   /* the factory's: accelerometer origin 0 and sensitivity 16384 - a g
+    * in 4096 - and gyroscope origins 10, -20 and 30, sensitivity 13371
+    * past them */
+   {
+      static const int16_t cal[12] = { 0, 0, 0, 16384, 16384, 16384,
+         10, -20, 30, 10 + 13371, -20 + 13371, 30 + 13371 };
+      unsigned k;
+      memset(flash, 0, sizeof(flash));
+      flash[0] = 0x20; flash[1] = 0x60; flash[4] = 24;
+      for (k = 0; k < 12; k++)
+      {
+         flash[5 + 2 * k]     = (uint8_t)(cal[k] & 0xff);
+         flash[5 + 2 * k + 1] = (uint8_t)((uint16_t)cal[k] >> 8);
+      }
+      deliver(ifc, dev, p, (uint16_t)sp_reply(p, &st, 0x10, flash, 5 + 24));
+   }
+   CHECK(sp_sent_command(0, 0x10, 0x26) && sent[12] == 0x80 && sent[15] == 20,
+         "switch_pro: the user's motion calibration not read");
+   /* not calibrated by the user */
+   memset(flash, 0xff, sizeof(flash));
+   flash[0] = 0x26; flash[1] = 0x80; flash[2] = 0; flash[3] = 0; flash[4] = 20;
+   count = sent_count;
+   deliver(ifc, dev, p, (uint16_t)sp_reply(p, &st, 0x10, flash, 5 + 20));
    CHECK(sent_count == count, "switch_pro: something sent after the last command");
 
    /* sticks: up positive becomes down positive; the factory's reach is
@@ -1491,6 +1517,46 @@ static void test_switch_pro(void)
       deliver(ifc, dev, p, (uint16_t)sp_report(p, 0x30, &st));
    CHECK(sp_sent_command(0, 0x30, 0x00), "switch_pro: lit on no port");
    CHECK(!strcmp(ifc->get_name(dev), "Pro Controller"), "switch_pro: misnamed");
+
+   /* motion: nothing until a core asks; then the sensors turned on,
+    * read from the newest sample with the flash's calibration, on the
+    * DualShock 4's axes; turned off when it is done */
+   {
+      float v[6];
+      const float g  = 936.0f / 13371.0f * 3.14159265358979323846f / 180.0f;
+      static const int16_t imu[6] = { 4096, 0, -8192, 10 + 1000, -20, 30 - 500 };
+      unsigned k, ok = 1;
+      CHECK(!ifc->sensor(dev, RETRO_SENSOR_GYROSCOPE_X, &v[0]),
+            "switch_pro: motion given before a core asked");
+      CHECK(ifc->set_sensor(dev, RETRO_SENSOR_ACCELEROMETER_ENABLE)
+            && ifc->set_sensor(dev, RETRO_SENSOR_GYROSCOPE_ENABLE),
+            "switch_pro: the sensors not taken");
+      for (n = 0; n < 2; n++)
+         deliver(ifc, dev, p, (uint16_t)sp_report(p, 0x30, &st));
+      CHECK(sp_sent_command(0, 0x40, 0x01), "switch_pro: the sensors not turned on");
+      sp_report(p, 0x30, &st);
+      for (k = 0; k < 6; k++)
+      {
+         p[13 + 2 * k]     = (uint8_t)(imu[k] & 0xff);
+         p[13 + 2 * k + 1] = (uint8_t)((uint16_t)imu[k] >> 8);
+      }
+      deliver(ifc, dev, p, 64);
+      for (k = 0; k < 6; k++)
+         ok &= ifc->sensor(dev, RETRO_SENSOR_ACCELEROMETER_X + k, &v[k]);
+      CHECK(ok && fabsf(v[0]) < 1e-5f && fabsf(v[1] + 1.0f) < 1e-5f
+            && fabsf(v[2] + 2.0f) < 1e-5f && fabsf(v[3]) < 1e-5f
+            && fabsf(v[4] - 1000.0f * g) < 1e-4f
+            && fabsf(v[5] + 500.0f * g) < 1e-4f,
+            "switch_pro: motion read %f %f %f / %f %f %f",
+            v[0], v[1], v[2], v[3], v[4], v[5]);
+      ifc->set_sensor(dev, RETRO_SENSOR_ACCELEROMETER_DISABLE);
+      ifc->set_sensor(dev, RETRO_SENSOR_GYROSCOPE_DISABLE);
+      for (n = 0; n < 2; n++)
+         deliver(ifc, dev, p, (uint16_t)sp_report(p, 0x30, &st));
+      CHECK(sp_sent_command(0, 0x40, 0x00), "switch_pro: the sensors not turned off");
+      CHECK(!ifc->sensor(dev, RETRO_SENSOR_ACCELEROMETER_X, &v[0]),
+            "switch_pro: motion given after the core was done");
+   }
    ifc->deinit(dev);
 
    /* told its port before its lights went: that port, not its slot */
@@ -1548,8 +1614,8 @@ static void test_switch_pro(void)
    deliver(ifc, dev, p, (uint16_t)sp_reply(p, &st, 0x03, NULL, 0));
    deliver(ifc, dev, p, (uint16_t)sp_reply(p, &st, 0x48, NULL, 0));
    deliver(ifc, dev, p, (uint16_t)sp_reply(p, &st, 0x30, NULL, 0));
-   deliver(ifc, dev, p, (uint16_t)sp_reply(p, &st, 0x10, NULL, 0));
-   deliver(ifc, dev, p, (uint16_t)sp_reply(p, &st, 0x10, NULL, 0));
+   for (n = 0; n < 4; n++)
+      deliver(ifc, dev, p, (uint16_t)sp_reply(p, &st, 0x10, NULL, 0));
    deliver(ifc, dev, p, (uint16_t)sp_report(p, 0x30, &st));
    count = sent_count;
    ifc->idle(dev);

@@ -629,6 +629,34 @@ void pad_connection_idle(joypad_connection_t *joyconn)
    pad_connection_release(joyconn);
 }
 
+bool pad_connection_set_sensor(joypad_connection_t *joyconn,
+      enum retro_sensor_action action)
+{
+   bool ret = false;
+   if (!joyconn || !pad_connection_acquire(joyconn))
+      return false;
+   if (     joyconn->connection
+         && joyconn->iface
+         && joyconn->iface->set_sensor)
+      ret = joyconn->iface->set_sensor(joyconn->connection, action);
+   pad_connection_release(joyconn);
+   return ret;
+}
+
+bool pad_connection_sensor(joypad_connection_t *joyconn, unsigned id,
+      float *value)
+{
+   bool ret = false;
+   if (!joyconn || !pad_connection_acquire(joyconn))
+      return false;
+   if (     joyconn->connection
+         && joyconn->iface
+         && joyconn->iface->sensor)
+      ret = joyconn->iface->sensor(joyconn->connection, id, value);
+   pad_connection_release(joyconn);
+   return ret;
+}
+
 void pad_connection_get_buttons(joypad_connection_t *joyconn,
       unsigned pad, input_bits_t *state)
 {

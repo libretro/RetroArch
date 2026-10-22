@@ -33,7 +33,13 @@
  * Full report 0x30 (and 0x21): from byte 3, the buttons - Y X B A,
  * -, -, R, ZR; then -, +, R3, L3, Home, Capture; then down, up, right,
  * left, -, -, L, ZL - then the sticks, 12 bits an axis, up positive.
- * Each stick's centre and reach are in the pad's flash. */
+ * Each stick's centre and reach are in the pad's flash.
+ *
+ * Motion: report 0x30 has three samples of the accelerometer and the
+ * gyroscope from byte 13, the newest first, once subcommand 0x40 has
+ * turned them on - which it is while a core asks for them. Their
+ * calibration is in the flash too; they are given on the axes SDL
+ * gives them, as the DualShock 4's are (sony_pad_motion.h). */
 
 #include <stdint.h>
 #include <string.h>
@@ -75,12 +81,21 @@
 #define SWITCH_PRO_CMD_LIGHTS    2
 #define SWITCH_PRO_CMD_FACTORY   3
 #define SWITCH_PRO_CMD_USER      4
-#define SWITCH_PRO_CMD_COUNT     5
+#define SWITCH_PRO_CMD_IMU_CAL   5
+#define SWITCH_PRO_CMD_IMU_USER  6
+#define SWITCH_PRO_CMD_COUNT     7
+/* sent on its own, its answer not waited for */
+#define SWITCH_PRO_CMD_IMU       7
 
 #define SWITCH_PRO_FACTORY_CAL   0x603d
 #define SWITCH_PRO_FACTORY_LEN   18
 #define SWITCH_PRO_USER_CAL      0x8010
 #define SWITCH_PRO_USER_LEN      22
+#define SWITCH_PRO_IMU_CAL       0x6020
+#define SWITCH_PRO_IMU_CAL_LEN   24
+#define SWITCH_PRO_IMU_USER      0x8026
+#define SWITCH_PRO_IMU_USER_LEN  20
+#define SWITCH_PRO_IMU_AT        13   /* the newest sample in report 0x30 */
 
 struct hidpad_switch_pro_data
 {
@@ -102,6 +117,19 @@ struct hidpad_switch_pro_data
    uint8_t number;      /* the output's packet number */
    uint8_t since_sent;  /* reports since output last went */
    bool heard;          /* a report has come: the first is logged */
+   /* motion: the newest sample as the pad sends it - accelerometer X Y
+    * Z, then gyroscope X Y Z - and its calibration: counts to g and to
+    * radians a second, and the gyroscope's reading at rest */
+   int16_t imu[6];
+   float accel_scale[3];
+   float gyro_scale[3];
+   int16_t gyro_rest[3];
+   int16_t accel_sens[3]; /* the factory's, for the user's origins */
+   int16_t gyro_sens[3];
+   bool imu_factory;      /* the factory's calibration was read */
+   uint8_t imu_want;    /* bit 0 the accelerometer, 1 the gyroscope */
+   bool imu_on;         /* as the pad was last told */
+   bool imu_seen;       /* a report has had a sample */
    retro_time_t quiet_since; /* the first poll without a report; 0: one came */
    int player;          /* told: from 1, -1 for none; 0 not yet */
    bool lights_due;     /* told another once its commands are done */
@@ -171,6 +199,19 @@ static void hidpad_switch_pro_send_command(
          address = SWITCH_PRO_USER_CAL;
          len     = SWITCH_PRO_USER_LEN;
          break;
+      case SWITCH_PRO_CMD_IMU_CAL:
+         address = SWITCH_PRO_IMU_CAL;
+         len     = SWITCH_PRO_IMU_CAL_LEN;
+         break;
+      case SWITCH_PRO_CMD_IMU_USER:
+         address = SWITCH_PRO_IMU_USER;
+         len     = SWITCH_PRO_IMU_USER_LEN;
+         break;
+      case SWITCH_PRO_CMD_IMU:
+         r[10] = 0x40;
+         r[11] = device->imu_want ? 1 : 0;
+         device->imu_on = device->imu_want != 0;
+         break;
    }
    if (len)
    {
@@ -224,7 +265,8 @@ static void hidpad_switch_pro_next_command(
       hidpad_switch_pro_send_command(device);
 }
 
-/* Until its flash is read, a stick as most are. */
+/* Until its flash is read, a stick as most are, and the sensors at
+ * their nominal scale, as SDL takes them. */
 static void hidpad_switch_pro_default_calibration(
       struct hidpad_switch_pro_data *device)
 {
@@ -235,6 +277,60 @@ static void hidpad_switch_pro_default_calibration(
       device->reach_up[i]   = 1000;
       device->reach_down[i] = 1000;
    }
+   for (i = 0; i < 3; i++)
+   {
+      device->accel_scale[i] = 1.0f / 4096.0f;
+      device->gyro_scale[i]  = 3.14159265358979323846f / 180.0f / 14.2842f;
+      device->gyro_rest[i]   = 0;
+   }
+}
+
+static int16_t hidpad_switch_pro_le16(const uint8_t *p)
+{
+   return (int16_t)(uint16_t)(p[0] | (p[1] << 8));
+}
+
+/* The sensors' calibration, as SDL reads it: the factory's origins and
+ * sensitivities, the user's origins over them where the user
+ * calibrated (@user, marked 0xB2 0xA1 first). */
+static void hidpad_switch_pro_imu_scale(
+      struct hidpad_switch_pro_data *device, unsigned i,
+      int accel_origin, int gyro_origin)
+{
+   int accel_sens = device->accel_sens[i];
+   int gyro_sens  = device->gyro_sens[i];
+   if (accel_sens != accel_origin)
+      device->accel_scale[i] = 4.0f / (float)(accel_sens - accel_origin);
+   if (gyro_sens != gyro_origin)
+      device->gyro_scale[i]  = 936.0f / (float)(gyro_sens - gyro_origin)
+         * 3.14159265358979323846f / 180.0f;
+   device->gyro_rest[i] = (int16_t)gyro_origin;
+}
+
+static void hidpad_switch_pro_imu_calibrate(
+      struct hidpad_switch_pro_data *device, const uint8_t *p, bool user)
+{
+   unsigned i;
+   if (user)
+   {
+      /* the user's origins, over the factory's sensitivities */
+      if (p[0] != 0xb2 || p[1] != 0xa1 || !device->imu_factory)
+         return;
+      for (i = 0; i < 3; i++)
+         hidpad_switch_pro_imu_scale(device, i,
+               hidpad_switch_pro_le16(p + 2 + 2 * i),
+               hidpad_switch_pro_le16(p + 14 + 2 * i));
+      return;
+   }
+   for (i = 0; i < 3; i++)
+   {
+      device->accel_sens[i] = hidpad_switch_pro_le16(p + 6 + 2 * i);
+      device->gyro_sens[i]  = hidpad_switch_pro_le16(p + 18 + 2 * i);
+      hidpad_switch_pro_imu_scale(device, i,
+            hidpad_switch_pro_le16(p + 2 * i),
+            hidpad_switch_pro_le16(p + 12 + 2 * i));
+   }
+   device->imu_factory = true;
 }
 
 static void *hidpad_switch_pro_init(void *data, uint32_t slot,
@@ -347,6 +443,12 @@ static void hidpad_switch_pro_flash(struct hidpad_switch_pro_data *device,
       if (p[11] == 0xb2 && p[12] == 0xa1)
          hidpad_switch_pro_calibrate(device, 1, p + 13);
    }
+   else if (address == SWITCH_PRO_IMU_CAL
+         && len >= 20 + SWITCH_PRO_IMU_CAL_LEN)
+      hidpad_switch_pro_imu_calibrate(device, p, false);
+   else if (address == SWITCH_PRO_IMU_USER
+         && len >= 20 + SWITCH_PRO_IMU_USER_LEN)
+      hidpad_switch_pro_imu_calibrate(device, p, true);
 }
 
 static int16_t hidpad_switch_pro_scale(struct hidpad_switch_pro_data *device,
@@ -527,7 +629,7 @@ static void hidpad_switch_pro_command_reply(
       struct hidpad_switch_pro_data *device, const uint8_t *r, unsigned len)
 {
    static const uint8_t ids[SWITCH_PRO_CMD_COUNT] = {
-      0x03, 0x48, 0x30, 0x10, 0x10 };
+      0x03, 0x48, 0x30, 0x10, 0x10, 0x10, 0x10 };
 
    if (     device->state != SWITCH_PRO_COMMANDS
          || len < 15
@@ -635,6 +737,18 @@ static void hidpad_switch_pro_packet_handler(void *data,
          if (len < SWITCH_PRO_FULL_LEN)
             return;
          hidpad_switch_pro_full(device, r);
+         /* the newest motion sample, where the pad sends them: an
+          * accelerometer all nought has none */
+         if (     r[0] == 0x30 && device->imu_want
+               && len >= SWITCH_PRO_IMU_AT + 12)
+         {
+            unsigned i;
+            for (i = 0; i < 6; i++)
+               device->imu[i] = hidpad_switch_pro_le16(
+                     r + SWITCH_PRO_IMU_AT + 2 * i);
+            if (device->imu[0] || device->imu[1] || device->imu[2])
+               device->imu_seen = true;
+         }
          break;
       default:
          return;
@@ -644,13 +758,22 @@ static void hidpad_switch_pro_packet_handler(void *data,
       device->since_sent++;
    hidpad_switch_pro_retry(device);
 
-   /* lights told after the commands, as a command of their own; its
-    * answer is not waited for */
+   /* lights told after the commands, and the sensors turned on or off
+    * when a core changes its mind, each as a command of its own; their
+    * answers are not waited for */
    if (     device->state == SWITCH_PRO_READY
          && device->lights_due
          && device->since_sent >= SWITCH_PRO_RUMBLE_GAP)
    {
       device->command = SWITCH_PRO_CMD_LIGHTS;
+      hidpad_switch_pro_send_command(device);
+      return;
+   }
+   if (     device->state == SWITCH_PRO_READY
+         && device->imu_on != (device->imu_want != 0)
+         && device->since_sent >= SWITCH_PRO_RUMBLE_GAP)
+   {
+      device->command = SWITCH_PRO_CMD_IMU;
       hidpad_switch_pro_send_command(device);
       return;
    }
@@ -708,6 +831,74 @@ static void hidpad_switch_pro_set_rumble(void *data,
       /* the strong motor is the left hand's, the weak the right's */
       hidpad_switch_pro_encode(device->rumble + idx * 4, strength);
       device->motors_due  = true;
+   }
+}
+
+/* A core asks for the accelerometer or the gyroscope, or is done with
+ * it; the pad is told at the next report. */
+static bool hidpad_switch_pro_set_sensor(void *data,
+      enum retro_sensor_action action)
+{
+   struct hidpad_switch_pro_data *device =
+      (struct hidpad_switch_pro_data*)data;
+   if (!device)
+      return false;
+   switch (action)
+   {
+      case RETRO_SENSOR_ACCELEROMETER_ENABLE:
+         device->imu_want |= 1;
+         break;
+      case RETRO_SENSOR_GYROSCOPE_ENABLE:
+         device->imu_want |= 2;
+         break;
+      case RETRO_SENSOR_ACCELEROMETER_DISABLE:
+         device->imu_want &= (uint8_t)~1;
+         break;
+      case RETRO_SENSOR_GYROSCOPE_DISABLE:
+         device->imu_want &= (uint8_t)~2;
+         break;
+      default:
+         return false;
+   }
+   if (!device->imu_want)
+      device->imu_seen = false;
+   return true;
+}
+
+/* One value, in g or radians a second; the pad's axes turned into the
+ * DualShock 4's as SDL does, then into libretro's as that pad's are. */
+static bool hidpad_switch_pro_sensor(void *data, unsigned id, float *value)
+{
+   struct hidpad_switch_pro_data *device =
+      (struct hidpad_switch_pro_data*)data;
+   float ps[3];
+
+   if (!device || !device->imu_seen)
+      return false;
+   if (id <= RETRO_SENSOR_ACCELEROMETER_Z)
+   {
+      if (!(device->imu_want & 1))
+         return false;
+      ps[0] = -(device->accel_scale[1] * device->imu[1]);
+      ps[1] =   device->accel_scale[2] * device->imu[2];
+      ps[2] = -(device->accel_scale[0] * device->imu[0]);
+      switch (id)
+      {
+         case RETRO_SENSOR_ACCELEROMETER_X: *value = ps[0]; return true;
+         case RETRO_SENSOR_ACCELEROMETER_Y: *value = ps[2]; return true;
+         default:                           *value = ps[1]; return true;
+      }
+   }
+   if (id > RETRO_SENSOR_GYROSCOPE_Z || !(device->imu_want & 2))
+      return false;
+   ps[0] = -(device->gyro_scale[1] * (device->imu[4] - device->gyro_rest[1]));
+   ps[1] =   device->gyro_scale[2] * (device->imu[5] - device->gyro_rest[2]);
+   ps[2] = -(device->gyro_scale[0] * (device->imu[3] - device->gyro_rest[0]));
+   switch (id)
+   {
+      case RETRO_SENSOR_GYROSCOPE_X: *value =  ps[0]; return true;
+      case RETRO_SENSOR_GYROSCOPE_Y: *value = -ps[2]; return true;
+      default:                       *value =  ps[1]; return true;
    }
 }
 
@@ -779,5 +970,7 @@ pad_connection_interface_t pad_connection_switch_pro = {
    NULL,  /* joypad */
    hidpad_switch_pro_set_player,
    hidpad_switch_pro_view,
-   hidpad_switch_pro_idle
+   hidpad_switch_pro_idle,
+   hidpad_switch_pro_set_sensor,
+   hidpad_switch_pro_sensor
 };
