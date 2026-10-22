@@ -1724,7 +1724,12 @@ jobs:
           # the frame still lent; otherwise, or under a blended overlay,
           # the copy turns it and nothing is lent. The menu is shown
           # unturned, the plane is left unturned, and a screenshot reads
-          # the frame back as it is shown.
+          # the frame back as it is shown. Without vsync, commits do not
+          # wait: one per vblank, none refused, a frame that comes before
+          # the last is on screen written over, the page written next
+          # never the one on screen or on its way; a resize, the menu, a
+          # mode switch and the free wait for the flip first, and vsync
+          # turned back on waits again.
           make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
              timeout 60 ./drm_surface_lifetime_test

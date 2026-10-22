@@ -23,6 +23,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/mman.h>
+#include <poll.h>
 
 #include <compat/strl.h>
 #include <file/file_path.h>
@@ -113,10 +114,15 @@ struct drm_surface
     * CPU, hw_rot made by the plane */
    unsigned rot;
    unsigned hw_rot;
-   bool flip_page;
+   /* The page the next frame is written into */
+   unsigned flip_page;
    /* A page went to the core to render into */
    bool lent;
 };
+
+/* What the next commit of @surface may write into: not the page on
+ * screen, nor one a flip is still taking there */
+static unsigned drm_next_page(struct drm_surface *surface);
 
 struct drm_struct
 {
@@ -146,8 +152,16 @@ struct drm_struct
    uint32_t rot_prop;
    uint32_t rot_plane;
    unsigned rot_turns;
+   /* A page a commit that did not wait is taking to the screen */
+   struct drm_page *pending;
+   /* That commit also takes the overlay's back page up */
+   bool pending_ov;
+   drmEventContext evctx;
    /* Flips are atomic commits; legacy plane updates without them */
    bool atomic;
+   /* Without vsync: a flip does not wait for the one before, and a
+    * frame that comes before it is done is not shown */
+   bool nonblock;
 } drm = { -1 };
 
 #ifdef HAVE_OVERLAY
@@ -252,6 +266,68 @@ struct drm_video
 
 };
 
+#ifdef HAVE_OVERLAY
+static void drm_overlay_flipped(struct drm_video *v);
+#endif
+
+static void drm_flip_handler(int fd, unsigned frame, unsigned sec,
+      unsigned usec, void *data)
+{
+   struct drm_page *page = drm.pending;
+   (void)fd; (void)frame; (void)sec; (void)usec; (void)data;
+   if (!page)
+      return;
+   drm.pending                 = NULL;
+   page->surface->current_page = page;
+#ifdef HAVE_OVERLAY
+   if (drm.pending_ov)
+      drm_overlay_flipped(page->drmvars);
+#endif
+   drm.pending_ov              = false;
+}
+
+/* Takes the event of a flip done, waiting up to @timeout ms (-1: until
+ * it comes); true when no flip is left on its way */
+static bool drm_flip_drain(int timeout)
+{
+   struct pollfd pfd;
+
+   if (!drm.pending)
+      return true;
+   pfd.fd      = drm.fd;
+   pfd.events  = POLLIN;
+   pfd.revents = 0;
+   if (poll(&pfd, 1, timeout) > 0 && (pfd.revents & POLLIN))
+   {
+      drm.evctx.version           = 2;
+      drm.evctx.page_flip_handler = drm_flip_handler;
+      drmHandleEvent(drm.fd, &drm.evctx);
+   }
+   return !drm.pending;
+}
+
+/* Before anything that would change what a flip on its way reads: a
+ * vblank or two at most, so a flip that never reports is let go */
+static void drm_flip_wait(void)
+{
+   int i;
+   for (i = 0; i < 10 && !drm_flip_drain(100); i++) { }
+   if (drm.pending)
+   {
+      RARCH_WARN("[DRM] A flip never reported done.\n");
+      drm_flip_handler(drm.fd, 0, 0, 0, NULL);
+   }
+}
+
+static int drm_set_plane(uint32_t plane, uint32_t crtc, uint32_t fb,
+      uint32_t flags, int32_t cx, int32_t cy, uint32_t cw, uint32_t ch,
+      uint32_t sx, uint32_t sy, uint32_t sw, uint32_t sh)
+{
+   drm_flip_wait();
+   return drmModeSetPlane(drm.fd, plane, crtc, fb, flags, cx, cy, cw, ch,
+         sx, sy, sw, sh);
+}
+
 /* Some prototypes for later use */
 
 static int modeset_create_dumbfb(int fd,
@@ -264,8 +340,9 @@ static void deinit_drm(void)
 {
    if (drm.fd < 0)
       return;
+   drm_flip_wait();
    if (drm.plane_id)
-      drmModeSetPlane(drm.fd, drm.plane_id, 0, 0, 0, 0, 0, 0, 0,
+      drm_set_plane(drm.plane_id, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0);
    /* The next to use the plane finds it unturned */
    if (drm.rot_prop)
@@ -317,6 +394,8 @@ static void drm_surface_free(void *data, struct drm_surface **sp)
 
    if (!sp || !(surface = *sp))
       return;
+   if (drm.pending && drm.pending->surface == surface)
+      drm_flip_wait();
 
    for (i = 0; i < surface->numpages; i++)
    {
@@ -435,9 +514,20 @@ static void drm_page_flip(struct drm_surface *surface)
                VIDEO_SCALE_H(surface->src_dims) << 16))
          RARCH_ERR("[DRM] Failed to flip the plane.\n");
       surface->current_page = &surface->pages[surface->flip_page];
-      surface->flip_page    = !(surface->flip_page);
+      surface->flip_page    = drm_next_page(surface);
       return;
    }
+
+   /* Without vsync, a frame that comes while the last is still on its
+    * way is not shown: the next is written over it. With vsync, the
+    * commit waits for the vblank, and for a flip on its way first. */
+   if (drm.nonblock)
+   {
+      if (!drm_flip_drain(0))
+         return;
+   }
+   else
+      drm_flip_wait();
 
    if (req)
       drmModeAtomicSetCursor(req, 0);
@@ -465,6 +555,24 @@ static void drm_page_flip(struct drm_surface *surface)
     * pageflip is complete. If you don't want -12 errors
     * (ENOMEM), namely "Cannot allocate memory", then
     * you must drain the event queue of that fd. */
+   if (drm.nonblock)
+   {
+      if (drmModeAtomicCommit(drm.fd, req,
+               DRM_MODE_ATOMIC_NONBLOCK | DRM_MODE_PAGE_FLIP_EVENT,
+               NULL) < 0)
+      {
+         /* Not taken: the page is written over by the next frame */
+         RARCH_ERR("[DRM] Failed to commit for pageflip.\n");
+         return;
+      }
+      drm.pending        = &surface->pages[surface->flip_page];
+#ifdef HAVE_OVERLAY
+      drm.pending_ov     = v && v->ov.pending;
+#endif
+      surface->flip_page = drm_next_page(surface);
+      return;
+   }
+
    if (drmModeAtomicCommit(drm.fd, req, 0, NULL) < 0)
    {
       RARCH_ERR("[DRM] Failed to commit for pageflip.\n");
@@ -474,7 +582,21 @@ static void drm_page_flip(struct drm_surface *surface)
    drm_overlay_flipped(v);
 #endif
    surface->current_page = &surface->pages[surface->flip_page];
-   surface->flip_page    = !(surface->flip_page);
+   surface->flip_page    = drm_next_page(surface);
+}
+
+static unsigned drm_next_page(struct drm_surface *surface)
+{
+   unsigned i;
+   for (;;)
+   {
+      for (i = 0; i < surface->numpages; i++)
+         if (     &surface->pages[i] != surface->current_page
+               && &surface->pages[i] != drm.pending)
+            return i;
+      /* Two pages, one shown and one on its way */
+      drm_flip_wait();
+   }
 }
 
 /* Where output row @oy of @w x @h pixels turned @rot quarter turns
@@ -874,7 +996,7 @@ static bool drm_plane_setup(struct drm_surface *surface)
 
    /* We have to set a buffer for the plane, whatever buffer we want,
     * but we must set a buffer so the plane starts reading from it now. */
-   if (drmModeSetPlane(drm.fd, drm.plane_id, drm.crtc_id,
+   if (drm_set_plane(drm.plane_id, drm.crtc_id,
             surface->pages[surface->flip_page].buf.fb_id,
             plane_flags, plane_x, plane_y, plane_w, plane_h,
             src_x<<16, src_y<<16, src_w<<16, src_h<<16))
@@ -882,6 +1004,8 @@ static bool drm_plane_setup(struct drm_surface *surface)
       RARCH_ERR("[DRM] Failed to enable plane.\n");
       return false;
    }
+   surface->current_page = &surface->pages[surface->flip_page];
+   surface->flip_page    = drm_next_page(surface);
 
    RARCH_DBG("[DRM] src_w %d, src_h %d, plane_w %d, plane_h %d\n",
          src_w, src_h, plane_w, plane_h);
@@ -1198,7 +1322,7 @@ static uint32_t drm_overlay_find_plane(void)
 static void drm_overlay_hide(struct drm_overlay *ov)
 {
    if (ov->mode == DRM_OVERLAY_PLANE && ov->shown)
-      drmModeSetPlane(drm.fd, ov->plane_id, 0, 0, 0, 0, 0, 0, 0,
+      drm_set_plane(ov->plane_id, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0);
    ov->shown   = false;
    ov->pending = false;
@@ -1219,6 +1343,8 @@ static void drm_overlay_free_images(struct drm_overlay *ov)
 
 static void drm_overlay_free(struct drm_overlay *ov)
 {
+   if (drm.pending_ov)
+      drm_flip_wait();
    drm_overlay_hide(ov);
    modeset_destroy_dumbfb(&ov->page[0]);
    modeset_destroy_dumbfb(&ov->page[1]);
@@ -1611,7 +1737,11 @@ static void drm_overlay_prepare(struct drm_video *v, struct drm_surface *frame)
       ov->layer_dirty = false;
       if (ov->mode == DRM_OVERLAY_PLANE && ov->page[ov->back].map)
       {
-         struct modeset_buf *pg = &ov->page[ov->back];
+         struct modeset_buf *pg;
+         /* The back page may be on its way to the screen */
+         if (drm.pending_ov)
+            drm_flip_wait();
+         pg = &ov->page[ov->back];
          for (y = 0; y < ov->lh; y++)
             memcpy(pg->map + (size_t)y * pg->stride,
                   ov->layer + (size_t)y * ov->lw, (size_t)ov->lw * 4);
@@ -1623,7 +1753,7 @@ static void drm_overlay_prepare(struct drm_video *v, struct drm_surface *frame)
     * or on their own without atomic commits */
    if (     ov->mode == DRM_OVERLAY_PLANE && ov->pending
          && (!ov->shown || !drm.atomic)
-         && !drmModeSetPlane(drm.fd, ov->plane_id, drm.crtc_id,
+         && !drm_set_plane(ov->plane_id, drm.crtc_id,
                ov->page[ov->back].fb_id, 0, ov->lx, ov->ly, ov->lw, ov->lh,
                0, 0, ov->lw << 16, ov->lh << 16))
    {
@@ -1854,10 +1984,10 @@ static bool drm_views_frame(struct drm_video *v, const void *frame,
          info->video_smooth ? SCALER_TYPE_BILINEAR : SCALER_TYPE_POINT,
          scale, cdims, (uint32_t*)page->buf.map, page->buf.stride / 4,
          layout->offscreen ? v->views_canvas : NULL);
+   /* Under the menu the page is not shown: the next is written over it,
+    * and it goes up when the menu closes */
    if (!v->menu_active)
       drm_page_flip(v->views_surface);
-   else
-      v->views_surface->flip_page = !v->views_surface->flip_page;
    return true;
 }
 
@@ -1983,7 +2113,7 @@ static void drm_set_texture_enable(void *data, bool state, bool full_screen)
       /* With nothing to show, the plane goes off before the menu's
        * buffers do */
       if (!s || !drm_plane_setup(s))
-         drmModeSetPlane(drm.fd, drm.plane_id, 0, 0, 0, 0, 0, 0, 0,
+         drm_set_plane(drm.plane_id, 0, 0, 0, 0, 0, 0, 0,
                0, 0, 0, 0);
       /* We free the menu surface buffers */
       drm_surface_free(_drmvars, &_drmvars->menu_surface);
@@ -2156,7 +2286,7 @@ static void drm_set_video_mode(void *data, unsigned dims, bool fullscreen)
          && m->clock == drm.mode.clock && m->vrefresh == drm.mode.vrefresh)
       return;
 
-   drmModeSetPlane(drm.fd, drm.plane_id, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+   drm_set_plane(drm.plane_id, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 #ifdef HAVE_OVERLAY
    drm_overlay_hide(&v->ov);
    v->ov.geom_dirty = true;
@@ -2171,7 +2301,16 @@ static void drm_set_video_mode(void *data, unsigned dims, bool fullscreen)
       drm_plane_setup(s);
 }
 
-static void drm_set_nonblock_state(void *a, bool b, bool c, unsigned d) { }
+/* Atomic commits only: a legacy plane update always waits */
+static void drm_set_nonblock_state(void *data, bool toggle,
+      bool adaptive_vsync_enabled, unsigned swap_interval)
+{
+   (void)data; (void)adaptive_vsync_enabled; (void)swap_interval;
+   if (drm.nonblock == (toggle && drm.atomic))
+      return;
+   drm.nonblock = toggle && drm.atomic;
+   RARCH_LOG("[DRM] Vsync %s.\n", drm.nonblock ? "off" : "on");
+}
 static bool drm_alive(void *data) { return true; }
 static bool drm_focus(void *data) { return true; }
 
@@ -2370,7 +2509,7 @@ static void drm_gfx_free(void *data)
 #endif
    /* Off before the buffers it scans out go */
    if (drm.fd >= 0 && drm.plane_id)
-      drmModeSetPlane(drm.fd, drm.plane_id, 0, 0, 0, 0, 0, 0, 0,
+      drm_set_plane(drm.plane_id, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0);
    if (_drmvars->main_surface && _drmvars->main_surface->lent)
       video_driver_cached_frame_retire();

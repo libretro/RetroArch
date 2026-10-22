@@ -185,11 +185,16 @@ static uint32_t ov_w, ov_h;
 static uint32_t plane_sw, plane_sh;
 static unsigned ov_blanks, ov_setplanes;
 
+static uint32_t flight_fb, flight_ov_fb;
+static int      flight;
+static unsigned flight_touched, busy, nonblock_commits;
 int drmModeRmFB(int fd, uint32_t fb)
 {
    (void)fd;
    if (fb >= MAX_OBJ || !fb_alive[fb])
       return -1;
+   if (flight && (fb == flight_fb || fb == flight_ov_fb))
+      flight_touched++;
    if (fb == plane_fb)
    {
       blanks++;
@@ -209,6 +214,8 @@ int drmModeSetPlane(int fd, uint32_t plane, uint32_t crtc, uint32_t fb,
       uint32_t sx, uint32_t sy, uint32_t sw, uint32_t sh)
 {
    (void)fd; (void)crtc; (void)flags; (void)sx; (void)sy;
+   if (flight)
+      flight_touched++;
    if (plane == PLANE2_ID)
    {
       ov_setplanes++;
@@ -408,11 +415,29 @@ int drmModeAtomicAddProperty(drmModeAtomicReqPtr r, uint32_t obj, uint32_t prop,
 static unsigned commits;
 int drmModeAtomicCommit(int fd, drmModeAtomicReqPtr r, uint32_t f, void *u)
 {
-   (void)fd; (void)r; (void)f; (void)u;
+   (void)fd; (void)r; (void)u;
    commits++;
+   if (flight)
+   {
+      busy++;
+      return -16;
+   }
    if (     !pending_fb || !fb_alive[pending_fb]
          || (pending_ov_fb && !fb_alive[pending_ov_fb]))
       return -1;
+   if (f & DRM_MODE_ATOMIC_NONBLOCK)
+   {
+      if (!(f & DRM_MODE_PAGE_FLIP_EVENT))
+         return -22;
+      nonblock_commits++;
+      flight       = 1;
+      flight_fb    = pending_fb;
+      flight_ov_fb = pending_ov_fb;
+      if (pending_ov_fb)
+         ov_commits++;
+      pending_ov_fb = 0;
+      return 0;
+   }
    plane_fb = pending_fb;
    if (pending_ov_fb)
    {
@@ -510,7 +535,35 @@ int drmModeSetCrtc(int fd, uint32_t c, uint32_t b, uint32_t x, uint32_t y,
       crtc_mode = *m;
    return 0;
 }
-int drmHandleEvent(int fd, drmEventContextPtr ev) { (void)fd; (void)ev; return 0; }
+/* A commit that does not wait: on screen at the next vblank(), its
+ * event read after that. Anything that would touch the plane or its
+ * pages before then is counted. */
+static int      flight_done;
+static void vblank(void) { if (flight) flight_done = 1; }
+int __wrap_poll(struct pollfd *fds, nfds_t n, int timeout)
+{
+   if (n != 1 || fds[0].fd != FAKE_FD)
+      return 0;
+   /* A wait sees the vblank come */
+   if (flight && timeout)
+      flight_done = 1;
+   fds[0].revents = (flight && flight_done) ? POLLIN : 0;
+   return fds[0].revents ? 1 : 0;
+}
+int drmHandleEvent(int fd, drmEventContextPtr ev)
+{
+   (void)fd;
+   if (!flight || !flight_done)
+      return 0;
+   plane_fb = flight_fb;
+   if (flight_ov_fb)
+      ov_fb = flight_ov_fb;
+   flight = flight_done = 0;
+   flight_fb = flight_ov_fb = 0;
+   if (ev && ev->page_flip_handler)
+      ev->page_flip_handler(fd, 0, 0, 0, NULL);
+   return 0;
+}
 
 static void set_mode(drmModeModeInfo *m, unsigned w, unsigned h, unsigned hz)
 {
@@ -1284,6 +1337,78 @@ int main(void)
    CHECK(fds_open == 0 && !count(dumb_alive), "and leaves nothing");
    if (failures == before)
       printf("   ok   the frame turned by the plane, or by the copy; read back as shown\n");
+   before = failures;
+
+   /* Without vsync: commits that do not wait, a frame that comes before
+    * the last is on screen not shown, and the page written next never
+    * the one on screen nor the one on its way there */
+   v = (struct drm_video*)drm_init(&info);
+   if (v)
+   {
+      unsigned f, c0, shown = 0, clean = 1, last = 0;
+      pattern(64, 32);
+      core_frame(v, 64, 32);
+      drm_set_nonblock_state(v, true, false, 0);
+      CHECK(drm.nonblock, "vsync off");
+      c0 = commits;
+      for (f = 0; f < 90; f++)
+      {
+         struct drm_surface *s = v->main_surface;
+         uint32_t next;
+         frame_px[0] = f;
+         core_frame(v, 64, 32);
+         next = s->pages[s->flip_page].buf.fb_id;
+         if (next == plane_fb || (flight && next == flight_fb))
+            clean = 0;
+         if (f % 3 == 2)
+            vblank();
+         if (plane_fb != last)
+         {
+            shown++;
+            last = plane_fb;
+         }
+      }
+      CHECK(clean, "the page written next was on screen or on its way");
+      CHECK(!busy && nonblock_commits == commits - c0
+            && nonblock_commits >= 29 && nonblock_commits <= 31,
+            "one commit per vblank, none refused (%u commits, %u nonblocking,"
+            " %u busy)", commits - c0, nonblock_commits, busy);
+      CHECK(shown >= 28, "the screen follows the frames (%u flips)", shown);
+      /* What changes the plane or its pages waits for the flip first */
+      core_frame(v, 64, 32);
+      CHECK(flight, "a flip on its way");
+      core_frame(v, 48, 32);
+      menu_open_close(v);
+      core_frame(v, 64, 32);
+      drm_set_video_mode(v, VIDEO_SCALE_PACK(1280, 720), true);
+      core_frame(v, 64, 32);
+      CHECK(!flight_touched && !busy && !blanks,
+            "nothing touched a page or the plane under a flip (%u, %u busy,"
+            " %u blanks)", flight_touched, busy, blanks);
+      /* Vsync back on: the flip on its way is waited for */
+      drm_set_nonblock_state(v, false, false, 0);
+      c0 = nonblock_commits;
+      core_frame(v, 64, 32);
+      CHECK(!flight && !busy && nonblock_commits == c0
+            && plane_fb == v->main_surface->current_page->buf.fb_id,
+            "with vsync, each frame waits for its vblank");
+      drm_set_nonblock_state(v, true, false, 0);
+      core_frame(v, 64, 32);
+      drm_gfx_free(v);
+      CHECK(!flight_touched && !flight, "the free waits for the flip");
+   }
+   CHECK(fds_open == 0 && !count(dumb_alive), "and leaves nothing");
+   atomic_ok = 0;
+   v = (struct drm_video*)drm_init(&info);
+   if (v)
+   {
+      drm_set_nonblock_state(v, true, false, 0);
+      CHECK(!drm.nonblock, "a plane update always waits: vsync stays on");
+      drm_gfx_free(v);
+   }
+   atomic_ok = 1;
+   if (failures == before)
+      printf("   ok   without vsync, flips do not wait and never write a page in use\n");
 
 
    if (failures)

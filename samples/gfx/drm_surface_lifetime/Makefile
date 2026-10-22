@@ -5,7 +5,8 @@
 # own for the plane; padded rows, lent pages and dupes; the menu in
 # RGUI's own format, lent, and resized; the input overlay on a plane of
 # its own, or blended into the frame; the frame turned by the plane, or
-# by the copy, and read back as it is shown.
+# by the copy, and read back as it is shown; without vsync, flips that
+# do not wait and never write a page in use.
 
 TARGET    := drm_surface_lifetime_test
 REPO_ROOT := ../../..
@@ -22,7 +23,7 @@ SOURCES   := drm_surface_lifetime_test.c \
              $(LRC)/gfx/scaler/pixconv.c
 CFLAGS    += -Wall -std=gnu99 -g1 -O0 -I$(REPO_ROOT) -I$(LRC)/include \
              -DHAVE_THREADS -DHAVE_OVERLAY $(shell pkg-config --cflags libdrm)
-LDFLAGS   += -lpthread -lm -Wl,--wrap=mmap,--wrap=munmap,--wrap=open,--wrap=close
+LDFLAGS   += -lpthread -lm -Wl,--wrap=mmap,--wrap=munmap,--wrap=open,--wrap=close,--wrap=poll
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
