@@ -48,6 +48,7 @@
 #include <retro_spsc.h>
 
 #include "android_lifecycle.h"
+#include "../../input/drivers/android_focus.h"
 
 /* struct android_app below embeds retro_atomic_int_t, which is
  * atomic_int under C and std::atomic<int> under C++. If this header were
@@ -96,6 +97,11 @@ typedef struct android_input_fields
    float axes[ANDROID_JOYSTICK_AXES]; /* a move's */
 } android_input_fields_t;
 
+/* The least number of keys and stick moves the second display's ring
+ * holds; a down or a move leaves room for this many ups */
+#define ANDROID_SECOND_INPUTS    512
+#define ANDROID_SECOND_INPUT_UPS 32
+
 /* A touch on the second display, UI thread to the input poll */
 typedef struct android_second_touch
 {
@@ -120,6 +126,9 @@ struct android_second_display
 {
    /* android_second_touch_t records, UI thread to app thread */
    retro_spsc_t touches;
+   /* android_input_fields_t records: the keys and stick moves its
+    * window received, UI thread to app thread */
+   retro_spsc_t inputs;
    /* The newest surface not yet taken, struct android_second_surface *;
     * the taker owns it. UI thread in, video thread out. */
    retro_atomic_ptr_t surface;
@@ -205,9 +214,12 @@ struct android_app
    int destroy_from_framework;
 
    /*  Below are "private" implementation of RA code. */
-   /* Written by the app thread on APP_CMD_GAINED_FOCUS/LOST_FOCUS, read
-    * by the video thread in dispserv_android.c. */
+   /* Written by the app thread when the focus of its two windows
+    * changes (android_focus.h), read by the video thread in
+    * dispserv_android.c. */
    retro_atomic_int_t unfocused;
+   /* App thread only */
+   android_focus_t focus;
    unsigned accelerometer_event_rate;
    unsigned gyroscope_event_rate;
    ASensorManager *sensorManager;
@@ -419,7 +431,14 @@ enum
     * it; the thread that lets go acknowledges, and the UI thread waits
     * for that.
     */
-   APP_CMD_SECOND_TERM_WINDOW
+   APP_CMD_SECOND_TERM_WINDOW,
+
+   /**
+    * Commands from the second display's controller, no ticket: its
+    * window gained focus, or lost it or went.
+    */
+   APP_CMD_SECOND_GAINED_FOCUS,
+   APP_CMD_SECOND_LOST_FOCUS
 };
 
 /* The JNI exception guard and call wrappers live in

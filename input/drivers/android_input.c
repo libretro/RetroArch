@@ -795,6 +795,153 @@ void android_input_flush_pending_state(void)
    android_input_release_state_ack(g_android);
 }
 
+/* RetroArch gained the focus (android_focus.h) */
+static void android_input_focus_gained(struct android_app *android_app)
+{
+   bool sensors_allowed         = input_config_get_sensors_enable();
+   /* Re-enable sensors that were disabled on focus loss */
+   bool enable_accelerometer   = (android_app->sensor_state_mask &
+         (UINT64_C(1) << RETRO_SENSOR_ACCELEROMETER_DISABLE));
+   bool enable_gyroscope       = (android_app->sensor_state_mask &
+         (UINT64_C(1) << RETRO_SENSOR_GYROSCOPE_DISABLE));
+
+   /* On first focus (no sensor state yet), enable if setting is on.
+    * This handles shader sensor access without going through cores.
+    * Default to enabling if settings aren't loaded yet (first launch). */
+   if (!enable_accelerometer &&
+       !(android_app->sensor_state_mask & (UINT64_C(1) << RETRO_SENSOR_ACCELEROMETER_ENABLE)))
+   {
+      if (sensors_allowed)
+         enable_accelerometer = true;
+   }
+   if (!enable_gyroscope &&
+       !(android_app->sensor_state_mask & (UINT64_C(1) << RETRO_SENSOR_GYROSCOPE_ENABLE)))
+   {
+      if (sensors_allowed)
+         enable_gyroscope = true;
+   }
+
+   if (!sensors_allowed)
+   {
+      enable_accelerometer = false;
+      enable_gyroscope     = false;
+   }
+
+   runloop_set_platform_paused(false);
+   video_driver_unset_stub_frame();
+
+   /* Try to enable sensors via input driver. If that fails before the
+    * input driver has initialized, enable directly via sensor API. */
+   if (enable_accelerometer)
+   {
+      if (!input_set_sensor_state(0,
+            RETRO_SENSOR_ACCELEROMETER_ENABLE,
+            android_app->accelerometer_event_rate) &&
+          !android_app->input_alive)
+      {
+         /* Input driver not ready — enable sensor directly */
+         unsigned rate = android_app->accelerometer_event_rate;
+         if (rate == 0)
+            rate = DEFAULT_ASENSOR_EVENT_RATE;
+         android_input_enable_sensor_manager(android_app);
+         if (android_enable_sensor(android_app,
+               android_app->accelerometerSensor, rate,
+               RETRO_SENSOR_ACCELEROMETER_ENABLE,
+               RETRO_SENSOR_ACCELEROMETER_DISABLE))
+            android_app->accelerometer_event_rate = rate;
+      }
+   }
+
+   if (enable_gyroscope)
+   {
+      if (!input_set_sensor_state(0,
+            RETRO_SENSOR_GYROSCOPE_ENABLE,
+            android_app->gyroscope_event_rate) &&
+          !android_app->input_alive)
+      {
+         /* Input driver not ready — enable sensor directly */
+         unsigned rate = android_app->gyroscope_event_rate;
+         if (rate == 0)
+            rate = DEFAULT_ASENSOR_EVENT_RATE;
+         android_input_enable_sensor_manager(android_app);
+         if (android_enable_sensor(android_app,
+               android_app->gyroscopeSensor, rate,
+               RETRO_SENSOR_GYROSCOPE_ENABLE,
+               RETRO_SENSOR_GYROSCOPE_DISABLE))
+            android_app->gyroscope_event_rate = rate;
+      }
+   }
+
+   /* Start gravity-based orientation detection (once per app launch only).
+    * Samples accelerometer data over ~30 frames to determine which axis
+    * gravity is on, detecting both display rotation and sensor IC
+    * misalignment automatically. */
+   if (!android_app->gravity_calibrated)
+   {
+      android_app->gravity_accum_x      = 0.0f;
+      android_app->gravity_accum_y      = 0.0f;
+      android_app->gravity_sample_count = 0;
+   }
+   else
+   {
+      /* Gravity already calibrated (not first launch),
+       * start rest position capture immediately */
+      input_sensor_start_rest_capture();
+   }
+   /* No waiter: onWindowFocusChanged() posts the command and
+    * returns without blocking, so the lock and broadcast only
+    * guarded this one scalar. The field is atomic now. */
+   retro_atomic_store_release_int(&android_app->unfocused, 0);
+}
+
+/* RetroArch lost the focus */
+static void android_input_focus_lost(struct android_app *android_app)
+{
+   bool disable_accelerometer  = (android_app->sensor_state_mask &
+         (UINT64_C(1) << RETRO_SENSOR_ACCELEROMETER_ENABLE)) &&
+               android_app->accelerometerSensor;
+   bool disable_gyroscope      = (android_app->sensor_state_mask &
+         (UINT64_C(1) << RETRO_SENSOR_GYROSCOPE_ENABLE)) &&
+               android_app->gyroscopeSensor;
+
+   android_keypress_vibrate_pending = false;
+   runloop_set_platform_paused(true);
+   video_driver_set_stub_frame();
+
+   /* Avoid draining battery while app is not being used. */
+   if (disable_accelerometer)
+      input_set_sensor_state(0,
+            RETRO_SENSOR_ACCELEROMETER_DISABLE,
+            android_app->accelerometer_event_rate);
+
+   if (disable_gyroscope)
+      input_set_sensor_state(0,
+            RETRO_SENSOR_GYROSCOPE_DISABLE,
+            android_app->gyroscope_event_rate);
+
+   /* No waiter: onWindowFocusChanged() posts the command and
+    * returns without blocking, so the lock and broadcast only
+    * guarded this one scalar. The field is atomic now. */
+   retro_atomic_store_release_int(&android_app->unfocused, 1);
+}
+
+/* After a poll's rings and commands: acted on once, and only when the
+ * focus of the two windows changed */
+static void android_input_focus_settle(struct android_app *android_app)
+{
+   switch (android_focus_settle(&android_app->focus))
+   {
+      case ANDROID_FOCUS_GAIN:
+         android_input_focus_gained(android_app);
+         break;
+      case ANDROID_FOCUS_LOSE:
+         android_input_focus_lost(android_app);
+         break;
+      default:
+         break;
+   }
+}
+
 static void android_input_poll_main_cmd(void)
 {
    int8_t cmd;
@@ -969,131 +1116,10 @@ static void android_input_poll_main_cmd(void)
       }
 
       case APP_CMD_GAINED_FOCUS:
-         {
-            bool sensors_allowed         = input_config_get_sensors_enable();
-            /* Re-enable sensors that were disabled on focus loss */
-            bool enable_accelerometer   = (android_app->sensor_state_mask &
-                  (UINT64_C(1) << RETRO_SENSOR_ACCELEROMETER_DISABLE));
-            bool enable_gyroscope       = (android_app->sensor_state_mask &
-                  (UINT64_C(1) << RETRO_SENSOR_GYROSCOPE_DISABLE));
-
-            /* On first focus (no sensor state yet), enable if setting is on.
-             * This handles shader sensor access without going through cores.
-             * Default to enabling if settings aren't loaded yet (first launch). */
-            if (!enable_accelerometer &&
-                !(android_app->sensor_state_mask & (UINT64_C(1) << RETRO_SENSOR_ACCELEROMETER_ENABLE)))
-            {
-               if (sensors_allowed)
-                  enable_accelerometer = true;
-            }
-            if (!enable_gyroscope &&
-                !(android_app->sensor_state_mask & (UINT64_C(1) << RETRO_SENSOR_GYROSCOPE_ENABLE)))
-            {
-               if (sensors_allowed)
-                  enable_gyroscope = true;
-            }
-
-            if (!sensors_allowed)
-            {
-               enable_accelerometer = false;
-               enable_gyroscope     = false;
-            }
-
-            runloop_set_platform_paused(false);
-            video_driver_unset_stub_frame();
-
-            /* Try to enable sensors via input driver. If that fails before the
-             * input driver has initialized, enable directly via sensor API. */
-            if (enable_accelerometer)
-            {
-               if (!input_set_sensor_state(0,
-                     RETRO_SENSOR_ACCELEROMETER_ENABLE,
-                     android_app->accelerometer_event_rate) &&
-                   !android_app->input_alive)
-               {
-                  /* Input driver not ready — enable sensor directly */
-                  unsigned rate = android_app->accelerometer_event_rate;
-                  if (rate == 0)
-                     rate = DEFAULT_ASENSOR_EVENT_RATE;
-                  android_input_enable_sensor_manager(android_app);
-                  if (android_enable_sensor(android_app,
-                        android_app->accelerometerSensor, rate,
-                        RETRO_SENSOR_ACCELEROMETER_ENABLE,
-                        RETRO_SENSOR_ACCELEROMETER_DISABLE))
-                     android_app->accelerometer_event_rate = rate;
-               }
-            }
-
-            if (enable_gyroscope)
-            {
-               if (!input_set_sensor_state(0,
-                     RETRO_SENSOR_GYROSCOPE_ENABLE,
-                     android_app->gyroscope_event_rate) &&
-                   !android_app->input_alive)
-               {
-                  /* Input driver not ready — enable sensor directly */
-                  unsigned rate = android_app->gyroscope_event_rate;
-                  if (rate == 0)
-                     rate = DEFAULT_ASENSOR_EVENT_RATE;
-                  android_input_enable_sensor_manager(android_app);
-                  if (android_enable_sensor(android_app,
-                        android_app->gyroscopeSensor, rate,
-                        RETRO_SENSOR_GYROSCOPE_ENABLE,
-                        RETRO_SENSOR_GYROSCOPE_DISABLE))
-                     android_app->gyroscope_event_rate = rate;
-               }
-            }
-
-            /* Start gravity-based orientation detection (once per app launch only).
-             * Samples accelerometer data over ~30 frames to determine which axis
-             * gravity is on, detecting both display rotation and sensor IC
-             * misalignment automatically. */
-            if (!android_app->gravity_calibrated)
-            {
-               android_app->gravity_accum_x      = 0.0f;
-               android_app->gravity_accum_y      = 0.0f;
-               android_app->gravity_sample_count = 0;
-            }
-            else
-            {
-               /* Gravity already calibrated (not first launch),
-                * start rest position capture immediately */
-               input_sensor_start_rest_capture();
-            }
-         }
-         /* No waiter: onWindowFocusChanged() posts the command and
-          * returns without blocking, so the lock and broadcast only
-          * guarded this one scalar. The field is atomic now. */
-         retro_atomic_store_release_int(&android_app->unfocused, 0);
-         break;
       case APP_CMD_LOST_FOCUS:
-         android_keypress_vibrate_pending = false;
-         {
-            bool disable_accelerometer  = (android_app->sensor_state_mask &
-                  (UINT64_C(1) << RETRO_SENSOR_ACCELEROMETER_ENABLE)) &&
-                        android_app->accelerometerSensor;
-            bool disable_gyroscope      = (android_app->sensor_state_mask &
-                  (UINT64_C(1) << RETRO_SENSOR_GYROSCOPE_ENABLE)) &&
-                        android_app->gyroscopeSensor;
-
-            runloop_set_platform_paused(true);
-            video_driver_set_stub_frame();
-
-            /* Avoid draining battery while app is not being used. */
-            if (disable_accelerometer)
-               input_set_sensor_state(0,
-                     RETRO_SENSOR_ACCELEROMETER_DISABLE,
-                     android_app->accelerometer_event_rate);
-
-            if (disable_gyroscope)
-               input_set_sensor_state(0,
-                     RETRO_SENSOR_GYROSCOPE_DISABLE,
-                     android_app->gyroscope_event_rate);
-         }
-         /* No waiter: onWindowFocusChanged() posts the command and
-          * returns without blocking, so the lock and broadcast only
-          * guarded this one scalar. The field is atomic now. */
-         retro_atomic_store_release_int(&android_app->unfocused, 1);
+         android_focus_activity(&android_app->focus,
+               cmd == APP_CMD_GAINED_FOCUS,
+               (int64_t)cpu_features_get_time_usec());
          break;
 
       case APP_CMD_DESTROY:
@@ -1107,6 +1133,13 @@ static void android_input_poll_main_cmd(void)
 
       case APP_CMD_SECOND_TERM_WINDOW:
          android_second_display_retire(android_app);
+         break;
+
+      case APP_CMD_SECOND_GAINED_FOCUS:
+      case APP_CMD_SECOND_LOST_FOCUS:
+         android_focus_second(&android_app->focus,
+               cmd == APP_CMD_SECOND_GAINED_FOCUS,
+               (int64_t)cpu_features_get_time_usec());
          break;
    }
 }
@@ -1141,6 +1174,7 @@ static void android_input_poll_second_touches(android_input_t *android,
       /* Window 0 would map through the main viewport: a clear raced */
       if (!surface || !window || touch.generation != surface)
          continue;
+      android_focus_second_input(&android_app->focus);
       for (i = 0; i < count; i++)
          if (android->second_pointer_id[i] == touch.pointer_id)
             break;
@@ -2870,6 +2904,35 @@ static void android_input_poll_input_default(android_input_t *android)
    }
 }
 
+/* The keys and stick moves the second display's window received since
+ * the last poll, handled as the input queue's are */
+static void android_input_poll_second_inputs(android_input_t *android,
+      struct android_app *android_app)
+{
+   android_input_fields_t in;
+   retro_spsc_t *ring = &android_app->second_display.inputs;
+
+   while (retro_spsc_read_avail(ring) >= sizeof(in))
+   {
+      bool is_keyboard;
+      int port;
+      int handled = 1;
+
+      retro_spsc_read(ring, &in, sizeof(in));
+      port = android_input_resolve_port(android, android_app,
+            android_input_map_id(in.device_id), in.source, &is_keyboard);
+      if (in.type == AINPUT_EVENT_TYPE_KEY)
+         android_input_key_fields(port, is_keyboard, &in, &handled);
+      else
+         android_input_dpad_fields(android_app, port, in.axes,
+               engine_handle_dpad != engine_handle_dpad_default);
+      /* A canceled up comes as the focus leaves the window: not use */
+      if (     in.type != AINPUT_EVENT_TYPE_KEY
+            || !(in.flags & AKEY_EVENT_FLAG_CANCELED))
+         android_focus_second_input(&android_app->focus);
+   }
+}
+
 static void android_input_poll_user(android_input_t *android)
 {
    struct android_app *android_app = (struct android_app*)g_android;
@@ -3085,10 +3148,7 @@ static void android_input_poll(void *data)
 
    /* Report the pads the OS has removed since the last poll. */
    if (android && android_app)
-   {
       android_input_poll_removed(android, android_app);
-      android_input_poll_second_touches(android, android_app);
-   }
 
    /* Backgrounded (APP_CMD_PAUSE/STOP set RUNLOOP_FLAG_IDLE): there is
     * nothing to do until the OS delivers the next command, and the
@@ -3142,7 +3202,16 @@ static void android_input_poll(void *data)
    if (android_app && android_app->second_display.retire_due)
       android_second_display_retire(android_app);
 
+   /* After the looper: a ring write that woke it is settled now */
+   if (android && android_app)
+   {
+      android_input_poll_second_touches(android, android_app);
+      android_input_poll_second_inputs(android, android_app);
+   }
+
    android_input_poll_press_groups();
+
+   android_input_focus_settle(android_app);
 }
 
 /* Dismiss queued input from before the input driver exists. ALooper
@@ -3187,6 +3256,8 @@ bool android_run_events(void *data)
       default:
          break;
    }
+
+   android_input_focus_settle(android_app);
 
    /* Check if we are exiting. */
    if (android_app->destroyRequested != 0)

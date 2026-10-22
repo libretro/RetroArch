@@ -558,6 +558,16 @@ JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_SecondDisplayCon
       android_second_surface_term(android_app);
 }
 
+/* UI thread: an app thread asleep in its looper while paused reads the
+ * second display's rings only once woken */
+static void android_second_wake(struct android_app *android_app)
+{
+   ALooper *looper = (ALooper*)retro_atomic_load_acquire_ptr(
+         &android_app->looper_to_wake);
+   if (looper)
+      ALooper_wake(looper);
+}
+
 /* For each pointer of a touch on the second display. Downs and moves
  * keep room in the ring for every finger's up. */
 JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_SecondDisplayController_nativeTouch(
@@ -602,6 +612,78 @@ JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_SecondDisplayCon
    touch.down       = (down != JNI_FALSE);
    retro_spsc_write(&android_app->second_display.touches, &touch,
          sizeof(touch));
+   android_second_wake(android_app);
+}
+
+/* A down or a move keeps room in the ring for ups */
+static void android_second_input_write(struct android_app *android_app,
+      const android_input_fields_t *in, bool up)
+{
+   retro_spsc_t *ring = &android_app->second_display.inputs;
+   size_t need        = up ? sizeof(*in)
+      : (ANDROID_SECOND_INPUT_UPS + 1) * sizeof(*in);
+
+   if (retro_spsc_write_avail(ring) < need)
+      return;
+   retro_spsc_write(ring, in, sizeof(*in));
+   android_second_wake(android_app);
+}
+
+/* A key the second display's window received; @event_time is
+ * KeyEvent.getEventTime(), milliseconds */
+JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_SecondDisplayController_nativeKey(
+      JNIEnv *env, jclass clazz, jint device_id, jint source, jint action,
+      jint keycode, jint flags, jint meta_state, jlong event_time)
+{
+   android_input_fields_t key;
+   struct android_app *android_app = g_android_early;
+
+   if (!android_app)
+      return;
+   memset(&key, 0, sizeof(key));
+   key.event_time = (int64_t)event_time * 1000000;
+   key.type       = AINPUT_EVENT_TYPE_KEY;
+   key.device_id  = device_id;
+   key.source     = source;
+   key.action     = action;
+   key.keycode    = keycode;
+   key.flags      = flags;
+   key.meta_state = meta_state;
+   android_second_input_write(android_app, &key,
+         action == AKEY_EVENT_ACTION_UP);
+}
+
+/* A stick or hat move the second display's window received: the axes
+ * in ANDROID_JOYSTICK_AXES' order */
+JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_SecondDisplayController_nativeMotion(
+      JNIEnv *env, jclass clazz, jint device_id, jint source,
+      jfloatArray axes)
+{
+   android_input_fields_t move;
+   struct android_app *android_app = g_android_early;
+
+   if (     !android_app || !axes
+         || (*env)->GetArrayLength(env, axes) < ANDROID_JOYSTICK_AXES)
+      return;
+   memset(&move, 0, sizeof(move));
+   move.type      = AINPUT_EVENT_TYPE_MOTION;
+   move.device_id = device_id;
+   move.source    = source;
+   (*env)->GetFloatArrayRegion(env, axes, 0, ANDROID_JOYSTICK_AXES,
+         move.axes);
+   android_second_input_write(android_app, &move, false);
+}
+
+/* The second display's window gained or lost focus; Java also sends a
+ * loss when it dismisses it */
+JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_SecondDisplayController_nativeFocusChanged(
+      JNIEnv *env, jclass clazz, jboolean focused)
+{
+   struct android_app *android_app = g_android_early;
+
+   if (android_app)
+      android_app_write_cmd(android_app, focused != JNI_FALSE
+            ? APP_CMD_SECOND_GAINED_FOCUS : APP_CMD_SECOND_LOST_FOCUS);
 }
 
 /* Upper bound on how long a lifecycle callback will block waiting for the
@@ -686,6 +768,13 @@ static void android_app_free(struct android_app* android_app)
 
    sthread_join(android_app->thread);
 
+   {
+      ALooper *looper = (ALooper*)retro_atomic_exchange_ptr(
+            &android_app->looper_to_wake, NULL);
+      if (looper)
+         ALooper_release(looper);
+   }
+
    close(android_app->msgread);
    close(android_app->msgwrite);
    android_lifecycle_free(&android_app->lc);
@@ -697,6 +786,7 @@ static void android_app_free(struct android_app* android_app)
          android_second_surface_free(node);
    }
    retro_spsc_free(&android_app->second_display.touches);
+   retro_spsc_free(&android_app->second_display.inputs);
 
    /* A re-created activity's create may have replaced it already */
    if (g_android_early == android_app)
@@ -970,10 +1060,12 @@ static struct android_app* android_app_create(ANativeActivity* activity,
    android_app->msgread  = msgpipe[0];
    android_app->msgwrite = msgpipe[1];
 
-   /* A ring that cannot be made drops every touch on the second
-    * display; nothing else depends on it */
+   /* A ring that cannot be made drops the second display's touches or
+    * keys; nothing else depends on them */
    retro_spsc_init(&android_app->second_display.touches,
          64 * sizeof(android_second_touch_t));
+   retro_spsc_init(&android_app->second_display.inputs,
+         ANDROID_SECOND_INPUTS * sizeof(android_input_fields_t));
 
    android_app->thread   = sthread_create(android_app_entry, android_app);
    /* NULL-check sthread_create: on OOM the thread won't be
@@ -988,6 +1080,7 @@ static struct android_app* android_app_create(ANativeActivity* activity,
       if (android_app->savedState)
          free(android_app->savedState);
       retro_spsc_free(&android_app->second_display.touches);
+      retro_spsc_free(&android_app->second_display.inputs);
       android_lifecycle_free(&android_app->lc);
       free(android_app);
       g_android_early = NULL;
@@ -1023,6 +1116,7 @@ static struct android_app* android_app_create(ANativeActivity* activity,
       if (android_app->savedState)
          free(android_app->savedState);
       retro_spsc_free(&android_app->second_display.touches);
+      retro_spsc_free(&android_app->second_display.inputs);
       android_lifecycle_free(&android_app->lc);
       free(android_app);
       g_android_early = NULL;
@@ -3855,6 +3949,8 @@ static void frontend_unix_init(void *data)
    ALooper_addFd(looper, android_app->msgread, LOOPER_ID_MAIN,
          ALOOPER_EVENT_INPUT, NULL, NULL);
    android_app->looper = looper;
+   /* Held for the UI thread's wakes until android_app_free() */
+   ALooper_acquire(looper);
    retro_atomic_store_release_ptr(&android_app->looper_to_wake, looper);
    retro_atomic_thread_fence_seq_cst();
    android_lifecycle_set_flags(&android_app->lc, ANDROID_LC_RUNNING);
