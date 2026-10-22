@@ -50,23 +50,37 @@ void rvp9_set_hw_backend(const rvp9_hw_backend_t *backend)
 #endif
 }
 
-bool rvp9_hw_backend_open(const rvp9_hdr *header, unsigned slots,
+bool rvp9_hw_backend_open_color(const rvp9_hdr *header,
+      const video_color_metadata_t *color, unsigned slots,
       rvp9_hw_ops_t *ops, rvp9_hw_backend_t *backend)
 {
    const rvp9_hw_backend_t *factory = RVP9_BACKEND_GET();
-   if (!ops || !backend) return false;
-   memset(ops, 0, sizeof(*ops)); memset(backend, 0, sizeof(*backend));
-   if (!header || slots < 10 || slots > 32 || !factory || !factory->open || !factory->close)
+   bool opened;
+   if (!ops || !backend)
       return false;
-   if (!factory->open(factory->user, header, slots, ops)
-         || !ops->decoder || !ops->decode || !ops->output)
+   memset(ops, 0, sizeof(*ops));
+   memset(backend, 0, sizeof(*backend));
+   if (!header || slots < 10 || slots > 32 || !factory
+         || (!factory->open && !factory->open_color) || !factory->close)
+      return false;
+   opened = factory->open_color
+      ? factory->open_color(factory->user, header, color, slots, ops)
+      : factory->open(factory->user, header, slots, ops);
+   if (!opened || !ops->decoder || !ops->decode || !ops->output)
    {
-      if (ops->decoder) factory->close(ops);
+      if (ops->decoder)
+         factory->close(ops);
       memset(ops, 0, sizeof(*ops));
       return false;
    }
    *backend = *factory;
    return true;
+}
+
+bool rvp9_hw_backend_open(const rvp9_hdr *header, unsigned slots,
+      rvp9_hw_ops_t *ops, rvp9_hw_backend_t *backend)
+{
+   return rvp9_hw_backend_open_color(header, NULL, slots, ops, backend);
 }
 
 /* Tile columns decoded side by side at most; VP9 allows 64. */
