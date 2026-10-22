@@ -14,7 +14,9 @@ NATIVE_PROBE = native_probe
 FRAME_THREAD_SOURCES = ../../../libretro-common/queues/retro_spsc.c
 FRAME_THREAD_FLAGS = -pthread
 endif
-all: test$(EXE) session_test$(EXE) runtime_test$(EXE) submit_test$(EXE) pool_test$(EXE) export_test$(EXE) identity_test$(EXE) prime_device_test$(EXE) prime_format_test$(EXE) prime_surface_test$(EXE) prime_image_test$(EXE) prime_frame_test$(EXE) prime_submit_test$(EXE) frame_test$(EXE) lease_test$(EXE) resources_test$(EXE) abi-check $(NATIVE_PROBE)
+all: test$(EXE) session_test$(EXE) runtime_test$(EXE) submit_test$(EXE) pool_test$(EXE) export_test$(EXE) identity_test$(EXE) prime_device_test$(EXE) prime_format_test$(EXE) prime_surface_test$(EXE) prime_image_test$(EXE) prime_frame_test$(EXE) prime_submit_test$(EXE) frame_test$(EXE) lease_test$(EXE) resources_test$(EXE) cache_test$(EXE) abi-check $(NATIVE_PROBE)
+cache_test$(EXE): cache_test.c resources_test.c prime_submit_test.c prime_frame_test.c export_test.c ../../../gfx/common/vaapi_hevc_vulkan_cache.c ../../../gfx/common/vaapi_hevc_vulkan_cache.h ../../../gfx/common/vaapi_hevc_vulkan_lease.c ../../../gfx/common/vaapi_hevc_vulkan_lease.h ../../../gfx/common/vaapi_frame.c ../../../gfx/common/vaapi_frame.h ../../../gfx/common/vaapi_hevc_vulkan_frame.c ../../../gfx/common/vaapi_hevc_vulkan_frame.h ../../../gfx/common/vaapi_hevc_vulkan_submit.c ../../../gfx/common/vaapi_hevc_vulkan_submit.h ../../../gfx/common/vaapi_hevc_vulkan_resources.c ../../../gfx/common/vaapi_hevc_vulkan_resources.h ../../../gfx/common/vulkan_prime_image.c ../../../gfx/common/vulkan_prime_image.h ../../../libretro-common/formats/image/image_yuv_blit.c ../../../gfx/drivers/vulkan_shaders/yuv_image_to_rgba8888.comp.inc ../../../gfx/drivers/vulkan_shaders/yuv_image_to_rgba16f.comp.inc
+	$(CC) $(CFLAGS) cache_test.c ../../../gfx/common/vaapi_hevc_vulkan_resources.c ../../../gfx/common/vaapi_hevc_vulkan_lease.c ../../../gfx/common/vaapi_frame.c ../../../gfx/common/vulkan_prime_image.c ../../../gfx/common/vaapi_hevc_vulkan_frame.c ../../../gfx/common/vaapi_hevc_vulkan_submit.c ../../../libretro-common/formats/image/image_yuv_blit.c -o $@ $(LDFLAGS) -lm
 resources_test$(EXE): resources_test.c ../../../gfx/common/vaapi_hevc_vulkan_resources.c ../../../gfx/common/vaapi_hevc_vulkan_resources.h ../../../gfx/drivers/vulkan_shaders/yuv_image_to_rgba8888.comp.inc ../../../gfx/drivers/vulkan_shaders/yuv_image_to_rgba16f.comp.inc
 	$(CC) $(CFLAGS) resources_test.c ../../../gfx/common/vaapi_hevc_vulkan_resources.c -o $@ $(LDFLAGS)
 runtime_test$(EXE): runtime_test.c session_test.c submit_test.c ../../../gfx/common/vaapi_hevc_submit.c ../../../gfx/common/vaapi_hevc_submit.h ../../../gfx/common/vaapi_hevc_runtime.c ../../../gfx/common/vaapi_hevc_runtime.h ../../../gfx/common/vaapi_hevc_session.c ../../../gfx/common/vaapi_hevc_session.h
@@ -82,9 +84,10 @@ check: all
 	$(RUNNER) ./frame_test$(EXE)
 	$(RUNNER) ./lease_test$(EXE)
 	$(RUNNER) ./resources_test$(EXE)
+	$(RUNNER) ./cache_test$(EXE)
 ifneq ($(NATIVE_PROBE),)
 	./native_probe
 endif
 clean:
-	rm -f test test.exe session_test session_test.exe runtime_test runtime_test.exe submit_test submit_test.exe pool_test pool_test.exe export_test export_test.exe identity_test identity_test.exe prime_device_test prime_device_test.exe prime_format_test prime_format_test.exe prime_surface_test prime_surface_test.exe prime_image_test prime_image_test.exe prime_frame_test prime_frame_test.exe prime_submit_test prime_submit_test.exe frame_test frame_test.exe lease_test lease_test.exe resources_test resources_test.exe lease_tsan_test lease_tsan_test.exe frame_tsan_test frame_tsan_test.exe prime_gpu_test prime_gpu_test.exe native_probe
+	rm -f cache_test cache_test.exe test test.exe session_test session_test.exe runtime_test runtime_test.exe submit_test submit_test.exe pool_test pool_test.exe export_test export_test.exe identity_test identity_test.exe prime_device_test prime_device_test.exe prime_format_test prime_format_test.exe prime_surface_test prime_surface_test.exe prime_image_test prime_image_test.exe prime_frame_test prime_frame_test.exe prime_submit_test prime_submit_test.exe frame_test frame_test.exe lease_test lease_test.exe resources_test resources_test.exe lease_tsan_test lease_tsan_test.exe frame_tsan_test frame_tsan_test.exe prime_gpu_test prime_gpu_test.exe native_probe
 .PHONY: all check gpu-check tsan-check clean abi-check

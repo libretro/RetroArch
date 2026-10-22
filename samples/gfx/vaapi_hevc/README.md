@@ -27,6 +27,13 @@ collection. Uncertain work retains ownership until exact device teardown.
 creation step for one and thirty-two slots. The GPU oracle uses this same
 production resource owner, including its commands, fences and shader variants.
 
+`cache_test` exercises bounded renderer ownership: warm reuse without native
+creation, paused-tick returns, identity-change eviction, cold allocation
+faults, refusal recovery and deferred exact-device teardown. Deferred caches
+retain external leases until actual device destruction and retry failed return
+publication. Creation covers capacities one and thirty-two; imported-image
+cache scenarios use one slot. Shipping driver/factory integration remains open.
+
 `make gpu-check SANITIZER=address,undefined` additionally needs the Vulkan
 loader, development library, validation layer and a device supporting
 Vulkan 1.1, external-memory FD and foreign queue ownership. Mesa lavapipe
