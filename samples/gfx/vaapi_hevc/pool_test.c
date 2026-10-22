@@ -169,7 +169,10 @@ static void po_bounds(void)
  assert(!vaapi_hevc_pool_acquire(&po_pool,32,&generation));
  assert(vaapi_hevc_pool_release(&po_pool,31,ticket) && vaapi_hevc_pool_close(&po_pool));
 }
-int main(void)
+#ifndef VAAPI_POOL_TEST_MAIN
+#define VAAPI_POOL_TEST_MAIN main
+#endif
+int VAAPI_POOL_TEST_MAIN(void)
 {
  unsigned i;
  for(i=0;i<sizeof(sequence_cases)/sizeof(sequence_cases[0]);i++)po_sequence(&sequence_cases[i]);

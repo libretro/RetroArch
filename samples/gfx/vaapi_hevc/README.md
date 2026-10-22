@@ -40,6 +40,14 @@ serialization and uncertain destination retention. Configure detects optional
 Linux VA headers; --disable-vaapi omits these frontend objects. Runtime VA
 libraries remain dynamically loaded. No native decoder factory is registered yet.
 
+`decoder_test` sends parsed HEVC pictures through the production adapter and
+native-pool fixture, then exports completed pictures as opaque carriers. It
+checks pending output, crop/color transport, export failure and detach while a
+renderer still claims a frame. Failed native ticket returns remain retryable.
+The adapter borrows its native pool; the factory must keep that pool, session
+and runtime alive through deferred retirement and drive collection on owner
+ticks. Native factory registration and device acceptance remain open.
+
 `make gpu-check SANITIZER=address,undefined` additionally needs the Vulkan
 loader, development library, validation layer and a device supporting
 Vulkan 1.1, external-memory FD and foreign queue ownership. Mesa lavapipe
