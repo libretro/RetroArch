@@ -6,6 +6,9 @@ on:
     paths:
     - '.github/workflows/MacOS-videotoolbox-hevc.yml'
     - 'samples/gfx/videotoolbox_hevc/**'
+    - 'samples/gfx/videotoolbox_vp9/**'
+    - 'gfx/common/videotoolbox_vp9*.h'
+    - 'gfx/common/vp9_color.h'
     - 'samples/gfx/metal_frame/**'
     - 'gfx/common/videotoolbox_hevc*.h'
     - 'gfx/common/metal_frame*.h'
@@ -24,6 +27,9 @@ on:
     paths:
     - '.github/workflows/MacOS-videotoolbox-hevc.yml'
     - 'samples/gfx/videotoolbox_hevc/**'
+    - 'samples/gfx/videotoolbox_vp9/**'
+    - 'gfx/common/videotoolbox_vp9*.h'
+    - 'gfx/common/vp9_color.h'
     - 'samples/gfx/metal_frame/**'
     - 'gfx/common/videotoolbox_hevc*.h'
     - 'gfx/common/metal_frame*.h'
@@ -55,6 +61,8 @@ jobs:
           make -C libretro-common/samples/formats/video_player clean all THREADS="$threads" SANITIZER=address,undefined
           libretro-common/samples/formats/video_player/video_player_test
         done
+    - name: VideoToolbox VP9 configuration conformance (no device claim)
+      run: make -C samples/gfx/videotoolbox_vp9 check CC=clang SANITIZER=address,undefined
     - name: VideoToolbox HEVC hardware decode and pixel ownership
       run: |
         rc=0

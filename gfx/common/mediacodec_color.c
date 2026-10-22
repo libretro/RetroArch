@@ -1,5 +1,6 @@
 /* Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier: GPL-3.0-or-later */
 #include "mediacodec_color.h"
+#include "vp9_color.h"
 #include <string.h>
 static bool mediacodec_color_merge(unsigned *coded,unsigned native)
 {
@@ -57,55 +58,7 @@ bool mediacodec_color_resolve(const mediacodec_output_format_t *native,
 bool mediacodec_vp9_color(const rvp9_hdr *header,
       const video_color_metadata_t *container, video_color_metadata_t *out)
 {
-   video_color_metadata_t color;
-   unsigned primaries = 0, matrix = 0, range;
-   if (!out)
-      return false;
-   memset(&color, 0, sizeof(color));
-   if (container)
-      color = *container;
-   memset(out, 0, sizeof(*out));
-   if (!header || (header->profile != 0 && header->profile != 2)
-         || header->bit_depth != (header->profile == 2 ? 10 : 8)
-         || header->subsampling_x != 1 || header->subsampling_y != 1
-         || header->color_range < 0 || header->color_range > 1
-         || color.range > 2)
-      return false;
-   switch (header->color_space)
-   {
-      case 0:
-         break;
-      case 1:
-         if ((color.primaries && color.primaries != 2 && color.primaries != 5
-                   && color.primaries != 6)
-               || (color.matrix && color.matrix != 2 && color.matrix != 5
-                     && color.matrix != 6))
-            return false;
-         matrix = color.matrix == 5 ? 5 : 6;
-         break;
-      case 2:
-         primaries = matrix = 1;
-         break;
-      case 3:
-         primaries = matrix = 6;
-         break;
-      case 4:
-         primaries = matrix = 7;
-         break;
-      case 5:
-         primaries = matrix = 9;
-         break;
-      default:
-         return false;
-   }
-   range = header->color_range ? 2 : 1;
-   if ((color.range && color.range != range)
-         || !mediacodec_color_merge(&color.primaries, primaries)
-         || !mediacodec_color_merge(&color.matrix, matrix))
-      return false;
-   color.range = range;
-   *out        = color;
-   return true;
+   return vp9_color_resolve(header, container, out);
 }
 
 bool mediacodec_av1_color(const rav1_sequence_t *sequence,

@@ -55,6 +55,8 @@ jobs:
         run: CC=clang python3 samples/gfx/metal_frame/run.py
       - name: VideoToolbox HEVC parameter ownership and session setup
         run: |
+          make -C samples/gfx/videotoolbox_vp9 check SANITIZER=address,undefined
+          make -B -C samples/gfx/videotoolbox_vp9 check CC=clang SANITIZER=address,undefined
           python3 samples/gfx/videotoolbox_hevc/codec_fixtures.py --verify
           python3 samples/gfx/videotoolbox_hevc/hdr_codec_fixtures.py --verify
           python3 samples/gfx/videotoolbox_hevc/sequence_fixtures.py --verify
