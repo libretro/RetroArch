@@ -43,10 +43,14 @@ int main(void)
    metal_decoder_snapshot_view_t held;
 #ifdef HAVE_RVP9
    rvp9_hw_backend_t foreign;
-   memset(&foreign, 0, sizeof(foreign));
 #endif
 #ifdef HAVE_RMP4
    rh265_hw_backend_t hevc_foreign;
+#endif
+#ifdef HAVE_RVP9
+   memset(&foreign, 0, sizeof(foreign));
+#endif
+#ifdef HAVE_RMP4
    memset(&hevc_foreign, 0, sizeof(hevc_foreign));
 #endif
    assert(!metal_video_decoder_start_supported(NULL, device, device, false));
