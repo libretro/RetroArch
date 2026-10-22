@@ -12,6 +12,9 @@ typedef struct object *CMVideoFormatDescriptionRef;
 typedef struct object *VTDecompressionSessionRef;
 typedef void *CVImageBufferRef;
 typedef unsigned VTDecodeInfoFlags;
+typedef unsigned VTDecodeFrameFlags;
+typedef struct object *CMBlockBufferRef;
+typedef struct object *CMSampleBufferRef;
 
 typedef struct
 {
@@ -20,6 +23,32 @@ typedef struct
    uint32_t flags;
    int64_t epoch;
 } CMTime;
+
+typedef struct
+{
+   CMTime duration, presentationTimeStamp, decodeTimeStamp;
+} CMSampleTimingInfo;
+
+typedef struct
+{
+   uint32_t version;
+   void *(*AllocateBlock)(void *, size_t);
+   void (*FreeBlock)(void *, void *, size_t);
+   void *refCon;
+} CMBlockBufferCustomBlockSource;
+
+#define kCFAllocatorNull ((void *)2)
+#define kCMBlockBufferCustomBlockSourceVersion 0
+#define kVTDecodeFrame_EnableAsynchronousDecompression 1
+#define kVTDecodeFrame_DoNotOutputFrame 2
+OSStatus CMBlockBufferCreateWithMemoryBlock(void *, void *, size_t, void *,
+      const CMBlockBufferCustomBlockSource *, size_t, size_t, unsigned,
+      CMBlockBufferRef *);
+OSStatus CMSampleBufferCreateReady(void *, CMBlockBufferRef,
+      CMVideoFormatDescriptionRef, long, long, const CMSampleTimingInfo *, long,
+      const size_t *, CMSampleBufferRef *);
+OSStatus VTDecompressionSessionDecodeFrame(VTDecompressionSessionRef,
+      CMSampleBufferRef, VTDecodeFrameFlags, void *, VTDecodeInfoFlags *);
 
 typedef struct
 {

@@ -13,7 +13,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--native", action="store_true")
 args = parser.parse_args()
 compiler = shlex.split(os.environ.get("CC", "cc"))
-flags = ["-O2", "-std=c89", "-pedantic", "-Wall", "-Wextra", "-Werror",
+flags = ["-DHAVE_THREADS", "-O2", "-std=c89", "-pedantic", "-Wall", "-Wextra", "-Werror",
          "-Wno-long-long", "-Wframe-larger-than=2048", "-fstack-usage",
          "-I" + str(root / "libretro-common/include")]
 if "clang" in subprocess.check_output(compiler + ["--version"], text=True).lower():

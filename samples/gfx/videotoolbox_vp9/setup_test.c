@@ -4,11 +4,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../../../gfx/common/videotoolbox_vp9.h"
+#include "../../../gfx/common/videotoolbox_vp9_sample.h"
 
 static rvp9_hdr header;
 static video_color_metadata_t color;
 static int callback_token;
+#ifdef VIDEOTOOLBOX_VP9_SAMPLE
+static uint8_t sample_bytes[64];
+static videotoolbox_vp9_packet_t sample_packet;
+static videotoolbox_vp9_sample_t sample_ticket;
+#endif
 
 static void callback(void *user, void *frame, OSStatus status,
       VTDecodeInfoFlags flags, CVImageBufferRef image, CMTime pts,
@@ -29,6 +34,10 @@ struct object
 {
    const void *keys[3], *values[3];
    struct object *format;
+   CMBlockBufferCustomBlockSource source;
+   void *data;
+   size_t size;
+   CMSampleTimingInfo timing;
    VTDecompressionOutputCallbackRecord callback;
    uint8_t bytes[12];
    int kind, refs, count, value, invalidated;
@@ -36,6 +45,11 @@ struct object
 
 static int objects, step, fail_step, format_error, session_error, registers;
 static int expected_pixel;
+#ifdef VIDEOTOOLBOX_VP9_SAMPLE
+static CMSampleBufferRef delayed_sample;
+static int block_error, sample_error, decode_error;
+static unsigned expected_flags;
+#endif
 
 static struct object *new_object(int kind)
 {
@@ -69,6 +83,8 @@ void CFRelease(void *value)
             CFRelease((void *)p->values[i]);
    if (p->format)
       CFRelease(p->format);
+   if (p->kind == 6)
+      p->source.FreeBlock(p->source.refCon, p->data, p->size);
    assert(p->kind != 5 || p->invalidated);
    objects--;
    free(p);
@@ -172,10 +188,126 @@ void VTDecompressionSessionInvalidate(VTDecompressionSessionRef session)
    session->invalidated = 1;
 }
 
+#ifdef VIDEOTOOLBOX_VP9_SAMPLE
+OSStatus CMBlockBufferCreateWithMemoryBlock(void *allocator, void *data,
+      size_t size, void *block_allocator,
+      const CMBlockBufferCustomBlockSource *source, size_t offset,
+      size_t length, unsigned flags, CMBlockBufferRef *out)
+{
+   assert(!allocator && block_allocator == kCFAllocatorNull && !offset
+          && !flags);
+   assert(source->version == 0 && !source->AllocateBlock && source->FreeBlock);
+   assert(data == sample_packet.data && size == length
+          && size == sample_packet.size);
+   *out = new_object(6);
+   if (*out)
+   {
+      (*out)->source = *source;
+      (*out)->data   = data;
+      (*out)->size   = size;
+   }
+   return *out ? block_error : -1001;
+}
+
+OSStatus CMSampleBufferCreateReady(void *allocator, CMBlockBufferRef block,
+      CMVideoFormatDescriptionRef format, long samples, long times,
+      const CMSampleTimingInfo *timing, long sizes, const size_t *size,
+      CMSampleBufferRef *out)
+{
+   assert(!allocator && format && samples == 1 && sizes == 1);
+   assert(
+         *size == sample_packet.size && (times == 0 || (times == 1 && timing)));
+   *out = new_object(7);
+   if (*out)
+   {
+      (*out)->format = block;
+      retain(block);
+      if (times)
+         (*out)->timing = *timing;
+   }
+   return *out ? sample_error : -1001;
+}
+
+OSStatus VTDecompressionSessionDecodeFrame(VTDecompressionSessionRef session,
+      CMSampleBufferRef sample, VTDecodeFrameFlags flags, void *ref,
+      VTDecodeInfoFlags *info)
+{
+   assert(session && ref == &callback_token && flags == expected_flags);
+   assert(!delayed_sample);
+   if (!decode_error)
+   {
+      retain(sample);
+      delayed_sample = sample;
+   }
+   if (info)
+      *info = 0;
+   return decode_error;
+}
+
+#endif
+
 static void register_decoder(CMVideoCodecType codec)
 {
    assert(codec == VIDEOTOOLBOX_VP9_CODEC);
    registers++;
+}
+#endif
+
+#ifdef VIDEOTOOLBOX_VP9_SAMPLE
+static void test_sample(CMVideoFormatDescriptionRef format)
+{
+   CMSampleBufferRef sample, busy;
+   CMSampleTimingInfo timing;
+#ifndef VT_VP9_NATIVE
+   int failure;
+#endif
+   assert(videotoolbox_vp9_packet_init(
+         &sample_packet, sample_bytes, sizeof(sample_bytes)));
+   assert(!videotoolbox_vp9_packet_append(
+         &sample_packet, (const uint8_t *)"vp9", 3, true, 0));
+   retro_atomic_int_init(&sample_ticket.held, 0);
+   timing.duration.value              = 1;
+   timing.duration.timescale          = 24;
+   timing.duration.flags              = 1;
+   timing.duration.epoch              = 0;
+   timing.presentationTimeStamp       = timing.duration;
+   timing.presentationTimeStamp.value = 48;
+   timing.decodeTimeStamp             = timing.presentationTimeStamp;
+   assert(!videotoolbox_vp9_sample_create_worker(
+         format, &sample_packet, &sample_ticket, &timing, &sample));
+   assert(sample && retro_atomic_load_acquire_int(&sample_ticket.held));
+   assert(videotoolbox_vp9_sample_create_worker(format, &sample_packet,
+         &sample_ticket, NULL, &busy) == 1 && !busy);
+#ifndef VT_VP9_NATIVE
+   timing.presentationTimeStamp.value = 999;
+   assert(sample->timing.presentationTimeStamp.value == 48
+         && sample->timing.duration.timescale == 24);
+#endif
+   CFRelease(sample);
+   assert(!retro_atomic_load_acquire_int(&sample_ticket.held));
+#ifndef VT_VP9_NATIVE
+   for (failure = 1; failure <= 2; failure++)
+   {
+      step      = 0;
+      fail_step = failure;
+      assert(videotoolbox_vp9_sample_create_worker(
+            format, &sample_packet, &sample_ticket, NULL, &sample));
+      assert(!sample && !retro_atomic_load_acquire_int(&sample_ticket.held));
+   }
+   fail_step   = 0;
+   block_error = -301;
+   assert(videotoolbox_vp9_sample_create_worker(
+                format, &sample_packet, &sample_ticket, NULL, &sample)
+          == -301);
+   assert(!sample && !retro_atomic_load_acquire_int(&sample_ticket.held));
+   block_error  = 0;
+   sample_error = -302;
+   assert(videotoolbox_vp9_sample_create_worker(
+                format, &sample_packet, &sample_ticket, NULL, &sample)
+          == -302);
+   assert(!sample && !retro_atomic_load_acquire_int(&sample_ticket.held));
+   sample_error = 0;
+#endif
 }
 #endif
 
@@ -223,6 +355,9 @@ int main(void)
             assert(bytes[8] == color.transfer && (bytes[6] & 1) == range);
          }
 #endif
+#ifdef VIDEOTOOLBOX_VP9_SAMPLE
+         test_sample(format);
+#endif
          CFRelease(format);
 #ifndef VT_VP9_NATIVE
          expected_pixel = depth == 10 ? (range ? 0x78663230 : 0x78343230)
@@ -233,6 +368,28 @@ int main(void)
                &header, &color, 1, register_decoder, &cb, &format, &session);
          assert(!status && format && session && registers == before + 1);
          assert(objects == 6);
+#ifdef VIDEOTOOLBOX_VP9_SAMPLE
+         expected_flags = kVTDecodeFrame_EnableAsynchronousDecompression;
+         assert(!videotoolbox_vp9_decode_worker(session, format, &sample_packet,
+               &sample_ticket, NULL, &callback_token, NULL));
+         assert(delayed_sample
+                && retro_atomic_load_acquire_int(&sample_ticket.held));
+         assert(videotoolbox_vp9_decode_worker(session, format, &sample_packet,
+                      &sample_ticket, NULL, &callback_token, NULL)
+                == 1);
+         CFRelease(delayed_sample);
+         delayed_sample = NULL;
+         assert(!retro_atomic_load_acquire_int(&sample_ticket.held));
+         sample_packet.display_slot = -1;
+         expected_flags |= kVTDecodeFrame_DoNotOutputFrame;
+         decode_error = -303;
+         assert(videotoolbox_vp9_decode_worker(session, format, &sample_packet,
+                      &sample_ticket, NULL, &callback_token, NULL)
+                == -303);
+         assert(!delayed_sample
+                && !retro_atomic_load_acquire_int(&sample_ticket.held));
+         decode_error = 0;
+#endif
          VTDecompressionSessionInvalidate(session);
          CFRelease(session);
          CFRelease(format);
@@ -278,9 +435,11 @@ int main(void)
                 != 0
           && !format && !session);
 #ifdef VT_VP9_NATIVE
-   puts("PASS: native CoreMedia VP9 formats and SDK signatures; no hardware session or decode execution");
+   puts("PASS: native CoreMedia VP9 formats/samples, storage release and SDK signatures; no hardware decode execution");
+#elif defined(VIDEOTOOLBOX_VP9_SAMPLE)
+   puts("PASS: VP9 setup/sample contracts, delayed storage release, busy/rejected submission and allocation cleanup; no Apple device execution");
 #else
-   puts("PASS: VP9 native setup contract, hardware/Metal/IOSurface requests and every allocation/partial-error cleanup; no Apple device execution");
+   puts("PASS: VP9 setup; threadless excludes native sample/decode helpers");
 #endif
    return 0;
 }
