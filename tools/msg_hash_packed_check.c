@@ -177,7 +177,15 @@ static void check_text(const char *text, size_t len, const char *lang,
    size_t i;
 
    if (!mh_is_packed(text, len, lang))
+   {
+      if (mh_is_stale_packed(text, len, lang))
+      {
+         ck_sb_puts(&msg, name);
+         ck_sb_puts(&msg, ": ids[] is not msg_hash_id_t; regenerate");
+         error(errors, &msg);
+      }
       return;
+   }
    if (!mh_split_sections(text, len, lang, sec))
    {
       ck_sb_puts(&msg, name);
@@ -543,7 +551,7 @@ static char *fixture(void)
       ck_sb_puts(&members, tmp);
       sprintf(tmp, "   \"%s\",", data[i]);
       ck_sb_puts(&inits, tmp);
-      sprintf(tmp, "   (uint32_t)%s,", keys[i]);
+      sprintf(tmp, "   (msg_hash_id_t)%s,", keys[i]);
       ck_sb_puts(&ids, tmp);
       if (g)
       {
@@ -564,7 +572,7 @@ static char *fixture(void)
          "       + %luu\n#endif", base, guarded);
    ck_sb_puts(&out, tmp);
    ck_sb_puts(&out, "\n      )) ? 1 : -1];\n\n");
-   ck_sb_puts(&out, "static const uint32_t msg_hash_zz_ids[] =\n{\n");
+   ck_sb_puts(&out, "static const msg_hash_id_t msg_hash_zz_ids[] =\n{\n");
    ck_sb_puts(&out, ids.p);
    ck_sb_puts(&out, "\n};\n");
    ck_sb_free(&members);
@@ -637,7 +645,7 @@ static int selftest(void)
    /* A retired setting's row taken out of ids[] and left in the blob,
     * which is what renamed every row after it in 5d0f721. */
    failures += expect("ids[] row dropped",
-         replace(good, "   (uint32_t)MENU_ENUM_LABEL_VALUE_C,\n", ""),
+         replace(good, "   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_C,\n", ""),
          "ids[] pairs it with");
 
    /* The mirror of it: the row taken out of the blob and left in ids[]. */
@@ -664,14 +672,22 @@ static int selftest(void)
    /* A guard on one side only: the pairing holds for the build that
     * defines it and breaks for the one that does not. */
    failures += expect("guard on the blob only",
-         replace(good, "#ifdef HAVE_X\n   (uint32_t)MENU_ENUM_LABEL_VALUE_B,"
-            "\n#endif\n", "   (uint32_t)MENU_ENUM_LABEL_VALUE_B,\n"),
+         replace(good, "#ifdef HAVE_X\n   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_B,"
+            "\n#endif\n", "   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_B,\n"),
          "is guarded");
 
    /* A contiguity constant that no longer describes the blob it
     * guards. */
    failures += expect("stale size check", replace(good, "== (18u", "== (17u"),
          "the size check counts");
+
+   /* ids[] left at its old width: the header was not regenerated. */
+   lost = replace(good, "static const msg_hash_id_t msg_hash_zz_ids",
+         "static const uint32_t msg_hash_zz_ids");
+   failures += expect("ids[] not narrowed",
+         replace(lost, "(msg_hash_id_t)", "(uint32_t)"),
+         "is not msg_hash_id_t");
+   free(lost);
 
    free(good);
    free_set(&named);

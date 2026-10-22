@@ -44,12 +44,12 @@ typedef char msg_hash_si_blob_check[
 #endif
       )) ? 1 : -1];
 
-static const uint32_t msg_hash_si_ids[] =
+static const msg_hash_id_t msg_hash_si_ids[] =
 {
 #ifdef HAVE_LAKKA
 #ifdef HAVE_RETROFLAG
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SAFESHUTDOWN_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_SAFESHUTDOWN_ENABLE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SAFESHUTDOWN_ENABLE,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_SAFESHUTDOWN_ENABLE,
 #endif
 #endif
 };

@@ -210,11 +210,10 @@ def update(messages, template, source_messages):
 # Packed string-table emitter.
 #
 # Instead of MSG_HASH(ID, "...") switch-case rows, translation headers are
-# emitted as three constant objects consumed by msg_hash.c:
+# emitted as two constant objects consumed by msg_hash.c:
 #
 #   static const struct { char s0[N0]; ... } msg_hash_<lang>_blob = {...};
-#   static const uint32_t msg_hash_<lang>_ids[]  = { (uint32_t)ID, ... };
-#   static const uint32_t msg_hash_<lang>_offs[] = { 0, N0, ... };
+#   static const msg_hash_id_t msg_hash_<lang>_ids[] = { (msg_hash_id_t)ID, ... };
 #
 # Every struct member is a char array of exactly the row's decoded byte
 # length (+1 for the NUL, except non-final chunks of long rows), each
@@ -227,9 +226,9 @@ def update(messages, template, source_messages):
 # OS demand-pages them and languages that are never selected never become
 # resident.
 #
-# Rows inside preprocessor guards keep their guards on the ids[] and
-# offs[] entries; the blob members are unconditional (a handful of unused
-# strings when a feature is compiled out is cheaper than shifting offsets).
+# Rows inside preprocessor guards keep their guards on the ids[] entries;
+# the blob members are unconditional (a handful of unused strings when a
+# feature is compiled out is cheaper than shifting offsets).
 # ---------------------------------------------------------------------------
 
 CHUNK_MAX = 500
@@ -587,11 +586,11 @@ def pack(text, lang, source=None):
     out.append('      )) ? 1 : -1];')
     out.append('')
     prev = ()
-    out.append('static const uint32_t msg_hash_%s_ids[] =' % lang)
+    out.append('static const msg_hash_id_t msg_hash_%s_ids[] =' % lang)
     out.append('{')
     for (key, val, guard) in rows:
         emit_guard_transition(out, prev, guard); prev = guard
-        out.append('   (uint32_t)%s,' % key)
+        out.append('   (msg_hash_id_t)%s,' % key)
     emit_guard_transition(out, prev, ())
     out.append('};')
     out.append('')
@@ -661,7 +660,7 @@ if __name__ == '__main__':
             # A header that has already been packed carries no MSG_HASH rows, so
             # the parser legitimately finds nothing; that is a no-op, not the
             # "no rows" failure below, which means the input is neither form.
-            if re.search(r'static const uint32_t msg_hash_\w+_ids\[\]', text):
+            if re.search(r'static const msg_hash_id_t msg_hash_\w+_ids\[\]', text):
                 print('%s is already packed; nothing to do' % h_filename)
                 sys.exit(0)
             raise SystemExit('packed emitter: no MSG_HASH rows in ' + h_filename)

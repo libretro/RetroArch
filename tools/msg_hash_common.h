@@ -304,14 +304,14 @@ CK_FN int mh_member(const char *b, const char *e, char **name,
    return 1;
 }
 
-/* \s*\(uint32_t\)(\w+),  Returns the name or NULL. */
+/* \s*\(msg_hash_id_t\)(\w+),  Returns the name or NULL. */
 CK_FN char *mh_ident(const char *b, const char *e)
 {
    const char *p = mh_skip_space(b, e);
    const char *w;
-   if (!mh_starts(p, e, "(uint32_t)"))
+   if (!mh_starts(p, e, "(msg_hash_id_t)"))
       return NULL;
-   for (w = p += 10; p < e && CK_IS_WORD(*p); p++);
+   for (w = p += 15; p < e && CK_IS_WORD(*p); p++);
    if (p == w || p >= e || *p != ',')
       return NULL;
    return ck_strndup(w, (size_t)(p - w));
@@ -454,14 +454,39 @@ CK_FN char *mh_lang_of(const char *path)
    return to > from ? ck_strndup(s + from, to - from) : ck_strdup("");
 }
 
-CK_FN int mh_is_packed(const char *text, size_t len, const char *lang)
+CK_FN int mh_has_ids(const char *text, size_t len, const char *lang,
+      const char *type)
 {
    struct ck_sb marker = {0};
    int found;
-   ck_sb_puts(&marker, "static const uint32_t msg_hash_");
+   ck_sb_puts(&marker, "static const ");
+   ck_sb_puts(&marker, type);
+   ck_sb_puts(&marker, " msg_hash_");
    ck_sb_puts(&marker, lang);
    ck_sb_puts(&marker, "_ids[] =");
    found = mh_find(text, text + len, marker.p, 0) != NULL;
+   ck_sb_free(&marker);
+   return found;
+}
+
+CK_FN int mh_is_packed(const char *text, size_t len, const char *lang)
+{
+   return mh_has_ids(text, len, lang, "msg_hash_id_t");
+}
+
+/* An ids[] array of any other type: a packed header that was not
+ * regenerated when the row id type changed. */
+CK_FN int mh_is_stale_packed(const char *text, size_t len, const char *lang)
+{
+   struct ck_sb marker = {0};
+   const char *p, *e = text + len;
+   int found = 0;
+   ck_sb_puts(&marker, " msg_hash_");
+   ck_sb_puts(&marker, lang);
+   ck_sb_puts(&marker, "_ids[] =");
+   p = mh_find(text, e, marker.p, 0);
+   if (p && !mh_is_packed(text, len, lang))
+      found = 1;
    ck_sb_free(&marker);
    return found;
 }
