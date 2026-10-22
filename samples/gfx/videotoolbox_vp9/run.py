@@ -147,6 +147,22 @@ with tempfile.TemporaryDirectory(prefix="vt-vp9-setup-") as directory:
             text = helper.metal_test_source().replace(
                 "VideoToolbox native adapter: exported pixels survive decoder, session and pool teardown",
                 "VP9 stream export: decoded planes and FrameView pixels survive stream/pool close")
+            text = """#import <VideoToolbox/VideoToolbox.h>
+#include <stdio.h>
+static OSStatus vp9_test_session_create(CFAllocatorRef allocator,
+      CMVideoFormatDescriptionRef format, CFDictionaryRef specification,
+      CFDictionaryRef attributes, const VTDecompressionOutputCallbackRecord *callback,
+      VTDecompressionSessionRef *session)
+{
+   static unsigned calls;
+   OSStatus status = VTDecompressionSessionCreate(allocator, format,
+         specification, attributes, callback, session);
+   fprintf(stderr, "VP9 test-only native session open %u: status %ld\\n",
+         ++calls, (long)status);
+   return status;
+}
+#define VTDecompressionSessionCreate vp9_test_session_create
+""" + text
             export = "if (!metal_frame_create_cv(&source, image, (void*)pool->cache, out)) return -1;"
             if text.count(export) != 1:
                 raise RuntimeError("shipping Metal export diagnostic anchor changed")
@@ -187,12 +203,21 @@ with tempfile.TemporaryDirectory(prefix="vt-vp9-setup-") as directory:
                 "image/image_blit_bands.c", "image/image_hdr_blit.c", "../time/rtime.c"]
             for index, source in enumerate(sources):
                 obj = path / ("stream-" + str(index) + ".o")
+                source_path = root / "libretro-common/formats" / source
+                if source == "mp4/rmp4_video.c":
+                    probe = path / "mp4_state.c"
+                    probe.write_text('#include "' + source_path.as_posix() + '"\n'
+                        'void videotoolbox_vp9_test_mp4_state(rmp4_video_stream_t *s, unsigned out[4])\n'
+                        '{ out[0] = s->vp9_hw != NULL; out[1] = s->vp9 != NULL;\n'
+                        '  out[2] = s->rndr_kind; out[3] = s->hwf_untaken; }\n',
+                        encoding="utf-8")
+                    source_path = probe
                 command = compiler + ["-O2", "-std=c89", "-pedantic", "-Wall",
                     "-Wextra", "-Werror", "-Wno-unused-parameter", "-Wno-long-long",
                     "-Wno-c99-extensions", "-Wframe-larger-than=2048", "-fstack-usage",
                     "-DHAVE_RMP4", "-DHAVE_RWEBM", "-DHAVE_RVP9",
                     "-mmacosx-version-min=10.14", "-I" + str(root / "libretro-common/include"),
-                    "-c", str(root / "libretro-common/formats" / source), "-o", str(obj)]
+                    "-c", str(source_path), "-o", str(obj)]
                 subprocess.run(command, check=True)
                 objects.append(str(obj))
             command = compiler + flags + [str(here / "native_pipeline_test.c"),

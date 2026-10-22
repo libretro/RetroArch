@@ -16,6 +16,7 @@ extern void videotoolbox_hevc_test_retired(void);
 extern void videotoolbox_hevc_test_export(video_hw_frame_t *, unsigned,
       unsigned, const uint32_t [3]);
 extern void videotoolbox_hevc_test_movie_reset(void);
+extern void videotoolbox_vp9_test_mp4_state(rmp4_video_stream_t *, unsigned [4]);
 
 static void run(const vp9_pipeline_fixture_t *fixture, void *device)
 {
@@ -105,9 +106,13 @@ static void run(const vp9_pipeline_fixture_t *fixture, void *device)
          : rmp4_video_stream_hw_frame(mp4, &frame);
       if (ret != 1 || frame.color.transfer != fixture->transfer)
       {
+         unsigned state[4] = {0, 0, 0, 0};
+         if (mp4) videotoolbox_vp9_test_mp4_state(mp4, state);
          fprintf(stderr, "VP9 seek %u target %u: hardware frame %d, transfer %u expected %u\n",
                seek, target, ret, ret == 1 ? frame.color.transfer : 0,
                fixture->transfer);
+         fprintf(stderr, "VP9 test-only MP4 state: hardware %u software %u renderer %u untaken %u\n",
+               state[0], state[1], state[2], state[3]);
          fflush(stderr);
       }
       assert(ret == 1 && frame.color.transfer == fixture->transfer);
