@@ -33345,6 +33345,10 @@ MSG_HASH(
    "Bluetooth scan complete."
    )
 MSG_HASH(
+   MSG_BLUETOOTH_ADAPTER_GENERIC_DRIVER,
+   "This computer's Bluetooth adapter runs on Windows' generic driver, which often finds no devices. Install the Bluetooth driver from the computer's or motherboard's maker."
+   )
+MSG_HASH(
    MSG_BLUETOOTH_PAIRING_REMOVED,
    "Pairing removed. Restart RetroArch to connect/pair again."
    )

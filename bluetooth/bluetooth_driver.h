@@ -57,6 +57,10 @@ typedef struct bluetooth_driver
     * out, so it can be ended early; NULL for a driver that cannot
     * tell. */
    bool (*scan_done)(void *data);
+
+   /* Whether the adapter is on its system's generic driver, which
+    * may find nothing; NULL for a driver that cannot tell. */
+   bool (*adapter_generic)(void *data);
 } bluetooth_driver_t;
 
 extern bluetooth_driver_t bluetooth_bluetoothctl;
@@ -94,6 +98,7 @@ const char* config_get_bluetooth_driver_options(void);
 void driver_bluetooth_scan_begin(void);
 void driver_bluetooth_scan_end(void);
 bool driver_bluetooth_scan_done(void);
+bool driver_bluetooth_adapter_generic(void);
 
 void driver_bluetooth_get_devices(struct string_list *list);
 

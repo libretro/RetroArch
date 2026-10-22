@@ -814,6 +814,18 @@ static int action_bind_sublabel_bluetooth_list(
    driver_bluetooth_device_get_sublabel(s, i, len);
    return 0;
 }
+
+/* Why none were found, where the driver can tell */
+static int action_bind_sublabel_bluetooth_none(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   if (driver_bluetooth_adapter_generic())
+      strlcpy(s, msg_hash_to_str(MSG_BLUETOOTH_ADAPTER_GENERIC_DRIVER), len);
+   return 0;
+}
 #endif
 
 #ifdef HAVE_LAKKA
@@ -3558,6 +3570,11 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_CONNECT_BLUETOOTH:
 #ifdef HAVE_BLUETOOTH
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_bluetooth_list);
+#endif
+            break;
+         case MENU_ENUM_LABEL_NO_BT_DEVICES_FOUND:
+#ifdef HAVE_BLUETOOTH
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_bluetooth_none);
 #endif
             break;
 #ifdef HAVE_NETWORKING

@@ -34,6 +34,7 @@
 #include <string.h>
 
 #include <windows.h>
+#include <setupapi.h>
 #include <bluetoothapis.h>
 
 #include <boolean.h>
@@ -92,6 +93,9 @@ typedef struct
    /* the scan thread's until it is joined */
    sthread_t *scan;
    retro_atomic_int_t scan_done;
+   /* the adapter is on Windows' generic driver: told when a scan found
+    * nothing */
+   retro_atomic_int_t generic;
    BLUETOOTH_DEVICE_INFO found[WINBT_MAX_DEVICES];
    unsigned found_count;
 
@@ -120,6 +124,57 @@ static HANDLE winbt_radio(winbt_t *bt)
       return NULL;
    bt->radio_close(find);
    return radio;
+}
+
+/* Whether the radio is on Windows' own driver, bth.inf, rather than
+ * its maker's: the USB device in the Bluetooth class, by its driver's
+ * INF. That one often finds no classic device at all - no phone, no
+ * Wii controller - and says nothing of it. */
+static bool winbt_generic_driver(void)
+{
+   /* GUID_DEVCLASS_BLUETOOTH */
+   static const GUID bt_class = { 0xe0cbf06c, 0xcd8b, 0x4647,
+      { 0xbb, 0x8a, 0x26, 0x3b, 0x43, 0xf0, 0xf9, 0x74 } };
+   SP_DEVINFO_DATA info;
+   DWORD i;
+   bool generic = false;
+   HDEVINFO devs = SetupDiGetClassDevsA(&bt_class, NULL, NULL,
+         DIGCF_PRESENT);
+
+   if (devs == INVALID_HANDLE_VALUE)
+      return false;
+   for (i = 0; !generic; i++)
+   {
+      char ids[512];
+      char inf[MAX_PATH];
+      DWORD size = sizeof(inf);
+      DWORD type = 0;
+      HKEY key;
+
+      info.cbSize = sizeof(info);
+      if (!SetupDiEnumDeviceInfo(devs, i, &info))
+         break;
+      memset(ids, 0, sizeof(ids));
+      if (     !SetupDiGetDeviceRegistryPropertyA(devs, &info,
+                  SPDRP_HARDWAREID, NULL, (PBYTE)ids, sizeof(ids) - 2,
+                  NULL)
+            || strncmp(ids, "USB\\", 4))
+         continue;
+      key = SetupDiOpenDevRegKey(devs, &info, DICS_FLAG_GLOBAL, 0,
+            DIREG_DRV, KEY_READ);
+      if (key == INVALID_HANDLE_VALUE)
+         continue;
+      if (     RegQueryValueExA(key, "InfPath", NULL, &type, (LPBYTE)inf,
+                  &size) == ERROR_SUCCESS
+            && type == REG_SZ)
+      {
+         inf[sizeof(inf) - 1] = '\0';
+         generic = (_stricmp(inf, "bth.inf") == 0);
+      }
+      RegCloseKey(key);
+   }
+   SetupDiDestroyDeviceInfoList(devs);
+   return generic;
 }
 
 static void winbt_scan_thread(void *data)
@@ -163,6 +218,14 @@ static void winbt_scan_thread(void *data)
       RARCH_DBG("[Bluetooth] The search found nothing (error %lu).\n",
             (unsigned long)GetLastError());
    CloseHandle(radio);
+   if (!bt->found_count && winbt_generic_driver())
+   {
+      RARCH_WARN("[Bluetooth] The adapter is on Windows' generic driver,"
+            " which often finds nothing; its maker's driver is needed.\n");
+      retro_atomic_store_release_int(&bt->generic, 1);
+   }
+   else
+      retro_atomic_store_release_int(&bt->generic, 0);
    retro_atomic_store_release_int(&bt->scan_done, 1);
 }
 
@@ -276,6 +339,7 @@ static void *winbt_init(void)
    }
    retro_atomic_int_init(&bt->action_busy, 0);
    retro_atomic_int_init(&bt->scan_done, 1);
+   retro_atomic_int_init(&bt->generic, 0);
    return bt;
 }
 
@@ -321,6 +385,12 @@ static bool winbt_scan_done(void *data)
 {
    winbt_t *bt = (winbt_t*)data;
    return !bt || retro_atomic_load_acquire_int(&bt->scan_done);
+}
+
+static bool winbt_adapter_generic(void *data)
+{
+   winbt_t *bt = (winbt_t*)data;
+   return bt && retro_atomic_load_acquire_int(&bt->generic);
 }
 
 static void winbt_get_devices(void *data, struct string_list *list)
@@ -402,5 +472,6 @@ bluetooth_driver_t bluetooth_windows = {
    winbt_connect_device,
    winbt_remove_device,
    "windows",
-   winbt_scan_done
+   winbt_scan_done,
+   winbt_adapter_generic
 };
