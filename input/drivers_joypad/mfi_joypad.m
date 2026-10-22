@@ -1184,6 +1184,12 @@ void *apple_gamecontroller_joypad_init(void *data)
                                                  {
                                                     apple_gamecontroller_joypad_disconnect([note object]);
                                                  } ];
+   /* Controllers the framework found before the observers were added
+    * had their connect notices posted to no one. */
+   dispatch_async(dispatch_get_main_queue(), ^{
+      for (GCController *controller in [GCController controllers])
+         apple_gamecontroller_joypad_connect(controller);
+   });
 #endif
    mfi_inited = true;
    return (void*)-1;

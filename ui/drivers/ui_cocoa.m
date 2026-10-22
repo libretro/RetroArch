@@ -515,6 +515,8 @@ static ui_application_t ui_application_cocoa = {
  * full-screen RAWindow made by -[RetroArch_OSX
  * enterBorderlessFullScreen] needs it to receive keystrokes. */
 - (BOOL)canBecomeKeyWindow { return YES; }
+/* Likewise main: -makeMainWindow asserts on a window that cannot. */
+- (BOOL)canBecomeMainWindow { return YES; }
 
 #define CONVERT_POINT() [[apple_platform renderView] convertPoint:[event locationInWindow] fromView:nil]
 
@@ -914,8 +916,13 @@ static ui_application_t ui_application_cocoa = {
 
 - (void)setupMainWindow
 {
-   [self.window makeMainWindow];
-   [self.window makeKeyWindow];
+   /* The borderless window in full screen; the titled one is not on
+    * screen then, and -makeMainWindow on it is an assertion. */
+   NSWindow *host = [self hostWindow];
+   if ([host canBecomeMainWindow])
+      [host makeMainWindow];
+   if ([host canBecomeKeyWindow])
+      [host makeKeyWindow];
 }
 
 - (NSWindow *)hostWindow
