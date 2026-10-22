@@ -845,6 +845,11 @@ void menu_update_runahead_mode(void);
 size_t menu_playlist_random_selection(
       size_t selection, bool is_explore_list);
 
+/* The Playlists tab's Scan: a random playlist row other than
+ * @selection. Not menu_playlist_random_selection, which picks an item
+ * inside an open playlist or Explore list. */
+size_t menu_playlists_tab_random_selection(size_t selection);
+
 void menu_dialog_confirm_set(struct menu_state *menu_st,
       unsigned msg, unsigned cmd);
 void menu_dialog_confirm_clear(struct menu_state *menu_st);

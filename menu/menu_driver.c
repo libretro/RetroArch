@@ -9330,6 +9330,43 @@ size_t menu_playlist_random_selection(size_t selection, bool is_explore_list)
    return new_selection;
 }
 
+/* Picks a random playlist on the Playlists tab other than the one at
+ * @selection, each with equal chance.  Returns @selection when there
+ * is no other playlist to land on, so the caller can tell nothing
+ * moved. */
+size_t menu_playlists_tab_random_selection(size_t selection)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   file_list_t *selection_buf = MENU_LIST_GET_SELECTION(menu_st->entries.list, 0);
+   size_t selection_total     = selection_buf ? selection_buf->size : 0;
+   size_t candidates          = 0;
+   size_t pick;
+   size_t i;
+
+   for (i = 0; i < selection_total; i++)
+      if (     i != selection
+            && selection_buf->list[i].type == FILE_TYPE_PLAYLIST_COLLECTION)
+         candidates++;
+
+   if (!candidates)
+      return selection;
+
+   pick = random_range(0, (unsigned)(candidates - 1));
+
+   for (i = 0; i < selection_total; i++)
+   {
+      if (     i == selection
+            || selection_buf->list[i].type != FILE_TYPE_PLAYLIST_COLLECTION)
+         continue;
+      if (!pick--)
+         return i;
+   }
+
+   /* random_range() can return one past max: it scales rand() as a
+    * float, which rounds up near RAND_MAX */
+   return selection;
+}
+
 /* Modal dialog handling */
 static void menu_dialog_confirm_reset(struct menu_state *menu_st)
 {
