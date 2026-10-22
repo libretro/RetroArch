@@ -457,6 +457,8 @@ static void test_unavailable(void)
    CHECK(opens == before);
 }
 
+#include "rav1_sequence_cache_test.h"
+
 int main(int argc, char **argv)
 {
    factory.user = &factory;
@@ -474,6 +476,12 @@ int main(int argc, char **argv)
    test_early_bad_hdr();
    test_probe_frontier();
    test_unavailable();
+   rav1_set_hw_backend(NULL);
+   rav1_set_hw_backend(&factory);
+   if (factory.open_config)
+   {
+      test_sequence_reopen(0);
+   }
    rav1_set_hw_backend(NULL);
    if (factory.open_config) CHECK(config_opens);
    printf("AV1 MP4 hardware reader: %u failures\n", failures);

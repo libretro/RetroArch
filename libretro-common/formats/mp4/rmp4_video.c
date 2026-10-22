@@ -88,6 +88,8 @@ struct rmp4_video_stream
    rh265_video *h265;
 #ifdef HAVE_RAV1
    rav1_hw_stream_t *av1;
+   uint8_t *av1_sequence_bytes;
+   size_t av1_sequence_size;
    rav1_hdr_metadata_t av1_hdr_initial, av1_hdr_seed;
    rmp4_av1_hdr_point_t *av1_hdr_points;
    rav1_hdr_metadata_t av1_hdr_scanned;
@@ -585,6 +587,15 @@ static void rmp4_video_hevc_color(rmp4_video_stream_t *s, const rmp4_track *t)
 }
 
 #ifdef HAVE_RAV1
+static bool rmp4_video_av1_retain(void *user,
+      const rav1_sequence_t *sequence, const rav1_obu_t *obu)
+{
+   rmp4_video_stream_t *s = (rmp4_video_stream_t*)user;
+   (void)sequence;
+   return rav1_hw_stream_retain_config(
+         &s->av1_sequence_bytes, &s->av1_sequence_size, obu);
+}
+
 static bool rmp4_video_av1_open(rmp4_video_stream_t *s)
 {
    const rmp4_track *t = rmp4_get_track(s->demux, s->track);
@@ -593,10 +604,19 @@ static bool rmp4_video_av1_open(rmp4_video_stream_t *s)
    if (!t ||
        !rav1_config_parse(&config, t->codec_private, t->codec_private_size))
       return false;
+   if (s->av1_sequence_bytes)
+   {
+      size_t offset = 0;
+      if (rav1_obu_next(&config.sequence, s->av1_sequence_bytes,
+               s->av1_sequence_size, &offset, true) != 1)
+         return false;
+   }
    s->av1 = (rav1_hw_stream_t *)calloc(1, sizeof(*s->av1));
    if (!s->av1)
       return false;
    rav1_hw_stream_init(s->av1, NULL);
+   s->av1->retain_sequence = rmp4_video_av1_retain;
+   s->av1->sequence_user = s;
    seq = &s->av1->sequence;
    if (!rav1_config_sequence(seq, &config) || seq->max_width != s->width ||
        seq->max_height != s->height)
@@ -989,6 +1009,7 @@ void rmp4_video_stream_close(rmp4_video_stream_t *s)
    if (s->demux)
       rmp4_close(s->demux);
 #ifdef HAVE_RAV1
+   free(s->av1_sequence_bytes);
    free(s->av1_hdr_points);
 #endif
    free(s->ts);

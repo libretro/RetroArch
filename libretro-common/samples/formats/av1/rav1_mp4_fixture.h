@@ -153,7 +153,8 @@ static void make_mp4_clip(int with_config, int hdr)
    be32(hdr >= 2 ? 3 : 2);
    if (hdr)
    {
-      be32((uint32_t)(sizeof(packet) + sizeof(cll) + 40 * sizeof(unknown)));
+      be32((uint32_t)(sizeof(packet) + sizeof(cll) + 40 * sizeof(unknown)
+            + (hdr == 4 ? sizeof(config) - 4 : 0)));
       be32((uint32_t)(sizeof(packet) + (hdr >= 2 ? sizeof(changed_cll) : 0)));
       if (hdr >= 2) be32(sizeof(packet) + (hdr == 3 ? sizeof(final_cll) : 0));
    }
@@ -178,6 +179,7 @@ static void make_mp4_clip(int with_config, int hdr)
    end_box(moov);
    b = box("mdat");
    media_at = used;
+   if (hdr == 4) copy(config + 4, sizeof(config) - 4);
    if (hdr)
    {
       for (i = 0; i < 40; i++) copy(unknown, sizeof(unknown));

@@ -4,6 +4,7 @@
 
 #include <formats/rav1_hw.h>
 #include <formats/rav1_hdr.h>
+#include <stdlib.h>
 
 enum rav1_hw_stream_result
 {
@@ -21,6 +22,11 @@ typedef struct rav1_hw_stream
 {
    rav1_hw_session_t session;
    rav1_hw_backend_t backend;
+   /* Cold startup admission only; the callback borrows the sequence view.
+    * Retain owned configuration for later seeks, or fail the admission. */
+   bool (*retain_sequence)(void *user, const rav1_sequence_t *sequence,
+         const rav1_obu_t *obu);
+   void *sequence_user;
    rav1_obu_t obu, sequence_obu;
    const uint8_t *packet;
    size_t size, offset, next;
@@ -29,6 +35,26 @@ typedef struct rav1_hw_stream
    video_color_metadata_t color;
    int opened, submitted, started, error, ending;
 } rav1_hw_stream_t;
+
+/* Cold configuration storage. Do not retain packet views after admission. */
+static INLINE bool rav1_hw_stream_retain_config(uint8_t **bytes,
+      size_t *size, const rav1_obu_t *obu)
+{
+   uint8_t *copy;
+   if (!bytes || !size || !obu || obu->type != 1 || !obu->data || !obu->size
+         || obu->size > 1024u * 1024u || obu->temporal_id || obu->spatial_id)
+      return false;
+   if (*bytes && *size == obu->size && !memcmp(*bytes, obu->data, *size))
+      return true;
+   copy = (uint8_t*)malloc(obu->size);
+   if (!copy)
+      return false;
+   memcpy(copy, obu->data, obu->size);
+   free(*bytes);
+   *bytes = copy;
+   *size = obu->size;
+   return true;
+}
 
 static INLINE bool rav1_hw_stream_open_sequence(rav1_hw_stream_t *s)
 {
@@ -44,7 +70,10 @@ static INLINE bool rav1_hw_stream_open_sequence(rav1_hw_stream_t *s)
       }
       /* av1C is provisional until the first frame, but its output
        * geometry and color have already been admitted by the caller. */
-      if (s->started || seq->max_width != old->max_width ||
+      if (s->started
+          || seq->operating_points[0].level != old->operating_points[0].level
+          || seq->operating_points[0].tier != old->operating_points[0].tier
+          || seq->max_width != old->max_width ||
           seq->max_height != old->max_height || seq->profile != old->profile ||
           seq->bit_depth != old->bit_depth || seq->monochrome != old->monochrome ||
           seq->subsampling_x != old->subsampling_x ||
@@ -67,6 +96,14 @@ static INLINE bool rav1_hw_stream_open_sequence(rav1_hw_stream_t *s)
    {
       s->backend.close(&ops);
       memset(&s->backend, 0, sizeof(s->backend));
+      return false;
+   }
+   if (s->retain_sequence
+         && !s->retain_sequence(s->sequence_user, &s->sequence, &s->sequence_obu))
+   {
+      s->backend.close(&s->session.ops);
+      memset(&s->backend, 0, sizeof(s->backend));
+      memset(&s->sequence_obu, 0, sizeof(s->sequence_obu));
       return false;
    }
    memset(&s->sequence_obu, 0, sizeof(s->sequence_obu));

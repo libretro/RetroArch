@@ -1219,6 +1219,18 @@ retain:
          s->av1_sequence_size, &offset, true) == 1;
 }
 
+static bool rwebm_video_av1_retain(void *user,
+      const rav1_sequence_t *sequence, const rav1_obu_t *obu)
+{
+   rwebm_video_stream_t *s = (rwebm_video_stream_t*)user;
+   if (!rav1_hw_stream_retain_config(
+            &s->av1_sequence_bytes, &s->av1_sequence_size, obu))
+      return false;
+   s->av1_initial_sequence = *sequence;
+   s->av1_initial_sequence_set = 1;
+   return true;
+}
+
 static int rwebm_video_av1_open(rwebm_video_stream_t *s)
 {
    const rwebm_track *t = rwebm_get_track(s->demux, s->track);
@@ -1232,6 +1244,8 @@ static int rwebm_video_av1_open(rwebm_video_stream_t *s)
    if (!s->av1)
       return 0;
    rav1_hw_stream_init(s->av1, NULL);
+   s->av1->retain_sequence = rwebm_video_av1_retain;
+   s->av1->sequence_user = s;
    seq = &s->av1->sequence;
    if (s->av1_initial_sequence_set) *seq = s->av1_initial_sequence;
    else if (!rav1_config_sequence(seq, &config)) goto fail;

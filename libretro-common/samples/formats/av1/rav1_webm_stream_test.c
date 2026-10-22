@@ -454,6 +454,9 @@ static void test_config(int inband, unsigned matrix, unsigned transfer,
    rwebm_video_stream_close(s);
 }
 
+#define SEQUENCE_CACHE_WEBM
+#include "rav1_sequence_cache_test.h"
+
 int main(int argc, char **argv)
 {
    rwebm_video_stream_t *s;
@@ -501,6 +504,13 @@ int main(int argc, char **argv)
    CHECK(!rwebm_video_stream_next(s, NULL));
    rwebm_video_stream_close(s);
    CHECK(opens == closes && exports == abandons);
+   rav1_set_hw_backend(&factory);
+   if (factory.open_config)
+   {
+      test_sequence_reopen(0);
+      test_sequence_reopen(1);
+   }
+   rav1_set_hw_backend(NULL);
    if (factory.open_config) CHECK(config_opens);
    printf("AV1 WebM hardware reader: %u failures\n", failures);
    return failures ? 1 : 0;
