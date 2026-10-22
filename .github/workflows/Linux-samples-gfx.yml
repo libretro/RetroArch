@@ -466,12 +466,9 @@ jobs:
   samples-gfx:
     name: Build and run samples/gfx
     runs-on: ubuntu-latest
-    # The gfx_thumbnail_preview step alone is ~5 min: two sanitizer
-    # builds, the video harness under each, and the windowed-animation
-    # harness under ASan over ~70 MB of lossless frames.  20 was cut
-    # too close once the animation harness joined; the run was
-    # cancelled mid-TSan pass.
-    timeout-minutes: 30
+    # Allow the 20-minute dependency bound, ~23 minutes of regressions
+    # and setup/cache overhead. Preview retains its own command bounds.
+    timeout-minutes: 50
 
     steps:
       - name: Install dependencies
