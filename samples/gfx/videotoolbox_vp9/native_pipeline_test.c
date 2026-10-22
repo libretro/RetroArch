@@ -103,6 +103,13 @@ static void run(const vp9_pipeline_fixture_t *fixture, void *device)
       assert(ret == 1);
       ret = fixture->webm ? rwebm_video_stream_hw_frame(webm, &frame)
          : rmp4_video_stream_hw_frame(mp4, &frame);
+      if (ret != 1 || frame.color.transfer != fixture->transfer)
+      {
+         fprintf(stderr, "VP9 seek %u target %u: hardware frame %d, transfer %u expected %u\n",
+               seek, target, ret, ret == 1 ? frame.color.transfer : 0,
+               fixture->transfer);
+         fflush(stderr);
+      }
       assert(ret == 1 && frame.color.transfer == fixture->transfer);
       videotoolbox_hevc_test_export(&frame, fixture->depth,
             fixture->full, fixture->crc[target]);
