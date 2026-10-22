@@ -1843,6 +1843,8 @@ bool vulkan_video_decode_init(const vulkan_context_t *ctx)
 #endif
 #ifdef HAVE_RAV1
    vvd.av1.packet_decoder = false;
+   vvd.av1.open_config = NULL;
+   vvd.av1.drain = NULL;
    vvd.av1.user = NULL;
    vvd.av1.open = vvd_av1_open;
    vvd.av1.close = vvd_av1_close;
@@ -1870,7 +1872,7 @@ void vulkan_video_decode_deinit(void)
    }
 #endif
 #ifdef HAVE_RAV1
-   rav1_set_hw_backend(NULL);
+   rav1_unset_hw_backend(&vvd.av1);
 #endif
    rh264_set_hw_backend(NULL);
    rh265_unset_hw_backend(&vvd.hevc);

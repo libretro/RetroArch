@@ -20,19 +20,40 @@ void rav1_set_hw_backend(const rav1_hw_backend_t *backend)
 #endif
 }
 
-bool rav1_hw_backend_open(const rav1_sequence_t *sequence, unsigned slots,
-                          rav1_hw_ops_t *ops, rav1_hw_backend_t *backend)
+int rav1_unset_hw_backend(const rav1_hw_backend_t *backend)
+{
+   if (!backend)
+      return 0;
+#ifdef RETRO_ATOMIC_HAS_PTR
+   return retro_atomic_cas_ptr(&rav1_backend, (void*)backend, NULL);
+#else
+   if (rav1_backend != backend)
+      return 0;
+   rav1_backend = NULL;
+   return 1;
+#endif
+}
+
+bool rav1_hw_backend_open_config(const rav1_sequence_t *sequence,
+      const rav1_obu_t *sequence_obu, const video_color_metadata_t *color,
+      unsigned slots, rav1_hw_ops_t *ops, rav1_hw_backend_t *backend)
 {
    const rav1_hw_backend_t *factory = RAV1_BACKEND_GET();
+   bool opened;
    if (!ops || !backend)
       return false;
    memset(ops, 0, sizeof(*ops));
    memset(backend, 0, sizeof(*backend));
-   if (!sequence || slots < 9 || slots > 32 || !factory || !factory->open ||
-       !factory->close)
+   if (!sequence || slots < 9 || slots > 32 || !factory
+         || (!factory->open && !factory->open_config) || !factory->close)
       return false;
-   if (!factory->open(factory->user, sequence, slots, ops) || !ops->decoder ||
-       !ops->decode || !ops->output)
+   if (factory->drain && !factory->packet_decoder)
+      return false;
+   opened = factory->open_config
+                  ? factory->open_config(factory->user, sequence, sequence_obu,
+                          color, slots, ops)
+                  : factory->open(factory->user, sequence, slots, ops);
+   if (!opened || !ops->decoder || !ops->decode || !ops->output)
    {
       if (ops->decoder)
          factory->close(ops);
@@ -41,4 +62,11 @@ bool rav1_hw_backend_open(const rav1_sequence_t *sequence, unsigned slots,
    }
    *backend = *factory;
    return true;
+}
+
+bool rav1_hw_backend_open(const rav1_sequence_t *sequence, unsigned slots,
+      rav1_hw_ops_t *ops, rav1_hw_backend_t *backend)
+{
+   return rav1_hw_backend_open_config(
+         sequence, NULL, NULL, slots, ops, backend);
 }

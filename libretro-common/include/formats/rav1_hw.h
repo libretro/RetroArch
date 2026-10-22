@@ -52,14 +52,25 @@ typedef struct rav1_hw_backend
    void (*close)(rav1_hw_ops_t *ops);
    /* Opaque bitstream decoders also consume show-existing header OBUs. */
    bool packet_decoder;
+   /* Optional admission; all views are borrowed only during open. */
+   bool (*open_config)(void *user, const rav1_sequence_t *sequence,
+         const rav1_obu_t *sequence_obu, const video_color_metadata_t *color,
+         unsigned slots, rav1_hw_ops_t *ops);
+   /* Packet decoders: 0 terminal completion, 1 pending, negative failure. */
+   int (*drain)(void *decoder, bool discard);
 } rav1_hw_backend_t;
 
 RETRO_BEGIN_DECLS
 /* Publish immutable storage before opening streams; NULL withdraws it.
  * Backend/user storage must outlive open decoders, which retain close. */
 void rav1_set_hw_backend(const rav1_hw_backend_t *backend);
+/* Withdraw only this offer; leave a replacement backend registered. */
+int rav1_unset_hw_backend(const rav1_hw_backend_t *backend);
 bool rav1_hw_backend_open(const rav1_sequence_t *sequence, unsigned slots,
       rav1_hw_ops_t *ops, rav1_hw_backend_t *backend);
+bool rav1_hw_backend_open_config(const rav1_sequence_t *sequence,
+      const rav1_obu_t *sequence_obu, const video_color_metadata_t *color,
+      unsigned slots, rav1_hw_ops_t *ops, rav1_hw_backend_t *backend);
 RETRO_END_DECLS
 
 typedef struct rav1_hw_reference
