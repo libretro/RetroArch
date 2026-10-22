@@ -87,6 +87,26 @@ struct drm_page
    struct drm_surface *surface;
 };
 
+/* The threaded wrapper's frame buffers: dumb buffers it writes frames
+ * into, scanned out where they lie through a framebuffer made for the
+ * frame's size, pitch and place in the buffer */
+#define DRM_FRAME_MEM 8
+struct drm_frame_mem
+{
+   struct drm_page page;
+   uint8_t *base;
+   size_t size;
+   uint32_t handle;
+   unsigned dims;
+   unsigned pitch;
+   size_t offset;
+   uint32_t fmt;
+   /* Freed while the plane still shows it: goes once it does not */
+   bool doomed;
+   /* The kernel took no framebuffer for this size and pitch */
+   bool refused;
+};
+
 /* One surface for main game, another for menu. */
 struct drm_surface
 {
@@ -260,6 +280,9 @@ struct drm_video
    /* The size the core last handed over, packed. */
    unsigned core_dims;
    int core_pitch;
+   struct drm_frame_mem fmem[DRM_FRAME_MEM];
+   /* The row pitch multiple the kernel gives dumb buffers, 0 unasked */
+   unsigned fmem_align;
    /* Both main and menu surfaces are going to have the same aspect,
     * so we keep it here for future reference. */
    float current_aspect;
@@ -494,27 +517,33 @@ static void drm_overlay_flipped(struct drm_video *v);
 static void drm_overlay_blend(struct drm_video *v, struct drm_surface *s);
 #endif
 
-static void drm_page_flip(struct drm_surface *surface)
+/* @page to the screen in place of @surface's: one of its own, the
+ * next to be written moving on past it, or frame memory */
+static void drm_page_flip_to(struct drm_surface *surface,
+      struct drm_page *page)
 {
 #ifdef HAVE_OVERLAY
    struct drm_video *v = surface->pages[0].drmvars;
 #endif
+   bool own                = page == &surface->pages[surface->flip_page];
    /* We already have the id of the FB_ID property of
     * the plane on which we are going to do a pageflip:
     * we got it back in drm_plane_setup()  */
    drmModeAtomicReqPtr req = drm.flip_req;
 
+   page->surface = surface;
    if (!drm.atomic)
    {
       /* The plane's update waits for the vblank, as the commit does */
       if (drmModeSetPlane(drm.fd, drm.plane_id, drm.crtc_id,
-               surface->pages[surface->flip_page].buf.fb_id, 0,
+               page->buf.fb_id, 0,
                drm.vp_x, drm.vp_y, drm.vp_w, drm.vp_h, 0, 0,
                VIDEO_SCALE_W(surface->src_dims) << 16,
                VIDEO_SCALE_H(surface->src_dims) << 16))
          RARCH_ERR("[DRM] Failed to flip the plane.\n");
-      surface->current_page = &surface->pages[surface->flip_page];
-      surface->flip_page    = drm_next_page(surface);
+      surface->current_page = page;
+      if (own)
+         surface->flip_page = drm_next_page(surface);
       return;
    }
 
@@ -540,7 +569,7 @@ static void drm_page_flip(struct drm_surface *surface)
    if (drmModeAtomicAddProperty(req,
          drm.plane_id,
          drm.plane_fb_prop_id,
-         surface->pages[surface->flip_page].buf.fb_id) < 0)
+         page->buf.fb_id) < 0)
    {
       RARCH_ERR("[DRM] Failed to add atomic property for pageflip.\n");
    }
@@ -565,11 +594,12 @@ static void drm_page_flip(struct drm_surface *surface)
          RARCH_ERR("[DRM] Failed to commit for pageflip.\n");
          return;
       }
-      drm.pending        = &surface->pages[surface->flip_page];
+      drm.pending        = page;
 #ifdef HAVE_OVERLAY
       drm.pending_ov     = v && v->ov.pending;
 #endif
-      surface->flip_page = drm_next_page(surface);
+      if (own)
+         surface->flip_page = drm_next_page(surface);
       return;
    }
 
@@ -581,8 +611,14 @@ static void drm_page_flip(struct drm_surface *surface)
 #ifdef HAVE_OVERLAY
    drm_overlay_flipped(v);
 #endif
-   surface->current_page = &surface->pages[surface->flip_page];
-   surface->flip_page    = drm_next_page(surface);
+   surface->current_page = page;
+   if (own)
+      surface->flip_page = drm_next_page(surface);
+}
+
+static void drm_page_flip(struct drm_surface *surface)
+{
+   drm_page_flip_to(surface, &surface->pages[surface->flip_page]);
 }
 
 static unsigned drm_next_page(struct drm_surface *surface)
@@ -651,6 +687,179 @@ static void drm_turn_copy(uint8_t *dst, size_t stride, const uint8_t *src,
             out[ox] = *(const uint16_t*)in;
       }
    }
+}
+
+static bool drm_fmem_busy(const struct drm_video *v,
+      const struct drm_frame_mem *m)
+{
+   return &m->page == drm.pending || (v->main_surface
+         && &m->page == v->main_surface->current_page);
+}
+
+static void drm_fmem_destroy(struct drm_frame_mem *m)
+{
+   m->page.buf.map    = m->base;
+   m->page.buf.size   = m->size;
+   m->page.buf.handle = m->handle;
+   modeset_destroy_dumbfb(&m->page.buf);
+   memset(m, 0, sizeof(*m));
+}
+
+/* What was freed while it was shown goes once it is not */
+static void drm_fmem_sweep(struct drm_video *v)
+{
+   unsigned i;
+   for (i = 0; i < DRM_FRAME_MEM; i++)
+      if (v->fmem[i].doomed && !drm_fmem_busy(v, &v->fmem[i]))
+         drm_fmem_destroy(&v->fmem[i]);
+}
+
+/* The frame memory @frame lies in, with a framebuffer showing @dims
+ * from there at @pitch; NULL to copy it instead */
+static struct drm_page *drm_fmem_page(struct drm_video *v,
+      const void *frame, unsigned dims, unsigned pitch, uint32_t fmt,
+      unsigned bpp)
+{
+   unsigned i;
+   const uint8_t *f = (const uint8_t*)frame;
+
+   for (i = 0; i < DRM_FRAME_MEM; i++)
+   {
+      struct drm_frame_mem *m = &v->fmem[i];
+      struct drm_mode_fb_cmd2 cmd;
+      size_t off;
+      if (     !m->base || m->doomed || f < m->base
+            || f >= m->base + m->size)
+         continue;
+      off = (size_t)(f - m->base);
+      if (     (size_t)pitch * (VIDEO_SCALE_H(dims) - 1)
+               + (size_t)VIDEO_SCALE_W(dims) * bpp > m->size - off
+            || pitch < VIDEO_SCALE_W(dims) * bpp)
+         return NULL;
+      if (     m->page.buf.fb_id && m->dims == dims && m->pitch == pitch
+            && m->offset == off && m->fmt == fmt)
+         return &m->page;
+      if (     m->refused && m->dims == dims && m->pitch == pitch
+            && m->offset == off && m->fmt == fmt)
+         return NULL;
+      /* Written again, so not shown: its old framebuffer can go */
+      if (m->page.buf.fb_id)
+      {
+         drmModeRmFB(drm.fd, m->page.buf.fb_id);
+         m->page.buf.fb_id = 0;
+      }
+      m->dims    = dims;
+      m->pitch   = pitch;
+      m->offset  = off;
+      m->fmt     = fmt;
+      m->refused = false;
+      memset(&cmd, 0, sizeof(cmd));
+      cmd.width        = VIDEO_SCALE_W(dims);
+      cmd.height       = VIDEO_SCALE_H(dims);
+      cmd.pixel_format = fmt;
+      cmd.handles[0]   = m->handle;
+      cmd.pitches[0]   = pitch;
+      cmd.offsets[0]   = (uint32_t)off;
+      if (drmIoctl(drm.fd, DRM_IOCTL_MODE_ADDFB2, &cmd))
+      {
+         RARCH_WARN("[DRM] Frames at a pitch of %u are copied.\n", pitch);
+         m->refused = true;
+         return NULL;
+      }
+      m->page.buf.fb_id        = cmd.fb_id;
+      m->page.buf.map          = m->base + off;
+      m->page.buf.stride       = pitch;
+      m->page.buf.dims         = dims;
+      m->page.buf.pixel_format = fmt;
+      m->page.drmvars          = v;
+      return &m->page;
+   }
+   return NULL;
+}
+
+/* A frame buffer for the threaded wrapper: a dumb buffer of @size
+ * bytes, the frames written into it flipped to without a copy */
+static void *drm_frame_mem_alloc(void *data, size_t size, uintptr_t *id,
+      bool *cached, unsigned *pitch_align)
+{
+   unsigned i;
+   struct drm_video *v                     = (struct drm_video*)data;
+   struct drm_mode_create_dumb create_dumb = {0};
+   struct drm_mode_map_dumb map_dumb       = {0};
+   struct drm_frame_mem *m                 = NULL;
+   void *map;
+
+   if (!v || !size || drm.fd < 0)
+      return NULL;
+   for (i = 0; i < DRM_FRAME_MEM && !m; i++)
+      if (!v->fmem[i].base)
+         m = &v->fmem[i];
+   if (!m)
+      return NULL;
+
+   /* The pitch the kernel gives the narrowest buffer is the multiple
+    * the display reads rows at */
+   if (!v->fmem_align)
+   {
+      struct drm_mode_destroy_dumb destroy_dumb = {0};
+      create_dumb.width  = 1;
+      create_dumb.height = 1;
+      create_dumb.bpp    = 32;
+      if (drmIoctl(drm.fd, DRM_IOCTL_MODE_CREATE_DUMB, &create_dumb))
+         return NULL;
+      destroy_dumb.handle = create_dumb.handle;
+      drmIoctl(drm.fd, DRM_IOCTL_MODE_DESTROY_DUMB, &destroy_dumb);
+      v->fmem_align = create_dumb.pitch < 64 ? 64 : create_dumb.pitch;
+      memset(&create_dumb, 0, sizeof(create_dumb));
+   }
+
+   create_dumb.width  = 1024;
+   create_dumb.height = (uint32_t)((size + 4095) / 4096);
+   create_dumb.bpp    = 32;
+   if (drmIoctl(drm.fd, DRM_IOCTL_MODE_CREATE_DUMB, &create_dumb))
+      return NULL;
+   map_dumb.handle = create_dumb.handle;
+   if (     drmIoctl(drm.fd, DRM_IOCTL_MODE_MAP_DUMB, &map_dumb)
+         || (map = mmap(0, create_dumb.size, PROT_READ | PROT_WRITE,
+               MAP_SHARED, drm.fd, map_dumb.offset)) == MAP_FAILED)
+   {
+      struct drm_mode_destroy_dumb destroy_dumb = {0};
+      destroy_dumb.handle = create_dumb.handle;
+      drmIoctl(drm.fd, DRM_IOCTL_MODE_DESTROY_DUMB, &destroy_dumb);
+      return NULL;
+   }
+   memset(m, 0, sizeof(*m));
+   m->base   = (uint8_t*)map;
+   m->size   = create_dumb.size;
+   m->handle = create_dumb.handle;
+   *id       = (uintptr_t)(m - v->fmem) + 1;
+   if (cached)
+      *cached = false;
+   if (pitch_align)
+      *pitch_align = v->fmem_align;
+   return map;
+}
+
+static bool drm_frame_mem_ready(void *data, uintptr_t id)
+{
+   struct drm_video *v = (struct drm_video*)data;
+   if (!v || !id || id > DRM_FRAME_MEM)
+      return false;
+   drm_flip_drain(0);
+   return !drm_fmem_busy(v, &v->fmem[id - 1]);
+}
+
+static void drm_frame_mem_free(void *data, uintptr_t id)
+{
+   struct drm_video *v = (struct drm_video*)data;
+   struct drm_frame_mem *m;
+   if (!v || !id || id > DRM_FRAME_MEM || !(m = &v->fmem[id - 1])->base)
+      return;
+   drm_flip_drain(0);
+   if (drm_fmem_busy(v, m))
+      m->doomed = true;
+   else
+      drm_fmem_destroy(m);
 }
 
 static void drm_surface_update(void *data, const void *frame,
@@ -2094,8 +2303,28 @@ static bool drm_frame(void *data, const void *frame,
    if (drm_views_frame(_drmvars, frame, dims, pitch, video_info))
       return true;
 
+   /* A frame in the threaded wrapper's frame memory goes up where it
+    * lies, unless the copy turns it or blends the overlay into it */
+   if (     !_drmvars->main_surface->rot
+#ifdef HAVE_OVERLAY
+         && !(_drmvars->ov.enabled && _drmvars->ov.count
+            && _drmvars->ov.mode == DRM_OVERLAY_BLEND)
+#endif
+      )
+   {
+      struct drm_page *page = drm_fmem_page(_drmvars, frame, dims, pitch,
+            _drmvars->main_surface->pixformat, _drmvars->main_surface->bpp);
+      if (page)
+      {
+         drm_page_flip_to(_drmvars->main_surface, page);
+         drm_fmem_sweep(_drmvars);
+         return true;
+      }
+   }
+
    /* Update main surface: locate free page, blit and flip. */
    drm_surface_update(_drmvars, frame, pitch, _drmvars->main_surface);
+   drm_fmem_sweep(_drmvars);
    return true;
 }
 
@@ -2480,9 +2709,9 @@ static const video_poke_interface_t drm_poke_interface = {
    NULL, /* hw_context_destroying */
    NULL, /* get_headset_refresh */
    NULL, /* set_frame_format */
-   NULL, /* frame_mem_alloc */
-   NULL, /* frame_mem_ready */
-   NULL, /* frame_mem_free */
+   drm_frame_mem_alloc,
+   drm_frame_mem_ready,
+   drm_frame_mem_free,
    NULL, /* get_device */
    NULL, /* import_texture */
    NULL, /* get_last_present_sync */
@@ -2514,6 +2743,12 @@ static void drm_gfx_free(void *data)
    if (_drmvars->main_surface && _drmvars->main_surface->lent)
       video_driver_cached_frame_retire();
    drm_surface_free(_drmvars, &_drmvars->main_surface);
+   {
+      unsigned i;
+      for (i = 0; i < DRM_FRAME_MEM; i++)
+         if (_drmvars->fmem[i].base)
+            drm_fmem_destroy(&_drmvars->fmem[i]);
+   }
 
    if (_drmvars->menu_surface)
       drm_surface_free(_drmvars, &_drmvars->menu_surface);

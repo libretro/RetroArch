@@ -86,6 +86,10 @@ static int      dumb_alive[MAX_OBJ];   /* by handle */
 static uint32_t dumb_size[MAX_OBJ];
 static int      fb_alive[MAX_OBJ];     /* by fb id */
 static uint32_t fb_format[MAX_OBJ];    /* the format each was made with */
+static uint32_t fb_pitch[MAX_OBJ], fb_offset[MAX_OBJ];
+/* Pitches the display cannot read rows at: not a multiple of this */
+static uint32_t scanout_align = 1;
+static unsigned addfb_calls;
 static unsigned maps_alive;
 static uint32_t plane_fb;              /* the fb the plane scans out */
 static unsigned blanks;                /* times it was removed from under the plane */
@@ -121,11 +125,20 @@ int drmIoctl(int fd, unsigned long request, void *arg)
    if (request == DRM_IOCTL_MODE_ADDFB2)
    {
       struct drm_mode_fb_cmd2 *f = (struct drm_mode_fb_cmd2*)arg;
-      if (next_fb >= MAX_OBJ || !dumb_alive[f->handles[0]])
+      unsigned bpp = f->pixel_format == DRM_FORMAT_XRGB8888
+         || f->pixel_format == DRM_FORMAT_ARGB8888 ? 4 : 2;
+      addfb_calls++;
+      if (     next_fb >= MAX_OBJ || !dumb_alive[f->handles[0]]
+            || f->pitches[0] % scanout_align
+            || f->pitches[0] < f->width * bpp
+            || (uint64_t)f->offsets[0] + (uint64_t)f->pitches[0]
+               * f->height > dumb_size[f->handles[0]])
          return -1;
       f->fb_id = next_fb++;
       fb_alive[f->fb_id]  = 1;
       fb_format[f->fb_id] = f->pixel_format;
+      fb_pitch[f->fb_id]  = f->pitches[0];
+      fb_offset[f->fb_id] = f->offsets[0];
       return 0;
    }
    /* Legacy: a depth and bpp, which name XRGB8888 or RGB565 at best */
@@ -1409,6 +1422,112 @@ int main(void)
    atomic_ok = 1;
    if (failures == before)
       printf("   ok   without vsync, flips do not wait and never write a page in use\n");
+   before = failures;
+
+   /* The threaded wrapper's frame memory: frames written into it are
+    * scanned out where they lie, the buffer on screen is not written,
+    * one freed while shown goes once it is not */
+   pitch_align = 64;
+   v = (struct drm_video*)drm_init(&info);
+   if (v)
+   {
+      uintptr_t id[3];
+      uint8_t  *mem[3];
+      unsigned  align = 0, k, x, y;
+      bool      cached = true;
+      uint32_t  fb;
+      struct drm_surface *s;
+      const unsigned w = 100, h = 32;
+      unsigned fp;
+      for (k = 0; k < 3; k++)
+         mem[k] = (uint8_t*)drm_frame_mem_alloc(v, 448 * h, &id[k],
+               &cached, &align);
+      CHECK(mem[0] && mem[1] && mem[2] && !cached && align == 64,
+            "three buffers, uncached, rows at the kernel's multiple (%u)",
+            align);
+      fp = (w * 4 + align - 1) / align * align;
+      for (k = 0; k < 3 && mem[k]; k++)
+         for (y = 0; y < h; y++)
+            for (x = 0; x < w; x++)
+               ((uint32_t*)(mem[k] + y * fp))[x] = (k << 20) | (y << 8) | x;
+      drm_frame(v, mem[0], VIDEO_SCALE_PACK(w, h), 0, fp, NULL, NULL);
+      s  = v->main_surface;
+      fb = plane_fb;
+      CHECK(s && s->current_page && s->current_page->buf.map == mem[0]
+            && fb_alive[fb] && fb_pitch[fb] == fp && fb_offset[fb] == 0,
+            "the frame is scanned out from the buffer it was written to");
+      CHECK(!drm_frame_mem_ready(v, id[0]) && drm_frame_mem_ready(v, id[1]),
+            "the buffer on screen is not written; another is");
+      CHECK(s && s->pages[0].buf.map && !((uint32_t*)s->pages[0].buf.map)[1]
+            && !((uint32_t*)s->pages[1].buf.map)[1],
+            "and nothing was copied");
+      drm_frame(v, mem[1], VIDEO_SCALE_PACK(w, h), 0, fp, NULL, NULL);
+      CHECK(drm_frame_mem_ready(v, id[0]) && !drm_frame_mem_ready(v, id[1]),
+            "once off the screen it is written again");
+      drm_frame(v, mem[0], VIDEO_SCALE_PACK(w, h), 0, fp, NULL, NULL);
+      CHECK(plane_fb == fb && fb_alive[fb], "its framebuffer is kept");
+      /* A frame inside the buffer: from where it starts */
+      drm_frame(v, mem[1] + fp, VIDEO_SCALE_PACK(w, h - 1), 0, fp, NULL,
+            NULL);
+      CHECK(fb_offset[plane_fb] == fp && v->main_surface->current_page
+            && v->main_surface->current_page->buf.map == mem[1] + fp,
+            "a frame inside a buffer is scanned out from its start");
+      /* Freed while shown: kept until the plane leaves it */
+      drm_frame_mem_free(v, id[1]);
+      CHECK(fb_alive[plane_fb] && !blanks, "freed while shown, it stays");
+      drm_frame(v, mem[2], VIDEO_SCALE_PACK(w, h - 1), 0, fp, NULL, NULL);
+      CHECK(!v->fmem[id[1] - 1].base && !blanks,
+            "and goes once the plane has left it");
+      id[1] = drm_frame_mem_alloc(v, 448 * h, &id[1], NULL, NULL)
+         ? id[1] : 0;
+      /* Without vsync: never the one on its way either */
+      drm_set_nonblock_state(v, true, false, 0);
+      drm_frame(v, mem[0], VIDEO_SCALE_PACK(w, h - 1), 0, fp, NULL, NULL);
+      CHECK(flight && !drm_frame_mem_ready(v, id[0])
+            && !drm_frame_mem_ready(v, id[2]),
+            "the buffer on its way and the one shown are not written");
+      vblank();
+      CHECK(!drm_frame_mem_ready(v, id[0]) && drm_frame_mem_ready(v, id[2]),
+            "the flip done is seen without waiting");
+      drm_set_nonblock_state(v, false, false, 0);
+      /* A pitch the display cannot read: copied, and not asked again.
+       * The surface's own pages are at the kernel's pitch, which it reads */
+      scanout_align = 128;
+      pitch_align   = 128;
+      {
+         unsigned c0 = next_fb, a0;
+         drm_frame(v, mem[2], VIDEO_SCALE_PACK(w, h), 0, fp, NULL, NULL);
+         a0 = addfb_calls;
+         drm_frame(v, mem[2], VIDEO_SCALE_PACK(w, h), 0, fp, NULL, NULL);
+         CHECK(addfb_calls == a0, "a refused pitch is not asked again");
+         s = v->main_surface;
+         CHECK(s && s->current_page && s->current_page >= s->pages
+               && s->current_page < s->pages + s->numpages
+               && ((uint32_t*)s->current_page->buf.map)[5] == ((2u << 20) | 5)
+               && next_fb == c0 + 3,
+               "a pitch the display refuses: the frame is copied (%u fbs)",
+               next_fb - c0);
+      }
+      scanout_align = 1;
+      pitch_align   = 64;
+      /* Turned by the copy: copied */
+      pp[0].has_rot = 0;
+      drm_set_rotation(v, 1);
+      drm_frame(v, mem[0], VIDEO_SCALE_PACK(w, h), 0, fp, NULL, NULL);
+      s = v->main_surface;
+      CHECK(s && s->rot == 1 && s->current_page >= s->pages
+            && s->current_page < s->pages + s->numpages,
+            "a frame the copy turns is copied");
+      drm_set_rotation(v, 0);
+      drm_frame(v, mem[0], VIDEO_SCALE_PACK(w, h), 0, fp, NULL, NULL);
+      drm_gfx_free(v);
+   }
+   pitch_align = 1;
+   CHECK(fds_open == 0 && !count(dumb_alive) && !count(fb_alive)
+         && maps_alive == 0, "and leaves nothing (%u dumb, %u fb, %u maps)",
+         count(dumb_alive), count(fb_alive), maps_alive);
+   if (failures == before)
+      printf("   ok   the threaded wrapper's frames scanned out where they lie\n");
 
 
    if (failures)

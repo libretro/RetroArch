@@ -6,7 +6,8 @@
 # RGUI's own format, lent, and resized; the input overlay on a plane of
 # its own, or blended into the frame; the frame turned by the plane, or
 # by the copy, and read back as it is shown; without vsync, flips that
-# do not wait and never write a page in use.
+# do not wait and never write a page in use; the threaded wrapper's
+# frames scanned out where they lie.
 
 TARGET    := drm_surface_lifetime_test
 REPO_ROOT := ../../..

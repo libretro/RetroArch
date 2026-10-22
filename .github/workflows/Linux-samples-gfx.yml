@@ -1729,7 +1729,11 @@ jobs:
           # the last is on screen written over, the page written next
           # never the one on screen or on its way; a resize, the menu, a
           # mode switch and the free wait for the flip first, and vsync
-          # turned back on waits again.
+          # turned back on waits again. The threaded wrapper's frame
+          # memory is scanned out where a frame lies, from inside a
+          # buffer too, never written while shown or on its way, freed
+          # only once the plane has left it, and copied where the display
+          # refuses the pitch or the copy turns the frame.
           make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
              timeout 60 ./drm_surface_lifetime_test
