@@ -83,8 +83,9 @@ void rslc_err(struct rslc_ctx *c, const char *a, const char *b, unsigned line)
       at = rslc_err_copy(dst, cap, at, b);
    if (line)
    {
-      char     num[12];
-      unsigned n = sizeof(num) - 1;
+      char        num[12];
+      unsigned    n    = sizeof(num) - 1;
+      const char *file = c->err_file < c->nfiles ? c->files[c->err_file] : NULL;
 
       num[n] = '\0';
       do
@@ -92,7 +93,14 @@ void rslc_err(struct rslc_ctx *c, const char *a, const char *b, unsigned line)
          num[--n] = (char)('0' + (line % 10u));
          line    /= 10u;
       } while (line && n);
-      at = rslc_err_copy(dst, cap, at, " (line ");
+      if (file && file[0])
+      {
+         at = rslc_err_copy(dst, cap, at, " (");
+         at = rslc_err_copy(dst, cap, at, file);
+         at = rslc_err_copy(dst, cap, at, ":");
+      }
+      else
+         at = rslc_err_copy(dst, cap, at, " (line ");
       at = rslc_err_copy(dst, cap, at, num + n);
       at = rslc_err_copy(dst, cap, at, ")");
    }
@@ -393,7 +401,7 @@ static const char *const rslc_keywords[] = {
    "mat2x2", "mat2x3", "mat2x4",
    "mat3x2", "mat3x3", "mat3x4",
    "mat4x2", "mat4x3", "mat4x4",
-   "sampler2D"
+   "sampler2D", "isampler2D", "usampler2D"
 };
 
 static bool rslc_seed_keywords(struct rslc_ctx *c)
@@ -566,6 +574,148 @@ void rslc_ctx_close(struct rslc_ctx *c)
 {
    rslc_arena_free_all(c, &c->arena);
    rslc_arena_free_all(c, &c->scratch);
+}
+
+/* IR */
+
+static struct rslc_type *rslc_type_find(struct rslc_ctx *c, enum rslc_tkind kind,
+      enum rslc_base base, unsigned rows, unsigned cols,
+      const struct rslc_type *elem, uint32_t array_len)
+{
+   struct rslc_type *t;
+   for (t = c->type_chain; t; t = t->next)
+      if (t->kind == kind && t->base == base && t->rows == rows
+            && t->cols == cols && t->elem == elem && t->array_len == array_len
+            && t->kind != RSLC_TY_STRUCT)
+         return t;
+   return NULL;
+}
+
+static struct rslc_type *rslc_type_add(struct rslc_ctx *c, enum rslc_tkind kind,
+      enum rslc_base base, unsigned rows, unsigned cols,
+      const struct rslc_type *elem, uint32_t array_len)
+{
+   struct rslc_type *t = (struct rslc_type*)rslc_arena_zalloc(c, sizeof(*t));
+   if (!t)
+      return NULL;
+   t->kind      = (uint8_t)kind;
+   t->base      = (uint8_t)base;
+   t->rows      = (uint8_t)rows;
+   t->cols      = (uint8_t)cols;
+   t->elem      = elem;
+   t->array_len = array_len;
+   t->id        = ++c->ntypes;
+   t->next      = c->type_chain;
+   c->type_chain = t;
+   return t;
+}
+
+const struct rslc_type *rslc_type_basic(struct rslc_ctx *c, enum rslc_tkind kind,
+      enum rslc_base base, unsigned rows, unsigned cols)
+{
+   struct rslc_type *t = rslc_type_find(c, kind, base, rows, cols, NULL, 0);
+   if (t)
+      return t;
+   return rslc_type_add(c, kind, base, rows, cols, NULL, 0);
+}
+
+const struct rslc_type *rslc_type_sampler2d(struct rslc_ctx *c, enum rslc_base base)
+{
+   return rslc_type_basic(c, RSLC_TY_SAMPLER2D, base, 1, 1);
+}
+
+const struct rslc_type *rslc_type_array(struct rslc_ctx *c,
+      const struct rslc_type *elem, uint32_t len)
+{
+   struct rslc_type *t;
+   if (!elem)
+      return NULL;
+   t = rslc_type_find(c, RSLC_TY_ARRAY, RSLC_BASE_VOID, 0, 0, elem, len);
+   if (t)
+      return t;
+   return rslc_type_add(c, RSLC_TY_ARRAY, RSLC_BASE_VOID, 0, 0, elem, len);
+}
+
+struct rslc_type *rslc_type_struct(struct rslc_ctx *c, struct rslc_sym *name,
+      const struct rslc_field *fields, uint32_t nfields)
+{
+   struct rslc_type *t = rslc_type_add(c, RSLC_TY_STRUCT, RSLC_BASE_VOID, 0, 0, NULL, 0);
+   if (!t)
+      return NULL;
+   t->name    = name;
+   t->fields  = fields;
+   t->nfields = nfields;
+   return t;
+}
+
+uint32_t rslc_node_new(struct rslc_ctx *c, enum rslc_op op,
+      const struct rslc_type *type, uint32_t a, uint32_t b, uint32_t c_,
+      uint16_t aux, uint32_t line)
+{
+   uint32_t          chunk;
+   struct rslc_node *n;
+
+   if (c->nnodes == 0)
+      c->nnodes = 1;   /* node 0 is the sentinel */
+   chunk = c->nnodes >> RSLC_NODE_CHUNK_SHIFT;
+   if (chunk == c->nnode_chunks)
+   {
+      struct rslc_node *nc;
+      if ((chunk & (chunk + 1)) == 0 || !c->node_chunks)
+      {
+         uint32_t           ncap = chunk ? (chunk + 1) * 2 : 1;
+         struct rslc_node **nt   = (struct rslc_node**)rslc_arena_alloc(c,
+               ncap * sizeof(*nt));
+         if (!nt)
+            return 0;
+         if (chunk)
+            memcpy(nt, c->node_chunks, chunk * sizeof(*nt));
+         c->node_chunks = nt;
+      }
+      nc = (struct rslc_node*)rslc_arena_zalloc(c, RSLC_NODE_CHUNK * sizeof(*nc));
+      if (!nc)
+         return 0;
+      c->node_chunks[chunk] = nc;
+      c->nnode_chunks++;
+   }
+   n       = rslc_node_at(c, c->nnodes);
+   n->type = type;
+   n->a    = a;
+   n->b    = b;
+   n->c    = c_;
+   n->line = line;
+   n->op   = (uint16_t)op;
+   n->aux  = aux;
+   return c->nnodes++;
+}
+
+uint32_t rslc_list_new(struct rslc_ctx *c, const uint32_t *items, uint32_t n)
+{
+   uint32_t id;
+   if (c->nlists == 0)
+      c->nlists = 1;   /* list 0 is the sentinel (empty) */
+   if (c->nlists + n + 1 > c->lists_cap)
+   {
+      uint32_t  ncap = c->lists_cap ? c->lists_cap * 2 : 1024;
+      uint32_t *nv;
+      while (ncap < c->nlists + n + 1)
+         ncap *= 2;
+      nv = (uint32_t*)rslc_arena_alloc(c, ncap * sizeof(*nv));
+      if (!nv)
+         return 0;
+      if (c->lists)
+         memcpy(nv, c->lists, c->nlists * sizeof(*nv));
+      else
+         nv[0] = 0;
+      c->lists     = nv;
+      c->lists_cap = ncap;
+   }
+   id = c->nlists;
+   c->lists[id] = n;
+   if (n)
+      memcpy(c->lists + id + 1, items, n * sizeof(*items));
+   c->nlists += n + 1;
+   return id;
 }
 
 /* Blob */

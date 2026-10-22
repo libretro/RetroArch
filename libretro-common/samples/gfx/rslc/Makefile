@@ -14,7 +14,7 @@ OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
 # The compiler is C89 everywhere it ships; the test is held to the
 # same flags so a C99-ism cannot hide in it.
-CFLAGS  += -Wall -Wextra -pedantic -std=c89 -Wno-long-long -D_GNU_SOURCE \
+CFLAGS  += -Wall -Wextra -pedantic -std=c89 -Wno-long-long -Wno-overlength-strings -D_GNU_SOURCE \
 	-Werror=implicit-function-declaration -g1 \
 	-I$(LIBRETRO_COMM_DIR)/include -I$(LIBRETRO_COMM_DIR)/gfx/shaders
 

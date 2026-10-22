@@ -22,7 +22,8 @@ GLSLANG = os.environ.get('GLSLANG_VALIDATOR', 'glslangValidator')
 
 TOKEN_RE = re.compile(
     r'[A-Za-z_][A-Za-z_0-9]*'
-    r'|(?:\d|\.\d)(?:[eE][+-]|[A-Za-z_0-9.])*'
+    r'|0[xX][0-9A-Fa-f]*[uU]?'
+    r'|(?:\d+\.\d*|\.\d+|\d+)(?:[eE][+-]?\d+)?(?:[fF]|lf|LF|[uU])?'
     r'|<<=|>>=|<<|>>|\+\+|--|<=|>=|==|!=|&&|\|\||\^\^'
     r'|\+=|-=|\*=|/=|%=|&=|\|=|\^='
     r'|[()\[\]{}.,:;=+\-*/%<>!~&|^?#]'

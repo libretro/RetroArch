@@ -77,11 +77,14 @@ struct rslc_sym
 {
    const char        *str;
    struct rslc_macro *macro;
+   struct rslc_decl  *decl;    /* innermost visible declaration */
    uint32_t           hash;
    uint32_t           len;
    uint32_t           index;   /* position in ctx->syms */
    uint16_t           kw;
    uint16_t           flags;   /* RSLC_SYM_* */
+   uint16_t           bfn;     /* enum rslc_bfn when a builtin function name */
+   uint16_t           pad;
 };
 
 #define RSLC_SYM_BUSY     1u   /* macro being expanded: do not re-expand */
@@ -207,8 +210,290 @@ enum rslc_kw
    RSLC_KW_MAT2X2, RSLC_KW_MAT2X3, RSLC_KW_MAT2X4,
    RSLC_KW_MAT3X2, RSLC_KW_MAT3X3, RSLC_KW_MAT3X4,
    RSLC_KW_MAT4X2, RSLC_KW_MAT4X3, RSLC_KW_MAT4X4,
-   RSLC_KW_SAMPLER2D,
+   RSLC_KW_SAMPLER2D, RSLC_KW_ISAMPLER2D, RSLC_KW_USAMPLER2D,
    RSLC_KW_COUNT
+};
+
+/* ------------------------------------------------------------------ */
+/* IR                                                                  */
+/* ------------------------------------------------------------------ */
+
+/* Types are interned: equal shapes are one record, compared by
+ * address.  Structs are distinct per definition.  rows is the vector
+ * width (1 for a scalar) or the matrix row count; cols the matrix
+ * column count (1 otherwise).  GLSL matN is N columns of vecN; matCxR
+ * is C columns of vecR. */
+enum rslc_tkind
+{
+   RSLC_TY_VOID = 0,
+   RSLC_TY_SCALAR,
+   RSLC_TY_VEC,
+   RSLC_TY_MAT,
+   RSLC_TY_SAMPLER2D,
+   RSLC_TY_ARRAY,
+   RSLC_TY_STRUCT
+};
+
+struct rslc_type;
+
+struct rslc_field
+{
+   const struct rslc_type *type;
+   struct rslc_sym        *name;
+   uint32_t                line;
+   uint8_t                 precision;   /* RSLC_PREC_* */
+   uint8_t                 pad[3];
+};
+
+struct rslc_type
+{
+   const struct rslc_type  *elem;      /* ARRAY element */
+   const struct rslc_field *fields;    /* STRUCT */
+   struct rslc_sym         *name;      /* STRUCT */
+   struct rslc_type        *next;      /* intern chain */
+   uint32_t                 id;
+   uint32_t                 array_len; /* ARRAY; 0 = unsized */
+   uint32_t                 nfields;
+   uint8_t                  kind;      /* enum rslc_tkind */
+   uint8_t                  base;      /* enum rslc_base */
+   uint8_t                  rows;
+   uint8_t                  cols;
+};
+
+#define RSLC_PREC_NONE   0
+#define RSLC_PREC_LOW    1
+#define RSLC_PREC_MEDIUM 2
+#define RSLC_PREC_HIGH   3
+
+enum rslc_storage
+{
+   RSLC_ST_LOCAL = 0,
+   RSLC_ST_GLOBAL,
+   RSLC_ST_CONST,       /* global or local const with a constant init */
+   RSLC_ST_IN,
+   RSLC_ST_OUT,
+   RSLC_ST_PARAM,       /* function parameter; dir says in/out/inout */
+   RSLC_ST_SAMPLER,     /* uniform sampler2D */
+   RSLC_ST_BLOCK,       /* the instance of a named uniform / push block */
+   RSLC_ST_MEMBER,      /* a member of an unnamed block, visible bare */
+   RSLC_ST_BUILTIN      /* gl_Position and friends */
+};
+
+#define RSLC_DIR_IN    0
+#define RSLC_DIR_OUT   1
+#define RSLC_DIR_INOUT 2
+
+#define RSLC_INTERP_NONE          0
+#define RSLC_INTERP_FLAT          1
+#define RSLC_INTERP_NOPERSPECTIVE 2
+#define RSLC_INTERP_SMOOTH        3
+
+#define RSLC_VQ_CENTROID  1u
+#define RSLC_VQ_SAMPLE    2u
+#define RSLC_VQ_INVARIANT 4u
+#define RSLC_VQ_PRECISE   8u
+
+#define RSLC_UNSET 0xffffffffu
+
+struct rslc_var
+{
+   const struct rslc_type *type;
+   struct rslc_sym        *name;
+   uint32_t                id;
+   uint32_t                init;       /* node, 0 = none */
+   uint32_t                line;
+   uint32_t                location;   /* RSLC_UNSET when absent */
+   uint32_t                binding;
+   uint32_t                set;
+   uint32_t                block;      /* RSLC_ST_MEMBER / BLOCK: block index */
+   uint32_t                member;     /* RSLC_ST_MEMBER: field index */
+   uint8_t                 storage;    /* enum rslc_storage */
+   uint8_t                 dir;        /* RSLC_DIR_* for params */
+   uint8_t                 interp;
+   uint8_t                 precision;
+   uint8_t                 quals;      /* RSLC_VQ_* */
+   uint8_t                 builtin;    /* RSLC_BI_* for RSLC_ST_BUILTIN */
+   uint8_t                 pad[2];
+};
+
+/* Builtin variables. */
+#define RSLC_BI_NONE         0
+#define RSLC_BI_POSITION     1
+#define RSLC_BI_FRAGCOORD    2
+#define RSLC_BI_FRAGDEPTH    3
+#define RSLC_BI_VERTEXINDEX  4
+#define RSLC_BI_POINTSIZE    5
+#define RSLC_BI_FRONTFACING  6
+#define RSLC_BI_INSTANCEINDEX 7
+
+/* A uniform block or push-constant block. */
+struct rslc_blockdecl
+{
+   const struct rslc_type *type;      /* the struct of its members */
+   struct rslc_sym        *instance;  /* NULL for an unnamed block */
+   uint32_t                binding;   /* RSLC_UNSET when absent */
+   uint32_t                set;
+   uint32_t                line;
+   bool                    push;
+};
+
+struct rslc_func
+{
+   struct rslc_sym        *name;
+   const struct rslc_type *ret;
+   struct rslc_var       **params;
+   struct rslc_func       *next;      /* next overload of the same name */
+   uint32_t                nparams;
+   uint32_t                body;      /* BLOCK node; 0 for a prototype */
+   uint32_t                id;
+   uint32_t                line;
+};
+
+/* Nodes.  Expressions carry their type after typecheck; statements
+ * carry NULL.  a, b, c are node ids or list ids as the op says; 0 is
+ * "none" (node 0 is a sentinel).  Lists are in ctx->lists: lists[id]
+ * is the count, followed by the items. */
+enum rslc_op
+{
+   RSLC_OP_NONE = 0,
+   /* expressions */
+   RSLC_OP_CONST,      /* aux unused; a = value bits (int/uint/float/bool) */
+   RSLC_OP_VAR,        /* a = var id */
+   RSLC_OP_MEMBER,     /* a = struct expr, b = field index */
+   RSLC_OP_INDEX,      /* a = aggregate expr, b = index expr */
+   RSLC_OP_SWIZZLE,    /* a = expr, aux = count | idx0<<2 | idx1<<4 | ... */
+   RSLC_OP_CALL,       /* a = func id, b = arg list */
+   RSLC_OP_BUILTIN,    /* a = builtin fn id, b = arg list */
+   RSLC_OP_CONSTRUCT,  /* type = target, b = arg list */
+   RSLC_OP_UNARY,      /* aux = RSLC_UN_*, a = operand */
+   RSLC_OP_BINARY,     /* aux = RSLC_BIN_*, a, b */
+   RSLC_OP_ASSIGN,     /* aux = RSLC_BIN_* or RSLC_BIN_NONE, a = lvalue, b = rhs */
+   RSLC_OP_TERNARY,    /* a = cond, b, c */
+   RSLC_OP_SEQ,        /* a, b (comma) */
+   RSLC_OP_CONVERT,    /* type = target, a = expr (implicit conversion) */
+   /* statements */
+   RSLC_OP_BLOCK,      /* b = stmt list */
+   RSLC_OP_DECL,       /* a = var id (init in the var) */
+   RSLC_OP_EXPR,       /* a = expr */
+   RSLC_OP_IF,         /* a = cond, b = then, c = else or 0 */
+   RSLC_OP_FOR,        /* b = list [init stmt|0, cond|0, iter|0, body] */
+   RSLC_OP_WHILE,      /* a = cond, b = body */
+   RSLC_OP_DO,         /* a = body, b = cond */
+   RSLC_OP_SWITCH,     /* a = expr, b = stmt list with CASE nodes inside */
+   RSLC_OP_CASE,       /* a = const expr, or 0 for default */
+   RSLC_OP_BREAK,
+   RSLC_OP_CONTINUE,
+   RSLC_OP_RETURN,     /* a = expr or 0 */
+   RSLC_OP_DISCARD
+};
+
+#define RSLC_UN_NEG     1
+#define RSLC_UN_NOT     2
+#define RSLC_UN_BITNOT  3
+#define RSLC_UN_PREINC  4
+#define RSLC_UN_PREDEC  5
+#define RSLC_UN_POSTINC 6
+#define RSLC_UN_POSTDEC 7
+
+#define RSLC_BIN_NONE   0
+#define RSLC_BIN_ADD    1
+#define RSLC_BIN_SUB    2
+#define RSLC_BIN_MUL    3
+#define RSLC_BIN_DIV    4
+#define RSLC_BIN_MOD    5
+#define RSLC_BIN_LSHIFT 6
+#define RSLC_BIN_RSHIFT 7
+#define RSLC_BIN_LT     8
+#define RSLC_BIN_GT     9
+#define RSLC_BIN_LE     10
+#define RSLC_BIN_GE     11
+#define RSLC_BIN_EQ     12
+#define RSLC_BIN_NE     13
+#define RSLC_BIN_AND    14
+#define RSLC_BIN_OR     15
+#define RSLC_BIN_XOR    16
+#define RSLC_BIN_BAND   17
+#define RSLC_BIN_BOR    18
+#define RSLC_BIN_BXOR   19
+
+struct rslc_node
+{
+   const struct rslc_type *type;
+   uint32_t                a;
+   uint32_t                b;
+   uint32_t                c;
+   uint32_t                line;
+   uint16_t                op;    /* enum rslc_op */
+   uint16_t                aux;
+   uint8_t                 prec;  /* RSLC_PREC_* of an expression's result */
+   uint8_t                 pad[3];
+};
+
+#define RSLC_NODE_CHUNK_SHIFT 12
+#define RSLC_NODE_CHUNK       (1u << RSLC_NODE_CHUNK_SHIFT)
+#define rslc_node_at(c, i) \
+   (&(c)->node_chunks[(i) >> RSLC_NODE_CHUNK_SHIFT][(i) & (RSLC_NODE_CHUNK - 1)])
+
+/* Builtin functions, by id.  The signature table is in rslc_front.c;
+ * the emitters map each to GLSL.std.450 or a core op. */
+enum rslc_bfn
+{
+   RSLC_BFN_NONE = 0,
+   RSLC_BFN_RADIANS, RSLC_BFN_DEGREES, RSLC_BFN_SIN, RSLC_BFN_COS, RSLC_BFN_TAN,
+   RSLC_BFN_ASIN, RSLC_BFN_ACOS, RSLC_BFN_ATAN, RSLC_BFN_SINH, RSLC_BFN_COSH,
+   RSLC_BFN_TANH, RSLC_BFN_ASINH, RSLC_BFN_ACOSH, RSLC_BFN_ATANH,
+   RSLC_BFN_POW, RSLC_BFN_EXP, RSLC_BFN_LOG, RSLC_BFN_EXP2, RSLC_BFN_LOG2,
+   RSLC_BFN_SQRT, RSLC_BFN_INVERSESQRT,
+   RSLC_BFN_ABS, RSLC_BFN_SIGN, RSLC_BFN_FLOOR, RSLC_BFN_TRUNC, RSLC_BFN_ROUND,
+   RSLC_BFN_ROUNDEVEN, RSLC_BFN_CEIL, RSLC_BFN_FRACT, RSLC_BFN_MOD, RSLC_BFN_MODF,
+   RSLC_BFN_MIN, RSLC_BFN_MAX, RSLC_BFN_CLAMP, RSLC_BFN_MIX, RSLC_BFN_STEP,
+   RSLC_BFN_SMOOTHSTEP, RSLC_BFN_ISNAN, RSLC_BFN_ISINF,
+   RSLC_BFN_FLOATBITSTOINT, RSLC_BFN_FLOATBITSTOUINT, RSLC_BFN_INTBITSTOFLOAT,
+   RSLC_BFN_UINTBITSTOFLOAT, RSLC_BFN_FMA, RSLC_BFN_FREXP, RSLC_BFN_LDEXP,
+   RSLC_BFN_PACKUNORM2X16, RSLC_BFN_PACKSNORM2X16, RSLC_BFN_PACKUNORM4X8,
+   RSLC_BFN_PACKSNORM4X8, RSLC_BFN_UNPACKUNORM2X16, RSLC_BFN_UNPACKSNORM2X16,
+   RSLC_BFN_UNPACKUNORM4X8, RSLC_BFN_UNPACKSNORM4X8, RSLC_BFN_PACKHALF2X16,
+   RSLC_BFN_UNPACKHALF2X16,
+   RSLC_BFN_LENGTH, RSLC_BFN_DISTANCE, RSLC_BFN_DOT, RSLC_BFN_CROSS,
+   RSLC_BFN_NORMALIZE, RSLC_BFN_FACEFORWARD, RSLC_BFN_REFLECT, RSLC_BFN_REFRACT,
+   RSLC_BFN_MATRIXCOMPMULT, RSLC_BFN_OUTERPRODUCT, RSLC_BFN_TRANSPOSE,
+   RSLC_BFN_DETERMINANT, RSLC_BFN_INVERSE,
+   RSLC_BFN_LESSTHAN, RSLC_BFN_LESSTHANEQUAL, RSLC_BFN_GREATERTHAN,
+   RSLC_BFN_GREATERTHANEQUAL, RSLC_BFN_EQUAL, RSLC_BFN_NOTEQUAL, RSLC_BFN_ANY,
+   RSLC_BFN_ALL, RSLC_BFN_NOT,
+   RSLC_BFN_UADDCARRY, RSLC_BFN_USUBBORROW, RSLC_BFN_UMULEXTENDED,
+   RSLC_BFN_IMULEXTENDED, RSLC_BFN_BITFIELDEXTRACT, RSLC_BFN_BITFIELDINSERT,
+   RSLC_BFN_BITFIELDREVERSE, RSLC_BFN_BITCOUNT, RSLC_BFN_FINDLSB, RSLC_BFN_FINDMSB,
+   RSLC_BFN_TEXTURESIZE, RSLC_BFN_TEXTUREQUERYLOD, RSLC_BFN_TEXTUREQUERYLEVELS,
+   RSLC_BFN_TEXTURE, RSLC_BFN_TEXTUREPROJ, RSLC_BFN_TEXTURELOD,
+   RSLC_BFN_TEXTUREOFFSET, RSLC_BFN_TEXELFETCH, RSLC_BFN_TEXELFETCHOFFSET,
+   RSLC_BFN_TEXTUREPROJOFFSET, RSLC_BFN_TEXTURELODOFFSET, RSLC_BFN_TEXTUREPROJLOD,
+   RSLC_BFN_TEXTUREPROJLODOFFSET, RSLC_BFN_TEXTUREGRAD, RSLC_BFN_TEXTUREGRADOFFSET,
+   RSLC_BFN_TEXTUREPROJGRAD, RSLC_BFN_TEXTUREPROJGRADOFFSET, RSLC_BFN_TEXTUREGATHER,
+   RSLC_BFN_TEXTUREGATHEROFFSET,
+   RSLC_BFN_DFDX, RSLC_BFN_DFDY, RSLC_BFN_FWIDTH, RSLC_BFN_DFDXFINE, RSLC_BFN_DFDYFINE,
+   RSLC_BFN_FWIDTHFINE, RSLC_BFN_DFDXCOARSE, RSLC_BFN_DFDYCOARSE, RSLC_BFN_FWIDTHCOARSE,
+   RSLC_BFN_COUNT
+};
+
+/* The parsed stage. */
+struct rslc_prog
+{
+   struct rslc_var       **vars;      /* every variable, by id (1-based) */
+   struct rslc_func      **funcs;     /* every function, by id (1-based) */
+   struct rslc_type      **structs;   /* struct types in declaration order */
+   struct rslc_var       **samplers;
+   struct rslc_var       **inputs;    /* stage in, by declaration order */
+   struct rslc_var       **outputs;
+   struct rslc_func       *main_fn;
+   struct rslc_blockdecl   blocks[2]; /* [0] uniform block, [1] push block */
+   uint32_t                nvars, vars_cap;
+   uint32_t                nfuncs, funcs_cap;
+   uint32_t                nstructs, structs_cap;
+   uint32_t                nsamplers, samplers_cap;
+   uint32_t                ninputs, inputs_cap;
+   uint32_t                noutputs, outputs_cap;
+   bool                    has_block[2];
 };
 
 /* Source file names seen through #line, for diagnostics. */
@@ -223,6 +508,10 @@ struct rslc_ctx
    struct rslc_intern      intern;
    struct rslc_sym       **syms;       /* dense, by sym->index */
    struct rslc_tok       **tok_chunks; /* preprocessed stream, EOF-terminated */
+   struct rslc_node      **node_chunks;
+   uint32_t               *lists;      /* node lists, see enum rslc_op */
+   struct rslc_type       *type_chain; /* interned types */
+   struct rslc_prog        prog;
    const char             *src;        /* the stage source, for token text */
    char                   *synth;      /* preprocessor-made spellings */
    const char             *files[RSLC_MAX_FILES];
@@ -230,10 +519,16 @@ struct rslc_ctx
    uint32_t                syms_cap;
    uint32_t                ntoks;
    uint32_t                ntok_chunks;
+   uint32_t                nnodes;
+   uint32_t                nnode_chunks;
+   uint32_t                nlists;
+   uint32_t                lists_cap;
+   uint32_t                ntypes;
    uint32_t                nsynth;
    uint32_t                synth_cap;
    uint32_t                nfiles;
    uint32_t                version;    /* from #version */
+   uint8_t                 err_file;   /* files[] index named in the next error */
    enum rslc_stage         stage;
    bool                    es;         /* #version ... es */
    bool                    failed;
@@ -302,6 +597,22 @@ void  rslc_err(struct rslc_ctx *c, const char *a, const char *b,
  * lines consumed into c->version / c->es and the extension list.
  * Returns false with the error set. */
 bool  rslc_pp_run(struct rslc_ctx *c, const char *src, size_t len);
+
+/* IR construction (TU 2).  Types are interned; node 0 and list 0 are
+ * reserved sentinels. */
+const struct rslc_type *rslc_type_basic(struct rslc_ctx *c, enum rslc_tkind kind,
+      enum rslc_base base, unsigned rows, unsigned cols);
+const struct rslc_type *rslc_type_array(struct rslc_ctx *c,
+      const struct rslc_type *elem, uint32_t len);
+struct rslc_type *rslc_type_struct(struct rslc_ctx *c, struct rslc_sym *name,
+      const struct rslc_field *fields, uint32_t nfields);
+const struct rslc_type *rslc_type_sampler2d(struct rslc_ctx *c, enum rslc_base base);
+uint32_t rslc_node_new(struct rslc_ctx *c, enum rslc_op op,
+      const struct rslc_type *type, uint32_t a, uint32_t b, uint32_t c_,
+      uint16_t aux, uint32_t line);
+uint32_t rslc_list_new(struct rslc_ctx *c, const uint32_t *items, uint32_t n);
+#define rslc_list_len(c, id)     ((c)->lists[(id)])
+#define rslc_list_item(c, id, i) ((c)->lists[(id) + 1 + (i)])
 
 /* Entry points across the TUs.  rslc_front_compile (TU 1) builds the
  * IR; rslc_emit_dst (TU 2) fills result for opts->dst, handling SPIR-V

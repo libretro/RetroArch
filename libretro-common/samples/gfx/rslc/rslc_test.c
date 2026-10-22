@@ -91,7 +91,7 @@ static void test_abi_rejects(void)
    opts_default(&o, err, sizeof(err));
    err[0] = 0;
    CHECK(!rslc_compile(src, sizeof(src) - 1, RSLC_STAGE_VERTEX, &o, &r));
-   CHECK(!strcmp(err, "rslc: parser not implemented"));
+   CHECK(!strcmp(err, "rslc: SPIR-V emitter not implemented"));
    CHECK(alloc_live == 0);
 
    err[0] = 0;
@@ -487,6 +487,359 @@ static void test_pp(void)
    CHECK(alloc_live == 0);
 }
 
+
+/* ---- IR dump ---- */
+
+static const char *ir_type_name(const struct rslc_type *t, char *buf, size_t cap)
+{
+   static const char *const vn[5][5] = {
+      { "void", "?", "?", "?", "?" },
+      { "bool", "bool", "bvec2", "bvec3", "bvec4" },
+      { "int", "int", "ivec2", "ivec3", "ivec4" },
+      { "uint", "uint", "uvec2", "uvec3", "uvec4" },
+      { "float", "float", "vec2", "vec3", "vec4" }
+   };
+   if (!t)
+      return "-";
+   switch (t->kind)
+   {
+      case RSLC_TY_VOID:      return "void";
+      case RSLC_TY_SCALAR:    return vn[t->base][1];
+      case RSLC_TY_VEC:       return vn[t->base][t->rows];
+      case RSLC_TY_MAT:
+         snprintf(buf, cap, "mat%ux%u", t->cols, t->rows);
+         return buf;
+      case RSLC_TY_SAMPLER2D: return "sampler2D";
+      case RSLC_TY_ARRAY:
+      {
+         char inner[64];
+         const char *e = ir_type_name(t->elem, inner, sizeof(inner));
+         snprintf(buf, cap, "%s[%u]", e, t->array_len);
+         return buf;
+      }
+      case RSLC_TY_STRUCT:    return t->name ? t->name->str : "struct";
+   }
+   return "?";
+}
+
+static void ir_indent(FILE *f, int d)
+{
+   while (d-- > 0)
+      fputs("  ", f);
+}
+
+static void ir_dump_node(const struct rslc_ctx *c, FILE *f, uint32_t id, int d);
+
+static void ir_dump_list(const struct rslc_ctx *c, FILE *f, uint32_t list, int d)
+{
+   uint32_t i, n = list ? rslc_list_len(c, list) : 0;
+   for (i = 0; i < n; i++)
+      ir_dump_node(c, f, rslc_list_item(c, list, i), d);
+}
+
+static void ir_dump_node(const struct rslc_ctx *c, FILE *f, uint32_t id, int d)
+{
+   static const char *const ops[] = {
+      "none", "const", "var", "member", "index", "swizzle", "call", "builtin",
+      "construct", "unary", "binary", "assign", "ternary", "seq", "convert",
+      "block", "decl", "expr", "if", "for", "while", "do", "switch", "case",
+      "break", "continue", "return", "discard"
+   };
+   static const char *const uns[] = { "", "neg", "not", "bitnot", "preinc", "predec", "postinc", "postdec" };
+   static const char *const bins[] = { "=", "+", "-", "*", "/", "%", "<<", ">>", "<", ">", "<=", ">=",
+      "==", "!=", "&&", "||", "^^", "&", "|", "^" };
+   const struct rslc_node *n;
+   char tb[64];
+
+   if (!id)
+   {
+      ir_indent(f, d);
+      fputs("(none)\n", f);
+      return;
+   }
+   n = rslc_node_at(c, id);
+   ir_indent(f, d);
+   fprintf(f, "%s", ops[n->op]);
+   if (n->type)
+      fprintf(f, " :%s", ir_type_name(n->type, tb, sizeof(tb)));
+   if (n->prec)
+      fprintf(f, " p%u", n->prec);
+   switch (n->op)
+   {
+      case RSLC_OP_CONST:
+         if (n->type->base == RSLC_BASE_FLOAT)
+         {
+            float v;
+            memcpy(&v, &n->a, 4);
+            fprintf(f, " %g\n", (double)v);
+         }
+         else if (n->type->base == RSLC_BASE_INT)
+            fprintf(f, " %d\n", (int)n->a);
+         else
+            fprintf(f, " %u\n", n->a);
+         return;
+      case RSLC_OP_VAR:
+      {
+         const struct rslc_var *v = c->prog.vars[n->a];
+         fprintf(f, " %s#%u\n", v->name ? v->name->str : "?", v->id);
+         return;
+      }
+      case RSLC_OP_MEMBER:
+         fprintf(f, " .%u\n", n->b);
+         ir_dump_node(c, f, n->a, d + 1);
+         return;
+      case RSLC_OP_INDEX:
+         fputc('\n', f);
+         ir_dump_node(c, f, n->a, d + 1);
+         ir_dump_node(c, f, n->b, d + 1);
+         return;
+      case RSLC_OP_SWIZZLE:
+      {
+         unsigned cnt = n->aux & 3u, i;
+         if (!cnt) cnt = 4;
+         fputs(" .", f);
+         for (i = 0; i < cnt; i++)
+            fputc("xyzw"[(n->aux >> (2 + 2 * i)) & 3u], f);
+         fputc('\n', f);
+         ir_dump_node(c, f, n->a, d + 1);
+         return;
+      }
+      case RSLC_OP_CALL:
+         fprintf(f, " %s#%u\n", c->prog.funcs[n->a]->name->str, n->a);
+         ir_dump_list(c, f, n->b, d + 1);
+         return;
+      case RSLC_OP_BUILTIN:
+         fprintf(f, " bfn%u\n", n->a);
+         ir_dump_list(c, f, n->b, d + 1);
+         return;
+      case RSLC_OP_CONSTRUCT:
+         fputc('\n', f);
+         ir_dump_list(c, f, n->b, d + 1);
+         return;
+      case RSLC_OP_UNARY:
+         fprintf(f, " %s\n", uns[n->aux]);
+         ir_dump_node(c, f, n->a, d + 1);
+         return;
+      case RSLC_OP_BINARY:
+      case RSLC_OP_ASSIGN:
+         fprintf(f, " %s\n", bins[n->aux]);
+         ir_dump_node(c, f, n->a, d + 1);
+         ir_dump_node(c, f, n->b, d + 1);
+         return;
+      case RSLC_OP_TERNARY:
+      case RSLC_OP_IF:
+         fputc('\n', f);
+         ir_dump_node(c, f, n->a, d + 1);
+         ir_dump_node(c, f, n->b, d + 1);
+         if (n->c)
+            ir_dump_node(c, f, n->c, d + 1);
+         return;
+      case RSLC_OP_SEQ:
+      case RSLC_OP_WHILE:
+      case RSLC_OP_DO:
+         fputc('\n', f);
+         ir_dump_node(c, f, n->a, d + 1);
+         ir_dump_node(c, f, n->b, d + 1);
+         return;
+      case RSLC_OP_CONVERT:
+      case RSLC_OP_EXPR:
+      case RSLC_OP_RETURN:
+         fputc('\n', f);
+         if (n->a)
+            ir_dump_node(c, f, n->a, d + 1);
+         return;
+      case RSLC_OP_BLOCK:
+         fputc('\n', f);
+         ir_dump_list(c, f, n->b, d + 1);
+         return;
+      case RSLC_OP_DECL:
+      {
+         const struct rslc_var *v = c->prog.vars[n->a];
+         fprintf(f, " %s#%u :%s\n", v->name ? v->name->str : "?", v->id,
+               ir_type_name(v->type, tb, sizeof(tb)));
+         if (v->init)
+            ir_dump_node(c, f, v->init, d + 1);
+         return;
+      }
+      case RSLC_OP_FOR:
+         fputc('\n', f);
+         ir_dump_list(c, f, n->b, d + 1);
+         return;
+      case RSLC_OP_SWITCH:
+         fputc('\n', f);
+         ir_dump_node(c, f, n->a, d + 1);
+         ir_dump_list(c, f, n->b, d + 1);
+         return;
+      case RSLC_OP_CASE:
+         fputc('\n', f);
+         if (n->a)
+            ir_dump_node(c, f, n->a, d + 1);
+         return;
+      default:
+         fputc('\n', f);
+         return;
+   }
+}
+
+static void ir_dump(const struct rslc_ctx *c, FILE *f)
+{
+   const struct rslc_prog *pr = &c->prog;
+   uint32_t i, k;
+   char     tb[64];
+
+   for (k = 0; k < 2; k++)
+   {
+      if (!pr->has_block[k])
+         continue;
+      fprintf(f, "%s %s binding=%d set=%d\n", k ? "push" : "ubo",
+            pr->blocks[k].type->name ? pr->blocks[k].type->name->str : "?",
+            (int)pr->blocks[k].binding, (int)pr->blocks[k].set);
+      for (i = 0; i < pr->blocks[k].type->nfields; i++)
+         fprintf(f, "  %s :%s\n", pr->blocks[k].type->fields[i].name->str,
+               ir_type_name(pr->blocks[k].type->fields[i].type, tb, sizeof(tb)));
+   }
+   for (i = 0; i < pr->nsamplers; i++)
+      fprintf(f, "sampler %s binding=%d set=%d\n", pr->samplers[i]->name->str,
+            (int)pr->samplers[i]->binding, (int)pr->samplers[i]->set);
+   for (i = 0; i < pr->ninputs; i++)
+      fprintf(f, "in %s :%s location=%d\n", pr->inputs[i]->name->str,
+            ir_type_name(pr->inputs[i]->type, tb, sizeof(tb)), (int)pr->inputs[i]->location);
+   for (i = 0; i < pr->noutputs; i++)
+      fprintf(f, "out %s :%s location=%d\n", pr->outputs[i]->name->str,
+            ir_type_name(pr->outputs[i]->type, tb, sizeof(tb)), (int)pr->outputs[i]->location);
+   for (i = 1; i < pr->nfuncs; i++)
+   {
+      const struct rslc_func *fn = pr->funcs[i];
+      uint32_t a;
+      if (!fn->body)
+         continue;
+      fprintf(f, "func %s#%u :%s (", fn->name->str, fn->id, ir_type_name(fn->ret, tb, sizeof(tb)));
+      for (a = 0; a < fn->nparams; a++)
+         fprintf(f, "%s%s#%u :%s", a ? ", " : "", fn->params[a]->name ? fn->params[a]->name->str : "_",
+               fn->params[a]->id, ir_type_name(fn->params[a]->type, tb, sizeof(tb)));
+      fputs(")\n", f);
+      ir_dump_node(c, f, fn->body, 1);
+   }
+}
+
+/* Runs the front end over a source string.  mode 0: result only;
+ * mode 1: print the IR to stdout. */
+static bool front_run(const char *src, enum rslc_stage stage, int mode, char *err, size_t errcap)
+{
+   struct rslc_opts o;
+   struct rslc_ctx  c;
+   bool             ok;
+
+   opts_default(&o, err, errcap);
+   err[0] = 0;
+   if (!rslc_ctx_init(&c, &o, stage))
+      return false;
+   ok = rslc_front_compile(&c, src, strlen(src));
+   if (ok && mode == 1)
+      ir_dump(&c, stdout);
+   rslc_ctx_close(&c);
+   return ok;
+}
+
+static int front_file(const char *path, int mode)
+{
+   char  err[256];
+   FILE *f = fopen(path, "rb");
+   char *src;
+   long  n;
+   bool  ok;
+   enum rslc_stage stage = strstr(path, ".vert") ? RSLC_STAGE_VERTEX : RSLC_STAGE_FRAGMENT;
+
+   if (!f)
+   {
+      fprintf(stderr, "cannot open %s\n", path);
+      return 2;
+   }
+   fseek(f, 0, SEEK_END);
+   n = ftell(f);
+   fseek(f, 0, SEEK_SET);
+   src = (char*)malloc((size_t)n + 1);
+   if (!src || fread(src, 1, (size_t)n, f) != (size_t)n)
+   {
+      fclose(f);
+      free(src);
+      return 2;
+   }
+   fclose(f);
+   src[n] = '\0';
+   ok = front_run(src, stage, mode, err, sizeof(err));
+   free(src);
+   if (!ok)
+   {
+      fprintf(stderr, "%s: %s\n", path, err);
+      return 1;
+   }
+   if (mode == 0)
+      printf("%s: ok\n", path);
+   return 0;
+}
+
+static void test_front(void)
+{
+   char err[256];
+   static const char stock_frag[] =
+      "#version 450\n"
+      "layout(push_constant) uniform Push { vec4 SourceSize; vec4 OriginalSize; vec4 OutputSize; uint FrameCount; } params;\n"
+      "layout(std140, set = 0, binding = 0) uniform UBO { mat4 MVP; } global;\n"
+      "layout(location = 0) in vec2 vTexCoord;\n"
+      "layout(location = 0) out vec4 FragColor;\n"
+      "layout(set = 0, binding = 2) uniform sampler2D Source;\n"
+      "void main() { FragColor = vec4(texture(Source, vTexCoord).rgb, 1.0); }\n";
+   static const char stock_vert[] =
+      "#version 450\n"
+      "layout(std140, set = 0, binding = 0) uniform UBO { mat4 MVP; } global;\n"
+      "layout(location = 0) in vec4 Position;\n"
+      "layout(location = 1) in vec2 TexCoord;\n"
+      "layout(location = 0) out vec2 vTexCoord;\n"
+      "void main() { gl_Position = global.MVP * Position; vTexCoord = TexCoord; }\n";
+
+   CHECK(front_run(stock_frag, RSLC_STAGE_FRAGMENT, 0, err, sizeof(err)));
+   CHECK(front_run(stock_vert, RSLC_STAGE_VERTEX, 0, err, sizeof(err)));
+
+   /* Overloads, implicit conversions, const folding into array sizes,
+    * swizzle lvalues, struct members, precision propagation. */
+   CHECK(front_run(
+      "#version 450\n"
+      "precision mediump float;\n"
+      "struct S { float a; vec3 b[2]; };\n"
+      "const int N = 2 + 2;\n"
+      "float f(float x) { return x; }\n"
+      "vec2 f(vec2 x) { return x * 2; }\n"
+      "layout(location = 0) out vec4 FragColor;\n"
+      "void main() {\n"
+      "   float arr[N];\n"
+      "   S s;\n"
+      "   highp float h = 1.0;\n"
+      "   int i = 3;\n"
+      "   s.b[1].yz = vec2(i);\n"
+      "   arr[i] = f(2) + f(vec2(1)).x + mix(h, 2.0, 0.5) + pow(2.0, float(i));\n"
+      "   for (int k = 0; k < N; k++) arr[k] += float(k);\n"
+      "   switch (i) { case 1: break; default: i = N; }\n"
+      "   FragColor = vec4(arr[0], s.a, s.b[0].x, (i > 2) ? 1.0 : 0.0);\n"
+      "}\n", RSLC_STAGE_FRAGMENT, 0, err, sizeof(err)));
+   CHECK(!strcmp(err, ""));
+
+   /* Refusals. */
+   CHECK(!front_run("#version 450\nvoid main() { int x = 1.0; }\n", RSLC_STAGE_VERTEX, 0, err, sizeof(err)));
+   CHECK(strstr(err, "mismatch") != NULL);
+   CHECK(!front_run("#version 450\nvoid main() { undeclared = 1; }\n", RSLC_STAGE_VERTEX, 0, err, sizeof(err)));
+   CHECK(strstr(err, "undeclared") != NULL);
+   CHECK(!front_run("#version 450\nvoid main() { float a[-1]; }\n", RSLC_STAGE_VERTEX, 0, err, sizeof(err)));
+   CHECK(!front_run("#version 450\nvoid foo() {}\n", RSLC_STAGE_VERTEX, 0, err, sizeof(err)));
+   CHECK(strstr(err, "main") != NULL);
+   CHECK(!front_run("#version 450\nvoid main() { vec3 v; v.xx = vec2(1); }\n", RSLC_STAGE_VERTEX, 0, err, sizeof(err)));
+   CHECK(strstr(err, "lvalue") != NULL);
+   CHECK(!front_run("#version 450\nlayout(binding=0) uniform A { float x; }; layout(binding=1) uniform B { float y; };\nvoid main(){}\n",
+            RSLC_STAGE_VERTEX, 0, err, sizeof(err)));
+   CHECK(strstr(err, "more than one uniform block") != NULL);
+   CHECK(alloc_live == 0);
+}
+
 /* Build a minimal valid blob by hand, then break it one field at a
  * time: every offset in the reflection section is range-checked and
  * every name must be NUL-terminated inside the blob. */
@@ -661,12 +1014,17 @@ int main(int argc, char **argv)
 {
    if (argc == 3 && !strcmp(argv[1], "--pp"))
       return pp_file(argv[2]);
+   if (argc == 3 && !strcmp(argv[1], "--front"))
+      return front_file(argv[2], 0);
+   if (argc == 3 && !strcmp(argv[1], "--ir"))
+      return front_file(argv[2], 1);
 
    test_abi_rejects();
    test_arena();
    test_intern();
    test_pbuf();
    test_pp();
+   test_front();
    test_blob();
 
    if (fails)
