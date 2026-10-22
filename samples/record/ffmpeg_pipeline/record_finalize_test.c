@@ -11,8 +11,14 @@ static recording_state_t recording_state;
 
 static settings_t test_settings;
 static unsigned freed, histories, gpu_cleanup;
-static bool finalize_result;
+static bool finalize_result, gpu_start_pending;
 struct defaults g_defaults;
+/* The native GPU encoders, which this test does not build: only their
+ * addresses are compared */
+const record_driver_t record_nvenc;
+const record_driver_t record_metal;
+/* A native GPU recording still starting is cancelled, not finalized */
+bool recording_gpu_cancel_start(void) { return gpu_start_pending; }
 
 
 settings_t *config_get_ptr(void) { return &test_settings; }
@@ -58,6 +64,22 @@ int record_finalize_test_run(void)
          return 1;
       }
    }
+   /* Stopped while a native GPU recording was still starting: the start
+    * is cancelled, nothing finalized, freed or pushed to history */
+   freed = histories = gpu_cleanup = 0;
+   gpu_start_pending = true;
+   driver.finalize = finish;
+   recording_state.driver = &driver;
+   recording_state.data = &driver;
+   recording_state.path[0] = 'x';
+   if (     !recording_deinit() || freed || gpu_cleanup || histories
+         || recording_state.data || recording_state.driver
+         || recording_state.path[0])
+   {
+      fprintf(stderr, "frontend finalize: a pending GPU start was not cancelled\n");
+      return 1;
+   }
+   gpu_start_pending = false;
    puts("[pass] frontend finalization propagates failures, cleans up, and gates history");
    return 0;
 }
