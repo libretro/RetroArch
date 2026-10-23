@@ -3,8 +3,16 @@
 #define VAAPI_VP9_EXPORT_TEST_MAIN vp9_export_contract_suite
 #include "export_test.c"
 #include "../../../gfx/common/vaapi_vp9_decoder.h"
+static VASurfaceID exported_surface;
+static VAStatus decoder_surface(VADisplay display, VASurfaceID surface,
+      uint32_t memory_type, uint32_t flags, void *out)
+{
+   assert(surface >= 100 && surface < 100 + session.slots);
+   exported_surface = surface;
+   return export_surface(display, 100, memory_type, flags, out);
+}
 static const vaapi_vp9_export_ops_t decoder_exports
-      = {export_surface, cloexec, close_fd, identity};
+      = {decoder_surface, cloexec, close_fd, identity};
 static unsigned pos;
 static void bits(unsigned v, unsigned n)
 {
@@ -149,6 +157,111 @@ static void parsed_session(void)
    assert(vaapi_vp9_pool_close(&pool));
 }
 
+static void retained_slot_reuse(void)
+{
+   static rvp9_hw_session_t state;
+   static rvp9_hw_ops_t ops;
+   static rvp9_hdr header;
+   static video_hw_frame_t held;
+   static vaapi_frame_view_t view;
+   vaapi_vp9_decoder_t *decoder;
+   size_t size;
+   uint64_t generation;
+   unsigned before;
+   memset(&pool, 0, sizeof(pool));
+   init(8);
+   size = coded(1, 1, 255, 0, 8, 0, 0);
+   assert(!rvp9_parse_frame_header(packet, size, NULL, NULL, &header));
+   memset(&ops, 0, sizeof(ops));
+   assert(vaapi_vp9_decoder_open(&pool, &header, NULL, &decoder_exports, &ops));
+   assert(rvp9_hw_session_init(&state, &ops, 10));
+   target = 0;
+   assert(!rvp9_hw_session_submit(&state, packet, size));
+   done[0] = 1;
+   assert(!rvp9_hw_session_output(&state, &held));
+   assert(vaapi_frame_claim(
+         held.owner, held.done, held.done_value, held.image, &view));
+   generation = view.source->ticket;
+   target = 1;
+   assert(!rvp9_hw_session_submit(&state, packet, size));
+   done[1] = 1;
+   assert(rvp9_hw_session_discard_output(&state));
+   target = 2;
+   assert(!rvp9_hw_session_submit(&state, packet, size));
+   assert(state.output_slot == 0 && pool.previous_slot == 2);
+   done[2] = 1;
+   assert(view.source->ticket == generation
+         && vaapi_export_current(view.source));
+   assert(vaapi_frame_finish(held.owner, held.done, held.done_value, NULL));
+   assert(vaapi_vp9_decoder_poll((vaapi_vp9_decoder_t *)ops.decoder) == 1);
+   assert(!rvp9_hw_session_output(&state, &held));
+   assert(exported_surface == 102);
+   assert(vaapi_frame_claim(
+         held.owner, held.done, held.done_value, held.image, &view));
+   assert(view.source->slot == 2);
+   generation = view.source->ticket;
+   size = coded(0, 1, 1, 0, 8, 0, 0);
+   target = 1;
+   assert(!rvp9_hw_session_submit(&state, packet, size));
+   assert(pool.reads[1] == (UINT32_C(1) << 2));
+   assert(view.source->ticket == generation
+         && vaapi_export_current(view.source));
+   done[1] = 1;
+   assert(rvp9_hw_session_discard_output(&state));
+   before = made;
+   assert(vaapi_frame_finish(held.owner, held.done, held.done_value, NULL));
+   decoder = vaapi_vp9_decoder_detach(&ops);
+   assert(decoder && vaapi_vp9_decoder_retire(decoder));
+   assert(vaapi_vp9_pool_close(&pool) && made == before && made == dropped);
+}
+
+static void retained_pool_full(void)
+{
+   static rvp9_hw_session_t state;
+   static rvp9_hdr header;
+   static rvp9_hw_ops_t ops;
+   vaapi_vp9_decoder_t *decoder;
+   static uint64_t tickets[32];
+   size_t size;
+   unsigned i, before;
+   memset(&pool, 0, sizeof(pool));
+   init(8);
+   assert(vaapi_vp9_pool_close(&pool));
+   session.slots = 32;
+   assert(vaapi_vp9_pool_init(&pool, &session, &native));
+   size = coded(1, 1, 255, 0, 8, 0, 0);
+   assert(!rvp9_parse_frame_header(packet, size, NULL, NULL, &header));
+   memset(&ops, 0, sizeof(ops));
+   assert(vaapi_vp9_decoder_open(&pool, &header, NULL, &decoder_exports, &ops));
+   decoder = (vaapi_vp9_decoder_t *)ops.decoder;
+   assert(rvp9_hw_session_init(&state, &ops, 32));
+   for (i = 0; i < 32; i++)
+   {
+      target = i;
+      assert(!rvp9_hw_session_submit(&state, packet, size));
+      done[i] = 1;
+      assert(vaapi_vp9_decoder_poll(decoder) == 1);
+      assert(vaapi_vp9_pool_acquire(&pool, i, &tickets[i]));
+      assert(rvp9_hw_session_discard_output(&state));
+   }
+   before = made;
+   assert(pool.exports == (uint32_t)-1);
+   assert(rvp9_hw_session_submit(&state, packet, size) == 1 && made == before);
+   assert(state.phase == 1 && pool.previous_slot == 31);
+   assert(vaapi_vp9_pool_release(&pool, 3, tickets[3]));
+   target = 3;
+   assert(!rvp9_hw_session_submit(&state, packet, size));
+   assert(pool.previous_slot == 3 && pool.generation[3] > tickets[3]);
+   assert(!vaapi_vp9_pool_release(&pool, 3, tickets[3]));
+   done[3] = 1;
+   for (i = 0; i < 32; i++)
+      if (i != 3)
+         assert(vaapi_vp9_pool_release(&pool, i, tickets[i]));
+   assert(vaapi_vp9_decoder_detach(&ops) == decoder);
+   assert(vaapi_vp9_decoder_retire(decoder));
+   assert(vaapi_vp9_pool_close(&pool) && made == dropped);
+}
+
 int main(void)
 {
    rvp9_hw_ops_t ops, untouched;
@@ -157,7 +270,7 @@ int main(void)
    video_hw_frame_t frame, other;
    static vaapi_frame_view_t view;
    static vaapi_vp9_export_t taken;
-   unsigned depth, before;
+   unsigned depth;
    assert(!vp9_export_contract_suite());
    duplicate_fd = 0;
    for (depth = 8; depth <= 10; depth += 2)
@@ -195,10 +308,6 @@ int main(void)
             && frame.pixfmt
                   == (depth == 10 ? IMAGE_PIXFMT_P010 : IMAGE_PIXFMT_NV12));
       assert(ops.output(ops.decoder, 0, &other) == 1);
-      picture.previous_slot = pool.previous_slot;
-      before = made;
-      assert(ops.decode(ops.decoder, packet, sizeof(packet), &picture) == 1
-            && made == before);
       assert(vaapi_frame_claim(
             frame.owner, frame.done, frame.done_value, frame.image, &view));
       memset(&taken, 0, sizeof(taken));
@@ -230,6 +339,8 @@ int main(void)
    made = dropped;
    fault = 0;
    parsed_session();
+   retained_slot_reuse();
+   retained_pool_full();
    puts("PASS: VP9 VA decoder backpressure, NV12/P010 color, retained opaque "
         "output and owner retirement; mock native calls");
    return 0;

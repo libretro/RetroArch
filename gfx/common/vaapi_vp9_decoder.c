@@ -13,6 +13,8 @@ struct vaapi_vp9_decoder
    vaapi_vp9_pool_t *pool;
    vaapi_frame_pool_t *frames;
    rvp9_hdr params;
+   rvp9_hw_picture_t picture;
+   int surfaces[32];
    video_color_metadata_t color;
    unsigned width, height, yuv;
    bool closed, failed;
@@ -51,7 +53,9 @@ static int vaapi_vp9_decoder_decode(void *opaque, const uint8_t *packet,
 {
    vaapi_vp9_decoder_t *decoder = (vaapi_vp9_decoder_t *)opaque;
    const rvp9_hdr *header;
-   int result;
+   uint32_t occupied;
+   unsigned i, slots;
+   int result, destination;
    if (!decoder || decoder->closed || !picture
          || vaapi_vp9_decoder_poll(decoder) < 0)
       return -1;
@@ -63,7 +67,53 @@ static int vaapi_vp9_decoder_decode(void *opaque, const uint8_t *packet,
          || header->color_space != decoder->params.color_space
          || header->color_range != decoder->params.color_range)
       return -1;
-   result = vaapi_vp9_pool_decode(decoder->pool, packet, size, picture);
+   slots = decoder->pool->session->slots;
+   if (picture->slot < 0 || (unsigned)picture->slot >= slots)
+      return -1;
+   decoder->picture = *picture;
+   /* Logical reuse must preserve retained native surfaces. */
+   occupied = vaapi_vp9_pool_held(decoder->pool);
+   for (i = 0; i < RVP9_REF_FRAMES + RVP9_REFS_PER_FRAME + 1; i++)
+   {
+      int logical, physical;
+      int *mapped;
+      if (i < RVP9_REF_FRAMES)
+         mapped = &decoder->picture.reference_slots[i];
+      else if (i < RVP9_REF_FRAMES + RVP9_REFS_PER_FRAME)
+         mapped = &decoder->picture.named_slots[i - RVP9_REF_FRAMES];
+      else
+         mapped = &decoder->picture.previous_slot;
+      logical = *mapped;
+      if (logical == -1)
+         continue;
+      if (logical < 0 || (unsigned)logical >= slots || logical == picture->slot)
+         return -1;
+      physical = decoder->surfaces[logical];
+      if (physical < 0)
+         return -1;
+      *mapped = physical;
+      occupied |= UINT32_C(1) << physical;
+   }
+   destination = decoder->surfaces[picture->slot];
+   if (destination < 0 || (occupied & (UINT32_C(1) << destination)))
+   {
+      for (i = 0; i < slots; i++)
+         if (!(occupied & (UINT32_C(1) << i)))
+            break;
+      if (i == slots)
+         return 1;
+      destination = (int)i;
+   }
+   decoder->picture.slot = destination;
+   result = vaapi_vp9_pool_decode(
+         decoder->pool, packet, size, &decoder->picture);
+   if (!result)
+   {
+      for (i = 0; i < slots; i++)
+         if (decoder->surfaces[i] == destination)
+            decoder->surfaces[i] = -1;
+      decoder->surfaces[picture->slot] = destination;
+   }
    if (result < 0)
       decoder->failed = true;
    return result;
@@ -77,6 +127,9 @@ static int vaapi_vp9_decoder_output(
          || slot >= decoder->pool->session->slots
          || vaapi_vp9_decoder_poll(decoder) < 0)
       return -1;
+   if (decoder->surfaces[slot] < 0)
+      return -1;
+   slot = (unsigned)decoder->surfaces[slot];
    if (decoder->pending.active && decoder->pending.slot != slot)
       return 1;
    if (!decoder->pending.active)
@@ -103,6 +156,7 @@ bool vaapi_vp9_decoder_open(vaapi_vp9_pool_t *pool, const rvp9_hdr *params,
    vaapi_vp9_decoder_t *decoder;
    const vaapi_vp9_session_t *session;
    video_color_metadata_t resolved;
+   unsigned i;
    if (!pool || !pool->active || pool->broken || !params || !ops || ops->decoder
          || !exports || !exports->surface || !exports->cloexec
          || !exports->close || !exports->identity
@@ -128,6 +182,8 @@ bool vaapi_vp9_decoder_open(vaapi_vp9_pool_t *pool, const rvp9_hdr *params,
       free(decoder);
       return false;
    }
+   for (i = 0; i < 32; i++)
+      decoder->surfaces[i] = (int)i;
    decoder->pool = pool;
    decoder->params = *params;
    decoder->color = resolved;
