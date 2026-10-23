@@ -45,6 +45,8 @@ with tempfile.TemporaryDirectory(prefix="vt-av1-native-") as directory:
             if completed.returncode not in (0, 77):
                 completed.check_returncode()
             assert "MODE: " + expected_mode in completed.stdout, "acceptance binary mode mismatch"
+            if not completed.returncode:
+                assert "PASS: native AV1 hardware pixels," in completed.stdout, "native completion marker missing"
             results.append(dict(depth=depth, position=position, grain=grain,
                                 stream_sha256=hashlib.sha256(stream.read_bytes()).hexdigest(),
                                 reference_sha256=hashlib.sha256(reference.read_bytes()).hexdigest(),

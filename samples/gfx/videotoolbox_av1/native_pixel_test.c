@@ -244,6 +244,13 @@ static int execute(const uint8_t *data)
                10, 1048576, registration, wake, NULL, &status);
          if (!owner)
          {
+            if (status != kVTCouldNotFindVideoDecoderErr
+                  && status != kVTVideoDecoderUnsupportedDataFormatErr
+                  && status != kVTVideoDecoderNotAvailableNowErr)
+            {
+               fprintf(stderr, "FAIL: AV1 native setup: %ld\n", (long)status);
+               return 1;
+            }
             fprintf(stderr,
                   "UNAVAILABLE: required AV1 %u-bit hardware session: %ld\n",
                   depth, (long)status);
