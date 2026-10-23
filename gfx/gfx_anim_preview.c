@@ -835,6 +835,13 @@ gfx_anim_preview_audio_prepared_t *gfx_anim_preview_audio_prepare_new(
       ? AUDIO_MIXER_TYPE_WEBA : AUDIO_MIXER_TYPE_M4A;
    if (a->type != AUDIO_TYPE_AAC && a->type != AUDIO_TYPE_OPUS
          && a->type != AUDIO_TYPE_VORBIS) goto failed;
+   a->sound = a->mixer_type == AUDIO_MIXER_TYPE_WEBA
+      ? audio_mixer_load_weba_avail((void*)base, len, initial_hi)
+      : audio_mixer_load_m4a((void*)base, len);
+   if (!a->sound) goto failed;
+   retro_atomic_fetch_add_int(&a->window->refs, 1);
+   audio_mixer_sound_set_data_owner(a->sound, a->window,
+         gfx_anim_preview_audio_win_release);
    if (!(a->transfer = audio_transfer_new(a->type))) goto failed;
    audio_transfer_set_buffer_ptr(a->transfer, a->type, (void*)base, len);
    audio_transfer_set_output_rate(a->transfer, a->type, mix_rate);
@@ -865,12 +872,10 @@ int gfx_anim_preview_audio_prepare_step(gfx_anim_preview_audio_prepared_t *a)
 {
 #ifdef GFX_ANIM_PREVIEW_AUDIO
    size_t len, hi, res_hi, anchor, ahead, requested;
-   const uint8_t *base;
    int result;
    if (!a || !a->window) return -1;
-   if (a->sound) return a->transfer ? -1 : 1;
-   if (!a->transfer) return -1;
-   base = data_transfer_window_base(a->window->dt, &len);
+   if (!a->transfer) return a->sound ? 1 : -1;
+   if (!data_transfer_window_base(a->window->dt, &len)) return -1;
    anchor = audio_transfer_buffer_tell(a->transfer, a->type);
    ahead = a->ahead;
    requested = audio_transfer_buffer_read_end(a->transfer, a->type);
@@ -896,13 +901,6 @@ int gfx_anim_preview_audio_prepare_step(gfx_anim_preview_audio_prepared_t *a)
    result = audio_transfer_seek_step(a->transfer, a->type);
    a->tell = audio_transfer_buffer_tell(a->transfer, a->type);
    if (result != 1) return result;
-   a->sound = a->mixer_type == AUDIO_MIXER_TYPE_WEBA
-      ? audio_mixer_load_weba_avail((void*)base, len, a->hi)
-      : audio_mixer_load_m4a((void*)base, len);
-   if (!a->sound) return -1;
-   retro_atomic_fetch_add_int(&a->window->refs, 1);
-   audio_mixer_sound_set_data_owner(a->sound, a->window,
-         gfx_anim_preview_audio_win_release);
    audio_mixer_sound_set_avail(a->sound, a->hi);
    if (!audio_mixer_sound_set_prepared_transfer(a->sound, a->transfer,
             a->mix_rate, a->s16))
