@@ -29,8 +29,14 @@ if os.environ.get("SANITIZER"):
 with tempfile.TemporaryDirectory(prefix="mediacodec-encode-") as directory:
     binary = Path(directory) / ("encoder_test.exe" if os.name == "nt" else "encoder_test")
     for source, extra in (("test.c", []), ("audio_test.c", []),
-                          ("mux_test.c", ["-DRECORD_MEDIACODEC_MUX_TEST"])):
+                          ("mux_test.c", ["-DRECORD_MEDIACODEC_MUX_TEST"]),
+                          ("worker_test.c", [])):
         command = compiler + flags + extra + [str(here / source), "-o", str(binary)]
+        if source == "worker_test.c":
+            command += ["-DHAVE_THREADS",
+                        str(root / "record/record_mediacodec_worker.c"),
+                        str(root / "record/record_audio_queue.c"),
+                        str(root / "libretro-common/queues/retro_spsc.c")]
         print("+", shlex.join(command), flush=True)
         subprocess.run(command, check=True)
         subprocess.run([str(binary)], check=True, timeout=30)
