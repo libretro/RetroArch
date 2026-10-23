@@ -42,10 +42,28 @@ static int audio_result;
 static mediacodec_encoder_request_t encoded;
 static const char *option_key, *option_value;
 static int config_token;
+static unsigned history_writes;
+static int native_error, native_file_error, native_system_error;
+static bool settings_available = true;
+#ifdef HAVE_WEBMPLAYER
+struct defaults g_defaults;
+static int playlist_token;
+void command_playlist_push_write(
+      playlist_t *list, const struct playlist_entry *entry)
+{
+   assert(list == (playlist_t *)&playlist_token
+         && list == g_defaults.video_history);
+   assert(!io.live && !request.live && configuration.live);
+   assert(entry && entry->path && !strcmp(entry->path, "test.mp4"));
+   assert(!strcmp(entry->core_path, "builtin")
+         && !strcmp(entry->core_name, "movieplayer"));
+   history_writes++;
+}
+#endif
 
 settings_t *config_get_ptr(void)
 {
-   return &settings;
+   return settings_available ? &settings : NULL;
 }
 recording_state_t *recording_state_get_ptr(void)
 {
@@ -252,11 +270,11 @@ enum record_dispatch_mediacodec_state record_dispatch_mediacodec_status(
 {
    assert(j == &io && j->live);
    if (error)
-      *error = 0;
+      *error = native_error;
    if (file)
-      *file = 0;
+      *file = native_file_error;
    if (system)
-      *system = 0;
+      *system = native_system_error;
    return j->state;
 }
 bool record_dispatch_mediacodec_gpu_claim(record_dispatch_mediacodec_t *j)
@@ -404,6 +422,12 @@ static void reset(unsigned mode)
    config_fault = io_fault = request_fault = 0;
    expected_audio = closed_audio = 0;
    audio_calls = 0;
+   native_error = native_file_error = native_system_error = 0;
+   settings_available = true;
+#ifdef HAVE_WEBMPLAYER
+   settings.bools.history_list_enable = true;
+   g_defaults.video_history = (playlist_t *)&playlist_token;
+#endif
    audio_result = RECORD_AUDIO_OK;
    option_key = option_value = NULL;
 }
@@ -430,7 +454,7 @@ static void arm(record_mc_context_t *ctx)
 }
 static void drain(bool failed)
 {
-   unsigned i, frees = config_frees;
+   unsigned i, frees = config_frees, writes = history_writes;
    if (record_mc_active)
       record_mediacodec_stop();
    assert(record_mc_retired && !record_mc_active);
@@ -438,12 +462,14 @@ static void drain(bool failed)
    for (i = 0; i < 100; i++)
       record_mediacodec_poll();
    assert(record_mc_retired && config_frees == frees && !request.busy);
+   assert(history_writes == writes);
    held_frames = false;
    record_mediacodec_poll();
    assert(request.busy && request.op == RECORD_ANDROID_CAPTURE_COLLECT);
    ack(0);
    record_mediacodec_poll();
    assert(request.busy && config_frees == frees);
+   assert(history_writes == writes);
    native_retired = true;
    ack(1);
    io.state = failed ? RECORD_MC_DISPATCH_FAILED : RECORD_MC_DISPATCH_DONE;
@@ -456,7 +482,7 @@ static void clocks(unsigned mode)
    record_mc_context_t *ctx;
    struct record_audio_data audio;
    static video_frame_info_t info;
-   unsigned i;
+   unsigned i, writes = history_writes;
    reset(mode);
    ctx = start();
    assert(encoded.color == (mode != 0) && encoded.profile == (mode ? 4096 : 1));
@@ -492,6 +518,11 @@ static void clocks(unsigned mode)
          && ctx->audio_frames == 5000);
    drain(false);
    assert(closed_audio == 5000);
+#ifdef HAVE_WEBMPLAYER
+   assert(history_writes == writes + 1);
+#else
+   assert(history_writes == writes);
+#endif
 }
 static void reset_lifecycle(void)
 {
@@ -602,6 +633,7 @@ static void output_faults(void)
 }
 static void video_only(void)
 {
+   unsigned writes = history_writes;
    struct record_params p;
    record_mc_context_t *ctx;
    struct record_audio_data audio;
@@ -619,9 +651,60 @@ static void video_only(void)
    audio.frames = 300;
    assert(record_mediacodec.push_audio(ctx, &audio) && !audio_calls);
    drain(false);
+   assert(history_writes == writes);
+}
+static void history(void)
+{
+   unsigned fault;
+   for (fault = 0; fault < 9; fault++)
+   {
+      char filename[] = "test.mp4";
+      struct record_params p;
+      record_mc_context_t *ctx;
+      static video_frame_info_t info;
+      unsigned writes = history_writes;
+      reset(0);
+      p = parameters();
+      p.filename = filename;
+      ctx = (record_mc_context_t *)record_mediacodec.init(&p);
+      assert(ctx && ctx->path != filename && !strcmp(ctx->path, filename));
+      filename[0] = 'X';
+      recording.data = ctx;
+      recording.driver = &record_mediacodec;
+      arm(ctx);
+      record_mediacodec_frame_info(&info, true);
+      assert(info.recording_gpu_capture && ctx->offered == 1);
+#ifdef HAVE_WEBMPLAYER
+      if (fault == 1)
+         settings.bools.history_list_enable = false;
+      if (fault == 2)
+         g_defaults.video_history = NULL;
+#endif
+      if (fault == 3)
+         native_error = 1;
+      if (fault == 4)
+         native_file_error = 1;
+      if (fault == 5)
+         native_system_error = 1;
+      if (fault == 7)
+         record_mc_fail(ctx);
+      if (fault == 8)
+         settings_available = false;
+      drain(fault == 6);
+#ifdef HAVE_WEBMPLAYER
+      assert(history_writes == writes + (fault == 0 ? 1u : 0u));
+#else
+      assert(history_writes == writes);
+#endif
+      record_mediacodec_poll();
+#ifdef HAVE_WEBMPLAYER
+      assert(history_writes == writes + (fault == 0 ? 1u : 0u));
+#endif
+   }
 }
 static void admission(void)
 {
+   static char overlong_path[PATH_MAX_LENGTH + 1];
    struct record_params p;
    unsigned fault, before;
    const char *keys[] = {"format", "vcodec", "audio_enable", "video_level",
@@ -664,6 +747,13 @@ static void admission(void)
    p.out_dims = VIDEO_SCALE_PACK(1919, 1080);
    assert(!record_mediacodec.init(&p));
    reset(0);
+   p = parameters();
+   memset(overlong_path, 'x', sizeof(overlong_path) - 1);
+   overlong_path[sizeof(overlong_path) - 1] = 0;
+   p.filename = overlong_path;
+   before = config_creates;
+   assert(!record_mediacodec.init(&p) && config_creates == before);
+   reset(0);
    assert(record_mediacodec_defer_start() && record_mediacodec_pending());
    dims = 0;
    record_mediacodec_poll();
@@ -683,8 +773,9 @@ int main(void)
    video_only();
    audio_faults();
    startup_faults();
+   history();
    admission();
-   assert(io_frees && config_frees && logs == 3 && failures >= 4 && stops);
+   assert(io_frees && config_frees && logs >= 3 && failures >= 4 && stops);
    puts("PASS full MediaCodec frontend startup, rational clocks, PCM, closure, "
         "reset readiness and retained native lifetimes; platform boundaries "
         "mocked");

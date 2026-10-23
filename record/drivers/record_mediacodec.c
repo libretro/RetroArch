@@ -19,6 +19,10 @@
 #include "../../configuration.h"
 #include "../../command.h"
 #include "../../verbosity.h"
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV) || defined(HAVE_WEBMPLAYER)
+#include "../../defaults.h"
+#include "../../playlist.h"
+#endif
 
 typedef struct record_mc_context
 {
@@ -28,6 +32,7 @@ typedef struct record_mc_context
    record_android_capture_config_t *config;
    record_android_capture_request_t *request;
    void *device;
+   char *path;
    unsigned divisor, dims, mode, rate, channels;
    enum record_android_capture_operation operation;
    enum record_dispatch_mediacodec_state final_state;
@@ -202,7 +207,7 @@ static void *record_mc_init(const struct record_params *params)
    record_mc_context_t *ctx;
    settings_t *settings = config_get_ptr();
    unsigned num, den, count, rate = 0, channels = 0;
-   size_t capacity = 0;
+   size_t capacity = 0, path_length;
    bool audio;
    if (!params || !settings || record_mc_active || record_mc_retired
          || !params->filename || !*params->filename || !params->video_gpu_record
@@ -256,9 +261,18 @@ static void *record_mc_init(const struct record_params *params)
                && params->video_fifo_frames <= RECORD_GPU_QUEUE_SLOTS
          ? params->video_fifo_frames
          : 4;
-   ctx = (record_mc_context_t *)calloc(1, sizeof(*ctx));
+   for (path_length = 0;
+         path_length < PATH_MAX_LENGTH && params->filename[path_length];
+         path_length++)
+   {
+   }
+   if (path_length == PATH_MAX_LENGTH)
+      return NULL;
+   ctx = (record_mc_context_t *)calloc(1, sizeof(*ctx) + path_length + 1);
    if (!ctx)
       return NULL;
+   ctx->path = (char *)(ctx + 1);
+   memcpy(ctx->path, params->filename, path_length + 1);
    ctx->config = record_android_capture_config_new(
          &device, encoder.width, encoder.height, count, hdr.output_mode, false);
    if (!ctx->config)
@@ -274,7 +288,7 @@ static void *record_mc_init(const struct record_params *params)
    ctx->rate = rate;
    ctx->channels = channels;
    ctx->io = record_dispatch_mediacodec_new(&encoder, 2, rate, channels,
-         audio ? 128000 : 0, audio ? 4096 : 0, capacity, params->filename);
+         audio ? 128000 : 0, audio ? 4096 : 0, capacity, ctx->path);
    if (!ctx->io)
    {
       record_android_capture_config_free(ctx->config);
@@ -515,11 +529,31 @@ void record_mediacodec_poll(void)
          continue;
       }
       if (ctx->final_state == RECORD_MC_DISPATCH_DONE && !ctx->failed
+            && !ctx->error && !ctx->file_error && !ctx->system_error
             && ctx->offered)
+      {
          RARCH_LOG("[MediaCodec recording] Finalized %llu offered frames, "
                    "%llu PCM frames.\n",
                (unsigned long long)ctx->offered,
                (unsigned long long)ctx->audio_frames);
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV) || defined(HAVE_WEBMPLAYER)
+         /* DONE follows mux/file finalization and independent native-user
+          * retirement. Offered frames or frontend finalize alone prove none
+          * of these; publish only after successful I/O collection. */
+         {
+            settings_t *settings = config_get_ptr();
+            if (settings && settings->bools.history_list_enable
+                  && g_defaults.video_history)
+            {
+               struct playlist_entry entry = {0};
+               entry.path = ctx->path;
+               entry.core_path = (char *)"builtin";
+               entry.core_name = (char *)"movieplayer";
+               command_playlist_push_write(g_defaults.video_history, &entry);
+            }
+         }
+#endif
+      }
       else
          RARCH_ERR("[MediaCodec recording] Failed (session %d, file %d, "
                    "system %d).\n",

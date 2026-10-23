@@ -335,6 +335,13 @@ jobs:
                   -DANDROID -DHAVE_VULKAN -DHAVE_RECORD_MEDIACODEC -DHAVE_CONFIGFILE \
                   -DHAVE_THREADS -DHAVE_DYLIB -Wframe-larger-than=2048 -Ilibretro-common/include -Igfx/include \
                   "${extra[@]}" -c "$unity" -o "$RUNNER_TEMP/unity-$target-$api-$offset.o"
+                "$bin/$target$api-clang" \
+                  -std=c89 -pedantic -Wall -Wextra -Werror -Wno-long-long -Wno-c99-extensions \
+                  -DANDROID -DHAVE_VULKAN -DHAVE_RECORD_MEDIACODEC -DHAVE_CONFIGFILE \
+                  -DHAVE_WEBMPLAYER -DHAVE_THREADS -DHAVE_DYLIB -Wframe-larger-than=2048 \
+                  -Ilibretro-common/include -Igfx/include "${extra[@]}" \
+                  -c record/drivers/record_mediacodec.c \
+                  -o "$RUNNER_TEMP/record-history-$target-$api-$offset.o"
                 for root_source in gfx/common/vulkan_common.c gfx/drivers/vulkan.c gfx/gfx_surface_player.c libretro-common/jni/rjni.c; do
                   "$bin/$target$api-clang" \
                     -DANDROID -DHAVE_MENU -DHAVE_GFX_WIDGETS \

@@ -33,7 +33,7 @@ with tempfile.TemporaryDirectory(prefix="mediacodec-encode-") as directory:
                           ("worker_test.c", []), ("surface_test.c", []),
                           ("capture_images_test.c", ["-DRECORD_ANDROID_CAPTURE_TEST"]),
                           ("capture_submit_test.c", []), ("capture_pipe_test.c", []),
-                          ("capture_pool_test.c", []), ("device_test.c", []), ("request_test.c", []), ("config_test.c", []), ("frontend_test.c", []), ("capture_ops_test.c", []),
+                          ("capture_pool_test.c", []), ("device_test.c", []), ("request_test.c", []), ("config_test.c", []), ("frontend_test.c", []), ("frontend_test.c", ["-DHAVE_WEBMPLAYER"]), ("capture_ops_test.c", []),
                           ("capture_egl_test.c", []),
                           ("capture_gl_test.c", []),
                           ("draw_test.c", []), ("gpu_worker_test.c", []),

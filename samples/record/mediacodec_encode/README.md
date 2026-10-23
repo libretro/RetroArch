@@ -56,5 +56,10 @@ Before default registration, run native acceptance for SDR, PQ and scRGB;
 actual MP4/AAC A/V output, orientation and color; source drops/backpressure;
 resize, video reset, stop during startup, cancellation and device loss.
 Permanent native failures can still retain owners and need recovery evidence.
-No-core menu-player recording, automatic codec-level selection across all
-modes, and final recording history integration also require follow-up.
+Successfully finalized nonempty recordings enter video history only after
+independent GPU/I/O collection, when history is enabled and the video history
+playlist exists. Cancelled/failed output never enters history. The frontend owns
+the original path across asynchronous completion.
+
+No-core menu-player recording and automatic codec-level selection across all
+modes still require follow-up.
