@@ -57,6 +57,14 @@ runloop_state_t *runloop_state_get_ptr(void) { return &runloop_st; }
 static video_driver_state_t video_st;
 video_driver_state_t *video_state_get_ptr(void) { return &video_st; }
 
+/* This harness applies presets synchronously and never owns a deferred job. */
+void video_driver_shader_deferred_cancel(const char *why)
+{
+   fprintf(stderr, "Unexpected deferred shader cancellation: %s\n",
+         why ? why : "");
+   abort();
+}
+
 static struct menu_state menu_st;
 struct menu_state *menu_state_get_ptr(void) { return &menu_st; }
 
