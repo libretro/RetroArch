@@ -346,7 +346,8 @@ static int run_one(const char *path, unsigned rate)
    return failed;
 }
 
-static int prepared_session(const char *path, bool s16, bool webm)
+static int prepared_session(const char *path, bool s16, bool webm,
+      int64_t target_us)
 {
    FILE *file = fopen(path, "rb");
    uint8_t *data = NULL;
@@ -380,7 +381,8 @@ static int prepared_session(const char *path, bool s16, bool webm)
    expected = (float*)calloc(64 * channels, sizeof(float));
    actual = calloc(64 * 2, sizeof(float));
    if (!expected || !actual) goto done;
-   if (!audio_transfer_seek(reference, type, (uint64_t)rate * 5 / 4)) goto done;
+   if (!audio_transfer_seek(reference, type,
+            (uint64_t)rate * (uint64_t)target_us / 1000000)) goto done;
    for (steps = 0; steps < 10000; steps++)
    {
       result = audio_transfer_read_f32(reference, type, expected, 64, &got);
@@ -397,12 +399,12 @@ static int prepared_session(const char *path, bool s16, bool webm)
    prepared_s16 = s16;
    gfx_anim_preview_set_paused(p, true);
    if (gfx_anim_preview_clock(p, 1000) != 1000) goto mixer_done;
-   a = gfx_anim_preview_audio_prepare_new(p, 1250000, rate, s16);
+   a = gfx_anim_preview_audio_prepare_new(p, target_us, rate, s16);
    if (!a) goto mixer_done;
    /* Cancel an unpublished preparation, then prepare its replacement. */
    if (gfx_anim_preview_audio_prepare_step(a) < 0) goto mixer_done;
    gfx_anim_preview_audio_prepare_free(a);
-   a = gfx_anim_preview_audio_prepare_new(p, 1250000, rate, s16);
+   a = gfx_anim_preview_audio_prepare_new(p, target_us, rate, s16);
    if (!a) goto mixer_done;
    for (steps = 0; steps < 10000 && !result; steps++)
       result = gfx_anim_preview_audio_prepare_step(a);
@@ -446,8 +448,8 @@ static int prepared_session(const char *path, bool s16, bool webm)
    if (demux) { if (webm) rwebm_close((rwebm_t*)demux); else rmp4_close((rmp4_t*)demux); }
    free(data); free(expected); free(actual);
    fclose(file);
-   printf("prepared session: s16=%u reserved=%u resident=%lu peak=%.9f %s\n",
-         s16, reserved, (unsigned long)resident, peak,
+   printf("prepared session: target=%ld s16=%u reserved=%u resident=%lu peak=%.9f %s\n",
+         (long)target_us, s16, reserved, (unsigned long)resident, peak,
          failed ? "FAIL" : "PASS");
    return failed;
 }
@@ -983,9 +985,14 @@ int main(int argc, char **argv)
    if (gfx_anim_preview_clock(&fallback, 10000) != 3000) failed = 1;
    for (i = first_arg; i < argc; i++)
    {
-      failed |= prepared_session(argv[i], false, webm_only);
-      failed |= prepared_session(argv[i], true, webm_only);
-      if (webm_only) continue;
+      failed |= prepared_session(argv[i], false, webm_only, 1250000);
+      failed |= prepared_session(argv[i], true, webm_only, 1250000);
+      if (webm_only)
+      {
+         failed |= prepared_session(argv[i], false, true, 3250000);
+         failed |= prepared_session(argv[i], true, true, 3250000);
+         continue;
+      }
       failed |= bounded_aac_seek(argv[i]);
       failed |= prepared_aac(argv[i], false);
       failed |= prepared_aac(argv[i], true);

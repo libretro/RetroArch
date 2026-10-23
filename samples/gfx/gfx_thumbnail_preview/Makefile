@@ -451,6 +451,7 @@ endif
 	./$(AUDIO_ORACLE_TARGET) fixtures/trailing_small.mp4 fixtures/trailing_large.mp4
 	./$(AUDIO_FEED_TARGET) fixtures/audio_large_packet.m4a
 	./$(AUDIO_FEED_TARGET) --prepared-only fixtures/audio_seek_gap.m4a
+	./$(AUDIO_FEED_TARGET) --prepared-webm fixtures/audio_seek_opus_window.webm fixtures/audio_seek_vorbis_window.webm
 	FRAMES=180 PACE_HZ=60 PACE_MAX_STALL_MS=500 NOAUDIO=1 ./$(TARGET) fixtures/bframes_h264.mp4 fixtures/bframes_hevc.mp4
 	THREADS=4 FRAMES=180 PACE_HZ=60 PACE_MAX_STALL_MS=500 NOAUDIO=1 ./$(THREADED_TARGET) fixtures/bframes_h264.mp4 fixtures/bframes_hevc.mp4
 	./$(BLIT_BANDS_TARGET) fixtures/long_video.mp4
