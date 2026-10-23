@@ -123,6 +123,14 @@ typedef struct
 } win32_modeline_t;
 #endif
 
+typedef struct win32_display_mode
+{
+   struct win32_display_mode *next;
+   DEVMODE original;
+   DEVMODE applied;
+   TCHAR device[CCHDEVICENAME];
+} win32_display_mode_t;
+
 typedef struct
 {
 #ifdef HAS_TASKBAR_EXT
@@ -135,11 +143,12 @@ typedef struct
 #ifdef HAVE_MODELINE
    win32_modeline_t ml;
 #endif
+   win32_display_mode_t *modes;
    int crt_center;
-   unsigned orig_dims;
-   unsigned orig_refresh;
    uint8_t flags;
 } dispserv_win32_t;
+
+static void win32_display_server_restore_modes(dispserv_win32_t *serv);
 
 #ifdef HAVE_MODELINE
 static void win32_display_server_modeline_close(void *data);
@@ -316,14 +325,7 @@ static void win32_display_server_destroy(void *data)
    win32_display_server_modeline_close(dispserv);
 #endif
 
-   if (   VIDEO_SCALE_W(dispserv->orig_dims) > 0
-       && VIDEO_SCALE_H(dispserv->orig_dims) > 0
-       && dispserv->orig_refresh > 0)
-      video_display_server_set_resolution(
-            dispserv->orig_dims,
-            dispserv->orig_refresh,
-            (float)dispserv->orig_refresh,
-            dispserv->crt_center, 0, 0, 0);
+   win32_display_server_restore_modes(dispserv);
 
 #ifdef HAS_TASKBAR_EXT
    if (dispserv->taskbar_list)
@@ -438,6 +440,44 @@ static bool win32_get_named_video_output(DEVMODE *dm, int mode,
 #endif
 }
 
+static bool win32_display_mode_matches(const DEVMODE *a, const DEVMODE *b)
+{
+   if (a->dmPelsWidth != b->dmPelsWidth || a->dmPelsHeight != b->dmPelsHeight
+         || a->dmBitsPerPel != b->dmBitsPerPel
+         || a->dmDisplayFrequency != b->dmDisplayFrequency
+         || a->dmDisplayFlags != b->dmDisplayFlags)
+      return false;
+#if _WIN32_WINNT >= 0x0500
+   if (a->dmDisplayOrientation != b->dmDisplayOrientation
+         || a->dmDisplayFixedOutput != b->dmDisplayFixedOutput
+         || a->dmPosition.x != b->dmPosition.x
+         || a->dmPosition.y != b->dmPosition.y)
+      return false;
+#endif
+   return true;
+}
+
+static void win32_display_server_restore_modes(dispserv_win32_t *serv)
+{
+   win32_display_mode_t *mode = serv->modes;
+   serv->modes = NULL;
+   while (mode)
+   {
+      win32_display_mode_t *next = mode->next;
+      DEVMODE current;
+      /* Restore only the named output and only while our applied mode
+       * remains current. A user or compositor change ends our ownership. */
+      if (win32_get_named_video_output(&current, -1, mode->device)
+            && win32_display_mode_matches(&current, &mode->applied)
+            && win32_change_display_settings((const char *)mode->device,
+               &mode->original, CDS_TEST) == DISP_CHANGE_SUCCESSFUL)
+         win32_change_display_settings((const char *)mode->device,
+               &mode->original, 0);
+      free(mode);
+      mode = next;
+   }
+}
+
 static bool win32_get_video_output_info(DEVMODE *dm, int mode,
       char *name, size_t len)
 {
@@ -477,6 +517,8 @@ static bool win32_display_server_set_resolution(void *data,
    HMONITOR hm_to_use         = NULL;
    unsigned mon_id            = 0;
    DEVMODE dm                 = {0};
+   DEVMODE original;
+   win32_display_mode_t *saved = NULL;
    LONG res                   = 0;
    unsigned i                 = 0;
    unsigned curr_bpp          = 0;
@@ -493,12 +535,10 @@ static bool win32_display_server_set_resolution(void *data,
    if (!win32_get_named_video_output(&dm, -1, current_mon.szDevice))
       return false;
 
-   if (!VIDEO_SCALE_W(serv->orig_dims))
-      VIDEO_SCALE_PUT_W(serv->orig_dims, GetSystemMetrics(SM_CXSCREEN));
-   if (!VIDEO_SCALE_H(serv->orig_dims))
-      VIDEO_SCALE_PUT_H(serv->orig_dims, GetSystemMetrics(SM_CYSCREEN));
-   if (serv->orig_refresh == 0)
-      serv->orig_refresh = video_driver_get_refresh_rate();
+   original = dm;
+   for (saved = serv->modes; saved; saved = saved->next)
+      if (!memcmp(saved->device, current_mon.szDevice, sizeof(saved->device)))
+         break;
 
    /* Used to stop super resolution bug */
    if (VIDEO_SCALE_W(dims) == dm.dmPelsWidth)
@@ -545,15 +585,36 @@ static bool win32_display_server_set_resolution(void *data,
       switch (res)
       {
          case DISP_CHANGE_SUCCESSFUL:
+         {
+            win32_display_mode_t *owned = saved;
+            if (!owned)
+            {
+               owned = (win32_display_mode_t *)calloc(1, sizeof(*owned));
+               if (!owned)
+                  return false;
+               owned->original = original;
+               memcpy(owned->device, current_mon.szDevice, sizeof(owned->device));
+            }
             res = win32_change_display_settings((const char*)&current_mon.szDevice, &dm, 0);
             switch (res)
             {
                case DISP_CHANGE_SUCCESSFUL:
+                  if (saved && !win32_display_mode_matches(&original, &saved->applied))
+                     owned->original = original;
+                  owned->applied = dm;
+                  if (!saved)
+                  {
+                     owned->next = serv->modes;
+                     serv->modes = owned;
+                  }
                   return true;
                default:
                   break;
             }
+            if (!saved)
+               free(owned);
             break;
+         }
          case DISP_CHANGE_RESTART:
             break;
          default:
