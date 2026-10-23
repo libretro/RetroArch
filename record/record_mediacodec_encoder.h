@@ -46,7 +46,8 @@ int record_mediacodec_encoder_audio_finish(
 void *record_mediacodec_encoder_surface(record_mediacodec_encoder_t *encoder);
 /* Worker only, zero native dequeue timeout, one output action per call.
  * PACKET repeats its borrow until release. Flags use Android key/config/EOS
- * bits 1/2/4. Format is borrowed until the next pump or free. */
+ * bits 1/2/4. FORMAT requires matching dimensions/profile/color aspects and
+ * exact HDR static metadata. Format is borrowed until the next pump or free. */
 int record_mediacodec_encoder_pump(
       record_mediacodec_encoder_t *encoder, record_mediacodec_packet_t *packet);
 void *record_mediacodec_encoder_format(record_mediacodec_encoder_t *encoder);

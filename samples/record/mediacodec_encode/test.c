@@ -16,6 +16,9 @@ static ANativeWindow window;
 static int stage, lookup, missing, libraries, codecs, windows, formats, names;
 static int output_mode, metadata, owned, output_calls, releases, finishes;
 static unsigned serial;
+static const char *test_mime = "video/hevc";
+static unsigned hdr_mode, format_fault, normalized_profile;
+static unsigned char hdr_saved[25];
 static uint8_t payload[16];
 static int allocation_fail;
 static void *test_allocate(size_t count, size_t bytes)
@@ -26,9 +29,10 @@ int mediacodec_inventory_select_encoder(JNIEnv *env,
       const mediacodec_encoder_request_t *request, char *name, size_t capacity)
 {
    (void)env;
-   assert(request && !strcmp(request->mime, "video/hevc")
-         && request->width == 320 && request->height == 192
-         && request->profile == 2 && capacity >= 16);
+   assert(request && !strcmp(request->mime, test_mime) && request->width == 320
+         && request->height == 192 && request->profile == (hdr_mode ? 4096 : 2)
+         && capacity >= 16 && request->level == 64 && request->range == 2
+         && request->color == hdr_mode);
    strcpy(name, "c2.test.encoder");
    return stage == 3 ? 0 : 1;
 }
@@ -104,7 +108,7 @@ static media_status_t format_free(AMediaFormat *f)
 }
 static void set_string(AMediaFormat *f, const char *key, const char *value)
 {
-   assert(f == &config && !strcmp(key, "mime") && !strcmp(value, "video/hevc"));
+   assert(f == &config && !strcmp(key, "mime") && !strcmp(value, test_mime));
 }
 static void set_integer(AMediaFormat *f, const char *key, int32_t value)
 {
@@ -114,6 +118,14 @@ static void set_integer(AMediaFormat *f, const char *key, int32_t value)
    else if (!strcmp(key, "height"))
       assert(value == 192);
    else if (!strcmp(key, "profile"))
+      assert(value == (hdr_mode ? 4096 : 2));
+   else if (!strcmp(key, "level"))
+      assert(value == 64);
+   else if (!strcmp(key, "color-standard"))
+      assert(value == (hdr_mode ? 6 : 1));
+   else if (!strcmp(key, "color-transfer"))
+      assert(value == (hdr_mode ? 6 : 3));
+   else if (!strcmp(key, "color-range"))
       assert(value == 2);
    else if (!strcmp(key, "bitrate"))
       assert(value == 1000000);
@@ -129,6 +141,50 @@ static void set_float(AMediaFormat *f, const char *key, float value)
 {
    assert(f == &config && !strcmp(key, "frame-rate") && value > 29.96f
          && value < 29.98f);
+}
+static void set_buffer(
+      AMediaFormat *f, const char *key, const void *data, size_t size)
+{
+   assert(f == &config && !strcmp(key, "hdr-static-info") && hdr_mode && data
+         && size == 25 && !((const unsigned char *)data)[0]);
+   memcpy(hdr_saved, data, 25);
+}
+static bool get_integer(AMediaFormat *f, const char *key, int32_t *value)
+{
+   static const char *const keys[] = {"width", "height", "profile",
+         "color-standard", "color-transfer", "color-range"};
+   int32_t values[6];
+   unsigned i;
+   assert(f == &output_formats[0] || f == &output_formats[1]);
+   values[0] = 320;
+   values[1] = 192;
+   values[2] = hdr_mode
+         ? (normalized_profile
+                       ? (!strcmp(test_mime, "video/x-vnd.on2.vp9") ? 4 : 2)
+                       : 4096)
+         : 2;
+   values[3] = hdr_mode ? 6 : 1;
+   values[4] = hdr_mode ? 6 : 3;
+   values[5] = 2;
+   for (i = 0; i < 6; i++)
+      if (!strcmp(key, keys[i]))
+      {
+         if (format_fault == i * 2 + 1)
+            return false;
+         *value = values[i] + (format_fault == i * 2 + 2 ? 1 : 0);
+         return true;
+      }
+   assert(0);
+   return false;
+}
+static bool get_buffer(
+      AMediaFormat *f, const char *key, void **data, size_t *size)
+{
+   assert((f == &output_formats[0] || f == &output_formats[1]) && hdr_mode
+         && !strcmp(key, "hdr-static-info"));
+   *data = format_fault == 15 ? NULL : hdr_saved;
+   *size = format_fault == 14 ? 24 : 25;
+   return format_fault != 13;
 }
 static ssize_t output(
       AMediaCodec *c, AMediaCodecBufferInfo *info, int64_t timeout)
@@ -228,6 +284,9 @@ function_t dylib_proc(dylib_t library, const char *symbol)
    FN("AMediaFormat_setString", set_string);
    FN("AMediaFormat_setInt32", set_integer);
    FN("AMediaFormat_setFloat", set_float);
+   FN("AMediaFormat_setBuffer", set_buffer);
+   FN("AMediaFormat_getInt32", get_integer);
+   FN("AMediaFormat_getBuffer", get_buffer);
    FN("ANativeWindow_release", window_free);
 #undef FN
    assert(0);
@@ -244,10 +303,24 @@ static record_mediacodec_encoder_t *open_encoder(void)
 {
    mediacodec_encoder_request_t request;
    memset(&request, 0, sizeof(request));
-   request.mime = "video/hevc";
+   request.mime = test_mime;
    request.width = 320;
    request.height = 192;
-   request.profile = 2;
+   request.profile = hdr_mode ? 4096 : 2;
+   request.level = 64;
+   request.range = 2;
+   request.color = hdr_mode;
+   if (hdr_mode)
+   {
+      request.hdr_static_size = 25;
+      request.hdr_static[17] = 0xe8;
+      request.hdr_static[18] = 3;
+      request.hdr_static[19] = 1;
+      request.hdr_static[21] = 0xe8;
+      request.hdr_static[22] = 3;
+      request.hdr_static[23] = 0x90;
+      request.hdr_static[24] = 1;
+   }
    request.bitrate = 1000000;
    request.frame_rate = 30000.0 / 1001.0;
    return record_mediacodec_encoder_new(NULL, &request, 2);
@@ -264,7 +337,7 @@ int main(void)
    record_mediacodec_encoder_t *s;
    record_mediacodec_packet_t packet, again;
    int i, before;
-   for (missing = 1; missing <= 19; missing++)
+   for (missing = 1; missing <= 22; missing++)
    {
       assert(!open_encoder());
       balanced();
@@ -389,6 +462,39 @@ int main(void)
    assert(packet.flags == 2 && packet.pts_us == -1);
    record_mediacodec_encoder_free(s);
    balanced();
+   metadata = 0;
+   for (hdr_mode = 0; hdr_mode < 2; hdr_mode++)
+   {
+      for (format_fault = 1; format_fault <= (hdr_mode ? 16u : 12u);
+            format_fault++)
+      {
+         s = open_encoder();
+         assert(s);
+         if (format_fault == 16)
+            hdr_saved[1] ^= 1;
+         output_mode = -1;
+         assert(record_mediacodec_encoder_pump(s, &packet) == RECORD_MC_ERROR);
+         assert(record_mediacodec_encoder_pump(s, &packet) == RECORD_MC_ERROR);
+         record_mediacodec_encoder_free(s);
+         balanced();
+      }
+   }
+   hdr_mode = 1;
+   format_fault = 0;
+   normalized_profile = 1;
+   for (i = 0; i < 3; i++)
+   {
+      test_mime = i == 0 ? "video/hevc"
+            : i == 1     ? "video/av01"
+                         : "video/x-vnd.on2.vp9";
+      s = open_encoder();
+      assert(s);
+      format_ready(s);
+      record_mediacodec_encoder_free(s);
+      balanced();
+   }
+   test_mime = "video/hevc";
+   normalized_profile = hdr_mode = 0;
    puts("PASS: Surface encoder startup faults, borrowed packets, format "
         "changes, "
         "zero-timeout output, bounds, EOS and cleanup; native APIs mocked");

@@ -62,6 +62,8 @@ int main(void)
       request.width = 1920;
       request.height = 1080;
       request.profile = 2;
+      request.level = 4096;
+      request.range = 2;
       request.bitrate = 10000000;
       request.frame_rate = 60000.0 / 1001.0;
       (*env)->SetStaticIntField(env, list, scenario, 11);
@@ -115,6 +117,74 @@ int main(void)
       assert(!(*env)->ExceptionCheck(env));
       assert(!mediacodec_inventory_select_encoder(env, NULL, name, sizeof(name))
             && !*name);
+      (*env)->SetStaticIntField(env, list, scenario, 13);
+      request.profile = 4096;
+      request.color = 1;
+      request.hdr_static_size = 25;
+      request.hdr_static[17] = 0xe8;
+      request.hdr_static[18] = 3;
+      for (i = 0; i < 10000; i++)
+         assert(mediacodec_inventory_select_encoder(
+                      env, &request, name, sizeof(name))
+               == 1);
+      request.range = 1;
+      assert(mediacodec_inventory_select_encoder(
+                   env, &request, name, sizeof(name))
+            == 1);
+      request.mime = "video/av01";
+      assert(mediacodec_inventory_select_encoder(
+                   env, &request, name, sizeof(name))
+            == 1);
+      request.mime = "video/x-vnd.on2.vp9";
+      assert(mediacodec_inventory_select_encoder(
+                   env, &request, name, sizeof(name))
+            == 1);
+      request.mime = "video/avc";
+      assert(!mediacodec_inventory_select_encoder(
+                   env, &request, name, sizeof(name))
+            && !*name);
+      request.mime = "video/hevc";
+      request.hdr_static_size = 24;
+      assert(!mediacodec_inventory_select_encoder(
+                   env, &request, name, sizeof(name))
+            && !*name);
+      request.hdr_static_size = 25;
+      request.hdr_static[0] = 1;
+      assert(!mediacodec_inventory_select_encoder(
+                   env, &request, name, sizeof(name))
+            && !*name);
+      request.hdr_static[0] = 0;
+      request.level = 0;
+      assert(!mediacodec_inventory_select_encoder(
+                   env, &request, name, sizeof(name))
+            && !*name);
+      request.level = 4096;
+      request.range = 3;
+      assert(!mediacodec_inventory_select_encoder(
+                   env, &request, name, sizeof(name))
+            && !*name);
+      request.range = 2;
+      request.profile = 2;
+      assert(!mediacodec_inventory_select_encoder(
+                   env, &request, name, sizeof(name))
+            && !*name);
+      request.profile = 4096;
+      (*env)->SetStaticIntField(env, list, scenario, 14);
+      assert(mediacodec_inventory_select_encoder(
+                   env, &request, name, sizeof(name))
+                  == -1
+            && !*name);
+      assert(!(*env)->ExceptionCheck(env));
+      (*env)->SetStaticIntField(env, list, scenario, 15);
+      assert(!mediacodec_inventory_select_encoder(
+                   env, &request, name, sizeof(name))
+            && !*name);
+      request.color = 0;
+      assert(!mediacodec_inventory_select_encoder(
+                   env, &request, name, sizeof(name))
+            && !*name);
+      request.profile = 2;
+      request.hdr_static_size = 0;
       (*env)->SetStaticIntField(env, list, scenario, 11);
       for (i = 0; i < 10000; i++)
          assert(mediacodec_inventory_select_encoder(
@@ -142,7 +212,7 @@ int main(void)
    }
    assert((*vm)->DestroyJavaVM(vm) == JNI_OK);
    puts("PASS: real JNI decoder and Surface encoder format admission, "
-        "rate/bitrate refusal, aliases, failures and 20000 bounded "
+        "rate/bitrate refusal, aliases, failures and 30000 bounded "
         "local-frame iterations");
    return 0;
 }

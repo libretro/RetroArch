@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #if defined(__ANDROID__) || defined(RECORD_MEDIACODEC_TEST)
+#include "../gfx/common/mediacodec_encoder_format.h"
 #include <dynamic/dylib.h>
 #ifdef RECORD_MEDIACODEC_TEST
 #include "mediacodec_encode_test_types.h"
@@ -34,6 +35,10 @@ typedef media_status_t (*record_mc_format_free_fn)(AMediaFormat *);
 typedef void (*record_mc_string_fn)(AMediaFormat *, const char *, const char *);
 typedef void (*record_mc_integer_fn)(AMediaFormat *, const char *, int32_t);
 typedef void (*record_mc_float_fn)(AMediaFormat *, const char *, float);
+typedef void (*record_mc_set_buffer_fn)(
+      AMediaFormat *, const char *, const void *, size_t);
+typedef bool (*record_mc_get_buffer_fn)(
+      AMediaFormat *, const char *, void **, size_t *);
 typedef bool (*record_mc_get_integer_fn)(
       AMediaFormat *, const char *, int32_t *);
 typedef ssize_t (*record_mc_input_fn)(AMediaCodec *, int64_t);
@@ -73,6 +78,8 @@ RECORD_MC_ABI(record_mc_string_fn, AMediaFormat_setString);
 RECORD_MC_ABI(record_mc_integer_fn, AMediaFormat_setInt32);
 RECORD_MC_ABI(record_mc_float_fn, AMediaFormat_setFloat);
 RECORD_MC_ABI(record_mc_get_integer_fn, AMediaFormat_getInt32);
+RECORD_MC_ABI(record_mc_set_buffer_fn, AMediaFormat_setBuffer);
+RECORD_MC_ABI(record_mc_get_buffer_fn, AMediaFormat_getBuffer);
 RECORD_MC_ABI(record_mc_input_fn, AMediaCodec_dequeueInputBuffer);
 RECORD_MC_ABI(record_mc_buffer_fn, AMediaCodec_getInputBuffer);
 RECORD_MC_ABI(record_mc_queue_fn, AMediaCodec_queueInputBuffer);
@@ -93,12 +100,15 @@ struct record_mediacodec_encoder
    record_mc_release_fn release;
    record_mc_format_fn get_format;
    record_mc_get_integer_fn get_integer;
+   record_mc_get_buffer_fn get_buffer;
    record_mc_input_fn input;
    record_mc_buffer_fn input_buffer;
    record_mc_queue_fn queue;
    record_mediacodec_packet_t packet;
    size_t index;
-   unsigned rate, channels;
+   unsigned rate, channels, width, height, color, range;
+   int profile, base_profile;
+   unsigned char hdr_static[25];
    bool started, failed, held, input_eos, output_eos;
    bool audio, seen_input, closing;
 };
@@ -139,8 +149,9 @@ record_mediacodec_encoder_t *record_mediacodec_encoder_new(JNIEnv *env,
    record_mc_string_fn set_string;
    record_mc_integer_fn set_integer;
    record_mc_float_fn set_float;
+   record_mc_set_buffer_fn set_buffer;
    int matches;
-   if (interval > INT_MAX
+   if (!mediacodec_encoder_color_valid(request) || interval > INT_MAX
          || mediacodec_inventory_select_encoder(
                   env, request, selected, sizeof(selected))
                != 1)
@@ -148,6 +159,13 @@ record_mediacodec_encoder_t *record_mediacodec_encoder_new(JNIEnv *env,
    s = (record_mediacodec_encoder_t *)calloc(1, sizeof(*s));
    if (!s)
       return NULL;
+   s->width = request->width;
+   s->height = request->height;
+   s->color = request->color;
+   s->range = request->range;
+   s->profile = request->profile;
+   s->base_profile = !strcmp(request->mime, "video/x-vnd.on2.vp9") ? 4 : 2;
+   memcpy(s->hdr_static, request->hdr_static, sizeof(s->hdr_static));
    s->library = dylib_load("libmediandk.so");
    s->android_library = dylib_load("libandroid.so");
    if (!s->library || !s->android_library)
@@ -184,6 +202,12 @@ record_mediacodec_encoder_t *record_mediacodec_encoder_new(JNIEnv *env,
    RECORD_MC_LOAD(set_string, record_mc_string_fn, "AMediaFormat_setString");
    RECORD_MC_LOAD(set_integer, record_mc_integer_fn, "AMediaFormat_setInt32");
    RECORD_MC_LOAD(set_float, record_mc_float_fn, "AMediaFormat_setFloat");
+   RECORD_MC_LOAD(
+         s->get_integer, record_mc_get_integer_fn, "AMediaFormat_getInt32");
+   RECORD_MC_LOAD(
+         s->get_buffer, record_mc_get_buffer_fn, "AMediaFormat_getBuffer");
+   RECORD_MC_LOAD(
+         set_buffer, record_mc_set_buffer_fn, "AMediaFormat_setBuffer");
 #undef RECORD_MC_LOAD
    s->window_free = (record_mc_window_free_fn)dylib_proc(
          s->android_library, "ANativeWindow_release");
@@ -206,6 +230,12 @@ record_mediacodec_encoder_t *record_mediacodec_encoder_new(JNIEnv *env,
    set_integer(s->config, "width", (int32_t)request->width);
    set_integer(s->config, "height", (int32_t)request->height);
    set_integer(s->config, "profile", request->profile);
+   set_integer(s->config, "level", request->level);
+   set_integer(s->config, "color-standard", request->color ? 6 : 1);
+   set_integer(s->config, "color-transfer", request->color ? 6 : 3);
+   set_integer(s->config, "color-range", (int32_t)request->range);
+   if (request->color)
+      set_buffer(s->config, "hdr-static-info", request->hdr_static, 25);
    set_integer(s->config, "bitrate", (int32_t)request->bitrate);
    set_integer(s->config, "color-format", 0x7f000789);
    set_integer(s->config, "i-frame-interval", (int32_t)interval);
@@ -481,6 +511,39 @@ int record_mediacodec_encoder_pump(
          if (!s->get_integer(format, "sample-rate", &rate)
                || !s->get_integer(format, "channel-count", &channels)
                || rate != (int32_t)s->rate || channels != (int32_t)s->channels)
+         {
+            s->format_free(format);
+            goto failed;
+         }
+      }
+      else
+      {
+         static const char *const keys[] = {"width", "height", "profile",
+               "color-standard", "color-transfer", "color-range"};
+         int32_t expected[6], value;
+         unsigned at;
+         void *metadata = NULL;
+         size_t size = 0;
+         expected[0] = (int32_t)s->width;
+         expected[1] = (int32_t)s->height;
+         expected[2] = s->profile;
+         expected[3] = s->color ? 6 : 1;
+         expected[4] = s->color ? 6 : 3;
+         expected[5] = (int32_t)s->range;
+         for (at = 0; at < 6; at++)
+         {
+            if (!s->get_integer(format, keys[at], &value)
+                  || (value != expected[at]
+                        && !(at == 2 && s->color && value == s->base_profile)))
+            {
+               s->format_free(format);
+               goto failed;
+            }
+         }
+         if (s->color
+               && (!s->get_buffer(format, "hdr-static-info", &metadata, &size)
+                     || size != 25 || !metadata
+                     || memcmp(metadata, s->hdr_static, 25)))
          {
             s->format_free(format);
             goto failed;
