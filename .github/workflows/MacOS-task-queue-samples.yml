@@ -1,0 +1,99 @@
+name: CI macOS task queue samples
+
+# The task_queue samples run on Linux and under Wine in
+# Linux-libretro-common-samples.yml, which never builds the GCD runner
+# Apple builds use. This runs each one with Apple clang on the threaded
+# runner, and those with a GCD=1 build again on GCD: plain, under
+# ASan+UBSan and under TSan.
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'libretro-common/queues/task_queue.c'
+      - 'libretro-common/include/queues/**'
+      - 'libretro-common/rthreads/**'
+      - 'libretro-common/include/rthreads/**'
+      - 'libretro-common/include/retro_atomic.h'
+      - 'libretro-common/include/retro_timers.h'
+      - 'libretro-common/include/features/features_cpu.h'
+      - 'libretro-common/include/time/rtime.h'
+      - 'libretro-common/features/**'
+      - 'libretro-common/time/rtime.c'
+      - 'libretro-common/samples/queues/task_queue_*/**'
+      - 'libretro-common/samples/sample_objdir.mk'
+      - '.github/workflows/MacOS-task-queue-samples.yml'
+  pull_request:
+    paths:
+      - 'libretro-common/queues/task_queue.c'
+      - 'libretro-common/include/queues/**'
+      - 'libretro-common/rthreads/**'
+      - 'libretro-common/include/rthreads/**'
+      - 'libretro-common/include/retro_atomic.h'
+      - 'libretro-common/include/retro_timers.h'
+      - 'libretro-common/include/features/features_cpu.h'
+      - 'libretro-common/include/time/rtime.h'
+      - 'libretro-common/features/**'
+      - 'libretro-common/time/rtime.c'
+      - 'libretro-common/samples/queues/task_queue_*/**'
+      - 'libretro-common/samples/sample_objdir.mk'
+      - '.github/workflows/MacOS-task-queue-samples.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+jobs:
+  task-queue-macos:
+    name: task_queue samples on macOS, threaded and GCD
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Build and run the task_queue samples
+        shell: bash
+        working-directory: libretro-common/samples/queues
+        env:
+          TSAN_OPTIONS: halt_on_error=1 second_deadlock_stack=1
+          UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+        run: |
+          set -u
+          set -o pipefail
+          # macOS has no timeout(1): perl's alarm bounds each run.
+          fails=0
+          runs=0
+          for d in task_queue_*; do
+            t=$(sed -nE 's/^TARGET[[:space:]]*:?=[[:space:]]*//p' "$d/Makefile")
+            runners=0
+            if grep -qF 'ifeq ($(GCD),1)' "$d/Makefile"; then
+              runners="0 1"
+            fi
+            for g in $runners; do
+              for san in '' address,undefined thread; do
+                label="$t, GCD=$g, ${san:-plain}"
+                printf '\n[build] %s\n' "$label"
+                if ! ( cd "$d" && make clean >/dev/null && make all GCD=$g SANITIZER=$san ); then
+                  printf '::error title=macOS build failed::%s does not build\n' "$label"
+                  fails=$((fails+1))
+                  continue
+                fi
+                printf '[run] %s\n' "$label"
+                if ( cd "$d" && perl -e 'alarm shift; exec @ARGV or die "exec $ARGV[0]: $!\n"' 300 "./$t" ); then
+                  printf '[pass] %s\n' "$label"
+                  runs=$((runs+1))
+                else
+                  rc=$?
+                  printf '::error title=Test failed on macOS::%s exited with status %d\n' "$label" "$rc"
+                  fails=$((fails+1))
+                fi
+              done
+            done
+            ( cd "$d" && make clean >/dev/null )
+          done
+          printf '\n  Ran:    %d\n  Failed: %d\n' "$runs" "$fails"
+          [[ $fails -eq 0 ]]

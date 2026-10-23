@@ -18,8 +18,33 @@ OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
 CFLAGS  += -Wall -pedantic -std=gnu99 -g1 -O1 -fno-omit-frame-pointer \
            -DHAVE_THREADS -I$(LIBRETRO_COMM_DIR)/include
-LDFLAGS += -Wl,--wrap=realloc
 LIBS    += -lpthread
+
+# Apple's linker has no --wrap: there task_queue.c calls the wrappers by
+# name, and the test's __real_ calls name the real functions.
+ifneq ($(shell uname -s),Darwin)
+   LDFLAGS += -Wl,--wrap=realloc
+else
+   TASK_QUEUE_O := $(call sample_objs,$(LIBRETRO_COMM_DIR)/queues/task_queue.o)
+   $(TASK_QUEUE_O): CFLAGS += -Drealloc=__wrap_realloc
+   $(TARGET).o: CFLAGS += -D__real_realloc=realloc
+endif
+
+# GCD=1 builds the GCD runner as the threaded one: against libSystem on
+# Apple, elsewhere against a libdispatch and blocks runtime
+# (DISPATCH_PREFIX for one outside the compiler's paths), with the QoS
+# class mapped onto a global queue priority.
+ifeq ($(GCD),1)
+   CFLAGS  += -fblocks -DHAVE_GCD
+   ifneq ($(DISPATCH_PREFIX),)
+      CFLAGS  += -I$(DISPATCH_PREFIX)/include
+      LDFLAGS += -L$(DISPATCH_PREFIX)/lib -Wl,-rpath,$(DISPATCH_PREFIX)/lib
+   endif
+   ifneq ($(shell uname -s),Darwin)
+      LIBS   += -ldispatch -lBlocksRuntime
+      CFLAGS += -DQOS_CLASS_USER_INITIATED=DISPATCH_QUEUE_PRIORITY_HIGH
+   endif
+endif
 
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) $(CFLAGS)
