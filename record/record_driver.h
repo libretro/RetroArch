@@ -212,6 +212,10 @@ void recording_gpu_frame_info(struct video_frame_info *info,bool capture);
 void recording_gpu_poll(void);
 void recording_gpu_stop(void);
 bool recording_gpu_pending(void);
+/* Main owner: coalesce reinit flags while native users retire. The existing
+ * GPU poll applies the reinit once, or drops it during content/quit teardown. */
+bool recording_gpu_defer_reinit(int flags);
+void recording_gpu_reinit_poll(void);
 bool recording_gpu_defer_start(const record_driver_t *driver);
 bool recording_gpu_cancel_start(void);
 RETRO_END_DECLS

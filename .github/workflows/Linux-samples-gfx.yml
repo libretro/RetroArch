@@ -119,6 +119,11 @@ jobs:
           python3 samples/gfx/videotoolbox_hevc/run.py --threadless
           CFLAGS='-DRETRO_ATOMIC_FORCE_VOLATILE -DRETRO_ATOMIC_SUPPRESS_WARNING' python3 samples/gfx/videotoolbox_hevc/run.py
           TSAN_OPTIONS=halt_on_error=1 CFLAGS='-fsanitize=thread -fno-omit-frame-pointer' RUNNER="setarch $(uname -m) -R" python3 samples/gfx/videotoolbox_hevc/run.py
+      - name: Native recording reinit ownership
+        run: |
+          make -C samples/record/gpu_reinit check CC=gcc SANITIZER=address,undefined
+          make -C samples/record/gpu_reinit clean
+          make -C samples/record/gpu_reinit check CC=clang SANITIZER=address,undefined
       - name: HEVC software and hardware sequencing regression
         working-directory: libretro-common/samples/formats/h265
         run: |
