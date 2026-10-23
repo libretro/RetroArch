@@ -1512,9 +1512,8 @@ static bool task_database_skip_unclaimed(database_state_handle_t *db_state,
       const char *name, bool path_contains_compressed_file)
 {
    /* Every database the gate refuses is passed over in this one
-    * step, so a file costs a handler call per database it can
-    * match rather than one per database in the directory - under
-    * the regular task queue that is a frame each. */
+    * step, so a file costs a step per database it can match rather
+    * than one per database in the directory. */
    const char *ext = path_get_extension(name);
    bool skipped    = false;
 
@@ -3240,59 +3239,25 @@ static bool task_manual_scan_begin_tick(retro_task_t *task,
    return error;
 }
 
-static void task_manual_content_scan_handler(retro_task_t *task)
+/* What an ITERATE step leaves for the tick to do. */
+enum scan_step
 {
-   uint8_t flg;
-   manual_scan_handle_t *manual_scan = NULL;
+   SCAN_STEP_NEXT = 0,
+   SCAN_STEP_FINISHED
+};
+
+/* One step of the ITERATE family: a cleanup entry, a database probe or
+ * a playlist add. */
+static enum scan_step task_manual_scan_iterate_step(retro_task_t *task,
+      manual_scan_handle_t *manual_scan)
+{
 #ifdef HAVE_LIBRETRODB
-   database_info_handle_t  *dbinfo   = NULL;
-   database_state_handle_t *dbstate  = NULL;
+   database_info_handle_t  *dbinfo  = manual_scan->handle;
+   database_state_handle_t *dbstate = &manual_scan->state;
 #endif
-
-   if (!task)
-      goto task_finished;
-
-   if (!(manual_scan = (manual_scan_handle_t*)task->state))
-      goto task_finished;
-
-#ifdef HAVE_LIBRETRODB
-   dbinfo  = manual_scan->handle;
-   dbstate = &manual_scan->state;
-#endif
-
-   flg = task_get_flags(task);
-
-   if ((flg & RETRO_TASK_FLG_CANCELLED) > 0)
-      goto task_finished;
-
-#ifdef DEBUG
-   RARCH_DBG("[Scanner] Task handler started, status %d\n",manual_scan->status);
-#endif
-
-/* Improvements / shortcomings:
-- default extension list could be the core supported list, instead
-- pushing "scan" twice on the same file in the file browser will freeze, if there is still task feedback widget on screen (?)
-    this also happened before rework, prob menu related
-- test with desktop menu
-*/
 
    switch (manual_scan->status)
    {
-      case MANUAL_SCAN_BEGIN:
-      case MANUAL_SCAN_BEGIN_DIR_LIST:
-      case MANUAL_SCAN_BEGIN_DAT_LOAD:
-      case MANUAL_SCAN_BEGIN_PLAYLIST:
-         if (task_manual_scan_begin_tick(task, manual_scan))
-            goto task_finished;
-#ifdef HAVE_LIBRETRODB
-         /* The BEGIN family may have created the database handle
-          * this invocation; refresh the locals the ITERATE cases
-          * of later ticks are fetched from at handler entry. */
-         dbinfo  = manual_scan->handle;
-         dbstate = &manual_scan->state;
-#endif
-         break;
-
       case MANUAL_SCAN_ITERATE_CLEAN:
          {
             const struct playlist_entry *entry = NULL;
@@ -3405,7 +3370,7 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                   manual_scan->content_list_index].data;
             enum scan_verdict current_verdict;
             if (!content_path)
-               goto task_finished;
+               return SCAN_STEP_FINISHED;
 
             path_contains_compressed_file      = path_contains_compressed_file(content_path);
             /* Reminder - remove this shortcut when serial scan inside zip is solved */
@@ -3584,6 +3549,105 @@ static void task_manual_content_scan_handler(retro_task_t *task)
 #endif
                   manual_scan->status = MANUAL_SCAN_ITERATE_CONTENT;
          }
+         break;
+      default:
+         break;
+   }
+
+   return SCAN_STEP_NEXT;
+}
+
+static bool manual_scan_status_is_iterate(enum manual_scan_status status)
+{
+   switch (status)
+   {
+      case MANUAL_SCAN_ITERATE_CLEAN:
+#ifdef HAVE_LIBRETRODB
+      case DATABASE_SCAN_ITERATE_START:
+      case DATABASE_SCAN_ITERATE_CONTENT:
+      case DATABASE_SCAN_ITERATE_NEXT:
+#endif
+      case MANUAL_SCAN_ITERATE_CONTENT:
+         return true;
+      default:
+         break;
+   }
+   return false;
+}
+
+/* Runs ITERATE steps while the shared window lasts, timed rather than
+ * counted; its floor pays for the first, so every call makes progress. */
+static bool task_manual_scan_iterate_tick(retro_task_t *task,
+      manual_scan_handle_t *manual_scan)
+{
+   nbio_budget_t b;
+   bool finished = false;
+
+   task_nbio_slice_open(&b);
+   while (task_nbio_slice_within_budget(&b, 0, 0))
+   {
+      if (task_manual_scan_iterate_step(task, manual_scan)
+            == SCAN_STEP_FINISHED)
+      {
+         finished = true;
+         break;
+      }
+      if (!manual_scan_status_is_iterate(manual_scan->status))
+         break;
+   }
+   task_nbio_slice_close(&b);
+   return finished;
+}
+
+static void task_manual_content_scan_handler(retro_task_t *task)
+{
+   uint8_t flg;
+   manual_scan_handle_t *manual_scan = NULL;
+#ifdef HAVE_LIBRETRODB
+   database_state_handle_t *dbstate  = NULL;
+#endif
+
+   if (!task)
+      goto task_finished;
+
+   if (!(manual_scan = (manual_scan_handle_t*)task->state))
+      goto task_finished;
+
+#ifdef HAVE_LIBRETRODB
+   dbstate = &manual_scan->state;
+#endif
+
+   flg = task_get_flags(task);
+
+   if ((flg & RETRO_TASK_FLG_CANCELLED) > 0)
+      goto task_finished;
+
+#ifdef DEBUG
+   RARCH_DBG("[Scanner] Task handler started, status %d\n",manual_scan->status);
+#endif
+
+/* Improvements / shortcomings:
+- default extension list could be the core supported list, instead
+- pushing "scan" twice on the same file in the file browser will freeze, if there is still task feedback widget on screen (?)
+    this also happened before rework, prob menu related
+- test with desktop menu
+*/
+
+   if (manual_scan_status_is_iterate(manual_scan->status))
+   {
+      if (task_manual_scan_iterate_tick(task, manual_scan))
+         goto task_finished;
+      return;
+   }
+
+   switch (manual_scan->status)
+   {
+      case MANUAL_SCAN_BEGIN:
+      case MANUAL_SCAN_BEGIN_DIR_LIST:
+      case MANUAL_SCAN_BEGIN_DAT_LOAD:
+      case MANUAL_SCAN_BEGIN_PLAYLIST:
+         if (task_manual_scan_begin_tick(task, manual_scan))
+            goto task_finished;
          break;
       case MANUAL_SCAN_ITERATE_M3U:
          {

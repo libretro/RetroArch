@@ -642,8 +642,21 @@ static bool run_scan(const char *dir)
    return true;
 }
 
+/* Charges the shared I/O window a second, more than it holds, so the
+ * scanner's next call on the regular queue gets only its floor of one
+ * step. */
+static void spend_window(void)
+{
+   nbio_budget_t b;
+
+   task_nbio_slice_open(&b);
+   b.start -= 1000000;
+   task_nbio_slice_close(&b);
+}
+
 /* As run_scan(), but counts the checks the scan took.  Meaningful on
- * the regular queue, where every check runs the handler once. */
+ * the regular queue, where every check runs the handler once and a
+ * spent window holds that call to one step. */
 static unsigned run_scan_counted(const char *dir)
 {
    unsigned gathers = 0;
@@ -657,6 +670,7 @@ static unsigned run_scan_counted(const char *dir)
    started = time(NULL);
    while (loop_active)
    {
+      spend_window();
       task_queue_check();
       gathers++;
       if (difftime(time(NULL), started) > SCAN_TIMEOUT_SECONDS)

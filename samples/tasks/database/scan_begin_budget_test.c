@@ -40,6 +40,7 @@
 #include <file/file_path.h>
 #include <features/features_cpu.h>
 #include <formats/logiqx_dat.h>
+#include <encodings/crc32.h>
 
 #include "../../../core_info.h"
 #include "../../../list_special.h"
@@ -54,6 +55,7 @@
 
 #define CONTENT_DIRS  50
 #define CONTENT_FILES 5000
+#define ITERATE_FILES 2000
 
 /* Per-gather cost for the pacing lane is measured in thread CPU
  * time, not wall time.  The property under test is how much work the
@@ -239,6 +241,82 @@ static bool build_fixture(const char *root, char *dat_path, size_t dat_path_len,
    fputs("</datafile>\n", dat);
    fclose(dat);
    return true;
+}
+
+/* A one-record database laid out as libretrodb writes one: the record
+ * map, a nil, then the {count} map the header points at. */
+static bool write_rdb_one(const char *path, const char *name,
+      uint32_t crc, uint32_t size)
+{
+   uint8_t b[128];
+   size_t  name_len = strlen(name);
+   size_t  n        = 16;
+   size_t  meta, i;
+   FILE   *f;
+
+   if (name_len > 31)
+      return false;
+   b[n++] = 0x83;
+   b[n++] = 0xa4; memcpy(b + n, "name", 4); n += 4;
+   b[n++] = (uint8_t)(0xa0 | name_len);
+   memcpy(b + n, name, name_len); n += name_len;
+   b[n++] = 0xa3; memcpy(b + n, "crc", 3); n += 3;
+   b[n++] = 0xc4; b[n++] = 4;
+   for (i = 0; i < 4; i++)
+      b[n++] = (uint8_t)(crc >> (24 - 8 * i));
+   b[n++] = 0xa4; memcpy(b + n, "size", 4); n += 4;
+   b[n++] = 0xce;
+   for (i = 0; i < 4; i++)
+      b[n++] = (uint8_t)(size >> (24 - 8 * i));
+   b[n++] = 0xc0;
+   meta   = n;
+   b[n++] = 0x81;
+   b[n++] = 0xa5; memcpy(b + n, "count", 5); n += 5;
+   b[n++] = 1;
+   memcpy(b, "RARCHDB", 8);
+   for (i = 0; i < 8; i++)
+      b[8 + i] = (uint8_t)((uint64_t)meta >> (56 - 8 * i));
+
+   if (!(f = fopen(path, "wb")))
+      return false;
+   i = fwrite(b, 1, n, f);
+   fclose(f);
+   return i == n;
+}
+
+/* ITERATE lane fixture: @count files of @size bytes, and one database
+ * whose only record has that size and, with @match_last, the last
+ * file's crc, else a crc none of them has. */
+static bool build_iterate_fixture(const char *db_dir,
+      const char *content_dir, unsigned count, uint32_t size,
+      bool match_last)
+{
+   char path[4608];
+   uint8_t *d = (uint8_t*)calloc(1, size);
+   unsigned i;
+   bool ok    = d && size >= sizeof(i)
+             && path_mkdir(db_dir) && path_mkdir(content_dir);
+
+   for (i = 0; ok && i < count; i++)
+   {
+      RFILE *f;
+      memcpy(d, &i, sizeof(i));
+      snprintf(path, sizeof(path), "%s/iter%04u.bin", content_dir, i);
+      if (!(f = filestream_open(path, RETRO_VFS_FILE_ACCESS_WRITE,
+            RETRO_VFS_FILE_ACCESS_HINT_NONE)))
+         ok = false;
+      else
+      {
+         ok = filestream_write(f, d, size) == (int64_t)size;
+         filestream_close(f);
+      }
+   }
+   snprintf(path, sizeof(path), "%s/ScanBench Iterate.rdb", db_dir);
+   ok = ok && write_rdb_one(path,
+         match_last ? "Iterate Last" : "Iterate Nothing",
+         match_last ? encoding_crc32(0, d, size) : 0xDEADBEEFu, size);
+   free(d);
+   return ok;
 }
 
 /* Big-DAT lane fixture: a DAT large enough that an unbudgeted parse
@@ -438,6 +516,97 @@ static bool run_scan(const char *content_dir, const char *dat_path,
    return !scan_err;
 }
 
+/* A database scan of the ITERATE fixture: strict, every .bin in
+ * @content_dir, no core needed to claim the database. */
+static bool configure_db_scan(const char *content_dir, const char *db_dir,
+      const char *playlist_dir)
+{
+   settings_t *settings = config_get_ptr();
+
+   strlcpy(settings->paths.directory_playlist, playlist_dir,
+         sizeof(settings->paths.directory_playlist));
+   strlcpy(settings->paths.path_content_database, db_dir,
+         sizeof(settings->paths.path_content_database));
+   settings->bools.scan_without_core_match = true;
+
+   if (!manual_content_scan_set_menu_scan_method(
+            MANUAL_CONTENT_SCAN_METHOD_CUSTOM))
+      return false;
+   if (!manual_content_scan_set_menu_content_dir(content_dir))
+      return false;
+   if (!manual_content_scan_set_menu_system_name(
+            MANUAL_CONTENT_SCAN_SYSTEM_NAME_CONTENT_DIR, NULL))
+      return false;
+   if (!manual_content_scan_set_menu_scan_use_db(
+            MANUAL_CONTENT_SCAN_USE_DB_STRICT))
+      return false;
+   strlcpy_lit(manual_content_scan_get_file_exts_custom_ptr(), "bin",
+         manual_content_scan_get_file_exts_custom_size());
+   *manual_content_scan_get_dat_file_path_ptr()      = '\0';
+   *manual_content_scan_get_search_recursively_ptr() = false;
+   *manual_content_scan_get_overwrite_playlist_ptr() = true;
+   return true;
+}
+
+/* Runs a database scan on the regular queue, one check a frame so
+ * that each call gets a fresh window.  A scan still running after
+ * @cancel_after checks (0: never) is cancelled and drained, so a lane
+ * can fail fast on a count it has already lost. */
+static bool run_db_scan(const char *content_dir, const char *db_dir,
+      const char *playlist_dir, unsigned cancel_after, scan_metrics_t *m)
+{
+   retro_time_t t0;
+   time_t started;
+
+   memset(m, 0, sizeof(*m));
+   scan_done = false;
+   scan_err  = false;
+
+   if (!configure_db_scan(content_dir, db_dir, playlist_dir))
+      return false;
+
+   t0 = cpu_features_get_time_usec();
+   if (!task_push_manual_content_scan(false, scan_cb))
+   {
+      fprintf(stderr, "database scan: push refused\n");
+      return false;
+   }
+
+   started = time(NULL);
+   while (!scan_done)
+   {
+      retro_time_t g0, g1;
+
+      if (cancel_after && m->gathers == cancel_after)
+      {
+         task_finder_data_t finder;
+         finder.func     = find_any;
+         finder.userdata = NULL;
+         found_task      = NULL;
+         if (task_queue_find(&finder) && found_task)
+            task_queue_cancel_task(found_task);
+      }
+
+      g0 = thread_cpu_usec();
+      task_queue_check();
+      g1 = thread_cpu_usec();
+
+      m->gathers++;
+      if (g1 - g0 > m->max_gather_usec)
+         m->max_gather_usec = g1 - g0;
+
+      if (difftime(time(NULL), started) > SCAN_TIMEOUT_SECONDS)
+      {
+         fprintf(stderr, "database scan did not finish within %d seconds\n",
+               SCAN_TIMEOUT_SECONDS);
+         return false;
+      }
+      retro_sleep(17);
+   }
+   m->total_usec = cpu_features_get_time_usec() - t0;
+   return true;
+}
+
 /* Threaded lane: the same scan under the threaded task queue, where
  * the handler runs on the worker thread while push/find/cancel come
  * from this one.  Pacing is not asserted here - there is no frame to
@@ -547,6 +716,25 @@ static bool run_scan_cancelled(const char *content_dir, const char *dat_path,
     * teardown must have released everything, which the sanitizers
     * decide. */
    return true;
+}
+
+/* Entries in @dir/@name; 0 when it cannot be read. */
+static size_t playlist_entries(const char *dir, const char *name)
+{
+   char path[4608];
+   playlist_config_t cfg;
+   playlist_t *pl;
+   size_t n;
+
+   memset(&cfg, 0, sizeof(cfg));
+   snprintf(path, sizeof(path), "%s/%s", dir, name);
+   playlist_config_set_path(&cfg, path);
+   cfg.capacity = COLLECTION_SIZE;
+   if (!(pl = playlist_init(&cfg)))
+      return 0;
+   n = playlist_size(pl);
+   playlist_free(pl);
+   return n;
 }
 
 /* Playlist correctness: every fixture file present exactly once. */
@@ -996,6 +1184,56 @@ int main(int argc, char *argv[])
 
    /* The regular-queue metrics lanes are done; tear that queue down
     * before the threaded and cancellation lanes bring up their own. */
+   task_queue_deinit();
+
+   /* ITERATE lane: a database scan batches its steps under the window,
+    * so one call covers many small files.  One step a call is about
+    * six calls a file. */
+   task_queue_init(false, msgq_push);
+   {
+      char it_db[4352], it_content[4352], it_pl[4352];
+      scan_metrics_t mi;
+      size_t entries;
+      bool ran;
+
+      snprintf(it_db,      sizeof(it_db),      "%s/iterate_db", fixture_root);
+      snprintf(it_content, sizeof(it_content), "%s/iterate",    fixture_root);
+      snprintf(it_pl,      sizeof(it_pl),      "%s/iterate_pl", fixture_root);
+      if (   !path_mkdir(it_pl)
+          || !build_iterate_fixture(it_db, it_content, ITERATE_FILES, 16,
+               true))
+      {
+         fprintf(stderr, "iterate fixture build failed\n");
+         goto out_queue;
+      }
+      ran = run_db_scan(it_content, it_db, it_pl, ITERATE_FILES, &mi);
+      config_get_ptr()->paths.path_content_database[0] = '\0';
+      config_get_ptr()->bools.scan_without_core_match  = false;
+      if (!ran)
+         goto out_queue;
+      fprintf(stderr,
+            "[metrics] iterate: files=%u checks=%u max_gather_cpu=%.2fms "
+            "total=%.1fms\n",
+            (unsigned)ITERATE_FILES, mi.gathers,
+            mi.max_gather_usec / 1000.0, mi.total_usec / 1000.0);
+      if (mi.gathers >= ITERATE_FILES)
+      {
+         fprintf(stderr, "FAIL iterate: %u checks for %u files\n",
+               mi.gathers, (unsigned)ITERATE_FILES);
+         goto out_queue;
+      }
+      if (scan_err)
+         goto out_queue;
+      entries = playlist_entries(it_pl, "iterate.lpl");
+      if (entries != 1)
+      {
+         fprintf(stderr, "FAIL iterate: %u playlist entries, expected 1\n",
+               (unsigned)entries);
+         goto out_queue;
+      }
+      fprintf(stderr, "[pass] iterate lane (%u files, %u checks)\n",
+            (unsigned)ITERATE_FILES, mi.gathers);
+   }
    task_queue_deinit();
 
    /* Threaded lane: correctness under the threaded queue (and the
