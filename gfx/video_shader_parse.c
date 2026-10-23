@@ -4157,10 +4157,13 @@ bool video_shader_apply_shader(
       d->current_pass = 0;
       strlcpy(d->preset_path, preset_path, sizeof(d->preset_path));
 
+      if (!video_st->threaded)
+         video_driver_shader_deferred_take(d, true);
       if (video_st->current_video->shader_load_begin(
                video_st->data, d))
       {
          d->state = SHADER_LOAD_COMPILING;
+         video_driver_shader_deferred_start(d);
 
          /* Store the runtime preset path early so hotkey
           * cycling and auto-preset logic see it immediately */

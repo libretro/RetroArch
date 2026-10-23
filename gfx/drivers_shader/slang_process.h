@@ -414,6 +414,28 @@ bool glslang_compile_shader_text(const char *shader_path,
       glslang_output *output, void *include_cache,
       const struct slang_text_target *text);
 
+/* The compile of one pass on a thread that is not the chain's: it
+ * reads, compiles and writes the cache as the chain's thread would,
+ * but asks and tells the blob table nothing, prints no text and falls
+ * back to no other compiler.  False, with nothing done, when the
+ * chain's compiler would be glslang (@hlsl_or_msl: the driver takes
+ * HLSL or MSL text, which decides that under auto).  @key (33 bytes) gets the pass's
+ * cache key.  The chain's thread then offers the output's blobs under
+ * it (slang_blob_offer) and its own compile of the pass takes them. */
+bool slang_compile_pass_detached(const char *shader_path, bool hlsl_or_msl,
+      glslang_output *output, char *key);
+
+/* Lists @vs and @fs under @key for the passes to come, holding one
+ * reference to each until the chain has taken them or the offers ring
+ * (64 passes) has moved on; takes the references passed.  Nothing is
+ * listed, and both are released, when the key is listed already.  On
+ * the thread that builds chains. */
+void slang_blob_offer(const char *key, struct slang_blob *vs,
+      struct slang_blob *fs);
+
+/* Drops the references the offers ring holds. */
+void slang_blob_offers_release(void);
+
 /* Merge parameters harvested into @meta into @shader, enforcing the
  * duplicate-must-match rule.  @pass is the pass @meta was harvested
  * from, and is recorded on each parameter this call adds, so that a

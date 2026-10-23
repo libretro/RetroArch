@@ -1474,6 +1474,7 @@ typedef struct shader_load_deferred
    unsigned               total_passes;
    void                  *driver_data;  /* driver-specific work state    */
    task_notify_t          done;         /* told once the load ends       */
+   void                  *precompile;   /* the passes compiling ahead    */
    retro_atomic_int_t     busy;         /* a step runs on the video thread */
    retro_atomic_int_t     cancel;       /* the next step ends the load   */
 } shader_load_deferred_t;
@@ -2320,6 +2321,15 @@ bool video_shader_deferred_notify(retro_task_callback_t cb, void *user_data);
  * far is freed on the driver's thread before this returns, the chain
  * on screen stays, and a caller waiting on the load is told @why. */
 void video_driver_shader_deferred_cancel(const char *why);
+
+/* Once the driver has begun a deferred load: its passes start
+ * compiling ahead on the task thread, when there is one. */
+void video_driver_shader_deferred_start(shader_load_deferred_t *d);
+
+/* On the thread that builds chains, before a step: the passes the
+ * worker has finished are listed for the step to take; with @end, the
+ * load is over and what was listed for it is let go. */
+void video_driver_shader_deferred_take(shader_load_deferred_t *d, bool end);
 
 bool video_driver_set_rotation(unsigned rotation);
 
