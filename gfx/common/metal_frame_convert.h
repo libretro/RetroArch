@@ -24,7 +24,8 @@ static INLINE bool metal_frame_yuv_params(const metal_frame_view_t *view,
          || (view->color.range != 1 && view->color.range != 2)
          || !view->width || !view->height
          || !VIDEO_SCALE_FITS(view->width, view->height)
-         || (view->crop_x & 1u) || (view->crop_y & 1u))
+         || (view->crop_x & 1u) || (view->crop_y & 1u)
+         || view->chroma_position > 2)
       return false;
    ten     = view->pixfmt == IMAGE_PIXFMT_P010;
    full    = view->color.range == 2;
@@ -41,6 +42,7 @@ static INLINE bool metal_frame_yuv_params(const metal_frame_view_t *view,
    p.coefficients[0] = 1.5748f; p.coefficients[1] = -0.18732427f;
    p.coefficients[2] = -0.46812427f; p.coefficients[3] = 1.8556f;
    p.mode[0] = view->color.transfer;
+   p.mode[1] = view->chroma_position;
    *output = p;
    return true;
 }

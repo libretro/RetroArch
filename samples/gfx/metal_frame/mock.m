@@ -310,6 +310,7 @@ static bool encode(void *user, const metal_frame_view_t *view, void *buffer)
    assert(commands->sequence++ == 1);
    assert(view->planes[0] && view->width == 7 && view->height == 5);
    assert(view->yuv == 123 && view->color.max_cll == 1500);
+   assert(view->chroma_position == (view->planes[1] ? 2u : 0u));
    (*count)++;
    return true;
 }
@@ -350,6 +351,9 @@ static void test(unsigned format, unsigned action)
       source.ready_value = 3; source.done_value = 7;
       source.color.max_cll = 1500;
       source.width = 7; source.height = 5; source.yuv = 123; source.pixfmt = format;
+      source.chroma_position = 3;
+      assert(!metal_frame_create(&source, &frame));
+      source.chroma_position = uv ? 2 : 0;
       for (i = 0; i < 3; i++) source.backing[i] = [MockBacking new];
       memset(&frame, 0xa5, sizeof(frame)); untouched = frame;
       source.device = other;
