@@ -12,10 +12,14 @@ parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--binary", required=True)
 parser.add_argument("--results", type=Path)
 parser.add_argument("--metal", action="store_true")
+parser.add_argument("--container", action="store_true")
 args = parser.parse_args()
 binary = Path(args.binary).resolve()
 expected_mode = "native-metal" if args.metal else "native-decode"
 completion = "PASS: native AV1 Metal pixels," if args.metal else "PASS: native AV1 hardware pixels,"
+if args.container:
+    expected_mode = "native-container"
+    completion = "PASS: native AV1 container Metal pixels,"
 results = []
 with tempfile.TemporaryDirectory(prefix="vt-av1-native-") as directory:
     root = Path(directory)
@@ -39,20 +43,31 @@ with tempfile.TemporaryDirectory(prefix="vt-av1-native-") as directory:
             subprocess.run(["ffmpeg", "-v", "error", "-i", str(stream),
                 "-pix_fmt", fmt, "-f", "rawvideo", "-y", str(reference)], check=True)
             assert reference.stat().st_size == 4 * 128 * 96 * 3 // 2 * (2 if depth == 10 else 1)
-            completed = subprocess.run([str(binary), "-", str(stream),
-                str(reference), str(depth), str(position), str(grain)], check=False,
-                capture_output=True, text=True, timeout=90)
-            print(completed.stdout, end="")
-            print(completed.stderr, end="")
-            if completed.returncode not in (0, 77):
-                completed.check_returncode()
-            assert "MODE: " + expected_mode in completed.stdout, "acceptance binary mode mismatch"
-            if not completed.returncode:
-                assert completion in completed.stdout, "native completion marker missing"
-            results.append(dict(depth=depth, position=position, grain=grain,
-                                stream_sha256=hashlib.sha256(stream.read_bytes()).hexdigest(),
-                                reference_sha256=hashlib.sha256(reference.read_bytes()).hexdigest(),
-                                status="passed" if not completed.returncode else "unavailable"))
+            for container in (("mp4", "webm") if args.container else ("ivf",)):
+                media = stream
+                if container != "ivf":
+                    media = root / (stem + "." + container)
+                    subprocess.run(["ffmpeg", "-v", "error", "-i", str(stream),
+                        "-map", "0:v:0", "-c:v", "copy", "-y", str(media)], check=True)
+                    decoded = root / (stem + "-" + container + ".yuv")
+                    subprocess.run(["ffmpeg", "-v", "error", "-i", str(media),
+                        "-pix_fmt", fmt, "-f", "rawvideo", "-y", str(decoded)], check=True)
+                    assert decoded.read_bytes() == reference.read_bytes(), "remuxed pixels changed"
+                completed = subprocess.run([str(binary), "-", str(media),
+                    str(reference), str(depth), str(position), str(grain)], check=False,
+                    capture_output=True, text=True, timeout=90)
+                print(completed.stdout, end="")
+                print(completed.stderr, end="")
+                if completed.returncode not in (0, 77):
+                    completed.check_returncode()
+                assert "MODE: " + expected_mode in completed.stdout, "acceptance binary mode mismatch"
+                if not completed.returncode:
+                    assert completion in completed.stdout, "native completion marker missing"
+                results.append(dict(depth=depth, position=position, grain=grain,
+                                    container=container,
+                                    stream_sha256=hashlib.sha256(media.read_bytes()).hexdigest(),
+                                    reference_sha256=hashlib.sha256(reference.read_bytes()).hexdigest(),
+                                    status="passed" if not completed.returncode else "unavailable"))
 record = dict(api="videotoolbox", mode=expected_mode, binary=str(binary),
               native_executed=any(r["status"] == "passed" for r in results),
               cases=results, complete=all(r["status"] == "passed" for r in results))

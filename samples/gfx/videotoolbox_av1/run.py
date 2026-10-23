@@ -77,7 +77,8 @@ with tempfile.TemporaryDirectory(prefix="vt-av1-setup-") as directory:
             helper = importlib.util.module_from_spec(specification)
             specification.loader.exec_module(helper)
             unit = path / "av1_metal.m"
-            unit.write_text(helper.metal_test_source() + '\n#include "'
+            unit.write_text('#include "' + (here / "native_session_probe.h").as_posix()
+                + '"\n' + helper.metal_test_source() + '\n#include "'
                 + (here / "native_metal.m").as_posix() + '"\n', encoding="utf-8")
             metal_object = path / "av1_metal.o"
             command = compiler + ["-DHAVE_THREADS", "-DHAVE_RAV1", "-O2",
@@ -100,6 +101,33 @@ with tempfile.TemporaryDirectory(prefix="vt-av1-setup-") as directory:
             subprocess.run(command, check=True)
             result = subprocess.run([sys.executable, str(here / "native_run.py"),
                                      "--binary", str(binary), "--metal"], check=False)
+            if not result.returncode:
+                for name in ("tpool", "retro_eventcount"):
+                    obj = path / (name + ".o")
+                    command = compiler + ["-O2", "-DHAVE_THREADS",
+                        "-mmacosx-version-min=10.14",
+                        "-I" + str(root / "libretro-common/include"), "-c",
+                        str(root / "libretro-common/rthreads" / (name + ".c")),
+                        "-o", str(obj)]
+                    subprocess.run(command, check=True)
+                    objects += [str(obj)]
+                sources = ["mp4/rmp4.c", "mp4/rmp4_video.c", "webm/rwebm.c",
+                    "webm/rwebm_video.c", "vp8/rvp8.c", "vp9/rvp9.c", "h264/rh264.c",
+                    "image/image_blit_bands.c", "image/image_hdr_blit.c", "../time/rtime.c"]
+                for index, relative in enumerate(sources):
+                    obj = path / ("stream-" + str(index) + ".o")
+                    command = compiler + flags + ["-DHAVE_RMP4", "-DHAVE_RWEBM",
+                        "-DHAVE_RVP9", "-DHAVE_RAV1", "-Wno-unused-parameter",
+                        "-c", str(root / "libretro-common/formats" / relative),
+                        "-o", str(obj)]
+                    subprocess.run(command, check=True)
+                    objects += [str(obj)]
+                command = compiler + flags + [str(here / "native_pipeline_test.c"),
+                    *objects, str(metal_object), "-o", str(binary), "-framework",
+                    "Foundation", "-framework", "Metal", "-lm"] + libraries
+                subprocess.run(command, check=True)
+                result = subprocess.run([sys.executable, str(here / "native_run.py"),
+                    "--binary", str(binary), "--container"], check=False)
         raise SystemExit(result.returncode)
     if not args.native_format:
         command = compiler + flags + ["-I" + str(path), str(here / "sample_test.c"),
