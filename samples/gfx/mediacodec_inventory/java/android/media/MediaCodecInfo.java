@@ -41,10 +41,16 @@ public final class MediaCodecInfo
    }
    public static final class CodecCapabilities
    {
+      public static final int COLOR_FormatSurface = 0x7f000789;
       public boolean isFormatSupported(MediaFormat f)
       {
-         if (MediaCodecList.scenario == 10)
+         if (MediaCodecList.scenario == 10 || MediaCodecList.scenario == 12)
             throw new OutOfMemoryError("injected");
+         if (MediaCodecList.scenario == 11)
+            return f.profile == 2 && f.width <= 1920 && f.height <= 1080
+                  && f.colorFormat == COLOR_FormatSurface
+                  && f.bitrate >= 1000000 && f.bitrate <= 20000000
+                  && f.frameRate >= 24 && f.frameRate <= 60;
          return f.profile == 2 && f.width <= 1920 && f.height <= 1080;
       }
    }

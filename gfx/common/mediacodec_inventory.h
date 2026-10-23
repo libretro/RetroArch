@@ -15,5 +15,16 @@ RETRO_BEGIN_DECLS
 int mediacodec_inventory_select(JNIEnv *env, const char *mime, int encoder,
       unsigned width, unsigned height, int profile, char *name,
       size_t capacity);
+typedef struct mediacodec_encoder_request
+{
+   double frame_rate;
+   const char *mime;
+   unsigned width, height, bitrate;
+   int profile;
+} mediacodec_encoder_request_t;
+/* Cold Surface encoder admission, including rate/bitrate/color format.
+ * Selection alone does not prove session creation or encoded output. */
+int mediacodec_inventory_select_encoder(JNIEnv *env,
+      const mediacodec_encoder_request_t *request, char *name, size_t capacity);
 RETRO_END_DECLS
 #endif

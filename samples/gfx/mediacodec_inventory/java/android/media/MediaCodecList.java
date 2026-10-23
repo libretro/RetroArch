@@ -17,14 +17,15 @@ public final class MediaCodecList
       String name = scenario == 5   ? "x".repeat(300)
                     : scenario == 6 ? "codec.\u00e9"
                                     : "c2.test.hevc";
+      boolean encode = scenario == 7 || scenario == 11 || scenario == 12;
       MediaCodecInfo good =
-          new MediaCodecInfo(name, scenario == 7, false, true, false);
+          new MediaCodecInfo(name, encode, false, true, false);
       if (scenario == 4)
          return new MediaCodecInfo[] {
              new MediaCodecInfo("wrong.mime", false, false, true, false), good};
       return new MediaCodecInfo[] {
-          new MediaCodecInfo("software", false, false, false, true),
-          new MediaCodecInfo("contradictory", false, false, true, true),
-          new MediaCodecInfo("alias", false, true, true, false), good};
+          new MediaCodecInfo("software", encode, false, false, true),
+          new MediaCodecInfo("contradictory", encode, false, true, true),
+          new MediaCodecInfo("alias", encode, true, true, false), good};
    }
 }

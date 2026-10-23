@@ -1,6 +1,8 @@
 /* Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier:
  * GPL-3.0-or-later */
 #include "mediacodec_inventory.h"
+#include <float.h>
+#include <limits.h>
 #include <string.h>
 
 #define MC_CHECK(value) \
@@ -16,8 +18,9 @@
       if ((*env)->ExceptionCheck(env)) \
          goto failed; \
    } while (0)
-int mediacodec_inventory_select(JNIEnv *env, const char *mime, int encoder,
-      unsigned width, unsigned height, int profile, char *name, size_t capacity)
+static int mediacodec_inventory_select_internal(JNIEnv *env, const char *mime,
+      int encoder, unsigned width, unsigned height, int profile, char *name,
+      size_t capacity, const mediacodec_encoder_request_t *request)
 {
    jclass version, lists, infos, formats, caps;
    jfieldID sdk;
@@ -108,6 +111,31 @@ int mediacodec_inventory_select(JNIEnv *env, const char *mime, int encoder,
    MC_CHECK(key);
    MC_VOID(
          (*env)->CallVoidMethod(env, format, set_integer, key, (jint)profile));
+   if (request)
+   {
+      jfieldID surface;
+      jmethodID set_float;
+      jint color;
+      surface = (*env)->GetStaticFieldID(env, caps, "COLOR_FormatSurface", "I");
+      MC_CHECK(surface);
+      color = (*env)->GetStaticIntField(env, caps, surface);
+      if ((*env)->ExceptionCheck(env) || color <= 0)
+         goto failed;
+      set_float = (*env)->GetMethodID(
+            env, formats, "setFloat", "(Ljava/lang/String;F)V");
+      MC_CHECK(set_float);
+      key = (*env)->NewStringUTF(env, "color-format");
+      MC_CHECK(key);
+      MC_VOID((*env)->CallVoidMethod(env, format, set_integer, key, color));
+      key = (*env)->NewStringUTF(env, "bitrate");
+      MC_CHECK(key);
+      MC_VOID((*env)->CallVoidMethod(
+            env, format, set_integer, key, (jint)request->bitrate));
+      key = (*env)->NewStringUTF(env, "frame-rate");
+      MC_CHECK(key);
+      MC_VOID((*env)->CallVoidMethod(
+            env, format, set_float, key, (jfloat)request->frame_rate));
+   }
    for (i = 0; i < count; i++)
    {
       jobject info, capability;
@@ -206,3 +234,23 @@ done:
 }
 #undef MC_CHECK
 #undef MC_VOID
+
+int mediacodec_inventory_select(JNIEnv *env, const char *mime, int encoder,
+      unsigned width, unsigned height, int profile, char *name, size_t capacity)
+{
+   return mediacodec_inventory_select_internal(
+         env, mime, encoder, width, height, profile, name, capacity, NULL);
+}
+
+int mediacodec_inventory_select_encoder(JNIEnv *env,
+      const mediacodec_encoder_request_t *request, char *name, size_t capacity)
+{
+   if (name && capacity)
+      name[0] = 0;
+   if (!request || !request->bitrate || request->bitrate > INT_MAX
+         || !(request->frame_rate > 0 && request->frame_rate <= FLT_MAX))
+      return 0;
+   return mediacodec_inventory_select_internal(env, request->mime, 1,
+         request->width, request->height, request->profile, name, capacity,
+         request);
+}

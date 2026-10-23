@@ -1,6 +1,8 @@
 /* Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier:
  * GPL-3.0-or-later */
 #include <assert.h>
+#include <float.h>
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 #include "../../../gfx/common/mediacodec_inventory.h"
@@ -53,6 +55,71 @@ int main(void)
       if (expected != 1)
          assert(!*name);
    }
+   {
+      mediacodec_encoder_request_t request;
+      memset(&request, 0, sizeof(request));
+      request.mime = "video/hevc";
+      request.width = 1920;
+      request.height = 1080;
+      request.profile = 2;
+      request.bitrate = 10000000;
+      request.frame_rate = 60000.0 / 1001.0;
+      (*env)->SetStaticIntField(env, list, scenario, 11);
+      assert(mediacodec_inventory_select_encoder(
+                   env, &request, name, sizeof(name))
+            == 1);
+      assert(!strcmp(name, "c2.test.hevc"));
+      assert(mediacodec_inventory_select(env, request.mime, 1, request.width,
+                   request.height, request.profile, name, sizeof(name))
+            == 0);
+      request.frame_rate = 120;
+      assert(!mediacodec_inventory_select_encoder(
+                   env, &request, name, sizeof(name))
+            && !*name);
+      request.frame_rate = 30;
+      request.bitrate = 100000;
+      assert(!mediacodec_inventory_select_encoder(
+                   env, &request, name, sizeof(name))
+            && !*name);
+      request.bitrate = 20000000;
+      assert(mediacodec_inventory_select_encoder(
+                   env, &request, name, sizeof(name))
+            == 1);
+      request.bitrate = 0;
+      assert(!mediacodec_inventory_select_encoder(
+                   env, &request, name, sizeof(name))
+            && !*name);
+      request.bitrate = UINT_MAX;
+      assert(!mediacodec_inventory_select_encoder(
+                   env, &request, name, sizeof(name))
+            && !*name);
+      request.bitrate = 10000000;
+      request.frame_rate = DBL_MAX;
+      assert(!mediacodec_inventory_select_encoder(
+                   env, &request, name, sizeof(name))
+            && !*name);
+      request.frame_rate = 0;
+      assert(!mediacodec_inventory_select_encoder(
+                   env, &request, name, sizeof(name))
+            && !*name);
+      request.frame_rate = -1;
+      assert(!mediacodec_inventory_select_encoder(
+                   env, &request, name, sizeof(name))
+            && !*name);
+      request.frame_rate = 30;
+      (*env)->SetStaticIntField(env, list, scenario, 12);
+      assert(mediacodec_inventory_select_encoder(
+                   env, &request, name, sizeof(name))
+                  == -1
+            && !*name);
+      assert(!(*env)->ExceptionCheck(env));
+      assert(!mediacodec_inventory_select_encoder(env, NULL, name, sizeof(name))
+            && !*name);
+      (*env)->SetStaticIntField(env, list, scenario, 11);
+      for (i = 0; i < 10000; i++)
+         assert(mediacodec_inventory_select_encoder(
+                      env, &request, name, sizeof(name)) == 1);
+   }
    (*env)->SetStaticIntField(env, list, scenario, 0);
    for (i = 0; i < 10000; i++)
       assert(mediacodec_inventory_select(
@@ -74,7 +141,8 @@ int main(void)
       (*env)->DeleteLocalRef(env, error);
    }
    assert((*vm)->DestroyJavaVM(vm) == JNI_OK);
-   puts("PASS: real JNI hardware/profile admission, aliases, failures and "
-        "10000 bounded local-frame iterations");
+   puts("PASS: real JNI decoder and Surface encoder format admission, "
+        "rate/bitrate refusal, aliases, failures and 20000 bounded "
+        "local-frame iterations");
    return 0;
 }
