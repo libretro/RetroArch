@@ -14,7 +14,10 @@ compiler = shlex.split(os.environ.get("CC", "cc"))
 parser = argparse.ArgumentParser()
 parser.add_argument("--native-format", action="store_true")
 parser.add_argument("--native-pixels", action="store_true")
+parser.add_argument("--pipeline", action="store_true")
 args = parser.parse_args()
+if args.pipeline:
+    args.native_pixels = True
 if args.native_pixels:
     args.native_format = True
 flags = ["-DHAVE_THREADS", "-O2", "-std=c89", "-pedantic", "-Wall", "-Wextra", "-Werror",
@@ -67,6 +70,36 @@ with tempfile.TemporaryDirectory(prefix="vt-av1-setup-") as directory:
         subprocess.run(command, check=True)
         result = subprocess.run([sys.executable, str(here / "native_run.py"),
                                  "--binary", str(binary)], check=False)
+        if not result.returncode and args.pipeline:
+            import importlib.util
+            specification = importlib.util.spec_from_file_location(
+                "hevc_metal_fixture", here.parent / "videotoolbox_hevc/run.py")
+            helper = importlib.util.module_from_spec(specification)
+            specification.loader.exec_module(helper)
+            unit = path / "av1_metal.m"
+            unit.write_text(helper.metal_test_source() + '\n#include "'
+                + (here / "native_metal.m").as_posix() + '"\n', encoding="utf-8")
+            metal_object = path / "av1_metal.o"
+            command = compiler + ["-DHAVE_THREADS", "-DHAVE_RAV1", "-O2",
+                "-fobjc-arc", "-fblocks", "-Wall", "-Wextra", "-Werror",
+                "-Wno-unused-function", "-Wframe-larger-than=4096",
+                "-mmacosx-version-min=10.14", "-I" + str(root / "libretro-common/include"),
+                "-c", str(unit), "-o", str(metal_object)]
+            subprocess.run(command, check=True)
+            for name, relative in (("av1_hw", "av1/rav1_hw.c"),
+                                   ("rh265", "h265/rh265.c")):
+                obj = path / (name + ".o")
+                command = compiler + ["-O2", "-DHAVE_THREADS", "-Wno-unused-parameter",
+                    "-mmacosx-version-min=10.14", "-I" + str(root / "libretro-common/include"),
+                    "-c", str(root / "libretro-common/formats" / relative), "-o", str(obj)]
+                subprocess.run(command, check=True)
+                objects += [str(obj)]
+            command = compiler + flags + ["-DVT_AV1_METAL_TEST", "-Wno-unused-function",
+                str(here / "native_pixel_test.c"), *objects, str(metal_object),
+                "-o", str(binary), "-framework", "Foundation", "-framework", "Metal", "-lm"] + libraries
+            subprocess.run(command, check=True)
+            result = subprocess.run([sys.executable, str(here / "native_run.py"),
+                                     "--binary", str(binary), "--metal"], check=False)
         raise SystemExit(result.returncode)
     if not args.native_format:
         command = compiler + flags + ["-I" + str(path), str(here / "sample_test.c"),

@@ -98,7 +98,7 @@ jobs:
           brew install ffmpeg
         fi
         rc=0
-        CC=clang python3 samples/gfx/videotoolbox_av1/run.py --native-pixels || rc=$?
+        CC=clang python3 samples/gfx/videotoolbox_av1/run.py --native-pixels --pipeline || rc=$?
         if [ "$rc" = 77 ]; then
           echo "::warning::AV1 hardware unavailable; native AV1 decode acceptance remains incomplete"
           exit 0

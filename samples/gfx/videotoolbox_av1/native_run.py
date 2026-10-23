@@ -11,9 +11,11 @@ import tempfile
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--binary", required=True)
 parser.add_argument("--results", type=Path)
+parser.add_argument("--metal", action="store_true")
 args = parser.parse_args()
 binary = Path(args.binary).resolve()
-expected_mode = "native-decode"
+expected_mode = "native-metal" if args.metal else "native-decode"
+completion = "PASS: native AV1 Metal pixels," if args.metal else "PASS: native AV1 hardware pixels,"
 results = []
 with tempfile.TemporaryDirectory(prefix="vt-av1-native-") as directory:
     root = Path(directory)
@@ -46,7 +48,7 @@ with tempfile.TemporaryDirectory(prefix="vt-av1-native-") as directory:
                 completed.check_returncode()
             assert "MODE: " + expected_mode in completed.stdout, "acceptance binary mode mismatch"
             if not completed.returncode:
-                assert "PASS: native AV1 hardware pixels," in completed.stdout, "native completion marker missing"
+                assert completion in completed.stdout, "native completion marker missing"
             results.append(dict(depth=depth, position=position, grain=grain,
                                 stream_sha256=hashlib.sha256(stream.read_bytes()).hexdigest(),
                                 reference_sha256=hashlib.sha256(reference.read_bytes()).hexdigest(),

@@ -335,6 +335,131 @@ static int execute(const uint8_t *data)
         "claim");
    return 0;
 }
+
+#ifdef VT_AV1_METAL_TEST
+#include "../../../gfx/common/videotoolbox_av1_decoder.h"
+extern void *videotoolbox_hevc_test_device(void *);
+extern void videotoolbox_hevc_test_device_release(void *);
+extern int videotoolbox_hevc_test_start(void *, void *, int);
+extern void videotoolbox_hevc_test_stop(void *);
+extern void videotoolbox_hevc_test_retired(void);
+extern void videotoolbox_hevc_test_movie_reset(void);
+extern void videotoolbox_av1_test_export(
+      video_hw_frame_t *, unsigned, unsigned, uint32_t);
+static int execute_metal(const uint8_t *data)
+{
+   rav1_hw_ops_t ops;
+   rav1_hw_backend_t backend;
+   rav1_obu_t config;
+   video_color_metadata_t color;
+   video_hw_frame_t retained;
+   void *device = videotoolbox_hevc_test_device(NULL);
+   size_t offset = 0;
+   unsigned cycle, retained_index = 0;
+   int renderer;
+   if (!device)
+   {
+      fputs("UNAVAILABLE: required native Metal device\n", stderr);
+      return 77;
+   }
+   memset(&ops, 0, sizeof(ops));
+   memset(&retained, 0, sizeof(retained));
+   memset(&color, 0, sizeof(color));
+   color.primaries = color.transfer = color.matrix = color.range = 1;
+   while (rav1_obu_next(&config, data + offsets[0], lengths[0], &offset, false)
+         == 1)
+      if (config.type == 1)
+         break;
+   assert(config.type == 1);
+   for (cycle = 0; cycle < 3; cycle++)
+   {
+      unsigned first = cycle == 1 ? 2 : 0, outputs = 0, i;
+      int64_t deadline;
+      int result;
+      if (cycle == 1)
+         assert(ops.decoder && !videotoolbox_av1_decoder_restart(ops.decoder));
+      else
+      {
+         CFTypeRef hardware = NULL;
+         videotoolbox_av1_decoder_t *decoder;
+         assert(videotoolbox_hevc_test_start(&renderer, device, 1));
+         assert(rav1_hw_backend_open_config(
+               &sequence, &config, &color, 9, &ops, &backend));
+         assert(backend.packet_decoder && backend.close && backend.drain);
+         decoder = (videotoolbox_av1_decoder_t *)ops.decoder;
+         assert(!VTSessionCopyProperty(decoder->owner->session,
+               kVTDecompressionPropertyKey_UsingHardwareAcceleratedVideoDecoder,
+               kCFAllocatorDefault, &hardware));
+         assert(hardware && CFEqual(hardware, kCFBooleanTrue));
+         CFRelease(hardware);
+      }
+      assert(rav1_hw_session_init_mode(&state, &sequence, &ops, 9, true));
+      for (i = first; i < 4; i++)
+      {
+         rav1_obu_t obu;
+         size_t at = 0;
+         while (rav1_obu_next(&obu, data + offsets[i], lengths[i], &at, false)
+               == 1)
+         {
+            video_hw_frame_t frame;
+            if (obu.type != 3 && obu.type != 6)
+               continue;
+            deadline = cpu_features_get_time_usec() + 10000000;
+            do
+            {
+               result = submit_packet(&state, obu.data, obu.size);
+               assert(result >= 0);
+               if (result)
+                  pending(deadline);
+            } while (result);
+            if (state.output_slot < 0)
+               continue;
+            do
+            {
+               result = rav1_hw_session_output(&state, &frame);
+               assert(result >= 0);
+               if (result)
+                  pending(deadline);
+            } while (result);
+            assert(frame.api == VIDEO_HW_API_METAL && frame.color.range == 1);
+            if (!retained.image)
+            {
+               retained = frame;
+               retained_index = i;
+            }
+            else
+               videotoolbox_av1_test_export(
+                     &frame, depth, position, expected_hash(i));
+            outputs++;
+         }
+         assert(at == lengths[i]);
+      }
+      assert(outputs == 4 - first && retained.image);
+      deadline = cpu_features_get_time_usec() + 10000000;
+      do
+      {
+         result = backend.drain(ops.decoder, false);
+         assert(result >= 0);
+         if (result)
+            pending(deadline);
+      } while (result);
+      if (!cycle)
+         continue;
+      backend.close(&ops);
+      videotoolbox_hevc_test_stop(&renderer);
+      videotoolbox_hevc_test_retired();
+      videotoolbox_av1_test_export(
+            &retained, depth, position, expected_hash(retained_index));
+      assert(!retained.image);
+      videotoolbox_hevc_test_movie_reset();
+   }
+   videotoolbox_hevc_test_device_release(device);
+   puts("PASS: native AV1 Metal pixels, renderer admission, warm seek and "
+        "retained pool exports");
+   return 0;
+}
+#endif
+
 #else
 static int execute(const uint8_t *data)
 {
@@ -350,7 +475,11 @@ int main(int argc, char **argv)
    uint8_t *data, *raw;
    size_t size;
    int result;
+#ifdef VT_AV1_METAL_TEST
+   puts("MODE: native-metal");
+#else
    puts("MODE: native-decode");
+#endif
    assert(argc == 7);
    depth = (unsigned)atoi(argv[4]);
    position = (unsigned)atoi(argv[5]);
@@ -360,7 +489,11 @@ int main(int argc, char **argv)
    raw = load(argv[3], &reference_size);
    reference = raw;
    fixture_check(data, size);
+#if defined(VT_AV1_METAL_TEST) && defined(__APPLE__) && defined(HAVE_THREADS)
+   result = execute_metal(data);
+#else
    result = execute(data);
+#endif
    free(raw);
    free(data);
    return result;
