@@ -52,10 +52,10 @@ bool record_mediacodec_surface_free(record_mediacodec_surface_t *s)
    return true;
 }
 
-record_mediacodec_surface_t *record_mediacodec_surface_new(
-      const record_mediacodec_surface_ops_t *ops, EGLDisplay display,
-      EGLConfig config, EGLContext share, EGLNativeWindowType window,
-      unsigned width, unsigned height, bool pq)
+bool record_mediacodec_surface_new(const record_mediacodec_surface_ops_t *ops,
+      EGLDisplay display, EGLConfig config, EGLContext share,
+      EGLNativeWindowType window, unsigned width, unsigned height, bool pq,
+      record_mediacodec_surface_t **output)
 {
    static const EGLint tokens[]
          = {EGL_RECORDABLE_ANDROID, EGL_SURFACE_TYPE, EGL_RENDERABLE_TYPE,
@@ -69,6 +69,9 @@ record_mediacodec_surface_t *record_mediacodec_surface_new(
    record_mediacodec_surface_t *s;
    EGLint size;
    unsigned i;
+   if (!output)
+      return false;
+   *output = NULL;
    if (!ops || !ops->query_string || !ops->config_attrib || !ops->create_context
          || !ops->create_surface || !ops->destroy_context
          || !ops->destroy_surface || !ops->query_surface || !ops->query_api
@@ -77,7 +80,7 @@ record_mediacodec_surface_t *record_mediacodec_surface_new(
          || !ops->presentation_time || !ops->swap || display == EGL_NO_DISPLAY
          || !config || !window || !width || !height || width > 16384
          || height > 16384 || ops->query_api() != EGL_OPENGL_ES_API)
-      return NULL;
+      return false;
    extensions = ops->query_string(display, EGL_EXTENSIONS);
    version = ops->query_string(display, EGL_VERSION);
    core15 = version && !strncmp(version, "1.5", 3)
@@ -92,18 +95,19 @@ record_mediacodec_surface_t *record_mediacodec_surface_new(
                                extensions, "EGL_KHR_gl_colorspace"))
                      || !record_mcs_extension(
                            extensions, "EGL_EXT_gl_colorspace_bt2020_pq"))))
-      return NULL;
+      return false;
    for (i = 0; i < 7; i++)
       if (!ops->config_attrib(display, config, tokens[i], &values[i]))
-         return NULL;
+         return false;
    if (values[0] != EGL_TRUE || !(values[1] & EGL_WINDOW_BIT)
          || !(values[2] & EGL_OPENGL_ES3_BIT_KHR) || values[3] != (pq ? 10 : 8)
          || values[4] != values[3] || values[5] != values[3]
          || (values[6] != 0 && values[6] != (pq ? 2 : 8)))
-      return NULL;
+      return false;
    s = (record_mediacodec_surface_t *)calloc(1, sizeof(*s));
    if (!s)
-      return NULL;
+      return false;
+   *output = s;
    s->ops = *ops;
    s->display = display;
    s->context = ops->create_context(display, config, share, context_attrs);
@@ -122,16 +126,24 @@ record_mediacodec_surface_t *record_mediacodec_surface_new(
          || !ops->query_surface(display, s->surface, EGL_HEIGHT, &size)
          || size != (EGLint)height)
       goto failed;
-   return s;
+   return true;
 failed:
-   record_mediacodec_surface_free(s);
-   return NULL;
+   if (record_mediacodec_surface_free(s))
+      *output = NULL;
+   return false;
 }
 
-bool record_mediacodec_surface_begin(record_mediacodec_surface_t *s)
+static bool record_mcs_begin(record_mediacodec_surface_t *s, bool retire)
 {
-   if (!s || s->active || s->failed || s->ops.query_api() != EGL_OPENGL_ES_API
-         || s->ops.current_context() == s->context)
+   if (!s || s->context == EGL_NO_CONTEXT || s->surface == EGL_NO_SURFACE
+         || (!retire && s->failed) || s->ops.query_api() != EGL_OPENGL_ES_API)
+      return false;
+   if (retire)
+      s->failed = true;
+   if (s->active)
+      return retire && s->ops.current_context() == s->context
+            && s->ops.current_display() == s->display;
+   if (s->ops.current_context() == s->context)
       return false;
    s->previous_context = s->ops.current_context();
    s->previous_display = s->ops.current_display();
@@ -144,6 +156,15 @@ bool record_mediacodec_surface_begin(record_mediacodec_surface_t *s)
    }
    s->active = true;
    return true;
+}
+
+bool record_mediacodec_surface_begin(record_mediacodec_surface_t *s)
+{
+   return record_mcs_begin(s, false);
+}
+bool record_mediacodec_surface_begin_retirement(record_mediacodec_surface_t *s)
+{
+   return record_mcs_begin(s, true);
 }
 
 bool record_mediacodec_surface_leave(record_mediacodec_surface_t *s)

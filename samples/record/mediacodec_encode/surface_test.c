@@ -199,8 +199,11 @@ static void reset(bool hdr)
 }
 static record_mediacodec_surface_t *create(void)
 {
-   return record_mediacodec_surface_new(
-         &ops, DISPLAY, CONFIG, SHARE, WINDOW, 128, 96, pq);
+   record_mediacodec_surface_t *s = NULL;
+   bool ok = record_mediacodec_surface_new(
+         &ops, DISPLAY, CONFIG, SHARE, WINDOW, 128, 96, pq, &s);
+   assert(ok || !s);
+   return s;
 }
 static void restored(void)
 {
@@ -215,14 +218,14 @@ static void admission(void)
    unsigned i;
    reset(false);
    assert(!record_mediacodec_surface_new(
-         NULL, DISPLAY, CONFIG, SHARE, WINDOW, 128, 96, false));
+         NULL, DISPLAY, CONFIG, SHARE, WINDOW, 128, 96, false, &s));
 #define MISSING(member)                                                        \
    do                                                                          \
    {                                                                           \
       missing = ops;                                                           \
       missing.member = NULL;                                                   \
       assert(!record_mediacodec_surface_new(                                   \
-            &missing, DISPLAY, CONFIG, SHARE, WINDOW, 128, 96, false));        \
+            &missing, DISPLAY, CONFIG, SHARE, WINDOW, 128, 96, false, &s));    \
    } while (0)
    MISSING(query_string);
    MISSING(config_attrib);
@@ -240,9 +243,9 @@ static void admission(void)
    MISSING(swap);
 #undef MISSING
    assert(!record_mediacodec_surface_new(
-         &ops, DISPLAY, CONFIG, SHARE, WINDOW, 0, 96, false));
+         &ops, DISPLAY, CONFIG, SHARE, WINDOW, 0, 96, false, &s));
    assert(!record_mediacodec_surface_new(
-         &ops, DISPLAY, CONFIG, SHARE, WINDOW, 128, 16385, false));
+         &ops, DISPLAY, CONFIG, SHARE, WINDOW, 128, 16385, false, &s));
    api = EGL_OPENGL_API;
    assert(!create());
    for (i = 1; i <= 7; i++)
@@ -354,6 +357,11 @@ static void failures(void)
       assert(swaps == (i == 1 ? 1u : 0u));
       restored();
       assert(!record_mediacodec_surface_begin(s));
+      assert(record_mediacodec_surface_begin_retirement(s));
+      assert(current_ctx == CONTEXT);
+      assert(!record_mediacodec_surface_present(s, 100));
+      assert(record_mediacodec_surface_leave(s));
+      restored();
       assert(record_mediacodec_surface_free(s));
    }
    reset(false);
@@ -368,6 +376,7 @@ static void failures(void)
    assert(s && record_mediacodec_surface_begin(s));
    assert(!record_mediacodec_surface_present(s, 0));
    assert(!record_mediacodec_surface_free(s));
+   assert(record_mediacodec_surface_begin_retirement(s));
    assert(!record_mediacodec_surface_present(s, 1) && swaps == 1);
    assert(record_mediacodec_surface_leave(s));
    restored();
@@ -380,6 +389,16 @@ static void failures(void)
    assert(!record_mediacodec_surface_begin(s));
    assert(!record_mediacodec_surface_free(s));
    assert(!context_live && surface_live);
+   assert(record_mediacodec_surface_free(s));
+   reset(false);
+   query_fail = 1;
+   context_fail = surface_fail = 1;
+   assert(!record_mediacodec_surface_new(
+         &ops, DISPLAY, CONFIG, SHARE, WINDOW, 128, 96, false, &s));
+   assert(s && context_live && surface_live);
+   assert(!record_mediacodec_surface_free(s));
+   assert(!context_live && surface_live);
+   assert(!record_mediacodec_surface_begin_retirement(s));
    assert(record_mediacodec_surface_free(s));
    reset(false);
    s = create();

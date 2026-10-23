@@ -33,7 +33,7 @@ with tempfile.TemporaryDirectory(prefix="mediacodec-encode-") as directory:
                           ("worker_test.c", []), ("surface_test.c", []),
                           ("capture_images_test.c", ["-DRECORD_ANDROID_CAPTURE_TEST"]),
                           ("capture_submit_test.c", []), ("capture_gl_test.c", []),
-                          ("draw_test.c", [])):
+                          ("draw_test.c", []), ("gpu_worker_test.c", [])):
         command = compiler + flags + extra + [str(here / source), "-o", str(binary)]
         if source == "worker_test.c":
             command += ["-DHAVE_THREADS",
@@ -43,6 +43,12 @@ with tempfile.TemporaryDirectory(prefix="mediacodec-encode-") as directory:
         if source == "surface_test.c":
             command += ["-DUSE_SYSTEM_EGL", "-I" + str(root / "gfx/include/ANGLE"),
                         str(root / "record/record_mediacodec_surface.c")]
+        if source == "gpu_worker_test.c":
+            command += ["-DHAVE_THREADS", "-DUSE_SYSTEM_EGL",
+                        "-I" + str(root / "gfx/include/ANGLE"),
+                        str(root / "record/record_mediacodec_gpu_worker.c"),
+                        str(root / "record/record_gpu_queue.c"),
+                        str(root / "libretro-common/queues/retro_spsc.c")]
         if source == "draw_test.c":
             command += ["-I" + str(root / "gfx/include/ANGLE"),
                         str(root / "record/record_android_capture_draw.c")]
