@@ -4004,6 +4004,42 @@ static size_t setting_get_string_representation_video_openxr_edit_snap_angles(
    return 0;
 }
 
+static size_t setting_get_string_representation_video_openxr_edit_hinge_gap(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case VIDEO_OPENXR_EDIT_HINGE_GAP_0:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_HINGE_GAP_0),
+                  len);
+         case VIDEO_OPENXR_EDIT_HINGE_GAP_1:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_HINGE_GAP_1),
+                  len);
+         case VIDEO_OPENXR_EDIT_HINGE_GAP_2:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_HINGE_GAP_2),
+                  len);
+         case VIDEO_OPENXR_EDIT_HINGE_GAP_3:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_HINGE_GAP_3),
+                  len);
+         case VIDEO_OPENXR_EDIT_HINGE_GAP_5:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_HINGE_GAP_5),
+                  len);
+         case VIDEO_OPENXR_EDIT_HINGE_GAP_10:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_HINGE_GAP_10),
+                  len);
+      }
+   }
+   return 0;
+}
+
 static size_t setting_get_string_representation_video_openxr_edit_smoothing(
       rarch_setting_t *setting, char *s, size_t len)
 {

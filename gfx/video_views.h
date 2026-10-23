@@ -94,6 +94,19 @@ enum video_openxr_edit_snap_angles
    VIDEO_OPENXR_EDIT_SNAP_ANGLES_LAST
 };
 
+/* Hinge Gap: the gap edit mode leaves between screens whose edges
+ * meet (video_openxr_edit_hinge_gap). */
+enum video_openxr_edit_hinge_gap
+{
+   VIDEO_OPENXR_EDIT_HINGE_GAP_0 = 0,
+   VIDEO_OPENXR_EDIT_HINGE_GAP_1,
+   VIDEO_OPENXR_EDIT_HINGE_GAP_2,
+   VIDEO_OPENXR_EDIT_HINGE_GAP_3,
+   VIDEO_OPENXR_EDIT_HINGE_GAP_5,
+   VIDEO_OPENXR_EDIT_HINGE_GAP_10,
+   VIDEO_OPENXR_EDIT_HINGE_GAP_LAST
+};
+
 /* Edit Smoothing: how much edit mode steadies the controllers' aim
  * (video_openxr_edit_smoothing). */
 enum video_openxr_edit_smoothing

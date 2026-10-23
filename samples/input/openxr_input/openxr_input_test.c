@@ -2021,6 +2021,8 @@ static void test_joypad_wrapped(void)
 /* Snap to Screens, as edit mode starts; off unless a case says. */
 static bool t_snap;
 static unsigned t_angles = VIDEO_OPENXR_EDIT_SNAP_ANGLES_15;
+/* Hinge Gap, as edit mode starts: touching unless a case says. */
+static unsigned t_gap = VIDEO_OPENXR_EDIT_HINGE_GAP_0;
 static unsigned t_smooth;
 
 /* As the frontend's command does it, between frames, with the menu
@@ -2028,7 +2030,7 @@ static unsigned t_smooth;
 static void t_edit_on(bool pause)
 {
    if (input_openxr_edit_toggle())
-      input_openxr_edit_begin(pause, t_snap, t_angles, t_smooth);
+      input_openxr_edit_begin(pause, t_snap, t_angles, t_gap, t_smooth);
 }
 
 /* Edit Screens: the frontend's command starts it at once, between
@@ -2054,7 +2056,7 @@ static void test_edit_mode(void)
    t_let_go();
    CHECK(input_openxr_edit_toggle(), "a start was refused");
    CHECK(!t_editing, "the toggle alone started it");
-   input_openxr_edit_begin(false, false, 0, 0);
+   input_openxr_edit_begin(false, false, 0, 0, 0);
    CHECK(t_editing, "did not start at once");
    t_hold("combined/a", 0, 1.0f, 0.0f);
    t_hold("edit/edit_screens", 0, 1.0f, 0.0f);
@@ -2117,7 +2119,7 @@ static void test_edit_mode(void)
    t_menu_open = true;
    t_notices   = 0;
    CHECK(input_openxr_edit_toggle(), "a start was refused with the menu open");
-   input_openxr_edit_begin(false, false, 0, 0);
+   input_openxr_edit_begin(false, false, 0, 0, 0);
    CHECK(!t_editing && t_notices == 1 && !strcmp(t_notice, "edit no content"),
          "%u notices, the last %s, editing %d", t_notices, t_notice,
          (int)t_editing);
@@ -4876,14 +4878,15 @@ static void test_edit_snap_edge(void)
    t_hold("edit/grab", 2, 1.0f, 0.0f);
    t_edit_poll();
    CHECK(hold->g.state == VIDEO_XR_GRAB_HELD && hold->g.slot == 1
-         && hold->armed == VIDEO_XR_SNAP_ALL,
+         && hold->armed == (VIDEO_XR_SNAP_ALL | VIDEO_XR_SNAP_GAP),
          "took slot %u armed %#x", hold->g.slot, hold->armed);
    n = t_applies[2];
    /* 1.5 cm off flush, 8.5 cm carried: the turn, Y and Z whole, one
-    * buzz; the edge fades, still armed. */
+    * buzz; the edge and its gap fade, still armed. */
    t_aim[2].position.x = 1.215f;
    t_edit_poll();
-   CHECK(t_applies[2] == n + 1 && hold->armed == VIDEO_XR_SNAP_X,
+   CHECK(     t_applies[2] == n + 1
+         && hold->armed == (VIDEO_XR_SNAP_X | VIDEO_XR_SNAP_GAP),
          "%u buzzes in the edge's fade, armed %#x", t_applies[2] - n,
          hold->armed);
    /* 0.9 cm off: the edge whole, one more. */
@@ -4915,8 +4918,8 @@ static void test_edit_snap_edge(void)
    t_edit_poll();
    t_hold("edit/grab", 2, 1.0f, 0.0f);
    t_edit_poll();
-   CHECK(hold->armed == VIDEO_XR_SNAP_ALL, "armed %#x after a new grab",
-         hold->armed);
+   CHECK(hold->armed == (VIDEO_XR_SNAP_ALL | VIDEO_XR_SNAP_GAP),
+         "armed %#x after a new grab", hold->armed);
    t_edit_end();
    t_snap = false;
 }
@@ -5860,6 +5863,31 @@ static double t_edge_along(bool under)
       : (double)pose.position.y + w.y;
 }
 
+/* Screen 2, as t_snap_under placed it, and the hand on it, d metres
+ * further under screen 1, across its bottom edge in its plane. */
+static void t_gap_shift(double d)
+{
+   t_quads.quads[t_quads.num_quads - 1].pose.position.y -= (float)d;
+   t_quads.slots[1].base.y -= (float)d;
+   t_aim[2].position.y     -= (float)d;
+}
+
+/* Screen 2's top edge's middle as edit mode last wrote it: how far
+ * under screen 1's bottom edge in screen 1's plane, and in *plane how
+ * far out of that plane. */
+static double t_under_gap(double *plane)
+{
+   video_xr_pose_t pose;
+   video_xr_vec3_t m, w;
+   video_xr_item_pose(&t_quads.slots[1].base, &t_xr[1], &pose);
+   m.x = 0.0f;
+   m.y = 0.3f;
+   m.z = 0.0f;
+   video_xr_rotate(&pose.orientation, &m, &w);
+   *plane = (double)pose.position.z + w.z + 1.8;
+   return -0.48 - ((double)pose.position.y + w.y);
+}
+
 /* Tilting with the hand rolled 1 to 4 degrees, the stick swings screen
  * 2 from 12 degrees through flat's fade band under screen 1, or from
  * about 12 short through square's at its corner: its hinged edge never
@@ -5910,6 +5938,289 @@ static void test_edit_hinge_rolled(void)
          t_take_end();
       }
    }
+}
+
+/* Hinge Gap 2 cm, screen 2 taken under screen 1 at 30 degrees from
+ * flat, its top edge under by d, carried 7 cm along so its snaps are
+ * whole. */
+static void t_take_gap(double d, bool tilt)
+{
+   t_gap  = VIDEO_OPENXR_EDIT_HINGE_GAP_2;
+   t_snap = true;
+   t_edit_start();
+   t_snap_under(30.0);
+   t_gap_shift(d);
+   t_tilt_polls(1, 0.0f, tilt);
+   t_aim[2].position.x = 0.07f;
+   t_tilt_polls(3, 0.0f, tilt);
+}
+
+/* Snap to Screens as snap, Hinge Gap gap, screen 2 taken touching
+ * under screen 1 at 30 degrees from flat and carried 7 cm along, so
+ * its snaps are whole; the hand then c metres higher, pushing it past
+ * touching. Returns the hand's height touching. */
+static double t_take_stop(bool snap, unsigned gap, double c)
+{
+   double y;
+   t_gap  = gap;
+   t_snap = snap;
+   t_edit_start();
+   t_snap_under(30.0);
+   y = t_aim[2].position.y;
+   t_tilt_polls(1, 0.0f, false);
+   t_aim[2].position.x = 0.07f;
+   t_aim[2].position.y = (float)(y + c);
+   t_tilt_polls(3, 0.0f, false);
+   return y;
+}
+
+/* Hinged, pushed 0.5 or 1 cm past touching, screen 2 shows touching at
+ * Hinge Gap 0, 2 and 10; shaken 3 mm every way 5 mm past, and shaken in
+ * depth and along held exactly touching, it stays touching; let go
+ * there, it is saved touching. 2 cm past it is partly stopped, 3 cm
+ * past not at all; 3 mm apart it shows as the gap leaves it. Snap to
+ * Screens off, 2 cm past it overlaps. */
+static void test_edit_gap_stop(void)
+{
+   static const unsigned gaps[] = { VIDEO_OPENXR_EDIT_HINGE_GAP_0,
+      VIDEO_OPENXR_EDIT_HINGE_GAP_2, VIDEO_OPENXR_EDIT_HINGE_GAP_10 };
+   static const unsigned cm[]    = { 0, 2, 10 };
+   static const double apart[]   = { 0.0, 0.006, 0.003 };
+   unsigned i, j, k;
+   double plane, gap, y, z;
+   for (i = 0; i < 3; i++)
+   {
+      for (j = 0; j < 2; j++)
+      {
+         double worst = 0.0;
+         y   = t_take_stop(true, gaps[i], j ? 0.01 : 0.005);
+         z   = t_aim[2].position.z;
+         gap = t_under_gap(&plane);
+         CHECK(     input_openxr_edit.hand[1].hinged && fabs(gap) < 1e-5
+               && fabs(plane) < 1e-5,
+               "Hinge Gap %u cm, %.3f past: hinged %d, gap %.5f, plane %.5f",
+               cm[i], j ? 0.01 : 0.005,
+               input_openxr_edit.hand[1].hinged, gap, plane);
+         for (k = 0; k < 80 && !j; k++)
+         {
+            double c = (k < 40) ? 0.005 + 0.003 * sin(k * 2.1) : 0.0;
+            t_aim[2].position.x = (float)(0.07 + 0.003 * sin(k * 1.3));
+            t_aim[2].position.y = (float)(y + c);
+            t_aim[2].position.z = (float)(z + 0.003 * sin(k * 0.7));
+            t_tilt_polls(1, 0.0f, false);
+            gap = t_under_gap(&plane);
+            if (fabs(gap) > worst)
+               worst = fabs(gap);
+         }
+         t_let_go();
+         t_clock += 10000;
+         t_edit_poll();
+         gap = t_under_gap(&plane);
+         CHECK(worst < 1e-5 && fabs(gap) < 1e-5 && fabs(plane) < 1e-5,
+               "Hinge Gap %u cm, %.3f past: shaken %.5f off, saved %.5f",
+               cm[i], j ? 0.01 : 0.005, worst, gap);
+         t_take_end();
+      }
+      t_take_stop(true, gaps[i], 0.02);
+      gap = t_under_gap(&plane);
+      CHECK(gap < -0.001 && gap > -0.0199,
+            "Hinge Gap %u cm, 2 cm past: gap %.5f", cm[i], gap);
+      t_take_end();
+      t_take_stop(true, gaps[i], 0.03);
+      gap = t_under_gap(&plane);
+      CHECK(fabs(gap + 0.03) < 1e-4,
+            "Hinge Gap %u cm, 3 cm past: gap %.5f", cm[i], gap);
+      t_take_end();
+      t_take_stop(true, gaps[i], -0.003);
+      gap = t_under_gap(&plane);
+      CHECK(     input_openxr_edit.hand[1].hinged
+            && fabs(gap - apart[i]) < 1e-5,
+            "Hinge Gap %u cm, 3 mm apart: hinged %d, gap %.5f, want %.3f",
+            cm[i], input_openxr_edit.hand[1].hinged, gap, apart[i]);
+      t_take_end();
+   }
+   t_take_stop(false, VIDEO_OPENXR_EDIT_HINGE_GAP_2, 0.02);
+   gap = t_under_gap(&plane);
+   CHECK(fabs(gap + 0.02) < 1e-4, "Snap to Screens off, 2 cm past: gap "
+         "%.5f", gap);
+   t_take_end();
+   t_gap = VIDEO_OPENXR_EDIT_HINGE_GAP_0;
+}
+
+/* Hinge Gap 1 cm: its click's fade shows touching 5 mm past, so
+ * screen 2 shows touching from there to 15 mm past, 0.5, 1 and 1.4 cm
+ * past; shaken 3 mm every way about 1 cm past at 8 Hz it shows
+ * touching on every poll, and let go there it is saved touching. */
+static void test_edit_gap_stop_one(void)
+{
+   static const double past[] = { 0.005, 0.01, 0.014 };
+   unsigned j, k;
+   double plane, gap, y, z;
+   for (j = 0; j < 3; j++)
+   {
+      t_take_stop(true, VIDEO_OPENXR_EDIT_HINGE_GAP_1, past[j]);
+      gap = t_under_gap(&plane);
+      CHECK(     input_openxr_edit.hand[1].hinged && fabs(gap) < 1e-5
+            && fabs(plane) < 1e-5,
+            "Hinge Gap 1 cm, %.3f past: hinged %d, gap %.5f, plane %.5f",
+            past[j], input_openxr_edit.hand[1].hinged, gap, plane);
+      t_take_end();
+   }
+   {
+      double worst = 0.0;
+      y = t_take_stop(true, VIDEO_OPENXR_EDIT_HINGE_GAP_1, 0.01);
+      z = t_aim[2].position.z;
+      for (k = 0; k < 450; k++)
+      {
+         t_aim[2].position.x = (float)(0.07 + 0.003 * sin(k * 1.3));
+         t_aim[2].position.y = (float)(y + 0.01 + 0.003 * sin(k * 0.5));
+         t_aim[2].position.z = (float)(z + 0.003 * sin(k * 0.7));
+         t_tilt_polls(1, 0.0f, false);
+         gap = t_under_gap(&plane);
+         if (fabs(gap) > worst)
+            worst = fabs(gap);
+      }
+      t_let_go();
+      t_clock += 10000;
+      t_edit_poll();
+      gap = t_under_gap(&plane);
+      CHECK(worst < 1e-5 && fabs(gap) < 1e-5 && fabs(plane) < 1e-5,
+            "Hinge Gap 1 cm, shaken about 1 cm past: %.5f off, saved "
+            "%.5f", worst, gap);
+      t_take_end();
+   }
+   t_gap = VIDEO_OPENXR_EDIT_HINGE_GAP_0;
+}
+
+/* The stick swings screen 2 from 30 degrees, carried or tilting: taken
+ * 2.6 cm under it shows 2 (the click), 3.5 under 3 (its fade), 6 under
+ * 6 (free); the gap holds through the swing and is saved so. */
+static void test_edit_gap_swing(void)
+{
+   static const double under[] = { 0.026, 0.035, 0.06 };
+   static const double shown[] = { 0.02, 0.03, 0.06 };
+   unsigned i, k, u;
+   t_angles = VIDEO_OPENXR_EDIT_SNAP_ANGLES_OFF;
+   for (u = 0; u < 3; u++)
+   for (k = 0; k < 2; k++)
+   {
+      double plane, gap, worst = 0.0;
+      float pitch0;
+      t_take_gap(under[u], k != 0);
+      gap = t_under_gap(&plane);
+      CHECK(     input_openxr_edit.hand[1].hinged
+            && fabs(gap - shown[u]) < 1e-4 && fabs(plane) < 1e-4,
+            "taken %.3f under: hinged %d, gap %.4f, plane %.4f",
+            under[u], input_openxr_edit.hand[1].hinged, gap, plane);
+      pitch0 = t_xr[1].pitch;
+      for (i = 0; i < 20; i++)
+      {
+         t_tilt_polls(1, 1.0f, k != 0);
+         gap = t_under_gap(&plane);
+         if (fabs(gap - shown[u]) > worst)
+            worst = fabs(gap - shown[u]);
+         if (fabs(plane) > worst)
+            worst = fabs(plane);
+      }
+      t_tilt_polls(3, 0.0f, k != 0);
+      t_let_go();
+      t_clock += 10000;
+      t_edit_poll();
+      gap = t_under_gap(&plane);
+      CHECK(     worst < 1e-4 && fabs(gap - shown[u]) < 1e-4
+            && fabs(t_xr[1].pitch - pitch0) > 5.0f,
+            "%s from %.3f under: worst %.5f, saved gap %.4f, pitch %.3f"
+            " from %.3f", k ? "tilting" : "carried", under[u], worst, gap,
+            t_xr[1].pitch, pitch0);
+      t_take_end();
+   }
+   t_gap    = VIDEO_OPENXR_EDIT_HINGE_GAP_0;
+   t_angles = VIDEO_OPENXR_EDIT_SNAP_ANGLES_15;
+}
+
+/* Snap to Angles 15 with a 2 cm gap: the swing stops on a step from
+ * flat, the gap kept. */
+static void test_edit_gap_steps(void)
+{
+   unsigned i;
+   double plane, gap, off;
+   t_take_gap(0.026, false);
+   for (i = 0; i < 16; i++)
+      t_tilt_polls(1, 1.0f, false);
+   t_tilt_polls(3, 0.0f, false);
+   gap = t_under_gap(&plane);
+   off = fmod(fabs(t_xr[1].pitch) + 0.001, 15.0);
+   CHECK(     input_openxr_edit.hand[1].hinged && off < 0.011
+         && fabs(gap - 0.02) < 1e-4 && fabs(plane) < 1e-4,
+         "pitch %.3f (%.3f off a step), gap %.4f, plane %.4f",
+         t_xr[1].pitch, off, gap, plane);
+   t_take_end();
+   t_gap = VIDEO_OPENXR_EDIT_HINGE_GAP_0;
+}
+
+/* The menu's value reaches the snap: 5 cm clicks from 5.6; a value
+ * past the list is 2 cm; Snap to Screens off, no gap and no hinge. */
+static void test_edit_gap_menu(void)
+{
+   double plane, gap;
+   t_gap  = VIDEO_OPENXR_EDIT_HINGE_GAP_5;
+   t_snap = true;
+   t_edit_start();
+   t_snap_under(30.0);
+   t_gap_shift(0.056);
+   t_tilt_polls(1, 0.0f, false);
+   t_aim[2].position.x = 0.07f;
+   t_tilt_polls(3, 0.0f, false);
+   gap = t_under_gap(&plane);
+   CHECK(fabs(gap - 0.05) < 1e-4, "Hinge Gap 5: gap %.4f", gap);
+   t_take_end();
+   t_gap  = VIDEO_OPENXR_EDIT_HINGE_GAP_LAST;
+   t_snap = true;
+   t_edit_start();
+   t_snap_under(30.0);
+   t_gap_shift(0.026);
+   t_tilt_polls(1, 0.0f, false);
+   t_aim[2].position.x = 0.07f;
+   t_tilt_polls(3, 0.0f, false);
+   gap = t_under_gap(&plane);
+   CHECK(fabs(gap - 0.02) < 1e-4, "past the list: gap %.4f", gap);
+   t_take_end();
+   t_snap = false;
+   t_gap  = VIDEO_OPENXR_EDIT_HINGE_GAP_2;
+   t_edit_start();
+   t_snap_under(30.0);
+   t_gap_shift(0.026);
+   t_tilt_polls(1, 0.0f, false);
+   t_aim[2].position.x = 0.07f;
+   t_tilt_polls(3, 0.0f, false);
+   gap = t_under_gap(&plane);
+   CHECK(     !input_openxr_edit.hand[1].hinged
+         && fabs(gap - 0.026) < 1e-4,
+         "Snap to Screens off: hinged %d, gap %.4f",
+         input_openxr_edit.hand[1].hinged, gap);
+   t_take_end();
+   t_gap = VIDEO_OPENXR_EDIT_HINGE_GAP_0;
+}
+
+/* Carried to 2.5 cm under, a 2 cm gap set, from 3.5 or from a free 6,
+ * where the plane holds its axes already and only the gap's own snap
+ * can buzz: the click takes hold with one buzz on the holding hand. */
+static void test_edit_gap_buzz(void)
+{
+   static const double from[] = { 0.035, 0.06 };
+   unsigned i, n;
+   for (i = 0; i < 2; i++)
+   {
+      t_take_gap(from[i], false);
+      n = t_applies[2];
+      t_aim[2].position.y += (float)(from[i] - 0.025);
+      t_tilt_polls(3, 0.0f, false);
+      CHECK(t_applies[2] == n + 1,
+            "%u buzzes as the gap clicked from %.3f under, want 1",
+            t_applies[2] - n, from[i]);
+      t_take_end();
+   }
+   t_gap = VIDEO_OPENXR_EDIT_HINGE_GAP_0;
 }
 
 /* Edit Smoothing: the frame loop steps each hand's aim once a frame,
@@ -6232,6 +6543,12 @@ int main(void)
    test_edit_hinge_diagonal();
    test_edit_hinge_level();
    test_edit_hinge_rolled();
+   test_edit_gap_swing();
+   test_edit_gap_stop();
+   test_edit_gap_stop_one();
+   test_edit_gap_steps();
+   test_edit_gap_menu();
+   test_edit_gap_buzz();
    test_edit_smoothing();
    test_edit_room();
    if (failures)

@@ -5623,11 +5623,11 @@ def check_edit_handle_sticky(stuck):
     return check
 
 
-# Screen 2 grabbed at its spot and held 2-2.5 cm off standing flush
+# Screen 2 grabbed at its spot and held 0.7-2 cm off standing flush
 # right of screen 1, level and in its plane. The buzz is
 # INPUT_OPENXR_SNAP_TICK_AMP for INPUT_OPENXR_SNAP_TICK_NS.
 SNAP_GRAB = (0.0, -0.992, 0.0)
-SNAP_HAND = (1.465, 0.02, 0.02)
+SNAP_HAND = (1.447, 0.02, 0.02)
 SNAPPED = (1.44, 0.0, -1.8)
 SNAP_TICK = (0.5, 20000000)
 
@@ -5671,6 +5671,21 @@ def check_edit_snap(snap):
                           % haptics(res, 'right'))
         if not snap and ticks:
             errors.append('a snap buzz with snapping off: %s' % ticks)
+        if snap:
+            # The hand is 0.7 cm off, inside EDIT_POS.
+            xs = [(what, q['pose'][0])
+                  for a, b, what in (('held', 'released', 'held'),
+                                     ('released', 'off', 'let go'))
+                  for q in (screen2(f) for f in between(res, a, b,
+                                                        delay=0.5))
+                  if q]
+            xs.append(('saved', S1[0] + float(
+                saved(res).get('video_screen2_xr_x', '0'))))
+            for what, x in xs:
+                if abs(x - SNAPPED[0]) > HINGE_GAP_POS:
+                    errors.append('screen 2 %s at x %.4f, want %.3f'
+                                  % (what, x, SNAPPED[0]))
+                    break
         return errors
     return check
 
@@ -5724,12 +5739,12 @@ EDIT_SNAP_STEPS = edit_start(straight(SNAP_GRAB), 1) + [
 ] + [('mark', 'held'), ('wait', 1.5), ('script', straight(SNAP_HAND)),
      ('mark', 'released'), ('wait', 1.5), ('send', EDIT), ('wait', 2),
      ('mark', 'off'), ('wait', 1)]
-# Screen 2 carried 7 cm off flush right of screen 1, then 4.5 cm off,
-# in the edge's fade, then 2.9 cm off, inside its whole pull, swaying
+# Screen 2 carried 7 cm off flush right of screen 1, then 1.5 cm off,
+# in the edge's fade, then 0.9 cm off, inside its whole pull, swaying
 # 2 mm across its end four times; then 7 cm off again and back.
-EDGE_IN, EDGE_OUT, EDGE_AWAY = (1.469, 0.0, 0.0), (1.471, 0.0, 0.0), \
+EDGE_IN, EDGE_OUT, EDGE_AWAY = (1.449, 0.0, 0.0), (1.451, 0.0, 0.0), \
     (1.51, 0.0, 0.0)
-EDGE_NEAR = (1.485, 0.0, 0.0)
+EDGE_NEAR = (1.455, 0.0, 0.0)
 EDIT_SNAP_EDGE_STEPS = edit_start(straight(SNAP_GRAB), 1) + [
     ('mark', 'grab'), ('script', script(straight(SNAP_GRAB), EDIT_GRIP)),
     ('wait', 1.5)] + [
@@ -5853,6 +5868,7 @@ def check_edit_step_45(res):
 # shows it square, it reaches the 5 degree window and clicks square at
 # the corner.
 SQUARE = dict(SAVE, video_openxr_edit_snap='true',
+              video_openxr_edit_hinge_gap='0',
               video_screen2_xr_x='0.8', video_screen2_xr_y='0.992',
               video_screen2_xr_z='0.64', video_screen2_xr_yaw='-72')
 SQUARED = (0.8, 0.0, -1.16)
@@ -5863,11 +5879,21 @@ YAW_M90 = (0.0, -math.sqrt(0.5), 0.0, math.sqrt(0.5))
 SWUNG_74 = (0.8 + 0.64 * math.cos(math.radians(74.0)), 0.0,
             -1.8 + 0.64 * math.sin(math.radians(74.0)))
 
-# Screen 2 raised 2.2 cm, its top edge 1 cm under screen 1's bottom
-# edge, Snap to Angles at 30 degrees.
+# A hinge holds its gap exactly: 1 mm tells the Hinge Gaps apart.
+HINGE_GAP_POS = 0.001
+
+# Screen 2 raised 2.5 cm, its top edge 0.7 cm under screen 1's bottom
+# edge, inside Hinge Gap 0's click, Snap to Angles at 30 degrees.
 HINGE_3DS = dict(SAVE, video_openxr_edit_snap='true',
+                 video_openxr_edit_hinge_gap='0',
                  video_openxr_edit_snap_angles='2',
-                 video_screen2_xr_y='0.022')
+                 video_screen2_xr_y='0.025')
+
+# The default Hinge Gap, 2 cm: screen 2 raised 1.6 cm, its top edge
+# 1.6 cm under screen 1's bottom edge, Snap to Angles at 30 degrees.
+HINGE_GAP = dict(SAVE, video_openxr_edit_snap='true',
+                 video_openxr_edit_snap_angles='2',
+                 video_screen2_xr_y='0.016')
 
 
 def quad_point(q, x, y):
@@ -5892,14 +5918,15 @@ def screen2_at_pitch(deg):
     return pick
 
 
-def check_edit_hinge_3ds(res):
+def check_edit_hinge_3ds(res, gap=0.0):
     """Screen 2, taken under screen 1 and carried 6 cm along its edge
     so its snaps are whole, hinges flat on screen 1's bottom edge; the
     left stick, held at an eighth of full speed until a frame shows it
     30 degrees from flat, swings it about that edge into the 30 step's
-    hold: it shows and is saved there, its top edge on screen 1's
-    bottom edge, and the right hand buzzes once for the step. Not a set
-    time: stalled polls cut the swing short."""
+    hold: it shows and is saved there, its top edge Hinge Gap (gap)
+    under screen 1's bottom edge, in its plane, and the right hand
+    buzzes once for the step. Not a set time: stalled polls cut the
+    swing short."""
     errors = edit_log_errors(res, ['on', 'off'])
     q = last_before(res, 'swung', screen2)
     if not q:
@@ -5909,9 +5936,10 @@ def check_edit_hinge_3ds(res):
         errors.append('screen 2 swung to yaw %.3f pitch %.3f roll %.3f, '
                       'want 0, +-30, 0' % (yaw, pitch, roll))
     edge = quad_point(q, 0.0, 0.48)
-    if abs(edge[1] + 0.48) > EDIT_POS or abs(edge[2] + 1.8) > EDIT_POS:
-        errors.append('screen 2 top edge at %s, want on y -0.48, z -1.8'
-                      % [round(v, 4) for v in edge])
+    if (     abs(edge[1] + 0.48 + gap) > HINGE_GAP_POS
+            or abs(edge[2] + 1.8) > HINGE_GAP_POS):
+        errors.append('screen 2 top edge at %s, want on y %.3f, z -1.8'
+                      % ([round(v, 4) for v in edge], -0.48 - gap))
     ticks = [e for e in haptics(res, 'right') if e['ev'] == 'haptic'
              and res.marks['held'] * 1e6 < e['t_us']
              < res.marks['swung'] * 1e6
@@ -5924,6 +5952,12 @@ def check_edit_hinge_3ds(res):
                                  (tuple(q['pose'][:3]),
                                   tuple(q['pose'][3:])), (1.28, 0.96),
                                  last_before(res, 'off', screen2))
+
+
+def check_edit_hinge_gap(res):
+    """Screen 2 at the default Hinge Gap: as check_edit_hinge_3ds, its
+    top edge 2 cm under screen 1's bottom edge."""
+    return check_edit_hinge_3ds(res, 0.02)
 
 
 def check_edit_snap_square(res):
@@ -6576,12 +6610,14 @@ EDIT_CASES += [
      'steps': sticky_steps(on_handle(0.0, -0.07)),
      'check': check_edit_handle_sticky(False)},
     {'name': 'edit-snap', 'map': '3ds',
-     'settings': dict(SAVE, video_openxr_edit_snap='true'),
+     'settings': dict(SAVE, video_openxr_edit_snap='true',
+                      video_openxr_edit_hinge_gap='0'),
      'steps': EDIT_SNAP_STEPS, 'check': check_edit_snap(True)},
     {'name': 'edit-snap-off', 'map': '3ds', 'settings': SAVE,
      'steps': EDIT_SNAP_STEPS, 'check': check_edit_snap(False)},
     {'name': 'edit-snap-edge', 'map': '3ds',
-     'settings': dict(SAVE, video_openxr_edit_snap='true'),
+     'settings': dict(SAVE, video_openxr_edit_snap='true',
+                      video_openxr_edit_hinge_gap='0'),
      'steps': EDIT_SNAP_EDGE_STEPS, 'check': check_edit_snap_edge},
     {'name': 'edit-turn-stick', 'map': '3ds', 'settings': SAVE,
      'env': {'RA_XR_LAYER_SNAP_EVERY': '0'},
@@ -6682,6 +6718,21 @@ EDIT_CASES += [
          ('wait', 1), ('send', EDIT), ('wait', 2), ('mark', 'off'),
          ('wait', 1)],
      'check': check_edit_hinge_3ds},
+    {'name': 'edit-hinge-gap', 'map': '3ds', 'settings': HINGE_GAP,
+     'script': HEAD_AT_ORIGIN,
+     'steps': edit_start(edit_aim()) + edit_tap(EDIT_NEXT, edit_aim())
+     + edit_tap(EDIT_NEXT, edit_aim()) + [
+         ('script', script(edit_aim(), EDIT_GRIP)), ('wait', 1),
+         ('script', script(edit_aim(x=0.06), EDIT_GRIP)), ('wait', 1),
+         ('mark', 'held'),
+         ('script', script(edit_aim(x=0.06), EDIT_GRIP,
+                           'action edit/stick@left 0 -0.3')),
+         ('until', ('screen 2 at 30', screen2_at_pitch(30.0), 10)),
+         ('script', script(edit_aim(x=0.06), EDIT_GRIP)),
+         ('wait', 1), ('mark', 'swung'), ('script', edit_aim(x=0.06)),
+         ('wait', 1), ('send', EDIT), ('wait', 2), ('mark', 'off'),
+         ('wait', 1)],
+     'check': check_edit_hinge_gap},
     {'name': 'edit-smooth', 'map': '3ds',
      'settings': dict(SAVE, video_openxr_edit_smoothing='2'),
      'steps': EDIT_SWAY_STEPS, 'check': check_edit_sway(True)},

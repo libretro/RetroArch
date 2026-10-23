@@ -6616,6 +6616,7 @@ bool command_event(enum event_command cmd, void *data)
                   settings->bools.video_openxr_edit_pause,
                   settings->bools.video_openxr_edit_snap,
                   settings->uints.video_openxr_edit_snap_angles,
+                  settings->uints.video_openxr_edit_hinge_gap,
                   settings->uints.video_openxr_edit_smoothing);
          }
 #endif

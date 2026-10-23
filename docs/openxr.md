@@ -22,9 +22,10 @@ Linux). Then turn on **Settings > Video > Stereo 3D & Screens > Headset
 Output (OpenXR)**. The other rows there are Headset Refresh Rate, Screen
 Distance, Screen Width, Screen Placement (Fixed in Room, Follow Head,
 Lazy Follow), Headset Controllers, Laser Pointer and Laser Beam; Edit
-Screens, While Editing Screens, Snap to Screens, Snap to Angles and Edit
-Smoothing are described below. The Recenter Headset Screens, Laser
-Pointer (Toggle) and Edit Headset Screens hotkeys are unbound by default.
+Screens, While Editing Screens, Snap to Screens, Snap to Angles, Hinge
+Gap and Edit Smoothing are described below. The Recenter Headset
+Screens, Laser Pointer (Toggle) and Edit Headset Screens hotkeys are
+unbound by default.
 
 **Laser Beam** draws a thin line from each controller to its laser's
 dot, turned to face you. It shows only where the dot can: outside edit
@@ -203,33 +204,50 @@ default) or pauses; leaving edit mode resumes only content it paused.
 **Snap to Screens** (on by default) lines a held screen up with the
 other screens within about 30 cm of it that no hand holds. Within 5
 degrees of facing the same way as one, or of a quarter turn from it
-about its vertical, the held screen turns exactly so. Then, within 3 cm,
-it moves into the other's plane, and its left, right, top, bottom or
-centre lines up with the other's, level or edge to edge; a screen at a
-quarter turn meets the other at a corner. Or, at any angle between
-them, an edge of the held screen hinges on an edge of the other where
-the two overlap along it, top, bottom or side, within 5 degrees of
-parallel and 3 cm: it turns exactly
-parallel to that edge and moves onto it, centres or ends level along
-it, keeping its angle, like the two halves of a DS. Screens that would
+about its vertical, the held screen turns exactly so; of two, it turns
+to the one whose edge is nearer. Then, within 3 cm, it moves into the
+other's plane, and its left, right, top, bottom or centre lines up with
+the other's, level; edge to edge, or at a corner for a screen at a
+quarter turn, it keeps the gap described under Hinge Gap. Or, at any
+angle between them, an edge of the held screen hinges on an edge of the
+other where the two overlap along it, top, bottom or side, within 5
+degrees of parallel and 3 cm of its plane, up to 10 cm out from the
+edge: it turns exactly parallel to that edge and moves into the other's
+plane, keeping its gap from that edge, centres or ends level along it,
+keeping its angle, like the two halves of a DS. Screens that would
 overlap do not hinge. While a screen is hinged, the other hand's stick
 swings it about the shared edge, the tilt for a top or bottom edge and
-the turn for a side one, and it stays where the swing leaves it; the
-swing lets go just past square, and the stick's other axis turns or
-tilts it as before and can pull it off.
-Past each range the pull fades out over as far again, and from 30 to
-60 cm away every pull fades, so the screen catches up with the hand
-instead of jumping. A screen just taken does not move: snapping fades in
-as it is carried, whole once it is 5 cm or 10 degrees from where it was
-taken. The holding hand gets a short buzz as a snap takes hold, and none
-again from that snap until the screen has left its pull. The menu
-neither snaps nor is snapped to. Where it is let go is where it is
-saved.
+the turn for a side one, and it stays where the swing leaves it. The
+swing lets go just past square, but that axis keeps pivoting it on the
+same edge until the edge is carried out of the hinge's reach; the
+stick's other axis turns or tilts it as before and can pull it off. Past
+each 3 cm range and the 1 cm click the pull fades out over as far again,
+a hinge fades out from 10 to 13 cm, and from 30 to 60 cm away every pull
+fades, so the screen catches up with the hand instead of jumping. A
+screen just taken does not move: snapping fades in as it is carried,
+whole once it is 5 cm or 10 degrees from where it was taken. The holding
+hand gets a short buzz as a snap takes hold, and none again from that
+snap until the screen has left its pull. The menu neither snaps nor is
+snapped to. Where it is let go is where it is saved.
 
 **Snap to Angles** (15 degrees by default) is the step the other hand's
 stick turns and tilts a held item in: 15, 30, 45 or 90 degrees. A
 hinged screen's steps count from flat with the other screen, both ways.
 Off turns and tilts it smoothly, with no steps and no buzz.
+
+**Hinge Gap** (2 cm by default) is the gap Snap to Screens leaves
+between screens that meet edge to edge, side by side, at a corner or
+hinged at an angle: 0, 1, 2, 3, 5 or 10 cm. A screen within 1 cm of it
+clicks to it exactly, with a buzz; anywhere else from touching to
+10 cm the gap stays where the hand puts it, still hinged, and from 10
+to 13 cm the hinge lets go. At 0 the edges touch. It does nothing while
+Snap to Screens is off; screens already placed do not move. Pushed
+past touching, a hinged screen stops there, so two screens can be
+pushed together with no gap and let go touching, with one short buzz per
+push (below a 3 cm gap, the click's); from 1 cm past the stop gives
+way, and from 3 cm the hinge lets go (1.5 and 3.5 cm at a 1 cm gap).
+With Snap to Screens off nothing stops them, and screens overlap
+freely.
 
 **Edit Smoothing** (Medium by default) steadies the controllers' aim
 while editing, so a screen held far out on the laser does not shake

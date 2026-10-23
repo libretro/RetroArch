@@ -318,6 +318,7 @@ typedef struct settings
       unsigned video_openxr_laser;
       unsigned video_openxr_laser_beam;
       unsigned video_openxr_edit_snap_angles;
+      unsigned video_openxr_edit_hinge_gap;
       unsigned video_openxr_edit_smoothing;
       unsigned video_openxr_placement;
       unsigned video_fse_negotiation;

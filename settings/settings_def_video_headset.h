@@ -64,6 +64,11 @@ S_UINT_EX(video_openxr_edit_snap_angles, VIDEO_OPENXR_EDIT_SNAP_ANGLES,
       1, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, 4, 1, 0, setting_action_ok_uint, setting_get_string_representation_video_openxr_edit_snap_angles, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,
       "Snap to Angles",
       "Stops a screen the other hand's stick turns or tilts at every step of this angle, with a buzz: turns count from facing you, tilts from upright, and a hinged screen from flat with its neighbour. Snap to Screens wins near another screen. Off: the stick turns and tilts smoothly.")
+S_UINT_EX(video_openxr_edit_hinge_gap, VIDEO_OPENXR_EDIT_HINGE_GAP,
+      "video_openxr_edit_hinge_gap",
+      2, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, 5, 1, 0, setting_action_ok_uint, setting_get_string_representation_video_openxr_edit_hinge_gap, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,
+      "Hinge Gap",
+      "Leaves this gap between screens that meet edge to edge, side by side, at a corner or hinged at an angle. A screen clicks to it within 1 cm; elsewhere up to 10 cm the gap stays where you put it. 0: the edges touch.")
 S_UINT_EX(video_openxr_edit_smoothing, VIDEO_OPENXR_EDIT_SMOOTHING,
       "video_openxr_edit_smoothing",
       2, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, 3, 1, 0, setting_action_ok_uint, setting_get_string_representation_video_openxr_edit_smoothing, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,

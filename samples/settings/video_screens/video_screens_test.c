@@ -946,6 +946,7 @@ static void test_xr_edit_rows(void)
    CHECK(!menu_has_setting("video_openxr_edit_pause"));
    CHECK(!menu_has_setting("video_openxr_edit_snap"));
    CHECK(!menu_has_setting("video_openxr_edit_snap_angles"));
+   CHECK(!menu_has_setting("video_openxr_edit_hinge_gap"));
    CHECK(!menu_has_setting("video_openxr_edit_smoothing"));
    settings->bools.video_openxr_enable = true;
    CHECK(menu_has_setting("video_screen_xr_edit"));
@@ -969,6 +970,15 @@ static void test_xr_edit_rows(void)
    CHECK(settings->uints.video_openxr_edit_snap_angles
          == VIDEO_OPENXR_EDIT_SNAP_ANGLES_30);
    menu_value("video_openxr_edit_snap_angles", "30°");
+   CHECK(menu_setting_follows("video_openxr_edit_hinge_gap",
+         "video_openxr_edit_snap_angles"));
+   CHECK(settings->uints.video_openxr_edit_hinge_gap
+         == VIDEO_OPENXR_EDIT_HINGE_GAP_2);
+   menu_value("video_openxr_edit_hinge_gap", "2 cm");
+   menu_action("video_openxr_edit_hinge_gap", MENU_ACTION_RIGHT);
+   CHECK(settings->uints.video_openxr_edit_hinge_gap
+         == VIDEO_OPENXR_EDIT_HINGE_GAP_3);
+   menu_value("video_openxr_edit_hinge_gap", "3 cm");
    CHECK(menu_has_setting("video_openxr_edit_smoothing"));
    CHECK(settings->uints.video_openxr_edit_smoothing
          == VIDEO_OPENXR_EDIT_SMOOTHING_MEDIUM);
@@ -1050,6 +1060,30 @@ static void test_xr_edit_snap_angles_row(void)
          "video_openxr_enable = \"true\"\n"
          "video_openxr_edit_snap_angles = \"4\"\n");
    menu_value("video_openxr_edit_snap_angles", "90°");
+}
+
+/* Each Hinge Gap shows its own value, and survives a save and load. */
+static void test_xr_edit_hinge_gap_row(void)
+{
+   static const char *const shown[] = { "0 cm", "1 cm", "2 cm", "3 cm",
+      "5 cm", "10 cm" };
+   char fixture[128];
+   settings_t *settings = config_get_ptr();
+   unsigned i;
+   for (i = 0; i < 6; i++)
+   {
+      snprintf(fixture, sizeof(fixture), "video_driver = \"glcore\"\n"
+            "video_openxr_enable = \"true\"\n"
+            "video_openxr_edit_hinge_gap = \"%u\"\n", i);
+      load_fixture(fixture);
+      CHECK(settings->uints.video_openxr_edit_hinge_gap == i);
+      menu_value("video_openxr_edit_hinge_gap", shown[i]);
+      settings->bools.config_save_minimal = false;
+      CHECK(config_save_file(saved_path));
+      path_set(RARCH_PATH_CONFIG, saved_path);
+      config_load();
+      CHECK(settings->uints.video_openxr_edit_hinge_gap == i);
+   }
 }
 #endif
 
@@ -2318,6 +2352,7 @@ int main(int argc, char **argv)
    test_xr_laser_beam_row();
    test_xr_edit_smoothing_row();
    test_xr_edit_snap_angles_row();
+   test_xr_edit_hinge_gap_row();
 #endif
    menu_setting_free(menu_state_get_ptr()->entries.list_settings);
    free(menu_state_get_ptr()->entries.list_settings);

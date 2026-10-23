@@ -601,6 +601,7 @@ typedef struct input_openxr_edit
    bool changed;      /* it wrote a setting */
    bool snap;         /* Snap to Screens */
    float step;        /* Snap to Angles in degrees, 0 Off */
+   unsigned char gap; /* Hinge Gap in whole centimetres */
    unsigned smoothing; /* Edit Smoothing, as edit mode started */
    bool next;         /* last poll's Select Next and Previous */
    bool prev;
@@ -2381,13 +2382,12 @@ static void input_openxr_edit_tick(input_openxr_t *st, unsigned h)
 }
 
 /* The snaps whose buzz may still fire after a move that snapped: one
- * that took hold is spent until its axis pulls no more. */
+ * that took hold is spent until its axis, or the gap, pulls no more. */
 static unsigned input_openxr_edit_armed(unsigned armed, unsigned snapped)
 {
-   unsigned pulling = (snapped >> VIDEO_XR_SNAP_PULL_SHIFT)
-      & VIDEO_XR_SNAP_ALL;
-   return (armed & ~snapped & VIDEO_XR_SNAP_ALL)
-      | (VIDEO_XR_SNAP_ALL & ~pulling);
+   const unsigned buzz = VIDEO_XR_SNAP_ALL | VIDEO_XR_SNAP_GAP;
+   unsigned pulling    = (snapped >> VIDEO_XR_SNAP_PULL_SHIFT) & buzz;
+   return (armed & ~snapped & buzz) | (buzz & ~pulling);
 }
 
 /* Hand h grabs st->quads' quad target: the item keeps its place in
@@ -2416,8 +2416,9 @@ static void input_openxr_edit_grab(input_openxr_t *st,
    hold->g.slot   = q->slot;
    hold->g.state  = VIDEO_XR_GRAB_HELD;
    hold->g.tilt   = tilt;
+   hold->g.gap    = e->gap;
    hold->start    = q->pose;
-   hold->armed    = VIDEO_XR_SNAP_ALL;
+   hold->armed    = VIDEO_XR_SNAP_ALL | VIDEO_XR_SNAP_GAP;
    /* Taken at a step, it buzzes only once it has left it. */
    hold->rest[0]  = 0.0f;
    hold->rest[1]  = 0.0f;
@@ -2648,7 +2649,7 @@ static void input_openxr_edit_reset(input_openxr_edit_t *e, unsigned slot)
  * Screens asks, and the desktop told. Video hears of it first, so the
  * frame the pause draws shows edit mode. */
 static void input_openxr_edit_start(input_openxr_edit_t *e, bool pause,
-      bool snap, float step, unsigned smoothing)
+      bool snap, float step, unsigned char gap, unsigned smoothing)
 {
    unsigned h;
    const char *msg = msg_hash_to_str(MSG_OPENXR_EDIT_ON);
@@ -2656,6 +2657,7 @@ static void input_openxr_edit_start(input_openxr_edit_t *e, bool pause,
    e->on      = true;
    e->snap    = snap;
    e->step    = step;
+   e->gap     = gap;
    e->smoothing = smoothing;
    e->changed = false;
    e->unbound = 0;
@@ -3163,10 +3165,12 @@ bool input_openxr_edit_toggle(void)
 }
 
 void input_openxr_edit_begin(bool pause, bool snap, unsigned snap_angles,
-      unsigned smoothing)
+      unsigned hinge_gap, unsigned smoothing)
 {
    static const float steps[VIDEO_OPENXR_EDIT_SNAP_ANGLES_LAST] =
          { 0.0f, 15.0f, 30.0f, 45.0f, 90.0f };
+   static const unsigned char gaps[VIDEO_OPENXR_EDIT_HINGE_GAP_LAST] =
+         { 0, 1, 2, 3, 5, 10 };
    input_openxr_edit_t *e = &input_openxr_edit;
    if (e->on || !input_openxr_st.frame)
       return;
@@ -3181,12 +3185,15 @@ void input_openxr_edit_begin(bool pause, bool snap, unsigned snap_angles,
    }
 #endif
    /* A config can hold any value: past Snap to Angles', 15 degrees;
-    * past Edit Smoothing's, Medium. */
+    * past Hinge Gap's, 2 cm; past Edit Smoothing's, Medium. */
    if (snap_angles >= VIDEO_OPENXR_EDIT_SNAP_ANGLES_LAST)
       snap_angles = VIDEO_OPENXR_EDIT_SNAP_ANGLES_15;
+   if (hinge_gap >= VIDEO_OPENXR_EDIT_HINGE_GAP_LAST)
+      hinge_gap = VIDEO_OPENXR_EDIT_HINGE_GAP_2;
    if (smoothing >= VIDEO_OPENXR_EDIT_SMOOTHING_LAST)
       smoothing = VIDEO_OPENXR_EDIT_SMOOTHING_MEDIUM;
-   input_openxr_edit_start(e, pause, snap, steps[snap_angles], smoothing);
+   input_openxr_edit_start(e, pause, snap, steps[snap_angles],
+         gaps[hinge_gap], smoothing);
 }
 
 void input_openxr_edit_end(void)
