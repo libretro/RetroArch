@@ -89,10 +89,8 @@ jobs:
           : > "$unity"
           for source in gfx/common/mediacodec_inventory.c record/record_mediacodec_encoder.c \
               record/record_mux_mediacodec.c record/record_mediacodec_worker.c \
-              record/record_mediacodec_surface.c \
-              record/record_android_capture_images.c \
-              record/record_android_capture_submit.c \
-              record/record_android_capture_gl.c \
+              record/record_mediacodec_surface.c record/record_android_capture_images.c \
+              record/record_android_capture_submit.c record/record_android_capture_gl.c \
               record/record_audio_queue.c libretro-common/queues/retro_spsc.c; do
             printf '#include "%s/%s"\n' "$PWD" "$source" >> "$unity"
           done
@@ -107,14 +105,14 @@ jobs:
                   -DHAVE_THREADS -DHAVE_DYLIB -Ilibretro-common/include -Igfx/include \
                   -c "$unity" -o "$RUNNER_TEMP/record-$target-$api-$offset.o"
                 if "$bin/llvm-nm" -u "$RUNNER_TEMP/record-$target-$api-$offset.o" | \
-                    grep -Eq ' U (AMedia|ANativeWindow|AHardwareBuffer|egl|record_android_capture_|record_mediacodec_|record_mux_mediacodec_|record_audio_queue_|retro_spsc_|mediacodec_inventory_)'; then
+                    grep -Eq ' U (AMedia|ANativeWindow|AHardwareBuffer|egl|gl[A-Z]|record_android_capture_|record_mediacodec_|record_mux_mediacodec_|record_audio_queue_|retro_spsc_|mediacodec_inventory_)'; then
                   echo "Unresolved Android recording dependency"
                   exit 1
                 fi
                 for source in android_image_queue android_image_ndk mediacodec_session android_frame \
                     mediacodec_color mediacodec_frame_export vulkan_android_device \
                     vulkan_android_image vulkan_android_pipeline vulkan_android_sync \
-                    vulkan_android_submit vulkan_android_queue vulkan_android_cache_entry vulkan_android_cache; do
+                    vulkan_android_submit vulkan_android_cache_entry vulkan_android_cache vulkan_android_queue; do
                   "$bin/$target$api-clang" $extra -O1 -std=c89 -pedantic -Wall -Wextra -Werror \
                     -Wno-long-long -Wno-c99-extensions -Wframe-larger-than=2048 \
                     -DHAVE_THREADS -DHAVE_DYLIB -Ilibretro-common/include -Igfx/include \
