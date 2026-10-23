@@ -79,6 +79,9 @@
 #include "../common/vulkan_android_queue.h"
 #endif
 #include "../common/rgba16_pack.h"
+#if defined(ANDROID) && defined(HAVE_THREADS)
+#include "../../record/record_android_capture_renderer.h"
+#endif
 #ifdef HAVE_OPENXR
 #include "../common/vulkan_openxr.h"
 #endif
@@ -11277,6 +11280,67 @@ static void vulkan_menu_upload(vk_t *vk, unsigned frame_index)
 }
 #endif
 
+#if defined(ANDROID) && defined(HAVE_THREADS)
+static record_android_capture_renderer_t *vulkan_record_gpu(vk_t *vk,
+      const video_frame_info_t *info, const struct vk_image *backbuffer)
+{
+   record_android_capture_source_t source;
+   record_android_capture_renderer_t *recording
+         = (record_android_capture_renderer_t *)info->recording_gpu;
+   unsigned mode = 0;
+   if (!recording || !recording->context || !recording->record
+         || !recording->release || !recording->submitted
+         || !info->recording_gpu_capture || info->frame_repeat
+         || !backbuffer->image || !vk->cmd
+         || !(vk->context->flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
+         || !(vk->context->flags & VK_CTX_FLAG_ANDROID_IMAGES)
+         || (vk->context->flags & VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK)
+         || (vk->flags & VK_FLAG_OPEN_XR) || VIDEO_POS_X(vk->vp.pos) < 0
+         || VIDEO_POS_Y(vk->vp.pos) < 0 || !VIDEO_SCALE_W(vk->vp.dims)
+         || !VIDEO_SCALE_H(vk->vp.dims))
+      return NULL;
+#ifdef VULKAN_HDR_SWAPCHAIN
+   if (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
+      mode = vk->context->flags & VK_CTX_FLAG_HDR_SCRGB ? 2 : 1;
+#endif
+   memset(&source, 0, sizeof(source));
+   source.image = backbuffer->image;
+   source.owner = recording->context;
+   source.release = recording->release;
+   source.format = vk->context->swapchain_format;
+   source.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+   source.width = VIDEO_SCALE_W(vk->vp.full_dims);
+   source.height = VIDEO_SCALE_H(vk->vp.full_dims);
+   source.x = (unsigned)VIDEO_POS_X(vk->vp.pos);
+   source.y = (unsigned)VIDEO_POS_Y(vk->vp.pos);
+   return recording->record(recording->context, &source, vk->cmd,
+                info->recording_gpu_timestamp, vk->vp.dims, mode)
+               == 1
+         ? recording
+         : NULL;
+}
+
+static void vulkan_record_service(const video_frame_info_t *info)
+{
+   record_android_capture_renderer_t *recording
+         = (record_android_capture_renderer_t *)info->recording_gpu;
+   if (recording && recording->context && recording->service)
+      recording->service(recording->context);
+}
+
+static VkResult vulkan_record_submit(vk_t *vk, const VkSubmitInfo *submit,
+      unsigned frame_index, record_android_capture_renderer_t *recording)
+{
+   VkResult result = vkQueueSubmit(vk->context->queue, 1, submit,
+         vk->context->swapchain_fences[frame_index]);
+   vk->context->swapchain_fences_signalled[frame_index] = result == VK_SUCCESS;
+   if (recording)
+      recording->submitted(recording->context, result);
+   vulkan_check_device_lost(vk, result);
+   return result;
+}
+#endif
+
 static bool vulkan_frame(void *data, const void *frame,
       unsigned dims,
       uint64_t frame_count,
@@ -11290,6 +11354,10 @@ static bool vulkan_frame(void *data, const void *frame,
    VkRenderPassBeginInfo rp_info;
    VkCommandBufferBeginInfo begin_info;
    VkSemaphore signal_semaphores[2];
+#if defined(ANDROID) && defined(HAVE_THREADS)
+   record_android_capture_renderer_t *recording = NULL;
+   VkResult recording_result;
+#endif
    retro_perf_tick_t c_lock                      = 0;
    vk_t *vk                                      = (vk_t*)data;
    vulkan_filter_chain_t *filter_chain           = NULL;
@@ -12677,6 +12745,10 @@ static bool vulkan_frame(void *data, const void *frame,
    else if (!views_direct_tex)
       vulkan_views_end_frame(vk, video_info, view_chains);
 
+#if defined(ANDROID) && defined(HAVE_THREADS)
+   recording = vulkan_record_gpu(vk, video_info, backbuffer);
+#endif
+
    if (
             (backbuffer->image != VK_NULL_HANDLE)
          && (vk->context->flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
@@ -12845,7 +12917,19 @@ static bool vulkan_frame(void *data, const void *frame,
             vk->context->graphics_queue_index, vk->hw.src_queue_family);
    }
 
+#if defined(ANDROID) && defined(HAVE_THREADS)
+   recording_result = vkEndCommandBuffer(vk->cmd);
+   if (recording_result != VK_SUCCESS)
+   {
+      vk->context->swapchain_fences_signalled[frame_index] = false;
+      if (recording)
+         recording->submitted(recording->context, recording_result);
+      vulkan_check_device_lost(vk, recording_result);
+      return false;
+   }
+#else
    vkEndCommandBuffer(vk->cmd);
+#endif
 
    /* Submit command buffers to GPU. */
    submit_info.sType                 = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -12942,32 +13026,58 @@ static bool vulkan_frame(void *data, const void *frame,
 #endif
 #if defined(ANDROID) \
    && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1))
-   if (vulkan_android_queue_flush(&vk->android_submissions, vkQueueSubmit)
-         != VK_SUCCESS)
    {
+      VkResult queue_result = vulkan_android_queue_flush(
+            &vk->android_submissions, vkQueueSubmit);
+      if (queue_result != VK_SUCCESS)
+      {
 #ifdef HAVE_THREADS
-      slock_unlock(vk->context->queue_lock);
+         slock_unlock(vk->context->queue_lock);
 #endif
-      vk->context->swapchain_fences_signalled[frame_index] = false;
-      video_driver_modify_disp_flags(VIDEO_FLAG_GPU_DEVICE_LOST, 0);
-      return false;
+#if defined(ANDROID) && defined(HAVE_THREADS)
+         if (recording)
+            recording->submitted(recording->context, queue_result);
+#endif
+         vk->context->swapchain_fences_signalled[frame_index] = false;
+         video_driver_modify_disp_flags(VIDEO_FLAG_GPU_DEVICE_LOST, 0);
+         return false;
+      }
    }
 #endif
 #if defined(HAVE_RMP4) && defined(HAVE_VAAPI)
-   if (vulkan_android_queue_flush(&vk->vaapi_submissions, vkQueueSubmit)
-         != VK_SUCCESS)
    {
+      VkResult queue_result
+            = vulkan_android_queue_flush(&vk->vaapi_submissions, vkQueueSubmit);
+      if (queue_result != VK_SUCCESS)
+      {
 #ifdef HAVE_THREADS
-      slock_unlock(vk->context->queue_lock);
+         slock_unlock(vk->context->queue_lock);
 #endif
-      vk->context->swapchain_fences_signalled[frame_index] = false;
-      video_driver_modify_disp_flags(VIDEO_FLAG_GPU_DEVICE_LOST, 0);
-      return false;
+#if defined(ANDROID) && defined(HAVE_THREADS)
+         if (recording)
+            recording->submitted(recording->context, queue_result);
+#endif
+         vk->context->swapchain_fences_signalled[frame_index] = false;
+         video_driver_modify_disp_flags(VIDEO_FLAG_GPU_DEVICE_LOST, 0);
+         return false;
+      }
    }
 #endif
-   vulkan_check_device_lost(vk, vkQueueSubmit(vk->context->queue, 1,
-         &submit_info, vk->context->swapchain_fences[frame_index]));
+#if defined(ANDROID) && defined(HAVE_THREADS)
+   vulkan_record_service(video_info);
+   recording_result
+         = vulkan_record_submit(vk, &submit_info, frame_index, recording);
+   if (recording_result != VK_SUCCESS)
+   {
+      slock_unlock(vk->context->queue_lock);
+      return false;
+   }
+#else
+   vulkan_check_device_lost(vk,
+         vkQueueSubmit(vk->context->queue, 1, &submit_info,
+               vk->context->swapchain_fences[frame_index]));
    vk->context->swapchain_fences_signalled[frame_index] = true;
+#endif
 #ifdef HAVE_OPENXR
    /* The quads with their images, before the XR thread's next frame. */
    if (xr_draw)
@@ -14762,6 +14872,7 @@ static bool vulkan_get_device(void *data, video_device_info_t *info)
    info->instance               = (void*)vk->context->instance;
    info->physical_device        = (void*)vk->context->gpu;
    info->device                 = (void*)vk->context->device;
+   info->queue                  = (void*)vk->context->queue;
    info->get_instance_proc_addr = (retro_proc_address_t)
       vulkan_symbol_wrapper_instance_proc_addr();
    info->queue_family           = vk->context->graphics_queue_index;

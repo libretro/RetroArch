@@ -4,6 +4,7 @@
 #define RECORD_ANDROID_CAPTURE_POOL_H
 #include "record_android_capture_images.h"
 #include "record_android_capture_pipe.h"
+#include "record_android_capture_renderer.h"
 RETRO_BEGIN_DECLS
 typedef struct record_android_capture_pool record_android_capture_pool_t;
 typedef struct record_android_capture_pool_config
@@ -25,6 +26,13 @@ typedef struct record_android_capture_pool_config
 bool record_android_capture_pool_new(record_dispatch_mediacodec_t *io,
       const record_android_capture_pool_config_t *config,
       record_android_capture_pool_t **out);
+/* Cold, once per pool. Binding storage must outlive queued video frames.
+ * Duration is in microseconds. All callbacks run on the render owner; service
+ * and successful submission callbacks use the renderer's existing queue lock.
+ * Source bookkeeping is the pool, never a swapchain-image object. */
+bool record_android_capture_pool_bind_renderer(
+      record_android_capture_pool_t *pool, unsigned duration,
+      record_android_capture_renderer_t *binding);
 int record_android_capture_pool_push(record_android_capture_pool_t *pool,
       const record_android_capture_source_t *source, uint64_t pts,
       uint64_t duration);

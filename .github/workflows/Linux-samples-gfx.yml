@@ -2453,6 +2453,11 @@ jobs:
       - name: MinGW strict C89 float math
         run: CC=x86_64-w64-mingw32-gcc WINEDEBUG=-all python3 samples/gfx/mingw_c89_math/run.py
 
+      - name: Vulkan recording command and queue acceptance
+        run: |
+          CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 samples/gfx/vulkan_recording/run.py
+          CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/vulkan_recording/run.py
+
       - name: Vulkan synchronous readback slot
         run: python3 samples/gfx/vulkan_readback_slot/run.py
 

@@ -1045,7 +1045,8 @@ typedef struct video_device_info
    void *instance;
    void *physical_device;
    void *device;
-   /* D3D12's immutable render queue, borrowed with the device. */
+   /* Vulkan/D3D12 immutable render queue, borrowed with the device.
+    * Queue submission still requires the driver's existing synchronization. */
    void *queue;
    retro_proc_address_t get_instance_proc_addr;
    /* The driver's queue family: an image the driver imports is either

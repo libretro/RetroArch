@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "../../../record/record_android_capture_pool.h"
+#include "../../../gfx/video_defines.h"
 struct record_android_capture_images
 {
    unsigned live;
@@ -33,6 +34,10 @@ static struct model
    bool fail_images, fail_gpu, fail_pipe, gpu_live, pending, pipe_done;
    bool sources_done, cancelled, refuse_gpu_free, images_prepared, destroyed;
    bool copies_done;
+   record_android_capture_source_t source;
+   uint64_t expected_pts;
+   unsigned records, commits;
+   int record_result, commit_result;
    VkFormat format;
 } m;
 static void reset(unsigned mode)
@@ -41,6 +46,7 @@ static void reset(unsigned mode)
    memset(&m, 0, sizeof(m));
    memset(entries, 0, sizeof(entries));
    m.count = 2;
+   m.record_result = m.commit_result = 1;
    m.format = mode == 2 ? VK_FORMAT_R16G16B16A16_SFLOAT
          : mode == 1    ? VK_FORMAT_A2B10G10R10_UNORM_PACK32
                         : VK_FORMAT_R8G8B8A8_UNORM;
@@ -196,8 +202,12 @@ record_android_capture_pipe_t *record_android_capture_pipe_new(
 int record_android_capture_pipe_push(record_android_capture_pipe_t *p,
       const record_android_capture_source_t *s, uint64_t pts, uint64_t duration)
 {
-   assert(p == &pipe && p->live && s && pts == 0 && duration == 10);
-   return 1;
+   assert(
+         p == &pipe && p->live && s && pts == m.expected_pts && duration == 10);
+   m.records++;
+   if (m.record_result == 1)
+      m.source = *s;
+   return m.record_result;
 }
 int record_android_capture_pipe_record(record_android_capture_pipe_t *p,
       const record_android_capture_source_t *source, uint64_t pts,
@@ -209,7 +219,8 @@ int record_android_capture_pipe_record(record_android_capture_pipe_t *p,
 int record_android_capture_pipe_commit(record_android_capture_pipe_t *p)
 {
    assert(p == &pipe && p->live);
-   return 1;
+   m.commits++;
+   return m.commit_result;
 }
 bool record_android_capture_pipe_abort_recorded(
       record_android_capture_pipe_t *p)
@@ -392,6 +403,100 @@ static void device_loss(unsigned mode, bool quiesced)
    assert(record_android_capture_pool_step(p) == 1);
    assert(record_android_capture_pool_free(p));
 }
+static void renderer_binding(unsigned mode, unsigned fault)
+{
+   static record_android_capture_pool_config_t c;
+   record_android_capture_pool_t *p;
+   record_android_capture_renderer_t binding;
+   record_android_capture_source_t source;
+   unsigned dims = VIDEO_SCALE_PACK(128, 96);
+   reset(mode);
+   c = config(mode);
+   memset(&binding, 0, sizeof(binding));
+   memset(&source, 0, sizeof(source));
+   assert(record_android_capture_pool_new(
+         (record_dispatch_mediacodec_t *)&m, &c, &p));
+   assert(!record_android_capture_pool_bind_renderer(NULL, 10, &binding));
+   assert(!record_android_capture_pool_bind_renderer(p, 0, &binding));
+   assert(!record_android_capture_pool_bind_renderer(p, 1000001, &binding));
+   assert(!record_android_capture_pool_bind_renderer(p, 10, NULL));
+   assert(record_android_capture_pool_bind_renderer(p, 10, &binding));
+   assert(binding.context == p && binding.record && binding.submitted
+         && binding.service && binding.release);
+   assert(!record_android_capture_pool_bind_renderer(p, 10, &binding));
+   assert(binding.context == p);
+   source.owner = binding.context;
+   source.release = binding.release;
+   source.image = (VkImage)(uintptr_t)99;
+   source.format = m.format;
+   source.width = 128;
+   source.height = 96;
+   source.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+   if (fault == 3 || fault == 4)
+   {
+      assert(binding.record(binding.context, &source,
+                   (VkCommandBuffer)(uintptr_t)77, 0,
+                   fault == 3 ? VIDEO_SCALE_PACK(64, 48) : dims,
+                   fault == 4 ? (mode + 1) % 3 : mode)
+            == -1);
+      assert(m.cancelled && !m.records && !m.commits && p->closed);
+   }
+   else
+   {
+      if (fault == 5)
+      {
+         m.record_result = 0;
+         assert(binding.record(binding.context, &source,
+                      (VkCommandBuffer)(uintptr_t)77, 0, dims, mode)
+               == 0);
+         assert(binding.record(binding.context, &source,
+                      (VkCommandBuffer)(uintptr_t)77, 0, dims, mode)
+               == 0);
+         assert(m.records == 1 && !p->renderer_leases);
+         m.record_result = 1;
+         m.expected_pts = 1;
+      }
+      assert(binding.record(binding.context, &source,
+                   (VkCommandBuffer)(uintptr_t)77, m.expected_pts, dims, mode)
+            == 1);
+      assert(p->renderer_leases == 1 && p->renderer_recorded);
+      assert(binding.record(binding.context, &source,
+                   (VkCommandBuffer)(uintptr_t)77, m.expected_pts, dims, mode)
+            == 0);
+      if (fault == 1)
+         m.commit_result = -1;
+      binding.submitted(
+            binding.context, fault == 2 ? VK_ERROR_DEVICE_LOST : VK_SUCCESS);
+      assert(!p->renderer_recorded && p->renderer_leases == 1);
+      assert(m.commits == (fault == 2 ? 0u : 1u));
+      binding.submitted(binding.context, VK_SUCCESS);
+      assert(m.commits == (fault == 2 ? 0u : 1u));
+      if (fault == 1 || fault == 2)
+         assert(m.cancelled && p->closed);
+      else
+      {
+         assert(!m.cancelled);
+         binding.service(binding.context);
+         assert(record_android_capture_pool_finish(p, 10 + m.expected_pts));
+      }
+   }
+   if (m.cancelled)
+   {
+      assert(record_android_capture_pool_prepare_device_destroy(p, true));
+      m.destroyed = true;
+      assert(record_android_capture_pool_after_device_destroy(p));
+   }
+   if (p->renderer_leases)
+   {
+      assert(m.source.owner == p && m.source.release == binding.release);
+      m.source.release(m.source.owner, m.destroyed);
+      assert(!p->renderer_leases);
+   }
+   gpu.state
+         = m.cancelled ? RECORD_MC_DISPATCH_FAILED : RECORD_MC_DISPATCH_DONE;
+   m.pipe_done = true;
+   assert(record_android_capture_pool_free(p));
+}
 static void bad_inputs(void)
 {
    static record_android_capture_pool_config_t c;
@@ -417,6 +522,7 @@ static void bad_inputs(void)
 }
 int main(void)
 {
+   unsigned mode, fault;
    assert(record_android_capture_pool_status(NULL, NULL, NULL)
          == RECORD_MC_DISPATCH_FAILED);
    bad_inputs();
@@ -431,6 +537,9 @@ int main(void)
    device_loss(1, true);
    device_loss(2, false);
    device_loss(2, true);
+   for (mode = 0; mode < 3; mode++)
+      for (fault = 0; fault < 6; fault++)
+         renderer_binding(mode, fault);
    assert(record_android_capture_pool_free(NULL));
    puts("PASS: joint capture pool construction, partial startup and ordered "
         "collection; native owners mocked");

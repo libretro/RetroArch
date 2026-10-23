@@ -2,6 +2,7 @@
  * GPL-3.0-or-later */
 #include "record_android_capture_pool.h"
 #include <stdlib.h>
+#include "../gfx/video_defines.h"
 
 struct record_android_capture_pool
 {
@@ -10,8 +11,10 @@ struct record_android_capture_pool
    record_gpu_dispatch_mediacodec_t *gpu;
    record_android_capture_pipe_t *pipe;
    int64_t end_us;
-   unsigned count;
+   uint64_t renderer_last_offer, renderer_end;
+   unsigned count, dims, mode, renderer_duration, renderer_leases;
    bool closed, preparing, prepared, destroyed;
+   bool renderer_bound, renderer_offer, renderer_recorded, renderer_stopping;
 };
 
 static bool record_acpool_terminal(const record_android_capture_pool_t *p)
@@ -53,6 +56,8 @@ bool record_android_capture_pool_free(record_android_capture_pool_t *p)
          return false;
       p->entries[i] = NULL;
    }
+   if (p->renderer_leases)
+      return false;
    record_android_capture_images_free(p->images);
    free(p);
    return true;
@@ -81,6 +86,7 @@ void record_android_capture_pool_cancel(record_android_capture_pool_t *p)
 {
    if (!p)
       return;
+   p->renderer_stopping = true;
    if (p->pipe)
       record_android_capture_pipe_cancel(p->pipe);
    else if (p->gpu)
@@ -106,6 +112,8 @@ bool record_android_capture_pool_new(record_dispatch_mediacodec_t *io,
    if (!p)
       return false;
    p->count = c->gpu.count;
+   p->dims = VIDEO_SCALE_PACK(c->gpu.width, c->gpu.height);
+   p->mode = c->gpu.mode;
    format = c->gpu.mode == 2 ? VK_FORMAT_R16G16B16A16_SFLOAT
          : c->gpu.mode == 1  ? VK_FORMAT_A2B10G10R10_UNORM_PACK32
                              : VK_FORMAT_R8G8B8A8_UNORM;
@@ -227,5 +235,96 @@ bool record_android_capture_pool_after_device_destroy(
       if (!record_android_capture_submit_after_device_destroy(p->entries[i]))
          return false;
    p->destroyed = true;
+   return true;
+}
+
+static void record_acpool_renderer_release(void *context, bool destroyed)
+{
+   record_android_capture_pool_t *p = (record_android_capture_pool_t *)context;
+   (void)destroyed;
+   p->renderer_leases--;
+}
+
+static void record_acpool_renderer_close(record_android_capture_pool_t *p)
+{
+   if (p->renderer_stopping && !p->closed)
+      record_android_capture_pool_finish(p, (int64_t)p->renderer_end);
+}
+
+static int record_acpool_renderer_record(void *context,
+      const record_android_capture_source_t *source, VkCommandBuffer command,
+      uint64_t pts, unsigned dims, unsigned mode)
+{
+   record_android_capture_pool_t *p = (record_android_capture_pool_t *)context;
+   int result;
+   if (p->closed || p->preparing || p->renderer_stopping)
+      return 0;
+   if (!source || source->owner != p
+         || source->release != record_acpool_renderer_release || dims != p->dims
+         || mode != p->mode)
+   {
+      record_android_capture_pool_cancel(p);
+      record_acpool_renderer_close(p);
+      return -1;
+   }
+   if (p->renderer_offer && pts <= p->renderer_last_offer)
+      return 0;
+   p->renderer_offer = true;
+   p->renderer_last_offer = pts;
+   result = record_android_capture_pool_record(
+         p, source, pts, p->renderer_duration, command);
+   if (result == 1)
+   {
+      p->renderer_leases++;
+      p->renderer_end = pts + p->renderer_duration;
+      p->renderer_recorded = true;
+   }
+   else if (result < 0)
+   {
+      record_android_capture_pool_cancel(p);
+      record_acpool_renderer_close(p);
+   }
+   return result;
+}
+
+static void record_acpool_renderer_service(void *context)
+{
+   record_android_capture_pool_t *p = (record_android_capture_pool_t *)context;
+   record_acpool_renderer_close(p);
+   if (record_android_capture_pool_step(p) < 0)
+   {
+      record_android_capture_pool_cancel(p);
+      record_acpool_renderer_close(p);
+   }
+}
+
+static void record_acpool_renderer_submitted(void *context, VkResult result)
+{
+   record_android_capture_pool_t *p = (record_android_capture_pool_t *)context;
+   if (!p->renderer_recorded)
+      return;
+   p->renderer_recorded = false;
+   if (result != VK_SUCCESS || record_android_capture_pool_commit(p) < 0)
+   {
+      record_android_capture_pool_cancel(p);
+      record_acpool_renderer_close(p);
+      return;
+   }
+   record_acpool_renderer_service(p);
+}
+
+bool record_android_capture_pool_bind_renderer(record_android_capture_pool_t *p,
+      unsigned duration, record_android_capture_renderer_t *binding)
+{
+   if (!p || !binding || !duration || duration > 1000000 || !p->pipe
+         || p->closed || p->preparing || p->renderer_bound)
+      return false;
+   p->renderer_duration = duration;
+   p->renderer_bound = true;
+   binding->context = p;
+   binding->release = record_acpool_renderer_release;
+   binding->record = record_acpool_renderer_record;
+   binding->submitted = record_acpool_renderer_submitted;
+   binding->service = record_acpool_renderer_service;
    return true;
 }
