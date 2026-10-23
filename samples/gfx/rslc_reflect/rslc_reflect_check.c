@@ -111,9 +111,16 @@ static void check_block(const char *stage, spvc_compiler comp,
    if (strcmp(label, "push") != 0)
    {
       unsigned binding = spvc_compiler_get_decoration(comp, res->id, SpvDecorationBinding);
+      unsigned set     = spvc_compiler_get_decoration(comp, res->id, SpvDecorationDescriptorSet);
       if (binding != b->binding)
       {
          snprintf(detail, sizeof(detail), "binding %u vs %u", binding, b->binding);
+         mismatch(stage, label, detail);
+      }
+      /* an undeclared set is set 0 to the module */
+      if (set != (b->set == RSLC_NO_BINDING ? 0 : b->set))
+      {
+         snprintf(detail, sizeof(detail), "set %u vs %u", set, b->set);
          mismatch(stage, label, detail);
       }
    }
@@ -288,6 +295,12 @@ static int check_stage(const char *dir, const char *file)
                if (s[k].binding != binding)
                {
                   snprintf(detail, sizeof(detail), "%s binding %u vs %u", list[i].name, binding, s[k].binding);
+                  mismatch(file, "sampler", detail);
+               }
+               if (spvc_compiler_get_decoration(comp, list[i].id, SpvDecorationDescriptorSet)
+                     != (s[k].set == RSLC_NO_BINDING ? 0 : s[k].set))
+               {
+                  snprintf(detail, sizeof(detail), "%s set %u", list[i].name, s[k].set);
                   mismatch(file, "sampler", detail);
                }
             }

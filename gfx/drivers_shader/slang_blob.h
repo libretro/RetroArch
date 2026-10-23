@@ -1,0 +1,70 @@
+/*  RetroArch - A frontend for libretro.
+ *
+ *  RetroArch is free software: you can redistribute it and/or modify it under the terms
+ *  of the GNU General Public License as published by the Free Software Found-
+ *  ation, either version 3 of the License, or (at your option) any later version.
+ *
+ *  RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ *  PURPOSE.  See the GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along with RetroArch.
+ *  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#ifndef SLANG_BLOB_H
+#define SLANG_BLOB_H
+
+#include <stdint.h>
+#include <stddef.h>
+#include <boolean.h>
+#include <retro_common_api.h>
+
+#ifdef HAVE_RSLC
+#include <gfx/shaders/rslc.h>
+#endif
+
+RETRO_BEGIN_DECLS
+
+struct rslc_reflect;
+
+/* A compiled stage as one allocation.  The SPIR-V words are read where
+ * they lie by the driver (vkCreateShaderModule, the GL SPIR-V path, a
+ * SPIRV-Cross parse) and by the cache writer; when the compiler wrote
+ * its reflection tables (rslc), @refl points at them inside the same
+ * allocation and the chain binds by them without crossing the words.
+ * A blob is shared by reference between the compile output, the pass
+ * that binds it and whatever else holds it, and released when the last
+ * reference goes; references change on the thread that owns the chain,
+ * never from two threads at once. */
+struct slang_blob
+{
+   void                      *mem;      /* the allocation */
+   size_t                     len;
+   void                     (*free_fn)(void *ud, void *ptr); /* NULL: free() */
+   void                      *ud;
+   const struct rslc_reflect *refl;     /* NULL: a module without tables */
+   const uint32_t            *words;    /* into mem */
+   size_t                     nwords;
+   unsigned                   refs;
+};
+
+/* Takes malloc'd SPIR-V words of a module no tables describe (glslang's,
+ * a stage slang_rect rewrote). NULL when out of memory: @words is freed
+ * either way. */
+struct slang_blob *slang_blob_adopt_words(uint32_t *words, size_t nwords);
+
+#ifdef HAVE_RSLC
+/* Takes an rslc blob produced for RSLC_DST_SPIRV: words and tables in
+ * place, released through @opts's allocator.  NULL when out of memory:
+ * the result is freed either way. */
+struct slang_blob *slang_blob_adopt_result(struct rslc_result *res,
+      const struct rslc_opts *opts);
+#endif
+
+struct slang_blob *slang_blob_ref(struct slang_blob *b);
+void slang_blob_unref(struct slang_blob *b);
+
+RETRO_END_DECLS
+
+#endif

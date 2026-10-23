@@ -31,7 +31,7 @@ int slang_last_pass_feedback(void *s, const void *o)
 unsigned glslang_num_miplevels(unsigned w, unsigned h) { (void)w; (void)h; return 1; }
 void glslang_output_free(void *o) { (void)o; }
 void glslang_output_init(void *o) { (void)o; }
-int  slang_reflect_spirv(void) { return 0; }
+int  slang_reflect_pass(void) { return 0; }
 void slang_reflection_free(void *r) { (void)r; }
 void slang_reflection_init(void *r) { (void)r; }
 void slang_semantic_name_map_free(void *m) { (void)m; }

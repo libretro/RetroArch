@@ -118,13 +118,15 @@ struct rslc_block
    uint32_t    member_count;
    uint32_t    binding;  /* RSLC_NO_BINDING when not declared; unused for push */
    uint32_t    present;  /* 0 when the stage declares no such block */
-   uint32_t    pad;
+   uint32_t    set;      /* descriptor set; RSLC_NO_BINDING when not declared */
 };
 
 struct rslc_sampler
 {
    uint32_t    name;
    uint32_t    binding;  /* RSLC_NO_BINDING when not declared */
+   uint32_t    set;      /* descriptor set; RSLC_NO_BINDING when not declared */
+   uint32_t    pad;
 };
 
 struct rslc_io
@@ -159,7 +161,7 @@ struct rslc_reflect
  * bytes wherever it lands.  All multi-byte fields are host-endian; a
  * cache is per machine. */
 #define RSLC_BLOB_MAGIC   0x434c5352u  /* 'RSLC' little-endian */
-#define RSLC_BLOB_VERSION 2u
+#define RSLC_BLOB_VERSION 3u
 
 struct rslc_blob_hdr
 {

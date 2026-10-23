@@ -10,6 +10,7 @@ CFLAGS  := -std=gnu99 -g1 -O1 -fsanitize=$(SAN) -DRARCH_INTERNAL \
            -I$(RA) -I$(RA)/libretro-common/include -I$(RA)/deps
 SRC     := slang_cache_test.c \
            $(RA)/gfx/drivers_shader/slang_cache.c \
+           $(RA)/gfx/drivers_shader/slang_blob.c \
            $(RA)/gfx/video_shader_parse.c \
            $(RA)/libretro-common/streams/file_stream.c \
            $(RA)/libretro-common/vfs/vfs_implementation.c \

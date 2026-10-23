@@ -4361,6 +4361,7 @@ uint32_t rslc_reflect_write(struct rslc_ctx *c, uint8_t *blob, uint32_t off,
       b->name     = bd->type->name ? refl_put_str(blob, &at, bd->type->name) : 0;
       b->instance = bd->instance ? refl_put_str(blob, &at, bd->instance) : 0;
       b->binding  = bd->binding;
+      b->set      = bd->set;
       b->size     = 0;
       for (i = 0; i < bd->type->nfields; i++)
       {
@@ -4382,6 +4383,7 @@ uint32_t rslc_reflect_write(struct rslc_ctx *c, uint8_t *blob, uint32_t off,
       {
          s[i].name    = refl_put_str(blob, &at, pr->samplers[i]->name);
          s[i].binding = pr->samplers[i]->binding;
+         s[i].set     = pr->samplers[i]->set;
       }
    }
    {

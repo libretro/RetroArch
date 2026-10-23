@@ -14,6 +14,7 @@
 
 #include "../../../gfx/drivers_shader/shader_gl3.h"
 #include "../../../gfx/drivers_shader/slang_process.h"
+#include "../../../gfx/drivers_shader/slang_blob.h"
 
 static unsigned alloc_calls; /* calloc() calls so far */
 static unsigned fail_at;     /* the one to fail, 1-based; 0 none */
@@ -56,11 +57,11 @@ static bool test_reflection_init(slang_reflection *r)
 }
 static void test_reflection_free(slang_reflection *r)
 { memset(r, 0, sizeof(*r)); }
-static bool test_reflect(const uint32_t *v, size_t vn,
-      const uint32_t *f, size_t fn, slang_reflection *r)
+static bool test_reflect(const struct slang_blob *v,
+      const struct slang_blob *f, slang_reflection *r)
 {
    r->semantic_textures[SLANG_TEXTURE_SEMANTIC_SOURCE].data[0].texture = true;
-   return v && vn && f && fn;
+   return v && v->nwords && f && f->nwords;
 }
 static unsigned test_miplevels(unsigned w, unsigned h)
 {
@@ -100,7 +101,7 @@ static void APIENTRY mock_draw(GLenum mode, GLint first, GLsizei count)
 
 #define slang_reflection_init test_reflection_init
 #define slang_reflection_free test_reflection_free
-#define slang_reflect_spirv test_reflect
+#define slang_reflect_pass test_reflect
 #define glslang_num_miplevels test_miplevels
 #define glGenTextures mock_gen_textures
 #define glDeleteTextures mock_delete_textures

@@ -286,6 +286,7 @@ samples/audio/stretch/stretch_bench
 samples/gfx/rslc_corpus/rslc_corpus_dump
 samples/gfx/rslc_reflect/rslc_reflect_check
 samples/gfx/rslc_reflect/spirv_cross.o
+samples/gfx/slang_blob_reflect/slang_blob_reflect_check
 samples/gfx/rslc_image/pattern_core.so
 samples/gfx/rslc_image/pattern_core.dll
 samples/gfx/rslc_image/out/

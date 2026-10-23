@@ -9,6 +9,7 @@ LIBRETRO_COMM_DIR := $(REPO_ROOT)/libretro-common
 # are served from memory by the test, in place of video_shader_parse.c.
 SOURCES := slang_last_pass_target_test.c feedback_test.c \
            $(REPO_ROOT)/gfx/drivers_shader/slang_process.c \
+           $(REPO_ROOT)/gfx/drivers_shader/slang_blob.c \
            $(REPO_ROOT)/gfx/drivers_shader/glslang_util.c \
            $(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
            $(LIBRETRO_COMM_DIR)/string/stdstring.c \

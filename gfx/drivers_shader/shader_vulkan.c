@@ -28,6 +28,7 @@
 
 #include "slang_process.h"
 #include "slang_rect.h"
+#include "slang_blob.h"
 
 #include "../common/vulkan_common.h"
 #include "../common/spirv_shaders.h"
@@ -847,9 +848,12 @@ struct slang_pass
    VkViewport curr_vp;
    vulkan_filter_chain_pass_info pass_info;
 
-   uint32_t *vertex_shader;
+   struct slang_blob *vertex_blob;     /* the stages, one reference each;
+                                          the pointers below view them */
+   struct slang_blob *fragment_blob;
+   const uint32_t *vertex_shader;
    size_t num_vertex_shader;
-   uint32_t *fragment_shader;
+   const uint32_t *fragment_shader;
    size_t num_fragment_shader;
 
    struct slang_framebuffer *framebuffer;
@@ -907,6 +911,8 @@ static unsigned slang_pass_set_pass_info(struct slang_pass *pass,
       const vulkan_filter_chain_pass_info info);
 static void slang_pass_set_shader(struct slang_pass *pass,
       VkShaderStageFlags stage, const uint32_t *spirv, size_t spirv_words);
+static void slang_pass_set_blob(struct slang_pass *pass,
+      VkShaderStageFlags stage, struct slang_blob *blob);
 static bool slang_pass_build(struct slang_pass *pass);
 static bool slang_pass_init_feedback(struct slang_pass *pass);
 static void slang_pass_build_commands(struct slang_pass *pass,
@@ -2514,11 +2520,11 @@ static bool slang_chain_compile_full_pass(struct vulkan_filter_chain *chain,
       }
    }
 
-   /* ---- Set SPIRV on the pass ---- */
-   slang_chain_set_shader(chain, pass_idx, VK_SHADER_STAGE_VERTEX_BIT,
-         output.vertex, output.vertex_len);
-   slang_chain_set_shader(chain, pass_idx, VK_SHADER_STAGE_FRAGMENT_BIT,
-         output.fragment, output.fragment_len);
+   /* ---- the stages, shared with the output ---- */
+   slang_pass_set_blob(chain->passes[pass_idx], VK_SHADER_STAGE_VERTEX_BIT,
+         slang_blob_ref(output.vertex_blob));
+   slang_pass_set_blob(chain->passes[pass_idx], VK_SHADER_STAGE_FRAGMENT_BIT,
+         slang_blob_ref(output.fragment_blob));
 
    slang_chain_set_frame_count_period(chain, pass_idx, pass->frame_count_mod);
 
@@ -2970,8 +2976,8 @@ static void slang_pass_free(struct slang_pass *pass)
       free(pass->parameters[i].id);
    free(pass->parameters);
    free(pass->filtered_parameters);
-   free(pass->vertex_shader);
-   free(pass->fragment_shader);
+   slang_blob_unref(pass->vertex_blob);
+   slang_blob_unref(pass->fragment_blob);
    free(pass->push.buffer);
    free(pass->sets);
    free(pass->pass_name);
@@ -2994,35 +3000,43 @@ static bool slang_pass_add_parameter(struct slang_pass *pass,
    return true;
 }
 
-static void slang_pass_set_shader(struct slang_pass *pass,
-      VkShaderStageFlags stage,
-      const uint32_t *spirv,
-      size_t spirv_words)
+/* The pass takes @blob's reference. */
+static void slang_pass_set_blob(struct slang_pass *pass,
+      VkShaderStageFlags stage, struct slang_blob *blob)
 {
    pass->frame_tried = false;
    switch (stage)
    {
       case VK_SHADER_STAGE_VERTEX_BIT:
-         free(pass->vertex_shader);
-         pass->num_vertex_shader = 0;
-         if (!(pass->vertex_shader = (uint32_t*)
-                  malloc(spirv_words * sizeof(uint32_t))))
-            break;
-         memcpy(pass->vertex_shader, spirv, spirv_words * sizeof(uint32_t));
-         pass->num_vertex_shader = spirv_words;
+         slang_blob_unref(pass->vertex_blob);
+         pass->vertex_blob       = blob;
+         pass->vertex_shader     = blob ? blob->words : NULL;
+         pass->num_vertex_shader = blob ? blob->nwords : 0;
          break;
       case VK_SHADER_STAGE_FRAGMENT_BIT:
-         free(pass->fragment_shader);
-         pass->num_fragment_shader = 0;
-         if (!(pass->fragment_shader = (uint32_t*)
-                  malloc(spirv_words * sizeof(uint32_t))))
-            break;
-         memcpy(pass->fragment_shader, spirv, spirv_words * sizeof(uint32_t));
-         pass->num_fragment_shader = spirv_words;
+         slang_blob_unref(pass->fragment_blob);
+         pass->fragment_blob       = blob;
+         pass->fragment_shader     = blob ? blob->words : NULL;
+         pass->num_fragment_shader = blob ? blob->nwords : 0;
          break;
       default:
+         slang_blob_unref(blob);
          break;
    }
+}
+
+/* Words from elsewhere (the built-in stock stages, a caller of the
+ * public API) become a blob of their own. */
+static void slang_pass_set_shader(struct slang_pass *pass,
+      VkShaderStageFlags stage,
+      const uint32_t *spirv,
+      size_t spirv_words)
+{
+   uint32_t *words = (uint32_t*)malloc(spirv_words * sizeof(uint32_t));
+   if (!words)
+      return;
+   memcpy(words, spirv, spirv_words * sizeof(uint32_t));
+   slang_pass_set_blob(pass, stage, slang_blob_adopt_words(words, spirv_words));
 }
 
 /* Returns the size this pass renders at, in VIDEO_SCALE_PACK's
@@ -3688,12 +3702,22 @@ static void slang_pass_read_frame_in_place(struct slang_pass *pass)
    if (pass->frame_tried)
       return;
    pass->frame_tried = true;
-   pass->frame_copy  = slang_rect_remap_pass(
-         &pass->vertex_shader, &pass->num_vertex_shader,
-         &pass->fragment_shader, &pass->num_fragment_shader,
-         pass->pass_number == 0, pass->common->frame_linear,
-         pass->common->frame_wrap)
-         == SLANG_RECT_UNSUPPORTED;
+   {
+      uint32_t *nv = NULL, *nf = NULL;
+      size_t    nvl = 0, nfl = 0;
+      pass->frame_copy = slang_rect_remap_pass(
+            pass->vertex_shader, pass->num_vertex_shader,
+            pass->fragment_shader, pass->num_fragment_shader,
+            pass->pass_number == 0, pass->common->frame_linear,
+            pass->common->frame_wrap, &nv, &nvl, &nf, &nfl)
+            == SLANG_RECT_UNSUPPORTED;
+      /* a rewritten stage is a module without tables; it crosses */
+      if (nv)
+         slang_pass_set_blob(pass, VK_SHADER_STAGE_VERTEX_BIT, slang_blob_adopt_words(nv, nvl));
+      if (nf)
+         slang_pass_set_blob(pass, VK_SHADER_STAGE_FRAGMENT_BIT, slang_blob_adopt_words(nf, nfl));
+      pass->frame_tried = true;
+   }
 }
 
 static bool slang_pass_build(struct slang_pass *pass)
@@ -3748,10 +3772,9 @@ static bool slang_pass_build(struct slang_pass *pass)
    pass->reflection.semantic_map                 = &semantic_map;
 
    {
-      bool refl_ok = slang_reflect_spirv(
-            pass->vertex_shader, pass->num_vertex_shader,
-            pass->fragment_shader, pass->num_fragment_shader,
-            &pass->reflection);
+      bool refl_ok = pass->vertex_blob && pass->fragment_blob
+         && slang_reflect_pass(pass->vertex_blob, pass->fragment_blob,
+               &pass->reflection);
       /* The parameter map is only needed during pass->reflection; the
        * pass->reflection keeps a dangling pointer otherwise. */
       slang_semantic_name_map_free(&semantic_map);
@@ -4967,15 +4990,10 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
       }
       }
 
-      slang_chain_set_shader(chain, i,
-            VK_SHADER_STAGE_VERTEX_BIT,
-            output.vertex,
-            output.vertex_len);
-
-      slang_chain_set_shader(chain, i,
-            VK_SHADER_STAGE_FRAGMENT_BIT,
-            output.fragment,
-            output.fragment_len);
+      slang_pass_set_blob(chain->passes[i], VK_SHADER_STAGE_VERTEX_BIT,
+            slang_blob_ref(output.vertex_blob));
+      slang_pass_set_blob(chain->passes[i], VK_SHADER_STAGE_FRAGMENT_BIT,
+            slang_blob_ref(output.fragment_blob));
 
       slang_chain_set_frame_count_period(chain, i, pass->frame_count_mod);
 
