@@ -45,12 +45,16 @@ The two fullscreen parameters select the mode the DRM should select. If zero, th
 
 A core that renders into a buffer the frontend provides (`get_current_software_framebuffer`) is given the GEM buffer the G2D reads its frame from, so the frame is never copied. A core that reads its frame back is not given it, as the mapping may be uncached. Screenshots read the page on screen.
 
+Where the G2D sits behind an IOMMU (an `iommu_group` under `/sys/bus/platform/drivers/exynos-drm-g2d/`), it reads a core's frame from the core's own memory (`G2D_IMGBUF_USERPTR`), so the frame is not copied either. The kernel keeps a mapping per address and size and syncs the CPU's caches only when it makes one, so each frame is given its address with a size other than the last, and the kernel maps it afresh. Memory the kernel will not map - read-only, or a frame ending exactly on a page with no room for a second size - is copied. Without an IOMMU the kernel would hand the G2D the address of the first page for the whole frame, so the driver copies.
+
+The input overlay's images each have a GEM buffer of their own, premultiplied, which the G2D scales and blends over the page; an image's alpha is applied to its buffer when it changes, as the G2D's blend takes none. Where an image lies outside the frame, that area is cleared first, so it is not blended over what it left on that page before.
+
 Messages and statistics are drawn into a buffer of their own, and only the area the glyphs cover is cleared and blended.
 
 ## Issues and TODOs
 
    - Rotation, of a core's frame and the menu's alike, is not applied: the G2D calls libdrm offers cannot rotate.
-   - A core's frame is copied into a GEM buffer unless the core renders into the one it is lent. The G2D can read from the core's own memory (`G2D_IMGBUF_USERPTR`) when the IOMMU is enabled; the driver does not use it.
-   - Overlays are not supported.
+   - Without an IOMMU, a core's frame is copied into a GEM buffer unless the core renders into the one it is lent.
+   - A mirrored overlay image is drawn unmirrored: the G2D calls libdrm offers cannot flip.
 
 The driver is tested against a fake kernel and G2D in `samples/gfx/exynos_g2d`.
