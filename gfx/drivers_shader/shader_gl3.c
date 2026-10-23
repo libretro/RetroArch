@@ -530,6 +530,82 @@ error:
    return 0;
 }
 
+/* Links a program from GLSL the compiler printed with the interface
+ * named as gl3_cross_compile_program() names it, so the rest of the
+ * pass sees no difference: attributes bound by location, blocks and
+ * push members looked up by name, samplers set to their bindings. */
+static GLuint gl3_text_link_program(const char *vertex_source,
+      const char *fragment_source, gl3_buffer_locations *loc)
+{
+   GLuint vertex_shader, fragment_shader, program;
+   GLint  status = 0;
+   unsigned i;
+
+   vertex_shader   = gl3_compile_shader(GL_VERTEX_SHADER, vertex_source);
+   fragment_shader = gl3_compile_shader(GL_FRAGMENT_SHADER, fragment_source);
+   if (!vertex_shader || !fragment_shader)
+   {
+      RARCH_ERR("[GLCore] One or more printed shaders failed to compile.\n");
+      if (vertex_shader)
+         glDeleteShader(vertex_shader);
+      if (fragment_shader)
+         glDeleteShader(fragment_shader);
+      return 0;
+   }
+   program = glCreateProgram();
+   glAttachShader(program, vertex_shader);
+   glAttachShader(program, fragment_shader);
+   /* slang stages have exactly the two attributes, at 0 and 1 */
+   glBindAttribLocation(program, 0, "RARCH_ATTRIBUTE_0");
+   glBindAttribLocation(program, 1, "RARCH_ATTRIBUTE_1");
+   glLinkProgram(program);
+   glDeleteShader(vertex_shader);
+   glDeleteShader(fragment_shader);
+   glGetProgramiv(program, GL_LINK_STATUS, &status);
+   if (!status)
+   {
+      GLint length;
+      glGetProgramiv(program, GL_INFO_LOG_LENGTH, &length);
+      if (length > 0)
+      {
+         char *info_log = (char*)malloc(length);
+         if (info_log)
+         {
+            glGetProgramInfoLog(program, length, &length, info_log);
+            RARCH_ERR("[GLCore] Failed to link printed program: %s\n", info_log);
+            free(info_log);
+         }
+      }
+      else
+         RARCH_ERR("[GLCore] Failed to link printed program.\n");
+      glDeleteProgram(program);
+      return 0;
+   }
+   glUseProgram(program);
+   if (loc)
+   {
+      loc->flat_ubo_fragment          = -1;
+      loc->flat_ubo_vertex            = -1;
+      loc->flat_push_vertex           = -1;
+      loc->flat_push_fragment         = -1;
+      loc->buffer_index_push_vertex   = GL_INVALID_INDEX;
+      loc->buffer_index_push_fragment = GL_INVALID_INDEX;
+      loc->buffer_index_ubo_vertex    = glGetUniformBlockIndex(program, "RARCH_UBO_VERTEX");
+      loc->buffer_index_ubo_fragment  = glGetUniformBlockIndex(program, "RARCH_UBO_FRAGMENT");
+   }
+   for (i = 0; i < SLANG_NUM_BINDINGS; i++)
+   {
+      char  name[64];
+      GLint location;
+      snprintf(name, sizeof(name), "RARCH_TEXTURE_%u", i);
+      if ((location = glGetUniformLocation(program, name)) >= 0)
+         glUniform1i(location, i);
+   }
+   glUseProgram(0);
+   RARCH_LOG("[GLCore] Linked the compiler's GLSL directly.\n");
+   return program;
+}
+
 #ifdef GL3_HAVE_SPIRV_BINARY
 static GLuint gl3_spirv_compile_stage(GLenum stage,
       const uint32_t *spirv, size_t words)
@@ -1107,6 +1183,10 @@ struct gl3_pass
    size_t num_vertex_shader;
    uint32_t *fragment_shader;
    size_t num_fragment_shader;
+   /* GLSL the compiler printed for this driver (rslc), in place of
+    * crossing the SPIR-V; NULL when it did not */
+   char *vertex_text;
+   char *fragment_text;
    struct gl3_framebuffer *framebuffer;
    struct gl3_framebuffer *framebuffer_feedback;
 
@@ -1212,6 +1292,15 @@ static bool gl3_pass_init_feedback(struct gl3_pass *pass);
 static void gl3_pass_set_shader(struct gl3_pass *pass, GLenum stage,
       const uint32_t *spirv,
       size_t spirv_words);
+/* The compiler's own GLSL for a stage; NULL clears it. */
+static void gl3_pass_set_shader_text(struct gl3_pass *pass, GLenum stage,
+      const char *text)
+{
+   char **slot = stage == GL_VERTEX_SHADER ? &pass->vertex_text : &pass->fragment_text;
+   free(*slot);
+   *slot = text ? strdup(text) : NULL;
+}
+
 static void gl3_pass_add_parameter(struct gl3_pass *pass, unsigned index, const char *id);
 static void gl3_pass_set_semantic_texture(struct gl3_pass *pass, enum slang_texture_semantic semantic,
       const gl3_texture_t *texture);
@@ -1638,6 +1727,10 @@ static bool gl3_pass_init_pipeline(struct gl3_pass *pass)
             ? push_binding : GL_INVALID_INDEX;
       }
    }
+
+   if (!pass->pipeline && pass->vertex_text && pass->fragment_text)
+      pass->pipeline = gl3_text_link_program(pass->vertex_text,
+            pass->fragment_text, &pass->locations);
 
    if (!pass->pipeline)
    {
@@ -2216,6 +2309,8 @@ static void gl3_pass_free(struct gl3_pass *pass)
    free(pass->pass_name);
    free(pass->vertex_shader);
    free(pass->fragment_shader);
+   free(pass->vertex_text);
+   free(pass->fragment_text);
    free(pass->uniforms);
    free(pass->push_constant_buffer);
    slang_reflection_free(&pass->reflection);
@@ -3259,6 +3354,36 @@ static void gl3_chain_set_shader(struct gl3_filter_chain *chain, unsigned pass, 
    gl3_pass_set_shader(chain->passes[pass], stage, spirv, spirv_words);
 }
 
+static void gl3_chain_set_shader_text(struct gl3_filter_chain *chain, unsigned pass,
+      const glslang_output *output)
+{
+   gl3_pass_set_shader_text(chain->passes[pass], GL_VERTEX_SHADER, output->vertex_text);
+   gl3_pass_set_shader_text(chain->passes[pass], GL_FRAGMENT_SHADER, output->fragment_text);
+}
+
+/* What this driver wants printed beside the SPIR-V: GLSL at the
+ * context's version, named as gl3_cross_compile_program() names the
+ * interface. */
+static void gl3_text_target(struct slang_text_target *t)
+{
+   memset(t, 0, sizeof(*t));
+   t->version        = gl3_get_cross_compiler_target_version();
+#if defined(HAVE_OPENGLES3) || defined(HAVE_OPENGLES)
+   t->es             = true;
+#endif
+   t->attr_prefix    = "RARCH_ATTRIBUTE_";
+   t->varying_prefix = "RARCH_VARYING_";
+   t->sampler_prefix = "RARCH_TEXTURE_";
+   t->ubo_block[0]     = "RARCH_UBO_VERTEX";
+   t->ubo_block[1]     = "RARCH_UBO_FRAGMENT";
+   t->ubo_instance[0]  = "RARCH_UBO_VERTEX_INSTANCE";
+   t->ubo_instance[1]  = "RARCH_UBO_FRAGMENT_INSTANCE";
+   t->push_block[0]    = "RARCH_PUSH_VERTEX";
+   t->push_block[1]    = "RARCH_PUSH_FRAGMENT";
+   t->push_instance[0] = "RARCH_PUSH_VERTEX_INSTANCE";
+   t->push_instance[1] = "RARCH_PUSH_FRAGMENT_INSTANCE";
+}
+
 static void gl3_chain_add_parameter(struct gl3_filter_chain *chain, unsigned pass,
       unsigned index, const char *id)
 {
@@ -3319,6 +3444,7 @@ static bool gl3_chain_compile_full_pass(struct gl3_filter_chain *chain, unsigned
 {
    size_t j;
    glslang_output output;
+   struct slang_text_target text;
    struct gl3_filter_chain_pass_info p_info;
    bool explicit_format;
    struct video_shader_parameter *itr;
@@ -3346,7 +3472,8 @@ static bool gl3_chain_compile_full_pass(struct gl3_filter_chain *chain, unsigned
       ? &shader->pass[pass_idx + 1] : NULL;
 
    /* ---- SPIRV cross-compile (CPU) ---- */
-   if (!glslang_compile_shader(pass->source.path, &output))
+   gl3_text_target(&text);
+   if (!glslang_compile_shader_text(pass->source.path, &output, NULL, &text))
    {
       RARCH_ERR("[GLCore] Failed to compile shader: \"%s\".\n",
             pass->source.path);
@@ -3426,6 +3553,7 @@ static bool gl3_chain_compile_full_pass(struct gl3_filter_chain *chain, unsigned
          output.vertex, output.vertex_len);
    gl3_chain_set_shader(chain, pass_idx, GL_FRAGMENT_SHADER,
          output.fragment, output.fragment_len);
+   gl3_chain_set_shader_text(chain, pass_idx, &output);
 
    gl3_chain_set_frame_count_period(chain, pass_idx, pass->frame_count_mod);
 
@@ -3989,6 +4117,7 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
    for (i = 0; i < shader->passes; i++)
    {
       glslang_output output;
+      struct slang_text_target text;
       struct gl3_filter_chain_pass_info pass_info;
       const struct video_shader_pass *pass      = &shader->pass[i];
       const struct video_shader_pass *next_pass =
@@ -4004,8 +4133,9 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
       pass_info.address       = GLSLANG_FILTER_CHAIN_ADDRESS_REPEAT;
       pass_info.max_levels    = 0;
 
-      if (!glslang_compile_shader_cached(pass->source.path, &output,
-               include_cache))
+      gl3_text_target(&text);
+      if (!glslang_compile_shader_text(pass->source.path, &output,
+               include_cache, &text))
       {
          RARCH_ERR("[GLCore] Failed to compile shader: \"%s\".\n",
                pass->source.path);
@@ -4108,6 +4238,7 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
             GL_FRAGMENT_SHADER,
             output.fragment,
             output.fragment_len);
+      gl3_chain_set_shader_text(chain, i, &output);
 
       gl3_chain_set_frame_count_period(chain, i, pass->frame_count_mod);
 

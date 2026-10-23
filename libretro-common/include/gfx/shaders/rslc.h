@@ -226,9 +226,29 @@ struct rslc_remap
    bool        linear;
 };
 
+/* How the printed destinations name the interface.  A driver binds
+ * attributes, varyings, blocks and samplers by name, so it chooses
+ * them: a NULL entry keeps the source's name.  Prefixes take the
+ * location (attributes, varyings) or the binding (samplers) as a
+ * decimal suffix.  The push block has no instance in GLSL or HLSL
+ * text; it is printed as a struct of push_block's name with one
+ * uniform of push_instance's name, and members are reached through
+ * it. */
+struct rslc_names
+{
+   const char *attr_prefix;      /* vertex inputs */
+   const char *varying_prefix;   /* vertex outputs = fragment inputs */
+   const char *sampler_prefix;
+   const char *ubo_block;        /* the uniform block type / instance */
+   const char *ubo_instance;
+   const char *push_block;
+   const char *push_instance;
+};
+
 /* Everything a compile needs from the caller.  Zero-initialise and
  * set what differs from the defaults.
  *
+ * names: optional interface naming for the printed destinations.
  * remap: optional frame-rectangle remap, see struct rslc_remap.
  * alloc / free_fn / ud: allocator for the arena chunks and the result
  *   blob.  NULL means malloc / free.
@@ -252,6 +272,7 @@ struct rslc_opts
    void  *arena;
    char  *err;
    const struct rslc_remap *remap;
+   const struct rslc_names *names;
    size_t arena_len;
    size_t arena_cap;
    size_t err_cap;

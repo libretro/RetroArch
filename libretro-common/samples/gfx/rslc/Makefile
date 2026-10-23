@@ -28,6 +28,9 @@ endif
 
 all: $(TARGET)
 
+# every object sees both headers, so a layout change rebuilds all of them
+$(OBJS): $(LIBRETRO_COMM_DIR)/include/gfx/shaders/rslc.h $(LIBRETRO_COMM_DIR)/gfx/shaders/rslc_share.h
+
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 

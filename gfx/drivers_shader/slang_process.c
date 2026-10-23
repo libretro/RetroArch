@@ -847,6 +847,8 @@ void glslang_output_free(glslang_output *output)
       return;
    free(output->vertex);
    free(output->fragment);
+   free(output->vertex_text);
+   free(output->fragment_text);
    free(output->meta.parameters);
    glslang_output_init(output);
 }
@@ -1181,6 +1183,48 @@ static bool slang_rslc_compile_stage(const char *source,
 }
 #endif
 
+#if defined(HAVE_RSLC)
+/* Prints one stage as the text a driver asked for; NULL when rslc
+ * cannot (the driver then crosses the SPIR-V). */
+static char *slang_rslc_print_stage(const char *source,
+      enum glslang_compile_stage stage, const struct slang_text_target *t)
+{
+   struct rslc_opts   opts;
+   struct rslc_result res;
+   struct rslc_names  names;
+   char              *text;
+   char               err[256];
+
+   memset(&names, 0, sizeof(names));
+   names.attr_prefix    = t->attr_prefix;
+   names.varying_prefix = t->varying_prefix;
+   names.sampler_prefix = t->sampler_prefix;
+   names.ubo_block      = t->ubo_block[stage == GLSLANG_COMPILE_STAGE_VERTEX ? 0 : 1];
+   names.ubo_instance   = t->ubo_instance[stage == GLSLANG_COMPILE_STAGE_VERTEX ? 0 : 1];
+   names.push_block     = t->push_block[stage == GLSLANG_COMPILE_STAGE_VERTEX ? 0 : 1];
+   names.push_instance  = t->push_instance[stage == GLSLANG_COMPILE_STAGE_VERTEX ? 0 : 1];
+   memset(&opts, 0, sizeof(opts));
+   opts.dst     = t->es ? RSLC_DST_GLSL_ES : RSLC_DST_GLSL;
+   opts.version = t->version;
+   opts.names   = &names;
+   opts.err     = err;
+   opts.err_cap = sizeof(err);
+   err[0]       = '\0';
+   if (!rslc_compile(source, strlen(source),
+            stage == GLSLANG_COMPILE_STAGE_VERTEX
+            ? RSLC_STAGE_VERTEX : RSLC_STAGE_FRAGMENT, &opts, &res))
+   {
+      RARCH_WARN("[Slang] %s; the driver crosses the SPIR-V instead.\n", err);
+      return NULL;
+   }
+   text = (char*)malloc(res.text_len + 1);
+   if (text)
+      memcpy(text, res.text, res.text_len + 1);
+   rslc_result_free(&res, &opts);
+   return text;
+}
+#endif
+
 /* Compiles one stage; *compiler names what produced the words, for
  * the cache entry's key. */
 static bool slang_compile_stage(const char *source,
@@ -1226,8 +1270,18 @@ bool glslang_compile_shader(const char *shader_path, glslang_output *output)
 bool glslang_compile_shader_cached(const char *shader_path,
       glslang_output *output, void *include_cache)
 {
+   return glslang_compile_shader_text(shader_path, output, include_cache, NULL);
+}
+
+bool glslang_compile_shader_text(const char *shader_path,
+      glslang_output *output, void *include_cache,
+      const struct slang_text_target *text)
+{
    glslang_output_init(output);
 
+#if !defined(HAVE_RSLC)
+   (void)text;
+#endif
 #if defined(HAVE_GLSLANG) || defined(HAVE_RSLC)
    {
       struct shader_line_buf lines;
@@ -1290,6 +1344,11 @@ bool glslang_compile_shader_cached(const char *shader_path,
          RARCH_ERR("[Slang] Failed to compile vertex shader stage.\n");
          goto error;
       }
+#if defined(HAVE_RSLC)
+      if (text && !strcmp(used, "rslc"))
+         output->vertex_text = slang_rslc_print_stage(vertex_source,
+               GLSLANG_COMPILE_STAGE_VERTEX, text);
+#endif
 
       /* The vertex source is dead now; release it before the fragment
        * compile so only one stage source is resident at a time. */
@@ -1303,6 +1362,17 @@ bool glslang_compile_shader_cached(const char *shader_path,
          RARCH_ERR("[Slang] Failed to compile fragment shader stage.\n");
          goto error;
       }
+#if defined(HAVE_RSLC)
+      if (text && !strcmp(used, "rslc") && output->vertex_text)
+         output->fragment_text = slang_rslc_print_stage(fragment_source,
+               GLSLANG_COMPILE_STAGE_FRAGMENT, text);
+      if (!output->fragment_text)
+      {
+         /* both stages or neither: the driver takes one path */
+         free(output->vertex_text);
+         output->vertex_text = NULL;
+      }
+#endif
 
       RARCH_LOG("[Slang] Compiled \"%s\" with %s.\n", shader_path, used);
 

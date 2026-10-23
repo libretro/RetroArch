@@ -976,6 +976,143 @@ static void test_folding(void)
    CHECK(alloc_live == 0);
 }
 
+/* --glsl <in> <version> [es]: print a stage as GLSL to stdout, with the
+ * interface named as RetroArch's glcore driver names it. */
+static int glsl_file(const char *path, unsigned version, bool es)
+{
+   char  err[256];
+   FILE *f = fopen(path, "rb");
+   char *src;
+   long  n;
+   bool  ok;
+   struct rslc_opts   opts;
+   struct rslc_result res;
+   struct rslc_names  names;
+   enum rslc_stage stage = strstr(path, ".vert") ? RSLC_STAGE_VERTEX : RSLC_STAGE_FRAGMENT;
+
+   if (!f)
+   {
+      fprintf(stderr, "cannot open %s\n", path);
+      return 2;
+   }
+   fseek(f, 0, SEEK_END);
+   n = ftell(f);
+   fseek(f, 0, SEEK_SET);
+   src = (char*)malloc((size_t)n + 1);
+   if (!src || fread(src, 1, (size_t)n, f) != (size_t)n)
+   {
+      fclose(f);
+      free(src);
+      return 2;
+   }
+   fclose(f);
+   src[n] = '\0';
+   memset(&names, 0, sizeof(names));
+   names.attr_prefix    = "RARCH_ATTRIBUTE_";
+   names.varying_prefix = "RARCH_VARYING_";
+   names.sampler_prefix = "RARCH_TEXTURE_";
+   names.ubo_block      = stage == RSLC_STAGE_VERTEX ? "RARCH_UBO_VERTEX" : "RARCH_UBO_FRAGMENT";
+   names.ubo_instance   = stage == RSLC_STAGE_VERTEX ? "RARCH_UBO_VERTEX_INSTANCE" : "RARCH_UBO_FRAGMENT_INSTANCE";
+   names.push_block     = stage == RSLC_STAGE_VERTEX ? "RARCH_PUSH_VERTEX" : "RARCH_PUSH_FRAGMENT";
+   names.push_instance  = stage == RSLC_STAGE_VERTEX ? "RARCH_PUSH_VERTEX_INSTANCE" : "RARCH_PUSH_FRAGMENT_INSTANCE";
+   memset(&opts, 0, sizeof(opts));
+   opts.dst     = es ? RSLC_DST_GLSL_ES : RSLC_DST_GLSL;
+   opts.version = version;
+   opts.names   = &names;
+   opts.err     = err;
+   opts.err_cap = sizeof(err);
+   err[0]       = '\0';
+   ok = rslc_compile(src, (size_t)n, stage, &opts, &res);
+   free(src);
+   if (!ok)
+   {
+      fprintf(stderr, "%s: %s\n", path, err);
+      return 1;
+   }
+   fwrite(res.text, 1, res.text_len, stdout);
+   rslc_result_free(&res, &opts);
+   return 0;
+}
+
+/* The GLSL printer: the interface named as the driver asks, push
+ * constants as a struct uniform, constants folded, scalar swizzles
+ * and local consts as glslang leaves them, and glslangValidator-shaped
+ * output for both the desktop and the ES target. */
+static void test_glsl(void)
+{
+   struct rslc_opts   o;
+   struct rslc_result r;
+   struct rslc_names  names;
+   char               err[128];
+   static const char  frag[] =
+      "#version 450\n"
+      "layout(push_constant) uniform Push { vec4 SourceSize; float gamma; } params;\n"
+      "layout(std140, set = 0, binding = 0) uniform UBO { mat4 MVP; } global;\n"
+      "layout(location = 0) in vec2 vTexCoord;\n"
+      "layout(location = 1) flat in int idx;\n"
+      "layout(location = 0) out vec4 FragColor;\n"
+      "layout(set = 0, binding = 2) uniform sampler2D Source;\n"
+      "float luma(vec3 c) { return c.y * (0.587/0.299) + c.x; }\n"
+      "float unused_helper(float x) { return x * 2.0; }\n"
+      "void main() {\n"
+      "  const float k = 0.25 * 4.0;\n"
+      "  float s = params.gamma;\n"
+      "  vec3 c = texture(Source, vTexCoord).rgb * s.xxx;\n"
+      "  FragColor = vec4(luma(c) * k, float(idx), 0, 1);\n"
+      "}\n";
+
+   memset(&names, 0, sizeof(names));
+   names.attr_prefix    = "RARCH_ATTRIBUTE_";
+   names.varying_prefix = "RARCH_VARYING_";
+   names.sampler_prefix = "RARCH_TEXTURE_";
+   names.ubo_block      = "RARCH_UBO_FRAGMENT";
+   names.ubo_instance   = "RARCH_UBO_FRAGMENT_INSTANCE";
+   names.push_block     = "RARCH_PUSH_FRAGMENT";
+   names.push_instance  = "RARCH_PUSH_FRAGMENT_INSTANCE";
+   opts_default(&o, err, sizeof(err));
+   o.dst     = RSLC_DST_GLSL;
+   o.version = 330;
+   o.names   = &names;
+   CHECK(rslc_compile(frag, sizeof(frag) - 1, RSLC_STAGE_FRAGMENT, &o, &r));
+   if (!r.text)
+      return;
+   CHECK(r.text_len == strlen(r.text));
+   CHECK(strstr(r.text, "#version 330\n") == r.text);
+   CHECK(strstr(r.text, "layout(std140) uniform RARCH_UBO_FRAGMENT {") != NULL);
+   CHECK(strstr(r.text, "} RARCH_UBO_FRAGMENT_INSTANCE;") != NULL);
+   CHECK(strstr(r.text, "struct RARCH_PUSH_FRAGMENT {") != NULL);
+   CHECK(strstr(r.text, "uniform RARCH_PUSH_FRAGMENT RARCH_PUSH_FRAGMENT_INSTANCE;") != NULL);
+   CHECK(strstr(r.text, "uniform sampler2D RARCH_TEXTURE_2;") != NULL);
+   CHECK(strstr(r.text, "in vec2 RARCH_VARYING_0;") != NULL);
+   CHECK(strstr(r.text, "flat in int RARCH_VARYING_1;") != NULL);
+   CHECK(strstr(r.text, "layout(location = 0) out vec4 FragColor;") != NULL);
+   CHECK(strstr(r.text, "RARCH_PUSH_FRAGMENT_INSTANCE.gamma") != NULL);
+   CHECK(strstr(r.text, "1.9632107 ") != NULL);           /* folded in double */
+   CHECK(strstr(r.text, "0.587") == NULL);
+   CHECK(strstr(r.text, "vec3(s)") != NULL);              /* scalar swizzle */
+   CHECK(strstr(r.text, "unused_helper") == NULL);        /* unreachable */
+   CHECK(strstr(r.text, "const float k") == NULL);        /* folded away */
+   CHECK(strstr(r.text, "* 1.0") != NULL);
+   CHECK(strstr(r.text, ", 0.0, 1.0)") != NULL);          /* int literals converted */
+   CHECK(r.refl->push.present && r.refl->sampler_count == 1);
+   {
+      const struct rslc_member *m = (const struct rslc_member*)((const uint8_t*)r.blob + r.refl->push.members);
+      CHECK(!m[0].active && m[1].active);
+   }
+   rslc_result_free(&r, &o);
+
+   o.dst     = RSLC_DST_GLSL_ES;
+   o.version = 300;
+   CHECK(rslc_compile(frag, sizeof(frag) - 1, RSLC_STAGE_FRAGMENT, &o, &r));
+   if (r.text)
+   {
+      CHECK(strstr(r.text, "#version 300 es\n") == r.text);
+      CHECK(strstr(r.text, "precision highp float;") != NULL);
+      rslc_result_free(&r, &o);
+   }
+   CHECK(alloc_live == 0);
+}
+
 static void test_front(void)
 {
    char err[256];
@@ -1217,6 +1354,8 @@ int main(int argc, char **argv)
       return front_file(argv[2], 1);
    if (argc == 4 && !strcmp(argv[1], "--spirv"))
       return spirv_file(argv[2], argv[3]);
+   if ((argc == 4 || argc == 5) && !strcmp(argv[1], "--glsl"))
+      return glsl_file(argv[2], (unsigned)atoi(argv[3]), argc == 5 && !strcmp(argv[4], "es"));
 
    test_abi_rejects();
    test_arena();
@@ -1227,6 +1366,7 @@ int main(int argc, char **argv)
    test_blob();
    test_spirv();
    test_folding();
+   test_glsl();
 
    if (fails)
    {

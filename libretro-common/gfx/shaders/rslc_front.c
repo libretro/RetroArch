@@ -3015,6 +3015,13 @@ static const struct rslc_bsig *rslc_bsig_by_id(unsigned id)
    return NULL;
 }
 
+/* The GLSL name of a builtin, for the printers. */
+const char *rslc_bfn_name(unsigned id)
+{
+   const struct rslc_bsig *bs = rslc_bsig_by_id(id);
+   return bs ? bs->name : "";
+}
+
 static bool rslc_p_seed_builtins(struct rslc_parser *p)
 {
    unsigned i;
@@ -4642,7 +4649,7 @@ static uint32_t rslc_p_statement(struct rslc_parser *p)
    if (rslc_p_is(p, RSLC_P_LBRACE))
       return rslc_p_block(p, true);
    if (rslc_p_accept(p, RSLC_P_SEMI))
-      return rslc_p_mk(p, RSLC_OP_BLOCK, NULL, 0, 0, 0, 0, line, 0);
+      return rslc_p_mk(p, RSLC_OP_BLOCK, NULL, 0, 0, 0, RSLC_BLOCK_GROUP, line, 0);
 
    if (s)
    {
@@ -5270,7 +5277,7 @@ static uint32_t rslc_p_declaration(struct rslc_parser *p, bool global)
          return rslc_p_fail(p, "precision statement needs float, int or sampler2D", NULL), 0;
       if (!rslc_p_expect(p, RSLC_P_SEMI, "';'"))
          return 0;
-      return global ? 1 : rslc_p_mk(p, RSLC_OP_BLOCK, NULL, 0, 0, 0, 0, line, 0);
+      return global ? 1 : rslc_p_mk(p, RSLC_OP_BLOCK, NULL, 0, 0, 0, RSLC_BLOCK_GROUP, line, 0);
    }
 
    if (!rslc_p_quals(p, &q))
@@ -5412,7 +5419,8 @@ static uint32_t rslc_p_declaration(struct rslc_parser *p, bool global)
       return 1;
    if (ndecls == 1)
       return decls[0];
-   return rslc_p_mk(p, RSLC_OP_BLOCK, NULL, 0, rslc_list_new(p->c, decls, ndecls), 0, 0, line, 0);
+   /* one declaration, several declarators: a group, not a scope */
+   return rslc_p_mk(p, RSLC_OP_BLOCK, NULL, 0, rslc_list_new(p->c, decls, ndecls), 0, RSLC_BLOCK_GROUP, line, 0);
 }
 
 /* ---- builtin variables ---- */
