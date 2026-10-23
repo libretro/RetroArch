@@ -1456,8 +1456,13 @@ typedef struct shader_load_deferred
    void                  *driver_data;  /* driver-specific work state    */
    task_notify_t          done;         /* told once the load ends       */
    void                  *precompile;   /* the passes compiling ahead    */
-   retro_atomic_int_t     busy;         /* a step runs on the video thread */
+   void                  *stepper;      /* the passes stepping on the task thread */
+   retro_atomic_int_t     busy;         /* a step runs on another thread */
    retro_atomic_int_t     cancel;       /* the next step ends the load   */
+   /* Set by the driver's begin: its step may run on any thread but the
+    * finalizing one, since the chain is not on screen before that and
+    * a pass's objects are made at device level. */
+   bool                   step_any_thread;
 } shader_load_deferred_t;
 
 typedef struct video_driver

@@ -297,7 +297,7 @@ static void test_shared_programs(void)
    CHECK(live_programs == 0 && gl3_programs.n == 0 && !gl3_programs.v,
          "no pass, no program, no table");
 
-   CHECK(vs->refs == 1 && fs->refs == 1 && fs2->refs == 1,
+   CHECK(retro_atomic_load_relaxed_int(&vs->refs) == 1 && retro_atomic_load_relaxed_int(&fs->refs) == 1 && retro_atomic_load_relaxed_int(&fs2->refs) == 1,
          "the programs' blob references went with them");
    slang_blob_unref(vs);
    slang_blob_unref(fs);

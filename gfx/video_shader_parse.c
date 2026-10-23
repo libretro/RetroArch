@@ -4153,8 +4153,9 @@ bool video_shader_apply_shader(
             || d->state == SHADER_LOAD_COMPILING)
          video_driver_shader_deferred_cancel("Replaced by another shader load.");
 
-      d->type         = (unsigned)type;
-      d->current_pass = 0;
+      d->type            = (unsigned)type;
+      d->current_pass    = 0;
+      d->step_any_thread = false;
       strlcpy(d->preset_path, preset_path, sizeof(d->preset_path));
 
       if (!video_st->threaded)

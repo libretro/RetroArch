@@ -8361,7 +8361,11 @@ static bool vulkan_shader_load_begin(void *data,
    RARCH_LOG("[Vulkan] Deferred: prepared %u passes for \"%s\".\n",
          deferred->total_passes, deferred->preset_path);
 
-   deferred->driver_data = ds;
+   /* A pass is modules, a pipeline, a framebuffer and descriptors, all
+    * made at device level; the chain goes on screen in the finalizing
+    * step.  So the passes may be built on the task thread. */
+   deferred->step_any_thread = true;
+   deferred->driver_data     = ds;
    return true;
 }
 
@@ -8389,7 +8393,8 @@ static bool vulkan_shader_load_step(void *data,
       {
          RARCH_ERR("[Vulkan] Deferred: failed to compile pass %u.\n", pass);
          vulkan_filter_chain_free(ds->new_chain);
-         vk->filter_chain = ds->old_chain;
+         /* the old chain never left vk->filter_chain, and this may be
+          * the task thread: nothing of vk is written here */
          deferred->state  = SHADER_LOAD_FAILED;
          goto cleanup;
       }

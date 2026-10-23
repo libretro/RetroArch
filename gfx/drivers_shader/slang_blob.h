@@ -19,6 +19,8 @@
 #include <stddef.h>
 #include <boolean.h>
 #include <retro_common_api.h>
+#include <retro_atomic.h>
+#include <queues/mpsc_stack.h>
 
 #ifdef HAVE_RSLC
 #include <gfx/shaders/rslc.h>
@@ -35,10 +37,11 @@ struct rslc_reflect;
  * allocation and the chain binds by them without crossing the words.
  * A blob is shared by reference between the compile output, the pass
  * that binds it and whatever else holds it, and released when the last
- * reference goes; references change on the thread that owns the chain,
- * never from two threads at once. */
+ * reference goes; the count is atomic, so a chain on one thread may let
+ * go of a stage a chain building on another just took. */
 struct slang_blob
 {
+   mpsc_stack_node_t          park;     /* on the table's dead list */
    void                      *mem;      /* the allocation */
    size_t                     len;
    void                     (*free_fn)(void *ud, void *ptr); /* NULL: free() */
@@ -46,7 +49,7 @@ struct slang_blob
    const struct rslc_reflect *refl;     /* NULL: a module without tables */
    const uint32_t            *words;    /* into mem */
    size_t                     nwords;
-   unsigned                   refs;
+   retro_atomic_int_t         refs;
    char                       key[32];  /* the pass key it is listed under */
    bool                       fragment;
    bool                       listed;   /* in the table */
@@ -74,8 +77,19 @@ void slang_blob_unref(struct slang_blob *b);
  * .slang another live pass already compiled - the same helper in two
  * slots of one preset, or the chain being rebuilt while the one on
  * screen still holds its blobs - takes the blob it has.  The table holds
- * no reference: a blob leaves it when its last reference goes.  It is
- * read and written by the thread that builds chains. */
+ * no reference: a blob leaves it when its last reference goes.
+ *
+ * One thread reads and writes it at a time: the thread that builds
+ * chains, or, while a load builds its chain on the task thread, that
+ * thread alone - it claims the table for the load and the other
+ * threads' lookups answer nothing and their listings list nothing
+ * meanwhile.  A listed blob whose last reference goes on any thread is
+ * parked on a dead list the table drains at its next operation, so no
+ * thread but the one at the table ever touches it. */
+
+/* The calling thread alone uses the table until the release. */
+void slang_blob_table_claim(void);
+void slang_blob_table_release(void);
 
 /* A new reference to the listed blob of that stage, or NULL. */
 struct slang_blob *slang_blob_table_find(const char *key, bool fragment);

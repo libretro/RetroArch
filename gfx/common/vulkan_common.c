@@ -2800,20 +2800,29 @@ static void vulkan_create_wait_fences(gfx_ctx_vulkan_data_t *vk)
 
 void vulkan_debug_mark_buffer(VkDevice device, VkBuffer buffer)
 {
-   static unsigned object_count;
-   vulkan_debug_mark_object(device, VK_OBJECT_TYPE_BUFFER, (uint64_t)buffer, "RetroArch buffer", ++object_count);
+   /* a chain's objects may be made on the task thread while a frame
+    * makes its own */
+   static retro_atomic_int_t object_count;
+   vulkan_debug_mark_object(device, VK_OBJECT_TYPE_BUFFER, (uint64_t)buffer, "RetroArch buffer",
+         (unsigned)retro_atomic_fetch_add_int(&object_count, 1) + 1);
 }
 
 void vulkan_debug_mark_image(VkDevice device, VkImage image)
 {
-   static unsigned object_count;
-   vulkan_debug_mark_object(device, VK_OBJECT_TYPE_IMAGE, (uint64_t)image, "RetroArch image", ++object_count);
+   /* a chain's objects may be made on the task thread while a frame
+    * makes its own */
+   static retro_atomic_int_t object_count;
+   vulkan_debug_mark_object(device, VK_OBJECT_TYPE_IMAGE, (uint64_t)image, "RetroArch image",
+         (unsigned)retro_atomic_fetch_add_int(&object_count, 1) + 1);
 }
 
 void vulkan_debug_mark_memory(VkDevice device, VkDeviceMemory memory)
 {
-   static unsigned object_count;
-   vulkan_debug_mark_object(device, VK_OBJECT_TYPE_DEVICE_MEMORY, (uint64_t)memory, "RetroArch memory", ++object_count);
+   /* a chain's objects may be made on the task thread while a frame
+    * makes its own */
+   static retro_atomic_int_t object_count;
+   vulkan_debug_mark_object(device, VK_OBJECT_TYPE_DEVICE_MEMORY, (uint64_t)memory, "RetroArch memory",
+         (unsigned)retro_atomic_fetch_add_int(&object_count, 1) + 1);
 }
 
 bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,

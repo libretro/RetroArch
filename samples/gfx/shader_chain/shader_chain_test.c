@@ -214,7 +214,7 @@ int main(void)
    printf("load a b a c\n");
    CHECK(chain_build(&live, abac, 4) == 6, "a preset compiles each distinct .slang once");
    CHECK(same_stages(&live.pass[0], &live.pass[2]), "the second a.slang holds the first one's blobs");
-   CHECK(live.pass[0].vertex_blob && live.pass[0].vertex_blob->refs == 2, "two passes, one blob, two references");
+   CHECK(live.pass[0].vertex_blob && retro_atomic_load_relaxed_int(&live.pass[0].vertex_blob->refs) == 2, "two passes, one blob, two references");
    CHECK(live.pass[0].vertex_blob->refl != NULL, "the shared blob carries its tables");
 
    /* append b while the chain is live: nothing compiles */

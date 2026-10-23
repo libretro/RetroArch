@@ -14,6 +14,7 @@ SOURCES := vulkan_chain_alloc_test.c \
            $(REPO_ROOT)/gfx/drivers_shader/slang_blob.c \
            $(REPO_ROOT)/gfx/common/spirv_shaders.c \
            $(LIBRETRO_COMM_DIR)/vulkan/vulkan_symbol_wrapper.c \
+           $(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
            $(LIBRETRO_COMM_DIR)/compat/compat_strl.c
 
 CFLAGS  += -Wall -Wno-unused-function -std=gnu99 -g1 -O1 -DRARCH_INTERNAL \

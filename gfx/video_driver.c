@@ -1029,6 +1029,143 @@ static void shader_precompile_cleanup(retro_task_t *task)
    shader_precompile_unref(p);
 }
 
+/* The whole step on the task thread, for a driver whose step may run
+ * on any thread (shader_load_deferred_t.step_any_thread: the chain it
+ * builds is not on screen until the step that finalizes it, and the
+ * objects a pass needs are made at device level).  One pass per
+ * handler call; the task claims the blob table for the load, marks the
+ * load busy around each step so the main thread's tick waits, and
+ * leaves the finalizing step - the swap - to the chain's own thread.
+ * The task and the load each hold a reference. */
+struct shader_stepper
+{
+   bool                     (*step)(void *data, shader_load_deferred_t *d);
+   void                      *data;
+   shader_load_deferred_t    *d;
+   retro_atomic_int_t         refs;
+   retro_atomic_int_t         done;
+   retro_atomic_int_t         stop;
+   bool                       claimed;
+};
+
+static void shader_stepper_unref(struct shader_stepper *st)
+{
+   if (st && retro_atomic_fetch_add_int(&st->refs, -1) == 1)
+      free(st);
+}
+
+static void shader_stepper_handler(retro_task_t *task)
+{
+   struct shader_stepper *st = (struct shader_stepper*)task->state;
+   shader_load_deferred_t *d = st->d;
+
+   if (     retro_atomic_load_acquire_int(&st->stop)
+         || (task_get_flags(task) & RETRO_TASK_FLG_CANCELLED)
+         || d->current_pass >= d->total_passes)
+   {
+      if (st->claimed)
+         slang_blob_table_release();
+      st->claimed = false;
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+      return;
+   }
+   if (!st->claimed)
+   {
+      slang_blob_table_claim();
+      st->claimed = true;
+   }
+   retro_atomic_store_release_int(&d->busy, 1);
+   if (!st->step(st->data, d))
+   {
+      /* the pass failed: the step left FAILED, nothing more to do */
+      slang_blob_table_release();
+      st->claimed = false;
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+   }
+   retro_atomic_store_release_int(&d->busy, 0);
+}
+
+static void shader_stepper_cleanup(retro_task_t *task)
+{
+   struct shader_stepper *st = (struct shader_stepper*)task->state;
+   retro_atomic_store_release_int(&st->done, 1);
+   shader_stepper_unref(st);
+}
+
+static struct shader_stepper *shader_stepper_start(shader_load_deferred_t *d)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   struct shader_stepper *st;
+   retro_task_t *task;
+   bool (*step)(void *data, shader_load_deferred_t *d) = NULL;
+   void *data                     = NULL;
+
+   if (!task_queue_is_threaded())
+      return NULL;
+#ifdef HAVE_THREADS
+   if (video_st->thread_wrapper_active)
+   {
+      /* the driver behind the wrapper: its step, not the wrapper's */
+      const thread_video_t *thr = (const thread_video_t*)video_st->data;
+      if (thr && thr->driver)
+      {
+         step = thr->driver->shader_load_step;
+         data = thr->driver_data;
+      }
+   }
+   else
+#endif
+   if (video_st->current_video)
+   {
+      step = video_st->current_video->shader_load_step;
+      data = video_st->data;
+   }
+   if (!step || !data)
+      return NULL;
+   if (!(st = (struct shader_stepper*)calloc(1, sizeof(*st))))
+      return NULL;
+   st->step = step;
+   st->data = data;
+   st->d    = d;
+   retro_atomic_int_init(&st->refs, 2);
+   retro_atomic_int_init(&st->done, 0);
+   retro_atomic_int_init(&st->stop, 0);
+   if (!(task = task_init()))
+   {
+      free(st);
+      return NULL;
+   }
+   task->handler = shader_stepper_handler;
+   task->cleanup = shader_stepper_cleanup;
+   task->state   = st;
+   task->flags  |= RETRO_TASK_FLG_MUTE;
+   if (!task_queue_push(task))
+   {
+      free(st);
+      return NULL;
+   }
+   return st;
+}
+
+static bool shader_stepper_running(void *data)
+{
+   struct shader_stepper *st = (struct shader_stepper*)data;
+   return !retro_atomic_load_acquire_int(&st->done);
+}
+
+/* The load's side letting go, once the task is through: a step may be
+ * in flight, and the driver's cancel step must not meet it. */
+static void shader_stepper_stop(shader_load_deferred_t *d)
+{
+   struct shader_stepper *st = (struct shader_stepper*)d->stepper;
+   if (!st)
+      return;
+   retro_atomic_store_release_int(&st->stop, 1);
+   task_queue_wait(shader_stepper_running, st);
+   shader_stepper_unref(st);
+   d->stepper = NULL;
+}
+
 /* Starts the task for @preset_path's passes; NULL when the work stays
  * with the chain's thread (no task thread, or nothing to read). */
 static struct shader_precompile *shader_precompile_start(
@@ -1167,6 +1304,9 @@ void video_driver_shader_deferred_cancel(const char *why)
     * chain built so far goes, the one on screen stays - and this
     * returns once it has; the writes the driver reads are its own
     * thread's, so with threaded video the wrapper makes them there. */
+#ifdef HAVE_SLANG
+   shader_stepper_stop(d);
+#endif
    if (vid && vid->shader_load_step && video_st->data)
    {
       if (video_st->threaded)
@@ -1192,7 +1332,10 @@ void video_driver_shader_deferred_cancel(const char *why)
 void video_driver_shader_deferred_start(shader_load_deferred_t *d)
 {
 #ifdef HAVE_SLANG
-   d->precompile = shader_precompile_start(d->preset_path);
+   if (d->step_any_thread)
+      d->stepper = shader_stepper_start(d);
+   if (!d->stepper)
+      d->precompile = shader_precompile_start(d->preset_path);
 #else
    (void)d;
 #endif
@@ -1225,6 +1368,14 @@ void video_driver_shader_deferred_tick(void)
    }
 
 #ifdef HAVE_SLANG
+   /* the task thread is stepping the passes: nothing for this thread
+    * until it is through, then the finalizing step is this thread's */
+   if (d->stepper)
+   {
+      if (shader_stepper_running(d->stepper))
+         return;
+      shader_stepper_stop(d);
+   }
    /* the worker has the next pass: the step would only compile it
     * itself, so it waits a frame */
    if (d->state == SHADER_LOAD_COMPILING && shader_precompile_pending(d))
@@ -1256,6 +1407,7 @@ void video_driver_shader_deferred_tick(void)
          video_driver_shader_deferred_take(d, true);
 #ifdef HAVE_SLANG
       shader_precompile_stop(d);
+      shader_stepper_stop(d);
 #endif
       if (d->state == SHADER_LOAD_DONE)
       {
