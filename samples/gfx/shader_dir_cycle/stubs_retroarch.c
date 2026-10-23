@@ -65,6 +65,21 @@ void video_driver_shader_deferred_cancel(const char *why)
    abort();
 }
 
+void video_driver_shader_deferred_start(shader_load_deferred_t *d)
+{
+   (void)d;
+   fputs("Unexpected deferred shader start\n", stderr);
+   abort();
+}
+
+void video_driver_shader_deferred_take(shader_load_deferred_t *d, bool end)
+{
+   (void)d;
+   (void)end;
+   fputs("Unexpected deferred shader transfer\n", stderr);
+   abort();
+}
+
 static struct menu_state menu_st;
 struct menu_state *menu_state_get_ptr(void) { return &menu_st; }
 
