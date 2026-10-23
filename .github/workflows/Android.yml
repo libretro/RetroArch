@@ -259,6 +259,7 @@ jobs:
             printf '#include "%s/gfx/common/%s.c"\n' "$PWD" "$source" >> "$unity"
           done
           printf '#include "%s/record/record_mediacodec_encoder.c"\n' "$PWD" >> "$unity"
+          printf '#include "%s/record/record_mux_mediacodec.c"\n' "$PWD" >> "$unity"
           for target in aarch64-linux-android armv7a-linux-androideabi; do
             for api in 21 29; do
               for offset in default 64; do
@@ -275,11 +276,13 @@ jobs:
                     exit 1
                   fi
                 done
-                "$bin/$target$api-clang" \
-                  -std=c89 -pedantic -Wall -Wextra -Werror -Wno-long-long -Wno-c99-extensions \
-                  -DHAVE_DYLIB -Wframe-larger-than=2048 -Ilibretro-common/include \
-                  "${extra[@]}" -c record/record_mediacodec_encoder.c \
-                  -o "$RUNNER_TEMP/record-encoder-$target-$api-$offset.o"
+                for record_source in record_mediacodec_encoder record_mux_mediacodec; do
+                  "$bin/$target$api-clang" \
+                    -std=c89 -pedantic -Wall -Wextra -Werror -Wno-long-long -Wno-c99-extensions \
+                    -DHAVE_DYLIB -Wframe-larger-than=2048 -Ilibretro-common/include \
+                    "${extra[@]}" -c "record/$record_source.c" \
+                    -o "$RUNNER_TEMP/$record_source-$target-$api-$offset.o"
+                done
                 "$bin/$target$api-clang" \
                   -std=c89 -pedantic -Wall -Wextra -Werror -Wno-long-long -Wno-c99-extensions \
                   -DHAVE_THREADS -DHAVE_DYLIB -Wframe-larger-than=2048 -Ilibretro-common/include -Igfx/include \
