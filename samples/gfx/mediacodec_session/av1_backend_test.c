@@ -226,6 +226,26 @@ static bool open_owner(rav1_hw_ops_t *ops)
          &backend, &sequence, &sequence_obu, NULL, 9, ops);
 }
 
+static void configuration_delay(void)
+{
+   static const uint8_t delayed[] = {0x0a, 0x0e, 0x02, 0x00, 0x00, 0x04, 0x95,
+         0x7f, 0xfc, 0xda, 0xf9, 0x10, 0x10, 0x10, 0x10, 0x40};
+   rav1_config_t record;
+   rav1_obu_t obu;
+   size_t offset = 0, size;
+   uint8_t *config;
+   assert(rav1_obu_next(&obu, delayed, sizeof(delayed), &offset, false) == 1);
+   assert(rav1_sequence_parse(&sequence, obu.payload, obu.payload_size));
+   assert(sequence.operating_points[0].initial_display_delay == 3);
+   config = mediacodec_av1_backend_config(&sequence, &obu, &size);
+   assert(config && !config[3]);
+   assert(rav1_config_parse(&record, config, size));
+   assert(!record.initial_presentation_delay);
+   assert(rav1_config_sequence(&sequence, &record));
+   assert(sequence.operating_points[0].initial_display_delay == 3);
+   free(config);
+}
+
 #include "av1_registry_test.h"
 
 int main(void)
@@ -241,6 +261,7 @@ int main(void)
    static uint8_t unsized[256];
    unsigned i;
    int opens;
+   configuration_delay();
    caller_thread = sthread_get_current_thread_id();
    retro_atomic_int_init(&retire_gate, 0);
    retro_atomic_int_init(&polls, 0);

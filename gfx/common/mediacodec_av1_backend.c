@@ -109,7 +109,6 @@ static uint8_t *mediacodec_av1_backend_config(
    rav1_obu_t obu;
    uint8_t *config;
    size_t offset = 0, length, used = 5;
-   unsigned delay;
    *size = 0;
    if (source->size > 1024u * 1024u
          || rav1_obu_next(&obu, source->data, source->size, &offset, true) != 1
@@ -129,8 +128,8 @@ static uint8_t *mediacodec_av1_backend_config(
                          | (sequence->subsampling_x << 3)
                          | (sequence->subsampling_y << 2)
                          | sequence->chroma_sample_position);
-   delay     = sequence->operating_points[0].initial_display_delay;
-   config[3] = delay ? (uint8_t)(0x10 | (delay - 1)) : 0;
+   /* Sample presentation delay cannot be inferred from frame display delay. */
+   config[3] = 0;
    config[4] = 0x0a;
    length    = obu.payload_size;
    do
