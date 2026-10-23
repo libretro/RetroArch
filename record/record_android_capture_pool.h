@@ -17,6 +17,7 @@ typedef struct record_android_capture_pool_config
    VkQueue queue;
    const VkPhysicalDeviceMemoryProperties *memory;
    unsigned family;
+   bool fail_on_drop;
 } record_android_capture_pool_config_t;
 /* Cold renderer setup. Owns fixed images, entries, executor and handoff.
  * Borrows I/O, device and native contexts through collection. Buffers in gpu
@@ -50,6 +51,9 @@ int record_android_capture_pool_step(record_android_capture_pool_t *pool);
 enum record_dispatch_mediacodec_state record_android_capture_pool_status(
       const record_android_capture_pool_t *pool, int *error, int *system_error);
 bool record_android_capture_pool_sources_retired(
+      const record_android_capture_pool_t *pool);
+/* Render-owner cached closure; does not change the immutable source end. */
+bool record_android_capture_pool_closed(
       const record_android_capture_pool_t *pool);
 /* Same producer closure and cancellation contract as the handoff. */
 bool record_android_capture_pool_finish(

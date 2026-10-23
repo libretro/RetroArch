@@ -40,6 +40,7 @@
 #include "drivers/record_wav.h"
 #include "drivers/record_nvenc.h"
 #include "drivers/record_metal.h"
+#include "drivers/record_mediacodec.h"
 #include "drivers/record_avfoundation.h"
 
 static recording_state_t recording_state = {0};
@@ -60,6 +61,9 @@ const record_driver_t *record_drivers[] = {
 #ifdef HAVE_RECORD_METAL
    &record_metal,
 #endif
+#ifdef HAVE_RECORD_MEDIACODEC
+   &record_mediacodec,
+#endif
 #ifdef HAVE_FFMPEG
    &record_ffmpeg,
 #endif
@@ -73,7 +77,9 @@ const record_driver_t *record_drivers[] = {
 
 void recording_gpu_frame_info(struct video_frame_info *info,bool capture)
 {
-#ifdef HAVE_RECORD_METAL
+#if defined(HAVE_RECORD_MEDIACODEC)
+   record_mediacodec_frame_info(info, capture);
+#elif defined(HAVE_RECORD_METAL)
    record_metal_frame_info(info,capture);
 #else
    record_nvenc_frame_info(info,capture);
@@ -83,21 +89,39 @@ void recording_gpu_poll(void)
 {
    record_nvenc_poll();
    record_metal_poll();
+   record_mediacodec_poll();
    recording_gpu_reinit_poll();
 }
-void recording_gpu_stop(void) { record_nvenc_stop(); record_metal_stop(); }
-bool recording_gpu_pending(void) { return record_nvenc_pending() || record_metal_pending(); }
+void recording_gpu_stop(void)
+{
+   record_nvenc_stop();
+   record_metal_stop();
+   record_mediacodec_stop();
+}
+bool recording_gpu_pending(void)
+{
+   return record_nvenc_pending() || record_metal_pending()
+      || record_mediacodec_pending();
+}
+
+bool recording_gpu_reset_pending(void)
+{
+   return record_nvenc_pending() || record_metal_pending()
+      || record_mediacodec_reset_pending();
+}
 
 bool recording_gpu_cancel_start(void)
 {
    bool nvenc=record_nvenc_cancel_start();
    bool metal=record_metal_cancel_start();
-   return nvenc || metal;
+   bool mediacodec = record_mediacodec_cancel_start();
+   return nvenc || metal || mediacodec;
 }
 bool recording_gpu_defer_start(const record_driver_t *driver)
 {
    if (driver==&record_nvenc) return record_nvenc_defer_start();
    if (driver==&record_metal) return record_metal_defer_start();
+   if (driver == &record_mediacodec) return record_mediacodec_defer_start();
    return false;
 }
 
@@ -257,7 +281,8 @@ bool recording_init(void)
    bool recording_enable                = recording_st->enable;
    bool nvenc_native = string_is_equal(settings->arrays.record_driver,"nvenc");
    bool metal_native = string_is_equal(settings->arrays.record_driver,"metal");
-   bool gpu_native = nvenc_native || metal_native;
+   bool mc_native = string_is_equal(settings->arrays.record_driver,"mediacodec");
+   bool gpu_native = nvenc_native || metal_native || mc_native;
 
    if (!recording_enable)
       return false;
@@ -273,6 +298,13 @@ bool recording_init(void)
    if (metal_native)
    {
       RARCH_ERR("[Recording] Native Metal recording is unavailable in this build.\n");
+      return false;
+   }
+#endif
+#ifndef HAVE_RECORD_MEDIACODEC
+   if (mc_native)
+   {
+      RARCH_ERR("[Recording] Native MediaCodec recording is unavailable in this build.\n");
       return false;
    }
 #endif
@@ -434,7 +466,8 @@ bool recording_init(void)
       if (!video_driver_get_viewport_info(&vp)) return false;
       if (!VIDEO_SCALE_W(vp.dims) || !VIDEO_SCALE_H(vp.dims))
       {
-         recording_st->driver=metal_native?&record_metal:&record_nvenc;
+         recording_st->driver = mc_native ? &record_mediacodec
+               : metal_native ? &record_metal : &record_nvenc;
          return recording_gpu_defer_start(recording_st->driver);
       }
       params.out_dims = params.fb_dims = vp.dims;

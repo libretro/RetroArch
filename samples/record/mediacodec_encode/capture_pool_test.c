@@ -413,6 +413,9 @@ static void renderer_binding(unsigned mode, unsigned fault)
    unsigned dims = VIDEO_SCALE_PACK(128, 96);
    reset(mode);
    c = config(mode);
+   c.fail_on_drop = fault == 6;
+   if (fault == 6)
+      m.record_result = 0;
    memset(&binding, 0, sizeof(binding));
    memset(&source, 0, sizeof(source));
    assert(record_android_capture_pool_new(
@@ -433,14 +436,15 @@ static void renderer_binding(unsigned mode, unsigned fault)
    source.width = 128;
    source.height = 96;
    source.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-   if (fault == 3 || fault == 4)
+   if (fault == 3 || fault == 4 || fault == 6)
    {
       assert(binding.record(binding.context, &source,
                    (VkCommandBuffer)(uintptr_t)77, 0,
                    fault == 3 ? VIDEO_SCALE_PACK(64, 48) : dims,
                    fault == 4 ? (mode + 1) % 3 : mode)
             == -1);
-      assert(m.cancelled && !m.records && !m.commits && p->closed);
+      assert(m.cancelled && m.records == (fault == 6 ? 1u : 0u)
+            && !m.commits && p->closed);
    }
    else
    {
@@ -593,7 +597,7 @@ int main(void)
    device_loss(2, false);
    device_loss(2, true);
    for (mode = 0; mode < 3; mode++)
-      for (fault = 0; fault < 6; fault++)
+      for (fault = 0; fault < 7; fault++)
          renderer_binding(mode, fault);
    assert(!record_acdevice_owners);
    assert(record_android_capture_pool_free(NULL));

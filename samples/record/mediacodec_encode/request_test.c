@@ -17,6 +17,7 @@ static video_thread_async_load_t *pending;
 static const void *expected_binding;
 static VkPhysicalDeviceMemoryProperties source_memory;
 static bool threaded, in_flight, post_allowed, egl_allowed, egl_free_allowed;
+static bool io_cancelled;
 static bool pool_allowed, partial_pool, finish_allowed, reads_retired, ready;
 static bool locked, gpu_done, gpu_released, gpu_claimed;
 static unsigned egl_creates, pool_creates, pool_steps, pool_frees, lock_calls;
@@ -56,6 +57,10 @@ void slock_unlock(slock_t *lock)
 {
    assert(lock == device.queue_lock && locked);
    locked = false;
+}
+bool record_android_capture_pool_closed(const record_android_capture_pool_t *p)
+{
+   return p && p->closed;
 }
 static bool get_device(void *data, video_device_info_t *out)
 {
@@ -168,6 +173,12 @@ bool record_android_capture_pool_free(record_android_capture_pool_t *p)
    gpu_end = 40;
    return true;
 }
+bool record_dispatch_mediacodec_cancelled(
+      const record_dispatch_mediacodec_t *io)
+{
+   assert(io == (record_dispatch_mediacodec_t *)&io_storage);
+   return io_cancelled;
+}
 enum record_dispatch_mediacodec_state record_dispatch_mediacodec_status(
       const record_dispatch_mediacodec_t *io, int *error, int *file,
       int *system)
@@ -250,13 +261,14 @@ static record_android_capture_request_t *new_request(unsigned mode)
    video.poke = test_poke();
    pending = NULL;
    threaded = post_allowed = egl_allowed = egl_free_allowed = true;
+   io_cancelled = false;
    pool_allowed = finish_allowed = true;
    in_flight = partial_pool = reads_retired = ready = locked = false;
    gpu_done = gpu_released = gpu_claimed = false;
    egl_creates = pool_creates = pool_steps = pool_frees = lock_calls = 0;
    io_state = RECORD_MC_DISPATCH_STARTING;
    r = record_android_capture_request_new(
-         (record_dispatch_mediacodec_t *)&io_storage, &config, 10);
+         (record_dispatch_mediacodec_t *)&io_storage, &config, 10, true);
    assert(r);
    expected_binding = &r->binding;
    source_memory.memoryTypeCount = 9;
@@ -466,8 +478,62 @@ static void unrelated_gpu_claim(void)
    assert(gpu_claimed && gpu_end == 77);
 }
 
+static void quiesce_for_drain(void)
+{
+   record_android_capture_request_t *r = new_request(0);
+   io_state = RECORD_MC_DISPATCH_READY;
+   ready = true;
+   assert(record_android_capture_request_post(
+         r, RECORD_ANDROID_CAPTURE_CREATE, 0));
+   flush(false, true);
+   finish_allowed = false;
+   in_flight = true;
+   assert(!record_android_capture_request_post(
+         r, RECORD_ANDROID_CAPTURE_QUIESCE_DEVICE, 40));
+   in_flight = false;
+   assert(record_android_capture_request_post(
+         r, RECORD_ANDROID_CAPTURE_QUIESCE_DEVICE, 40));
+   flush(false, true);
+   assert(record_android_capture_request_result(r) == 1);
+   assert(pool.live && !pool.prepared && !pool.dead && !pool.closed);
+   assert(
+         !record_android_capture_request_free(r) && !pool_steps && !pool_frees);
+   /* Only modeled common teardown's actual drain can now prepare children. */
+   pool.prepared = pool.dead = true;
+   finish_allowed = true;
+   reads_retired = true;
+   device.device = (void *)(uintptr_t)222;
+   assert(record_android_capture_request_post(
+         r, RECORD_ANDROID_CAPTURE_COLLECT, 40));
+   flush(false, true);
+   assert(record_android_capture_request_free(r));
+}
+static void already_closed(void)
+{
+   record_android_capture_request_t *r = new_request(0);
+   io_state = RECORD_MC_DISPATCH_READY;
+   ready = true;
+   assert(record_android_capture_request_post(
+         r, RECORD_ANDROID_CAPTURE_CREATE, 0));
+   flush(false, true);
+   pool.closed = true;
+   finish_allowed = false;
+   reads_retired = true;
+   assert(record_android_capture_request_post(
+         r, RECORD_ANDROID_CAPTURE_COLLECT, 40));
+   flush(false, true);
+   assert(record_android_capture_request_result(r) == 0 && pool.live);
+   io_cancelled = true;
+   assert(record_android_capture_request_post(
+         r, RECORD_ANDROID_CAPTURE_COLLECT, 40));
+   flush(false, true);
+   assert(record_android_capture_request_result(r) == 1);
+   assert(!pool.live && record_android_capture_request_free(r));
+}
 int main(void)
 {
+   quiesce_for_drain();
+   already_closed();
    unrelated_gpu_claim();
    post_refusal();
    inline_owner();

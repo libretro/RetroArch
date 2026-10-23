@@ -110,10 +110,23 @@ static uintptr_t record_acrequest_run(
             slock_lock(lock);
          }
          if (r->operation == RECORD_ANDROID_CAPTURE_CANCEL
-               || r->operation == RECORD_ANDROID_CAPTURE_PREPARE_DEVICE)
+               || r->operation == RECORD_ANDROID_CAPTURE_PREPARE_DEVICE
+               || r->operation == RECORD_ANDROID_CAPTURE_QUIESCE_DEVICE)
             record_android_capture_pool_cancel(r->pool);
+         if (r->operation == RECORD_ANDROID_CAPTURE_QUIESCE_DEVICE)
+         {
+            /* Every pool is registered before native allocation. The common
+             * teardown must reach its existing drain for ambiguous work; a
+             * failed nonblocking child proof must not deadlock that drain.
+             * Cancellation stops publication, but proves no GPU completion. */
+            record_android_capture_pool_finish(r->pool, r->end_us);
+            result = 1;
+            goto unlock;
+         }
          if (r->operation >= RECORD_ANDROID_CAPTURE_FINISH
-               && !record_android_capture_pool_finish(r->pool, r->end_us))
+               && !record_android_capture_pool_finish(r->pool, r->end_us)
+               && !(record_dispatch_mediacodec_cancelled(r->io)
+                     && record_android_capture_pool_closed(r->pool)))
          {
             record_android_capture_pool_step(r->pool);
             goto unlock;
@@ -179,7 +192,8 @@ static void record_acrequest_done(void *user, uintptr_t executed)
 
 record_android_capture_request_t *record_android_capture_request_new(
       record_dispatch_mediacodec_t *io,
-      const record_android_capture_pool_config_t *config, unsigned duration)
+      const record_android_capture_pool_config_t *config, unsigned duration,
+      bool allow_drop)
 {
    record_android_capture_request_t *r;
    if (!io || !config || !config->device || !config->physical || !config->queue
@@ -191,6 +205,7 @@ record_android_capture_request_t *record_android_capture_request_new(
    if (!r)
       return NULL;
    r->config = *config;
+   r->config.fail_on_drop = !allow_drop;
    r->memory = *config->memory;
    r->config.memory = &r->memory;
    r->io = io;
@@ -207,7 +222,8 @@ bool record_android_capture_request_post(record_android_capture_request_t *r,
       enum record_android_capture_operation operation, int64_t end_us)
 {
    video_driver_state_t *video = video_state_get_ptr();
-   if (!r || r->busy || (unsigned)operation > RECORD_ANDROID_CAPTURE_COLLECT
+   if (!r || r->busy
+         || (unsigned)operation > RECORD_ANDROID_CAPTURE_QUIESCE_DEVICE
          || end_us < 0
          || (r->closing && operation == RECORD_ANDROID_CAPTURE_CREATE))
       return false;
@@ -283,11 +299,13 @@ bool record_android_capture_request_free(record_android_capture_request_t *r)
 #else
 record_android_capture_request_t *record_android_capture_request_new(
       record_dispatch_mediacodec_t *io,
-      const record_android_capture_pool_config_t *config, unsigned duration)
+      const record_android_capture_pool_config_t *config, unsigned duration,
+      bool allow_drop)
 {
    (void)io;
    (void)config;
    (void)duration;
+   (void)allow_drop;
    return NULL;
 }
 bool record_android_capture_request_post(record_android_capture_request_t *r,

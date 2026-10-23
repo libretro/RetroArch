@@ -374,7 +374,8 @@ VIDEO CONTEXT
 #endif
 #ifdef HAVE_VULKAN
 #if defined(ANDROID) \
-   && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1))
+   && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1) \
+         || defined(HAVE_RECORD_MEDIACODEC))
 #include "../gfx/common/vulkan_android_device.c"
 #include "../gfx/common/android_image_queue.c"
 #include "../gfx/common/android_frame.c"
@@ -1637,6 +1638,30 @@ RECORDING
 #include "../record/drivers/record_wav.c"
 #include "../record/drivers/record_nvenc.c"
 #include "../record/drivers/record_metal.c"
+#include "../record/drivers/record_mediacodec.c"
+#ifdef HAVE_RECORD_MEDIACODEC
+#include "../record/record_mediacodec_encoder.c"
+#include "../record/record_mux_mediacodec.c"
+#include "../record/record_mediacodec_worker.c"
+#include "../record/record_mediacodec_surface.c"
+#include "../record/record_mediacodec_file.c"
+#include "../record/record_session_mediacodec.c"
+#include "../record/record_dispatch_mediacodec.c"
+#include "../record/record_gpu_dispatch_mediacodec.c"
+#include "../record/record_mediacodec_gpu_worker.c"
+#include "../record/record_android_capture_config.c"
+#include "../record/record_android_capture_request.c"
+#include "../record/record_android_capture_images.c"
+#include "../record/record_android_capture_submit.c"
+#include "../record/record_android_capture_pipe.c"
+#include "../record/record_android_capture_pool.c"
+#include "../record/record_android_capture_ops.c"
+#include "../record/record_android_capture_egl.c"
+#include "../record/record_android_capture_gl.c"
+#include "../record/record_android_capture_draw.c"
+#include "../record/record_gpu_queue.c"
+#include "../record/record_audio_queue.c"
+#endif
 #ifdef HAVE_RECORD_METAL
 #include "../record/record_gpu_queue.c"
 #include "../record/record_audio_queue.c"

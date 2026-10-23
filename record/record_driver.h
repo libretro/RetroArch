@@ -207,11 +207,16 @@ extern const record_driver_t *record_drivers[];
 RETRO_BEGIN_DECLS
 extern const record_driver_t record_nvenc;
 extern const record_driver_t record_metal;
+extern const record_driver_t record_mediacodec;
 struct video_frame_info;
 void recording_gpu_frame_info(struct video_frame_info *info,bool capture);
 void recording_gpu_poll(void);
 void recording_gpu_stop(void);
 bool recording_gpu_pending(void);
+/* Main owner after stop: gate video reset on producer quiescence, while the
+ * existing device teardown proves native child retirement. Independent media
+ * workers may stay retained; this is not new recording admission. */
+bool recording_gpu_reset_pending(void);
 /* Main owner: coalesce reinit flags while native users retire. The existing
  * GPU poll applies the reinit once, or drops it during content/quit teardown. */
 bool recording_gpu_defer_reinit(int flags);
@@ -220,6 +225,12 @@ bool recording_gpu_defer_start(const record_driver_t *driver);
 bool recording_gpu_cancel_start(void);
 RETRO_END_DECLS
 static INLINE bool recording_is_native_gpu(const record_driver_t *driver)
-{ return driver==&record_nvenc || driver==&record_metal; }
+{
+   return driver == &record_nvenc || driver == &record_metal
+#ifdef HAVE_RECORD_MEDIACODEC
+      || driver == &record_mediacodec
+#endif
+      ;
+}
 
 #endif

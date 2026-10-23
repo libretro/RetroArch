@@ -15,7 +15,7 @@ struct record_android_capture_pool
    int64_t end_us;
    uint64_t renderer_last_offer, renderer_end;
    unsigned count, dims, mode, renderer_duration, renderer_leases;
-   bool closed, preparing, prepared, destroyed;
+   bool closed, preparing, prepared, destroyed, fail_on_drop;
    bool renderer_bound, renderer_offer, renderer_recorded, renderer_stopping;
 };
 
@@ -64,6 +64,12 @@ bool record_android_capture_pool_free(record_android_capture_pool_t *p)
    record_android_capture_device_detach(&p->device_owner);
    free(p);
    return true;
+}
+
+bool record_android_capture_pool_closed(
+      const record_android_capture_pool_t *p)
+{
+   return p && p->closed;
 }
 
 bool record_android_capture_pool_finish(
@@ -141,6 +147,7 @@ bool record_android_capture_pool_new(record_dispatch_mediacodec_t *io,
       return false;
    }
    p->count = c->gpu.count;
+   p->fail_on_drop = c->fail_on_drop;
    p->dims = VIDEO_SCALE_PACK(c->gpu.width, c->gpu.height);
    p->mode = c->gpu.mode;
    format = c->gpu.mode == 2 ? VK_FORMAT_R16G16B16A16_SFLOAT
@@ -324,10 +331,11 @@ static int record_acpool_renderer_record(void *context,
       p->renderer_end = pts + p->renderer_duration;
       p->renderer_recorded = true;
    }
-   else if (result < 0)
+   else if (result < 0 || (result == 0 && p->fail_on_drop))
    {
       record_android_capture_pool_cancel(p);
       record_acpool_renderer_close(p);
+      return -1;
    }
    return result;
 }

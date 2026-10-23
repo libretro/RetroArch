@@ -7,7 +7,7 @@
 #include "../../../record/record_gpu_reinit.c"
 static video_driver_state_t video;
 static runloop_state_t loop;
-static bool native_pending, switching;
+static bool native_pending, switching, reset_ready;
 static unsigned stops, reinits;
 static int applied;
 video_driver_state_t *video_state_get_ptr(void)
@@ -30,9 +30,13 @@ bool recording_gpu_pending(void)
 {
    return native_pending;
 }
+bool recording_gpu_reset_pending(void)
+{
+   return native_pending && !reset_ready;
+}
 bool command_event_reinit(const int flags)
 {
-   assert(!native_pending && video.data);
+   assert((!native_pending || reset_ready) && video.data);
    assert(!loop.quit_pending && !loop.content_closing && !switching);
    assert(!recording_gpu_defer_reinit(flags));
    applied = flags;
@@ -79,5 +83,13 @@ int main(void)
       assert(reinits == before);
    }
    assert(!recording_gpu_defer_reinit(DRIVER_VIDEO_MASK));
+   native_pending = true;
+   assert(recording_gpu_defer_reinit(DRIVER_VIDEO_MASK));
+   before = reinits;
+   recording_gpu_reinit_poll();
+   assert(reinits == before);
+   reset_ready = true;
+   recording_gpu_reinit_poll();
+   assert(reinits == before + 1 && native_pending);
    return 0;
 }

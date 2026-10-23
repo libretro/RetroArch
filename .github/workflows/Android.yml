@@ -87,7 +87,7 @@ jobs:
           bin="$MEDIA_NDK/toolchains/llvm/prebuilt/linux-x86_64/bin"
           unity="$RUNNER_TEMP/android-record-unity.c"
           : > "$unity"
-          for source in gfx/common/mediacodec_inventory.c record/record_mediacodec_encoder.c \
+          for source in record/drivers/record_mediacodec.c gfx/common/mediacodec_inventory.c record/record_mediacodec_encoder.c \
               record/record_mux_mediacodec.c record/record_mediacodec_worker.c \
               record/record_mediacodec_surface.c record/record_android_capture_images.c \
               record/record_android_capture_submit.c record/record_android_capture_pipe.c \
@@ -109,6 +109,7 @@ jobs:
                 CC="$bin/$target$api-clang $extra" python3 libretro-common/samples/formats/vp9/check_stack.py
                 "$bin/$target$api-clang" $extra -O1 -std=c89 -pedantic -Wall -Wextra -Werror \
                   -Wno-long-long -Wno-c99-extensions -Wframe-larger-than=2048 \
+                  -DANDROID -DHAVE_VULKAN -DHAVE_RECORD_MEDIACODEC -DHAVE_CONFIGFILE \
                   -DHAVE_THREADS -DHAVE_DYLIB -Ilibretro-common/include -Igfx/include \
                   -c "$unity" -o "$RUNNER_TEMP/record-$target-$api-$offset.o"
                 if "$bin/llvm-nm" -u "$RUNNER_TEMP/record-$target-$api-$offset.o" | \
@@ -289,6 +290,7 @@ jobs:
           printf '#include "%s/record/record_mux_mediacodec.c"\n' "$PWD" >> "$unity"
           printf '#include "%s/record/record_mediacodec_worker.c"\n' "$PWD" >> "$unity"
           printf '#include "%s/record/record_mediacodec_surface.c"\n' "$PWD" >> "$unity"
+          printf '#include "%s/record/drivers/record_mediacodec.c"\n' "$PWD" >> "$unity"
           printf '#include "%s/record/record_android_capture_images.c"\n' "$PWD" >> "$unity"
           printf '#include "%s/record/record_android_capture_submit.c"\n' "$PWD" >> "$unity"
           printf '#include "%s/record/record_android_capture_pipe.c"\n' "$PWD" >> "$unity"
@@ -330,6 +332,7 @@ jobs:
                 done
                 "$bin/$target$api-clang" \
                   -std=c89 -pedantic -Wall -Wextra -Werror -Wno-long-long -Wno-c99-extensions \
+                  -DANDROID -DHAVE_VULKAN -DHAVE_RECORD_MEDIACODEC -DHAVE_CONFIGFILE \
                   -DHAVE_THREADS -DHAVE_DYLIB -Wframe-larger-than=2048 -Ilibretro-common/include -Igfx/include \
                   "${extra[@]}" -c "$unity" -o "$RUNNER_TEMP/unity-$target-$api-$offset.o"
                 for root_source in gfx/common/vulkan_common.c gfx/drivers/vulkan.c gfx/gfx_surface_player.c libretro-common/jni/rjni.c; do
@@ -341,12 +344,13 @@ jobs:
                     -I. -Ilibretro-common/include -Igfx/include "${extra[@]}" \
                     -c "$root_source" -o "$RUNNER_TEMP/$(basename "$root_source")-$target-$api-$offset.o"
                 done
-                for variant in vp9-only av1-only no-codecs; do
+                for variant in vp9-only av1-only no-codecs recording-only; do
                   codec_flags=()
                   case "$variant" in
                     vp9-only) codec_flags=(-DHAVE_RVP9 -DHAVE_THREADS) ;;
                     av1-only) codec_flags=(-DHAVE_RAV1 -DHAVE_THREADS) ;;
                     no-codecs) codec_flags=(-DHAVE_THREADS) ;;
+                    recording-only) codec_flags=(-DHAVE_THREADS -DHAVE_CONFIGFILE -DHAVE_RECORD_MEDIACODEC) ;;
                   esac
                   for root_source in gfx/common/vulkan_common.c gfx/drivers/vulkan.c; do
                     "$bin/$target$api-clang" \

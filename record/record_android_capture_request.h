@@ -12,7 +12,8 @@ enum record_android_capture_operation
    RECORD_ANDROID_CAPTURE_FINISH,
    RECORD_ANDROID_CAPTURE_CANCEL,
    RECORD_ANDROID_CAPTURE_PREPARE_DEVICE,
-   RECORD_ANDROID_CAPTURE_COLLECT
+   RECORD_ANDROID_CAPTURE_COLLECT,
+   RECORD_ANDROID_CAPTURE_QUIESCE_DEVICE
 };
 /* Main-owner cold allocation. Copies the validated Vulkan pool configuration
  * and memory properties. Operation contexts/callbacks must survive collection;
@@ -25,12 +26,16 @@ enum record_android_capture_operation
  * No frontend driver is registered by this private bridge. */
 record_android_capture_request_t *record_android_capture_request_new(
       record_dispatch_mediacodec_t *io,
-      const record_android_capture_pool_config_t *config, unsigned duration);
+      const record_android_capture_pool_config_t *config, unsigned duration,
+      bool allow_drop);
 /* Main owner outside frame publication. At most one embedded job is posted.
  * FINISH/CANCEL/PREPARE/COLLECT refuse queued frames naming this binding;
  * producers must first stop publishing it. Wrapped posting neither waits nor
  * allocates; without a wrapper it runs cold work on the current render owner.
- * end_us is immutable for an accepted operation, including dropped frames. */
+ * end_us is immutable for an accepted operation, including dropped frames.
+ * QUIESCE_DEVICE acknowledges only stopped publication and render-producer
+ * quiescence. Registered native owners remain retained for the existing device
+ * teardown drain; it is not child completion or actual device-death proof. */
 bool record_android_capture_request_post(record_android_capture_request_t *job,
       enum record_android_capture_operation operation, int64_t end_us);
 /* Main owner after post: 0 awaiting acknowledgment or progress, 1 complete,
