@@ -54,8 +54,9 @@
 #include "../../configuration.h"
 #include "../../retroarch.h"
 
-/* The G2D calls libdrm gives cannot rotate: neither a core's rotation
- * nor the menu's is applied. */
+/* The G2D calls libdrm gives cannot rotate or mirror: a core's rotation
+ * is applied as the frame is copied, a mirrored overlay image is written
+ * mirrored into its buffer. */
 
 /* Set to '1' to enable debug logging code. */
 #define EXYNOS_GFX_DEBUG_LOG 0
@@ -193,6 +194,9 @@ struct exynos_data
   bool main_lent;
   /* The G2D reads a core's own frame memory, an IOMMU mapping it */
   bool userptr;
+
+  /* The frame turned by the CPU, while a rotation is set */
+  struct exynos_bo *turn;
 
   struct exynos_userptr up[EXYNOS_USERPTR_SLOTS];
   unsigned up_count;
@@ -876,6 +880,9 @@ static void exynos_data_free(struct exynos_data *pdata)
       exynos_bo_destroy(pdata->buf[i]);
       pdata->buf[i] = NULL;
    }
+   if (pdata->turn)
+      exynos_bo_destroy(pdata->turn);
+   pdata->turn = NULL;
 
    exynos_device_destroy(pdata->device);
    pdata->device = NULL;
@@ -1099,6 +1106,76 @@ static int exynos_copy_frame(
    return 0;
 }
 
+/* @w x @h pixels of @src turned @rot quarter turns counter-clockwise
+ * into @dst, written in order */
+static void exynos_turn_copy(uint8_t *dst, size_t stride,
+      const uint8_t *src, size_t pitch, unsigned w, unsigned h,
+      unsigned bpp, unsigned rot)
+{
+   unsigned ox, oy;
+   const unsigned ow = (rot & 1) ? h : w;
+   const unsigned oh = (rot & 1) ? w : h;
+
+   for (oy = 0; oy < oh; oy++, dst += stride)
+   {
+      ptrdiff_t step;
+      const uint8_t *in;
+      /* Where output row oy starts in the source, and its next pixel */
+      switch (rot & 3)
+      {
+         case 1:
+            step = (ptrdiff_t)pitch;
+            in   = src + (size_t)(w - 1 - oy) * bpp;
+            break;
+         case 2:
+            step = -(ptrdiff_t)bpp;
+            in   = src + (size_t)(h - 1 - oy) * pitch + (size_t)(w - 1) * bpp;
+            break;
+         default:
+            step = -(ptrdiff_t)pitch;
+            in   = src + (size_t)(h - 1) * pitch + (size_t)oy * bpp;
+            break;
+      }
+      if (bpp == 4)
+      {
+         uint32_t *out = (uint32_t*)dst;
+         for (ox = 0; ox < ow; ox++, in += step)
+            out[ox] = *(const uint32_t*)in;
+      }
+      else
+      {
+         uint16_t *out = (uint16_t*)dst;
+         for (ox = 0; ox < ow; ox++, in += step)
+            out[ox] = *(const uint16_t*)in;
+      }
+   }
+}
+
+/* A turned frame, @w x @h before the turn, into the buffer for it */
+static int exynos_turn_frame(struct exynos_data *pdata, const void *frame,
+      unsigned src_pitch, unsigned w, unsigned h, unsigned rot)
+{
+   struct g2d_image *src = pdata->src[EXYNOS_IMAGE_FRAME];
+   const unsigned bpp    = (src->color_mode & G2D_COLOR_FMT_MASK)
+      == G2D_COLOR_FMT_RGB565 ? 2 : 4;
+   const unsigned stride = ((rot & 1) ? h : w) * bpp;
+   const unsigned size   = stride * ((rot & 1) ? w : h);
+
+   if (!pdata->turn || pdata->turn->size < size)
+   {
+      if (pdata->turn)
+         exynos_bo_destroy(pdata->turn);
+      if (!(pdata->turn = exynos_create_mapped_buffer(pdata->device, size)))
+         return -1;
+   }
+   exynos_turn_copy((uint8_t*)pdata->turn->vaddr, stride,
+         (const uint8_t*)frame, src_pitch, w, h, bpp, rot);
+   src->buf_type = G2D_IMGBUF_GEM;
+   src->bo[0]    = pdata->turn->handle;
+   src->stride   = stride;
+   return 0;
+}
+
 /* The frame where the G2D reads it: in the buffer the core was lent, in
  * the core's own memory, or copied into the GEM buffer */
 static int exynos_upload_frame(
@@ -1220,8 +1297,7 @@ static int exynos_blit_views(
 }
 
 #ifdef HAVE_MENU
-static int exynos_blend_menu(struct exynos_data *pdata,
-                             unsigned rotation)
+static int exynos_blend_menu(struct exynos_data *pdata)
 {
    struct g2d_image *src = pdata->src[EXYNOS_IMAGE_MENU];
    /* Over the frame, or the whole screen the views are laid out on */
@@ -1303,6 +1379,7 @@ struct exynos_overlay_image
    float vert[4];
    float alpha;
    unsigned w, h;
+   unsigned mirror;      /* bo holds px mirrored: 1 across, 2 up and down */
    bool stale;           /* bo does not hold px at alpha */
 };
 
@@ -1334,7 +1411,8 @@ struct exynos_video
    unsigned dims;
 
    /* menu data */
-   unsigned menu_rotation;
+   /* The frame's quarter turns, counter-clockwise */
+   unsigned rotation;
    bool menu_active;
 
    bool aspect_changed;
@@ -1690,10 +1768,11 @@ static void exynos_overlay_enable(void *data, bool state)
 }
 
 /* Image @o's part on the screen, @base its overlay's area (x, y, w, h):
- * src and dst as x, y, w, h. False when none of it is. */
+ * src and dst as x, y, w, h, src in the image as @mirror has it
+ * mirrored. False when none of it is. */
 static bool exynos_overlay_rect(const struct exynos_overlay_image *o,
       const float *base, unsigned sw, unsigned sh,
-      unsigned *src, unsigned *dst)
+      unsigned *src, unsigned *dst, unsigned *mirror)
 {
    float fx = base[0] + o->vert[0] * base[2];
    float fy = base[1] + o->vert[1] * base[3];
@@ -1704,7 +1783,10 @@ static bool exynos_overlay_rect(const struct exynos_overlay_image *o,
    float x0, y0, x1, y1;
    int dx0, dy0, dx1, dy1, sx0, sy0, sx1, sy1;
 
-   /* The G2D does not mirror: a flipped quad is drawn unflipped */
+   /* A quad and its texels running opposite ways: the image mirrored,
+    * which the G2D cannot do as it scales; its buffer holds it so */
+   *mirror = ((fw < 0.0f) != (tw < 0.0f) ? 1u : 0u)
+      | ((fh < 0.0f) != (th < 0.0f) ? 2u : 0u);
    if (fw < 0.0f)
    {
       fx += fw;
@@ -1727,6 +1809,11 @@ static bool exynos_overlay_rect(const struct exynos_overlay_image *o,
    }
    if (fw < 0.5f || fh < 0.5f || tw <= 0.0f || th <= 0.0f)
       return false;
+   /* The same texels, where the mirrored image has them */
+   if (*mirror & 1)
+      tx = (float)o->w - tx - tw;
+   if (*mirror & 2)
+      ty = (float)o->h - ty - th;
    x0 = MAX(fx, 0.0f);
    y0 = MAX(fy, 0.0f);
    x1 = MIN(fx + fw, (float)sw);
@@ -1804,12 +1891,12 @@ static int exynos_overlay_clear(struct exynos_video *vid, bool frame_drawn)
    exynos_overlay_base(vid, base);
    for (i = 0; i < ov->count; i++)
    {
-      unsigned src[4], dst[4];
+      unsigned src[4], dst[4], mirror;
       int x0, y0, x1, y1, my0, my1;
       if (     !ov->img[i].bo
             || !exynos_overlay_rect(&ov->img[i], base,
                VIDEO_SCALE_W(pdata->dims), VIDEO_SCALE_H(pdata->dims),
-               src, dst))
+               src, dst, &mirror))
          continue;
       x0  = (int)dst[0];
       y0  = (int)dst[1];
@@ -1842,32 +1929,39 @@ static int exynos_overlay_blend(struct exynos_video *vid)
    exynos_overlay_base(vid, base);
    for (i = 0; i < ov->count; i++)
    {
-      unsigned src[4], dst[4];
+      unsigned src[4], dst[4], mirror;
       struct exynos_overlay_image *o = &ov->img[i];
       unsigned m = VIDEO_ALPHA_BYTE(o->alpha);
 
-      if (!o->bo || !m)
+      if (     !o->bo || !m
+            || !exynos_overlay_rect(o, base, VIDEO_SCALE_W(pdata->dims),
+               VIDEO_SCALE_H(pdata->dims), src, dst, &mirror))
          continue;
-      if (o->stale)
+      if (o->stale || o->mirror != mirror)
       {
-         size_t k, n  = (size_t)o->w * o->h;
+         unsigned x, y;
          uint32_t *to = (uint32_t*)o->bo->vaddr;
-         if (m == 0xFF)
-            memcpy_neon(to, o->px, n * sizeof(uint32_t));
+         if (m == 0xFF && !mirror)
+            memcpy_neon(to, o->px, (size_t)o->w * o->h * sizeof(uint32_t));
          else
-            for (k = 0; k < n; k++)
+            for (y = 0; y < o->h; y++)
             {
-               uint32_t p = o->px[k];
-               to[k] = (EXYNOS_DIV255((p >> 24) * m) << 24)
-                  | (EXYNOS_DIV255(((p >> 16) & 0xff) * m) << 16)
-                  | (EXYNOS_DIV255(((p >> 8) & 0xff) * m) << 8)
-                  | EXYNOS_DIV255((p & 0xff) * m);
+               const uint32_t *row = o->px
+                  + (size_t)((mirror & 2) ? o->h - 1 - y : y) * o->w;
+               for (x = 0; x < o->w; x++, to++)
+               {
+                  uint32_t p = row[(mirror & 1) ? o->w - 1 - x : x];
+                  if (m < 0xFF)
+                     p = (EXYNOS_DIV255((p >> 24) * m) << 24)
+                        | (EXYNOS_DIV255(((p >> 16) & 0xff) * m) << 16)
+                        | (EXYNOS_DIV255(((p >> 8) & 0xff) * m) << 8)
+                        | EXYNOS_DIV255((p & 0xff) * m);
+                  *to = p;
+               }
             }
-         o->stale = false;
+         o->mirror = mirror;
+         o->stale  = false;
       }
-      if (!exynos_overlay_rect(o, base, VIDEO_SCALE_W(pdata->dims),
-               VIDEO_SCALE_H(pdata->dims), src, dst))
-         continue;
       if (g2d_scale_and_blend(pdata->g2d, &o->img, pdata->dst,
                src[0], src[1], src[2], src[3],
                dst[0], dst[1], dst[2], dst[3], G2D_OP_OVER) != 0)
@@ -2086,7 +2180,13 @@ static bool exynos_frame(void *data, const void *frame,
             RARCH_LOG("[Exynos] Resolution changed by core: %ux%u -> %ux%u.\n",
                   VIDEO_SCALE_W(vid->dims), VIDEO_SCALE_H(vid->dims),
                   width, height);
-         exynos_setup_scale(vid->data, width, height, vid->bytes_per_pixel);
+         /* Placed at the size it is shown, turned */
+         if (vid->rotation & 1)
+            exynos_setup_scale(vid->data, height, width,
+                  vid->bytes_per_pixel);
+         else
+            exynos_setup_scale(vid->data, width, height,
+                  vid->bytes_per_pixel);
 
          vid->dims           = dims;
          vid->aspect_changed = false;
@@ -2094,7 +2194,20 @@ static bool exynos_frame(void *data, const void *frame,
 
       page = exynos_free_page(vid->data);
 
-      if (exynos_views_frame(vid, frame, dims, pitch, video_info, page))
+      if (vid->rotation)
+      {
+         struct exynos_data *pd = vid->data;
+         /* The views are laid out for the frame unturned: drawn whole */
+         exynos_views_frame(vid, NULL, dims, pitch, video_info, page);
+         if (     exynos_turn_frame(pd, frame, pitch, width, height,
+                     vid->rotation) != 0
+               || exynos_scale_frame(pd, NULL, pitch, 0, 0,
+                     pd->blit_params[4], pd->blit_params[5],
+                     pd->blit_params[0], pd->blit_params[1],
+                     pd->blit_params[2], pd->blit_params[3]) != 0)
+            goto fail;
+      }
+      else if (exynos_views_frame(vid, frame, dims, pitch, video_info, page))
       {
          if (exynos_blit_views(vid->data, frame, pitch,
                   &video_info->views, &video_info->views_layout) != 0)
@@ -2124,7 +2237,7 @@ static bool exynos_frame(void *data, const void *frame,
 #ifdef HAVE_MENU
    if (vid->menu_active)
    {
-      if (exynos_blend_menu(vid->data, vid->menu_rotation) != 0)
+      if (exynos_blend_menu(vid->data) != 0)
          goto fail;
       menu_driver_frame(menu_is_alive, video_info);
    }
@@ -2181,8 +2294,12 @@ static bool exynos_suppress_screensaver(void *data, bool enable) { return false;
 static void exynos_set_rotation(void *data, unsigned rotation)
 {
    struct exynos_video *vid = (struct exynos_video*)data;
-   if (vid)
-      vid->menu_rotation = rotation;
+   if (vid && (rotation & 3) != vid->rotation)
+   {
+      vid->rotation       = rotation & 3;
+      /* Placed again, at its turned size, with the next frame */
+      vid->aspect_changed = true;
+   }
 }
 
 /* Where the frame is on the screen; the whole screen while views draw */

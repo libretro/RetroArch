@@ -4,7 +4,8 @@
 # blended over only what they cover, the menu's alpha, screenshots, mode
 # switches and CRT modelines, and a free that leaves nothing; then behind
 # an IOMMU, frames read from the core's memory and never through a stale
-# mapping, and the input overlay blended by the G2D.
+# mapping, the input overlay blended by the G2D, mirrored where its
+# quad is, and a core's rotation turned as the frame is copied.
 
 TARGET    := exynos_g2d_test
 REPO_ROOT := ../../..

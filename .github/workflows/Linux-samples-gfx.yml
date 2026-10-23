@@ -1871,7 +1871,9 @@ jobs:
           # free and a failed init that leave nothing behind. Behind an
           # IOMMU, frames read from the core's own memory - the kernel
           # reuses a mapping unsynced, so a frame must never come
-          # through one - and the input overlay blended by the G2D.
+          # through one - and the input overlay blended by the G2D,
+          # mirrored where its quad is; a core's rotation, turned as
+          # the frame is copied.
           make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
              timeout 60 ./exynos_g2d_test

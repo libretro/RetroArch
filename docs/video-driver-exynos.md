@@ -51,10 +51,11 @@ The input overlay's images each have a GEM buffer of their own, premultiplied, w
 
 Messages and statistics are drawn into a buffer of their own, and only the area the glyphs cover is cleared and blended.
 
+The G2D calls libdrm offers can neither rotate nor mirror. A core's rotation is applied by the CPU as the frame is copied into a GEM buffer, so a rotated frame is always copied; a mirrored overlay image is written mirrored into its buffer when its layout changes.
+
 ## Issues and TODOs
 
-   - Rotation, of a core's frame and the menu's alike, is not applied: the G2D calls libdrm offers cannot rotate.
    - Without an IOMMU, a core's frame is copied into a GEM buffer unless the core renders into the one it is lent.
-   - A mirrored overlay image is drawn unmirrored: the G2D calls libdrm offers cannot flip.
+   - A core's views are drawn as one frame while a rotation is set.
 
 The driver is tested against a fake kernel and G2D in `samples/gfx/exynos_g2d`.

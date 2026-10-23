@@ -1017,6 +1017,44 @@ int main(void)
             && (s[400 * pitch + 680] & 0xffffff) == 0x404040
             && !(s[10 * pitch + 10] & 0xffffff),
             "disabled: nothing blended, nothing left");
+      /* Mirrored: the quad's width negative, or its texels', not both */
+      {
+         static uint32_t rb[2] = { 0xffff0000u, 0xff0000ffu };
+         struct texture_image one;
+         memset(&one, 0, sizeof(one));
+         one.pixels = rb; one.width = 2; one.height = 1;
+         ov->enable(v, true);
+         ov->full_screen(v, false);
+         CHECK(ov->load(v, &one, 1), "a red and blue image");
+         ov->vertex_geom(v, 0, 0.5f, 0.5f, -0.25f, 0.25f);
+         frame(v, grey, 256, 224, 1024, NULL, &vi);
+         s = screen(&pitch);
+         CHECK(s && (s[450 * pitch + 420] & 0xffffff) == 0x0000ff
+               && (s[450 * pitch + 620] & 0xffffff) == 0xff0000,
+               "a quad drawn right to left shows the image mirrored"
+               " (%06x %06x)", s ? s[450 * pitch + 420] & 0xffffff : 0,
+               s ? s[450 * pitch + 620] & 0xffffff : 0);
+         ov->vertex_geom(v, 0, 0.25f, 0.5f, 0.25f, 0.25f);
+         ov->tex_geom(v, 0, 1.0f, 0.0f, -1.0f, 1.0f);
+         frame(v, grey, 256, 224, 1024, NULL, &vi);
+         s = screen(&pitch);
+         CHECK(s && (s[450 * pitch + 420] & 0xffffff) == 0x0000ff
+               && (s[450 * pitch + 620] & 0xffffff) == 0xff0000,
+               "so do texels read right to left");
+         ov->vertex_geom(v, 0, 0.5f, 0.5f, -0.25f, 0.25f);
+         frame(v, grey, 256, 224, 1024, NULL, &vi);
+         s = screen(&pitch);
+         CHECK(s && (s[450 * pitch + 420] & 0xffffff) == 0xff0000
+               && (s[450 * pitch + 620] & 0xffffff) == 0x0000ff,
+               "and both: not mirrored");
+         ov->vertex_geom(v, 0, 0.5f, 0.75f, 0.25f, -0.25f);
+         ov->tex_geom(v, 0, 0.0f, 0.0f, 1.0f, 1.0f);
+         frame(v, grey, 256, 224, 1024, NULL, &vi);
+         s = screen(&pitch);
+         CHECK(s && (s[450 * pitch + 660] & 0xffffff) == 0xff0000
+               && (s[450 * pitch + 860] & 0xffffff) == 0x0000ff,
+               "upside down, a one-row image as it was");
+      }
       ov->enable(v, true);
       CHECK(ov->load(v, NULL, 0), "an empty page");
       ov->set_alpha(v, 0, 1.0f);
@@ -1025,6 +1063,43 @@ int main(void)
    }
    if (failures == before)
       printf("   ok   the overlay: each image scaled and blended by the G2D\n");
+
+   /* ---- a core's rotation, applied as the frame is copied ---- */
+   before = failures;
+   {
+      static const struct { unsigned rot, w, h, x0, sx, sy; float a; } t[] = {
+         /* quarter turns, the turned size, where it sits on the screen,
+          * the source pixel at its centre, the aspect it is shown at */
+         { 1, 224, 256, 370, 127, 112, 3.0f / 4.0f },
+         { 2, 256, 224, 160, 127, 111, 4.0f / 3.0f },
+         { 3, 224, 256, 370, 128, 111, 3.0f / 4.0f },
+         { 0, 256, 224, 160, 128, 112, 4.0f / 3.0f }
+      };
+      unsigned k, pitch;
+      const uint32_t *s;
+      for (y = 0; y < 224; y++)
+         for (x = 0; x < 256; x++)
+            frame_px[y * 256 + x] = pattern_px(x, y);
+      for (k = 0; k < 4; k++)
+      {
+         drv_aspect = t[k].a;
+         exynos_apply_state_changes(v);
+         exynos_set_rotation(v, t[k].rot);
+         frame(v, frame_px, 256, 224, 1024, NULL, &vi);
+         s = screen(&pitch);
+         CHECK(pd->blit_params[4] == t[k].w && pd->blit_params[5] == t[k].h
+               && pd->blit_params[0] == t[k].x0,
+               "%u quarter turn(s): %ux%u at %u (%ux%u at %u)", t[k].rot,
+               t[k].w, t[k].h, t[k].x0, pd->blit_params[4],
+               pd->blit_params[5], pd->blit_params[0]);
+         CHECK(s && (s[360 * pitch + 640] & 0xffffff)
+               == pattern_px(t[k].sx, t[k].sy),
+               "%u quarter turn(s): the frame turned on the screen (%06x)",
+               t[k].rot, s ? s[360 * pitch + 640] & 0xffffff : 0);
+      }
+   }
+   if (failures == before)
+      printf("   ok   a core's rotation, turned as the frame is copied\n");
 
    before = failures;
    exynos_overlay_load(v, NULL, 0);
