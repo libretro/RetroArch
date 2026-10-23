@@ -91,6 +91,7 @@ jobs:
               record/record_mux_mediacodec.c record/record_mediacodec_worker.c \
               record/record_mediacodec_surface.c record/record_android_capture_images.c \
               record/record_android_capture_submit.c record/record_android_capture_gl.c \
+              record/record_android_capture_draw.c \
               record/record_audio_queue.c libretro-common/queues/retro_spsc.c; do
             printf '#include "%s/%s"\n' "$PWD" "$source" >> "$unity"
           done
@@ -173,7 +174,7 @@ jobs:
       matrix:
         cc: [gcc, clang]
     env:
-      APT_PKGS: libvulkan-dev mesa-vulkan-drivers glslc spirv-tools
+      APT_PKGS: libvulkan-dev mesa-vulkan-drivers glslc spirv-tools libegl1 libgles2 libgl1-mesa-dri
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-java@v4
@@ -204,6 +205,8 @@ jobs:
           key: ${{ steps.apt.outputs.key }}
       - name: Execute embedded and freshly compiled SDR PQ HLG cropped pixels
         run: make -C samples/gfx/mediacodec_session vulkan-gpu-check CC=${{ matrix.cc }} SANITIZER=
+      - name: GLES recording SDR PQ and scRGB pixel oracle
+        run: EGL_PLATFORM=surfaceless LIBGL_ALWAYS_SOFTWARE=1 CC=${{ matrix.cc }} python3 samples/record/mediacodec_encode/draw_pixels.py
 
   jni-contract:
     runs-on: ubuntu-latest
@@ -283,6 +286,7 @@ jobs:
           printf '#include "%s/record/record_android_capture_images.c"\n' "$PWD" >> "$unity"
           printf '#include "%s/record/record_android_capture_submit.c"\n' "$PWD" >> "$unity"
           printf '#include "%s/record/record_android_capture_gl.c"\n' "$PWD" >> "$unity"
+          printf '#include "%s/record/record_android_capture_draw.c"\n' "$PWD" >> "$unity"
           for target in aarch64-linux-android armv7a-linux-androideabi; do
             for api in 21 29; do
               for offset in default 64; do
@@ -299,7 +303,7 @@ jobs:
                     exit 1
                   fi
                 done
-                for record_source in record_mediacodec_encoder record_mux_mediacodec record_mediacodec_worker record_mediacodec_surface record_android_capture_images record_android_capture_submit record_android_capture_gl record_audio_queue; do
+                for record_source in record_mediacodec_encoder record_mux_mediacodec record_mediacodec_worker record_mediacodec_surface record_android_capture_images record_android_capture_submit record_android_capture_gl record_android_capture_draw record_audio_queue; do
                   "$bin/$target$api-clang" \
                     -std=c89 -pedantic -Wall -Wextra -Werror -Wno-long-long -Wno-c99-extensions \
                     -DHAVE_THREADS -DHAVE_DYLIB -Wframe-larger-than=2048 -Ilibretro-common/include -Igfx/include \

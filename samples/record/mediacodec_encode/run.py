@@ -32,7 +32,8 @@ with tempfile.TemporaryDirectory(prefix="mediacodec-encode-") as directory:
                           ("mux_test.c", ["-DRECORD_MEDIACODEC_MUX_TEST"]),
                           ("worker_test.c", []), ("surface_test.c", []),
                           ("capture_images_test.c", ["-DRECORD_ANDROID_CAPTURE_TEST"]),
-                          ("capture_submit_test.c", []), ("capture_gl_test.c", [])):
+                          ("capture_submit_test.c", []), ("capture_gl_test.c", []),
+                          ("draw_test.c", [])):
         command = compiler + flags + extra + [str(here / source), "-o", str(binary)]
         if source == "worker_test.c":
             command += ["-DHAVE_THREADS",
@@ -42,6 +43,9 @@ with tempfile.TemporaryDirectory(prefix="mediacodec-encode-") as directory:
         if source == "surface_test.c":
             command += ["-DUSE_SYSTEM_EGL", "-I" + str(root / "gfx/include/ANGLE"),
                         str(root / "record/record_mediacodec_surface.c")]
+        if source == "draw_test.c":
+            command += ["-I" + str(root / "gfx/include/ANGLE"),
+                        str(root / "record/record_android_capture_draw.c")]
         if source == "capture_gl_test.c":
             command += ["-DUSE_SYSTEM_EGL", "-I" + str(root / "gfx/include/ANGLE"),
                         str(root / "record/record_android_capture_gl.c")]
