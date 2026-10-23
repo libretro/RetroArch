@@ -335,6 +335,14 @@ int main(void)
       record_android_capture_images_free(c);
    }
    reset();
+   c = create(2);
+   assert(c);
+   record_android_capture_images_prepare_device_destroy(c);
+   assert(!record_android_capture_images_image(c, 0));
+   assert(buffers[0].refs == 1 && buffers[1].refs == 1 && library);
+   record_android_capture_images_prepare_device_destroy(c);
+   record_android_capture_images_free(c);
+   reset();
    selected = VK_FORMAT_UNDEFINED;
    assert(!create(2));
    assert(!record_android_capture_images_image(NULL, 0));

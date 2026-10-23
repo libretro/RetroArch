@@ -52,7 +52,8 @@ struct record_android_capture_images
    unsigned count;
 };
 
-void record_android_capture_images_free(record_android_capture_images_t *c)
+void record_android_capture_images_prepare_device_destroy(
+      record_android_capture_images_t *c)
 {
    unsigned i;
    if (!c)
@@ -64,6 +65,20 @@ void record_android_capture_images_free(record_android_capture_images_t *c)
          c->ops.destroy(c->device, s->image, NULL);
       if (s->memory)
          c->ops.free_memory(c->device, s->memory, NULL);
+      s->image = VK_NULL_HANDLE;
+      s->memory = VK_NULL_HANDLE;
+   }
+}
+
+void record_android_capture_images_free(record_android_capture_images_t *c)
+{
+   unsigned i;
+   if (!c)
+      return;
+   record_android_capture_images_prepare_device_destroy(c);
+   for (i = 0; i < c->count; i++)
+   {
+      record_ac_image_t *s = &c->slots[i];
       if (s->buffer)
          c->release(s->buffer);
    }
@@ -303,6 +318,11 @@ struct AHardwareBuffer *record_android_capture_images_buffer(
    return NULL;
 }
 void record_android_capture_images_free(record_android_capture_images_t *c)
+{
+   (void)c;
+}
+void record_android_capture_images_prepare_device_destroy(
+      record_android_capture_images_t *c)
 {
    (void)c;
 }

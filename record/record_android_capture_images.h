@@ -34,8 +34,15 @@ VkImage record_android_capture_images_image(
       const record_android_capture_images_t *images, unsigned slot);
 struct AHardwareBuffer *record_android_capture_images_buffer(
       const record_android_capture_images_t *images, unsigned slot);
-/* Renderer-owner teardown, after every Vulkan and worker GPU use retires.
- * The borrowed VkDevice must remain alive until this returns. */
+/* Renderer-owner terminal preparation, after completion or DEVICE_LOST proof
+ * for every submitted use and retirement of worker GPU reads. Destroys child
+ * Vulkan objects before their device; retains native buffer/library ownership.
+ */
+void record_android_capture_images_prepare_device_destroy(
+      record_android_capture_images_t *images);
+/* Renderer-owner teardown, all GPU uses retired. Device must remain alive
+ * unless preparation completed. Native references may outlive device teardown.
+ */
 void record_android_capture_images_free(
       record_android_capture_images_t *images);
 RETRO_END_DECLS

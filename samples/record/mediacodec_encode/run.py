@@ -31,7 +31,8 @@ with tempfile.TemporaryDirectory(prefix="mediacodec-encode-") as directory:
     for source, extra in (("test.c", []), ("audio_test.c", []),
                           ("mux_test.c", ["-DRECORD_MEDIACODEC_MUX_TEST"]),
                           ("worker_test.c", []), ("surface_test.c", []),
-                          ("capture_images_test.c", ["-DRECORD_ANDROID_CAPTURE_TEST"])):
+                          ("capture_images_test.c", ["-DRECORD_ANDROID_CAPTURE_TEST"]),
+                          ("capture_submit_test.c", [])):
         command = compiler + flags + extra + [str(here / source), "-o", str(binary)]
         if source == "worker_test.c":
             command += ["-DHAVE_THREADS",
@@ -39,11 +40,15 @@ with tempfile.TemporaryDirectory(prefix="mediacodec-encode-") as directory:
                         str(root / "record/record_audio_queue.c"),
                         str(root / "libretro-common/queues/retro_spsc.c")]
         if source == "surface_test.c":
-            command += ["-I" + str(root / "gfx/include/ANGLE"),
+            command += ["-DUSE_SYSTEM_EGL", "-I" + str(root / "gfx/include/ANGLE"),
                         str(root / "record/record_mediacodec_surface.c")]
         if source == "capture_images_test.c":
             command += ["-I" + str(root / "gfx/include"),
                         str(root / "record/record_android_capture_images.c")]
+        if source == "capture_submit_test.c":
+            command += ["-I" + str(root / "gfx/include"),
+                        str(root / "record/record_android_capture_submit.c"),
+                        str(root / "gfx/common/vulkan_android_queue.c")]
         print("+", shlex.join(command), flush=True)
         subprocess.run(command, check=True)
         subprocess.run([str(binary)], check=True, timeout=30)
