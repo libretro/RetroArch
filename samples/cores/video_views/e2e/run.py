@@ -712,13 +712,19 @@ def wm_start(env):
     p = subprocess.Popen(['openbox'], stdout=subprocess.DEVNULL,
                          stderr=subprocess.DEVNULL, env=env,
                          start_new_session=True)
-    deadline = time.monotonic() + 10
+    deadline = time.monotonic() + 30
     try:
         while p.poll() is None and time.monotonic() < deadline:
-            probe = subprocess.run(
-                ['xprop', '-root', '_NET_SUPPORTING_WM_CHECK'], env=env,
-                stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
-                timeout=2, text=True)
+            # A probe that is slow to answer on a loaded runner, with
+            # the other cases' servers and players beside it, is not an
+            # answer: ask again until the deadline.
+            try:
+                probe = subprocess.run(
+                    ['xprop', '-root', '_NET_SUPPORTING_WM_CHECK'], env=env,
+                    stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+                    timeout=5, text=True)
+            except subprocess.TimeoutExpired:
+                continue
             if probe.returncode == 0 and 'window id #' in probe.stdout:
                 return p
             time.sleep(0.05)

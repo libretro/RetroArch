@@ -12,12 +12,17 @@
 #
 # A .slang given in place of a .slangp is wrapped in a one-pass preset.
 # Options: -d DRIVER (vulkan, the default, glcore, d3d10, d3d11 or
-# d3d12), -f FRAMES (default 30), -k keep the captures in ./out/, -c
+# d3d12), -f FRAMES (default 30, 300 with -D or -t), -k keep the captures in ./out/, -c
 # capture the rslc run a second time on its warm SPIR-V cache (the
 # words must pass rslc's ingest and the picture must not change), -w
 # run a Windows RetroArch under Wine with pattern_core.dll (make
 # CC=x86_64-w64-mingw32-gcc EXT=dll), which is how the D3D drivers run
-# on a Linux box.  With glcore the glslang run crosses the SPIR-V and
+# on a Linux box, -D apply the preset after the first frames instead
+# of at start, which takes the deferred path (one pass per frame, the
+# stock chain on screen until the new one is live), -t the same under
+# threaded video, where the passes are built on the video thread;
+# both capture at frame 300 unless -f says otherwise, since the load
+# starts 50 ms in and a frame is not a vblank on a headless box.  With glcore the glslang run crosses the SPIR-V and
 # the rslc run links the GLSL rslc printed; GL_ARB_gl_spirv is kept
 # out of the way so the printer, not the driver's SPIR-V path, is what
 # is compared.  With D3D both runs go through D3DCompile, the glslang
@@ -29,8 +34,10 @@
 set -u
 
 driver=vulkan
-frames=30
+frames=
 keep=0
+late=0
+threaded=false
 cached=0
 runner=
 ext=so
@@ -41,13 +48,16 @@ while [ $# -gt 0 ]; do
       -k) keep=1; shift ;;
       -c) cached=1; shift ;;
       -w) runner=wine; ext=dll; shift ;;
+      -D) late=1; shift ;;
+      -t) late=1; threaded=true; shift ;;
       *) break ;;
    esac
 done
 if [ $# -lt 2 ]; then
-   echo "usage: $0 [-d driver] [-f frames] [-k] [-c] [-w] <retroarch> <preset.slangp> ..." >&2
+   echo "usage: $0 [-d driver] [-f frames] [-k] [-c] [-w] [-D|-t] <retroarch> <preset.slangp> ..." >&2
    exit 2
 fi
+[ -n "$frames" ] || { [ $late = 1 ] && frames=300 || frames=30; }
 ra=$1; shift
 case $driver in
    vulkan) ctx=vk_x ;;
@@ -88,6 +98,9 @@ notification_show_screenshot = "false"
 screenshot_directory = "$out"
 cache_directory = "$out/cache_$2"
 video_shader_dir = "$(dirname "$1")"
+video_threaded = "$threaded"
+video_shader_delay = "$([ $late = 1 ] && echo 50 || echo 0)"
+video_shader_deferred_loading = "true"
 config_save_on_exit = "false"
 EOF
    # every capture compiles afresh, so the log says which compiler ran,

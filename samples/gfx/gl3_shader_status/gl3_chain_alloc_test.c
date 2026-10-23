@@ -211,6 +211,100 @@ static void render_shrink_chain(struct gl3_filter_chain *chain)
          "copy pass changed the source size");
 }
 
+/* A blob of the stock stage's words, as the compile output hands one
+ * over. */
+static struct slang_blob *stock_blob(const uint32_t *words, size_t len)
+{
+   uint32_t *copy = (uint32_t*)malloc(len);
+   if (!copy)
+      return NULL;
+   memcpy(copy, words, len);
+   return slang_blob_adopt_words(copy, len / sizeof(uint32_t));
+}
+
+/* @passes passes binding @vs/@fs by reference, as a preset's passes do
+ * once the blob table hands the same stages to each of them. */
+static struct gl3_filter_chain *chain_of(unsigned passes,
+      struct slang_blob *vs, struct slang_blob *fs)
+{
+   struct gl3_filter_chain_pass_info pass_info;
+   struct gl3_filter_chain *chain = gl3_chain_new(passes);
+   unsigned i;
+   if (!chain)
+      return NULL;
+   pass_info.scale_type_x  = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
+   pass_info.scale_type_y  = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
+   pass_info.scale_x       = 1.0f;
+   pass_info.scale_y       = 1.0f;
+   pass_info.rt_format     = 0;
+   pass_info.source_filter = GLSLANG_FILTER_CHAIN_NEAREST;
+   pass_info.mip_filter    = GLSLANG_FILTER_CHAIN_NEAREST;
+   pass_info.address       = GLSLANG_FILTER_CHAIN_ADDRESS_CLAMP_TO_EDGE;
+   pass_info.max_levels    = 0;
+   for (i = 0; i < passes; i++)
+   {
+      gl3_chain_set_pass_info(chain, i, pass_info);
+      gl3_chain_set_blob(chain, i, GL_VERTEX_SHADER, slang_blob_ref(vs));
+      gl3_chain_set_blob(chain, i, GL_FRAGMENT_SHADER, slang_blob_ref(fs));
+   }
+   if (!gl3_chain_init(chain))
+   {
+      gl3_chain_free(chain);
+      return NULL;
+   }
+   return chain;
+}
+
+/* Passes that bind the same two blobs share one linked program, within
+ * a chain and across the chain being built and the one it replaces;
+ * the program goes with the last pass that holds it. */
+static void test_shared_programs(void)
+{
+   struct slang_blob *vs = stock_blob(spirv_opaque_vert, spirv_opaque_vert_size);
+   struct slang_blob *fs = stock_blob(spirv_opaque_frag, spirv_opaque_frag_size);
+   struct slang_blob *fs2 = stock_blob(spirv_opaque_frag, spirv_opaque_frag_size);
+   struct gl3_filter_chain *live, *next;
+   unsigned reused0 = gl3_programs.reused;
+   /* every chain links a quad program of its own besides its passes' */
+   int chains = 0;
+
+   CHECK(vs && fs && fs2, "stock blobs");
+   live = chain_of(3, vs, fs);
+   chains++;
+   CHECK(live && live_programs - chains == 1 && gl3_programs.n == 1,
+         "three passes of one blob pair: %d pass programs, %u listed",
+         live_programs - chains, (unsigned)gl3_programs.n);
+   CHECK(gl3_programs.reused - reused0 == 2, "two of them took the first one's program");
+   CHECK(live && live->passes[0]->pipeline == live->passes[2]->pipeline,
+         "the passes draw with the same program");
+
+   next = chain_of(2, vs, fs);
+   chains++;
+   CHECK(next && live_programs - chains == 1, "a chain built beside the live one links nothing");
+   gl3_chain_free(live);
+   chains--;
+   CHECK(live_programs - chains == 1, "freeing the outgoing chain keeps the program the new one holds");
+   live = next;
+
+   next = chain_of(1, vs, fs2);
+   chains++;
+   CHECK(next && live_programs - chains == 2, "another fragment blob is another program");
+   gl3_chain_free(live);
+   chains--;
+   CHECK(live_programs - chains == 1 && gl3_programs.n == 1, "the first program went with its last pass");
+   gl3_chain_free(next);
+   chains--;
+   CHECK(live_programs == 0 && gl3_programs.n == 0 && !gl3_programs.v,
+         "no pass, no program, no table");
+
+   CHECK(vs->refs == 1 && fs->refs == 1 && fs2->refs == 1,
+         "the programs' blob references went with them");
+   slang_blob_unref(vs);
+   slang_blob_unref(fs);
+   slang_blob_unref(fs2);
+   check_gl_objects();
+}
+
 static void test_shrink_chain(void)
 {
    struct gl3_filter_chain *chain;
@@ -297,6 +391,7 @@ int main(void)
    }
 
    test_shrink_chain();
+   test_shared_programs();
 
    if (failures)
    {

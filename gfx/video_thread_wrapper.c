@@ -1220,6 +1220,39 @@ static bool video_thread_handle_packet(
          video_thread_reply(thr, &pkt);
          break;
 
+      case CMD_SHADER_LOAD_BEGIN:
+         {
+            shader_load_deferred_t *d = (shader_load_deferred_t*)pkt.data.v;
+            pkt.data.b = thr->driver_data && thr->driver
+               && thr->driver->shader_load_begin
+               && thr->driver->shader_load_begin(thr->driver_data, d);
+         }
+         video_thread_reply(thr, &pkt);
+         break;
+
+      case CMD_SHADER_LOAD_STEP:
+         {
+            shader_load_deferred_t *d = (shader_load_deferred_t*)pkt.data.v;
+            /* The main thread asked for the load to end: the writes the
+             * driver's step reads as that are made here, on its thread. */
+            if (retro_atomic_load_acquire_int(&d->cancel))
+            {
+               d->current_pass = d->total_passes;
+               d->state        = SHADER_LOAD_FAILED;
+            }
+            if (thr->driver_data && thr->driver && thr->driver->shader_load_step)
+               pkt.data.b = thr->driver->shader_load_step(thr->driver_data, d);
+            else
+            {
+               d->state   = SHADER_LOAD_FAILED;
+               pkt.data.b = false;
+            }
+            /* publishes the step's writes to the main thread's tick */
+            retro_atomic_store_release_int(&d->busy, 0);
+         }
+         video_thread_reply(thr, &pkt);
+         break;
+
       case CMD_SUPPRESS_SCREENSAVER:
          /* The inhibit belongs to the window, and the window to this
           * thread. */
@@ -4411,6 +4444,64 @@ static bool video_thread_init(thread_video_t *thr,
    return pkt.data.b;
 }
 
+/* The deferred load's begin and step run where the driver's chain
+ * lives.  begin waits: it is short and the main thread needs its
+ * answer.  A step is posted and runs between frames with the load
+ * marked busy, so the main thread's tick returns at once and asks
+ * again next frame; one it means as a cancel waits, since the caller
+ * frees the driver, or starts another load, when it returns. */
+static bool video_thread_shader_load_begin(void *data,
+      shader_load_deferred_t *deferred)
+{
+   thread_packet_t pkt;
+   thread_video_t *thr = (thread_video_t*)data;
+
+   if (!thr || !thr->driver || !thr->driver->shader_load_begin
+         || !thr->driver->shader_load_step)
+      return false;
+
+   pkt.type   = CMD_SHADER_LOAD_BEGIN;
+   pkt.data.v = deferred;
+   video_thread_send_and_wait_user_to_thread(thr, &pkt);
+   return pkt.data.b;
+}
+
+static bool video_thread_shader_load_step(void *data,
+      shader_load_deferred_t *deferred)
+{
+   thread_packet_t pkt;
+   thread_video_t *thr = (thread_video_t*)data;
+
+   if (!thr || !thr->driver || !thr->driver->shader_load_step)
+   {
+      deferred->state = SHADER_LOAD_FAILED;
+      return false;
+   }
+
+   pkt.type   = CMD_SHADER_LOAD_STEP;
+   pkt.data.v = deferred;
+
+   if (retro_atomic_load_acquire_int(&deferred->cancel))
+   {
+      /* after any step still queued, which ends the load itself */
+      video_thread_send_and_wait_user_to_thread(thr, &pkt);
+      return pkt.data.b;
+   }
+
+   /* the step before this one is still running, or ended the load */
+   if (retro_atomic_load_acquire_int(&deferred->busy))
+      return true;
+   if (deferred->state != SHADER_LOAD_COMPILING)
+      return false;
+
+   retro_atomic_store_release_int(&deferred->busy, 1);
+   if (video_thread_defer_packet(thr, &pkt))
+      return true;
+   /* no thread to post to: run it the waiting way, as set_shader does */
+   video_thread_send_and_wait_user_to_thread(thr, &pkt);
+   return pkt.data.b;
+}
+
 static bool video_thread_set_shader(void *data,
       enum rarch_shader_type type, const char *path)
 {
@@ -5765,16 +5856,8 @@ static const video_driver_t video_thread = {
 #endif
    video_thread_get_poke_interface,
    NULL, /* wrap_type_to_enum */
-   /* Deliberately absent: deferred shader loading is main-thread
-    * tick machinery stepping a driver-owned partial chain, and under
-    * the wrapper the chain lives on the video thread - the parse-side
-    * gate (!video_st->threaded in video_shader_parse.c) is the
-    * primary guard against that race, and this NULL is the backstop
-    * that makes the capability test fail even if the gate is ever
-    * bypassed. Threaded video takes the synchronous fallback, whose
-    * driver calls are blocking wrapper commands. */
-   NULL, /* shader_load_begin */
-   NULL, /* shader_load_step */
+   video_thread_shader_load_begin,
+   video_thread_shader_load_step,
 #ifdef HAVE_GFX_WIDGETS
    video_thread_wrapper_gfx_widgets_enabled,
 #endif
