@@ -23,6 +23,26 @@ static size_t   device_bytes;
 static unsigned write_calls, writes_while_stopped;
 static bool     device_running;
 static unsigned failures;
+static size_t recorded_frames, record_sample_index;
+static bool record_bad;
+
+static bool test_record(void *data, const struct record_audio_data *audio)
+{
+   const int16_t *samples = (const int16_t*)audio->data;
+   size_t i;
+   if (data != &recorded_frames || !samples || !audio->frames)
+      record_bad = true;
+   else
+      for (i = 0; i < audio->frames * 2; i++, record_sample_index++)
+         if (samples[i] != source_i[record_sample_index % (FRAMES * 2)])
+            record_bad = true;
+   recorded_frames += audio->frames;
+   return true;
+}
+
+static const record_driver_t test_recorder = {
+   NULL, NULL, NULL, test_record, NULL, "test"
+};
 
 static void *test_init(const char *device, unsigned rate, unsigned latency,
       unsigned *new_rate)
@@ -68,8 +88,11 @@ static void test_nonblock(void *data, bool state) { (void)data; (void)state; }
 static void submit_all(void)
 {
    unsigned i;
+   record_sample_index = 0;
    audio_driver_sample_batch(source_i, FRAMES);
+   record_sample_index = 0;
    audio_driver_sample_batch_float(source_f, FRAMES);
+   record_sample_index = 0;
    for (i = 0; i < AUDIO_SAMPLE_ACCUM_INT16S; i += 2)
       audio_driver_sample(source_i[i % (FRAMES * 2)],
             source_i[(i + 1) % (FRAMES * 2)]);
@@ -91,7 +114,9 @@ int main(void)
    audio_driver_state_t *st = &audio_driver_st;
    settings_t *settings     = config_get_ptr();
    unsigned before;
-   size_t i;
+   size_t i, before_recorded;
+   size_t expected_frames = FRAMES * 2 + AUDIO_SAMPLE_ACCUM_INT16S / 2;
+   recording_state_t *record_st = recording_state_get_ptr();
 
    audio_null.init              = test_init;
    audio_null.write             = test_write;
@@ -128,26 +153,40 @@ int main(void)
    if (!audio_driver_init_internal(settings, false))
       abort();
    audio_driver_publish_runloop();
+   record_st->data = &recorded_frames;
+   record_st->driver = &test_recorder;
+   record_st->channels = 2;
+   record_st->layout = AUDIO_LAYOUT_STEREO;
 
    printf("core audio against a stopped driver:\n");
 
    submit_all();
    expect("a driver that came up running takes core audio", write_calls > 0);
+   expect("recording receives complete PCM from all core callback styles",
+         recorded_frames == expected_frames && !record_bad);
 
    expect("audio_driver_stop() stops the driver", audio_driver_stop()
          && !device_running);
    before = write_calls;
+   before_recorded = recorded_frames;
    submit_all();
    expect("core audio while stopped reaches no write",
          write_calls == before && writes_while_stopped == 0);
+   expect("recording keeps complete PCM while device output is stopped",
+         recorded_frames == before_recorded + expected_frames && !record_bad);
 
    expect("audio_driver_start() starts it again", audio_driver_start(false)
          && device_running);
    before = write_calls;
+   before_recorded = recorded_frames;
    submit_all();
    expect("core audio flows again after the start", write_calls > before
          && writes_while_stopped == 0);
 
+   expect("recording keeps complete PCM after device output resumes",
+         recorded_frames == before_recorded + expected_frames && !record_bad);
+   record_st->data = NULL;
+   record_st->driver = NULL;
    audio_driver_deinit();
 
    if (failures)
