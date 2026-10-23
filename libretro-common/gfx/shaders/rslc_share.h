@@ -642,6 +642,8 @@ bool  rslc_emit_text(struct rslc_ctx *c, struct rslc_result *result);
 void     rslc_mark_reach(struct rslc_ctx *c, uint32_t node, uint8_t *reach);
 void     rslc_reach_funcs(struct rslc_ctx *c, uint8_t *reach);
 uint32_t rslc_reflect_len(struct rslc_ctx *c);
+uint32_t rslc_layout_field_offset(const struct rslc_type *t, uint32_t field,
+      bool std140);
 uint32_t rslc_reflect_write(struct rslc_ctx *c, uint8_t *blob, uint32_t off,
       uint8_t *const active[2]);
 bool     rslc_blob_begin(struct rslc_ctx *c, struct rslc_pbuf *pb, size_t payload_hint,

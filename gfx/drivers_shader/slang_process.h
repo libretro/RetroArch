@@ -344,8 +344,11 @@ typedef struct glslang_output
 } glslang_output;
 
 /* What a driver that compiles source text wants printed beside the
- * SPIR-V: the language version and how the interface is named, since
- * the driver binds attributes, varyings, blocks and samplers by name.
+ * SPIR-V: the language (GLSL, GLSL ES, HLSL or MSL), its version (a
+ * GLSL #version or an HLSL shader model, 40 / 50) and, for GLSL, how
+ * the interface is named, since the GL driver binds attributes,
+ * varyings, blocks and samplers by name; HLSL binds by register and
+ * semantic, MSL by buffer, texture and sampler index.
  * Prefixes take the location or binding as a decimal suffix.  Only
  * rslc prints; with glslang the text pointers stay NULL and the driver
  * crosses the SPIR-V as it does today. */
@@ -353,6 +356,8 @@ struct slang_text_target
 {
    unsigned    version;
    bool        es;
+   bool        hlsl;
+   bool        msl;
    const char *attr_prefix;
    const char *varying_prefix;
    const char *sampler_prefix;

@@ -11,28 +11,35 @@
 #   ./rslc_image_check.sh ../../../retroarch ../../../../slang-shaders/bilinear.slangp ...
 #
 # A .slang given in place of a .slangp is wrapped in a one-pass preset.
-# Options: -d DRIVER (vulkan, the default, or glcore), -f FRAMES
-# (default 30), -k keep the captures in ./out/.  With glcore the
-# glslang run crosses the SPIR-V and the rslc run links the GLSL rslc
-# printed; GL_ARB_gl_spirv is kept out of the way so the printer, not
-# the driver's SPIR-V path, is what is compared.  Exit status is the
-# number of presets whose captures differ or failed, capped at 1.  No
-# check target: the run needs a display and a driver.
+# Options: -d DRIVER (vulkan, the default, glcore, d3d10, d3d11 or
+# d3d12), -f FRAMES (default 30), -k keep the captures in ./out/, -w
+# run a Windows RetroArch under Wine with pattern_core.dll (make
+# CC=x86_64-w64-mingw32-gcc EXT=dll), which is how the D3D drivers run
+# on a Linux box.  With glcore the glslang run crosses the SPIR-V and
+# the rslc run links the GLSL rslc printed; GL_ARB_gl_spirv is kept
+# out of the way so the printer, not the driver's SPIR-V path, is what
+# is compared.  With D3D both runs go through D3DCompile, the glslang
+# one on SPIRV-Cross's HLSL and the rslc one on rslc's.  Exit status is
+# the number of presets whose captures differ or failed, capped at 1.
+# No check target: the run needs a display and a driver.
 set -u
 
 driver=vulkan
 frames=30
 keep=0
+runner=
+ext=so
 while [ $# -gt 0 ]; do
    case $1 in
       -d) driver=$2; shift 2 ;;
       -f) frames=$2; shift 2 ;;
       -k) keep=1; shift ;;
+      -w) runner=wine; ext=dll; shift ;;
       *) break ;;
    esac
 done
 if [ $# -lt 2 ]; then
-   echo "usage: $0 [-d driver] [-f frames] [-k] <retroarch> <preset.slangp> ..." >&2
+   echo "usage: $0 [-d driver] [-f frames] [-k] [-w] <retroarch> <preset.slangp> ..." >&2
    exit 2
 fi
 ra=$1; shift
@@ -42,9 +49,9 @@ case $driver in
    *) ctx= ;;
 esac
 here=$(cd "$(dirname "$0")" && pwd)
-core="$here/pattern_core.so"
+core="$here/pattern_core.$ext"
 out="$here/out"
-[ -f "$core" ] || { echo "build pattern_core.so first (make)" >&2; exit 2; }
+[ -f "$core" ] || { echo "build $core first (make)" >&2; exit 2; }
 mkdir -p "$out"
 
 capture() {
@@ -80,7 +87,7 @@ EOF
    rm -rf "$out/cache_$2"
    mkdir -p "$out/cache_$2"
    rm -f "$3"
-   "$ra" --verbose --config "$cfg" -L "$core" --set-shader "$1" \
+   $runner "$ra" --verbose --config "$cfg" -L "$core" --set-shader "$1" \
       --max-frames="$frames" --max-frames-ss --max-frames-ss-path="$3" \
       > "$4" 2>&1
    [ -s "$3" ]
@@ -112,6 +119,11 @@ for preset in "$@"; do
    if [ "$driver" = glcore ] && ! grep -q "Linked the compiler's GLSL" "$lr"; then
       echo "FAIL  $name: the rslc run did not link rslc's GLSL (see $lr)"; bad=$((bad + 1)); continue
    fi
+   case $driver in d3d1*)
+      if ! grep -q "Using the compiler's HLSL" "$lr"; then
+         echo "FAIL  $name: the rslc run did not compile rslc's HLSL (see $lr)"; bad=$((bad + 1)); continue
+      fi ;;
+   esac
    if cmp -s "$g" "$r"; then
       echo "same  $name"
    else

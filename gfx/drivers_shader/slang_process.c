@@ -1204,9 +1204,10 @@ static char *slang_rslc_print_stage(const char *source,
    names.push_block     = t->push_block[stage == GLSLANG_COMPILE_STAGE_VERTEX ? 0 : 1];
    names.push_instance  = t->push_instance[stage == GLSLANG_COMPILE_STAGE_VERTEX ? 0 : 1];
    memset(&opts, 0, sizeof(opts));
-   opts.dst     = t->es ? RSLC_DST_GLSL_ES : RSLC_DST_GLSL;
+   opts.dst     = t->hlsl ? RSLC_DST_HLSL : t->msl ? RSLC_DST_MSL
+      : t->es ? RSLC_DST_GLSL_ES : RSLC_DST_GLSL;
    opts.version = t->version;
-   opts.names   = &names;
+   opts.names   = t->hlsl || t->msl ? NULL : &names;
    opts.err     = err;
    opts.err_cap = sizeof(err);
    err[0]       = '\0';
@@ -1554,8 +1555,16 @@ bool slang_process(
    const spvc_reflected_resource *list = NULL;
    size_t                  list_num    = 0;
    struct video_shader_pass *pass      = &shader_info->pass[pass_number];
+   struct slang_text_target text;
 
-   if (!glslang_compile_shader(pass->source.path, &output))
+   /* D3D and Metal take the compiler's own HLSL / MSL when it prints
+    * one; the other destinations cross the SPIR-V */
+   memset(&text, 0, sizeof(text));
+   text.version = version;
+   text.hlsl    = dst_type == RARCH_SHADER_HLSL;
+   text.msl     = dst_type == RARCH_SHADER_METAL;
+   if (!glslang_compile_shader_text(pass->source.path, &output, NULL,
+            text.hlsl || text.msl ? &text : NULL))
       return false;
 
    if (!slang_preprocess_parse_parameters_meta(&output.meta, shader_info,
@@ -1602,6 +1611,14 @@ bool slang_process(
       out->frame_in_place = res != SLANG_RECT_UNSUPPORTED;
       out->frame_unspec   = res == SLANG_RECT_REWRITTEN
          && shader_info->pass[0].filter == RARCH_FILTER_UNSPEC;
+      if (res == SLANG_RECT_REWRITTEN)
+      {
+         /* the rewrite is on the SPIR-V: the printed text is behind it */
+         free(output.vertex_text);
+         free(output.fragment_text);
+         output.vertex_text   = NULL;
+         output.fragment_text = NULL;
+      }
    }
 
    out->format          = output.meta.rt_format;
@@ -1778,14 +1795,27 @@ bool slang_process(
       }
    }
 
-   if (   spvc_compiler_compile(vs_compiler, &vs_code) != SPVC_SUCCESS
-       || spvc_compiler_compile(ps_compiler, &ps_code) != SPVC_SUCCESS)
-      goto spvc_error;
+   if (output.vertex_text && output.fragment_text)
+   {
+      /* the compiler's text, owned by the pass from here; Cross still
+       * reflects the SPIR-V */
+      pass->source.string.vertex   = output.vertex_text;
+      pass->source.string.fragment = output.fragment_text;
+      output.vertex_text           = NULL;
+      output.fragment_text         = NULL;
+      RARCH_LOG("[Slang] Using the compiler's %s directly.\n", backend_name);
+   }
+   else
+   {
+      if (   spvc_compiler_compile(vs_compiler, &vs_code) != SPVC_SUCCESS
+          || spvc_compiler_compile(ps_compiler, &ps_code) != SPVC_SUCCESS)
+         goto spvc_error;
 
-   pass->source.string.vertex   = strdup(vs_code);
-   pass->source.string.fragment = strdup(ps_code);
-   if (!pass->source.string.vertex || !pass->source.string.fragment)
-      goto error;
+      pass->source.string.vertex   = strdup(vs_code);
+      pass->source.string.fragment = strdup(ps_code);
+      if (!pass->source.string.vertex || !pass->source.string.fragment)
+         goto error;
+   }
 
    if (!slang_process_reflection(
              vs_compiler, ps_compiler,

@@ -977,8 +977,10 @@ static void test_folding(void)
 }
 
 /* --glsl <in> <version> [es]: print a stage as GLSL to stdout, with the
- * interface named as RetroArch's glcore driver names it. */
-static int glsl_file(const char *path, unsigned version, bool es)
+ * interface named as RetroArch's glcore driver names it.
+ * --hlsl <in> <model>: print it as HLSL for shader model 40 / 50.
+ * --msl <in>: print it as MSL. */
+static int glsl_file(const char *path, unsigned version, bool es, enum rslc_dst dst)
 {
    char  err[256];
    FILE *f = fopen(path, "rb");
@@ -1016,9 +1018,10 @@ static int glsl_file(const char *path, unsigned version, bool es)
    names.push_block     = stage == RSLC_STAGE_VERTEX ? "RARCH_PUSH_VERTEX" : "RARCH_PUSH_FRAGMENT";
    names.push_instance  = stage == RSLC_STAGE_VERTEX ? "RARCH_PUSH_VERTEX_INSTANCE" : "RARCH_PUSH_FRAGMENT_INSTANCE";
    memset(&opts, 0, sizeof(opts));
-   opts.dst     = es ? RSLC_DST_GLSL_ES : RSLC_DST_GLSL;
+   opts.dst     = dst;
    opts.version = version;
-   opts.names   = &names;
+   opts.names   = dst == RSLC_DST_GLSL || dst == RSLC_DST_GLSL_ES ? &names : NULL;
+   (void)es;
    opts.err     = err;
    opts.err_cap = sizeof(err);
    err[0]       = '\0';
@@ -1108,6 +1111,181 @@ static void test_glsl(void)
    {
       CHECK(strstr(r.text, "#version 300 es\n") == r.text);
       CHECK(strstr(r.text, "precision highp float;") != NULL);
+      rslc_result_free(&r, &o);
+   }
+   CHECK(alloc_live == 0);
+}
+
+/* The HLSL printer: matrices transposed so cbuffer members overlay
+ * std140 and products swap into mul(), the uniform block at b0 and the
+ * push block at b1 with packoffsets, Texture2D + SamplerState pairs at
+ * the binding, locations as TEXCOORDn / SV_Target, builtins through
+ * the wrapper main, aggregate constructors hoisted, GLSL mod kept,
+ * and shader model 4's gather limit refused. */
+static void test_hlsl(void)
+{
+   struct rslc_opts   o;
+   struct rslc_result r;
+   char               err[128];
+   static const char  vert[] =
+      "#version 450\n"
+      "layout(std140, set = 0, binding = 0) uniform UBO { mat4 MVP; vec2 scale; float t; } global;\n"
+      "layout(location = 0) in vec4 Position;\n"
+      "layout(location = 1) in vec2 TexCoord;\n"
+      "layout(location = 0) out vec2 vTexCoord;\n"
+      "layout(location = 1) flat out int vIdx;\n"
+      "void main() {\n"
+      "  mat2 r = mat2(global.t);\n"
+      "  gl_Position = global.MVP * Position;\n"
+      "  vTexCoord = TexCoord * r * global.scale;\n"
+      "  vIdx = gl_VertexIndex;\n"
+      "}\n";
+   static const char  frag[] =
+      "#version 450\n"
+      "layout(push_constant) uniform Push { vec4 SourceSize; float gamma; } params;\n"
+      "layout(location = 0) in vec2 vTexCoord;\n"
+      "layout(location = 0) out vec4 FragColor;\n"
+      "layout(set = 0, binding = 2) uniform sampler2D Source;\n"
+      "float pick(sampler2D s, float k[3], int i) { return texture(s, vTexCoord).r * k[i]; }\n"
+      "void main() {\n"
+      "  vec2 m = mod(vTexCoord, 0.5);\n"
+      "  float v = pick(Source, float[3](1.0, params.gamma, 3.0), int(m.x));\n"
+      "  if (gl_FragCoord.x > 8.0 && vTexCoord == m) discard;\n"
+      "  FragColor = vec4(v.xxx, textureGather(Source, vTexCoord, 1).x);\n"
+      "}\n";
+
+   opts_default(&o, err, sizeof(err));
+   o.dst     = RSLC_DST_HLSL;
+   o.version = 50;
+   CHECK(rslc_compile(vert, sizeof(vert) - 1, RSLC_STAGE_VERTEX, &o, &r));
+   if (!r.text)
+      return;
+   CHECK(strstr(r.text, "cbuffer UBO : register(b0)") != NULL);
+   CHECK(strstr(r.text, "row_major float4x4 global_MVP : packoffset(c0);") != NULL);
+   CHECK(strstr(r.text, "float2 global_scale : packoffset(c4);") != NULL);
+   CHECK(strstr(r.text, "float global_t : packoffset(c4.z);") != NULL);
+   CHECK(strstr(r.text, "float4 Position : TEXCOORD0;") != NULL);
+   CHECK(strstr(r.text, "nointerpolation int vIdx : TEXCOORD1;") != NULL);
+   CHECK(strstr(r.text, "float4 gl_Position : SV_Position;") != NULL);
+   CHECK(strstr(r.text, "uint gl_VertexIndex : SV_VertexID;") != NULL);
+   CHECK(strstr(r.text, "gl_Position = mul(Position, global_MVP);") != NULL);
+   CHECK(strstr(r.text, "mul(r, TexCoord) * global_scale") != NULL);
+   CHECK(strstr(r.text, "float2x2((global_t), 0.0f, 0.0f, (global_t))") != NULL);
+   CHECK(strstr(r.text, "gl_VertexIndex = int(stage_input.gl_VertexIndex);") != NULL);
+   CHECK(strstr(r.text, "rslc_out main(rslc_in stage_input)") != NULL);
+   CHECK(strstr(r.text, "gl_FragCoord") == NULL);
+   rslc_result_free(&r, &o);
+
+   CHECK(rslc_compile(frag, sizeof(frag) - 1, RSLC_STAGE_FRAGMENT, &o, &r));
+   if (r.text)
+   {
+      CHECK(strstr(r.text, "float2 mod(float2 x, float2 y)") != NULL);
+      CHECK(strstr(r.text, "cbuffer Push : register(b1)") != NULL);
+      CHECK(strstr(r.text, "float params_gamma : packoffset(c1);") != NULL);
+      CHECK(strstr(r.text, "Texture2D<float4> Source : register(t2);") != NULL);
+      CHECK(strstr(r.text, "SamplerState _Source_sampler : register(s2);") != NULL);
+      CHECK(strstr(r.text, "float pick(Texture2D<float4> s, SamplerState _s_sampler, float k[3], int i)") != NULL);
+      CHECK(strstr(r.text, "s.Sample(_s_sampler, vTexCoord).x") != NULL);
+      CHECK(strstr(r.text, "float _rslc_t0[3] = { 1.0f, params_gamma, 3.0f };") != NULL);
+      CHECK(strstr(r.text, "pick(Source, _Source_sampler, _rslc_t0, int(m.x))") != NULL);
+      CHECK(strstr(r.text, "mod(vTexCoord, (0.5f).xx)") != NULL);
+      CHECK(strstr(r.text, "all(vTexCoord == m)") != NULL);
+      CHECK(strstr(r.text, "(v).xxx") != NULL);
+      CHECK(strstr(r.text, "Source.GatherGreen(_Source_sampler, vTexCoord).x") != NULL);
+      CHECK(strstr(r.text, "float4 gl_FragCoord : SV_Position;") != NULL);
+      CHECK(strstr(r.text, "gl_FragCoord.w = 1.0f / gl_FragCoord.w;") != NULL);
+      CHECK(strstr(r.text, "float4 FragColor : SV_Target0;") != NULL);
+      rslc_result_free(&r, &o);
+   }
+
+   /* shader model 4 has Gather for the red component only */
+   o.version = 40;
+   CHECK(!rslc_compile(frag, sizeof(frag) - 1, RSLC_STAGE_FRAGMENT, &o, &r));
+   CHECK(strstr(err, "red component") != NULL);
+   CHECK(alloc_live == 0);
+}
+
+/* The MSL printer: no globals, so every function takes what it
+ * reaches by reference (blocks as constant references, samplers as
+ * texture + sampler pairs) and main0 holds the stage's variables;
+ * blocks laid out at their std140 offsets with vec3 packed where the
+ * tail is taken; arrays as metal::array with braced initialisers; a
+ * vector component passed to an out parameter through a temporary;
+ * the interface at the chain's buffer, texture and sampler indices. */
+static void test_msl(void)
+{
+   struct rslc_opts   o;
+   struct rslc_result r;
+   char               err[128];
+   static const char  vert[] =
+      "#version 450\n"
+      "layout(std140, set = 0, binding = 0) uniform UBO { mat4 MVP; vec3 tint; float t; vec2 scale; } global;\n"
+      "layout(location = 0) in vec4 Position;\n"
+      "layout(location = 1) in vec2 TexCoord;\n"
+      "layout(location = 0) out vec2 vTexCoord;\n"
+      "vec2 half_scale;\n"
+      "vec2 sc(vec2 v) { return v * global.scale * half_scale; }\n"
+      "void main() {\n"
+      "  half_scale = global.scale * 0.5;\n"
+      "  gl_Position = global.MVP * Position;\n"
+      "  vTexCoord = sc(TexCoord) + global.tint.xy * global.t;\n"
+      "}\n";
+   static const char  frag[] =
+      "#version 450\n"
+      "layout(push_constant) uniform Push { vec4 SourceSize; float gamma; } params;\n"
+      "layout(location = 0) in vec2 vTexCoord;\n"
+      "layout(location = 0) out vec4 FragColor;\n"
+      "layout(set = 0, binding = 2) uniform sampler2D Source;\n"
+      "void split(float v, out float lo, out float hi) { lo = fract(v); hi = v - lo; }\n"
+      "float pick(sampler2D s, float k[3], int i) { return texture(s, vTexCoord).r * k[i]; }\n"
+      "void main() {\n"
+      "  vec2 m = mod(vTexCoord, 0.5);\n"
+      "  vec3 c = vec3(0.0);\n"
+      "  split(params.gamma, c.x, c.y);\n"
+      "  float v = pick(Source, float[3](1.0, params.gamma, 3.0), int(m.x));\n"
+      "  if (gl_FragCoord.x > 8.0 && vTexCoord == m) discard;\n"
+      "  FragColor = vec4(v.xxx + c, textureGather(Source, vTexCoord, 1).x);\n"
+      "}\n";
+
+   opts_default(&o, err, sizeof(err));
+   o.dst = RSLC_DST_MSL;
+   CHECK(rslc_compile(vert, sizeof(vert) - 1, RSLC_STAGE_VERTEX, &o, &r));
+   if (!r.text)
+      return;
+   CHECK(strstr(r.text, "#include <metal_stdlib>") == r.text);
+   CHECK(strstr(r.text, "float4x4 MVP;") != NULL);
+   CHECK(strstr(r.text, "packed_float3 tint;") != NULL);     /* t sits in its tail */
+   CHECK(strstr(r.text, "float t;") != NULL);
+   CHECK(strstr(r.text, "float2 scale;") != NULL);
+   CHECK(strstr(r.text, "float4 Position [[attribute(0)]];") != NULL);
+   CHECK(strstr(r.text, "float2 vTexCoord [[user(locn0)]];") != NULL);
+   CHECK(strstr(r.text, "float4 gl_Position [[position]];") != NULL);
+   CHECK(strstr(r.text, "float2 sc(float2 v, thread float2& half_scale, constant UBO& global)") != NULL);
+   CHECK(strstr(r.text, "vertex main0_out main0(main0_in in [[stage_in]], constant UBO& global [[buffer(0)]])") != NULL);
+   CHECK(strstr(r.text, "float2 half_scale = {};") != NULL);
+   CHECK(strstr(r.text, "sc(TexCoord, half_scale, global)") != NULL);
+   CHECK(strstr(r.text, "global.MVP * Position") != NULL);
+   CHECK(strstr(r.text, "out.gl_Position = gl_Position;") != NULL);
+   rslc_result_free(&r, &o);
+
+   CHECK(rslc_compile(frag, sizeof(frag) - 1, RSLC_STAGE_FRAGMENT, &o, &r));
+   if (r.text)
+   {
+      CHECK(strstr(r.text, "inline Tx mod(Tx x, Ty y)") != NULL);
+      CHECK(strstr(r.text, "constant Push& params [[buffer(1)]]") != NULL);
+      CHECK(strstr(r.text, "texture2d<float> Source [[texture(2)]], sampler SourceSmplr [[sampler(2)]]") != NULL);
+      CHECK(strstr(r.text, "float4 gl_FragCoord [[position]]") != NULL);
+      CHECK(strstr(r.text, "float pick(texture2d<float> s, sampler sSmplr, array<float, 3> k, int i, thread float2& vTexCoord)") != NULL);
+      CHECK(strstr(r.text, "void split(float v, thread float& lo, thread float& hi)") != NULL);
+      CHECK(strstr(r.text, "float _rslc_t0 = c.x;") != NULL);
+      CHECK(strstr(r.text, "split(params.gamma, _rslc_t0, _rslc_t1);") != NULL);
+      CHECK(strstr(r.text, "c.y = _rslc_t1;") != NULL);
+      CHECK(strstr(r.text, "array<float, 3>{{ 1.0f, params.gamma, 3.0f }}") != NULL);
+      CHECK(strstr(r.text, "all(vTexCoord == m)") != NULL);
+      CHECK(strstr(r.text, "discard_fragment();") != NULL);
+      CHECK(strstr(r.text, "Source.gather(SourceSmplr, vTexCoord, int2(0), component::y).x") != NULL);
+      CHECK(strstr(r.text, "float4 FragColor [[color(0)]];") != NULL);
+      CHECK(strstr(r.text, "s.sample(sSmplr, vTexCoord).x") != NULL);
       rslc_result_free(&r, &o);
    }
    CHECK(alloc_live == 0);
@@ -1355,7 +1533,12 @@ int main(int argc, char **argv)
    if (argc == 4 && !strcmp(argv[1], "--spirv"))
       return spirv_file(argv[2], argv[3]);
    if ((argc == 4 || argc == 5) && !strcmp(argv[1], "--glsl"))
-      return glsl_file(argv[2], (unsigned)atoi(argv[3]), argc == 5 && !strcmp(argv[4], "es"));
+      return glsl_file(argv[2], (unsigned)atoi(argv[3]), false,
+            argc == 5 && !strcmp(argv[4], "es") ? RSLC_DST_GLSL_ES : RSLC_DST_GLSL);
+   if (argc == 4 && !strcmp(argv[1], "--hlsl"))
+      return glsl_file(argv[2], (unsigned)atoi(argv[3]), false, RSLC_DST_HLSL);
+   if (argc == 3 && !strcmp(argv[1], "--msl"))
+      return glsl_file(argv[2], 20000, false, RSLC_DST_MSL);
 
    test_abi_rejects();
    test_arena();
@@ -1367,6 +1550,8 @@ int main(int argc, char **argv)
    test_spirv();
    test_folding();
    test_glsl();
+   test_hlsl();
+   test_msl();
 
    if (fails)
    {

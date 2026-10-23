@@ -911,7 +911,7 @@ static void rslc_layout_of(const struct rslc_type *t, bool std140,
 }
 
 /* Offset of field i of a struct under a layout. */
-static uint32_t rslc_layout_field_offset(const struct rslc_type *t, uint32_t field,
+uint32_t rslc_layout_field_offset(const struct rslc_type *t, uint32_t field,
       bool std140)
 {
    uint32_t i, off = 0;

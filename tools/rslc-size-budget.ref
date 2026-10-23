@@ -1,7 +1,7 @@
 # unit        .text bytes   (x86-64 GCC -O2 -std=c89)
 rslc_front      73740
 rslc_ir         63799
-rslc_emit       22045
+rslc_emit       88588
 # ceilings, from the plan: Vulkan-only build and full build
 vulkan_only_max  153600
 full_max         460800
