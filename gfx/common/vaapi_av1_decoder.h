@@ -7,6 +7,9 @@
 RETRO_BEGIN_DECLS
 
 typedef struct vaapi_av1_decoder vaapi_av1_decoder_t;
+/* Source CICP intersection; mastering/light data stays intact. */
+bool vaapi_av1_color_resolve(const rav1_sequence_t *sequence,
+      const video_color_metadata_t *container, video_color_metadata_t *out);
 /* Cold decoder owner; borrowed pool/session/runtime outlive detach/retirement.
  * Initially empty ops. Copies metadata and creates its opaque carriers.
  * Failure leaves ops unchanged; no native context ownership is transferred. */

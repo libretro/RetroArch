@@ -10,12 +10,13 @@ ifneq ($(SANITIZER),)
 CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
-all: decoder_trace_test$(EXE) busy_test$(EXE) decoder_test$(EXE) export_test$(EXE) pool_test$(EXE) submit_test$(EXE) picture_test$(EXE) session_test$(EXE) runtime_test$(EXE) old_sdk_test$(EXE) tiles_test$(EXE) tiles_trace_test$(EXE)
+all: owner_test$(EXE) decoder_trace_test$(EXE) busy_test$(EXE) decoder_test$(EXE) export_test$(EXE) pool_test$(EXE) submit_test$(EXE) picture_test$(EXE) session_test$(EXE) runtime_test$(EXE) old_sdk_test$(EXE) tiles_test$(EXE) tiles_trace_test$(EXE)
 session_test$(EXE): session_test.c ../vaapi_hevc/session_test.c ../../../gfx/common/vaapi_hevc_session.c ../../../gfx/common/vaapi_av1_session.h
 	$(CC) $(CFLAGS) session_test.c -o $@ $(LDFLAGS)
 runtime_test$(EXE): runtime_test.c ../vaapi_hevc/runtime_test.c ../vaapi_hevc/session_test.c ../vaapi_hevc/submit_test.c ../../../gfx/common/vaapi_hevc_runtime.c ../../../gfx/common/vaapi_av1_runtime.h ../../../gfx/common/vaapi_hevc_session.c ../../../gfx/common/vaapi_hevc_submit.c
 	$(CC) $(CFLAGS) runtime_test.c -o $@ $(LDFLAGS)
 check: all
+	$(RUNNER) ./owner_test$(EXE)
 	$(RUNNER) ./busy_test$(EXE)
 	$(RUNNER) ./decoder_test$(EXE)
 	$(RUNNER) ./export_test$(EXE)
@@ -27,7 +28,7 @@ check: all
 	$(RUNNER) ./old_sdk_test$(EXE)
 	$(RUNNER) ./tiles_test$(EXE)
 clean:
-	rm -f decoder_trace_test decoder_trace_test.exe busy_test busy_test.exe decoder_test decoder_test.exe export_test export_test.exe pool_test pool_test.exe submit_test submit_test.exe picture_test picture_test.exe tiles_test tiles_test.exe tiles_trace_test tiles_trace_test.exe old_sdk_test old_sdk_test.exe session_test session_test.exe runtime_test runtime_test.exe
+	rm -f owner_test owner_test.exe decoder_trace_test decoder_trace_test.exe busy_test busy_test.exe decoder_test decoder_test.exe export_test export_test.exe pool_test pool_test.exe submit_test submit_test.exe picture_test picture_test.exe tiles_test tiles_test.exe tiles_trace_test tiles_trace_test.exe old_sdk_test old_sdk_test.exe session_test session_test.exe runtime_test runtime_test.exe
 .PHONY: all check clean
 
 old_sdk_test$(EXE): old_sdk_test.c ../../../gfx/common/vaapi_hevc_session.c ../../../gfx/common/vaapi_hevc_runtime.c ../../../gfx/common/vaapi_av1_session.h ../../../gfx/common/vaapi_av1_runtime.h
@@ -64,3 +65,7 @@ busy_test$(EXE): busy_test.c decoder_test.c export_test.c pool_test.c $(EXPORT_S
 DECODER_TRACE_SOURCES := ../../../gfx/common/vaapi_av1_decoder.c ../../../gfx/common/vaapi_av1_pool.c ../../../gfx/common/vaapi_av1_submit.c ../../../gfx/common/vaapi_hevc_submit.c $(EXPORT_SOURCES)
 decoder_trace_test$(EXE): decoder_trace_test.c tiles_trace_test.c $(DECODER_TRACE_SOURCES) ../vulkan_video_caps/av1_params_test.c
 	$(CC) $(CFLAGS) -DHAVE_THREADS -Wno-unused-function decoder_trace_test.c $(DECODER_TRACE_SOURCES) -o $@ $(LDFLAGS)
+
+OWNER_SOURCES := ../../../gfx/common/vaapi_av1_decoder.c ../../../gfx/common/vaapi_av1_pool.c ../../../gfx/common/vaapi_av1_submit.c $(EXPORT_SOURCES)
+owner_test$(EXE): owner_test.c ../vaapi_hevc/runtime_test.c ../vaapi_hevc/session_test.c ../vaapi_hevc/submit_test.c ../../../gfx/common/vaapi_av1_owner.c ../../../gfx/common/vaapi_av1_owner.h $(OWNER_SOURCES)
+	$(CC) $(CFLAGS) -DHAVE_THREADS owner_test.c $(OWNER_SOURCES) -o $@ $(LDFLAGS)

@@ -17,7 +17,7 @@ struct vaapi_av1_decoder
    unsigned widths[32], heights[32], yuv[32];
    bool closed, failed;
 };
-static bool vaapi_av1_color(const rav1_sequence_t *s,
+bool vaapi_av1_color_resolve(const rav1_sequence_t *s,
       const video_color_metadata_t *container, video_color_metadata_t *out)
 {
    video_color_metadata_t color;
@@ -97,7 +97,7 @@ static int vaapi_av1_decoder_decode(void *opaque, const uint8_t *packet,
    int reference, display, result;
    if (!d || d->closed || !sequence || !p || p->header.show_existing
          || vaapi_av1_decoder_poll(d) < 0 || !d->pool->active
-         || !vaapi_av1_color(sequence, &d->container, &color))
+         || !vaapi_av1_color_resolve(sequence, &d->container, &color))
       return -1;
    slots = d->pool->session->slots;
    if (p->slot < 0 || (unsigned)p->slot >= slots
@@ -208,7 +208,7 @@ bool vaapi_av1_decoder_open(vaapi_av1_pool_t *pool,
          || params->operating_point_count != 1
          || params->operating_points[0].idc
          || (params->film_grain_params_present && pool->session->slots < 18)
-         || !vaapi_av1_color(params, color, &resolved))
+         || !vaapi_av1_color_resolve(params, color, &resolved))
       return false;
    d = (vaapi_av1_decoder_t *)calloc(1, sizeof(*d));
    if (!d)
