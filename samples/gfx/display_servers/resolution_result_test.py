@@ -19,6 +19,7 @@ unit = r"""
 #include <assert.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 typedef int bool;
 #define true 1
@@ -35,9 +36,16 @@ typedef struct { TCHAR szDevice[32]; } MONITORINFOEX;
 typedef struct
 {
    unsigned dmPelsWidth, dmPelsHeight, dmBitsPerPel, dmDisplayFrequency;
-   unsigned dmDisplayOrientation, dmDisplayFixedOutput, dmFields;
+   unsigned dmDisplayOrientation, dmDisplayFixedOutput, dmFields, dmDisplayFlags;
+   struct { long x, y; } dmPosition;
 } DEVMODE;
-typedef struct { unsigned orig_dims; float orig_refresh; } dispserv_win32_t;
+typedef struct win32_display_mode
+{
+   struct win32_display_mode *next;
+   DEVMODE original, applied;
+   TCHAR device[32];
+} win32_display_mode_t;
+typedef struct { win32_display_mode_t *modes; } dispserv_win32_t;
 #define VIDEO_SCALE_PACK(w, h) (((w) << 16) | (h))
 #define VIDEO_SCALE_W(d) ((d) >> 16)
 #define VIDEO_SCALE_H(d) ((d) & 65535)
@@ -58,25 +66,39 @@ typedef struct { unsigned orig_dims; float orig_refresh; } dispserv_win32_t;
 #define DISP_CHANGE_NOTUPDATED -3
 static int current_ok = 1, test_result, apply_result;
 static unsigned tests, applies, enumerated, monitors;
-static int monitor_ok = 1;
-static float video_driver_get_refresh_rate(void) { return 60.0f; }
-static int GetSystemMetrics(int which) { return which ? 1080 : 1920; }
+static int monitor_ok = 1, fail_alloc;
+static TCHAR selected = 'D';
+static DEVMODE current_modes[2];
+static void reset_modes(void)
+{
+   unsigned i;
+   memset(current_modes, 0, sizeof(current_modes));
+   for (i = 0; i < 2; i++)
+   {
+      current_modes[i].dmPelsWidth = 1920;
+      current_modes[i].dmPelsHeight = 1080;
+      current_modes[i].dmBitsPerPel = 32;
+      current_modes[i].dmDisplayFrequency = i ? 75 : 60;
+   }
+   selected = 'D';
+   monitor_ok = current_ok = 1;
+   fail_alloc = 0;
+}
 static bool win32_get_named_video_output(DEVMODE *dm, int mode,
       const TCHAR *device)
 {
    memset(dm, 0, sizeof(*dm));
    if (!*device) return false;
-   assert(device[0] == 'D');
+   assert(device[0] == 'D' || device[0] == 'E');
    if (mode == -1 && !current_ok) return false;
    if (mode >= 0)
    {
       enumerated++;
       if (mode >= 2) return false;
    }
-   dm->dmPelsWidth = 1920;
-   dm->dmPelsHeight = 1080;
-   dm->dmBitsPerPel = 32;
-   dm->dmDisplayFrequency = mode == 0 ? 120 : 60;
+   *dm = current_modes[device[0] == 'E'];
+   if (mode >= 0)
+      dm->dmDisplayFrequency = mode == 0 ? 120 : 60;
    return true;
 }
 static void win32_monitor_info(void *data, void *monitor, unsigned *id)
@@ -85,7 +107,8 @@ static void win32_monitor_info(void *data, void *monitor, unsigned *id)
    memset(info, 0, sizeof(*info));
    monitors++;
    if (monitor_ok)
-      info->szDevice[0] = monitors == 1 ? 'D' : 'E';
+      info->szDevice[0] = selected;
+   selected = 'E';
    *(HMONITOR *)monitor = info;
    *id = 0;
 }
@@ -93,8 +116,8 @@ static int win32_change_display_settings(const char *name, void *mode,
       unsigned flags)
 {
    const DEVMODE *dm = (const DEVMODE *)mode;
-   assert(name && ((const TCHAR *)name)[0] == 'D'
-         && dm->dmDisplayFrequency == 120);
+   const TCHAR *device = (const TCHAR *)name;
+   assert(name && (device[0] == 'D' || device[0] == 'E'));
    if (flags == CDS_TEST)
    {
       tests++;
@@ -102,20 +125,33 @@ static int win32_change_display_settings(const char *name, void *mode,
    }
    assert(!flags);
    applies++;
+   if (apply_result == DISP_CHANGE_SUCCESSFUL)
+      current_modes[device[0] == 'E'] = *dm;
    return apply_result;
 }
 """
+match_start = source.index("static bool win32_display_mode_matches(")
+match_end = source.index("static bool win32_get_video_output_info(", match_start)
+unit += r"""
+static void *record_alloc(size_t n, size_t size)
+{
+   return fail_alloc ? NULL : calloc(n, size);
+}
+#define calloc record_alloc
+"""
+unit += source[match_start:match_end]
 unit += source[start:end]
 unit += r"""
 int main(void)
 {
    unsigned i;
-   for (i = 0; i < 8; i++)
+   for (i = 0; i < 9; i++)
    {
       dispserv_win32_t serv;
       bool result;
       unsigned hz = 120;
       memset(&serv, 0, sizeof(serv));
+      reset_modes();
       tests = applies = enumerated = monitors = 0;
       monitor_ok = 1;
       current_ok = 1;
@@ -129,6 +165,7 @@ int main(void)
          case 5: apply_result = DISP_CHANGE_FAILED; break;
          case 6: apply_result = DISP_CHANGE_NOTUPDATED; break;
          case 7: monitor_ok = 0; break;
+         case 8: fail_alloc = 1; break;
       }
       result = win32_display_server_set_resolution(&serv,
             VIDEO_SCALE_PACK(1920, 1080), hz, (float)hz, 0, 0, 0, 0);
@@ -137,9 +174,63 @@ int main(void)
       assert(applies == (i == 0 || i == 5 || i == 6));
       if (i == 2) assert(!tests && !enumerated);
       if (i == 1) assert(!tests && enumerated == 3);
+      test_result = apply_result = DISP_CHANGE_SUCCESSFUL;
+      win32_display_server_restore_modes(&serv);
+      assert(!serv.modes && current_modes[0].dmDisplayFrequency == 60);
+   }
+   /* Two changed outputs restore independently after the window moves. */
+   {
+      dispserv_win32_t serv;
+      unsigned before;
+      memset(&serv, 0, sizeof(serv));
+      reset_modes();
+      monitors = 0;
+      assert(win32_display_server_set_resolution(&serv, 0, 120, 120, 0, 0, 0, 0));
+      assert(win32_display_server_set_resolution(&serv, 0, 120, 120, 0, 0, 0, 0));
+      assert(serv.modes && serv.modes->next);
+      before = monitors;
+      win32_display_server_restore_modes(&serv);
+      assert(monitors == before && !serv.modes);
+      assert(current_modes[0].dmDisplayFrequency == 60);
+      assert(current_modes[1].dmDisplayFrequency == 75);
+   }
+   /* Repeated switches retain the first original mode; external changes
+    * and disconnect end ownership rather than being overwritten. */
+   for (i = 0; i < 4; i++)
+   {
+      dispserv_win32_t serv;
+      unsigned before;
+      memset(&serv, 0, sizeof(serv));
+      reset_modes();
+      assert(win32_display_server_set_resolution(&serv, 0, 120, 120, 0, 0, 0, 0));
+      selected = 'D';
+      assert(win32_display_server_set_resolution(&serv, 0, 60, 60, 0, 0, 0, 0));
+      assert(serv.modes && !serv.modes->next);
+      assert(serv.modes->original.dmDisplayFrequency == 60);
+      if (i == 1) current_modes[0].dmDisplayFrequency = 144;
+      if (i == 2) current_ok = 0;
+      if (i == 3) current_modes[0].dmDisplayFlags = 2;
+      before = applies;
+      win32_display_server_restore_modes(&serv);
+      assert(!serv.modes);
+      assert(applies == before + (i == 0));
+      if (i == 1) assert(current_modes[0].dmDisplayFrequency == 144);
+      current_ok = 1;
+   }
+   {
+      dispserv_win32_t serv;
+      memset(&serv, 0, sizeof(serv));
+      reset_modes();
+      assert(win32_display_server_set_resolution(&serv, 0, 120, 120, 0, 0, 0, 0));
+      current_modes[0].dmDisplayFrequency = 144;
+      selected = 'D';
+      assert(win32_display_server_set_resolution(&serv, 0, 120, 120, 0, 0, 0, 0));
+      assert(serv.modes->original.dmDisplayFrequency == 144);
+      win32_display_server_restore_modes(&serv);
+      assert(!serv.modes && current_modes[0].dmDisplayFrequency == 144);
    }
    assert(!win32_display_server_set_resolution(NULL, 0, 0, 0, 0, 0, 0, 0));
-   puts("PASS: resolution success requires a successful Windows mode application");
+   puts("PASS: mode results and conditional restoration stay bound to each output");
    return 0;
 }
 """
