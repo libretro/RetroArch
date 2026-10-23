@@ -57,12 +57,16 @@ typedef struct { unsigned orig_dims; float orig_refresh; } dispserv_win32_t;
 #define DISP_CHANGE_FAILED -1
 #define DISP_CHANGE_NOTUPDATED -3
 static int current_ok = 1, test_result, apply_result;
-static unsigned tests, applies, enumerated;
+static unsigned tests, applies, enumerated, monitors;
+static int monitor_ok = 1;
 static float video_driver_get_refresh_rate(void) { return 60.0f; }
 static int GetSystemMetrics(int which) { return which ? 1080 : 1920; }
-static bool win32_get_video_output(DEVMODE *dm, int mode)
+static bool win32_get_named_video_output(DEVMODE *dm, int mode,
+      const TCHAR *device)
 {
    memset(dm, 0, sizeof(*dm));
+   if (!*device) return false;
+   assert(device[0] == 'D');
    if (mode == -1 && !current_ok) return false;
    if (mode >= 0)
    {
@@ -79,7 +83,9 @@ static void win32_monitor_info(void *data, void *monitor, unsigned *id)
 {
    MONITORINFOEX *info = (MONITORINFOEX *)data;
    memset(info, 0, sizeof(*info));
-   info->szDevice[0] = 'D';
+   monitors++;
+   if (monitor_ok)
+      info->szDevice[0] = monitors == 1 ? 'D' : 'E';
    *(HMONITOR *)monitor = info;
    *id = 0;
 }
@@ -87,7 +93,8 @@ static int win32_change_display_settings(const char *name, void *mode,
       unsigned flags)
 {
    const DEVMODE *dm = (const DEVMODE *)mode;
-   assert(name && dm->dmDisplayFrequency == 120);
+   assert(name && ((const TCHAR *)name)[0] == 'D'
+         && dm->dmDisplayFrequency == 120);
    if (flags == CDS_TEST)
    {
       tests++;
@@ -103,13 +110,14 @@ unit += r"""
 int main(void)
 {
    unsigned i;
-   for (i = 0; i < 7; i++)
+   for (i = 0; i < 8; i++)
    {
       dispserv_win32_t serv;
       bool result;
       unsigned hz = 120;
       memset(&serv, 0, sizeof(serv));
-      tests = applies = enumerated = 0;
+      tests = applies = enumerated = monitors = 0;
+      monitor_ok = 1;
       current_ok = 1;
       test_result = apply_result = DISP_CHANGE_SUCCESSFUL;
       switch (i)
@@ -120,10 +128,12 @@ int main(void)
          case 4: test_result = DISP_CHANGE_RESTART; break;
          case 5: apply_result = DISP_CHANGE_FAILED; break;
          case 6: apply_result = DISP_CHANGE_NOTUPDATED; break;
+         case 7: monitor_ok = 0; break;
       }
       result = win32_display_server_set_resolution(&serv,
             VIDEO_SCALE_PACK(1920, 1080), hz, (float)hz, 0, 0, 0, 0);
       assert(result == (i == 0));
+      assert(monitors == 1);
       assert(applies == (i == 0 || i == 5 || i == 6));
       if (i == 2) assert(!tests && !enumerated);
       if (i == 1) assert(!tests && enumerated == 3);

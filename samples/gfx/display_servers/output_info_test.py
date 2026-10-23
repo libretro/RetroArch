@@ -124,6 +124,7 @@ static int WideCharToMultiByte(unsigned page, unsigned flags,
 #endif
 '''
 unit += "\n".join(function(signature) for signature in (
+    "static bool win32_get_named_video_output(",
     "static bool win32_get_video_output_info(",
     "static bool win32_get_video_output(",
     "static void win32_display_server_get_video_output_size("))
