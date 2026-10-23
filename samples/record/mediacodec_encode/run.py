@@ -30,7 +30,8 @@ with tempfile.TemporaryDirectory(prefix="mediacodec-encode-") as directory:
     binary = Path(directory) / ("encoder_test.exe" if os.name == "nt" else "encoder_test")
     for source, extra in (("test.c", []), ("audio_test.c", []),
                           ("mux_test.c", ["-DRECORD_MEDIACODEC_MUX_TEST"]),
-                          ("worker_test.c", []), ("surface_test.c", [])):
+                          ("worker_test.c", []), ("surface_test.c", []),
+                          ("capture_images_test.c", ["-DRECORD_ANDROID_CAPTURE_TEST"])):
         command = compiler + flags + extra + [str(here / source), "-o", str(binary)]
         if source == "worker_test.c":
             command += ["-DHAVE_THREADS",
@@ -40,6 +41,9 @@ with tempfile.TemporaryDirectory(prefix="mediacodec-encode-") as directory:
         if source == "surface_test.c":
             command += ["-I" + str(root / "gfx/include/ANGLE"),
                         str(root / "record/record_mediacodec_surface.c")]
+        if source == "capture_images_test.c":
+            command += ["-I" + str(root / "gfx/include"),
+                        str(root / "record/record_android_capture_images.c")]
         print("+", shlex.join(command), flush=True)
         subprocess.run(command, check=True)
         subprocess.run([str(binary)], check=True, timeout=30)
