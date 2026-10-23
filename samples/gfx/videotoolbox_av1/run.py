@@ -58,10 +58,11 @@ with tempfile.TemporaryDirectory(prefix="vt-av1-setup-") as directory:
             command += ["-c", str(root / "libretro-common" / relative), "-o", str(obj)]
             subprocess.run(command, check=True)
             objects += [str(obj)]
-        command = compiler + flags + ["-I" + str(path), str(here / "owner_test.c")]
-        command += objects + ["-o", str(binary)]
-        if os.name != "nt":
-            command += ["-pthread"]
-        subprocess.run(command, check=True)
-        subprocess.run(shlex.split(os.environ.get("RUNNER", "")) + [str(binary)],
-                       check=True, timeout=90)
+        for name in ("owner_test.c", "decoder_test.c"):
+            command = compiler + flags + ["-I" + str(path), str(here / name)]
+            command += objects + ["-o", str(binary)]
+            if os.name != "nt":
+                command += ["-pthread"]
+            subprocess.run(command, check=True)
+            subprocess.run(shlex.split(os.environ.get("RUNNER", "")) + [str(binary)],
+                           check=True, timeout=90)
