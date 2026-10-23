@@ -172,7 +172,7 @@ enum
    OZONE_SYSTEM_TAB_SETTINGS,
    OZONE_SYSTEM_TAB_HISTORY,
    OZONE_SYSTEM_TAB_FAVORITES,
-#ifdef HAVE_IMAGEVIEWER
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU)
    OZONE_SYSTEM_TAB_IMAGES,
 #endif
    OZONE_SYSTEM_TAB_MUSIC,
@@ -235,7 +235,7 @@ enum
    OZONE_ENTRIES_ICONS_TEXTURE_SETTINGS,
    OZONE_ENTRIES_ICONS_TEXTURE_HISTORY,
    OZONE_ENTRIES_ICONS_TEXTURE_FAVORITES,
-#ifdef HAVE_IMAGEVIEWER
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU)
    OZONE_ENTRIES_ICONS_TEXTURE_IMAGES,
 #endif
    OZONE_ENTRIES_ICONS_TEXTURE_MUSICS,
@@ -2119,7 +2119,7 @@ static uintptr_t ozone_entries_icon_get_texture(
       case MENU_ENUM_LABEL_GOTO_FAVORITES:
       case MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST:
          return GFX_SURFACE_HANDLE(ozone->tab_textures[OZONE_TAB_TEXTURE_FAVORITES]);
-#ifdef HAVE_IMAGEVIEWER
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU)
       case MENU_ENUM_LABEL_GOTO_IMAGES:
       case MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST:
          return GFX_SURFACE_HANDLE(ozone->tab_textures[OZONE_TAB_TEXTURE_IMAGE]);
@@ -2550,7 +2550,7 @@ static uintptr_t ozone_entries_icon_get_texture(
                else if (string_is_equal(ozone->title, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_TAB)))
                   return icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_MOVIE];
                break;
-#ifdef HAVE_IMAGEVIEWER
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU)
             case OZONE_SYSTEM_TAB_IMAGES:
                return icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_IMAGE];
 #endif
@@ -2804,7 +2804,7 @@ static const char *ozone_entries_icon_texture_path(unsigned id)
          return "favorites.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_ADD_FAVORITE:
          return "add-favorite.png";
-#ifdef HAVE_IMAGEVIEWER
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU)
       case OZONE_ENTRIES_ICONS_TEXTURE_IMAGES:
          return "images.png";
 #endif
@@ -3548,7 +3548,7 @@ const enum msg_hash_enums ozone_system_tabs_label[OZONE_SYSTEM_TAB_LAST] = {
       MENU_ENUM_LABEL_SETTINGS_TAB,
       MENU_ENUM_LABEL_HISTORY_TAB,
       MENU_ENUM_LABEL_FAVORITES_TAB,
-#ifdef HAVE_IMAGEVIEWER
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU)
       MENU_ENUM_LABEL_IMAGES_TAB,
 #endif
       MENU_ENUM_LABEL_MUSIC_TAB,
@@ -3599,7 +3599,7 @@ OZONE_NOINLINE static void ozone_draw_sidebar(
       MENU_ENUM_LABEL_VALUE_SETTINGS_TAB,
       MENU_ENUM_LABEL_VALUE_HISTORY_TAB,
       MENU_ENUM_LABEL_VALUE_FAVORITES_TAB,
-#ifdef HAVE_IMAGEVIEWER
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU)
       MENU_ENUM_LABEL_VALUE_IMAGES_TAB,
 #endif
       MENU_ENUM_LABEL_VALUE_MUSIC_TAB,
@@ -3620,7 +3620,7 @@ OZONE_NOINLINE static void ozone_draw_sidebar(
       OZONE_TAB_TEXTURE_SETTINGS,
       OZONE_TAB_TEXTURE_HISTORY,
       OZONE_TAB_TEXTURE_FAVORITES,
-#ifdef HAVE_IMAGEVIEWER
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU)
       OZONE_TAB_TEXTURE_IMAGE,
 #endif
       OZONE_TAB_TEXTURE_MUSIC,
@@ -4380,7 +4380,7 @@ static bool ozone_is_playlist(ozone_handle_t *ozone, bool depth)
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
          case OZONE_SYSTEM_TAB_VIDEO:
 #endif
-#ifdef HAVE_IMAGEVIEWER
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU)
          case OZONE_SYSTEM_TAB_IMAGES:
 #endif
          default:
@@ -5080,7 +5080,7 @@ static void ozone_sidebar_goto(ozone_handle_t *ozone, size_t new_selection)
       MENU_ENUM_LABEL_SETTINGS_TAB,
       MENU_ENUM_LABEL_HISTORY_TAB,
       MENU_ENUM_LABEL_FAVORITES_TAB,
-#ifdef HAVE_IMAGEVIEWER
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU)
       MENU_ENUM_LABEL_IMAGES_TAB,
 #endif
       MENU_ENUM_LABEL_MUSIC_TAB,
@@ -5101,7 +5101,7 @@ static void ozone_sidebar_goto(ozone_handle_t *ozone, size_t new_selection)
       MENU_SETTINGS_TAB,
       MENU_HISTORY_TAB,
       MENU_FAVORITES_TAB,
-#ifdef HAVE_IMAGEVIEWER
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU)
       MENU_IMAGES_TAB,
 #endif
       MENU_MUSIC_TAB,
@@ -5608,7 +5608,7 @@ static void ozone_refresh_system_tabs_list(ozone_handle_t * ozone)
          ozone->tabs[++ozone->system_tab_end] = OZONE_SYSTEM_TAB_FAVORITES;
    }
 
-#ifdef HAVE_IMAGEVIEWER
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU)
    if (settings->bools.menu_content_show_images && settings->bools.history_list_enable)
       ozone->tabs[++ozone->system_tab_end] = OZONE_SYSTEM_TAB_IMAGES;
 #endif
@@ -6570,7 +6570,7 @@ border_iterate:
                texture = icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_HISTORY];
             else if (string_is_equal(e->rich_label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES_TAB)))
                texture = icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_FAVORITES];
-#ifdef HAVE_IMAGEVIEWER
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU)
             else if (string_is_equal(e->rich_label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_IMAGES_TAB)))
                texture = icons_tex[OZONE_TAB_TEXTURE_IMAGE];
 #endif
@@ -9127,7 +9127,7 @@ static enum menu_action ozone_parse_menu_entry_action(
    if ((ozone->flags & OZONE_FLAG_IS_FILE_LIST)
          && !(ozone->flags2 & OZONE_FLAG2_SHOW_FULLSCREEN_THUMBNAILS)
          && (action == MENU_ACTION_OK || action == MENU_ACTION_SELECT || action == MENU_ACTION_START)
-         && menu_media_open_selected_movie(menu_st, &ozone->thumbnails.left, &ozone->thumbnails.right))
+         && menu_media_open_selected_file(menu_st, &ozone->thumbnails.left, &ozone->thumbnails.right))
    {
       ozone->thumbnails.pending = OZONE_PENDING_THUMBNAIL_NONE;
       ozone->flags |= OZONE_FLAG_FULLSCREEN_THUMBNAILS_AVAILABLE;
@@ -9138,6 +9138,10 @@ static enum menu_action ozone_parse_menu_entry_action(
    if ((ozone->flags2 & OZONE_FLAG2_SHOW_FULLSCREEN_THUMBNAILS)
          && menu_media_controls_action(&ozone->media, action,
             menu_driver_get_current_time()))
+      return MENU_ACTION_NOOP;
+   if ((ozone->flags & OZONE_FLAG_IS_FILE_LIST)
+         && (ozone->flags2 & OZONE_FLAG2_SHOW_FULLSCREEN_THUMBNAILS)
+         && action == MENU_ACTION_OK)
       return MENU_ACTION_NOOP;
 
    /* We have to override the thumbnail stream
@@ -9211,7 +9215,7 @@ static enum menu_action ozone_parse_menu_entry_action(
                      strlcpy(playlist_path, playlist_get_conf_path(g_defaults.content_favorites), sizeof(playlist_path));
                      break;
                   case MENU_ENUM_LABEL_IMAGES_TAB:
-#ifdef HAVE_IMAGEVIEWER
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU)
                      strlcpy(playlist_path, playlist_get_conf_path(g_defaults.image_history), sizeof(playlist_path));
 #endif
                      break;

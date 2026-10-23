@@ -704,7 +704,7 @@ enum msg_file_type msg_hash_to_file_type(const char *value)
       { "au",        FILE_TYPE_MUSIC_OTHER },
       { "caf",       FILE_TYPE_MUSIC_OTHER },
 #endif
-#ifdef HAVE_IMAGEVIEWER
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU)
       { "jpg",       FILE_TYPE_JPEG },
       { "JPG",       FILE_TYPE_JPEG },
       { "jpeg",      FILE_TYPE_JPEG },

@@ -3332,7 +3332,7 @@ enum rarch_content_type path_is_media_type(const char *path)
 #endif
          return RARCH_CONTENT_MUSIC;
 #endif
-#ifdef HAVE_IMAGEVIEWER
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU)
       case FILE_TYPE_JPEG:
       case FILE_TYPE_PNG:
       case FILE_TYPE_TGA:
@@ -5077,7 +5077,7 @@ bool command_event(enum event_command cmd, void *data)
          g_defaults.video_history = NULL;
 #endif
 
-#ifdef HAVE_IMAGEVIEWER
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU)
          if (g_defaults.image_history)
          {
             playlist_write_file(g_defaults.image_history);
@@ -5096,7 +5096,7 @@ bool command_event(enum event_command cmd, void *data)
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV) || defined(HAVE_WEBMPLAYER)
             const char *path_content_video_history = settings->paths.path_content_video_history;
 #endif
-#ifdef HAVE_IMAGEVIEWER
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU)
             const char *path_content_image_history = settings->paths.path_content_image_history;
 #endif
             playlist_config.capacity               = settings->uints.content_history_size;
@@ -5127,7 +5127,7 @@ bool command_event(enum event_command cmd, void *data)
                      g_defaults.content_history, PLAYLIST_SORT_MODE_OFF);
             }
 
-#ifdef HAVE_IMAGEVIEWER
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU)
             if (path_content_image_history && *path_content_image_history)
             {
                RARCH_LOG("[Playlist] %s: \"%s\".\n", _msg,
@@ -9495,6 +9495,9 @@ bool retroarch_main_init_core(int argc, char *argv[],
    {
       const char    *fullpath  = p_rarch->path_content;
 
+#ifdef HAVE_MENU
+      menu_driver_media_open(NULL);
+#endif
       if (fullpath && *fullpath)
       {
          enum rarch_content_type cont_type = path_is_media_type(fullpath);
@@ -9503,6 +9506,18 @@ bool retroarch_main_init_core(int argc, char *argv[],
 #endif
          bool builtin_mediaplayer          = settings->bools.multimedia_builtin_mediaplayer_enable;
 
+#ifdef HAVE_MENU
+         if (!(runloop_st->flags & RUNLOOP_FLAG_HAS_SET_CORE)
+               && !retroarch_override_setting_is_set(
+                  RARCH_OVERRIDE_SETTING_LIBRETRO, NULL)
+               && menu_driver_media_open(fullpath))
+         {
+            path_clear(RARCH_PATH_CONTENT);
+            path_clear(RARCH_PATH_BASENAME);
+            runloop_set_current_core_type(CORE_TYPE_DUMMY, false);
+         }
+         else
+#endif
          switch (cont_type)
          {
             case RARCH_CONTENT_MOVIE:

@@ -136,7 +136,7 @@ enum
    XMB_TEXTURE_SETTINGS,
    XMB_TEXTURE_HISTORY,
    XMB_TEXTURE_FAVORITES,
-#ifdef HAVE_IMAGEVIEWER
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU)
    XMB_TEXTURE_IMAGES,
 #endif
    XMB_TEXTURE_MUSICS,
@@ -272,7 +272,7 @@ enum
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
    XMB_SYSTEM_TAB_VIDEO,
 #endif
-#ifdef HAVE_IMAGEVIEWER
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU)
    XMB_SYSTEM_TAB_IMAGES,
 #endif
 #ifdef HAVE_NETWORKING
@@ -368,7 +368,7 @@ typedef struct xmb_handle
    xmb_node_t **playlist_db_node_map;
 
    xmb_node_t main_menu_node;
-#ifdef HAVE_IMAGEVIEWER
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU)
    xmb_node_t images_tab_node;
 #endif
    xmb_node_t music_tab_node;
@@ -3246,7 +3246,7 @@ static xmb_node_t* xmb_get_node(xmb_handle_t *xmb, unsigned i)
    {
       case XMB_SYSTEM_TAB_SETTINGS:
          return &xmb->settings_tab_node;
-#ifdef HAVE_IMAGEVIEWER
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU)
       case XMB_SYSTEM_TAB_IMAGES:
          return &xmb->images_tab_node;
 #endif
@@ -3834,7 +3834,7 @@ static void xmb_refresh_system_tabs_list(xmb_handle_t *xmb)
          xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_FAVORITES;
    }
 
-#ifdef HAVE_IMAGEVIEWER
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU)
    if (settings->bools.menu_content_show_images && settings->bools.history_list_enable)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_IMAGES;
 #endif
@@ -3997,7 +3997,7 @@ static void xmb_populate_entries(void *data,
          (  depth == 1
          && (  (xmb_system_tab == XMB_SYSTEM_TAB_FAVORITES)
             || (xmb_system_tab == XMB_SYSTEM_TAB_HISTORY)
-#ifdef HAVE_IMAGEVIEWER
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU)
             || (xmb_system_tab == XMB_SYSTEM_TAB_IMAGES)
 #endif
             || (xmb_system_tab == XMB_SYSTEM_TAB_MUSIC)
@@ -4425,7 +4425,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          return GFX_SURFACE_HANDLE(xmb->textures.list[XMB_TEXTURE_HISTORY]);
       case MENU_ENUM_LABEL_GOTO_FAVORITES:
          return GFX_SURFACE_HANDLE(xmb->textures.list[XMB_TEXTURE_FAVORITES]);
-#ifdef HAVE_IMAGEVIEWER
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU)
       case MENU_ENUM_LABEL_GOTO_IMAGES:
          return GFX_SURFACE_HANDLE(xmb->textures.list[XMB_TEXTURE_IMAGES]);
 #endif
@@ -4827,7 +4827,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
                   }
                }
                break;
-#ifdef HAVE_IMAGEVIEWER
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU)
             case XMB_SYSTEM_TAB_IMAGES:
                return GFX_SURFACE_HANDLE(xmb->textures.list[XMB_TEXTURE_IMAGE]);
 #endif
@@ -5648,7 +5648,7 @@ XMB_NOINLINE static int xmb_draw_item(
             texture = GFX_SURFACE_HANDLE(xmb->textures.list[XMB_TEXTURE_HISTORY]);
          else if (string_is_equal(entry.rich_label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES_TAB)))
             texture = GFX_SURFACE_HANDLE(xmb->textures.list[XMB_TEXTURE_FAVORITES]);
-#ifdef HAVE_IMAGEVIEWER
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU)
          else if (string_is_equal(entry.rich_label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_IMAGES_TAB)))
             texture = GFX_SURFACE_HANDLE(xmb->textures.list[XMB_TEXTURE_IMAGES]);
 #endif
@@ -6199,7 +6199,7 @@ static enum menu_action xmb_parse_menu_entry_action(
 
    if (xmb->is_file_list && !xmb->show_fullscreen_thumbnails
          && (action == MENU_ACTION_OK || action == MENU_ACTION_SELECT || action == MENU_ACTION_START)
-         && menu_media_open_selected_movie(menu_st, &xmb->thumbnails.left, &xmb->thumbnails.right))
+         && menu_media_open_selected_file(menu_st, &xmb->thumbnails.left, &xmb->thumbnails.right))
    {
       xmb->thumbnails.pending = XMB_PENDING_THUMBNAIL_NONE;
       xmb->fullscreen_thumbnails_available = true;
@@ -6210,6 +6210,9 @@ static enum menu_action xmb_parse_menu_entry_action(
    if (xmb->show_fullscreen_thumbnails
          && menu_media_controls_action(&xmb->media, action,
             menu_driver_get_current_time()))
+      return MENU_ACTION_NOOP;
+   if (xmb->is_file_list && xmb->show_fullscreen_thumbnails
+         && action == MENU_ACTION_OK)
       return MENU_ACTION_NOOP;
 
    /* Scan user inputs */
@@ -6797,7 +6800,7 @@ static const char *xmb_texture_path(unsigned id)
          return "favorites.png";
       case XMB_TEXTURE_ADD_FAVORITE:
          return "add-favorite.png";
-#ifdef HAVE_IMAGEVIEWER
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU)
       case XMB_TEXTURE_IMAGES:
          return "images.png";
 #endif
@@ -7099,7 +7102,7 @@ static void xmb_context_reset_textures(
    xmb->settings_tab_node.icon           = xmb->textures.list[XMB_TEXTURE_SETTINGS];
    xmb->history_tab_node.icon            = xmb->textures.list[XMB_TEXTURE_HISTORY];
    xmb->favorites_tab_node.icon          = xmb->textures.list[XMB_TEXTURE_FAVORITES];
-#ifdef HAVE_IMAGEVIEWER
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU)
    xmb->images_tab_node.icon             = xmb->textures.list[XMB_TEXTURE_IMAGES];
 #endif
    xmb->music_tab_node.icon              = xmb->textures.list[XMB_TEXTURE_MUSICS];
@@ -7123,7 +7126,7 @@ static void xmb_context_reset_textures(
    xmb->history_tab_node.zoom            = xmb->categories_active_zoom;
    xmb->favorites_tab_node.alpha         = xmb->categories_active_alpha;
    xmb->favorites_tab_node.zoom          = xmb->categories_active_zoom;
-#ifdef HAVE_IMAGEVIEWER
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU)
    xmb->images_tab_node.alpha            = xmb->categories_active_alpha;
    xmb->images_tab_node.zoom             = xmb->categories_active_zoom;
 #endif
@@ -9884,7 +9887,7 @@ static void xmb_free_textures(xmb_handle_t *xmb)
    xmb->settings_tab_node.icon           = NULL;
    xmb->history_tab_node.icon            = NULL;
    xmb->favorites_tab_node.icon          = NULL;
-#ifdef HAVE_IMAGEVIEWER
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU)
    xmb->images_tab_node.icon             = NULL;
 #endif
    xmb->music_tab_node.icon              = NULL;
@@ -10164,7 +10167,7 @@ static void xmb_list_cache(void *data, enum menu_list_type type,
                menu_stack->list[stack_size - 1].label = strdup(MENU_ENUM_LABEL_SETTINGS_TAB_STR);
                menu_stack->list[stack_size - 1].type  = MENU_SETTINGS_TAB;
                break;
-#ifdef HAVE_IMAGEVIEWER
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU)
             case XMB_SYSTEM_TAB_IMAGES:
                menu_stack->list[stack_size - 1].label = strdup(MENU_ENUM_LABEL_IMAGES_TAB_STR);
                menu_stack->list[stack_size - 1].type  = MENU_IMAGES_TAB;

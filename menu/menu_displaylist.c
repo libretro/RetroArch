@@ -725,7 +725,7 @@ static int filebrowser_parse(
 #endif
                break;
             case RARCH_CONTENT_IMAGE:
-#ifdef HAVE_IMAGEVIEWER
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU)
                if (builtin_imageviewer_enable && type != DISPLAYLIST_IMAGES)
                   file_type = FILE_TYPE_IMAGEVIEWER;
                else
@@ -1635,13 +1635,13 @@ static unsigned menu_displaylist_parse_core_manager_list(file_list_t *list,
          count++;
 #endif
 
-#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_FFMPEG) || defined(HAVE_MPV) || defined(HAVE_AUDIOMIXER)
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU) || defined(HAVE_FFMPEG) || defined(HAVE_MPV) || defined(HAVE_AUDIOMIXER)
    {
       /* MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM requires 'settings',
        * so the scope only exists where one of the entries below
        * is built in. */
       settings_t *settings = config_get_ptr();
-#ifdef HAVE_IMAGEVIEWER
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU)
       if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
             MENU_ENUM_LABEL_USE_BUILTIN_IMAGE_VIEWER, PARSE_ONLY_BOOL,
             false) == 0)
@@ -5564,7 +5564,7 @@ static unsigned menu_displaylist_parse_playlists(
          }
       }
 
-#ifdef HAVE_IMAGEVIEWER
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU)
       if (settings->bools.menu_content_show_images && g_defaults.image_history)
          if (menu_entries_append(info_list,
                   playlist_get_conf_path(g_defaults.image_history),
@@ -6130,7 +6130,7 @@ static unsigned menu_displaylist_parse_playlist_manager_list(
                MENU_SETTING_ACTION, 0, 0, NULL))
             count++;
 
-#ifdef HAVE_IMAGEVIEWER
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU)
    /* Add image history */
    if (playlist_size(g_defaults.image_history) > 0)
       if (menu_entries_append(list,
@@ -18030,7 +18030,7 @@ static bool menu_displaylist_ctl_internal(
             break;
          case DISPLAYLIST_IMAGES_HISTORY:
             menu_entries_clear(info->list);
-#ifdef HAVE_IMAGEVIEWER
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU)
             {
                bool history_list_enable  = settings->bools.history_list_enable;
                const char *path_content_image_history = settings->paths.path_content_image_history;
@@ -18064,7 +18064,7 @@ static bool menu_displaylist_ctl_internal(
             info->flags                &= ~MD_FLAG_NEED_SORT;
             info->flags                |=  MD_FLAG_NEED_REFRESH
                                         |  MD_FLAG_NEED_PUSH;
-#if defined(HAVE_IMAGEVIEWER)
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU)
             if (history_needs_navigation_clear(menu, g_defaults.image_history))
                info->flags             |=  MD_FLAG_NEED_NAVIGATION_CLEAR;
 #endif

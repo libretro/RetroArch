@@ -44,7 +44,7 @@ else
 
 	HAVE_FILTERS_BUILTIN	:= 1
 	HAVE_LANGEXTRA				:= 1
-	HAVE_IMAGEVIEWER 			:= 1
+	HAVE_IMAGEVIEWER 			:= 0
 	HAVE_RPNG							:= 1
 	HAVE_RWEBP						:= 1
 	HAVE_RDDS						:= 1

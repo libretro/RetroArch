@@ -22,12 +22,10 @@ S_BOOL(menu_content_show_favorites_first, CONTENT_SHOW_FAVORITES_FIRST,
       "Show Favorites First",
       "Show 'Favorites' before 'History'.")
 #endif
-/* Descriptor and configuration rows are #ifdef HAVE_IMAGEVIEWER; the string
- * tables always carry this row via the strings pass. */
-#if defined(HAVE_IMAGEVIEWER) || defined(SETTINGS_DEF_STRINGS_PASS)
-/* The configuration row lives under defined(HAVE_MENU) && defined(HAVE_IMAGEVIEWER); other passes are
- * unaffected. */
-#if !defined(SETTINGS_DEF_CONFIG_PASS) || (defined(HAVE_MENU) && defined(HAVE_IMAGEVIEWER))
+/* The menu image viewer does not require the legacy core. */
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU) || defined(SETTINGS_DEF_STRINGS_PASS)
+/* Configuration stores menu visibility only in menu builds. */
+#if !defined(SETTINGS_DEF_CONFIG_PASS) || defined(HAVE_MENU)
 S_BOOL(menu_content_show_images, CONTENT_SHOW_IMAGES,
       "content_show_images",
       DEFAULT_CONTENT_SHOW_IMAGES, SD_FLAG_NONE, 0, 0,

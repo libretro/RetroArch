@@ -2,6 +2,7 @@
  * Only main() and the RGUI object are replaced; no playback/UI stubs. */
 #include "../../../menu/drivers/rgui.c"
 #include "../../../retroarch.h"
+#include "../../../paths.h"
 #include "../../../frontend/frontend.h"
 #include "../../../gfx/gfx_surface_player.h"
 #include <time/rtime.h>
@@ -81,7 +82,7 @@ int main(int argc, char **argv)
    rtime_init(); retroarch_config_init();
    retroarch_ctl(RARCH_CTL_STATE_FREE, NULL);
    frontend_driver_init_first(NULL);
-   rarch_argv[0] = (char*)"retroarch"; rarch_argv[1] = (char*)"--menu";
+   rarch_argv[0] = (char*)"retroarch"; rarch_argv[1] = getenv("MEDIA_TEST_EXTERNAL") ? argv[1] : (char*)"--menu";
    rarch_argv[2] = (char*)"--config"; rarch_argv[3] = argv[2];
    if (!retroarch_main_init(4, rarch_argv)) return 1;
    retroarch_menu_running();
@@ -96,6 +97,36 @@ int main(int argc, char **argv)
    settings = config_get_ptr();
    settings->bools.menu_rgui_inline_thumbnails = false;
    settings->bools.menu_thumbnail_preview_audio = false;
+   if (getenv("MEDIA_TEST_EXTERNAL") || getenv("MEDIA_TEST_BROWSER_IMAGE"))
+   {
+      bool image = image_texture_get_type(argv[1]) != IMAGE_TYPE_MP4
+         && image_texture_get_type(argv[1]) != IMAGE_TYPE_WEBM;
+      if (!getenv("MEDIA_TEST_EXTERNAL"))
+         MEDIA_CHECK("image browser request accepted", menu_driver_media_open(argv[1]));
+      for (tick = 0; tick < 4000; tick++)
+      {
+         task_queue_check();
+         rgui = (rgui_t *)menu_st->userdata;
+         menu_driver_iterate(menu_st, disp_get_ptr(), anim_get_ptr(),
+               settings, MENU_ACTION_NOOP, cpu_features_get_time_usec());
+         media_render(menu_st);
+         if (((rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL) != 0) && (rgui->fs_thumbnail.is_valid
+                  || (!image && rgui->media_gpu.texture
+                     && rgui->media_gpu.anim_player))) break;
+         retro_sleep(1);
+      }
+      MEDIA_CHECK("opened file reaches internal fullscreen view", tick < 4000);
+      MEDIA_CHECK("opened file does not launch a content core",
+            runloop_state_get_ptr()->current_core_type == CORE_TYPE_DUMMY
+            && !*path_get(RARCH_PATH_CONTENT));
+      if (image)
+         MEDIA_CHECK("image confirmation remains in internal view",
+               rgui_parse_menu_entry_action(rgui, entry, MENU_ACTION_OK)
+                  == MENU_ACTION_NOOP && ((rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL) != 0));
+      rgui_parse_menu_entry_action(rgui, entry, MENU_ACTION_CANCEL);
+      MEDIA_CHECK("Back closes internal view", !((rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL) != 0));
+      goto cleanup;
+   }
    list = MENU_LIST_GET_SELECTION(menu_st->entries.list, 0);
    stack = MENU_LIST_GET(menu_st->entries.list, 0);
    fill_pathname_basedir(directory, argv[1], sizeof(directory));

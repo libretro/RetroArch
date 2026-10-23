@@ -333,7 +333,7 @@ static int general_push(menu_displaylist_info_t *info,
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV) || defined (HAVE_AUDIOMIXER)
    bool multimedia_builtin_mediaplayer_enable = settings->bools.multimedia_builtin_mediaplayer_enable;
 #endif
-#ifdef HAVE_IMAGEVIEWER
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU)
    bool multimedia_builtin_imageviewer_enable = settings->bools.multimedia_builtin_imageviewer_enable;
 #endif
    if (!menu)
@@ -536,15 +536,24 @@ static int general_push(menu_displaylist_info_t *info,
    }
 #endif
 
-#ifdef HAVE_IMAGEVIEWER
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU)
    if (multimedia_builtin_imageviewer_enable && id != PUSH_ARCHIVE_OPEN)
    {
-      struct retro_system_info sysinfo = {0};
-      libretro_imageviewer_retro_get_system_info(&sysinfo);
-      if (*sysinfo.valid_extensions)
-      {
-         string_ext_list_merge_dedup(ext_filter, &_len, ext_size, sysinfo.valid_extensions);
-      }
+#ifdef HAVE_RPNG
+      string_ext_list_merge_dedup(ext_filter, &_len, ext_size, "png");
+#endif
+#ifdef HAVE_RJPEG
+      string_ext_list_merge_dedup(ext_filter, &_len, ext_size, "jpg|jpeg");
+#endif
+#ifdef HAVE_RBMP
+      string_ext_list_merge_dedup(ext_filter, &_len, ext_size, "bmp");
+#endif
+#ifdef HAVE_RTGA
+      string_ext_list_merge_dedup(ext_filter, &_len, ext_size, "tga");
+#endif
+#ifdef HAVE_RWEBP
+      string_ext_list_merge_dedup(ext_filter, &_len, ext_size, "webp");
+#endif
    }
 #endif
 

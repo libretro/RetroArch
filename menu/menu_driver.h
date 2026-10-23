@@ -809,6 +809,9 @@ void menu_driver_toggle(
       retro_keyboard_event_t *frontend_key_event,
       bool on);
 
+/* Queue a fullscreen file-browser launch; NULL cancels it. */
+bool menu_driver_media_open(const char *path);
+
 /* Iterate the menu driver for one frame. */
 bool menu_driver_iterate(
       struct menu_state *menu_st,

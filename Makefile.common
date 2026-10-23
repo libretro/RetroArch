@@ -529,7 +529,6 @@ OBJ += $(LIBRETRO_COMM_DIR)/formats/image_texture.o \
        $(LIBRETRO_COMM_DIR)/formats/image/image_yuv_blit.o
 
 ifeq ($(HAVE_IMAGEVIEWER), 1)
-   DEFINES += -DHAVE_IMAGEVIEWER
    OBJ += cores/libretro-imageviewer/image_core.o
 endif
 
