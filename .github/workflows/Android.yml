@@ -92,6 +92,7 @@ jobs:
               record/record_mediacodec_surface.c \
               record/record_android_capture_images.c \
               record/record_android_capture_submit.c \
+              record/record_android_capture_gl.c \
               record/record_audio_queue.c libretro-common/queues/retro_spsc.c; do
             printf '#include "%s/%s"\n' "$PWD" "$source" >> "$unity"
           done
@@ -283,6 +284,7 @@ jobs:
           printf '#include "%s/record/record_mediacodec_surface.c"\n' "$PWD" >> "$unity"
           printf '#include "%s/record/record_android_capture_images.c"\n' "$PWD" >> "$unity"
           printf '#include "%s/record/record_android_capture_submit.c"\n' "$PWD" >> "$unity"
+          printf '#include "%s/record/record_android_capture_gl.c"\n' "$PWD" >> "$unity"
           for target in aarch64-linux-android armv7a-linux-androideabi; do
             for api in 21 29; do
               for offset in default 64; do
@@ -299,7 +301,7 @@ jobs:
                     exit 1
                   fi
                 done
-                for record_source in record_mediacodec_encoder record_mux_mediacodec record_mediacodec_worker record_mediacodec_surface record_android_capture_images record_android_capture_submit record_audio_queue; do
+                for record_source in record_mediacodec_encoder record_mux_mediacodec record_mediacodec_worker record_mediacodec_surface record_android_capture_images record_android_capture_submit record_android_capture_gl record_audio_queue; do
                   "$bin/$target$api-clang" \
                     -std=c89 -pedantic -Wall -Wextra -Werror -Wno-long-long -Wno-c99-extensions \
                     -DHAVE_THREADS -DHAVE_DYLIB -Wframe-larger-than=2048 -Ilibretro-common/include -Igfx/include \
