@@ -93,6 +93,7 @@ jobs:
               record/record_android_capture_submit.c record/record_android_capture_gl.c \
               record/record_android_capture_draw.c record/record_mediacodec_gpu_worker.c \
               record/record_mediacodec_file.c record/record_session_mediacodec.c \
+              record/record_dispatch_mediacodec.c \
               record/record_gpu_queue.c \
               record/record_audio_queue.c libretro-common/queues/retro_spsc.c; do
             printf '#include "%s/%s"\n' "$PWD" "$source" >> "$unity"
@@ -108,7 +109,7 @@ jobs:
                   -DHAVE_THREADS -DHAVE_DYLIB -Ilibretro-common/include -Igfx/include \
                   -c "$unity" -o "$RUNNER_TEMP/record-$target-$api-$offset.o"
                 if "$bin/llvm-nm" -u "$RUNNER_TEMP/record-$target-$api-$offset.o" | \
-                    grep -Eq ' U (AMedia|ANativeWindow|AHardwareBuffer|egl|gl[A-Z]|record_android_capture_|record_mediacodec_|record_session_mediacodec_|record_mux_mediacodec_|record_audio_queue_|record_gpu_queue_|retro_spsc_|mediacodec_inventory_)'; then
+                    grep -Eq ' U (AMedia|ANativeWindow|AHardwareBuffer|egl|gl[A-Z]|record_android_capture_|record_mediacodec_|record_session_mediacodec_|record_dispatch_mediacodec_|record_mux_mediacodec_|record_audio_queue_|record_gpu_queue_|retro_spsc_|mediacodec_inventory_)'; then
                   echo "Unresolved Android recording dependency"
                   exit 1
                 fi
@@ -292,6 +293,7 @@ jobs:
           printf '#include "%s/record/record_mediacodec_gpu_worker.c"\n' "$PWD" >> "$unity"
           printf '#include "%s/record/record_mediacodec_file.c"\n' "$PWD" >> "$unity"
           printf '#include "%s/record/record_session_mediacodec.c"\n' "$PWD" >> "$unity"
+          printf '#include "%s/record/record_dispatch_mediacodec.c"\n' "$PWD" >> "$unity"
           for target in aarch64-linux-android armv7a-linux-androideabi; do
             for api in 21 29; do
               for offset in default 64; do
@@ -308,7 +310,7 @@ jobs:
                     exit 1
                   fi
                 done
-                for record_source in record_mediacodec_encoder record_mux_mediacodec record_mediacodec_worker record_mediacodec_surface record_android_capture_images record_android_capture_submit record_android_capture_gl record_android_capture_draw record_mediacodec_gpu_worker record_mediacodec_file record_session_mediacodec record_gpu_queue record_audio_queue; do
+                for record_source in record_mediacodec_encoder record_mux_mediacodec record_mediacodec_worker record_mediacodec_surface record_android_capture_images record_android_capture_submit record_android_capture_gl record_android_capture_draw record_mediacodec_gpu_worker record_mediacodec_file record_session_mediacodec record_dispatch_mediacodec record_gpu_queue record_audio_queue; do
                   "$bin/$target$api-clang" \
                     -std=c89 -pedantic -Wall -Wextra -Werror -Wno-long-long -Wno-c99-extensions \
                     -DHAVE_THREADS -DHAVE_DYLIB -Wframe-larger-than=2048 -Ilibretro-common/include -Igfx/include \
@@ -406,7 +408,7 @@ jobs:
                   "$RUNNER_TEMP/retro_spsc.c-$target-$api-$offset.o" \
                   -o "$RUNNER_TEMP/media-root-$target-$api-$offset.o"
                 if "$bin/llvm-nm" -u "$RUNNER_TEMP/media-root-$target-$api-$offset.o" | \
-                    grep -Eq ' U (record_android_capture_|record_mediacodec_|record_session_mediacodec_|record_mux_mediacodec_|record_audio_queue_|record_gpu_queue_|retro_spsc_|rav1_|rvp9_|rjni_env$|mediacodec_|android_frame_|android_image_|vulkan_android_|video_player_(request_software|set_hw_fallback)|image_transfer_anim_stream_stop_hw|rwebm_video_stream_stop_hw)'; then
+                    grep -Eq ' U (record_android_capture_|record_mediacodec_|record_session_mediacodec_|record_dispatch_mediacodec_|record_mux_mediacodec_|record_audio_queue_|record_gpu_queue_|retro_spsc_|rav1_|rvp9_|rjni_env$|mediacodec_|android_frame_|android_image_|vulkan_android_|video_player_(request_software|set_hw_fallback)|image_transfer_anim_stream_stop_hw|rwebm_video_stream_stop_hw)'; then
                   echo "Unresolved private Android media helper in root link"
                   exit 1
                 fi

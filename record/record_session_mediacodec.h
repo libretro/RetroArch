@@ -25,12 +25,14 @@ void *record_session_mediacodec_surface(record_session_mediacodec_t *session);
 /* One PCM producer. Explicit source sample clock; BUSY copies nothing. */
 int record_session_mediacodec_audio(record_session_mediacodec_t *session,
       const int16_t *samples, size_t frames, uint64_t timestamp);
-/* Same producer, after last push returns, including cancellation. No pushes
+/* Producer or its I/O notification owner after the last push returns,
+ * including cancellation. No pushes
  * after close. The end is immutable and includes any dropped source interval.
  */
 bool record_session_mediacodec_audio_finish(
       record_session_mediacodec_t *session, uint64_t end_sample);
-/* GPU executor only, after producer closure and all source reads retire.
+/* GPU executor or its single I/O notification owner, after producer closure
+ * and all source reads retire.
  * Then signal released separately after Surface/context users retire. These
  * notifications publish immutable source ends; they perform no native calls. */
 bool record_session_mediacodec_gpu_retired(
