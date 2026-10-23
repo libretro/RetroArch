@@ -24,6 +24,7 @@ void image_texture_free(void *t) { (void)t; }
 
 int  glslang_compile_shader(void) { return 0; }
 int  glslang_compile_shader_cached(void) { return 0; }
+int  glslang_compile_shader_text(void) { return 0; }
 const char *glslang_format_to_string(int f) { (void)f; return ""; }
 void *glslang_include_cache_new(void) { return NULL; }
 void glslang_include_cache_free(void *c) { (void)c; }
