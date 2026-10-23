@@ -1135,12 +1135,19 @@ static bool glslang_parse_meta(const struct shader_line_buf *lines,
 #define SLANG_COMPILER_GLSLANG 1
 #define SLANG_COMPILER_RSLC    2
 
-/* No driver has met its gate yet: auto is glslang everywhere. */
-static bool slang_prefer_rslc(void)
+/* Auto per driver.  Vulkan and glcore have met their gate (the whole
+ * corpus with zero reflection diffs, every non-bezel preset of
+ * slang-shaders pixel-identical to glslang+Cross on both), so a caller
+ * that wants no text (vulkan) or GLSL text (glcore) gets rslc; d3d and
+ * metal, which ask for HLSL or MSL, stay with glslang until the fxc and
+ * xcrun runs of the same gate are in. */
+static bool slang_prefer_rslc(const struct slang_text_target *text)
 {
    const settings_t *settings = config_get_ptr();
    unsigned choice            = settings
       ? settings->uints.video_shader_compiler : SLANG_COMPILER_AUTO;
+   if (choice == SLANG_COMPILER_AUTO)
+      return !text || (!text->hlsl && !text->msl);
    return choice == SLANG_COMPILER_RSLC;
 }
 #endif
@@ -1258,11 +1265,15 @@ static char *slang_rslc_print_stage(const char *source,
  * the cache entry's key. */
 static bool slang_compile_stage(const char *source,
       enum glslang_compile_stage stage,
-      uint32_t **spirv, size_t *spirv_len, const char **compiler)
+      uint32_t **spirv, size_t *spirv_len, const char **compiler,
+      const struct slang_text_target *text)
 {
+#if !defined(HAVE_RSLC) || !defined(HAVE_GLSLANG)
+   (void)text;
+#endif
 #if defined(HAVE_RSLC)
 #if defined(HAVE_GLSLANG)
-   if (slang_prefer_rslc())
+   if (slang_prefer_rslc(text))
 #endif
    {
       if (slang_rslc_compile_stage(source, stage, spirv, spirv_len))
@@ -1322,7 +1333,7 @@ bool glslang_compile_shader_text(const char *shader_path,
       char *fragment_source = NULL;
       const char *compiler  =
 #if defined(HAVE_RSLC) && defined(HAVE_GLSLANG)
-         slang_prefer_rslc() ? "rslc" : "glslang";
+         slang_prefer_rslc(text) ? "rslc" : "glslang";
 #elif defined(HAVE_RSLC)
          "rslc";
 #else
@@ -1400,7 +1411,7 @@ bool glslang_compile_shader_text(const char *shader_path,
 
       if (!slang_compile_stage(vertex_source,
                GLSLANG_COMPILE_STAGE_VERTEX,
-               &output->vertex, &output->vertex_len, &used))
+               &output->vertex, &output->vertex_len, &used, text))
       {
          RARCH_ERR("[Slang] Failed to compile vertex shader stage.\n");
          goto error;
@@ -1418,7 +1429,7 @@ bool glslang_compile_shader_text(const char *shader_path,
 
       if (!slang_compile_stage(fragment_source,
                GLSLANG_COMPILE_STAGE_FRAGMENT,
-               &output->fragment, &output->fragment_len, &used))
+               &output->fragment, &output->fragment_len, &used, text))
       {
          RARCH_ERR("[Slang] Failed to compile fragment shader stage.\n");
          goto error;
