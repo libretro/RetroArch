@@ -27,6 +27,10 @@ int record_android_capture_pipe_step(record_android_capture_pipe_t *pipe);
 bool record_android_capture_pipe_finish(
       record_android_capture_pipe_t *pipe, int64_t end_us);
 void record_android_capture_pipe_cancel(record_android_capture_pipe_t *pipe);
+/* Renderer, after source production stops. Cached proof for original source
+ * leases only; capture buffers and the device still require joint retirement. */
+bool record_android_capture_pipe_sources_retired(
+      const record_android_capture_pipe_t *pipe);
 /* Renderer quiescent. Does not free borrowed executor, entries or pool. */
 bool record_android_capture_pipe_free(record_android_capture_pipe_t *pipe);
 RETRO_END_DECLS

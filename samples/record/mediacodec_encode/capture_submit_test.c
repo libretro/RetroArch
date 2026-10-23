@@ -723,15 +723,18 @@ static void pipe_source_retirement(void)
    gpu.state = RECORD_MC_DISPATCH_READY;
    assert(gpu.queue);
    pipe = record_android_capture_pipe_new(&gpu, &entry, 1, close_fd, &m);
-   assert(pipe);
+   assert(pipe && record_android_capture_pipe_sources_retired(pipe));
    s = source();
    assert(record_android_capture_pipe_push(pipe, &s, 0, 10) == 1);
+   assert(!record_android_capture_pipe_sources_retired(pipe));
    assert(record_android_capture_pipe_step(pipe) == 0);
    assert(record_gpu_queue_take(gpu.queue, &frame) == RECORD_GPU_QUEUE_OK);
    assert(record_android_capture_pipe_step(pipe) == 0 && m.refs == 1);
+   assert(!record_android_capture_pipe_sources_retired(pipe));
    m.complete = true;
    assert(record_android_capture_pipe_step(pipe) == 0);
    assert(!m.refs && m.releases == 1 && m.fd_refs == 1);
+   assert(record_android_capture_pipe_sources_retired(pipe));
    assert(!record_android_capture_submit_free(entry));
    assert(!record_gpu_queue_free(gpu.queue));
    assert(record_android_capture_pipe_step(pipe) == 0 && m.releases == 1);
@@ -746,6 +749,7 @@ static void pipe_source_retirement(void)
 }
 int main(void)
 {
+   assert(record_android_capture_pipe_sources_retired(NULL));
    pipe_source_retirement();
    pipe_device_loss();
    pipe_lifetime(false, false);

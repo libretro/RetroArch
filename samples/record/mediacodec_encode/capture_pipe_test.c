@@ -201,6 +201,14 @@ static void multiple(void)
    gpu.slot = 1;
    assert(record_android_capture_pipe_push(p, &source, 20, 10) == 1);
    assert(record_android_capture_pipe_step(p) == 0);
+   assert(!record_android_capture_pipe_sources_retired(p));
+   assert(record_android_capture_pipe_step(p) == 0);
+   assert(!record_android_capture_pipe_sources_retired(p));
+   assert(record_android_capture_pipe_step(p) == 0);
+   assert(record_android_capture_pipe_sources_retired(p));
+   queries = first.queries + second.queries;
+   assert(record_android_capture_pipe_step(p) == 0);
+   assert(first.queries + second.queries == queries);
    assert(record_android_capture_pipe_finish(p, 30));
    gpu.owned = 0;
    gpu.state = RECORD_MC_DISPATCH_DONE;
@@ -234,6 +242,7 @@ static void reuse(void)
    gpu.owned = 0;
    assert(record_android_capture_pipe_push(p, &source, 20, 10) == 1);
    assert(entry.released == 1);
+   assert(!record_android_capture_pipe_sources_retired(p));
    assert(record_android_capture_pipe_step(p) == 0);
    assert(gpu.posts == 2);
    assert(record_android_capture_pipe_finish(p, 30));

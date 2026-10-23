@@ -222,6 +222,12 @@ bool record_android_capture_pipe_finish(
    return true;
 }
 
+bool record_android_capture_pipe_sources_retired(
+      const record_android_capture_pipe_t *p)
+{
+   return !p || !(p->active & ~p->copied);
+}
+
 bool record_android_capture_pipe_free(record_android_capture_pipe_t *p)
 {
    if (!p)
