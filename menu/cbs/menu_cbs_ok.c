@@ -7055,7 +7055,7 @@ static int action_ok_delete_entry(const char *path,
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV) || defined(HAVE_WEBMPLAYER)
    char *def_conf_video_path = NULL;
 #endif
-#ifdef HAVE_IMAGEVIEWER
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU)
    char *def_conf_img_path   = NULL;
 #endif
    char *def_conf_fav_path   = NULL;
@@ -7072,7 +7072,7 @@ static int action_ok_delete_entry(const char *path,
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV) || defined(HAVE_WEBMPLAYER)
    def_conf_video_path       = playlist_get_conf_path(g_defaults.video_history);
 #endif
-#ifdef HAVE_IMAGEVIEWER
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU)
    def_conf_img_path         = playlist_get_conf_path(g_defaults.image_history);
 #endif
    def_conf_fav_path         = playlist_get_conf_path(g_defaults.content_favorites);
@@ -7085,7 +7085,7 @@ static int action_ok_delete_entry(const char *path,
    else if (string_is_equal(conf_path, def_conf_video_path))
       playlist               = g_defaults.video_history;
 #endif
-#ifdef HAVE_IMAGEVIEWER
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU)
    else if (string_is_equal(conf_path, def_conf_img_path))
       playlist               = g_defaults.image_history;
 #endif

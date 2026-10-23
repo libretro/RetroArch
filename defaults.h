@@ -71,7 +71,7 @@ struct defaults
 #ifndef IS_SALAMANDER
    playlist_t *content_history;
    playlist_t *content_favorites;
-#ifdef HAVE_IMAGEVIEWER
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU)
    playlist_t *image_history;
 #endif
    playlist_t *music_history;

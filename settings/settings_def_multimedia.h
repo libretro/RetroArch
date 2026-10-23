@@ -13,9 +13,8 @@ S_BOOL(multimedia_builtin_mediaplayer_enable, USE_BUILTIN_PLAYER,
       "Use Built-In Media Player",
       "Show Media Player supported files in File Browser.")
 #endif
-/* Descriptor and configuration rows are #ifdef HAVE_IMAGEVIEWER; the string
- * tables always carry this row via the strings pass. */
-#if defined(HAVE_IMAGEVIEWER) || defined(SETTINGS_DEF_STRINGS_PASS)
+/* The menu image viewer does not require the legacy core. */
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU) || defined(SETTINGS_DEF_STRINGS_PASS)
 /* config key "builtin_imageviewer_enable" differs from the label string; the
  * configuration.c row stays literal for this setting. */
 #ifndef SETTINGS_DEF_CONFIG_PASS

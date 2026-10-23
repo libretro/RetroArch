@@ -368,9 +368,9 @@ int main(int argc, char *argv[])
             "listed\n", missing, CORES * EXTS_PER);
       failures++;
    }
-#ifdef HAVE_IMAGEVIEWER
+#if defined(HAVE_RPNG) && (defined(HAVE_MENU) || defined(HAVE_IMAGEVIEWER))
    CHECK(listed("picture.png"),
-         "an image is not listed while the image viewer is built in");
+         "an image is not listed while the internal viewer is available");
 #endif
    CHECK(!listed_label(MENU_ENUM_LABEL_USE_THIS_DIRECTORY_STR),
          "the start directory offers Use This Directory with no core "
