@@ -1938,6 +1938,20 @@ static bool pr_msl_env_build(struct rslc_pr *p)
    return true;
 }
 
+/* M / s printed as M * (1.0 / s): what glslang's module computes. */
+static void pr_mat_div_scalar(struct rslc_pr *p, uint32_t m, uint32_t s, int ctx)
+{
+   int prec = PR_PREC_MUL;
+   if (prec > ctx)
+      pr_c(p, '(');
+   pr_expr(p, m, prec);
+   pr_s(p, p->hlsl || p->msl ? " * (1.0f / " : " * (1.0 / ");
+   pr_expr(p, s, PR_PREC_MUL);
+   pr_c(p, ')');
+   if (prec > ctx)
+      pr_c(p, ')');
+}
+
 static void pr_expr(struct rslc_pr *p, uint32_t node, int ctx)
 {
    const struct rslc_node *n = rslc_node_at(p->c, node);
@@ -2161,6 +2175,14 @@ static void pr_expr(struct rslc_pr *p, uint32_t node, int ctx)
       case RSLC_OP_BINARY:
       {
          const char *op = pr_binop_str(n->aux, &prec);
+         if (n->aux == RSLC_BIN_DIV && rslc_node_at(p->c, n->a)->type->kind == RSLC_TY_MAT
+               && rslc_node_at(p->c, n->b)->type->kind == RSLC_TY_SCALAR)
+         {
+            /* a matrix over a scalar is the matrix times the reciprocal,
+             * as the SPIR-V emitter and glslang lower it */
+            pr_mat_div_scalar(p, n->a, n->b, ctx);
+            break;
+         }
          if (p->hlsl || p->msl)
          {
             const struct rslc_type *ta = rslc_node_at(p->c, n->a)->type;
@@ -2250,6 +2272,15 @@ static void pr_expr(struct rslc_pr *p, uint32_t node, int ctx)
             pr_s(p, ", ");
             pr_expr(p, n->a, PR_PREC_ASSIGN);
             pr_c(p, ')');
+            if (PR_PREC_ASSIGN > ctx)
+               pr_c(p, ')');
+            break;
+         }
+         if (n->aux == RSLC_BIN_DIV && n->type->kind == RSLC_TY_MAT
+               && rslc_node_at(p->c, n->b)->type->kind == RSLC_TY_SCALAR)
+         {
+            pr_s(p, "= ");
+            pr_mat_div_scalar(p, n->a, n->b, PR_PREC_ASSIGN);
             if (PR_PREC_ASSIGN > ctx)
                pr_c(p, ')');
             break;
