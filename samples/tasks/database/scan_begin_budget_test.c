@@ -62,6 +62,7 @@
 #ifndef SCAN_CRC_QUANTUM
 #define SCAN_CRC_QUANTUM (256 * 1024)
 #endif
+#define INDEX_RECORDS 200000
 
 /* Per-gather cost for the pacing lane is measured in thread CPU
  * time, not wall time.  The property under test is how much work the
@@ -249,19 +250,15 @@ static bool build_fixture(const char *root, char *dat_path, size_t dat_path_len,
    return true;
 }
 
-/* A one-record database laid out as libretrodb writes one: the record
- * map, a nil, then the {count} map the header points at. */
-static bool write_rdb_one(const char *path, const char *name,
-      uint32_t crc, uint32_t size)
+/* A {name, crc, size} record map at @b, as libretrodb writes one, for
+ * a @name of at most 31 bytes.  Returns its length, at most 59. */
+static size_t put_record(uint8_t *b, const char *name, uint32_t crc,
+      uint32_t size)
 {
-   uint8_t b[128];
-   size_t  name_len = strlen(name);
-   size_t  n        = 16;
-   size_t  meta, i;
-   FILE   *f;
+   size_t name_len = strlen(name);
+   size_t n        = 0;
+   size_t i;
 
-   if (name_len > 31)
-      return false;
    b[n++] = 0x83;
    b[n++] = 0xa4; memcpy(b + n, "name", 4); n += 4;
    b[n++] = (uint8_t)(0xa0 | name_len);
@@ -274,6 +271,22 @@ static bool write_rdb_one(const char *path, const char *name,
    b[n++] = 0xce;
    for (i = 0; i < 4; i++)
       b[n++] = (uint8_t)(size >> (24 - 8 * i));
+   return n;
+}
+
+/* A one-record database laid out as libretrodb writes one: the record
+ * map, a nil, then the {count} map the header points at. */
+static bool write_rdb_one(const char *path, const char *name,
+      uint32_t crc, uint32_t size)
+{
+   uint8_t b[128];
+   size_t  n = 16;
+   size_t  meta, i;
+   FILE   *f;
+
+   if (strlen(name) > 31)
+      return false;
+   n     += put_record(b + n, name, crc, size);
    b[n++] = 0xc0;
    meta   = n;
    b[n++] = 0x81;
@@ -288,6 +301,47 @@ static bool write_rdb_one(const char *path, const char *name,
    i = fwrite(b, 1, n, f);
    fclose(f);
    return i == n;
+}
+
+/* @count records laid out as write_rdb_one() lays one out, named
+ * "Index NNNNNN", all of size @size, with crcs scattered so that the
+ * index has to sort them. */
+static bool write_rdb_many(const char *path, unsigned count, uint32_t size)
+{
+   uint8_t  b[64];
+   unsigned i;
+   size_t   n, k;
+   long     meta;
+   bool     ok;
+   FILE    *f;
+
+   if (!(f = fopen(path, "wb")))
+      return false;
+   memset(b, 0, 16);
+   ok = fwrite(b, 1, 16, f) == 16;
+   for (i = 0; ok && i < count; i++)
+   {
+      char name[16];
+
+      sprintf(name, "Index %06u", i % 1000000);
+      n  = put_record(b, name, i * 2654435761u, size);
+      ok = fwrite(b, 1, n, f) == n;
+   }
+   meta   = ftell(f);
+   n      = 0;
+   b[n++] = 0xc0;
+   b[n++] = 0x81;
+   b[n++] = 0xa5; memcpy(b + n, "count", 5); n += 5;
+   b[n++] = 0xce;
+   for (k = 0; k < 4; k++)
+      b[n++] = (uint8_t)(count >> (24 - 8 * k));
+   ok = ok && meta > 0 && fwrite(b, 1, n, f) == n;
+   /* The header points past the nil, at the {count} map. */
+   memcpy(b, "RARCHDB", 8);
+   for (k = 0; k < 8; k++)
+      b[8 + k] = (uint8_t)((uint64_t)(meta + 1) >> (56 - 8 * k));
+   ok = ok && fseek(f, 0, SEEK_SET) == 0 && fwrite(b, 1, 16, f) == 16;
+   return (fclose(f) == 0) && ok;
 }
 
 /* ITERATE lane fixture: @count files of @size bytes, and one database
@@ -933,6 +987,100 @@ lane_out:
    return true;
 }
 
+/* Runs a database scan on a spent window, on a fresh one, and
+ * cancelled after @cancel_after checks.  On a spent window it has to
+ * take more than @min_checks checks; on a fresh one a call takes at
+ * most 4 ms of CPU times PACING_SLACK_MULTIPLIER.  @entries, when not
+ * NULL, gets what @playlist holds after the fresh run.  The cancelled
+ * run must release what the step held, which only the sanitizers see. */
+static bool stepped_runs(const char *what, const char *size,
+      const char *content_dir, const char *db_dir,
+      const char *playlist_dir, const char *playlist,
+      unsigned min_checks, unsigned cancel_after, bool sanitize,
+      size_t *entries)
+{
+   scan_metrics_t ms, mf, mc;
+   bool ran =    run_db_scan(content_dir, db_dir, playlist_dir, true, 0, &ms)
+              && !scan_err
+              && run_db_scan(content_dir, db_dir, playlist_dir, false, 0,
+                    &mf)
+              && !scan_err;
+
+   if (entries)
+      *entries = playlist_entries(playlist_dir, playlist);
+   ran =    ran
+         && run_db_scan(content_dir, db_dir, playlist_dir, true,
+               cancel_after, &mc)
+         && !scan_err;
+   config_get_ptr()->paths.path_content_database[0] = '\0';
+   config_get_ptr()->bools.scan_without_core_match  = false;
+   if (!ran)
+      return false;
+   fprintf(stderr,
+         "[metrics] %s: %s, spent-window checks=%u, "
+         "fresh-window checks=%u max_gather_cpu=%.2fms, "
+         "cancelled run checks=%u\n",
+         what, size, ms.gathers, mf.gathers,
+         mf.max_gather_usec / 1000.0, mc.gathers);
+   if (ms.gathers <= min_checks)
+   {
+      fprintf(stderr, "FAIL %s: %s took %u checks on a spent window\n",
+            what, size, ms.gathers);
+      return false;
+   }
+   if (   !sanitize
+       && mf.max_gather_usec > 4000 * PACING_SLACK_MULTIPLIER)
+   {
+      fprintf(stderr, "FAIL %s pacing: max gather %.2fms CPU exceeds "
+            "%.2fms\n", what, mf.max_gather_usec / 1000.0,
+            4000 * PACING_SLACK_MULTIPLIER / 1000.0);
+      return false;
+   }
+   return true;
+}
+
+/* A big database's index is built over many calls.  On a spent
+ * window a call walks one run of records or merges one run of entries;
+ * on a fresh one it stays within the window plus one of those.  A
+ * cancel part way must free the build, which only the sanitizers
+ * see. */
+static bool index_lane(bool sanitize)
+{
+   char  size[32];
+   bool  ok  = false;
+   char *buf = (char*)malloc(4 * 4608);
+   char *db  = buf;
+   char *in, *pl, *rdb;
+
+   if (!buf)
+      return false;
+   in  = buf + 4608;
+   pl  = buf + 2 * 4608;
+   rdb = buf + 3 * 4608;
+   snprintf(db,  4608, "%s/index_db", fixture_root);
+   snprintf(in,  4608, "%s/index",    fixture_root);
+   snprintf(pl,  4608, "%s/index_pl", fixture_root);
+   snprintf(rdb, 4608, "%s/ScanBench Index.rdb", db);
+   if (   !path_mkdir(pl)
+       || !build_iterate_fixture(db, in, 1, 1024, false)
+       || !write_rdb_many(rdb, INDEX_RECORDS, 1024))
+   {
+      fprintf(stderr, "index fixture build failed\n");
+      goto end;
+   }
+   /* At most 4096 records a call. */
+   sprintf(size, "%u records", (unsigned)INDEX_RECORDS);
+   if (!stepped_runs("index", size, in, db, pl, NULL,
+            INDEX_RECORDS / 4096, 64, sanitize, NULL))
+      goto end;
+   fprintf(stderr, "[pass] stepped index lane\n");
+   ok = true;
+
+end:
+   free(buf);
+   return ok;
+}
+
 int main(int argc, char *argv[])
 {
    char content_dir[4096];
@@ -1252,9 +1400,8 @@ int main(int argc, char *argv[])
     * must release the open span, which only the sanitizers see. */
    {
       char st_db[4352], st_content[4352], st_pl[4352];
-      scan_metrics_t ms, mf, mc;
+      char size[32];
       size_t entries;
-      bool ran;
 
       snprintf(st_db,      sizeof(st_db),      "%s/stepped_db", fixture_root);
       snprintf(st_content, sizeof(st_content), "%s/stepped",    fixture_root);
@@ -1266,37 +1413,11 @@ int main(int argc, char *argv[])
          fprintf(stderr, "stepped fixture build failed\n");
          goto out_queue;
       }
-      ran =    run_db_scan(st_content, st_db, st_pl, true,  0,  &ms)
-            && !scan_err
-            && run_db_scan(st_content, st_db, st_pl, false, 0,  &mf)
-            && !scan_err;
-      entries = playlist_entries(st_pl, "stepped.lpl");
-      ran     = ran && run_db_scan(st_content, st_db, st_pl, true, 32, &mc)
-            && !scan_err;
-      config_get_ptr()->paths.path_content_database[0] = '\0';
-      config_get_ptr()->bools.scan_without_core_match  = false;
-      if (!ran)
+      sprintf(size, "%u MiB", STEPPED_FILE_SIZE >> 20);
+      if (!stepped_runs("stepped", size, st_content, st_db, st_pl,
+               "stepped.lpl", STEPPED_FILE_SIZE / SCAN_CRC_QUANTUM, 32,
+               sanitize, &entries))
          goto out_queue;
-      fprintf(stderr,
-            "[metrics] stepped: %u MiB, spent-window checks=%u, "
-            "fresh-window checks=%u max_gather_cpu=%.2fms, "
-            "cancelled run checks=%u\n",
-            STEPPED_FILE_SIZE >> 20, ms.gathers, mf.gathers,
-            mf.max_gather_usec / 1000.0, mc.gathers);
-      if (ms.gathers <= STEPPED_FILE_SIZE / SCAN_CRC_QUANTUM)
-      {
-         fprintf(stderr, "FAIL stepped: a %u MiB CRC took %u checks on a "
-               "spent window\n", STEPPED_FILE_SIZE >> 20, ms.gathers);
-         goto out_queue;
-      }
-      if (   !sanitize
-          && mf.max_gather_usec > 4000 * PACING_SLACK_MULTIPLIER)
-      {
-         fprintf(stderr, "FAIL stepped pacing: max gather %.2fms CPU exceeds "
-               "%.2fms\n", mf.max_gather_usec / 1000.0,
-               4000 * PACING_SLACK_MULTIPLIER / 1000.0);
-         goto out_queue;
-      }
       if (entries != 1)
       {
          fprintf(stderr, "FAIL stepped: %u playlist entries, expected 1\n",
@@ -1305,6 +1426,9 @@ int main(int argc, char *argv[])
       }
       fprintf(stderr, "[pass] stepped CRC lane\n");
    }
+
+   if (!index_lane(sanitize))
+      goto out_queue;
    task_queue_deinit();
 
    /* Threaded lane: correctness under the threaded queue (and the

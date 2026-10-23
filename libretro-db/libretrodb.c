@@ -600,23 +600,6 @@ static int32_t rmsgpack_read_key_string(intfstream_t *fd,
 #define CURSOR_MAX_MAP_FIELDS    24
 
 /**
- * libretrodb_scan_field:
- *
- * Walk the database once, reporting the binary value of @field and
- * the offset of the record carrying it.  Records without the field,
- * or carrying it as something other than binary, are skipped.
- *
- * This exists so a caller can build its own lookup structure in one
- * pass instead of re-walking the whole database for every key it
- * wants to test.  Nothing is parsed beyond the field itself: values
- * the caller did not ask for are stepped over, not decoded.
- *
- * @cb is called for each match and may return non-zero to stop the
- * scan, which is then reported as success.
- *
- * Returns: 0 when the database was walked, -1 on a malformed stream.
- */
-/**
  * rmsgpack_read_bin_inplace:
  *
  * Read a MsgPack binary value into a caller buffer.  Returns -1 and
@@ -924,57 +907,11 @@ end:
    return rv;
 }
 
-int libretrodb_scan_field2(libretrodb_t *db, const char *field,
-      const char *field2, const char *aux_field,
-      libretrodb_scan2_cb cb, void *ctx)
-{
-   libretrodb_scan_t *scan;
-   int                rv;
-
-   if (!cb || !(scan = libretrodb_scan_begin(db, field, field2, aux_field)))
-      return -1;
-   do
-      rv = libretrodb_scan_step(scan, 4096, cb, ctx);
-   while (rv == 1);
-   libretrodb_scan_end(scan);
-   return rv;
-}
-
-struct libretrodb_scan1
-{
-   libretrodb_scan_cb cb;
-   void              *ctx;
-};
-
-static int libretrodb_scan1_cb(void *ctx, const uint8_t *key,
-      size_t key_len, const uint8_t *key2, size_t key2_len,
-      uint64_t offset, const uint64_t *aux)
-{
-   struct libretrodb_scan1 *s = (struct libretrodb_scan1*)ctx;
-   (void)key2;
-   (void)key2_len;
-   return s->cb(s->ctx, key, key_len, offset, aux);
-}
-
-int libretrodb_scan_field(libretrodb_t *db, const char *field,
-      const char *aux_field, libretrodb_scan_cb cb, void *ctx)
-{
-   struct libretrodb_scan1 s;
-
-   if (!field || !*field || !cb)
-      return -1;
-
-   s.cb  = cb;
-   s.ctx = ctx;
-   return libretrodb_scan_field2(db, field, NULL, aux_field,
-         libretrodb_scan1_cb, &s);
-}
-
 /**
  * libretrodb_read_at:
  *
  * Read the record beginning at @offset, which must have come from
- * libretrodb_scan_field().  Lets a caller that kept only offsets
+ * libretrodb_scan_step().  Lets a caller that kept only offsets
  * fetch a record without walking to it.
  */
 int libretrodb_read_at(libretrodb_t *db, uint64_t offset,

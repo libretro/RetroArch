@@ -355,7 +355,7 @@ static int write_db_many(const char *path, int count)
 }
 
 /* Name of the first record a lookup returns, or "" for none. */
-static void crc_lookup(const database_info_crc_index_t *idx,
+static void crc_lookup(database_info_crc_index_t *idx,
       const char *path, uint32_t crc, char *out, size_t len)
 {
    database_info_list_t *l = database_info_list_new_crc(idx, path, crc, 0,
@@ -373,7 +373,7 @@ static void crc_lookup(const database_info_crc_index_t *idx,
    out[len - 1] = '\0';
 }
 
-static void serial_lookup(const database_info_serial_index_t *idx,
+static void serial_lookup(database_info_serial_index_t *idx,
       const char *path, const char *serial, char *out, size_t len)
 {
    database_info_list_t *l = database_info_list_new_serial(idx, path,
@@ -391,7 +391,70 @@ static void serial_lookup(const database_info_serial_index_t *idx,
    out[len - 1] = '\0';
 }
 
-/* database_info_index_new() builds in one walk what the two builders
+/* A job stepped until it is done: the one-shot build the stepped jobs
+ * below are held to. */
+static void index_new(const char *path, size_t max_bytes,
+      database_info_crc_index_t **crc,
+      database_info_serial_index_t **serial, bool *has_serial)
+{
+   database_info_index_job_t *job;
+   unsigned                   want = 0;
+
+   if (crc)
+      want |= DATABASE_INFO_INDEX_CRC;
+   if (serial)
+      want |= DATABASE_INFO_INDEX_SERIAL;
+   if (has_serial)
+      want |= DATABASE_INFO_INDEX_HAS_SERIAL;
+   job = database_info_index_job_new(path, max_bytes, want);
+   while (job && !database_info_index_job_step(job, 4096, 65536))
+      ;
+   database_info_index_job_finish(job, crc, serial, has_serial);
+}
+
+static database_info_crc_index_t *crc_index_new(const char *path,
+      size_t max_bytes)
+{
+   database_info_crc_index_t *idx;
+   index_new(path, max_bytes, &idx, NULL, NULL);
+   return idx;
+}
+
+static database_info_serial_index_t *serial_index_new(const char *path,
+      size_t max_bytes)
+{
+   database_info_serial_index_t *idx;
+   index_new(path, max_bytes, NULL, &idx, NULL);
+   return idx;
+}
+
+/* Builds @path's indexes in one walk under @max and as two builds, the
+ * crc index first and the serial index on what it leaves.  False when
+ * the two disagree on which come back; *@crc_only says the one walk
+ * held the crc index alone. */
+static int split_agrees(const char *path, size_t max, int *crc_only)
+{
+   database_info_crc_index_t    *ci = NULL, *ci1;
+   database_info_serial_index_t *si = NULL, *si1;
+   size_t left = max;
+   int    agree;
+
+   ci1 = crc_index_new(path, max);
+   if (ci1)
+      left = (database_info_crc_index_bytes(ci1) < max)
+         ? max - database_info_crc_index_bytes(ci1) : 0;
+   si1 = left ? serial_index_new(path, left) : NULL;
+   index_new(path, max, &ci, &si, NULL);
+   agree     = (!ci == !ci1) && (!si == !si1);
+   *crc_only = ci && !si;
+   database_info_crc_index_free(ci);
+   database_info_serial_index_free(si);
+   database_info_crc_index_free(ci1);
+   database_info_serial_index_free(si1);
+   return agree;
+}
+
+/* index_new() builds in one walk what the two builders
  * build in two, so its indexes have to answer as theirs do, and a
  * budget has to be spent as when the crc index was built first and
  * the serial index got the rest. */
@@ -410,9 +473,9 @@ static void check_one_walk(const char *dir, const char *path_a)
       return;
    }
 
-   database_info_index_new(path_a, 0, &ci, &si, &has_serial);
-   ci1 = database_info_crc_index_new(path_a, 0);
-   si1 = database_info_serial_index_new(path_a, 0);
+   index_new(path_a, 0, &ci, &si, &has_serial);
+   ci1 = crc_index_new(path_a, 0);
+   si1 = serial_index_new(path_a, 0);
    check(   ci && si && ci1 && si1 && has_serial
          && database_info_crc_index_count(ci)
             == database_info_crc_index_count(ci1)
@@ -450,30 +513,27 @@ static void check_one_walk(const char *dir, const char *path_a)
    database_info_serial_index_free(si1);
 
    {
-      size_t   max;
+      size_t   max, edge;
       unsigned tight = 0;
-      int      agree = 1;
+      int      agree = 1, crc_only;
       char     detail[64];
 
       for (max = 1024; max <= 32768; max += 256)
       {
-         size_t left = max;
-
-         ci1 = database_info_crc_index_new(path_a, max);
-         if (ci1)
-            left = (database_info_crc_index_bytes(ci1) < max)
-               ? max - database_info_crc_index_bytes(ci1) : 0;
-         si1 = left ? database_info_serial_index_new(path_a, left) : NULL;
-         database_info_index_new(path_a, max, &ci, &si, NULL);
-         if (!ci != !ci1 || !si != !si1)
+         if (!split_agrees(path_a, max, &crc_only))
             agree = 0;
-         if (ci && !si)
+         if (crc_only)
             tight++;
-         database_info_crc_index_free(ci);
-         database_info_serial_index_free(si);
-         database_info_crc_index_free(ci1);
-         database_info_serial_index_free(si1);
       }
+
+      /* The serial build's first table, 1024 entries of 8 bytes, fits
+       * what the crc index leaves of @edge and not a byte less. */
+      ci1  = crc_index_new(path_a, 0);
+      edge = database_info_crc_index_bytes(ci1) + 8192;
+      database_info_crc_index_free(ci1);
+      if (   !split_agrees(path_a, edge - 1, &crc_only) || !crc_only
+          || !split_agrees(path_a, edge, &crc_only)     ||  crc_only)
+         agree = 0;
       sprintf(detail, "%u budgets hold the crc index only", tight);
       check(agree && tight, "budget split as the two builds split it",
             detail);
@@ -481,15 +541,15 @@ static void check_one_walk(const char *dir, const char *path_a)
 
    /* The crc lookup asks only whether serials are there. */
    sprintf(path, "%s/sizes.rdb", dir);
-   database_info_index_new(path_a, 0, &ci, NULL, &has_serial);
+   index_new(path_a, 0, &ci, NULL, &has_serial);
    i = ci && has_serial;
    database_info_crc_index_free(ci);
-   database_info_index_new(path, 0, &ci, NULL, &has_serial);
+   index_new(path, 0, &ci, NULL, &has_serial);
    check(i && ci && !has_serial, "serials seen without a serial index",
          "Alpha has them, sizes.rdb not");
    database_info_crc_index_free(ci);
 
-   database_info_index_new(path, 0, &ci, &si, &has_serial);
+   index_new(path, 0, &ci, &si, &has_serial);
    check(   ci && si && !has_serial
          && database_info_serial_index_count(si) == 0,
          "no serials: an empty serial index", "sizes.rdb");
@@ -502,10 +562,10 @@ static void check_one_walk(const char *dir, const char *path_a)
  * sizes below, and a dozen merge passes. */
 #define JOB_RECORDS 3000
 
-/* database_info_index_job_*() spreads database_info_index_new() over
- * calls of a few records or entries each.  Its indexes have to answer
- * every crc and serial of a database whose crcs come in no order, as
- * the one-shot build's do, and a job freed part way must not leak. */
+/* database_info_index_job_*() spreads a build over calls of a few
+ * records or entries each.  Its indexes have to answer every crc and
+ * serial of a database whose crcs come in no order, as index_new()'s
+ * do, and a job freed part way must not leak. */
 static void check_index_job(const char *dir)
 {
    static const unsigned stop_at[] = { 100, 3000, 9000 };
@@ -536,7 +596,7 @@ static void check_index_job(const char *dir)
    while (job && !database_info_index_job_step(job, 7, 5))
       steps++;
    database_info_index_job_finish(job, &ci, &si, &has_serial);
-   database_info_index_new(path, 0, &ci1, &si1, NULL);
+   index_new(path, 0, &ci1, &si1, NULL);
    printf("  info  index job steps for %d records: %u\n", JOB_RECORDS,
          steps);
    sprintf(detail, "%u steps of 7 records or 5 entries", steps);
@@ -708,10 +768,10 @@ int main(int argc, char **argv)
       return 1;
     }
 
-   cia = database_info_crc_index_new(path_a, 0);
-   cib = database_info_crc_index_new(path_b, 0);
-   sia = database_info_serial_index_new(path_a, 0);
-   sib = database_info_serial_index_new(path_b, 0);
+   cia = crc_index_new(path_a, 0);
+   cib = crc_index_new(path_b, 0);
+   sia = serial_index_new(path_a, 0);
+   sib = serial_index_new(path_b, 0);
 
    if (!cia || !cib || !sia || !sib)
    {
@@ -773,14 +833,14 @@ int main(int argc, char **argv)
     * is the failure the whole fallback design exists to avoid. */
    {
       database_info_crc_index_t *tiny =
-         database_info_crc_index_new(path_a, 64);
+         crc_index_new(path_a, 64);
       check(tiny == NULL, "index refused when over budget",
             tiny ? "built anyway" : "refused");
       database_info_crc_index_free(tiny);
    }
    {
       database_info_crc_index_t *ample =
-         database_info_crc_index_new(path_a, 1024 * 1024);
+         crc_index_new(path_a, 1024 * 1024);
       char tmp[256];
       check(ample != NULL, "index built when within budget",
             ample ? "built" : "refused");
@@ -817,7 +877,7 @@ int main(int argc, char **argv)
       {
          check(0, "size-range fixture written", "write failed");
       }
-      else if (!(idx = database_info_crc_index_new(path, 0)))
+      else if (!(idx = crc_index_new(path, 0)))
       {
          check(0, "size-range index built", "no index");
       }

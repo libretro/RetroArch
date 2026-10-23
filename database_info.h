@@ -168,12 +168,6 @@ bool menu_dbinfo_cache_has(const char *path, const char *query);
  * and lives for as long as the caller keeps it. */
 typedef struct database_info_crc_index database_info_crc_index_t;
 
-/* @max_bytes caps the entry table; the build gives up and returns
- * NULL rather than exceed it, because a partial index would miss
- * matches without saying so.  Zero means no limit. */
-database_info_crc_index_t *database_info_crc_index_new(const char *rdb_path,
-      size_t max_bytes);
-
 /* Bytes the index actually holds, for a caller tracking a budget
  * across several databases. */
 size_t database_info_crc_index_bytes(const database_info_crc_index_t *idx);
@@ -203,9 +197,6 @@ database_info_list_t *database_info_list_new_crc(
  * costs an extra read, never a wrong match. */
 typedef struct database_info_serial_index database_info_serial_index_t;
 
-database_info_serial_index_t *database_info_serial_index_new(
-      const char *rdb_path, size_t max_bytes);
-
 size_t database_info_serial_index_bytes(
       const database_info_serial_index_t *idx);
 void database_info_serial_index_free(database_info_serial_index_t *idx);
@@ -216,17 +207,6 @@ database_info_list_t *database_info_list_new_serial(
       database_info_serial_index_t *idx, const char *rdb_path,
       const char *serial, unsigned fields);
 
-/* Builds the crc index of @rdb_path and, given @serial, its serial
- * index, in one walk.  @crc may be NULL to build only the serial
- * index.  The serial index gets what the crc index leaves of
- * @max_bytes, and either comes back NULL when it cannot be built
- * whole.  @has_serial, when not NULL, says whether any record carries
- * a serial the serial index keys on; it is complete whenever an index
- * comes back. */
-void database_info_index_new(const char *rdb_path, size_t max_bytes,
-      database_info_crc_index_t **crc,
-      database_info_serial_index_t **serial, bool *has_serial);
-
 /* What database_info_index_job_new() builds. */
 enum database_info_index_want
 {
@@ -236,11 +216,16 @@ enum database_info_index_want
    DATABASE_INFO_INDEX_HAS_SERIAL = (1 << 2)
 };
 
-/* database_info_index_new() spread over as many calls as it takes, so
- * that no call walks or sorts a whole database. */
+/* Builds the crc index of a database and its serial index in one
+ * walk, spread over as many calls as it takes, so that no call walks
+ * or sorts a whole database. */
 typedef struct database_info_index_job database_info_index_job_t;
 
-/* NULL when @rdb_path cannot be opened or @want names no index. */
+/* NULL when @rdb_path cannot be opened or @want names no index.
+ * @max_bytes caps the crc index's entry table and the serial index
+ * gets what the crc index leaves; an index that cannot be built whole
+ * comes back NULL, because a partial index would miss matches without
+ * saying so.  Zero means no limit. */
 database_info_index_job_t *database_info_index_job_new(
       const char *rdb_path, size_t max_bytes, unsigned want);
 
@@ -250,9 +235,10 @@ database_info_index_job_t *database_info_index_job_new(
 bool database_info_index_job_step(database_info_index_job_t *job,
       unsigned records, size_t entries);
 
-/* Hands over what a done job built, as database_info_index_new()
- * would have, and frees the job.  Only what the job was asked for
- * comes back; the other pointers may be NULL. */
+/* Hands over what a done job built and frees the job.  Only what the
+ * job was asked for comes back; the other pointers may be NULL.
+ * @has_serial says whether any record carries a serial the serial
+ * index keys on; it is complete whenever an index comes back. */
 void database_info_index_job_finish(database_info_index_job_t *job,
       database_info_crc_index_t **crc,
       database_info_serial_index_t **serial, bool *has_serial);

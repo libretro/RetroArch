@@ -1186,14 +1186,6 @@ static database_info_crc_index_t *db_crc_index_finish(
    return idx;
 }
 
-database_info_crc_index_t *database_info_crc_index_new(const char *rdb_path,
-      size_t max_bytes)
-{
-   database_info_crc_index_t *idx;
-   database_info_index_new(rdb_path, max_bytes, &idx, NULL, NULL);
-   return idx;
-}
-
 bool database_info_crc_index_size_range(
       const database_info_crc_index_t *idx, int64_t *min, int64_t *max)
 {
@@ -1467,14 +1459,6 @@ static database_info_serial_index_t *db_serial_index_finish(
    idx->entries = b->entries;
    idx->count   = b->count;
    b->entries   = NULL;
-   return idx;
-}
-
-database_info_serial_index_t *database_info_serial_index_new(
-      const char *rdb_path, size_t max_bytes)
-{
-   database_info_serial_index_t *idx;
-   database_info_index_new(rdb_path, max_bytes, NULL, &idx, NULL);
    return idx;
 }
 
@@ -1756,26 +1740,6 @@ void database_info_index_job_free(database_info_index_job_t *job)
    free(job->b.serial.entries);
    free(job->rdb_path);
    free(job);
-}
-
-void database_info_index_new(const char *rdb_path, size_t max_bytes,
-      database_info_crc_index_t **crc,
-      database_info_serial_index_t **serial, bool *has_serial)
-{
-   database_info_index_job_t *job;
-   unsigned                   want = 0;
-
-   if (crc)
-      want |= DATABASE_INFO_INDEX_CRC;
-   if (serial)
-      want |= DATABASE_INFO_INDEX_SERIAL;
-   if (has_serial)
-      want |= DATABASE_INFO_INDEX_HAS_SERIAL;
-
-   job = database_info_index_job_new(rdb_path, max_bytes, want);
-   while (job && !database_info_index_job_step(job, 4096, 65536))
-      ;
-   database_info_index_job_finish(job, crc, serial, has_serial);
 }
 
 size_t database_info_serial_index_bytes(

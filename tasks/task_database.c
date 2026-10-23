@@ -228,6 +228,15 @@ static size_t task_database_index_budget(void)
 #define SCAN_CRC_QUANTUM (256 * 1024)
 #endif
 
+/* Records an index build walks, and entries it merges, between two
+ * looks at the window. */
+#ifndef SCAN_INDEX_RECORDS
+#define SCAN_INDEX_RECORDS 1024
+#endif
+#ifndef SCAN_INDEX_ENTRIES
+#define SCAN_INDEX_ENTRIES 32768
+#endif
+
 typedef struct database_state_handle
 {
    database_info_list_t *info;
@@ -278,6 +287,10 @@ typedef struct database_state_handle
    uint8_t crc_dest;  /* enum db_crc_dest */
    uint8_t crc_fail;  /* enum db_crc_fail */
    bool crc_done;
+   /* The index build in flight, run by task_database_index_step()
+    * until index_ready, then taken by the lookup that began it. */
+   database_info_index_job_t *index_job;
+   bool index_ready;
 } database_state_handle_t;
 
 /* Where a stepped CRC and its size go. */
@@ -1006,6 +1019,55 @@ static enum scan_verdict task_database_crc_step(
    return SCAN_VERDICT_CONTINUE;
 }
 
+static void task_database_index_close(database_state_handle_t *db_state)
+{
+   database_info_index_job_free(db_state->index_job);
+   db_state->index_job   = NULL;
+   db_state->index_ready = false;
+}
+
+/* Begins the current database's index build, or takes what it built.
+ * False while it runs: the caller returns SCAN_VERDICT_CONTINUE, the
+ * steps that follow run the build, and the caller comes back here for
+ * it.  A build that cannot begin gives nothing, as a failed one. */
+static bool task_database_index_take(database_state_handle_t *db_state,
+      database_info_crc_index_t **crc,
+      database_info_serial_index_t **serial, bool *has_serial)
+{
+   if (!db_state->index_job)
+   {
+      unsigned want = 0;
+
+      if (crc)
+         want |= DATABASE_INFO_INDEX_CRC;
+      if (serial)
+         want |= DATABASE_INFO_INDEX_SERIAL;
+      if (has_serial)
+         want |= DATABASE_INFO_INDEX_HAS_SERIAL;
+      if ((db_state->index_job = database_info_index_job_new(
+            db_state->list->elems[db_state->list_index].data,
+            db_state->index_budget, want)))
+         return false;
+   }
+   database_info_index_job_finish(db_state->index_job, crc, serial,
+         has_serial);
+   db_state->index_job   = NULL;
+   db_state->index_ready = false;
+   return true;
+}
+
+/* One unit of the build always, then more while the window lasts. */
+static enum scan_verdict task_database_index_step(
+      database_state_handle_t *db_state, nbio_budget_t *b)
+{
+   while (!database_info_index_job_step(db_state->index_job,
+            SCAN_INDEX_RECORDS, SCAN_INDEX_ENTRIES))
+      if (!task_nbio_slice_within_budget(b, 0, 0))
+         return SCAN_VERDICT_CONTINUE;
+   db_state->index_ready = true;
+   return SCAN_VERDICT_CONTINUE;
+}
+
 static int task_database_iterate_playlist(
       manual_scan_handle_t *_db,
       database_state_handle_t *db_state,
@@ -1494,48 +1556,53 @@ static bool task_database_state_alloc_arrays(
    return true;
 }
 
-static void task_database_fill_db_min_max(database_state_handle_t *db_state,
+/* False while the index walk it began runs: it is called again once
+ * the walk is done. */
+static bool task_database_fill_db_min_max(database_state_handle_t *db_state,
       database_info_serial_index_t **serial)
 {
+   const char *rdb        = db_state->list->elems[db_state->list_index].data;
+   bool        has_serial = false;
    char query[50];
    query[0] = '\0';
-
-   /* Marked up front so that every exit below - including the ones
-    * that record a placeholder range - counts as having been asked.
-    * This is what stops the two walks repeating per content file. */
-   db_state->flags[db_state->list_index] |= DB_STATE_FLAG_SIZE_CHECKED;
 
    /* The crc index collects the size range while it walks, so build
     * it here and take the range from it: one walk instead of this
     * function's two, and the crc lookup then finds the index already
     * built.  The same walk sees whether any record carries a serial
     * and, given @serial, builds the serial index too, so the serial
-    * lookup reads the database once.  The queries below still run for
-    * a database the index cannot cover. */
+    * lookup reads the database once. */
+   if (   rdb && *rdb
+       && !db_state->crc_index[db_state->list_index]
+       && db_state->index_budget)
    {
-      const char *rdb        = db_state->list->elems[db_state->list_index].data;
-      int64_t     lo         = 0;
-      int64_t     hi         = 0;
-      bool        has_serial = false;
+      database_info_crc_index_t *ci = NULL;
+
+      if (!task_database_index_take(db_state, &ci, serial, &has_serial))
+         return false;
+      if (ci)
+      {
+         size_t used = database_info_crc_index_bytes(ci);
+         db_state->index_budget = (used < db_state->index_budget)
+            ? db_state->index_budget - used : 0;
+         db_state->crc_index[db_state->list_index] = ci;
+      }
+   }
+
+   /* Marked once the walk is in, so that every exit below - including
+    * the ones that record a placeholder range - counts as having been
+    * asked.  This is what stops the walks repeating per content
+    * file. */
+   db_state->flags[db_state->list_index] |= DB_STATE_FLAG_SIZE_CHECKED;
+
+   /* The queries below still run for a database the index cannot
+    * cover. */
+   {
+      int64_t lo = 0;
+      int64_t hi = 0;
 
       if (rdb && *rdb)
       {
-         if (   !db_state->crc_index[db_state->list_index]
-             && db_state->index_budget)
-         {
-            database_info_crc_index_t *ci = NULL;
-
-            database_info_index_new(rdb, db_state->index_budget, &ci,
-                  serial, &has_serial);
-            if (ci)
-            {
-               size_t used = database_info_crc_index_bytes(ci);
-               db_state->index_budget = (used < db_state->index_budget)
-                  ? db_state->index_budget - used : 0;
-               db_state->crc_index[db_state->list_index] = ci;
-            }
-         }
-
          if (   db_state->crc_index[db_state->list_index]
              && database_info_crc_index_size_range(
                    db_state->crc_index[db_state->list_index], &lo, &hi))
@@ -1554,7 +1621,7 @@ static void task_database_fill_db_min_max(database_state_handle_t *db_state,
                   DB_STATE_FLAG_HAS_SERIAL;
 
             db_state->entry_index = 0;
-            return;
+            return true;
          }
       }
    }
@@ -1572,7 +1639,7 @@ static void task_database_fill_db_min_max(database_state_handle_t *db_state,
       db_state->min_sizes[db_state->list_index] = -1;
       db_state->max_sizes[db_state->list_index] = -1;
       db_state->entry_index                     = 0;
-      return;
+      return true;
    }
 
    if (db_state->info->count > 0)
@@ -1615,6 +1682,7 @@ static void task_database_fill_db_min_max(database_state_handle_t *db_state,
 #endif
    }
    db_state->entry_index = 0;
+   return true;
 }
 
 /* Passes over the run of databases, from the current one, that no
@@ -1690,8 +1758,9 @@ static enum scan_verdict task_database_iterate_crc_lookup(
       return SCAN_VERDICT_CONTINUE;
 
    /* If size boundaries are not filled for this DB, run the queries */
-   if (!(db_state->flags[db_state->list_index] & DB_STATE_FLAG_SIZE_CHECKED))
-      task_database_fill_db_min_max(db_state, NULL);
+   if (   !(db_state->flags[db_state->list_index] & DB_STATE_FLAG_SIZE_CHECKED)
+       && !task_database_fill_db_min_max(db_state, NULL))
+      return SCAN_VERDICT_CONTINUE;
 
    if (db_state->min_sizes[db_state->list_index] > 0)
    {
@@ -1754,8 +1823,10 @@ static enum scan_verdict task_database_iterate_crc_lookup(
          if (   !db_state->crc_index[db_state->list_index]
              && db_state->index_budget)
          {
-            database_info_crc_index_t *ci =
-               database_info_crc_index_new(rdb, db_state->index_budget);
+            database_info_crc_index_t *ci = NULL;
+
+            if (!task_database_index_take(db_state, &ci, NULL, NULL))
+               return SCAN_VERDICT_CONTINUE;
             if (ci)
             {
                size_t used = database_info_crc_index_bytes(ci);
@@ -1948,8 +2019,9 @@ static int task_database_iterate_serial_lookup(
       return SCAN_VERDICT_CONTINUE;
 
    /* If size boundaries are not filled for this DB, run the queries */
-   if (!(db_state->flags[db_state->list_index] & DB_STATE_FLAG_SIZE_CHECKED))
-      task_database_fill_db_min_max(db_state, &si);
+   if (   !(db_state->flags[db_state->list_index] & DB_STATE_FLAG_SIZE_CHECKED)
+       && !task_database_fill_db_min_max(db_state, &si))
+      return SCAN_VERDICT_CONTINUE;
 
    if (db_state->min_sizes[db_state->list_index] > 0)
    {
@@ -2019,8 +2091,9 @@ static int task_database_iterate_serial_lookup(
       {
          if (   !si
              && !db_state->serial_index[db_state->list_index]
-             && db_state->index_budget)
-            si = database_info_serial_index_new(rdb, db_state->index_budget);
+             && db_state->index_budget
+             && !task_database_index_take(db_state, NULL, &si, NULL))
+            return SCAN_VERDICT_CONTINUE;
          if (si)
          {
             size_t used = database_info_serial_index_bytes(si);
@@ -2213,6 +2286,8 @@ static int task_database_iterate(
 {
    if (db_state->crc_fd)
       return task_database_crc_step(db_state, b);
+   if (db_state->index_job && !db_state->index_ready)
+      return task_database_index_step(db_state, b);
 #ifdef DEBUG
    RARCH_DBG("[Scanner] Type %d, \"%s\" against \"%s\".\n", db->type, name, database_info_get_current_name(db_state));
    /* list_index == list->size is a valid state here (every database
@@ -2266,6 +2341,7 @@ static void task_database_cleanup_state(database_state_handle_t *db_state)
       free(db_state->buf);
    db_state->buf = NULL;
    task_database_crc_close(db_state);
+   task_database_index_close(db_state);
 }
 #endif
 /* Batch update playlists from accumulated scan results */
@@ -2667,6 +2743,7 @@ static void free_manual_content_scan_handle(manual_scan_handle_t *manual_scan)
          size_t db_count = dbstate->list ? dbstate->list->size : 0;
 
          task_database_crc_close(dbstate);
+         task_database_index_close(dbstate);
          if (dbstate->list)
          {
             dir_list_free(dbstate->list);
