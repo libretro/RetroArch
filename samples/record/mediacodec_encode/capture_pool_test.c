@@ -29,9 +29,10 @@ static struct record_gpu_dispatch_mediacodec gpu;
 static struct record_android_capture_pipe pipe;
 static struct model
 {
-   unsigned count, created, fail_entry, prepared, after, pipe_frees;
+   unsigned count, created, fail_entry, prepared, after, pipe_frees, pipe_steps;
    bool fail_images, fail_gpu, fail_pipe, gpu_live, pending, pipe_done;
    bool sources_done, cancelled, refuse_gpu_free, images_prepared, destroyed;
+   bool copies_done;
    VkFormat format;
 } m;
 static void reset(unsigned mode)
@@ -111,12 +112,11 @@ bool record_android_capture_submit_free(record_android_capture_submit_t *e)
 bool record_android_capture_submit_prepare_device_destroy(
       record_android_capture_submit_t *e, bool quiesced)
 {
-   (void)quiesced;
    if (!e)
       return true;
-   assert(e->live
-         && (gpu.state == RECORD_MC_DISPATCH_DONE
-               || gpu.state == RECORD_MC_DISPATCH_FAILED));
+   assert(e->live);
+   if (!quiesced && !m.copies_done)
+      return false;
    if (m.fail_entry && e == &entries[m.fail_entry - 1])
       return false;
    if (!e->prepared)
@@ -220,6 +220,7 @@ bool record_android_capture_pipe_abort_recorded(
 int record_android_capture_pipe_step(record_android_capture_pipe_t *p)
 {
    assert(p == &pipe && p->live);
+   m.pipe_steps++;
    return m.pipe_done ? 1 : 0;
 }
 bool record_android_capture_pipe_sources_retired(
@@ -296,9 +297,9 @@ static void normal(unsigned mode, unsigned count)
    m.pending = true;
    assert(!record_android_capture_pool_finish(p, 10));
    m.pending = false;
+   assert(!record_android_capture_pool_prepare_device_destroy(p, true));
    assert(record_android_capture_pool_finish(p, 10));
    assert(!record_android_capture_pool_finish(p, 11));
-   assert(!record_android_capture_pool_prepare_device_destroy(p, false));
    assert(record_android_capture_pool_push(p, &source, 0, 10) == -1);
    assert(record_android_capture_pool_record(
                 p, &source, 0, 10, (VkCommandBuffer)(uintptr_t)77)
@@ -340,29 +341,55 @@ static void faults(void)
       }
    }
 }
-static void device_loss(void)
+static void device_loss(unsigned mode, bool quiesced)
 {
    static record_android_capture_pool_config_t c;
    record_android_capture_pool_t *p;
-   reset(0);
-   c = config(0);
+   unsigned i;
+   reset(mode);
+   c = config(mode);
    assert(record_android_capture_pool_new(
          (record_dispatch_mediacodec_t *)&m, &c, &p));
    assert(!record_android_capture_pool_after_device_destroy(p));
+   assert(!record_android_capture_pool_prepare_device_destroy(p, true));
    record_android_capture_pool_cancel(p);
    assert(record_android_capture_pool_finish(p, 0));
-   assert(!record_android_capture_pool_prepare_device_destroy(p, true));
-   gpu.state = RECORD_MC_DISPATCH_FAILED;
-   m.fail_entry = 2;
    assert(!record_android_capture_pool_prepare_device_destroy(p, false));
+   assert(!m.prepared && !m.images_prepared);
+   assert(record_android_capture_pool_commit(p) == -1);
+   assert(!record_android_capture_pool_abort_recorded(p));
+   m.copies_done = !quiesced;
+   m.fail_entry = 2;
+   assert(!record_android_capture_pool_prepare_device_destroy(p, quiesced));
    assert(m.prepared == 1 && !m.images_prepared);
+   for (i = 0; i < 100; i++)
+   {
+      assert(record_android_capture_pool_step(p) == 0);
+      assert(!record_android_capture_pool_free(p));
+      assert(!m.pipe_steps && !m.pipe_frees && images.live && m.gpu_live);
+   }
    m.fail_entry = 0;
-   assert(record_android_capture_pool_prepare_device_destroy(p, false));
+   assert(record_android_capture_pool_prepare_device_destroy(p, quiesced));
    assert(m.prepared == 2 && m.images_prepared);
+   assert(record_android_capture_pool_prepare_device_destroy(p, false));
+   gpu.state = RECORD_MC_DISPATCH_READY;
+   assert(record_android_capture_pool_step(p) == 0);
    assert(!record_android_capture_pool_free(p));
+   assert(!m.pipe_steps && images.live && m.gpu_live);
+   gpu.state = RECORD_MC_DISPATCH_DRAINING;
    m.destroyed = true;
    assert(record_android_capture_pool_after_device_destroy(p) && m.after == 2);
+   for (i = 0; i < 100; i++)
+   {
+      assert(record_android_capture_pool_step(p) == 0);
+      assert(!record_android_capture_pool_free(p));
+      assert(!m.pipe_steps && !m.pipe_frees && images.live && m.gpu_live);
+   }
+   gpu.state = RECORD_MC_DISPATCH_FAILED;
+   assert(record_android_capture_pool_step(p) == 0);
+   assert(!record_android_capture_pool_free(p));
    m.pipe_done = true;
+   assert(record_android_capture_pool_step(p) == 1);
    assert(record_android_capture_pool_free(p));
 }
 static void bad_inputs(void)
@@ -398,7 +425,12 @@ int main(void)
    normal(1, 2);
    normal(2, 2);
    faults();
-   device_loss();
+   device_loss(0, false);
+   device_loss(0, true);
+   device_loss(1, false);
+   device_loss(1, true);
+   device_loss(2, false);
+   device_loss(2, true);
    assert(record_android_capture_pool_free(NULL));
    puts("PASS: joint capture pool construction, partial startup and ordered "
         "collection; native owners mocked");

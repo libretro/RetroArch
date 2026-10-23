@@ -11,7 +11,7 @@ struct record_android_capture_pool
    record_android_capture_pipe_t *pipe;
    int64_t end_us;
    unsigned count;
-   bool closed, prepared, destroyed;
+   bool closed, preparing, prepared, destroyed;
 };
 
 static bool record_acpool_terminal(const record_android_capture_pool_t *p)
@@ -29,7 +29,8 @@ bool record_android_capture_pool_free(record_android_capture_pool_t *p)
    unsigned i;
    if (!p)
       return true;
-   if (!p->closed || (p->prepared && !p->destroyed))
+   if (!p->closed
+         || (p->preparing && (!p->destroyed || !record_acpool_terminal(p))))
       return false;
    if (p->pipe)
    {
@@ -160,7 +161,7 @@ int record_android_capture_pool_record(record_android_capture_pool_t *p,
 
 int record_android_capture_pool_commit(record_android_capture_pool_t *p)
 {
-   if (!p || p->prepared || !p->pipe)
+   if (!p || p->preparing || !p->pipe)
       return -1;
    return record_android_capture_pipe_commit(p->pipe);
 }
@@ -168,7 +169,7 @@ int record_android_capture_pool_commit(record_android_capture_pool_t *p)
 bool record_android_capture_pool_abort_recorded(
       record_android_capture_pool_t *p)
 {
-   return p && !p->prepared && p->pipe
+   return p && !p->preparing && p->pipe
          && record_android_capture_pipe_abort_recorded(p->pipe);
 }
 
@@ -176,6 +177,8 @@ int record_android_capture_pool_step(record_android_capture_pool_t *p)
 {
    if (!p)
       return -1;
+   if (p->preparing && (!p->destroyed || !record_acpool_terminal(p)))
+      return 0;
    return p->pipe                    ? record_android_capture_pipe_step(p->pipe)
          : record_acpool_terminal(p) ? 1
                                      : 0;
@@ -200,8 +203,9 @@ bool record_android_capture_pool_prepare_device_destroy(
    unsigned i;
    if (!p || p->prepared)
       return true;
-   if (!p->closed || !record_acpool_terminal(p))
+   if (!p->closed)
       return false;
+   p->preparing = true;
    for (i = 0; i < p->count; i++)
       if (!record_android_capture_submit_prepare_device_destroy(
                 p->entries[i], queue_quiesced))

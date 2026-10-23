@@ -47,9 +47,10 @@ bool record_android_capture_pool_sources_retired(
 bool record_android_capture_pool_finish(
       record_android_capture_pool_t *pool, int64_t end_us);
 void record_android_capture_pool_cancel(record_android_capture_pool_t *pool);
-/* Closed producer and terminal GLES ownership are required. Child Vulkan
- * objects retire before the matching device. queue_quiesced is independent
- * proof that deferred/native queue work can no longer execute. */
+/* Closed producer, renderer quiescent. Starts irreversible device retirement;
+ * commit/abort stop even if a child still needs completion proof. Vulkan
+ * children retire before the device; buffers/GLES stay owned until collection.
+ * queue_quiesced proves deferred/native work can no longer execute. */
 bool record_android_capture_pool_prepare_device_destroy(
       record_android_capture_pool_t *pool, bool queue_quiesced);
 bool record_android_capture_pool_after_device_destroy(
