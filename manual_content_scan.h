@@ -125,6 +125,7 @@ typedef struct
    bool validate_entries;
    bool omit_db_reference;
    bool target_is_single_determined_playlist;
+   bool content_is_file;
    enum manual_content_scan_db_usage db_usage;
    enum manual_content_scan_db_selection db_selection;
    /* Captured when the config is built, on the main thread: the scan

@@ -793,6 +793,235 @@ end:
    free(p);
 }
 
+/* The folder a playlist refreshes from, its default core and
+ * whether it recurses.  False when the playlist holds no scan record. */
+static bool scan_record(const char *lpl, char *dir, char *core,
+      size_t len, bool *recursive)
+{
+   playlist_config_t *cfg = (playlist_config_t*)calloc(1, sizeof(*cfg));
+   playlist_t        *pl  = NULL;
+   const char        *d   = NULL;
+   bool               ok  = false;
+
+   dir[0]  = '\0';
+   core[0] = '\0';
+   if (!cfg)
+      return false;
+   playlist_config_set_path(cfg, lpl);
+   cfg->capacity = COLLECTION_SIZE;
+   if ((pl = playlist_init(cfg)))
+   {
+      if ((d = playlist_get_scan_content_dir(pl)) && *d)
+      {
+         strlcpy(dir, d, len);
+         if ((d = playlist_get_default_core_name(pl)))
+            strlcpy(core, d, len);
+         *recursive = playlist_get_scan_search_recursively(pl);
+         ok         = true;
+      }
+      playlist_free(pl);
+   }
+   free(cfg);
+   return ok;
+}
+
+/* Scans @dir while it is renamed away, as on a drive that is offline.
+ * @gone is scratch for the path it is renamed to. */
+static bool scan_gone(const char *dir, char *gone)
+{
+   bool ran;
+
+   sprintf(gone, "%s_gone", dir);
+   ran = !filestream_rename(dir, gone) && run_scan(dir) && scan_completed;
+   return !filestream_rename(gone, dir) && ran;
+}
+
+/* A file given as the content location is only added: Overwrite is
+ * not applied to it, the playlist keeps the folder and settings it
+ * refreshes with, and with no database the file is filed under its
+ * folder's name, as a scan of that folder files it. */
+static void single_lane(const char *root, const char *pl_dir,
+      uint32_t crc_a, uint32_t sz_a)
+{
+   char *in_dir  = (char*)malloc(512);
+   char *one_dir = (char*)malloc(512);
+   char *one_pl  = (char*)malloc(512);
+   char *file    = (char*)malloc(1024);
+   char *p       = (char*)malloc(1024);
+   char *rec     = (char*)malloc(1024);
+   char *core    = (char*)malloc(1024);
+   char *kept    = (char*)malloc(1024);
+   bool  recursive = false;
+   bool  recorded;
+
+   if (   !in_dir || !one_dir || !one_pl || !file || !p || !rec || !core
+       || !kept)
+   {
+      check(0, "single file lane", "out of memory");
+      goto end;
+   }
+
+   sprintf(in_dir,  "%s/scan_single",     root);
+   sprintf(one_dir, "%s/scan_single_one", root);
+   sprintf(one_pl,  "%s/scan_single_pl",  root);
+   path_mkdir(in_dir);
+   path_mkdir(one_dir);
+   path_mkdir(one_pl);
+
+   sprintf(p, "%s/50_single.bin", in_dir);
+   if (!write_content(p, crc_a, sz_a))
+   { check(0, "fixture", "crc forcing failed"); goto end; }
+   sprintf(p, "%s/51_one.bin", one_dir);
+   if (!write_content(p, crc_a, sz_a))
+   { check(0, "fixture", "crc forcing failed"); goto end; }
+   sprintf(p, "%s/52_named.bin", one_dir);
+   if (!write_content(p, 0x52A3ED00u, 1024))
+   { check(0, "fixture", "crc forcing failed"); goto end; }
+   sprintf(p, "%s/53_core.bin", one_dir);
+   if (!write_content(p, crc_a, sz_a))
+   { check(0, "fixture", "crc forcing failed"); goto end; }
+
+   strlcpy(config_get_ptr()->paths.directory_playlist, one_pl,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+   sprintf(file, "%s/51_one.bin", one_dir);
+
+   /* Automatic: the database names the playlist. */
+   manual_content_scan_set_menu_scan_method(
+         MANUAL_CONTENT_SCAN_METHOD_AUTOMATIC);
+   if (!run_scan(in_dir) || !scan_completed || !run_scan(file)
+         || !scan_completed)
+   {
+      check(0, "single file scans ran", "refused or timed out");
+      goto restore;
+   }
+   sprintf(p, "%s/Test Alpha.lpl", one_pl);
+   check(   file_contains(p, "51_one.bin")
+         && file_contains(p, "50_single.bin"),
+         "one file matched into its playlist", "Test Alpha");
+   recorded = scan_record(p, rec, core, 1024, &recursive);
+   check(recorded && !strcmp(rec, in_dir) && recursive,
+         "file scan keeps the folder it refreshes", path_basename(rec));
+
+   /* Custom with the database and a core set: the playlist keeps the
+    * default core it had. */
+   strlcpy(kept, core, 1024);
+   manual_content_scan_set_menu_scan_method(
+         MANUAL_CONTENT_SCAN_METHOD_CUSTOM);
+   manual_content_scan_set_menu_core_name(MANUAL_CONTENT_SCAN_CORE_SET,
+         "Scan Test");
+   sprintf(file, "%s/53_core.bin", one_dir);
+   if (!run_scan(file) || !scan_completed)
+   {
+      check(0, "core set file scan ran", "refused or timed out");
+      goto restore;
+   }
+   sprintf(file, "%s/51_one.bin", one_dir);
+   recorded = scan_record(p, rec, core, 1024, &recursive);
+   check(   file_contains(p, "53_core.bin") && recorded
+         && !strcmp(core, kept) && strcmp(core, "Scan Test"),
+         "and its default core with a core set", core);
+
+   /* Custom, no database, one named playlist, Overwrite on.  The
+    * folder is scanned with one core and the file with another. */
+   manual_content_scan_set_menu_scan_method(
+         MANUAL_CONTENT_SCAN_METHOD_CUSTOM);
+   manual_content_scan_set_menu_scan_use_db(
+         MANUAL_CONTENT_SCAN_USE_DB_NONE);
+   strlcpy(manual_content_scan_get_system_name_custom_ptr(),
+         "Single Custom",
+         manual_content_scan_get_system_name_custom_size());
+   manual_content_scan_set_menu_system_name(
+         MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM, NULL);
+   *manual_content_scan_get_overwrite_playlist_ptr() = true;
+   manual_content_scan_set_menu_core_name(MANUAL_CONTENT_SCAN_CORE_SET,
+         "Scan Test");
+   if (!run_scan(in_dir) || !scan_completed)
+   {
+      check(0, "overwrite scans ran", "refused or timed out");
+      goto restore;
+   }
+   manual_content_scan_set_menu_core_name(MANUAL_CONTENT_SCAN_CORE_SET,
+         "Gamma Test");
+   if (!run_scan(file) || !scan_completed)
+   {
+      check(0, "overwrite scans ran", "refused or timed out");
+      goto restore;
+   }
+   sprintf(p, "%s/Single Custom.lpl", one_pl);
+   check(   file_contains(p, "51_one.bin")
+         && file_contains(p, "50_single.bin"),
+         "Overwrite leaves a file scan's playlist", "both entries");
+   /* A folder that is gone counts as a file, so its playlist keeps
+    * its entries and its record. */
+   check(   scan_gone(in_dir, rec)
+         && file_contains(p, "51_one.bin")
+         && file_contains(p, "50_single.bin"),
+         "and a rescan of a folder that is gone", "both entries");
+   recorded = scan_record(p, rec, core, 1024, &recursive);
+   check(recorded && !strcmp(rec, in_dir),
+         "and the folder it refreshes", path_basename(rec));
+   check(recorded && !strcmp(core, "Scan Test"),
+         "and its default core", core);
+
+   /* Validate prunes by the scan's extensions, here .gam alone */
+   *manual_content_scan_get_overwrite_playlist_ptr() = false;
+   *manual_content_scan_get_validate_entries_ptr()   = true;
+   if (!run_scan(file) || !scan_completed)
+   {
+      check(0, "validate scan ran", "refused or timed out");
+      goto restore;
+   }
+   check(   file_contains(p, "51_one.bin")
+         && file_contains(p, "50_single.bin"),
+         "Validate leaves a file scan's playlist", "both entries");
+   check(   scan_gone(in_dir, rec)
+         && file_contains(p, "51_one.bin")
+         && file_contains(p, "50_single.bin"),
+         "and a rescan of a folder that is gone", "both entries");
+   *manual_content_scan_get_validate_entries_ptr() = false;
+
+   /* No database, Target Playlist on Auto. */
+   manual_content_scan_set_menu_core_name(MANUAL_CONTENT_SCAN_CORE_DETECT,
+         NULL);
+   manual_content_scan_set_menu_system_name(
+         MANUAL_CONTENT_SCAN_SYSTEM_NAME_AUTO, NULL);
+   sprintf(file, "%s/52_named.bin", one_dir);
+   if (!run_scan(file) || !scan_completed)
+   {
+      check(0, "auto named scan ran", "refused or timed out");
+      goto restore;
+   }
+   sprintf(p, "%s/scan_single_one.lpl", one_pl);
+   sprintf(rec, "%s/52_named.lpl", one_pl);
+   check(   file_contains(p, "52_named.bin") && !path_is_valid(rec)
+         && !scan_record(p, rec, core, 1024, &recursive),
+         "a file is filed under its folder's name", "with no record");
+
+restore:
+   *manual_content_scan_get_validate_entries_ptr() = false;
+   *manual_content_scan_get_overwrite_playlist_ptr() = false;
+   manual_content_scan_set_menu_core_name(MANUAL_CONTENT_SCAN_CORE_DETECT,
+         NULL);
+   manual_content_scan_get_system_name_custom_ptr()[0] = '\0';
+   manual_content_scan_set_menu_system_name(
+         MANUAL_CONTENT_SCAN_SYSTEM_NAME_AUTO, NULL);
+   manual_content_scan_set_menu_scan_use_db(
+         MANUAL_CONTENT_SCAN_USE_DB_STRICT);
+   manual_content_scan_set_menu_scan_method(
+         MANUAL_CONTENT_SCAN_METHOD_AUTOMATIC);
+   strlcpy(config_get_ptr()->paths.directory_playlist, pl_dir,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+end:
+   free(in_dir);
+   free(one_dir);
+   free(one_pl);
+   free(file);
+   free(p);
+   free(rec);
+   free(core);
+   free(kept);
+}
+
 int main(int argc, char **argv)
 {
    const char *root = (argc > 1) ? argv[1] : "/tmp";
@@ -1753,6 +1982,7 @@ int main(int argc, char **argv)
    }
 
    walk_lane(root, pl_dir, db_dir);
+   single_lane(root, pl_dir, crc_a, sz_a);
 
 done:
    printf("\n%d checks, %d failures\n", checks, failures);

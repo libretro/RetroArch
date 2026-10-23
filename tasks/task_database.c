@@ -2477,8 +2477,10 @@ static bool manual_scan_end_flush_tick(
           * fallback below */
          manual_scan->flush_dedup = playlist_dedup_init();
 
-         /* Set default core, if required */
-         if (manual_scan->task_config->core_set)
+         /* Set default core, if required.
+          * A file is only added: the playlist keeps its own. */
+         if (    manual_scan->task_config->core_set
+             && !manual_scan->task_config->content_is_file)
          {
             playlist_set_default_core_path(manual_scan->flush_playlist,
                   manual_scan->task_config->core_path);
@@ -2487,30 +2489,35 @@ static bool manual_scan_end_flush_tick(
          }
 
          /* Record remaining scan parameters to enable
-          * subsequent 'refresh playlist' operations */
-         playlist_set_scan_content_dir(manual_scan->flush_playlist,
-               manual_scan->task_config->content_dir);
-         playlist_set_scan_file_exts(manual_scan->flush_playlist,
-               manual_scan->task_config->file_exts_custom_set ?
-                     manual_scan->task_config->file_exts : NULL);
-         if (manual_scan->task_config->db_usage == MANUAL_CONTENT_SCAN_USE_DB_DAT_LOOSE ||
-             manual_scan->task_config->db_usage == MANUAL_CONTENT_SCAN_USE_DB_DAT_STRICT)
-            playlist_set_scan_dat_file_path(manual_scan->flush_playlist,
-                  manual_scan->task_config->dat_file_path);
-         playlist_set_scan_database_name(manual_scan->flush_playlist,
-                  manual_scan->task_config->database_name);
-         playlist_set_scan_search_recursively(manual_scan->flush_playlist,
-               manual_scan->task_config->search_recursively);
-         playlist_set_scan_search_archives(manual_scan->flush_playlist,
-               manual_scan->task_config->search_archives);
-         playlist_set_scan_filter_dat_content(manual_scan->flush_playlist,
-               manual_scan->task_config->filter_dat_content);
-         playlist_set_scan_overwrite_playlist(manual_scan->flush_playlist,
-               manual_scan->task_config->overwrite_playlist);
-         playlist_set_scan_db_usage(manual_scan->flush_playlist,
-               manual_scan->task_config->db_usage);
-         playlist_set_scan_omit_db_ref(manual_scan->flush_playlist,
-               manual_scan->task_config->omit_db_reference);
+          * subsequent 'refresh playlist' operations.
+          * A file is only added, so the playlist keeps its folder's scan
+          * settings. */
+         if (!manual_scan->task_config->content_is_file)
+         {
+            playlist_set_scan_content_dir(manual_scan->flush_playlist,
+                  manual_scan->task_config->content_dir);
+            playlist_set_scan_file_exts(manual_scan->flush_playlist,
+                  manual_scan->task_config->file_exts_custom_set ?
+                        manual_scan->task_config->file_exts : NULL);
+            if (manual_scan->task_config->db_usage == MANUAL_CONTENT_SCAN_USE_DB_DAT_LOOSE ||
+                manual_scan->task_config->db_usage == MANUAL_CONTENT_SCAN_USE_DB_DAT_STRICT)
+               playlist_set_scan_dat_file_path(manual_scan->flush_playlist,
+                     manual_scan->task_config->dat_file_path);
+            playlist_set_scan_database_name(manual_scan->flush_playlist,
+                     manual_scan->task_config->database_name);
+            playlist_set_scan_search_recursively(manual_scan->flush_playlist,
+                  manual_scan->task_config->search_recursively);
+            playlist_set_scan_search_archives(manual_scan->flush_playlist,
+                  manual_scan->task_config->search_archives);
+            playlist_set_scan_filter_dat_content(manual_scan->flush_playlist,
+                  manual_scan->task_config->filter_dat_content);
+            playlist_set_scan_overwrite_playlist(manual_scan->flush_playlist,
+                  manual_scan->task_config->overwrite_playlist);
+            playlist_set_scan_db_usage(manual_scan->flush_playlist,
+                  manual_scan->task_config->db_usage);
+            playlist_set_scan_omit_db_ref(manual_scan->flush_playlist,
+                  manual_scan->task_config->omit_db_reference);
+         }
 
          RARCH_LOG("[Scanner] Processing playlist: \"%s\".\n", result->db_name);
       }
@@ -3337,8 +3344,10 @@ static bool manual_scan_begin_playlist(retro_task_t *task,
    manual_scan->playlist_size =
       playlist_size(manual_scan->playlist);
 
-   /* Set default core, if required */
-   if (manual_scan->task_config->core_set)
+   /* Set default core, if required.
+    * A file is only added: the playlist keeps its own. */
+   if (    manual_scan->task_config->core_set
+       && !manual_scan->task_config->content_is_file)
    {
       playlist_set_default_core_path(manual_scan->playlist,
             manual_scan->task_config->core_path);
@@ -3347,37 +3356,44 @@ static bool manual_scan_begin_playlist(retro_task_t *task,
    }
 
    /* Record remaining scan parameters to enable
-    * subsequent 'refresh playlist' operations */
-   playlist_set_scan_content_dir(manual_scan->playlist,
-         manual_scan->task_config->content_dir);
-   playlist_set_scan_file_exts(manual_scan->playlist,
-         manual_scan->task_config->file_exts_custom_set ?
-               manual_scan->task_config->file_exts : NULL);
-   if (manual_scan->task_config->db_usage == MANUAL_CONTENT_SCAN_USE_DB_DAT_LOOSE ||
-       manual_scan->task_config->db_usage == MANUAL_CONTENT_SCAN_USE_DB_DAT_STRICT)
-      playlist_set_scan_dat_file_path(manual_scan->playlist,
-            manual_scan->task_config->dat_file_path);
-   playlist_set_scan_database_name(manual_scan->playlist,
-         manual_scan->task_config->database_name);
-   playlist_set_scan_search_recursively(manual_scan->playlist,
-         manual_scan->task_config->search_recursively);
-   playlist_set_scan_search_archives(manual_scan->playlist,
-         manual_scan->task_config->search_archives);
-   playlist_set_scan_filter_dat_content(manual_scan->playlist,
-         manual_scan->task_config->filter_dat_content);
-   playlist_set_scan_overwrite_playlist(manual_scan->playlist,
-         manual_scan->task_config->overwrite_playlist);
-   playlist_set_scan_db_usage(manual_scan->playlist,
-         manual_scan->task_config->db_usage);
-   playlist_set_scan_omit_db_ref(manual_scan->playlist,
-         manual_scan->task_config->omit_db_reference);
+    * subsequent 'refresh playlist' operations.
+    * A file is only added, so the playlist keeps its folder's scan
+    * settings. */
+   if (!manual_scan->task_config->content_is_file)
+   {
+      playlist_set_scan_content_dir(manual_scan->playlist,
+            manual_scan->task_config->content_dir);
+      playlist_set_scan_file_exts(manual_scan->playlist,
+            manual_scan->task_config->file_exts_custom_set ?
+                  manual_scan->task_config->file_exts : NULL);
+      if (manual_scan->task_config->db_usage == MANUAL_CONTENT_SCAN_USE_DB_DAT_LOOSE ||
+          manual_scan->task_config->db_usage == MANUAL_CONTENT_SCAN_USE_DB_DAT_STRICT)
+         playlist_set_scan_dat_file_path(manual_scan->playlist,
+               manual_scan->task_config->dat_file_path);
+      playlist_set_scan_database_name(manual_scan->playlist,
+            manual_scan->task_config->database_name);
+      playlist_set_scan_search_recursively(manual_scan->playlist,
+            manual_scan->task_config->search_recursively);
+      playlist_set_scan_search_archives(manual_scan->playlist,
+            manual_scan->task_config->search_archives);
+      playlist_set_scan_filter_dat_content(manual_scan->playlist,
+            manual_scan->task_config->filter_dat_content);
+      playlist_set_scan_overwrite_playlist(manual_scan->playlist,
+            manual_scan->task_config->overwrite_playlist);
+      playlist_set_scan_db_usage(manual_scan->playlist,
+            manual_scan->task_config->db_usage);
+      playlist_set_scan_omit_db_ref(manual_scan->playlist,
+            manual_scan->task_config->omit_db_reference);
+   }
 
    /* All good - can start iterating
     * > If playlist has content and 'validate
     *   entries' is enabled, go to clean-up phase
+    *   (a file is only added, so its scan prunes nothing)
     * > Otherwise go straight to content scan phase */
-   if (manual_scan->task_config->validate_entries &&
-       (manual_scan->playlist_size > 0))
+   if (    manual_scan->task_config->validate_entries
+       && !manual_scan->task_config->content_is_file
+       && (manual_scan->playlist_size > 0))
       manual_scan->status = MANUAL_SCAN_ITERATE_CLEAN;
    else
    {

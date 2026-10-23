@@ -373,6 +373,7 @@ enum manual_content_scan_dat_file_path_status
 bool manual_content_scan_set_menu_content_dir(const char *content_dir)
 {
    size_t _len;
+   int path_stats;
    const char *dir_name = NULL;
    char _tmpbuf[PATH_MAX_LENGTH];
 
@@ -439,6 +440,15 @@ bool manual_content_scan_set_menu_content_dir(const char *content_dir)
 
    if (!dir_name || !*dir_name)
       goto error;
+
+   /* A file takes the name of the folder that holds it,
+    * as a scan of that folder would */
+   path_stats = path_stat(scan_content_dir);
+   if (      (path_stats & RETRO_VFS_STAT_IS_VALID)
+         && !(path_stats & RETRO_VFS_STAT_IS_DIRECTORY)
+         &&  fill_pathname_parent_dir_name(scan_system_name_content_dir,
+               scan_content_dir, sizeof(scan_system_name_content_dir)))
+      return true;
 
    /* Copy directory name to settings struct */
    strlcpy(
@@ -1386,7 +1396,8 @@ bool manual_content_scan_get_task_config(
    if (!*scan_content_dir)
       return false;
 
-   if (!path_is_directory(scan_content_dir))
+   task_config->content_is_file = !path_is_directory(scan_content_dir);
+   if (task_config->content_is_file)
    {
       scan_settings.scan_single_file = true;
       scan_settings.search_recursively = false;
@@ -1588,8 +1599,10 @@ bool manual_content_scan_get_task_config(
    /* Set up filter if DB usage requires */
    task_config->filter_dat_content = 
       (scan_settings.db_usage == MANUAL_CONTENT_SCAN_USE_DB_DAT_STRICT) ? true : false;
-   /* Copy 'overwrite playlist' setting */
-   task_config->overwrite_playlist = scan_settings.overwrite_playlist;
+   /* Copy 'overwrite playlist' setting.
+    * A file is only added to its playlist. */
+   task_config->overwrite_playlist = scan_settings.overwrite_playlist
+         && !task_config->content_is_file;
    /* Copy 'validate_entries' setting */
    task_config->validate_entries   = scan_settings.validate_entries;
    
