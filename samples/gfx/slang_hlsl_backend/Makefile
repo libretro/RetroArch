@@ -9,6 +9,7 @@ LIBRETRO_COMM_DIR := $(REPO_ROOT)/libretro-common
 # when that build would.
 C_SOURCES := slang_hlsl_backend_test.c \
              $(REPO_ROOT)/gfx/drivers_shader/slang_process.c \
+           $(REPO_ROOT)/gfx/drivers_shader/slang_blob.c \
              $(REPO_ROOT)/gfx/drivers_shader/slang_rect.c \
              $(REPO_ROOT)/gfx/drivers_shader/glslang_util.c \
              $(LIBRETRO_COMM_DIR)/compat/compat_strl.c \

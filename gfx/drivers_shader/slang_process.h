@@ -329,10 +329,15 @@ typedef struct glslang_meta
    char name[64];                      /* '\0' terminated, empty if unset */
 } glslang_meta;
 
+struct slang_blob;
+
 typedef struct glslang_output
 {
-   uint32_t *vertex;                   /* malloc'd SPIR-V words */
-   uint32_t *fragment;                 /* malloc'd SPIR-V words */
+   struct slang_blob *vertex_blob;     /* one reference each; the words
+                                          below are views into them */
+   struct slang_blob *fragment_blob;
+   const uint32_t *vertex;             /* SPIR-V words */
+   const uint32_t *fragment;
    char *vertex_text;                  /* malloc'd stage source for a driver that
                                           takes text, when the compiler printed
                                           one (see struct slang_text_target);
@@ -374,6 +379,11 @@ bool slang_last_pass_feedback(struct glslang_last_pass *state,
 
 void glslang_output_init(glslang_output *output);
 void glslang_output_free(glslang_output *output);
+
+/* Gives a stage of @output to @blob, taking the reference: the words
+ * the output's readers see are the blob's.  NULL clears the stage. */
+void glslang_output_set_blob(glslang_output *output, bool fragment,
+      struct slang_blob *blob);
 
 /* Append a parameter to @meta, growing the array as needed.
  * Returns false on allocation failure ONLY; duplicate checking
@@ -457,6 +467,21 @@ bool slang_reflect_spirv(
       const uint32_t *vertex,   size_t vertex_len,
       const uint32_t *fragment, size_t fragment_len,
       slang_reflection *reflection);
+
+#if defined(HAVE_RSLC)
+/* Reflect a pass from the tables its compiler wrote into each stage's
+ * blob (struct rslc_reflect): the same tables, checks and messages as
+ * slang_reflect_spirv() derives through SPIRV-Cross, without a SPIR-V
+ * parse.  Both blobs must carry tables. */
+bool slang_reflect_blobs(const struct slang_blob *vertex,
+      const struct slang_blob *fragment, slang_reflection *reflection);
+#endif
+
+/* Reflect a pass: by its blobs' tables when both stages carry them, by
+ * SPIRV-Cross on the words otherwise (glslang's modules, a stage
+ * slang_rect rewrote). */
+bool slang_reflect_pass(const struct slang_blob *vertex,
+      const struct slang_blob *fragment, slang_reflection *reflection);
 
 bool slang_process(
       struct video_shader*   shader_info,

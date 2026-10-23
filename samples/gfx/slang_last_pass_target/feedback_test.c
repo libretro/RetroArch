@@ -3,10 +3,24 @@
 #include <stdlib.h>
 #include <string.h>
 #include "gfx/drivers_shader/slang_process.h"
+#include "gfx/drivers_shader/slang_blob.h"
 
 static unsigned failures;
 static const char vertex[] =
    "#version 450\nvoid main() { gl_Position = vec4(0.0); }\n";
+
+/* Compiles one stage with glslang and hands the words to the output as
+ * a blob, as slang_process.c does. */
+static bool compile_into(glslang_output *output, bool fragment, const char *src)
+{
+   uint32_t *words = NULL;
+   size_t    n     = 0;
+   if (!glslang_compile_spirv(src, fragment ? GLSLANG_COMPILE_STAGE_FRAGMENT
+            : GLSLANG_COMPILE_STAGE_VERTEX, &words, &n))
+      return false;
+   glslang_output_set_blob(output, fragment, slang_blob_adopt_words(words, n));
+   return fragment ? output->fragment != NULL : output->vertex != NULL;
+}
 
 static void probe(const char *label, const char *declarations,
       const char *expression, bool needs)
@@ -23,10 +37,8 @@ static void probe(const char *label, const char *declarations,
    snprintf(source, sizeof(source),
          "#version 450\n%s\nlayout(location = 0) out vec4 Color;\n"
          "void main() { Color = %s; }\n", declarations, expression);
-   ok = glslang_compile_spirv(vertex, GLSLANG_COMPILE_STAGE_VERTEX,
-            &output.vertex, &output.vertex_len)
-      && glslang_compile_spirv(source, GLSLANG_COMPILE_STAGE_FRAGMENT,
-            &output.fragment, &output.fragment_len)
+   ok = compile_into(&output, false, vertex)
+      && compile_into(&output, true, source)
       && slang_last_pass_feedback(&state, &output);
    if (!ok || state.needs_target != needs)
    {
@@ -36,8 +48,7 @@ static void probe(const char *label, const char *declarations,
    }
    else
       printf("      compiled %-43s %s\n", label, needs ? "target" : "direct");
-   free(output.vertex);
-   free(output.fragment);
+   glslang_output_free(&output);
 }
 
 unsigned test_compiled_feedback(void)
@@ -83,29 +94,27 @@ unsigned test_compiled_feedback(void)
       state.index = 1;
       state.inspect_feedback = true;
       strcpy(state.name, "Final");
-      ok = glslang_compile_spirv("#version 450\n"
+      ok = compile_into(&output, false, "#version 450\n"
             "layout(push_constant) uniform Params { vec4 FinalFeedbackSize; } p;"
-            "void main() { gl_Position = p.FinalFeedbackSize; }",
-            GLSLANG_COMPILE_STAGE_VERTEX, &output.vertex, &output.vertex_len)
-         && glslang_compile_spirv("#version 450\n"
-            "layout(location=0) out vec4 Color; void main() { Color=vec4(1.0); }",
-            GLSLANG_COMPILE_STAGE_FRAGMENT, &output.fragment, &output.fragment_len)
+            "void main() { gl_Position = p.FinalFeedbackSize; }")
+         && compile_into(&output, true, "#version 450\n"
+            "layout(location=0) out vec4 Color; void main() { Color=vec4(1.0); }")
          && slang_last_pass_feedback(&state, &output);
       if (!ok || !state.needs_target)
       {
          printf("FAIL vertex-stage feedback size\n");
          failures++;
       }
-      free(output.vertex);
       state.needs_target = false;
-      output.vertex = (uint32_t*)invalid;
+      /* a malformed vertex stage in place of the real one */
+      output.vertex = invalid;
       output.vertex_len = 1;
       if (slang_last_pass_feedback(&state, &output))
       {
          printf("FAIL malformed SPIR-V must refuse analysis\n");
          failures++;
       }
-      free(output.fragment);
+      glslang_output_free(&output);
    }
    return failures;
 }

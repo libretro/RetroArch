@@ -137,13 +137,17 @@ enum slang_rect_result slang_rect_remap(const uint32_t *in, size_t in_len,
 /* A pass's two stages, rewritten as slang_rect_remap() does with the
  * three vec4s placed as struct slang_rect_place describes: in the push
  * constants past both stages' own, or in the uniform block when those
- * would come out past SLANG_RECT_PUSH_LIMIT. @vs and @fs are malloc'd
- * and replaced by the rewritten stages: REWRITTEN when either was,
- * UNCHANGED when neither reads the frame, UNSUPPORTED - the stages left
- * as they are - when a stage reads it in a way that cannot be kept. */
-enum slang_rect_result slang_rect_remap_pass(uint32_t **vs, size_t *vs_words,
-      uint32_t **fs, size_t *fs_words,
-      bool source, bool linear, enum slang_rect_wrap wrap);
+ * would come out past SLANG_RECT_PUSH_LIMIT. The inputs are left as
+ * they are; a rewritten stage comes back malloc'd in @vs_out / @fs_out
+ * (NULL for a stage that was not): REWRITTEN when either was, UNCHANGED
+ * when neither reads the frame, UNSUPPORTED - nothing returned - when a
+ * stage reads it in a way that cannot be kept. */
+enum slang_rect_result slang_rect_remap_pass(
+      const uint32_t *vs, size_t vs_words,
+      const uint32_t *fs, size_t fs_words,
+      bool source, bool linear, enum slang_rect_wrap wrap,
+      uint32_t **vs_out, size_t *vs_out_words,
+      uint32_t **fs_out, size_t *fs_out_words);
 
 /* The three vec4s, in that order, for the frame at @origin, @dims in
  * size, in a texture @tex_dims in size; each packed as

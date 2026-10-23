@@ -22,6 +22,7 @@
 /* Names the reflection table below needs in every build, with or
  * without the compiler. */
 #include "slang_rect.h"
+#include "slang_blob.h"
 #if defined(HAVE_GLSLANG) || defined(HAVE_RSLC)
 #include "slang_cache.h"
 #endif
@@ -473,11 +474,26 @@ static bool sem_array_push_texture(texture_sem_t **arr,
    return true;
 }
 
+/* Whether both stages of @output carry the compiler's tables, so the
+ * pass reflects without a SPIR-V parse. */
+static bool slang_output_has_tables(const glslang_output *output)
+{
+#if defined(HAVE_RSLC)
+   return output->vertex_blob && output->fragment_blob
+      && output->vertex_blob->refl && output->fragment_blob->refl;
+#else
+   (void)output;
+   return false;
+#endif
+}
+
+/* The spvc handles are read only when @output carries no tables. */
 static bool slang_process_reflection(
       spvc_compiler          vs_compiler,
       spvc_compiler          ps_compiler,
       spvc_resources         vs_resources,
       spvc_resources         ps_resources,
+      const glslang_output*  output,
       struct video_shader*   shader_info,
       unsigned               pass_number,
       const semantics_map_t* map,
@@ -565,7 +581,14 @@ static bool slang_process_reflection(
    sl_reflection.texture_semantic_uniform_map = &texture_semantic_uniform_map;
    sl_reflection.semantic_map                 = &uniform_semantic_map;
 
-   if (!slang_reflect(vs_compiler, ps_compiler,
+   if (slang_output_has_tables(output)
+#if defined(HAVE_RSLC)
+         ? !slang_reflect_blobs(output->vertex_blob, output->fragment_blob,
+            &sl_reflection)
+#else
+         ? true
+#endif
+         : !slang_reflect(vs_compiler, ps_compiler,
             vs_resources, ps_resources, &sl_reflection))
    {
       RARCH_ERR("[Slang] Failed to reflect SPIR-V."
@@ -841,12 +864,33 @@ void glslang_output_init(glslang_output *output)
    output->meta.rt_format = SLANG_FORMAT_UNKNOWN;
 }
 
+/* Gives a stage of @output to @blob: the output's reference, and the
+ * word view the readers of the output use. */
+void glslang_output_set_blob(glslang_output *output, bool fragment,
+      struct slang_blob *blob)
+{
+   if (fragment)
+   {
+      slang_blob_unref(output->fragment_blob);
+      output->fragment_blob = blob;
+      output->fragment      = blob ? blob->words : NULL;
+      output->fragment_len  = blob ? blob->nwords : 0;
+   }
+   else
+   {
+      slang_blob_unref(output->vertex_blob);
+      output->vertex_blob = blob;
+      output->vertex      = blob ? blob->words : NULL;
+      output->vertex_len  = blob ? blob->nwords : 0;
+   }
+}
+
 void glslang_output_free(glslang_output *output)
 {
    if (!output)
       return;
-   free(output->vertex);
-   free(output->fragment);
+   slang_blob_unref(output->vertex_blob);
+   slang_blob_unref(output->fragment_blob);
    free(output->vertex_text);
    free(output->fragment_text);
    free(output->meta.parameters);
@@ -1154,17 +1198,12 @@ static bool slang_prefer_rslc(const struct slang_text_target *text)
 
 #if defined(HAVE_RSLC)
 /* rslc builds the stage in its own arena and returns one blob holding
- * the words and the reflection tables.  glslang_output owns a malloc'd
- * word array per stage, so the words are copied out of the blob here;
- * the blob becomes the unit of ownership when the shader task graph
- * lands and this copy goes with it. */
+ * the words and the reflection tables; the output adopts it whole. */
 static bool slang_rslc_compile_stage(const char *source,
-      enum glslang_compile_stage stage,
-      uint32_t **spirv, size_t *spirv_len)
+      enum glslang_compile_stage stage, struct slang_blob **blob)
 {
    struct rslc_opts   opts;
    struct rslc_result res;
-   uint32_t          *words;
    char               err[256];
 
    memset(&opts, 0, sizeof(opts));
@@ -1180,40 +1219,40 @@ static bool slang_rslc_compile_stage(const char *source,
       RARCH_ERR("[Slang] %s\n", err);
       return false;
    }
-   words = (uint32_t*)malloc(res.spirv_len * sizeof(*words));
-   if (words)
-      memcpy(words, res.spirv, res.spirv_len * sizeof(*words));
-   *spirv     = words;
-   *spirv_len = words ? res.spirv_len : 0;
-   rslc_result_free(&res, &opts);
-   return words != NULL;
+   *blob = slang_blob_adopt_result(&res, &opts);
+   return *blob != NULL;
 }
 #endif
 
 #if defined(HAVE_RSLC)
 /* A cached module read back through rslc's ingest: the words a hit
  * serves must be a module this compiler accepts for the stage, or the
- * hit is a miss and the stage is compiled again from its GLSL. */
-static bool slang_rslc_cached_stage_ok(const uint32_t *words, size_t len,
-      enum glslang_compile_stage stage)
+ * hit is a miss and the stage is compiled again from its GLSL.  The
+ * ingest's blob - the words with their tables - replaces the bare
+ * words the cache handed over, so a hit binds by the tables as a miss
+ * does. */
+static bool slang_rslc_cached_stage_ok(glslang_output *output, bool fragment)
 {
    struct rslc_opts   opts;
    struct rslc_result res;
+   struct slang_blob *blob;
    char               err[256];
 
    memset(&opts, 0, sizeof(opts));
-   opts.dst     = RSLC_DST_REFLECT;
+   opts.dst     = RSLC_DST_SPIRV;
    opts.err     = err;
    opts.err_cap = sizeof(err);
    err[0]       = '\0';
-   if (!rslc_compile_spirv(words, len,
-            stage == GLSLANG_COMPILE_STAGE_VERTEX
-            ? RSLC_STAGE_VERTEX : RSLC_STAGE_FRAGMENT, &opts, &res))
+   if (!rslc_compile_spirv(fragment ? output->fragment : output->vertex,
+            fragment ? output->fragment_len : output->vertex_len,
+            fragment ? RSLC_STAGE_FRAGMENT : RSLC_STAGE_VERTEX, &opts, &res))
    {
       RARCH_WARN("[Slang] Cached SPIR-V refused: %s\n", err);
       return false;
    }
-   rslc_result_free(&res, &opts);
+   if (!(blob = slang_blob_adopt_result(&res, &opts)))
+      return false;
+   glslang_output_set_blob(output, fragment, blob);
    return true;
 }
 #endif
@@ -1265,9 +1304,13 @@ static char *slang_rslc_print_stage(const char *source,
  * the cache entry's key. */
 static bool slang_compile_stage(const char *source,
       enum glslang_compile_stage stage,
-      uint32_t **spirv, size_t *spirv_len, const char **compiler,
+      struct slang_blob **blob, const char **compiler,
       const struct slang_text_target *text)
 {
+#if defined(HAVE_GLSLANG)
+   uint32_t *words = NULL;
+   size_t    nwords = 0;
+#endif
 #if !defined(HAVE_RSLC) || !defined(HAVE_GLSLANG)
    (void)text;
 #endif
@@ -1276,7 +1319,7 @@ static bool slang_compile_stage(const char *source,
    if (slang_prefer_rslc(text))
 #endif
    {
-      if (slang_rslc_compile_stage(source, stage, spirv, spirv_len))
+      if (slang_rslc_compile_stage(source, stage, blob))
       {
          *compiler = "rslc";
          return true;
@@ -1288,16 +1331,19 @@ static bool slang_compile_stage(const char *source,
 #endif
 #if defined(HAVE_GLSLANG)
    *compiler = "glslang";
-   return glslang_compile_spirv(source, stage, spirv, spirv_len);
+   if (!glslang_compile_spirv(source, stage, &words, &nwords))
+      return false;
+   *blob = slang_blob_adopt_words(words, nwords);
+   return *blob != NULL;
 #else
    (void)source;
    (void)stage;
-   (void)spirv;
-   (void)spirv_len;
+   (void)blob;
    (void)compiler;
    return false;
 #endif
 }
+
 
 /* -----------------------------------------------------------------------
  * glslang_compile_shader — now uses shader_line_buf
@@ -1340,6 +1386,7 @@ bool glslang_compile_shader_text(const char *shader_path,
          "glslang";
 #endif
       const char *used      = compiler;
+      struct slang_blob *blob = NULL;
 
       if (!shader_line_buf_init(&lines))
          return false;
@@ -1369,10 +1416,8 @@ bool glslang_compile_shader_text(const char *shader_path,
       {
 #if defined(HAVE_RSLC)
          if (     !strcmp(compiler, "rslc")
-               && (   !slang_rslc_cached_stage_ok(output->vertex,
-                        output->vertex_len, GLSLANG_COMPILE_STAGE_VERTEX)
-                   || !slang_rslc_cached_stage_ok(output->fragment,
-                        output->fragment_len, GLSLANG_COMPILE_STAGE_FRAGMENT)))
+               && (   !slang_rslc_cached_stage_ok(output, false)
+                   || !slang_rslc_cached_stage_ok(output, true)))
          {
             RARCH_WARN("[Slang] Recompiling \"%s\": the cached SPIR-V is not a module rslc accepts.\n",
                   shader_path);
@@ -1410,12 +1455,12 @@ bool glslang_compile_shader_text(const char *shader_path,
          goto error;
 
       if (!slang_compile_stage(vertex_source,
-               GLSLANG_COMPILE_STAGE_VERTEX,
-               &output->vertex, &output->vertex_len, &used, text))
+               GLSLANG_COMPILE_STAGE_VERTEX, &blob, &used, text))
       {
          RARCH_ERR("[Slang] Failed to compile vertex shader stage.\n");
          goto error;
       }
+      glslang_output_set_blob(output, false, blob);
 #if defined(HAVE_RSLC)
       if (text && !strcmp(used, "rslc"))
          output->vertex_text = slang_rslc_print_stage(vertex_source,
@@ -1428,12 +1473,12 @@ bool glslang_compile_shader_text(const char *shader_path,
       vertex_source = NULL;
 
       if (!slang_compile_stage(fragment_source,
-               GLSLANG_COMPILE_STAGE_FRAGMENT,
-               &output->fragment, &output->fragment_len, &used, text))
+               GLSLANG_COMPILE_STAGE_FRAGMENT, &blob, &used, text))
       {
          RARCH_ERR("[Slang] Failed to compile fragment shader stage.\n");
          goto error;
       }
+      glslang_output_set_blob(output, true, blob);
 #if defined(HAVE_RSLC)
       if (text && !strcmp(used, "rslc") && output->vertex_text)
          output->fragment_text = slang_rslc_print_stage(fragment_source,
@@ -1675,10 +1720,22 @@ bool slang_process(
          default:
             break;
       }
-      res = slang_rect_remap_pass(
-            &output.vertex, &output.vertex_len,
-            &output.fragment, &output.fragment_len,
-            pass_number == 0, filter == RARCH_FILTER_LINEAR, wrap);
+      {
+         uint32_t *nv = NULL, *nf = NULL;
+         size_t    nvl = 0, nfl = 0;
+         res = slang_rect_remap_pass(
+               output.vertex, output.vertex_len,
+               output.fragment, output.fragment_len,
+               pass_number == 0, filter == RARCH_FILTER_LINEAR, wrap,
+               &nv, &nvl, &nf, &nfl);
+         /* a rewritten stage is a module without tables */
+         if (nv)
+            glslang_output_set_blob(&output, false, slang_blob_adopt_words(nv, nvl));
+         if (nf)
+            glslang_output_set_blob(&output, true, slang_blob_adopt_words(nf, nfl));
+         if ((nv && !output.vertex) || (nf && !output.fragment))
+            goto error;
+      }
       out->frame_in_place = res != SLANG_RECT_UNSUPPORTED;
       out->frame_unspec   = res == SLANG_RECT_REWRITTEN
          && shader_info->pass[0].filter == RARCH_FILTER_UNSPEC;
@@ -1714,6 +1771,23 @@ bool slang_process(
 
    pass->source.string.vertex   = NULL;
    pass->source.string.fragment = NULL;
+
+   if (output.vertex_text && output.fragment_text
+         && slang_output_has_tables(&output))
+   {
+      /* the compiler's text and its tables: nothing for SPIRV-Cross */
+      pass->source.string.vertex   = output.vertex_text;
+      pass->source.string.fragment = output.fragment_text;
+      output.vertex_text           = NULL;
+      output.fragment_text         = NULL;
+      RARCH_LOG("[Slang] Using the compiler's %s and its tables directly.\n",
+            dst_type == RARCH_SHADER_METAL ? "MSL" : "HLSL");
+      if (!slang_process_reflection(NULL, NULL, NULL, NULL, &output,
+               shader_info, pass_number, semantics_map, out))
+         goto error;
+      glslang_output_free(&output);
+      return true;
+   }
 
    switch (dst_type)
    {
@@ -1890,7 +1964,7 @@ bool slang_process(
 
    if (!slang_process_reflection(
              vs_compiler, ps_compiler,
-             vs_resources, ps_resources, shader_info, pass_number,
+             vs_resources, ps_resources, &output, shader_info, pass_number,
              semantics_map, out))
       goto error;
 
@@ -2041,128 +2115,82 @@ static bool set_ubo_offset(
    return true;
 }
 
-static bool validate_type_for_semantic(spvc_type type, enum slang_semantic sem)
+/* The scalar kind, width and shape a semantic's member must have.
+ * @kind: 0 float, 1 int, 2 uint; @vec: vector width or matrix rows;
+ * @cols: matrix columns, 1 otherwise. */
+static bool validate_shape_for_semantic(unsigned kind, unsigned vec,
+      unsigned cols, bool arrayed, enum slang_semantic sem)
 {
-   if (spvc_type_get_num_array_dimensions(type) != 0)
+   if (arrayed)
       return false;
-   if (     spvc_type_get_basetype(type) != SPVC_BASETYPE_FP32
-         && spvc_type_get_basetype(type) != SPVC_BASETYPE_INT32
-         && spvc_type_get_basetype(type) != SPVC_BASETYPE_UINT32)
+   if (kind > 2)
       return false;
 
    switch (sem)
    {
          /* mat4 */
       case SLANG_SEMANTIC_MVP:
-         return
-               spvc_type_get_basetype(type) == SPVC_BASETYPE_FP32
-            && spvc_type_get_vector_size(type)  == 4
-            && spvc_type_get_columns(type)  == 4;
+         return kind == 0 && vec == 4 && cols == 4;
          /* uint */
       case SLANG_SEMANTIC_FRAME_COUNT:
-         return spvc_type_get_basetype(type) == SPVC_BASETYPE_UINT32
-            &&  spvc_type_get_vector_size(type)  == 1
-            &&  spvc_type_get_columns(type)  == 1;
-         /* int */
       case SLANG_SEMANTIC_TOTAL_SUBFRAMES:
-         return spvc_type_get_basetype(type) == SPVC_BASETYPE_UINT32
-            &&  spvc_type_get_vector_size(type)  == 1
-            &&  spvc_type_get_columns(type)  == 1;
-         /* int */
       case SLANG_SEMANTIC_CURRENT_SUBFRAME:
       case SLANG_SEMANTIC_SWAP_COUNT:
-         return spvc_type_get_basetype(type) == SPVC_BASETYPE_UINT32
-            &&  spvc_type_get_vector_size(type)  == 1
-            &&  spvc_type_get_columns(type)  == 1;
-         /* int */
-      case SLANG_SEMANTIC_FRAME_DIRECTION:
-         return spvc_type_get_basetype(type) == SPVC_BASETYPE_INT32
-            &&  spvc_type_get_vector_size(type)  == 1
-            &&  spvc_type_get_columns(type)  == 1;
-         /* uint */
       case SLANG_SEMANTIC_FRAME_TIME_DELTA:
-         return spvc_type_get_basetype(type) == SPVC_BASETYPE_UINT32
-            &&  spvc_type_get_vector_size(type)  == 1
-            &&  spvc_type_get_columns(type)  == 1;
-         /* uint */
-      case SLANG_SEMANTIC_ORIGINAL_FPS:
-         return spvc_type_get_basetype(type) == SPVC_BASETYPE_FP32
-            &&  spvc_type_get_vector_size(type)  == 1
-            &&  spvc_type_get_columns(type)  == 1;
-         /* uint */
       case SLANG_SEMANTIC_ROTATION:
-         return spvc_type_get_basetype(type) == SPVC_BASETYPE_UINT32
-            &&  spvc_type_get_vector_size(type)  == 1
-            &&  spvc_type_get_columns(type)  == 1;
-      case SLANG_SEMANTIC_CORE_ASPECT:
-         return spvc_type_get_basetype(type) == SPVC_BASETYPE_FP32
-            &&  spvc_type_get_vector_size(type)  == 1
-            &&  spvc_type_get_columns(type)  == 1;
-      case SLANG_SEMANTIC_CORE_ASPECT_ROT:
-         return spvc_type_get_basetype(type) == SPVC_BASETYPE_FP32
-            &&  spvc_type_get_vector_size(type)  == 1
-            &&  spvc_type_get_columns(type)  == 1;
-         /* vec3 - sensor uniforms */
-      case SLANG_SEMANTIC_GYROSCOPE:
-      case SLANG_SEMANTIC_ACCELEROMETER:
-      case SLANG_SEMANTIC_ACCELEROMETER_REST:
-         return spvc_type_get_basetype(type) == SPVC_BASETYPE_FP32
-            &&  spvc_type_get_vector_size(type)  == 3
-            &&  spvc_type_get_columns(type)  == 1;
-      case SLANG_SEMANTIC_ORIGINAL_RECT:
-      case SLANG_SEMANTIC_ORIGINAL_CLAMP:
-      case SLANG_SEMANTIC_ORIGINAL_TEXELS:
-         return spvc_type_get_basetype(type) == SPVC_BASETYPE_FP32
-            &&  spvc_type_get_vector_size(type)  == 4
-            &&  spvc_type_get_columns(type)  == 1;
-         /* float */
-      case SLANG_SEMANTIC_FLOAT_PARAMETER:
-         return spvc_type_get_basetype(type) == SPVC_BASETYPE_FP32
-            &&  spvc_type_get_vector_size(type)  == 1
-            &&  spvc_type_get_columns(type)  == 1;
       case SLANG_SEMANTIC_PASSTHROUGH:
       case SLANG_SEMANTIC_SOURCE_HDR:
       case SLANG_SEMANTIC_TONEMAP_OPERATOR:
       case SLANG_SEMANTIC_HDR:
-         return spvc_type_get_basetype(type) == SPVC_BASETYPE_UINT32
-            &&  spvc_type_get_vector_size(type)  == 1
-            &&  spvc_type_get_columns(type)  == 1;
+      case SLANG_SEMANTIC_SUBPIXEL_LAYOUT:
+      case SLANG_SEMANTIC_EXPAND_GAMUT:
+         return kind == 2 && vec == 1 && cols == 1;
+         /* int */
+      case SLANG_SEMANTIC_FRAME_DIRECTION:
+         return kind == 1 && vec == 1 && cols == 1;
+         /* float */
+      case SLANG_SEMANTIC_ORIGINAL_FPS:
+      case SLANG_SEMANTIC_CORE_ASPECT:
+      case SLANG_SEMANTIC_CORE_ASPECT_ROT:
+      case SLANG_SEMANTIC_FLOAT_PARAMETER:
       case SLANG_SEMANTIC_PAPER_WHITE_NITS:
       case SLANG_SEMANTIC_PAPER_WHITE_ALIAS:
       case SLANG_SEMANTIC_PEAK_NITS:
       case SLANG_SEMANTIC_MAX_NITS_ALIAS:
       case SLANG_SEMANTIC_ENABLE_HDR:
       case SLANG_SEMANTIC_MIN_NITS:
-         return spvc_type_get_basetype(type) == SPVC_BASETYPE_FP32
-            &&  spvc_type_get_vector_size(type)  == 1
-            &&  spvc_type_get_columns(type)  == 1;
       case SLANG_SEMANTIC_SCANLINES:
-         return spvc_type_get_basetype(type) == SPVC_BASETYPE_FP32
-            &&  spvc_type_get_vector_size(type)  == 1
-            &&  spvc_type_get_columns(type)  == 1;
-      case SLANG_SEMANTIC_SUBPIXEL_LAYOUT:
-         return spvc_type_get_basetype(type) == SPVC_BASETYPE_UINT32
-            &&  spvc_type_get_vector_size(type)  == 1
-            &&  spvc_type_get_columns(type)  == 1;
-      case SLANG_SEMANTIC_EXPAND_GAMUT:
-         return spvc_type_get_basetype(type) == SPVC_BASETYPE_UINT32
-            &&  spvc_type_get_vector_size(type)  == 1
-            &&  spvc_type_get_columns(type)  == 1;
       case SLANG_SEMANTIC_INVERSE_TONEMAP:
-         return spvc_type_get_basetype(type) == SPVC_BASETYPE_FP32
-            &&  spvc_type_get_vector_size(type)  == 1
-            &&  spvc_type_get_columns(type)  == 1;
       case SLANG_SEMANTIC_HDR10:
-         return spvc_type_get_basetype(type) == SPVC_BASETYPE_FP32
-            &&  spvc_type_get_vector_size(type)  == 1
-            &&  spvc_type_get_columns(type)  == 1;
+         return kind == 0 && vec == 1 && cols == 1;
+         /* vec3 - sensor uniforms */
+      case SLANG_SEMANTIC_GYROSCOPE:
+      case SLANG_SEMANTIC_ACCELEROMETER:
+      case SLANG_SEMANTIC_ACCELEROMETER_REST:
+         return kind == 0 && vec == 3 && cols == 1;
          /* vec4 */
       default:
          break;
    }
-   return spvc_type_get_basetype(type) == SPVC_BASETYPE_FP32
-      &&  spvc_type_get_vector_size(type)  == 4
-      &&  spvc_type_get_columns(type)  == 1;
+   return kind == 0 && vec == 4 && cols == 1;
+}
+
+static unsigned spvc_kind_of(spvc_type type)
+{
+   switch (spvc_type_get_basetype(type))
+   {
+      case SPVC_BASETYPE_FP32:  return 0;
+      case SPVC_BASETYPE_INT32: return 1;
+      case SPVC_BASETYPE_UINT32: return 2;
+      default: return 3;
+   }
+}
+
+static bool validate_type_for_semantic(spvc_type type, enum slang_semantic sem)
+{
+   return validate_shape_for_semantic(spvc_kind_of(type),
+         spvc_type_get_vector_size(type), spvc_type_get_columns(type),
+         spvc_type_get_num_array_dimensions(type) != 0, sem);
 }
 
 static bool validate_type_for_texture_semantic(spvc_type type)
@@ -2792,6 +2820,295 @@ bool slang_last_pass_feedback(struct glslang_last_pass *state,
 end:
    spvc_context_destroy(ctx);
    return ret;
+}
+
+#if defined(HAVE_RSLC)
+/* ---- reflection from the compiler's tables ------------------------ */
+
+/* One block of one stage, as add_active_buffer_ranges() reads it from
+ * SPIRV-Cross's active ranges: every member the stage touches must be
+ * a known semantic of the right shape, and lands at its offset. */
+static bool slang_blob_block_ranges(const uint8_t *mem,
+      const struct rslc_block *b, slang_reflection *reflection,
+      bool push_constant)
+{
+   const struct rslc_member *m = (const struct rslc_member*)(mem + b->members);
+   uint32_t i;
+
+   for (i = 0; i < b->member_count; i++)
+   {
+      unsigned sem_index     = 0;
+      unsigned tex_sem_index = 0;
+      const char *name;
+      unsigned kind;
+      enum slang_semantic sem;
+      enum slang_texture_semantic tex_sem;
+
+      if (!m[i].active)
+         continue;
+      name    = RSLC_STR(mem, m[i].name);
+      kind    = m[i].base == RSLC_BASE_FLOAT ? 0
+              : m[i].base == RSLC_BASE_INT   ? 1
+              : m[i].base == RSLC_BASE_UINT  ? 2 : 3;
+      sem     = slang_uniform_name_to_semantic(
+            reflection->semantic_map, name, &sem_index);
+      tex_sem = slang_uniform_name_to_texture_semantic(
+            reflection->texture_semantic_uniform_map, name, &tex_sem_index);
+
+      if (tex_sem != SLANG_INVALID_TEXTURE_SEMANTIC &&
+            !validate_texture_semantic_index(reflection, tex_sem, tex_sem_index))
+         return false;
+
+      if (sem != SLANG_INVALID_SEMANTIC)
+      {
+         if (!validate_shape_for_semantic(kind, m[i].rows, m[i].cols,
+                  m[i].array_len != 0, sem))
+         {
+            RARCH_ERR("[Slang] Underlying type of semantic is invalid.\n");
+            return false;
+         }
+         if (sem == SLANG_SEMANTIC_FLOAT_PARAMETER)
+         {
+            if (!set_ubo_float_parameter_offset(reflection, sem_index,
+                     m[i].offset, m[i].rows, push_constant))
+               return false;
+         }
+         else if (!set_ubo_offset(reflection, sem, m[i].offset,
+                  m[i].rows * m[i].cols, push_constant))
+            return false;
+      }
+      else if (tex_sem != SLANG_INVALID_TEXTURE_SEMANTIC)
+      {
+         if (m[i].array_len || kind != 0 || m[i].rows != 4 || m[i].cols != 1)
+         {
+            RARCH_ERR("[Slang] Underlying type of texture"
+                  " semantic is invalid.\n");
+            return false;
+         }
+         if (!set_ubo_texture_offset(reflection, tex_sem, tex_sem_index,
+                  m[i].offset, push_constant))
+            return false;
+      }
+      else
+      {
+         RARCH_ERR("[Slang] Unknown semantic found: \"%s\".\n", name);
+         return false;
+      }
+   }
+   return true;
+}
+
+bool slang_reflect_blobs(const struct slang_blob *vertex,
+      const struct slang_blob *fragment, slang_reflection *reflection)
+{
+   const struct rslc_reflect *vr = vertex->refl;
+   const struct rslc_reflect *fr = fragment->refl;
+   const uint8_t *vm = (const uint8_t*)vertex->mem;
+   const uint8_t *fm = (const uint8_t*)fragment->mem;
+   const struct rslc_io *io;
+   const struct rslc_sampler *smp;
+   uint32_t location_mask = 0;
+   uint32_t binding_mask  = 0;
+   unsigned vertex_ubo_binding, fragment_ubo_binding, ubo_binding;
+   bool has_ubo;
+   uint32_t i;
+
+   /* Validate use of unexpected types: a sampler in the vertex stage
+    * is what SPIRV-Cross would list under its sampled images. */
+   if (vr->sampler_count)
+   {
+      RARCH_ERR("[Slang] Invalid resource type detected.\n");
+      return false;
+   }
+
+   /* Validate vertex input. */
+   if (vr->input_count != 2)
+   {
+      RARCH_ERR("[Slang] Vertex must have two attributes.\n");
+      return false;
+   }
+
+   if (fr->output_count != 1)
+   {
+      RARCH_ERR("[Slang] Multiple render targets not supported.\n");
+      return false;
+   }
+
+   io = (const struct rslc_io*)(fm + fr->outputs);
+   if (io[0].location != 0)
+   {
+      RARCH_ERR("[Slang] Render target must use location = 0.\n");
+      return false;
+   }
+
+   io = (const struct rslc_io*)(vm + vr->inputs);
+   for (i = 0; i < vr->input_count; i++)
+      if (io[i].location < 32)
+         location_mask |= 1u << io[i].location;
+
+   if (location_mask != 0x3)
+   {
+      RARCH_ERR("[Slang] The two vertex attributes do not"
+            " use location = 0 and location = 1.\n");
+      return false;
+   }
+
+   /* The tables hold at most one uniform block and one push block per
+    * stage, as the dialect does; the set is 0 unless declared. */
+   if ((vr->ubo.present && vr->ubo.set != RSLC_NO_BINDING && vr->ubo.set != 0)
+         || (fr->ubo.present && fr->ubo.set != RSLC_NO_BINDING && fr->ubo.set != 0))
+   {
+      RARCH_ERR("[Slang] Resources must use descriptor set #0.\n");
+      return false;
+   }
+
+   vertex_ubo_binding   = vr->ubo.present
+      ? (vr->ubo.binding == RSLC_NO_BINDING ? 0 : vr->ubo.binding) : (unsigned)-1;
+   fragment_ubo_binding = fr->ubo.present
+      ? (fr->ubo.binding == RSLC_NO_BINDING ? 0 : fr->ubo.binding) : (unsigned)-1;
+   has_ubo              = vr->ubo.present || fr->ubo.present;
+
+   if (  (vertex_ubo_binding   != (unsigned)-1) &&
+         (fragment_ubo_binding != (unsigned)-1) &&
+         (vertex_ubo_binding   != fragment_ubo_binding))
+   {
+      RARCH_ERR("[Slang] Vertex and fragment uniform buffer must have same binding.\n");
+      return false;
+   }
+
+   ubo_binding = (vertex_ubo_binding != (unsigned)-1)
+      ? vertex_ubo_binding
+      : fragment_ubo_binding;
+
+   if (has_ubo && ubo_binding >= SLANG_NUM_BINDINGS)
+   {
+      RARCH_ERR("[Slang] Binding %u is out of range.\n", ubo_binding);
+      return false;
+   }
+
+   reflection->ubo_binding              = has_ubo ? ubo_binding : 0;
+   reflection->ubo_stage_mask           = 0;
+   reflection->ubo_size                 = 0;
+   reflection->push_constant_size       = 0;
+   reflection->push_constant_stage_mask = 0;
+
+   if (vr->ubo.present)
+   {
+      reflection->ubo_stage_mask |= SLANG_STAGE_VERTEX_MASK;
+      reflection->ubo_size        = MAX(reflection->ubo_size, vr->ubo.size);
+   }
+   if (fr->ubo.present)
+   {
+      reflection->ubo_stage_mask |= SLANG_STAGE_FRAGMENT_MASK;
+      reflection->ubo_size        = MAX(reflection->ubo_size, fr->ubo.size);
+   }
+   if (vr->push.present)
+   {
+      reflection->push_constant_stage_mask |= SLANG_STAGE_VERTEX_MASK;
+      reflection->push_constant_size        = MAX(
+            reflection->push_constant_size, vr->push.size);
+   }
+   if (fr->push.present)
+   {
+      reflection->push_constant_stage_mask |= SLANG_STAGE_FRAGMENT_MASK;
+      reflection->push_constant_size        = MAX(
+            reflection->push_constant_size, fr->push.size);
+   }
+
+   /* Validate push constant size against Vulkan's
+    * minimum spec to avoid cross-vendor issues. */
+   if (reflection->push_constant_size > 128)
+   {
+      RARCH_ERR("[Slang] Exceeded maximum size of 128 bytes"
+            " for push constant buffer.\n");
+      return false;
+   }
+
+   /* Find all relevant uniforms and push constants. */
+   if (vr->ubo.present && !slang_blob_block_ranges(vm, &vr->ubo, reflection, false))
+      return false;
+   if (fr->ubo.present && !slang_blob_block_ranges(fm, &fr->ubo, reflection, false))
+      return false;
+   if (vr->push.present && !slang_blob_block_ranges(vm, &vr->push, reflection, true))
+      return false;
+   if (fr->push.present && !slang_blob_block_ranges(fm, &fr->push, reflection, true))
+      return false;
+
+   if (has_ubo)
+      binding_mask = 1 << ubo_binding;
+
+   /* On to textures. */
+   smp = (const struct rslc_sampler*)(fm + fr->samplers);
+   for (i = 0; i < fr->sampler_count; i++)
+   {
+      unsigned array_index = 0;
+      unsigned set         = smp[i].set == RSLC_NO_BINDING ? 0 : smp[i].set;
+      unsigned binding     = smp[i].binding == RSLC_NO_BINDING ? 0 : smp[i].binding;
+      const char *name     = RSLC_STR(fm, smp[i].name);
+      enum slang_texture_semantic index;
+
+      if (set != 0)
+      {
+         RARCH_ERR("[Slang] Resources must use descriptor set #0.\n");
+         return false;
+      }
+
+      if (binding >= SLANG_NUM_BINDINGS)
+      {
+         RARCH_ERR("[Slang] Binding %u is out of range.\n", ubo_binding);
+         return false;
+      }
+
+      if (binding_mask & (1 << binding))
+      {
+         RARCH_ERR("[Slang] Binding %u is already in use.\n", binding);
+         return false;
+      }
+      binding_mask |= 1 << binding;
+
+      index = slang_name_to_texture_semantic(
+            reflection->texture_semantic_map, name, &array_index);
+
+      if (index == SLANG_INVALID_TEXTURE_SEMANTIC)
+      {
+         RARCH_ERR("[Slang] Texture name \"%s\" not found in semantic map, "
+                   "Probably the texture name or pass alias is not defined "
+                   "in the preset (Non-semantic textures not supported yet)\n",
+                   name);
+         return false;
+      }
+
+      if (!validate_texture_semantic_index(reflection, index, array_index))
+         return false;
+
+      if (!slang_texture_sem_array_resize_min(
+               &reflection->semantic_textures[index], array_index + 1))
+         return false;
+      {
+         slang_texture_semantic_meta *m =
+            &reflection->semantic_textures[index].data[array_index];
+         m->binding    = binding;
+         m->stage_mask = SLANG_STAGE_FRAGMENT_MASK;
+         m->texture    = true;
+      }
+   }
+   return true;
+}
+#endif
+
+bool slang_reflect_pass(const struct slang_blob *vertex,
+      const struct slang_blob *fragment, slang_reflection *reflection)
+{
+#if defined(HAVE_RSLC)
+   if (vertex->refl && fragment->refl)
+   {
+      RARCH_LOG("[Slang] Reflected pass %u from the compiler's tables.\n",
+            reflection->pass_number);
+      return slang_reflect_blobs(vertex, fragment, reflection);
+   }
+#endif
+   return slang_reflect_spirv(vertex->words, vertex->nwords,
+         fragment->words, fragment->nwords, reflection);
 }
 
 bool slang_reflect_spirv(const uint32_t *vertex, size_t vertex_len,

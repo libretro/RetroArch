@@ -11,6 +11,7 @@ LIBRETRO_COMM_DIR := $(REPO_ROOT)/libretro-common
 SOURCES := vulkan_chain_alloc_test.c \
            stubs.c \
            $(REPO_ROOT)/gfx/drivers_shader/slang_rect.c \
+           $(REPO_ROOT)/gfx/drivers_shader/slang_blob.c \
            $(REPO_ROOT)/gfx/common/spirv_shaders.c \
            $(LIBRETRO_COMM_DIR)/vulkan/vulkan_symbol_wrapper.c \
            $(LIBRETRO_COMM_DIR)/compat/compat_strl.c

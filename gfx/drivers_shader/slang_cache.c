@@ -1,4 +1,5 @@
 #include "slang_cache.h"
+#include "slang_blob.h"
 #include "glslang_util.h"
 #include "slang_process.h"
 
@@ -157,9 +158,22 @@ bool spirv_cache_load(const char *hash, struct glslang_output *output)
          || version != SPIRV_CACHE_VERSION)
       goto error;
 
-   if (     !spirv_cache_read_stage(&r, &output->vertex,   &output->vertex_len)
-         || !spirv_cache_read_stage(&r, &output->fragment, &output->fragment_len))
-      goto error;
+   {
+      /* the words come in as two allocations the output adopts whole */
+      uint32_t *vw = NULL, *fw = NULL;
+      size_t    vn = 0, fn = 0;
+      if (     !spirv_cache_read_stage(&r, &vw, &vn)
+            || !spirv_cache_read_stage(&r, &fw, &fn))
+      {
+         free(vw);
+         free(fw);
+         goto error;
+      }
+      glslang_output_set_blob(output, false, slang_blob_adopt_words(vw, vn));
+      glslang_output_set_blob(output, true,  slang_blob_adopt_words(fw, fn));
+      if ((vn && !output->vertex) || (fn && !output->fragment))
+         goto error;
+   }
 
    if (     !spirv_cache_read(&r, &param_count, sizeof(param_count))
          || param_count > SPIRV_CACHE_MAX_PARAMETERS)

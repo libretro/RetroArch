@@ -12,6 +12,7 @@ LIBRETRO_COMM_DIR := $(REPO_ROOT)/libretro-common
 # SPIRV-Cross and the rest of the frontend stubbed in stubs.c.
 COMMON  := stubs.c \
            $(REPO_ROOT)/gfx/drivers_shader/slang_rect.c \
+           $(REPO_ROOT)/gfx/drivers_shader/slang_blob.c \
            $(REPO_ROOT)/gfx/common/spirv_shaders.c \
            spvc_stubs.c \
            $(REPO_ROOT)/gfx/drivers_shader/slang_rect.c \

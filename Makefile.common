@@ -2101,6 +2101,7 @@ ifeq ($(HAVE_SLANG),1)
    OBJ += gfx/drivers_shader/glslang_util.o
    OBJ += gfx/drivers_shader/slang_cache.o
    OBJ += gfx/drivers_shader/slang_rect.o
+   OBJ += gfx/drivers_shader/slang_blob.o
 endif
 
 ifeq ($(HAVE_RSLC),1)

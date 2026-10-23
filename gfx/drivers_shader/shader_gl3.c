@@ -29,6 +29,7 @@
 
 #include "slang_process.h"
 #include "slang_rect.h"
+#include "slang_blob.h"
 #include "spirv_opengl.h"
 /* The vendored SPIRV-Cross headers end their enumerator lists with a
  * comma, which the C89 lane rejects under -pedantic; they are upstream
@@ -1172,9 +1173,12 @@ struct gl3_pass
    gl3_viewport curr_vp;
    gl3_filter_chain_pass_info pass_info;
 
-   uint32_t *vertex_shader;
+   struct slang_blob *vertex_blob;     /* the stages, one reference each;
+                                          the pointers below view them */
+   struct slang_blob *fragment_blob;
+   const uint32_t *vertex_shader;
    size_t num_vertex_shader;
-   uint32_t *fragment_shader;
+   const uint32_t *fragment_shader;
    size_t num_fragment_shader;
    /* GLSL the compiler printed for this driver (rslc), in place of
     * crossing the SPIR-V; NULL when it did not */
@@ -1285,6 +1289,8 @@ static bool gl3_pass_init_feedback(struct gl3_pass *pass);
 static void gl3_pass_set_shader(struct gl3_pass *pass, GLenum stage,
       const uint32_t *spirv,
       size_t spirv_words);
+static void gl3_pass_set_blob(struct gl3_pass *pass, GLenum stage,
+      struct slang_blob *blob);
 /* The compiler's own GLSL for a stage; NULL clears it. */
 static void gl3_pass_set_shader_text(struct gl3_pass *pass, GLenum stage,
       const char *text)
@@ -1437,12 +1443,19 @@ static void gl3_pass_set_pass_number(struct gl3_pass *pass, unsigned number)
  * copied out. */
 static void gl3_pass_read_frame_in_place(struct gl3_pass *pass)
 {
+   uint32_t *nv = NULL, *nf = NULL;
+   size_t    nvl = 0, nfl = 0;
    enum slang_rect_result res = slang_rect_remap_pass(
-         &pass->vertex_shader, &pass->num_vertex_shader,
-         &pass->fragment_shader, &pass->num_fragment_shader,
+         pass->vertex_shader, pass->num_vertex_shader,
+         pass->fragment_shader, pass->num_fragment_shader,
          pass->pass_number == 0, pass->common->frame_linear,
-         pass->common->frame_wrap);
+         pass->common->frame_wrap, &nv, &nvl, &nf, &nfl);
    pass->frame_copy = res == SLANG_RECT_UNSUPPORTED;
+   /* a rewritten stage is a module without tables; it crosses */
+   if (nv)
+      gl3_pass_set_blob(pass, GL_VERTEX_SHADER, slang_blob_adopt_words(nv, nvl));
+   if (nf)
+      gl3_pass_set_blob(pass, GL_FRAGMENT_SHADER, slang_blob_adopt_words(nf, nfl));
    if (res == SLANG_RECT_REWRITTEN)
    {
       /* the rewrite is on the SPIR-V: the compiler's text is behind it */
@@ -1496,10 +1509,9 @@ static bool gl3_pass_build(struct gl3_pass *pass)
    pass->reflection.semantic_map                 = &semantic_map;
 
    {
-      bool refl_ok = slang_reflect_spirv(
-            pass->vertex_shader, pass->num_vertex_shader,
-            pass->fragment_shader, pass->num_fragment_shader,
-            &pass->reflection);
+      bool refl_ok = pass->vertex_blob && pass->fragment_blob
+         && slang_reflect_pass(pass->vertex_blob, pass->fragment_blob,
+               &pass->reflection);
       /* The parameter map is only needed during pass->reflection; the
        * pass->reflection keeps a dangling pointer otherwise. */
       slang_semantic_name_map_free(&semantic_map);
@@ -2306,8 +2318,8 @@ static void gl3_pass_free(struct gl3_pass *pass)
    free(pass->parameters);
    free(pass->filtered_parameters);
    free(pass->pass_name);
-   free(pass->vertex_shader);
-   free(pass->fragment_shader);
+   slang_blob_unref(pass->vertex_blob);
+   slang_blob_unref(pass->fragment_blob);
    free(pass->vertex_text);
    free(pass->fragment_text);
    free(pass->uniforms);
@@ -2318,37 +2330,47 @@ static void gl3_pass_free(struct gl3_pass *pass)
    free(pass);
 }
 
-static void gl3_pass_set_shader(struct gl3_pass *pass, GLenum stage,
-      const uint32_t *spirv,
-      size_t spirv_words)
+/* The pass takes @blob's reference. */
+static void gl3_pass_set_blob(struct gl3_pass *pass, GLenum stage,
+      struct slang_blob *blob)
 {
    switch (stage)
    {
       case GL_VERTEX_SHADER:
-         free(pass->vertex_shader);
-         pass->vertex_shader     = NULL;
-         pass->num_vertex_shader = 0;
-         if (spirv_words &&
-               (pass->vertex_shader = (uint32_t*)malloc(
-                     spirv_words * sizeof(uint32_t))))
-         {
-            memcpy(pass->vertex_shader, spirv, spirv_words * sizeof(uint32_t));
-            pass->num_vertex_shader = spirv_words;
-         }
+         slang_blob_unref(pass->vertex_blob);
+         pass->vertex_blob       = blob;
+         pass->vertex_shader     = blob ? blob->words : NULL;
+         pass->num_vertex_shader = blob ? blob->nwords : 0;
          break;
       case GL_FRAGMENT_SHADER:
-         free(pass->fragment_shader);
-         pass->fragment_shader     = NULL;
-         pass->num_fragment_shader = 0;
-         if (spirv_words &&
-               (pass->fragment_shader = (uint32_t*)malloc(
-                     spirv_words * sizeof(uint32_t))))
-         {
-            memcpy(pass->fragment_shader, spirv, spirv_words * sizeof(uint32_t));
-            pass->num_fragment_shader = spirv_words;
-         }
+         slang_blob_unref(pass->fragment_blob);
+         pass->fragment_blob       = blob;
+         pass->fragment_shader     = blob ? blob->words : NULL;
+         pass->num_fragment_shader = blob ? blob->nwords : 0;
          break;
       default:
+         slang_blob_unref(blob);
+         break;
+   }
+}
+
+/* Words from elsewhere (the built-in stock stages, a caller of the
+ * public API) become a blob of their own. */
+static void gl3_pass_set_shader(struct gl3_pass *pass, GLenum stage,
+      const uint32_t *spirv,
+      size_t spirv_words)
+{
+   uint32_t *words = NULL;
+   if (spirv_words && (words = (uint32_t*)malloc(spirv_words * sizeof(uint32_t))))
+      memcpy(words, spirv, spirv_words * sizeof(uint32_t));
+   switch (stage)
+   {
+      case GL_VERTEX_SHADER:
+      case GL_FRAGMENT_SHADER:
+         gl3_pass_set_blob(pass, stage, words ? slang_blob_adopt_words(words, spirv_words) : NULL);
+         break;
+      default:
+         free(words);
          break;
    }
 }
@@ -2804,6 +2826,7 @@ static bool gl3_chain_init_alias(struct gl3_filter_chain *chain);
 static void gl3_chain_set_pass_info(struct gl3_filter_chain *chain, unsigned pass, const gl3_filter_chain_pass_info info);
 static bool gl3_chain_set_num_passes(struct gl3_filter_chain *chain, unsigned num_passes_);
 static void gl3_chain_set_shader(struct gl3_filter_chain *chain, unsigned pass, GLenum stage, const uint32_t *spirv, size_t spirv_words);
+static void gl3_chain_set_blob(struct gl3_filter_chain *chain, unsigned pass, GLenum stage, struct slang_blob *blob);
 static void gl3_chain_add_parameter(struct gl3_filter_chain *chain, unsigned pass,
       unsigned index, const char *id);
 static bool gl3_chain_init(struct gl3_filter_chain *chain);
@@ -3353,6 +3376,11 @@ static void gl3_chain_set_shader(struct gl3_filter_chain *chain, unsigned pass, 
    gl3_pass_set_shader(chain->passes[pass], stage, spirv, spirv_words);
 }
 
+static void gl3_chain_set_blob(struct gl3_filter_chain *chain, unsigned pass, GLenum stage, struct slang_blob *blob)
+{
+   gl3_pass_set_blob(chain->passes[pass], stage, blob);
+}
+
 static void gl3_chain_set_shader_text(struct gl3_filter_chain *chain, unsigned pass,
       const glslang_output *output)
 {
@@ -3547,11 +3575,11 @@ static bool gl3_chain_compile_full_pass(struct gl3_filter_chain *chain, unsigned
       }
    }
 
-   /* ---- Set SPIRV on the pass ---- */
-   gl3_chain_set_shader(chain, pass_idx, GL_VERTEX_SHADER,
-         output.vertex, output.vertex_len);
-   gl3_chain_set_shader(chain, pass_idx, GL_FRAGMENT_SHADER,
-         output.fragment, output.fragment_len);
+   /* ---- the stages, shared with the output ---- */
+   gl3_chain_set_blob(chain, pass_idx, GL_VERTEX_SHADER,
+         slang_blob_ref(output.vertex_blob));
+   gl3_chain_set_blob(chain, pass_idx, GL_FRAGMENT_SHADER,
+         slang_blob_ref(output.fragment_blob));
    gl3_chain_set_shader_text(chain, pass_idx, &output);
 
    gl3_chain_set_frame_count_period(chain, pass_idx, pass->frame_count_mod);
@@ -4228,15 +4256,10 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
          }
       }
 
-      gl3_chain_set_shader(chain, i,
-            GL_VERTEX_SHADER,
-            output.vertex,
-            output.vertex_len);
-
-      gl3_chain_set_shader(chain, i,
-            GL_FRAGMENT_SHADER,
-            output.fragment,
-            output.fragment_len);
+      gl3_chain_set_blob(chain, i, GL_VERTEX_SHADER,
+            slang_blob_ref(output.vertex_blob));
+      gl3_chain_set_blob(chain, i, GL_FRAGMENT_SHADER,
+            slang_blob_ref(output.fragment_blob));
       gl3_chain_set_shader_text(chain, i, &output);
 
       gl3_chain_set_frame_count_period(chain, i, pass->frame_count_mod);

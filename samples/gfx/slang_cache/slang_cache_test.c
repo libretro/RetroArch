@@ -31,6 +31,7 @@
 #include "gfx/video_shader_parse.h"
 #include "gfx/drivers_shader/slang_process.h"
 #include "gfx/drivers_shader/slang_cache.h"
+#include "gfx/drivers_shader/slang_blob.h"
 
 static int fails = 0;
 #define CHECK(c, m) do { if (!(c)) { printf("  FAIL: %s\n", m); fails++; } } while (0)
@@ -52,10 +53,28 @@ void glslang_output_init(glslang_output *output)
 }
 void glslang_output_free(glslang_output *output)
 {
-   free(output->vertex);
-   free(output->fragment);
+   slang_blob_unref(output->vertex_blob);
+   slang_blob_unref(output->fragment_blob);
    free(output->meta.parameters);
    glslang_output_init(output);
+}
+void glslang_output_set_blob(glslang_output *output, bool fragment,
+      struct slang_blob *blob)
+{
+   if (fragment)
+   {
+      slang_blob_unref(output->fragment_blob);
+      output->fragment_blob = blob;
+      output->fragment      = blob ? blob->words : NULL;
+      output->fragment_len  = blob ? blob->nwords : 0;
+   }
+   else
+   {
+      slang_blob_unref(output->vertex_blob);
+      output->vertex_blob = blob;
+      output->vertex      = blob ? blob->words : NULL;
+      output->vertex_len  = blob ? blob->nwords : 0;
+   }
 }
 
 /* ---- fixtures ------------------------------------------------------ */
@@ -68,14 +87,16 @@ static void make_output(glslang_output *o)
 {
    size_t i;
    glslang_output_init(o);
-   o->vertex_len   = 777;
-   o->fragment_len = 1234;
-   o->vertex       = (uint32_t*)malloc(o->vertex_len * 4);
-   o->fragment     = (uint32_t*)malloc(o->fragment_len * 4);
-   for (i = 0; i < o->vertex_len; i++)
-      o->vertex[i] = 0x07230203u ^ (uint32_t)(i * 2654435761u);
-   for (i = 0; i < o->fragment_len; i++)
-      o->fragment[i] = (uint32_t)(i * 40503u + 17u);
+   {
+      uint32_t *v = (uint32_t*)malloc(777 * 4);
+      uint32_t *f = (uint32_t*)malloc(1234 * 4);
+      for (i = 0; i < 777; i++)
+         v[i] = 0x07230203u ^ (uint32_t)(i * 2654435761u);
+      for (i = 0; i < 1234; i++)
+         f[i] = (uint32_t)(i * 40503u + 17u);
+      glslang_output_set_blob(o, false, slang_blob_adopt_words(v, 777));
+      glslang_output_set_blob(o, true,  slang_blob_adopt_words(f, 1234));
+   }
    o->meta.num_parameters = o->meta.cap_parameters = 3;
    o->meta.parameters = (glslang_parameter*)calloc(3, sizeof(glslang_parameter));
    for (i = 0; i < 3; i++)
