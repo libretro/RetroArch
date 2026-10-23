@@ -14,7 +14,8 @@
 #define import_errors errors
 #include "native_import_gpu.h"
 
-static void check(unsigned depth, unsigned full, unsigned bt709)
+static void check(
+      unsigned depth, unsigned full, unsigned bt709, unsigned position)
 {
    static vaapi_frame_view_t view;
    static VAImage image;
@@ -44,6 +45,7 @@ static void check(unsigned depth, unsigned full, unsigned bt709)
    frame.ops.destroy_view  = vkDestroyImageView;
    frame.ops.destroy_image = vkDestroyImage;
    frame.ops.free_memory   = vkFreeMemory;
+   view.chroma_position = position;
    view.x = view.y     = 2;
    view.width          = 3;
    view.height         = 2;
@@ -61,16 +63,17 @@ static void check(unsigned depth, unsigned full, unsigned bt709)
 
 int main(void)
 {
-   unsigned depth, full, bt709;
+   unsigned depth, full, bt709, position;
    PFN_vkDestroyDebugUtilsMessengerEXT destroy_messenger;
    (void)import_debug;
    initialize();
    import_family = family;
-   for (depth = 8; depth <= 10; depth += 2)
-      for (full = 0; full < 2; full++)
-         for (bt709 = 0; bt709 < 2; bt709++)
-            check(depth, full, bt709);
-   assert(import_pixels == 48 && import_max_error <= 1 && !errors);
+   for (position = 0; position <= 2; position++)
+      for (depth = 8; depth <= 10; depth += 2)
+         for (full = 0; full < 2; full++)
+            for (bt709 = 0; bt709 < 2; bt709++)
+               check(depth, full, bt709, position);
+   assert(import_pixels == 144 && import_max_error <= 1 && !errors);
    vkUnmapMemory(device, buffer_memory);
    vkDestroyBuffer(device, buffer, NULL);
    vkFreeMemory(device, buffer_memory, NULL);
@@ -84,6 +87,8 @@ int main(void)
    destroy_messenger(instance, messenger, NULL);
    vkDestroyInstance(instance, NULL);
    assert(!errors);
-   puts("PASS: native import conversion/readback oracle, 8 synthetic NV12/P010 cases, 48 cropped pixels, zero validation errors; no VA modifier import executed");
+   puts("PASS: native import conversion/readback oracle, 24 synthetic "
+        "NV12/P010/chroma cases, 144 cropped pixels, zero validation errors; "
+        "no VA modifier import executed");
    return 0;
 }

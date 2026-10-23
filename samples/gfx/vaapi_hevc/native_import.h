@@ -180,7 +180,7 @@ static void native_import_check(const vaapi_frame_view_t *view,
    assert(vaapi_frame_claim(lease->owner, lease->done, lease->done_value,
          lease->image, &restored));
    assert(!returned.active && restored.source == source && source->active
-          && source->ready);
+         && source->ready && restored.chroma_position == view->chroma_position);
    assert(fd_count() == before);
    imported++;
 }

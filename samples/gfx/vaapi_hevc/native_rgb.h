@@ -6,8 +6,8 @@
 #include <stdint.h>
 
 /* Independent SDR reference; no shader constants or production color helper. */
-static INLINE void native_rgb(unsigned y, unsigned cb, unsigned cr,
-      unsigned ten, unsigned full, unsigned bt709, uint8_t out[4])
+static INLINE void native_rgb(double y, double cb, double cr, unsigned ten,
+      unsigned full, unsigned bt709, uint8_t out[4])
 {
    double scale = ten ? 4.0 : 1.0;
    double kr    = bt709 ? 0.2126 : 0.299;

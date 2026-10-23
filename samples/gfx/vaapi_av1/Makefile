@@ -31,7 +31,7 @@ check: all
 	$(RUNNER) ./old_sdk_test$(EXE)
 	$(RUNNER) ./tiles_test$(EXE)
 clean:
-	rm -f backend_tsan_test backend_tsan_test.exe backend_test backend_test.exe backend_nothreads_test backend_nothreads_test.exe backend_volatile_test backend_volatile_test.exe owner_test owner_test.exe decoder_trace_test decoder_trace_test.exe busy_test busy_test.exe decoder_test decoder_test.exe export_test export_test.exe pool_test pool_test.exe submit_test submit_test.exe picture_test picture_test.exe tiles_test tiles_test.exe tiles_trace_test tiles_trace_test.exe old_sdk_test old_sdk_test.exe session_test session_test.exe runtime_test runtime_test.exe
+	rm -f native_fixture_test native_fixture_test.exe native_decode_test native_decode_test.exe native_import_test native_import_test.exe backend_tsan_test backend_tsan_test.exe backend_test backend_test.exe backend_nothreads_test backend_nothreads_test.exe backend_volatile_test backend_volatile_test.exe owner_test owner_test.exe decoder_trace_test decoder_trace_test.exe busy_test busy_test.exe decoder_test decoder_test.exe export_test export_test.exe pool_test pool_test.exe submit_test submit_test.exe picture_test picture_test.exe tiles_test tiles_test.exe tiles_trace_test tiles_trace_test.exe old_sdk_test old_sdk_test.exe session_test session_test.exe runtime_test runtime_test.exe
 .PHONY: all check clean
 
 old_sdk_test$(EXE): old_sdk_test.c ../../../gfx/common/vaapi_hevc_session.c ../../../gfx/common/vaapi_hevc_runtime.c ../../../gfx/common/vaapi_av1_session.h ../../../gfx/common/vaapi_av1_runtime.h
@@ -83,3 +83,29 @@ backend_volatile_test$(EXE): backend_disabled_test.c ../../../gfx/common/vaapi_a
 
 backend_tsan_test$(EXE): backend_test.c ../../../gfx/common/vaapi_av1_backend.c ../../../gfx/common/vaapi_av1_backend.h ../../../gfx/drivers/vulkan_vaapi_av1_backend.h $(BACKEND_SOURCES)
 	$(CC) $(filter-out -fsanitize=%,$(CFLAGS)) -DHAVE_THREADS -D_DEFAULT_SOURCE -pthread -fsanitize=thread -fno-omit-frame-pointer backend_test.c $(BACKEND_SOURCES) -o $@ $(filter-out -fsanitize=%,$(LDFLAGS)) -fsanitize=thread
+
+AV1_NATIVE_PARSER_DEPS := $(wildcard ../../../libretro-common/include/formats/rav1*.h)
+native_fixture_test$(EXE): native_decode.c $(AV1_NATIVE_PARSER_DEPS)
+	$(CC) $(CFLAGS) -DVAAPI_AV1_FIXTURE_ONLY native_decode.c -o $@ $(LDFLAGS)
+all: native_fixture_test$(EXE)
+check: native-fixture-check
+native-fixture-check: native_fixture_test$(EXE)
+	python3 native_run.py --fixture-only --binary ./native_fixture_test$(EXE)
+
+NATIVE_SOURCES := $(OWNER_SOURCES) ../../../gfx/common/vaapi_av1_owner.c ../../../gfx/common/vaapi_hevc_runtime.c ../../../gfx/common/vaapi_hevc_session.c ../../../gfx/common/vaapi_hevc_submit.c ../../../libretro-common/dynamic/dylib.c
+NATIVE_DEPS := $(AV1_NATIVE_PARSER_DEPS) $(wildcard ../../../gfx/common/vaapi_av1*.h ../../../gfx/common/vaapi_hevc*.h) ../../../gfx/common/vaapi_frame.h
+native_decode_test$(EXE): native_decode.c ../vaapi_hevc/native_pixels.h $(NATIVE_SOURCES) $(NATIVE_DEPS)
+	$(CC) $(CFLAGS) -DHAVE_DYLIB -DHAVE_THREADS native_decode.c $(NATIVE_SOURCES) -o $@ $(LDFLAGS) -ldl -lva
+native-decode-check: native_decode_test$(EXE)
+	python3 native_run.py --binary ./native_decode_test$(EXE)
+
+NATIVE_IMPORT_SOURCES := ../../../gfx/common/vulkan_prime_image.c ../../../gfx/common/vaapi_hevc_vulkan_frame.c ../../../gfx/common/vaapi_hevc_vulkan_submit.c ../../../gfx/common/vaapi_hevc_vulkan_resources.c ../../../libretro-common/formats/image/image_yuv_blit.c
+NATIVE_IMPORT_DEPS := $(wildcard ../../../gfx/common/vulkan_prime*.h) ../../../gfx/common/vulkan_video_import.h ../../../gfx/common/video_import_color.h ../../../gfx/drivers/vulkan_shaders/yuv_image_to_rgba8888.comp.inc ../../../gfx/drivers/vulkan_shaders/yuv_image_to_rgba16f.comp.inc
+native_import_test$(EXE): native_decode.c ../vaapi_hevc/native_pixels.h ../vaapi_hevc/native_import.h ../vaapi_hevc/native_import_gpu.h ../vaapi_hevc/native_rgb.h $(NATIVE_SOURCES) $(NATIVE_IMPORT_SOURCES) $(NATIVE_DEPS) $(NATIVE_IMPORT_DEPS)
+	$(CC) $(CFLAGS) $(shell pkg-config --cflags libdrm) -DHAVE_DYLIB -DHAVE_THREADS -DNATIVE_VULKAN_IMPORT native_decode.c $(NATIVE_SOURCES) $(NATIVE_IMPORT_SOURCES) -o $@ $(LDFLAGS) -ldl -lva -lvulkan -ldrm -lm
+native-import-check: native_import_test$(EXE)
+	python3 native_run.py --import --binary ./native_import_test$(EXE)
+ifeq ($(shell uname -s),Linux)
+all: native_decode_test$(EXE) native_import_test$(EXE)
+endif
+.PHONY: native-fixture-check native-decode-check native-import-check

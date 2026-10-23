@@ -3,6 +3,7 @@
 #include "../../../gfx/common/vaapi_hevc_vulkan_resources.h"
 #include "../../../gfx/common/vaapi_hevc_vulkan_submit.h"
 #include "native_rgb.h"
+#include <math.h>
 
 #define IMPORT_OK(call) assert((call) == VK_SUCCESS)
 
@@ -50,6 +51,48 @@ static unsigned import_sample(const uint8_t *data, size_t offset, bool ten)
               : data[offset];
 }
 
+static double import_chroma(const vaapi_frame_view_t *view,
+      const VAImage *image, const uint8_t *data, bool ten, unsigned col,
+      unsigned row, unsigned component)
+{
+   unsigned bytes = ten ? 2 : 1, i, j, x, y;
+   unsigned max_x = (view->x + view->width - 1) / 2;
+   unsigned max_y = (view->y + view->height - 1) / 2;
+   double cx = (view->x + col) / 2.0, cy = (view->y + row) / 2.0;
+   double result = 0, wx, wy;
+   if (!view->chroma_position)
+   {
+      size_t at = image->offsets[1]
+            + ((view->y + row) / 2) * (size_t)image->pitches[1]
+            + ((view->x + col) / 2 * 2 + component) * bytes;
+      return import_sample(data, at, ten);
+   }
+   assert(view->chroma_position <= 2);
+   if (view->chroma_position == 1)
+      cy -= .25;
+   if (cx > max_x)
+      cx = max_x;
+   if (cy > max_y)
+      cy = max_y;
+   if (cy < 0)
+      cy = 0;
+   x = (unsigned)floor(cx);
+   y = (unsigned)floor(cy);
+   wx = cx - x;
+   wy = cy - y;
+   for (j = 0; j < 2; j++)
+      for (i = 0; i < 2; i++)
+      {
+         unsigned xx = x + (i && x < max_x);
+         unsigned yy = y + (j && y < max_y);
+         size_t at = image->offsets[1] + yy * (size_t)image->pitches[1]
+               + (xx * 2 + component) * bytes;
+         result += (i ? wx : 1 - wx) * (j ? wy : 1 - wy)
+               * import_sample(data, at, ten);
+      }
+   return result;
+}
+
 static void import_compare(const vaapi_frame_view_t *view, const VAImage *image,
       const uint8_t *data, const uint8_t *rgba)
 {
@@ -72,13 +115,11 @@ static void import_compare(const vaapi_frame_view_t *view, const VAImage *image,
          size_t y = image->offsets[0]
                     + (view->y + row) * (size_t)image->pitches[0]
                     + (view->x + col) * bytes;
-         size_t uv = image->offsets[1]
-                     + ((view->y + row) / 2) * (size_t)image->pitches[1]
-                     + ((view->x + col) / 2) * 2 * bytes;
          size_t output = ((size_t)row * view->width + col) * 4;
-         native_rgb(import_sample(data, y, ten), import_sample(data, uv, ten),
-               import_sample(data, uv + bytes, ten), ten, full, bt709,
-               expected);
+         native_rgb(import_sample(data, y, ten),
+               import_chroma(view, image, data, ten, col, row, 0),
+               import_chroma(view, image, data, ten, col, row, 1), ten, full,
+               bt709, expected);
          for (i = 0; i < 4; i++)
          {
             unsigned actual = rgba[output + i];
@@ -170,8 +211,9 @@ static void native_import_convert(vaapi_hevc_vulkan_frame_t *frame,
    assert(vaapi_hevc_vulkan_resources_create(
          &resources, import_device, import_family, 2, false, &ops));
    memset(&entry, 0, sizeof(entry));
-   assert(vaapi_hevc_vulkan_submission_configure(&entry, frame, view->x,
-         view->y, view->width, view->height, view->yuv, &view->color, false));
+   assert(vaapi_hevc_vulkan_submission_configure_position(&entry, frame,
+         view->x, view->y, view->width, view->height, view->yuv,
+         view->chroma_position, &view->color, false));
    entry.queue             = import_queue;
    entry.command           = resources.commands[0];
    entry.fence             = resources.fences[0];
