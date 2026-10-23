@@ -92,13 +92,24 @@ bool glslang_compile_spirv(const char *source,
 
 /* --- the SPIR-V cache: always a miss, nothing kept ------------------ */
 
+/* A key that tells the lanes' sources apart, since the blob table
+ * lists live stages under it. */
+static unsigned long key_sum(const char *s, unsigned long h)
+{
+   while (*s)
+      h = h * 33 + (unsigned char)*s++;
+   return h;
+}
+
 bool spirv_cache_compute_hash(const char *vertex_source,
       const char *fragment_source, const char *compiler, char *hash_out)
 {
-   (void)vertex_source;
-   (void)fragment_source;
-   (void)compiler;
-   strcpy(hash_out, "0");
+   sprintf(hash_out, "%08lx%08lx%08lx%08lx",
+         key_sum(vertex_source, 5381) & 0xfffffffful,
+         key_sum(fragment_source, 5381) & 0xfffffffful,
+         key_sum(compiler, 5381) & 0xfffffffful,
+         (unsigned long)(strlen(vertex_source) + strlen(fragment_source))
+            & 0xfffffffful);
    return true;
 }
 

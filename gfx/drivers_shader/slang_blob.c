@@ -71,10 +71,80 @@ struct slang_blob *slang_blob_ref(struct slang_blob *b)
    return b;
 }
 
+static struct
+{
+   struct slang_blob **v;
+   size_t              n;
+   size_t              cap;
+   unsigned            reused;
+} blob_table;
+
+static void slang_blob_table_remove(struct slang_blob *b)
+{
+   size_t i;
+   for (i = 0; i < blob_table.n; i++)
+   {
+      if (blob_table.v[i] != b)
+         continue;
+      blob_table.v[i] = blob_table.v[--blob_table.n];
+      break;
+   }
+   b->listed = false;
+   if (!blob_table.n)
+   {
+      free(blob_table.v);
+      blob_table.v   = NULL;
+      blob_table.cap = 0;
+   }
+}
+
+struct slang_blob *slang_blob_table_find(const char *key, bool fragment)
+{
+   size_t i;
+   for (i = 0; i < blob_table.n; i++)
+   {
+      struct slang_blob *b = blob_table.v[i];
+      if (b->fragment != fragment || memcmp(b->key, key, sizeof(b->key)))
+         continue;
+      blob_table.reused++;
+      return slang_blob_ref(b);
+   }
+   return NULL;
+}
+
+void slang_blob_table_add(struct slang_blob *b, const char *key,
+      bool fragment)
+{
+   if (!b || b->listed)
+      return;
+   if (blob_table.n == blob_table.cap)
+   {
+      size_t cap             = blob_table.cap ? blob_table.cap * 2 : 64;
+      struct slang_blob **v  = (struct slang_blob**)realloc(blob_table.v,
+            cap * sizeof(*v));
+      if (!v)
+         return;
+      blob_table.v   = v;
+      blob_table.cap = cap;
+   }
+   memcpy(b->key, key, sizeof(b->key));
+   b->fragment                  = fragment;
+   b->listed                    = true;
+   blob_table.v[blob_table.n++] = b;
+}
+
+void slang_blob_table_stats(size_t *live, unsigned *reused)
+{
+   *live   = blob_table.n;
+   *reused = blob_table.reused;
+}
+
 void slang_blob_unref(struct slang_blob *b)
 {
    if (!b || --b->refs)
       return;
+   if (b->listed)
+      slang_blob_table_remove(b);
    if (b->free_fn)
       b->free_fn(b->ud, b->mem);
    else
