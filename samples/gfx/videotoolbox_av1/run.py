@@ -87,12 +87,14 @@ with tempfile.TemporaryDirectory(prefix="vt-av1-setup-") as directory:
                 "-mmacosx-version-min=10.14", "-I" + str(root / "libretro-common/include"),
                 "-c", str(unit), "-o", str(metal_object)]
             subprocess.run(command, check=True)
-            for name, relative in (("av1_hw", "av1/rav1_hw.c"),
-                                   ("rh265", "h265/rh265.c")):
+            for name, relative in (("av1_hw", "formats/av1/rav1_hw.c"),
+                                   ("rh265", "formats/h265/rh265.c"),
+                                   ("tpool", "rthreads/tpool.c"),
+                                   ("retro_eventcount", "rthreads/retro_eventcount.c")):
                 obj = path / (name + ".o")
                 command = compiler + ["-O2", "-DHAVE_THREADS", "-Wno-unused-parameter",
                     "-mmacosx-version-min=10.14", "-I" + str(root / "libretro-common/include"),
-                    "-c", str(root / "libretro-common/formats" / relative), "-o", str(obj)]
+                    "-c", str(root / "libretro-common" / relative), "-o", str(obj)]
                 subprocess.run(command, check=True)
                 objects += [str(obj)]
             command = compiler + flags + ["-DVT_AV1_METAL_TEST", "-Wno-unused-function",
@@ -104,15 +106,6 @@ with tempfile.TemporaryDirectory(prefix="vt-av1-setup-") as directory:
                 result = subprocess.run([sys.executable, str(here / "native_run.py"),
                                          "--binary", str(binary), "--metal"], check=False)
             if result.returncode in (0, 77):
-                for name in ("tpool", "retro_eventcount"):
-                    obj = path / (name + ".o")
-                    command = compiler + ["-O2", "-DHAVE_THREADS",
-                        "-mmacosx-version-min=10.14",
-                        "-I" + str(root / "libretro-common/include"), "-c",
-                        str(root / "libretro-common/rthreads" / (name + ".c")),
-                        "-o", str(obj)]
-                    subprocess.run(command, check=True)
-                    objects += [str(obj)]
                 sources = ["mp4/rmp4.c", "mp4/rmp4_video.c", "webm/rwebm.c",
                     "webm/rwebm_video.c", "vp8/rvp8.c", "vp9/rvp9.c", "h264/rh264.c",
                     "image/image_blit_bands.c", "image/image_hdr_blit.c", "../time/rtime.c"]
