@@ -19,6 +19,11 @@
 typedef struct vk
 {
    vulkan_context_t *context;
+   uint32_t device_support, built_hdr_flags;
+   retro_atomic_int_t texture_format_support, built_hdr_output;
+   VkFormat built_format;
+   bool built;
+   struct { VkPipeline pipeline_linear_sdr; } display;
    VkCommandPool staging_pool;
    struct vk_stream_state *stream_states;
    struct { VkSampler nearest; } samplers;
@@ -710,8 +715,21 @@ static int import_test_gpu_format(VkInstance instance, VkPhysicalDevice gpu,
          || vkCreateFence(device, &fence, NULL, &t->fence) != VK_SUCCESS
          || vkCreateSemaphore(device, &semaphore, NULL, &t->ready) != VK_SUCCESS
          || vkCreateSemaphore(device, &semaphore, NULL, &t->done) != VK_SUCCESS) goto cleanup;
+   vulkan_note_device(&t->vk);
+   vulkan_note_built(&t->vk);
    if (!vulkan_get_device(&t->vk, &advertised)
          || advertised.import_formats != (IMAGE_PIXFMT_NV12 | IMAGE_PIXFMT_P010)) goto cleanup;
+   ctx->flags &= ~VK_CTX_FLAG_TIMELINE_SEMAPHORE;
+   if (!vulkan_get_device(&t->vk, &advertised)
+         || advertised.import_formats != (IMAGE_PIXFMT_NV12 | IMAGE_PIXFMT_P010)) goto cleanup;
+   ctx->flags |= VK_CTX_FLAG_TIMELINE_SEMAPHORE;
+   retro_atomic_store_release_int(&t->vk.texture_format_support, 0);
+   if (!vulkan_get_device(&t->vk, &advertised) || advertised.import_formats) goto cleanup;
+   vulkan_note_built(&t->vk);
+   t->vk.device_support &= ~VULKAN_DEVICE_SUPPORT_TIMELINE;
+   if (!vulkan_get_device(&t->vk, &advertised) || advertised.import_formats) goto cleanup;
+   vulkan_note_device(&t->vk);
+   puts("PASS: immutable device and published import capability gates");
    ok = 1;
    for (i = 0; i < 96; i++)
       if (!oracle_case(t, i % 3 == 1 ? 10 : 8,

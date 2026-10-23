@@ -9,9 +9,9 @@ import tempfile
 
 root = Path(__file__).resolve().parents[3]
 subprocess.run([sys.executable, str(Path(__file__).with_name('generate_ui_roundtrip.py')), '--check'], check=True)
-source = (root / 'gfx/drivers/vulkan.c').read_text()
-common = (root / 'gfx/common/vulkan_common.c').read_text()
-win32 = (root / 'gfx/drivers/vulkan_win32_video.h').read_text()
+source = (root / 'gfx/drivers/vulkan.c').read_text(encoding='utf-8')
+common = (root / 'gfx/common/vulkan_common.c').read_text(encoding='utf-8')
+win32 = (root / 'gfx/drivers/vulkan_win32_video.h').read_text(encoding='utf-8')
 win32_types, separator, win32_functions = win32.partition('static bool vulkan_win32_video_matches(')
 assert separator
 
@@ -20,22 +20,29 @@ def function(text, signature):
     return text[start:text.index('\n}', start) + 2]
 
 types = []
+for name in ('vulkan_texture_support', 'vulkan_device_support'):
+    start = source.index('enum ' + name + '\n')
+    types.append(source[start:source.index('\n};', start) + 3])
+start = source.index('#define VULKAN_BUILT_HDR_FLAGS')
+types.append(source[start:source.index('\n\n', start)])
 for name in ('vk_texture', 'vk_stream_state'):
     start = source.index('struct ' + name + '\n')
     types.append(source[start:source.index('\n};', start) + 3])
 with tempfile.TemporaryDirectory() as directory:
     tmp = Path(directory)
-    (tmp / 'import_win32_types.inc').write_text(win32_types)
-    (tmp / 'import_win32_functions.inc').write_text(separator + win32_functions)
-    (tmp / 'import_types.inc').write_text('\n'.join(types))
+    (tmp / 'import_win32_types.inc').write_text(win32_types, encoding='utf-8')
+    (tmp / 'import_win32_functions.inc').write_text(separator + win32_functions, encoding='utf-8')
+    (tmp / 'import_types.inc').write_text('\n'.join(types), encoding='utf-8')
     bodies = [function(common, 'uint32_t vulkan_find_memory_type_fallback(')]
-    for signature in ('static bool vulkan_import_buffer(',
+    for signature in ('static void vulkan_note_device(',
+                      'static void vulkan_note_built(',
+                      'static bool vulkan_import_buffer(',
                       'static struct vk_stream_state *vulkan_import_state_get(',
                       'static enum video_texture_update vulkan_import_convert(',
                       'static bool vulkan_get_device(',
                       'static void vulkan_movie_input('):
         bodies.append(function(source, signature))
-    (tmp / 'import_functions.inc').write_text('\n'.join(bodies))
+    (tmp / 'import_functions.inc').write_text('\n'.join(bodies), encoding='utf-8')
     cc = shlex.split(os.environ.get('CC', 'cc'))
     flags = shlex.split(os.environ.get('CFLAGS', '-O1 -g -std=gnu89'))
     windows = 'mingw' in cc[0] or os.name == 'nt'

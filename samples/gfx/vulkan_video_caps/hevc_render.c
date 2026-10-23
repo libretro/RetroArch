@@ -35,8 +35,10 @@ void *hevc_render_open(vulkan_context_t *ctx, unsigned width, unsigned height)
    view.format = t->output.format; view.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
    view.subresourceRange.levelCount = view.subresourceRange.layerCount = 1;
    if (vkCreateImageView(ctx->device, &view, NULL, &t->output.view) != VK_SUCCESS
-         || !oracle_pipeline(t)
-         || !vulkan_get_device(&t->vk, &advertised)
+         || !oracle_pipeline(t)) goto fail;
+   vulkan_note_device(&t->vk);
+   vulkan_note_built(&t->vk);
+   if (!vulkan_get_device(&t->vk, &advertised)
          || advertised.api != VIDEO_DEVICE_VULKAN
          || advertised.import_formats != (IMAGE_PIXFMT_NV12 | IMAGE_PIXFMT_P010)) goto fail;
    pool.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
