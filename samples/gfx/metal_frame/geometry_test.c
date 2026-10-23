@@ -50,7 +50,7 @@ static void test_hdr_params(void)
 {
    metal_frame_view_t view;
    metal_frame_sdr_params_t p, unchanged;
-   unsigned ten, full, hlg, bad;
+   unsigned ten, full, hlg, bad, position;
    memset(&view, 0, sizeof(view));
    memset(&p, 0x5a, sizeof(p)); unchanged = p;
    assert(!metal_frame_hdr_params(NULL, &p));
@@ -70,6 +70,14 @@ static void test_hdr_params(void)
          assert(!metal_frame_sdr_params(&view, &p));
          assert(metal_frame_hdr_params(&view, &p));
          assert(p.mode[0] == view.color.transfer && p.dims[0] == 7 && p.dims[2] == 2);
+         for (position = 0; position < 3; position++)
+         {
+            view.chroma_position = position;
+            assert(metal_frame_hdr_params(&view, &p) && p.mode[1] == position);
+         }
+         view.chroma_position = 3;
+         assert(!metal_frame_hdr_params(&view, &p));
+         view.chroma_position = 0;
          assert(p.coefficients[0] > 1.4745f && p.coefficients[0] < 1.4747f);
          assert(p.coefficients[1] < 0 && p.coefficients[2] < 0 && p.coefficients[3] > 1.8813f);
          at_black = black / sample * p.levels[0] + p.levels[1];

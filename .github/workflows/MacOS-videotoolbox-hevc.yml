@@ -7,6 +7,8 @@ on:
     - '.github/workflows/MacOS-videotoolbox-hevc.yml'
     - 'samples/gfx/videotoolbox_hevc/**'
     - 'samples/gfx/videotoolbox_vp9/**'
+    - 'samples/gfx/videotoolbox_av1/**'
+    - 'gfx/common/videotoolbox_av1*.h'
     - 'gfx/common/videotoolbox_vp9*.h'
     - 'gfx/common/vp9_color.h'
     - 'libretro-common/include/formats/rvp9*.h'
@@ -33,6 +35,8 @@ on:
     - '.github/workflows/MacOS-videotoolbox-hevc.yml'
     - 'samples/gfx/videotoolbox_hevc/**'
     - 'samples/gfx/videotoolbox_vp9/**'
+    - 'samples/gfx/videotoolbox_av1/**'
+    - 'gfx/common/videotoolbox_av1*.h'
     - 'gfx/common/videotoolbox_vp9*.h'
     - 'gfx/common/vp9_color.h'
     - 'libretro-common/include/formats/rvp9*.h'
@@ -84,6 +88,10 @@ jobs:
           exit 0
         fi
         exit "$rc"
+    - name: VideoToolbox AV1 configuration and ownership (no decoder device claim)
+      run: |
+        make -C samples/gfx/videotoolbox_av1 check CC=clang SANITIZER=address,undefined
+        CC=clang python3 samples/gfx/videotoolbox_av1/run.py --native-format
     - name: VideoToolbox HEVC hardware decode and pixel ownership
       run: |
         rc=0

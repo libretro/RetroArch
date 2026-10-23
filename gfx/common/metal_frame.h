@@ -23,14 +23,14 @@ typedef struct metal_frame_source
    void *listener;
    const void *backing[3];
    video_color_metadata_t color;
-   unsigned pixfmt, width, height, crop_x, crop_y, yuv;
+   unsigned pixfmt, width, height, crop_x, crop_y, yuv, chroma_position;
 } metal_frame_source_t;
 
 typedef struct metal_frame_view
 {
    void *planes[2];
    video_color_metadata_t color;
-   unsigned pixfmt, width, height, crop_x, crop_y, yuv;
+   unsigned pixfmt, width, height, crop_x, crop_y, yuv, chroma_position;
 } metal_frame_view_t;
 
 struct video_frame_import;

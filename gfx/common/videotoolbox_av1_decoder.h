@@ -175,6 +175,7 @@ static INLINE bool videotoolbox_av1_decoder_open(const rav1_sequence_t *header,
    d->view.width = config.width;
    d->view.height = config.height;
    d->view.pixfmt = config.pixfmt;
+   d->view.chroma_position = config.chroma_position;
    d->pool = pool;
    d->retire = retire;
    d->user = user;

@@ -51,7 +51,9 @@ static void test_cv_pool(void *device, void *cache, void *image,
    assert(metal_frame_cv_pool_export(pool, &metadata, image, &probe) == -1);
    assert(!memcmp(&probe, &sentinel, sizeof(probe)) && !pool->value[0]);
    metadata.crop_x = 0;
+   metadata.chroma_position = 2;
    assert(!metal_frame_cv_pool_export(pool, &metadata, image, &frames[0]));
+   assert(((__bridge RArchMetalFrameLease*)frames[0].owner)->view.chroma_position == 2);
    assert(!metal_frame_cv_pool_export(pool, &metadata, image, &frames[1]));
    assert(frames[0].done != frames[1].done);
    assert(frames[0].done_value == 1 && frames[1].done_value == 1);

@@ -5,7 +5,7 @@
 #ifdef NDEBUG
 #error Assertions are required for this test
 #endif
-#include "../../../gfx/common/videotoolbox_av1.h"
+#include "../../../gfx/common/videotoolbox_av1_decoder.h"
 #include "../vulkan_video_caps/av1_session_data.h"
 
 static rav1_sequence_t sequence;

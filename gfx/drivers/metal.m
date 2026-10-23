@@ -751,6 +751,8 @@ bool metal_frame_create(const metal_frame_source_t *source,
    done   = (__bridge id<RArchMetalSharedEvent>)source->done;
    planar = source->pixfmt == IMAGE_PIXFMT_NV12
       || source->pixfmt == IMAGE_PIXFMT_P010;
+   if (source->chroma_position > 2 || (!planar && source->chroma_position))
+      return false;
    switch (source->pixfmt)
    {
       case IMAGE_PIXFMT_8888:
@@ -811,6 +813,7 @@ bool metal_frame_create(const metal_frame_source_t *source,
       lease->view.crop_x = source->crop_x;
       lease->view.crop_y = source->crop_y;
       lease->view.yuv = source->yuv;
+      lease->view.chroma_position = source->chroma_position;
       memset(&frame, 0, sizeof(frame));
       frame.owner = RARCH_BRIDGE_RETAINED(lease);
       frame.image = (uint64_t)(uintptr_t)frame.owner;
@@ -941,7 +944,20 @@ void *metal_frame_sdr_pipeline_create(void *device)
       " if (any(id >= p.dims.xy)) return;\n"
       " uint2 q = id + p.dims.zw;\n"
       " float luma = y.read(q).r * p.levels.x + p.levels.y;\n"
-      " float2 c = uv.read(q >> 1).rg * p.levels.z + p.levels.w;\n"
+      " float2 chroma;\n"
+      " if (p.mode.y != 0u) {\n"
+      "    float2 at = float2(q) * 0.5f;\n"
+      "    if (p.mode.y == 1u) at.y -= 0.25f;\n"
+      "    int2 lo = int2(floor(at)); float2 f = fract(at);\n"
+      "    int2 hi = min(int2(uv.get_width(), uv.get_height()) - 1,\n"
+      "       int2((p.dims.xy + p.dims.zw - uint2(1)) >> 1));\n"
+      "    float2 a = uv.read(uint2(clamp(lo, int2(0), hi))).rg;\n"
+      "    float2 b = uv.read(uint2(clamp(lo + int2(1,0), int2(0), hi))).rg;\n"
+      "    float2 c = uv.read(uint2(clamp(lo + int2(0,1), int2(0), hi))).rg;\n"
+      "    float2 d = uv.read(uint2(clamp(lo + int2(1,1), int2(0), hi))).rg;\n"
+      "    chroma = mix(mix(a,b,f.x), mix(c,d,f.x), f.y);\n"
+      " } else chroma = uv.read(q >> 1).rg;\n"
+      " float2 c = chroma * p.levels.z + p.levels.w;\n"
       " float3 rgb = saturate(float3(luma) + float3(p.k.x * c.y,\n"
       "    p.k.y * c.x + p.k.z * c.y, p.k.w * c.x));\n"
       " if (p.mode.x == 16u || p.mode.x == 18u) {\n"
@@ -1231,6 +1247,7 @@ int metal_frame_cv_pool_export(metal_frame_cv_pool_t *pool,
       source.pixfmt = metadata->pixfmt; source.width = metadata->width;
       source.height = metadata->height; source.crop_x = metadata->crop_x;
       source.crop_y = metadata->crop_y; source.yuv = metadata->yuv;
+      source.chroma_position = metadata->chroma_position;
       source.color = metadata->color;
       if (!metal_frame_create_cv(&source, image, (void*)pool->cache, out)) return -1;
       pool->value[i] = source.done_value; pool->next = (i + 1) % pool->count;

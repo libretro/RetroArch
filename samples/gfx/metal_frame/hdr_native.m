@@ -18,6 +18,7 @@ static void test_hdr_native(id<MTLDevice> device)
       kCVPixelFormatType_420YpCbCr10BiPlanarFullRange };
    for (unsigned f = 0; f < 4; f++) for (unsigned hlg = 0; hlg < 2; hlg++)
       for (unsigned movie = 0; movie < 2; movie++)
+      for (unsigned position = 0; position < 3; position++)
    {
       @autoreleasepool
       {
@@ -60,6 +61,7 @@ static void test_hdr_native(id<MTLDevice> device)
          source.done = (__bridge void*)done; source.listener = (__bridge void*)listener;
          source.ready_value = 3; source.done_value = 7;
          source.width = 7; source.height = 5; source.crop_x = source.crop_y = 2;
+         source.chroma_position = position;
          source.pixfmt = f < 2 ? IMAGE_PIXFMT_NV12 : IMAGE_PIXFMT_P010;
          assert(ready && done && listener);
          assert(CVMetalTextureCacheCreate(NULL, NULL, device, NULL, &cache) == kCVReturnSuccess);
@@ -122,7 +124,7 @@ static void test_hdr_native(id<MTLDevice> device)
          unsigned negative = 0, bright = 0;
          for (unsigned i = 0; i < 140; i++)
          {
-            double expected = hdr_expected[f * 2 + hlg][i], value = hdr_half(actual[i]);
+            double expected = hdr_expected[position * 8 + f * 2 + hlg][i], value = hdr_half(actual[i]);
             double tolerance = fmax(0.002, fabs(expected) * 0.002);
             if ((i & 3) == 3) assert(actual[i] == 0x3c00);
             if (fabs(value - expected) > tolerance)
@@ -134,5 +136,5 @@ static void test_hdr_native(id<MTLDevice> device)
          assert(negative && bright);
       }
    }
-   puts("Metal HDR native: sixteen cropped PQ/HLG conversions, movie history and CPU transitions preserve linear scRGB");
+   puts("Metal HDR native: 48 cropped PQ/HLG/chroma conversions, movie history and CPU transitions preserve linear scRGB");
 }
