@@ -18,11 +18,16 @@
 
 #include "menu_media_controls.h"
 #include "../gfx/video_defines.h"
+#include "../configuration.h"
 
 void menu_media_controls_update(menu_media_controls_t *media,
       const gfx_media_target_t *target, unsigned width, unsigned height,
       const menu_input_pointer_t *pointer, int64_t now)
 {
+   settings_t *settings = config_get_ptr();
+   gfx_media_controls_configure(&media->controls,
+         settings->uints.media_player_seek_seconds,
+         settings->uints.media_player_controls_timeout);
    if (gfx_media_controls_update(&media->controls, target, width, height, now))
    {
       bool valid = pointer && pointer->type != MENU_POINTER_DISABLED
@@ -127,6 +132,7 @@ void menu_media_controls_draw(menu_media_controls_t *media,
    const gfx_media_view_t *view;
    gfx_media_rect_t bar;
    char elapsed[24], duration[24], caption[56];
+   char seek_back[16], seek_forward[16];
    const char *labels[4];
    unsigned i;
    int64_t position;
@@ -155,7 +161,9 @@ void menu_media_controls_draw(menu_media_controls_t *media,
          (float)(view->layout.panel.y + view->layout.unit), dims,
          0xffffffffU, TEXT_ALIGN_LEFT, scale, false, 0.0f, false);
    labels[0] = view->playback.paused ? ">" : "||";
-   labels[1] = "-5"; labels[2] = "+5"; labels[3] = "[]";
+   snprintf(seek_back, sizeof(seek_back), "-%u", view->seek_seconds);
+   snprintf(seek_forward, sizeof(seek_forward), "+%u", view->seek_seconds);
+   labels[1] = seek_back; labels[2] = seek_forward; labels[3] = "[]";
    for (i = 0; i < 4; i++)
    {
       const gfx_media_rect_t *button = &view->layout.buttons[i];

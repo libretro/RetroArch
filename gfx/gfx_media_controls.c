@@ -22,6 +22,15 @@ void gfx_media_controls_reset(gfx_media_controls_t *c)
    c->last_x = c->last_y = c->hover = c->press_target = -1;
 }
 
+void gfx_media_controls_configure(gfx_media_controls_t *c,
+      unsigned seek_seconds, unsigned hide_seconds)
+{
+   if (!c) return;
+   c->seek_seconds = seek_seconds && seek_seconds <= 600 ? seek_seconds : 5;
+   c->hide_seconds = hide_seconds <= 60 ? hide_seconds : 3;
+   c->configured = true;
+}
+
 static int64_t gfx_media_drag_position(const gfx_media_controls_t *c, int x)
 {
    int offset = x - c->layout.timeline.x;
@@ -46,7 +55,10 @@ bool gfx_media_controls_update(gfx_media_controls_t *c, const gfx_media_target_t
    if (c->target.user != target->user || c->target.identity != target->identity
          || c->target.state != target->state)
    {
+      unsigned seek_seconds = c->configured ? c->seek_seconds : 5;
+      unsigned hide_seconds = c->configured ? c->hide_seconds : 3;
       gfx_media_controls_reset(c);
+      gfx_media_controls_configure(c, seek_seconds, hide_seconds);
       c->target = *target;
       c->release_inhibit = true;
       c->last_activity = now;
@@ -80,9 +92,10 @@ bool gfx_media_controls_update(gfx_media_controls_t *c, const gfx_media_target_t
       c->layout.buttons[i].w = bw;
       c->layout.buttons[i].h = unit;
    }
-   if (!c->playback.paused && !c->playback.seeking && !c->row_focus
+   if (!c->hide_seconds) c->visible = true;
+   if (c->hide_seconds && !c->playback.paused && !c->playback.seeking && !c->row_focus
          && !c->dragging && c->hover < 0 && now > c->last_activity
-         && (uint64_t)now - (uint64_t)c->last_activity > 3000000)
+         && (uint64_t)now - (uint64_t)c->last_activity > (uint64_t)c->hide_seconds * 1000000)
       c->visible = false;
    if (c->playback.paused || c->playback.seeking || c->row_focus || c->dragging)
       c->visible = true;
@@ -94,6 +107,7 @@ static bool gfx_media_button(gfx_media_controls_t *c, unsigned button, int64_t n
    int64_t position = c->playback.seek_failed ? c->playback.seek_target_us
       : c->playback.position_us;
    const int64_t maximum = (int64_t)((~(uint64_t)0) >> 1);
+   int64_t step = (int64_t)(c->seek_seconds ? c->seek_seconds : 5) * 1000000;
    if (button == 0)
       return c->target.pause(c->target.user, !c->playback.paused, now);
    if (!c->playback.seekable) return false;
@@ -102,8 +116,8 @@ static bool gfx_media_button(gfx_media_controls_t *c, unsigned button, int64_t n
       if (!c->target.pause(c->target.user, true, now)) return false;
       return c->target.seek(c->target.user, 0, now);
    }
-   position = button == 1 ? (position > 5000000 ? position - 5000000 : 0)
-      : position > maximum - 5000000 ? maximum : position + 5000000;
+   position = button == 1 ? (position > step ? position - step : 0)
+      : position > maximum - step ? maximum : position + step;
    return c->target.seek(c->target.user, position, now);
 }
 
@@ -243,6 +257,7 @@ void gfx_media_controls_publish(const gfx_media_controls_t *c, gfx_media_mailbox
       v->playback = c->playback;
       v->drag_us = c->drag_us;
       v->focus = c->focus;
+      v->seek_seconds = c->seek_seconds ? c->seek_seconds : 5;
       v->hover = c->hover;
       v->visible = c->visible;
       v->row_focus = c->row_focus;

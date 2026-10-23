@@ -33,6 +33,8 @@
 #include "../../../configuration.h"
 #include "../../../retroarch.h"
 #include "../../../config.def.h"
+#include "../../../gfx/gfx_display.h"
+#include "../../../gfx/gfx_animation.h"
 #include "../../../menu/menu_setting.h"
 #include "../../../menu/menu_entries.h"
 #include "../../../frontend/frontend_driver.h"
@@ -154,15 +156,77 @@ static long pick_uint(enum msg_hash_enums e, const char *want)
    return -1;
 }
 
+static void media_settings(const char *cfg_path)
+{
+   settings_t *settings = config_get_ptr();
+   file_list_t *buf;
+   menu_file_list_cbs_t *cbs;
+   size_t i;
+   bool found = false;
+   bool show_browser = settings->bools.settings_show_file_browser;
+   bool kiosk = settings->bools.kiosk_mode_enable;
+   config_file_t *cfg;
+   unsigned seek = 0, timeout = 1;
+   CHECK(settings->uints.media_player_seek_seconds == 5
+         && settings->uints.media_player_controls_timeout == 3, "media control defaults");
+   settings->bools.settings_show_file_browser = true;
+   settings->bools.kiosk_mode_enable = false;
+   open_list(DISPLAYLIST_LOAD_CONTENT_LIST,
+         MENU_ENUM_LABEL_LOAD_CONTENT_LIST_STR, MENU_ENUM_LABEL_LOAD_CONTENT_LIST);
+   buf = selection_buf();
+   for (i = 0; buf && i + 1 < buf->size; i++)
+      if (string_is_equal(buf->list[i].label, MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS_STR))
+      {
+         found = string_is_equal(buf->list[i + 1].label, MENU_ENUM_LABEL_MEDIA_PLAYER_SETTINGS_STR);
+         break;
+      }
+   CHECK(found, "Media Player appears directly below File Browser");
+   cbs = entry_cbs(MENU_ENUM_LABEL_MEDIA_PLAYER_SETTINGS_STR);
+   CHECK(cbs && cbs->action_ok, "Media Player has an OK action");
+   CHECK(string_is_equal(msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MEDIA_PLAYER_SETTINGS_LIST),
+            MENU_ENUM_LABEL_DEFERRED_MEDIA_PLAYER_SETTINGS_LIST_STR), "deferred media label resolves");
+   if (found && cbs && cbs->action_ok)
+   {
+      i++;
+      cbs->action_ok(buf->list[i].path, buf->list[i].label, buf->list[i].type, i, 0);
+      menu_driver_iterate(menu_state_get_ptr(), disp_get_ptr(), anim_get_ptr(),
+            settings, MENU_ACTION_NOOP, cpu_features_get_time_usec());
+      CHECK(list_has_label(MENU_ENUM_LABEL_MEDIA_PLAYER_SEEK_SECONDS_STR)
+            && list_has_label(MENU_ENUM_LABEL_MEDIA_PLAYER_CONTROLS_TIMEOUT_STR),
+            "Media Player OK opens both backed settings");
+   }
+   CHECK(pick_uint(MENU_ENUM_LABEL_MEDIA_PLAYER_SEEK_SECONDS, "12") == 12, "seek step is editable");
+   CHECK(pick_uint(MENU_ENUM_LABEL_MEDIA_PLAYER_SEEK_SECONDS, "0") == -1, "zero seek step is not offered");
+   CHECK(pick_uint(MENU_ENUM_LABEL_MEDIA_PLAYER_CONTROLS_TIMEOUT, "0") == 0, "controls can remain visible");
+   CHECK(config_save_file(cfg_path), "media settings save");
+   cfg = config_file_new_from_path_to_string(cfg_path);
+   CHECK(cfg && config_get_uint(cfg, "media_player_seek_seconds", &seek) && seek == 12
+         && config_get_uint(cfg, "media_player_controls_timeout", &timeout) && timeout == 0,
+         "saved media settings retain selected values");
+   if (cfg) config_file_free(cfg);
+   settings->bools.kiosk_mode_enable = true;
+   open_list(DISPLAYLIST_LOAD_CONTENT_LIST,
+         MENU_ENUM_LABEL_LOAD_CONTENT_LIST_STR, MENU_ENUM_LABEL_LOAD_CONTENT_LIST);
+   CHECK(!list_has_label(MENU_ENUM_LABEL_MEDIA_PLAYER_SETTINGS_STR), "kiosk hides media settings");
+   settings->bools.kiosk_mode_enable = false;
+   settings->bools.settings_show_file_browser = false;
+   open_list(DISPLAYLIST_LOAD_CONTENT_LIST,
+         MENU_ENUM_LABEL_LOAD_CONTENT_LIST_STR, MENU_ENUM_LABEL_LOAD_CONTENT_LIST);
+   CHECK(!list_has_label(MENU_ENUM_LABEL_MEDIA_PLAYER_SETTINGS_STR), "browser settings visibility respected");
+   settings->bools.settings_show_file_browser = show_browser;
+   settings->bools.kiosk_mode_enable = kiosk;
+}
+
 int main(int argc, char *argv[])
 {
    static char cfg_path[640];
    char fixture_dir[128], cmd[300];
    char *rarch_argv[8];
    int rarch_argc = 0;
+   const char *menu_driver = argc > 1 ? argv[1] : "rgui";
    size_t n;
 
-   (void)argc; (void)argv;
+
    snprintf(fixture_dir, sizeof(fixture_dir), "/tmp/menu_net_%ld", (long)getpid());
    snprintf(cmd, sizeof(cmd), "mkdir -p %s", fixture_dir);
    if (system(cmd) != 0)
@@ -174,8 +238,8 @@ int main(int argc, char *argv[])
          return 1;
       fprintf(cfg, "video_driver = \"null\"\naudio_driver = \"null\"\n"
             "input_driver = \"null\"\ninput_joypad_driver = \"null\"\n"
-            "menu_driver = \"rgui\"\nvideo_threaded = \"false\"\n"
-            "smb_client_enable = \"true\"\n");
+            "menu_driver = \"%s\"\nvideo_threaded = \"false\"\n"
+            "smb_client_enable = \"true\"\n", menu_driver);
 #if defined(HAVE_CLOUDSYNC) && defined(HAVE_NFSCLIENT)
       fprintf(cfg, "cloud_sync_nfs_subdir = \"retroarch\"\n");
 #endif
@@ -201,6 +265,9 @@ int main(int argc, char *argv[])
       fprintf(stderr, "FAIL: the menu came up without an entry list\n");
       return 1;
    }
+
+   CHECK(string_is_equal(menu_driver_ident(), menu_driver), "requested menu initialized");
+   media_settings(cfg_path);
 
    /* the labels the deferred lists are pushed with must be identifiers */
 #ifdef HAVE_SMBCLIENT

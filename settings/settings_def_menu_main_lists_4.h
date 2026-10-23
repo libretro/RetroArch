@@ -90,6 +90,10 @@ S_ACTION(POWER_MANAGEMENT_SETTINGS,
       "power_management_settings",
       "Power Management",
       "Change power management settings.")
+S_ACTION(MEDIA_PLAYER_SETTINGS,
+      "media_player_settings",
+      "Media Player",
+      "Change built-in fullscreen media playback settings.")
 S_ACTION_EX(MENU_FILE_BROWSER_SETTINGS,
       "menu_file_browser_settings", SD_FLAG_LAKKA_ADVANCED, NULL, NULL, 0,
       "File Browser",

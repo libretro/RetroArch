@@ -38,6 +38,8 @@ typedef struct gfx_media_controls
    int64_t last_activity, drag_us;
    int last_x, last_y, hover, press_target;
    unsigned focus;
+   unsigned seek_seconds, hide_seconds;
+   bool configured;
    bool visible, row_focus, held, dragging, release_inhibit;
 } gfx_media_controls_t;
 
@@ -50,6 +52,7 @@ typedef struct gfx_media_view
    gfx_media_playback_state_t playback;
    int64_t drag_us;
    unsigned focus;
+   unsigned seek_seconds;
    int hover;
    bool visible, row_focus, dragging;
 } gfx_media_view_t;
@@ -65,6 +68,8 @@ bool gfx_media_controls_consume(gfx_media_mailbox_t *m, gfx_media_view_t *out);
 void gfx_media_controls_thumbnail_target(gfx_thumbnail_t *thumbnail, gfx_media_target_t *out);
 
 void gfx_media_controls_reset(gfx_media_controls_t *c);
+void gfx_media_controls_configure(gfx_media_controls_t *c,
+      unsigned seek_seconds, unsigned hide_seconds);
 /* Cancel held/drag state on focus loss, device loss or context reset. */
 void gfx_media_controls_cancel(gfx_media_controls_t *c);
 bool gfx_media_controls_update(gfx_media_controls_t *c, const gfx_media_target_t *target,
