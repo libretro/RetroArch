@@ -63,6 +63,10 @@ bool record_android_capture_pool_prepare_device_destroy(
       record_android_capture_pool_t *pool, bool queue_quiesced);
 bool record_android_capture_pool_after_device_destroy(
       record_android_capture_pool_t *pool);
+/* Render-owner cached proof only. prepared means Vulkan children retired;
+ * destroyed means the matching actual device destruction was observed. */
+bool record_android_capture_pool_device_state(
+      const record_android_capture_pool_t *pool, bool *destroyed);
 /* Cold renderer, callers quiescent. Refuses live resources; does not free I/O.
  * Device stays alive unless the two-phase device retirement completed. */
 bool record_android_capture_pool_free(record_android_capture_pool_t *pool);

@@ -1906,9 +1906,8 @@ static void video_thread_lend_forget(thread_video_t *thr, uintptr_t id)
       }
 }
 
-/* Video thread: take the whole in list, upload each
- * node with the driver directly (this is the driver's thread), release
- * the image, and queue the handle for the main thread. */
+/* Video thread: run posted uploads or explicit cold jobs on their owner,
+ * release each payload, and return its result to the main thread. */
 static void video_thread_async_run(thread_video_t *thr)
 {
    video_thread_async_load_t *n;
@@ -1927,7 +1926,15 @@ static void video_thread_async_run(thread_video_t *thr)
    while (n)
    {
       video_thread_async_load_t *next = VIDEO_THREAD_ASYNC_NEXT(n);
-      if (n->kind == VIDEO_THREAD_ASYNC_IMPORT)
+      if (n->kind == VIDEO_THREAD_ASYNC_JOB)
+      {
+         const video_thread_async_job_t *job =
+               (const video_thread_async_job_t *)n->img;
+         n->made = n->dropped = 0;
+         n->handle = job && job->run
+               ? job->run(driver_data, poke, job->user) : 0;
+      }
+      else if (n->kind == VIDEO_THREAD_ASYNC_IMPORT)
       {
          enum video_texture_update r = VIDEO_TEXTURE_UPDATE_REFUSED;
          uintptr_t id                = n->handle;

@@ -91,7 +91,7 @@ jobs:
               record/record_mux_mediacodec.c record/record_mediacodec_worker.c \
               record/record_mediacodec_surface.c record/record_android_capture_images.c \
               record/record_android_capture_submit.c record/record_android_capture_pipe.c \
-              record/record_android_capture_pool.c record/record_android_capture_device.c record/record_android_capture_ops.c \
+              record/record_android_capture_pool.c record/record_android_capture_device.c record/record_android_capture_request.c record/record_android_capture_ops.c \
               record/record_android_capture_egl.c \
               record/record_android_capture_gl.c \
               record/record_android_capture_draw.c record/record_mediacodec_gpu_worker.c \
@@ -292,6 +292,7 @@ jobs:
           printf '#include "%s/record/record_android_capture_images.c"\n' "$PWD" >> "$unity"
           printf '#include "%s/record/record_android_capture_submit.c"\n' "$PWD" >> "$unity"
           printf '#include "%s/record/record_android_capture_pipe.c"\n' "$PWD" >> "$unity"
+          printf '#include "%s/record/record_android_capture_request.c"\n' "$PWD" >> "$unity"
           printf '#include "%s/record/record_android_capture_device.c"\n' "$PWD" >> "$unity"
           printf '#include "%s/record/record_android_capture_pool.c"\n' "$PWD" >> "$unity"
           printf '#include "%s/record/record_android_capture_ops.c"\n' "$PWD" >> "$unity"
@@ -319,7 +320,7 @@ jobs:
                     exit 1
                   fi
                 done
-                for record_source in record_mediacodec_encoder record_mux_mediacodec record_mediacodec_worker record_mediacodec_surface record_android_capture_images record_android_capture_submit record_android_capture_pipe record_android_capture_pool record_android_capture_device record_android_capture_gl record_android_capture_draw record_mediacodec_gpu_worker record_mediacodec_file record_session_mediacodec record_dispatch_mediacodec record_gpu_dispatch_mediacodec record_gpu_queue record_audio_queue; do
+                for record_source in record_mediacodec_encoder record_mux_mediacodec record_mediacodec_worker record_mediacodec_surface record_android_capture_images record_android_capture_submit record_android_capture_pipe record_android_capture_pool record_android_capture_device record_android_capture_request record_android_capture_gl record_android_capture_draw record_mediacodec_gpu_worker record_mediacodec_file record_session_mediacodec record_dispatch_mediacodec record_gpu_dispatch_mediacodec record_gpu_queue record_audio_queue; do
                   "$bin/$target$api-clang" \
                     -std=c89 -pedantic -Wall -Wextra -Werror -Wno-long-long -Wno-c99-extensions \
                     -DHAVE_THREADS -DHAVE_DYLIB -Wframe-larger-than=2048 -Ilibretro-common/include -Igfx/include \

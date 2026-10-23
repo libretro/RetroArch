@@ -275,6 +275,14 @@ bool record_android_capture_pool_after_device_destroy(
    return true;
 }
 
+bool record_android_capture_pool_device_state(
+      const record_android_capture_pool_t *p, bool *destroyed)
+{
+   if (destroyed)
+      *destroyed = p && p->destroyed;
+   return !p || p->prepared;
+}
+
 static void record_acpool_renderer_release(void *context, bool destroyed)
 {
    record_android_capture_pool_t *p = (record_android_capture_pool_t *)context;

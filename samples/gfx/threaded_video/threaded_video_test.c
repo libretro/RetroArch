@@ -3404,6 +3404,150 @@ static void asyncwin_done_cb(void *user, uintptr_t handle)
 
 static void asyncwin_release_cb(void *img) { (void)img; }
 
+/* Cold native setup uses the same caller-owned asynchronous node as texture
+ * work, but its opaque result must never reach unload_texture(). */
+#define COLD_JOB_COUNT 8
+#define COLD_JOB_RESULT (~(uintptr_t)0 - 1)
+struct cold_job_test
+{
+   video_thread_async_load_t node;
+   video_thread_async_job_t job;
+   void *expected_data;
+   uintptr_t main_thread, run_thread, done_thread, result;
+   unsigned runs, releases, dones;
+   bool wrong_data;
+};
+static const video_poke_interface_t *cold_job_inner_poke;
+static video_poke_interface_t cold_job_poke;
+static retro_atomic_int_t cold_job_held, cold_job_continue;
+static unsigned cold_job_unloads;
+static void cold_job_unload(void *data, bool threaded, uintptr_t handle);
+static const video_driver_t *cold_job_inner_driver;
+static video_driver_t cold_job_driver;
+static void cold_job_get_poke(void *data, const video_poke_interface_t **out)
+{
+   cold_job_inner_driver->poke_interface(data, &cold_job_inner_poke);
+   cold_job_poke = *cold_job_inner_poke;
+   cold_job_poke.unload_texture = cold_job_unload;
+   *out = &cold_job_poke;
+}
+static uintptr_t cold_job_run(void *data, const video_poke_interface_t *poke,
+      void *user)
+{
+   struct cold_job_test *t = (struct cold_job_test *)user;
+   t->runs++;
+   t->run_thread = sthread_get_current_thread_id();
+   t->wrong_data = data != t->expected_data || poke != &cold_job_poke;
+   if (!retro_atomic_load_acquire_int(&cold_job_continue))
+   {
+      unsigned attempt;
+      retro_atomic_store_release_int(&cold_job_held, 1);
+      for (attempt = 0; attempt < 2000
+            && !retro_atomic_load_acquire_int(&cold_job_continue); attempt++)
+         retro_sleep(1);
+      retro_atomic_store_release_int(&cold_job_held, 0);
+   }
+   return COLD_JOB_RESULT;
+}
+static void cold_job_release(void *payload)
+{
+   video_thread_async_job_t *job = (video_thread_async_job_t *)payload;
+   struct cold_job_test *t = (struct cold_job_test *)job->user;
+   t->releases++;
+}
+static void cold_job_done(void *user, uintptr_t result)
+{
+   struct cold_job_test *t = (struct cold_job_test *)user;
+   t->dones++;
+   t->done_thread = sthread_get_current_thread_id();
+   t->result = result;
+}
+static void cold_job_unload(void *data, bool threaded, uintptr_t handle)
+{
+   if (handle == COLD_JOB_RESULT)
+      cold_job_unloads++;
+   else if (cold_job_inner_poke && cold_job_inner_poke->unload_texture)
+      cold_job_inner_poke->unload_texture(data, threaded, handle);
+}
+static void lane_async_cold_jobs(void)
+{
+   static struct cold_job_test nodes[COLD_JOB_COUNT];
+   video_driver_state_t *video = video_state_get_ptr();
+   thread_video_t *thr;
+   uintptr_t main_thread = sthread_get_current_thread_id();
+   unsigned i, cycle, had = failures;
+   set_threaded_via_setting(true);
+   run_frames(3);
+   expect_wrapper(true, "cold native jobs");
+   thr = (thread_video_t *)video->data;
+   video_thread_wait_idle();
+   cold_job_inner_driver = thr->driver;
+   cold_job_driver = *thr->driver;
+   cold_job_driver.poke_interface = cold_job_get_poke;
+   set_driver(thr, &cold_job_driver);
+   set_poke_from(thr, &cold_job_driver);
+   for (cycle = 0; cycle < 2; cycle++)
+   {
+      memset(nodes, 0, sizeof(nodes));
+      retro_atomic_int_init(&cold_job_held, 0);
+      retro_atomic_int_init(&cold_job_continue, 0);
+      cold_job_unloads = 0;
+      for (i = 0; i < COLD_JOB_COUNT; i++)
+      {
+         nodes[i].expected_data = thr->driver_data;
+         nodes[i].main_thread = main_thread;
+         nodes[i].job.run = cold_job_run;
+         nodes[i].job.user = &nodes[i];
+         nodes[i].node.kind = VIDEO_THREAD_ASYNC_JOB;
+         nodes[i].node.img = &nodes[i].job;
+         nodes[i].node.user = &nodes[i];
+         nodes[i].node.done = cold_job_done;
+         nodes[i].node.release = cold_job_release;
+         nodes[i].node.made = 1;
+         CHECK(video_thread_async_post(&nodes[i].node), "cold job %u refused", i);
+         if (!i)
+         {
+            unsigned attempt;
+            for (attempt = 0; attempt < 2000
+                  && !retro_atomic_load_acquire_int(&cold_job_held); attempt++)
+               retro_sleep(1);
+            CHECK(retro_atomic_load_acquire_int(&cold_job_held),
+                  "cold native job never reached render owner");
+         }
+      }
+      CHECK(retro_atomic_load_acquire_int(&cold_job_held),
+            "posting cold jobs blocked until worker completion");
+      retro_atomic_store_release_int(&cold_job_continue, 1);
+      if (!cycle)
+      {
+         run_frames(3);
+         video_thread_wait_idle();
+         run_frames(1);
+      }
+      else
+         set_threaded_via_setting(false);
+      for (i = 0; i < COLD_JOB_COUNT; i++)
+      {
+         CHECK(nodes[i].dones == 1 && nodes[i].releases == 1,
+               "cold job %u: %u completions, %u payload releases", i,
+               nodes[i].dones, nodes[i].releases);
+         CHECK(nodes[i].done_thread == main_thread,
+               "cold job completion ran off main owner");
+         CHECK(nodes[i].runs <= 1 && !nodes[i].wrong_data,
+               "cold job ran twice or with the wrong driver");
+         CHECK(!nodes[i].runs || nodes[i].run_thread != main_thread,
+               "cold native job ran on main owner");
+         CHECK(cycle || (nodes[i].runs == 1
+                  && nodes[i].result == COLD_JOB_RESULT && !nodes[i].node.made),
+               "cold job result was treated as a texture");
+      }
+      CHECK(!cold_job_unloads, "opaque cold job result reached texture unload");
+   }
+   run_frames(2);
+   if (failures == had)
+      fprintf(stderr, "[pass] asynchronous cold native job ownership and teardown lane\n");
+}
+
 static void lane_async_done_main_thread(void)
 {
    unsigned had = failures;
@@ -11607,6 +11751,12 @@ int main(int argc, char *argv[])
       goto shutdown;
    }
 
+   if (getenv("HARNESS_COLD_JOBS_ONLY"))
+   {
+      lane_async_cold_jobs();
+      goto shutdown;
+   }
+
    if (getenv("HARNESS_SURFACE_PITCH_ONLY"))
    {
       lane_surface_pitch();
@@ -11679,6 +11829,7 @@ int main(int argc, char *argv[])
    lane_headset_calls();
    lane_headset_target_rate();
    lane_shader_params();
+   lane_async_cold_jobs();
    lane_async_texture_load();
    if (!real_driver())
       lane_present_repeat();

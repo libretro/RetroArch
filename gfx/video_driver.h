@@ -1048,6 +1048,9 @@ typedef struct video_device_info
    /* Vulkan/D3D12 immutable render queue, borrowed with the device.
     * Queue submission still requires the driver's existing synchronization. */
    void *queue;
+   /* Borrowed existing Vulkan queue lock, cold render-owner jobs only.
+    * Never retain across driver teardown or acquire from frame publication. */
+   void *queue_lock;
    retro_proc_address_t get_instance_proc_addr;
    /* The driver's queue family: an image the driver imports is either
     * exclusive to it or shared with it (concurrent). */

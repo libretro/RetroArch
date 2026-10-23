@@ -227,15 +227,29 @@ enum video_thread_async_kind
 {
    VIDEO_THREAD_ASYNC_LOAD = 0,
    VIDEO_THREAD_ASYNC_UPDATE,
-   VIDEO_THREAD_ASYNC_IMPORT
+   VIDEO_THREAD_ASYNC_IMPORT,
+   VIDEO_THREAD_ASYNC_JOB
 };
+
+/* Explicit cold operation on the render owner. img points to this payload for
+ * JOB nodes. done/release follow the same ownership rules as uploads; the
+ * result is opaque and must never be treated as a texture. A teardown reply
+ * of zero does not prove that an operation never ran. No frame capture uses
+ * this path. Node/completion storage survives through done(); payload ownership
+ * follows release, as for texture uploads. run must handle a missing driver. */
+typedef struct video_thread_async_job
+{
+   uintptr_t (*run)(void *driver_data, const video_poke_interface_t *poke,
+         void *user);
+   void *user;
+} video_thread_async_job_t;
 
 typedef struct video_thread_async_load
 {
    /* The wrapper's list link, first so a node and its link share an
     * address; the wrapper's from post until done(). */
    mpsc_stack_node_t link;
-   void *img;                      /* struct texture_image*, ours until released */
+   void *img;                      /* Payload, ours until released. */
    void *user;
    video_thread_async_done_t    done;
    video_thread_async_release_t release;

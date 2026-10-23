@@ -14873,6 +14873,7 @@ static bool vulkan_get_device(void *data, video_device_info_t *info)
    info->physical_device        = (void*)vk->context->gpu;
    info->device                 = (void*)vk->context->device;
    info->queue                  = (void*)vk->context->queue;
+   info->queue_lock             = (void*)vk->context->queue_lock;
    info->get_instance_proc_addr = (retro_proc_address_t)
       vulkan_symbol_wrapper_instance_proc_addr();
    info->queue_family           = vk->context->graphics_queue_index;
