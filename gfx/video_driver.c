@@ -1213,7 +1213,9 @@ static struct shader_precompile *shader_precompile_start(
    task->flags  |= RETRO_TASK_FLG_MUTE;
    if (!task_queue_push(task))
    {
-      /* the queue freed the task; nothing of it runs */
+      /* A refused task is still the caller's: the queue neither runs
+       * nor frees it, so its cleanup never drops the task's reference. */
+      free(task);
       retro_atomic_int_init(&p->refs, 1);
       goto fail;
    }
