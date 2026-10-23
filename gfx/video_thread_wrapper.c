@@ -2767,10 +2767,6 @@ static void video_thread_loop(void *data)
             retro_eventcount_commit_wait(&thr->work, key);
       }
 
-      /* One GL context handed between the threads: this pass holds it,
-       * and gives it back below before the next park. */
-      video_thread_hw_ctx_take(thr, true);
-
       /* Claim the oldest filled slot: from the claim until completion
        * the slot is this thread's and the main thread routes new
        * frames to the other one. The compare-and-swap is what keeps a
@@ -2799,6 +2795,12 @@ static void video_thread_loop(void *data)
           * whole render later at completion. */
          retro_eventcount_notify(&thr->frame.ring);
       }
+
+      /* One GL context handed between the threads: this pass holds it
+       * from here, and gives it back at the end. After the claim, which
+       * needs no GL: a push waiting for ring space while it holds the
+       * context is answered by the claim, not by this wait. */
+      video_thread_hw_ctx_take(thr, true);
 
       /* A command is in the mailbox for as long as send_cmd says so:
        * the reply clears it, so a pass after the reply - this thread
@@ -4003,13 +4005,15 @@ static bool video_thread_frame(void *data, const void *frame_,
    hw_slot = -1;
    if (frame_ == RETRO_HW_FRAME_BUFFER_VALID)
    {
-      hw_slot = video_thread_hw_publish(thr, &taken_back);
-      /* One GL context: the frame is captured, the present needs the
-       * context now; taken back after the hold below, before the core
-       * gets video_refresh() back. A push from outside the core's run
-       * (the menu's) held nothing and takes nothing back. */
-      ctx_held = video_thread_hw_ctx_release(thr, false);
-      frame_  = NULL;
+      /* One GL context: the publish gives it up once the frame is
+       * captured, the present needs it; taken back after the hold
+       * below, before the core gets video_refresh() back. A push from
+       * outside the core's run (the menu's) held nothing and takes
+       * nothing back. */
+      ctx_held = video_thread_hw_ctx_held(thr);
+      hw_slot  = video_thread_hw_publish(thr, &taken_back);
+      video_thread_hw_ctx_release(thr, false);
+      frame_   = NULL;
       /* No ring: the driver cannot take a hardware frame from this
        * thread. frame_ is NULL now, which this function treats as a
        * dupe, rather than read as pixels. */

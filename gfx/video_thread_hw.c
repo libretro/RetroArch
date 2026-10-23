@@ -1145,6 +1145,12 @@ int video_thread_hw_publish(thread_video_t *thr, unsigned *taken_back)
       /* Fence the core's rendering into the slot, on its context. */
       if (!thr->poke->hw_ring_capture(thr->driver_data, published, NULL, 0))
          return -1;
+      /* One context: the present needs it from here, and the waits
+       * below are for the video thread's work - which needs it too.
+       * Given up before any of them; the push takes it back after the
+       * video thread's turn. */
+      if (ring->handoff)
+         video_thread_hw_ctx_release(thr, false);
    }
 #ifdef HAVE_D3D12
    if (ring->api == HW_API_D3D12)
@@ -1209,6 +1215,12 @@ int video_thread_hw_publish(thread_video_t *thr, unsigned *taken_back)
       hw_wait_queued(ring, ring->index);
 #endif
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
+   /* One context: its commands run in order, the video thread's draw
+    * of the next slot ahead of what the core puts there after its
+    * turn; and the fences are the video thread's to wait, on the
+    * context this thread no longer holds. */
+   if (ring->api == HW_API_GL && ring->handoff)
+      return (int)published;
    if (ring->api == HW_API_GL)
       hw_wait_queued(ring, ring->index);
 #endif
@@ -1566,6 +1578,13 @@ void video_thread_hw_ctx_take(thread_video_t *thr, bool video_thread)
    video_context_driver_bind_hw_render(!video_thread);
 }
 
+/* Whether the main thread holds the context. */
+bool video_thread_hw_ctx_held(thread_video_t *thr)
+{
+   hw_ring_t *ring = hw_handoff_ring(thr);
+   return ring && retro_atomic_load_acquire_int(&ring->ctx_owner) == HW_CTX_MAIN;
+}
+
 /* Give the context up on the calling thread, if it holds it: unbound
  * here first, since a context current on this thread cannot be made
  * current on the other. True when it was held. */
@@ -1699,6 +1718,7 @@ void video_thread_hw_prepare_context(thread_video_t *thr) { (void)thr; }
 bool video_thread_hw_bind_core_context(void *data) { (void)data; return false; }
 bool video_thread_hw_handoff(thread_video_t *thr) { (void)thr; return false; }
 void video_thread_hw_ctx_take(thread_video_t *thr, bool video_thread) { (void)thr; (void)video_thread; }
+bool video_thread_hw_ctx_held(thread_video_t *thr) { (void)thr; return false; }
 bool video_thread_hw_ctx_release(thread_video_t *thr, bool video_thread) { (void)thr; (void)video_thread; return false; }
 void video_thread_hw_ctx_retake(thread_video_t *thr) { (void)thr; }
 uintptr_t video_thread_hw_get_current_framebuffer(void *data) { (void)data; return 0; }

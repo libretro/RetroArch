@@ -11,6 +11,10 @@
  *   noshare       eglCreateContext with a share context fails, so the
  *                 driver has one context and the ring hands it between
  *                 the threads (what the Switch's context declares)
+ *   slowswap      eglSwapBuffers takes 150 ms, longer than the push
+ *                 waits for the video thread's turn with the one
+ *                 context: the core runs ahead and the frame ring
+ *                 fills while the push holds the context
  *
  * It also says on stderr when a pbuffer is made, which is how the test
  * knows the pbuffer runs were pbuffer runs.
@@ -21,6 +25,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <EGL/egl.h>
+#include <unistd.h>
 
 static int shim_hides(const char *what)
 {
@@ -86,4 +91,13 @@ EGLContext eglCreateContext(EGLDisplay dpy, EGLConfig config,
       return EGL_NO_CONTEXT;
    }
    return real(dpy, config, share, attrib_list);
+}
+
+EGLBoolean eglSwapBuffers(EGLDisplay dpy, EGLSurface surface)
+{
+   EGLBoolean (*real)(EGLDisplay, EGLSurface) =
+      (EGLBoolean (*)(EGLDisplay, EGLSurface))dlsym(RTLD_NEXT, "eglSwapBuffers");
+   if (shim_hides("slowswap"))
+      usleep(150000);
+   return real(dpy, surface);
 }

@@ -19,6 +19,10 @@ one of those is the path taken:
   threaded, pbuffer config  a pbuffer on a config searched for
   threaded, one context     no share context can be made: the driver's
                             one context is handed between the threads
+  threaded, one context,    the same with a swap slower than the push's
+  slow swap                 wait for the video thread's turn: the core
+                            runs ahead and the ring fills, and the run
+                            must still finish
   unthreaded                the driver's own context, as ever
 
 Needs Xvfb (xvfb-run) and a software GL (Mesa llvmpipe).
@@ -181,6 +185,7 @@ def main():
         ("threaded, pbuffer config", True,  "surfaceless,pbuffer", False),
         ("threaded, one context",    True,  "noshare",            False),
         ("threaded, one context, cached FBO", True, "noshare",    True),
+        ("threaded, one context, slow swap", True, "noshare,slowswap", False),
         ("threaded, cached FBO",     True,  "",                   True),
         ("unthreaded",               False, "",                   False),
     ]

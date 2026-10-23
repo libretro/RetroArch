@@ -117,6 +117,7 @@ void video_thread_hw_prepare_context(struct thread_video *thr);
 bool video_thread_hw_handoff(struct thread_video *thr);
 void video_thread_hw_ctx_take(struct thread_video *thr, bool video_thread);
 bool video_thread_hw_ctx_release(struct thread_video *thr, bool video_thread);
+bool video_thread_hw_ctx_held(struct thread_video *thr);
 /* Main thread, after a push released: waits the video thread's turn
  * with the context, bounded, then takes it back. */
 void video_thread_hw_ctx_retake(struct thread_video *thr);
