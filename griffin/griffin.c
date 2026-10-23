@@ -1593,6 +1593,7 @@ WIFI
 RECORDING
 ============================================================ */
 #include "../record/record_driver.c"
+#include "../record/record_gpu_reinit.c"
 #include "../record/drivers/record_wav.c"
 #include "../record/drivers/record_nvenc.c"
 #include "../record/drivers/record_metal.c"

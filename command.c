@@ -6976,6 +6976,9 @@ bool command_event_reinit(const int flags)
    if (runloop_is_content_switching())
       return false;
 
+   if (recording_gpu_defer_reinit(flags))
+      return true;
+
 
 
    {

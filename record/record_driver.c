@@ -79,9 +79,15 @@ void recording_gpu_frame_info(struct video_frame_info *info,bool capture)
    record_nvenc_frame_info(info,capture);
 #endif
 }
-void recording_gpu_poll(void) { record_nvenc_poll(); record_metal_poll(); }
+void recording_gpu_poll(void)
+{
+   record_nvenc_poll();
+   record_metal_poll();
+   recording_gpu_reinit_poll();
+}
 void recording_gpu_stop(void) { record_nvenc_stop(); record_metal_stop(); }
 bool recording_gpu_pending(void) { return record_nvenc_pending() || record_metal_pending(); }
+
 bool recording_gpu_cancel_start(void)
 {
    bool nvenc=record_nvenc_cancel_start();
