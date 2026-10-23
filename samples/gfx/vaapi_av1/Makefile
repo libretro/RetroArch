@@ -10,12 +10,14 @@ ifneq ($(SANITIZER),)
 CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
-all: export_test$(EXE) pool_test$(EXE) submit_test$(EXE) picture_test$(EXE) session_test$(EXE) runtime_test$(EXE) old_sdk_test$(EXE) tiles_test$(EXE) tiles_trace_test$(EXE)
+all: decoder_trace_test$(EXE) busy_test$(EXE) decoder_test$(EXE) export_test$(EXE) pool_test$(EXE) submit_test$(EXE) picture_test$(EXE) session_test$(EXE) runtime_test$(EXE) old_sdk_test$(EXE) tiles_test$(EXE) tiles_trace_test$(EXE)
 session_test$(EXE): session_test.c ../vaapi_hevc/session_test.c ../../../gfx/common/vaapi_hevc_session.c ../../../gfx/common/vaapi_av1_session.h
 	$(CC) $(CFLAGS) session_test.c -o $@ $(LDFLAGS)
 runtime_test$(EXE): runtime_test.c ../vaapi_hevc/runtime_test.c ../vaapi_hevc/session_test.c ../vaapi_hevc/submit_test.c ../../../gfx/common/vaapi_hevc_runtime.c ../../../gfx/common/vaapi_av1_runtime.h ../../../gfx/common/vaapi_hevc_session.c ../../../gfx/common/vaapi_hevc_submit.c
 	$(CC) $(CFLAGS) runtime_test.c -o $@ $(LDFLAGS)
 check: all
+	$(RUNNER) ./busy_test$(EXE)
+	$(RUNNER) ./decoder_test$(EXE)
 	$(RUNNER) ./export_test$(EXE)
 	$(RUNNER) ./pool_test$(EXE)
 	$(RUNNER) ./submit_test$(EXE)
@@ -25,7 +27,7 @@ check: all
 	$(RUNNER) ./old_sdk_test$(EXE)
 	$(RUNNER) ./tiles_test$(EXE)
 clean:
-	rm -f export_test export_test.exe pool_test pool_test.exe submit_test submit_test.exe picture_test picture_test.exe tiles_test tiles_test.exe tiles_trace_test tiles_trace_test.exe old_sdk_test old_sdk_test.exe session_test session_test.exe runtime_test runtime_test.exe
+	rm -f decoder_trace_test decoder_trace_test.exe busy_test busy_test.exe decoder_test decoder_test.exe export_test export_test.exe pool_test pool_test.exe submit_test submit_test.exe picture_test picture_test.exe tiles_test tiles_test.exe tiles_trace_test tiles_trace_test.exe old_sdk_test old_sdk_test.exe session_test session_test.exe runtime_test runtime_test.exe
 .PHONY: all check clean
 
 old_sdk_test$(EXE): old_sdk_test.c ../../../gfx/common/vaapi_hevc_session.c ../../../gfx/common/vaapi_hevc_runtime.c ../../../gfx/common/vaapi_av1_session.h ../../../gfx/common/vaapi_av1_runtime.h
@@ -35,8 +37,9 @@ tiles_test$(EXE): tiles_test.c ../../../gfx/common/vaapi_av1_tiles.h ../../../li
 	$(CC) $(CFLAGS) tiles_test.c -o $@ $(LDFLAGS)
 tiles_trace_test$(EXE): tiles_trace_test.c ../../../gfx/common/vaapi_av1_picture.h ../vulkan_video_caps/av1_params_test.c ../vulkan_video_caps/av1_session_data.h ../../../gfx/common/vulkan_av1_params.h ../../../gfx/common/vaapi_av1_tiles.h
 	$(CC) $(CFLAGS) -Wno-unused-function tiles_trace_test.c -o $@ $(LDFLAGS)
-trace-check: tiles_trace_test$(EXE)
+trace-check: tiles_trace_test$(EXE) decoder_trace_test$(EXE)
 	AV1_VULKAN_TEST=./tiles_trace_test$(EXE) python3 ../vulkan_video_caps/av1_fixtures.py
+	AV1_VULKAN_TEST=./decoder_trace_test$(EXE) python3 ../vulkan_video_caps/av1_fixtures.py
 .PHONY: trace-check
 
 picture_test$(EXE): picture_test.c ../../../gfx/common/vaapi_av1_picture.h ../../../gfx/common/vaapi_av1_tiles.h
@@ -51,3 +54,13 @@ pool_test$(EXE): pool_test.c ../../../gfx/common/vaapi_av1_pool.c ../../../gfx/c
 EXPORT_SOURCES := ../../../gfx/common/vaapi_av1_export.c ../../../gfx/common/vaapi_hevc_export.c ../../../gfx/common/vaapi_frame.c
 export_test$(EXE): export_test.c pool_test.c $(EXPORT_SOURCES) ../../../gfx/common/vaapi_av1_export.h ../../../gfx/common/vaapi_av1_pool.c ../../../gfx/common/vaapi_av1_submit.c
 	$(CC) $(CFLAGS) -DHAVE_THREADS export_test.c $(EXPORT_SOURCES) -o $@ $(LDFLAGS)
+
+decoder_test$(EXE): decoder_test.c export_test.c pool_test.c $(EXPORT_SOURCES) ../../../gfx/common/vaapi_av1_decoder.c ../../../gfx/common/vaapi_av1_decoder.h ../../../gfx/common/vaapi_av1_pool.c ../../../gfx/common/vaapi_av1_submit.c
+	$(CC) $(CFLAGS) -DHAVE_THREADS decoder_test.c $(EXPORT_SOURCES) -o $@ $(LDFLAGS)
+
+busy_test$(EXE): busy_test.c decoder_test.c export_test.c pool_test.c $(EXPORT_SOURCES) ../../../gfx/common/vaapi_av1_decoder.c ../../../gfx/common/vaapi_av1_decoder.h ../../../gfx/common/vaapi_av1_pool.c ../../../gfx/common/vaapi_av1_submit.c
+	$(CC) $(CFLAGS) -DHAVE_THREADS busy_test.c $(EXPORT_SOURCES) -o $@ $(LDFLAGS)
+
+DECODER_TRACE_SOURCES := ../../../gfx/common/vaapi_av1_decoder.c ../../../gfx/common/vaapi_av1_pool.c ../../../gfx/common/vaapi_av1_submit.c ../../../gfx/common/vaapi_hevc_submit.c $(EXPORT_SOURCES)
+decoder_trace_test$(EXE): decoder_trace_test.c tiles_trace_test.c $(DECODER_TRACE_SOURCES) ../vulkan_video_caps/av1_params_test.c
+	$(CC) $(CFLAGS) -DHAVE_THREADS -Wno-unused-function decoder_trace_test.c $(DECODER_TRACE_SOURCES) -o $@ $(LDFLAGS)

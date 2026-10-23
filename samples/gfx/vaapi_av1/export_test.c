@@ -8,13 +8,18 @@
 #include <formats/image.h>
 #include <formats/image_yuv_blit.h>
 static unsigned test_depth;
-static unsigned fd_live[64], fd_closed, duplicate_fd, release_fail;
+static VASurfaceID expected_surface = 1001;
+static unsigned fd_live[256], fd_closed, duplicate_fd, release_fail;
 static VAStatus export_surface(VADisplay display, VASurfaceID surface,
       uint32_t memory_type, uint32_t flags, void *out)
 {
    VADRMPRIMESurfaceDescriptor *descriptor = (VADRMPRIMESurfaceDescriptor *)out;
-   unsigned i;
-   assert(display == session.display && surface == 1001);
+   unsigned i, base;
+   assert(display == session.display && surface == expected_surface);
+   for (base = 31; base < 255; base += 2)
+      if (!fd_live[base] && !fd_live[base + 1])
+         break;
+   assert(base < 255);
    assert(memory_type == VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME_2);
    assert(flags
          == (VA_EXPORT_SURFACE_READ_ONLY | VA_EXPORT_SURFACE_SEPARATE_LAYERS));
@@ -25,13 +30,13 @@ static VAStatus export_surface(VADisplay display, VASurfaceID surface,
    descriptor->width = 128;
    descriptor->height = 64;
    descriptor->num_objects = descriptor->num_layers = 2;
-   descriptor->objects[0].fd = 31;
-   descriptor->objects[1].fd = duplicate_fd ? 31 : 32;
+   descriptor->objects[0].fd = (int)base;
+   descriptor->objects[1].fd = (int)(duplicate_fd ? base : base + 1);
    descriptor->objects[0].size = session.depth == 10 ? 16384 : 8192;
    descriptor->objects[1].size = session.depth == 10 ? 8192 : 4096;
-   fd_live[31] = 1;
+   fd_live[base] = 1;
    if (!duplicate_fd)
-      fd_live[32] = 1;
+      fd_live[base + 1] = 1;
    descriptor->layers[0].drm_format = session.depth == 10
          ? VA_FOURCC('R', '1', '6', ' ')
          : VA_FOURCC('R', '8', ' ', ' ');
@@ -48,18 +53,18 @@ static VAStatus export_surface(VADisplay display, VASurfaceID surface,
 }
 static bool cloexec(int fd)
 {
-   assert(fd >= 0 && fd < 64 && fd_live[fd]);
+   assert(fd >= 0 && fd < 256 && fd_live[fd]);
    return true;
 }
 static void close_fd(int fd)
 {
-   assert(fd >= 0 && fd < 64 && fd_live[fd]);
+   assert(fd >= 0 && fd < 256 && fd_live[fd]);
    fd_live[fd] = 0;
    fd_closed++;
 }
 static bool identity(int fd, uint64_t *device, uint64_t *inode)
 {
-   assert(fd >= 0 && fd < 64 && fd_live[fd]);
+   assert(fd >= 0 && fd < 256 && fd_live[fd]);
    *device = 7;
    *inode = (uint64_t)fd + 100;
    return true;
@@ -87,6 +92,7 @@ static bool release_ticket(void *owner, unsigned slot, uint64_t ticket)
 static void ready_picture(void)
 {
    reset();
+   expected_surface = 1001;
    session.depth = sequence.bit_depth = test_depth;
    assert(!decode(1));
    assert(vaapi_av1_pool_poll(&pool, 0) == 0);
@@ -117,6 +123,7 @@ static int export_contract_suite(unsigned depth)
    color.primaries = color.matrix = color.range = 1;
    color.transfer = 13;
    reset();
+   expected_surface = 1001;
    session.depth = sequence.bit_depth = test_depth;
    assert(!decode(1));
    display_status = VA_STATUS_ERROR_TIMEDOUT;
