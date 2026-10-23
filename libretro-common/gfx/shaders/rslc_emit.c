@@ -95,11 +95,13 @@ struct rslc_pr
    uint32_t                 nwb;
    uint32_t                 hl_uses;        /* RSLC_HL_* helpers the code needs */
    bool                     es;
+   bool                     cafe;        /* GLSL for CafeGLSL, see rslc.h */
    bool                     hlsl;
    bool                     msl;
    bool                     ok;
    bool                     uses_packing;   /* a pack or unpack builtin in reachable code */
    bool                     uses_gather;    /* textureGather in reachable code */
+   bool                     uses_bitcast;   /* floatBitsToInt and kin in reachable code */
    bool                     uses_gather_comp; /* ... with a component other than 0 */
 };
 
@@ -3064,6 +3066,8 @@ static void pr_mark_members(struct rslc_pr *p, uint32_t node)
             pr_mark_members(p, n->a);
          if (n->op == RSLC_OP_BUILTIN && n->a >= RSLC_BFN_PACKUNORM2X16 && n->a <= RSLC_BFN_UNPACKHALF2X16)
             p->uses_packing = true;
+         if (n->op == RSLC_OP_BUILTIN && n->a >= RSLC_BFN_FLOATBITSTOINT && n->a <= RSLC_BFN_UINTBITSTOFLOAT)
+            p->uses_bitcast = true;
          if (n->op == RSLC_OP_BUILTIN && (p->hlsl || p->msl))
             pr_hl_note(p, n);
          if (n->op == RSLC_OP_BUILTIN && (n->a == RSLC_BFN_TEXTUREGATHER || n->a == RSLC_BFN_TEXTUREGATHEROFFSET))
@@ -3100,7 +3104,7 @@ static void pr_block_decl(struct rslc_pr *p, unsigned idx)
       if (forced)
          type_name = forced;
    }
-   if (b->push)
+   if (b->push && !p->cafe)
    {
       /* no push constants in GLSL: a struct and one uniform of it */
       pr_struct(p, b->type, type_name);
@@ -3112,7 +3116,12 @@ static void pr_block_decl(struct rslc_pr *p, unsigned idx)
       pr_nl(p);
       return;
    }
-   pr_s(p, "layout(std140) uniform ");
+   /* CafeGLSL takes the push block as a second uniform block, laid out
+    * as the source declared it; the runtime reads offsets back from
+    * the .gsh */
+   if (!b->push || b->std140)
+      pr_s(p, "layout(std140) ");
+   pr_s(p, "uniform ");
    pr_s(p, type_name);
    pr_s(p, " {");
    p->indent++;
@@ -3152,8 +3161,9 @@ static void pr_io_decl(struct rslc_pr *p, const struct rslc_var *v, bool is_in)
    bool layout_ok = p->es ? p->version >= 300 : p->version >= 330;
    bool fragment  = p->c->stage == RSLC_STAGE_FRAGMENT;
    /* fragment outputs keep their location; attributes and varyings are
-    * bound by name by the driver */
-   if (layout_ok && fragment && !is_in && v->location != RSLC_UNSET)
+    * bound by name by the driver.  CafeGLSL takes a location on every
+    * in and out, as the Wii U lane has always handed it. */
+   if ((p->cafe || (layout_ok && fragment && !is_in)) && v->location != RSLC_UNSET)
    {
       pr_s(p, "layout(location = ");
       pr_u(p, v->location);
@@ -3299,6 +3309,11 @@ static bool pr_glsl(struct rslc_pr *p, struct rslc_result *result)
    if (!p->es && p->version < 420 && p->uses_packing)
    {
       pr_s(p, "#extension GL_ARB_shading_language_packing : require");
+      pr_nl(p);
+   }
+   if (!p->es && p->version < 330 && p->uses_bitcast)
+   {
+      pr_s(p, "#extension GL_ARB_shader_bit_encoding : require");
       pr_nl(p);
    }
    if (!p->es && p->version < 400 && p->uses_gather)
@@ -4471,8 +4486,14 @@ bool rslc_emit_text(struct rslc_ctx *c, struct rslc_result *result)
    {
       case RSLC_DST_GLSL:
       case RSLC_DST_GLSL_ES:
+      case RSLC_DST_GLSL_CAFE:
          if (c->opts->dst == RSLC_DST_GLSL_ES)
             p->es = true;
+         if (c->opts->dst == RSLC_DST_GLSL_CAFE)
+         {
+            p->cafe    = true;
+            p->version = 150;
+         }
          if (!p->version)
             p->version = p->es ? 300 : 330;
          break;

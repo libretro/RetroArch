@@ -21,8 +21,10 @@
 # the rslc run links the GLSL rslc printed; GL_ARB_gl_spirv is kept
 # out of the way so the printer, not the driver's SPIR-V path, is what
 # is compared.  With D3D both runs go through D3DCompile, the glslang
-# one on SPIRV-Cross's HLSL and the rslc one on rslc's.  Exit status is
-# the number of presets whose captures differ or failed, capped at 1.
+# one on SPIRV-Cross's HLSL and the rslc one on rslc's.  A preset whose
+# frame depends on the clock (two glslang runs differ as well) is
+# reported as time-dependent, not as a difference.  Exit status is the
+# number of presets whose captures differ or failed, capped at 1.
 # No check target: the run needs a display and a driver.
 set -u
 
@@ -101,7 +103,7 @@ EOF
    [ -s "$3" ]
 }
 
-bad=0; n=0
+bad=0; n=0; vary=0
 for preset in "$@"; do
    n=$((n + 1))
    case $preset in
@@ -133,7 +135,40 @@ for preset in "$@"; do
       fi ;;
    esac
    if ! cmp -s "$g" "$r"; then
-      echo "DIFF  $name: $g $r"; bad=$((bad + 1)); continue
+      # a preset that reads the clock (FrameTimeDelta, flicker, noise)
+      # paints one of a few frames per run: glslang captured again, up
+      # to three times, either lands on rslc's frame or on another of
+      # its own, and either tells it apart from a compiler difference
+      verdict=
+      for k in 2 3 4; do
+         g2="$out/${name}_glslang$k.png"
+         capture "$preset" 1 "$g2" "$out/${name}_glslang$k.log" || break
+         if cmp -s "$g2" "$r"; then
+            verdict="same  $name (time-dependent: glslang run $k painted rslc's frame)"; break
+         fi
+         if ! cmp -s "$g" "$g2"; then
+            verdict="vary  $name: differs between glslang runs as well (time-dependent)"; vary=$((vary + 1)); break
+         fi
+      done
+      # and the other way round: rslc captured again may paint glslang's
+      # frame, or another of its own
+      [ -n "$verdict" ] || for k in 2 3 4; do
+         r2="$out/${name}_rslc$k.png"
+         capture "$preset" 2 "$r2" "$out/${name}_rslc$k.log" || break
+         if cmp -s "$r2" "$g"; then
+            verdict="same  $name (time-dependent: rslc run $k painted glslang's frame)"; break
+         fi
+         if ! cmp -s "$r" "$r2"; then
+            verdict="vary  $name: differs between rslc runs as well (time-dependent)"; vary=$((vary + 1)); break
+         fi
+      done
+      if [ -z "$verdict" ]; then
+         echo "DIFF  $name: $g $r"; bad=$((bad + 1)); continue
+      fi
+      case $verdict in vary*) echo "$verdict"; continue ;; esac
+      if [ "$cached" != 1 ]; then
+         echo "$verdict"; continue
+      fi
    fi
    if [ "$cached" = 1 ]; then
       c="$out/${name}_rslc_cached.png"
@@ -150,6 +185,6 @@ for preset in "$@"; do
    fi
    echo "same  $name"
 done
-echo "$n presets, $bad differ or failed"
+echo "$n presets, $bad differ or failed, $vary time-dependent"
 [ "$keep" = 1 ] || rm -f "$out"/*.cfg
 [ "$bad" = 0 ]

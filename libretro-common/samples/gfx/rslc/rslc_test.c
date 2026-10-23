@@ -1482,6 +1482,46 @@ static void test_blob(void)
    CHECK(!rslc_blob_open(NULL, 0, &r));
 }
 
+/* The CafeGLSL flavour: version 150, both blocks as uniform blocks
+ * under their source names, a location on every in and out, samplers
+ * under their source names, and the extension GLSL 150 needs for the
+ * bit casts. */
+static void test_cafe(void)
+{
+   struct rslc_opts   o;
+   struct rslc_result r;
+   char               err[128];
+   static const char  vert[] =
+      "#version 450\n"
+      "layout(push_constant) uniform Push { vec4 SourceSize; float gamma; } params;\n"
+      "layout(std140, set = 0, binding = 0) uniform UBO { mat4 MVP; } global;\n"
+      "layout(location = 0) in vec4 Position;\n"
+      "layout(location = 1) in vec2 TexCoord;\n"
+      "layout(location = 0) out vec2 vTexCoord;\n"
+      "void main() { gl_Position = global.MVP * Position; vTexCoord = TexCoord * params.gamma"
+      " + intBitsToFloat(int(params.SourceSize.x)); }\n";
+
+   opts_default(&o, err, sizeof(err));
+   o.dst = RSLC_DST_GLSL_CAFE;
+   CHECK(rslc_compile(vert, sizeof(vert) - 1, RSLC_STAGE_VERTEX, &o, &r));
+   if (!r.text)
+   {
+      fprintf(stderr, "  %s\n", err);
+      return;
+   }
+   CHECK(!strncmp(r.text, "#version 150\n", 13));
+   CHECK(strstr(r.text, "#extension GL_ARB_shader_bit_encoding : require\n"));
+   CHECK(strstr(r.text, "layout(std140) uniform UBO {\n   mat4 MVP;\n} global;\n"));
+   CHECK(strstr(r.text, "\nuniform Push {\n   vec4 SourceSize;\n   float gamma;\n} params;\n"));
+   CHECK(!strstr(r.text, "struct Push"));
+   CHECK(strstr(r.text, "layout(location = 0) in vec4 Position;\n"));
+   CHECK(strstr(r.text, "layout(location = 1) in vec2 TexCoord;\n"));
+   CHECK(strstr(r.text, "layout(location = 0) out vec2 vTexCoord;\n"));
+   CHECK(strstr(r.text, "params.gamma"));
+   CHECK(!strstr(r.text, "binding"));
+   rslc_result_free(&r, &o);
+}
+
 /* The ingest reads a module back to the reflection the GLSL gave,
  * carries the words through for the Vulkan driver, and refuses what
  * the cache must not serve: another stage, a printed destination, a
@@ -1676,6 +1716,8 @@ int main(int argc, char **argv)
       return glsl_file(argv[2], (unsigned)atoi(argv[3]), false, RSLC_DST_HLSL);
    if (argc == 3 && !strcmp(argv[1], "--msl"))
       return glsl_file(argv[2], 20000, false, RSLC_DST_MSL);
+   if (argc == 3 && !strcmp(argv[1], "--cafe"))
+      return glsl_file(argv[2], 150, false, RSLC_DST_GLSL_CAFE);
 
    test_abi_rejects();
    test_arena();
@@ -1689,6 +1731,7 @@ int main(int argc, char **argv)
    test_glsl();
    test_hlsl();
    test_msl();
+   test_cafe();
    test_ingest();
 
    if (fails)
