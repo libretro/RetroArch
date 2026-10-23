@@ -5656,6 +5656,7 @@ static uintptr_t video_thread_set_poke(void *data)
 {
    video_thread_set_poke_t *set = (video_thread_set_poke_t*)data;
    set->thr->poke               = set->poke;
+   video_thread_hw_prepare_context(set->thr);
    retro_atomic_store_release_int(&set->thr->movie_capable,
          set->poke && set->poke->import_movie_frame ? 1 : 0);
    return 0;
