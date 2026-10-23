@@ -15,6 +15,7 @@
 #define FENCE ((VkFence)(uintptr_t)7)
 #define DONE ((VkSemaphore)(uintptr_t)8)
 #define READY ((VkSemaphore)(uintptr_t)9)
+#define RENDER_COMMAND ((VkCommandBuffer)(uintptr_t)10)
 typedef struct model
 {
    vulkan_android_queue_t queued;
@@ -24,7 +25,7 @@ typedef struct model
    unsigned refs, releases, fd_refs, close_calls, export_failures;
    bool pool, command, fence, semaphore, pending, complete, signal;
    bool deferred, auto_complete, device_alive, gone_release, ready;
-   bool partial_fd, invalid_fd, signaled_fd;
+   bool partial_fd, invalid_fd, signaled_fd, external, abort_proof;
 } model_t;
 static model_t m;
 
@@ -113,7 +114,9 @@ static VkResult VKAPI_CALL begin(
 }
 static VkResult VKAPI_CALL end(VkCommandBuffer c)
 {
-   assert(c == COMMAND && m.barriers == 2 && m.copies == 1);
+   assert(c == COMMAND);
+   assert(m.external ? (!m.barriers && !m.copies)
+                     : (m.barriers == 2 && m.copies == 1));
    return m.record_failure == 3 ? VK_ERROR_DEVICE_LOST : VK_SUCCESS;
 }
 static void VKAPI_CALL barrier(VkCommandBuffer c, VkPipelineStageFlags src,
@@ -121,7 +124,8 @@ static void VKAPI_CALL barrier(VkCommandBuffer c, VkPipelineStageFlags src,
       const VkMemoryBarrier *mb, uint32_t nb, const VkBufferMemoryBarrier *bb,
       uint32_t ni, const VkImageMemoryBarrier *b)
 {
-   assert(c == COMMAND && !flags && !nm && !mb && !nb && !bb && ni == 2);
+   assert(c == (m.external ? RENDER_COMMAND : COMMAND) && !flags && !nm && !mb
+         && !nb && !bb && ni == 2);
    assert(b[0].sType == VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER
          && b[0].image == SOURCE);
    assert(b[1].sType == VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER
@@ -166,8 +170,8 @@ static void VKAPI_CALL barrier(VkCommandBuffer c, VkPipelineStageFlags src,
 static void VKAPI_CALL copy(VkCommandBuffer c, VkImage src, VkImageLayout sl,
       VkImage dst, VkImageLayout dl, uint32_t count, const VkImageCopy *r)
 {
-   assert(c == COMMAND && src == SOURCE && dst == DEST && count == 1
-         && m.barriers == 1);
+   assert(c == (m.external ? RENDER_COMMAND : COMMAND) && src == SOURCE
+         && dst == DEST && count == 1 && m.barriers == 1);
    assert(sl == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL
          && dl == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
    assert(r->srcOffset.x == 8 && r->srcOffset.y == 6 && !r->srcOffset.z
@@ -262,7 +266,9 @@ static void close_fd(void *context, int fd)
 static void release_source(void *owner, bool destroyed)
 {
    assert(owner == &m && m.refs == 1);
-   assert(destroyed ? !m.device_alive : m.pending && m.complete);
+   assert(destroyed
+               ? !m.device_alive
+               : (m.pending && m.complete) || (m.abort_proof && !m.pending));
    m.refs--;
    m.releases++;
    m.gone_release = destroyed;
@@ -747,9 +753,135 @@ static void pipe_source_retirement(void)
    assert(record_android_capture_submit_free(entry));
    assert(record_gpu_queue_free(gpu.queue));
 }
+static void renderer_recording(bool deferred, bool busy)
+{
+   record_android_capture_submit_t *e;
+   record_android_capture_source_t s;
+   int fd;
+   unsigned submits;
+   reset();
+   m.external = true;
+   m.deferred = deferred;
+   e = create();
+   assert(e);
+   s = source();
+   s.ready = READY;
+   assert(record_android_capture_submit_record(e, &s, RENDER_COMMAND) == -1);
+   s.ready = VK_NULL_HANDLE;
+   assert(record_android_capture_submit_record(e, &s, RENDER_COMMAND) == 1);
+   assert(m.copies == 1 && !m.submits && m.refs == 1);
+   assert(record_android_capture_submit_poll(e) == 0);
+   assert(!record_android_capture_submit_free(e));
+   assert(record_android_capture_submit_record(e, &s, RENDER_COMMAND) == 0);
+   assert(!record_android_capture_submit_prepare_device_destroy(e, false));
+   /* The retirement probe above is terminal; abort the never-submitted frame.
+    */
+   m.abort_proof = true;
+   assert(record_android_capture_submit_abort_recorded(e));
+   assert(!m.refs && record_android_capture_submit_free(e));
+   reset();
+   m.external = true;
+   m.deferred = deferred;
+   e = create();
+   s = source();
+   assert(record_android_capture_submit_record(e, &s, RENDER_COMMAND) == 1);
+   if (busy)
+      m.result = VK_TIMEOUT;
+   assert(record_android_capture_submit_commit(e) == (busy ? 0 : 1));
+   assert(!record_android_capture_submit_abort_recorded(e));
+   assert(record_android_capture_submit_commit(e) == -1);
+   m.result = VK_SUCCESS;
+   assert(record_android_capture_submit_poll(e) == 0);
+   if (deferred)
+      assert(
+            vulkan_android_queue_flush(&m.queued, native_submit) == VK_SUCCESS);
+   assert(m.copies == 1 && m.submits == 1 && m.refs == 1);
+   submits = m.submits;
+   m.complete = true;
+   assert(record_android_capture_submit_poll(e) == 1);
+   assert(!m.refs && m.submits == submits && m.copies == 1);
+   assert(record_android_capture_submit_take_ready(e, &fd) == 1);
+   close_fd(&m, fd);
+   assert(record_android_capture_submit_release(e));
+   assert(record_android_capture_submit_free(e));
+}
+
+static void renderer_faults(void)
+{
+   record_android_capture_submit_t *e;
+   record_android_capture_source_t source_frame;
+   unsigned i;
+   for (i = 1; i <= 4; i++)
+   {
+      reset();
+      m.external = true;
+      e = create();
+      source_frame = source();
+      m.record_failure = i;
+      assert(record_android_capture_submit_record(
+                   e, &source_frame, RENDER_COMMAND)
+            == -1);
+      assert(!m.copies && !m.submits && m.refs == 1);
+      m.refs = 0;
+      assert(record_android_capture_submit_free(e));
+   }
+   reset();
+   m.external = true;
+   e = create();
+   source_frame = source();
+   assert(record_android_capture_submit_record(e, &source_frame, RENDER_COMMAND)
+         == 1);
+   m.abort_proof = true;
+   assert(record_android_capture_submit_abort_recorded(e));
+   source_frame = source();
+   assert(record_android_capture_submit_record(e, &source_frame, RENDER_COMMAND)
+         == 1);
+   m.result = VK_TIMEOUT;
+   assert(record_android_capture_submit_commit(e) == 0);
+   assert(record_android_capture_submit_discard(e) == 0);
+   assert(m.refs == 1 && !m.submits && m.copies == 1);
+   m.result = VK_SUCCESS;
+   assert(record_android_capture_submit_discard(e) == 0);
+   assert(m.submits == 1 && m.refs == 1 && m.copies == 1);
+   m.complete = true;
+   assert(record_android_capture_submit_discard(e) == 1);
+   assert(!m.refs && record_android_capture_submit_free(e));
+   reset();
+   m.external = true;
+   e = create();
+   source_frame = source();
+   assert(record_android_capture_submit_record(e, &source_frame, RENDER_COMMAND)
+         == 1);
+   m.result = VK_ERROR_DEVICE_LOST;
+   assert(record_android_capture_submit_commit(e) == -1);
+   assert(m.refs == 1 && m.submits == 1);
+   assert(record_android_capture_submit_poll(e) == -1);
+   m.complete = true;
+   assert(record_android_capture_submit_discard(e) == 1);
+   assert(!m.refs && record_android_capture_submit_free(e));
+   reset();
+   m.external = true;
+   e = create();
+   source_frame = source();
+   assert(record_android_capture_submit_record(e, &source_frame, RENDER_COMMAND)
+         == 1);
+   assert(record_android_capture_submit_prepare_device_destroy(e, true));
+   assert(record_android_capture_submit_poll(e) == -1);
+   assert(!m.submits && m.refs == 1);
+   m.device_alive = false;
+   assert(record_android_capture_submit_after_device_destroy(e));
+   assert(!m.refs && m.gone_release);
+   assert(record_android_capture_submit_free(e));
+}
+
 int main(void)
 {
    assert(record_android_capture_pipe_sources_retired(NULL));
+   renderer_faults();
+   renderer_recording(false, false);
+   renderer_recording(false, true);
+   renderer_recording(true, false);
+   renderer_recording(true, true);
    pipe_source_retirement();
    pipe_device_loss();
    pipe_lifetime(false, false);

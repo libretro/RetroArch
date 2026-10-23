@@ -59,6 +59,21 @@ record_android_capture_submit_t *record_android_capture_submit_new(
  * conversion occurs. */
 int record_android_capture_submit_push(record_android_capture_submit_t *entry,
       const record_android_capture_source_t *source);
+/* Renderer recording command, outside render passes, same queue/family.
+ * No ready semaphore: the renderer supplies all prior dependencies. Records
+ * one copy and takes the lease on 1. The command must never be replayed. */
+int record_android_capture_submit_record(record_android_capture_submit_t *entry,
+      const record_android_capture_source_t *source, VkCommandBuffer command);
+/* Exactly once, AFTER the renderer accepted that command on the same queue.
+ * Submits only a completion signal/fence, no second copy. 0 retains pending
+ * completion; poll retries only this signal submission, never source work.
+ * Negative retains ambiguous ownership for terminal device recovery. */
+int record_android_capture_submit_commit(
+      record_android_capture_submit_t *entry);
+/* ONLY after the renderer reset/discarded its unsubmitted command and proves
+ * it can never execute. Refuses after commit; releases the original lease. */
+bool record_android_capture_submit_abort_recorded(
+      record_android_capture_submit_t *entry);
 /* One zero-timeout fence query. 1 copy retired, 0 pending, -1 sticky error.
  * Export failures cannot leave a binary semaphore eligible for re-signaling. */
 int record_android_capture_submit_poll(record_android_capture_submit_t *entry);
