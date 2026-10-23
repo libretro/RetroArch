@@ -108,6 +108,14 @@ static bool audio_driver_pipeline_transport_publish(uint32_t tempo_q16,
  * both core callback styles reach the resampler in the same unit. */
 #define AUDIO_CHUNK_SIZE_NONBLOCKING   2048
 
+/* Core audio goes to the device only while the driver is both up and
+ * started: a driver that was stopped - the audio toggle, a window
+ * size/move, CoreAudio's interruption - drains nothing, and a blocking
+ * write to it would never return. The threaded commit already lets go
+ * on a stopped driver; these gates do the same on the direct path. */
+#define AUDIO_FLAGS_OUTPUT_UP          (AUDIO_FLAG_ACTIVE | AUDIO_FLAG_STARTED)
+#define AUDIO_OUTPUT_DOWN(f)           (((f) & AUDIO_FLAGS_OUTPUT_UP) != AUDIO_FLAGS_OUTPUT_UP)
+
 /* Capacity of the single-sample accumulator (audio_driver_state_t::
  * sample_accum) in int16 samples. Equal to the batch slice size: a core
  * emitting more than this per retro_run() gets its audio flushed in
@@ -4789,6 +4797,11 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
       RARCH_ERR("Failed to initialize audio driver. Will continue without audio.\n");
       AUDIO_FLAGS_CLEAR(&audio_driver_st, AUDIO_FLAG_ACTIVE);
    }
+   /* A driver comes up running: it is started until audio_driver_stop().
+    * The threaded wrapper's thread is created parked and is released by
+    * the audio_driver_start() below, which sets this again. */
+   else
+      AUDIO_FLAGS_SET(&audio_driver_st, AUDIO_FLAG_STARTED);
 
    AUDIO_FLAGS_CLEAR(&audio_driver_st, AUDIO_FLAG_USE_FLOAT);
    if (     (AUDIO_FLAGS_GET(&audio_driver_st) & AUDIO_FLAG_ACTIVE)
@@ -7340,7 +7353,7 @@ static void audio_driver_sample_accum_flush(audio_driver_state_t *audio_st)
 
    if (!(    (snap & AUDIO_SNAP_PAUSED)
          ||  audio_driver_core_silenced()
-         || !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE)
+         || AUDIO_OUTPUT_DOWN(AUDIO_FLAGS_GET(audio_st))
          || !(audio_st->output_samples_buf)))
       audio_driver_submit(audio_st,
             (snap & AUDIO_SNAP_SLOWMOTION)
@@ -7432,7 +7445,7 @@ size_t audio_driver_sample_batch(const int16_t *data, size_t frames)
          ? audio_driver_snapshot_slowmotion(audio_st) : 1.0f;
    flush_audio                    = !((runloop_flags & AUDIO_SNAP_PAUSED)
             ||  audio_driver_core_silenced()
-            || !(aflags & AUDIO_FLAG_ACTIVE)
+            || AUDIO_OUTPUT_DOWN(aflags)
             || !(audio_st->output_samples_buf));
    recording_push_audio           = record_st->data
            && record_st->driver
@@ -7577,7 +7590,7 @@ static bool audio_driver_multi_pipe(audio_driver_state_t *audio_st,
       audio_driver_record_push(audio_st, data, frames, channels, layout, is_float);
       if (      (runloop_flags & AUDIO_SNAP_PAUSED)
             ||  audio_driver_core_silenced()
-            || !(aflags & AUDIO_FLAG_ACTIVE)
+            || AUDIO_OUTPUT_DOWN(aflags)
             || !audio_st->output_samples_buf)
          return true;
    }
@@ -7661,7 +7674,7 @@ static bool audio_driver_inline_multi(audio_driver_state_t *audio_st,
    if (flags & AUDIO_SNAP_SLOWMOTION)
       ratio = audio_driver_snapshot_slowmotion(audio_st);
    if ((flags & AUDIO_SNAP_PAUSED) || audio_driver_core_silenced()
-         || !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE)
+         || AUDIO_OUTPUT_DOWN(AUDIO_FLAGS_GET(audio_st))
          || !audio_st->output_samples_buf) return true;
    audio_driver_state_lock();
    audio_driver_arm_resume(audio_st);
@@ -7941,7 +7954,7 @@ size_t audio_driver_sample_batch_float(const float *data, size_t frames)
       slowmotion_ratio            = audio_driver_snapshot_slowmotion(audio_st);
    flush_audio                    = !((runloop_flags & AUDIO_SNAP_PAUSED)
             ||  audio_driver_core_silenced()
-            || !(aflags & AUDIO_FLAG_ACTIVE)
+            || AUDIO_OUTPUT_DOWN(aflags)
             || !(audio_st->output_samples_buf));
    recording_push_audio           = record_st->data
            && record_st->driver
