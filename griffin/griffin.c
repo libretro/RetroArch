@@ -406,6 +406,9 @@ VIDEO CONTEXT
 #endif
 #endif
 #endif
+#if defined(ANDROID) && defined(HAVE_THREADS)
+#include "../record/record_android_capture_device.c"
+#endif
 #include "../gfx/common/vulkan_common.c"
 #include "../libretro-common/vulkan/vulkan_symbol_wrapper.c"
 #ifdef HAVE_RMP4

@@ -257,6 +257,7 @@ bool record_android_capture_pipe_free(record_android_capture_pipe_t *p)
    m.pipe_frees++;
    return true;
 }
+#include "../../../record/record_android_capture_device.c"
 #include "../../../record/record_android_capture_pool.c"
 static void close_fd(void *context, int fd)
 {
@@ -497,6 +498,57 @@ static void renderer_binding(unsigned mode, unsigned fault)
    m.pipe_done = true;
    assert(record_android_capture_pool_free(p));
 }
+static void device_registration(unsigned mode)
+{
+   static record_android_capture_pool_config_t c;
+   record_android_capture_pool_t *p;
+   unsigned i;
+   record_android_capture_source_t source;
+   reset(mode);
+   c = config(mode);
+   assert(record_android_capture_pool_new(
+         (record_dispatch_mediacodec_t *)&m, &c, &p));
+   /* No renderer binding or frame exists yet; startup is still protected. */
+   assert(record_android_capture_device_pending(c.device));
+   assert(!record_android_capture_device_pending((VkDevice)(uintptr_t)999));
+   assert(!record_android_capture_device_destroyed(c.device));
+   memset(&source, 0, sizeof(source));
+   if (mode == 1)
+      assert(record_android_capture_pool_push(p, &source, 0, 10) == 1);
+   if (mode == 2)
+      assert(record_android_capture_pool_record(p, &source, 0, 10,
+                   (VkCommandBuffer)(uintptr_t)77) == 1);
+   assert(p->renderer_end == (mode ? 10u : 0u));
+   m.pending = true;
+   assert(!record_android_capture_device_prepare(c.device, true));
+   assert(!p->closed && p->preparing && !p->device_owner.prepared);
+   assert(record_android_capture_pool_step(p) == 0);
+   assert(record_android_capture_pool_push(p, &source, 0, 10) == -1);
+   assert(record_android_capture_pool_record(p, &source, 0, 10,
+                (VkCommandBuffer)(uintptr_t)77) == -1);
+   m.pending = false;
+   assert(!record_android_capture_device_prepare(c.device, false));
+   assert(p->closed && p->preparing && !p->device_owner.prepared);
+   assert(record_android_capture_device_prepare(c.device, true));
+   assert(p->device_owner.prepared && !m.after);
+   assert(record_android_capture_device_pending(c.device));
+   m.destroyed = true;
+   assert(record_android_capture_device_destroyed(c.device));
+   assert(m.after == c.gpu.count);
+   assert(!record_android_capture_device_pending(c.device));
+   assert(record_android_capture_device_destroyed(c.device));
+   assert(m.after == c.gpu.count);
+   for (i = 0; i < 100; i++)
+   {
+      assert(!record_android_capture_pool_free(p));
+      assert(!m.pipe_steps && images.live && m.gpu_live);
+   }
+   gpu.state = RECORD_MC_DISPATCH_FAILED;
+   m.pipe_done = true;
+   assert(record_android_capture_pool_free(p));
+   assert(!record_acdevice_owners);
+}
+
 static void bad_inputs(void)
 {
    static record_android_capture_pool_config_t c;
@@ -526,6 +578,9 @@ int main(void)
    assert(record_android_capture_pool_status(NULL, NULL, NULL)
          == RECORD_MC_DISPATCH_FAILED);
    bad_inputs();
+   device_registration(0);
+   device_registration(1);
+   device_registration(2);
    normal(0, 1);
    normal(0, 16);
    normal(1, 2);
@@ -540,6 +595,7 @@ int main(void)
    for (mode = 0; mode < 3; mode++)
       for (fault = 0; fault < 6; fault++)
          renderer_binding(mode, fault);
+   assert(!record_acdevice_owners);
    assert(record_android_capture_pool_free(NULL));
    puts("PASS: joint capture pool construction, partial startup and ordered "
         "collection; native owners mocked");

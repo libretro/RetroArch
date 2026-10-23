@@ -1,11 +1,13 @@
 /* Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier:
  * GPL-3.0-or-later */
 #include "record_android_capture_pool.h"
+#include "record_android_capture_device.h"
 #include <stdlib.h>
 #include "../gfx/video_defines.h"
 
 struct record_android_capture_pool
 {
+   record_android_capture_device_t device_owner;
    record_android_capture_images_t *images;
    record_android_capture_submit_t *entries[RECORD_GPU_QUEUE_SLOTS];
    record_gpu_dispatch_mediacodec_t *gpu;
@@ -59,6 +61,7 @@ bool record_android_capture_pool_free(record_android_capture_pool_t *p)
    if (p->renderer_leases)
       return false;
    record_android_capture_images_free(p->images);
+   record_android_capture_device_detach(&p->device_owner);
    free(p);
    return true;
 }
@@ -93,6 +96,23 @@ void record_android_capture_pool_cancel(record_android_capture_pool_t *p)
       record_gpu_dispatch_mediacodec_cancel(p->gpu);
 }
 
+static bool record_acpool_device_prepare(void *context, bool queue_quiesced)
+{
+   record_android_capture_pool_t *p = (record_android_capture_pool_t *)context;
+   p->preparing = true;
+   record_android_capture_pool_cancel(p);
+   if (!p->closed && !record_android_capture_pool_finish(p,
+            (int64_t)p->renderer_end))
+      return false;
+   return record_android_capture_pool_prepare_device_destroy(p, queue_quiesced);
+}
+
+static void record_acpool_device_destroyed(void *context)
+{
+   record_android_capture_pool_after_device_destroy(
+         (record_android_capture_pool_t *)context);
+}
+
 bool record_android_capture_pool_new(record_dispatch_mediacodec_t *io,
       const record_android_capture_pool_config_t *c,
       record_android_capture_pool_t **out)
@@ -111,6 +131,15 @@ bool record_android_capture_pool_new(record_dispatch_mediacodec_t *io,
    p = (record_android_capture_pool_t *)calloc(1, sizeof(*p));
    if (!p)
       return false;
+   p->device_owner.context = p;
+   p->device_owner.device = c->device;
+   p->device_owner.prepare = record_acpool_device_prepare;
+   p->device_owner.destroyed = record_acpool_device_destroyed;
+   if (!record_android_capture_device_attach(&p->device_owner))
+   {
+      free(p);
+      return false;
+   }
    p->count = c->gpu.count;
    p->dims = VIDEO_SCALE_PACK(c->gpu.width, c->gpu.height);
    p->mode = c->gpu.mode;
@@ -152,19 +181,27 @@ int record_android_capture_pool_push(record_android_capture_pool_t *p,
       const record_android_capture_source_t *source, uint64_t pts,
       uint64_t duration)
 {
-   if (!p || p->closed || !p->pipe)
+   int result;
+   if (!p || p->closed || p->preparing || !p->pipe)
       return -1;
-   return record_android_capture_pipe_push(p->pipe, source, pts, duration);
+   result = record_android_capture_pipe_push(p->pipe, source, pts, duration);
+   if (result == 1 || result == -2)
+      p->renderer_end = pts + duration;
+   return result;
 }
 
 int record_android_capture_pool_record(record_android_capture_pool_t *p,
       const record_android_capture_source_t *source, uint64_t pts,
       uint64_t duration, VkCommandBuffer command)
 {
-   if (!p || p->closed || !p->pipe)
+   int result;
+   if (!p || p->closed || p->preparing || !p->pipe)
       return -1;
-   return record_android_capture_pipe_record(
+   result = record_android_capture_pipe_record(
          p->pipe, source, pts, duration, command);
+   if (result == 1 || result == -2)
+      p->renderer_end = pts + duration;
+   return result;
 }
 
 int record_android_capture_pool_commit(record_android_capture_pool_t *p)

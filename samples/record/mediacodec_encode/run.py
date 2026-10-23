@@ -33,7 +33,7 @@ with tempfile.TemporaryDirectory(prefix="mediacodec-encode-") as directory:
                           ("worker_test.c", []), ("surface_test.c", []),
                           ("capture_images_test.c", ["-DRECORD_ANDROID_CAPTURE_TEST"]),
                           ("capture_submit_test.c", []), ("capture_pipe_test.c", []),
-                          ("capture_pool_test.c", []), ("capture_ops_test.c", []),
+                          ("capture_pool_test.c", []), ("device_test.c", []), ("capture_ops_test.c", []),
                           ("capture_egl_test.c", []),
                           ("capture_gl_test.c", []),
                           ("draw_test.c", []), ("gpu_worker_test.c", []),
@@ -95,6 +95,25 @@ with tempfile.TemporaryDirectory(prefix="mediacodec-encode-") as directory:
                         str(root / "record/record_gpu_queue.c"),
                         str(root / "libretro-common/queues/retro_spsc.c"),
                         str(root / "gfx/common/vulkan_android_queue.c")]
+        if source == "device_test.c":
+            shipping = (root / "gfx/common/vulkan_common.c").read_text(encoding="utf-8")
+            start = shipping.index("   /* Retire capture children")
+            prepare = shipping[start:shipping.index("\n#endif", start)]
+            start = shipping.index("   if (record_android_capture_device_pending")
+            pending = shipping[start:shipping.index("\n#endif", start)]
+            start = shipping.index("         vkDestroyDevice(vk->context.device, NULL);")
+            end = shipping.index("\n#endif", start)
+            destroyed = shipping[start:end + len("\n#endif")]
+            assert prepare.index("record_android_capture_device_prepare") < prepare.index("return;")
+            assert shipping.index(prepare) < shipping.index("   vulkan_destroy_swapchain(vk);", shipping.index(prepare))
+            unit = "static void teardown(VkDevice device, VkResult recording_idle, unsigned video_st_flags)\n{\n"
+            unit += "struct test_context storage; struct test_context *vk = &storage;\n"
+            unit += "vk->context.device = device;\n" + prepare + "\n" + pending
+            unit += "\nif (video_st_flags & VIDEO_FLAG_CACHE_CONTEXT) cached++; else {\n"
+            unit += destroyed + "\n}\n}\n"
+            (Path(directory) / "device_teardown_fixture.h").write_text(unit)
+            command += ["-DANDROID", "-DHAVE_THREADS", "-I" + str(root / "gfx/include"),
+                        "-I" + directory]
         print("+", shlex.join(command), flush=True)
         subprocess.run(command, check=True)
         arguments = [str(binary)] + ([directory] if source == "file_test.c" else [])

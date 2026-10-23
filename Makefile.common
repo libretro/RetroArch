@@ -1814,6 +1814,12 @@ ifeq ($(HAVE_VULKAN), 1)
           gfx/common/vulkan_common.o \
           $(LIBRETRO_COMM_DIR)/vulkan/vulkan_symbol_wrapper.o
 
+   ifeq ($(ANDROID), 1)
+      ifeq ($(HAVE_THREADS), 1)
+         OBJ += record/record_android_capture_device.o
+      endif
+   endif
+
    # H.264/HEVC previews decoded on the GPU
    ifeq ($(HAVE_RMP4), 1)
       OBJ += gfx/common/vulkan_video_decode.o

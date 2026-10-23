@@ -37,6 +37,9 @@
 #ifdef HAVE_VAAPI
 #include "vaapi_hevc_vulkan_cache.h"
 #endif
+#if defined(ANDROID) && defined(HAVE_THREADS)
+#include "../../record/record_android_capture_device.h"
+#endif
 #include "vulkan_video_caps.h"
 #if defined(__linux__) && !defined(ANDROID) && defined(HAVE_RMP4)
 #include "vulkan_prime_device.h"
@@ -4909,6 +4912,9 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
 {
    video_driver_state_t *video_st = video_state_get_ptr();
    uint32_t video_st_flags        = 0;
+#if defined(ANDROID) && defined(HAVE_THREADS)
+   VkResult recording_idle = VK_NOT_READY;
+#endif
 #ifdef HAVE_OPENXR
    /* Its thread uses the queue, which is drained below. */
    vulkan_openxr_stop(vk->context.xr);
@@ -4930,8 +4936,24 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
       vk->context.present_pending = true;
       vulkan_context_wait_frames(vk);
 #endif
+#if defined(ANDROID) && defined(HAVE_THREADS)
+      recording_idle = vkDeviceWaitIdle(vk->context.device);
+#else
       vkDeviceWaitIdle(vk->context.device);
+#endif
    }
+#if defined(ANDROID) && defined(HAVE_THREADS)
+   /* Retire capture children before their device, independently of retained
+    * worker reads. Never turn an unsuccessful drain into completion proof. */
+   if (vk->context.device
+         && !record_android_capture_device_prepare(vk->context.device,
+               recording_idle == VK_SUCCESS
+                  || recording_idle == VK_ERROR_DEVICE_LOST))
+   {
+      RARCH_ERR("[Vulkan] Recording children still owned; retaining device.\n");
+      return;
+   }
+#endif
    /* Drained above; the fence would only be waited on again. */
    vk->context.present_pending = false;
 
@@ -4967,6 +4989,10 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
 #endif
 #ifdef HAVE_VAAPI
    if (vaapi_hevc_vulkan_cache_device_pending(vk->context.device))
+      video_st_flags &= ~VIDEO_FLAG_CACHE_CONTEXT;
+#endif
+#if defined(ANDROID) && defined(HAVE_THREADS)
+   if (record_android_capture_device_pending(vk->context.device))
       video_st_flags &= ~VIDEO_FLAG_CACHE_CONTEXT;
 #endif
    if (video_st_flags & VIDEO_FLAG_CACHE_CONTEXT)
@@ -5029,6 +5055,9 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
          vaapi_hevc_vulkan_cache_device_destroying(vk->context.device);
 #endif
          vkDestroyDevice(vk->context.device, NULL);
+#if defined(ANDROID) && defined(HAVE_THREADS)
+         record_android_capture_device_destroyed(vk->context.device);
+#endif
 #ifdef HAVE_VAAPI
          vaapi_hevc_vulkan_cache_device_destroyed(vk->context.device);
 #endif
