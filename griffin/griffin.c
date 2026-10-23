@@ -1640,6 +1640,7 @@ RECORDING
 #include "../record/drivers/record_metal.c"
 #include "../record/drivers/record_mediacodec.c"
 #ifdef HAVE_RECORD_MEDIACODEC
+#include "../record/record_audio_tap.c"
 #include "../record/record_mediacodec_encoder.c"
 #include "../record/record_mux_mediacodec.c"
 #include "../record/record_mediacodec_worker.c"

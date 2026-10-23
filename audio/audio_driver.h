@@ -484,6 +484,9 @@ typedef struct
    uint64_t free_samples_count;
 
    struct audio_record_source *record_source;
+#if defined(HAVE_RECORD_MEDIACODEC) || defined(RECORD_AUDIO_TAP_TEST)
+   struct record_audio_tap *record_tap;
+#endif
    struct string_list *devices_list;
    /* The driver whose device_list_new built devices_list, so that its
     * device_list_free is the one that releases it - not whichever
@@ -1241,6 +1244,12 @@ void audio_driver_pipeline_wake(void);
  * the lock exists for the driver's lifetime and both are no-ops
  * without it.
  **/
+struct record_audio_tap;
+/* Cold main owner. Uses try-lock on the existing audio state serialization;
+ * install: 1 installed, 0 retry, -1 refused. Removal proves producer quiescence
+ * without waiting. No acquisition is added to an audio processing pass. */
+int audio_driver_record_tap_install(struct record_audio_tap *tap);
+bool audio_driver_record_tap_remove(struct record_audio_tap *tap);
 void audio_driver_state_lock(void);
 void audio_driver_state_unlock(void);
 

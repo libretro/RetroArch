@@ -3338,6 +3338,7 @@ ifeq ($(HAVE_RECORD_MEDIACODEC), 1)
    endif
    DEFINES += -DHAVE_RECORD_MEDIACODEC
    MEDIA_RECORD_OBJ := record/record_mediacodec_encoder.o \
+      record/record_audio_tap.o \
       record/record_mux_mediacodec.o record/record_mediacodec_worker.o \
       record/record_mediacodec_surface.o record/record_mediacodec_file.o \
       record/record_session_mediacodec.o record/record_dispatch_mediacodec.o \

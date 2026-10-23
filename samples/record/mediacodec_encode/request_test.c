@@ -232,7 +232,7 @@ static void flush(bool discard, bool execute)
    node->img = NULL;
    node->done(node->user, discard ? 0 : result);
 }
-static record_android_capture_request_t *new_request(unsigned mode)
+static record_android_capture_request_t *new_request_source(unsigned mode, bool menu_source)
 {
    static record_android_capture_pool_config_t config;
    record_android_capture_request_t *r;
@@ -268,11 +268,15 @@ static record_android_capture_request_t *new_request(unsigned mode)
    egl_creates = pool_creates = pool_steps = pool_frees = lock_calls = 0;
    io_state = RECORD_MC_DISPATCH_STARTING;
    r = record_android_capture_request_new(
-         (record_dispatch_mediacodec_t *)&io_storage, &config, 10, true);
+         (record_dispatch_mediacodec_t *)&io_storage, &config, 10, true, menu_source);
    assert(r);
    expected_binding = &r->binding;
    source_memory.memoryTypeCount = 9;
    return r;
+}
+static record_android_capture_request_t *new_request(unsigned mode)
+{
+   return new_request_source(mode, false);
 }
 static void start(record_android_capture_request_t *r)
 {
@@ -430,13 +434,15 @@ static void post_refusal(void)
 
 static void inline_owner(void)
 {
-   record_android_capture_request_t *r = new_request(1);
+   record_android_capture_request_t *r = new_request_source(1, true);
    threaded = false;
    io_state = RECORD_MC_DISPATCH_READY;
    ready = true;
    assert(record_android_capture_request_post(
          r, RECORD_ANDROID_CAPTURE_CREATE, 0));
    assert(record_android_capture_request_binding(r));
+   assert(record_android_capture_request_binding(r)->flags
+         & RECORD_ANDROID_CAPTURE_MENU);
    reads_retired = true;
    assert(record_android_capture_request_post(
          r, RECORD_ANDROID_CAPTURE_COLLECT, 40));

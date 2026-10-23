@@ -27,13 +27,30 @@ flags += shlex.split(os.environ.get("CFLAGS", ""))
 if os.environ.get("SANITIZER"):
     flags += ["-fsanitize=" + os.environ["SANITIZER"], "-fno-omit-frame-pointer"]
 with tempfile.TemporaryDirectory(prefix="mediacodec-encode-") as directory:
+    # Compile the actual shipping hook and ownership functions without unrelated
+    # legacy audio functions, which have different historical stack budgets.
+    shipping_audio = (root / "audio/audio_driver.c").read_text(encoding="utf-8")
+    audio_fragment = []
+    for signature in ("static INLINE int32_t audio_float_to_s16_sat(",
+                      "static float audio_driver_pause_read(",
+                      "static void audio_driver_pause_write(",
+                      "static void audio_driver_pause_track(",
+                      "void audio_driver_state_lock(",
+                      "void audio_driver_state_unlock(",
+                      "int audio_driver_record_tap_install(",
+                      "bool audio_driver_record_tap_remove("):
+        start = shipping_audio.index(signature)
+        end = shipping_audio.index("\n}\n", start) + 3
+        audio_fragment.append(shipping_audio[start:end])
+    (Path(directory) / "audio_tap_fragment.c").write_text("\n".join(audio_fragment))
     binary = Path(directory) / ("encoder_test.exe" if os.name == "nt" else "encoder_test")
     for source, extra in (("test.c", []), ("audio_test.c", []),
                           ("mux_test.c", ["-DRECORD_MEDIACODEC_MUX_TEST"]),
                           ("worker_test.c", []), ("surface_test.c", []),
                           ("capture_images_test.c", ["-DRECORD_ANDROID_CAPTURE_TEST"]),
                           ("capture_submit_test.c", []), ("capture_pipe_test.c", []),
-                          ("capture_pool_test.c", []), ("device_test.c", []), ("request_test.c", []), ("config_test.c", []), ("frontend_test.c", []), ("frontend_test.c", ["-DHAVE_WEBMPLAYER"]), ("capture_ops_test.c", []),
+                          ("capture_pool_test.c", []), ("device_test.c", []), ("request_test.c", []), ("config_test.c", []), ("audio_tap_test.c", []), ("audio_tap_driver_test.c", []), ("audio_tap_driver_test.c", ["-DHAVE_THREADS"]),
+                          ("frontend_test.c", []), ("frontend_test.c", ["-DHAVE_WEBMPLAYER"]), ("capture_ops_test.c", []),
                           ("capture_egl_test.c", []),
                           ("capture_gl_test.c", []),
                           ("draw_test.c", []), ("gpu_worker_test.c", []),
@@ -95,10 +112,24 @@ with tempfile.TemporaryDirectory(prefix="mediacodec-encode-") as directory:
                         str(root / "record/record_gpu_queue.c"),
                         str(root / "libretro-common/queues/retro_spsc.c"),
                         str(root / "gfx/common/vulkan_android_queue.c")]
+        if source == "audio_tap_test.c":
+            command += [str(root / "libretro-common/audio/conversion/float_to_s16.c")]
+        if source == "audio_tap_driver_test.c":
+            command += ["-I" + directory, "-DRECORD_AUDIO_TAP_TEST", "-D_GNU_SOURCE",
+                        "-ffunction-sections", "-fdata-sections", "-Wl,--gc-sections",
+                        "-Wno-unused-function", "-Wno-unused-parameter", "-Wno-unused-variable",
+                        str(root / "record/record_audio_tap.c"),
+                        str(root / "libretro-common/audio/conversion/float_to_s16.c"),
+                        str(root / "libretro-common/rthreads/rthreads.c"),
+                        str(root / "libretro-common/rthreads/retro_eventcount.c"), "-lm"]
+            if os.name != "nt":
+                command += ["-pthread"]
         if source == "frontend_test.c":
             command += ["-DHAVE_THREADS", "-DHAVE_CONFIGFILE", "-DRECORD_MEDIACODEC_FRONTEND_TEST",
                         "-DUSE_SYSTEM_EGL", "-I" + str(root / "gfx/include"),
-                        "-I" + str(root / "gfx/include/ANGLE"), "-lm"]
+                        "-I" + str(root / "gfx/include/ANGLE"), "-lm",
+                        str(root / "record/record_audio_tap.c"),
+                        str(root / "libretro-common/audio/conversion/float_to_s16.c")]
         if source == "config_test.c":
             command += ["-DRECORD_ANDROID_CAPTURE_CONFIG_TEST", "-DUSE_SYSTEM_EGL",
                         "-I" + str(root / "gfx/include"), "-I" + str(root / "gfx/include/ANGLE")]

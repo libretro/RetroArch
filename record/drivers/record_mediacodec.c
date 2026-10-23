@@ -14,6 +14,9 @@
 #include <string/stdstring.h>
 #include "../record_android_capture_config.h"
 #include "../record_android_capture_request.h"
+#include "../record_audio_tap.h"
+#include "../../runloop.h"
+#include <features/features_cpu.h>
 #include "../../audio/audio_driver.h"
 #include "../../audio/audio_upmix.h"
 #include "../../configuration.h"
@@ -27,8 +30,11 @@
 typedef struct record_mc_context
 {
    uint64_t next_us, step, carry, audio_frames, offered;
+   int64_t menu_origin;
+   uint64_t last_menu_pts;
    struct record_mc_context *next;
    record_dispatch_mediacodec_t *io;
+   record_audio_tap_t *tap;
    record_android_capture_config_t *config;
    record_android_capture_request_t *request;
    void *device;
@@ -38,7 +44,7 @@ typedef struct record_mc_context
    enum record_dispatch_mediacodec_state final_state;
    int error, file_error, system_error;
    bool armed, stopped, failed, audio_closed, gpu_closed;
-   bool resetting, reset_ready;
+   bool resetting, reset_ready, menu_source;
 } record_mc_context_t;
 static record_mc_context_t *record_mc_active, *record_mc_retired;
 static bool record_mc_start_requested;
@@ -186,8 +192,25 @@ static void record_mc_fail(record_mc_context_t *ctx)
 }
 static void record_mc_close(record_mc_context_t *ctx)
 {
+   if (ctx->menu_source && ctx->armed)
+   {
+      int64_t now = cpu_features_get_time_usec();
+      uint64_t maximum = (((uint64_t)1 << 63) - 1) / 1000;
+      if (now >= ctx->menu_origin)
+      {
+         uint64_t end = (uint64_t)now - (uint64_t)ctx->menu_origin;
+         if (end <= maximum && end > ctx->next_us)
+            ctx->next_us = end;
+      }
+   }
    ctx->armed = false;
    ctx->stopped = true;
+   if (ctx->tap)
+   {
+      if (!audio_driver_record_tap_remove(ctx->tap)
+            || !record_audio_tap_end(ctx->tap, &ctx->audio_frames))
+         return;
+   }
    if (!ctx->audio_closed)
       ctx->audio_closed = record_dispatch_mediacodec_audio_finish(
             ctx->io, ctx->audio_frames);
@@ -199,6 +222,12 @@ static void record_mc_retire(record_mc_context_t *ctx)
    record_mc_retired = ctx;
 }
 
+static int record_mc_mixed_audio(
+      void *io, const int16_t *samples, size_t frames, uint64_t pts)
+{
+   return record_dispatch_mediacodec_audio(
+         (record_dispatch_mediacodec_t *)io, samples, frames, pts);
+}
 static void *record_mc_init(const struct record_params *params)
 {
    mediacodec_encoder_request_t encoder;
@@ -285,6 +314,7 @@ static void *record_mc_init(const struct record_params *params)
    ctx->mode = hdr.output_mode;
    ctx->step = (uint64_t)1000000 * den;
    ctx->divisor = num;
+   ctx->menu_source = params->menu_source;
    ctx->rate = rate;
    ctx->channels = channels;
    ctx->io = record_dispatch_mediacodec_new(&encoder, 2, rate, channels,
@@ -295,9 +325,20 @@ static void *record_mc_init(const struct record_params *params)
       free(ctx);
       return NULL;
    }
+   if (ctx->menu_source && audio)
+   {
+      ctx->tap = record_audio_tap_new(rate, record_mc_mixed_audio, ctx->io);
+      if (!ctx->tap)
+      {
+         record_mc_fail(ctx);
+         record_mc_retire(ctx);
+         return NULL;
+      }
+   }
    ctx->request = record_android_capture_request_new(ctx->io,
          record_android_capture_config_pool(ctx->config),
-         (unsigned)(ctx->step / num), params->allow_frame_drop);
+         (unsigned)(ctx->step / num), params->allow_frame_drop,
+         ctx->menu_source);
    if (!ctx->request)
    {
       record_mc_fail(ctx);
@@ -327,6 +368,9 @@ static bool record_mc_audio(void *data, const struct record_audio_data *audio)
    size_t frames;
    if (ctx->stopped || ctx->failed)
       return false;
+   /* Menu filler is mixed on the audio owner; it is not the recorded PCM. */
+   if (ctx->menu_source)
+      return true;
    if (!ctx->channels || !ctx->armed || (audio && !audio->frames))
       return true;
    if (!audio || !audio->data
@@ -369,8 +413,31 @@ void record_mediacodec_frame_info(struct video_frame_info *info, bool capture)
          = (void *)record_android_capture_request_binding(ctx->request);
    if (!info->recording_gpu || !capture
          || recording_state_get_ptr()->data != ctx
-         || video_state_get_ptr()->frame_repeat)
+         || (video_state_get_ptr()->frame_repeat && !ctx->menu_source))
       return;
+   if (ctx->menu_source)
+   {
+      int64_t now = cpu_features_get_time_usec();
+      uint64_t pts;
+      delta = ctx->step / ctx->divisor;
+      if (now < ctx->menu_origin)
+         return;
+      pts = (uint64_t)now - (uint64_t)ctx->menu_origin;
+      if (ctx->offered && pts <= ctx->last_menu_pts)
+         return;
+      if (pts > maximum - delta)
+      {
+         record_mc_fail(ctx);
+         info->recording_gpu = NULL;
+         return;
+      }
+      info->recording_gpu_capture = true;
+      info->recording_gpu_timestamp = pts;
+      ctx->last_menu_pts = pts;
+      ctx->next_us = pts + delta;
+      ctx->offered++;
+      return;
+   }
    carry = ctx->carry + ctx->step % ctx->divisor;
    delta = ctx->step / ctx->divisor + carry / ctx->divisor;
    if (ctx->next_us > maximum - delta)
@@ -463,7 +530,7 @@ static bool record_mc_collect(record_mc_context_t *ctx)
    if (ctx->final_state != RECORD_MC_DISPATCH_DONE
          && ctx->final_state != RECORD_MC_DISPATCH_FAILED)
       return false;
-   return record_dispatch_mediacodec_free(ctx->io);
+   return ctx->audio_closed && record_dispatch_mediacodec_free(ctx->io);
 }
 void record_mediacodec_poll(void)
 {
@@ -474,11 +541,17 @@ void record_mediacodec_poll(void)
       memset(&vp, 0, sizeof(vp));
       if (!recording_state_get_ptr()->enable)
          record_mc_start_requested = false;
-      else if (video_driver_get_viewport_info(&vp) && VIDEO_SCALE_W(vp.dims)
-            && VIDEO_SCALE_H(vp.dims))
+      else if (video_driver_get_viewport_info(&vp))
       {
-         record_mc_start_requested = false;
-         command_event(CMD_EVENT_RECORD_INIT, NULL);
+         unsigned dims
+               = runloop_state_get_ptr()->current_core_type == CORE_TYPE_DUMMY
+               ? vp.full_dims
+               : vp.dims;
+         if (VIDEO_SCALE_W(dims) && VIDEO_SCALE_H(dims))
+         {
+            record_mc_start_requested = false;
+            command_event(CMD_EVENT_RECORD_INIT, NULL);
+         }
       }
    }
    if (record_mc_active)
@@ -497,8 +570,13 @@ void record_mediacodec_poll(void)
             || !video_driver_get_display_metadata(
                   RETRO_ENVIRONMENT_GET_HDR_METADATA, &hdr)
             || hdr.output_mode != ctx->mode
-            || !video_driver_get_viewport_info(&vp) || vp.dims != ctx->dims
+            || !video_driver_get_viewport_info(&vp)
+            || (ctx->menu_source ? vp.full_dims : vp.dims) != ctx->dims
             || audio_driver_has_callback()
+            || (ctx->tap && record_audio_tap_failed(ctx->tap))
+            || (ctx->menu_source
+                  && runloop_state_get_ptr()->current_core_type
+                        != CORE_TYPE_DUMMY)
             || state >= RECORD_MC_DISPATCH_DRAINING
             || record_dispatch_mediacodec_cancelled(ctx->io))
          record_mc_fail(ctx);
@@ -507,7 +585,20 @@ void record_mediacodec_poll(void)
       else if (!ctx->armed)
       {
          if (record_android_capture_request_binding(ctx->request))
-            ctx->armed = true;
+         {
+            int attached
+                  = ctx->tap ? audio_driver_record_tap_install(ctx->tap) : 1;
+            if (attached < 0)
+            {
+               record_mc_fail(ctx);
+               record_mediacodec_stop();
+            }
+            else if (attached == 1)
+            {
+               ctx->menu_origin = cpu_features_get_time_usec();
+               ctx->armed = true;
+            }
+         }
          else if (record_android_capture_request_result(ctx->request) < 0)
          {
             record_mc_fail(ctx);
@@ -522,8 +613,10 @@ void record_mediacodec_poll(void)
    while (*link)
    {
       record_mc_context_t *ctx = *link;
+      bool collected;
       record_mc_close(ctx);
-      if (!ctx->audio_closed || !record_mc_collect(ctx))
+      collected = record_mc_collect(ctx);
+      if (!ctx->audio_closed || !collected)
       {
          link = &ctx->next;
          continue;
@@ -558,6 +651,7 @@ void record_mediacodec_poll(void)
          RARCH_ERR("[MediaCodec recording] Failed (session %d, file %d, "
                    "system %d).\n",
                ctx->error, ctx->file_error, ctx->system_error);
+      record_audio_tap_free(ctx->tap);
       record_android_capture_config_free(ctx->config);
       *link = ctx->next;
       free(ctx);

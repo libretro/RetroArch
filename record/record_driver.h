@@ -94,6 +94,8 @@ struct record_params
    bool allow_frame_drop;
    /* Prefer a hardware H.264 encoder for the built-in presets. */
    bool hw_encoder;
+   /* Native final-viewport recording of a menu without a running core. */
+   bool menu_source;
 };
 
 struct record_video_data

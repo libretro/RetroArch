@@ -11308,16 +11308,19 @@ static record_android_capture_renderer_t *vulkan_record_gpu(vk_t *vk,
    record_android_capture_renderer_t *recording
          = (record_android_capture_renderer_t *)info->recording_gpu;
    unsigned mode = 0;
+   bool menu = recording && (recording->flags & RECORD_ANDROID_CAPTURE_MENU);
    if (!recording || !recording->context || !recording->record
          || !recording->release || !recording->submitted
-         || !info->recording_gpu_capture || info->frame_repeat
+         || !info->recording_gpu_capture
+         || (info->frame_repeat && !(recording->flags & RECORD_ANDROID_CAPTURE_MENU))
          || !backbuffer->image || !vk->cmd
          || !(vk->context->flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
          || !(vk->context->flags & VK_CTX_FLAG_ANDROID_IMAGES)
          || (vk->context->flags & VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK)
-         || (vk->flags & VK_FLAG_OPEN_XR) || VIDEO_POS_X(vk->vp.pos) < 0
-         || VIDEO_POS_Y(vk->vp.pos) < 0 || !VIDEO_SCALE_W(vk->vp.dims)
-         || !VIDEO_SCALE_H(vk->vp.dims))
+         || (vk->flags & VK_FLAG_OPEN_XR) || (!menu && (VIDEO_POS_X(vk->vp.pos) < 0
+               || VIDEO_POS_Y(vk->vp.pos) < 0))
+         || !VIDEO_SCALE_W(menu ? vk->vp.full_dims : vk->vp.dims)
+         || !VIDEO_SCALE_H(menu ? vk->vp.full_dims : vk->vp.dims))
       return NULL;
 #ifdef VULKAN_HDR_SWAPCHAIN
    if (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
@@ -11331,10 +11334,10 @@ static record_android_capture_renderer_t *vulkan_record_gpu(vk_t *vk,
    source.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
    source.width = VIDEO_SCALE_W(vk->vp.full_dims);
    source.height = VIDEO_SCALE_H(vk->vp.full_dims);
-   source.x = (unsigned)VIDEO_POS_X(vk->vp.pos);
-   source.y = (unsigned)VIDEO_POS_Y(vk->vp.pos);
+   source.x = menu ? 0 : (unsigned)VIDEO_POS_X(vk->vp.pos);
+   source.y = menu ? 0 : (unsigned)VIDEO_POS_Y(vk->vp.pos);
    return recording->record(recording->context, &source, vk->cmd,
-                info->recording_gpu_timestamp, vk->vp.dims, mode)
+                info->recording_gpu_timestamp, menu ? vk->vp.full_dims : vk->vp.dims, mode)
                == 1
          ? recording
          : NULL;

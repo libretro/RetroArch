@@ -49,7 +49,7 @@ static struct
    const VkSubmitInfo *submit;
    unsigned records, callbacks, submits, ends, presents, services, checks;
    unsigned mode, releases;
-   bool queue_locked, accept, lease;
+   bool queue_locked, accept, lease, menu;
 } m;
 static int record(void *user, const record_android_capture_source_t *s,
       VkCommandBuffer command, uint64_t pts, unsigned dims, unsigned mode)
@@ -57,9 +57,11 @@ static int record(void *user, const record_android_capture_source_t *s,
    assert(user == &m && !m.queue_locked && command == COMMAND);
    assert(s->image == IMAGE && s->format == VK_FORMAT_R8G8B8A8_UNORM);
    assert(s->layout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL && !s->ready);
-   assert(s->width == 640 && s->height == 480 && s->x == 8 && s->y == 4);
+   assert(s->width == 640 && s->height == 480);
+   assert(s->x == (m.menu ? 0 : 8) && s->y == (m.menu ? 0 : 4));
    assert(s->owner == &m && s->release);
-   assert(dims == VIDEO_SCALE_PACK(320, 240) && pts == 123456);
+   assert(dims == (m.menu ? VIDEO_SCALE_PACK(640, 480)
+         : VIDEO_SCALE_PACK(320, 240)) && pts == 123456);
    assert(mode == m.mode);
    m.records++;
    if (m.accept)
@@ -190,6 +192,16 @@ int main(void)
       assert(ctx.swapchain_fences_signalled[0]);
       binding.release(binding.context, true);
    }
+   /* A repeated core frame can still contain changing menu media. Capture the
+    * whole composed window, independently of the dummy core viewport. */
+   reset(&vk, &ctx, &info, &binding);
+   binding.flags = RECORD_ANDROID_CAPTURE_MENU;
+   m.menu = true;
+   info.frame_repeat = true;
+   vk.vp.pos = VIDEO_POS_PACK(-8, -4);
+   assert(frame(&vk, &info, &image, &input));
+   assert(m.records == 1 && m.callbacks == 1 && m.lease);
+   binding.release(binding.context, true);
    for (i = 0; i < 16; i++)
    {
       reset(&vk, &ctx, &info, &binding);

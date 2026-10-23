@@ -31,6 +31,10 @@ static record_android_capture_pool_config_t pool_config;
 static settings_t settings;
 static recording_state_t recording;
 static video_driver_state_t video;
+static runloop_state_t loop;
+static int64_t wall_us;
+static record_audio_tap_t *active_tap;
+static bool tap_busy;
 static video_device_info_t device;
 static struct retro_hdr_metadata metadata;
 static unsigned dims, io_creates, config_creates, config_frees, io_frees;
@@ -61,6 +65,26 @@ void command_playlist_push_write(
 }
 #endif
 
+runloop_state_t *runloop_state_get_ptr(void) { return &loop; }
+retro_time_t cpu_features_get_time_usec(void) { return wall_us; }
+int audio_driver_record_tap_install(struct record_audio_tap *tap)
+{
+   if (tap_busy) return 0;
+   if (active_tap == tap) return 1;
+   if (active_tap || !record_audio_tap_begin(tap)) return -1;
+   active_tap = tap;
+   return 1;
+}
+bool audio_driver_record_tap_remove(struct record_audio_tap *tap)
+{
+   if (tap_busy) return false;
+   if (active_tap == tap)
+   {
+      active_tap = NULL;
+      record_audio_tap_retire(tap, false);
+   }
+   return record_audio_tap_end(tap, NULL);
+}
 settings_t *config_get_ptr(void)
 {
    return settings_available ? &settings : NULL;
@@ -98,9 +122,11 @@ bool video_driver_get_display_metadata(unsigned command, void *out)
    *(struct retro_hdr_metadata *)out = metadata;
    return true;
 }
+static bool menu_view_only;
 bool video_driver_get_viewport_info(struct video_viewport *out)
 {
-   out->dims = dims;
+   out->dims = menu_view_only ? 0 : dims;
+   out->full_dims = dims;
    return true;
 }
 void RARCH_LOG(const char *format, ...)
@@ -316,13 +342,14 @@ bool record_dispatch_mediacodec_free(record_dispatch_mediacodec_t *j)
 record_android_capture_request_t *record_android_capture_request_new(
       record_dispatch_mediacodec_t *j,
       const record_android_capture_pool_config_t *config, unsigned duration,
-      bool allow_drop)
+      bool allow_drop, bool menu_source)
 {
    assert(j == &io && config == &pool_config && duration == 16683 && !allow_drop
          && !request.live);
    if (request_fault)
       return NULL;
    request.live = true;
+   request.binding.flags = menu_source ? RECORD_ANDROID_CAPTURE_MENU : 0;
    return &request;
 }
 int record_android_capture_request_result(
@@ -397,11 +424,16 @@ static struct record_params parameters(void)
 }
 static void reset(unsigned mode)
 {
-   assert(!record_mediacodec_pending() && !configuration.live && !io.live);
+   assert(!record_mediacodec_pending() && !configuration.live && !io.live
+         && !active_tap);
    memset(&settings, 0, sizeof(settings));
    memset(&recording, 0, sizeof(recording));
    memset(&video, 0, sizeof(video));
    memset(&device, 0, sizeof(device));
+   memset(&loop, 0, sizeof(loop));
+   loop.current_core_type = CORE_TYPE_DUMMY;
+   wall_us = 100000;
+   tap_busy = false;
    memset(&metadata, 0, sizeof(metadata));
    memset(&request, 0, sizeof(request));
    memset(&io, 0, sizeof(io));
@@ -653,6 +685,71 @@ static void video_only(void)
    drain(false);
    assert(history_writes == writes);
 }
+static void menu_capture(void)
+{
+   static int16_t mixed[10000];
+   static video_frame_info_t info;
+   struct record_params p;
+   struct record_audio_data silence;
+   record_mc_context_t *ctx;
+   uint64_t end;
+   unsigned writes = history_writes;
+   reset(0);
+   p = parameters();
+   p.menu_source = true;
+   video.av_info.timing.sample_rate = 44100;
+   ctx = (record_mc_context_t *)record_mediacodec.init(&p);
+   assert(ctx && ctx->tap);
+   recording.data = ctx;
+   recording.driver = &record_mediacodec;
+   record_mediacodec_poll();
+   io.state = RECORD_MC_DISPATCH_READY;
+   ack(1);
+   tap_busy = true;
+   record_mediacodec_poll();
+   assert(!ctx->armed && !active_tap && !expected_audio);
+   tap_busy = false;
+   record_mediacodec_poll();
+   assert(ctx->armed && active_tap == ctx->tap);
+   assert(!record_audio_tap_end(ctx->tap, &end));
+   silence.data = mixed; silence.frames = 5000;
+   assert(record_mediacodec.push_audio(ctx, &silence) && !audio_calls);
+   assert(record_audio_tap_push(active_tap, mixed, 5000, false, 48000));
+   assert(audio_calls == 2 && expected_audio == 5000);
+   video.frame_repeat = true;
+   record_mediacodec_frame_info(&info, true);
+   assert(info.recording_gpu_capture && info.recording_gpu_timestamp == 0);
+   assert(((record_android_capture_renderer_t *)info.recording_gpu)->flags
+         & RECORD_ANDROID_CAPTURE_MENU);
+   record_mediacodec_frame_info(&info, true);
+   assert(!info.recording_gpu_capture);
+   wall_us += 50000;
+   record_mediacodec_frame_info(&info, true);
+   assert(info.recording_gpu_capture && info.recording_gpu_timestamp == 50000);
+   wall_us += 100000;
+   tap_busy = true;
+   record_mediacodec_stop();
+   assert(active_tap == ctx->tap && !ctx->audio_closed && ctx->next_us == 150000);
+   record_mediacodec_poll();
+   assert(request.busy && !io.audio_closed);
+   native_retired = true;
+   ack(1);
+   record_mediacodec_poll();
+   assert(!request.live && io.live && configuration.live);
+   assert(history_writes == writes);
+   tap_busy = false;
+   record_mediacodec_poll();
+   assert(!active_tap && closed_audio == 5000 && io.live);
+   io.state = RECORD_MC_DISPATCH_DONE;
+   record_mediacodec_poll();
+   assert(!record_mediacodec_pending());
+   assert(video.av_info.timing.sample_rate == 44100);
+#ifdef HAVE_WEBMPLAYER
+   assert(history_writes == writes + 1);
+#else
+   assert(history_writes == writes);
+#endif
+}
 static void history(void)
 {
    unsigned fault;
@@ -762,6 +859,12 @@ static void admission(void)
    record_mediacodec_poll();
    assert(!record_mc_start_requested && starts == 1
          && !record_mediacodec_pending());
+   menu_view_only = true;
+   loop.current_core_type = CORE_TYPE_DUMMY;
+   assert(record_mediacodec_defer_start());
+   record_mediacodec_poll();
+   assert(!record_mc_start_requested && starts == 2);
+   menu_view_only = false;
 }
 int main(void)
 {
@@ -774,6 +877,7 @@ int main(void)
    audio_faults();
    startup_faults();
    history();
+   menu_capture();
    admission();
    assert(io_frees && config_frees && logs >= 3 && failures >= 4 && stops);
    puts("PASS full MediaCodec frontend startup, rational clocks, PCM, closure, "

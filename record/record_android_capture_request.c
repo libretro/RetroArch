@@ -26,7 +26,7 @@ struct record_android_capture_request
    enum record_android_capture_operation operation;
    unsigned duration;
    int result;
-   bool busy, ready, closing, failed, had_pool;
+   bool busy, ready, closing, failed, had_pool, menu_source;
 };
 
 static bool record_acrequest_in_flight(record_android_capture_request_t *r)
@@ -67,6 +67,8 @@ static int record_acrequest_create(record_android_capture_request_t *r)
          r->failed = true;
          return -1;
       }
+      if (r->menu_source)
+         r->binding.flags |= RECORD_ANDROID_CAPTURE_MENU;
    }
    state = record_android_capture_pool_status(r->pool, NULL, NULL);
    return state == RECORD_MC_DISPATCH_READY     ? 1
@@ -193,7 +195,7 @@ static void record_acrequest_done(void *user, uintptr_t executed)
 record_android_capture_request_t *record_android_capture_request_new(
       record_dispatch_mediacodec_t *io,
       const record_android_capture_pool_config_t *config, unsigned duration,
-      bool allow_drop)
+      bool allow_drop, bool menu_source)
 {
    record_android_capture_request_t *r;
    if (!io || !config || !config->device || !config->physical || !config->queue
@@ -210,6 +212,7 @@ record_android_capture_request_t *record_android_capture_request_new(
    r->config.memory = &r->memory;
    r->io = io;
    r->duration = duration;
+   r->menu_source = menu_source;
    r->job.run = record_acrequest_run;
    r->job.user = r;
    r->node.kind = VIDEO_THREAD_ASYNC_JOB;
@@ -300,12 +303,13 @@ bool record_android_capture_request_free(record_android_capture_request_t *r)
 record_android_capture_request_t *record_android_capture_request_new(
       record_dispatch_mediacodec_t *io,
       const record_android_capture_pool_config_t *config, unsigned duration,
-      bool allow_drop)
+      bool allow_drop, bool menu_source)
 {
    (void)io;
    (void)config;
    (void)duration;
    (void)allow_drop;
+   (void)menu_source;
    return NULL;
 }
 bool record_android_capture_request_post(record_android_capture_request_t *r,

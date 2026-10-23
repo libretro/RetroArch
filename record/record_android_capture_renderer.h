@@ -7,6 +7,10 @@
  * Context and source leases survive resize and remain alive through collection.
  * Callbacks never block, allocate, read back pixels or acquire the queue lock.
  */
+enum record_android_capture_renderer_flags
+{
+   RECORD_ANDROID_CAPTURE_MENU = 1
+};
 typedef struct record_android_capture_renderer
 {
    void *context;
@@ -23,5 +27,6 @@ typedef struct record_android_capture_renderer
    void (*submitted)(void *context, VkResult result);
    /* Optional bounded retirement/completion service under the queue lock. */
    void (*service)(void *context);
+   unsigned flags;
 } record_android_capture_renderer_t;
 #endif

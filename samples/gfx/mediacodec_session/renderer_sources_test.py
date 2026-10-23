@@ -39,7 +39,7 @@ def objects(names):
 
 
 recording = {"record/" + name + ".o" for name in [
-    "record_mediacodec_encoder", "record_mux_mediacodec", "record_mediacodec_worker",
+    "record_audio_tap", "record_mediacodec_encoder", "record_mux_mediacodec", "record_mediacodec_worker",
     "record_mediacodec_surface", "record_mediacodec_file", "record_session_mediacodec",
     "record_dispatch_mediacodec", "record_gpu_dispatch_mediacodec",
     "record_mediacodec_gpu_worker", "record_android_capture_config",

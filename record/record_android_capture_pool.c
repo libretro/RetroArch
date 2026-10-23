@@ -375,6 +375,7 @@ bool record_android_capture_pool_bind_renderer(record_android_capture_pool_t *p,
    p->renderer_duration = duration;
    p->renderer_bound = true;
    binding->context = p;
+   binding->flags = 0;
    binding->release = record_acpool_renderer_release;
    binding->record = record_acpool_renderer_record;
    binding->submitted = record_acpool_renderer_submitted;

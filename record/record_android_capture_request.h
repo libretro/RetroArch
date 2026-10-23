@@ -27,7 +27,7 @@ enum record_android_capture_operation
 record_android_capture_request_t *record_android_capture_request_new(
       record_dispatch_mediacodec_t *io,
       const record_android_capture_pool_config_t *config, unsigned duration,
-      bool allow_drop);
+      bool allow_drop, bool menu_source);
 /* Main owner outside frame publication. At most one embedded job is posted.
  * FINISH/CANCEL/PREPARE/COLLECT refuse queued frames naming this binding;
  * producers must first stop publishing it. Wrapped posting neither waits nor

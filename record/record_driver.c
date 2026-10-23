@@ -283,6 +283,10 @@ bool recording_init(void)
    bool metal_native = string_is_equal(settings->arrays.record_driver,"metal");
    bool mc_native = string_is_equal(settings->arrays.record_driver,"mediacodec");
    bool gpu_native = nvenc_native || metal_native || mc_native;
+   bool menu_source = false;
+#ifdef HAVE_RECORD_MEDIACODEC
+   menu_source = mc_native && current_core_type == CORE_TYPE_DUMMY;
+#endif
 
    if (!recording_enable)
       return false;
@@ -316,7 +320,7 @@ bool recording_init(void)
    }
    output[0] = '\0';
 
-   if (current_core_type == CORE_TYPE_DUMMY)
+   if (current_core_type == CORE_TYPE_DUMMY && !menu_source)
    {
       RARCH_WARN("[Recording] %s\n",
             msg_hash_to_str(MSG_USING_LIBRETRO_DUMMY_CORE_RECORDING_SKIPPED));
@@ -431,6 +435,19 @@ bool recording_init(void)
    params.filename                  = output;
    params.fps                       = av_info->timing.fps;
    params.samplerate                = av_info->timing.sample_rate;
+   params.menu_source               = menu_source;
+   if (menu_source)
+   {
+      /* Capture the menu's actual output, without changing the core AV info.
+       * The encoder rate is a nominal hint; presentation timestamps use wall
+       * time, so content-rate and display-rate menus retain their real pace. */
+      params.fps = settings->floats.video_refresh_rate;
+      if (!(params.fps > 0.0))
+         params.fps = video_driver_get_window_refresh_rate();
+      params.samplerate = audio_state_get_ptr()->out_rate;
+      params.channels = recording_st->channels = 2;
+      recording_st->layout = AUDIO_LAYOUT_STEREO;
+   }
    /* XRGB2101010 source frames are down-converted to XRGB8888 before the
     * recording path sees them (see video_driver_frame), so they record as
     * ARGB8888 just like a native XRGB8888 core. */
@@ -464,16 +481,18 @@ bool recording_init(void)
       struct video_viewport vp;
       memset(&vp, 0, sizeof(vp));
       if (!video_driver_get_viewport_info(&vp)) return false;
-      if (!VIDEO_SCALE_W(vp.dims) || !VIDEO_SCALE_H(vp.dims))
+      if (!VIDEO_SCALE_W(menu_source ? vp.full_dims : vp.dims)
+            || !VIDEO_SCALE_H(menu_source ? vp.full_dims : vp.dims))
       {
          recording_st->driver = mc_native ? &record_mediacodec
                : metal_native ? &record_metal : &record_nvenc;
          return recording_gpu_defer_start(recording_st->driver);
       }
-      params.out_dims = params.fb_dims = vp.dims;
+      params.out_dims = params.fb_dims = menu_source ? vp.full_dims : vp.dims;
       params.pix_fmt = FFEMU_PIX_ARGB8888;
-      params.aspect_ratio = (float)VIDEO_SCALE_W(vp.dims) / VIDEO_SCALE_H(vp.dims);
-      recording_st->gpu_dims = vp.dims;
+      params.aspect_ratio = (float)VIDEO_SCALE_W(params.out_dims)
+            / VIDEO_SCALE_H(params.out_dims);
+      recording_st->gpu_dims = params.out_dims;
       recording_st->gpu_bgrx = false;
    }
    else if (video_gpu_record && video_st->current_video->read_viewport)
