@@ -83,6 +83,8 @@ void videotoolbox_av1_test_export(video_hw_frame_t *frame, unsigned depth,
              destinationOrigin:MTLOriginMake(0, 0, 0)];
       [encoder endEncoding];
       memset(frame, 0, sizeof(*frame));
+      lease = nil;
+      assert([done signaledValue] < value);
       [buffer commit];
       /* Readbacks and bounded completion belong only to this fixture. */
       pool_test_wait((__bridge void *)done, (__bridge void *)listener, value);
