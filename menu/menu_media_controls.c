@@ -31,7 +31,10 @@ static gfx_media_playback_state_t menu_media_display_source_state;
 
 static void menu_media_display_publish(menu_media_controls_t *media, bool clear)
 {
-   if (!clear && config_get_ptr()->bools.media_player_crt_switch
+   settings_t *settings = config_get_ptr();
+   bool desktop = settings->bools.media_player_refresh_rate
+      && !settings->uints.crt_switch_resolution;
+   if (!clear && (settings->bools.media_player_crt_switch || desktop)
          && media->controls.target.user)
    {
       gfx_media_controls_t request;
@@ -42,8 +45,11 @@ static void menu_media_display_publish(menu_media_controls_t *media, bool clear)
             || menu_media_display_identity != media->controls.target.identity
             || menu_media_display_source_state.dims != state->dims
             || state->seek_failed)
+      {
+         video_display_server_media_refresh(0, 0);
          memset(&menu_media_display_source_state, 0,
                sizeof(menu_media_display_source_state));
+      }
       menu_media_display_owner = media;
       menu_media_display_identity = media->controls.target.identity;
       if (gfx_media_display_source(state, &dims, &hz)
@@ -51,6 +57,9 @@ static void menu_media_display_publish(menu_media_controls_t *media, bool clear)
                   NULL, &previous_hz)
                || hz < previous_hz * 0.9991f || hz > previous_hz * 1.0009f))
          menu_media_display_source_state = *state;
+      video_display_server_media_refresh(
+            desktop ? menu_media_display_source_state.cadence_num : 0,
+            desktop ? menu_media_display_source_state.cadence_den : 0);
       memset(&request, 0, sizeof(request));
       request.target.user = media;
       request.playback = menu_media_display_source_state;
@@ -58,6 +67,7 @@ static void menu_media_display_publish(menu_media_controls_t *media, bool clear)
    }
    else if (menu_media_display_owner == media)
    {
+      video_display_server_media_refresh(0, 0);
       menu_media_display_owner = NULL;
       menu_media_display_identity = NULL;
       gfx_media_controls_publish(NULL, &menu_media_display_mailbox);

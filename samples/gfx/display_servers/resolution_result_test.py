@@ -153,7 +153,7 @@ config_start = header.index("typedef struct video_display_config")
 config_end = header.index("} video_display_config_t;", config_start) + len("} video_display_config_t;")
 unit += header[config_start:config_end]
 policy = (root / "gfx/gfx_media_display.c").read_text(encoding="utf-8")
-unit += policy[policy.index("float gfx_media_display_rate("):]
+unit += policy[policy.index("float gfx_media_display_rate("):policy.index("void gfx_media_display_owner_reset(")]
 unit += source[start:end]
 unit += r"""
 int main(void)
@@ -261,6 +261,15 @@ int main(void)
       lease = win32_display_server_begin_media_refresh(&serv, i == 3 ? 25 : 24, 1);
       assert((lease != NULL) == (i == 0 || i == 2));
       assert(!serv.modes);
+      if (lease)
+      {
+         assert(!win32_display_server_media_refresh_current(&serv, lease, 24, 1));
+         selected = 'D';
+         assert(win32_display_server_media_refresh_current(&serv, lease, 24, 1));
+         assert(!win32_display_server_media_refresh_current(&serv, lease, 25, 1));
+         selected = 'D';
+         assert(win32_display_server_media_refresh_current(&serv, lease, 30, 1));
+      }
       before = monitors;
       test_result = apply_result = DISP_CHANGE_SUCCESSFUL;
       win32_display_server_end_media_refresh(&serv, lease);

@@ -196,7 +196,7 @@ static bool media_folder_drive(struct menu_state *menu_st,
          size_t row;
          unsigned dims;
          float hz;
-         bool found = false;
+         bool found = false, refresh_found = false;
          if (getenv("MEDIA_TEST_CRT_ENGINE"))
          {
 #ifdef HAVE_MODELINE
@@ -211,9 +211,25 @@ static bool media_folder_drive(struct menu_state *menu_st,
          }
          else if (menu_media_controls_display(&dims, &hz)) return false;
          for (row = 0; row < entries->size; row++)
+         {
+            if (entries->list[row].label
+                  && !strcmp(entries->list[row].label, "media_player_refresh_rate"))
+               refresh_found = true;
             if (entries->list[row].label
                   && !strcmp(entries->list[row].label, "media_player_crt_switch"))
                found = true;
+         }
+         if (!refresh_found) return false;
+         if (getenv("MEDIA_TEST_DESKTOP_REFRESH"))
+         {
+            video_driver_state_t *video = video_state_get_ptr();
+            if (!config_get_ptr()->bools.media_player_refresh_rate
+                  || config_get_ptr()->bools.media_player_crt_switch
+                  || video->av_info.timing.fps != media_folder_core_fps
+                  || video->core_hz != media_folder_core_hz)
+               return false;
+            puts("desktop refresh: source cleared on settings exit; core timing unchanged");
+         }
 #ifdef HAVE_MODELINE
          if (!found) return false;
 #else

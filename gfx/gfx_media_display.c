@@ -1,4 +1,5 @@
 #include <math.h>
+#include <string.h>
 #include "gfx_media_display.h"
 #include "video_defines.h"
 
@@ -60,4 +61,41 @@ float gfx_media_display_rate(const video_display_config_t *modes,
       }
    }
    return best;
+}
+
+void gfx_media_display_owner_reset(gfx_media_display_owner_t *owner)
+{
+   if (owner->lease && owner->server && owner->server->end_media_refresh)
+      owner->server->end_media_refresh(owner->data, owner->lease);
+   memset(owner, 0, sizeof(*owner));
+}
+
+void gfx_media_display_owner_update(gfx_media_display_owner_t *owner,
+      const video_display_server_t *server, void *data,
+      unsigned num, unsigned den, bool output_changed)
+{
+   if (!num || !den || !server || !data)
+   {
+      gfx_media_display_owner_reset(owner);
+      return;
+   }
+   if (owner->server == server && owner->data == data)
+   {
+      if (!output_changed && owner->num == num && owner->den == den)
+         return;
+      if (owner->lease && server->media_refresh_current
+            && server->media_refresh_current(data, owner->lease, num, den))
+      {
+         owner->num = num;
+         owner->den = den;
+         return;
+      }
+   }
+   gfx_media_display_owner_reset(owner);
+   owner->server = server;
+   owner->data = data;
+   owner->num = num;
+   owner->den = den;
+   if (server->begin_media_refresh && server->end_media_refresh)
+      owner->lease = server->begin_media_refresh(data, num, den);
 }

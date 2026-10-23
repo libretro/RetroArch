@@ -6,6 +6,19 @@
 
 RETRO_BEGIN_DECLS
 
+typedef struct gfx_media_display_owner
+{
+   const video_display_server_t *server;
+   void *data;
+   void *lease;
+   unsigned num, den;
+} gfx_media_display_owner_t;
+
+void gfx_media_display_owner_reset(gfx_media_display_owner_t *owner);
+void gfx_media_display_owner_update(gfx_media_display_owner_t *owner,
+      const video_display_server_t *server, void *data,
+      unsigned num, unsigned den, bool output_changed);
+
 bool gfx_media_display_source(const gfx_media_playback_state_t *state,
       unsigned *dims, float *hz);
 

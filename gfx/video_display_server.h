@@ -175,11 +175,15 @@ typedef struct video_display_server
     * the captured output and frees the opaque lease. Cold transitions only. */
    void    *(*begin_media_refresh)(void *data, unsigned num, unsigned den);
    void     (*end_media_refresh)(void *data, void *lease);
+   bool     (*media_refresh_current)(void *data, void *lease,
+         unsigned num, unsigned den);
 } video_display_server_t;
 
 void* video_display_server_init(enum rarch_display_type type);
 
 void video_display_server_destroy(void);
+
+void video_display_server_media_refresh(unsigned num, unsigned den);
 
 bool video_display_server_get_flags(gfx_ctx_flags_t *flags);
 

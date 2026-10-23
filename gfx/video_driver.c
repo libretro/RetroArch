@@ -41,6 +41,7 @@
 #include "../cores/internal_cores.h"
 #include "video_driver.h"
 #include "video_hdr_metadata.h"
+#include "gfx_media_display.h"
 #if defined(HAVE_MENU) && defined(HAVE_MODELINE)
 #include "../menu/menu_media_controls.h"
 #endif
@@ -800,6 +801,8 @@ const video_driver_t *video_drivers[] = {
 };
 
 static video_driver_state_t video_driver_st;
+static gfx_media_display_owner_t video_media_refresh_owner;
+static retro_atomic_int_t video_media_refresh_output_changed = RETRO_ATOMIC_INT_INITIALIZER(0);
 static const video_display_server_t *current_display_server =
 &dispserv_null;
 
@@ -2220,12 +2223,28 @@ void *video_display_server_init(enum rarch_display_type type)
    return data;
 }
 
+void video_display_server_media_refresh(unsigned num, unsigned den)
+{
+   void *data;
+   const video_display_server_t *server;
+   bool changed = retro_atomic_exchange_int(&video_media_refresh_output_changed, 0) != 0;
+   if (!num || !den)
+   {
+      gfx_media_display_owner_reset(&video_media_refresh_owner);
+      return;
+   }
+   server = video_display_server_modes(&data);
+   gfx_media_display_owner_update(&video_media_refresh_owner,
+         server, data, num, den, changed);
+}
+
 void video_display_server_destroy(void)
 {
    video_driver_state_t *video_st                 = &video_driver_st;
    const enum rotation initial_screen_orientation = video_st->initial_screen_orientation;
    const enum rotation current_screen_orientation = video_st->current_screen_orientation;
 
+   video_display_server_media_refresh(0, 0);
    if (initial_screen_orientation != current_screen_orientation)
       video_display_server_set_screen_orientation(initial_screen_orientation);
 
@@ -6972,6 +6991,7 @@ float video_driver_get_window_refresh_rate(void)
 
 void video_driver_window_output_changed(void)
 {
+   retro_atomic_store_release_int(&video_media_refresh_output_changed, 1);
    video_driver_st.window_refresh_known = false;
 }
 

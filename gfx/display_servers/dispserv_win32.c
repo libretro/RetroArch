@@ -712,6 +712,32 @@ static void win32_display_server_end_media_refresh(void *data, void *handle)
    free(lease);
 }
 
+static bool win32_display_server_media_refresh_current(void *data, void *handle,
+      unsigned num, unsigned den)
+{
+   win32_display_mode_t *lease = (win32_display_mode_t *)handle;
+   MONITORINFOEX mon;
+   HMONITOR monitor = NULL;
+   unsigned id = 0;
+   DEVMODE current;
+   video_display_config_t mode;
+   (void)data;
+   if (!lease)
+      return false;
+   memset(&mode, 0, sizeof(mode));
+   mode.dims = VIDEO_SCALE_PACK(lease->applied.dmPelsWidth, lease->applied.dmPelsHeight);
+   mode.bpp = lease->applied.dmBitsPerPel;
+   mode.refreshrate = lease->applied.dmDisplayFrequency;
+   if (!gfx_media_display_rate(&mode, 1, mode.dims, mode.bpp, num, den,
+            (float)mode.refreshrate))
+      return false;
+   memset(&mon, 0, sizeof(mon));
+   win32_monitor_info(&mon, &monitor, &id);
+   return !memcmp(mon.szDevice, lease->device, sizeof(lease->device))
+      && win32_get_named_video_output(&current, -1, lease->device)
+      && win32_display_mode_matches(&current, &lease->applied);
+}
+
 /* Display resolution list qsort helper function */
 static int resolution_list_qsort_func(
       const video_display_config_t *a, const video_display_config_t *b)
@@ -1836,5 +1862,6 @@ const video_display_server_t dispserv_win32 = {
    "win32",
    win32_display_server_get_window_refresh_rate,
    win32_display_server_begin_media_refresh,
-   win32_display_server_end_media_refresh
+   win32_display_server_end_media_refresh,
+   win32_display_server_media_refresh_current
 };

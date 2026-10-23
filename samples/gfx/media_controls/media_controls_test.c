@@ -30,6 +30,74 @@ int generic_action_ok_displaylist_push(const char *path, const char *new_path,
 }
 
 #define CHECK(c) do { if (!(c)) { printf("FAIL line %u: %s\n", (unsigned)__LINE__, #c); failures++; } } while (0)
+static gfx_media_display_owner_t desktop_owner;
+static video_display_server_t desktop_server;
+static unsigned desktop_begin, desktop_end, desktop_checked;
+static int desktop_data, desktop_other, desktop_token;
+static bool desktop_valid = true, desktop_refused;
+static void *desktop_acquire(void *data, unsigned num, unsigned den)
+{
+   CHECK(data && num && den);
+   desktop_begin++;
+   return desktop_refused ? NULL : &desktop_token;
+}
+static void desktop_release(void *data, void *lease)
+{
+   CHECK(data && lease == &desktop_token);
+   desktop_end++;
+}
+static bool desktop_current(void *data, void *lease, unsigned num, unsigned den)
+{
+   CHECK(data && lease == &desktop_token);
+   CHECK(num && den);
+   desktop_checked++;
+   return desktop_valid;
+}
+void video_display_server_media_refresh(unsigned num, unsigned den)
+{
+   gfx_media_display_owner_update(&desktop_owner, &desktop_server,
+         &desktop_data, num, den, false);
+}
+static void display_owner_lifecycle(void)
+{
+   gfx_media_display_owner_t owner;
+   unsigned i;
+   memset(&owner, 0, sizeof(owner));
+   memset(&desktop_server, 0, sizeof(desktop_server));
+   desktop_server.begin_media_refresh = desktop_acquire;
+   desktop_server.end_media_refresh = desktop_release;
+   desktop_server.media_refresh_current = desktop_current;
+   desktop_begin = desktop_end = desktop_checked = 0;
+   gfx_media_display_owner_update(&owner, &desktop_server, &desktop_data, 24, 1, false);
+   for (i = 0; i < 100; i++)
+      gfx_media_display_owner_update(&owner, &desktop_server, &desktop_data, 24, 1, false);
+   CHECK(desktop_begin == 1 && !desktop_end && !desktop_checked);
+   gfx_media_display_owner_update(&owner, &desktop_server, &desktop_data, 24, 1, true);
+   CHECK(desktop_begin == 1 && desktop_checked == 1 && !desktop_end);
+   gfx_media_display_owner_update(&owner, &desktop_server, &desktop_data, 30, 1, false);
+   CHECK(desktop_begin == 1 && desktop_checked == 2 && !desktop_end);
+   desktop_valid = false;
+   gfx_media_display_owner_update(&owner, &desktop_server, &desktop_data, 24, 1, true);
+   CHECK(desktop_begin == 2 && desktop_end == 1);
+   gfx_media_display_owner_update(&owner, &desktop_server, &desktop_other, 24, 1, false);
+   CHECK(desktop_begin == 3 && desktop_end == 2);
+   gfx_media_display_owner_update(&owner, &desktop_server, &desktop_other, 25, 1, false);
+   CHECK(desktop_begin == 4 && desktop_end == 3);
+   gfx_media_display_owner_reset(&owner);
+   gfx_media_display_owner_reset(&owner);
+   CHECK(desktop_end == 4 && !owner.lease && !owner.server);
+   desktop_refused = true;
+   gfx_media_display_owner_update(&owner, &desktop_server, &desktop_data, 24, 1, false);
+   for (i = 0; i < 100; i++)
+      gfx_media_display_owner_update(&owner, &desktop_server, &desktop_data, 24, 1, false);
+   CHECK(desktop_begin == 5 && desktop_end == 4);
+   gfx_media_display_owner_update(&owner, &desktop_server, &desktop_data, 24, 1, true);
+   CHECK(desktop_begin == 6 && desktop_end == 4);
+   gfx_media_display_owner_reset(&owner);
+   desktop_refused = false;
+   desktop_valid = true;
+}
+
 typedef struct fake_player
 {
    gfx_thumbnail_playback_state_t state;
@@ -594,6 +662,54 @@ static void settings_button(void)
    settings_refused = false;
 }
 
+static void desktop_refresh_lifecycle(void)
+{
+   menu_media_controls_t media, other;
+   gfx_media_target_t target;
+   fake_player_t player;
+   memset(&media, 0, sizeof(media));
+   memset(&other, 0, sizeof(other));
+   memset(&target, 0, sizeof(target));
+   memset(&player, 0, sizeof(player));
+   player.available = true;
+   player.state.dims = VIDEO_SCALE_PACK(320, 240);
+   player.state.cadence_num = 24;
+   player.state.cadence_den = 1;
+   target.user = &player;
+   target.identity = &player;
+   target.state = fake_state;
+   target.pause = fake_pause;
+   target.seek = fake_seek;
+   desktop_begin = desktop_end = 0;
+   test_settings.bools.media_player_refresh_rate = true;
+   menu_media_controls_update(&media, &target, 640, 480, NULL, 1);
+   CHECK(desktop_begin == 1 && !desktop_end);
+   player.state.seeking = true;
+   menu_media_controls_update(&media, &target, 640, 480, NULL, 2);
+   CHECK(desktop_begin == 1 && !desktop_end);
+   player.state.seeking = false;
+   test_settings.bools.media_player_refresh_rate = false;
+   menu_media_controls_update(&media, &target, 640, 480, NULL, 3);
+   CHECK(desktop_end == 1);
+   test_settings.bools.media_player_refresh_rate = true;
+   menu_media_controls_update(&media, &target, 640, 480, NULL, 4);
+   CHECK(desktop_begin == 2);
+   test_settings.uints.crt_switch_resolution = 1;
+   menu_media_controls_update(&media, &target, 640, 480, NULL, 5);
+   CHECK(desktop_end == 2);
+   test_settings.uints.crt_switch_resolution = 0;
+   menu_media_controls_update(&media, &target, 640, 480, NULL, 6);
+   CHECK(desktop_begin == 3);
+   target.identity = &target;
+   menu_media_controls_update(&media, &target, 640, 480, NULL, 7);
+   CHECK(desktop_end == 3 && desktop_begin == 4);
+   menu_media_controls_cancel(&other);
+   CHECK(desktop_end == 3);
+   menu_media_controls_cancel(&media);
+   CHECK(desktop_end == 4 && !desktop_owner.lease);
+   test_settings.bools.media_player_refresh_rate = false;
+}
+
 static void display_source(void)
 {
    menu_media_controls_t media, other;
@@ -767,6 +883,8 @@ int main(void)
 {
    test_settings.uints.media_player_seek_seconds = 5;
    test_settings.uints.media_player_controls_timeout = 3;
+   display_owner_lifecycle();
+   desktop_refresh_lifecycle();
    display_rates();
    display_source();
 #ifdef HAVE_THREADS

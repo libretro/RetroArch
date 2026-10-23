@@ -1057,6 +1057,7 @@ typedef struct settings
       bool multimedia_builtin_mediaplayer_enable;
       bool media_player_continuous;
       bool media_player_crt_switch;
+      bool media_player_refresh_rate;
       bool multimedia_builtin_imageviewer_enable;
 
       /* Bundle */
