@@ -806,6 +806,109 @@ static void renderer_recording(bool deferred, bool busy)
    assert(record_android_capture_submit_free(e));
 }
 
+static void renderer_handoff(bool deferred, unsigned disposition)
+{
+   record_android_capture_submit_t *entry;
+   record_android_capture_pipe_t *pipe;
+   record_android_capture_source_t s;
+   record_gpu_dispatch_mediacodec_t gpu;
+   record_gpu_frame_t frame;
+   int result;
+   reset();
+   m.external = true;
+   m.deferred = deferred;
+   entry = create();
+   memset(&gpu, 0, sizeof(gpu));
+   gpu.queue = record_gpu_queue_new(1);
+   gpu.state = RECORD_MC_DISPATCH_READY;
+   assert(entry && gpu.queue);
+   pipe = record_android_capture_pipe_new(&gpu, &entry, 1, close_fd, &m);
+   assert(pipe);
+   s = source();
+   assert(record_android_capture_pipe_record(pipe, &s, 0, 10, VK_NULL_HANDLE)
+         == -1);
+   assert(record_android_capture_pipe_record(pipe, &s, 0, 10, RENDER_COMMAND)
+         == 1);
+   assert(record_android_capture_pipe_step(pipe) == 0);
+   assert(m.copies == 1 && !m.submits && m.refs == 1);
+   assert(record_gpu_queue_take(gpu.queue, &frame) == RECORD_GPU_QUEUE_BUSY);
+   assert(!record_android_capture_pipe_finish(pipe, 10));
+   if (disposition == 1 || disposition == 2)
+   {
+      if (disposition == 2)
+      {
+         record_android_capture_pipe_cancel(pipe);
+         assert(record_android_capture_pipe_finish(pipe, 10));
+         gpu.state = RECORD_MC_DISPATCH_FAILED;
+         assert(record_android_capture_pipe_step(pipe) == 0);
+      }
+      m.abort_proof = true;
+      assert(record_android_capture_pipe_abort_recorded(pipe));
+      assert(record_android_capture_pipe_sources_retired(pipe) && !m.refs);
+      assert(record_android_capture_pipe_commit(pipe) == -1);
+   }
+   else
+   {
+      if (disposition == 3)
+      {
+         record_android_capture_pipe_cancel(pipe);
+         assert(record_android_capture_pipe_finish(pipe, 10));
+         gpu.state = RECORD_MC_DISPATCH_FAILED;
+         assert(record_android_capture_pipe_step(pipe) == 0);
+      }
+      if (disposition == 4)
+         m.result = VK_TIMEOUT;
+      if (disposition == 5)
+         m.result = VK_ERROR_DEVICE_LOST;
+      result = record_android_capture_pipe_commit(pipe);
+      assert(result
+            == (disposition == 4                        ? 0
+                        : disposition == 5 && !deferred ? -1
+                                                        : 1));
+      assert(!record_android_capture_pipe_abort_recorded(pipe));
+      assert(record_android_capture_pipe_commit(pipe) == -1);
+      if (disposition >= 3)
+      {
+         record_android_capture_pipe_cancel(pipe);
+         assert(record_android_capture_pipe_finish(pipe, 10));
+         gpu.state = RECORD_MC_DISPATCH_FAILED;
+      }
+      m.result = VK_SUCCESS;
+      assert(record_android_capture_pipe_step(pipe) == 0);
+      if (deferred)
+      {
+         if (disposition == 5)
+            m.result = VK_ERROR_DEVICE_LOST;
+         assert(vulkan_android_queue_flush(&m.queued, native_submit)
+               == (disposition == 5 ? VK_ERROR_DEVICE_LOST : VK_SUCCESS));
+      }
+      assert(m.copies == 1 && m.submits == 1 && m.refs == 1);
+      m.complete = true;
+      if (!disposition)
+      {
+         assert(record_android_capture_pipe_step(pipe) == 0);
+         assert(
+               record_gpu_queue_take(gpu.queue, &frame) == RECORD_GPU_QUEUE_OK);
+         assert(frame.timestamp == 0 && frame.duration == 10
+               && frame.ready_value == 101);
+         assert(record_android_capture_pipe_step(pipe) == 0);
+         assert(record_android_capture_pipe_sources_retired(pipe));
+         close_fd(&m, (int)frame.ready_value - 1);
+         assert(record_gpu_queue_release(gpu.queue, frame.slot));
+      }
+   }
+   assert(record_android_capture_pipe_finish(pipe, 10));
+   gpu.state = disposition >= 2 ? RECORD_MC_DISPATCH_FAILED
+                                : RECORD_MC_DISPATCH_DONE;
+   assert(record_android_capture_pipe_step(pipe) == 1);
+   assert(!m.refs && !m.fd_refs);
+   assert(m.copies == 1
+         && m.submits == (disposition == 1 || disposition == 2 ? 0u : 1u));
+   assert(record_android_capture_pipe_free(pipe));
+   assert(record_android_capture_submit_free(entry));
+   assert(record_gpu_queue_free(gpu.queue));
+}
+
 static void renderer_faults(void)
 {
    record_android_capture_submit_t *e;
@@ -866,6 +969,7 @@ static void renderer_faults(void)
    assert(record_android_capture_submit_record(e, &source_frame, RENDER_COMMAND)
          == 1);
    assert(record_android_capture_submit_prepare_device_destroy(e, true));
+   assert(!record_android_capture_submit_abort_recorded(e));
    assert(record_android_capture_submit_poll(e) == -1);
    assert(!m.submits && m.refs == 1);
    m.device_alive = false;
@@ -876,6 +980,12 @@ static void renderer_faults(void)
 
 int main(void)
 {
+   unsigned disposition;
+   for (disposition = 0; disposition < 6; disposition++)
+   {
+      renderer_handoff(false, disposition);
+      renderer_handoff(true, disposition);
+   }
    assert(record_android_capture_pipe_sources_retired(NULL));
    renderer_faults();
    renderer_recording(false, false);

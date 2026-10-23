@@ -341,7 +341,7 @@ static int record_acs_complete_recorded(record_android_capture_submit_t *e)
 
 int record_android_capture_submit_commit(record_android_capture_submit_t *e)
 {
-   if (!e || e->broken || !e->recorded || e->committed)
+   if (!e || e->gpu_retired || !e->recorded || e->committed)
       return -1;
    e->initialized = e->committed = e->completion_pending = true;
    return record_acs_complete_recorded(e);
@@ -350,7 +350,7 @@ int record_android_capture_submit_commit(record_android_capture_submit_t *e)
 bool record_android_capture_submit_abort_recorded(
       record_android_capture_submit_t *e)
 {
-   if (!e || !e->recorded || e->committed)
+   if (!e || e->gpu_retired || !e->recorded || e->committed)
       return false;
    e->release_source(e->owner, false);
    e->owner = NULL;

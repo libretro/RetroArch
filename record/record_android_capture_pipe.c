@@ -16,7 +16,7 @@ struct record_android_capture_pipe
    unsigned count, slot, cursor;
    uint32_t active, copied;
    int fd;
-   bool reserved, pending, have_frame, cancelled, closed, retired;
+   bool reserved, pending, have_frame, cancelled, closed, retired, recorded;
 };
 
 record_android_capture_pipe_t *record_android_capture_pipe_new(
@@ -64,16 +64,16 @@ void record_android_capture_pipe_cancel(record_android_capture_pipe_t *p)
       p->reserved = false;
 }
 
-int record_android_capture_pipe_push(record_android_capture_pipe_t *p,
+static int record_acpipe_push(record_android_capture_pipe_t *p,
       const record_android_capture_source_t *source, uint64_t pts,
-      uint64_t duration)
+      uint64_t duration, VkCommandBuffer command)
 {
    uint64_t maximum = (((uint64_t)1 << 63) - 1) / 1000;
    int result;
    if (!p || !source || p->cancelled || p->closed || !duration || pts > maximum
          || duration > maximum - pts || (p->have_frame && pts <= p->last_pts))
       return -1;
-   if (p->pending)
+   if (p->pending || p->recorded)
       return 0;
    if (!p->reserved)
    {
@@ -101,7 +101,10 @@ int record_android_capture_pipe_push(record_android_capture_pipe_t *p,
       p->active &= ~((uint32_t)1 << p->slot);
       p->copied &= ~((uint32_t)1 << p->slot);
    }
-   result = record_android_capture_submit_push(p->entries[p->slot], source);
+   result = command
+         ? record_android_capture_submit_record(
+                 p->entries[p->slot], source, command)
+         : record_android_capture_submit_push(p->entries[p->slot], source);
    if (result == 1 || result == -2)
    {
       p->active |= (uint32_t)1 << p->slot;
@@ -112,10 +115,51 @@ int record_android_capture_pipe_push(record_android_capture_pipe_t *p,
       p->frame.duration = duration;
       p->frame.slot = p->slot;
       p->pending = true;
+      p->recorded = command != VK_NULL_HANDLE;
    }
    if (result < 0)
       record_android_capture_pipe_cancel(p);
    return result;
+}
+
+int record_android_capture_pipe_push(record_android_capture_pipe_t *p,
+      const record_android_capture_source_t *source, uint64_t pts,
+      uint64_t duration)
+{
+   return record_acpipe_push(p, source, pts, duration, VK_NULL_HANDLE);
+}
+
+int record_android_capture_pipe_record(record_android_capture_pipe_t *p,
+      const record_android_capture_source_t *source, uint64_t pts,
+      uint64_t duration, VkCommandBuffer command)
+{
+   if (!command)
+      return -1;
+   return record_acpipe_push(p, source, pts, duration, command);
+}
+
+int record_android_capture_pipe_commit(record_android_capture_pipe_t *p)
+{
+   int result;
+   if (!p || !p->recorded)
+      return -1;
+   result = record_android_capture_submit_commit(p->entries[p->slot]);
+   p->recorded = false;
+   if (result < 0)
+      record_android_capture_pipe_cancel(p);
+   return result;
+}
+
+bool record_android_capture_pipe_abort_recorded(
+      record_android_capture_pipe_t *p)
+{
+   if (!p || !p->recorded
+         || !record_android_capture_submit_abort_recorded(p->entries[p->slot]))
+      return false;
+   p->active &= ~((uint32_t)1 << p->slot);
+   p->copied &= ~((uint32_t)1 << p->slot);
+   p->pending = p->recorded = false;
+   return true;
 }
 
 int record_android_capture_pipe_step(record_android_capture_pipe_t *p)
@@ -133,6 +177,8 @@ int record_android_capture_pipe_step(record_android_capture_pipe_t *p)
       record_android_capture_pipe_cancel(p);
    if (p->pending && !p->cancelled)
    {
+      if (p->recorded)
+         return 0;
       if (p->fd < 0 && !p->frame.ready_value)
       {
          result = record_android_capture_submit_take_ready(
@@ -194,6 +240,8 @@ int record_android_capture_pipe_step(record_android_capture_pipe_t *p)
       if (result != 1)
          return result;
       p->active &= ~((uint32_t)1 << p->cursor);
+      if (p->slot == p->cursor)
+         p->recorded = false;
       break;
    }
    p->retired = p->active == 0;

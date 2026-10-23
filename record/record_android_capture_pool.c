@@ -148,6 +148,30 @@ int record_android_capture_pool_push(record_android_capture_pool_t *p,
    return record_android_capture_pipe_push(p->pipe, source, pts, duration);
 }
 
+int record_android_capture_pool_record(record_android_capture_pool_t *p,
+      const record_android_capture_source_t *source, uint64_t pts,
+      uint64_t duration, VkCommandBuffer command)
+{
+   if (!p || p->closed || !p->pipe)
+      return -1;
+   return record_android_capture_pipe_record(
+         p->pipe, source, pts, duration, command);
+}
+
+int record_android_capture_pool_commit(record_android_capture_pool_t *p)
+{
+   if (!p || p->prepared || !p->pipe)
+      return -1;
+   return record_android_capture_pipe_commit(p->pipe);
+}
+
+bool record_android_capture_pool_abort_recorded(
+      record_android_capture_pool_t *p)
+{
+   return p && !p->prepared && p->pipe
+         && record_android_capture_pipe_abort_recorded(p->pipe);
+}
+
 int record_android_capture_pool_step(record_android_capture_pool_t *p)
 {
    if (!p)

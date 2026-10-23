@@ -199,6 +199,24 @@ int record_android_capture_pipe_push(record_android_capture_pipe_t *p,
    assert(p == &pipe && p->live && s && pts == 0 && duration == 10);
    return 1;
 }
+int record_android_capture_pipe_record(record_android_capture_pipe_t *p,
+      const record_android_capture_source_t *source, uint64_t pts,
+      uint64_t duration, VkCommandBuffer command)
+{
+   assert(command == (VkCommandBuffer)(uintptr_t)77);
+   return record_android_capture_pipe_push(p, source, pts, duration);
+}
+int record_android_capture_pipe_commit(record_android_capture_pipe_t *p)
+{
+   assert(p == &pipe && p->live);
+   return 1;
+}
+bool record_android_capture_pipe_abort_recorded(
+      record_android_capture_pipe_t *p)
+{
+   assert(p == &pipe && p->live);
+   return true;
+}
 int record_android_capture_pipe_step(record_android_capture_pipe_t *p)
 {
    assert(p == &pipe && p->live);
@@ -267,6 +285,11 @@ static void normal(unsigned mode, unsigned count)
                == RECORD_MC_DISPATCH_STARTING
          && error == 17 && system_error == 19);
    assert(record_android_capture_pool_push(p, &source, 0, 10) == 1);
+   assert(record_android_capture_pool_record(
+                p, &source, 0, 10, (VkCommandBuffer)(uintptr_t)77)
+         == 1);
+   assert(record_android_capture_pool_abort_recorded(p));
+   assert(record_android_capture_pool_commit(p) == 1);
    assert(!record_android_capture_pool_sources_retired(p));
    m.sources_done = true;
    assert(record_android_capture_pool_sources_retired(p));
@@ -277,6 +300,11 @@ static void normal(unsigned mode, unsigned count)
    assert(!record_android_capture_pool_finish(p, 11));
    assert(!record_android_capture_pool_prepare_device_destroy(p, false));
    assert(record_android_capture_pool_push(p, &source, 0, 10) == -1);
+   assert(record_android_capture_pool_record(
+                p, &source, 0, 10, (VkCommandBuffer)(uintptr_t)77)
+         == -1);
+   assert(record_android_capture_pool_commit(p) == 1);
+   assert(record_android_capture_pool_abort_recorded(p));
    gpu.state = RECORD_MC_DISPATCH_DONE;
    assert(!record_android_capture_pool_free(p));
    m.pipe_done = true;

@@ -28,6 +28,15 @@ bool record_android_capture_pool_new(record_dispatch_mediacodec_t *io,
 int record_android_capture_pool_push(record_android_capture_pool_t *pool,
       const record_android_capture_source_t *source, uint64_t pts,
       uint64_t duration);
+/* Renderer-command path; same record/commit/never-execute abort contract as
+ * the handoff. Commit/abort remain available during cancellation until device
+ * preparation; an accepted frame must not be silently abandoned. */
+int record_android_capture_pool_record(record_android_capture_pool_t *pool,
+      const record_android_capture_source_t *source, uint64_t pts,
+      uint64_t duration, VkCommandBuffer command);
+int record_android_capture_pool_commit(record_android_capture_pool_t *pool);
+bool record_android_capture_pool_abort_recorded(
+      record_android_capture_pool_t *pool);
 int record_android_capture_pool_step(record_android_capture_pool_t *pool);
 /* Executor status; DONE does not authorize pool/device destruction. */
 enum record_dispatch_mediacodec_state record_android_capture_pool_status(

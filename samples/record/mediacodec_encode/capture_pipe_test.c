@@ -32,6 +32,24 @@ int record_android_capture_submit_push(record_android_capture_submit_t *e,
       e->active = 1;
    return e->push;
 }
+int record_android_capture_submit_record(record_android_capture_submit_t *e,
+      const record_android_capture_source_t *source, VkCommandBuffer command)
+{
+   assert(command);
+   return record_android_capture_submit_push(e, source);
+}
+int record_android_capture_submit_commit(record_android_capture_submit_t *e)
+{
+   assert(e->active);
+   return 1;
+}
+bool record_android_capture_submit_abort_recorded(
+      record_android_capture_submit_t *e)
+{
+   assert(e->active);
+   e->active = 0;
+   return true;
+}
 int record_android_capture_submit_poll(record_android_capture_submit_t *e)
 {
    e->queries++;
