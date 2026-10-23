@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- *  Copyright (C) 2014-2017 - Jean-André Santoni
- *  Copyright (C) 2016-2019 - Andrés Suárez
+ *  Copyright (C) 2014-2017 - Jean-AndrÃ© Santoni
+ *  Copyright (C) 2016-2019 - AndrÃ©s SuÃ¡rez
  *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -634,7 +634,7 @@ static int filebrowser_parse(
       enum rarch_content_type path_type = RARCH_CONTENT_NONE;
       enum msg_file_type file_type      = FILE_TYPE_NONE;
       const char *file_path             = str_list.elems[i].data;
-      int attr                          = str_list.elems[i].attr.i; /* [8] cache attr — read twice below */
+      int attr                          = str_list.elems[i].attr.i; /* [8] cache attr â€” read twice below */
 
       if (!file_path || !*file_path)
          continue;
@@ -10092,11 +10092,18 @@ unsigned menu_displaylist_build_list(
 #endif
          if (     !settings->bools.kiosk_mode_enable
                &&  settings->bools.settings_show_file_browser)
+         {
             menu_entries_append(list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS),
                   MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS_STR,
                   MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS,
                   MENU_SETTING_ACTION, 0, 0, NULL);
+            menu_entries_append(list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MEDIA_PLAYER_SETTINGS),
+                  MENU_ENUM_LABEL_MEDIA_PLAYER_SETTINGS_STR,
+                  MENU_ENUM_LABEL_MEDIA_PLAYER_SETTINGS,
+                  MENU_SETTING_ACTION, 0, 0, NULL);
+         }
          break;
       }
       case DISPLAYLIST_INPUT_MENU_SETTINGS_LIST:
@@ -12714,6 +12721,19 @@ unsigned menu_displaylist_build_list(
                            PARSE_ONLY_BOOL, false) == 0)
                   count++;
             }
+         }
+         break;
+      case DISPLAYLIST_MEDIA_PLAYER_SETTINGS_LIST:
+         {
+            static const menu_displaylist_build_info_t build_list[] = {
+               {MENU_ENUM_LABEL_MEDIA_PLAYER_SEEK_SECONDS, PARSE_ONLY_UINT},
+               {MENU_ENUM_LABEL_MEDIA_PLAYER_CONTROLS_TIMEOUT, PARSE_ONLY_UINT},
+            };
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        build_list[i].enum_idx, build_list[i].parse_type,
+                        false) == 0)
+                  count++;
          }
          break;
       case DISPLAYLIST_MENU_FILE_BROWSER_SETTINGS_LIST:
@@ -16987,6 +17007,7 @@ static bool menu_displaylist_ctl_internal(
          case DISPLAYLIST_ACCOUNTS_CHEEVOS_LIST:
          case DISPLAYLIST_ACCOUNTS_LIST:
          case DISPLAYLIST_MENU_FILE_BROWSER_SETTINGS_LIST:
+         case DISPLAYLIST_MEDIA_PLAYER_SETTINGS_LIST:
          case DISPLAYLIST_MENU_VIEWS_SETTINGS_LIST:
          case DISPLAYLIST_LAKKA_SERVICES_LIST:
 #ifdef HAVE_LAKKA_SWITCH

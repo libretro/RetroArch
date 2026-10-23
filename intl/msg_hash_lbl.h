@@ -962,6 +962,10 @@ MSG_HASH(
    "deferred_logging_settings_list"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_MEDIA_PLAYER_SETTINGS_LIST,
+   "deferred_media_player_settings_list"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_MENU_FILE_BROWSER_SETTINGS_LIST,
    "deferred_menu_file_browser_settings_list"
    )

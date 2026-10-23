@@ -332,6 +332,8 @@ typedef struct settings
       unsigned menu_icon_thumbnails;
       unsigned gfx_thumbnail_upscale_threshold;
       unsigned menu_thumbnail_preview_threads;
+      unsigned media_player_seek_seconds;
+      unsigned media_player_controls_timeout;
       unsigned menu_rgui_thumbnail_downscaler;
       unsigned menu_rgui_thumbnail_delay;
       unsigned menu_rgui_color_theme;

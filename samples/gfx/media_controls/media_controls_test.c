@@ -5,6 +5,10 @@
 #include "../../../gfx/gfx_media_controls.h"
 #include "../../../menu/menu_media_controls.h"
 #include "../../../gfx/video_defines.h"
+#include "../../../configuration.h"
+
+static settings_t test_settings;
+settings_t *config_get_ptr(void) { return &test_settings; }
 
 static unsigned failures;
 static bool drawing;
@@ -37,7 +41,7 @@ bool gfx_thumbnail_set_paused(gfx_thumbnail_t *t, bool p, retro_time_t n)
 bool gfx_thumbnail_seek(gfx_thumbnail_t *t, int64_t p, retro_time_t n)
 { (void)t; (void)p; (void)n; abort(); return false; }
 
-static unsigned quads, captions;
+static unsigned quads, captions, seek_captions;
 static bool dialog_open;
 
 bool menu_input_dialog_get_display_kb(void) { return dialog_open; }
@@ -60,6 +64,8 @@ void gfx_display_draw_text(const font_data_t *font, const char *text,
 {
    (void)font; (void)color; (void)align; (void)shadows; (void)offset; (void)outside;
    CHECK(text && *text && scale > 0.0f);
+   if (strcmp(text, "-12") == 0) seek_captions |= 1;
+   if (strcmp(text, "+12") == 0) seek_captions |= 2;
    CHECK(x >= 0.0f && x <= VIDEO_SCALE_W(dims));
    CHECK(y >= 0.0f && y <= VIDEO_SCALE_H(dims));
    captions++;
@@ -327,8 +333,83 @@ static void mailbox_races(void)
 }
 #endif
 
+static void menu_preferences(void)
+{
+   menu_media_controls_t *m = (menu_media_controls_t*)calloc(1, sizeof(*m));
+   gfx_media_target_t target;
+   fake_player_t f;
+   font_data_t font;
+   CHECK(m != NULL); if (!m) return;
+   memset(&target, 0, sizeof(target));
+   memset(&f, 0, sizeof(f));
+   memset(&font, 0, sizeof(font));
+   font.size = 20.0f;
+   f.available = f.state.seekable = true;
+   target.user = &f; target.identity = &f;
+   target.state = fake_state; target.pause = fake_pause; target.seek = fake_seek;
+   test_settings.uints.media_player_seek_seconds = 12;
+   test_settings.uints.media_player_controls_timeout = 0;
+   menu_media_controls_update(m, &target, 640, 480, NULL, 1);
+   CHECK(menu_media_controls_action(m, MENU_ACTION_RIGHT, 2));
+   CHECK(f.last_seek == 12000000);
+   drawing = true;
+   menu_media_controls_draw(m, NULL, NULL, VIDEO_SCALE_PACK(640, 480), &font);
+   drawing = false;
+   CHECK(seek_captions == 3);
+   test_settings.uints.media_player_seek_seconds = 2;
+   menu_media_controls_update(m, &target, 640, 480, NULL, 3);
+   CHECK(menu_media_controls_action(m, MENU_ACTION_LEFT, 4));
+   CHECK(f.last_seek == 10000000);
+   CHECK(m->controls.hide_seconds == 0);
+   test_settings.uints.media_player_seek_seconds = 5;
+   test_settings.uints.media_player_controls_timeout = 3;
+   free(m);
+}
+
+static void playback_preferences(void)
+{
+   gfx_media_controls_t c;
+   gfx_media_target_t target;
+   fake_player_t f;
+   memset(&c, 0, sizeof(c));
+   memset(&target, 0, sizeof(target));
+   memset(&f, 0, sizeof(f));
+   f.available = f.state.seekable = true;
+   f.state.position_us = 20000000;
+   target.user = &f;
+   target.identity = &f;
+   target.state = fake_state;
+   target.pause = fake_pause;
+   target.seek = fake_seek;
+   gfx_media_controls_configure(&c, 12, 1);
+   CHECK(gfx_media_controls_update(&c, &target, 640, 480, 1));
+   CHECK(c.seek_seconds == 12 && c.hide_seconds == 1);
+   CHECK(gfx_media_controls_action(&c, GFX_MEDIA_SEEK_FORWARD, 2));
+   CHECK(f.last_seek == 32000000);
+   CHECK(gfx_media_controls_action(&c, GFX_MEDIA_SEEK_BACK, 3));
+   CHECK(f.last_seek == 20000000);
+   CHECK(gfx_media_controls_update(&c, &target, 640, 480, 1000004));
+   CHECK(!c.visible);
+   gfx_media_controls_configure(&c, 12, 0);
+   CHECK(gfx_media_controls_update(&c, &target, 640, 480, 1000005));
+   CHECK(c.visible);
+   target.identity = &target;
+   CHECK(gfx_media_controls_update(&c, &target, 640, 480, 1000006));
+   CHECK(c.seek_seconds == 12 && c.hide_seconds == 0);
+   CHECK(gfx_media_controls_update(&c, &target, 640, 480, 100000000));
+   CHECK(c.visible);
+   gfx_media_controls_configure(&c, 0, 61);
+   CHECK(c.seek_seconds == 5 && c.hide_seconds == 3);
+   gfx_media_controls_configure(&c, 601, 3);
+   CHECK(c.seek_seconds == 5);
+}
+
 int main(void)
 {
+   test_settings.uints.media_player_seek_seconds = 5;
+   test_settings.uints.media_player_controls_timeout = 3;
+   playback_preferences();
+   menu_preferences();
    transport();
    explicit_playback();
    failed_seek_transport();
