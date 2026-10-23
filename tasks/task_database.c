@@ -223,6 +223,11 @@ static size_t task_database_index_budget(void)
 }
 #endif
 
+/* Bytes a stepped CRC reads between two looks at the window. */
+#ifndef SCAN_CRC_QUANTUM
+#define SCAN_CRC_QUANTUM (256 * 1024)
+#endif
+
 typedef struct database_state_handle
 {
    database_info_list_t *info;
@@ -263,7 +268,31 @@ typedef struct database_state_handle
     * for the whole scan, so without a ceiling a large database set
     * costs tens of megabytes.  See task_database_index_budget(). */
    size_t index_budget;
+   /* A CRC hashed a few quanta per step by task_database_crc_step():
+    * the open span or NULL, the bytes left (-1: to the end) and the
+    * running value.  crc_done says crc (or, for DB_CRC_DEST_ARCHIVE,
+    * archive_crc) holds this file's value, which may be 0. */
+   intfstream_t *crc_fd;
+   int64_t crc_left;
+   uint32_t crc_acc;
+   uint8_t crc_dest;  /* enum db_crc_dest */
+   uint8_t crc_fail;  /* enum db_crc_fail */
+   bool crc_done;
 } database_state_handle_t;
+
+/* Where a stepped CRC and its size go. */
+enum db_crc_dest
+{
+   DB_CRC_DEST_FILE = 0,
+   DB_CRC_DEST_ARCHIVE
+};
+
+/* What a failed read of a stepped CRC does. */
+enum db_crc_fail
+{
+   DB_CRC_FAIL_ERROR = 0,  /* the file errors out */
+   DB_CRC_FAIL_ZERO        /* the CRC is 0, so no entry matches */
+};
 
 enum db_flags_enum
 {
@@ -902,6 +931,81 @@ static enum msg_file_type extension_to_file_type(const char *ext)
    return FILE_TYPE_NONE;
 }
 
+static void task_database_crc_close(database_state_handle_t *db_state)
+{
+   if (db_state->crc_fd)
+   {
+      intfstream_close(db_state->crc_fd);
+      free(db_state->crc_fd);
+      db_state->crc_fd = NULL;
+   }
+   db_state->crc_done = false;
+}
+
+/* Opens @name's CRC span for task_database_crc_step() to hash over
+ * the steps that follow, and records its size. */
+static bool task_database_crc_begin(database_state_handle_t *db_state,
+      const char *name, enum task_database_crc_kind kind,
+      enum db_crc_dest dest, enum db_crc_fail fail)
+{
+   uint64_t size = 0;
+
+   task_database_crc_close(db_state);
+   if (!(db_state->crc_fd = task_database_crc_open(name, kind,
+         &db_state->crc_left, &size)))
+      return false;
+   db_state->crc_acc  = 0;
+   db_state->crc_dest = (uint8_t)dest;
+   db_state->crc_fail = (uint8_t)fail;
+   if (dest == DB_CRC_DEST_ARCHIVE)
+      db_state->archive_size = size;
+   else
+      db_state->size         = size;
+   return true;
+}
+
+/* One quantum always, then more while the window lasts.  At the end
+ * of the span the lookup runs on the next step. */
+static enum scan_verdict task_database_crc_step(
+      database_state_handle_t *db_state, nbio_budget_t *b)
+{
+   for (;;)
+   {
+      size_t  want = SCAN_CRC_QUANTUM;
+      int64_t got  = 0;
+
+      if (db_state->crc_left >= 0 && db_state->crc_left < (int64_t)want)
+         want = (size_t)db_state->crc_left;
+      if (want)
+         got = intfstream_crc_step(db_state->crc_fd,
+               &db_state->crc_acc, want);
+      /* A span that ends early is a failed read. */
+      if (got < 0 || (got == 0 && db_state->crc_left > 0))
+      {
+         task_database_crc_close(db_state);
+         if (db_state->crc_fail == DB_CRC_FAIL_ERROR)
+            return SCAN_VERDICT_ERROR;
+         db_state->crc      = 0;
+         db_state->crc_done = true;
+         return SCAN_VERDICT_CONTINUE;
+      }
+      if (db_state->crc_left > 0)
+         db_state->crc_left -= got;
+      if (got == 0 || db_state->crc_left == 0)
+         break;
+      if (!task_nbio_slice_within_budget(b, 0, 0))
+         return SCAN_VERDICT_CONTINUE;
+   }
+
+   if (db_state->crc_dest == DB_CRC_DEST_ARCHIVE)
+      db_state->archive_crc = db_state->crc_acc;
+   else
+      db_state->crc         = db_state->crc_acc;
+   task_database_crc_close(db_state);
+   db_state->crc_done = true;
+   return SCAN_VERDICT_CONTINUE;
+}
+
 static int task_database_iterate_playlist(
       manual_scan_handle_t *_db,
       database_state_handle_t *db_state,
@@ -913,9 +1017,9 @@ static int task_database_iterate_playlist(
 #ifdef HAVE_COMPRESSION
          db->type = DATABASE_TYPE_CRC_LOOKUP;
          /* first check crc of archive itself */
-         return intfstream_file_get_crc_and_size(name,
-               0, INT64_MAX, &db_state->archive_crc,
-               &db_state->archive_size);
+         return task_database_crc_begin(db_state, name,
+               TASK_DATABASE_CRC_FILE, DB_CRC_DEST_ARCHIVE,
+               DB_CRC_FAIL_ERROR);
 #else
          break;
 #endif
@@ -930,7 +1034,8 @@ static int task_database_iterate_playlist(
             db->type = DATABASE_TYPE_CRC_LOOKUP;
             db_state->serial[0] = '\0';
             RARCH_DBG("[Scanner] CUE file serial not detected, fallback to crc.\n");
-            return task_database_cue_get_crc_and_size(name, &db_state->crc, &db_state->size);
+            return task_database_crc_begin(db_state, name,
+                  TASK_DATABASE_CRC_CUE, DB_CRC_DEST_FILE, DB_CRC_FAIL_ERROR);
          }
          break;
       case FILE_TYPE_GDI:
@@ -944,7 +1049,8 @@ static int task_database_iterate_playlist(
             db->type = DATABASE_TYPE_CRC_LOOKUP;
             db_state->serial[0] = '\0';
             RARCH_DBG("[Scanner] GDI file serial not detected, fallback to crc.\n");
-            return task_database_gdi_get_crc_and_size(name, &db_state->crc, &db_state->size);
+            return task_database_crc_begin(db_state, name,
+                  TASK_DATABASE_CRC_GDI, DB_CRC_DEST_FILE, DB_CRC_FAIL_ERROR);
          }
          break;
       /* Consider WBFS, RVZ and WIA files similar to ISO files. */
@@ -969,7 +1075,8 @@ static int task_database_iterate_playlist(
             db->type         = DATABASE_TYPE_CRC_LOOKUP;
             db_state->serial[0] = '\0';
             RARCH_DBG("[Scanner] CHD file serial not detected, fallback to crc.\n");
-            return task_database_chd_get_crc_and_size(name, &db_state->crc, &db_state->size);
+            return task_database_crc_begin(db_state, name,
+                  TASK_DATABASE_CRC_CHD, DB_CRC_DEST_FILE, DB_CRC_FAIL_ERROR);
          }
          break;
       case FILE_TYPE_PBP:
@@ -981,13 +1088,12 @@ static int task_database_iterate_playlist(
             db->type         = DATABASE_TYPE_CRC_LOOKUP;
             db_state->serial[0] = '\0';
             RARCH_DBG("[Scanner] PBP file serial not detected, fallback to crc.\n");
-            return intfstream_file_get_crc_and_size(name, 0, INT64_MAX, &db_state->crc, &db_state->size);
+            return task_database_crc_begin(db_state, name,
+                  TASK_DATABASE_CRC_FILE, DB_CRC_DEST_FILE, DB_CRC_FAIL_ERROR);
          }
          break;
       case FILE_TYPE_3DS:
          db_state->serial[0] = '\0';
-         /* The serial-miss fallback reuses a non-zero crc. */
-         db_state->crc       = 0;
          if (task_database_3ds_get_serial(name, db_state->serial, sizeof(db_state->serial),&db_state->size))
             db->type         = DATABASE_TYPE_SERIAL_LOOKUP;
          else
@@ -995,7 +1101,8 @@ static int task_database_iterate_playlist(
             db->type         = DATABASE_TYPE_CRC_LOOKUP;
             db_state->serial[0] = '\0';
             RARCH_DBG("[Scanner] 3DS file serial not detected, fallback to crc.\n");
-            return intfstream_file_get_crc_and_size(name, 0, INT64_MAX, &db_state->crc, &db_state->size);
+            return task_database_crc_begin(db_state, name,
+                  TASK_DATABASE_CRC_FILE, DB_CRC_DEST_FILE, DB_CRC_FAIL_ERROR);
          }
          break;
       case FILE_TYPE_LUTRO:
@@ -1004,7 +1111,8 @@ static int task_database_iterate_playlist(
       default:
          db_state->serial[0] = '\0';
          db->type            = DATABASE_TYPE_CRC_LOOKUP;
-         return intfstream_file_get_crc_and_size(name, 0, INT64_MAX, &db_state->crc, &db_state->size);
+         return task_database_crc_begin(db_state, name,
+               TASK_DATABASE_CRC_FILE, DB_CRC_DEST_FILE, DB_CRC_FAIL_ERROR);
    }
 
    return 1;
@@ -1081,6 +1189,7 @@ static enum scan_verdict database_info_list_iterate_end_no_match(
    db_state->size         = 0;
    db_state->archive_size = 0;
    db_state->serial[0]    = '\0';
+   task_database_crc_close(db_state);
 
    if (db_state->crc != 0)
       db_state->crc = 0;
@@ -1255,6 +1364,7 @@ static enum scan_verdict database_info_list_iterate_found_match(
    db_state->size         = 0;
    db_state->archive_size = 0;
    db_state->serial[0]    = '\0';
+   task_database_crc_close(db_state);
 
    /* Move database to start since we are likely to match against it
       again */
@@ -1815,9 +1925,10 @@ static int task_database_iterate_serial_lookup(
          db_state->list_index  = 0;
          db_state->entry_index = 0;
          db->type              = DATABASE_TYPE_CRC_LOOKUP;
-         if (   !db_state->crc
-             && !intfstream_file_get_crc_and_size(name, 0, INT64_MAX,
-                  &db_state->crc, &db_state->size))
+         if (   !db_state->crc_done
+             && !task_database_crc_begin(db_state, name,
+                  TASK_DATABASE_CRC_FILE, DB_CRC_DEST_FILE,
+                  DB_CRC_FAIL_ERROR))
             return SCAN_VERDICT_ERROR;
          return SCAN_VERDICT_CONTINUE;
       }
@@ -2036,12 +2147,18 @@ serial_query_done:
                    || task_database_check_serial_and_crc(db_state,
                      _db->task_config->scan_serial_and_crc))
                {
-                  if (db_state->crc == 0)
+                  /* Resumes at this entry once the CRC is in.  A file
+                   * that cannot be read keeps a CRC of 0. */
+                  if (!db_state->crc_done)
                   {
-                     if (extension_to_file_type(path_get_extension(name)) == FILE_TYPE_GDI)
-                        task_database_gdi_get_crc_and_size(name, &db_state->crc, &db_state->size);
-                     else
-                        intfstream_file_get_crc_and_size(name, 0, INT64_MAX, &db_state->crc, &db_state->size);
+                     if (task_database_crc_begin(db_state, name,
+                           extension_to_file_type(path_get_extension(name))
+                              == FILE_TYPE_GDI
+                           ? TASK_DATABASE_CRC_GDI : TASK_DATABASE_CRC_FILE,
+                           DB_CRC_DEST_FILE, DB_CRC_FAIL_ZERO))
+                        return SCAN_VERDICT_CONTINUE;
+                     db_state->crc      = 0;
+                     db_state->crc_done = true;
                   }
 
                   if (db_state->crc == db_info_entry->crc32)
@@ -2086,8 +2203,11 @@ static int task_database_iterate(
       const char *name,
       database_state_handle_t *db_state,
       database_info_handle_t *db,
-      bool path_contains_compressed_file)
+      bool path_contains_compressed_file,
+      nbio_budget_t *b)
 {
+   if (db_state->crc_fd)
+      return task_database_crc_step(db_state, b);
 #ifdef DEBUG
    RARCH_DBG("[Scanner] Type %d, \"%s\" against \"%s\".\n", db->type, name, database_info_get_current_name(db_state));
    /* list_index == list->size is a valid state here (every database
@@ -2140,6 +2260,7 @@ static void task_database_cleanup_state(database_state_handle_t *db_state)
    if (db_state->buf)
       free(db_state->buf);
    db_state->buf = NULL;
+   task_database_crc_close(db_state);
 }
 #endif
 /* Batch update playlists from accumulated scan results */
@@ -2540,6 +2661,7 @@ static void free_manual_content_scan_handle(manual_scan_handle_t *manual_scan)
           * returns then drives the loops below. */
          size_t db_count = dbstate->list ? dbstate->list->size : 0;
 
+         task_database_crc_close(dbstate);
          if (dbstate->list)
          {
             dir_list_free(dbstate->list);
@@ -3249,11 +3371,13 @@ enum scan_step
 /* One step of the ITERATE family: a cleanup entry, a database probe or
  * a playlist add. */
 static enum scan_step task_manual_scan_iterate_step(retro_task_t *task,
-      manual_scan_handle_t *manual_scan)
+      manual_scan_handle_t *manual_scan, nbio_budget_t *b)
 {
 #ifdef HAVE_LIBRETRODB
    database_info_handle_t  *dbinfo  = manual_scan->handle;
    database_state_handle_t *dbstate = &manual_scan->state;
+#else
+   (void)b;
 #endif
 
    switch (manual_scan->status)
@@ -3379,7 +3503,7 @@ static enum scan_step task_manual_scan_iterate_step(retro_task_t *task,
                   dbinfo->type   = DATABASE_TYPE_ITERATE_ARCHIVE;
 
             current_verdict = (enum scan_verdict)task_database_iterate(manual_scan, content_path, dbstate, dbinfo,
-                     path_contains_compressed_file);
+                     path_contains_compressed_file, b);
 #ifdef DEBUG
             RARCH_DBG("[Scanner] Scan verdict is %d for %s\n", current_verdict, content_path);
 #endif
@@ -3586,7 +3710,7 @@ static bool task_manual_scan_iterate_tick(retro_task_t *task,
    task_nbio_slice_open(&b);
    while (task_nbio_slice_within_budget(&b, 0, 0))
    {
-      if (task_manual_scan_iterate_step(task, manual_scan)
+      if (task_manual_scan_iterate_step(task, manual_scan, &b)
             == SCAN_STEP_FINISHED)
       {
          finished = true;

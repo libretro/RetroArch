@@ -2234,176 +2234,95 @@ int task_database_chd_get_serial(const char *name, char *serial,
    return result;
 }
 
-/* CRC over an already-open stream; @file_size as in
- * intfstream_file_get_serial_fd().  The stream is left open for the
- * caller and its position is unspecified on return. */
-static bool intfstream_file_get_crc_and_size_fd(intfstream_t *fd,
-      int64_t file_size, uint64_t offset, int64_t len,
-      uint32_t *crc, uint64_t *size)
+/* Opens what the scanner hashes for @name: the file itself, the data
+ * track a CUE or GDI sheet names, or a CHD's data track.  The stream
+ * comes back at the start of the span, *span is its length or -1 to
+ * read to the end, and *size is the size the lookups compare: the
+ * track file's for a sheet, the track's for a CHD. */
+intfstream_t *task_database_crc_open(const char *name,
+      enum task_database_crc_kind kind, int64_t *span, uint64_t *size)
 {
-   bool rv;
+   char track_path[PATH_MAX_LENGTH];
+   const char *path  = name;
+   intfstream_t *fd  = NULL;
+   int64_t file_size = -1;
+   int64_t len       = -1;
+   uint64_t offset   = 0;
+
+   if (kind == TASK_DATABASE_CRC_CHD)
+   {
+      /* CD-i discs store data in AUDIO-labeled tracks, so track 1 is
+       * opened explicitly instead of CHDSTREAM_TRACK_PRIMARY. */
+      if (!(fd = intfstream_open_chd_track(name,
+            RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE,
+            is_chd_file_cdi(name) ? 1 : CHDSTREAM_TRACK_PRIMARY)))
+         return NULL;
+      *size = intfstream_get_size(fd);
+      *span = -1;
+      intfstream_rewind(fd);
+      return fd;
+   }
+
+   track_path[0] = '\0';
+   if (kind == TASK_DATABASE_CRC_CUE)
+   {
+      size_t _len = 0;
+      if (cue_find_track_internal(name, false, &offset, &_len,
+            track_path, sizeof(track_path), &fd, &file_size) < 0)
+      {
+#ifdef DEBUG
+         RARCH_LOG("[Scanner] %s\n",
+               msg_hash_to_str(MSG_COULD_NOT_FIND_VALID_DATA_TRACK));
+#endif
+         return NULL;
+      }
+      len  = (int64_t)_len;
+      path = track_path;
+   }
+   else if (kind == TASK_DATABASE_CRC_GDI)
+   {
+      if (gdi_find_track_internal(name, false,
+            track_path, sizeof(track_path), &fd, &file_size) < 0)
+      {
+#ifdef DEBUG
+         RARCH_LOG("[Scanner] %s\n",
+               msg_hash_to_str(MSG_COULD_NOT_FIND_VALID_DATA_TRACK));
+#endif
+         return NULL;
+      }
+      path = track_path;
+   }
+
+   /* FREQUENT_ACCESS: the VFS maps the file where it can, and
+    * intfstream_crc_step() then hashes the mapping in place. */
+   if (!fd && !(fd = intfstream_open_file(path,
+         RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS)))
+      return NULL;
 
    if (file_size < 0)
    {
       if (intfstream_seek(fd, 0, SEEK_END) == -1)
-         return false;
+         goto error;
       file_size = intfstream_tell(fd);
    }
-
-   if (size)
-      *size = (uint64_t)file_size;
-
    if (file_size < 0)
-      return false;
+      goto error;
+   *size = (uint64_t)file_size;
 
-   if (intfstream_seek(fd, 0, SEEK_SET) == -1)
-      return false;
-
-   if (offset != 0 || len < file_size)
+   /* Only a CUE data track can be part of its file. */
+   if (len < 0 || (offset == 0 && len >= file_size))
    {
-      /* A bounded span - a CD data track, routinely hundreds of MB.
-       * This used to allocate the whole span, read it in, wrap it in
-       * a memory stream and have intfstream_get_crc() copy it back
-       * out again: two passes and a track-sized buffer, which on a
-       * console is the difference between scanning and not.  Seek
-       * once and fold it in place instead.  A short read fails the
-       * call, as the single full-span read used to. */
-      uint32_t accumulator = 0;
-      int64_t  remaining   = len;
-
-      if (intfstream_seek(fd, (int64_t)offset, SEEK_SET) == -1)
-         return false;
-
-      /* intfstream_crc_step() folds straight out of the VFS mapping
-       * when the file was opened FREQUENT_ACCESS (as
-       * intfstream_file_get_crc_and_size() does), and keeps one
-       * scratch buffer for the stream otherwise; either way no
-       * per-call allocation here.  A short step - end of file inside
-       * the span - fails the call, as a short read used to. */
-      while (remaining > 0)
-      {
-         int64_t got = intfstream_crc_step(fd, &accumulator,
-               (size_t)((remaining < (int64_t)(256 * 1024))
-                     ? remaining : (int64_t)(256 * 1024)));
-         if (got <= 0)
-            return false;
-         remaining -= got;
-      }
-
-      *crc = accumulator;
-      return true;
+      offset = 0;
+      len    = -1;
    }
+   if (intfstream_seek(fd, (int64_t)offset, SEEK_SET) == -1)
+      goto error;
+   *span = len;
+   return fd;
 
-   rv = intfstream_get_crc(fd, crc);
-   return rv;
-}
-
-bool intfstream_file_get_crc_and_size(const char *name,
-      uint64_t offset, int64_t len, uint32_t *crc, uint64_t *size)
-{
-   bool rv;
-   /* FREQUENT_ACCESS: the VFS maps the file where it can, and the
-    * CRC below is then computed in place from the mapping rather
-    * than read out through a buffer.  Where it cannot map (a URL
-    * scheme, a 32-bit host and a huge image) the hint is just a
-    * hint and the read path is what it was. */
-   intfstream_t *fd = intfstream_open_file(name,
-         RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS);
-
-   if (!fd)
-      return false;
-
-   rv = intfstream_file_get_crc_and_size_fd(fd, -1, offset, len,
-         crc, size);
+error:
    intfstream_close(fd);
    free(fd);
-   return rv;
-}
-
-int task_database_cue_get_crc_and_size(const char *name, uint32_t *crc,
-   uint64_t *size)
-{
-   char track_path[PATH_MAX_LENGTH];
-   uint64_t offset     = 0;
-   size_t _len         = 0;
-   intfstream_t *track = NULL;
-   int64_t track_fsize = -1;
-
-   track_path[0]       = '\0';
-
-   if (cue_find_track_internal(name, false, &offset, &_len,
-         track_path, sizeof(track_path), &track, &track_fsize) < 0)
-   {
-#ifdef DEBUG
-      RARCH_LOG("[Scanner] %s\n",
-            msg_hash_to_str(MSG_COULD_NOT_FIND_VALID_DATA_TRACK));
-#endif
-      return 0;
-   }
-
-   if (track)
-   {
-      int rv = intfstream_file_get_crc_and_size_fd(track, track_fsize,
-            offset, _len, crc, size);
-      cue_track_stream_close(track);
-      return rv;
-   }
-
-   return intfstream_file_get_crc_and_size(track_path, offset,
-   _len, crc, size);
-}
-
-int task_database_gdi_get_crc_and_size(const char *name, uint32_t *crc,
-   uint64_t *size)
-{
-   char track_path[PATH_MAX_LENGTH];
-   intfstream_t *track = NULL;
-   int64_t track_fsize = -1;
-
-   track_path[0]       = '\0';
-
-   if (gdi_find_track_internal(name, false,
-       track_path, sizeof(track_path), &track, &track_fsize) < 0)
-   {
-#ifdef DEBUG
-      RARCH_LOG("[Scanner] %s\n",
-            msg_hash_to_str(MSG_COULD_NOT_FIND_VALID_DATA_TRACK));
-#endif
-      return 0;
-   }
-
-   if (track)
-   {
-      int rv = intfstream_file_get_crc_and_size_fd(track, track_fsize,
-            0, INT64_MAX, crc, size);
-      cue_track_stream_close(track);
-      return rv;
-   }
-
-   return intfstream_file_get_crc_and_size(track_path, 0, INT64_MAX, crc, size);
-}
-
-bool task_database_chd_get_crc_and_size(const char *name, uint32_t *crc,
-   uint64_t *size)
-{
-   bool found_crc   = false;
-   /* CD-i discs store data in AUDIO-labeled tracks, so we must
-    * explicitly open track 1 instead of using CHDSTREAM_TRACK_PRIMARY */
-   int32_t track    = is_chd_file_cdi(name) ? 1 : CHDSTREAM_TRACK_PRIMARY;
-   intfstream_t *fd = intfstream_open_chd_track(
-         name,
-         RETRO_VFS_FILE_ACCESS_READ,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE,
-         track);
-   if (!fd)
-      return 0;
-
-   *size     = intfstream_get_size(fd);
-   found_crc = intfstream_get_crc(fd, crc);
-   if (fd)
-   {
-      intfstream_close(fd);
-      free(fd);
-   }
-   return found_crc;
+   return NULL;
 }

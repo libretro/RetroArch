@@ -220,11 +220,14 @@ $(INDEX_TEST)$(EXE_EXT): $(INDEX_TEST_OBJECTS)
 	$(LD)  $(LINKOUT)$@ $(SHARED) $(INDEX_TEST_OBJECTS) $(LDFLAGS) $(LIBS)
 
 # Builds its own databases, so it needs nothing but a writable dir.
+# The wrap spends the scanner's window.
 $(SCAN_TEST)$(EXE_EXT): $(SCAN_TEST_OBJECTS)
-	$(LD)  $(LINKOUT)$@ $(SHARED) $(SCAN_TEST_OBJECTS) $(LDFLAGS) $(LIBS)
+	$(LD)  $(LINKOUT)$@ $(SHARED) $(SCAN_TEST_OBJECTS) $(LDFLAGS) \
+	      -Wl,--wrap=task_nbio_slice_open $(LIBS)
 
 $(BEGIN_TEST)$(EXE_EXT): $(BEGIN_TEST_OBJECTS)
-	$(LD)  $(LINKOUT)$@ $(SHARED) $(BEGIN_TEST_OBJECTS) $(LDFLAGS) $(LIBS)
+	$(LD)  $(LINKOUT)$@ $(SHARED) $(BEGIN_TEST_OBJECTS) $(LDFLAGS) \
+	      -Wl,--wrap=task_nbio_slice_open $(LIBS)
 
 check: $(INDEX_TEST)$(EXE_EXT) $(SCAN_TEST)$(EXE_EXT) $(BEGIN_TEST)$(EXE_EXT)
 	./$(INDEX_TEST)$(EXE_EXT)

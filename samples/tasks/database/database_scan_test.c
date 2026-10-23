@@ -49,6 +49,7 @@
 #include "../../../list_special.h"
 #include "../../../configuration.h"
 #include "../../../verbosity.h"
+#include "spend_window.h"
 
 #define SCAN_TIMEOUT_SECONDS 120
 
@@ -467,10 +468,10 @@ static void put_le32(uint8_t *p, uint32_t v)
 /* A 3DS cart image (NCSD) whose partition 0 starts @part0 media units
  * in, or a bare NCCH when @part0 is 0, with @code as its product code.
  * A zero @ncch_magic leaves the partition without its magic. */
-static int write_ctr(const char *path, uint32_t part0, int ncch_magic,
-      const char *code, uint32_t crc)
+static int write_ctr_sized(const char *path, uint32_t size,
+      uint32_t part0, int ncch_magic, const char *code, uint32_t crc)
 {
-   uint8_t *d = (uint8_t*)calloc(1, CTR_IMAGE_SIZE);
+   uint8_t *d = (uint8_t*)calloc(1, size);
    uint8_t *ncch;
    int      ok;
 
@@ -480,16 +481,23 @@ static int write_ctr(const char *path, uint32_t part0, int ncch_magic,
    if (part0)
    {
       memcpy(d + 0x100, "NCSD", 4);
-      put_le32(d + 0x104, CTR_IMAGE_SIZE / 0x200);
+      put_le32(d + 0x104, size / 0x200);
       put_le32(d + 0x120, part0);
-      put_le32(d + 0x124, CTR_IMAGE_SIZE / 0x200 - part0);
+      put_le32(d + 0x124, size / 0x200 - part0);
    }
    if (ncch_magic)
       memcpy(ncch + 0x100, "NCCH", 4);
    memcpy(ncch + 0x150, code, strlen(code));
-   ok = write_forced(path, d, CTR_IMAGE_SIZE, crc);
+   ok = write_forced(path, d, size, crc);
    free(d);
    return ok;
+}
+
+static int write_ctr(const char *path, uint32_t part0, int ncch_magic,
+      const char *code, uint32_t crc)
+{
+   return write_ctr_sized(path, CTR_IMAGE_SIZE, part0, ncch_magic, code,
+         crc);
 }
 
 /* A cart image @size bytes long whose table puts partition 0 at @part0
@@ -642,18 +650,6 @@ static bool run_scan(const char *dir)
    return true;
 }
 
-/* Charges the shared I/O window a second, more than it holds, so the
- * scanner's next call on the regular queue gets only its floor of one
- * step. */
-static void spend_window(void)
-{
-   nbio_budget_t b;
-
-   task_nbio_slice_open(&b);
-   b.start -= 1000000;
-   task_nbio_slice_close(&b);
-}
-
 /* As run_scan(), but counts the checks the scan took.  Meaningful on
  * the regular queue, where every check runs the handler once and a
  * spent window holds that call to one step. */
@@ -683,6 +679,12 @@ static unsigned run_scan_counted(const char *dir)
  * lane below. */
 #define UNCLAIMED_DBS   48
 #define UNMATCHED_FILES 4
+
+/* 560 sectors, 00:07:35, then ten of audio: over 1 MiB, so the CRCs
+ * take several quanta. */
+#define STEP_TRACK_SIZE (560 * 2352)
+#define STEP_AUDIO_SIZE (10 * 2352)
+#define STEP_CTR_SIZE   0x140000
 
 int main(int argc, char **argv)
 {
@@ -1564,6 +1566,82 @@ int main(int argc, char **argv)
       check(gathers && gathers < UNMATCHED_FILES * 8 + 32,
             "unclaimed databases passed over in one step",
             "checks bounded by files, not databases");
+   }
+
+   /* On the regular queue with a spent window, every call is one step
+    * and a CRC step one quantum, so these CRCs span several calls: a
+    * CUE data track that is part of its file, and the confirming CRC
+    * of a shared 3DS serial, which resumes at the entry that began it. */
+   {
+      static const db_rec_t step_disc_recs[] = {
+         { "Stepped Disc", NULL, 0x5BEDC0DEu, STEP_TRACK_SIZE + STEP_AUDIO_SIZE }
+      };
+      static const db_rec_t step_ctr_recs[] = {
+         { "Stepped Rev 0", "CTR-P-STEP", 0x5BED0000u, STEP_CTR_SIZE },
+         { "Stepped Rev 1", "CTR-P-STEP", 0x5BED0001u, STEP_CTR_SIZE }
+      };
+      char     step_db[512], step_in[512];
+      uint8_t *d;
+      FILE    *f;
+      unsigned gathers;
+
+      sprintf(step_db, "%s/scan_db_step", root);
+      sprintf(step_in, "%s/scan_step",    root);
+      path_mkdir(step_db);
+      path_mkdir(step_in);
+
+      sprintf(p, "%s/Test Disc.rdb", step_db);
+      if (!write_db_set(p, step_disc_recs, ARRAY_SIZE(step_disc_recs)))
+      { check(0, "fixture", "could not write database"); goto done; }
+      sprintf(p, "%s/Test 3DS.rdb", step_db);
+      if (!write_db_set(p, step_ctr_recs, ARRAY_SIZE(step_ctr_recs)))
+      { check(0, "fixture", "could not write database"); goto done; }
+
+      /* Track 1 is the first STEP_TRACK_SIZE bytes; the audio track
+       * after it is not part of the CRC. */
+      if (!(d = (uint8_t*)calloc(1, STEP_TRACK_SIZE + STEP_AUDIO_SIZE)))
+      { check(0, "fixture", "out of memory"); goto done; }
+      crc_force(d, STEP_TRACK_SIZE - 4, 0x5BEDC0DEu,
+            d + STEP_TRACK_SIZE - 4);
+      sprintf(p, "%s/40_step.bin", step_in);
+      if (   crc_of(d, STEP_TRACK_SIZE) != 0x5BEDC0DEu
+          || !(f = fopen(p, "wb")))
+      { free(d); check(0, "fixture", "could not write track"); goto done; }
+      fwrite(d, 1, STEP_TRACK_SIZE + STEP_AUDIO_SIZE, f);
+      fclose(f);
+      free(d);
+      sprintf(p, "%s/40_step.cue", step_in);
+      if (!(f = fopen(p, "w")))
+      { check(0, "fixture", "could not write cue"); goto done; }
+      fprintf(f,
+            "FILE \"40_step.bin\" BINARY\n"
+            "  TRACK 01 MODE1/2352\n"
+            "    INDEX 01 00:00:00\n"
+            "  TRACK 02 AUDIO\n"
+            "    INDEX 01 00:07:35\n");
+      fclose(f);
+      sprintf(p, "%s/41_step.3ds", step_in);
+      if (!write_ctr_sized(p, STEP_CTR_SIZE, 0x20, 1, "CTR-P-STEP",
+            0x5BED0001u))
+      { check(0, "fixture", "could not write image"); goto done; }
+
+      strlcpy(config_get_ptr()->paths.path_content_database, step_db,
+            sizeof(config_get_ptr()->paths.path_content_database));
+      gathers = run_scan_counted(step_in);
+      strlcpy(config_get_ptr()->paths.path_content_database, db_dir,
+            sizeof(config_get_ptr()->paths.path_content_database));
+      printf("  info  checks for the stepped CRCs: %u\n", gathers);
+      check(scan_completed, "stepped CRC scan completed",
+            scan_completed ? "callback fired" : "timed out");
+
+      sprintf(p, "%s/Test Disc.lpl", pl_dir);
+      check(   file_contains(p, "Stepped Disc")
+            && file_contains(p, "5BEDC0DE|crc"),
+            "CUE track CRC over several calls", "5BEDC0DE|crc");
+      sprintf(p, "%s/Test 3DS.lpl", pl_dir);
+      check(   file_contains(p, "Stepped Rev 1")
+            && !file_contains(p, "Stepped Rev 0"),
+            "shared serial's CRC resumed at its entry", "Stepped Rev 1");
    }
 
 done:

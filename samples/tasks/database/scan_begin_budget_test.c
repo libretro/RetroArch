@@ -49,6 +49,7 @@
 #include "../../../playlist.h"
 #include "../../../configuration.h"
 #include "../../../verbosity.h"
+#include "spend_window.h"
 #include <compat/strl.h>
 
 #define SCAN_TIMEOUT_SECONDS 300
@@ -56,6 +57,11 @@
 #define CONTENT_DIRS  50
 #define CONTENT_FILES 5000
 #define ITERATE_FILES 2000
+#define STEPPED_FILE_SIZE (32u * 1024 * 1024)
+/* As in task_database.c. */
+#ifndef SCAN_CRC_QUANTUM
+#define SCAN_CRC_QUANTUM (256 * 1024)
+#endif
 
 /* Per-gather cost for the pacing lane is measured in thread CPU
  * time, not wall time.  The property under test is how much work the
@@ -549,11 +555,13 @@ static bool configure_db_scan(const char *content_dir, const char *db_dir,
 }
 
 /* Runs a database scan on the regular queue, one check a frame so
- * that each call gets a fresh window.  A scan still running after
- * @cancel_after checks (0: never) is cancelled and drained, so a lane
- * can fail fast on a count it has already lost. */
+ * that each call gets a fresh window, or with @spend each on a spent
+ * window, which holds every call to one step.  A scan still running
+ * after @cancel_after checks (0: never) is cancelled and drained, so
+ * a lane can fail fast on a count it has already lost. */
 static bool run_db_scan(const char *content_dir, const char *db_dir,
-      const char *playlist_dir, unsigned cancel_after, scan_metrics_t *m)
+      const char *playlist_dir, bool spend, unsigned cancel_after,
+      scan_metrics_t *m)
 {
    retro_time_t t0;
    time_t started;
@@ -587,6 +595,8 @@ static bool run_db_scan(const char *content_dir, const char *db_dir,
             task_queue_cancel_task(found_task);
       }
 
+      if (spend)
+         spend_window();
       g0 = thread_cpu_usec();
       task_queue_check();
       g1 = thread_cpu_usec();
@@ -601,7 +611,8 @@ static bool run_db_scan(const char *content_dir, const char *db_dir,
                SCAN_TIMEOUT_SECONDS);
          return false;
       }
-      retro_sleep(17);
+      if (!spend)
+         retro_sleep(17);
    }
    m->total_usec = cpu_features_get_time_usec() - t0;
    return true;
@@ -1206,7 +1217,7 @@ int main(int argc, char *argv[])
          fprintf(stderr, "iterate fixture build failed\n");
          goto out_queue;
       }
-      ran = run_db_scan(it_content, it_db, it_pl, ITERATE_FILES, &mi);
+      ran = run_db_scan(it_content, it_db, it_pl, false, ITERATE_FILES, &mi);
       config_get_ptr()->paths.path_content_database[0] = '\0';
       config_get_ptr()->bools.scan_without_core_match  = false;
       if (!ran)
@@ -1233,6 +1244,66 @@ int main(int argc, char *argv[])
       }
       fprintf(stderr, "[pass] iterate lane (%u files, %u checks)\n",
             (unsigned)ITERATE_FILES, mi.gathers);
+   }
+
+   /* A big file's CRC is stepped.  On a spent window every call hashes
+    * at most one 256 KiB quantum; on a fresh one a call takes at most
+    * 4 ms of CPU times PACING_SLACK_MULTIPLIER.  A cancel in the middle
+    * must release the open span, which only the sanitizers see. */
+   {
+      char st_db[4352], st_content[4352], st_pl[4352];
+      scan_metrics_t ms, mf, mc;
+      size_t entries;
+      bool ran;
+
+      snprintf(st_db,      sizeof(st_db),      "%s/stepped_db", fixture_root);
+      snprintf(st_content, sizeof(st_content), "%s/stepped",    fixture_root);
+      snprintf(st_pl,      sizeof(st_pl),      "%s/stepped_pl", fixture_root);
+      if (   !path_mkdir(st_pl)
+          || !build_iterate_fixture(st_db, st_content, 1, STEPPED_FILE_SIZE,
+               true))
+      {
+         fprintf(stderr, "stepped fixture build failed\n");
+         goto out_queue;
+      }
+      ran =    run_db_scan(st_content, st_db, st_pl, true,  0,  &ms)
+            && !scan_err
+            && run_db_scan(st_content, st_db, st_pl, false, 0,  &mf)
+            && !scan_err;
+      entries = playlist_entries(st_pl, "stepped.lpl");
+      ran     = ran && run_db_scan(st_content, st_db, st_pl, true, 32, &mc)
+            && !scan_err;
+      config_get_ptr()->paths.path_content_database[0] = '\0';
+      config_get_ptr()->bools.scan_without_core_match  = false;
+      if (!ran)
+         goto out_queue;
+      fprintf(stderr,
+            "[metrics] stepped: %u MiB, spent-window checks=%u, "
+            "fresh-window checks=%u max_gather_cpu=%.2fms, "
+            "cancelled run checks=%u\n",
+            STEPPED_FILE_SIZE >> 20, ms.gathers, mf.gathers,
+            mf.max_gather_usec / 1000.0, mc.gathers);
+      if (ms.gathers <= STEPPED_FILE_SIZE / SCAN_CRC_QUANTUM)
+      {
+         fprintf(stderr, "FAIL stepped: a %u MiB CRC took %u checks on a "
+               "spent window\n", STEPPED_FILE_SIZE >> 20, ms.gathers);
+         goto out_queue;
+      }
+      if (   !sanitize
+          && mf.max_gather_usec > 4000 * PACING_SLACK_MULTIPLIER)
+      {
+         fprintf(stderr, "FAIL stepped pacing: max gather %.2fms CPU exceeds "
+               "%.2fms\n", mf.max_gather_usec / 1000.0,
+               4000 * PACING_SLACK_MULTIPLIER / 1000.0);
+         goto out_queue;
+      }
+      if (entries != 1)
+      {
+         fprintf(stderr, "FAIL stepped: %u playlist entries, expected 1\n",
+               (unsigned)entries);
+         goto out_queue;
+      }
+      fprintf(stderr, "[pass] stepped CRC lane\n");
    }
    task_queue_deinit();
 
