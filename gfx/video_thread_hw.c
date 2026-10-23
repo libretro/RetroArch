@@ -951,15 +951,43 @@ bool video_thread_get_hw_render_interface(void *data,
 
 /* OpenGL: there is no interface to interpose - the core renders into a
  * framebuffer the driver hands it, on the context that is current. The
- * ring is set up when the main thread takes the core's context, which
- * must happen before the core's context_reset runs there. */
-/* Video thread, inside the blocking call from the ring's bring-up:
- * the context init left current here goes, for the main thread. */
-static uintptr_t hw_handoff_init_release_cb(void *data)
+ * single-context ring is prepared on the video thread; shared rings
+ * are set up when the main thread takes the core's context, before
+ * the core's context_reset runs there. */
+/* Video thread, before the poke-install command replies. Establish the
+ * token for init's current context. The normal end-of-pass release gives
+ * it up after any remaining uploads or frame work on this pass. */
+void video_thread_hw_prepare_context(thread_video_t *thr)
 {
-   (void)data;
-   video_context_driver_release_current();
-   return 0;
+   gfx_ctx_flags_t flags;
+   hw_ring_t *ring;
+   video_driver_state_t *video_st = video_state_get_ptr();
+
+   if (!thr || !thr->driver_data || !thr->poke)
+      return;
+   switch (video_st->hw_render.context_type)
+   {
+      case RETRO_HW_CONTEXT_OPENGL:
+      case RETRO_HW_CONTEXT_OPENGL_CORE:
+      case RETRO_HW_CONTEXT_OPENGLES2:
+      case RETRO_HW_CONTEXT_OPENGLES3:
+      case RETRO_HW_CONTEXT_OPENGLES_VERSION:
+         break;
+      default:
+         return;
+   }
+   flags.flags = 0;
+   if (!thr->poke->hw_ring_context_new || !thr->poke->hw_ring_framebuffer
+         || !thr->poke->hw_ring_capture || !thr->poke->hw_ring_present_slot
+         || !thr->poke->hw_ring_fence_new
+         || !video_context_driver_get_flags(&flags)
+         || !BIT32_GET(flags.flags, GFX_CTX_FLAGS_NO_SHARED_CONTEXT))
+      return;
+   if (!hw_ring_setup(thr, &ring) || ring->handoff)
+      return;
+   ring->handoff = true;
+   retro_atomic_store_release_int(&ring->ctx_owner, HW_CTX_VIDEO);
+   retro_atomic_store_release_int(&thr->frame.hw_handoff, 1);
 }
 
 bool video_thread_hw_bind_core_context(void *data)
@@ -991,32 +1019,25 @@ bool video_thread_hw_bind_core_context(void *data)
    {
       gfx_ctx_flags_t flags;
       flags.flags = 0;
-      /* A context that cannot share: the driver's one context is
-       * handed between the threads from here on. The video thread
-       * gave it up when it parked after init; take it here for the
-       * core's context_reset, which follows this call. */
+      /* The poke-install command prepared the single-context token
+       * before replying. Never bind a context still current on the
+       * video thread if preparation failed. */
       if (     video_context_driver_get_flags(&flags)
             && BIT32_GET(flags.flags, GFX_CTX_FLAGS_NO_SHARED_CONTEXT))
       {
-         ring->handoff = true;
+         if (!ring->handoff)
+            return false;
          RARCH_LOG("[Video] Threaded video: one GL context, handed between "
                "the core's thread and the video thread.\n");
       }
       if (!thr->poke->hw_ring_context_new(thr->driver_data, &ring->core_ctx))
       {
-         ring->handoff = false;
          RARCH_ERR("[Video] Threaded video: the core's GL context could not be "
                "taken on the main thread; the core will have no context.\n");
          return false;
       }
-      /* The context came up current on the video thread, in init; it
-       * is given up there before this thread can bind it. */
       if (ring->handoff)
-      {
-         retro_atomic_store_release_int(&thr->frame.hw_handoff, 1);
-         video_thread_run_blocking(hw_handoff_init_release_cb, thr);
          video_thread_hw_ctx_take(thr, false);
-      }
    }
    ring->api = HW_API_GL;
    return true;
@@ -1674,6 +1695,7 @@ void video_thread_hw_after_frame(thread_video_t *thr, int hw_slot)  { (void)thr;
 void video_thread_hw_drop(thread_video_t *thr, int hw_slot) { (void)thr; (void)hw_slot; }
 void video_thread_hw_free(thread_video_t *thr) { (void)thr; }
 bool video_thread_hw_allowed(void) { return false; }
+void video_thread_hw_prepare_context(thread_video_t *thr) { (void)thr; }
 bool video_thread_hw_bind_core_context(void *data) { (void)data; return false; }
 bool video_thread_hw_handoff(thread_video_t *thr) { (void)thr; return false; }
 void video_thread_hw_ctx_take(thread_video_t *thr, bool video_thread) { (void)thr; (void)video_thread; }

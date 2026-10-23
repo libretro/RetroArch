@@ -101,6 +101,10 @@ bool video_thread_hw_bind_core_context(void *data);
 /* thread_poke.get_current_framebuffer for OpenGL cores. Main thread. */
 uintptr_t video_thread_hw_get_current_framebuffer(void *data);
 
+/* Video thread, before the initial poke-install reply: publish init's
+ * single-context token, released by the normal end of this pass. */
+void video_thread_hw_prepare_context(struct thread_video *thr);
+
 /* OpenGL on a context that cannot share (GFX_CTX_FLAGS_NO_SHARED_CONTEXT):
  * the driver's one context is handed between the threads. handoff says
  * the ring is in that mode; take binds the context on the calling
