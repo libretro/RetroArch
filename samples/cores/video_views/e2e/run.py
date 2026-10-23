@@ -712,8 +712,25 @@ def wm_start(env):
     p = subprocess.Popen(['openbox'], stdout=subprocess.DEVNULL,
                          stderr=subprocess.DEVNULL, env=env,
                          start_new_session=True)
-    time.sleep(0.5)
-    return p
+    deadline = time.monotonic() + 10
+    try:
+        while p.poll() is None and time.monotonic() < deadline:
+            probe = subprocess.run(
+                ['xprop', '-root', '_NET_SUPPORTING_WM_CHECK'], env=env,
+                stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+                timeout=2, text=True)
+            if probe.returncode == 0 and 'window id #' in probe.stdout:
+                return p
+            time.sleep(0.05)
+        raise RuntimeError('openbox did not become ready on ' + env['DISPLAY'])
+    except BaseException:
+        p.terminate()
+        try:
+            p.wait(5)
+        except subprocess.TimeoutExpired:
+            p.kill()
+            p.wait()
+        raise
 
 
 def release_display(display):
@@ -902,7 +919,17 @@ def run_case(retroarch, root, driver, case, hw='off', menu=False,
     if XVFB:
         xvfb, env['DISPLAY'] = xvfb_start(env)
         if driver in WM_DRIVERS:
-            wm = wm_start(env)
+            # sdl12-compat otherwise creates a GL renderer on Xvfb.
+            env['SDL_RENDER_DRIVER'] = 'software'
+            env['SDL_FRAMEBUFFER_ACCELERATION'] = '0'
+            try:
+                wm = wm_start(env)
+            except Exception:
+                xvfb.terminate()
+                xvfb.wait(5)
+                release_display(env['DISPLAY'])
+                shutil.rmtree(env['XDG_RUNTIME_DIR'], ignore_errors=True)
+                raise
         cmd = cmd[cmd.index('--') + 1:]
     if WINE:
         env['WINEPREFIX'] = wine_prefix()
