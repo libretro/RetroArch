@@ -69,6 +69,7 @@ jobs:
         run: |
           make -j2 all SANITIZER=address,undefined
           ./rh265_malformed_test
+          ./rh265_weight_test
           ./rh265_lossless_test
           ./rh265_lossless_test_nothreads
           ./rh265_lossless_test_volatile

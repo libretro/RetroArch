@@ -1009,7 +1009,7 @@ static int rh265_parse_pred_weight_table(rh265_bits *b, rh265_shdr *sh,
 {
    int list, i, c;
    int nlists = is_b ? 2 : 1;
-   uint8_t lflag[16], cflag[16];
+   uint8_t lflag[RH265_MAX_REFS], cflag[RH265_MAX_REFS];
    sh->luma_log2_denom = (int)rh265_ue(b);
    if (sh->luma_log2_denom > 7)
       return -1;
@@ -1018,11 +1018,14 @@ static int rh265_parse_pred_weight_table(rh265_bits *b, rh265_shdr *sh,
       return -1;
    for (list = 0; list < nlists; list++)
    {
-      for (i = 0; i < sh->nb_refs[list]; i++)
+      int nrefs = sh->nb_refs[list];
+      if (nrefs < 1 || nrefs > RH265_MAX_REFS)
+         return -1;
+      for (i = 0; i < nrefs; i++)
          lflag[i] = (uint8_t)rh265_u1(b);
-      for (i = 0; i < sh->nb_refs[list]; i++)
+      for (i = 0; i < nrefs; i++)
          cflag[i] = (uint8_t)rh265_u1(b);
-      for (i = 0; i < sh->nb_refs[list]; i++)
+      for (i = 0; i < nrefs; i++)
       {
          sh->luma_w[list][i] = (int16_t)(1 << sh->luma_log2_denom);
          sh->luma_o[list][i] = 0;
