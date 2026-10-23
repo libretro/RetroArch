@@ -25,6 +25,12 @@
  * park that pass asks for. slock_unlock() and sthread_create() are
  * wrapped as well, so that the main thread can be held where the new
  * runner first runs a task.
+ *
+ * Last, tasks are pushed from other threads: on the unthreaded queue,
+ * whose lists take no lock, and all through a run of switches. Such a
+ * push is held for the next check, and a second BLOCKING task held
+ * there is cancelled, with its callback. A thread's next push does not
+ * pass one of its own that is held.
  */
 
 #include <stdio.h>
@@ -463,6 +469,403 @@ static void retire_parked(void)
          "both parked tasks retire");
 }
 
+/* --- tasks pushed from other threads ---------------------------------- */
+
+#define PUSHERS         4
+#define PUSHES_A_SWITCH 4
+#define PUSHES          (PUSHES_A_SWITCH * SWITCHES)
+#define DRAIN_US        5000000
+
+/* How often each pushed task reached its callback, and in what order.
+ * Callbacks run on the main thread. */
+static unsigned           pushed_runs[PUSHERS * PUSHES];
+static int                pushed_last[PUSHERS];
+static unsigned           pushed_done;
+static unsigned           pushed_out_of_order;
+static unsigned           pusher_ids[PUSHERS];
+/* The switches made so far.  A pusher keeps within PUSHES_A_SWITCH a
+ * switch of it, so that its pushes fall all through the switches. */
+static retro_atomic_int_t switches_done;
+
+static void pushed_callback(retro_task_t *task, void *task_data,
+      void *user_data, const char *error)
+{
+   unsigned idx = (unsigned)((unsigned*)user_data - pushed_runs);
+   unsigned who = idx / PUSHES;
+   int      seq = (int)(idx % PUSHES);
+
+   pushed_runs[idx]++;
+   pushed_done++;
+   if (seq != pushed_last[who] + 1)
+      pushed_out_of_order++;
+   pushed_last[who] = seq;
+}
+
+static void pusher(void *data)
+{
+   unsigned who = *(unsigned*)data;
+   unsigned i;
+
+   for (i = 0; i < PUSHES; i++)
+   {
+      retro_task_t *task;
+
+      while ((int)(i / PUSHES_A_SWITCH)
+            > retro_atomic_load_acquire_int(&switches_done))
+         retro_sleep(1);
+      task            = task_init();
+      task->handler   = test_task_handler;
+      task->callback  = pushed_callback;
+      task->user_data = &pushed_runs[who * PUSHES + i];
+      task_queue_push(task);
+   }
+}
+
+static void pushers_start(sthread_t **th, bool paced)
+{
+   unsigned i;
+
+   memset(pushed_runs, 0, sizeof(pushed_runs));
+   for (i = 0; i < PUSHERS; i++)
+   {
+      pusher_ids[i]  = i;
+      pushed_last[i] = -1;
+   }
+   pushed_done         = 0;
+   pushed_out_of_order = 0;
+   retro_atomic_store_release_int(&switches_done, paced ? 0 : SWITCHES);
+   for (i = 0; i < PUSHERS; i++)
+      th[i] = sthread_create(pusher, &pusher_ids[i]);
+}
+
+/* Joins the pushers and checks the queue until every task they pushed
+ * has reached its callback: true when each did so once. */
+static bool pushers_finish(sthread_t **th)
+{
+   retro_time_t until;
+   unsigned     i;
+
+   retro_atomic_store_release_int(&switches_done, SWITCHES);
+   for (i = 0; i < PUSHERS; i++)
+      if (th[i])
+         sthread_join(th[i]);
+   until = cpu_features_get_time_usec() + DRAIN_US;
+   while (     pushed_done < PUSHERS * PUSHES
+            && cpu_features_get_time_usec() < until)
+   {
+      task_queue_check();
+      retro_sleep(1);
+   }
+   for (i = 0; i < PUSHERS * PUSHES; i++)
+      if (pushed_runs[i] != 1)
+         return false;
+   return true;
+}
+
+static retro_atomic_int_t pushed_from_thread;
+
+static void push_one(void *data)
+{
+   retro_atomic_store_release_int(&pushed_from_thread,
+         task_queue_push((retro_task_t*)data) ? 1 : 0);
+}
+
+/* A push from a thread other than the one that drives the queue.  A
+ * task it refuses is still the caller's. */
+static bool push_from_thread(retro_task_t *task)
+{
+   sthread_t *th;
+
+   retro_atomic_store_release_int(&pushed_from_thread, 0);
+   th = sthread_create(push_one, task);
+   if (!th)
+      return false;
+   sthread_join(th);
+   return retro_atomic_load_acquire_int(&pushed_from_thread) == 1;
+}
+
+static retro_atomic_int_t blocker_release;
+static unsigned           blocker_retired;
+static unsigned           refused_runs;
+static unsigned           refused_callbacks;
+static bool               refused_cancelled;
+
+static void blocker_handler(retro_task_t *task)
+{
+   if (retro_atomic_load_acquire_int(&blocker_release))
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+}
+
+static void blocker_callback(retro_task_t *task, void *task_data,
+      void *user_data, const char *error)
+{
+   blocker_retired++;
+}
+
+static void refused_handler(retro_task_t *task)
+{
+   refused_runs++;
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+}
+
+static void refused_callback(retro_task_t *task, void *task_data,
+      void *user_data, const char *error)
+{
+   refused_callbacks++;
+   refused_cancelled = (task_get_flags(task) & RETRO_TASK_FLG_CANCELLED) != 0;
+}
+
+static retro_task_t *blocking_task(retro_task_handler_t handler,
+      retro_task_callback_t callback)
+{
+   retro_task_t *task = task_init();
+
+   task->type     = TASK_TYPE_BLOCKING;
+   task->handler  = handler;
+   task->callback = callback;
+   return task;
+}
+
+/* On the unthreaded queue, with a BLOCKING task running: a second one
+ * pushed on the main thread is refused at once.  One pushed
+ * from another thread is taken, and the next check cancels it. */
+static void lane_push_blocking(void)
+{
+   retro_task_t *task;
+   bool          taken;
+   unsigned      i;
+
+   task_queue_push(blocking_task(blocker_handler, blocker_callback));
+   task = blocking_task(refused_handler, NULL);
+   if (!task_queue_push(task))
+   {
+      free(task);
+      task = NULL;
+   }
+   check(!task, "a second BLOCKING push on the main thread is refused at once");
+
+   task  = blocking_task(refused_handler, refused_callback);
+   taken = push_from_thread(task);
+   if (!taken)
+      free(task);
+   check(taken, "one from another thread is taken");
+   for (i = 0; i < 10 && !refused_callbacks; i++)
+      task_queue_check();
+   check(refused_callbacks == 1 && refused_cancelled && !refused_runs,
+         "the next check cancels it, and its callback runs");
+
+   retro_atomic_store_release_int(&blocker_release, 1);
+   for (i = 0; i < 100 && !blocker_retired; i++)
+   {
+      task_queue_check();
+      retro_sleep(1);
+   }
+   check(blocker_retired == 1, "the running BLOCKING task retires");
+}
+
+/* The unthreaded queue, checked all the while: its lists take no lock,
+ * so no other thread may touch them. */
+static void lane_push_unthreaded(void)
+{
+   sthread_t   *th[PUSHERS];
+   retro_time_t until;
+
+   pushers_start(th, false);
+   until = cpu_features_get_time_usec() + LIMIT_US;
+   while (     pushed_done < PUSHERS * PUSHES
+            && cpu_features_get_time_usec() < until)
+      task_queue_check();
+   check(pushers_finish(th),
+         "every push from another thread on the unthreaded queue runs once");
+   check(!pushed_out_of_order, "in the order each thread pushed them");
+}
+
+/* Pushers on other threads all through a run of switches: no push may
+ * reach a runner being torn down, nor the unthreaded queue's lists,
+ * and none may be lost. */
+static void lane_push_storm(void)
+{
+   sthread_t   *th[PUSHERS];
+   retro_time_t started = cpu_features_get_time_usec();
+   unsigned     i;
+   unsigned     done = 0;
+
+   pushers_start(th, true);
+   for (i = 0; i < SWITCHES; i++)
+   {
+      int side = (i & 1) ? 1 : 0;
+
+      retro_atomic_store_release_int(&probe_ran_on, -1);
+      if (side)
+         task_queue_unset_threaded();
+      else
+         task_queue_set_threaded();
+      if (!probe_runs_on(side))
+         break;
+      done++;
+      retro_atomic_store_release_int(&switches_done, (int)done);
+   }
+   printf("  [info] %u of %u switches with pushes in %lld ms\n", done,
+         SWITCHES,
+         (long long)((cpu_features_get_time_usec() - started) / 1000));
+   check(done == SWITCHES,
+         "every switch takes effect while other threads push");
+   check(pushers_finish(th),
+         "every task pushed from another thread reaches its callback once");
+}
+
+/* A push from another thread, held by the unthreaded queue, runs on
+ * the threaded queue that the next check switches to. */
+static void lane_push_carried(void)
+{
+   retro_task_t *task = task_init();
+   retro_time_t  until;
+   bool          taken;
+
+   task->handler  = test_task_handler;
+   task->callback = test_task_callback;
+   tasks_done     = 0;
+   taken          = push_from_thread(task);
+   if (!taken)
+      free(task);
+   check(taken, "a push from another thread is held by the unthreaded queue");
+   retro_atomic_store_release_int(&probe_ran_on, -1);
+   task_queue_set_threaded();
+   until = cpu_features_get_time_usec() + LIMIT_US;
+   while (!tasks_done && cpu_features_get_time_usec() < until)
+   {
+      task_queue_check();
+      retro_sleep(1);
+   }
+   check(tasks_done == 1,
+         "a push held by the unthreaded queue runs after the switch to threaded");
+   probe_runs_on(0);
+}
+
+static retro_atomic_int_t order_first_pushed;
+static retro_atomic_int_t order_saw_hold;
+static retro_atomic_int_t order_overtook;
+static unsigned           order_retired;
+
+static void order_callback(retro_task_t *task, void *task_data,
+      void *user_data, const char *error)
+{
+   order_retired++;
+}
+
+static bool order_finder(retro_task_t *task, void *data)
+{
+   return task == (retro_task_t*)data;
+}
+
+static retro_task_t *order_task(void)
+{
+   retro_task_t *task = task_init();
+
+   task->handler  = test_task_handler;
+   task->callback = order_callback;
+   return task;
+}
+
+/* Its first push meets the gate shut and is held.  The second waits
+ * until the main thread is held in the gather that opens the gate
+ * again, before that gather has pushed the first, and then looks for
+ * itself in the runner. */
+static void order_pusher(void *data)
+{
+   retro_task_t      *first  = order_task();
+   retro_task_t      *second = order_task();
+   task_finder_data_t find;
+   retro_time_t       until;
+
+   (void)data;
+   task_queue_push(first);
+   retro_atomic_store_release_int(&order_first_pushed, 1);
+   until = cpu_features_get_time_usec() + LIMIT_US;
+   while (     !retro_atomic_load_acquire_int(&hold_inside)
+            && cpu_features_get_time_usec() < until)
+      retro_sleep(1);
+   retro_atomic_store_release_int(&order_saw_hold,
+         retro_atomic_load_acquire_int(&hold_inside));
+   task_queue_push(second);
+   find.func     = order_finder;
+   find.userdata = second;
+   if (task_queue_find(&find))
+   {
+      find.userdata = first;
+      retro_atomic_store_release_int(&order_overtook,
+            task_queue_find(&find) ? 0 : 1);
+   }
+   retro_atomic_store_release_int(&hold_release, 1);
+}
+
+/* A thread's push held at a put-off switch is not passed by its next
+ * one, which meets the gate open again before the gather that opened
+ * it has pushed the first. */
+static void lane_push_order(void)
+{
+   sthread_t   *waker_th;
+   sthread_t   *th;
+   retro_time_t until;
+
+   retro_atomic_store_release_int(&order_first_pushed, 0);
+   retro_atomic_store_release_int(&order_saw_hold, 0);
+   retro_atomic_store_release_int(&order_overtook, 0);
+   order_retired = 0;
+
+   /* A waker held inside puts the switch to unthreaded off, with the
+    * gate shut. */
+   retro_atomic_store_release_int(&hold_inside, 0);
+   retro_atomic_store_release_int(&hold_release, 0);
+   waker_th = sthread_create(held_waker, NULL);
+   until    = cpu_features_get_time_usec() + LIMIT_US;
+   while (     waker_th
+            && !retro_atomic_load_acquire_int(&hold_inside)
+            && cpu_features_get_time_usec() < until)
+      retro_sleep(1);
+   check(retro_atomic_load_acquire_int(&hold_inside) == 1,
+         "a waker is held inside the threaded queue");
+   task_queue_unset_threaded();
+   task_queue_check();
+   retro_atomic_store_release_int(&hold_release, 1);
+   if (waker_th)
+      sthread_join(waker_th);
+
+   retro_atomic_store_release_int(&hold_inside, 0);
+   retro_atomic_store_release_int(&hold_release, 0);
+   th    = sthread_create(order_pusher, NULL);
+   until = cpu_features_get_time_usec() + LIMIT_US;
+   while (     th
+            && !retro_atomic_load_acquire_int(&order_first_pushed)
+            && cpu_features_get_time_usec() < until)
+      retro_sleep(1);
+
+   /* Taken back: the check opens the gate, and its gather stops at its
+    * first queue lock until the pusher has pushed again. */
+   if (th)
+   {
+      holder_tid = sthread_get_current_thread_id();
+      retro_atomic_store_release_int(&hold_armed, 1);
+   }
+   task_queue_set_threaded();
+   task_queue_check();
+   if (th)
+      sthread_join(th);
+   retro_atomic_store_release_int(&hold_armed, 0);
+
+   until = cpu_features_get_time_usec() + LIMIT_US;
+   while (order_retired < 2 && cpu_features_get_time_usec() < until)
+   {
+      task_queue_check();
+      retro_sleep(1);
+   }
+   check(retro_atomic_load_acquire_int(&order_saw_hold) == 1,
+         "the gather that takes a put-off switch back is held at its first queue lock");
+   check(!retro_atomic_load_acquire_int(&order_overtook),
+         "a thread's next push does not reach the runner before its held one");
+   check(order_retired == 2, "both of its pushes run");
+}
+
 int main(void)
 {
    main_tid = sthread_get_current_thread_id();
@@ -500,6 +903,22 @@ int main(void)
    lane_switch_storm();
    lane_park_across_switch();
    lane_first_pass_wake();
+   retire_parked();
+   task_queue_deinit();
+
+   printf("tasks pushed from other threads, also while the queue switches\n");
+   retro_atomic_store_release_int(&parked_stop, 0);
+   retro_atomic_store_release_int(&parked_retired, 0);
+   retro_atomic_store_release_int(&probe_ran_on, -1);
+   task_queue_init(false, NULL);
+   probe_ident   = push_parked(probe_handler);
+   sleeper_ident = push_parked(sleeper_handler);
+   check(probe_runs_on(1), "the probe runs on the unthreaded queue");
+   lane_push_blocking();
+   lane_push_unthreaded();
+   lane_push_storm();
+   lane_push_carried();
+   lane_push_order();
    retire_parked();
    task_queue_deinit();
 

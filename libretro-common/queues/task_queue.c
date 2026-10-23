@@ -194,6 +194,12 @@ static bool property_lock_pinned            = false;
  * fallback lost would hold every later switch off. */
 static retro_atomic_int_t task_wakers    = RETRO_ATOMIC_INT_INITIALIZER(0);
 static retro_atomic_int_t task_switching = RETRO_ATOMIC_INT_INITIALIZER(0);
+#ifdef RETRO_ATOMIC_HAS_PTR
+#define TASK_PUSH_DEFER
+/* Tasks pushed from other threads that may not reach the runner, for
+ * the next gather. */
+static retro_atomic_ptr_t task_deferred;
+#endif
 #endif
 static void task_wake_gate_open(void);
 #endif
@@ -481,6 +487,8 @@ void task_queue_set_slow_handler_cb(retro_task_slow_handler_t cb,
    task_slow_handler_budget = (budget_usec < 1) ? 1 : budget_usec;
 }
 
+static void task_queue_push_deferred(void);
+
 static void retro_task_regular_gather(void)
 {
    retro_task_t *task     = NULL;
@@ -492,6 +500,8 @@ static void retro_task_regular_gather(void)
    retro_time_t  started  = 0;
    unsigned      n_ran    = 0;
    bool          over     = false;
+
+   task_queue_push_deferred();
 
    /* Detach the running list, in order. */
    while ((task = task_queue_get(&tasks_running)))
@@ -857,6 +867,8 @@ static unsigned       task_report_cap = 0;
 static void retro_task_threaded_gather(void)
 {
    retro_task_t *task = NULL;
+
+   task_queue_push_deferred();
 
    /* Nothing running and nothing finished, as on nearly every frame.
     * A task that finishes just after this test retires on the next
@@ -2200,7 +2212,7 @@ void task_queue_check(void)
    impl_current->gather();
 }
 
-bool task_queue_push(retro_task_t *task)
+static bool task_queue_push_now(retro_task_t *task)
 {
    /* Ignore this task if a related one is already running.
     *
@@ -2241,6 +2253,107 @@ bool task_queue_push(retro_task_t *task)
    impl_current->push_running(task);
 
    return true;
+}
+
+#ifdef TASK_PUSH_DEFER
+/* Newest first.  A swap that succeeds has linked the task to the true
+ * head, whatever came and went before it. */
+static void task_queue_defer(retro_task_t *task)
+{
+   void *head;
+
+   do
+   {
+      head       = retro_atomic_load_acquire_ptr(&task_deferred);
+      task->next = (retro_task_t*)head;
+   } while (!retro_atomic_cas_ptr(&task_deferred, head, task));
+}
+#endif
+
+/* At the top of each gather, on the thread that drives the queue, so
+ * it never meets a switch.  The tasks stay on the list until they are
+ * pushed: a push from another thread is held while it is not empty, so
+ * it cannot pass one its own thread made earlier. */
+static void task_queue_push_deferred(void)
+{
+#ifdef TASK_PUSH_DEFER
+   retro_task_t  *snap;
+   retro_task_t  *task;
+   retro_task_t  *fifo        = NULL;
+   retro_task_t  *refused     = NULL;
+   retro_task_t **refused_end = &refused;
+
+   snap = (retro_task_t*)retro_atomic_load_acquire_ptr(&task_deferred);
+   if (!snap)
+      return;
+   task = snap;
+   while (task)
+   {
+      retro_task_t *next = task->next;
+      task->next         = fifo;
+      fifo               = task;
+      task               = next;
+   }
+   while (fifo)
+   {
+      retro_task_t *next = fifo->next;
+      if (!task_queue_push_now(fifo))
+      {
+         fifo->next   = NULL;
+         *refused_end = fifo;
+         refused_end  = &fifo->next;
+      }
+      fifo = next;
+   }
+   /* Cut them off below any task held since. */
+   if (!retro_atomic_cas_ptr(&task_deferred, snap, NULL))
+   {
+      task = (retro_task_t*)retro_atomic_load_acquire_ptr(&task_deferred);
+      while (task->next != snap)
+         task = task->next;
+      task->next = NULL;
+   }
+   /* A second BLOCKING task is retired cancelled, so that its callback
+    * still runs.  Not before the cut: freed, its address could come
+    * back as the head. */
+   while (refused)
+   {
+      retro_task_t *next = refused->next;
+      task_flags_set(refused,
+            RETRO_TASK_FLG_CANCELLED | RETRO_TASK_FLG_FINISHED);
+      retro_task_internal_retire_callback(refused);
+      retro_task_internal_retire_cleanup(refused);
+      free(refused);
+      refused = next;
+   }
+#endif
+}
+
+bool task_queue_push(retro_task_t *task)
+{
+#ifdef TASK_PUSH_DEFER
+   /* The thread that drives the queue is the one that switches it. */
+   if (!task_is_on_main_thread())
+   {
+      bool pushed = true;
+
+      if (!task_wake_gate_enter())
+         task_queue_defer(task);
+      else
+      {
+         /* The unthreaded queue's lists take no lock, and a held task
+          * may be this thread's own. */
+         if (   impl_current == &impl_regular
+             || retro_atomic_load_acquire_ptr(&task_deferred))
+            task_queue_defer(task);
+         else
+            pushed = task_queue_push_now(task);
+         task_wake_gate_leave();
+      }
+      return pushed;
+   }
+#endif
+   return task_queue_push_now(task);
 }
 
 void task_queue_wait(retro_task_condition_fn_t cond, void* data)

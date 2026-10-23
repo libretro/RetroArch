@@ -806,6 +806,15 @@ uint8_t task_get_flags(retro_task_t *task);
  * Tasks with the same \c task::when value
  * will be executed in the order they were scheduled.
  *
+ * Where the platform has lock-free atomics, a push from a thread other
+ * than the one that drives the queue, made while the queue switches
+ * between threaded and unthreaded, while it is unthreaded, or while
+ * earlier held pushes still wait, is held for the next
+ * task_queue_check() and returns true. A thread's pushes start in the
+ * order it made them. A \c TASK_TYPE_BLOCKING task refused there is
+ * cancelled, and its callback still runs. Elsewhere such a push goes
+ * straight in, as one from the thread that drives the queue does.
+ *
  * @param task The task to schedule.
  * @return \c true unless \c task's type is \c TASK_TYPE_BLOCKING
  * and there's already a blocking task in the queue.
