@@ -1029,9 +1029,14 @@ bool gfx_thumbnail_get_playback_state(gfx_thumbnail_t *thumbnail,
       retro_time_t current_time, gfx_thumbnail_playback_state_t *state)
 {
    gfx_anim_preview_t *session = NULL;
+   gfx_surface_player_t *player = NULL;
    if (thumbnail && (thumbnail->flags & GFX_THUMB_FLAG_ANIM_ACTIVE))
+   {
       session = (gfx_anim_preview_t*)thumbnail->anim_sess;
-   return gfx_media_player_state(session, (int64_t)current_time, state);
+      player = (gfx_surface_player_t*)thumbnail->anim_player;
+   }
+   return gfx_media_player_state(session, player ? player->vp : NULL,
+         (int64_t)current_time, state);
 }
 
 bool gfx_thumbnail_seek(gfx_thumbnail_t *thumbnail, int64_t target_us,

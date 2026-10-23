@@ -76,7 +76,8 @@ typedef struct
    int wait_at;
    bool waiting;
    int duration_ms;
-   int64_t movie_ns, lead_ns, frame_step_ns;
+   int64_t movie_ns, lead_ns, frame_step_ns, stamp_jitter_ns;
+   bool stamp_quantized;
    int catchup;        /* last value set */
    int catchup_sets;
    int argb;
@@ -109,10 +110,14 @@ int64_t image_transfer_anim_stream_frame_time_ns(void *stream,
       enum image_type_enum type)
 {
    fake_t *f = (fake_t*)stream;
+   int64_t time_ns;
    (void)type;
-   return f->pos ? f->lead_ns + (int64_t)(f->pos - 1)
+   time_ns = f->pos ? f->lead_ns + (int64_t)(f->pos - 1)
       * (f->frame_step_ns ? f->frame_step_ns
-            : (int64_t)f->duration_ms * 1000000) : -1;
+            : (int64_t)f->duration_ms * 1000000)
+      + ((f->pos & 1) ? 0 : f->stamp_jitter_ns) : -1;
+   return time_ns >= 0 && f->stamp_quantized
+      ? time_ns / 1000000 * 1000000 : time_ns;
 }
 
 static uint32_t frame_px(int k, bool argb)
@@ -1296,6 +1301,65 @@ static void lane_timestamp_precision(bool threaded)
    video_player_worker_deinit();
 }
 
+static void lane_cadence(bool threaded, unsigned mode, bool hardware)
+{
+   fake_t f;
+   sink_t k;
+   video_player_sink_t s;
+   video_player_t *p;
+   seek_test_t seek;
+   unsigned num = 0, den = 0;
+   int tick;
+   fake_init(&f, 60, 42);
+   f.movie_ns = (int64_t)3000000 * 1000;
+   f.frame_step_ns = 41708333;
+   f.stamp_jitter_ns = mode == 1 ? 7000000 : 0;
+   f.stamp_quantized = mode == 2;
+   memset(&seek, 0, sizeof(seek));
+   seek.stream = &f;
+   retro_atomic_int_init(&seek.gate, 1);
+   retro_atomic_int_init(&seek.steps, 0);
+   if (hardware)
+   {
+      f.hw_can = true;
+      sink_init_hw(&k, &s);
+      k.hw_busy_every = 2;
+   }
+   else
+      sink_init(&k, &s, true);
+   p = video_player_new(&f, IMAGE_TYPE_MP4, 1, &s,
+         threaded ? 0 : VIDEO_PLAYER_INLINE);
+   CHECK(p != NULL, "cadence: allocation");
+   if (!p) return;
+   CHECK(video_player_set_seek_handler(p, seek_step, &seek), "cadence: seek setup");
+   if (hardware)
+      settle_hw_start(p, 0);
+   for (tick = 0; tick < 3000 && k.nseen < (mode == 1 ? 60 : 33); tick++)
+   {
+      video_player_poll(p, (int64_t)tick * 1000);
+      if (k.nseen < 33 || mode == 1)
+         CHECK(!video_player_cadence(p, &num, &den),
+               "cadence: insufficient or variable timing");
+      if (threaded) retro_sleep(1);
+   }
+   if (mode != 1)
+   {
+      CHECK(k.nseen == 33 && video_player_cadence(p, &num, &den)
+            && num == 32000000 && (mode == 2 ? den == 1334000
+               : den >= 1334666 && den <= 1334667),
+            "cadence: measured rate thread=%d hardware=%d mode=%u seen=%d rate=%u/%u",
+            threaded, hardware, mode, k.nseen, num, den);
+      CHECK(video_player_seek(p, 0), "cadence: seek accepted");
+      CHECK(!video_player_cadence(p, &num, &den), "cadence: seek clears evidence");
+   }
+   else
+      CHECK(k.nseen == 60, "cadence: variable stream completes");
+   video_player_stop(p);
+   CHECK(!video_player_cadence(p, &num, &den), "cadence: stopped player has no rate");
+   video_player_free(p);
+   video_player_worker_deinit();
+}
+
 static void lane_movie_stop(bool threaded)
 {
    fake_t f;
@@ -1608,8 +1672,16 @@ int main(void)
    lane_pause(true);
 #endif
    lane_timestamp_precision(false);
+   lane_cadence(false, 0, false);
+   lane_cadence(false, 1, false);
+   lane_cadence(false, 2, false);
+   lane_cadence(false, 0, true);
 #ifdef HAVE_THREADS
    lane_timestamp_precision(true);
+   lane_cadence(true, 0, false);
+   lane_cadence(true, 1, false);
+   lane_cadence(true, 2, false);
+   lane_cadence(true, 0, true);
 #endif
    lane_inline_release();
    lane_padded();

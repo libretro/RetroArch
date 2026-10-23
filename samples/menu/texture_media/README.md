@@ -60,3 +60,8 @@ settings from the shared transport. It checks that the fullscreen overlay
 is dismissed and that Back restores the browser stack depth and selection.
 Playback is paused before navigation; existing inline-preview policy governs
 the session lifetime after leaving fullscreen.
+
+`--require-cadence` checks that a movie with at least 33 near-uniform
+presentation timestamps publishes a measured rate through the real menu
+transport. The rate is evidence for display policy, not a constant-frame-rate
+guarantee. Timestamp discontinuities and seeking invalidate it.

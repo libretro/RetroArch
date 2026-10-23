@@ -1,7 +1,7 @@
 from pathlib import Path
 import argparse, os, shutil, subprocess, sys, tempfile
-p=argparse.ArgumentParser();p.add_argument('fixture');p.add_argument('--objdir',default='obj-unix/release');p.add_argument('--c89',action='store_true');p.add_argument('--shell',default='bash');p.add_argument('--driver',choices=['rgui','materialui','xmb','ozone'],default='rgui');p.add_argument('--video-driver',default='null');p.add_argument('--threaded',action='store_true');p.add_argument('--assets');p.add_argument('--gpu-surface',action='store_true',help='require RGUI GPU surface playback');p.add_argument('--hardware-decode',action='store_true',help='require hardware decoding as well as GPU presentation');p.add_argument('--continuous',action='store_true',help='test natural folder playback using three temporary fixture links/copies');p.add_argument('--first-video-us',type=int,default=0,help='first visible video timestamp used for capture comparisons');p.add_argument('--continuous-error',action='store_true',help='test that an invalid next movie stops folder playback');p.add_argument('--fullscreen-settings',action='store_true',help='test the shared fullscreen settings action');a=p.parse_args()
-if a.continuous_error or a.fullscreen_settings:a.continuous=True
+p=argparse.ArgumentParser();p.add_argument('fixture');p.add_argument('--objdir',default='obj-unix/release');p.add_argument('--c89',action='store_true');p.add_argument('--shell',default='bash');p.add_argument('--driver',choices=['rgui','materialui','xmb','ozone'],default='rgui');p.add_argument('--video-driver',default='null');p.add_argument('--threaded',action='store_true');p.add_argument('--assets');p.add_argument('--gpu-surface',action='store_true',help='require RGUI GPU surface playback');p.add_argument('--hardware-decode',action='store_true',help='require hardware decoding as well as GPU presentation');p.add_argument('--continuous',action='store_true',help='test natural folder playback using three temporary fixture links/copies');p.add_argument('--first-video-us',type=int,default=0,help='first visible video timestamp used for capture comparisons');p.add_argument('--continuous-error',action='store_true',help='test that an invalid next movie stops folder playback');p.add_argument('--fullscreen-settings',action='store_true',help='test the shared fullscreen settings action');p.add_argument('--require-cadence',action='store_true',help='require measured movie cadence in the folder fixture');a=p.parse_args()
+if a.continuous_error or a.fullscreen_settings or a.require_cadence:a.continuous=True
 if a.gpu_surface and (a.driver!='rgui' or a.video_driver=='null'):p.error('--gpu-surface requires RGUI and a GPU video driver')
 if a.hardware_decode and not a.gpu_surface:p.error('--hardware-decode requires --gpu-surface')
 if not 0<=a.first_video_us<=2147483647 or (a.first_video_us and a.driver!='rgui'):p.error('--first-video-us requires RGUI and a timestamp from 0 through 2147483647')
@@ -36,6 +36,7 @@ with tempfile.TemporaryDirectory(prefix='rgui-media-') as temp:
  if a.continuous:env['MEDIA_TEST_CONTINUOUS']='1'
  if a.continuous_error:env['MEDIA_TEST_CONTINUOUS_ERROR']='1'
  if a.fullscreen_settings:env['MEDIA_TEST_SETTINGS']='1'
+ if a.require_cadence:env['MEDIA_TEST_CADENCE']='1'
  if a.video_driver!='null':env['MEDIA_TEST_GPU']='1'
  if a.gpu_surface:env['MEDIA_TEST_GPU_SURFACE']='1'
  if a.hardware_decode:env['MEDIA_TEST_HW_DECODE']='1'

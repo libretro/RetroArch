@@ -178,6 +178,11 @@ bool video_player_set_repeat(video_player_t *player, bool repeat);
 /* Polling owner only: finite movie playback reached a clean EOF. False for
  * stop, decode/presentation failure, and while the last frame is still due. */
 bool video_player_completed(const video_player_t *player);
+/* Polling owner: measured rate after 32 near-uniform movie intervals.
+ * Allows 1 ms timestamp quantization; false during timing discontinuities.
+ * This is cadence evidence, not a declaration that a stream is CFR. */
+bool video_player_cadence(const video_player_t *player,
+      unsigned *numerator, unsigned *denominator);
 
 enum video_player_state video_player_poll(video_player_t *p, int64_t now_us);
 

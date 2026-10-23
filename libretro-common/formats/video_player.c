@@ -110,8 +110,11 @@ struct video_player
 {
    int64_t next_us;        /* when the next frame is due, 0 at once */
    int64_t pause_left_us;  /* remaining picture duration at pause */
+   int64_t cadence_last;
+   unsigned cadence_count, cadence_sum, cadence_min, cadence_max;
+   unsigned cadence_span;
    bool paused;           /* polling thread only */
-   bool presented, completed, ended;
+   bool presented, completed, ended, cadence_seen;
    bool inline_ready, inline_finished, inline_held;
    video_player_frame_t inline_frame;
    int64_t movie_us;       /* immutable full movie period, or zero */
@@ -258,6 +261,62 @@ static void vp_copy_frame(uint32_t *dst, const uint32_t *src,
          memcpy(dst, src, (size_t)width * sizeof(*dst));
       dst += stride;
       src += src_stride;
+   }
+}
+
+static void vp_cadence_reset(video_player_t *p)
+{
+   p->cadence_seen = false;
+   p->cadence_count = p->cadence_sum = p->cadence_span = 0;
+}
+
+static void vp_cadence_present(video_player_t *p, int64_t time_us)
+{
+   uint64_t delta;
+   unsigned interval;
+   if (time_us < 0)
+   {
+      vp_cadence_reset(p);
+      return;
+   }
+   if (!p->cadence_seen)
+   {
+      p->cadence_seen = true;
+      p->cadence_last = time_us;
+      return;
+   }
+   delta = time_us > p->cadence_last
+      ? (uint64_t)time_us - (uint64_t)p->cadence_last : 0;
+   p->cadence_last = time_us;
+   if (delta < 4000 || delta > 200000)
+   {
+      p->cadence_count = p->cadence_sum = p->cadence_span = 0;
+      return;
+   }
+   interval = (unsigned)delta;
+   if (p->cadence_span
+         && (interval * 32 + 32000 < p->cadence_span
+            || interval * 32 > p->cadence_span + 32000))
+      p->cadence_span = 0;
+   if (!p->cadence_count)
+      p->cadence_min = p->cadence_max = interval;
+   else
+   {
+      if (interval < p->cadence_min)
+         p->cadence_min = interval;
+      if (interval > p->cadence_max)
+         p->cadence_max = interval;
+      if (p->cadence_max - p->cadence_min > 1000)
+      {
+         p->cadence_count = p->cadence_sum = p->cadence_span = 0;
+         p->cadence_min = p->cadence_max = interval;
+      }
+   }
+   p->cadence_sum += interval;
+   if (++p->cadence_count == 32)
+   {
+      p->cadence_span = p->cadence_sum;
+      p->cadence_count = p->cadence_sum = 0;
    }
 }
 
@@ -823,6 +882,7 @@ static enum video_player_state vp_poll_threaded(video_player_t *p,
       return VIDEO_PLAYER_ENDED;
    }
    ju->hw         = false;   /* the sink's now */
+   vp_cadence_present(p, fr.time_us);
    vp_schedule(p, ju->duration_ms, now);
    /* a QUEUED frame keeps its slot until the sink lets it go */
    retro_atomic_store_relaxed_int(&ju->status,
@@ -1002,6 +1062,7 @@ present_frame:
       return VIDEO_PLAYER_ENDED;
    }
    p->inline_held = fr.hw && res == VIDEO_PLAYER_PRESENT_QUEUED;
+   vp_cadence_present(p, fr.time_us);
    vp_schedule(p, fr.duration_ms, now);
    return VIDEO_PLAYER_PLAYING;
 
@@ -1251,6 +1312,17 @@ bool video_player_set_repeat(video_player_t *p, bool repeat)
    return true;
 }
 
+bool video_player_cadence(const video_player_t *p,
+      unsigned *numerator, unsigned *denominator)
+{
+   if (!p || !numerator || !denominator || !p->cadence_span
+         || (p->flags & VP_STOPPED) || p->seek_pending)
+      return false;
+   *numerator = 32000000;
+   *denominator = p->cadence_span;
+   return true;
+}
+
 bool video_player_completed(const video_player_t *p)
 {
    return p && p->ended && p->completed && !(p->flags & VP_STOPPED)
@@ -1367,6 +1439,7 @@ bool video_player_seek(video_player_t *p, int64_t target_us)
    if (!p || !p->seek_cb || (p->flags & VP_STOPPED))
       return false;
    p->ended = p->completed = false;
+   vp_cadence_reset(p);
    if (p->inline_ready && p->inline_frame.hw)
       video_hw_frame_abandon(p->inline_frame.hw);
    p->inline_ready = false;

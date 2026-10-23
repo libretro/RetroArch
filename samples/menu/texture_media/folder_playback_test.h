@@ -93,6 +93,14 @@ static bool media_folder_drive(struct menu_state *menu_st,
          return false;
       retro_sleep(1);
    }
+   if (getenv("MEDIA_TEST_CADENCE"))
+   {
+      printf("movie cadence: %u/%u Hz\n", media->controls.playback.cadence_num,
+            media->controls.playback.cadence_den);
+      if (!media->controls.playback.cadence_num
+            || !media->controls.playback.cadence_den)
+         return false;
+   }
    if (!media->controls.target.user || !media->controls.playback.paused
          || media->controls.layout.button_count != 7
          || media->controls.target.directions != 1)

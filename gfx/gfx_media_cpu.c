@@ -151,7 +151,8 @@ bool gfx_media_cpu_seek(gfx_media_cpu_t *p, int64_t target_us,
 bool gfx_media_cpu_state(gfx_media_cpu_t *p, int64_t wall_us,
       gfx_media_playback_state_t *state)
 {
-   return gfx_media_player_state(p ? p->session : NULL, wall_us, state);
+   return gfx_media_player_state(p ? p->session : NULL,
+         p ? p->player : NULL, wall_us, state);
 }
 
 bool gfx_media_cpu_free(gfx_media_cpu_t *p)
