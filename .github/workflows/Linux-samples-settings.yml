@@ -73,6 +73,13 @@ jobs:
           ccache -M 250M
           ccache -z
 
+      - name: Settings definitions keep their keys and defaults
+        run: |
+          set -eu
+          python3 tools/settings_check_test.py
+          python3 tools/settings_check.py table --check tools/settings_table.reference
+          python3 tools/settings_check.py unity
+
       - name: Settings lists have room for what they are given
         shell: bash
         run: |

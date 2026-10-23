@@ -146,20 +146,35 @@ TABLE_ROW = re.compile(
     re.S)
 
 
+TABLE_LABEL_ROW = re.compile(
+    r'\{\s*\(uint32_t\)[^,]*\([^)]*\)\s*,\s*'
+    r'\(uint16_t\)[^,]*\(\s*struct msg_hash_us_lbl_blob_s\s*,\s*'
+    r'm_(\w+)\s*\)\s*,\s*(.*?)\s*\},\s*(?=\{)', re.S)
+
+LABEL_MEMBER = re.compile(
+    r'char\s+m_(\w+)\s*\[\s*sizeof\s*\(\s*"([^"]*)"\s*\)\s*\]\s*;')
+
+
 def table_rows(text, kind):
-    """The literal-keyed rows of config_<kind>_rows[], which
-    config_<kind>_rows_add() adds where it is called."""
+    """Resolve literal and packed-label keys where rows_add() adds them."""
     start = text.find('config_%s_rows[] = {' % kind)
     if start < 0:
         return []
     end = text.find('{ 0 }', start)
     body = text[start:end] + '{'
     rows = []
-    for m in TABLE_ROW.finditer(body):
+    labels = dict(LABEL_MEMBER.findall(text))
+    matches = list(TABLE_ROW.finditer(body)) + list(TABLE_LABEL_ROW.finditer(body))
+    for m in sorted(matches, key=lambda item: item.start()):
+        ident = m.group(1)
+        if m.re is TABLE_LABEL_ROW:
+            if ident not in labels:
+                raise ValueError('settings row has no packed label: ' + ident)
+            ident = labels[ident]
         value = ' '.join(m.group(2).split())
         if value.startswith('(') and value.endswith(')'):
             value = value[1:-1]  # CFG_ROW brackets the default
-        rows.append((kind, m.group(1), '1', value))
+        rows.append((kind, ident, '1', value))
     return rows
 
 
