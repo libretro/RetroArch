@@ -977,12 +977,13 @@ static void config_settings_list_full(const char *key, unsigned cap)
          " SETTINGS_*_COUNT_MAX in configuration.c.\n", key, cap);
 }
 
-/* Rows the settings/ def files generate: the key, the value's offset
- * in settings_t and its default, copied into a list by
- * config_*_rows_add() where the rows stood. With the menu, a key is its
- * label's offset in the packed label blob, which needs no relocation.
- * A row whose label the blob lacks fails to compile here; register such
- * a setting by hand, as microphone_block_frames is. */
+/* Rows the settings/ def files generate, and hand-written ones keyed
+ * by a menu label: the key, the value's offset in settings_t and its
+ * default, copied into a list by config_*_rows_add() where the rows
+ * stood. With the menu, a key is its label's offset in the packed
+ * label blob, which needs no relocation. A row whose label the blob
+ * lacks fails to compile here; register such a setting by hand, as
+ * microphone_block_frames is. */
 #ifdef HAVE_MENU
 #define CFG_ROW(field, T, d) \
    { (uint32_t)offsetof(settings_t, field), \
@@ -2868,6 +2869,47 @@ static const struct config_bool_row config_bool_rows[] = {
 #undef S_UINT_AT_EX_NS
 #undef S_UINT_AT_EX_H
 #undef S_UINT_AT_EX_NS_H
+   CFG_ROW(bools.auto_overrides_enable, AUTO_OVERRIDES_ENABLE, DEFAULT_AUTO_OVERRIDES_ENABLE),
+   CFG_ROW(bools.auto_remaps_enable, AUTO_REMAPS_ENABLE, DEFAULT_AUTO_REMAPS_ENABLE),
+   CFG_ROW(bools.auto_shaders_enable, AUTO_SHADERS_ENABLE, DEFAULT_AUTO_SHADERS_ENABLE),
+   CFG_ROW(bools.block_sram_overwrite, BLOCK_SRAM_OVERWRITE, DEFAULT_BLOCK_SRAM_OVERWRITE),
+   CFG_ROW(bools.config_save_minimal, CONFIG_SAVE_MINIMAL, DEFAULT_CONFIG_SAVE_MINIMAL),
+   CFG_ROW(bools.config_save_on_exit, CONFIG_SAVE_ON_EXIT, DEFAULT_CONFIG_SAVE_ON_EXIT),
+   CFG_ROW(bools.core_info_savestate_bypass, CORE_INFO_SAVESTATE_BYPASS, DEFAULT_CORE_INFO_SAVESTATE_BYPASS),
+   CFG_ROW(bools.core_option_category_enable, CORE_OPTION_CATEGORY_ENABLE, DEFAULT_CORE_OPTION_CATEGORY_ENABLE),
+   CFG_ROW(bools.driver_switch_enable, DRIVER_SWITCH_ENABLE, DEFAULT_DRIVER_SWITCH_ENABLE),
+   CFG_ROW(bools.game_specific_options, GAME_SPECIFIC_OPTIONS, DEFAULT_GAME_SPECIFIC_OPTIONS),
+   CFG_ROW(bools.global_core_options, GLOBAL_CORE_OPTIONS, DEFAULT_GLOBAL_CORE_OPTIONS),
+   CFG_ROW(bools.initial_disk_change_enable, INITIAL_DISK_CHANGE_ENABLE, DEFAULT_INITIAL_DISK_CHANGE_ENABLE),
+   CFG_ROW(bools.input_descriptor_hide_unbound, INPUT_DESCRIPTOR_HIDE_UNBOUND, DEFAULT_INPUT_DESCRIPTOR_HIDE_UNBOUND),
+   CFG_ROW(bools.input_descriptor_label_show, INPUT_DESCRIPTOR_LABEL_SHOW, DEFAULT_INPUT_DESCRIPTOR_LABEL_SHOW),
+   CFG_ROW(bools.remap_save_on_exit, REMAP_SAVE_ON_EXIT, DEFAULT_REMAP_SAVE_ON_EXIT),
+   CFG_ROW(bools.savestate_auto_load, SAVESTATE_AUTO_LOAD, DEFAULT_SAVESTATE_AUTO_LOAD),
+   CFG_ROW(bools.savestate_auto_save, SAVESTATE_AUTO_SAVE, DEFAULT_SAVESTATE_AUTO_SAVE),
+   CFG_ROW(bools.sort_savefiles_by_content_enable, SORT_SAVEFILES_BY_CONTENT_ENABLE, DEFAULT_SORT_SAVEFILES_BY_CONTENT_ENABLE),
+   CFG_ROW(bools.sort_savefiles_enable, SORT_SAVEFILES_ENABLE, DEFAULT_SORT_SAVEFILES_ENABLE),
+   CFG_ROW(bools.sort_savestates_by_content_enable, SORT_SAVESTATES_BY_CONTENT_ENABLE, DEFAULT_SORT_SAVESTATES_BY_CONTENT_ENABLE),
+   CFG_ROW(bools.sort_savestates_enable, SORT_SAVESTATES_ENABLE, DEFAULT_SORT_SAVESTATES_ENABLE),
+   CFG_ROW(bools.sort_screenshots_by_content_enable, SORT_SCREENSHOTS_BY_CONTENT_ENABLE, DEFAULT_SORT_SCREENSHOTS_BY_CONTENT_ENABLE),
+   CFG_ROW(bools.video_allow_rotate, VIDEO_ALLOW_ROTATE, DEFAULT_ALLOW_ROTATE),
+   CFG_ROW(bools.video_shared_context, VIDEO_SHARED_CONTEXT, DEFAULT_VIDEO_SHARED_CONTEXT),
+#ifdef HAVE_PSGL
+   CFG_ROW(bools.video_pal60_enable, PAL60_ENABLE, DEFAULT_PAL60_ENABLE),
+#endif
+#ifdef HAVE_MENU
+   CFG_ROW(bools.menu_scroll_fast, MENU_SCROLL_FAST, DEFAULT_MENU_SCROLL_FAST),
+   CFG_ROW(bools.menu_show_quit_retroarch, MENU_SHOW_QUIT_RETROARCH, DEFAULT_MENU_SHOW_QUIT),
+#endif
+#ifdef HAVE_CHEEVOS
+   CFG_ROW(bools.cheevos_appearance_padding_auto, CHEEVOS_APPEARANCE_PADDING_AUTO, DEFAULT_CHEEVOS_APPEARANCE_PADDING_AUTO),
+   CFG_ROW(bools.cheevos_enable, CHEEVOS_ENABLE, DEFAULT_CHEEVOS_ENABLE),
+   CFG_ROW(bools.cheevos_hardcore_mode_enable, CHEEVOS_HARDCORE_MODE_ENABLE, true),
+   CFG_ROW(bools.cheevos_visibility_lboard_trackers, CHEEVOS_VISIBILITY_LBOARD_TRACKERS, DEFAULT_CHEEVOS_VISIBILITY_LBOARD_TRACKERS),
+#endif
+#ifdef HAVE_OVERLAY
+   CFG_ROW(bools.input_osk_overlay_auto_scale, INPUT_OSK_OVERLAY_AUTO_SCALE, DEFAULT_INPUT_OVERLAY_AUTO_SCALE),
+   CFG_ROW(bools.input_overlay_auto_rotate, INPUT_OVERLAY_AUTO_ROTATE, DEFAULT_OVERLAY_AUTO_ROTATE),
+#endif
    { 0 }
 };
 CONFIG_ROWS_ADD(bool, bool)
@@ -2883,12 +2925,7 @@ static struct config_bool_setting *populate_settings_bool(
       return NULL;
 
    SETTING_BOOL("accessibility_enable",          &settings->bools.accessibility_enable, true, DEFAULT_ACCESSIBILITY_ENABLE, false);
-   SETTING_BOOL("driver_switch_enable",          &settings->bools.driver_switch_enable, true, DEFAULT_DRIVER_SWITCH_ENABLE, false);
-   SETTING_BOOL("input_descriptor_label_show",   &settings->bools.input_descriptor_label_show, true, DEFAULT_INPUT_DESCRIPTOR_LABEL_SHOW, false);
-   SETTING_BOOL("input_descriptor_hide_unbound", &settings->bools.input_descriptor_hide_unbound, true, DEFAULT_INPUT_DESCRIPTOR_HIDE_UNBOUND, false);
    SETTING_BOOL("load_dummy_on_core_shutdown",   &settings->bools.load_dummy_on_core_shutdown, true, DEFAULT_LOAD_DUMMY_ON_CORE_SHUTDOWN, false);
-   SETTING_BOOL("core_option_category_enable",   &settings->bools.core_option_category_enable, true, DEFAULT_CORE_OPTION_CATEGORY_ENABLE, false);
-   SETTING_BOOL("core_info_savestate_bypass",    &settings->bools.core_info_savestate_bypass, true, DEFAULT_CORE_INFO_SAVESTATE_BYPASS, false);
 #if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
    SETTING_BOOL("core_info_cache_enable",        &settings->bools.core_info_cache_enable, false, DEFAULT_CORE_INFO_CACHE_ENABLE, false);
 #else
@@ -2911,28 +2948,11 @@ static struct config_bool_setting *populate_settings_bool(
 #if HAVE_MENU
    SETTING_BOOL("kiosk_mode_enable",             &settings->bools.kiosk_mode_enable, true, DEFAULT_KIOSK_MODE_ENABLE, false);
 #endif
-   SETTING_BOOL("block_sram_overwrite",          &settings->bools.block_sram_overwrite, true, DEFAULT_BLOCK_SRAM_OVERWRITE, false);
-   SETTING_BOOL("savestate_auto_save",           &settings->bools.savestate_auto_save, true, DEFAULT_SAVESTATE_AUTO_SAVE, false);
-   SETTING_BOOL("savestate_auto_load",           &settings->bools.savestate_auto_load, true, DEFAULT_SAVESTATE_AUTO_LOAD, false);
    SETTING_BOOL("savestate_thumbnail_enable",    &settings->bools.savestate_thumbnail_enable, true, DEFAULT_SAVESTATE_THUMBNAIL_ENABLE, false);
-   SETTING_BOOL("game_specific_options",         &settings->bools.game_specific_options, true, DEFAULT_GAME_SPECIFIC_OPTIONS, false);
-   SETTING_BOOL("auto_overrides_enable",         &settings->bools.auto_overrides_enable, true, DEFAULT_AUTO_OVERRIDES_ENABLE, false);
-   SETTING_BOOL("auto_remaps_enable",            &settings->bools.auto_remaps_enable, true, DEFAULT_AUTO_REMAPS_ENABLE, false);
-   SETTING_BOOL("initial_disk_change_enable",    &settings->bools.initial_disk_change_enable, true, DEFAULT_INITIAL_DISK_CHANGE_ENABLE, false);
-   SETTING_BOOL("global_core_options",           &settings->bools.global_core_options, true, DEFAULT_GLOBAL_CORE_OPTIONS, false);
-   SETTING_BOOL("auto_shaders_enable",           &settings->bools.auto_shaders_enable, true, DEFAULT_AUTO_SHADERS_ENABLE, false);
-   SETTING_BOOL("sort_savefiles_enable",              &settings->bools.sort_savefiles_enable, true, DEFAULT_SORT_SAVEFILES_ENABLE, false);
-   SETTING_BOOL("sort_savestates_enable",             &settings->bools.sort_savestates_enable, true, DEFAULT_SORT_SAVESTATES_ENABLE, false);
-   SETTING_BOOL("sort_savefiles_by_content_enable",   &settings->bools.sort_savefiles_by_content_enable, true, DEFAULT_SORT_SAVEFILES_BY_CONTENT_ENABLE, false);
-   SETTING_BOOL("sort_savestates_by_content_enable",  &settings->bools.sort_savestates_by_content_enable, true, DEFAULT_SORT_SAVESTATES_BY_CONTENT_ENABLE, false);
-   SETTING_BOOL("sort_screenshots_by_content_enable", &settings->bools.sort_screenshots_by_content_enable, true, DEFAULT_SORT_SCREENSHOTS_BY_CONTENT_ENABLE, false);
    SETTING_BOOL("savestates_in_content_dir",     &settings->bools.savestates_in_content_dir, true, DEFAULT_SAVESTATES_IN_CONTENT_DIR, false);
    SETTING_BOOL("savefiles_in_content_dir",      &settings->bools.savefiles_in_content_dir, true, DEFAULT_SAVEFILES_IN_CONTENT_DIR, false);
    SETTING_BOOL("systemfiles_in_content_dir",    &settings->bools.systemfiles_in_content_dir, true, DEFAULT_SYSTEMFILES_IN_CONTENT_DIR, false);
    SETTING_BOOL("screenshots_in_content_dir",    &settings->bools.screenshots_in_content_dir, true, DEFAULT_SCREENSHOTS_IN_CONTENT_DIR, false);
-   SETTING_BOOL("config_save_on_exit",           &settings->bools.config_save_on_exit, true, DEFAULT_CONFIG_SAVE_ON_EXIT, false);
-   SETTING_BOOL("config_save_minimal",           &settings->bools.config_save_minimal, true, DEFAULT_CONFIG_SAVE_MINIMAL, false);
-   SETTING_BOOL("remap_save_on_exit",            &settings->bools.remap_save_on_exit, true, DEFAULT_REMAP_SAVE_ON_EXIT, false);
    SETTING_BOOL("show_hidden_files",             &settings->bools.show_hidden_files, true, DEFAULT_SHOW_HIDDEN_FILES, false);
    SETTING_OVERRIDE(RARCH_OVERRIDE_SETTING_LOG_TO_FILE);
 #ifndef HAVE_LAKKA
@@ -2964,10 +2984,8 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("video_aspect_ratio_auto",       &settings->bools.video_aspect_ratio_auto, true, DEFAULT_ASPECT_RATIO_AUTO, false);
 
 
-   SETTING_BOOL("video_allow_rotate",            &settings->bools.video_allow_rotate, true, DEFAULT_ALLOW_ROTATE, false);
    SETTING_BOOL("video_force_aspect",            &settings->bools.video_force_aspect, true, DEFAULT_FORCE_ASPECT, false);
    SETTING_BOOL("video_threaded",                video_driver_get_threaded(), true, DEFAULT_VIDEO_THREADED, false);
-   SETTING_BOOL("video_shared_context",          &settings->bools.video_shared_context, true, DEFAULT_VIDEO_SHARED_CONTEXT, false);
    /* Rows with no default in the configuration table. The generated
     * grammar always applies a default, so these are registered here
     * instead and excluded from the configuration pass in their
@@ -2985,9 +3003,6 @@ static struct config_bool_setting *populate_settings_bool(
 #endif
    count = config_bool_rows_add(tmp, count, cap, settings);
    SETTING_BOOL("video_notch_write_over_enable", &settings->bools.video_notch_write_over_enable, true, DEFAULT_NOTCH_WRITE_OVER_ENABLE, false);
-#ifdef HAVE_PSGL
-   SETTING_BOOL("pal60_enable",                  &settings->bools.video_pal60_enable, true, DEFAULT_PAL60_ENABLE, false);
-#endif
 #if defined(_XBOX1) || defined(HW_RVL)
    SETTING_BOOL("soft_filter_enable",            &settings->bools.video_soft_filter, true, DEFAULT_SOFT_FILTER, false);
 #endif
@@ -3004,7 +3019,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("menu_disable_search_button",    &settings->bools.menu_disable_search_button, true, false, false);
    SETTING_BOOL("menu_disable_left_analog",      &settings->bools.menu_disable_left_analog, true, false, false);
    SETTING_BOOL("menu_disable_right_analog",     &settings->bools.menu_disable_right_analog, true, false, false);
-   SETTING_BOOL("menu_scroll_fast",              &settings->bools.menu_scroll_fast, true, DEFAULT_MENU_SCROLL_FAST, false);
    SETTING_BOOL("menu_ignore_missing_assets",    &settings->bools.menu_ignore_missing_assets, true, DEFAULT_MENU_IGNORE_MISSING_ASSETS, false);
 
    /* Actually Quick Menu items, but too late to change without breaking old confs */
@@ -3012,7 +3026,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("menu_show_rewind",              &settings->bools.menu_show_rewind, true, DEFAULT_QUICK_MENU_SHOW_REWIND, false);
    SETTING_BOOL("menu_show_overlays",            &settings->bools.menu_show_overlays, true, DEFAULT_QUICK_MENU_SHOW_OVERLAYS, false);
 
-   SETTING_BOOL("menu_show_quit_retroarch",      &settings->bools.menu_show_quit_retroarch, true, DEFAULT_MENU_SHOW_QUIT, false);
    SETTING_BOOL("filter_by_current_core",        &settings->bools.filter_by_current_core, true, DEFAULT_FILTER_BY_CURRENT_CORE, false);
 #ifdef HAVE_RGUI
    SETTING_BOOL("rgui_background_filler_thickness_enable", &settings->bools.menu_rgui_background_filler_thickness_enable, true, true, false);
@@ -3021,12 +3034,6 @@ static struct config_bool_setting *populate_settings_bool(
 #endif
 #endif /* HAVE_MENU */
 
-#ifdef HAVE_CHEEVOS
-   SETTING_BOOL("cheevos_enable",                &settings->bools.cheevos_enable, true, DEFAULT_CHEEVOS_ENABLE, false);
-   SETTING_BOOL("cheevos_hardcore_mode_enable",  &settings->bools.cheevos_hardcore_mode_enable, true, true, false);
-   SETTING_BOOL("cheevos_appearance_padding_auto", &settings->bools.cheevos_appearance_padding_auto, true, DEFAULT_CHEEVOS_APPEARANCE_PADDING_AUTO, false);
-   SETTING_BOOL("cheevos_visibility_lboard_trackers", &settings->bools.cheevos_visibility_lboard_trackers, true, DEFAULT_CHEEVOS_VISIBILITY_LBOARD_TRACKERS, false);
-#endif
 #ifdef HAVE_OVERLAY
    SETTING_BOOL("input_overlay_enable",          &settings->bools.input_overlay_enable, true, config_overlay_enable_default(), false);
    SETTING_BOOL("input_overlay_enable_autopreferred", &settings->bools.input_overlay_enable_autopreferred, true, DEFAULT_OVERLAY_ENABLE_AUTOPREFERRED, false);
@@ -3034,8 +3041,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("input_overlay_hide_in_menu",    &settings->bools.input_overlay_hide_in_menu, true, DEFAULT_OVERLAY_HIDE_IN_MENU, false);
    SETTING_BOOL("input_overlay_hide_when_gamepad_connected", &settings->bools.input_overlay_hide_when_gamepad_connected, true, DEFAULT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED, false);
    SETTING_BOOL("input_overlay_show_mouse_cursor", &settings->bools.input_overlay_show_mouse_cursor, true, DEFAULT_OVERLAY_SHOW_MOUSE_CURSOR, false);
-   SETTING_BOOL("input_overlay_auto_rotate",     &settings->bools.input_overlay_auto_rotate, true, DEFAULT_OVERLAY_AUTO_ROTATE, false);
-   SETTING_BOOL("input_osk_overlay_auto_scale",  &settings->bools.input_osk_overlay_auto_scale, true, DEFAULT_INPUT_OVERLAY_AUTO_SCALE, false);
 #endif
 #if defined(VITA)
    SETTING_BOOL("input_backtouch_enable",        &settings->bools.input_backtouch_enable, false, DEFAULT_INPUT_BACKTOUCH_ENABLE, false);
@@ -4339,6 +4344,36 @@ static const struct config_uint_row config_uint_rows[] = {
 #undef S_UINT_AT_EX_NS
 #undef S_UINT_AT_EX_H
 #undef S_UINT_AT_EX_NS_H
+   CFG_ROW(uints.audio_latency_floor, AUDIO_LATENCY_FLOOR, DEFAULT_AUDIO_LATENCY_FLOOR),
+   CFG_ROW(uints.core_updater_auto_backup_history_size, CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE, DEFAULT_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE),
+   CFG_ROW(uints.frontend_log_level, FRONTEND_LOG_LEVEL, DEFAULT_FRONTEND_LOG_LEVEL),
+   CFG_ROW(uints.run_ahead_frames, RUN_AHEAD_FRAMES, DEFAULT_RUN_AHEAD_FRAMES),
+#ifdef HAVE_MENU
+#ifdef HAVE_XMB
+   CFG_ROW(uints.menu_xmb_thumbnail_scale_factor, MENU_XMB_THUMBNAIL_SCALE_FACTOR, DEFAULT_XMB_THUMBNAIL_SCALE_FACTOR),
+#endif
+#endif
+#ifdef HAVE_NETWORKING
+   CFG_ROW(uints.netplay_input_latency_frames_min, NETPLAY_INPUT_LATENCY_FRAMES_MIN, 0),
+   CFG_ROW(uints.netplay_input_latency_frames_range, NETPLAY_INPUT_LATENCY_FRAMES_RANGE, 0),
+   CFG_ROW(uints.streaming_mode, STREAMING_MODE, STREAMING_MODE_TWITCH),
+#endif
+#if defined(HAVE_OVERLAY)
+   CFG_ROW(uints.input_overlay_abxy_diagonal_sensitivity, INPUT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY, DEFAULT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY),
+   CFG_ROW(uints.input_overlay_analog_recenter_zone, INPUT_OVERLAY_ANALOG_RECENTER_ZONE, DEFAULT_INPUT_OVERLAY_ANALOG_RECENTER_ZONE),
+   CFG_ROW(uints.input_overlay_dpad_diagonal_sensitivity, INPUT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY, DEFAULT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY),
+   CFG_ROW(uints.input_overlay_show_inputs, INPUT_OVERLAY_SHOW_INPUTS, DEFAULT_OVERLAY_SHOW_INPUTS),
+   CFG_ROW(uints.input_overlay_show_inputs_port, INPUT_OVERLAY_SHOW_INPUTS_PORT, DEFAULT_OVERLAY_SHOW_INPUTS_PORT),
+#endif
+#ifdef HAVE_COMMAND
+   CFG_ROW(uints.network_cmd_port, NETWORK_CMD_PORT, DEFAULT_NETWORK_CMD_PORT),
+#endif
+#ifdef HAVE_NETWORKGAMEPAD
+   CFG_ROW(uints.network_remote_base_port, NETWORK_REMOTE_PORT, DEFAULT_NETWORK_REMOTE_BASE_PORT),
+#endif
+#ifdef HAVE_CHEEVOS
+   CFG_ROW(uints.cheevos_appearance_anchor, CHEEVOS_APPEARANCE_ANCHOR, DEFAULT_CHEEVOS_APPEARANCE_ANCHOR),
+#endif
    { 0 }
 };
 CONFIG_ROWS_ADD(uint, unsigned)
@@ -4353,7 +4388,6 @@ static struct config_uint_setting *populate_settings_uint(
    if (!tmp)
       return NULL;
 
-   SETTING_UINT("frontend_log_level",            &settings->uints.frontend_log_level, true, DEFAULT_FRONTEND_LOG_LEVEL, false);
    SETTING_UINT("video_shader_compiler",         &settings->uints.video_shader_compiler, true, DEFAULT_VIDEO_SHADER_COMPILER, false);
 #ifdef HAVE_NFSCLIENT
    SETTING_UINT("nfs_timeout",                   &settings->uints.nfs_timeout, true, DEFAULT_NFS_TIMEOUT, false);
@@ -4363,8 +4397,6 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("nfs_version",                   &settings->uints.nfs_version, true, DEFAULT_NFS_VERSION, false);
    SETTING_UINT("nfs_readahead",                 &settings->uints.nfs_readahead, true, DEFAULT_NFS_READAHEAD, false);
 #endif
-   SETTING_UINT("core_updater_auto_backup_history_size", &settings->uints.core_updater_auto_backup_history_size, true, DEFAULT_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE, false);
-   SETTING_UINT("run_ahead_frames",              &settings->uints.run_ahead_frames, true, DEFAULT_RUN_AHEAD_FRAMES,  false);
 #ifdef HAVE_MENU
    SETTING_UINT("menu_thumbnails",               &settings->uints.gfx_thumbnails, true, DEFAULT_GFX_THUMBNAILS_DEFAULT, false);
    SETTING_UINT("menu_left_thumbnails",          &settings->uints.menu_left_thumbnails, true, DEFAULT_MENU_LEFT_THUMBNAILS_DEFAULT, false);
@@ -4373,14 +4405,12 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("menu_xmb_animation_opening_main_menu",    &settings->uints.menu_xmb_animation_opening_main_menu, true, DEFAULT_XMB_ANIMATION, false);
    SETTING_UINT("menu_xmb_animation_horizontal_highlight", &settings->uints.menu_xmb_animation_horizontal_highlight, true, DEFAULT_XMB_ANIMATION, false);
    SETTING_UINT("menu_xmb_animation_move_up_down",         &settings->uints.menu_xmb_animation_move_up_down, true, DEFAULT_XMB_ANIMATION, false);
-   SETTING_UINT("menu_xmb_thumbnail_scale_factor",         &settings->uints.menu_xmb_thumbnail_scale_factor, true, DEFAULT_XMB_THUMBNAIL_SCALE_FACTOR, false);
    SETTING_UINT("menu_shader_pipeline",          &settings->uints.menu_xmb_shader_pipeline, true, DEFAULT_MENU_SHADER_PIPELINE, false);
 #endif
 #endif /* HAVE_MENU */
 
    SETTING_UINT("audio_out_rate",                &settings->uints.audio_output_sample_rate, true, DEFAULT_OUTPUT_RATE, false);
    SETTING_UINT("audio_latency",                 &settings->uints.audio_latency, false, 0 /* TODO */, false);
-   SETTING_UINT("audio_latency_floor",           &settings->uints.audio_latency_floor, true, DEFAULT_AUDIO_LATENCY_FLOOR, false);
 
 
 #ifdef HAVE_MICROPHONE
@@ -4433,9 +4463,6 @@ static struct config_uint_setting *populate_settings_uint(
 
    SETTING_UINT("video_hdr_mode",                &settings->uints.video_hdr_mode, true, DEFAULT_VIDEO_HDR_MODE, false);
    SETTING_UINT("video_swapchain_bit_depth",     &settings->uints.video_swapchain_bit_depth, true, DEFAULT_VIDEO_SWAPCHAIN_BIT_DEPTH, false);
-#ifdef HAVE_NETWORKING
-   SETTING_UINT("streaming_mode",                &settings->uints.streaming_mode, true, STREAMING_MODE_TWITCH, false);
-#endif
 
 #ifdef ANDROID
    SETTING_UINT("input_stylus_pressure_sensitivity", &settings->uints.input_stylus_pressure_sensitivity, true, DEFAULT_INPUT_STYLUS_PRESSURE_SENSITIVITY, false);
@@ -4444,13 +4471,6 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("input_sensor_orientation",          &settings->uints.input_sensor_orientation, true, 1, false);
 #endif
 
-#if defined(HAVE_OVERLAY)
-   SETTING_UINT("input_overlay_show_inputs",               &settings->uints.input_overlay_show_inputs, true, DEFAULT_OVERLAY_SHOW_INPUTS, false);
-   SETTING_UINT("input_overlay_show_inputs_port",          &settings->uints.input_overlay_show_inputs_port, true, DEFAULT_OVERLAY_SHOW_INPUTS_PORT, false);
-   SETTING_UINT("input_overlay_dpad_diagonal_sensitivity", &settings->uints.input_overlay_dpad_diagonal_sensitivity, true, DEFAULT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY, false);
-   SETTING_UINT("input_overlay_abxy_diagonal_sensitivity", &settings->uints.input_overlay_abxy_diagonal_sensitivity, true, DEFAULT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY, false);
-   SETTING_UINT("input_overlay_analog_recenter_zone",      &settings->uints.input_overlay_analog_recenter_zone, true, DEFAULT_INPUT_OVERLAY_ANALOG_RECENTER_ZONE, false);
-#endif
 
 #ifdef HAVE_LIBNX
    SETTING_UINT("split_joycon_p1",               &settings->uints.input_split_joycon[0], true, 0, false);
@@ -4467,14 +4487,6 @@ static struct config_uint_setting *populate_settings_uint(
 #ifdef HAVE_NETWORKING
    SETTING_UINT("netplay_ip_port",                    &settings->uints.netplay_port, true, RARCH_DEFAULT_PORT, false);
    SETTING_OVERRIDE(RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT);
-   SETTING_UINT("netplay_input_latency_frames_min",   &settings->uints.netplay_input_latency_frames_min, true, 0, false);
-   SETTING_UINT("netplay_input_latency_frames_range", &settings->uints.netplay_input_latency_frames_range, true, 0, false);
-#endif
-#ifdef HAVE_COMMAND
-   SETTING_UINT("network_cmd_port",              &settings->uints.network_cmd_port,    true, DEFAULT_NETWORK_CMD_PORT, false);
-#endif
-#ifdef HAVE_NETWORKGAMEPAD
-   SETTING_UINT("network_remote_base_port",      &settings->uints.network_remote_base_port, true, DEFAULT_NETWORK_REMOTE_BASE_PORT, false);
 #endif
 
 #ifdef HAVE_LANGEXTRA
@@ -4486,9 +4498,6 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("bundle_assets_extract_last_version",    &settings->uints.bundle_assets_extract_last_version, true, 0, false);
 
 
-#ifdef HAVE_CHEEVOS
-   SETTING_UINT("cheevos_appearance_anchor",     &settings->uints.cheevos_appearance_anchor, true, DEFAULT_CHEEVOS_APPEARANCE_ANCHOR, false);
-#endif
 
 #ifdef HAVE_LIBNX
    SETTING_UINT("libnx_overclock",               &settings->uints.libnx_overclock, true, SWITCH_DEFAULT_CPU_PROFILE, false);

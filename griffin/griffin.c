@@ -752,6 +752,10 @@ VIDEO DRIVER
 #include "../gfx/drivers/omap_gfx.c"
 #endif
 
+#if defined(HAVE_VULKAN) || (defined(HAVE_OPENGL_CORE) && defined(HAVE_SLANG))
+#include "../gfx/common/spirv_shaders.c"
+#endif
+
 #ifdef HAVE_VULKAN
 #include "../gfx/drivers/vulkan.c"
 #endif

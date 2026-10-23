@@ -30,6 +30,9 @@ extern Display *g_x11_dpy;
 extern Colormap g_x11_cmap;
 extern unsigned g_x11_screen;
 
+extern const unsigned long x11_retroarch_icon[];
+extern const size_t x11_retroarch_icon_len;
+
 /* The refresh rate the X display server read through g_x11_dpy, kept
  * until the display changes. The display server selects RandR screen,
  * crtc and output changes on the root window and publishes the
