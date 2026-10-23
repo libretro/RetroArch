@@ -938,6 +938,10 @@ if [ "$HAVE_RVP9" != 'no' ]; then
    check_header '' VAAPI va/va.h va/va_dec_vp9.h
 fi
 check_macro VAAPI VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME_2 va/va_drmcommon.h
+check_enabled VAAPI VAAPI_AV1 'VA-API AV1' 'VA-API is' false
+check_enabled RAV1 VAAPI_AV1 'VA-API AV1' 'RAV1 is' false
+check_header '' VAAPI_AV1 va/va.h va/va_dec_av1.h
+
 
 check_platform Linux OPENXR 'OpenXR is' true
 check_enabled 'VULKAN OPENGL OPENGL_CORE' OPENXR OpenXR 'Vulkan and OpenGL are' false

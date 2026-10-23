@@ -70,6 +70,8 @@ jobs:
           make -C samples/gfx/vaapi_hevc tsan-check CC=gcc RUNNER="setarch $(uname -m) -R"
           make -C samples/gfx/vaapi_vp9 backend_tsan_test CC=gcc
           setarch "$(uname -m)" -R samples/gfx/vaapi_vp9/backend_tsan_test
+          make -C samples/gfx/vaapi_av1 backend_tsan_test CC=gcc
+          setarch "$(uname -m)" -R samples/gfx/vaapi_av1/backend_tsan_test
 
   metal-frame-lease:
     runs-on: ubuntu-latest

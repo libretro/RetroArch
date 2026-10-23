@@ -1830,6 +1830,17 @@ ifeq ($(HAVE_VULKAN), 1)
                    gfx/common/vaapi_vp9_submit.o \
                    gfx/common/vaapi_vp9_export.o
          endif
+         ifeq ($(HAVE_RAV1), 1)
+            ifeq ($(HAVE_VAAPI_AV1), 1)
+               DEFINES += -DHAVE_VAAPI_AV1
+               OBJ += gfx/common/vaapi_av1_decoder.o \
+                      gfx/common/vaapi_av1_owner.o \
+                      gfx/common/vaapi_av1_backend.o \
+                      gfx/common/vaapi_av1_pool.o \
+                      gfx/common/vaapi_av1_submit.o \
+                      gfx/common/vaapi_av1_export.o
+            endif
+         endif
          OBJ += gfx/common/vaapi_frame.o \
                 gfx/common/vaapi_hevc_decoder.o \
                 gfx/common/vaapi_hevc_owner.o \
