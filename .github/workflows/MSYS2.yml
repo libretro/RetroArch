@@ -58,11 +58,13 @@ jobs:
           # A package that fails its checksum is deleted, but pacman
           # fetches it again from the same first mirror, so each retry
           # also moves every mirror list's first server to the end.
+          # Refresh databases and upgrade together: another mirror may
+          # already serve newer packages than the cached database.
           p=$MINGW_PACKAGE_PREFIX
           pkgs="base-devel git $p-gettext $p-gobject-introspection
             $p-graphite2 $p-p11-kit $p-qt6-base $p-x264 $p-cc"
           for i in 1 2 3 4 5; do
-            pacman -S --noconfirm --needed $pkgs && exit 0
+            pacman -Syu --noconfirm --needed $pkgs && exit 0
             [ $i = 5 ] && break
             echo "package install failed (attempt $i); retrying in $((30 * i))s, next mirror, serial downloads"
             sed -i -e '/^#*ParallelDownloads/d' -e '/^\[options\]/a ParallelDownloads = 1' /etc/pacman.conf
