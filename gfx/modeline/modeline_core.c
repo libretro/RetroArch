@@ -16,6 +16,8 @@
  */
 
 #include <stdio.h>
+#include <limits.h>
+#include <float.h>
 #include <string.h>
 #include <math.h>
 
@@ -31,23 +33,31 @@
 
 static int scale_into_range_i(int value, int lower_limit, int higher_limit)
 {
-   int scale = 1;
-   while (value * scale < lower_limit)
-      scale++;
-   if (value * scale <= higher_limit)
-      return scale;
-   return 0;
+   int scale;
+   if (value <= 0 || lower_limit < 0 || higher_limit < lower_limit)
+      return 0;
+   scale = lower_limit > value ? (lower_limit - 1) / value + 1 : 1;
+   return scale <= higher_limit / value ? scale : 0;
 }
 
 static int scale_into_range_d(double value, double lower_limit,
       double higher_limit)
 {
-   int scale = 1;
-   while (value * scale < lower_limit)
+   double quotient;
+   int scale;
+   if (!(value > 0.0 && value <= DBL_MAX && lower_limit >= 0.0
+            && higher_limit >= lower_limit && higher_limit <= DBL_MAX))
+      return 0;
+   quotient = lower_limit / value;
+   if (!(quotient <= INT_MAX)) return 0;
+   scale = quotient > 1.0 ? (int)quotient : 1;
+   if (value > DBL_MAX / scale) return 0;
+   if (value * scale < lower_limit)
+   {
+      if (scale == INT_MAX || value > DBL_MAX / (scale + 1)) return 0;
       scale++;
-   if (value * scale <= higher_limit)
-      return scale;
-   return 0;
+   }
+   return value * scale <= higher_limit ? scale : 0;
 }
 
 static int scale_into_aspect(int source_res, int tot_res,

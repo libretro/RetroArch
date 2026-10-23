@@ -691,8 +691,50 @@ static void test_synthesize(void)
    CHECK(modeline_edid_synthesize(&in, block, 64) == 0, "short buffer");
 }
 
+static void test_scale_bounds(void)
+{
+   video_modeline_t source, target;
+   video_modeline_range_t range;
+   video_modeline_gen_t *gen = (video_modeline_gen_t*)calloc(1, sizeof(*gen));
+   CHECK(gen != NULL, "generator allocation");
+   if (!gen) return;
+   CHECK(!scale_into_range_i(0, 192, 240), "zero integer scale");
+   CHECK(!scale_into_range_i(-1, 192, 240), "negative integer scale");
+   CHECK(scale_into_range_i(1, INT_MAX, INT_MAX) == INT_MAX,
+         "large integer scale is bounded");
+   CHECK(!scale_into_range_i(INT_MAX - 1, INT_MAX, INT_MAX),
+         "integer product overflow");
+   CHECK(scale_into_range_i(INT_MAX, INT_MAX, INT_MAX) == 1,
+         "integer endpoint");
+   CHECK(!scale_into_range_d(0.0, 49.5, 65.0), "zero refresh");
+   CHECK(!scale_into_range_d(-1.0, 49.5, 65.0), "negative refresh");
+   CHECK(!scale_into_range_d(DBL_MIN, 49.5, 65.0), "unrepresentable scale");
+   CHECK(!scale_into_range_d(HUGE_VAL, 49.5, 65.0), "infinite refresh");
+   CHECK(scale_into_range_d(0.5, 49.5, 65.0) == 99,
+         "fractional refresh integer multiple");
+   CHECK(scale_into_range_d(24.0, 48.0, 72.0) == 2,
+         "movie refresh multiple");
+   CHECK(!scale_into_range_d(24.0, 49.5, 65.0),
+         "no refresh multiple in range");
+   CHECK(scale_into_range_d(0.3, 0.9, 1.2) == 4,
+         "rounded product still meets lower bound");
+   memset(&source, 0, sizeof(source));
+   memset(&target, 0, sizeof(target));
+   memset(&range, 0, sizeof(range));
+   source.hactive = target.hactive = 640;
+   source.vactive = target.vactive = 360;
+   source.vfreq = 24.0;
+   range.vfreq_min = 49.5;
+   range.vfreq_max = 65.0;
+   CHECK(modeline_create(&source, &target, &range, gen) < 0
+         && (target.result.weight & MODELINE_R_OUT_OF_RANGE),
+         "zero-rate server mode is rejected without spinning");
+   free(gen);
+}
+
 int main(void)
 {
+   test_scale_bounds();
    test_round_trip();
    test_synthesize();
    test_modern();
