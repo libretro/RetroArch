@@ -92,6 +92,18 @@ jobs:
       run: |
         make -C samples/gfx/videotoolbox_av1 check CC=clang SANITIZER=address,undefined
         CC=clang python3 samples/gfx/videotoolbox_av1/run.py --native-format
+    - name: VideoToolbox AV1 hardware pixels, keyframe seeks and retained images
+      run: |
+        if ! command -v ffmpeg >/dev/null; then
+          brew install ffmpeg
+        fi
+        rc=0
+        CC=clang python3 samples/gfx/videotoolbox_av1/run.py --native-pixels || rc=$?
+        if [ "$rc" = 77 ]; then
+          echo "::warning::AV1 hardware unavailable; native AV1 decode acceptance remains incomplete"
+          exit 0
+        fi
+        exit "$rc"
     - name: VideoToolbox HEVC hardware decode and pixel ownership
       run: |
         rc=0

@@ -18,4 +18,6 @@ check: all
 	CC="$(CC)" CFLAGS="$(CFLAGS) $(LDFLAGS)" python3 run.py
 clean:
 	rm -f config_test config_test.exe packet_test packet_test.exe
-.PHONY: all check clean
+native-check:
+	CC="$(CC)" python3 run.py --native-pixels
+.PHONY: all check clean native-check

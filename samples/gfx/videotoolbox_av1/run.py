@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import shlex
 import subprocess
+import sys
 import tempfile
 
 here = Path(__file__).resolve().parent
@@ -12,7 +13,10 @@ root = here.parents[2]
 compiler = shlex.split(os.environ.get("CC", "cc"))
 parser = argparse.ArgumentParser()
 parser.add_argument("--native-format", action="store_true")
+parser.add_argument("--native-pixels", action="store_true")
 args = parser.parse_args()
+if args.native_pixels:
+    args.native_format = True
 flags = ["-DHAVE_THREADS", "-O2", "-std=c89", "-pedantic", "-Wall", "-Wextra", "-Werror",
          "-Wno-long-long", "-Wframe-larger-than=2048",
          "-I" + str(root / "libretro-common/include")]
@@ -47,6 +51,23 @@ with tempfile.TemporaryDirectory(prefix="vt-av1-setup-") as directory:
     subprocess.run(command, check=True)
     subprocess.run(shlex.split(os.environ.get("RUNNER", "")) + [str(binary)],
                    check=True, timeout=30)
+    if args.native_pixels:
+        objects = []
+        for name, relative in (("rthreads", "rthreads/rthreads.c"),
+                               ("retro_spsc", "queues/retro_spsc.c"),
+                               ("features_cpu", "features/features_cpu.c")):
+            obj = path / (name + ".o")
+            command = compiler + ["-O2", "-DHAVE_THREADS", "-mmacosx-version-min=10.14",
+                "-I" + str(root / "libretro-common/include"), "-c",
+                str(root / "libretro-common" / relative), "-o", str(obj)]
+            subprocess.run(command, check=True)
+            objects += [str(obj)]
+        command = compiler + flags + [str(here / "native_pixel_test.c")]
+        command += objects + ["-o", str(binary)] + libraries
+        subprocess.run(command, check=True)
+        result = subprocess.run([sys.executable, str(here / "native_run.py"),
+                                 "--binary", str(binary)], check=False)
+        raise SystemExit(result.returncode)
     if not args.native_format:
         command = compiler + flags + ["-I" + str(path), str(here / "sample_test.c"),
                                       "-o", str(binary)]
