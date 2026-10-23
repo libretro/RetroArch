@@ -71,8 +71,7 @@ STUB_LOG(RARCH_LOG, 0)
 STUB_LOG(RARCH_WARN, 0)
 STUB_LOG(RARCH_ERR, 1)
 
-/* RetroArch-side symbols the driver refers to outside the modeline
- * path; none of them is reached by this test. */
+/* RetroArch-side symbols outside the modeline path. */
 bool video_display_server_set_resolution(unsigned dims,
       int int_hz, float hz, int center, int monitor_index, int xoffset, int padjust)
 {
@@ -89,7 +88,12 @@ uint8_t win32_get_flags(void) { return 0; }
 HWND win32_get_window(void) { return NULL; }
 void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id)
 {
-   (void)data; (void)hm_data;
+   MONITORINFOEX *info = (MONITORINFOEX *)data;
+   HMONITOR monitor = MonitorFromWindow(GetDesktopWindow(), MONITOR_DEFAULTTOPRIMARY);
+   memset(info, 0, sizeof(*info));
+   info->cbSize = sizeof(*info);
+   GetMonitorInfo(monitor, (MONITORINFO *)info);
+   *(HMONITOR *)hm_data = monitor;
    if (mon_id)
       *mon_id = 0;
 }
@@ -113,6 +117,8 @@ int main(void)
    video_modeline_gen_t *gen;
    video_modeline_t *mode;
    video_output_info_t outputs[8];
+   char output_name[64] = {0};
+   unsigned output_dims = 0;
    int nout, i, pick = -1;
    int dw, dh, dhz, cw, ch, chz;
 
@@ -132,6 +138,22 @@ int main(void)
    {
       fprintf(stderr, "FAIL: init\n");
       return 1;
+   }
+
+   dispserv_win32.get_video_output_size(data, &output_dims,
+         output_name, sizeof(output_name));
+   if (output_dims != VIDEO_SCALE_PACK(dw, dh) || !*output_name)
+   {
+      fprintf(stderr, "FAIL: output identity and geometry\n");
+      dispserv_win32.destroy(data);
+      return 1;
+   }
+   printf("[pass] current output '%s' %ux%u\n", output_name,
+         VIDEO_SCALE_W(output_dims), VIDEO_SCALE_H(output_dims));
+   if (getenv("DISPLAY_SERVERS_READ_ONLY"))
+   {
+      dispserv_win32.destroy(data);
+      return 0;
    }
 
    nout = dispserv_win32.modeline_list_outputs(data, outputs, 8);
