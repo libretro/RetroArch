@@ -421,6 +421,23 @@ static bool win32_display_server_set_window_decorations(void *data, bool on)
    return true;
 }
 
+static bool win32_get_named_video_output(DEVMODE *dm, int mode,
+      const TCHAR *device)
+{
+   memset(dm, 0, sizeof(DEVMODE));
+   dm->dmSize = sizeof(DEVMODE);
+   if (!device || !*device)
+      return false;
+#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500 /* Windows 2K and up */
+   return EnumDisplaySettingsEx(device,
+         (mode == -1) ? ENUM_CURRENT_SETTINGS : (DWORD)mode,
+         dm, EDS_ROTATEDMODE) != 0;
+#else
+   return EnumDisplaySettings(device,
+         (mode == -1) ? ENUM_CURRENT_SETTINGS : (DWORD)mode, dm) != 0;
+#endif
+}
+
 static bool win32_get_video_output_info(DEVMODE *dm, int mode,
       char *name, size_t len)
 {
@@ -430,24 +447,8 @@ static bool win32_get_video_output_info(DEVMODE *dm, int mode,
    bool found;
 
    memset(&current_mon, 0, sizeof(current_mon));
-   memset(dm, 0, sizeof(DEVMODE));
-   dm->dmSize = sizeof(DEVMODE);
-
    win32_monitor_info(&current_mon, &hm_to_use, &mon_id);
-   if (!current_mon.szDevice[0])
-      return false;
-
-#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500 /* Windows 2K and up*/
-   found = EnumDisplaySettingsEx(
-         current_mon.szDevice,
-         (mode == -1) ? ENUM_CURRENT_SETTINGS : (DWORD)mode,
-         dm, EDS_ROTATEDMODE) != 0;
-#else
-   found = EnumDisplaySettings(
-         current_mon.szDevice,
-         (mode == -1) ? ENUM_CURRENT_SETTINGS : (DWORD)mode,
-         dm) != 0;
-#endif
+   found = win32_get_named_video_output(dm, mode, current_mon.szDevice);
    if (found && name && len)
    {
 #ifdef UNICODE
@@ -487,7 +488,9 @@ static bool win32_display_server_set_resolution(void *data,
    if (!serv)
       return false;
 
-   if (!win32_get_video_output(&dm, -1))
+   memset(&current_mon, 0, sizeof(current_mon));
+   win32_monitor_info(&current_mon, &hm_to_use, &mon_id);
+   if (!win32_get_named_video_output(&dm, -1, current_mon.szDevice))
       return false;
 
    if (!VIDEO_SCALE_W(serv->orig_dims))
@@ -514,7 +517,7 @@ static bool win32_display_server_set_resolution(void *data,
       curr_orientation = dm.dmDisplayOrientation;
 #endif
 
-   for (i = 0; win32_get_video_output(&dm, i); i++)
+   for (i = 0; win32_get_named_video_output(&dm, i, current_mon.szDevice); i++)
    {
       if (dm.dmPelsWidth        != VIDEO_SCALE_W(dims))
          continue;
@@ -536,8 +539,6 @@ static bool win32_display_server_set_resolution(void *data,
 #if _WIN32_WINNT >= 0x0500
       dm.dmFields |= DM_DISPLAYORIENTATION;
 #endif
-
-      win32_monitor_info(&current_mon, &hm_to_use, &mon_id);
 
       res = win32_change_display_settings((const char*)&current_mon.szDevice, &dm, CDS_TEST);
 
