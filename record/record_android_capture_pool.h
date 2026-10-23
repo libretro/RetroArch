@@ -1,0 +1,52 @@
+/* Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier:
+ * GPL-3.0-or-later */
+#ifndef RECORD_ANDROID_CAPTURE_POOL_H
+#define RECORD_ANDROID_CAPTURE_POOL_H
+#include "record_android_capture_images.h"
+#include "record_android_capture_pipe.h"
+RETRO_BEGIN_DECLS
+typedef struct record_android_capture_pool record_android_capture_pool_t;
+typedef struct record_android_capture_pool_config
+{
+   record_android_capture_image_ops_t images;
+   record_android_capture_submit_ops_t submit;
+   record_gpu_mediacodec_config_t gpu;
+   VkPhysicalDevice physical;
+   VkDevice device;
+   VkQueue queue;
+   const VkPhysicalDeviceMemoryProperties *memory;
+   unsigned family;
+} record_android_capture_pool_config_t;
+/* Cold renderer setup. Owns fixed images, entries, executor and handoff.
+ * Borrows I/O, device and native contexts through collection. Buffers in gpu
+ * are replaced by the newly allocated pool. False may return a partial owner:
+ * it is cancelled/closed, but still needs collection before borrowed teardown.
+ */
+bool record_android_capture_pool_new(record_dispatch_mediacodec_t *io,
+      const record_android_capture_pool_config_t *config,
+      record_android_capture_pool_t **out);
+int record_android_capture_pool_push(record_android_capture_pool_t *pool,
+      const record_android_capture_source_t *source, uint64_t pts,
+      uint64_t duration);
+int record_android_capture_pool_step(record_android_capture_pool_t *pool);
+/* Executor status; DONE does not authorize pool/device destruction. */
+enum record_dispatch_mediacodec_state record_android_capture_pool_status(
+      const record_android_capture_pool_t *pool, int *error, int *system_error);
+bool record_android_capture_pool_sources_retired(
+      const record_android_capture_pool_t *pool);
+/* Same producer closure and cancellation contract as the handoff. */
+bool record_android_capture_pool_finish(
+      record_android_capture_pool_t *pool, int64_t end_us);
+void record_android_capture_pool_cancel(record_android_capture_pool_t *pool);
+/* Closed producer and terminal GLES ownership are required. Child Vulkan
+ * objects retire before the matching device. queue_quiesced is independent
+ * proof that deferred/native queue work can no longer execute. */
+bool record_android_capture_pool_prepare_device_destroy(
+      record_android_capture_pool_t *pool, bool queue_quiesced);
+bool record_android_capture_pool_after_device_destroy(
+      record_android_capture_pool_t *pool);
+/* Cold renderer, callers quiescent. Refuses live resources; does not free I/O.
+ * Device stays alive unless the two-phase device retirement completed. */
+bool record_android_capture_pool_free(record_android_capture_pool_t *pool);
+RETRO_END_DECLS
+#endif
