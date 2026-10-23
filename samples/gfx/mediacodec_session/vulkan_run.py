@@ -41,7 +41,8 @@ with tempfile.TemporaryDirectory(prefix="android-vulkan-") as directory:
             data = spv.read_bytes()
             words = struct.unpack("<" + "I" * (len(data) // 4), data)
             header = Path(directory) / (mode + ".inc")
-            header.write_text("{" + ",".join(hex(w) for w in words) + "}", encoding="utf-8")
+            header.write_text("{" + ",".join(hex(w) for w in words) + "}\n",
+                              encoding="utf-8", newline="\n")
             shader_flags += ['-DVULKAN_ANDROID_' + mode + '_SHADER="' + header.as_posix() + '"']
     for unit in units:
         name = "vulkan_" + unit + "_test"
