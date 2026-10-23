@@ -2779,6 +2779,20 @@ static const gfx_ctx_driver_t *gl3_get_context(gl3_t *gl)
    if (ctx_data)
       gl->ctx_data = ctx_data;
 
+   /* A context that cannot share (one GL context per process) gets
+    * no shared context asked of it: a hardware core is handed this
+    * one - by the ring between the threads under the wrapper, as the
+    * driver's own unthreaded. */
+   if (     gfx_ctx
+         && (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+         && gfx_ctx->get_flags
+         && BIT32_GET(gfx_ctx->get_flags(ctx_data), GFX_CTX_FLAGS_NO_SHARED_CONTEXT))
+   {
+      gl->flags &= ~GL3_FLAG_USE_SHARED_CONTEXT;
+      RARCH_LOG("[GLCore] No shared context on \"%s\": the core shares this driver's.\n",
+            gfx_ctx->ident);
+   }
+
    /* Need to force here since video_context_driver_init also checks for global option. */
    if (gfx_ctx->bind_hw_render)
       gfx_ctx->bind_hw_render(ctx_data, (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT) ? true : false);
@@ -8523,10 +8537,30 @@ static bool gl3_core_context_is_mains(gl3_t *gl)
 static bool gl3_hw_ring_context_new(void *data, void **ctx)
 {
    gl3_t *gl = (gl3_t*)data;
-   if (!gl || !ctx || !(gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
-         || !gl->ctx_driver || !gl->ctx_driver->bind_hw_render)
+   if (!gl || !ctx || !gl->ctx_driver || !gl->ctx_driver->bind_hw_render)
       return false;
-   gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
+   /* Asked now, with the context up: a driver that could not make the
+    * shared context says so only once it has tried. One context for
+    * both threads: the ring binds it on whichever thread holds its
+    * token, so nothing is bound here. */
+   if (     (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+         && gl->ctx_driver->get_flags
+         && BIT32_GET(gl->ctx_driver->get_flags(gl->ctx_data),
+               GFX_CTX_FLAGS_NO_SHARED_CONTEXT))
+   {
+      gl->flags &= ~GL3_FLAG_USE_SHARED_CONTEXT;
+      RARCH_LOG("[GLCore] No shared context on \"%s\": the core shares this driver's.\n",
+            gl->ctx_driver->ident);
+   }
+   if (!(gl->flags & GL3_FLAG_USE_SHARED_CONTEXT))
+   {
+      if (     !gl->ctx_driver->get_flags
+            || !BIT32_GET(gl->ctx_driver->get_flags(gl->ctx_data),
+                  GFX_CTX_FLAGS_NO_SHARED_CONTEXT))
+         return false;
+   }
+   else
+      gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
    gl->flags |= GL3_FLAG_HW_RING;
    *ctx = gl;
    return true;

@@ -101,6 +101,22 @@ bool video_thread_hw_bind_core_context(void *data);
 /* thread_poke.get_current_framebuffer for OpenGL cores. Main thread. */
 uintptr_t video_thread_hw_get_current_framebuffer(void *data);
 
+/* OpenGL on a context that cannot share (GFX_CTX_FLAGS_NO_SHARED_CONTEXT):
+ * the driver's one context is handed between the threads. handoff says
+ * the ring is in that mode; take binds the context on the calling
+ * thread once it holds the ring's token, waiting for the other thread's
+ * release; release unbinds it and lets the other thread have it. Both
+ * do nothing on a ring that is not handing off. The main thread holds
+ * it around the core's work and gives it up around the present and
+ * around blocking commands to the video thread; the video thread holds
+ * it for a pass of its loop and gives it up before parking. */
+bool video_thread_hw_handoff(struct thread_video *thr);
+void video_thread_hw_ctx_take(struct thread_video *thr, bool video_thread);
+bool video_thread_hw_ctx_release(struct thread_video *thr, bool video_thread);
+/* Main thread, after a push released: waits the video thread's turn
+ * with the context, bounded, then takes it back. */
+void video_thread_hw_ctx_retake(struct thread_video *thr);
+
 /* Main thread: whether the ring holds anything of the core's - an image
  * in a slot, or a presented slot a dupe would read again. Vulkan and
  * Direct3D 9, whose slots hold the core's own by pointer; the other

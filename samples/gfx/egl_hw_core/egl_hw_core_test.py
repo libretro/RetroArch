@@ -17,6 +17,8 @@ one of those is the path taken:
   threaded                  EGL_KHR_surfaceless_context
   threaded, pbuffer         a pbuffer on the context's own config
   threaded, pbuffer config  a pbuffer on a config searched for
+  threaded, one context     no share context can be made: the driver's
+                            one context is handed between the threads
   unthreaded                the driver's own context, as ever
 
 Needs Xvfb (xvfb-run) and a software GL (Mesa llvmpipe).
@@ -135,7 +137,16 @@ def run(retroarch, name, threaded, hide, cache_fbo=False, frames=20):
             return fail("the core was given no context")
         if "[egl_hw_core] context_reset: GL_VERSION" not in log:
             return fail("the core's context_reset did not run")
-        if bool(hide) != ("[egl_shim] pbuffer created" in log):
+        if "noshare" in hide:
+            if "[egl_shim] share context refused" not in log:
+                return fail("the shim did not refuse the share context")
+            if "[EGL] Created shared context" in log:
+                return fail("a shared context was made anyway")
+            if "one GL context, handed between" not in log:
+                return fail("the ring did not hand the one context off")
+            if "could not be made current" in log:
+                return fail("a bind failed on the way to the handoff")
+        elif bool(hide) != ("[egl_shim] pbuffer created" in log):
             return fail("the core's context is %s a pbuffer"
                         % ("not on" if hide else "on"))
         # A core that keeps the framebuffer from context_reset renders
@@ -168,6 +179,8 @@ def main():
         ("threaded",                 True,  "",                   False),
         ("threaded, pbuffer",        True,  "surfaceless",        False),
         ("threaded, pbuffer config", True,  "surfaceless,pbuffer", False),
+        ("threaded, one context",    True,  "noshare",            False),
+        ("threaded, one context, cached FBO", True, "noshare",    True),
         ("threaded, cached FBO",     True,  "",                   True),
         ("unthreaded",               False, "",                   False),
     ]

@@ -8,6 +8,9 @@
  *   pbuffer       no config says it has pbuffers through
  *                 eglGetConfigAttrib, so the pbuffer's config is one
  *                 searched for (eglChooseConfig still finds them)
+ *   noshare       eglCreateContext with a share context fails, so the
+ *                 driver has one context and the ring hands it between
+ *                 the threads (what the Switch's context declares)
  *
  * It also says on stderr when a pbuffer is made, which is how the test
  * knows the pbuffer runs were pbuffer runs.
@@ -67,4 +70,20 @@ EGLSurface eglCreatePbufferSurface(EGLDisplay dpy, EGLConfig config,
          surf != EGL_NO_SURFACE ? "created" : "refused");
    fflush(stderr);
    return surf;
+}
+
+EGLContext eglCreateContext(EGLDisplay dpy, EGLConfig config,
+      EGLContext share, const EGLint *attrib_list)
+{
+   EGLContext (*real)(EGLDisplay, EGLConfig, EGLContext, const EGLint*) =
+      (EGLContext (*)(EGLDisplay, EGLConfig, EGLContext, const EGLint*))
+      dlsym(RTLD_NEXT, "eglCreateContext");
+
+   if (share != EGL_NO_CONTEXT && shim_hides("noshare"))
+   {
+      fprintf(stderr, "[egl_shim] share context refused\n");
+      fflush(stderr);
+      return EGL_NO_CONTEXT;
+   }
+   return real(dpy, config, share, attrib_list);
 }

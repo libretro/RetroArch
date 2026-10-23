@@ -2723,6 +2723,10 @@ bool video_context_driver_presentable(void);
  * running on the thread that owns it. */
 bool video_context_driver_presentable_direct(void);
 
+void video_context_driver_bind_hw_render(bool enable);
+
+void video_context_driver_release_current(void);
+
 void video_context_driver_destroy(gfx_ctx_driver_t *ctx_driver);
 
 enum gfx_ctx_api video_context_driver_get_api(void);

@@ -898,6 +898,11 @@ typedef struct thread_video
        * Opaque here so this header needs no API types; see
        * video_thread_hw.c. */
       void *hw_ring;
+      /* 1 while hw_ring hands one GL context between the threads: the
+       * video thread reads this, not hw_ring, at every pass - the ring
+       * is set up on the main thread, and this is stored after it with
+       * release, so a thread that sees 1 sees the ring. */
+      retro_atomic_int_t hw_handoff;
       uint64_t zero_copy_count;
    } frame;
 
@@ -1159,6 +1164,10 @@ bool video_thread_get_handoff_stats(video_thread_handoff_stats_t *out);
  * will signal - a ring fence - where the video thread may need the
  * main thread first. */
 void video_thread_main_pump(void);
+
+void video_thread_core_context_take(void);
+
+void video_thread_core_context_release(void);
 
 /* From the video thread, while it is answering a synchronous command:
  * runs fn on the thread waiting for the reply and returns when it has

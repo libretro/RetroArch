@@ -652,6 +652,11 @@ static gfx_ctx_proc_t gfx_ctx_xegl_get_proc_address(const char *symbol)
 static uint32_t gfx_ctx_xegl_get_flags(void *data)
 {
    uint32_t flags = 0;
+#ifdef HAVE_EGL
+   xegl_ctx_data_t *xegl = (xegl_ctx_data_t*)data;
+   if (xegl && egl_no_shared_context(&xegl->egl))
+      BIT32_SET(flags, GFX_CTX_FLAGS_NO_SHARED_CONTEXT);
+#endif
 
    if (string_is_equal(video_driver_get_ident(), "glcore"))
    {

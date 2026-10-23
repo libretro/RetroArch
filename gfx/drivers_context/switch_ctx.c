@@ -229,10 +229,24 @@ static uint32_t switch_ctx_get_flags(void *data)
 #endif
    }
 
+   /* nvservices gives a process one GL context: a second one, shared
+    * or not, is not usable. The threaded wrapper's ring hands this one
+    * between the threads instead. */
+   BIT32_SET(flags, GFX_CTX_FLAGS_NO_SHARED_CONTEXT);
+
     return flags;
 }
 
 static void switch_ctx_set_flags(void *data, uint32_t flags) { }
+
+static void switch_ctx_release_current(void *data)
+{
+#ifdef HAVE_EGL
+    switch_ctx_data_t *ctx_nx = (switch_ctx_data_t *)data;
+    if (ctx_nx)
+        egl_release_current(&ctx_nx->egl);
+#endif
+}
 
 static float switch_ctx_get_refresh_rate(void *data)
 {
@@ -347,5 +361,8 @@ const gfx_ctx_driver_t switch_ctx = {
     NULL,
     NULL,
     switch_ctx_create_surface,
-    switch_ctx_destroy_surface
+    switch_ctx_destroy_surface,
+    NULL, /* presentable */
+    NULL, /* last_present_time */
+    switch_ctx_release_current
 };
