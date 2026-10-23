@@ -2008,11 +2008,25 @@ static void pr_expr(struct rslc_pr *p, uint32_t node, int ctx)
          break;
       }
       case RSLC_OP_INDEX:
+      {
+         const struct rslc_node *base = rslc_node_at(p->c, n->a);
+         struct rslc_cval cv;
+         /* a constant component of a vector prints as the swizzle, as
+          * SPIRV-Cross prints it: Mesa compiles v[0] and v.x apart and
+          * rounds the two differently */
+         if (base->type->kind == RSLC_TY_VEC && rslc_const_eval(p->c, n->b, &cv) && cv.v[0] < 4)
+         {
+            pr_expr(p, n->a, PR_PREC_POSTFIX);
+            pr_c(p, '.');
+            pr_c(p, "xyzw"[cv.v[0]]);
+            break;
+         }
          pr_expr(p, n->a, PR_PREC_POSTFIX);
          pr_c(p, '[');
          pr_expr(p, n->b, PR_PREC_SEQ);
          pr_c(p, ']');
          break;
+      }
       case RSLC_OP_SWIZZLE:
       {
          static const char comps[] = "xyzw";
