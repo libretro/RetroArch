@@ -31,13 +31,16 @@ endif
 
 PYTHON ?= python3
 ifeq ($(OS),Windows_NT)
-all: error-scope-check
+all: error-scope-check output-info-check
 else
-all: $(TARGET) error-scope-check
+all: $(TARGET) error-scope-check output-info-check
 endif
 
 error-scope-check:
 	$(PYTHON) error_scope_test.py --cc "$(CC)"
+
+output-info-check:
+	$(PYTHON) output_info_test.py --cc "$(CC)" $(if $(SANITIZER),--sanitizer "$(SANITIZER)")
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -53,4 +56,4 @@ clean:
 	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(TARGET) $(OBJS)
 
-.PHONY: all clean error-scope-check
+.PHONY: all clean error-scope-check output-info-check

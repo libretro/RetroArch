@@ -421,28 +421,52 @@ static bool win32_display_server_set_window_decorations(void *data, bool on)
    return true;
 }
 
-static bool win32_get_video_output(DEVMODE *dm, int mode)
+static bool win32_get_video_output_info(DEVMODE *dm, int mode,
+      char *name, size_t len)
 {
    MONITORINFOEX current_mon;
    HMONITOR hm_to_use = NULL;
    unsigned mon_id    = 0;
+   bool found;
 
+   memset(&current_mon, 0, sizeof(current_mon));
    memset(dm, 0, sizeof(DEVMODE));
    dm->dmSize = sizeof(DEVMODE);
 
    win32_monitor_info(&current_mon, &hm_to_use, &mon_id);
+   if (!current_mon.szDevice[0])
+      return false;
 
 #if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500 /* Windows 2K and up*/
-   return EnumDisplaySettingsEx(
+   found = EnumDisplaySettingsEx(
          current_mon.szDevice,
          (mode == -1) ? ENUM_CURRENT_SETTINGS : (DWORD)mode,
          dm, EDS_ROTATEDMODE) != 0;
 #else
-   return EnumDisplaySettings(
+   found = EnumDisplaySettings(
          current_mon.szDevice,
          (mode == -1) ? ENUM_CURRENT_SETTINGS : (DWORD)mode,
          dm) != 0;
 #endif
+   if (found && name && len)
+   {
+#ifdef UNICODE
+      char utf8[sizeof(current_mon.szDevice) * 3];
+      if (!WideCharToMultiByte(CP_UTF8, 0, current_mon.szDevice, -1,
+               utf8, sizeof(utf8), NULL, NULL))
+         name[0] = '\0';
+      else
+         strlcpy(name, utf8, len);
+#else
+      strlcpy(name, current_mon.szDevice, len);
+#endif
+   }
+   return found;
+}
+
+static bool win32_get_video_output(DEVMODE *dm, int mode)
+{
+   return win32_get_video_output_info(dm, mode, NULL, 0);
 }
 
 static bool win32_display_server_set_resolution(void *data,
@@ -905,10 +929,13 @@ static void win32_display_server_get_video_output_size(void *data,
       unsigned *dims, char *s, size_t len)
 {
    DEVMODE dm;
-   if (win32_get_video_output(&dm, -1))
-   {
+   (void)data;
+   if (dims)
+      *dims = 0;
+   if (s && len)
+      s[0] = '\0';
+   if (win32_get_video_output_info(&dm, -1, s, len) && dims)
       *dims = VIDEO_SCALE_PACK(dm.dmPelsWidth, dm.dmPelsHeight);
-   }
 }
 
 static void win32_display_server_get_video_output_prev(void *data)
