@@ -541,7 +541,11 @@ void task_queue_park(retro_task_t *task, retro_time_t horizon_usec);
  * from any thread, and does nothing for a task that is not parked or
  * is no longer running.  A wake that arrives while the handler is
  * running cancels the park that pass asks for, so a waker publishes
- * whatever the handler checks first and wakes after.
+ * whatever the handler checks first and wakes after.  A switch between
+ * the threaded and the unthreaded queue ends every park, unless it
+ * leaves a stuck handler behind.  A wake from another thread that meets
+ * the switch is dropped, and one already in flight puts the switch off
+ * to the next task_queue_check().
  */
 void task_queue_wake(uint32_t ident);
 
