@@ -141,6 +141,8 @@ jobs:
           java-version: '21'
       - name: Cold session, Surface timestamps and terminal output contracts
         run: make -C samples/gfx/mediacodec_session session-check CC=${{ matrix.cc }} SANITIZER=address,undefined
+      - name: Worker-owned Surface encoder and borrowed output contracts
+        run: make -C samples/record/mediacodec_encode check CC=${{ matrix.cc }} SANITIZER=address,undefined
       - name: Opaque frame leases, HDR refinement and concurrent handoffs
         run: make -C samples/gfx/mediacodec_session frame-check CC=${{ matrix.cc }} SANITIZER=address,undefined
       - name: HEVC VP9 AV1 color intersection and renderer export contracts
@@ -256,6 +258,7 @@ jobs:
           for source in "${sources[@]}"; do
             printf '#include "%s/gfx/common/%s.c"\n' "$PWD" "$source" >> "$unity"
           done
+          printf '#include "%s/record/record_mediacodec_encoder.c"\n' "$PWD" >> "$unity"
           for target in aarch64-linux-android armv7a-linux-androideabi; do
             for api in 21 29; do
               for offset in default 64; do
@@ -272,6 +275,11 @@ jobs:
                     exit 1
                   fi
                 done
+                "$bin/$target$api-clang" \
+                  -std=c89 -pedantic -Wall -Wextra -Werror -Wno-long-long -Wno-c99-extensions \
+                  -DHAVE_DYLIB -Wframe-larger-than=2048 -Ilibretro-common/include \
+                  "${extra[@]}" -c record/record_mediacodec_encoder.c \
+                  -o "$RUNNER_TEMP/record-encoder-$target-$api-$offset.o"
                 "$bin/$target$api-clang" \
                   -std=c89 -pedantic -Wall -Wextra -Werror -Wno-long-long -Wno-c99-extensions \
                   -DHAVE_THREADS -DHAVE_DYLIB -Wframe-larger-than=2048 -Ilibretro-common/include -Igfx/include \
