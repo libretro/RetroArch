@@ -27,7 +27,7 @@ jobs:
       matrix:
         cc: [gcc, clang]
     env:
-      APT_PKGS: libva-dev libdrm-dev libvulkan-dev mesa-vulkan-drivers vulkan-validationlayers
+      APT_PKGS: libva-dev libdrm-dev libvulkan-dev mesa-vulkan-drivers vulkan-validationlayers ffmpeg
     steps:
       - uses: actions/checkout@v6
       - name: Apt cache key
@@ -57,6 +57,7 @@ jobs:
           make -C samples/gfx/vaapi_hevc clean check CC=${{ matrix.cc }} SANITIZER=address,undefined
           make -C samples/gfx/vaapi_vp9 clean check CC=${{ matrix.cc }} SANITIZER=address,undefined
           make -C samples/gfx/vaapi_av1 clean check CC=${{ matrix.cc }} SANITIZER=address,undefined
+          make -C samples/gfx/vaapi_av1 trace-check CC=${{ matrix.cc }} SANITIZER=address,undefined
           make -C libretro-common/samples/formats/vp9 rvp9_hw_segment_test CC=${{ matrix.cc }} SANITIZER=address,undefined
           libretro-common/samples/formats/vp9/rvp9_hw_segment_test
           make -C libretro-common/samples/formats/h265 rh265_slice_info_test CC=${{ matrix.cc }} SANITIZER=address,undefined
