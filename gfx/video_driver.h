@@ -1440,6 +1440,12 @@ enum shader_load_state
    SHADER_LOAD_FAILED          /* Error - revert to previous or stock    */
 };
 
+/* The load belongs to two threads: the main thread, which starts it,
+ * ticks it and tells the menu, and the thread the video driver runs
+ * on, which builds the passes.  Without threaded video they are one
+ * thread.  With it, a step runs on the video thread between frames
+ * while busy is set, and the main thread reads nothing else of this
+ * while it is: the clear of busy is what publishes the step's writes. */
 typedef struct shader_load_deferred
 {
    enum shader_load_state state;
@@ -1449,6 +1455,8 @@ typedef struct shader_load_deferred
    unsigned               total_passes;
    void                  *driver_data;  /* driver-specific work state    */
    task_notify_t          done;         /* told once the load ends       */
+   retro_atomic_int_t     busy;         /* a step runs on the video thread */
+   retro_atomic_int_t     cancel;       /* the next step ends the load   */
 } shader_load_deferred_t;
 
 typedef struct video_driver
@@ -2288,6 +2296,11 @@ void video_driver_shader_deferred_tick(void);
  * when no load is in progress. A caller still waiting is told it was
  * superseded. */
 bool video_shader_deferred_notify(retro_task_callback_t cb, void *user_data);
+
+/* Ends the deferred shader load in progress, if any: the chain built so
+ * far is freed on the driver's thread before this returns, the chain
+ * on screen stays, and a caller waiting on the load is told @why. */
+void video_driver_shader_deferred_cancel(const char *why);
 
 bool video_driver_set_rotation(unsigned rotation);
 

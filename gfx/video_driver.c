@@ -936,10 +936,39 @@ video_driver_state_t *video_state_get_ptr(void)
 bool video_shader_deferred_notify(retro_task_callback_t cb, void *user_data)
 {
    shader_load_deferred_t *d = &video_driver_st.shader_deferred;
-   if (d->state != SHADER_LOAD_COMPILING)
+   /* a step in flight is a load in progress whatever it writes */
+   if (     !retro_atomic_load_acquire_int(&d->busy)
+         && d->state != SHADER_LOAD_COMPILING)
       return false;
    task_notify_set(&d->done, cb, user_data);
    return true;
+}
+
+void video_driver_shader_deferred_cancel(const char *why)
+{
+   video_driver_state_t *video_st  = &video_driver_st;
+   shader_load_deferred_t *d       = &video_st->shader_deferred;
+   video_driver_t *vid             = video_st->current_video;
+
+   /* The step the driver's thread runs is told to end the load - the
+    * chain built so far goes, the one on screen stays - and this
+    * returns once it has; the writes the driver reads are its own
+    * thread's, so with threaded video the wrapper makes them there. */
+   if (vid && vid->shader_load_step && video_st->data)
+   {
+      if (video_st->threaded)
+         retro_atomic_store_release_int(&d->cancel, 1);
+      else
+      {
+         d->current_pass = d->total_passes;
+         d->state        = SHADER_LOAD_FAILED;
+      }
+      vid->shader_load_step(video_st->data, d);
+      retro_atomic_store_relaxed_int(&d->cancel, 0);
+   }
+   d->state       = SHADER_LOAD_IDLE;
+   d->driver_data = NULL;
+   task_notify_fire(&d->done, d->preset_path, why);
 }
 
 void video_driver_shader_deferred_tick(void)
@@ -947,7 +976,11 @@ void video_driver_shader_deferred_tick(void)
    video_driver_state_t *video_st  = &video_driver_st;
    shader_load_deferred_t *d       = &video_st->shader_deferred;
 
-   if (d->state != SHADER_LOAD_COMPILING)
+   /* a step on the video thread owns the state until it is through;
+    * one that ended the load leaves DONE or FAILED here to act on */
+   if (retro_atomic_load_acquire_int(&d->busy))
+      return;
+   if (d->state == SHADER_LOAD_IDLE)
       return;
 
    /* Same pairing as the frame call: the handle goes away while the
@@ -964,11 +997,25 @@ void video_driver_shader_deferred_tick(void)
       return;
    }
 
-   if (!video_st->current_video->shader_load_step(
-            video_st->data, d))
+   if (d->state == SHADER_LOAD_COMPILING
+         && video_st->current_video->shader_load_step(video_st->data, d))
    {
-      /* shader_load_step returned false: no more work.
-       * The step function sets d->state to DONE or FAILED. */
+      /* more passes, or one in flight on the video thread */
+#ifdef HAVE_GFX_WIDGETS
+      if (dispwidget_get_ptr()->active && d->total_passes > 0)
+      {
+         char label[32];
+         snprintf(label, sizeof(label), "%s %u/%u",
+               msg_hash_to_str(MSG_LOADING),
+               d->current_pass, d->total_passes);
+         gfx_widget_set_generic_message_progress(label);
+      }
+#endif
+      return;
+   }
+
+   {
+      /* no more work: the step left d->state DONE or FAILED */
       if (d->state == SHADER_LOAD_DONE)
       {
          settings_t *settings = config_get_ptr();
@@ -1053,17 +1100,6 @@ void video_driver_shader_deferred_tick(void)
       d->state = SHADER_LOAD_IDLE;
       d->driver_data = NULL;
    }
-#ifdef HAVE_GFX_WIDGETS
-   /* Still compiling */
-   else if (dispwidget_get_ptr()->active && d->total_passes > 0)
-   {
-      char label[32];
-      snprintf(label, sizeof(label), "%s %u/%u",
-            msg_hash_to_str(MSG_LOADING),
-            d->current_pass, d->total_passes);
-      gfx_widget_set_generic_message_progress(label);
-   }
-#endif
 }
 
 #ifdef HAVE_THREADS
@@ -2979,18 +3015,9 @@ void video_driver_free_internal(void)
     * into driver-owned GPU resources. */
    {
       shader_load_deferred_t *d = &video_st->shader_deferred;
-      if (d->state == SHADER_LOAD_COMPILING && d->driver_data)
-      {
-         if (vid && vid->shader_load_step)
-         {
-            d->current_pass = d->total_passes;
-            d->state        = SHADER_LOAD_FAILED; /* signal cancellation */
-            vid->shader_load_step(video_st->data, d);
-         }
-         d->state       = SHADER_LOAD_IDLE;
-         d->driver_data = NULL;
-         task_notify_fire(&d->done, d->preset_path, "The video driver went away.");
-      }
+      if (     retro_atomic_load_acquire_int(&d->busy)
+            || d->state == SHADER_LOAD_COMPILING)
+         video_driver_shader_deferred_cancel("The video driver went away.");
    }
 
    /* Drop the OSD font before the driver that owns its GPU objects

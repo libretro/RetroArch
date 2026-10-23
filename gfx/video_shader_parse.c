@@ -4136,39 +4136,22 @@ bool video_shader_apply_shader(
             settings->paths.directory_video_shader);
 
    /* ---- Deferred (per-frame) path ----
-    * Skip when threaded video is active: the tick runs on the main
-    * thread but gl3_frame() runs on the video thread, so they would
-    * race on the filter_chain pointer.
+    * The passes are built one per frame on the thread the driver runs
+    * on - the video thread under threaded video, through the wrapper -
+    * while the chain on screen stays up.
     * Disabled on Android: untested on mobile GPU drivers.
     * Can be disabled at runtime via video_shader_deferred_loading. */
    if (  video_st->current_video
       && video_st->current_video->shader_load_begin
       && video_st->current_video->shader_load_step
-      && !video_st->threaded
       && settings->bools.video_shader_deferred_loading
       && preset_path && *preset_path)
    {
       shader_load_deferred_t *d = &video_st->shader_deferred;
 
-      /* Cancel any in-progress deferred load */
-      if (d->state == SHADER_LOAD_COMPILING)
-      {
-         /* Let the driver clean up the partial chain.
-          * Set current_pass past total and state to FAILED so
-          * step() skips compilation and goes to cleanup. */
-         if (d->driver_data
-               && video_st->current_video->shader_load_step)
-         {
-            d->current_pass = d->total_passes;
-            d->state        = SHADER_LOAD_FAILED;
-            video_st->current_video->shader_load_step(
-                  video_st->data, d);
-         }
-         d->state       = SHADER_LOAD_IDLE;
-         d->driver_data = NULL;
-         task_notify_fire(&d->done, d->preset_path,
-               "Replaced by another shader load.");
-      }
+      if (     retro_atomic_load_acquire_int(&d->busy)
+            || d->state == SHADER_LOAD_COMPILING)
+         video_driver_shader_deferred_cancel("Replaced by another shader load.");
 
       d->type         = (unsigned)type;
       d->current_pass = 0;

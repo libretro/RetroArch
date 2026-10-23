@@ -54,6 +54,8 @@ enum thread_cmd
    CMD_VIDEO_NONE = 0,
    CMD_INIT,
    CMD_SET_SHADER,
+   CMD_SHADER_LOAD_BEGIN,
+   CMD_SHADER_LOAD_STEP,
    CMD_FREE,
    CMD_ALIVE, /* Blocking alive check. Used when paused. */
    CMD_SET_VIEWPORT,
