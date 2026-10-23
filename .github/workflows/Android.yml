@@ -190,8 +190,28 @@ jobs:
     strategy:
       matrix:
         cc: [gcc, clang]
+    env:
+      APT_PKGS: libvulkan-dev mesa-vulkan-drivers ffmpeg
     steps:
       - uses: actions/checkout@v6
+      - name: Apt cache key
+        id: apt
+        run: sh .github/workflows/scripts/apt-cache-key.sh "$APT_PKGS"
+      - name: Restore apt cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+          restore-keys: ${{ steps.apt.outputs.prefix }}
+      - name: Install test dependencies
+        timeout-minutes: 20
+        run: sh .github/workflows/scripts/apt-install.sh $APT_PKGS
+      - name: Save apt cache
+        if: env.APT_CACHE_SAVE == '1'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -208,12 +228,8 @@ jobs:
         run: |
           make -C samples/gfx/d3d11_video_decode rh265_hw_stream_test hevc_color_stream_test CC=${{ matrix.cc }} SANITIZER=address,undefined
           (cd samples/gfx/d3d11_video_decode && ./rh265_hw_stream_test && ./hevc_color_stream_test)
-      - name: Install test-only Vulkan software renderer
-        run: sudo apt-get update && sudo apt-get install -y libvulkan-dev mesa-vulkan-drivers
       - name: Execute RGB shader crop and SDR PQ HLG pixel oracle on Vulkan software device
         run: make -C samples/gfx/mediacodec_session gpu-check CC=${{ matrix.cc }} SANITIZER=
-      - name: Install test-only HEVC generator if needed
-        run: command -v ffmpeg >/dev/null || (sudo apt-get update && sudo apt-get install -y ffmpeg)
       - name: HEVC Annex-B configuration and packet preservation
         run: make -C samples/gfx/mediacodec_hevc_packet clean all check parser-check CC=${{ matrix.cc }} SANITIZER=address,undefined
   ndk-compile:

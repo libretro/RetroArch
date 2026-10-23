@@ -29,6 +29,8 @@ jobs:
   library-backends:
     name: ${{ matrix.lane }}
     runs-on: ubuntu-latest
+    env:
+      APT_PKGS: build-essential pkg-config cmake libgl1-mesa-dev libx11-dev libxext-dev libasound2-dev libsdl2-dev zlib1g-dev libfreetype6-dev python3 openssl libmbedtls-dev libbearssl-dev samba ccache
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -48,16 +50,30 @@ jobs:
             absent: ' T rsmb_connect'
 
     steps:
-      - name: Dependencies
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y build-essential pkg-config cmake \
-            libgl1-mesa-dev libx11-dev libxext-dev libasound2-dev libsdl2-dev \
-            zlib1g-dev libfreetype6-dev python3 openssl \
-            libmbedtls-dev libbearssl-dev samba
-
       - name: Checkout
         uses: actions/checkout@v5
+
+      - name: Apt cache key
+        id: apt
+        run: sh .github/workflows/scripts/apt-cache-key.sh "$APT_PKGS"
+
+      - name: Restore apt cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+          restore-keys: ${{ steps.apt.outputs.prefix }}
+
+      - name: Install dependencies
+        timeout-minutes: 10
+        run: sh .github/workflows/scripts/apt-install.sh $APT_PKGS
+
+      - name: Save apt cache
+        if: env.APT_CACHE_SAVE == '1'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
 
       - name: Link with lld
         run: sh .github/workflows/scripts/use-lld.sh
@@ -73,7 +89,6 @@ jobs:
       - name: Enable ccache
         run: |
           set -eu
-          command -v ccache >/dev/null 2>&1 || sudo apt-get install -y -qq ccache
           export CCACHE_DIR="$HOME/.ccache"
           echo "CCACHE_DIR=$CCACHE_DIR" >> "$GITHUB_ENV"
           echo "/usr/lib/ccache" >> "$GITHUB_PATH"

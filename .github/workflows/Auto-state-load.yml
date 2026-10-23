@@ -19,12 +19,35 @@ on:
 jobs:
   regression:
     runs-on: ubuntu-latest
+    env:
+      APT_PKGS: gcc-mingw-w64-x86-64
     steps:
       - uses: actions/checkout@v4
 
+      - name: Apt cache key
+        id: apt
+        run: sh .github/workflows/scripts/apt-cache-key.sh "$APT_PKGS"
+
+      - name: Restore apt cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+          restore-keys: ${{ steps.apt.outputs.prefix }}
+
+      - name: Install dependencies
+        timeout-minutes: 10
+        run: sh .github/workflows/scripts/apt-install.sh $APT_PKGS
+
+      - name: Save apt cache
+        if: env.APT_CACHE_SAVE == '1'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+
       - name: Link with lld
         run: sh .github/workflows/scripts/use-lld.sh
-      - run: sudo apt-get update && sudo apt-get install -y gcc-mingw-w64-x86-64
       - name: Linux and sanitizer tests
         working-directory: samples/runloop/auto_state_load
         run: |

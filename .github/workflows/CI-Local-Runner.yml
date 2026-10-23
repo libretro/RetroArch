@@ -20,20 +20,38 @@ jobs:
   ci-local-selftest:
     name: tools/ci_local.py reads and runs every workflow
     runs-on: ubuntu-latest
+    env:
+      APT_PKGS: python3-yaml
     timeout-minutes: 10
 
     steps:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Apt cache key
+        id: apt
+        run: sh .github/workflows/scripts/apt-cache-key.sh "$APT_PKGS"
+
+      - name: Restore apt cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+          restore-keys: ${{ steps.apt.outputs.prefix }}
+
+      - name: Install dependencies
+        timeout-minutes: 10
+        run: sh .github/workflows/scripts/apt-install.sh $APT_PKGS
+
+      - name: Save apt cache
+        if: env.APT_CACHE_SAVE == '1'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+
       - name: Link with lld
         run: sh .github/workflows/scripts/use-lld.sh
-
-      - name: PyYAML for the parser comparison
-        shell: bash
-        run: |
-          set -eu
-          python3 -c 'import yaml' 2>/dev/null || sudo apt-get install -y -qq python3-yaml
 
       - name: Self-test
         shell: bash
@@ -43,6 +61,15 @@ jobs:
           # matrix combination resolves in a dry run, and a fixture job runs
           # with GitHub's step semantics.
           python3 tools/ci_local.py selftest
+
+      - name: Every runner job installs through apt-install.sh
+        shell: bash
+        run: |
+          set -eu
+          # A bare apt-get waits on a stalled mirror until the job is
+          # cancelled, and fetches every package again each run.
+          python3 tools/ci_apt_check.py --selftest
+          python3 tools/ci_apt_check.py
 
       - name: compile_commands.py self-test
         shell: bash

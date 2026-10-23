@@ -44,7 +44,7 @@ jobs:
       # Bounded, with the main archive tried when the mirror stalls: a
       # plain apt-get install stalled on it took the job's 15 minutes
       - name: Install dependencies
-        timeout-minutes: 10
+        timeout-minutes: 15
         run: sh .github/workflows/scripts/apt-install.sh $APT_PKGS
       - name: Save apt cache
         if: env.APT_CACHE_SAVE == '1'

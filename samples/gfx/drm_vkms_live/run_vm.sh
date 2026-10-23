@@ -55,7 +55,7 @@ if [ -z "${KERNEL_DIR:-}" ]; then
          echo "run_vm.sh: fetching $kver stalled (attempt $i)"
       done
       # vkms is in the modules, or in the extra ones, by kernel
-      (cd "$work/deb" && apt-get download "linux-modules-extra-$kver" \
+      (cd "$work/deb" && timeout 300 apt-get download "linux-modules-extra-$kver" \
          >/dev/null 2>&1) || true
       for d in "$work"/deb/*.deb; do
          dpkg-deb -x "$d" "$work/root"

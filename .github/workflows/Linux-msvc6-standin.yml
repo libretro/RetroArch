@@ -23,20 +23,35 @@ jobs:
   msvc6-standin:
     name: The Visual C++ 6 project's sources, defines and libraries, on mingw held to old C
     runs-on: ubuntu-latest
+    env:
+      APT_PKGS: --no-install-recommends gcc-mingw-w64-i686 g++-mingw-w64-i686 gcc-mingw-w64-x86-64 wine64 pulseaudio xvfb
     timeout-minutes: 20
 
     steps:
-      - name: Install dependencies
-        shell: bash
-        run: |
-          set -eu
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq --no-install-recommends \
-            gcc-mingw-w64-i686 g++-mingw-w64-i686 \
-            gcc-mingw-w64-x86-64 wine64 pulseaudio xvfb
-
       - name: Checkout
         uses: actions/checkout@v5
+
+      - name: Apt cache key
+        id: apt
+        run: sh .github/workflows/scripts/apt-cache-key.sh "$APT_PKGS"
+
+      - name: Restore apt cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+          restore-keys: ${{ steps.apt.outputs.prefix }}
+
+      - name: Install dependencies
+        timeout-minutes: 15
+        run: sh .github/workflows/scripts/apt-install.sh $APT_PKGS
+
+      - name: Save apt cache
+        if: env.APT_CACHE_SAVE == '1'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
 
       - name: Link with lld
         run: sh .github/workflows/scripts/use-lld.sh

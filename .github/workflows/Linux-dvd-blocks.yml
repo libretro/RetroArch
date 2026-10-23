@@ -29,13 +29,33 @@ permissions:
 jobs:
   blocks:
     runs-on: ubuntu-latest
+    env:
+      APT_PKGS: build-essential gcc-mingw-w64-x86-64 wine64
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v5
+      - name: Apt cache key
+        id: apt
+        run: sh .github/workflows/scripts/apt-cache-key.sh "$APT_PKGS"
+
+      - name: Restore apt cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+          restore-keys: ${{ steps.apt.outputs.prefix }}
+
       - name: Install dependencies
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y build-essential gcc-mingw-w64-x86-64 wine64
+        timeout-minutes: 15
+        run: sh .github/workflows/scripts/apt-install.sh $APT_PKGS
+
+      - name: Save apt cache
+        if: env.APT_CACHE_SAVE == '1'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+
       - name: Linux commands and VFS
         working-directory: libretro-common/samples/file/vfs_cdrom
         run: |

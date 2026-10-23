@@ -23,20 +23,35 @@ jobs:
   driver-vtables:
     name: Every driver against its interface
     runs-on: ubuntu-latest
+    env:
+      APT_PKGS: --no-install-recommends build-essential libasound2-dev libpulse-dev libjack-jackd2-dev libopenal-dev libpipewire-0.3-dev libsdl2-dev
     timeout-minutes: 15
 
     steps:
-      - name: Install dependencies
-        shell: bash
-        run: |
-          set -eu
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq --no-install-recommends \
-            build-essential libasound2-dev libpulse-dev libjack-jackd2-dev \
-            libopenal-dev libpipewire-0.3-dev libsdl2-dev
-
       - name: Checkout
         uses: actions/checkout@v5
+
+      - name: Apt cache key
+        id: apt
+        run: sh .github/workflows/scripts/apt-cache-key.sh "$APT_PKGS"
+
+      - name: Restore apt cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+          restore-keys: ${{ steps.apt.outputs.prefix }}
+
+      - name: Install dependencies
+        timeout-minutes: 10
+        run: sh .github/workflows/scripts/apt-install.sh $APT_PKGS
+
+      - name: Save apt cache
+        if: env.APT_CACHE_SAVE == '1'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
 
       - name: Link with lld
         run: sh .github/workflows/scripts/use-lld.sh

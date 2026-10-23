@@ -46,7 +46,7 @@ jobs:
       # run under Wine: installed inside the loop, a mirror that stalled
       # held the job, silent, until its 30 minutes ran out
       - name: Install dependencies
-        timeout-minutes: 10
+        timeout-minutes: 15
         run: sh .github/workflows/scripts/apt-install.sh $APT_PKGS
 
       - name: Save apt cache

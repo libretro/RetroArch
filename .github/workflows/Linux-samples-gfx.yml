@@ -26,64 +26,32 @@ jobs:
     strategy:
       matrix:
         cc: [gcc, clang]
+    env:
+      APT_PKGS: libva-dev libdrm-dev libvulkan-dev mesa-vulkan-drivers vulkan-validationlayers
     steps:
       - uses: actions/checkout@v6
-      - name: Install VA-API and Vulkan oracle dependencies
-        timeout-minutes: 20
-        run: |
-          set -eu
-          pkgs="libva-dev libdrm-dev libvulkan-dev mesa-vulkan-drivers vulkan-validationlayers"
-          if dpkg -s $pkgs >/dev/null 2>&1; then
-            echo "All packages already present on runner image; skipping apt."
-            exit 0
-          fi
-          for i in 1 2 3; do
-            sudo timeout 90 apt-get update -y \
-              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
-            echo "apt-get update failed (attempt $i); retrying in 10s"
-            sleep 10
-          done
-          # Fetch first, under a bound: a download is safe to stop and
-          # resumes, an install is not. A mirror that stalls is left for
-          # the main archive on the next attempt.
-          for i in 1 2 3; do
-            sudo timeout 240 apt-get install -y --download-only \
-              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
-              $pkgs && break
-            [ $i = 3 ] && exit 1
-            echo "package download failed or stalled (attempt $i); retrying from archive.ubuntu.com"
-            if [ ! -d /etc/apt/ra-orig ]; then
-              sudo mkdir /etc/apt/ra-orig
-              sudo cp -a /etc/apt/sources.list.d /etc/apt/ra-orig/
-              [ ! -f /etc/apt/sources.list ] || sudo cp -a /etc/apt/sources.list /etc/apt/ra-orig/
-            fi
-            for f in /etc/apt/sources.list /etc/apt/sources.list.d/*; do
-              [ -f "$f" ] || continue
-              sudo sed -i -e 's#mirror+file:/etc/apt/apt-mirrors.txt#http://archive.ubuntu.com/ubuntu/#g' \
-                -e 's#http://azure\.archive\.ubuntu\.com/ubuntu#http://archive.ubuntu.com/ubuntu#g' "$f"
-            done
-            # A refresh cut short or refused leaves apt no package lists: it
-            # is retried, without translations or command-not-found data, and
-            # the mirror is put back when the archive will not answer either.
-            upd="-o Acquire::Retries=3 -o Acquire::http::Timeout=30
-              -o Acquire::Languages=none
-              -o Acquire::IndexTargets::deb::CNF::DefaultEnabled=false
-              -o APT::Update::Error-Mode=any"
-            ok=0
-            for j in 1 2; do
-              sudo timeout 120 apt-get update -y $upd && { ok=1; break; }
-            done
-            if [ $ok = 0 ]; then
-              sudo rm -rf /etc/apt/sources.list.d
-              sudo cp -a /etc/apt/ra-orig/sources.list.d /etc/apt/
-              [ ! -f /etc/apt/ra-orig/sources.list ] || sudo cp -a /etc/apt/ra-orig/sources.list /etc/apt/
-              sudo rm -rf /etc/apt/ra-orig
-              sudo timeout 120 apt-get update -y $upd || true
-            fi
-          done
-          sudo apt-get install -y \
-            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
-            $pkgs
+      - name: Apt cache key
+        id: apt
+        run: sh .github/workflows/scripts/apt-cache-key.sh "$APT_PKGS"
+
+      - name: Restore apt cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+          restore-keys: ${{ steps.apt.outputs.prefix }}
+
+      - name: Install dependencies
+        timeout-minutes: 15
+        run: sh .github/workflows/scripts/apt-install.sh $APT_PKGS
+
+      - name: Save apt cache
+        if: env.APT_CACHE_SAVE == '1'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+
       - name: Strict C89 HEVC buffer ABI and cold session ownership
         run: |
           make -C samples/gfx/vaapi_hevc clean check CC=${{ matrix.cc }} SANITIZER=address,undefined
@@ -123,7 +91,7 @@ jobs:
           restore-keys: ${{ steps.apt.outputs.prefix }}
 
       - name: Install dependencies
-        timeout-minutes: 10
+        timeout-minutes: 15
         run: sh .github/workflows/scripts/apt-install.sh $APT_PKGS
 
       - name: Save apt cache
@@ -337,7 +305,7 @@ jobs:
           restore-keys: ${{ steps.apt.outputs.prefix }}
 
       - name: Install dependencies
-        timeout-minutes: 10
+        timeout-minutes: 15
         run: sh .github/workflows/scripts/apt-install.sh $APT_PKGS
 
       - name: Save apt cache
@@ -386,7 +354,7 @@ jobs:
           restore-keys: ${{ steps.apt.outputs.prefix }}
 
       - name: Install dependencies
-        timeout-minutes: 10
+        timeout-minutes: 15
         run: sh .github/workflows/scripts/apt-install.sh $APT_PKGS
 
       - name: Save apt cache
@@ -449,7 +417,7 @@ jobs:
           restore-keys: ${{ steps.apt.outputs.prefix }}
 
       - name: Install dependencies
-        timeout-minutes: 10
+        timeout-minutes: 15
         run: sh .github/workflows/scripts/apt-install.sh $APT_PKGS
 
       - name: Save apt cache
@@ -574,14 +542,7 @@ jobs:
     # installation on a slow runner it took the job past 30 min.
     timeout-minutes: 30
     env:
-      APT_PKGS: >-
-        build-essential libx11-dev libxrandr-dev libdrm-dev
-        xserver-xorg-core xserver-xorg-video-dummy x11-xserver-utils
-        libsdl2-dev libxinerama-dev libwayland-dev libegl-dev libgles-dev
-        libgbm-dev gcc-mingw-w64-x86-64 wine64 openbox cmake ninja-build
-        ccache libgl-dev xvfb libdbus-1-dev dbus python3-dbus python3-gi
-        weston xwayland mutter libvkd3d1 mesa-vulkan-drivers
-        fonts-dejavu-core
+      APT_PKGS: build-essential libx11-dev libxrandr-dev libdrm-dev xserver-xorg-core xserver-xorg-video-dummy x11-xserver-utils libsdl2-dev libxinerama-dev libwayland-dev libegl-dev libgles-dev libgbm-dev gcc-mingw-w64-x86-64 wine64 openbox cmake ninja-build ccache libgl-dev xvfb libdbus-1-dev dbus python3-dbus python3-gi weston xwayland mutter libvkd3d1 mesa-vulkan-drivers fonts-dejavu-core fonts-dejavu-mono
 
     steps:
       - name: Checkout
@@ -623,7 +584,6 @@ jobs:
       - name: Enable ccache
         run: |
           set -eu
-          command -v ccache >/dev/null 2>&1 || sudo apt-get install -y -qq ccache
           export CCACHE_DIR="$HOME/.ccache"
           echo "CCACHE_DIR=$CCACHE_DIR" >> "$GITHUB_ENV"
           echo "/usr/lib/ccache" >> "$GITHUB_PATH"
@@ -863,7 +823,6 @@ jobs:
         working-directory: samples/gfx/gl2_pbo_readback
         run: |
           set -eu
-          sudo apt-get install -y -qq libgl-dev
           # gfx/drivers/gl2.c's PBO readback ring against a scripted
           # GL: a slot is read only once the fence placed after its
           # readback has signalled, and never waited on in the map. A
@@ -1419,7 +1378,6 @@ jobs:
              grep -q FocusChangeMask gfx/drivers_context/$f \
                 || { echo "::error::$f does not select FocusChangeMask"; exit 1; }
           done
-          sudo apt-get install -y -qq xvfb > /dev/null
           Xvfb :97 -screen 0 1024x768x24 > /tmp/xvfb97.log 2>&1 &
           XVFB_PID=$!
           sleep 1
@@ -1567,8 +1525,6 @@ jobs:
           # and its XWayland: Mutter names XWayland's outputs after its
           # connectors (DP-1, Meta-0), so only the XWAYLAND extension
           # says what the server is.
-          sudo apt-get install -y -qq libdbus-1-dev dbus python3-dbus \
-             python3-gi weston xwayland mutter > /dev/null
           (cd samples/gfx/mutter_displayconfig \
              && make clean all SANITIZER=address,undefined \
              && ASAN_OPTIONS=detect_leaks=1 \
@@ -1597,7 +1553,6 @@ jobs:
           # one's answer, three threads toggling leave what the last one
           # asked, close and reopen release the old inhibit, and no
           # service answers FAILED.
-          sudo apt-get install -y -qq libdbus-1-dev dbus > /dev/null
           make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
              timeout 300 ./run.sh
@@ -1754,7 +1709,6 @@ jobs:
           # implements deferred contexts over OpenGL. Requires the ring
           # and the immediate context to show every frame, and the ring
           # as it used to be to fail.
-          sudo apt-get install -y -qq xvfb > /dev/null
           samples/gfx/d3d11_hw_ring/run.sh
 
       - name: libretro_d3d11.h version 2, the contract run (mingw + Wine, headless)
@@ -1769,7 +1723,6 @@ jobs:
           # D3D11 device (wined3d), and requires every frame and every
           # readback to be right, and a core that ignores what
           # lock_context tells it to be caught.
-          sudo apt-get install -y -qq xvfb > /dev/null
           REQUIRE_D3D11=1 samples/gfx/d3d11_hw_interface_v2/run.sh
 
       - name: libretro_d3d12.h version 2, the contract run (mingw + Wine + vkd3d, headless)
@@ -1783,7 +1736,6 @@ jobs:
           # over Mesa's software Vulkan driver - and requires every frame
           # to arrive intact, and a core that ignores wait_sync_index to
           # be caught.
-          sudo apt-get install -y -qq xvfb libvkd3d1 mesa-vulkan-drivers > /dev/null
           REQUIRE_D3D12=1 samples/gfx/d3d12_hw_interface_v2/run.sh
 
       - name: D3D texture pokes marshal onto the video thread (mingw, object check)
@@ -1809,7 +1761,6 @@ jobs:
           # script - then makes and destroys the window through twenty
           # fullscreen toggles. Any difference from the recorded trace
           # fails.
-          sudo apt-get install -y -qq xvfb > /dev/null
           samples/gfx/win32_window_proc/run.sh
 
       - name: Build and run window_driver_test for Windows (Wine)
@@ -1958,6 +1909,24 @@ jobs:
           make clean
           echo "[pass] drm_crtc_pick_test"
 
+      - name: Build and run exynos_g2d_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/exynos_g2d
+        run: |
+          set -eu
+          # gfx/drivers/exynos_gfx.c against a fake kernel and a G2D that
+          # draws into the GEM buffers: the frame at its aspect ratio, a
+          # core rendering into the buffer the G2D reads, vsync off
+          # neither waiting nor queueing flips, messages and statistics
+          # cleared and blended over only what they cover, the menu's
+          # alpha, screenshots, mode switches and CRT modelines, and a
+          # free and a failed init that leave nothing behind.
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 60 ./exynos_g2d_test
+          make clean
+          echo "[pass] exynos_g2d_test"
+
       - name: Build and run egl_gbm_frames_test (ASan + UBSan)
         shell: bash
         working-directory: samples/gfx/egl_gbm_frames
@@ -1979,7 +1948,6 @@ jobs:
         shell: bash
         run: |
           set -eu
-          sudo apt-get install -y -qq libgl-dev
           # The check gfx/common/egl_gbm_frames.c runs before a format is
           # first used, on llvmpipe: GBM and the dma-buf import are
           # stand-ins, the shader, target, draw and readback the GL's own.
@@ -2015,7 +1983,6 @@ jobs:
         working-directory: samples/gfx/gl2_kms_frames
         run: |
           set -eu
-          sudo apt-get install -y -qq libgl-dev
           # gfx/drivers/gl2.c's frames in scanout memory against a
           # scripted egl_gbm_frames: on KMS a plain software frame is lent
           # from the buffers, never to a core that reads it back, a
@@ -2259,8 +2226,6 @@ jobs:
           # OpenVG and SDL2 drivers - OpenVG onto a software OpenVG in
           # the test, SDL2 through its own software renderer - and check
           # every glyph texel lands where it should.
-          sudo apt-get install -y -qq fonts-dejavu-core fonts-dejavu-mono \
-             > /dev/null 2>&1 || sudo apt-get install -y -qq fonts-dejavu-core > /dev/null
           make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1:allocator_may_return_null=1 \
           UBSAN_OPTIONS=print_stacktrace=1 timeout 120 make check SANITIZER=address,undefined
@@ -2578,7 +2543,6 @@ jobs:
       - name: Enable ccache
         run: |
           set -eu
-          command -v ccache >/dev/null 2>&1 || sudo apt-get install -y -qq ccache
           export CCACHE_DIR="$HOME/.ccache"
           echo "CCACHE_DIR=$CCACHE_DIR" >> "$GITHUB_ENV"
           echo "/usr/lib/ccache" >> "$GITHUB_PATH"
@@ -2645,7 +2609,6 @@ jobs:
           # window boundary the assertions rest on (the feeder moves
           # at AUDIO_BYTES_PER_TICK, not per frame).  The job timeout
           # goes to 20 min to leave headroom for the slowest runner.
-          sudo apt-get install -y -o Acquire::Retries=3 -o Acquire::http::Timeout=30 ffmpeg
           make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           make fixtures
           test -x gfx_thumbnail_preview_test
