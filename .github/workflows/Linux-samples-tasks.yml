@@ -1323,6 +1323,26 @@ jobs:
           TSAN_OPTIONS=halt_on_error=1 ./task_ordering_test
           make clean >/dev/null
 
+      - name: Build and run autodetect_handoff_test (plain, ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/tasks/autodetect_handoff
+        run: |
+          set -eu
+          # Autoconfig reports from a driver's own thread are made on
+          # the main thread, in order, where the queue's answer is exact.
+          make clean >/dev/null
+          make all -j$(nproc)
+          ./autodetect_handoff_test
+          make clean >/dev/null
+          make all SANITIZER=address,undefined -j$(nproc)
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+          UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+            ./autodetect_handoff_test
+          make clean >/dev/null
+          make all SANITIZER=thread -j$(nproc)
+          TSAN_OPTIONS=halt_on_error=1 ./autodetect_handoff_test
+          make clean >/dev/null
+
       - name: Build and run task_watchdog_test (plain, ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/tasks/watchdog
