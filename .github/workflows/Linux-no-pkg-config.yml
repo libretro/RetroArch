@@ -23,22 +23,35 @@ jobs:
   no-pkg-config:
     name: Configure and build with pkg-config unavailable
     runs-on: ubuntu-latest
+    env:
+      APT_PKGS: --no-install-recommends build-essential zlib1g-dev libfreetype-dev libdrm-dev libasound2-dev libpulse-dev libpipewire-0.3-dev libdbus-1-dev libwayland-dev libwayland-bin libxkbcommon-dev libdecor-0-dev libssl-dev qt6-base-dev qt6-base-dev-tools
     timeout-minutes: 30
 
     steps:
-      - name: Install dependencies
-        shell: bash
-        run: |
-          set -eu
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq --no-install-recommends \
-            build-essential zlib1g-dev libfreetype-dev libdrm-dev \
-            libasound2-dev libpulse-dev libpipewire-0.3-dev \
-            libdbus-1-dev libwayland-dev libwayland-bin libxkbcommon-dev \
-            libdecor-0-dev libssl-dev qt6-base-dev qt6-base-dev-tools
-
       - name: Checkout
         uses: actions/checkout@v5
+
+      - name: Apt cache key
+        id: apt
+        run: sh .github/workflows/scripts/apt-cache-key.sh "$APT_PKGS"
+
+      - name: Restore apt cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+          restore-keys: ${{ steps.apt.outputs.prefix }}
+
+      - name: Install dependencies
+        timeout-minutes: 15
+        run: sh .github/workflows/scripts/apt-install.sh $APT_PKGS
+
+      - name: Save apt cache
+        if: env.APT_CACHE_SAVE == '1'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
 
       - name: Link with lld
         run: sh .github/workflows/scripts/use-lld.sh

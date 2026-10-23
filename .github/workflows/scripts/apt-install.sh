@@ -2,7 +2,7 @@
 # Installs Ubuntu packages for a CI job, from the job's apt cache when it
 # has them.
 #
-#   apt-install.sh PACKAGE...
+#   apt-install.sh [--no-install-recommends] PACKAGE...
 #
 # APT_CACHE (default ~/.apt-cache) holds the package lists and the .deb
 # files of the last install; actions/cache restores it before this runs
@@ -17,6 +17,14 @@
 # them are, nothing is done at all.
 set -eu
 
+opts=
+while [ $# -gt 0 ]; do
+   case $1 in
+      --no-install-recommends) opts="$opts $1"; shift ;;
+      -*) echo "apt-install.sh: unknown option $1"; exit 2 ;;
+      *) break ;;
+   esac
+done
 [ $# -gt 0 ] || { echo "apt-install.sh: no packages"; exit 2; }
 pkgs="$*"
 cache=${APT_CACHE:-$HOME/.apt-cache}
@@ -29,6 +37,8 @@ fi
 mkdir -p "$cache/archives/partial" "$cache/lists/partial"
 dirs="-o Dir::Cache::Archives=$cache/archives -o Dir::State::Lists=$cache/lists"
 net="-o Acquire::Retries=3 -o Acquire::http::Timeout=30"
+# No package may stop the install to ask a question
+apt="sudo env DEBIAN_FRONTEND=noninteractive apt-get"
 
 saved() {
    # A later plain apt-get install in the job resolves from the same
@@ -40,7 +50,7 @@ saved() {
 
 # Warm: everything from the cache
 if [ -f "$cache/lists/.complete" ] \
-      && sudo apt-get install -y --no-download $dirs $pkgs; then
+      && $apt install -y --no-download $dirs $opts $pkgs; then
    echo "apt-install.sh: installed from the cache."
    saved
    exit 0
@@ -60,7 +70,7 @@ done
 # Fetch first, under a bound: a download is safe to stop and resumes, an
 # install is not. A mirror that stalls is left for the main archive.
 for i in 1 2 3; do
-   sudo timeout 240 apt-get install -y --download-only $dirs $net $pkgs \
+   sudo timeout 240 apt-get install -y --download-only $dirs $net $opts $pkgs \
       && break
    [ $i = 3 ] && exit 1
    echo "package download failed or stalled (attempt $i); retrying from archive.ubuntu.com"
@@ -72,7 +82,7 @@ for i in 1 2 3; do
    sudo timeout 120 apt-get update -y $dirs $upd || true
 done
 
-sudo apt-get install -y $dirs $net $pkgs
+$apt install -y $dirs $net $opts $pkgs
 # Only what this job installs is kept: the lists, and its own packages
 sudo touch "$cache/lists/.complete"
 sudo rm -rf "$cache/archives/partial" "$cache/lists/partial"

@@ -10,16 +10,36 @@ permissions:
 jobs:
   rgui-media:
     runs-on: ubuntu-latest
+    env:
+      APT_PKGS: ffmpeg
     timeout-minutes: 20
     strategy:
       matrix:
         threads: [enable, disable]
     steps:
       - uses: actions/checkout@v6
-      - name: Install fixture encoder
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq ffmpeg
+      - name: Apt cache key
+        id: apt
+        run: sh .github/workflows/scripts/apt-cache-key.sh "$APT_PKGS"
+
+      - name: Restore apt cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+          restore-keys: ${{ steps.apt.outputs.prefix }}
+
+      - name: Install dependencies
+        timeout-minutes: 10
+        run: sh .github/workflows/scripts/apt-install.sh $APT_PKGS
+
+      - name: Save apt cache
+        if: env.APT_CACHE_SAVE == '1'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+
       - name: Configure C89 frontend
         run: ./configure --disable-qt --disable-vulkan --disable-wayland --disable-x11 --disable-opengl --disable-opengl1 --disable-opengl_core --disable-ffmpeg --disable-cheevos --enable-webmplayer --${{ matrix.threads }}-threads
       - name: Build shipping frontend

@@ -23,11 +23,35 @@ jobs:
   openxr-input:
     name: OpenXR input and shared units against a stand-in runtime
     runs-on: ubuntu-latest
+    env:
+      APT_PKGS: pkg-config libegl-dev libgl-dev libx11-dev
     timeout-minutes: 10
 
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+
+      - name: Apt cache key
+        id: apt
+        run: sh .github/workflows/scripts/apt-cache-key.sh "$APT_PKGS"
+
+      - name: Restore apt cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+          restore-keys: ${{ steps.apt.outputs.prefix }}
+
+      - name: Install dependencies
+        timeout-minutes: 10
+        run: sh .github/workflows/scripts/apt-install.sh $APT_PKGS
+
+      - name: Save apt cache
+        if: env.APT_CACHE_SAVE == '1'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
 
       - name: Link with lld
         run: sh .github/workflows/scripts/use-lld.sh
@@ -48,13 +72,6 @@ jobs:
           grep -q "PASS openxr_input_test" openxr_input.log
           make clean
           rm -f openxr_input.log
-
-      - name: Install the desktop GL host's headers
-        shell: bash
-        run: |
-          set -eu
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq pkg-config libegl-dev libgl-dev libx11-dev
 
       - name: Run the shared OpenXR units against a stand-in runtime
         working-directory: samples/openxr/core
@@ -87,16 +104,37 @@ jobs:
   openxr-haptics:
     name: Desktop haptic results (Linux sanitizers, Windows build)
     runs-on: ubuntu-latest
+    env:
+      APT_PKGS: gcc-mingw-w64-x86-64
     timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Apt cache key
+        id: apt
+        run: sh .github/workflows/scripts/apt-cache-key.sh "$APT_PKGS"
+
+      - name: Restore apt cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+          restore-keys: ${{ steps.apt.outputs.prefix }}
+
+      - name: Install dependencies
+        timeout-minutes: 10
+        run: sh .github/workflows/scripts/apt-install.sh $APT_PKGS
+
+      - name: Save apt cache
+        if: env.APT_CACHE_SAVE == '1'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+
       - name: Link with lld
         run: sh .github/workflows/scripts/use-lld.sh
-
-      - name: Install Windows cross compiler
-        run: sudo apt-get install -y -qq gcc-mingw-w64-x86-64
 
       - name: Run desktop haptics against scripted runtime results
         working-directory: samples/input/openxr_haptics
@@ -142,27 +180,38 @@ jobs:
   openxr-desktop:
     name: Desktop headset output with the in-tree loader
     runs-on: ubuntu-latest
+    env:
+      APT_PKGS: build-essential pkg-config libgl1-mesa-dev libgles2-mesa-dev libegl1-mesa-dev libx11-dev libxext-dev libxrandr-dev libxinerama-dev libxxf86vm-dev libxv-dev libxkbcommon-dev libwayland-dev wayland-protocols libdrm-dev libgbm-dev libasound2-dev libpulse-dev libudev-dev libusb-1.0-0-dev libvulkan-dev libdbus-1-dev zlib1g-dev
     timeout-minutes: 30
 
     steps:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Link with lld
-        run: sh .github/workflows/scripts/use-lld.sh
+      - name: Apt cache key
+        id: apt
+        run: sh .github/workflows/scripts/apt-cache-key.sh "$APT_PKGS"
+
+      - name: Restore apt cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+          restore-keys: ${{ steps.apt.outputs.prefix }}
 
       - name: Install dependencies
-        shell: bash
-        run: |
-          set -eu
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq build-essential pkg-config \
-            libgl1-mesa-dev libgles2-mesa-dev libegl1-mesa-dev \
-            libx11-dev libxext-dev libxrandr-dev libxinerama-dev \
-            libxxf86vm-dev libxv-dev libxkbcommon-dev \
-            libwayland-dev wayland-protocols libdrm-dev libgbm-dev \
-            libasound2-dev libpulse-dev libudev-dev libusb-1.0-0-dev \
-            libvulkan-dev libdbus-1-dev zlib1g-dev
+        timeout-minutes: 10
+        run: sh .github/workflows/scripts/apt-install.sh $APT_PKGS
+
+      - name: Save apt cache
+        if: env.APT_CACHE_SAVE == '1'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+
+      - name: Link with lld
+        run: sh .github/workflows/scripts/use-lld.sh
 
       - name: Build RetroArch with OpenXR
         shell: bash
@@ -216,27 +265,38 @@ jobs:
   openxr-desktop-gl:
     name: Desktop headset output on OpenGL alone, without Vulkan
     runs-on: ubuntu-latest
+    env:
+      APT_PKGS: build-essential pkg-config libgl1-mesa-dev libgles2-mesa-dev libegl1-mesa-dev libx11-dev libxext-dev libxrandr-dev libxinerama-dev libxxf86vm-dev libxv-dev libxkbcommon-dev libwayland-dev wayland-protocols libdrm-dev libgbm-dev libasound2-dev libpulse-dev libudev-dev libusb-1.0-0-dev libdbus-1-dev zlib1g-dev
     timeout-minutes: 30
 
     steps:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Link with lld
-        run: sh .github/workflows/scripts/use-lld.sh
+      - name: Apt cache key
+        id: apt
+        run: sh .github/workflows/scripts/apt-cache-key.sh "$APT_PKGS"
+
+      - name: Restore apt cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+          restore-keys: ${{ steps.apt.outputs.prefix }}
 
       - name: Install dependencies
-        shell: bash
-        run: |
-          set -eu
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq build-essential pkg-config \
-            libgl1-mesa-dev libgles2-mesa-dev libegl1-mesa-dev \
-            libx11-dev libxext-dev libxrandr-dev libxinerama-dev \
-            libxxf86vm-dev libxv-dev libxkbcommon-dev \
-            libwayland-dev wayland-protocols libdrm-dev libgbm-dev \
-            libasound2-dev libpulse-dev libudev-dev libusb-1.0-0-dev \
-            libdbus-1-dev zlib1g-dev
+        timeout-minutes: 10
+        run: sh .github/workflows/scripts/apt-install.sh $APT_PKGS
+
+      - name: Save apt cache
+        if: env.APT_CACHE_SAVE == '1'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+
+      - name: Link with lld
+        run: sh .github/workflows/scripts/use-lld.sh
 
       - name: Build RetroArch with OpenXR and no Vulkan
         shell: bash

@@ -26,62 +26,39 @@ jobs:
   network-clients:
     name: TLS, SMB and NFS clients against local servers
     runs-on: ubuntu-latest
+    env:
+      APT_PKGS: --no-install-recommends build-essential clang gcc-mingw-w64-x86-64 openssl samba libtirpc-dev flex bison autoconf automake wine wine64 nfs-ganesha nfs-ganesha-vfs krb5-kdc krb5-admin-server krb5-user winbind samba-dsdb-modules samba-ad-provision samba-vfs-modules acl smbclient tshark
     timeout-minutes: 45
 
     steps:
-      - name: Install dependencies
-        timeout-minutes: 25
-        run: |
-          sudo apt-get update -y
-          # Fetch first, under a bound: a download is safe to stop and
-          # resumes, an install is not. A mirror that stalls is left for
-          # the main archive on the next attempt.
-          # tshark's dumpcap asks whether to be setuid: no, runs are root
-          echo "wireshark-common wireshark-common/install-setuid boolean false" | sudo debconf-set-selections
-          export DEBIAN_FRONTEND=noninteractive
-          for i in 1 2 3; do
-            sudo timeout 240 apt-get install -y --download-only --no-install-recommends build-essential clang \
-              gcc-mingw-w64-x86-64 openssl samba libtirpc-dev flex bison autoconf automake wine wine64 \
-              nfs-ganesha nfs-ganesha-vfs krb5-kdc krb5-admin-server krb5-user winbind \
-              samba-dsdb-modules samba-ad-provision samba-vfs-modules acl smbclient tshark && break
-            [ $i = 3 ] && exit 1
-            echo "package download failed or stalled (attempt $i); retrying from archive.ubuntu.com"
-            if [ ! -d /etc/apt/ra-orig ]; then
-              sudo mkdir /etc/apt/ra-orig
-              sudo cp -a /etc/apt/sources.list.d /etc/apt/ra-orig/
-              [ ! -f /etc/apt/sources.list ] || sudo cp -a /etc/apt/sources.list /etc/apt/ra-orig/
-            fi
-            for f in /etc/apt/sources.list /etc/apt/sources.list.d/*; do
-              [ -f "$f" ] || continue
-              sudo sed -i -e 's#mirror+file:/etc/apt/apt-mirrors.txt#http://archive.ubuntu.com/ubuntu/#g' \
-                -e 's#http://azure\.archive\.ubuntu\.com/ubuntu#http://archive.ubuntu.com/ubuntu#g' "$f"
-            done
-            # A refresh cut short or refused leaves apt no package lists: it
-            # is retried, without translations or command-not-found data, and
-            # the mirror is put back when the archive will not answer either.
-            upd="-o Acquire::Retries=3 -o Acquire::http::Timeout=30
-              -o Acquire::Languages=none
-              -o Acquire::IndexTargets::deb::CNF::DefaultEnabled=false
-              -o APT::Update::Error-Mode=any"
-            ok=0
-            for j in 1 2; do
-              sudo timeout 120 apt-get update -y $upd && { ok=1; break; }
-            done
-            if [ $ok = 0 ]; then
-              sudo rm -rf /etc/apt/sources.list.d
-              sudo cp -a /etc/apt/ra-orig/sources.list.d /etc/apt/
-              [ ! -f /etc/apt/ra-orig/sources.list ] || sudo cp -a /etc/apt/ra-orig/sources.list /etc/apt/
-              sudo rm -rf /etc/apt/ra-orig
-              sudo timeout 120 apt-get update -y $upd || true
-            fi
-          done
-          sudo apt-get install -y --no-install-recommends build-essential clang \
-            gcc-mingw-w64-x86-64 openssl samba libtirpc-dev flex bison autoconf automake wine wine64 \
-            nfs-ganesha nfs-ganesha-vfs krb5-kdc krb5-admin-server krb5-user winbind \
-            samba-dsdb-modules samba-ad-provision samba-vfs-modules acl smbclient tshark
-
       - name: Checkout
         uses: actions/checkout@v5
+
+      - name: Apt cache key
+        id: apt
+        run: sh .github/workflows/scripts/apt-cache-key.sh "$APT_PKGS"
+
+      - name: Restore apt cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+          restore-keys: ${{ steps.apt.outputs.prefix }}
+
+      - name: Preseed tshark
+        # dumpcap asks whether to be setuid: no, runs are root
+        run: echo "wireshark-common wireshark-common/install-setuid boolean false" | sudo debconf-set-selections
+
+      - name: Install dependencies
+        timeout-minutes: 25
+        run: sh .github/workflows/scripts/apt-install.sh $APT_PKGS
+
+      - name: Save apt cache
+        if: env.APT_CACHE_SAVE == '1'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
 
       - name: Link with lld
         run: sh .github/workflows/scripts/use-lld.sh

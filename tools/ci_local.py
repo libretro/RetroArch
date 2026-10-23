@@ -971,6 +971,8 @@ STAND_INS = {
    'taiki-e/checkout-action': 'checkout',
    'actions/setup-python': 'host',
    'actions/cache': 'skip',
+   'actions/cache/restore': 'skip',
+   'actions/cache/save': 'skip',
    'actions/upload-artifact': 'skip',
    'actions/download-artifact': 'skip',
 }

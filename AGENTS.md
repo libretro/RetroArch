@@ -129,6 +129,7 @@ If a change touches code already covered by the GitHub CI workflow regression te
 - `tools/ci_local.py run <workflow> --job <job>` runs that job's own steps, with its configure line, flags, matrix and environment. `--dry-run` prints them, `--clean-copy` runs on a fresh worktree of HEAD plus your changes, and container jobs run in their image through docker or podman.
 - Do not present a change while any of those tests fail.
 - A workflow construct `ci_local.py` cannot read fails `tools/ci_local.py selftest`, which CI runs; extend the script in the same change.
+- A job's Ubuntu packages go in its `APT_PKGS` and are installed once, through `.github/workflows/scripts/apt-install.sh` and its cache steps; `tools/ci_apt_check.py` fails any other `apt-get` in a runner job.
 
 ## Never commit build output
 

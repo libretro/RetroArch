@@ -23,73 +23,35 @@ jobs:
   samples:
     name: Build and run libretro-common/samples
     runs-on: ubuntu-latest
+    env:
+      APT_PKGS: build-essential zlib1g-dev clang ffmpeg ccache
     timeout-minutes: 15
 
     steps:
-      - name: Install dependencies
-        timeout-minutes: 20
-        run: |
-          # All three packages ship on the stock ubuntu-latest image, so
-          # this step is a no-op there and apt is only contacted if the
-          # image ever drops one of them.
-          # ffmpeg (with libx264 and libx265): formats/h264/rh264_lossless_test
-          # and formats/h265/rh265_lossless_test build their corpora and
-          # their reference decodes with it; with libmp3lame,
-          # formats/mp3/rmp3_frame_test its streams.
-          if dpkg -s build-essential zlib1g-dev clang ffmpeg >/dev/null 2>&1; then
-            echo "All packages already present on runner image; skipping apt."
-            exit 0
-          fi
-          for i in 1 2 3; do
-            sudo timeout 90 apt-get update -y \
-              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
-            echo "apt-get update failed (attempt $i); retrying in 10s"
-            sleep 10
-          done
-          # Fetch first, under a bound: a download is safe to stop and
-          # resumes, an install is not. A mirror that stalls is left for
-          # the main archive on the next attempt.
-          for i in 1 2 3; do
-            sudo timeout 240 apt-get install -y --download-only \
-              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
-              build-essential zlib1g-dev clang ffmpeg && break
-            [ $i = 3 ] && exit 1
-            echo "package download failed or stalled (attempt $i); retrying from archive.ubuntu.com"
-            if [ ! -d /etc/apt/ra-orig ]; then
-              sudo mkdir /etc/apt/ra-orig
-              sudo cp -a /etc/apt/sources.list.d /etc/apt/ra-orig/
-              [ ! -f /etc/apt/sources.list ] || sudo cp -a /etc/apt/sources.list /etc/apt/ra-orig/
-            fi
-            for f in /etc/apt/sources.list /etc/apt/sources.list.d/*; do
-              [ -f "$f" ] || continue
-              sudo sed -i -e 's#mirror+file:/etc/apt/apt-mirrors.txt#http://archive.ubuntu.com/ubuntu/#g' \
-                -e 's#http://azure\.archive\.ubuntu\.com/ubuntu#http://archive.ubuntu.com/ubuntu#g' "$f"
-            done
-            # A refresh cut short or refused leaves apt no package lists: it
-            # is retried, without translations or command-not-found data, and
-            # the mirror is put back when the archive will not answer either.
-            upd="-o Acquire::Retries=3 -o Acquire::http::Timeout=30
-              -o Acquire::Languages=none
-              -o Acquire::IndexTargets::deb::CNF::DefaultEnabled=false
-              -o APT::Update::Error-Mode=any"
-            ok=0
-            for j in 1 2; do
-              sudo timeout 120 apt-get update -y $upd && { ok=1; break; }
-            done
-            if [ $ok = 0 ]; then
-              sudo rm -rf /etc/apt/sources.list.d
-              sudo cp -a /etc/apt/ra-orig/sources.list.d /etc/apt/
-              [ ! -f /etc/apt/ra-orig/sources.list ] || sudo cp -a /etc/apt/ra-orig/sources.list /etc/apt/
-              sudo rm -rf /etc/apt/ra-orig
-              sudo timeout 120 apt-get update -y $upd || true
-            fi
-          done
-          sudo apt-get install -y \
-            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
-            build-essential zlib1g-dev clang ffmpeg
-
       - name: Checkout
         uses: actions/checkout@v5
+
+      - name: Apt cache key
+        id: apt
+        run: sh .github/workflows/scripts/apt-cache-key.sh "$APT_PKGS"
+
+      - name: Restore apt cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+          restore-keys: ${{ steps.apt.outputs.prefix }}
+
+      - name: Install dependencies
+        timeout-minutes: 20
+        run: sh .github/workflows/scripts/apt-install.sh $APT_PKGS
+
+      - name: Save apt cache
+        if: env.APT_CACHE_SAVE == '1'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
 
       - name: Link with lld
         run: sh .github/workflows/scripts/use-lld.sh
@@ -105,7 +67,6 @@ jobs:
       - name: Enable ccache
         run: |
           set -eu
-          command -v ccache >/dev/null 2>&1 || sudo apt-get install -y -qq ccache
           export CCACHE_DIR="$HOME/.ccache"
           echo "CCACHE_DIR=$CCACHE_DIR" >> "$GITHUB_ENV"
           echo "/usr/lib/ccache" >> "$GITHUB_PATH"
@@ -920,6 +881,7 @@ jobs:
     timeout-minutes: 20
 
     env:
+      APT_PKGS: ccache
       # Pinned rather than floating: the job exists to hold a libc ABI,
       # so the toolchain it is held against changes deliberately.
       EM_VERSION: 5.0.1
@@ -928,6 +890,28 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+
+      - name: Apt cache key
+        id: apt
+        run: sh .github/workflows/scripts/apt-cache-key.sh "$APT_PKGS"
+
+      - name: Restore apt cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+          restore-keys: ${{ steps.apt.outputs.prefix }}
+
+      - name: Install dependencies
+        timeout-minutes: 10
+        run: sh .github/workflows/scripts/apt-install.sh $APT_PKGS
+
+      - name: Save apt cache
+        if: env.APT_CACHE_SAVE == '1'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
 
       - name: Link with lld
         run: sh .github/workflows/scripts/use-lld.sh
@@ -943,7 +927,6 @@ jobs:
       - name: Enable ccache
         run: |
           set -eu
-          command -v ccache >/dev/null 2>&1 || sudo apt-get install -y -qq ccache
           export CCACHE_DIR="$HOME/.ccache"
           echo "CCACHE_DIR=$CCACHE_DIR" >> "$GITHUB_ENV"
           echo "/usr/lib/ccache" >> "$GITHUB_PATH"
@@ -1032,68 +1015,35 @@ jobs:
   config-file-fuzz-smoke:
     name: config_file differential fuzz (smoke)
     runs-on: ubuntu-latest
+    env:
+      APT_PKGS: clang ccache
     timeout-minutes: 10
 
     steps:
-      - name: Install dependencies
-        timeout-minutes: 20
-        run: |
-          # clang ships on the stock ubuntu-latest image; apt is only
-          # contacted if the image ever drops it.
-          if dpkg -s clang >/dev/null 2>&1; then
-            echo "clang already present on runner image; skipping apt."
-            exit 0
-          fi
-          for i in 1 2 3; do
-            sudo timeout 90 apt-get update -y \
-              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
-            echo "apt-get update failed (attempt $i); retrying in 10s"
-            sleep 10
-          done
-          # Fetch first, under a bound: a download is safe to stop and
-          # resumes, an install is not. A mirror that stalls is left for
-          # the main archive on the next attempt.
-          for i in 1 2 3; do
-            sudo timeout 240 apt-get install -y --download-only \
-              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
-              clang && break
-            [ $i = 3 ] && exit 1
-            echo "package download failed or stalled (attempt $i); retrying from archive.ubuntu.com"
-            if [ ! -d /etc/apt/ra-orig ]; then
-              sudo mkdir /etc/apt/ra-orig
-              sudo cp -a /etc/apt/sources.list.d /etc/apt/ra-orig/
-              [ ! -f /etc/apt/sources.list ] || sudo cp -a /etc/apt/sources.list /etc/apt/ra-orig/
-            fi
-            for f in /etc/apt/sources.list /etc/apt/sources.list.d/*; do
-              [ -f "$f" ] || continue
-              sudo sed -i -e 's#mirror+file:/etc/apt/apt-mirrors.txt#http://archive.ubuntu.com/ubuntu/#g' \
-                -e 's#http://azure\.archive\.ubuntu\.com/ubuntu#http://archive.ubuntu.com/ubuntu#g' "$f"
-            done
-            # A refresh cut short or refused leaves apt no package lists: it
-            # is retried, without translations or command-not-found data, and
-            # the mirror is put back when the archive will not answer either.
-            upd="-o Acquire::Retries=3 -o Acquire::http::Timeout=30
-              -o Acquire::Languages=none
-              -o Acquire::IndexTargets::deb::CNF::DefaultEnabled=false
-              -o APT::Update::Error-Mode=any"
-            ok=0
-            for j in 1 2; do
-              sudo timeout 120 apt-get update -y $upd && { ok=1; break; }
-            done
-            if [ $ok = 0 ]; then
-              sudo rm -rf /etc/apt/sources.list.d
-              sudo cp -a /etc/apt/ra-orig/sources.list.d /etc/apt/
-              [ ! -f /etc/apt/ra-orig/sources.list ] || sudo cp -a /etc/apt/ra-orig/sources.list /etc/apt/
-              sudo rm -rf /etc/apt/ra-orig
-              sudo timeout 120 apt-get update -y $upd || true
-            fi
-          done
-          sudo apt-get install -y \
-            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
-            clang
-
       - name: Checkout
         uses: actions/checkout@v5
+
+      - name: Apt cache key
+        id: apt
+        run: sh .github/workflows/scripts/apt-cache-key.sh "$APT_PKGS"
+
+      - name: Restore apt cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+          restore-keys: ${{ steps.apt.outputs.prefix }}
+
+      - name: Install dependencies
+        timeout-minutes: 20
+        run: sh .github/workflows/scripts/apt-install.sh $APT_PKGS
+
+      - name: Save apt cache
+        if: env.APT_CACHE_SAVE == '1'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
 
       - name: Link with lld
         run: sh .github/workflows/scripts/use-lld.sh
@@ -1109,7 +1059,6 @@ jobs:
       - name: Enable ccache
         run: |
           set -eu
-          command -v ccache >/dev/null 2>&1 || sudo apt-get install -y -qq ccache
           export CCACHE_DIR="$HOME/.ccache"
           echo "CCACHE_DIR=$CCACHE_DIR" >> "$GITHUB_ENV"
           echo "/usr/lib/ccache" >> "$GITHUB_PATH"
@@ -1176,62 +1125,35 @@ jobs:
   task-queue-mingw:
     name: task_queue samples under mingw-w64 + Wine
     runs-on: ubuntu-latest
+    env:
+      APT_PKGS: build-essential gcc-mingw-w64-x86-64 wine wine64
     timeout-minutes: 15
 
     steps:
-      - name: Install dependencies
-        timeout-minutes: 20
-        run: |
-          for i in 1 2 3; do
-            sudo timeout 90 apt-get update -y \
-              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
-            echo "apt-get update failed (attempt $i); retrying in 10s"
-            sleep 10
-          done
-          # Fetch first, under a bound: a download is safe to stop and
-          # resumes, an install is not. A mirror that stalls is left for
-          # the main archive on the next attempt.
-          for i in 1 2 3; do
-            sudo timeout 240 apt-get install -y --download-only \
-              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
-              build-essential gcc-mingw-w64-x86-64 wine wine64 && break
-            [ $i = 3 ] && exit 1
-            echo "package download failed or stalled (attempt $i); retrying from archive.ubuntu.com"
-            if [ ! -d /etc/apt/ra-orig ]; then
-              sudo mkdir /etc/apt/ra-orig
-              sudo cp -a /etc/apt/sources.list.d /etc/apt/ra-orig/
-              [ ! -f /etc/apt/sources.list ] || sudo cp -a /etc/apt/sources.list /etc/apt/ra-orig/
-            fi
-            for f in /etc/apt/sources.list /etc/apt/sources.list.d/*; do
-              [ -f "$f" ] || continue
-              sudo sed -i -e 's#mirror+file:/etc/apt/apt-mirrors.txt#http://archive.ubuntu.com/ubuntu/#g' \
-                -e 's#http://azure\.archive\.ubuntu\.com/ubuntu#http://archive.ubuntu.com/ubuntu#g' "$f"
-            done
-            # A refresh cut short or refused leaves apt no package lists: it
-            # is retried, without translations or command-not-found data, and
-            # the mirror is put back when the archive will not answer either.
-            upd="-o Acquire::Retries=3 -o Acquire::http::Timeout=30
-              -o Acquire::Languages=none
-              -o Acquire::IndexTargets::deb::CNF::DefaultEnabled=false
-              -o APT::Update::Error-Mode=any"
-            ok=0
-            for j in 1 2; do
-              sudo timeout 120 apt-get update -y $upd && { ok=1; break; }
-            done
-            if [ $ok = 0 ]; then
-              sudo rm -rf /etc/apt/sources.list.d
-              sudo cp -a /etc/apt/ra-orig/sources.list.d /etc/apt/
-              [ ! -f /etc/apt/ra-orig/sources.list ] || sudo cp -a /etc/apt/ra-orig/sources.list /etc/apt/
-              sudo rm -rf /etc/apt/ra-orig
-              sudo timeout 120 apt-get update -y $upd || true
-            fi
-          done
-          sudo apt-get install -y \
-            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
-            build-essential gcc-mingw-w64-x86-64 wine wine64
-
       - name: Checkout
         uses: actions/checkout@v5
+
+      - name: Apt cache key
+        id: apt
+        run: sh .github/workflows/scripts/apt-cache-key.sh "$APT_PKGS"
+
+      - name: Restore apt cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+          restore-keys: ${{ steps.apt.outputs.prefix }}
+
+      - name: Install dependencies
+        timeout-minutes: 20
+        run: sh .github/workflows/scripts/apt-install.sh $APT_PKGS
+
+      - name: Save apt cache
+        if: env.APT_CACHE_SAVE == '1'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
 
       - name: Link with lld
         run: sh .github/workflows/scripts/use-lld.sh
@@ -1290,6 +1212,8 @@ jobs:
   retro-atomic-cross:
     name: Cross-arch retro_atomic_test (${{ matrix.arch }})
     runs-on: ubuntu-latest
+    env:
+      APT_PKGS: build-essential ${{ matrix.apt_pkgs }} qemu-user-static ccache
     timeout-minutes: 10
     strategy:
       fail-fast: false
@@ -1307,59 +1231,30 @@ jobs:
             sysroot: /usr/arm-linux-gnueabihf
 
     steps:
-      - name: Install dependencies
-        timeout-minutes: 20
-        run: |
-          for i in 1 2 3; do
-            sudo timeout 90 apt-get update -y \
-              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
-            echo "apt-get update failed (attempt $i); retrying in 10s"
-            sleep 10
-          done
-          # Fetch first, under a bound: a download is safe to stop and
-          # resumes, an install is not. A mirror that stalls is left for
-          # the main archive on the next attempt.
-          for i in 1 2 3; do
-            sudo timeout 240 apt-get install -y --download-only \
-              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
-              build-essential ${{ matrix.apt_pkgs }} qemu-user-static && break
-            [ $i = 3 ] && exit 1
-            echo "package download failed or stalled (attempt $i); retrying from archive.ubuntu.com"
-            if [ ! -d /etc/apt/ra-orig ]; then
-              sudo mkdir /etc/apt/ra-orig
-              sudo cp -a /etc/apt/sources.list.d /etc/apt/ra-orig/
-              [ ! -f /etc/apt/sources.list ] || sudo cp -a /etc/apt/sources.list /etc/apt/ra-orig/
-            fi
-            for f in /etc/apt/sources.list /etc/apt/sources.list.d/*; do
-              [ -f "$f" ] || continue
-              sudo sed -i -e 's#mirror+file:/etc/apt/apt-mirrors.txt#http://archive.ubuntu.com/ubuntu/#g' \
-                -e 's#http://azure\.archive\.ubuntu\.com/ubuntu#http://archive.ubuntu.com/ubuntu#g' "$f"
-            done
-            # A refresh cut short or refused leaves apt no package lists: it
-            # is retried, without translations or command-not-found data, and
-            # the mirror is put back when the archive will not answer either.
-            upd="-o Acquire::Retries=3 -o Acquire::http::Timeout=30
-              -o Acquire::Languages=none
-              -o Acquire::IndexTargets::deb::CNF::DefaultEnabled=false
-              -o APT::Update::Error-Mode=any"
-            ok=0
-            for j in 1 2; do
-              sudo timeout 120 apt-get update -y $upd && { ok=1; break; }
-            done
-            if [ $ok = 0 ]; then
-              sudo rm -rf /etc/apt/sources.list.d
-              sudo cp -a /etc/apt/ra-orig/sources.list.d /etc/apt/
-              [ ! -f /etc/apt/ra-orig/sources.list ] || sudo cp -a /etc/apt/ra-orig/sources.list /etc/apt/
-              sudo rm -rf /etc/apt/ra-orig
-              sudo timeout 120 apt-get update -y $upd || true
-            fi
-          done
-          sudo apt-get install -y \
-            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
-            build-essential ${{ matrix.apt_pkgs }} qemu-user-static
-
       - name: Checkout
         uses: actions/checkout@v5
+
+      - name: Apt cache key
+        id: apt
+        run: sh .github/workflows/scripts/apt-cache-key.sh "$APT_PKGS"
+
+      - name: Restore apt cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+          restore-keys: ${{ steps.apt.outputs.prefix }}
+
+      - name: Install dependencies
+        timeout-minutes: 20
+        run: sh .github/workflows/scripts/apt-install.sh $APT_PKGS
+
+      - name: Save apt cache
+        if: env.APT_CACHE_SAVE == '1'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
 
       - name: Link with lld
         run: sh .github/workflows/scripts/use-lld.sh
@@ -1375,7 +1270,6 @@ jobs:
       - name: Enable ccache
         run: |
           set -eu
-          command -v ccache >/dev/null 2>&1 || sudo apt-get install -y -qq ccache
           export CCACHE_DIR="$HOME/.ccache"
           echo "CCACHE_DIR=$CCACHE_DIR" >> "$GITHUB_ENV"
           echo "/usr/lib/ccache" >> "$GITHUB_PATH"
@@ -1466,6 +1360,8 @@ jobs:
   crc32-cross:
     name: Cross-arch crc32_test (${{ matrix.name }})
     runs-on: ubuntu-latest
+    env:
+      APT_PKGS: build-essential ${{ matrix.apt_pkgs }} qemu-user-static ccache
     timeout-minutes: 20
     strategy:
       fail-fast: false
@@ -1497,59 +1393,30 @@ jobs:
             sysroot: /usr/powerpc-linux-gnu
 
     steps:
-      - name: Install dependencies
-        timeout-minutes: 20
-        run: |
-          for i in 1 2 3; do
-            sudo timeout 90 apt-get update -y \
-              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
-            echo "apt-get update failed (attempt $i); retrying in 10s"
-            sleep 10
-          done
-          # Fetch first, under a bound: a download is safe to stop and
-          # resumes, an install is not. A mirror that stalls is left for
-          # the main archive on the next attempt.
-          for i in 1 2 3; do
-            sudo timeout 240 apt-get install -y --download-only \
-              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
-              build-essential ${{ matrix.apt_pkgs }} qemu-user-static && break
-            [ $i = 3 ] && exit 1
-            echo "package download failed or stalled (attempt $i); retrying from archive.ubuntu.com"
-            if [ ! -d /etc/apt/ra-orig ]; then
-              sudo mkdir /etc/apt/ra-orig
-              sudo cp -a /etc/apt/sources.list.d /etc/apt/ra-orig/
-              [ ! -f /etc/apt/sources.list ] || sudo cp -a /etc/apt/sources.list /etc/apt/ra-orig/
-            fi
-            for f in /etc/apt/sources.list /etc/apt/sources.list.d/*; do
-              [ -f "$f" ] || continue
-              sudo sed -i -e 's#mirror+file:/etc/apt/apt-mirrors.txt#http://archive.ubuntu.com/ubuntu/#g' \
-                -e 's#http://azure\.archive\.ubuntu\.com/ubuntu#http://archive.ubuntu.com/ubuntu#g' "$f"
-            done
-            # A refresh cut short or refused leaves apt no package lists: it
-            # is retried, without translations or command-not-found data, and
-            # the mirror is put back when the archive will not answer either.
-            upd="-o Acquire::Retries=3 -o Acquire::http::Timeout=30
-              -o Acquire::Languages=none
-              -o Acquire::IndexTargets::deb::CNF::DefaultEnabled=false
-              -o APT::Update::Error-Mode=any"
-            ok=0
-            for j in 1 2; do
-              sudo timeout 120 apt-get update -y $upd && { ok=1; break; }
-            done
-            if [ $ok = 0 ]; then
-              sudo rm -rf /etc/apt/sources.list.d
-              sudo cp -a /etc/apt/ra-orig/sources.list.d /etc/apt/
-              [ ! -f /etc/apt/ra-orig/sources.list ] || sudo cp -a /etc/apt/ra-orig/sources.list /etc/apt/
-              sudo rm -rf /etc/apt/ra-orig
-              sudo timeout 120 apt-get update -y $upd || true
-            fi
-          done
-          sudo apt-get install -y \
-            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
-            build-essential ${{ matrix.apt_pkgs }} qemu-user-static
-
       - name: Checkout
         uses: actions/checkout@v5
+
+      - name: Apt cache key
+        id: apt
+        run: sh .github/workflows/scripts/apt-cache-key.sh "$APT_PKGS"
+
+      - name: Restore apt cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+          restore-keys: ${{ steps.apt.outputs.prefix }}
+
+      - name: Install dependencies
+        timeout-minutes: 20
+        run: sh .github/workflows/scripts/apt-install.sh $APT_PKGS
+
+      - name: Save apt cache
+        if: env.APT_CACHE_SAVE == '1'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
 
       - name: Link with lld
         run: sh .github/workflows/scripts/use-lld.sh
@@ -1565,7 +1432,6 @@ jobs:
       - name: Enable ccache
         run: |
           set -eu
-          command -v ccache >/dev/null 2>&1 || sudo apt-get install -y -qq ccache
           export CCACHE_DIR="$HOME/.ccache"
           echo "CCACHE_DIR=$CCACHE_DIR" >> "$GITHUB_ENV"
           echo "/usr/lib/ccache" >> "$GITHUB_PATH"
