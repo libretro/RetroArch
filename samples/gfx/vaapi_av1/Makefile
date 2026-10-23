@@ -10,12 +10,13 @@ ifneq ($(SANITIZER),)
 CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
-all: submit_test$(EXE) picture_test$(EXE) session_test$(EXE) runtime_test$(EXE) old_sdk_test$(EXE) tiles_test$(EXE) tiles_trace_test$(EXE)
+all: pool_test$(EXE) submit_test$(EXE) picture_test$(EXE) session_test$(EXE) runtime_test$(EXE) old_sdk_test$(EXE) tiles_test$(EXE) tiles_trace_test$(EXE)
 session_test$(EXE): session_test.c ../vaapi_hevc/session_test.c ../../../gfx/common/vaapi_hevc_session.c ../../../gfx/common/vaapi_av1_session.h
 	$(CC) $(CFLAGS) session_test.c -o $@ $(LDFLAGS)
 runtime_test$(EXE): runtime_test.c ../vaapi_hevc/runtime_test.c ../vaapi_hevc/session_test.c ../vaapi_hevc/submit_test.c ../../../gfx/common/vaapi_hevc_runtime.c ../../../gfx/common/vaapi_av1_runtime.h ../../../gfx/common/vaapi_hevc_session.c ../../../gfx/common/vaapi_hevc_submit.c
 	$(CC) $(CFLAGS) runtime_test.c -o $@ $(LDFLAGS)
 check: all
+	$(RUNNER) ./pool_test$(EXE)
 	$(RUNNER) ./submit_test$(EXE)
 	$(RUNNER) ./picture_test$(EXE)
 	$(RUNNER) ./session_test$(EXE)
@@ -23,7 +24,7 @@ check: all
 	$(RUNNER) ./old_sdk_test$(EXE)
 	$(RUNNER) ./tiles_test$(EXE)
 clean:
-	rm -f submit_test submit_test.exe picture_test picture_test.exe tiles_test tiles_test.exe tiles_trace_test tiles_trace_test.exe old_sdk_test old_sdk_test.exe session_test session_test.exe runtime_test runtime_test.exe
+	rm -f pool_test pool_test.exe submit_test submit_test.exe picture_test picture_test.exe tiles_test tiles_test.exe tiles_trace_test tiles_trace_test.exe old_sdk_test old_sdk_test.exe session_test session_test.exe runtime_test runtime_test.exe
 .PHONY: all check clean
 
 old_sdk_test$(EXE): old_sdk_test.c ../../../gfx/common/vaapi_hevc_session.c ../../../gfx/common/vaapi_hevc_runtime.c ../../../gfx/common/vaapi_av1_session.h ../../../gfx/common/vaapi_av1_runtime.h
@@ -42,3 +43,6 @@ picture_test$(EXE): picture_test.c ../../../gfx/common/vaapi_av1_picture.h ../..
 
 submit_test$(EXE): submit_test.c ../../../gfx/common/vaapi_av1_submit.c ../../../gfx/common/vaapi_av1_submit.h ../../../gfx/common/vaapi_hevc_submit.c ../../../gfx/common/vaapi_av1_picture.h
 	$(CC) $(CFLAGS) submit_test.c -o $@ $(LDFLAGS)
+
+pool_test$(EXE): pool_test.c ../../../gfx/common/vaapi_av1_pool.c ../../../gfx/common/vaapi_av1_pool.h ../../../gfx/common/vaapi_av1_submit.c ../../../gfx/common/vaapi_hevc_submit.c ../../../gfx/common/vaapi_av1_picture.h
+	$(CC) $(CFLAGS) pool_test.c -o $@ $(LDFLAGS)
