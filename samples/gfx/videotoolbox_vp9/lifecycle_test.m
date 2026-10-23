@@ -38,6 +38,9 @@ int metal_frame_cv_pool_export(metal_frame_cv_pool_t *pool,
 int main(void)
 {
    int first, second;
+#ifdef HAVE_RAV1
+   rav1_hw_backend_t av1_foreign;
+#endif
    void *device = (void *)CFSTR("lifecycle device");
    metal_decoder_snapshot_t *snapshot;
    metal_decoder_snapshot_view_t held;
@@ -53,6 +56,9 @@ int main(void)
 #ifdef HAVE_RMP4
    memset(&hevc_foreign, 0, sizeof(hevc_foreign));
 #endif
+#ifdef HAVE_RAV1
+   memset(&av1_foreign, 0, sizeof(av1_foreign));
+#endif
    assert(!metal_video_decoder_start_supported(NULL, device, device, false));
    assert(!metal_video_decoder_start_supported(&first, NULL, device, false));
    assert(!metal_video_decoder_start_supported(&first, device, NULL, false));
@@ -65,6 +71,9 @@ int main(void)
 #ifdef HAVE_RVP9
    assert(rvp9_unset_hw_backend(&metal_video_decoder_vp9.offer));
 #endif
+#ifdef HAVE_RAV1
+   assert(rav1_unset_hw_backend(&metal_video_decoder_av1.offer));
+#endif
 #ifdef HAVE_RMP4
    assert(rh265_unset_hw_backend(&metal_video_decoder_hevc.backend.offer));
 #endif
@@ -75,12 +84,18 @@ int main(void)
 #ifdef HAVE_RVP9
    assert(rvp9_unset_hw_backend(&metal_video_decoder_vp9.offer));
 #endif
+#ifdef HAVE_RAV1
+   assert(rav1_unset_hw_backend(&metal_video_decoder_av1.offer));
+#endif
 #ifdef HAVE_RMP4
    assert(rh265_unset_hw_backend(&metal_video_decoder_hevc.backend.offer));
 #endif
    assert(metal_video_decoder_start_supported(&second, device, device, true));
 #ifdef HAVE_RVP9
    rvp9_set_hw_backend(&foreign);
+#endif
+#ifdef HAVE_RAV1
+   rav1_set_hw_backend(&av1_foreign);
 #endif
 #ifdef HAVE_RMP4
    rh265_set_hw_backend(&hevc_foreign);
@@ -92,6 +107,9 @@ int main(void)
    metal_video_decoder_release(held.device);
 #ifdef HAVE_RVP9
    assert(rvp9_unset_hw_backend(&foreign));
+#endif
+#ifdef HAVE_RAV1
+   assert(rav1_unset_hw_backend(&av1_foreign));
 #endif
 #ifdef HAVE_RMP4
    assert(rh265_unset_hw_backend(&hevc_foreign));

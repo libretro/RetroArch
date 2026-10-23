@@ -8,13 +8,18 @@
 #endif
 #ifdef HAVE_RVP9
 #include "videotoolbox_vp9_backend.h"
+#endif
+#ifdef HAVE_RAV1
+#include "videotoolbox_av1_backend.h"
+#endif
+#if defined(HAVE_RVP9) || defined(HAVE_RAV1)
 #include <TargetConditionals.h>
 #include <dlfcn.h>
 #endif
 #include <dispatch/dispatch.h>
 
 #if defined(METAL_DECODER_SNAPSHOT) && (defined(VIDEOTOOLBOX_HEVC_REGISTRY) \
-      || defined(VIDEOTOOLBOX_VP9_OWNER))
+      || defined(VIDEOTOOLBOX_VP9_OWNER) || defined(VIDEOTOOLBOX_AV1_OWNER))
 #define METAL_VIDEO_DECODER_DRIVER 1
 static bool metal_video_decoder_enabled(void *user);
 static dispatch_once_t metal_video_decoder_once;
@@ -27,10 +32,16 @@ static metal_decoder_snapshot_t metal_video_decoder_snapshot;
 #endif
 #ifdef VIDEOTOOLBOX_VP9_OWNER
 static videotoolbox_vp9_backend_t metal_video_decoder_vp9;
+#endif
+#ifdef VIDEOTOOLBOX_AV1_OWNER
+static videotoolbox_av1_backend_t metal_video_decoder_av1;
+#endif
+#if defined(VIDEOTOOLBOX_VP9_OWNER) || defined(VIDEOTOOLBOX_AV1_OWNER)
+typedef void (*metal_video_decoder_register_t)(CMVideoCodecType);
 
-static videotoolbox_vp9_register_t metal_video_decoder_registration(void)
+static metal_video_decoder_register_t metal_video_decoder_registration(void)
 {
-   videotoolbox_vp9_register_t registration = NULL;
+   metal_video_decoder_register_t registration = NULL;
 #if TARGET_OS_OSX && !TARGET_OS_MACCATALYST
    if (@available(macOS 11.0, *))
    {
@@ -72,6 +83,9 @@ static void metal_video_decoder_publish(void *unused)
 #ifdef VIDEOTOOLBOX_VP9_OWNER
    rvp9_set_hw_backend(&metal_video_decoder_vp9.offer);
 #endif
+#ifdef VIDEOTOOLBOX_AV1_OWNER
+   rav1_set_hw_backend(&metal_video_decoder_av1.offer);
+#endif
 }
 
 static void metal_video_decoder_withdraw(void *unused)
@@ -82,6 +96,9 @@ static void metal_video_decoder_withdraw(void *unused)
 #endif
 #ifdef VIDEOTOOLBOX_VP9_OWNER
    rvp9_unset_hw_backend(&metal_video_decoder_vp9.offer);
+#endif
+#ifdef VIDEOTOOLBOX_AV1_OWNER
+   rav1_unset_hw_backend(&metal_video_decoder_av1.offer);
 #endif
 }
 
@@ -128,6 +145,13 @@ metal_video_decoder_initialize(void *unused)
             metal_decoder_snapshot_acquire, metal_video_decoder_release,
             metal_decoder_snapshot_current, metal_video_decoder_enabled,
             metal_video_decoder_registration(), 8u * 1024 * 1024, 1))
+      return;
+#endif
+#ifdef VIDEOTOOLBOX_AV1_OWNER
+   if (!videotoolbox_av1_backend_init(&metal_video_decoder_av1, snapshot,
+            metal_decoder_snapshot_acquire, metal_video_decoder_release,
+            metal_decoder_snapshot_current, metal_video_decoder_enabled,
+            metal_video_decoder_registration(), 8u * 1024 * 1024))
       return;
 #endif
    retro_atomic_store_release_ptr(&metal_video_decoder_active, snapshot);

@@ -98,7 +98,8 @@ with tempfile.TemporaryDirectory(prefix="vt-vp9-setup-") as directory:
             subprocess.run([str(binary)], check=True, timeout=90)
 
         codec_objects = {}
-        for codec, source in (("vp9", "vp9/rvp9.c"), ("hevc", "h265/rh265.c")):
+        for codec, source in (("vp9", "vp9/rvp9.c"), ("hevc", "h265/rh265.c"),
+                              ("av1", "av1/rav1_hw.c")):
             obj = path / (codec + ".o")
             command = compiler + ["-O2", "-Wno-unused-parameter",
                 "-I" + str(root / "libretro-common/include"),
@@ -108,7 +109,11 @@ with tempfile.TemporaryDirectory(prefix="vt-vp9-setup-") as directory:
             codec_objects[codec] = str(obj)
         for features, codecs in ((["-DHAVE_RVP9"], ["vp9"]),
                 (["-DHAVE_RMP4"], ["hevc"]),
-                (["-DHAVE_RMP4", "-DHAVE_RVP9"], ["hevc", "vp9"])):
+                (["-DHAVE_RMP4", "-DHAVE_RVP9"], ["hevc", "vp9"]),
+                (["-DHAVE_RAV1"], ["av1"]),
+                (["-DHAVE_RMP4", "-DHAVE_RAV1"], ["hevc", "av1"]),
+                (["-DHAVE_RVP9", "-DHAVE_RAV1"], ["vp9", "av1"]),
+                (["-DHAVE_RMP4", "-DHAVE_RVP9", "-DHAVE_RAV1"], ["hevc", "vp9", "av1"])):
             for mode in ("-fobjc-arc", "-fno-objc-arc"):
                 command = compiler + flags + features + [mode, "-fblocks",
                     "-Wno-unused-function", str(here / "lifecycle_test.m"),
