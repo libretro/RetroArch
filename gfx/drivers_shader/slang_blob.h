@@ -47,6 +47,9 @@ struct slang_blob
    const uint32_t            *words;    /* into mem */
    size_t                     nwords;
    unsigned                   refs;
+   char                       key[32];  /* the pass key it is listed under */
+   bool                       fragment;
+   bool                       listed;   /* in the table */
 };
 
 /* Takes malloc'd SPIR-V words of a module no tables describe (glslang's,
@@ -64,6 +67,25 @@ struct slang_blob *slang_blob_adopt_result(struct rslc_result *res,
 
 struct slang_blob *slang_blob_ref(struct slang_blob *b);
 void slang_blob_unref(struct slang_blob *b);
+
+/* The table of live blobs, keyed by the pass they were compiled from:
+ * @key is the 32-character cache key of the pass's two stage sources
+ * and compiler (spirv_cache_compute_hash), and a pass that names a
+ * .slang another live pass already compiled - the same helper in two
+ * slots of one preset, or the chain being rebuilt while the one on
+ * screen still holds its blobs - takes the blob it has.  The table holds
+ * no reference: a blob leaves it when its last reference goes.  It is
+ * read and written by the thread that builds chains. */
+
+/* A new reference to the listed blob of that stage, or NULL. */
+struct slang_blob *slang_blob_table_find(const char *key, bool fragment);
+
+/* Lists @b under @key.  Nothing happens for a blob already listed. */
+void slang_blob_table_add(struct slang_blob *b, const char *key,
+      bool fragment);
+
+/* @live: blobs listed now; @reused: finds that returned one. */
+void slang_blob_table_stats(size_t *live, unsigned *reused);
 
 RETRO_END_DECLS
 

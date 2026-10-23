@@ -8518,11 +8518,14 @@ static bool vulkan_set_shader(void *data,
       enum rarch_shader_type type, const char *path)
 {
    vk_t *vk = (vk_t*)data;
+   vulkan_filter_chain_t *old;
+   bool ok  = true;
    if (!vk)
       return false;
 
-   if (vk->filter_chain)
-      vulkan_filter_chain_free((vulkan_filter_chain_t*)vk->filter_chain);
+   /* The outgoing chain lives until the new one is built, so the
+    * stages both name are taken from it instead of compiled again. */
+   old              = (vulkan_filter_chain_t*)vk->filter_chain;
    vk->filter_chain = NULL;
    vulkan_views_set_preset(vk, NULL);
 
@@ -8533,19 +8536,17 @@ static bool vulkan_set_shader(void *data,
    }
 
    if (!path || !*path)
-   {
       vulkan_init_default_filter_chain(vk);
-      return true;
-   }
-
-   if (!vulkan_init_filter_chain_preset(vk, path))
+   else if (!vulkan_init_filter_chain_preset(vk, path))
    {
       RARCH_ERR("[Vulkan] Failed to create filter chain: \"%s\". Falling back to stock.\n", path);
       vulkan_init_default_filter_chain(vk);
-      return false;
+      ok = false;
    }
 
-   return true;
+   if (old)
+      vulkan_filter_chain_free(old);
+   return ok;
 }
 
 static void vulkan_set_projection(vk_t *vk,

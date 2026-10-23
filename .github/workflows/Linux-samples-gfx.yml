@@ -405,6 +405,28 @@ jobs:
           WINEDEBUG=-all timeout 300 wine ./slang_last_pass_target_test.exe
           make clean
 
+      - name: Build and run shader_chain_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/shader_chain
+        run: |
+          set -eu
+          # The blob table: a .slang two passes name compiles once, and
+          # a chain built while the one it replaces is alive compiles
+          # only the passes the live chain does not have.
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 \
+             timeout 120 make check
+          make clean
+
+      - name: Build and run shader_chain_test (mingw-w64, Wine)
+        shell: bash
+        working-directory: samples/gfx/shader_chain
+        run: |
+          set -eu
+          make clean CC=x86_64-w64-mingw32-gcc && make -j$(nproc) all CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++ LDFLAGS="-static"
+          WINEDEBUG=-all timeout 300 wine ./shader_chain_test.exe
+          make clean
+
       - name: Build and run gl2/gl3 last_pass_fbo tests (ASan + UBSan)
         shell: bash
         working-directory: samples/gfx/gl_last_pass_fbo

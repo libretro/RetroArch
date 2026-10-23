@@ -1298,6 +1298,24 @@ static char *slang_rslc_print_stage(const char *source,
    rslc_result_free(&res, &opts);
    return text;
 }
+
+/* Prints both stages of @output for @text, or neither: the driver takes
+ * one path for a pass. */
+static void slang_output_print_text(glslang_output *output,
+      const char *vertex_source, const char *fragment_source,
+      const struct slang_text_target *text)
+{
+   output->vertex_text = slang_rslc_print_stage(vertex_source,
+         GLSLANG_COMPILE_STAGE_VERTEX, text);
+   if (output->vertex_text)
+      output->fragment_text = slang_rslc_print_stage(fragment_source,
+            GLSLANG_COMPILE_STAGE_FRAGMENT, text);
+   if (!output->fragment_text)
+   {
+      free(output->vertex_text);
+      output->vertex_text = NULL;
+   }
+}
 #endif
 
 /* Compiles one stage; *compiler names what produced the words, for
@@ -1348,6 +1366,30 @@ static bool slang_compile_stage(const char *source,
 /* -----------------------------------------------------------------------
  * glslang_compile_shader — now uses shader_line_buf
  * ----------------------------------------------------------------------- */
+/* Gives @output the blobs the table lists under @key, both stages or
+ * neither. */
+static bool slang_output_take_listed(glslang_output *output, const char *key)
+{
+   struct slang_blob *vs = slang_blob_table_find(key, false);
+   struct slang_blob *fs = vs ? slang_blob_table_find(key, true) : NULL;
+   if (!fs)
+   {
+      slang_blob_unref(vs);
+      return false;
+   }
+   glslang_output_set_blob(output, false, vs);
+   glslang_output_set_blob(output, true, fs);
+   return true;
+}
+
+/* Lists both stages of @output under @key for the passes still to
+ * come. */
+static void slang_output_list(const glslang_output *output, const char *key)
+{
+   slang_blob_table_add(output->vertex_blob, key, false);
+   slang_blob_table_add(output->fragment_blob, key, true);
+}
+
 bool glslang_compile_shader(const char *shader_path, glslang_output *output)
 {
    return glslang_compile_shader_cached(shader_path, output, NULL);
@@ -1387,6 +1429,7 @@ bool glslang_compile_shader_text(const char *shader_path,
 #endif
       const char *used      = compiler;
       struct slang_blob *blob = NULL;
+      bool listed           = false;
 
       if (!shader_line_buf_init(&lines))
          return false;
@@ -1411,6 +1454,32 @@ bool glslang_compile_shader_text(const char *shader_path,
             fallback_filename);
 #endif
 
+      /* A pass a live chain already compiled: its blobs, by reference */
+      listed = slang_output_take_listed(output, cache_filename);
+#if defined(HAVE_RSLC) && defined(HAVE_GLSLANG)
+      if (!listed && slang_output_take_listed(output, fallback_filename))
+      {
+         listed = true;
+         used   = "glslang";
+      }
+#endif
+      if (listed)
+      {
+         if (!glslang_parse_meta(&lines, &output->meta))
+            goto error;
+#if defined(HAVE_RSLC)
+         if (text && !strcmp(used, "rslc"))
+            slang_output_print_text(output, vertex_source, fragment_source,
+                  text);
+#endif
+         RARCH_LOG("[Slang] Reused the compiled stages of \"%s\".\n",
+               shader_path);
+         free(vertex_source);
+         free(fragment_source);
+         shader_line_buf_free(&lines);
+         return true;
+      }
+
       /* Try to load from cache */
       if (spirv_cache_load(cache_filename, output))
       {
@@ -1430,19 +1499,10 @@ bool glslang_compile_shader_text(const char *shader_path,
             /* a hit serves the same text a miss would, from the sources
              * already in hand */
             if (text && !strcmp(compiler, "rslc"))
-            {
-               output->vertex_text = slang_rslc_print_stage(vertex_source,
-                     GLSLANG_COMPILE_STAGE_VERTEX, text);
-               if (output->vertex_text)
-                  output->fragment_text = slang_rslc_print_stage(fragment_source,
-                        GLSLANG_COMPILE_STAGE_FRAGMENT, text);
-               if (!output->fragment_text)
-               {
-                  free(output->vertex_text);
-                  output->vertex_text = NULL;
-               }
-            }
+               slang_output_print_text(output, vertex_source, fragment_source,
+                     text);
 #endif
+            slang_output_list(output, cache_filename);
             RARCH_LOG("[Slang] Loaded shader from cache: \"%s\".\n", shader_path);
             free(vertex_source);
             free(fragment_source);
@@ -1498,9 +1558,12 @@ bool glslang_compile_shader_text(const char *shader_path,
 #if defined(HAVE_RSLC) && defined(HAVE_GLSLANG)
       spirv_cache_save(used != compiler ? fallback_filename : cache_filename,
             output);
+      slang_output_list(output,
+            used != compiler ? fallback_filename : cache_filename);
 #else
       (void)used;
       spirv_cache_save(cache_filename, output);
+      slang_output_list(output, cache_filename);
 #endif
 
       free(vertex_source);
