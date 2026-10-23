@@ -1,6 +1,5 @@
 /* Copyright (C) 2026 The RetroArch team.
  * SPDX-License-Identifier: GPL-3.0-or-later */
-#define _POSIX_C_SOURCE 200809L
 #ifdef NDEBUG
 #error Native VideoToolbox acceptance requires assertions
 #endif
