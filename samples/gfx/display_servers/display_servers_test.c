@@ -344,9 +344,17 @@ int XRRGetOutputProperty(Display *dpy, RROutput output, Atom property,
    return Success;
 }
 
-/* The modeline path traps X errors around each RandR call; the
- * stub never raises one, so the handler is stored and returned. */
 static XErrorHandler s_error_handler;
+static unsigned s_add_error, s_forwarded_errors;
+static Display s_foreign_display;
+
+static int previous_error_handler(Display *dpy, XErrorEvent *error)
+{
+   (void)dpy;
+   (void)error;
+   s_forwarded_errors++;
+   return 0;
+}
 XErrorHandler XSetErrorHandler(XErrorHandler handler)
 {
    XErrorHandler old = s_error_handler;
@@ -642,6 +650,13 @@ void XRRAddOutputMode(Display *dpy, RROutput out, RRMode mode)
 {
    (void)dpy; (void)out; (void)mode;
    s_log.add_output_mode_calls++;
+   if (s_add_error && s_error_handler)
+   {
+      XErrorEvent error;
+      memset(&error, 0, sizeof(error));
+      error.error_code = BadMatch;
+      s_error_handler(s_add_error == 1 ? dpy : &s_foreign_display, &error);
+   }
 }
 
 void XRRDeleteOutputMode(Display *dpy, RROutput out, RRMode mode)
@@ -1156,6 +1171,50 @@ static int test_modeline_lifecycle(void)
    return 0;
 }
 
+static int test_modeline_error_routing(void)
+{
+   stub_cfg_t cfg;
+   video_modeline_disp_t ds;
+   video_modeline_t mode;
+   unsigned kind;
+   for (kind = 1; kind <= 2; kind++)
+   {
+      void *data;
+      bool added;
+      cfg_default(&cfg);
+      cfg.output_crtc_in_screen = 1;
+      stub_reset(&cfg);
+      memset(&ds, 0, sizeof(ds));
+      memset(&mode, 0, sizeof(mode));
+      strcpy(ds.screen, "auto");
+      mode.hactive = 320;
+      mode.vactive = 240;
+      mode.vfreq = 60.0;
+      data = dispserv_x11.init();
+      if (!data || !dispserv_x11.modeline_open(data, &ds)) return 1;
+      s_add_error = kind;
+      s_forwarded_errors = 0;
+      s_error_handler = previous_error_handler;
+      added = dispserv_x11.modeline_add(data, &mode);
+      s_add_error = 0;
+      if (added != (kind == 2)
+            || s_forwarded_errors != (kind == 2 ? 1U : 0U)
+            || s_error_handler != previous_error_handler
+            || (kind == 1 && mode.platform_data))
+      {
+         fprintf(stderr, "FAIL: modeline error routing, kind %u\n", kind);
+         return 1;
+      }
+      if (added) dispserv_x11.modeline_delete(data, &mode);
+      dispserv_x11.modeline_close(data);
+      dispserv_x11.destroy(data);
+      s_error_handler = NULL;
+      if (stub_leaks("modeline error routing")) return 1;
+   }
+   puts("[pass] modeline traps its errors and forwards other connections");
+   return 0;
+}
+
 static int test_modeline_query_failures(void)
 {
    int i;
@@ -1306,6 +1365,8 @@ int main(void)
    if (test_modeline_lifecycle())
       return 1;
    if (test_modeline_query_failures())
+      return 1;
+   if (test_modeline_error_routing())
       return 1;
 
    puts("ALL OK");

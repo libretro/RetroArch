@@ -350,10 +350,10 @@ static int (*x11_ml_old_error_handler)(Display *, XErrorEvent *) = NULL;
 
 static int x11_ml_error_handler(Display *dpy, XErrorEvent *err)
 {
-   if (x11_ml_current)
-      x11_ml_current->xerrors |= x11_ml_current->xerrors_flag;
-   if (x11_ml_old_error_handler)
-      x11_ml_old_error_handler(dpy, err);
+   if (!x11_ml_current || dpy != x11_ml_current->dpy)
+      return x11_ml_old_error_handler
+         ? x11_ml_old_error_handler(dpy, err) : 0;
+   x11_ml_current->xerrors |= x11_ml_current->xerrors_flag;
    RARCH_ERR("[XRandR] Error code %d flags %02x\n", err->error_code,
          x11_ml_current ? x11_ml_current->xerrors : 0);
    return 0;

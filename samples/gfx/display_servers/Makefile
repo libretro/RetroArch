@@ -29,7 +29,15 @@ ifneq ($(SANITIZER),)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
 
-all: $(TARGET)
+PYTHON ?= python3
+ifeq ($(OS),Windows_NT)
+all: error-scope-check
+else
+all: $(TARGET) error-scope-check
+endif
+
+error-scope-check:
+	$(PYTHON) error_scope_test.py --cc "$(CC)"
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -45,4 +53,4 @@ clean:
 	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(TARGET) $(OBJS)
 
-.PHONY: clean
+.PHONY: all clean error-scope-check
