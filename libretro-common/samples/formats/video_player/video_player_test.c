@@ -76,7 +76,7 @@ typedef struct
    int wait_at;
    bool waiting;
    int duration_ms;
-   int64_t movie_ns, lead_ns;
+   int64_t movie_ns, lead_ns, frame_step_ns;
    int catchup;        /* last value set */
    int catchup_sets;
    int argb;
@@ -111,7 +111,8 @@ int64_t image_transfer_anim_stream_frame_time_ns(void *stream,
    fake_t *f = (fake_t*)stream;
    (void)type;
    return f->pos ? f->lead_ns + (int64_t)(f->pos - 1)
-      * f->duration_ms * 1000000 : -1;
+      * (f->frame_step_ns ? f->frame_step_ns
+            : (int64_t)f->duration_ms * 1000000) : -1;
 }
 
 static uint32_t frame_px(int k, bool argb)
@@ -296,6 +297,7 @@ typedef struct
 {
    uint32_t slots[2][(W + 3) * H];
    unsigned stride[2];
+   int64_t times[4];
    int seen[MAX_SEEN];
    int nseen;
    int bad_px;
@@ -373,6 +375,8 @@ static enum video_player_present sink_present(void *user,
       if (p != want_argb)
          k->bad_px++;
    }
+   if (k->nseen < 4)
+      k->times[k->nseen] = fr->time_us;
    if (k->nseen < MAX_SEEN)
       k->seen[k->nseen] = idx;
    k->nseen++;
@@ -413,6 +417,8 @@ static enum video_player_present sink_present_hw(void *user,
    if (k->nseen && k->nseen <= MAX_SEEN && k->seen[k->nseen - 1] == idx
          && k->held < 0)
       k->hw_twice = true;
+   if (k->nseen < 4)
+      k->times[k->nseen] = fr->time_us;
    if (k->nseen < MAX_SEEN)
       k->seen[k->nseen] = idx;
    k->nseen++;
@@ -567,6 +573,8 @@ static void lane_order_and_default(void)
    video_player_poll(p, 100000);
    CHECK(k.nseen == 2 && k.bad_px == 0,
          "swizzle: %d frames, %d pixels wrong", k.nseen, k.bad_px);
+   CHECK(k.times[0] == -1 && k.times[1] == -1,
+         "animation: no fabricated movie timestamp");
    video_player_free(p);
 
    /* the same without slots: handed over as is, marked non-native */
@@ -1249,10 +1257,43 @@ static void lane_movie(bool threaded, bool hardware, bool pause_lead)
    CHECK(k.seen[0] == 0 && k.seen[1] == 1
          && k.seen[2] == 0 && k.seen[3] == 1 && !k.bad_px,
          "movie: repeated picture sequence");
+   CHECK(k.times[0] == 1000000 && k.times[1] == 1100000
+         && k.times[2] == 5000000 && k.times[3] == 5100000,
+         "movie: published timestamps preserve lead and loop epoch");
    video_player_free(p);
    video_player_worker_deinit();
    CHECK(!hardware || f.hw_made == f.hw_abandoned + k.hw_taken,
          "movie: every hardware lease accounted for");
+}
+
+static void lane_timestamp_precision(bool threaded)
+{
+   fake_t f;
+   sink_t k;
+   video_player_sink_t s;
+   video_player_t *p;
+   int tick;
+   fake_init(&f, 3, 42);
+   f.movie_ns = 200000000;
+   f.lead_ns = 1234567;
+   f.frame_step_ns = 41708333;
+   sink_init(&k, &s, true);
+   p = video_player_new(&f, IMAGE_TYPE_MP4, 1, &s,
+         threaded ? 0 : VIDEO_PLAYER_INLINE);
+   CHECK(p != NULL, "timestamp: allocation");
+   if (!p)
+      return;
+   for (tick = 0; tick < 250 && k.nseen < 3; tick++)
+   {
+      video_player_poll(p, (int64_t)tick * 1000);
+      if (threaded)
+         retro_sleep(1);
+   }
+   CHECK(k.nseen == 3 && k.times[0] == 1234 && k.times[1] == 42942
+         && k.times[2] == 84651,
+         "timestamp: fractional cadence survives millisecond frame duration");
+   video_player_free(p);
+   video_player_worker_deinit();
 }
 
 static void lane_movie_stop(bool threaded)
@@ -1565,6 +1606,10 @@ int main(void)
    lane_seek(true, true);
    lane_seek_stop(true);
    lane_pause(true);
+#endif
+   lane_timestamp_precision(false);
+#ifdef HAVE_THREADS
+   lane_timestamp_precision(true);
 #endif
    lane_inline_release();
    lane_padded();

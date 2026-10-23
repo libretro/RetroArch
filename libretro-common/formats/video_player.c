@@ -806,6 +806,7 @@ static enum video_player_state vp_poll_threaded(video_player_t *p,
    fr.width       = p->width;
    fr.height      = p->height;
    fr.duration_ms = ju->duration_ms;
+   fr.time_us     = ju->time_us;
    fr.how         = VIDEO_PLAYER_DIRECT;
    fr.native      = true;
    fr.hw          = ju->hw ? &p->hw[p->upload] : NULL;
@@ -975,13 +976,14 @@ static enum video_player_state vp_poll_inline(video_player_t *p,
    if (buf && p->sink.slot_end)
       p->sink.slot_end(p->sink.user, 0);
 decoded_frame:
+   fr.time_us = vp_frame_time(p, false);
    if (budgeted)
       vp_budget_used_us += cpu_features_get_time_usec() - budget_now;
    if (p->movie_us)
    {
       p->inline_frame = fr;
       p->inline_ready = true;
-      vp_movie_deadline(p, vp_frame_time(p, false), now);
+      vp_movie_deadline(p, fr.time_us, now);
       if (now < p->next_us) return VIDEO_PLAYER_PLAYING;
    }
 present_frame:

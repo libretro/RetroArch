@@ -97,6 +97,8 @@ enum video_player_state
 
 typedef struct video_player_frame
 {
+   /* Movie timeline, including completed loops; -1 when unavailable. */
+   int64_t time_us;
    /* The frame in the stream's canvas, valid until the next poll; NULL
     * when it is in the slot. */
    const uint32_t *pixels;
