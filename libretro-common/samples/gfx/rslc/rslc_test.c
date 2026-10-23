@@ -1482,6 +1482,79 @@ static void test_blob(void)
    CHECK(!rslc_blob_open(NULL, 0, &r));
 }
 
+/* How many instructions of opcode @op a module holds. */
+static unsigned spv_count(const uint32_t *w, size_t n, unsigned op)
+{
+   size_t   at = 5;
+   unsigned k  = 0;
+   while (at < n && (w[at] >> 16))
+   {
+      if ((w[at] & 0xffffu) == op)
+         k++;
+      at += w[at] >> 16;
+   }
+   return k;
+}
+
+/* The shapes glslang gives ?: and && / ||, which the emitter mirrors
+ * so a driver's compiler rounds the two modules alike: OpSelect only
+ * over variables and constants, OpLogicalAnd only over a trivial
+ * right side, control flow otherwise. */
+static void test_shapes(void)
+{
+   struct rslc_opts   o;
+   struct rslc_result r;
+   char               err[128];
+   static const char *srcs[] = {
+      "float g(float q) { return q * 2.0; }\n"
+      "void main() { float y = 1.0; FragColor = vec4(x > 0.0 ? x : y); }\n",         /* select */
+      "void main() { FragColor = vec4(x > 0.0 ? vec3(1.0) : vec3(0.5), 1.0); }\n",   /* select: constants */
+      "float g(float q) { return q * 2.0; }\n"
+      "void main() { FragColor = vec4(x > 0.0 ? g(x) : 1.0); }\n",                   /* branch: a call */
+      "void main() { FragColor = vec4(x > 0.0 ? params.a : 1.0); }\n",               /* branch: a member */
+      "void main() { FragColor = vec4(x > 0.0 ? -x : 1.0); }\n",                     /* branch: an operator */
+      "void main() { float d = x; FragColor = vec4((x > 0.0 && d > 0.5) ? 1.0 : 0.0); }\n", /* and: comparison of leaves */
+      "float g(float q) { return q * 2.0; }\n"
+      "void main() { FragColor = vec4((x > 0.0 && g(x) > 0.5) ? 1.0 : 0.0); }\n",    /* short circuit: a call */
+      "void main() { FragColor = vec4((x > 0.0 || params.a > 0.5) ? 1.0 : 0.0); }\n" /* short circuit: member in a comparison */
+   };
+   /* OpSelect 169, OpLogicalAnd 167, OpLogicalOr 166, OpBranchConditional 250 */
+   static const unsigned want_select[] = { 1, 1, 0, 0, 0, 1, 1, 1 };
+   static const unsigned want_and[]    = { 0, 0, 0, 0, 0, 1, 0, 0 };
+   static const unsigned want_or[]     = { 0, 0, 0, 0, 0, 0, 0, 0 };
+   static const unsigned want_branch[] = { 0, 0, 1, 1, 1, 0, 1, 1 };
+   unsigned i;
+
+   for (i = 0; i < sizeof(srcs) / sizeof(srcs[0]); i++)
+   {
+      char src[1024];
+      strcpy(src, "#version 450\n"
+            "layout(push_constant) uniform Push { float a; float b; } params;\n"
+            "layout(location = 0) in float x;\n"
+            "layout(location = 0) out vec4 FragColor;\n");
+      strcat(src, srcs[i]);
+      opts_default(&o, err, sizeof(err));
+      o.dst = RSLC_DST_SPIRV;
+      CHECK(rslc_compile(src, strlen(src), RSLC_STAGE_FRAGMENT, &o, &r));
+      if (!r.blob)
+      {
+         fprintf(stderr, "  case %u: %s\n", i, err);
+         continue;
+      }
+      if (spv_count(r.spirv, r.spirv_len, 169) != want_select[i]
+            || spv_count(r.spirv, r.spirv_len, 167) != want_and[i]
+            || spv_count(r.spirv, r.spirv_len, 166) != want_or[i]
+            || spv_count(r.spirv, r.spirv_len, 250) != want_branch[i])
+      {
+         fprintf(stderr, "FAIL shapes case %u: select %u and %u or %u branch %u\n", i,
+               spv_count(r.spirv, r.spirv_len, 169), spv_count(r.spirv, r.spirv_len, 167),
+               spv_count(r.spirv, r.spirv_len, 166), spv_count(r.spirv, r.spirv_len, 250));
+         fails++;
+      }
+      rslc_result_free(&r, &o);
+   }
+}
+
 /* The CafeGLSL flavour: version 150, both blocks as uniform blocks
  * under their source names, a location on every in and out, samplers
  * under their source names, and the extension GLSL 150 needs for the
@@ -1731,6 +1804,7 @@ int main(int argc, char **argv)
    test_glsl();
    test_hlsl();
    test_msl();
+   test_shapes();
    test_cafe();
    test_ingest();
 

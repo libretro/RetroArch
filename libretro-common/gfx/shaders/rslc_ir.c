@@ -2351,38 +2351,55 @@ static uint32_t spv_phi2(struct spv_emit *e, uint32_t tid, uint32_t a, uint32_t 
    return spv_fn_result(e, SpvOpPhi, tid, w, 4, prec);
 }
 
-static bool spv_node_has_effects(struct spv_emit *e, uint32_t node)
+/* glslang's shapes for ?: and && / ||, mirrored so the two modules
+ * branch alike and a driver's compiler rounds them alike.  A ?: of
+ * scalar or vector type is an OpSelect when each side is a plain
+ * variable or a constant expression, control flow otherwise; the right
+ * side of && / || is evaluated unconditionally (OpLogicalAnd / Or)
+ * when it is a leaf - a variable or a constant - or one comparison,
+ * not, member, constant index, any or all over leaves, and short
+ * circuits otherwise. */
+static bool spv_leaf(struct spv_emit *e, uint32_t node)
 {
-   const struct rslc_node *n;
-   uint32_t i, cnt;
-   if (!node)
-      return false;
-   n = rslc_node_at(e->c, node);
+   const struct rslc_node *n = rslc_node_at(e->c, node);
+   struct rslc_cval cv;
+   if (n->op == RSLC_OP_VAR)
+   {
+      const struct rslc_var *v = e->c->prog.vars[n->a];
+      return !(v->storage == RSLC_ST_PARAM && v->dir != RSLC_DIR_IN);
+   }
+   return n->op == RSLC_OP_CONST || rslc_const_eval(e->c, node, &cv);
+}
+
+static bool spv_trivial_rhs(struct spv_emit *e, uint32_t node)
+{
+   const struct rslc_node *n = rslc_node_at(e->c, node);
+   if (spv_leaf(e, node))
+      return true;
    switch (n->op)
    {
-      case RSLC_OP_CONST: case RSLC_OP_VAR:
-         return false;
-      case RSLC_OP_CALL: case RSLC_OP_ASSIGN:
-         return true;
       case RSLC_OP_UNARY:
-         return n->aux >= RSLC_UN_PREINC || spv_node_has_effects(e, n->a);
-      case RSLC_OP_MEMBER: case RSLC_OP_SWIZZLE: case RSLC_OP_CONVERT:
-         return spv_node_has_effects(e, n->a);   /* b is not a node */
+         return n->aux == RSLC_UN_NOT && spv_leaf(e, n->a);
+      case RSLC_OP_CONVERT:
+         return n->type->base == RSLC_BASE_BOOL && spv_leaf(e, n->a);
+      case RSLC_OP_BINARY:
+         switch (n->aux)
+         {
+            case RSLC_BIN_EQ: case RSLC_BIN_NE: case RSLC_BIN_LT: case RSLC_BIN_GT:
+            case RSLC_BIN_LE: case RSLC_BIN_GE: case RSLC_BIN_XOR:
+               return spv_leaf(e, n->a) && spv_leaf(e, n->b);
+            default:
+               return false;
+         }
+      case RSLC_OP_MEMBER:
+         return spv_leaf(e, n->a);
+      case RSLC_OP_INDEX:
+         return spv_leaf(e, n->a) && spv_leaf(e, n->b);
       case RSLC_OP_BUILTIN:
-         if (n->a == RSLC_BFN_MODF || n->a == RSLC_BFN_FREXP || n->a == RSLC_BFN_UADDCARRY
-               || n->a == RSLC_BFN_USUBBORROW || n->a == RSLC_BFN_UMULEXTENDED
-               || n->a == RSLC_BFN_IMULEXTENDED)
-            return true;
-         /* fall through */
-      case RSLC_OP_CONSTRUCT:
-         cnt = rslc_list_len(e->c, n->b);
-         for (i = 0; i < cnt; i++)
-            if (spv_node_has_effects(e, rslc_list_item(e->c, n->b, i)))
-               return true;
-         return false;
+         return (n->a == RSLC_BFN_ANY || n->a == RSLC_BFN_ALL)
+            && rslc_list_len(e->c, n->b) == 1 && spv_leaf(e, rslc_list_item(e->c, n->b, 0));
       default:
-         return spv_node_has_effects(e, n->a) || spv_node_has_effects(e, n->b)
-            || spv_node_has_effects(e, n->c);
+         return false;
    }
 }
 
@@ -3038,7 +3055,7 @@ static uint32_t spv_binary_node(struct spv_emit *e, const struct rslc_node *n)
    if (!tid)
       return 0;
 
-   if (op == RSLC_BIN_AND || op == RSLC_BIN_OR)
+   if ((op == RSLC_BIN_AND || op == RSLC_BIN_OR) && !spv_trivial_rhs(e, n->b))
    {
       /* short circuit: a && b  ==  a ? b : false */
       uint32_t lhs_label, rhs_label, merge, rhs_end;
@@ -3086,6 +3103,10 @@ static uint32_t spv_binary_node(struct spv_emit *e, const struct rslc_node *n)
          return spv_equal(e, ta, a, b, op == RSLC_BIN_NE, prec);
       case RSLC_BIN_XOR:
          return spv_r2(e, SpvOpLogicalNotEqual, tid, a, b, prec);
+      case RSLC_BIN_AND:
+         return spv_r2(e, SpvOpLogicalAnd, tid, a, b, prec);
+      case RSLC_BIN_OR:
+         return spv_r2(e, SpvOpLogicalOr, tid, a, b, prec);
       case RSLC_BIN_LT: case RSLC_BIN_GT: case RSLC_BIN_LE: case RSLC_BIN_GE:
          return spv_r2(e, spv_binop(ta, op), tid, a, b, prec);
       default:
@@ -3106,6 +3127,17 @@ static uint32_t spv_binary_node(struct spv_emit *e, const struct rslc_node *n)
          if (ta->kind == RSLC_TY_MAT)
             return spv_r2(e, SpvOpMatrixTimesScalar, tid, a, b, prec);
          return spv_r2(e, SpvOpMatrixTimesScalar, tid, b, a, prec);
+      }
+      /* matrix / scalar is the matrix times the reciprocal, as glslang
+       * lowers it (there is no OpMatrixDivScalar), so the two modules
+       * round alike */
+      if (op == RSLC_BIN_DIV && ta->kind == RSLC_TY_MAT && tb->kind == RSLC_TY_SCALAR)
+      {
+         uint32_t one = spv_const_float(e, 1.0f);
+         uint32_t rb  = one ? spv_r2(e, SpvOpFDiv, spv_type(e, tb), one, b, prec) : 0;
+         if (!rb)
+            return 0;
+         return spv_r2(e, SpvOpMatrixTimesScalar, tid, a, rb, prec);
       }
       /* + - / component-wise by column; a scalar operand is splatted */
       {
@@ -3466,7 +3498,7 @@ static uint32_t spv_rvalue_impl(struct spv_emit *e, uint32_t node)
          if (!tid || !cond)
             return 0;
          if ((n->type->kind == RSLC_TY_SCALAR || n->type->kind == RSLC_TY_VEC)
-               && !spv_node_has_effects(e, n->b) && !spv_node_has_effects(e, n->c))
+               && spv_leaf(e, n->b) && spv_leaf(e, n->c))
          {
             uint32_t a = spv_rvalue(e, n->b);
             uint32_t b = a ? spv_rvalue(e, n->c) : 0;
