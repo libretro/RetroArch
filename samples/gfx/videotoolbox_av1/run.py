@@ -70,7 +70,7 @@ with tempfile.TemporaryDirectory(prefix="vt-av1-setup-") as directory:
         subprocess.run(command, check=True)
         result = subprocess.run([sys.executable, str(here / "native_run.py"),
                                  "--binary", str(binary)], check=False)
-        if not result.returncode and args.pipeline:
+        if result.returncode in (0, 77) and args.pipeline:
             import importlib.util
             specification = importlib.util.spec_from_file_location(
                 "hevc_metal_fixture", here.parent / "videotoolbox_hevc/run.py")
@@ -99,9 +99,11 @@ with tempfile.TemporaryDirectory(prefix="vt-av1-setup-") as directory:
                 str(here / "native_pixel_test.c"), *objects, str(metal_object),
                 "-o", str(binary), "-framework", "Foundation", "-framework", "Metal", "-lm"] + libraries
             subprocess.run(command, check=True)
-            result = subprocess.run([sys.executable, str(here / "native_run.py"),
-                                     "--binary", str(binary), "--metal"], check=False)
+            print("COMPILED: native AV1 Metal decoder fixture", flush=True)
             if not result.returncode:
+                result = subprocess.run([sys.executable, str(here / "native_run.py"),
+                                         "--binary", str(binary), "--metal"], check=False)
+            if result.returncode in (0, 77):
                 for name in ("tpool", "retro_eventcount"):
                     obj = path / (name + ".o")
                     command = compiler + ["-O2", "-DHAVE_THREADS",
@@ -126,8 +128,10 @@ with tempfile.TemporaryDirectory(prefix="vt-av1-setup-") as directory:
                     *objects, str(metal_object), "-o", str(binary), "-framework",
                     "Foundation", "-framework", "Metal", "-lm"] + libraries
                 subprocess.run(command, check=True)
-                result = subprocess.run([sys.executable, str(here / "native_run.py"),
-                    "--binary", str(binary), "--container"], check=False)
+                print("COMPILED: native AV1 MP4/WebM fixture", flush=True)
+                if not result.returncode:
+                    result = subprocess.run([sys.executable, str(here / "native_run.py"),
+                        "--binary", str(binary), "--container"], check=False)
         raise SystemExit(result.returncode)
     if not args.native_format:
         command = compiler + flags + ["-I" + str(path), str(here / "sample_test.c"),
