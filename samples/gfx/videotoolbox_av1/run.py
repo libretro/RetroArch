@@ -13,7 +13,7 @@ compiler = shlex.split(os.environ.get("CC", "cc"))
 parser = argparse.ArgumentParser()
 parser.add_argument("--native-format", action="store_true")
 args = parser.parse_args()
-flags = ["-O2", "-std=c89", "-pedantic", "-Wall", "-Wextra", "-Werror",
+flags = ["-DHAVE_THREADS", "-O2", "-std=c89", "-pedantic", "-Wall", "-Wextra", "-Werror",
          "-Wno-long-long", "-Wframe-larger-than=2048",
          "-I" + str(root / "libretro-common/include")]
 if "clang" in subprocess.check_output(compiler + ["--version"], text=True).lower():
@@ -42,3 +42,9 @@ with tempfile.TemporaryDirectory(prefix="vt-av1-setup-") as directory:
     subprocess.run(command, check=True)
     subprocess.run(shlex.split(os.environ.get("RUNNER", "")) + [str(binary)],
                    check=True, timeout=30)
+    if not args.native_format:
+        command = compiler + flags + ["-I" + str(path), str(here / "sample_test.c"),
+                                      "-o", str(binary)]
+        subprocess.run(command, check=True)
+        subprocess.run(shlex.split(os.environ.get("RUNNER", "")) + [str(binary)],
+                       check=True, timeout=30)
