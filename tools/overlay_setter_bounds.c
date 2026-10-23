@@ -49,8 +49,8 @@
 
 static const char *const drivers[] = {
    "ctr_gfx.c", "d3d8.c", "d3d9cg.c", "d3d9hlsl.c", "d3d10.c", "d3d11.c",
-   "d3d12.c", "drm_gfx.c", "gdi_gfx.c", "gekko_gfx.c", "gl1.c", "gl2.c",
-   "gl3.c",
+   "d3d12.c", "drm_gfx.c", "exynos_gfx.c", "gdi_gfx.c", "gekko_gfx.c",
+   "gl1.c", "gl2.c", "gl3.c",
    "gx_gfx_libogc.c", "gx2_gfx.c", "gxm_gfx.c", "hub75_gfx.c", "rsx_gfx.c",
    "sdl2_gfx.c", "sdl3_gfx.c", "switch_nx_gfx.c", "vulkan.c"
 };

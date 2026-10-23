@@ -355,7 +355,7 @@ platform_video "openvg video" "-DHAVE_VG -DHAVE_EGL" \
 # core's views, through calls these lanes check.
 platform_video "drm video" "" "-I/usr/include/libdrm" \
    gfx/drivers/drm_gfx.c /usr/include/xf86drm.h
-platform_video "exynos video" "-DHAVE_EXYNOS" \
+platform_video "exynos video" "-DHAVE_EXYNOS -DHAVE_OVERLAY" \
    "-I$STUBS/exynos -I/usr/include/libdrm" \
    gfx/drivers/exynos_gfx.c /usr/include/libdrm/drm_fourcc.h
 platform_video "dispmanx video" "-DHAVE_DISPMANX" "-I$STUBS/videocore" \

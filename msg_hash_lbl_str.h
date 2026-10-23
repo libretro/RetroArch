@@ -3894,7 +3894,7 @@ extern const struct msg_hash_us_lbl_blob_s msg_hash_us_lbl_blob;
 #else
 #define MENU_ENUM_LABEL_EJECT_DISC_STR "eject_disc"
 #endif
-#if defined(HAVE_MENU) && (((defined(HAVE_MICROPHONE)) && (defined(RARCH_MOBILE) || 0)))
+#if defined(HAVE_MENU) && (((defined(HAVE_MICROPHONE)) && (defined(RARCH_MOBILE))))
 #define MENU_ENUM_LABEL_MICROPHONE_BLOCK_FRAMES_STR (msg_hash_us_lbl_blob.m_MENU_ENUM_LABEL_MICROPHONE_BLOCK_FRAMES)
 #else
 #define MENU_ENUM_LABEL_MICROPHONE_BLOCK_FRAMES_STR "microphone_block_frames"

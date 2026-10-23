@@ -8,6 +8,7 @@
 #include <stdio.h>
 
 struct defaults g_defaults;
+void RARCH_ERR(const char *fmt, ...) { (void)fmt; }
 
 bool *audio_get_bool_ptr(enum audio_action action)
 {

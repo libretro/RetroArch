@@ -332,6 +332,28 @@ static int alloc_expr(const char *b, const char *e, const char *kind,
    return 0;
 }
 
+/* The rows of the config_KIND_rows[] table the def files generate, less
+ * the empty one it ends in; 0 when there is none */
+static unsigned long table_rows(const char *b, const char *e,
+      const char *kind)
+{
+   char want[64];
+   const char *p;
+   unsigned long n = 0;
+   int depth = 0;
+   sprintf(want, "config_%s_rows[] = {", kind);
+   if (!(p = find_in(b, e, want)))
+      return 0;
+   for (p += strlen(want); p < e; p++)
+   {
+      if (*p == '{' && !depth++)
+         n++;
+      else if (*p == '}' && !depth--)
+         break;
+   }
+   return n ? n - 1 : 0;
+}
+
 static char *preprocess(const char *root, int profile, size_t *len)
 {
    struct ck_sb cmd = {0}, path = {0};
@@ -440,6 +462,9 @@ int main(int argc, char **argv)
             continue;
          }
          need = count_adds(start, end);
+         sprintf(head, "config_%s_rows_add(", kind);
+         if (find_in(start, end, head))
+            need += table_rows(text, te, kind);
          if (need > cap)
          {
             char up[16];

@@ -333,10 +333,35 @@ typedef struct glslang_output
 {
    uint32_t *vertex;                   /* malloc'd SPIR-V words */
    uint32_t *fragment;                 /* malloc'd SPIR-V words */
+   char *vertex_text;                  /* malloc'd stage source for a driver that
+                                          takes text, when the compiler printed
+                                          one (see struct slang_text_target);
+                                          NULL otherwise */
+   char *fragment_text;
    size_t vertex_len;                  /* in words */
    size_t fragment_len;                /* in words */
    glslang_meta meta;
 } glslang_output;
+
+/* What a driver that compiles source text wants printed beside the
+ * SPIR-V: the language version and how the interface is named, since
+ * the driver binds attributes, varyings, blocks and samplers by name.
+ * Prefixes take the location or binding as a decimal suffix.  Only
+ * rslc prints; with glslang the text pointers stay NULL and the driver
+ * crosses the SPIR-V as it does today. */
+struct slang_text_target
+{
+   unsigned    version;
+   bool        es;
+   const char *attr_prefix;
+   const char *varying_prefix;
+   const char *sampler_prefix;
+   /* block names per stage: [0] vertex, [1] fragment */
+   const char *ubo_block[2];
+   const char *ubo_instance[2];
+   const char *push_block[2];
+   const char *push_instance[2];
+};
 
 /* Accumulate active feedback resources from the compiled stages. */
 bool slang_last_pass_feedback(struct glslang_last_pass *state,
@@ -366,6 +391,13 @@ bool glslang_compile_shader(const char *shader_path,
  * behaves exactly like the uncached call. */
 bool glslang_compile_shader_cached(const char *shader_path,
       glslang_output *output, void *include_cache);
+
+/* As glslang_compile_shader_cached(), and when rslc is the compiler
+ * also prints each stage as @text asks, into output->vertex_text and
+ * output->fragment_text.  A cache hit brings words only. */
+bool glslang_compile_shader_text(const char *shader_path,
+      glslang_output *output, void *include_cache,
+      const struct slang_text_target *text);
 
 /* Merge parameters harvested into @meta into @shader, enforcing the
  * duplicate-must-match rule.  @pass is the pass @meta was harvested

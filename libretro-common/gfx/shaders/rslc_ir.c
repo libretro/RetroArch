@@ -3974,14 +3974,15 @@ static bool spv_function(struct spv_emit *e, const struct rslc_func *f)
 /* ---- reachability ---- */
 
 /* Marks every function reachable from node's calls; glslang emits
- * only those, and so does the capability set. */
-static void spv_mark_calls(struct spv_emit *e, uint32_t node, uint8_t *reach)
+ * only those, and so does the capability set.  Shared with the
+ * printers. */
+void rslc_mark_reach(struct rslc_ctx *c, uint32_t node, uint8_t *reach)
 {
    const struct rslc_node *n;
    uint32_t i, cnt;
    if (!node)
       return;
-   n = rslc_node_at(e->c, node);
+   n = rslc_node_at(c, node);
    switch (n->op)
    {
       case RSLC_OP_CONST:
@@ -3989,36 +3990,47 @@ static void spv_mark_calls(struct spv_emit *e, uint32_t node, uint8_t *reach)
       case RSLC_OP_VAR:
          return;
       case RSLC_OP_DECL:
-         spv_mark_calls(e, e->c->prog.vars[n->a]->init, reach);
+         rslc_mark_reach(c, c->prog.vars[n->a]->init, reach);
          return;
       case RSLC_OP_MEMBER: case RSLC_OP_SWIZZLE: case RSLC_OP_CONVERT:
       case RSLC_OP_EXPR: case RSLC_OP_RETURN: case RSLC_OP_CASE:
-         spv_mark_calls(e, n->a, reach);
+         rslc_mark_reach(c, n->a, reach);
          return;
       case RSLC_OP_CALL:
          if (!reach[n->a])
          {
-#ifdef RSLC_SPV_TRACE
-            fprintf(stderr, "reach: %s (line %u)\n", e->c->prog.funcs[n->a]->name->str, n->line);
-#endif
             reach[n->a] = 1;
-            spv_mark_calls(e, e->c->prog.funcs[n->a]->body, reach);
+            rslc_mark_reach(c, c->prog.funcs[n->a]->body, reach);
          }
          /* fall through */
       case RSLC_OP_BUILTIN: case RSLC_OP_CONSTRUCT:
       case RSLC_OP_BLOCK: case RSLC_OP_FOR: case RSLC_OP_SWITCH:
          if (n->op == RSLC_OP_SWITCH)
-            spv_mark_calls(e, n->a, reach);
-         cnt = n->b ? rslc_list_len(e->c, n->b) : 0;
+            rslc_mark_reach(c, n->a, reach);
+         cnt = n->b ? rslc_list_len(c, n->b) : 0;
          for (i = 0; i < cnt; i++)
-            spv_mark_calls(e, rslc_list_item(e->c, n->b, i), reach);
+            rslc_mark_reach(c, rslc_list_item(c, n->b, i), reach);
          return;
       default:
-         spv_mark_calls(e, n->a, reach);
-         spv_mark_calls(e, n->b, reach);
-         spv_mark_calls(e, n->c, reach);
+         rslc_mark_reach(c, n->a, reach);
+         rslc_mark_reach(c, n->b, reach);
+         rslc_mark_reach(c, n->c, reach);
          return;
    }
+}
+
+/* Fills reach[func id] for main and everything it calls, through
+ * global initialisers too. */
+void rslc_reach_funcs(struct rslc_ctx *c, uint8_t *reach)
+{
+   const struct rslc_prog *pr = &c->prog;
+   uint32_t i;
+   memset(reach, 0, pr->nfuncs + 1);
+   reach[pr->main_fn->id] = 1;
+   rslc_mark_reach(c, pr->main_fn->body, reach);
+   for (i = 1; i < pr->nvars; i++)
+      if (pr->vars[i]->global && pr->vars[i]->init)
+         rslc_mark_reach(c, pr->vars[i]->init, reach);
 }
 
 /* ---- globals and interface ---- */
@@ -4211,7 +4223,7 @@ static bool spv_pervertex(struct spv_emit *e)
 /* ---- module ---- */
 
 /* Reflection section size, laid out as the blob wants it. */
-static uint32_t spv_refl_strings_len(struct rslc_ctx *c)
+static uint32_t rslc_refl_strings_len(struct rslc_ctx *c)
 {
    const struct rslc_prog *pr = &c->prog;
    uint32_t len = 1, i, k;
@@ -4262,10 +4274,23 @@ static void refl_fill_member(struct rslc_member *m, const struct rslc_type *t)
    }
 }
 
-/* Writes the reflection section at blob + off; returns bytes used. */
-static uint32_t spv_write_reflect(struct spv_emit *e, uint8_t *blob, uint32_t off, uint32_t strings_len)
+/* Bytes the reflection section takes. */
+uint32_t rslc_reflect_len(struct rslc_ctx *c)
 {
-   struct rslc_ctx *c = e->c;
+   const struct rslc_prog *pr = &c->prog;
+   return sizeof(struct rslc_reflect) + rslc_refl_strings_len(c)
+      + (pr->has_block[0] ? pr->blocks[0].type->nfields * sizeof(struct rslc_member) : 0)
+      + (pr->has_block[1] ? pr->blocks[1].type->nfields * sizeof(struct rslc_member) : 0)
+      + pr->nsamplers * sizeof(struct rslc_sampler)
+      + (pr->ninputs + pr->noutputs) * sizeof(struct rslc_io);
+}
+
+/* Writes the reflection section at blob + off; active[k] holds one
+ * byte per member of block k (NULL: none active).  Returns bytes
+ * used. */
+uint32_t rslc_reflect_write(struct rslc_ctx *c, uint8_t *blob, uint32_t off,
+      uint8_t *const active[2])
+{
    const struct rslc_prog *pr = &c->prog;
    struct rslc_reflect *r = (struct rslc_reflect*)(blob + off);
    uint32_t at = off + sizeof(*r);
@@ -4314,7 +4339,7 @@ static uint32_t spv_write_reflect(struct spv_emit *e, uint8_t *blob, uint32_t of
          m[i].offset = rslc_layout_field_offset(bd->type, i, std140);
          m[i].size   = fs;
          refl_fill_member(&m[i], f->type);
-         m[i].active = e->member_active[k] ? e->member_active[k][i] : 0;
+         m[i].active = active[k] ? active[k][i] : 0;
          /* as SPIRV-Cross's get_declared_struct_size: no tail padding */
          b->size     = m[i].offset + fs;
       }
@@ -4351,7 +4376,6 @@ static uint32_t spv_write_reflect(struct spv_emit *e, uint8_t *blob, uint32_t of
          io[i].flat     = v->interp == RSLC_INTERP_FLAT;
       }
    }
-   (void)strings_len;
    return at - off;
 }
 
@@ -4395,12 +4419,7 @@ static bool rslc_emit_spirv(struct rslc_ctx *c, struct rslc_result *result)
          rslc_err(c, "no main() in stage", NULL, 0);
       return false;
    }
-   memset(reach, 0, pr->nfuncs + 1);
-   reach[pr->main_fn->id] = 1;
-   spv_mark_calls(e, pr->main_fn->body, reach);
-   for (i = 1; i < pr->nvars; i++)
-      if (pr->vars[i]->global && pr->vars[i]->init)
-         spv_mark_calls(e, pr->vars[i]->init, reach);
+   rslc_reach_funcs(c, reach);
    for (i = 1; i < pr->nfuncs; i++)
    {
       if (!pr->funcs[i]->body || !reach[i])
@@ -4457,52 +4476,67 @@ static bool rslc_emit_spirv(struct rslc_ctx *c, struct rslc_result *result)
    {
       uint32_t words = 5;
       uint32_t s;
-      uint32_t strings_len = spv_refl_strings_len(c);
-      uint32_t refl_len = sizeof(struct rslc_reflect) + strings_len
-         + (pr->has_block[0] ? pr->blocks[0].type->nfields * sizeof(struct rslc_member) : 0)
-         + (pr->has_block[1] ? pr->blocks[1].type->nfields * sizeof(struct rslc_member) : 0)
-         + pr->nsamplers * sizeof(struct rslc_sampler)
-         + (pr->ninputs + pr->noutputs) * sizeof(struct rslc_io);
-      uint32_t refl_off    = sizeof(struct rslc_blob_hdr);
-      uint32_t payload_off = (refl_off + refl_len + 3) & ~3u;
       struct rslc_pbuf pb;
-      struct rslc_blob_hdr *h;
       uint32_t *out;
       for (s = 0; s < SPV_SEC_COUNT; s++)
          words += e->sec[s].n;
-      if (!rslc_pbuf_init(c, &pb, payload_off, words * 4))
+      if (!rslc_blob_begin(c, &pb, words * 4, e->member_active))
          return false;
-      memset(pb.data, 0, payload_off);
-      spv_write_reflect(e, pb.data, refl_off, strings_len);
-      out = (uint32_t*)(pb.data + payload_off);
+      out = (uint32_t*)(pb.data + pb.len);
       out[0] = SPV_MAGIC;
       out[1] = SPV_VERSION_1_0;
       out[2] = 0;             /* generator */
       out[3] = e->bound;
       out[4] = 0;
-      pb.len = payload_off + 5 * 4;
+      pb.len += 5 * 4;
       for (s = 0; s < SPV_SEC_COUNT; s++)
          if (e->sec[s].n && !rslc_pbuf_put(c, &pb, e->sec[s].v, e->sec[s].n * 4))
             return false;
-      h = (struct rslc_blob_hdr*)pb.data;
-      h->magic       = RSLC_BLOB_MAGIC;
-      h->version     = RSLC_BLOB_VERSION;
-      h->total_len   = (uint32_t)pb.len;
-      h->refl_off    = refl_off;
-      h->refl_len    = refl_len;
-      h->payload_off = payload_off;
-      h->payload_len = words * 4;
-      h->stage       = (uint8_t)c->stage;
-      h->dst         = RSLC_DST_SPIRV;
-      memset(result, 0, sizeof(*result));
-      result->blob      = pb.data;
-      result->blob_len  = pb.len;
-      result->refl      = (const struct rslc_reflect*)(pb.data + refl_off);
-      result->spirv     = out;
+      rslc_blob_end(c, &pb, RSLC_DST_SPIRV, result);
+      result->spirv     = (const uint32_t*)(pb.data + ((struct rslc_blob_hdr*)pb.data)->payload_off);
       result->spirv_len = words;
    }
    rslc_scratch_release(c, &mark);
    return true;
+}
+
+/* Starts a result blob: header space, the reflection section, and a
+ * 4-aligned payload area of payload_hint bytes.  pb.len is left at the
+ * payload offset. */
+bool rslc_blob_begin(struct rslc_ctx *c, struct rslc_pbuf *pb, size_t payload_hint,
+      uint8_t *const active[2])
+{
+   uint32_t refl_len    = rslc_reflect_len(c);
+   uint32_t refl_off    = sizeof(struct rslc_blob_hdr);
+   uint32_t payload_off = (refl_off + refl_len + 3) & ~3u;
+   struct rslc_blob_hdr *h;
+   if (!rslc_pbuf_init(c, pb, payload_off, payload_hint))
+      return false;
+   memset(pb->data, 0, payload_off);
+   rslc_reflect_write(c, pb->data, refl_off, active);
+   h = (struct rslc_blob_hdr*)pb->data;
+   h->refl_off    = refl_off;
+   h->refl_len    = refl_len;
+   h->payload_off = payload_off;
+   pb->len        = payload_off;
+   return true;
+}
+
+/* Finishes the blob and hands it to result. */
+void rslc_blob_end(struct rslc_ctx *c, struct rslc_pbuf *pb, enum rslc_dst dst,
+      struct rslc_result *result)
+{
+   struct rslc_blob_hdr *h = (struct rslc_blob_hdr*)pb->data;
+   h->magic       = RSLC_BLOB_MAGIC;
+   h->version     = RSLC_BLOB_VERSION;
+   h->total_len   = (uint32_t)pb->len;
+   h->payload_len = (uint32_t)(pb->len - h->payload_off);
+   h->stage       = (uint8_t)c->stage;
+   h->dst         = (uint8_t)dst;
+   memset(result, 0, sizeof(*result));
+   result->blob     = pb->data;
+   result->blob_len = pb->len;
+   result->refl     = (const struct rslc_reflect*)(pb->data + h->refl_off);
 }
 
 bool rslc_emit_dst(struct rslc_ctx *c, struct rslc_result *result)

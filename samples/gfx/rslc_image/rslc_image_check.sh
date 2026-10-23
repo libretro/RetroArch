@@ -11,10 +11,13 @@
 #   ./rslc_image_check.sh ../../../retroarch ../../../../slang-shaders/bilinear.slangp ...
 #
 # A .slang given in place of a .slangp is wrapped in a one-pass preset.
-# Options: -d DRIVER (default vulkan), -f FRAMES (default 30), -k keep
-# the captures in ./out/.  Exit status is the number of presets whose
-# captures differ or failed, capped at 1.  No check target: the run
-# needs a display and a driver.
+# Options: -d DRIVER (vulkan, the default, or glcore), -f FRAMES
+# (default 30), -k keep the captures in ./out/.  With glcore the
+# glslang run crosses the SPIR-V and the rslc run links the GLSL rslc
+# printed; GL_ARB_gl_spirv is kept out of the way so the printer, not
+# the driver's SPIR-V path, is what is compared.  Exit status is the
+# number of presets whose captures differ or failed, capped at 1.  No
+# check target: the run needs a display and a driver.
 set -u
 
 driver=vulkan
@@ -33,6 +36,11 @@ if [ $# -lt 2 ]; then
    exit 2
 fi
 ra=$1; shift
+case $driver in
+   vulkan) ctx=vk_x ;;
+   glcore) ctx=x; export RETROARCH_GL3_DISABLE_SPIRV=1 ;;
+   *) ctx= ;;
+esac
 here=$(cd "$(dirname "$0")" && pwd)
 core="$here/pattern_core.so"
 out="$here/out"
@@ -44,6 +52,7 @@ capture() {
    cfg="$out/ra_$2.cfg"
    cat > "$cfg" <<EOF
 video_driver = "$driver"
+video_context_driver = "$ctx"
 video_shader_compiler = "$2"
 video_shader_enable = "true"
 video_gpu_screenshot = "true"
@@ -99,6 +108,9 @@ for preset in "$@"; do
    fi
    if ! grep -q "with rslc" "$lr" || grep -q "rslc rejected" "$lr"; then
       echo "FAIL  $name: the rslc run did not compile with rslc (see $lr)"; bad=$((bad + 1)); continue
+   fi
+   if [ "$driver" = glcore ] && ! grep -q "Linked the compiler's GLSL" "$lr"; then
+      echo "FAIL  $name: the rslc run did not link rslc's GLSL (see $lr)"; bad=$((bad + 1)); continue
    fi
    if cmp -s "$g" "$r"; then
       echo "same  $name"

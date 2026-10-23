@@ -374,7 +374,7 @@ enum rslc_op
    RSLC_OP_SEQ,        /* a, b (comma) */
    RSLC_OP_CONVERT,    /* type = target, a = expr (implicit conversion) */
    /* statements */
-   RSLC_OP_BLOCK,      /* b = stmt list */
+   RSLC_OP_BLOCK,      /* b = stmt list; aux RSLC_BLOCK_GROUP: no scope of its own */
    RSLC_OP_DECL,       /* a = var id (init in the var) */
    RSLC_OP_EXPR,       /* a = expr */
    RSLC_OP_IF,         /* a = cond, b = then, c = else or 0 */
@@ -388,6 +388,8 @@ enum rslc_op
    RSLC_OP_RETURN,     /* a = expr or 0 */
    RSLC_OP_DISCARD
 };
+
+#define RSLC_BLOCK_GROUP 1   /* BLOCK aux: several declarators of one declaration */
 
 #define RSLC_UN_NEG     1
 #define RSLC_UN_NOT     2
@@ -623,6 +625,7 @@ struct rslc_cval
 };
 bool     rslc_const_eval(struct rslc_ctx *c, uint32_t node, struct rslc_cval *out);
 unsigned rslc_ty_components(const struct rslc_type *t);
+const char *rslc_bfn_name(unsigned id);
 #define rslc_list_len(c, id)     ((c)->lists[(id)])
 #define rslc_list_item(c, id, i) ((c)->lists[(id) + 1 + (i)])
 
@@ -633,6 +636,18 @@ unsigned rslc_ty_components(const struct rslc_type *t);
 bool  rslc_front_compile(struct rslc_ctx *c, const char *src, size_t len);
 bool  rslc_emit_dst(struct rslc_ctx *c, struct rslc_result *result);
 bool  rslc_emit_text(struct rslc_ctx *c, struct rslc_result *result);
+
+/* Shared by the backends (TU 2): which functions main reaches, the
+ * reflection section, and the blob around a payload. */
+void     rslc_mark_reach(struct rslc_ctx *c, uint32_t node, uint8_t *reach);
+void     rslc_reach_funcs(struct rslc_ctx *c, uint8_t *reach);
+uint32_t rslc_reflect_len(struct rslc_ctx *c);
+uint32_t rslc_reflect_write(struct rslc_ctx *c, uint8_t *blob, uint32_t off,
+      uint8_t *const active[2]);
+bool     rslc_blob_begin(struct rslc_ctx *c, struct rslc_pbuf *pb, size_t payload_hint,
+      uint8_t *const active[2]);
+void     rslc_blob_end(struct rslc_ctx *c, struct rslc_pbuf *pb, enum rslc_dst dst,
+      struct rslc_result *result);
 
 RETRO_END_DECLS
 

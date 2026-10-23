@@ -4,7 +4,9 @@
  * blends - into the GEM buffers it is handed, so what a page holds when
  * it is flipped to is what the screen shows. The KMS side counts the
  * framebuffers, the flips and the waits for them, and the cards opened
- * and closed. */
+ * and closed. Userptr memory is mapped as the kernel maps it: once per
+ * address and size, and reused unsynced, so a frame that came through a
+ * reused mapping shows what the memory held when it was made. */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,6 +15,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <poll.h>
+#include <sys/stat.h>
 
 #include "../../../gfx/drivers/exynos_gfx.c"
 #include "../../../gfx/common/drm_common.c"
@@ -132,7 +135,67 @@ void exynos_bo_destroy(struct exynos_bo *bo)
 
 struct g2d_context { int fd; };
 static struct g2d_context g2d_ctx;
-static unsigned g2d_execs, blends, fills_font;
+static unsigned g2d_execs, blends, fills_font, overlay_blends;
+
+/* The kernel's userptr mappings: one per address, the memory as it was
+ * when the mapping was made - and, as the kernel syncs nothing when it
+ * reuses one, as the G2D still reads it after the CPU wrote it again */
+#define MAX_UP 16
+static struct { uintptr_t addr; unsigned long size; uint8_t *seen; } ups[MAX_UP];
+static unsigned up_new, up_reused, up_refused;
+/* Memory that cannot be pinned for writing (read-only), and the ends of
+ * the memory the test maps: pinning past them fails */
+static uintptr_t ro_addr, mapped_lo[4], mapped_hi[4];
+static unsigned long page_sz;
+
+static const uint8_t *userptr_map(const struct g2d_image *img,
+      unsigned long need)
+{
+   unsigned i, j;
+   uintptr_t a = (uintptr_t)img->user_ptr[0].userptr;
+   unsigned long size = img->user_ptr[0].size;
+   uintptr_t end = (a + size + page_sz - 1) & ~(uintptr_t)(page_sz - 1);
+   int ok = 0;
+   if (!size || need > size || a == ro_addr)
+   {
+      up_refused++;
+      return NULL;
+   }
+   for (j = 0; j < 4; j++)
+      if (a >= mapped_lo[j] && end <= mapped_hi[j])
+         ok = 1;
+   if (!ok)
+   {
+      up_refused++;
+      return NULL;
+   }
+   for (i = 0; i < MAX_UP; i++)
+      if (ups[i].seen && ups[i].addr == a)
+      {
+         if (ups[i].size == size)
+         {
+            up_reused++;
+            return ups[i].seen;
+         }
+         free(ups[i].seen);
+         ups[i].seen = NULL;
+      }
+   for (i = 0; i < MAX_UP && ups[i].seen; i++);
+   if (i == MAX_UP)
+      return NULL;
+   ups[i].addr = a;
+   ups[i].size = size;
+   ups[i].seen = (uint8_t*)malloc(size);
+   memcpy(ups[i].seen, (const void*)a, size);
+   up_new++;
+   return ups[i].seen;
+}
+
+static const uint8_t *img_mem(const struct g2d_image *img)
+{
+   return img->buf_type == G2D_IMGBUF_USERPTR
+      ? (const uint8_t*)img->mapped_ptr[1] : bo_mem[img->bo[0]];
+}
 /* The last fill and blend of the font image, x y w h */
 static unsigned fill_rect[4], blend_src[4], blend_dst[4];
 
@@ -156,7 +219,7 @@ static unsigned bpp_of(const struct g2d_image *img)
 static void read_px(const struct g2d_image *img, unsigned x, unsigned y,
       unsigned *a, unsigned *r, unsigned *g, unsigned *b)
 {
-   const uint8_t *row = bo_mem[img->bo[0]] + (size_t)y * img->stride;
+   const uint8_t *row = img_mem(img) + (size_t)y * img->stride;
    unsigned mode      = img->color_mode & G2D_COLOR_FMT_MASK;
    unsigned order     = img->color_mode & G2D_ORDER_MASK;
    if (bpp_of(img) == 4)
@@ -234,7 +297,19 @@ int g2d_copy_with_scale(struct g2d_context *ctx, struct g2d_image *src,
 {
    unsigned x, y;
    (void)ctx; (void)negative;
-   if (     !bo_mem[src->bo[0]] || !bo_mem[dst->bo[0]] || !sw || !sh
+   if (src->buf_type == G2D_IMGBUF_USERPTR)
+   {
+      /* The last byte read must lie inside the size given */
+      unsigned long need = (unsigned long)(sy + sh - 1) * src->stride
+         + (sx + sw) * bpp_of(src);
+      const uint8_t *m   = userptr_map(src, need);
+      if (!m)
+         return -14;
+      src->mapped_ptr[1] = (void*)m;
+   }
+   else if (!bo_mem[src->bo[0]])
+      return -1;
+   if (     !bo_mem[dst->bo[0]] || !sw || !sh
          || dx + dw > dst->width || dy + dh > dst->height)
       return -1;
    for (y = 0; y < dh; y++)
@@ -253,12 +328,14 @@ int g2d_scale_and_blend(struct g2d_context *ctx, struct g2d_image *src,
       unsigned int dw, unsigned int dh, enum e_g2d_op op)
 {
    unsigned x, y;
-   (void)ctx; (void)op;
+   (void)ctx;
    if (     !bo_mem[src->bo[0]] || !bo_mem[dst->bo[0]] || !sw || !sh
          || sx + sw > src->width || sy + sh > src->height
          || dx + dw > dst->width || dy + dh > dst->height)
       return -1;
    blends++;
+   if (op == G2D_OP_OVER)
+      overlay_blends++;
    if (is_font(src))
    {
       blend_src[0] = sx; blend_src[1] = sy; blend_src[2] = sw; blend_src[3] = sh;
@@ -270,8 +347,13 @@ int g2d_scale_and_blend(struct g2d_context *ctx, struct g2d_image *src,
          unsigned a, r, g, b, da, dr, dg, db;
          read_px(src, sx + x * sw / dw, sy + y * sh / dh, &a, &r, &g, &b);
          read_px(dst, dx + x, dy + y, &da, &dr, &dg, &db);
-         write_px(dst, dx + x, dy + y, (r * a + dr * (255 - a)) / 255,
-               (g * a + dg * (255 - a)) / 255, (b * a + db * (255 - a)) / 255);
+         if (op == G2D_OP_OVER) /* premultiplied */
+            write_px(dst, dx + x, dy + y, r + dr * (255 - a) / 255,
+                  g + dg * (255 - a) / 255, b + db * (255 - a) / 255);
+         else
+            write_px(dst, dx + x, dy + y, (r * a + dr * (255 - a)) / 255,
+                  (g * a + dg * (255 - a)) / 255,
+                  (b * a + db * (255 - a)) / 255);
       }
    return 0;
 }
@@ -492,6 +574,9 @@ int main(void)
    unsigned i, x, y, before;
 
    setvbuf(stdout, NULL, _IONBF, 0);
+   page_sz               = (unsigned long)sysconf(_SC_PAGESIZE);
+   /* No G2D device with an IOMMU: frames are copied */
+   exynos_g2d_driver_dir = "/nonexistent/exynos-drm-g2d";
    set_mode(&modes[0], 1280, 720, 60);
    set_mode(&modes[1], 1920, 1080, 60);
    set_mode(&modes[2], 640, 480, 60);
@@ -751,6 +836,281 @@ int main(void)
    connected = 1;
    if (failures == before)
       printf("   ok   the free and a failed init leave nothing\n");
+
+   /* ---- a G2D behind an IOMMU: frames read where the core wrote them ---- */
+   {
+      static char dir[] = "/tmp/exynos_g2d_XXXXXX";
+      char path[128];
+      FILE *f;
+      if (mkdtemp(dir))
+      {
+         snprintf(path, sizeof(path), "%s/bind", dir);
+         if ((f = fopen(path, "w")))
+            fclose(f);
+         snprintf(path, sizeof(path), "%s/10800000.g2d", dir);
+         mkdir(path, 0700);
+         snprintf(path, sizeof(path), "%s/10800000.g2d/iommu_group", dir);
+         if ((f = fopen(path, "w")))
+            fclose(f);
+         exynos_g2d_driver_dir = dir;
+      }
+   }
+   v = (struct exynos_video*)exynos_init(&info);
+   CHECK(v && v->data->userptr, "a G2D in an IOMMU group reads userptr memory");
+   if (!v)
+      return 1;
+   pd = v->data;
+
+   before = failures;
+   {
+      /* Three frames in memory of the core's: one ending mid-page, one
+       * ending on a page boundary, one the kernel will not pin */
+      const size_t fsz = 256 * 224 * 4;
+      uint8_t *blk[3];
+      uint32_t *fr[3];
+      unsigned k, m0, n0, pitch;
+      const uint32_t *s;
+      for (k = 0; k < 3; k++)
+      {
+         size_t len = (fsz / page_sz + 2) * page_sz;
+         if (posix_memalign((void**)&blk[k], page_sz, len))
+            return 1;
+         mapped_lo[k] = (uintptr_t)blk[k];
+         mapped_hi[k] = (uintptr_t)blk[k] + (k == 1 ? fsz : len);
+      }
+      fr[0]   = (uint32_t*)(blk[0] + 64);
+      fr[1]   = (uint32_t*)blk[1];
+      fr[2]   = (uint32_t*)(blk[2] + 64);
+      ro_addr = (uintptr_t)fr[2];
+
+      m0 = memcpys;
+      n0 = up_new;
+      for (k = 0; k < 4; k++)
+      {
+         /* The core draws a new frame into the same memory */
+         for (y = 0; y < 224; y++)
+            for (x = 0; x < 256; x++)
+               fr[0][y * 256 + x] = pattern_px(x + k * 7, y);
+         frame(v, fr[0], 256, 224, 1024, NULL, &vi);
+         s = screen(&pitch);
+         CHECK(s && (s[360 * pitch + 640] & 0xffffff)
+               == pattern_px(128 + k * 7, 112),
+               "frame %u of the same memory on the screen, not the one"
+               " the kernel mapped before (%06x)", k,
+               s ? s[360 * pitch + 640] & 0xffffff : 0);
+      }
+      CHECK(memcpys == m0 && up_new == n0 + 4 && !up_reused,
+            "read where the core wrote it, mapped afresh each frame"
+            " (%u copies, %u mapped, %u reused)", memcpys - m0,
+            up_new - n0, up_reused);
+
+      /* No room after it for a second size: the frame after is copied */
+      m0 = memcpys;
+      for (k = 0; k < 3; k++)
+      {
+         for (y = 0; y < 224; y++)
+            for (x = 0; x < 256; x++)
+               fr[1][y * 256 + x] = pattern_px(x, y + k * 5);
+         frame(v, fr[1], 256, 224, 1024, NULL, &vi);
+         s = screen(&pitch);
+         CHECK(s && (s[360 * pitch + 640] & 0xffffff)
+               == pattern_px(128, 112 + k * 5),
+               "a frame ending on a page: frame %u shown", k);
+      }
+      CHECK(memcpys == m0 + 2 && !up_reused,
+            "and the ones after the first copied, never a stale mapping"
+            " (%u copies)", memcpys - m0);
+
+      /* Memory the kernel refuses: copied, and not offered again */
+      for (y = 0; y < 224; y++)
+         for (x = 0; x < 256; x++)
+            fr[2][y * 256 + x] = pattern_px(x ^ 3, y);
+      m0 = memcpys;
+      n0 = up_refused;
+      frame(v, fr[2], 256, 224, 1024, NULL, &vi);
+      frame(v, fr[2], 256, 224, 1024, NULL, &vi);
+      s = screen(&pitch);
+      CHECK(s && (s[360 * pitch + 640] & 0xffffff) == pattern_px(128 ^ 3, 112)
+            && memcpys == m0 + 2 && up_refused == n0 + 1,
+            "memory the kernel will not map copied, and only asked once"
+            " (%u copies, %u refused)", memcpys - m0, up_refused - n0);
+      for (k = 0; k < 3; k++)
+         free(blk[k]);
+   }
+   if (failures == before)
+      printf("   ok   frames read from the core's memory, never stale\n");
+
+   /* ---- the input overlay, blended by the G2D ---- */
+   before = failures;
+   {
+      static uint32_t red[16], white[16], grey[256 * 224];
+      struct texture_image im[2];
+      const video_overlay_interface_t *ov = NULL;
+      unsigned k, b0, pitch;
+      const uint32_t *s;
+
+      for (i = 0; i < 16; i++)
+      {
+         red[i]   = 0xffff0000u; /* opaque */
+         white[i] = 0x80ffffffu; /* half */
+      }
+      for (i = 0; i < 256 * 224; i++)
+         grey[i] = 0x404040u;
+      memset(im, 0, sizeof(im));
+      im[0].pixels = red;   im[0].width = 4; im[0].height = 4;
+      im[1].pixels = white; im[1].width = 4; im[1].height = 4;
+      exynos_get_overlay_interface(v, &ov);
+      CHECK(ov && ov->load(v, im, 2), "two overlay images loaded");
+      ov->vertex_geom(v, 0, 0.0f, 0.0f, 0.25f, 0.25f);
+      ov->vertex_geom(v, 1, 0.5f, 0.5f, 0.25f, 0.25f);
+      ov->set_alpha(v, 7, 0.5f);
+      ov->vertex_geom(v, 7, 0.0f, 0.0f, 1.0f, 1.0f);
+      ov->tex_geom(v, 7, 0.0f, 0.0f, 1.0f, 1.0f);
+      ov->enable(v, true);
+      b0 = overlay_blends;
+      frame(v, grey, 256, 224, 1024, NULL, &vi);
+      s = screen(&pitch);
+      /* The frame is 960x720 at 160: a quarter of it each */
+      CHECK(overlay_blends == b0 + 2, "each image blended by the G2D (%u)",
+            overlay_blends - b0);
+      CHECK(s && (s[90 * pitch + 280] & 0xffffff) == 0xff0000,
+            "an opaque image over the frame where it is placed (%06x)",
+            s ? s[90 * pitch + 280] & 0xffffff : 0);
+      CHECK(s && (s[450 * pitch + 760] & 0xffffff) == 0x9f9f9f,
+            "a half-transparent one blended over it (%06x)",
+            s ? s[450 * pitch + 760] & 0xffffff : 0);
+      CHECK(s && (s[300 * pitch + 500] & 0xffffff) == 0x404040,
+            "the frame elsewhere");
+      ov->set_alpha(v, 0, 0.5f);
+      frame(v, grey, 256, 224, 1024, NULL, &vi);
+      s = screen(&pitch);
+      CHECK(s && (s[90 * pitch + 280] & 0xffffff) == 0x9f2020,
+            "an image at half alpha (%06x)",
+            s ? s[90 * pitch + 280] & 0xffffff : 0);
+
+      /* On the screen, partly where no frame is: drawn once a frame there,
+       * not over what it left on that page before */
+      ov->full_screen(v, true);
+      ov->vertex_geom(v, 0, 0.5f, 0.5f, 0.1f, 0.1f);
+      ov->vertex_geom(v, 1, 0.0f, 0.0f, 0.1f, 0.1f);
+      for (k = 0; k < 6; k++)
+      {
+         frame(v, grey, 256, 224, 1024, NULL, &vi);
+         s = screen(&pitch);
+         CHECK(s && (s[10 * pitch + 10] & 0xffffff) == 0x808080,
+               "beside the frame, frame %u: half white over black (%06x)", k,
+               s ? s[10 * pitch + 10] & 0xffffff : 0);
+      }
+      ov->vertex_geom(v, 1, 0.5f, 0.0f, 0.1f, 0.1f);
+      for (k = 0; k < 4; k++)
+         frame(v, grey, 256, 224, 1024, NULL, &vi);
+      s = screen(&pitch);
+      CHECK(s && !(s[10 * pitch + 10] & 0xffffff),
+            "moved: where it was is black again (%06x)",
+            s ? s[10 * pitch + 10] & 0xffffff : 0);
+      ov->enable(v, false);
+      b0 = overlay_blends;
+      for (k = 0; k < 4; k++)
+         frame(v, grey, 256, 224, 1024, NULL, &vi);
+      s = screen(&pitch);
+      CHECK(overlay_blends == b0 && s
+            && (s[400 * pitch + 680] & 0xffffff) == 0x404040
+            && !(s[10 * pitch + 10] & 0xffffff),
+            "disabled: nothing blended, nothing left");
+      /* Mirrored: the quad's width negative, or its texels', not both */
+      {
+         static uint32_t rb[2] = { 0xffff0000u, 0xff0000ffu };
+         struct texture_image one;
+         memset(&one, 0, sizeof(one));
+         one.pixels = rb; one.width = 2; one.height = 1;
+         ov->enable(v, true);
+         ov->full_screen(v, false);
+         CHECK(ov->load(v, &one, 1), "a red and blue image");
+         ov->vertex_geom(v, 0, 0.5f, 0.5f, -0.25f, 0.25f);
+         frame(v, grey, 256, 224, 1024, NULL, &vi);
+         s = screen(&pitch);
+         CHECK(s && (s[450 * pitch + 420] & 0xffffff) == 0x0000ff
+               && (s[450 * pitch + 620] & 0xffffff) == 0xff0000,
+               "a quad drawn right to left shows the image mirrored"
+               " (%06x %06x)", s ? s[450 * pitch + 420] & 0xffffff : 0,
+               s ? s[450 * pitch + 620] & 0xffffff : 0);
+         ov->vertex_geom(v, 0, 0.25f, 0.5f, 0.25f, 0.25f);
+         ov->tex_geom(v, 0, 1.0f, 0.0f, -1.0f, 1.0f);
+         frame(v, grey, 256, 224, 1024, NULL, &vi);
+         s = screen(&pitch);
+         CHECK(s && (s[450 * pitch + 420] & 0xffffff) == 0x0000ff
+               && (s[450 * pitch + 620] & 0xffffff) == 0xff0000,
+               "so do texels read right to left");
+         ov->vertex_geom(v, 0, 0.5f, 0.5f, -0.25f, 0.25f);
+         frame(v, grey, 256, 224, 1024, NULL, &vi);
+         s = screen(&pitch);
+         CHECK(s && (s[450 * pitch + 420] & 0xffffff) == 0xff0000
+               && (s[450 * pitch + 620] & 0xffffff) == 0x0000ff,
+               "and both: not mirrored");
+         ov->vertex_geom(v, 0, 0.5f, 0.75f, 0.25f, -0.25f);
+         ov->tex_geom(v, 0, 0.0f, 0.0f, 1.0f, 1.0f);
+         frame(v, grey, 256, 224, 1024, NULL, &vi);
+         s = screen(&pitch);
+         CHECK(s && (s[450 * pitch + 660] & 0xffffff) == 0xff0000
+               && (s[450 * pitch + 860] & 0xffffff) == 0x0000ff,
+               "upside down, a one-row image as it was");
+      }
+      ov->enable(v, true);
+      CHECK(ov->load(v, NULL, 0), "an empty page");
+      ov->set_alpha(v, 0, 1.0f);
+      ov->vertex_geom(v, 0, 0.0f, 0.0f, 1.0f, 1.0f);
+      frame(v, grey, 256, 224, 1024, NULL, &vi);
+   }
+   if (failures == before)
+      printf("   ok   the overlay: each image scaled and blended by the G2D\n");
+
+   /* ---- a core's rotation, applied as the frame is copied ---- */
+   before = failures;
+   {
+      static const struct { unsigned rot, w, h, x0, sx, sy; float a; } t[] = {
+         /* quarter turns, the turned size, where it sits on the screen,
+          * the source pixel at its centre, the aspect it is shown at */
+         { 1, 224, 256, 370, 127, 112, 3.0f / 4.0f },
+         { 2, 256, 224, 160, 127, 111, 4.0f / 3.0f },
+         { 3, 224, 256, 370, 128, 111, 3.0f / 4.0f },
+         { 0, 256, 224, 160, 128, 112, 4.0f / 3.0f }
+      };
+      unsigned k, pitch;
+      const uint32_t *s;
+      for (y = 0; y < 224; y++)
+         for (x = 0; x < 256; x++)
+            frame_px[y * 256 + x] = pattern_px(x, y);
+      for (k = 0; k < 4; k++)
+      {
+         drv_aspect = t[k].a;
+         exynos_apply_state_changes(v);
+         exynos_set_rotation(v, t[k].rot);
+         frame(v, frame_px, 256, 224, 1024, NULL, &vi);
+         s = screen(&pitch);
+         CHECK(pd->blit_params[4] == t[k].w && pd->blit_params[5] == t[k].h
+               && pd->blit_params[0] == t[k].x0,
+               "%u quarter turn(s): %ux%u at %u (%ux%u at %u)", t[k].rot,
+               t[k].w, t[k].h, t[k].x0, pd->blit_params[4],
+               pd->blit_params[5], pd->blit_params[0]);
+         CHECK(s && (s[360 * pitch + 640] & 0xffffff)
+               == pattern_px(t[k].sx, t[k].sy),
+               "%u quarter turn(s): the frame turned on the screen (%06x)",
+               t[k].rot, s ? s[360 * pitch + 640] & 0xffffff : 0);
+      }
+   }
+   if (failures == before)
+      printf("   ok   a core's rotation, turned as the frame is copied\n");
+
+   before = failures;
+   exynos_overlay_load(v, NULL, 0);
+   exynos_free(v);
+   CHECK(!fbs_alive && !rmfb_wrong_fd && !bos_alive && !fds_open,
+         "the second free leaves nothing (%u fbs, %u bos, %u open)",
+         fbs_alive, bos_alive, fds_open);
+   for (i = 0; i < MAX_UP; i++)
+      free(ups[i].seen);
+   if (failures == before)
+      printf("   ok   and its free, overlay buffers too\n");
 
    if (failures)
    {
