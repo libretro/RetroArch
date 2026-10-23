@@ -24,7 +24,7 @@ typedef xmb_handle_t test_viewer_t;
 #define TEST_IDENT "xmb"
 static bool test_showing(test_viewer_t *v) { return v->show_fullscreen_thumbnails; }
 static bool test_fade_ready(test_viewer_t *v) { return v->fullscreen_thumbnail_alpha>=0.9999f; }
-static gfx_thumbnail_t *test_thumbnail(test_viewer_t *v) { return v->thumbnails.left.anim_sess?&v->thumbnails.left:&v->thumbnails.right; }
+static gfx_thumbnail_t *test_thumbnail(test_viewer_t *v) { return (v->thumbnails.left.anim_sess||v->thumbnails.left.texture)?&v->thumbnails.left:&v->thumbnails.right; }
 static void test_prepare(test_viewer_t *v) { v->is_playlist=v->is_explore_list=false;v->is_file_list=true;v->depth=2; }
 static enum menu_action test_action(test_viewer_t *v,enum menu_action a) { return xmb_parse_menu_entry_action(v,a); }
 static int test_release(test_viewer_t *v,unsigned x,unsigned y) { return xmb_pointer_up(v,x,y,0,MENU_INPUT_GESTURE_TAP,NULL,NULL,0); }
@@ -34,12 +34,13 @@ typedef ozone_handle_t test_viewer_t;
 #define TEST_IDENT "ozone"
 static bool test_showing(test_viewer_t *v) { return (v->flags2&OZONE_FLAG2_SHOW_FULLSCREEN_THUMBNAILS)!=0; }
 static bool test_fade_ready(test_viewer_t *v) { return v->animations.fullscreen_thumbnail_alpha>=0.9999f; }
-static gfx_thumbnail_t *test_thumbnail(test_viewer_t *v) { return v->thumbnails.left.anim_sess?&v->thumbnails.left:&v->thumbnails.right; }
+static gfx_thumbnail_t *test_thumbnail(test_viewer_t *v) { return (v->thumbnails.left.anim_sess||v->thumbnails.left.texture)?&v->thumbnails.left:&v->thumbnails.right; }
 static void test_prepare(test_viewer_t *v) { v->flags&=~(OZONE_FLAG_IS_PLAYLIST|OZONE_FLAG_IS_EXPLORE_LIST|OZONE_FLAG_CURSOR_IN_SIDEBAR);v->flags|=OZONE_FLAG_IS_FILE_LIST;v->depth=2; }
 static enum menu_action test_action(test_viewer_t *v,enum menu_action a) { return ozone_parse_menu_entry_action(v,true,true,a); }
 static int test_release(test_viewer_t *v,unsigned x,unsigned y) { return ozone_pointer_up(v,x,y,0,MENU_INPUT_GESTURE_TAP,NULL,NULL,0); }
 #endif
 #include "../../../retroarch.h"
+#include "../../../paths.h"
 #include "../../../frontend/frontend.h"
 #include <time/rtime.h>
 #include <retro_timers.h>
@@ -141,7 +142,7 @@ int main(int argc,char **argv)
    native_gpu=getenv("MEDIA_TEST_GPU")!=NULL;
    config_file_set_io_default(config_file_io_filestream());rtime_init();retroarch_config_init();
    retroarch_ctl(RARCH_CTL_STATE_FREE,NULL);frontend_driver_init_first(NULL);
-   rarch_argv[0]=(char*)"retroarch";rarch_argv[1]=(char*)"--menu";
+   rarch_argv[0]=(char*)"retroarch";rarch_argv[1]=getenv("MEDIA_TEST_EXTERNAL")?argv[1]:(char*)"--menu";
    rarch_argv[2]=(char*)"--config";rarch_argv[3]=argv[2];
    if(!retroarch_main_init(4,rarch_argv))return 1;
    retroarch_menu_running();menu_st=menu_state_get_ptr();
@@ -152,6 +153,59 @@ int main(int argc,char **argv)
    if(!native_gpu)
    { poke.load_texture=memory_texture;poke.unload_texture=memory_unload;video->poke=&poke; }
    config_get_ptr()->bools.menu_thumbnail_preview_audio=false;
+   if (getenv("MEDIA_TEST_EXTERNAL") || getenv("MEDIA_TEST_BROWSER_IMAGE"))
+   {
+      bool image = image_texture_get_type(argv[1]) != IMAGE_TYPE_MP4
+         && image_texture_get_type(argv[1]) != IMAGE_TYPE_WEBM;
+      if (!getenv("MEDIA_TEST_EXTERNAL"))
+         CHECK("image browser request accepted", menu_driver_media_open(argv[1]));
+      for (tick = 0; tick < 4000; tick++)
+      {
+         task_queue_check();
+         viewer = (test_viewer_t *)menu_st->userdata;
+         video = video_state_get_ptr();
+         if (!native_gpu && video->poke != &poke)
+         {
+            old_poke = video->poke;
+            video->poke = &poke;
+         }
+         menu_driver_iterate(menu_st, disp_get_ptr(), anim_get_ptr(),
+               config_get_ptr(), MENU_ACTION_NOOP, cpu_features_get_time_usec());
+         render(menu_st);
+         if (test_showing(viewer) && test_thumbnail(viewer)->texture
+               && (image || viewer->media.controls.target.user)) break;
+         retro_sleep(1);
+      }
+      CHECK("opened file reaches internal fullscreen view", tick < 4000);
+      if (tick == 4000)
+      {
+         file_list_t *items = MENU_LIST_GET_SELECTION(menu_st->entries.list, 0);
+         file_list_t *frames = MENU_LIST_GET(menu_st->entries.list, 0);
+         size_t row;
+         printf("launch state: flags=%x selection=%lu shown=%u texture=%lu\n",
+               menu_st->flags, (unsigned long)menu_st->selection_ptr,
+               test_showing(viewer), (unsigned long)test_thumbnail(viewer)->texture);
+         for (row = 0; row < frames->size; row++)
+            printf("stack %lu: %s [%s]\n", (unsigned long)row,
+                  frames->list[row].path, frames->list[row].label);
+         for (row = 0; row < items->size && row < 20; row++)
+            printf("item %lu: %s type=%u\n", (unsigned long)row,
+                  items->list[row].path, items->list[row].type);
+      }
+      CHECK("opened file does not launch a content core",
+            runloop_state_get_ptr()->current_core_type == CORE_TYPE_DUMMY
+            && !*path_get(RARCH_PATH_CONTENT));
+      if (image)
+         CHECK("image confirmation remains in internal view",
+               test_action(viewer, MENU_ACTION_OK) == MENU_ACTION_NOOP
+               && test_showing(viewer));
+      CHECK("Back closes internal view", test_action(viewer, MENU_ACTION_CANCEL)
+            == MENU_ACTION_NOOP && !test_showing(viewer));
+      video->poke=old_poke;
+      main_exit(NULL);
+      printf("external media: %u failure(s)\n", failures);
+      return failures ? 1 : 0;
+   }
    list=MENU_LIST_GET_SELECTION(menu_st->entries.list,0);stack=MENU_LIST_GET(menu_st->entries.list,0);
    file_list_clear(list);file_list_clear(stack);fill_pathname_basedir(directory,argv[1],sizeof(directory));
    CHECK("file-browser directory installed",file_list_append(stack,directory,"",FILE_TYPE_PLAIN,0,0));

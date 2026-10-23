@@ -9495,6 +9495,9 @@ bool retroarch_main_init_core(int argc, char *argv[],
    {
       const char    *fullpath  = p_rarch->path_content;
 
+#ifdef HAVE_MENU
+      menu_driver_media_open(NULL);
+#endif
       if (fullpath && *fullpath)
       {
          enum rarch_content_type cont_type = path_is_media_type(fullpath);
@@ -9503,6 +9506,18 @@ bool retroarch_main_init_core(int argc, char *argv[],
 #endif
          bool builtin_mediaplayer          = settings->bools.multimedia_builtin_mediaplayer_enable;
 
+#ifdef HAVE_MENU
+         if (!(runloop_st->flags & RUNLOOP_FLAG_HAS_SET_CORE)
+               && !retroarch_override_setting_is_set(
+                  RARCH_OVERRIDE_SETTING_LIBRETRO, NULL)
+               && menu_driver_media_open(fullpath))
+         {
+            path_clear(RARCH_PATH_CONTENT);
+            path_clear(RARCH_PATH_BASENAME);
+            runloop_set_current_core_type(CORE_TYPE_DUMMY, false);
+         }
+         else
+#endif
          switch (cont_type)
          {
             case RARCH_CONTENT_MOVIE:

@@ -10,9 +10,9 @@ unsigned menu_media_queue_directions(const menu_media_queue_t *queue);
 bool menu_media_queue_step(menu_media_queue_t *queue,
       struct menu_state *menu_st, int direction);
 
-/* Main-thread movie activation, independent of playlist thumbnail settings.
+/* Main-thread image/movie activation, independent of playlist thumbnail settings.
  * Retains a matching preview and removes a duplicate/obsolete second one. */
-bool menu_media_open_selected_movie(struct menu_state *menu_st,
+bool menu_media_open_selected_file(struct menu_state *menu_st,
       gfx_thumbnail_t *primary, gfx_thumbnail_t *secondary);
 RETRO_END_DECLS
 #endif

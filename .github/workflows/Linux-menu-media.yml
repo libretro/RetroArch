@@ -54,6 +54,14 @@ jobs:
         run: python3 samples/menu/rgui_media/run.py --c89 --driver xmb samples/menu/rgui_media/fixture.mp4
       - name: Real Ozone file-browser playback controls
         run: python3 samples/menu/rgui_media/run.py --c89 --driver ozone samples/menu/rgui_media/fixture.mp4
+      - name: External movies and internal image activation across all menus
+        run: |
+          ffmpeg -v error -y -f lavfi -i color=c=orange:size=32x32 -frames:v 1 -threads 1 samples/menu/rgui_media/fixture.png
+          for driver in rgui materialui xmb ozone; do
+            python3 samples/menu/rgui_media/run.py --c89 --external --driver "$driver" samples/menu/rgui_media/fixture.mp4
+            python3 samples/menu/rgui_media/run.py --c89 --external --driver "$driver" samples/menu/rgui_media/fixture.png
+            python3 samples/menu/rgui_media/run.py --c89 --browser-image --driver "$driver" samples/menu/rgui_media/fixture.png
+          done
       - name: Natural MP4 folder playback and file controls across all menus
         run: |
           for driver in rgui materialui xmb ozone; do

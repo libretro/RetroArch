@@ -31,6 +31,7 @@
 #include <time/rtime.h>
 #include <memory/mempool.h>
 #include <retro_atomic.h>
+#include <formats/image.h>
 
 #include "menu_str.h"
 
@@ -373,6 +374,8 @@ const menu_ctx_driver_t *menu_ctx_drivers[] = {
 };
 
 static struct menu_state menu_driver_state = { 0 };
+static char *menu_media_launch_path;
+static bool menu_media_launch_browsing;
 
 /* menu_file_list_cbs_t is fixed-size and allocated once per appended
  * entry, so a playlist of any size used to cost one malloc() and one
@@ -4904,6 +4907,8 @@ void menu_driver_frame(bool menu_is_alive, video_frame_info_t *video_info)
 void menu_driver_destroy(
       struct menu_state *menu_st)
 {
+   if (!task_content_load_pending())
+      menu_driver_media_open(NULL);
    menu_st->flags &= ~(MENU_ST_FLAG_PENDING_QUICK_MENU
                      | MENU_ST_FLAG_PREVENT_POPULATE
                      | MENU_ST_FLAG_DATA_OWN
@@ -7536,6 +7541,8 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          }
          break;
       case RARCH_MENU_CTL_DEINIT:
+         if (menu_media_launch_browsing)
+            menu_driver_media_open(NULL);
          if (     menu_st->driver_ctx
                && menu_st->driver_ctx->context_destroy)
             menu_st->driver_ctx->context_destroy(menu_st->userdata);
@@ -9046,6 +9053,97 @@ static void menu_driver_pump_pending(struct menu_state *menu_st,
    menu_st->flags &= ~MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
 }
 
+bool menu_driver_media_open(const char *path)
+{
+   settings_t *settings = config_get_ptr();
+   const menu_ctx_driver_t *driver;
+   const char *ident;
+   enum image_type_enum type;
+   char *copy;
+   if (!path)
+   {
+      free(menu_media_launch_path);
+      menu_media_launch_path = NULL;
+      menu_media_launch_browsing = false;
+      return false;
+   }
+   driver = menu_driver_find_driver(settings, "menu", false);
+   ident = driver ? driver->ident : NULL;
+   type = image_texture_get_type(path);
+   if (type == IMAGE_TYPE_NONE || type == IMAGE_TYPE_DDS
+         || strstr(path, "://") || path_contains_compressed_file(path)
+         || ((type == IMAGE_TYPE_MP4 || type == IMAGE_TYPE_WEBM)
+            ? !settings->bools.multimedia_builtin_mediaplayer_enable
+            : !settings->bools.multimedia_builtin_imageviewer_enable)
+         || (!string_is_equal(ident, "ozone") && !string_is_equal(ident, "xmb")
+            && !string_is_equal(ident, "rgui") && !string_is_equal(ident, "glui")))
+      return false;
+   copy = (char *)malloc(PATH_MAX_LENGTH);
+   if (!copy)
+      return false;
+   if (strlcpy(copy, path, PATH_MAX_LENGTH) >= PATH_MAX_LENGTH
+         || !path_resolve_realpath(copy, PATH_MAX_LENGTH, false))
+   {
+      free(copy);
+      return false;
+   }
+   free(menu_media_launch_path);
+   menu_media_launch_path = copy;
+   menu_media_launch_browsing = false;
+   return true;
+}
+
+static enum menu_action menu_driver_media_launch(struct menu_state *menu_st,
+      enum menu_action action)
+{
+   file_list_t *list;
+   size_t i;
+   if (!menu_media_launch_path || !menu_st->driver_data
+         || !menu_st->entries.list || task_content_load_pending())
+      return action;
+   if (action != MENU_ACTION_NOOP)
+   {
+      menu_driver_media_open(NULL);
+      return action;
+   }
+   if (!menu_media_launch_browsing)
+   {
+      char *directory = strdup(menu_media_launch_path);
+      int result;
+      if (!directory)
+      {
+         menu_driver_media_open(NULL);
+         return action;
+      }
+      path_basedir(directory);
+      menu_st->flags &= ~(MENU_ST_FLAG_PENDING_QUICK_MENU
+            | MENU_ST_FLAG_PENDING_STARTUP_PAGE);
+      result = generic_action_ok_displaylist_push(NULL, directory,
+            MENU_ENUM_LABEL_FAVORITES_STR, FILE_TYPE_DIRECTORY, 0, 0,
+            ACTION_OK_DL_CONTENT_LIST);
+      free(directory);
+      if (result != 0)
+         menu_driver_media_open(NULL);
+      else
+         menu_media_launch_browsing = true;
+      return MENU_ACTION_NOOP;
+   }
+   if (menu_dirwalk_pending() || MENU_ENTRIES_NEEDS_REFRESH(menu_st))
+      return action;
+   list = MENU_LIST_GET_SELECTION(menu_st->entries.list, 0);
+   for (i = 0; list && i < list->size; i++)
+      if (string_is_equal(list->list[i].path, path_basename(menu_media_launch_path)))
+      {
+         menu_st->selection_ptr = i;
+         if (menu_st->driver_ctx->navigation_set)
+            menu_st->driver_ctx->navigation_set(menu_st->userdata, true);
+         menu_driver_media_open(NULL);
+         return MENU_ACTION_OK;
+      }
+   menu_driver_media_open(NULL);
+   return action;
+}
+
 bool menu_driver_iterate(
       struct menu_state *menu_st,
       gfx_display_t *p_disp,
@@ -9055,6 +9153,7 @@ bool menu_driver_iterate(
       retro_time_t current_time)
 {
    menu_driver_pump_pending(menu_st, settings);
+   action = menu_driver_media_launch(menu_st, action);
 
 #ifdef RETRO_ATOMIC_HAS_PTR
    if (retro_atomic_load_relaxed_ptr(&menu_drop_pending))

@@ -11041,6 +11041,10 @@ static enum menu_action materialui_parse_menu_entry_action(
          && menu_media_controls_action(&mui->media, action,
             menu_driver_get_current_time()))
       return MENU_ACTION_NOOP;
+   if ((mui->flags & MUI_FLAG_IS_FILE_LIST)
+         && (mui->flags & MUI_FLAG_SHOW_FULLSCREEN_THUMBNAILS)
+         && action == MENU_ACTION_OK)
+      return MENU_ACTION_NOOP;
 
    /* Scan user inputs */
    switch (action)

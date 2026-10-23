@@ -9463,6 +9463,28 @@ static enum menu_action rgui_parse_menu_entry_action(
    struct menu_state *menu_st  = menu_state_get_ptr();
    enum menu_action new_action = action;
 
+   if (!(rgui->flags & (RGUI_FLAG_IS_PLAYLIST | RGUI_FLAG_IS_EXPLORE_LIST
+               | RGUI_FLAG_IS_QUICK_MENU)) && menu_st->entries.list)
+   {
+      file_list_t *list = MENU_LIST_GET_SELECTION(menu_st->entries.list, 0);
+      if (list && menu_st->selection_ptr < list->size
+            && (list->list[menu_st->selection_ptr].type == FILE_TYPE_IMAGE
+               || list->list[menu_st->selection_ptr].type == FILE_TYPE_IMAGEVIEWER))
+      {
+         bool fullscreen = (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL) != 0;
+         if (action == MENU_ACTION_START || action == MENU_ACTION_SELECT
+               || (action == MENU_ACTION_OK && !fullscreen)
+               || (action == MENU_ACTION_CANCEL && fullscreen))
+         {
+            rgui_toggle_fs_thumbnail(rgui, config_get_ptr()->bools.menu_rgui_inline_thumbnails);
+            rgui->flags |= RGUI_FLAG_FORCE_REDRAW;
+            return MENU_ACTION_NOOP;
+         }
+         if (fullscreen && action == MENU_ACTION_OK)
+            return MENU_ACTION_NOOP;
+      }
+   }
+
    if (*rgui->media_requested_path)
    {
       bool fullscreen = (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL) != 0;

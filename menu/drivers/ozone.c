@@ -9133,7 +9133,7 @@ static enum menu_action ozone_parse_menu_entry_action(
    if ((ozone->flags & OZONE_FLAG_IS_FILE_LIST)
          && !(ozone->flags2 & OZONE_FLAG2_SHOW_FULLSCREEN_THUMBNAILS)
          && (action == MENU_ACTION_OK || action == MENU_ACTION_SELECT || action == MENU_ACTION_START)
-         && menu_media_open_selected_movie(menu_st, &ozone->thumbnails.left, &ozone->thumbnails.right))
+         && menu_media_open_selected_file(menu_st, &ozone->thumbnails.left, &ozone->thumbnails.right))
    {
       ozone->thumbnails.pending = OZONE_PENDING_THUMBNAIL_NONE;
       ozone->flags |= OZONE_FLAG_FULLSCREEN_THUMBNAILS_AVAILABLE;
@@ -9144,6 +9144,10 @@ static enum menu_action ozone_parse_menu_entry_action(
    if ((ozone->flags2 & OZONE_FLAG2_SHOW_FULLSCREEN_THUMBNAILS)
          && menu_media_controls_action(&ozone->media, action,
             menu_driver_get_current_time()))
+      return MENU_ACTION_NOOP;
+   if ((ozone->flags & OZONE_FLAG_IS_FILE_LIST)
+         && (ozone->flags2 & OZONE_FLAG2_SHOW_FULLSCREEN_THUMBNAILS)
+         && action == MENU_ACTION_OK)
       return MENU_ACTION_NOOP;
 
    /* We have to override the thumbnail stream
@@ -12910,7 +12914,7 @@ static void ozone_navigation_set(void *data, bool scroll)
    ozone_selection_changed(ozone, true);
    if ((ozone->flags & OZONE_FLAG_IS_FILE_LIST)
          && (ozone->flags2 & OZONE_FLAG2_SHOW_FULLSCREEN_THUMBNAILS)
-         && menu_media_open_selected_movie(menu_state_get_ptr(),
+         && menu_media_open_selected_file(menu_state_get_ptr(),
                &ozone->thumbnails.left, &ozone->thumbnails.right))
       ozone->thumbnails.pending = OZONE_PENDING_THUMBNAIL_NONE;
 }
