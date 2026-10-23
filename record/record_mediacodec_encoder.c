@@ -34,11 +34,26 @@ typedef media_status_t (*record_mc_format_free_fn)(AMediaFormat *);
 typedef void (*record_mc_string_fn)(AMediaFormat *, const char *, const char *);
 typedef void (*record_mc_integer_fn)(AMediaFormat *, const char *, int32_t);
 typedef void (*record_mc_float_fn)(AMediaFormat *, const char *, float);
+typedef bool (*record_mc_get_integer_fn)(
+      AMediaFormat *, const char *, int32_t *);
+typedef ssize_t (*record_mc_input_fn)(AMediaCodec *, int64_t);
+/* The codec queue keeps its long-sized offset in large-file builds. */
+#if defined(__USE_FILE_OFFSET64) && !defined(__LP64__)
+typedef int32_t record_mc_offset_t;
+#else
+typedef off_t record_mc_offset_t;
+#endif
+typedef char record_mc_offset_abi[(sizeof(record_mc_offset_t) == sizeof(long))
+            ? 1
+            : -1];
+typedef media_status_t (*record_mc_queue_fn)(
+      AMediaCodec *, size_t, record_mc_offset_t, size_t, uint64_t, uint32_t);
 #if defined(__ANDROID__) && defined(__clang__) && __ANDROID_API__ >= 29
 #define RECORD_MC_ABI(type, symbol)                                            \
    __extension__ typedef char symbol##_record_abi                              \
          [__builtin_types_compatible_p(type, __typeof__(&symbol)) ? 1 : -1]
 RECORD_MC_ABI(record_mc_new_fn, AMediaCodec_createCodecByName);
+RECORD_MC_ABI(record_mc_new_fn, AMediaCodec_createEncoderByType);
 RECORD_MC_ABI(record_mc_action_fn, AMediaCodec_start);
 RECORD_MC_ABI(record_mc_action_fn, AMediaCodec_stop);
 RECORD_MC_ABI(record_mc_action_fn, AMediaCodec_delete);
@@ -57,10 +72,15 @@ RECORD_MC_ABI(record_mc_format_free_fn, AMediaFormat_delete);
 RECORD_MC_ABI(record_mc_string_fn, AMediaFormat_setString);
 RECORD_MC_ABI(record_mc_integer_fn, AMediaFormat_setInt32);
 RECORD_MC_ABI(record_mc_float_fn, AMediaFormat_setFloat);
+RECORD_MC_ABI(record_mc_get_integer_fn, AMediaFormat_getInt32);
+RECORD_MC_ABI(record_mc_input_fn, AMediaCodec_dequeueInputBuffer);
+RECORD_MC_ABI(record_mc_buffer_fn, AMediaCodec_getInputBuffer);
+RECORD_MC_ABI(record_mc_queue_fn, AMediaCodec_queueInputBuffer);
 #undef RECORD_MC_ABI
 #endif
 struct record_mediacodec_encoder
 {
+   uint64_t next_sample, end_sample;
    dylib_t library, android_library;
    AMediaCodec *codec;
    AMediaFormat *config, *format;
@@ -72,9 +92,15 @@ struct record_mediacodec_encoder
    record_mc_buffer_fn buffer;
    record_mc_release_fn release;
    record_mc_format_fn get_format;
+   record_mc_get_integer_fn get_integer;
+   record_mc_input_fn input;
+   record_mc_buffer_fn input_buffer;
+   record_mc_queue_fn queue;
    record_mediacodec_packet_t packet;
    size_t index;
+   unsigned rate, channels;
    bool started, failed, held, input_eos, output_eos;
+   bool audio, seen_input, closing;
 };
 void record_mediacodec_encoder_free(record_mediacodec_encoder_t *s)
 {
@@ -198,6 +224,192 @@ failed:
    record_mediacodec_encoder_free(s);
    return NULL;
 }
+record_mediacodec_encoder_t *record_mediacodec_encoder_audio_new(
+      unsigned rate, unsigned channels, unsigned bitrate)
+{
+   record_mediacodec_encoder_t *s;
+   record_mc_new_fn make;
+   record_mc_configure_fn configure;
+   record_mc_action_fn start;
+   record_mc_format_new_fn format_new;
+   record_mc_string_fn set_string;
+   record_mc_integer_fn set_integer;
+   if (!rate || rate > INT_MAX || !bitrate || bitrate > INT_MAX
+         || (channels != 1 && channels != 2))
+      return NULL;
+   s = (record_mediacodec_encoder_t *)calloc(1, sizeof(*s));
+   if (!s)
+      return NULL;
+   s->audio = true;
+   s->rate = rate;
+   s->channels = channels;
+   s->library = dylib_load("libmediandk.so");
+   if (!s->library)
+      goto failed;
+#define RECORD_AAC_LOAD(target, type, symbol)                                  \
+   do                                                                          \
+   {                                                                           \
+      target = (type)dylib_proc(s->library, symbol);                           \
+      if (!target)                                                             \
+         goto failed;                                                          \
+   } while (0)
+   RECORD_AAC_LOAD(make, record_mc_new_fn, "AMediaCodec_createEncoderByType");
+   RECORD_AAC_LOAD(configure, record_mc_configure_fn, "AMediaCodec_configure");
+   RECORD_AAC_LOAD(start, record_mc_action_fn, "AMediaCodec_start");
+   RECORD_AAC_LOAD(s->stop, record_mc_action_fn, "AMediaCodec_stop");
+   RECORD_AAC_LOAD(s->delete_codec, record_mc_action_fn, "AMediaCodec_delete");
+   RECORD_AAC_LOAD(
+         s->output, record_mc_output_fn, "AMediaCodec_dequeueOutputBuffer");
+   RECORD_AAC_LOAD(
+         s->buffer, record_mc_buffer_fn, "AMediaCodec_getOutputBuffer");
+   RECORD_AAC_LOAD(
+         s->release, record_mc_release_fn, "AMediaCodec_releaseOutputBuffer");
+   RECORD_AAC_LOAD(
+         s->get_format, record_mc_format_fn, "AMediaCodec_getOutputFormat");
+   RECORD_AAC_LOAD(format_new, record_mc_format_new_fn, "AMediaFormat_new");
+   RECORD_AAC_LOAD(
+         s->format_free, record_mc_format_free_fn, "AMediaFormat_delete");
+   RECORD_AAC_LOAD(set_string, record_mc_string_fn, "AMediaFormat_setString");
+   RECORD_AAC_LOAD(set_integer, record_mc_integer_fn, "AMediaFormat_setInt32");
+   RECORD_AAC_LOAD(
+         s->get_integer, record_mc_get_integer_fn, "AMediaFormat_getInt32");
+   RECORD_AAC_LOAD(
+         s->input, record_mc_input_fn, "AMediaCodec_dequeueInputBuffer");
+   RECORD_AAC_LOAD(
+         s->input_buffer, record_mc_buffer_fn, "AMediaCodec_getInputBuffer");
+   RECORD_AAC_LOAD(
+         s->queue, record_mc_queue_fn, "AMediaCodec_queueInputBuffer");
+#undef RECORD_AAC_LOAD
+   s->codec = make("audio/mp4a-latm");
+   if (!s->codec || !(s->config = format_new()))
+      goto failed;
+   set_string(s->config, "mime", "audio/mp4a-latm");
+   set_integer(s->config, "sample-rate", (int32_t)rate);
+   set_integer(s->config, "channel-count", (int32_t)channels);
+   set_integer(s->config, "bitrate", (int32_t)bitrate);
+   set_integer(s->config, "aac-profile", 2);
+   set_integer(s->config, "pcm-encoding", 2);
+   set_integer(s->config, "max-input-size", 16384);
+   if (configure(
+             s->codec, s->config, NULL, NULL, AMEDIACODEC_CONFIGURE_FLAG_ENCODE)
+         != AMEDIA_OK)
+      goto failed;
+   s->started = true;
+   if (start(s->codec) != AMEDIA_OK)
+      goto failed;
+   return s;
+failed:
+   record_mediacodec_encoder_free(s);
+   return NULL;
+}
+static bool record_mc_sample_time(unsigned rate, uint64_t sample, int64_t *time)
+{
+   uint64_t maximum = ((uint64_t)-1) >> 1;
+   uint64_t whole = sample / rate, fraction = (sample % rate) * 1000000 / rate;
+   if (whole > maximum / 1000000 || fraction > maximum - whole * 1000000)
+      return false;
+   *time = (int64_t)(whole * 1000000 + fraction);
+   return true;
+}
+static int record_mc_audio_input(record_mediacodec_encoder_t *s,
+      const int16_t *samples, uint64_t count, uint64_t timestamp, bool eos,
+      size_t *accepted)
+{
+   ssize_t index;
+   uint8_t *data;
+   size_t capacity = 0, frames, stride = s->channels * sizeof(int16_t);
+   int64_t pts;
+   if (!record_mc_sample_time(s->rate, timestamp, &pts))
+      goto failed;
+   index = s->input(s->codec, 0);
+   if (index == AMEDIACODEC_INFO_TRY_AGAIN_LATER)
+      return 0;
+   if (index < 0)
+      goto failed;
+   frames = 0;
+   if (!eos)
+   {
+      data = s->input_buffer(s->codec, (size_t)index, &capacity);
+      frames = capacity / stride;
+      if (frames > 4096)
+         frames = 4096;
+      if (frames > count)
+         frames = (size_t)count;
+      if (!data || !frames)
+         goto failed;
+      if (samples)
+         memcpy(data, samples, frames * stride);
+      else
+         memset(data, 0, frames * stride);
+   }
+   if (s->queue(s->codec, (size_t)index, 0, frames * stride, (uint64_t)pts,
+             eos ? AMEDIACODEC_BUFFER_FLAG_END_OF_STREAM : 0)
+         != AMEDIA_OK)
+      goto failed;
+   if (eos)
+      s->input_eos = true;
+   else
+   {
+      s->next_sample = timestamp + frames;
+      s->seen_input = true;
+      if (samples)
+         *accepted = frames;
+   }
+   return 1;
+failed:
+   s->failed = true;
+   return -1;
+}
+int record_mediacodec_encoder_audio_submit(record_mediacodec_encoder_t *s,
+      const int16_t *samples, size_t frames, uint64_t timestamp,
+      size_t *accepted)
+{
+   int64_t end;
+   if (accepted)
+      *accepted = 0;
+   if (!s || !s->audio || s->failed)
+      return -1;
+   if (!accepted || !samples || !frames || s->closing
+         || frames > (size_t)-1 / (s->channels * sizeof(int16_t))
+         || (uint64_t)frames > (uint64_t)-1 - timestamp
+         || !record_mc_sample_time(s->rate, timestamp + frames, &end)
+         || (s->seen_input && timestamp < s->next_sample))
+   {
+      s->failed = true;
+      return -1;
+   }
+   if (s->seen_input && timestamp > s->next_sample)
+      return record_mc_audio_input(s, NULL, timestamp - s->next_sample,
+            s->next_sample, false, accepted);
+   return record_mc_audio_input(s, samples, frames, timestamp, false, accepted);
+}
+int record_mediacodec_encoder_audio_finish(
+      record_mediacodec_encoder_t *s, uint64_t end_sample)
+{
+   int64_t end;
+   size_t accepted = 0;
+   int result;
+   if (!s || !s->audio || s->failed)
+      return -1;
+   if (!record_mc_sample_time(s->rate, end_sample, &end)
+         || (s->seen_input && end_sample < s->next_sample)
+         || (s->closing && end_sample != s->end_sample))
+   {
+      s->failed = true;
+      return -1;
+   }
+   s->closing = true;
+   s->end_sample = end_sample;
+   if (s->input_eos)
+      return 1;
+   if (end_sample > s->next_sample)
+   {
+      result = record_mc_audio_input(s, NULL, end_sample - s->next_sample,
+            s->next_sample, false, &accepted);
+      return result == 1 ? 2 : result;
+   }
+   return record_mc_audio_input(s, NULL, 0, end_sample, true, &accepted);
+}
 void *record_mediacodec_encoder_surface(record_mediacodec_encoder_t *s)
 {
    return s && !s->failed && !s->input_eos ? s->surface : NULL;
@@ -208,7 +420,7 @@ void *record_mediacodec_encoder_format(record_mediacodec_encoder_t *s)
 }
 bool record_mediacodec_encoder_finish(record_mediacodec_encoder_t *s)
 {
-   if (!s || s->failed)
+   if (!s || s->failed || s->audio)
       return false;
    if (s->input_eos)
       return true;
@@ -263,6 +475,17 @@ int record_mediacodec_encoder_pump(
       AMediaFormat *format = s->get_format(s->codec);
       if (!format)
          goto failed;
+      if (s->audio)
+      {
+         int32_t rate = 0, channels = 0;
+         if (!s->get_integer(format, "sample-rate", &rate)
+               || !s->get_integer(format, "channel-count", &channels)
+               || rate != (int32_t)s->rate || channels != (int32_t)s->channels)
+         {
+            s->format_free(format);
+            goto failed;
+         }
+      }
       if (s->format)
          s->format_free(s->format);
       s->format = format;
@@ -300,6 +523,33 @@ failed:
    return RECORD_MC_ERROR;
 }
 #else
+record_mediacodec_encoder_t *record_mediacodec_encoder_audio_new(
+      unsigned rate, unsigned channels, unsigned bitrate)
+{
+   (void)rate;
+   (void)channels;
+   (void)bitrate;
+   return NULL;
+}
+int record_mediacodec_encoder_audio_submit(record_mediacodec_encoder_t *s,
+      const int16_t *samples, size_t frames, uint64_t timestamp,
+      size_t *accepted)
+{
+   (void)s;
+   (void)samples;
+   (void)frames;
+   (void)timestamp;
+   if (accepted)
+      *accepted = 0;
+   return -1;
+}
+int record_mediacodec_encoder_audio_finish(
+      record_mediacodec_encoder_t *s, uint64_t end_sample)
+{
+   (void)s;
+   (void)end_sample;
+   return -1;
+}
 record_mediacodec_encoder_t *record_mediacodec_encoder_new(JNIEnv *env,
       const mediacodec_encoder_request_t *request, unsigned interval)
 {

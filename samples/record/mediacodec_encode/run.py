@@ -28,7 +28,7 @@ if os.environ.get("SANITIZER"):
     flags += ["-fsanitize=" + os.environ["SANITIZER"], "-fno-omit-frame-pointer"]
 with tempfile.TemporaryDirectory(prefix="mediacodec-encode-") as directory:
     binary = Path(directory) / ("encoder_test.exe" if os.name == "nt" else "encoder_test")
-    for source, extra in (("test.c", []),
+    for source, extra in (("test.c", []), ("audio_test.c", []),
                           ("mux_test.c", ["-DRECORD_MEDIACODEC_MUX_TEST"])):
         command = compiler + flags + extra + [str(here / source), "-o", str(binary)]
         print("+", shlex.join(command), flush=True)

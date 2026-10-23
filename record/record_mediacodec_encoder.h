@@ -27,6 +27,21 @@ enum record_mediacodec_result
  * interval is the requested keyframe interval in seconds. */
 record_mediacodec_encoder_t *record_mediacodec_encoder_new(JNIEnv *env,
       const mediacodec_encoder_request_t *request, unsigned interval);
+/* Worker-owned platform AAC-LC encoder; software implementations are allowed.
+ * S16 mono/stereo only. Native configuration determines rate/bitrate support.
+ */
+record_mediacodec_encoder_t *record_mediacodec_encoder_audio_new(
+      unsigned rate, unsigned channels, unsigned bitrate);
+/* Sample-clock timestamps share the recording epoch. 1 means progress,
+ * 0 BUSY, -1 sticky error. accepted counts consumed source frames, possibly
+ * zero while filling a gap with bounded silence. Retain unconsumed PCM. */
+int record_mediacodec_encoder_audio_submit(record_mediacodec_encoder_t *encoder,
+      const int16_t *samples, size_t frames, uint64_t timestamp,
+      size_t *accepted);
+/* -1 error, 0 BUSY, 1 EOS queued, 2 trailing silence queued. The first call
+ * closes input and fixes the end timestamp, even across BUSY. */
+int record_mediacodec_encoder_audio_finish(
+      record_mediacodec_encoder_t *encoder, uint64_t end_sample);
 /* Borrowed until free; stop/retire the GPU producer before freeing. */
 void *record_mediacodec_encoder_surface(record_mediacodec_encoder_t *encoder);
 /* Worker only, zero native dequeue timeout, one output action per call.
