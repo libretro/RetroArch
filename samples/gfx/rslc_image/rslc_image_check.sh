@@ -12,7 +12,9 @@
 #
 # A .slang given in place of a .slangp is wrapped in a one-pass preset.
 # Options: -d DRIVER (vulkan, the default, glcore, d3d10, d3d11 or
-# d3d12), -f FRAMES (default 30), -k keep the captures in ./out/, -w
+# d3d12), -f FRAMES (default 30), -k keep the captures in ./out/, -c
+# capture the rslc run a second time on its warm SPIR-V cache (the
+# words must pass rslc's ingest and the picture must not change), -w
 # run a Windows RetroArch under Wine with pattern_core.dll (make
 # CC=x86_64-w64-mingw32-gcc EXT=dll), which is how the D3D drivers run
 # on a Linux box.  With glcore the glslang run crosses the SPIR-V and
@@ -27,6 +29,7 @@ set -u
 driver=vulkan
 frames=30
 keep=0
+cached=0
 runner=
 ext=so
 while [ $# -gt 0 ]; do
@@ -34,12 +37,13 @@ while [ $# -gt 0 ]; do
       -d) driver=$2; shift 2 ;;
       -f) frames=$2; shift 2 ;;
       -k) keep=1; shift ;;
+      -c) cached=1; shift ;;
       -w) runner=wine; ext=dll; shift ;;
       *) break ;;
    esac
 done
 if [ $# -lt 2 ]; then
-   echo "usage: $0 [-d driver] [-f frames] [-k] [-w] <retroarch> <preset.slangp> ..." >&2
+   echo "usage: $0 [-d driver] [-f frames] [-k] [-c] [-w] <retroarch> <preset.slangp> ..." >&2
    exit 2
 fi
 ra=$1; shift
@@ -55,7 +59,8 @@ out="$here/out"
 mkdir -p "$out"
 
 capture() {
-   # $1 preset, $2 compiler number, $3 output png, $4 log
+   # $1 preset, $2 compiler number, $3 output png, $4 log, $5 "warm"
+   # to keep the SPIR-V cache of the previous capture
    cfg="$out/ra_$2.cfg"
    cat > "$cfg" <<EOF
 video_driver = "$driver"
@@ -83,9 +88,12 @@ cache_directory = "$out/cache_$2"
 video_shader_dir = "$(dirname "$1")"
 config_save_on_exit = "false"
 EOF
-   # every capture compiles afresh, so the log says which compiler ran
-   rm -rf "$out/cache_$2"
-   mkdir -p "$out/cache_$2"
+   # every capture compiles afresh, so the log says which compiler ran,
+   # unless the warm cache is the thing under test
+   if [ "${5:-}" != warm ]; then
+      rm -rf "$out/cache_$2"
+      mkdir -p "$out/cache_$2"
+   fi
    rm -f "$3"
    $runner "$ra" --verbose --config "$cfg" -L "$core" --set-shader "$1" \
       --max-frames="$frames" --max-frames-ss --max-frames-ss-path="$3" \
@@ -124,11 +132,23 @@ for preset in "$@"; do
          echo "FAIL  $name: the rslc run did not compile rslc's HLSL (see $lr)"; bad=$((bad + 1)); continue
       fi ;;
    esac
-   if cmp -s "$g" "$r"; then
-      echo "same  $name"
-   else
-      echo "DIFF  $name: $g $r"; bad=$((bad + 1))
+   if ! cmp -s "$g" "$r"; then
+      echo "DIFF  $name: $g $r"; bad=$((bad + 1)); continue
    fi
+   if [ "$cached" = 1 ]; then
+      c="$out/${name}_rslc_cached.png"
+      lc="$out/${name}_rslc_cached.log"
+      if ! capture "$preset" 2 "$c" "$lc" warm; then
+         echo "FAIL  $name: no capture from the warm cache (see $lc)"; bad=$((bad + 1)); continue
+      fi
+      if ! grep -q "Loaded shader from cache" "$lc" || grep -q "Cached SPIR-V refused" "$lc"; then
+         echo "FAIL  $name: the warm run did not serve the cache (see $lc)"; bad=$((bad + 1)); continue
+      fi
+      if ! cmp -s "$r" "$c"; then
+         echo "DIFF  $name: cache $r $c"; bad=$((bad + 1)); continue
+      fi
+   fi
+   echo "same  $name"
 done
 echo "$n presets, $bad differ or failed"
 [ "$keep" = 1 ] || rm -f "$out"/*.cfg

@@ -309,10 +309,16 @@ bool rslc_compile(const char *glsl, size_t len,
       enum rslc_stage stage,
       const struct rslc_opts *opts, struct rslc_result *result);
 
-/* Rebuild the IR from a SPIR-V module this compiler or glslang emitted
- * for the slang stack, then produce opts->dst from it.  Modules with
- * capabilities beyond Shader or with unstructured control flow are
- * refused; the caller recompiles from GLSL. */
+/* Read a SPIR-V module this compiler or glslang emitted for the slang
+ * stack back to its reflection: the blocks and their members, the
+ * samplers, the stage inputs and outputs, and the block members the
+ * code the entry point reaches touches.  opts->dst is RSLC_DST_REFLECT
+ * (tables only) or RSLC_DST_SPIRV (tables and a copy of the words);
+ * bodies are not decompiled, so a printed destination is refused and
+ * the caller prints from the GLSL.  A module for another stage, with
+ * capabilities beyond Shader, with unstructured control flow, with a
+ * block layout this compiler would not produce, or with malformed
+ * instructions is refused; the caller recompiles from GLSL. */
 bool rslc_compile_spirv(const uint32_t *words, size_t n,
       enum rslc_stage stage,
       const struct rslc_opts *opts, struct rslc_result *result);

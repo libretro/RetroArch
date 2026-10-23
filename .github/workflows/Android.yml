@@ -85,12 +85,28 @@ jobs:
         run: |
           set -eu
           bin="$MEDIA_NDK/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          unity="$RUNNER_TEMP/android-record-unity.c"
+          : > "$unity"
+          for source in gfx/common/mediacodec_inventory.c record/record_mediacodec_encoder.c \
+              record/record_mux_mediacodec.c record/record_mediacodec_worker.c \
+              record/record_audio_queue.c libretro-common/queues/retro_spsc.c; do
+            printf '#include "%s/%s"\n' "$PWD" "$source" >> "$unity"
+          done
           for target in armv7a-linux-androideabi aarch64-linux-android; do
             for api in 21 29; do
               for offset in default 64; do
                 extra=""
                 if [ "$offset" = 64 ]; then extra="-D_FILE_OFFSET_BITS=64"; fi
                 CC="$bin/$target$api-clang $extra" python3 libretro-common/samples/formats/vp9/check_stack.py
+                "$bin/$target$api-clang" $extra -O1 -std=c89 -pedantic -Wall -Wextra -Werror \
+                  -Wno-long-long -Wno-c99-extensions -Wframe-larger-than=2048 \
+                  -DHAVE_THREADS -DHAVE_DYLIB -Ilibretro-common/include \
+                  -c "$unity" -o "$RUNNER_TEMP/record-$target-$api-$offset.o"
+                if "$bin/llvm-nm" -u "$RUNNER_TEMP/record-$target-$api-$offset.o" | \
+                    grep -Eq ' U (AMedia|ANativeWindow|record_mediacodec_|record_mux_mediacodec_|record_audio_queue_|retro_spsc_|mediacodec_inventory_)'; then
+                  echo "Unresolved Android recording dependency"
+                  exit 1
+                fi
                 for source in android_image_queue android_image_ndk mediacodec_session android_frame \
                     mediacodec_color mediacodec_frame_export vulkan_android_device \
                     vulkan_android_image vulkan_android_pipeline vulkan_android_sync \
@@ -139,10 +155,10 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+      - name: Android encoder, AAC, mux and worker contracts
+        run: make -C samples/record/mediacodec_encode check CC=${{ matrix.cc }} SANITIZER=address,undefined
       - name: Cold session, Surface timestamps and terminal output contracts
         run: make -C samples/gfx/mediacodec_session session-check CC=${{ matrix.cc }} SANITIZER=address,undefined
-      - name: Worker-owned Surface encoder and borrowed output contracts
-        run: make -C samples/record/mediacodec_encode check CC=${{ matrix.cc }} SANITIZER=address,undefined
       - name: Opaque frame leases, HDR refinement and concurrent handoffs
         run: make -C samples/gfx/mediacodec_session frame-check CC=${{ matrix.cc }} SANITIZER=address,undefined
       - name: HEVC VP9 AV1 color intersection and renderer export contracts
