@@ -59,6 +59,7 @@
 #endif
 #ifdef HAVE_GCD
 #include <dispatch/dispatch.h>
+#include <pthread.h>
 #endif
 
 typedef struct
@@ -72,6 +73,7 @@ struct retro_task_impl
    retro_task_queue_msg_t msg_push;
    void (*push_running)(retro_task_t *);
    void (*cancel)(void *);
+   bool (*cancel_ident)(uint32_t ident);
    void (*wake)(uint32_t ident);
    void (*reset)(void);
    void (*wait)(retro_task_condition_fn_t, void *);
@@ -137,6 +139,9 @@ struct task_worker
    retro_atomic_int_t state;
    /* Takes only RETRO_TASK_FLG_PARALLEL tasks; set at start. */
    bool               parallel_only;
+   /* Its entry in task_worker_tid: 0 for the one worker, 1 + i for
+    * extra worker i. */
+   unsigned           slot;
    /* The task whose handler it is in; written under running_lock. */
    retro_task_t      *task;
    /* The primitives of the queue this worker was started for, so an
@@ -199,6 +204,22 @@ static retro_atomic_int_t task_switching = RETRO_ATOMIC_INT_INITIALIZER(0);
 /* Tasks pushed from other threads that may not reach the runner, for
  * the next gather. */
 static retro_atomic_ptr_t task_deferred;
+/* Cancels by ident from other threads, for the next gather. */
+static retro_atomic_ptr_t task_cancels;
+/* The threaded workers' thread ids, one slot each, and on GCD a key
+ * set while a handler runs: a find from any of them skips the gate,
+ * since deinit waits for them. */
+static retro_atomic_ptr_t task_worker_tid[1 + TASK_PARALLEL_MAX];
+#ifdef HAVE_GCD
+static pthread_key_t      task_gcd_key;
+static retro_atomic_int_t task_gcd_key_made = RETRO_ATOMIC_INT_INITIALIZER(0);
+#endif
+
+struct task_cancel_node
+{
+   struct task_cancel_node *next;
+   uint32_t                 ident;
+};
 #endif
 #endif
 static void task_wake_gate_open(void);
@@ -467,6 +488,21 @@ static void retro_task_regular_cancel(void *task)
    task_flags_set((retro_task_t*)task, RETRO_TASK_FLG_CANCELLED);
 }
 
+static bool retro_task_regular_cancel_ident(uint32_t ident)
+{
+   retro_task_t *task = tasks_running.front;
+
+   for (; task; task = task->next)
+   {
+      if (task->ident == ident)
+      {
+         task_flags_set(task, RETRO_TASK_FLG_CANCELLED);
+         return true;
+      }
+   }
+   return false;
+}
+
 /* This runner calls each handler once per check, which is already the
  * wait a park asks for, so there is nothing to wake. */
 static void retro_task_regular_wake(uint32_t ident)
@@ -488,6 +524,7 @@ void task_queue_set_slow_handler_cb(retro_task_slow_handler_t cb,
 }
 
 static void task_queue_push_deferred(void);
+static void task_queue_cancel_deferred(void);
 
 static void retro_task_regular_gather(void)
 {
@@ -502,6 +539,7 @@ static void retro_task_regular_gather(void)
    bool          over     = false;
 
    task_queue_push_deferred();
+   task_queue_cancel_deferred();
 
    /* Detach the running list, in order. */
    while ((task = task_queue_get(&tasks_running)))
@@ -672,6 +710,7 @@ static struct retro_task_impl impl_regular = {
    NULL,
    retro_task_regular_push_running,
    retro_task_regular_cancel,
+   retro_task_regular_cancel_ident,
    retro_task_regular_wake,
    retro_task_regular_reset,
    retro_task_regular_wait,
@@ -855,6 +894,27 @@ static void retro_task_threaded_cancel(void *task)
    slock_unlock(running_lock);
 }
 
+/* As retro_task_threaded_cancel(), for the task with @ident. */
+static bool retro_task_threaded_cancel_ident(uint32_t ident)
+{
+   retro_task_t *t;
+   bool          found = false;
+
+   slock_lock(running_lock);
+   for (t = tasks_running.front; t; t = t->next)
+   {
+      if (t->ident == ident)
+      {
+         task_flags_set(t, RETRO_TASK_FLG_CANCELLED);
+         retro_task_threaded_wake_locked(t);
+         found = true;
+         break;
+      }
+   }
+   slock_unlock(running_lock);
+   return found;
+}
+
 static void retro_task_threaded_run_main(unsigned due);
 static unsigned retro_task_threaded_due_main(retro_task_t *task,
       retro_time_t *now);
@@ -869,6 +929,7 @@ static void retro_task_threaded_gather(void)
    retro_task_t *task = NULL;
 
    task_queue_push_deferred();
+   task_queue_cancel_deferred();
 
    /* Nothing running and nothing finished, as on nearly every frame.
     * A task that finishes just after this test retires on the next
@@ -1341,11 +1402,26 @@ static void retro_task_threaded_run_main(unsigned due)
 }
 
 #ifndef HAVE_GCD
+/* For task_is_queue_thread(): each worker sets its own id before it
+ * runs a handler and clears it before it reports that it left, and
+ * deinit clears the id of one it leaves behind, so a thread that
+ * reuses an id is not taken for a worker. */
+static void task_worker_tid_set(unsigned slot, void *tid)
+{
+#ifdef TASK_PUSH_DEFER
+   retro_atomic_store_release_ptr(&task_worker_tid[slot], tid);
+#else
+   (void)slot;
+   (void)tid;
+#endif
+}
+
 static void threaded_worker(void *userdata)
 {
    struct task_worker *self = (struct task_worker*)userdata;
 
    sthread_setname("ra-task");
+   task_worker_tid_set(self->slot, (void*)sthread_get_current_thread_id());
 #ifdef TASK_WORKER_BELOW_CREATOR
    /* Refused outside the process's priority range, which leaves the
     * worker level with its creator. */
@@ -1364,6 +1440,7 @@ static void threaded_worker(void *userdata)
       {
          /* Tell deinit, which may be waiting on worker_cond with a
           * bound, that there is nothing left to wait for. */
+         task_worker_tid_set(self->slot, NULL);
          retro_atomic_store_release_int(&self->state, TASK_WORKER_EXITED);
          scond_broadcast(worker_cond);
          slock_unlock(running_lock);
@@ -1537,6 +1614,7 @@ static void retro_task_threaded_start_parallel(void)
          break;
       retro_atomic_store_release_int(&w->state, TASK_WORKER_IDLE);
       w->parallel_only = true;
+      w->slot          = 1 + i;
       w->running_lock  = running_lock;
       w->finished_lock = finished_lock;
       w->worker_cond   = worker_cond;
@@ -1699,6 +1777,7 @@ static void retro_task_threaded_deinit(void)
          if (detachable && retro_atomic_cas_int(&worker_self->state,
                   TASK_WORKER_IN_HANDLER, TASK_WORKER_ORPHANED))
          {
+            task_worker_tid_set(worker_self->slot, NULL);
             retro_task_threaded_orphan_worker(task);
             free(task_report);
             task_report     = NULL;
@@ -1731,6 +1810,7 @@ static struct retro_task_impl impl_threaded = {
    NULL,
    retro_task_threaded_push_running,
    retro_task_threaded_cancel,
+   retro_task_threaded_cancel_ident,
    retro_task_threaded_wake,
    retro_task_threaded_reset,
    retro_task_threaded_wait,
@@ -1880,6 +1960,17 @@ static void gcd_stop_locked(retro_task_t *task)
       scond_signal(worker_cond);
 }
 
+/* Marks the thread as one of the queue's own while a handler runs. */
+static void gcd_mark_handler(void *mark)
+{
+#ifdef TASK_PUSH_DEFER
+   if (retro_atomic_load_acquire_int(&task_gcd_key_made))
+      pthread_setspecific(task_gcd_key, mark);
+#else
+   (void)mark;
+#endif
+}
+
 static void gcd_worker(retro_task_t *task)
 {
    bool finished = false;
@@ -1908,7 +1999,9 @@ static void gcd_worker(retro_task_t *task)
    retro_task_threaded_unpark_locked(task);
    slock_unlock(running_lock);
 
+   gcd_mark_handler(task);
    task->handler(task);
+   gcd_mark_handler(NULL);
 
    finished = (retro_atomic_load_acquire_int(&task->flags)
          & RETRO_TASK_FLG_FINISHED) != 0;
@@ -1999,6 +2092,13 @@ static bool retro_task_gcd_init(void)
 
    if (!retro_task_sync_primitives_new())
       return false;
+#ifdef TASK_PUSH_DEFER
+   /* Made once and never deleted, so that no finder meets a key on its
+    * way out. */
+   if (     !retro_atomic_load_relaxed_int(&task_gcd_key_made)
+         && !pthread_key_create(&task_gcd_key, NULL))
+      retro_atomic_store_release_int(&task_gcd_key_made, 1);
+#endif
 
    slock_lock(running_lock);
    worker_continue = true;
@@ -2050,6 +2150,7 @@ static struct retro_task_impl impl_gcd = {
    NULL,
    retro_task_gcd_push_running,
    retro_task_threaded_cancel,
+   retro_task_threaded_cancel_ident,
    retro_task_threaded_wake,
    retro_task_threaded_reset,
    retro_task_gcd_wait,
@@ -2177,8 +2278,62 @@ bool task_queue_is_threaded(void)
    return task_threaded_enable;
 }
 
+#ifdef TASK_PUSH_DEFER
+/* A handler on the queue's own worker or GCD threads: deinit waits for
+ * it before it frees anything, so it never meets a switch. */
+static bool task_is_queue_thread(void)
+{
+   void    *self = (void*)sthread_get_current_thread_id();
+   unsigned i;
+#ifdef HAVE_GCD
+   if (     retro_atomic_load_acquire_int(&task_gcd_key_made)
+         && pthread_getspecific(task_gcd_key))
+      return true;
+#endif
+   for (i = 0; i < 1 + TASK_PARALLEL_MAX; i++)
+      if (retro_atomic_load_acquire_ptr(&task_worker_tid[i]) == self)
+         return true;
+   return false;
+}
+
+/* Pushes held for the gather.  Only the thread that drives the queue
+ * drains them, so only it may walk them. */
+static bool task_queue_find_deferred(retro_task_finder_t func,
+      void *user_data)
+{
+   retro_task_t *task = (retro_task_t*)
+      retro_atomic_load_acquire_ptr(&task_deferred);
+
+   for (; task; task = task->next)
+   {
+      if (func(task, user_data))
+         return true;
+   }
+   return false;
+}
+#endif
+
 bool task_queue_find(task_finder_data_t *find_data)
 {
+#ifdef TASK_PUSH_DEFER
+   if (task_is_on_main_thread())
+      return impl_current->find(find_data->func, find_data->userdata)
+         || task_queue_find_deferred(find_data->func, find_data->userdata);
+   if (!task_is_queue_thread())
+   {
+      bool found = false;
+
+      /* The unthreaded queue's lists take no lock. */
+      if (task_wake_gate_enter())
+      {
+         if (impl_current && impl_current != &impl_regular)
+            found = impl_current->find(find_data->func,
+                  find_data->userdata);
+         task_wake_gate_leave();
+      }
+      return found;
+   }
+#endif
    return impl_current->find(find_data->func, find_data->userdata);
 }
 
@@ -2297,7 +2452,10 @@ static void task_queue_push_deferred(void)
    while (fifo)
    {
       retro_task_t *next = fifo->next;
-      if (!task_queue_push_now(fifo))
+      /* Cancelled while held: retired below without running. */
+      if (   (retro_atomic_load_acquire_int(&fifo->flags)
+               & RETRO_TASK_FLG_CANCELLED)
+          || !task_queue_push_now(fifo))
       {
          fifo->next   = NULL;
          *refused_end = fifo;
@@ -2313,9 +2471,9 @@ static void task_queue_push_deferred(void)
          task = task->next;
       task->next = NULL;
    }
-   /* A second BLOCKING task is retired cancelled, so that its callback
-    * still runs.  Not before the cut: freed, its address could come
-    * back as the head. */
+   /* A second BLOCKING task, or one cancelled while held, is retired
+    * cancelled, so that its callback still runs.  Not before the cut:
+    * freed, its address could come back as the head. */
    while (refused)
    {
       retro_task_t *next = refused->next;
@@ -2414,6 +2572,98 @@ void task_queue_reset(void)
 void task_queue_cancel_task(void *task)
 {
    impl_current->cancel(task);
+}
+
+/* On the thread that drives the queue: a running task, or one held for
+ * the gather, which the gather then retires without running it. */
+static bool task_queue_cancel_ident_now(uint32_t ident)
+{
+#ifdef TASK_PUSH_DEFER
+   retro_task_t *task;
+#endif
+
+   if (!impl_current)
+      return false;
+   if (impl_current->cancel_ident(ident))
+      return true;
+#ifdef TASK_PUSH_DEFER
+   for (task = (retro_task_t*)retro_atomic_load_acquire_ptr(&task_deferred);
+         task; task = task->next)
+   {
+      if (task->ident == ident)
+      {
+         task_flags_set(task, RETRO_TASK_FLG_CANCELLED);
+         return true;
+      }
+   }
+#endif
+   return false;
+}
+
+#ifdef TASK_PUSH_DEFER
+static bool task_queue_defer_cancel(uint32_t ident)
+{
+   void                    *head;
+   struct task_cancel_node *node = (struct task_cancel_node*)
+      malloc(sizeof(*node));
+
+   if (!node)
+      return false;
+   node->ident = ident;
+   do
+   {
+      head       = retro_atomic_load_acquire_ptr(&task_cancels);
+      node->next = (struct task_cancel_node*)head;
+   } while (!retro_atomic_cas_ptr(&task_cancels, head, node));
+   return true;
+}
+#endif
+
+/* After the pushes in each gather, so that a cancel finds a push its
+ * own thread made first. */
+static void task_queue_cancel_deferred(void)
+{
+#ifdef TASK_PUSH_DEFER
+   struct task_cancel_node *node;
+
+   if (!retro_atomic_load_acquire_ptr(&task_cancels))
+      return;
+   node = (struct task_cancel_node*)
+      retro_atomic_exchange_ptr(&task_cancels, NULL);
+   while (node)
+   {
+      struct task_cancel_node *next = node->next;
+      task_queue_cancel_ident_now(node->ident);
+      free(node);
+      node = next;
+   }
+#endif
+}
+
+bool task_queue_cancel_ident(uint32_t ident)
+{
+#ifdef TASK_PUSH_DEFER
+   /* The thread that drives the queue is the one that switches it. */
+   if (!task_is_on_main_thread())
+   {
+      if (task_wake_gate_enter())
+      {
+         /* A held push may be this thread's own, which the running
+          * list does not have yet. */
+         bool direct =    impl_current
+                       && impl_current != &impl_regular
+                       && !retro_atomic_load_acquire_ptr(&task_deferred);
+         if (direct)
+            impl_current->cancel_ident(ident);
+         task_wake_gate_leave();
+         if (direct)
+            return true;
+      }
+      return task_queue_defer_cancel(ident);
+   }
+#endif
+   task_queue_cancel_ident_now(ident);
+   return true;
 }
 
 void task_queue_park(retro_task_t *task, retro_time_t horizon_usec)

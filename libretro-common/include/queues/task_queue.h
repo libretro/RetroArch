@@ -511,11 +511,33 @@ void task_queue_retriever_info_free(task_retriever_info_t *list);
 /**
  * Cancels the provided task.
  * The task should finish its work as soon as possible afterward.
+ * Only on the thread that drives the queue or from a handler the queue
+ * runs: from another thread, use task_queue_cancel_ident().
  *
  * @param task The task to cancel.
  * @see task_set_cancelled
  */
 void task_queue_cancel_task(void *task);
+
+/**
+ * task_queue_cancel_ident:
+ * @ident : The task::ident of the task to cancel.
+ *
+ * Cancels a running task as task_queue_cancel_task() does, or one
+ * pushed from another thread and still held for the next
+ * task_queue_check(), which then retires it cancelled without running
+ * it; its callback still runs.  Does nothing for a task that is no
+ * longer running.  Safe from any thread where the platform has
+ * lock-free atomics; elsewhere, only where task_queue_cancel_task()
+ * is.  From a handler on the unthreaded queue it misses, as
+ * task_queue_find() does, the tasks that the check running that
+ * handler has taken off the queue.  From another thread, while the
+ * queue switches, while it is unthreaded, or while pushes from other
+ * threads are held, the cancel is made at the next task_queue_check().
+ *
+ * @return \c false only when such a cancel could not be recorded.
+ */
+bool task_queue_cancel_ident(uint32_t ident);
 
 /**
  * task_queue_park:
@@ -767,6 +789,13 @@ void task_queue_set_parallel_workers(unsigned count);
  * Calls the function given in \c find_data for each task
  * until it returns \c true for one of them,
  * or until all tasks have been searched.
+ *
+ * On the thread that drives the queue it also sees tasks pushed from
+ * other threads and held for the next task_queue_check().  From a
+ * thread other than that one and the queue's own, it never sees held
+ * pushes, and it reports \c false unless the queue is threaded with no
+ * switch under way.  Such a find can miss a task, its own thread's
+ * held push included, so a push it guards against may be made twice.
  *
  * @param find_data Parameters for the search.
  * Behavior is undefined if \c NULL.

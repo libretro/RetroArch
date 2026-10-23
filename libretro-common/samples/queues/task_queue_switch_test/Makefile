@@ -9,7 +9,9 @@ LIBRETRO_COMM_DIR := ../../..
 # an absurd request is seen, and refused, rather than attempted,
 # slock_lock() so that a waker can be held inside the queue, and
 # slock_unlock() and sthread_create() so that the main thread can be
-# held where a new runner first runs a task.
+# held where a new runner first runs a task, and sthread_join() and
+# sthread_get_current_thread_id() so that a thread can take the
+# worker's id while deinit joins it.
 SOURCES := \
 	task_queue_switch_test.c \
 	$(LIBRETRO_COMM_DIR)/queues/task_queue.c \
@@ -27,15 +29,21 @@ LIBS    += -lpthread
 # name, and the test's __real_ calls name the real functions.
 ifneq ($(shell uname -s),Darwin)
    LDFLAGS += -Wl,--wrap=realloc -Wl,--wrap=slock_lock \
-              -Wl,--wrap=slock_unlock -Wl,--wrap=sthread_create
+              -Wl,--wrap=slock_unlock -Wl,--wrap=sthread_create \
+              -Wl,--wrap=sthread_join \
+              -Wl,--wrap=sthread_get_current_thread_id
 else
    TASK_QUEUE_O := $(call sample_objs,$(LIBRETRO_COMM_DIR)/queues/task_queue.o)
    $(TASK_QUEUE_O): CFLAGS += -Drealloc=__wrap_realloc -Dslock_lock=__wrap_slock_lock \
                               -Dslock_unlock=__wrap_slock_unlock \
-                              -Dsthread_create=__wrap_sthread_create
+                              -Dsthread_create=__wrap_sthread_create \
+                              -Dsthread_join=__wrap_sthread_join \
+                              -Dsthread_get_current_thread_id=__wrap_sthread_get_current_thread_id
    $(TARGET).o: CFLAGS += -D__real_realloc=realloc -D__real_slock_lock=slock_lock \
                           -D__real_slock_unlock=slock_unlock \
-                          -D__real_sthread_create=sthread_create
+                          -D__real_sthread_create=sthread_create \
+                          -D__real_sthread_join=sthread_join \
+                          -D__real_sthread_get_current_thread_id=sthread_get_current_thread_id
 endif
 
 # GCD=1 builds the GCD runner as the threaded one: against libSystem on

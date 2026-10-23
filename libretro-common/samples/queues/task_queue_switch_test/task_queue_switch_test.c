@@ -26,11 +26,19 @@
  * wrapped as well, so that the main thread can be held where the new
  * runner first runs a task.
  *
- * Last, tasks are pushed from other threads: on the unthreaded queue,
+ * Then, tasks are pushed from other threads: on the unthreaded queue,
  * whose lists take no lock, and all through a run of switches. Such a
  * push is held for the next check, and a second BLOCKING task held
  * there is cancelled, with its callback. A thread's next push does not
  * pass one of its own that is held.
+ *
+ * Then tasks are cancelled by ident and looked for from other threads.
+ * A cancel reaches a parked task at once on the threaded queue, and
+ * otherwise at the next check, a held push included, which retires
+ * cancelled without running. A find from another thread at a switch,
+ * or on the unthreaded queue, reports false; the main thread's and the
+ * queue's own handlers' finds do not, and the main thread's sees held
+ * pushes.
  */
 
 #include <stdio.h>
@@ -866,6 +874,543 @@ static void lane_push_order(void)
    check(order_retired == 2, "both of its pushes run");
 }
 
+/* --- cancels and finds from other threads ----------------------------- */
+
+/* A task that parks for a minute until it is cancelled.  runs counts
+ * every handler call; the callback runs on the main thread. */
+typedef struct
+{
+   retro_atomic_int_t runs;
+   unsigned           callbacks;
+   bool               cancelled;
+} victim_t;
+
+static victim_t           victims[6];
+static retro_atomic_int_t finder_armed;
+static retro_atomic_int_t finder_found;
+static retro_atomic_int_t foreign_result;
+
+static void victim_handler(retro_task_t *task)
+{
+   victim_t *victim = (victim_t*)task->user_data;
+
+   retro_atomic_fetch_add_int(&victim->runs, 1);
+   if (task_get_flags(task) & RETRO_TASK_FLG_CANCELLED)
+   {
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+      return;
+   }
+   task_queue_park(task, LONG_PARK_US);
+}
+
+static void victim_callback(retro_task_t *task, void *task_data,
+      void *user_data, const char *error)
+{
+   victim_t *victim = (victim_t*)user_data;
+
+   victim->callbacks++;
+   victim->cancelled =
+      (task_get_flags(task) & RETRO_TASK_FLG_CANCELLED) != 0;
+}
+
+static bool ident_finder(retro_task_t *task, void *data)
+{
+   return task->ident == *(uint32_t*)data;
+}
+
+/* A victim that, while armed, looks for the probe from its handler. */
+static void finder_handler(retro_task_t *task)
+{
+   if (retro_atomic_load_acquire_int(&finder_armed))
+   {
+      task_finder_data_t find;
+
+      find.func     = ident_finder;
+      find.userdata = &probe_ident;
+      retro_atomic_store_release_int(&finder_found,
+            task_queue_find(&find) ? 1 : 0);
+   }
+   victim_handler(task);
+}
+
+static retro_task_t *victim_task(victim_t *victim,
+      retro_task_handler_t handler)
+{
+   retro_task_t *task = task_init();
+
+   task->handler   = handler;
+   task->callback  = victim_callback;
+   task->user_data = victim;
+   return task;
+}
+
+/* Pushes a victim on the main thread and checks the queue until its
+ * handler has run. */
+static uint32_t push_victim(victim_t *victim, retro_task_handler_t handler)
+{
+   retro_task_t *task  = victim_task(victim, handler);
+   uint32_t      ident = task->ident;
+   retro_time_t  until = cpu_features_get_time_usec() + LIMIT_US;
+
+   task_queue_push(task);
+   while (     !retro_atomic_load_acquire_int(&victim->runs)
+            && cpu_features_get_time_usec() < until)
+   {
+      task_queue_check();
+      retro_sleep(1);
+   }
+   return ident;
+}
+
+/* Checks the queue until the victim's callback has run. */
+static bool victim_retires(victim_t *victim)
+{
+   retro_time_t until = cpu_features_get_time_usec() + LIMIT_US;
+
+   while (!victim->callbacks)
+   {
+      if (cpu_features_get_time_usec() > until)
+         return false;
+      task_queue_check();
+      retro_sleep(1);
+   }
+   return true;
+}
+
+static void cancel_one(void *data)
+{
+   retro_atomic_store_release_int(&foreign_result,
+         task_queue_cancel_ident(*(uint32_t*)data) ? 1 : 0);
+}
+
+static void find_one(void *data)
+{
+   task_finder_data_t find;
+
+   find.func     = ident_finder;
+   find.userdata = data;
+   retro_atomic_store_release_int(&foreign_result,
+         task_queue_find(&find) ? 1 : 0);
+}
+
+/* Runs @fn on another thread, with @ident: whether it returned true. */
+static bool from_thread(void (*fn)(void*), uint32_t ident)
+{
+   sthread_t *th;
+
+   retro_atomic_store_release_int(&foreign_result, -1);
+   if (!(th = sthread_create(fn, &ident)))
+      return false;
+   sthread_join(th);
+   return retro_atomic_load_acquire_int(&foreign_result) == 1;
+}
+
+static bool find_here(uint32_t ident)
+{
+   task_finder_data_t find;
+
+   find.func     = ident_finder;
+   find.userdata = &ident;
+   return task_queue_find(&find);
+}
+
+/* A waker held inside the threaded queue puts a switch to unthreaded
+ * off, with the gate shut, until gate_release(). */
+static sthread_t *gate_shut(void)
+{
+   sthread_t   *th;
+   retro_time_t until;
+
+   retro_atomic_store_release_int(&hold_inside, 0);
+   retro_atomic_store_release_int(&hold_release, 0);
+   th    = sthread_create(held_waker, NULL);
+   until = cpu_features_get_time_usec() + LIMIT_US;
+   while (     th
+            && !retro_atomic_load_acquire_int(&hold_inside)
+            && cpu_features_get_time_usec() < until)
+      retro_sleep(1);
+   task_queue_unset_threaded();
+   task_queue_check();
+   return th;
+}
+
+/* The next check makes the switch, unless it is taken back first. */
+static void gate_release(sthread_t *th)
+{
+   retro_atomic_store_release_int(&hold_release, 1);
+   if (th)
+      sthread_join(th);
+}
+
+/* On the threaded queue, with no switch under way: a cancel from
+ * another thread reaches its parked task at once, with no check, which
+ * would apply one held for the gather. */
+static void lane_cancel_threaded(void)
+{
+   uint32_t     ident = push_victim(&victims[0], victim_handler);
+   retro_time_t until;
+
+   check(from_thread(cancel_one, ident),
+         "a cancel by ident from another thread is taken");
+   until = cpu_features_get_time_usec() + LIMIT_US;
+   while (     retro_atomic_load_acquire_int(&victims[0].runs) < 2
+            && cpu_features_get_time_usec() < until)
+      retro_sleep(1);
+   check(retro_atomic_load_acquire_int(&victims[0].runs) >= 2,
+         "on the threaded queue it wakes its parked task with no check");
+   check(victim_retires(&victims[0]) && victims[0].cancelled,
+         "which retires cancelled");
+}
+
+/* With a switch put off: finds from other threads report false, while
+ * the main thread's and the queue's own handlers' do not, and cancels
+ * from other threads wait for the gather.  The main thread sees a push
+ * held for the gather, and cancels it before it runs. */
+static void lane_cancel_find_shut(void)
+{
+   sthread_t    *waker_th;
+   retro_task_t *held;
+   retro_time_t  until;
+   uint32_t      held_ident;
+   uint32_t      parked = push_victim(&victims[1], victim_handler);
+   uint32_t      finder = push_victim(&victims[3], finder_handler);
+
+   waker_th = gate_shut();
+   check(!from_thread(find_one, probe_ident),
+         "a find from another thread while the queue switches reports false");
+   check(find_here(probe_ident), "a find on the main thread still sees the task");
+
+   retro_atomic_store_release_int(&finder_found, -1);
+   retro_atomic_store_release_int(&finder_armed, 1);
+   task_queue_wake(finder);
+   until = cpu_features_get_time_usec() + LIMIT_US;
+   while (     retro_atomic_load_acquire_int(&finder_found) < 0
+            && cpu_features_get_time_usec() < until)
+   {
+      task_queue_check();
+      retro_sleep(1);
+   }
+   retro_atomic_store_release_int(&finder_armed, 0);
+   check(retro_atomic_load_acquire_int(&finder_found) == 1,
+         "a find from the queue's own handler while it switches still sees the task");
+
+   held       = victim_task(&victims[2], victim_handler);
+   held_ident = held->ident;
+   check(push_from_thread(held), "a push from another thread is held");
+   check(find_here(held_ident), "a find on the main thread sees the held push");
+   check(!from_thread(find_one, held_ident),
+         "one from another thread is turned away while the queue switches");
+   check(task_queue_cancel_ident(held_ident),
+         "the main thread cancels the held push");
+   check(from_thread(cancel_one, parked),
+         "a cancel from another thread while the queue switches is taken");
+
+   gate_release(waker_th);
+   check(victim_retires(&victims[2]) && victims[2].cancelled
+         && !retro_atomic_load_acquire_int(&victims[2].runs),
+         "the held push retires cancelled without running");
+   check(victim_retires(&victims[1]) && victims[1].cancelled,
+         "the cancel held for the gather reaches its task");
+   check(task_queue_cancel_ident(finder) && victim_retires(&victims[3])
+         && victims[3].cancelled,
+         "a cancel by ident on the main thread reaches its task");
+}
+
+/* The unthreaded queue's lists take no lock: a find from another
+ * thread reports false there, and a cancel waits for the gather. */
+static void lane_cancel_find_unthreaded(void)
+{
+   uint32_t ident = push_victim(&victims[4], victim_handler);
+
+   check(!from_thread(find_one, probe_ident),
+         "on the unthreaded queue a find from another thread reports false");
+   check(find_here(probe_ident), "a find on the main thread sees the task");
+   check(from_thread(cancel_one, ident),
+         "a cancel by ident from another thread is taken");
+   check(victim_retires(&victims[4]) && victims[4].cancelled,
+         "the next check applies it");
+
+   retro_atomic_store_release_int(&probe_ran_on, -1);
+   task_queue_set_threaded();
+   probe_runs_on(0);
+}
+
+static retro_atomic_int_t corder_pushed;
+static retro_atomic_int_t corder_saw_hold;
+static retro_atomic_int_t corder_taken;
+
+/* Its push meets the gate shut and is held.  Its cancel waits until the
+ * main thread is held in the gather that opens the gate again, before
+ * that gather has pushed the task. */
+static void corder_pusher(void *data)
+{
+   retro_task_t *task  = victim_task(&victims[5], victim_handler);
+   uint32_t      ident = task->ident;
+   retro_time_t  until;
+
+   (void)data;
+   task_queue_push(task);
+   retro_atomic_store_release_int(&corder_pushed, 1);
+   until = cpu_features_get_time_usec() + LIMIT_US;
+   while (     !retro_atomic_load_acquire_int(&hold_inside)
+            && cpu_features_get_time_usec() < until)
+      retro_sleep(1);
+   retro_atomic_store_release_int(&corder_saw_hold,
+         retro_atomic_load_acquire_int(&hold_inside));
+   retro_atomic_store_release_int(&corder_taken,
+         task_queue_cancel_ident(ident) ? 1 : 0);
+   retro_atomic_store_release_int(&hold_release, 1);
+}
+
+/* A thread's cancel of its own held push, made after the gate opens
+ * again but before the gather has pushed the task, is not lost. */
+static void lane_cancel_order(void)
+{
+   sthread_t   *th;
+   retro_time_t until;
+
+   retro_atomic_store_release_int(&corder_pushed, 0);
+   retro_atomic_store_release_int(&corder_saw_hold, 0);
+   retro_atomic_store_release_int(&corder_taken, 0);
+   gate_release(gate_shut());
+
+   retro_atomic_store_release_int(&hold_inside, 0);
+   retro_atomic_store_release_int(&hold_release, 0);
+   th    = sthread_create(corder_pusher, NULL);
+   until = cpu_features_get_time_usec() + LIMIT_US;
+   while (     th
+            && !retro_atomic_load_acquire_int(&corder_pushed)
+            && cpu_features_get_time_usec() < until)
+      retro_sleep(1);
+
+   /* Taken back: the check opens the gate, and its gather stops at its
+    * first queue lock until the pusher has cancelled. */
+   if (th)
+   {
+      holder_tid = sthread_get_current_thread_id();
+      retro_atomic_store_release_int(&hold_armed, 1);
+   }
+   task_queue_set_threaded();
+   task_queue_check();
+   if (th)
+      sthread_join(th);
+   retro_atomic_store_release_int(&hold_armed, 0);
+
+   check(retro_atomic_load_acquire_int(&corder_saw_hold) == 1,
+         "the gather that takes a put-off switch back is held before it pushes");
+   check(retro_atomic_load_acquire_int(&corder_taken) == 1,
+         "a thread's cancel of its own held push is taken");
+   check(victim_retires(&victims[5]) && victims[5].cancelled,
+         "and reaches it");
+}
+
+/* --- the worker's id at deinit --------------------------------------- */
+
+/* Armed, the next sthread_join() then runs a probe thread that takes
+ * worker_tid from sthread_get_current_thread_id(), as a new thread
+ * that reuses a joined worker's id would, and looks for a task. */
+static retro_atomic_int_t join_probe_armed;
+static retro_atomic_int_t join_probe_active;
+static retro_atomic_int_t join_probe_found;
+static uintptr_t          join_probe_tid;
+static uintptr_t          worker_tid;
+static uint32_t           worker_task_ident;
+
+uintptr_t __real_sthread_get_current_thread_id(void);
+void      __real_sthread_join(sthread_t *thread);
+
+uintptr_t __wrap_sthread_get_current_thread_id(void)
+{
+   uintptr_t tid = __real_sthread_get_current_thread_id();
+
+   if (     retro_atomic_load_acquire_int(&join_probe_active)
+         && tid == join_probe_tid)
+      return worker_tid;
+   return tid;
+}
+
+static void join_probe(void *data)
+{
+   task_finder_data_t find;
+
+   (void)data;
+   join_probe_tid = __real_sthread_get_current_thread_id();
+   retro_atomic_store_release_int(&join_probe_active, 1);
+   find.func     = ident_finder;
+   find.userdata = &worker_task_ident;
+   retro_atomic_store_release_int(&join_probe_found,
+         task_queue_find(&find) ? 1 : 0);
+   retro_atomic_store_release_int(&join_probe_active, 0);
+}
+
+void __wrap_sthread_join(sthread_t *thread)
+{
+   __real_sthread_join(thread);
+   if (retro_atomic_load_acquire_int(&join_probe_armed))
+   {
+      sthread_t *th;
+
+      retro_atomic_store_release_int(&join_probe_armed, 0);
+      if ((th = __real_sthread_create(join_probe, NULL)))
+         __real_sthread_join(th);
+   }
+}
+
+#ifndef HAVE_GCD
+static victim_t worker_victim;
+
+/* A victim that takes the id of the worker it first runs on. */
+static void worker_id_handler(retro_task_t *task)
+{
+   victim_t *victim = (victim_t*)task->user_data;
+
+   if (!retro_atomic_load_acquire_int(&victim->runs))
+      worker_tid = sthread_get_current_thread_id();
+   victim_handler(task);
+}
+
+/* A thread that reuses the worker's id while deinit joins the worker
+ * is not taken for it: its find meets the shut gate, not the lists. */
+static void lane_worker_id_at_deinit(void)
+{
+   task_queue_init(true, NULL);
+   worker_task_ident = push_victim(&worker_victim, worker_id_handler);
+   retro_atomic_store_release_int(&join_probe_found, -1);
+   retro_atomic_store_release_int(&join_probe_armed, 1);
+   task_queue_deinit();
+   check(retro_atomic_load_acquire_int(&join_probe_found) == 0,
+         "a find with the worker's id from inside deinit's join is refused");
+   task_queue_init(false, NULL);
+   task_queue_cancel_ident(worker_task_ident);
+   check(victim_retires(&worker_victim) && worker_victim.cancelled,
+         "the task it leaves parked retires cancelled after the next init");
+   task_queue_deinit();
+}
+
+/* --- the workers' ids with extra workers ------------------------------ */
+
+static victim_t           extra_victims[3];
+static retro_atomic_int_t hog_inside;
+static retro_atomic_int_t hog_release;
+
+/* Holds the one worker in its handler, so that a parallel task runs
+ * on an extra. */
+static void hog_handler(retro_task_t *task)
+{
+   retro_atomic_store_release_int(&hog_inside, 1);
+   while (!retro_atomic_load_acquire_int(&hog_release))
+      retro_sleep(1);
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+}
+
+static void hog_start(void)
+{
+   retro_task_t *task  = task_init();
+   retro_time_t  until = cpu_features_get_time_usec() + LIMIT_US;
+
+   retro_atomic_store_release_int(&hog_inside, 0);
+   retro_atomic_store_release_int(&hog_release, 0);
+   task->handler = hog_handler;
+   task_queue_push(task);
+   while (     !retro_atomic_load_acquire_int(&hog_inside)
+            && cpu_features_get_time_usec() < until)
+      retro_sleep(1);
+}
+
+static uint32_t push_parallel_victim(victim_t *victim,
+      retro_task_handler_t handler)
+{
+   retro_task_t *task  = victim_task(victim, handler);
+   retro_time_t  until = cpu_features_get_time_usec() + LIMIT_US;
+
+   task_set_flags(task, RETRO_TASK_FLG_PARALLEL, true);
+   task_queue_push(task);
+   while (     !retro_atomic_load_acquire_int(&victim->runs)
+            && cpu_features_get_time_usec() < until)
+   {
+      task_queue_check();
+      retro_sleep(1);
+   }
+   return task->ident;
+}
+
+/* Wakes a finder_handler victim: whether its find saw the probe. */
+static bool handler_finds(uint32_t finder)
+{
+   retro_time_t until = cpu_features_get_time_usec() + LIMIT_US;
+
+   retro_atomic_store_release_int(&finder_found, -1);
+   retro_atomic_store_release_int(&finder_armed, 1);
+   task_queue_wake(finder);
+   while (     retro_atomic_load_acquire_int(&finder_found) < 0
+            && cpu_features_get_time_usec() < until)
+   {
+      task_queue_check();
+      retro_sleep(1);
+   }
+   retro_atomic_store_release_int(&finder_armed, 0);
+   return retro_atomic_load_acquire_int(&finder_found) == 1;
+}
+
+/* Each worker has its own id slot: once extra workers start, a handler
+ * on the one worker and one on an extra both still skip the gate. */
+static void lane_worker_ids_with_extras(void)
+{
+   sthread_t *waker_th;
+   uint32_t   plain;
+   uint32_t   parallel;
+
+   task_queue_set_parallel_workers(2);
+   task_queue_init(true, NULL);
+   probe_ident   = push_parked(probe_handler);
+   sleeper_ident = push_parked(sleeper_handler);
+   plain         = push_victim(&extra_victims[0], finder_handler);
+   hog_start();
+   parallel      = push_parallel_victim(&extra_victims[1], finder_handler);
+
+   waker_th = gate_shut();
+   check(handler_finds(parallel),
+         "a find from a handler on an extra worker while the queue switches sees the task");
+   retro_atomic_store_release_int(&hog_release, 1);
+   check(handler_finds(plain),
+         "one from the one worker still does after the extras started");
+   gate_release(waker_th);
+
+   check(task_queue_cancel_ident(plain) && victim_retires(&extra_victims[0])
+         && task_queue_cancel_ident(parallel)
+         && victim_retires(&extra_victims[1]),
+         "both finders retire cancelled");
+   retire_parked();
+   task_queue_deinit();
+   task_queue_set_parallel_workers(0);
+}
+
+/* An extra worker's id, like the one worker's, is gone before deinit
+ * joins it. */
+static void lane_extra_id_at_deinit(void)
+{
+   uint32_t ident;
+
+   task_queue_set_parallel_workers(1);
+   task_queue_init(true, NULL);
+   hog_start();
+   ident = push_parallel_victim(&extra_victims[2], worker_id_handler);
+   retro_atomic_store_release_int(&hog_release, 1);
+   worker_task_ident = ident;
+   retro_atomic_store_release_int(&join_probe_found, -1);
+   retro_atomic_store_release_int(&join_probe_armed, 1);
+   task_queue_deinit();
+   check(retro_atomic_load_acquire_int(&join_probe_found) == 0,
+         "a find with a joined extra worker's id from inside deinit is refused");
+   task_queue_init(false, NULL);
+   task_queue_cancel_ident(ident);
+   check(victim_retires(&extra_victims[2]) && extra_victims[2].cancelled,
+         "the parallel task it leaves parked retires cancelled after the next init");
+   task_queue_deinit();
+   task_queue_set_parallel_workers(0);
+}
+#endif
+
 int main(void)
 {
    main_tid = sthread_get_current_thread_id();
@@ -921,6 +1466,33 @@ int main(void)
    lane_push_order();
    retire_parked();
    task_queue_deinit();
+
+   printf("cancels and finds from other threads, also while the queue switches\n");
+   retro_atomic_store_release_int(&parked_stop, 0);
+   retro_atomic_store_release_int(&parked_retired, 0);
+   retro_atomic_store_release_int(&probe_ran_on, -1);
+   task_queue_init(true, NULL);
+   probe_ident   = push_parked(probe_handler);
+   sleeper_ident = push_parked(sleeper_handler);
+   check(probe_runs_on(0), "the probe runs on the worker");
+   lane_cancel_threaded();
+   lane_cancel_find_shut();
+   lane_cancel_find_unthreaded();
+   lane_cancel_order();
+   retire_parked();
+   task_queue_deinit();
+
+#ifndef HAVE_GCD
+   printf("the worker's id at deinit\n");
+   lane_worker_id_at_deinit();
+
+   printf("the workers' ids with extra workers\n");
+   retro_atomic_store_release_int(&parked_stop, 0);
+   retro_atomic_store_release_int(&parked_retired, 0);
+   retro_atomic_store_release_int(&probe_ran_on, -1);
+   lane_worker_ids_with_extras();
+   lane_extra_id_at_deinit();
+#endif
 
    if (failures)
    {
