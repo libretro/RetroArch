@@ -189,11 +189,14 @@ OSStatus CMVideoFormatDescriptionCreate(void *allocator, CMVideoCodecType codec,
    assert(!parsed.initial_presentation_delay);
    assert(get(extensions, "FullRangeVideo") == kCFBooleanFalse);
    assert((const void *)get(extensions, "ColorPrimaries")
-         == kCVImageBufferColorPrimaries_ITU_R_709_2);
+         == (color.primaries == 9 ? kCVImageBufferColorPrimaries_ITU_R_2020
+               : kCVImageBufferColorPrimaries_ITU_R_709_2));
    assert((const void *)get(extensions, "TransferFunction")
-         == kCVImageBufferTransferFunction_ITU_R_709_2);
+         == (color.transfer == 16 ? kCVImageBufferTransferFunction_SMPTE_ST_2084_PQ
+               : kCVImageBufferTransferFunction_ITU_R_709_2));
    assert((const void *)get(extensions, "YCbCrMatrix")
-         == kCVImageBufferYCbCrMatrix_ITU_R_709_2);
+         == (color.matrix == 9 ? kCVImageBufferYCbCrMatrix_ITU_R_2020
+               : kCVImageBufferYCbCrMatrix_ITU_R_709_2));
    *out = new_object(4);
    if (*out)
    {

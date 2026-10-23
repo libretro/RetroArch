@@ -35,6 +35,11 @@ with tempfile.TemporaryDirectory(prefix="vt-av1-setup-") as directory:
             (folder / (framework + ".h")).write_text(
                 '#include "' + (here.parent / "videotoolbox_vp9/mock_apple.h").as_posix()
                 + '"\n', encoding="utf-8")
+        folder = path / "dispatch"
+        folder.mkdir()
+        (folder / "dispatch.h").write_text(
+            '#include "' + (here.parent / "videotoolbox_vp9/mock_dispatch.h").as_posix()
+            + '"\n', encoding="utf-8")
     binary = path / ("setup.exe" if os.name == "nt" else "setup")
     command = compiler + flags + ["-I" + str(path), str(source),
                                   "-o", str(binary)] + libraries
@@ -58,7 +63,7 @@ with tempfile.TemporaryDirectory(prefix="vt-av1-setup-") as directory:
             command += ["-c", str(root / "libretro-common" / relative), "-o", str(obj)]
             subprocess.run(command, check=True)
             objects += [str(obj)]
-        for name in ("owner_test.c", "decoder_test.c"):
+        for name in ("owner_test.c", "decoder_test.c", "dispatch_test.c", "backend_test.c"):
             command = compiler + flags + ["-I" + str(path), str(here / name)]
             command += objects + ["-o", str(binary)]
             if os.name != "nt":

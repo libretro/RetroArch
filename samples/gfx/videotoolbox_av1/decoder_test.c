@@ -54,7 +54,10 @@ static void retire(void *user, videotoolbox_av1_decoder_t *d)
    retired = d;
 }
 
-int main(void)
+#ifndef DECODER_MAIN_NAME
+#define DECODER_MAIN_NAME main
+#endif
+int DECODER_MAIN_NAME(void)
 {
    static uint8_t bytes[128];
    static const uint8_t frame[] = {0x32, 1, 0x80};
