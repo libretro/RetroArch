@@ -650,6 +650,7 @@ typedef struct settings
       bool video_fullscreen;
       bool video_windowed_fullscreen;
       bool video_dxgi_present;
+      bool video_refresh_rate_polled_auto;
       bool video_vsync;
       bool video_adaptive_vsync;
       bool video_gl_direct_spirv;
