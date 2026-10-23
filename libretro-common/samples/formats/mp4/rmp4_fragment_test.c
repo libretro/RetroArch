@@ -161,6 +161,9 @@ static int read_all(rmp4_t *m, const buf_t *w, const char *name,
 static void test_sample_cursor(rmp4_t *m, const buf_t *w, size_t payload)
 {
    rmp4_packet pkt;
+   size_t lo = 1, hi = 1;
+   rmp4_read_span(NULL, &lo, &hi);
+   CHECK(!lo && !hi, "sample span: null demux");
    rmp4_set_avail(m, 0);
    CHECK(rmp4_track_sample_key(m, 0, 0) == 1,
          "sample cursor: key metadata without resident media");
@@ -172,6 +175,11 @@ static void test_sample_cursor(rmp4_t *m, const buf_t *w, size_t payload)
          "sample cursor: feeder anchor follows selected sample");
    CHECK(rmp4_read_packet(m, &pkt) == RMP4_READ_AGAIN,
          "sample cursor: read respects byte wall");
+   rmp4_read_span(m, &lo, &hi);
+   CHECK(lo == payload + 4 && hi == payload + 8
+         && rmp4_consumed(m) == payload + 4,
+         "sample span: selected packet without resident bytes or cursor change");
+   rmp4_read_span(m, NULL, NULL);
    CHECK(!rmp4_select_track_sample(m, -1, 0)
          && !rmp4_select_track_sample(m, 0, 2)
          && rmp4_consumed(m) == payload + 4,
@@ -181,6 +189,8 @@ static void test_sample_cursor(rmp4_t *m, const buf_t *w, size_t payload)
          && pkt.data == w->b + payload + 4 && pkt.size == 4,
          "sample cursor: retry reads the selected sample");
    CHECK(rmp4_read_packet(m, &pkt) == 0, "sample cursor: selected track ends");
+   rmp4_read_span(m, &lo, &hi);
+   CHECK(!lo && !hi, "sample span: exhausted track");
    rmp4_rewind(m);
    CHECK(rmp4_consumed(m) == payload
          && rmp4_read_packet(m, &pkt) == 1 && pkt.data == w->b + payload,
@@ -197,6 +207,7 @@ static void test_track_selection(void)
    uint8_t keys[2] = {1, 0};
    rmp4_t *m = (rmp4_t*)calloc(1, sizeof(*m));
    rmp4_packet packet;
+   size_t lo, hi;
    int i;
    CHECK(m != NULL, "track selection: allocation");
    if (!m) return;
@@ -220,9 +231,19 @@ static void test_track_selection(void)
          "track selection: other track parked at end");
    rmp4_rewind(m);
    for (i = 0; i < 4; i++)
+   {
+      rmp4_read_span(m, &lo, &hi);
+      CHECK(lo == (size_t)i * 2 && hi == lo + 2,
+            "sample span: merged track order");
       CHECK(rmp4_read_packet(m, &packet) == 1
             && packet.track == (i & 1) && packet.data == bytes + i * 2,
             "track selection: rewind restores both tracks");
+   }
+   rmp4_rewind(m);
+   sizes[0] = sizeof(bytes) + 1;
+   rmp4_read_span(m, &lo, &hi);
+   CHECK(!lo && !hi, "sample span: malformed size");
+   sizes[0] = 2;
    rmp4_rewind(m);
    offsets0[1] = (uint64_t)-1;
    CHECK(!rmp4_select_track_sample(m, 0, 1)

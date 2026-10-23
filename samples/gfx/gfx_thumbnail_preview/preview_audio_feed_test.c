@@ -940,8 +940,12 @@ static int bounded_video_seek(void)
                seek_probe_lo = seek_probe_hi = 0;
                seek_probe_boundary = i;
                seek_probe_calls = 0;
+               seek_probe_wait = i != 1;
                if (gfx_anim_preview_seek_step(&p, 0, false, &position) != 0
-                     || seek_probe_calls != 1) failed = 1;
+                     || (i == 1 ? seek_probe_calls != 1
+                        : seek_probe_calls <= 1 || seek_probe_calls > 8))
+                  failed = 1;
+               seek_probe_wait = false;
             }
             data_transfer_free(p.dt);
          }

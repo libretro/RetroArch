@@ -1023,24 +1023,34 @@ int gfx_anim_preview_seek_step(void *user, int64_t target_us,
    if (p->seek_phase == 1)
    {
       int64_t started = cpu_features_get_time_usec();
-      unsigned budget = 1024;
+      unsigned budget = 1024, feeds = 1;
       if (!gfx_anim_preview_seek_feed(p)) return -1;
       do
       {
          result = image_transfer_anim_stream_seek_step(p->stream, p->type,
                &p->seek_video_us);
-         if (result || image_transfer_anim_stream_waiting(p->stream, p->type)
-               || cpu_features_get_time_usec() - started >= 4000) break;
+         if (result || cpu_features_get_time_usec() - started >= 4000)
+            break;
          if (p->windowed && p->dt)
          {
             size_t anchor = image_transfer_anim_stream_consumed(p->stream, p->type);
             size_t lo = 0, hi = 0;
             if (!anchor) anchor = image_transfer_anim_stream_media_floor(p->stream, p->type);
             image_transfer_anim_stream_next_span(p->stream, p->type, &lo, &hi);
-            if (anchor < p->seek_feed_anchor || anchor >= p->seek_feed_hi
-                  || (hi > lo && (lo < p->seek_feed_anchor || hi > p->seek_feed_hi)))
+            if (anchor < p->seek_feed_anchor
+                  || (hi > lo && lo < p->seek_feed_anchor))
                break;
+            if (anchor >= p->seek_feed_hi
+                  || (hi > lo && hi > p->seek_feed_hi))
+            {
+               if (feeds >= 8) break;
+               if (!gfx_anim_preview_seek_feed(p)) return -1;
+               feeds++;
+               continue;
+            }
          }
+         if (image_transfer_anim_stream_waiting(p->stream, p->type))
+            break;
       } while (--budget);
       if (result != 1) return result;
       p->seek_video_us = p->seek_video_us > p->timeline_start_us
