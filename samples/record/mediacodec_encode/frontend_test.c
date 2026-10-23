@@ -518,6 +518,7 @@ static void clocks(unsigned mode)
    reset(mode);
    ctx = start();
    assert(encoded.color == (mode != 0) && encoded.profile == (mode ? 4096 : 1));
+   assert(encoded.level == (mode ? 4096 : 8192));
    if (mode)
    {
       assert(encoded.hdr_static_size == 25);
@@ -799,6 +800,65 @@ static void history(void)
 #endif
    }
 }
+static void level_selection(void)
+{
+   mediacodec_encoder_request_t v;
+   bool audio;
+   memset(&v, 0, sizeof(v));
+   v.mime = "video/avc";
+   v.width = 1920;
+   v.height = 1080;
+   v.bitrate = 16000000;
+   v.frame_rate = 30.0;
+   assert(record_mc_level(&v) == 2048);
+   v.frame_rate = 60.0;
+   assert(record_mc_level(&v) == 8192);
+   v.width = 3840;
+   v.height = 2160;
+   assert(record_mc_level(&v) == 65536);
+   v.frame_rate = 30.0;
+   assert(record_mc_level(&v) == 32768);
+   v.width = 7680;
+   v.height = 4320;
+   assert(record_mc_level(&v) == 131072);
+   v.mime = "video/hevc";
+   assert(record_mc_level(&v) == 1048576);
+   v.width = 1920;
+   v.height = 1080;
+   assert(record_mc_level(&v) == 4096);
+   v.bitrate = 12000000;
+   assert(record_mc_level(&v) == 1024);
+   v.bitrate++;
+   assert(record_mc_level(&v) == 4096);
+   v.frame_rate = 60.0;
+   v.bitrate = 20000000;
+   assert(record_mc_level(&v) == 4096);
+   v.frame_rate = 60.0001;
+   assert(record_mc_level(&v) == 4096);
+   v.frame_rate = 65.0;
+   assert(record_mc_level(&v) == 16384);
+   v.width = 3840;
+   v.height = 2160;
+   v.frame_rate = 60.0;
+   assert(record_mc_level(&v) == 65536);
+   v.bitrate = 800000000;
+   assert(record_mc_level(&v) == 33554432);
+   v.bitrate++;
+   assert(!record_mc_level(&v));
+   v.bitrate = 1;
+   v.width = 16384;
+   v.height = 2;
+   assert(record_mc_level(&v) == 1048576);
+   v.width = v.height = 16384;
+   assert(!record_mc_level(&v));
+   v.width = 0;
+   assert(!record_mc_level(&v));
+   reset(0);
+   option_key = "video_level";
+   option_value = "65536";
+   assert(record_mc_options("options", &v, &audio));
+   assert(v.level == 65536);
+}
 static void admission(void)
 {
    static char overlong_path[PATH_MAX_LENGTH + 1];
@@ -878,6 +938,7 @@ int main(void)
    startup_faults();
    history();
    menu_capture();
+   level_selection();
    admission();
    assert(io_frees && config_frees && logs >= 3 && failures >= 4 && stops);
    puts("PASS full MediaCodec frontend startup, rational clocks, PCM, closure, "

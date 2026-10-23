@@ -89,6 +89,89 @@ static bool record_mc_rate(double fps, unsigned *num, unsigned *den)
    return false;
 }
 
+/* Android CodecProfileLevel values and picture/rate/bitrate limits:
+ * AOSP MediaCodecInfo.VideoCapabilities (AVC baseline, HEVC main/high tier).
+ * This selects a minimum request, not proof of hardware/session support.
+ * https://android.googlesource.com/platform/frameworks/base/+/fecafc513b542baf3931a95d5096cde679730dca/media/java/android/media/MediaCodecInfo.java
+ */
+static int record_mc_level(const mediacodec_encoder_request_t *video)
+{
+   struct record_mc_level_limit
+   {
+      double rate;
+      unsigned size, bitrate;
+      int level;
+   };
+   static const struct record_mc_level_limit avc[] = {{1485, 99, 64000, 1},
+         {1485, 99, 128000, 2}, {3000, 396, 192000, 4}, {6000, 396, 384000, 8},
+         {11880, 396, 768000, 16}, {11880, 396, 2000000, 32},
+         {19800, 792, 4000000, 64}, {20250, 1620, 4000000, 128},
+         {40500, 1620, 10000000, 256}, {108000, 3600, 14000000, 512},
+         {216000, 5120, 20000000, 1024}, {245760, 8192, 20000000, 2048},
+         {245760, 8192, 50000000, 4096}, {522240, 8704, 50000000, 8192},
+         {589824, 22080, 135000000, 16384}, {983040, 36864, 240000000, 32768},
+         {2073600, 36864, 240000000, 65536},
+         {4177920, 139264, 240000000, 131072},
+         {8355840, 139264, 480000000, 262144},
+         {16711680, 139264, 800000000, 524288}};
+   static const struct record_mc_level_limit hevc[] = {
+         {552960, 36864, 128000, 1}, {3686400, 122880, 1500000, 4},
+         {7372800, 245760, 3000000, 16}, {16588800, 552960, 6000000, 64},
+         {33177600, 983040, 10000000, 256}, {66846720, 2228224, 12000000, 1024},
+         {66846720, 2228224, 30000000, 2048},
+         {133693440, 2228224, 20000000, 4096},
+         {133693440, 2228224, 50000000, 8192},
+         {267386880, 8912896, 25000000, 16384},
+         {267386880, 8912896, 100000000, 32768},
+         {534773760, 8912896, 40000000, 65536},
+         {534773760, 8912896, 160000000, 131072},
+         {1069547520, 8912896, 60000000, 262144},
+         {1069547520, 8912896, 240000000, 524288},
+         {1069547520, 35651584, 60000000, 1048576},
+         {1069547520, 35651584, 240000000, 2097152},
+         {2139095040, 35651584, 120000000, 4194304},
+         {2139095040, 35651584, 480000000, 8388608},
+         {4278190080.0, 35651584, 240000000, 16777216},
+         {4278190080.0, 35651584, 800000000, 33554432}};
+   const struct record_mc_level_limit *limits;
+   size_t count, i;
+   unsigned tier;
+   double width, height, size;
+   bool is_hevc = string_is_equal(video->mime, "video/hevc");
+   if (!video->width || !video->height || !video->bitrate
+         || !(video->frame_rate > 0.0 && video->frame_rate <= 1000.0))
+      return 0;
+   if (is_hevc)
+   {
+      width = video->width;
+      height = video->height;
+      limits = hevc;
+      count = sizeof(hevc) / sizeof(hevc[0]);
+   }
+   else if (string_is_equal(video->mime, "video/avc"))
+   {
+      width = ceil((double)video->width / 16.0);
+      height = ceil((double)video->height / 16.0);
+      limits = avc;
+      count = sizeof(avc) / sizeof(avc[0]);
+   }
+   else
+      return 0;
+   size = width * height;
+   /* Prefer main tier: a lower high-tier number is not a guarantee that a
+    * main-tier encoder accepts it. Explicit levels retain the user's choice. */
+   for (tier = 0; tier < (is_hevc ? 2u : 1u); tier++)
+      for (i = 0; i < count; i++)
+         if ((!is_hevc || !!(limits[i].level & 0x2AAAAAA) == !!tier)
+               && size <= limits[i].size
+               && width * width <= 8.0 * limits[i].size
+               && height * height <= 8.0 * limits[i].size
+               && size * video->frame_rate <= limits[i].rate
+               && video->bitrate <= limits[i].bitrate)
+            return limits[i].level;
+   return 0;
+}
+
 static bool record_mc_options(
       const char *path, mediacodec_encoder_request_t *video, bool *audio)
 {
@@ -268,9 +351,11 @@ static void *record_mc_init(const struct record_params *params)
    /* Explicit Android levels. Inventory/session admission checks the complete
     * requested dimensions, rate, profile, level and color on the I/O worker. */
    if (!encoder.level)
-      encoder.level = string_is_equal(encoder.mime, "video/hevc")
-            ? (encoder.width <= 1920 && encoder.height <= 1080 ? 4096 : 65536)
-            : (encoder.width <= 1920 && encoder.height <= 1080 ? 8192 : 65536);
+   {
+      encoder.level = record_mc_level(&encoder);
+      if (!encoder.level)
+         return NULL;
+   }
    if (audio)
    {
       double sr = params->samplerate;
