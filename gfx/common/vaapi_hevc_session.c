@@ -1,6 +1,7 @@
 /* Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier: GPL-3.0-or-later */
 #include "vaapi_hevc_session.h"
 #include "vaapi_vp9_session.h"
+#include "vaapi_av1_session.h"
 #include <stdlib.h>
 #include <string.h>
 typedef union vaapi_hevc_query {
@@ -23,7 +24,7 @@ static bool vaapi_hevc_session_surfaces(vaapi_hevc_session_t *s)
 
 static bool vaapi_session_open(vaapi_hevc_session_t *s, VADisplay display,
       const vaapi_hevc_session_ops_t *ops, unsigned width, unsigned height,
-      unsigned depth, unsigned slots, unsigned slice_mode, bool vp9)
+      unsigned depth, unsigned slots, unsigned slice_mode, bool vp9, bool av1)
 {
    vaapi_hevc_query_t *q;
    vaapi_hevc_session_ops_t native;
@@ -34,19 +35,32 @@ static bool vaapi_session_open(vaapi_hevc_session_t *s, VADisplay display,
          : (depth == 10 ? VAProfileHEVCMain10 : VAProfileHEVCMain);
    unsigned format = depth == 10 ? VA_RT_FORMAT_YUV420_10 : VA_RT_FORMAT_YUV420;
    unsigned fourcc = depth == 10 ? VA_FOURCC_P010 : VA_FOURCC_NV12;
-   unsigned i, count, requests = 1, config_attrs = vp9 ? 1 : 2;
-   unsigned width_attr = vp9 ? 1 : 2, height_attr = vp9 ? 2 : 3;
+   bool frame = vp9 || av1;
+   unsigned minimum_slots = av1 ? 9u : vp9 ? 10u : 2u;
+   unsigned i, count, requests = 1, config_attrs = frame ? 1 : 2;
+   unsigned width_attr = frame ? 1 : 2, height_attr = frame ? 2 : 3;
    int maximum, n;
    bool found;
-   if (!s || s->initialized || !display || !ops || !ops->max_profiles
+   if (av1)
+   {
+#if VA_CHECK_VERSION(1, 8, 0)
+      profile = VAProfileAV1Profile0;
+#else
+      return false;
+#endif
+   }
+   if ((vp9 && av1) || !s || s->initialized || !display || !ops
+         || !ops->max_profiles
          || !ops->profiles || !ops->max_entrypoints || !ops->entrypoints
          || !ops->attributes || !ops->create_config || !ops->destroy_config
          || !ops->surface_attributes || !ops->create_surfaces
          || !ops->destroy_surfaces || !ops->create_context
-         || !ops->destroy_context || width < (vp9 ? 1u : 8u) || width > 65535
-         || height < (vp9 ? 1u : 8u)
-         || height > 65535 || (!vp9 && ((width & 1) || (height & 1)))
-         || (depth != 8 && depth != 10) || slots < (vp9 ? 10u : 2u) || slots > 32
+         || !ops->destroy_context || width < (frame ? 1u : 8u)
+         || width > (av1 ? 65536u : 65535u)
+         || height < (frame ? 1u : 8u)
+         || height > (av1 ? 65536u : 65535u)
+         || (!frame && ((width & 1) || (height & 1)))
+         || (depth != 8 && depth != 10) || slots < minimum_slots || slots > 32
          || (slice_mode != VAAPI_HEVC_SLICE_AUTO
                && slice_mode != VA_DEC_SLICE_MODE_NORMAL
                && slice_mode != VA_DEC_SLICE_MODE_BASE))
@@ -111,7 +125,8 @@ static bool vaapi_session_open(vaapi_hevc_session_t *s, VADisplay display,
    attrs[height_attr].type = VAConfigAttribMaxPictureHeight;
    for (i = 0; i < 4; i++)
       attrs[i].value = VA_ATTRIB_NOT_SUPPORTED;
-   s->error = ops->attributes(display, profile, VAEntrypointVLD, attrs, vp9 ? 3 : 4);
+   s->error = ops->attributes(
+         display, profile, VAEntrypointVLD, attrs, frame ? 3 : 4);
    if (s->error != VA_STATUS_SUCCESS)
       goto done;
    if (attrs[0].value == VA_ATTRIB_NOT_SUPPORTED || !(attrs[0].value & format))
@@ -119,7 +134,7 @@ static bool vaapi_session_open(vaapi_hevc_session_t *s, VADisplay display,
       s->error = VA_STATUS_ERROR_UNSUPPORTED_RT_FORMAT;
       goto done;
    }
-   if (!vp9 && slice_mode == VAAPI_HEVC_SLICE_AUTO)
+   if (!frame && slice_mode == VAAPI_HEVC_SLICE_AUTO)
    {
       if (attrs[1].value == VA_ATTRIB_NOT_SUPPORTED
             || (attrs[1].value & VA_DEC_SLICE_MODE_NORMAL))
@@ -128,10 +143,10 @@ static bool vaapi_session_open(vaapi_hevc_session_t *s, VADisplay display,
          slice_mode = VA_DEC_SLICE_MODE_BASE;
       s->slice_mode = slice_mode;
    }
-   if (!vp9 && attrs[1].value == VA_ATTRIB_NOT_SUPPORTED
+   if (!frame && attrs[1].value == VA_ATTRIB_NOT_SUPPORTED
          && slice_mode == VA_DEC_SLICE_MODE_NORMAL)
       config_attrs = 1;
-   else if (!vp9 && (attrs[1].value == VA_ATTRIB_NOT_SUPPORTED
+   else if (!frame && (attrs[1].value == VA_ATTRIB_NOT_SUPPORTED
             || !(attrs[1].value & slice_mode)))
    {
       s->error = VA_STATUS_ERROR_ATTR_NOT_SUPPORTED;
@@ -146,7 +161,7 @@ static bool vaapi_session_open(vaapi_hevc_session_t *s, VADisplay display,
       goto done;
    }
    attrs[0].value = format;
-   if (!vp9)
+   if (!frame)
       attrs[1].value = slice_mode;
    s->error       = ops->create_config(display, profile, VAEntrypointVLD, attrs,
                (int)config_attrs, &s->config);
@@ -215,7 +230,7 @@ bool vaapi_hevc_session_open(vaapi_hevc_session_t *s, VADisplay display,
       unsigned depth, unsigned slots, unsigned slice_mode)
 {
    return vaapi_session_open(s, display, ops, width, height, depth, slots,
-         slice_mode, false);
+         slice_mode, false, false);
 }
 
 bool vaapi_vp9_session_open(vaapi_vp9_session_t *s, VADisplay display,
@@ -223,7 +238,15 @@ bool vaapi_vp9_session_open(vaapi_vp9_session_t *s, VADisplay display,
       unsigned depth, unsigned slots)
 {
    return vaapi_session_open(s, display, ops, width, height, depth, slots,
-         0, true);
+         0, true, false);
+}
+
+bool vaapi_av1_session_open(vaapi_av1_session_t *s, VADisplay display,
+      const vaapi_av1_session_ops_t *ops, unsigned width, unsigned height,
+      unsigned depth, unsigned slots)
+{
+   return vaapi_session_open(s, display, ops, width, height, depth, slots,
+         0, false, true);
 }
 
 bool vaapi_hevc_session_close(vaapi_hevc_session_t *s)

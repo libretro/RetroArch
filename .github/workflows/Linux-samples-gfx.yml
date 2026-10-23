@@ -88,6 +88,7 @@ jobs:
         run: |
           make -C samples/gfx/vaapi_hevc clean check CC=${{ matrix.cc }} SANITIZER=address,undefined
           make -C samples/gfx/vaapi_vp9 clean check CC=${{ matrix.cc }} SANITIZER=address,undefined
+          make -C samples/gfx/vaapi_av1 clean check CC=${{ matrix.cc }} SANITIZER=address,undefined
           make -C libretro-common/samples/formats/vp9 rvp9_hw_segment_test CC=${{ matrix.cc }} SANITIZER=address,undefined
           libretro-common/samples/formats/vp9/rvp9_hw_segment_test
           make -C libretro-common/samples/formats/h265 rh265_slice_info_test CC=${{ matrix.cc }} SANITIZER=address,undefined
