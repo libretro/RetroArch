@@ -1161,7 +1161,7 @@ static int db_crc_collect(void *ctx, const uint8_t *key, size_t key_len,
    return 0;
 }
 
-/* Hands a finished build's entries to a new index. */
+/* Hands a finished, sorted build's entries to a new index. */
 static database_info_crc_index_t *db_crc_index_finish(
       struct db_crc_build *b, const char *rdb_path)
 {
@@ -1176,9 +1176,6 @@ static database_info_crc_index_t *db_crc_index_finish(
       free(idx);
       return NULL;
    }
-
-   if (b->count > 1)
-      qsort(b->entries, b->count, sizeof(*b->entries), db_crc_by_crc);
 
    idx->entries   = b->entries;
    idx->count     = b->count;
@@ -1451,7 +1448,7 @@ static int db_serial_collect(void *ctx, const uint8_t *key, size_t key_len,
    return 0;
 }
 
-/* Hands a finished build's entries to a new index. */
+/* Hands a finished, sorted build's entries to a new index. */
 static database_info_serial_index_t *db_serial_index_finish(
       struct db_serial_build *b, const char *rdb_path)
 {
@@ -1466,9 +1463,6 @@ static database_info_serial_index_t *db_serial_index_finish(
       free(idx);
       return NULL;
    }
-
-   if (b->count > 1)
-      qsort(b->entries, b->count, sizeof(*b->entries), db_serial_by_hash);
 
    idx->entries = b->entries;
    idx->count   = b->count;
@@ -1515,13 +1509,205 @@ static int db_index_collect(void *ctx, const uint8_t *key, size_t key_len,
           && (!b->want_serial || b->serial.failed);
 }
 
-void database_info_index_new(const char *rdb_path, size_t max_bytes,
+/* A bottom-up merge sort that stops after a given number of entries
+ * and resumes where it stopped.  Each pass merges pairs of runs of
+ * @width from one array into the other: @lo is the pair being merged,
+ * @i and @j its cursors.  Stable, so equal keys keep their file
+ * order. */
+struct db_sort
+{
+   void   *tmp;
+   size_t  width;
+   size_t  lo;
+   size_t  i;
+   size_t  j;
+};
+
+/* Moves up to @entries entries.  True once *@base is sorted, or when
+ * the scratch array cannot be had, which sets *@failed.  The scratch
+ * holds @cap entries, as *@base does, so that a build's capacity stays
+ * true of whichever array the sort ends in. */
+static bool db_sort_step(struct db_sort *s, void **base, size_t n,
+      size_t cap, size_t size, int (*cmp)(const void*, const void*),
+      size_t entries, bool *failed)
+{
+   if (n < 2)
+      return true;
+
+   if (!s->tmp)
+   {
+      if (!(s->tmp = malloc(cap * size)))
+      {
+         *failed = true;
+         return true;
+      }
+      s->width = 1;
+      s->lo    = 0;
+      s->i     = 0;
+      s->j     = 1;
+   }
+
+   while (entries)
+   {
+      const char *src = (const char*)*base;
+      char       *dst = (char*)s->tmp;
+      size_t      mid = (s->lo + s->width < n) ? s->lo + s->width : n;
+      size_t      hi  = (mid + s->width < n) ? mid + s->width : n;
+
+      for (; entries && (s->i < mid || s->j < hi); entries--)
+      {
+         size_t k = s->i + s->j - mid;
+
+         if (   s->j >= hi
+             || (   s->i < mid
+                 && cmp(src + s->j * size, src + s->i * size) >= 0))
+            memcpy(dst + k * size, src + s->i++ * size, size);
+         else
+            memcpy(dst + k * size, src + s->j++ * size, size);
+      }
+      if (s->i < mid || s->j < hi)
+         return false;
+
+      if ((s->lo = hi) >= n)
+      {
+         /* A pass is done: the runs are now in the other array. */
+         void *t   = *base;
+         *base     = s->tmp;
+         s->tmp    = t;
+         s->lo     = 0;
+         s->width *= 2;
+         if (s->width >= n)
+         {
+            free(s->tmp);
+            s->tmp = NULL;
+            return true;
+         }
+      }
+      s->i = s->lo;
+      s->j = (s->lo + s->width < n) ? s->lo + s->width : n;
+   }
+   return false;
+}
+
+enum db_index_phase
+{
+   DB_INDEX_WALK = 0,
+   DB_INDEX_SORT_CRC,
+   DB_INDEX_SORT_SERIAL,
+   DB_INDEX_DONE,
+   DB_INDEX_FAILED
+};
+
+struct database_info_index_job
+{
+   struct db_index_build  b;
+   struct db_sort         sort;
+   libretrodb_scan_t     *scan;
+   char                  *rdb_path;
+   size_t                 max_bytes;
+   unsigned               phase;     /* enum db_index_phase */
+};
+
+database_info_index_job_t *database_info_index_job_new(
+      const char *rdb_path, size_t max_bytes, unsigned want)
+{
+   database_info_index_job_t *job;
+   libretrodb_t              *db;
+
+   if (   !rdb_path || !*rdb_path
+       || !(want & (DATABASE_INFO_INDEX_CRC | DATABASE_INFO_INDEX_SERIAL)))
+      return NULL;
+   if (!(job = (database_info_index_job_t*)calloc(1, sizeof(*job))))
+      return NULL;
+
+   job->b.want_crc         = (want & DATABASE_INFO_INDEX_CRC)    != 0;
+   job->b.want_serial      = (want & DATABASE_INFO_INDEX_SERIAL) != 0;
+   job->b.crc.max_bytes    = max_bytes;
+   job->b.serial.max_bytes = max_bytes;
+   job->max_bytes          = max_bytes;
+
+   if (   !(job->rdb_path = strdup(rdb_path))
+       || !(db = libretrodb_new()))
+   {
+      database_info_index_job_free(job);
+      return NULL;
+   }
+   if (libretrodb_open(rdb_path, db, false) == 0)
+   {
+      job->scan = libretrodb_scan_begin(db,
+            job->b.want_crc ? "crc" : NULL,
+            (want & (DATABASE_INFO_INDEX_SERIAL
+                   | DATABASE_INFO_INDEX_HAS_SERIAL)) ? "serial" : NULL,
+            job->b.want_crc ? "size" : NULL);
+      libretrodb_close(db);
+   }
+   libretrodb_free(db);
+
+   if (!job->scan)
+   {
+      database_info_index_job_free(job);
+      return NULL;
+   }
+   return job;
+}
+
+bool database_info_index_job_step(database_info_index_job_t *job,
+      unsigned records, size_t entries)
+{
+   struct db_index_build *b = &job->b;
+
+   switch (job->phase)
+   {
+      case DB_INDEX_WALK:
+         {
+            int rv = libretrodb_scan_step(job->scan, records,
+                  db_index_collect, b);
+
+            if (rv > 0)
+               return false;
+            libretrodb_scan_end(job->scan);
+            job->scan  = NULL;
+            job->phase = (rv < 0) ? DB_INDEX_FAILED : DB_INDEX_SORT_CRC;
+            return rv < 0;
+         }
+      case DB_INDEX_SORT_CRC:
+         if (b->want_crc && !b->crc.failed)
+         {
+            void *base = b->crc.entries;
+            bool  done = db_sort_step(&job->sort, &base, b->crc.count,
+                  b->crc.capacity, sizeof(*b->crc.entries), db_crc_by_crc,
+                  entries, &b->crc.failed);
+
+            b->crc.entries = (struct db_crc_entry*)base;
+            if (!done)
+               return false;
+         }
+         job->phase = DB_INDEX_SORT_SERIAL;
+         return false;
+      case DB_INDEX_SORT_SERIAL:
+         if (b->want_serial && !b->serial.failed)
+         {
+            void *base = b->serial.entries;
+            bool  done = db_sort_step(&job->sort, &base, b->serial.count,
+                  b->serial.capacity, sizeof(*b->serial.entries),
+                  db_serial_by_hash, entries, &b->serial.failed);
+
+            b->serial.entries = (struct db_serial_entry*)base;
+            if (!done)
+               return false;
+         }
+         job->phase = DB_INDEX_DONE;
+         return true;
+      default:
+         break;
+   }
+   return true;
+}
+
+void database_info_index_job_finish(database_info_index_job_t *job,
       database_info_crc_index_t **crc,
       database_info_serial_index_t **serial, bool *has_serial)
 {
-   struct db_index_build b;
-   libretrodb_t         *db;
-
    if (crc)
       *crc        = NULL;
    if (serial)
@@ -1529,57 +1715,67 @@ void database_info_index_new(const char *rdb_path, size_t max_bytes,
    if (has_serial)
       *has_serial = false;
 
-   if (!rdb_path || !*rdb_path || (!crc && !serial))
-      return;
-
-   memset(&b, 0, sizeof(b));
-   b.want_crc         = (crc    != NULL);
-   b.want_serial      = (serial != NULL);
-   b.crc.max_bytes    = max_bytes;
-   b.serial.max_bytes = max_bytes;
-
-   if (!(db = libretrodb_new()))
-      return;
-
-   if (libretrodb_open(rdb_path, db, false) != 0)
+   if (job && job->phase == DB_INDEX_DONE)
    {
-      libretrodb_free(db);
-      return;
-   }
+      struct db_index_build *b    = &job->b;
+      size_t                 left = job->max_bytes;
 
-   if (libretrodb_scan_field2(db, crc ? "crc" : NULL,
-            (serial || has_serial) ? "serial" : NULL,
-            crc ? "size" : NULL, db_index_collect, &b) == 0)
-   {
-      size_t left = max_bytes;
+      if (crc && b->want_crc && !b->crc.failed)
+         *crc = db_crc_index_finish(&b->crc, job->rdb_path);
 
-      if (crc && !b.crc.failed)
-         *crc = db_crc_index_finish(&b.crc, rdb_path);
-
-      /* The serial index gets what the crc index leaves, as when the
-       * two were built one after the other. */
-      if (max_bytes && crc && *crc)
+      /* The serial index gets what the crc index leaves. */
+      if (job->max_bytes && crc && *crc)
       {
          size_t used = database_info_crc_index_bytes(*crc);
-         left        = (used < max_bytes) ? max_bytes - used : 0;
+         left        = (used < job->max_bytes)
+            ? job->max_bytes - used : 0;
       }
 
       if (   serial
-          && !b.serial.failed
-          && (   !max_bytes
+          && b->want_serial
+          && !b->serial.failed
+          && (   !job->max_bytes
               || (   left
-                  && b.serial.capacity * sizeof(*b.serial.entries)
+                  && b->serial.capacity * sizeof(*b->serial.entries)
                      <= left)))
-         *serial = db_serial_index_finish(&b.serial, rdb_path);
+         *serial = db_serial_index_finish(&b->serial, job->rdb_path);
 
       if (has_serial)
-         *has_serial = b.has_serial;
+         *has_serial = b->has_serial;
    }
+   database_info_index_job_free(job);
+}
 
-   free(b.crc.entries);
-   free(b.serial.entries);
-   libretrodb_close(db);
-   libretrodb_free(db);
+void database_info_index_job_free(database_info_index_job_t *job)
+{
+   if (!job)
+      return;
+   libretrodb_scan_end(job->scan);
+   free(job->sort.tmp);
+   free(job->b.crc.entries);
+   free(job->b.serial.entries);
+   free(job->rdb_path);
+   free(job);
+}
+
+void database_info_index_new(const char *rdb_path, size_t max_bytes,
+      database_info_crc_index_t **crc,
+      database_info_serial_index_t **serial, bool *has_serial)
+{
+   database_info_index_job_t *job;
+   unsigned                   want = 0;
+
+   if (crc)
+      want |= DATABASE_INFO_INDEX_CRC;
+   if (serial)
+      want |= DATABASE_INFO_INDEX_SERIAL;
+   if (has_serial)
+      want |= DATABASE_INFO_INDEX_HAS_SERIAL;
+
+   job = database_info_index_job_new(rdb_path, max_bytes, want);
+   while (job && !database_info_index_job_step(job, 4096, 65536))
+      ;
+   database_info_index_job_finish(job, crc, serial, has_serial);
 }
 
 size_t database_info_serial_index_bytes(

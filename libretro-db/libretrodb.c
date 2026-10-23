@@ -711,38 +711,99 @@ static int rmsgpack_read_uint_inplace(intfstream_t *fd, uint64_t *out)
    return -1;
 }
 
-int libretrodb_scan_field2(libretrodb_t *db, const char *field,
-      const char *field2, const char *aux_field,
+struct libretrodb_scan
+{
+   intfstream_t *fd;
+   const char   *field;
+   const char   *field2;
+   const char   *aux_field;
+   size_t        field_len;
+   size_t        field2_len;
+   size_t        aux_len;
+};
+
+libretrodb_scan_t *libretrodb_scan_begin(libretrodb_t *db,
+      const char *field, const char *field2, const char *aux_field)
+{
+   libretrodb_scan_t *scan;
+
+   if (!db || !db->path || !*db->path)
+      return NULL;
+   if (!(scan = (libretrodb_scan_t*)calloc(1, sizeof(*scan))))
+      return NULL;
+
+   if (field && *field)
+      scan->field_len  = strlen(field);
+   if (field2 && *field2)
+      scan->field2_len = strlen(field2);
+   if (aux_field && *aux_field)
+      scan->aux_len    = strlen(aux_field);
+   scan->field     = field;
+   scan->field2    = field2;
+   scan->aux_field = aux_field;
+
+   if (!scan->field_len && !scan->field2_len)
+   {
+      free(scan);
+      return NULL;
+   }
+
+   if (!(scan->fd = intfstream_open_buffered(db->path,
+               LIBRETRODB_WINDOW_SIZE)))
+      if (!(scan->fd = intfstream_open_file(db->path,
+                  RETRO_VFS_FILE_ACCESS_READ,
+                  RETRO_VFS_FILE_ACCESS_HINT_NONE)))
+      {
+         free(scan);
+         return NULL;
+      }
+
+   if (intfstream_seek(scan->fd,
+            (int64_t)(db->root + sizeof(libretrodb_header_t)),
+            RETRO_VFS_SEEK_POSITION_START) < 0)
+   {
+      libretrodb_scan_end(scan);
+      return NULL;
+   }
+   return scan;
+}
+
+void libretrodb_scan_end(libretrodb_scan_t *scan)
+{
+   if (!scan)
+      return;
+   intfstream_close(scan->fd);
+   free(scan->fd);
+   free(scan);
+}
+
+int libretrodb_scan_step(libretrodb_scan_t *scan, unsigned max_records,
       libretrodb_scan2_cb cb, void *ctx)
 {
    intfstream_t *fd;
-   size_t        field_len  = 0;
-   size_t        field2_len = 0;
-   size_t        aux_len    = 0;
-   int           rv         = -1;
+   const char   *field;
+   const char   *field2;
+   const char   *aux_field;
+   size_t        field_len;
+   size_t        field2_len;
+   size_t        aux_len;
+   unsigned      n;
+   int           rv = -1;
 
-   if (field && *field)
-      field_len  = strlen(field);
-   if (field2 && *field2)
-      field2_len = strlen(field2);
-   if (aux_field && *aux_field)
-      aux_len    = strlen(aux_field);
-
-   if (   !db || !db->path || !*db->path
-       || (!field_len && !field2_len) || !cb)
+   if (!scan || !cb)
       return -1;
 
-   if (!(fd = intfstream_open_buffered(db->path, LIBRETRODB_WINDOW_SIZE)))
-      if (!(fd = intfstream_open_file(db->path,
-                  RETRO_VFS_FILE_ACCESS_READ,
-                  RETRO_VFS_FILE_ACCESS_HINT_NONE)))
-         return -1;
+   fd         = scan->fd;
+   field      = scan->field;
+   field2     = scan->field2;
+   aux_field  = scan->aux_field;
+   field_len  = scan->field_len;
+   field2_len = scan->field2_len;
+   aux_len    = scan->aux_len;
 
-   if (intfstream_seek(fd, (int64_t)(db->root + sizeof(libretrodb_header_t)),
-            RETRO_VFS_SEEK_POSITION_START) < 0)
-      goto end;
-
-   for (;;)
+   /* Every record is read from its start to its end, so the stream's
+    * position is all that carries over to the next call. */
+   for (n = 0; n < max_records; n++)
    {
       int64_t record_start = intfstream_tell(fd);
       int32_t  map_len;
@@ -857,10 +918,25 @@ int libretrodb_scan_field2(libretrodb_t *db, const char *field,
          }
       }
    }
+   return 1;
 
 end:
-   intfstream_close(fd);
-   free(fd);
+   return rv;
+}
+
+int libretrodb_scan_field2(libretrodb_t *db, const char *field,
+      const char *field2, const char *aux_field,
+      libretrodb_scan2_cb cb, void *ctx)
+{
+   libretrodb_scan_t *scan;
+   int                rv;
+
+   if (!cb || !(scan = libretrodb_scan_begin(db, field, field2, aux_field)))
+      return -1;
+   do
+      rv = libretrodb_scan_step(scan, 4096, cb, ctx);
+   while (rv == 1);
+   libretrodb_scan_end(scan);
    return rv;
 }
 

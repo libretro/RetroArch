@@ -92,6 +92,23 @@ int libretrodb_scan_field2(libretrodb_t *db, const char *field,
       const char *field2, const char *aux_field,
       libretrodb_scan2_cb cb, void *ctx);
 
+/* libretrodb_scan_field2() a run of records at a time, so that a walk
+ * can be spread over several calls.  The scan reads through a stream
+ * of its own, so @db may be closed once it has begun.  The field names
+ * are not copied and must outlive the scan. */
+typedef struct libretrodb_scan libretrodb_scan_t;
+
+libretrodb_scan_t *libretrodb_scan_begin(libretrodb_t *db,
+      const char *field, const char *field2, const char *aux_field);
+
+/* Reports up to @max_records records, which must be non-zero, as
+ * libretrodb_scan_field2() does.  Returns 1 while records remain, 0
+ * once the walk is complete or @cb stopped it, -1 on a read error. */
+int libretrodb_scan_step(libretrodb_scan_t *scan, unsigned max_records,
+      libretrodb_scan2_cb cb, void *ctx);
+
+void libretrodb_scan_end(libretrodb_scan_t *scan);
+
 int libretrodb_read_at(libretrodb_t *db, uint64_t offset,
       struct rmsgpack_dom_value *out);
 

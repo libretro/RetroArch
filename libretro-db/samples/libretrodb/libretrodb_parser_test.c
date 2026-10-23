@@ -981,6 +981,80 @@ static void case_field_scan(const char *dir)
    libretrodb_free(db);
 }
 
+/* The two-field collector, for the stepped scan below. */
+static int scan2_collect(void *ctx, const uint8_t *key, size_t key_len,
+      const uint8_t *key2, size_t key2_len, uint64_t offset,
+      const uint64_t *aux)
+{
+   (void)key2;
+   (void)key2_len;
+   return scan_collect(ctx, key, key_len, offset, aux);
+}
+
+/* A scan begun, stepped two records at a time and ended reports what
+ * libretrodb_scan_field() reports, each call carrying on where the
+ * last one stopped.  The database is closed once the scan has begun,
+ * since the scan reads through a stream of its own.  Reads the
+ * database case_field_scan() writes. */
+static void case_scan_steps(const char *dir)
+{
+   char               path[512], detail[64];
+   scan_ent_t         whole[8];
+   size_t             n_whole = 0, i;
+   unsigned           calls   = 0;
+   int                rv      = 1, begun, ok;
+   libretrodb_t      *db      = libretrodb_new();
+   libretrodb_scan_t *scan    = NULL;
+
+   sprintf(path, "%s/field_scan.rdb", dir);
+   begin("stepped scan reports every record");
+   if (db && libretrodb_open(path, db, false) == 0)
+   {
+      scan_n = 0;
+      if (libretrodb_scan_field(db, "crc", "size", scan_collect, NULL) == 0)
+         n_whole = scan_n;
+      memcpy(whole, scan_ents, n_whole * sizeof(*whole));
+      scan = libretrodb_scan_begin(db, "crc", NULL, "size");
+      libretrodb_close(db);
+   }
+   libretrodb_free(db);
+
+   begun  = (scan != NULL);
+   scan_n = 0;
+   while (scan && rv == 1)
+   {
+      rv = libretrodb_scan_step(scan, 2, scan2_collect, NULL);
+      calls++;
+   }
+   libretrodb_scan_end(scan);
+
+   ok = begun && rv == 0 && calls == 3 && n_whole == 5 && scan_n == n_whole;
+   for (i = 0; ok && i < scan_n; i++)
+      if (   scan_ents[i].key      != whole[i].key
+          || scan_ents[i].off      != whole[i].off
+          || scan_ents[i].have_aux != whole[i].have_aux
+          || scan_ents[i].aux      != whole[i].aux)
+         ok = 0;
+   sprintf(detail, "%u calls of up to 2 records", calls);
+   check(ok, "stepped scan reports every record", detail);
+
+   /* Ended part way, the scan still releases its stream; the
+    * sanitizers see it if not. */
+   begin("stepped scan ended part way");
+   rv   = -1;
+   scan = NULL;
+   if ((db = libretrodb_new()) && libretrodb_open(path, db, false) == 0)
+   {
+      scan = libretrodb_scan_begin(db, "crc", NULL, "size");
+      libretrodb_close(db);
+   }
+   libretrodb_free(db);
+   if (scan)
+      rv = libretrodb_scan_step(scan, 1, scan2_collect, NULL);
+   libretrodb_scan_end(scan);
+   check(rv == 1, "stepped scan ended part way", "one record of five");
+}
+
 int main(int argc, char **argv)
 {
    const char *dir = (argc > 1) ? argv[1] : "/tmp";
@@ -1002,6 +1076,7 @@ int main(int argc, char **argv)
    case_minmax_zero(dir);
    case_index_round_trip(dir);
    case_field_scan(dir);
+   case_scan_steps(dir);
 
    printf("\n%d checks, %d failures\n", checks, failures);
    return failures ? 1 : 0;

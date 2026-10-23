@@ -227,6 +227,39 @@ void database_info_index_new(const char *rdb_path, size_t max_bytes,
       database_info_crc_index_t **crc,
       database_info_serial_index_t **serial, bool *has_serial);
 
+/* What database_info_index_job_new() builds. */
+enum database_info_index_want
+{
+   DATABASE_INFO_INDEX_CRC        = (1 << 0),
+   DATABASE_INFO_INDEX_SERIAL     = (1 << 1),
+   /* Whether any record carries a serial, without the serial index. */
+   DATABASE_INFO_INDEX_HAS_SERIAL = (1 << 2)
+};
+
+/* database_info_index_new() spread over as many calls as it takes, so
+ * that no call walks or sorts a whole database. */
+typedef struct database_info_index_job database_info_index_job_t;
+
+/* NULL when @rdb_path cannot be opened or @want names no index. */
+database_info_index_job_t *database_info_index_job_new(
+      const char *rdb_path, size_t max_bytes, unsigned want);
+
+/* Walks up to @records records or merges up to @entries index
+ * entries; both must be non-zero.  Unlike finish and free, it takes no
+ * NULL job.  True once the job is done, built or failed. */
+bool database_info_index_job_step(database_info_index_job_t *job,
+      unsigned records, size_t entries);
+
+/* Hands over what a done job built, as database_info_index_new()
+ * would have, and frees the job.  Only what the job was asked for
+ * comes back; the other pointers may be NULL. */
+void database_info_index_job_finish(database_info_index_job_t *job,
+      database_info_crc_index_t **crc,
+      database_info_serial_index_t **serial, bool *has_serial);
+
+/* Frees a job, done or not. */
+void database_info_index_job_free(database_info_index_job_t *job);
+
 database_info_list_t *database_info_list_new_filtered(const char *rdb_path,
       const char *query, unsigned fields);
 
