@@ -4691,6 +4691,9 @@ static bool gl3_set_shader(void *data,
 {
    bool ok;
    gl3_t *gl = (gl3_t *)data;
+#ifdef HAVE_SLANG
+   gl3_filter_chain_t *old;
+#endif
    if (!gl)
       return false;
 
@@ -4702,8 +4705,11 @@ static bool gl3_set_shader(void *data,
       gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
 
 #ifdef HAVE_SLANG
-   if (gl->filter_chain)
-      gl3_filter_chain_free(gl->filter_chain);
+   /* The outgoing chain lives until the new one is built, so the
+    * stages and programs both have are taken from it instead of
+    * compiled and linked again. */
+   old              = gl->filter_chain;
+   gl->filter_chain = NULL;
    gl3_views_set_preset(gl, NULL);
 #endif
 
@@ -4729,6 +4735,10 @@ static bool gl3_set_shader(void *data,
    }
 
    ok = gl3_init_filter_chain_with_path(gl, path);
+#ifdef HAVE_SLANG
+   if (old)
+      gl3_filter_chain_free(old);
+#endif
    gl3_publish_flags(gl);
    if (!ok)
       return false;

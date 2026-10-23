@@ -1164,7 +1164,8 @@ struct gl3_pass
 
    bool final_pass;
 
-   GLuint pipeline;
+   GLuint pipeline;                    /* program->id */
+   struct gl3_program *program;        /* one reference */
    gl3_common_resources *common;
 
    /* The size this pass last rendered at, in VIDEO_SCALE_PACK's
@@ -1691,9 +1692,110 @@ static void gl3_ubo_ring_init(struct gl3_ubo_ring *ring, size_t size)
    glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
-static bool gl3_pass_init_pipeline(struct gl3_pass *pass)
+/* A linked program, shared by every pass that binds the same two
+ * blobs: the program is a function of the stages alone (the push
+ * block's binding comes from their reflection), so two slots of one
+ * preset naming one .slang, or a chain built while the one it replaces
+ * still holds its passes, link once.  Listed while a pass holds it;
+ * the last pass to let go deletes it.  One GL context, one thread. */
+struct gl3_program
 {
-   size_t mi;
+   struct slang_blob   *vertex;     /* references, so the pair is unique
+                                       while the program is listed */
+   struct slang_blob   *fragment;
+   gl3_buffer_locations locations;
+   GLuint               id;
+   unsigned             refs;
+   bool                 spirv_binary;
+};
+
+static struct
+{
+   struct gl3_program **v;
+   size_t               n;
+   size_t               cap;
+   unsigned             reused;
+} gl3_programs;
+
+static struct gl3_program *gl3_program_find(const struct slang_blob *vs,
+      const struct slang_blob *fs)
+{
+   size_t i;
+   for (i = 0; i < gl3_programs.n; i++)
+   {
+      struct gl3_program *p = gl3_programs.v[i];
+      if (p->vertex != vs || p->fragment != fs)
+         continue;
+      p->refs++;
+      gl3_programs.reused++;
+      return p;
+   }
+   return NULL;
+}
+
+static void gl3_program_list(struct gl3_program *p)
+{
+   if (gl3_programs.n == gl3_programs.cap)
+   {
+      size_t cap              = gl3_programs.cap ? gl3_programs.cap * 2 : 32;
+      struct gl3_program **v  = (struct gl3_program**)realloc(gl3_programs.v,
+            cap * sizeof(*v));
+      if (!v)
+         return; /* unlisted: linked again next time, deleted with its pass */
+      gl3_programs.v   = v;
+      gl3_programs.cap = cap;
+   }
+   gl3_programs.v[gl3_programs.n++] = p;
+}
+
+static void gl3_program_unref(struct gl3_program *p)
+{
+   size_t i;
+   if (!p || --p->refs)
+      return;
+   for (i = 0; i < gl3_programs.n; i++)
+   {
+      if (gl3_programs.v[i] != p)
+         continue;
+      gl3_programs.v[i] = gl3_programs.v[--gl3_programs.n];
+      break;
+   }
+   if (!gl3_programs.n)
+   {
+      free(gl3_programs.v);
+      gl3_programs.v   = NULL;
+      gl3_programs.cap = 0;
+   }
+   glDeleteProgram(p->id);
+   slang_blob_unref(p->vertex);
+   slang_blob_unref(p->fragment);
+   free(p);
+}
+
+/* Links the pass's two stages, or takes the program a pass that binds
+ * the same two blobs already linked. */
+static bool gl3_pass_link(struct gl3_pass *pass)
+{
+   struct gl3_program *p;
+
+   gl3_program_unref(pass->program);
+   pass->program  = NULL;
+   pass->pipeline = 0;
+
+   if ((p = gl3_program_find(pass->vertex_blob, pass->fragment_blob)))
+   {
+      pass->program      = p;
+      pass->pipeline     = p->id;
+      pass->locations    = p->locations;
+      pass->spirv_binary = p->spirv_binary;
+      return true;
+   }
+
+   if (!(p = (struct gl3_program*)calloc(1, sizeof(*p))))
+      return false;
+   p->refs         = 1;
+   p->spirv_binary = false;
+
    /* Handing the SPIR-V straight to the driver skips both SPIRV-Cross and
     * the driver's GLSL front end, which is most of the cost of bringing up
     * a multi-pass preset. Not every module can be expressed under the
@@ -1704,53 +1806,72 @@ static bool gl3_pass_init_pipeline(struct gl3_pass *pass)
        * only ever declares a single UBO, so one other slot always exists. */
       unsigned push_binding = (pass->reflection.ubo_binding == 0) ? 1 : 0;
 
-      if ((pass->pipeline = gl3_spirv_link_program(
+      if ((p->id = gl3_spirv_link_program(
                   pass->vertex_shader,   pass->num_vertex_shader,
                   pass->fragment_shader, pass->num_fragment_shader,
                   push_binding)))
       {
-         pass->spirv_binary                       = true;
+         p->spirv_binary                       = true;
 
-         pass->locations.flat_ubo_vertex          = -1;
-         pass->locations.flat_ubo_fragment        = -1;
-         pass->locations.flat_push_vertex         = -1;
-         pass->locations.flat_push_fragment       = -1;
+         p->locations.flat_ubo_vertex          = -1;
+         p->locations.flat_ubo_fragment        = -1;
+         p->locations.flat_push_vertex         = -1;
+         p->locations.flat_push_fragment       = -1;
 
          /* Block bindings in a SPIR-V shader are immutable and cannot be
           * looked up by name, so they come from pass->reflection rather than
           * glGetUniformBlockIndex(). */
-         pass->locations.buffer_index_ubo_vertex  =
+         p->locations.buffer_index_ubo_vertex  =
             (pass->reflection.ubo_size
              && (pass->reflection.ubo_stage_mask & SLANG_STAGE_VERTEX_MASK))
             ? pass->reflection.ubo_binding : GL_INVALID_INDEX;
-         pass->locations.buffer_index_ubo_fragment =
+         p->locations.buffer_index_ubo_fragment =
             (pass->reflection.ubo_size
              && (pass->reflection.ubo_stage_mask & SLANG_STAGE_FRAGMENT_MASK))
             ? pass->reflection.ubo_binding : GL_INVALID_INDEX;
 
-         pass->locations.buffer_index_push_vertex =
+         p->locations.buffer_index_push_vertex =
             (pass->reflection.push_constant_size
              && (pass->reflection.push_constant_stage_mask & SLANG_STAGE_VERTEX_MASK))
             ? push_binding : GL_INVALID_INDEX;
-         pass->locations.buffer_index_push_fragment =
+         p->locations.buffer_index_push_fragment =
             (pass->reflection.push_constant_size
              && (pass->reflection.push_constant_stage_mask & SLANG_STAGE_FRAGMENT_MASK))
             ? push_binding : GL_INVALID_INDEX;
       }
    }
 
-   if (!pass->pipeline && pass->vertex_text && pass->fragment_text)
-      pass->pipeline = gl3_text_link_program(pass->vertex_text,
-            pass->fragment_text, &pass->locations);
+   if (!p->id && pass->vertex_text && pass->fragment_text)
+      p->id = gl3_text_link_program(pass->vertex_text,
+            pass->fragment_text, &p->locations);
 
-   if (!pass->pipeline)
+   if (!p->id)
+      p->id = gl3_cross_compile_program(
+            pass->vertex_shader,   pass->num_vertex_shader   * sizeof(uint32_t),
+            pass->fragment_shader, pass->num_fragment_shader * sizeof(uint32_t),
+            &p->locations, false);
+   if (!p->id)
    {
-      if (!(pass->pipeline = gl3_cross_compile_program(
-                  pass->vertex_shader,   pass->num_vertex_shader   * sizeof(uint32_t),
-                  pass->fragment_shader, pass->num_fragment_shader * sizeof(uint32_t),
-                  &pass->locations, false)))
-         return false;
+      free(p);
+      return false;
    }
+
+   p->vertex          = slang_blob_ref(pass->vertex_blob);
+   p->fragment        = slang_blob_ref(pass->fragment_blob);
+   gl3_program_list(p);
+
+   pass->program      = p;
+   pass->pipeline     = p->id;
+   pass->locations    = p->locations;
+   pass->spirv_binary = p->spirv_binary;
+   return true;
+}
+
+static bool gl3_pass_init_pipeline(struct gl3_pass *pass)
+{
+   size_t mi;
+   if (!gl3_pass_link(pass))
+      return false;
 
    free(pass->uniforms);
    pass->uniforms      = NULL;
@@ -2301,8 +2422,7 @@ static void gl3_pass_free(struct gl3_pass *pass)
    if (!pass)
       return;
 
-   if (pass->pipeline != 0)
-      glDeleteProgram(pass->pipeline);
+   gl3_program_unref(pass->program);
    /* the unique_ptrs these replaced were released by ~Pass itself */
    gl3_framebuffer_delete(pass->framebuffer);
    gl3_framebuffer_delete(pass->framebuffer_feedback);
