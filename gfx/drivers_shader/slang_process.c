@@ -1204,9 +1204,10 @@ static char *slang_rslc_print_stage(const char *source,
    names.push_block     = t->push_block[stage == GLSLANG_COMPILE_STAGE_VERTEX ? 0 : 1];
    names.push_instance  = t->push_instance[stage == GLSLANG_COMPILE_STAGE_VERTEX ? 0 : 1];
    memset(&opts, 0, sizeof(opts));
-   opts.dst     = t->hlsl ? RSLC_DST_HLSL : t->es ? RSLC_DST_GLSL_ES : RSLC_DST_GLSL;
+   opts.dst     = t->hlsl ? RSLC_DST_HLSL : t->msl ? RSLC_DST_MSL
+      : t->es ? RSLC_DST_GLSL_ES : RSLC_DST_GLSL;
    opts.version = t->version;
-   opts.names   = t->hlsl ? NULL : &names;
+   opts.names   = t->hlsl || t->msl ? NULL : &names;
    opts.err     = err;
    opts.err_cap = sizeof(err);
    err[0]       = '\0';
@@ -1556,13 +1557,14 @@ bool slang_process(
    struct video_shader_pass *pass      = &shader_info->pass[pass_number];
    struct slang_text_target text;
 
-   /* D3D takes the compiler's own HLSL when it prints one; the other
-    * destinations cross the SPIR-V */
+   /* D3D and Metal take the compiler's own HLSL / MSL when it prints
+    * one; the other destinations cross the SPIR-V */
    memset(&text, 0, sizeof(text));
    text.version = version;
-   text.hlsl    = true;
+   text.hlsl    = dst_type == RARCH_SHADER_HLSL;
+   text.msl     = dst_type == RARCH_SHADER_METAL;
    if (!glslang_compile_shader_text(pass->source.path, &output, NULL,
-            dst_type == RARCH_SHADER_HLSL ? &text : NULL))
+            text.hlsl || text.msl ? &text : NULL))
       return false;
 
    if (!slang_preprocess_parse_parameters_meta(&output.meta, shader_info,

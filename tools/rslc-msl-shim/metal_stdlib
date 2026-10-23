@@ -1,0 +1,166 @@
+/* A stand-in for the Metal standard library, for tools/rslc-msl-check.py:
+ * enough of its types and functions, declared as clang++ accepts them,
+ * for the compiler's MSL to be type-checked where no Metal compiler
+ * runs.  Nothing here executes; only the declarations matter, so the
+ * bodies are empty and the return types are what Metal's are.  Bool
+ * vectors are int vectors, since clang's bool vectors have no
+ * components; comparisons of vectors give int vectors in clang as
+ * they give bool vectors in Metal.  Vector constructors reach this
+ * file as make_floatN() calls, rewritten by the check script, since
+ * clang's extended vectors construct only from braces. */
+#ifndef RSLC_MSL_SHIM
+#define RSLC_MSL_SHIM
+
+#define constant const
+#define thread
+#define device
+#define vertex
+#define fragment
+#define kernel
+
+namespace metal {
+
+typedef unsigned int uint;
+typedef unsigned short ushort;
+typedef unsigned long size_t;
+
+typedef float float2 __attribute__((ext_vector_type(2)));
+typedef float float3 __attribute__((ext_vector_type(3)));
+typedef float float4 __attribute__((ext_vector_type(4)));
+typedef int int2 __attribute__((ext_vector_type(2)));
+typedef int int3 __attribute__((ext_vector_type(3)));
+typedef int int4 __attribute__((ext_vector_type(4)));
+typedef uint uint2 __attribute__((ext_vector_type(2)));
+typedef uint uint3 __attribute__((ext_vector_type(3)));
+typedef uint uint4 __attribute__((ext_vector_type(4)));
+typedef int bool2 __attribute__((ext_vector_type(2)));
+typedef int bool3 __attribute__((ext_vector_type(3)));
+typedef int bool4 __attribute__((ext_vector_type(4)));
+typedef _Float16 half;
+typedef half half2 __attribute__((ext_vector_type(2)));
+typedef half half3 __attribute__((ext_vector_type(3)));
+typedef half half4 __attribute__((ext_vector_type(4)));
+typedef float packed_float3 __attribute__((ext_vector_type(3), aligned(4)));
+
+#define RSLC_MAKE(T) template<typename... A> T make_##T(A... a) { T r = {}; return r; }
+RSLC_MAKE(float2) RSLC_MAKE(float3) RSLC_MAKE(float4) RSLC_MAKE(int2) RSLC_MAKE(int3) RSLC_MAKE(int4)
+RSLC_MAKE(uint2) RSLC_MAKE(uint3) RSLC_MAKE(uint4) RSLC_MAKE(bool2) RSLC_MAKE(bool3) RSLC_MAKE(bool4)
+RSLC_MAKE(half2) RSLC_MAKE(half3) RSLC_MAKE(half4)
+
+template<typename T, int N> struct vec_of;
+template<> struct vec_of<float, 1> { typedef float type; };
+template<> struct vec_of<float, 2> { typedef float2 type; };
+template<> struct vec_of<float, 3> { typedef float3 type; };
+template<> struct vec_of<float, 4> { typedef float4 type; };
+template<> struct vec_of<int, 1> { typedef int type; };
+template<> struct vec_of<int, 2> { typedef int2 type; };
+template<> struct vec_of<int, 3> { typedef int3 type; };
+template<> struct vec_of<int, 4> { typedef int4 type; };
+template<> struct vec_of<uint, 1> { typedef uint type; };
+template<> struct vec_of<uint, 2> { typedef uint2 type; };
+template<> struct vec_of<uint, 3> { typedef uint3 type; };
+template<> struct vec_of<uint, 4> { typedef uint4 type; };
+
+/* a matrix of C columns of R rows, as Metal's */
+template<int C, int R> struct matrix
+{
+   typedef typename vec_of<float, R>::type col;
+   col c[C];
+   matrix() {}
+   matrix(float s) { (void)s; }
+   template<typename... A> matrix(A... a) {}
+   col& operator[](int i) { return c[i]; }
+   const col& operator[](int i) const { return c[i]; }
+   matrix operator*(float s) const { return *this; }
+   matrix operator/(float s) const { return *this; }
+   matrix operator+(const matrix& o) const { return *this; }
+   matrix operator-(const matrix& o) const { return *this; }
+   matrix operator-() const { return *this; }
+   matrix& operator*=(float s) { return *this; }
+   matrix& operator/=(float s) { return *this; }
+   matrix& operator+=(const matrix& o) { return *this; }
+   matrix& operator-=(const matrix& o) { return *this; }
+};
+typedef matrix<2, 2> float2x2;
+typedef matrix<2, 3> float2x3;
+typedef matrix<2, 4> float2x4;
+typedef matrix<3, 2> float3x2;
+typedef matrix<3, 3> float3x3;
+typedef matrix<3, 4> float3x4;
+typedef matrix<4, 2> float4x2;
+typedef matrix<4, 3> float4x3;
+typedef matrix<4, 4> float4x4;
+template<int C, int R> matrix<C, R> operator*(float s, const matrix<C, R>& m) { return m; }
+template<int C, int R> typename vec_of<float, R>::type operator*(const matrix<C, R>& m,
+      typename vec_of<float, C>::type v) { return m[0]; }
+template<int C, int R> typename vec_of<float, C>::type operator*(typename vec_of<float, R>::type v,
+      const matrix<C, R>& m) { typename vec_of<float, C>::type r = {}; return r; }
+template<int A, int B, int C> matrix<C, B> operator*(const matrix<A, B>& m, const matrix<C, A>& n)
+{ matrix<C, B> r; return r; }
+template<int C, int R> matrix<R, C> transpose(const matrix<C, R>& m) { matrix<R, C> r; return r; }
+template<int N> float determinant(const matrix<N, N>& m) { return 0; }
+template<int N> matrix<N, N>& operator*=(matrix<N, N>& m, const matrix<N, N>& n) { return m; }
+template<typename V, int N, int R> V operator*=(V v, const matrix<N, R>& m) { return v; }
+
+template<typename T, size_t N> struct array
+{
+   T elements[N];
+   T& operator[](size_t i) { return elements[i]; }
+   const T& operator[](size_t i) const { return elements[i]; }
+};
+
+/* textures and samplers */
+struct sampler {};
+struct level { level(float) {} };
+struct bias { bias(float) {} };
+struct gradient2d { gradient2d(float2, float2) {} };
+enum class component { x, y, z, w };
+template<typename T> struct texture2d
+{
+   typedef typename vec_of<T, 4>::type v4;
+   template<typename... A> v4 sample(sampler s, float2 c, A... a) const { v4 r = {}; return r; }
+   v4 read(uint2 c, uint lod = 0) const { v4 r = {}; return r; }
+   v4 gather(sampler s, float2 c, int2 off = {}, component k = component::x) const { v4 r = {}; return r; }
+   uint get_width(uint lod = 0) const { return 0; }
+   uint get_height(uint lod = 0) const { return 0; }
+   uint get_num_mip_levels() const { return 0; }
+};
+
+void discard_fragment();
+
+/* math: the result type is the first argument's unless Metal says
+ * otherwise */
+#define RSLC_FN1(name) template<typename T> T name(T x) { return x; }
+#define RSLC_FN2(name) template<typename T, typename U> T name(T x, U y) { return x; }
+#define RSLC_FN3(name) template<typename T, typename U, typename V> T name(T x, U y, V z) { return x; }
+RSLC_FN1(sin) RSLC_FN1(cos) RSLC_FN1(tan) RSLC_FN1(asin) RSLC_FN1(acos) RSLC_FN1(atan)
+RSLC_FN1(sinh) RSLC_FN1(cosh) RSLC_FN1(tanh) RSLC_FN1(asinh) RSLC_FN1(acosh) RSLC_FN1(atanh)
+RSLC_FN1(exp) RSLC_FN1(log) RSLC_FN1(exp2) RSLC_FN1(log2) RSLC_FN1(sqrt) RSLC_FN1(rsqrt)
+RSLC_FN1(abs) RSLC_FN1(sign) RSLC_FN1(floor) RSLC_FN1(trunc) RSLC_FN1(round) RSLC_FN1(rint)
+RSLC_FN1(ceil) RSLC_FN1(fract) RSLC_FN1(normalize) RSLC_FN1(saturate) RSLC_FN1(dfdx)
+RSLC_FN1(dfdy) RSLC_FN1(fwidth) RSLC_FN1(popcount) RSLC_FN1(reverse_bits) RSLC_FN1(ctz)
+RSLC_FN1(clz)
+RSLC_FN2(pow) RSLC_FN2(atan2) RSLC_FN2(min) RSLC_FN2(max) RSLC_FN2(fmod) RSLC_FN2(reflect)
+RSLC_FN2(ldexp) RSLC_FN2(modf) RSLC_FN2(frexp)
+RSLC_FN3(clamp) RSLC_FN3(mix) RSLC_FN3(fma) RSLC_FN3(refract) RSLC_FN3(faceforward)
+RSLC_FN3(select) RSLC_FN3(extract_bits)
+template<typename T, typename U> U step(T edge, U x) { return x; }
+template<typename T, typename U, typename V> V smoothstep(T a, U b, V x) { return x; }
+template<typename T> T insert_bits(T base, T ins, int off, int bits) { return base; }
+float dot(float a, float b); float dot(float2 a, float2 b); float dot(float3 a, float3 b); float dot(float4 a, float4 b);
+float length(float a); float length(float2 a); float length(float3 a); float length(float4 a);
+float distance(float a, float b); float distance(float2 a, float2 b); float distance(float3 a, float3 b); float distance(float4 a, float4 b);
+float3 cross(float3 a, float3 b);
+bool any(bool b); bool any(bool2 b); bool any(bool3 b); bool any(bool4 b);
+bool all(bool b); bool all(bool2 b); bool all(bool3 b); bool all(bool4 b);
+bool isnan(float x); bool2 isnan(float2 x); bool3 isnan(float3 x); bool4 isnan(float4 x);
+bool isinf(float x); bool2 isinf(float2 x); bool3 isinf(float3 x); bool4 isinf(float4 x);
+template<typename T, typename U> T as_type(U x) { T r = {}; return r; }
+uint pack_float_to_unorm2x16(float2 v); uint pack_float_to_snorm2x16(float2 v);
+uint pack_float_to_unorm4x8(float4 v); uint pack_float_to_snorm4x8(float4 v);
+float2 unpack_unorm2x16_to_float(uint v); float2 unpack_snorm2x16_to_float(uint v);
+float4 unpack_unorm4x8_to_float(uint v); float4 unpack_snorm4x8_to_float(uint v);
+
+}
+
+#endif
