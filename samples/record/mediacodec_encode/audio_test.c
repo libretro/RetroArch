@@ -15,6 +15,7 @@ static AMediaFormat config, output_format;
 static int stage, missing, lookup, libraries, codecs, formats, queues;
 static int input_busy, input_owned, output_owned, output_mode, input_calls;
 static int allocation_fail;
+static int stops, stop_fault;
 static unsigned expected_rate, expected_channels;
 static size_t capacity = 8, queued_bytes;
 static uint64_t queued_pts;
@@ -58,7 +59,8 @@ static media_status_t start(AMediaCodec *c)
 static media_status_t stop(AMediaCodec *c)
 {
    assert(c == &codec);
-   return 0;
+   stops++;
+   return stop_fault ? -99 : 0;
 }
 static media_status_t destroy(AMediaCodec *c)
 {
@@ -412,6 +414,26 @@ int main(void)
    record_mediacodec_encoder_free(s);
    balanced();
    input_busy = 0;
+   for (i = 0; i < 2; i++)
+   {
+      s = open_audio(44100, 2);
+      assert(s);
+      assert(record_mediacodec_encoder_audio_submit(s, pcm, 2, 0, &accepted)
+            == 1);
+      stop_fault = i;
+      before = stops;
+      assert(record_mediacodec_encoder_stop(s) == !stop_fault);
+      assert(record_mediacodec_encoder_stop(s) == !stop_fault);
+      assert(codecs == 1 && formats == 1 && libraries == 1);
+      accepted = 99;
+      assert(record_mediacodec_encoder_audio_submit(s, pcm, 2, 2, &accepted)
+            == -1 && !accepted);
+      assert(record_mediacodec_encoder_audio_finish(s, 2) == -1);
+      record_mediacodec_encoder_free(s);
+      assert(stops == before + 1);
+      balanced();
+      stop_fault = 0;
+   }
    puts("PASS: worker AAC PCM ownership, partial/BUSY input, bounded silence, "
         "sample-clock timestamps, EOS, native faults and format validation; "
         "APIs mocked");

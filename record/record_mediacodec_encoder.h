@@ -54,6 +54,13 @@ void *record_mediacodec_encoder_format(record_mediacodec_encoder_t *encoder);
 bool record_mediacodec_encoder_release(record_mediacodec_encoder_t *encoder);
 /* After the last Surface submission; successful EOS is idempotent. */
 bool record_mediacodec_encoder_finish(record_mediacodec_encoder_t *encoder);
+/* Terminal cancellation on the owning I/O worker, after its pump/mux borrows
+ * are quiescent. Native stop may block this worker. Retains codec, libraries
+ * and input window until free; previously borrowed window remains owned.
+ * Invalidates packet/format access. Same-result retries do not call stop again.
+ * Neither success nor failure proves GPU reads retired. Free only after GPU
+ * producer and Surface/context retirement. Never call from frame/audio/task. */
+bool record_mediacodec_encoder_stop(record_mediacodec_encoder_t *encoder);
 void record_mediacodec_encoder_free(record_mediacodec_encoder_t *encoder);
 RETRO_END_DECLS
 #endif

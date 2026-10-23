@@ -110,15 +110,31 @@ struct record_mediacodec_encoder
    int profile, base_profile;
    unsigned char hdr_static[25];
    bool started, failed, held, input_eos, output_eos;
-   bool audio, seen_input, closing;
+   bool audio, seen_input, closing, stop_attempted, stopped;
 };
+bool record_mediacodec_encoder_stop(record_mediacodec_encoder_t *s)
+{
+   if (!s)
+      return false;
+   if (s->stop_attempted)
+      return s->stopped;
+   s->stop_attempted = true;
+   s->failed = true;
+   s->held = false;
+   memset(&s->packet, 0, sizeof(s->packet));
+   if (!s->started || s->stop(s->codec) != AMEDIA_OK)
+      return false;
+   s->started = false;
+   s->stopped = true;
+   return true;
+}
 void record_mediacodec_encoder_free(record_mediacodec_encoder_t *s)
 {
    if (!s)
       return;
    if (s->codec)
    {
-      if (s->started)
+      if (s->started && !s->stop_attempted)
          s->stop(s->codec);
       s->delete_codec(s->codec);
    }
@@ -645,6 +661,11 @@ bool record_mediacodec_encoder_release(record_mediacodec_encoder_t *s)
    return false;
 }
 bool record_mediacodec_encoder_finish(record_mediacodec_encoder_t *s)
+{
+   (void)s;
+   return false;
+}
+bool record_mediacodec_encoder_stop(record_mediacodec_encoder_t *s)
 {
    (void)s;
    return false;
