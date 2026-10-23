@@ -94,23 +94,26 @@ with tempfile.TemporaryDirectory(prefix="capture-draw-") as tmp:
     recovery_unit = Path(tmp) / "recovery.c"
     recovery_unit.write_text(
         '#include "' + (root / 'record/record_android_capture_gl.c').as_posix() + '"\n'
-        'void *recovery_fixture_new(void)\n{\n'
+        'void *recovery_fixture_new(PFNGLFENCESYNCPROC fence, PFNGLFLUSHPROC flush,\n'
+        '      PFNGLCLIENTWAITSYNCPROC poll, PFNGLDELETESYNCPROC delete_fence)\n{\n'
         '   record_android_capture_gl_t *c = (record_android_capture_gl_t *)calloc(1, sizeof(*c));\n'
         '   if (!c) return NULL;\n'
-        '   c->count = 2; c->ops.fence = glFenceSync; c->ops.flush = glFlush;\n'
-        '   c->ops.poll = glClientWaitSync; c->ops.delete_fence = glDeleteSync;\n'
+        '   c->count = 2; c->ops.fence = fence; c->ops.flush = flush;\n'
+        '   c->ops.poll = poll; c->ops.delete_fence = delete_fence;\n'
         '   c->slots[0].reading = c->slots[1].reading = true;\n'
-        '   c->slots[0].done = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);\n'
+        '   c->slots[0].done = fence(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);\n'
         '   if (!c->slots[0].done) { free(c); return NULL; }\n'
         '   return c;\n}\n', encoding="utf-8")
     recovery_binary = Path(tmp) / "recovery.so"
     recovery_command = command.copy()
     recovery_command[recovery_command.index(str(root / "record/record_android_capture_draw.c"))] = str(recovery_unit)
     recovery_command[recovery_command.index(str(binary))] = str(recovery_binary)
-    recovery_command += ["-DUSE_SYSTEM_EGL", "-lGLESv2", "-Wl,--no-undefined"]
+    recovery_command += ["-DUSE_SYSTEM_EGL", "-Wl,--no-undefined"]
     subprocess.run(recovery_command, check=True)
     recovery_lib = C.CDLL(str(recovery_binary))
-    recovery_new = function(recovery_lib, "recovery_fixture_new", P, [])
+    recovery_new = function(recovery_lib, "recovery_fixture_new", P, [P, P, P, P])
+    recovery_ops = [C.cast(getattr(gl, name), P) for name in
+                    ("glFenceSync", "glFlush", "glClientWaitSync", "glDeleteSync")]
     recover = function(recovery_lib, "record_android_capture_gl_recover_step", I, [P])
     recovery_free = function(recovery_lib, "record_android_capture_gl_free", C.c_bool, [P])
     new = function(lib, "record_android_capture_draw_new", P, [P,U,U,U,C.c_bool])
@@ -150,7 +153,7 @@ with tempfile.TemporaryDirectory(prefix="capture-draw-") as tmp:
                 bind_tex(0x0DE1, texture.value)
                 upload(0x0DE1,0,internal,4,4,0,0x1908,kind,data)
                 assert error() == 0
-                recovery = recovery_new()
+                recovery = recovery_new(*recovery_ops)
                 assert recovery
                 assert frame(draw, texture.value)
                 assert recover(recovery) == 0
