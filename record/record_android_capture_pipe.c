@@ -14,7 +14,7 @@ struct record_android_capture_pipe
    uint64_t last_pts, last_end;
    int64_t end_us;
    unsigned count, slot, cursor;
-   uint32_t active;
+   uint32_t active, copied;
    int fd;
    bool reserved, pending, have_frame, cancelled, closed, retired;
 };
@@ -99,6 +99,7 @@ int record_android_capture_pipe_push(record_android_capture_pipe_t *p,
          return -1;
       }
       p->active &= ~((uint32_t)1 << p->slot);
+      p->copied &= ~((uint32_t)1 << p->slot);
    }
    result = record_android_capture_submit_push(p->entries[p->slot], source);
    if (result == 1 || result == -2)
@@ -165,7 +166,25 @@ int record_android_capture_pipe_step(record_android_capture_pipe_t *p)
    if (!p->closed
          || (state != RECORD_MC_DISPATCH_DONE
                && state != RECORD_MC_DISPATCH_FAILED))
+   {
+      if (!p->cancelled)
+         for (slot = 0; slot < p->count; slot++)
+         {
+            p->cursor = (p->cursor + 1) % p->count;
+            if (!(p->active & ~p->copied & ((uint32_t)1 << p->cursor)))
+               continue;
+            result = record_android_capture_submit_poll(p->entries[p->cursor]);
+            if (result < 0)
+            {
+               record_android_capture_pipe_cancel(p);
+               return -1;
+            }
+            if (result == 1)
+               p->copied |= (uint32_t)1 << p->cursor;
+            break;
+         }
       return 0;
+   }
    for (slot = 0; slot < p->count; slot++)
    {
       p->cursor = (p->cursor + 1) % p->count;
