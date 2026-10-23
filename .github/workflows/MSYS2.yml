@@ -55,14 +55,20 @@ jobs:
           # whole transaction; what it fetched stays in the cache, so a
           # retry fetches only the rest, one file at a time after a
           # growing wait so a shared runner's rate limit can clear.
+          # A package that fails its checksum is deleted, but pacman
+          # fetches it again from the same first mirror, so each retry
+          # also moves every mirror list's first server to the end.
           p=$MINGW_PACKAGE_PREFIX
           pkgs="base-devel git $p-gettext $p-gobject-introspection
             $p-graphite2 $p-p11-kit $p-qt6-base $p-x264 $p-cc"
           for i in 1 2 3 4 5; do
             pacman -S --noconfirm --needed $pkgs && exit 0
             [ $i = 5 ] && break
-            echo "package install failed (attempt $i); retrying in $((30 * i))s, serial downloads"
+            echo "package install failed (attempt $i); retrying in $((30 * i))s, next mirror, serial downloads"
             sed -i -e '/^#*ParallelDownloads/d' -e '/^\[options\]/a ParallelDownloads = 1' /etc/pacman.conf
+            for m in /etc/pacman.d/mirrorlist.*; do
+              awk '/^Server/ && !s { s = $0; next } { print } END { if (s) print s }' "$m" > "$m.tmp" && mv "$m.tmp" "$m"
+            done
             sleep $((30 * i))
           done
           exit 1
