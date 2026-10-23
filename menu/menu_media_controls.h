@@ -19,6 +19,8 @@ typedef struct menu_media_controls
 
 RETRO_BEGIN_DECLS
 
+bool menu_media_controls_display(unsigned *dims, float *hz);
+
 bool menu_media_controls_continuous(menu_media_controls_t *media, bool shown);
 bool menu_media_controls_complete(menu_media_controls_t *media);
 void menu_media_controls_update(menu_media_controls_t *media,

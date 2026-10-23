@@ -33,6 +33,12 @@ S_BOOL(media_player_continuous, MEDIA_PLAYER_CONTINUOUS,
       "Continuous Playback",
       "Play the remaining movies in the current folder in natural filename order. Stop at the end of the folder or on a playback error.")
 
+S_BOOL(media_player_crt_switch, MEDIA_PLAYER_CRT_SWITCH,
+      "media_player_crt_switch",
+      false, SD_FLAG_NONE, 0, 0,
+      "Use CRT SwitchRes for Fullscreen Playback",
+      "Use movie dimensions and measured frame rate with the configured CRT SwitchRes engine during fullscreen playback.")
+
 S_UINT(media_player_seek_seconds, MEDIA_PLAYER_SEEK_SECONDS,
       "media_player_seek_seconds",
       5, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 1, 600, 1, 0,

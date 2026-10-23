@@ -2,7 +2,7 @@ CC ?= cc
 THREADS ?= 1
 TARGET := media_controls_test
 CFLAGS += -O2 -g1 -std=c89 -pedantic -Wall -Wextra -Werror -Wno-long-long -Wno-unused-parameter -Wframe-larger-than=4096 -D_GNU_SOURCE -I../../.. -I../../../libretro-common/include
-SOURCES := media_controls_test.c ../../../gfx/gfx_media_controls.c ../../../menu/menu_media_controls.c \
+SOURCES := media_controls_test.c ../../../gfx/gfx_media_display.c ../../../gfx/gfx_media_controls.c ../../../menu/menu_media_controls.c \
  ../../../menu/menu_media_browser.c ../../../libretro-common/lists/file_list.c \
  ../../../libretro-common/compat/compat_strldup.c ../../../libretro-common/compat/compat_strl.c \
  ../../../libretro-common/compat/compat_strcasestr.c
@@ -21,6 +21,7 @@ ifneq ($(SANITIZER),)
 CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
+LDFLAGS += -lm
 all: $(TARGET)
 $(TARGET): $(SOURCES) ../../../gfx/gfx_media_controls.h
 	$(CC) $(CFLAGS) $(SOURCES) -o $@ $(LDFLAGS)

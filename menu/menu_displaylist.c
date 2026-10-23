@@ -12727,6 +12727,9 @@ unsigned menu_displaylist_build_list(
          {
             static const menu_displaylist_build_info_t build_list[] = {
                {MENU_ENUM_LABEL_MEDIA_PLAYER_CONTINUOUS, PARSE_ONLY_BOOL},
+#ifdef HAVE_MODELINE
+               {MENU_ENUM_LABEL_MEDIA_PLAYER_CRT_SWITCH, PARSE_ONLY_BOOL},
+#endif
                {MENU_ENUM_LABEL_MEDIA_PLAYER_SEEK_SECONDS, PARSE_ONLY_UINT},
                {MENU_ENUM_LABEL_MEDIA_PLAYER_CONTROLS_TIMEOUT, PARSE_ONLY_UINT},
             };

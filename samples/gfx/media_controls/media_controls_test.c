@@ -3,6 +3,7 @@
 #include <string.h>
 #include <rthreads/rthreads.h>
 #include "../../../gfx/gfx_media_controls.h"
+#include "../../../gfx/gfx_media_display.h"
 #include "../../../menu/menu_media_controls.h"
 #include "../../../menu/menu_media_browser.h"
 #include "../../../gfx/video_defines.h"
@@ -593,10 +594,184 @@ static void settings_button(void)
    settings_refused = false;
 }
 
+static void display_source(void)
+{
+   menu_media_controls_t media, other;
+   gfx_media_target_t target;
+   fake_player_t player;
+   unsigned dims;
+   float hz;
+   memset(&media, 0, sizeof(media));
+   memset(&other, 0, sizeof(other));
+   memset(&target, 0, sizeof(target));
+   memset(&player, 0, sizeof(player));
+   player.available = true;
+   player.state.dims = VIDEO_SCALE_PACK(320, 240);
+   player.state.cadence_num = 24000;
+   player.state.cadence_den = 1001;
+   target.user = &player;
+   target.state = fake_state;
+   target.pause = fake_pause;
+   target.seek = fake_seek;
+   CHECK(!gfx_media_display_source(NULL, &dims, &hz) && !dims && !hz);
+   menu_media_controls_update(&media, &target, 640, 480, NULL, 1);
+   CHECK(!menu_media_controls_display(&dims, &hz));
+   test_settings.bools.media_player_crt_switch = true;
+   menu_media_controls_update(&media, &target, 640, 480, NULL, 2);
+   CHECK(menu_media_controls_display(&dims, &hz)
+         && dims == player.state.dims && hz > 23.97f && hz < 23.98f);
+   player.state.paused = true;
+   menu_media_controls_update(&media, &target, 640, 480, NULL, 3);
+   CHECK(menu_media_controls_display(&dims, &hz));
+   player.state.cadence_num = 23988;
+   player.state.cadence_den = 1000;
+   menu_media_controls_update(&media, &target, 640, 480, NULL, 3);
+   CHECK(menu_media_controls_display(&dims, &hz) && hz > 23.97f && hz < 23.98f);
+   player.state.cadence_num = 24;
+   player.state.cadence_den = 1;
+   menu_media_controls_update(&media, &target, 640, 480, NULL, 3);
+   CHECK(menu_media_controls_display(&dims, &hz) && hz == 24.0f);
+   player.state.seeking = true;
+   menu_media_controls_update(&media, &target, 640, 480, NULL, 4);
+   CHECK(menu_media_controls_display(&dims, &hz)
+         && dims == player.state.dims);
+   CHECK(!gfx_media_display_source(&player.state, &dims, &hz));
+   player.state.seeking = false;
+   player.state.seek_failed = true;
+   CHECK(!gfx_media_display_source(&player.state, &dims, &hz));
+   player.state.seek_failed = false;
+   player.state.dims = VIDEO_SCALE_PACK(640, 360);
+   menu_media_controls_update(&other, &target, 640, 480, NULL, 5);
+   menu_media_controls_cancel(&media);
+   CHECK(menu_media_controls_display(&dims, &hz)
+         && dims == player.state.dims);
+   menu_media_controls_update(&other, NULL, 640, 480, NULL, 6);
+   CHECK(!menu_media_controls_display(&dims, &hz));
+   menu_media_controls_update(&media, &target, 640, 480, NULL, 7);
+   CHECK(menu_media_controls_display(&dims, &hz));
+   CHECK(!menu_media_controls_action(&media, MENU_ACTION_CANCEL, 8));
+   CHECK(!menu_media_controls_display(&dims, &hz));
+   player.state.dims = VIDEO_SCALE_PACK(320, 4);
+   CHECK(!gfx_media_display_source(&player.state, &dims, &hz));
+   player.state.dims = VIDEO_SCALE_PACK(320, 240);
+   player.state.cadence_den = 0;
+   CHECK(!gfx_media_display_source(&player.state, &dims, &hz));
+   player.state.cadence_den = 1;
+   player.state.cadence_num = 241;
+   CHECK(!gfx_media_display_source(&player.state, &dims, &hz));
+   test_settings.bools.media_player_crt_switch = false;
+   menu_media_controls_cancel(&media);
+   menu_media_controls_cancel(&other);
+}
+
+#ifdef HAVE_THREADS
+static void display_reader(void *user)
+{
+   mailbox_test_t *t = (mailbox_test_t*)user;
+   unsigned dims;
+   float hz;
+   do
+   {
+      if (menu_media_controls_display(&dims, &hz))
+      {
+         if (VIDEO_SCALE_H(dims) != 240
+               || (float)VIDEO_SCALE_W(dims) != hz)
+            retro_atomic_store_release_int(&t->bad, 1);
+         retro_atomic_fetch_add_int(&t->seen, 1);
+      }
+   } while (!retro_atomic_load_acquire_int(&t->done));
+}
+
+static void display_races(void)
+{
+   mailbox_test_t *t = (mailbox_test_t*)calloc(1, sizeof(*t));
+   menu_media_controls_t media;
+   gfx_media_target_t target;
+   fake_player_t player;
+   sthread_t *thread;
+   unsigned i;
+   CHECK(t != NULL);
+   if (!t) return;
+   memset(&media, 0, sizeof(media));
+   memset(&target, 0, sizeof(target));
+   memset(&player, 0, sizeof(player));
+   player.available = true;
+   player.state.cadence_den = 1;
+   target.user = &player;
+   target.identity = &player;
+   target.state = fake_state;
+   target.pause = fake_pause;
+   target.seek = fake_seek;
+   test_settings.bools.media_player_crt_switch = true;
+   thread = sthread_create(display_reader, t);
+   CHECK(thread != NULL);
+   if (thread)
+   {
+      for (i = 1; i <= 20000; i++)
+      {
+         unsigned rate = 24 + (i & 1);
+         player.state.cadence_num = rate;
+         player.state.dims = VIDEO_SCALE_PACK(rate, 240);
+         menu_media_controls_update(&media, &target, 640, 480, NULL, i);
+      }
+      retro_atomic_store_release_int(&t->done, 1);
+      sthread_join(thread);
+      CHECK(!retro_atomic_load_acquire_int(&t->bad)
+            && retro_atomic_load_acquire_int(&t->seen));
+   }
+   test_settings.bools.media_player_crt_switch = false;
+   menu_media_controls_cancel(&media);
+   free(t);
+}
+#endif
+
+static void display_rates(void)
+{
+   static const float rates[] = {24.0f, 48.0f, 50.0f, 59.94f,
+      60.0f, 71.928f, 72.0f, 119.88f, 120.0f};
+   video_display_config_t modes[9];
+   unsigned i, dims = VIDEO_SCALE_PACK(1920, 1080);
+   float rate;
+   memset(modes, 0, sizeof(modes));
+   for (i = 0; i < 9; i++)
+   {
+      modes[i].dims = dims;
+      modes[i].bpp = 32;
+      modes[i].refreshrate_float = rates[i];
+   }
+   rate = gfx_media_display_rate(modes, 9, dims, 32, 24000, 1001, 60.0f);
+   CHECK(rate > 71.927f && rate < 71.929f);
+   CHECK(gfx_media_display_rate(modes, 9, dims, 32, 24, 1, 60.0f) == 48.0f);
+   CHECK(gfx_media_display_rate(modes, 9, dims, 32, 25, 1, 60.0f) == 50.0f);
+   CHECK(gfx_media_display_rate(modes, 9, dims, 32, 30, 1, 60.0f) == 60.0f);
+   rate = gfx_media_display_rate(modes, 9, dims, 32, 24000, 1001, 119.88f);
+   CHECK(rate > 119.879f && rate < 119.881f);
+   CHECK(!gfx_media_display_rate(modes + 4, 1, dims, 32, 24, 1, 60.0f));
+   CHECK(!gfx_media_display_rate(modes, 9, dims, 16, 30, 1, 60.0f));
+   CHECK(!gfx_media_display_rate(modes, 9, VIDEO_SCALE_PACK(1280, 720),
+            32, 30, 1, 60.0f));
+   CHECK(!gfx_media_display_rate(modes, 9, dims, 32, 30, 0, 60.0f));
+   CHECK(!gfx_media_display_rate(NULL, 9, dims, 32, 30, 1, 60.0f));
+   modes[4].interlaced = true;
+   CHECK(!gfx_media_display_rate(modes + 4, 1, dims, 32, 30, 1, 60.0f));
+   modes[4].interlaced = false;
+   modes[4].dblscan = true;
+   CHECK(!gfx_media_display_rate(modes + 4, 1, dims, 32, 30, 1, 60.0f));
+   modes[4].dblscan = false;
+   modes[4].refreshrate_float = 0.0f;
+   modes[4].refreshrate = 60;
+   CHECK(gfx_media_display_rate(modes + 4, 1, dims, 32, 30, 1, 60.0f) == 60.0f);
+}
+
 int main(void)
 {
    test_settings.uints.media_player_seek_seconds = 5;
    test_settings.uints.media_player_controls_timeout = 3;
+   display_rates();
+   display_source();
+#ifdef HAVE_THREADS
+   display_races();
+#endif
    folder_queue();
    playback_preferences();
    menu_preferences();

@@ -28,6 +28,7 @@ with tempfile.TemporaryDirectory(prefix='rgui-media-') as temp:
  values={'video_driver':'null','audio_driver':'null','input_driver':'null','input_joypad_driver':'null','menu_driver':('glui' if a.driver=='materialui' else a.driver),'audio_enable':'false','menu_ignore_missing_assets':'true','video_threaded':'false','menu_show_start_screen':'false','config_save_on_exit':'false','menu_mouse_enable':'true','history_list_enable':'false','savefile_directory':temp,'savestate_directory':temp,'screenshot_directory':temp}
  values.update(video_driver=a.video_driver,video_threaded='true' if a.threaded else 'false',video_vsync='false',pause_nonactive='false',video_hw_decode='1')
  if a.continuous:values['media_player_continuous']='true'
+ if a.require_cadence:values.update(media_player_crt_switch='true',crt_switch_resolution='1' if os.environ.get('MEDIA_TEST_CRT_ENGINE') else '0',crt_switch_resolution_super='0')
  if a.assets:values['assets_directory']=str(Path(a.assets).resolve())
  cfg.write_text(''.join(k+' = "'+v.replace('\\','/')+'"\n' for k,v in values.items()),encoding='utf-8')
  cmd=[str(exe),str(fixture),str(cfg)]

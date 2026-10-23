@@ -2,6 +2,10 @@
  * GPL-3.0-or-later */
 #ifndef MEDIA_FOLDER_PLAYBACK_TEST_H
 #define MEDIA_FOLDER_PLAYBACK_TEST_H
+#include "../../../menu/menu_cbs.h"
+
+static double media_folder_core_fps;
+static float media_folder_core_hz;
 
 static bool media_folder_install(struct menu_state *menu_st, file_list_t *list,
       const char *directory, const char *fixture)
@@ -11,6 +15,8 @@ static bool media_folder_install(struct menu_state *menu_st, file_list_t *list,
    char name[64];
    unsigned i;
    unsigned count = getenv("MEDIA_TEST_CONTINUOUS_ERROR") ? 4 : 3;
+   media_folder_core_fps = video_state_get_ptr()->av_info.timing.fps;
+   media_folder_core_hz = video_state_get_ptr()->core_hz;
    for (i = 0; i < count; i++)
    {
       snprintf(name, sizeof(name), "episode%u.%s", episodes[i], extension);
@@ -100,6 +106,34 @@ static bool media_folder_drive(struct menu_state *menu_st,
       if (!media->controls.playback.cadence_num
             || !media->controls.playback.cadence_den)
          return false;
+      {
+         unsigned dims = 0;
+         float hz = 0.0f;
+         double expected = (double)media->controls.playback.cadence_num
+            / media->controls.playback.cadence_den;
+         if (getenv("MEDIA_TEST_CRT_ENGINE"))
+         {
+#ifdef HAVE_MODELINE
+            video_driver_state_t *video = video_state_get_ptr();
+            dims = video->crt_switch_st.ra_core_dims;
+            hz = video->crt_switch_st.ra_core_hz;
+            printf("CRT owner request: %ux%u %.6f Hz; core %.6f/%.6f Hz\n",
+                  VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), hz,
+                  video->av_info.timing.fps, (double)video->core_hz);
+            if (video->av_info.timing.fps != media_folder_core_fps
+                  || video->core_hz != media_folder_core_hz) return false;
+#else
+            return false;
+#endif
+         }
+         else if (!menu_media_controls_display(&dims, &hz))
+            return false;
+         if (dims != media->controls.playback.dims
+               || hz < expected - 0.001 || hz > expected + 0.001)
+            return false;
+         printf("fullscreen display source: %ux%u %.6f Hz\n",
+               VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), hz);
+      }
    }
    if (!media->controls.target.user || !media->controls.playback.paused
          || media->controls.layout.button_count != 7
@@ -145,6 +179,8 @@ static bool media_folder_drive(struct menu_state *menu_st,
       if (!gfx_media_controls_action(&media->controls, GFX_MEDIA_SETTINGS,
                menu_st->current_time_us))
          return false;
+      menu_driver_iterate(menu_st, disp_get_ptr(), anim_get_ptr(),
+            config_get_ptr(), MENU_ACTION_NOOP, menu_st->current_time_us);
       draw(menu_st);
       stack = MENU_LIST_GET(menu_st->entries.list, 0);
       if (!stack || !stack->size || !stack->list[stack->size - 1].label
@@ -154,6 +190,36 @@ static bool media_folder_drive(struct menu_state *menu_st,
       printf("fullscreen settings: showing=%u\n", shown(viewer));
       if (shown(viewer))
          return false;
+      if (getenv("MEDIA_TEST_CADENCE"))
+      {
+         file_list_t *entries = MENU_LIST_GET_SELECTION(menu_st->entries.list, 0);
+         size_t row;
+         unsigned dims;
+         float hz;
+         bool found = false;
+         if (getenv("MEDIA_TEST_CRT_ENGINE"))
+         {
+#ifdef HAVE_MODELINE
+            video_driver_state_t *video = video_state_get_ptr();
+            if (video->crt_switch_st.ra_core_hz != media_folder_core_hz
+                  || video->av_info.timing.fps != media_folder_core_fps
+                  || video->core_hz != media_folder_core_hz)
+               return false;
+#else
+            return false;
+#endif
+         }
+         else if (menu_media_controls_display(&dims, &hz)) return false;
+         for (row = 0; row < entries->size; row++)
+            if (entries->list[row].label
+                  && !strcmp(entries->list[row].label, "media_player_crt_switch"))
+               found = true;
+#ifdef HAVE_MODELINE
+         if (!found) return false;
+#else
+         if (found) return false;
+#endif
+      }
       if (action_cancel_pop_default(NULL, NULL, 0, 0) != 0)
          return false;
       draw(menu_st);

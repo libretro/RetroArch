@@ -41,6 +41,9 @@
 #include "../cores/internal_cores.h"
 #include "video_driver.h"
 #include "video_hdr_metadata.h"
+#if defined(HAVE_MENU) && defined(HAVE_MODELINE)
+#include "../menu/menu_media_controls.h"
+#endif
 #include "gfx_instrument.h"
 #ifdef HAVE_OPENXR
 #include "video_xr.h"
@@ -8936,7 +8939,23 @@ if (!VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st))
    if (video_info.crt_switch_resolution)
    {
       unsigned native_width     = width;
+      float source_hz           = video_st->core_hz;
+      bool source_rotated       = (rotation & 1) != 0;
       bool dynamic_super_width  = false;
+#if defined(HAVE_MENU)
+      unsigned media_dims;
+      float media_hz;
+      if ((video_info.menu_st_flags & MENU_ST_FLAG_ALIVE)
+            && config_get_ptr()->bools.media_player_crt_switch
+            && menu_media_controls_display(&media_dims, &media_hz))
+      {
+         native_width = VIDEO_SCALE_W(media_dims);
+         width = native_width;
+         height = VIDEO_SCALE_H(media_dims);
+         source_hz = media_hz;
+         source_rotated = false;
+      }
+#endif
 
       retro_atomic_store_release_int(&video_st->crt_switching_active, 1);
 
@@ -8957,8 +8976,8 @@ if (!VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st))
       crt_switch_res_core(
             &video_st->crt_switch_st,
             native_width, VIDEO_SCALE_PACK(width, height),
-            video_st->core_hz,
-            rotation & 1,
+            source_hz,
+            source_rotated,
             video_info.crt_switch_resolution,
             video_info.crt_switch_center_adjust,
             video_info.crt_switch_porch_adjust,

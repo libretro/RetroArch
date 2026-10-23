@@ -1329,6 +1329,7 @@ DRIVERS
 #include "../gfx/gfx_surface_player.c"
 #include "../gfx/gfx_thumbnail.c"
 #include "../gfx/gfx_media_controls.c"
+#include "../gfx/gfx_media_display.c"
 #include "../gfx/gfx_media_player.c"
 #include "../gfx/gfx_media_cpu.c"
 #include "../gfx/gfx_anim_preview.c"
