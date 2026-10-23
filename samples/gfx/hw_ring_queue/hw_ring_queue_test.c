@@ -10,6 +10,11 @@
 void RARCH_LOG(const char *fmt, ...) { (void)fmt; }
 void RARCH_WARN(const char *fmt, ...) { (void)fmt; }
 void RARCH_ERR(const char *fmt, ...) { (void)fmt; }
+void video_context_driver_release_current(void)
+{
+   fputs("Unexpected context handoff in the fence queue harness\n", stderr);
+   abort();
+}
 void video_thread_call_on_waiter(void (*fn)(void*), void *data)
 { (void)fn; (void)data; exit(1); }
 
