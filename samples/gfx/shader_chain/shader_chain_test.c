@@ -260,6 +260,42 @@ int main(void)
    slang_blob_table_stats(&n, &reused);
    CHECK(n == 0, "no chain, no blobs");
 
+   /* a pass compiled detached - on a thread that is not the chain's -
+    * lists nothing until the chain's thread offers it, and the offer
+    * is what the chain's own compile then takes */
+   printf("detached a, offer, load a\n");
+   {
+      glslang_output out;
+      struct slang_blob *vs, *fs;
+      char key[33];
+      CHECK(slang_compile_pass_detached("a.slang", false, &out, key), "detached compile");
+      slang_blob_table_stats(&n, &reused);
+      CHECK(n == 0, "a detached compile lists nothing");
+      CHECK(strlen(key) == 32, "the detached compile names the pass's key");
+      vs = slang_blob_ref(out.vertex_blob);
+      fs = slang_blob_ref(out.fragment_blob);
+      glslang_output_free(&out);
+      slang_blob_offer(key, vs, fs);
+      slang_blob_table_stats(&n, &reused);
+      CHECK(n == 2, "the offer lists both stages");
+      CHECK(chain_build(&live, abac, 1) == 0, "the chain's compile takes the offered stages");
+      CHECK(live.pass[0].vertex_blob == vs && live.pass[0].fragment_blob == fs,
+            "by reference");
+      /* a second offer of a listed pass is dropped, references and all */
+      CHECK(slang_compile_pass_detached("a.slang", false, &out, key), "detached compile again");
+      vs = slang_blob_ref(out.vertex_blob);
+      glslang_output_free(&out);
+      slang_blob_offer(key, vs, NULL);
+      slang_blob_table_stats(&n, &reused);
+      CHECK(n == 2, "an offer of a listed pass lists nothing");
+      chain_free(&live);
+      slang_blob_table_stats(&n, &reused);
+      CHECK(n == 2, "the offer holds the stages after the chain let go");
+      slang_blob_offers_release();
+      slang_blob_table_stats(&n, &reused);
+      CHECK(n == 0, "released offers leave the table");
+   }
+
    printf("%s: %u failure(s)\n", failures ? "FAIL" : "ok", failures);
    return failures ? 1 : 0;
 }

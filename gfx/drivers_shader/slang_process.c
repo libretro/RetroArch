@@ -1323,7 +1323,7 @@ static void slang_output_print_text(glslang_output *output,
 static bool slang_compile_stage(const char *source,
       enum glslang_compile_stage stage,
       struct slang_blob **blob, const char **compiler,
-      const struct slang_text_target *text)
+      const struct slang_text_target *text, bool detached)
 {
 #if defined(HAVE_GLSLANG)
    uint32_t *words = NULL;
@@ -1342,12 +1342,19 @@ static bool slang_compile_stage(const char *source,
          *compiler = "rslc";
          return true;
       }
+      /* glslang is one process-wide instance: a detached compile leaves
+       * the stage to the chain's own thread rather than enter it beside
+       * that thread */
+      if (detached)
+         return false;
 #if defined(HAVE_GLSLANG)
       RARCH_WARN("[Slang] rslc rejected the stage; compiling it with glslang.\n");
 #endif
    }
 #endif
 #if defined(HAVE_GLSLANG)
+   if (detached)
+      return false;
    *compiler = "glslang";
    if (!glslang_compile_spirv(source, stage, &words, &nwords))
       return false;
@@ -1401,9 +1408,15 @@ bool glslang_compile_shader_cached(const char *shader_path,
    return glslang_compile_shader_text(shader_path, output, include_cache, NULL);
 }
 
-bool glslang_compile_shader_text(const char *shader_path,
+/* The compile of one pass.  Detached, it runs on a thread that is not
+ * the chain's: it reads and compiles as the chain's thread would and
+ * writes the cache, but neither asks the blob table nor lists in it,
+ * prints no text, falls back to no other compiler and tells the user
+ * nothing; @key_out (33 bytes) gets the pass's cache key, under which
+ * the chain's thread offers the stages to the table (slang_blob_offer). */
+static bool slang_compile_pass(const char *shader_path,
       glslang_output *output, void *include_cache,
-      const struct slang_text_target *text)
+      const struct slang_text_target *text, bool detached, char *key_out)
 {
    glslang_output_init(output);
 
@@ -1454,10 +1467,15 @@ bool glslang_compile_shader_text(const char *shader_path,
             fallback_filename);
 #endif
 
+      if (key_out)
+         strlcpy(key_out, cache_filename, 33);
+
       /* A pass a live chain already compiled: its blobs, by reference */
-      listed = slang_output_take_listed(output, cache_filename);
+      if (!detached)
+         listed = slang_output_take_listed(output, cache_filename);
 #if defined(HAVE_RSLC) && defined(HAVE_GLSLANG)
-      if (!listed && slang_output_take_listed(output, fallback_filename))
+      if (!detached && !listed
+            && slang_output_take_listed(output, fallback_filename))
       {
          listed = true;
          used   = "glslang";
@@ -1502,7 +1520,8 @@ bool glslang_compile_shader_text(const char *shader_path,
                slang_output_print_text(output, vertex_source, fragment_source,
                      text);
 #endif
-            slang_output_list(output, cache_filename);
+            if (!detached)
+               slang_output_list(output, cache_filename);
             RARCH_LOG("[Slang] Loaded shader from cache: \"%s\".\n", shader_path);
             free(vertex_source);
             free(fragment_source);
@@ -1515,7 +1534,7 @@ bool glslang_compile_shader_text(const char *shader_path,
          goto error;
 
       if (!slang_compile_stage(vertex_source,
-               GLSLANG_COMPILE_STAGE_VERTEX, &blob, &used, text))
+               GLSLANG_COMPILE_STAGE_VERTEX, &blob, &used, text, detached))
       {
          RARCH_ERR("[Slang] Failed to compile vertex shader stage.\n");
          goto error;
@@ -1533,7 +1552,7 @@ bool glslang_compile_shader_text(const char *shader_path,
       vertex_source = NULL;
 
       if (!slang_compile_stage(fragment_source,
-               GLSLANG_COMPILE_STAGE_FRAGMENT, &blob, &used, text))
+               GLSLANG_COMPILE_STAGE_FRAGMENT, &blob, &used, text, detached))
       {
          RARCH_ERR("[Slang] Failed to compile fragment shader stage.\n");
          goto error;
@@ -1558,12 +1577,14 @@ bool glslang_compile_shader_text(const char *shader_path,
 #if defined(HAVE_RSLC) && defined(HAVE_GLSLANG)
       spirv_cache_save(used != compiler ? fallback_filename : cache_filename,
             output);
-      slang_output_list(output,
-            used != compiler ? fallback_filename : cache_filename);
+      if (!detached)
+         slang_output_list(output,
+               used != compiler ? fallback_filename : cache_filename);
 #else
       (void)used;
       spirv_cache_save(cache_filename, output);
-      slang_output_list(output, cache_filename);
+      if (!detached)
+         slang_output_list(output, cache_filename);
 #endif
 
       free(vertex_source);
@@ -1580,6 +1601,7 @@ error:
    }
 #endif
 
+   if (!detached)
    {
       size_t _len;
       char msg[NAME_MAX_LENGTH];
@@ -1592,6 +1614,83 @@ error:
    }
 
    return false;
+}
+
+bool glslang_compile_shader_text(const char *shader_path,
+      glslang_output *output, void *include_cache,
+      const struct slang_text_target *text)
+{
+   return slang_compile_pass(shader_path, output, include_cache, text,
+         false, NULL);
+}
+
+bool slang_compile_pass_detached(const char *shader_path, bool hlsl_or_msl,
+      glslang_output *output, char *key)
+{
+#if defined(HAVE_RSLC)
+#if defined(HAVE_GLSLANG)
+   struct slang_text_target text;
+   memset(&text, 0, sizeof(text));
+   text.hlsl = hlsl_or_msl;
+   /* under glslang the chain's thread compiles, as before */
+   if (!slang_prefer_rslc(hlsl_or_msl ? &text : NULL))
+      return false;
+#else
+   (void)hlsl_or_msl;
+#endif
+   return slang_compile_pass(shader_path, output, NULL, NULL, true, key);
+#else
+   (void)shader_path;
+   (void)hlsl_or_msl;
+   (void)output;
+   (void)key;
+   return false;
+#endif
+}
+
+/* Stages compiled detached, held here with one reference each so they
+ * stay listed until the chain that asked for them takes them; the
+ * oldest goes when the ring is full. */
+#define SLANG_OFFERS 64
+static struct
+{
+   struct slang_blob *vs[SLANG_OFFERS];
+   struct slang_blob *fs[SLANG_OFFERS];
+   unsigned           next;
+} slang_offers;
+
+void slang_blob_offer(const char *key, struct slang_blob *vs,
+      struct slang_blob *fs)
+{
+   struct slang_blob *listed = slang_blob_table_find(key, false);
+   unsigned i;
+   if (listed || !vs || !fs)
+   {
+      /* already there, or half a pass: nothing to list */
+      slang_blob_unref(listed);
+      slang_blob_unref(vs);
+      slang_blob_unref(fs);
+      return;
+   }
+   slang_blob_table_add(vs, key, false);
+   slang_blob_table_add(fs, key, true);
+   i = slang_offers.next++ % SLANG_OFFERS;
+   slang_blob_unref(slang_offers.vs[i]);
+   slang_blob_unref(slang_offers.fs[i]);
+   slang_offers.vs[i] = vs;
+   slang_offers.fs[i] = fs;
+}
+
+void slang_blob_offers_release(void)
+{
+   unsigned i;
+   for (i = 0; i < SLANG_OFFERS; i++)
+   {
+      slang_blob_unref(slang_offers.vs[i]);
+      slang_blob_unref(slang_offers.fs[i]);
+      slang_offers.vs[i] = NULL;
+      slang_offers.fs[i] = NULL;
+   }
 }
 
 bool slang_preprocess_parse_parameters_meta(const glslang_meta *meta,

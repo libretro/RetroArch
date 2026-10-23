@@ -1223,6 +1223,7 @@ static bool video_thread_handle_packet(
       case CMD_SHADER_LOAD_BEGIN:
          {
             shader_load_deferred_t *d = (shader_load_deferred_t*)pkt.data.v;
+            video_driver_shader_deferred_take(d, true);
             pkt.data.b = thr->driver_data && thr->driver
                && thr->driver->shader_load_begin
                && thr->driver->shader_load_begin(thr->driver_data, d);
@@ -1240,6 +1241,7 @@ static bool video_thread_handle_packet(
                d->current_pass = d->total_passes;
                d->state        = SHADER_LOAD_FAILED;
             }
+            video_driver_shader_deferred_take(d, false);
             if (thr->driver_data && thr->driver && thr->driver->shader_load_step)
                pkt.data.b = thr->driver->shader_load_step(thr->driver_data, d);
             else
@@ -1247,6 +1249,8 @@ static bool video_thread_handle_packet(
                d->state   = SHADER_LOAD_FAILED;
                pkt.data.b = false;
             }
+            if (!pkt.data.b)
+               video_driver_shader_deferred_take(d, true);
             /* publishes the step's writes to the main thread's tick */
             retro_atomic_store_release_int(&d->busy, 0);
          }
