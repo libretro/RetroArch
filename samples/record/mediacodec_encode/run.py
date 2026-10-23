@@ -33,7 +33,8 @@ with tempfile.TemporaryDirectory(prefix="mediacodec-encode-") as directory:
                           ("worker_test.c", []), ("surface_test.c", []),
                           ("capture_images_test.c", ["-DRECORD_ANDROID_CAPTURE_TEST"]),
                           ("capture_submit_test.c", []), ("capture_gl_test.c", []),
-                          ("draw_test.c", []), ("gpu_worker_test.c", [])):
+                          ("draw_test.c", []), ("gpu_worker_test.c", []),
+                          ("file_test.c", ["-DRECORD_MEDIACODEC_FILE_TEST"])):
         command = compiler + flags + extra + [str(here / source), "-o", str(binary)]
         if source == "worker_test.c":
             command += ["-DHAVE_THREADS",
@@ -43,6 +44,8 @@ with tempfile.TemporaryDirectory(prefix="mediacodec-encode-") as directory:
         if source == "surface_test.c":
             command += ["-DUSE_SYSTEM_EGL", "-I" + str(root / "gfx/include/ANGLE"),
                         str(root / "record/record_mediacodec_surface.c")]
+        if source == "file_test.c" and os.name != "nt":
+            command += ["-D_POSIX_C_SOURCE=200809L"]
         if source == "gpu_worker_test.c":
             command += ["-DHAVE_THREADS", "-DUSE_SYSTEM_EGL",
                         "-I" + str(root / "gfx/include/ANGLE"),
@@ -64,4 +67,8 @@ with tempfile.TemporaryDirectory(prefix="mediacodec-encode-") as directory:
                         str(root / "gfx/common/vulkan_android_queue.c")]
         print("+", shlex.join(command), flush=True)
         subprocess.run(command, check=True)
-        subprocess.run([str(binary)], check=True, timeout=30)
+        arguments = [str(binary)] + ([directory] if source == "file_test.c" else [])
+        subprocess.run(arguments, check=True, timeout=30)
+        if source == "file_test.c":
+            assert (Path(directory) / "record-\u00e9.mp4").read_bytes() == b"sentinel"
+            assert not (Path(directory) / "nonexistent-recording").exists()
