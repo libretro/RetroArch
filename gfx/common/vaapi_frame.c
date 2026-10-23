@@ -173,13 +173,22 @@ int vaapi_frame_export(vaapi_frame_pool_t *pool, vaapi_hevc_export_t *source,
       unsigned x, unsigned y, unsigned width, unsigned height, unsigned yuv,
       const video_color_metadata_t *color, video_hw_frame_t *out)
 {
+   return vaapi_frame_export_position(
+         pool, source, x, y, width, height, yuv, 0, color, out);
+}
+
+int vaapi_frame_export_position(vaapi_frame_pool_t *pool,
+      vaapi_hevc_export_t *source, unsigned x, unsigned y, unsigned width,
+      unsigned height, unsigned yuv, unsigned chroma_position,
+      const video_color_metadata_t *color, video_hw_frame_t *out)
+{
    vaapi_frame_slot_t *slot;
    video_hw_frame_t frame;
    unsigned i;
-   if (!pool || pool->closed || !source || !source->active || !source->ready
-         || !vaapi_export_owner(source) || !source->ticket || !out || !width || !height
-         || ((x | y) & 1) || x >= source->descriptor.width
-         || y >= source->descriptor.height
+   if (chroma_position > 2 || !pool || pool->closed || !source
+         || !source->active || !source->ready || !vaapi_export_owner(source)
+         || !source->ticket || !out || !width || !height || ((x | y) & 1)
+         || x >= source->descriptor.width || y >= source->descriptor.height
          || width > source->descriptor.width - x
          || height > source->descriptor.height - y
          || (source->descriptor.fourcc != VA_FOURCC_NV12
@@ -212,6 +221,7 @@ int vaapi_frame_export(vaapi_frame_pool_t *pool, vaapi_hevc_export_t *source,
    slot->view.width  = width;
    slot->view.height = height;
    slot->view.yuv    = yuv;
+   slot->view.chroma_position = chroma_position;
    slot->view.pixfmt = source->descriptor.fourcc == VA_FOURCC_P010
                              ? IMAGE_PIXFMT_P010
                              : IMAGE_PIXFMT_NV12;

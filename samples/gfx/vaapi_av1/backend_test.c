@@ -366,10 +366,14 @@ int main(void)
    assert(test_open(&first) && seen_major == 227 && seen_minor == 130);
    backend.offer.close(&first);
    wait_value(&backend.active, 0);
+   for (params.chroma_sample_position = 1; params.chroma_sample_position <= 2;
+         params.chroma_sample_position++)
+   {
+      assert(test_open(&first));
+      backend.offer.close(&first);
+      wait_value(&backend.active, 0);
+   }
    before = paths;
-   params.chroma_sample_position = 1;
-   assert(!test_open(&refused) && paths == before);
-   params.chroma_sample_position = 2;
    assert(!test_open(&refused) && paths == before);
    params.chroma_sample_position = 0;
    assert(!backend.offer.open_config(

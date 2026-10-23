@@ -12,7 +12,7 @@ typedef struct vaapi_frame_view
 {
    const struct vaapi_hevc_export *source;
    video_color_metadata_t color;
-   unsigned x, y, width, height, yuv, pixfmt;
+   unsigned x, y, width, height, yuv, pixfmt, chroma_position;
 } vaapi_frame_view_t;
 
 /* Cold decoder-worker setup. One producer, one renderer owner per lease.
@@ -27,6 +27,11 @@ int vaapi_frame_export(vaapi_frame_pool_t *pool,
       struct vaapi_hevc_export *source, unsigned x, unsigned y, unsigned width,
       unsigned height, unsigned yuv, const video_color_metadata_t *color,
       video_hw_frame_t *out);
+/* AV1 positions: 0 unspecified, 1 left/vertical-center, 2 top-left. */
+int vaapi_frame_export_position(vaapi_frame_pool_t *pool,
+      struct vaapi_hevc_export *source, unsigned x, unsigned y, unsigned width,
+      unsigned height, unsigned yuv, unsigned chroma_position,
+      const video_color_metadata_t *color, video_hw_frame_t *out);
 bool vaapi_frame_callback(void (*abandon)(void *, uint64_t, uint64_t));
 /* Claim publishes a read-only source pointer valid ONLY while claimed and
  * until take. Cold imports may borrow FDs without consuming this export. */

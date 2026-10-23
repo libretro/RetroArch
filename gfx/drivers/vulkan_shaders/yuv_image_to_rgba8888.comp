@@ -28,7 +28,25 @@ void main()
    float scale = words[14] == 2u ? 65535.0 / (words[15] != 0u ? 65472.0 : 65280.0) : 1.0;
    float center = words[14] == 2u && words[15] != 0u ? 512.0 / 1023.0 : 128.0 / 255.0;
    float y = texelFetch(Y, ivec2(p) + origin, 0).r * scale;
-   vec2 c = texelFetch(C, (ivec2(p) + origin) >> 1, 0).rg * scale - center;
+   ivec2 position = ivec2(p) + origin;
+   vec2 chroma;
+   if (words[4] == 1u || words[4] == 2u)
+   {
+      vec2 location = vec2(position) * 0.5;
+      if (words[4] == 1u) location.y -= 0.25;
+      ivec2 base = ivec2(floor(location));
+      vec2 weight = fract(location);
+      ivec2 limit = min(textureSize(C, 0) - 1,
+            (origin + ivec2(words[0], words[1]) - 1) >> 1);
+      vec2 a = texelFetch(C, clamp(base, ivec2(0), limit), 0).rg;
+      vec2 b = texelFetch(C, clamp(base + ivec2(1, 0), ivec2(0), limit), 0).rg;
+      vec2 c = texelFetch(C, clamp(base + ivec2(0, 1), ivec2(0), limit), 0).rg;
+      vec2 d = texelFetch(C, clamp(base + ivec2(1), ivec2(0), limit), 0).rg;
+      chroma = mix(mix(a, b, weight.x), mix(c, d, weight.x), weight.y);
+   }
+   else
+      chroma = texelFetch(C, position >> 1, 0).rg;
+   vec2 c = chroma * scale - center;
 #endif
    vec3 rgb = vec3(uintBitsToFloat(words[8]) * y + uintBitsToFloat(words[9]));
    rgb += vec3(uintBitsToFloat(words[10]) * c.y,

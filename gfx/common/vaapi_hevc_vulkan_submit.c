@@ -7,10 +7,19 @@ bool vaapi_hevc_vulkan_submission_configure(vaapi_hevc_vulkan_submission_t *e,
       unsigned height, unsigned yuv, const video_color_metadata_t *color,
       bool fp16)
 {
+   return vaapi_hevc_vulkan_submission_configure_position(
+         e, frame, x, y, width, height, yuv, 0, color, fp16);
+}
+
+bool vaapi_hevc_vulkan_submission_configure_position(
+      vaapi_hevc_vulkan_submission_t *e, vaapi_hevc_vulkan_frame_t *frame,
+      unsigned x, unsigned y, unsigned width, unsigned height, unsigned yuv,
+      unsigned chroma_position, const video_color_metadata_t *color, bool fp16)
+{
    vulkan_video_layout_t layout;
    unsigned pixfmt;
-   if (!e || !frame || !frame->active || !frame->source.active || frame->pending
-         || frame->broken
+   if (chroma_position > 2 || !e || !frame || !frame->active
+         || !frame->source.active || frame->pending || frame->broken
          || (e->frame && (e->frame->pending || e->frame->broken)) || !width
          || !height || ((x | y) & 1) || x >= frame->source.descriptor.width
          || y >= frame->source.descriptor.height
@@ -25,6 +34,7 @@ bool vaapi_hevc_vulkan_submission_configure(vaapi_hevc_vulkan_submission_t *e,
       return false;
    layout.header[2] = x;
    layout.header[3] = y;
+   layout.header[4] = chroma_position;
    if (fp16)
    {
       float linear = -1.0f;

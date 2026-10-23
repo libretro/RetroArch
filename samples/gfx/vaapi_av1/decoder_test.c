@@ -15,62 +15,67 @@ static void hdr_metadata(void)
          = {export_surface, cloexec, close_fd, identity};
    static video_color_metadata_t hdr;
    vaapi_av1_decoder_t *detached;
-   unsigned transfer, i;
-   for (transfer = 16; transfer <= 18; transfer += 2)
-   {
-      reset();
-      assert(vaapi_av1_pool_close(&pool));
-      session.slots = 32;
-      for (i = 0; i < 32; i++)
-         session.surfaces[i] = 1000 + i;
-      session.depth = sequence.bit_depth = 10;
-      assert(vaapi_av1_pool_init(&pool, &session, &ops));
-      test_depth = 10;
-      fd_closed = duplicate_fd = release_fail = 0;
-      memset(fd_live, 0, sizeof(fd_live));
-      memset(&hdr, 0, sizeof(hdr));
-      sequence.color_primaries = sequence.matrix_coefficients = 9;
-      sequence.transfer_characteristics = transfer;
-      hdr.primaries = hdr.matrix = 9;
-      hdr.transfer = transfer;
-      hdr.range = 1;
-      hdr.max_cll = 1500;
-      hdr.max_fall = 400;
-      hdr.mastering.present = VIDEO_MASTERING_DISPLAY_COMPLETE;
-      hdr.mastering.luminance_max = 10000000;
-      hdr.mastering.chromaticity[0] = 34000;
-      sequence.chroma_sample_position = 1;
-      assert(!vaapi_av1_decoder_open(
-            &pool, &sequence, &hdr, &exports, &adapter));
-      sequence.chroma_sample_position = 0;
-      hdr.transfer = 13;
-      assert(!vaapi_av1_decoder_open(
-            &pool, &sequence, &hdr, &exports, &adapter));
-      assert(
-            !adapter.decoder && !adapter.decode && !adapter.output && !created);
-      hdr.transfer = transfer;
-      assert(
-            vaapi_av1_decoder_open(&pool, &sequence, &hdr, &exports, &adapter));
-      assert(!adapter.decode(
-            adapter.decoder, packet, sizeof(packet), &sequence, &picture));
-      expected_surface = 1001;
-      assert(
-            !adapter.output(adapter.decoder, 0, &picture.grain.params, &first));
-      assert(vaapi_frame_claim(first.owner, first.done, first.done_value,
-            first.image, &first_view));
-      assert(first_view.pixfmt == IMAGE_PIXFMT_P010);
-      assert(first_view.color.transfer == transfer);
-      assert(first_view.color.primaries == 9 && first_view.color.matrix == 9);
-      assert(first_view.color.range == 1 && first_view.color.max_cll == 1500);
-      assert(first_view.color.max_fall == 400);
-      assert(!memcmp(&first_view.color.mastering, &hdr.mastering,
-            sizeof(hdr.mastering)));
-      assert(vaapi_frame_finish(
-            first.owner, first.done, first.done_value, NULL));
-      detached = vaapi_av1_decoder_detach(&adapter);
-      assert(detached && vaapi_av1_decoder_retire(detached));
-      assert(vaapi_av1_pool_close(&pool) && fd_closed == 2);
-   }
+   unsigned transfer, i, position;
+   for (position = 0; position <= 2; position++)
+      for (transfer = 16; transfer <= 18; transfer += 2)
+      {
+         reset();
+         assert(vaapi_av1_pool_close(&pool));
+         session.slots = 32;
+         for (i = 0; i < 32; i++)
+            session.surfaces[i] = 1000 + i;
+         session.depth = sequence.bit_depth = 10;
+         assert(vaapi_av1_pool_init(&pool, &session, &ops));
+         test_depth = 10;
+         fd_closed = duplicate_fd = release_fail = 0;
+         memset(fd_live, 0, sizeof(fd_live));
+         memset(&hdr, 0, sizeof(hdr));
+         sequence.color_primaries = sequence.matrix_coefficients = 9;
+         sequence.transfer_characteristics = transfer;
+         hdr.primaries = hdr.matrix = 9;
+         hdr.transfer = transfer;
+         hdr.range = 1;
+         hdr.max_cll = 1500;
+         hdr.max_fall = 400;
+         hdr.mastering.present = VIDEO_MASTERING_DISPLAY_COMPLETE;
+         hdr.mastering.luminance_max = 10000000;
+         hdr.mastering.chromaticity[0] = 34000;
+         sequence.chroma_sample_position = 3;
+         assert(!vaapi_av1_decoder_open(
+               &pool, &sequence, &hdr, &exports, &adapter));
+         sequence.chroma_sample_position = position;
+         hdr.transfer = 13;
+         assert(!vaapi_av1_decoder_open(
+               &pool, &sequence, &hdr, &exports, &adapter));
+         assert(!adapter.decoder && !adapter.decode && !adapter.output
+               && !created);
+         hdr.transfer = transfer;
+         assert(vaapi_av1_decoder_open(
+               &pool, &sequence, &hdr, &exports, &adapter));
+         assert(!adapter.decode(
+               adapter.decoder, packet, sizeof(packet), &sequence, &picture));
+         sequence.chroma_sample_position = (position + 1) % 3;
+         expected_surface = 1001;
+         assert(!adapter.output(
+               adapter.decoder, 0, &picture.grain.params, &first));
+         assert(vaapi_frame_claim(first.owner, first.done, first.done_value,
+               first.image, &first_view));
+         assert(first_view.pixfmt == IMAGE_PIXFMT_P010);
+         assert(first_view.chroma_position == position);
+         assert(first_view.color.transfer == transfer);
+         assert(
+               first_view.color.primaries == 9 && first_view.color.matrix == 9);
+         assert(
+               first_view.color.range == 1 && first_view.color.max_cll == 1500);
+         assert(first_view.color.max_fall == 400);
+         assert(!memcmp(&first_view.color.mastering, &hdr.mastering,
+               sizeof(hdr.mastering)));
+         assert(vaapi_frame_finish(
+               first.owner, first.done, first.done_value, NULL));
+         detached = vaapi_av1_decoder_detach(&adapter);
+         assert(detached && vaapi_av1_decoder_retire(detached));
+         assert(vaapi_av1_pool_close(&pool) && fd_closed == 2);
+      }
 }
 #ifndef VAAPI_AV1_DECODER_TEST_MAIN
 #define VAAPI_AV1_DECODER_TEST_MAIN main

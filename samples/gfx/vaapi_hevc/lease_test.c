@@ -12,6 +12,7 @@
 static vaapi_hevc_vulkan_lease_t lease;
 static vaapi_frame_pool_t *lease_pool;
 static video_hw_frame_t lease_frame, lease_before;
+static unsigned lease_chroma;
 
 static void lease_setup(void)
 {
@@ -26,8 +27,8 @@ static void lease_setup(void)
    color.primaries = color.matrix = 1;
    color.transfer                 = 13;
    color.range                    = 2;
-   assert(!vaapi_frame_export(
-         lease_pool, &ex_frame, 2, 2, 60, 58, 0, &color, &lease_frame));
+   assert(!vaapi_frame_export_position(lease_pool, &ex_frame, 2, 2, 60, 58, 0,
+         lease_chroma, &color, &lease_frame));
    assert(vaapi_frame_claim(lease_frame.owner, lease_frame.done,
          lease_frame.done_value, lease_frame.image, &view));
    vf_export_source = view.source;
@@ -330,6 +331,15 @@ int main(void)
 {
    unsigned i, calls;
    assert(!submission_unit_main());
+   for (lease_chroma = 1; lease_chroma <= 2; lease_chroma++)
+   {
+      lease_setup();
+      assert(lease_present() == 1 && sub.header[4] == lease_chroma);
+      vf_fence_result = VK_SUCCESS;
+      assert(vaapi_hevc_vulkan_lease_poll(&lease) == 1);
+      lease_cleanup();
+   }
+   lease_chroma = 0;
    for (ex_depth = 8; ex_depth <= 10; ex_depth += 2)
       for (ex_mode = 0; ex_mode < 3; ex_mode++)
       {

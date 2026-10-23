@@ -14509,6 +14509,7 @@ static enum video_texture_update vulkan_import_convert(vk_t *vk,
       }
       vkUpdateDescriptorSets(device, 2, writes, 0, NULL);
       layout.header[2] = f->crop_x; layout.header[3] = f->crop_y;
+      layout.header[4] = 0;
       wait_stage |= VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
    }
    if (sampled)

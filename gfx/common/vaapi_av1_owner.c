@@ -52,7 +52,8 @@ bool vaapi_av1_owner_open_with_io(vaapi_av1_owner_t **out, const char *path,
          || !header->max_width || !header->max_height
          || header->max_width > 65536 || header->max_height > 65536
          || header->operating_point_count != 1
-         || header->operating_points[0].idc || header->chroma_sample_position
+         || header->operating_points[0].idc
+         || header->chroma_sample_position > 2
          || header->film_grain_params_present > 1
          || slots < (header->film_grain_params_present ? 18u : 9u) || slots > 32
          || !vaapi_av1_color_resolve(header, color, &resolved))

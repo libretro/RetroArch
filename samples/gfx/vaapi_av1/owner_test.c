@@ -312,7 +312,7 @@ static void owner_failures(unsigned bits)
    owner_color.transfer = 16;
    assert(!owner_open() && !test_owner && !loads);
    owner_reset(bits);
-   owner_params.chroma_sample_position = 1;
+   owner_params.chroma_sample_position = 3;
    assert(!owner_open() && !test_owner && !loads);
    owner_reset(bits);
    assert(!vaapi_av1_owner_open_with_io(&test_owner, "/render-test", 226, 128,
@@ -335,6 +335,7 @@ static void owner_lifetime(unsigned bits, bool claimed)
    vaapi_av1_export_t taken;
    unsigned native_calls;
    owner_reset(bits);
+   owner_params.chroma_sample_position = claimed ? 1 : 2;
    assert(owner_open() && owner_ops.decoder == test_owner);
    assert(!vaapi_av1_owner_retire(test_owner));
    assert(!owner_ops.decode(owner_ops.decoder, owner_packet,

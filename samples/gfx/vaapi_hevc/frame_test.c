@@ -16,7 +16,7 @@ static pthread_t producer;
 static vaapi_frame_pool_t *opaque;
 static video_hw_frame_t current_frame, old_frame;
 static vaapi_hevc_export_t owned, other;
-static unsigned native_calls;
+static unsigned native_calls, chroma_position;
 
 static void owner_close(int fd)
 {
@@ -51,8 +51,8 @@ static int publish(video_hw_frame_t *out)
    color.primaries = color.matrix = 1;
    color.transfer                 = 13;
    color.range                    = 1;
-   return vaapi_frame_export(
-         opaque, &ex_frame, 2, 2, 60, 60, IMAGE_YUV_FLAG_BT709, &color, out);
+   return vaapi_frame_export_position(opaque, &ex_frame, 2, 2, 60, 60,
+         IMAGE_YUV_FLAG_BT709, chroma_position, &color, out);
 }
 
 static bool claim(vaapi_frame_view_t *view)
@@ -70,6 +70,12 @@ static void portable_cases(void)
    opaque = vaapi_frame_pool_new(1);
    assert(opaque && !vaapi_frame_pool_new(0) && !vaapi_frame_pool_new(33));
    produce();
+   memset(&untouched, 0x55, sizeof(untouched));
+   before = untouched;
+   assert(vaapi_frame_export_position(
+                opaque, &ex_frame, 2, 2, 60, 60, 0, 3, NULL, &untouched)
+         == -1);
+   assert(ex_frame.active && !memcmp(&before, &untouched, sizeof(before)));
    assert(!publish(&current_frame));
    old_frame = current_frame;
    assert(!ex_frame.active && current_frame.api == VIDEO_HW_API_VULKAN
@@ -93,7 +99,8 @@ static void portable_cases(void)
    assert(!vaapi_frame_claim(current_frame.owner, current_frame.done,
          current_frame.done_value, current_frame.image + 1, &view));
    assert(claim(&view) && view.source->active && view.width == 60
-          && view.height == 60 && view.color.range == 1);
+         && view.height == 60 && view.color.range == 1
+         && view.chroma_position == chroma_position);
    assert(view.pixfmt
           == (ex_depth == 10 ? IMAGE_PIXFMT_P010 : IMAGE_PIXFMT_NV12));
    assert(!vaapi_frame_unclaim(current_frame.owner, current_frame.done,
@@ -249,7 +256,9 @@ int main(void)
    for (ex_depth = 8; ex_depth <= 10; ex_depth += 2)
       for (ex_mode = 0; ex_mode < 3; ex_mode++)
       {
-         portable_cases();
+         for (chroma_position = 0; chroma_position <= 2; chroma_position++)
+            portable_cases();
+         chroma_position = 0;
          imported_case();
       }
 #if defined(__linux__)

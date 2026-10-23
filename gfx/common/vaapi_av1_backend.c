@@ -163,7 +163,7 @@ static bool vaapi_av1_backend_open_config(void *opaque,
    if (!ops || ops->decoder || ops->decode || ops->output || !backend || !header
          || slots < 9 || slots > 32 || header->profile || header->monochrome
          || header->subsampling_x != 1 || header->subsampling_y != 1
-         || header->chroma_sample_position
+         || header->chroma_sample_position > 2
          || (header->bit_depth != 8 && header->bit_depth != 10)
          || !header->max_width || !header->max_height
          || header->max_width > 65536 || header->max_height > 65536

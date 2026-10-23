@@ -25,6 +25,7 @@ static unsigned family, errors, submitted;
 static vulkan_android_queue_t pending;
 static bool deferred;
 static unsigned checked_channels, max_byte_error;
+static unsigned chroma_position, crop_origin;
 static uint32_t resource_slots;
 static double max_half_error, max_half_relative;
 static VkCommandPool command_pool;
@@ -341,6 +342,33 @@ static double light(double x, unsigned transfer)
    return pow(x, 1.2) * (1000.0 / 203.0);
 }
 
+static double reference_chroma(
+      unsigned plane, unsigned x, unsigned y, unsigned depth, unsigned full)
+{
+   double cx, cy, result = 0;
+   unsigned i, j, limit_x = (crop_origin + 2) / 2;
+   unsigned limit_y = (crop_origin + 1) / 2;
+   if (!chroma_position)
+      return sample(plane, x / 2, y / 2, depth, full);
+   cx = x / 2.0;
+   cy = (y - (chroma_position == 1 ? .5 : 0)) / 2.0;
+   for (j = 0; j < 4; j++)
+      for (i = 0; i < 4; i++)
+      {
+         /* Integrate the separable unit tent at each clamped source tap. */
+         double wx = 1 - fabs(cx - i), wy = 1 - fabs(cy - j);
+         if (cy < 0 && !j)
+            wy = 1;
+         if (cx > limit_x && i == limit_x)
+            wx = 1;
+         if (cy > limit_y && j == limit_y)
+            wy = 1;
+         if (i <= limit_x && j <= limit_y && wx > 0 && wy > 0)
+            result += wx * wy * sample(plane, i, j, depth, full);
+      }
+   return result;
+}
+
 static void check_pixels(unsigned depth, unsigned full, unsigned transfer,
       unsigned flags, bool fp16)
 {
@@ -348,9 +376,11 @@ static void check_pixels(unsigned depth, unsigned full, unsigned transfer,
    for (y = 0; y < 2; y++)
       for (x = 0; x < 3; x++)
       {
-         unsigned yy = sample(0, x + 2, y + 2, depth, full),
-                  u  = sample(1, (x + 2) / 2, (y + 2) / 2, depth, full);
-         unsigned v  = sample(2, (x + 2) / 2, (y + 2) / 2, depth, full);
+         unsigned yy = sample(0, x + crop_origin, y + crop_origin, depth, full);
+         double u = reference_chroma(
+               1, x + crop_origin, y + crop_origin, depth, full);
+         double v = reference_chroma(
+               2, x + crop_origin, y + crop_origin, depth, full);
          float expected[3];
          if (fp16)
          {
@@ -482,9 +512,12 @@ static void execute(unsigned depth, unsigned full, unsigned mode)
    color.transfer  = transfer;
    color.range     = full ? 2 : 1;
    color.max_cll   = 1000;
-   assert(vaapi_hevc_vulkan_submission_configure(
-         &entry, &frame, 2, 2, 3, 2, flags, &color, fp16));
+   assert(vaapi_hevc_vulkan_submission_configure_position(&entry, &frame,
+         crop_origin, crop_origin, 3, 2, flags, chroma_position, &color, fp16));
    assert(entry.output_format == resources.format);
+#ifdef PRIME_GPU_NEGATIVE_CHROMA
+   entry.header[4] = 0;
+#endif
 #ifdef PRIME_GPU_NEGATIVE_CROP
    entry.header[2] = 0;
 #endif
@@ -675,12 +708,14 @@ int main(void)
    unsigned depth, full, mode;
    PFN_vkDestroyDebugUtilsMessengerEXT destroy_messenger;
    initialize();
-   for (depth = 8; depth <= 10; depth += 2)
-      for (full = 0; full < 2; full++)
-         for (mode = 0; mode < 8; mode++)
-            execute(depth, full, mode);
-   assert(submitted == 96 && checked_channels == 2304
-          && resource_slots == (uint32_t)-1 && !errors);
+   for (crop_origin = 0; crop_origin <= 2; crop_origin += 2)
+      for (chroma_position = 0; chroma_position <= 2; chroma_position++)
+         for (depth = 8; depth <= 10; depth += 2)
+            for (full = 0; full < 2; full++)
+               for (mode = 0; mode < 8; mode++)
+                  execute(depth, full, mode);
+   assert(submitted == 576 && checked_channels == 13824
+         && resource_slots == (uint32_t)-1 && !errors);
    vkUnmapMemory(device, buffer_memory);
    vkDestroyBuffer(device, buffer, NULL);
    vkFreeMemory(device, buffer_memory, NULL);
@@ -697,6 +732,8 @@ int main(void)
    printf(
          "Pixel maxima over %u channels: RGBA8 %u codes; FP16 absolute %.8g relative %.8g\n",
          checked_channels, max_byte_error, max_half_error, max_half_relative);
-   puts("PASS: 32 real Vulkan conversion cases, 96 foreign-ownership/fence rounds, zero validation errors; no native VA/DRM-modifier import executed");
+   puts("PASS: 192 real Vulkan conversion/chroma cases, 576 "
+        "foreign-ownership/fence rounds, zero validation errors; no native "
+        "VA/DRM-modifier import executed");
    return 0;
 }

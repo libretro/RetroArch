@@ -14,7 +14,7 @@ struct vaapi_av1_decoder
    video_color_metadata_t container, colors[32];
    VAFilmGrainStructAV1 grains[32];
    int references[32], displays[32];
-   unsigned widths[32], heights[32], yuv[32];
+   unsigned widths[32], heights[32], yuv[32], chroma_position[32];
    bool closed, failed;
 };
 bool vaapi_av1_color_resolve(const rav1_sequence_t *s,
@@ -101,7 +101,7 @@ static int vaapi_av1_decoder_decode(void *opaque, const uint8_t *packet,
       return -1;
    slots = d->pool->session->slots;
    if (p->slot < 0 || (unsigned)p->slot >= slots
-         || sequence->chroma_sample_position
+         || sequence->chroma_sample_position > 2
          || sequence->bit_depth != d->pool->session->depth
          || sequence->max_width > d->pool->session->width
          || sequence->max_height > d->pool->session->height
@@ -150,6 +150,7 @@ static int vaapi_av1_decoder_decode(void *opaque, const uint8_t *packet,
       d->widths[logical] = p->setup.size.upscaled_width;
       d->heights[logical] = p->setup.size.height;
       d->colors[logical] = color;
+      d->chroma_position[logical] = sequence->chroma_sample_position;
       d->grains[logical] = d->pool->work.film_grain_info;
       d->yuv[logical] = (color.range == 2 ? IMAGE_YUV_FLAG_FULL_RANGE : 0)
             | (color.matrix == 1 ? IMAGE_YUV_FLAG_BT709 : 0);
@@ -186,8 +187,9 @@ static int vaapi_av1_decoder_output(void *opaque, unsigned logical,
          return -1;
       }
    }
-   return vaapi_frame_export(d->frames, &d->pending, 0, 0, d->widths[logical],
-         d->heights[logical], d->yuv[logical], &d->colors[logical], out);
+   return vaapi_frame_export_position(d->frames, &d->pending, 0, 0,
+         d->widths[logical], d->heights[logical], d->yuv[logical],
+         d->chroma_position[logical], &d->colors[logical], out);
 }
 bool vaapi_av1_decoder_open(vaapi_av1_pool_t *pool,
       const rav1_sequence_t *params, const video_color_metadata_t *color,
@@ -200,7 +202,7 @@ bool vaapi_av1_decoder_open(vaapi_av1_pool_t *pool,
          || ops->decode || ops->output || !exports || !exports->surface
          || !exports->cloexec || !exports->close || !exports->identity
          || !pool->session->ready || pool->session->closing || params->profile
-         || params->monochrome || params->chroma_sample_position
+         || params->monochrome || params->chroma_sample_position > 2
          || params->subsampling_x != 1 || params->subsampling_y != 1
          || params->bit_depth != pool->session->depth || !params->max_width
          || !params->max_height || params->max_width > pool->session->width

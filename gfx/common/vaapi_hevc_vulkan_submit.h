@@ -52,6 +52,11 @@ bool vaapi_hevc_vulkan_submission_configure(
       vaapi_hevc_vulkan_submission_t *entry, vaapi_hevc_vulkan_frame_t *frame,
       unsigned x, unsigned y, unsigned width, unsigned height, unsigned yuv,
       const video_color_metadata_t *color, bool fp16);
+/* Sampled-image header word 4 carries the private chroma position. */
+bool vaapi_hevc_vulkan_submission_configure_position(
+      vaapi_hevc_vulkan_submission_t *entry, vaapi_hevc_vulkan_frame_t *frame,
+      unsigned x, unsigned y, unsigned width, unsigned height, unsigned yuv,
+      unsigned chroma_position, const video_color_metadata_t *color, bool fp16);
 /* Renderer owner, warm resources only. Destination is a matching
  * SAMPLED|STORAGE image and view; layout is its tracked current layout. Ends
  * SHADER_READ_ONLY after conversion. 1 queued, 0 busy, -1 refused before GPU

@@ -120,9 +120,9 @@ int vaapi_hevc_vulkan_lease_present(vaapi_hevc_vulkan_lease_t *l,
       return -2;
    }
    if (!vaapi_hevc_vulkan_frame_adopt(l->entry->frame, &l->returned)
-         || !vaapi_hevc_vulkan_submission_configure(l->entry, l->entry->frame,
-               source.x, source.y, frame->width, frame->height, yuv,
-               &source.color, l->fp16))
+         || !vaapi_hevc_vulkan_submission_configure_position(l->entry,
+               l->entry->frame, source.x, source.y, frame->width, frame->height,
+               yuv, source.chroma_position, &source.color, l->fp16))
       result = -1;
    else
       result = vaapi_hevc_vulkan_submission_present(
