@@ -1035,6 +1035,12 @@ enum video_device_api
    VIDEO_DEVICE_METAL
 };
 
+/* Enabled native prerequisites, not an advertised working recorder. */
+enum video_device_recording_caps
+{
+   VIDEO_DEVICE_CAP_ANDROID_CAPTURE_INTEROP = (1 << 0)
+};
+
 typedef struct video_device_info
 {
    enum video_device_api api;
@@ -1057,6 +1063,7 @@ typedef struct video_device_info
    unsigned queue_family;
    /* image_pixfmt bits import_texture takes; 0 when it takes none. */
    uint32_t import_formats;
+   uint32_t recording_caps;
    /* Cached render-node identity; does not imply PRIME import support. */
    uint32_t drm_render_major, drm_render_minor;
    bool drm_render_valid;

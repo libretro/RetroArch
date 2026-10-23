@@ -473,6 +473,8 @@ typedef struct vk
    /* Format and HDR state of retained renderer resources. */
    VkFormat built_format;
    uint32_t built_hdr_flags;
+   /* Immutable enabled device capabilities, published by init. */
+   uint32_t device_support;
    /* built_hdr_flags' HDR output, for get_flags() on the main thread
     * (atomic: the video thread rebuilds) */
    retro_atomic_int_t built_hdr_output;
@@ -7777,6 +7779,23 @@ static void vulkan_hdr_buffers_init(vk_t *vk, unsigned fallback_dims)
 #define VULKAN_BUILT_HDR_FLAGS (VK_CTX_FLAG_HDR_SUPPORT \
       | VK_CTX_FLAG_HDR_ENABLE | VK_CTX_FLAG_HDR_SCRGB)
 
+enum vulkan_device_support
+{
+   VULKAN_DEVICE_SUPPORT_TIMELINE = 1,
+   VULKAN_DEVICE_SUPPORT_ANDROID_CAPTURE = 2
+};
+
+/* Cold init only: get_device never reads the renderer's mutable flags. */
+static void vulkan_note_device(vk_t *vk)
+{
+   vk->device_support = (vk->context->flags & VK_CTX_FLAG_TIMELINE_SEMAPHORE)
+         ? VULKAN_DEVICE_SUPPORT_TIMELINE : 0;
+#if defined(ANDROID) && defined(HAVE_THREADS)
+   if (vk->context->flags & VK_CTX_FLAG_ANDROID_IMAGES)
+      vk->device_support |= VULKAN_DEVICE_SUPPORT_ANDROID_CAPTURE;
+#endif
+}
+
 /* Noted when everything has been built: what it was built for. */
 static void vulkan_note_built(vk_t *vk)
 {
@@ -8153,6 +8172,7 @@ static void *vulkan_init(const video_info_t *video)
 
    /* Driver resources now match the context's current swapchain. */
    vk->context->flags &= ~VK_CTX_FLAG_INVALID_SWAPCHAIN;
+   vulkan_note_device(vk);
    vulkan_note_built(vk);
    vulkan_views_publish(vk);
    return vk;
@@ -14881,9 +14901,13 @@ static bool vulkan_get_device(void *data, video_device_info_t *info)
    info->drm_render_minor       = vk->context->drm_identity.minor_id;
    info->drm_render_valid       = vk->context->drm_identity.valid;
    info->import_formats         =
-         (     (vk->context->flags & VK_CTX_FLAG_TIMELINE_SEMAPHORE)
-            && vk->pipelines.yuv420_to_rgba8888 != VK_NULL_HANDLE)
+         (     (vk->device_support & VULKAN_DEVICE_SUPPORT_TIMELINE)
+            && (retro_atomic_load_acquire_int(&vk->texture_format_support)
+                  & VULKAN_TEXTURE_SUPPORT_YUV420))
       ? (IMAGE_PIXFMT_NV12 | IMAGE_PIXFMT_P010) : 0;
+   info->recording_caps =
+         (vk->device_support & VULKAN_DEVICE_SUPPORT_ANDROID_CAPTURE)
+      ? VIDEO_DEVICE_CAP_ANDROID_CAPTURE_INTEROP : 0;
    return true;
 }
 

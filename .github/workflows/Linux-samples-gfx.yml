@@ -2465,6 +2465,8 @@ jobs:
         run: |
           CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 samples/gfx/vulkan_recording/run.py
           CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/vulkan_recording/run.py
+          DEVICE_INFO_THREADS=1 CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 samples/gfx/vulkan_recording/device_info.py
+          CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/vulkan_recording/device_info.py
 
       - name: Vulkan synchronous readback slot
         run: python3 samples/gfx/vulkan_readback_slot/run.py

@@ -33,7 +33,7 @@ with tempfile.TemporaryDirectory(prefix="mediacodec-encode-") as directory:
                           ("worker_test.c", []), ("surface_test.c", []),
                           ("capture_images_test.c", ["-DRECORD_ANDROID_CAPTURE_TEST"]),
                           ("capture_submit_test.c", []), ("capture_pipe_test.c", []),
-                          ("capture_pool_test.c", []), ("device_test.c", []), ("request_test.c", []), ("capture_ops_test.c", []),
+                          ("capture_pool_test.c", []), ("device_test.c", []), ("request_test.c", []), ("config_test.c", []), ("capture_ops_test.c", []),
                           ("capture_egl_test.c", []),
                           ("capture_gl_test.c", []),
                           ("draw_test.c", []), ("gpu_worker_test.c", []),
@@ -95,6 +95,9 @@ with tempfile.TemporaryDirectory(prefix="mediacodec-encode-") as directory:
                         str(root / "record/record_gpu_queue.c"),
                         str(root / "libretro-common/queues/retro_spsc.c"),
                         str(root / "gfx/common/vulkan_android_queue.c")]
+        if source == "config_test.c":
+            command += ["-DRECORD_ANDROID_CAPTURE_CONFIG_TEST", "-DUSE_SYSTEM_EGL",
+                        "-I" + str(root / "gfx/include"), "-I" + str(root / "gfx/include/ANGLE")]
         if source == "request_test.c":
             command += ["-DHAVE_THREADS", "-DUSE_SYSTEM_EGL", "-I" + str(root / "gfx/include"),
                         "-I" + str(root / "gfx/include/ANGLE")]
