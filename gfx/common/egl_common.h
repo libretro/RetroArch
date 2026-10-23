@@ -96,6 +96,8 @@ void egl_bind_hw_render(egl_ctx_data_t *egl, bool enable);
  * gfx_ctx_driver_t::release_current. */
 void egl_release_current(egl_ctx_data_t *egl);
 
+bool egl_no_shared_context(const egl_ctx_data_t *egl);
+
 /* gfx_ctx_driver_t's shared context: in egl->ctx's share group, made
  * with egl_create_context's attributes for client API 'api', and
  * surfaceless where the display allows it, else with a pbuffer of its

@@ -1828,6 +1828,11 @@ void drivers_init(
       }
       else if (hwr->context_reset)
          hwr->context_reset();
+#ifdef HAVE_THREADS
+      /* Taken for context_reset by video_thread_hw_bind_core_context;
+       * the core's next run takes it again. */
+      video_thread_core_context_release();
+#endif
       video_driver_cache_context_ack_clear();
       runloop_st->frame_time_last = 0;
    }

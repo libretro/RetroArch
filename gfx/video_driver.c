@@ -1788,10 +1788,16 @@ const gfx_ctx_driver_t *video_context_driver_init(
          settings->bools.video_shared_context || core_set_shared_context;
 #ifdef HAVE_THREADS
       /* The wrapper's ring gives an OpenGL core a context of its own
-       * on the main thread: that is the shared context, forced on. */
+       * on the main thread: that is the shared context, forced on -
+       * except on a context that has none to give (one GL context per
+       * process), where the ring hands the driver's own between the
+       * threads and a second context must not be made. */
       if (video_driver_thread_wrapper_active() && video_thread_hw_allowed())
          video_shared_context = true;
 #endif
+      if (     ctx->get_flags
+            && BIT32_GET(ctx->get_flags(*ctx_data), GFX_CTX_FLAGS_NO_SHARED_CONTEXT))
+         video_shared_context = false;
 
       ctx->bind_hw_render(*ctx_data,
             video_shared_context && hw_render_ctx);
@@ -2894,7 +2900,15 @@ void video_driver_free_hw_context(void)
          video_st->poke->hw_context_destroying(video_st->data);
    }
    if (video_st->hw_render.context_destroy)
+   {
+#ifdef HAVE_THREADS
+      video_thread_core_context_take();
+#endif
       video_st->hw_render.context_destroy();
+#ifdef HAVE_THREADS
+      video_thread_core_context_release();
+#endif
+   }
    video_driver_invalidate_hw_render_cache();
    /* the core holds no interface of ours any more */
    video_hw_render_iface_held = NULL;
@@ -6410,6 +6424,27 @@ bool video_context_driver_presentable_direct(void)
    if (ctx && ctx->presentable)
       return ctx->presentable((void*)video_st->context_data);
    return true;
+}
+
+/* The threaded wrapper's single-context ring: the driver's one context
+ * is made current on the calling thread - the core's thread off the
+ * window surface (true), the video thread with it (false) - and given
+ * up with release. Through the context driver gl2 registered, from
+ * either thread; the ring serialises the two with its token. */
+void video_context_driver_bind_hw_render(bool enable)
+{
+   video_driver_state_t *video_st  = &video_driver_st;
+   const gfx_ctx_driver_t *ctx     = &video_st->current_video_context;
+   if (ctx && ctx->bind_hw_render && video_st->context_data)
+      ctx->bind_hw_render((void*)video_st->context_data, enable);
+}
+
+void video_context_driver_release_current(void)
+{
+   video_driver_state_t *video_st  = &video_driver_st;
+   const gfx_ctx_driver_t *ctx     = &video_st->current_video_context;
+   if (ctx && ctx->release_current && video_st->context_data)
+      ctx->release_current((void*)video_st->context_data);
 }
 
 /* False only while the context has told us it has nothing to present

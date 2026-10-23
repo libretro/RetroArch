@@ -5441,7 +5441,13 @@ static bool core_unload_game(void)
    if ((runloop_st->current_core.flags & RETRO_CORE_FLAG_GAME_LOADED))
    {
       RARCH_LOG("[Core] Unloading game...\n");
+#ifdef HAVE_THREADS
+      video_thread_core_context_take();
+#endif
       runloop_st->current_core.retro_unload_game();
+#ifdef HAVE_THREADS
+      video_thread_core_context_release();
+#endif
 #ifdef HAVE_WEBMPLAYER
       if (runloop_st->current_core_type == CORE_TYPE_WEBM)
       {
@@ -10871,7 +10877,17 @@ bool core_get_system_info(struct retro_system_info *sysinfo)
 bool core_unserialize(retro_ctx_serialize_info_t *info)
 {
    runloop_state_t *runloop_st  = &runloop_state;
-   if (!info || !runloop_st->current_core.retro_unserialize(info->data_const, info->size))
+   bool ok;
+   if (!info)
+      return false;
+#ifdef HAVE_THREADS
+   video_thread_core_context_take();
+#endif
+   ok = runloop_st->current_core.retro_unserialize(info->data_const, info->size);
+#ifdef HAVE_THREADS
+   video_thread_core_context_release();
+#endif
+   if (!ok)
       return false;
 
 #ifdef HAVE_NETWORKING
@@ -10962,7 +10978,13 @@ void core_reset(void)
 
    /* retro_reset() may reallocate the core's framebuffer. */
    video_driver_cached_frame_retire();
+#ifdef HAVE_THREADS
+   video_thread_core_context_take();
+#endif
    runloop_st->current_core.retro_reset();
+#ifdef HAVE_THREADS
+   video_thread_core_context_release();
+#endif
 }
 
 static void runloop_load_deferred_auto_state(void)
@@ -11081,7 +11103,15 @@ bool core_run(void)
       /* The flags this iteration's checks flipped, fast-forward above
        * all, reach the frame's own audio rather than the next frame's. */
       audio_driver_publish_runloop();
+#ifdef HAVE_THREADS
+      /* One GL context handed between the threads: the core's for the
+       * frame, the video thread's between frames. */
+      video_thread_core_context_take();
+#endif
       current_core->retro_run();
+#ifdef HAVE_THREADS
+      video_thread_core_context_release();
+#endif
       ran = true;
       if (runloop_st->auto_state_load_pending)
          runloop_st->auto_state_load_core_ran = true;

@@ -759,10 +759,17 @@ static void video_thread_send_and_wait_user_to_thread(thread_video_t *thr, threa
       return;
    }
 
-   video_thread_user_acquire(thr);
-   video_thread_send_packet(thr, pkt);
-   video_thread_wait_reply(thr, pkt);
-   video_thread_user_release(thr);
+   {
+      /* The video thread may need the one context to answer; a main
+       * thread holding it would wait for a reply that waits for it. */
+      bool held = video_thread_hw_ctx_release(thr, false);
+      video_thread_user_acquire(thr);
+      video_thread_send_packet(thr, pkt);
+      video_thread_wait_reply(thr, pkt);
+      video_thread_user_release(thr);
+      if (held)
+         video_thread_hw_ctx_take(thr, false);
+   }
 }
 
 void video_thread_main_pump(void)
@@ -780,6 +787,25 @@ void video_thread_main_pump(void)
  * through the video singleton's getter. Pointer-stable for exactly
  * the window in which the video thread exists. */
 static thread_video_t *video_thread_thr_capture;
+
+/* The core's thread takes the one context around the core's work and
+ * gives it up between, so the video thread can draw while the core is
+ * not running (the menu over a paused core). No-ops without a ring
+ * that hands off. */
+void video_thread_core_context_take(void)
+{
+   thread_video_t *thr = video_thread_thr_capture;
+   if (thr)
+      video_thread_hw_ctx_take(thr, false);
+}
+
+void video_thread_core_context_release(void)
+{
+   thread_video_t *thr = video_thread_thr_capture;
+   if (thr)
+      video_thread_hw_ctx_release(thr, false);
+}
+
 
 /* The instance video_thread_free() is tearing down, for the length of
  * its CMD_FREE. The capture is cleared before that command is sent,
@@ -2704,6 +2730,10 @@ static void video_thread_loop(void *data)
             retro_eventcount_commit_wait(&thr->work, key);
       }
 
+      /* One GL context handed between the threads: this pass holds it,
+       * and gives it back below before the next park. */
+      video_thread_hw_ctx_take(thr, true);
+
       /* Claim the oldest filled slot: from the claim until completion
        * the slot is this thread's and the main thread routes new
        * frames to the other one. The compare-and-swap is what keeps a
@@ -3178,6 +3208,8 @@ static void video_thread_loop(void *data)
       if (have_cmd && claimed && (pkt.type == CMD_READ_VIEWPORT
                || pkt.type == CMD_READ_VIEWPORT_HDR))
          video_thread_handle_packet(thr, &pkt);
+
+      video_thread_hw_ctx_release(thr, true);
    }
 }
 
@@ -3799,6 +3831,7 @@ static bool video_thread_frame(void *data, const void *frame_,
    unsigned slot       = 0;
    int hw_slot         = -1;
    unsigned taken_back = 0;
+   bool ctx_held       = false;
    bool dropped        = false;
    bool dupe_dropped   = false;
    bool zero_copy      = false;
@@ -3934,6 +3967,11 @@ static bool video_thread_frame(void *data, const void *frame_,
    if (frame_ == RETRO_HW_FRAME_BUFFER_VALID)
    {
       hw_slot = video_thread_hw_publish(thr, &taken_back);
+      /* One GL context: the frame is captured, the present needs the
+       * context now; taken back after the hold below, before the core
+       * gets video_refresh() back. A push from outside the core's run
+       * (the menu's) held nothing and takes nothing back. */
+      ctx_held = video_thread_hw_ctx_release(thr, false);
       frame_  = NULL;
       /* No ring: the driver cannot take a hardware frame from this
        * thread. frame_ is NULL now, which this function treats as a
@@ -4231,6 +4269,11 @@ static bool video_thread_frame(void *data, const void *frame_,
 
    video_thread_pace_hold(thr, now, video_info->driver_pacing_id != 0);
 
+   /* One GL context: the video thread's turn with it - the present of
+    * what was just pushed - comes between the release above and this. */
+   if (ctx_held)
+      video_thread_hw_ctx_retake(thr);
+
    thr->last_time = cpu_features_get_time_usec();
    thr->run_start = thr->last_time;
 
@@ -4322,6 +4365,7 @@ static bool video_thread_init(thread_video_t *thr,
          | VIDEO_THREAD_WIN_FOCUS | VIDEO_THREAD_WIN_PRESENTABLE
          | VIDEO_THREAD_WIN_HAS_WINDOWED);
    retro_atomic_int_init(&thr->worker_running, 1);
+   retro_atomic_int_init(&thr->frame.hw_handoff, 0);
    retro_atomic_int_init(&thr->deferred_head,  0);
    retro_atomic_int_init(&thr->deferred_tail,  0);
    /* A ring that cannot be allocated is simply never used: every
