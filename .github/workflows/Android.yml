@@ -92,7 +92,7 @@ jobs:
               record/record_mediacodec_surface.c record/record_android_capture_images.c \
               record/record_android_capture_submit.c record/record_android_capture_gl.c \
               record/record_android_capture_draw.c record/record_mediacodec_gpu_worker.c \
-              record/record_gpu_queue.c record/record_mediacodec_file.c \
+              record/record_mediacodec_file.c record/record_gpu_queue.c \
               record/record_audio_queue.c libretro-common/queues/retro_spsc.c; do
             printf '#include "%s/%s"\n' "$PWD" "$source" >> "$unity"
           done
