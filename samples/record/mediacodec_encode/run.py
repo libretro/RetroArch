@@ -32,7 +32,8 @@ with tempfile.TemporaryDirectory(prefix="mediacodec-encode-") as directory:
                           ("mux_test.c", ["-DRECORD_MEDIACODEC_MUX_TEST"]),
                           ("worker_test.c", []), ("surface_test.c", []),
                           ("capture_images_test.c", ["-DRECORD_ANDROID_CAPTURE_TEST"]),
-                          ("capture_submit_test.c", []), ("capture_gl_test.c", []),
+                          ("capture_submit_test.c", []), ("capture_pipe_test.c", []),
+                          ("capture_gl_test.c", []),
                           ("draw_test.c", []), ("gpu_worker_test.c", []),
                           ("file_test.c", ["-DRECORD_MEDIACODEC_FILE_TEST"]),
                           ("session_test.c", []), ("dispatch_test.c", []),
@@ -77,6 +78,9 @@ with tempfile.TemporaryDirectory(prefix="mediacodec-encode-") as directory:
         if source == "capture_images_test.c":
             command += ["-I" + str(root / "gfx/include"),
                         str(root / "record/record_android_capture_images.c")]
+        if source == "capture_pipe_test.c":
+            command += ["-DUSE_SYSTEM_EGL", "-I" + str(root / "gfx/include"),
+                        "-I" + str(root / "gfx/include/ANGLE")]
         if source == "capture_submit_test.c":
             command += ["-I" + str(root / "gfx/include"),
                         str(root / "record/record_android_capture_submit.c"),
