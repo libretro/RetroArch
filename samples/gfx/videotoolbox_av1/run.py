@@ -48,3 +48,20 @@ with tempfile.TemporaryDirectory(prefix="vt-av1-setup-") as directory:
         subprocess.run(command, check=True)
         subprocess.run(shlex.split(os.environ.get("RUNNER", "")) + [str(binary)],
                        check=True, timeout=30)
+        objects = []
+        for name, relative in (("rthreads", "rthreads/rthreads.c"),
+                               ("retro_spsc", "queues/retro_spsc.c")):
+            obj = path / (name + ".o")
+            command = compiler + ["-O2", "-DHAVE_THREADS",
+                "-I" + str(root / "libretro-common/include")]
+            command += shlex.split(os.environ.get("CFLAGS", ""))
+            command += ["-c", str(root / "libretro-common" / relative), "-o", str(obj)]
+            subprocess.run(command, check=True)
+            objects += [str(obj)]
+        command = compiler + flags + ["-I" + str(path), str(here / "owner_test.c")]
+        command += objects + ["-o", str(binary)]
+        if os.name != "nt":
+            command += ["-pthread"]
+        subprocess.run(command, check=True)
+        subprocess.run(shlex.split(os.environ.get("RUNNER", "")) + [str(binary)],
+                       check=True, timeout=90)

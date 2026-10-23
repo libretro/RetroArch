@@ -8,7 +8,7 @@
 #ifdef NDEBUG
 #error Assertions are required for this test
 #endif
-static void *setup_malloc(size_t size);
+static INLINE void *setup_malloc(size_t size);
 #define malloc setup_malloc
 #include "../../../gfx/common/videotoolbox_av1.h"
 #undef malloc
@@ -19,7 +19,7 @@ static video_color_metadata_t color;
 static int callback_token;
 static int malloc_fail;
 
-static void *setup_malloc(size_t size)
+static INLINE void *setup_malloc(size_t size)
 {
    return malloc_fail ? NULL : malloc(size);
 }
@@ -210,8 +210,13 @@ OSStatus VTDecompressionSessionCreate(void *allocator,
       VTDecompressionSessionRef *out)
 {
    assert(!allocator && format->kind == 4);
+#ifdef VT_AV1_OWNER_TEST
+   assert(cb->decompressionOutputCallback == videotoolbox_av1_owner_output);
+   assert(cb->decompressionOutputRefCon);
+#else
    assert(cb->decompressionOutputCallback == callback);
    assert(cb->decompressionOutputRefCon == &callback_token);
+#endif
    assert((void *)get(specification, "hardware") == kCFBooleanTrue);
    assert((void *)get(attributes, "metal") == kCFBooleanTrue);
    assert(get(attributes, "surface")->kind == 3
