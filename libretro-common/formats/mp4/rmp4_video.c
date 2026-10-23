@@ -139,6 +139,7 @@ struct rmp4_video_stream
     * the old seek-only 'catchup' blit suppression). */
    int          rndr_kind;     /* 0 none, 1 vp8, 2 vp9, 3 h264, 4 h265 */
    int          rndr_vp9_show; /* fbs index of the vp9 picture       */
+   int completed;
    int          wait_key;   /* a reference failed; hold out for a key */
    int          catchup;    /* dropping droppable pictures to catch up */
    int          track;      /* index of the chosen video track        */
@@ -1647,6 +1648,7 @@ static int rmp4_video_stream_step(rmp4_video_stream_t *s,
       }
       if (r != 1)
       {
+         if (r < 0) return -1;
 #ifdef HAVE_RVP9
          vp9_eof = r == 0;
 #endif
@@ -1700,6 +1702,7 @@ static int rmp4_video_stream_step(rmp4_video_stream_t *s,
          s->disp_idx++;
          return 1;
       }
+      s->completed = output == 0;
       return -1;
    }
 #endif
@@ -1711,12 +1714,14 @@ static int rmp4_video_stream_step(rmp4_video_stream_t *s,
       if (s->vp9_backend.drain)
       {
          int ret = s->vp9_backend.drain(s->vp9_hw->ops.decoder, discard != 0);
+         if (ret < 0) return -1;
          if (ret > 0)
          {
             s->waiting = RMP4_VIDEO_WAIT_DECODER;
             return 2;
          }
       }
+      s->completed = 1;
       return -1;
    }
 #endif
@@ -1728,6 +1733,8 @@ static int rmp4_video_stream_step(rmp4_video_stream_t *s,
       s->waiting = RMP4_VIDEO_WAIT_DECODER;
       return 2;
    }
+   if (s->h264 && drained < -1)
+      return -1;
    if (s->h264 && drained == 0)
    {
       s->rndr_kind = 0;   /* the drain replaced the current picture */
@@ -1754,6 +1761,8 @@ static int rmp4_video_stream_step(rmp4_video_stream_t *s,
       s->waiting = RMP4_VIDEO_WAIT_DECODER;
       return 2;
    }
+   if (s->h265 && drained < -1)
+      return -1;
    if (s->h265 && drained == 0)
    {
       s->rndr_kind = 0;   /* the drain replaced the current picture */
@@ -1773,6 +1782,7 @@ static int rmp4_video_stream_step(rmp4_video_stream_t *s,
          return 1;
       }
    }
+   s->completed = 1;
    return -1;             /* end of one pass */
 }
 
@@ -1787,6 +1797,7 @@ static int rmp4_video_stream_advance(rmp4_video_stream_t *s,
 
    if (!s)
       return -1;
+   s->completed = 0;
    s->waiting = 0;
 #ifdef HAVE_RAV1
    bounded = s->codec == RMP4_CODEC_AV1;
@@ -2342,10 +2353,16 @@ const uint32_t *rmp4_video_stream_next(rmp4_video_stream_t *s,
    return rmp4_video_stream_render(s);
 }
 
+int rmp4_video_stream_completed(const rmp4_video_stream_t *s)
+{
+   return s && s->completed;
+}
+
 void rmp4_video_stream_rewind(rmp4_video_stream_t *s)
 {
    if (!s)
       return;
+   s->completed = 0;
    s->pending = s->waiting = s->seek_state = 0;
 #ifdef HAVE_RAV1
    s->av1_hdr_probe_started = 0;
@@ -2603,6 +2620,7 @@ int rmp4_video_stream_seek_begin_ns(rmp4_video_stream_t *s, int64_t ns)
    int lo = 0, hi;
    if (!s || s->ts_count <= 0)
       return 0;
+   s->completed = 0;
    if (ns < 0) ns = 0;
    hi = s->ts_count;
    while (lo < hi)

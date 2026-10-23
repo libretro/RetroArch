@@ -113,6 +113,7 @@ static void test_stream(void)
    CHECK(rmp4_video_stream_set_hw(s, 1) && opens == 1);
    CHECK(!rmp4_video_stream_next(s, &duration));
    CHECK(rmp4_video_stream_wait_reason(s) == RMP4_VIDEO_WAIT_INPUT && !decodes);
+   CHECK(!rmp4_video_stream_completed(s));
    rmp4_video_stream_set_avail(s, used);
    decode_busy = 1;
    CHECK(!rmp4_video_stream_next(s, &duration));
@@ -132,8 +133,10 @@ static void test_stream(void)
    CHECK(ret == 1 && duration == 40 && exports == 1 && decodes == 3);
    CHECK(!rmp4_video_stream_hw_frame(s, &frame));
    CHECK(rmp4_video_stream_skip(s, NULL) == -1);
+   CHECK(rmp4_video_stream_completed(s));
    before = opens;
    rmp4_video_stream_rewind(s);
+   CHECK(!rmp4_video_stream_completed(s));
    CHECK(opens == before + 1 && closes == before);
    decode_busy = 1;
    CHECK(!rmp4_video_stream_next(s, NULL));
@@ -444,6 +447,7 @@ static void test_unavailable(void)
    {
       CHECK(!rmp4_video_stream_set_hw(s, 1));
       CHECK(!rmp4_video_stream_next(s, NULL));
+      CHECK(!rmp4_video_stream_completed(s));
       rmp4_video_stream_close(s);
    }
    rav1_set_hw_backend(&factory);

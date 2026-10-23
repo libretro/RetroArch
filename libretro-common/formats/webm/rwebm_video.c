@@ -77,6 +77,7 @@ struct rwebm_video_stream
    size_t len, avail;
    rwebm_packet lookahead_packet;
    size_t lookahead_floor;
+   int completed;
    int lookahead_ready;
    rwebm_packet soft_packet;
    size_t soft_floor;
@@ -1425,6 +1426,7 @@ static int rwebm_video_av1_step(rwebm_video_stream_t *s,
                }
                if (ret == RAV1_HW_STREAM_FRAME || ret == RAV1_HW_STREAM_DISCARDED)
                   return rwebm_video_av1_result(s, ret, &frame, duration_ms, 0, 0);
+               s->completed = ret == RAV1_HW_STREAM_END;
             }
             return -1;
          }
@@ -1719,7 +1721,8 @@ static int rwebm_video_hw_step(
          }
          if (ret != 1)
          {
-            if (!ret && s->hw_backend.drain)
+            if (ret < 0) return -1;
+            if (s->hw_backend.drain)
             {
                ret = s->hw_backend.drain(s->hw->ops.decoder, discard != 0);
                if (ret > 0)
@@ -1727,7 +1730,9 @@ static int rwebm_video_hw_step(
                   s->waiting = 1;
                   return 2;
                }
+               if (ret < 0) return -1;
             }
+            s->completed = 1;
             return -1;
          }
          if (s->pending_packet.track != s->track)
@@ -2042,7 +2047,10 @@ static int rwebm_video_stream_step(rwebm_video_stream_t *s,
                         after rwebm_video_stream_set_avail */
       }
       if (r != 1)
+      {
+         s->completed = r == 0;
          break;
+      }
       if (pkt.track != s->track)
          continue;
       idx = s->pkt_idx;
@@ -2080,6 +2088,7 @@ static int rwebm_video_stream_advance(rwebm_video_stream_t *s,
 #endif
    if (!s)
       return -1;
+   s->completed = 0;
 #ifdef HAVE_RAV1
    if (s->codec == RWEBM_CODEC_AV1)
       started = cpu_features_get_time_usec();
@@ -2129,10 +2138,16 @@ void rwebm_video_stream_stop_hw(rwebm_video_stream_t *s)
    rwebm_video_stream_rewind(s);
 }
 
+int rwebm_video_stream_completed(const rwebm_video_stream_t *s)
+{
+   return s && s->completed;
+}
+
 void rwebm_video_stream_rewind(rwebm_video_stream_t *s)
 {
    if (!s)
       return;
+   s->completed = 0;
    rwebm_rewind(s->demux);
    s->seek_active = s->seek_ready = s->seek_key = s->seek_scan = 0;
 #ifdef HAVE_RAV1

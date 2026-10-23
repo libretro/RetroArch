@@ -932,7 +932,8 @@ bool gfx_anim_preview_audio_adopt(gfx_anim_preview_t *p,
       params.slot_selection_type = AUDIO_MIXER_SLOT_SELECTION_AUTOMATIC;
       params.stream_type = AUDIO_STREAM_TYPE_SYSTEM;
       params.type = a->mixer_type;
-      params.state = AUDIO_STREAM_STATE_PLAYING_LOOPED;
+      params.state = p->loop_count ? AUDIO_STREAM_STATE_PLAYING
+            : AUDIO_STREAM_STATE_PLAYING_LOOPED;
       audio_mixer_sound_set_initial_paused(a->sound, p->paused);
       ok = audio_driver_mixer_add_prepared_stream(&params, a->sound,
             &p->audio_voice, &p->audio_serial);
@@ -1129,7 +1130,8 @@ void gfx_anim_preview_audio_begin(gfx_anim_preview_t *p)
       params.type                = (p->type == IMAGE_TYPE_WEBM)
                                     ? AUDIO_MIXER_TYPE_WEBA
                                     : AUDIO_MIXER_TYPE_M4A;
-      params.state               = AUDIO_STREAM_STATE_PLAYING_LOOPED;
+      params.state               = p->loop_count ? AUDIO_STREAM_STATE_PLAYING
+            : AUDIO_STREAM_STATE_PLAYING_LOOPED;
       params.end_granule         = 0;
       params.avail               = p->audio_hi;
       retro_atomic_fetch_add_int(&w->refs, 1);
@@ -1246,6 +1248,22 @@ bool gfx_anim_preview_audio_feed(gfx_anim_preview_t *p)
 #else
    (void)p;
    return true;
+#endif
+}
+
+void gfx_anim_preview_set_repeat(gfx_anim_preview_t *p, bool repeat)
+{
+   if (!p)
+      return;
+   p->loop_count = repeat ? 0 : 1;
+#if defined(GFX_ANIM_PREVIEW_AUDIO)
+   if (p->audio_slot >= 0)
+   {
+      const char *name
+            = audio_driver_mixer_get_stream_name((unsigned)p->audio_slot);
+      if (name && string_is_equal(name, GFX_ANIM_PREVIEW_AUDIO_NAME))
+         audio_driver_mixer_stream_set_repeat((unsigned)p->audio_slot, repeat);
+   }
 #endif
 }
 

@@ -5,8 +5,11 @@
 #include "../gfx/gfx_media_controls.h"
 #include "../gfx/gfx_display.h"
 
+struct menu_media_queue;
+
 typedef struct menu_media_controls
 {
+   struct menu_media_queue *queue;
    gfx_media_controls_t controls; /* main thread */
    gfx_media_mailbox_t mailbox;
    gfx_media_view_t view; /* render thread */
@@ -14,6 +17,8 @@ typedef struct menu_media_controls
 
 RETRO_BEGIN_DECLS
 
+bool menu_media_controls_continuous(menu_media_controls_t *media, bool shown);
+bool menu_media_controls_complete(menu_media_controls_t *media);
 void menu_media_controls_update(menu_media_controls_t *media,
       const gfx_media_target_t *target, unsigned width, unsigned height,
       const menu_input_pointer_t *pointer, int64_t now);

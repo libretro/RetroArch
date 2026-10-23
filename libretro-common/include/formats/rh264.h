@@ -95,6 +95,7 @@ int rh264_video_decode(rh264_video *v, const uint8_t *data, size_t len);
  * data, for end of stream. Returns 0 when a picture became available through
  * rh264_video_plane, -1 when nothing is pending. */
 /* 2 when hardware output is busy; retry later. */
+/* -2 on a terminal hardware drain failure; -1 remains empty output. */
 int rh264_video_drain(rh264_video *v);
 
 /* Bits per sample of the decoded pictures (8..14).  Above 8 the planes

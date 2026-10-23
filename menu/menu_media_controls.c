@@ -17,14 +17,52 @@
 #include <string.h>
 
 #include "menu_media_controls.h"
+#include "menu_media_browser.h"
 #include "../gfx/video_defines.h"
 #include "../configuration.h"
+
+bool menu_media_controls_continuous(menu_media_controls_t *media, bool shown)
+{
+   if (!shown)
+   {
+      menu_media_queue_free(media->queue);
+      media->queue = NULL;
+      return false;
+   }
+   if (!media->queue)
+      media->queue = menu_media_queue_new(menu_state_get_ptr());
+   return media->queue && config_get_ptr()->bools.media_player_continuous;
+}
+
+bool menu_media_controls_complete(menu_media_controls_t *media)
+{
+   return config_get_ptr()->bools.media_player_continuous && media->queue
+         && menu_media_queue_step(media->queue, menu_state_get_ptr(), 1);
+}
+
+static bool menu_media_controls_step(void *user, int direction)
+{
+   menu_media_controls_t *media = (menu_media_controls_t*)user;
+   return menu_media_queue_step(media->queue, menu_state_get_ptr(), direction);
+}
 
 void menu_media_controls_update(menu_media_controls_t *media,
       const gfx_media_target_t *target, unsigned width, unsigned height,
       const menu_input_pointer_t *pointer, int64_t now)
 {
    settings_t *settings = config_get_ptr();
+   gfx_media_target_t active;
+   if (target)
+   {
+      active = *target;
+      if (media->queue && active.user)
+      {
+         active.navigation_user = media;
+         active.step = menu_media_controls_step;
+         active.directions = menu_media_queue_directions(media->queue);
+      }
+      target = &active;
+   }
    gfx_media_controls_configure(&media->controls,
          settings->uints.media_player_seek_seconds,
          settings->uints.media_player_controls_timeout);
@@ -49,19 +87,35 @@ void menu_media_controls_thumbnail(menu_media_controls_t *media,
 {
    gfx_media_target_t target;
    gfx_media_playback_state_t state;
+   bool once = menu_media_controls_continuous(media, shown);
+   bool completed = gfx_thumbnail_take_completed(primary);
+   completed = gfx_thumbnail_take_completed(secondary) || completed;
    memset(&target, 0, sizeof(target));
+   if (once && completed)
+      menu_media_controls_complete(media);
    if (shown)
    {
       if (gfx_thumbnail_get_playback_state(primary, now, &state))
+      {
+         gfx_thumbnail_set_repeat(primary, !once);
          gfx_media_controls_thumbnail_target(primary, &target);
+      }
       else if (gfx_thumbnail_get_playback_state(secondary, now, &state))
+      {
+         gfx_thumbnail_set_repeat(secondary, !once);
          gfx_media_controls_thumbnail_target(secondary, &target);
+      }
+   }
+   else
+   {
+      gfx_thumbnail_set_repeat(primary, true);
+      gfx_thumbnail_set_repeat(secondary, true);
    }
    menu_media_controls_update(media, &target, width, height, pointer, now);
 }
 
-bool menu_media_controls_action(menu_media_controls_t *media,
-      enum menu_action action, int64_t now)
+bool menu_media_controls_action(
+      menu_media_controls_t *media, enum menu_action action, int64_t now)
 {
    enum gfx_media_action command;
    if (!media->controls.target.user || menu_input_dialog_get_display_kb())
@@ -98,6 +152,8 @@ bool menu_media_controls_release(menu_media_controls_t *media,
 
 void menu_media_controls_cancel(menu_media_controls_t *media)
 {
+   menu_media_queue_free(media->queue);
+   media->queue = NULL;
    gfx_media_controls_reset(&media->controls);
    gfx_media_controls_publish(NULL, &media->mailbox);
 }
@@ -133,7 +189,7 @@ void menu_media_controls_draw(menu_media_controls_t *media,
    gfx_media_rect_t bar;
    char elapsed[24], duration[24], caption[56];
    char seek_back[16], seek_forward[16];
-   const char *labels[4];
+   const char *labels[6];
    unsigned i;
    int64_t position;
    float scale;
@@ -164,10 +220,12 @@ void menu_media_controls_draw(menu_media_controls_t *media,
    snprintf(seek_back, sizeof(seek_back), "-%u", view->seek_seconds);
    snprintf(seek_forward, sizeof(seek_forward), "+%u", view->seek_seconds);
    labels[1] = seek_back; labels[2] = seek_forward; labels[3] = "[]";
-   for (i = 0; i < 4; i++)
+   labels[4] = "|<"; labels[5] = ">|";
+   for (i = 0; i < view->layout.button_count; i++)
    {
       const gfx_media_rect_t *button = &view->layout.buttons[i];
-      bool enabled = !i || view->playback.seekable;
+      bool enabled = i >= 4 ? (view->directions & (i == 4 ? 1u : 2u)) != 0
+         : !i || view->playback.seekable;
       bool focused = (view->row_focus && view->focus == i) || view->hover == (int)i;
       menu_media_quad(display, userdata, dims, button,
             focused ? 0.05f : 0.16f, focused ? 0.45f : 0.16f,

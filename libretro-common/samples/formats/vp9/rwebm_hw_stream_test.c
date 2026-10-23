@@ -29,6 +29,7 @@ typedef char rvp9_backend_restart_appended[
 static uint8_t file[4096], packet[64], key[64], hidden[64], shown[64];
 static size_t used, prefix;
 static unsigned bitpos, tail_hidden, terminal_mode;
+static int terminal_failure;
 static unsigned fixture_chroma_horz, fixture_chroma_vert;
 static unsigned fixture_full_range, fixture_color_space;
 static unsigned terminal_packets = 7, terminal_shown = 3;
@@ -562,6 +563,7 @@ static int packet_stream(void)
 static int drain_backend(void *owner, bool discard)
 {
    mock_t *m = (mock_t *)owner;
+   if (terminal_failure) return -1;
    if (m->native_count != terminal_packets)
       return -1;
    m->eos_attempts++;
@@ -617,7 +619,9 @@ static int terminal_stream(void)
       shown++;
    }
    CHECK(tries < 100 && shown == 3 && m->eos_accepted && m->native_count == 7);
+   CHECK(rwebm_video_stream_completed(s));
    rwebm_video_stream_rewind(s);
+   CHECK(!rwebm_video_stream_completed(s));
    CHECK(lives == 2 && held.image);
    for (tries = 0; tries < 100; tries++)
       if (rwebm_video_stream_next(s, NULL))
@@ -661,6 +665,14 @@ static int terminal_stream(void)
    CHECK(!lives && opens == closes && abandoned == exports);
    terminal_packets = 7;
    terminal_shown   = 3;
+   terminal_failure = 1;
+   s = rwebm_video_stream_open(file, used);
+   CHECK(s && rwebm_video_stream_set_hw(s, 1));
+   for (tries = 0; tries < 100; tries++)
+      if (!rwebm_video_stream_skip(s, NULL)) break;
+   CHECK(tries < 100 && !rwebm_video_stream_completed(s));
+   rwebm_video_stream_close(s);
+   terminal_failure = 0;
    terminal_mode = tail_hidden = 0;
    rvp9_set_hw_backend(NULL);
    return 0;

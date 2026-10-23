@@ -1055,6 +1055,7 @@ typedef struct settings
 
       /* Multimedia */
       bool multimedia_builtin_mediaplayer_enable;
+      bool media_player_continuous;
       bool multimedia_builtin_imageviewer_enable;
 
       /* Bundle */

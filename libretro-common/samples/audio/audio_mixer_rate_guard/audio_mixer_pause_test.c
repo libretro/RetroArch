@@ -190,10 +190,67 @@ done:
       printf("prepared voice: s16=%u cancel=%u failed\n", s16, cancel);
 }
 
+static unsigned repeat_ends, repeat_laps;
+static void repeat_stopped(audio_mixer_sound_t *sound, unsigned reason)
+{
+   (void)sound;
+   if (reason == AUDIO_MIXER_SOUND_FINISHED) repeat_ends++;
+   if (reason == AUDIO_MIXER_SOUND_REPEATED) repeat_laps++;
+}
+
+static void repeat_policy(bool s16, bool stream, bool enable)
+{
+   unsigned char *data = wav();
+   audio_mixer_sound_t *sound;
+   audio_mixer_voice_t *voice;
+   static float f[BLOCK * 2];
+   static int16_t pcm[BLOCK * 2];
+   unsigned i;
+   if (!data) { failures++; return; }
+   audio_mixer_init(48000);
+   sound = stream ? audio_mixer_load_wav_stream(data, 44 + FRAMES * 4)
+      : audio_mixer_load_wav(data, 44 + FRAMES * 4, "sinc",
+            RESAMPLER_QUALITY_NORMAL, s16);
+   if (!sound) { free(data); failures++; audio_mixer_done(); return; }
+   repeat_ends = repeat_laps = 0;
+   voice = s16 ? audio_mixer_play_s16(sound, !enable, AUDIO_MIXER_GAIN_UNITY,
+         "sinc", RESAMPLER_QUALITY_NORMAL, repeat_stopped)
+      : audio_mixer_play(sound, !enable, 1.0f, "sinc",
+            RESAMPLER_QUALITY_NORMAL, repeat_stopped);
+   if (!voice) failures++;
+   for (i = 0; voice && i < 96; i++)
+   {
+      if (i == 1) audio_mixer_voice_set_repeat(voice, enable);
+      if (i == 48 && enable) audio_mixer_voice_set_repeat(voice, false);
+      memset(f, 0, sizeof(f));
+      memset(pcm, 0, sizeof(pcm));
+      if (s16) audio_mixer_mix_s16(pcm, BLOCK, AUDIO_MIXER_GAIN_UNITY, false);
+      else audio_mixer_mix(f, BLOCK, 1.0f, false);
+      if (repeat_ends) break;
+   }
+   if (repeat_ends != 1 || (enable ? !repeat_laps : repeat_laps != 0))
+   {
+      printf("repeat policy failed: s16=%u stream=%u enable=%u ends=%u laps=%u\n",
+            s16, stream, enable, repeat_ends, repeat_laps);
+      failures++;
+   }
+   if (voice) audio_mixer_stop(voice);
+   audio_mixer_destroy(sound);
+   if (!stream) free(data);
+   audio_mixer_done();
+}
+
 int main(void)
 {
    unsigned s16, stream, rate;
    audio_mixer_voice_set_paused(NULL, true);
+   audio_mixer_voice_set_repeat(NULL, false);
+   for (s16 = 0; s16 < 2; s16++)
+      for (stream = 0; stream < 2; stream++)
+      {
+         repeat_policy(s16 != 0, stream != 0, false);
+         repeat_policy(s16 != 0, stream != 0, true);
+      }
    for (s16 = 0; s16 < 2; s16++)
       for (stream = 0; stream < 2; stream++)
       for (rate = 44100; rate <= 48000; rate += 3900)

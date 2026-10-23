@@ -12900,6 +12900,11 @@ static void ozone_navigation_set(void *data, bool scroll)
 {
    ozone_handle_t *ozone = (ozone_handle_t*)data;
    ozone_selection_changed(ozone, true);
+   if ((ozone->flags & OZONE_FLAG_IS_FILE_LIST)
+         && (ozone->flags2 & OZONE_FLAG2_SHOW_FULLSCREEN_THUMBNAILS)
+         && menu_media_open_selected_movie(menu_state_get_ptr(),
+               &ozone->thumbnails.left, &ozone->thumbnails.right))
+      ozone->thumbnails.pending = OZONE_PENDING_THUMBNAIL_NONE;
 }
 
 static void ozone_navigation_alphabet(void *data, size_t *unused)

@@ -9995,6 +9995,10 @@ static void xmb_navigation_set(void *data, bool scroll)
 {
    xmb_handle_t *xmb = (xmb_handle_t*)data;
    xmb_selection_pointer_changed(xmb, scroll);
+   if (xmb->is_file_list && xmb->show_fullscreen_thumbnails
+         && menu_media_open_selected_movie(menu_state_get_ptr(),
+               &xmb->thumbnails.left, &xmb->thumbnails.right))
+      xmb->thumbnails.pending = XMB_PENDING_THUMBNAIL_NONE;
 }
 
 static void xmb_navigation_alphabet(void *data, size_t *unused)

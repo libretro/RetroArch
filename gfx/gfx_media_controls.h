@@ -9,15 +9,17 @@
 typedef struct gfx_media_rect { int x, y, w, h; } gfx_media_rect_t;
 typedef struct gfx_media_layout
 {
-   gfx_media_rect_t panel, timeline, buttons[4];
+   gfx_media_rect_t panel, timeline, buttons[6];
    int unit;
+   unsigned button_count;
 } gfx_media_layout_t;
 enum gfx_media_action
 {
    GFX_MEDIA_ACTIVATE, GFX_MEDIA_PREVIOUS, GFX_MEDIA_NEXT,
    GFX_MEDIA_FOCUS, GFX_MEDIA_UNFOCUS, GFX_MEDIA_STOP,
    GFX_MEDIA_SEEK_BACK, GFX_MEDIA_SEEK_FORWARD,
-   GFX_MEDIA_PLAY, GFX_MEDIA_PAUSE
+   GFX_MEDIA_PLAY, GFX_MEDIA_PAUSE,
+   GFX_MEDIA_PREVIOUS_FILE, GFX_MEDIA_NEXT_FILE
 };
 /* A framebuffer player and a texture player provide the same transport
  * interface. identity changes when their underlying session changes. */
@@ -28,6 +30,9 @@ typedef struct gfx_media_target
    bool (*state)(void *user, int64_t now, gfx_media_playback_state_t *out);
    bool (*pause)(void *user, bool paused, int64_t now);
    bool (*seek)(void *user, int64_t target_us, int64_t now);
+   void *navigation_user;
+   bool (*step)(void *user, int direction);
+   unsigned directions;
 } gfx_media_target_t;
 
 typedef struct gfx_media_controls
@@ -53,6 +58,7 @@ typedef struct gfx_media_view
    int64_t drag_us;
    unsigned focus;
    unsigned seek_seconds;
+   unsigned directions;
    int hover;
    bool visible, row_focus, dragging;
 } gfx_media_view_t;

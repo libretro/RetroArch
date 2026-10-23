@@ -317,6 +317,10 @@ int64_t rwebm_video_stream_duration_ns(rwebm_video_stream_t *stream);
 void rwebm_video_stream_complete_scan(rwebm_video_stream_t *stream,
       const uint8_t *buf, size_t len);
 
+/* Decoder owner only: the last advance exhausted input and drained output,
+ * rather than failing. Cleared by the next advance or rewind. */
+int rwebm_video_stream_completed(const rwebm_video_stream_t *stream);
+
 void rwebm_video_stream_rewind(rwebm_video_stream_t *stream);
 
 /* Owner-thread seek. Begin selects a cue (or rewinds without

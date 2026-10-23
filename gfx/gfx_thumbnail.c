@@ -585,7 +585,8 @@ static void gfx_thumbnail_anim_close(gfx_thumbnail_t *thumbnail)
    thumbnail->anim_type         = 0;
    thumbnail->anim_read_pending = 0;
    thumbnail->anim_windowed     = 0;
-   thumbnail->flags            &= ~GFX_THUMB_FLAG_ANIM_ACTIVE;
+   thumbnail->flags            &= ~(GFX_THUMB_FLAG_ANIM_ACTIVE
+         | GFX_THUMB_FLAG_MEDIA_COMPLETED | GFX_THUMB_FLAG_MEDIA_ENDED);
 }
 
 static gfx_surface_t *gfx_thumbnail_anim_surface(void *user,
@@ -992,12 +993,33 @@ bool gfx_thumbnail_has_file(const gfx_thumbnail_t *thumbnail, const char *path)
 
 /* Main-thread transport command; the audio mixer applies its request
  * at a block boundary while video retains the current display slot. */
+bool gfx_thumbnail_set_repeat(gfx_thumbnail_t *thumbnail, bool repeat)
+{
+   gfx_surface_player_t *player;
+   if (!thumbnail || !(thumbnail->flags & GFX_THUMB_FLAG_ANIM_ACTIVE)
+         || !(player = (gfx_surface_player_t *)thumbnail->anim_player))
+      return false;
+   return gfx_media_player_set_repeat(
+         (gfx_anim_preview_t *)thumbnail->anim_sess, player->vp, repeat);
+}
+
+bool gfx_thumbnail_take_completed(gfx_thumbnail_t *thumbnail)
+{
+   if (!thumbnail || !(thumbnail->flags & GFX_THUMB_FLAG_MEDIA_COMPLETED))
+      return false;
+   thumbnail->flags &= ~GFX_THUMB_FLAG_MEDIA_COMPLETED;
+   return true;
+}
+
 bool gfx_thumbnail_set_paused(gfx_thumbnail_t *thumbnail, bool paused,
       retro_time_t current_time)
 {
    gfx_surface_player_t *player;
    if (!thumbnail || !(thumbnail->flags & GFX_THUMB_FLAG_ANIM_ACTIVE)
          || !(player = (gfx_surface_player_t*)thumbnail->anim_player))
+      return false;
+   if (!paused && (thumbnail->flags & GFX_THUMB_FLAG_MEDIA_ENDED)
+         && !gfx_thumbnail_seek(thumbnail, 0, current_time))
       return false;
    return gfx_media_player_set_paused((gfx_anim_preview_t*)thumbnail->anim_sess,
          player->vp, paused, !thumbnail->anim_read_pending, (int64_t)current_time);
@@ -1019,6 +1041,7 @@ bool gfx_thumbnail_seek(gfx_thumbnail_t *thumbnail, int64_t target_us,
    gfx_anim_preview_t *session;
    unsigned rate = 0;
    bool s16 = false;
+   bool result;
    if (!thumbnail || thumbnail->anim_read_pending
          || !(thumbnail->flags & GFX_THUMB_FLAG_ANIM_ACTIVE)
          || !(player = (gfx_surface_player_t*)thumbnail->anim_player)
@@ -1029,8 +1052,11 @@ bool gfx_thumbnail_seek(gfx_thumbnail_t *thumbnail, int64_t target_us,
    if (config_get_ptr()->bools.menu_thumbnail_preview_audio)
       audio_driver_mixer_prepare_format(&rate, &s16);
 #endif
-   return gfx_media_player_seek(session, player->vp, target_us, rate, s16,
+   result = gfx_media_player_seek(session, player->vp, target_us, rate, s16,
          (int64_t)current_time);
+   if (result)
+      thumbnail->flags &= ~(GFX_THUMB_FLAG_MEDIA_ENDED | GFX_THUMB_FLAG_MEDIA_COMPLETED);
+   return result;
 }
 
 /* Advances an animated thumbnail: at most one frame shown a call, once
@@ -1052,6 +1078,7 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
    gfx_thumbnail_anim_reap();
    if (   !thumbnail
        || !(thumbnail->flags & GFX_THUMB_FLAG_ANIM_ACTIVE)
+       || (thumbnail->flags & GFX_THUMB_FLAG_MEDIA_ENDED)
        || !thumbnail->anim)
       return;
    {
@@ -1118,7 +1145,19 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
    if (gfx_media_player_poll((gfx_anim_preview_t*)thumbnail->anim_sess,
             ((gfx_surface_player_t*)thumbnail->anim_player)->vp, now)
          == VIDEO_PLAYER_ENDED)
-      gfx_thumbnail_anim_close(thumbnail);
+   {
+      bool completed = video_player_completed(
+            ((gfx_surface_player_t*)thumbnail->anim_player)->vp);
+      if (completed)
+      {
+         gfx_media_player_set_paused((gfx_anim_preview_t*)thumbnail->anim_sess,
+               ((gfx_surface_player_t*)thumbnail->anim_player)->vp,
+               true, false, now);
+         thumbnail->flags |= GFX_THUMB_FLAG_MEDIA_COMPLETED | GFX_THUMB_FLAG_MEDIA_ENDED;
+      }
+      else
+         gfx_thumbnail_anim_close(thumbnail);
+   }
 }
 
 /* A still's decode has come back, the image (NULL: nothing) the

@@ -230,6 +230,7 @@ void gfx_anim_preview_audio_stop(gfx_anim_preview_t *p);
 
 /* Main thread: preserve audio position, including an audio voice that
  * begins later when a pending file read completes. */
+void gfx_anim_preview_set_repeat(gfx_anim_preview_t *p, bool repeat);
 void gfx_anim_preview_set_paused(gfx_anim_preview_t *p, bool paused);
 
 /* Main thread: one logical clock for video and transport. Follows actual

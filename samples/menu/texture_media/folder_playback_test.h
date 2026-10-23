@@ -1,0 +1,134 @@
+/* Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier:
+ * GPL-3.0-or-later */
+#ifndef MEDIA_FOLDER_PLAYBACK_TEST_H
+#define MEDIA_FOLDER_PLAYBACK_TEST_H
+
+static bool media_folder_install(struct menu_state *menu_st, file_list_t *list,
+      const char *directory, const char *fixture)
+{
+   static const unsigned episodes[] = {10, 2, 1, 11};
+   const char *extension = path_get_extension(fixture);
+   char name[64];
+   unsigned i;
+   unsigned count = getenv("MEDIA_TEST_CONTINUOUS_ERROR") ? 4 : 3;
+   for (i = 0; i < count; i++)
+   {
+      snprintf(name, sizeof(name), "episode%u.%s", episodes[i], extension);
+      if (!file_list_append(list, name, "", FILE_TYPE_MOVIE, 0, 0))
+         return false;
+      if (menu_st->driver_ctx->list_insert)
+         menu_st->driver_ctx->list_insert(menu_st->userdata, list, name,
+               directory, "", i, FILE_TYPE_MOVIE);
+   }
+   return true;
+}
+
+static bool media_folder_drive(struct menu_state *menu_st,
+      menu_media_controls_t *media, void (*draw)(struct menu_state *),
+      int (*stage)(void *), bool (*shown)(void *), void *viewer)
+{
+   struct menu_media_queue *identity = media->queue;
+   bool next_loaded = false, ended = false;
+   unsigned tick;
+   if (!identity || menu_st->selection_ptr != 1)
+   {
+      printf("folder setup: queue=%u selection=%lu enabled=%u\n",
+            identity != NULL, (unsigned long)menu_st->selection_ptr,
+            config_get_ptr()->bools.media_player_continuous);
+      return false;
+   }
+   if (getenv("MEDIA_TEST_CONTINUOUS_ERROR"))
+   {
+      unsigned settled = 0;
+      for (tick = 0; tick < 16000; tick++)
+      {
+         draw(menu_st);
+         if (!shown(viewer) || media->queue != identity)
+            return false;
+         if (menu_st->selection_ptr != 1 && menu_st->selection_ptr != 0)
+            return false;
+         if (menu_st->selection_ptr == 0 && !media->controls.target.user)
+         {
+            if (++settled == 1000)
+            {
+               puts("folder error: invalid next movie does not skip to episode11");
+               return true;
+            }
+         }
+         else
+            settled = 0;
+         retro_sleep(1);
+      }
+      return false;
+   }
+   for (tick = 0; tick < 16000; tick++)
+   {
+      int status;
+      draw(menu_st);
+      if (!shown(viewer) || media->queue != identity)
+         break;
+      if (menu_st->selection_ptr != 1 && menu_st->selection_ptr != 0)
+         break;
+      status = stage(viewer);
+      if (menu_st->selection_ptr == 0 && status == 1)
+         next_loaded = true;
+      if (next_loaded && status == 2)
+      {
+         ended = true;
+         break;
+      }
+      retro_sleep(1);
+   }
+   printf("folder playback: ticks=%u selection=%lu next=%u ended=%u "
+          "fullscreen=%u stable=%u\n",
+         tick, (unsigned long)menu_st->selection_ptr, next_loaded, ended,
+         shown(viewer), media->queue == identity);
+   if (!ended || !shown(viewer) || media->queue != identity
+         || menu_st->selection_ptr != 0)
+      return false;
+   for (tick = 0; tick < 500; tick++)
+   {
+      draw(menu_st);
+      if (menu_st->selection_ptr != 0 || stage(viewer) != 2)
+         return false;
+      retro_sleep(1);
+   }
+   if (!media->controls.target.user || !media->controls.playback.paused
+         || media->controls.layout.button_count != 6
+         || media->controls.target.directions != 1)
+      return false;
+   if (!gfx_media_controls_action(&media->controls, GFX_MEDIA_PREVIOUS_FILE,
+             menu_st->current_time_us))
+      return false;
+   for (tick = 0; tick < 2000 && stage(viewer) != 3; tick++)
+   {
+      draw(menu_st);
+      retro_sleep(1);
+   }
+   if (stage(viewer) != 3 || menu_st->selection_ptr != 1 || !shown(viewer))
+      return false;
+   if (!gfx_media_controls_action(
+             &media->controls, GFX_MEDIA_STOP, menu_st->current_time_us))
+      return false;
+   for (tick = 0; tick < 2000; tick++)
+   {
+      draw(menu_st);
+      if (!media->controls.playback.seeking && media->controls.playback.paused
+            && !media->controls.playback.seek_failed
+            && !media->controls.playback.position_us)
+         break;
+      retro_sleep(1);
+   }
+   if (tick == 2000)
+      return false;
+   for (tick = 0; tick < 4000; tick++)
+   {
+      draw(menu_st);
+      if (menu_st->selection_ptr != 1 || !media->controls.playback.paused)
+         return false;
+      retro_sleep(1);
+   }
+   puts("folder controls: previous works after EOF; Stop does not advance");
+   return true;
+}
+#endif

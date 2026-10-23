@@ -6226,7 +6226,7 @@ int rh265_video_drain(rh265_video *v)
       video_hw_frame_abandon(&v->hw->shown);
       memset(&v->hw->shown, 0, sizeof(v->hw->shown));
       ret = rh265_hw_show(v->hw, true);
-      return ret == 1 ? 0 : ret == 2 ? 2 : -1;
+      return ret == 1 ? 0 : ret == 2 ? 2 : ret < 0 ? -2 : -1;
    }
    if (v->threaded)
    {

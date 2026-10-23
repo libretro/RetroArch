@@ -3107,7 +3107,8 @@ static void rgui_media_close(rgui_t *rgui)
       gfx_thumbnail_cancel_pending_requests();
    gfx_thumbnail_reset(&rgui->media_gpu);
    rgui->media_path[0] = '\0';
-   menu_media_controls_cancel(&rgui->media);
+   gfx_media_controls_reset(&rgui->media.controls);
+   gfx_media_controls_publish(NULL, &rgui->media.mailbox);
 }
 
 static bool rgui_media_present(void *user, const video_player_frame_t *frame)
@@ -3186,6 +3187,8 @@ RGUI_NOINLINE static void rgui_media_update(rgui_t *rgui, unsigned dims)
    bool wanted = *rgui->media_requested_path
       && ((rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
             || settings->bools.menu_rgui_inline_thumbnails);
+   bool once = menu_media_controls_continuous(&rgui->media,
+         (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL) != 0);
    gfx_media_cpu_reap();
    memset(&target, 0, sizeof(target));
    if (!wanted || !string_is_equal(rgui->media_requested_path, rgui->media_path))
@@ -3218,7 +3221,10 @@ RGUI_NOINLINE static void rgui_media_update(rgui_t *rgui, unsigned dims)
    }
    if (rgui->media_gpu.anim_sess)
    {
+      gfx_thumbnail_set_repeat(&rgui->media_gpu, !once);
       gfx_thumbnail_animate(&rgui->media_gpu, now);
+      if (gfx_thumbnail_take_completed(&rgui->media_gpu) && once)
+         menu_media_controls_complete(&rgui->media);
       if ((rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
             && !(rgui->flags & RGUI_FLAG_SHOW_SCREENSAVER)
             && !menu_input_dialog_get_display_kb())
@@ -3232,14 +3238,23 @@ RGUI_NOINLINE static void rgui_media_update(rgui_t *rgui, unsigned dims)
    if (rgui->media_player)
    {
       video_player_set_threads(gfx_thumbnail_anim_threads_wanted());
+      gfx_media_cpu_set_repeat(rgui->media_player, !once);
       if (gfx_media_cpu_poll(rgui->media_player, now) == VIDEO_PLAYER_ENDED)
       {
-         gfx_media_cpu_retire(rgui->media_player);
-         rgui->media_player = NULL;
-         if (!rgui->fs_thumbnail.is_valid && disp_get_ptr()->dispctx)
-            gfx_thumbnail_request_file(rgui->media_path, &rgui->media_gpu, 0);
+         if (gfx_media_cpu_completed(rgui->media_player))
+         {
+            if (gfx_media_cpu_take_completed(rgui->media_player) && once)
+               menu_media_controls_complete(&rgui->media);
+         }
+         else
+         {
+            gfx_media_cpu_retire(rgui->media_player);
+            rgui->media_player = NULL;
+            if (!rgui->fs_thumbnail.is_valid && disp_get_ptr()->dispctx)
+               gfx_thumbnail_request_file(rgui->media_path, &rgui->media_gpu, 0);
+         }
       }
-      else if ((rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
+      if (rgui->media_player && (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
             && !(rgui->flags & RGUI_FLAG_SHOW_SCREENSAVER)
             && !menu_input_dialog_get_display_kb())
       {
@@ -6081,8 +6096,9 @@ RGUI_NOINLINE static void rgui_media_draw(rgui_t *rgui, unsigned dims)
    unsigned i, width = VIDEO_SCALE_W(dims);
    int64_t position;
    char elapsed[24], duration[24], caption[56];
+   char seek_back[16], seek_forward[16];
    size_t limit;
-   const char *labels[4];
+   const char *labels[6];
    gfx_media_controls_consume(&rgui->media.mailbox, view);
    if (!view->visible || !view->layout.unit) return;
    bar = view->layout.panel;
@@ -6111,12 +6127,16 @@ RGUI_NOINLINE static void rgui_media_draw(rgui_t *rgui, unsigned dims)
          view->layout.panel.y + 1, caption, rgui->colors.normal_color,
          rgui->colors.shadow_color);
    labels[0] = view->playback.paused ? ">" : "||";
-   labels[1] = "-5"; labels[2] = "+5"; labels[3] = "[]";
-   for (i = 0; i < 4; i++)
+   snprintf(seek_back, sizeof(seek_back), "-%u", view->seek_seconds);
+   snprintf(seek_forward, sizeof(seek_forward), "+%u", view->seek_seconds);
+   labels[1] = seek_back; labels[2] = seek_forward; labels[3] = "[]";
+   labels[4] = "|<"; labels[5] = ">|";
+   for (i = 0; i < view->layout.button_count; i++)
    {
       const gfx_media_rect_t *button = &view->layout.buttons[i];
       bool focused = (view->row_focus && view->focus == i) || view->hover == (int)i;
-      bool enabled = !i || view->playback.seekable;
+      bool enabled = i >= 4 ? (view->directions & (i == 4 ? 1u : 2u)) != 0
+         : !i || view->playback.seekable;
       int x = button->x + (button->w - (int)(strlen(labels[i]) * rgui->font_width_stride)) / 2;
       int y = button->y + (button->h - (int)VIDEO_SCALE_H(rgui->font_dims)) / 2;
       rgui_color_rect(rgui->frame_buf.data, dims, button->x, button->y,

@@ -27,6 +27,12 @@ S_BOOL(multimedia_builtin_imageviewer_enable, USE_BUILTIN_IMAGE_VIEWER,
 #endif
 #endif
 
+S_BOOL(media_player_continuous, MEDIA_PLAYER_CONTINUOUS,
+      "media_player_continuous",
+      false, SD_FLAG_NONE, 0, 0,
+      "Continuous Playback",
+      "Play the remaining movies in the current folder in natural filename order. Stop at the end of the folder or on a playback error.")
+
 S_UINT(media_player_seek_seconds, MEDIA_PLAYER_SEEK_SECONDS,
       "media_player_seek_seconds",
       5, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 1, 600, 1, 0,

@@ -17,6 +17,9 @@ gfx_media_cpu_t *gfx_media_cpu_new(gfx_anim_preview_t *session,
       gfx_media_cpu_present_t present, void *user, unsigned flags);
 enum video_player_state gfx_media_cpu_poll(gfx_media_cpu_t *player,
       int64_t wall_us);
+bool gfx_media_cpu_set_repeat(gfx_media_cpu_t *player, bool repeat);
+bool gfx_media_cpu_completed(gfx_media_cpu_t *player);
+bool gfx_media_cpu_take_completed(gfx_media_cpu_t *player);
 bool gfx_media_cpu_pause(gfx_media_cpu_t *player, bool paused, int64_t wall_us);
 bool gfx_media_cpu_seek(gfx_media_cpu_t *player, int64_t target_us,
       unsigned mix_rate, bool s16, int64_t wall_us);

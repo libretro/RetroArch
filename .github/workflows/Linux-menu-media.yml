@@ -54,6 +54,12 @@ jobs:
         run: python3 samples/menu/rgui_media/run.py --c89 --driver xmb samples/menu/rgui_media/fixture.mp4
       - name: Real Ozone file-browser playback controls
         run: python3 samples/menu/rgui_media/run.py --c89 --driver ozone samples/menu/rgui_media/fixture.mp4
+      - name: Natural MP4 folder playback and file controls across all menus
+        run: |
+          for driver in rgui materialui xmb ozone; do
+            python3 samples/menu/rgui_media/run.py --c89 --continuous --driver "$driver" samples/menu/rgui_media/fixture.mp4
+            python3 samples/menu/rgui_media/run.py --c89 --continuous-error --driver "$driver" samples/menu/rgui_media/fixture.mp4
+          done
       - name: Generate WebM transport fixtures
         run: |
           ffmpeg -v error -y -f lavfi -i testsrc2=size=320x240:rate=30 -f lavfi -i sine=frequency=440:sample_rate=48000 -t 3 -c:v libvpx -deadline realtime -cpu-used 8 -g 30 -auto-alt-ref 0 -c:a libopus -shortest samples/menu/rgui_media/fixture-opus.webm
@@ -63,4 +69,10 @@ jobs:
           for driver in rgui materialui xmb ozone; do
             python3 samples/menu/rgui_media/run.py --c89 --driver "$driver" samples/menu/rgui_media/fixture-opus.webm
             python3 samples/menu/rgui_media/run.py --c89 --driver "$driver" samples/menu/rgui_media/fixture-vorbis.webm
+          done
+      - name: Natural WebM folder playback across all menus
+        run: |
+          for driver in rgui materialui xmb ozone; do
+            python3 samples/menu/rgui_media/run.py --c89 --continuous --driver "$driver" samples/menu/rgui_media/fixture-vorbis.webm
+            python3 samples/menu/rgui_media/run.py --c89 --continuous-error --driver "$driver" samples/menu/rgui_media/fixture-vorbis.webm
           done

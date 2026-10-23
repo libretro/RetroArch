@@ -194,6 +194,13 @@ void gfx_anim_preview_rewind(gfx_anim_preview_t *p)
 
 /* The stream behind the session, as video_player plays it: the fake
  * session is its own stream. */
+bool image_transfer_anim_stream_completed(const void *stream,
+      enum image_type_enum type)
+{
+   (void)type;
+   return stream && ((const fake_sess_t*)stream)->frame >= FRAMES;
+}
+
 const uint32_t *image_transfer_anim_stream_next(void *stream,
       enum image_type_enum type, int *duration_ms)
 {

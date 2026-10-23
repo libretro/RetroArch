@@ -254,6 +254,7 @@ struct audio_mixer_voice
    /* A transport pause preserves decoder, resampler and buffered PCM.
     * The owner requests it; the mixer samples it once per block. */
    retro_atomic_int_t paused;
+   retro_atomic_int_t repeat;
    size_t mixed_frames;              /* mix owner's, modulo SIZE_MAX+1 */
    retro_atomic_size_t clock_frames; /* published output-frame count */
    retro_atomic_int_t clock_rate;    /* output Hz, fixed for this play */
@@ -275,7 +276,6 @@ struct audio_mixer_voice
    size_t   avail_done;              /* the mix's: the bound it applied */
    int      avail_done_lap;
    bool     avail_done_valid;
-   bool     repeat;
    bool     is_s16;
 #if defined(AUDIO_MIXER_VOICE_OWNERSHIP)
    retro_atomic_int_t owner;
@@ -2498,7 +2498,7 @@ audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound,
 
    if (res)
    {
-      voice->repeat   = repeat;
+      retro_atomic_store_relaxed_int(&voice->repeat, repeat ? 1 : 0);
       retro_atomic_store_relaxed_int(&voice->volume,
             audio_mixer_float_bits(volume));
       voice->sound    = sound;
@@ -2627,7 +2627,7 @@ audio_mixer_voice_t* audio_mixer_play_s16(audio_mixer_sound_t* sound,
 
    if (res)
    {
-      voice->repeat   = repeat;
+      retro_atomic_store_relaxed_int(&voice->repeat, repeat ? 1 : 0);
       retro_atomic_store_relaxed_int(&voice->gain, (int)gain);
       voice->sound    = sound;
       voice->stop_cb  = stop_cb;
@@ -2748,7 +2748,7 @@ again:
       for (i = pcm_available; i != 0; i--)
          *buffer++ += *pcm++ * volume;
 
-      if (voice->repeat)
+      if (retro_atomic_load_acquire_int(&voice->repeat))
       {
          if (voice->stop_cb)
             voice->stop_cb(voice->sound, AUDIO_MIXER_SOUND_REPEATED);
@@ -2798,7 +2798,7 @@ again:
          buffer++;
       }
 
-      if (voice->repeat)
+      if (retro_atomic_load_acquire_int(&voice->repeat))
       {
          if (voice->stop_cb)
             voice->stop_cb(voice->sound, AUDIO_MIXER_SOUND_REPEATED);
@@ -2909,7 +2909,7 @@ again:
           * mixer, with no frame ever produced.  One rewind is allowed
           * per empty read; a second in a row ends the voice the way a
           * stream that simply finished does. */
-         if (     voice->repeat
+         if (     retro_atomic_load_acquire_int(&voice->repeat)
                && !rewound
                && audio_transfer_seek(voice->types.stream.stream, type, 0))
          {
@@ -3055,7 +3055,7 @@ again:
          /* See audio_mixer_mix_stream: one rewind per empty read, so a
           * repeat that yields nothing twice ends the voice instead of
           * spinning here with no frame ever produced. */
-         if (     voice->repeat
+         if (     retro_atomic_load_acquire_int(&voice->repeat)
                && !rewound
                && audio_transfer_seek(voice->types.stream.stream, type, 0))
          {
@@ -3362,6 +3362,12 @@ int32_t audio_mixer_voice_get_gain(audio_mixer_voice_t *voice)
       return 0;
 
    return (int32_t)retro_atomic_load_relaxed_int(&voice->gain);
+}
+
+void audio_mixer_voice_set_repeat(audio_mixer_voice_t *voice, bool repeat)
+{
+   if (voice)
+      retro_atomic_store_release_int(&voice->repeat, repeat ? 1 : 0);
 }
 
 void audio_mixer_voice_set_paused(audio_mixer_voice_t *voice, bool paused)

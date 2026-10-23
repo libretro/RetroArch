@@ -1570,6 +1570,26 @@ void image_transfer_anim_stream_get_info(void *stream,
    }
 }
 
+bool image_transfer_anim_stream_completed(const void *stream,
+      enum image_type_enum type)
+{
+   if (!stream) return false;
+   switch (type)
+   {
+#ifdef HAVE_RMP4
+      case IMAGE_TYPE_MP4:
+         return rmp4_video_stream_completed((const rmp4_video_stream_t*)stream) != 0;
+#endif
+#ifdef HAVE_RWEBM
+      case IMAGE_TYPE_WEBM:
+         return rwebm_video_stream_completed((const rwebm_video_stream_t*)stream) != 0;
+#endif
+      default:
+         break;
+   }
+   return false;
+}
+
 const uint32_t *image_transfer_anim_stream_next(void *stream,
       enum image_type_enum type, int *duration_ms)
 {

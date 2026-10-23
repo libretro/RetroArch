@@ -251,6 +251,10 @@ size_t rmp4_video_stream_consumed(rmp4_video_stream_t *s);
 /* Container duration in nanoseconds (mvhd), 0 when absent. */
 int64_t rmp4_video_stream_duration_ns(rmp4_video_stream_t *s);
 
+/* Decoder owner only: the last advance exhausted input and drained output,
+ * rather than failing. Cleared by the next advance or rewind. */
+int rmp4_video_stream_completed(const rmp4_video_stream_t *stream);
+
 void rmp4_video_stream_rewind(rmp4_video_stream_t *stream);
 
 /* Seek to the display position at or before 'ms' milliseconds: the

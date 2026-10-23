@@ -2,6 +2,16 @@
 #include "gfx_anim_preview.h"
 #include "gfx_media_player.h"
 
+bool gfx_media_player_set_repeat(gfx_anim_preview_t *session,
+      video_player_t *player, bool repeat)
+{
+   if (!session || !player) return false;
+   if (session->loop_count == (repeat ? 0 : 1)) return true;
+   if (!video_player_set_repeat(player, repeat)) return false;
+   gfx_anim_preview_set_repeat(session, repeat);
+   return true;
+}
+
 bool gfx_media_player_set_paused(gfx_anim_preview_t *session,
       video_player_t *player, bool paused, bool audio_ready, int64_t wall_us)
 {

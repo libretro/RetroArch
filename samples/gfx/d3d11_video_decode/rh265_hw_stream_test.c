@@ -272,8 +272,8 @@ static void check_empty_drain(void)
    rh265_video_close(v);
    v=start();if(!v)return;
    v->hw->session.ops.drain=drain_empty;drain_calls=0;drain_fail=1;
-   CHECK(rh265_video_drain(v)==-1 && drain_calls==1);
-   CHECK(rh265_video_drain(v)==-1 && drain_calls==1);
+   CHECK(rh265_video_drain(v)==-2 && drain_calls==1);
+   CHECK(rh265_video_drain(v)==-2 && drain_calls==1);
    drain_fail=0;rh265_video_close(v);
 }
 

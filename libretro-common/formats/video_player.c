@@ -65,7 +65,8 @@ enum vp_job_status
    VP_JOB_QUEUED = 0,  /* posted, not started                        */
    VP_JOB_RUNNING,     /* the worker is decoding into its frame      */
    VP_JOB_READY,       /* decoded, waiting to be presented           */
-   VP_JOB_FINISHED,    /* loops done, or the stream failed           */
+   VP_JOB_FINISHED,    /* stream or sink failed                      */
+   VP_JOB_COMPLETED,   /* finite movie reached clean EOF              */
    VP_JOB_HELD,        /* presented as QUEUED: the slot is the sink's */
    VP_JOB_IDLE,        /* neither the worker's nor holding a frame   */
    VP_JOB_WAITING,     /* hardware busy; the next poll retries       */
@@ -110,7 +111,7 @@ struct video_player
    int64_t next_us;        /* when the next frame is due, 0 at once */
    int64_t pause_left_us;  /* remaining picture duration at pause */
    bool paused;           /* polling thread only */
-   bool presented;
+   bool presented, completed, ended;
    bool inline_ready, inline_finished, inline_held;
    video_player_frame_t inline_frame;
    int64_t movie_us;       /* immutable full movie period, or zero */
@@ -128,6 +129,7 @@ struct video_player
    bool hw_checked, hw_starting, hw_available;
    int64_t seek_target, seek_run_target, seek_position;
    int32_t initial_loops;
+   retro_atomic_int_t repeat_request;
    bool seek_pending, seek_dirty, seek_active, seek_restart, seek_failed;
    bool seek_valid, seek_show, seek_gap;
    void *stream;
@@ -154,12 +156,18 @@ static const uint32_t *vp_next(video_player_t *p,
 {
    void *stream = p->stream;
    enum image_type_enum type = p->type;
+   int repeat;
    const uint32_t *frame = image_transfer_anim_stream_next(stream, type,
          duration_ms);
    if (frame)
       return frame;
    if (image_transfer_anim_stream_waiting(stream, type))
       return NULL;
+   if ((type == IMAGE_TYPE_MP4 || type == IMAGE_TYPE_WEBM)
+         && !image_transfer_anim_stream_completed(stream, type))
+      return NULL;
+   repeat = retro_atomic_load_acquire_int(&p->repeat_request);
+   if (repeat) *loops_left = repeat;
    if (*loops_left > 0)
       (*loops_left)--;
    if (*loops_left == 0)
@@ -401,7 +409,8 @@ static int vp_job_step(vp_job_t *job)
       job->hw = r == 1;
       job->duration_ms = duration_ms;
       job->time_us = vp_frame_time(p, !r);
-      return r;
+      return !r && job->loops_left == 0
+            && image_transfer_anim_stream_completed(stream, type) ? 3 : r;
    }
    /* Every stream emits the order asked for; one that cannot is
     * swizzled below. Asked a frame at a time, and a repeat ask of the
@@ -426,7 +435,9 @@ static int vp_job_step(vp_job_t *job)
    if (!(frame = vp_next(p, &job->loops_left, &duration_ms)))
    {
       job->time_us = vp_frame_time(p, true);
-      return image_transfer_anim_stream_waiting(stream, type) ? 2 : 0;
+      if (image_transfer_anim_stream_waiting(stream, type)) return 2;
+      return job->loops_left == 0
+            && image_transfer_anim_stream_completed(stream, type) ? 3 : 0;
    }
    job->time_us = vp_frame_time(p, false);
 
@@ -489,7 +500,8 @@ static void vp_job_publish(vp_job_t *job, int alive)
    if (!job->gpu)
       retro_atomic_thread_fence_seq_cst();
    retro_atomic_store_release_int(&job->status,
-         alive == 2 ? VP_JOB_WAITING : (alive ? VP_JOB_READY : VP_JOB_FINISHED));
+         alive == 3 ? VP_JOB_COMPLETED : alive == 2 ? VP_JOB_WAITING
+               : (alive ? VP_JOB_READY : VP_JOB_FINISHED));
 }
 
 static void vp_worker(void *unused)
@@ -771,16 +783,18 @@ static enum video_player_state vp_poll_threaded(video_player_t *p,
       vp_job_start(p, jo);
    }
 
-   if (p->movie_us && (su == VP_JOB_READY || su == VP_JOB_FINISHED))
+   if (p->movie_us && (su == VP_JOB_READY || su == VP_JOB_FINISHED
+            || su == VP_JOB_COMPLETED))
       vp_movie_deadline(p, ju->time_us, now);
    if (p->next_us != 0 && now < p->next_us)
       return VIDEO_PLAYER_PLAYING;
    /* loops done or the stream failed: the sibling holds only a frame
     * already shown, so nothing is lost */
-   if (su == VP_JOB_FINISHED)
+   if (su == VP_JOB_FINISHED || su == VP_JOB_COMPLETED)
    {
       if ((p->flags & VP_HW) && !p->presented && video_player_request_software(p))
          return VIDEO_PLAYER_PLAYING;
+      p->completed = p->presented && su == VP_JOB_COMPLETED;
       return VIDEO_PLAYER_ENDED;
    }
    if (su != VP_JOB_READY)
@@ -990,6 +1004,8 @@ present_frame:
    return VIDEO_PLAYER_PLAYING;
 
 finished:
+   p->completed = p->presented && p->loops_left == 0
+         && image_transfer_anim_stream_completed(p->stream, p->type);
    if ((p->flags & VP_HW) && !p->presented && video_player_request_software(p))
       return VIDEO_PLAYER_PLAYING;
    if (p->movie_us)
@@ -1212,6 +1228,7 @@ video_player_t *video_player_new(void *stream, enum image_type_enum type,
          | VIDEO_PLAYER_INLINE);
    p->loops_left = (loop_count == 0) ? -1 : loop_count;
    p->initial_loops = p->loops_left;
+   retro_atomic_int_init(&p->repeat_request, 0);
    if (type == IMAGE_TYPE_MP4 || type == IMAGE_TYPE_WEBM)
    {
       int64_t duration = image_transfer_anim_stream_duration_ns(stream, type);
@@ -1222,8 +1239,25 @@ video_player_t *video_player_new(void *stream, enum image_type_enum type,
    return p;
 }
 
+bool video_player_set_repeat(video_player_t *p, bool repeat)
+{
+   if (!p || p->ended || (p->flags & VP_STOPPED)
+         || (p->type != IMAGE_TYPE_MP4 && p->type != IMAGE_TYPE_WEBM))
+      return false;
+   p->initial_loops = repeat ? -1 : 1;
+   retro_atomic_store_release_int(&p->repeat_request, p->initial_loops);
+   return true;
+}
+
+bool video_player_completed(const video_player_t *p)
+{
+   return p && p->ended && p->completed && !(p->flags & VP_STOPPED)
+         && !p->inline_ready && !p->seek_pending && !p->seek_failed;
+}
+
 enum video_player_state video_player_poll(video_player_t *p, int64_t now_us)
 {
+   enum video_player_state result;
    if (!p || (p->flags & VP_STOPPED))
       return VIDEO_PLAYER_ENDED;
    if (p->hw_fallback_pending)
@@ -1308,9 +1342,12 @@ enum video_player_state video_player_poll(video_player_t *p, int64_t now_us)
 
 #ifdef VIDEO_PLAYER_WORKER
    if (p->flags & VP_THREADED)
-      return vp_poll_threaded(p, now_us);
+      result = vp_poll_threaded(p, now_us);
+   else
 #endif
-   return vp_poll_inline(p, now_us);
+      result = vp_poll_inline(p, now_us);
+   p->ended = result == VIDEO_PLAYER_ENDED;
+   return result;
 }
 
 bool video_player_set_seek_handler(video_player_t *p,
@@ -1327,6 +1364,7 @@ bool video_player_seek(video_player_t *p, int64_t target_us)
 {
    if (!p || !p->seek_cb || (p->flags & VP_STOPPED))
       return false;
+   p->ended = p->completed = false;
    if (p->inline_ready && p->inline_frame.hw)
       video_hw_frame_abandon(p->inline_frame.hw);
    p->inline_ready = false;

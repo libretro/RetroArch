@@ -36,3 +36,21 @@ Set `MEDIA_TEST_HDR_TIMELINE=1` with a PQ fixture whose CLL changes from
 metadata after forward, backward and burst seeks.
 
 Readbacks and bounded polling belong to this test harness only.
+
+Use `--continuous` to test folder playback with temporary fixture links/copies:
+
+```sh
+python3 samples/menu/rgui_media/run.py --c89 --continuous --driver ozone movie.mp4
+```
+
+This starts at episode 2, advances to episode 10 in natural filename order,
+keeps fullscreen open, and stops at the folder boundary with the final picture
+and transport available. It then selects the previous file, checks that Stop
+prevents further advancement, and closes the folder queue with Back. Repeat
+for all four menu drivers. The shipping workflow runs this for MP4 and WebM,
+with threads enabled and disabled. Mixer repeat changes are checked separately
+by the float/S16 cached/streamed audio transport tests.
+
+`--continuous-error` supplies an invalid next movie followed by a valid one.
+The viewer must stop on the failed movie, preserve fullscreen mode, and release
+the folder queue when Back closes the viewer. The input fixture is preserved.

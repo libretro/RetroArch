@@ -571,6 +571,10 @@ void image_transfer_anim_stream_get_info(void *stream,
       enum image_type_enum type,
       unsigned *width, unsigned *height, int *num_frames, int *loop_count);
 
+/* Decoder owner only. True only after a movie exhausted input and output. */
+bool image_transfer_anim_stream_completed(const void *stream,
+      enum image_type_enum type);
+
 const uint32_t *image_transfer_anim_stream_next(void *stream,
       enum image_type_enum type, int *duration_ms);
 
