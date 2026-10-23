@@ -1,5 +1,8 @@
 /* Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier:
  * GPL-3.0-or-later */
+#ifdef NDEBUG
+#error Capture retirement acceptance requires assertions
+#endif
 #include <assert.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -9,6 +12,8 @@
 static unsigned images, textures, syncs, fences, waits, flushes, imported;
 static unsigned image_calls, bad_image;
 static bool bad_destroy, bad_wait, bad_fence, bad_sync;
+static GLsync live_fences[32], newest, expected_poll;
+static unsigned fence_serial;
 static GLenum completion;
 static const char *EGLAPIENTRY query(EGLDisplay d, EGLint name)
 {
@@ -108,20 +113,36 @@ static const GLubyte *GL_APIENTRY string(GLenum name)
 }
 static GLsync GL_APIENTRY fence(GLenum type, GLbitfield flags)
 {
+   unsigned i;
    assert(type == GL_SYNC_GPU_COMMANDS_COMPLETE && !flags);
    if (bad_fence)
       return NULL;
    fences++;
-   return (GLsync)(uintptr_t)400;
+   newest = (GLsync)(uintptr_t)(400 + ++fence_serial);
+   for (i = 0; i < 32; i++)
+      if (!live_fences[i])
+      {
+         live_fences[i] = newest;
+         return newest;
+      }
+   assert(0);
+   return NULL;
 }
 static GLenum GL_APIENTRY poll(GLsync s, GLbitfield flags, GLuint64 timeout)
 {
    assert(s && !flags && !timeout);
+   assert(!expected_poll || s == expected_poll);
    return completion;
 }
 static void GL_APIENTRY delete_fence(GLsync s)
 {
+   unsigned i;
    assert(s && fences);
+   for (i = 0; i < 32; i++)
+      if (live_fences[i] == s)
+         break;
+   assert(i < 32);
+   live_fences[i] = NULL;
    fences--;
 }
 static void GL_APIENTRY flush(void)
@@ -236,7 +257,38 @@ int main(void)
       assert(record_android_capture_gl_free(c));
       assert(!images && !textures && !syncs && !fences);
    }
-   puts("PASS: fixed GLES imports, 16000 GPU-read retirements and "
+   assert(record_android_capture_gl_new(D, &ops, buffers, 2, &c));
+   for (i = 0; i < 2; i++)
+   {
+      fd = -1;
+      assert(record_android_capture_gl_begin(c, i, &fd, &texture));
+      bad_fence = i == 1;
+      assert(record_android_capture_gl_end(c, i) == !bad_fence);
+   }
+   assert(fences == 1);
+   bad_fence = true;
+   assert(record_android_capture_gl_recover_step(c) == -1 && fences == 1);
+   assert(!record_android_capture_gl_free(c));
+   bad_fence = false;
+   assert(record_android_capture_gl_recover_step(c) == 0 && fences == 2);
+   expected_poll = newest;
+   completion = GL_WAIT_FAILED;
+   assert(record_android_capture_gl_recover_step(c) == -1 && fences == 2);
+   assert(!record_android_capture_gl_free(c));
+   completion = GL_TIMEOUT_EXPIRED;
+   assert(record_android_capture_gl_recover_step(c) == 0 && fences == 2);
+   completion = GL_CONDITION_SATISFIED;
+   assert(record_android_capture_gl_recover_step(c) == 1 && !fences);
+   expected_poll = NULL;
+   assert(record_android_capture_gl_recover_step(c) == 1);
+   assert(record_android_capture_gl_poll(c, 0) == 1);
+   assert(record_android_capture_gl_poll(c, 1) == 1);
+   fd = -1;
+   assert(!record_android_capture_gl_begin(c, 0, &fd, &texture));
+   assert(record_android_capture_gl_free(c));
+   assert(!images && !textures && !syncs && !fences);
+   puts("PASS: fixed GLES imports, 16000 GPU-read retirements, terminal "
+        "recovery and "
         "partial-fault ownership");
    return 0;
 }

@@ -59,7 +59,8 @@ static int record_mcg_poll(record_mediacodec_gpu_worker_t *w)
       if (!(w->failed ? record_mediacodec_surface_begin_retirement(w->surface)
                       : record_mediacodec_surface_begin(w->surface)))
          return -1;
-      result = record_android_capture_gl_poll(w->capture, slot);
+      result = w->failed ? record_android_capture_gl_recover_step(w->capture)
+                         : record_android_capture_gl_poll(w->capture, slot);
       if (!record_mediacodec_surface_leave(w->surface))
          return -1;
       if (result == 1)

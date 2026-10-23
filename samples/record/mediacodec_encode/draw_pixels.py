@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 """Run the shipping capture shader on EGL/GLES; readback is test-only."""
+if not __debug__:
+    raise SystemExit("GLES pixel and retirement acceptance requires assertions")
+
 import ctypes as C
 import ctypes.util
 import json
@@ -8,6 +11,7 @@ from pathlib import Path
 import shlex
 import subprocess
 import tempfile
+import time
 
 here = Path(__file__).resolve().parent
 root = here.parents[2]
@@ -87,6 +91,28 @@ with tempfile.TemporaryDirectory(prefix="capture-draw-") as tmp:
         command += ["-Wno-c99-extensions"]
     subprocess.run(command, check=True)
     lib = C.CDLL(str(binary))
+    recovery_unit = Path(tmp) / "recovery.c"
+    recovery_unit.write_text(
+        '#include "' + (root / 'record/record_android_capture_gl.c').as_posix() + '"\n'
+        'void *recovery_fixture_new(void)\n{\n'
+        '   record_android_capture_gl_t *c = (record_android_capture_gl_t *)calloc(1, sizeof(*c));\n'
+        '   if (!c) return NULL;\n'
+        '   c->count = 2; c->ops.fence = glFenceSync; c->ops.flush = glFlush;\n'
+        '   c->ops.poll = glClientWaitSync; c->ops.delete_fence = glDeleteSync;\n'
+        '   c->slots[0].reading = c->slots[1].reading = true;\n'
+        '   c->slots[0].done = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);\n'
+        '   if (!c->slots[0].done) { free(c); return NULL; }\n'
+        '   return c;\n}\n', encoding="utf-8")
+    recovery_binary = Path(tmp) / "recovery.so"
+    recovery_command = command.copy()
+    recovery_command[recovery_command.index(str(root / "record/record_android_capture_draw.c"))] = str(recovery_unit)
+    recovery_command[recovery_command.index(str(binary))] = str(recovery_binary)
+    recovery_command += ["-DUSE_SYSTEM_EGL", "-lGLESv2", "-Wl,--no-undefined"]
+    subprocess.run(recovery_command, check=True)
+    recovery_lib = C.CDLL(str(recovery_binary))
+    recovery_new = function(recovery_lib, "recovery_fixture_new", P, [])
+    recover = function(recovery_lib, "record_android_capture_gl_recover_step", I, [P])
+    recovery_free = function(recovery_lib, "record_android_capture_gl_free", C.c_bool, [P])
     new = function(lib, "record_android_capture_draw_new", P, [P,U,U,U,C.c_bool])
     frame = function(lib, "record_android_capture_draw_frame", C.c_bool, [P,U])
     free = function(lib, "record_android_capture_draw_free", None, [P,C.c_bool])
@@ -124,7 +150,20 @@ with tempfile.TemporaryDirectory(prefix="capture-draw-") as tmp:
                 bind_tex(0x0DE1, texture.value)
                 upload(0x0DE1,0,internal,4,4,0,0x1908,kind,data)
                 assert error() == 0
+                recovery = recovery_new()
+                assert recovery
                 assert frame(draw, texture.value)
+                assert recover(recovery) == 0
+                assert not recovery_free(recovery)
+                for attempt in range(1000):
+                    retired = recover(recovery)
+                    assert retired in (0, 1)
+                    if retired:
+                        break
+                    time.sleep(.001)  # Test-only; production polls once per step.
+                else:
+                    raise AssertionError("GLES terminal retirement did not complete")
+                assert recovery_free(recovery)
                 result = (C.c_ubyte * 64)()
                 read(0,0,4,4,0x1908,0x1401,result)
                 assert error() == 0
@@ -142,6 +181,7 @@ with tempfile.TemporaryDirectory(prefix="capture-draw-") as tmp:
     print(json.dumps(dict(cases=cases, maximum_8bit_error=maximum,
                           renderer=get_string(0x1F01).decode(),
                           source_formats=["RGBA8", "RGB10_A2", "RGBA16F"],
+                          retirement="actual GLES recovery fence before readback; AHB slots synthetic",
                           destination="RGBA8 test pbuffer", complete=True)))
 assert make_current(display, None, None, None)
 assert destroy_context(display, context) and destroy_surface(display, surface)
