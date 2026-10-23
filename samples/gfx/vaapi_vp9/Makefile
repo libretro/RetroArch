@@ -10,7 +10,11 @@ ifneq ($(SANITIZER),)
 CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
-all: backend_nothreads_test$(EXE) backend_volatile_test$(EXE) backend_test$(EXE) owner_test$(EXE) decoder_test$(EXE) runtime_test$(EXE) picture_test$(EXE) session_test$(EXE) submit_test$(EXE) pool_test$(EXE) export_test$(EXE)
+ifeq ($(shell uname -s),Linux)
+NATIVE_DECODE := native_decode_test
+NATIVE_IMPORT := native_import_test
+endif
+all: native_fixture_test$(EXE) $(NATIVE_DECODE) $(NATIVE_IMPORT) backend_nothreads_test$(EXE) backend_volatile_test$(EXE) backend_test$(EXE) owner_test$(EXE) decoder_test$(EXE) runtime_test$(EXE) picture_test$(EXE) session_test$(EXE) submit_test$(EXE) pool_test$(EXE) export_test$(EXE)
 picture_test$(EXE): picture_test.c ../../../gfx/common/vaapi_vp9_picture.h ../../../libretro-common/include/formats/rvp9_hw.h ../../../libretro-common/formats/vp9/rvp9.c ../../../libretro-common/formats/vp9/rvp9_recon.inc
 	$(CC) $(CFLAGS) picture_test.c ../../../libretro-common/formats/vp9/rvp9.c -o $@ $(LDFLAGS)
 session_test$(EXE): session_test.c ../vaapi_hevc/session_test.c ../../../gfx/common/vaapi_hevc_session.c ../../../gfx/common/vaapi_hevc_session.h ../../../gfx/common/vaapi_vp9_session.h
@@ -26,6 +30,7 @@ EXPORT_SOURCES := $(filter-out ../../../libretro-common/formats/vp9/rvp9.c,$(POO
 export_test$(EXE): export_test.c pool_test.c $(EXPORT_SOURCES) rvp9_test.o ../../../gfx/common/vaapi_vp9_export.h ../../../gfx/common/vaapi_hevc_export.h
 	$(CC) $(CFLAGS) -DHAVE_THREADS export_test.c $(EXPORT_SOURCES) rvp9_test.o -o $@ $(LDFLAGS)
 check: all
+	$(RUNNER) ./native_fixture_test$(EXE)
 	$(RUNNER) ./backend_nothreads_test$(EXE)
 	$(RUNNER) ./backend_volatile_test$(EXE)
 	$(RUNNER) ./backend_test$(EXE)
@@ -38,7 +43,7 @@ check: all
 	$(RUNNER) ./pool_test$(EXE)
 	$(RUNNER) ./export_test$(EXE)
 clean:
-	rm -f backend_tsan_test backend_tsan_test.exe backend_nothreads_test backend_nothreads_test.exe backend_volatile_test backend_volatile_test.exe backend_test backend_test.exe owner_test owner_test.exe decoder_test decoder_test.exe runtime_test runtime_test.exe picture_test picture_test.exe session_test session_test.exe submit_test submit_test.exe pool_test pool_test.exe export_test export_test.exe rvp9_test.o
+	rm -f native_import_test native_import_test.exe native_fixture_test native_fixture_test.exe native_decode_test native_decode_test.exe backend_tsan_test backend_tsan_test.exe backend_nothreads_test backend_nothreads_test.exe backend_volatile_test backend_volatile_test.exe backend_test backend_test.exe owner_test owner_test.exe decoder_test decoder_test.exe runtime_test runtime_test.exe picture_test picture_test.exe session_test session_test.exe submit_test submit_test.exe pool_test pool_test.exe export_test export_test.exe rvp9_test.o
 .PHONY: all check clean
 
 runtime_test$(EXE): runtime_test.c ../vaapi_hevc/runtime_test.c ../vaapi_hevc/session_test.c ../vaapi_hevc/submit_test.c ../../../gfx/common/vaapi_hevc_runtime.c ../../../gfx/common/vaapi_vp9_runtime.h ../../../gfx/common/vaapi_hevc_session.c ../../../gfx/common/vaapi_hevc_submit.c
@@ -62,3 +67,20 @@ backend_volatile_test$(EXE): backend_disabled_test.c ../../../gfx/common/vaapi_v
 
 backend_tsan_test$(EXE): backend_test.c ../../../gfx/common/vaapi_vp9_backend.c ../../../gfx/common/vaapi_vp9_backend.h ../../../gfx/drivers/vulkan_vaapi_vp9_backend.h $(BACKEND_SOURCES)
 	$(CC) $(filter-out -fsanitize=%,$(CFLAGS)) -DHAVE_THREADS -D_DEFAULT_SOURCE -pthread -fsanitize=thread -fno-omit-frame-pointer backend_test.c $(BACKEND_SOURCES) -o $@ $(filter-out -fsanitize=%,$(LDFLAGS)) -fsanitize=thread
+
+native_fixture_test$(EXE): native_decode.c ../videotoolbox_vp9/native_fixture.h rvp9_test.o
+	$(CC) $(CFLAGS) -DVAAPI_VP9_FIXTURE_ONLY native_decode.c rvp9_test.o -o $@ $(LDFLAGS)
+
+NATIVE_SOURCES := $(OWNER_SOURCES) ../../../gfx/common/vaapi_vp9_owner.c ../../../gfx/common/vaapi_hevc_runtime.c ../../../gfx/common/vaapi_hevc_session.c ../../../gfx/common/vaapi_hevc_submit.c ../../../libretro-common/dynamic/dylib.c
+native_decode_test$(EXE): native_decode.c ../videotoolbox_vp9/native_fixture.h ../vaapi_hevc/native_pixels.h $(NATIVE_SOURCES) rvp9_test.o
+	$(CC) $(CFLAGS) -DHAVE_DYLIB -DHAVE_THREADS native_decode.c $(NATIVE_SOURCES) rvp9_test.o -o $@ $(LDFLAGS) -ldl -lva
+native-decode-check: native_decode_test$(EXE)
+	./native_decode_test$(EXE) "$(VAAPI_RENDER_NODE)"
+.PHONY: native-decode-check
+
+NATIVE_IMPORT_SOURCES := ../../../gfx/common/vulkan_prime_image.c ../../../gfx/common/vaapi_hevc_vulkan_frame.c ../../../gfx/common/vaapi_hevc_vulkan_submit.c ../../../gfx/common/vaapi_hevc_vulkan_resources.c ../../../libretro-common/formats/image/image_yuv_blit.c
+native_import_test$(EXE): native_decode.c ../videotoolbox_vp9/native_fixture.h ../vaapi_hevc/native_pixels.h ../vaapi_hevc/native_import.h ../vaapi_hevc/native_import_gpu.h ../vaapi_hevc/native_rgb.h $(NATIVE_SOURCES) $(NATIVE_IMPORT_SOURCES) rvp9_test.o
+	$(CC) $(CFLAGS) $(shell pkg-config --cflags libdrm) -DHAVE_DYLIB -DHAVE_THREADS -DNATIVE_VULKAN_IMPORT native_decode.c $(NATIVE_SOURCES) $(NATIVE_IMPORT_SOURCES) rvp9_test.o -o $@ $(LDFLAGS) -ldl -lva -lvulkan -ldrm -lm
+native-import-check: native_import_test$(EXE)
+	./native_import_test$(EXE) "$(VAAPI_RENDER_NODE)"
+.PHONY: native-import-check
