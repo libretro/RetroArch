@@ -35,7 +35,11 @@ public final class MediaCodecInfo
    {
       if (MediaCodecList.scenario == 3)
          throw new IllegalStateException("vendor failure");
-      if (name.equals("wrong.mime") || !mime.equals("video/hevc"))
+      if (name.equals("wrong.mime")
+            || !(mime.equals("video/hevc")
+                  || (MediaCodecList.scenario == 13
+                        && (mime.equals("video/av01")
+                              || mime.equals("video/x-vnd.on2.vp9")))))
          throw new IllegalArgumentException();
       return new CodecCapabilities();
    }
@@ -50,7 +54,17 @@ public final class MediaCodecInfo
             return f.profile == 2 && f.width <= 1920 && f.height <= 1080
                   && f.colorFormat == COLOR_FormatSurface
                   && f.bitrate >= 1000000 && f.bitrate <= 20000000
-                  && f.frameRate >= 24 && f.frameRate <= 60;
+                  && f.frameRate >= 24 && f.frameRate <= 60 && f.level == 4096
+                  && f.standard == 1 && f.transfer == 3
+                  && (f.range == 1 || f.range == 2) && f.hdr == null;
+         if (MediaCodecList.scenario == 13)
+            return f.profile == 4096 && f.level == 4096 && f.standard == 6
+                  && f.transfer == 6 && (f.range == 1 || f.range == 2)
+                  && f.colorFormat == COLOR_FormatSurface && f.hdr != null
+                  && f.hdr.remaining() == 25 && f.hdr.get(0) == 0
+                  && (f.hdr.get(17) & 255) == 0xe8 && f.hdr.get(18) == 3;
+         if (MediaCodecList.scenario == 15)
+            return false;
          return f.profile == 2 && f.width <= 1920 && f.height <= 1080;
       }
    }

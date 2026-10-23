@@ -91,6 +91,8 @@ jobs:
               record/record_mux_mediacodec.c record/record_mediacodec_worker.c \
               record/record_mediacodec_surface.c record/record_android_capture_images.c \
               record/record_android_capture_submit.c record/record_android_capture_gl.c \
+              record/record_android_capture_draw.c record/record_mediacodec_gpu_worker.c \
+              record/record_mediacodec_file.c record/record_gpu_queue.c \
               record/record_audio_queue.c libretro-common/queues/retro_spsc.c; do
             printf '#include "%s/%s"\n' "$PWD" "$source" >> "$unity"
           done
@@ -105,7 +107,7 @@ jobs:
                   -DHAVE_THREADS -DHAVE_DYLIB -Ilibretro-common/include -Igfx/include \
                   -c "$unity" -o "$RUNNER_TEMP/record-$target-$api-$offset.o"
                 if "$bin/llvm-nm" -u "$RUNNER_TEMP/record-$target-$api-$offset.o" | \
-                    grep -Eq ' U (AMedia|ANativeWindow|AHardwareBuffer|egl|gl[A-Z]|record_android_capture_|record_mediacodec_|record_mux_mediacodec_|record_audio_queue_|retro_spsc_|mediacodec_inventory_)'; then
+                    grep -Eq ' U (AMedia|ANativeWindow|AHardwareBuffer|egl|gl[A-Z]|record_android_capture_|record_mediacodec_|record_mux_mediacodec_|record_audio_queue_|record_gpu_queue_|retro_spsc_|mediacodec_inventory_)'; then
                   echo "Unresolved Android recording dependency"
                   exit 1
                 fi
@@ -173,7 +175,7 @@ jobs:
       matrix:
         cc: [gcc, clang]
     env:
-      APT_PKGS: libvulkan-dev mesa-vulkan-drivers glslc spirv-tools
+      APT_PKGS: libvulkan-dev mesa-vulkan-drivers glslc spirv-tools libegl1 libgles2 libgl1-mesa-dri
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-java@v4
@@ -204,3 +206,5 @@ jobs:
           key: ${{ steps.apt.outputs.key }}
       - name: Execute embedded and freshly compiled SDR PQ HLG cropped pixels
         run: make -C samples/gfx/mediacodec_session vulkan-gpu-check CC=${{ matrix.cc }} SANITIZER=
+      - name: GLES recording SDR PQ and scRGB pixel oracle
+        run: EGL_PLATFORM=surfaceless LIBGL_ALWAYS_SOFTWARE=1 CC=${{ matrix.cc }} python3 samples/record/mediacodec_encode/draw_pixels.py

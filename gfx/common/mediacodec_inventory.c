@@ -1,6 +1,7 @@
 /* Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier:
  * GPL-3.0-or-later */
 #include "mediacodec_inventory.h"
+#include "mediacodec_encoder_format.h"
 #include <float.h>
 #include <limits.h>
 #include <string.h>
@@ -131,6 +132,47 @@ static int mediacodec_inventory_select_internal(JNIEnv *env, const char *mime,
       MC_CHECK(key);
       MC_VOID((*env)->CallVoidMethod(
             env, format, set_integer, key, (jint)request->bitrate));
+      {
+         static const char *const keys[]
+               = {"level", "color-standard", "color-transfer", "color-range"};
+         jint values[4];
+         unsigned at;
+         values[0] = (jint)request->level;
+         values[1] = request->color ? 6 : 1;
+         values[2] = request->color ? 6 : 3;
+         values[3] = (jint)request->range;
+         for (at = 0; at < 4; at++)
+         {
+            key = (*env)->NewStringUTF(env, keys[at]);
+            MC_CHECK(key);
+            MC_VOID((*env)->CallVoidMethod(
+                  env, format, set_integer, key, values[at]));
+         }
+         if (request->color)
+         {
+            jclass buffers = (*env)->FindClass(env, "java/nio/ByteBuffer");
+            jmethodID wrap, set_buffer;
+            jbyteArray bytes;
+            jobject buffer;
+            MC_CHECK(buffers);
+            wrap = (*env)->GetStaticMethodID(
+                  env, buffers, "wrap", "([B)Ljava/nio/ByteBuffer;");
+            MC_CHECK(wrap);
+            set_buffer = (*env)->GetMethodID(env, formats, "setByteBuffer",
+                  "(Ljava/lang/String;Ljava/nio/ByteBuffer;)V");
+            MC_CHECK(set_buffer);
+            bytes = (*env)->NewByteArray(env, 25);
+            MC_CHECK(bytes);
+            MC_VOID((*env)->SetByteArrayRegion(
+                  env, bytes, 0, 25, (const jbyte *)request->hdr_static));
+            buffer = (*env)->CallStaticObjectMethod(env, buffers, wrap, bytes);
+            MC_CHECK(buffer);
+            key = (*env)->NewStringUTF(env, "hdr-static-info");
+            MC_CHECK(key);
+            MC_VOID(
+                  (*env)->CallVoidMethod(env, format, set_buffer, key, buffer));
+         }
+      }
       key = (*env)->NewStringUTF(env, "frame-rate");
       MC_CHECK(key);
       MC_VOID((*env)->CallVoidMethod(
@@ -247,7 +289,8 @@ int mediacodec_inventory_select_encoder(JNIEnv *env,
 {
    if (name && capacity)
       name[0] = 0;
-   if (!request || !request->bitrate || request->bitrate > INT_MAX
+   if (!mediacodec_encoder_color_valid(request) || !request->bitrate
+         || request->bitrate > INT_MAX
          || !(request->frame_rate > 0 && request->frame_rate <= FLT_MAX))
       return 0;
    return mediacodec_inventory_select_internal(env, request->mime, 1,
