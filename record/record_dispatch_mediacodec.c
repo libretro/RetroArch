@@ -27,7 +27,8 @@ struct record_dispatch_mediacodec
    void *window;
    pthread_t thread;
    retro_atomic_int_t state, done, epoch, cancelled, audio_closed;
-   retro_atomic_int_t gpu_done, gpu_released, error, file_error, system_error;
+   retro_atomic_int_t gpu_done, gpu_released, gpu_owner, error, file_error,
+         system_error;
    unsigned interval, rate, channels, bitrate;
    int wake;
    bool joinable;
@@ -194,6 +195,7 @@ record_dispatch_mediacodec_t *record_dispatch_mediacodec_new(
          !(rate || channels || bitrate || max_audio_frames || audio_capacity));
    retro_atomic_int_init(&j->gpu_done, 0);
    retro_atomic_int_init(&j->gpu_released, 0);
+   retro_atomic_int_init(&j->gpu_owner, 0);
    retro_atomic_int_init(&j->error, 0);
    retro_atomic_int_init(&j->file_error, 0);
    retro_atomic_int_init(&j->system_error, 0);
@@ -218,6 +220,34 @@ void *record_dispatch_mediacodec_surface(record_dispatch_mediacodec_t *j)
                      == RECORD_MC_DISPATCH_READY
          ? j->window
          : NULL;
+}
+bool record_dispatch_mediacodec_video_format(
+      const record_dispatch_mediacodec_t *j, unsigned *width, unsigned *height,
+      unsigned *color)
+{
+   if (!j || !width || !height || !color)
+      return false;
+   *width = j->video.width;
+   *height = j->video.height;
+   *color = j->video.color;
+   return true;
+}
+bool record_dispatch_mediacodec_gpu_claim(record_dispatch_mediacodec_t *j)
+{
+   if (!j || !retro_atomic_cas_int(&j->gpu_owner, 0, 1))
+      return false;
+   if (retro_atomic_load_acquire_int(&j->gpu_done))
+   {
+      retro_atomic_store_release_int(&j->gpu_owner, 0);
+      return false;
+   }
+   return true;
+}
+void record_dispatch_mediacodec_gpu_release_claim(
+      record_dispatch_mediacodec_t *j)
+{
+   if (j)
+      retro_atomic_store_release_int(&j->gpu_owner, 0);
 }
 
 int record_dispatch_mediacodec_audio(record_dispatch_mediacodec_t *j,
@@ -310,7 +340,8 @@ bool record_dispatch_mediacodec_free(record_dispatch_mediacodec_t *j)
 {
    if (!j)
       return true;
-   if (!retro_atomic_load_acquire_int(&j->done))
+   if (retro_atomic_load_acquire_int(&j->gpu_owner)
+         || !retro_atomic_load_acquire_int(&j->done))
       return false;
    if (j->joinable && pthread_join(j->thread, NULL))
       return false;
@@ -321,6 +352,26 @@ bool record_dispatch_mediacodec_free(record_dispatch_mediacodec_t *j)
    return true;
 }
 #else
+bool record_dispatch_mediacodec_gpu_claim(record_dispatch_mediacodec_t *j)
+{
+   (void)j;
+   return false;
+}
+void record_dispatch_mediacodec_gpu_release_claim(
+      record_dispatch_mediacodec_t *j)
+{
+   (void)j;
+}
+bool record_dispatch_mediacodec_video_format(
+      const record_dispatch_mediacodec_t *j, unsigned *width, unsigned *height,
+      unsigned *color)
+{
+   (void)j;
+   (void)width;
+   (void)height;
+   (void)color;
+   return false;
+}
 record_dispatch_mediacodec_t *record_dispatch_mediacodec_new(
       const mediacodec_encoder_request_t *video, unsigned interval,
       unsigned rate, unsigned channels, unsigned bitrate,

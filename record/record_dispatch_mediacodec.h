@@ -23,6 +23,15 @@ record_dispatch_mediacodec_t *record_dispatch_mediacodec_new(
 /* GPU executor, after READY. Window remains borrowed until gpu_released.
  * No producer may use the session directly. */
 void *record_dispatch_mediacodec_surface(record_dispatch_mediacodec_t *job);
+/* Immutable cold configuration, valid until collection. */
+bool record_dispatch_mediacodec_video_format(
+      const record_dispatch_mediacodec_t *job, unsigned *width,
+      unsigned *height, unsigned *color);
+/* Cold GPU-executor construction/collection only. One owner per input window;
+ * claim survives native retirement until executor collection. */
+bool record_dispatch_mediacodec_gpu_claim(record_dispatch_mediacodec_t *job);
+void record_dispatch_mediacodec_gpu_release_claim(
+      record_dispatch_mediacodec_t *job);
 /* PCM producer; STARTING is BUSY and copies nothing. Explicit sample clock. */
 int record_dispatch_mediacodec_audio(record_dispatch_mediacodec_t *job,
       const int16_t *samples, size_t frames, uint64_t timestamp);

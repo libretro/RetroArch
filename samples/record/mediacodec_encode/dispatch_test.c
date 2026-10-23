@@ -103,8 +103,9 @@ record_session_mediacodec_t *record_session_mediacodec_new(JNIEnv *env,
 {
    record_session_mediacodec_t *s;
    assert(env && !strcmp(v->mime, "video/hevc") && !strcmp(path, "record.mp4"));
-   assert(v->width == 320 && interval == 2 && rate == 48000 && channels == 2
-         && bitrate == 128000 && max_frames == 1024 && capacity == 65536);
+   assert(v->width == 320 && v->height == 192 && interval == 2 && rate == 48000
+         && channels == 2 && bitrate == 128000 && max_frames == 1024
+         && capacity == 65536);
    if (retro_atomic_load_acquire_int(&startup_fault))
       return NULL;
    while (retro_atomic_load_acquire_int(&hold_start))
@@ -218,6 +219,7 @@ static record_dispatch_mediacodec_t *start(void)
    char mime[] = "video/hevc", path[] = "record.mp4";
    v.mime = mime;
    v.width = 320;
+   v.height = 192;
    j = record_dispatch_mediacodec_new(
          &v, 2, 48000, 2, 128000, 1024, 65536, path);
    memset(mime, 0, sizeof(mime));
@@ -249,6 +251,7 @@ int main(void)
    record_dispatch_mediacodec_t *j;
    pthread_t producer, gpu;
    int i, error, detail, system;
+   unsigned width, height, color;
    retro_atomic_int_init(&fault, 0);
    retro_atomic_int_init(&env_fault, 0);
    retro_atomic_int_init(&startup_fault, 0);
@@ -282,12 +285,21 @@ int main(void)
       j = start();
       assert(j);
       wait_state(j, RECORD_MC_DISPATCH_READY);
+      assert(record_dispatch_mediacodec_video_format(j, &width, &height, &color)
+            && width == 320 && height == 192 && !color);
+      assert(
+            !record_dispatch_mediacodec_video_format(j, NULL, &height, &color));
       assert(!record_dispatch_mediacodec_free(j));
+      assert(record_dispatch_mediacodec_gpu_claim(j));
+      assert(!record_dispatch_mediacodec_gpu_claim(j));
       assert(!record_dispatch_mediacodec_gpu_released(j));
       assert(!pthread_create(&producer, NULL, pcm_producer, j));
       assert(!pthread_create(&gpu, NULL, gpu_executor, j));
       assert(!pthread_join(producer, NULL) && !pthread_join(gpu, NULL));
       wait_state(j, RECORD_MC_DISPATCH_DONE);
+      assert(!record_dispatch_mediacodec_free(j));
+      record_dispatch_mediacodec_gpu_release_claim(j);
+      assert(!record_dispatch_mediacodec_gpu_claim(j));
       record_dispatch_mediacodec_status(j, &error, &detail, &system);
       assert(!error && !detail && !system);
       collect(j);
