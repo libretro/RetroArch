@@ -1112,6 +1112,21 @@ static unsigned config_##kind##_rows_add( \
 #define SETTING_OVERRIDE(override_setting) \
    tmp[count-1].override = override_setting
 
+/* As SETTING_OVERRIDE, for the row of @field wherever it was added;
+ * the override is only read once set, so only then is it looked for. */
+#define SETTING_OVERRIDE_FOR(field, override_setting) \
+   do \
+   { \
+      unsigned j; \
+      if (retroarch_override_setting_is_set(override_setting, NULL)) \
+         for (j = 0; j < count; j++) \
+            if (tmp[j].ptr == &settings->field) \
+            { \
+               tmp[j].override = override_setting; \
+               break; \
+            } \
+   } while (0)
+
 #define SETTING_SENSITIVE() \
    tmp[count-1].flags |= CFG_BOOL_FLG_SENSITIVE
 
@@ -2954,7 +2969,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("systemfiles_in_content_dir",    &settings->bools.systemfiles_in_content_dir, true, DEFAULT_SYSTEMFILES_IN_CONTENT_DIR, false);
    SETTING_BOOL("screenshots_in_content_dir",    &settings->bools.screenshots_in_content_dir, true, DEFAULT_SCREENSHOTS_IN_CONTENT_DIR, false);
    SETTING_BOOL("show_hidden_files",             &settings->bools.show_hidden_files, true, DEFAULT_SHOW_HIDDEN_FILES, false);
-   SETTING_OVERRIDE(RARCH_OVERRIDE_SETTING_LOG_TO_FILE);
 #ifndef HAVE_LAKKA
    SETTING_BOOL("gamemode_enable",               &settings->bools.gamemode_enable, true, DEFAULT_GAMEMODE_ENABLE, false);
 #endif
@@ -3097,6 +3111,7 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("gcdwebserver_alert",            &settings->bools.gcdwebserver_alert, true, true, false);
 #endif
 
+   SETTING_OVERRIDE_FOR(bools.log_to_file, RARCH_OVERRIDE_SETTING_LOG_TO_FILE);
 
    *size = count;
 
@@ -5799,7 +5814,8 @@ static struct config_int_setting *populate_settings_int(
 #endif
 
 #ifdef HAVE_NETWORKING
-   SETTING_OVERRIDE(RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES);
+   SETTING_OVERRIDE_FOR(ints.netplay_check_frames,
+         RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES);
 #endif
 
 

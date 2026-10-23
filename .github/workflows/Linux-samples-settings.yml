@@ -119,6 +119,17 @@ jobs:
              ./pipeline_migration_test
           echo "[pass] pipeline_migration_test (ASan)"
 
+      - name: Build and run cli_override_rows_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/settings/cli_override_rows
+        run: |
+          set -eu
+          # Each command-line override (--log-file, --check-frames,
+          # --port) must pin its own setting's row: config_save_file()
+          # skips the row carrying a set override, so on another row it
+          # dropped that setting and saved the command-line value.
+          make clean && make check SANITIZER=address,undefined
+
       - name: ccache statistics
         if: ${{ !cancelled() }}
         continue-on-error: true

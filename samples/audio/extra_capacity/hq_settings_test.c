@@ -14,6 +14,13 @@ bool *video_driver_get_threaded(void)
    static bool value;
    return &value;
 }
+bool retroarch_override_setting_is_set(
+      enum rarch_override_setting enum_idx, void *data)
+{
+   (void)enum_idx;
+   (void)data;
+   return false;
+}
 
 struct hq_setting_row
 {
