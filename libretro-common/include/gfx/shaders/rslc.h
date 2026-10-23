@@ -58,6 +58,9 @@ enum rslc_dst
    RSLC_DST_GLSL_ES,     /* opts.version = 300 / 310 */
    RSLC_DST_HLSL,        /* opts.version = 40 / 50 / 51 */
    RSLC_DST_MSL,         /* opts.version = 12 / 20 ... (major*10+minor) */
+   RSLC_DST_GLSL_CAFE,   /* GLSL for the Wii U's offline CafeGLSL: version
+                            150, the push block as a second uniform block,
+                            a location on every in and out */
    RSLC_DST_REFLECT      /* tables only */
 };
 
@@ -156,7 +159,7 @@ struct rslc_reflect
  * bytes wherever it lands.  All multi-byte fields are host-endian; a
  * cache is per machine. */
 #define RSLC_BLOB_MAGIC   0x434c5352u  /* 'RSLC' little-endian */
-#define RSLC_BLOB_VERSION 1u
+#define RSLC_BLOB_VERSION 2u
 
 struct rslc_blob_hdr
 {

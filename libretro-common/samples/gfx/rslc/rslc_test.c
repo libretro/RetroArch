@@ -1482,6 +1482,119 @@ static void test_blob(void)
    CHECK(!rslc_blob_open(NULL, 0, &r));
 }
 
+/* How many instructions of opcode @op a module holds. */
+static unsigned spv_count(const uint32_t *w, size_t n, unsigned op)
+{
+   size_t   at = 5;
+   unsigned k  = 0;
+   while (at < n && (w[at] >> 16))
+   {
+      if ((w[at] & 0xffffu) == op)
+         k++;
+      at += w[at] >> 16;
+   }
+   return k;
+}
+
+/* The shapes glslang gives ?: and && / ||, which the emitter mirrors
+ * so a driver's compiler rounds the two modules alike: OpSelect only
+ * over variables and constants, OpLogicalAnd only over a trivial
+ * right side, control flow otherwise. */
+static void test_shapes(void)
+{
+   struct rslc_opts   o;
+   struct rslc_result r;
+   char               err[128];
+   static const char *srcs[] = {
+      "float g(float q) { return q * 2.0; }\n"
+      "void main() { float y = 1.0; FragColor = vec4(x > 0.0 ? x : y); }\n",         /* select */
+      "void main() { FragColor = vec4(x > 0.0 ? vec3(1.0) : vec3(0.5), 1.0); }\n",   /* select: constants */
+      "float g(float q) { return q * 2.0; }\n"
+      "void main() { FragColor = vec4(x > 0.0 ? g(x) : 1.0); }\n",                   /* branch: a call */
+      "void main() { FragColor = vec4(x > 0.0 ? params.a : 1.0); }\n",               /* branch: a member */
+      "void main() { FragColor = vec4(x > 0.0 ? -x : 1.0); }\n",                     /* branch: an operator */
+      "void main() { float d = x; FragColor = vec4((x > 0.0 && d > 0.5) ? 1.0 : 0.0); }\n", /* and: comparison of leaves */
+      "float g(float q) { return q * 2.0; }\n"
+      "void main() { FragColor = vec4((x > 0.0 && g(x) > 0.5) ? 1.0 : 0.0); }\n",    /* short circuit: a call */
+      "void main() { FragColor = vec4((x > 0.0 || params.a > 0.5) ? 1.0 : 0.0); }\n" /* short circuit: member in a comparison */
+   };
+   /* OpSelect 169, OpLogicalAnd 167, OpLogicalOr 166, OpBranchConditional 250 */
+   static const unsigned want_select[] = { 1, 1, 0, 0, 0, 1, 1, 1 };
+   static const unsigned want_and[]    = { 0, 0, 0, 0, 0, 1, 0, 0 };
+   static const unsigned want_or[]     = { 0, 0, 0, 0, 0, 0, 0, 0 };
+   static const unsigned want_branch[] = { 0, 0, 1, 1, 1, 0, 1, 1 };
+   unsigned i;
+
+   for (i = 0; i < sizeof(srcs) / sizeof(srcs[0]); i++)
+   {
+      char src[1024];
+      strcpy(src, "#version 450\n"
+            "layout(push_constant) uniform Push { float a; float b; } params;\n"
+            "layout(location = 0) in float x;\n"
+            "layout(location = 0) out vec4 FragColor;\n");
+      strcat(src, srcs[i]);
+      opts_default(&o, err, sizeof(err));
+      o.dst = RSLC_DST_SPIRV;
+      CHECK(rslc_compile(src, strlen(src), RSLC_STAGE_FRAGMENT, &o, &r));
+      if (!r.blob)
+      {
+         fprintf(stderr, "  case %u: %s\n", i, err);
+         continue;
+      }
+      if (spv_count(r.spirv, r.spirv_len, 169) != want_select[i]
+            || spv_count(r.spirv, r.spirv_len, 167) != want_and[i]
+            || spv_count(r.spirv, r.spirv_len, 166) != want_or[i]
+            || spv_count(r.spirv, r.spirv_len, 250) != want_branch[i])
+      {
+         fprintf(stderr, "FAIL shapes case %u: select %u and %u or %u branch %u\n", i,
+               spv_count(r.spirv, r.spirv_len, 169), spv_count(r.spirv, r.spirv_len, 167),
+               spv_count(r.spirv, r.spirv_len, 166), spv_count(r.spirv, r.spirv_len, 250));
+         fails++;
+      }
+      rslc_result_free(&r, &o);
+   }
+}
+
+/* The CafeGLSL flavour: version 150, both blocks as uniform blocks
+ * under their source names, a location on every in and out, samplers
+ * under their source names, and the extension GLSL 150 needs for the
+ * bit casts. */
+static void test_cafe(void)
+{
+   struct rslc_opts   o;
+   struct rslc_result r;
+   char               err[128];
+   static const char  vert[] =
+      "#version 450\n"
+      "layout(push_constant) uniform Push { vec4 SourceSize; float gamma; } params;\n"
+      "layout(std140, set = 0, binding = 0) uniform UBO { mat4 MVP; } global;\n"
+      "layout(location = 0) in vec4 Position;\n"
+      "layout(location = 1) in vec2 TexCoord;\n"
+      "layout(location = 0) out vec2 vTexCoord;\n"
+      "void main() { gl_Position = global.MVP * Position; vTexCoord = TexCoord * params.gamma"
+      " + intBitsToFloat(int(params.SourceSize.x)); }\n";
+
+   opts_default(&o, err, sizeof(err));
+   o.dst = RSLC_DST_GLSL_CAFE;
+   CHECK(rslc_compile(vert, sizeof(vert) - 1, RSLC_STAGE_VERTEX, &o, &r));
+   if (!r.text)
+   {
+      fprintf(stderr, "  %s\n", err);
+      return;
+   }
+   CHECK(!strncmp(r.text, "#version 150\n", 13));
+   CHECK(strstr(r.text, "#extension GL_ARB_shader_bit_encoding : require\n"));
+   CHECK(strstr(r.text, "layout(std140) uniform UBO {\n   mat4 MVP;\n} global;\n"));
+   CHECK(strstr(r.text, "\nuniform Push {\n   vec4 SourceSize;\n   float gamma;\n} params;\n"));
+   CHECK(!strstr(r.text, "struct Push"));
+   CHECK(strstr(r.text, "layout(location = 0) in vec4 Position;\n"));
+   CHECK(strstr(r.text, "layout(location = 1) in vec2 TexCoord;\n"));
+   CHECK(strstr(r.text, "layout(location = 0) out vec2 vTexCoord;\n"));
+   CHECK(strstr(r.text, "params.gamma"));
+   CHECK(!strstr(r.text, "binding"));
+   rslc_result_free(&r, &o);
+}
+
 /* The ingest reads a module back to the reflection the GLSL gave,
  * carries the words through for the Vulkan driver, and refuses what
  * the cache must not serve: another stage, a printed destination, a
@@ -1676,6 +1789,8 @@ int main(int argc, char **argv)
       return glsl_file(argv[2], (unsigned)atoi(argv[3]), false, RSLC_DST_HLSL);
    if (argc == 3 && !strcmp(argv[1], "--msl"))
       return glsl_file(argv[2], 20000, false, RSLC_DST_MSL);
+   if (argc == 3 && !strcmp(argv[1], "--cafe"))
+      return glsl_file(argv[2], 150, false, RSLC_DST_GLSL_CAFE);
 
    test_abi_rejects();
    test_arena();
@@ -1689,6 +1804,8 @@ int main(int argc, char **argv)
    test_glsl();
    test_hlsl();
    test_msl();
+   test_shapes();
+   test_cafe();
    test_ingest();
 
    if (fails)
