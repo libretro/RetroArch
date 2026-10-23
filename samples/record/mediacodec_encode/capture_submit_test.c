@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "../../../record/record_android_capture_submit.h"
+#include "../../../record/record_android_capture_pipe.h"
 #include "../../../gfx/common/vulkan_android_queue.h"
 #define DEVICE ((VkDevice)(uintptr_t)1)
 #define QUEUE ((VkQueue)(uintptr_t)2)
@@ -562,8 +563,158 @@ static void formats_and_layouts(void)
          assert(record_android_capture_submit_free(e));
       }
 }
+struct record_gpu_dispatch_mediacodec
+{
+   record_gpu_queue_t *queue;
+   enum record_dispatch_mediacodec_state state;
+   bool cancelled;
+};
+int record_gpu_dispatch_mediacodec_acquire(
+      record_gpu_dispatch_mediacodec_t *g, unsigned *slot)
+{
+   return record_gpu_queue_acquire(g->queue, slot);
+}
+bool record_gpu_dispatch_mediacodec_submit(
+      record_gpu_dispatch_mediacodec_t *g, const record_gpu_frame_t *frame)
+{
+   return !g->cancelled && record_gpu_queue_submit(g->queue, frame);
+}
+bool record_gpu_dispatch_mediacodec_cancel_slot(
+      record_gpu_dispatch_mediacodec_t *g)
+{
+   return record_gpu_queue_cancel(g->queue);
+}
+bool record_gpu_dispatch_mediacodec_finish(
+      record_gpu_dispatch_mediacodec_t *g, int64_t end_us)
+{
+   (void)end_us;
+   return record_gpu_queue_finish(g->queue);
+}
+void record_gpu_dispatch_mediacodec_cancel(record_gpu_dispatch_mediacodec_t *g)
+{
+   g->cancelled = true;
+}
+enum record_dispatch_mediacodec_state record_gpu_dispatch_mediacodec_status(
+      const record_gpu_dispatch_mediacodec_t *g, int *error, int *system_error)
+{
+   (void)error;
+   (void)system_error;
+   return g->state;
+}
+static void pipe_lifetime(bool deferred, bool cancel)
+{
+   record_android_capture_submit_t *entry;
+   record_android_capture_pipe_t *pipe;
+   record_android_capture_source_t s;
+   record_gpu_dispatch_mediacodec_t gpu;
+   record_gpu_frame_t frame;
+   reset();
+   m.deferred = deferred;
+   entry = create();
+   assert(entry);
+   memset(&gpu, 0, sizeof(gpu));
+   gpu.queue = record_gpu_queue_new(1);
+   gpu.state = RECORD_MC_DISPATCH_READY;
+   assert(gpu.queue);
+   pipe = record_android_capture_pipe_new(&gpu, &entry, 1, close_fd, &m);
+   assert(pipe);
+   s = source();
+   assert(record_android_capture_pipe_push(pipe, &s, 0, 10) == 1);
+   assert(m.refs == 1 && m.submits == (deferred ? 0u : 1u));
+   if (cancel)
+   {
+      record_android_capture_pipe_cancel(pipe);
+      assert(record_android_capture_pipe_finish(pipe, 10));
+      assert(gpu.cancelled);
+      gpu.state = RECORD_MC_DISPATCH_FAILED;
+      assert(record_android_capture_pipe_step(pipe) == 0);
+      assert(m.refs == 1 && !record_android_capture_pipe_free(pipe));
+   }
+   else
+   {
+      assert(!record_android_capture_pipe_finish(pipe, 10));
+      assert(record_android_capture_pipe_step(pipe) == 0);
+      if (deferred)
+         assert(record_gpu_queue_take(gpu.queue, &frame)
+               == RECORD_GPU_QUEUE_BUSY);
+   }
+   if (deferred)
+      assert(
+            vulkan_android_queue_flush(&m.queued, native_submit) == VK_SUCCESS);
+   if (!cancel && deferred)
+   {
+      assert(record_android_capture_pipe_step(pipe) == 0);
+      assert(m.refs == 1 && m.exports == 0 && m.submits == 1);
+      m.complete = true;
+      assert(record_android_capture_pipe_step(pipe) == 0);
+      assert(m.refs == 0 && m.exports == 1);
+   }
+   if (!cancel)
+   {
+      assert(record_gpu_queue_take(gpu.queue, &frame) == RECORD_GPU_QUEUE_OK);
+      assert(frame.ready_value == 101 && frame.timestamp == 0
+            && frame.duration == 10);
+      close_fd(&m, (int)frame.ready_value - 1);
+      assert(record_android_capture_pipe_finish(pipe, 10));
+      gpu.state = RECORD_MC_DISPATCH_DRAINING;
+      assert(record_android_capture_pipe_step(pipe) == 0 && !gpu.cancelled);
+      assert(!record_android_capture_pipe_free(pipe));
+      assert(record_gpu_queue_release(gpu.queue, frame.slot));
+   }
+   gpu.state = cancel ? RECORD_MC_DISPATCH_FAILED : RECORD_MC_DISPATCH_DONE;
+   if (!m.complete)
+   {
+      assert(record_android_capture_pipe_step(pipe) == 0);
+      assert(m.refs == 1 && !record_android_capture_submit_free(entry));
+      assert(!record_android_capture_pipe_free(pipe));
+   }
+   m.complete = true;
+   assert(record_android_capture_pipe_step(pipe) == 1);
+   assert(!m.refs && !m.fd_refs && m.submits == 1 && m.releases == 1);
+   assert(record_android_capture_pipe_free(pipe));
+   assert(record_android_capture_submit_free(entry));
+   assert(record_gpu_queue_free(gpu.queue));
+}
+static void pipe_device_loss(void)
+{
+   record_android_capture_submit_t *entry;
+   record_android_capture_pipe_t *pipe;
+   record_android_capture_source_t s;
+   record_gpu_dispatch_mediacodec_t gpu;
+   reset();
+   entry = create();
+   assert(entry);
+   memset(&gpu, 0, sizeof(gpu));
+   gpu.queue = record_gpu_queue_new(1);
+   gpu.state = RECORD_MC_DISPATCH_READY;
+   assert(gpu.queue);
+   pipe = record_android_capture_pipe_new(&gpu, &entry, 1, close_fd, &m);
+   assert(pipe);
+   s = source();
+   assert(record_android_capture_pipe_push(pipe, &s, 0, 10) == 1);
+   record_android_capture_pipe_cancel(pipe);
+   assert(record_android_capture_pipe_finish(pipe, 10));
+   gpu.state = RECORD_MC_DISPATCH_FAILED;
+   m.fence_error = VK_ERROR_DEVICE_LOST;
+   assert(record_android_capture_pipe_step(pipe) == -1);
+   assert(m.refs == 1 && !record_android_capture_pipe_free(pipe));
+   assert(record_android_capture_submit_prepare_device_destroy(entry, false));
+   assert(m.refs == 1 && !m.pool && !m.fence && !m.semaphore);
+   m.device_alive = false;
+   assert(record_android_capture_submit_after_device_destroy(entry));
+   assert(!m.refs && !m.fd_refs && m.gone_release);
+   assert(record_android_capture_pipe_step(pipe) == 1);
+   assert(record_android_capture_pipe_free(pipe));
+   assert(record_android_capture_submit_free(entry));
+   assert(record_gpu_queue_free(gpu.queue));
+}
 int main(void)
 {
+   pipe_device_loss();
+   pipe_lifetime(false, false);
+   pipe_lifetime(true, false);
+   pipe_lifetime(false, true);
+   pipe_lifetime(true, true);
    cycles(false, false);
    cycles(false, true);
    cycles(true, false);

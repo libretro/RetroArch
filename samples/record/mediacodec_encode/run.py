@@ -83,7 +83,12 @@ with tempfile.TemporaryDirectory(prefix="mediacodec-encode-") as directory:
                         "-I" + str(root / "gfx/include/ANGLE")]
         if source == "capture_submit_test.c":
             command += ["-I" + str(root / "gfx/include"),
+                        "-DHAVE_THREADS", "-DUSE_SYSTEM_EGL",
+                        "-I" + str(root / "gfx/include/ANGLE"),
                         str(root / "record/record_android_capture_submit.c"),
+                        str(root / "record/record_android_capture_pipe.c"),
+                        str(root / "record/record_gpu_queue.c"),
+                        str(root / "libretro-common/queues/retro_spsc.c"),
                         str(root / "gfx/common/vulkan_android_queue.c")]
         print("+", shlex.join(command), flush=True)
         subprocess.run(command, check=True)
