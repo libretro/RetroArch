@@ -83,7 +83,7 @@ bool gfx_media_controls_update(gfx_media_controls_t *c, const gfx_media_target_t
    c->layout.timeline.y = c->layout.panel.y + unit + gap;
    c->layout.timeline.w = (int)width - 4 * gap;
    c->layout.timeline.h = unit / 2;
-   count = target->step ? 6 : 4;
+   count = target->settings ? 7 : target->step ? 6 : 4;
    c->layout.button_count = (unsigned)count;
    if (c->focus >= (unsigned)count) c->focus = 0;
    bw = (c->layout.panel.w - (count + 1) * gap) / count;
@@ -119,6 +119,8 @@ static bool gfx_media_button(gfx_media_controls_t *c, unsigned button, int64_t n
             && !c->target.seek(c->target.user, 0, now)) return false;
       return c->target.pause(c->target.user, !c->playback.paused, now);
    }
+   if (button == 6)
+      return c->target.settings && c->target.settings(c->target.settings_user);
    if (button >= 4)
    {
       unsigned mask = button == 4 ? 1 : 2;
@@ -167,6 +169,7 @@ bool gfx_media_controls_action(gfx_media_controls_t *c,
          return c->playback.paused || c->target.pause(c->target.user, true, now);
       case GFX_MEDIA_PREVIOUS_FILE: return gfx_media_button(c, 4, now);
       case GFX_MEDIA_NEXT_FILE: return gfx_media_button(c, 5, now);
+      case GFX_MEDIA_SETTINGS: return gfx_media_button(c, 6, now);
       case GFX_MEDIA_STOP: return gfx_media_button(c, 3, now);
       case GFX_MEDIA_SEEK_BACK: return gfx_media_button(c, 1, now);
       case GFX_MEDIA_SEEK_FORWARD: return gfx_media_button(c, 2, now);
@@ -193,7 +196,7 @@ void gfx_media_controls_pointer(gfx_media_controls_t *c, int x, int y,
       c->last_activity = now;
    }
    c->last_x = x; c->last_y = y;
-   c->hover = gfx_media_inside(&c->layout.panel, x, y) ? 6 : -1;
+   c->hover = gfx_media_inside(&c->layout.panel, x, y) ? 7 : -1;
    for (i = 0; i < (int)c->layout.button_count; i++)
       if (gfx_media_inside(&c->layout.buttons[i], x, y)) c->hover = i;
    if (pressed && !c->held)

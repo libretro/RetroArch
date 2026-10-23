@@ -9,7 +9,7 @@
 typedef struct gfx_media_rect { int x, y, w, h; } gfx_media_rect_t;
 typedef struct gfx_media_layout
 {
-   gfx_media_rect_t panel, timeline, buttons[6];
+   gfx_media_rect_t panel, timeline, buttons[7];
    int unit;
    unsigned button_count;
 } gfx_media_layout_t;
@@ -19,7 +19,7 @@ enum gfx_media_action
    GFX_MEDIA_FOCUS, GFX_MEDIA_UNFOCUS, GFX_MEDIA_STOP,
    GFX_MEDIA_SEEK_BACK, GFX_MEDIA_SEEK_FORWARD,
    GFX_MEDIA_PLAY, GFX_MEDIA_PAUSE,
-   GFX_MEDIA_PREVIOUS_FILE, GFX_MEDIA_NEXT_FILE
+   GFX_MEDIA_PREVIOUS_FILE, GFX_MEDIA_NEXT_FILE, GFX_MEDIA_SETTINGS
 };
 /* A framebuffer player and a texture player provide the same transport
  * interface. identity changes when their underlying session changes. */
@@ -32,6 +32,8 @@ typedef struct gfx_media_target
    bool (*seek)(void *user, int64_t target_us, int64_t now);
    void *navigation_user;
    bool (*step)(void *user, int direction);
+   void *settings_user;
+   bool (*settings)(void *user);
    unsigned directions;
 } gfx_media_target_t;
 

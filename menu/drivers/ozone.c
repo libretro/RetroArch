@@ -8209,6 +8209,12 @@ static void ozone_hide_fullscreen_thumbnails(ozone_handle_t *ozone, bool animate
    ozone_set_thumbnail_delay(ozone, true);
 }
 
+static void ozone_media_settings_hide(void *user)
+{
+   ozone_handle_t *ozone = (ozone_handle_t*)user;
+   ozone_hide_fullscreen_thumbnails(ozone, false);
+}
+
 static void ozone_show_fullscreen_thumbnails(ozone_handle_t *ozone)
 {
    gfx_animation_ctx_entry_t animation_entry;
@@ -11174,6 +11180,8 @@ static void ozone_render(void *data,
 
    /* Read pointer state */
    menu_input_get_pointer_state(&ozone->pointer);
+   ozone->media.settings_user = ozone;
+   ozone->media.settings_hide = ozone_media_settings_hide;
    menu_media_controls_thumbnail(&ozone->media, &ozone->thumbnails.left,
          &ozone->thumbnails.right,
          (ozone->flags2 & OZONE_FLAG2_SHOW_FULLSCREEN_THUMBNAILS)

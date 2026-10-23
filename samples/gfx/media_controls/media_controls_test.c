@@ -16,6 +16,18 @@ settings_t *config_get_ptr(void) { return &test_settings; }
 
 static unsigned failures;
 static bool drawing;
+static unsigned settings_opened, settings_hidden;
+static bool settings_refused;
+int generic_action_ok_displaylist_push(const char *path, const char *new_path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx,
+      unsigned action_type)
+{
+   (void)path; (void)new_path; (void)label; (void)type;
+   (void)idx; (void)entry_idx; (void)action_type;
+   settings_opened++;
+   return settings_refused ? -1 : 0;
+}
+
 #define CHECK(c) do { if (!(c)) { printf("FAIL line %u: %s\n", (unsigned)__LINE__, #c); failures++; } } while (0)
 typedef struct fake_player
 {
@@ -268,7 +280,7 @@ static void menu_transport(void)
    drawing = true;
    menu_media_controls_draw(m, NULL, NULL, VIDEO_SCALE_PACK(640,480), &font);
    drawing = false;
-   CHECK(quads >= 6 && captions == 5);
+   CHECK(quads >= 9 && captions == 8);
    old_quads = quads;
    menu_media_controls_cancel(m);
    CHECK(!menu_media_controls_release(m, (unsigned)x, (unsigned)y, 1013));
@@ -530,6 +542,57 @@ static void file_buttons(void)
    CHECK(player.seeks == 1 && player.last_seek == 0 && !player.state.paused);
 }
 
+static void settings_hide(void *user)
+{
+   CHECK(user == &test_menu);
+   settings_hidden++;
+}
+
+static void settings_button(void)
+{
+   menu_media_controls_t media;
+   gfx_media_target_t target;
+   fake_player_t player;
+   const gfx_media_rect_t *button;
+   memset(&media, 0, sizeof(media));
+   memset(&target, 0, sizeof(target));
+   memset(&player, 0, sizeof(player));
+   player.available = true;
+   media.settings_hide = settings_hide;
+   media.settings_user = &test_menu;
+   target.user = target.navigation_user = &player;
+   target.identity = &player;
+   target.state = fake_state;
+   target.pause = fake_pause;
+   target.seek = fake_seek;
+   menu_media_controls_update(&media, &target, 640, 480, NULL, 1);
+   CHECK(media.controls.layout.button_count == 7);
+   media.controls.row_focus = true;
+   media.controls.focus = 5;
+   CHECK(gfx_media_controls_action(&media.controls, GFX_MEDIA_NEXT, 2));
+   CHECK(media.controls.focus == 6);
+   CHECK(gfx_media_controls_action(&media.controls, GFX_MEDIA_ACTIVATE, 3));
+   CHECK(settings_opened == 1 && player.state.paused);
+   CHECK(!media.controls.held && !media.controls.row_focus);
+   menu_media_controls_update(&media, &target, 640, 480, NULL, 4);
+   button = &media.controls.layout.buttons[6];
+   gfx_media_controls_pointer(&media.controls, 0, 0, false, true, 5);
+   gfx_media_controls_pointer(&media.controls, button->x + 1, button->y + 1,
+         true, true, 6);
+   gfx_media_controls_release(&media.controls, button->x + 1, button->y + 1, 7);
+   CHECK(settings_opened == 2 && settings_hidden == 2);
+   player.state.paused = false;
+   player.pause_refused = true;
+   menu_media_controls_update(&media, &target, 640, 480, NULL, 8);
+   CHECK(!gfx_media_controls_action(&media.controls, GFX_MEDIA_SETTINGS, 9));
+   CHECK(settings_opened == 2 && settings_hidden == 2 && !player.state.paused);
+   player.pause_refused = false;
+   settings_refused = true;
+   CHECK(!gfx_media_controls_action(&media.controls, GFX_MEDIA_SETTINGS, 10));
+   CHECK(settings_opened == 3 && settings_hidden == 2 && player.state.paused);
+   settings_refused = false;
+}
+
 int main(void)
 {
    test_settings.uints.media_player_seek_seconds = 5;
@@ -542,6 +605,7 @@ int main(void)
    failed_seek_transport();
    menu_transport();
    file_buttons();
+   settings_button();
 #ifdef HAVE_THREADS
    mailbox_races();
 #endif

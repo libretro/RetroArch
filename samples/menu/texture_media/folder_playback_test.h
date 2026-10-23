@@ -94,7 +94,7 @@ static bool media_folder_drive(struct menu_state *menu_st,
       retro_sleep(1);
    }
    if (!media->controls.target.user || !media->controls.playback.paused
-         || media->controls.layout.button_count != 6
+         || media->controls.layout.button_count != 7
          || media->controls.target.directions != 1)
       return false;
    if (!gfx_media_controls_action(&media->controls, GFX_MEDIA_PREVIOUS_FILE,
@@ -129,6 +129,31 @@ static bool media_folder_drive(struct menu_state *menu_st,
       retro_sleep(1);
    }
    puts("folder controls: previous works after EOF; Stop does not advance");
+   if (getenv("MEDIA_TEST_SETTINGS"))
+   {
+      file_list_t *stack = MENU_LIST_GET(menu_st->entries.list, 0);
+      size_t depth = stack->size;
+      size_t selected = menu_st->selection_ptr;
+      if (!gfx_media_controls_action(&media->controls, GFX_MEDIA_SETTINGS,
+               menu_st->current_time_us))
+         return false;
+      draw(menu_st);
+      stack = MENU_LIST_GET(menu_st->entries.list, 0);
+      if (!stack || !stack->size || !stack->list[stack->size - 1].label
+            || strcmp(stack->list[stack->size - 1].label,
+                  MENU_ENUM_LABEL_DEFERRED_MEDIA_PLAYER_SETTINGS_LIST_STR))
+         return false;
+      printf("fullscreen settings: showing=%u\n", shown(viewer));
+      if (shown(viewer))
+         return false;
+      if (action_cancel_pop_default(NULL, NULL, 0, 0) != 0)
+         return false;
+      draw(menu_st);
+      stack = MENU_LIST_GET(menu_st->entries.list, 0);
+      if (stack->size != depth || menu_st->selection_ptr != selected)
+         return false;
+      puts("fullscreen settings: Back restores browser depth and selection");
+   }
    return true;
 }
 #endif

@@ -57,7 +57,7 @@ jobs:
       - name: Natural MP4 folder playback and file controls across all menus
         run: |
           for driver in rgui materialui xmb ozone; do
-            python3 samples/menu/rgui_media/run.py --c89 --continuous --driver "$driver" samples/menu/rgui_media/fixture.mp4
+            python3 samples/menu/rgui_media/run.py --c89 --continuous --fullscreen-settings --driver "$driver" samples/menu/rgui_media/fixture.mp4
             python3 samples/menu/rgui_media/run.py --c89 --continuous-error --driver "$driver" samples/menu/rgui_media/fixture.mp4
           done
       - name: Generate WebM transport fixtures
@@ -73,6 +73,6 @@ jobs:
       - name: Natural WebM folder playback across all menus
         run: |
           for driver in rgui materialui xmb ozone; do
-            python3 samples/menu/rgui_media/run.py --c89 --continuous --driver "$driver" samples/menu/rgui_media/fixture-vorbis.webm
+            python3 samples/menu/rgui_media/run.py --c89 --continuous --fullscreen-settings --driver "$driver" samples/menu/rgui_media/fixture-vorbis.webm
             python3 samples/menu/rgui_media/run.py --c89 --continuous-error --driver "$driver" samples/menu/rgui_media/fixture-vorbis.webm
           done

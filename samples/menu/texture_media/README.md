@@ -54,3 +54,9 @@ by the float/S16 cached/streamed audio transport tests.
 `--continuous-error` supplies an invalid next movie followed by a valid one.
 The viewer must stop on the failed movie, preserve fullscreen mode, and release
 the folder queue when Back closes the viewer. The input fixture is preserved.
+
+`--fullscreen-settings` enables the folder fixture and opens Media Player
+settings from the shared transport. It checks that the fullscreen overlay
+is dismissed and that Back restores the browser stack depth and selection.
+Playback is paused before navigation; existing inline-preview policy governs
+the session lifetime after leaving fullscreen.

@@ -3173,6 +3173,13 @@ static bool rgui_media_gpu_supported(void)
       || info.api == VIDEO_DEVICE_D3D12;
 }
 
+static void rgui_media_settings_hide(void *user)
+{
+   rgui_t *rgui = (rgui_t*)user;
+   rgui->flags &= ~RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL;
+   rgui->flags |= RGUI_FLAG_FORCE_REDRAW;
+}
+
 RGUI_NOINLINE static void rgui_media_update(rgui_t *rgui, unsigned dims)
 {
    settings_t *settings = config_get_ptr();
@@ -3265,6 +3272,8 @@ RGUI_NOINLINE static void rgui_media_update(rgui_t *rgui, unsigned dims)
       }
    }
    menu_input_get_pointer_state(&rgui->media_pointer);
+   rgui->media.settings_user = rgui;
+   rgui->media.settings_hide = rgui_media_settings_hide;
    menu_media_controls_update(&rgui->media, &target, VIDEO_SCALE_W(dims),
          VIDEO_SCALE_H(dims), &rgui->media_pointer, now);
    {
@@ -6098,7 +6107,7 @@ RGUI_NOINLINE static void rgui_media_draw(rgui_t *rgui, unsigned dims)
    char elapsed[24], duration[24], caption[56];
    char seek_back[16], seek_forward[16];
    size_t limit;
-   const char *labels[6];
+   const char *labels[7];
    gfx_media_controls_consume(&rgui->media.mailbox, view);
    if (!view->visible || !view->layout.unit) return;
    bar = view->layout.panel;
@@ -6130,13 +6139,16 @@ RGUI_NOINLINE static void rgui_media_draw(rgui_t *rgui, unsigned dims)
    snprintf(seek_back, sizeof(seek_back), "-%u", view->seek_seconds);
    snprintf(seek_forward, sizeof(seek_forward), "+%u", view->seek_seconds);
    labels[1] = seek_back; labels[2] = seek_forward; labels[3] = "[]";
-   labels[4] = "|<"; labels[5] = ">|";
+   labels[4] = "|<";
+   labels[5] = ">|";
+   labels[6] = "...";
    for (i = 0; i < view->layout.button_count; i++)
    {
       const gfx_media_rect_t *button = &view->layout.buttons[i];
       bool focused = (view->row_focus && view->focus == i) || view->hover == (int)i;
-      bool enabled = i >= 4 ? (view->directions & (i == 4 ? 1u : 2u)) != 0
-         : !i || view->playback.seekable;
+      bool enabled = i == 6 || (i >= 4
+            ? (view->directions & (i == 4 ? 1u : 2u)) != 0
+            : !i || view->playback.seekable);
       int x = button->x + (button->w - (int)(strlen(labels[i]) * rgui->font_width_stride)) / 2;
       int y = button->y + (button->h - (int)VIDEO_SCALE_H(rgui->font_dims)) / 2;
       rgui_color_rect(rgui->frame_buf.data, dims, button->x, button->y,

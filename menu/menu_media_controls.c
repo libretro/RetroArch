@@ -18,6 +18,7 @@
 
 #include "menu_media_controls.h"
 #include "menu_media_browser.h"
+#include "menu_cbs.h"
 #include "../gfx/video_defines.h"
 #include "../configuration.h"
 
@@ -46,6 +47,24 @@ static bool menu_media_controls_step(void *user, int direction)
    return menu_media_queue_step(media->queue, menu_state_get_ptr(), direction);
 }
 
+static bool menu_media_controls_settings(void *user)
+{
+   menu_media_controls_t *media = (menu_media_controls_t*)user;
+   struct menu_state *menu_st = menu_state_get_ptr();
+   void (*hide)(void *) = media->settings_hide;
+   void *hide_user = media->settings_user;
+   if (!gfx_media_controls_action(&media->controls, GFX_MEDIA_PAUSE,
+            media->controls.last_activity))
+      return false;
+   gfx_media_controls_cancel(&media->controls);
+   if (generic_action_ok_displaylist_push(NULL, NULL, "", 0,
+            menu_st->selection_ptr, 0, ACTION_OK_DL_MEDIA_PLAYER_SETTINGS_LIST) != 0)
+      return false;
+   if (hide)
+      hide(hide_user);
+   return true;
+}
+
 void menu_media_controls_update(menu_media_controls_t *media,
       const gfx_media_target_t *target, unsigned width, unsigned height,
       const menu_input_pointer_t *pointer, int64_t now)
@@ -55,6 +74,8 @@ void menu_media_controls_update(menu_media_controls_t *media,
    if (target)
    {
       active = *target;
+      active.settings_user = media;
+      active.settings = active.user ? menu_media_controls_settings : NULL;
       if (media->queue && active.user)
       {
          active.navigation_user = media;
@@ -189,7 +210,7 @@ void menu_media_controls_draw(menu_media_controls_t *media,
    gfx_media_rect_t bar;
    char elapsed[24], duration[24], caption[56];
    char seek_back[16], seek_forward[16];
-   const char *labels[6];
+   const char *labels[7];
    unsigned i;
    int64_t position;
    float scale;
@@ -220,12 +241,15 @@ void menu_media_controls_draw(menu_media_controls_t *media,
    snprintf(seek_back, sizeof(seek_back), "-%u", view->seek_seconds);
    snprintf(seek_forward, sizeof(seek_forward), "+%u", view->seek_seconds);
    labels[1] = seek_back; labels[2] = seek_forward; labels[3] = "[]";
-   labels[4] = "|<"; labels[5] = ">|";
+   labels[4] = "|<";
+   labels[5] = ">|";
+   labels[6] = "...";
    for (i = 0; i < view->layout.button_count; i++)
    {
       const gfx_media_rect_t *button = &view->layout.buttons[i];
-      bool enabled = i >= 4 ? (view->directions & (i == 4 ? 1u : 2u)) != 0
-         : !i || view->playback.seekable;
+      bool enabled = i == 6 || (i >= 4
+            ? (view->directions & (i == 4 ? 1u : 2u)) != 0
+            : !i || view->playback.seekable);
       bool focused = (view->row_focus && view->focus == i) || view->hover == (int)i;
       menu_media_quad(display, userdata, dims, button,
             focused ? 0.05f : 0.16f, focused ? 0.45f : 0.16f,

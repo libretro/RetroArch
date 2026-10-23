@@ -6136,6 +6136,12 @@ static void xmb_hide_fullscreen_thumbnails(
 
 /* Enables (and triggers a fade in of) the fullscreen
  * thumbnail view */
+static void xmb_media_settings_hide(void *user)
+{
+   xmb_handle_t *xmb = (xmb_handle_t*)user;
+   xmb_hide_fullscreen_thumbnails(xmb, false);
+}
+
 static void xmb_show_fullscreen_thumbnails(
       xmb_handle_t *xmb, struct menu_state *menu_st,
       size_t selection)
@@ -7480,6 +7486,8 @@ static void xmb_render(void *data,
 
    /* Read pointer state */
    menu_input_get_pointer_state(&xmb->pointer);
+   xmb->media.settings_user = xmb;
+   xmb->media.settings_hide = xmb_media_settings_hide;
    menu_media_controls_thumbnail(&xmb->media, &xmb->thumbnails.left,
          &xmb->thumbnails.right,
          xmb->show_fullscreen_thumbnails && !xmb->show_screensaver

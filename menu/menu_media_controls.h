@@ -10,6 +10,8 @@ struct menu_media_queue;
 typedef struct menu_media_controls
 {
    struct menu_media_queue *queue;
+   void *settings_user;
+   void (*settings_hide)(void *user);
    gfx_media_controls_t controls; /* main thread */
    gfx_media_mailbox_t mailbox;
    gfx_media_view_t view; /* render thread */
