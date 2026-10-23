@@ -91,7 +91,8 @@ jobs:
               record/record_mux_mediacodec.c record/record_mediacodec_worker.c \
               record/record_mediacodec_surface.c record/record_android_capture_images.c \
               record/record_android_capture_submit.c record/record_android_capture_pipe.c \
-              record/record_android_capture_pool.c record/record_android_capture_gl.c \
+              record/record_android_capture_pool.c record/record_android_capture_ops.c \
+              record/record_android_capture_gl.c \
               record/record_android_capture_draw.c record/record_mediacodec_gpu_worker.c \
               record/record_mediacodec_file.c record/record_session_mediacodec.c \
               record/record_dispatch_mediacodec.c record/record_gpu_dispatch_mediacodec.c \
@@ -291,6 +292,7 @@ jobs:
           printf '#include "%s/record/record_android_capture_submit.c"\n' "$PWD" >> "$unity"
           printf '#include "%s/record/record_android_capture_pipe.c"\n' "$PWD" >> "$unity"
           printf '#include "%s/record/record_android_capture_pool.c"\n' "$PWD" >> "$unity"
+          printf '#include "%s/record/record_android_capture_ops.c"\n' "$PWD" >> "$unity"
           printf '#include "%s/record/record_android_capture_gl.c"\n' "$PWD" >> "$unity"
           printf '#include "%s/record/record_android_capture_draw.c"\n' "$PWD" >> "$unity"
           printf '#include "%s/record/record_mediacodec_gpu_worker.c"\n' "$PWD" >> "$unity"
