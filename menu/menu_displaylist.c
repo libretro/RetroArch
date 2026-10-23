@@ -12566,45 +12566,44 @@ unsigned menu_displaylist_build_list(
                      PARSE_ONLY_BOOL, false) == 0)
                count++;
 #endif
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_OPENXR_REFRESH_RATE,
-                     PARSE_ONLY_UINT, false) == 0)
-               count++;
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_OPENXR_PERF_BOOST,
-                     PARSE_ONLY_BOOL, false) == 0)
-               count++;
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_OPENXR_DISTANCE,
-                     PARSE_ONLY_FLOAT, false) == 0)
-               count++;
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_OPENXR_WIDTH,
-                     PARSE_ONLY_FLOAT, false) == 0)
-               count++;
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_OPENXR_PLACEMENT,
-                     PARSE_ONLY_UINT, false) == 0)
-               count++;
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_OPENXR_CONTROLLERS,
-                     PARSE_ONLY_UINT, false) == 0)
-               count++;
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_OPENXR_LASER,
-                     PARSE_ONLY_UINT, false) == 0)
-               count++;
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_OPENXR_LASER_BEAM,
-                     PARSE_ONLY_UINT, false) == 0)
-               count++;
+            /* Edit mode needs the headset's output and controllers. */
+#ifdef ANDROID
+            if (video_context_driver_headset_inline())
+#else
+            if (settings->bools.video_openxr_enable)
+#endif
             {
+               static const menu_displaylist_settings_row_t edit_rows[] = {
+                  { MENU_ENUM_LABEL_VIDEO_SCREEN_XR_EDIT, PARSE_ACTION, false },
+                  { MENU_ENUM_LABEL_VIDEO_OPENXR_EDIT_SNAP, PARSE_ONLY_BOOL, false },
+                  { MENU_ENUM_LABEL_VIDEO_OPENXR_EDIT_SNAP_ANGLES, PARSE_ONLY_UINT, false },
+                  { MENU_ENUM_LABEL_VIDEO_OPENXR_EDIT_HINGE_GAP, PARSE_ONLY_UINT, false },
+                  { MENU_ENUM_LABEL_VIDEO_OPENXR_EDIT_SMOOTHING, PARSE_ONLY_UINT, false },
+                  { MENU_ENUM_LABEL_VIDEO_OPENXR_EDIT_PAUSE, PARSE_ONLY_BOOL, false },
+               };
+               count += menu_displaylist_parse_settings_rows(list, settings,
+                     edit_rows, (unsigned)ARRAY_SIZE(edit_rows));
+            }
+            {
+               static const menu_displaylist_settings_row_t headset_rows[] = {
+                  { MENU_ENUM_LABEL_VIDEO_OPENXR_REFRESH_RATE, PARSE_ONLY_UINT, false },
+                  { MENU_ENUM_LABEL_VIDEO_OPENXR_PERF_BOOST, PARSE_ONLY_BOOL, false },
+                  { MENU_ENUM_LABEL_VIDEO_OPENXR_CONTROLLERS, PARSE_ONLY_UINT, false },
+                  { MENU_ENUM_LABEL_VIDEO_OPENXR_LASER, PARSE_ONLY_UINT, false },
+                  { MENU_ENUM_LABEL_VIDEO_OPENXR_LASER_BEAM, PARSE_ONLY_UINT, false },
+                  { MENU_ENUM_LABEL_VIDEO_OPENXR_PLACEMENT, PARSE_ONLY_UINT, false },
+                  { MENU_ENUM_LABEL_VIDEO_OPENXR_DISTANCE, PARSE_ONLY_FLOAT, false },
+                  { MENU_ENUM_LABEL_VIDEO_OPENXR_WIDTH, PARSE_ONLY_FLOAT, false },
+               };
                rarch_setting_t *screen = menu_setting_find_enum(
                      MENU_ENUM_LABEL_VIDEO_SCREEN_SELECTED);
+               count += menu_displaylist_parse_settings_rows(list, settings,
+                     headset_rows, (unsigned)ARRAY_SIZE(headset_rows));
                if (screen && screen->value.target.unsigned_integer)
                {
                   static const menu_displaylist_settings_row_t screen_rows[] = {
                      { MENU_ENUM_LABEL_VIDEO_SCREEN_SELECTED, PARSE_ONLY_UINT, false },
+                     { MENU_ENUM_LABEL_VIDEO_SCREEN_XR_VISIBLE, PARSE_ONLY_BOOL, false },
                      { MENU_ENUM_LABEL_VIDEO_SCREEN_XR_X, PARSE_ONLY_FLOAT, false },
                      { MENU_ENUM_LABEL_VIDEO_SCREEN_XR_Y, PARSE_ONLY_FLOAT, false },
                      { MENU_ENUM_LABEL_VIDEO_SCREEN_XR_Z, PARSE_ONLY_FLOAT, false },
@@ -12612,7 +12611,6 @@ unsigned menu_displaylist_build_list(
                      { MENU_ENUM_LABEL_VIDEO_SCREEN_XR_PITCH, PARSE_ONLY_FLOAT, false },
                      { MENU_ENUM_LABEL_VIDEO_SCREEN_XR_ROLL, PARSE_ONLY_FLOAT, false },
                      { MENU_ENUM_LABEL_VIDEO_SCREEN_XR_SCALE, PARSE_ONLY_FLOAT, false },
-                     { MENU_ENUM_LABEL_VIDEO_SCREEN_XR_VISIBLE, PARSE_ONLY_BOOL, false },
                      { MENU_ENUM_LABEL_VIDEO_SCREEN_XR_RESET, PARSE_ACTION, false },
                   };
                   count += menu_displaylist_parse_settings_rows(list, settings,
@@ -12621,38 +12619,6 @@ unsigned menu_displaylist_build_list(
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                         MENU_ENUM_LABEL_VIDEO_SCREEN_XR_RESET_ALL,
                         PARSE_ACTION, false) == 0)
-                  count++;
-            }
-            /* Edit mode needs the headset's output and controllers. */
-#ifdef ANDROID
-            if (video_context_driver_headset_inline())
-#else
-            if (settings->bools.video_openxr_enable)
-#endif
-            {
-               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                        MENU_ENUM_LABEL_VIDEO_SCREEN_XR_EDIT,
-                        PARSE_ACTION, false) == 0)
-                  count++;
-               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                        MENU_ENUM_LABEL_VIDEO_OPENXR_EDIT_PAUSE,
-                        PARSE_ONLY_BOOL, false) == 0)
-                  count++;
-               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                        MENU_ENUM_LABEL_VIDEO_OPENXR_EDIT_SNAP,
-                        PARSE_ONLY_BOOL, false) == 0)
-                  count++;
-               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                        MENU_ENUM_LABEL_VIDEO_OPENXR_EDIT_SNAP_ANGLES,
-                        PARSE_ONLY_UINT, false) == 0)
-                  count++;
-               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                        MENU_ENUM_LABEL_VIDEO_OPENXR_EDIT_HINGE_GAP,
-                        PARSE_ONLY_UINT, false) == 0)
-                  count++;
-               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                        MENU_ENUM_LABEL_VIDEO_OPENXR_EDIT_SMOOTHING,
-                        PARSE_ONLY_UINT, false) == 0)
                   count++;
             }
          }

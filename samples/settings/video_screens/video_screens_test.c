@@ -979,6 +979,28 @@ static void test_xr_edit_rows(void)
    CHECK(settings->uints.video_openxr_edit_hinge_gap
          == VIDEO_OPENXR_EDIT_HINGE_GAP_3);
    menu_value("video_openxr_edit_hinge_gap", "3 cm");
+   CHECK(menu_setting_follows("video_screen_xr_edit",
+         "video_openxr_enable"));
+   CHECK(menu_setting_follows("video_openxr_edit_snap",
+         "video_screen_xr_edit"));
+   CHECK(menu_setting_follows("video_openxr_edit_smoothing",
+         "video_openxr_edit_hinge_gap"));
+   CHECK(menu_setting_follows("video_openxr_edit_pause",
+         "video_openxr_edit_smoothing"));
+   CHECK(menu_setting_follows("video_openxr_refresh_rate",
+         "video_openxr_edit_pause"));
+   CHECK(menu_setting_follows("video_openxr_controllers",
+         "video_openxr_perf_boost"));
+   CHECK(menu_setting_follows("video_openxr_placement",
+         "video_openxr_laser_beam"));
+   CHECK(menu_setting_follows("video_openxr_width",
+         "video_openxr_distance"));
+   CHECK(menu_setting_follows("video_screen_selected",
+         "video_openxr_width"));
+   CHECK(menu_setting_follows("video_screen_xr_visible",
+         "video_screen_selected"));
+   CHECK(menu_setting_follows("video_screen_xr_x",
+         "video_screen_xr_visible"));
    CHECK(menu_has_setting("video_openxr_edit_smoothing"));
    CHECK(settings->uints.video_openxr_edit_smoothing
          == VIDEO_OPENXR_EDIT_SMOOTHING_MEDIUM);

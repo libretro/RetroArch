@@ -1630,7 +1630,7 @@ def check_menu_closed(res):
 
 # RGUI, OK and Cancel unswapped, from the Quick Menu: back to the Main
 # Menu, Settings (row 5), Video (1), Stereo 3D & Screens (5), and down
-# to Screen Distance (row 5).
+# to Screen Distance (row 15).
 DISTANCE_NAV = ([('send', 'MENU_B'), ('wait', 0.8)]
                 + [('send', 'MENU_DOWN'), ('wait', 0.3)] * 5
                 + [('send', 'MENU_A'), ('wait', 0.8)]
@@ -1638,7 +1638,7 @@ DISTANCE_NAV = ([('send', 'MENU_B'), ('wait', 0.8)]
                 + [('send', 'MENU_A'), ('wait', 0.8)]
                 + [('send', 'MENU_DOWN'), ('wait', 0.3)] * 5
                 + [('send', 'MENU_A'), ('wait', 0.8)]
-                + [('send', 'MENU_DOWN'), ('wait', 0.3)] * 5)
+                + [('send', 'MENU_DOWN'), ('wait', 0.3)] * 15)
 STEP_RIGHT = [('send', 'MENU_RIGHT'), ('wait', 2)]
 STEP_LEFT = [('send', 'MENU_LEFT'), ('wait', 2)]
 # Screen Distance out and in, Screen Width out and back, and Width once

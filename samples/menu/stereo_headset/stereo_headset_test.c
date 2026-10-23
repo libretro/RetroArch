@@ -19,7 +19,7 @@
  * playlist_nav pattern). A headset gives each eye its own image, so
  * the list leaves Stereo Mode out while Headset Output is on, and
  * pressing Headset Output rebuilds the open list with the cursor still
- * on it. Headset Refresh Rate sits under Headset Output, and with no
+ * on it. Headset Refresh Rate sits below Headset Output, and with no
  * headset lists the fixed rates.
  *
  * The video driver stays null: the list reads only the driver's name,
@@ -219,12 +219,12 @@ static void lane_headset_rows(void)
    static const char *const rows[] = {
       MENU_ENUM_LABEL_VIDEO_OPENXR_ENABLE_STR,
       MENU_ENUM_LABEL_VIDEO_OPENXR_REFRESH_RATE_STR,
-      MENU_ENUM_LABEL_VIDEO_OPENXR_DISTANCE_STR,
-      MENU_ENUM_LABEL_VIDEO_OPENXR_WIDTH_STR,
-      MENU_ENUM_LABEL_VIDEO_OPENXR_PLACEMENT_STR,
       MENU_ENUM_LABEL_VIDEO_OPENXR_CONTROLLERS_STR,
       MENU_ENUM_LABEL_VIDEO_OPENXR_LASER_STR,
-      MENU_ENUM_LABEL_VIDEO_OPENXR_LASER_BEAM_STR };
+      MENU_ENUM_LABEL_VIDEO_OPENXR_LASER_BEAM_STR,
+      MENU_ENUM_LABEL_VIDEO_OPENXR_PLACEMENT_STR,
+      MENU_ENUM_LABEL_VIDEO_OPENXR_DISTANCE_STR,
+      MENU_ENUM_LABEL_VIDEO_OPENXR_WIDTH_STR };
    unsigned i, d;
 
 #ifdef HAVE_VULKAN
@@ -341,9 +341,9 @@ static void lane_toggle(void)
          "the cursor left Headset Output when Start turned it off");
 }
 
-/* Right under Headset Output. With no headset to list its rates it
- * steps through Auto, Headset's Choice and 72, 90, 120 and 144 Hz,
- * round, and its dropdown lists the same. */
+/* Right after the edit rows Headset Output shows. With no headset to
+ * list its rates it steps through Auto, Headset's Choice and 72, 90,
+ * 120 and 144 Hz, round, and its dropdown lists the same. */
 static void lane_refresh_rate(void)
 {
    static const unsigned want[]     = { 0, 1, 72, 90, 120, 144, 0 };
@@ -351,7 +351,7 @@ static void lane_refresh_rate(void)
       "72 Hz", "90 Hz", "120 Hz", "144 Hz", "Auto" };
    char s[64];
    unsigned i;
-   int enable, rate;
+   int edit, rate;
    file_list_t *buf;
    settings_t *settings     = config_get_ptr();
    rarch_setting_t *setting = menu_setting_find_enum(
@@ -360,11 +360,11 @@ static void lane_refresh_rate(void)
    set_headset(true);
    set_driver(HEADSET_DRIVER);
    open_stereo_list();
-   enable = row(MENU_ENUM_LABEL_VIDEO_OPENXR_ENABLE_STR);
+   edit   = row(msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_OPENXR_EDIT_PAUSE));
    rate   = row(MENU_ENUM_LABEL_VIDEO_OPENXR_REFRESH_RATE_STR);
-   CHECK(rate >= 0 && rate == enable + 1,
-         "Headset Refresh Rate is not right under Headset Output "
-         "(rows %d and %d)", enable, rate);
+   CHECK(rate >= 0 && rate == edit + 1,
+         "Headset Refresh Rate is not right under While Editing Screens "
+         "(rows %d and %d)", edit, rate);
    CHECK(setting != NULL, "fixture: no Headset Refresh Rate setting");
    if (!setting)
       return;
