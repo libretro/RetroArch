@@ -1161,62 +1161,40 @@ static int db_crc_collect(void *ctx, const uint8_t *key, size_t key_len,
    return 0;
 }
 
-database_info_crc_index_t *database_info_crc_index_new(const char *rdb_path,
-      size_t max_bytes)
+/* Hands a finished build's entries to a new index. */
+static database_info_crc_index_t *db_crc_index_finish(
+      struct db_crc_build *b, const char *rdb_path)
 {
-   struct db_crc_build        build;
-   database_info_crc_index_t *idx = NULL;
-   libretrodb_t              *db  = NULL;
+   database_info_crc_index_t *idx =
+      (database_info_crc_index_t*)calloc(1, sizeof(*idx));
 
-   if (!rdb_path || !*rdb_path)
+   if (!idx)
       return NULL;
-
-   memset(&build, 0, sizeof(build));
-   build.max_bytes = max_bytes;
-
-   if (!(db = libretrodb_new()))
-      return NULL;
-
-   if (libretrodb_open(rdb_path, db, false) != 0)
-   {
-      libretrodb_free(db);
-      return NULL;
-   }
-
-   if (   libretrodb_scan_field(db, "crc", "size", db_crc_collect,
-             &build) != 0
-       || build.failed)
-      goto error;
-
-   if (!(idx = (database_info_crc_index_t*)calloc(1, sizeof(*idx))))
-      goto error;
 
    if (!(idx->rdb_path = strdup(rdb_path)))
    {
       free(idx);
-      idx = NULL;
-      goto error;
+      return NULL;
    }
 
-   if (build.count > 1)
-      qsort(build.entries, build.count, sizeof(*build.entries),
-            db_crc_by_crc);
+   if (b->count > 1)
+      qsort(b->entries, b->count, sizeof(*b->entries), db_crc_by_crc);
 
-   idx->entries   = build.entries;
-   idx->count     = build.count;
-   idx->size_min  = build.size_min;
-   idx->size_max  = build.size_max;
-   idx->have_size = build.have_size;
-
-   libretrodb_close(db);
-   libretrodb_free(db);
+   idx->entries   = b->entries;
+   idx->count     = b->count;
+   idx->size_min  = b->size_min;
+   idx->size_max  = b->size_max;
+   idx->have_size = b->have_size;
+   b->entries     = NULL;
    return idx;
+}
 
-error:
-   free(build.entries);
-   libretrodb_close(db);
-   libretrodb_free(db);
-   return NULL;
+database_info_crc_index_t *database_info_crc_index_new(const char *rdb_path,
+      size_t max_bytes)
+{
+   database_info_crc_index_t *idx;
+   database_info_index_new(rdb_path, max_bytes, &idx, NULL, NULL);
+   return idx;
 }
 
 bool database_info_crc_index_size_range(
@@ -1473,59 +1451,135 @@ static int db_serial_collect(void *ctx, const uint8_t *key, size_t key_len,
    return 0;
 }
 
-database_info_serial_index_t *database_info_serial_index_new(
-      const char *rdb_path, size_t max_bytes)
+/* Hands a finished build's entries to a new index. */
+static database_info_serial_index_t *db_serial_index_finish(
+      struct db_serial_build *b, const char *rdb_path)
 {
-   struct db_serial_build        build;
-   database_info_serial_index_t *idx = NULL;
-   libretrodb_t                 *db  = NULL;
+   database_info_serial_index_t *idx =
+      (database_info_serial_index_t*)calloc(1, sizeof(*idx));
 
-   if (!rdb_path || !*rdb_path)
+   if (!idx)
       return NULL;
-
-   memset(&build, 0, sizeof(build));
-   build.max_bytes = max_bytes;
-
-   if (!(db = libretrodb_new()))
-      return NULL;
-
-   if (libretrodb_open(rdb_path, db, false) != 0)
-   {
-      libretrodb_free(db);
-      return NULL;
-   }
-
-   if (   libretrodb_scan_field(db, "serial", NULL, db_serial_collect,
-             &build) != 0
-       || build.failed)
-      goto error;
-
-   if (!(idx = (database_info_serial_index_t*)calloc(1, sizeof(*idx))))
-      goto error;
 
    if (!(idx->rdb_path = strdup(rdb_path)))
    {
       free(idx);
-      idx = NULL;
-      goto error;
+      return NULL;
    }
 
-   if (build.count > 1)
-      qsort(build.entries, build.count, sizeof(*build.entries),
-            db_serial_by_hash);
+   if (b->count > 1)
+      qsort(b->entries, b->count, sizeof(*b->entries), db_serial_by_hash);
 
-   idx->entries = build.entries;
-   idx->count   = build.count;
-
-   libretrodb_close(db);
-   libretrodb_free(db);
+   idx->entries = b->entries;
+   idx->count   = b->count;
+   b->entries   = NULL;
    return idx;
+}
 
-error:
-   free(build.entries);
+database_info_serial_index_t *database_info_serial_index_new(
+      const char *rdb_path, size_t max_bytes)
+{
+   database_info_serial_index_t *idx;
+   database_info_index_new(rdb_path, max_bytes, NULL, &idx, NULL);
+   return idx;
+}
+
+/* Both builds, fed by one walk.  Each may grow to the whole budget, so
+ * a build for the serial lookup can hold twice it until the split at
+ * the end. */
+struct db_index_build
+{
+   struct db_crc_build    crc;
+   struct db_serial_build serial;
+   bool                   want_crc;
+   bool                   want_serial;
+   bool                   has_serial;
+};
+
+static int db_index_collect(void *ctx, const uint8_t *key, size_t key_len,
+      const uint8_t *serial, size_t serial_len, uint64_t offset,
+      const uint64_t *aux)
+{
+   struct db_index_build *b = (struct db_index_build*)ctx;
+
+   if (serial_len)
+      b->has_serial = true;
+   if (b->want_crc && !b->crc.failed)
+      db_crc_collect(&b->crc, key, key_len, offset, aux);
+   if (b->want_serial && !b->serial.failed)
+      db_serial_collect(&b->serial, serial, serial_len, offset, NULL);
+
+   /* A build that fails stops collecting; the walk stops once every
+    * build it feeds has. */
+   return    (!b->want_crc    || b->crc.failed)
+          && (!b->want_serial || b->serial.failed);
+}
+
+void database_info_index_new(const char *rdb_path, size_t max_bytes,
+      database_info_crc_index_t **crc,
+      database_info_serial_index_t **serial, bool *has_serial)
+{
+   struct db_index_build b;
+   libretrodb_t         *db;
+
+   if (crc)
+      *crc        = NULL;
+   if (serial)
+      *serial     = NULL;
+   if (has_serial)
+      *has_serial = false;
+
+   if (!rdb_path || !*rdb_path || (!crc && !serial))
+      return;
+
+   memset(&b, 0, sizeof(b));
+   b.want_crc         = (crc    != NULL);
+   b.want_serial      = (serial != NULL);
+   b.crc.max_bytes    = max_bytes;
+   b.serial.max_bytes = max_bytes;
+
+   if (!(db = libretrodb_new()))
+      return;
+
+   if (libretrodb_open(rdb_path, db, false) != 0)
+   {
+      libretrodb_free(db);
+      return;
+   }
+
+   if (libretrodb_scan_field2(db, crc ? "crc" : NULL,
+            (serial || has_serial) ? "serial" : NULL,
+            crc ? "size" : NULL, db_index_collect, &b) == 0)
+   {
+      size_t left = max_bytes;
+
+      if (crc && !b.crc.failed)
+         *crc = db_crc_index_finish(&b.crc, rdb_path);
+
+      /* The serial index gets what the crc index leaves, as when the
+       * two were built one after the other. */
+      if (max_bytes && crc && *crc)
+      {
+         size_t used = database_info_crc_index_bytes(*crc);
+         left        = (used < max_bytes) ? max_bytes - used : 0;
+      }
+
+      if (   serial
+          && !b.serial.failed
+          && (   !max_bytes
+              || (   left
+                  && b.serial.capacity * sizeof(*b.serial.entries)
+                     <= left)))
+         *serial = db_serial_index_finish(&b.serial, rdb_path);
+
+      if (has_serial)
+         *has_serial = b.has_serial;
+   }
+
+   free(b.crc.entries);
+   free(b.serial.entries);
    libretrodb_close(db);
    libretrodb_free(db);
-   return NULL;
 }
 
 size_t database_info_serial_index_bytes(

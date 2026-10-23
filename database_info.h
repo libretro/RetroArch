@@ -216,6 +216,17 @@ database_info_list_t *database_info_list_new_serial(
       database_info_serial_index_t *idx, const char *rdb_path,
       const char *serial, unsigned fields);
 
+/* Builds the crc index of @rdb_path and, given @serial, its serial
+ * index, in one walk.  @crc may be NULL to build only the serial
+ * index.  The serial index gets what the crc index leaves of
+ * @max_bytes, and either comes back NULL when it cannot be built
+ * whole.  @has_serial, when not NULL, says whether any record carries
+ * a serial the serial index keys on; it is complete whenever an index
+ * comes back. */
+void database_info_index_new(const char *rdb_path, size_t max_bytes,
+      database_info_crc_index_t **crc,
+      database_info_serial_index_t **serial, bool *has_serial);
+
 database_info_list_t *database_info_list_new_filtered(const char *rdb_path,
       const char *query, unsigned fields);
 

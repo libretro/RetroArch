@@ -1494,7 +1494,8 @@ static bool task_database_state_alloc_arrays(
    return true;
 }
 
-static void task_database_fill_db_min_max(database_state_handle_t *db_state)
+static void task_database_fill_db_min_max(database_state_handle_t *db_state,
+      database_info_serial_index_t **serial)
 {
    char query[50];
    query[0] = '\0';
@@ -1507,20 +1508,25 @@ static void task_database_fill_db_min_max(database_state_handle_t *db_state)
    /* The crc index collects the size range while it walks, so build
     * it here and take the range from it: one walk instead of this
     * function's two, and the crc lookup then finds the index already
-    * built.  The queries below still run for a database the index
-    * cannot cover. */
+    * built.  The same walk sees whether any record carries a serial
+    * and, given @serial, builds the serial index too, so the serial
+    * lookup reads the database once.  The queries below still run for
+    * a database the index cannot cover. */
    {
-      const char *rdb = db_state->list->elems[db_state->list_index].data;
-      int64_t     lo  = 0;
-      int64_t     hi  = 0;
+      const char *rdb        = db_state->list->elems[db_state->list_index].data;
+      int64_t     lo         = 0;
+      int64_t     hi         = 0;
+      bool        has_serial = false;
 
       if (rdb && *rdb)
       {
          if (   !db_state->crc_index[db_state->list_index]
              && db_state->index_budget)
          {
-            database_info_crc_index_t *ci =
-               database_info_crc_index_new(rdb, db_state->index_budget);
+            database_info_crc_index_t *ci = NULL;
+
+            database_info_index_new(rdb, db_state->index_budget, &ci,
+                  serial, &has_serial);
             if (ci)
             {
                size_t used = database_info_crc_index_bytes(ci);
@@ -1539,18 +1545,13 @@ static void task_database_fill_db_min_max(database_state_handle_t *db_state)
             db_state->flags[db_state->list_index]    |=
                DB_STATE_FLAG_HAS_SIZE;
 
-            /* HAS_SERIAL gates a skip in the serial lookup, and this
-             * walk does not observe serial keys - it scans crc with
-             * size alongside.  Set it rather than leave it clear:
-             * clear would skip every database for disc content, which
-             * is a missed match, while set costs at most one wasted
-             * serial-index build for a database that carries none.
-             * Every database shipped today carries serials.
-             *
-             * HAS_CRC is set for symmetry; nothing reads it beyond a
-             * debug line. */
-            db_state->flags[db_state->list_index] |=
-               DB_STATE_FLAG_HAS_CRC | DB_STATE_FLAG_HAS_SERIAL;
+            /* HAS_SERIAL gates a skip in the serial lookup.  HAS_CRC
+             * is set for symmetry; nothing reads it beyond a debug
+             * line. */
+            db_state->flags[db_state->list_index] |= DB_STATE_FLAG_HAS_CRC;
+            if (has_serial)
+               db_state->flags[db_state->list_index] |=
+                  DB_STATE_FLAG_HAS_SERIAL;
 
             db_state->entry_index = 0;
             return;
@@ -1690,7 +1691,7 @@ static enum scan_verdict task_database_iterate_crc_lookup(
 
    /* If size boundaries are not filled for this DB, run the queries */
    if (!(db_state->flags[db_state->list_index] & DB_STATE_FLAG_SIZE_CHECKED))
-      task_database_fill_db_min_max(db_state);
+      task_database_fill_db_min_max(db_state, NULL);
 
    if (db_state->min_sizes[db_state->list_index] > 0)
    {
@@ -1903,6 +1904,9 @@ static int task_database_iterate_serial_lookup(
       bool path_contains_compressed_file,
       bool size_hint_allowed)
 {
+   /* The serial index the size walk builds: taken below, or freed
+    * where a gate passes the database over. */
+   database_info_serial_index_t *si = NULL;
 #ifdef DEBUG
    RARCH_DBG("[Scanner] Serial check, list_idx %d/%d, entry_idx %d.\n",
          db_state->list_index, db_state->list->size, db_state->entry_index);
@@ -1945,7 +1949,7 @@ static int task_database_iterate_serial_lookup(
 
    /* If size boundaries are not filled for this DB, run the queries */
    if (!(db_state->flags[db_state->list_index] & DB_STATE_FLAG_SIZE_CHECKED))
-      task_database_fill_db_min_max(db_state);
+      task_database_fill_db_min_max(db_state, &si);
 
    if (db_state->min_sizes[db_state->list_index] > 0)
    {
@@ -1954,6 +1958,7 @@ static int task_database_iterate_serial_lookup(
 #ifdef DEBUG
          RARCH_DBG("[Scanner] Skipping DB, no serials here.\n");
 #endif
+         database_info_serial_index_free(si);
          return database_info_list_iterate_next(db_state);
       }
 
@@ -1978,6 +1983,7 @@ static int task_database_iterate_serial_lookup(
             RARCH_DBG("[Scanner] Skipping DB, neither archive nor uncompressed size %ld/%ld is in range.\n",
                   db_state->archive_size, db_state->size);
 #endif
+            database_info_serial_index_free(si);
             return database_info_list_iterate_next(db_state);
          }
       }
@@ -1989,6 +1995,7 @@ static int task_database_iterate_serial_lookup(
 #ifdef DEBUG
          RARCH_DBG("[Scanner] Skipping DB, file size %ld not in range.\n", db_state->size);
 #endif
+         database_info_serial_index_free(si);
          return database_info_list_iterate_next(db_state);
       }
    }
@@ -2010,18 +2017,16 @@ static int task_database_iterate_serial_lookup(
        * still runs. */
       if (rdb && *rdb)
       {
-         if (   !db_state->serial_index[db_state->list_index]
+         if (   !si
+             && !db_state->serial_index[db_state->list_index]
              && db_state->index_budget)
+            si = database_info_serial_index_new(rdb, db_state->index_budget);
+         if (si)
          {
-            database_info_serial_index_t *si =
-               database_info_serial_index_new(rdb, db_state->index_budget);
-            if (si)
-            {
-               size_t used = database_info_serial_index_bytes(si);
-               db_state->index_budget = (used < db_state->index_budget)
-                  ? db_state->index_budget - used : 0;
-               db_state->serial_index[db_state->list_index] = si;
-            }
+            size_t used = database_info_serial_index_bytes(si);
+            db_state->index_budget = (used < db_state->index_budget)
+               ? db_state->index_budget - used : 0;
+            db_state->serial_index[db_state->list_index] = si;
          }
 
          if (db_state->serial_index[db_state->list_index])

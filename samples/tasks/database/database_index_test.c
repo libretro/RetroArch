@@ -361,6 +361,113 @@ static void serial_lookup(const database_info_serial_index_t *idx,
    out[len - 1] = '\0';
 }
 
+/* database_info_index_new() builds in one walk what the two builders
+ * build in two, so its indexes have to answer as theirs do, and a
+ * budget has to be spent as when the crc index was built first and
+ * the serial index got the rest. */
+static void check_one_walk(const char *dir, const char *path_a)
+{
+   database_info_crc_index_t    *ci = NULL, *ci1;
+   database_info_serial_index_t *si = NULL, *si1;
+   bool   has_serial = false;
+   int    i, same    = 1;
+   char   a[256], b[256];
+   char  *path       = (char*)malloc(1024);
+
+   if (!path)
+   {
+      check(0, "one walk", "out of memory");
+      return;
+   }
+
+   database_info_index_new(path_a, 0, &ci, &si, &has_serial);
+   ci1 = database_info_crc_index_new(path_a, 0);
+   si1 = database_info_serial_index_new(path_a, 0);
+   check(   ci && si && ci1 && si1 && has_serial
+         && database_info_crc_index_count(ci)
+            == database_info_crc_index_count(ci1)
+         && database_info_serial_index_count(si)
+            == database_info_serial_index_count(si1),
+         "one walk builds both indexes", "crc and serial, 40 each");
+
+   for (i = 0; ci && si && ci1 && si1 && i < 40; i++)
+   {
+      char serial[32];
+
+      crc_lookup(ci,  path_a, 0x1000 + (uint32_t)i, a, sizeof(a));
+      crc_lookup(ci1, path_a, 0x1000 + (uint32_t)i, b, sizeof(b));
+      if (!a[0] || strcmp(a, b))
+         same = 0;
+      sprintf(serial, "Alpha-%03d", i);
+      serial_lookup(si,  path_a, serial, a, sizeof(a));
+      serial_lookup(si1, path_a, serial, b, sizeof(b));
+      if (!a[0] || strcmp(a, b))
+         same = 0;
+   }
+   {
+      int64_t lo = 0, hi = 0, lo1 = 1, hi1 = 1;
+
+      if (   !database_info_crc_index_size_range(ci,  &lo,  &hi)
+          || !database_info_crc_index_size_range(ci1, &lo1, &hi1)
+          || lo != lo1 || hi != hi1)
+         same = 0;
+   }
+   check(same, "one walk answers as the two builds",
+         "every crc, every serial, the size range");
+   database_info_crc_index_free(ci);
+   database_info_serial_index_free(si);
+   database_info_crc_index_free(ci1);
+   database_info_serial_index_free(si1);
+
+   {
+      size_t   max;
+      unsigned tight = 0;
+      int      agree = 1;
+      char     detail[64];
+
+      for (max = 1024; max <= 32768; max += 256)
+      {
+         size_t left = max;
+
+         ci1 = database_info_crc_index_new(path_a, max);
+         if (ci1)
+            left = (database_info_crc_index_bytes(ci1) < max)
+               ? max - database_info_crc_index_bytes(ci1) : 0;
+         si1 = left ? database_info_serial_index_new(path_a, left) : NULL;
+         database_info_index_new(path_a, max, &ci, &si, NULL);
+         if (!ci != !ci1 || !si != !si1)
+            agree = 0;
+         if (ci && !si)
+            tight++;
+         database_info_crc_index_free(ci);
+         database_info_serial_index_free(si);
+         database_info_crc_index_free(ci1);
+         database_info_serial_index_free(si1);
+      }
+      sprintf(detail, "%u budgets hold the crc index only", tight);
+      check(agree && tight, "budget split as the two builds split it",
+            detail);
+   }
+
+   /* The crc lookup asks only whether serials are there. */
+   sprintf(path, "%s/sizes.rdb", dir);
+   database_info_index_new(path_a, 0, &ci, NULL, &has_serial);
+   i = ci && has_serial;
+   database_info_crc_index_free(ci);
+   database_info_index_new(path, 0, &ci, NULL, &has_serial);
+   check(i && ci && !has_serial, "serials seen without a serial index",
+         "Alpha has them, sizes.rdb not");
+   database_info_crc_index_free(ci);
+
+   database_info_index_new(path, 0, &ci, &si, &has_serial);
+   check(   ci && si && !has_serial
+         && database_info_serial_index_count(si) == 0,
+         "no serials: an empty serial index", "sizes.rdb");
+   database_info_crc_index_free(ci);
+   database_info_serial_index_free(si);
+   free(path);
+}
+
 int main(int argc, char **argv)
 {
    const char *dir = (argc > 1) ? argv[1] : "/tmp";
@@ -507,6 +614,8 @@ int main(int argc, char **argv)
          database_info_crc_index_free(idx);
       }
    }
+
+   check_one_walk(dir, path_a);
 
    printf("\n%d checks, %d failures\n", checks, failures);
    return failures ? 1 : 0;

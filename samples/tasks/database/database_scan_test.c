@@ -49,6 +49,7 @@
 #include "../../../list_special.h"
 #include "../../../configuration.h"
 #include "../../../verbosity.h"
+#include "../../../libretro-db/libretrodb.h"
 #include "spend_window.h"
 
 #define SCAN_TIMEOUT_SECONDS 120
@@ -177,6 +178,17 @@ static void check(int ok, const char *what, const char *detail)
          detail ? detail : "");
    if (!ok)
       failures++;
+}
+
+/* Linked with --wrap=libretrodb_open.  An index build opens its
+ * database once and walks it once, so this counts the walks. */
+static unsigned rdb_opens = 0;
+
+int __real_libretrodb_open(const char *path, libretrodb_t *db, bool write);
+int __wrap_libretrodb_open(const char *path, libretrodb_t *db, bool write)
+{
+   rdb_opens++;
+   return __real_libretrodb_open(path, db, write);
 }
 
 /* ------------------------------------------------------------------
@@ -686,6 +698,101 @@ static unsigned run_scan_counted(const char *dir)
 #define STEP_AUDIO_SIZE (10 * 2352)
 #define STEP_CTR_SIZE   0x140000
 
+/* Databases in the walk lane below. */
+#define WALK_DBS 4
+
+/* A database is walked once.  A cue sheet, which the scan takes
+ * first, fills the one claimed database through the crc lookup: its
+ * track has no serial.  Then a 3DS file that matches and one that
+ * matches nothing take the serial lookup through all four, in
+ * whatever order the directory lists them.  Two carry no serials, as
+ * Mobile - J2ME does. */
+static void walk_lane(const char *root, const char *pl_dir,
+      const char *db_dir)
+{
+   static const db_rec_t other_recs[] = {
+      { "Other The Game", "CTR-P-OTHR", 0x3A1C0002u, CTR_IMAGE_SIZE }
+   };
+   static const db_rec_t walk_recs[] = {
+      { "Walk The Game",  "CTR-P-WALK", 0x3A1C0003u, CTR_IMAGE_SIZE }
+   };
+   char    *walk_db = (char*)malloc(512);
+   char    *walk_in = (char*)malloc(512);
+   char    *p       = (char*)malloc(1024);
+   char     detail[64];
+   bool     started;
+   unsigned opens;
+
+   if (!walk_db || !walk_in || !p)
+   {
+      check(0, "walk lane", "out of memory");
+      goto end;
+   }
+
+   sprintf(walk_db, "%s/scan_db_walk", root);
+   sprintf(walk_in, "%s/scan_walk",    root);
+   path_mkdir(walk_db);
+   path_mkdir(walk_in);
+
+   /* The test core claims Test Alpha for .cue. */
+   sprintf(p, "%s/Test Alpha.rdb", walk_db);
+   if (!write_db(p, "Walk Disc Game", 0x3A1C0001u, 2 * PS1_SECTOR))
+   { check(0, "fixture", "could not write database"); goto end; }
+   sprintf(p, "%s/Walk Mobile.rdb", walk_db);
+   if (!write_db(p, "Mobile The Game", 0x3A1C0004u, 4096))
+   { check(0, "fixture", "could not write database"); goto end; }
+   sprintf(p, "%s/Walk Other.rdb", walk_db);
+   if (!write_db_set(p, other_recs, ARRAY_SIZE(other_recs)))
+   { check(0, "fixture", "could not write database"); goto end; }
+   sprintf(p, "%s/Walk Serial.rdb", walk_db);
+   if (!write_db_set(p, walk_recs, ARRAY_SIZE(walk_recs)))
+   { check(0, "fixture", "could not write database"); goto end; }
+
+   sprintf(p, "%s/40_walk.bin", walk_in);
+   if (!write_content(p, 0x3A1C0001u, 2 * PS1_SECTOR))
+   { check(0, "fixture", "crc forcing failed"); goto end; }
+   sprintf(p, "%s/40_walk.cue", walk_in);
+   if (!write_cue(p, "40_walk.bin"))
+   { check(0, "fixture", "could not write cue"); goto end; }
+   sprintf(p, "%s/41_walk.3ds", walk_in);
+   if (!write_ctr(p, 0x20, 1, "CTR-P-WALK", 0x41414141u))
+   { check(0, "fixture", "could not write image"); goto end; }
+   sprintf(p, "%s/42_walk.3ds", walk_in);
+   if (!write_ctr(p, 0x20, 1, "CTR-P-NONE", 0x42424242u))
+   { check(0, "fixture", "could not write image"); goto end; }
+
+   strlcpy(config_get_ptr()->paths.path_content_database, walk_db,
+         sizeof(config_get_ptr()->paths.path_content_database));
+   rdb_opens = 0;
+   started   = run_scan(walk_in);
+   opens     = rdb_opens;
+   strlcpy(config_get_ptr()->paths.path_content_database, db_dir,
+         sizeof(config_get_ptr()->paths.path_content_database));
+   if (!started)
+   {
+      check(0, "walk scan started", "task_push_dbscan refused");
+      goto end;
+   }
+
+   printf("  info  database walks over %u databases: %u\n", WALK_DBS,
+         opens);
+   check(scan_completed, "walk scan completed",
+         scan_completed ? "callback fired" : "timed out");
+   sprintf(detail, "%u walks for %u databases", opens, WALK_DBS);
+   check(opens == WALK_DBS, "one walk per database", detail);
+   sprintf(p, "%s/Walk Serial.lpl", pl_dir);
+   check(file_contains(p, "41_walk.3ds"),
+         "walked serial index matches", "41_walk.3ds");
+   sprintf(p, "%s/Test Alpha.lpl", pl_dir);
+   check(file_contains(p, "40_walk.cue"),
+         "crc lookup ahead of the walk", "40_walk.cue");
+
+end:
+   free(walk_db);
+   free(walk_in);
+   free(p);
+}
+
 int main(int argc, char **argv)
 {
    const char *root = (argc > 1) ? argv[1] : "/tmp";
@@ -849,7 +956,8 @@ int main(int argc, char **argv)
             "display_name = \"3DS Test\"\n"
             "corename = \"CtrTest\"\n"
             "supported_extensions = \"3ds|cci|cxi\"\n"
-            "database = \"Test 3DS|Test 3DS Strict\"\n");
+            "database = \"Test 3DS|Test 3DS Strict|Walk Mobile|Walk Other|"
+            "Walk Serial\"\n");
       fclose(f);
    }
    sprintf(p, "%s/ctr_libretro.so", core_dir);
@@ -1643,6 +1751,8 @@ int main(int argc, char **argv)
             && !file_contains(p, "Stepped Rev 0"),
             "shared serial's CRC resumed at its entry", "Stepped Rev 1");
    }
+
+   walk_lane(root, pl_dir, db_dir);
 
 done:
    printf("\n%d checks, %d failures\n", checks, failures);

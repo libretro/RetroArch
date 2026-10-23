@@ -78,6 +78,20 @@ typedef int (*libretrodb_scan_cb)(void *ctx, const uint8_t *key,
 int libretrodb_scan_field(libretrodb_t *db, const char *field,
       const char *aux_field, libretrodb_scan_cb cb, void *ctx);
 
+/* As libretrodb_scan_cb, with the value of a second binary field:
+ * @key2 is NULL and @key2_len zero when the record lacks it. */
+typedef int (*libretrodb_scan2_cb)(void *ctx, const uint8_t *key,
+      size_t key_len, const uint8_t *key2, size_t key2_len,
+      uint64_t offset, const uint64_t *aux);
+
+/* libretrodb_scan_field() over two binary fields, so a caller indexing
+ * both walks the database once.  Either field may be NULL, not both.
+ * A record is reported when it carries either field or the
+ * companion. */
+int libretrodb_scan_field2(libretrodb_t *db, const char *field,
+      const char *field2, const char *aux_field,
+      libretrodb_scan2_cb cb, void *ctx);
+
 int libretrodb_read_at(libretrodb_t *db, uint64_t offset,
       struct rmsgpack_dom_value *out);
 
