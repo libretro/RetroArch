@@ -7,7 +7,8 @@ include ../../sample_objdir.mk
 # are what the drivers read once SPIRV-Cross leaves the runtime path.
 #
 #   make
-#   ./rslc_reflect_check <dumpdir>      the directory rslc_corpus_dump wrote
+#   ./rslc_reflect_check <dumpdir>           the directory rslc_corpus_dump wrote
+#   ./rslc_reflect_check --ingest <dumpdir>  glslang's .spv through rslc_compile_spirv
 #
 # No check target: the tool needs a corpus on disk to do anything.
 

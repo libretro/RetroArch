@@ -118,7 +118,7 @@ static void test_abi_rejects(void)
    words[3] = 100; words[4] = 0;
    err[0] = 0;
    CHECK(!rslc_compile_spirv(words, 5, RSLC_STAGE_VERTEX, &o, &r));
-   CHECK(!strcmp(err, "rslc: SPIR-V ingest not implemented"));
+   CHECK(!strcmp(err, "rslc: SPIR-V module without an entry point"));
    words[0] = 1;
    err[0] = 0;
    CHECK(!rslc_compile_spirv(words, 5, RSLC_STAGE_VERTEX, &o, &r));
@@ -1482,6 +1482,143 @@ static void test_blob(void)
    CHECK(!rslc_blob_open(NULL, 0, &r));
 }
 
+/* The ingest reads a module back to the reflection the GLSL gave,
+ * carries the words through for the Vulkan driver, and refuses what
+ * the cache must not serve: another stage, a printed destination, a
+ * capability beyond Shader, unstructured control flow, a layout this
+ * compiler would not have produced. */
+static void test_ingest(void)
+{
+   struct rslc_opts   o, oi;
+   struct rslc_result r, ri;
+   char               err[128], erri[128];
+   static const char  frag[] =
+      "#version 450\n"
+      "layout(push_constant) uniform Push { vec4 SourceSize; float f[3]; mat3 m; uint FrameCount; } params;\n"
+      "layout(std140, set = 0, binding = 0) uniform UBO { mat4 MVP; vec2 v2[2]; float x; } global;\n"
+      "layout(location = 0) in vec2 vTexCoord;\n"
+      "layout(location = 1) flat in int idx;\n"
+      "layout(location = 0) out vec4 FragColor;\n"
+      "layout(set = 0, binding = 3) uniform sampler2D Source;\n"
+      "layout(set = 0, binding = 4) uniform sampler2D Other;\n"
+      "float g(float a) { return a * global.x; }\n"
+      "void main() { if (idx > 0) FragColor = texture(Source, vTexCoord) * params.f[idx] + global.v2[1].xyxy;"
+      " else FragColor = vec4(g(params.SourceSize.x)); }\n";
+   const uint8_t *b, *bi;
+   const struct rslc_member *m, *mi;
+   const struct rslc_sampler *s, *si;
+   const struct rslc_io *io, *ioi;
+   uint32_t *copy;
+   size_t    n, i;
+   unsigned  k;
+
+   opts_default(&o, err, sizeof(err));
+   o.dst = RSLC_DST_SPIRV;
+   CHECK(rslc_compile(frag, sizeof(frag) - 1, RSLC_STAGE_FRAGMENT, &o, &r));
+   if (!r.blob)
+      return;
+   n = r.spirv_len;
+
+   opts_default(&oi, erri, sizeof(erri));
+   oi.dst = RSLC_DST_SPIRV;
+   CHECK(rslc_compile_spirv(r.spirv, n, RSLC_STAGE_FRAGMENT, &oi, &ri));
+   if (!ri.blob)
+   {
+      fprintf(stderr, "  %s\n", erri);
+      rslc_result_free(&r, &o);
+      return;
+   }
+   b  = (const uint8_t*)r.blob;
+   bi = (const uint8_t*)ri.blob;
+   CHECK(ri.spirv_len == n && !memcmp(ri.spirv, r.spirv, n * 4));
+   CHECK(ri.refl->ubo.present && ri.refl->push.present);
+   CHECK(!strcmp(RSLC_STR(bi, ri.refl->push.name), "Push") && !strcmp(RSLC_STR(bi, ri.refl->push.instance), "params"));
+   CHECK(!strcmp(RSLC_STR(bi, ri.refl->ubo.name), "UBO") && !strcmp(RSLC_STR(bi, ri.refl->ubo.instance), "global"));
+   CHECK(ri.refl->ubo.size == r.refl->ubo.size && ri.refl->push.size == r.refl->push.size);
+   CHECK(ri.refl->ubo.binding == 0 && ri.refl->push.member_count == 4 && ri.refl->ubo.member_count == 3);
+   for (k = 0; k < 2; k++)
+   {
+      const struct rslc_block *x  = k ? &r.refl->push : &r.refl->ubo;
+      const struct rslc_block *xi = k ? &ri.refl->push : &ri.refl->ubo;
+      m  = (const struct rslc_member*)(b + x->members);
+      mi = (const struct rslc_member*)(bi + xi->members);
+      for (i = 0; i < x->member_count; i++)
+      {
+         CHECK(!strcmp(RSLC_STR(b, m[i].name), RSLC_STR(bi, mi[i].name)));
+         CHECK(m[i].offset == mi[i].offset && m[i].size == mi[i].size && m[i].array_len == mi[i].array_len);
+         CHECK(m[i].base == mi[i].base && m[i].cols == mi[i].cols && m[i].rows == mi[i].rows);
+         CHECK(m[i].active == mi[i].active);
+      }
+   }
+   /* params.SourceSize is read in g(), reached from main; m and FrameCount are not */
+   mi = (const struct rslc_member*)(bi + ri.refl->push.members);
+   CHECK(mi[0].active && mi[1].active && !mi[2].active && !mi[3].active);
+   mi = (const struct rslc_member*)(bi + ri.refl->ubo.members);
+   CHECK(!mi[0].active && mi[1].active && mi[2].active);
+
+   CHECK(ri.refl->sampler_count == 2);
+   s  = (const struct rslc_sampler*)(b + r.refl->samplers);
+   si = (const struct rslc_sampler*)(bi + ri.refl->samplers);
+   for (i = 0; i < 2; i++)
+      CHECK(!strcmp(RSLC_STR(b, s[i].name), RSLC_STR(bi, si[i].name)) && s[i].binding == si[i].binding);
+   CHECK(ri.refl->input_count == 2 && ri.refl->output_count == 1);
+   io  = (const struct rslc_io*)(b + r.refl->inputs);
+   ioi = (const struct rslc_io*)(bi + ri.refl->inputs);
+   for (i = 0; i < 2; i++)
+   {
+      CHECK(!strcmp(RSLC_STR(b, io[i].name), RSLC_STR(bi, ioi[i].name)));
+      CHECK(io[i].location == ioi[i].location && io[i].flat == ioi[i].flat && io[i].rows == ioi[i].rows);
+   }
+   rslc_result_free(&ri, &oi);
+
+   /* reflection only: no payload */
+   oi.dst = RSLC_DST_REFLECT;
+   CHECK(rslc_compile_spirv(r.spirv, n, RSLC_STAGE_FRAGMENT, &oi, &ri));
+   CHECK(ri.spirv == NULL && ri.refl && ri.refl->sampler_count == 2);
+   rslc_result_free(&ri, &oi);
+
+   /* refusals */
+   CHECK(!rslc_compile_spirv(r.spirv, n, RSLC_STAGE_VERTEX, &oi, &ri));
+   oi.dst = RSLC_DST_HLSL;
+   CHECK(!rslc_compile_spirv(r.spirv, n, RSLC_STAGE_FRAGMENT, &oi, &ri));
+   oi.dst = RSLC_DST_REFLECT;
+   CHECK(!rslc_compile_spirv(r.spirv, 4, RSLC_STAGE_FRAGMENT, &oi, &ri));
+
+   copy = (uint32_t*)malloc(n * 4);
+   if (copy)
+   {
+      /* a capability beyond Shader */
+      memcpy(copy, r.spirv, n * 4);
+      CHECK((copy[5] & 0xffffu) == 17 && copy[6] == 1);
+      copy[6] = 2;   /* Geometry */
+      CHECK(!rslc_compile_spirv(copy, n, RSLC_STAGE_FRAGMENT, &oi, &ri));
+
+      /* the selection merge removed: the branch is no longer structured */
+      memcpy(copy, r.spirv, n * 4);
+      for (i = 5; i < n; i += copy[i] >> 16)
+         if ((copy[i] & 0xffffu) == 247)
+         {
+            copy[i] = (copy[i] & 0xffff0000u);   /* OpNop of the same length */
+            break;
+         }
+      CHECK(i < n);
+      CHECK(!rslc_compile_spirv(copy, n, RSLC_STAGE_FRAGMENT, &oi, &ri));
+
+      /* a member offset this compiler would not lay out */
+      memcpy(copy, r.spirv, n * 4);
+      for (i = 5; i < n; i += copy[i] >> 16)
+         if ((copy[i] & 0xffffu) == 72 && copy[i + 3] == 35 && copy[i + 4] == 16)
+         {
+            copy[i + 4] = 20;
+            break;
+         }
+      CHECK(i < n);
+      CHECK(!rslc_compile_spirv(copy, n, RSLC_STAGE_FRAGMENT, &oi, &ri));
+      free(copy);
+   }
+   rslc_result_free(&r, &o);
+}
+
 /* rslc_test --pp <file>: preprocess a stage source and print the token
  * stream, for the comparison against glslangValidator -E that the
  * corpus check runs. */
@@ -1552,6 +1689,7 @@ int main(int argc, char **argv)
    test_glsl();
    test_hlsl();
    test_msl();
+   test_ingest();
 
    if (fails)
    {

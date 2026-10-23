@@ -1005,8 +1005,8 @@ enum spv_op
    SpvOpConstantTrue = 41, SpvOpConstantFalse = 42, SpvOpConstant = 43,
    SpvOpConstantComposite = 44,
    SpvOpFunction = 54, SpvOpFunctionParameter = 55, SpvOpFunctionEnd = 56,
-   SpvOpFunctionCall = 57, SpvOpVariable = 59, SpvOpLoad = 61, SpvOpStore = 62,
-   SpvOpAccessChain = 65, SpvOpDecorate = 71, SpvOpMemberDecorate = 72,
+   SpvOpFunctionCall = 57, SpvOpVariable = 59, SpvOpLoad = 61, SpvOpStore = 62, SpvOpCopyMemory = 63,
+   SpvOpAccessChain = 65, SpvOpInBoundsAccessChain = 66, SpvOpDecorate = 71, SpvOpMemberDecorate = 72,
    SpvOpVectorExtractDynamic = 77, SpvOpVectorInsertDynamic = 78,
    SpvOpVectorShuffle = 79, SpvOpCompositeConstruct = 80, SpvOpCompositeExtract = 81,
    SpvOpCompositeInsert = 82, SpvOpTranspose = 84,
@@ -4562,30 +4562,701 @@ bool rslc_emit_dst(struct rslc_ctx *c, struct rslc_result *result)
 #endif
 }
 
-/* SPIR-V ingest */
+/* ------------------------------------------------------------------ */
+/* SPIR-V ingest                                                       */
+/* ------------------------------------------------------------------ */
+
+/* A module this compiler or glslang emitted for the slang stack is
+ * read for its interface: the two blocks with their members, the
+ * samplers, the stage inputs and outputs, and which block members the
+ * code the entry point reaches touches.  That rebuilds the declaration
+ * half of the program, which the reflection writer then lays out as
+ * it would from GLSL; the layout the module decorates is held against
+ * the computed one and a module that differs is refused.  Function
+ * bodies are not decompiled: a cached module serves reflection and
+ * the Vulkan driver, and a textual driver recompiles its text from
+ * the GLSL. */
 
 #define RSLC_SPV_MAGIC 0x07230203u
+
+enum ing_kind
+{
+   ING_NONE = 0,
+   ING_TYPE,      /* type: b set while its rslc type is being built */
+   ING_CONST,     /* a: value */
+   ING_VAR,       /* a: pointee type id, b: storage class */
+   ING_FUNC       /* a: function index */
+};
+
+struct ing_id
+{
+   uint32_t       a;
+   uint32_t       b;
+   uint32_t       name;      /* word offset of the OpName string, 0 none */
+   uint32_t       inst;      /* word offset of the defining instruction */
+   uint32_t       location;  /* RSLC_UNSET when absent */
+   uint32_t       binding;
+   uint32_t       set;
+   uint8_t        kind;      /* enum ing_kind */
+   uint8_t        block;     /* Block decoration on a struct type */
+   uint8_t        flat;
+   uint8_t        builtin;   /* BuiltIn on the id or a member of it */
+   uint8_t        merge;     /* a merge block or continue target */
+   const struct rslc_type *type;
+};
+
+struct ing
+{
+   struct rslc_ctx *c;
+   const uint32_t  *w;
+   uint32_t         n;
+   uint32_t         bound;
+   struct ing_id   *ids;
+   uint32_t         entry;      /* entry point function id */
+   uint32_t         model;
+   uint32_t         nfuncs;
+   uint32_t        *func_at;    /* function index -> word offset of OpFunction */
+   uint8_t         *func_reach;
+   uint8_t         *active[2];
+   uint32_t         block_var[2];   /* variable ids of the blocks, 0 none */
+};
+
+static bool ing_fail(struct ing *g, const char *msg)
+{
+   rslc_err(g->c, msg, NULL, 0);
+   return false;
+}
+
+/* Appends to one of the program's pointer tables. */
+static bool ing_push(struct rslc_ctx *c, void ***arr, uint32_t *n, uint32_t *cap, void *item)
+{
+   if (*n == *cap)
+   {
+      uint32_t ncap = *cap ? *cap * 2 : 8;
+      void **nv = (void**)rslc_arena_alloc(c, ncap * sizeof(*nv));
+      if (!nv)
+         return false;
+      if (*n)
+         memcpy(nv, *arr, *n * sizeof(*nv));
+      *arr = nv;
+      *cap = ncap;
+   }
+   (*arr)[(*n)++] = item;
+   return true;
+}
+
+static struct rslc_sym *ing_name(struct ing *g, uint32_t at)
+{
+   const char *s;
+   size_t len = 0;
+   if (!at)
+      return NULL;
+   s = (const char*)(g->w + at);
+   while (s[len])
+      len++;
+   if (!len)
+      return NULL;
+   return rslc_sym(g->c, s, len);
+}
+
+/* The rslc type of a type id, built once. */
+static const struct rslc_type *ing_type(struct ing *g, uint32_t id)
+{
+   struct ing_id  *d;
+   const uint32_t *w;
+   uint32_t        op, len;
+   if (id >= g->bound || g->ids[id].kind != ING_TYPE)
+      return NULL;
+   d = &g->ids[id];
+   if (d->type)
+      return d->type;
+   if (d->b)
+      return NULL;   /* a type that contains itself */
+   d->b = 1;
+   w   = g->w + d->inst;
+   op  = w[0] & 0xffffu;
+   len = w[0] >> 16;
+   switch (op)
+   {
+      case SpvOpTypeVoid:
+         d->type = rslc_type_basic(g->c, RSLC_TY_VOID, RSLC_BASE_VOID, 0, 0);
+         break;
+      case SpvOpTypeBool:
+         d->type = rslc_type_basic(g->c, RSLC_TY_SCALAR, RSLC_BASE_BOOL, 1, 1);
+         break;
+      case SpvOpTypeInt:
+         if (w[2] != 32)
+            return NULL;
+         d->type = rslc_type_basic(g->c, RSLC_TY_SCALAR, w[3] ? RSLC_BASE_INT : RSLC_BASE_UINT, 1, 1);
+         break;
+      case SpvOpTypeFloat:
+         if (w[2] != 32)
+            return NULL;
+         d->type = rslc_type_basic(g->c, RSLC_TY_SCALAR, RSLC_BASE_FLOAT, 1, 1);
+         break;
+      case SpvOpTypeVector:
+      {
+         const struct rslc_type *e = ing_type(g, w[2]);
+         if (!e || e->kind != RSLC_TY_SCALAR || w[3] < 2 || w[3] > 4)
+            return NULL;
+         d->type = rslc_type_basic(g->c, RSLC_TY_VEC, (enum rslc_base)e->base, w[3], 1);
+         break;
+      }
+      case SpvOpTypeMatrix:
+      {
+         const struct rslc_type *e = ing_type(g, w[2]);
+         if (!e || e->kind != RSLC_TY_VEC || e->base != RSLC_BASE_FLOAT || w[3] < 2 || w[3] > 4)
+            return NULL;
+         d->type = rslc_type_basic(g->c, RSLC_TY_MAT, RSLC_BASE_FLOAT, e->rows, w[3]);
+         break;
+      }
+      case SpvOpTypeImage:
+      {
+         const struct rslc_type *e = ing_type(g, w[2]);
+         if (!e || e->kind != RSLC_TY_SCALAR || w[3] != 1 /* Dim2D */ || w[7] != 1 /* sampled */)
+            return NULL;
+         d->type = rslc_type_sampler2d(g->c, (enum rslc_base)e->base);
+         break;
+      }
+      case SpvOpTypeSampledImage:
+         d->type = ing_type(g, w[2]);
+         break;
+      case SpvOpTypeArray:
+      {
+         const struct rslc_type *e = ing_type(g, w[2]);
+         uint32_t lid = w[3];
+         if (!e || lid >= g->bound || g->ids[lid].kind != ING_CONST || !g->ids[lid].a)
+            return NULL;
+         d->type = rslc_type_array(g->c, e, g->ids[lid].a);
+         break;
+      }
+      case SpvOpTypeStruct:
+      {
+         uint32_t nf = len - 2, i;
+         struct rslc_field *f = (struct rslc_field*)rslc_arena_zalloc(g->c, (nf ? nf : 1) * sizeof(*f));
+         struct rslc_type  *t;
+         if (!f)
+            return NULL;
+         for (i = 0; i < nf; i++)
+         {
+            f[i].type = ing_type(g, w[2 + i]);
+            if (!f[i].type)
+               return NULL;
+            f[i].name = NULL;   /* member names come after, from OpMemberName */
+         }
+         t = rslc_type_struct(g->c, ing_name(g, d->name), f, nf);
+         if (t && !ing_push(g->c, (void***)&g->c->prog.structs, &g->c->prog.nstructs,
+                  &g->c->prog.structs_cap, t))
+            return NULL;
+         d->type = t;
+         break;
+      }
+      case SpvOpTypePointer:
+         d->type = ing_type(g, w[3]);
+         break;
+      default:
+         return NULL;
+   }
+   return d->type;
+}
+
+/* The member names of a struct, from the OpMemberNames seen on the
+ * tape; a struct id used by a block must carry them all. */
+static bool ing_member_names(struct ing *g, uint32_t sid, const struct rslc_type *t)
+{
+   struct rslc_field *f = (struct rslc_field*)t->fields;
+   uint32_t at = 5, i;
+   while (at < g->n)
+   {
+      uint32_t op  = g->w[at] & 0xffffu;
+      uint32_t len = g->w[at] >> 16;
+      if (!len)
+         return false;
+      if (op == SpvOpMemberName && len >= 4 && g->w[at + 1] == sid && g->w[at + 2] < t->nfields)
+         f[g->w[at + 2]].name = ing_name(g, at + 3);
+      if (op == SpvOpFunction)
+         break;
+      at += len;
+   }
+   for (i = 0; i < t->nfields; i++)
+      if (!f[i].name)
+         return false;
+   return true;
+}
+
+static struct rslc_var *ing_var(struct ing *g, uint32_t id, const struct rslc_type *t)
+{
+   struct rslc_prog *pr = &g->c->prog;
+   struct rslc_var  *v  = (struct rslc_var*)rslc_arena_zalloc(g->c, sizeof(*v));
+   if (!v)
+      return NULL;
+   v->name     = ing_name(g, g->ids[id].name);
+   v->type     = t;
+   v->location = g->ids[id].location;
+   v->binding  = g->ids[id].binding;
+   v->set      = g->ids[id].set;
+   v->global   = 1;
+   v->interp   = g->ids[id].flat ? RSLC_INTERP_FLAT : RSLC_INTERP_NONE;
+   (void)pr;
+   return v;
+}
+
+/* A block's decorated member offsets against the layout the reflection
+ * writer will compute; the push block may be std430 or std140. */
+static bool ing_block_layout(struct ing *g, uint32_t sid, const struct rslc_type *t, bool std140)
+{
+   uint32_t at = 5;
+   uint32_t seen = 0;
+   while (at < g->n)
+   {
+      uint32_t op  = g->w[at] & 0xffffu;
+      uint32_t len = g->w[at] >> 16;
+      if (!len)
+         return false;
+      if (op == SpvOpMemberDecorate && len >= 5 && g->w[at + 1] == sid && g->w[at + 3] == SPV_DEC_OFFSET
+            && g->w[at + 2] < t->nfields)
+      {
+         if (g->w[at + 4] != rslc_layout_field_offset(t, g->w[at + 2], std140))
+            return false;
+         seen++;
+      }
+      if (op == SpvOpFunction)
+         break;
+      at += len;
+   }
+   return seen == t->nfields;
+}
+
+/* Which functions the entry point reaches, by their OpFunctionCalls;
+ * stack holds nfuncs entries. */
+static void ing_reach(struct ing *g, uint32_t entry, uint32_t *stack)
+{
+   uint32_t top = 0;
+   stack[top++]         = entry;
+   g->func_reach[entry] = 1;
+   while (top)
+   {
+      uint32_t at = g->func_at[stack[--top]];
+      while (at < g->n)
+      {
+         uint32_t op  = g->w[at] & 0xffffu;
+         uint32_t len = g->w[at] >> 16;
+         if (!len || op == SpvOpFunctionEnd)
+            break;
+         if (op == SpvOpFunctionCall && g->w[at + 3] < g->bound && g->ids[g->w[at + 3]].kind == ING_FUNC)
+         {
+            uint32_t fi = g->ids[g->w[at + 3]].a;
+            if (!g->func_reach[fi])
+            {
+               g->func_reach[fi] = 1;
+               stack[top++]      = fi;
+            }
+         }
+         at += len;
+      }
+   }
+}
+
+/* The block members the reachable code touches: the first index of an
+ * access chain on a block variable, or the whole block loaded. */
+static bool ing_active(struct ing *g)
+{
+   uint32_t at = 5, fi = 0, k;
+   bool in_reach = false;
+   while (at < g->n)
+   {
+      uint32_t op  = g->w[at] & 0xffffu;
+      uint32_t len = g->w[at] >> 16;
+      if (!len)
+         return false;
+      if (op == SpvOpFunction)
+      {
+         in_reach = g->func_reach[fi];
+         fi++;
+      }
+      else if (in_reach && (op == SpvOpAccessChain || op == SpvOpInBoundsAccessChain) && len >= 5)
+      {
+         uint32_t base = g->w[at + 3], idx = g->w[at + 4];
+         for (k = 0; k < 2; k++)
+            if (base == g->block_var[k] && g->active[k])
+            {
+               if (idx >= g->bound || g->ids[idx].kind != ING_CONST
+                     || g->ids[idx].a >= g->c->prog.blocks[k].type->nfields)
+                  return false;
+               g->active[k][g->ids[idx].a] = 1;
+            }
+      }
+      else if (in_reach && (op == SpvOpLoad || (op == SpvOpCopyMemory && len >= 3)))
+      {
+         uint32_t base = g->w[at + (op == SpvOpLoad ? 3 : 2)];
+         for (k = 0; k < 2; k++)
+            if (base == g->block_var[k] && g->active[k])
+               memset(g->active[k], 1, g->c->prog.blocks[k].type->nfields);
+      }
+      at += len;
+   }
+   return true;
+}
+
+/* First pass: every id's kind, name and decorations; the entry point;
+ * the structured-control-flow check (a conditional branch or switch
+ * follows its merge instruction); the capabilities. */
+static bool ing_scan(struct ing *g)
+{
+   uint32_t at = 5;
+   uint32_t fi = 0;
+   bool merged = false;
+   while (at < g->n)
+   {
+      uint32_t op   = g->w[at] & 0xffffu;
+      uint32_t len  = g->w[at] >> 16;
+      uint32_t need;
+      const uint32_t *w = g->w + at;
+      if (!len || at + len > g->n)
+         return ing_fail(g, "SPIR-V instruction runs past the module");
+      switch (op)
+      {
+         /* operand counts the reader relies on; a string operand ends
+          * inside its instruction */
+         case SpvOpCapability: case SpvOpName: case SpvOpTypeVoid: case SpvOpTypeBool:
+         case SpvOpTypeStruct: case SpvOpSelectionMerge: case SpvOpSwitch:
+            need = 2; break;
+         case SpvOpEntryPoint: case SpvOpMemberName: case SpvOpDecorate: case SpvOpExtInstImport:
+         case SpvOpTypeInt: case SpvOpTypeFloat: case SpvOpTypeSampledImage:
+         case SpvOpLoopMerge: case SpvOpBranchConditional:
+            need = 3; break;
+         case SpvOpConstant: case SpvOpVariable: case SpvOpTypeVector: case SpvOpTypeMatrix:
+         case SpvOpTypeArray: case SpvOpTypePointer: case SpvOpMemberDecorate: case SpvOpLoad:
+         case SpvOpFunctionCall:
+            need = 4; break;
+         case SpvOpFunction:
+            need = 5; break;
+         case SpvOpTypeImage:
+            need = 9; break;
+         default:
+            need = 1; break;
+      }
+      if (len < need)
+         return ing_fail(g, "SPIR-V instruction is short");
+      if ((op == SpvOpName || op == SpvOpMemberName || op == SpvOpExtInstImport)
+            && ((const char*)(w + len))[-1])
+         return ing_fail(g, "SPIR-V string runs past its instruction");
+      switch (op)
+      {
+         case SpvOpCapability:
+            if (w[1] != SPV_CAP_SHADER && w[1] != SPV_CAP_IMAGEQUERY)
+               return ing_fail(g, "SPIR-V capability beyond Shader");
+            break;
+         case SpvOpExtInstImport:
+            if (strcmp((const char*)(w + 2), "GLSL.std.450"))
+               return ing_fail(g, "SPIR-V extended instruction set beyond GLSL.std.450");
+            break;
+         case SpvOpEntryPoint:
+            if (g->entry)
+               return ing_fail(g, "SPIR-V module with several entry points");
+            g->model = w[1];
+            g->entry = w[2];
+            break;
+         case SpvOpName:
+            if (w[1] < g->bound)
+               g->ids[w[1]].name = at + 2;
+            break;
+         case SpvOpDecorate:
+            if (w[1] < g->bound)
+            {
+               struct ing_id *d = &g->ids[w[1]];
+               switch (w[2])
+               {
+                  case SPV_DEC_LOCATION:
+                  case SPV_DEC_BINDING:
+                  case SPV_DEC_DESCRIPTORSET:
+                     if (len < 4)
+                        return ing_fail(g, "SPIR-V instruction is short");
+                     if (w[2] == SPV_DEC_LOCATION)
+                        d->location = w[3];
+                     else if (w[2] == SPV_DEC_BINDING)
+                        d->binding = w[3];
+                     else
+                        d->set = w[3];
+                     break;
+                  case SPV_DEC_BLOCK:         d->block    = 1;    break;
+                  case SPV_DEC_FLAT:          d->flat     = 1;    break;
+                  case SPV_DEC_BUILTIN:       d->builtin  = 1;    break;
+                  default: break;
+               }
+            }
+            break;
+         case SpvOpMemberDecorate:
+            if (w[1] < g->bound && w[3] == SPV_DEC_BUILTIN)
+               g->ids[w[1]].builtin = 1;
+            break;
+         case SpvOpTypeVoid: case SpvOpTypeBool: case SpvOpTypeInt: case SpvOpTypeFloat:
+         case SpvOpTypeVector: case SpvOpTypeMatrix: case SpvOpTypeImage:
+         case SpvOpTypeSampledImage: case SpvOpTypeArray: case SpvOpTypeStruct:
+         case SpvOpTypePointer: case SpvOpTypeFunction:
+            if (w[1] >= g->bound)
+               return ing_fail(g, "SPIR-V id beyond the bound");
+            g->ids[w[1]].kind = ING_TYPE;
+            g->ids[w[1]].inst = at;
+            break;
+         case SpvOpConstant:
+            if (w[2] >= g->bound)
+               return ing_fail(g, "SPIR-V id beyond the bound");
+            g->ids[w[2]].kind = ING_CONST;
+            g->ids[w[2]].a    = w[3];
+            break;
+         case SpvOpVariable:
+            if (w[2] >= g->bound)
+               return ing_fail(g, "SPIR-V id beyond the bound");
+            g->ids[w[2]].kind = ING_VAR;
+            g->ids[w[2]].a    = w[1];
+            g->ids[w[2]].b    = w[3];
+            break;
+         case SpvOpFunction:
+            if (w[2] >= g->bound)
+               return ing_fail(g, "SPIR-V id beyond the bound");
+            g->ids[w[2]].kind = ING_FUNC;
+            g->ids[w[2]].a    = fi;
+            g->func_at[fi]    = at;
+            fi++;
+            break;
+         case SpvOpLabel:
+            merged = false;
+            break;
+         case SpvOpSelectionMerge:
+         case SpvOpLoopMerge:
+            merged = true;
+            if (w[1] < g->bound)
+               g->ids[w[1]].merge = 1;
+            if (op == SpvOpLoopMerge && w[2] < g->bound)
+               g->ids[w[2]].merge = 1;
+            break;
+         case SpvOpBranchConditional:
+         case SpvOpSwitch:
+         {
+            /* a header's branch follows its merge instruction; any
+             * other conditional branch leaves for a merge block or a
+             * continue target of an enclosing construct */
+            bool structured = merged;
+            uint32_t i;
+            if (op == SpvOpBranchConditional)
+               structured = structured || (w[2] < g->bound && g->ids[w[2]].merge)
+                     || (w[3] < g->bound && g->ids[w[3]].merge);
+            else
+            {
+               structured = structured || (w[2] < g->bound && g->ids[w[2]].merge);
+               for (i = 4; i < len; i += 2)
+                  structured = structured || (w[i] < g->bound && g->ids[w[i]].merge);
+            }
+            if (!structured)
+               return ing_fail(g, "SPIR-V control flow is not structured");
+            break;
+         }
+         default:
+            if (op == 29 /* OpTypeRuntimeArray */)
+               return ing_fail(g, "SPIR-V runtime array");
+            break;
+      }
+      at += len;
+   }
+   g->nfuncs = fi;
+   return true;
+}
 
 bool rslc_compile_spirv(const uint32_t *words, size_t n,
       enum rslc_stage stage,
       const struct rslc_opts *opts, struct rslc_result *result)
 {
-   struct rslc_ctx c;
+   struct rslc_ctx   c;
+   struct ing        g;
+   struct rslc_prog *pr;
+   struct rslc_pbuf  pb;
+   uint32_t          id, k;
+   bool              ok = false;
 
    if (!words || !opts || !result)
       return false;
    if (!rslc_ctx_init(&c, opts, stage))
       return false;
+   pr = &c.prog;
 
+   memset(&g, 0, sizeof(g));
+   g.c = &c;
+   g.w = words;
+   g.n = (uint32_t)n;
    if (n < 5 || words[0] != RSLC_SPV_MAGIC)
       rslc_err(&c, "not a SPIR-V module", NULL, 0);
    else if ((words[1] >> 8) != 0x100)
       rslc_err(&c, "SPIR-V version not 1.x", NULL, 0);
    else if (words[3] == 0 || words[3] > 0x10000)
       rslc_err(&c, "SPIR-V id bound out of range", NULL, 0);
+   else if (opts->dst != RSLC_DST_SPIRV && opts->dst != RSLC_DST_REFLECT)
+      rslc_err(&c, "a printed destination needs the GLSL, not a module", NULL, 0);
    else
-      rslc_err(&c, "SPIR-V ingest not implemented", NULL, 0);
+   {
+      uint32_t at, nf = 1;
+      for (at = 5; at < n && (words[at] >> 16); at += words[at] >> 16)
+         nf += (words[at] & 0xffffu) == SpvOpFunction;
+      g.bound      = words[3];
+      g.ids        = (struct ing_id*)rslc_arena_zalloc(&c, (size_t)g.bound * sizeof(*g.ids));
+      g.func_at    = (uint32_t*)rslc_arena_zalloc(&c, nf * sizeof(uint32_t));
+      g.func_reach = (uint8_t*)rslc_arena_zalloc(&c, nf);
+      if (g.ids && g.func_at && g.func_reach)
+      {
+         for (id = 0; id < g.bound; id++)
+            g.ids[id].location = g.ids[id].binding = g.ids[id].set = RSLC_UNSET;
+         ok = ing_scan(&g);
+      }
+   }
+   if (ok && (!g.entry || g.entry >= g.bound || g.ids[g.entry].kind != ING_FUNC))
+      ok = ing_fail(&g, "SPIR-V module without an entry point");
+   if (ok && g.model != (stage == RSLC_STAGE_VERTEX ? SPV_MODEL_VERTEX : SPV_MODEL_FRAGMENT))
+      ok = ing_fail(&g, "SPIR-V entry point is not this stage");
+
+   /* the interface, in id order as glslang and rslc emit it */
+   for (id = 1; ok && id < g.bound; id++)
+   {
+      struct ing_id *d = &g.ids[id];
+      const struct rslc_type *t;
+      struct rslc_var *v;
+      uint32_t ptr;
+      if (d->kind != ING_VAR)
+         continue;
+      if (d->b != SPV_SC_UNIFORM && d->b != SPV_SC_PUSHCONSTANT && d->b != SPV_SC_UNIFORMCONSTANT
+            && d->b != SPV_SC_INPUT && d->b != SPV_SC_OUTPUT)
+         continue;   /* Private and Function variables are the body's */
+      ptr = d->a;
+      if (ptr >= g.bound || g.ids[ptr].kind != ING_TYPE
+            || (g.w[g.ids[ptr].inst] & 0xffffu) != SpvOpTypePointer
+            || g.w[g.ids[ptr].inst + 3] >= g.bound)
+      {
+         ok = ing_fail(&g, "SPIR-V variable of no pointer type");
+         break;
+      }
+      t = ing_type(&g, ptr);
+      if (!t)
+      {
+         ok = ing_fail(&g, "SPIR-V variable of a type outside the dialect");
+         break;
+      }
+      switch (d->b)
+      {
+         case SPV_SC_UNIFORM:
+         case SPV_SC_PUSHCONSTANT:
+         {
+            uint32_t sid = g.w[g.ids[ptr].inst + 3];
+            bool push = d->b == SPV_SC_PUSHCONSTANT;
+            k = push ? 1 : 0;
+            if (t->kind != RSLC_TY_STRUCT || !g.ids[sid].block || pr->has_block[k])
+            {
+               ok = ing_fail(&g, "SPIR-V uniform that is not the stage's one block");
+               break;
+            }
+            if (!ing_member_names(&g, sid, t))
+            {
+               ok = ing_fail(&g, "SPIR-V block without member names");
+               break;
+            }
+            pr->has_block[k]        = true;
+            pr->blocks[k].type      = t;
+            pr->blocks[k].instance  = ing_name(&g, d->name);
+            pr->blocks[k].binding   = d->binding;
+            pr->blocks[k].set       = d->set;
+            pr->blocks[k].push      = push;
+            pr->blocks[k].std140    = !push;
+            if (push && !ing_block_layout(&g, sid, t, false))
+               pr->blocks[k].std140 = true;   /* layout(push_constant, std140) */
+            if (!ing_block_layout(&g, sid, t, pr->blocks[k].std140))
+            {
+               ok = ing_fail(&g, "SPIR-V block layout is not the one this compiler lays out");
+               break;
+            }
+            g.block_var[k] = id;
+            g.active[k]    = (uint8_t*)rslc_arena_zalloc(&c, t->nfields ? t->nfields : 1);
+            if (!g.active[k])
+               ok = false;
+            break;
+         }
+         case SPV_SC_UNIFORMCONSTANT:
+            if (t->kind != RSLC_TY_SAMPLER2D)
+            {
+               ok = ing_fail(&g, "SPIR-V uniform that is not a sampler2D");
+               break;
+            }
+            v = ing_var(&g, id, t);
+            if (!v || !v->name)
+            {
+               ok = ing_fail(&g, "SPIR-V sampler without a name");
+               break;
+            }
+            v->storage = RSLC_ST_SAMPLER;
+            ok = ing_push(&c, (void***)&pr->samplers, &pr->nsamplers, &pr->samplers_cap, v);
+            break;
+         case SPV_SC_INPUT:
+         case SPV_SC_OUTPUT:
+         {
+            struct rslc_var ***arr = d->b == SPV_SC_INPUT ? &pr->inputs : &pr->outputs;
+            uint32_t *cnt = d->b == SPV_SC_INPUT ? &pr->ninputs : &pr->noutputs;
+            uint32_t *cap = d->b == SPV_SC_INPUT ? &pr->inputs_cap : &pr->outputs_cap;
+            uint32_t sid  = g.w[g.ids[ptr].inst + 3];
+            if (d->builtin || (sid < g.bound && g.ids[sid].builtin))
+               break;   /* gl_Position, gl_FragCoord and the rest */
+            if (d->location == RSLC_UNSET)
+            {
+               ok = ing_fail(&g, "SPIR-V stage variable without a location");
+               break;
+            }
+            v = ing_var(&g, id, t);
+            if (!v || !v->name)
+            {
+               ok = ing_fail(&g, "SPIR-V stage variable without a name");
+               break;
+            }
+            v->storage = d->b == SPV_SC_INPUT ? RSLC_ST_IN : RSLC_ST_OUT;
+            ok = ing_push(&c, (void***)arr, cnt, cap, v);
+            break;
+         }
+         default:
+            break;
+      }
+   }
+
+   if (ok)
+   {
+      uint32_t *stack = (uint32_t*)rslc_arena_alloc(&c, g.nfuncs * sizeof(uint32_t));
+      if (!stack)
+         ok = false;
+      else
+         ing_reach(&g, g.ids[g.entry].a, stack);
+      if (ok && !ing_active(&g))
+         ok = ing_fail(&g, "SPIR-V block access this reader cannot follow");
+   }
+   if (ok)
+   {
+      size_t payload = opts->dst == RSLC_DST_SPIRV ? n * 4 : 0;
+      if (!rslc_blob_begin(&c, &pb, payload, g.active))
+         ok = false;
+      else
+      {
+         if (payload && !rslc_pbuf_put(&c, &pb, words, payload))
+            ok = false;
+         else
+         {
+            rslc_blob_end(&c, &pb, opts->dst, result);
+            if (payload)
+            {
+               result->spirv     = (const uint32_t*)((uint8_t*)pb.data
+                     + ((struct rslc_blob_hdr*)pb.data)->payload_off);
+               result->spirv_len = n;
+            }
+         }
+         if (!ok)
+            rslc_pbuf_free(&c, &pb);
+      }
+      if (!ok && !c.failed)
+         rslc_err(&c, "out of memory", NULL, 0);
+   }
 
    rslc_ctx_close(&c);
-   return false;
+   return ok;
 }

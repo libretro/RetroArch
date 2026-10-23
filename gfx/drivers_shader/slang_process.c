@@ -1184,6 +1184,34 @@ static bool slang_rslc_compile_stage(const char *source,
 #endif
 
 #if defined(HAVE_RSLC)
+/* A cached module read back through rslc's ingest: the words a hit
+ * serves must be a module this compiler accepts for the stage, or the
+ * hit is a miss and the stage is compiled again from its GLSL. */
+static bool slang_rslc_cached_stage_ok(const uint32_t *words, size_t len,
+      enum glslang_compile_stage stage)
+{
+   struct rslc_opts   opts;
+   struct rslc_result res;
+   char               err[256];
+
+   memset(&opts, 0, sizeof(opts));
+   opts.dst     = RSLC_DST_REFLECT;
+   opts.err     = err;
+   opts.err_cap = sizeof(err);
+   err[0]       = '\0';
+   if (!rslc_compile_spirv(words, len,
+            stage == GLSLANG_COMPILE_STAGE_VERTEX
+            ? RSLC_STAGE_VERTEX : RSLC_STAGE_FRAGMENT, &opts, &res))
+   {
+      RARCH_WARN("[Slang] Cached SPIR-V refused: %s\n", err);
+      return false;
+   }
+   rslc_result_free(&res, &opts);
+   return true;
+}
+#endif
+
+#if defined(HAVE_RSLC)
 /* Prints one stage as the text a driver asked for; NULL when rslc
  * cannot (the driver then crosses the SPIR-V). */
 static char *slang_rslc_print_stage(const char *source,
@@ -1328,11 +1356,43 @@ bool glslang_compile_shader_text(const char *shader_path,
       /* Try to load from cache */
       if (spirv_cache_load(cache_filename, output))
       {
-         RARCH_LOG("[Slang] Loaded shader from cache: \"%s\".\n", shader_path);
-         free(vertex_source);
-         free(fragment_source);
-         shader_line_buf_free(&lines);
-         return true;
+#if defined(HAVE_RSLC)
+         if (     !strcmp(compiler, "rslc")
+               && (   !slang_rslc_cached_stage_ok(output->vertex,
+                        output->vertex_len, GLSLANG_COMPILE_STAGE_VERTEX)
+                   || !slang_rslc_cached_stage_ok(output->fragment,
+                        output->fragment_len, GLSLANG_COMPILE_STAGE_FRAGMENT)))
+         {
+            RARCH_WARN("[Slang] Recompiling \"%s\": the cached SPIR-V is not a module rslc accepts.\n",
+                  shader_path);
+            glslang_output_free(output);
+         }
+         else
+#endif
+         {
+#if defined(HAVE_RSLC)
+            /* a hit serves the same text a miss would, from the sources
+             * already in hand */
+            if (text && !strcmp(compiler, "rslc"))
+            {
+               output->vertex_text = slang_rslc_print_stage(vertex_source,
+                     GLSLANG_COMPILE_STAGE_VERTEX, text);
+               if (output->vertex_text)
+                  output->fragment_text = slang_rslc_print_stage(fragment_source,
+                        GLSLANG_COMPILE_STAGE_FRAGMENT, text);
+               if (!output->fragment_text)
+               {
+                  free(output->vertex_text);
+                  output->vertex_text = NULL;
+               }
+            }
+#endif
+            RARCH_LOG("[Slang] Loaded shader from cache: \"%s\".\n", shader_path);
+            free(vertex_source);
+            free(fragment_source);
+            shader_line_buf_free(&lines);
+            return true;
+         }
       }
 
       if (!glslang_parse_meta(&lines, &output->meta))

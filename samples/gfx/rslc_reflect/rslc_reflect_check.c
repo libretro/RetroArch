@@ -27,7 +27,12 @@
  * actually reads (Cross's active buffer ranges), and each sampler's
  * name and binding.  slang_process.c derives the filter chain's
  * reflection from exactly these Cross calls, so agreement here is
- * what lets the chain read the blob instead. */
+ * what lets the chain read the blob instead.
+ *
+ * With --ingest the module under test is glslang's .spv beside each
+ * stage, read by rslc_compile_spirv rather than compiled from the
+ * GLSL: the tables a cache hit yields must agree with Cross on that
+ * module the same way. */
 
 #include <dirent.h>
 #include <stdio.h>
@@ -46,6 +51,8 @@
 #endif
 
 static unsigned diffs;
+static int      ingest;
+static unsigned refused;
 
 static char *read_file(const char *path, size_t *len)
 {
@@ -177,6 +184,8 @@ static int check_stage(const char *dir, const char *file)
    const struct rslc_reflect *rf;
    enum rslc_stage stage = strstr(file, ".vert.") ? RSLC_STAGE_VERTEX : RSLC_STAGE_FRAGMENT;
    char detail[256];
+   const uint32_t *module;
+   size_t nwords;
 
    /* a stage glslang rejected has no .spv beside it and is not a gate */
    snprintf(path, sizeof(path), "%s/%.*s.spv", dir, (int)(strlen(file) - 5), file);
@@ -186,28 +195,53 @@ static int check_stage(const char *dir, const char *file)
          return 0;
       fclose(f);
    }
-   snprintf(path, sizeof(path), "%s/%s", dir, file);
-   src = read_file(path, &len);
-   if (!src)
-      return 0;
    memset(&opts, 0, sizeof(opts));
    opts.dst     = RSLC_DST_SPIRV;
    opts.err     = err;
    opts.err_cap = sizeof(err);
    err[0]       = '\0';
-   if (!rslc_compile(src, len, stage, &opts, &res))
+   if (ingest)
    {
-      printf("FAIL %s: %s\n", file, err);
-      diffs++;
-      free(src);
-      return 1;
+      /* glslang's module through the ingest; Cross reads the same words */
+      src = read_file(path, &len);
+      if (!src || (len & 3))
+      {
+         free(src);
+         return 0;
+      }
+      if (!rslc_compile_spirv((const uint32_t*)src, len / 4, stage, &opts, &res))
+      {
+         printf("REFUSED %s: %s\n", file, err);
+         refused++;
+         free(src);
+         return 1;
+      }
+      module = (const uint32_t*)src;
+      nwords = len / 4;
    }
-   free(src);
+   else
+   {
+      snprintf(path, sizeof(path), "%s/%s", dir, file);
+      src = read_file(path, &len);
+      if (!src)
+         return 0;
+      if (!rslc_compile(src, len, stage, &opts, &res))
+      {
+         printf("FAIL %s: %s\n", file, err);
+         diffs++;
+         free(src);
+         return 1;
+      }
+      free(src);
+      src    = NULL;
+      module = res.spirv;
+      nwords = res.spirv_len;
+   }
    blob = (const uint8_t*)res.blob;
    rf   = res.refl;
 
    if (spvc_context_create(&ctx) != SPVC_SUCCESS
-         || spvc_context_parse_spirv(ctx, (const SpvId*)res.spirv, res.spirv_len, &ir) != SPVC_SUCCESS
+         || spvc_context_parse_spirv(ctx, (const SpvId*)module, nwords, &ir) != SPVC_SUCCESS
          || spvc_context_create_compiler(ctx, SPVC_BACKEND_NONE, ir, SPVC_CAPTURE_MODE_TAKE_OWNERSHIP, &comp) != SPVC_SUCCESS
          || spvc_compiler_create_shader_resources(comp, &rs) != SPVC_SUCCESS)
    {
@@ -295,6 +329,7 @@ out:
    if (ctx)
       spvc_context_destroy(ctx);
    rslc_result_free(&res, &opts);
+   free(src);
    return 1;
 }
 
@@ -303,24 +338,31 @@ int main(int argc, char **argv)
    DIR *d;
    struct dirent *ent;
    unsigned stages = 0;
-   if (argc != 2)
+   const char *dir;
+   if (argc == 3 && !strcmp(argv[1], "--ingest"))
+      ingest = 1;
+   else if (argc != 2)
    {
-      fprintf(stderr, "usage: rslc_reflect_check <dumpdir>\n");
+      fprintf(stderr, "usage: rslc_reflect_check [--ingest] <dumpdir>\n");
       return 2;
    }
-   d = opendir(argv[1]);
+   dir = argv[argc - 1];
+   d   = opendir(dir);
    if (!d)
    {
-      fprintf(stderr, "cannot open %s\n", argv[1]);
+      fprintf(stderr, "cannot open %s\n", dir);
       return 2;
    }
    while ((ent = readdir(d)))
    {
       size_t n = strlen(ent->d_name);
       if (n > 5 && !strcmp(ent->d_name + n - 5, ".glsl"))
-         stages += check_stage(argv[1], ent->d_name);
+         stages += check_stage(dir, ent->d_name);
    }
    closedir(d);
-   printf("%u stages, %u mismatches\n", stages, diffs);
-   return diffs ? 1 : 0;
+   if (ingest)
+      printf("%u stages, %u refused, %u mismatches\n", stages, refused, diffs);
+   else
+      printf("%u stages, %u mismatches\n", stages, diffs);
+   return (diffs || refused) ? 1 : 0;
 }
