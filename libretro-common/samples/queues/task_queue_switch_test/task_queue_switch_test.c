@@ -39,6 +39,11 @@
  * or on the unthreaded queue, reports false; the main thread's and the
  * queue's own handlers' finds do not, and the main thread's sees held
  * pushes.
+ *
+ * Last, a held push is run by a wait with nothing else running, and
+ * cancelled by a reset like a queued task.  At deinit a held cancel
+ * is applied, while a held push stays held, with no callback, for the
+ * first check after the next init.
  */
 
 #include <stdio.h>
@@ -946,10 +951,10 @@ static retro_task_t *victim_task(victim_t *victim,
 
 /* Pushes a victim on the main thread and checks the queue until its
  * handler has run. */
-static uint32_t push_victim(victim_t *victim, retro_task_handler_t handler)
+static retro_task_t *push_victim_task(victim_t *victim,
+      retro_task_handler_t handler)
 {
    retro_task_t *task  = victim_task(victim, handler);
-   uint32_t      ident = task->ident;
    retro_time_t  until = cpu_features_get_time_usec() + LIMIT_US;
 
    task_queue_push(task);
@@ -959,7 +964,12 @@ static uint32_t push_victim(victim_t *victim, retro_task_handler_t handler)
       task_queue_check();
       retro_sleep(1);
    }
-   return ident;
+   return task;
+}
+
+static uint32_t push_victim(victim_t *victim, retro_task_handler_t handler)
+{
+   return push_victim_task(victim, handler)->ident;
 }
 
 /* Checks the queue until the victim's callback has run. */
@@ -1202,6 +1212,136 @@ static void lane_cancel_order(void)
          "a thread's cancel of its own held push is taken");
    check(victim_retires(&victims[5]) && victims[5].cancelled,
          "and reaches it");
+}
+
+/* --- held pushes seen by wait, reset and deinit ----------------------- */
+
+#define HELD_DUE_US 500000
+
+static victim_t held_victims[7];
+
+/* Finishes on its first run.  runs counts only runs not cancelled. */
+static void held_handler(retro_task_t *task)
+{
+   victim_t *victim = (victim_t*)task->user_data;
+
+   if (!(task_get_flags(task) & RETRO_TASK_FLG_CANCELLED))
+      retro_atomic_fetch_add_int(&victim->runs, 1);
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+}
+
+/* On the unthreaded queue with nothing running. */
+static void lane_held_wait(void)
+{
+   victim_t *victim = &held_victims[0];
+
+   check(push_from_thread(victim_task(victim, held_handler)),
+         "a push from another thread is held");
+   task_queue_wait(NULL, NULL);
+   check(   retro_atomic_load_acquire_int(&victim->runs) == 1
+         && victim->callbacks == 1 && !victim->cancelled,
+         "a wait with nothing running runs it before it returns");
+}
+
+static void lane_held_reset(void)
+{
+   victim_t *victim = &held_victims[1];
+
+   check(push_from_thread(victim_task(victim, held_handler)),
+         "a push from another thread is held");
+   task_queue_reset();
+   check(victim_retires(victim) && victim->cancelled
+         && !retro_atomic_load_acquire_int(&victim->runs),
+         "a reset on the unthreaded queue cancels it");
+}
+
+/* With a switch put off.  The task is not due yet, so the worker cannot
+ * run it before the reset does. */
+static void lane_held_reset_threaded(void)
+{
+   victim_t     *victim = &held_victims[2];
+   retro_task_t *task   = victim_task(victim, held_handler);
+   sthread_t    *waker_th;
+
+   waker_th   = gate_shut();
+   task->when = cpu_features_get_time_usec() + HELD_DUE_US;
+   check(push_from_thread(task),
+         "a push from another thread while the queue switches is held");
+   task_queue_reset();
+   gate_release(waker_th);
+   task_queue_set_threaded();
+   check(victim_retires(victim) && victim->cancelled
+         && !retro_atomic_load_acquire_int(&victim->runs),
+         "a reset on the threaded queue cancels it");
+}
+
+/* LeakSanitizer cannot see a cancel node left held, since the list
+ * head is static: its task shows whether deinit took it. */
+static void lane_held_cancel_deinit(void)
+{
+   victim_t     *victim = &held_victims[3];
+   retro_task_t *task   = push_victim_task(victim, victim_handler);
+   sthread_t    *waker_th;
+
+   waker_th = gate_shut();
+   check(from_thread(cancel_one, task->ident),
+         "a cancel from another thread while the queue switches is held");
+   gate_release(waker_th);
+   task_queue_deinit();
+   check((task_get_flags(task) & RETRO_TASK_FLG_CANCELLED) != 0,
+         "the deinit that follows applies it");
+   task_queue_init(false, NULL);
+   check(victim_retires(victim) && victim->cancelled,
+         "and its task retires cancelled");
+   task_queue_deinit();
+}
+
+/* Held pushes stay held at deinit.  One is cancelled first, which a
+ * drain there would retire with its callback. */
+static void lane_held_push_deinit(void)
+{
+   victim_t     *kept      = &held_victims[4];
+   victim_t     *cancelled = &held_victims[5];
+   retro_task_t *task      = victim_task(cancelled, held_handler);
+   uint32_t      ident     = task->ident;
+
+   task_queue_init(false, NULL);
+   check(   push_from_thread(victim_task(kept, held_handler))
+         && push_from_thread(task),
+         "two pushes from another thread are held");
+   task_queue_cancel_ident(ident);
+   task_queue_deinit();
+   check(!kept->callbacks && !cancelled->callbacks,
+         "deinit runs no callback, not even the cancelled one's");
+   task_queue_init(false, NULL);
+   task_queue_check();
+   check(   retro_atomic_load_acquire_int(&kept->runs) == 1
+         && kept->callbacks == 1 && !kept->cancelled,
+         "the first check after the next init runs the other held push");
+   check(   cancelled->callbacks == 1 && cancelled->cancelled
+         && !retro_atomic_load_acquire_int(&cancelled->runs),
+         "and retires the cancelled one without running it");
+   task_queue_deinit();
+}
+
+/* A cancel from another thread, held until deinit, finds a held push. */
+static void lane_held_push_cancel_deinit(void)
+{
+   victim_t     *victim = &held_victims[6];
+   retro_task_t *task   = victim_task(victim, held_handler);
+   uint32_t      ident  = task->ident;
+
+   task_queue_init(false, NULL);
+   check(   push_from_thread(task)
+         && from_thread(cancel_one, ident),
+         "a push and then a cancel of it from another thread are held");
+   task_queue_deinit();
+   task_queue_init(false, NULL);
+   task_queue_check();
+   check(   victim->callbacks == 1 && victim->cancelled
+         && !retro_atomic_load_acquire_int(&victim->runs),
+         "deinit applies the cancel to the held push");
+   task_queue_deinit();
 }
 
 /* --- the worker's id at deinit --------------------------------------- */
@@ -1481,6 +1621,17 @@ int main(void)
    lane_cancel_order();
    retire_parked();
    task_queue_deinit();
+
+   printf("held pushes seen by wait, reset and deinit\n");
+   task_queue_init(false, NULL);
+   lane_held_wait();
+   lane_held_reset();
+   task_queue_set_threaded();
+   task_queue_check();
+   lane_held_reset_threaded();
+   lane_held_cancel_deinit();
+   lane_held_push_deinit();
+   lane_held_push_cancel_deinit();
 
 #ifndef HAVE_GCD
    printf("the worker's id at deinit\n");

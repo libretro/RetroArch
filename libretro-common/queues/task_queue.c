@@ -622,6 +622,8 @@ static void retro_task_regular_gather(void)
 
 static void retro_task_regular_wait(retro_task_condition_fn_t cond, void* data)
 {
+   /* A held push counts as running. */
+   task_queue_push_deferred();
    while ((tasks_running.front && !tasks_running.front->when) && (!cond || cond(data)))
       retro_task_regular_gather();
 }
@@ -2213,7 +2215,12 @@ void task_queue_deinit(void)
 {
    task_wake_gate_close();
    if (impl_current)
+   {
+      /* Held pushes wait for the next runner's first gather, so no
+       * callback runs here; held cancels still reach them. */
+      task_queue_cancel_deferred();
       impl_current->deinit();
+   }
    impl_current = NULL;
 }
 
@@ -2563,6 +2570,8 @@ bool task_queue_wait_timeout(retro_task_condition_fn_t cond, void *data,
 
 void task_queue_reset(void)
 {
+   /* Held pushes are cancelled with the queued tasks. */
+   task_queue_push_deferred();
    impl_current->reset();
 }
 

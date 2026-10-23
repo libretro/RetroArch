@@ -524,16 +524,16 @@ void task_queue_cancel_task(void *task);
  * @ident : The task::ident of the task to cancel.
  *
  * Cancels a running task as task_queue_cancel_task() does, or one
- * pushed from another thread and still held for the next
- * task_queue_check(), which then retires it cancelled without running
- * it; its callback still runs.  Does nothing for a task that is no
- * longer running.  Safe from any thread where the platform has
- * lock-free atomics; elsewhere, only where task_queue_cancel_task()
- * is.  From a handler on the unthreaded queue it misses, as
- * task_queue_find() does, the tasks that the check running that
- * handler has taken off the queue.  From another thread, while the
- * queue switches, while it is unthreaded, or while pushes from other
- * threads are held, the cancel is made at the next task_queue_check().
+ * pushed from another thread and still held for the next gather,
+ * which then retires it cancelled without running it; its callback
+ * still runs.  Does nothing for a task that is no longer running.
+ * Safe from any thread where the platform has lock-free atomics;
+ * elsewhere, only where task_queue_cancel_task() is.  From a handler
+ * on the unthreaded queue it misses, as task_queue_find() does, the
+ * tasks that the check running that handler has taken off the queue.
+ * From another thread, while the queue switches, while it is
+ * unthreaded, or while pushes from other threads are held, the cancel
+ * is made at the next gather.
  *
  * @return \c false only when such a cancel could not be recorded.
  */
@@ -791,11 +791,11 @@ void task_queue_set_parallel_workers(unsigned count);
  * or until all tasks have been searched.
  *
  * On the thread that drives the queue it also sees tasks pushed from
- * other threads and held for the next task_queue_check().  From a
- * thread other than that one and the queue's own, it never sees held
- * pushes, and it reports \c false unless the queue is threaded with no
- * switch under way.  Such a find can miss a task, its own thread's
- * held push included, so a push it guards against may be made twice.
+ * other threads and held for the next gather.  From a thread other
+ * than that one and the queue's own, it never sees held pushes, and it
+ * reports \c false unless the queue is threaded with no switch under
+ * way.  Such a find can miss a task, its own thread's held push
+ * included, so a push it guards against may be made twice.
  *
  * @param find_data Parameters for the search.
  * Behavior is undefined if \c NULL.
@@ -838,11 +838,12 @@ uint8_t task_get_flags(retro_task_t *task);
  * Where the platform has lock-free atomics, a push from a thread other
  * than the one that drives the queue, made while the queue switches
  * between threaded and unthreaded, while it is unthreaded, or while
- * earlier held pushes still wait, is held for the next
- * task_queue_check() and returns true. A thread's pushes start in the
- * order it made them. A \c TASK_TYPE_BLOCKING task refused there is
- * cancelled, and its callback still runs. Elsewhere such a push goes
- * straight in, as one from the thread that drives the queue does.
+ * earlier held pushes still wait, is held for the next gather, by
+ * task_queue_check(), a wait or a reset, and returns true. A thread's
+ * pushes start in the order it made them. A \c TASK_TYPE_BLOCKING task
+ * refused there is cancelled, and its callback still runs. Elsewhere
+ * such a push goes straight in, as one from the thread that drives the
+ * queue does.
  *
  * @param task The task to schedule.
  * @return \c true unless \c task's type is \c TASK_TYPE_BLOCKING
@@ -853,6 +854,7 @@ bool task_queue_push(retro_task_t *task);
 /**
  * Block until all active (i.e. current time > \c task::when) tasks have finished,
  * or until the given function returns \c false.
+ * A held push counts as active.
  * If a scheduled task's \c when is passed while within this function,
  * it will start executing.
  *
@@ -895,7 +897,8 @@ bool task_queue_wait_timeout(retro_task_condition_fn_t cond, void *data,
       retro_time_t timeout_usec);
 
 /**
- * Marks all tasks in the queue as cancelled.
+ * Marks all tasks in the queue as cancelled,
+ * held pushes included.
  *
  * The tasks won't immediately be terminated;
  * each task may finish its work,
@@ -913,6 +916,10 @@ void task_queue_reset(void);
 /**
  * Deinitializes the task system.
  *
+ * Cancels held for the next gather are applied;
+ * held pushes stay held for the next runner.
+ * No task callback runs here.
+ * No other thread may be inside a task_queue call.
  * Outstanding tasks will not be cleaned up;
  * if the intent is to finish the core or frontend's work,
  * then all tasks must be finished before calling this function.

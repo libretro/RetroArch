@@ -286,6 +286,7 @@ static void lanes(bool threaded)
       { NULL, 0, 0, false } };
    static const report_t dropped[] = {
       { "pad E", 5, 5, true }, { NULL, 0, 0, false } };
+   bool reported;
 
    printf("reports from another thread, %s queue\n",
          threaded ? "threaded" : "unthreaded");
@@ -314,15 +315,10 @@ static void lanes(bool threaded)
    check(report_from_thread(gone) && settle() && !*port_names[4],
          "a connect then a disconnect on one port leave it empty");
 
-   /* On the unthreaded queue the request is still held for the
-    * gather, which task_queue_reset() does not reach. */
-   if (threaded)
-   {
-      bool reported = report_from_thread(dropped);
-      task_queue_reset();
-      check(reported && settle() && !*port_names[5],
-            "a request cancelled before the main thread makes it is dropped");
-   }
+   reported = report_from_thread(dropped);
+   task_queue_reset();
+   check(reported && settle() && !*port_names[5],
+         "a request cancelled before the main thread makes it is dropped");
 
    pushes_reset();
    check(input_autoconfigure_connect("pad C", NULL, NULL, "hid", 3, 3, 1)
