@@ -1983,7 +1983,7 @@ static void gl2_renderchain_deinit_fbo(gl2_t *gl,
 static void gl2_bind_core_context(gl2_t *gl, bool enable)
 {
    if (     (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
-         && !(gl->flags & GL2_FLAG_HW_RING))
+         && !retro_atomic_load_acquire_int(&gl->hw_ring))
       gl->ctx_driver->bind_hw_render(gl->ctx_data, enable);
 }
 
@@ -3663,7 +3663,8 @@ static bool gl2_core_context_is_mains(gl2_t *gl)
     * path. The live-settings consultation this replaces read
     * settings->arrays.video_driver every frame from the video
     * thread with the main thread running free. */
-   return (gl->flags & (GL2_FLAG_HW_RING | GL2_FLAG_HW_RING_EXPECTED)) != 0;
+   return retro_atomic_load_acquire_int(&gl->hw_ring)
+      || (gl->flags & GL2_FLAG_HW_RING_EXPECTED);
 }
 
 
@@ -3707,7 +3708,7 @@ static bool gl2_hw_ring_context_new(void *data, void **ctx)
    }
    else
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
-   gl->flags |= GL2_FLAG_HW_RING;
+   retro_atomic_store_release_int(&gl->hw_ring, 1);
    *ctx = gl;
    return true;
 }
@@ -3724,7 +3725,7 @@ static void gl2_hw_ring_context_free(void *data, void *ctx)
    (void)ctx;
    if (!gl)
       return;
-   gl->flags &= ~GL2_FLAG_HW_RING;
+   retro_atomic_store_release_int(&gl->hw_ring, 0);
    if (gl->ctx_driver && gl->ctx_driver->release_current)
       gl->ctx_driver->release_current(gl->ctx_data);
 }
@@ -3750,7 +3751,8 @@ static bool gl2_hw_ring_capture(void *data, unsigned slot,
    if (!gl || slot >= 3)
       return false;
 #ifdef GL2_HW_RING_SYNC
-   if (gl->flags & GL2_FLAG_HAVE_SYNC)
+   /* The core's thread: flags is the video thread's word. */
+   if (gl->hw_ring_have_sync)
    {
       /* A sync the video thread never took belongs to a frame it
        * dropped; deleting it does not disturb a wait already placed. */
@@ -7517,6 +7519,7 @@ static bool gl2_resolve_extensions(gl2_t *gl, const char *context_ident, const v
       bool video_hard_sync       = settings->bools.video_hard_sync;
 
       gl->flags                 |=  GL2_FLAG_HAVE_SYNC;
+      gl->hw_ring_have_sync      = true;
       if (video_hard_sync)
          RARCH_LOG("[GL] Using ARB_sync to reduce latency.\n");
    }
@@ -7937,7 +7940,10 @@ static void *gl2_init(const video_info_t *video)
    const gfx_ctx_driver_t *ctx_driver   = NULL;
 
    /* gl must exist before the context lookup writes its flags. */
-   if (!gl || !(ctx_driver = gl2_get_context(gl)))
+   if (!gl)
+      goto error;
+   retro_atomic_int_init(&gl->hw_ring, 0);
+   if (!(ctx_driver = gl2_get_context(gl)))
       goto error;
 
    /* Latched here, inside the wrapper's blocking CMD_INIT (the main

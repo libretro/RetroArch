@@ -106,10 +106,6 @@ enum gl2_flags
    GL2_FLAG_MENU_TEXTURE_FULLSCREEN= (1 << 20),
    GL2_FLAG_NONE                   = (1 << 21),
    GL2_FLAG_FRAME_DUPE_LOCK        = (1 << 22),
-   /* The threaded wrapper's hardware ring is driving this driver: the
-    * core's context is current on the main thread, so this thread
-    * never takes it, and the frame reads the ring's slot. */
-   GL2_FLAG_HW_RING                = (1 << 23),
    /* Latched at init: the wrapper was active and the driver
     * configuration allowed a hw ring when this context came up.
     * core_context_is_mains() reads this instead of consulting the
@@ -202,6 +198,11 @@ struct gl2
    void *pbo_readback_sync[4];
 
    uint32_t flags;
+   /* The threaded wrapper's hardware ring is driving this driver: set
+    * and cleared on the core's thread, read on the video thread. Kept
+    * apart from flags, whose bits the video thread moves: a bit the
+    * core's thread moved in the same word could be lost either way. */
+   retro_atomic_int_t hw_ring;
 
    /* In VIDEO_SCALE_PACK's layout. */
    unsigned video_dims;
@@ -256,6 +257,9 @@ struct gl2
    bool pbo_readback_valid[4];
    /* At init: textures take half floats (TEXTURE_GPU_FORMAT_RGBA16F) */
    bool fp16_textures;
+   /* At init: ARB_sync is there (GL2_FLAG_HAVE_SYNC). Read by the
+    * ring's capture on the core's thread, where flags is not read. */
+   bool hw_ring_have_sync;
    /* scRGB (FP16) default framebuffer support (Windows/WGL HDR):
     * everything renders into this SDR offscreen and one GLSL 1.20
     * pass encodes it into the FP16 backbuffer at end of frame.
