@@ -222,6 +222,7 @@ static void run_case(const char *name, bool remember_last_dir,
       {
          char expected[PATH_MAX_LENGTH];
          fill_pathname_join(expected, want_dir, want[i], sizeof(expected));
+         pathname_conform_slashes_to_os(expected);
          if (!string_is_equal(stub_applied(i), expected))
             ok = false;
       }
@@ -235,6 +236,7 @@ static void run_case(const char *name, bool remember_last_dir,
       {
          char expected[PATH_MAX_LENGTH];
          fill_pathname_join(expected, want_dir, want[i], sizeof(expected));
+         pathname_conform_slashes_to_os(expected);
          printf("      press %u\n         want %s\n         got  %s\n",
                i + 1, expected,
                i < stub_applied_count() ? stub_applied(i) : "(nothing)");
@@ -276,6 +278,7 @@ static void run_toggle_case(const char *name, const char *runtime_preset,
       {
          char expected[PATH_MAX_LENGTH];
          fill_pathname_join(expected, shader_dir, want[i], sizeof(expected));
+         pathname_conform_slashes_to_os(expected);
          if (!string_is_equal(stub_applied(off_presses + i), expected))
             ok = false;
       }
@@ -289,6 +292,7 @@ static void run_toggle_case(const char *name, const char *runtime_preset,
       {
          char expected[PATH_MAX_LENGTH];
          fill_pathname_join(expected, shader_dir, want[i], sizeof(expected));
+         pathname_conform_slashes_to_os(expected);
          printf("      press %u\n         want %s\n         got  %s\n",
                i + 1, expected,
                off_presses + i < stub_applied_count()
@@ -343,6 +347,7 @@ int main(int argc, char **argv)
       fill_pathname_join(fixture, cwd, relative, sizeof(fixture));
    }
 
+   pathname_conform_slashes_to_os(fixture);
    build_fixture();
    /* Registered once the paths it removes are all set, so a failing
     * case leaves nothing behind either */
