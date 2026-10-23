@@ -487,7 +487,8 @@ static bool win32_display_server_set_resolution(void *data,
    if (!serv)
       return false;
 
-   win32_get_video_output(&dm, -1);
+   if (!win32_get_video_output(&dm, -1))
+      return false;
 
    if (!VIDEO_SCALE_W(serv->orig_dims))
       VIDEO_SCALE_PUT_W(serv->orig_dims, GetSystemMetrics(SM_CXSCREEN));
@@ -547,7 +548,6 @@ static bool win32_display_server_set_resolution(void *data,
             switch (res)
             {
                case DISP_CHANGE_SUCCESSFUL:
-               case DISP_CHANGE_NOTUPDATED:
                   return true;
                default:
                   break;
@@ -560,7 +560,7 @@ static bool win32_display_server_set_resolution(void *data,
       }
    }
 
-   return true;
+   return false;
 }
 
 /* Display resolution list qsort helper function */
