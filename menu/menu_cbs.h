@@ -285,6 +285,10 @@ int generic_action_cheat_toggle(size_t idx, unsigned type, const char *label,
 int action_ok_path_use_directory(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx);
 
+void action_ok_manual_content_scan_set_dir(const char *content_dir);
+
+bool action_ok_manual_content_scan_dir_browsing(void);
+
 /**
  * @brief Open a Content Downloader category list
  *

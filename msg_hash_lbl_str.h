@@ -595,7 +595,6 @@ extern const struct msg_hash_us_lbl_blob_s msg_hash_us_lbl_blob;
 #define MENU_ENUM_LABEL_SCAN_DIRECTORY_STR (msg_hash_us_lbl_blob.m_MENU_ENUM_LABEL_SCAN_DIRECTORY)
 #define MENU_ENUM_LABEL_SCAN_FILE_STR (msg_hash_us_lbl_blob.m_MENU_ENUM_LABEL_SCAN_FILE)
 #define MENU_ENUM_LABEL_SCAN_TARGET_PLAYLIST_STR (msg_hash_us_lbl_blob.m_MENU_ENUM_LABEL_SCAN_TARGET_PLAYLIST)
-#define MENU_ENUM_LABEL_SCAN_SINGLE_FILE_STR (msg_hash_us_lbl_blob.m_MENU_ENUM_LABEL_SCAN_SINGLE_FILE)
 #define MENU_ENUM_LABEL_SCAN_OMIT_DB_REF_STR (msg_hash_us_lbl_blob.m_MENU_ENUM_LABEL_SCAN_OMIT_DB_REF)
 #define MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS_STR (msg_hash_us_lbl_blob.m_MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS)
 #define MENU_ENUM_LABEL_NETPLAY_REFRESH_LAN_STR (msg_hash_us_lbl_blob.m_MENU_ENUM_LABEL_NETPLAY_REFRESH_LAN)
@@ -2311,7 +2310,6 @@ extern const struct msg_hash_us_lbl_blob_s msg_hash_us_lbl_blob;
 #define MENU_ENUM_LABEL_SCAN_DIRECTORY_STR "scan_directory"
 #define MENU_ENUM_LABEL_SCAN_FILE_STR "scan_file"
 #define MENU_ENUM_LABEL_SCAN_TARGET_PLAYLIST_STR "scan_target_playlist"
-#define MENU_ENUM_LABEL_SCAN_SINGLE_FILE_STR "scan_single_file"
 #define MENU_ENUM_LABEL_SCAN_OMIT_DB_REF_STR "scan_omit_db_ref"
 #define MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS_STR "refresh_rooms"
 #define MENU_ENUM_LABEL_NETPLAY_REFRESH_LAN_STR "refresh_lan"

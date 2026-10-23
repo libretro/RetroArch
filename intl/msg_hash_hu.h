@@ -1824,7 +1824,6 @@ static const struct
    char s_df763da7[7];
    char s_69dad0e6[54];
    char s_1532af95[49];
-   char s_03fb590d[22];
    char s_7c2f8b04[29];
    char s_fdbd73a3[30];
    char s_b443c25e[9];
@@ -3276,7 +3275,6 @@ static const struct
    char s_34a76adb[55];
    char s_88021a14[134];
    char s_fe1a9203[266];
-   char s_2222a23b[119];
    char s_8213bb32[115];
    char s_48462dac[374];
    char s_631de1a2[104];
@@ -6302,7 +6300,6 @@ static const struct
    "Egyedi",
    "Adatb\303\241zis hivatkoz\303\241s kihagy\303\241sa a j\303\241t\303\251klist\303\241b\303\263l",
    "CRC ellen\305\221rz\303\251s duplik\303\241lt azonos\303\255t\303\263k eset\303\251n",
-   "Egy f\303\241jl beolvas\303\241sa",
    "A friss\303\255tend\305\221 j\303\241t\303\251klista",
    "<Automatikus/a rendszer neve>",
    "<Egyedi>",
@@ -8600,8 +8597,6 @@ static const struct
    "a PSP/PSN lemezekn\303\251l. Ilyenkor ha a beolvas\303\263 csak a sorozatsz\303\241mra hagyatkoz"
    "ik, rossz rendszert t\303\241rs\303\255that a tartalomhoz. A CRC ellen\305\221rz\303\251st bekap"
    "csolva a beolvas\303\241s j\303\263val lassabb, de pontosabb lehet.",
-   "Egy k\303\266nyvt\303\241r helyett csak egy f\303\241jl beolvas\303\241sa. V\303\241ltoztat\303"
-   "\241s ut\303\241n \303\272jra ki kell v\303\241lasztani a beolvas\303\241s hely\303\251t.",
    "Az eredm\303\251nyek ebbe a j\303\241t\303\251klist\303\241ba ker\303\274lnek. Automatikus - b"
    "\303\241rmely esetben t\303\266bb j\303\241t\303\251klista is friss\303\274lhet.",
    "Szigor\303\272 esetben csak az adatb\303\241zisban fellelt t\303\251telek ker\303\274lnek be. En"
@@ -9806,7 +9801,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_hu_blob_check[
-      (sizeof(msg_hash_hu_blob) == (187849u
+      (sizeof(msg_hash_hu_blob) == (187708u
 #ifdef ANDROID
        + 316u
 #endif
@@ -12060,7 +12055,6 @@ static const msg_hash_id_t msg_hash_hu_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_METHOD_CUSTOM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_OMIT_DB_REF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_SERIAL_AND_CRC,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_SINGLE_FILE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_AUTO_ANY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_CUSTOM,
@@ -13510,7 +13504,6 @@ static const msg_hash_id_t msg_hash_hu_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_METHOD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_OMIT_DB_REF,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_SERIAL_AND_CRC,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_SINGLE_FILE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_TARGET_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_USE_DB,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_WITHOUT_CORE_MATCH,

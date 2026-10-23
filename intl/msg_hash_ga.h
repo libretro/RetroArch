@@ -2105,7 +2105,6 @@ static const struct
    char s_df763da7[13];
    char s_69dad0e6[55];
    char s_1532af95[50];
-   char s_03fb590d[22];
    char s_7c2f8b04[26];
    char s_fdbd73a3[29];
    char s_b443c25e[15];
@@ -3831,7 +3830,6 @@ static const struct
    char s_34a76adb[58];
    char s_88021a14[172];
    char s_fe1a9203[324];
-   char s_2222a23b[133];
    char s_8213bb32[252];
    char s_48462dac[393];
    char s_631de1a2[94];
@@ -7298,7 +7296,6 @@ static const struct
    "Saincheaptha",
    "L\303\251im thar Thagairt\303\255 Bunachar Sonra\303\255 \303\263n Seinmliosta",
    "Seice\303\241lann Scanadh CRC ar Dh\303\272blaigh F\303\251ideartha",
-   "Scanadh Comhad Aonair",
    "Seinmliosta le Nuashonr\303\272",
    "<Ainm uathoibr\303\255och/c\303\263rais>",
    "<Saincheaptha>",
@@ -10192,8 +10189,6 @@ static const struct
    "eis an scan\303\263ir \303\241bhar a chur sa ch\303\263ras m\303\255cheart uaireanta. Cuireann s"
    "\303\251 seo seice\303\241il CRC leis, rud a mhoill\303\255onn an scanadh go m\303\263r, ach a d"
    "'fh\303\251adfadh a bheith n\303\255os cruinne.",
-   "N\303\255 dh\303\251anann s\303\251 ach comhad amh\303\241in a scanadh in ionad eolaire. Athrogh"
-   "naigh su\303\255omh an \303\241bhair tar \303\251is an iontr\303\241il seo a athr\303\272.",
    "Cuirtear tortha\303\255 leis an seinmliosta seo. I gc\303\241s Uathoibr\303\255och - Aon cheann,"
    " f\303\251adfar seinmliosta\303\255 c\303\263rais iolracha a nuashonr\303\272. N\303\255 nascfai"
    "dh Saincheaptha gan tagairt do bhunachar sonra\303\255 na hiontr\303\241lacha le haon bhunachar "
@@ -11777,7 +11772,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ga_blob_check[
-      (sizeof(msg_hash_ga_blob) == (254721u
+      (sizeof(msg_hash_ga_blob) == (254566u
 #ifdef ANDROID
        + 390u
 #endif
@@ -14436,7 +14431,6 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_METHOD_CUSTOM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_OMIT_DB_REF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_SERIAL_AND_CRC,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_SINGLE_FILE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_AUTO_ANY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_CUSTOM,
@@ -16149,7 +16143,6 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_METHOD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_OMIT_DB_REF,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_SERIAL_AND_CRC,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_SINGLE_FILE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_TARGET_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_USE_DB,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_WITHOUT_CORE_MATCH,

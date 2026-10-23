@@ -52,7 +52,6 @@ typedef struct
 
    bool search_recursively;
    bool search_archives;
-   bool scan_single_file;
    bool omit_db_ref;
    bool filter_dat_content;
    bool overwrite_playlist;
@@ -77,7 +76,6 @@ static scan_settings_t scan_settings = {
    MANUAL_CONTENT_SCAN_SELECT_DB_AUTO,
    true,                                        /* search_recursively */
    true,                                        /* search_archives */
-   false,
    false,
    false,                                       /* filter_dat_content */
    false,                                       /* overwrite_playlist */
@@ -191,11 +189,6 @@ bool *manual_content_scan_get_search_recursively_ptr(void)
 bool *manual_content_scan_get_search_archives_ptr(void)
 {
    return &scan_settings.search_archives;
-}
-
-bool *manual_content_scan_get_scan_single_file_ptr(void)
-{
-   return &scan_settings.scan_single_file;
 }
 
 bool *manual_content_scan_get_omit_db_ref_ptr(void)
@@ -1390,20 +1383,12 @@ bool manual_content_scan_get_task_config(
       scan_file_exts_custom[0] = '\0';
       scan_settings.search_recursively = true;
       scan_settings.search_archives = true;
-      scan_settings.scan_single_file = false;     
    }
    /* Get content directory */
    if (!*scan_content_dir)
       return false;
 
    task_config->content_is_file = !path_is_directory(scan_content_dir);
-   if (task_config->content_is_file)
-   {
-      scan_settings.scan_single_file = true;
-      scan_settings.search_recursively = false;
-   }
-   else
-      scan_settings.scan_single_file = false;
 
    strlcpy(
          task_config->content_dir,

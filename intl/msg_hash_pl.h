@@ -2020,7 +2020,6 @@ static const struct
    char s_df763da7[15];
    char s_69dad0e6[45];
    char s_1532af95[45];
-   char s_03fb590d[23];
    char s_7c2f8b04[26];
    char s_fdbd73a3[29];
    char s_b443c25e[17];
@@ -3587,7 +3586,6 @@ static const struct
    char s_34a76adb[61];
    char s_88021a14[152];
    char s_fe1a9203[281];
-   char s_2222a23b[104];
    char s_8213bb32[245];
    char s_48462dac[314];
    char s_631de1a2[112];
@@ -6763,7 +6761,6 @@ static const struct
    "Niestandardowy",
    "Pomi\305\204 odwo\305\202ania do bazy danych z playlisty",
    "Skanuj CRC pod k\304\205tem mo\305\274liwych duplikat\303\263w",
-   "Skanuj pojedynczy plik",
    "Playlista do aktualizacji",
    "<Automatyczne/Nazwa systemu>",
    "<Niestandardowy>",
@@ -9025,8 +9022,6 @@ static const struct
    "eganie tylko na numerach seryjnych mo\305\274e spowodowa\304\207 dodanie tre\305\233ci do niew"
    "\305\202a\305\233ciwego systemu. To dodaje sprawdzanie CRC, kt\303\263re zauwa\305\274alnie spow"
    "alnia skanowanie, ale mo\305\274e by\304\207 dok\305\202adniejsze.",
-   "Skanuje tylko jeden plik zamiast katalogu. Po zmianie tego wpisu wybierz ponownie lokalizacj\304"
-   "\231 tre\305\233ci.",
    "Wyniki zostan\304\205 dodane do tej playlisty. W przypadku Automatycznie - Jakakolwiek, wiele pl"
    "aylist system\303\263w mo\305\274e zosta\304\207 zaktualizowanych. Niestandardowy bez odniesieni"
    "a do bazy danych nie po\305\202\304\205czy wpis\303\263w do \305\274adnej bazy danych w playli"
@@ -10222,7 +10217,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pl_blob_check[
-      (sizeof(msg_hash_pl_blob) == (200445u
+      (sizeof(msg_hash_pl_blob) == (200318u
 #ifdef ANDROID
        + 385u
 #endif
@@ -12745,7 +12740,6 @@ static const msg_hash_id_t msg_hash_pl_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_METHOD_CUSTOM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_OMIT_DB_REF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_SERIAL_AND_CRC,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_SINGLE_FILE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_AUTO_ANY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_CUSTOM,
@@ -14309,7 +14303,6 @@ static const msg_hash_id_t msg_hash_pl_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_METHOD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_OMIT_DB_REF,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_SERIAL_AND_CRC,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_SINGLE_FILE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_TARGET_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_USE_DB,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_WITHOUT_CORE_MATCH,

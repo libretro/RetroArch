@@ -19245,21 +19245,6 @@ static void settings_build_manual_content_scan(
             general_read_handler,
             SD_FLAG_NONE);
 
-      CONFIG_BOOL(
-            list, list_info,
-            manual_content_scan_get_scan_single_file_ptr(),
-            MENU_ENUM_LABEL_SCAN_SINGLE_FILE,
-            MENU_ENUM_LABEL_VALUE_SCAN_SINGLE_FILE,
-            false,
-            MENU_ENUM_LABEL_VALUE_OFF,
-            MENU_ENUM_LABEL_VALUE_ON,
-            &group_info,
-            &subgroup_info,
-            parent_group,
-            general_write_handler,
-            general_read_handler,
-            SD_FLAG_NONE);
-
       CONFIG_PATH(
             list, list_info,
             manual_content_scan_get_dat_file_path_ptr(),

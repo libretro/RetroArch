@@ -188,7 +188,6 @@ size_t manual_content_scan_get_dat_file_path_size(void);
  * 'search_recursively' bool */
 bool *manual_content_scan_get_search_recursively_ptr(void);
 
-bool *manual_content_scan_get_scan_single_file_ptr(void);
 bool *manual_content_scan_get_omit_db_ref_ptr(void);
 /* Returns a pointer to the internal
  * 'search_archives' bool */

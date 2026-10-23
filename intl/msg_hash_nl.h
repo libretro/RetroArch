@@ -1778,7 +1778,6 @@ static const struct
    char s_df763da7[10];
    char s_69dad0e6[48];
    char s_1532af95[59];
-   char s_03fb590d[19];
    char s_7c2f8b04[30];
    char s_fdbd73a3[26];
    char s_b443c25e[14];
@@ -3177,7 +3176,6 @@ static const struct
    char s_34a76adb[52];
    char s_88021a14[181];
    char s_fe1a9203[270];
-   char s_2222a23b[127];
    char s_8213bb32[243];
    char s_48462dac[340];
    char s_631de1a2[134];
@@ -5955,7 +5953,6 @@ static const struct
    "Aangepast",
    "Databaseverwijzingen uit afspeellijst overslaan",
    "Controller CRC op mogelijke duplicaten tijdens het scannen",
-   "Scan \303\251\303\251n bestand",
    "Afspeellijst om bij te werken",
    "<Automatisch/Systeemnaam>",
    "<Automatisch>",
@@ -7690,8 +7687,6 @@ static const struct
    "Soms hebben ISO's dubbele serienummers, met name met PSP/PSN-titels. Als je uitsluitend serienum"
    "mers gebruikt, zet de scanner soms de inhoud in het verkeerde systeem. Dit voegt een CRC-control"
    "e toe, wat het scannen aanzienlijk vertraagt, maar misschien nauwkeuriger is.",
-   "Scant slechts \303\251\303\251n bestand in plaats van een map. Selecteer de locatie van de inhou"
-   "d opnieuw na het wijzigen van deze invoer.",
    "Resultaten worden toegevoegd aan deze afspeellijst. In geval van Auto - Elke, kunnen meerdere af"
    "speellijsten van systeem worden bijgewerkt. Aangepast zonder database verwijzing zal de items ni"
    "et koppelen aan enige database in de afspeellijst.",
@@ -8650,7 +8645,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_nl_blob_check[
-      (sizeof(msg_hash_nl_blob) == (173206u
+      (sizeof(msg_hash_nl_blob) == (173060u
 #ifdef ANDROID
        + 375u
 #endif
@@ -10861,7 +10856,6 @@ static const msg_hash_id_t msg_hash_nl_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_METHOD_CUSTOM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_OMIT_DB_REF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_SERIAL_AND_CRC,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_SINGLE_FILE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_AUTO_ANY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_CUSTOM,
@@ -12260,7 +12254,6 @@ static const msg_hash_id_t msg_hash_nl_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_METHOD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_OMIT_DB_REF,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_SERIAL_AND_CRC,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_SINGLE_FILE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_TARGET_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_USE_DB,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_WITHOUT_CORE_MATCH,

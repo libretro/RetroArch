@@ -77,6 +77,10 @@
 #include "../../steam/steam.h"
 #endif
 
+#ifdef HAVE_MENU
+#include "../../menu/menu_driver.h"
+#endif
+
 /* Selectors this file names with @selector() for methods newer than an
  * old SDK (each call is behind -respondsToSelector: or a version
  * check): declared for -Wundeclared-selector only where the SDK has
@@ -1392,9 +1396,10 @@ static void open_document_handler(
    if (!result)
       return;
 
-#ifdef HAVE_LIBRETRODB
-   if (filebrowser_get_type() == FILEBROWSER_SCAN_FILE)
-      action_scan_file(state->result, NULL, 0, 0);
+#ifdef HAVE_MENU
+   if (     (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
+         && action_ok_manual_content_scan_dir_browsing())
+      action_ok_manual_content_scan_set_dir(state->result);
    else
 #endif
    {

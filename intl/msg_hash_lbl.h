@@ -2400,10 +2400,6 @@ MSG_HASH(
    "scan_target_playlist"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_SCAN_SINGLE_FILE,
-   "scan_single_file"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_SCAN_OMIT_DB_REF,
    "scan_omit_db_ref"
    )

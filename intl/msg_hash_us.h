@@ -24310,14 +24310,6 @@ MSG_HASH(
    "Results are added to this playlist. In case of Auto - Any, multiple system playlists may be updated. Custom without database reference will not link the entries to any database in the playlist."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SCAN_SINGLE_FILE,
-   "Scan Single File"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SCAN_SINGLE_FILE,
-   "Scans only one file instead of a directory. Re-select content location after changing this entry."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_OMIT_DB_REF,
    "Skip Database References From Playlist"
    )

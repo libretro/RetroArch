@@ -583,7 +583,7 @@ static int filebrowser_parse(
          break;
       case FILEBROWSER_MANUAL_SCAN_DIR:
          menu_entries_prepend(info_list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_THIS_DIRECTORY),
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USE_THIS_DIRECTORY),
                MENU_ENUM_LABEL_SCAN_THIS_DIRECTORY_STR,
                MENU_ENUM_LABEL_SCAN_THIS_DIRECTORY,
                FILE_TYPE_MANUAL_SCAN_DIRECTORY, 0, 0);
@@ -643,8 +643,7 @@ static int filebrowser_parse(
          continue;
 
       dir_only_mode      = (   filebrowser_type == FILEBROWSER_SELECT_DIR
-                            || filebrowser_type == FILEBROWSER_SCAN_DIR
-                            || filebrowser_type == FILEBROWSER_MANUAL_SCAN_DIR);
+                            || filebrowser_type == FILEBROWSER_SCAN_DIR);
 
       if (dir_only_mode && attr != RARCH_DIRECTORY)
          continue;
@@ -711,7 +710,9 @@ static int filebrowser_parse(
       if (filebrowser_type == FILEBROWSER_SELECT_COLLECTION)
          file_type = FILE_TYPE_PLAYLIST_COLLECTION;
 
-      if (builtin_mediaplayer_enable || builtin_imageviewer_enable)
+      /* Content Location picks media files as scan content */
+      if (     (builtin_mediaplayer_enable || builtin_imageviewer_enable)
+            && filebrowser_type != FILEBROWSER_MANUAL_SCAN_DIR)
       {
          switch (path_type)
          {
@@ -8162,15 +8163,6 @@ static unsigned menu_displaylist_parse_manual_content_scan_list(
             false) == 0)
          count++;
 
-      if (*(manual_content_scan_get_search_recursively_ptr()) == false)
-      {
-         /* Scan only one file */
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info_list,
-               MENU_ENUM_LABEL_SCAN_SINGLE_FILE, PARSE_ONLY_BOOL,
-               false) == 0)
-            count++;
-      }
-
       /* Search inside archive files */
       if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info_list,
             MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SEARCH_ARCHIVES, PARSE_ONLY_BOOL,
@@ -10387,7 +10379,7 @@ unsigned menu_displaylist_build_list(
          }
          break;
       case DISPLAYLIST_ADD_CONTENT_LIST:
-#ifdef HAVE_LIBRETRODB
+#if 0
          if (menu_entries_append(list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY),
                   MENU_ENUM_LABEL_SCAN_DIRECTORY_STR,

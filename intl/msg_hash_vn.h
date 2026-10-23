@@ -2110,7 +2110,6 @@ static const struct
    char s_df763da7[13];
    char s_69dad0e6[57];
    char s_1532af95[60];
-   char s_03fb590d[18];
    char s_7c2f8b04[35];
    char s_fdbd73a3[30];
    char s_b443c25e[15];
@@ -3865,7 +3864,6 @@ static const struct
    char s_34a76adb[68];
    char s_88021a14[146];
    char s_fe1a9203[306];
-   char s_2222a23b[122];
    char s_8213bb32[312];
    char s_48462dac[389];
    char s_631de1a2[128];
@@ -7972,7 +7970,6 @@ static const struct
    "\306\241i",
    "Qu\303\251t v\303\240 ki\341\273\203m tra CRC tr\303\252n c\303\241c b\341\272\243n sao c\303"
    "\263 th\341\273\203 c\303\263",
-   "Qu\303\251t m\341\273\231t t\341\273\207p",
    "Danh s\303\241ch ch\306\241i s\341\272\275 c\341\272\255p nh\341\272\255t",
    "<T\341\273\261 \304\221\341\273\231ng/T\303\252n h\341\273\207 m\303\241y>",
    "<T\303\271y ch\341\273\211nh>",
@@ -12331,9 +12328,6 @@ static const struct
    "\341\273\221ng sai. T\303\271y ch\341\273\215n n\303\240y th\303\252m ki\341\273\203m tra CRC, l"
    "\303\240m ch\341\272\255m qu\303\241 tr\303\254nh qu\303\251t \304\221\303\241ng k\341\273\203, "
    "nh\306\260ng c\303\263 th\341\273\203 ch\303\255nh x\303\241c h\306\241n.",
-   "Ch\341\273\211 qu\303\251t m\341\273\231t t\341\273\207p thay v\303\254 c\341\272\243 th\306\260"
-   " m\341\273\245c. C\341\272\247n ch\341\273\215n l\341\272\241i v\341\273\213 tr\303\255 n\341"
-   "\273\231i dung sau khi thay \304\221\341\273\225i m\341\273\245c n\303\240y.",
    "K\341\272\277t qu\341\272\243 s\341\272\275 \304\221\306\260\341\273\243c th\303\252m v\303\240o"
    " danh s\303\241ch ch\306\241i n\303\240y. N\341\272\277u ch\341\273\215n T\341\273\261 \304\221"
    "\341\273\231ng - B\341\272\245t k\341\273\263, nhi\341\273\201u danh s\303\241ch ch\306\241i h"
@@ -14814,7 +14808,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_vn_blob_check[
-      (sizeof(msg_hash_vn_blob) == (291251u
+      (sizeof(msg_hash_vn_blob) == (291111u
 #ifdef ANDROID
        + 373u
 #endif
@@ -17484,7 +17478,6 @@ static const msg_hash_id_t msg_hash_vn_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_METHOD_CUSTOM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_OMIT_DB_REF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_SERIAL_AND_CRC,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_SINGLE_FILE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_AUTO_ANY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_CUSTOM,
@@ -19217,7 +19210,6 @@ static const msg_hash_id_t msg_hash_vn_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_METHOD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_OMIT_DB_REF,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_SERIAL_AND_CRC,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_SINGLE_FILE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_TARGET_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_USE_DB,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_WITHOUT_CORE_MATCH,

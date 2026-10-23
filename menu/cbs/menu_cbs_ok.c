@@ -1346,18 +1346,9 @@ int generic_action_ok_displaylist_push(
          dl_type            = DISPLAYLIST_FILE_BROWSER_SCAN_DIR;
          break;
       case ACTION_OK_DL_MANUAL_SCAN_DIR_LIST:
-         if (*(manual_content_scan_get_scan_single_file_ptr()) == true)
-         {
-            filebrowser_set_type(FILEBROWSER_SCAN_FILE);
-            info.type          = FILE_TYPE_PLAIN;
-            dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
-         }
-         else
-         {
-            filebrowser_set_type(FILEBROWSER_MANUAL_SCAN_DIR);
-            info.type          = FILE_TYPE_DIRECTORY;
-            dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_DIR;
-         }
+         filebrowser_set_type(FILEBROWSER_MANUAL_SCAN_DIR);
+         info.type          = FILE_TYPE_DIRECTORY;
+         dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_DIR;
          info.directory_ptr = idx;
          info_label         = label;
 
@@ -4529,6 +4520,47 @@ static int action_ok_path_scan_directory(const char *path,
 }
 #endif
 
+/* Also called by the Apple file pickers opened from Content Location. */
+void action_ok_manual_content_scan_set_dir(const char *content_dir)
+{
+#ifdef HAVE_COCOATOUCH
+   /* For iOS, set the path using realpath because the path name
+    * can start with /private and this ensures the path starts with it.
+    * This will allow the path to be properly substituted when
+    * fill_pathname_expand_special() is called. */
+   char tmp_dir[DIR_MAX_LENGTH];
+   char *real_dir = NULL;
+   fill_pathname_expand_special(tmp_dir, content_dir, sizeof(tmp_dir));
+   if ((real_dir = realpath(tmp_dir, NULL)))
+      content_dir = real_dir;
+#endif
+
+   /* 'Reset' file browser */
+   filebrowser_clear_type();
+
+   /* Update manual content scan settings */
+   manual_content_scan_set_menu_content_dir(content_dir);
+#ifdef HAVE_COCOATOUCH
+   free(real_dir);
+#endif
+
+   /* Return to 'manual content scan' menu */
+   menu_entries_flush_stack(MENU_ENUM_LABEL_DEFERRED_MANUAL_CONTENT_SCAN_LIST_STR, 0);
+}
+
+/* Whether Content Location's browser, or a folder entered from it,
+ * is the current menu. Back leaves the browser type set; a folder
+ * entered keeps the browser's label. */
+bool action_ok_manual_content_scan_dir_browsing(void)
+{
+   const char *menu_label = NULL;
+   if (filebrowser_get_type() != FILEBROWSER_MANUAL_SCAN_DIR)
+      return false;
+   menu_entries_get_last_stack(NULL, &menu_label, NULL, NULL, NULL);
+   return string_is_equal(menu_label,
+         MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DIR_STR);
+}
+
 static int action_ok_path_manual_scan_directory(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -4536,53 +4568,28 @@ static int action_ok_path_manual_scan_directory(const char *path,
    char dir_path[DIR_MAX_LENGTH];
 #endif
    char content_dir[DIR_MAX_LENGTH];
-   unsigned flush_type    = 0;
    const char *menu_path  = NULL;
 
    content_dir[0]         = '\0';
 
-   if (filebrowser_get_type() == FILEBROWSER_SCAN_FILE)
-   {
-      menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
+   menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
 
+   /* The folder entry picks the folder, any other entry its file */
+   if (type == FILE_TYPE_MANUAL_SCAN_DIRECTORY)
+   {
+      if (menu_path && *menu_path)
+         strlcpy(content_dir, menu_path, sizeof(content_dir));
+   }
+   else
+   {
 #if TARGET_OS_IPHONE
       fill_pathname_expand_special(dir_path, menu_path, sizeof(dir_path));
       menu_path = dir_path;
 #endif
-
       fill_pathname_join_special(content_dir, menu_path, path, sizeof(content_dir));
    }
-   else
-   {
-      /* Get user-selected scan directory */
-      menu_entries_get_last_stack(&menu_path,
-            NULL, NULL, NULL, NULL);
-      if (menu_path && *menu_path)
-         strlcpy(content_dir, menu_path, sizeof(content_dir));
-   }
-   /* 'Reset' file browser */
-   filebrowser_clear_type();
 
-
-#ifdef HAVE_COCOATOUCH
-   {
-      /* For iOS, set the path using realpath because the path name
-       * can start with /private and this ensures the path starts with it.
-       * This will allow the path to be properly substituted when
-       * fill_pathname_expand_special() is called. */
-      char tmp_dir[DIR_MAX_LENGTH];
-      tmp_dir[0] = '\0';
-      fill_pathname_expand_special(tmp_dir, content_dir, sizeof(content_dir));
-      realpath(tmp_dir, content_dir);
-   }
-#endif
-
-   /* Update manual content scan settings */
-   manual_content_scan_set_menu_content_dir(content_dir);
-
-   /* Return to 'manual content scan' menu */
-   menu_entries_flush_stack(MENU_ENUM_LABEL_DEFERRED_MANUAL_CONTENT_SCAN_LIST_STR, flush_type);
-
+   action_ok_manual_content_scan_set_dir(content_dir);
    return 0;
 }
 
@@ -10418,7 +10425,7 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
                BIND_ACTION_OK(cbs, action_ok_push_random_dir);
             break;
          case FILE_TYPE_CARCHIVE:
-            if (filebrowser_get_type() == FILEBROWSER_SCAN_FILE)
+            if (filebrowser_get_type() == FILEBROWSER_MANUAL_SCAN_DIR)
             {
                BIND_ACTION_OK(cbs, action_ok_path_manual_scan_directory);
             }
@@ -10580,7 +10587,7 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
 #endif
             /* fall through */
          case FILE_TYPE_PLAIN:
-            if (filebrowser_get_type() == FILEBROWSER_SCAN_FILE)
+            if (filebrowser_get_type() == FILEBROWSER_MANUAL_SCAN_DIR)
             {
                BIND_ACTION_OK(cbs, action_ok_path_manual_scan_directory);
             }

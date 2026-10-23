@@ -2105,7 +2105,6 @@ static const struct
    char s_df763da7[14];
    char s_69dad0e6[65];
    char s_1532af95[57];
-   char s_03fb590d[27];
    char s_7c2f8b04[36];
    char s_fdbd73a3[40];
    char s_b443c25e[16];
@@ -3820,7 +3819,6 @@ static const struct
    char s_34a76adb[79];
    char s_88021a14[205];
    char s_fe1a9203[367];
-   char s_2222a23b[131];
    char s_8213bb32[322];
    char s_48462dac[446];
    char s_631de1a2[113];
@@ -7182,7 +7180,6 @@ static const struct
    "Personalizado",
    "Omitir referencias en base de datos de la lista de reproducci\303\263n",
    "Comprobar duplicados mediante sumas de verificaci\303\263n CRC",
-   "Buscar un archivo concreto",
    "Lista de reproducci\303\263n a actualizar",
    "<Ajuste autom\303\241tico/Nombre del sistema>",
    "<Personalizado>",
@@ -9715,8 +9712,6 @@ static const struct
    "\255a asignar contenidos al sistema equivocado. Esta opci\303\263n a\303\261ade una comprobaci"
    "\303\263n mediante sumas de verificaci\303\263n CRC, lo que ralentizar\303\241 considerablemente"
    " la b\303\272squeda, pero har\303\241 que sea m\303\241s precisa.",
-   "Busca un archivo en vez de un directorio. Debes volver a seleccionar la ubicaci\303\263n del con"
-   "tenido despu\303\251s de cambiar esta opci\303\263n.",
    "Los resultados se a\303\261adir\303\241n a esta lista de reproducci\303\263n. En el caso de la o"
    "pci\303\263n Ajuste autom\303\241tico/Cualquiera, se pueden actualizar varias listas de reproduc"
    "ci\303\263n de sistemas. El m\303\251todo personalizado sin base de datos de referencia no vincu"
@@ -11159,7 +11154,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_es_blob_check[
-      (sizeof(msg_hash_es_blob) == (261831u
+      (sizeof(msg_hash_es_blob) == (261673u
 #ifdef ANDROID
        + 329u
 #endif
@@ -13828,7 +13823,6 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_METHOD_CUSTOM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_OMIT_DB_REF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_SERIAL_AND_CRC,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_SINGLE_FILE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_AUTO_ANY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_CUSTOM,
@@ -15533,7 +15527,6 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_METHOD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_OMIT_DB_REF,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_SERIAL_AND_CRC,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_SINGLE_FILE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_TARGET_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_USE_DB,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_WITHOUT_CORE_MATCH,

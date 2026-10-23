@@ -2025,7 +2025,6 @@ static const struct
    char s_df763da7[8];
    char s_69dad0e6[46];
    char s_1532af95[55];
-   char s_03fb590d[24];
    char s_7c2f8b04[24];
    char s_fdbd73a3[25];
    char s_6cead93e[16];
@@ -3687,7 +3686,6 @@ static const struct
    char s_34a76adb[55];
    char s_88021a14[138];
    char s_fe1a9203[276];
-   char s_2222a23b[113];
    char s_8213bb32[197];
    char s_48462dac[320];
    char s_631de1a2[126];
@@ -6959,7 +6957,6 @@ static const struct
    "Anpassa",
    "Hoppa \303\266ver databasreferenser fr\303\245n spellista",
    "S\303\266k igenom CRC-kontrollsummor vid m\303\266jliga dubbletter",
-   "S\303\266k igenom en enda fil",
    "Spellista att uppdatera",
    "<Automatiskt/Systemnamn>",
    "Databaskontroll",
@@ -9440,8 +9437,6 @@ static const struct
    "ta sig p\303\245 serienumret kan ibland leda till att skannern placerar inneh\303\245llet i fel "
    "system. Detta l\303\244gger till en CRC-kontroll, vilket saktar ner skanningen avsev\303\244rt, "
    "men kan vara mer exakt.",
-   "S\303\266ker igenom endast en enda fil ist\303\244llet f\303\266r en katalog. V\303\244lj inneh"
-   "\303\245llsplats igen efter att detta \303\244ndrats.",
    "Resultaten l\303\244ggs till i denna spellista. Vid inst\303\244llningen Auto - Alla kan flera s"
    "ystemspellistor uppdateras. Anpassa utan databasreferens l\303\244nkar inte posterna till n\303"
    "\245gon databas i spellistan.",
@@ -10846,7 +10841,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sv_blob_check[
-      (sizeof(msg_hash_sv_blob) == (221560u
+      (sizeof(msg_hash_sv_blob) == (221423u
 #ifdef ANDROID
        + 361u
 #endif
@@ -13434,7 +13429,6 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_METHOD_CUSTOM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_OMIT_DB_REF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_SERIAL_AND_CRC,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_SINGLE_FILE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_AUTO_ANY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_USE_DB,
@@ -15089,7 +15083,6 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_METHOD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_OMIT_DB_REF,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_SERIAL_AND_CRC,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_SINGLE_FILE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_TARGET_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_USE_DB,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_WITHOUT_CORE_MATCH,
