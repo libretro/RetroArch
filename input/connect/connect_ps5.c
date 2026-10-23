@@ -185,6 +185,8 @@ static uint32_t hidpad_ps5_decode(const uint8_t *b)
    if (b[1] & 0x40) r |= 1u << RETRO_DEVICE_ID_JOYPAD_L3;
    if (b[1] & 0x80) r |= 1u << RETRO_DEVICE_ID_JOYPAD_R3;
    r |= (uint32_t)(b[2] & 0x07) << 16;                        /* PS, pad, mute */
+   /* an Edge's Fn buttons, then its back buttons, left first */
+   r |= (uint32_t)(b[2] & 0xf0) << 15;
    return r;
 }
 

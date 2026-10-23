@@ -934,6 +934,7 @@ const char* const input_builtin_autoconfs[] =
    DECL_AUTOCONF_DEVICE("8BitDo Ultimate 2C Wireless", "hid", HID_8BITDO_BINDS),
    DECL_AUTOCONF_DEVICE("8BitDo Ultimate 3", "hid", HID_8BITDO_BINDS),
    DECL_AUTOCONF_DEVICE("DualSense Wireless Controller", "hid", HID_RETROPAD_BINDS),
+   DECL_AUTOCONF_DEVICE("DualSense Edge Wireless Controller", "hid", HID_RETROPAD_BINDS),
 #ifdef _WIN32
    DECL_AUTOCONF_DEVICE("Controller (Xbox One For Windows)", "hid", HID_XBOX_BINDS),
    DECL_AUTOCONF_DEVICE("Controller (Xbox 360 For Windows)", "hid", HID_XBOX_BINDS),

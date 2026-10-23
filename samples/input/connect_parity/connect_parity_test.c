@@ -1020,6 +1020,9 @@ static uint32_t ps5_want(const struct ps5_state *st)
    for (i = 0; i < 3; i++)
       if (st->b[2] & (1u << i))
          r |= 1u << (16 + i);
+   for (i = 4; i < 8; i++) /* an Edge's Fn and back buttons */
+      if (st->b[2] & (1u << i))
+         r |= 1u << (15 + i);
    return r;
 }
 
@@ -1081,7 +1084,7 @@ static void ps5_random_state(struct ps5_state *st)
    for (i = 0; i < 4; i++) st->sticks[i]   = (uint8_t)rand();
    for (i = 0; i < 2; i++) st->triggers[i] = (uint8_t)rand();
    for (i = 0; i < 3; i++) st->b[i]        = (uint8_t)rand();
-   st->b[2] &= 0x07;
+   st->b[2] &= 0xf7;
 }
 
 static void test_ps5(void)
