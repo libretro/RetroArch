@@ -194,6 +194,19 @@ static int test_head_selection(Display *dpy, video_modeline_ops_t *ops,
       fprintf(stderr, "FAIL: open(auto) bound a head with no desktop mode\n");
       return 1;
    }
+   {
+      unsigned dims = 0;
+      char name[64] = {0};
+      dispserv_x11.get_video_output_size(data, &dims, name, sizeof(name));
+      if (dims != modes[i].dims || strcmp(name, under))
+      {
+         fprintf(stderr, "FAIL: window output identity/geometry %s %ux%u\n",
+               name, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims));
+         return 1;
+      }
+      printf("[pass] window output snapshot: %s %ux%u\n", name,
+            VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims));
+   }
    printf("[pass] open(auto): head under the window (%s), desktop %dx%d\n",
          under, (int)VIDEO_SCALE_W(modes[i].dims),
          (int)VIDEO_SCALE_H(modes[i].dims));

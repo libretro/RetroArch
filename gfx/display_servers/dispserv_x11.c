@@ -2098,37 +2098,72 @@ static void x11_display_server_get_video_output_size(void *data,
    dispserv_x11_t *dispserv       = (dispserv_x11_t*)data;
    Display *dpy                   = x11_display_server_open_display(dispserv);
    XRRScreenResources *screen     = NULL;
+   int rx                        = 0;
+   int ry                        = 0;
 
+   if (dims)
+      *dims = 0;
+   if (s && len)
+      s[0] = '\0';
    if (!dpy)
       return;
 
+   if (g_x11_win)
+   {
+      XWindowAttributes attr;
+      Window child;
+      if (!XGetWindowAttributes(dpy, g_x11_win, &attr)
+            || !XTranslateCoordinates(dpy, g_x11_win, attr.root,
+               attr.width / 2, attr.height / 2, &rx, &ry, &child))
+      {
+         x11_display_server_close_display(dispserv, dpy);
+         return;
+      }
+   }
    screen = XRRGetScreenResources(dpy, DefaultRootWindow(dpy));
 
    if (screen)
    {
       int i;
-      for (i = 0; i < screen->noutput; i++)
+      for (i = 0; screen->outputs && i < screen->noutput; i++)
       {
          XRROutputInfo *info = XRRGetOutputInfo(dpy, screen, screen->outputs[i]);
+         bool found         = false;
 
+         if (!info)
+            continue;
          if (info->connection == RR_Connected && info->crtc)
          {
             XRRCrtcInfo *crtc = XRRGetCrtcInfo(dpy, screen, info->crtc);
 
             if (crtc)
             {
-               if (dims)
-                  *dims = VIDEO_SCALE_PACK(crtc->width, crtc->height);
+               /* Before window creation, use the first active output.
+                * Otherwise bind the name and geometry to its window center. */
+               found = crtc->width && crtc->height && (!g_x11_win
+                     || (rx >= crtc->x && ry >= crtc->y
+                        && (int64_t)rx - crtc->x < crtc->width
+                        && (int64_t)ry - crtc->y < crtc->height));
+               if (found)
+               {
+                  if (dims)
+                     *dims = VIDEO_SCALE_PACK(crtc->width, crtc->height);
+                  if (s && len && info->name && info->nameLen > 0)
+                  {
+                     size_t count = (size_t)info->nameLen;
+                     if (count >= len)
+                        count = len - 1;
+                     memcpy(s, info->name, count);
+                     s[count] = '\0';
+                  }
+               }
                XRRFreeCrtcInfo(crtc);
             }
-
-            XRRFreeOutputInfo(info);
-            break;
          }
-
          XRRFreeOutputInfo(info);
+         if (found)
+            break;
       }
-
       XRRFreeScreenResources(screen);
    }
 
