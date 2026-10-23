@@ -43,6 +43,7 @@
 #endif
 
 #include "../common/gl3_defines.h"
+#include "../common/spirv_shaders.h"
 
 /* GL_ARB_gl_spirv is desktop only, and glsym does not carry ShaderBinary,
  * SpecializeShader or GetStringi for the GLES targets, so the whole path
@@ -762,14 +763,6 @@ GLuint gl3_spirv_link_program(
 }
 #endif
 
-static const uint32_t gl3_opaque_vert[] =
-#include "../drivers/vulkan_shaders/opaque.vert.inc"
-;
-
-static const uint32_t gl3_opaque_frag[] =
-#include "../drivers/vulkan_shaders/opaque.frag.inc"
-;
-
 typedef struct
 {
    gl3_filter_chain_texture texture;
@@ -941,8 +934,8 @@ static void gl3_common_resources_init(gl3_common_resources *common)
    glBindBuffer(GL_ARRAY_BUFFER, 0);
 
    common->quad_program = gl3_cross_compile_program(
-         gl3_opaque_vert, sizeof(gl3_opaque_vert),
-         gl3_opaque_frag, sizeof(gl3_opaque_frag), &common->quad_loc, true);
+         spirv_opaque_vert, spirv_opaque_vert_size,
+         spirv_opaque_frag, spirv_opaque_frag_size, &common->quad_loc, true);
 }
 
 static void gl3_common_resources_free(gl3_common_resources *common)
@@ -4006,11 +3999,11 @@ gl3_filter_chain_t *gl3_filter_chain_create_default(
    gl3_chain_set_pass_info(chain, 0, pass_info);
 
    gl3_chain_set_shader(chain, 0, GL_VERTEX_SHADER,
-         gl3_opaque_vert,
-         sizeof(gl3_opaque_vert) / sizeof(uint32_t));
+         spirv_opaque_vert,
+         spirv_opaque_vert_size / sizeof(uint32_t));
    gl3_chain_set_shader(chain, 0, GL_FRAGMENT_SHADER,
-         gl3_opaque_frag,
-         sizeof(gl3_opaque_frag) / sizeof(uint32_t));
+         spirv_opaque_frag,
+         spirv_opaque_frag_size / sizeof(uint32_t));
 
    if (!gl3_chain_init(chain))
    {
@@ -4054,9 +4047,9 @@ gl3_filter_chain_t *gl3_filter_chain_create_shrink(void)
    for (i = 0; i < 2; i++)
    {
       gl3_chain_set_shader(chain, i, GL_VERTEX_SHADER,
-            gl3_opaque_vert, sizeof(gl3_opaque_vert) / sizeof(uint32_t));
+            spirv_opaque_vert, spirv_opaque_vert_size / sizeof(uint32_t));
       gl3_chain_set_shader(chain, i, GL_FRAGMENT_SHADER,
-            gl3_opaque_frag, sizeof(gl3_opaque_frag) / sizeof(uint32_t));
+            spirv_opaque_frag, spirv_opaque_frag_size / sizeof(uint32_t));
    }
    if (!gl3_chain_init(chain))
    {
@@ -4402,13 +4395,13 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
 
       gl3_chain_set_shader(chain, shader->passes,
             GL_VERTEX_SHADER,
-            gl3_opaque_vert,
-            sizeof(gl3_opaque_vert) / sizeof(uint32_t));
+            spirv_opaque_vert,
+            spirv_opaque_vert_size / sizeof(uint32_t));
 
       gl3_chain_set_shader(chain, shader->passes,
             GL_FRAGMENT_SHADER,
-            gl3_opaque_frag,
-            sizeof(gl3_opaque_frag) / sizeof(uint32_t));
+            spirv_opaque_frag,
+            spirv_opaque_frag_size / sizeof(uint32_t));
    }
 
    gl3_chain_set_shader_preset(chain, shader);
@@ -4500,13 +4493,13 @@ gl3_filter_chain_t *gl3_filter_chain_create_deferred(
 
       gl3_chain_set_shader(chain, shader->passes,
             GL_VERTEX_SHADER,
-            gl3_opaque_vert,
-            sizeof(gl3_opaque_vert) / sizeof(uint32_t));
+            spirv_opaque_vert,
+            spirv_opaque_vert_size / sizeof(uint32_t));
 
       gl3_chain_set_shader(chain, shader->passes,
             GL_FRAGMENT_SHADER,
-            gl3_opaque_frag,
-            sizeof(gl3_opaque_frag) / sizeof(uint32_t));
+            spirv_opaque_frag,
+            spirv_opaque_frag_size / sizeof(uint32_t));
    }
 
    gl3_chain_set_shader_preset(chain, shader);

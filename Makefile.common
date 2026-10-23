@@ -1848,6 +1848,13 @@ ifeq ($(HAVE_VULKAN), 1)
    endif
 endif
 
+# SPIR-V the Vulkan driver and the glcore driver with slang share
+ifeq ($(HAVE_VULKAN), 1)
+   OBJ += gfx/common/spirv_shaders.o
+else ifeq ($(HAVE_OPENGL_CORE)$(HAVE_SLANG), 11)
+   OBJ += gfx/common/spirv_shaders.o
+endif
+
 ifeq ($(HAVE_OPENGL_CORE), 1)
    OBJ += gfx/drivers/gl3.o
 

@@ -8,10 +8,11 @@ LIBRETRO_COMM_DIR := $(REPO_ROOT)/libretro-common
 
 # The real gfx/drivers_shader/shader_gl3.c, with GL entry points through
 # the real glsym table the test points at its own mocks, the real
-# slang_rect.c it rewrites stages with, and SPIRV-Cross and the rest of
-# the frontend stubbed in stubs.c.
+# slang_rect.c it rewrites stages with, the SPIR-V it loads, and
+# SPIRV-Cross and the rest of the frontend stubbed in stubs.c.
 COMMON  := stubs.c \
            $(REPO_ROOT)/gfx/drivers_shader/slang_rect.c \
+           $(REPO_ROOT)/gfx/common/spirv_shaders.c \
            spvc_stubs.c \
            $(REPO_ROOT)/gfx/drivers_shader/slang_rect.c \
            $(LIBRETRO_COMM_DIR)/glsym/glsym_gl.c \

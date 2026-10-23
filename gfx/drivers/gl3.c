@@ -33,6 +33,7 @@
 #include "../gfx_instrument.h"
 #include "../common/gl_common.h"
 #include "../common/rgba16_pack.h"
+#include "../common/spirv_shaders.h"
 
 #include <compat/strl.h>
 #include <encodings/utf.h>
@@ -2879,14 +2880,6 @@ static void gl3_set_viewport(gl3_t *gl,
 }
 
 #ifdef HAVE_SLANG
-static const uint32_t gl3_alpha_blend_vert[] =
-#include "vulkan_shaders/alpha_blend.vert.inc"
-      ;
-
-static const uint32_t gl3_alpha_blend_linear_frag[] =
-#include "vulkan_shaders/alpha_blend_linear.frag.inc"
-      ;
-
 /* The program for a half-float texture under the scRGB composite, made
  * the first time one is drawn; 0 where it cannot be. */
 static GLuint gl3_linear_program(gl3_t *gl)
@@ -2896,46 +2889,12 @@ static GLuint gl3_linear_program(gl3_t *gl)
    {
       gl->pipelines.alpha_blend_linear_tried = true;
       gl->pipelines.alpha_blend_linear       = gl3_cross_compile_program(
-            gl3_alpha_blend_vert, sizeof(gl3_alpha_blend_vert),
-            gl3_alpha_blend_linear_frag, sizeof(gl3_alpha_blend_linear_frag),
+            spirv_alpha_blend_vert, spirv_alpha_blend_vert_size,
+            spirv_alpha_blend_linear_frag, spirv_alpha_blend_linear_frag_size,
             &gl->pipelines.alpha_blend_linear_loc, true);
    }
    return gl->pipelines.alpha_blend_linear;
 }
-
-#ifdef HAVE_SHADERPIPELINE
-static const uint32_t gl3_pipeline_ribbon_vert[] =
-#include "vulkan_shaders/pipeline_ribbon.vert.inc"
-      ;
-
-static const uint32_t gl3_pipeline_ribbon_frag[] =
-#include "vulkan_shaders/pipeline_ribbon.frag.inc"
-      ;
-
-static const uint32_t gl3_pipeline_ribbon_simple_vert[] =
-#include "vulkan_shaders/pipeline_ribbon_simple.vert.inc"
-      ;
-
-static const uint32_t gl3_pipeline_ribbon_simple_frag[] =
-#include "vulkan_shaders/pipeline_ribbon_simple.frag.inc"
-      ;
-
-static const uint32_t gl3_pipeline_snow_simple_frag[] =
-#include "vulkan_shaders/pipeline_snow_simple.frag.inc"
-      ;
-
-static const uint32_t gl3_pipeline_snow_frag[] =
-#include "vulkan_shaders/pipeline_snow.frag.inc"
-      ;
-
-static const uint32_t gl3_pipeline_bokeh_frag[] =
-#include "vulkan_shaders/pipeline_bokeh.frag.inc"
-      ;
-
-static const uint32_t gl3_pipeline_snowflake_frag[] =
-#include "vulkan_shaders/pipeline_snowflake.frag.inc"
-      ;
-#endif /* HAVE_SHADERPIPELINE */
 
 #ifdef HAVE_SHADERPIPELINE
 /* A menu effect's program, compiled the first time the effect is drawn
@@ -2953,33 +2912,33 @@ static GLuint gl3_effect_program(gl3_t *gl, unsigned pipeline_id,
    {
       case VIDEO_SHADER_MENU:
          prog = &gl->pipelines.ribbon;      l    = &gl->pipelines.ribbon_loc;
-         vs   = gl3_pipeline_ribbon_vert;       vs_size = sizeof(gl3_pipeline_ribbon_vert);
-         fs   = gl3_pipeline_ribbon_frag;       fs_size = sizeof(gl3_pipeline_ribbon_frag);
+         vs   = spirv_pipeline_ribbon_vert;       vs_size = spirv_pipeline_ribbon_vert_size;
+         fs   = spirv_pipeline_ribbon_frag;       fs_size = spirv_pipeline_ribbon_frag_size;
          break;
       case VIDEO_SHADER_MENU_2:
          prog = &gl->pipelines.ribbon_simple; l    = &gl->pipelines.ribbon_simple_loc;
-         vs   = gl3_pipeline_ribbon_simple_vert;  vs_size = sizeof(gl3_pipeline_ribbon_simple_vert);
-         fs   = gl3_pipeline_ribbon_simple_frag;  fs_size = sizeof(gl3_pipeline_ribbon_simple_frag);
+         vs   = spirv_pipeline_ribbon_simple_vert;  vs_size = spirv_pipeline_ribbon_simple_vert_size;
+         fs   = spirv_pipeline_ribbon_simple_frag;  fs_size = spirv_pipeline_ribbon_simple_frag_size;
          break;
       case VIDEO_SHADER_MENU_3:
          prog = &gl->pipelines.snow_simple; l    = &gl->pipelines.snow_simple_loc;
-         vs   = gl3_alpha_blend_vert;           vs_size = sizeof(gl3_alpha_blend_vert);
-         fs   = gl3_pipeline_snow_simple_frag;  fs_size = sizeof(gl3_pipeline_snow_simple_frag);
+         vs   = spirv_alpha_blend_vert;           vs_size = spirv_alpha_blend_vert_size;
+         fs   = spirv_pipeline_snow_simple_frag;  fs_size = spirv_pipeline_snow_simple_frag_size;
          break;
       case VIDEO_SHADER_MENU_4:
          prog = &gl->pipelines.snow;        l    = &gl->pipelines.snow_loc;
-         vs   = gl3_alpha_blend_vert;           vs_size = sizeof(gl3_alpha_blend_vert);
-         fs   = gl3_pipeline_snow_frag;         fs_size = sizeof(gl3_pipeline_snow_frag);
+         vs   = spirv_alpha_blend_vert;           vs_size = spirv_alpha_blend_vert_size;
+         fs   = spirv_pipeline_snow_frag;         fs_size = spirv_pipeline_snow_frag_size;
          break;
       case VIDEO_SHADER_MENU_5:
          prog = &gl->pipelines.bokeh;       l    = &gl->pipelines.bokeh_loc;
-         vs   = gl3_alpha_blend_vert;           vs_size = sizeof(gl3_alpha_blend_vert);
-         fs   = gl3_pipeline_bokeh_frag;        fs_size = sizeof(gl3_pipeline_bokeh_frag);
+         vs   = spirv_alpha_blend_vert;           vs_size = spirv_alpha_blend_vert_size;
+         fs   = spirv_pipeline_bokeh_frag;        fs_size = spirv_pipeline_bokeh_frag_size;
          break;
       case VIDEO_SHADER_MENU_6:
          prog = &gl->pipelines.snowflake;   l    = &gl->pipelines.snowflake_loc;
-         vs   = gl3_alpha_blend_vert;           vs_size = sizeof(gl3_alpha_blend_vert);
-         fs   = gl3_pipeline_snowflake_frag;    fs_size = sizeof(gl3_pipeline_snowflake_frag);
+         vs   = spirv_alpha_blend_vert;           vs_size = spirv_alpha_blend_vert_size;
+         fs   = spirv_pipeline_snowflake_frag;    fs_size = spirv_pipeline_snowflake_frag_size;
          break;
       default:
          return 0;
@@ -2995,19 +2954,6 @@ static GLuint gl3_effect_program(gl3_t *gl, unsigned pipeline_id,
 #ifdef HAVE_SLANG
 static bool gl3_init_pipelines(gl3_t *gl)
 {
-
-   static const uint32_t alpha_blend_frag[] =
-#include "vulkan_shaders/alpha_blend.frag.inc"
-      ;
-
-   static const uint32_t mesh_vert[] =
-#include "vulkan_shaders/mesh.vert.inc"
-      ;
-
-   static const uint32_t font_frag[] =
-#include "vulkan_shaders/font.frag.inc"
-      ;
-
    static const uint32_t hdr_scrgb_vert[] =
 #include "vulkan_shaders/hdr_scrgb.vert.inc"
       ;
@@ -3018,21 +2964,21 @@ static bool gl3_init_pipelines(gl3_t *gl)
 
 
    if (!gl->pipelines.alpha_blend)
-      gl->pipelines.alpha_blend = gl3_cross_compile_program(gl3_alpha_blend_vert, sizeof(gl3_alpha_blend_vert),
-                                                             alpha_blend_frag, sizeof(alpha_blend_frag),
+      gl->pipelines.alpha_blend = gl3_cross_compile_program(spirv_alpha_blend_vert, spirv_alpha_blend_vert_size,
+                                                             spirv_alpha_blend_frag, spirv_alpha_blend_frag_size,
                                                              &gl->pipelines.alpha_blend_loc, true);
    if (!gl->pipelines.alpha_blend)
       return false;
 
    /* Without it meshes are streamed through the alpha-blend program */
    if (!gl->pipelines.mesh)
-      gl->pipelines.mesh = gl3_cross_compile_program(mesh_vert, sizeof(mesh_vert),
-                                                      alpha_blend_frag, sizeof(alpha_blend_frag),
+      gl->pipelines.mesh = gl3_cross_compile_program(spirv_mesh_vert, spirv_mesh_vert_size,
+                                                      spirv_alpha_blend_frag, spirv_alpha_blend_frag_size,
                                                       &gl->pipelines.mesh_loc, true);
 
    if (!gl->pipelines.font)
-      gl->pipelines.font = gl3_cross_compile_program(gl3_alpha_blend_vert, sizeof(gl3_alpha_blend_vert),
-                                                      font_frag, sizeof(font_frag),
+      gl->pipelines.font = gl3_cross_compile_program(spirv_alpha_blend_vert, spirv_alpha_blend_vert_size,
+                                                      spirv_font_frag, spirv_font_frag_size,
                                                       &gl->pipelines.font_loc, true);
    if (!gl->pipelines.font)
       return false;
@@ -6002,26 +5948,14 @@ static bool gl3_views_target_make(gl3_t *gl, struct gl3_views_fbo *t,
  * never blend. Views fall back to the left eye without them. */
 static void gl3_views_init_blend(gl3_t *gl)
 {
-   static const uint32_t alpha_blend_vert[] =
-#include "vulkan_shaders/alpha_blend.vert.inc"
-      ;
-
-   static const uint32_t stereo_anaglyph_frag[] =
-#include "vulkan_shaders/stereo_anaglyph.frag.inc"
-      ;
-
-   static const uint32_t stereo_interlaced_frag[] =
-#include "vulkan_shaders/stereo_interlaced.frag.inc"
-      ;
-
    gl->views.blend_tried           = true;
    gl->pipelines.stereo_anaglyph   = gl3_cross_compile_program(
-         alpha_blend_vert, sizeof(alpha_blend_vert),
-         stereo_anaglyph_frag, sizeof(stereo_anaglyph_frag),
+         spirv_alpha_blend_vert, spirv_alpha_blend_vert_size,
+         spirv_stereo_anaglyph_frag, spirv_stereo_anaglyph_frag_size,
          &gl->pipelines.stereo_anaglyph_loc, true);
    gl->pipelines.stereo_interlaced = gl3_cross_compile_program(
-         alpha_blend_vert, sizeof(alpha_blend_vert),
-         stereo_interlaced_frag, sizeof(stereo_interlaced_frag),
+         spirv_alpha_blend_vert, spirv_alpha_blend_vert_size,
+         spirv_stereo_interlaced_frag, spirv_stereo_interlaced_frag_size,
          &gl->pipelines.stereo_interlaced_loc, true);
 }
 
@@ -6031,18 +5965,10 @@ static void gl3_views_init_blend(gl3_t *gl)
 static void gl3_stock_rect_init(gl3_t *gl)
 {
    unsigned i;
-   static const uint32_t alpha_blend_vert[] =
-#include "vulkan_shaders/alpha_blend.vert.inc"
-      ;
-
-   static const uint32_t stock_rect_frag[] =
-#include "vulkan_shaders/stock_rect.frag.inc"
-      ;
-
    gl->pipelines.stock_rect_tried = true;
    gl->pipelines.stock_rect       = gl3_cross_compile_program(
-         alpha_blend_vert, sizeof(alpha_blend_vert),
-         stock_rect_frag, sizeof(stock_rect_frag),
+         spirv_alpha_blend_vert, spirv_alpha_blend_vert_size,
+         spirv_stock_rect_frag, spirv_stock_rect_frag_size,
          &gl->pipelines.stock_rect_loc, true);
    if (!gl->pipelines.stock_rect)
    {

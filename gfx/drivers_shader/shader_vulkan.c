@@ -30,6 +30,7 @@
 #include "slang_rect.h"
 
 #include "../common/vulkan_common.h"
+#include "../common/spirv_shaders.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../msg_hash.h"
@@ -396,18 +397,7 @@ static void vulkan_flush_descriptor_writes(VkDevice device,
    }
 }
 
-static const uint32_t opaque_vert[] =
-#include "../drivers/vulkan_shaders/opaque.vert.inc"
-;
-
-static const uint32_t opaque_frag[] =
-#include "../drivers/vulkan_shaders/opaque.frag.inc"
-;
-
 #ifdef VULKAN_HDR_SWAPCHAIN
-static const uint32_t hdr_frag[] =
-#include "../drivers/vulkan_shaders/hdr.frag.inc"
-;
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
 typedef struct
@@ -4758,22 +4748,22 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_default(
    slang_chain_set_pass_info(chain, 0, pass_info);
 
    slang_chain_set_shader(chain, 0, VK_SHADER_STAGE_VERTEX_BIT,
-         opaque_vert,
-         sizeof(opaque_vert) / sizeof(uint32_t));
+         spirv_opaque_vert,
+         spirv_opaque_vert_size / sizeof(uint32_t));
 
 #ifdef VULKAN_HDR_SWAPCHAIN
    if (info->hdr_enabled)
    {
       slang_chain_set_shader(chain, 0, VK_SHADER_STAGE_FRAGMENT_BIT,
-            hdr_frag,
-            sizeof(hdr_frag) / sizeof(uint32_t));
+            spirv_hdr_frag,
+            spirv_hdr_frag_size / sizeof(uint32_t));
    }
    else
 #endif /* VULKAN_HDR_SWAPCHAIN */ 
    {
       slang_chain_set_shader(chain, 0, VK_SHADER_STAGE_FRAGMENT_BIT,
-            opaque_frag,
-            sizeof(opaque_frag) / sizeof(uint32_t));
+            spirv_opaque_frag,
+            spirv_opaque_frag_size / sizeof(uint32_t));
    }
 
    if (!slang_chain_init(chain))
@@ -4825,11 +4815,11 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_shrink(
    for (i = 0; i < 2; i++)
    {
       slang_chain_set_shader(chain, i, VK_SHADER_STAGE_VERTEX_BIT,
-            opaque_vert,
-            sizeof(opaque_vert) / sizeof(uint32_t));
+            spirv_opaque_vert,
+            spirv_opaque_vert_size / sizeof(uint32_t));
       slang_chain_set_shader(chain, i, VK_SHADER_STAGE_FRAGMENT_BIT,
-            opaque_frag,
-            sizeof(opaque_frag) / sizeof(uint32_t));
+            spirv_opaque_frag,
+            spirv_opaque_frag_size / sizeof(uint32_t));
    }
 
    if (!slang_chain_init(chain))
@@ -5176,15 +5166,15 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
 
       slang_chain_set_shader(chain, shader->passes,
             VK_SHADER_STAGE_VERTEX_BIT,
-            opaque_vert,
-            sizeof(opaque_vert) / sizeof(uint32_t));
+            spirv_opaque_vert,
+            spirv_opaque_vert_size / sizeof(uint32_t));
 
       /* The hidden copy/scale pass is always a plain blit.
        * HDR conversion is handled by the HDR pipeline, not here. */
       slang_chain_set_shader(chain, shader->passes,
             VK_SHADER_STAGE_FRAGMENT_BIT,
-            opaque_frag,
-            sizeof(opaque_frag) / sizeof(uint32_t));
+            spirv_opaque_frag,
+            spirv_opaque_frag_size / sizeof(uint32_t));
    }
 
    slang_chain_set_shader_preset(chain, shader);
@@ -5280,13 +5270,13 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_deferred(
 
       slang_chain_set_shader(chain, shader->passes,
             VK_SHADER_STAGE_VERTEX_BIT,
-            opaque_vert,
-            sizeof(opaque_vert) / sizeof(uint32_t));
+            spirv_opaque_vert,
+            spirv_opaque_vert_size / sizeof(uint32_t));
 
       slang_chain_set_shader(chain, shader->passes,
             VK_SHADER_STAGE_FRAGMENT_BIT,
-            opaque_frag,
-            sizeof(opaque_frag) / sizeof(uint32_t));
+            spirv_opaque_frag,
+            spirv_opaque_frag_size / sizeof(uint32_t));
    }
 
    slang_chain_set_shader_preset(chain, shader);

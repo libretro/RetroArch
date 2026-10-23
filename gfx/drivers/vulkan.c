@@ -54,6 +54,7 @@
 #endif
 
 #include "../common/vulkan_common.h"
+#include "../common/spirv_shaders.h"
 #if defined(_WIN32) && !defined(__WINRT__)
 #include "../common/win_vulkan_dxgi.h"
 #endif
@@ -5237,46 +5238,6 @@ static void vulkan_init_pipeline_layout(
          &layout_info, NULL, &vk->pipelines.layout);
 }
 
-static const uint32_t vk_alpha_blend_vert[] =
-#include "vulkan_shaders/alpha_blend.vert.inc"
-   ;
-
-#ifdef HAVE_SHADERPIPELINE
-/* The SPIR-V the menu effects are made from, which they are made from
- * when first drawn rather than at start */
-static const uint32_t vk_pipeline_ribbon_vert[] =
-#include "vulkan_shaders/pipeline_ribbon.vert.inc"
-   ;
-
-static const uint32_t vk_pipeline_ribbon_frag[] =
-#include "vulkan_shaders/pipeline_ribbon.frag.inc"
-   ;
-
-static const uint32_t vk_pipeline_ribbon_simple_vert[] =
-#include "vulkan_shaders/pipeline_ribbon_simple.vert.inc"
-   ;
-
-static const uint32_t vk_pipeline_ribbon_simple_frag[] =
-#include "vulkan_shaders/pipeline_ribbon_simple.frag.inc"
-   ;
-
-static const uint32_t vk_pipeline_snow_simple_frag[] =
-#include "vulkan_shaders/pipeline_snow_simple.frag.inc"
-   ;
-
-static const uint32_t vk_pipeline_snow_frag[] =
-#include "vulkan_shaders/pipeline_snow.frag.inc"
-   ;
-
-static const uint32_t vk_pipeline_bokeh_frag[] =
-#include "vulkan_shaders/pipeline_bokeh.frag.inc"
-   ;
-
-static const uint32_t vk_pipeline_snowflake_frag[] =
-#include "vulkan_shaders/pipeline_snowflake.frag.inc"
-   ;
-#endif
-
 /* Copies the pipeline state the menu effects are made with as it stands
  * here, so each can be made the first time it is drawn */
 static void vulkan_effect_capture(struct vk_effect_template *t,
@@ -5376,16 +5337,16 @@ static VkPipeline vulkan_effect_pipeline(vk_t *vk, unsigned i, bool sdr)
    switch (i)
    {
       case 0:
-         module_info.codeSize = sizeof(vk_pipeline_ribbon_vert);
-         module_info.pCode    = vk_pipeline_ribbon_vert;
+         module_info.codeSize = spirv_pipeline_ribbon_vert_size;
+         module_info.pCode    = spirv_pipeline_ribbon_vert;
          break;
       case 1:
-         module_info.codeSize = sizeof(vk_pipeline_ribbon_simple_vert);
-         module_info.pCode    = vk_pipeline_ribbon_simple_vert;
+         module_info.codeSize = spirv_pipeline_ribbon_simple_vert_size;
+         module_info.pCode    = spirv_pipeline_ribbon_simple_vert;
          break;
       default:
-         module_info.codeSize = sizeof(vk_alpha_blend_vert);
-         module_info.pCode    = vk_alpha_blend_vert;
+         module_info.codeSize = spirv_alpha_blend_vert_size;
+         module_info.pCode    = spirv_alpha_blend_vert;
          break;
    }
    if (vkCreateShaderModule(vk->context->device, &module_info, NULL,
@@ -5394,28 +5355,28 @@ static VkPipeline vulkan_effect_pipeline(vk_t *vk, unsigned i, bool sdr)
    switch (i)
    {
       case 0:
-         module_info.codeSize = sizeof(vk_pipeline_ribbon_frag);
-         module_info.pCode    = vk_pipeline_ribbon_frag;
+         module_info.codeSize = spirv_pipeline_ribbon_frag_size;
+         module_info.pCode    = spirv_pipeline_ribbon_frag;
          break;
       case 1:
-         module_info.codeSize = sizeof(vk_pipeline_ribbon_simple_frag);
-         module_info.pCode    = vk_pipeline_ribbon_simple_frag;
+         module_info.codeSize = spirv_pipeline_ribbon_simple_frag_size;
+         module_info.pCode    = spirv_pipeline_ribbon_simple_frag;
          break;
       case 2:
-         module_info.codeSize = sizeof(vk_pipeline_snow_simple_frag);
-         module_info.pCode    = vk_pipeline_snow_simple_frag;
+         module_info.codeSize = spirv_pipeline_snow_simple_frag_size;
+         module_info.pCode    = spirv_pipeline_snow_simple_frag;
          break;
       case 3:
-         module_info.codeSize = sizeof(vk_pipeline_snow_frag);
-         module_info.pCode    = vk_pipeline_snow_frag;
+         module_info.codeSize = spirv_pipeline_snow_frag_size;
+         module_info.pCode    = spirv_pipeline_snow_frag;
          break;
       case 4:
-         module_info.codeSize = sizeof(vk_pipeline_bokeh_frag);
-         module_info.pCode    = vk_pipeline_bokeh_frag;
+         module_info.codeSize = spirv_pipeline_bokeh_frag_size;
+         module_info.pCode    = spirv_pipeline_bokeh_frag;
          break;
       default:
-         module_info.codeSize = sizeof(vk_pipeline_snowflake_frag);
-         module_info.pCode    = vk_pipeline_snowflake_frag;
+         module_info.codeSize = spirv_pipeline_snowflake_frag_size;
+         module_info.pCode    = spirv_pipeline_snowflake_frag;
          break;
    }
    if (vkCreateShaderModule(vk->context->device, &module_info, NULL,
@@ -5451,42 +5412,13 @@ static void vulkan_sdr_alpha_blend(const vk_t *vk,
 static void vulkan_init_pipelines(vk_t *vk)
 {
 #ifdef VULKAN_HDR_SWAPCHAIN
-   static const uint32_t hdr_frag[] =
-#include "vulkan_shaders/hdr.frag.inc"
-      ;
    static const uint32_t hdr_tonemap_frag[] =
 #include "vulkan_shaders/hdr_tonemap.frag.inc"
       ;
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
-   static const uint32_t alpha_blend_frag[] =
-#include "vulkan_shaders/alpha_blend.frag.inc"
-      ;
 #ifdef VULKAN_HDR_SWAPCHAIN
-   static const uint32_t alpha_blend_linear_frag[] =
-#include "vulkan_shaders/alpha_blend_linear.frag.inc"
-      ;
 #endif
-
-   static const uint32_t mesh_vert[] =
-#include "vulkan_shaders/mesh.vert.inc"
-      ;
-
-   static const uint32_t font_frag[] =
-#include "vulkan_shaders/font.frag.inc"
-      ;
-
-   static const uint32_t stereo_anaglyph_frag[] =
-#include "vulkan_shaders/stereo_anaglyph.frag.inc"
-      ;
-
-   static const uint32_t stereo_interlaced_frag[] =
-#include "vulkan_shaders/stereo_interlaced.frag.inc"
-      ;
-
-   static const uint32_t stock_rect_frag[] =
-#include "vulkan_shaders/stock_rect.frag.inc"
-      ;
 
    static const uint32_t rgb565_to_rgba8888_comp[] =
 #include "vulkan_shaders/rgb565_to_rgba8888.comp.inc"
@@ -5665,8 +5597,8 @@ static void vulkan_init_pipelines(vk_t *vk)
    pipe.renderPass                      = vk->render_pass;
    pipe.layout                          = vk->pipelines.layout;
 
-   module_info.codeSize                 = sizeof(vk_alpha_blend_vert);
-   module_info.pCode                    = vk_alpha_blend_vert;
+   module_info.codeSize                 = spirv_alpha_blend_vert_size;
+   module_info.pCode                    = spirv_alpha_blend_vert;
    shader_stages[0].stage               = VK_SHADER_STAGE_VERTEX_BIT;
    shader_stages[0].pName               = "main";
    vkCreateShaderModule(vk->context->device,
@@ -5682,8 +5614,8 @@ static void vulkan_init_pipelines(vk_t *vk)
    blend_attachment.alphaBlendOp        = VK_BLEND_OP_MAX;
 
    /* Glyph pipeline */
-   module_info.codeSize                 = sizeof(font_frag);
-   module_info.pCode                    = font_frag;
+   module_info.codeSize                 = spirv_font_frag_size;
+   module_info.pCode                    = spirv_font_frag;
    shader_stages[1].stage               = VK_SHADER_STAGE_FRAGMENT_BIT;
    shader_stages[1].pName               = "main";
    vkCreateShaderModule(vk->context->device,
@@ -5694,8 +5626,8 @@ static void vulkan_init_pipelines(vk_t *vk)
    vkDestroyShaderModule(vk->context->device, shader_stages[1].module, NULL);
 
    /* Alpha-blended pipeline. */
-   module_info.codeSize   = sizeof(alpha_blend_frag);
-   module_info.pCode      = alpha_blend_frag;
+   module_info.codeSize   = spirv_alpha_blend_frag_size;
+   module_info.pCode      = spirv_alpha_blend_frag;
    shader_stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
    shader_stages[1].pName = "main";
    vkCreateShaderModule(vk->context->device,
@@ -5709,8 +5641,8 @@ static void vulkan_init_pipelines(vk_t *vk)
       VkPipelineShaderStageCreateInfo alpha_frag = shader_stages[1];
       blend_attachment.blendEnable = VK_FALSE;
 
-      module_info.codeSize         = sizeof(stereo_anaglyph_frag);
-      module_info.pCode            = stereo_anaglyph_frag;
+      module_info.codeSize         = spirv_stereo_anaglyph_frag_size;
+      module_info.pCode            = spirv_stereo_anaglyph_frag;
       vkCreateShaderModule(vk->context->device,
             &module_info, NULL, &shader_stages[1].module);
       vkCreateGraphicsPipelines(vk->context->device, vk->pipelines.cache,
@@ -5718,8 +5650,8 @@ static void vulkan_init_pipelines(vk_t *vk)
       vkDestroyShaderModule(vk->context->device,
             shader_stages[1].module, NULL);
 
-      module_info.codeSize         = sizeof(stereo_interlaced_frag);
-      module_info.pCode            = stereo_interlaced_frag;
+      module_info.codeSize         = spirv_stereo_interlaced_frag_size;
+      module_info.pCode            = spirv_stereo_interlaced_frag;
       vkCreateShaderModule(vk->context->device,
             &module_info, NULL, &shader_stages[1].module);
       vkCreateGraphicsPipelines(vk->context->device, vk->pipelines.cache,
@@ -5728,8 +5660,8 @@ static void vulkan_init_pipelines(vk_t *vk)
             shader_stages[1].module, NULL);
 
       /* Stock views straight from the frame. */
-      module_info.codeSize         = sizeof(stock_rect_frag);
-      module_info.pCode            = stock_rect_frag;
+      module_info.codeSize         = spirv_stock_rect_frag_size;
+      module_info.pCode            = spirv_stock_rect_frag;
       vkCreateShaderModule(vk->context->device,
             &module_info, NULL, &shader_stages[1].module);
       vkCreateGraphicsPipelines(vk->context->device, vk->pipelines.cache,
@@ -5770,8 +5702,8 @@ static void vulkan_init_pipelines(vk_t *vk)
       blend_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
 
       /* HDR pipeline. */
-      module_info.codeSize         = sizeof(hdr_frag);
-      module_info.pCode            = hdr_frag;
+      module_info.codeSize         = spirv_hdr_frag_size;
+      module_info.pCode            = spirv_hdr_frag;
       shader_stages[1].stage       = VK_SHADER_STAGE_FRAGMENT_BIT;
       shader_stages[1].pName       = "main";
       vkCreateShaderModule(vk->context->device,
@@ -5787,7 +5719,7 @@ static void vulkan_init_pipelines(vk_t *vk)
             1, &pipe, NULL, &vk->pipelines.hdr);
 
       /* The previous code built two additional display pipelines
-       * here (in old slots 4 and 5) using the hdr_frag shader.  Both
+       * here (in old slots 4 and 5) using the spirv_hdr_frag shader.  Both
        * iterations of that loop produced identical pipeline objects
        * (no varying state between them), and no consumer ever
        * indexed slots 4 or 5 -- they were copy-paste residue from
@@ -5859,15 +5791,15 @@ static void vulkan_init_pipelines(vk_t *vk)
       input_assembly.primitiveRestartEnable = VK_FALSE;
 
       /* SDR font pipeline */
-      module_info.codeSize   = sizeof(vk_alpha_blend_vert);
-      module_info.pCode      = vk_alpha_blend_vert;
+      module_info.codeSize   = spirv_alpha_blend_vert_size;
+      module_info.pCode      = spirv_alpha_blend_vert;
       shader_stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
       shader_stages[0].pName = "main";
       vkCreateShaderModule(vk->context->device,
             &module_info, NULL, &shader_stages[0].module);
 
-      module_info.codeSize   = sizeof(font_frag);
-      module_info.pCode      = font_frag;
+      module_info.codeSize   = spirv_font_frag_size;
+      module_info.pCode      = spirv_font_frag;
       shader_stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
       shader_stages[1].pName = "main";
       vkCreateShaderModule(vk->context->device,
@@ -5882,8 +5814,8 @@ static void vulkan_init_pipelines(vk_t *vk)
       vkDestroyShaderModule(vk->context->device, shader_stages[1].module, NULL);
 
       /* SDR alpha_blend pipeline */
-      module_info.codeSize   = sizeof(alpha_blend_frag);
-      module_info.pCode      = alpha_blend_frag;
+      module_info.codeSize   = spirv_alpha_blend_frag_size;
+      module_info.pCode      = spirv_alpha_blend_frag;
       shader_stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
       shader_stages[1].pName = "main";
       vkCreateShaderModule(vk->context->device,
@@ -5909,8 +5841,8 @@ static void vulkan_init_pipelines(vk_t *vk)
       /* The blended strip again for a linear scRGB texture: the same
        * vertex shader, alpha_blend_linear.frag */
       vkDestroyShaderModule(vk->context->device, shader_stages[1].module, NULL);
-      module_info.codeSize   = sizeof(alpha_blend_linear_frag);
-      module_info.pCode      = alpha_blend_linear_frag;
+      module_info.codeSize   = spirv_alpha_blend_linear_frag_size;
+      module_info.pCode      = spirv_alpha_blend_linear_frag;
       vkCreateShaderModule(vk->context->device,
             &module_info, NULL, &shader_stages[1].module);
       blend_attachment.blendEnable = VK_TRUE;
@@ -5954,14 +5886,14 @@ static void vulkan_init_pipelines(vk_t *vk)
    blend_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
    blend_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
    blend_attachment.alphaBlendOp        = VK_BLEND_OP_MAX;
-   module_info.codeSize   = sizeof(mesh_vert);
-   module_info.pCode      = mesh_vert;
+   module_info.codeSize   = spirv_mesh_vert_size;
+   module_info.pCode      = spirv_mesh_vert;
    shader_stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
    shader_stages[0].pName = "main";
    vkCreateShaderModule(vk->context->device,
          &module_info, NULL, &shader_stages[0].module);
-   module_info.codeSize   = sizeof(alpha_blend_frag);
-   module_info.pCode      = alpha_blend_frag;
+   module_info.codeSize   = spirv_alpha_blend_frag_size;
+   module_info.pCode      = spirv_alpha_blend_frag;
    shader_stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
    shader_stages[1].pName = "main";
    vkCreateShaderModule(vk->context->device,
@@ -8202,7 +8134,7 @@ built:
 #ifdef VULKAN_HDR_SWAPCHAIN
    /* When rendering through the SDR offscreen buffer, the filter chain's
     * final pass must use the SDR render pass to match the framebuffer format.
-    * The default filter chain has hdr_frag built in and renders directly to
+    * The default filter chain has spirv_hdr_frag built in and renders directly to
     * the swapchain — only custom shader chains need the SDR render pass.
     * Passthrough (direct to swapchain) when:
     *   scRGB mode: shader emits RGBA16F (scRGB)
@@ -11401,7 +11333,7 @@ static bool vulkan_frame(void *data, const void *frame,
    /* Use the offscreen buffer when the shader's output format doesn't match
     * the swapchain format and the HDR pipeline needs to convert.
     * The default filter chain already contains the internal HDR shader
-    * (hdr_frag) so it renders directly to the swapchain — no offscreen needed.
+    * (spirv_hdr_frag) so it renders directly to the swapchain — no offscreen needed.
     * Custom shader chains need offscreen unless they emit HDR natively. */
    if ((vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
       && filter_chain != vk->filter_chain_default)
