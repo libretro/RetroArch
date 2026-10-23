@@ -94,9 +94,12 @@ jobs:
         CC=clang python3 samples/gfx/videotoolbox_av1/run.py --native-format
     - name: VideoToolbox AV1 hardware pixels, keyframe seeks and retained images
       run: |
-        if ! command -v ffmpeg >/dev/null; then
-          brew install ffmpeg
+        if ! command -v ffmpeg >/dev/null ||
+            ! ffmpeg -hide_banner -encoders 2>/dev/null | grep ' libaom-av1 ' >/dev/null; then
+          brew install ffmpeg-full
+          export PATH="$(brew --prefix ffmpeg-full)/bin:$PATH"
         fi
+        ffmpeg -hide_banner -encoders 2>/dev/null | grep ' libaom-av1 '
         rc=0
         CC=clang python3 samples/gfx/videotoolbox_av1/run.py --native-pixels --pipeline || rc=$?
         if [ "$rc" = 77 ]; then
