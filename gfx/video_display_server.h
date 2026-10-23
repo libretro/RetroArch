@@ -170,6 +170,11 @@ typedef struct video_display_server
     * without it needs no entry; video_driver_get_window_refresh_rate()
     * falls back to get_refresh_rate. */
    float    (*get_window_refresh_rate)(void *data);
+   /* Optional temporary refresh ownership. Begin selects an advertised
+    * progressive mode at the current geometry. End conditionally restores
+    * the captured output and frees the opaque lease. Cold transitions only. */
+   void    *(*begin_media_refresh)(void *data, unsigned num, unsigned den);
+   void     (*end_media_refresh)(void *data, void *lease);
 } video_display_server_t;
 
 void* video_display_server_init(enum rarch_display_type type);

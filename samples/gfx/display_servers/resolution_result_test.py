@@ -17,6 +17,7 @@ start = source.index("static bool win32_display_server_set_resolution(")
 end = source.index("/* Display resolution list qsort", start)
 unit = r"""
 #include <assert.h>
+#include <math.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -54,6 +55,7 @@ typedef struct { win32_display_mode_t *modes; } dispserv_win32_t;
 #define SM_CXSCREEN 0
 #define SM_CYSCREEN 1
 #define DMDFO_DEFAULT 0
+#define DM_INTERLACED 2
 #define DM_PELSWIDTH 1
 #define DM_PELSHEIGHT 2
 #define DM_BITSPERPEL 4
@@ -66,7 +68,7 @@ typedef struct { win32_display_mode_t *modes; } dispserv_win32_t;
 #define DISP_CHANGE_NOTUPDATED -3
 static int current_ok = 1, test_result, apply_result;
 static unsigned tests, applies, enumerated, monitors;
-static int monitor_ok = 1, fail_alloc;
+static int monitor_ok = 1, fail_alloc, candidate_defect;
 static TCHAR selected = 'D';
 static DEVMODE current_modes[2];
 static void reset_modes(void)
@@ -82,7 +84,7 @@ static void reset_modes(void)
    }
    selected = 'D';
    monitor_ok = current_ok = 1;
-   fail_alloc = 0;
+   fail_alloc = candidate_defect = 0;
 }
 static bool win32_get_named_video_output(DEVMODE *dm, int mode,
       const TCHAR *device)
@@ -99,6 +101,12 @@ static bool win32_get_named_video_output(DEVMODE *dm, int mode,
    *dm = current_modes[device[0] == 'E'];
    if (mode >= 0)
       dm->dmDisplayFrequency = mode == 0 ? 120 : 60;
+   if (mode == 0)
+   {
+      if (candidate_defect == 1) dm->dmPelsWidth = 2000;
+      if (candidate_defect == 2) dm->dmBitsPerPel = 16;
+      if (candidate_defect == 3) dm->dmDisplayFlags = DM_INTERLACED;
+   }
    return true;
 }
 static void win32_monitor_info(void *data, void *monitor, unsigned *id)
@@ -140,6 +148,12 @@ static void *record_alloc(size_t n, size_t size)
 #define calloc record_alloc
 """
 unit += source[match_start:match_end]
+header = (root / "gfx/video_display_server.h").read_text(encoding="utf-8")
+config_start = header.index("typedef struct video_display_config")
+config_end = header.index("} video_display_config_t;", config_start) + len("} video_display_config_t;")
+unit += header[config_start:config_end]
+policy = (root / "gfx/gfx_media_display.c").read_text(encoding="utf-8")
+unit += policy[policy.index("float gfx_media_display_rate("):]
 unit += source[start:end]
 unit += r"""
 int main(void)
@@ -229,6 +243,48 @@ int main(void)
       win32_display_server_restore_modes(&serv);
       assert(!serv.modes && current_modes[0].dmDisplayFrequency == 144);
    }
+   for (i = 0; i < 10; i++)
+   {
+      dispserv_win32_t serv;
+      void *lease;
+      unsigned before;
+      memset(&serv, 0, sizeof(serv));
+      reset_modes();
+      tests = applies = monitors = 0;
+      test_result = apply_result = DISP_CHANGE_SUCCESSFUL;
+      if (i == 1) current_modes[0].dmDisplayFrequency = 120;
+      if (i == 2) current_modes[0].dmDisplayFrequency = 75;
+      if (i == 4) fail_alloc = 1;
+      if (i == 5) test_result = DISP_CHANGE_FAILED;
+      if (i == 6) apply_result = DISP_CHANGE_FAILED;
+      if (i >= 7) candidate_defect = i - 6;
+      lease = win32_display_server_begin_media_refresh(&serv, i == 3 ? 25 : 24, 1);
+      assert((lease != NULL) == (i == 0 || i == 2));
+      assert(!serv.modes);
+      before = monitors;
+      test_result = apply_result = DISP_CHANGE_SUCCESSFUL;
+      win32_display_server_end_media_refresh(&serv, lease);
+      assert(monitors == before);
+      assert(current_modes[0].dmDisplayFrequency == (i == 1 ? 120 : i == 2 ? 75 : 60));
+   }
+   {
+      dispserv_win32_t serv;
+      void *lease;
+      unsigned before;
+      memset(&serv, 0, sizeof(serv));
+      reset_modes();
+      lease = win32_display_server_begin_media_refresh(&serv, 24, 1);
+      assert(lease);
+      current_modes[0].dmDisplayFrequency = 144;
+      before = applies;
+      win32_display_server_end_media_refresh(&serv, lease);
+      assert(applies == before && current_modes[0].dmDisplayFrequency == 144);
+      before = monitors;
+      assert(!win32_display_server_begin_media_refresh(&serv, 0, 1));
+      assert(!win32_display_server_begin_media_refresh(&serv, 24, 0));
+      assert(!win32_display_server_begin_media_refresh(NULL, 24, 1));
+      assert(monitors == before);
+   }
    assert(!win32_display_server_set_resolution(NULL, 0, 0, 0, 0, 0, 0, 0));
    puts("PASS: mode results and conditional restoration stay bound to each output");
    return 0;
@@ -248,6 +304,6 @@ with tempfile.TemporaryDirectory(prefix="win32-resolution-result-") as temp:
                 flags.append("-DUNICODE")
             if a.sanitizer:
                 flags += ["-fsanitize=" + a.sanitizer, "-fno-omit-frame-pointer"]
-            subprocess.run(shlex.split(a.cc) + flags + [str(src), "-o", str(exe)],
+            subprocess.run(shlex.split(a.cc) + flags + [str(src), "-o", str(exe), "-lm"],
                            check=True)
             subprocess.run(shlex.split(a.runner) + [str(exe)], check=True)
