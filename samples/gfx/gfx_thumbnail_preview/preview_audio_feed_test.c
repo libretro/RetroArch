@@ -927,7 +927,7 @@ static int bounded_video_seek(void)
          || !seek_probe_calls || seek_probe_calls > 1024) failed = 1;
    seek_probe_calls = 0;
    seek_probe_wait = true;
-   if (!seek_pending(gfx_anim_preview_seek_step(&p, 0, true, &position))
+   if (gfx_anim_preview_seek_step(&p, 0, true, &position) != 0
          || seek_probe_calls != 1) failed = 1;
    seek_probe_calls = 0;
    seek_probe_wait = false;
@@ -982,6 +982,16 @@ static int bounded_video_seek(void)
             }
             seek_probe_boundary = 0;
             seek_probe_sparse = seek_probe_wait = true;
+            seek_probe_calls = seek_probe_end = 0;
+            seek_probe_stride = 128;
+            seek_probe_anchor = 65536;
+            p.seek_phase = 1;
+            data_transfer_window_rewind(p.dt);
+            p.seek_feed_anchor = p.seek_feed_hi = seek_probe_anchor;
+            if (gfx_anim_preview_seek_step(&p, 0, false, &position)
+                  != VIDEO_PLAYER_SEEK_PROGRESS
+                  || !seek_probe_calls || seek_probe_calls > 1024) failed = 1;
+
             seek_probe_calls = 0;
             seek_probe_end = 64;
             seek_probe_stride = 128;

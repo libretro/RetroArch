@@ -1075,8 +1075,14 @@ int gfx_anim_preview_seek_step(void *user, int64_t target_us,
          }
       } while (--budget);
       if (result != 1)
-         return !result && !image_transfer_anim_stream_waiting(p->stream, p->type)
+      {
+         size_t lo, hi;
+         bool local_input = p->windowed && p->dt
+            && image_transfer_anim_stream_seek_span(p->stream, p->type, &lo, &hi);
+         return !result && (local_input
+               || !image_transfer_anim_stream_waiting(p->stream, p->type))
             ? VIDEO_PLAYER_SEEK_PROGRESS : result;
+      }
       p->seek_video_us = p->seek_video_us > p->timeline_start_us
          ? p->seek_video_us - p->timeline_start_us : 0;
       if (p->seek_format & 0x3fffffffU)
