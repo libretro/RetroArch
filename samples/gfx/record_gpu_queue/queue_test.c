@@ -99,13 +99,26 @@ struct stress
    uint64_t pixels[RECORD_GPU_QUEUE_SLOTS];
    unsigned made;
 };
+/* 30 s without progress: a stall fails, a loaded machine does not */
+static int stalled(unsigned count, unsigned *seen, time_t *deadline)
+{
+   time_t now = time(NULL);
+   if (count != *seen)
+   {
+      *seen     = count;
+      *deadline = now + 30;
+      return 0;
+   }
+   return now >= *deadline;
+}
 static void producer(void *data)
 {
    struct stress *s = (struct stress*)data;
    record_gpu_frame_t frame = {0};
-   unsigned i = 0, spins = 0;
+   unsigned i = 0, spins = 0, seen = 0;
    time_t deadline = time(NULL) + 30;
-   while (i < TEST_FRAMES && ((spins++ & 1023) || time(NULL) < deadline))
+   while (i < TEST_FRAMES
+         && ((spins++ & 1023) || !stalled(i, &seen, &deadline)))
    {
       int result = record_gpu_queue_acquire(s->queue, &frame.slot);
       if (result == RECORD_GPU_QUEUE_BUSY)
@@ -132,7 +145,7 @@ static void threaded(unsigned slots)
    struct stress *s = (struct stress*)calloc(1, sizeof(*s));
    sthread_t *thread;
    record_gpu_frame_t frame;
-   unsigned n = 0, spins = 0;
+   unsigned n = 0, spins = 0, seen = 0;
    int result = RECORD_GPU_QUEUE_BUSY;
    time_t deadline = time(NULL) + 30;
    CHECK(s != NULL);
@@ -141,7 +154,7 @@ static void threaded(unsigned slots)
    CHECK(s->queue != NULL);
    thread = sthread_create(producer, s);
    CHECK(thread != NULL);
-   while (((spins++ & 1023) || time(NULL) < deadline))
+   while ((spins++ & 1023) || !stalled(n, &seen, &deadline))
    {
       result = record_gpu_queue_take(s->queue, &frame);
       if (result == RECORD_GPU_QUEUE_END)
