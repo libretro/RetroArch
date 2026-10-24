@@ -146,6 +146,10 @@ $(WEBM_TIMING_TARGET): webm_timing_test.c $(RESIDENCY_OBJS)
 	$(CC) $(CFLAGS) -o $@ $< $(RESIDENCY_OBJS) $(LDFLAGS) $(LDLIBS)
 
 WEBM_SEEK_TARGET := webm_seek_test$(EXE)
+VP8_REFERENCE_TARGET := vp8_reference_test$(EXE)
+$(VP8_REFERENCE_TARGET): vp8_reference_test.c $(COMMON)/formats/vp8/rvp8.c
+	$(CC) $(CFLAGS) -fno-builtin-memcpy -o $@ $^ $(LDFLAGS) -Wl,--wrap=memcpy -Wl,--wrap=malloc $(LDLIBS)
+
 $(WEBM_SEEK_TARGET): webm_seek_test.c $(RESIDENCY_OBJS)
 	$(CC) $(CFLAGS) -o $@ $< $(RESIDENCY_OBJS) $(LDFLAGS) $(LDLIBS)
 
@@ -184,7 +188,10 @@ $(DEVICE_TARGET): webm_vp9_device_test.c
 endif
 
 check: $(WEBM_TIMING_TARGET) $(VORBIS_SEEK_TARGET) $(OPUS_SEEK_TARGET) $(WEBM_SEEK_TARGET) $(MP4_SEEK_TARGET) $(TARGET) $(HW_TARGET) $(AV1_HW_TARGET) $(RESIDENCY_TARGET) $(VP9_HW_TARGET) $(DEVICE_TARGET) $(AUDIO_START_TARGET)
-check: $(PROGRESSIVE_GROUP_TARGET) $(TIMELINE_TARGET) $(VIDEO_TIMELINE_TARGET)
+check: $(PROGRESSIVE_GROUP_TARGET) $(TIMELINE_TARGET) $(VIDEO_TIMELINE_TARGET) $(VP8_REFERENCE_TARGET)
+	$(RUNNER) ./$(VP8_REFERENCE_TARGET) fixtures/vp8-refs.ivf fixtures/vp8-refs.yuv
+	$(RUNNER) ./$(VP8_REFERENCE_TARGET) fixtures/vp8-altref.ivf fixtures/vp8-altref.yuv
+	$(RUNNER) ./$(VP8_REFERENCE_TARGET) fixtures/vp8-resize.ivf fixtures/vp8-resize.yuv
 	$(RUNNER) ./$(PROGRESSIVE_GROUP_TARGET) fixtures/core-group-seed.webm fixtures/core-group.webm
 	CORE_SPARSE=1 $(RUNNER) ./$(PROGRESSIVE_GROUP_TARGET) fixtures/core-group-seed.webm fixtures/core-sparse.webm
 ifeq ($(AUDIO),1)
@@ -233,6 +240,7 @@ clean:
 	rm -f vorbis_seek_test vorbis_seek_test.exe
 	rm -f opus_seek_test opus_seek_test.exe
 	rm -f webm_seek_test webm_seek_test.exe
+	rm -f vp8_reference_test vp8_reference_test.exe
 	rm -f mp4_seek_test mp4_seek_test.exe
 	rm -f webm_audio_start_test webm_audio_start_test.exe webm_av1_hw_test webm_av1_hw_test.exe av1-core-fixture.mp4 av1-core-fixture.webm
 	rm -rf $(SAMPLE_OBJDIR)

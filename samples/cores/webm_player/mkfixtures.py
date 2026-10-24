@@ -6,6 +6,7 @@ import sys
 
 out = Path(sys.argv[1] if len(sys.argv) > 1 else "fixtures")
 out.mkdir(parents=True, exist_ok=True)
+subprocess.run([sys.executable, str(Path(__file__).with_name("vp8_reference_fixtures.py")), str(out)], check=True)
 cases = [
     ("vp8-long-timing.webm", ["-c:v", "libvpx", "-deadline", "realtime", "-cpu-used", "8", "-g", "120", "-auto-alt-ref", "0", "-an"]),
     ("vp8-seek-opus.webm", ["-c:v", "libvpx", "-g", "12", "-auto-alt-ref", "0", "-cluster_time_limit", "1000", "-c:a", "libopus"]),
