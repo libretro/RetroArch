@@ -27,7 +27,13 @@
  * A search, a pairing and a forgetting each block for seconds, so each
  * runs on a thread of the driver's: the menu's calls only start it.
  * The scan's list passes to the frontend's thread at scan_end, after
- * the thread is joined; a pairing works on a copy of its device. */
+ * the thread is joined; a pairing works on a copy of its device. A
+ * thread still running when the driver is freed is let go, not waited
+ * for - a pairing can wait on Windows for good - and the last of it and
+ * the driver to be done frees the driver.
+ *
+ * A Wii controller's PIN request is answered here, so Windows asks the
+ * user for none. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -68,6 +74,17 @@ typedef DWORD (WINAPI *winbt_authenticate_t)(HWND, HANDLE,
 typedef DWORD (WINAPI *winbt_service_t)(HANDLE, const BLUETOOTH_DEVICE_INFO*,
       const GUID*, DWORD);
 typedef DWORD (WINAPI *winbt_remove_t)(const BLUETOOTH_ADDRESS*);
+typedef DWORD (WINAPI *winbt_device_info_t)(HANDLE, BLUETOOTH_DEVICE_INFO*);
+typedef DWORD (WINAPI *winbt_register_auth_t)(const BLUETOOTH_DEVICE_INFO*,
+      HBLUETOOTH_AUTHENTICATION_REGISTRATION*,
+      PFN_AUTHENTICATION_CALLBACK_EX, PVOID);
+typedef BOOL (WINAPI *winbt_unregister_auth_t)(
+      HBLUETOOTH_AUTHENTICATION_REGISTRATION);
+typedef DWORD (WINAPI *winbt_send_auth_t)(HANDLE,
+      PBLUETOOTH_AUTHENTICATE_RESPONSE);
+typedef DWORD (WINAPI *winbt_authenticate_ex_t)(HWND, HANDLE,
+      BLUETOOTH_DEVICE_INFO*, PBLUETOOTH_OOB_DATA_INFO,
+      int); /* AUTHENTICATION_REQUIREMENTS, named otherwise by mingw */
 
 /* the Bluetooth HID service, HumanInterfaceDeviceServiceClass_UUID */
 static const GUID winbt_hid_service = { 0x00001124, 0x0000, 0x1000,
@@ -85,6 +102,15 @@ typedef struct
    winbt_authenticate_t authenticate;
    winbt_service_t service;
    winbt_remove_t remove;
+   winbt_device_info_t device_info;
+   /* Vista's: where these are missing, the PIN is given the older way */
+   winbt_register_auth_t register_auth;
+   winbt_unregister_auth_t unregister_auth;
+   winbt_send_auth_t send_auth;
+   winbt_authenticate_ex_t authenticate_ex;
+
+   /* the driver's own, and one for each thread running */
+   retro_atomic_int_t refs;
 
    /* the frontend's: as the last scan found them */
    BLUETOOTH_DEVICE_INFO devices[WINBT_MAX_DEVICES];
@@ -104,7 +130,67 @@ typedef struct
    retro_atomic_int_t action_busy;
    BLUETOOTH_DEVICE_INFO target;
    bool target_remove;
+   /* the pairing's, for its PIN request */
+   HANDLE auth_radio;
+   UCHAR pin[6];
 } winbt_t;
+
+static void winbt_unref(winbt_t *bt)
+{
+   if (retro_atomic_fetch_sub_int(&bt->refs, 1) == 1)
+   {
+      FreeLibrary(bt->lib);
+      free(bt);
+   }
+}
+
+static BOOL CALLBACK winbt_auth_answer(LPVOID param,
+      PBLUETOOTH_AUTHENTICATION_CALLBACK_PARAMS p)
+{
+   winbt_t *bt = (winbt_t*)param;
+   BLUETOOTH_AUTHENTICATE_RESPONSE r;
+
+   memset(&r, 0, sizeof(r));
+   r.bthAddressRemote = p->deviceInfo.Address;
+   r.authMethod       = p->authenticationMethod;
+   if (p->authenticationMethod == BLUETOOTH_AUTHENTICATION_METHOD_LEGACY)
+   {
+      memcpy(r.pinInfo.pin, bt->pin, sizeof(bt->pin));
+      r.pinInfo.pinLength = sizeof(bt->pin);
+   }
+   else if (p->authenticationMethod
+         == BLUETOOTH_AUTHENTICATION_METHOD_NUMERIC_COMPARISON)
+      r.numericCompInfo.NumericValue = p->Numeric_Value;
+   else
+      r.negativeResponse = TRUE;
+   bt->send_auth(bt->auth_radio, &r);
+   return TRUE;
+}
+
+/* Paired with the radio's address as its PIN, given when Windows asks */
+static DWORD winbt_pair_wii(winbt_t *bt, HANDLE radio,
+      BLUETOOTH_DEVICE_INFO *d, const BLUETOOTH_ADDRESS *own)
+{
+   HBLUETOOTH_AUTHENTICATION_REGISTRATION reg = NULL;
+   WCHAR pin[6];
+   DWORD err;
+   unsigned i;
+
+   for (i = 0; i < 6; i++)
+   {
+      bt->pin[i] = own->rgBytes[i];
+      pin[i]     = own->rgBytes[i];
+   }
+   bt->auth_radio = radio;
+   if (     !bt->register_auth || !bt->unregister_auth
+         || !bt->send_auth     || !bt->authenticate_ex
+         || bt->register_auth(d, &reg, winbt_auth_answer, bt)
+            != ERROR_SUCCESS)
+      return bt->authenticate(NULL, radio, d, pin, 6);
+   err = bt->authenticate_ex(NULL, radio, d, NULL, MITMProtectionNotRequired);
+   bt->unregister_auth(reg);
+   return err;
+}
 
 /* A Wii controller, by the name it gives: the remotes, the Wii U Pro
  * Controller and the Balance Board. */
@@ -190,6 +276,7 @@ static void winbt_scan_thread(void *data)
    {
       RARCH_WARN("[Bluetooth] No Bluetooth radio.\n");
       retro_atomic_store_release_int(&bt->scan_done, 1);
+      winbt_unref(bt);
       return;
    }
    memset(&p, 0, sizeof(p));
@@ -227,6 +314,7 @@ static void winbt_scan_thread(void *data)
    else
       retro_atomic_store_release_int(&bt->generic, 0);
    retro_atomic_store_release_int(&bt->scan_done, 1);
+   winbt_unref(bt);
 }
 
 static void winbt_action_thread(void *data)
@@ -244,6 +332,7 @@ static void winbt_action_thread(void *data)
    {
       RARCH_WARN("[Bluetooth] No Bluetooth radio.\n");
       retro_atomic_store_release_int(&bt->action_busy, 0);
+      winbt_unref(bt);
       return;
    }
 
@@ -255,11 +344,19 @@ static void winbt_action_thread(void *data)
    }
    else
    {
+      /* a name the search had not heard yet */
+      if (!d->szName[0] && bt->device_info(radio, d) == ERROR_SUCCESS)
+      {
+         WideCharToMultiByte(CP_UTF8, 0, d->szName, -1, name,
+               sizeof(name), NULL, NULL);
+         name[sizeof(name) - 1] = '\0';
+      }
       if (winbt_is_wii(d))
       {
          BLUETOOTH_RADIO_INFO info;
-         WCHAR pin[6];
-         unsigned i;
+
+         RARCH_LOG("[Bluetooth] Pairing \"%s\" as a Wii controller.\n",
+               name);
 
          /* a pairing it cannot reach stands in the way of a new one */
          if (d->fRemembered && !d->fConnected)
@@ -271,12 +368,7 @@ static void winbt_action_thread(void *data)
          info.dwSize = sizeof(info);
          if (     !d->fAuthenticated
                && bt->radio_info(radio, &info) == ERROR_SUCCESS)
-         {
-            /* paired by its sync button: the radio's address, as it is */
-            for (i = 0; i < 6; i++)
-               pin[i] = info.address.rgBytes[i];
-            err = bt->authenticate(NULL, radio, d, pin, 6);
-         }
+            err = winbt_pair_wii(bt, radio, d, &info.address);
       }
       else if (!d->fAuthenticated)
          err = bt->authenticate(NULL, radio, d, NULL, 0);
@@ -291,6 +383,7 @@ static void winbt_action_thread(void *data)
    }
    CloseHandle(radio);
    retro_atomic_store_release_int(&bt->action_busy, 0);
+   winbt_unref(bt);
 }
 
 static void winbt_join_action(winbt_t *bt)
@@ -329,14 +422,26 @@ static void *winbt_init(void)
          "BluetoothSetServiceState");
    bt->remove       = (winbt_remove_t)GetProcAddress(bt->lib,
          "BluetoothRemoveDevice");
+   bt->device_info  = (winbt_device_info_t)GetProcAddress(bt->lib,
+         "BluetoothGetDeviceInfo");
+   bt->register_auth   = (winbt_register_auth_t)GetProcAddress(bt->lib,
+         "BluetoothRegisterForAuthenticationEx");
+   bt->unregister_auth = (winbt_unregister_auth_t)GetProcAddress(bt->lib,
+         "BluetoothUnregisterAuthentication");
+   bt->send_auth       = (winbt_send_auth_t)GetProcAddress(bt->lib,
+         "BluetoothSendAuthenticationResponseEx");
+   bt->authenticate_ex = (winbt_authenticate_ex_t)GetProcAddress(bt->lib,
+         "BluetoothAuthenticateDeviceEx");
    if (     !bt->find_radio || !bt->radio_close || !bt->radio_info
          || !bt->find_first || !bt->find_next   || !bt->find_close
-         || !bt->authenticate || !bt->service   || !bt->remove)
+         || !bt->authenticate || !bt->service   || !bt->remove
+         || !bt->device_info)
    {
       FreeLibrary(bt->lib);
       free(bt);
       return NULL;
    }
+   retro_atomic_int_init(&bt->refs, 1);
    retro_atomic_int_init(&bt->action_busy, 0);
    retro_atomic_int_init(&bt->scan_done, 1);
    retro_atomic_int_init(&bt->generic, 0);
@@ -349,10 +454,12 @@ static void winbt_free(void *data)
    if (!bt)
       return;
    if (bt->scan)
-      sthread_join(bt->scan);
-   winbt_join_action(bt);
-   FreeLibrary(bt->lib);
-   free(bt);
+      sthread_detach(bt->scan);
+   if (bt->action)
+      sthread_detach(bt->action);
+   bt->scan   = NULL;
+   bt->action = NULL;
+   winbt_unref(bt);
 }
 
 static void winbt_scan_begin(void *data)
@@ -361,8 +468,12 @@ static void winbt_scan_begin(void *data)
    if (!bt || bt->scan)
       return;
    retro_atomic_store_release_int(&bt->scan_done, 0);
+   retro_atomic_inc_int(&bt->refs);
    if (!(bt->scan = sthread_create(winbt_scan_thread, bt)))
+   {
+      retro_atomic_dec_int(&bt->refs);
       retro_atomic_store_release_int(&bt->scan_done, 1);
+   }
 }
 
 static void winbt_scan_end(void *data)
@@ -443,8 +554,10 @@ static bool winbt_start_action(winbt_t *bt, unsigned i, bool remove)
    bt->target        = bt->devices[i];
    bt->target_remove = remove;
    retro_atomic_store_release_int(&bt->action_busy, 1);
+   retro_atomic_inc_int(&bt->refs);
    if (!(bt->action = sthread_create(winbt_action_thread, bt)))
    {
+      retro_atomic_dec_int(&bt->refs);
       retro_atomic_store_release_int(&bt->action_busy, 0);
       return false;
    }
