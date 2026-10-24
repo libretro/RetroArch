@@ -29,7 +29,7 @@ bool gfx_media_player_set_paused(gfx_anim_preview_t *session,
 }
 
 bool gfx_media_player_state(gfx_anim_preview_t *session,
-      int64_t wall_us, gfx_media_playback_state_t *state)
+      video_player_t *player, int64_t wall_us, gfx_media_playback_state_t *state)
 {
    int64_t now, elapsed = 0, duration;
    uint64_t delta;
@@ -58,6 +58,8 @@ bool gfx_media_player_state(gfx_anim_preview_t *session,
       state->position_us %= state->duration_us;
    if (state->duration_us && state->position_us > state->duration_us)
       state->position_us = state->duration_us;
+   video_player_cadence(player, &state->cadence_num, &state->cadence_den);
+   state->dims = session->dims;
    state->paused = session->paused;
    state->seeking = session->seeking;
    state->seekable = session->seekable;

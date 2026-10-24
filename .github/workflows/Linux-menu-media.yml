@@ -47,13 +47,13 @@ jobs:
       - name: Generate movie fixture
         run: ffmpeg -v error -y -f lavfi -i testsrc2=size=320x240:rate=30 -f lavfi -i sine=frequency=440:sample_rate=48000 -t 3 -c:v libx264 -preset ultrafast -pix_fmt yuv420p -c:a aac -shortest samples/menu/rgui_media/fixture.mp4
       - name: Real RGUI framebuffer and playback controls
-        run: python3 samples/menu/rgui_media/run.py --c89 samples/menu/rgui_media/fixture.mp4
+        run: python3 samples/menu/rgui_media/run.py --c89 --cadence-hz 30 samples/menu/rgui_media/fixture.mp4
       - name: Real MaterialUI file-browser playback controls
-        run: python3 samples/menu/rgui_media/run.py --c89 --driver materialui samples/menu/rgui_media/fixture.mp4
+        run: python3 samples/menu/rgui_media/run.py --c89 --cadence-hz 30 --driver materialui samples/menu/rgui_media/fixture.mp4
       - name: Real XMB file-browser playback controls
-        run: python3 samples/menu/rgui_media/run.py --c89 --driver xmb samples/menu/rgui_media/fixture.mp4
+        run: python3 samples/menu/rgui_media/run.py --c89 --cadence-hz 30 --driver xmb samples/menu/rgui_media/fixture.mp4
       - name: Real Ozone file-browser playback controls
-        run: python3 samples/menu/rgui_media/run.py --c89 --driver ozone samples/menu/rgui_media/fixture.mp4
+        run: python3 samples/menu/rgui_media/run.py --c89 --cadence-hz 30 --driver ozone samples/menu/rgui_media/fixture.mp4
       - name: UTF-8 subtitle sidecars across all four menus
         run: |
           python3 -c "from pathlib import Path; Path('samples/menu/rgui_media/fixture.srt').write_text('1\n00:00:00,000 --> 00:10:00,000\nSubtitle sidecar\nUTF-8 \u00e9\n\n', encoding='utf-8')"

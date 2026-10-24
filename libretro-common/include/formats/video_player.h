@@ -94,6 +94,8 @@ enum video_player_state
 
 typedef struct video_player_frame
 {
+   /* Movie timeline, including completed loops; -1 when unavailable. */
+   int64_t time_us;
    /* The frame in the stream's canvas, valid until the next poll; NULL
     * when it is in the slot. */
    const uint32_t *pixels;
@@ -167,6 +169,10 @@ bool video_player_stop(video_player_t *p);
 /* Polling owner: changes loop policy at the next clean movie EOF. */
 bool video_player_set_repeat(video_player_t *p, bool repeat);
 /* Clean finite EOF after the final picture duration, excluding failures. */
+/* Measured from 32 stable movie timestamp intervals. Polling-thread only. */
+bool video_player_cadence(const video_player_t *player,
+      unsigned *numerator, unsigned *denominator);
+
 bool video_player_completed(const video_player_t *p);
 
 enum video_player_state video_player_poll(video_player_t *p, int64_t now_us);

@@ -122,6 +122,7 @@ static void render_subtitles(struct menu_state *menu_st)
 #include "subtitle_media_test.h"
 
 #include "folder_playback_test.h"
+#include "media_cadence_test.h"
 #ifdef _WIN32
 static bool test_current_visible(struct menu_state *menu_st)
 {
@@ -420,6 +421,11 @@ int main(int argc,char **argv)
    }
    else CHECK("real movie pixels reach texture boundary",uploads&&uploaded_pixels);
    CHECK("browser media controls are reachable",viewer->media.controls.target.user==test_thumbnail(viewer));
+   if (getenv("MEDIA_TEST_CADENCE_HZ"))
+   {
+      CHECK("movie timestamps supply stable source cadence",
+            media_cadence_check(menu_st, &viewer->media, render));
+   }
    if (folder)
    {
       CHECK("natural folder playback reaches next episode and stops",

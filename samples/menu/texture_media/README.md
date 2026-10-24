@@ -44,3 +44,8 @@ and checks that Back restores browser depth and selection.
 `--continuous-error` instead verifies that a broken episode10 stops before
 episode11. These modes are separate from `--subtitles`, external launch,
 window toggling and modal-loop acceptance; incompatible modes are rejected.
+
+`--cadence-hz RATE` additionally checks stable source cadence from movie
+timestamps through the active menu player. Use a constant-rate fixture long
+enough for 32 picture intervals. This checks timing metadata, not physical
+refresh-rate switching or VRR.

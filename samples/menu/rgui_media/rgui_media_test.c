@@ -88,6 +88,7 @@ static bool media_capture_settled(struct menu_state *menu_st, int ordinal)
 }
 
 #include "../texture_media/folder_playback_test.h"
+#include "../texture_media/media_cadence_test.h"
 #ifdef _WIN32
 static bool media_current_visible(struct menu_state *menu_st)
 {
@@ -352,6 +353,12 @@ int main(int argc, char **argv)
 
    MEDIA_CHECK("real decoder supplies the requested presentation path",
          tick < 2000 && media_picture_ready(rgui));
+   if (media_failures) goto cleanup;
+   if (getenv("MEDIA_TEST_CADENCE_HZ"))
+   {
+      MEDIA_CHECK("movie timestamps supply stable source cadence",
+            media_cadence_check(menu_st, &rgui->media, media_render));
+   }
    if (media_failures) goto cleanup;
    if (getenv("MEDIA_TEST_HW_DECODE"))
       MEDIA_CHECK("movie uses the hardware decoder sink",

@@ -14,7 +14,7 @@ bool gfx_media_player_set_repeat(struct gfx_anim_preview *session,
 bool gfx_media_player_set_paused(struct gfx_anim_preview *session,
       video_player_t *player, bool paused, bool audio_ready, int64_t wall_us);
 bool gfx_media_player_state(struct gfx_anim_preview *session,
-      int64_t wall_us, gfx_media_playback_state_t *state);
+      video_player_t *player, int64_t wall_us, gfx_media_playback_state_t *state);
 bool gfx_media_player_seek(struct gfx_anim_preview *session,
       video_player_t *player, int64_t target_us, unsigned mix_rate,
       bool s16, int64_t wall_us);
