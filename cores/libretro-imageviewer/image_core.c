@@ -316,13 +316,18 @@ bool IMAGE_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
    {
       if (IMAGE_CORE_PREFIX(log_cb))
          IMAGE_CORE_PREFIX(log_cb)(RETRO_LOG_INFO, "XRGB8888 is not supported.\n");
-      return false;
+      goto error;
    }
 
    if (!imageviewer_load(info->path, 0))
-      return false;
+      goto error;
 
    return true;
+
+error:
+   string_list_free(image_file_list);
+   image_file_list = NULL;
+   return false;
 }
 
 bool IMAGE_CORE_PREFIX(retro_load_game_special)(unsigned a,
@@ -335,6 +340,8 @@ size_t IMAGE_CORE_PREFIX(retro_get_memory_size)(unsigned id) { return 0; }
 void IMAGE_CORE_PREFIX(retro_unload_game)(void)
 {
    imageviewer_free_image();
+   string_list_free(image_file_list);
+   image_file_list = NULL;
    image_width  = 0;
    image_height = 0;
 }
