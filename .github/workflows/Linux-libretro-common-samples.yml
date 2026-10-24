@@ -682,6 +682,11 @@ jobs:
           make clean
           make -j$(nproc) all THREADS=0 SANITIZER=address,undefined
           ./video_player_test
+          for threads in 1 0; do
+            make clean
+            make -j$(nproc) all THREADS=$threads FAULT_ALLOC=1 SANITIZER=address,undefined || exit $?
+            VP_TEST_RECOVERY_ONLY=1 ./video_player_test || exit $?
+          done
 
       - name: Run rtime_localtime_test under Clang + ThreadSanitizer
         shell: bash

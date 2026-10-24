@@ -46,12 +46,17 @@ with tempfile.TemporaryDirectory() as directory:
         ('static int gfx_surface_player_start_hw(',
          'static enum video_player_present gfx_surface_player_present_hw(',
          'bool gfx_surface_player_release(',
+         'static int gfx_surface_player_restart_software(',
          'gfx_surface_player_t *gfx_surface_player_new(')))
     with (tmp / 'surface.inc').open('a', encoding='utf-8') as output:
         output.write('\n' + body((root / 'gfx/gfx_thumbnail.c').read_text(encoding='utf-8'),
             'static void gfx_thumbnail_anim_open_probed('))
-    exe = tmp / ('surface.exe' if 'mingw' in cc[0] or os.name == 'nt' else 'surface')
-    subprocess.run(cc + flags + ['-I' + str(tmp), '-I' + str(root),
-        '-I' + str(root / 'libretro-common/include'),
-        str(Path(__file__).with_name('surface_output_test.c')), '-o', str(exe)], check=True)
-    subprocess.run(shlex.split(os.environ.get('RUNNER', '')) + [str(exe)], check=True)
+    for threaded in (False, True):
+        exe = tmp / (('surface-threaded' if threaded else 'surface') +
+            ('.exe' if 'mingw' in cc[0] or os.name == 'nt' else ''))
+        subprocess.run(cc + flags + (['-DHAVE_THREADS'] if threaded else []) +
+            ['-I' + str(tmp), '-I' + str(root),
+             '-I' + str(root / 'libretro-common/include'),
+             str(Path(__file__).with_name('surface_output_test.c')),
+             '-o', str(exe)], check=True)
+        subprocess.run(shlex.split(os.environ.get('RUNNER', '')) + [str(exe)], check=True)

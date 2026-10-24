@@ -293,7 +293,7 @@ static gfx_anim_preview_t *gfx_anim_preview_open_internal(const char *path,
       for (;;)
       {
          if (hardware)
-            stream = image_transfer_anim_stream_new_hw_avail(
+            stream = image_transfer_anim_stream_new_hw_deferred_avail(
                   (void*)base, blen, avail, type, &need_more,
                   &need_lo, &need_hi);
          else

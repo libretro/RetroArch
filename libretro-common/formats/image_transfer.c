@@ -1054,6 +1054,28 @@ bool image_transfer_anim_stream_set_hw(void *stream,
    return false;
 }
 
+bool image_transfer_anim_stream_stop_hw(void *stream, enum image_type_enum type)
+{
+   if (!stream)
+      return false;
+   switch (type)
+   {
+#ifdef HAVE_RWEBM
+   case IMAGE_TYPE_WEBM:
+      rwebm_video_stream_stop_hw((rwebm_video_stream_t *)stream);
+      return !rwebm_video_stream_set_hw((rwebm_video_stream_t *)stream, 0);
+#endif
+#ifdef HAVE_RMP4
+   case IMAGE_TYPE_MP4:
+      rmp4_video_stream_stop_hw((rmp4_video_stream_t *)stream);
+      return !rmp4_video_stream_set_hw((rmp4_video_stream_t *)stream, 0);
+#endif
+   default:
+      break;
+   }
+   return false;
+}
+
 bool image_transfer_anim_stream_hw_frame(void *stream,
       enum image_type_enum type, video_hw_frame_t *out)
 {
@@ -1445,13 +1467,14 @@ void *image_transfer_anim_stream_new_avail(void *buf, size_t len,
    return NULL;
 }
 
-void *image_transfer_anim_stream_new_hw_avail(void *buf, size_t len,
+static void *image_transfer_anim_stream_new_hw_internal(void *buf, size_t len,
       size_t avail, enum image_type_enum type, int *need_more,
-      size_t *need_lo, size_t *need_hi)
+      size_t *need_lo, size_t *need_hi, bool deferred)
 {
    int more = 0;
    void *stream = image_transfer_anim_stream_new_avail(buf, len, avail,
          type, &more, need_lo, need_hi);
+   (void)deferred;
    if (need_more)
       *need_more = more;
    if (stream || more)
@@ -1461,7 +1484,7 @@ void *image_transfer_anim_stream_new_hw_avail(void *buf, size_t len,
    {
       rmp4_video_stream_t *mp4 = rmp4_video_stream_open_hw_avail(
             (const uint8_t*)buf, len, avail, need_more, need_lo, need_hi);
-      if (mp4 && !rmp4_video_stream_set_hw(mp4, 1))
+      if (mp4 && !deferred && !rmp4_video_stream_set_hw(mp4, 1))
       {
          rmp4_video_stream_close(mp4);
          return NULL;
@@ -1474,7 +1497,7 @@ void *image_transfer_anim_stream_new_hw_avail(void *buf, size_t len,
    {
       rwebm_video_stream_t *webm = rwebm_video_stream_open_hw_avail(
             (const uint8_t*)buf, len, avail, need_more);
-      if (webm && !rwebm_video_stream_set_hw(webm, 1))
+      if (webm && !deferred && !rwebm_video_stream_set_hw(webm, 1))
       {
          rwebm_video_stream_close(webm);
          return NULL;
@@ -1483,6 +1506,22 @@ void *image_transfer_anim_stream_new_hw_avail(void *buf, size_t len,
    }
 #endif
    return NULL;
+}
+
+void *image_transfer_anim_stream_new_hw_avail(void *buf, size_t len,
+      size_t avail, enum image_type_enum type, int *need_more,
+      size_t *need_lo, size_t *need_hi)
+{
+   return image_transfer_anim_stream_new_hw_internal(buf, len, avail, type,
+         need_more, need_lo, need_hi, false);
+}
+
+void *image_transfer_anim_stream_new_hw_deferred_avail(void *buf, size_t len,
+      size_t avail, enum image_type_enum type, int *need_more,
+      size_t *need_lo, size_t *need_hi)
+{
+   return image_transfer_anim_stream_new_hw_internal(buf, len, avail, type,
+         need_more, need_lo, need_hi, true);
 }
 
 bool image_transfer_anim_stream_waiting(const void *stream,

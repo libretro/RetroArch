@@ -12,7 +12,7 @@ static bool hdr_source, requirements_ok;
 static gfx_surface_t surface;
 static video_frame_import_t captured;
 static enum gfx_surface_submit_result result = GFX_SURFACE_SUBMIT_DONE;
-static unsigned submitted, abandoned, released;
+static unsigned submitted, abandoned, released, recovery_requested;
 static video_player_t *player;
 #define CHECK(c) do { if (!(c)) { failures++; fprintf(stderr, "FAIL %d: %s\n", __LINE__, #c); } } while (0)
 bool gfx_surface_query_requirements(unsigned width, gfx_surface_requirements_t *req)
@@ -54,6 +54,12 @@ void video_player_slot_released(video_player_t *vp, unsigned slot)
 {
    CHECK(vp == player && slot == 3);
    released++;
+}
+bool video_player_request_software(video_player_t *vp)
+{
+   CHECK(vp == player);
+   recovery_requested++;
+   return true;
 }
 static void abandon(void *owner, uint64_t done, uint64_t value)
 {
@@ -150,6 +156,19 @@ static bool gfx_thumbnail_anim_install(gfx_thumbnail_t *thumbnail,
    CHECK(false);
    return false;
 }
+bool image_transfer_anim_stream_stop_hw(void *stream, enum image_type_enum type)
+{
+   (void)stream; (void)type;
+   CHECK(false);
+   return false;
+}
+bool video_player_set_hw_fallback(video_player_t *vp,
+      video_player_hw_restart_t restart, void *user)
+{
+   CHECK(vp == (video_player_t*)&policy_sink && restart != NULL);
+   CHECK(user == policy_sink.user);
+   return true;
+}
 #include "surface.inc"
 static void policy_snapshot(void)
 {
@@ -199,44 +218,60 @@ static void retry_ownership(void)
       GFX_SURFACE_SUBMIT_FAILED
    };
    gfx_surface_player_t gsp;
-   unsigned i, mode;
-   for (mode = 0; mode < 3; mode++)
-      for (i = 0; i < sizeof(results) / sizeof(results[0]); i++)
-      {
-         bool queued;
-         bool retry = mode == 0;
-         memset(&gsp, 0, sizeof(gsp));
-         memset(&surface, 0, sizeof(surface));
-         player = (video_player_t*)&gsp;
-         gsp.vp = player;
-         gsp.hw_slot = 3;
-         gsp.hw_resent = mode == 1;
-         surface.imported = surface.dropped = true;
-         surface.import.owner = &abandoned;
-         surface.import.abandon = abandon;
-         surface.import.done = 88;
-         surface.import.done_value = 7;
-         result = results[i];
-         submitted = abandoned = released = 0;
-         queued = gfx_surface_player_release(mode == 2 ? NULL : &gsp,
-               &surface, 0);
-         CHECK(submitted == (retry ? 1u : 0u));
-         CHECK(queued == (retry && result == GFX_SURFACE_SUBMIT_QUEUED));
-         CHECK(abandoned == ((!retry || (result != GFX_SURFACE_SUBMIT_DONE
-                     && result != GFX_SURFACE_SUBMIT_QUEUED)) ? 1u : 0u));
-         CHECK(released == (mode != 2 && !queued ? 1u : 0u));
-         if (retry && result == GFX_SURFACE_SUBMIT_DONE)
-            CHECK(!surface.dropped);
-         if (queued)
+   unsigned i, mode, transient;
+   for (transient = 0; transient < 2; transient++)
+      for (mode = 0; mode < 4; mode++)
+         for (i = 0; i < sizeof(results) / sizeof(results[0]); i++)
          {
-            CHECK(gsp.hw_resent);
-            /* The accepted retry is still pending; the first release
-             * must not return its decoder slot or signal abandonment. */
-            surface.dropped = false;
-            CHECK(!gfx_surface_player_release(&gsp, &surface, 0));
-            CHECK(!abandoned && released == 1 && submitted == 1);
+            bool queued;
+            bool refused = true;
+            bool retry = mode == 0 || mode == 3;
+            memset(&gsp, 0, sizeof(gsp));
+            memset(&surface, 0, sizeof(surface));
+            player = (video_player_t*)&gsp;
+            gsp.vp = player;
+            gsp.hw_slot = 3;
+            gsp.hw_resent = mode == 1;
+            gsp.hw_confirmed = mode == 3;
+            surface.imported = surface.dropped = true;
+#ifdef HAVE_THREADS
+            surface.node.kind = VIDEO_THREAD_ASYNC_IMPORT;
+            surface.node.dropped = transient != 0;
+            refused = !transient;
+#else
+            (void)transient;
+#endif
+            if (retry && results[i] == GFX_SURFACE_SUBMIT_FAILED)
+               refused = true;
+            else if (retry && results[i] == GFX_SURFACE_SUBMIT_DROPPED)
+               refused = false;
+            surface.import.owner = &abandoned;
+            surface.import.abandon = abandon;
+            surface.import.done = 88;
+            surface.import.done_value = 7;
+            result = results[i];
+            submitted = abandoned = released = recovery_requested = 0;
+            queued = gfx_surface_player_release(mode == 2 ? NULL : &gsp,
+                  &surface, 0);
+            CHECK(submitted == (retry ? 1u : 0u));
+            CHECK(queued == (retry && result == GFX_SURFACE_SUBMIT_QUEUED));
+            CHECK(abandoned == ((!retry || (result != GFX_SURFACE_SUBMIT_DONE
+                        && result != GFX_SURFACE_SUBMIT_QUEUED)) ? 1u : 0u));
+            CHECK(released == (mode != 2 && !queued ? 1u : 0u));
+            CHECK(recovery_requested == ((mode != 2 && !queued && surface.dropped
+                     && refused && !gsp.hw_confirmed) ? 1u : 0u));
+            if (retry && result == GFX_SURFACE_SUBMIT_DONE)
+               CHECK(!surface.dropped);
+            if (queued)
+            {
+               CHECK(gsp.hw_resent);
+               /* The accepted retry is still pending; the first release
+                * must not return its decoder slot or signal abandonment. */
+               surface.dropped = false;
+               CHECK(!gfx_surface_player_release(&gsp, &surface, 0));
+               CHECK(!abandoned && released == 1 && submitted == 1);
+            }
          }
-      }
 }
 
 int main(void)
@@ -262,6 +297,10 @@ int main(void)
       CHECK(captured.output_pixfmt == expected && captured.pixfmt == IMAGE_PIXFMT_P010);
       CHECK(captured.image == 17 && captured.color.transfer == 16);
    }
+   CHECK(shown == 8);
+   result = GFX_SURFACE_SUBMIT_DROPPED;
+   gsp.threaded = false;
+   CHECK(gfx_surface_player_present_hw(&gsp, &surface, &frame) == VIDEO_PLAYER_PRESENT_BUSY);
    CHECK(shown == 8);
    retry_ownership();
    policy_snapshot();

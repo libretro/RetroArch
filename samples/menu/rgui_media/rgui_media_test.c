@@ -11,10 +11,59 @@
 #include "../../../gfx/common/win32_common.h"
 #endif
 #include <retro_timers.h>
+#ifdef MEDIA_TEST_COLD_CANCEL
+#include <rthreads/rthreads.h>
+#endif
 
 static unsigned media_failures;
 static bool native_gpu;
 static bool gpu_surface;
+#ifdef MEDIA_TEST_COLD_CANCEL
+static retro_atomic_int_t cold_gate;
+static retro_atomic_int_t cold_entered;
+static uintptr_t cold_poll_owner;
+static uintptr_t cold_open_owner;
+
+bool __real_image_transfer_anim_stream_set_hw(void *stream,
+      enum image_type_enum type, bool enable);
+
+bool __wrap_image_transfer_anim_stream_set_hw(void *stream,
+      enum image_type_enum type, bool enable)
+{
+   if (enable && retro_atomic_cas_int(&cold_gate, 1, 2))
+   {
+      unsigned ticks;
+      cold_open_owner = sthread_get_current_thread_id();
+      retro_atomic_store_release_int(&cold_entered, 1);
+      for (ticks = 0; ticks < 5000
+            && retro_atomic_load_acquire_int(&cold_gate) == 2; ticks++)
+         retro_sleep(1);
+   }
+   return __real_image_transfer_anim_stream_set_hw(stream, type, enable);
+}
+#endif
+#ifdef MEDIA_TEST_IMPORT_REFUSAL
+static unsigned refused_imports;
+static unsigned queued_refusals;
+
+enum gfx_surface_submit_result __real_gfx_surface_submit_import(
+      gfx_surface_t *surface, const video_frame_import_t *frame);
+
+enum gfx_surface_submit_result __wrap_gfx_surface_submit_import(
+      gfx_surface_t *surface, const video_frame_import_t *frame)
+{
+   video_frame_import_t refused = *frame;
+   enum gfx_surface_submit_result result;
+   if (frame->image)
+      refused_imports++;
+   /* Keep the native lease intact; the renderer rejects this output format. */
+   refused.output_pixfmt = IMAGE_PIXFMT_NV12;
+   result = __real_gfx_surface_submit_import(surface, &refused);
+   if (result == GFX_SURFACE_SUBMIT_QUEUED)
+      queued_refusals++;
+   return result;
+}
+#endif
 static uint32_t native_background[320*240];
 #define MEDIA_CHECK(message, cond) do { \
    bool passed = (cond) != 0; \
@@ -137,9 +186,17 @@ int main(int argc, char **argv)
    gfx_media_playback_state_t state;
    uint32_t pixels = 0;
    bool seeking;
+#ifdef MEDIA_TEST_COLD_CANCEL
+   bool cold_canceled = false;
+#endif
    bool folder = getenv("MEDIA_TEST_CONTINUOUS") != NULL;
    const char *first_video = getenv("MEDIA_TEST_FIRST_VIDEO_US");
    int64_t first_video_us = first_video ? strtol(first_video, NULL, 10) : 0;
+#ifdef MEDIA_TEST_COLD_CANCEL
+   retro_atomic_int_init(&cold_gate, 1);
+   retro_atomic_int_init(&cold_entered, 0);
+   cold_poll_owner = sthread_get_current_thread_id();
+#endif
    if (argc != 3) return 2;
    native_gpu=getenv("MEDIA_TEST_GPU")!=NULL;
    gpu_surface=getenv("MEDIA_TEST_GPU_SURFACE")!=NULL;
@@ -337,12 +394,39 @@ int main(int argc, char **argv)
    for (tick = 0; tick < 2000; tick++)
    {
       media_render(menu_st);
+#ifdef MEDIA_TEST_COLD_CANCEL
+      if (!cold_canceled && retro_atomic_load_acquire_int(&cold_entered))
+      {
+         MEDIA_CHECK("cold hardware admission runs off the polling owner",
+               cold_open_owner != cold_poll_owner);
+         rgui_parse_menu_entry_action(rgui, entry, MENU_ACTION_CANCEL);
+         media_render(menu_st);
+         MEDIA_CHECK("closing held admission detaches the player",
+               !rgui->media_gpu.anim_player && !rgui->media_gpu.anim_sess);
+         rgui_parse_menu_entry_action(rgui, entry, MENU_ACTION_OK);
+         media_render(menu_st);
+         cold_canceled = true;
+         retro_atomic_store_release_int(&cold_gate, 0);
+      }
+#endif
       if (media_picture_ready(rgui)) break;
       retro_sleep(1);
    }
    MEDIA_CHECK("real decoder supplies the requested presentation path",
          tick < 2000 && media_picture_ready(rgui));
    if (media_failures) goto cleanup;
+#ifdef MEDIA_TEST_COLD_CANCEL
+   MEDIA_CHECK("replacement survives cancellation during native admission",
+         cold_canceled && media_picture_ready(rgui));
+   if (media_failures) goto cleanup;
+#endif
+#ifdef MEDIA_TEST_IMPORT_REFUSAL
+   MEDIA_CHECK("native import refusal recovers through software decoding",
+         gpu_surface && refused_imports && queued_refusals
+         && rgui->media_gpu.anim_surface
+         && !((gfx_surface_t*)rgui->media_gpu.anim_surface)->imported);
+   if (media_failures) goto cleanup;
+#endif
    if (getenv("MEDIA_TEST_HW_DECODE"))
       MEDIA_CHECK("movie uses the hardware decoder sink",
             gpu_surface && rgui->media_gpu.anim_player
@@ -540,6 +624,9 @@ int main(int argc, char **argv)
             tick < 2000 && media_picture_ready(rgui));
    }
 cleanup:
+#ifdef MEDIA_TEST_COLD_CANCEL
+   retro_atomic_store_release_int(&cold_gate, 0);
+#endif
    free(entry);
    main_exit(NULL);
    printf("rgui media: %u failure(s)\n", media_failures);

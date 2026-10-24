@@ -66,6 +66,9 @@ enum image_type_enum image_texture_get_type(const char *p)
 void *image_transfer_anim_stream_new_hw_avail(void *b, size_t n, size_t a,
       enum image_type_enum t, int *more, size_t *lo, size_t *hi)
 { (void)b; (void)n; (void)a; (void)t; (void)more; (void)lo; (void)hi; abort(); return NULL; }
+void *image_transfer_anim_stream_new_hw_deferred_avail(void *b, size_t n,
+      size_t a, enum image_type_enum t, int *more, size_t *lo, size_t *hi)
+{ (void)b; (void)n; (void)a; (void)t; (void)more; (void)lo; (void)hi; abort(); return NULL; }
 void *image_transfer_anim_stream_new_avail(void *b, size_t n, size_t a,
       enum image_type_enum t, int *more, size_t *lo, size_t *hi)
 { (void)b; (void)n; (void)a; (void)t; (void)more; (void)lo; (void)hi; abort(); return NULL; }

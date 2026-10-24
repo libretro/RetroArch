@@ -38,6 +38,19 @@ and 6 is the browser after retirement. Readback exists only in the harness.
 These semantic-action tests do not establish physical keyboard/gamepad/remote
 mapping, playback-context ownership, or physical HDR display conformance.
 
+On a native hardware-decoding device, add `--threaded --gpu-surface
+--first-import-refusal` to exercise software recovery before the first picture.
+The test links a wrapper around surface submission that preserves the decoder's
+real lease but asks the renderer for an unsupported output format. It requires
+an asynchronous import and a recovered software surface, then runs the usual
+seek, close and reopen checks. This requires an H.264 fixture with software
+decoding support; a WARP-only device cannot establish the native-decoder gate.
+
+`--threaded --gpu-surface --hardware-decode --cold-cancel` holds the first native
+constructor on its worker, closes the viewer and immediately opens it again.
+It requires the replacement to reach native playback. The bounded hold exists
+only in the linked test wrapper, with no production scheduling hook.
+
 The tested Windows NVIDIA driver fails the opt-in
 [H.264 host-header lifetime probe](../../gfx/vulkan_video_caps/README.md#h264-external-and-host-lifetime-probes).
 Default validation handle wrapping can expose the same delayed host-header

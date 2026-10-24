@@ -141,7 +141,8 @@ typedef struct gfx_anim_preview
  * fails admission - the caller keeps whatever still it has. */
 gfx_anim_preview_t *gfx_anim_preview_open(const char *path, int png_probe);
 
-/* GPU player only: may return a stream without CPU pixel output. */
+/* GPU player only: may return a stream without CPU pixel output. Native
+ * admission is deferred to the player; open does not construct a backend. */
 gfx_anim_preview_t *gfx_anim_preview_open_hw(const char *path, int png_probe);
 
 /* Cheap "does this file animate?" from its head alone, without opening

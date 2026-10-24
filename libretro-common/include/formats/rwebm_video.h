@@ -224,6 +224,8 @@ int rwebm_video_stream_skip(rwebm_video_stream_t *stream, int *duration_ms);
  * GPU next returns a non-pixel token; take the lease with hw_frame.
  * A NULL next while waiting is a retry, not EOS. Owner-thread calls. */
 int rwebm_video_stream_set_hw(rwebm_video_stream_t *stream, int enable);
+/* Exclusive decoder owner; withdraw hardware preference and restart. */
+void rwebm_video_stream_stop_hw(rwebm_video_stream_t *stream);
 int rwebm_video_stream_hw_frame(rwebm_video_stream_t *stream,
       video_hw_frame_t *out);
 int rwebm_video_stream_waiting(const rwebm_video_stream_t *stream);
@@ -338,6 +340,8 @@ int64_t rwebm_video_stream_frame_time_ns(const rwebm_video_stream_t *stream);
 int rwebm_video_stream_seek_movie_begin_ns(rwebm_video_stream_t *stream, int64_t ns);
 int rwebm_video_stream_seek_movie_step(rwebm_video_stream_t *stream,
       int64_t *position_us);
+/* Format capability is available before native admission. The seek itself
+ * still requires an admitted decoder on the exclusive stream owner. */
 int rwebm_video_stream_seekable(const rwebm_video_stream_t *stream);
 int rwebm_video_stream_seek_begin_ns(rwebm_video_stream_t *stream, int64_t ns);
 int rwebm_video_stream_seek_step(rwebm_video_stream_t *stream,

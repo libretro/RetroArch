@@ -63,11 +63,14 @@ static int gfx_surface_player_start_hw(void *user, unsigned width,
          && (req.formats & IMAGE_PIXFMT_FP16)
          && image_transfer_anim_stream_is_hdr(gsp->stream, gsp->type))
       gsp->hw_output_pixfmt = IMAGE_PIXFMT_FP16;
-   if (     !VIDEO_SCALE_FITS(width, height)
-         || !(s = gsp->cb.surface(gsp->cb.user,
-               VIDEO_SCALE_PACK(width, height), 0, IMAGE_PIXFMT_NV12))
-         || !s->imported)
+   if (!VIDEO_SCALE_FITS(width, height))
+      return VIDEO_PLAYER_HW_REFUSED;
+   if (!(s = gsp->cb.surface(gsp->cb.user,
+               VIDEO_SCALE_PACK(width, height), 0, IMAGE_PIXFMT_NV12)))
       return -1;
+   if (!s->imported)
+      return VIDEO_PLAYER_HW_REFUSED;
+   gsp->hw_confirmed = false;
    gsp->threaded = jobs > 1;
    return 0;
 }
@@ -108,6 +111,7 @@ static enum video_player_present gfx_surface_player_present_hw(
    switch (gfx_surface_submit_import(s, &imp))
    {
       case GFX_SURFACE_SUBMIT_DONE:
+         gsp->hw_confirmed = true;
          gsp->cb.shown(gsp->cb.user, s);
          return VIDEO_PLAYER_PRESENT_DONE;
       case GFX_SURFACE_SUBMIT_QUEUED:
@@ -117,10 +121,9 @@ static enum video_player_present gfx_surface_player_present_hw(
       case GFX_SURFACE_SUBMIT_BUSY:
          return VIDEO_PLAYER_PRESENT_BUSY;
       case GFX_SURFACE_SUBMIT_DROPPED:
-         if (gsp->threaded)
-            return VIDEO_PLAYER_PRESENT_BUSY;
-         video_hw_frame_abandon(hw);
-         return VIDEO_PLAYER_PRESENT_DONE;
+         /* A dropped conversion did not reach the texture. Retain a movie's
+          * inline lease for retry too; never confirm an unshown first frame. */
+         return VIDEO_PLAYER_PRESENT_BUSY;
       default:
          break;
    }
@@ -229,6 +232,12 @@ static void gfx_surface_player_decoded(void *user, enum video_player_how how)
    }
 }
 
+static int gfx_surface_player_restart_software(void *user)
+{
+   gfx_surface_player_t *gsp = (gfx_surface_player_t*)user;
+   return image_transfer_anim_stream_stop_hw(gsp->stream, gsp->type) ? 1 : -1;
+}
+
 gfx_surface_player_t *gfx_surface_player_new(void *stream,
       enum image_type_enum type, int loop_count, void **surface,
       const gfx_surface_player_cbs_t *cb, unsigned flags)
@@ -264,6 +273,8 @@ gfx_surface_player_t *gfx_surface_player_new(void *stream,
       free(gsp);
       return NULL;
    }
+   video_player_set_hw_fallback(gsp->vp,
+         gfx_surface_player_restart_software, gsp);
    return gsp;
 }
 
@@ -280,6 +291,10 @@ bool gfx_surface_player_release(gfx_surface_player_t *gsp,
 {
    if (s->imported)
    {
+      bool refused = true;
+#ifdef HAVE_THREADS
+      refused = s->node.kind == VIDEO_THREAD_ASYNC_IMPORT && !s->node.dropped;
+#endif
       /* sent again once; then, or with the player gone, the frame
        * goes back to its decoder unread */
       if (s->dropped)
@@ -295,13 +310,23 @@ bool gfx_surface_player_release(gfx_surface_player_t *gsp,
             }
             if (r == GFX_SURFACE_SUBMIT_DONE)
                s->dropped = 0;
+            else if (r == GFX_SURFACE_SUBMIT_DROPPED)
+               refused = false;
+            else if (r == GFX_SURFACE_SUBMIT_FAILED)
+               refused = true;
          }
          if (s->dropped && s->import.abandon)
             s->import.abandon(s->import.owner, s->import.done,
                   s->import.done_value);
       }
       if (gsp)
+      {
+         if (!s->dropped)
+            gsp->hw_confirmed = true;
+         else if (refused && !gsp->hw_confirmed)
+            video_player_request_software(gsp->vp);
          video_player_slot_released(gsp->vp, gsp->hw_slot);
+      }
       return false;
    }
    /* Only a two-slot surface is fed by the worker, whose frame sits in

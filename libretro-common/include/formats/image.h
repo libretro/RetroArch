@@ -564,6 +564,14 @@ void *image_transfer_anim_stream_new_hw_avail(void *buf, size_t len,
       size_t avail, enum image_type_enum type, int *need_more,
       size_t *need_lo, size_t *need_hi);
 
+/* Metadata-first GPU-player open. Software preference is unchanged; native-only
+ * candidates are returned without opening a backend. The decoder owner must
+ * call set_hw(true) before advancing such a candidate. Admission can still
+ * fail, including when no native backend is available. */
+void *image_transfer_anim_stream_new_hw_deferred_avail(void *buf, size_t len,
+      size_t avail, enum image_type_enum type, int *need_more,
+      size_t *need_lo, size_t *need_hi);
+
 void image_transfer_anim_stream_free(void *stream,
       enum image_type_enum type);
 
@@ -639,8 +647,12 @@ bool image_transfer_anim_stream_set_output_stride(void *stream,
  * be. A stream under way starts over. The frame of each shown frame is
  * then taken with _hw_frame after _next - whose pointer only says a
  * frame came - and read or abandoned by the caller. */
+/* enable=false only queries an already admitted backend. */
 bool image_transfer_anim_stream_set_hw(void *stream,
       enum image_type_enum type, bool enable);
+/* Exclusive decoder owner, after decode jobs settle: withdraw hardware
+ * preference and restart the software stream where that type supports it. */
+bool image_transfer_anim_stream_stop_hw(void *stream, enum image_type_enum type);
 bool image_transfer_anim_stream_waiting(const void *stream,
       enum image_type_enum type);
 bool image_transfer_anim_stream_hw_frame(void *stream,

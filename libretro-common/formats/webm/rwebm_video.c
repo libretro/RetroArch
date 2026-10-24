@@ -2137,6 +2137,16 @@ int rwebm_video_stream_skip(rwebm_video_stream_t *s, int *duration_ms)
    return ret > 0 ? ret : 0;
 }
 
+void rwebm_video_stream_stop_hw(rwebm_video_stream_t *s)
+{
+   if (!s)
+      return;
+#if defined(HAVE_RVP9) || defined(HAVE_RAV1)
+   s->hw_want = 0;
+#endif
+   rwebm_video_stream_rewind(s);
+}
+
 int rwebm_video_stream_completed(const rwebm_video_stream_t *s)
 {
    return s && s->completed;
@@ -2315,7 +2325,10 @@ int rwebm_video_stream_seekable(const rwebm_video_stream_t *s)
 {
    if (!s) return 0;
 #ifdef HAVE_RAV1
-   if (s->codec == RWEBM_CODEC_AV1) return s->av1 != NULL;
+   /* Format capability is known before deferred native admission. The
+    * seek operation itself still requires an admitted decoder. */
+   if (s->codec == RWEBM_CODEC_AV1)
+      return 1;
 #endif
 #ifdef HAVE_RVP9
    if (s->hw || s->vp9) return 1;

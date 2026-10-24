@@ -6,6 +6,9 @@
 #include <formats/video_player.h>
 #include <formats/rav1_hw.h>
 #include <features/features_cpu.h>
+#ifdef HAVE_THREADS
+#include <rthreads/rthreads.h>
+#endif
 #include "../../../gfx/gfx_anim_preview.h"
 #include "../../../libretro-common/samples/formats/av1/rav1_webm_fixture.h"
 
@@ -16,6 +19,9 @@ static gfx_anim_preview_t *preview;
 static video_hw_frame_t held;
 static uint64_t offered;
 static rav1_hw_backend_t factory;
+#ifdef HAVE_THREADS
+static uintptr_t first_open_thread;
+#endif
 #define CHECK(x)                                                               \
    do                                                                          \
    {                                                                           \
@@ -62,6 +68,10 @@ static bool open_backend(void *user, const rav1_sequence_t *seq, unsigned slots,
    ops->decoder = &factory;
    ops->decode = decode;
    ops->output = output;
+#ifdef HAVE_THREADS
+   if (!first_open_thread)
+      first_open_thread = sthread_get_current_thread_id();
+#endif
    opens++;
    return true;
 }
@@ -138,6 +148,11 @@ static void playback(unsigned flags, int loops)
    video_player_t *player;
    int state = VIDEO_PLAYER_PLAYING;
    int64_t deadline;
+   unsigned before = opens;
+#ifdef HAVE_THREADS
+   uintptr_t owner = sthread_get_current_thread_id();
+   first_open_thread = 0;
+#endif
    shown = 0;
    decoded_count = 0;
    busy = 1;
@@ -146,6 +161,8 @@ static void playback(unsigned flags, int loops)
    CHECK(preview != NULL);
    if (!preview)
       return;
+   CHECK(opens == before);
+   CHECK(preview->seekable);
    known_movie = image_transfer_anim_stream_duration_ns(preview->stream,
          preview->type) > 0;
    memset(&sink, 0, sizeof(sink));
@@ -165,6 +182,9 @@ static void playback(unsigned flags, int loops)
          shown == (unsigned)(2 * loops - ((threaded || known_movie) ? 0 : 1)));
    video_player_free(player);
    video_player_worker_deinit();
+#ifdef HAVE_THREADS
+   CHECK(first_open_thread && first_open_thread != owner);
+#endif
    CHECK(decoded_count == (unsigned)(2 * loops));
    gfx_anim_preview_close(preview);
    preview = NULL;
@@ -197,7 +217,18 @@ static void test_container(unsigned container)
    CHECK(!image_transfer_anim_stream_new_avail(bytes, used, used, type, &more,
                                                NULL, NULL) &&
          !more);
-   CHECK(!gfx_anim_preview_open_hw(fixture_path, 0));
+   CHECK(!image_transfer_anim_stream_new_hw_avail(bytes, used, used, type,
+         &more, NULL, NULL) && !more && opens == before);
+   /* A GPU player's metadata open must not depend on native availability
+    * or construct a decoder on the polling owner. */
+   preview = gfx_anim_preview_open_hw(fixture_path, 0);
+   CHECK(preview && opens == before);
+   if (preview)
+   {
+      CHECK(preview->seekable);
+      gfx_anim_preview_close(preview);
+      preview = NULL;
+   }
    factory.user = &factory;
    factory.open = open_backend;
    factory.close = close_backend;
