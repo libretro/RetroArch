@@ -168,14 +168,21 @@ static VIDEO_NOINLINE void video_thread_ring_sleep(thread_video_t *thr, int stat
  * main thread of an Apple build the wait is sliced so the worker's
  * marshalled main-thread jobs can run in between, as the reply waits
  * do; a wait of one tick, and otherwise unbounded. */
+static bool video_thread_is_self(thread_video_t *thr);
+
 static VIDEO_NOINLINE void video_thread_ring_drain(thread_video_t *thr)
 {
+   /* The claimed frame completes only once the video thread has the
+    * one GL context: a caller holding it gives it up for the wait. */
+   bool held = video_thread_hw_ctx_held(thr)
+      && !video_thread_is_self(thr)
+      && video_thread_hw_ctx_release(thr, false);
    for (;;)
    {
       int st = video_thread_ring_load(thr);
       if (     !VIDEO_THREAD_RING_PENDING_OF(st)
             && !VIDEO_THREAD_RING_BUSY_OF(st))
-         return;
+         break;
 #ifdef __APPLE__
       video_thread_ring_sleep(thr, st, 1000);
       video_thread_main_pump();
@@ -183,6 +190,8 @@ static VIDEO_NOINLINE void video_thread_ring_drain(thread_video_t *thr)
       video_thread_ring_sleep(thr, st, -1);
 #endif
    }
+   if (held)
+      video_thread_hw_ctx_take(thr, false);
 }
 
 /* Host memory for frame buffers: cache-line aligned, and on the 3DS

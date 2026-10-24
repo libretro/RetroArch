@@ -43,6 +43,8 @@ static core_clear_t            core_clear;
  * bound every frame after, as GLideN64's glsm does (#19727). */
 static int                     cache_fbo;
 static unsigned                cached_fbo;
+static int                     dupe_odd;
+static unsigned                runs;
 
 static void context_reset(void)
 {
@@ -134,6 +136,12 @@ void retro_run(void)
       video_cb(NULL, W, H, 0);
       return;
    }
+   /* Every other frame a dupe, pushed with the context held. */
+   if (dupe_odd && (runs++ & 1))
+   {
+      video_cb(NULL, W, H, 0);
+      return;
+   }
    core_bind_framebuffer(CORE_GL_FRAMEBUFFER, cache_fbo
          ? cached_fbo : (unsigned)hw.get_current_framebuffer());
    core_viewport(0, 0, W, H);
@@ -150,6 +158,7 @@ bool retro_load_game(const struct retro_game_info *game)
    environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt);
    memset(&hw, 0, sizeof(hw));
    cache_fbo          = getenv("EGL_HW_CORE_CACHE_FBO") != NULL;
+   dupe_odd           = getenv("EGL_HW_CORE_DUPE") != NULL;
    hw.context_type    = RETRO_HW_CONTEXT_OPENGL;
    hw.context_reset   = context_reset;
    hw.context_destroy = context_destroy;
