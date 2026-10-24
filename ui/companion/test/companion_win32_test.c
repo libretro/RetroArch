@@ -58,8 +58,8 @@ static int stub_menu_loop_calls;
 LRESULT win32_menu_loop(HWND hwnd, WPARAM wparam) { (void)hwnd; (void)wparam; stub_menu_loop_calls++; return 0; }
 void win32_sizemove_enter(HWND h) { (void)h; }
 void win32_sizemove_exit(HWND h) { (void)h; }
-void win32_sizemove_tick(void) { }
-void win32_sizemove_abort(void) { }
+bool win32_message_paint(HWND h) { (void)h; return false; }
+void win32_sizemove_abort(HWND h) { (void)h; }
 
 extern settings_t test_settings;
 extern runloop_state_t test_runloop;
