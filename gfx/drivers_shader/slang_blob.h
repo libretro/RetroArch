@@ -87,7 +87,9 @@ void slang_blob_unref(struct slang_blob *b);
  * parked on a dead list the table drains at its next operation, so no
  * thread but the one at the table ever touches it. */
 
-/* The calling thread alone uses the table until the release. */
+/* The calling thread alone uses the table until the release; claiming
+ * again moves the claim to the calling thread, for a task whose calls
+ * run on one worker after another but never at once. */
 void slang_blob_table_claim(void);
 void slang_blob_table_release(void);
 

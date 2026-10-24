@@ -171,7 +171,24 @@ enum retro_task_flags
     * unfinished is called again on a later check, as on the
     * unthreaded runner.  Not changed after the push.
     */
-   RETRO_TASK_FLG_MAIN_THREAD      = (1 << 5)
+   RETRO_TASK_FLG_MAIN_THREAD      = (1 << 5),
+   /**
+    * Set by the pusher before \c task_queue_push: \c handler may run
+    * at the same time as any other task's, on one of the threaded
+    * runner's extra workers, which take only tasks marked so.  A task
+    * without it runs on the one worker every task has always run on,
+    * one at a time with every other such task, as before.  For work
+    * that shares nothing with other tasks but what it publishes on its
+    * own - a shader stage's compile, a decode into its own buffer.  One
+    * task is never in two handlers at once either way, but its calls
+    * may each be on a different worker.  Ignored with
+    * \c RETRO_TASK_FLG_DETACHABLE or \c RETRO_TASK_FLG_MAIN_THREAD, and
+    * by the unthreaded runner.  The GCD runner (Apple) already hands
+    * every task to the system's concurrent queue, one run of it at a
+    * time, a run on any thread; there the flag changes nothing.  Not
+    * changed after the push.
+    */
+   RETRO_TASK_FLG_PARALLEL         = (1 << 6)
 };
 
 /**
@@ -364,6 +381,11 @@ struct retro_task
     */
    bool parked;
    bool woken;
+   /**
+    * A worker is in its handler; no other worker takes it.  Owned by the
+    * task queue, read and written under its running lock.
+    */
+   bool busy;
 };
 
 /**
@@ -725,6 +747,17 @@ bool task_queue_is_threaded(void);
  * caller's thread or on GCD.
  */
 void task_queue_set_prefer_fast_cores(bool prefer);
+
+/**
+ * How many extra workers the threaded runner starts for
+ * RETRO_TASK_FLG_PARALLEL tasks, beside the one worker every task runs
+ * on; at most 8.  They start the first time such a task is pushed after
+ * a task_queue_init(), and stop at task_queue_deinit().  None by
+ * default: a parallel task then runs on the one worker like any other.
+ * The frontend sizes it to the machine; the queue reads no core count.
+ * No effect on the GCD runner, whose concurrency is the system's.
+ */
+void task_queue_set_parallel_workers(unsigned count);
 
 /**
  * Calls the function given in \c find_data for each task

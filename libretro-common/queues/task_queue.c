@@ -133,6 +133,8 @@ enum task_worker_state
 struct task_worker
 {
    retro_atomic_int_t state;
+   /* Takes only RETRO_TASK_FLG_PARALLEL tasks; set at start. */
+   bool               parallel_only;
    /* The task whose handler it is in; written under running_lock. */
    retro_task_t      *task;
    /* The primitives of the queue this worker was started for, so an
@@ -155,6 +157,19 @@ struct task_worker
 };
 
 static struct task_worker *worker_self      = NULL;
+
+/* The extra workers for RETRO_TASK_FLG_PARALLEL tasks, started the first
+ * time one is pushed: as many as task_queue_set_parallel_workers() last
+ * asked for, at most TASK_PARALLEL_MAX; none until it is called, and
+ * then such tasks run on the one worker.  Written under running_lock by
+ * the push that starts them; read by deinit, which no push runs
+ * beside. */
+#define TASK_PARALLEL_MAX 8
+static struct task_worker *parallel_self[TASK_PARALLEL_MAX];
+static sthread_t          *parallel_thread[TASK_PARALLEL_MAX];
+static unsigned            parallel_count   = 0;
+static bool                parallel_started = false;
+static retro_atomic_int_t  parallel_wanted  = RETRO_ATOMIC_INT_INITIALIZER(0);
 
 /* How long deinit waits for the worker before it may leave one stuck
  * in a detachable task's handler behind. */
@@ -681,12 +696,18 @@ static void task_queue_remove(task_queue_t *queue, retro_task_t *task)
    }
 }
 
+static void retro_task_threaded_start_parallel(void);
+static bool task_is_parallel(retro_task_t *task);
+
 static void retro_task_threaded_push_running(retro_task_t *task)
 {
+   if (!parallel_started && task_is_parallel(task))
+      retro_task_threaded_start_parallel();
    slock_lock(running_lock);
    task_queue_put(&tasks_running, task);
    retro_atomic_fetch_add_int(&tasks_running_count, 1);
-   scond_signal(worker_cond);
+   /* Every worker: the one that wakes must be one that may take it */
+   scond_broadcast(worker_cond);
    slock_unlock(running_lock);
 }
 
@@ -710,7 +731,7 @@ static void retro_task_threaded_wake_locked(retro_task_t *task)
    if (task->sched)
       gcd_wake_locked(task);
 #endif
-   scond_signal(worker_cond);
+   scond_broadcast(worker_cond);
 }
 
 /* @task is about to run: a park it was on is over, so it counts as
@@ -1010,7 +1031,7 @@ static void retro_task_threaded_reset(void)
          gcd_wake_locked(task);
 #endif
    }
-   scond_signal(worker_cond);
+   scond_broadcast(worker_cond);
    slock_unlock(running_lock);
 }
 
@@ -1095,6 +1116,12 @@ static void retro_task_threaded_retrieve(task_retriever_data_t *data)
 static retro_atomic_int_t task_worker_prefer_fast_cores =
    RETRO_ATOMIC_INT_INITIALIZER(0);
 
+void task_queue_set_parallel_workers(unsigned count)
+{
+   retro_atomic_store_release_int(&parallel_wanted,
+         count > TASK_PARALLEL_MAX ? TASK_PARALLEL_MAX : (int)count);
+}
+
 void task_queue_set_prefer_fast_cores(bool prefer)
 {
    retro_atomic_store_release_int(&task_worker_prefer_fast_cores,
@@ -1107,6 +1134,16 @@ static bool task_is_main_thread_task(retro_task_t *task)
 {
    return (retro_atomic_load_acquire_int(&task->flags)
          & RETRO_TASK_FLG_MAIN_THREAD) != 0;
+}
+
+/* A task an extra worker may take.  Detachable tasks stay with the one
+ * worker deinit knows how to leave behind.  Set before the push and
+ * never changed. */
+static bool task_is_parallel(retro_task_t *task)
+{
+   int flags = retro_atomic_load_acquire_int(&task->flags);
+   return (flags & RETRO_TASK_FLG_PARALLEL)
+      && !(flags & (RETRO_TASK_FLG_DETACHABLE | RETRO_TASK_FLG_MAIN_THREAD));
 }
 
 /* After a handler returned: a finished task moves to the finished
@@ -1127,11 +1164,12 @@ static void retro_task_threaded_settle(retro_task_t *task)
       /* A parked task waits behind the due ones until its horizon or a
        * wake; any other goes to the back of the tasks due now, unless
        * it is the only item in the queue. */
+      task->busy = false;
       if (!retro_task_threaded_park_locked(task) && task->next)
       {
          task_queue_remove(&tasks_running, task);
          task_queue_put(&tasks_running, task);
-         scond_signal(worker_cond);
+         scond_broadcast(worker_cond);
       }
       slock_unlock(running_lock);
    }
@@ -1147,6 +1185,7 @@ static void retro_task_threaded_settle(retro_task_t *task)
        * running_lock -> finished_lock, matching the find
        * function; no other path nests these locks. */
       slock_lock(running_lock);
+      task->busy = false;
       task_queue_remove(&tasks_running, task);
 
       /* Add task to finished queue */
@@ -1280,9 +1319,13 @@ static void threaded_worker(void *userdata)
          break;
       }
 
-      /* Get first task to run; main-thread tasks are the gather's */
+      /* Get first task to run; main-thread tasks are the gather's, one
+       * in another worker's handler is that worker's, and an extra
+       * worker takes only the tasks marked for it */
       for (task = tasks_running.front; task; task = task->next)
-         if (!task_is_main_thread_task(task))
+         if (     !task_is_main_thread_task(task)
+               && !task->busy
+               && (!self->parallel_only || task_is_parallel(task)))
             break;
       if (!task)
       {
@@ -1304,6 +1347,7 @@ static void threaded_worker(void *userdata)
       }
 
       self->task = task;
+      task->busy = true;
       retro_task_threaded_unpark_locked(task);
       retro_atomic_store_release_int(&self->state, TASK_WORKER_IN_HANDLER);
       slock_unlock(running_lock);
@@ -1406,6 +1450,71 @@ static void retro_task_threaded_count_lists(void)
    retro_atomic_store_release_int(&tasks_finished_count, finished);
 }
 
+/* The extra workers, once: the first push of a parallel task starts
+ * them, on whatever thread it is made; the queue's lock decides which
+ * push that is. */
+static void retro_task_threaded_start_parallel(void)
+{
+   unsigned want, i;
+
+   slock_lock(running_lock);
+   if (parallel_started)
+   {
+      slock_unlock(running_lock);
+      return;
+   }
+   parallel_started = true;
+   slock_unlock(running_lock);
+
+   want = (unsigned)retro_atomic_load_acquire_int(&parallel_wanted);
+   if (want > TASK_PARALLEL_MAX)
+      want = TASK_PARALLEL_MAX;
+
+   for (i = 0; i < want; i++)
+   {
+      struct task_worker *w = (struct task_worker*)calloc(1, sizeof(*w));
+      sthread_t          *t;
+      if (!w)
+         break;
+      retro_atomic_store_release_int(&w->state, TASK_WORKER_IDLE);
+      w->parallel_only = true;
+      w->running_lock  = running_lock;
+      w->finished_lock = finished_lock;
+      w->worker_cond   = worker_cond;
+      w->finished_cond = finished_cond;
+#ifdef TASK_WORKER_BELOW_CREATOR
+      w->prio          = worker_self->prio;
+#endif
+      if (!(t = sthread_create(threaded_worker, w)))
+      {
+         free(w);
+         break;
+      }
+      slock_lock(running_lock);
+      parallel_self[parallel_count]   = w;
+      parallel_thread[parallel_count] = t;
+      parallel_count++;
+      slock_unlock(running_lock);
+   }
+}
+
+/* Stops the extra workers and waits for them.  Their tasks are neither
+ * detachable nor main-thread ones, so each leaves once its handler
+ * returns.  worker_continue is already false. */
+static void retro_task_threaded_stop_parallel(void)
+{
+   unsigned i;
+   for (i = 0; i < parallel_count; i++)
+   {
+      sthread_join(parallel_thread[i]);
+      free(parallel_self[i]);
+      parallel_thread[i] = NULL;
+      parallel_self[i]   = NULL;
+   }
+   parallel_count   = 0;
+   parallel_started = false;
+}
+
 static bool retro_task_threaded_init(void)
 {
    if (!retro_task_sync_primitives_new())
@@ -1486,12 +1595,19 @@ static void retro_task_threaded_orphan_worker(retro_task_t *task)
  * the only safe thing is to keep waiting for it. */
 static void retro_task_threaded_deinit(void)
 {
-   retro_time_t deadline = cpu_features_get_time_usec()
-      + TASK_QUEUE_DETACH_AFTER_US;
+   retro_time_t deadline;
 
    slock_lock(running_lock);
    worker_continue = false;
    scond_broadcast(worker_cond);
+   slock_unlock(running_lock);
+
+   /* The extra workers first, while the queue's primitives are certain
+    * to stay: the one worker may be left behind below. */
+   retro_task_threaded_stop_parallel();
+
+   deadline = cpu_features_get_time_usec() + TASK_QUEUE_DETACH_AFTER_US;
+   slock_lock(running_lock);
 
    for (;;)
    {
@@ -2333,6 +2449,7 @@ retro_task_t *task_init(void)
    task->park              = 0;
    task->parked            = false;
    task->woken             = false;
+   task->busy              = false;
 
    return task;
 }

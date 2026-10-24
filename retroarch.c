@@ -9858,6 +9858,13 @@ void retroarch_task_queue_configure(void)
    settings_t *settings        = config_get_ptr();
    bool threaded_enable        = settings->bools.threaded_data_runloop_enable;
 
+   /* Parallel tasks (shader stage compiles) get the cores left over
+    * once the main thread, the video thread and the one worker have
+    * theirs. */
+   {
+      unsigned cores = cpu_features_get_core_amount();
+      task_queue_set_parallel_workers(cores > 3 ? cores - 3 : 0);
+   }
    if (threaded_enable)
       task_queue_set_threaded();
    else

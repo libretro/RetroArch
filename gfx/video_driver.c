@@ -939,15 +939,18 @@ video_driver_state_t *video_state_get_ptr(void)
  * handles completion or failure.
  **/
 #ifdef HAVE_SLANG
-/* The passes of a deferred load compiled ahead on the task thread,
- * while the chain's thread builds them one per frame.  A worker reads
- * and compiles a pass (slang_compile_pass_detached) and publishes its
- * stages in that pass's slot; the chain's thread lists them in the blob
- * table (slang_blob_offer) before its step, so the step's own compile
- * of the pass takes them and does no work.  The load's tick holds a
- * step back while its pass is still with the worker.  The task and the
- * load each hold a reference; the slots a chain never took are released
- * by the last, unlisted, so on either thread. */
+/* The passes of a deferred load compiled ahead on the task threads,
+ * while the chain's thread builds them one at a time.  Up to
+ * SHADER_PRECOMPILE_TASKS parallel tasks each take the next pass not
+ * yet taken, read and compile it (slang_compile_pass_detached) and
+ * publish its stages in that pass's slot; the chain's thread lists them
+ * in the blob table (slang_blob_offer) before its step, so the step's
+ * own compile of the pass takes them and does no work.  A step is held
+ * back while its pass is still with a worker, and woken when it lands.
+ * The tasks and the load each hold a reference; the slots a chain never
+ * took are released by the last, unlisted, so on any thread. */
+#define SHADER_PRECOMPILE_TASKS 4
+
 enum shader_precompile_state
 {
    SHADER_PRECOMPILE_PENDING = 0,
@@ -969,10 +972,11 @@ struct shader_precompile
    struct shader_precompile_pass *pass;
    char                         **path;
    unsigned                       n;
-   unsigned                       next;    /* the worker's cursor */
+   retro_atomic_int_t             next;    /* the next pass to take */
    retro_atomic_int_t             refs;
-   retro_atomic_int_t             done;    /* the task is through */
+   retro_atomic_int_t             live;    /* tasks not yet through */
    retro_atomic_int_t             stop;    /* the load ended */
+   retro_atomic_int_t             waker;   /* the stepper's ident, or -1 */
    bool                           hlsl_or_msl;
 };
 
@@ -997,20 +1001,27 @@ static void shader_precompile_handler(retro_task_t *task)
    struct shader_precompile *p = (struct shader_precompile*)task->state;
    struct shader_precompile_pass *slot;
    glslang_output output;
-   unsigned i;
+   unsigned i, j;
+   int waker;
 
    if (     retro_atomic_load_acquire_int(&p->stop)
          || (task_get_flags(task) & RETRO_TASK_FLG_CANCELLED)
-         || p->next >= p->n)
+         || (i = (unsigned)retro_atomic_fetch_add_int(&p->next, 1)) >= p->n)
    {
       task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
       return;
    }
 
    /* one pass per call, so the queue's other work gets its turn */
-   i    = p->next++;
    slot = &p->pass[i];
-   if (slang_compile_pass_detached(p->path[i], p->hlsl_or_msl, &output,
+   for (j = 0; j < i; j++)
+      if (!strcmp(p->path[j], p->path[i]))
+         break;
+   if (j < i)
+      /* an earlier pass names the same file: its stages are listed by
+       * the time this pass's step runs, and the step takes them */
+      retro_atomic_store_release_int(&slot->state, SHADER_PRECOMPILE_FAILED);
+   else if (slang_compile_pass_detached(p->path[i], p->hlsl_or_msl, &output,
             slot->key))
    {
       slot->vs = slang_blob_ref(output.vertex_blob);
@@ -1020,14 +1031,24 @@ static void shader_precompile_handler(retro_task_t *task)
    }
    else
       retro_atomic_store_release_int(&slot->state, SHADER_PRECOMPILE_FAILED);
+
+   /* a stepper parked on this pass goes on now */
+   if ((waker = retro_atomic_load_acquire_int(&p->waker)) >= 0)
+      task_queue_wake((uint32_t)waker);
 }
 
 static void shader_precompile_cleanup(retro_task_t *task)
 {
    struct shader_precompile *p = (struct shader_precompile*)task->state;
-   retro_atomic_store_release_int(&p->done, 1);
+   int waker;
+   retro_atomic_fetch_add_int(&p->live, -1);
+   /* the last pass may have been left to the stepper by this exit */
+   if ((waker = retro_atomic_load_acquire_int(&p->waker)) >= 0)
+      task_queue_wake((uint32_t)waker);
    shader_precompile_unref(p);
 }
+
+static bool shader_precompile_pending(const shader_load_deferred_t *d);
 
 /* The whole step on the task thread, for a driver whose step may run
  * on any thread (shader_load_deferred_t.step_any_thread: the chain it
@@ -1069,10 +1090,17 @@ static void shader_stepper_handler(retro_task_t *task)
       task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
       return;
    }
-   if (!st->claimed)
+   /* the table follows the task: a parallel task's next call may be on
+    * another worker, and its calls never overlap */
+   slang_blob_table_claim();
+   st->claimed = true;
+   /* the passes the compile tasks finished, listed for this step; one
+    * still being compiled parks the stepper until it lands */
+   video_driver_shader_deferred_take(d, false);
+   if (shader_precompile_pending(d))
    {
-      slang_blob_table_claim();
-      st->claimed = true;
+      task_queue_park(task, 100000);
+      return;
    }
    retro_atomic_store_release_int(&d->busy, 1);
    if (!st->step(st->data, d))
@@ -1138,9 +1166,19 @@ static struct shader_stepper *shader_stepper_start(shader_load_deferred_t *d)
    task->handler = shader_stepper_handler;
    task->cleanup = shader_stepper_cleanup;
    task->state   = st;
-   task->flags  |= RETRO_TASK_FLG_MUTE;
+   /* beside the compile tasks and anything else: it builds one chain
+    * that nothing on screen reads */
+   task->flags  |= RETRO_TASK_FLG_MUTE | RETRO_TASK_FLG_PARALLEL;
+   if (d->precompile)
+      retro_atomic_store_release_int(
+            &((struct shader_precompile*)d->precompile)->waker,
+            (int)task->ident);
    if (!task_queue_push(task))
    {
+      if (d->precompile)
+         retro_atomic_store_release_int(
+               &((struct shader_precompile*)d->precompile)->waker, -1);
+      free(task);
       free(st);
       return NULL;
    }
@@ -1175,7 +1213,7 @@ static struct shader_precompile *shader_precompile_start(
    struct shader_precompile *p = NULL;
    retro_task_t *task;
    const char *ident;
-   unsigned i;
+   unsigned i, tasks, pushed;
 
    if (!task_queue_is_threaded())
       return NULL;
@@ -1199,25 +1237,43 @@ static struct shader_precompile *shader_precompile_start(
    ident          = video_driver_get_ident();
    p->hlsl_or_msl = ident && (   string_starts_with(ident, "d3d1")
                               || string_is_equal(ident, "metal"));
-   retro_atomic_int_init(&p->refs, 2);
-   retro_atomic_int_init(&p->done, 0);
+   tasks          = p->n < SHADER_PRECOMPILE_TASKS
+      ? p->n : SHADER_PRECOMPILE_TASKS;
+   retro_atomic_int_init(&p->next, 0);
+   retro_atomic_int_init(&p->refs, (int)tasks + 1);
+   retro_atomic_int_init(&p->live, (int)tasks);
    retro_atomic_int_init(&p->stop, 0);
+   retro_atomic_int_init(&p->waker, -1);
    for (i = 0; i < p->n; i++)
       retro_atomic_int_init(&p->pass[i].state, SHADER_PRECOMPILE_PENDING);
 
-   if (!(task = task_init()))
-      goto fail;
-   task->handler = shader_precompile_handler;
-   task->cleanup = shader_precompile_cleanup;
-   task->state   = p;
-   task->flags  |= RETRO_TASK_FLG_MUTE;
-   if (!task_queue_push(task))
+   for (pushed = 0; pushed < tasks; pushed++)
    {
-      /* A refused task is still the caller's: the queue neither runs
-       * nor frees it, so its cleanup never drops the task's reference. */
-      free(task);
-      retro_atomic_int_init(&p->refs, 1);
-      goto fail;
+      if (!(task = task_init()))
+         break;
+      task->handler = shader_precompile_handler;
+      task->cleanup = shader_precompile_cleanup;
+      task->state   = p;
+      task->flags  |= RETRO_TASK_FLG_MUTE | RETRO_TASK_FLG_PARALLEL;
+      if (!task_queue_push(task))
+      {
+         /* A refused task is still the caller's: the queue neither runs
+          * nor frees it, so its cleanup never drops the task's
+          * reference. */
+         free(task);
+         break;
+      }
+   }
+   /* the references and the count of the tasks that never went */
+   for (i = pushed; i < tasks; i++)
+   {
+      retro_atomic_fetch_add_int(&p->live, -1);
+      shader_precompile_unref(p);
+   }
+   if (!pushed)
+   {
+      shader_precompile_unref(p);
+      p = NULL;
    }
    goto end;
 
@@ -1253,8 +1309,8 @@ static bool shader_precompile_pending(const shader_load_deferred_t *d)
    if (retro_atomic_load_acquire_int(&p->pass[d->current_pass].state)
          != SHADER_PRECOMPILE_PENDING)
       return false;
-   /* a task that is through left the pass to the chain's thread */
-   return !retro_atomic_load_acquire_int(&p->done);
+   /* tasks that are all through left the pass to the chain's thread */
+   return retro_atomic_load_acquire_int(&p->live) > 0;
 }
 #endif
 
@@ -1334,10 +1390,10 @@ void video_driver_shader_deferred_cancel(const char *why)
 void video_driver_shader_deferred_start(shader_load_deferred_t *d)
 {
 #ifdef HAVE_SLANG
+   /* the compile tasks first: the stepper reads what they publish */
+   d->precompile = shader_precompile_start(d->preset_path);
    if (d->step_any_thread)
       d->stepper = shader_stepper_start(d);
-   if (!d->stepper)
-      d->precompile = shader_precompile_start(d->preset_path);
 #else
    (void)d;
 #endif
