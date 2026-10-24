@@ -145,10 +145,10 @@ static bool media_native_modal_playback(struct menu_state *menu_st,
    gfx_media_playback_state_t initial, current;
    sthread_t *thread;
    POINT cursor;
-   RECT rect, final_rect;
+   RECT rect, final_rect, sampled_rect, live_rect;
    audio_mixer_voice_t *voice;
    size_t first_frames = 0, frames = 0, first_serial = 0, serial = 0;
-   unsigned rate = 0, warmup, live = 0;
+   unsigned rate = 0, warmup, live = 0, stable_geometry = 0;
    uint32_t first_hash = 0, last_hash = 0;
    uint64_t first_present = 0, presents = 0;
    int64_t deadline;
@@ -190,6 +190,7 @@ static bool media_native_modal_playback(struct menu_state *menu_st,
       return false;
    GetCursorPos(&cursor);
    GetWindowRect(probe->hwnd, &rect);
+   sampled_rect = rect;
    if (mode && !strcmp(mode, "move"))
       SetCursorPos(rect.left + 100, rect.top + 20);
    else
@@ -224,6 +225,20 @@ static bool media_native_modal_playback(struct menu_state *menu_st,
          continue;
       }
       presents = media_modal_present_count();
+      if (!GetWindowRect(probe->hwnd, &live_rect))
+      {
+         valid = false;
+         retro_atomic_store_release_int(&probe->verified, 1);
+         continue;
+      }
+      if (!EqualRect(&live_rect, &sampled_rect))
+      {
+         sampled_rect = live_rect;
+         stable_geometry = 0;
+         sampled = changed = false;
+      }
+      if (stable_geometry++ < 5)
+         continue;
       if (!sampled)
       {
          initial = current;
