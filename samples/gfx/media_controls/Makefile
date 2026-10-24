@@ -6,7 +6,7 @@ ifneq ($(findstring clang,$(shell $(CC) --version 2>/dev/null)),)
 CFLAGS += -Wno-c99-extensions
 endif
 LRC := ../../../libretro-common
-SOURCES := media_controls_test.c ../../../gfx/gfx_media_controls.c ../../../menu/menu_media_controls.c \
+SOURCES := media_controls_test.c ../../../gfx/gfx_media_display.c ../../../gfx/gfx_media_controls.c ../../../menu/menu_media_controls.c \
  ../../../menu/menu_media_browser.c ../../../libretro-common/lists/file_list.c \
  ../../../libretro-common/compat/compat_strldup.c ../../../libretro-common/compat/compat_strl.c \
  ../../../libretro-common/compat/compat_strcasestr.c

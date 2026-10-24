@@ -10,7 +10,7 @@ typedef struct gfx_media_playback_state
    int64_t seek_target_us;
    unsigned cadence_num, cadence_den;
    unsigned dims;
-   bool paused, seeking, seekable, seek_failed;
+   bool paused, seeking, seekable, seek_failed, cadence_unstable;
 } gfx_media_playback_state_t;
 
 #endif

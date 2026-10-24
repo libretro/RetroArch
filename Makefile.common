@@ -343,6 +343,7 @@ OBJ += \
        gfx/gfx_surface_player.o \
        gfx/gfx_thumbnail.o \
        gfx/gfx_media_controls.o \
+       gfx/gfx_media_display.o \
        gfx/gfx_media_player.o \
        gfx/gfx_media_cpu.o \
        gfx/gfx_anim_preview.o \

@@ -59,6 +59,7 @@ bool gfx_media_player_state(gfx_anim_preview_t *session,
    if (state->duration_us && state->position_us > state->duration_us)
       state->position_us = state->duration_us;
    video_player_cadence(player, &state->cadence_num, &state->cadence_den);
+   state->cadence_unstable = video_player_cadence_unstable(player);
    state->dims = session->dims;
    state->paused = session->paused;
    state->seeking = session->seeking;

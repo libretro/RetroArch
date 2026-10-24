@@ -17,6 +17,7 @@ start = source.index("static bool win32_display_server_set_resolution(")
 end = source.index("/* Display resolution list qsort", start)
 unit = r"""
 #include <assert.h>
+#include <math.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -54,6 +55,7 @@ typedef struct { win32_display_mode_t *modes; } dispserv_win32_t;
 #define SM_CXSCREEN 0
 #define SM_CYSCREEN 1
 #define DMDFO_DEFAULT 0
+#define DM_INTERLACED 2
 #define DM_PELSWIDTH 1
 #define DM_PELSHEIGHT 2
 #define DM_BITSPERPEL 4
@@ -140,6 +142,14 @@ static void *record_alloc(size_t n, size_t size)
 #define calloc record_alloc
 """
 unit += source[match_start:match_end]
+display_header = (root / "gfx/video_display_server.h").read_text(encoding="utf-8")
+config_start = display_header.index("typedef struct video_display_config\n")
+config_end = display_header.index("} video_display_config_t;", config_start) + len("} video_display_config_t;")
+unit += display_header[config_start:config_end] + "\n"
+selector = (root / "gfx/gfx_media_display.c").read_text(encoding="utf-8")
+rate_start = selector.index("float gfx_media_display_rate(")
+rate_end = selector.index("\n}", rate_start) + 2
+unit += selector[rate_start:rate_end] + "\n"
 unit += source[start:end]
 unit += r"""
 int main(void)
@@ -231,6 +241,77 @@ int main(void)
    }
    assert(!win32_display_server_set_resolution(NULL, 0, 0, 0, 0, 0, 0, 0));
    puts("PASS: mode results and conditional restoration stay bound to each output");
+
+   for (i = 0; i < 9; i++)
+   {
+      dispserv_win32_t serv;
+      void *lease;
+      unsigned num = 24;
+      memset(&serv, 0, sizeof(serv));
+      reset_modes();
+      tests = applies = 0;
+      test_result = apply_result = DISP_CHANGE_SUCCESSFUL;
+      switch (i)
+      {
+         case 1: num = 0; break;
+         case 2: current_ok = 0; break;
+         case 3: fail_alloc = 1; break;
+         case 4: test_result = DISP_CHANGE_FAILED; break;
+         case 5: apply_result = DISP_CHANGE_FAILED; break;
+         case 6: monitor_ok = 0; break;
+         case 7: current_modes[0].dmDisplayFrequency = 120; break;
+         case 8: num = 241; break;
+      }
+      lease = win32_display_server_begin_media_refresh(&serv, num, 1);
+      assert((lease != NULL) == (i == 0));
+      assert(applies == (i == 0 || i == 5));
+      if (lease)
+      {
+         selected = 'D';
+         assert(win32_display_server_media_refresh_current(&serv, lease, 24, 1));
+         selected = 'D';
+         assert(!win32_display_server_media_refresh_current(&serv, lease, 25, 1));
+         selected = 'E';
+         assert(!win32_display_server_media_refresh_current(&serv, lease, 24, 1));
+         win32_display_server_end_media_refresh(&serv, lease);
+         assert(current_modes[0].dmDisplayFrequency == 60);
+         assert(current_modes[1].dmDisplayFrequency == 75);
+      }
+   }
+   for (i = 0; i < 4; i++)
+   {
+      dispserv_win32_t serv;
+      void *lease;
+      unsigned before;
+      memset(&serv, 0, sizeof(serv));
+      reset_modes();
+      test_result = apply_result = DISP_CHANGE_SUCCESSFUL;
+      lease = win32_display_server_begin_media_refresh(&serv, 24, 1);
+      assert(lease);
+      if (i == 1) current_modes[0].dmDisplayFrequency = 144;
+      if (i == 2) current_ok = 0;
+      if (i == 3) current_modes[0].dmDisplayFlags = DM_INTERLACED;
+      before = applies;
+      win32_display_server_end_media_refresh(&serv, lease);
+      assert(applies == before + (i == 0));
+      if (i == 1) assert(current_modes[0].dmDisplayFrequency == 144);
+   }
+   {
+      dispserv_win32_t serv;
+      void *lease;
+      memset(&serv, 0, sizeof(serv));
+      reset_modes();
+      test_result = apply_result = DISP_CHANGE_SUCCESSFUL;
+      current_modes[0].dmDisplayFrequency = 75;
+      assert(win32_display_server_set_resolution(&serv, 0, 60, 60, 0, 0, 0, 0));
+      selected = 'D';
+      lease = win32_display_server_begin_media_refresh(&serv, 24, 1);
+      assert(lease && current_modes[0].dmDisplayFrequency == 120);
+      win32_display_server_end_media_refresh(&serv, lease);
+      assert(current_modes[0].dmDisplayFrequency == 60);
+      win32_display_server_restore_modes(&serv);
+      assert(!serv.modes && current_modes[0].dmDisplayFrequency == 75);
+   }
    return 0;
 }
 """
@@ -248,6 +329,6 @@ with tempfile.TemporaryDirectory(prefix="win32-resolution-result-") as temp:
                 flags.append("-DUNICODE")
             if a.sanitizer:
                 flags += ["-fsanitize=" + a.sanitizer, "-fno-omit-frame-pointer"]
-            subprocess.run(shlex.split(a.cc) + flags + [str(src), "-o", str(exe)],
+            subprocess.run(shlex.split(a.cc) + flags + [str(src), "-o", str(exe), "-lm"],
                            check=True)
             subprocess.run(shlex.split(a.runner) + [str(exe)], check=True)

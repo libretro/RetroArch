@@ -367,6 +367,24 @@ XErrorHandler XSetErrorHandler(XErrorHandler handler)
    return old;
 }
 
+Bool XQueryExtension(Display *dpy, const char *name, int *opcode,
+      int *event, int *error)
+{
+   (void)dpy;
+   *opcode = 140;
+   *event = *error = 0;
+   return strcmp(name, "RANDR") == 0;
+}
+
+Bool (*XESetWireToError(Display *dpy, int error,
+      Bool (*handler)(Display *, XErrorEvent *, xError *)))(Display *, XErrorEvent *, xError *)
+{
+   (void)dpy;
+   (void)error;
+   (void)handler;
+   return NULL;
+}
+
 int XClearWindow(Display *dpy, Window w) { (void)dpy; (void)w; return 0; }
 
 /* Window-center queries also exercise output selection after a move. */

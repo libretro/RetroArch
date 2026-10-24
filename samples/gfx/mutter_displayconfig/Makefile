@@ -20,6 +20,7 @@ WLR_CODE := wlr-output-management-unstable-v1-protocol.c
 SOURCES := mutter_displayconfig_test.c \
            $(REPO_ROOT)/gfx/common/mutter_displayconfig.c \
            $(REPO_ROOT)/gfx/display_servers/dispserv_x11.c \
+           $(REPO_ROOT)/gfx/gfx_media_display.c \
            $(REPO_ROOT)/gfx/display_servers/dispserv_wl.c \
            $(REPO_ROOT)/gfx/common/xinerama_common.c \
            $(REPO_ROOT)/gfx/common/dbus_runtime.c \

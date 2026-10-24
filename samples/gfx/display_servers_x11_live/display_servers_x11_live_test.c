@@ -585,6 +585,126 @@ fail:
    return 1;
 }
 
+static bool reject_next_media_mode;
+
+Status live_XRRSetCrtcConfig(Display *dpy, XRRScreenResources *res,
+      RRCrtc crtc, Time timestamp, int x, int y, RRMode mode,
+      Rotation rotation, RROutput *outputs, int noutput)
+{
+   if (reject_next_media_mode)
+   {
+      reject_next_media_mode = false;
+      mode = (RRMode)0xffffffff;
+   }
+   return XRRSetCrtcConfig(dpy, res, crtc, timestamp, x, y, mode,
+         rotation, outputs, noutput);
+}
+
+static int test_media_refresh(Display *dpy, void *data)
+{
+   XRRScreenResources *res;
+   XRROutputInfo *oi = NULL;
+   XRRCrtcInfo *ci = NULL;
+   XRRModeInfo timing;
+   RROutput output = 0;
+   RRMode added[2] = { 0, 0 };
+   res_state_t original, current;
+   void *lease = NULL;
+   int i, m, failed = 1;
+   if (res_read(dpy, &original) < 0)
+      return 1;
+   res = XRRGetScreenResourcesCurrent(dpy, DefaultRootWindow(dpy));
+   if (!res)
+      return 1;
+   memset(&timing, 0, sizeof(timing));
+   for (i = 0; i < res->noutput; i++)
+   {
+      oi = XRRGetOutputInfo(dpy, res, res->outputs[i]);
+      if (oi && oi->connection == RR_Connected && oi->crtc)
+         ci = XRRGetCrtcInfo(dpy, res, oi->crtc);
+      if (ci && ci->mode == original.id)
+      {
+         output = res->outputs[i];
+         break;
+      }
+      if (ci) XRRFreeCrtcInfo(ci);
+      if (oi) XRRFreeOutputInfo(oi);
+      ci = NULL;
+      oi = NULL;
+   }
+   for (m = 0; output && m < res->nmode; m++)
+      if (res->modes[m].id == original.id)
+      {
+         timing = res->modes[m];
+         break;
+      }
+   if (ci) XRRFreeCrtcInfo(ci);
+   if (oi) XRRFreeOutputInfo(oi);
+   XRRFreeScreenResources(res);
+   if (!output || !timing.hTotal || !timing.vTotal)
+      return 1;
+   for (i = 0; i < 2; i++)
+   {
+      double rate = i ? 48000.0 / 1001.0 : 48.0;
+      timing.name = i ? "RA-media-47952" : "RA-media-48";
+      timing.nameLength = (unsigned)strlen(timing.name);
+      timing.dotClock = (unsigned long)((double)timing.hTotal * timing.vTotal * rate + 0.5);
+      added[i] = XRRCreateMode(dpy, DefaultRootWindow(dpy), &timing);
+      if (!added[i])
+         goto done;
+      XRRAddOutputMode(dpy, output, added[i]);
+   }
+   XSync(dpy, False);
+   lease = dispserv_x11.begin_media_refresh(data, 24, 1);
+   if (!lease || res_expect(dpy, original.w, original.h, 48.0f,
+            "media chooses advertised 48 Hz")
+         || !dispserv_x11.media_refresh_current(data, lease, 24, 1)
+         || dispserv_x11.media_refresh_current(data, lease, 30, 1))
+      goto done;
+   dispserv_x11.end_media_refresh(data, lease);
+   lease = NULL;
+   if (res_expect(dpy, original.w, original.h, original.rate,
+            "media restores original mode"))
+      goto done;
+   reject_next_media_mode = true;
+   lease = dispserv_x11.begin_media_refresh(data, 24, 1);
+   if (lease || reject_next_media_mode || res_expect(dpy, original.w,
+            original.h, original.rate, "media protocol rejection leaves mode unchanged"))
+      goto done;
+   lease = dispserv_x11.begin_media_refresh(data, 24000, 1001);
+   if (!lease || res_expect(dpy, original.w, original.h, 48000.0f / 1001.0f,
+            "media chooses fractional refresh"))
+      goto done;
+   dispserv_x11.end_media_refresh(data, lease);
+   lease = dispserv_x11.begin_media_refresh(data, 24, 1);
+   if (!lease || !dispserv_x11.set_resolution(data, 0, 0,
+            48000.0f / 1001.0f, 0, 0, 0, 0))
+      goto done;
+   dispserv_x11.end_media_refresh(data, lease);
+   lease = NULL;
+   if (res_read(dpy, &current) < 0 || current.id != added[1])
+   {
+      fprintf(stderr, "FAIL: media restore clobbered an external mode change\n");
+      goto done;
+   }
+   failed = 0;
+   puts("[pass] media fractional refresh and conditional restoration on live Xorg");
+done:
+   if (lease)
+      dispserv_x11.end_media_refresh(data, lease);
+   if (!dispserv_x11.set_resolution(data, VIDEO_SCALE_PACK(original.w, original.h),
+            0, original.rate, 0, 0, 0, 0))
+      failed = 1;
+   for (i = 0; i < 2; i++)
+      if (added[i])
+      {
+         XRRDeleteOutputMode(dpy, output, added[i]);
+         XRRDestroyMode(dpy, added[i]);
+      }
+   XSync(dpy, False);
+   return failed;
+}
+
 int main(void)
 {
    Display *dpy;
@@ -752,6 +872,9 @@ int main(void)
    }
 
    if (test_screen_resolution(dpy, data))
+      return 1;
+
+   if (test_media_refresh(dpy, data))
       return 1;
 
    dispserv_x11.destroy(data);

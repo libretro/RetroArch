@@ -15,7 +15,8 @@ REPO_ROOT := ../../..
 # -lX11 on purpose: a working display is precisely the environment
 # that cannot produce the failing queries under test.
 SOURCES := display_servers_test.c \
-           $(REPO_ROOT)/gfx/display_servers/dispserv_x11.c
+           $(REPO_ROOT)/gfx/display_servers/dispserv_x11.c \
+           $(REPO_ROOT)/gfx/gfx_media_display.c
 
 CFLAGS  += -Wall -std=gnu99 -g1 -O0 \
            -DHAVE_XRANDR \
@@ -31,9 +32,9 @@ endif
 
 PYTHON ?= python3
 ifeq ($(OS),Windows_NT)
-all: error-scope-check output-info-check resolution-result-check
+all: error-scope-check output-info-check resolution-result-check x11-refresh-check
 else
-all: $(TARGET) error-scope-check output-info-check resolution-result-check
+all: $(TARGET) error-scope-check output-info-check resolution-result-check x11-refresh-check
 endif
 
 error-scope-check:
@@ -41,6 +42,9 @@ error-scope-check:
 
 output-info-check:
 	$(PYTHON) output_info_test.py --cc "$(CC)" $(if $(SANITIZER),--sanitizer "$(SANITIZER)")
+
+x11-refresh-check:
+	$(PYTHON) x11_refresh_lease_test.py --cc "$(CC)" $(if $(SANITIZER),--sanitizer "$(SANITIZER)")
 
 resolution-result-check:
 	$(PYTHON) resolution_result_test.py --cc "$(CC)" $(if $(SANITIZER),--sanitizer "$(SANITIZER)")
@@ -59,4 +63,4 @@ clean:
 	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(TARGET) $(OBJS)
 
-.PHONY: all clean error-scope-check output-info-check resolution-result-check
+.PHONY: all clean error-scope-check output-info-check resolution-result-check x11-refresh-check

@@ -11,6 +11,7 @@ REPO_ROOT := ../../..
 SOURCES := x11_refresh_rate_test.c \
            $(REPO_ROOT)/gfx/common/x11_common.c \
            $(REPO_ROOT)/gfx/display_servers/dispserv_x11.c \
+           $(REPO_ROOT)/gfx/gfx_media_display.c \
            $(REPO_ROOT)/gfx/common/xinerama_common.c \
            $(REPO_ROOT)/gfx/modeline/modeline_core.c \
            $(REPO_ROOT)/gfx/modeline/modeline_monitor.c \

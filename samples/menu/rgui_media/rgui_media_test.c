@@ -340,6 +340,16 @@ int main(int argc, char **argv)
       if (media_picture_ready(rgui)) break;
       retro_sleep(1);
    }
+   MEDIA_CHECK("real decoder supplies the requested presentation path",
+         tick < 2000 && media_picture_ready(rgui));
+   if (media_failures) goto cleanup;
+   if (getenv("MEDIA_TEST_HW_DECODE"))
+      MEDIA_CHECK("movie uses the hardware decoder sink",
+            gpu_surface && rgui->media_gpu.anim_player
+            && ((gfx_surface_player_t*)rgui->media_gpu.anim_player)->hw_output_pixfmt
+            && rgui->media_gpu.anim_surface
+            && ((gfx_surface_t*)rgui->media_gpu.anim_surface)->imported);
+   if (media_failures) goto cleanup;
    if (folder)
    {
       MEDIA_CHECK("natural folder playback reaches next episode and stops",
@@ -351,21 +361,12 @@ int main(int argc, char **argv)
       goto cleanup;
    }
 
-   MEDIA_CHECK("real decoder supplies the requested presentation path",
-         tick < 2000 && media_picture_ready(rgui));
-   if (media_failures) goto cleanup;
    if (getenv("MEDIA_TEST_CADENCE_HZ"))
    {
       MEDIA_CHECK("movie timestamps supply stable source cadence",
             media_cadence_check(menu_st, &rgui->media, media_render));
    }
    if (media_failures) goto cleanup;
-   if (getenv("MEDIA_TEST_HW_DECODE"))
-      MEDIA_CHECK("movie uses the hardware decoder sink",
-            gpu_surface && rgui->media_gpu.anim_player
-            && ((gfx_surface_player_t*)rgui->media_gpu.anim_player)->hw_output_pixfmt
-            && rgui->media_gpu.anim_surface
-            && ((gfx_surface_t*)rgui->media_gpu.anim_surface)->imported);
    for (i = 0; i < VIDEO_SCALE_AREA(rgui->fs_thumbnail.dims); i++) pixels |= rgui->fs_thumbnail.data[i];
    MEDIA_CHECK("decoded movie picture is nonempty",
          gpu_surface ? rgui->media_gpu.texture != 0 : pixels != 0);

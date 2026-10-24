@@ -22,6 +22,67 @@
 #include "menu_cbs.h"
 #include "../gfx/video_defines.h"
 #include "../configuration.h"
+#include "../gfx/gfx_media_display.h"
+
+static gfx_media_mailbox_t menu_media_display_mailbox;
+static gfx_media_view_t menu_media_display_view;
+static menu_media_controls_t *menu_media_display_owner;
+static const void *menu_media_display_identity;
+static gfx_media_playback_state_t menu_media_display_source_state;
+
+static void menu_media_display_publish(menu_media_controls_t *media, bool clear)
+{
+   settings_t *settings = config_get_ptr();
+   bool desktop = settings->bools.media_player_refresh_rate
+      && !settings->uints.crt_switch_resolution;
+   if (!clear && (settings->bools.media_player_crt_switch || desktop)
+         && (media->controls.target.user || media->queue))
+   {
+      gfx_media_controls_t request;
+      const gfx_media_playback_state_t *state = &media->controls.playback;
+      unsigned dims;
+      float hz, previous_hz;
+      if (menu_media_display_owner != media
+            || (!media->queue
+               && (menu_media_display_identity != media->controls.target.identity
+                  || menu_media_display_source_state.dims != state->dims))
+            || state->seek_failed || state->cadence_unstable)
+      {
+         video_display_server_media_refresh(0, 0);
+         memset(&menu_media_display_source_state, 0,
+               sizeof(menu_media_display_source_state));
+      }
+      menu_media_display_owner = media;
+      menu_media_display_identity = media->controls.target.identity;
+      if (gfx_media_display_source(state, &dims, &hz)
+            && (!gfx_media_display_source(&menu_media_display_source_state,
+                  NULL, &previous_hz)
+               || dims != menu_media_display_source_state.dims
+               || hz < previous_hz * 0.9991f || hz > previous_hz * 1.0009f))
+         menu_media_display_source_state = *state;
+      video_display_server_media_refresh(
+            desktop ? menu_media_display_source_state.cadence_num : 0,
+            desktop ? menu_media_display_source_state.cadence_den : 0);
+      memset(&request, 0, sizeof(request));
+      request.target.user = media;
+      request.playback = menu_media_display_source_state;
+      gfx_media_controls_publish(&request, &menu_media_display_mailbox);
+   }
+   else if (menu_media_display_owner == media)
+   {
+      video_display_server_media_refresh(0, 0);
+      menu_media_display_owner = NULL;
+      menu_media_display_identity = NULL;
+      gfx_media_controls_publish(NULL, &menu_media_display_mailbox);
+   }
+}
+
+bool menu_media_controls_display(unsigned *dims, float *hz)
+{
+   gfx_media_controls_consume(&menu_media_display_mailbox,
+         &menu_media_display_view);
+   return gfx_media_display_source(&menu_media_display_view.playback, dims, hz);
+}
 
 bool menu_media_controls_continuous(menu_media_controls_t *media, bool shown)
 {
@@ -61,6 +122,7 @@ static bool menu_media_controls_settings(void *user)
    if (generic_action_ok_displaylist_push(NULL, NULL, "", 0,
             menu_st->selection_ptr, 0, ACTION_OK_DL_MEDIA_PLAYER_SETTINGS_LIST) != 0)
       return false;
+   menu_media_display_publish(media, true);
    if (hide)
       hide(hide_user);
    return true;
@@ -132,6 +194,7 @@ bool menu_media_controls_update(menu_media_controls_t *media,
          media->context_reset = false;
    }
    gfx_media_controls_publish(&media->controls, &media->mailbox);
+   menu_media_display_publish(media, false);
    return subtitle_changed;
 }
 
@@ -187,6 +250,7 @@ bool menu_media_controls_action(
       case MENU_ACTION_SCROLL_DOWN: command = GFX_MEDIA_SEEK_FORWARD; break;
       case MENU_ACTION_CANCEL:
       case MENU_ACTION_SELECT:
+         menu_media_display_publish(media, true);
          gfx_media_controls_cancel(&media->controls);
          return false;
       default: return true;
@@ -226,6 +290,7 @@ void menu_media_controls_subtitle_caption(const gfx_media_subtitle_view_t *view,
 
 void menu_media_controls_cancel(menu_media_controls_t *media)
 {
+   menu_media_display_publish(media, true);
    menu_media_queue_free(media->queue);
    media->queue = NULL;
    gfx_media_subtitle_free(media->subtitle);

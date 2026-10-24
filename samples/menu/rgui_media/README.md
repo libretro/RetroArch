@@ -43,3 +43,17 @@ The tested Windows NVIDIA driver fails the opt-in
 Default validation handle wrapping can expose the same delayed host-header
 read during submission. Keep that failed conformance result separate from
 normal playback and color checks; this runner does not disable validation.
+
+`--desktop-refresh` exercises measured fullscreen cadence, folder transitions,
+settings entry and exit, and unchanged core timing. `--refresh-pixels` also
+requires three changing movie-region captures, spaced 250 ms apart, on a
+native video driver. A static fixture must fail this pixel check. Captures
+3000-3002 exclude controls and clocks. These options do not prove a physical
+refresh change when the current mode already matches or the display refuses it.
+
+For a native Windows display-switch gate, set `MEDIA_TEST_REFRESH_RATE` to
+the expected advertised integer rate. The fixture checks it after cadence is
+published and when the next episode opens. Record the original named output
+mode before running and verify restoration afterward. Do not count an OS mode
+refusal as a physical-switch pass. Fractional X11 timing has separate live
+RandR tests; this Windows assertion uses the nominal EnumDisplaySettings rate.

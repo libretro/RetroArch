@@ -64,7 +64,7 @@ jobs:
       - name: Folder playback and fullscreen settings across all menus
         run: |
           for driver in rgui materialui xmb ozone; do
-            python3 samples/menu/rgui_media/run.py --c89 --fullscreen-settings --driver "$driver" samples/menu/rgui_media/fixture.mp4
+            python3 samples/menu/rgui_media/run.py --c89 --desktop-refresh --driver "$driver" samples/menu/rgui_media/fixture.mp4
             python3 samples/menu/rgui_media/run.py --c89 --continuous-error --driver "$driver" samples/menu/rgui_media/fixture.mp4
           done
       - name: External movies and internal image activation across all menus

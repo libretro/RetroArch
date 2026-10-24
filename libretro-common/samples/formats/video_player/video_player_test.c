@@ -1343,13 +1343,52 @@ static void lane_cadence(bool threaded, unsigned mode, bool hardware)
                : den >= 1334666 && den <= 1334667),
             "cadence: measured rate thread=%d hardware=%d mode=%u seen=%d rate=%u/%u",
             threaded, hardware, mode, k.nseen, num, den);
+      CHECK(!video_player_cadence_unstable(p), "cadence: stable evidence");
       CHECK(video_player_seek(p, 0), "cadence: seek accepted");
       CHECK(!video_player_cadence(p, &num, &den), "cadence: seek clears evidence");
+      CHECK(!video_player_cadence_unstable(p), "cadence: seek is not variable timing");
    }
    else
+   {
       CHECK(k.nseen == 60, "cadence: variable stream completes");
+      CHECK(video_player_cadence_unstable(p), "cadence: variable evidence");
+   }
    video_player_stop(p);
    CHECK(!video_player_cadence(p, &num, &den), "cadence: stopped player has no rate");
+   video_player_free(p);
+   video_player_worker_deinit();
+}
+
+static void lane_cadence_loops(bool threaded)
+{
+   fake_t f;
+   sink_t k;
+   video_player_sink_t s;
+   video_player_t *p;
+   unsigned num = 0, den = 0;
+   int tick, previous = 0;
+   fake_init(&f, 40, 42);
+   f.movie_ns = 2000000000;
+   f.frame_step_ns = 41708333;
+   sink_init(&k, &s, true);
+   p = video_player_new(&f, IMAGE_TYPE_MP4, 2, &s,
+         threaded ? 0 : VIDEO_PLAYER_INLINE);
+   CHECK(p != NULL, "cadence loops: allocation");
+   if (!p)
+      return;
+   for (tick = 0; tick < 4500 && k.nseen < 80; tick++)
+   {
+      video_player_poll(p, (int64_t)tick * 1000);
+      if (k.nseen != previous && k.nseen >= 33)
+         CHECK(video_player_cadence(p, &num, &den)
+               && !video_player_cadence_unstable(p)
+               && num == 32000000 && den >= 1334666 && den <= 1334667,
+               "cadence loops: audio tail is not variable picture timing");
+      previous = k.nseen;
+      if (threaded)
+         retro_sleep(1);
+   }
+   CHECK(k.nseen == 80, "cadence loops: both complete picture sequences");
    video_player_free(p);
    video_player_worker_deinit();
 }
@@ -1472,12 +1511,14 @@ int main(void)
 #ifdef HAVE_THREADS
    lane_terminal_error(true);
 #endif
+   lane_cadence_loops(false);
    lane_timestamp_precision(false);
    lane_cadence(false, 0, false);
    lane_cadence(false, 1, false);
    lane_cadence(false, 2, false);
    lane_cadence(false, 0, true);
 #ifdef HAVE_THREADS
+   lane_cadence_loops(true);
    lane_timestamp_precision(true);
    lane_cadence(true, 0, false);
    lane_cadence(true, 1, false);

@@ -69,6 +69,7 @@
 #include <compat/strl.h>
 
 #include "../video_display_server.h"
+#include "../gfx_media_display.h"
 #include "../common/win32_common.h"
 #ifdef HAVE_MODELINE
 #include "win32_modeline.h"
@@ -457,6 +458,17 @@ static bool win32_display_mode_matches(const DEVMODE *a, const DEVMODE *b)
    return true;
 }
 
+static void win32_display_mode_restore(win32_display_mode_t *mode)
+{
+   DEVMODE current;
+   if (win32_get_named_video_output(&current, -1, mode->device)
+         && win32_display_mode_matches(&current, &mode->applied)
+         && win32_change_display_settings((const char *)mode->device,
+            &mode->original, CDS_TEST) == DISP_CHANGE_SUCCESSFUL)
+      win32_change_display_settings((const char *)mode->device,
+            &mode->original, 0);
+}
+
 static void win32_display_server_restore_modes(dispserv_win32_t *serv)
 {
    win32_display_mode_t *mode = serv->modes;
@@ -464,15 +476,9 @@ static void win32_display_server_restore_modes(dispserv_win32_t *serv)
    while (mode)
    {
       win32_display_mode_t *next = mode->next;
-      DEVMODE current;
       /* Restore only the named output and only while our applied mode
        * remains current. A user or compositor change ends our ownership. */
-      if (win32_get_named_video_output(&current, -1, mode->device)
-            && win32_display_mode_matches(&current, &mode->applied)
-            && win32_change_display_settings((const char *)mode->device,
-               &mode->original, CDS_TEST) == DISP_CHANGE_SUCCESSFUL)
-         win32_change_display_settings((const char *)mode->device,
-               &mode->original, 0);
+      win32_display_mode_restore(mode);
       free(mode);
       mode = next;
    }
@@ -623,6 +629,113 @@ static bool win32_display_server_set_resolution(void *data,
    }
 
    return false;
+}
+
+/* A playback lease is separate from serv->modes: it restores the mode
+ * active just before playback, including a core's current fullscreen mode. */
+static void *win32_display_server_begin_media_refresh(void *data,
+      unsigned num, unsigned den)
+{
+   MONITORINFOEX mon;
+   HMONITOR monitor = NULL;
+   unsigned id = 0, i;
+   DEVMODE original, candidate, best;
+   video_display_config_t choices[2];
+   win32_display_mode_t *lease;
+   float selected, previous = 0.0f;
+   unsigned dims;
+   (void)data;
+
+   if (!data || !num || !den)
+      return NULL;
+   memset(&mon, 0, sizeof(mon));
+   win32_monitor_info(&mon, &monitor, &id);
+   if (!win32_get_named_video_output(&original, -1, mon.szDevice))
+      return NULL;
+   dims = VIDEO_SCALE_PACK(original.dmPelsWidth, original.dmPelsHeight);
+   memset(&best, 0, sizeof(best));
+   memset(choices, 0, sizeof(choices));
+   for (i = 0; win32_get_named_video_output(&candidate, i, mon.szDevice); i++)
+   {
+      if (candidate.dmPelsWidth != original.dmPelsWidth
+            || candidate.dmPelsHeight != original.dmPelsHeight
+            || candidate.dmBitsPerPel != original.dmBitsPerPel
+            || (candidate.dmDisplayFlags & DM_INTERLACED))
+         continue;
+#if _WIN32_WINNT >= 0x0500
+      if (candidate.dmDisplayOrientation != original.dmDisplayOrientation
+            || candidate.dmDisplayFixedOutput != original.dmDisplayFixedOutput)
+         continue;
+#endif
+      choices[0].dims = dims;
+      choices[0].bpp = original.dmBitsPerPel;
+      choices[0].refreshrate_float = previous;
+      choices[1] = choices[0];
+      choices[1].refreshrate_float = (float)candidate.dmDisplayFrequency;
+      selected = gfx_media_display_rate(choices, 2, dims,
+            original.dmBitsPerPel, num, den, (float)original.dmDisplayFrequency);
+      if (selected > 0.0f && selected != previous)
+      {
+         best = candidate;
+         previous = selected;
+      }
+   }
+#if _WIN32_WINNT >= 0x0500
+   best.dmPosition = original.dmPosition;
+#endif
+   if (!previous || win32_display_mode_matches(&best, &original))
+      return NULL;
+   lease = (win32_display_mode_t *)calloc(1, sizeof(*lease));
+   if (!lease)
+      return NULL;
+   lease->original = original;
+   lease->applied = best;
+   memcpy(lease->device, mon.szDevice, sizeof(lease->device));
+   if (win32_change_display_settings((const char *)lease->device,
+            &lease->applied, CDS_TEST) != DISP_CHANGE_SUCCESSFUL
+         || win32_change_display_settings((const char *)lease->device,
+            &lease->applied, 0) != DISP_CHANGE_SUCCESSFUL)
+   {
+      free(lease);
+      return NULL;
+   }
+   return lease;
+}
+
+static void win32_display_server_end_media_refresh(void *data, void *handle)
+{
+   win32_display_mode_t *lease = (win32_display_mode_t *)handle;
+   (void)data;
+   if (!lease)
+      return;
+   win32_display_mode_restore(lease);
+   free(lease);
+}
+
+static bool win32_display_server_media_refresh_current(void *data, void *handle,
+      unsigned num, unsigned den)
+{
+   win32_display_mode_t *lease = (win32_display_mode_t *)handle;
+   MONITORINFOEX mon;
+   HMONITOR monitor = NULL;
+   unsigned id = 0;
+   DEVMODE current;
+   video_display_config_t mode;
+   (void)data;
+   if (!lease)
+      return false;
+   memset(&mode, 0, sizeof(mode));
+   mode.dims = VIDEO_SCALE_PACK(lease->applied.dmPelsWidth, lease->applied.dmPelsHeight);
+   mode.bpp = lease->applied.dmBitsPerPel;
+   mode.refreshrate = lease->applied.dmDisplayFrequency;
+   if (!gfx_media_display_rate(&mode, 1, mode.dims, mode.bpp, num, den,
+            (float)mode.refreshrate))
+      return false;
+   memset(&mon, 0, sizeof(mon));
+   win32_monitor_info(&mon, &monitor, &id);
+   return !memcmp(mon.szDevice, lease->device, sizeof(lease->device))
+      && win32_get_named_video_output(&current, -1, lease->device)
+      && win32_display_mode_matches(&current, &lease->applied);
 }
 
 /* Display resolution list qsort helper function */
@@ -1747,5 +1860,8 @@ const video_display_server_t dispserv_win32 = {
    win32_display_server_get_edid,
    win32_display_server_idle_wait,
    "win32",
-   win32_display_server_get_window_refresh_rate
+   win32_display_server_get_window_refresh_rate,
+   win32_display_server_begin_media_refresh,
+   win32_display_server_end_media_refresh,
+   win32_display_server_media_refresh_current
 };

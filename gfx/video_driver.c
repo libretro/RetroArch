@@ -41,6 +41,13 @@
 #include "../cores/internal_cores.h"
 #include "video_driver.h"
 #include "video_hdr_metadata.h"
+#include "gfx_media_display.h"
+#if defined(HAVE_X11) && defined(HAVE_XRANDR)
+#include "common/x11_common.h"
+#endif
+#if defined(HAVE_MENU) && defined(HAVE_MODELINE)
+#include "../menu/menu_media_controls.h"
+#endif
 #include "gfx_instrument.h"
 #ifdef HAVE_OPENXR
 #include "video_xr.h"
@@ -802,6 +809,11 @@ const video_driver_t *video_drivers[] = {
 };
 
 static video_driver_state_t video_driver_st;
+static gfx_media_display_owner_t video_media_refresh_owner;
+static retro_atomic_int_t video_media_refresh_output_changed = RETRO_ATOMIC_INT_INITIALIZER(0);
+#if defined(HAVE_X11) && defined(HAVE_XRANDR)
+static int video_media_x11_serial;
+#endif
 static const video_display_server_t *current_display_server =
 &dispserv_null;
 
@@ -2876,12 +2888,40 @@ void *video_display_server_init(enum rarch_display_type type)
    return data;
 }
 
+void video_display_server_media_refresh(unsigned num, unsigned den)
+{
+   void *data;
+   const video_display_server_t *server;
+   bool changed = retro_atomic_exchange_int(&video_media_refresh_output_changed, 0) != 0;
+#if defined(HAVE_X11) && defined(HAVE_XRANDR)
+   int serial;
+#endif
+   if (!num || !den)
+   {
+      gfx_media_display_owner_reset(&video_media_refresh_owner);
+      return;
+   }
+#if defined(HAVE_X11) && defined(HAVE_XRANDR)
+   serial = retro_atomic_load_acquire_int(&g_x11_refresh_serial);
+   if (serial != video_media_x11_serial)
+   {
+      video_media_x11_serial = serial;
+      video_driver_st.window_refresh_known = false;
+      changed = true;
+   }
+#endif
+   server = video_display_server_modes(&data);
+   gfx_media_display_owner_update(&video_media_refresh_owner,
+         server, data, num, den, changed);
+}
+
 void video_display_server_destroy(void)
 {
    video_driver_state_t *video_st                 = &video_driver_st;
    const enum rotation initial_screen_orientation = video_st->initial_screen_orientation;
    const enum rotation current_screen_orientation = video_st->current_screen_orientation;
 
+   video_display_server_media_refresh(0, 0);
    if (initial_screen_orientation != current_screen_orientation)
       video_display_server_set_screen_orientation(initial_screen_orientation);
 
@@ -7763,6 +7803,7 @@ float video_driver_get_window_refresh_rate(void)
 
 void video_driver_window_output_changed(void)
 {
+   retro_atomic_store_release_int(&video_media_refresh_output_changed, 1);
    video_driver_st.window_refresh_known = false;
 }
 
@@ -9757,7 +9798,23 @@ if (!VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st))
    if (video_info.crt_switch_resolution)
    {
       unsigned native_width     = width;
+      float source_hz           = video_st->core_hz;
+      bool source_rotated       = (rotation & 1) != 0;
       bool dynamic_super_width  = false;
+#if defined(HAVE_MENU)
+      unsigned media_dims;
+      float media_hz;
+      if ((video_info.menu_st_flags & MENU_ST_FLAG_ALIVE)
+            && config_get_ptr()->bools.media_player_crt_switch
+            && menu_media_controls_display(&media_dims, &media_hz))
+      {
+         native_width = VIDEO_SCALE_W(media_dims);
+         width = native_width;
+         height = VIDEO_SCALE_H(media_dims);
+         source_hz = media_hz;
+         source_rotated = false;
+      }
+#endif
 
       retro_atomic_store_release_int(&video_st->crt_switching_active, 1);
 
@@ -9778,8 +9835,8 @@ if (!VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st))
       crt_switch_res_core(
             &video_st->crt_switch_st,
             native_width, VIDEO_SCALE_PACK(width, height),
-            video_st->core_hz,
-            rotation & 1,
+            source_hz,
+            source_rotated,
             video_info.crt_switch_resolution,
             video_info.crt_switch_center_adjust,
             video_info.crt_switch_porch_adjust,

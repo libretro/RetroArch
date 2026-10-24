@@ -1041,9 +1041,14 @@ bool x11_alive(void *data)
 
          case ConfigureNotify:
             if (event.xconfigure.window == g_x11_win)
+            {
                retro_atomic_store_relaxed_int(&g_x11_size,
                      (int)VIDEO_SCALE_PACK(event.xconfigure.width,
                         event.xconfigure.height));
+#ifdef HAVE_XRANDR
+               x11_refresh_invalidate();
+#endif
+            }
             break;
 
          /* Grabs leave the focus where it was. */

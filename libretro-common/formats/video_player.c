@@ -112,7 +112,7 @@ struct video_player
    int64_t cadence_last;
    unsigned cadence_count, cadence_sum, cadence_min, cadence_max;
    unsigned cadence_span;
-   bool presented, completed, ended, cadence_seen;
+   bool presented, completed, ended, cadence_seen, cadence_unstable;
    bool inline_ready, inline_finished;
    video_player_frame_t inline_frame;
    int64_t movie_us;       /* immutable full movie period, or zero */
@@ -263,7 +263,7 @@ static void vp_copy_frame(uint32_t *dst, const uint32_t *src,
 
 static void vp_cadence_reset(video_player_t *p)
 {
-   p->cadence_seen = false;
+   p->cadence_seen = p->cadence_unstable = false;
    p->cadence_count = p->cadence_sum = p->cadence_span = 0;
 }
 
@@ -274,6 +274,7 @@ static void vp_cadence_present(video_player_t *p, int64_t time_us)
    if (time_us < 0)
    {
       vp_cadence_reset(p);
+      p->cadence_unstable = true;
       return;
    }
    if (!p->cadence_seen)
@@ -282,19 +283,31 @@ static void vp_cadence_present(video_player_t *p, int64_t time_us)
       p->cadence_last = time_us;
       return;
    }
+   /* An audio-only loop tail does not describe picture cadence. */
+   if (p->movie_us > 0
+         && time_us / p->movie_us != p->cadence_last / p->movie_us)
+   {
+      p->cadence_last = time_us;
+      p->cadence_count = p->cadence_sum = 0;
+      return;
+   }
    delta = time_us > p->cadence_last
       ? (uint64_t)time_us - (uint64_t)p->cadence_last : 0;
    p->cadence_last = time_us;
    if (delta < 4000 || delta > 200000)
    {
       p->cadence_count = p->cadence_sum = p->cadence_span = 0;
+      p->cadence_unstable = true;
       return;
    }
    interval = (unsigned)delta;
    if (p->cadence_span
          && (interval * 32 + 32000 < p->cadence_span
             || interval * 32 > p->cadence_span + 32000))
+   {
       p->cadence_span = 0;
+      p->cadence_unstable = true;
+   }
    if (!p->cadence_count)
       p->cadence_min = p->cadence_max = interval;
    else
@@ -306,6 +319,7 @@ static void vp_cadence_present(video_player_t *p, int64_t time_us)
       if (p->cadence_max - p->cadence_min > 1000)
       {
          p->cadence_count = p->cadence_sum = p->cadence_span = 0;
+         p->cadence_unstable = true;
          p->cadence_min = p->cadence_max = interval;
       }
    }
@@ -313,6 +327,7 @@ static void vp_cadence_present(video_player_t *p, int64_t time_us)
    if (++p->cadence_count == 32)
    {
       p->cadence_span = p->cadence_sum;
+      p->cadence_unstable = false;
       p->cadence_count = p->cadence_sum = 0;
    }
 }
@@ -1189,6 +1204,11 @@ bool video_player_set_repeat(video_player_t *p, bool repeat)
    p->initial_loops = repeat ? -1 : 1;
    retro_atomic_store_release_int(&p->repeat_request, p->initial_loops);
    return true;
+}
+
+bool video_player_cadence_unstable(const video_player_t *p)
+{
+   return p && p->movie_us && p->cadence_unstable;
 }
 
 bool video_player_cadence(const video_player_t *p,

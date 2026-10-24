@@ -10,6 +10,7 @@ REPO_ROOT := ../../..
 
 SOURCES := display_servers_x11_live_test.c \
            $(REPO_ROOT)/gfx/display_servers/dispserv_x11.c \
+           $(REPO_ROOT)/gfx/gfx_media_display.c \
            $(REPO_ROOT)/gfx/common/xinerama_common.c \
            $(REPO_ROOT)/gfx/modeline/modeline_core.c \
            $(REPO_ROOT)/gfx/modeline/modeline_monitor.c \
@@ -38,15 +39,17 @@ VPATH := $(sort $(dir $(SOURCES)))
 # The driver and the test take the verbosity.h functions the test
 # defines, not the standalone macros; -include would rewrite the
 # prototypes. Only the engine objects get live_log.h.
-NO_MACROS := $(filter-out -include live_log.h -DMODELINE_STANDALONE,$(CFLAGS))
-obj/dispserv_x11.o obj/xinerama_common.o: CFLAGS := $(NO_MACROS)
-obj/display_servers_x11_live_test.o: CFLAGS := $(NO_MACROS)
-obj/compat_strl.o: CFLAGS := $(NO_MACROS)
 
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
+
+NO_MACROS := $(filter-out -include live_log.h -DMODELINE_STANDALONE,$(CFLAGS))
+obj/dispserv_x11.o obj/xinerama_common.o: CFLAGS := $(NO_MACROS)
+obj/dispserv_x11.o: CFLAGS += -DXRRSetCrtcConfig=live_XRRSetCrtcConfig
+obj/display_servers_x11_live_test.o: CFLAGS := $(NO_MACROS)
+obj/compat_strl.o: CFLAGS := $(NO_MACROS)
 
 all: $(TARGET)
 

@@ -880,7 +880,7 @@ jobs:
         shell: msys2 {0}
         run: |
           set -eu
-          python3 samples/menu/rgui_media/run.py --driver rgui --video-driver ${{ matrix.driver }} --gpu-surface --fullscreen-settings samples/menu/rgui_media/fixture.mp4
+          python3 samples/menu/rgui_media/run.py --driver rgui --video-driver ${{ matrix.driver }} --gpu-surface --refresh-pixels samples/menu/rgui_media/fixture.mp4
           python3 samples/menu/rgui_media/run.py --driver rgui --video-driver ${{ matrix.driver }} --gpu-surface --continuous-error samples/menu/rgui_media/fixture.mp4
 
   views-sdl3:

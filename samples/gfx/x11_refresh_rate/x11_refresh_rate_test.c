@@ -31,6 +31,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <math.h>
+#include <poll.h>
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -267,6 +268,30 @@ int main(void)
    printf("pumped: %lu requests over 1000 asks\n", sent);
    CHECK(sent == 0, "pumped: no request over 1000 asks");
    CHECK(fabs(rate() - r0) < 0.001f, "pumped: same rate as the server's");
+
+   {
+      XWindowAttributes attrs;
+      unsigned attempt;
+      int serial = retro_atomic_load_acquire_int(&g_x11_refresh_serial);
+      CHECK(XGetWindowAttributes(g_x11_dpy, g_x11_win, &attrs),
+            "window geometry is available before movement");
+      XMoveWindow(g_x11_dpy, g_x11_win, attrs.x + 17, attrs.y + 19);
+      for (attempt = 0; attempt < 100; attempt++)
+      {
+         struct pollfd event;
+         pump();
+         if (retro_atomic_load_acquire_int(&g_x11_refresh_serial) != serial)
+            break;
+         event.fd = ConnectionNumber(g_x11_dpy);
+         event.events = POLLIN;
+         event.revents = 0;
+         poll(&event, 1, 20);
+      }
+      CHECK(retro_atomic_load_acquire_int(&g_x11_refresh_serial) != serial,
+            "window movement publishes an output change");
+      (void)rate();
+      CHECK(requests_over(1000) == 0, "moved: no request over 1000 stable asks");
+   }
 
    /* A 50 Hz mode at the desktop size, from another client. */
    res = XRRGetScreenResourcesCurrent(other, DefaultRootWindow(other));

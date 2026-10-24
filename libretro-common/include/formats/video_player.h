@@ -163,18 +163,20 @@ void video_player_free(video_player_t *p);
  * True: free() will not wait. A stopped player cannot resume. */
 bool video_player_stop(video_player_t *p);
 
-/* Advances the playback to @now_us (any monotonic microsecond clock,
- * the same one every call): starts decodes, presents the frame that is
- * due. */
 /* Polling owner: changes loop policy at the next clean movie EOF. */
 bool video_player_set_repeat(video_player_t *p, bool repeat);
-/* Clean finite EOF after the final picture duration, excluding failures. */
+/* Invalid timing or a rate change; cleared after fresh stable evidence. */
+bool video_player_cadence_unstable(const video_player_t *player);
 /* Measured from 32 stable movie timestamp intervals. Polling-thread only. */
 bool video_player_cadence(const video_player_t *player,
       unsigned *numerator, unsigned *denominator);
 
+/* Clean finite EOF after the final picture duration, excluding failures. */
 bool video_player_completed(const video_player_t *p);
 
+/* Advances the playback to @now_us (any monotonic microsecond clock,
+ * the same one every call): starts decodes, presents the frame that is
+ * due. */
 enum video_player_state video_player_poll(video_player_t *p, int64_t now_us);
 
 /* Polling-thread transport primitive. Pausing keeps the current picture
