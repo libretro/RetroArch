@@ -1220,11 +1220,12 @@ static void lane_delayed_slot_releases(void)
    sink_t k;
    video_player_sink_t sink;
    video_player_t *player;
-   unsigned tick;
+   unsigned tick, released = 4, i;
+   enum video_player_state state = VIDEO_PLAYER_PLAYING;
    fake_init(&f, 8, 10);
    sink_init(&k, &sink, true);
    k.queue_every = 1;
-   player = video_player_new(&f, IMAGE_TYPE_WEBM, 1, &sink, 0);
+   player = video_player_new(&f, IMAGE_TYPE_WEBM, 2, &sink, 0);
    CHECK(player != NULL, "delayed release: allocation");
    if (!player) return;
    for (tick = 0; tick < 1000 && k.nseen < 2; tick++)
@@ -1243,6 +1244,25 @@ static void lane_delayed_slot_releases(void)
    }
    CHECK(k.nseen == 4 && !k.bad_px,
          "delayed release: decoding resumes after both releases");
+   k.held = -1;
+   video_player_slot_released(player, 0);
+   video_player_slot_released(player, 1);
+   for (; tick < 4000 && state != VIDEO_PLAYER_ENDED; tick++)
+   {
+      state = video_player_poll(player, (int64_t)tick * 10000);
+      if (k.nseen >= (int)released + 2)
+      {
+         released = (unsigned)k.nseen;
+         k.held = -1;
+         video_player_slot_released(player, 0);
+         video_player_slot_released(player, 1);
+      }
+      retro_sleep(1);
+   }
+   CHECK(state == VIDEO_PLAYER_ENDED && k.nseen == 16,
+         "delayed release: exactly two complete loops");
+   for (i = 0; i < 16 && i < (unsigned)k.nseen; i++)
+      CHECK(k.seen[i] == (int)(i % 8), "delayed release: frame order");
    k.held = -1;
    video_player_slot_released(player, 0);
    video_player_slot_released(player, 1);
