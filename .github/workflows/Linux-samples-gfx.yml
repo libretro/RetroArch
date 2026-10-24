@@ -1486,9 +1486,10 @@ jobs:
                 LSAN_OPTIONS=suppressions=lsan.supp \
                 timeout 120 ./display_servers_sdl2_live_test)
           echo "[pass] display_servers_sdl2_live_test"
-          # The SDL3 server against an SDL3 built from a pinned release
-          # (the runner image ships no libsdl3-dev): video and events
-          # only, X11 backend.
+          # The SDL3 server, audio driver and keyboard against an SDL3
+          # built from a pinned release (the runner image ships no
+          # libsdl3-dev): video, events and the dummy audio device, X11
+          # backend.
           SDL3_VER=3.2.20
           if [ ! -f /opt/sdl3/lib/pkgconfig/sdl3.pc ]; then
              curl -sL -o /tmp/sdl3.tar.gz \
@@ -1496,7 +1497,7 @@ jobs:
              tar -C /tmp -xzf /tmp/sdl3.tar.gz
              cmake -S "/tmp/SDL3-$SDL3_VER" -B /tmp/sdl3-build -G Ninja \
                 -DCMAKE_BUILD_TYPE=Release -DSDL_SHARED=ON -DSDL_STATIC=OFF \
-                -DSDL_TESTS=OFF -DSDL_EXAMPLES=OFF -DSDL_AUDIO=OFF -DSDL_CAMERA=OFF \
+                -DSDL_TESTS=OFF -DSDL_EXAMPLES=OFF -DSDL_AUDIO=ON -DSDL_CAMERA=OFF \
                 -DSDL_WAYLAND=OFF -DSDL_X11=ON -DSDL_OPENGL=OFF -DSDL_OPENGLES=OFF \
                 -DSDL_VULKAN=OFF -DSDL_RENDER=OFF -DCMAKE_INSTALL_PREFIX=/opt/sdl3 \
                 > /tmp/sdl3-cmake.log
@@ -1510,6 +1511,22 @@ jobs:
                 LSAN_OPTIONS=suppressions=lsan.supp \
                 timeout 120 ./display_servers_sdl3_live_test)
           echo "[pass] display_servers_sdl3_live_test"
+          (cd samples/audio/sdl3_counters \
+             && PKG_CONFIG_PATH=/opt/sdl3/lib/pkgconfig make clean all SANITIZER=address,undefined \
+             && LD_LIBRARY_PATH=/opt/sdl3/lib SDL_AUDIO_DRIVER=dummy \
+                ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+                LSAN_OPTIONS=suppressions=../../gfx/display_servers_sdl3_live/lsan.supp \
+                timeout 120 ./sdl3_counters_test \
+             && make clean)
+          echo "[pass] sdl3_counters_test"
+          (cd samples/input/sdl3_keyboard \
+             && PKG_CONFIG_PATH=/opt/sdl3/lib/pkgconfig make clean all SANITIZER=address,undefined \
+             && LD_LIBRARY_PATH=/opt/sdl3/lib \
+                ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+                LSAN_OPTIONS=suppressions=../../gfx/display_servers_sdl3_live/lsan.supp \
+                timeout 120 ./sdl3_keyboard_test \
+             && make clean)
+          echo "[pass] sdl3_keyboard_test"
           # The Win32 server, its vendor timing paths and the engine
           # cross-built with mingw-w64 and run under Wine on the same
           # display: Wine backs EnumDisplaySettingsExA and

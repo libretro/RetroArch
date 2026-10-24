@@ -134,6 +134,7 @@ static bool test_device(void)
    size_t    i, under_open, under_fed, under_starved, under_reopen;
    int16_t  *buf;
    void     *ctx;
+   SDL_AudioStream *stream;
 
    if (!(ctx = d->init(NULL, OUT_RATE, LATENCY_MS, &out_rate)))
    {
@@ -192,8 +193,12 @@ static bool test_device(void)
    /* A device migration opens a new stream under the same driver;
     * what the frontend has already seen must still hold. */
    under_starved += under_fed;
+   stream = ((sdl3_audio_t*)ctx)->stream;
    if (sdl3_audio_reopen_default((sdl3_audio_t*)ctx))
    {
+      /* The main thread may be reading the stream as it reopens */
+      CHECK(((sdl3_audio_t*)ctx)->stream == stream,
+            "a reopen replaced the stream other threads read");
       under_reopen = d->underruns(ctx);
       printf("after reopen:  %u underruns\n", (unsigned)under_reopen);
       CHECK(under_reopen >= under_starved,

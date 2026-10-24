@@ -228,19 +228,19 @@ static struct string_list *sdl3_audio_device_list(bool recording)
 }
 
 /**
- * Opens the given audio device.
+ * Opens the given audio device, paused.
  *
  * It is configured to match native hardware rates to avoid
  * resampling, and sets low-latency buffer periods.
  */
-static SDL_AudioStream *sdl3_audio_open_stream(const char *device,
+static SDL_AudioDeviceID sdl3_audio_open_device(const char *device,
       bool recording, unsigned rate, unsigned latency, int channels,
       SDL_AudioSpec *spec, int *period_frames)
 {
    int frames;
    char frames_str[16];
    const char *device_name = NULL;
-   SDL_AudioStream *stream = NULL;
+   SDL_AudioDeviceID logdev = 0;
    SDL_AudioSpec device_spec = {0};
    int device_sample_frames = 0;
    SDL_AudioDeviceID devid = sdl3_audio_find_device(device, recording);
@@ -263,20 +263,21 @@ static SDL_AudioStream *sdl3_audio_open_stream(const char *device,
          ? SDL_AUDIO_S16 : SDL_AUDIO_F32;
    spec->channels = channels;
 
-   stream = SDL_OpenAudioDeviceStream(devid, spec, NULL, NULL);
+   logdev = SDL_OpenAudioDevice(devid, spec);
 
    /* Audio hints are global, so clear it now that we've used it. */
    SDL_ResetHint(SDL_HINT_AUDIO_DEVICE_SAMPLE_FRAMES);
-   if (!stream)
+   if (!logdev)
    {
       RARCH_ERR("[SDL3 audio] failed to open SDL audio %s device: %s.\n",
             recording ? "input" : "output", SDL_GetError());
-      return NULL;
+      return 0;
    }
+   SDL_PauseAudioDevice(logdev);
 
    /* Retrieve the device information to set the period_frames. */
-   if (!SDL_GetAudioDeviceFormat(SDL_GetAudioStreamDevice(stream),
-         &device_spec, &device_sample_frames))
+   if (!SDL_GetAudioDeviceFormat(logdev, &device_spec,
+         &device_sample_frames))
       device_sample_frames = frames;
    *period_frames = device_sample_frames;
 
@@ -289,6 +290,36 @@ static SDL_AudioStream *sdl3_audio_open_stream(const char *device,
          SDL_AUDIO_BITSIZE(spec->format),
          SDL_AUDIO_ISFLOAT(spec->format) ? "floating-point" : "integer",
          rate, frames, spec->freq, device_sample_frames);
+
+   return logdev;
+}
+
+/**
+ * Opens the given audio device with a stream bound to it. Not a
+ * device stream: the stream outlives a lost device, rebound to
+ * another, so a thread querying it never finds it freed.
+ */
+static SDL_AudioStream *sdl3_audio_open_stream(const char *device,
+      bool recording, unsigned rate, unsigned latency, int channels,
+      SDL_AudioSpec *spec, int *period_frames)
+{
+   SDL_AudioStream *stream = NULL;
+   SDL_AudioDeviceID logdev = sdl3_audio_open_device(device, recording,
+         rate, latency, channels, spec, period_frames);
+
+   if (!logdev)
+      return NULL;
+
+   if (     !(stream = SDL_CreateAudioStream(spec, spec))
+         || !SDL_BindAudioStream(logdev, stream))
+   {
+      RARCH_ERR("[SDL3 audio] failed to bind SDL audio %s stream: %s.\n",
+            recording ? "input" : "output", SDL_GetError());
+      if (stream)
+         SDL_DestroyAudioStream(stream);
+      SDL_CloseAudioDevice(logdev);
+      return NULL;
+   }
 
    return stream;
 }
@@ -409,7 +440,12 @@ static void sdl3_audio_destroy_context(sdl3_audio_t *ctx)
    SDL_RemoveEventWatch(sdl3_audio_device_removed_watch, ctx);
 
    if (ctx->stream)
+   {
+      SDL_AudioDeviceID logdev = SDL_GetAudioStreamDevice(ctx->stream);
       SDL_DestroyAudioStream(ctx->stream);
+      if (logdev)
+         SDL_CloseAudioDevice(logdev);
+   }
 #ifdef HAVE_THREADS
    if (ctx->park_init)
       retro_eventcount_free(&ctx->park);
@@ -610,6 +646,19 @@ static size_t sdl3_audio_frames_consumed(void *data)
    return (waiting < put) ? put - waiting : 0;
 }
 
+/* SDL finishes a device's removal, and sends its events, from the
+ * main thread's event pump. Without an SDL3 window nothing else pumps. */
+static void sdl3_audio_pump_events(void)
+{
+   if (SDL_WasInit(SDL_INIT_VIDEO) || !SDL_IsMainThread())
+      return;
+   SDL_PumpEvents();
+   /* The watch has seen them; nothing else reads them */
+   SDL_FlushEvents(SDL_EVENT_TERMINATING, SDL_EVENT_SYSTEM_THEME_CHANGED);
+   SDL_FlushEvents(SDL_EVENT_AUDIO_DEVICE_ADDED,
+         SDL_EVENT_AUDIO_DEVICE_FORMAT_CHANGED);
+}
+
 static size_t sdl3_audio_write_avail(void *data)
 {
    int queued;
@@ -617,6 +666,8 @@ static size_t sdl3_audio_write_avail(void *data)
 
    if (!sdl)
       return 0;
+
+   sdl3_audio_pump_events();
 
    queued = SDL_GetAudioStreamQueued(sdl->stream);
    if (queued < 0)
@@ -674,27 +725,35 @@ static bool sdl3_audio_reopen_default(sdl3_audio_t *sdl)
 {
    SDL_AudioSpec spec = {0};
    int device_sample_frames = 0;
-   SDL_AudioStream *stream = NULL;
+   SDL_AudioDeviceID old = SDL_GetAudioStreamDevice(sdl->stream);
+   SDL_AudioDeviceID logdev;
 
    RARCH_WARN("[SDL3 audio] Reopening output on the default device.\n");
 
-   stream = sdl3_audio_open_stream(NULL, false, (unsigned)sdl->spec.freq,
+   /* The stream itself is kept: write_avail() may be reading it on
+    * the main thread. Only its device changes. */
+   SDL_UnbindAudioStream(sdl->stream);
+   if (old)
+      SDL_CloseAudioDevice(old);
+   SDL_ClearAudioStream(sdl->stream);
+
+   logdev = sdl3_audio_open_device(NULL, false, (unsigned)sdl->spec.freq,
          sdl->latency, 2, &spec, &device_sample_frames);
-   if (stream && !SDL_SetAudioStreamFormat(stream, &sdl->spec, NULL))
+   if (     logdev
+         && (  !SDL_SetAudioStreamFormat(sdl->stream, &sdl->spec, NULL)
+            || !SDL_BindAudioStream(logdev, sdl->stream)))
    {
-      SDL_DestroyAudioStream(stream);
-      stream = NULL;
+      SDL_CloseAudioDevice(logdev);
+      logdev = 0;
    }
 
-   if (!stream)
+   if (!logdev)
    {
       RARCH_ERR("[SDL3 audio] Failed to reopen on the default device, waiting for one to be added.\n");
       SDL_SetAtomicInt(&sdl->defunct, 1);
       return false;
    }
 
-   SDL_DestroyAudioStream(sdl->stream);
-   sdl->stream        = stream;
    sdl->period_frames = device_sample_frames;
    sdl3_audio_prime_stream(sdl);
 
@@ -714,6 +773,7 @@ static bool sdl3_audio_reopen_default(sdl3_audio_t *sdl)
  */
 static bool sdl3_audio_stream_ok(sdl3_audio_t *sdl)
 {
+   sdl3_audio_pump_events();
    if (SDL_GetAtomicInt(&sdl->defunct))
       return false;
    if (SDL_GetAtomicInt(&sdl->device_removed))
@@ -895,7 +955,9 @@ static bool sdl3_audio_stop(void *data)
    sdl3_audio_t *sdl = (sdl3_audio_t*)data;
    if (!sdl)
       return false;
-   return SDL_PauseAudioStreamDevice(sdl->stream);
+   /* No device while a lost one waits for another: nothing to pause */
+   return SDL_PauseAudioStreamDevice(sdl->stream)
+      || !SDL_GetAudioStreamDevice(sdl->stream);
 }
 
 static bool sdl3_audio_alive(void *data)
@@ -911,7 +973,9 @@ static bool sdl3_audio_start(void *data, bool is_shutdown)
    sdl3_audio_t *sdl = (sdl3_audio_t*)data;
    if (!sdl)
       return false;
-   return SDL_ResumeAudioStreamDevice(sdl->stream);
+   /* The reopen resumes it once a device is back */
+   return SDL_ResumeAudioStreamDevice(sdl->stream)
+      || !SDL_GetAudioStreamDevice(sdl->stream);
 }
 
 static void sdl3_audio_set_nonblock_state(void *data, bool state)

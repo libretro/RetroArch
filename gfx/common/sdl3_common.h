@@ -73,7 +73,15 @@ typedef struct _sdl3_video
 
    SDL_Renderer *renderer;
 
-   /* Display draw geometry, grown to the largest draw */
+   /* The largest swap interval the renderer took at init */
+   unsigned swap_interval_cap;
+
+   /* Resolution steps asked for on the main thread, taken on the
+    * video thread */
+   retro_atomic_int_t mode_step;
+
+   /* What SDL_RenderGeometry is handed, grown to the largest batch:
+    * the display draws, and the interlaced placement's rows */
    SDL_Vertex *display_verts;
    int *display_indices;
    size_t display_verts_cap;
@@ -113,6 +121,8 @@ typedef struct _sdl3_video
       retro_atomic_int_t    allowed;
       retro_atomic_int_t    fallback;
       bool                  tried;
+      /* A view could not be written at frame_dims: draw whole */
+      bool                  write_failed;
       /* The premultiplied blend the UI layer is placed with */
       bool                  layer;
       bool                  active;
@@ -192,7 +202,8 @@ void sdl3_show_mouse(void *data, bool state);
 
 /* Returns the active SDL_Window, whether it belongs to the sdl3
  * video driver or one of the gl/vk sdl3 context drivers. NULL when
- * SDL3 isn't driving the window. */
+ * SDL3 isn't driving the window. Under threaded video it is made on
+ * the video thread; only sdl3_pump_input_events pumps its queue. */
 SDL_Window *sdl3_get_window(void);
 
 /* True when SDL_StartTextInput() on this device pops up a system

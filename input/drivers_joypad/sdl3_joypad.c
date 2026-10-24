@@ -586,6 +586,9 @@ static void sdl3_joypad_poll(void)
    SDL_Event event;
 
    sdl3_pump_input_events();
+   /* Detects devices too: before the read, so the flush below can't
+    * drop what it adds. */
+   SDL_UpdateGamepads();
 
    while (SDL_PeepEvents(&event, 1, SDL_GETEVENT,
             SDL_EVENT_JOYSTICK_ADDED, SDL_EVENT_JOYSTICK_REMOVED) > 0)
@@ -601,10 +604,11 @@ static void sdl3_joypad_poll(void)
       }
    }
 
-   SDL_UpdateGamepads();
-
-   /* Flush all remaining gamepad/joystick input events, since we handle it directly. */
-   SDL_FlushEvents(SDL_EVENT_JOYSTICK_AXIS_MOTION, SDL_EVENT_GAMEPAD_STEAM_HANDLE_UPDATED);
+   /* Flush all remaining gamepad/joystick input events, since we handle
+    * it directly. Hotplug is left for the next poll. */
+   SDL_FlushEvents(SDL_EVENT_JOYSTICK_AXIS_MOTION, SDL_EVENT_JOYSTICK_BUTTON_UP);
+   SDL_FlushEvents(SDL_EVENT_JOYSTICK_BATTERY_UPDATED,
+         SDL_EVENT_GAMEPAD_STEAM_HANDLE_UPDATED);
 }
 
 static bool sdl3_joypad_set_rumble(unsigned pad,

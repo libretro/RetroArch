@@ -52,6 +52,7 @@
 #include "../gfx_display.h"
 #include "../video_thread_wrapper.h"
 
+#include "../../config.def.h"
 #include "../../configuration.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
@@ -94,13 +95,22 @@ static bool sdl3_init_renderer(sdl3_video_t *vid)
    if (SDL_SetRenderVSync(vid->renderer, SDL_RENDERER_VSYNC_ADAPTIVE))
       vid->flags |= SDL3_FLAG_ADAPTIVE_VSYNC;
 
+   /* The largest interval the renderer takes, found the same way, so
+    * auto swap interval never picks one presented at 1. */
+   for (vid->swap_interval_cap = MAXIMUM_SWAP_INTERVAL;
+         vid->swap_interval_cap > 1;
+         vid->swap_interval_cap--)
+      if (SDL_SetRenderVSync(vid->renderer, (int)vid->swap_interval_cap))
+         break;
+
    /* Get the desired vsync setting from the config. */
    vsync = vid->video.vsync ?
          ((vid->video.swap_interval > 0) ? vid->video.swap_interval : 1) :
          SDL_RENDERER_VSYNC_DISABLED;
 
    if (!SDL_SetRenderVSync(vid->renderer, vsync) && vsync != SDL_RENDERER_VSYNC_DISABLED)
-      SDL_SetRenderVSync(vid->renderer, 1);
+      SDL_SetRenderVSync(vid->renderer, (vsync > (int)vid->swap_interval_cap)
+            ? (int)vid->swap_interval_cap : 1);
 
    SDL_SetRenderDrawColor(vid->renderer, 0, 0, 0, 255);
 
@@ -292,10 +302,19 @@ error:
    return NULL;
 }
 
+static void sdl3_cycle_video_mode(sdl3_video_t *vid, int dir);
+
 static void sdl3_check_window(sdl3_video_t *vid)
 {
    bool quit   = false;
    bool resize = false;
+   int step    = retro_atomic_load_acquire_int(&vid->mode_step);
+
+   if (step)
+   {
+      retro_atomic_fetch_add_int(&vid->mode_step, -step);
+      sdl3_cycle_video_mode(vid, step);
+   }
 
    sdl3_pump_window_events(&quit, &resize);
 
@@ -428,6 +447,8 @@ static void sdl3_views_draw_direct(sdl3_video_t *vid,
 static bool sdl3_views_target_make(sdl3_video_t *vid, SDL_Texture **t,
       unsigned dims);
 static bool sdl3_views_target_retire(sdl3_video_t *vid, SDL_Texture **t);
+static bool sdl3_display_geometry_reserve(sdl3_video_t *vid,
+      size_t verts, size_t indices);
 
 /* The views compositor, with these calls bound in. SDL3 takes no
  * preset: every view is drawn straight from its texture, its chain the
@@ -489,7 +510,7 @@ static bool sdl3_views_target_make(sdl3_video_t *vid, SDL_Texture **t,
    return false;
 }
 
-static void sdl3_views_release(sdl3_video_t *vid)
+static void sdl3_views_release_textures(sdl3_video_t *vid)
 {
    unsigned i;
    for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
@@ -499,6 +520,11 @@ static void sdl3_views_release(sdl3_video_t *vid)
       vid->views.tex[i]      = NULL;
       vid->views.tex_dims[i] = 0;
    }
+}
+
+static void sdl3_views_release(sdl3_video_t *vid)
+{
+   sdl3_views_release_textures(vid);
    sdl3_vv_target_drop(vid, &vid->views.canvas_target, &vid->views.canvas);
    sdl3_vv_target_drop(vid, &vid->views.ui_target, &vid->views.ui);
 }
@@ -520,6 +546,38 @@ static void sdl3_views_frect(const video_views_rect_t *r, SDL_FRect *out)
    out->h = (float)VIDEO_SCALE_H(r->dims);
 }
 
+/* Quad @n of a geometry batch: x0,y0..x1,y1 over u0,v0..u1,v1, white */
+static void sdl3_quad(SDL_Vertex *verts, int *indices, size_t n,
+      float x0, float y0, float x1, float y1,
+      float u0, float v0, float u1, float v1)
+{
+   static const SDL_FColor white = { 1.0f, 1.0f, 1.0f, 1.0f };
+   static const int order[6]     = { 0, 1, 2, 2, 1, 3 };
+   size_t b                      = n * 4;
+   unsigned k;
+
+   verts[b + 0].position.x  = x0;
+   verts[b + 0].position.y  = y0;
+   verts[b + 0].tex_coord.x = u0;
+   verts[b + 0].tex_coord.y = v0;
+   verts[b + 1].position.x  = x1;
+   verts[b + 1].position.y  = y0;
+   verts[b + 1].tex_coord.x = u1;
+   verts[b + 1].tex_coord.y = v0;
+   verts[b + 2].position.x  = x0;
+   verts[b + 2].position.y  = y1;
+   verts[b + 2].tex_coord.x = u0;
+   verts[b + 2].tex_coord.y = v1;
+   verts[b + 3].position.x  = x1;
+   verts[b + 3].position.y  = y1;
+   verts[b + 3].tex_coord.x = u1;
+   verts[b + 3].tex_coord.y = v1;
+   for (k = 0; k < 4; k++)
+      verts[b + k].color = white;
+   for (k = 0; k < 6; k++)
+      indices[n * 6 + k] = (int)(b + (size_t)order[k]);
+}
+
 /* View @view over @dst, cut to @cut, from its texture, turned as the
  * frame is: about @dst's centre, the turned view filling it */
 static void sdl3_views_draw_direct(sdl3_video_t *vid,
@@ -528,11 +586,19 @@ static void sdl3_views_draw_direct(sdl3_video_t *vid,
 {
    SDL_FRect r;
    SDL_Rect c;
+   bool clip;
    int deg = (int)vid->rotation;
    if (!vid->views.tex[view])
       return;
    sdl3_views_frect(dst, &r);
    sdl3_views_rect(cut, &c);
+   /* Setting the clip flushes what is batched, so it is set only for a
+    * placement that reaches past its cut. @r is still the drawn extent:
+    * a turned view fills it. */
+   clip = !(  (float)c.x <= r.x
+           && (float)c.y <= r.y
+           && (float)(c.x + c.w) >= r.x + r.w
+           && (float)(c.y + c.h) >= r.y + r.h);
    if (deg == 90 || deg == 270)
    {
       float w = r.w;
@@ -541,10 +607,12 @@ static void sdl3_views_draw_direct(sdl3_video_t *vid,
       r.w     = r.h;
       r.h     = w;
    }
-   SDL_SetRenderClipRect(vid->renderer, &c);
+   if (clip)
+      SDL_SetRenderClipRect(vid->renderer, &c);
    SDL_RenderTextureRotated(vid->renderer, vid->views.tex[view], NULL, &r,
          vid->rotation, NULL, SDL_FLIP_NONE);
-   SDL_SetRenderClipRect(vid->renderer, NULL);
+   if (clip)
+      SDL_SetRenderClipRect(vid->renderer, NULL);
 }
 
 /* Whether the UI is drawn this frame into the layer per eye: @menu the
@@ -592,6 +660,7 @@ static bool sdl3_views_setup(sdl3_video_t *vid,
       sdl3_vv_target_drop(vid, &vid->views.canvas_target,
             &vid->views.canvas);
    views = video_info->views.num_views
+      && !vid->views.write_failed
       && (!offscreen || *blend)
       && (vid->views.layer || !sdl3_views_ui_wanted(vid, video_info, msg,
             video_views_ui_per_eye(&video_info->views, layout, true)))
@@ -610,8 +679,9 @@ static bool sdl3_views_setup(sdl3_video_t *vid,
 
 /* Each drawn view of the frame at @frame, @pitch bytes a row, written
  * straight into its own texture: no copy. An RGB565 view is widened on
- * the way in, its bits repeated as every other driver's are. */
-static void sdl3_views_write(sdl3_video_t *vid, const video_views_map_t *map,
+ * the way in, its bits repeated as every other driver's are. False when
+ * a drawn view can't be written. */
+static bool sdl3_views_write(sdl3_video_t *vid, const video_views_map_t *map,
       void *const *chains, const void *frame, unsigned pitch)
 {
    unsigned i;
@@ -635,14 +705,18 @@ static void sdl3_views_write(sdl3_video_t *vid, const video_views_map_t *map,
          if (!(vid->views.tex[i] = SDL_CreateTexture(vid->renderer,
                      SDL_PIXELFORMAT_XRGB8888, SDL_TEXTUREACCESS_STREAMING,
                      (int)v->width, (int)v->height)))
-            continue;
+         {
+            RARCH_WARN("[SDL3] Views can't write a %ux%u view. "
+                  "Drawing the frame whole.\n", v->width, v->height);
+            return false;
+         }
          SDL_SetTextureScaleMode(vid->views.tex[i], vid->video.smooth
                ? SDL_SCALEMODE_LINEAR : SDL_SCALEMODE_NEAREST);
          SDL_SetTextureBlendMode(vid->views.tex[i], SDL_BLENDMODE_NONE);
          vid->views.tex_dims[i] = dims;
       }
       if (!SDL_LockTexture(vid->views.tex[i], NULL, &pixels, &out_pitch))
-         continue;
+         return false;
       if (rgb32)
       {
          unsigned y;
@@ -655,6 +729,7 @@ static void sdl3_views_write(sdl3_video_t *vid, const video_views_map_t *map,
                out_pitch, (int)pitch);
       SDL_UnlockTexture(vid->views.tex[i]);
    }
+   return true;
 }
 
 /* Draws the last frame's views into the window, or with a canvas into
@@ -678,9 +753,12 @@ static void sdl3_views_render(sdl3_video_t *vid)
          blend || !layout->offscreen, dims, true);
    if (blend)
    {
-      SDL_FRect src, dst;
-      int y, h = (int)VIDEO_SCALE_H(vid->views.dims);
-      float w  = (float)VIDEO_SCALE_W(vid->views.dims);
+      SDL_FRect src;
+      int y, h    = (int)VIDEO_SCALE_H(vid->views.dims);
+      float w     = (float)VIDEO_SCALE_W(vid->views.dims);
+      float cw    = (float)VIDEO_SCALE_W(layout->canvas_dims);
+      float ch    = (float)VIDEO_SCALE_H(layout->canvas_dims);
+      size_t rows = (size_t)(h / 2);
       SDL_SetRenderTarget(vid->renderer, NULL);
       SDL_SetRenderViewport(vid->renderer, NULL);
       SDL_SetTextureBlendMode(vid->views.canvas, SDL_BLENDMODE_NONE);
@@ -691,15 +769,38 @@ static void sdl3_views_render(sdl3_video_t *vid)
       src.w = w;
       src.h = (float)h;
       SDL_RenderTexture(vid->renderer, vid->views.canvas, &src, &src);
-      src.x = w;
-      src.h = 1.0f;
-      dst.x = 0.0f;
-      dst.w = w;
-      dst.h = 1.0f;
-      for (y = 1; y < h; y += 2)
+      /* The odd rows as one draw */
+      if (     rows
+            && cw > 0.0f && ch > 0.0f
+            && sdl3_display_geometry_reserve(vid, rows * 4, rows * 6))
       {
-         src.y = dst.y = (float)y;
-         SDL_RenderTexture(vid->renderer, vid->views.canvas, &src, &dst);
+         SDL_Vertex *verts = (SDL_Vertex*)vid->display_verts;
+         int *indices      = vid->display_indices;
+         size_t n          = 0;
+         /* The right half, every row of it */
+         float u0          = w / cw;
+         float u1          = (w + w) / cw;
+         for (y = 1; y < h; y += 2, n++)
+            sdl3_quad(verts, indices, n,
+                  0.0f, (float)y, w, (float)(y + 1),
+                  u0, (float)y / ch, u1, (float)(y + 1) / ch);
+         SDL_RenderGeometry(vid->renderer, vid->views.canvas, verts,
+               (int)(n * 4), indices, (int)(n * 6));
+      }
+      else
+      {
+         /* No room for the batch: a draw per row */
+         SDL_FRect dst;
+         src.x = w;
+         src.h = 1.0f;
+         dst.x = 0.0f;
+         dst.w = w;
+         dst.h = 1.0f;
+         for (y = 1; y < h; y += 2)
+         {
+            src.y = dst.y = (float)y;
+            SDL_RenderTexture(vid->renderer, vid->views.canvas, &src, &dst);
+         }
       }
    }
 }
@@ -734,7 +835,6 @@ static void sdl3_views_ui_end(sdl3_video_t *vid,
    video_views_ui_leave(&vid->views.saved, &video_info->dims,
          &vid->vp.full_dims);
    SDL_SetRenderTarget(vid->renderer, NULL);
-   sdl3_refresh_renderer(vid);
    SDL_SetRenderViewport(vid->renderer, NULL);
    SDL_SetTextureBlendMode(vid->views.ui, vid->views.premultiplied);
    /* Only full side by side places it unscaled. */
@@ -844,6 +944,8 @@ static void sdl3_render_ui(sdl3_video_t *vid, const char *msg,
       menu_dst.h = (float)VIDEO_SCALE_H(vid->vp.dims);
       if (vid->views.active)
          sdl3_views_menu_rect(vid, &menu_dst);
+      SDL_SetTextureScaleMode(vid->menu.tex, video_info->menu_linear_filter
+            ? SDL_SCALEMODE_LINEAR : SDL_SCALEMODE_NEAREST);
       SDL_RenderTexture(vid->renderer, vid->menu.tex, NULL, &menu_dst);
    }
 
@@ -885,14 +987,29 @@ static bool sdl3_gfx_frame(void *data, const void *frame,
    bool views_per_eye, views_ui, views;
 
    if (frame)
+   {
+      if (dims != vid->views.frame_dims)
+         vid->views.write_failed = false;
       vid->views.frame_dims = dims;
+   }
    views = sdl3_views_setup(vid, video_info, msg, &views_blend,
          view_chains, view_rects);
+   if (     views && frame
+         && !sdl3_views_write(vid, &video_info->views, view_chains,
+            frame, pitch))
+   {
+      vid->views.write_failed = true;
+      views                   = false;
+   }
    /* vid->vp is the whole window while views draw. */
    if (views != vid->views.active)
    {
       vid->views.active = views;
       vid->flags       |= SDL3_FLAG_SHOULD_RESIZE;
+      /* Kept through a fallback, whose next frame may be a dupe that
+       * draws them again; not once the core stops sending views */
+      if (!views && !video_info->views.num_views)
+         sdl3_views_release_textures(vid);
    }
    retro_atomic_store_release_int(&vid->views.fallback,
          (video_info->views.num_views && !views) ? 1 : 0);
@@ -914,9 +1031,6 @@ static bool sdl3_gfx_frame(void *data, const void *frame,
       vid->views.blend  = views_blend;
       for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
          vid->views.drawn[i] = view_chains[i];
-      if (frame)
-         sdl3_views_write(vid, &video_info->views, view_chains, frame,
-               pitch);
       sdl3_views_render(vid);
       sdl3_refresh_renderer(vid);
    }
@@ -978,11 +1092,20 @@ static void sdl3_gfx_set_nonblock_state(void *data, bool toggle,
    if (vid->renderer)
    {
       /* Adaptive vsync and higher intervals aren't supported by every
-       * backend; fall back to a plain 1-frame interval if SDL rejects
-       * the requested value. */
+       * backend; fall back to the largest interval taken, or 1 if SDL
+       * rejects the requested value. */
       if (!SDL_SetRenderVSync(vid->renderer, vsync) && vsync != SDL_RENDERER_VSYNC_DISABLED)
-         SDL_SetRenderVSync(vid->renderer, 1);
+         SDL_SetRenderVSync(vid->renderer,
+               (vsync > (int)vid->swap_interval_cap)
+               ? (int)vid->swap_interval_cap : 1);
    }
+}
+
+/* What sdl3_init_renderer found the renderer takes. */
+static unsigned sdl3_get_swap_interval_cap(void *data)
+{
+   sdl3_video_t *vid = (sdl3_video_t*)data;
+   return vid ? vid->swap_interval_cap : 1;
 }
 
 static bool sdl3_gfx_alive(void *data)
@@ -1046,18 +1169,17 @@ static void sdl3_gfx_viewport_info(void *data, struct video_viewport *vp)
    *vp = vid->vp;
 }
 
-static bool sdl3_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
+/* The backbuffer contents after SDL_RenderPresent are undefined on
+ * several backends, so the presented frame can't be read directly.
+ * The last core frame is still retained in vid->frame.tex, though:
+ * redraw it into the backbuffer and capture that. Nothing here is
+ * presented - the next real frame starts with a full clear - so
+ * this scratch rendering is never visible. Menu/widget/OSD passes
+ * are not replayed; the capture is the raw game viewport, or the
+ * views. */
+static bool sdl3_gfx_redraw_and_capture(sdl3_video_t *vid, uint8_t *buffer,
+      bool bgrx)
 {
-   sdl3_video_t *vid = (sdl3_video_t*)data;
-
-   /* The backbuffer contents after SDL_RenderPresent are undefined on
-    * several backends, so the presented frame can't be read directly.
-    * The last core frame is still retained in vid->frame.tex, though:
-    * redraw it into the backbuffer and capture that. Nothing here is
-    * presented - the next real frame starts with a full clear - so
-    * this scratch rendering is never visible. Menu/widget/OSD passes
-    * are not replayed; the capture is the raw game viewport, or the
-    * views. */
    SDL_RenderClear(vid->renderer);
    if (vid->views.active)
    {
@@ -1067,26 +1189,19 @@ static bool sdl3_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
    else
       sdl3_blit_frame(vid);
 
-   return sdl3_capture_viewport(vid, buffer, false);
+   return sdl3_capture_viewport(vid, buffer, bgrx);
+}
+
+static bool sdl3_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
+{
+   return sdl3_gfx_redraw_and_capture((sdl3_video_t*)data, buffer, false);
 }
 
 static bool sdl3_gfx_read_viewport_bgrx(void *data, uint8_t *buffer,
       bool is_idle, bool *bottom_up)
 {
-   sdl3_video_t *vid = (sdl3_video_t*)data;
-
-   /* Same redraw-and-capture as sdl3_gfx_read_viewport(). */
-   SDL_RenderClear(vid->renderer);
-   if (vid->views.active)
-   {
-      sdl3_views_render(vid);
-      sdl3_refresh_renderer(vid);
-   }
-   else
-      sdl3_blit_frame(vid);
-
    *bottom_up = false;
-   return sdl3_capture_viewport(vid, buffer, true);
+   return sdl3_gfx_redraw_and_capture((sdl3_video_t*)data, buffer, true);
 }
 
 /* Applies a new window size / fullscreen in place, without tearing
@@ -1198,7 +1313,7 @@ static void sdl3_cycle_video_mode(sdl3_video_t *vid, int dir)
       }
    }
 
-   target = modes[(index + dir + count) % count];
+   target = modes[((index + dir) % count + count) % count];
 
    /* Switch the mode, and clear the mode list afterwards. */
    if (SDL_SetWindowFullscreenMode(vid->window, target))
@@ -1210,14 +1325,16 @@ static void sdl3_cycle_video_mode(sdl3_video_t *vid, int dir)
    SDL_free(modes);
 }
 
+/* Called on the main thread under threaded video: the window is the
+ * video thread's, so the step is taken there. */
 static void sdl3_get_video_output_prev(void *data)
 {
-   sdl3_cycle_video_mode((sdl3_video_t*)data, -1);
+   retro_atomic_fetch_add_int(&((sdl3_video_t*)data)->mode_step, -1);
 }
 
 static void sdl3_get_video_output_next(void *data)
 {
-   sdl3_cycle_video_mode((sdl3_video_t*)data, 1);
+   retro_atomic_fetch_add_int(&((sdl3_video_t*)data)->mode_step, 1);
 }
 
 static void sdl3_poke_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
@@ -1275,6 +1392,7 @@ static uint32_t sdl3_get_flags(void *data)
    /* The viewport readback redraws the core's frame alone, so a GPU
     * recording never holds the menu or messages. */
    BIT32_SET(flags, GFX_CTX_FLAGS_RECORD_GAME_ONLY);
+   BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
    if (vid && retro_atomic_load_acquire_int(&vid->views.allowed))
       BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS);
    if (vid && retro_atomic_load_acquire_int(&vid->views.fallback))
@@ -2029,6 +2147,24 @@ static void sdl3_raster_font_render_message(
 
 #define FONT_LAYOUT_ALIGNED (align == TEXT_ALIGN_RIGHT \
       || align == TEXT_ALIGN_CENTER)
+/* A glyph cached mid-line lands in the atlas after the line's upload:
+ * what is batched goes out first, on the texture it was laid out for. */
+#define FONT_LAYOUT_DIRTY(glyph) \
+   do \
+   { \
+      (void)(glyph); \
+      if (font->atlas->dirty) \
+      { \
+         if (line_ok && n_glyphs > 0) \
+            SDL_RenderGeometry(font->vid->renderer, font->tex, \
+                  verts, n_glyphs * 4, idx, n_glyphs * 6); \
+         n_glyphs = 0; \
+         sdl3_raster_font_upload_atlas(font); \
+         line_ok  = line_ok && font->tex; \
+         inv_w    = 1.0f / (float)VIDEO_SCALE_W(font->tex_dims); \
+         inv_h    = 1.0f / (float)VIDEO_SCALE_H(font->tex_dims); \
+      } \
+   } while (0)
 #define FONT_LAYOUT_LINE(line, line_width, count, bytes) \
    do \
    { \
@@ -2501,7 +2637,7 @@ static video_poke_interface_t sdl3_video_poke_interface = {
    NULL,                            /* hw_ring_context_free */
    NULL,                            /* hw_ring_framebuffer */
    sdl3_update_texture,
-   NULL,                            /* get_swap_interval_cap */
+   sdl3_get_swap_interval_cap,
    NULL,                            /* texture_lend */
    NULL,                            /* texture_lend_ready */
    NULL,                            /* get_last_present_wait */
