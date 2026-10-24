@@ -6818,7 +6818,7 @@ void runloop_pause_checks(void)
 #endif
 
       /* Limit paused frames to video refresh. */
-      runloop_st->frame_limit_minimum_time = (retro_time_t)roundf(1000000.0f /
+      runloop_st->frame_limit_minimum_time = runloop_content_frame_time_us(
             ((video_st->video_refresh_rate_original)
                ? video_st->video_refresh_rate_original
                : video_refresh_rate));
