@@ -2058,6 +2058,29 @@ static bool rslc_p_coerce(struct rslc_parser *p, uint32_t *e, const struct rslc_
 
 /* ---- constant folding ---- */
 
+static bool rslc_p_nonconstant(struct rslc_parser *p, uint32_t e)
+{
+   while (e)
+   {
+      const struct rslc_node *n = rslc_p_node(p, e);
+      if (n->nonconstant)
+         return true;
+      switch (n->op)
+      {
+         case RSLC_OP_VAR:
+            return p->c->prog.vars[n->a]->storage != RSLC_ST_CONST;
+         case RSLC_OP_UNARY:
+         case RSLC_OP_CONVERT:
+         case RSLC_OP_SWIZZLE:
+            e = n->a;
+            break;
+         default:
+            return false;
+      }
+   }
+   return false;
+}
+
 static bool rslc_p_eval(struct rslc_parser *p, uint32_t e, struct rslc_cval *out);
 
 bool rslc_const_eval(struct rslc_ctx *c, uint32_t node, struct rslc_cval *out)
@@ -2704,7 +2727,7 @@ static bool rslc_p_eval(struct rslc_parser *p, uint32_t e, struct rslc_cval *out
 
    memset(out, 0, sizeof(*out));
    /* a failed compile's nodes may name lists and nodes never made */
-   if (!e || p->c->failed)
+   if (!e || p->c->failed || n->nonconstant)
       return false;
    switch (n->op)
    {
@@ -4063,8 +4086,13 @@ static uint32_t rslc_p_fold_binary(struct rslc_parser *p, uint32_t e)
 {
    struct rslc_node *n = rslc_p_node(p, e);
    struct rslc_cval  v;
-   if (!e)   /* the node could not be made: the error is set */
+   if (!e || p->c->failed)
       return 0;
+   if (rslc_p_nonconstant(p, n->a) || rslc_p_nonconstant(p, n->b))
+   {
+      n->nonconstant = 1;
+      return e;
+   }
    if (n->type->kind != RSLC_TY_SCALAR)
       return e;
    if (rslc_p_node(p, n->a)->op != RSLC_OP_CONST || rslc_p_node(p, n->b)->op != RSLC_OP_CONST)

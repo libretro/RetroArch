@@ -3057,7 +3057,7 @@ static uint32_t spv_builtin_node(struct spv_emit *e, const struct rslc_node *n)
    }
 }
 
-static uint32_t spv_binary_node(struct spv_emit *e, const struct rslc_node *n)
+static uint32_t spv_binary_value(struct spv_emit *e, const struct rslc_node *n, uint32_t a)
 {
    const struct rslc_node *an = rslc_node_at(e->c, n->a);
    const struct rslc_node *bn = rslc_node_at(e->c, n->b);
@@ -3067,7 +3067,7 @@ static uint32_t spv_binary_node(struct spv_emit *e, const struct rslc_node *n)
    uint32_t tid = spv_type(e, rt);
    uint8_t  prec = n->prec;
    uint16_t op = n->aux;
-   uint32_t a, b;
+   uint32_t b;
 
    if (!tid)
       return 0;
@@ -3108,7 +3108,8 @@ static uint32_t spv_binary_node(struct spv_emit *e, const struct rslc_node *n)
       return spv_phi2(e, tid, cv, lhs_label, b, rhs_end, prec);
    }
 
-   a = spv_rvalue(e, n->a);
+   if (!a)
+      a = spv_rvalue(e, n->a);
    b = a ? spv_rvalue(e, n->b) : 0;
    if (!b)
       return 0;
@@ -3217,11 +3218,50 @@ static uint32_t spv_binary_node(struct spv_emit *e, const struct rslc_node *n)
    return spv_r2(e, spv_binop(rt, op), tid, a, b, prec);
 }
 
+static uint32_t spv_binary_node(struct spv_emit *e, const struct rslc_node *n)
+{
+   return spv_binary_value(e, n, 0);
+}
+
+static bool spv_runtime_binary(const struct rslc_node *n)
+{
+   return n->op == RSLC_OP_BINARY && n->nonconstant
+      && n->aux != RSLC_BIN_AND && n->aux != RSLC_BIN_OR;
+}
+
 static uint32_t spv_rvalue_impl(struct spv_emit *e, uint32_t node);
 
 static uint32_t spv_rvalue(struct spv_emit *e, uint32_t node)
 {
-   uint32_t r = spv_rvalue_impl(e, node);
+   uint32_t r;
+   const struct rslc_node *n = rslc_node_at(e->c, node);
+   if (spv_runtime_binary(n) && spv_runtime_binary(rslc_node_at(e->c, n->a)))
+   {
+      uint32_t at = node, count = 0, i;
+      uint32_t *chain;
+      while (spv_runtime_binary(rslc_node_at(e->c, at)))
+      {
+         count++;
+         at = rslc_node_at(e->c, at)->a;
+      }
+      chain = (uint32_t*)rslc_arena_alloc(e->c, (size_t)count * sizeof(*chain));
+      if (!chain)
+         return 0;
+      at = node;
+      for (i = 0; i < count; i++)
+      {
+         chain[i] = at;
+         at = rslc_node_at(e->c, at)->a;
+      }
+      r = spv_rvalue(e, at);
+      while (count && r)
+      {
+         count--;
+         r = spv_binary_value(e, rslc_node_at(e->c, chain[count]), r);
+      }
+   }
+   else
+      r = spv_rvalue_impl(e, node);
 #ifdef RSLC_SPV_TRACE
    if (!r)
    {

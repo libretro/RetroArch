@@ -430,7 +430,8 @@ struct rslc_node
    uint16_t                op;    /* enum rslc_op */
    uint16_t                aux;
    uint8_t                 prec;  /* RSLC_PREC_* of an expression's result */
-   uint8_t                 pad[3];
+   uint8_t                 nonconstant;
+   uint8_t                 pad[2];
 };
 
 #define RSLC_NODE_CHUNK_SHIFT 12
