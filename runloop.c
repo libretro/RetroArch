@@ -10125,13 +10125,17 @@ int runloop_iterate(void)
     * has in cache; no bit needed. */
    if (input_st->bsv_movie_state_handle)
    {
-      bsv_movie_next_frame(input_st,
-            settings->uints.replay_checkpoint_interval,
-            settings->bools.replay_checkpoint_deserialize);
+      if (!BSV_MOVIE_IS_NETPLAY(input_st->bsv_movie_state_handle))
+         bsv_movie_next_frame(input_st,
+               settings->uints.replay_checkpoint_interval,
+               settings->bools.replay_checkpoint_deserialize);
       if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_END)
       {
+         bool netplay_movie = BSV_MOVIE_IS_NETPLAY(
+               input_st->bsv_movie_state_handle);
          movie_stop(input_st);
-         command_event(CMD_EVENT_PAUSE, NULL);
+         if (!netplay_movie)
+            command_event(CMD_EVENT_PAUSE, NULL);
       }
    }
 #endif

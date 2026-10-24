@@ -619,6 +619,7 @@ static bool content_write_serialized_state(void* buffer,
        bool frame_is_reversed         = false;
 #endif
        if (    !rewind
+             && size->replay_size
              && input_st->bsv_movie_state.flags & (BSV_FLAG_MOVIE_RECORDING | BSV_FLAG_MOVIE_PLAYBACK)
              && !frame_is_reversed)
        {

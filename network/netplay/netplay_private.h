@@ -321,6 +321,11 @@ struct delta_frame
    /* The serialized state of the core at this frame, before input */
    void *state;
 
+#ifdef HAVE_BSV_MOVIE
+   /* Allocated only while recording; never part of the wire protocol. */
+   struct netplay_bsv_frame *bsv;
+#endif
+
    uint32_t frame;
 
    /* The CRC-32 of the serialized state if we've calculated it, else 0 */
@@ -511,7 +516,9 @@ enum netplay_flags
    /* Have we requested a savestate as a sync point? */
    NETPLAY_FLAG_SAVESTATE_REQUEST_OUTSTANDING = (1 << 12),
    /* Host settings */
-   NETPLAY_FLAG_ALLOW_PAUSING                 = (1 << 13)
+   NETPLAY_FLAG_ALLOW_PAUSING                 = (1 << 13),
+   /* A BSV recording is staging this frame's input queries */
+   NETPLAY_FLAG_BSV_CAPTURING                 = (1 << 14)
 };
 
 struct netplay

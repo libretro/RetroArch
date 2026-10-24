@@ -42,6 +42,11 @@ RETRO_BEGIN_DECLS
 
 typedef struct netplay netplay_t;
 
+#ifdef HAVE_BSV_MOVIE
+struct bsv_movie;
+bool netplay_bsv_movie_init(struct bsv_movie *movie);
+#endif
+
 typedef struct netplay_client_info
 {
    uint32_t protocol;
