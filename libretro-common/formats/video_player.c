@@ -542,7 +542,7 @@ static void vp_worker(void *unused)
          alive = 2;
       else
          alive = vp_job_step(job);
-      if (alive == 3)
+      if (job->seek && alive == 3)
       {
          if (retro_atomic_load_acquire_int(&job->owner->seek_interrupt))
             vp_job_publish(job, 2);
