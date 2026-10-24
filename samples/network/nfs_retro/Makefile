@@ -8,6 +8,8 @@ SRC = nfs_test.c $(COMMON)/net/net_nfs3.c $(COMMON)/net/net_socket.c $(COMMON)/n
 ifneq (,$(findstring mingw,$(CC))$(findstring MINGW,$(MSYSTEM))$(findstring Windows,$(OS)))
    LDLIBS += -lws2_32 -liphlpapi
 endif
+all: nfs_test nfs_sparse_test nfs_idle_test vfs_test vfs_threads_test
+
 nfs_test: $(SRC)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(SRC) $(LDLIBS) -o $@
 SPARSE_SRC = nfs_sparse_test.c $(filter-out nfs_test.c,$(SRC))
@@ -28,4 +30,4 @@ vfs_threads_test: $(THR_SRC)
 	$(CC) $(CPPFLAGS) -DHAVE_NFSCLIENT -DHAVE_THREADS -I$(ROOT) $(CFLAGS) $(THR_SRC) $(LDLIBS) -lpthread -o $@
 clean:
 	rm -f nfs_test nfs_test.exe nfs_sparse_test nfs_sparse_test.exe nfs_idle_test nfs_idle_test.exe vfs_test vfs_test.exe vfs_threads_test vfs_threads_test.exe
-.PHONY: clean
+.PHONY: all clean

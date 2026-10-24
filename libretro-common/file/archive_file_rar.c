@@ -40,82 +40,34 @@
 #define RAR_MAGIC     "Rar!\x1A\x07"
 #define RAR_MAGIC_LEN 6
 
-/* rrar_archive parses from a buffer rather than a stream.
- *
- * archive_file.c has already opened the file and, for archives up to
+/* archive_file.c has already opened the file and, for archives up to
  * 256 MiB, mapped it before this backend is entered. Where that
- * mapping exists it is used directly, as the zip, 7z and zstd backends
- * do; only when there is none does this read the file itself, and
- * owns_data records which of the two happened. */
+ * mapping exists rrar_archive parses it in place, as the zip, 7z and
+ * zstd backends do. Without one (no mapping on the platform, a network
+ * share, an archive over the cap) it reads the open stream through
+ * file_archive_read_at(): headers at open, a member's packed bytes
+ * only when that member is extracted. */
 struct rar_context_t
 {
    rrar_archive_t *archive;
-   const uint8_t  *data;
-   size_t          data_len;
    /* The last extracted member, owned here so the handle handed to the
     * caller stays valid until the next call. */
    uint8_t        *output;
    uint32_t        parse_index;
    uint32_t        decompress_index;
-   int             owns_data;
 };
 
-/* Read a whole file into memory, for the no-mapping case only. */
-static uint8_t *rar_slurp(const char *path, size_t *out_len)
-{
-   RFILE   *f;
-   int64_t  len;
-   uint8_t *buf;
-
-   if (string_is_empty(path))
-      return NULL;
-
-   if (!(f = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE)))
-      return NULL;
-
-   filestream_seek(f, 0, SEEK_END);
-   len = filestream_tell(f);
-   filestream_seek(f, 0, SEEK_SET);
-
-   if (     len <= 0
-         || (uint64_t)len > (uint64_t)((size_t)-1)
-         || !(buf = (uint8_t *)malloc((size_t)len)))
-   {
-      filestream_close(f);
-      return NULL;
-   }
-
-   if (filestream_read(f, buf, (int64_t)len) != len)
-   {
-      free(buf);
-      filestream_close(f);
-      return NULL;
-   }
-
-   filestream_close(f);
-   *out_len = (size_t)len;
-   return buf;
-}
-
-static int rar_bind_data(struct rar_context_t *ctx,
-      file_archive_transfer_t *state, const char *file)
+static int rar_open_archive(struct rar_context_t *ctx,
+      file_archive_transfer_t *state)
 {
 #ifdef VFS_HAVE_FILE_MAPPING
    if (state->archive_mmap_data && state->archive_size > 0)
-   {
-      ctx->data      = state->archive_mmap_data;
-      ctx->data_len  = (size_t)state->archive_size;
-      ctx->owns_data = 0;
-      return 1;
-   }
-#else
-   (void)state;
+      return rrar_archive_open(&ctx->archive, state->archive_mmap_data,
+            (size_t)state->archive_size) == RRAR_OK;
 #endif
-   if (!(ctx->data = rar_slurp(file, &ctx->data_len)))
-      return 0;
-   ctx->owns_data = 1;
-   return 1;
+   return rrar_archive_open_read(&ctx->archive,
+         (uint64_t)state->archive_size,
+         file_archive_read_at, state->archive_file) == RRAR_OK;
 }
 
 static void rar_parse_file_free(void *context)
@@ -126,10 +78,9 @@ static void rar_parse_file_free(void *context)
       return;
 
    free(ctx->output);
+   /* The mapping and the stream belong to archive_file.c, which
+    * releases them after this. */
    rrar_archive_close(ctx->archive);
-   /* The mapping belongs to archive_file.c and is unmapped there. */
-   if (ctx->owns_data)
-      free((void*)ctx->data);
    free(ctx);
 }
 
@@ -300,6 +251,8 @@ static int rar_parse_file_init(file_archive_transfer_t *state,
    uint8_t magic_buf[RAR_MAGIC_LEN];
    struct rar_context_t *ctx = NULL;
 
+   (void)file;
+
    if (state->archive_size < RRAR_SIGNATURE_SIZE)
       goto error;
 
@@ -316,11 +269,7 @@ static int rar_parse_file_init(file_archive_transfer_t *state,
 
    state->context = ctx;
 
-   if (!rar_bind_data(ctx, state, file))
-      goto error;
-
-   if (rrar_archive_open(&ctx->archive, ctx->data, ctx->data_len)
-         != RRAR_OK)
+   if (!rar_open_archive(ctx, state))
       goto error;
 
    state->step_total = rrar_archive_num_entries(ctx->archive);

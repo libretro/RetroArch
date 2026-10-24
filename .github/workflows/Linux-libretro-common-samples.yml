@@ -108,6 +108,7 @@ jobs:
             archive_zip_test
             archive_zstd_test
             archive_rar_test
+            archive_stream_test
             config_file_test
             path_resolve_realpath_test
             fill_pathname_test
@@ -149,6 +150,7 @@ jobs:
             vfs_read_overflow_test
             vfs_mapped_ptr_test
             vfs_prefetch_test
+            vfs_prefetch_retarget_test
             vfs_large_file_test
             vfs_seek_contract_test
             vfs_bulk_read_test

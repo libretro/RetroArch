@@ -11,12 +11,13 @@
 #include <file/file_path.h>
 #include <retro_dirent.h>
 #include <rthreads/rthreads.h>
+#include <retro_timers.h>
 #include "../../../libretro-common/vfs/vfs_implementation_nfs.h"
 
 #define NTHREADS 4
 #define ROUNDS   12
 
-static char url_file[600], url_dir[600];
+static char url_file[600], url_dir[600], url_big[600];
 static int  failures = 0;
 
 static void worker(void *arg)
@@ -71,12 +72,15 @@ int main(int argc, char **argv)
       cfg.version = (unsigned)atoi(argv[5]);
    snprintf(url_file, sizeof(url_file), "nfs://%s/rnfs_dir/vfs.bin", argv[1]);
    snprintf(url_dir, sizeof(url_dir), "nfs://%s/rnfs_dir", argv[1]);
+   snprintf(url_big, sizeof(url_big), "nfs://%s/rnfs_dir/vfs_big.bin", argv[1]);
    /* read-ahead off, then on: off is one request per read with no
-    * prefetcher; on, a read-only open starts one (with threads) */
-   for (phase = 0; phase < 2; phase++)
+    * prefetcher; on, a read-only open starts one (with threads), once
+    * with a window larger than the file and once with windows far
+    * smaller than one read */
+   for (phase = 0; phase < 3; phase++)
    {
       RFILE *f;
-      cfg.readahead = phase ? 1024 : 0;
+      cfg.readahead = phase == 0 ? 0 : phase == 1 ? 1024 : 1;
       nfs_init_cfg(&cfg);
       for (i = 0; i < NTHREADS; i++)
          t[i] = sthread_create(worker, (void*)(intptr_t)i);
@@ -124,6 +128,59 @@ int main(int argc, char **argv)
             failures++;
          }
       }
+      /* one read reaching past the ready windows: it still gets every
+       * octet it asked for, the rest read from the network, as a
+       * parser checking for the exact length expects */
+      if (phase == 2)
+      {
+         static uint8_t whole[200000];
+         unsigned window_kib, direct_kib;
+         int64_t  got = -1;
+         uint32_t j;
+         for (j = 0; j < sizeof(whole); j++)
+            whole[j] = (uint8_t)(j * 31 + 7);
+         if ((f = filestream_open(url_big, RETRO_VFS_FILE_ACCESS_WRITE,
+                     RETRO_VFS_FILE_ACCESS_HINT_NONE)))
+         {
+            got = filestream_write(f, whole, sizeof(whole));
+            filestream_close(f);
+         }
+         memset(whole, 0, sizeof(whole));
+         if (got == (int64_t)sizeof(whole) && (f = filestream_open(url_big,
+                     RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE)))
+         {
+            /* a first octet sends the prefetcher to the start of the file;
+             * the rest is then asked for in one read, past its windows */
+            got = filestream_read(f, whole, 1);
+            retro_sleep(200);
+            if (got == 1)
+               got += filestream_read(f, whole + 1, sizeof(whole) - 1);
+            filestream_close(f);
+         }
+         else
+            got = -1;
+         filestream_delete(url_big);
+         nfs_take_readahead_stats(&window_kib, &direct_kib);
+         if (got != (int64_t)sizeof(whole))
+         {
+            fprintf(stderr, "FAIL: read past the windows got %lld of %u\n",
+                  (long long)got, (unsigned)sizeof(whole));
+            failures++;
+         }
+         else
+            for (j = 0; j < sizeof(whole); j++)
+               if (whole[j] != (uint8_t)(j * 31 + 7))
+               {
+                  fprintf(stderr, "FAIL: read past the windows, octet %u\n", j);
+                  failures++;
+                  break;
+               }
+         if (got == (int64_t)sizeof(whole) && !window_kib)
+         {
+            fprintf(stderr, "FAIL: read past the windows took nothing from them (%u KiB direct)\n", direct_kib);
+            failures++;
+         }
+      }
       nfs_shutdown();
    }
    if (failures)
@@ -131,7 +188,7 @@ int main(int argc, char **argv)
       fprintf(stderr, "FAIL: %d bad operations across %d threads\n", failures, NTHREADS);
       return 1;
    }
-   printf("ok: %d threads x %d rounds through the VFS, read-ahead off and on\n",
+   printf("ok: %d threads x %d rounds through the VFS, read-ahead off and on, reads past the windows\n",
          NTHREADS, ROUNDS);
    return 0;
 }

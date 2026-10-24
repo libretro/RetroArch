@@ -1061,6 +1061,7 @@ int64_t retro_vfs_file_read_smb(libretro_vfs_implementation_file *stream,
 {
    uint8_t *ptr               = (uint8_t*)s;
    uint64_t total             = 0;
+   uint64_t windowed          = 0;
    bool mended                = false;
    struct smb2_context *ctx;
    struct smb2fh *fh;
@@ -1086,8 +1087,9 @@ int64_t retro_vfs_file_read_smb(libretro_vfs_implementation_file *stream,
    if (!fh)
       return -1;
 
-   /* the prefetcher's windows first; on a miss the stream reads the
-    * network itself, and the thread starts over from here */
+   /* the prefetcher's windows first; what they do not cover, or all of
+    * it on a miss, the stream reads from the network itself, and the
+    * thread starts over from there */
    if (stream->smb_prefetch)
    {
       struct smb_prefetch *sp = (struct smb_prefetch*)(void*)(uintptr_t)stream->smb_prefetch;
@@ -1099,7 +1101,11 @@ int64_t retro_vfs_file_read_smb(libretro_vfs_implementation_file *stream,
          {
             smb2_lseek(ctx, fh, got, SEEK_CUR, NULL);
             sp->from_window += (uint64_t)got;
-            return got;
+            /* all of it, or a window that ends the file */
+            if (got == 0 || (uint64_t)got == len)
+               return got;
+            total    = (uint64_t)got;
+            windowed = total;
          }
       }
    }
@@ -1138,9 +1144,9 @@ int64_t retro_vfs_file_read_smb(libretro_vfs_implementation_file *stream,
       total += (uint64_t)ret;
    }
 
-   /* a read the prefetcher had nothing ready for */
+   /* what the prefetcher had nothing ready for */
    if (stream->smb_prefetch)
-      ((struct smb_prefetch*)(void*)(uintptr_t)stream->smb_prefetch)->direct += total;
+      ((struct smb_prefetch*)(void*)(uintptr_t)stream->smb_prefetch)->direct += total - windowed;
    return (int64_t)total;
 }
 

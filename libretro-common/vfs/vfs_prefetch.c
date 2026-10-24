@@ -71,6 +71,9 @@ struct vfs_prefetch
    /* the window index (offset / window) the thread fetches next, so the
     * reader can tell "not yet fetched" from "elsewhere" without a lock */
    retro_atomic_int_t       next_idx;
+   /* the gen next_idx belongs to: until the thread has taken a
+    * retarget, the stream is headed for target_idx instead */
+   retro_atomic_int_t       seen_gen;
    retro_atomic_int_t       stop;
 
    retro_eventcount_t       wake;      /* the thread parks here */
@@ -103,6 +106,7 @@ static void vfs_prefetch_thread(void *data)
          p->next_off   = (uint64_t)retro_atomic_load_acquire_int(&p->target_idx) * p->window;
          p->at_eof     = 0;
          retro_atomic_store_release_int(&p->next_idx, (int)(p->next_off / p->window));
+         retro_atomic_store_release_int(&p->seen_gen, gen);
       }
 
       /* work: an empty slot while the stream has not ended */
@@ -200,6 +204,7 @@ struct vfs_prefetch *vfs_prefetch_new(vfs_prefetch_fetch_t fetch, void *user,
    p->thread_gen = 0;
    retro_atomic_store_release_int(&p->gen, 1);
    retro_atomic_store_release_int(&p->next_idx, (int)(start / window));
+   retro_atomic_store_release_int(&p->seen_gen, 0);
    retro_atomic_store_release_int(&p->stop, 0);
    if (!retro_eventcount_init(&p->wake))
    {
@@ -304,8 +309,12 @@ void vfs_prefetch_seek(struct vfs_prefetch *p, uint64_t off)
             && s->gen == gen && off >= s->off && off < s->off + s->len)
          return;
    }
-   /* about to be fetched (the window being filled or the next one) */
-   next = retro_atomic_load_acquire_int(&p->next_idx);
+   /* about to be fetched (the window being filled or the next one),
+    * judged by where the stream is headed: a retarget the thread has
+    * not taken yet replaces where it was */
+   next = retro_atomic_load_acquire_int(&p->seen_gen) == gen
+      ? retro_atomic_load_acquire_int(&p->next_idx)
+      : retro_atomic_load_acquire_int(&p->target_idx);
    if (off / p->window + 1 >= (uint64_t)next && off / p->window <= (uint64_t)next + 1)
       return;
    retro_atomic_store_release_int(&p->target_idx, (int)(off / p->window));

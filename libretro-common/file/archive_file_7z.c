@@ -41,21 +41,16 @@
 #define SEVENZIP_MAGIC "7z\xBC\xAF\x27\x1C"
 #define SEVENZIP_MAGIC_LEN 6
 
-/* r7z_archive parses from a buffer rather than a stream.
- *
- * archive_file.c has already opened the file and, for archives up to
- * 256 MiB, mmapped it before this backend is entered. Where that
- * mapping exists it is used directly, exactly as the zip and zstd
- * backends do; reading the file again would mean a second full copy of
- * the archive alongside the mapping. Only when there is no mapping
- * (mmap unavailable, or an archive over the cap) does this read the
- * file itself, and `owns_data` records which of the two happened. */
+/* archive_file.c has already opened the file and, for archives up to
+ * 256 MiB, mapped it before this backend is entered. Where that
+ * mapping exists r7z_archive parses it in place, exactly as the zip
+ * and zstd backends do. Without one (no mapping on the platform, a
+ * network share, an archive over the cap) it reads the open stream
+ * through file_archive_read_at(): the header at open, a folder's
+ * packed bytes only when that folder is decoded. */
 struct sevenzip_context_t
 {
    r7z_archive_t *archive;
-   const uint8_t *data;
-   size_t         data_len;
-   int            owns_data;
    /* Cache of the last extracted member, owned here so the handle
     * handed to the caller stays valid until the next call. */
    uint8_t       *output;
@@ -63,75 +58,17 @@ struct sevenzip_context_t
    uint32_t       decompress_index;
 };
 
-/* Read a whole file into memory, for the no-mapping case only.
- * Returns NULL on any failure. */
-static uint8_t *sevenzip_slurp(const char *path, size_t *out_len)
-{
-   RFILE   *f;
-   int64_t  len;
-   uint8_t *buf;
-
-   if (string_is_empty(path))
-      return NULL;
-
-   f = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE);
-   if (!f)
-      return NULL;
-
-   filestream_seek(f, 0, SEEK_END);
-   len = filestream_tell(f);
-   filestream_seek(f, 0, SEEK_SET);
-
-   if (len <= 0 || (uint64_t)len > (uint64_t)((size_t)-1))
-   {
-      filestream_close(f);
-      return NULL;
-   }
-
-   if (!(buf = (uint8_t *)malloc((size_t)len)))
-   {
-      filestream_close(f);
-      return NULL;
-   }
-
-   if (filestream_read(f, buf, (int64_t)len) != len)
-   {
-      free(buf);
-      filestream_close(f);
-      return NULL;
-   }
-
-   filestream_close(f);
-   *out_len = (size_t)len;
-   return buf;
-}
-
-/* Point the context at the archive bytes, preferring the mapping the
- * caller already made. */
-static int sevenzip_bind_data(struct sevenzip_context_t *ctx,
-      file_archive_transfer_t *state, const char *file)
+static int sevenzip_open_archive(struct sevenzip_context_t *ctx,
+      file_archive_transfer_t *state)
 {
 #ifdef VFS_HAVE_FILE_MAPPING
    if (state->archive_mmap_data && state->archive_size > 0)
-   {
-      ctx->data      = state->archive_mmap_data;
-      ctx->data_len  = (size_t)state->archive_size;
-      ctx->owns_data = 0;
-      return 1;
-   }
-#else
-   (void)state;
+      return r7z_archive_open(&ctx->archive, state->archive_mmap_data,
+            (size_t)state->archive_size) == R7Z_OK;
 #endif
-
-   {
-      uint8_t *buf = sevenzip_slurp(file, &ctx->data_len);
-      if (!buf)
-         return 0;
-      ctx->data      = buf;
-      ctx->owns_data = 1;
-   }
-   return 1;
+   return r7z_archive_open_read(&ctx->archive,
+         (uint64_t)state->archive_size,
+         file_archive_read_at, state->archive_file) == R7Z_OK;
 }
 
 /* Convert a stored UTF-16 name into the caller's char buffer. */
@@ -151,11 +88,9 @@ static void sevenzip_parse_file_free(void *context)
       return;
 
    free(sevenzip_context->output);
+   /* The mapping and the stream belong to archive_file.c, which
+    * releases them after this. */
    r7z_archive_close(sevenzip_context->archive);
-   /* Only free what this backend allocated; the mapping belongs to
-    * archive_file.c and is unmapped there. */
-   if (sevenzip_context->owns_data)
-      free((void*)sevenzip_context->data);
    free(sevenzip_context);
 }
 
@@ -371,6 +306,8 @@ static int sevenzip_parse_file_init(file_archive_transfer_t *state,
    uint8_t magic_buf[SEVENZIP_MAGIC_LEN];
    struct sevenzip_context_t *sevenzip_context = NULL;
 
+   (void)file;
+
    if (state->archive_size < SEVENZIP_MAGIC_LEN)
       goto error;
 
@@ -388,11 +325,7 @@ static int sevenzip_parse_file_init(file_archive_transfer_t *state,
 
    state->context = sevenzip_context;
 
-   if (!sevenzip_bind_data(sevenzip_context, state, file))
-      goto error;
-
-   if (r7z_archive_open(&sevenzip_context->archive,
-            sevenzip_context->data, sevenzip_context->data_len) != R7Z_OK)
+   if (!sevenzip_open_archive(sevenzip_context, state))
       goto error;
 
    state->step_total = r7z_archive_num_entries(sevenzip_context->archive);

@@ -226,6 +226,21 @@ bool file_archive_get_file_list_noalloc(struct string_list *list,
 struct string_list* file_archive_get_file_list(const char *path, const char *valid_exts);
 
 /**
+ * file_archive_read_at:
+ * @ud         : the archive's open RFILE
+ * @off        : offset to read at
+ * @dst        : receives the octets
+ * @len        : octets wanted
+ *
+ * Positioned read of an archive, the shape the 7z and RAR parsers read
+ * through when the archive is not mapped. Short reads are retried, so
+ * the result is @len unless the file ends first.
+ *
+ * Returns: octets read, 0 at the end, -1 on error.
+ */
+int64_t file_archive_read_at(void *ud, uint64_t off, void *dst, size_t len);
+
+/**
  * file_archive_perform_mode_start:
  *
  * Begins decoding one member into the transfer's pending slot and does

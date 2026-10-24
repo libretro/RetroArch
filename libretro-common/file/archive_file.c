@@ -191,6 +191,31 @@ static int file_archive_parse_file_init(file_archive_transfer_t *state,
    return state->backend->archive_parse_file_init(state, path);
 }
 
+int64_t file_archive_read_at(void *ud, uint64_t off, void *dst, size_t len)
+{
+   RFILE   *f    = (RFILE*)ud;
+   uint8_t *out  = (uint8_t*)dst;
+   size_t   done = 0;
+
+   if (     !f
+         || (int64_t)off < 0
+         || filestream_seek(f, (int64_t)off,
+               RETRO_VFS_SEEK_POSITION_START) < 0)
+      return -1;
+
+   while (done < len)
+   {
+      int64_t r = filestream_read(f, out + done, (int64_t)(len - done));
+      if (r < 0)
+         return -1;
+      if (r == 0)
+         break;
+      done += (size_t)r;
+   }
+
+   return (int64_t)done;
+}
+
 /* Drops the output of a member that will not complete: the temporary
  * file beside the target goes, and the target is left as it was. */
 static void file_archive_pending_abandon(file_archive_transfer_t *state)
