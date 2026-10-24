@@ -19,6 +19,7 @@
 
 #ifdef RMP4_TEST_ALLOCATOR
 static unsigned fail_next_malloc;
+static unsigned fail_next_realloc;
 static void *rmp4_test_malloc(size_t size)
 {
    if (fail_next_malloc)
@@ -28,9 +29,20 @@ static void *rmp4_test_malloc(size_t size)
    }
    return malloc(size);
 }
+static void *rmp4_test_realloc(void *ptr, size_t size)
+{
+   if (fail_next_realloc)
+   {
+      fail_next_realloc = 0;
+      return NULL;
+   }
+   return realloc(ptr, size);
+}
 #define malloc rmp4_test_malloc
+#define realloc rmp4_test_realloc
 #include "../../../formats/mp4/rmp4.c"
 #undef malloc
+#undef realloc
 #endif
 
 static int failures;
@@ -101,6 +113,54 @@ static void head_private(buf_t *w, uint32_t dflt_size, uint32_t dflt_dur,
 static void head(buf_t *w, uint32_t dflt_size, uint32_t dflt_dur)
 {
    head_private(w, dflt_size, dflt_dur, NULL, NULL, NULL);
+}
+
+static void test_long_fragment(void)
+{
+   static buf_t w;
+   const uint32_t count = 262146;
+   uint32_t stored = 0, offset;
+   size_t moof, traf, b, data_offset, length;
+   uint8_t *bytes;
+   rmp4_t *m;
+   rmp4_packet packet;
+   memset(&w, 0, sizeof(w));
+   head(&w, 1, 1);
+   moof = box(&w, "moof");
+   traf = box(&w, "traf");
+   b = box(&w, "tfhd"); put32(&w, 0); put32(&w, 1); box_end(&w, b);
+   b = box(&w, "trun"); put32(&w, 1); put32(&w, count);
+   data_offset = w.n; put32(&w, 0); box_end(&w, b);
+   box_end(&w, traf); box_end(&w, moof);
+   put32(&w, count + 8); put4cc(&w, "mdat");
+   offset = (uint32_t)(w.n - moof);
+   w.b[data_offset] = offset >> 24; w.b[data_offset + 1] = offset >> 16;
+   w.b[data_offset + 2] = offset >> 8; w.b[data_offset + 3] = offset;
+   length = w.n + count;
+   bytes = (uint8_t*)calloc(length, 1);
+   CHECK(bytes != NULL, "long fragment: fixture allocation");
+   if (!bytes) return;
+   memcpy(bytes, w.b, w.n);
+   bytes[length - 1] = 73;
+   m = rmp4_open_memory(bytes, length);
+   CHECK(m != NULL, "long fragment: opens");
+   if (m)
+   {
+      CHECK(rmp4_track_pts(m, 0, &stored) && stored == count,
+            "long fragment: retain all samples, got %u", stored);
+      CHECK(rmp4_select_track_sample(m, 0, count - 1)
+            && rmp4_read_packet(m, &packet) == 1 && packet.size == 1
+            && packet.data[0] == 73, "long fragment: tail seek and read");
+      rmp4_close(m);
+   }
+#ifdef RMP4_TEST_ALLOCATOR
+   fail_next_realloc = 1;
+   m = rmp4_open_memory(bytes, length);
+   CHECK(!fail_next_realloc && !m,
+         "long fragment: allocation failure cannot publish a truncated movie");
+   rmp4_close(m);
+#endif
+   free(bytes);
 }
 
 /* A released metadata page can disappear while decoder configuration must
@@ -197,6 +257,65 @@ static void test_sample_cursor(rmp4_t *m, const buf_t *w, size_t payload)
 }
 
 #ifdef RMP4_TEST_ALLOCATOR
+static void test_long_track(void)
+{
+   static buf_t sizes, times, chunks, offsets;
+   static const uint32_t counts[] = {262143, 262144, 262145, 500000};
+   rmp4_stbl tables;
+   unsigned c;
+   memset(&tables, 0, sizeof(tables));
+   for (c = 0; c < sizeof(counts) / sizeof(counts[0]); c++)
+   {
+      uint32_t count = counts[c], stored = 0;
+      uint8_t *bytes = (uint8_t*)calloc(count, 1);
+      rmp4_t *m = (rmp4_t*)calloc(1, sizeof(*m));
+      rmp4_packet packet;
+      const int64_t *pts;
+      CHECK(bytes && m, "long track: fixture allocation");
+      if (!bytes || !m) { free(bytes); free(m); return; }
+      sizes.n = times.n = chunks.n = offsets.n = 0;
+      put32(&sizes, 0); put32(&sizes, 1); put32(&sizes, count);
+      put32(&times, 0); put32(&times, 1);
+      put32(&times, count); put32(&times, 1);
+      put32(&chunks, 0); put32(&chunks, 1);
+      put32(&chunks, 1); put32(&chunks, count); put32(&chunks, 1);
+      put32(&offsets, 0); put32(&offsets, 1); put32(&offsets, 0);
+      tables.stsz = sizes.b; tables.stsz_size = sizes.n;
+      tables.stts = times.b; tables.stts_size = times.n;
+      tables.stsc = chunks.b; tables.stsc_size = chunks.n;
+      tables.stco = offsets.b; tables.stco_size = offsets.n;
+      m->trk[0].timescale = 30;
+      m->buf = bytes; m->len = m->avail = count; m->num_tracks = 1;
+      CHECK(rmp4_build_samples(&m->trk[0], &tables, count),
+            "long track: build %u samples", count);
+      pts = rmp4_track_pts(m, 0, &stored);
+      CHECK(pts && stored == count, "long track: retain all %u samples, got %u", count, stored);
+      bytes[count - 2] = 17; bytes[count - 1] = 29;
+      CHECK(rmp4_select_track_sample(m, 0, count - 2),
+            "long track: seek past old cutoff");
+      CHECK(rmp4_read_packet(m, &packet) == 1 && packet.size == 1
+            && packet.data[0] == 17, "long track: first tail sample");
+      CHECK(rmp4_read_packet(m, &packet) == 1 && packet.size == 1
+            && packet.data[0] == 29, "long track: playback continues after seek");
+      CHECK(rmp4_read_packet(m, &packet) == 0, "long track: actual end of track");
+      rmp4_close(m);
+      free(bytes);
+   }
+   {
+      rmp4_itrack *track = (rmp4_itrack*)calloc(1, sizeof(*track));
+      CHECK(track != NULL, "index budget: fixture allocation");
+      if (!track) return;
+      sizes.n = 0;
+      put32(&sizes, 0); put32(&sizes, 1); put32(&sizes, RMP4_MAX_SAMPLES + 1);
+      fail_next_malloc = 1;
+      CHECK(!rmp4_build_samples(track, &tables, RMP4_MAX_SAMPLES + 1)
+            && !track->count && !track->off && fail_next_malloc,
+            "index budget: reject excess before allocation instead of truncating");
+      fail_next_malloc = 0;
+      free(track);
+   }
+}
+
 static void test_track_selection(void)
 {
    static const uint8_t bytes[8] = {1, 2, 3, 4, 5, 6, 7, 8};
@@ -450,7 +569,9 @@ static void test_edit_lists(void)
 int main(void)
 {
    test_valid();
+   test_long_fragment();
 #ifdef RMP4_TEST_ALLOCATOR
+   test_long_track();
    test_track_selection();
    test_edit_lists();
 #endif

@@ -31,9 +31,9 @@
 #include <formats/rmp4.h>
 
 #define RMP4_MAX_TRACKS       8
-/* Hard cap on samples stored per track: bounds the table memory a
- * hostile file can demand (24 bytes per sample). */
-#define RMP4_MAX_SAMPLES      262144
+/* Bound each track's parallel sample arrays to 64 MiB. */
+#define RMP4_MAX_SAMPLES ((uint32_t)((64u * 1024u * 1024u) / \
+      (sizeof(uint64_t) + sizeof(uint32_t) + sizeof(int64_t) + 1)))
 
 /* Repacked OpusHead: 19-byte fixed part + up to 2 + 8 mapping bytes. */
 #define RMP4_OPUS_HEAD_MAX    32
@@ -155,6 +155,7 @@ struct rmp4
    rmp4_itrack    trk[RMP4_MAX_TRACKS];
    int            num_tracks;
    int            fragmented;      /* an mvex box was present        */
+   int            sample_error;
    uint64_t       media_max_end;   /* highest sample end delivered   */
    uint32_t       movie_timescale;
    uint64_t       movie_duration;   /* in movie timescale ticks       */
@@ -551,12 +552,8 @@ typedef struct
    int            co64;
 } rmp4_stbl;
 
-/* Build the per-sample offset/size/pts/key arrays for one track.
- * Returns 1 on success (possibly with zero samples), 0 on OOM or a
- * table too malformed to trust. */
 /* Append one sample to a track's parallel arrays, growing them as
- * movie fragments arrive. Returns 0 on allocation failure or once the
- * global sample cap is reached (further samples are dropped). */
+ * movie fragments arrive. Returns 0 on allocation or budget failure. */
 static int rmp4_track_append(rmp4_itrack *t, uint64_t off, uint32_t size,
       int64_t pts_ns, uint8_t key)
 {
@@ -607,7 +604,7 @@ static int rmp4_build_samples(rmp4_itrack *t, const rmp4_stbl *s,
    if (!count)
       return 1;
    if (count > RMP4_MAX_SAMPLES)
-      count = RMP4_MAX_SAMPLES;
+      return 0;
    if (!uniform && s->stsz_size < 12 + (uint64_t)count * 4)
       return 0;
 
@@ -1126,8 +1123,12 @@ static void rmp4_parse_traf(rmp4_t *m, const uint8_t *body, uint64_t size,
                if (doff > (uint64_t)m->len
                      || sz > (uint64_t)m->len - doff)
                   return;
-               rmp4_track_append(t, doff, sz, pts,
-                     (uint8_t)!((fl >> 16) & 1));
+               if (!rmp4_track_append(t, doff, sz, pts,
+                        (uint8_t)!((fl >> 16) & 1)))
+               {
+                  m->sample_error = 1;
+                  return;
+               }
             }
             doff        += sz;
             t->frag_dts += dur;
@@ -1148,6 +1149,8 @@ static void rmp4_parse_moof(rmp4_t *m, const uint8_t *body, uint64_t size,
    {
       if (b.type == RMP4_FOURCC('t','r','a','f'))
          rmp4_parse_traf(m, b.body, b.size, moof_pos);
+      if (m->sample_error)
+         return;
       if (next <= pos)
          break;
       pos = next;
@@ -1277,6 +1280,11 @@ rmp4_t *rmp4_open_memory_avail(const uint8_t *data, size_t size,
       {
          if (b.type == RMP4_FOURCC('m','o','o','f'))
             rmp4_parse_moof(m, b.body, b.size, pos);
+         if (m->sample_error)
+         {
+            rmp4_close(m);
+            return NULL;
+         }
          if (next <= pos)
             break;
          pos = next;
