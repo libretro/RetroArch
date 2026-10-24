@@ -15,8 +15,9 @@
 
 /* A DualShock 3 moved to Windows' own WinUSB driver - the
  * Microsoft-signed "WinUsb Device" of winusb.inf - so that
- * winusb_hid.c can start it, and given back to Windows' choice. No
- * driver of RetroArch's own is installed.
+ * winusb_hid.c can start it, and given back to Windows' choice; and a
+ * Wii U GameCube adapter, which Windows' own driver cannot run at all,
+ * moved there the same way. No driver of RetroArch's own is installed.
  *
  * Changing a device's driver needs administrator rights, which
  * RetroArch does not run with: the menu starts a copy of it with them
@@ -43,6 +44,7 @@
 
 #include "../connect/joypad_connection.h"
 #include "../../msg_hash.h"
+#include "../../runloop.h"
 #include "../../verbosity.h"
 #include "winusb_bind.h"
 
@@ -134,10 +136,10 @@ static bool winusb_bind_one(HDEVINFO devs, SP_DEVINFO_DATA *dev,
    return di_install(NULL, devs, dev, &drv, 0, &reboot) != FALSE;
 }
 
-/* Every DualShock 3 plugged in: to WinUSB with @bind, else back to
+/* Every pad of @kind plugged in: to WinUSB with @bind, else back to
  * Windows' own choice. How many were changed; -1 when it cannot be
  * done here. */
-static int winusb_bind_all(bool bind)
+static int winusb_bind_all(enum winusb_bind_kind kind, bool bind)
 {
    DWORD i;
    int changed = 0;
@@ -177,7 +179,8 @@ static int winusb_bind_all(bool bind)
                   sizeof(instance), NULL)
             || !(ids = strstr(instance, "VID_"))
             || sscanf(ids, "VID_%4x&PID_%4x", &vid, &pid) != 2
-            || !winusb_bind_is_ds3(vid, pid))
+            || !(kind == WINUSB_BIND_GCA ? winusb_bind_is_gca(vid, pid)
+                                         : winusb_bind_is_ds3(vid, pid)))
          continue;
       if (!SetupDiGetDeviceRegistryPropertyA(devs, &dev, SPDRP_SERVICE,
                NULL, (BYTE*)service, sizeof(service), NULL))
@@ -221,14 +224,20 @@ bool winusb_bind_command(const char *arg, int *ret)
 {
    int changed;
    bool bind;
+   enum winusb_bind_kind kind = WINUSB_BIND_DS3;
 
    if (string_is_equal(arg, WINUSB_BIND_ARG))
       bind = true;
    else if (string_is_equal(arg, WINUSB_RESTORE_ARG))
       bind = false;
+   else if (string_is_equal(arg, WINUSB_BIND_GCA_ARG))
+   {
+      bind = true;
+      kind = WINUSB_BIND_GCA;
+   }
    else
       return false;
-   changed = winusb_bind_all(bind);
+   changed = winusb_bind_all(kind, bind);
    *ret    = (changed < 0) ? 255 : changed;
    return true;
 }
@@ -253,8 +262,29 @@ static struct
 {
    retro_atomic_int_t state;
    int  result;   /* the copy's exit code; -1 not started, -2 declined */
+   enum winusb_bind_kind kind;
    bool bind;
 } winusb_bind_job;
+
+/* a GameCube adapter that nothing could open, as the last scan saw */
+static bool winusb_bind_gca_waits;
+
+void winusb_bind_gca_seen(bool waiting)
+{
+   if (waiting && !winusb_bind_gca_waits)
+   {
+      const char *msg = msg_hash_to_str(MSG_INPUT_GCA_NEEDS_ENABLING);
+      RARCH_LOG("[WinUSB] %s\n", msg);
+      runloop_msg_queue_push(msg, strlen(msg), 1, 300, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+   }
+   winusb_bind_gca_waits = waiting;
+}
+
+bool winusb_bind_gca_waiting(void)
+{
+   return winusb_bind_gca_waits;
+}
 
 static void winusb_bind_thread(void *data)
 {
@@ -282,8 +312,9 @@ static void winusb_bind_thread(void *data)
       sei.fMask        = SEE_MASK_NOCLOSEPROCESS | SEE_MASK_FLAG_NO_UI;
       sei.lpVerb       = "runas";
       sei.lpFile       = self;
-      sei.lpParameters = winusb_bind_job.bind
-         ? WINUSB_BIND_ARG : WINUSB_RESTORE_ARG;
+      sei.lpParameters = (winusb_bind_job.kind == WINUSB_BIND_GCA)
+         ? WINUSB_BIND_GCA_ARG
+         : winusb_bind_job.bind ? WINUSB_BIND_ARG : WINUSB_RESTORE_ARG;
       sei.nShow        = SW_HIDE;
       if (!exec(&sei))
          result = (GetLastError() == ERROR_CANCELLED) ? -2 : -1;
@@ -317,7 +348,11 @@ static void winusb_bind_task_handler(retro_task_t *task)
       return;
    }
    result = winusb_bind_job.result;
-   if (result == -2)
+   if (winusb_bind_job.kind == WINUSB_BIND_GCA)
+      msg = (result == -2) ? MSG_INPUT_GCA_DECLINED
+          : (result <= 0 || result == 255) ? MSG_INPUT_GCA_NOT_CHANGED
+          : MSG_INPUT_GCA_ENABLED;
+   else if (result == -2)
       msg = MSG_INPUT_DS3_DECLINED;
    else if (result <= 0 || result == 255)
       msg = MSG_INPUT_DS3_NOT_CHANGED;
@@ -331,7 +366,7 @@ static void winusb_bind_task_handler(retro_task_t *task)
    task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 }
 
-bool winusb_bind_request(bool bind)
+bool winusb_bind_request(enum winusb_bind_kind kind, bool bind)
 {
    retro_task_t *task;
    sthread_t *thread;
@@ -339,7 +374,8 @@ bool winusb_bind_request(bool bind)
    if (!retro_atomic_cas_int(&winusb_bind_job.state,
             WINUSB_BIND_IDLE, WINUSB_BIND_RUNNING))
       return false;
-   winusb_bind_job.bind   = bind;
+   winusb_bind_job.kind   = kind;
+   winusb_bind_job.bind   = bind || kind == WINUSB_BIND_GCA;
    winusb_bind_job.result = -1;
    if (!(task = task_init()))
    {
@@ -354,7 +390,8 @@ bool winusb_bind_request(bool bind)
    }
    sthread_detach(thread);
    task->handler = winusb_bind_task_handler;
-   task->title   = strdup(msg_hash_to_str(MSG_INPUT_DS3_ASKING));
+   task->title   = strdup(msg_hash_to_str(kind == WINUSB_BIND_GCA
+            ? MSG_INPUT_GCA_ASKING : MSG_INPUT_DS3_ASKING));
    task->flags  &= ~RETRO_TASK_FLG_MUTE;
    task_queue_push(task);
    return true;

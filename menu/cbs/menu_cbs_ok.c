@@ -4890,14 +4890,23 @@ static int action_ok_input_bt_pair(const char *path,
 static int action_ok_input_ds3_enable(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   winusb_bind_request(true);
+   winusb_bind_request(WINUSB_BIND_DS3, true);
    return 0;
 }
 
 static int action_ok_input_ds3_restore(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   winusb_bind_request(false);
+   winusb_bind_request(WINUSB_BIND_DS3, false);
+   return 0;
+}
+
+/* Information > Input Information: the Wii U GameCube adapters plugged
+ * in moved to WinUSB. */
+static int action_ok_input_gca_enable(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   winusb_bind_request(WINUSB_BIND_GCA, true);
    return 0;
 }
 #endif
@@ -9749,6 +9758,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
 #ifdef HAVE_WINUSB_BIND
          {MENU_ENUM_LABEL_INPUT_DS3_ENABLE,                    action_ok_input_ds3_enable},
          {MENU_ENUM_LABEL_INPUT_DS3_RESTORE,                   action_ok_input_ds3_restore},
+         {MENU_ENUM_LABEL_INPUT_GCA_ENABLE,                    action_ok_input_gca_enable},
 #endif
 #ifdef HAVE_AUDIOMIXER
          {MENU_ENUM_LABEL_ADD_TO_MIXER_AND_COLLECTION,         action_ok_audio_add_to_mixer_and_collection},

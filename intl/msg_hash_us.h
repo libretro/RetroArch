@@ -31726,6 +31726,10 @@ MSG_HASH( /* Under a DualShock 3 on WinUSB: selecting it gives every DualShock 3
    MENU_ENUM_LABEL_VALUE_PORT_DS3_RESTORE,
    "- Restore Windows Driver"
    )
+MSG_HASH( /* Shown while a Wii U GameCube adapter is plugged in that Windows' own driver cannot run: selecting it moves the adapter to Windows' WinUSB driver, after one administrator prompt */
+   MENU_ENUM_LABEL_VALUE_INPUT_GCA_ENABLE,
+   "Enable Wii U GameCube Adapter"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SETTINGS,
    "Cheat Settings"
@@ -33000,6 +33004,26 @@ MSG_HASH(
 MSG_HASH( /* %s is the controller's name, %u its port */
    MSG_INPUT_DS3_NEEDS_ENABLING,
    "%s (port %u) needs enabling: Information > Input Information > Enable DualShock 3 Support."
+   )
+MSG_HASH(
+   MSG_INPUT_GCA_ASKING,
+   "Changing the GameCube adapter's driver: allow it in the Windows prompt."
+   )
+MSG_HASH(
+   MSG_INPUT_GCA_ENABLED,
+   "GameCube adapter enabled. It reconnects by itself."
+   )
+MSG_HASH(
+   MSG_INPUT_GCA_NOT_CHANGED,
+   "The GameCube adapter's driver could not be changed."
+   )
+MSG_HASH(
+   MSG_INPUT_GCA_DECLINED,
+   "The GameCube adapter's driver was not changed: administrator rights were not given."
+   )
+MSG_HASH(
+   MSG_INPUT_GCA_NEEDS_ENABLING,
+   "Wii U GameCube adapter found, which Windows' own driver cannot run: Information > Input Information > Enable Wii U GameCube Adapter."
    )
 MSG_HASH(
    MSG_INPUT_COMBO_SET_BUTTONS,

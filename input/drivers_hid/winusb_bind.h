@@ -18,6 +18,7 @@
 
 #include <boolean.h>
 #include <retro_common_api.h>
+#include <retro_inline.h>
 
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__) \
    && defined(HAVE_WINUSB) && defined(HAVE_THREADS)
@@ -29,14 +30,30 @@ RETRO_BEGIN_DECLS
 #ifdef HAVE_WINUSB_BIND
 /* Command-line arguments the elevated copy of RetroArch is started
  * with; an installer may start it with one too. */
-#define WINUSB_BIND_ARG    "--winusb-bind-ds3"
-#define WINUSB_RESTORE_ARG "--winusb-restore-ds3"
+#define WINUSB_BIND_ARG     "--winusb-bind-ds3"
+#define WINUSB_RESTORE_ARG  "--winusb-restore-ds3"
+#define WINUSB_BIND_GCA_ARG "--winusb-bind-gca"
+
+/* What is moved: the DualShock 3s, or the Wii U GameCube adapters.
+ * Windows' own driver cannot start either; it cannot run the adapter
+ * at all, so it is only ever moved to WinUSB. */
+enum winusb_bind_kind
+{
+   WINUSB_BIND_DS3 = 0,
+   WINUSB_BIND_GCA
+};
 
 /* A DualShock 3, by its USB ids. */
 bool winusb_bind_is_ds3(unsigned vid, unsigned pid);
 
-/* @arg one of the two above: the DualShock 3s plugged in moved to
- * WinUSB, or given back to Windows' own driver, with *ret the exit
+/* A Wii U GameCube adapter, by its USB ids. */
+static INLINE bool winusb_bind_is_gca(unsigned vid, unsigned pid)
+{
+   return vid == 0x057e && pid == 0x0337;
+}
+
+/* @arg one of the three above: the pads of its kind plugged in moved
+ * to WinUSB, or given back to Windows' own driver, with *ret the exit
  * code (how many were, or 255 when it could not be done). False for
  * any other argument. Needs administrator rights. */
 bool winusb_bind_command(const char *arg, int *ret);
@@ -45,7 +62,14 @@ bool winusb_bind_command(const char *arg, int *ret);
  * with administrator rights to do it, and the outcome is shown as a
  * message. Nothing waits on the main thread. False while one asked for
  * before is still going. */
-bool winusb_bind_request(bool bind);
+bool winusb_bind_request(enum winusb_bind_kind kind, bool bind);
+
+/* The WinUSB scan's word, at each scan, on whether a GameCube adapter
+ * is plugged in that nothing could open - Windows' own driver cannot
+ * run it - said on screen once when one comes; and the menu's ask.
+ * Both on the frontend's thread. */
+void winusb_bind_gca_seen(bool waiting);
+bool winusb_bind_gca_waiting(void);
 #endif
 
 RETRO_END_DECLS

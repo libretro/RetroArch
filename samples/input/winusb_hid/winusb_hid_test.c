@@ -97,6 +97,8 @@ int input_driver_hid_number(const void *hid_data, unsigned slot)
 void input_driver_hid_release(const void *hid_data, unsigned slot) { }
 static bool beside;
 bool input_driver_hid_beside(const void *hid_data) { return beside; }
+/* the scan's word to the menu on an adapter nothing could open */
+void winusb_bind_gca_seen(bool waiting) { }
 
 /* ---- winusb.dll ---- */
 

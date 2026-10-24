@@ -58,6 +58,7 @@
 #include "../common/hid_report_desc.h"
 #include "../common/hid_sjoy_output.h"
 #include "winusb_wgi.h"
+#include "winusb_bind.h"
 #include "../input_defines.h"
 #include "../../tasks/tasks_internal.h"
 #include "../input_driver.h"
@@ -1581,6 +1582,10 @@ static void winusb_hid_scan(winusb_hid_t *hid)
 {
    DWORD i;
    HDEVINFO devs;
+#ifdef HAVE_WINUSB_BIND
+   /* a Wii U GameCube adapter on a driver other than WinUSB */
+   bool gca_elsewhere = false;
+#endif
 
    hid->busy_seen = 0;
    devs           = winusb_api.Initialize
@@ -1611,6 +1616,10 @@ static void winusb_hid_scan(winusb_hid_t *hid)
             || !string_is_equal_noncase(service, "WinUSB"))
       {
          RARCH_LOG("[WinUSB] %s is not bound to WinUSB.\n", instance);
+#ifdef HAVE_WINUSB_BIND
+         if (winusb_bind_is_gca(vid, pid))
+            gca_elsewhere = true;
+#endif
          continue;
       }
       {
@@ -1626,6 +1635,18 @@ static void winusb_hid_scan(winusb_hid_t *hid)
    if (devs != INVALID_HANDLE_VALUE)
       SetupDiDestroyDeviceInfoList(devs);
    winusb_hidclass_scan(hid);
+#ifdef HAVE_WINUSB_BIND
+   /* one Windows' own driver could not run either: the menu offers to
+    * move it to WinUSB */
+   if (gca_elsewhere)
+   {
+      winusb_device_t *dev;
+      for (dev = hid->devices; dev; dev = dev->next)
+         if (winusb_bind_is_gca(dev->vid, dev->pid))
+            gca_elsewhere = false;
+   }
+   winusb_bind_gca_seen(gca_elsewhere);
+#endif
    /* one unplugged while held elsewhere is said again when it is back */
    for (i = hid->busy_count; i-- > 0; )
       if (!(hid->busy_seen & (1u << i)))

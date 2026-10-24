@@ -3033,6 +3033,17 @@ static unsigned menu_displaylist_parse_input_info(file_list_t *list)
 #endif
    }
 
+#ifdef HAVE_WINUSB_BIND
+   /* A Wii U GameCube adapter that Windows' own driver cannot run: it
+    * is on no port, so it has a row of its own, to move it to WinUSB */
+   if (     winusb_bind_gca_waiting()
+         && menu_entries_append(list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_GCA_ENABLE), "",
+               MENU_ENUM_LABEL_INPUT_GCA_ENABLE,
+               MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
+      count++;
+#endif
+
    /* This computer's Bluetooth */
    if (host_known)
    {
