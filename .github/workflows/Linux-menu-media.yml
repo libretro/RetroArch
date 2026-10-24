@@ -72,3 +72,42 @@ jobs:
             python3 samples/menu/rgui_media/run.py --c89 --driver "$driver" samples/menu/rgui_media/fixture-opus.webm
             python3 samples/menu/rgui_media/run.py --c89 --driver "$driver" samples/menu/rgui_media/fixture-vorbis.webm
           done
+
+  window-toggle-media:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      APT_PKGS: ffmpeg xvfb xauth libgl1-mesa-dev libx11-dev libxext-dev libxrandr-dev
+    steps:
+      - uses: actions/checkout@v6
+      - name: Apt cache key
+        id: apt
+        run: sh .github/workflows/scripts/apt-cache-key.sh "$APT_PKGS"
+      - name: Restore apt cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+          restore-keys: ${{ steps.apt.outputs.prefix }}
+      - name: Install dependencies
+        timeout-minutes: 10
+        run: sh .github/workflows/scripts/apt-install.sh $APT_PKGS
+      - name: Save apt cache
+        if: env.APT_CACHE_SAVE == '1'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+      - name: Configure C89 GL frontend
+        run: ./configure --disable-qt --disable-vulkan --disable-wayland --disable-ffmpeg --disable-cheevos --enable-webmplayer
+      - name: Build shipping frontend
+        run: make -j2 C89_BUILD=1
+      - name: Generate moving VP8 fixture
+        run: ffmpeg -v error -y -f lavfi -i "testsrc2=size=320x240:rate=30,hue=h=90*t" -t 3 -c:v libvpx -deadline realtime -cpu-used 8 -g 90 -auto-alt-ref 0 samples/menu/rgui_media/window-toggle.webm
+      - name: Fullscreen window transitions retain movie pixels and seeking
+        run: |
+          for driver in rgui materialui xmb ozone; do
+            for threaded in '' --threaded; do
+              xvfb-run -a python3 samples/menu/rgui_media/run.py --c89 --window-toggle --video-driver gl --driver "$driver" $threaded samples/menu/rgui_media/window-toggle.webm
+            done
+          done

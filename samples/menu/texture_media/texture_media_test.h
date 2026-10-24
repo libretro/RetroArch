@@ -95,6 +95,14 @@ static void render(struct menu_state *menu_st)
 
 #include "native_media_capture.h"
 
+static bool test_current_target(struct menu_state *menu_st,
+      gfx_media_target_t *target)
+{
+   test_viewer_t *viewer = (test_viewer_t *)menu_st->userdata;
+   *target = viewer->media.controls.target;
+   return target->user && target->state;
+}
+
 int main(int argc,char **argv)
 {
    struct menu_state *menu_st;
@@ -221,6 +229,13 @@ int main(int argc,char **argv)
    }
    else CHECK("real movie pixels reach texture boundary",uploads&&uploaded_pixels);
    CHECK("browser media controls are reachable",viewer->media.controls.target.user==test_thumbnail(viewer));
+   if (getenv("MEDIA_TEST_WINDOW_TOGGLE"))
+   {
+      CHECK("window fullscreen toggles retain seeking and updating pixels",
+            native_gpu && media_native_window_toggle(menu_st, render,
+               test_current_target));
+      goto media_test_done;
+   }
    CHECK("confirm pauses through menu adapter",
          test_action(viewer,MENU_ACTION_OK)==MENU_ACTION_NOOP
          &&gfx_thumbnail_get_playback_state(test_thumbnail(viewer),menu_st->current_time_us,&state)&&state.paused);
@@ -304,6 +319,7 @@ int main(int argc,char **argv)
 #else
    gfx_thumbnail_reset(&viewer->thumbnails.left);gfx_thumbnail_reset(&viewer->thumbnails.right);
 #endif
+media_test_done:
    gfx_thumbnail_anim_worker_deinit();video->poke=old_poke;
    main_exit(NULL);printf("texture menu media: %u failure(s)\n",failures);return failures?1:0;
 }

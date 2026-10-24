@@ -7352,6 +7352,11 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
       }
    }
 
+   if (xmb->is_file_list && xmb->show_fullscreen_thumbnails
+         && menu_media_open_selected_file(menu_st,
+               &xmb->thumbnails.left, &xmb->thumbnails.right))
+      xmb->thumbnails.pending = XMB_PENDING_THUMBNAIL_NONE;
+
    /* Have to reset this, otherwise savestate
     * thumbnail won't update after fullscreen toggle */
    gfx_thumbnail_reset(&xmb->thumbnails.savestate);

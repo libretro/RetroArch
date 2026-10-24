@@ -57,6 +57,14 @@ static bool media_capture_settled(struct menu_state *menu_st, int ordinal)
    return media_native_capture(&hash, ordinal);
 }
 
+static bool media_current_target(struct menu_state *menu_st,
+      gfx_media_target_t *target)
+{
+   rgui_t *rgui = (rgui_t *)menu_st->userdata;
+   *target = rgui->media.controls.target;
+   return target->user && target->state;
+}
+
 int main(int argc, char **argv)
 {
    struct menu_state *menu_st;
@@ -161,6 +169,13 @@ int main(int argc, char **argv)
    MEDIA_CHECK("decoded movie picture is nonempty",
          gpu_surface ? rgui->media_gpu.texture != 0 : pixels != 0);
    MEDIA_CHECK("fullscreen shared controller owns the player", rgui->media.controls.target.user == rgui);
+   if (getenv("MEDIA_TEST_WINDOW_TOGGLE"))
+   {
+      MEDIA_CHECK("window fullscreen toggles retain seeking and updating pixels",
+            native_gpu && media_native_window_toggle(menu_st, media_render,
+               media_current_target));
+      goto cleanup;
+   }
    MEDIA_CHECK("confirm pauses through the real menu adapter",
          rgui_parse_menu_entry_action(rgui, entry, MENU_ACTION_OK) == MENU_ACTION_NOOP
          && rgui_media_state(rgui, menu_st->current_time_us, &state) && state.paused);
