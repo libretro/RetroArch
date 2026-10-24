@@ -19,6 +19,7 @@
 #include <sys/process.h>
 #if !defined(__PSL1GHT__)
 #include <sysutil/sysutil_common.h>
+#include <sysutil/sysutil_userinfo.h>
 #endif
 #if defined (IS_SALAMANDER) && !defined(__PSL1GHT__)
 #include <netex/net.h>
@@ -50,6 +51,7 @@
 #include "../../file_path_special.h"
 #include "../../paths.h"
 #include "../../verbosity.h"
+#include "platform_ps3_paths.h"
 
 #if !defined(IS_SALAMANDER) && defined(HAVE_NETWORKING)
 #include "../../network/netplay/netplay.h"
@@ -59,6 +61,16 @@
 #define EMULATOR_CONTENT_DIR "SSNE10001"
 #else
 #define EMULATOR_CONTENT_DIR "SSNE10000"
+#endif
+
+#ifdef __PSL1GHT__
+struct ps3_user_info
+{
+   uint32_t id;
+   char name[64];
+};
+
+extern int ps3_user_info_get_stat(uint32_t id, struct ps3_user_info *info);
 #endif
 
 #ifndef __PSL1GHT__
@@ -117,9 +129,6 @@ static void callback_sysutil_exit(uint64_t status,
 
 static void fill_derived_paths(void)
 {
-    strlcpy(g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY],
-            g_defaults.dirs[DEFAULT_DIR_PORT],
-            sizeof(g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY]));
     fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE],
 		       g_defaults.dirs[DEFAULT_DIR_PORT],
 		       "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
@@ -127,26 +136,12 @@ static void fill_derived_paths(void)
 		       g_defaults.dirs[DEFAULT_DIR_PORT],
 		       "info",
 		       sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
-    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
-		       g_defaults.dirs[DEFAULT_DIR_PORT],
-		       "config", sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]));
-    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP],
-		       g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
-		       "remaps", sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
-    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SAVESTATE],
-		       g_defaults.dirs[DEFAULT_DIR_PORT],
-		       "savestates", sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
-    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SRAM],
-		       g_defaults.dirs[DEFAULT_DIR_PORT],
-		       "savefiles", sizeof(g_defaults.dirs[DEFAULT_DIR_SRAM]));
     fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SYSTEM],
 		       g_defaults.dirs[DEFAULT_DIR_PORT],
 		       "system", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
     fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SHADER],
 		       g_defaults.dirs[DEFAULT_DIR_PORT],
 		       "shaders_cg", sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
-    fill_pathname_join(g_defaults.path_config, g_defaults.dirs[DEFAULT_DIR_PORT],
-		       FILE_PATH_MAIN_CONFIG,  sizeof(g_defaults.path_config));
     fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY],
 		       g_defaults.dirs[DEFAULT_DIR_PORT],
 		       "overlays", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
@@ -159,30 +154,57 @@ static void fill_derived_paths(void)
     fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_DATABASE],
 		       g_defaults.dirs[DEFAULT_DIR_PORT],
 		       "database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
-    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PLAYLIST],
-		       g_defaults.dirs[DEFAULT_DIR_PORT],
-		       "playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
     fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS],
 		       g_defaults.dirs[DEFAULT_DIR_PORT],
 		       "downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
     fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS],
 		       g_defaults.dirs[DEFAULT_DIR_PORT], "cheats",
 		       sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
-    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG],
-		       g_defaults.dirs[DEFAULT_DIR_PORT],
-		       "autoconfig", sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
-    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS],
-		       g_defaults.dirs[DEFAULT_DIR_PORT],
-		       "logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
 	fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS],
 		       g_defaults.dirs[DEFAULT_DIR_PORT],
 		       "thumbnails", sizeof(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]));
-	fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP],
-		       g_defaults.dirs[DEFAULT_DIR_PORT],
-		       "remaps", sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
-	fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
-		       g_defaults.dirs[DEFAULT_DIR_PORT],
-		       "config", sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]));
+}
+
+static bool frontend_ps3_init_user_paths(void)
+{
+   char path[DIR_MAX_LENGTH];
+   RFILE *file;
+   unsigned user_id;
+   bool writable;
+#ifdef __PSL1GHT__
+   struct ps3_user_info info;
+   if (   sysModuleIsLoaded(SYSMODULE_USERINFO) != 0
+       && sysModuleLoad(SYSMODULE_USERINFO) < 0)
+      return false;
+   if (ps3_user_info_get_stat(0, &info) < 0)
+      return false;
+   user_id = info.id;
+#else
+   CellUserInfoUserStat info;
+   if (   cellSysmoduleIsLoaded(CELL_SYSMODULE_SYSUTIL_USERINFO) != 0
+       && cellSysmoduleLoadModule(CELL_SYSMODULE_SYSUTIL_USERINFO) < 0)
+      return false;
+   if (cellUserInfoGetStat(CELL_SYSUTIL_USERID_CURRENT, &info) < 0)
+      return false;
+   user_id = info.id;
+#endif
+   if (!ps3_user_paths_init(user_id))
+      return false;
+
+   fill_pathname_basedir(path, g_defaults.path_config, sizeof(path));
+   if (!path_mkdir(path))
+      return false;
+   fill_pathname_join(path, path, ".write-test", sizeof(path));
+   file = filestream_open(path, RETRO_VFS_FILE_ACCESS_WRITE,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   if (!file)
+      return false;
+   writable = filestream_write(file, "", 1) == 1;
+   if (filestream_close(file) < 0)
+      writable = false;
+   if (filestream_delete(path) != 0 || !writable)
+      return false;
+   return ps3_user_data_migrate(g_defaults.dirs[DEFAULT_DIR_PORT]);
 }
 
 static void use_app_path(char *content_info_path)
@@ -197,6 +219,7 @@ static void frontend_ps3_get_env(int *argc, char *argv[],
       void *args, void *params_data)
 {
    char content_info_path[PATH_MAX_LENGTH];
+   bool user_paths;
 #ifndef __PSL1GHT__
    CellGameContentSize size;
    unsigned int type, attributes;
@@ -212,14 +235,6 @@ static void frontend_ps3_get_env(int *argc, char *argv[],
 
 #if defined(HAVE_LOGGER)
    logger_init();
-#elif defined(HAVE_FILE_LOGGER)
-   retro_main_log_file_init("/dev_hdd0/game/"
-      EMULATOR_CONTENT_DIR "/USRDIR/retroarch-log.txt", false);
-#endif
-#elif defined(__PSL1GHT__)
-#ifdef HAVE_FILE_LOGGER
-   retro_main_log_file_init("/dev_hdd0/game/"
-      EMULATOR_CONTENT_DIR "/USRDIR/retroarch-log-salamander.txt", false);
 #endif
 #endif
 
@@ -265,6 +280,22 @@ static void frontend_ps3_get_env(int *argc, char *argv[],
 #endif
 
    fill_derived_paths();
+   if (!(user_paths = frontend_ps3_init_user_paths()))
+      ps3_legacy_paths_init(g_defaults.dirs[DEFAULT_DIR_PORT]);
+
+#ifdef HAVE_FILE_LOGGER
+   fill_pathname_resolve_relative(content_info_path, g_defaults.path_config,
+#ifdef IS_SALAMANDER
+         "retroarch-log-salamander.txt",
+#else
+         "retroarch-log.txt",
+#endif
+         sizeof(content_info_path));
+   retro_main_log_file_init(content_info_path, false);
+#endif
+   if (!user_paths)
+      RARCH_WARN("[PS3] The current user's directory is unusable, "
+            "using the shared one.\n");
 
 #ifndef IS_SALAMANDER
    if (verbosity)
@@ -272,7 +303,7 @@ static void frontend_ps3_get_env(int *argc, char *argv[],
    else
       verbosity_disable();
 
-   dir_check_defaults("custom.ini");
+   dir_check_defaults(NULL);
 #endif
 }
 
