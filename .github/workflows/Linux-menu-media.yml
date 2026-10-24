@@ -41,7 +41,7 @@ jobs:
           key: ${{ steps.apt.outputs.key }}
 
       - name: Configure C89 frontend
-        run: ./configure --disable-qt --disable-vulkan --disable-wayland --disable-x11 --disable-opengl --disable-opengl1 --disable-opengl_core --disable-ffmpeg --disable-cheevos --enable-webmplayer --${{ matrix.threads }}-threads
+        run: ./configure --disable-qt --disable-vulkan --disable-wayland --disable-x11 --disable-opengl --disable-opengl1 --disable-opengl_core --disable-ffmpeg --disable-cheevos --disable-webmplayer --${{ matrix.threads }}-threads
       - name: Build shipping frontend
         run: make -j2 C89_BUILD=1
       - name: Generate movie fixture
@@ -105,7 +105,7 @@ jobs:
           path: ~/.apt-cache
           key: ${{ steps.apt.outputs.key }}
       - name: Configure C89 GL frontend
-        run: ./configure --disable-qt --disable-vulkan --disable-wayland --disable-ffmpeg --disable-cheevos --enable-webmplayer
+        run: ./configure --disable-qt --disable-vulkan --disable-wayland --disable-ffmpeg --disable-cheevos --disable-webmplayer
       - name: Build shipping frontend
         run: make -j2 C89_BUILD=1
       - name: Generate moving VP8 fixture
