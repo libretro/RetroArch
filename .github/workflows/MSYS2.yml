@@ -83,6 +83,20 @@ jobs:
           QB_JOBS=${{ matrix.qb_jobs }} ./configure
           make -j"$(nproc)" info all
 
+      - name: Native modal message pump regression
+        shell: msys2 {0}
+        run: |
+          set -eu
+          cc -std=c89 -pedantic -Wall -Wextra -Werror -Wno-unused-function -Wframe-larger-than=4096 -Ilibretro-common/include samples/gfx/win32_window_proc/modal_frame_test.c -o modal_frame_test.exe -lgdi32 -luser32
+          rc=0
+          ./modal_frame_test.exe || rc=$?
+          if [ "$rc" = 77 ] && [ "${{ matrix.sys }}" = CLANGARM64 ]; then
+            echo "::notice::Modal continuity unavailable; checking safe fallback"
+            ./modal_frame_test.exe --fallback
+          else
+            test "$rc" = 0
+          fi
+
       - name: Collect DLLs and binaries
         shell: msys2 {0}
         run: |

@@ -1827,6 +1827,7 @@ jobs:
           # fullscreen toggles. Any difference from the recorded trace
           # fails.
           samples/gfx/win32_window_proc/run.sh
+          python3 samples/gfx/win32_window_proc/modal_frame_run.py
 
       - name: Build and run window_driver_test for Windows (Wine)
         shell: bash

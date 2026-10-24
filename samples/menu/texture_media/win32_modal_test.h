@@ -60,8 +60,14 @@ static void media_modal_av_worker(void *data)
                >= entered_at + (int64_t)(probe->moves + 1) * 25000)
          {
             probe->moves++;
-            SetCursorPos(origin.x + (int)probe->moves * 32,
-                  origin.y + (int)probe->moves * 24);
+            if (probe->command == SC_MOVE)
+            {
+               PostMessage(probe->hwnd, WM_KEYDOWN, VK_RIGHT, 0);
+               PostMessage(probe->hwnd, WM_KEYDOWN, VK_DOWN, 0);
+            }
+            else
+               SetCursorPos(origin.x + (int)probe->moves * 32,
+                     origin.y + (int)probe->moves * 24);
          }
          if (!stopping && retro_atomic_load_acquire_int(&probe->verified))
          {
@@ -140,7 +146,6 @@ static bool media_native_modal_playback(struct menu_state *menu_st,
    sthread_t *thread;
    POINT cursor;
    RECT rect, final_rect;
-   HWND foreground;
    audio_mixer_voice_t *voice;
    size_t first_frames = 0, frames = 0, first_serial = 0, serial = 0;
    unsigned rate = 0, warmup, live = 0;
@@ -183,12 +188,12 @@ static bool media_native_modal_playback(struct menu_state *menu_st,
    hook = SetWindowsHookEx(WH_CALLWNDPROC, media_modal_message, NULL, probe->owner);
    if (!hook)
       return false;
-   foreground = GetForegroundWindow();
-   ShowWindow(probe->hwnd, SW_RESTORE);
-   SetForegroundWindow(probe->hwnd);
    GetCursorPos(&cursor);
    GetWindowRect(probe->hwnd, &rect);
-   SetCursorPos(rect.right - 4, rect.bottom - 4);
+   if (mode && !strcmp(mode, "move"))
+      SetCursorPos(rect.left + 100, rect.top + 20);
+   else
+      SetCursorPos(rect.right - 4, rect.bottom - 4);
    thread = sthread_create(media_modal_av_worker, probe);
    if (!thread)
    {
@@ -244,10 +249,8 @@ static bool media_native_modal_playback(struct menu_state *menu_st,
       : final_rect.right - final_rect.left != rect.right - rect.left
          || final_rect.bottom - final_rect.top != rect.bottom - rect.top;
    SetWindowPos(probe->hwnd, NULL, rect.left, rect.top,
-         rect.right - rect.left, rect.bottom - rect.top, SWP_NOZORDER | SWP_NOACTIVATE);
+         rect.right - rect.left, rect.bottom - rect.top, SWP_NOZORDER | SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS);
    SetCursorPos(cursor.x, cursor.y);
-   if (foreground && foreground != probe->hwnd)
-      SetForegroundWindow(foreground);
    for (warmup = 0; warmup < 4; warmup++)
       if (!media_modal_normal_tick()) valid = false;
    if (!get_target(menu_st, &target) || media_modal_audio_voice() != voice
