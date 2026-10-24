@@ -1126,7 +1126,8 @@ static void ec_list_lock(retro_eventcount_t *ec)
    unsigned spins = 0;
    for (;;)
    {
-      uintptr_t old = ec_head(ec);
+      /* The successful CAS acquires the list; polling only tests its bit. */
+      uintptr_t old = (uintptr_t)retro_atomic_load_relaxed_ptr(&ec->waitlist);
       if (!(old & EC_HEAD_LOCK)
             && retro_atomic_cas_ptr(&ec->waitlist, (void*)old,
                (void*)(old | EC_HEAD_LOCK)))
