@@ -810,14 +810,17 @@ uint16_t win32_get_keyboard_mods(void)
 
 #ifndef HAVE_THREADS
 static win32_pump_t win32_messages;
-#elif defined(_MSC_VER)
-static __declspec(thread) win32_pump_t win32_messages;
-#else
-static __thread win32_pump_t win32_messages;
-#endif
-
 static uint8_t win32_sizemove_depth;
 static bool win32_sizemove_stopped_audio;
+#elif defined(_MSC_VER)
+static __declspec(thread) win32_pump_t win32_messages;
+static __declspec(thread) uint8_t win32_sizemove_depth;
+static __declspec(thread) bool win32_sizemove_stopped_audio;
+#else
+static __thread win32_pump_t win32_messages;
+static __thread uint8_t win32_sizemove_depth;
+static __thread bool win32_sizemove_stopped_audio;
+#endif
 
 void win32_message_pump_free(void)
 {
