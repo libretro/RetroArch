@@ -1,7 +1,9 @@
 from pathlib import Path
 import argparse, os, shutil, subprocess, sys, tempfile
-p=argparse.ArgumentParser();p.add_argument('fixture');p.add_argument('--objdir',default='obj-unix/release');p.add_argument('--c89',action='store_true');p.add_argument('--shell',default='bash');p.add_argument('--driver',choices=['rgui','materialui','xmb','ozone'],default='rgui');p.add_argument('--video-driver',default='null');p.add_argument('--threaded',action='store_true');p.add_argument('--assets');p.add_argument('--gpu-surface',action='store_true',help='require RGUI GPU surface playback');p.add_argument('--hardware-decode',action='store_true',help='require hardware decoding as well as GPU presentation');p.add_argument('--continuous',action='store_true',help='test natural folder playback using three temporary fixture links/copies');p.add_argument('--first-video-us',type=int,default=0,help='first visible video timestamp used for capture comparisons');p.add_argument('--continuous-error',action='store_true',help='test that an invalid next movie stops folder playback');p.add_argument('--fullscreen-settings',action='store_true',help='test the shared fullscreen settings action');p.add_argument('--require-cadence',action='store_true',help='require measured movie cadence in the folder fixture');p.add_argument("--external",action="store_true",help="open the fixture as OS/command-line content");p.add_argument("--browser-image",action="store_true",help="activate an image through the real file browser");p.add_argument("--desktop-refresh",action="store_true",help="exercise fullscreen desktop-refresh source and settings lifecycle");a=p.parse_args()
+p=argparse.ArgumentParser();p.add_argument('fixture');p.add_argument('--objdir',default='obj-unix/release');p.add_argument('--c89',action='store_true');p.add_argument('--shell',default='bash');p.add_argument('--driver',choices=['rgui','materialui','xmb','ozone'],default='rgui');p.add_argument('--video-driver',default='null');p.add_argument('--threaded',action='store_true');p.add_argument('--assets');p.add_argument('--gpu-surface',action='store_true',help='require RGUI GPU surface playback');p.add_argument('--hardware-decode',action='store_true',help='require hardware decoding as well as GPU presentation');p.add_argument('--continuous',action='store_true',help='test natural folder playback using three temporary fixture links/copies');p.add_argument('--first-video-us',type=int,default=0,help='first visible video timestamp used for capture comparisons');p.add_argument('--continuous-error',action='store_true',help='test that an invalid next movie stops folder playback');p.add_argument('--fullscreen-settings',action='store_true',help='test the shared fullscreen settings action');p.add_argument('--require-cadence',action='store_true',help='require measured movie cadence in the folder fixture');p.add_argument("--external",action="store_true",help="open the fixture as OS/command-line content");p.add_argument("--browser-image",action="store_true",help="activate an image through the real file browser");p.add_argument("--desktop-refresh",action="store_true",help="exercise fullscreen desktop-refresh source and settings lifecycle");p.add_argument("--window-toggle",action="store_true",help="verify pixels and seeking across application fullscreen transitions");p.add_argument("--dxgi",action="store_true",help="use the Windows DXGI presentation bridge");a=p.parse_args()
 if a.desktop_refresh:a.require_cadence=True;a.fullscreen_settings=True
+if a.window_toggle and (a.video_driver=='null' or a.external or a.browser_image or a.continuous):p.error('--window-toggle needs standalone GPU playback')
+if a.dxgi and (os.name!='nt' or a.video_driver!='vulkan'):p.error('--dxgi needs Windows Vulkan')
 if a.continuous_error or a.fullscreen_settings or a.require_cadence:a.continuous=True
 if (a.external or a.browser_image) and a.continuous:p.error("external/image launch checks cannot use continuous mode")
 if a.external and a.browser_image:p.error("choose external or browser-image mode")
@@ -33,11 +35,13 @@ with tempfile.TemporaryDirectory(prefix='rgui-media-') as temp:
  if a.continuous:values['media_player_continuous']='true'
  if a.require_cadence:values.update(media_player_crt_switch='true',crt_switch_resolution='1' if os.environ.get('MEDIA_TEST_CRT_ENGINE') else '0',crt_switch_resolution_super='0')
  if a.desktop_refresh:values.update(media_player_crt_switch='false',media_player_refresh_rate='true',crt_switch_resolution='0')
+ if a.dxgi:values.update(video_dxgi_present='true',log_verbosity='true')
  if a.assets:values['assets_directory']=str(Path(a.assets).resolve())
  cfg.write_text(''.join(k+' = "'+v.replace('\\','/')+'"\n' for k,v in values.items()),encoding='utf-8')
  cmd=[str(exe),str(fixture),str(cfg)]
  if os.name=='nt':cmd=['gdb','--batch','-return-child-result','-ex','run','-ex','thread apply all bt','--args']+cmd
  env=os.environ.copy()
+ if a.window_toggle:env['MEDIA_TEST_WINDOW_TOGGLE']='1'
  if a.external:env["MEDIA_TEST_EXTERNAL"]="1"
  if a.browser_image:env["MEDIA_TEST_BROWSER_IMAGE"]="1"
  if a.continuous:env['MEDIA_TEST_CONTINUOUS']='1'
@@ -49,4 +53,9 @@ with tempfile.TemporaryDirectory(prefix='rgui-media-') as temp:
  if a.gpu_surface:env['MEDIA_TEST_GPU_SURFACE']='1'
  if a.hardware_decode:env['MEDIA_TEST_HW_DECODE']='1'
  env['MEDIA_TEST_FIRST_VIDEO_US']=str(a.first_video_us)
- subprocess.run(cmd,cwd=r,env=env,check=True)
+ if a.dxgi:
+  result=subprocess.run(cmd,cwd=r,env=env,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,encoding='utf-8',errors='replace')
+  print(result.stdout,flush=True)
+  result.check_returncode()
+  if 'DXGI presentation active.' not in result.stdout or 'DXGI presentation unavailable' in result.stdout:raise RuntimeError('DXGI presentation was not retained')
+ else:subprocess.run(cmd,cwd=r,env=env,check=True)

@@ -105,6 +105,14 @@ static void render(struct menu_state *menu_st)
 
 #include "folder_playback_test.h"
 
+static bool test_current_target(struct menu_state *menu_st,
+      gfx_media_target_t *target)
+{
+   test_viewer_t *viewer = (test_viewer_t *)menu_st->userdata;
+   *target = viewer->media.controls.target;
+   return target->user && target->state;
+}
+
 static int test_folder_stage(void *data)
 {
    test_viewer_t *viewer = (test_viewer_t*)data;
@@ -269,6 +277,13 @@ int main(int argc,char **argv)
       gfx_thumbnail_reset(&viewer->thumbnails.left);
       gfx_thumbnail_reset(&viewer->thumbnails.right);
 #endif
+      goto media_test_done;
+   }
+   if (getenv("MEDIA_TEST_WINDOW_TOGGLE"))
+   {
+      CHECK("window fullscreen toggles retain seeking and updating pixels",
+            native_gpu && media_native_window_toggle(menu_st, render,
+               test_current_target));
       goto media_test_done;
    }
    CHECK("confirm pauses through menu adapter",

@@ -10781,6 +10781,11 @@ static void ozone_context_reset(void *data, bool is_threaded)
          ozone_update_thumbnail_image(ozone);
       else
          ozone_thumbnails_reload(ozone);
+      if ((ozone->flags & OZONE_FLAG_IS_FILE_LIST)
+            && (ozone->flags2 & OZONE_FLAG2_SHOW_FULLSCREEN_THUMBNAILS)
+            && menu_media_open_selected_file(menu_state_get_ptr(),
+                  &ozone->thumbnails.left, &ozone->thumbnails.right))
+         ozone->thumbnails.pending = OZONE_PENDING_THUMBNAIL_NONE;
       ozone_update_savestate_thumbnail_image(ozone);
 
       /* Header icon */

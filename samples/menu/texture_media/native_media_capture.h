@@ -1,7 +1,7 @@
 #ifndef NATIVE_MEDIA_CAPTURE_H
 #define NATIVE_MEDIA_CAPTURE_H
 /* Native acceptance only: readback never enters a production frame path. */
-static bool media_native_capture(uint32_t *hash,int ordinal)
+static bool media_native_capture_region(uint32_t *hash,int ordinal, bool movie_only)
 {
    video_driver_state_t *video=video_state_get_ptr();
    struct video_viewport vp;
@@ -19,7 +19,7 @@ static bool media_native_capture(uint32_t *hash,int ordinal)
       :video->current_video->read_viewport
          &&video->current_video->read_viewport(video->data,pixels,false);
    *hash=UINT32_C(2166136261);
-   for(y=h/4;ok&&y<h*3/4;y++)for(x=w/4;x<w*3/4;x++)for(ch=0;ch<3;ch++)
+   for(y=h/4;ok&&y<(movie_only?h/2:h*3/4);y++)for(x=w/4;x<w*3/4;x++)for(ch=0;ch<3;ch++)
       *hash=(*hash^pixels[((size_t)y*w+x)*bpp+ch])*UINT32_C(16777619);
    if(ok&&directory&&ordinal>=0)
    {
@@ -43,6 +43,11 @@ static bool media_native_capture(uint32_t *hash,int ordinal)
    free(pixels);return ok;
 }
 
+static bool media_native_capture(uint32_t *hash, int ordinal)
+{
+   return media_native_capture_region(hash, ordinal, false);
+}
+
 static bool media_native_seek_capture(struct menu_state *menu_st,
       void (*draw_frame)(struct menu_state*),const gfx_media_target_t *target,
       int64_t position,uint32_t expected,int comparison,int ordinal,uint32_t *hash)
@@ -64,6 +69,56 @@ static bool media_native_seek_capture(struct menu_state *menu_st,
       retro_sleep(1);
    }
    return false;
+}
+
+static bool media_native_window_toggle(struct menu_state *menu_st,
+      void (*draw_frame)(struct menu_state *),
+      bool (*get_target)(struct menu_state *, gfx_media_target_t *))
+{
+   unsigned cycle;
+   for (cycle = 0; cycle < 4; cycle++)
+   {
+      gfx_media_target_t target;
+      gfx_media_playback_state_t state;
+      int64_t until;
+      uint32_t first = 0, second = 0, playing = 0;
+      if (!command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL))
+         return false;
+      until = cpu_features_get_time_usec() + 150000;
+      do
+      {
+         draw_frame(menu_st);
+         retro_sleep(1);
+      } while (cpu_features_get_time_usec() < until);
+      if (!get_target(menu_st, &target) || !target.pause
+            || !target.pause(target.user, true, cpu_features_get_time_usec())
+            || !media_native_seek_capture(menu_st, draw_frame, &target,
+               125000, 0, 0, -1, &first)
+            || !media_native_seek_capture(menu_st, draw_frame, &target,
+               625000, first, 1, -1, &second)
+            || !media_native_capture_region(&second, -1, true)
+            || !target.pause(target.user, false, cpu_features_get_time_usec()))
+      {
+         fprintf(stderr, "window toggle %u: transport or seek failed\n", cycle);
+         return false;
+      }
+      until = cpu_features_get_time_usec() + 250000;
+      do
+      {
+         draw_frame(menu_st);
+         retro_sleep(1);
+      } while (cpu_features_get_time_usec() < until);
+      if (!target.state(target.user, cpu_features_get_time_usec(), &state))
+         return false;
+      if (state.paused || state.seeking
+            || !media_native_capture_region(&playing, -1, true) || playing == second)
+      {
+         fprintf(stderr, "window toggle %u: paused=%u seeking=%u pixels=%08x,%08x\n",
+               cycle, state.paused, state.seeking, second, playing);
+         return false;
+      }
+   }
+   return true;
 }
 
 #endif

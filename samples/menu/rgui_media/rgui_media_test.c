@@ -59,6 +59,14 @@ static bool media_capture_settled(struct menu_state *menu_st, int ordinal)
 
 #include "../texture_media/folder_playback_test.h"
 
+static bool media_current_target(struct menu_state *menu_st,
+      gfx_media_target_t *target)
+{
+   rgui_t *rgui = (rgui_t *)menu_st->userdata;
+   *target = rgui->media.controls.target;
+   return target->user && target->state;
+}
+
 static int media_folder_stage(void *data)
 {
    rgui_t *rgui = (rgui_t*)data;
@@ -194,6 +202,13 @@ int main(int argc, char **argv)
    for (i = 0; i < VIDEO_SCALE_AREA(rgui->fs_thumbnail.dims); i++) pixels |= rgui->fs_thumbnail.data[i];
    MEDIA_CHECK("decoded movie picture is nonempty",
          gpu_surface ? rgui->media_gpu.texture != 0 : pixels != 0);
+   if (getenv("MEDIA_TEST_WINDOW_TOGGLE"))
+   {
+      MEDIA_CHECK("window fullscreen toggles retain seeking and updating pixels",
+            native_gpu && media_native_window_toggle(menu_st, media_render,
+               media_current_target));
+      goto cleanup;
+   }
    MEDIA_CHECK("fullscreen shared controller owns the player", rgui->media.controls.target.user == rgui);
    MEDIA_CHECK("confirm pauses through the real menu adapter",
          rgui_parse_menu_entry_action(rgui, entry, MENU_ACTION_OK) == MENU_ACTION_NOOP
