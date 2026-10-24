@@ -687,6 +687,11 @@ struct rarch_joypad_driver
     * where the driver cannot say that, which then gets copied. Asked
     * once a poll per pad read. */
    const input_pad_view_t *(*view)(unsigned pad);
+
+   /* Pad @pad's touchpad now, into @view's touch and touch_down; false
+    * where it has none. For a driver without view(), whose pads are
+    * copied; NULL where the driver reads no touchpad. */
+   bool (*get_touchpad)(unsigned pad, input_pad_view_t *view);
 };
 
 /**
@@ -854,6 +859,8 @@ typedef struct
 
    /* primitives */
    bool analog_requested[MAX_USERS];
+   /* the core reads the port's controller touchpad itself */
+   bool touchpad_requested[MAX_USERS];
 
    /* Per-port joypad state bitmask cache.
     * Populated lazily on the first JOYPAD query for each mapped_port

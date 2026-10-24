@@ -304,6 +304,33 @@ extern "C" {
  */
 #define RETRO_DEVICE_POINTER      6
 
+/**
+ * A controller's touchpad, such as the DualShock 4's or the DualSense's.
+ *
+ * It is not the screen: \c RETRO_DEVICE_POINTER is, and a core can read
+ * both at once - a handheld's front touchscreen through the pointer and
+ * its rear touchpad through this, for example.
+ *
+ * Read per port, with the pointer's IDs:
+ * \c RETRO_DEVICE_ID_POINTER_X and \c RETRO_DEVICE_ID_POINTER_Y give a
+ * finger's place, -0x7fff to 0x7fff across the touchpad's surface;
+ * \c RETRO_DEVICE_ID_POINTER_PRESSED whether that finger is on it; and
+ * \c RETRO_DEVICE_ID_POINTER_COUNT how many fingers are.
+ *
+ * The index is the touchpad times 16 plus the finger: 0 is the first
+ * finger on the port's first touchpad, 1 the second, and 16 the first
+ * finger on a second touchpad. As with the pointer, fingers are counted
+ * among those on the surface: index 0 is the first one down.
+ *
+ * A port whose controller has no touchpad answers 0 to every query.
+ * The frontend sets <tt>(1 << RETRO_DEVICE_TOUCHPAD)</tt> in
+ * \c RETRO_ENVIRONMENT_GET_INPUT_DEVICE_CAPABILITIES where it can read
+ * controllers' touchpads at all.
+ *
+ * @see RETRO_DEVICE_POINTER
+ */
+#define RETRO_DEVICE_TOUCHPAD     7
+
 /** @} */
 
 /** @defgroup RETRO_DEVICE_ID_JOYPAD RetroPad Input

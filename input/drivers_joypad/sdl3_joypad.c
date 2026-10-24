@@ -44,6 +44,7 @@ typedef struct _sdl3_joypad
    uint16_t        rumble[2];   /* raw magnitude per retro_rumble_effect (strong/weak) */
    bool            sensor_accel; /* Whether or not the sensor has been connected. */
    bool            sensor_gyro;
+   uint8_t         touch_fingers; /* the first touchpad's, at most two */
 } sdl3_joypad_t;
 
 /**
@@ -315,6 +316,13 @@ static void sdl3_joypad_connect(SDL_JoystickID jid)
          SDL_SetGamepadSensorEnabled(gamepad, SDL_SENSOR_ACCEL, true);
       if (has_gyro && pad->sensor_gyro)
          SDL_SetGamepadSensorEnabled(gamepad, SDL_SENSOR_GYRO, true);
+
+      if (SDL_GetNumGamepadTouchpads(gamepad) > 0)
+      {
+         int fingers        = SDL_GetNumGamepadTouchpadFingers(gamepad, 0);
+         pad->touch_fingers = (uint8_t)(fingers > INPUT_PAD_VIEW_TOUCHES
+               ? INPUT_PAD_VIEW_TOUCHES : fingers > 0 ? fingers : 0);
+      }
    }
 }
 
@@ -747,6 +755,38 @@ static bool sdl3_joypad_get_sensor_input(unsigned pad, unsigned id, float *value
    return true;
 }
 
+static bool sdl3_joypad_get_touchpad(unsigned pad, input_pad_view_t *view)
+{
+   unsigned i;
+   uint8_t down = 0;
+   SDL_Gamepad *gamepad;
+
+   if (     pad >= MAX_USERS
+         || !(gamepad = sdl3_joypads[pad].gamepad)
+         || !sdl3_joypads[pad].touch_fingers)
+      return false;
+
+   for (i = 0; i < sdl3_joypads[pad].touch_fingers; i++)
+   {
+      bool on;
+      float x, y;
+      if (     SDL_GetGamepadTouchpadFinger(gamepad, 0, (int)i, &on, &x, &y, NULL)
+            && on)
+      {
+         /* 0..1 across, as -0x7fff..0x7fff */
+         int32_t tx      = (int32_t)(x * 65534.0f) - 0x7fff;
+         int32_t ty      = (int32_t)(y * 65534.0f) - 0x7fff;
+         view->touch[i]  = (uint32_t)(uint16_t)(int16_t)tx
+                         | ((uint32_t)(uint16_t)(int16_t)ty << 16);
+         down           |= (uint8_t)(1 << i);
+      }
+   }
+   if (SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_TOUCHPAD))
+      down |= INPUT_PAD_TOUCH_PRESS;
+   view->touch_down = down;
+   return true;
+}
+
 /**
  * Queries whether or not the joypad is still connected.
  *
@@ -774,4 +814,10 @@ input_device_driver_t sdl3_joypad = {
    sdl3_joypad_get_sensor_input,
    sdl3_joypad_name,
    "sdl3",
+   NULL, /* get_bt_host */
+   NULL, /* set_bt_host */
+   NULL, /* survives_video */
+   NULL, /* set_player */
+   NULL, /* view */
+   sdl3_joypad_get_touchpad
 };

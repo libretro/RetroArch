@@ -5380,6 +5380,8 @@ static void uninit_libretro_symbols(
     * reset 'analog input requested' flags */
    memset(&input_st->analog_requested, 0,
          sizeof(input_st->analog_requested));
+   memset(&input_st->touchpad_requested, 0,
+         sizeof(input_st->touchpad_requested));
 
    /* Performance counters no longer valid. */
    runloop_st->perf_ptr_libretro  = 0;
@@ -10805,6 +10807,8 @@ bool core_set_controller_port_device(retro_ctx_controller_info_t *pad)
     * of 'input_state()' */
    memset(&input_st->analog_requested, 0,
          sizeof(input_st->analog_requested));
+   memset(&input_st->touchpad_requested, 0,
+         sizeof(input_st->touchpad_requested));
 
 #if defined(HAVE_RUNAHEAD)
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)

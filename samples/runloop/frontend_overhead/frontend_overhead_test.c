@@ -8111,6 +8111,19 @@ static void touch_finger(unsigned f, bool down, int x, int y)
       touch_lent.touch_down &= (uint8_t)~(1u << f);
 }
 
+/* a driver that copies its pads hands over the touchpad alone */
+static unsigned touch_gets;
+
+static bool touch_get(unsigned pad, input_pad_view_t *view)
+{
+   touch_gets++;
+   if (pad != syn_pad_index || !touch_lent.touchpad)
+      return false;
+   memcpy(view->touch, touch_lent.touch, sizeof(view->touch));
+   view->touch_down = touch_lent.touch_down;
+   return true;
+}
+
 static void lane_touchpad(void)
 {
 #if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
@@ -8119,6 +8132,16 @@ static void lane_touchpad(void)
    const input_device_driver_t *joypad_real = input_st->primary_joypad;
    unsigned had = failures;
    int px0, py0, pd0, px1, py1, pd1, pc, mx, my, ml, mr;
+   int tx0, ty0, td0, td1, tc, t16;
+#define TOUCHPAD_READ() do { \
+      run_loop_frames(1); \
+      tx0 = input_driver_state_wrapper(0, RETRO_DEVICE_TOUCHPAD, 0, RETRO_DEVICE_ID_POINTER_X); \
+      ty0 = input_driver_state_wrapper(0, RETRO_DEVICE_TOUCHPAD, 0, RETRO_DEVICE_ID_POINTER_Y); \
+      td0 = input_driver_state_wrapper(0, RETRO_DEVICE_TOUCHPAD, 0, RETRO_DEVICE_ID_POINTER_PRESSED); \
+      td1 = input_driver_state_wrapper(0, RETRO_DEVICE_TOUCHPAD, 1, RETRO_DEVICE_ID_POINTER_PRESSED); \
+      tc  = input_driver_state_wrapper(0, RETRO_DEVICE_TOUCHPAD, 0, RETRO_DEVICE_ID_POINTER_COUNT); \
+      t16 = input_driver_state_wrapper(0, RETRO_DEVICE_TOUCHPAD, 16, RETRO_DEVICE_ID_POINTER_PRESSED); \
+   } while (0)
 #define TOUCH_READ() do { \
       run_loop_frames(1); \
       px0 = input_driver_state_wrapper(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X); \
@@ -8212,17 +8235,54 @@ static void lane_touchpad(void)
    TOUCH_READ();
    CHECK(mr && !ml, "touchpad: pressing it with two fingers is not a right click");
 
+   /* RETRO_DEVICE_TOUCHPAD: the core's own, and then only its own */
+   settings->uints.input_touchpad[0] = INPUT_TOUCHPAD_POINTER;
+   touch_lent.touch_down = 0;
+   touch_finger(1, true, 7000, -8000);
+   CHECK(input_driver_get_capabilities() & (1 << RETRO_DEVICE_TOUCHPAD),
+         "touchpad device: not among the capabilities");
+   TOUCH_READ();
+   CHECK(pd0 && px0 == 7000, "touchpad device: the pointer was not the pad before");
+   TOUCHPAD_READ();
+   CHECK(tx0 == 7000 && ty0 == -8000 && td0 && !td1 && tc == 1 && !t16,
+         "touchpad device: one finger is not the first one down, where it is");
+   TOUCH_READ();
+   CHECK(!pd0 && px0 != 7000,
+         "touchpad device: read by the core, it was still the pointer too");
+   touch_finger(0, true, -100, 200);
+   TOUCHPAD_READ();
+   CHECK(tx0 == -100 && ty0 == 200 && td0 && td1 && tc == 2,
+         "touchpad device: two fingers are not two, in the pad's order");
+   /* a driver that copies its pads */
+   syn_joypad.view         = NULL;
+   syn_joypad.get_touchpad = touch_get;
+   touch_gets              = 0;
+   TOUCHPAD_READ();
+   CHECK(tx0 == -100 && td1 && tc == 2,
+         "touchpad device: a driver's copied touchpad is not read");
+   CHECK(touch_gets == 1, "touchpad device: copied more than once a poll");
+   touch_lent.touchpad = false;
+   TOUCHPAD_READ();
+   CHECK(!td0 && !tc && !tx0, "touchpad device: a pad without one answered");
+   touch_lent.touchpad          = true;
+   syn_joypad.view              = touch_view;
+   syn_joypad.get_touchpad      = NULL;
+   input_st->touchpad_requested[0] = false;
+
    touch_lent.touch_down = 0;
    settings->uints.input_touchpad[0] = INPUT_TOUCHPAD_POINTER;
    fast_forward(false);
    run_loop_frames(3);
    input_st->primary_joypad = joypad_real;
 #undef TOUCH_READ
+#undef TOUCHPAD_READ
    if (failures == had)
       printf("[pass] touchpad: as a touchscreen, each finger is a touch where it"
             " is, the screen's own while there is none; as a mouse, a finger's"
             " moves once a poll, small ones added up, and a press a left or"
-            " with two fingers a right click; off or without one, nothing\n");
+            " with two fingers a right click; off or without one, nothing;"
+            " as RETRO_DEVICE_TOUCHPAD, the fingers down in order, lent or"
+            " copied once a poll, and the port's mapping off once read\n");
 #else
    printf("[skip] touchpad: needs the test drivers\n");
 #endif

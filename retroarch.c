@@ -2324,6 +2324,8 @@ static void retroarch_deinit_drivers(struct retro_callbacks *cbs)
       memset(&input_st->hold_btns, 0, sizeof(hold_buttons_t));
       memset(&input_st->analog_requested, 0,
          sizeof(input_st->analog_requested));
+      memset(&input_st->touchpad_requested, 0,
+         sizeof(input_st->touchpad_requested));
       input_st->current_driver           = NULL;
    }
 
@@ -10216,6 +10218,8 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
 
             memset(&input_st->analog_requested, 0,
                   sizeof(input_st->analog_requested));
+            memset(&input_st->touchpad_requested, 0,
+                  sizeof(input_st->touchpad_requested));
          }
          break;
       case RARCH_CTL_SET_SHUTDOWN:
