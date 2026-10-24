@@ -19,6 +19,23 @@ static bool media_native_capture_region(uint32_t *hash,int ordinal, bool movie_o
       :video->current_video->read_viewport
          &&video->current_video->read_viewport(video->data,pixels,false);
    *hash=UINT32_C(2166136261);
+   if (getenv("MEDIA_TEST_MODAL_UNIFORM"))
+   {
+      unsigned total[3] = {0, 0, 0};
+      for (y = 0; ok && y < 8; y++)
+      {
+         for (x = 0; x < 8; x++)
+         {
+            unsigned sx = w / 2 - w / 16 + (w / 8) * x / 8;
+            unsigned sy = h / 2 - h / 16 + (h / 8) * y / 8;
+            for (ch = 0; ch < 3; ch++)
+               total[ch] += pixels[((size_t)sy * w + sx) * bpp + ch];
+         }
+      }
+      *hash = (total[0] / 64) | ((total[1] / 64) << 8)
+            | ((total[2] / 64) << 16);
+   }
+   else
    for(y=h/4;ok&&y<(movie_only?h/2:h*3/4);y++)for(x=w/4;x<w*3/4;x++)for(ch=0;ch<3;ch++)
       *hash=(*hash^pixels[((size_t)y*w+x)*bpp+ch])*UINT32_C(16777619);
    if(ok&&directory&&ordinal>=0)

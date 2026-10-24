@@ -14,9 +14,9 @@ typedef struct media_modal_av_probe
    HWND hwnd;
    WPARAM command;
    DWORD owner;
-   unsigned moves;
-   retro_atomic_int_t active, verified, done;
-   bool entered, exited, continuous;
+   unsigned moves, capture_serial;
+   retro_atomic_int_t active, verified, done, capture, capture_ready, moved;
+   bool entered, exited, continuous, uniform;
 } media_modal_av_probe_t;
 
 static media_modal_av_probe_t media_modal_probe;
@@ -44,6 +44,8 @@ static void media_modal_av_worker(void *data)
    bool stopping = false;
    int64_t entered_at = 0;
    POINT origin;
+   RECT clip;
+   int direction_x = 1, direction_y = 1, capture;
    origin.x = origin.y = 0;
    PostMessage(probe->hwnd, WM_SYSCOMMAND, probe->command, 0);
    while (cpu_features_get_time_usec() < deadline)
@@ -53,10 +55,20 @@ static void media_modal_av_worker(void *data)
          if (!probe->entered)
          {
             GetCursorPos(&origin);
+            if (GetClipCursor(&clip))
+            {
+               if (origin.x + 64 >= clip.right)
+                  direction_x = -1;
+               if (origin.y + 48 >= clip.bottom)
+                  direction_y = -1;
+            }
             entered_at = cpu_features_get_time_usec();
             probe->entered = true;
          }
-         if (!stopping && (probe->continuous || probe->moves < 2)
+         capture = retro_atomic_load_acquire_int(&probe->capture);
+         retro_atomic_store_release_int(&probe->capture_ready, capture);
+         if (!stopping && !capture
+               && (probe->continuous || probe->moves < 2)
                && cpu_features_get_time_usec() >= entered_at
                   + (int64_t)(probe->moves + 1) * (probe->continuous ? 4000 : 25000))
          {
@@ -71,9 +83,10 @@ static void media_modal_av_worker(void *data)
                unsigned step = probe->continuous ? probe->moves % 8 : probe->moves;
                if (probe->continuous && step > 4)
                   step = 8 - step;
-               SetCursorPos(origin.x + (int)step * (probe->continuous ? 16 : 32),
-                     origin.y + (int)step * (probe->continuous ? 12 : 24));
+               SetCursorPos(origin.x + direction_x * (int)step * (probe->continuous ? 16 : 32),
+                     origin.y + direction_y * (int)step * (probe->continuous ? 12 : 24));
             }
+            retro_atomic_store_release_int(&probe->moved, (int)probe->moves);
          }
          if (!stopping && (!probe->continuous || probe->moves >= 120)
                && retro_atomic_load_acquire_int(&probe->verified))
@@ -149,6 +162,76 @@ static bool media_modal_normal_tick(void)
    return result != -1;
 }
 
+static bool media_modal_pixels_changed(uint32_t first, uint32_t last,
+      bool uniform)
+{
+   unsigned shift;
+   if (!uniform)
+      return first != last;
+   for (shift = 0; shift < 24; shift += 8)
+   {
+      int delta = (int)((last >> shift) & 255) - (int)((first >> shift) & 255);
+      if (delta > 16 || delta < -16)
+         return true;
+   }
+   return false;
+}
+
+/* A capture must keep the viewport size stable through its readback. */
+static bool media_modal_capture(media_modal_av_probe_t *probe, uint32_t *hash,
+      RECT *sample_rect, bool first)
+{
+   RECT previous, current;
+   unsigned stable = 0;
+   int ticket = (int)++probe->capture_serial;
+   bool ok = false;
+   int64_t deadline = cpu_features_get_time_usec() + 1000000;
+   memset(&previous, 0, sizeof(previous));
+   retro_atomic_store_release_int(&probe->capture, ticket);
+   while (retro_atomic_load_acquire_int(&probe->active)
+         && cpu_features_get_time_usec() < deadline)
+   {
+      if (!media_modal_normal_tick())
+         break;
+      if (retro_atomic_load_acquire_int(&probe->capture_ready) != ticket
+            || !GetWindowRect(probe->hwnd, &current))
+         continue;
+      if (EqualRect(&previous, &current))
+      {
+         if (++stable >= 5)
+         {
+            if (first || probe->uniform || EqualRect(sample_rect, &current))
+            {
+               ok = media_native_capture_region(hash, -1, true);
+               if (ok)
+                  *sample_rect = current;
+            }
+            break;
+         }
+      }
+      else
+      {
+         previous = current;
+         stable = 0;
+      }
+   }
+   retro_atomic_store_release_int(&probe->capture, 0);
+   return ok;
+}
+
+static bool media_modal_fit_window(void)
+{
+   RECT window, clip;
+   HWND hwnd = win32_get_window();
+   if (!GetWindowRect(hwnd, &window) || !GetClipCursor(&clip)
+         || clip.right - clip.left <= 64 || clip.bottom - clip.top <= 64)
+      return false;
+   return SetWindowPos(hwnd, NULL, clip.left + 16, clip.top + 16,
+         MIN(window.right - window.left, clip.right - clip.left - 32),
+         MIN(window.bottom - window.top, clip.bottom - clip.top - 32),
+         SWP_NOZORDER | SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS) != 0;
+}
+
 static bool media_native_modal_audio_ready(void)
 {
    const char *cold_audio = getenv("MEDIA_TEST_MODAL_AUDIO_COLD");
@@ -198,7 +281,10 @@ static bool media_native_modal_playback(struct menu_state *menu_st,
    memset(probe, 0, sizeof(*probe));
    memset(&initial, 0, sizeof(initial));
    probe->continuous = getenv("MEDIA_TEST_MODAL_CONTINUOUS") != NULL;
+   probe->uniform = getenv("MEDIA_TEST_MODAL_UNIFORM") != NULL;
    ui_companion_driver_init_first(false, false, false);
+   if (!media_modal_fit_window())
+      return false;
    if (!get_target(menu_st, &target)
          || !target.seek(target.user, 0, cpu_features_get_time_usec())
          || !target.pause(target.user, false, cpu_features_get_time_usec()))
@@ -234,6 +320,9 @@ static bool media_native_modal_playback(struct menu_state *menu_st,
    retro_atomic_int_init(&probe->active, 0);
    retro_atomic_int_init(&probe->verified, 0);
    retro_atomic_int_init(&probe->done, 0);
+   retro_atomic_int_init(&probe->capture, 0);
+   retro_atomic_int_init(&probe->capture_ready, 0);
+   retro_atomic_int_init(&probe->moved, 0);
    hook = SetWindowsHookEx(WH_CALLWNDPROC, media_modal_message, NULL, probe->owner);
    if (!hook)
       return false;
@@ -291,6 +380,9 @@ static bool media_native_modal_playback(struct menu_state *menu_st,
          retro_atomic_store_release_int(&probe->verified, 1);
          continue;
       }
+      if (probe->continuous && !sampled
+            && retro_atomic_load_acquire_int(&probe->moved) < 16)
+         continue;
       if (!probe->continuous && !EqualRect(&live_rect, &sampled_rect))
       {
          sampled_rect = live_rect;
@@ -299,7 +391,8 @@ static bool media_native_modal_playback(struct menu_state *menu_st,
       }
       if (!probe->continuous && stable_geometry++ < 5)
          continue;
-      if (probe->continuous && sampled && !EqualRect(&live_rect, &sampled_rect))
+      if (probe->continuous && !probe->uniform && sampled
+            && !EqualRect(&live_rect, &sampled_rect))
          continue;
       if (!sampled)
       {
@@ -308,13 +401,13 @@ static bool media_native_modal_playback(struct menu_state *menu_st,
          first_frames = frames;
          first_serial = serial;
          first_present = presents;
-         sampled = media_native_capture_region(&first_hash, -1, true);
+         sampled = media_modal_capture(probe, &first_hash, &sampled_rect, true);
       }
       else if (!changed && serial == first_serial && frames - first_frames >= 4096
             && current.position_us >= initial.position_us + 100000)
       {
-         changed = media_native_capture_region(&last_hash, -1, true)
-            && last_hash != first_hash;
+         changed = media_modal_capture(probe, &last_hash, &sampled_rect, false)
+            && media_modal_pixels_changed(first_hash, last_hash, probe->uniform);
          if (changed)
             retro_atomic_store_release_int(&probe->verified, 1);
       }
@@ -366,6 +459,8 @@ static bool media_native_modal_image(struct menu_state *menu_st,
    bool valid = true, sampled = false, geometry = false, restored = false;
    memset(probe, 0, sizeof(*probe));
    ui_companion_driver_init_first(false, false, false);
+   if (!media_modal_fit_window())
+      return false;
    deadline = cpu_features_get_time_usec() + 500000;
    do
       if (!media_modal_normal_tick() || !visible(menu_st))
@@ -379,6 +474,9 @@ static bool media_native_modal_image(struct menu_state *menu_st,
    retro_atomic_int_init(&probe->active, 0);
    retro_atomic_int_init(&probe->verified, 0);
    retro_atomic_int_init(&probe->done, 0);
+   retro_atomic_int_init(&probe->capture, 0);
+   retro_atomic_int_init(&probe->capture_ready, 0);
+   retro_atomic_int_init(&probe->moved, 0);
    hook = SetWindowsHookEx(WH_CALLWNDPROC, media_modal_message, NULL, probe->owner);
    if (!hook)
       return false;
