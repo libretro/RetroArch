@@ -597,6 +597,146 @@ static void lane_reinit_under_wrapper(unsigned reps)
 }
 
 /* ------------------------------------------------------------------ */
+/* Lane: the unfocused stub frame across a driver switch              */
+/*   Android stubs the frame on focus loss and lifts it on focus      */
+/*   gain; a core load in between can switch or rebuild the driver.  */
+/* ------------------------------------------------------------------ */
+
+static video_driver_t        stub_a_driver;
+static video_driver_t        stub_b_driver;
+static video_driver_t        stub_inner_driver;
+static const video_driver_t *stub_from;
+static const video_driver_t *stub_inner;
+static retro_atomic_int_t    stub_a_frames;
+static retro_atomic_int_t    stub_b_frames;
+static retro_atomic_int_t    stub_inner_frames;
+
+static bool stub_a_frame(void *data, const void *frame,
+      unsigned dims, uint64_t frame_count,
+      unsigned pitch, const char *msg, video_frame_info_t *video_info)
+{
+   retro_atomic_fetch_add_int(&stub_a_frames, 1);
+   return stub_from->frame(data, frame, dims, frame_count,
+         pitch, msg, video_info);
+}
+
+static bool stub_b_frame(void *data, const void *frame,
+      unsigned dims, uint64_t frame_count,
+      unsigned pitch, const char *msg, video_frame_info_t *video_info)
+{
+   retro_atomic_fetch_add_int(&stub_b_frames, 1);
+   return stub_from->frame(data, frame, dims, frame_count,
+         pitch, msg, video_info);
+}
+
+static bool stub_inner_frame(void *data, const void *frame,
+      unsigned dims, uint64_t frame_count,
+      unsigned pitch, const char *msg, video_frame_info_t *video_info)
+{
+   retro_atomic_fetch_add_int(&stub_inner_frames, 1);
+   return stub_inner->frame(data, frame, dims, frame_count,
+         pitch, msg, video_info);
+}
+
+static void lane_stub_frame_switch(void)
+{
+   unsigned had                   = failures;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   int flags                      = DRIVER_VIDEO_MASK | DRIVER_INPUT_MASK;
+   bool reopen_menu               = menu_is_up();
+   video_driver_frame_t wrapper_frame;
+   thread_video_t *thr;
+   int av;
+
+   expect_wrapper(false, "stub-frame lane");
+   if (reopen_menu)
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   run_frames(3);
+
+   /* Stubbed under driver A, lifted under driver B */
+   stub_from               = video_st->current_video;
+   stub_a_driver           = *stub_from;
+   stub_a_driver.frame     = stub_a_frame;
+   stub_b_driver           = *stub_from;
+   stub_b_driver.frame     = stub_b_frame;
+   video_st->current_video = &stub_a_driver;
+   video_driver_set_stub_frame();
+   video_st->current_video = &stub_b_driver;
+   video_driver_unset_stub_frame();
+   CHECK(stub_a_driver.frame == stub_a_frame,
+         "stub-frame lane: driver A's frame was left stubbed");
+   CHECK(stub_b_driver.frame == stub_b_frame,
+         "stub-frame lane: driver B was given another driver's frame");
+
+   /* While stubbed no frame reaches the driver, and the core is told */
+   retro_atomic_store_release_int(&stub_a_frames, 0);
+   retro_atomic_store_release_int(&stub_b_frames, 0);
+   video_driver_set_stub_frame();
+   run_frames(3);
+   av = 0;
+   runloop_environment_cb(RETRO_ENVIRONMENT_GET_AUDIO_VIDEO_ENABLE, &av);
+   CHECK(!retro_atomic_load_acquire_int(&stub_a_frames)
+         && !retro_atomic_load_acquire_int(&stub_b_frames),
+         "stub-frame lane: %d frames drew while stubbed",
+         retro_atomic_load_acquire_int(&stub_a_frames)
+         + retro_atomic_load_acquire_int(&stub_b_frames));
+   CHECK(!(av & RETRO_AV_ENABLE_VIDEO),
+         "stub-frame lane: video reported enabled while stubbed");
+   video_driver_unset_stub_frame();
+   run_frames(3);
+   av = 0;
+   runloop_environment_cb(RETRO_ENVIRONMENT_GET_AUDIO_VIDEO_ENABLE, &av);
+   CHECK(retro_atomic_load_acquire_int(&stub_b_frames) > 0
+         && !retro_atomic_load_acquire_int(&stub_a_frames),
+         "stub-frame lane: after the stub, B drew %d frames and A %d",
+         retro_atomic_load_acquire_int(&stub_b_frames),
+         retro_atomic_load_acquire_int(&stub_a_frames));
+   CHECK(av & RETRO_AV_ENABLE_VIDEO,
+         "stub-frame lane: video reported disabled after the stub");
+   video_st->current_video = (video_driver_t*)stub_from;
+
+   /* Under the wrapper, rebuilt while stubbed: the wrapper's vtable
+    * keeps its frame and the driver behind it draws nothing */
+   set_threaded_via_setting(true);
+   run_frames(3);
+   expect_wrapper(true, "stub-frame lane");
+   wrapper_frame = video_st->current_video->frame;
+   video_driver_set_stub_frame();
+   CHECK(video_st->current_video->frame == wrapper_frame,
+         "stub-frame lane: the wrapper's frame was replaced");
+   command_event(CMD_EVENT_REINIT, &flags);
+   run_frames(1);
+   expect_wrapper(true, "stub-frame lane, after reinit");
+   thr                     = (thread_video_t*)video_st->data;
+   stub_inner              = thr->driver;
+   stub_inner_driver       = *thr->driver;
+   stub_inner_driver.frame = stub_inner_frame;
+   set_driver(thr, &stub_inner_driver);
+   retro_atomic_store_release_int(&stub_inner_frames, 0);
+   run_frames(3);
+   video_thread_wait_idle();
+   CHECK(!retro_atomic_load_acquire_int(&stub_inner_frames),
+         "stub-frame lane: %d frames drew behind a wrapper rebuilt "
+         "while stubbed",
+         retro_atomic_load_acquire_int(&stub_inner_frames));
+   video_driver_unset_stub_frame();
+   run_frames(5);
+   video_thread_wait_idle();
+   CHECK(retro_atomic_load_acquire_int(&stub_inner_frames) > 0,
+         "stub-frame lane: nothing drew behind the wrapper after the stub");
+   CHECK(video_st->current_video->frame == wrapper_frame,
+         "stub-frame lane: the rebuilt wrapper's frame was replaced");
+   set_driver(thr, stub_inner);
+   set_threaded_via_setting(false);
+   expect_wrapper(false, "stub-frame lane");
+
+   if (reopen_menu)
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   if (failures == had)
+      fprintf(stderr, "[pass] stub-frame lane (driver switch, wrapper rebuild)\n");
+}
+
+/* ------------------------------------------------------------------ */
 /* Lane: toggle with the menu closed                                  */
 /*   Setting written while the core is running, no menu in between,  */
 /*   as a hotkey or override would do it.                            */
@@ -11689,6 +11829,7 @@ int main(int argc, char *argv[])
    lane_vp_params_publish();
    lane_toggle_cycle(cycles);
    lane_reinit_under_wrapper(cycles / 2 + 1);
+   lane_stub_frame_switch();
 #ifdef HAVE_GFX_WIDGETS
    lane_threaded_off_in_flight();
 #endif

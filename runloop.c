@@ -3937,6 +3937,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                && !runloop_ff_skips_render(
                   (video_st->main_flags & VIDEO_FLAG_FF_SKIP_FRAME) != 0,
                   (video_st->main_flags & VIDEO_FLAG_FF_FRAME_OWED) != 0)
+               && !(video_st->main_flags & VIDEO_FLAG_STUB_FRAME)
                && !(video_st->current_video->frame == video_null.frame))
             result |= RETRO_AV_ENABLE_VIDEO;
 
