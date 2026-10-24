@@ -24,6 +24,7 @@
 #include "../video_shader_parse.h"
 #include "../../retroarch.h"
 #include "glslang_util.h"
+#include "slang_rect.h"
 
 /* Vulkan maximum texture bindings inside shader. 
  * D3D11 has a hard limit of 16 */
@@ -413,6 +414,23 @@ bool glslang_compile_shader_cached(const char *shader_path,
 bool glslang_compile_shader_text(const char *shader_path,
       glslang_output *output, void *include_cache,
       const struct slang_text_target *text);
+
+#ifdef HAVE_RSLC
+/* A pass's frame-rectangle remap (slang_rect.h) done by rslc on the
+ * pass's own source: placed from @vs, @fs, the stages as compiled, it
+ * hands back the stages it rewrote with their tables and, for @text,
+ * their text; a stage left as it was comes back NULL. *verdict as
+ * slang_rect_remap_pass() says. False when rslc cannot do it: the
+ * caller rewrites the SPIR-V. */
+bool slang_compile_remapped(const char *shader_path,
+      const uint32_t *vs, size_t vs_words,
+      const uint32_t *fs, size_t fs_words,
+      bool source, bool linear, enum slang_rect_wrap wrap,
+      const struct slang_text_target *text,
+      enum slang_rect_result *verdict,
+      struct slang_blob **vs_out, struct slang_blob **fs_out,
+      char **vs_text, char **fs_text);
+#endif
 
 /* The compile of one pass on a thread that is not the chain's: it
  * reads, compiles and writes the cache as the chain's thread would,

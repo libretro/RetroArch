@@ -3697,29 +3697,53 @@ static bool slang_pass_init_feedback(struct slang_pass *pass)
 
 /* Has a pass's stages read the frame where it lies, as slang_rect.h
  * describes, once for the stages it was given: a chain rebuilt for a
- * new swapchain builds its passes again. A pass that cannot keeps its
- * stages and needs the frame on its own. */
+ * new swapchain builds its passes again. Stages rslc compiled it
+ * compiles again from the pass's source; others are rewritten on the
+ * SPIR-V. A pass that cannot keeps its stages and needs the frame on
+ * its own. */
 static void slang_pass_read_frame_in_place(struct slang_pass *pass)
 {
+   enum slang_rect_result res;
+   uint32_t *nv = NULL, *nf = NULL;
+   size_t    nvl = 0, nfl = 0;
+#ifdef HAVE_RSLC
+   struct slang_blob         *vb     = NULL;
+   struct slang_blob         *fb     = NULL;
+   const struct video_shader *preset = pass->common->shader_preset;
+#endif
+
    if (pass->frame_tried)
       return;
    pass->frame_tried = true;
+#ifdef HAVE_RSLC
+   if (     pass->vertex_blob   && pass->vertex_blob->refl
+         && pass->fragment_blob && pass->fragment_blob->refl
+         && preset && pass->pass_number < preset->passes
+         && slang_compile_remapped(preset->pass[pass->pass_number].source.path,
+               pass->vertex_shader, pass->num_vertex_shader,
+               pass->fragment_shader, pass->num_fragment_shader,
+               pass->pass_number == 0, pass->common->frame_linear,
+               pass->common->frame_wrap, NULL, &res, &vb, &fb, NULL, NULL))
    {
-      uint32_t *nv = NULL, *nf = NULL;
-      size_t    nvl = 0, nfl = 0;
-      pass->frame_copy = slang_rect_remap_pass(
-            pass->vertex_shader, pass->num_vertex_shader,
-            pass->fragment_shader, pass->num_fragment_shader,
-            pass->pass_number == 0, pass->common->frame_linear,
-            pass->common->frame_wrap, &nv, &nvl, &nf, &nfl)
-            == SLANG_RECT_UNSUPPORTED;
-      /* a rewritten stage is a module without tables; it crosses */
-      if (nv)
-         slang_pass_set_blob(pass, VK_SHADER_STAGE_VERTEX_BIT, slang_blob_adopt_words(nv, nvl));
-      if (nf)
-         slang_pass_set_blob(pass, VK_SHADER_STAGE_FRAGMENT_BIT, slang_blob_adopt_words(nf, nfl));
-      pass->frame_tried = true;
+      pass->frame_copy = res == SLANG_RECT_UNSUPPORTED;
+      if (vb)
+         slang_pass_set_blob(pass, VK_SHADER_STAGE_VERTEX_BIT, vb);
+      if (fb)
+         slang_pass_set_blob(pass, VK_SHADER_STAGE_FRAGMENT_BIT, fb);
+      return;
    }
+#endif
+   res = slang_rect_remap_pass(
+         pass->vertex_shader, pass->num_vertex_shader,
+         pass->fragment_shader, pass->num_fragment_shader,
+         pass->pass_number == 0, pass->common->frame_linear,
+         pass->common->frame_wrap, &nv, &nvl, &nf, &nfl);
+   pass->frame_copy = res == SLANG_RECT_UNSUPPORTED;
+   /* a rewritten stage is a module without tables; it crosses */
+   if (nv)
+      slang_pass_set_blob(pass, VK_SHADER_STAGE_VERTEX_BIT, slang_blob_adopt_words(nv, nvl));
+   if (nf)
+      slang_pass_set_blob(pass, VK_SHADER_STAGE_FRAGMENT_BIT, slang_blob_adopt_words(nf, nfl));
 }
 
 static bool slang_pass_build(struct slang_pass *pass)

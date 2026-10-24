@@ -137,30 +137,12 @@ static enum slang_rect_result expected(const struct shader *s,
    return SLANG_RECT_UNSUPPORTED;
 }
 
-/* Where the rectangle goes, as a chain decides it for a pass of one
- * stage: the push constants, or the uniform block when they would come
- * out past SLANG_RECT_PUSH_LIMIT. false when neither will do. */
+/* Where the rectangle goes for a pass of one stage, as a chain decides
+ * it; false when neither the push constants nor the uniform block will
+ * do. */
 static bool place_for(const struct shader *s, struct slang_rect_place *p)
 {
-   uint32_t end;
-   p->where   = SLANG_RECT_PUSH;
-   p->set     = 0;
-   p->binding = 0;
-   p->offset  = 0;
-   if ((end = slang_rect_block_end(s->spv, s->words, p)) == ~0u)
-      return false;
-   if (((end + 15) & ~15u) + 48 <= SLANG_RECT_PUSH_LIMIT)
-   {
-      p->offset = end;
-      return true;
-   }
-   if (!slang_rect_uniform_block(s->spv, s->words, &p->set, &p->binding))
-      return false;
-   p->where = SLANG_RECT_UBO;
-   if ((end = slang_rect_block_end(s->spv, s->words, p)) == ~0u)
-      return false;
-   p->offset = end;
-   return true;
+   return slang_rect_place_pass(s->spv, s->words, s->spv, s->words, p);
 }
 
 /* The module's GLSL (version 450) or HLSL (shader model 5.0), malloc'd;

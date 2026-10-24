@@ -1441,14 +1441,55 @@ static void gl3_pass_set_pass_number(struct gl3_pass *pass, unsigned number)
 }
 
 
+static void gl3_text_target(struct slang_text_target *t);
+
 /* Has a pass's stages read the frame where it lies, as slang_rect.h
- * describes; a pass that cannot keeps its stages and needs the frame
- * copied out. */
+ * describes. Stages rslc compiled it compiles again from the pass's
+ * source, printed when the pass links the compiler's text; others are
+ * rewritten on the SPIR-V and cross. A pass that cannot keeps its
+ * stages and needs the frame copied out. */
 static void gl3_pass_read_frame_in_place(struct gl3_pass *pass)
 {
+   enum slang_rect_result res;
    uint32_t *nv = NULL, *nf = NULL;
    size_t    nvl = 0, nfl = 0;
-   enum slang_rect_result res = slang_rect_remap_pass(
+#ifdef HAVE_RSLC
+   struct slang_text_target   text;
+   struct slang_blob         *vb     = NULL;
+   struct slang_blob         *fb     = NULL;
+   char                      *vt     = NULL;
+   char                      *ft     = NULL;
+   bool                       print  = pass->vertex_text && pass->fragment_text;
+   const struct video_shader *preset = pass->common->shader_preset;
+
+   gl3_text_target(&text);
+   if (     pass->vertex_blob   && pass->vertex_blob->refl
+         && pass->fragment_blob && pass->fragment_blob->refl
+         && preset && pass->pass_number < preset->passes
+         && slang_compile_remapped(preset->pass[pass->pass_number].source.path,
+               pass->vertex_shader, pass->num_vertex_shader,
+               pass->fragment_shader, pass->num_fragment_shader,
+               pass->pass_number == 0, pass->common->frame_linear,
+               pass->common->frame_wrap, print ? &text : NULL,
+               &res, &vb, &fb, &vt, &ft))
+   {
+      pass->frame_copy = res == SLANG_RECT_UNSUPPORTED;
+      if (vb)
+      {
+         gl3_pass_set_blob(pass, GL_VERTEX_SHADER, vb);
+         gl3_pass_set_shader_text(pass, GL_VERTEX_SHADER, vt);
+      }
+      if (fb)
+      {
+         gl3_pass_set_blob(pass, GL_FRAGMENT_SHADER, fb);
+         gl3_pass_set_shader_text(pass, GL_FRAGMENT_SHADER, ft);
+      }
+      free(vt);
+      free(ft);
+      return;
+   }
+#endif
+   res = slang_rect_remap_pass(
          pass->vertex_shader, pass->num_vertex_shader,
          pass->fragment_shader, pass->num_fragment_shader,
          pass->pass_number == 0, pass->common->frame_linear,

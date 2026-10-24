@@ -1910,6 +1910,41 @@ end:
    return res;
 }
 
+bool slang_rect_place_pass(const uint32_t *vs, size_t vs_words,
+      const uint32_t *fs, size_t fs_words, struct slang_rect_place *place)
+{
+   uint32_t vend, fend;
+
+   place->where   = SLANG_RECT_PUSH;
+   place->set     = 0;
+   place->binding = 0;
+   place->offset  = 0;
+   vend = slang_rect_block_end(vs, vs_words, place);
+   fend = slang_rect_block_end(fs, fs_words, place);
+   if (vend == ~0u || fend == ~0u)
+      return false;
+   place->offset = vend > fend ? vend : fend;
+
+   /* Push constants are scarce: the uniform block takes what does not
+    * fit. */
+   if (((place->offset + 15) & ~15u) + 48 > SLANG_RECT_PUSH_LIMIT)
+   {
+      if (     !slang_rect_uniform_block(vs, vs_words,
+                  &place->set, &place->binding)
+            && !slang_rect_uniform_block(fs, fs_words,
+                  &place->set, &place->binding))
+         return false;
+      place->where  = SLANG_RECT_UBO;
+      place->offset = 0;
+      vend = slang_rect_block_end(vs, vs_words, place);
+      fend = slang_rect_block_end(fs, fs_words, place);
+      if (vend == ~0u || fend == ~0u)
+         return false;
+      place->offset = vend > fend ? vend : fend;
+   }
+   return true;
+}
+
 enum slang_rect_result slang_rect_remap_pass(
       const uint32_t *vs, size_t vs_words,
       const uint32_t *fs, size_t fs_words,
@@ -1923,39 +1958,13 @@ enum slang_rect_result slang_rect_remap_pass(
    uint32_t *fout     = NULL;
    size_t    vout_len = 0;
    size_t    fout_len = 0;
-   uint32_t  vend, fend;
 
-   place.where   = SLANG_RECT_PUSH;
-   place.set     = 0;
-   place.binding = 0;
-   place.offset  = 0;
    *vs_out       = NULL;
    *fs_out       = NULL;
    *vs_out_words = 0;
    *fs_out_words = 0;
-   vend = slang_rect_block_end(vs, vs_words, &place);
-   fend = slang_rect_block_end(fs, fs_words, &place);
-   if (vend == ~0u || fend == ~0u)
+   if (!slang_rect_place_pass(vs, vs_words, fs, fs_words, &place))
       return SLANG_RECT_UNSUPPORTED;
-   place.offset = vend > fend ? vend : fend;
-
-   /* Push constants are scarce: the uniform block takes what does not
-    * fit. */
-   if (((place.offset + 15) & ~15u) + 48 > SLANG_RECT_PUSH_LIMIT)
-   {
-      if (     !slang_rect_uniform_block(vs, vs_words,
-                  &place.set, &place.binding)
-            && !slang_rect_uniform_block(fs, fs_words,
-                  &place.set, &place.binding))
-         return SLANG_RECT_UNSUPPORTED;
-      place.where  = SLANG_RECT_UBO;
-      place.offset = 0;
-      vend = slang_rect_block_end(vs, vs_words, &place);
-      fend = slang_rect_block_end(fs, fs_words, &place);
-      if (vend == ~0u || fend == ~0u)
-         return SLANG_RECT_UNSUPPORTED;
-      place.offset = vend > fend ? vend : fend;
-   }
 
    vres = slang_rect_remap(vs, vs_words, source, linear, wrap, &place,
          &vout, &vout_len);

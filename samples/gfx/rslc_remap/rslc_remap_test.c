@@ -196,33 +196,6 @@ static bool compile(const char *src, size_t len, bool vert, enum rslc_dst dst,
    return true;
 }
 
-/* Where the rectangle goes, as a chain decides it for a pass of one
- * stage, from the stage's module: the push constants, or the uniform
- * block when they would come out past the push limit. */
-static bool place_for(const uint32_t *spv, size_t words,
-      struct slang_rect_place *p)
-{
-   uint32_t end;
-   p->where   = SLANG_RECT_PUSH;
-   p->set     = 0;
-   p->binding = 0;
-   p->offset  = 0;
-   if ((end = slang_rect_block_end(spv, words, p)) == ~0u)
-      return false;
-   if (((end + 15) & ~15u) + 48 <= SLANG_RECT_PUSH_LIMIT)
-   {
-      p->offset = end;
-      return true;
-   }
-   if (!slang_rect_uniform_block(spv, words, &p->set, &p->binding))
-      return false;
-   p->where = SLANG_RECT_UBO;
-   if ((end = slang_rect_block_end(spv, words, p)) == ~0u)
-      return false;
-   p->offset = end;
-   return true;
-}
-
 static void remap_for(struct rslc_remap *rm, const struct slang_rect_place *pl,
       bool source, const struct sampling *m)
 {
@@ -273,7 +246,8 @@ static int remap_one(const char *name, const char *src, size_t len,
 
    if (!compile(src, len, vert, RSLC_DST_SPIRV, 0, NULL, &plain, &o))
       return -1;
-   if (!place_for(plain.spirv, plain.spirv_len, &pl))
+   if (!slang_rect_place_pass(plain.spirv, plain.spirv_len,
+            plain.spirv, plain.spirv_len, &pl))
    {
       /* nothing to place: slang_rect.c refuses the stage */
       rslc_result_free(&plain, &o);
@@ -789,7 +763,8 @@ static int gl_run(void)
             continue;
          if (!compile(src, len, false, RSLC_DST_SPIRV, 0, NULL, &plain, &o))
             continue;
-         if (!place_for(plain.spirv, plain.spirv_len, &pl))
+         if (!slang_rect_place_pass(plain.spirv, plain.spirv_len,
+            plain.spirv, plain.spirv_len, &pl))
          {
             rslc_result_free(&plain, &o);
             continue;

@@ -134,6 +134,13 @@ enum slang_rect_result slang_rect_remap(const uint32_t *in, size_t in_len,
       const struct slang_rect_place *place,
       uint32_t **out, size_t *out_len);
 
+/* Where a pass's two stages take the three vec4s: in the push
+ * constants past both stages' own, or in the uniform block when those
+ * would come out past SLANG_RECT_PUSH_LIMIT; false when neither will
+ * do. */
+bool slang_rect_place_pass(const uint32_t *vs, size_t vs_words,
+      const uint32_t *fs, size_t fs_words, struct slang_rect_place *place);
+
 /* A pass's two stages, rewritten as slang_rect_remap() does with the
  * three vec4s placed as struct slang_rect_place describes: in the push
  * constants past both stages' own, or in the uniform block when those
