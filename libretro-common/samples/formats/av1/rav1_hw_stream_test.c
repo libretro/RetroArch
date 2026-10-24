@@ -404,6 +404,84 @@ static void test_hdr(void)
    video_hw_frame_abandon(&held);
 }
 
+static uint8_t *retained_sequence;
+static size_t retained_size;
+static unsigned retain_calls;
+static bool retain_refuse;
+
+static bool retain_configuration(
+      void *user, const rav1_sequence_t *seq, const rav1_obu_t *obu)
+{
+   CHECK(user == &factory && !memcmp(seq, &sequence, sizeof(sequence)));
+   retain_calls++;
+   return !retain_refuse
+          && rav1_hw_stream_retain_config(
+                &retained_sequence, &retained_size, obu);
+}
+
+static void test_retained_configuration(void)
+{
+   rav1_sequence_t config = sequence;
+   rav1_obu_t obu;
+   video_hw_frame_t frame;
+   unsigned before, closed, mode;
+   size_t offset = 0;
+   config.enable_filter_intra ^= 1;
+   CHECK(rav1_hw_stream_init(&stream, &config));
+   stream.retain_sequence = retain_configuration;
+   stream.sequence_user   = &factory;
+   memcpy(unit, sequence_obu, sizeof(sequence_obu));
+   CHECK(!rav1_hw_stream_begin(&stream, unit, sizeof(sequence_obu)));
+   CHECK(rav1_hw_stream_step(&stream, &frame, false)
+         == RAV1_HW_STREAM_PROGRESS);
+   CHECK(retain_calls == 1 && retained_size == sizeof(sequence_obu));
+   CHECK(!memcmp(retained_sequence, sequence_obu, retained_size));
+   CHECK(rav1_hw_stream_step(&stream, &frame, false) == RAV1_HW_STREAM_END);
+   memset(unit, 0, sizeof(sequence_obu));
+   CHECK(!memcmp(retained_sequence, sequence_obu, retained_size));
+   rav1_hw_stream_close(&stream);
+   CHECK(rav1_obu_next(&obu, retained_sequence, retained_size, &offset, true)
+         == 1);
+   CHECK(rav1_hw_stream_retain_config(
+         &retained_sequence, &retained_size, &obu));
+   obu.size = 1024u * 1024u + 1;
+   CHECK(!rav1_hw_stream_retain_config(
+         &retained_sequence, &retained_size, &obu));
+   CHECK(retained_size == sizeof(sequence_obu));
+   free(retained_sequence);
+   retained_sequence = NULL;
+   retained_size     = 0;
+
+   retain_refuse = true;
+   before        = opens;
+   closed        = closes;
+   CHECK(rav1_hw_stream_init(&stream, NULL));
+   stream.retain_sequence = retain_configuration;
+   stream.sequence_user   = &factory;
+   CHECK(!rav1_hw_stream_begin(&stream, sequence_obu, sizeof(sequence_obu)));
+   CHECK(rav1_hw_stream_step(&stream, &frame, false) == -2);
+   CHECK(!stream.opened && !stream.packet && !frame.image);
+   CHECK(opens == before + 1 && closes == closed + 1);
+   rav1_hw_stream_close(&stream);
+   CHECK(closes == closed + 1);
+   retain_refuse = false;
+
+   for (mode = 0; mode < 2; mode++)
+   {
+      config = sequence;
+      if (mode)
+         config.operating_points[0].tier ^= 1;
+      else
+         config.operating_points[0].level ^= 1;
+      CHECK(rav1_hw_stream_init(&stream, &config));
+      before = opens;
+      CHECK(!rav1_hw_stream_begin(&stream, sequence_obu, sizeof(sequence_obu)));
+      CHECK(rav1_hw_stream_step(&stream, &frame, false) == -2);
+      CHECK(opens == before);
+      rav1_hw_stream_close(&stream);
+   }
+}
+
 int main(void)
 {
    CHECK(rav1_sequence_parse(&sequence, sequence_obu + 2,
@@ -417,6 +495,7 @@ int main(void)
    test_discard_and_cancel();
    test_sequences();
    test_initial_sequence();
+   test_retained_configuration();
    test_decode_failure();
    test_restart();
    test_hdr();

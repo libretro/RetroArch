@@ -89,11 +89,14 @@ static void make_webm_clip(int inband, unsigned matrix, unsigned transfer,
       put(!i || (cues && i == frames / 2) ? 128 : 0);
       if (!i)
          media_at = used;
-      if (!i && inband)
+      if (!i && (inband || hdr == 4))
+         copy(config + 4, sizeof(config) - 4);
+      if (!i && inband && hdr == 4)
          copy(config + 4, sizeof(config) - 4);
       if (!i && hdr)
          copy(cll, sizeof(cll));
-      if (hdr == 2 && i == 4) copy(changed_cll, sizeof(changed_cll));
+      if (hdr == 2 && i == 4)
+         copy(changed_cll, sizeof(changed_cll));
       copy(packet, sizeof(packet));
       end_element(b);
    }

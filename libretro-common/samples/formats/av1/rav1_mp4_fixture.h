@@ -69,7 +69,7 @@ static void make_mp4_clip(int with_config, int hdr)
    b = box("mvhd");
    zeros(12);
    be32(1000);
-   be32(hdr == 2 ? 120 : 80);
+   be32(hdr >= 2 ? 120 : 80);
    zeros(80);
    end_box(b);
    trak = box("trak");
@@ -82,7 +82,7 @@ static void make_mp4_clip(int with_config, int hdr)
    b = box("mdhd");
    zeros(12);
    be32(1000);
-   be32(hdr == 2 ? 120 : 80);
+   be32(hdr >= 2 ? 120 : 80);
    zeros(4);
    end_box(b);
    b = box("hdlr");
@@ -136,25 +136,26 @@ static void make_mp4_clip(int with_config, int hdr)
    b = box("stts");
    be32(0);
    be32(1);
-   be32(hdr == 2 ? 3 : 2);
+   be32(hdr >= 2 ? 3 : 2);
    be32(40);
    end_box(b);
    b = box("stsc");
    be32(0);
    be32(1);
    be32(1);
-   be32(hdr == 2 ? 3 : 2);
+   be32(hdr >= 2 ? 3 : 2);
    be32(1);
    end_box(b);
    b = box("stsz");
    be32(0);
    be32(hdr ? 0 : sizeof(packet));
-   be32(hdr == 2 ? 3 : 2);
+   be32(hdr >= 2 ? 3 : 2);
    if (hdr)
    {
-      be32((uint32_t)(sizeof(packet) + sizeof(cll) + 40 * sizeof(unknown)));
-      be32((uint32_t)(sizeof(packet) + (hdr == 2 ? sizeof(changed_cll) : 0)));
-      if (hdr == 2) be32(sizeof(packet));
+      be32((uint32_t)(sizeof(packet) + sizeof(cll) + 40 * sizeof(unknown)
+            + (hdr == 4 ? sizeof(config) - 4 : 0)));
+      be32((uint32_t)(sizeof(packet) + (hdr >= 2 ? sizeof(changed_cll) : 0)));
+      if (hdr >= 2) be32(sizeof(packet));
    }
    end_box(b);
    b = box("stco");
@@ -165,10 +166,10 @@ static void make_mp4_clip(int with_config, int hdr)
    end_box(b);
    b = box("stss");
    be32(0);
-   be32(hdr == 2 ? 3 : hdr ? 2 : 1);
+   be32(hdr >= 2 ? 3 : hdr ? 2 : 1);
    be32(1);
    if (hdr) be32(2);
-   if (hdr == 2) be32(3);
+   if (hdr >= 2) be32(3);
    end_box(b);
    end_box(stbl);
    end_box(minf);
@@ -177,15 +178,16 @@ static void make_mp4_clip(int with_config, int hdr)
    end_box(moov);
    b = box("mdat");
    media_at = used;
+   if (hdr == 4) copy(config + 4, sizeof(config) - 4);
    if (hdr)
    {
       for (i = 0; i < 40; i++) copy(unknown, sizeof(unknown));
       copy(cll, sizeof(cll));
    }
    copy(packet, sizeof(packet));
-   if (hdr == 2) copy(changed_cll, sizeof(changed_cll));
+   if (hdr >= 2) copy(changed_cll, sizeof(changed_cll));
    copy(packet, sizeof(packet));
-   if (hdr == 2) copy(packet, sizeof(packet));
+   if (hdr >= 2) copy(packet, sizeof(packet));
    end_box(b);
    patch32(chunk, (uint32_t)media_at);
 }

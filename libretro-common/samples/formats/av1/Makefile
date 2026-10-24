@@ -37,11 +37,11 @@ MP4_SOURCES := $(COMMON)/formats/mp4/rmp4.c $(COMMON)/formats/mp4/rmp4_video.c \
       $(COMMON)/formats/image/image_hdr_blit.c $(COMMON)/features/features_cpu.c \
       $(COMMON)/time/rtime.c $(COMMON)/formats/av1/rav1_hw.c
 
-$(TARGET_TEST2): rav1_mp4_stream_test.c rav1_mp4_fixture.h $(MP4_SOURCES) $(wildcard $(COMMON)/include/formats/rav1*.h) $(COMMON)/include/formats/rmp4_video.h
+$(TARGET_TEST2): rav1_mp4_stream_test.c rav1_sequence_cache_test.h rav1_mp4_fixture.h $(MP4_SOURCES) $(wildcard $(COMMON)/include/formats/rav1*.h) $(COMMON)/include/formats/rmp4_video.h
 	$(CC) $(CFLAGS) -DHAVE_RAV1 -DHAVE_RMP4 -ffunction-sections -fdata-sections -o $@ $< $(MP4_SOURCES) $(LDFLAGS) -Wl,--gc-sections -lm
 
 WEBM_SOURCES := $(COMMON)/formats/webm/rwebm.c $(COMMON)/formats/webm/rwebm_video.c
-$(TARGET_TEST3): rav1_webm_stream_test.c rav1_webm_fixture.h rav1_mp4_fixture.h $(MP4_SOURCES) $(WEBM_SOURCES) $(wildcard $(COMMON)/include/formats/rav1*.h) $(COMMON)/include/formats/rwebm_video.h Makefile
+$(TARGET_TEST3): rav1_webm_stream_test.c rav1_sequence_cache_test.h rav1_webm_fixture.h rav1_mp4_fixture.h $(MP4_SOURCES) $(WEBM_SOURCES) $(wildcard $(COMMON)/include/formats/rav1*.h) $(COMMON)/include/formats/rwebm_video.h Makefile
 	$(CC) $(CFLAGS) -DHAVE_RAV1 -DRWEBM_VIDEO_MAX_TS=4 -ffunction-sections -fdata-sections -o $@ $< $(MP4_SOURCES) $(WEBM_SOURCES) $(LDFLAGS) -Wl,--gc-sections -lm
 
 $(TARGET_TEST): rav1_hw_stream_test.c $(COMMON)/formats/av1/rav1_hw.c $(wildcard $(COMMON)/include/formats/rav1*.h)
@@ -104,6 +104,8 @@ check: all
 	$(RUNNER) ./$(TARGET_TEST)
 	$(RUNNER) ./$(TARGET_TEST2)
 	$(RUNNER) ./$(TARGET_TEST3)
+	$(RUNNER) ./$(TARGET_TEST2) --config
+	$(RUNNER) ./$(TARGET_TEST3) --config
 	$(RUNNER) ./$(BACKEND)
 
 clean:

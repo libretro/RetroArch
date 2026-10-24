@@ -70,6 +70,24 @@ static bool open_backend(void *user, const rav1_sequence_t *seq, unsigned slots,
    return true;
 }
 
+static rav1_sequence_t admitted_sequence;
+static unsigned config_opens;
+static bool open_config(void *user, const rav1_sequence_t *seq,
+      const rav1_obu_t *obu, const video_color_metadata_t *color,
+      unsigned slots, rav1_hw_ops_t *ops)
+{
+   CHECK(obu && obu->type == 1 && obu->data && obu->payload);
+   if (!obu) return false;
+   CHECK(rav1_sequence_parse(&admitted_sequence, obu->payload, obu->payload_size));
+   CHECK(!memcmp(seq, &admitted_sequence, sizeof(*seq)));
+   CHECK(color && color->range == (seq->color_range ? 2u : 1u));
+   if (seq->color_primaries != 2) CHECK(color->primaries == seq->color_primaries);
+   if (seq->transfer_characteristics != 2) CHECK(color->transfer == seq->transfer_characteristics);
+   if (seq->matrix_coefficients != 2) CHECK(color->matrix == seq->matrix_coefficients);
+   config_opens++;
+   return open_backend(user, seq, slots, ops);
+}
+
 static void close_backend(rav1_hw_ops_t *ops)
 {
    CHECK(ops->decoder == &factory);
@@ -436,12 +454,17 @@ static void test_config(int inband, unsigned matrix, unsigned transfer,
    rwebm_video_stream_close(s);
 }
 
-int main(void)
+#define SEQUENCE_CACHE_WEBM
+#include "rav1_sequence_cache_test.h"
+
+int main(int argc, char **argv)
 {
    rwebm_video_stream_t *s;
    factory.user = &factory;
    factory.open = open_backend;
    factory.close = close_backend;
+   if (argc == 2 && !strcmp(argv[1], "--config"))
+      factory.open_config = open_config;
    rav1_set_hw_backend(&factory);
    test_stream(0);
    test_stream(1);
@@ -481,6 +504,14 @@ int main(void)
    CHECK(!rwebm_video_stream_next(s, NULL));
    rwebm_video_stream_close(s);
    CHECK(opens == closes && exports == abandons);
+   rav1_set_hw_backend(&factory);
+   if (factory.open_config)
+   {
+      test_sequence_reopen(0);
+      test_sequence_reopen(1);
+   }
+   rav1_set_hw_backend(NULL);
+   if (factory.open_config) CHECK(config_opens);
    printf("AV1 WebM hardware reader: %u failures\n", failures);
    return failures ? 1 : 0;
 }
