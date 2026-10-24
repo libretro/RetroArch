@@ -65,6 +65,8 @@ static VkResult acquire_result  = VK_SUCCESS;
 static int acquire_ready        = 1;
 static VkResult present_result  = VK_SUCCESS;
 static int gpu_done             = 1;
+/* The presentation engine never gives an acquired image back */
+static int pe_never;
 
 /* What the code under test asked for */
 static VkSwapchainKHR old_swapchain;
@@ -271,8 +273,9 @@ static VKAPI_ATTR void VKAPI_CALL fake_destroy_fence(VkDevice d, VkFence f,
 {
    int *st = fence_state(f);
    (void)d; (void)a;
-   /* A fence the GPU still owes is not destroyed */
-   CHECK(st && *st != FENCE_GPU);
+   /* A fence the GPU or the presentation engine still owes is not
+    * destroyed */
+   CHECK(st && *st != FENCE_GPU && *st != FENCE_PE);
    live_fences--;
 }
 
@@ -308,6 +311,8 @@ static VKAPI_ATTR VkResult VKAPI_CALL fake_wait_fences(VkDevice d,
    for (i = 0; i < n; i++)
    {
       int *st = fence_state(f[i]);
+      if (st && *st == FENCE_PE && pe_never)
+         return VK_TIMEOUT;
       if (st)
          *st = FENCE_SIGNALED;
    }
@@ -416,6 +421,7 @@ static void reset(void)
    acquire_ready    = 1;
    present_result   = VK_SUCCESS;
    gpu_done         = 1;
+   pe_never         = 0;
    num_destroyed    = 0;
    image_counter    = 0;
 }
@@ -657,6 +663,19 @@ static void test_retire(void)
    CHECK(vulkan_output_retire(&out));
    all_gone();
    CHECK(idle_waits == 0);
+
+   /* An acquire never answered: finish gives up on it after its bound,
+    * and its fence is left rather than destroyed while still owed */
+   reset();
+   CHECK(make(&out));
+   acquire_ready = 0;
+   pe_never      = 1;
+   CHECK(!vulkan_output_acquire(&out));
+   vulkan_output_finish(&out);
+   CHECK(out.flags & VK_OUTPUT_FLAG_FENCE_PENDING);
+   CHECK(vulkan_output_retire(&out));
+   CHECK(live_fences == 1);
+   CHECK(live_surfaces == 0 && live_swapchains == 0);
 }
 
 int main(void)

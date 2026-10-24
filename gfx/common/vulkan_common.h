@@ -764,7 +764,10 @@ enum vulkan_output_flags
    /* remade for a suboptimal present; another suboptimal one is kept */
    VK_OUTPUT_FLAG_SUBOPTIMAL_REBUILT = (1 << 4),
    /* the surface is gone, or no swapchain can be made for it */
-   VK_OUTPUT_FLAG_LOST               = (1 << 5)
+   VK_OUTPUT_FLAG_LOST               = (1 << 5),
+   /* teardown gave up on acquire_fence, which may still be signalled:
+    * it is left, never destroyed */
+   VK_OUTPUT_FLAG_FENCE_PENDING      = (1 << 6)
 };
 
 /* A second presentable surface on the context's device and queue, with
@@ -825,8 +828,9 @@ bool vulkan_output_present(vulkan_output_t *output);
  * destroyed. Never waits; call it again on a later frame until true. */
 bool vulkan_output_retire(vulkan_output_t *output);
 
-/* Teardown only, never from a frame: waits for what retire waits on,
- * so that the next vulkan_output_retire() returns true. */
+/* The driver's teardown only, after its own submissions: waits for
+ * what retire waits on, so that the next vulkan_output_retire() returns
+ * true. An acquire never answered is waited on for a bound. */
 void vulkan_output_finish(vulkan_output_t *output);
 
 void vulkan_debug_mark_image(VkDevice device, VkImage image);

@@ -94,6 +94,21 @@ unsigned android_windows_poll(void *owner, video_window_event_t *events,
          android_second_surface_free(node);
          node = NULL;
       }
+      /* Java took the surface back: drawn no more, and the renderer
+       * lets go of what it made of it */
+      if (     !node && state->node
+            && state->node->generation
+               == retro_atomic_load_acquire_int(&second->surface_gone))
+      {
+         video_window_native_t *native = state->common.native;
+         android_second_surface_free(state->node);
+         state->node         = NULL;
+         native->surface     = NULL;
+         native->dims        = 0;
+         native->configured  = false;
+         native->presentable = false;
+         retro_atomic_store_release_int(&second->bound_surface, 0);
+      }
       if (node)
       {
          video_window_native_t *native = state->common.native;
@@ -149,6 +164,13 @@ void android_windows_destroy(void *owner, video_window_native_t *window)
          break;
    /* Holding nothing now: the surfaces asked for so far need no handoff */
    android_second_display_request(0, i == RETRO_VIDEO_VIEWS_MAX);
+}
+
+android_window_t *android_windows_find(void *owner, unsigned screen)
+{
+   android_window_t *state = screen < RETRO_VIDEO_VIEWS_MAX
+      ? android_windows[screen] : NULL;
+   return (state && state->common.owner == owner) ? state : NULL;
 }
 
 void android_windows_free(void *owner,

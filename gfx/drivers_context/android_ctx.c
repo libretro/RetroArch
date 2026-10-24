@@ -96,6 +96,28 @@ static bool android_gfx_ctx_window_bind_gl(void *owner,
          (EGLSurface)state->gl_surface, made);
 }
 
+/* A window whose surface Java took back loses its EGL surface now,
+ * not when the window goes */
+static unsigned android_gfx_ctx_window_poll(void *owner,
+      video_window_event_t *events, unsigned capacity)
+{
+   unsigned i;
+   android_ctx_data_t *and = (android_ctx_data_t*)owner;
+   unsigned count          = android_windows_poll(owner, events, capacity);
+   for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
+   {
+      android_window_t *state = android_windows_find(owner, i);
+      if (     state && state->gl_surface
+            && state->gl_window != state->common.native->surface)
+      {
+         egl_window_surface_free(&and->egl, (EGLSurface)state->gl_surface);
+         state->gl_surface = NULL;
+         state->gl_window  = NULL;
+      }
+   }
+   return count;
+}
+
 static bool android_gfx_ctx_window_present_gl(void *owner,
       video_window_native_t *window)
 {
@@ -122,7 +144,7 @@ static void android_gfx_ctx_window_destroy(void *owner,
 static const gfx_ctx_window_driver_t android_gfx_ctx_windows = {
    android_windows_create,
    android_windows_update,
-   android_windows_poll,
+   android_gfx_ctx_window_poll,
    android_gfx_ctx_window_bind_gl,
    android_gfx_ctx_window_present_gl,
    android_gfx_ctx_window_destroy

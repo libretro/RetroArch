@@ -3318,8 +3318,10 @@ bool vulkan_output_resize(vulkan_output_t *output, unsigned dims)
    vkGetSwapchainImagesKHR(ctx->device, swapchain, &count, output->images);
    output->num_images = count;
 
-   memset(&view, 0, sizeof(view));
    view.sType                           = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+   view.pNext                           = NULL;
+   view.flags                           = 0;
+   view.image                           = VK_NULL_HANDLE;
    view.viewType                        = VK_IMAGE_VIEW_TYPE_2D;
    view.format                          = ctx->swapchain_format;
    view.components.r                    = VK_COMPONENT_SWIZZLE_R;
@@ -3327,12 +3329,16 @@ bool vulkan_output_resize(vulkan_output_t *output, unsigned dims)
    view.components.b                    = VK_COMPONENT_SWIZZLE_B;
    view.components.a                    = VK_COMPONENT_SWIZZLE_A;
    view.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+   view.subresourceRange.baseMipLevel   = 0;
    view.subresourceRange.levelCount     = 1;
+   view.subresourceRange.baseArrayLayer = 0;
    view.subresourceRange.layerCount     = 1;
-   memset(&fb, 0, sizeof(fb));
    fb.sType                             = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+   fb.pNext                             = NULL;
+   fb.flags                             = 0;
    fb.renderPass                        = output->render_pass;
    fb.attachmentCount                   = 1;
+   fb.pAttachments                      = NULL;
    fb.width                             = extent.width;
    fb.height                            = extent.height;
    fb.layers                            = 1;
@@ -3541,7 +3547,8 @@ bool vulkan_output_retire(vulkan_output_t *output)
    if (!vulkan_output_sweep(output))
       return false;
 
-   if (output->acquire_fence != VK_NULL_HANDLE)
+   if (     output->acquire_fence != VK_NULL_HANDLE
+         && !(output->flags & VK_OUTPUT_FLAG_FENCE_PENDING))
       vkDestroyFence(device, output->acquire_fence, NULL);
    for (i = 0; i < VULKAN_OUTPUT_RETIRED_MAX; i++)
       if (output->retired[i].fence != VK_NULL_HANDLE)
@@ -3563,8 +3570,9 @@ void vulkan_output_finish(vulkan_output_t *output)
    if (     (output->flags & VK_OUTPUT_FLAG_ACQUIRED)
          && !(output->flags & VK_OUTPUT_FLAG_READY))
    {
-      vkWaitForFences(device, 1, &output->acquire_fence, VK_TRUE,
-            VULKAN_OUTPUT_FINISH_NS);
+      if (vkWaitForFences(device, 1, &output->acquire_fence, VK_TRUE,
+               VULKAN_OUTPUT_FINISH_NS) != VK_SUCCESS)
+         output->flags |= VK_OUTPUT_FLAG_FENCE_PENDING;
       output->flags |= VK_OUTPUT_FLAG_READY;
    }
    for (i = 0; i < VULKAN_OUTPUT_RETIRED_MAX; i++)

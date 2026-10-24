@@ -40,6 +40,8 @@ void android_windows_update(void *owner, video_window_native_t *window,
 unsigned android_windows_poll(void *owner, video_window_event_t *events,
       unsigned capacity);
 void android_windows_destroy(void *owner, video_window_native_t *window);
+/* Window @screen if @owner made it, else NULL */
+android_window_t *android_windows_find(void *owner, unsigned screen);
 
 /* Context teardown: hands each window @owner still has to @destroy */
 void android_windows_free(void *owner,

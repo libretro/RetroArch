@@ -1131,10 +1131,6 @@ static void android_input_poll_main_cmd(void)
          video_driver_restore_windows();
          break;
 
-      case APP_CMD_SECOND_TERM_WINDOW:
-         android_second_display_retire(android_app);
-         break;
-
       case APP_CMD_SECOND_GAINED_FOCUS:
       case APP_CMD_SECOND_LOST_FOCUS:
          android_focus_second(&android_app->focus,
@@ -3162,9 +3158,7 @@ static void android_input_poll(void *data)
     * without blocking so a burst (RESUME then INPUT_CHANGED) is handled
     * in one call. In the foreground it never waits: the input block
     * timeout keeps presses back instead (android_press_group.h). */
-   /* A retire still due is tried again below */
-   android_poll_waits((runloop_get_flags() & RUNLOOP_FLAG_IDLE) != 0
-         && !(android_app && android_app->second_display.retire_due),
+   android_poll_waits((runloop_get_flags() & RUNLOOP_FLAG_IDLE) != 0,
          &timeout, &then);
    android_press_window_ns =
       (int64_t)input_config_get_block_timeout() * 1000000;
@@ -3198,9 +3192,6 @@ static void android_input_poll(void *data)
          return;
       }
    }
-
-   if (android_app && android_app->second_display.retire_due)
-      android_second_display_retire(android_app);
 
    /* After the looper: a ring write that woke it is settled now */
    if (android && android_app)

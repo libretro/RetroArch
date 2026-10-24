@@ -132,8 +132,10 @@ struct android_second_display
    /* The newest surface not yet taken, struct android_second_surface *;
     * the taker owns it. UI thread in, video thread out. */
    retro_atomic_ptr_t surface;
-   /* UI thread: the last surface generation handed out */
+   /* UI thread: the last surface generation handed out, and the last
+    * one Java took back */
    retro_atomic_int_t surface_generation;
+   retro_atomic_int_t surface_gone;
    /* Video thread: what the renderer shows, for the input poll */
    retro_atomic_int_t bound_surface;     /* surface generation, 0 none */
    retro_atomic_int_t bound_window;      /* window id */
@@ -143,8 +145,6 @@ struct android_second_display
    /* Video thread: a hide sent while no window held anything; the
     * surfaces made for earlier requests are given up, 0 none */
    retro_atomic_int_t released;
-   /* App thread: a retire the video thread could not take yet */
-   bool retire_due;
 };
 
 /* Request number @a was sent before @b; wrap-safe */
@@ -202,11 +202,10 @@ struct android_app
     * a change of window has it give up first. */
    ANativeWindow *posted_window;
 
-   /* UI thread only: the second display's window last handed over,
-    * its size, VIDEO_SCALE_PACK, and the request it was made for */
+   /* UI thread only: the second display's window last handed over and
+    * its size, VIDEO_SCALE_PACK */
    ANativeWindow *posted_second_window;
    unsigned posted_second_dims;
-   int posted_second_request;
 
    /* Set by android_app_free() before it asks the app thread to shut
     * down, so android_app_destroy() knows the activity is already being
@@ -426,14 +425,6 @@ enum
    APP_CMD_SECOND_WINDOW_CHANGED,
 
    /**
-    * Command from the second display's controller, ticketed: its
-    * surface is going away. The app thread has the renderer let go of
-    * it; the thread that lets go acknowledges, and the UI thread waits
-    * for that.
-    */
-   APP_CMD_SECOND_TERM_WINDOW,
-
-   /**
     * Commands from the second display's controller, no ticket: its
     * window gained focus, or lost it or went.
     */
@@ -496,14 +487,9 @@ extern struct android_app *g_android;
 /* Any native thread, never waits: asks Java to show the second display
  * on display @ordinal of the last published list, or to hide it for 0.
  * A hide @given_up comes from a caller that holds nothing of the
- * display's surfaces: those made for earlier requests are given up,
- * so their surfaceDestroyed does not wait for the app thread. */
+ * display's surfaces: those made for earlier requests are dropped as
+ * they arrive. */
 void android_second_display_request(unsigned ordinal, bool given_up);
-
-/* App thread, APP_CMD_SECOND_TERM_WINDOW, and again while
- * retire_due: lets go of the second display's surface and has the
- * renderer let go of its windows, without waiting for it. */
-void android_second_display_retire(struct android_app *android_app);
 
 /* Releases a surface's window and frees it. Any thread that owns it. */
 void android_second_surface_free(struct android_second_surface *node);

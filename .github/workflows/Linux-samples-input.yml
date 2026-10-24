@@ -509,6 +509,16 @@ jobs:
           make -C samples/input/android_focus clean check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
           make -C samples/input/android_focus clean
 
+      - name: Build and run android_second_surface_test (ASan + UBSan, mingw + Wine)
+        shell: bash
+        run: |
+          set -eu
+          # The second display's surface going: surfaceDestroyed never
+          # waits for the renderer, and the next poll lets it go.
+          make -C samples/frontend/android_second_surface clean check SANITIZER=address,undefined
+          make -C samples/frontend/android_second_surface clean check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
+          make -C samples/frontend/android_second_surface clean
+
       - name: Build and run key_lane_test (plain, ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/input/key_lane

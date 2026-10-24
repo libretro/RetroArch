@@ -6808,22 +6808,6 @@ static bool gl2_windows_draw(gl2_t *gl,
          drawn = true;
    return drawn;
 }
-
-/* The poke's: every window let go of now, for a platform taking a
- * surface back. The next frame makes them again where they still have
- * screens. */
-static void gl2_windows_retire(void *data)
-{
-   gl2_t *gl = (gl2_t*)data;
-   if (!gl || !gl->windows.held.live)
-      return;
-   if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
-      gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
-   gl2_windows_retire_all(gl);
-   if (     (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
-         && !gl2_core_context_is_mains(gl))
-      gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
-}
 #endif
 
 static bool gl2_frame(void *data, const void *frame,
@@ -10017,12 +10001,7 @@ static const video_poke_interface_t gl2_poke_interface = {
    false, /* texture_lend_per_write */
    NULL, /* driver_pacing_set */
    NULL, /* driver_pacing_wait */
-   NULL, /* driver_pacing_mark */
-#ifdef GL2_VIEWS
-   gl2_windows_retire
-#else
-   NULL  /* windows_retire */
-#endif
+   NULL  /* driver_pacing_mark */
 };
 
 static void gl2_get_poke_interface(void *data,

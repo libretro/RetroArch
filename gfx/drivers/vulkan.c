@@ -6771,7 +6771,7 @@ static void vulkan_views_draw_pass(vk_t *vk, vulkan_filter_chain_t *fc,
       bool again);
 static bool vulkan_views_make(vk_t *vk, struct vk_image *img, unsigned dims);
 static bool vulkan_views_retire(vk_t *vk, struct vk_image *img);
-static void vulkan_windows_retire(void *data);
+static void vulkan_windows_free(vk_t *vk);
 
 /* The views compositor, with these calls bound in */
 #define VV_FN(name)                     vulkan_vv_##name
@@ -7298,7 +7298,7 @@ static void vulkan_free(void *data)
       vulkan_import_movie_frame(vk, NULL);
       vulkan_wait_own_submissions(vk);
       /* Before the context's destroy, which takes the instance */
-      vulkan_windows_retire(vk);
+      vulkan_windows_free(vk);
       vulkan_deferred_textures_flush(vk);
       vulkan_deferred_cmds_flush(vk);
       vulkan_stream_states_flush(vk);
@@ -10629,6 +10629,16 @@ static VIDEO_NOINLINE void vulkan_windows_prepare(vk_t *vk,
 
       /* A frame that ended before its draw left it set */
       win->flags &= ~VK_WINDOW_FLAG_PREPARED;
+      /* Its surface was taken back: the output goes, on later frames
+       * while the presentation engine still has an image */
+      if (     (vk->windows.held.live & (1u << w))
+            && (win->flags & VK_WINDOW_FLAG_OUTPUT)
+            && !win->native.surface)
+      {
+         if (vulkan_output_retire(out))
+            win->flags &= ~(VK_WINDOW_FLAG_OUTPUT | VK_WINDOW_FLAG_DROP);
+         continue;
+      }
       if (     !(vk->windows.held.live & (1u << w))
             || (win->flags & VK_WINDOW_FLAG_CLOSE)
             || !f->window_screens[w]
@@ -10804,14 +10814,12 @@ static void vulkan_windows_present(vk_t *vk,
    }
 }
 
-/* The poke's, and the driver's teardown: every window let go of
- * now, waiting on each output's own fences. Never from a frame. The
- * next frame makes them again where they still have screens. */
-static void vulkan_windows_retire(void *data)
+/* The driver's teardown, after its own submissions: every window let
+ * go of, waiting on each output's own fences */
+static void vulkan_windows_free(vk_t *vk)
 {
    unsigned w;
-   vk_t *vk = (vk_t*)data;
-   if (!vk || !vk->windows.held.live)
+   if (!vk->windows.held.live)
       return;
    for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
    {
@@ -15631,8 +15639,7 @@ static const video_poke_interface_t vulkan_poke_interface = {
    false, /* texture_lend_per_write */
    vulkan_driver_pacing_set,
    vulkan_driver_pacing_wait,
-   vulkan_driver_pacing_mark,
-   vulkan_windows_retire
+   vulkan_driver_pacing_mark
 };
 
 static void vulkan_get_poke_interface(void *data,

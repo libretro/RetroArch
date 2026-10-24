@@ -337,11 +337,6 @@ static void android_app_set_window(struct android_app *android_app,
          (int)ticket, true, -1);
 }
 
-/* Set while the renderer lets go of the second display's windows for a
- * surface that is going: Java keeps its choice of display, so the
- * windows' destroy asks it for nothing. */
-static retro_atomic_int_t android_second_retiring;
-
 void android_second_surface_free(struct android_second_surface *node)
 {
    ANativeWindow_release(node->window);
@@ -355,9 +350,7 @@ void android_second_display_request(unsigned ordinal, bool given_up)
    struct android_app *android_app = (struct android_app*)g_android;
    struct android_second_display *second;
 
-   if (     !android_app
-         || !android_app->setSecondDisplay
-         || retro_atomic_load_acquire_int(&android_second_retiring))
+   if (!android_app || !android_app->setSecondDisplay)
       return;
    if (!(env = jni_thread_getenv()))
       return;
@@ -370,59 +363,25 @@ void android_second_display_request(unsigned ordinal, bool given_up)
          android_app->setSecondDisplay, (jint)ordinal, (jint)number);
 }
 
-/* On the thread letting go of the windows; done acknowledges
- * APP_CMD_SECOND_TERM_WINDOW */
-static void android_second_retire_hook(void *data, bool done)
-{
-   struct android_app *android_app = (struct android_app*)data;
-   retro_atomic_store_release_int(&android_second_retiring, done ? 0 : 1);
-   if (done)
-   {
-      retro_atomic_store_release_int(
-            &android_app->second_display.bound_surface, 0);
-      android_lifecycle_done(&android_app->lc);
-   }
-}
-
-void android_second_display_retire(struct android_app *android_app)
+/* UI thread: the second display's window goes. Never waits for the
+ * renderer: its own references keep the window alive, a frame still
+ * drawing into it gets an error from the abandoned queue, and the
+ * next frame lets it go (android_windows_poll()). */
+static void android_second_surface_term(struct android_app *android_app)
 {
    struct android_second_display *second = &android_app->second_display;
    struct android_second_surface *node   = (struct android_second_surface*)
       retro_atomic_exchange_ptr(&second->surface, NULL);
 
-   /* Before the retire: no frame after it may take this surface */
    if (node)
       android_second_surface_free(node);
-   second->retire_due = !video_driver_windows_retire(
-         android_second_retire_hook, android_app);
-}
-
-/* UI thread: the second display's window goes; returns once the app
- * thread holds nothing of it, as android_app_set_window() does. */
-static void android_second_surface_term(struct android_app *android_app)
-{
-   struct android_second_display *second = &android_app->second_display;
-   unsigned ticket = android_lifecycle_last_ticket(&android_app->lc);
-
-   if (     !ANDROID_SECOND_BEFORE(android_app->posted_second_request,
-               retro_atomic_load_acquire_int(&second->released))
-         && !android_app_thread_gone(android_app)
-         && android_app_write_cmd(android_app, APP_CMD_SECOND_TERM_WINDOW))
-      ticket = android_lifecycle_ticket(&android_app->lc);
-   else
-   {
-      /* Given up already, or nobody left to take it */
-      struct android_second_surface *node = (struct android_second_surface*)
-         retro_atomic_exchange_ptr(&second->surface, NULL);
-      if (node)
-         android_second_surface_free(node);
-   }
-
+   retro_atomic_store_release_int(&second->surface_gone,
+         retro_atomic_load_acquire_int(&second->surface_generation));
    android_app->posted_second_window = NULL;
    android_app->posted_second_dims   = 0;
-
-   android_lifecycle_wait(&android_app->lc, ANDROID_LC_UNTIL_DONE,
-         (int)ticket, true, -1);
+   /* A failure the going surface caused is not held against the next */
+   if (!android_app_thread_gone(android_app))
+      android_app_write_cmd(android_app, APP_CMD_SECOND_WINDOW_CHANGED);
 }
 
 JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_SecondDisplayController_nativeDisplaysChanged(
@@ -540,7 +499,6 @@ JNIEXPORT jint JNICALL Java_com_retroarch_browser_retroactivity_SecondDisplayCon
    node->request                      = (int)request;
    android_app->posted_second_window  = window;
    android_app->posted_second_dims    = dims;
-   android_app->posted_second_request = (int)request;
 
    if ((stale = (struct android_second_surface*)retro_atomic_exchange_ptr(
                &second->surface, node)))
