@@ -81,6 +81,22 @@ def free_port():
     return port
 
 
+def wait_ready(process, port, timeout=60):
+    """A reply means the application is polling its command socket."""
+    deadline = time.monotonic() + timeout
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as command:
+        command.settimeout(0.25)
+        while process.poll() is None and time.monotonic() < deadline:
+            command.sendto(b'GET_STATUS\n', ('127.0.0.1', port))
+            try:
+                reply, _ = command.recvfrom(4096)
+            except socket.timeout:
+                continue
+            if reply.startswith((b'GET_STATUS PLAYING ', b'GET_STATUS PAUSED ')):
+                return True
+    return False
+
+
 def launch(retroarch, core, root, driver, name, core_env, still,
            threaded):
     """(screen or None, lent framebuffers or None, quit cleanly)."""
@@ -132,6 +148,9 @@ def launch(retroarch, core, root, driver, name, core_env, still,
                                    run.winpath(core)],
                                   stdout=log, stderr=subprocess.STDOUT,
                                   env=env, start_new_session=True)
+            if not wait_ready(ra, port) and ra.poll() is None:
+                raise RuntimeError('application did not answer GET_STATUS: '
+                                   + log_path)
             time.sleep(run.SETTLE)
             if still:
                 last, deadline = None, time.time() + run.STEADY
