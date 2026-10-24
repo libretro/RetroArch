@@ -115,12 +115,16 @@ endif
 
 AV1_HW_TARGET := $(SAMPLE_OBJDIR)/webm_av1_hw_test$(EXE)
 AV1_HW_SOURCES := $(filter-out webm_player_test.c $(ROOT)/cores/libretro-media/media_core.c,$(SOURCES))
+# the two that read HAVE_RAV1 or RWEBM_VIDEO_MAX_TS are compiled with
+# them; the rest are the build's own objects
+AV1_HW_OWN := $(filter $(COMMON)/formats/webm/rwebm_video.c $(COMMON)/formats/mp4/rmp4_video.c,$(AV1_HW_SOURCES))
+AV1_HW_OBJS := $(call sample_objs,$(patsubst %.c,%.o,$(filter-out $(AV1_HW_OWN),$(AV1_HW_SOURCES))))
 $(AV1_HW_TARGET): webm_av1_hw_test.c $(ROOT)/cores/libretro-media/media_core.c \
       $(COMMON)/samples/formats/av1/rav1_mp4_fixture.h \
-      $(COMMON)/samples/formats/av1/rav1_webm_fixture.h $(AV1_HW_SOURCES) \
+      $(COMMON)/samples/formats/av1/rav1_webm_fixture.h $(AV1_HW_OWN) $(AV1_HW_OBJS) \
       $(COMMON)/formats/av1/rav1_hw.c $(COMMON)/include/formats/rav1_hw_stream.h
 	@mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) -DHAVE_RAV1 -DRWEBM_VIDEO_MAX_TS=2 -o $@ $< $(AV1_HW_SOURCES) $(COMMON)/formats/av1/rav1_hw.c $(LDFLAGS) $(LDLIBS)
+	$(CC) $(CFLAGS) -DHAVE_RAV1 -DRWEBM_VIDEO_MAX_TS=2 -o $@ $< $(AV1_HW_OWN) $(COMMON)/formats/av1/rav1_hw.c $(AV1_HW_OBJS) $(LDFLAGS) $(LDLIBS)
 
 RESIDENCY_TARGET := webm_residency_test$(EXE)
 PROGRESSIVE_GROUP_TARGET := progressive_group_test$(EXE)
