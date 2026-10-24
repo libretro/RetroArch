@@ -6428,6 +6428,8 @@ void video_driver_build_info(video_frame_info_t *video_info)
 #ifdef HAVE_MENU
    video_info->notifications_hidden        = settings->bools.notification_show_when_menu_is_alive
          && !(menu_st->flags & MENU_ST_FLAG_ALIVE);
+#else
+   video_info->notifications_hidden        = false;
 #endif
    video_info->refresh_rate                = settings->floats.video_refresh_rate;
    video_info->crt_switch_resolution       = settings->uints.crt_switch_resolution;
