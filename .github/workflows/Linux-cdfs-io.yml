@@ -67,7 +67,6 @@ jobs:
         working-directory: libretro-common/samples/formats/cdfs
         run: |
           set -eu
-          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           make -j2 CC=x86_64-w64-mingw32-gcc OS=Windows_NT EXE=.exe SAMPLE_OBJDIR=obj-ci-win
           WINEDEBUG=-all wine ./cdfs_dir_record_test.exe
           WINEDEBUG=-all wine ./cdfs_pure_api_test.exe

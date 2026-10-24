@@ -271,7 +271,6 @@ jobs:
 
       - name: Regression test
         run: |
-          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           # The mode and sleep state machine of the Driver Pacing
           # backend, on fake entry points: one sleep and one bounded
           # wait a content frame, markers on the released frame only,
@@ -343,7 +342,6 @@ jobs:
         working-directory: samples/gfx/slang_rect
         run: |
           set -eu
-          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           make clean CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++ && make -j$(nproc) all CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++ \
              LDFLAGS=-static
           WINEDEBUG=-all timeout 300 wine ./slang_rect_test.exe
@@ -372,7 +370,6 @@ jobs:
         working-directory: samples/gfx/rslc_remap
         run: |
           set -eu
-          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           make clean CC=x86_64-w64-mingw32-gcc && make -j$(nproc) all CC=x86_64-w64-mingw32-gcc LDFLAGS=-static
           WINEDEBUG=-all timeout 300 wine ./rslc_remap_test.exe
           make clean
@@ -445,7 +442,6 @@ jobs:
         working-directory: samples/gfx/slang_last_pass_target
         run: |
           set -eu
-          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           make clean CC=x86_64-w64-mingw32-gcc && make -j$(nproc) all CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++ LDFLAGS="-static -Wl,--gc-sections"
           WINEDEBUG=-all timeout 300 wine ./slang_last_pass_target_test.exe
           make clean
@@ -468,7 +464,6 @@ jobs:
         working-directory: samples/gfx/shader_chain
         run: |
           set -eu
-          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           make clean CC=x86_64-w64-mingw32-gcc && make -j$(nproc) all CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++ LDFLAGS="-static"
           WINEDEBUG=-all timeout 300 wine ./shader_chain_test.exe
           make clean
@@ -493,7 +488,6 @@ jobs:
         working-directory: samples/gfx/gl_last_pass_fbo
         run: |
           set -eu
-          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           make clean CC=x86_64-w64-mingw32-gcc && make -j$(nproc) all CC=x86_64-w64-mingw32-gcc LDFLAGS=-static
           WINEDEBUG=-all timeout 300 wine ./gl2_last_pass_fbo_test.exe
           WINEDEBUG=-all timeout 300 wine ./gl3_last_pass_fbo_test.exe
@@ -503,7 +497,6 @@ jobs:
         shell: bash
         run: |
           set -eu
-          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           CC=x86_64-w64-mingw32-gcc RUNNER="wine" WINEDEBUG=-all \
              python3 samples/gfx/gles_texture_lend/run.py
 
@@ -512,7 +505,6 @@ jobs:
         working-directory: samples/gfx/gl2_pbo_readback
         run: |
           set -eu
-          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           # The Linux runs are in the samples-gfx job; this is the
           # Windows build, the GL 1.1 entry points through import
           # pointers (gl11_fakes.h).
@@ -898,7 +890,6 @@ jobs:
       - name: Menu framebuffer loans (ASan/UBSan, TSan)
         shell: bash
         run: |
-          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 samples/gfx/threaded_video/menu_framebuffer.py
           CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 samples/gfx/threaded_video/vulkan_menu.py
           CFLAGS='-fsanitize=thread -fno-omit-frame-pointer' python3 samples/gfx/threaded_video/menu_framebuffer.py
@@ -1630,7 +1621,6 @@ jobs:
         shell: bash
         run: |
           set -eu
-          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           CC=gcc CFLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" python3 samples/gfx/threaded_video/gl_context_init.py
           CC=clang CFLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" python3 samples/gfx/threaded_video/gl_context_init.py
           CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/threaded_video/gl_context_init.py
@@ -1639,7 +1629,6 @@ jobs:
         shell: bash
         run: |
           set -eu
-          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           CFLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" python3 samples/gfx/threaded_video/d3d_menu_format.py
           CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/threaded_video/d3d_menu_format.py
           CFLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" python3 samples/gfx/threaded_video/d3d12_menu.py
@@ -1654,7 +1643,6 @@ jobs:
         shell: bash
         run: |
           set -eu
-          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           make -C samples/gfx/d3d8_cleanup clean check SANITIZER=address,undefined
           make -C samples/gfx/d3d8_cleanup clean check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
           make -C samples/gfx/d3d8_cleanup clean
@@ -1663,7 +1651,6 @@ jobs:
         shell: bash
         run: |
           set -eu
-          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           make -C samples/gfx/d3d_feedback clean check SANITIZER=address,undefined
           make -C samples/gfx/d3d_feedback clean check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
           make -C samples/gfx/d3d_feedback clean
@@ -1672,7 +1659,6 @@ jobs:
         shell: bash
         run: |
           set -eu
-          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           make -C samples/gfx/d3d12_mipmaps clean check SANITIZER=address,undefined
           make -C samples/gfx/d3d12_mipmaps clean check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
           make -C samples/gfx/d3d12_mipmaps clean
@@ -1681,7 +1667,6 @@ jobs:
         shell: bash
         run: |
           set -eu
-          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           # H.264, HEVC and VP9 submission buffers, byte by byte
           # and against dxva.h, and the backend itself on a D3D11 that
           # records what it is told. The GPU oracle builds here and
@@ -1694,7 +1679,6 @@ jobs:
         shell: bash
         run: |
           set -eu
-          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           CFLAGS="-O1 -g -std=c89 -Wall -Wextra -fsanitize=address,undefined -fno-omit-frame-pointer" python3 samples/gfx/movie_gpu_handoff/run.py
           CFLAGS="-O1 -g -std=c89 -Wall -Wextra -fsanitize=thread -fno-omit-frame-pointer" python3 samples/gfx/movie_gpu_handoff/run.py
           CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/movie_gpu_handoff/run.py
@@ -1702,35 +1686,30 @@ jobs:
       - name: D3D12 descriptor cache resource lifetime (Linux and mingw + Wine)
         run: |
           set -eu
-          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           CFLAGS="-O1 -g -std=c89 -Wall -Wextra -fsanitize=address,undefined -fno-omit-frame-pointer" python3 samples/gfx/d3d12_descriptor_cache/run.py
           CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/d3d12_descriptor_cache/run.py
 
       - name: D3D12 pass descriptor tables on their own slots (Linux and mingw + Wine)
         run: |
           set -eu
-          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           CFLAGS="-O1 -g -std=c89 -Wall -Wextra -fsanitize=address,undefined -fno-omit-frame-pointer" python3 samples/gfx/d3d12_pass_tables/run.py
           CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/d3d12_pass_tables/run.py
 
       - name: D3D12 repeated screenshots and recording slots (Linux and mingw + Wine)
         run: |
           set -eu
-          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           CFLAGS="-O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer" python3 samples/gfx/d3d12_readback_slot/run.py
           CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/d3d12_readback_slot/run.py
 
       - name: D3D12 frame ring, one frame in flight or two (Linux and mingw + Wine)
         run: |
           set -eu
-          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           CFLAGS="-O1 -g -std=c89 -Wall -Wextra -fsanitize=address,undefined -fno-omit-frame-pointer" python3 samples/gfx/d3d12_frame_ring/run.py
           CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/d3d12_frame_ring/run.py
 
       - name: D3D10/11 failed maps and swapchain recovery (Linux and mingw + Wine)
         run: |
           set -eu
-          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           CFLAGS="-O1 -g -std=c89 -Wall -Wextra -fsanitize=address,undefined -fno-omit-frame-pointer" python3 samples/gfx/d3d_failure_paths/run.py
           CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/d3d_failure_paths/run.py
             CFLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" python3 samples/gfx/d3d_failure_paths/upload.py
@@ -1743,7 +1722,6 @@ jobs:
       - name: D3D9 HLSL failed locks (Linux and mingw + Wine)
         run: |
           set -eu
-          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           CFLAGS="-O1 -g -std=c89 -Wall -Wextra -fsanitize=address,undefined -fno-omit-frame-pointer" python3 samples/gfx/d3d9_failed_lock/run.py
           CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/d3d9_failed_lock/run.py
 
@@ -1751,7 +1729,6 @@ jobs:
         shell: bash
         run: |
           set -eu
-          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           make -C samples/gfx/vulkan_video_caps clean check SANITIZER=address,undefined
           make -C samples/gfx/vulkan_video_caps clean check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
           make -C samples/gfx/vulkan_video_caps clean
@@ -1773,7 +1750,6 @@ jobs:
         shell: bash
         run: |
           set -eu
-          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           make -C samples/gfx/record_gpu_queue clean check
           make -C samples/gfx/record_gpu_queue clean check THREADS=1 SANITIZE=-fsanitize=address,undefined
           make -C samples/gfx/record_gpu_queue clean check THREADS=1 SANITIZE=-fsanitize=thread
@@ -1783,7 +1759,6 @@ jobs:
         shell: bash
         run: |
           set -eu
-          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           make -C samples/gfx/nvenc_d3d12 check
           make -C samples/gfx/nvenc_d3d12 check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
 
@@ -2424,7 +2399,6 @@ jobs:
         working-directory: samples/gfx/gfx_surface_still
         run: |
           set -eu
-          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           # A still keeps the texture up until the new one has landed,
           # updates a same-size image in place, and is freed by the
           # completion of an upload or decode still out when it goes.

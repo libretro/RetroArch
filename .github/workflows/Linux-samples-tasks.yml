@@ -249,7 +249,6 @@ jobs:
         working-directory: samples/tasks/cloudsync
         run: |
           set -eu
-          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           make clean SANITIZER=address,undefined && make -j$(nproc) cloudsync_commit_test SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1 ./cloudsync_commit_test
           make clean SANITIZER=thread && make -j$(nproc) cloudsync_commit_test SANITIZER=thread
@@ -490,7 +489,6 @@ jobs:
         working-directory: samples/tasks/bsv_replay_init
         run: |
           set -eu
-          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           make clean && make -j$(nproc) NETPLAY=1 SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1:allocator_may_return_null=1 \
              timeout 120 ./bsv_replay_init_test

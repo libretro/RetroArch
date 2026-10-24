@@ -986,7 +986,6 @@ jobs:
         working-directory: samples/audio/dsound_pump
         run: |
           set -eu
-          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           # audio/drivers/dsound.c end to end on wine's DirectSound, fed
           # by an ALSA null PCM, which plays at real-time pace on a
           # runner with no sound card. Pins that the pump - which now
@@ -1005,7 +1004,6 @@ jobs:
         working-directory: samples/audio/wdmks_loop
         run: |
           set -eu
-          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           # audio/drivers/wdmks.c compiled whole, its WaveRT loop driven
           # by hand: the test owns the driver's state, points the
           # position register at a word of its own and moves the
@@ -1031,7 +1029,6 @@ jobs:
         working-directory: samples/audio/mmdevice_notification
         run: |
           set -eu
-          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           for threads in 0 1; do
             make clean check THREADS=$threads SANITIZER=address,undefined
             make clean THREADS=$threads CC=x86_64-w64-mingw32-gcc LDFLAGS=-static && make -j$(nproc) all THREADS=$threads CC=x86_64-w64-mingw32-gcc LDFLAGS=-static
@@ -1189,7 +1186,6 @@ jobs:
       - name: Build and run sinc fast-forward test (C89, ASan + UBSan, MinGW)
         working-directory: samples/audio/sinc_fastforward
         run: |
-          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           # Live ratios under the table's design are decimated first:
           # rejection as a table built for that ratio, the nominal path
           # untouched, the output bound, crossfaded stage changes.
@@ -1205,7 +1201,6 @@ jobs:
       - name: Build and run sinc sibling test (C89, ASan + UBSan, MinGW)
         working-directory: samples/audio/sinc_sibling
         run: |
-          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           # Siblings share their parent's tables: a fresh stream either
           # way, own state only, either free order.
           make -j$(nproc) check SANITIZER=address,undefined
@@ -1233,7 +1228,6 @@ jobs:
       - name: Build and run pipeline_rate_change_test (ASan + UBSan, mingw)
         working-directory: samples/audio/pipeline_rate_change
         run: |
-          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           # A core rate change taken by the running driver: one device
           # open, the tone at its pitch on both sides, the ring grown
           # where the new rate needs it, time stretch refused.

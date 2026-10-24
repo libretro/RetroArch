@@ -77,7 +77,6 @@ jobs:
         working-directory: libretro-common/samples/file/vfs_cdrom
         run: |
           set -eu
-          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           make -j2 dvd_blocks_test.exe CC=x86_64-w64-mingw32-gcc OS=Windows_NT EXE=.exe SAMPLE_OBJDIR=obj-dvd-win
           WINEDEBUG=-all wine ./dvd_blocks_test.exe
           make -j2 disc_dump_test.exe CC=x86_64-w64-mingw32-gcc OS=Windows_NT EXE=.exe SAMPLE_OBJDIR=obj-dvd-win

@@ -56,7 +56,6 @@ jobs:
       - name: Regression test
         working-directory: samples/frontend/ps3_user_paths
         run: |
-          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           # Each console user's own directory, the shared USRDIR layout
           # when it cannot be used, a user's first boot copying the
           # shared data, and one copy per imported configuration.

@@ -76,5 +76,4 @@ jobs:
         working-directory: samples/cores/webm_player
         run: |
           set -eu
-          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           make -j2 check CC=x86_64-w64-mingw32-gcc OS=Windows_NT EXE=.exe SAMPLE_OBJDIR=obj-win RUNNER=wine
