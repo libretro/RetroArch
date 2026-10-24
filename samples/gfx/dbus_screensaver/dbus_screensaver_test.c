@@ -12,7 +12,9 @@
  *    holding what the last request asked for, once the worker settles;
  *  - closing and reopening at once still reconnects and releases what
  *    the old connection held;
- *  - with no service on the bus the answer is FAILED.
+ *  - with no service on the bus the answer is FAILED;
+ *  - what the worker finds is logged on the callers' threads, never on
+ *    the worker, which outlives the log at exit.
  * Under TSan by the tsan-samples list; a watchdog fails a hang. */
 
 #include <signal.h>
@@ -23,6 +25,7 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <time.h>
+#include <sys/prctl.h>
 
 #include <dbus/dbus.h>
 
@@ -30,8 +33,23 @@
 
 #include "../../../gfx/common/dbus_common.h"
 
-/* verbosity.h, as dbus_common.c logs */
-void RARCH_LOG(const char *fmt, ...) { (void)fmt; }
+/* verbosity.h, as dbus_common.c logs: counted, and by whom */
+static retro_atomic_int_t log_on_worker;
+static retro_atomic_int_t log_suspended;
+static retro_atomic_int_t log_no_screensaver;
+
+void RARCH_LOG(const char *fmt, ...)
+{
+   char name[17];
+   memset(name, 0, sizeof(name));
+   prctl(PR_GET_NAME, name, 0, 0, 0);
+   if (!strcmp(name, "ra-dbus-ss"))
+      retro_atomic_fetch_add_int(&log_on_worker, 1);
+   if (strstr(fmt, "Suspended screensaver"))
+      retro_atomic_fetch_add_int(&log_suspended, 1);
+   if (strstr(fmt, "no screensaver"))
+      retro_atomic_fetch_add_int(&log_no_screensaver, 1);
+}
 void RARCH_WARN(const char *fmt, ...) { (void)fmt; }
 void RARCH_ERR(const char *fmt, ...) { (void)fmt; }
 void RARCH_DBG(const char *fmt, ...) { (void)fmt; }
@@ -213,6 +231,8 @@ int main(void)
    CHECK(settle() == DBUS_SCREENSAVER_INHIBITED, "re-inhibit not answered");
    CHECK(held_settled() == 1, "re-inhibit: service holds %d",
          retro_atomic_load_acquire_int(&svc_held));
+   CHECK(retro_atomic_load_acquire_int(&log_suspended) >= 1,
+         "an inhibit granted was never logged");
    printf("ok    inhibit, release and inhibit again\n");
 
    /* three threads at once, then one last word */
@@ -258,6 +278,13 @@ int main(void)
    printf("ok    no service: FAILED\n");
 
    dbus_close_connection();
+   CHECK(retro_atomic_load_acquire_int(&log_no_screensaver) == 1,
+         "no service logged %d times, not once",
+         retro_atomic_load_acquire_int(&log_no_screensaver));
+   CHECK(retro_atomic_load_acquire_int(&log_on_worker) == 0,
+         "the worker logged %d lines itself",
+         retro_atomic_load_acquire_int(&log_on_worker));
+   printf("ok    logged on the callers' threads only\n");
    if (failures)
    {
       printf("%u failure(s)\n", failures);

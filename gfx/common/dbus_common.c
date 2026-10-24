@@ -42,6 +42,14 @@
  * state. One the request has since moved past reads as pending. */
 #define DBUS_SS_TAG(req)   ((req) & ~3u)
 
+/* What the worker found, for the next caller to log: the worker, which
+ * lives as long as the process, never logs, so nothing it does meets
+ * the log being torn down at exit. */
+#define DBUS_SS_NOTE_NO_LIBDBUS     (1 << 0)
+#define DBUS_SS_NOTE_NO_BUS         (1 << 1)
+#define DBUS_SS_NOTE_SUSPENDED      (1 << 2)
+#define DBUS_SS_NOTE_NO_SCREENSAVER (1 << 3)
+
 /* The worker, one for the process, started on first use. Callers store
  * a new request and wake it; it works through the latest request it
  * finds, never holding anything across a D-Bus call, and stores the
@@ -52,6 +60,7 @@ typedef struct dbus_ss_ctl
    retro_eventcount_t ec;
    retro_atomic_int_t req;
    retro_atomic_int_t answer;
+   retro_atomic_int_t notes;
 } dbus_ss_ctl_t;
 
 static retro_atomic_ptr_t dbus_ss_ctl_ptr;
@@ -120,6 +129,23 @@ static void dbus_ss_publish(dbus_ss_ctl_t *ctl, unsigned req, int state)
          (int)(DBUS_SS_TAG(req) | (unsigned)state));
 }
 
+/* Logs, on the caller's thread, what the worker has noted since. */
+static void dbus_ss_log_notes(dbus_ss_ctl_t *ctl)
+{
+   int notes;
+   if (!retro_atomic_load_acquire_int(&ctl->notes))
+      return;
+   notes = retro_atomic_exchange_int(&ctl->notes, 0);
+   if (notes & DBUS_SS_NOTE_NO_LIBDBUS)
+      RARCH_LOG("[DBus] libdbus is not available; the screensaver is not suspended through D-Bus.\n");
+   if (notes & DBUS_SS_NOTE_NO_BUS)
+      RARCH_LOG("[DBus] No session bus; the screensaver is not suspended through D-Bus.\n");
+   if (notes & DBUS_SS_NOTE_SUSPENDED)
+      RARCH_LOG("[DBus] Suspended screensaver via DBus.\n");
+   if (notes & DBUS_SS_NOTE_NO_SCREENSAVER)
+      RARCH_LOG("[DBus] The session bus has no screensaver to suspend.\n");
+}
+
 static void dbus_ss_worker(void *data)
 {
    rdbus_error_t err;
@@ -171,7 +197,7 @@ static void dbus_ss_worker(void *data)
       if (open && new_gen)
       {
          if (!rd && !(rd = rdbus_get()))
-            RARCH_LOG("[DBus] libdbus is not available; the screensaver is not suspended through D-Bus.\n");
+            retro_atomic_fetch_or_int(&ctl->notes, DBUS_SS_NOTE_NO_LIBDBUS);
          else
          {
             rd->error_init(&err);
@@ -179,7 +205,7 @@ static void dbus_ss_worker(void *data)
                /* A lost session bus ends the connection, not RetroArch. */
                rd->connection_set_exit_on_disconnect(conn, 0);
             else
-               RARCH_LOG("[DBus] No session bus; the screensaver is not suspended through D-Bus.\n");
+               retro_atomic_fetch_or_int(&ctl->notes, DBUS_SS_NOTE_NO_BUS);
             rd->error_free(&err);
          }
       }
@@ -195,12 +221,13 @@ static void dbus_ss_worker(void *data)
             dbus_ss_publish(ctl, req, DBUS_SCREENSAVER_FAILED);
          else if (cookie || dbus_ss_inhibit(rd, conn, &cookie))
          {
-            RARCH_LOG("[DBus] Suspended screensaver via DBus.\n");
+            retro_atomic_fetch_or_int(&ctl->notes, DBUS_SS_NOTE_SUSPENDED);
             dbus_ss_publish(ctl, req, DBUS_SCREENSAVER_INHIBITED);
          }
          else
          {
-            RARCH_LOG("[DBus] The session bus has no screensaver to suspend.\n");
+            retro_atomic_fetch_or_int(&ctl->notes,
+                  DBUS_SS_NOTE_NO_SCREENSAVER);
             dbus_ss_publish(ctl, req, DBUS_SCREENSAVER_FAILED);
          }
       }
@@ -286,6 +313,7 @@ void dbus_ensure_connection(void)
       retro_atomic_store_release_ptr(&dbus_ss_ctl_ptr, ctl);
    }
 
+   dbus_ss_log_notes(ctl);
    dbus_ss_request(ctl, dbus_ss_update_open, 0);
 }
 
@@ -293,8 +321,10 @@ void dbus_close_connection(void)
 {
    dbus_ss_ctl_t *ctl = dbus_ss_ctl_get();
 
-   if (ctl)
-      dbus_ss_request(ctl, dbus_ss_update_close, 0);
+   if (!ctl)
+      return;
+   dbus_ss_log_notes(ctl);
+   dbus_ss_request(ctl, dbus_ss_update_close, 0);
 }
 
 bool dbus_suspend_screensaver(bool enable)
@@ -303,6 +333,7 @@ bool dbus_suspend_screensaver(bool enable)
 
    if (!ctl)
       return false;
+   dbus_ss_log_notes(ctl);
    return (dbus_ss_request(ctl, dbus_ss_update_want, enable ? 1 : 0)
          & DBUS_SS_OPEN) != 0;
 }
@@ -314,6 +345,7 @@ enum dbus_screensaver_state dbus_screensaver_state(void)
 
    if (!ctl)
       return DBUS_SCREENSAVER_FAILED;
+   dbus_ss_log_notes(ctl);
    req = (unsigned)retro_atomic_load_acquire_int(&ctl->req);
    if (!(req & DBUS_SS_OPEN))
       return DBUS_SCREENSAVER_FAILED;

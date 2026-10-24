@@ -528,7 +528,9 @@ static bool g_x11_xdg_deferred = false;
 bool x11_suspend_screensaver(void *data, bool enable)
 {
    Window wnd;
+#ifdef RARCH_HAVE_DBUS_SCREENSAVER
    bool dbus_asked = false;
+#endif
    if (video_driver_display_type_get() != RARCH_DISPLAY_X11)
       return false;
    wnd = video_driver_window_get();

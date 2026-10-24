@@ -26,7 +26,11 @@
  * thread of the connection's own; the caller only says what it wants and
  * never waits for an answer. */
 #if defined(RARCH_HAVE_DBUS_RUNTIME) && defined(HAVE_THREADS)
+#include <retro_atomic.h>
+/* the worker is published through an atomic pointer */
+#ifdef RETRO_ATOMIC_HAS_PTR
 #define RARCH_HAVE_DBUS_SCREENSAVER 1
+#endif
 #endif
 
 #ifdef RARCH_HAVE_DBUS_SCREENSAVER
