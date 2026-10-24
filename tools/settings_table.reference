@@ -284,6 +284,9 @@ bool	cheevos_verbose_enable	1	1
 bool	cheevos_visibility_account	1	1
 bool	pause_nonactive	1	1
 bool	video_disable_composition	1	0
+bool	media_player_continuous	1	0
+bool	media_player_crt_switch	1	0
+bool	media_player_refresh_rate	1	0
 bool	media_player_subtitles	1	1
 bool	rgui_inline_thumbnails	1	0
 bool	rgui_swap_thumbnails	1	0
@@ -997,6 +1000,9 @@ bool	cheevos_verbose_enable	1	1
 bool	cheevos_visibility_account	1	1
 bool	pause_nonactive	1	1
 bool	video_disable_composition	1	0
+bool	media_player_continuous	1	0
+bool	media_player_crt_switch	1	0
+bool	media_player_refresh_rate	1	0
 bool	media_player_subtitles	1	1
 bool	rgui_inline_thumbnails	1	0
 bool	rgui_swap_thumbnails	1	0
@@ -1713,6 +1719,9 @@ bool	cheevos_verbose_enable	1	1
 bool	cheevos_visibility_account	1	1
 bool	pause_nonactive	1	1
 bool	video_disable_composition	1	0
+bool	media_player_continuous	1	0
+bool	media_player_crt_switch	1	0
+bool	media_player_refresh_rate	1	0
 bool	media_player_subtitles	1	1
 bool	rgui_inline_thumbnails	1	0
 bool	rgui_swap_thumbnails	1	0
