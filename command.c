@@ -902,30 +902,38 @@ static void command_deferred_send(command_deferred_t *d,
 }
 
 #ifdef HAVE_SCREENSHOTS
+/* SCREENSHOT's answer, and GET_FRAME's - the frame written nowhere, so
+ * with no path: the picture where the interface takes one, with the
+ * file's path or the frame's size as its text. */
 static void command_screenshot_done(retro_task_t *task, void *task_data,
       void *user_data, const char *error)
 {
    command_deferred_t             *d = (command_deferred_t*)user_data;
    const struct screenshot_result *r = (const struct screenshot_result*)task_data;
+   bool                        frame = r && !*r->path;
    char msg[PATH_MAX_LENGTH];
-   if (error || !r)
+   if (error || !r || (frame && !r->png_base64))
    {
-      snprintf(msg, sizeof(msg), "SCREENSHOT ERROR %s",
+      snprintf(msg, sizeof(msg), "%s ERROR %s",
+            frame ? "GET_FRAME" : "SCREENSHOT",
             error ? error : "no result");
       command_deferred_send(d, msg, strlen(msg), true);
    }
-   else if (r->png_base64 && d->cmd->reply_image_to && d->dest
-         && input_driver_command_generation() == d->gen)
-   {
-      /* the picture itself, with its path, where the interface takes one */
-      d->cmd->reply_image_to(d->cmd, d->dest, r->path, strlen(r->path),
-            "image/png", r->png_base64, r->png_base64_len);
-      command_deferred_send(d, NULL, 0, false);
-   }
    else
    {
-      strlcpy(msg, r->path, sizeof(msg));
-      command_deferred_send(d, msg, strlen(msg), false);
+      if (frame)
+         snprintf(msg, sizeof(msg), "GET_FRAME %ux%u", r->width, r->height);
+      else
+         strlcpy(msg, r->path, sizeof(msg));
+      if (     r->png_base64 && d->cmd->reply_image_to && d->dest
+            && input_driver_command_generation() == d->gen)
+      {
+         d->cmd->reply_image_to(d->cmd, d->dest, msg, strlen(msg),
+               "image/png", r->png_base64, r->png_base64_len);
+         command_deferred_send(d, NULL, 0, false);
+      }
+      else
+         command_deferred_send(d, msg, strlen(msg), false);
    }
    free(d);
 }
@@ -955,31 +963,6 @@ static bool command_screenshot(command_t *cmd)
    /* the task's callback, which uses this, runs on a later frame */
    command_deferred_take(d, cmd);
    return true;
-}
-
-static void command_get_frame_done(retro_task_t *task, void *task_data,
-      void *user_data, const char *error)
-{
-   command_deferred_t             *d = (command_deferred_t*)user_data;
-   const struct screenshot_result *r = (const struct screenshot_result*)task_data;
-   char msg[256];
-   if (error || !r || !r->png_base64)
-   {
-      snprintf(msg, sizeof(msg), "GET_FRAME ERROR %s",
-            error ? error : "the frame could not be encoded");
-      command_deferred_send(d, msg, strlen(msg), true);
-   }
-   else
-   {
-      int _len = snprintf(msg, sizeof(msg), "GET_FRAME %ux%u",
-            r->width, r->height);
-      if (     d->cmd->reply_image_to && d->dest
-            && input_driver_command_generation() == d->gen)
-         d->cmd->reply_image_to(d->cmd, d->dest, msg, (size_t)_len,
-               "image/png", r->png_base64, r->png_base64_len);
-      command_deferred_send(d, NULL, 0, false);
-   }
-   free(d);
 }
 
 /* GET_FRAME [size]: the frame on screen as image content, scaled to fit
@@ -1018,7 +1001,7 @@ bool command_get_frame(command_t *cmd, const char *arg)
    if (!(d = (command_deferred_t*)calloc(1, sizeof(*d))))
       return false;
    if (!take_frame_notify((unsigned)size, (unsigned)size,
-            command_get_frame_done, d))
+            command_screenshot_done, d))
    {
       free(d);
       command_reply_error(cmd, "GET_FRAME", "the frame could not be "
