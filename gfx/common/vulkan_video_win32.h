@@ -1,7 +1,7 @@
 /* Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier: GPL-3.0-or-later */
 /* Included by vulkan_video_decode.c on desktop Windows. */
 
-bool vulkan_video_decode_av1_fallback_init(const vulkan_context_t *ctx, unsigned formats)
+bool vulkan_video_decode_win32_fallback_init(const vulkan_context_t *ctx, unsigned formats)
 {
    static const GUID factory_iid =
       { 0x770aae78, 0xf26f, 0x4dba, { 0xa8, 0x29, 0x25, 0x3c, 0x83, 0xd1, 0xb3, 0x87 } };
@@ -25,7 +25,7 @@ bool vulkan_video_decode_av1_fallback_init(const vulkan_context_t *ctx, unsigned
    unsigned index;
    bool ok = false;
    if (!ctx || !vvd.up || vvd.device != ctx->device
-         || !vvd.av1_intrabc_broken || vvd.av1_fallback
+         || !vvd.h264_broken || vvd.win32_fallback
          || !(ctx->flags & VK_CTX_FLAG_TIMELINE_SEMAPHORE) || !formats)
       return false;
    get_properties = (PFN_vkGetPhysicalDeviceProperties2)
@@ -87,13 +87,13 @@ bool vulkan_video_decode_av1_fallback_init(const vulkan_context_t *ctx, unsigned
          bool match = SUCCEEDED(adapter->lpVtbl->GetDesc1(adapter, &description))
             && !memcmp(&description.AdapterLuid, id.deviceLUID, sizeof(description.AdapterLuid));
          if (match)
-            ok = d3d11_video_decode_init_av1_adapter(adapter, formats);
+            ok = d3d11_video_decode_init_packed_adapter(adapter, formats, true);
          adapter->lpVtbl->Release(adapter);
          if (match) break;
       }
       factory->lpVtbl->Release(factory);
    }
    FreeLibrary(dxgi);
-   vvd.av1_fallback = ok;
+   vvd.win32_fallback = ok;
    return ok;
 }
