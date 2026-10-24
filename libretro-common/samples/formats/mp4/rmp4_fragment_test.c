@@ -161,7 +161,16 @@ static int read_all(rmp4_t *m, const buf_t *w, const char *name,
 static void test_sample_cursor(rmp4_t *m, const buf_t *w, size_t payload)
 {
    rmp4_packet pkt;
+   size_t begin = 17, end = 19;
    rmp4_set_avail(m, 0);
+   CHECK(rmp4_track_sample_span(m, 0, 1, &begin, &end)
+         && begin == payload + 4 && end == payload + 8,
+         "sample span: metadata without resident media");
+   CHECK(!rmp4_track_sample_span(m, -1, 0, &begin, &end)
+         && !rmp4_track_sample_span(m, 0, 2, &begin, &end)
+         && !rmp4_track_sample_span(m, 0, 0, NULL, &end)
+         && begin == payload + 4 && end == payload + 8,
+         "sample span: invalid queries preserve outputs");
    CHECK(rmp4_track_sample_key(m, 0, 0) == 1,
          "sample cursor: key metadata without resident media");
    CHECK(rmp4_track_sample_key(m, -1, 0) == -1
@@ -198,6 +207,7 @@ static void test_track_selection(void)
    rmp4_t *m = (rmp4_t*)calloc(1, sizeof(*m));
    rmp4_packet packet;
    int i;
+   size_t begin = 17, end = 19;
    CHECK(m != NULL, "track selection: allocation");
    if (!m) return;
    m->buf = bytes;
@@ -224,7 +234,14 @@ static void test_track_selection(void)
             && packet.track == (i & 1) && packet.data == bytes + i * 2,
             "track selection: rewind restores both tracks");
    rmp4_rewind(m);
+   offsets0[1] = sizeof(bytes) - 1;
+   CHECK(!rmp4_track_sample_span(m, 0, 1, &begin, &end)
+         && begin == 17 && end == 19,
+         "sample span: rejects range beyond file");
    offsets0[1] = (uint64_t)-1;
+   CHECK(!rmp4_track_sample_span(m, 0, 1, &begin, &end)
+         && begin == 17 && end == 19,
+         "sample span: rejects wrapped offset");
    CHECK(!rmp4_select_track_sample(m, 0, 1)
          && rmp4_read_packet(m, &packet) == 1 && packet.data == bytes,
          "track selection: malformed offset leaves cursors unchanged");

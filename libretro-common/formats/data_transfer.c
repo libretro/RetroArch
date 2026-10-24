@@ -718,6 +718,16 @@ void data_transfer_window_rebase(data_transfer_t *dt, size_t pos)
    return;
 }
 
+void data_transfer_window_skip(data_transfer_t *dt, size_t pos)
+{
+   if (!dt || !dt->window || !dt->map_len || dt->failed)
+      return;
+   if (pos > dt->len) pos = dt->len;
+   if (pos <= dt->whi) return;
+   data_transfer_wdecommit_to(dt, pos);
+   dt->wlo = dt->whi = pos;
+}
+
 void data_transfer_window_advance(data_transfer_t *dt, size_t lo)
 {
    if (!dt || !dt->window || !dt->map_len || dt->failed)

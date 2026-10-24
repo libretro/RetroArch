@@ -414,6 +414,69 @@ static void test_probe_frontier(void)
    CHECK(opens == closes);
 }
 
+static void test_sparse_hdr_seek(void)
+{
+   rmp4_video_stream_t *s;
+   video_hw_frame_t frame = {0};
+   size_t lo, hi, second, last, i, previous = 0, skipped = 0;
+   rmp4_t *demux;
+   unsigned n, spans = 0, before;
+   int ret = 0;
+   make_mp4_clip(1, 2);
+   demux = rmp4_open_memory(bytes, used);
+   CHECK(demux && rmp4_track_sample_span(demux, 0, 1, &second, &last));
+   if (!demux) return;
+   rmp4_close(demux);
+   memmove(bytes + second + 515, bytes + second, used - second);
+   bytes[second] = 0x7a;
+   bytes[second + 1] = 0x80;
+   bytes[second + 2] = 4;
+   memset(bytes + second + 3, 0xcc, 512);
+   used += 515;
+   patch32(media_at - 8, (uint32_t)(used - media_at + 8));
+   for (i = 4; i + 24 <= media_at; i++)
+      if (!memcmp(bytes + i, "stsz", 4))
+      {
+         patch32(i + 20, (uint32_t)(last - second + 515));
+         break;
+      }
+   CHECK(i + 24 <= media_at);
+   s = rmp4_video_stream_open_hw_avail(bytes, used, used, NULL, NULL, NULL);
+   CHECK(s && rmp4_video_stream_set_hw(s, 1));
+   if (!s) return;
+   CHECK(rmp4_video_stream_next(s, NULL));
+   CHECK(rmp4_video_stream_hw_frame(s, &frame));
+   video_hw_frame_abandon(&frame);
+   before = decodes;
+   CHECK(rmp4_video_stream_seek_begin_ns(s, 80000000));
+   for (n = 0; n < 128 && !ret; n++)
+   {
+      if (rmp4_video_stream_seek_span(s, &lo, &hi) && hi > lo)
+      {
+         CHECK(lo <= hi && hi <= used && hi - lo <= 10);
+         if (previous && lo > previous) skipped += lo - previous;
+         previous = hi;
+         CHECK(rmp4_video_stream_consumed(s) == lo);
+         rmp4_video_stream_set_avail(s, hi ? hi - 1 : 0);
+         CHECK(rmp4_video_stream_seek_step(s, NULL) == 0);
+         CHECK(rmp4_video_stream_wait_reason(s) == RMP4_VIDEO_WAIT_INPUT);
+         CHECK(decodes == before);
+         rmp4_video_stream_set_avail(s, hi);
+         spans++;
+      }
+      else
+         rmp4_video_stream_set_avail(s, used);
+      ret = rmp4_video_stream_seek_step(s, NULL);
+   }
+   CHECK(ret == 1 && spans > 0 && skipped >= 500);
+   CHECK(rmp4_video_stream_next(s, NULL));
+   CHECK(rmp4_video_stream_hw_frame(s, &frame));
+   CHECK(frame.color.max_cll == 2000 && frame.color.max_fall == 600);
+   video_hw_frame_abandon(&frame);
+   rmp4_video_stream_close(s);
+   CHECK(opens == closes);
+}
+
 static void test_unavailable(void)
 {
    rmp4_video_stream_t *s;
@@ -453,6 +516,7 @@ int main(void)
    test_changed_bad_hdr();
    test_early_bad_hdr();
    test_probe_frontier();
+   test_sparse_hdr_seek();
    test_unavailable();
    rav1_set_hw_backend(NULL);
    printf("AV1 MP4 hardware reader: %u failures\n", failures);

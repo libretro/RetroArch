@@ -248,6 +248,9 @@ void rmp4_video_stream_set_avail(rmp4_video_stream_t *stream,
 /* Bounded-memory streaming support (see rmp4_media_floor/consumed). */
 size_t rmp4_video_stream_media_floor(rmp4_video_stream_t *s);
 size_t rmp4_video_stream_consumed(rmp4_video_stream_t *s);
+/* Exact input range while seeking through AV1 metadata; 0 otherwise. */
+int rmp4_video_stream_seek_span(rmp4_video_stream_t *s,
+      size_t *lo, size_t *hi);
 /* Container duration in nanoseconds (mvhd), 0 when absent. */
 int64_t rmp4_video_stream_duration_ns(rmp4_video_stream_t *s);
 

@@ -715,6 +715,8 @@ size_t image_transfer_anim_stream_consumed(void *stream,
 size_t image_transfer_anim_stream_feed_frontier(void *stream, enum image_type_enum type);
 void image_transfer_anim_stream_pin_span(void *stream, enum image_type_enum type,
       size_t *lo, size_t *hi);
+int image_transfer_anim_stream_seek_span(void *stream,
+      enum image_type_enum type, size_t *lo, size_t *hi);
 void image_transfer_anim_stream_next_span(void *stream,
       enum image_type_enum type, size_t *lo, size_t *hi);
 

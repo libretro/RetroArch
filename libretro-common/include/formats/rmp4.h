@@ -177,6 +177,11 @@ const int64_t *rmp4_track_pts(const rmp4_t *mp4, int track,
  * Does not read sample bytes or change any packet cursor. */
 int rmp4_track_sample_key(const rmp4_t *mp4, int track, uint32_t sample);
 
+/* Metadata-only half-open file span. Does not read sample bytes or
+ * change cursors. Invalid input leaves the outputs unchanged. */
+int rmp4_track_sample_span(const rmp4_t *mp4, int track, uint32_t sample,
+      size_t *begin, size_t *end);
+
 /* Read only this track from sample onward until rewind. Other tracks
  * are parked at their ends. No sample bytes are read; the next read
  * still obeys the current availability bound. Invalid input leaves

@@ -925,6 +925,17 @@ void image_transfer_anim_stream_pin_span(void *stream, enum image_type_enum type
    (void)stream; (void)type;
 }
 
+int image_transfer_anim_stream_seek_span(void *stream,
+      enum image_type_enum type, size_t *lo, size_t *hi)
+{
+#ifdef HAVE_RMP4
+   if (type == IMAGE_TYPE_MP4)
+      return rmp4_video_stream_seek_span((rmp4_video_stream_t*)stream, lo, hi);
+#endif
+   (void)stream; (void)type; (void)lo; (void)hi;
+   return 0;
+}
+
 void image_transfer_anim_stream_next_span(void *stream,
       enum image_type_enum type, size_t *lo, size_t *hi)
 {

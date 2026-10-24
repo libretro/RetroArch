@@ -81,6 +81,8 @@ struct rmp4_video_stream
    rmp4_t      *demux;
    rmp4_packet pending_packet;
    size_t pending_floor;
+   const uint8_t *input;
+   size_t input_len, input_avail;
    int pending, waiting;
    rvp8_video  *vp8;
 #ifdef HAVE_RVP9
@@ -97,6 +99,7 @@ struct rmp4_video_stream
    rmp4_av1_hdr_point_t *av1_hdr_points;
    rav1_hdr_metadata_t av1_hdr_scanned;
    size_t av1_hdr_count, av1_hdr_capacity, av1_hdr_scan_offset;
+   size_t av1_hdr_scan_need;
    uint32_t av1_hdr_scan_sample, av1_decode_sample;
    rav1_sequence_t av1_hdr_probe_sequence;
    size_t av1_hdr_probe_offset;
@@ -867,6 +870,10 @@ static rmp4_video_stream_t *rmp4_video_stream_open_begin(
          need_lo, need_hi)))
       goto fail;
 
+   s->input = buf;
+   s->input_len = len;
+   s->input_avail = avail > len ? len : avail;
+
    /* Pick the first video track whose codec we can decode. */
    s->track   = -1;
    num_tracks = rmp4_num_tracks(s->demux);
@@ -1105,7 +1112,7 @@ static int rmp4_video_av1_learn_hdr(rmp4_video_stream_t *s)
    }
    s->av1_hdr_scanned = s->av1->hdr;
    if (!rmp4_video_av1_hdr_point(s, s->av1_decode_sample + 1)) return 0;
-   s->av1_hdr_scan_offset = 0;
+   s->av1_hdr_scan_offset = s->av1_hdr_scan_need = 0;
    s->av1_hdr_scan_sample++;
    return 1;
 }
@@ -1777,7 +1784,10 @@ static void rmp4_video_blit_frame(rmp4_video_stream_t *s,
 void rmp4_video_stream_set_avail(rmp4_video_stream_t *s, size_t avail)
 {
    if (s)
+   {
+      s->input_avail = avail > s->input_len ? s->input_len : avail;
       rmp4_set_avail(s->demux, avail);
+   }
 }
 
 size_t rmp4_video_stream_media_floor(rmp4_video_stream_t *s)
@@ -1785,8 +1795,32 @@ size_t rmp4_video_stream_media_floor(rmp4_video_stream_t *s)
    return s ? rmp4_media_floor(s->demux) : 0;
 }
 
+int rmp4_video_stream_seek_span(rmp4_video_stream_t *s,
+      size_t *lo, size_t *hi)
+{
+#ifdef HAVE_RAV1
+   size_t begin, end, need;
+   if (!s || !lo || !hi || s->seek_state != 5
+         || s->av1_hdr_scan_sample >= (uint32_t)s->seek_scan
+         || !rmp4_track_sample_span(s->demux, s->track,
+            s->av1_hdr_scan_sample, &begin, &end)
+         || s->av1_hdr_scan_offset > end - begin)
+      return 0;
+   begin += s->av1_hdr_scan_offset;
+   need = s->av1_hdr_scan_need > 10 ? s->av1_hdr_scan_need : 10;
+   *lo = begin;
+   *hi = end - begin > need ? begin + need : end;
+   return 1;
+#else
+   (void)s; (void)lo; (void)hi;
+   return 0;
+#endif
+}
+
 size_t rmp4_video_stream_consumed(rmp4_video_stream_t *s)
 {
+   size_t lo, hi;
+   if (rmp4_video_stream_seek_span(s, &lo, &hi)) return lo;
    return s ? (s->pending ? s->pending_floor : rmp4_consumed(s->demux)) : 0;
 }
 
@@ -2130,47 +2164,48 @@ static const rav1_hdr_metadata_t *rmp4_video_av1_hdr_at(
    return lo ? &s->av1_hdr_points[lo - 1].hdr : &s->av1_hdr_seed;
 }
 
-/* Header-only prefix scan: one resident OBU, yielding before a new sample. */
+/* Only OBU headers and metadata payloads need resident storage. */
 static int rmp4_video_av1_scan_hdr(rmp4_video_stream_t *s)
 {
-   rmp4_packet packet;
    rav1_obu_t obu;
+   size_t begin, end, lo, hi, next;
    int ret;
    if (!s->av1_hdr_count)
    {
       s->av1_hdr_scanned = s->av1_hdr_seed;
       if (!rmp4_video_av1_hdr_point(s, 0)) return -1;
-      if (!rmp4_select_track_sample(s->demux, s->track, 0)) return -1;
-      return 2;
    }
-   if (!rmp4_select_track_sample(s->demux, s->track, s->av1_hdr_scan_sample))
-      return -1;
-   if (!s->pending) s->pending_floor = rmp4_consumed(s->demux);
-   ret = rmp4_read_packet(s->demux, &packet);
-   if (ret == RMP4_READ_AGAIN)
+   if (!rmp4_track_sample_span(s->demux, s->track,
+            s->av1_hdr_scan_sample, &begin, &end)
+         || !rmp4_video_stream_seek_span(s, &lo, &hi)) return -1;
+   if (hi > s->input_avail)
    {
       s->waiting = RMP4_VIDEO_WAIT_INPUT;
       return 0;
    }
-   if (ret != 1 || packet.track != s->track) return -1;
-   s->pending_packet = packet;
-   s->pending = 1;
-   ret = rav1_obu_next(&obu, packet.data, packet.size,
-         &s->av1_hdr_scan_offset, true);
+   next = s->av1_hdr_scan_offset;
+   ret = rav1_obu_next(&obu, s->input + begin, end - begin, &next, true);
    if (ret < 0) return -1;
    if (!ret)
    {
       if (!rmp4_video_av1_hdr_point(s, s->av1_hdr_scan_sample + 1)) return -1;
-      s->pending = 0;
-      s->av1_hdr_scan_offset = 0;
+      s->av1_hdr_scan_offset = s->av1_hdr_scan_need = 0;
       s->av1_hdr_scan_sample++;
-      if (!rmp4_select_track_sample(s->demux, s->track, s->av1_hdr_scan_sample))
-         return -1;
       return 2;
    }
    if (obu.temporal_id || obu.spatial_id) return -1;
-   if (obu.type == 5 && rav1_hdr_metadata_obu(&s->av1_hdr_scanned, &obu) < 0)
-      return -1;
+   if (obu.type == 5)
+   {
+      s->av1_hdr_scan_need = obu.size;
+      if (begin + next > s->input_avail)
+      {
+         s->waiting = RMP4_VIDEO_WAIT_INPUT;
+         return 0;
+      }
+      if (rav1_hdr_metadata_obu(&s->av1_hdr_scanned, &obu) < 0) return -1;
+   }
+   s->av1_hdr_scan_offset = next;
+   s->av1_hdr_scan_need = 0;
    return 0;
 }
 
@@ -2428,7 +2463,7 @@ failed:
    {
       if (s->seek_state == 5)
       {
-         s->av1_hdr_scan_offset = 0;
+         s->av1_hdr_scan_offset = s->av1_hdr_scan_need = 0;
          s->av1_hdr_scanned = *rmp4_video_av1_hdr_at(s, s->av1_hdr_scan_sample);
       }
       s->pending = s->av1_hdr_probe_started = 0;

@@ -34,7 +34,7 @@ static settings_t settings;
 static audio_mixer_sound_t *sound;
 static audio_mixer_voice_t *voice;
 static unsigned repeats, finishes;
-static bool seek_probe, seek_probe_wait;
+static bool seek_probe, seek_probe_wait, seek_probe_sparse;
 static int seek_probe_error;
 static unsigned seek_probe_calls, seek_probe_end;
 static int64_t seek_probe_target;
@@ -76,6 +76,15 @@ size_t image_transfer_anim_stream_feed_frontier(void *s, enum image_type_enum t)
 void image_transfer_anim_stream_pin_span(void *s, enum image_type_enum t,
       size_t *lo, size_t *hi)
 { (void)s; (void)t; (void)lo; (void)hi; abort(); }
+int image_transfer_anim_stream_seek_span(void *s, enum image_type_enum t,
+      size_t *lo, size_t *hi)
+{
+   (void)s; (void)t;
+   if (!seek_probe_sparse) return 0;
+   *lo = seek_probe_anchor;
+   *hi = seek_probe_anchor + 10;
+   return 1;
+}
 void image_transfer_anim_stream_next_span(void *s, enum image_type_enum t,
       size_t *lo, size_t *hi)
 { (void)s; (void)t; if (!seek_probe) abort(); *lo=seek_probe_lo; *hi=seek_probe_hi; }
@@ -963,6 +972,18 @@ static int bounded_video_seek(void)
                if (gfx_anim_preview_seek_step(&p, 0, false, &position) != 0
                      || seek_probe_calls != 1) failed = 1;
             }
+            seek_probe_boundary = 0;
+            seek_probe_sparse = seek_probe_wait = true;
+            seek_probe_calls = 0;
+            seek_probe_end = 64;
+            seek_probe_anchor = 65536;
+            p.seek_phase = 1;
+            for (attempt = 0; attempt < 8 && p.seek_phase != 2; attempt++)
+               if (gfx_anim_preview_seek_step(&p, 0, false, &position) != 0)
+                  failed = 1;
+            if (p.seek_phase != 2 || seek_probe_calls != 64) failed = 1;
+            seek_probe_sparse = seek_probe_wait = false;
+            seek_probe_end = 0;
             data_transfer_free(p.dt);
          }
          remove(path);

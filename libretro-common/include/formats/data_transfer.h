@@ -202,6 +202,9 @@ bool data_transfer_window_ensure(data_transfer_t *dt, size_t lo,
  * No-op when pos does not lie past the frontier, so front-moov files
  * are unaffected. */
 void data_transfer_window_rebase(data_transfer_t *dt, size_t pos);
+/* Skip forward without reading the gap or the new page's prefix.
+ * Consumers must not read below pos outside the head or pinned range. */
+void data_transfer_window_skip(data_transfer_t *dt, size_t pos);
 void data_transfer_window_advance(data_transfer_t *dt, size_t lo);
 void data_transfer_window_rewind(data_transfer_t *dt);
 /* Raise the permanently-resident head.  For codecs whose loop

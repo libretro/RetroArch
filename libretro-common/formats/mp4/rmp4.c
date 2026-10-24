@@ -1307,6 +1307,21 @@ int rmp4_track_sample_key(const rmp4_t *m, int track, uint32_t sample)
    return m->trk[track].key[sample] ? 1 : 0;
 }
 
+int rmp4_track_sample_span(const rmp4_t *m, int track, uint32_t sample,
+      size_t *begin, size_t *end)
+{
+   const rmp4_itrack *t;
+   if (!m || !begin || !end || track < 0 || track >= m->num_tracks)
+      return 0;
+   t = &m->trk[track];
+   if (sample >= t->count || t->off[sample] > (uint64_t)m->len
+         || t->size[sample] > (uint64_t)m->len - t->off[sample])
+      return 0;
+   *begin = (size_t)t->off[sample];
+   *end   = *begin + t->size[sample];
+   return 1;
+}
+
 int rmp4_select_track_sample(rmp4_t *m, int track, uint32_t sample)
 {
    rmp4_itrack *t;
