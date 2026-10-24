@@ -510,7 +510,7 @@ static bool sdl3_views_target_make(sdl3_video_t *vid, SDL_Texture **t,
    return false;
 }
 
-static void sdl3_views_release(sdl3_video_t *vid)
+static void sdl3_views_release_textures(sdl3_video_t *vid)
 {
    unsigned i;
    for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
@@ -520,6 +520,11 @@ static void sdl3_views_release(sdl3_video_t *vid)
       vid->views.tex[i]      = NULL;
       vid->views.tex_dims[i] = 0;
    }
+}
+
+static void sdl3_views_release(sdl3_video_t *vid)
+{
+   sdl3_views_release_textures(vid);
    sdl3_vv_target_drop(vid, &vid->views.canvas_target, &vid->views.canvas);
    sdl3_vv_target_drop(vid, &vid->views.ui_target, &vid->views.ui);
 }
@@ -782,6 +787,21 @@ static void sdl3_views_render(sdl3_video_t *vid)
          SDL_RenderGeometry(vid->renderer, vid->views.canvas, verts,
                (int)(n * 4), indices, (int)(n * 6));
       }
+      else
+      {
+         /* No room for the batch: a draw per row */
+         SDL_FRect dst;
+         src.x = w;
+         src.h = 1.0f;
+         dst.x = 0.0f;
+         dst.w = w;
+         dst.h = 1.0f;
+         for (y = 1; y < h; y += 2)
+         {
+            src.y = dst.y = (float)y;
+            SDL_RenderTexture(vid->renderer, vid->views.canvas, &src, &dst);
+         }
+      }
    }
 }
 
@@ -986,6 +1006,10 @@ static bool sdl3_gfx_frame(void *data, const void *frame,
    {
       vid->views.active = views;
       vid->flags       |= SDL3_FLAG_SHOULD_RESIZE;
+      /* Kept through a fallback, whose next frame may be a dupe that
+       * draws them again; not once the core stops sending views */
+      if (!views && !video_info->views.num_views)
+         sdl3_views_release_textures(vid);
    }
    retro_atomic_store_release_int(&vid->views.fallback,
          (video_info->views.num_views && !views) ? 1 : 0);
