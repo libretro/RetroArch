@@ -122,6 +122,14 @@ video_shader_delay = "$([ $late = 1 ] && echo 50 || echo 0)"
 video_shader_deferred_loading = "true"
 config_save_on_exit = "false"
 EOF
+   # retroarch.exe sends --verbose to the console it attaches to, not to
+   # a redirected stdout: on Windows the log goes to a file instead
+   if [ $native_win = 1 ]; then
+      rm -rf "$out/log_$2"
+      mkdir -p "$out/log_$2"
+      printf 'log_to_file = "true"\nlog_to_file_timestamp = "false"\nlog_dir = "%s"\n' \
+         "$(wp "$out/log_$2")" >> "$cfg"
+   fi
    # every capture compiles afresh, so the log says which compiler ran,
    # unless the warm cache is the thing under test
    if [ "${5:-}" != warm ]; then
@@ -135,6 +143,7 @@ EOF
       --set-shader "$(wp "$1")" \
       --max-frames="$frames" --max-frames-ss --max-frames-ss-path="$(wp "$3")" \
       > "$4" 2>&1
+   [ $native_win = 1 ] && cat "$out/log_$2/retroarch.log" >> "$4" 2>/dev/null
    [ -s "$3" ]
 }
 
