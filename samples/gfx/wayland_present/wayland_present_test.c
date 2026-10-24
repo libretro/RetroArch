@@ -386,7 +386,9 @@ int main(void)
    wl_present_wait(&present, 1);
    CHECK(now_ns() - t0 < 10000000ULL, "slept for a vblank already gone");
    CHECK(present.presented, "a wait that did not sleep spent the timing");
-   comp_set(ANSWER_PRESENT, now_ns(), 2000000u);
+   /* a refresh long enough to still be ahead after the roundtrip on a
+    * busy machine; the wait sleeps out what is left of it */
+   comp_set(ANSWER_PRESENT, now_ns(), 250000000u);
    wl_present_request(&present, surface);
    wl_surface_commit(surface);
    wl_display_roundtrip(cdpy);
