@@ -113,6 +113,23 @@ static void render_subtitles(struct menu_state *menu_st)
 #include "win32_modal_test.h"
 #include "subtitle_media_test.h"
 
+#ifdef _WIN32
+static bool test_current_visible(struct menu_state *menu_st)
+{
+   test_viewer_t *viewer = (test_viewer_t*)menu_st->userdata;
+   if (!test_showing(viewer) || !test_thumbnail(viewer)->texture)
+   {
+      file_list_t *list = MENU_LIST_GET_SELECTION(menu_st->entries.list, 0);
+      fprintf(stderr, "modal image unavailable: shown=%u selection=%lu path=%s texture=%lu status=%u\n",
+            test_showing(viewer), (unsigned long)menu_st->selection_ptr,
+            menu_st->selection_ptr < list->size ? list->list[menu_st->selection_ptr].path : "none",
+            (unsigned long)test_thumbnail(viewer)->texture, test_thumbnail(viewer)->status);
+      return false;
+   }
+   return true;
+}
+#endif
+
 static bool test_current_target(struct menu_state *menu_st,
       gfx_media_target_t *target)
 {
@@ -241,13 +258,20 @@ int main(int argc,char **argv)
             runloop_state_get_ptr()->current_core_type == CORE_TYPE_DUMMY
             && !*path_get(RARCH_PATH_CONTENT));
 #ifdef _WIN32
+      if (image && getenv("MEDIA_TEST_MODAL_MODE"))
+      {
+         CHECK("image remains visible through native resize and restore",
+               native_gpu && media_native_modal_image(menu_st, test_current_visible));
+         goto media_test_done;
+      }
       if (image && native_gpu)
       {
          unsigned resize_tick;
+         ui_companion_driver_init_first(false, false, false);
          ShowWindowAsync(win32_get_window(), SW_MAXIMIZE);
          for (resize_tick = 0; resize_tick < 30; resize_tick++)
          {
-            render(menu_st);
+            media_modal_normal_tick();
             retro_sleep(1);
          }
          CHECK("maximizing retains image viewer",
@@ -255,7 +279,7 @@ int main(int argc,char **argv)
          ShowWindowAsync(win32_get_window(), SW_RESTORE);
          for (resize_tick = 0; resize_tick < 30; resize_tick++)
          {
-            render(menu_st);
+            media_modal_normal_tick();
             retro_sleep(1);
          }
          CHECK("restoring retains image viewer",
@@ -294,8 +318,7 @@ int main(int argc,char **argv)
       if (getenv("MEDIA_TEST_MODAL_MODE"))
       {
          CHECK("movie pixels and audio continue inside the native modal loop",
-               !image && native_gpu
-               && media_native_modal_playback(menu_st, test_current_target));
+               native_gpu && media_native_modal_playback(menu_st, test_current_target));
          goto media_test_done;
       }
 #endif

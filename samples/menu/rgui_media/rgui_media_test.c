@@ -87,6 +87,14 @@ static bool media_capture_settled(struct menu_state *menu_st, int ordinal)
    return media_native_capture(&hash, ordinal);
 }
 
+#ifdef _WIN32
+static bool media_current_visible(struct menu_state *menu_st)
+{
+   rgui_t *rgui = (rgui_t*)menu_st->userdata;
+   return (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL) && rgui->fs_thumbnail.is_valid;
+}
+#endif
+
 static bool media_current_target(struct menu_state *menu_st,
       gfx_media_target_t *target)
 {
@@ -205,13 +213,20 @@ int main(int argc, char **argv)
             runloop_state_get_ptr()->current_core_type == CORE_TYPE_DUMMY
             && !*path_get(RARCH_PATH_CONTENT));
 #ifdef _WIN32
+      if (image && getenv("MEDIA_TEST_MODAL_MODE"))
+      {
+         MEDIA_CHECK("image remains visible through native resize and restore",
+               native_gpu && media_native_modal_image(menu_st, media_current_visible));
+         goto cleanup;
+      }
       if (image && native_gpu)
       {
          unsigned resize_tick;
+         ui_companion_driver_init_first(false, false, false);
          ShowWindowAsync(win32_get_window(), SW_MAXIMIZE);
          for (resize_tick = 0; resize_tick < 30; resize_tick++)
          {
-            media_render(menu_st);
+            media_modal_normal_tick();
             retro_sleep(1);
          }
          MEDIA_CHECK("maximizing retains image viewer",
@@ -219,7 +234,7 @@ int main(int argc, char **argv)
          ShowWindowAsync(win32_get_window(), SW_RESTORE);
          for (resize_tick = 0; resize_tick < 30; resize_tick++)
          {
-            media_render(menu_st);
+            media_modal_normal_tick();
             retro_sleep(1);
          }
          MEDIA_CHECK("restoring retains image viewer",
@@ -259,8 +274,7 @@ int main(int argc, char **argv)
       if (getenv("MEDIA_TEST_MODAL_MODE"))
       {
          MEDIA_CHECK("movie pixels and audio continue inside the native modal loop",
-               !image && native_gpu
-               && media_native_modal_playback(menu_st, media_current_target));
+               native_gpu && media_native_modal_playback(menu_st, media_current_target));
          goto cleanup;
       }
 #endif
