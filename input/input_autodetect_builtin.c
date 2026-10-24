@@ -923,6 +923,11 @@ DECL_AXIS(r_x_plus,  +2) \
 DECL_AXIS(r_x_minus, -2) \
 DECL_AXIS(r_y_plus,  +3) \
 DECL_AXIS(r_y_minus, -3)
+
+/* the DualSense's handler gives its PS button as 16 */
+#define HID_DUALSENSE_BINDS \
+HID_RETROPAD_BINDS \
+DECL_MENU_EX(16, "PS")
 #endif
 
 const char* const input_builtin_autoconfs[] =
@@ -933,8 +938,8 @@ const char* const input_builtin_autoconfs[] =
    DECL_AUTOCONF_DEVICE("8BitDo Ultimate 2 Wireless", "hid", HID_8BITDO_BINDS),
    DECL_AUTOCONF_DEVICE("8BitDo Ultimate 2C Wireless", "hid", HID_8BITDO_BINDS),
    DECL_AUTOCONF_DEVICE("8BitDo Ultimate 3", "hid", HID_8BITDO_BINDS),
-   DECL_AUTOCONF_DEVICE("DualSense Wireless Controller", "hid", HID_RETROPAD_BINDS),
-   DECL_AUTOCONF_DEVICE("DualSense Edge Wireless Controller", "hid", HID_RETROPAD_BINDS),
+   DECL_AUTOCONF_DEVICE("DualSense Wireless Controller", "hid", HID_DUALSENSE_BINDS),
+   DECL_AUTOCONF_DEVICE("DualSense Edge Wireless Controller", "hid", HID_DUALSENSE_BINDS),
 #ifdef _WIN32
    DECL_AUTOCONF_DEVICE("Controller (Xbox One For Windows)", "hid", HID_XBOX_BINDS),
    DECL_AUTOCONF_DEVICE("Controller (Xbox 360 For Windows)", "hid", HID_XBOX_BINDS),
