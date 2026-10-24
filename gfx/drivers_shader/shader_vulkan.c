@@ -916,6 +916,8 @@ static void slang_pass_set_shader(struct slang_pass *pass,
 static void slang_pass_set_blob(struct slang_pass *pass,
       VkShaderStageFlags stage, struct slang_blob *blob);
 static bool slang_pass_build(struct slang_pass *pass);
+static bool slang_pass_build_layout(struct slang_pass *pass);
+static bool slang_pass_init_pipeline(struct slang_pass *pass);
 static bool slang_pass_init_feedback(struct slang_pass *pass);
 static void slang_pass_build_commands(struct slang_pass *pass,
       struct deferred_disposes *disposer,
@@ -2390,6 +2392,10 @@ static bool slang_chain_init(struct vulkan_filter_chain *chain)
    return true;
 }
 
+/* Pass @pass_idx readied for its pipeline - framebuffer, reflection,
+ * layout and descriptors - in the order the chain needs, the pipeline
+ * itself left to slang_pass_init_pipeline(), which reads nothing the
+ * later passes' preparation writes. */
 static bool slang_chain_init_single_pass(struct vulkan_filter_chain *chain,
       unsigned pass_idx)
 {
@@ -2409,10 +2415,7 @@ static bool slang_chain_init_single_pass(struct vulkan_filter_chain *chain,
          ? slang_pass_get_name(chain->passes[pass_idx])
          : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
 
-   if (!slang_pass_build(chain->passes[pass_idx]))
-      return false;
-
-   return true;
+   return slang_pass_build_layout(chain->passes[pass_idx]);
 }
 
 static bool slang_chain_compile_full_pass(struct vulkan_filter_chain *chain,
@@ -3346,9 +3349,6 @@ static bool slang_pass_init_pipeline(struct slang_pass *pass)
       { VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO },
    };
 
-   if (!slang_pass_init_pipeline_layout(pass))
-      return false;
-
    /* Input assembly */
    input_assembly.sType                         = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
    input_assembly.pNext                         = NULL;
@@ -3724,6 +3724,12 @@ static void slang_pass_read_frame_in_place(struct slang_pass *pass)
 
 static bool slang_pass_build(struct slang_pass *pass)
 {
+   return slang_pass_build_layout(pass) && slang_pass_init_pipeline(pass);
+}
+
+/* All of a pass but its pipeline */
+static bool slang_pass_build_layout(struct slang_pass *pass)
+{
    unsigned i;
    unsigned j = 0;
    slang_semantic_name_map semantic_map = { 0 };
@@ -3828,7 +3834,7 @@ static bool slang_pass_build(struct slang_pass *pass)
       }
    }
 
-   return slang_pass_init_pipeline(pass);
+   return slang_pass_init_pipeline_layout(pass);
 }
 
 static void slang_pass_set_semantic_texture(struct slang_pass *pass,
@@ -5321,12 +5327,23 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_deferred(
    return chain;
 }
 
-bool vulkan_filter_chain_compile_pass(
+bool vulkan_filter_chain_prepare_pass(
       vulkan_filter_chain_t *chain,
       unsigned pass_index,
       glslang_filter_chain_filter filter)
 {
    return slang_chain_compile_full_pass(chain, pass_index, filter);
+}
+
+bool vulkan_filter_chain_build_pipeline(
+      vulkan_filter_chain_t *chain,
+      unsigned pass_index)
+{
+   /* The slot alone: a later pass's preparation may prune the copy
+    * pass and count it out meanwhile, and a pruned copy builds
+    * nothing.  @pass_index is one the deferred chain scheduled. */
+   struct slang_pass *pass = chain->passes[pass_index];
+   return !pass || slang_pass_init_pipeline(pass);
 }
 
 bool vulkan_filter_chain_finalize(vulkan_filter_chain_t *chain)

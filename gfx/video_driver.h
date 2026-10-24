@@ -1459,6 +1459,10 @@ typedef struct shader_load_deferred
    void                  *stepper;      /* the passes stepping on the task thread */
    retro_atomic_int_t     busy;         /* a step runs on another thread */
    retro_atomic_int_t     cancel;       /* the next step ends the load   */
+   /* The driver's own tasks building the load's passes: a cancel waits
+    * for none to be left before its step frees what they build into,
+    * and the driver's steps end the load only once none are. */
+   retro_atomic_int_t     builds;
    /* Set by the driver's begin: its step may run on any thread but the
     * finalizing one, since the chain is not on screen before that and
     * a pass's objects are made at device level. */

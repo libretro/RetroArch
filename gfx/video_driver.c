@@ -1352,6 +1352,12 @@ bool video_shader_deferred_notify(retro_task_callback_t cb, void *user_data)
    return true;
 }
 
+static bool shader_builds_running(void *data)
+{
+   shader_load_deferred_t *d = (shader_load_deferred_t*)data;
+   return retro_atomic_load_acquire_int(&d->builds) != 0;
+}
+
 void video_driver_shader_deferred_cancel(const char *why)
 {
    video_driver_state_t *video_st  = &video_driver_st;
@@ -1365,6 +1371,9 @@ void video_driver_shader_deferred_cancel(const char *why)
 #ifdef HAVE_SLANG
    shader_stepper_stop(d);
 #endif
+   /* nor the passes the driver's tasks are building */
+   if (retro_atomic_load_acquire_int(&d->builds))
+      task_queue_wait(shader_builds_running, d);
    if (vid && vid->shader_load_step && video_st->data)
    {
       if (video_st->threaded)

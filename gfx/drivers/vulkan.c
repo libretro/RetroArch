@@ -31,6 +31,7 @@
 #include <retro_inline.h>
 #include <retro_miscellaneous.h>
 #include <queues/mpsc_stack.h>
+#include <queues/task_queue.h>
 #include <retro_math.h>
 #include <string/stdstring.h>
 #include <libretro.h>
@@ -8299,12 +8300,73 @@ static bool vulkan_suppress_screensaver(void *data, bool enable)
 
 /* ---- Deferred (per-frame) shader loading for Vulkan ---- */
 
+/* A pass's pipeline is built by a task of its own, several at once,
+ * after the step that prepared the pass; deferred->builds counts them,
+ * and the chain is not freed or finalized while any is left. */
 typedef struct vulkan_deferred_state
 {
    vulkan_filter_chain_t *new_chain;
    vulkan_filter_chain_t *old_chain;
    enum glslang_filter_chain_filter filter;
+   retro_atomic_int_t     failed;   /* a pass failed: the load ends */
 } vulkan_deferred_state_t;
+
+struct vulkan_build_task
+{
+   shader_load_deferred_t  *deferred;
+   vulkan_deferred_state_t *ds;
+   unsigned                 pass;
+};
+
+static void vulkan_build_task_handler(retro_task_t *task)
+{
+   struct vulkan_build_task *b = (struct vulkan_build_task*)task->state;
+   if (!vulkan_filter_chain_build_pipeline(b->ds->new_chain, b->pass))
+   {
+      RARCH_ERR("[Vulkan] Deferred: failed to build pass %u.\n", b->pass);
+      retro_atomic_store_release_int(&b->ds->failed, 1);
+   }
+   /* the last access to the state: the step may free it once this lands */
+   retro_atomic_fetch_add_int(&b->deferred->builds, -1);
+   free(b);
+   task->state = NULL;
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+}
+
+/* Pass @pass's pipeline built beside the frame and the other passes
+ * when the task queue runs on threads; here and now otherwise. */
+static void vulkan_deferred_build(shader_load_deferred_t *deferred,
+      vulkan_deferred_state_t *ds, unsigned pass)
+{
+   struct vulkan_build_task *b;
+   retro_task_t *task;
+
+   if (     task_queue_is_threaded()
+         && (b = (struct vulkan_build_task*)malloc(sizeof(*b))))
+   {
+      if ((task = task_init()))
+      {
+         b->deferred   = deferred;
+         b->ds         = ds;
+         b->pass       = pass;
+         retro_atomic_fetch_add_int(&deferred->builds, 1);
+         task->handler = vulkan_build_task_handler;
+         task->state   = b;
+         task->flags  |= RETRO_TASK_FLG_MUTE | RETRO_TASK_FLG_PARALLEL;
+         if (task_queue_push(task))
+            return;
+         /* refused: the task is still ours, and the build is too */
+         retro_atomic_fetch_add_int(&deferred->builds, -1);
+         free(task);
+      }
+      free(b);
+   }
+   if (!vulkan_filter_chain_build_pipeline(ds->new_chain, pass))
+   {
+      RARCH_ERR("[Vulkan] Deferred: failed to build pass %u.\n", pass);
+      retro_atomic_store_release_int(&ds->failed, 1);
+   }
+}
 
 static bool vulkan_shader_load_begin(void *data,
       shader_load_deferred_t *deferred)
@@ -8323,6 +8385,7 @@ static bool vulkan_shader_load_begin(void *data,
    ds = (vulkan_deferred_state_t*)calloc(1, sizeof(*ds));
    if (!ds)
       return false;
+   retro_atomic_int_init(&ds->failed, 0);
 
    ds->old_chain = vk->filter_chain;
    ds->filter    = vk->video.smooth
@@ -8388,27 +8451,41 @@ static bool vulkan_shader_load_step(void *data,
       RARCH_LOG("[Vulkan] Deferred: compiling pass %u/%u...\n",
             pass + 1, deferred->total_passes);
 
-      if (!vulkan_filter_chain_compile_pass(
+      if (     retro_atomic_load_acquire_int(&ds->failed)
+            || !vulkan_filter_chain_prepare_pass(
                ds->new_chain, pass, ds->filter))
       {
-         RARCH_ERR("[Vulkan] Deferred: failed to compile pass %u.\n", pass);
-         vulkan_filter_chain_free(ds->new_chain);
-         /* the old chain never left vk->filter_chain, and this may be
-          * the task thread: nothing of vk is written here */
-         deferred->state  = SHADER_LOAD_FAILED;
-         goto cleanup;
+         if (!retro_atomic_load_acquire_int(&ds->failed))
+            RARCH_ERR("[Vulkan] Deferred: failed to compile pass %u.\n", pass);
+         /* the pipelines in flight build into the chain: the step that
+          * finalizes frees it once they are in */
+         retro_atomic_store_release_int(&ds->failed, 1);
+         deferred->current_pass = deferred->total_passes;
+         return true;
       }
+      vulkan_deferred_build(deferred, ds, pass);
 
       deferred->current_pass++;
       return true; /* more work */
    }
 
-   /* Check for cancellation */
+   /* Check for cancellation (the cancel waited for the builds) */
    if (deferred->state != SHADER_LOAD_COMPILING)
    {
       RARCH_LOG("[Vulkan] Deferred: cancelled, cleaning up.\n");
       vulkan_filter_chain_free(ds->new_chain);
       vk->filter_chain = ds->old_chain;
+      deferred->state  = SHADER_LOAD_FAILED;
+      goto cleanup;
+   }
+
+   /* Pipelines still building: the chain goes live once they are in */
+   if (retro_atomic_load_acquire_int(&deferred->builds))
+      return true;
+   if (retro_atomic_load_acquire_int(&ds->failed))
+   {
+      vulkan_filter_chain_free(ds->new_chain);
+      /* the old chain never left vk->filter_chain */
       deferred->state  = SHADER_LOAD_FAILED;
       goto cleanup;
    }
