@@ -22,6 +22,12 @@ void RARCH_LOG(const char *fmt, ...) { (void)fmt; }
 void RARCH_WARN(const char *fmt, ...) { (void)fmt; }
 void RARCH_ERR(const char *fmt, ...) { (void)fmt; }
 
+void video_context_driver_release_current(void)
+{
+   fprintf(stderr, "[FAIL] unexpected core-context release\n");
+   ExitProcess(1);
+}
+
 void video_thread_call_on_waiter(void (*fn)(void *data), void *data)
 {
    (void)fn;
