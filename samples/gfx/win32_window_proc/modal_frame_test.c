@@ -129,6 +129,33 @@ static void run_case(unsigned mode)
          mode, live, painted, sizes, enters, exits);
 }
 
+static void run_foreign(unsigned flags)
+{
+   void *caller = ConvertThreadToFiberEx(NULL, flags);
+   unsigned original = _controlfp(0, 0) & _MCW_RC;
+   unsigned mode;
+   CHECK(caller != NULL);
+   if (!caller) return;
+   if (win32_pump_init(&pump))
+   {
+      CHECK(pump.caller == caller && !pump.converted);
+      for (mode = 0; mode < 4; mode++)
+      {
+         run_case(mode);
+         CHECK(GetCurrentFiber() == caller);
+      }
+   }
+   else
+   {
+      CHECK(!flags && pump.disabled);
+      CHECK((_controlfp(0, 0) & _MCW_RC) == original);
+      CHECK(win32_pump_free(&pump));
+      printf("UNAVAILABLE: foreign fiber flags=%u continuity; ownership retained\n", flags);
+   }
+   CHECK(GetCurrentFiber() == caller);
+   CHECK(ConvertFiberToThread());
+}
+
 int main(int argc, char **argv)
 {
    WNDCLASSA wc;
@@ -165,6 +192,8 @@ int main(int argc, char **argv)
    CHECK(RegisterClassA(&wc) != 0);
    for (mode = 0; mode < 4; mode++)
       run_case(mode);
+   run_foreign(1);
+   run_foreign(0);
    UnregisterClassA(wc.lpszClassName, wc.hInstance);
    printf("modal frames: %u failure(s)\n", failures);
    return failures ? 1 : 0;

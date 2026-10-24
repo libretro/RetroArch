@@ -6,6 +6,10 @@
 #include <windows.h>
 #include <boolean.h>
 
+#ifndef ERROR_ALREADY_FIBER
+#define ERROR_ALREADY_FIBER 1280L
+#endif
+
 typedef LPVOID (WINAPI *win32_pump_convert_t)(LPVOID, DWORD);
 typedef LPVOID (WINAPI *win32_pump_create_t)(SIZE_T, SIZE_T, DWORD,
       LPFIBER_START_ROUTINE, LPVOID);
@@ -99,6 +103,8 @@ static bool win32_pump_init(win32_pump_t *p)
       /* Both stacks preserve the x86 floating-point state. */
       p->caller = p->convert(NULL, 1);
       p->converted = p->caller != NULL;
+      if (!p->caller && GetLastError() == ERROR_ALREADY_FIBER)
+         p->caller = GetCurrentFiber();
       if (!p->caller)
       {
          p->disabled = true;
