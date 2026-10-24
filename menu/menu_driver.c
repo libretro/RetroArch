@@ -3815,7 +3815,7 @@ static void menu_input_key_bind_poll_bind_state(
       /* Poll mouse (on the relevant port)
        *
        * Check if key was being pressed by
-       * user with mouse number 'port'
+       * the mouse of the user being bound
        *
        * NOTE: We start iterating on 2 (RETRO_DEVICE_ID_MOUSE_LEFT),
        * because we want to skip the axes
@@ -3825,7 +3825,7 @@ static void menu_input_key_bind_poll_bind_state(
          state->state[port].mouse_buttons[b] =
             input_driver_bind_capture_state(
                   joy_idx,
-                  port,
+                  state->user,
                   RETRO_DEVICE_MOUSE, 0, b);
       }
 
@@ -5417,7 +5417,7 @@ MENU_NOINLINE static bool menu_input_key_bind_iterate(
       bool complete                         = false;
       struct menu_bind_state new_binds      = *_binds;
       unsigned bind_index                   = _binds->begin - MENU_SETTINGS_BIND_BEGIN;
-      const struct retro_keybind *old_binds = input_config_bind(new_binds.port, bind_index);
+      const struct retro_keybind *old_binds = input_config_bind(new_binds.out_user, bind_index);
       unsigned old_key                      = RETRO_KEYBIND_KEY(old_binds);
 
       input_driver_set_keyboard_mapping_blocked(false);
@@ -5557,7 +5557,7 @@ MENU_NOINLINE static bool menu_input_key_bind_iterate(
          input_driver_set_wait_input_release(true);
 
          /* Next bind */
-         new_binds.out_user                  = new_binds.port;
+         new_binds.out_user                  = new_binds.user;
          new_binds.out_id                    =
             input_config_bind_order[new_binds.order];
          new_binds.buffer = *input_config_bind(

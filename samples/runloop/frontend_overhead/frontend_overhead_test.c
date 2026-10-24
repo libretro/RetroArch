@@ -6378,6 +6378,233 @@ static void lane_bind_settings(void)
 #endif
 }
 
+/* Bind All for a user whose Device Index is not their own number: user
+ * 1 on slot 3. Every button lands in user 1's binds, user 3's are left
+ * alone, and a key user 3 has bound keeps its mapping bit. */
+static void lane_bind_all_device_index(void)
+{
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32) && defined(HAVE_MENU)
+   enum { ORDER = ARRAY_SIZE(input_config_bind_order) };
+   struct retro_keybind saved1[ORDER], saved3[ORDER];
+   unsigned k;
+   bool landed                    = true;
+   bool kept                      = true;
+   unsigned had                   = failures;
+   settings_t *settings           = config_get_ptr();
+   input_driver_state_t *input_st = input_state_get_ptr();
+   const input_device_driver_t *joypad_real = input_st->primary_joypad;
+   rarch_setting_t *b1            = menu_setting_find("p1_b");
+   unsigned saved_index           = settings->uints.input_joypad_index[0];
+   unsigned saved_pad             = syn_pad_index;
+   retro_bits_512_t saved_bits    = input_st->keyboard_mapping_bits;
+
+   if (!b1 || !joypad_real)
+   {
+      CHECK(false, "bind all: no setting or joypad driver to bind with");
+      return;
+   }
+   for (k = 0; k < ORDER; k++)
+   {
+      saved1[k] = input_config_binds[0][input_config_bind_order[k]];
+      saved3[k] = input_config_binds[2][input_config_bind_order[k]];
+   }
+   RETRO_KEYBIND_SET_KEY(&input_config_binds[2][input_config_bind_order[0]],
+         RETROK_F13);
+   BIT512_SET(input_st->keyboard_mapping_bits, RETROK_F13);
+
+   syn_joypad               = *joypad_real;
+   syn_joypad.button        = syn_button;
+   syn_joypad.axis          = syn_axis;
+   syn_joypad.state         = syn_state;
+   syn_joypad.get_buttons   = syn_get_buttons;
+   input_st->primary_joypad = &syn_joypad;
+   settings->uints.input_joypad_index[0] = 2;
+   input_driver_deadzones_refresh();
+   syn_pad_index            = 2;
+   syn_buttons              = 0;
+   syn_hat                  = 0;
+   memset(syn_axes, 0, sizeof(syn_axes));
+   if (!menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   run_loop_frames(3);
+
+   if (menu_input_key_bind_set_mode(MENU_INPUT_BINDS_CTL_BIND_ALL, b1))
+   {
+      run_loop_frames(8);
+      for (k = 0; k < ORDER; k++)
+      {
+         unsigned i;
+         unsigned id = input_config_bind_order[k];
+         syn_buttons = 1u << k;
+         for (i = 0; i < 30 && input_config_binds[0][id].joykey != k; i++)
+            run_loop_frames(1);
+         syn_buttons = 0;
+         run_loop_frames(8);
+         if (input_config_binds[0][id].joykey != k)
+            landed = false;
+         if (input_config_binds[2][id].joykey != saved3[k].joykey)
+            kept = false;
+      }
+      CHECK(landed, "bind all: with user 1 on slot 3, a button did not land"
+            " in user 1's binds");
+      CHECK(kept, "bind all: with user 1 on slot 3, user 3's binds were"
+            " written");
+      CHECK(BIT512_GET(input_st->keyboard_mapping_bits, RETROK_F13),
+            "bind all: with user 1 on slot 3, the key bound to user 3's Up"
+            " lost its mapping bit");
+   }
+   else
+      CHECK(false, "bind all: a capture could not be started");
+   run_loop_frames(5);
+   if (menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   run_loop_frames(3);
+
+   settings->uints.input_joypad_index[0] = saved_index;
+   input_driver_deadzones_refresh();
+   syn_pad_index            = saved_pad;
+   input_st->primary_joypad = joypad_real;
+   for (k = 0; k < ORDER; k++)
+   {
+      input_config_binds[0][input_config_bind_order[k]] = saved1[k];
+      input_config_binds[2][input_config_bind_order[k]] = saved3[k];
+   }
+   input_st->keyboard_mapping_bits = saved_bits;
+   binds_written_by_a_lane();
+   run_loop_frames(2);
+
+   if (failures == had)
+      printf("[pass] bind all: with user 1 on slot 3, every button lands in"
+            " user 1's binds, user 3's are left alone and keep their key's"
+            " mapping bit\n");
+#else
+   printf("[skip] bind all: needs the test drivers and the menu\n");
+#endif
+}
+
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32) && defined(HAVE_MENU)
+/* a mouse per user: the button held on user 1's mouse and on user 3's,
+ * 0 for none */
+static unsigned bm_held[2];
+
+static int16_t bm_input_state(void *data,
+      const input_device_driver_t *joypad,
+      rarch_joypad_info_t *joypad_info,
+      const retro_keybind_set *binds,
+      unsigned port, unsigned device, unsigned idx, unsigned id)
+{
+   unsigned held = 0;
+   (void)data; (void)joypad; (void)joypad_info; (void)binds; (void)idx;
+   if ((device & RETRO_DEVICE_MASK) != RETRO_DEVICE_MOUSE)
+      return 0;
+   if (port == 0)
+      held = bm_held[0];
+   else if (port == 2)
+      held = bm_held[1];
+   return (held && id == held) ? 1 : 0;
+}
+#endif
+
+/* A mouse bind for user 1 on slot 3 is heard from user 1's mouse: a
+ * click on user 3's is not taken for user 1's B, and one on user 1's
+ * is. */
+static void lane_bind_mouse_device_index(void)
+{
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32) && defined(HAVE_MENU)
+   static input_driver_t bm_input;
+   unsigned i;
+   unsigned had                   = failures;
+   settings_t *settings           = config_get_ptr();
+   input_driver_state_t *input_st = input_state_get_ptr();
+   const input_device_driver_t *joypad_real = input_st->primary_joypad;
+   input_driver_t *saved_input    = input_st->current_driver;
+   rarch_setting_t *b1            = menu_setting_find("p1_b");
+   struct retro_keybind saved1    = input_config_binds[0][RETRO_DEVICE_ID_JOYPAD_B];
+   unsigned saved_index           = settings->uints.input_joypad_index[0];
+   unsigned saved_pad             = syn_pad_index;
+
+   if (!b1 || !joypad_real || !saved_input)
+   {
+      CHECK(false, "bind mouse: no setting, joypad or input driver to bind with");
+      return;
+   }
+
+   syn_joypad               = *joypad_real;
+   syn_joypad.button        = syn_button;
+   syn_joypad.axis          = syn_axis;
+   syn_joypad.state         = syn_state;
+   syn_joypad.get_buttons   = syn_get_buttons;
+   input_st->primary_joypad = &syn_joypad;
+   bm_input                 = *saved_input;
+   bm_input.input_state     = bm_input_state;
+   bm_held[0]               = 0;
+   bm_held[1]               = 0;
+   input_st->current_driver = &bm_input;
+   settings->uints.input_joypad_index[0] = 2;
+   input_driver_deadzones_refresh();
+   syn_pad_index            = 2;
+   syn_buttons              = 0;
+   syn_hat                  = 0;
+   memset(syn_axes, 0, sizeof(syn_axes));
+   if (!menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   run_loop_frames(3);
+
+   if (menu_input_key_bind_set_mode(MENU_INPUT_BINDS_CTL_BIND_SINGLE, b1))
+   {
+      run_loop_frames(8);
+      bm_held[1] = RETRO_DEVICE_ID_MOUSE_RIGHT;
+      run_loop_frames(10);
+      bm_held[1] = 0;
+      run_loop_frames(8);
+      CHECK(RETRO_KEYBIND_MBUTTON(&input_config_binds[0][RETRO_DEVICE_ID_JOYPAD_B])
+               != RETRO_DEVICE_ID_MOUSE_RIGHT,
+            "bind mouse: with user 1 on slot 3, a click on user 3's mouse was"
+            " taken for user 1's B");
+      bm_held[0] = RETRO_DEVICE_ID_MOUSE_LEFT;
+      for (i = 0; i < 30
+            && RETRO_KEYBIND_MBUTTON(&input_config_binds[0][RETRO_DEVICE_ID_JOYPAD_B])
+               != RETRO_DEVICE_ID_MOUSE_LEFT; i++)
+         run_loop_frames(1);
+      bm_held[0] = 0;
+      run_loop_frames(8);
+      CHECK(RETRO_KEYBIND_MBUTTON(&input_config_binds[0][RETRO_DEVICE_ID_JOYPAD_B])
+               == RETRO_DEVICE_ID_MOUSE_LEFT,
+            "bind mouse: with user 1 on slot 3, a click on user 1's mouse was"
+            " not heard for user 1's B");
+      /* a capture still waiting is ended from the pad */
+      if (menu_state_get_ptr()->flags & MENU_ST_FLAG_IS_BINDING)
+      {
+         syn_buttons = 1u << 9;
+         run_loop_frames(10);
+         syn_buttons = 0;
+         run_loop_frames(8);
+      }
+   }
+   else
+      CHECK(false, "bind mouse: a capture could not be started");
+   run_loop_frames(5);
+   if (menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   run_loop_frames(3);
+
+   input_st->current_driver = saved_input;
+   input_st->primary_joypad = joypad_real;
+   settings->uints.input_joypad_index[0] = saved_index;
+   input_driver_deadzones_refresh();
+   syn_pad_index            = saved_pad;
+   input_config_binds[0][RETRO_DEVICE_ID_JOYPAD_B] = saved1;
+   binds_written_by_a_lane();
+   run_loop_frames(2);
+
+   if (failures == had)
+      printf("[pass] bind mouse: with user 1 on slot 3, a click on user 1's"
+            " mouse is bound and one on user 3's is not\n");
+#else
+   printf("[skip] bind mouse: needs the test drivers and the menu\n");
+#endif
+}
+
 /* A user's binds are a row that is shared until it is written: every
  * user who has configured nothing reads the same row of defaults, and
  * every port with no profile the same row of nothing. Held to it with
@@ -9946,6 +10173,8 @@ int main(int argc, char *argv[])
       lane_entry_capture();
       lane_entry_target_pick();
       lane_bind_settings();
+      lane_bind_all_device_index();
+      lane_bind_mouse_device_index();
       lane_aim_stick();
       lane_touchpad();
       lane_core_view();
