@@ -44,12 +44,14 @@
 #include "../menu_driver.h"
 #include "../menu_media_controls.h"
 #include "../menu_screensaver.h"
+#include "materialui_color_themes.h"
 
 #include "../../gfx/gfx_animation.h"
 #include "../../gfx/gfx_thumbnail.h"
 #include "../../msg_hash_lbl_str.h"
 
 #include "../../core_info.h"
+#include "../../config.def.h"
 #include "../../configuration.h"
 #include "../../runtime_file.h"
 #include "../../file_path_special.h"
@@ -2064,6 +2066,28 @@ static const materialui_color_map_t materialui_color_map[] = {
    MUI_COLOR_MAP(divider, entry_divider, 1),
    MUI_COLOR_MAP(missing_thumbnail_icon, missing_thumbnail_icon, 1),
 };
+
+static enum materialui_color_theme materialui_color_theme_from_ident(
+      const char *ident)
+{
+#define MATERIALUI_COLOR_THEME_ROW(ident, theme, label) { ident, theme },
+   static const struct
+   {
+      const char *ident;
+      enum materialui_color_theme theme;
+   } materialui_color_themes[] = {
+      MATERIALUI_COLOR_THEME_LIST(MATERIALUI_COLOR_THEME_ROW)
+   };
+#undef MATERIALUI_COLOR_THEME_ROW
+   size_t i;
+
+   for (i = 0; i < ARRAY_SIZE(materialui_color_themes); i++)
+      if (string_is_equal(ident, materialui_color_themes[i].ident))
+         return materialui_color_themes[i].theme;
+   return string_is_equal(ident, DEFAULT_MATERIALUI_THEME)
+         ? MATERIALUI_THEME_BLUE
+         : materialui_color_theme_from_ident(DEFAULT_MATERIALUI_THEME);
+}
 
 static void materialui_prepare_colors(
       materialui_handle_t *mui, enum materialui_color_theme color_theme)
@@ -8497,7 +8521,8 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    unsigned video_width           = VIDEO_SCALE_W(video_info->dims);
    unsigned video_height          = VIDEO_SCALE_H(video_info->dims);
    unsigned
-      materialui_color_theme      = video_info->materialui_color_theme;
+      materialui_color_theme      = materialui_color_theme_from_ident(
+            video_info->materialui_color_theme);
    bool video_fullscreen          = video_info->fullscreen;
    bool mouse_grabbed             = video_info->input_driver_grab_mouse_state;
    bool menu_mouse_enable         = video_info->menu_mouse_enable;
@@ -9778,8 +9803,8 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
    mui->menu_title[0]                     = '\0';
 
    /* Set initial theme colours */
-   mui->color_theme                       = (enum materialui_color_theme)
-      settings->uints.menu_materialui_color_theme;
+   mui->color_theme                       = materialui_color_theme_from_ident(
+         settings->arrays.menu_materialui_color_theme);
    materialui_prepare_colors(mui, (enum materialui_color_theme)mui->color_theme);
 
    /* Initialise screensaver */
