@@ -516,7 +516,9 @@ enum netplay_flags
    /* Have we requested a savestate as a sync point? */
    NETPLAY_FLAG_SAVESTATE_REQUEST_OUTSTANDING = (1 << 12),
    /* Host settings */
-   NETPLAY_FLAG_ALLOW_PAUSING                 = (1 << 13)
+   NETPLAY_FLAG_ALLOW_PAUSING                 = (1 << 13),
+   /* A BSV recording is staging this frame's input queries */
+   NETPLAY_FLAG_BSV_CAPTURING                 = (1 << 14)
 };
 
 struct netplay
@@ -684,9 +686,6 @@ struct netplay
    char nick[NETPLAY_NICK_LEN];
 
    uint16_t flags; /* enum netplay_flags */
-#ifdef HAVE_BSV_MOVIE
-   bool bsv_capturing;
-#endif
 };
 
 void video_frame_net(const void *data,

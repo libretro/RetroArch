@@ -1346,6 +1346,10 @@ void bsv_movie_next_frame_from_state(input_driver_state_t *input_st,
 
 size_t replay_get_serialize_size(input_driver_state_t *input_st)
 {
+   /* A netplay movie lags the core by its unconfirmed frames. */
+   if (     input_st->bsv_movie_state_handle
+         && BSV_MOVIE_IS_NETPLAY(input_st->bsv_movie_state_handle))
+      return 0;
    if (input_st->bsv_movie_state.flags & (BSV_FLAG_MOVIE_RECORDING | BSV_FLAG_MOVIE_PLAYBACK))
       return sizeof(int32_t)+intfstream_tell(input_st->bsv_movie_state_handle->file);
    return 0;
@@ -1355,6 +1359,8 @@ bool replay_get_serialized_data(input_driver_state_t *input_st, void* buffer)
 {
    bsv_movie_t *handle            = input_st->bsv_movie_state_handle;
 
+   if (handle && BSV_MOVIE_IS_NETPLAY(handle))
+      return false;
    if (input_st->bsv_movie_state.flags & (BSV_FLAG_MOVIE_RECORDING | BSV_FLAG_MOVIE_PLAYBACK))
    {
       int32_t file_end        = (uint32_t)intfstream_tell(handle->file);
@@ -2215,7 +2221,7 @@ bool movie_commit_checkpoint(input_driver_state_t *input_st)
 bool movie_seek_to_frame(input_driver_state_t *input_st, int64_t frame)
 {
    if (!input_st->bsv_movie_state_handle
-         || input_st->bsv_movie_state_handle->netplay)
+         || BSV_MOVIE_IS_NETPLAY(input_st->bsv_movie_state_handle))
       return false;
 #ifdef HAVE_CHEEVOS
    if (rcheevos_hardcore_active())
@@ -2236,7 +2242,7 @@ bool movie_skip_to_next_checkpoint(input_driver_state_t *input_st)
    if (      !input_st->bsv_movie_state_handle
          || (!input_st->bsv_movie_state_handle->playback && !paused)
          || input_st->bsv_movie_state_handle->version == 0
-         || input_st->bsv_movie_state_handle->netplay)
+         || BSV_MOVIE_IS_NETPLAY(input_st->bsv_movie_state_handle))
       return false;
 #ifdef HAVE_CHEEVOS
    if (rcheevos_hardcore_active())
@@ -2250,7 +2256,7 @@ bool movie_skip_to_prev_checkpoint(input_driver_state_t *input_st)
 {
    if (  !input_st->bsv_movie_state_handle
        || input_st->bsv_movie_state_handle->version == 0
-       || input_st->bsv_movie_state_handle->netplay)
+       || BSV_MOVIE_IS_NETPLAY(input_st->bsv_movie_state_handle))
       return false;
 #ifdef HAVE_CHEEVOS
    if (rcheevos_hardcore_active())

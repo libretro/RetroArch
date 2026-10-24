@@ -528,7 +528,7 @@ jobs:
           make clean && make -j$(nproc) NETPLAY=1 STATESTREAM=1 SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1:allocator_may_return_null=1 \
              timeout 120 ./bsv_replay_init_test
-          make clean && make -j$(nproc) NETPLAY=1 CC=x86_64-w64-mingw32-gcc
+          make clean && make -j$(nproc) NETPLAY=1 CC=x86_64-w64-mingw32-gcc LDFLAGS=-static
           WINEDEBUG=-all timeout 120 wine ./bsv_replay_init_test.exe
 
       - name: Build and run bsv_statestream_test (plain, ASan + UBSan)

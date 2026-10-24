@@ -2332,9 +2332,14 @@ struct netplay_bsv_frame
    size_t checkpoint_size;
    bsv_input_data_t inputs[BSV_MOVIE_MAX_INPUT_EVENTS];
    uint16_t input_count;
-   bool valid;
-   bool checkpoint_valid;
-   bool forced;
+   uint8_t flags; /* enum netplay_bsv_frame_flags */
+};
+
+enum netplay_bsv_frame_flags
+{
+   NETPLAY_BSV_FRAME_VALID      = (1 << 0),
+   NETPLAY_BSV_FRAME_CHECKPOINT = (1 << 1),
+   NETPLAY_BSV_FRAME_FORCED     = (1 << 2)
 };
 
 static void netplay_bsv_frame_free(struct netplay_bsv_frame *frame)
@@ -2346,10 +2351,23 @@ static void netplay_bsv_frame_free(struct netplay_bsv_frame *frame)
    free(frame);
 }
 
+static void netplay_bsv_release(netplay_t *netplay)
+{
+   size_t i;
+   if (!netplay->buffer)
+      return;
+   for (i = 0; i < netplay->buffer_size; i++)
+   {
+      netplay_bsv_frame_free(netplay->buffer[i].bsv);
+      netplay->buffer[i].bsv = NULL;
+   }
+}
+
 static void netplay_bsv_stop(netplay_t *netplay, const char *reason)
 {
-   netplay->bsv_capturing = false;
+   netplay->flags &= ~NETPLAY_FLAG_BSV_CAPTURING;
    input_driver_netplay_bsv_stop(reason, false);
+   netplay_bsv_release(netplay);
 }
 
 static bool netplay_bsv_save(uint8_t **data, size_t *size)
@@ -2377,19 +2395,19 @@ static void netplay_bsv_begin_frame(netplay_t *netplay,
 {
    bsv_movie_t *movie = input_driver_netplay_bsv_recording();
    struct netplay_bsv_frame *frame;
-   netplay->bsv_capturing = false;
+   netplay->flags &= ~NETPLAY_FLAG_BSV_CAPTURING;
    if (!movie)
-      return;
-   if (!movie->netplay_armed)
    {
-      size_t i;
+      /* Recording ended elsewhere: drop what it staged. */
+      if (netplay->buffer[ptr].bsv)
+         netplay_bsv_release(netplay);
+      return;
+   }
+   if (!(movie->netplay_flags & BSV_NETPLAY_FLAG_ARMED))
+   {
       /* A new recording must not inherit a previous movie's staging. */
-      for (i = 0; i < netplay->buffer_size; i++)
-      {
-         netplay_bsv_frame_free(netplay->buffer[i].bsv);
-         netplay->buffer[i].bsv = NULL;
-      }
-      movie->netplay_armed       = true;
+      netplay_bsv_release(netplay);
+      movie->netplay_flags      |= BSV_NETPLAY_FLAG_ARMED;
       movie->netplay_start_frame = count;
       movie->netplay_next_frame  = count;
       movie->netplay_next_ptr    = ptr;
@@ -2405,14 +2423,14 @@ static void netplay_bsv_begin_frame(netplay_t *netplay,
    }
    if (!frame)
       goto error;
-   frame->valid            = false;
-   frame->checkpoint_valid = false;
-   if (count == movie->netplay_start_frame && !movie->netplay_committed)
+   frame->flags &= ~(NETPLAY_BSV_FRAME_VALID | NETPLAY_BSV_FRAME_CHECKPOINT);
+   if (     count == movie->netplay_start_frame
+         && !(movie->netplay_flags & BSV_NETPLAY_FLAG_COMMITTED))
       if (!netplay_bsv_save(&frame->initial_state, &frame->initial_size))
          goto error;
    movie->input_event_count = 0;
    movie->key_event_count   = 0;
-   netplay->bsv_capturing   = true;
+   netplay->flags          |= NETPLAY_FLAG_BSV_CAPTURING;
    return;
 error:
    netplay_bsv_stop(netplay, "could not capture the initial state");
@@ -2423,7 +2441,8 @@ static void netplay_bsv_input(netplay_t *netplay,
 {
    unsigned i;
    bsv_movie_t *movie;
-   if (!netplay->bsv_capturing || !(movie = input_driver_netplay_bsv_recording()))
+   if (     !(netplay->flags & NETPLAY_FLAG_BSV_CAPTURING)
+         || !(movie = input_driver_netplay_bsv_recording()))
       return;
    /* BSV looks up events by query. Repeated reads of the same resolved
     * input need only one event, irrespective of how often the core polls. */
@@ -2449,9 +2468,9 @@ static void netplay_bsv_end_frame(netplay_t *netplay,
    struct netplay_bsv_frame *frame;
    uint64_t interval;
    bool checkpoint;
-   if (!netplay->bsv_capturing || !movie)
+   if (!(netplay->flags & NETPLAY_FLAG_BSV_CAPTURING) || !movie)
       return;
-   netplay->bsv_capturing = false;
+   netplay->flags &= ~NETPLAY_FLAG_BSV_CAPTURING;
    frame = netplay->buffer[ptr].bsv;
    frame->input_count = movie->input_event_count;
    memcpy(frame->inputs, movie->input_events,
@@ -2462,27 +2481,28 @@ static void netplay_bsv_end_frame(netplay_t *netplay,
          % interval == 0;
    if (   !(netplay->flags & NETPLAY_FLAG_IS_REPLAY)
        && input_driver_netplay_bsv_take_checkpoint())
-      frame->forced = true;
+      frame->flags |= NETPLAY_BSV_FRAME_FORCED;
    /* Recapture both scheduled and forced checkpoints when rollback
     * corrects this frame. The snapshot describes the state AFTER it. */
-   if (checkpoint || frame->forced)
+   if (checkpoint || (frame->flags & NETPLAY_BSV_FRAME_FORCED))
    {
       if (!netplay_bsv_save(&frame->checkpoint, &frame->checkpoint_size))
       {
          input_driver_netplay_bsv_stop("could not capture a checkpoint",
-               frame->forced);
+               (frame->flags & NETPLAY_BSV_FRAME_FORCED) != 0);
+         netplay_bsv_release(netplay);
          return;
       }
-      frame->checkpoint_valid = true;
+      frame->flags |= NETPLAY_BSV_FRAME_CHECKPOINT;
    }
-   frame->valid = true;
+   frame->flags |= NETPLAY_BSV_FRAME_VALID;
 }
 
 static void netplay_bsv_commit(netplay_t *netplay)
 {
    bsv_movie_t *movie = input_driver_netplay_bsv_recording();
    uint32_t confirmed = netplay->other_frame_count;
-   if (!movie || !movie->netplay_armed)
+   if (!movie || !(movie->netplay_flags & BSV_NETPLAY_FLAG_ARMED))
       return;
    /* self_frame_count can be ahead of emulation due to input latency,
     * including on the server's no-remote-players fast path. */
@@ -2493,12 +2513,12 @@ static void netplay_bsv_commit(netplay_t *netplay)
       struct delta_frame *delta = &netplay->buffer[movie->netplay_next_ptr];
       struct netplay_bsv_frame *frame = delta->bsv;
       if (   !delta->used || delta->frame != movie->netplay_next_frame
-          || !frame || !frame->valid)
+          || !frame || !(frame->flags & NETPLAY_BSV_FRAME_VALID))
       {
          netplay_bsv_stop(netplay, "the confirmed timeline is discontinuous");
          return;
       }
-      if (!movie->netplay_committed)
+      if (!(movie->netplay_flags & BSV_NETPLAY_FLAG_COMMITTED))
       {
          if (!bsv_movie_reset_recording_from_state(movie,
                   frame->initial_state, frame->initial_size))
@@ -2506,26 +2526,30 @@ static void netplay_bsv_commit(netplay_t *netplay)
             netplay_bsv_stop(netplay, "could not write the initial state");
             return;
          }
-         movie->netplay_committed = true;
+         movie->netplay_flags |= BSV_NETPLAY_FLAG_COMMITTED;
       }
       movie->input_event_count = frame->input_count;
       movie->key_event_count   = 0;
       memcpy(movie->input_events, frame->inputs,
             frame->input_count * sizeof(*frame->inputs));
       if (!input_driver_netplay_bsv_next_frame(
-               frame->checkpoint_valid ? frame->checkpoint : NULL,
-               frame->checkpoint_valid ? frame->checkpoint_size : 0,
-               frame->forced))
+               (frame->flags & NETPLAY_BSV_FRAME_CHECKPOINT)
+               ? frame->checkpoint : NULL,
+               (frame->flags & NETPLAY_BSV_FRAME_CHECKPOINT)
+               ? frame->checkpoint_size : 0,
+               (frame->flags & NETPLAY_BSV_FRAME_FORCED) != 0))
       {
          netplay_bsv_stop(netplay, "could not write a confirmed frame");
          return;
       }
+      /* Written: no slot keeps a state past its commit. */
       free(frame->initial_state);
+      free(frame->checkpoint);
       frame->initial_state    = NULL;
       frame->initial_size     = 0;
-      frame->valid            = false;
-      frame->forced           = false;
-      frame->checkpoint_valid = false;
+      frame->checkpoint       = NULL;
+      frame->checkpoint_size  = 0;
+      frame->flags            = 0;
       movie->netplay_next_ptr = NEXT_PTR(movie->netplay_next_ptr);
       movie->netplay_next_frame++;
    }
@@ -2558,11 +2582,7 @@ bool netplay_delta_frame_ready(netplay_t *netplay, struct delta_frame *delta,
 
 #ifdef HAVE_BSV_MOVIE
    if (delta->bsv)
-   {
-      delta->bsv->valid            = false;
-      delta->bsv->forced           = false;
-      delta->bsv->checkpoint_valid = false;
-   }
+      delta->bsv->flags = 0;
 #endif
    delta->used  = true;
    delta->frame = frame;
@@ -9088,7 +9108,7 @@ bool netplay_bsv_movie_init(bsv_movie_t *movie)
       RARCH_WARN("[Replay] Wait for netplay synchronization before recording.\n");
       return false;
    }
-   movie->netplay = true;
+   movie->netplay_flags = BSV_NETPLAY_FLAG_ACTIVE;
    return true;
 }
 #endif

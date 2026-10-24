@@ -231,6 +231,15 @@ typedef struct bsv_input_data bsv_input_data_t;
 
 #define BSV_MOVIE_MAX_INPUT_EVENTS 512
 
+enum bsv_netplay_flags
+{
+   BSV_NETPLAY_FLAG_ACTIVE    = (1 << 0),
+   BSV_NETPLAY_FLAG_ARMED     = (1 << 1),
+   BSV_NETPLAY_FLAG_COMMITTED = (1 << 2)
+};
+
+#define BSV_MOVIE_IS_NETPLAY(m) (((m)->netplay_flags & BSV_NETPLAY_FLAG_ACTIVE) != 0)
+
 struct bsv_movie
 {
    intfstream_t *file;
@@ -261,9 +270,7 @@ struct bsv_movie
    size_t netplay_next_ptr;
    uint32_t netplay_start_frame;
    uint32_t netplay_next_frame;
-   bool netplay;
-   bool netplay_armed;
-   bool netplay_committed;
+   uint8_t netplay_flags; /* enum bsv_netplay_flags */
 
 #ifdef HAVE_STATESTREAM
    /* Block index and superblock index for incremental checkpoints */

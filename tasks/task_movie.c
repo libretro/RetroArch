@@ -206,7 +206,8 @@ static bool bsv_movie_init_record(
    if (!handle->superblocks || !handle->blocks)
       return false;
 #endif
-   if (state_size)
+   /* Netplay writes its first confirmed state instead. */
+   if (state_size && !BSV_MOVIE_IS_NETPLAY(handle))
       return bsv_movie_reset_recording(handle);
    
    handle->min_file_pos = sizeof(header);

@@ -239,8 +239,11 @@ size_t core_serialize_size(void)
 {
    return serialize_size_override ? serialize_size_override : STATE_SIZE;
 }
+static unsigned n_serialize;
+
 bool core_serialize(retro_ctx_serialize_info_t *info)
 {
+   n_serialize++;
    memcpy(info->data, core_state, STATE_SIZE);
    return true;
 }

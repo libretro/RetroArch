@@ -155,6 +155,23 @@ static void bsv_net_free(netplay_t *netplay)
    memset(&networking_driver_st, 0, sizeof(networking_driver_st));
 }
 
+/* Committed frames keep no state, and a stopped recording keeps no
+ * staging at all, so a long session cannot pile up savestates. */
+static void bsv_net_check_released(netplay_t *netplay, bool all,
+      const char *what)
+{
+   unsigned i;
+   for (i = 0; i < netplay->buffer_size; i++)
+   {
+      struct netplay_bsv_frame *frame = netplay->buffer[i].bsv;
+      if (all)
+         CHECK(!frame, "%s: slot %u released", what, i);
+      else if (frame && !(frame->flags & NETPLAY_BSV_FRAME_VALID))
+         CHECK(!frame->checkpoint && !frame->initial_state,
+               "%s: committed slot %u keeps no state", what, i);
+   }
+}
+
 static void bsv_net_record(const char *path, unsigned role, unsigned start)
 {
    unsigned i;
@@ -167,16 +184,22 @@ static void bsv_net_record(const char *path, unsigned role, unsigned start)
       struct delta_frame *delta = &netplay->buffer[netplay->run_ptr];
       if (i == start)
       {
+         unsigned serialized = n_serialize;
          CHECK(movie_start_record(&input_st, (char*)path), "start netplay recording");
          task_queue_check();
          bsv_movie_dequeue_next(&input_st);
-         CHECK(input_st.bsv_movie_state_handle && input_st.bsv_movie_state_handle->netplay,
+         CHECK(input_st.bsv_movie_state_handle
+               && BSV_MOVIE_IS_NETPLAY(input_st.bsv_movie_state_handle),
                "netplay owns the recorder");
+         CHECK(n_serialize == serialized,
+               "no speculative state serialized at record start");
+         CHECK(replay_get_serialize_size(&input_st) == 0,
+               "netplay movie stays out of savestates");
       }
       delta->used = true;
       delta->frame = netplay->run_frame_count;
       if (delta->bsv)
-         delta->bsv->forced = false;
+         delta->bsv->flags &= ~NETPLAY_BSV_FRAME_FORCED;
       memcpy(delta->state, core_state, STATE_SIZE);
       bsv_remote[netplay->run_ptr] = 0; /* initially predict no remote input */
       if (i == start + 7)
@@ -205,7 +228,12 @@ static void bsv_net_record(const char *path, unsigned role, unsigned start)
    netplay_sync_input_post_frame(netplay, true);
    CHECK(input_st.bsv_movie_state_handle->frame_counter == 64, "64 confirmed frames");
    CHECK(bsv_core_runs > 64, "rollback actually ran");
+   bsv_net_check_released(netplay, false, "after commit");
    CHECK(movie_stop_record(&input_st), "stop netplay recording");
+   /* Stopped from the menu, not by netplay: the next frame drops staging. */
+   CHECK(netplay->buffer[netplay->run_ptr].bsv != NULL, "staging left to drop");
+   netplay_bsv_begin_frame(netplay, netplay->run_ptr, netplay->run_frame_count);
+   bsv_net_check_released(netplay, true, "after a menu stop");
    bsv_net_free(netplay);
    free(netplay);
 }
@@ -290,10 +318,10 @@ static void lane_netplay_lifecycle(void)
    CHECK(!netplay_bsv_movie_init(movie), "reject pending resynchronization");
    netplay->flags &= ~NETPLAY_FLAG_FORCE_REWIND;
    networking_driver_st.core_netpacket_interface = &packet;
-   CHECK(netplay_bsv_movie_init(movie) && !movie->netplay, "packet interface unchanged");
+   CHECK(netplay_bsv_movie_init(movie) && !BSV_MOVIE_IS_NETPLAY(movie), "packet interface unchanged");
    networking_driver_st.core_netpacket_interface = NULL;
    networking_driver_st.flags = 0;
-   CHECK(netplay_bsv_movie_init(movie) && !movie->netplay, "solo unchanged");
+   CHECK(netplay_bsv_movie_init(movie) && !BSV_MOVIE_IS_NETPLAY(movie), "solo unchanged");
    networking_driver_st.flags = NET_DRIVER_ST_FLAG_NETPLAY_ENABLED;
    netplay->flags |= NETPLAY_FLAG_IS_SERVER;
    netplay->connected_players = 1;
@@ -314,6 +342,7 @@ static void lane_netplay_lifecycle(void)
    netplay_bsv_stop(netplay, "test resynchronization");
    CHECK(input_st.bsv_movie_state.flags & BSV_FLAG_MOVIE_END, "deferred stop requested");
    CHECK(!input_driver_netplay_bsv_recording(), "stopped recorder cannot capture more input");
+   bsv_net_check_released(netplay, true, "after a netplay stop");
    CHECK(movie_stop(&input_st), "finish stopped movie outside netplay");
    CHECK(play("bsv_netplay_lifecycle.replay"), "confirmed prefix still playable");
    bsv_movie_dequeue_next(&input_st);
