@@ -165,10 +165,10 @@ static bool media_native_modal_playback(struct menu_state *menu_st,
          return false;
    voice = media_modal_audio_voice();
    if (!voice || !audio_mixer_voice_clock(voice, &frames, &rate, &serial)
-         || !(audio_state_get_ptr()->flags & AUDIO_FLAG_ACTIVE))
+         || !(AUDIO_FLAGS_GET(audio_state_get_ptr()) & AUDIO_FLAG_ACTIVE))
    {
       fprintf(stderr, "FAIL: modal A/V probe needs a live preview audio voice (%s, voice=%p flags=%x enabled=%u)\n",
-            audio_driver_get_ident(), (void*)voice, audio_state_get_ptr()->flags,
+            audio_driver_get_ident(), (void*)voice, AUDIO_FLAGS_GET(audio_state_get_ptr()),
             config_get_ptr()->bools.menu_thumbnail_preview_audio);
       return false;
    }
@@ -218,7 +218,7 @@ static bool media_native_modal_playback(struct menu_state *menu_st,
             || !target.state(target.user, cpu_features_get_time_usec(), &current)
             || media_modal_audio_voice() != voice
             || !audio_mixer_voice_clock(voice, &frames, &rate, &serial)
-            || !(audio_state_get_ptr()->flags & AUDIO_FLAG_ACTIVE))
+            || !(AUDIO_FLAGS_GET(audio_state_get_ptr()) & AUDIO_FLAG_ACTIVE))
       {
          valid = false;
          retro_atomic_store_release_int(&probe->verified, 1);
