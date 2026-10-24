@@ -27,7 +27,7 @@ ELF_TARGET  := retroarch_psl1ght.elf
 SELF_TARGET := $(ELF_TARGET:.elf=.self)
 CORE_PATH    = pkg/psl1ght/pkg/USRDIR/cores/CORE.SELF
 
-INCLUDE += -I. -Ideps -Ilibretro-common/include $(LIBPSL1GHT_INC) -Iinclude -Idefines -I$(PORTLIBS)/include
+INCLUDE += -I. -Ideps -Ideps/rcheevos/include -Ilibretro-common/include $(LIBPSL1GHT_INC) -Iinclude -Idefines -I$(PORTLIBS)/include
 LIBDIRS += -L. -L$(PORTLIBS)/lib
 
 ifeq ($(HAVE_STATIC_DUMMY),1)
@@ -98,6 +98,7 @@ SHARED_FLAGS := -DHAVE_GCM \
 		-DHAVE_THREADS \
 		-DHAVE_GRIFFIN=1 \
 		-DHAVE_NETWORKING=1 \
+		-DHAVE_CHEEVOS \
 		-DHAVE_SOCKET_LEGACY=1 \
 		-DPC_DEVELOPMENT_IP_ADDRESS=\"$(PC_DEVELOPMENT_IP_ADDRESS)\" \
 		-DPC_DEVELOPMENT_UDP_PORT=$(PC_DEVELOPMENT_UDP_PORT) \

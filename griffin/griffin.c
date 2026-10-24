@@ -210,8 +210,8 @@ ACHIEVEMENTS
 
 /* rcheevos doesn't actually spawn and manage threads, RC_NO_THREADS
  * simply disables the mutexes that provide thread safety. rc_compat
- * carries its own native mutexes for GEKKO (recursive LWP) and 3DS
- * (RecursiveLock), so threaded builds keep their locks there too. */
+ * carries native recursive mutexes for the threaded consoles, so
+ * threaded builds keep their locks there too. */
 #if !defined(HAVE_THREADS)
 #define RC_NO_THREADS 1
 #endif
