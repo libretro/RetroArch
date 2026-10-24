@@ -17,7 +17,7 @@ needed; the YAML the workflows use is read by the small parser below.
 
   tools/ci_local.py run <workflow> [--job ID] [--matrix KEY=VALUE]...
                         [--skip REGEX]... [--dry-run] [--clean-copy]
-                        [--host] [--force]
+                        [--host] [--force] [--times]
       Runs a workflow's jobs, or one job; every matrix combination unless
       --matrix narrows them. <workflow> is a file name, with or without
       .yml, or the workflow's name.
@@ -29,6 +29,7 @@ needed; the YAML the workflows use is read by the small parser below.
                       its image (docker or podman is used otherwise)
         --force       run a job whose runner is another OS, or that uses
                       an action this script cannot stand in for
+        --times       print every step's time, not only the three slowest
 
   tools/ci_local.py selftest
       Checks the parser against PyYAML (when installed) and resolves every
@@ -1157,8 +1158,9 @@ class Runner:
                outputs[k] = ''
       # where the time went: a slow step is one to make faster
       if not self.opts.dry_run:
-         for secs, name in sorted(took, reverse=True)[:3]:
-            if secs >= 10:
+         every = getattr(self.opts, 'times', False)
+         for secs, name in sorted(took, reverse=True)[:None if every else 3]:
+            if every or secs >= 10:
                self.say('   %4.0f s  %s' % (secs, name))
       if status == 'failure':
          self.failed.append(label)
@@ -1836,6 +1838,7 @@ def main(argv):
       clean = False
       host = False
       force = False
+      times = False
    opts = Opts()
    opts.matrix = {}
    opts.skip = []
@@ -1866,6 +1869,8 @@ def main(argv):
          opts.host = True
       elif a == '--force':
          opts.force = True
+      elif a == '--times':
+         opts.times = True
       elif a.startswith('-'):
          sys.exit('ci_local: unknown option %s' % a)
       elif target is None:
