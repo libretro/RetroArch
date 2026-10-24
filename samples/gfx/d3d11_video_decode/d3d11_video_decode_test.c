@@ -599,6 +599,7 @@ static int decode(const unsigned char *mp4, size_t len, int hw,
    rmp4_t *m;
    rh264_video *v;
    int i, r, trk = -1, on_hw = 0, ok = 1, ordinal = 0;
+   int replayed = 0;
 
    memset(f, 0, sizeof(*f));
    if (!(m = rmp4_open_memory(mp4, len)))
@@ -623,6 +624,7 @@ static int decode(const unsigned char *mp4, size_t len, int hw,
       on_hw = rh264_video_set_hw(v, 1);
    if (hw == 1 && !on_hw)
       ok = 0;
+replay:
    while (ok && rmp4_read_packet(m, &pkt) == 1)
    {
       if (pkt.track != trk)
@@ -664,6 +666,19 @@ static int decode(const unsigned char *mp4, size_t len, int hw,
       else if (rh264_video_hw_frame(v, &fr) != 0
             || !(use_d3d12 ? take_hw12(f, &fr) : take_hw(f, &o, &fr)))
          ok = 0;
+   }
+   if (ok && on_hw && !replayed)
+   {
+      frames_free(f);
+      memset(f, 0, sizeof(*f));
+      if (!rh264_video_restart_hw(&v))
+         ok = 0;
+      else
+      {
+         rmp4_rewind(m);
+         replayed = 1;
+         goto replay;
+      }
    }
    if (hw >= 2 && !rh264_video_is_hw(v))
       ok = 0;

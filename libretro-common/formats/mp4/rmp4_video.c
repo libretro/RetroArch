@@ -2018,6 +2018,8 @@ void rmp4_video_stream_rewind(rmp4_video_stream_t *s)
    s->wait_key = 0;
    /* The stream restarts at a key frame, so a fresh decoder (empty
     * reference chain, default probabilities) is the correct state. */
+   if (s->h264 && rh264_video_restart_hw(&s->h264))
+      return;
    rmp4_video_stream_close_decoder(s);
    rmp4_video_stream_open_decoder(s);
 }

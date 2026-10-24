@@ -76,6 +76,10 @@ typedef struct rh264_video rh264_video;
 /* Create a decoder. Returns NULL on allocation failure. */
 rh264_video *rh264_video_open(void);
 
+/* Restart at an IDR while retaining a healthy hardware session. On success
+ * replaces *video; on failure leaves it unchanged. Software returns 0. */
+int rh264_video_restart_hw(rh264_video **video);
+
 /* Supply the avcC (AVCDecoderConfigurationRecord) extradata from the sample
  * description, which carries the SPS/PPS and the NAL length size. Optional
  * for Annex-B input that carries in-band SPS/PPS, required for bare AVCC

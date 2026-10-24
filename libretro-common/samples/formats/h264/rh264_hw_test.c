@@ -130,7 +130,7 @@ static void *fake_open(void *user, const rh264_hw_sps_t *sps,
    (void)user;
    if (slots < 2 || slots > slot_limit)
       return NULL;
-   fake.opened = 1;
+   fake.opened++;
    fake.slots  = slots;
    fake.width  = sps->width;
    fake.height = sps->height;
@@ -450,6 +450,46 @@ static int decode(const char *mp4, int hw, int skip_lo, int skip_hi,
             res->failed = 1;
       }
       memcpy(res->order, fake.shown, sizeof(res->order));
+   }
+   if (res->hw && hw == 1 && !res->failed)
+   {
+      int pass;
+      int decoded = fake.ndecoded;
+      int shown = fake.nshown;
+      for (pass = 0; pass < 3; pass++)
+      {
+         int r = 0;
+         rmp4_rewind(m);
+         if (!rh264_video_restart_hw(&v) || fake.opened != 1 || fake.closed)
+         {
+            res->failed = 1;
+            break;
+         }
+         while (rmp4_read_packet(m, &pkt) == 1)
+         {
+            unsigned tries = 0;
+            if (pkt.track != trk)
+               continue;
+            cur_sample = 0;
+            rh264_video_set_skip_nonref(v, 0);
+            do
+               r = rh264_video_decode(v, pkt.data, pkt.size);
+            while (r == 2 && ++tries < 100);
+            break;
+         }
+         if (r == 0)
+            do
+               r = rh264_video_drain(v);
+            while (r == 2);
+         else if (r == 1)
+            r = 0;
+         if (r != 0 || fake.errors)
+            res->failed = 1;
+      }
+      check("three hardware restarts retain the backend session",
+            !res->failed && fake.opened == 1 && !fake.closed);
+      fake.ndecoded = decoded;
+      fake.nshown = shown;
    }
    rh264_video_close(v);
    rmp4_close(m);
