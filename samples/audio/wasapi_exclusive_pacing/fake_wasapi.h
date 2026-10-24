@@ -244,6 +244,10 @@ struct IAudioClient3 { const IAudioClient3Vtbl *lpVtbl; void *fake; };
 #define _IAudioClient3_Release(This)                                  ((This)->lpVtbl->Release(This))
 
 /* --- Win32 calls ----------------------------------------------------- */
+#ifndef _WIN32
+HANDLE CreateThread(void *sa, size_t stack, void (*entry)(void*),
+      void *data, DWORD flags, DWORD *id);
+#endif
 HANDLE CreateEventA(void *sa, BOOL manual, BOOL initial, const char *name);
 BOOL   CloseHandle(HANDLE h);
 BOOL   SetEvent(HANDLE h);
@@ -258,7 +262,11 @@ void       *mmdevice_init_device(const char *id, unsigned data_flow);
 const char *mmdevice_hresult_name(int hr);
 void       *mmdevice_list_new(const void *u, unsigned data_flow);
 char       *mmdevice_name(void *data);
+#if defined(_WIN32) && !defined(HAVE_THREADS)
+DWORD WINAPI mmdevice_thread(void *data);
+#else
 void        mmdevice_thread(void *data);
+#endif
 #define WASAPI_SH_BUFFER_AUDIO_LATENCY 0
 #define WASAPI_SH_BUFFER_DEVICE_PERIOD 32
 #define WASAPI_SH_BUFFER_CLIENT_BUFFER 64

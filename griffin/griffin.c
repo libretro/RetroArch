@@ -1049,15 +1049,13 @@ FIFO BUFFER
 ============================================================ */
 #include "../libretro-common/queues/fifo_queue.c"
 #include "../libretro-common/queues/retro_spsc.c"
-/* The waitable queue and the eventcount it parks on are both under
- * HAVE_THREADS, because the eventcount is not thread-free: it calls
- * slock_new and scond_new directly, in twenty-odd places, and those
- * live in rthreads.c which only this configuration builds. Moving the
- * eventcount out on the theory that it degrades to a spin was wrong
- * and produced a threadless build that linked against rthreads. */
+/* Native Windows audio workers also need rthreads and eventcounts. */
+#if defined(HAVE_THREADS) || (defined(_WIN32) && !defined(_XBOX) \
+      && (defined(HAVE_DSOUND) || defined(HAVE_XAUDIO) || defined(HAVE_WAVEOUT)))
+#include "../libretro-common/rthreads/retro_eventcount.c"
+#endif
 #if defined(HAVE_THREADS)
 #include "../libretro-common/queues/retro_waitable_spsc.c"
-#include "../libretro-common/rthreads/retro_eventcount.c"
 #include "../libretro-common/rthreads/retro_procbarrier.c"
 #include "../libretro-common/rthreads/retro_asym_eventcount.c"
 #endif
@@ -1638,6 +1636,9 @@ THREAD
 #include "../frontend/thread_elevation/rtkit.c"
 #include "../frontend/thread_elevation/eevdf.c"
 #endif
+#elif defined(_WIN32) && !defined(_XBOX) \
+      && (defined(HAVE_DSOUND) || defined(HAVE_XAUDIO) || defined(HAVE_WAVEOUT))
+#include "../libretro-common/rthreads/rthreads.c"
 #endif
 
 /* needed for playlists, netplay lobbies and achievements */

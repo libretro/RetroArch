@@ -1145,6 +1145,11 @@ ifeq ($(HAVE_THREADS), 1)
    ifeq ($(findstring Haiku,$(OS)),)
       LIBS += $(THREADS_LIBS)
    endif
+else ifeq ($(OS), Win32)
+   ifneq ($(filter 1,$(HAVE_DSOUND) $(HAVE_XAUDIO) $(HAVE_WAVEOUT)),)
+      OBJ += $(LIBRETRO_COMM_DIR)/rthreads/rthreads.o \
+             $(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.o
+   endif
 endif
 
 ifeq ($(HAVE_THREAD_STORAGE), 1)
