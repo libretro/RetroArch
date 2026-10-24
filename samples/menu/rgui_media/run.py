@@ -21,6 +21,7 @@ with tempfile.TemporaryDirectory(prefix='rgui-media-') as temp:
  values={'video_driver':'null','audio_driver':'null','input_driver':'null','input_joypad_driver':'null','menu_driver':('glui' if a.driver=='materialui' else a.driver),'audio_enable':'false','menu_ignore_missing_assets':'true','video_threaded':'false','menu_show_start_screen':'false','config_save_on_exit':'false','menu_mouse_enable':'true','history_list_enable':'false','savefile_directory':temp,'savestate_directory':temp,'screenshot_directory':temp}
  values.update(video_driver=a.video_driver,video_threaded='true' if a.threaded else 'false',video_vsync='false',pause_nonactive='false',video_hw_decode='1')
  if a.modal:values.update(audio_enable='true',audio_driver=a.audio_driver,menu_thumbnail_preview_audio='true')
+ if a.modal and a.audio_driver=='wasapi':values.update(audio_wasapi_exclusive_mode='false',audio_format_negotiation='1',audio_output_layout='0',audio_out_rate='48000',log_verbosity='true')
  if a.dxgi:values.update(video_dxgi_present='true',log_verbosity='true')
  # Loading suppression must also cover controller/OSD widgets.
  if a.first_frame:values.update(menu_enable_widgets='true',video_window_custom_size_enable='true',video_window_width='1280',video_window_height='720')

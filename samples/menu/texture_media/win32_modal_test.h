@@ -142,6 +142,33 @@ static bool media_modal_normal_tick(void)
    return result != -1;
 }
 
+static bool media_native_modal_audio_ready(void)
+{
+   const char *cold_audio = getenv("MEDIA_TEST_MODAL_AUDIO_COLD");
+   settings_t *settings = config_get_ptr();
+   if (!getenv("MEDIA_TEST_MODAL_MODE")
+         || strcmp(settings->arrays.audio_driver, "wasapi"))
+      return true;
+   if (cold_audio)
+   {
+      settings->bools.audio_enable = false;
+      command_event(CMD_EVENT_AUDIO_REINIT, NULL);
+      settings->bools.audio_enable = strcmp(cold_audio, "unavailable") != 0;
+   }
+   if (!(AUDIO_FLAGS_GET(audio_state_get_ptr()) & AUDIO_FLAG_ACTIVE))
+   {
+      puts("modal startup: reinitializing inactive WASAPI endpoint once");
+      command_event(CMD_EVENT_AUDIO_REINIT, NULL);
+   }
+   if (!(AUDIO_FLAGS_GET(audio_state_get_ptr()) & AUDIO_FLAG_ACTIVE)
+         || strcmp(audio_driver_get_ident(), "wasapi"))
+   {
+      fputs("FAIL: WASAPI modal fixture could not initialize its endpoint\n", stderr);
+      return false;
+   }
+   return true;
+}
+
 static bool media_native_modal_playback(struct menu_state *menu_st,
       bool (*get_target)(struct menu_state*, gfx_media_target_t*))
 {
