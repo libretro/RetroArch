@@ -124,6 +124,7 @@ jobs:
         working-directory: samples/record/file_win32
         run: |
           set -eu
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           make clean && make check SANITIZER=address,undefined
           make clean && make check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
           make clean
@@ -133,6 +134,7 @@ jobs:
         working-directory: samples/record/mp4_mux
         run: |
           set -eu
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           make clean && make -j$(nproc) check SANITIZER=address,undefined
           make clean && make -j$(nproc) check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
           make clean
@@ -141,6 +143,7 @@ jobs:
         working-directory: samples/record/gpu_av_output
         run: |
           set -eu
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           make clean && make -j$(nproc) check SANITIZER=address,undefined
           make clean && make thread_test session_test SANITIZER=thread
           TSAN_OPTIONS=halt_on_error=1 timeout 120 ./thread_test
@@ -167,6 +170,7 @@ jobs:
         working-directory: samples/record/nvenc_frontend
         run: |
           set -eu
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           make clean && make check SANITIZER=address,undefined
           make clean && make check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
           make clean
@@ -177,6 +181,7 @@ jobs:
         working-directory: samples/record/videotoolbox_encode
         run: |
           set -eu
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           make clean && make check thread_test worker_thread_test audio_thread_test av_session_thread_test SANITIZER=address,undefined
           ./thread_test
           ./worker_thread_test

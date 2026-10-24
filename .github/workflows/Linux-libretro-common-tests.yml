@@ -91,6 +91,7 @@ jobs:
           WINEPREFIX: "/tmp/wineprefix"
         run: |
           set -eu
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           # The recipe builds each suite and runs it, in order.
           # Any suite failing to build, or any check failing, or any
           # sanitizer report, fails the job.

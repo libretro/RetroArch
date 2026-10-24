@@ -1173,6 +1173,7 @@ jobs:
         run: |
           set -u
           set -o pipefail
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           # The samples job above runs these on Linux only. On Win32
           # retro_sleep() is a function in time/rtime.c rather than a
           # macro, so a Makefile that links on Linux can still fail to
@@ -1204,6 +1205,7 @@ jobs:
         env:
           WINEDEBUG: -all
         run: |
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           make CC=x86_64-w64-mingw32-gcc EXE=.exe all
           timeout 120 wine ./rdvd_h262_test.exe
           timeout 120 wine ./rdvd_lpcm_test.exe

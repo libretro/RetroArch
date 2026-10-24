@@ -105,6 +105,7 @@ jobs:
         shell: bash
         run: |
           set -eu
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           v="$RUNNER_TEMP/vkd3d"
           git clone -q --depth 1 --branch vkd3d-2.1 \
             https://gitlab.winehq.org/wine/vkd3d.git "$v"
