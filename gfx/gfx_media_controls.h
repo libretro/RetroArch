@@ -9,7 +9,8 @@
 typedef struct gfx_media_rect { int x, y, w, h; } gfx_media_rect_t;
 typedef struct gfx_media_layout
 {
-   gfx_media_rect_t panel, timeline, buttons[4];
+   gfx_media_rect_t panel, timeline, buttons[5];
+   unsigned button_count;
    int unit;
 } gfx_media_layout_t;
 enum gfx_media_action
@@ -29,6 +30,7 @@ typedef struct gfx_media_target
    bool (*pause)(void *user, bool paused, int64_t now);
    bool (*seek)(void *user, int64_t target_us, int64_t now);
    const char *source_path; /* main thread, immutable session path */
+   bool subtitle_tracks;
 } gfx_media_target_t;
 
 typedef struct gfx_media_controls
@@ -40,7 +42,7 @@ typedef struct gfx_media_controls
    int last_x, last_y, hover, press_target;
    unsigned focus;
    unsigned seek_seconds, hide_seconds;
-   bool configured;
+   bool configured, subtitle_requested;
    bool visible, row_focus, held, dragging, release_inhibit;
 } gfx_media_controls_t;
 

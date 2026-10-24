@@ -57,6 +57,7 @@ jobs:
       - name: UTF-8 subtitle sidecars across all four menus
         run: |
           python3 -c "from pathlib import Path; Path('samples/menu/rgui_media/fixture.srt').write_text('1\n00:00:00,000 --> 00:10:00,000\nSubtitle sidecar\nUTF-8 \u00e9\n\n', encoding='utf-8')"
+          python3 -c "from pathlib import Path; Path('samples/menu/rgui_media/fixture.en.srt').write_text('1\n00:00:00,000 --> 00:10:00,000\nEnglish track\n', encoding='utf-8')"
           for driver in rgui materialui xmb ozone; do
             python3 samples/menu/rgui_media/run.py --c89 --subtitles --driver "$driver" samples/menu/rgui_media/fixture.mp4
           done

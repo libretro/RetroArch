@@ -10217,6 +10217,7 @@ static void ozone_free(void *data)
 
    if (ozone)
    {
+      menu_media_controls_cancel(&ozone->media);
       ozone_free_context_textures(ozone);
 
       video_coord_array_free(&ozone->fonts.footer.raster_block.carr);
@@ -10876,7 +10877,7 @@ static void ozone_context_destroy(void *data)
    /* Signal the render path to stop using textures/fonts.
     * Under threaded video, ozone_frame() may be mid-render on
     * the video thread when this runs on the main thread. */
-   menu_media_controls_cancel(&ozone->media);
+   menu_media_controls_context_reset(&ozone->media);
    ozone->context_generation++;
    (void)retro_atomic_exchange_ptr(&ozone->pending_theme, NULL);
 

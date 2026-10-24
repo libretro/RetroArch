@@ -11,7 +11,7 @@ SOURCES := subtitle_load_test.c $(ROOT)/tasks/task_subtitle.c \
            $(LRC)/rthreads/retro_eventcount.c \
            $(LRC)/features/features_cpu.c $(LRC)/time/rtime.c \
            $(LRC)/streams/file_stream.c $(LRC)/vfs/vfs_implementation.c \
-           $(LRC)/file/file_path.c $(LRC)/file/file_path_io.c \
+           $(LRC)/file/retro_dirent.c $(LRC)/file/file_path.c $(LRC)/file/file_path_io.c \
            $(LRC)/string/stdstring.c $(LRC)/string/rstrtod.c \
            $(LRC)/encodings/encoding_utf.c \
            $(LRC)/compat/compat_strl.c $(LRC)/compat/compat_strldup.c \

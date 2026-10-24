@@ -2,6 +2,9 @@ CC ?= cc
 THREADS ?= 1
 TARGET := media_controls_test
 CFLAGS += -O2 -g1 -std=c89 -pedantic -Wall -Wextra -Werror -Wno-long-long -Wno-unused-parameter -Wframe-larger-than=4096 -D_GNU_SOURCE -I../../.. -I../../../libretro-common/include
+ifneq ($(findstring clang,$(shell $(CC) --version 2>/dev/null)),)
+CFLAGS += -Wno-c99-extensions
+endif
 LRC := ../../../libretro-common
 SOURCES := media_controls_test.c ../../../gfx/gfx_media_controls.c ../../../menu/menu_media_controls.c \
            ../../../gfx/gfx_media_subtitle.c $(LRC)/formats/subtitle/rsubtitle_srt.c \

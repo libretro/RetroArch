@@ -27,10 +27,20 @@ bool menu_media_controls_update(menu_media_controls_t *media,
 {
    settings_t *settings = config_get_ptr();
    bool subtitle_changed = false;
+   gfx_media_target_t playback_target;
+   memset(&playback_target, 0, sizeof(playback_target));
+   if (target)
+   {
+      enum image_type_enum type;
+      playback_target = *target;
+      type = target->source_path ? image_texture_get_type(target->source_path) : IMAGE_TYPE_NONE;
+      playback_target.subtitle_tracks = settings->bools.media_player_subtitles
+         && (type == IMAGE_TYPE_MP4 || type == IMAGE_TYPE_WEBM);
+   }
    gfx_media_controls_configure(&media->controls,
          settings->uints.media_player_seek_seconds,
          settings->uints.media_player_controls_timeout);
-   if (gfx_media_controls_update(&media->controls, target, width, height, now))
+   if (gfx_media_controls_update(&media->controls, &playback_target, width, height, now))
    {
       bool valid = pointer && pointer->type != MENU_POINTER_DISABLED
          && !(pointer->flags & MENU_INP_PTR_FLG_RESET);
@@ -47,18 +57,26 @@ bool menu_media_controls_update(menu_media_controls_t *media,
       const char *path = media->controls.target.source_path;
       enum image_type_enum type = path ? image_texture_get_type(path) : IMAGE_TYPE_NONE;
       bool enabled = settings->bools.media_player_subtitles
-         && (type == IMAGE_TYPE_MP4 || type == IMAGE_TYPE_WEBM);
-      if (enabled && !media->subtitle)
+         && (type == IMAGE_TYPE_MP4 || type == IMAGE_TYPE_WEBM || !path);
+      if (enabled && playback_target.subtitle_tracks && !media->subtitle)
          media->subtitle = gfx_media_subtitle_new();
       if (media->subtitle)
          changed = gfx_media_subtitle_update(media->subtitle, media->controls.target.identity,
                path, media->controls.playback.position_us,
                (int64_t)settings->ints.media_player_subtitle_delay * 1000, enabled);
+      if (media->controls.subtitle_requested)
+      {
+         media->controls.subtitle_requested = false;
+         if (enabled)
+            gfx_media_subtitle_next(media->subtitle);
+      }
       subtitle_changed = changed || seeking != media->subtitle_seeking;
       if (subtitle_changed)
          gfx_media_subtitle_publish(&media->subtitle_mailbox,
                seeking ? NULL : gfx_media_subtitle_view(media->subtitle));
       media->subtitle_seeking = seeking;
+      if (media->controls.target.identity)
+         media->context_reset = false;
    }
    gfx_media_controls_publish(&media->controls, &media->mailbox);
    return subtitle_changed;
@@ -118,10 +136,30 @@ bool menu_media_controls_release(menu_media_controls_t *media,
    return true;
 }
 
+void menu_media_controls_context_reset(menu_media_controls_t *media)
+{
+   gfx_media_subtitle_suspend(media->subtitle);
+   media->context_reset = true;
+   media->subtitle_seeking = false;
+   gfx_media_subtitle_publish(&media->subtitle_mailbox, NULL);
+   gfx_media_controls_reset(&media->controls);
+   gfx_media_controls_publish(NULL, &media->mailbox);
+}
+
+void menu_media_controls_subtitle_caption(const gfx_media_subtitle_view_t *view,
+      char *text, size_t size)
+{
+   const char *track = view->off ? msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED)
+      : view->discovering ? msg_hash_to_str(MSG_LOADING)
+      : *view->track ? view->track : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY);
+   snprintf(text, size, "CC: %s", track);
+}
+
 void menu_media_controls_cancel(menu_media_controls_t *media)
 {
    gfx_media_subtitle_free(media->subtitle);
    media->subtitle = NULL;
+   media->context_reset = false;
    media->subtitle_seeking = false;
    gfx_media_subtitle_publish(&media->subtitle_mailbox, NULL);
    gfx_media_controls_reset(&media->controls);
@@ -224,7 +262,7 @@ void menu_media_controls_draw(menu_media_controls_t *media,
    gfx_media_rect_t bar;
    char elapsed[24], duration[24], caption[56];
    char seek_back[16], seek_forward[16];
-   const char *labels[4];
+   const char *labels[5];
    unsigned i;
    int64_t position;
    float scale;
@@ -255,11 +293,11 @@ void menu_media_controls_draw(menu_media_controls_t *media,
    labels[0] = view->playback.paused ? ">" : "||";
    snprintf(seek_back, sizeof(seek_back), "-%u", view->seek_seconds);
    snprintf(seek_forward, sizeof(seek_forward), "+%u", view->seek_seconds);
-   labels[1] = seek_back; labels[2] = seek_forward; labels[3] = "[]";
-   for (i = 0; i < 4; i++)
+   labels[1] = seek_back; labels[2] = seek_forward; labels[3] = "[]"; labels[4] = "CC";
+   for (i = 0; i < view->layout.button_count; i++)
    {
       const gfx_media_rect_t *button = &view->layout.buttons[i];
-      bool enabled = !i || view->playback.seekable;
+      bool enabled = !i || i == 4 || view->playback.seekable;
       bool focused = (view->row_focus && view->focus == i) || view->hover == (int)i;
       menu_media_quad(display, userdata, dims, button,
             focused ? 0.05f : 0.16f, focused ? 0.45f : 0.16f,
@@ -269,4 +307,18 @@ void menu_media_controls_draw(menu_media_controls_t *media,
             enabled ? 0xffffffffU : 0x808080ffU, TEXT_ALIGN_CENTER,
             scale, false, 0.0f, false);
    }
+   if (view->layout.button_count == 5)
+   {
+      char track[160];
+      int text_width;
+      float track_scale = scale * 0.8f;
+      menu_media_controls_subtitle_caption(&media->subtitle_view, track, sizeof(track));
+      text_width = font_driver_get_message_width((void*)font, track, strlen(track), track_scale);
+      if (text_width > view->layout.timeline.w)
+         track_scale *= (float)view->layout.timeline.w / text_width;
+      gfx_display_draw_text(font, track, (float)view->layout.timeline.x,
+            (float)(view->layout.panel.y + 4 * view->layout.unit), dims,
+            0xffffffffU, TEXT_ALIGN_LEFT, track_scale, false, 0.0f, false);
+   }
+
 }

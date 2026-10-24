@@ -1,5 +1,13 @@
 #ifndef NATIVE_MEDIA_CAPTURE_H
 #define NATIVE_MEDIA_CAPTURE_H
+static bool media_native_video_driver_ready(void)
+{
+   const char *expected = getenv("MEDIA_TEST_VIDEO_DRIVER");
+   const char *actual = video_driver_get_ident();
+   printf("native video driver: requested=%s actual=%s\n",
+         expected ? expected : "(unspecified)", actual ? actual : "(none)");
+   return !expected || (actual && !strcmp(expected, actual));
+}
 /* Native acceptance only: readback never enters a production frame path. */
 static bool media_native_capture_region(uint32_t *hash,int ordinal, bool movie_only)
 {

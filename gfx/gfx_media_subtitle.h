@@ -13,7 +13,9 @@ typedef struct gfx_media_subtitle gfx_media_subtitle_t;
 typedef struct gfx_media_subtitle_view
 {
    char text[GFX_MEDIA_SUBTITLE_TEXT_SIZE];
-   bool truncated;
+   char track[128];
+   unsigned track_count;
+   bool truncated, off, discovering;
 } gfx_media_subtitle_view_t;
 
 /* One producer and one consumer. Zero-initialize once; never reset live slots. */
@@ -33,6 +35,10 @@ void gfx_media_subtitle_free(gfx_media_subtitle_t *subtitle);
 bool gfx_media_subtitle_update(gfx_media_subtitle_t *subtitle,
       const void *identity, const char *path, int64_t position_us,
       int64_t delay_us, bool enabled);
+/* Cycle discovered tracks and Off; discovery starts only on demand. */
+void gfx_media_subtitle_next(gfx_media_subtitle_t *subtitle);
+/* Retain CPU track choice across a graphics context replacement. */
+void gfx_media_subtitle_suspend(gfx_media_subtitle_t *subtitle);
 const gfx_media_subtitle_view_t *gfx_media_subtitle_view(
       const gfx_media_subtitle_t *subtitle);
 void gfx_media_subtitle_publish(gfx_media_subtitle_mailbox_t *mailbox,

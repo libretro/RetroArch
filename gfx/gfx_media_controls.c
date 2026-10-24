@@ -77,16 +77,21 @@ bool gfx_media_controls_update(gfx_media_controls_t *c, const gfx_media_target_t
    c->layout.unit = unit;
    c->layout.panel.x = gap;
    c->layout.panel.w = (int)width - 2 * gap;
-   c->layout.panel.h = 3 * unit + 3 * gap;
+   c->layout.button_count = target->subtitle_tracks ? 5 : 4;
+   c->target.subtitle_tracks = target->subtitle_tracks;
+   if (c->focus >= c->layout.button_count) c->focus = 0;
+   c->layout.panel.h = (target->subtitle_tracks ? 4 : 3) * unit + 3 * gap;
    c->layout.panel.y = (int)height - c->layout.panel.h - gap;
    c->layout.timeline.x = 2 * gap;
    c->layout.timeline.y = c->layout.panel.y + unit + gap;
    c->layout.timeline.w = (int)width - 4 * gap;
    c->layout.timeline.h = unit / 2;
-   bw = (c->layout.panel.w - 5 * gap) / 4;
+   bw = (c->layout.panel.w - ((int)c->layout.button_count + 1) * gap)
+      / (int)c->layout.button_count;
    if (bw > 3 * unit) bw = 3 * unit;
-   left = ((int)width - (4 * bw + 3 * gap)) / 2;
-   for (i = 0; i < 4; i++)
+   left = ((int)width - ((int)c->layout.button_count * bw
+         + ((int)c->layout.button_count - 1) * gap)) / 2;
+   for (i = 0; i < (int)c->layout.button_count; i++)
    {
       c->layout.buttons[i].x = left + i * (bw + gap);
       c->layout.buttons[i].y = c->layout.panel.y + 2 * unit + gap;
@@ -111,6 +116,11 @@ static bool gfx_media_button(gfx_media_controls_t *c, unsigned button, int64_t n
    int64_t step = (int64_t)(c->seek_seconds ? c->seek_seconds : 5) * 1000000;
    if (button == 0)
       return c->target.pause(c->target.user, !c->playback.paused, now);
+   if (button == 4 && c->target.subtitle_tracks)
+   {
+      c->subtitle_requested = true;
+      return true;
+   }
    if (!c->playback.seekable) return false;
    if (button == 3)
    {
@@ -141,7 +151,8 @@ bool gfx_media_controls_action(gfx_media_controls_t *c,
       case GFX_MEDIA_NEXT:
          if (c->row_focus)
          {
-            c->focus = (c->focus + (action == GFX_MEDIA_PREVIOUS ? 3 : 1)) % 4;
+            c->focus = (c->focus + (action == GFX_MEDIA_PREVIOUS
+                     ? c->layout.button_count - 1 : 1)) % c->layout.button_count;
             return true;
          }
          return gfx_media_button(c, action == GFX_MEDIA_PREVIOUS ? 1 : 2, now);
@@ -176,11 +187,11 @@ void gfx_media_controls_pointer(gfx_media_controls_t *c, int x, int y,
       c->last_activity = now;
    }
    c->last_x = x; c->last_y = y;
-   c->hover = gfx_media_inside(&c->layout.panel, x, y) ? 5 : -1;
-   for (i = 0; i < 4; i++)
+   c->hover = gfx_media_inside(&c->layout.panel, x, y) ? 6 : -1;
+   for (i = 0; i < (int)c->layout.button_count; i++)
       if (gfx_media_inside(&c->layout.buttons[i], x, y)) c->hover = i;
    if (pressed && !c->held)
-      c->press_target = c->hover >= 0 && c->hover < 4 ? c->hover : -1;
+      c->press_target = c->hover >= 0 && c->hover < (int)c->layout.button_count ? c->hover : -1;
    if (pressed && !c->release_inhibit && !c->held && c->playback.seekable && c->playback.duration_us > 0
          && gfx_media_inside(&c->layout.timeline, x, y))
       c->dragging = true;
@@ -211,7 +222,7 @@ void gfx_media_controls_release(gfx_media_controls_t *c, int x, int y,
          c->target.seek(c->target.user, gfx_media_drag_position(c, x), now);
    }
    else
-      for (i = 0; i < 4; i++)
+      for (i = 0; i < (int)c->layout.button_count; i++)
          if (gfx_media_inside(&c->layout.buttons[i], x, y))
          {
             if (c->held && c->press_target != i) break;

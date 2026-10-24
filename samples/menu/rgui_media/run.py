@@ -29,7 +29,7 @@ with tempfile.TemporaryDirectory(prefix='rgui-media-') as temp:
  cfg.write_text(''.join(k+' = "'+v.replace('\\','/')+'"\n' for k,v in values.items()),encoding='utf-8')
  cmd=[str(exe),str(Path(a.fixture).resolve()),str(cfg)]
  if os.name=='nt':cmd=['gdb','--batch','-return-child-result','-ex','run','-ex','thread apply all bt','--args']+cmd
- env=os.environ.copy()
+ env=os.environ.copy();env['MEDIA_TEST_VIDEO_DRIVER']=a.video_driver
  if a.modal:env['MEDIA_TEST_MODAL_MODE']=a.modal
  if a.subtitles:env['MEDIA_TEST_SUBTITLES']='1'
  if a.window_toggle:env['MEDIA_TEST_WINDOW_TOGGLE']='1'

@@ -161,6 +161,11 @@ int main(int argc,char **argv)
    rarch_argv[0]=(char*)"retroarch";rarch_argv[1]=getenv("MEDIA_TEST_EXTERNAL")?argv[1]:(char*)"--menu";
    rarch_argv[2]=(char*)"--config";rarch_argv[3]=argv[2];
    if(!retroarch_main_init(4,rarch_argv))return 1;
+   if (!media_native_video_driver_ready())
+   {
+      main_exit(NULL);
+      return 1;
+   }
 #ifdef _WIN32
    if (!media_native_modal_audio_ready())
    {

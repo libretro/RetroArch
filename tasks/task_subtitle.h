@@ -27,6 +27,8 @@
 
 typedef struct task_subtitle_request task_subtitle_request_t;
 
+typedef struct task_subtitle_catalog task_subtitle_catalog_t;
+
 RETRO_BEGIN_DECLS
 
 /* Main-thread owner. No file access occurs until the task handler runs. */
@@ -36,6 +38,15 @@ int task_subtitle_status(const task_subtitle_request_t *request);
 rsubtitle_srt_t *task_subtitle_take(task_subtitle_request_t *request);
 /* Cancels pending work and releases the caller's reference; never joins. */
 void task_subtitle_release(task_subtitle_request_t *request);
+
+/* Bounded, asynchronous same-movie sidecar discovery. */
+task_subtitle_catalog_t *task_subtitle_discover(const char *movie_path);
+int task_subtitle_catalog_status(const task_subtitle_catalog_t *catalog);
+size_t task_subtitle_catalog_count(const task_subtitle_catalog_t *catalog);
+/* Borrowed until release; available only after discovery completes. */
+const char *task_subtitle_catalog_path(const task_subtitle_catalog_t *catalog,
+      size_t index);
+void task_subtitle_catalog_release(task_subtitle_catalog_t *catalog);
 
 RETRO_END_DECLS
 

@@ -23,6 +23,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <retro_atomic.h>
+#include <retro_dirent.h>
+#include <string/stdstring.h>
 #include <queues/task_queue.h>
 #include <streams/file_stream.h>
 #include "task_subtitle.h"
@@ -214,4 +216,215 @@ void task_subtitle_release(task_subtitle_request_t *request)
       return;
    retro_atomic_store_release_int(&request->cancelled, 1);
    subtitle_task_unref(request);
+}
+
+#define SUBTITLE_CATALOG_LIMIT 64
+
+struct task_subtitle_catalog
+{
+   struct RDIR *directory;
+   char *folder, *stem;
+   char *paths[SUBTITLE_CATALOG_LIMIT];
+   size_t count, stem_length;
+   retro_atomic_int_t refs, cancelled, status;
+};
+
+static void subtitle_catalog_unref(task_subtitle_catalog_t *catalog)
+{
+   size_t i;
+   if (retro_atomic_fetch_sub_int(&catalog->refs, 1) != 1)
+      return;
+   for (i = 0; i < catalog->count; i++)
+      free(catalog->paths[i]);
+   free(catalog->folder);
+   free(catalog->stem);
+   free(catalog);
+}
+
+static void subtitle_catalog_finish(retro_task_t *task, int status)
+{
+   task_subtitle_catalog_t *catalog = (task_subtitle_catalog_t*)task->state;
+   retro_closedir(catalog->directory);
+   catalog->directory = NULL;
+   retro_atomic_store_release_int(&catalog->status, status);
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+}
+
+static bool subtitle_catalog_add(task_subtitle_catalog_t *catalog,
+      const char *name)
+{
+   size_t length = strlen(name), folder_length, index, i;
+   char *path;
+   if (length < catalog->stem_length + 4
+#if defined(_WIN32)
+         || !string_starts_with_case_insensitive(name, catalog->stem)
+#else
+         || memcmp(name, catalog->stem, catalog->stem_length)
+#endif
+         || name[catalog->stem_length] != '.'
+         || !string_is_equal_noncase(name + length - 4, ".srt"))
+      return true;
+   if (retro_dirent_is_dir(catalog->directory, NULL))
+      return true;
+   folder_length = strlen(catalog->folder);
+   if (length > 32768 - folder_length)
+      return true;
+   path = (char*)malloc(folder_length + length + 1);
+   if (!path)
+      return false;
+   memcpy(path, catalog->folder, folder_length);
+   memcpy(path + folder_length, name, length + 1);
+   for (index = 0; index < catalog->count; index++)
+      if (strcmp(path, catalog->paths[index]) < 0)
+         break;
+   if (index == SUBTITLE_CATALOG_LIMIT)
+   {
+      free(path);
+      return true;
+   }
+   if (catalog->count == SUBTITLE_CATALOG_LIMIT)
+      free(catalog->paths[catalog->count - 1]);
+   else
+      catalog->count++;
+   for (i = catalog->count - 1; i > index; i--)
+      catalog->paths[i] = catalog->paths[i - 1];
+   catalog->paths[index] = path;
+   return true;
+}
+
+static void subtitle_catalog_handler(retro_task_t *task)
+{
+   task_subtitle_catalog_t *catalog = (task_subtitle_catalog_t*)task->state;
+   nbio_budget_t budget;
+   unsigned entries = 0;
+   int status = 0;
+   if (!catalog->directory)
+   {
+      if (retro_atomic_load_acquire_int(&catalog->cancelled))
+      {
+         subtitle_catalog_finish(task, -1);
+         return;
+      }
+      catalog->directory = retro_opendir(*catalog->folder ? catalog->folder : ".");
+      if (!catalog->directory)
+      {
+         subtitle_catalog_finish(task, -1);
+         return;
+      }
+   }
+   task_nbio_slice_open(&budget);
+   while (entries++ < 32 && task_nbio_slice_within_budget(&budget, 0, 0))
+   {
+      const char *name;
+      if (retro_atomic_load_acquire_int(&catalog->cancelled)
+            || (task_get_flags(task) & RETRO_TASK_FLG_CANCELLED))
+      {
+         status = -1;
+         break;
+      }
+      if (!retro_readdir(catalog->directory))
+      {
+         status = 1;
+         break;
+      }
+      name = retro_dirent_get_name(catalog->directory);
+      if (name && !subtitle_catalog_add(catalog, name))
+      {
+         status = -1;
+         break;
+      }
+   }
+   task_nbio_slice_close(&budget);
+   if (status)
+      subtitle_catalog_finish(task, status);
+}
+
+static void subtitle_catalog_cleanup(retro_task_t *task)
+{
+   task_subtitle_catalog_t *catalog = (task_subtitle_catalog_t*)task->state;
+   if (!retro_atomic_load_acquire_int(&catalog->status))
+      subtitle_catalog_finish(task, -1);
+   subtitle_catalog_unref(catalog);
+}
+
+task_subtitle_catalog_t *task_subtitle_discover(const char *movie_path)
+{
+   task_subtitle_catalog_t *catalog;
+   retro_task_t *task;
+   size_t length, start, end;
+   if (!movie_path || !*movie_path || (length = strlen(movie_path)) > 32768)
+      return NULL;
+   start = length;
+   while (start && movie_path[start - 1] != '/' && movie_path[start - 1] != '\\')
+      start--;
+   end = length;
+   while (end > start && movie_path[end - 1] != '.')
+      end--;
+   if (end > start)
+      end--;
+   else
+      end = length;
+   if (end == start)
+      return NULL;
+   catalog = (task_subtitle_catalog_t*)calloc(1, sizeof(*catalog));
+   if (!catalog)
+      return NULL;
+   retro_atomic_int_init(&catalog->refs, 1);
+   retro_atomic_int_init(&catalog->cancelled, 0);
+   retro_atomic_int_init(&catalog->status, 0);
+   catalog->folder = (char*)malloc(start + 1);
+   catalog->stem_length = end - start;
+   catalog->stem = (char*)malloc(catalog->stem_length + 1);
+   if (!catalog->folder || !catalog->stem)
+   {
+      subtitle_catalog_unref(catalog);
+      return NULL;
+   }
+   memcpy(catalog->folder, movie_path, start);
+   catalog->folder[start] = '\0';
+   memcpy(catalog->stem, movie_path + start, catalog->stem_length);
+   catalog->stem[catalog->stem_length] = '\0';
+   task = task_init();
+   if (!task)
+   {
+      subtitle_catalog_unref(catalog);
+      return NULL;
+   }
+   task->state = catalog;
+   task->handler = subtitle_catalog_handler;
+   task->cleanup = subtitle_catalog_cleanup;
+   task_set_flags(task, RETRO_TASK_FLG_MUTE, true);
+   retro_atomic_fetch_add_int(&catalog->refs, 1);
+   if (!task_queue_push(task))
+   {
+      free(task);
+      subtitle_catalog_unref(catalog);
+      subtitle_catalog_unref(catalog);
+      return NULL;
+   }
+   return catalog;
+}
+
+int task_subtitle_catalog_status(const task_subtitle_catalog_t *catalog)
+{
+   return catalog ? retro_atomic_load_acquire_int(&catalog->status) : -1;
+}
+
+size_t task_subtitle_catalog_count(const task_subtitle_catalog_t *catalog)
+{
+   return task_subtitle_catalog_status(catalog) == 1 ? catalog->count : 0;
+}
+
+const char *task_subtitle_catalog_path(const task_subtitle_catalog_t *catalog,
+      size_t index)
+{
+   return index < task_subtitle_catalog_count(catalog) ? catalog->paths[index] : NULL;
+}
+
+void task_subtitle_catalog_release(task_subtitle_catalog_t *catalog)
+{
+   if (!catalog)
+      return;
+   retro_atomic_store_release_int(&catalog->cancelled, 1);
+   subtitle_catalog_unref(catalog);
 }

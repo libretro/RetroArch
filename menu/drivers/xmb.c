@@ -9936,6 +9936,7 @@ static void xmb_free(void *data)
 
    if (xmb)
    {
+      menu_media_controls_cancel(&xmb->media);
       xmb_free_textures(xmb);
       xmb_context_bg_destroy(xmb);
 
@@ -10258,7 +10259,7 @@ static void xmb_context_destroy(void *data)
    /* Signal the render path to stop using textures/fonts.
     * Under threaded video, xmb_frame() may be mid-render on
     * the video thread when this runs on the main thread. */
-   menu_media_controls_cancel(&xmb->media);
+   menu_media_controls_context_reset(&xmb->media);
    xmb->context_generation++;
 
    xmb_free_textures(xmb);

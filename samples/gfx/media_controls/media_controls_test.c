@@ -52,6 +52,19 @@ rsubtitle_srt_t *task_subtitle_take(task_subtitle_request_t *request)
 void task_subtitle_release(task_subtitle_request_t *request)
 { if (request) abort(); }
 
+task_subtitle_catalog_t *task_subtitle_discover(const char *path)
+{ (void)path; abort(); return NULL; }
+int task_subtitle_catalog_status(const task_subtitle_catalog_t *catalog)
+{ if (catalog) abort(); return -1; }
+size_t task_subtitle_catalog_count(const task_subtitle_catalog_t *catalog)
+{ if (catalog) abort(); return 0; }
+const char *task_subtitle_catalog_path(const task_subtitle_catalog_t *catalog, size_t index)
+{ (void)catalog; (void)index; abort(); return NULL; }
+void task_subtitle_catalog_release(task_subtitle_catalog_t *catalog)
+{ if (catalog) abort(); }
+const char *msg_hash_to_str(enum msg_hash_enums msg)
+{ (void)msg; return "test"; }
+
 enum image_type_enum image_texture_get_type(const char *path)
 {
    (void)path;
@@ -429,6 +442,45 @@ static void playback_preferences(void)
    CHECK(c.seek_seconds == 5);
 }
 
+static void subtitle_button(void)
+{
+   gfx_media_controls_t c;
+   gfx_media_target_t target;
+   fake_player_t player;
+   const gfx_media_rect_t *button;
+   unsigned i;
+   memset(&c, 0, sizeof(c));
+   memset(&target, 0, sizeof(target));
+   memset(&player, 0, sizeof(player));
+   player.available = true;
+   target.user = &player;
+   target.identity = &player;
+   target.state = fake_state;
+   target.pause = fake_pause;
+   target.seek = fake_seek;
+   target.subtitle_tracks = true;
+   CHECK(gfx_media_controls_update(&c, &target, 640, 480, 1));
+   CHECK(c.layout.button_count == 5);
+   CHECK(gfx_media_controls_action(&c, GFX_MEDIA_FOCUS, 2));
+   for (i = 0; i < 4; i++)
+      CHECK(gfx_media_controls_action(&c, GFX_MEDIA_NEXT, 3));
+   CHECK(c.focus == 4);
+   CHECK(gfx_media_controls_action(&c, GFX_MEDIA_ACTIVATE, 4));
+   CHECK(c.subtitle_requested && !player.seeks && !player.pauses);
+   c.subtitle_requested = false;
+   button = &c.layout.buttons[4];
+   gfx_media_controls_pointer(&c, button->x + 1, button->y + 1, false, true, 5);
+   gfx_media_controls_pointer(&c, button->x + 1, button->y + 1, true, true, 6);
+   gfx_media_controls_release(&c, button->x + 1, button->y + 1, 7);
+   CHECK(c.subtitle_requested && !player.seeks && !player.pauses);
+   target.identity = &target;
+   CHECK(gfx_media_controls_update(&c, &target, 640, 480, 8));
+   CHECK(!c.subtitle_requested);
+   CHECK(gfx_media_controls_action(&c, GFX_MEDIA_FOCUS, 9));
+   CHECK(gfx_media_controls_action(&c, GFX_MEDIA_PREVIOUS, 10));
+   CHECK(c.focus == 4);
+}
+
 static void subtitles_without_transport(void)
 {
    menu_media_controls_t *media = (menu_media_controls_t*)calloc(1, sizeof(*media));
@@ -462,6 +514,7 @@ int main(void)
 {
    test_settings.uints.media_player_seek_seconds = 5;
    test_settings.uints.media_player_controls_timeout = 3;
+   subtitle_button();
    subtitles_without_transport();
    playback_preferences();
    menu_preferences();

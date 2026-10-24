@@ -3095,7 +3095,7 @@ static void rgui_media_gpu_consume(rgui_t *rgui)
       }
 }
 
-static void rgui_media_close(rgui_t *rgui)
+static void rgui_media_close(rgui_t *rgui, bool context_reset)
 {
    rgui_media_gpu_view_t draw;
    memset(&draw, 0, sizeof(draw));
@@ -3107,7 +3107,10 @@ static void rgui_media_close(rgui_t *rgui)
       gfx_thumbnail_cancel_pending_requests();
    gfx_thumbnail_reset(&rgui->media_gpu);
    rgui->media_path[0] = '\0';
-   menu_media_controls_cancel(&rgui->media);
+   if (context_reset)
+      menu_media_controls_context_reset(&rgui->media);
+   else
+      menu_media_controls_cancel(&rgui->media);
 }
 
 static bool rgui_media_present(void *user, const video_player_frame_t *frame)
@@ -3190,7 +3193,7 @@ RGUI_NOINLINE static void rgui_media_update(rgui_t *rgui, unsigned dims)
    memset(&target, 0, sizeof(target));
    if (!wanted || !string_is_equal(rgui->media_requested_path, rgui->media_path))
    {
-      rgui_media_close(rgui);
+      rgui_media_close(rgui, wanted && rgui->media.context_reset);
       if (wanted)
       {
          gfx_anim_preview_t *session;
@@ -6156,7 +6159,7 @@ RGUI_NOINLINE static void rgui_media_draw(rgui_t *rgui, unsigned dims)
    int64_t position;
    char elapsed[24], duration[24], caption[56];
    size_t limit;
-   const char *labels[4];
+   const char *labels[5];
    gfx_media_controls_consume(&rgui->media.mailbox, view);
    rgui_media_subtitle_draw(rgui, dims);
    if (!view->visible || !view->layout.unit) return;
@@ -6186,12 +6189,12 @@ RGUI_NOINLINE static void rgui_media_draw(rgui_t *rgui, unsigned dims)
          view->layout.panel.y + 1, caption, rgui->colors.normal_color,
          rgui->colors.shadow_color);
    labels[0] = view->playback.paused ? ">" : "||";
-   labels[1] = "-5"; labels[2] = "+5"; labels[3] = "[]";
-   for (i = 0; i < 4; i++)
+   labels[1] = "-5"; labels[2] = "+5"; labels[3] = "[]"; labels[4] = "CC";
+   for (i = 0; i < view->layout.button_count; i++)
    {
       const gfx_media_rect_t *button = &view->layout.buttons[i];
       bool focused = (view->row_focus && view->focus == i) || view->hover == (int)i;
-      bool enabled = !i || view->playback.seekable;
+      bool enabled = !i || i == 4 || view->playback.seekable;
       int x = button->x + (button->w - (int)(strlen(labels[i]) * rgui->font_width_stride)) / 2;
       int y = button->y + (button->h - (int)VIDEO_SCALE_H(rgui->font_dims)) / 2;
       rgui_color_rect(rgui->frame_buf.data, dims, button->x, button->y,
@@ -6201,6 +6204,19 @@ RGUI_NOINLINE static void rgui_media_draw(rgui_t *rgui, unsigned dims)
             ? rgui->colors.normal_color : rgui->colors.disabled_color,
             rgui->colors.shadow_color);
    }
+   if (view->layout.button_count == 5)
+   {
+      char track[160];
+      size_t columns = rgui->font_width_stride
+         ? view->layout.timeline.w / rgui->font_width_stride : 0;
+      menu_media_controls_subtitle_caption(&rgui->media.subtitle_view, track, sizeof(track));
+      if (utf8len(track) > columns)
+         *(char*)utf8skip(track, columns) = '\0';
+      rgui_blit_line(rgui, width, view->layout.timeline.x,
+            view->layout.panel.y + 3 * view->layout.unit + view->layout.unit / 2,
+            track, rgui->colors.normal_color, rgui->colors.shadow_color);
+   }
+
 }
 
 static void rgui_render(void *data, unsigned dims,
@@ -6449,6 +6465,7 @@ static void rgui_render(void *data, unsigned dims,
 
       /* Draw thumbnail */
       rgui_render_fs_thumbnail(rgui, p_disp->framebuf_dims, fb_pitch);
+      rgui_media_gpu_cutout(rgui, p_disp->framebuf_dims);
       rgui_media_draw(rgui, p_disp->framebuf_dims);
 
       /* Get thumbnail title */
@@ -7076,7 +7093,8 @@ static void rgui_render(void *data, unsigned dims,
             || (!*rgui->media_requested_path && *rgui->fs_thumbnail.path)
             || rgui->media_gpu.status == GFX_THUMBNAIL_STATUS_MISSING))
       menu_driver_media_startup_ready(menu_driver_media_startup_token());
-   rgui_media_gpu_cutout(rgui, p_disp->framebuf_dims);
+   if (!show_fs_thumbnail)
+      rgui_media_gpu_cutout(rgui, p_disp->framebuf_dims);
    if (*rgui->msgbox)
    {
       /* Draw popup directly on top of the menu; the messagebox
@@ -7935,7 +7953,7 @@ static void rgui_free(void *data)
    if (!rgui)
       return;
 
-   rgui_media_close(rgui);
+   rgui_media_close(rgui, false);
    rgui_fonts_free(rgui);
    rgui_buffers_free(rgui);
    rgui_upscale_buf_free(&rgui->upscale_buf);
@@ -9483,7 +9501,7 @@ static void rgui_toggle(void *userdata, bool menu_on)
 static void rgui_context_destroy(void *data)
 {
    rgui_t *rgui = (rgui_t*)data;
-   if (rgui) rgui_media_close(rgui);
+   if (rgui) rgui_media_close(rgui, true);
 }
 
 static void rgui_context_reset(void *data, bool is_threaded)
@@ -9493,7 +9511,7 @@ static void rgui_context_reset(void *data, bool is_threaded)
    if (!rgui)
       return;
 
-   menu_media_controls_cancel(&rgui->media);
+   menu_media_controls_context_reset(&rgui->media);
    if (!disp_get_ptr()->dispctx)
       gfx_display_init_first_driver(disp_get_ptr(), is_threaded);
    video_driver_monitor_reset();

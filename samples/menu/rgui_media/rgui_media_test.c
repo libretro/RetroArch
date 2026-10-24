@@ -131,6 +131,11 @@ int main(int argc, char **argv)
    rarch_argv[0] = (char*)"retroarch"; rarch_argv[1] = getenv("MEDIA_TEST_EXTERNAL") ? argv[1] : (char*)"--menu";
    rarch_argv[2] = (char*)"--config"; rarch_argv[3] = argv[2];
    if (!retroarch_main_init(4, rarch_argv)) return 1;
+   if (!media_native_video_driver_ready())
+   {
+      main_exit(NULL);
+      return 1;
+   }
 #ifdef _WIN32
    if (!media_native_modal_audio_ready())
    {
@@ -476,7 +481,7 @@ int main(int argc, char **argv)
       MEDIA_CHECK("failed video admission queues a still-image task",
             retro_atomic_load_acquire_int(&rgui->media_gpu.status)
                == GFX_THUMBNAIL_STATUS_PENDING);
-      rgui_media_close(rgui);
+      rgui_media_close(rgui, false);
       task_queue_check();
       MEDIA_CHECK("closing invalidates queued image delivery",
             !rgui->media_gpu.anim_sess && !rgui->media.controls.target.user

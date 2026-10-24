@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
+#include <string/stdstring.h>
 #include "gfx_media_subtitle.h"
 #include "../tasks/task_subtitle.h"
 
@@ -7,8 +8,11 @@ struct gfx_media_subtitle
 {
    task_subtitle_request_t *request;
    rsubtitle_srt_t *track;
+   task_subtitle_catalog_t *catalog;
    const void *identity;
-   char *path;
+   char *path, *selected;
+   unsigned pending_cycles;
+   bool off, rebind;
    gfx_media_subtitle_view_t view;
 };
 
@@ -17,10 +21,16 @@ static void media_subtitle_reset(gfx_media_subtitle_t *subtitle)
    task_subtitle_release(subtitle->request);
    rsubtitle_srt_free(subtitle->track);
    free(subtitle->path);
+   free(subtitle->selected);
+   task_subtitle_catalog_release(subtitle->catalog);
    subtitle->request = NULL;
    subtitle->track = NULL;
    subtitle->path = NULL;
    subtitle->identity = NULL;
+   subtitle->selected = NULL;
+   subtitle->catalog = NULL;
+   subtitle->pending_cycles = 0;
+   subtitle->off = subtitle->rebind = false;
 }
 
 gfx_media_subtitle_t *gfx_media_subtitle_new(void)
@@ -65,8 +75,102 @@ static bool media_subtitle_open(gfx_media_subtitle_t *subtitle,
    memcpy(sidecar, path, end);
    memcpy(sidecar + end, ".srt", sizeof(".srt"));
    subtitle->request = task_subtitle_load(sidecar);
-   free(sidecar);
+   subtitle->selected = sidecar;
    return subtitle->request != NULL;
+}
+
+void gfx_media_subtitle_next(gfx_media_subtitle_t *subtitle)
+{
+   if (!subtitle || !subtitle->path)
+      return;
+   if (task_subtitle_catalog_status(subtitle->catalog) < 0)
+   {
+      task_subtitle_catalog_release(subtitle->catalog);
+      subtitle->catalog = task_subtitle_discover(subtitle->path);
+   }
+   if (subtitle->catalog && subtitle->pending_cycles < (unsigned)-1)
+      subtitle->pending_cycles++;
+}
+
+void gfx_media_subtitle_suspend(gfx_media_subtitle_t *subtitle)
+{
+   if (subtitle)
+      subtitle->rebind = true;
+}
+
+static void media_subtitle_select(gfx_media_subtitle_t *subtitle)
+{
+   size_t count, index, next, length;
+   const char *path;
+   char *selected = NULL;
+   if (!subtitle->pending_cycles
+         || !task_subtitle_catalog_status(subtitle->catalog))
+      return;
+   if (task_subtitle_catalog_status(subtitle->catalog) < 0)
+   {
+      subtitle->pending_cycles = 0;
+      return;
+   }
+   count = task_subtitle_catalog_count(subtitle->catalog);
+   index = count;
+   if (!subtitle->off && subtitle->selected)
+      for (index = 0; index < count; index++)
+#if defined(_WIN32)
+         if (string_is_equal_noncase(subtitle->selected,
+                  task_subtitle_catalog_path(subtitle->catalog, index)))
+#else
+         if (!strcmp(subtitle->selected,
+                  task_subtitle_catalog_path(subtitle->catalog, index)))
+#endif
+            break;
+   next = (index + subtitle->pending_cycles % (count + 1)) % (count + 1);
+   subtitle->pending_cycles = 0;
+   path = task_subtitle_catalog_path(subtitle->catalog, next);
+   if (path)
+   {
+      length = strlen(path);
+      selected = (char*)malloc(length + 1);
+      if (!selected)
+         return;
+      memcpy(selected, path, length + 1);
+   }
+   task_subtitle_release(subtitle->request);
+   rsubtitle_srt_free(subtitle->track);
+   free(subtitle->selected);
+   subtitle->selected = selected;
+   subtitle->off = selected == NULL;
+   subtitle->track = NULL;
+   subtitle->request = selected ? task_subtitle_load(selected) : NULL;
+}
+
+static void media_subtitle_track_view(gfx_media_subtitle_t *subtitle,
+      gfx_media_subtitle_view_t *view)
+{
+   const char *name = subtitle->selected, *p;
+   size_t used = 0;
+   view->off = subtitle->off;
+   view->discovering = subtitle->catalog
+      && !task_subtitle_catalog_status(subtitle->catalog);
+   view->track_count = (unsigned)task_subtitle_catalog_count(subtitle->catalog);
+   if (!name || (!subtitle->track && !subtitle->request))
+      return;
+   for (p = name; *p; p++)
+      if (*p == '/' || *p == '\\')
+         name = p + 1;
+   while (*name)
+   {
+      unsigned lead = (unsigned char)*name;
+      size_t length = lead < 0x80 ? 1 : lead < 0xe0 ? 2 : lead < 0xf0 ? 3 : 4;
+      size_t i;
+      if (used + length >= sizeof(view->track))
+         break;
+      for (i = 0; i < length; i++)
+         if (!name[i])
+            return;
+      memcpy(view->track + used, name, length);
+      used += length;
+      name += length;
+   }
 }
 
 static void media_subtitle_text(gfx_media_subtitle_t *subtitle,
@@ -119,16 +223,20 @@ bool gfx_media_subtitle_update(gfx_media_subtitle_t *subtitle,
    if (!subtitle)
       return false;
    memset(&next, 0, sizeof(next));
-   if (!enabled || !identity || !path || !*path)
+   if (!enabled || ((!identity || !path || !*path) && !subtitle->rebind))
       media_subtitle_reset(subtitle);
-   else
+   else if (identity && path && *path)
    {
+      if (subtitle->rebind && subtitle->path && !strcmp(subtitle->path, path))
+         subtitle->identity = identity;
+      subtitle->rebind = false;
       if (subtitle->identity != identity || !subtitle->path
             || strcmp(subtitle->path, path))
       {
          media_subtitle_reset(subtitle);
          media_subtitle_open(subtitle, identity, path);
       }
+      media_subtitle_select(subtitle);
       if (subtitle->request && task_subtitle_status(subtitle->request))
       {
          subtitle->track = task_subtitle_take(subtitle->request);
@@ -141,11 +249,11 @@ bool gfx_media_subtitle_update(gfx_media_subtitle_t *subtitle,
          position_us = (int64_t)(((uint64_t)-1) >> 1);
       else
          position_us -= delay_us;
+      media_subtitle_track_view(subtitle, &next);
       if (subtitle->track && position_us >= 0)
          media_subtitle_text(subtitle, &next, position_us);
    }
-   changed = next.truncated != subtitle->view.truncated
-      || strcmp(next.text, subtitle->view.text) != 0;
+   changed = memcmp(&next, &subtitle->view, sizeof(next)) != 0;
    subtitle->view = next;
    return changed;
 }

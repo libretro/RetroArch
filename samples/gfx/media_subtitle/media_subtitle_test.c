@@ -14,6 +14,7 @@
 #include <retro_timers.h>
 #include <rthreads/rthreads.h>
 #include "../../../gfx/gfx_media_subtitle.h"
+#include "../../../tasks/task_subtitle.h"
 
 static char media_path[80], subtitle_path[80], other_path[80];
 static gfx_media_subtitle_mailbox_t mailbox;
@@ -178,14 +179,180 @@ static void concurrent_mailbox(void)
 }
 #endif
 
+static void catalog_discovery(bool threaded)
+{
+   task_subtitle_catalog_t *catalog;
+   char movie[80], name[80], expected[80];
+   unsigned i;
+   task_queue_init(threaded, NULL);
+   sprintf(movie, "subtitle-catalog-%lu.mp4", (unsigned long)sample_getpid());
+   catalog = task_subtitle_discover(movie);
+   assert(catalog);
+   if (!threaded)
+   {
+      assert(task_subtitle_catalog_status(catalog) == 0);
+      assert(!task_subtitle_catalog_count(catalog));
+      assert(!task_subtitle_catalog_path(catalog, 0));
+   }
+   task_subtitle_catalog_release(catalog);
+   drain();
+   for (i = 0; i < 3; i++)
+   {
+      FILE *file;
+      sprintf(name, "subtitle-catalog-%lu%s",
+            (unsigned long)sample_getpid(),
+            i == 0 ? ".srt" : i == 1 ? ".en.forced.srt" : ".ja.SRT");
+      file = fopen(name, "wb");
+      assert(file && !fclose(file));
+   }
+   catalog = task_subtitle_discover(movie);
+   assert(catalog);
+   drain();
+   assert(task_subtitle_catalog_status(catalog) == 1);
+   assert(task_subtitle_catalog_count(catalog) == 3);
+   assert(strstr(task_subtitle_catalog_path(catalog, 0), ".en.forced.srt"));
+   assert(strstr(task_subtitle_catalog_path(catalog, 1), ".ja.SRT"));
+   assert(strstr(task_subtitle_catalog_path(catalog, 2), ".srt"));
+   task_subtitle_catalog_release(catalog);
+   for (i = 0; i < 3; i++)
+   {
+      sprintf(name, "subtitle-catalog-%lu%s",
+            (unsigned long)sample_getpid(),
+            i == 0 ? ".srt" : i == 1 ? ".en.forced.srt" : ".ja.SRT");
+      assert(!remove(name));
+   }
+   sprintf(name, "SUBTITLE-CATALOG-%lu.en.srt", (unsigned long)sample_getpid());
+   {
+      FILE *file = fopen(name, "wb");
+      assert(file && !fclose(file));
+   }
+   catalog = task_subtitle_discover(movie);
+   assert(catalog);
+   drain();
+   assert(task_subtitle_catalog_status(catalog) == 1);
+#if defined(_WIN32)
+   assert(task_subtitle_catalog_count(catalog) == 1);
+   assert(!strcmp(task_subtitle_catalog_path(catalog, 0), name));
+#else
+   assert(!task_subtitle_catalog_count(catalog));
+#endif
+   task_subtitle_catalog_release(catalog);
+   assert(!remove(name));
+   for (i = 0; i < 70; i++)
+   {
+      FILE *file;
+      sprintf(name, "subtitle-catalog-%lu.%02u.srt",
+            (unsigned long)sample_getpid(), 69 - i);
+      file = fopen(name, "wb");
+      assert(file && !fclose(file));
+   }
+   sprintf(name, "subtitle-catalog-%lu-other.srt", (unsigned long)sample_getpid());
+   {
+      FILE *file = fopen(name, "wb");
+      assert(file && !fclose(file));
+   }
+   catalog = task_subtitle_discover(movie);
+   assert(catalog);
+   drain();
+   assert(task_subtitle_catalog_status(catalog) == 1);
+   assert(task_subtitle_catalog_count(catalog) == 64);
+   for (i = 0; i < 64; i++)
+   {
+      sprintf(expected, "subtitle-catalog-%lu.%02u.srt",
+            (unsigned long)sample_getpid(), i);
+      assert(!strcmp(task_subtitle_catalog_path(catalog, i), expected));
+   }
+   assert(!task_subtitle_catalog_path(catalog, 64));
+   task_subtitle_catalog_release(catalog);
+   assert(!remove(name));
+   for (i = 0; i < 70; i++)
+   {
+      sprintf(name, "subtitle-catalog-%lu.%02u.srt",
+            (unsigned long)sample_getpid(), i);
+      assert(!remove(name));
+   }
+   for (i = 0; i < 128; i++)
+   {
+      catalog = task_subtitle_discover(movie);
+      assert(catalog);
+      if (!threaded && (i & 1))
+         task_queue_check();
+      task_subtitle_catalog_release(catalog);
+   }
+   drain();
+   task_queue_deinit();
+   printf("PASS: bounded sorted sidecar discovery and cancellation (%s)\n",
+         threaded ? "threaded" : "regular");
+}
+
+static void track_selection(bool threaded)
+{
+   gfx_media_subtitle_t *owner;
+   char english[80], japanese[80];
+   unsigned i;
+   FILE *file;
+   sprintf(english, "subtitle-view-%lu.en.srt", (unsigned long)sample_getpid());
+   sprintf(japanese, "subtitle-view-%lu.ja.srt", (unsigned long)sample_getpid());
+   fixture("1\n00:00:00,000 --> 00:00:03,000\ndefault\n");
+   file = fopen(english, "wb");
+   assert(file);
+   fputs("1\n00:00:00,000 --> 00:00:03,000\nEnglish\n", file);
+   assert(!fclose(file));
+   file = fopen(japanese, "wb");
+   assert(file);
+   fputs("1\n00:00:00,000 --> 00:00:03,000\nJapanese\n", file);
+   assert(!fclose(file));
+   task_queue_init(threaded, NULL);
+   owner = gfx_media_subtitle_new();
+   assert(owner);
+   await(owner, &source_a, 1000000, "default");
+   gfx_media_subtitle_next(owner);
+   drain();
+   gfx_media_subtitle_update(owner, &source_a, media_path, 1000000, 0, true);
+   assert(gfx_media_subtitle_view(owner)->off);
+   assert(!*gfx_media_subtitle_view(owner)->text);
+   assert(gfx_media_subtitle_view(owner)->track_count == 3);
+   gfx_media_subtitle_next(owner);
+   await(owner, &source_a, 1000000, "English");
+   assert(!strcmp(gfx_media_subtitle_view(owner)->track, english));
+   gfx_media_subtitle_suspend(owner);
+   gfx_media_subtitle_update(owner, NULL, NULL, 0, 0, true);
+   assert(!*gfx_media_subtitle_view(owner)->text);
+   gfx_media_subtitle_update(owner, &source_b, media_path, 1000000, 0, true);
+   assert(!strcmp(gfx_media_subtitle_view(owner)->text, "English"));
+   gfx_media_subtitle_next(owner);
+   await(owner, &source_b, 1000000, "Japanese");
+   assert(!strcmp(gfx_media_subtitle_view(owner)->track, japanese));
+   /* Queued choices are collapsed into one final load. */
+   for (i = 0; i < 7; i++)
+      gfx_media_subtitle_next(owner);
+   await(owner, &source_b, 1000000, "English");
+   gfx_media_subtitle_next(owner);
+   gfx_media_subtitle_update(owner, &source_a, other_path, 1000000, 0, true);
+   drain();
+   gfx_media_subtitle_update(owner, &source_a, other_path, 1000000, 0, true);
+   assert(!*gfx_media_subtitle_view(owner)->text);
+   assert(!gfx_media_subtitle_view(owner)->track_count);
+   gfx_media_subtitle_free(owner);
+   drain();
+   task_queue_deinit();
+   assert(!remove(english) && !remove(japanese) && !remove(subtitle_path));
+   printf("PASS: subtitle choice, Off, context restoration and stale commands (%s)\n",
+         threaded ? "threaded" : "regular");
+}
+
 int main(void)
 {
    sprintf(media_path, "subtitle-view-%lu.mp4", (unsigned long)sample_getpid());
    sprintf(subtitle_path, "subtitle-view-%lu.srt", (unsigned long)sample_getpid());
    sprintf(other_path, "subtitle-view-%lu-missing.mp4", (unsigned long)sample_getpid());
+   catalog_discovery(false);
    lifecycle(false);
+   track_selection(false);
 #ifdef HAVE_THREADS
+   catalog_discovery(true);
    lifecycle(true);
+   track_selection(true);
    concurrent_mailbox();
 #endif
    return 0;
