@@ -13,6 +13,7 @@
  */
 
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 #include <compat/strl.h>
 #include <retro_miscellaneous.h>
@@ -35,12 +36,20 @@
  * a time */
 static retro_time_t task_bluetooth_scan_deadline;
 
+typedef struct
+{
+   struct bluetooth_hold *hold;
+   bool begun;
+} task_bluetooth_scan_t;
+
 static void task_bluetooth_scan_handler(retro_task_t *task)
 {
-   if (!task->state)
+   task_bluetooth_scan_t *scan = (task_bluetooth_scan_t*)task->state;
+
+   if (!scan->begun)
    {
-      driver_bluetooth_scan_begin();
-      task->state = (void*)(uintptr_t)1;
+      driver_bluetooth_scan_begin(scan->hold);
+      scan->begun = true;
       task_bluetooth_scan_deadline = cpu_features_get_time_usec()
          + BLUETOOTH_SCAN_WINDOW_US;
       task_queue_park(task, BLUETOOTH_SCAN_POLL_US);
@@ -51,7 +60,7 @@ static void task_bluetooth_scan_handler(retro_task_t *task)
     * BLUETOOTH_SCAN_POLL_US where the driver can say it has found all
     * it will.  A cancel wakes it and ends the window. */
    if (     !(task_get_flags(task) & RETRO_TASK_FLG_CANCELLED)
-         && !driver_bluetooth_scan_done())
+         && !driver_bluetooth_scan_done(scan->hold))
    {
       retro_time_t now = cpu_features_get_time_usec();
       /* the queue runs a parked task up to half a millisecond early:
@@ -66,7 +75,9 @@ static void task_bluetooth_scan_handler(retro_task_t *task)
       }
    }
 
-   driver_bluetooth_scan_end();
+   driver_bluetooth_scan_end(scan->hold);
+   driver_bluetooth_scan_release(scan->hold);
+   free(scan);
    task->state = NULL;
 
    task_set_progress(task, 100);
@@ -78,23 +89,34 @@ static void task_bluetooth_scan_handler(retro_task_t *task)
 bool task_push_bluetooth_scan(retro_task_callback_t cb)
 {
    retro_task_t   *task = task_init();
+   task_bluetooth_scan_t *scan;
 
    if (!task)
       return false;
+   if (!(scan = (task_bluetooth_scan_t*)calloc(1, sizeof(*scan))))
+   {
+      free(task);
+      return false;
+   }
 
    /* blocking means no other task can run while this one is running,
     * which is the default */
    task->type           = TASK_TYPE_BLOCKING;
-   task->state          = NULL;
+   task->state          = scan;
    task->handler        = task_bluetooth_scan_handler;
    task->callback       = cb;
    task->title          = strdup(msg_hash_to_str(
                            MSG_SCANNING_BLUETOOTH_DEVICES));
 
+   /* taken here, on the frontend's thread, where the driver is
+    * stopped: the scan's thread cannot find it half gone */
+   scan->hold = driver_bluetooth_scan_hold();
    if (task_queue_push(task))
       return true;
 
    /* Another blocking task is already active */
+   driver_bluetooth_scan_release(scan->hold);
+   free(scan);
    task_free_title(task);
    free(task);
    return false;

@@ -15,6 +15,9 @@
  */
 
 #include <stdint.h>
+#include <stdlib.h>
+
+#include <retro_atomic.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -58,6 +61,15 @@ const bluetooth_driver_t *bluetooth_drivers[] = {
 
 static bluetooth_driver_state_t bluetooth_driver_st = {0};
 
+/* The frontend's hold, and one for each scan running: whichever lets
+ * go last frees the driver. */
+struct bluetooth_hold
+{
+   const bluetooth_driver_t *drv;
+   void *data;
+   retro_atomic_int_t refs;
+};
+
 bluetooth_driver_state_t *bluetooth_state_get_ptr(void)
 {
    return &bluetooth_driver_st;
@@ -77,30 +89,39 @@ const char* config_get_bluetooth_driver_options(void)
    return char_list_new_special(STRING_LIST_BLUETOOTH_DRIVERS, NULL);
 }
 
-void driver_bluetooth_scan_begin(void)
+struct bluetooth_hold *driver_bluetooth_scan_hold(void)
 {
    bluetooth_driver_state_t *bt_st = &bluetooth_driver_st;
-   if (     bt_st
-        &&  bt_st->active
-        &&  bt_st->drv->scan_begin )
-      bt_st->drv->scan_begin(bt_st->data);
+   if (!bt_st->active || !bt_st->hold)
+      return NULL;
+   retro_atomic_inc_int(&bt_st->hold->refs);
+   return bt_st->hold;
 }
 
-void driver_bluetooth_scan_end(void)
+void driver_bluetooth_scan_release(struct bluetooth_hold *hold)
 {
-   bluetooth_driver_state_t *bt_st = &bluetooth_driver_st;
-   if (     bt_st
-        &&  bt_st->active
-        &&  bt_st->drv->scan_end )
-      bt_st->drv->scan_end(bt_st->data);
+   if (!hold || retro_atomic_fetch_sub_int(&hold->refs, 1) != 1)
+      return;
+   if (hold->drv->free)
+      hold->drv->free(hold->data);
+   free(hold);
 }
 
-bool driver_bluetooth_scan_done(void)
+void driver_bluetooth_scan_begin(struct bluetooth_hold *hold)
 {
-   bluetooth_driver_state_t *bt_st = &bluetooth_driver_st;
-   return      bt_st->active
-           &&  bt_st->drv->scan_done
-           &&  bt_st->drv->scan_done(bt_st->data);
+   if (hold && hold->drv->scan_begin)
+      hold->drv->scan_begin(hold->data);
+}
+
+void driver_bluetooth_scan_end(struct bluetooth_hold *hold)
+{
+   if (hold && hold->drv->scan_end)
+      hold->drv->scan_end(hold->data);
+}
+
+bool driver_bluetooth_scan_done(struct bluetooth_hold *hold)
+{
+   return hold && hold->drv->scan_done && hold->drv->scan_done(hold->data);
 }
 
 bool driver_bluetooth_adapter_generic(void)
@@ -198,12 +219,12 @@ bool bluetooth_driver_ctl(enum rarch_bluetooth_ctl_state state, void *data)
          }
          break;
       case RARCH_BLUETOOTH_CTL_DEINIT:
-        if (bt_st->data && bt_st->drv)
-        {
-           if (bt_st->drv->free)
-              bt_st->drv->free(bt_st->data);
-        }
+        if (bt_st->hold)
+           driver_bluetooth_scan_release(bt_st->hold);
+        else if (bt_st->data && bt_st->drv && bt_st->drv->free)
+           bt_st->drv->free(bt_st->data);
 
+        bt_st->hold   = NULL;
         bt_st->data   = NULL;
         bt_st->active = false;
         break;
@@ -219,10 +240,23 @@ bool bluetooth_driver_ctl(enum rarch_bluetooth_ctl_state state, void *data)
            bt_st->active = true;
            bt_st->data   = bt_st->drv->init();
 
+           if (bt_st->data && !(bt_st->hold = (struct bluetooth_hold*)
+                     calloc(1, sizeof(*bt_st->hold))))
+           {
+              if (bt_st->drv->free)
+                 bt_st->drv->free(bt_st->data);
+              bt_st->data = NULL;
+           }
            if (!bt_st->data)
            {
               RARCH_ERR("Failed to initialize bluetooth driver. Will continue without bluetooth.\n");
               bt_st->active = false;
+           }
+           else
+           {
+              bt_st->hold->drv  = bt_st->drv;
+              bt_st->hold->data = bt_st->data;
+              retro_atomic_int_init(&bt_st->hold->refs, 1);
            }
         }
         else

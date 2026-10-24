@@ -45,16 +45,35 @@ static long long mono_ms(void)
    return (long long)ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
 }
 
-void driver_bluetooth_scan_begin(void)
-{ begin_at = mono_ms(); retro_atomic_fetch_add_int(&begins, 1); }
-void driver_bluetooth_scan_end(void)
-{ end_at = mono_ms(); retro_atomic_fetch_add_int(&ends, 1); }
+/* the driver's hold: every call on it before its release */
+struct bluetooth_hold { int unused; };
+static struct bluetooth_hold the_hold;
+static retro_atomic_int_t holds    = RETRO_ATOMIC_INT_INITIALIZER(0);
+static retro_atomic_int_t releases = RETRO_ATOMIC_INT_INITIALIZER(0);
+static retro_atomic_int_t misuse   = RETRO_ATOMIC_INT_INITIALIZER(0);
+
+static void hold_used(struct bluetooth_hold *hold)
+{
+   if (     hold != &the_hold
+         || retro_atomic_load_acquire_int(&releases)
+            >= retro_atomic_load_acquire_int(&holds))
+      retro_atomic_fetch_add_int(&misuse, 1);
+}
+
+struct bluetooth_hold *driver_bluetooth_scan_hold(void)
+{ retro_atomic_fetch_add_int(&holds, 1); return &the_hold; }
+void driver_bluetooth_scan_release(struct bluetooth_hold *hold)
+{ hold_used(hold); retro_atomic_fetch_add_int(&releases, 1); }
+void driver_bluetooth_scan_begin(struct bluetooth_hold *hold)
+{ hold_used(hold); begin_at = mono_ms(); retro_atomic_fetch_add_int(&begins, 1); }
+void driver_bluetooth_scan_end(struct bluetooth_hold *hold)
+{ hold_used(hold); end_at = mono_ms(); retro_atomic_fetch_add_int(&ends, 1); }
 const char *msg_hash_to_str(enum msg_hash_enums msg) { return "msg"; }
 
 /* the driver says it has found all it will */
 static retro_atomic_int_t driver_done = RETRO_ATOMIC_INT_INITIALIZER(0);
-bool driver_bluetooth_scan_done(void)
-{ return retro_atomic_load_acquire_int(&driver_done) != 0; }
+bool driver_bluetooth_scan_done(struct bluetooth_hold *hold)
+{ hold_used(hold); return retro_atomic_load_acquire_int(&driver_done) != 0; }
 
 /* ---- the task under test's neighbours ---- */
 
@@ -149,6 +168,11 @@ int main(void)
    check(retro_atomic_load_acquire_int(&ends) == 2
          && end_at - begin_at < 280,
          "a driver done early ends the scan before the window");
+   check(   retro_atomic_load_acquire_int(&holds) == 2
+         && retro_atomic_load_acquire_int(&releases) == 2,
+         "each scan takes the driver once and lets it go once");
+   check(!retro_atomic_load_acquire_int(&misuse),
+         "the driver is used only while held, and only the hold taken");
 
    task_queue_deinit();
 

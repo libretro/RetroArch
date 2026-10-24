@@ -67,10 +67,14 @@ extern bluetooth_driver_t bluetooth_bluetoothctl;
 extern bluetooth_driver_t bluetooth_windows;
 extern bluetooth_driver_t bluetooth_bluez;
 
+struct bluetooth_hold;
+
 typedef struct
 {
    const bluetooth_driver_t *drv;
    void *data;
+   /* the driver started, as a scan holds it */
+   struct bluetooth_hold *hold;
    bool active;
 } bluetooth_driver_state_t;
 
@@ -95,9 +99,16 @@ const char* config_get_bluetooth_driver_options(void);
 #define BLUETOOTH_SCAN_POLL_US 100000
 #endif
 
-void driver_bluetooth_scan_begin(void);
-void driver_bluetooth_scan_end(void);
-bool driver_bluetooth_scan_done(void);
+/* A scan's hold on the driver, taken on the frontend's thread before
+ * the scan starts and let go, on any thread, once it has ended: a
+ * driver stopped during a scan is freed when the scan is done with it,
+ * not under it. NULL with no driver, and the calls below then do
+ * nothing. */
+struct bluetooth_hold *driver_bluetooth_scan_hold(void);
+void driver_bluetooth_scan_release(struct bluetooth_hold *hold);
+void driver_bluetooth_scan_begin(struct bluetooth_hold *hold);
+void driver_bluetooth_scan_end(struct bluetooth_hold *hold);
+bool driver_bluetooth_scan_done(struct bluetooth_hold *hold);
 bool driver_bluetooth_adapter_generic(void);
 
 void driver_bluetooth_get_devices(struct string_list *list);
