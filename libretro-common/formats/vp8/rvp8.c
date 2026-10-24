@@ -3790,167 +3790,127 @@ uint32_t *rvp8_decode(const uint8_t *data, size_t len,
 struct rvp8_video
 {
    rvp8_dec s;
-   int      w, h, mbw, mbh, ys, uvs;
-   int      have_refs;
-   /* three reference frames (last, golden, altref), each a full padded
-    * plane set matching the decoder's yb/ub/vb geometry. All nine planes
-    * are carved out of ref_arena; the pointers are views into it. */
-   uint8_t *ref_arena;
-   uint8_t *ry[3], *ru[3], *rv[3];
-   size_t   ysz, uvsz;
+   uint8_t *arena[4];
+   uint8_t *ry[4], *ru[4], *rv[4];
+   size_t arena_len[4];
+   unsigned refs[3];
+   int w, h, mbw, mbh, ys, uvs;
+   int have_refs;
 };
-
-static void rvp8_video_free_refs(rvp8_video *v)
-{
-   int i;
-   free(v->ref_arena);
-   v->ref_arena = NULL;
-   for (i = 0; i < 3; i++)
-      v->ry[i] = v->ru[i] = v->rv[i] = NULL;
-   v->have_refs = 0;
-}
 
 rvp8_video *rvp8_video_open(void)
 {
-   rvp8_video *v = (rvp8_video*)calloc(1, sizeof(*v));
-   return v;
+   return (rvp8_video*)calloc(1, sizeof(rvp8_video));
 }
 
 void rvp8_video_close(rvp8_video *v)
 {
+   unsigned i;
    if (!v) return;
-   rvp8_video_free_refs(v);
-   /* Free the decoder's per-frame scratch arena from the last decode. */
-   free(v->s.arena);
+   for (i = 0; i < 4; i++)
+      free(v->arena[i]);
    free(v->s.mb_info);
    free(v);
 }
 
-/* Allocate the reference planes once the dimensions are known: nine
- * planes out of one block, each starting on a 64-byte boundary. */
-static int rvp8_video_alloc_refs(rvp8_video *v)
-{
-   int    i;
-   size_t cur = 0;
-   size_t ysz  = RVP8_ARENA_NEXT(0, (size_t)v->ys  * v->mbh * 16);
-   size_t uvsz = RVP8_ARENA_NEXT(0, (size_t)v->uvs * v->mbh * 8);
-   v->ysz  = (size_t)v->ys  * v->mbh * 16;
-   v->uvsz = (size_t)v->uvs * v->mbh * 8;
-   if (!(v->ref_arena = (uint8_t*)malloc(3 * (ysz + 2 * uvsz))))
-      return -1;
-   for (i = 0; i < 3; i++)
-   {
-      v->ry[i] = v->ref_arena + cur; cur += ysz;
-      v->ru[i] = v->ref_arena + cur; cur += uvsz;
-      v->rv[i] = v->ref_arena + cur; cur += uvsz;
-   }
-   return 0;
-}
-
-/* Decode one frame (key or inter). On success the decoded YUV is in
- * v->s.yb/ub/vb and also promoted into the reference frames per the
- * frame's refresh flags. Returns 0 on success. */
+/* Reference slots alias completed arenas; the fourth arena receives the
+ * next picture without overwriting any reference still used to decode it. */
 int rvp8_video_decode(rvp8_video *v, const uint8_t *data, size_t len)
 {
-   int kf;
+   void *mb_info;
+   unsigned work, i;
+   int kf, ret;
    if (len < 3) return -1;
    kf = !((uint32_t)data[0] & 1);
+   if (!kf && !v->have_refs)
+      return -1;
+   for (work = 0; work < 4; work++)
+      if (!v->have_refs || (work != v->refs[0]
+               && work != v->refs[1] && work != v->refs[2]))
+         break;
+   if (work == 4) return -1;
 
    if (kf)
    {
-      /* Key frame: plain decode, then all references := this frame. The
-       * decoder state must reset fully (a key frame carries no inter
-       * context), so clear the inter flag before begin. Free the mbinfo
-       * array too — begin's reset would otherwise drop the pointer. */
       v->s.is_inter = 0;
       free(v->s.mb_info);
       v->s.mb_info = NULL;
-      if (rvp8_begin(data, len, &v->s) != 0)
-         return -1;
-      while (rvp8_rows(&v->s, v->s.mbh) > 0)
-         ;
-      rvp8_filter_rows(&v->s, 0, v->s.mbh);
-
-      /* A key frame with a new geometry retires the old reference set. */
-      if (v->have_refs && (v->mbw != v->s.mbw || v->mbh != v->s.mbh))
-         rvp8_video_free_refs(v);
-      v->w = v->s.w; v->h = v->s.h; v->mbw = v->s.mbw; v->mbh = v->s.mbh;
-      v->ys = v->s.ys; v->uvs = v->s.uvs;
-      if (!v->have_refs)
-      {
-         if (rvp8_video_alloc_refs(v) != 0) return -1;
-         v->have_refs = 1;
-      }
-      {
-         int i;
-         for (i = 0; i < 3; i++)
-         {
-            memcpy(v->ry[i], v->s.yb, v->ysz);
-            memcpy(v->ru[i], v->s.ub, v->uvsz);
-            memcpy(v->rv[i], v->s.vb, v->uvsz);
-         }
-      }
-      return 0;
    }
-
-   /* Inter frame: set up references + inherited context, decode, then
-    * update references per refresh/copy flags. */
-   if (!v->have_refs)
-      return -1;   /* inter before any key frame */
-
-   /* Prime the decoder struct with what begin() must preserve. */
-   v->s.is_inter = 1;
-   v->s.w = v->w; v->s.h = v->h;
-   v->s.ref_y[0] = v->ry[0]; v->s.ref_u[0] = v->ru[0]; v->s.ref_v[0] = v->rv[0];
-   v->s.ref_y[1] = v->ry[1]; v->s.ref_u[1] = v->ru[1]; v->s.ref_v[1] = v->rv[1];
-   v->s.ref_y[2] = v->ry[2]; v->s.ref_u[2] = v->ru[2]; v->s.ref_v[2] = v->rv[2];
-   v->s.ref_ys[0] = v->s.ref_ys[1] = v->s.ref_ys[2] = v->ys;
-   v->s.ref_uvs[0] = v->s.ref_uvs[1] = v->s.ref_uvs[2] = v->uvs;
-   /* cprob/mvc/ymode/uvmode already hold the inherited context from the
-    * previous frame (begin preserves them for inter). Initialise the MV
-    * and intra-mode probs on the very first inter frame from defaults. */
-   if (!v->s.mvc[0][0])
+   else
    {
-      memcpy(v->s.mvc[0], vp8_default_mv_context[0], MVPCOUNT);
-      memcpy(v->s.mvc[1], vp8_default_mv_context[1], MVPCOUNT);
+      v->s.is_inter = 1;
+      v->s.w = v->w; v->s.h = v->h;
+      for (i = 0; i < 3; i++)
+      {
+         unsigned ref = v->refs[i];
+         v->s.ref_y[i] = v->ry[ref];
+         v->s.ref_u[i] = v->ru[ref];
+         v->s.ref_v[i] = v->rv[ref];
+         v->s.ref_ys[i] = v->ys;
+         v->s.ref_uvs[i] = v->uvs;
+      }
+      if (!v->s.mvc[0][0])
+      {
+         memcpy(v->s.mvc[0], vp8_default_mv_context[0], MVPCOUNT);
+         memcpy(v->s.mvc[1], vp8_default_mv_context[1], MVPCOUNT);
+      }
+      if (!v->s.ymode_prob[0])
+      {
+         static const uint8_t dy[4] = {112, 86, 140, 37};
+         static const uint8_t du[3] = {162, 101, 204};
+         memcpy(v->s.ymode_prob, dy, 4);
+         memcpy(v->s.uvmode_prob, du, 3);
+      }
    }
-   if (!v->s.ymode_prob[0])
+   v->s.arena = v->arena[work];
+   v->s.arena_len = v->arena_len[work];
+   mb_info = v->s.mb_info;
+   ret = rvp8_begin(data, len, &v->s);
+   v->arena[work] = v->s.arena;
+   v->arena_len[work] = v->s.arena_len;
+   if (ret != 0)
    {
-      static const uint8_t dy[4] = {112, 86, 140, 37};
-      static const uint8_t du[3] = {162, 101, 204};
-      memcpy(v->s.ymode_prob, dy, 4);
-      memcpy(v->s.uvmode_prob, du, 3);
-   }
-
-   if (rvp8_begin(data, len, &v->s) != 0)
+      if (!v->s.mb_info) free(mb_info);
       return -1;
+   }
+   v->ry[work] = v->s.yb;
+   v->ru[work] = v->s.ub;
+   v->rv[work] = v->s.vb;
    while (rvp8_rows(&v->s, v->s.mbh) > 0)
       ;
    rvp8_filter_rows(&v->s, 0, v->s.mbh);
 
-   /* Update references. copy_golden/altref: 0=no change,1=from last,2=from
-    * the other; refresh_*: replace with the just-decoded frame. Order per
-    * libvpx: copies use the OLD last frame, then refreshes apply. */
+   if (kf)
    {
-      /* Reference updates in libvpx order (onyxd_if.c): copy_altref first
-       * (so a following copy_golden==2 sees the updated altref), then
-       * copy_golden, then the refreshes from the newly decoded frame.
-       * Copies read the pre-refresh buffers. */
-      if (!v->s.refresh_altref && v->s.copy_altref == 1)
-      { memcpy(v->ry[2], v->ry[0], v->ysz); memcpy(v->ru[2], v->ru[0], v->uvsz); memcpy(v->rv[2], v->rv[0], v->uvsz); }
-      else if (!v->s.refresh_altref && v->s.copy_altref == 2)
-      { memcpy(v->ry[2], v->ry[1], v->ysz); memcpy(v->ru[2], v->ru[1], v->uvsz); memcpy(v->rv[2], v->rv[1], v->uvsz); }
-      if (!v->s.refresh_golden && v->s.copy_golden == 1)
-      { memcpy(v->ry[1], v->ry[0], v->ysz); memcpy(v->ru[1], v->ru[0], v->uvsz); memcpy(v->rv[1], v->rv[0], v->uvsz); }
-      else if (!v->s.refresh_golden && v->s.copy_golden == 2)
-      { memcpy(v->ry[1], v->ry[2], v->ysz); memcpy(v->ru[1], v->ru[2], v->uvsz); memcpy(v->rv[1], v->rv[2], v->uvsz); }
-      if (v->s.refresh_golden)
-      { memcpy(v->ry[1], v->s.yb, v->ysz); memcpy(v->ru[1], v->s.ub, v->uvsz); memcpy(v->rv[1], v->s.vb, v->uvsz); }
-      if (v->s.refresh_altref)
-      { memcpy(v->ry[2], v->s.yb, v->ysz); memcpy(v->ru[2], v->s.ub, v->uvsz); memcpy(v->rv[2], v->s.vb, v->uvsz); }
-      if (v->s.refresh_last)
-      { memcpy(v->ry[0], v->s.yb, v->ysz); memcpy(v->ru[0], v->s.ub, v->uvsz); memcpy(v->rv[0], v->s.vb, v->uvsz); }
+      if (v->have_refs && (v->mbw != v->s.mbw || v->mbh != v->s.mbh))
+         for (i = 0; i < 4; i++)
+            if (i != work)
+            {
+               free(v->arena[i]);
+               v->arena[i] = NULL;
+               v->arena_len[i] = 0;
+               v->ry[i] = v->ru[i] = v->rv[i] = NULL;
+            }
+      v->w = v->s.w; v->h = v->s.h;
+      v->mbw = v->s.mbw; v->mbh = v->s.mbh;
+      v->ys = v->s.ys; v->uvs = v->s.uvs;
+      v->refs[0] = v->refs[1] = v->refs[2] = work;
+      v->have_refs = 1;
+      return 0;
    }
+
+   /* Altref copies precede golden copies; refreshes follow both. */
+   if (!v->s.refresh_altref && v->s.copy_altref == 1)
+      v->refs[2] = v->refs[0];
+   else if (!v->s.refresh_altref && v->s.copy_altref == 2)
+      v->refs[2] = v->refs[1];
+   if (!v->s.refresh_golden && v->s.copy_golden == 1)
+      v->refs[1] = v->refs[0];
+   else if (!v->s.refresh_golden && v->s.copy_golden == 2)
+      v->refs[1] = v->refs[2];
+   if (v->s.refresh_golden) v->refs[1] = work;
+   if (v->s.refresh_altref) v->refs[2] = work;
+   if (v->s.refresh_last) v->refs[0] = work;
    return 0;
 }
 
