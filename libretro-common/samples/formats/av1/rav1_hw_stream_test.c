@@ -341,6 +341,40 @@ static void test_errors(void)
    rav1_hw_stream_close(&stream);
 }
 
+static void test_restart(void)
+{
+   video_hw_frame_t frame, held;
+   unsigned before, i;
+   CHECK(!rav1_hw_stream_restart(NULL));
+   CHECK(rav1_hw_stream_init(&stream, &sequence));
+   before = opens;
+   make_frame(1); expected = packet;
+   CHECK(!rav1_hw_stream_begin(&stream, packet, packet_size));
+   CHECK(rav1_hw_stream_step(&stream, &held, false) == RAV1_HW_STREAM_FRAME);
+   CHECK(held.image && stream.session.state.have_previous);
+   for (i = 0; i < 4; i++)
+   {
+      CHECK(rav1_hw_stream_restart(&stream));
+      CHECK(opens == before && !stream.packet && !stream.session.phase
+            && !stream.session.state.have_previous && !stream.hdr.present);
+      CHECK(held.image && held.owner == &factory);
+      CHECK(!rav1_hw_stream_begin(&stream, packet, packet_size));
+      decode_busy = 1;
+      CHECK(rav1_hw_stream_step(&stream, &frame, false) == RAV1_HW_STREAM_BUSY);
+      CHECK(stream.session.phase);
+      decode_busy = 0;
+   }
+   CHECK(rav1_hw_stream_restart(&stream));
+   stream.backend.packet_decoder = true;
+   CHECK(!rav1_hw_stream_restart(&stream));
+   stream.backend.packet_decoder = false;
+   stream.session.broken = 1;
+   CHECK(!rav1_hw_stream_restart(&stream));
+   rav1_hw_stream_close(&stream);
+   CHECK(held.image);
+   video_hw_frame_abandon(&held);
+}
+
 static void test_hdr(void)
 {
    static const uint8_t metadata[] = {42, 6, 1, 3, 232, 1, 144, 128};
@@ -384,6 +418,7 @@ int main(void)
    test_sequences();
    test_initial_sequence();
    test_decode_failure();
+   test_restart();
    test_hdr();
    test_errors();
    CHECK(opens == closes);

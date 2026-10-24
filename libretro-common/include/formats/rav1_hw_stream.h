@@ -95,6 +95,32 @@ static INLINE void rav1_hw_stream_close(rav1_hw_stream_t *s)
    memset(s, 0, sizeof(*s));
 }
 
+/* Raw backends accept a new reference chain without retiring GPU leases.
+ * Opaque packet decoders require a platform flush instead. */
+static INLINE bool rav1_hw_stream_restart(rav1_hw_stream_t *s)
+{
+   rav1_hw_ops_t ops;
+   unsigned slots;
+   if (!s || !s->opened || s->error || s->session.broken
+         || s->backend.packet_decoder)
+      return false;
+   ops = s->session.ops;
+   slots = s->session.slots;
+   rav1_hw_session_cancel(&s->session);
+   if (!rav1_hw_session_init_mode(&s->session, &s->sequence, &ops, slots, false))
+   {
+      s->session.ops = ops;
+      s->error = -1;
+      return false;
+   }
+   s->packet = NULL;
+   s->size = s->offset = s->next = 0;
+   s->submitted = s->started = 0;
+   memset(&s->obu, 0, sizeof(s->obu));
+   memset(&s->hdr, 0, sizeof(s->hdr));
+   return true;
+}
+
 /* 0 borrowed, 1 previous packet active, negative invalid/unsupported.
  * Keep input immutable/resident until END, error or close. No packet copy. */
 static INLINE int rav1_hw_stream_begin(rav1_hw_stream_t *s,

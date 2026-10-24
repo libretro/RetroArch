@@ -2052,7 +2052,15 @@ void rmp4_video_stream_rewind(rmp4_video_stream_t *s)
    s->wait_key = 0;
    /* The stream restarts at a key frame, so a fresh decoder (empty
     * reference chain, default probabilities) is the correct state. */
-   if (s->h264 && rh264_video_restart_hw(&s->h264))
+#ifdef HAVE_RAV1
+   if (s->want_hw && s->av1 && rav1_hw_stream_restart(s->av1))
+   {
+      s->av1->hdr = s->av1_hdr_initial_set
+         ? s->av1_hdr_initial : s->av1_hdr_seed;
+      return;
+   }
+#endif
+   if (s->want_hw && s->h264 && rh264_video_restart_hw(&s->h264))
       return;
    rmp4_video_stream_close_decoder(s);
    rmp4_video_stream_open_decoder(s);
