@@ -123,7 +123,7 @@ static uint64_t media_modal_present_count(void)
 #ifdef HAVE_THREADS
    return video_thread_swap_count();
 #else
-   return 0;
+   return video_state_get_ptr()->swap_count;
 #endif
 }
 
