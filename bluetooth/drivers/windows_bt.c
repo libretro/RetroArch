@@ -50,6 +50,8 @@
 #include <rthreads/rthreads.h>
 
 #include "../bluetooth_driver.h"
+#include "../../msg_hash.h"
+#include "../../runloop.h"
 #include "../../verbosity.h"
 
 #define WINBT_MAX_DEVICES 32
@@ -317,6 +319,17 @@ static void winbt_scan_thread(void *data)
    winbt_unref(bt);
 }
 
+/* on screen, from the pairing's thread: the queue takes it across */
+static void winbt_notify(enum msg_hash_enums id, const char *name)
+{
+   char msg[256];
+   size_t len = (size_t)snprintf(msg, sizeof(msg), msg_hash_to_str(id), name);
+   if (len >= sizeof(msg))
+      len = sizeof(msg) - 1;
+   runloop_msg_queue_push(msg, len, 1, 180, true, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+}
+
 static void winbt_action_thread(void *data)
 {
    winbt_t *bt              = (winbt_t*)data;
@@ -351,6 +364,7 @@ static void winbt_action_thread(void *data)
                sizeof(name), NULL, NULL);
          name[sizeof(name) - 1] = '\0';
       }
+      winbt_notify(MSG_BLUETOOTH_PAIRING, name);
       if (winbt_is_wii(d))
       {
          BLUETOOTH_RADIO_INFO info;
@@ -376,10 +390,17 @@ static void winbt_action_thread(void *data)
          err = bt->service(radio, d, &winbt_hid_service,
                BLUETOOTH_SERVICE_ENABLE);
       if (err == ERROR_SUCCESS)
+      {
          RARCH_LOG("[Bluetooth] \"%s\" paired.\n", name);
+         winbt_notify(MSG_BLUETOOTH_PAIRED, name);
+      }
       else
+      {
          RARCH_WARN("[Bluetooth] \"%s\" could not be paired (error %lu).\n",
                name, (unsigned long)err);
+         winbt_notify(winbt_is_wii(d) ? MSG_BLUETOOTH_PAIRING_FAILED_WII
+               : MSG_BLUETOOTH_PAIRING_FAILED, name);
+      }
    }
    CloseHandle(radio);
    retro_atomic_store_release_int(&bt->action_busy, 0);

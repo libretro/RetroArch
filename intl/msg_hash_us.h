@@ -33349,6 +33349,22 @@ MSG_HASH(
    "This computer's Bluetooth adapter runs on Windows' generic driver, which often finds no devices. Install the Bluetooth driver from the computer's or motherboard's maker."
    )
 MSG_HASH(
+   MSG_BLUETOOTH_PAIRING,
+   "Pairing \"%s\"..."
+   )
+MSG_HASH(
+   MSG_BLUETOOTH_PAIRED,
+   "\"%s\" paired."
+   )
+MSG_HASH(
+   MSG_BLUETOOTH_PAIRING_FAILED,
+   "\"%s\" could not be paired."
+   )
+MSG_HASH(
+   MSG_BLUETOOTH_PAIRING_FAILED_WII,
+   "\"%s\" could not be paired. Press its sync button, then select it again while its lights blink."
+   )
+MSG_HASH(
    MSG_BLUETOOTH_PAIRING_REMOVED,
    "Pairing removed. Restart RetroArch to connect/pair again."
    )
