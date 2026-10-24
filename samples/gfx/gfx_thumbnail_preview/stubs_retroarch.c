@@ -22,6 +22,8 @@
 
 harness_probe_t hp;
 
+int menu_driver_media_startup_token(void) { return 0; }
+
 /* ---- video driver ---- */
 bool video_driver_texture_load(void *data, unsigned filter_type,
       uintptr_t *id)
