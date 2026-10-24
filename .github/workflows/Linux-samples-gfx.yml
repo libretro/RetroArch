@@ -2717,6 +2717,15 @@ jobs:
           AUDIO_BYTES_PER_TICK=65536 FRAMES=120 timeout 300 \
              ./gfx_thumbnail_preview_test fixtures/*.mp4 fixtures/anim_lossless.webp
           echo "[pass] gfx_thumbnail_preview_test (ASan)"
+          mkdir -p fixtures/packet_span
+          ffmpeg -v error -y -f lavfi \
+             -i 'testsrc2=size=1280x720:rate=1,noise=alls=100:allf=t+u:all_seed=10' \
+             -t 3 -c:v libx264 -preset ultrafast -qp 0 -pix_fmt yuv420p \
+             -moov_size 16777216 fixtures/packet_span/large.mp4
+          for bin in gfx_thumbnail_preview_test gfx_thumbnail_preview_test_threaded; do
+             ASAN_OPTIONS=detect_leaks=1 MP4_PACKET_SPAN=1 timeout 120 \
+                ./$bin fixtures/packet_span/large.mp4
+          done
           # HDR previews: with HDR_OUTPUT the stub driver keeps half
           # floats and shows them as linear scRGB, and the PQ-tagged
           # fixture must animate as them on the PQ EOTF of its grey; its

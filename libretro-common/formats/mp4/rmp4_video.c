@@ -1920,6 +1920,12 @@ size_t rmp4_video_stream_consumed(rmp4_video_stream_t *s)
    return s ? (s->pending ? s->pending_floor : rmp4_consumed(s->demux)) : 0;
 }
 
+void rmp4_video_stream_read_span(const rmp4_video_stream_t *s,
+      size_t *lo, size_t *hi)
+{
+   rmp4_read_span(s && !s->pending ? s->demux : NULL, lo, hi);
+}
+
 int64_t rmp4_video_stream_duration_ns(rmp4_video_stream_t *s)
 {
    return (s && s->demux) ? rmp4_duration_ns(s->demux) : 0;

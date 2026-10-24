@@ -494,10 +494,8 @@ bool gfx_anim_preview_feed(gfx_anim_preview_t *p)
       if (span_hi > span_lo && span_hi > anchor && span_hi - anchor > ahead)
       {
          ahead  = span_hi - anchor;
-         /* A WebM BlockGroup may exceed ordinary lookahead. Admit its
-          * exact metadata-declared span over successive bounded reads,
-          * never as an unpaced burst on the decode worker. */
-         budget = p->type == IMAGE_TYPE_WEBM
+         /* Movie packets exceeding lookahead still use bounded reads. */
+         budget = (p->type == IMAGE_TYPE_WEBM || p->type == IMAGE_TYPE_MP4)
             ? GFX_ANIM_PREVIEW_FEED_BUDGET : 0;
       }
       /* The paced budget is sized for a decoder that takes one sample

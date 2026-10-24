@@ -136,9 +136,9 @@
  *   (media_floor / consumed), so all four can be windowed.  APNG and
  *   WEBP index frames and can also name the next frame's byte span
  *   (next_span) for a feeder; WEBM names a blocked complete element,
- *   while MP4 reports 0/0 there. Only
- *   WEBM and MP4 can be adopted from a still whose read is still in
- *   flight (detach_anim_stream).  complete_scan() is WEBM only because
+ *   and MP4 names its next packet. Only WEBM and MP4 can be adopted
+ *   from a still whose read is still in flight (detach_anim_stream).
+ *   complete_scan() is WEBM only because
  *   only its timestamp pre-scan can be truncated by the wall.
  *
  * Deliberately not dispatched here:
@@ -945,6 +945,11 @@ void image_transfer_anim_stream_next_span(void *stream,
       *hi = 0;
    switch (type)
    {
+      case IMAGE_TYPE_MP4:
+#ifdef HAVE_RMP4
+         rmp4_video_stream_read_span((rmp4_video_stream_t*)stream, lo, hi);
+#endif
+         break;
       case IMAGE_TYPE_WEBM:
 #ifdef HAVE_RWEBM
          rwebm_video_stream_read_span((rwebm_video_stream_t*)stream, lo, hi);

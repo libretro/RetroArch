@@ -1450,6 +1450,32 @@ void rmp4_rewind(rmp4_t *m)
    m->media_max_end = have ? next : 0;
 }
 
+void rmp4_read_span(const rmp4_t *m, size_t *lo, size_t *hi)
+{
+   uint64_t offset = 0;
+   uint32_t size = 0;
+   int i, found = 0;
+   if (lo) *lo = 0;
+   if (hi) *hi = 0;
+   if (!m) return;
+   for (i = 0; i < m->num_tracks; i++)
+   {
+      const rmp4_itrack *t = &m->trk[i];
+      uint32_t c = t->cursor;
+      if (c < t->count && (!found || t->off[c] < offset))
+      {
+         offset = t->off[c];
+         size = t->size[c];
+         found = 1;
+      }
+   }
+   if (!found || offset > (uint64_t)m->len
+         || size > (uint64_t)m->len - offset)
+      return;
+   if (lo) *lo = (size_t)offset;
+   if (hi) *hi = (size_t)offset + size;
+}
+
 int rmp4_read_packet(rmp4_t *m, rmp4_packet *pkt)
 {
    int      i, best = -1;

@@ -1203,6 +1203,52 @@ static void lane_cpu_retirement(const char *path)
    gfx_media_cpu_reap();
 }
 
+static void lane_mp4_packet_span(const char *path)
+{
+   gfx_anim_preview_t *p = gfx_anim_preview_open(path, -1);
+   size_t lo = 0, hi = 0;
+   unsigned polls = 0;
+   bool native = false;
+   const uint32_t *pixels;
+   check("MP4 packet span", "windowed MP4 session opens",
+         p && p->windowed && p->type == IMAGE_TYPE_MP4);
+   if (!p) return;
+   image_transfer_anim_stream_next_span(p->stream, p->type, &lo, &hi);
+   check("MP4 packet span", "sample metadata names a large distant packet",
+         lo > GFX_ANIM_PREVIEW_WINDOW_KEEP
+         && hi > lo && hi - lo > GFX_ANIM_PREVIEW_FEED_BUDGET);
+   if (!(lo > GFX_ANIM_PREVIEW_WINDOW_KEEP && hi > lo
+            && hi - lo > GFX_ANIM_PREVIEW_FEED_BUDGET))
+   {
+      gfx_anim_preview_close(p);
+      return;
+   }
+   data_transfer_window_rewind(p->dt);
+   data_transfer_window_skip(p->dt, lo);
+   p->feed_tell = p->feed_res_hi = lo;
+   p->feed_ahead = 1;
+   p->feed_back = 0;
+   while (p->feed_res_hi < hi && polls < 64)
+   {
+      size_t before = p->feed_res_hi;
+      bool fed = gfx_anim_preview_feed(p);
+      check("MP4 packet span", "packet admission advances within the I/O budget",
+            fed && p->feed_res_hi > before
+            && p->feed_res_hi - before <= GFX_ANIM_PREVIEW_FEED_BUDGET
+            && p->feed_res_hi <= hi);
+      polls++;
+      if (!fed || p->feed_res_hi <= before) break;
+   }
+   printf("MP4 packet span: offset=%lu bytes=%lu polls=%u admitted=%lu\n",
+         (unsigned long)lo, (unsigned long)(hi - lo), polls,
+         (unsigned long)(p->feed_res_hi - lo));
+   check("MP4 packet span", "complete packet admitted over multiple polls",
+         polls > 1 && p->feed_res_hi == hi);
+   pixels = gfx_anim_preview_next(p, NULL, &native);
+   check("MP4 packet span", "the admitted packet decodes its picture", pixels != NULL);
+   gfx_anim_preview_close(p);
+}
+
 int main(int argc, char **argv)
 {
    int i;
@@ -1210,6 +1256,11 @@ int main(int argc, char **argv)
    {
       printf("usage: %s <video> [more...]\n", argv[0]);
       return 2;
+   }
+   if (getenv("MP4_PACKET_SPAN"))
+   {
+      lane_mp4_packet_span(argv[1]);
+      return fails ? 1 : 0;
    }
    if (getenv("FRONTEND_TIMELINE"))
    {

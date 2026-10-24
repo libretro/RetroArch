@@ -145,6 +145,9 @@ int64_t rmp4_duration_ns(const rmp4_t *mp4);
 
 int rmp4_read_packet(rmp4_t *mp4, rmp4_packet *pkt);
 
+/* Next packet byte range from sample tables; reads no media bytes. */
+void rmp4_read_span(const rmp4_t *mp4, size_t *lo, size_t *hi);
+
 /* Open against a partially-read buffer: only the first 'avail' bytes
  * are valid (the rest may be uninitialised) and are never read.  Box
  * bodies are hopped arithmetically, so a trailing moov (a file muxed

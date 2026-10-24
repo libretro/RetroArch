@@ -205,8 +205,20 @@ static int read_all(rmp4_t *m, const buf_t *w, const char *name,
 {
    rmp4_packet pkt;
    int n = 0, r;
-   while ((r = rmp4_read_packet(m, &pkt)) == 1)
+   for (;;)
    {
+      size_t lo = 17, hi = 19;
+      size_t again_lo = 23, again_hi = 29;
+      rmp4_read_span(m, &lo, &hi);
+      rmp4_read_span(m, &again_lo, &again_hi);
+      CHECK(lo == again_lo && hi == again_hi,
+            "%s: range query leaves the cursor intact", name);
+      r = rmp4_read_packet(m, &pkt);
+      if (r != 1)
+         break;
+      if (hi > lo)
+         CHECK(lo == (size_t)(pkt.data - w->b) && hi - lo == pkt.size,
+               "%s: predicted range matches packet %d", name, n);
       CHECK(pkt.data >= w->b && pkt.size <= w->n
             && (size_t)(pkt.data - w->b) <= w->n - pkt.size,
             "%s: packet %d points outside the file", name, n);
@@ -239,8 +251,16 @@ static void test_sample_cursor(rmp4_t *m, const buf_t *w, size_t payload)
    CHECK(rmp4_select_track_sample(m, 0, 1), "sample cursor: select second");
    CHECK(rmp4_consumed(m) == payload + 4,
          "sample cursor: feeder anchor follows selected sample");
+   rmp4_read_span(m, &begin, &end);
+   CHECK(begin == payload + 4 && end == payload + 8,
+         "next packet range: metadata without resident media");
    CHECK(rmp4_read_packet(m, &pkt) == RMP4_READ_AGAIN,
          "sample cursor: read respects byte wall");
+   rmp4_read_span(m, NULL, &end);
+   rmp4_read_span(m, &begin, NULL);
+   CHECK(begin == payload + 4 && end == payload + 8
+         && rmp4_consumed(m) == payload + 4,
+         "next packet range: retry and nullable outputs preserve cursor");
    CHECK(!rmp4_select_track_sample(m, -1, 0)
          && !rmp4_select_track_sample(m, 0, 2)
          && rmp4_consumed(m) == payload + 4,
@@ -250,10 +270,33 @@ static void test_sample_cursor(rmp4_t *m, const buf_t *w, size_t payload)
          && pkt.data == w->b + payload + 4 && pkt.size == 4,
          "sample cursor: retry reads the selected sample");
    CHECK(rmp4_read_packet(m, &pkt) == 0, "sample cursor: selected track ends");
+   rmp4_read_span(m, &begin, &end);
+   CHECK(!begin && !end, "next packet range: EOF clears outputs");
    rmp4_rewind(m);
    CHECK(rmp4_consumed(m) == payload
          && rmp4_read_packet(m, &pkt) == 1 && pkt.data == w->b + payload,
          "sample cursor: rewind restores beginning");
+   rmp4_read_span(m, &begin, &end);
+   CHECK(begin == payload + 4 && end == payload + 8,
+         "next packet range: follows rewound cursor");
+#ifdef RMP4_TEST_ALLOCATOR
+   {
+      rmp4_itrack *track = &m->trk[0];
+      uint32_t cursor = track->cursor;
+      uint64_t offset = track->off[cursor];
+      uint32_t size = track->size[cursor];
+      track->off[cursor] = (uint64_t)m->len + 1;
+      rmp4_read_span(m, &begin, &end);
+      CHECK(!begin && !end, "next packet range: offset beyond file refused");
+      track->off[cursor] = offset;
+      track->size[cursor] = UINT32_MAX;
+      rmp4_read_span(m, &begin, &end);
+      CHECK(!begin && !end, "next packet range: end beyond file refused");
+      track->size[cursor] = size;
+   }
+#endif
+   rmp4_read_span(NULL, &begin, &end);
+   CHECK(!begin && !end, "next packet range: null stream clears outputs");
 }
 
 #ifdef RMP4_TEST_ALLOCATOR
@@ -342,17 +385,29 @@ static void test_track_selection(void)
    }
    CHECK(rmp4_track_sample_key(m, 0, 1) == 0,
          "track selection: non-key metadata");
-   CHECK(rmp4_select_track_sample(m, 0, 1)
-         && rmp4_read_packet(m, &packet) == 1
+   CHECK(rmp4_select_track_sample(m, 0, 1), "track selection: select second sample");
+   rmp4_read_span(m, &begin, &end);
+   CHECK(begin == 4 && end == 6,
+         "next packet range: selected track parks the other cursor");
+   CHECK(rmp4_read_packet(m, &packet) == 1
          && packet.track == 0 && packet.data == bytes + 4
          && rmp4_read_packet(m, &packet) == 0,
          "track selection: other track parked at end");
    rmp4_rewind(m);
    for (i = 0; i < 4; i++)
+   {
+      rmp4_read_span(m, &begin, &end);
+      CHECK(begin == (size_t)i * 2 && end == (size_t)i * 2 + 2,
+            "next packet range: interleaved tracks follow file order");
       CHECK(rmp4_read_packet(m, &packet) == 1
             && packet.track == (i & 1) && packet.data == bytes + i * 2,
             "track selection: rewind restores both tracks");
+   }
+   rmp4_read_span(m, &begin, &end);
+   CHECK(!begin && !end, "next packet range: all tracks exhausted");
    rmp4_rewind(m);
+   begin = 17;
+   end = 19;
    offsets0[1] = sizeof(bytes) - 1;
    CHECK(!rmp4_track_sample_span(m, 0, 1, &begin, &end)
          && begin == 17 && end == 19,
