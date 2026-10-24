@@ -3065,6 +3065,7 @@ error_surface:
    return false;
 }
 
+#ifdef HAVE_VIDEO_WINDOWS
 /* How long a teardown waits for the presentation engine to give back an
  * image it was asked for: it may never, for a surface going away. */
 #define VULKAN_OUTPUT_FINISH_NS 100000000
@@ -3586,6 +3587,7 @@ void vulkan_output_finish(vulkan_output_t *output)
          vkWaitForFences(device, 1, &output->retired[i].fence, VK_TRUE,
                UINT64_MAX);
 }
+#endif
 
 uint32_t vulkan_find_memory_type(
       const VkPhysicalDeviceMemoryProperties *mem_props,

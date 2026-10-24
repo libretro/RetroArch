@@ -6191,6 +6191,7 @@ void config_set_defaults(settings_t *target)
       settings->uints.input_aim_stick[i]      = INPUT_AIM_STICK_NONE;
    }
 
+#ifdef HAVE_VIDEO_WINDOWS
    for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
    {
       settings->uints.video_screen_window_mode[i] = i
@@ -6200,6 +6201,7 @@ void config_set_defaults(settings_t *target)
       settings->uints.video_screen_window_monitor[i] = 0;
       settings->bools.video_screen_window_fullscreen[i] = false;
    }
+#endif
 
    custom_vp->dims   = 0;
    custom_vp->pos    = 0;
@@ -6873,6 +6875,7 @@ static void config_sanitize_turbo_binds(settings_t *settings)
       settings->uints.input_turbo_button  = DEFAULT_TURBO_BUTTON;
 }
 
+#ifdef HAVE_VIDEO_WINDOWS
 /* Keep indexed-load scratch out of config_load_file's frame. */
 #if defined(__OPTIMIZE_SIZE__)
 #define CONFIG_NOINLINE
@@ -6925,6 +6928,7 @@ CONFIG_NOINLINE static void config_load_video_windows(settings_t *settings, conf
 }
 
 #undef CONFIG_NOINLINE
+#endif
 
 /**
  * config_load:
@@ -7247,7 +7251,9 @@ static bool config_load_file(const char *path, settings_t *settings)
             *size_settings[i].ptr  = *size_settings[i].ptr * 1024 * 1024;
    }
 
+#ifdef HAVE_VIDEO_WINDOWS
    config_load_video_windows(settings, conf);
+#endif
 
    {
       char prefix[64];
@@ -9639,6 +9645,7 @@ bool config_save_file(const char *path)
       }
    }
 
+#ifdef HAVE_VIDEO_WINDOWS
    for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
    {
       char cfg[64];
@@ -9693,6 +9700,7 @@ bool config_save_file(const char *path)
       else
          config_unset(conf, cfg);
    }
+#endif
 
    for (i = 0; i < MAX_USERS; i++)
    {
@@ -10301,6 +10309,7 @@ int8_t config_save_overrides(enum override_type type,
          }
       }
 
+#ifdef HAVE_VIDEO_WINDOWS
       for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
       {
          char cfg[64];
@@ -10334,6 +10343,7 @@ int8_t config_save_overrides(enum override_type type,
          if (settings->bools.video_screen_window_fullscreen[i] != overrides->bools.video_screen_window_fullscreen[i])
             config_set_string(conf, cfg, overrides->bools.video_screen_window_fullscreen[i] ? "true" : "false");
       }
+#endif
 
       for (i = 0; i < MAX_USERS; i++)
       {

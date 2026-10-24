@@ -2029,22 +2029,6 @@ typedef struct
    unsigned views_driver_count;
    /* The status video_driver_views_status_changed() last saw. */
    unsigned views_status_seen;
-   /* The last video_driver_window_generation(); never reset, so a
-    * replacement window never reuses one. */
-   retro_atomic_int_t window_generation;
-   /* The screens' own windows: this frame's snapshot, and the screens
-    * a close attached until video_driver_restore_windows() and its
-    * count; main thread. */
-   video_windows_frame_t windows;
-#ifdef HAVE_THREADS
-   /* The video thread's redraw of the cached frame fills its own. */
-   video_windows_frame_t windows_redraw;
-#endif
-   unsigned windows_forced_attached;
-   unsigned windows_restore;
-   /* The main thread's last route, which a redraw keeps; written only
-    * when it changes, as Win32's redraws run beside the main thread */
-   video_windows_route_t windows_route;
    bool views_presented;
    /* The driver drew frames with the map whole
     * (GFX_CTX_FLAGS_VIDEO_VIEWS_FALLBACK), so touch, overlays and the
@@ -2075,12 +2059,30 @@ typedef struct
    bool headset_vsync;
    /* Set while video_driver_cached_frame() sends the last frame again. */
    bool frame_repeat;
+#ifdef HAVE_VIDEO_WINDOWS
    /* Each secondary's published layouts */
    video_window_layouts_t window_layouts[RETRO_VIDEO_VIEWS_MAX - 1];
    video_window_displays_t window_displays;
+   /* The screens' own windows: this frame's snapshot, and the screens
+    * a close attached until video_driver_restore_windows() and its
+    * count; main thread. */
+   video_windows_frame_t windows;
+#ifdef HAVE_THREADS
+   /* The video thread's redraw of the cached frame fills its own. */
+   video_windows_frame_t windows_redraw;
+#endif
+   /* The main thread's last route, which a redraw keeps; written only
+    * when it changes, as Win32's redraws run beside the main thread */
+   video_windows_route_t windows_route;
+   /* The last video_driver_window_generation(); never reset, so a
+    * replacement window never reuses one. */
+   retro_atomic_int_t window_generation;
    /* Screens video_driver_attach_windows() sent back, for the next
     * frame */
    retro_atomic_int_t windows_failed;
+   unsigned windows_forced_attached;
+   unsigned windows_restore;
+#endif
 } video_driver_state_t;
 
 typedef struct video_frame_delay_auto

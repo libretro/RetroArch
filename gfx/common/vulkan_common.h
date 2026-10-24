@@ -734,6 +734,7 @@ void vulkan_low_latency_present_end(gfx_ctx_vulkan_data_t *vk);
 void vulkan_low_latency_retire(gfx_ctx_vulkan_data_t *vk,
       VkSwapchainKHR swapchain);
 
+#ifdef HAVE_VIDEO_WINDOWS
 #define VULKAN_OUTPUT_RETIRED_MAX 2
 
 /* A swapchain an output let go of, destroyed once its fence shows that
@@ -832,6 +833,7 @@ bool vulkan_output_retire(vulkan_output_t *output);
  * what retire waits on, so that the next vulkan_output_retire() returns
  * true. An acquire never answered is waited on for a bound. */
 void vulkan_output_finish(vulkan_output_t *output);
+#endif
 
 void vulkan_debug_mark_image(VkDevice device, VkImage image);
 void vulkan_debug_mark_memory(VkDevice device, VkDeviceMemory memory);

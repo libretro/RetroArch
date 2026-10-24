@@ -336,7 +336,6 @@ OBJ += \
        gfx/video_driver.o \
        gfx/common/video_mode_select.o \
        gfx/video_views.o \
-       gfx/video_windows.o \
        gfx/gfx_display.o \
        gfx/gfx_animation.o \
        gfx/gfx_instrument.o \
@@ -2030,6 +2029,11 @@ endif
 
 ifeq ($(HAVE_SHADERS_COMMON), 1)
    OBJ += gfx/video_shader_parse.o
+endif
+
+ifeq ($(HAVE_VIDEO_WINDOWS), 1)
+   DEFINES += -DHAVE_VIDEO_WINDOWS
+   OBJ += gfx/video_windows.o
 endif
 
 ifeq ($(HAVE_OPENXR), 1)

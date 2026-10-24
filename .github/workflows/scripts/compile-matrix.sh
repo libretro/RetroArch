@@ -1244,4 +1244,29 @@ rm -rf "$UNITY_DIR"
 check "image YUV: PS2 C89" "-DPS2 -DRARCH_CONSOLE $HOSTOFF -std=c89" \
    libretro-common/formats/image/image_yuv_blit.c
 
+echo "== screens' own windows: with HAVE_VIDEO_WINDOWS =="
+# Android builds the screens' windows and a desktop build does not, so
+# no other lane compiles the drivers' window code or the frontend's
+# with it; and without threads, as a --disable-threads build would.
+WINDEFS="-DHAVE_VIDEO_WINDOWS -DHAVE_EGL"
+WINTU="gfx/video_driver.c gfx/video_thread_wrapper.c input/input_driver.c \
+   configuration.c menu/menu_setting.c menu/menu_displaylist.c \
+   gfx/common/egl_common.c gfx/video_windows.c"
+check "windows: frontend" "$UIDEFS $WINDEFS -DHAVE_OPENGL -DHAVE_OVERLAY" $WINTU
+check_nothreads "windows: frontend, no threads" \
+   "$UIDEFS $WINDEFS -DHAVE_OPENGL -DHAVE_OVERLAY" \
+   $(echo "$WINTU" | sed 's|gfx/video_thread_wrapper.c||')
+check "windows: gl2 GLES2" \
+   "$GLDEFS -DHAVE_OPENGLES -DHAVE_OPENGLES2 $WINDEFS $GLINC" gfx/drivers/gl2.c
+check "windows: gl2 GLES3" \
+   "$GLDEFS -DHAVE_OPENGLES -DHAVE_OPENGLES3 $WINDEFS $GLINC" gfx/drivers/gl2.c
+check "windows: gl2 desktop" "$GLDEFS $WINDEFS $GLINC" gfx/drivers/gl2.c
+check_nothreads "windows: gl2, no threads" "$GLDEFS $WINDEFS $GLINC" \
+   gfx/drivers/gl2.c
+platform_video "windows: vulkan back end" \
+   "$GFXDEFS -DHAVE_VULKAN -DHAVE_VIDEO_WINDOWS" "" gfx/drivers/vulkan.c "$VK_H"
+check "windows: vulkan second output" \
+   "-DHAVE_VULKAN -DHAVE_DYLIB -DHAVE_VIDEO_WINDOWS -Igfx/include" \
+   gfx/common/vulkan_common.c
+
 exit $fail

@@ -926,6 +926,7 @@ video_driver_state_t *video_state_get_ptr(void)
    return &video_driver_st;
 }
 
+#ifdef HAVE_VIDEO_WINDOWS
 /* The last generation: held there, below INT_MAX by more than any
  * number of threads asking at once, so the counter never wraps round
  * to a value it gave before. */
@@ -1105,6 +1106,7 @@ bool video_driver_translate_window_point(unsigned window,
    return video_views_map_point(&slot->layout, &slot->core_map,
          slot->core_dims, x, y, report_oob, result);
 }
+#endif
 
 /**
  * video_driver_shader_deferred_tick:
@@ -3203,7 +3205,9 @@ void video_driver_free_internal(void)
     * implementation dereferences that argument on entry. */
    video_st->data               = NULL;
    video_st->views_driver_count = 0;
+#ifdef HAVE_VIDEO_WINDOWS
    video_driver_window_layouts_clear(video_st);
+#endif
    /* The next driver's headset, if any, is measured afresh. */
    video_st->headset_hz         = 0.0f;
    video_st->headset_runloop_hz = 0.0f;
@@ -3754,6 +3758,7 @@ void video_driver_views_layout_flat(const video_views_map_t *map,
          VIDEO_STEREO_MODE_2D, window, 0, out);
 }
 
+#ifdef HAVE_VIDEO_WINDOWS
 void video_driver_window_layout(const video_windows_frame_t *frame,
       unsigned screen, unsigned dims, video_views_layout_t *out)
 {
@@ -3861,6 +3866,7 @@ static VIDEO_NOINLINE const video_windows_frame_t *video_driver_windows_frame(
             out->window_screens[i] = 1u << i;
    return out;
 }
+#endif
 
 /* Fills the frame's views and layout. A repeated frame (no data), or one
  * that will not be presented (frameskip), reuses the last map, since the
@@ -3901,8 +3907,10 @@ static void video_driver_views_frame(video_driver_state_t *video_st,
    }
    if (presented)
    {
+#ifdef HAVE_VIDEO_WINDOWS
       video_info->windows = video_driver_windows_frame(video_st, settings,
             flags.flags, redraw);
+#endif
       /* Laid out from the core's own map: a CPU filter's scaling must
        * not change a view's shape. The indices match the scaled map. */
       video_info->views = video_st->views_frame;

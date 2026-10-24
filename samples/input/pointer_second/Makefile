@@ -1,7 +1,7 @@
 CC ?= cc
 PYTHON ?= python3
 CFLAGS ?= -O2 -g1
-CFLAGS += -Wall -Wextra -Wno-unused-parameter -std=gnu89 -DHAVE_OVERLAY -I../../.. -I../../../libretro-common/include
+CFLAGS += -Wall -Wextra -Wno-unused-parameter -std=gnu89 -DHAVE_OVERLAY -DHAVE_VIDEO_WINDOWS -I../../.. -I../../../libretro-common/include
 ifneq ($(SANITIZER),)
 CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
 endif

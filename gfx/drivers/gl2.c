@@ -6615,6 +6615,7 @@ static void gl2_views_ui_end(gl2_t *gl, video_frame_info_t *video_info)
    gl2_set_viewport(gl, video_info->dims, false, true);
 }
 
+#ifdef HAVE_VIDEO_WINDOWS
 /* Events a frame takes from the context's windows */
 #define GL2_WINDOW_EVENTS 8
 
@@ -6808,6 +6809,7 @@ static bool gl2_windows_draw(gl2_t *gl,
          drawn = true;
    return drawn;
 }
+#endif
 #endif
 
 static bool gl2_frame(void *data, const void *frame,
@@ -7391,7 +7393,7 @@ static bool gl2_frame(void *data, const void *frame,
       gl2_desktop_xr_frame(gl, video_info, frame != NULL, dims, &xr_vp);
 #endif
 
-#ifdef GL2_VIEWS
+#if defined(GL2_VIEWS) && defined(HAVE_VIDEO_WINDOWS)
    /* Before the ring's fence: the windows read the frame too. Not from
     * the BFI light dupes. */
    if (     (video_info->windows || gl->windows.held.live
@@ -7606,8 +7608,10 @@ static void gl2_free(void *data)
 
    gl2_scrgb_deinit(gl);
 #ifdef GL2_VIEWS
+#ifdef HAVE_VIDEO_WINDOWS
    /* Before the context, which sweeps what is left */
    gl2_windows_retire_all(gl);
+#endif
    gl2_views_release(gl);
 #endif
 #ifdef HAVE_GL_PLANAR
@@ -9685,7 +9689,7 @@ static uint32_t gl2_get_flags(void *data)
    if (gl2 && retro_atomic_load_acquire_int(&gl2->views.allowed))
    {
       BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS);
-#if !(defined(HAVE_OPENXR) && defined(ANDROID))
+#if defined(HAVE_VIDEO_WINDOWS) && !(defined(HAVE_OPENXR) && defined(ANDROID))
       /* The context can make screens windows of their own. Not in the
        * Quest's build, whose back buffer is the headset's framebuffer. */
       if (gl2->ctx_driver && gl2->ctx_driver->windows)

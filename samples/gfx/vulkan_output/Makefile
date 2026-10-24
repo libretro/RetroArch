@@ -25,7 +25,7 @@ SOURCES := vulkan_output_test.c \
            $(LIBRETRO_COMM_DIR)/time/rtime.c
 
 CFLAGS  += -Wall -std=gnu99 -g1 -O0 \
-           -DHAVE_VULKAN -DHAVE_THREADS -DHAVE_DYLIB \
+           -DHAVE_VULKAN -DHAVE_THREADS -DHAVE_DYLIB -DHAVE_VIDEO_WINDOWS \
            -I$(REPO_ROOT) \
            -I$(REPO_ROOT)/gfx/include \
            -I$(LIBRETRO_COMM_DIR)/include

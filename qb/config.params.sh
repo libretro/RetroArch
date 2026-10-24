@@ -113,6 +113,7 @@ C89_VULKAN=no
 HAVE_VULKAN_DISPLAY=yes    # Vulkan KHR display backend support
 HAVE_OPENXR=no             # OpenXR headset output (Vulkan, or desktop GL on Linux; the vendored Khronos loader is built in-tree)
 C89_OPENXR=no
+HAVE_VIDEO_WINDOWS=no      # Separate windows for a core's secondary screens (Android builds it in)
 HAVE_METAL=no              # Metal support (macOS-only)
 C89_METAL=no
 HAVE_D3D8=no               # Direct3D 8 support

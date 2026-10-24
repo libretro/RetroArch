@@ -12428,6 +12428,7 @@ unsigned menu_displaylist_build_list(
                   MENU_ENUM_LABEL_VIDEO_SCREEN_LAYOUT,
                   PARSE_ONLY_UINT, false) == 0)
             count++;
+#ifdef HAVE_VIDEO_WINDOWS
          if (video_driver_test_all_flags(GFX_CTX_FLAGS_VIDEO_WINDOWS))
          {
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
@@ -12460,6 +12461,7 @@ unsigned menu_displaylist_build_list(
                }
             }
          }
+#endif
 #ifdef HAVE_OPENXR
          if (video_driver_has_headset_path(settings->arrays.video_driver))
          {

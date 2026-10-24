@@ -296,6 +296,7 @@ struct vk_effect_template
    bool                                   valid;
 };
 
+#ifdef HAVE_VIDEO_WINDOWS
 enum vk_window_flags
 {
    /* output holds a surface: made, or being let go of */
@@ -322,6 +323,7 @@ struct vk_window
    unsigned dims;      /* native.dims the output was made at */
    uint8_t flags;      /* VK_WINDOW_FLAG_* */
 };
+#endif
 
 /* Frame buffers lent to the threaded wrapper at once: what it takes
  * (VIDEO_THREAD_FRAME_MEM_DRIVER), the menu pool, and resize headroom. */
@@ -373,6 +375,7 @@ typedef struct vk
       bool in_place_seen;
       bool written_seen;
    } views;
+#ifdef HAVE_VIDEO_WINDOWS
    /* The screens' own windows (video_windows.h), by window id; [0],
     * the main window's, stays unused */
    struct
@@ -384,6 +387,7 @@ typedef struct vk
       math_matrix_4x4 mvp;
       struct vk_texture *direct;
    } windows;
+#endif
 #ifdef HAVE_OPENXR
    /* Headset output: each slot's swapchain images, with a view and a
     * framebuffer per image and layer, and this frame's quads. Each view
@@ -6771,7 +6775,9 @@ static void vulkan_views_draw_pass(vk_t *vk, vulkan_filter_chain_t *fc,
       bool again);
 static bool vulkan_views_make(vk_t *vk, struct vk_image *img, unsigned dims);
 static bool vulkan_views_retire(vk_t *vk, struct vk_image *img);
+#ifdef HAVE_VIDEO_WINDOWS
 static void vulkan_windows_free(vk_t *vk);
+#endif
 
 /* The views compositor, with these calls bound in */
 #define VV_FN(name)                     vulkan_vv_##name
@@ -7297,8 +7303,10 @@ static void vulkan_free(void *data)
    {
       vulkan_import_movie_frame(vk, NULL);
       vulkan_wait_own_submissions(vk);
+#ifdef HAVE_VIDEO_WINDOWS
       /* Before the context's destroy, which takes the instance */
       vulkan_windows_free(vk);
+#endif
       vulkan_deferred_textures_flush(vk);
       vulkan_deferred_cmds_flush(vk);
       vulkan_stream_states_flush(vk);
@@ -10454,6 +10462,7 @@ static void vulkan_views_ui_end(vk_t *vk, video_frame_info_t *video_info,
       vulkan_set_viewport(vk, video_info->dims, false, true);
 }
 
+#ifdef HAVE_VIDEO_WINDOWS
 /* Events a frame takes from the context's windows */
 #define VK_WINDOW_EVENTS 8
 
@@ -10830,6 +10839,7 @@ static void vulkan_windows_free(vk_t *vk)
       vulkan_window_retire(vk, w);
    }
 }
+#endif
 
 #ifdef HAVE_OPENXR
 /* The runtime's format for the window's, which the chains' final passes
@@ -11657,7 +11667,9 @@ static bool vulkan_frame(void *data, const void *frame,
 #endif
    /* Recording's readback was already taken this frame, before the UI. */
    bool record_readback_done                     = false;
+#ifdef HAVE_VIDEO_WINDOWS
    bool windows_drawn                            = false;
+#endif
    bool movie_frame                              = vk->movie_pending;
 
 #ifdef HAVE_OPENXR
@@ -12083,9 +12095,12 @@ static bool vulkan_frame(void *data, const void *frame,
             views_blend ? video_info->views_layout.canvas_dims
                         : vk->context->swapchain_dims,
             view_chains, view_rects, &views_direct);
+#ifdef HAVE_VIDEO_WINDOWS
    /* The screens' own windows' views are this frame's too */
-   vulkan_windows_prepare(vk, video_info, frame || movie_frame, views,
-         views_direct, view_chains, view_rects);
+   if (vk->ctx_driver && vk->ctx_driver->windows)
+      vulkan_windows_prepare(vk, video_info, frame || movie_frame, views,
+            views_direct, view_chains, view_rects);
+#endif
    /* Stock views draw straight from the frame, but for a rolling
     * scanline, drawn by the chain's final pass. */
    views_direct = views_direct && vk->pipelines.stock_rect
@@ -12522,7 +12537,9 @@ static bool vulkan_frame(void *data, const void *frame,
 
    /* Views place themselves in the whole window. */
    vulkan_set_viewport(vk, VIDEO_SCALE_PACK(width, height), views, true);
+#ifdef HAVE_VIDEO_WINDOWS
    vk->windows.mvp = vk->mvp;
+#endif
 #ifdef HAVE_OPENXR
    /* The menu and UI set their own before the headset draws. */
    vk->xr.mvp    = vk->mvp;
@@ -12942,10 +12959,15 @@ static bool vulkan_frame(void *data, const void *frame,
       vk->xr.ui_dims = 0;
 #endif
 
+#ifdef HAVE_VIDEO_WINDOWS
    /* The screens' own windows, from the views this frame set up */
-   vk->windows.direct = views_direct_tex;
-   windows_drawn      = vulkan_windows_draw(vk, video_info,
-         frame || movie_frame);
+   if (vk->windows.held.live)
+   {
+      vk->windows.direct = views_direct_tex;
+      windows_drawn      = vulkan_windows_draw(vk, video_info,
+            frame || movie_frame);
+   }
+#endif
 
    /* End the filter chain frame.
     * This must happen outside a render pass.
@@ -13208,10 +13230,12 @@ static bool vulkan_frame(void *data, const void *frame,
       signal_semaphores[submit_info.signalSemaphoreCount++] = vk->hw.signal_semaphore;
       vk->hw.signal_semaphore = VK_NULL_HANDLE;
    }
+#ifdef HAVE_VIDEO_WINDOWS
    /* Each window's present waits on the frame that drew it */
    if (windows_drawn)
       submit_info.signalSemaphoreCount += vulkan_windows_signals(vk,
             signal_semaphores + submit_info.signalSemaphoreCount);
+#endif
    submit_info.pSignalSemaphores = submit_info.signalSemaphoreCount ? signal_semaphores : NULL;
 
    /* What this frame's textures were loaded with goes ahead of it */
@@ -13255,9 +13279,11 @@ static bool vulkan_frame(void *data, const void *frame,
    slock_unlock(vk->context->queue_lock);
 #endif
 
+#ifdef HAVE_VIDEO_WINDOWS
    /* Before the main present, the only one that may wait */
    if (windows_drawn)
       vulkan_windows_present(vk, video_info);
+#endif
 
    vulkan_present_wait = 0;
    vulkan_fence_wait   = 0;
@@ -15145,7 +15171,7 @@ static uint32_t vulkan_get_flags(void *data)
       BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS);
    if (vk && retro_atomic_load_acquire_int(&vk->views.fallback))
       BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS_FALLBACK);
-#if !(defined(HAVE_OPENXR) && defined(ANDROID))
+#if defined(HAVE_VIDEO_WINDOWS) && !(defined(HAVE_OPENXR) && defined(ANDROID))
    /* Not the Quest's: its window is the headset's, and it has no
     * second display */
    if (     vk && vk->ctx_driver && vk->ctx_driver->windows

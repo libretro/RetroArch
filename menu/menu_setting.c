@@ -3804,6 +3804,7 @@ static size_t setting_get_string_representation_video_screen_layout(
    return 0;
 }
 
+#ifdef HAVE_VIDEO_WINDOWS
 static size_t setting_get_string_representation_video_screen_window_mode(
       rarch_setting_t *setting, char *s, size_t len)
 {
@@ -3906,6 +3907,7 @@ static int setting_action_ok_video_screen_window_monitor(
    setting->max = (float)last;
    return setting_action_ok_uint(setting, idx, wraparound);
 }
+#endif
 
 static size_t setting_get_string_representation_video_openxr_controllers(
       rarch_setting_t *setting, char *s, size_t len)
@@ -10183,6 +10185,7 @@ static void general_write_handler(rarch_setting_t *setting)
    if (     setting->enum_idx >= MENU_ENUM_LABEL_INPUT_KEYBOARD_INDEX
          && setting->enum_idx <= MENU_ENUM_LABEL_INPUT_KEYBOARD_INDEX_LAST)
       input_keyboard_pin_from_index(setting->index_offset);
+#ifdef HAVE_VIDEO_WINDOWS
    /* a screen sent back to the main window gets another try at the
     * window or display it is now given */
    if (     (   setting->enum_idx >= MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MODE
@@ -10191,6 +10194,7 @@ static void general_write_handler(rarch_setting_t *setting)
              && setting->enum_idx <= MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MONITOR_LAST)
          || setting->enum_idx == MENU_ENUM_LABEL_VIDEO_WINDOWS_ENABLE)
       video_driver_restore_windows();
+#endif
 
    switch (setting->enum_idx)
    {
@@ -15842,6 +15846,7 @@ static void settings_build_cheat_search(
    }
 }
 
+#ifdef HAVE_VIDEO_WINDOWS
 /* Screens 2 and up: where each one goes, and on which display */
 static void setting_append_list_video_screen_windows(
       settings_t *settings,
@@ -15904,6 +15909,7 @@ static void setting_append_list_video_screen_windows(
             (enum msg_hash_enums)(MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MONITOR + screen));
    }
 }
+#endif
 
 static void settings_build_video(
       settings_t *settings,
@@ -16201,8 +16207,10 @@ static void settings_build_video(
          START_SUB_GROUP(list, list_info, "Stereo 3D & Screens", &group_info, &subgroup_info, parent_group);
 
          ADD_DESC(stereo_desc);
+#ifdef HAVE_VIDEO_WINDOWS
          setting_append_list_video_screen_windows(settings, list, list_info,
                &group_info, &subgroup_info, parent_group);
+#endif
 
          END_SUB_GROUP(list, list_info, parent_group);
 

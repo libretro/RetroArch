@@ -1465,6 +1465,7 @@ typedef struct input_video_window
    unsigned generation;
 } input_video_window_t;
 
+#ifdef HAVE_VIDEO_WINDOWS
 /* input_driver_publish_pointers() with each device's window. Its place
  * is in that window, through the layout the window last published; a
  * screen's window has no place on the main window's screen, and one
@@ -1474,6 +1475,7 @@ void input_driver_publish_window_pointers(
       const input_pointer_frame_t *frames,
       const input_video_window_t *windows,
       unsigned count, unsigned flags);
+#endif
 
 /* The viewport as of this poll: asked of the video driver the first
  * time it is wanted after a poll, and that answer given until the
@@ -1503,10 +1505,12 @@ unsigned input_driver_pointer_read_as(unsigned i);
 void input_driver_publish_touches(const uint32_t *pos, unsigned count,
       unsigned present, unsigned down);
 
+#ifdef HAVE_VIDEO_WINDOWS
 /* The same with each place's window, as for the devices. */
 void input_driver_publish_window_touches(const uint32_t *pos,
       const input_video_window_t *windows, unsigned count,
       unsigned present, unsigned down);
+#endif
 
 typedef struct input_pointer_view
 {

@@ -1029,6 +1029,7 @@ bool egl_destroy_surface(egl_ctx_data_t *egl)
    return true;
 }
 
+#ifdef HAVE_VIDEO_WINDOWS
 EGLSurface egl_window_surface_new(egl_ctx_data_t *egl, void *native_window)
 {
    EGLint window_attribs[5];
@@ -1065,6 +1066,7 @@ void egl_window_surface_free(egl_ctx_data_t *egl, EGLSurface surf)
       egl_window_surface_bind(egl, EGL_NO_SURFACE, false);
    _egl_destroy_surface(egl->dpy, surf);
 }
+#endif
 
 #ifndef EGL_COLOR_COMPONENT_TYPE_EXT
 #define EGL_COLOR_COMPONENT_TYPE_EXT       0x3339

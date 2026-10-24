@@ -373,6 +373,7 @@ struct gl2
       bool                  prev_live[RETRO_VIDEO_VIEWS_MAX];
    } views;
 
+#ifdef HAVE_VIDEO_WINDOWS
    /* The screens' own windows, by window id; [0] is the main window
     * and stays unused */
    struct
@@ -382,6 +383,7 @@ struct gl2
       /* gl2_frame()'s, for the preset's passes in them */
       unsigned              frame_count;
    } windows;
+#endif
 
 #if defined(HAVE_OPENXR) && defined(ANDROID) && defined(HAVE_OPENGLES3)
    /* The framebuffer the headset's tracked eyes are drawn through. */

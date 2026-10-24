@@ -2247,6 +2247,7 @@ void input_driver_publish_pointers(const input_pointer_frame_t *frames,
    input_pointer_frames_set(frames, NULL, count, flags);
 }
 
+#ifdef HAVE_VIDEO_WINDOWS
 void input_driver_publish_window_pointers(
       const input_pointer_frame_t *frames,
       const input_video_window_t *windows,
@@ -2254,6 +2255,7 @@ void input_driver_publish_window_pointers(
 {
    input_pointer_frames_set(frames, windows, count, flags);
 }
+#endif
 
 unsigned input_driver_pointer_read_as(unsigned i)
 {
@@ -2274,12 +2276,14 @@ void input_driver_publish_touches(const uint32_t *pos, unsigned count,
    input_pointer_touches_set(pos, NULL, count, present, down);
 }
 
+#ifdef HAVE_VIDEO_WINDOWS
 void input_driver_publish_window_touches(const uint32_t *pos,
       const input_video_window_t *windows, unsigned count,
       unsigned present, unsigned down)
 {
    input_pointer_touches_set(pos, windows, count, present, down);
 }
+#endif
 
 /* The keys a port's binds name, compiled when the binds change, and
  * which of them are down, asked of the input driver once a poll for
@@ -4447,6 +4451,7 @@ static int16_t input_turbo_hold_apply(
 }
 /* ===== END input turbo and hold ===== */
 
+#ifdef HAVE_VIDEO_WINDOWS
 /* A driver's second list of pointers (Android's second display) goes
  * on after the main list's, whoever answers for that: the overlay, else
  * none while the pointer is blocked, else the driver. False where @idx
@@ -4487,6 +4492,7 @@ static bool input_state_pointer_second(input_driver_state_t *input_st,
       return false;
    return true;
 }
+#endif
 
 static int16_t input_state_device(
       input_driver_state_t *input_st,
@@ -4735,10 +4741,12 @@ static int16_t input_state_device(
             break;
 #endif
 
+#ifdef HAVE_VIDEO_WINDOWS
          if (     device == RETRO_DEVICE_POINTER
                && input_state_pointer_second(input_st, settings, port,
                   idx, id, &res))
             break;
+#endif
 
 #ifdef HAVE_OVERLAY
          if (     (input_st->overlay_ptr)

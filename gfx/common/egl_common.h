@@ -143,6 +143,7 @@ bool egl_create_surface(egl_ctx_data_t *egl, void *native_window);
 
 bool egl_destroy_surface(egl_ctx_data_t *egl);
 
+#ifdef HAVE_VIDEO_WINDOWS
 /* A secondary window's surface on egl's config, with the main window's
  * attributes. Bind makes egl->ctx current on it, giving it swap interval
  * 0 when 'interval' is set (once is enough, the interval is the
@@ -154,6 +155,7 @@ bool egl_window_surface_bind(egl_ctx_data_t *egl, EGLSurface surf,
       bool interval);
 bool egl_window_surface_swap(egl_ctx_data_t *egl, EGLSurface surf);
 void egl_window_surface_free(egl_ctx_data_t *egl, EGLSurface surf);
+#endif
 
 bool egl_get_native_visual_id(egl_ctx_data_t *egl, EGLint *value);
 
