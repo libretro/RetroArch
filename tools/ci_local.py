@@ -1253,6 +1253,14 @@ class Runner:
       for p in files.values():
          open(p, 'a').close()
       run_env = dict(os.environ)
+      # One ccache serves every job here, where on GitHub each job has
+      # its own: a job's "ccache -M 250M" would cap the one they all
+      # share, so they evicted each other, and a clean copy is a new
+      # directory each run, which ccache puts in a debug build's hash, so
+      # nothing from the last run matched. Not where already set.
+      for k, v in (('CCACHE_MAXSIZE', '1G'), ('CCACHE_BASEDIR', workspace),
+                   ('CCACHE_NOHASHDIR', '1')):
+         run_env.setdefault(k, v)
       run_env.update(env)
       gh = ctx['github']
       run_env.update({
