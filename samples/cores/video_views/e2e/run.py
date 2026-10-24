@@ -638,6 +638,9 @@ def isolated_env():
     env = {k: v for k, v in os.environ.items() if k not in DESKTOP_ENV}
     env['XDG_RUNTIME_DIR'] = tempfile.mkdtemp(
         prefix='ra-e2e-', dir=os.environ.get('RA_E2E_RUNTIME_BASE', '/tmp'))
+    # Unset means autolaunch, not no session bus.
+    env['DBUS_SESSION_BUS_ADDRESS'] = 'unix:path=' + os.path.join(
+        env['XDG_RUNTIME_DIR'], 'no-session-bus')
     return env
 
 
