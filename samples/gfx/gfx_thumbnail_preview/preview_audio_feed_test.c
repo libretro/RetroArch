@@ -991,8 +991,14 @@ static int bounded_video_seek(void)
                seek_probe_lo = seek_probe_hi = 0;
                seek_probe_boundary = i;
                seek_probe_calls = 0;
+               seek_probe_wait = i != 1;
                if (!seek_pending(gfx_anim_preview_seek_step(&p, 0, false, &position))
-                     || seek_probe_calls != 1) failed = 1;
+                     || (i == 1 ? seek_probe_calls != 1
+                        : seek_probe_calls <= 1 || seek_probe_calls > 8))
+                  failed = 1;
+               fprintf(stderr, "seek boundary %u: %u decoder steps\n",
+                     i, seek_probe_calls);
+               seek_probe_wait = false;
             }
             seek_probe_boundary = 0;
             seek_probe_sparse = seek_probe_wait = true;

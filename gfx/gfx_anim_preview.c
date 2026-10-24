@@ -1041,39 +1041,48 @@ int gfx_anim_preview_seek_step(void *user, int64_t target_us,
    if (p->seek_phase == 1)
    {
       int64_t started = cpu_features_get_time_usec();
-      unsigned budget = 1024;
+      unsigned budget = 1024, feeds = 1;
       if (!gfx_anim_preview_seek_feed(p)) return -1;
       do
       {
          result = image_transfer_anim_stream_seek_step(p->stream, p->type,
                &p->seek_video_us);
-         if (result || cpu_features_get_time_usec() - started >= 4000) break;
+         if (result || cpu_features_get_time_usec() - started >= 4000)
+            break;
          if (image_transfer_anim_stream_waiting(p->stream, p->type))
          {
             size_t lo, hi;
-            if (!p->windowed || !p->dt
-                  || !image_transfer_anim_stream_seek_span(p->stream,
+            if (p->windowed && p->dt
+                  && image_transfer_anim_stream_seek_span(p->stream,
                      p->type, &lo, &hi))
-               break;
-            if (!gfx_anim_preview_seek_feed(p)) return -1;
-            continue;
+            {
+               if (!gfx_anim_preview_seek_feed(p)) return -1;
+               continue;
+            }
          }
          if (p->windowed && p->dt)
          {
             size_t anchor = image_transfer_anim_stream_consumed(p->stream, p->type);
             size_t lo = 0, hi = 0;
+            int sparse = image_transfer_anim_stream_seek_span(p->stream,
+                  p->type, &lo, &hi);
             if (!anchor) anchor = image_transfer_anim_stream_media_floor(p->stream, p->type);
-            if (!image_transfer_anim_stream_seek_span(p->stream, p->type, &lo, &hi))
+            if (!sparse)
                image_transfer_anim_stream_next_span(p->stream, p->type, &lo, &hi);
-            if (anchor < p->seek_feed_anchor || anchor >= p->seek_feed_hi
-                  || (hi > lo && (lo < p->seek_feed_anchor || hi > p->seek_feed_hi)))
+            if (anchor < p->seek_feed_anchor
+                  || (hi > lo && lo < p->seek_feed_anchor))
+               break;
+            if (anchor >= p->seek_feed_hi
+                  || (hi > lo && hi > p->seek_feed_hi))
             {
-               if (!image_transfer_anim_stream_seek_span(p->stream, p->type,
-                        &lo, &hi))
-                  break;
+               if (!sparse && feeds >= 8) break;
                if (!gfx_anim_preview_seek_feed(p)) return -1;
+               feeds++;
+               continue;
             }
          }
+         if (image_transfer_anim_stream_waiting(p->stream, p->type))
+            break;
       } while (--budget);
       if (result != 1)
       {
