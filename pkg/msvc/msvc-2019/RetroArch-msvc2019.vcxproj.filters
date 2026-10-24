@@ -21,6 +21,9 @@
     <ClCompile Include="..\..\..\griffin\griffin_glslang.cpp">
       <Filter>griffin</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\griffin\griffin_rslc.c">
+      <Filter>griffin</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\..\..\ui\drivers\ui_qt.h">

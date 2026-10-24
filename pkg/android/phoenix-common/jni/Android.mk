@@ -26,6 +26,14 @@ HAVE_RETRONFS := 1
 # EDID reader behind Information > Display Information > EDID.
 HAVE_MODELINE := 1
 HAVE_OPENXR ?= 0
+# slang shaders (Vulkan): compiled by rslc, with glslang and SPIRV-Cross
+# behind it for a stage rslc refuses; HAVE_RSLC_ONLY=1 builds without
+# those two.
+HAVE_RSLC      ?= 1
+HAVE_RSLC_ONLY ?= 0
+ifeq ($(HAVE_RSLC_ONLY),1)
+   HAVE_RSLC := 1
+endif
 
 INCFLAGS    :=
 DEFINES     :=
@@ -207,11 +215,16 @@ endif
 ifeq ($(HAVE_VULKAN),1)
 DEFINES += -DHAVE_VULKAN \
 	   -DHAVE_SLANG \
-	   -DHAVE_GLSLANG \
+	   -D__STDC_LIMIT_MACROS
+ifeq ($(HAVE_RSLC),1)
+DEFINES += -DHAVE_RSLC
+endif
+ifneq ($(HAVE_RSLC_ONLY),1)
+DEFINES += -DHAVE_GLSLANG \
 	   -DHAVE_BUILTINGLSLANG \
 	   -DHAVE_SPIRV_CROSS \
-	   -DWANT_GLSLANG \
-	   -D__STDC_LIMIT_MACROS
+	   -DWANT_GLSLANG
+endif
 endif
 
 DEFINES += -DHAVE_7ZIP \
@@ -288,7 +301,12 @@ LOCAL_CPPFLAGS   += -I$(LOCAL_PATH)/$(DEPS_DIR)/glslang \
 		    -I$(LOCAL_PATH)/$(DEPS_DIR)/glslang/glslang/SPIRV
 
 LOCAL_CFLAGS    += -Wno-sign-compare -Wno-unused-variable -Wno-parentheses
+ifneq ($(HAVE_RSLC_ONLY),1)
 LOCAL_SRC_FILES += $(RARCH_DIR)/griffin/griffin_glslang.cpp
+endif
+ifeq ($(HAVE_RSLC),1)
+LOCAL_SRC_FILES += $(RARCH_DIR)/griffin/griffin_rslc.c
+endif
 endif
 
 LOCAL_LDLIBS += -lOpenSLES

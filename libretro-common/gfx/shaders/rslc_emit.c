@@ -965,7 +965,7 @@ static void pr_hlsl_builtin(struct rslc_pr *p, const struct rslc_node *n)
             pr_c(p, '(');
             pr_expr(p, rslc_list_item(p->c, list, 1), PR_PREC_SEQ);
             pr_s(p, ").");
-            pr_s(p, "xxxx" + (4 - tx->rows));
+            pr_s(p, &"xxxx"[4 - tx->rows]);
          }
          else
             pr_expr(p, rslc_list_item(p->c, list, 1), PR_PREC_ASSIGN);
@@ -1529,7 +1529,7 @@ static bool pr_hlsl_to_bool(struct rslc_pr *p, const struct rslc_type *t, uint32
    if (at->kind == RSLC_TY_VEC)
    {
       pr_s(p, ".");
-      pr_s(p, "xxxx" + (4 - at->rows));
+      pr_s(p, &"xxxx"[4 - at->rows]);
    }
    pr_c(p, ')');
    return true;
@@ -1564,7 +1564,7 @@ static void pr_hlsl_construct(struct rslc_pr *p, const struct rslc_node *n)
          pr_c(p, '(');
          pr_expr(p, an, PR_PREC_SEQ);
          pr_s(p, ").");
-         pr_s(p, "xxxx" + (4 - t->rows));
+         pr_s(p, &"xxxx"[4 - t->rows]);
          if (at->base != t->base)
             pr_c(p, ')');
          return;
@@ -2144,7 +2144,7 @@ static void pr_expr(struct rslc_pr *p, uint32_t node, int ctx)
                pr_c(p, '(');
                pr_expr(p, n->a, PR_PREC_SEQ);
                pr_s(p, ").");
-               pr_s(p, "xxxx" + (4 - cnt));
+               pr_s(p, &"xxxx"[4 - cnt]);
             }
             else
             {
