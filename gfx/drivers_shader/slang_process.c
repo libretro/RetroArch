@@ -1361,27 +1361,24 @@ void slang_arena_pool_drop(void) { }
 
 #if defined(HAVE_RSLC)
 /* rslc builds the stage in its own arena and returns one blob holding
- * the words and the reflection tables; the output adopts it whole. */
+ * the words and the reflection tables; the output adopts it whole.  On
+ * a refusal @err (256 bytes) holds rslc's message. */
 static bool slang_rslc_compile_stage(const char *source,
-      enum glslang_compile_stage stage, struct slang_blob **blob)
+      enum glslang_compile_stage stage, struct slang_blob **blob, char *err)
 {
    struct rslc_opts   opts;
    struct rslc_result res;
-   char               err[256];
 
    memset(&opts, 0, sizeof(opts));
    opts.dst     = RSLC_DST_SPIRV;
    opts.err     = err;
-   opts.err_cap = sizeof(err);
+   opts.err_cap = 256;
    err[0]       = '\0';
 
    if (!slang_rslc_run(source, NULL, strlen(source),
             stage == GLSLANG_COMPILE_STAGE_VERTEX
             ? RSLC_STAGE_VERTEX : RSLC_STAGE_FRAGMENT, &opts, &res))
-   {
-      RARCH_ERR("[Slang] %s\n", err);
       return false;
-   }
    *blob = slang_blob_adopt_result(&res, &opts);
    return *blob != NULL;
 }
@@ -1477,12 +1474,17 @@ bool slang_compile_builtin(const char *source, bool fragment,
       const struct slang_text_target *t, struct slang_blob **blob,
       char **text)
 {
+   char err[256];
    enum glslang_compile_stage stage = fragment
       ? GLSLANG_COMPILE_STAGE_FRAGMENT : GLSLANG_COMPILE_STAGE_VERTEX;
    *blob = NULL;
    *text = NULL;
-   if (!slang_rslc_compile_stage(source, stage, blob))
+   if (!slang_rslc_compile_stage(source, stage, blob, err))
+   {
+      RARCH_ERR("[Slang] A built-in %s stage: %s\n",
+            fragment ? "fragment" : "vertex", err);
       return false;
+   }
    if (t && !(*text = slang_rslc_print_stage(source, stage, t, NULL)))
    {
       slang_blob_unref(*blob);
@@ -1511,16 +1513,21 @@ static void slang_output_print_text(glslang_output *output,
 }
 #endif
 
-/* Compiles one stage; *compiler names what produced the words, for
- * the cache entry's key. */
+/* Compiles one stage of the pass at @path, whose cache key is @key;
+ * *compiler names what produced the words, for the cache entry's key. */
 static bool slang_compile_stage(const char *source,
       enum glslang_compile_stage stage,
       struct slang_blob **blob, const char **compiler,
-      const struct slang_text_target *text, bool detached)
+      const struct slang_text_target *text, bool detached,
+      const char *path, const char *key)
 {
 #if defined(HAVE_GLSLANG)
    uint32_t *words = NULL;
    size_t    nwords = 0;
+#endif
+#if !defined(HAVE_RSLC)
+   (void)path;
+   (void)key;
 #endif
 #if !defined(HAVE_RSLC) || !defined(HAVE_GLSLANG)
    (void)text;
@@ -1530,18 +1537,26 @@ static bool slang_compile_stage(const char *source,
    if (slang_prefer_rslc(text))
 #endif
    {
-      if (slang_rslc_compile_stage(source, stage, blob))
+      char err[256];
+      if (slang_rslc_compile_stage(source, stage, blob, err))
       {
          *compiler = "rslc";
          return true;
       }
       /* glslang is one process-wide instance: a detached compile leaves
        * the stage to the chain's own thread rather than enter it beside
-       * that thread */
+       * that thread, which tells the user */
       if (detached)
          return false;
+      /* the line a tester reports: which stage, of which file, and why */
 #if defined(HAVE_GLSLANG)
-      RARCH_WARN("[Slang] rslc rejected the stage; compiling it with glslang.\n");
+      RARCH_WARN("[Slang] rslc rejected the %s stage of \"%s\" (pass %.16s): %s; compiling it with glslang.\n",
+            stage == GLSLANG_COMPILE_STAGE_VERTEX ? "vertex" : "fragment",
+            path, key, err);
+#else
+      RARCH_ERR("[Slang] rslc rejected the %s stage of \"%s\" (pass %.16s): %s\n",
+            stage == GLSLANG_COMPILE_STAGE_VERTEX ? "vertex" : "fragment",
+            path, key, err);
 #endif
    }
 #endif
@@ -1727,7 +1742,8 @@ static bool slang_compile_pass(const char *shader_path,
          goto error;
 
       if (!slang_compile_stage(vertex_source,
-               GLSLANG_COMPILE_STAGE_VERTEX, &blob, &used, text, detached))
+               GLSLANG_COMPILE_STAGE_VERTEX, &blob, &used, text, detached,
+               shader_path, cache_filename))
       {
          RARCH_ERR("[Slang] Failed to compile vertex shader stage.\n");
          goto error;
@@ -1745,7 +1761,8 @@ static bool slang_compile_pass(const char *shader_path,
       vertex_source = NULL;
 
       if (!slang_compile_stage(fragment_source,
-               GLSLANG_COMPILE_STAGE_FRAGMENT, &blob, &used, text, detached))
+               GLSLANG_COMPILE_STAGE_FRAGMENT, &blob, &used, text, detached,
+               shader_path, cache_filename))
       {
          RARCH_ERR("[Slang] Failed to compile fragment shader stage.\n");
          goto error;

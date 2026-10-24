@@ -54,12 +54,18 @@ static unsigned failures;
 void RARCH_LOG(const char *fmt, ...)  { (void)fmt; }
 void RARCH_WARN(const char *fmt, ...) { (void)fmt; }
 void RARCH_DBG(const char *fmt, ...)  { (void)fmt; }
+/* the refusal line, for the lane that holds what it says */
+static char last_err[512];
 void RARCH_ERR(const char *fmt, ...)
 {
+   char    line[512];
    va_list ap;
    va_start(ap, fmt);
-   vprintf(fmt, ap);
+   vsnprintf(line, sizeof(line), fmt, ap);
    va_end(ap);
+   if (strstr(line, "rslc rejected"))
+      memcpy(last_err, line, sizeof(line));
+   fputs(line, stdout);
 }
 void runloop_msg_queue_push(const char *msg, size_t len, unsigned prio,
       unsigned duration, bool flush, char *title,
@@ -120,7 +126,9 @@ static const struct source sources[] =
    { "a.slang", HEAD STAGE_VS STAGE_FS("texture(Source, vTexCoord)") },
    { "b.slang", HEAD STAGE_VS STAGE_FS("texture(Source, vTexCoord) * 0.5") },
    { "c.slang", HEAD STAGE_VS STAGE_FS("vec4(vTexCoord, 0.0, 1.0)") },
-   { "d.slang", HEAD STAGE_VS STAGE_FS("texture(Source, vTexCoord).bgra") }
+   { "d.slang", HEAD STAGE_VS STAGE_FS("texture(Source, vTexCoord).bgra") },
+   /* a fragment stage rslc refuses: an undeclared name */
+   { "bad.slang", HEAD STAGE_VS STAGE_FS("texture(Source, nowhere)") }
 };
 
 bool video_shader_source_read(const char *ident, char **buf, int64_t *len)
@@ -294,6 +302,20 @@ int main(void)
       slang_blob_offers_release();
       slang_blob_table_stats(&n, &reused);
       CHECK(n == 0, "released offers leave the table");
+   }
+
+   /* a stage rslc refuses: the line names the stage, the file and the
+    * pass key, then rslc's reason */
+   {
+      glslang_output out;
+      last_err[0] = '\0';
+      printf("load bad (refused)\n");
+      CHECK(!glslang_compile_shader("bad.slang", &out), "a refused stage fails the pass");
+      CHECK(strstr(last_err, "rslc rejected the fragment stage of \"bad.slang\" (pass ") != NULL,
+            "the refusal names the stage and the file");
+      CHECK(strstr(last_err, "nowhere") != NULL, "the refusal carries rslc's reason");
+      slang_blob_table_stats(&n, &reused);
+      CHECK(n == 0, "a refused pass lists nothing");
    }
 
    printf("%s: %u failure(s)\n", failures ? "FAIL" : "ok", failures);
