@@ -2641,6 +2641,124 @@ static void test_sdl_pads(void)
          failures == had ? "pass" : "fail");
 }
 
+/* ---- DualShock 4 and DualSense touchpads ---------------------- */
+
+/* a finger's four bytes as the pads send them */
+static void touch_put(uint8_t *t, bool down, unsigned x, unsigned y)
+{
+   t[0] = (uint8_t)(down ? 0x05 : 0x85);
+   t[1] = (uint8_t)x;
+   t[2] = (uint8_t)(((x >> 8) & 0x0f) | ((y & 0x0f) << 4));
+   t[3] = (uint8_t)(y >> 4);
+}
+
+/* where a place on the pad is, as the pointer device has it */
+static int16_t touch_want(unsigned v, unsigned reach)
+{
+   if (v >= reach)
+      v = reach - 1;
+   return (int16_t)((long)v * 0xfffe / (long)(reach - 1) - 0x7fff);
+}
+
+static bool touch_wrong(const input_pad_view_t *v, unsigned finger,
+      unsigned x, unsigned y, unsigned h)
+{
+   return (int16_t)(v->touch[finger] & 0xffff) != touch_want(x, 1920)
+       || (int16_t)(v->touch[finger] >> 16)    != touch_want(y, h);
+}
+
+/* @shape: 0 the DualShock 4 over USB, 1 woken over Bluetooth (0x11);
+ * 2 the DualSense over USB, 3 over Bluetooth (0x31) */
+static unsigned touch_reports(const pad_connection_interface_t *ifc,
+      void *dev, int shape)
+{
+   uint8_t p[80];
+   const input_pad_view_t *v = ifc->view(dev);
+   unsigned i, bad = 0;
+   unsigned h = shape < 2 ? 920 : 1070;
+   for (i = 0; i < 4000; i++)
+   {
+      unsigned x[2], y[2], j, len, at, press_at;
+      bool d[2], press;
+      uint8_t want;
+      for (j = 0; j < 2; j++)
+      {
+         x[j] = (unsigned)rand() % 2048;
+         y[j] = (unsigned)rand() % 1280;
+         d[j] = (rand() & 1) != 0;
+      }
+      press = (rand() & 1) != 0;
+      for (j = 0; j < sizeof(p); j++)
+         p[j] = (uint8_t)rand();
+      switch (shape)
+      {
+         case 0:  p[0] = 0x01; at = 1 + 34; press_at = 1 + 6; len = 64; break;
+         case 1:  p[0] = 0x11; at = 3 + 34; press_at = 3 + 6; len = 78; break;
+         case 2:  p[0] = 0x01; at = 33;     press_at = 10;    len = 64; break;
+         default: p[0] = 0x31; at = 34;     press_at = 11;    len = 78; break;
+      }
+      p[press_at] = (uint8_t)((p[press_at] & ~0x02) | (press ? 0x02 : 0));
+      touch_put(p + at,     d[0], x[0], y[0]);
+      touch_put(p + at + 4, d[1], x[1], y[1]);
+      deliver(ifc, dev, p, (uint16_t)len);
+      want = (uint8_t)((d[0] ? 1 : 0) | (d[1] ? 2 : 0)
+            | (press ? INPUT_PAD_TOUCH_PRESS : 0));
+      if (     v->touch_down != want
+            || (d[0] && touch_wrong(v, 0, x[0], y[0], h))
+            || (d[1] && touch_wrong(v, 1, x[1], y[1], h)))
+         bad++;
+   }
+   return bad;
+}
+
+static void test_sony_touch(void)
+{
+   uint8_t p[80];
+   unsigned had = failures, bad;
+   int dummy_connection;
+   void *dev;
+
+   srand(7);
+   dev = pad_connection_ps4.init(&dummy_connection, 0, &stub_hid);
+   CHECK(pad_connection_ps4.view(dev)->touchpad, "touch: a DualShock 4 has no touchpad");
+   bad  = touch_reports(&pad_connection_ps4, dev, 0);
+   bad += touch_reports(&pad_connection_ps4, dev, 1);
+   CHECK(!bad, "touch: %u DualShock 4 reports read wrong", bad);
+   /* Bluetooth's short report has no fingers */
+   memset(p, 0, sizeof(p));
+   p[0] = 0x01; p[5] = 8;
+   deliver(&pad_connection_ps4, dev, p, 10);
+   CHECK(!pad_connection_ps4.view(dev)->touch_down,
+         "touch: a DualShock 4's short report kept the fingers");
+   pad_connection_ps4.deinit(dev);
+
+   dev = pad_connection_ps5.init(&dummy_connection, 0, &stub_hid);
+   CHECK(pad_connection_ps5.view(dev)->touchpad, "touch: a DualSense has no touchpad");
+   bad  = touch_reports(&pad_connection_ps5, dev, 2);
+   bad += touch_reports(&pad_connection_ps5, dev, 3);
+   CHECK(!bad, "touch: %u DualSense reports read wrong", bad);
+   memset(p, 0, sizeof(p));
+   p[0] = 0x01; p[5] = 8;
+   deliver(&pad_connection_ps5, dev, p, 10);
+   CHECK(!pad_connection_ps5.view(dev)->touch_down,
+         "touch: a DualSense's short report kept the fingers");
+   pad_connection_ps5.deinit(dev);
+
+   /* the others' are not known to be laid out the same */
+   dev = pad_connection_ps4_third_party.init(&dummy_connection, 0, &stub_hid);
+   CHECK(!pad_connection_ps4_third_party.view(dev)->touchpad,
+         "touch: another make's DualShock 4 was taken to have a touchpad");
+   pad_connection_ps4_third_party.deinit(dev);
+   dev = pad_connection_ps5_third_party.init(&dummy_connection, 0, &stub_hid);
+   CHECK(!pad_connection_ps5_third_party.view(dev)->touchpad,
+         "touch: another make's DualSense was taken to have a touchpad");
+   pad_connection_ps5_third_party.deinit(dev);
+
+   printf("[%s] touch: both fingers and the press on the DualShock 4 and DualSense,"
+         " over USB and Bluetooth, on 16000 reports; none in a short report or on another make's\n",
+         failures == had ? "pass" : "fail");
+}
+
 int main(void)
 {
    stub_hid.send_control = stub_send_control;
@@ -2659,6 +2777,7 @@ int main(void)
          ref_kade_take, ref_no_axis);
    test_retrode();
    test_ps5();
+   test_sony_touch();
    test_switch_pro();
    test_switch2_pro();
    test_ds3();

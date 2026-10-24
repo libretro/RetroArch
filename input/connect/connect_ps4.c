@@ -27,6 +27,7 @@
 #include "../../driver.h"
 #include "../common/sony_pad_output.h"
 #include "../common/sony_pad_motion.h"
+#include "../common/sony_pad_touch.h"
 #include "../common/pad_motion.h"
 
 /* The DualShock 4 and its USB wireless adaptor.
@@ -49,7 +50,9 @@
  *   and triangle;
  * - byte 5: L1, R1, L2, R2, share, options, L3, R3, from bit 0;
  * - byte 6: PS in bit 0, the touchpad's click in bit 1;
- * - bytes 7 and 8: L2 and R2's travel. */
+ * - bytes 7 and 8: L2 and R2's travel;
+ * - from byte 34, not in Bluetooth's short report, the touchpad's two
+ *   fingers (sony_pad_touch.h). */
 #define PS4_REPORT_LEN 9
 
 enum hidpad_ps4_make
@@ -164,6 +167,8 @@ static void* hidpad_ps4_start(void *data, uint32_t slot,
    device->gyro_mul   = 1.0f;
    /* Sony's: the calibration's feature report read, which wakes the
     * full report over Bluetooth; the others are wired, as SDL has it */
+   /* the others' touchpads are not known to be read the same */
+   device->view.touchpad = (make == PS4_SONY);
    if (make != PS4_SONY)
       hidpad_ps4_third_party(device, make);
    else if (driver && driver->get_report)
@@ -303,6 +308,11 @@ static void hidpad_ps4_packet_handler(void *data,
    /* a timestamp and the temperature, then the gyroscope and the
     * accelerometer; not in Bluetooth's short report */
    rest = size - (unsigned)(r - packet);
+   if (device->view.touchpad && rest >= 42)
+      sony_pad_touch(&device->view, r + 34, SONY_PAD_TOUCH_H_DS4,
+            (r[6] & 0x02) != 0);
+   else
+      device->view.touch_down = 0;
    if (device->motion_want && device->sensors && rest >= 24)
    {
       for (i = 0; i < 3; i++)

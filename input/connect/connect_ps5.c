@@ -24,6 +24,8 @@
  *   and triangle;
  * - byte 1: L1, R1, L2, R2, create, options, L3, R3, from bit 0;
  * - byte 2: PS, the touchpad's click, mute.
+ * After the motion, from byte 33 of the USB report, are the touchpad's
+ * two fingers (sony_pad_touch.h); Bluetooth's short report has none.
  *
  * Output - rumble and the player lights - is the report raw input's
  * driver sends (input/common/sony_pad_output.h), over USB or
@@ -41,6 +43,7 @@
 #include "../input_defines.h"
 #include "../common/sony_pad_output.h"
 #include "../common/sony_pad_motion.h"
+#include "../common/sony_pad_touch.h"
 #include "../common/pad_motion.h"
 
 #define PS5_USB_REPORT_LEN    64
@@ -120,6 +123,8 @@ static void *hidpad_ps5_start(void *data, uint32_t slot,
    device->vibration_v2 = edge;
    device->effects      = true;
    device->sensors      = true;
+   /* the others' touchpads are not known to be read the same */
+   device->view.touchpad = !third;
    if (third)
       hidpad_ps5_third_party(device);
    else if (!edge && driver && driver->get_report)
@@ -263,6 +268,11 @@ static void hidpad_ps5_packet_handler(void *data,
             | (triggers[i] >> 1));
    pad_view_set_buttons(&device->view, hidpad_ps5_decode(buttons),
          (buttons[2] & 0x01) != 0);
+   if (device->view.touchpad && motion_len >= 41)
+      sony_pad_touch(&device->view, r + 33, SONY_PAD_TOUCH_H_DS5,
+            (buttons[2] & 0x02) != 0);
+   else
+      device->view.touch_down = 0;
    if (device->motion_want && device->sensors && motion_len >= 16 + 12)
    {
       for (i = 0; i < 3; i++)

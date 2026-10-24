@@ -602,6 +602,9 @@ struct input_driver
  * field holds is what button(), axis() and get_buttons() answer. */
 #define INPUT_PAD_VIEW_AXES 16
 #define INPUT_PAD_VIEW_HATS 4
+#define INPUT_PAD_VIEW_TOUCHES 2
+/* touch_down's bit for the touchpad pressed in, beside its fingers' */
+#define INPUT_PAD_TOUCH_PRESS 0x80
 
 typedef struct input_pad_view
 {
@@ -610,6 +613,12 @@ typedef struct input_pad_view
    int16_t      axes[INPUT_PAD_VIEW_AXES];
    /* four bits a hat, from bit 0: up, down, left, right */
    uint16_t     hats;
+   /* A touchpad's fingers where the pointer device puts a place: x in
+    * the low half of each word, y in the high, -0x7fff to 0x7fff across
+    * the pad. Bit n of touch_down is finger n on it. */
+   uint32_t     touch[INPUT_PAD_VIEW_TOUCHES];
+   uint8_t      touch_down;
+   bool         touchpad;   /* the pad has one */
 } input_pad_view_t;
 
 struct rarch_joypad_driver
