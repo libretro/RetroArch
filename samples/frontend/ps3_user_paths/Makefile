@@ -14,7 +14,10 @@ SOURCES := ps3_user_paths_test.c \
    $(COMMON)/file/file_path_io.c \
    $(COMMON)/file/config_file.c \
    $(COMMON)/file/config_file_io.c \
+   $(COMMON)/lists/dir_list.c \
    $(COMMON)/lists/string_list.c \
+   $(COMMON)/file/retro_dirent.c \
+   $(COMMON)/string/stdstring.c \
    $(COMMON)/streams/file_stream.c \
    $(COMMON)/string/rstrtod.c \
    $(COMMON)/vfs/vfs_implementation.c \

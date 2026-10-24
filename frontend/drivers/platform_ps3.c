@@ -173,9 +173,8 @@ static bool frontend_ps3_init_user_paths(void)
    bool writable;
 #ifdef __PSL1GHT__
    struct ps3_user_info info;
-   sysModuleId module = (sysModuleId)0x0032;
-   if (   sysModuleIsLoaded(module) != 0
-       && sysModuleLoad(module) < 0)
+   if (   sysModuleIsLoaded(SYSMODULE_USERINFO) != 0
+       && sysModuleLoad(SYSMODULE_USERINFO) < 0)
       return false;
    if (ps3_user_info_get_stat(0, &info) < 0)
       return false;
@@ -203,7 +202,9 @@ static bool frontend_ps3_init_user_paths(void)
    writable = filestream_write(file, "", 1) == 1;
    if (filestream_close(file) < 0)
       writable = false;
-   return filestream_delete(path) == 0 && writable;
+   if (filestream_delete(path) != 0 || !writable)
+      return false;
+   return ps3_user_data_migrate(g_defaults.dirs[DEFAULT_DIR_PORT]);
 }
 
 static void use_app_path(char *content_info_path)
@@ -218,6 +219,7 @@ static void frontend_ps3_get_env(int *argc, char *argv[],
       void *args, void *params_data)
 {
    char content_info_path[PATH_MAX_LENGTH];
+   bool user_paths;
 #ifndef __PSL1GHT__
    CellGameContentSize size;
    unsigned int type, attributes;
@@ -278,12 +280,8 @@ static void frontend_ps3_get_env(int *argc, char *argv[],
 #endif
 
    fill_derived_paths();
-   if (!frontend_ps3_init_user_paths())
-   {
-      RARCH_ERR("[PS3] Cannot access the current user's RetroArch directory.\n");
-      sysProcessExit(1);
-      return;
-   }
+   if (!(user_paths = frontend_ps3_init_user_paths()))
+      ps3_legacy_paths_init(g_defaults.dirs[DEFAULT_DIR_PORT]);
 
 #ifdef HAVE_FILE_LOGGER
    fill_pathname_resolve_relative(content_info_path, g_defaults.path_config,
@@ -295,6 +293,9 @@ static void frontend_ps3_get_env(int *argc, char *argv[],
          sizeof(content_info_path));
    retro_main_log_file_init(content_info_path, false);
 #endif
+   if (!user_paths)
+      RARCH_WARN("[PS3] The current user's directory is unusable, "
+            "using the shared one.\n");
 
 #ifndef IS_SALAMANDER
    if (verbosity)

@@ -21,23 +21,51 @@ concurrency:
 
 jobs:
   ps3-user-paths:
+    name: PS3 per-user directories
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
+    env:
+      APT_PKGS: gcc-mingw-w64-x86-64 wine64
+
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Apt cache key
+        id: apt
+        run: sh .github/workflows/scripts/apt-cache-key.sh "$APT_PKGS"
+
+      - name: Restore apt cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+          restore-keys: ${{ steps.apt.outputs.prefix }}
+
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y gcc-mingw-w64-x86-64
-      - name: User paths and configuration imports (ASan + UBSan)
+        timeout-minutes: 15
+        run: sh .github/workflows/scripts/apt-install.sh $APT_PKGS
+
+      - name: Save apt cache
+        if: env.APT_CACHE_SAVE == '1'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+
+      - name: Regression test
         working-directory: samples/frontend/ps3_user_paths
         run: |
+          # Each console user's own directory, the shared USRDIR layout
+          # when it cannot be used, a user's first boot copying the
+          # shared data, and one copy per imported configuration.
           make clean
-          make -j2 SANITIZER=address,undefined
+          make -j$(nproc) SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1 ./ps3_user_paths_test
-      - name: Build for Windows
-        working-directory: samples/frontend/ps3_user_paths
-        run: |
           make clean
-          make -j2 CC=x86_64-w64-mingw32-gcc TARGET=ps3_user_paths_test.exe
+          make -j$(nproc) CC=x86_64-w64-mingw32-gcc TARGET=ps3_user_paths_test.exe
+          WINEDEBUG=-all timeout 300 wine ./ps3_user_paths_test.exe
+          make clean TARGET=ps3_user_paths_test.exe
 
   samples-settings:
     name: Build and run samples/settings
