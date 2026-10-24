@@ -48,6 +48,7 @@ byte count is not.
 """
 import os
 import re
+import shutil
 import subprocess
 import concurrent.futures
 import sys
@@ -71,6 +72,11 @@ REFERENCE_TARGETS = ('x86_64-pc-linux-gnu', 'x86_64-linux-gnu')
 # for a comparison that is already approximate off-reference - it is
 # not a raise in the budget, and BUDGET itself does not move.
 ABI_SLACK         = 256
+
+# Where installed, each compile goes through ccache, which keeps the
+# .su with the object: a file unchanged since the last run is not
+# compiled again, and most of a run is three passes over unchanged files.
+CCACHE            = shutil.which('ccache')
 
 # Used for an extra pass when present, to reach code the host's own
 # preprocessor throws away. Not required: absent ones are skipped.
@@ -183,7 +189,7 @@ def stack_usage(path, workdir, cc='gcc', tag='o'):
         # PATH_MAX_LENGTH shaping -DPSP exists for does not apply.
         defs.remove('-DPSP')
         defs.append('-DHAVE_THREADS')
-    cmd = [cc, '-O2'] + defs + [
+    cmd = ([CCACHE] if CCACHE else []) + [cc, '-O2'] + defs + [
            '-I' + INCLUDE, '-fstack-usage', '-c', path, '-o', obj]
     r = subprocess.run(cmd, cwd=workdir, capture_output=True)
     # The .su existing is not proof the compile succeeded: gcc creates
