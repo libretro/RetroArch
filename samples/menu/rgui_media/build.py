@@ -1,6 +1,6 @@
 """Relink a built non-Qt frontend with a real menu translation unit."""
 from pathlib import Path
-import argparse, os, shlex, subprocess
+import argparse, os, shlex, shutil, subprocess
 p=argparse.ArgumentParser();p.add_argument('--objdir',default='obj-unix/release');p.add_argument('--c89',action='store_true');p.add_argument('--shell',default='bash');p.add_argument('--driver',default='rgui');p.add_argument('--test-source');p.add_argument('--output');a=p.parse_args()
 r=Path(__file__).resolve().parents[3];here=Path(__file__).resolve().parent
 output=Path(a.output).resolve() if a.output else here/('rgui_media_test.exe' if os.name=='nt' else 'rgui_media_test')
@@ -18,7 +18,10 @@ def run(c):
  if any(x in c for x in ['&&',';','|']):raise RuntimeError('Unexpected shell command')
  print('+',c[0],'- compile' if '-c' in c else '- link',len(c),'arguments',flush=True)
  if os.name=='nt':
-  subprocess.run([a.shell,'--noprofile','--norc','-c',shlex.join(c)],cwd=r,check=True,creationflags=subprocess.CREATE_NO_WINDOW)
+  # CreateProcess searches System32 before PATH and may select WSL's bash.
+  shell=shutil.which(a.shell)
+  if not shell:raise FileNotFoundError('Build shell not found: '+a.shell)
+  subprocess.run([shell,'--noprofile','--norc','-c',shlex.join(c)],cwd=r,check=True,creationflags=subprocess.CREATE_NO_WINDOW)
  else:subprocess.run(c,cwd=r,check=True)
 cc=compile_line('retroarch.c');retro_object=cc[cc.index('-o')+1]
 cc[cc.index('-o')+1]=str(objects/'retroarch_nomain.o');cc.extend(['-Umain','-Dmain=rarch_harness_unused_main']);run(cc)
