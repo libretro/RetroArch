@@ -504,6 +504,75 @@ static int sparse_cue_index(void)
    return 0;
 }
 
+static int filtered_payload(unsigned blocks)
+{
+   size_t marker, segment, tracks, entry, body = 0, after = 0, lo, hi;
+   unsigned i;
+   rwebm_t *demux;
+   rwebm_packet pkt;
+   int result;
+   used = 0;
+   marker = start(0x1a45dfa3, 4); finish(marker);
+   segment = start(0x18538067, 4);
+   tracks = start(0x1654ae6b, 4);
+   for (i = 1; i <= 2; i++)
+   {
+      entry = start(0xae, 1);
+      integer(0xd7, 1, i); integer(0x83, 1, i);
+      marker = start(0x86, 1);
+      memcpy(file + used, i == 1 ? "V_VP9" : "A_OPUS", i == 1 ? 5 : 6);
+      used += i == 1 ? 5 : 6;
+      finish(marker); finish(entry);
+   }
+   finish(tracks);
+   tracks = start(0x1f43b675, 4);
+   integer(0xe7, 1, 0);
+   for (i = 0; i < blocks; i++)
+   {
+      marker = start(0xa3, 1); body = used;
+      file[used++] = 0x81; file[used++] = 0;
+      file[used++] = 0; file[used++] = 0x80;
+      memset(file + used, 0xa5, blocks == 1 ? 512 : 1);
+      used += blocks == 1 ? 512 : 1;
+      finish(marker); after = used;
+   }
+   finish(tracks);
+   tracks = start(0x1f43b675, 4);
+   integer(0xe7, 1, 0);
+   marker = start(0xa3, 1);
+   file[used++] = 0x82; file[used++] = 0;
+   file[used++] = 10; file[used++] = 0;
+   memset(file + used, 0x7e, 8); used += 8;
+   finish(marker); finish(tracks); finish(segment);
+   demux = rwebm_open_memory_avail(file, used, blocks == 1 ? body + 1 : used, NULL);
+   CHECK(demux && rwebm_num_tracks(demux) == 2);
+   CHECK(rwebm_read_packet_track(demux, -1, &pkt) < 0);
+   if (blocks == 1)
+   {
+      CHECK(rwebm_read_packet_track(demux, 1, &pkt) == RWEBM_READ_AGAIN);
+      rwebm_read_span(demux, &lo, &hi);
+      CHECK(hi == body + 11 && hi < after);
+      rwebm_set_avail(demux, hi);
+      CHECK(rwebm_read_packet_track(demux, 1, &pkt) == RWEBM_READ_AGAIN);
+      CHECK(rwebm_consumed(demux) == after);
+      rwebm_set_avail(demux, used);
+   }
+   else if (blocks > 256)
+   {
+      CHECK(rwebm_read_packet_track(demux, 1, &pkt) == RWEBM_READ_YIELD);
+      rwebm_read_span(demux, &lo, &hi);
+      CHECK(!lo && !hi && rwebm_consumed(demux) < after);
+   }
+   result = rwebm_read_packet_track(demux, 1, &pkt);
+   CHECK(result == 1 && pkt.track == 1 && pkt.size == 8
+         && pkt.timestamp == 10000000 && pkt.data[0] == 0x7e);
+   CHECK(!rwebm_read_packet_track(demux, 1, &pkt));
+   rwebm_rewind(demux);
+   CHECK(rwebm_read_packet(demux, &pkt) == 1 && pkt.track == 0 && pkt.data[0] == 0xa5);
+   rwebm_close(demux);
+   return 0;
+}
+
 static unsigned gpu_starts, cpu_starts, presents;
 static int start_cpu(void *user, unsigned w, unsigned h, unsigned slots)
 {
@@ -882,6 +951,9 @@ int main(void)
    CHECK(!terminal_stream());
    CHECK(!config_admission());
    CHECK(!sparse_cue_index());
+   CHECK(!filtered_payload(1));
+   CHECK(!filtered_payload(2));
+   CHECK(!filtered_payload(300));
    puts("WebM hardware dispatch, seeks, superframe retries, lacing, partial input and leases passed");
    return 0;
 }

@@ -140,6 +140,12 @@ int64_t rwebm_duration_ns(const rwebm_t *webm);
 #define RWEBM_READ_AGAIN 2
 
 int rwebm_read_packet(rwebm_t *webm, rwebm_packet *pkt);
+/* Track-specific bounded walk (zero-based track index). Unselected
+ * SimpleBlock payloads need not be resident. YIELD means metadata progress
+ * with no missing bytes; retry without refilling. Other results match above. */
+#define RWEBM_READ_YIELD 3
+int rwebm_read_packet_track(rwebm_t *webm, int track, rwebm_packet *pkt);
+
 /* Optional exclusive-owner notification for validated Void payloads.
  * All cursors over the borrowed buffer must skip these inert bytes.
  * Return zero to refuse the packet walk. Callback/user are borrowed

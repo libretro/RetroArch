@@ -1663,7 +1663,8 @@ static int audio_transfer_vorbis_pull(struct audio_transfer_vorbis *v,
       {
          int r;
          if ((v->seek_phase || v->time.enabled) && walked++ == 256) return -3;
-         r = rwebm_read_packet(v->demux, &pkt);
+         r = rwebm_read_packet_track(v->demux, v->track_idx, &pkt);
+         if (r == RWEBM_READ_YIELD) return -3;
          /* The walk reached the resident wall rather than the end of
           * the stream: the feeder has not got here yet.  Report it
           * apart from end of stream, so the drain returns short and
@@ -2719,12 +2720,12 @@ static int audio_transfer_flac_next(struct audio_transfer_flac *fl)
       rwebm_packet pkt;
       for (;;)
       {
-         int r = rwebm_read_packet(fl->demux, &pkt);
+         int r = rwebm_read_packet_track(fl->demux, fl->track_idx, &pkt);
          /* The resident wall is not the end of the stream.  The pull
           * still reports "no chunk" - nothing here consumed anything,
           * so the retry is exact - but the wall flag lets the read
           * surface the difference instead of ending the sound. */
-         if (r == RWEBM_READ_AGAIN)
+         if (r == RWEBM_READ_AGAIN || r == RWEBM_READ_YIELD)
          {
             fl->wall = 1;
             return 0;
@@ -4530,7 +4531,8 @@ static int audio_transfer_opus_pull(struct audio_transfer_opus *op,
       {
          int r;
          if ((op->seek_pending || op->time.enabled) && walked++ == 256) return -3;
-         r = rwebm_read_packet(op->demux, &pkt);
+         r = rwebm_read_packet_track(op->demux, op->track_idx, &pkt);
+         if (r == RWEBM_READ_YIELD) return -3;
          /* Resident wall, not end of stream: see the Vorbis pull. */
          if (r == RWEBM_READ_AGAIN)
          {
@@ -4936,7 +4938,8 @@ static int audio_transfer_aac_pull(struct audio_transfer_aac *ac,
          {
             int r;
             if (walked++ == 256) return 3; /* metadata yield, not a byte wall */
-            r = rwebm_read_packet(ac->wdemux, &wpkt);
+            r = rwebm_read_packet_track(ac->wdemux, ac->wtrack_idx, &wpkt);
+            if (r == RWEBM_READ_YIELD) return 3;
             /* Resident wall, not end of stream - the same distinction
              * the rmp4 branch below has always drawn; conflating them
              * here had a Matroska AAC voice end (and a looping one

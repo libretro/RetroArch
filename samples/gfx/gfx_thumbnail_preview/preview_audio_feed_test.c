@@ -456,6 +456,8 @@ static int prepared_session(const char *path, bool s16, bool webm,
    if (size > 16 * 1024 * 1024 && data_transfer_reserve_supported()
          && (!reserved || resident >= size / 2))
       goto mixer_done;
+   if (p->type == IMAGE_TYPE_WEBM && reserved && resident > 3 * 1024 * 1024)
+      goto mixer_done;
    if (s16) audio_mixer_mix_s16((int16_t*)actual, 64, AUDIO_MIXER_GAIN_UNITY, false);
    else audio_mixer_mix((float*)actual, 64, 1.0f, false);
    for (i = 0; i < 64 * 2; i++)

@@ -870,13 +870,13 @@ failed:
 int gfx_anim_preview_audio_prepare_step(gfx_anim_preview_audio_prepared_t *a)
 {
 #ifdef GFX_ANIM_PREVIEW_AUDIO
-   size_t len, hi, res_hi, anchor, ahead, requested;
+   size_t len, hi, res_hi, anchor, ahead, requested, prefix;
    int result;
    if (!a || !a->window) return -1;
    if (!a->transfer) return a->sound ? 1 : -1;
    if (!data_transfer_window_base(a->window->dt, &len)) return -1;
    anchor = audio_transfer_buffer_tell(a->transfer, a->type);
-   ahead = a->ahead;
+   ahead = a->mixer_type == AUDIO_MIXER_TYPE_WEBA ? 16 : a->ahead;
    requested = audio_transfer_buffer_read_end(a->transfer, a->type);
    if (requested > anchor && requested - anchor > ahead)
       ahead = requested - anchor;
@@ -886,8 +886,9 @@ int gfx_anim_preview_audio_prepare_step(gfx_anim_preview_audio_prepared_t *a)
    if (anchor > a->hi || anchor < a->feed_anchor)
       data_transfer_window_rewind(a->window->dt);
    data_transfer_window_rebase(a->window->dt, anchor);
-   hi = anchor > (size_t)-1 - GFX_ANIM_PREVIEW_AUDIO_FEED_BUDGET
-      ? len : anchor + GFX_ANIM_PREVIEW_AUDIO_FEED_BUDGET;
+   prefix = ahead < GFX_ANIM_PREVIEW_AUDIO_FEED_BUDGET
+      ? ahead : GFX_ANIM_PREVIEW_AUDIO_FEED_BUDGET;
+   hi = anchor > (size_t)-1 - prefix ? len : anchor + prefix;
    if (hi > len) hi = len;
    if (!data_transfer_window_extend(a->window->dt, hi)
          || !data_transfer_window_feed_budget(a->window->dt, anchor,

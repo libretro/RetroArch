@@ -794,14 +794,19 @@ static int64_t webm_group_discard(rwebm_t *webm, const uint8_t *p,
    return v;
 }
 
-int rwebm_read_packet(rwebm_t *webm, rwebm_packet *pkt)
+static int rwebm_read_packet_filtered(rwebm_t *webm, rwebm_packet *pkt,
+      int selected)
 {
    ebml_reader r;
+   unsigned walked = 0;
    if (!webm || !pkt)
       return -1;
    webm->need_hi = 0;
    pkt->timestamp_continuation = 0;
 
+   /* A caller changing tracks must not receive the previous track's lace. */
+   if (selected >= 0 && webm->lace_track != selected)
+      webm->lace_index = webm->lace_count;
    /* Drain a laced block first. */
    if (webm->lace_index < webm->lace_count)
    {
@@ -822,12 +827,23 @@ int rwebm_read_packet(rwebm_t *webm, rwebm_packet *pkt)
     * so an element crossing it must not be parsed - or consumed.  When
     * avail_end == segment_end this clamp is the old behaviour. */
    r.p = webm->cur; r.end = webm->avail_end;
-   while (r.p < r.end)
+   while (r.p < r.end
+         || (selected >= 0 && r.p < webm->avail_end))
    {
-      int      ok;
-      uint32_t id  = ebml_read_id(&r);
-      uint64_t sz  = ebml_read_vint(&r, 1, &ok);
-      const uint8_t *body = r.p;
+      int ok;
+      uint32_t id;
+      uint64_t sz;
+      const uint8_t *body;
+      if (selected >= 0 && r.p >= r.end)
+         r.end = webm->avail_end;
+      if (selected >= 0 && walked++ == 256)
+      {
+         webm->cur = r.p;
+         return RWEBM_READ_YIELD;
+      }
+      id = ebml_read_id(&r);
+      sz = ebml_read_vint(&r, 1, &ok);
+      body = r.p;
       if (!id || !ok)
       {
          if (webm->avail_end < webm->segment_end)
@@ -866,6 +882,33 @@ int rwebm_read_packet(rwebm_t *webm, rwebm_packet *pkt)
          continue;
       }
       if (sz > (uint64_t)(webm->segment_end - body)) return -1;
+      if (selected >= 0 && id == ID_SIMPLEBLOCK)
+      {
+         ebml_reader block;
+         uint64_t number;
+         size_t prefix = sz < 11 ? (size_t)sz : 11;
+         block.p = body;
+         block.end = body + ((uint64_t)(r.end - body) < sz
+               ? (size_t)(r.end - body) : (size_t)sz);
+         number = ebml_read_vint(&block, 1, &ok);
+         if (!ok || block.end - block.p < 3)
+         {
+            if ((size_t)(r.end - body) < prefix)
+            {
+               webm->need_hi = (size_t)(body - webm->data) + prefix;
+               return RWEBM_READ_AGAIN;
+            }
+            return -1;
+         }
+         if (number != (uint64_t)webm->tracks[selected].number)
+         {
+            /* Only this cursor ignores the payload. It is not globally
+             * inert: a separate video cursor may still need its bytes. */
+            r.p = body + (size_t)sz;
+            webm->cur = r.p;
+            continue;
+         }
+      }
       if (sz > (uint64_t)(r.end - body))
       {
          /* Truncated at the wall: if the file continues past it, the
@@ -1097,6 +1140,18 @@ int rwebm_read_packet(rwebm_t *webm, rwebm_packet *pkt)
    }
    webm->cur = r.end;
    return 0;
+}
+
+int rwebm_read_packet(rwebm_t *webm, rwebm_packet *pkt)
+{
+   return rwebm_read_packet_filtered(webm, pkt, -1);
+}
+
+int rwebm_read_packet_track(rwebm_t *webm, int track, rwebm_packet *pkt)
+{
+   if (!webm || track < 0 || track >= webm->num_tracks)
+      return -1;
+   return rwebm_read_packet_filtered(webm, pkt, track);
 }
 
 /* SeekHead positions are relative to Segment data, not the file header. */
