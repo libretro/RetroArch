@@ -956,6 +956,78 @@ static bool command_screenshot(command_t *cmd)
    command_deferred_take(d, cmd);
    return true;
 }
+
+static void command_get_frame_done(retro_task_t *task, void *task_data,
+      void *user_data, const char *error)
+{
+   command_deferred_t             *d = (command_deferred_t*)user_data;
+   const struct screenshot_result *r = (const struct screenshot_result*)task_data;
+   char msg[256];
+   if (error || !r || !r->png_base64)
+   {
+      snprintf(msg, sizeof(msg), "GET_FRAME ERROR %s",
+            error ? error : "the frame could not be encoded");
+      command_deferred_send(d, msg, strlen(msg), true);
+   }
+   else
+   {
+      int _len = snprintf(msg, sizeof(msg), "GET_FRAME %ux%u",
+            r->width, r->height);
+      if (     d->cmd->reply_image_to && d->dest
+            && input_driver_command_generation() == d->gen)
+         d->cmd->reply_image_to(d->cmd, d->dest, msg, (size_t)_len,
+               "image/png", r->png_base64, r->png_base64_len);
+      command_deferred_send(d, NULL, 0, false);
+   }
+   free(d);
+}
+
+/* GET_FRAME [size]: the frame on screen as image content, scaled to fit
+ * a square of @size and never up. Nothing is written, so it is cheap
+ * enough to call while a queued STEPS plays. */
+bool command_get_frame(command_t *cmd, const char *arg)
+{
+   command_deferred_t *d;
+   unsigned long       size = COMMAND_FRAME_SIZE;
+   char               *end  = NULL;
+   while (arg && *arg == ' ')
+      arg++;
+   if (arg && *arg)
+   {
+      size = strtoul(arg, &end, 10);
+      if (     *arg < '0' || *arg > '9' || *end
+            || size < COMMAND_FRAME_SIZE_MIN || size > COMMAND_FRAME_SIZE_MAX)
+      {
+         command_reply_error(cmd, "GET_FRAME", "a size from %u to %u",
+               COMMAND_FRAME_SIZE_MIN, COMMAND_FRAME_SIZE_MAX);
+         return false;
+      }
+   }
+   /* the line interfaces carry text alone */
+   if (!cmd->reply_image_to)
+   {
+      command_reply_error(cmd, "GET_FRAME", "this interface carries no "
+            "image; SCREENSHOT writes one to a file");
+      return false;
+   }
+   if (!(runloop_get_flags() & RUNLOOP_FLAG_CORE_RUNNING))
+   {
+      command_reply_error(cmd, "GET_FRAME", "no content is running");
+      return false;
+   }
+   if (!(d = (command_deferred_t*)calloc(1, sizeof(*d))))
+      return false;
+   if (!take_frame_notify((unsigned)size, (unsigned)size,
+            command_get_frame_done, d))
+   {
+      free(d);
+      command_reply_error(cmd, "GET_FRAME", "the frame could not be "
+            "taken: none has been drawn, or a screenshot is being taken");
+      return false;
+   }
+   command_deferred_take(d, cmd);
+   return true;
+}
 #endif
 
 /* A command answered once the work it starts is through: by @ok, else

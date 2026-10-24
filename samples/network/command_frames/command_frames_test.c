@@ -461,6 +461,14 @@ int main(int argc, char **argv)
    /* a family of commands as one: the word picks the command, and only
     * the ones that take a number take what follows */
    reply[0]=0; cmd.error=false;
+#ifdef HAVE_SCREENSHOTS
+   /* GET_FRAME answers with an image, which a line interface cannot carry */
+   reply[0]=0; cmd.error=false;
+   CHECK(!command_get_frame(&cmd,"") && strstr(reply,"carries no image"));
+   reply[0]=0; cmd.error=false;
+   CHECK(!command_get_frame(&cmd,"1000") && strstr(reply,"64 to 640"));
+#endif
+   reply[0]=0; cmd.error=false;
    CHECK(!command_menu(&cmd,"toggle") && strstr(reply,"MENU ERROR one of show|"));
    reply[0]=0;
    CHECK(!command_menu(&cmd,"up 5") && strstr(reply,"up takes no index"));
