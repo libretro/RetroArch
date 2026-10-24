@@ -6,6 +6,7 @@
 #include "../../../paths.h"
 #include "../../../frontend/frontend.h"
 #include "../../../gfx/gfx_surface_player.h"
+#include "../../../driver.h"
 #include <time/rtime.h>
 #ifdef _WIN32
 #include "../../../gfx/common/win32_common.h"
@@ -21,6 +22,7 @@ static bool gpu_surface;
 #ifdef MEDIA_TEST_COLD_CANCEL
 static retro_atomic_int_t cold_gate;
 static retro_atomic_int_t cold_entered;
+static retro_atomic_int_t cold_finished;
 static uintptr_t cold_poll_owner;
 static uintptr_t cold_open_owner;
 
@@ -30,7 +32,9 @@ bool __real_image_transfer_anim_stream_set_hw(void *stream,
 bool __wrap_image_transfer_anim_stream_set_hw(void *stream,
       enum image_type_enum type, bool enable)
 {
-   if (enable && retro_atomic_cas_int(&cold_gate, 1, 2))
+   bool held = enable && retro_atomic_cas_int(&cold_gate, 1, 2);
+   bool result;
+   if (held)
    {
       unsigned ticks;
       cold_open_owner = sthread_get_current_thread_id();
@@ -39,8 +43,35 @@ bool __wrap_image_transfer_anim_stream_set_hw(void *stream,
             && retro_atomic_load_acquire_int(&cold_gate) == 2; ticks++)
          retro_sleep(1);
    }
-   return __real_image_transfer_anim_stream_set_hw(stream, type, enable);
+   result = __real_image_transfer_anim_stream_set_hw(stream, type, enable);
+   if (held)
+      retro_atomic_store_release_int(&cold_finished, 1);
+   return result;
 }
+#ifdef MEDIA_TEST_COLD_RESET
+static bool cold_free_unsafe;
+void __real_gfx_thumbnail_anim_worker_deinit(void);
+void __real_video_driver_free_internal(void);
+
+void __wrap_gfx_thumbnail_anim_worker_deinit(void)
+{
+   retro_atomic_store_release_int(&cold_gate, 0);
+   __real_gfx_thumbnail_anim_worker_deinit();
+}
+
+void __wrap_video_driver_free_internal(void)
+{
+   if (retro_atomic_load_acquire_int(&cold_entered)
+         && !retro_atomic_load_acquire_int(&cold_finished))
+   {
+      cold_free_unsafe = true;
+      /* Record the failure, then make baseline cleanup safe. */
+      retro_atomic_store_release_int(&cold_gate, 0);
+      __real_gfx_thumbnail_anim_worker_deinit();
+   }
+   __real_video_driver_free_internal();
+}
+#endif
 #endif
 #ifdef MEDIA_TEST_IMPORT_REFUSAL
 static unsigned refused_imports;
@@ -195,6 +226,7 @@ int main(int argc, char **argv)
 #ifdef MEDIA_TEST_COLD_CANCEL
    retro_atomic_int_init(&cold_gate, 1);
    retro_atomic_int_init(&cold_entered, 0);
+   retro_atomic_int_init(&cold_finished, 0);
    cold_poll_owner = sthread_get_current_thread_id();
 #endif
    if (argc != 3) return 2;
@@ -399,12 +431,22 @@ int main(int argc, char **argv)
       {
          MEDIA_CHECK("cold hardware admission runs off the polling owner",
                cold_open_owner != cold_poll_owner);
+#ifdef MEDIA_TEST_COLD_RESET
+         driver_uninit(DRIVER_VIDEO_MASK, DRIVER_LIFETIME_RESET);
+         MEDIA_CHECK("video-only teardown drains admission before device free",
+               !cold_free_unsafe
+               && retro_atomic_load_acquire_int(&cold_finished));
+         drivers_init(settings, DRIVER_VIDEO_MASK, DRIVER_LIFETIME_RESET, false);
+         MEDIA_CHECK("video-only reset retains the requested renderer",
+               media_native_video_driver_ready());
+#else
          rgui_parse_menu_entry_action(rgui, entry, MENU_ACTION_CANCEL);
          media_render(menu_st);
          MEDIA_CHECK("closing held admission detaches the player",
                !rgui->media_gpu.anim_player && !rgui->media_gpu.anim_sess);
          rgui_parse_menu_entry_action(rgui, entry, MENU_ACTION_OK);
          media_render(menu_st);
+#endif
          cold_canceled = true;
          retro_atomic_store_release_int(&cold_gate, 0);
       }

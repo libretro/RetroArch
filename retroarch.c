@@ -2168,6 +2168,7 @@ void driver_uninit(int flags, enum driver_lifetime_flags lifetime_flags)
       if (     menu_st->driver_ctx
             && menu_st->driver_ctx->context_destroy)
          menu_st->driver_ctx->context_destroy(menu_st->userdata);
+      gfx_thumbnail_anim_worker_deinit();
    }
 #endif
 

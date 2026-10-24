@@ -51,6 +51,12 @@ constructor on its worker, closes the viewer and immediately opens it again.
 It requires the replacement to reach native playback. The bounded hold exists
 only in the linked test wrapper, with no production scheduling hook.
 
+Use `--cold-reset` instead of `--cold-cancel` to reinitialize only video while
+admission is held. The test requires worker completion before device teardown
+and native playback after the renderer is recreated. A failing baseline is
+drained by the test wrapper after recording the unsafe ordering, so cleanup
+does not deliberately free a device still used by its constructor.
+
 The tested Windows NVIDIA driver fails the opt-in
 [H.264 host-header lifetime probe](../../gfx/vulkan_video_caps/README.md#h264-external-and-host-lifetime-probes).
 Default validation handle wrapping can expose the same delayed host-header
