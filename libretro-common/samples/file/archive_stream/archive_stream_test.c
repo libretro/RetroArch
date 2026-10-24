@@ -24,7 +24,9 @@
  * answers reads in pieces, the way an smb:// or nfs:// stream does:
  * listing an archive reads its headers through the one stream the
  * archive layer opened and nothing more, and members still extract
- * whole and correct.
+ * whole and correct. Also which archives the layer asks to have
+ * mapped: every one on a 64-bit host, those under the ceiling on a
+ * 32-bit one.
  *
  * The 7z fixture is a Copy-coder archive built here: its signature
  * header and end header are below, its 64 KiB member is regenerated
@@ -48,6 +50,8 @@
 #define BIG_LEN   65536
 #define PIECE     1024   /* the most one read answers */
 #define FIXTURE   "archive_stream_test.7z"
+#define BIG_ZIP   "archive_stream_test_big.zip"
+#define BIG_SIZE  (300L * 1024 * 1024)   /* past the 32-bit ceiling */
 
 static const uint8_t head_7z[32] =
 {
@@ -73,6 +77,7 @@ static const char small_txt[] = "stream me\n";
 
 static unsigned failures;
 static unsigned opens;
+static unsigned last_hints;
 static uint64_t bytes_read;
 
 static void fail(const char *what, const char *detail)
@@ -102,6 +107,7 @@ static struct retro_vfs_file_handle *fe_open(const char *path,
       unsigned mode, unsigned hints)
 {
    opens++;
+   last_hints = hints;
    return (struct retro_vfs_file_handle*)retro_vfs_file_open_impl(path, mode, hints);
 }
 
@@ -276,6 +282,52 @@ static void check_crc(const char *what, const char *path,
    free(buf);
 }
 
+/* Whether the archive layer asks the VFS for a mapping: always on a
+ * 64-bit host, only under the ceiling on a 32-bit one. The large file
+ * is sparse and not a real archive; only the open matters. */
+static void check_map_hint(void)
+{
+   struct string_list *list;
+   FILE *f;
+   unsigned want;
+
+   opens      = 0;
+   last_hints = 0;
+   list       = file_archive_get_file_list(FIXTURE, NULL);
+   string_list_free(list);
+   if (!opens || !(last_hints & RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS))
+      fail("map hint", "a small archive is not mapped");
+
+   if (!(f = fopen(BIG_ZIP, "wb")))
+   {
+      fail("map hint", "could not write the large file");
+      return;
+   }
+   if (fseek(f, BIG_SIZE - 1, SEEK_SET) != 0 || fputc(0, f) == EOF)
+   {
+      fclose(f);
+      remove(BIG_ZIP);
+      fail("map hint", "could not size the large file");
+      return;
+   }
+   fclose(f);
+   opens      = 0;
+   last_hints = 0;
+   list       = file_archive_get_file_list(BIG_ZIP, NULL);
+   string_list_free(list);
+   remove(BIG_ZIP);
+   want = sizeof(size_t) >= 8 ? RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS : 0;
+   if (!opens)
+      fail("map hint", "the large archive was not opened");
+   else if ((last_hints & RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS) != want)
+      fail("map hint", want
+            ? "a large archive is not mapped on a 64-bit host"
+            : "a large archive is mapped on a 32-bit host");
+   else
+      printf("[PASS] map hint: %u-bit host, large archive %s\n",
+            (unsigned)(sizeof(size_t) * 8), want ? "mapped" : "streamed");
+}
+
 int main(int argc, char *argv[])
 {
    const char *rar_dir = argc > 1 ? argv[1] : "../../formats/rrar/archives";
@@ -307,6 +359,8 @@ int main(int argc, char *argv[])
    check_list("rar list", path, "bsdcat.exe", 1, 4096);
    strlcat(path, "#bsdcat.exe", sizeof(path));
    check_crc("rar bsdcat.exe", path, 204288, 0x4db10349u);
+
+   check_map_hint();
 
    remove(FIXTURE);
    if (failures)

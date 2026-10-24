@@ -41,11 +41,11 @@
 #define SEVENZIP_MAGIC "7z\xBC\xAF\x27\x1C"
 #define SEVENZIP_MAGIC_LEN 6
 
-/* archive_file.c has already opened the file and, for archives up to
- * 256 MiB, mapped it before this backend is entered. Where that
- * mapping exists r7z_archive parses it in place, exactly as the zip
- * and zstd backends do. Without one (no mapping on the platform, a
- * network share, an archive over the cap) it reads the open stream
+/* archive_file.c has already opened the file and, where it could,
+ * mapped it before this backend is entered. Where that mapping
+ * exists r7z_archive parses it in place, exactly as the zip and zstd
+ * backends do. Without one (no mapping on the platform, a network
+ * share, an archive over a 32-bit host's ceiling) it reads the open stream
  * through file_archive_read_at(): the header at open, a folder's
  * packed bytes only when that folder is decoded. */
 struct sevenzip_context_t

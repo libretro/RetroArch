@@ -140,6 +140,9 @@ static int file_archive_extract_cb(const char *name, const char *valid_exts,
    return 1;
 }
 
+/* The largest archive a 32-bit host maps whole. */
+#define ARCHIVE_MAP_CEILING_32 (256 * 1024 * 1024)
+
 static int file_archive_parse_file_init(file_archive_transfer_t *state,
       const char *file)
 {
@@ -154,15 +157,17 @@ static int file_archive_parse_file_init(file_archive_transfer_t *state,
    if (!(state->backend = file_archive_get_file_backend(path)))
       return -1;
 
-   /* Ask the VFS to map the archive, as the private mmap() over a
-    * second open() of the path used to: same 256 MiB ceiling, so a
-    * huge archive is still streamed rather than mapped whole.  The
-    * VFS handles what that code had to special-case - a URL scheme
-    * or a failed map just leaves no mapping - and it maps on Win32
-    * too, which the private mmap() never did. */
+   /* Ask the VFS to map the archive. A 64-bit host maps it whatever
+    * its size, since pages are only faulted in as they are touched;
+    * a 32-bit one keeps the mapping to ARCHIVE_MAP_CEILING_32 so a
+    * huge archive cannot take the address space the core needs, and
+    * reads it through the stream instead. A URL scheme or a failed
+    * map just leaves no mapping, which every backend reads through
+    * the stream as well. */
    {
       int64_t  sz    = path_get_size(path);
-      unsigned hints = (sz > 0 && sz <= (256 * 1024 * 1024))
+      unsigned hints = (sz > 0 && (sizeof(size_t) >= 8
+               || sz <= ARCHIVE_MAP_CEILING_32))
             ? RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS
             : RETRO_VFS_FILE_ACCESS_HINT_NONE;
 
