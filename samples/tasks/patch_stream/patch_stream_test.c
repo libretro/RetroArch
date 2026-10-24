@@ -308,8 +308,11 @@ static int cmp1(int fmt,const uint8_t*pat,size_t pl,const uint8_t*src,size_t sl,
     free(os);free(ss);patch_stream_free(ps);free(priv);return bad;}}
 static int run_ips_ups(void){
    size_t chunks[]={1,2,3,7,64,1024,1<<20};int trial,ci,fails=0,total=0;
+   /* the patches are built here, once allocated: each comparison reads
+    * its own exact-size copy (cmp1), where an overread is caught */
+   uint8_t*pat=malloc(1<<21);
    for(trial=0;trial<20000;trial++){
-      size_t sl; {unsigned m=xr()%10; sl = m==0?0 : m==1?1 : m==2?2 : m==3?(xr()%4) : m==4?1024 : m==5?1025 : xr()%8192;}uint8_t*src=malloc(sl?sl:1);size_t k;uint8_t*pat=malloc(1<<21);size_t pl,wtl;
+      size_t sl; {unsigned m=xr()%10; sl = m==0?0 : m==1?1 : m==2?2 : m==3?(xr()%4) : m==4?1024 : m==5?1025 : xr()%8192;}uint8_t*src=malloc(sl?sl:1);size_t k;size_t pl,wtl;
       for(k=0;k<sl;k++)src[k]=(uint8_t)xr();
       pl=make_ips(pat,src,sl,&wtl);
       for(ci=0;ci<7;ci++){total++;fails+=cmp1(0,pat,pl,src,sl,chunks[ci]);}
@@ -318,7 +321,8 @@ static int run_ips_ups(void){
        pl=make_ups(pat,src,sl,tgt,tl);
        for(ci=0;ci<7;ci++){total++;fails+=cmp1(1,pat,pl,src,sl,chunks[ci]);}
        free(tgt);}
-      free(src);free(pat);}
+      free(src);}
+   free(pat);
    printf("%s: %d comparisons, %d mismatches (private patch copies)\n",fails?"FAIL":"PASS",total,fails);
    return fails!=0;}
 
