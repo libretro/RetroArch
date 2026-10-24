@@ -131,6 +131,7 @@ RC_BEGIN_C_DECLS
   #include <switch.h>
   typedef RMutex rc_mutex_t;
  #elif defined(__PSL1GHT__)
+  /* RetroArch-local: PSL1GHT ships no pthreads. */
   #include <lv2/mutex.h>
   typedef sys_lwmutex_t rc_mutex_t;
  #else
