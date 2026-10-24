@@ -6,16 +6,18 @@
 #include <formats/rmp4.h>
 #include <formats/rwebm.h>
 #include <formats/audio.h>
+#include <formats/video_player.h>
 #include <formats/data_transfer.h>
 #include <memmap.h>
 #ifdef PREVIEW_COUNT_READS
 #include <retro_atomic.h>
 #include <streams/file_stream.h>
-static retro_atomic_int_t window_reads;
+static retro_atomic_int_t window_reads, window_bytes;
 int64_t __real_filestream_read(RFILE *file, void *data, int64_t size);
 int64_t __wrap_filestream_read(RFILE *file, void *data, int64_t size)
 {
    retro_atomic_fetch_add_int(&window_reads, 1);
+   retro_atomic_fetch_add_int(&window_bytes, (int)size);
    return __real_filestream_read(file, data, size);
 }
 #endif
@@ -36,7 +38,7 @@ static audio_mixer_voice_t *voice;
 static unsigned repeats, finishes;
 static bool seek_probe, seek_probe_wait, seek_probe_sparse;
 static int seek_probe_error;
-static unsigned seek_probe_calls, seek_probe_end;
+static unsigned seek_probe_calls, seek_probe_end, seek_probe_stride;
 static int64_t seek_probe_target;
 static size_t seek_probe_anchor, seek_probe_lo, seek_probe_hi;
 static unsigned seek_probe_boundary;
@@ -105,6 +107,7 @@ int image_transfer_anim_stream_seek_step(void *s, enum image_type_enum t,
    (void)s; (void)t;
    if (!seek_probe) abort();
    seek_probe_calls++;
+   if (seek_probe_sparse) seek_probe_anchor += seek_probe_stride;
    if (seek_probe_boundary == 1) seek_probe_anchor = 1;
    if (seek_probe_boundary == 2) seek_probe_anchor = ((gfx_anim_preview_t*)s)->seek_feed_hi;
    if (seek_probe_boundary == 3)
@@ -895,6 +898,11 @@ finish:
    return failed;
 }
 
+static bool seek_pending(int result)
+{
+   return result == 0 || result == VIDEO_PLAYER_SEEK_PROGRESS;
+}
+
 static int bounded_video_seek(void)
 {
    gfx_anim_preview_t p;
@@ -909,17 +917,17 @@ static int bounded_video_seek(void)
    seek_probe_calls = 0;
    seek_probe_end = 64;
    for (attempt = 0; attempt < 8 && p.seek_phase != 2; attempt++)
-      if (gfx_anim_preview_seek_step(&p, 1200000, attempt == 0, &position) != 0)
+      if (!seek_pending(gfx_anim_preview_seek_step(&p, 1200000, attempt == 0, &position)))
          failed = 1;
    if (p.seek_phase != 2 || seek_probe_calls != 64) failed = 1;
    if (gfx_anim_preview_seek_step(&p, 1200000, false, &position) != 1
          || position != 1200000) failed = 1;
    seek_probe_calls = seek_probe_end = 0;
-   if (gfx_anim_preview_seek_step(&p, 0, true, &position) != 0
+   if (!seek_pending(gfx_anim_preview_seek_step(&p, 0, true, &position))
          || !seek_probe_calls || seek_probe_calls > 1024) failed = 1;
    seek_probe_calls = 0;
    seek_probe_wait = true;
-   if (gfx_anim_preview_seek_step(&p, 0, true, &position) != 0
+   if (!seek_pending(gfx_anim_preview_seek_step(&p, 0, true, &position))
          || seek_probe_calls != 1) failed = 1;
    seek_probe_calls = 0;
    seek_probe_wait = false;
@@ -954,7 +962,7 @@ static int bounded_video_seek(void)
             seek_probe_calls = 0;
             seek_probe_wait = true;
             retro_atomic_store_relaxed_int(&window_reads, 0);
-            if (gfx_anim_preview_seek_step(&p, 0, true, &position) != 0
+            if (!seek_pending(gfx_anim_preview_seek_step(&p, 0, true, &position))
                   || retro_atomic_load_relaxed_int(&window_reads))
                failed = 1;
             fprintf(stderr, "warm seek window: %d reads\n",
@@ -969,19 +977,52 @@ static int bounded_video_seek(void)
                seek_probe_lo = seek_probe_hi = 0;
                seek_probe_boundary = i;
                seek_probe_calls = 0;
-               if (gfx_anim_preview_seek_step(&p, 0, false, &position) != 0
+               if (!seek_pending(gfx_anim_preview_seek_step(&p, 0, false, &position))
                      || seek_probe_calls != 1) failed = 1;
             }
             seek_probe_boundary = 0;
             seek_probe_sparse = seek_probe_wait = true;
             seek_probe_calls = 0;
             seek_probe_end = 64;
+            seek_probe_stride = 128;
             seek_probe_anchor = 65536;
             p.seek_phase = 1;
+            data_transfer_window_rewind(p.dt);
+            p.seek_feed_anchor = p.seek_feed_hi = seek_probe_anchor;
+#ifdef PREVIEW_COUNT_READS
+            retro_atomic_store_relaxed_int(&window_reads, 0);
+#endif
             for (attempt = 0; attempt < 8 && p.seek_phase != 2; attempt++)
-               if (gfx_anim_preview_seek_step(&p, 0, false, &position) != 0)
+               if (!seek_pending(gfx_anim_preview_seek_step(&p, 0, false, &position)))
                   failed = 1;
             if (p.seek_phase != 2 || seek_probe_calls != 64) failed = 1;
+#ifdef PREVIEW_COUNT_READS
+            if (retro_atomic_load_relaxed_int(&window_reads) != 1) failed = 1;
+            fprintf(stderr, "sparse seek headers: %d reads for 64 spans\n",
+                  retro_atomic_load_relaxed_int(&window_reads));
+#endif
+            seek_probe_calls = 0;
+            seek_probe_end = 4;
+            seek_probe_stride = 128 * 1024;
+            seek_probe_anchor = 65536;
+            p.seek_phase = 1;
+            data_transfer_window_rewind(p.dt);
+            p.seek_feed_anchor = p.seek_feed_hi = seek_probe_anchor;
+#ifdef PREVIEW_COUNT_READS
+            retro_atomic_store_relaxed_int(&window_reads, 0);
+            retro_atomic_store_relaxed_int(&window_bytes, 0);
+#endif
+            for (attempt = 0; attempt < 8 && p.seek_phase != 2; attempt++)
+               if (!seek_pending(gfx_anim_preview_seek_step(&p, 0, false, &position)))
+                  failed = 1;
+            if (p.seek_phase != 2 || seek_probe_calls != 4) failed = 1;
+#ifdef PREVIEW_COUNT_READS
+            if (retro_atomic_load_relaxed_int(&window_reads) != 4
+                  || retro_atomic_load_relaxed_int(&window_bytes)
+                     > GFX_ANIM_PREVIEW_SEEK_AHEAD + 30) failed = 1;
+            fprintf(stderr, "distant seek headers: %d bytes for 4 spans\n",
+                  retro_atomic_load_relaxed_int(&window_bytes));
+#endif
             seek_probe_sparse = seek_probe_wait = false;
             seek_probe_end = 0;
             data_transfer_free(p.dt);

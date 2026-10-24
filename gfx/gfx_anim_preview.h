@@ -59,6 +59,7 @@ typedef struct gfx_anim_preview_audio_prepared gfx_anim_preview_audio_prepared_t
 #define GFX_ANIM_PREVIEW_WINDOW_AHEAD (8 * 1024 * 1024)
 #define GFX_ANIM_PREVIEW_WINDOW_BACK  (8 * 1024 * 1024)
 #define GFX_ANIM_PREVIEW_FEED_BUDGET  (512 * 1024)
+#define GFX_ANIM_PREVIEW_SEEK_AHEAD   (32 * 1024)
 /* Bitrate-sized feed for the video types: seconds of content kept
  * committed ahead of and behind the decoder, and the floors under
  * them. A short lookahead is refilled every animate() tick with

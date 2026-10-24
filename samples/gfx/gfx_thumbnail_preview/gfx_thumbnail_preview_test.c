@@ -19,6 +19,7 @@
 #include <audio/audio_mixer.h>
 #include <retro_timers.h>
 #include <stdio.h>
+#include <formats/video_player.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -735,7 +736,7 @@ static void lane_group_seek(const char *path)
       if (!p) continue;
       gfx_anim_preview_set_paused(p, true);
       check("group seek", "seek request accepted", gfx_anim_preview_seek_request(p, 0, false));
-      for (tick = 0; tick < 512 && !result; tick++)
+      for (tick = 0; tick < 512 && (result == 0 || result == VIDEO_PLAYER_SEEK_PROGRESS); tick++)
       {
          result = gfx_anim_preview_seek_step(p, 1200000, tick == 0, &position);
          image_transfer_anim_stream_next_span(p->stream, p->type, &lo, &hi);
@@ -757,7 +758,7 @@ static void lane_group_seek(const char *path)
          result = gfx_anim_preview_seek_step(p, target, true, &position);
          image_transfer_anim_stream_next_span(p->stream, p->type, &lo, &hi);
          check("group seek", "replacement clears old element request", hi != old_hi);
-         for (tick = 0; tick < 512 && !result; tick++)
+         for (tick = 0; tick < 512 && (result == 0 || result == VIDEO_PLAYER_SEEK_PROGRESS); tick++)
             result = gfx_anim_preview_seek_step(p, target, false, &position);
       }
       printf("group seek: replacement=%u result=%d polls=%d position=%ld\n",

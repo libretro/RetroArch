@@ -28,6 +28,7 @@
 #include <streams/file_stream.h>
 #include <formats/image.h>
 #include <formats/data_transfer.h>
+#include <formats/video_player.h>
 #include <retro_atomic.h>
 #include <features/features_cpu.h>
 #include <memory/mem_stats.h>
@@ -974,7 +975,16 @@ static bool gfx_anim_preview_seek_feed(gfx_anim_preview_t *p)
    if (!anchor) anchor = image_transfer_anim_stream_media_floor(p->stream, p->type);
    sparse = image_transfer_anim_stream_seek_span(p->stream, p->type,
          &span_lo, &span_hi);
+   if (anchor > p->len)
+      return false;
+   if (sparse && span_lo >= p->seek_feed_anchor && span_hi <= p->seek_feed_hi)
+      return true;
    ahead = sparse ? span_hi - span_lo : p->feed_ahead;
+   if (sparse && ahead < GFX_ANIM_PREVIEW_SEEK_AHEAD
+         && (anchor <= p->seek_feed_hi
+            || anchor - p->seek_feed_hi <= GFX_ANIM_PREVIEW_SEEK_AHEAD))
+      ahead = p->len - anchor < GFX_ANIM_PREVIEW_SEEK_AHEAD
+         ? p->len - anchor : GFX_ANIM_PREVIEW_SEEK_AHEAD;
    back = sparse ? 0 : p->feed_back;
    if (!sparse)
       image_transfer_anim_stream_next_span(p->stream, p->type, &span_lo, &span_hi);
@@ -988,7 +998,7 @@ static bool gfx_anim_preview_seek_feed(gfx_anim_preview_t *p)
       data_transfer_window_rebase(p->dt, anchor);
    hi = anchor > (size_t)-1 - GFX_ANIM_PREVIEW_FEED_BUDGET
       ? p->len : anchor + GFX_ANIM_PREVIEW_FEED_BUDGET;
-   if (sparse) hi = span_hi;
+   if (sparse) hi = anchor + ahead;
    if (hi > p->len) hi = p->len;
    if (!data_transfer_window_extend(p->dt, hi)
          || !data_transfer_window_feed_budget(p->dt, anchor, ahead,
@@ -1064,20 +1074,22 @@ int gfx_anim_preview_seek_step(void *user, int64_t target_us,
             }
          }
       } while (--budget);
-      if (result != 1) return result;
+      if (result != 1)
+         return !result && !image_transfer_anim_stream_waiting(p->stream, p->type)
+            ? VIDEO_PLAYER_SEEK_PROGRESS : result;
       p->seek_video_us = p->seek_video_us > p->timeline_start_us
          ? p->seek_video_us - p->timeline_start_us : 0;
       if (p->seek_format & 0x3fffffffU)
          p->seek_audio = gfx_anim_preview_audio_prepare_new(p, p->seek_video_us,
                p->seek_format & 0x3fffffffU, (p->seek_format & 0x40000000U) != 0);
       p->seek_phase = 2;
-      return 0;
+      return VIDEO_PLAYER_SEEK_PROGRESS;
    }
    if (p->seek_phase != 2) return -1;
    if (p->seek_audio)
    {
       result = gfx_anim_preview_audio_prepare_step(p->seek_audio);
-      if (!result) return 0;
+      if (!result) return VIDEO_PLAYER_SEEK_PROGRESS;
       if (result < 0)
       {
          /* A missing/failed audio track must not discard valid video. */

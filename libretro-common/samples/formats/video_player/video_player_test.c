@@ -937,6 +937,7 @@ typedef struct
    retro_atomic_int_t gate, steps;
    int restarts;
    int fail;
+   bool progress;
    int64_t target;
 } seek_test_t;
 
@@ -951,7 +952,7 @@ static int seek_step(void *user, int64_t target, bool restart,
    }
    retro_atomic_fetch_add_int(&seek->steps, 1);
    if (!retro_atomic_load_acquire_int(&seek->gate))
-      return 0;
+      return seek->progress ? VIDEO_PLAYER_SEEK_PROGRESS : 0;
    if (seek->fail)
       return -1;
    seek->stream->pos = (int)(target / 10000);
@@ -1081,6 +1082,57 @@ static void lane_seek(bool threaded, bool hw)
    if (hw)
       CHECK(f.hw_made == k.hw_taken + f.hw_abandoned,
             "seek: each GPU lease taken or abandoned exactly once");
+}
+
+static void lane_seek_progress(bool threaded)
+{
+   fake_t f;
+   sink_t k;
+   video_player_sink_t sink;
+   video_player_t *p;
+   seek_test_t seek;
+   int tick;
+   int64_t position = -1;
+   fake_init(&f, 12, 10);
+   sink_init(&k, &sink, true);
+   memset(&seek, 0, sizeof(seek));
+   seek.stream = &f;
+   seek.progress = true;
+   p = video_player_new(&f, IMAGE_TYPE_WEBM, 1, &sink,
+         threaded ? 0 : VIDEO_PLAYER_INLINE);
+   CHECK(p != NULL, "seek progress: allocation");
+   if (!p)
+      return;
+   video_player_set_seek_handler(p, seek_step, &seek);
+   video_player_set_paused(p, true, 1000000);
+   CHECK(video_player_seek(p, 40000), "seek progress: initial request");
+   video_player_poll(p, 1000000);
+   video_player_poll(p, 1000000);
+   for (tick = 0; tick < 1000
+         && retro_atomic_load_acquire_int(&seek.steps) < 64; tick++)
+   {
+      if (threaded)
+         retro_sleep(1);
+      else
+         video_player_poll(p, 1000000);
+   }
+   CHECK(retro_atomic_load_acquire_int(&seek.steps) >= 64,
+         "seek progress: worker continues without polling the player");
+   CHECK(video_player_seeking(p) && !k.nseen,
+         "seek progress: progress is not completion");
+   CHECK(video_player_seek(p, 20000), "seek progress: replace running target");
+   retro_atomic_store_release_int(&seek.gate, 1);
+   for (tick = 0; tick < 1000
+         && !video_player_seek_position(p, &position); tick++)
+   {
+      video_player_poll(p, 1000000);
+      if (threaded)
+         retro_sleep(1);
+   }
+   CHECK(video_player_seek_position(p, &position) && position == 20000,
+         "seek progress: the latest request completes");
+   video_player_free(p);
+   video_player_worker_deinit();
 }
 
 static void lane_seek_stop(bool threaded)
@@ -1287,12 +1339,14 @@ int main(void)
    lane_seek(false, false);
    lane_seek(false, true);
    lane_seek_stop(false);
+   lane_seek_progress(false);
    lane_pause(false);
 #ifdef HAVE_THREADS
    lane_input_wait(true, true);
    lane_seek(true, false);
    lane_seek(true, true);
    lane_seek_stop(true);
+   lane_seek_progress(true);
    lane_pause(true);
 #endif
    lane_inline_release();

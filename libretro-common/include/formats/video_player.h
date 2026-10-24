@@ -182,8 +182,14 @@ bool video_player_has_presented(const video_player_t *p);
  * a delayed first video picture is due. Polling thread only. */
 bool video_player_started(const video_player_t *p);
 
-/* One bounded seek step on the decoding thread: -1 failed, 0 needs
- * another step, 1 positioned for the next frame. restart begins a new
+enum video_player_seek_result
+{
+   VIDEO_PLAYER_SEEK_PROGRESS = 2
+};
+
+/* One bounded seek step: -1 failed, 0 waits for a later poll,
+ * 1 positioned, 2 made progress and can run another bounded step.
+ * restart begins a new
  * request, including replacing an unfinished one. The callback owns
  * stream/window preparation; it must not wait. */
 typedef int (*video_player_seek_cb_t)(void *user, int64_t target_us,

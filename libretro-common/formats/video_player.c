@@ -124,6 +124,9 @@ struct video_player
    int32_t initial_loops;
    bool seek_pending, seek_dirty, seek_active, seek_restart, seek_failed;
    bool seek_valid, seek_show, seek_gap;
+#ifdef VIDEO_PLAYER_WORKER
+   retro_atomic_int_t seek_interrupt;
+#endif
    void *stream;
    vp_job_t *job[2];       /* one block; NULL until a threaded start */
    video_player_sink_t sink;
@@ -376,7 +379,8 @@ static int vp_job_step(vp_job_t *job)
    {
       int r = p->seek_cb(p->seek_user, p->seek_run_target,
             p->seek_restart, &p->seek_position);
-      return r < 0 ? 0 : (r ? 1 : 2);
+      p->seek_restart = false;
+      return r == VIDEO_PLAYER_SEEK_PROGRESS ? 3 : (r < 0 ? 0 : (r ? 1 : 2));
    }
    if (job->gpu)
    {
@@ -476,6 +480,18 @@ static void vp_job_publish(vp_job_t *job, int alive)
          alive == 2 ? VP_JOB_WAITING : (alive ? VP_JOB_READY : VP_JOB_FINISHED));
 }
 
+static void vp_job_post(vp_job_t *job)
+{
+   void *head;
+   retro_atomic_store_relaxed_int(&job->status, VP_JOB_QUEUED);
+   do
+   {
+      head      = retro_atomic_load_acquire_ptr(&vp_worker_inbox);
+      job->next = (vp_job_t*)head;
+   } while (!retro_atomic_cas_ptr(&vp_worker_inbox, head, job));
+   retro_eventcount_notify(&vp_worker_wake);
+}
+
 static void vp_worker(void *unused)
 {
    (void)unused;
@@ -522,11 +538,19 @@ static void vp_worker(void *unused)
          continue;
       }
 
-      alive = vp_job_step(job);
-
-      /* Publishes the frame to the poll, and wakes a release waiting
-       * the decode out. */
-      vp_job_publish(job, alive);
+      if (job->seek && retro_atomic_load_acquire_int(&job->owner->seek_interrupt))
+         alive = 2;
+      else
+         alive = vp_job_step(job);
+      if (alive == 3)
+      {
+         if (retro_atomic_load_acquire_int(&job->owner->seek_interrupt))
+            vp_job_publish(job, 2);
+         else
+            vp_job_post(job);
+      }
+      else
+         vp_job_publish(job, alive);
       retro_eventcount_notify(&vp_worker_done);
    }
 }
@@ -578,16 +602,9 @@ static void vp_retired_reap(void)
 
 static void vp_job_enqueue(vp_job_t *job)
 {
-   void *head;
    if (vp_retired)
       vp_retired_reap();
-   retro_atomic_store_relaxed_int(&job->status, VP_JOB_QUEUED);
-   do
-   {
-      head      = retro_atomic_load_acquire_ptr(&vp_worker_inbox);
-      job->next = (vp_job_t*)head;
-   } while (!retro_atomic_cas_ptr(&vp_worker_inbox, head, job));
-   retro_eventcount_notify(&vp_worker_wake);
+   vp_job_post(job);
 }
 
 /* Takes a job back from the worker: cancels it while queued, waits the
@@ -1001,6 +1018,7 @@ static int vp_poll_seek(video_player_t *p, int64_t now)
       p->seek_dirty = false;
       p->seek_active = true;
       job->seek = true;
+      retro_atomic_store_release_int(&p->seek_interrupt, 0);
       vp_job_enqueue(job);
       return 0;
    }
@@ -1015,7 +1033,7 @@ static int vp_poll_seek(video_player_t *p, int64_t now)
    p->seek_active = true;
    result = p->seek_cb(p->seek_user, p->seek_run_target,
          p->seek_restart, &p->seek_position);
-   if (!result)
+   if (!result || result == VIDEO_PLAYER_SEEK_PROGRESS)
       return 0;
 #ifdef VIDEO_PLAYER_WORKER
 finished:
@@ -1061,6 +1079,9 @@ video_player_t *video_player_new(void *stream, enum image_type_enum type,
       return NULL;
    if (!(p = (video_player_t*)calloc(1, sizeof(*p))))
       return NULL;
+#ifdef VIDEO_PLAYER_WORKER
+   retro_atomic_int_init(&p->seek_interrupt, 0);
+#endif
    p->stream     = stream;
    p->type       = type;
    p->sink       = *sink;
@@ -1160,6 +1181,9 @@ bool video_player_seek(video_player_t *p, int64_t target_us)
    p->seek_target = target_us < 0 ? 0 : target_us;
    p->seek_failed = false;
    p->seek_pending = p->seek_dirty = true;
+#ifdef VIDEO_PLAYER_WORKER
+   retro_atomic_store_release_int(&p->seek_interrupt, 1);
+#endif
    p->seek_valid = p->seek_show = false;
    p->seek_gap = false;
    return true;
@@ -1249,6 +1273,7 @@ bool video_player_stop(video_player_t *p)
       return true;
    p->flags |= VP_STOPPED;
 #ifdef VIDEO_PLAYER_WORKER
+   retro_atomic_store_release_int(&p->seek_interrupt, 1);
    if (p->job[0])
    {
       unsigned i;
@@ -1275,6 +1300,9 @@ void video_player_free(video_player_t *p)
 {
    if (!p)
       return;
+#ifdef VIDEO_PLAYER_WORKER
+   retro_atomic_store_release_int(&p->seek_interrupt, 1);
+#endif
    if (p->inline_ready && p->inline_frame.hw)
       video_hw_frame_abandon(p->inline_frame.hw);
 #ifdef VIDEO_PLAYER_WORKER
