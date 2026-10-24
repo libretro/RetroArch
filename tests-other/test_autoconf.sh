@@ -333,6 +333,8 @@ input_up_btn = "4"
 input_down_btn = "5"
 input_left_btn = "6"
 input_right_btn = "7"
+input_menu_toggle_btn = "10"
+input_menu_toggle_btn_label = "PS"
 CFG
 run
 [ "$(grep -c 'Save profile for port 1: saved' "$LOG")" -eq 2 ] \
@@ -341,6 +343,10 @@ run
 grep -q 'input_b_btn_label = "Cross"' "$AUTOCONF/Test joypad device L.cfg" 2>/dev/null \
    && pass "P10 label written to the saved profile" \
    || fail "P10 label missing from the saved profile"
+grep -q 'input_menu_toggle_btn = "10"' "$AUTOCONF/Test joypad device L.cfg" 2>/dev/null \
+   && grep -q 'input_menu_toggle_btn_label = "PS"' "$AUTOCONF/Test joypad device L.cfg" \
+   && pass "P10 the profile's hotkey kept in the profile saved under a new name" \
+   || fail "P10 the profile's hotkey lost from the saved profile"
 
 # Port 1 driven by the second device: port 1's binds, second device's name.
 setup test_input_autoconf_save_mapped.ratst

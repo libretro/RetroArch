@@ -8937,6 +8937,24 @@ bool config_save_autoconf_profile(const char *device_name, unsigned user)
       }
    }
 
+   /* The profile's own hotkeys: the port's binds never hold them, and a
+    * profile saved under a new name would lose them. */
+   for (i = RARCH_FIRST_META_KEY; i < RARCH_BIND_LIST_END && valid; i++)
+   {
+      const struct retro_keybind *bind   = input_autoconf_bind(dev, i);
+      const struct input_bind_label *lbl = input_autoconf_bind_names(dev, i);
+      const char *base                   = input_config_bind_map_get_base(i);
+
+      if (!base)
+         continue;
+      save_keybind_joykey(conf, "input", base, bind, false);
+      save_keybind_axis(conf, "input", base, bind, false);
+      if (lbl->joykey && *lbl->joykey)
+         save_keybind_joykey_label(conf, "input", base, lbl);
+      if (lbl->joyaxis && *lbl->joyaxis)
+         save_keybind_axis_label(conf, "input", base, lbl);
+   }
+
    if (valid)
    {
       ret = config_file_write(conf, autoconf_file, false);
