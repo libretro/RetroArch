@@ -52,7 +52,7 @@
 #include "../../configuration.h"
 #include "../../verbosity.h"
 
-#if defined(_WIN32) && !defined(__WINRT__) && defined(HAVE_RAV1) \
+#if defined(_WIN32) && !defined(__WINRT__) \
    && (defined(HAVE_D3D11) || defined(HAVE_D3D12))
 #include <dxgi1_2.h>
 #include "d3d11_video_decode.h"
@@ -172,11 +172,14 @@ static struct
    rav1_hw_backend_t av1;
 #ifdef _WIN32
    bool av1_intrabc_broken;
-#if defined(_WIN32) && !defined(__WINRT__) && defined(HAVE_RAV1) \
+#endif
+#endif
+#ifdef _WIN32
+   bool h264_broken;
+#endif
+#if defined(_WIN32) && !defined(__WINRT__) \
    && (defined(HAVE_D3D11) || defined(HAVE_D3D12))
-   bool av1_fallback;
-#endif
-#endif
+   bool win32_fallback;
 #endif
    VkVideoCodecOperationFlagsKHR codecs;
 
@@ -1764,10 +1767,13 @@ bool vulkan_video_decode_init(const vulkan_context_t *ctx)
    vvd.codecs      = ctx->video_codec_operations;
    vvd.general     = (ctx->flags & VK_CTX_FLAG_VIDEO_GENERAL) != 0;
    vvd.mem         = ctx->memory_properties;
-#if defined(HAVE_RAV1) && defined(_WIN32)
-   /* NVIDIA 610.47 faults in vkCmdDecodeVideoKHR for AV1 intra block copy. */
-   vvd.av1_intrabc_broken = ctx->gpu_properties.vendorID == 0x10de
+#ifdef _WIN32
+   /* NVIDIA 610.47 corrupts H.264 and faults on AV1 intra block copy. */
+   vvd.h264_broken = ctx->gpu_properties.vendorID == 0x10de
       && ctx->gpu_properties.driverVersion == ((610u << 22) | (47u << 14));
+#ifdef HAVE_RAV1
+   vvd.av1_intrabc_broken = vvd.h264_broken;
+#endif
 #endif
    vvd.gfx_family  = ctx->graphics_queue_index;
    vvd.dec_family  = ctx->video_decode_family;
@@ -1829,7 +1835,12 @@ bool vulkan_video_decode_init(const vulkan_context_t *ctx)
    vvd.hevc.open = vvd_hevc_open;
    vvd.hevc.close = vvd_hevc_close;
    if (vvd.codecs & VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR)
-      rh264_set_hw_backend(&vvd.ops);
+   {
+#ifdef _WIN32
+      if (!vvd.h264_broken)
+#endif
+         rh264_set_hw_backend(&vvd.ops);
+   }
    if (vvd.codecs & VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR)
       rh265_set_hw_backend(&vvd.hevc);
 #ifdef HAVE_RVP9
@@ -1854,7 +1865,7 @@ bool vulkan_video_decode_init(const vulkan_context_t *ctx)
    return true;
 }
 
-#if defined(_WIN32) && !defined(__WINRT__) && defined(HAVE_RAV1) \
+#if defined(_WIN32) && !defined(__WINRT__) \
    && (defined(HAVE_D3D11) || defined(HAVE_D3D12))
 #include "vulkan_video_win32.h"
 #endif
@@ -1863,12 +1874,12 @@ void vulkan_video_decode_deinit(void)
 {
    if (!vvd.up)
       return;
-#if defined(_WIN32) && !defined(__WINRT__) && defined(HAVE_RAV1) \
+#if defined(_WIN32) && !defined(__WINRT__) \
    && (defined(HAVE_D3D11) || defined(HAVE_D3D12))
-   if (vvd.av1_fallback)
+   if (vvd.win32_fallback)
    {
       d3d11_video_decode_deinit();
-      vvd.av1_fallback = false;
+      vvd.win32_fallback = false;
    }
 #endif
 #ifdef HAVE_RAV1

@@ -7977,11 +7977,11 @@ static void *vulkan_init(const video_info_t *video)
 #ifdef HAVE_RMP4
       /* previews decoded on the GPU, where the device can */
       vulkan_video_decode_init(vk->context);
-#if defined(_WIN32) && !defined(__WINRT__) && defined(HAVE_RAV1) \
+#if defined(_WIN32) && !defined(__WINRT__) \
    && (defined(HAVE_D3D11) || defined(HAVE_D3D12))
       if (vk->pipelines.yuv_packed_to_rgba8888 != VK_NULL_HANDLE
             && vk->pipelines.yuv_packed_to_rgba16f != VK_NULL_HANDLE)
-         vulkan_video_decode_av1_fallback_init(vk->context,
+         vulkan_video_decode_win32_fallback_init(vk->context,
                IMAGE_PIXFMT_YUV8_FP16 | IMAGE_PIXFMT_YUV10_FP16);
 #endif
 #endif

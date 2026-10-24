@@ -37,9 +37,9 @@ RETRO_BEGIN_DECLS
  * device is up; false when the device has no video queues. */
 bool vulkan_video_decode_init(const vulkan_context_t *ctx);
 
-#if defined(_WIN32) && !defined(__WINRT__) && defined(HAVE_RAV1) \
+#if defined(_WIN32) && !defined(__WINRT__) \
    && (defined(HAVE_D3D11) || defined(HAVE_D3D12))
-bool vulkan_video_decode_av1_fallback_init(const vulkan_context_t *ctx, unsigned formats);
+bool vulkan_video_decode_win32_fallback_init(const vulkan_context_t *ctx, unsigned formats);
 #endif
 
 /* Withdraws it and frees what closed decoders left, before the device

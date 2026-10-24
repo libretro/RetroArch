@@ -181,6 +181,19 @@ static int shared_dpb_expected(const video_hw_frame_t *fr)
    return 0;
 }
 
+static uint8_t packed_sample(uint16_t value)
+{
+   unsigned exponent = (value >> 10) & 31;
+   if (!exponent)
+      return 0;
+   if ((value & 0x8000) || exponent < 15 || exponent > 22)
+   {
+      check("packed sample is an unsigned byte", 0);
+      return 0;
+   }
+   return (uint8_t)((1024 + (value & 1023)) >> (25 - exponent));
+}
+
 /* The frame the backend handed out, read back as the driver reads it,
  * then given back */
 static int take_hw(frames_t *f, opened_t *o, const video_hw_frame_t *fr)
@@ -191,8 +204,14 @@ static int take_hw(frames_t *f, opened_t *o, const video_hw_frame_t *fr)
    ID3D11Fence *wait, *done;
    unsigned w = fr->width, h = fr->height, cw = (w + 1) / 2, ch = (h + 1) / 2;
    unsigned y, bps = fr->pixfmt == IMAGE_PIXFMT_P010 ? 2 : 1;
+   bool packed = fr->pixfmt == IMAGE_PIXFMT_YUV8_FP16;
    int i;
 
+   if (d3d11vd.packed_yuv && !packed)
+   {
+      video_hw_frame_abandon(fr);
+      return 0;
+   }
    if (!shared_dpb_expected(fr)) return 0;
    if (o->gen != fr->layout)
    {
@@ -214,7 +233,8 @@ static int take_hw(frames_t *f, opened_t *o, const video_hw_frame_t *fr)
       d.Height           = h;
       d.MipLevels        = 1;
       d.ArraySize        = 1;
-      d.Format           = bps == 2 ? DXGI_FORMAT_P010 : DXGI_FORMAT_NV12;
+      d.Format           = packed ? DXGI_FORMAT_R16G16B16A16_FLOAT
+         : bps == 2 ? DXGI_FORMAT_P010 : DXGI_FORMAT_NV12;
       d.SampleDesc.Count = 1;
       d.Usage            = D3D11_USAGE_STAGING;
       d.CPUAccessFlags   = D3D11_CPU_ACCESS_READ;
@@ -244,13 +264,36 @@ static int take_hw(frames_t *f, opened_t *o, const video_hw_frame_t *fr)
       if (f->y[i] && f->uv[i])
       {
          const uint8_t *p = (const uint8_t*)m.pData;
-         for (y = 0; y < h; y++)
-            memcpy(f->y[i] + (size_t)y * w * bps, p + (size_t)y * m.RowPitch, w * bps);
-         /* the chroma plane follows the luma rows */
-         p += (size_t)m.RowPitch * h;
-         for (y = 0; y < ch; y++)
-            memcpy(f->uv[i] + (size_t)y * cw * 2 * bps, p + (size_t)y * m.RowPitch,
-                  cw * 2 * bps);
+         if (packed)
+         {
+            for (y = 0; y < h; y++)
+            {
+               const uint16_t *row = (const uint16_t*)(p + (size_t)y * m.RowPitch);
+               unsigned x;
+               for (x = 0; x < w; x++)
+                  f->y[i][(size_t)y * w + x] = packed_sample(row[x * 4]);
+            }
+            for (y = 0; y < ch; y++)
+            {
+               const uint16_t *row = (const uint16_t*)(p + (size_t)y * 2 * m.RowPitch);
+               unsigned x;
+               for (x = 0; x < cw; x++)
+               {
+                  f->uv[i][(size_t)y * cw * 2 + x * 2] = packed_sample(row[x * 8 + 1]);
+                  f->uv[i][(size_t)y * cw * 2 + x * 2 + 1] = packed_sample(row[x * 8 + 2]);
+               }
+            }
+         }
+         else
+         {
+            for (y = 0; y < h; y++)
+               memcpy(f->y[i] + (size_t)y * w * bps, p + (size_t)y * m.RowPitch, w * bps);
+            /* the chroma plane follows the luma rows */
+            p += (size_t)m.RowPitch * h;
+            for (y = 0; y < ch; y++)
+               memcpy(f->uv[i] + (size_t)y * cw * 2 * bps, p + (size_t)y * m.RowPitch,
+                     cw * 2 * bps);
+         }
       }
    }
    ctx->lpVtbl->Unmap(ctx, (ID3D11Resource*)o->staging, 0);
@@ -1304,6 +1347,35 @@ int main(void)
    else
       printf("no D3D12 device: the D3D12 reading is not run\n");
    d12_deinit();
+
+   d3d11_video_decode_deinit();
+   {
+      IDXGIDevice *device = NULL;
+      IDXGIAdapter *adapter = NULL;
+      check("packed exports: adapter", SUCCEEDED(dev->lpVtbl->QueryInterface(dev,
+               &d3d11vd_iid_dxgi_device, (void**)&device)));
+      if (device)
+         device->lpVtbl->GetAdapter(device, &adapter);
+      check("packed exports: H.264 backend", adapter
+            && d3d11_video_decode_init_packed_adapter(adapter,
+               IMAGE_PIXFMT_YUV8_FP16, true));
+      D3D11VD_RELEASE(adapter);
+      D3D11VD_RELEASE(device);
+   }
+   d3d11vd.ops.readback = counted_readback;
+   for (i = 0; i < sizeof(streams) / sizeof(streams[0]); i++)
+   {
+      const stream_t *s = &streams[i];
+      int first, worst, on;
+      decode(s->data, s->len, 0, &sw);
+      on = decode(s->data, s->len, 1, &hw);
+      printf("packed GPU export: %s\n", s->name);
+      check("packed exports match software without decoder readback",
+            on && sw.n > 0 && !cpu_readbacks
+            && compare(&sw, &hw, &first, &worst) == 0);
+      frames_free(&sw);
+      frames_free(&hw);
+   }
 
    if (lists_seen)
       printf("scaling lists: the GPU took them in %s order\n",

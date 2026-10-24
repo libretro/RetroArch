@@ -191,6 +191,7 @@ static struct
    bool shared_dpb;
    bool packed_yuv;
    bool av1_only;
+   bool h264_owned;
 } d3d11vd;
 
 /* ---- teardown ---- */
@@ -531,6 +532,7 @@ static void *d3d11vd_open(void *user, const rh264_hw_sps_t *sps,
    d->profile   = d3d11vd_h264_vld_nofgt;
    d->format    = DXGI_FORMAT_NV12;
    d->bit_depth = 8;
+   d->packed_yuv = d3d11vd.packed_yuv;
    d->bitstream_raw = 2;
    d->slots     = slots;
    d->coded_w   = (unsigned)sps->width_in_mbs  * 16;
@@ -1284,6 +1286,7 @@ static bool d3d11vd_init_adapter(void *adapter, unsigned formats, bool av1_only)
    d3d11vd.ops.api = VIDEO_HW_API_D3D11;
    d3d11vd.up         = true;
    d3d11vd.av1_only = av1_only;
+   d3d11vd.h264_owned = !av1_only;
    if (!av1_only) rh264_set_hw_backend(&d3d11vd.ops);
    d3d11vd.shared_dpb = !!(formats & D3D11_VIDEO_DECODE_SHARED_DPB);
    d3d11vd.packed_yuv = !!(formats & D3D11_VIDEO_DECODE_PACKED_YUV);
@@ -1320,14 +1323,27 @@ bool d3d11_video_decode_init_adapter_formats(void *adapter, unsigned formats)
    return d3d11vd_init_adapter(adapter, formats, false);
 }
 
-#ifdef HAVE_RAV1
-bool d3d11_video_decode_init_av1_adapter(void *adapter, unsigned formats)
+bool d3d11_video_decode_init_packed_adapter(void *adapter, unsigned formats,
+      bool h264)
 {
    unsigned native_formats = 0;
    if (formats & IMAGE_PIXFMT_YUV8_FP16) native_formats |= IMAGE_PIXFMT_NV12;
    if (formats & IMAGE_PIXFMT_YUV10_FP16) native_formats |= IMAGE_PIXFMT_P010;
-   return native_formats && d3d11vd_init_adapter(adapter,
-         native_formats | D3D11_VIDEO_DECODE_PACKED_YUV, true);
+   if (!native_formats || !d3d11vd_init_adapter(adapter,
+            native_formats | D3D11_VIDEO_DECODE_PACKED_YUV, true))
+      return false;
+   if (h264 && (native_formats & IMAGE_PIXFMT_NV12))
+   {
+      rh264_set_hw_backend(&d3d11vd.ops);
+      d3d11vd.h264_owned = true;
+   }
+   return true;
+}
+
+#ifdef HAVE_RAV1
+bool d3d11_video_decode_init_av1_adapter(void *adapter, unsigned formats)
+{
+   return d3d11_video_decode_init_packed_adapter(adapter, formats, false);
 }
 #endif
 
@@ -1363,11 +1379,10 @@ void d3d11_video_decode_deinit(void)
 {
    if (!d3d11vd.up)
       return;
-   if (!d3d11vd.av1_only)
-   {
+   if (d3d11vd.h264_owned)
       rh264_set_hw_backend(NULL);
+   if (!d3d11vd.av1_only)
       rh265_unset_hw_backend(&d3d11vd.hevc);
-   }
 #ifdef HAVE_RVP9
    if (!d3d11vd.av1_only) rvp9_unset_hw_backend(&d3d11vd.vp9);
 #endif
