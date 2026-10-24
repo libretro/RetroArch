@@ -45,6 +45,7 @@
 
 #include "video_defines.h"
 #include "video_views.h"
+#include "video_windows.h"
 
 #ifdef HAVE_MODELINE
 #include "video_crt_switch.h"
@@ -778,6 +779,10 @@ typedef struct video_frame_info
     * when the frame is drawn whole. */
    video_views_map_t views;
    video_views_layout_t views_layout;
+   /* The screens' own windows: NULL while they are off, the driver has
+    * none, or no views are presented. Owned by video_driver_state_t,
+    * or under the threaded wrapper by the frame's slot. */
+   const video_windows_frame_t *windows;
    /* Headset output: the screens' distance and width in metres, where
     * they are kept (enum video_openxr_placement), and a count of
     * recenter requests the driver compares with the last it saw. */
@@ -993,6 +998,9 @@ typedef struct gfx_ctx_driver
    bool (*shared_context_new)(void *data, gfx_ctx_shared_context_t *out);
    bool (*shared_context_bind)(gfx_ctx_shared_context_t *ctx, bool bind);
    void (*shared_context_free)(gfx_ctx_shared_context_t *ctx);
+   /* Optional: windows of their own for secondary screens, on the
+    * thread that runs the context. Placed last, as above. */
+   const gfx_ctx_window_driver_t *windows;
 } gfx_ctx_driver_t;
 
 typedef struct gfx_ctx_mode
@@ -1685,6 +1693,43 @@ bool video_driver_get_vr_controller_poses(
 bool video_driver_get_vr_frame_state(struct retro_vr_frame_state *out);
 #endif
 
+/* A screen's own window's layout, as its renderer last published it;
+ * generation 0 for none */
+typedef struct video_window_layout
+{
+   video_views_layout_t layout;
+   video_views_map_t core_map;
+   unsigned core_dims;
+   unsigned window_dims;
+   unsigned generation;
+} video_window_layout_t;
+
+/* One window's published layouts, handed over by index as the window
+ * title is (see window_title_slot): the publisher fills a slot no
+ * reader holds and exchanges its index into 'published', the main
+ * thread exchanges it out and reads that slot until it takes another. */
+typedef struct video_window_layouts
+{
+   video_window_layout_t slot[3];
+   retro_atomic_int_t published;  /* slot + 1; 0: nothing new */
+   unsigned next;                 /* the publisher's: slot to fill */
+   unsigned last;                 /* the publisher's: slot + 1 */
+   unsigned held;                 /* the main thread's: slot + 1 */
+} video_window_layouts_t;
+
+/* The platform's displays, handed over by index as the window layouts
+ * are: the UI thread fills a slot no reader holds and exchanges its
+ * index into 'published'; the app thread takes it at its frame. */
+typedef struct video_window_displays
+{
+   video_window_display_t slot[3][VIDEO_WINDOW_DISPLAYS_MAX];
+   unsigned count[3];
+   retro_atomic_int_t published;  /* slot + 1; 0: nothing new */
+   unsigned next;                 /* the publisher's: slot to fill */
+   unsigned last;                 /* the publisher's: slot + 1 */
+   unsigned held;                 /* the app thread's: slot + 1 */
+} video_window_displays_t;
+
 /* Slots of video_driver_state_t::vp_params_bits in use. The array has
  * headroom above this so a parameter can be added without moving
  * anything after it; the count is what the publish and the read walk.
@@ -2032,6 +2077,30 @@ typedef struct
    bool headset_vsync;
    /* Set while video_driver_cached_frame() sends the last frame again. */
    bool frame_repeat;
+#ifdef HAVE_VIDEO_WINDOWS
+   /* Each secondary's published layouts */
+   video_window_layouts_t window_layouts[RETRO_VIDEO_VIEWS_MAX - 1];
+   video_window_displays_t window_displays;
+   /* The screens' own windows: this frame's snapshot, and the screens
+    * a close attached until video_driver_restore_windows() and its
+    * count; main thread. */
+   video_windows_frame_t windows;
+#ifdef HAVE_THREADS
+   /* The video thread's redraw of the cached frame fills its own. */
+   video_windows_frame_t windows_redraw;
+#endif
+   /* The main thread's last route, which a redraw keeps; written only
+    * when it changes, as Win32's redraws run beside the main thread */
+   video_windows_route_t windows_route;
+   /* The last video_driver_window_generation(); never reset, so a
+    * replacement window never reuses one. */
+   retro_atomic_int_t window_generation;
+   /* Screens video_driver_attach_windows() sent back, for the next
+    * frame */
+   retro_atomic_int_t windows_failed;
+   unsigned windows_forced_attached;
+   unsigned windows_restore;
+#endif
 } video_driver_state_t;
 
 typedef struct video_frame_delay_auto

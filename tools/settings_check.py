@@ -49,7 +49,7 @@ COMMON = [
 
 PROFILES = {
     'desktop': ['HAVE_VULKAN', 'HAVE_QT', 'HAVE_DISCORD'],
-    'android': ['ANDROID', 'RARCH_MOBILE', 'HAVE_VULKAN'],
+    'android': ['ANDROID', 'RARCH_MOBILE', 'HAVE_VULKAN', 'HAVE_VIDEO_WINDOWS'],
     'console': ['RARCH_CONSOLE'],
 }
 

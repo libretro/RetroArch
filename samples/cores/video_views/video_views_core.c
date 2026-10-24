@@ -21,7 +21,8 @@
  * RETRO_VIDEO_VIEWS_STATUS_PRESENTS, so the frontend's answer there is
  * logged too. It draws in software, or with the video_views_test_hw
  * option through a GL core context, with either origin, or a
- * compatibility one (gl_compat, which the gl driver takes), into Vulkan
+ * compatibility one (gl_compat, which the gl driver takes), or a GLES 3
+ * one (gles3, which the gl driver takes on Android), into Vulkan
  * images of its own handed over with set_image, or on Windows into
  * D3D11 textures of its own, one per sync index, handed over with
  * set_texture (libretro_d3d11.h version 2), or into D3D12 textures
@@ -242,6 +243,7 @@ static enum map_kind map_kind = MAP_3DS;
 static enum hw_kind hw_kind   = HW_OFF;
 /* HW_GL through a compatibility context. */
 static bool hw_gl_compat;
+static bool hw_gles3;
 static enum pattern_kind pattern = PATTERN_SOLID;
 static bool large_max;
 static bool rgb565;
@@ -275,8 +277,8 @@ static struct vk_slot vk_slots[VK_SLOTS];
 static bool vk_ready;
 static int last_status        = -1;
 static int last_accepted      = -1;
-static int last_pressed       = -1;
-static int16_t last_px, last_py;
+static int last_pressed[2]    = { -1, -1 };
+static int16_t last_px[2], last_py[2];
 static struct retro_rumble_interface rumble;
 static int last_pad[2][7];      /* buttons, lx, ly, rx, ry, l2, r2 */
 static bool pad_logged[2];
@@ -898,6 +900,7 @@ static void read_options(void)
    var.value = NULL;
    hw_kind      = HW_OFF;
    hw_gl_compat = false;
+   hw_gles3     = false;
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
       if (!strcmp(var.value, "gl"))
@@ -906,6 +909,11 @@ static void read_options(void)
       {
          hw_kind      = HW_GL;
          hw_gl_compat = true;
+      }
+      else if (!strcmp(var.value, "gles3"))
+      {
+         hw_kind  = HW_GL;
+         hw_gles3 = true;
       }
       else if (!strcmp(var.value, "gl_topleft"))
          hw_kind = HW_GL_TOPLEFT;
@@ -936,6 +944,9 @@ static void read_options(void)
       else if (!strcmp(var.value, "noise"))
          pattern = PATTERN_NOISE;
    }
+   if (hw_gles3 && pattern != PATTERN_SOLID)
+      log_cb(RETRO_LOG_ERROR,
+            "[video_views] gles3 can't upload a pattern: BGRA isn't GLES 3.0\n");
 
    var.key   = "video_views_test_format";
    var.value = NULL;
@@ -1017,7 +1028,7 @@ void retro_set_environment(retro_environment_t cb)
       { "video_views_test_map",
         "View map; 3ds|3ds_force|ds|vb|invalid|none|crop" },
       { "video_views_test_hw",
-        "Hardware rendering; off|gl|gl_topleft|gl_compat|vulkan|vulkan_keep|d3d11|d3d12" },
+        "Hardware rendering; off|gl|gl_topleft|gl_compat|vulkan|vulkan_keep|d3d11|d3d12|gles3" },
       { "video_views_test_max",
         "Declared maximum size; normal|large" },
       { "video_views_test_fps",
@@ -1153,6 +1164,37 @@ static void log_lightgun(unsigned fw, unsigned fh)
          s[0], s[1], s[2], s[3], cx, cy);
    memcpy(last_gun, s, sizeof(s));
    gun_logged = true;
+}
+
+/* Pointer @idx logged when it changes; 1 is the second finger, for
+ * touches on two displays at once. True while pressed, at @cx,@cy in
+ * the frame. */
+static bool log_pointer(unsigned idx, unsigned fw, unsigned fh,
+      unsigned *cx, unsigned *cy)
+{
+   const char *name = idx ? "pointer1" : "pointer";
+   int16_t x        = input_state_cb(0, RETRO_DEVICE_POINTER, idx,
+         RETRO_DEVICE_ID_POINTER_X);
+   int16_t y        = input_state_cb(0, RETRO_DEVICE_POINTER, idx,
+         RETRO_DEVICE_ID_POINTER_Y);
+   int pressed      = input_state_cb(0, RETRO_DEVICE_POINTER, idx,
+         RETRO_DEVICE_ID_POINTER_PRESSED) ? 1 : 0;
+   *cx = (unsigned)(((long)x + 0x7fff) * (long)(fw - 1) / 0xfffe);
+   *cy = (unsigned)(((long)y + 0x7fff) * (long)(fh - 1) / 0xfffe);
+   if (pressed)
+   {
+      if (     x != last_px[idx] || y != last_py[idx]
+            || pressed != last_pressed[idx])
+         log_cb(RETRO_LOG_INFO,
+               "[video_views] %s x=%d y=%d pressed=1 packed=(%u,%u)\n",
+               name, x, y, *cx, *cy);
+   }
+   else if (last_pressed[idx] == 1)
+      log_cb(RETRO_LOG_INFO, "[video_views] %s pressed=0\n", name);
+   last_px[idx]      = x;
+   last_py[idx]      = y;
+   last_pressed[idx] = pressed;
+   return pressed != 0;
 }
 
 /* A port rumbles while it holds Start; each port at its own strength. */
@@ -1785,9 +1827,7 @@ void retro_run(void)
    struct retro_video_view v[RETRO_VIDEO_VIEWS_MAX];
    uint32_t c[RETRO_VIDEO_VIEWS_MAX];
    struct retro_video_views views;
-   unsigned i, n, fw, fh;
-   int16_t px, py;
-   int pressed;
+   unsigned i, n, fw, fh, cx, cy;
    int accepted    = 0;
    unsigned status = 0;
    bool stereo;
@@ -1929,30 +1969,13 @@ void retro_run(void)
    }
    log_status(status, accepted, n);
 
-   px      = input_state_cb(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X);
-   py      = input_state_cb(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_Y);
-   pressed = input_state_cb(0, RETRO_DEVICE_POINTER, 0,
-         RETRO_DEVICE_ID_POINTER_PRESSED) ? 1 : 0;
-   if (pressed)
+   if (     log_pointer(0, fw, fh, &cx, &cy)
+         && cx >= 4 && cx + 5 <= fw && cy >= 4 && cy + 5 <= fh)
    {
-      unsigned cx = (unsigned)(((long)px + 0x7fff) * (long)(fw - 1) / 0xfffe);
-      unsigned cy = (unsigned)(((long)py + 0x7fff) * (long)(fh - 1) / 0xfffe);
-      if (cx >= 4 && cx + 5 <= fw && cy >= 4 && cy + 5 <= fh)
-      {
-         rect(cx - 4, cy, 9, 1, fw, fh, COL_WHITE);
-         rect(cx, cy - 4, 1, 9, fw, fh, COL_WHITE);
-      }
-      if (px != last_px || py != last_py || pressed != last_pressed)
-         log_cb(RETRO_LOG_INFO,
-               "[video_views] pointer x=%d y=%d pressed=1 packed=(%u,%u)\n",
-               px, py, cx, cy);
+      rect(cx - 4, cy, 9, 1, fw, fh, COL_WHITE);
+      rect(cx, cy - 4, 1, 9, fw, fh, COL_WHITE);
    }
-   else if (last_pressed == 1)
-      log_cb(RETRO_LOG_INFO, "[video_views] pointer pressed=0\n");
-   last_px      = px;
-   last_py      = py;
-   last_pressed = pressed;
-
+   log_pointer(1, fw, fh, &cx, &cy);
    log_pads();
    log_lightgun(fw, fh);
    update_rumble();
@@ -2084,6 +2107,12 @@ bool retro_load_game(const struct retro_game_info *game)
       {
          hw_render.context_type    = RETRO_HW_CONTEXT_OPENGL;
          hw_render.version_major   = 0;
+         hw_render.version_minor   = 0;
+      }
+      else if (hw_gles3)
+      {
+         hw_render.context_type    = RETRO_HW_CONTEXT_OPENGLES3;
+         hw_render.version_major   = 3;
          hw_render.version_minor   = 0;
       }
       hw_render.context_reset      = context_reset;

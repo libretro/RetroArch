@@ -931,6 +931,202 @@ video_driver_state_t *video_state_get_ptr(void)
    return &video_driver_st;
 }
 
+#ifdef HAVE_VIDEO_WINDOWS
+/* The last generation: held there, below INT_MAX by more than any
+ * number of threads asking at once, so the counter never wraps round
+ * to a value it gave before. */
+#define VIDEO_WINDOW_GENERATION_LAST (INT_MAX - 0xffff)
+
+unsigned video_driver_window_generation(void)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   int prev = retro_atomic_fetch_add_int(&video_st->window_generation, 1);
+   if (prev < VIDEO_WINDOW_GENERATION_LAST)
+      return (unsigned)prev + 1;
+   retro_atomic_store_release_int(&video_st->window_generation,
+         VIDEO_WINDOW_GENERATION_LAST);
+   return 0;
+}
+
+void video_driver_restore_windows(void)
+{
+   video_driver_state_t *video_st   = &video_driver_st;
+   video_st->windows_forced_attached = 0;
+   video_st->windows_restore++;
+}
+
+/* The three-slot protocol of video_title_publish(), latest wins: hands
+ * over the slot just filled and picks the next one to fill */
+static void video_window_slot_publish(retro_atomic_int_t *published,
+      unsigned *next, unsigned *last)
+{
+   unsigned pub = *next;
+   int prev     = retro_atomic_exchange_int(published, (int)pub + 1);
+   if (prev)
+      /* never taken, so no reader holds it */
+      *next = (unsigned)prev - 1;
+   else if (*last)
+      /* the reader took the last one and may be reading it */
+      *next = 3u - pub - (*last - 1);
+   else
+      *next = (pub + 1) % 3;
+   *last = pub + 1;
+}
+
+/* The reader's side: holds the newest slot, if one was published since
+ * the last take; true when it took one */
+static bool video_window_slot_take(retro_atomic_int_t *published,
+      unsigned *held)
+{
+   int taken;
+   if (!retro_atomic_load_acquire_int(published))
+      return false;
+   if (!(taken = retro_atomic_exchange_int(published, 0)))
+      return false;
+   *held = (unsigned)taken;
+   return true;
+}
+
+void video_driver_publish_window_displays(
+      const video_window_display_t *displays, unsigned count)
+{
+   video_window_displays_t *box = &video_driver_st.window_displays;
+   unsigned pub                 = box->next;
+   if (!displays || count > VIDEO_WINDOW_DISPLAYS_MAX)
+      count = displays ? VIDEO_WINDOW_DISPLAYS_MAX : 0;
+   if (count)
+      memcpy(box->slot[pub], displays, count * sizeof(*displays));
+   box->count[pub] = count;
+   video_window_slot_publish(&box->published, &box->next, &box->last);
+}
+
+/* App thread: the newest list, or NULL with *count 0. Taking a new one
+ * gives the screens a close attached another try. */
+static const video_window_display_t *video_driver_take_window_displays(
+      video_driver_state_t *video_st, unsigned *count)
+{
+   video_window_displays_t *box = &video_st->window_displays;
+   if (video_window_slot_take(&box->published, &box->held))
+      video_driver_restore_windows();
+   *count = box->held ? box->count[box->held - 1] : 0;
+   return *count ? box->slot[box->held - 1] : NULL;
+}
+
+unsigned video_driver_get_window_displays(video_window_display_t *out,
+      unsigned capacity)
+{
+   unsigned count;
+   const video_window_display_t *list =
+      video_driver_take_window_displays(&video_driver_st, &count);
+   if (count > capacity)
+      count = capacity;
+   if (count)
+      memcpy(out, list, count * sizeof(*out));
+   return count;
+}
+
+/* windows_failed: the screens in its low byte, the restore count of
+ * the frames they failed in above it */
+#define VIDEO_WINDOWS_FAILED_TAG(restore) ((int)(((restore) & 0x7fffffu) << 8))
+
+void video_driver_attach_windows(unsigned screens, unsigned restore)
+{
+   retro_atomic_int_t *word = &video_driver_st.windows_failed;
+   int tag                  = VIDEO_WINDOWS_FAILED_TAG(restore);
+   int was, now;
+   if (!(screens &= 0xffu))
+      return;
+   /* A later restore's failures replace an earlier one's */
+   do
+   {
+      was = retro_atomic_load_acquire_int(word);
+      now = (((was & ~0xff) == tag) ? was : tag) | (int)screens;
+   } while (!retro_atomic_cas_int(word, was, now));
+}
+
+void video_driver_publish_window_layout(unsigned window,
+      unsigned generation, const video_views_layout_t *layout,
+      const video_views_map_t *core_map, unsigned core_dims,
+      unsigned window_dims)
+{
+   video_window_layouts_t *box;
+   video_window_layout_t *slot;
+   if (!window || window >= RETRO_VIDEO_VIEWS_MAX)
+      return;
+   box  = &video_driver_st.window_layouts[window - 1];
+   slot = &box->slot[box->next];
+   if (layout && core_map)
+   {
+      slot->layout      = *layout;
+      slot->core_map    = *core_map;
+      slot->core_dims   = core_dims;
+      slot->window_dims = window_dims;
+      slot->generation  = generation;
+   }
+   else
+      slot->generation  = 0;
+   video_window_slot_publish(&box->published, &box->next, &box->last);
+}
+
+/* Once the driver has gone, with no publisher left: no window has a
+ * layout */
+static void video_driver_window_layouts_clear(video_driver_state_t *video_st)
+{
+   unsigned i;
+   for (i = 0; i < RETRO_VIDEO_VIEWS_MAX - 1; i++)
+   {
+      video_window_layouts_t *box = &video_st->window_layouts[i];
+      retro_atomic_store_release_int(&box->published, 0);
+      box->next = 0;
+      box->last = 0;
+      box->held = 0;
+   }
+}
+
+/* @p in @client pixels to @drawn ones */
+static int video_window_point_scale(int p, unsigned drawn, unsigned client)
+{
+   if (!client || drawn == client)
+      return p;
+   return (int)floor((double)p * drawn / client);
+}
+
+bool video_driver_translate_window_point(unsigned window,
+      unsigned generation, int x, int y, bool report_oob,
+      uint32_t *result)
+{
+   video_window_layouts_t *box;
+   const video_window_layout_t *slot;
+   unsigned drawn;
+   if (!window)
+   {
+      struct video_viewport vp;
+      uint32_t screen_pos;
+      return video_driver_get_viewport_info(&vp)
+         && video_driver_translate_coord_viewport(&vp, x, y,
+               result, &screen_pos, report_oob);
+   }
+   if (window >= RETRO_VIDEO_VIEWS_MAX)
+      return false;
+   box = &video_driver_st.window_layouts[window - 1];
+   video_window_slot_take(&box->published, &box->held);
+   if (!box->held)
+      return false;
+   slot = &box->slot[box->held - 1];
+   if (!slot->generation || slot->generation != generation)
+      return false;
+   /* The window as drawn: the canvas, unless that is offscreen */
+   drawn = slot->layout.offscreen
+      ? slot->layout.ui_dims : slot->layout.canvas_dims;
+   x = video_window_point_scale(x, VIDEO_SCALE_W(drawn),
+         VIDEO_SCALE_W(slot->window_dims));
+   y = video_window_point_scale(y, VIDEO_SCALE_H(drawn),
+         VIDEO_SCALE_H(slot->window_dims));
+   return video_views_map_point(&slot->layout, &slot->core_map,
+         slot->core_dims, x, y, report_oob, result);
+}
+#endif
+
 /**
  * video_driver_shader_deferred_tick:
  *
@@ -3513,6 +3709,9 @@ void video_driver_free_internal(void)
     * implementation dereferences that argument on entry. */
    video_st->data               = NULL;
    video_st->views_driver_count = 0;
+#ifdef HAVE_VIDEO_WINDOWS
+   video_driver_window_layouts_clear(video_st);
+#endif
    /* The next driver's headset, if any, is measured afresh. */
    video_st->headset_hz         = 0.0f;
    video_st->headset_runloop_hz = 0.0f;
@@ -4006,39 +4205,52 @@ void video_driver_headset_poll(void)
 }
 #endif
 
+/* What the settings give every window's layout: all but the map, the
+ * size, the stereo mode, the screens left out and the custom viewport,
+ * which is the main window's. */
+static void video_driver_views_params(settings_t *settings,
+      video_views_layout_params_t *params)
+{
+   unsigned aspect_idx     = settings->uints.video_aspect_ratio_idx;
+
+   params->custom_vp       = NULL;
+   params->single_aspect   = 0.0f;
+   params->stretch         = !settings->bools.video_force_aspect;
+   params->stereo_mode     = settings->uints.video_stereo_mode;
+   params->screen_layout   = settings->uints.video_screen_layout;
+   params->rotation        = retroarch_get_rotation() % 4;
+   params->swap_eyes       = settings->bools.video_stereo_swap_eyes;
+   params->scale_integer   = settings->bools.video_scale_integer;
+
+   /* The core's geometry covers the whole packed frame, so "core
+    * provided" and square pixels mean each view's own aspect. */
+   if (     aspect_idx != ASPECT_RATIO_CUSTOM
+         && aspect_idx != ASPECT_RATIO_CORE
+         && aspect_idx != ASPECT_RATIO_SQUARE)
+      params->single_aspect = video_driver_get_aspect_ratio();
+}
+
 /* @custom_vp: the custom viewport, in the window's pixels, applies to
  * a one-screen map laid out in the window. */
 static void video_driver_views_layout(settings_t *settings,
       const video_views_map_t *map, unsigned dims, unsigned stereo_mode,
-      bool custom_vp, video_views_layout_t *out)
+      bool custom_vp, unsigned exclude, video_views_layout_t *out)
 {
    video_views_layout_params_t params;
    video_views_rect_t custom;
-   unsigned aspect_idx  = settings->uints.video_aspect_ratio_idx;
 
-   params.map           = map;
-   params.custom_vp     = NULL;
-   params.single_aspect = 0.0f;
-   params.stretch       = !settings->bools.video_force_aspect;
-   params.dims          = dims;
-   params.stereo_mode   = stereo_mode;
-   params.screen_layout = settings->uints.video_screen_layout;
-   params.rotation      = retroarch_get_rotation() % 4;
-   params.swap_eyes     = settings->bools.video_stereo_swap_eyes;
-   params.scale_integer = settings->bools.video_scale_integer;
-
-   /* The core's geometry covers the whole packed frame, so "core
-    * provided" and square pixels mean each view's own aspect. */
-   if (aspect_idx == ASPECT_RATIO_CUSTOM)
+   video_driver_views_params(settings, &params);
+   params.map             = map;
+   params.dims            = dims;
+   params.stereo_mode     = stereo_mode;
+   params.exclude_screens = exclude;
+   if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
       custom.pos  = settings->video_vp_custom.pos;
       custom.dims = settings->video_vp_custom.dims;
       if (custom_vp && VIDEO_SCALE_W(custom.dims) && VIDEO_SCALE_H(custom.dims))
          params.custom_vp = &custom;
    }
-   else if (aspect_idx != ASPECT_RATIO_CORE
-         && aspect_idx != ASPECT_RATIO_SQUARE)
-      params.single_aspect = video_driver_get_aspect_ratio();
 
    video_views_layout(&params, out);
 }
@@ -4047,8 +4259,123 @@ void video_driver_views_layout_flat(const video_views_map_t *map,
       unsigned dims, bool window, video_views_layout_t *out)
 {
    video_driver_views_layout(config_get_ptr(), map, dims,
-         VIDEO_STEREO_MODE_2D, window, out);
+         VIDEO_STEREO_MODE_2D, window, 0, out);
 }
+
+#ifdef HAVE_VIDEO_WINDOWS
+void video_driver_window_layout(const video_windows_frame_t *frame,
+      unsigned screen, unsigned dims, video_views_layout_t *out)
+{
+   video_driver_window_layout_screens(frame,
+         (screen < RETRO_VIDEO_VIEWS_MAX) ? 1u << screen : 0, dims, out);
+}
+
+void video_driver_window_layout_screens(const video_windows_frame_t *frame,
+      unsigned screens, unsigned dims, video_views_layout_t *out)
+{
+   video_views_layout_params_t params;
+   params.map             = &frame->core;
+   params.custom_vp       = NULL;
+   params.single_aspect   = frame->single_aspect;
+   params.stretch         = frame->stretch;
+   params.dims            = dims;
+   params.stereo_mode     = frame->stereo_mode;
+   params.screen_layout   = frame->screen_layout;
+   params.exclude_screens = ~screens;
+   params.rotation        = frame->rotation;
+   params.swap_eyes       = frame->swap_eyes;
+   params.scale_integer   = frame->scale_integer;
+   video_views_layout(&params, out);
+}
+
+/* The screens' own windows for a frame presented with views, or NULL
+ * while they are off or the driver has none. Not inlined: the frame's
+ * stack has no room to spare. */
+static VIDEO_NOINLINE const video_windows_frame_t *video_driver_windows_frame(
+      video_driver_state_t *video_st, settings_t *settings,
+      uint32_t flags, bool redraw)
+{
+   video_views_layout_params_t params;
+   video_windows_route_t route;
+   unsigned i;
+   unsigned forced            = video_st->windows_forced_attached;
+   video_windows_frame_t *out = &video_st->windows;
+   if (     !settings->bools.video_windows_enable
+         || !BIT32_GET(flags, GFX_CTX_FLAGS_VIDEO_WINDOWS))
+      return NULL;
+#ifdef HAVE_THREADS
+   if (redraw)
+      out = &video_st->windows_redraw;
+#endif
+   for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
+   {
+      video_window_settings_t *w = &out->settings[i];
+      w->pos        = settings->uints.video_screen_window_pos[i];
+      w->dims       = settings->uints.video_screen_window_dims[i];
+      w->monitor    = settings->uints.video_screen_window_monitor[i];
+      w->mode       = settings->uints.video_screen_window_mode[i];
+      w->fullscreen = settings->bools.video_screen_window_fullscreen[i];
+   }
+   out->core          = video_st->views_core;
+   out->core_dims     = video_st->views_frame_dims;
+   video_driver_views_params(settings, &params);
+   out->single_aspect = params.single_aspect;
+   out->stereo_mode   = params.stereo_mode;
+   out->screen_layout = params.screen_layout;
+   out->rotation      = params.rotation;
+   out->stretch       = params.stretch;
+   out->scale_integer = params.scale_integer;
+   out->swap_eyes     = params.swap_eyes;
+   /* Only the app thread takes display lists; a redraw keeps the last route */
+   if (redraw)
+      route = video_st->windows_route;
+   else
+   {
+      unsigned count;
+      const video_window_display_t *list;
+      memset(&route, 0, sizeof(route));
+      {
+         /* Not those of frames laid out before the last restore */
+         int failed = retro_atomic_exchange_int(&video_st->windows_failed, 0);
+         if (     (failed & ~0xff)
+               == VIDEO_WINDOWS_FAILED_TAG(video_st->windows_restore))
+            video_st->windows_forced_attached |= (unsigned)failed & 0xffu;
+      }
+      list   = video_driver_take_window_displays(video_st, &count);
+      forced = video_st->windows_forced_attached;
+      if (list)
+         video_windows_route(list, count, out->settings,
+               out->core.num_screens, &route);
+      if (memcmp(&route, &video_st->windows_route, sizeof(route)))
+         video_st->windows_route = route;
+   }
+   forced      |= route.unplaced;
+   out->restore = video_st->windows_restore;
+   video_windows_plan(&out->core, out->settings, true, true,
+         forced, route.attached, &out->plan);
+   out->display = route.display;
+   memset(out->window_screens, 0, sizeof(out->window_screens));
+   if (out->display)
+   {
+      /* One window for the display, led by its lowest screen; screen 0
+       * leads from the attached screen's id, id 0 being the main
+       * window's */
+      unsigned lead = 0;
+      while (     lead < RETRO_VIDEO_VIEWS_MAX
+            && !(out->plan.separate_mask & (1u << lead)))
+         lead++;
+      if (!lead)
+         lead = route.attached;
+      if (lead && lead < RETRO_VIDEO_VIEWS_MAX)
+         out->window_screens[lead] = out->plan.separate_mask;
+   }
+   else
+      for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
+         if (out->plan.separate_mask & (1u << i))
+            out->window_screens[i] = 1u << i;
+   return out;
+}
+#endif
 
 /* Fills the frame's views and layout. A repeated frame (no data), or one
  * that will not be presented (frameskip), reuses the last map, since the
@@ -4075,6 +4402,7 @@ static void video_driver_views_frame(video_driver_state_t *video_st,
       && BIT32_GET(flags.flags, GFX_CTX_FLAGS_VIDEO_VIEWS);
    memset(&video_info->views,        0, sizeof(video_info->views));
    memset(&video_info->views_layout, 0, sizeof(video_info->views_layout));
+   video_info->windows = NULL;
    presented   = allowed && video_st->views_presented;
    if (allowed && data && render_frame && !redraw)
    {
@@ -4088,6 +4416,10 @@ static void video_driver_views_frame(video_driver_state_t *video_st,
    }
    if (presented)
    {
+#ifdef HAVE_VIDEO_WINDOWS
+      video_info->windows = video_driver_windows_frame(video_st, settings,
+            flags.flags, redraw);
+#endif
       /* Laid out from the core's own map: a CPU filter's scaling must
        * not change a view's shape. The indices match the scaled map. */
       video_info->views = video_st->views_frame;
@@ -4097,11 +4429,15 @@ static void video_driver_views_frame(video_driver_state_t *video_st,
             && (video_driver_xr_headset() & VIDEO_XR_HEADSET_TRACKING))
          video_views_eye_pair(&video_info->views, video_info->headset_eye);
 #endif
+      /* Without the screens that have windows of their own */
       video_driver_views_layout(settings, &video_st->views_core,
             video_info->dims,
             BIT32_GET(flags.flags, GFX_CTX_FLAGS_VIDEO_VIEWS_OWN_EYES)
             ? VIDEO_STEREO_MODE_2D : settings->uints.video_stereo_mode,
-            true, &video_info->views_layout);
+            true, video_info->windows
+            ? (video_info->windows->plan.separate_mask
+               | video_info->windows->plan.hidden_mask) : 0,
+            &video_info->views_layout);
       if (!redraw)
          video_st->views_layout = video_info->views_layout;
       /* The menu was laid out whole for this frame. */

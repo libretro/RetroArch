@@ -484,6 +484,41 @@ jobs:
           make -C samples/input/hotkey_menu clean check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
           make -C samples/input/hotkey_menu clean
 
+      - name: Build and run pointer_second_test (ASan + UBSan, mingw + Wine)
+        shell: bash
+        run: |
+          set -eu
+          # A core's pointer read where the input driver has a second
+          # list (Android's second display): its fingers go after the
+          # overlay's, after none while the overlay blocks the pointer,
+          # else after the driver's main list; a driver with no second
+          # list answers with its main list alone. The test runs
+          # input_state_device() extracted from input_driver.c.
+          make -C samples/input/pointer_second clean check SANITIZER=address,undefined
+          make -C samples/input/pointer_second clean check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
+          make -C samples/input/pointer_second clean
+
+      - name: Build and run android_focus_test (ASan + UBSan, mingw + Wine)
+        shell: bash
+        run: |
+          set -eu
+          # RetroArch's focus on Android from its two windows, the
+          # Activity's and the second display's, through the sequences
+          # the AYN Thor's focus modes and a one-focus system produce.
+          make -C samples/input/android_focus clean check SANITIZER=address,undefined
+          make -C samples/input/android_focus clean check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
+          make -C samples/input/android_focus clean
+
+      - name: Build and run android_second_surface_test (ASan + UBSan, mingw + Wine)
+        shell: bash
+        run: |
+          set -eu
+          # The second display's surface going: surfaceDestroyed never
+          # waits for the renderer, and the next poll lets it go.
+          make -C samples/frontend/android_second_surface clean check SANITIZER=address,undefined
+          make -C samples/frontend/android_second_surface clean check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
+          make -C samples/frontend/android_second_surface clean
+
       - name: Build and run key_lane_test (plain, ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/input/key_lane

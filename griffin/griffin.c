@@ -287,6 +287,9 @@ CRYPTO
 #include "../gfx/video_driver.c"
 #include "../gfx/common/video_mode_select.c"
 #include "../gfx/video_views.c"
+#if defined(HAVE_VIDEO_WINDOWS)
+#include "../gfx/video_windows.c"
+#endif
 /*============================================================
 UI COMMON CONTEXT
 ============================================================ */
@@ -324,6 +327,7 @@ VIDEO CONTEXT
 #endif
 
 #if defined(ANDROID)
+#include "../gfx/common/android_windows.c"
 #include "../gfx/drivers_context/android_ctx.c"
 #if defined(HAVE_OPENXR)
 #if defined(HAVE_OPENGLES3)

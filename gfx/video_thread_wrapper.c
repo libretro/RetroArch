@@ -4244,6 +4244,14 @@ static bool video_thread_frame(void *data, const void *frame_,
             thr->frame.slot[slot].stat_text[0]             = '\0';
          thr->frame.slot[slot].video_info.stat_text        =
             thr->frame.slot[slot].stat_text;
+#ifdef HAVE_VIDEO_WINDOWS
+         if (video_info->windows)
+         {
+            thr->frame.slot[slot].windows            = *video_info->windows;
+            thr->frame.slot[slot].video_info.windows =
+               &thr->frame.slot[slot].windows;
+         }
+#endif
 #ifdef HAVE_GFX_WIDGETS
          /* The widget paths, for the same reason: this thread may write
           * the settings they point at while the frame is drawn. Copied

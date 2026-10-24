@@ -181,7 +181,7 @@ typedef struct video_views_layout
 typedef struct video_views_layout_params
 {
    const video_views_map_t *map;
-   /* One-screen maps only. custom_vp is the custom viewport in window
+   /* One included screen only. custom_vp is the custom viewport in window
     * pixels, or NULL; single_aspect is the aspect ratio setting's value,
     * or 0 for the view's own; stretch fills the area instead. */
    const video_views_rect_t *custom_vp;
@@ -190,6 +190,7 @@ typedef struct video_views_layout_params
    unsigned dims;
    unsigned stereo_mode;
    unsigned screen_layout;
+   unsigned exclude_screens;
    unsigned rotation;
    bool swap_eyes;
    bool scale_integer;

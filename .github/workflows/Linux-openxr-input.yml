@@ -221,14 +221,23 @@ jobs:
           # the tree, so nothing has to be installed. Qt has to go: the
           # menu harness below replaces main(), which lives in ui_qt.o
           # with Qt enabled.
-          ./configure --disable-qt --enable-openxr
+          # The screens' windows too, which video_screens_test runs.
+          ./configure --disable-qt --enable-openxr --enable-video_windows
           grep -q '^HAVE_OPENXR = 1' config.mk
+          grep -q '^HAVE_VIDEO_WINDOWS = 1' config.mk
           make -j$(nproc)
           # Vulkan's headset host and the desktop GL drivers', side by
           # side.
           test -f obj-unix/release/gfx/common/vulkan_openxr.o
           test -f obj-unix/release/gfx/common/gl_openxr.o
           test -f obj-unix/release/gfx/common/openxr_binding_gl.o
+
+      - name: Build and run video_screens_test
+        shell: bash
+        run: |
+          set -eu
+          python3 samples/settings/video_screens/build.py \
+            --output-dir "$RUNNER_TEMP/video-screens"
 
       - name: Build and run stereo_headset_test
         shell: bash
@@ -304,13 +313,22 @@ jobs:
           set -eu
           # The gl and glcore drivers' headset output has to configure,
           # build and link without Vulkan.
-          ./configure --disable-qt --enable-openxr --disable-vulkan
+          ./configure --disable-qt --enable-openxr --disable-vulkan \
+            --enable-video_windows
           grep -q '^HAVE_OPENXR = 1' config.mk
+          grep -q '^HAVE_VIDEO_WINDOWS = 1' config.mk
           grep -q '^HAVE_VULKAN = 0' config.mk
           make -j$(nproc)
           test -f obj-unix/release/gfx/common/openxr_frame.o
           test -f obj-unix/release/gfx/common/gl_openxr.o
           test ! -e obj-unix/release/gfx/common/vulkan_openxr.o
+
+      - name: Build and run video_screens_test
+        shell: bash
+        run: |
+          set -eu
+          python3 samples/settings/video_screens/build.py \
+            --output-dir "$RUNNER_TEMP/video-screens"
 
       - name: Build and run stereo_headset_test
         shell: bash

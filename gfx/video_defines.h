@@ -443,7 +443,10 @@ enum display_flags
     * context could not be created. The threaded wrapper's ring then
     * hands the driver's one context between the two threads instead
     * of giving the core a shared one. */
-   GFX_CTX_FLAGS_NO_SHARED_CONTEXT
+   GFX_CTX_FLAGS_NO_SHARED_CONTEXT,
+   /* Set by a video driver that presents secondary screens in windows
+    * of their own through its context's gfx_ctx_window_driver_t. */
+   GFX_CTX_FLAGS_VIDEO_WINDOWS
 };
 
 enum shader_uniform_type

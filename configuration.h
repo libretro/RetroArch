@@ -22,6 +22,7 @@
 #include <stdint.h>
 
 #include <boolean.h>
+#include <libretro.h>
 #include <retro_common_api.h>
 #include <retro_miscellaneous.h>
 #include <file/config_file.h>
@@ -292,6 +293,12 @@ typedef struct settings
       unsigned video_rotation;
       unsigned video_stereo_mode;
       unsigned video_screen_layout;
+#ifdef HAVE_VIDEO_WINDOWS
+      unsigned video_screen_window_mode[RETRO_VIDEO_VIEWS_MAX];
+      unsigned video_screen_window_pos[RETRO_VIDEO_VIEWS_MAX];
+      unsigned video_screen_window_dims[RETRO_VIDEO_VIEWS_MAX];
+      unsigned video_screen_window_monitor[RETRO_VIDEO_VIEWS_MAX];
+#endif
       unsigned video_openxr_refresh_rate;
       unsigned video_openxr_controllers;
       unsigned video_openxr_laser;
@@ -649,6 +656,10 @@ typedef struct settings
    struct
    {
       bool placeholder;
+#ifdef HAVE_VIDEO_WINDOWS
+      bool video_windows_enable;
+      bool video_screen_window_fullscreen[RETRO_VIDEO_VIEWS_MAX];
+#endif
 
       /* Video */
       bool video_fullscreen;

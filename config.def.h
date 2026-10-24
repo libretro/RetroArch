@@ -571,6 +571,13 @@
  * Off: the discard swap effect and the runtime's own queue, as before. */
 #define DEFAULT_VIDEO_D3D9EX_PRESENT false
 
+/* Screens a core sends as views may go to a window or display of their
+ * own. Android puts them on a second display when there is one. */
+#if defined(ANDROID)
+#define DEFAULT_VIDEO_WINDOWS_ENABLE true
+#else
+#define DEFAULT_VIDEO_WINDOWS_ENABLE false
+#endif
 
 
 #if defined(HAVE_THREADS)

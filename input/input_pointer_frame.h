@@ -37,7 +37,15 @@ static struct
    uint32_t touch_pos[INPUT_TOUCHES_MAX];      /* in the window; 0: none */
    uint32_t touch_confined_pos[INPUT_TOUCHES_MAX];
    uint32_t touch_screen_pos[INPUT_TOUCHES_MAX];
+#ifdef HAVE_VIDEO_WINDOWS
+   input_video_window_t window[MAX_USERS];  /* where in_window says */
+   input_video_window_t touch_window[INPUT_TOUCHES_MAX];
+#endif
    struct video_viewport vp;
+#ifdef HAVE_VIDEO_WINDOWS
+   uint16_t in_window;                /* a bit a device: in a screen's own */
+   uint16_t touch_in_window;
+#endif
    uint16_t have_confined;            /* a bit a device: done this poll */
    uint16_t have_viewport;
    uint32_t touch_viewport_pos[INPUT_TOUCHES_MAX];  /* -0x8000 outside */
@@ -52,12 +60,36 @@ static struct
    bool     vp_ok;
 } input_pointers;
 
+#ifdef HAVE_VIDEO_WINDOWS
+/* @count windows kept, and a bit for each in a screen's own; NULL is
+ * the main window's. */
+static uint16_t input_pointer_windows_set(input_video_window_t *kept,
+      const input_video_window_t *windows, unsigned count)
+{
+   unsigned i;
+   uint16_t in_window = 0;
+   if (!windows)
+      return 0;
+   memcpy(kept, windows, count * sizeof(*windows));
+   for (i = 0; i < count; i++)
+      if (windows[i].window)
+         in_window |= (uint16_t)(1 << i);
+   return in_window;
+}
+#endif
+
 static void input_pointer_frames_set(const input_pointer_frame_t *frames,
-      unsigned count, unsigned flags)
+      const input_video_window_t *windows, unsigned count, unsigned flags)
 {
    if (count > MAX_USERS)
       count = MAX_USERS;
    memcpy(input_pointers.frame, frames, count * sizeof(*frames));
+#ifdef HAVE_VIDEO_WINDOWS
+   input_pointers.in_window     = input_pointer_windows_set(
+         input_pointers.window, windows, count);
+#else
+   (void)windows;
+#endif
    input_pointers.count         = (uint8_t)count;
    input_pointers.flags         = (uint8_t)flags;
    input_pointers.have_confined = 0;
@@ -69,7 +101,8 @@ static void input_pointer_frames_set(const input_pointer_frame_t *frames,
  * three things. A place can hold a contact that has lifted - the last
  * place of a finger, a pen in the air - and a contact can be at 0,0,
  * the window's corner: neither is told by the position. */
-static void input_pointer_touches_set(const uint32_t *pos, unsigned count,
+static void input_pointer_touches_set(const uint32_t *pos,
+      const input_video_window_t *windows, unsigned count,
       unsigned present, unsigned down)
 {
    unsigned all;
@@ -77,6 +110,12 @@ static void input_pointer_touches_set(const uint32_t *pos, unsigned count,
       count = INPUT_TOUCHES_MAX;
    all = (1u << count) - 1;
    memcpy(input_pointers.touch_pos, pos, count * sizeof(*pos));
+#ifdef HAVE_VIDEO_WINDOWS
+   input_pointers.touch_in_window = input_pointer_windows_set(
+         input_pointers.touch_window, windows, count);
+#else
+   (void)windows;
+#endif
    input_pointers.touch_count   = (uint8_t)count;
    input_pointers.touch_present = (uint16_t)(present & all);
    input_pointers.touch_down    = (uint16_t)(down & present & all);
@@ -109,20 +148,46 @@ static unsigned input_pointer_of_port(unsigned port, unsigned device)
    return (input_pointers.count == 1) ? 0 : port;
 }
 
-/* Device @i's place in the viewport and on the screen; false when there
- * is no viewport to place it in. */
+#ifdef HAVE_VIDEO_WINDOWS
+/* @pos in a screen's own window, through the layout it last published:
+ * off-screen once the window is gone, and nowhere on the main window's
+ * screen. */
+static void input_pointer_window_place(const input_video_window_t *w,
+      uint32_t pos, bool confined, uint32_t *place, uint32_t *screen_pos)
+{
+   *screen_pos = VIDEO_POS_PACK(-0x8000, -0x8000);
+   if (!video_driver_translate_window_point(w->window, w->generation,
+            VIDEO_POS_X(pos), VIDEO_POS_Y(pos), !confined, place))
+      *place   = VIDEO_POS_PACK(-0x8000, -0x8000);
+}
+#endif
+
+/* Device @i's place in the viewport, or its own window's, and on the
+ * screen; false when there is no viewport to place it in. */
 static bool input_pointer_place(unsigned i, bool confined,
       uint32_t *pos, uint32_t *screen_pos)
 {
    uint16_t bit   = (uint16_t)(1 << i);
    uint16_t *have = confined
       ? &input_pointers.have_confined : &input_pointers.have_viewport;
+#ifdef HAVE_VIDEO_WINDOWS
+   bool in_window = (input_pointers.in_window & bit) != 0;
+#else
+   bool in_window = false;
+#endif
 
-   if (!input_pointer_viewport())
+   if (!in_window && !input_pointer_viewport())
       return false;
    if (!(*have & bit))
    {
       uint32_t place = 0;
+#ifdef HAVE_VIDEO_WINDOWS
+      if (in_window)
+         input_pointer_window_place(&input_pointers.window[i],
+               input_pointers.frame[i].pos, confined,
+               &place, &input_pointers.screen_pos[i]);
+      else
+#endif
       if (!video_driver_translate_coord_viewport(&input_pointers.vp,
                VIDEO_POS_X(input_pointers.frame[i].pos),
                VIDEO_POS_Y(input_pointers.frame[i].pos),
@@ -143,8 +208,9 @@ static bool input_pointer_place(unsigned i, bool confined,
    return true;
 }
 
-/* Touch @t's place in the viewport - held to its edges, or -0x8000
- * outside it - and on the screen; false when there is no viewport. */
+/* Touch @t's place in the viewport, or its own window's - held to its
+ * edges, or -0x8000 outside it - and on the screen; false when there is
+ * no viewport. */
 static bool input_touch_place(unsigned t, bool confined,
       uint32_t *pos, uint32_t *screen_pos)
 {
@@ -154,11 +220,23 @@ static bool input_touch_place(unsigned t, bool confined,
    uint32_t *kept = confined
       ? &input_pointers.touch_confined_pos[t]
       : &input_pointers.touch_viewport_pos[t];
+#ifdef HAVE_VIDEO_WINDOWS
+   bool in_window = (input_pointers.touch_in_window & bit) != 0;
+#else
+   bool in_window = false;
+#endif
 
-   if (!input_pointer_viewport())
+   if (!in_window && !input_pointer_viewport())
       return false;
    if (!(*have & bit))
    {
+#ifdef HAVE_VIDEO_WINDOWS
+      if (in_window)
+         input_pointer_window_place(&input_pointers.touch_window[t],
+               input_pointers.touch_pos[t], confined,
+               kept, &input_pointers.touch_screen_pos[t]);
+      else
+#endif
       if (!video_driver_translate_coord_viewport(&input_pointers.vp,
                VIDEO_POS_X(input_pointers.touch_pos[t]),
                VIDEO_POS_Y(input_pointers.touch_pos[t]),
@@ -172,6 +250,17 @@ static bool input_touch_place(unsigned t, bool confined,
    *pos        = *kept;
    *screen_pos = input_pointers.touch_screen_pos[t];
    return true;
+}
+
+/* Device @i's place in the main window, as published; none for one in
+ * a screen's own window. */
+static uint32_t input_pointer_screen_place(unsigned i)
+{
+#ifdef HAVE_VIDEO_WINDOWS
+   if (input_pointers.in_window & (1 << i))
+      return VIDEO_POS_PACK(-0x8000, -0x8000);
+#endif
+   return input_pointers.frame[i].pos;
 }
 
 /* Whether mouse @f, standing for touch @idx, is down. */
@@ -273,7 +362,7 @@ static bool input_pointer_frame_pos(unsigned port, unsigned device,
          *pos = input_pointers.frame[i].rel;
          return true;
       case RARCH_DEVICE_MOUSE_SCREEN:
-         *pos = input_pointers.frame[i].pos;
+         *pos = input_pointer_screen_place(i);
          return true;
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
@@ -339,7 +428,8 @@ static bool input_pointer_frame_read(unsigned port, unsigned device,
    {
       case RETRO_DEVICE_MOUSE:
       case RARCH_DEVICE_MOUSE_SCREEN:
-         pos = (device == RETRO_DEVICE_MOUSE) ? f->rel : f->pos;
+         pos = (device == RETRO_DEVICE_MOUSE)
+            ? f->rel : input_pointer_screen_place(i);
          switch (id)
          {
             case RETRO_DEVICE_ID_MOUSE_X:

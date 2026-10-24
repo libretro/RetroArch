@@ -47,6 +47,11 @@
  * It is only used internally for overlays. */
 #define RARCH_DEVICE_POINTER_SCREEN    (RETRO_DEVICE_POINTER | 0x10000)
 
+/* Specialized _POINTER for a driver's second list of pointers (Android's
+ * second display). The frontend lists them after the main list's for
+ * RETRO_DEVICE_POINTER. */
+#define RARCH_DEVICE_POINTER_SECOND    (RETRO_DEVICE_POINTER | 0x20000)
+
 #define RARCH_DEVICE_ID_POINTER_BACK   (RETRO_DEVICE_ID_POINTER_PRESSED | 0x10000)
 
 /* libretro has 16 buttons from 0-15 (libretro.h)

@@ -2244,8 +2244,18 @@ INPUT_NOINLINE static void input_combos_frame(
 void input_driver_publish_pointers(const input_pointer_frame_t *frames,
       unsigned count, unsigned flags)
 {
-   input_pointer_frames_set(frames, count, flags);
+   input_pointer_frames_set(frames, NULL, count, flags);
 }
+
+#ifdef HAVE_VIDEO_WINDOWS
+void input_driver_publish_window_pointers(
+      const input_pointer_frame_t *frames,
+      const input_video_window_t *windows,
+      unsigned count, unsigned flags)
+{
+   input_pointer_frames_set(frames, windows, count, flags);
+}
+#endif
 
 unsigned input_driver_pointer_read_as(unsigned i)
 {
@@ -2263,8 +2273,17 @@ bool input_driver_poll_viewport(struct video_viewport *vp)
 void input_driver_publish_touches(const uint32_t *pos, unsigned count,
       unsigned present, unsigned down)
 {
-   input_pointer_touches_set(pos, count, present, down);
+   input_pointer_touches_set(pos, NULL, count, present, down);
 }
+
+#ifdef HAVE_VIDEO_WINDOWS
+void input_driver_publish_window_touches(const uint32_t *pos,
+      const input_video_window_t *windows, unsigned count,
+      unsigned present, unsigned down)
+{
+   input_pointer_touches_set(pos, windows, count, present, down);
+}
+#endif
 
 /* The keys a port's binds name, compiled when the binds change, and
  * which of them are down, asked of the input driver once a poll for
@@ -4432,6 +4451,49 @@ static int16_t input_turbo_hold_apply(
 }
 /* ===== END input turbo and hold ===== */
 
+#ifdef HAVE_VIDEO_WINDOWS
+/* A driver's second list of pointers (Android's second display) goes
+ * on after the main list's, whoever answers for that: the overlay, else
+ * none while the pointer is blocked, else the driver. False where @idx
+ * is the main list's. */
+static bool input_state_pointer_second(input_driver_state_t *input_st,
+      settings_t *settings, unsigned port, unsigned idx, unsigned id,
+      int16_t *res)
+{
+   int16_t main_count = 0;
+   int16_t second;
+
+   if (!input_driver_has_device_state())
+      return false;
+   second = input_driver_device_state(port, RARCH_DEVICE_POINTER_SECOND,
+         0, RETRO_DEVICE_ID_POINTER_COUNT);
+   if (second <= 0)
+      return false;
+
+#ifdef HAVE_OVERLAY
+   if (     (input_st->overlay_ptr)
+         && (input_st->overlay_ptr->flags & INPUT_OVERLAY_ENABLE)
+         && !(input_st->overlay_ptr->flags & INPUT_OVERLAY_STYLUS_HIDDEN)
+         && (settings->bools.input_overlay_pointer_enable))
+      main_count = input_overlay_pointer_state(input_st->overlay_ptr,
+            &input_st->overlay_ptr->pointer_state, 0,
+            RETRO_DEVICE_ID_POINTER_COUNT);
+#endif
+   if (!main_count && !(input_st->flags & INP_FLAG_BLOCK_POINTER_INPUT))
+      main_count = input_driver_device_state(port, RETRO_DEVICE_POINTER,
+            0, RETRO_DEVICE_ID_POINTER_COUNT);
+
+   if (id == RETRO_DEVICE_ID_POINTER_COUNT)
+      *res = main_count + second;
+   else if (idx >= (unsigned)main_count)
+      *res = input_driver_device_state(port, RARCH_DEVICE_POINTER_SECOND,
+            idx - (unsigned)main_count, id);
+   else
+      return false;
+   return true;
+}
+#endif
+
 static int16_t input_state_device(
       input_driver_state_t *input_st,
       settings_t *settings,
@@ -4676,6 +4738,13 @@ static int16_t input_state_device(
 #ifdef HAVE_OPENXR
          /* The headset's laser, ahead of the overlay and the mouse. */
          if (input_openxr_pointer(port, device, idx, id, &res))
+            break;
+#endif
+
+#ifdef HAVE_VIDEO_WINDOWS
+         if (     device == RETRO_DEVICE_POINTER
+               && input_state_pointer_second(input_st, settings, port,
+                  idx, id, &res))
             break;
 #endif
 

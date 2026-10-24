@@ -43,6 +43,10 @@ bool video_driver_translate_coord_viewport(struct video_viewport *vp,
       int x, int y, uint32_t *pos, uint32_t *screen_pos, bool oob)
 { (void)vp; (void)x; (void)y; (void)pos; (void)screen_pos; (void)oob;
   return false; }
+bool video_driver_translate_window_point(unsigned window,
+      unsigned generation, int x, int y, bool report_oob, uint32_t *result)
+{ (void)window; (void)generation; (void)x; (void)y; (void)report_oob;
+  (void)result; return false; }
 
 int main(void)
 {

@@ -45,8 +45,10 @@
 
 #include <rthreads/rthreads.h>
 #include <retro_atomic.h>
+#include <retro_spsc.h>
 
 #include "android_lifecycle.h"
+#include "../../input/drivers/android_focus.h"
 
 /* struct android_app below embeds retro_atomic_int_t, which is
  * atomic_int under C and std::atomic<int> under C++. If this header were
@@ -67,6 +69,87 @@ char internal_storage_app_path[PATH_MAX_LENGTH];
 
 struct android_app;
 
+#define ANDROID_DISPLAY_OWN      (1 << 0)
+#define ANDROID_DISPLAY_VALID    (1 << 1)
+#define ANDROID_DISPLAY_ON       (1 << 2)
+#define ANDROID_DISPLAY_PRIVATE  (1 << 3)
+#define ANDROID_DISPLAY_PHYSICAL (1 << 4)
+
+/* Fingers tracked on each display */
+#define MAX_TOUCH 16
+
+/* The joystick axes native input reads: X, Y, Z, RZ, HAT_X, HAT_Y,
+ * LTRIGGER, RTRIGGER, BRAKE, GAS */
+#define ANDROID_JOYSTICK_AXES 10
+
+/* What native input reads of a key or a joystick move, from the input
+ * queue or from the second display's window */
+typedef struct android_input_fields
+{
+   int64_t event_time; /* a key's, ns, AKeyEvent_getEventTime()'s clock */
+   int32_t type;       /* AINPUT_EVENT_TYPE_KEY or _MOTION */
+   int32_t device_id;
+   int32_t source;
+   int32_t action;     /* a key's */
+   int32_t keycode;
+   int32_t flags;
+   int32_t meta_state;
+   float axes[ANDROID_JOYSTICK_AXES]; /* a move's */
+} android_input_fields_t;
+
+/* The least number of keys and stick moves the second display's ring
+ * holds; a down or a move leaves room for this many ups */
+#define ANDROID_SECOND_INPUTS    512
+#define ANDROID_SECOND_INPUT_UPS 32
+
+/* A touch on the second display, UI thread to the input poll */
+typedef struct android_second_touch
+{
+   int32_t pointer_id;
+   int32_t x;          /* surface pixels */
+   int32_t y;
+   int32_t generation; /* nativeSurfaceChanged()'s, for the surface */
+   int32_t down;
+} android_second_touch_t;
+
+/* A surface the second display handed over; owns one ANativeWindow
+ * reference */
+struct android_second_surface
+{
+   ANativeWindow *window;
+   unsigned dims;       /* VIDEO_SCALE_PACK */
+   int generation;
+   int request;         /* the show request it was made for */
+};
+
+struct android_second_display
+{
+   /* android_second_touch_t records, UI thread to app thread */
+   retro_spsc_t touches;
+   /* android_input_fields_t records: the keys and stick moves its
+    * window received, UI thread to app thread */
+   retro_spsc_t inputs;
+   /* The newest surface not yet taken, struct android_second_surface *;
+    * the taker owns it. UI thread in, video thread out. */
+   retro_atomic_ptr_t surface;
+   /* UI thread: the last surface generation handed out, and the last
+    * one Java took back */
+   retro_atomic_int_t surface_generation;
+   retro_atomic_int_t surface_gone;
+   /* Video thread: what the renderer shows, for the input poll */
+   retro_atomic_int_t bound_surface;     /* surface generation, 0 none */
+   retro_atomic_int_t bound_window;      /* window id */
+   retro_atomic_int_t bound_generation;  /* window generation */
+   /* Video thread: the last request number sent to Java */
+   retro_atomic_int_t requests;
+   /* Video thread: a hide sent while no window held anything; the
+    * surfaces made for earlier requests are given up, 0 none */
+   retro_atomic_int_t released;
+};
+
+/* Request number @a was sent before @b; wrap-safe */
+#define ANDROID_SECOND_BEFORE(a, b) \
+   ((int)((unsigned)(a) - (unsigned)(b)) < 0)
 
 struct android_app
 {
@@ -119,15 +202,23 @@ struct android_app
     * a change of window has it give up first. */
    ANativeWindow *posted_window;
 
+   /* UI thread only: the second display's window last handed over and
+    * its size, VIDEO_SCALE_PACK */
+   ANativeWindow *posted_second_window;
+   unsigned posted_second_dims;
+
    /* Set by android_app_free() before it asks the app thread to shut
     * down, so android_app_destroy() knows the activity is already being
     * torn down by the framework and must not call finish() on it. */
    int destroy_from_framework;
 
    /*  Below are "private" implementation of RA code. */
-   /* Written by the app thread on APP_CMD_GAINED_FOCUS/LOST_FOCUS, read
-    * by the video thread in dispserv_android.c. */
+   /* Written by the app thread when the focus of its two windows
+    * changes (android_focus.h), read by the video thread in
+    * dispserv_android.c. */
    retro_atomic_int_t unfocused;
+   /* App thread only */
+   android_focus_t focus;
    unsigned accelerometer_event_rate;
    unsigned gyroscope_event_rate;
    ASensorManager *sensorManager;
@@ -189,6 +280,7 @@ struct android_app
 
    jmethodID showKeyboard;
    jmethodID hideKeyboard;
+   jmethodID setSecondDisplay;
 
    /* Written by the Android UI thread in onContentRectChanged(), read by
     * the video thread in the context drivers, with no lock on either
@@ -204,6 +296,7 @@ struct android_app
       retro_atomic_int_t dims;
       retro_atomic_int_t changed;
    } content_rect;
+   struct android_second_display second_display;
    uint16_t rumble_last_strength_strong[MAX_USERS];
    uint16_t rumble_last_strength_weak[MAX_USERS];
    uint16_t rumble_last_strength[MAX_USERS];
@@ -322,7 +415,21 @@ enum
     */
    APP_CMD_DESTROY,
 
-   APP_CMD_REINIT_DONE
+   APP_CMD_REINIT_DONE,
+
+   /**
+    * Command from the second display's controller, no ticket: its
+    * surface or the display list changed, so the screens' windows get
+    * another try.
+    */
+   APP_CMD_SECOND_WINDOW_CHANGED,
+
+   /**
+    * Commands from the second display's controller, no ticket: its
+    * window gained focus, or lost it or went.
+    */
+   APP_CMD_SECOND_GAINED_FOCUS,
+   APP_CMD_SECOND_LOST_FOCUS
 };
 
 /* The JNI exception guard and call wrappers live in
@@ -376,6 +483,16 @@ void android_run_lifecycle_hook(struct android_app *android_app,
 #endif
 
 extern struct android_app *g_android;
+
+/* Any native thread, never waits: asks Java to show the second display
+ * on display @ordinal of the last published list, or to hide it for 0.
+ * A hide @given_up comes from a caller that holds nothing of the
+ * display's surfaces: those made for earlier requests are dropped as
+ * they arrive. */
+void android_second_display_request(unsigned ordinal, bool given_up);
+
+/* Releases a surface's window and frees it. Any thread that owns it. */
+void android_second_surface_free(struct android_second_surface *node);
 
 void frontend_android_get_name(char *s, size_t len);
 

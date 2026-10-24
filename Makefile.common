@@ -2031,6 +2031,11 @@ ifeq ($(HAVE_SHADERS_COMMON), 1)
    OBJ += gfx/video_shader_parse.o
 endif
 
+ifeq ($(HAVE_VIDEO_WINDOWS), 1)
+   DEFINES += -DHAVE_VIDEO_WINDOWS
+   OBJ += gfx/video_windows.o
+endif
+
 ifeq ($(HAVE_OPENXR), 1)
    NEED_CXX_LINKER = 1
    DEFINES += -DHAVE_OPENXR
