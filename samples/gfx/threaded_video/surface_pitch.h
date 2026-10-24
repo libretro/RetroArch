@@ -122,6 +122,13 @@ static void lane_surface_pitch(void)
 #endif
             if (threaded) video_thread_wait_idle();
             still_test_surface = s;
+            /* The replacement draws GPU pixels without RGUI's software layer. */
+            if (video->poke && video->poke->set_texture_frame)
+            {
+               static const uint32_t transparent = 0;
+               video->poke->set_texture_frame(video->data, &transparent,
+                     true, VIDEO_SCALE_PACK(1, 1), 0.0f);
+            }
             menu->driver_ctx = &replacement;
             run_frames(4);
             if (threaded) video_thread_wait_idle();
