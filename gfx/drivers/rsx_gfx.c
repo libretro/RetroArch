@@ -966,7 +966,6 @@ static void rsx_font_render_msg(
       rsxSetBlendEnable(rsx->context, GCM_FALSE);
       rsx_set_viewport(rsx, dims, false, true);
    }
-   rsx->font_vert_idx = 0;
 }
 
 static const struct font_glyph *rsx_font_get_glyph(
@@ -995,7 +994,6 @@ static void rsx_font_flush_block(unsigned dims, void *data)
          GCM_TRUE, 0 << 8, 12 << 8, GCM_TEXTURE_MAX_ANISO_1);
    rsxSetBlendEnable(rsx->context, GCM_FALSE);
    rsx_set_viewport(rsx, dims, block->fullscreen, true);
-   font->rsx->font_vert_idx = 0;
 }
 
 static void rsx_font_bind_block(void *data, void *userdata)
@@ -2461,6 +2459,13 @@ static bool rsx_frame(void* data, const void* frame,
 #ifdef HAVE_MENU
    if (gcm->menu_frame_enable && menu_is_alive)
    {
+      /* A duped core frame stays behind the menu: the surface was
+       * cleared at the last flip */
+      if (!draw && gcm->texture[gcm->tex_index].data)
+      {
+         rsx_set_texture(gcm, &gcm->texture[gcm->tex_index]);
+         rsx_draw_vertices(gcm);
+      }
       menu_driver_frame(menu_is_alive, video_info);
       draw = true;
       if (gcm->menu_texture.data)
@@ -2470,7 +2475,6 @@ static bool rsx_frame(void* data, const void* frame,
           * this be RSX_SHADER_MENU instead? */
          rsx_set_menu_texture(gcm, &gcm->menu_texture);
          rsx_draw_menu_vertices(gcm);
-         draw = true;
       }
    };
 
@@ -2504,7 +2508,6 @@ static bool rsx_frame(void* data, const void* frame,
       rsx_clear_surface(gcm);
    }
    gcm->vert_idx         = 0;
-   gcm->font_vert_idx    = 0;
 
    return true;
 }

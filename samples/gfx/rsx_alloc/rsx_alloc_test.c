@@ -22,6 +22,12 @@
  *    vertices and texture, or none.
  *  - overlay_sweep: rsx_overlay_load() likewise loads whole images
  *    or nothing.
+ *  - menu_vertices, font_vertices, menu_frame_vertices, font_queue:
+ *    vertices land where the RSX is pointed at, inside their buffer,
+ *    and vertices queued for the RSX are not written over by the next
+ *    draw, message or frame.
+ *  - native_menu_frame, menu_dupe_frame: a menu with no new core
+ *    frame is presented, over the last core frame if there is one.
  *
  * Plain C and the C library only, so it builds and runs the same with
  * mingw on Windows. */
@@ -267,14 +273,26 @@ bool video_coord_array_append(video_coord_array_t *ca,
 uint32_t utf8_walk(const char **string) { return *(*string)++; }
 void font_driver_render_msg(void *data, const char *msg, size_t msg_len,
       const struct font_params *params, void *font_data) { }
+/* Red of the next message drawn, to tell draws apart */
+static float fake_msg_red;
 void font_driver_resolve_params(const struct font_params *params,
-      font_params_resolved_t *out) { memset(out, 0, sizeof(*out)); }
+      font_params_resolved_t *out)
+{
+   memset(out, 0, sizeof(*out));
+   out->color[0] = fake_msg_red;
+}
 int font_renderer_get_message_width(
       const font_renderer_driver_t *renderer, void *renderer_data,
       const char *msg, size_t msg_len, float scale) { return 0; }
 
 static struct font_atlas *fake_get_atlas(void *data) { return &fake_atlas; }
 static void fake_font_free(void *data) { }
+static struct font_glyph fake_glyph;
+static const struct font_glyph *fake_get_glyph(void *data, uint32_t code)
+{ return &fake_glyph; }
+static struct font_line_metrics fake_metrics;
+static void fake_get_line_metrics(void *data,
+      struct font_line_metrics **metrics) { *metrics = &fake_metrics; }
 static font_renderer_driver_t fake_font_renderer;
 
 int font_renderer_create_default(const font_renderer_driver_t **drv,
@@ -283,6 +301,8 @@ int font_renderer_create_default(const font_renderer_driver_t **drv,
 {
    fake_font_renderer.get_atlas = fake_get_atlas;
    fake_font_renderer.free      = fake_font_free;
+   fake_font_renderer.get_glyph = fake_get_glyph;
+   fake_font_renderer.get_line_metrics = fake_get_line_metrics;
    fake_atlas.buffer            = fake_atlas_buffer;
    fake_atlas.width             = 32;
    fake_atlas.height            = 16;
@@ -753,6 +773,115 @@ static void test_menu_frame_vertices(void)
    printf("menu_frame_vertices: ok\n");
 }
 
+/* Text queued for the RSX is not written over by the next message,
+ * raster block or frame */
+static void test_font_queue(void)
+{
+   static float vertex[2 * 6];
+   float color[4 * 6];
+   video_font_raster_block_t block;
+   video_frame_info_t info;
+   rsx_t *rsx             = driver_up();
+   rsx_font_t *font       = (rsx_font_t*)rsx_font_init(rsx, NULL, 12.0f,
+         false);
+   rsx_vertex_t *previous = NULL;
+   float previous_red     = 0;
+   unsigned i, j, start   = 0;
+   u32 expected;
+
+   CHECK(font != NULL, "font_queue: font initialization");
+   if (!font)
+   {
+      driver_down(rsx);
+      return;
+   }
+   memset(&block, 0, sizeof(block));
+   memset(&info, 0, sizeof(info));
+   block.carr.coords.vertex    = vertex;
+   block.carr.coords.tex_coord = vertex;
+   block.carr.coords.color     = color;
+   block.carr.coords.vertices  = 6;
+   for (i = 0; i < RSX_MAX_FONT_VERTICES / 6 + 2; i++)
+   {
+      float red = (float)(i + 1);
+      if (start + 6 > RSX_MAX_FONT_VERTICES)
+         start = 0;
+      if (i & 1)
+      {
+         fake_msg_red = red;
+         rsx_font_render_msg(rsx, font, "a", 1, NULL);
+      }
+      else
+      {
+         for (j = 0; j < 6; j++)
+         {
+            color[4 * j + 0] = red;
+            color[4 * j + 1] = 1.0f;
+            color[4 * j + 2] = 1.0f;
+            color[4 * j + 3] = 1.0f;
+         }
+         font->block = &block;
+         rsx_font_flush_block(VIDEO_SCALE_PACK(64, 48), font);
+         font->block = NULL;
+      }
+      if (previous)
+         CHECK(previous->r == previous_red,
+               "font_queue: queued text overwritten at draw %u", i);
+      CHECK(font->vertices[start].r == red,
+            "font_queue: wrong data at vertex %u", start);
+      rsxAddressToOffset(&font->vertices[start].x, &expected);
+      CHECK(font->pos_offset == expected,
+            "font_queue: wrong GPU offset at vertex %u", start);
+      previous     = &font->vertices[start];
+      previous_red = red;
+      start       += 6;
+      if (i % 3 == 2)
+         rsx_frame(rsx, NULL, 0, i, 0, NULL, &info);
+   }
+   fake_msg_red = 0;
+   rsx_font_free(font, false);
+   driver_down(rsx);
+   printf("font_queue: ok\n");
+}
+
+/* A duped core frame is drawn again behind the menu, as the surface
+ * it was drawn to has been cleared */
+static void test_menu_dupe_frame(void)
+{
+   static u8 frame[16 * 8 * 2];
+   video_frame_info_t info;
+   rsx_t *rsx = driver_up();
+   unsigned draws, flips;
+
+   memset(&info, 0, sizeof(info));
+   info.menu_st_flags     = MENU_ST_FLAG_ALIVE;
+   rsx->menu_frame_enable = true;
+
+   draws = rsx_draw_calls;
+   rsx_frame(rsx, NULL, 0, 0, 0, NULL, &info);
+   CHECK(rsx_draw_calls == draws,
+         "menu_dupe_frame: drawn with no core frame yet");
+
+   rsx_frame(rsx, frame, VIDEO_SCALE_PACK(16, 8), 1, 16 * 2, NULL, &info);
+   draws = rsx_draw_calls;
+   flips = rsx_flip_calls;
+   rsx_frame(rsx, NULL, 0, 2, 0, NULL, &info);
+   CHECK(rsx_draw_calls == draws + 1,
+         "menu_dupe_frame: duped core frame not drawn behind the menu");
+   CHECK(rsx_flip_calls == flips + 1,
+         "menu_dupe_frame: menu over a duped frame not presented");
+
+   info.menu_st_flags = 0;
+   draws = rsx_draw_calls;
+   flips = rsx_flip_calls;
+   rsx_frame(rsx, NULL, 0, 3, 0, NULL, &info);
+   CHECK(rsx_draw_calls == draws && rsx_flip_calls == flips,
+         "menu_dupe_frame: a dupe without the menu was redrawn");
+
+   driver_down(rsx);
+   printf("menu_dupe_frame: ok\n");
+}
+
 int main(int argc, char **argv)
 {
    static const struct
@@ -770,6 +899,8 @@ int main(int argc, char **argv)
       { "font_vertices", test_font_vertices },
       { "native_menu_frame", test_native_menu_frame },
       { "menu_frame_vertices", test_menu_frame_vertices },
+      { "font_queue", test_font_queue },
+      { "menu_dupe_frame", test_menu_dupe_frame },
    };
    unsigned i;
 
