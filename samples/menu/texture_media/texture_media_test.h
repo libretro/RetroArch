@@ -32,6 +32,7 @@ static enum menu_action test_action(test_viewer_t *v,enum menu_action a) { retur
 static int test_release(test_viewer_t *v,unsigned x,unsigned y) { return ozone_pointer_up(v,x,y,0,MENU_INPUT_GESTURE_TAP,NULL,NULL,0); }
 #endif
 #include "../../../retroarch.h"
+#include "../../../tasks/task_content.h"
 #include "../../../paths.h"
 #include "../../../frontend/frontend.h"
 #include <time/rtime.h>
@@ -142,6 +143,7 @@ int main(int argc,char **argv)
       bool image = image_texture_get_type(argv[1]) != IMAGE_TYPE_MP4
          && image_texture_get_type(argv[1]) != IMAGE_TYPE_WEBM;
       bool first_frame = getenv("MEDIA_TEST_FIRST_FRAME") != NULL;
+      bool startup_core_untouched = true;
       bool startup_readback = true;
       unsigned startup_frames = 0, startup_nonblack = 0;
       int startup_token = menu_driver_media_startup_token();
@@ -180,6 +182,9 @@ int main(int argc,char **argv)
          }
          menu_driver_iterate(menu_st, disp_get_ptr(), anim_get_ptr(),
                config_get_ptr(), MENU_ACTION_NOOP, cpu_features_get_time_usec());
+         startup_core_untouched = !task_content_load_pending()
+            && runloop_state_get_ptr()->current_core_type == CORE_TYPE_DUMMY
+            && startup_core_untouched;
          render(menu_st);
          if (test_showing(viewer) && test_thumbnail(viewer)->texture
                && (image || viewer->media.controls.target.user)
@@ -217,6 +222,7 @@ int main(int argc,char **argv)
             printf("item %lu: %s type=%u\n", (unsigned long)row,
                   items->list[row].path, items->list[row].type);
       }
+      CHECK("external viewer never queues a content-core load", startup_core_untouched);
       CHECK("opened file does not launch a content core",
             runloop_state_get_ptr()->current_core_type == CORE_TYPE_DUMMY
             && !*path_get(RARCH_PATH_CONTENT));

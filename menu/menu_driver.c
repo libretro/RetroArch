@@ -9192,6 +9192,18 @@ static enum menu_action menu_driver_media_launch(struct menu_state *menu_st,
    }
    if (menu_dirwalk_pending() || MENU_ENTRIES_NEEDS_REFRESH(menu_st))
       return action;
+   if (menu_st->driver_ctx->populate_entries)
+   {
+      file_list_t *stack = MENU_LIST_GET(menu_st->entries.list, 0);
+      if (stack && stack->size)
+      {
+         struct item_file *entry = &stack->list[stack->size - 1];
+         /* The asynchronous refresh may have retained the previous page. */
+         menu_st->flags &= ~MENU_ST_FLAG_PREVENT_POPULATE;
+         menu_st->driver_ctx->populate_entries(menu_st->userdata,
+               entry->path, entry->label, entry->type);
+      }
+   }
    list = MENU_LIST_GET_SELECTION(menu_st->entries.list, 0);
    for (i = 0; list && i < list->size; i++)
       if (string_is_equal(list->list[i].path, path_basename(menu_media_launch_path)))

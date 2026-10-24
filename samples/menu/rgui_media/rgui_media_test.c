@@ -2,6 +2,7 @@
  * Only main() and the RGUI object are replaced; no playback/UI stubs. */
 #include "../../../menu/drivers/rgui.c"
 #include "../../../retroarch.h"
+#include "../../../tasks/task_content.h"
 #include "../../../paths.h"
 #include "../../../frontend/frontend.h"
 #include "../../../gfx/gfx_surface_player.h"
@@ -113,6 +114,7 @@ int main(int argc, char **argv)
       bool image = image_texture_get_type(argv[1]) != IMAGE_TYPE_MP4
          && image_texture_get_type(argv[1]) != IMAGE_TYPE_WEBM;
       bool first_frame = getenv("MEDIA_TEST_FIRST_FRAME") != NULL;
+      bool startup_core_untouched = true;
       bool startup_readback = true;
       unsigned startup_frames = 0, startup_nonblack = 0;
       int startup_token = menu_driver_media_startup_token();
@@ -143,6 +145,9 @@ int main(int argc, char **argv)
          rgui = (rgui_t *)menu_st->userdata;
          menu_driver_iterate(menu_st, disp_get_ptr(), anim_get_ptr(),
                settings, MENU_ACTION_NOOP, cpu_features_get_time_usec());
+         startup_core_untouched = !task_content_load_pending()
+            && runloop_state_get_ptr()->current_core_type == CORE_TYPE_DUMMY
+            && startup_core_untouched;
          media_render(menu_st);
          if (((rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL) != 0) && (rgui->fs_thumbnail.is_valid
                   || (!image && rgui->media_gpu.texture
@@ -169,6 +174,7 @@ int main(int argc, char **argv)
          MEDIA_CHECK("every loading frame can be captured", startup_readback);
          MEDIA_CHECK("loading frames do not expose the browser", !startup_nonblack);
       }
+      MEDIA_CHECK("external viewer never queues a content-core load", startup_core_untouched);
       MEDIA_CHECK("opened file does not launch a content core",
             runloop_state_get_ptr()->current_core_type == CORE_TYPE_DUMMY
             && !*path_get(RARCH_PATH_CONTENT));
