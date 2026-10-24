@@ -282,6 +282,34 @@ static bool act_readt(command_t *cmd, const char *arg)
    return true;
 }
 
+/* the menu: its title opens the reply, and a closed one says so */
+#define MENUS_TEXT "MENU Main Menu\nPATH Main Menu > Settings\n" \
+                   "0\tQuick Menu\t...\n1\tLoad Content\t\n" \
+                   "SELECTED 1\nCOUNT 60\nMORE 50\n"
+#define MENUC_TEXT "CLOSED\n"
+/* what waits on the user, as text anywhere in the reply */
+#define MENUD_TEXT "MENU User\nKEYBOARD Username: any\t1 text\n" \
+                   "MESSAGE Press again to quit\n0\tUsername\t\n" \
+                   "SELECTED 0\nCOUNT 1\n"
+static bool act_menud(command_t *cmd, const char *arg)
+{
+   (void)arg;
+   cmd->replier(cmd, MENUD_TEXT, sizeof(MENUD_TEXT) - 1);
+   return true;
+}
+static bool act_menus(command_t *cmd, const char *arg)
+{
+   (void)arg;
+   cmd->replier(cmd, MENUS_TEXT, sizeof(MENUS_TEXT) - 1);
+   return true;
+}
+static bool act_menuc(command_t *cmd, const char *arg)
+{
+   (void)arg;
+   cmd->replier(cmd, MENUC_TEXT, sizeof(MENUC_TEXT) - 1);
+   return true;
+}
+
 static bool act_wait(command_t *cmd, const char *arg)
 {
    (void)arg;
@@ -363,6 +391,9 @@ static struct cmd_action_map test_actions[] = {
    { "PREVF", act_prevf, "No argument", "Answer as RUN_FRAMES after a queue gave up.", 0, NULL, &cmd_rows_frames },
    { "PREVE", act_preve, "No argument", "Answer as STEPS after a queue failed.", 0, NULL, &cmd_rows_steps },
    { "READT", act_readt, "No argument", "Answer as a read cut short.", CMD_INFO_READ_ONLY, NULL, &cmd_rows_read },
+   { "MENUS", act_menus, "No argument", "Answer as MENU does.", 0, NULL, &cmd_rows_menu },
+   { "MENUC", act_menuc, "No argument", "Answer as MENU does when closed.", 0, NULL, &cmd_rows_menu },
+   { "MENUD", act_menud, "No argument", "Answer as MENU does over a dialog.", 0, NULL, &cmd_rows_menu },
 };
 static struct cmd_map test_hotkeys[] = {
    { "PAUSE_TOGGLE", 1, "Pause or resume.", 0 },
@@ -906,8 +937,8 @@ int main(void)
             && strstr(rs, "\"next\":{\"type\":\"integer\""));
       /* GET_STATUS, READ_CORE_MEMORY, ROWS, LROWS, SHORT, ONE, LOGR,
        * BARE, UNTIL, NOW, WAIT, RUN_FRAMES, PRESS, PRESSU, STOPS, STEPS,
-       * STEP, PREVS, PREVF, PREVE and READT */
-      check("only the commands that answer rows declare one", n == 21);
+       * STEP, PREVS, PREVF, PREVE, READT, MENUS, MENUC and MENUD */
+      check("only the commands that answer rows declare one", n == 24);
    }
    {
       /* ROWS describes its columns; LROWS, answering the same ones,
@@ -1215,6 +1246,37 @@ int main(void)
          st == 200 && json_valid(body_of(out))
          && strstr(out, "\"structuredContent\":{\"address\":\"101e\","
                "\"bytes\":\"1E 1F\",\"truncated\":true,\"read\":2}"));
+   st = post(cmd, PORT_OPEN, NULL, call("MENUS", NULL), out, sizeof(out), NULL);
+   check("the menu's title, path, and three closing lines",
+         st == 200 && json_valid(body_of(out))
+         && strstr(out, "\"structuredContent\":{\"rows\":["
+               "{\"index\":\"0\",\"label\":\"Quick Menu\",\"value\":\"...\"},"
+               "{\"index\":\"1\",\"label\":\"Load Content\",\"value\":\"\"}],"
+               "\"selected\":1,\"count\":60,\"more\":true,\"next\":50,"
+               "\"title\":\"Main Menu\",\"path\":\"Main Menu > Settings\"}"));
+   st = post(cmd, PORT_OPEN, NULL, call("MENUC", NULL), out, sizeof(out), NULL);
+   check("and a closed menu says so",
+         st == 200 && json_valid(body_of(out))
+         && strstr(out, "\"structuredContent\":{\"rows\":[],\"closed\":true}"));
+   st = post(cmd, PORT_OPEN, NULL, call("MENUD", NULL), out, sizeof(out), NULL);
+   check("a text line is a field on any line, a tab in it and all",
+         st == 200 && json_valid(body_of(out))
+         && strstr(out, "\"structuredContent\":{\"rows\":["
+               "{\"index\":\"0\",\"label\":\"Username\",\"value\":\"\"}],"
+               "\"selected\":0,\"count\":1,\"title\":\"User\","
+               "\"keyboard\":\"Username: any\\t1 text\","
+               "\"message\":\"Press again to quit\"}"));
+   st = post(cmd, PORT_OPEN, NULL,
+         "{\"jsonrpc\":\"2.0\",\"id\":9,\"method\":\"tools/list\"}",
+         out, sizeof(out), NULL);
+   {
+      const char *m = strstr(out, "\"name\":\"MENUC\"");
+      check("a flag that is not a cut says what it means",
+            m && strstr(m, "\"closed\":{\"type\":\"boolean\","
+                  "\"description\":\"The menu is closed.\"}"));
+      check("and a text line is declared a string",
+            m && strstr(m, "\"message\":{\"type\":\"string\","));
+   }
    st = post(cmd, PORT_OPEN, NULL, call("PREVS", NULL), out, sizeof(out), NULL);
    check("a queued STEPS after a stop: its steps dropped, and the stop",
          st == 200 && json_valid(body_of(out))
@@ -1241,13 +1303,16 @@ int main(void)
       /* the tool after BARE answers rows, so BARE's own ends there */
       const char *nx = br ? strstr(br, "\"name\":\"UNTIL\"") : NULL;
       const char *rw = br ? strstr(br, "\"rows\"") : NULL;
+      /* LOGR's own entry: the tools after it may well cut short */
+      const char *ln = lg ? strstr(lg + 1, "\"name\":\"") : NULL;
+      const char *mo = lg ? strstr(lg, "\"more\"") : NULL;
       check("its schema declares the trailers and no rows",
             br && strstr(br, "\"next\":{\"type\":\"integer\"")
             && (!rw || (nx && rw > nx)));
       check("its schema declares both trailers and no more",
             lg && strstr(lg, "\"next\":{\"type\":\"integer\"")
             && strstr(lg, "\"lost\":{\"type\":\"integer\"")
-            && !strstr(lg, "\"more\""));
+            && (!mo || (ln && mo > ln)));
    }
 
    printf("commands that are not tools\n");

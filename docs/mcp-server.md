@@ -113,9 +113,9 @@ having to write the command's own line by hand:
 
 `STATE` takes an `action`, and a `slot` number for `save` and `load`,
 `GET_PLAYLIST` takes
-`playlist` and an optional `first`, `SET_OPTION` takes `option` and a
-`state` of `on` or `off` - which the schema gives as the only two values
-it accepts. `tools/list` describes every one of them.
+`playlist` and an optional `first`, `OPTION` takes an `action`, an
+`option` and a `state` of `on` or `off` - which the schema gives as the
+only two values it accepts. `tools/list` describes every one of them.
 
 A parameter that is needed and left out, one that should be an integer
 and is not, one the tool does not take, a value outside the set a
@@ -145,11 +145,10 @@ read: 2`.
 
 ## Results that are rows
 
-The replies that are lines of tab-separated fields - `GET_OPTION`,
-`SET_OPTION`, `LIST_CORES`, `LIST_PLAYLISTS`, `GET_PLAYLIST`,
-`GET_CORE_OPTION`, `GET_MEMORY_MAP`, `GET_LOG`, `SET_INPUT`,
-`RELEASE_INPUT`, `GET_INPUT`, `WATCH`, `RUN_FRAMES`, `PRESS`,
-`RUN_UNTIL` and `STEPS` - come
+The replies that are lines of tab-separated fields - `OPTION`,
+`LIST_CORES`, `LIST_PLAYLISTS`, `GET_PLAYLIST`, `CORE_OPTION`,
+`GET_MEMORY_MAP`, `GET_LOG`, `INPUT`, `WATCH`, `RUN_FRAMES`, `PRESS`,
+`RUN_UNTIL`, `STEPS` and `MENU` - come
 with `structuredContent` beside the text, so a client is handed the
 rows rather than splitting them itself. Each of those tools declares an
 `outputSchema` naming its columns, described by the first tool in the
@@ -170,19 +169,23 @@ and `core` for a playlist's entries, `key`, `value`, `description` and
 `values` for a core's options, `start`, `length`, `select`,
 `disconnect`, `kind`, `access`, `order` and `space` for the memory map,
 `player`, `buttons` and `axes` for what a player holds, and `label`,
-`address` and `value` for the bytes `WATCH` watches. Every field
+`address` and `value` for the bytes `WATCH` watches, and `index`,
+`label` and `value` for the menu's entries. Every field
 is a string: it is the text's own field, which the server does not read
 as anything else.
 
 **A tool answers with `structuredContent` exactly when it declared an
 `outputSchema` and succeeded**, so a client reads the schema it was
-handed at `tools/list` and does not have to probe each reply. A reply
+handed at `tools/list` and does not have to probe each reply. The
+end-to-end test calls every tool that declares one and holds each reply
+to it: the required fields, the declared types, and no field it leaves
+out. A reply
 marked `isError` is its reason as text, with no `structuredContent`. A tool with no
 `outputSchema` answers with text alone, because its reply is prose or a
 confirmation rather than rows.
 
 A reply may end short of its columns, and the schema requires only the
-ones every row carries: `GET_CORE_OPTION` gives an option's `values`
+ones every row carries: `CORE_OPTION show` gives an option's `values`
 only where it was asked for that option by key.
 
 A line the command opens with its own name, such as `LIST_CORES none`,
@@ -210,6 +213,13 @@ ending the line, so `PRESS 1 right+a 4` gives `frames: 4`:
 | `STOP 2` | `stop: 2` | which `stop` held, from 1, when `STEPS` stopped |
 | `STEP 3` | `step: 3` | the step it ended on, from 1 |
 | `TRUNCATED 2` | `truncated: true`, `read: 2` | a `READ_CORE_MEMORY` that met unmapped memory |
+| `CLOSED` | `closed: true` | `MENU` with the menu closed |
+| `SELECTED 3` | `selected: 3` | the menu entry selected |
+| `COUNT 40` | `count: 40` | the entries in the menu's list |
+| `MESSAGE Press again to quit` | `message: "Press again to quit"` | a message over the menu, on any line |
+| `KEYBOARD Username` | `keyboard: "Username"` | the menu asking for text, on any line |
+| `PATH Main Menu > Settings` | `path: "Main Menu > Settings"` | the lists above the menu's own, on any line |
+| `MORE 50` | `more: true`, `next: 50` | the menu's next page, as `from` takes it |
 
 `GET_LOG` always says where to go on from, so it carries `next` without
 carrying `more`: a client asks again from `next` and gets whatever has
@@ -235,7 +245,7 @@ session.
 Not every command is a tool. `HELP` and `VERSION` are not, because
 `tools/list` already lists the commands and every answer names the
 server's version, and neither are the toggle hotkeys or
-`GET_CONFIG_PARAM`, whose work `SET_OPTION` and `GET_OPTION` do below.
+`GET_CONFIG_PARAM`, whose work `OPTION` does below.
 
 Nor is a hotkey that steps a selection. A person presses
 `STATE_SLOT_PLUS` while watching the slot on screen; for a program the
@@ -252,13 +262,16 @@ achievement address, which looks like `READ_CORE_MEMORY`'s system
 address and is not one, and `GET_MEMORY_MAP` answers the addresses
 `READ_CORE_MEMORY` takes.
 
-The disc and the menu are the exceptions: `DISK` and `MENU` step blind,
-and until something answers where they landed, stepping is all there is
-- and a disc swap is part of playing a game. Each is one tool taking a
-choice - `MENU down`, `DISK next` - rather than a tool per hotkey.
-`REINIT`, `STATE`, `REPLAY` and `CORE` stand for their families
-likewise: `STATE load 3` is `LOAD_STATE_SLOT 3`, `REPLAY seek 600` is
-`SEEK_REPLAY 600`, and `CORE load <path>` is `LOAD_CORE <path>`. Each
+The disc is the exception: `DISK` steps blind, and a disc swap is part
+of playing a game. It is one tool taking a choice - `DISK next` -
+rather than a tool per hotkey; `MENU`, below, answers with where it
+landed.
+`REINIT`, `STATE`, `REPLAY`, `CORE`, `INPUT`, `OPTION` and
+`CORE_OPTION` stand for their families likewise: `STATE load 3` is
+`LOAD_STATE_SLOT 3`, `REPLAY seek 600` is `SEEK_REPLAY 600`, `CORE load
+<path>` is `LOAD_CORE <path>`, `INPUT set 1 a 1` is `SET_INPUT 1 a 1`,
+and `OPTION show pause` is `GET_OPTION pause`. A reply that is rows -
+`INPUT`'s, `OPTION`'s - is the tool's answer as it is. Each
 answers under its own name - `STATE load 3`,
 `DISK next pressed`, `REPLAY ERROR no replay is playing or recording`,
 and `REINIT audio` for a restart that says nothing itself - while the
@@ -275,28 +288,91 @@ files itself, and playing a game does not need them.
 All of them are still commands on the network and stdin interfaces,
 where a person is typing and can see what happened.
 
+## The menu
+
+`MENU <action> [index] [from <entry>]` reads and drives RetroArch's own
+menu - settings, playlists, cores, the Quick Menu - and answers with
+what it shows once the action has run: its title, a page of 50 entries
+holding the selection, which entry is selected and how many there are.
+
+```
+MENU down
+MENU Quick Menu
+0	Resume	
+1	Reset	
+2	Close Content	
+3	Save States	...
+SELECTED 1
+COUNT 15
+```
+
+The menu opens where it was left, so below the title `PATH` names the
+lists above it - `PATH Main Menu > Settings > Drivers` - and `b` goes
+back up them. Where the list runs past the page, `MORE 50` says where
+the next one starts, for `from`.
+
+XMB and Ozone keep their top level in tabs - Main Menu, Settings,
+History, the playlists - rather than in one list. On XMB, `left` and
+`right` at the top switch tabs. On Ozone, `left` moves to the tabs,
+`up` and `down` pick one, and `right` returns to its list; `a` there
+only returns too. A playlist's tab is titled with the playlist's name.
+
+Each entry is its index, its label and its value: a setting's value,
+`...` for an entry that opens a list, or `checked` for the current
+choice in a list of them - the driver in use, say. `title`, `rows`, `selected`
+and `count` are its structured fields.
+
+- `show` answers what the menu shows; `from` lists from that entry.
+- `open` and `close` open and close it. With it closed, `show` and
+  `close` answer `CLOSED`, and the rest are refused. With no content
+  running the menu cannot close, and `close` says so.
+- `select <index>` moves straight to an entry, rather than pressing
+  `down` 137 times.
+- `up`, `down`, `left`, `right`, `a` and `b` press the menu's buttons:
+  `left` and `right` change a value, `a` confirms, `b` goes back. `left`,
+  `right` and `a` take an index too, acting on that entry: `MENU a 3`
+  opens Save States.
+- `type <text>` answers a keyboard: one line, entered whole and
+  confirmed, as a platform's own keyboard hands it over.
+
+What waits on the user comes as a line of its own after the title. A
+message - `MESSAGE Press again to close content...`, the confirmation
+Close Content, Reset and Quit ask for - is confirmed with `a` and
+dismissed with `b`. An entry that asks for text - a username, a search
+- answers `KEYBOARD Username`, and `type` or `b` ends it.
+
+The action runs on the menu's next frame as its own input would, and
+the answer comes a frame after that, so a list or a message an action
+opens is there to read. `MENU open` and `close` are the menu's switch:
+`menu` is not an `OPTION`. A second `MENU` while one waits replaces it, answered
+with an error; one whose list another hand changes first does nothing
+to the entry that took its place, and says so; and one whose menu closes first - a hotkey, another
+client - is answered `CLOSED`. `MENU` is marked destructive: its
+entries include Quit, Close Content and Delete. It is RetroArch's menu, not a game's: a game's menus are
+its screen and memory, played with `PRESS`, `STEPS` and `WATCH`.
+
 ## Options
 
 A hotkey toggle is of little use to an assistant: `FAST_FORWARD` turns
 fast-forward on or off depending on what it already was, which cannot be
-known without asking. Two tools replace the toggles with something that
+known without asking. `OPTION` replaces the toggles with something that
 can be asked and told:
 
-- `GET_OPTION [option]` reports every option and its value, name and
+- `OPTION show [option]` reports every option and its value, name and
   value tab separated, one per line; with a name, that option's line
   alone.
-- `SET_OPTION <option> on|off` puts an option in a state. Asking for the
+- `OPTION set <option> on|off` puts an option in a state. Asking for the
   state it is already in changes nothing and succeeds, so the same
   request twice is one change.
 
 Each option is read where its state lives rather than from the setting
-behind it, so `GET_OPTION` reports what is true now and not what was
+behind it, so `OPTION show` reports what is true now and not what was
 configured. Which options a build has depends on what it was built with,
-so `GET_OPTION` with no argument is the list: it covers what is on or off
-(pausing, fast-forward, mute, the menu, the shader, recording), what the
+so `OPTION show` with no argument is the list: it covers what is on or off
+(pausing, fast-forward, mute, the shader, recording), what the
 frontend is doing (the frame count, the state and replay slots, whether
 content is loading), and the configured directories. Some only report,
-and `SET_OPTION` says so for them.
+and `OPTION set` says so for them.
 
 Options take effect at once and report the resulting state. Speed changes
 respect the runloop's pause, netplay, core override and hardcore restrictions.
@@ -305,7 +381,7 @@ share one recorder; stop the active mode before starting the other.
 
 A hotkey tool that is still a tool answers `<NAME> pressed` for the same
 reason: the press goes out on the next poll, and what it
-changed is read back with `GET_OPTION`.
+changed is read back with `OPTION show`.
 
 `GET_LOG [since]` gives the lines RetroArch has logged since line
 `since` (0 when left out), as far as the logging verbosity lets them be
@@ -317,15 +393,15 @@ starts or the first `GET_LOG`.
 `PRESS <player> <control>[+<control>...] <frames>` is how an assistant
 taps a button: it holds the buttons, runs that many frames and lets
 them go, answered once the last frame has run. A tap is 2 to 4 frames;
-`PRESS 1 right+a 6` runs and jumps. What `SET_INPUT` holds stays held,
-under the press and after it: `SET_INPUT 1 right+b 1` then `PRESS 1 a
+`PRESS 1 right+a 6` runs and jumps. What `INPUT set` holds stays held,
+under the press and after it: `INPUT set 1 right+b 1` then `PRESS 1 a
 20` is a running jump.
 
-This is one request where four were needed - `SET_INPUT`, `RUN_FRAMES`,
-`SET_INPUT` to release, `RUN_FRAMES` again - and each of those is its
+This is one request where four were needed - `INPUT set`, `RUN_FRAMES`,
+`INPUT set` to release, `RUN_FRAMES` again - and each of those is its
 own HTTP connection, so it is latency saved as much as tokens. The
 buttons are let go of however the press ends, including the error that
-ends it early. Axes are `SET_INPUT`'s: they are held at a value rather
+ends it early. Axes are `INPUT set`'s: they are held at a value rather
 than pressed, so `PRESS` refuses one.
 
 `PRESS ... until <condition>` lets go and runs on until the condition
@@ -432,7 +508,7 @@ Two presses of the same button in a row get a frame with it let go
 between them, so the game reads two taps rather than one long press -
 also where one request ends on the press and the next starts with it.
 That frame is the second press's own, not taken from it, and is not
-needed where `SET_INPUT` held the button throughout or a frame has run
+needed where `INPUT set` held the button throughout or a frame has run
 since.
 
 It answers `DONE` when every step has run, `STOPPED` when `stop` held,
@@ -483,35 +559,37 @@ achievements hardcore mode, and they, `RUN_UNTIL` and `STEPS` are the
 same one job: a second of any of them replaces one still running, which is answered with an error, as it is when the content
 closes.
 
-`SET_INPUT` with `RUN_FRAMES` is still the way to hold something across
+`INPUT set` with `RUN_FRAMES` is still the way to hold something across
 several steps - a direction held while reading memory between frames -
 and to put a stick anywhere but centre.
 
-`SET_INPUT <player> <control> <value>` holds a RetroPad button (`a`,
+`INPUT set <player> <control> <value>` holds a RetroPad button (`a`,
 `b`, `start`, `up` and the rest; 1 holds it, 0 lets it go) or a stick
 axis (`left_x`, `left_y`, `right_x`, `right_y`; -32768 to 32767, 0 lets
 it go) for the core, over the player's own controller, until it is set
-again, `RELEASE_INPUT [player]` lets go of it, or the content closes -
+again, `INPUT release [player]` lets go of it, or the content closes -
 the next content does not start with a button held for this one. Both answer with the
 player, the buttons held and the axes held, tab separated, and `none`
-for either where nothing is held. `RELEASE_INPUT` with no player lets
+for either where nothing is held. `INPUT release` with no player lets
 go for every player and answers for the first of them. Achievements
-hardcore mode refuses `SET_INPUT`. `GET_INPUT [player]` answers in the same
+hardcore mode refuses `INPUT set`. The core is given exactly what is
+held: opposing directions are not cleaned and the D-Pad is not turned
+with the picture, and under netplay the player is this machine's, so a
+hold is sent like a press. `INPUT show [player]` answers in the same
 shape **without changing anything**, which neither of the others can
 do: one has to set something to answer and the other lets go before it
 does.
 
 Several controls join with `+` to be held together:
-`SET_INPUT 1 right+a 1` runs and jumps in one request, where two
+`INPUT set 1 right+a 1` runs and jumps in one request, where two
 requests would take two frames. Every control is checked before any is
 held, so a combination with a name or a value wrong in it holds
 nothing. `PRESS` takes the same combinations.
 
-The running core's own options are `GET_CORE_OPTION` and
-`SET_CORE_OPTION`. With no key, `GET_CORE_OPTION` lists every option as
+The running core's own options are `CORE_OPTION`. With no key, `CORE_OPTION show` lists every option as
 key, value and description, tab separated; with a key it gives that
 option's line with the values it takes after a further tab, separated
-by `|`. `SET_CORE_OPTION <key> <value>` takes one of those values and
+by `|`. `CORE_OPTION set <key> <value>` takes one of those values and
 answers with the option's line; asking for the value it already has
 changes nothing. Whether a change applies at once or on the next start
 of the content is the core's to say.
@@ -571,7 +649,7 @@ the reason:
 - `STATE`: once the state is applied or written. `STATE checkpoint`
   keeps one state in memory, not in a slot's file, and `STATE rollback`
   restores it: the retry after a mistake, in one request where
-  replaying the level took a dozen. What `SET_INPUT` holds stays held
+  replaying the level took a dozen. What `INPUT set` holds stays held
   through it; a queued `STEPS` ends, as it does on any load. The
   checkpoint lives as long as the content does; a rollback is refused
   while a replay records, as a load from a slot is.
@@ -604,8 +682,8 @@ Over stdio a line past 64 KiB is answered with a parse error and skipped
 to its newline, and a `\r` before the newline is taken as part of it.
 Batch requests are refused as invalid.
 
-Hotkey tools (`QUIT`), and the hotkeys behind `MENU`, `DISK`
-and `REPLAY halt`, press for one frame. `SCREENSHOT` is the exception: it
+Hotkey tools (`QUIT`), and the hotkeys behind `DISK` and `REPLAY
+halt`, press for one frame. `SCREENSHOT` is the exception: it
 takes the screenshot at once and answers when it has been written - with the
 picture itself as image content (PNG, up to 4 MiB) and the file's path as
 text, so a client can see the screen without reaching the file - or with
@@ -613,19 +691,19 @@ text, so a client can see the screen without reaching the file - or with
 
 Every tool carries hints for the client:
 
-- **read-only**: only reports (`GET_STATUS`, `GET_OPTION`, `GET_LOG`,
-  `GET_INPUT`, `GET_CORE_OPTION`, `LIST_CORES`, `LIST_PLAYLISTS`,
-  `GET_PLAYLIST`, `READ_CORE_MEMORY`, `GET_MEMORY_MAP`);
+- **read-only**: only reports (`GET_STATUS`, `GET_LOG`, `LIST_CORES`,
+  `LIST_PLAYLISTS`, `GET_PLAYLIST`, `READ_CORE_MEMORY`,
+  `GET_MEMORY_MAP`);
 - **destructive**: can lose unsaved progress or data, or loads code
   (`QUIT`, `RESET`, `STATE`, `REPLAY`, `WRITE_CORE_MEMORY`, `CORE`,
-  `LOAD_CONTENT`, `CLOSE_CONTENT`).
+  `LOAD_CONTENT`, `CLOSE_CONTENT`, `MENU`).
 
-Every tool states `destructiveHint`, true or false, since its default is
-true. `openWorldHint` is left at its default rather than spend 22 bytes
-of every tool's entry on it.
+A tool that is not read-only states `destructiveHint`, true or false,
+since its default is true; a read-only one leaves it out, as it means
+nothing there. `openWorldHint` is left at its default.
 
-`SET_OPTION` is neither: it writes, but only to the options `GET_OPTION`
-lists, and none of them loses progress.
+`OPTION`, `INPUT` and `CORE_OPTION` are neither: they write, but only to
+the options and controls they list, and none of them loses progress.
 
 Most clients ask before running a destructive tool. Keep that on.
 

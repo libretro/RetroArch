@@ -266,7 +266,7 @@ int main(int argc, char **argv)
    CHECK(!command_replay(&cmd,"seek 600") && !strncmp(reply,"REPLAY ERROR ",13));
    cmd.structured=true;
    reply[0]=0;
-   CHECK(command_menu(&cmd,"up") && !strcmp(reply,"MENU up pressed\n"));
+   CHECK(command_menu(&cmd,"show") && !strcmp(reply,"CLOSED\n"));
    /* a command that answers nothing of its own answers as the tool */
    reply[0]=0;
    CHECK(command_reinit(&cmd,"audio") && !strcmp(reply,"REINIT audio\n"));
@@ -461,9 +461,78 @@ int main(int argc, char **argv)
    /* a family of commands as one: the word picks the command, and only
     * the ones that take a number take what follows */
    reply[0]=0; cmd.error=false;
-   CHECK(!command_menu(&cmd,"toggle") && strstr(reply,"MENU ERROR one of up|"));
+   CHECK(!command_menu(&cmd,"toggle") && strstr(reply,"MENU ERROR one of show|"));
    reply[0]=0;
-   CHECK(!command_menu(&cmd,"up 5") && strstr(reply,"nothing after up"));
+   CHECK(!command_menu(&cmd,"up 5") && strstr(reply,"up takes no index"));
+   reply[0]=0;
+   CHECK(!command_menu(&cmd,"down") && strstr(reply,"the menu is closed"));
+   /* MENU answers once the menu has run its action, with what it shows */
+   reply[0]=0; cmd.error=false;
+   CHECK(command_menu(&cmd,"open") && !reply[0]);
+   for (i=0;i<8 && !reply[0];i++) runloop_iterate();
+   CHECK(!strncmp(reply,"MENU ",5) && strstr(reply,"\nSELECTED 0\nCOUNT "));
+   reply[0]=0;
+   CHECK(command_menu(&cmd,"down") && !reply[0]);
+   /* a second request replaces the first, which is told */
+   CHECK(command_menu(&cmd,"down") && strstr(reply,"replaced by another"));
+   reply[0]=0;
+   for (i=0;i<8 && !reply[0];i++) runloop_iterate();
+   CHECK(strstr(reply,"\nSELECTED 1\n") != NULL);
+   reply[0]=0;
+   CHECK(command_menu(&cmd,"select 0") && !reply[0]);
+   for (i=0;i<8 && !reply[0];i++) runloop_iterate();
+   CHECK(strstr(reply,"\nSELECTED 0\n") != NULL);
+   reply[0]=0;
+   CHECK(!command_menu(&cmd,"select 9999") && strstr(reply,"no entry 9999"));
+   /* a list another hand changes before the frame: the entry asked for
+    * is not reached, and the request after it is not held to that */
+   {
+      menu_entry_t *entry = (menu_entry_t*)malloc(sizeof(*entry));
+      reply[0]=0; cmd.error=false;
+      CHECK(entry && command_menu(&cmd,"select 0") && !reply[0]);
+      if (entry)
+      {
+         MENU_ENTRY_INITIALIZE((*entry));
+         menu_entry_get(entry, 0, 0, NULL, false);
+         menu_entry_action(entry, 0, MENU_ACTION_OK);
+         free(entry);
+      }
+      for (i=0;i<8 && !reply[0];i++) runloop_iterate();
+      CHECK(strstr(reply,"the list changed") != NULL);
+      reply[0]=0; cmd.error=false;
+      CHECK(command_menu(&cmd,"b") && !reply[0]);
+      for (i=0;i<8 && !reply[0];i++) runloop_iterate();
+      CHECK(!strncmp(reply,"MENU ",5) && !cmd.error);
+   }
+   /* one whose menu closes first is told so, not left waiting */
+   reply[0]=0; cmd.error=false;
+   CHECK(command_menu(&cmd,"down") && !reply[0]);
+   command_event(CMD_EVENT_MENU_TOGGLE,NULL);
+   for (i=0;i<8 && !reply[0];i++) runloop_iterate();
+   CHECK(!strcmp(reply,"CLOSED\n"));
+   reply[0]=0;
+   CHECK(command_menu(&cmd,"open"));
+   for (i=0;i<8 && !reply[0];i++) runloop_iterate();
+   reply[0]=0; cmd.error=false;
+   CHECK(command_menu(&cmd,"close") && !strcmp(reply,"CLOSED\n"));
+   /* INPUT, OPTION and CORE_OPTION: their rows as they are, their
+    * errors under their own names */
+   reply[0]=0; cmd.error=false;
+   CHECK(command_input(&cmd,"show 1") && !strcmp(reply,"1\tnone\tnone\n"));
+   reply[0]=0;
+   CHECK(!command_input(&cmd,"set 1 a") && !strncmp(reply,"INPUT ERROR ",12));
+   reply[0]=0; cmd.error=false;
+   CHECK(command_option(&cmd,"show pause") && !strncmp(reply,"pause\t",6));
+   reply[0]=0;
+   CHECK(!command_option(&cmd,"set nope on") && strstr(reply,
+         "OPTION ERROR no such option nope; OPTION show lists them"));
+   reply[0]=0; cmd.error=false;
+   CHECK(!command_option(&cmd,"toggle") && strstr(reply,
+         "OPTION ERROR one of show|set"));
+   reply[0]=0; cmd.error=false;
+   CHECK(!command_core_option(&cmd,"show nope") && strstr(reply,
+         "CORE_OPTION ERROR "));
+   cmd.error=false;
    reply[0]=0;
    CHECK(!command_replay(&cmd,"record 3") && strstr(reply,"nothing after record"));
    reply[0]=0;
@@ -650,7 +719,7 @@ int main(int argc, char **argv)
    /* a press holds input for every frame it runs, so it is bounded by
     * what a client waits for, not by RUN_FRAMES' ten minutes */
    reply[0]=0;
-   CHECK(!command_press(&cmd,"1 a 601") && strstr(reply,"SET_INPUT"));
+   CHECK(!command_press(&cmd,"1 a 601") && strstr(reply,"INPUT set"));
    /* a player past 32 bits is refused, not taken as player 1 */
    reply[0]=0;
    CHECK(!command_press(&cmd,"4294967297 a 1") && strstr(reply,"a player from 1"));

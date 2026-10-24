@@ -16322,6 +16322,9 @@ void input_driver_poll(void)
    }
 
 #ifdef HAVE_COMMAND
+#ifdef HAVE_MENU
+   command_menu_closed();
+#endif
    /* The interfaces outlive a content load, but the core they would
     * reach does not: what arrives meanwhile waits for it. */
    for (i = 0; i < ARRAY_SIZE(input_st->command)
