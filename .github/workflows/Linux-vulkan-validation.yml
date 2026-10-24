@@ -837,7 +837,7 @@ jobs:
           # retry fetches only the rest, one file at a time after a
           # growing wait so a shared runner's rate limit can clear.
           p=$MINGW_PACKAGE_PREFIX
-          pkgs="base-devel git $p-cc $p-gdb"
+          pkgs="base-devel git $p-cc $p-gdb $p-python $p-ffmpeg"
           for i in 1 2 3 4 5; do
             pacman -S --noconfirm --needed $pkgs && exit 0
             [ $i = 5 ] && break
@@ -851,7 +851,7 @@ jobs:
         shell: msys2 {0}
         run: |
           set -eu
-          ./configure --disable-qt
+          ./configure --disable-qt --disable-ffmpeg --disable-webmplayer --disable-imageviewer
           grep -q '^HAVE_D3D11 = 1' config.mk
           grep -q '^HAVE_D3D12 = 1' config.mk
           make -j"$(nproc)"
@@ -865,6 +865,17 @@ jobs:
           HARNESS_CORE_XRGB8888=${{ matrix.core_xrgb8888 || '' }} \
             SAN=none DRIVER=${{ matrix.driver }} CYCLES=1 GDB=1 make -C samples/gfx/threaded_video check-driver
           make -C samples/gfx/threaded_video clean
+
+      - name: RGUI GPU subtitle output on ${{ matrix.driver }}
+        shell: msys2 {0}
+        run: |
+          set -eu
+          ffmpeg -v error -y -f lavfi -i testsrc2=size=320x240:rate=30 -f lavfi -i sine=frequency=440:sample_rate=48000 -t 3 -c:v libx264 -preset ultrafast -pix_fmt yuv420p -c:a aac -shortest samples/menu/rgui_media/fixture.mp4
+          python3 -c "from pathlib import Path; Path('samples/menu/rgui_media/fixture.srt').write_text('1\n00:00:00,000 --> 00:10:00,000\nSubtitle sidecar\nUTF-8 \u00e9\n\n', encoding='utf-8'); Path('samples/menu/rgui_media/fixture.en.srt').write_text('1\n00:00:00,000 --> 00:10:00,000\nEnglish track\n', encoding='utf-8')"
+          capture="$(cygpath -m "$RUNNER_TEMP/rgui-subtitles-${{ matrix.driver }}")"
+          mkdir -p "$capture"
+          MEDIA_TEST_CAPTURE_DIR="$capture" MEDIA_TEST_SUBTITLE_CONTEXT=1 \
+            python3 samples/menu/rgui_media/run.py --driver rgui --video-driver ${{ matrix.driver }} --gpu-surface --subtitles samples/menu/rgui_media/fixture.mp4
 
   views-sdl3:
     name: Views on SDL3, end to end (Xvfb, llvmpipe)

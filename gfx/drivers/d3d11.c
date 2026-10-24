@@ -6852,6 +6852,94 @@ static void d3d11_set_view_count(void *data, unsigned count)
    d3d11_views_free_chains(d3d11, d3d11->views.chains.count);
 }
 
+static void d3d11_sprites_begin(d3d11_video_t *d3d11)
+{
+   ID3D11DeviceContext *context = d3d11->context;
+   context->lpVtbl->RSSetViewports(context, 1, &d3d11->viewport);
+   {
+      d3d11_shader_t *shader = d3d11_sprite_shader(d3d11);
+      context->lpVtbl->IASetInputLayout(context, shader->layout);
+      context->lpVtbl->VSSetShader(context, shader->vs, NULL, 0);
+      context->lpVtbl->PSSetShader(context, shader->ps, NULL, 0);
+      context->lpVtbl->GSSetShader(context, shader->gs, NULL, 0);
+   }
+   context->lpVtbl->IASetPrimitiveTopology(context,
+         D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
+   context->lpVtbl->VSSetConstantBuffers(context, 0, 1, &d3d11->ubo);
+   context->lpVtbl->PSSetConstantBuffers(
+         context, 0, 1, &d3d11->ubo);
+   {
+      UINT stride = sizeof(d3d11_sprite_t);
+      UINT offset = 0;
+      context->lpVtbl->IASetVertexBuffers(
+            context, 0, 1, &d3d11->sprites.vbo, &stride, &offset);
+   }
+   d3d11->flags          |= D3D11_ST_FLAG_SPRITES_ENABLE;
+}
+
+#ifdef HAVE_MENU
+static void d3d11_menu_texture_draw(d3d11_video_t *d3d11)
+{
+   ID3D11DeviceContext *context = d3d11->context;
+   if (    (d3d11->flags & D3D11_ST_FLAG_MENU_ENABLE)
+         && d3d11->menu.texture.handle)
+   {
+      if (d3d11->flags & D3D11_ST_FLAG_MENU_FULLSCREEN)
+         context->lpVtbl->RSSetViewports(context, 1, &d3d11->viewport);
+      else if (d3d11->views.active)
+      {
+         /* d3d11->vp is the whole window while views draw, so fit the
+          * menu to this pass's target here. */
+         struct video_viewport vp;
+         D3D11_VIEWPORT menu_vp;
+         vp.full_dims     = VIDEO_SCALE_PACK(
+               (unsigned)d3d11->viewport.Width,
+               (unsigned)d3d11->viewport.Height);
+         video_driver_update_viewport(&vp, false,
+               (d3d11->flags & D3D11_ST_FLAG_KEEP_ASPECT) ? true : false,
+               false);
+         menu_vp.TopLeftX = (float)VIDEO_POS_X(vp.pos);
+         menu_vp.TopLeftY = (float)VIDEO_POS_Y(vp.pos);
+         menu_vp.Width    = (float)VIDEO_SCALE_W(vp.dims);
+         menu_vp.Height   = (float)VIDEO_SCALE_H(vp.dims);
+         menu_vp.MinDepth = 0.0f;
+         menu_vp.MaxDepth = 1.0f;
+         context->lpVtbl->RSSetViewports(context, 1, &menu_vp);
+      }
+
+      {
+         d3d11_shader_t *shader = &d3d11->shaders[VIDEO_SHADER_STOCK_BLEND];
+         context->lpVtbl->IASetInputLayout(context, shader->layout);
+         context->lpVtbl->VSSetShader(context, shader->vs, NULL, 0);
+         context->lpVtbl->PSSetShader(context, shader->ps, NULL, 0);
+         context->lpVtbl->GSSetShader(context, shader->gs, NULL, 0);
+      }
+      {
+         UINT stride = sizeof(d3d11_vertex_t);
+         UINT offset = 0;
+         d3d11->context->lpVtbl->IASetVertexBuffers(
+               d3d11->context, 0, 1, &d3d11->menu.vbo, &stride, &offset);
+      }
+      context->lpVtbl->VSSetConstantBuffers(context, 0, 1, &d3d11->ubo);
+      {
+         d3d11_texture_t *texture = (d3d11_texture_t*)&d3d11->menu.texture;
+         d3d11->context->lpVtbl->PSSetShaderResources(
+               d3d11->context, 0, 1,
+               &texture->view);
+         d3d11->context->lpVtbl->PSSetSamplers(
+               d3d11->context, 0, 1,
+               (D3D11SamplerState*)&texture->sampler);
+      }
+      context->lpVtbl->OMSetBlendState(context, d3d11->blend_enable,
+            NULL, D3D11_DEFAULT_SAMPLE_MASK);
+      context->lpVtbl->IASetPrimitiveTopology(context,
+            D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+      context->lpVtbl->Draw(context, 4, 0);
+      d3d11_sprites_begin(d3d11);
+   }
+}
+#endif
+
 static bool d3d11_gfx_frame_body(void *data, const void *frame,
       unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info);
@@ -7707,80 +7795,9 @@ static bool d3d11_gfx_frame_body(
    context->lpVtbl->OMSetBlendState(context, d3d11->blend_enable,
          NULL, D3D11_DEFAULT_SAMPLE_MASK);
 
-#ifdef HAVE_MENU
-   if (    (d3d11->flags & D3D11_ST_FLAG_MENU_ENABLE)
-         && d3d11->menu.texture.handle)
-   {
-      if (d3d11->flags & D3D11_ST_FLAG_MENU_FULLSCREEN)
-         context->lpVtbl->RSSetViewports(context, 1, &d3d11->viewport);
-      else if (d3d11->views.active)
-      {
-         /* d3d11->vp is the whole window while views draw, so fit the
-          * menu to this pass's target here. */
-         struct video_viewport vp;
-         D3D11_VIEWPORT menu_vp;
-         vp.full_dims     = VIDEO_SCALE_PACK(
-               (unsigned)d3d11->viewport.Width,
-               (unsigned)d3d11->viewport.Height);
-         video_driver_update_viewport(&vp, false,
-               (d3d11->flags & D3D11_ST_FLAG_KEEP_ASPECT) ? true : false,
-               false);
-         menu_vp.TopLeftX = (float)VIDEO_POS_X(vp.pos);
-         menu_vp.TopLeftY = (float)VIDEO_POS_Y(vp.pos);
-         menu_vp.Width    = (float)VIDEO_SCALE_W(vp.dims);
-         menu_vp.Height   = (float)VIDEO_SCALE_H(vp.dims);
-         menu_vp.MinDepth = 0.0f;
-         menu_vp.MaxDepth = 1.0f;
-         context->lpVtbl->RSSetViewports(context, 1, &menu_vp);
-      }
 
-      {
-         d3d11_shader_t *shader = &d3d11->shaders[VIDEO_SHADER_STOCK_BLEND];
-         context->lpVtbl->IASetInputLayout(context, shader->layout);
-         context->lpVtbl->VSSetShader(context, shader->vs, NULL, 0);
-         context->lpVtbl->PSSetShader(context, shader->ps, NULL, 0);
-         context->lpVtbl->GSSetShader(context, shader->gs, NULL, 0);
-      }
-      {
-         UINT stride = sizeof(d3d11_vertex_t);
-         UINT offset = 0;
-         d3d11->context->lpVtbl->IASetVertexBuffers(
-               d3d11->context, 0, 1, &d3d11->menu.vbo, &stride, &offset);
-      }
-      context->lpVtbl->VSSetConstantBuffers(context, 0, 1, &d3d11->ubo);
-      {
-         d3d11_texture_t *texture = (d3d11_texture_t*)&d3d11->menu.texture;
-         d3d11->context->lpVtbl->PSSetShaderResources(
-               d3d11->context, 0, 1,
-               &texture->view);
-         d3d11->context->lpVtbl->PSSetSamplers(
-               d3d11->context, 0, 1,
-               (D3D11SamplerState*)&texture->sampler);
-      }
-      context->lpVtbl->Draw(context, 4, 0);
-   }
-#endif
 
-   context->lpVtbl->RSSetViewports(context, 1, &d3d11->viewport);
-   {
-      d3d11_shader_t *shader = d3d11_sprite_shader(d3d11);
-      context->lpVtbl->IASetInputLayout(context, shader->layout);
-      context->lpVtbl->VSSetShader(context, shader->vs, NULL, 0);
-      context->lpVtbl->PSSetShader(context, shader->ps, NULL, 0);
-      context->lpVtbl->GSSetShader(context, shader->gs, NULL, 0);
-   }
-   context->lpVtbl->IASetPrimitiveTopology(context,
-         D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
-   context->lpVtbl->VSSetConstantBuffers(context, 0, 1, &d3d11->ubo);
-   context->lpVtbl->PSSetConstantBuffers(
-         context, 0, 1, &d3d11->ubo);
-   {
-         UINT stride = sizeof(d3d11_sprite_t);
-         UINT offset = 0;
-         context->lpVtbl->IASetVertexBuffers(
-               context, 0, 1, &d3d11->sprites.vbo, &stride, &offset);
-   }
-   d3d11->flags          |= D3D11_ST_FLAG_SPRITES_ENABLE;
+   d3d11_sprites_begin(d3d11);
 
 #ifdef HAVE_OVERLAY
    /* Touch overlays would straddle both eyes. */
@@ -7806,7 +7823,10 @@ static bool d3d11_gfx_frame_body(
 
 #ifdef HAVE_MENU
    if (d3d11->flags & D3D11_ST_FLAG_MENU_ENABLE)
+   {
       menu_driver_frame(menu_is_alive, video_info);
+      d3d11_menu_texture_draw(d3d11);
+   }
    else
 #endif
       if (statistics_show)

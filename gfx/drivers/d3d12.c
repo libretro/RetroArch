@@ -9163,6 +9163,90 @@ static void d3d12_set_view_count(void *data, unsigned count)
    d3d12_views_free_chains(d3d12, d3d12->views.chains.count);
 }
 
+static void d3d12_sprites_begin(d3d12_video_t *d3d12)
+{
+   D3D12GraphicsCommandList cmd = d3d12->queue.cmd;
+#ifdef HAVE_DXGI_HDR
+   d3d12->sprites.pipe = d3d12_rt_pipe(d3d12, d3d12->sprites.pipe_noblend,
+         d3d12->sprites.pipe_noblend_hdr, d3d12->sprites.pipe_noblend_f16);
+#else
+   d3d12->sprites.pipe = d3d12->sprites.pipe_noblend;
+#endif
+   cmd->lpVtbl->SetPipelineState(cmd, (D3D12PipelineState)d3d12->sprites.pipe);
+   cmd->lpVtbl->IASetPrimitiveTopology(cmd, D3D_PRIMITIVE_TOPOLOGY_POINTLIST);
+
+   d3d12->flags |= D3D12_ST_FLAG_SPRITES_ENABLE;
+}
+
+#ifdef HAVE_MENU
+static void d3d12_menu_texture_draw(d3d12_video_t *d3d12)
+{
+   D3D12GraphicsCommandList cmd = d3d12->queue.cmd;
+   if (    (d3d12->flags & D3D12_ST_FLAG_MENU_ENABLE)
+         && d3d12->menu.texture.handle)
+   {
+      if (d3d12->menu.texture.dirty)
+         d3d12_menu_upload(cmd, d3d12);
+#ifdef HAVE_DXGI_HDR
+      if (d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE)
+         cmd->lpVtbl->SetPipelineState(cmd, d3d12_rt_pipe(d3d12,
+               d3d12->pipes[VIDEO_SHADER_STOCK_BLEND],
+               d3d12->pipes[VIDEO_SHADER_STOCK_BLEND_HDR],
+               d3d12->sprites.pipe_stock_blend_f16));
+      else
+#endif
+         cmd->lpVtbl->SetPipelineState(cmd, d3d12->pipes[VIDEO_SHADER_STOCK_BLEND]);
+
+      cmd->lpVtbl->SetGraphicsRootConstantBufferView(
+            cmd, ROOT_ID_UBO, d3d12_cb_slot(&d3d12->ubo_view, d3d12->queue.slot));
+
+      if (d3d12->flags & D3D12_ST_FLAG_MENU_FULLSCREEN)
+      {
+         cmd->lpVtbl->RSSetViewports(cmd, 1, &d3d12->chain.viewport);
+         cmd->lpVtbl->RSSetScissorRects(cmd, 1, &d3d12->chain.scissorRect);
+      }
+      else if (d3d12->views.active)
+      {
+         /* d3d12->vp is the whole window while views draw, so fit the
+          * menu to this pass's target here. */
+         struct video_viewport vp;
+         D3D12_VIEWPORT menu_vp;
+         D3D12_RECT menu_sc;
+         vp.full_dims     = VIDEO_SCALE_PACK(
+               (unsigned)d3d12->chain.viewport.Width,
+               (unsigned)d3d12->chain.viewport.Height);
+         video_driver_update_viewport(&vp, false,
+               (d3d12->flags & D3D12_ST_FLAG_KEEP_ASPECT) ? true : false,
+               false);
+         menu_vp.TopLeftX = (float)VIDEO_POS_X(vp.pos);
+         menu_vp.TopLeftY = (float)VIDEO_POS_Y(vp.pos);
+         menu_vp.Width    = (float)VIDEO_SCALE_W(vp.dims);
+         menu_vp.Height   = (float)VIDEO_SCALE_H(vp.dims);
+         menu_vp.MinDepth = 0.0f;
+         menu_vp.MaxDepth = 1.0f;
+         menu_sc.left     = VIDEO_POS_X(vp.pos);
+         menu_sc.top      = VIDEO_POS_Y(vp.pos);
+         menu_sc.right    = menu_sc.left + (LONG)VIDEO_SCALE_W(vp.dims);
+         menu_sc.bottom   = menu_sc.top  + (LONG)VIDEO_SCALE_H(vp.dims);
+         cmd->lpVtbl->RSSetViewports(cmd, 1, &menu_vp);
+         cmd->lpVtbl->RSSetScissorRects(cmd, 1, &menu_sc);
+      }
+
+      cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_TEXTURE_T,
+            d3d12->menu.texture.gpu_descriptor[0]);
+      cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_SAMPLER_T,
+            d3d12->menu.texture.sampler);
+      cmd->lpVtbl->IASetVertexBuffers(cmd, 0, 1, &d3d12->menu.vbo_view);
+      cmd->lpVtbl->IASetPrimitiveTopology(cmd, D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+      cmd->lpVtbl->DrawInstanced(cmd, 4, 1, 0, 0);
+      d3d12_sprites_begin(d3d12);
+      cmd->lpVtbl->RSSetViewports(cmd, 1, &d3d12->chain.viewport);
+      cmd->lpVtbl->RSSetScissorRects(cmd, 1, &d3d12->chain.scissorRect);
+      cmd->lpVtbl->IASetVertexBuffers(cmd, 0, 1, &d3d12->sprites.vbo_view);
+   }
+}
+#endif
+
 static bool d3d12_gfx_frame_body(void *data, const void *frame,
       unsigned dims, uint64_t count, unsigned pitch, const char *msg,
       video_frame_info_t *info);
@@ -10225,77 +10309,9 @@ recording_resize_deferred:;
    }
 #endif
 
-   if (    (d3d12->flags & D3D12_ST_FLAG_MENU_ENABLE)
-         && d3d12->menu.texture.handle)
-   {
-      if (d3d12->menu.texture.dirty)
-      {
-         d3d12_menu_upload(cmd, d3d12);
 
-#ifdef HAVE_DXGI_HDR
-         if (d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE)
-            cmd->lpVtbl->SetPipelineState(cmd, d3d12_rt_pipe(d3d12,
-                  d3d12->pipes[VIDEO_SHADER_STOCK_BLEND],
-                  d3d12->pipes[VIDEO_SHADER_STOCK_BLEND_HDR],
-                  d3d12->sprites.pipe_stock_blend_f16));
-         else
-#endif
-            cmd->lpVtbl->SetPipelineState(cmd, d3d12->pipes[VIDEO_SHADER_STOCK_BLEND]);
-      }
 
-      cmd->lpVtbl->SetGraphicsRootConstantBufferView(
-            cmd, ROOT_ID_UBO, d3d12_cb_slot(&d3d12->ubo_view, d3d12->queue.slot));
-
-      if (d3d12->flags & D3D12_ST_FLAG_MENU_FULLSCREEN)
-      {
-         cmd->lpVtbl->RSSetViewports(cmd, 1, &d3d12->chain.viewport);
-         cmd->lpVtbl->RSSetScissorRects(cmd, 1, &d3d12->chain.scissorRect);
-      }
-      else if (d3d12->views.active)
-      {
-         /* d3d12->vp is the whole window while views draw, so fit the
-          * menu to this pass's target here. */
-         struct video_viewport vp;
-         D3D12_VIEWPORT menu_vp;
-         D3D12_RECT menu_sc;
-         vp.full_dims     = VIDEO_SCALE_PACK(
-               (unsigned)d3d12->chain.viewport.Width,
-               (unsigned)d3d12->chain.viewport.Height);
-         video_driver_update_viewport(&vp, false,
-               (d3d12->flags & D3D12_ST_FLAG_KEEP_ASPECT) ? true : false,
-               false);
-         menu_vp.TopLeftX = (float)VIDEO_POS_X(vp.pos);
-         menu_vp.TopLeftY = (float)VIDEO_POS_Y(vp.pos);
-         menu_vp.Width    = (float)VIDEO_SCALE_W(vp.dims);
-         menu_vp.Height   = (float)VIDEO_SCALE_H(vp.dims);
-         menu_vp.MinDepth = 0.0f;
-         menu_vp.MaxDepth = 1.0f;
-         menu_sc.left     = VIDEO_POS_X(vp.pos);
-         menu_sc.top      = VIDEO_POS_Y(vp.pos);
-         menu_sc.right    = menu_sc.left + (LONG)VIDEO_SCALE_W(vp.dims);
-         menu_sc.bottom   = menu_sc.top  + (LONG)VIDEO_SCALE_H(vp.dims);
-         cmd->lpVtbl->RSSetViewports(cmd, 1, &menu_vp);
-         cmd->lpVtbl->RSSetScissorRects(cmd, 1, &menu_sc);
-      }
-
-      cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_TEXTURE_T,
-            d3d12->menu.texture.gpu_descriptor[0]);
-      cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_SAMPLER_T,
-            d3d12->menu.texture.sampler);
-      cmd->lpVtbl->IASetVertexBuffers(cmd, 0, 1, &d3d12->menu.vbo_view);
-      cmd->lpVtbl->DrawInstanced(cmd, 4, 1, 0, 0);
-   }
-
-#ifdef HAVE_DXGI_HDR
-   d3d12->sprites.pipe = d3d12_rt_pipe(d3d12, d3d12->sprites.pipe_noblend,
-         d3d12->sprites.pipe_noblend_hdr, d3d12->sprites.pipe_noblend_f16);
-#else
-   d3d12->sprites.pipe = d3d12->sprites.pipe_noblend;
-#endif
-   cmd->lpVtbl->SetPipelineState(cmd, (D3D12PipelineState)d3d12->sprites.pipe);
-   cmd->lpVtbl->IASetPrimitiveTopology(cmd, D3D_PRIMITIVE_TOPOLOGY_POINTLIST);
-
-   d3d12->flags |= D3D12_ST_FLAG_SPRITES_ENABLE;
+   d3d12_sprites_begin(d3d12);
 
 #ifdef HAVE_OVERLAY
    /* Touch overlays would straddle both eyes. */
@@ -10317,7 +10333,10 @@ recording_resize_deferred:;
 
 #ifdef HAVE_MENU
    if (d3d12->flags & D3D12_ST_FLAG_MENU_ENABLE)
+   {
       menu_driver_frame(menu_is_alive, video_info);
+      d3d12_menu_texture_draw(d3d12);
+   }
    else
 #endif
       if (statistics_show)
