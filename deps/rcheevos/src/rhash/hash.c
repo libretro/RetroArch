@@ -700,7 +700,7 @@ static int rc_hash_path_is_absolute(const char* path)
 static const char* rc_hash_get_first_item_from_playlist(const rc_hash_iterator_t* iterator) {
   char buffer[1024];
   char* disc_path;
-  char* ptr, *start, *next;
+  char* ptr, *start, *next, *label;
   size_t num_read, path_len, file_len;
   void* file_handle;
 
@@ -716,6 +716,11 @@ static const char* rc_hash_get_first_item_from_playlist(const rc_hash_iterator_t
   rc_file_close(iterator, file_handle);
 
   ptr = start = buffer;
+
+  /* skip a UTF-8 byte order mark */
+  if ((unsigned char)ptr[0] == 0xEF && (unsigned char)ptr[1] == 0xBB && (unsigned char)ptr[2] == 0xBF)
+    ptr += 3;
+
   do {
     /* ignore empty and commented lines */
     while (*ptr == '#' || *ptr == '\r' || *ptr == '\n') {
@@ -734,6 +739,21 @@ static const char* rc_hash_get_first_item_from_playlist(const rc_hash_iterator_t
     /* remove trailing whitespace - especially '\r' */
     while (ptr > start && isspace((unsigned char)ptr[-1]))
       --ptr;
+
+    /* RetroArch's "path|label" entries: the label is not part of the path */
+    for (label = start; label < ptr && *label != '|'; ++label)
+      continue;
+    if (label < ptr) {
+      ptr = label;
+      while (ptr > start && isspace((unsigned char)ptr[-1]))
+        --ptr;
+    }
+
+    /* and a path may be quoted */
+    if (ptr - start >= 2 && *start == '"' && ptr[-1] == '"') {
+      ++start;
+      --ptr;
+    }
 
     /* if we found a non-empty line, break out of the loop to process it */
     file_len = ptr - start;
@@ -1318,7 +1338,7 @@ static void rc_hash_initialize_iterator_from_path(rc_hash_iterator_t* iterator, 
       while (iterator->consoles[count])
         ++count;
 
-      rc_hash_iterator_verbose_formatted(iterator, "Found %d potential consoles for %s file extension", count, ext);
+      rc_hash_iterator_verbose_formatted(iterator, "Found %d potential consoles for %s file extension", count, search.ext);
     }
   }
   else {
