@@ -616,6 +616,15 @@ struct cmd_action_map
    const struct cmd_rows *rows;
 };
 
+#ifdef HAVE_SCREENSHOTS
+/* GET_FRAME [size]: the frame on screen, as image content where the
+ * interface carries one */
+#define COMMAND_FRAME_SIZE     320
+#define COMMAND_FRAME_SIZE_MIN 64
+#define COMMAND_FRAME_SIZE_MAX 640
+bool command_get_frame(command_t *cmd, const char *arg);
+#endif
+
 /* GET_OPTION [option] / SET_OPTION <option> on|off */
 bool command_get_option(command_t *cmd, const char *arg);
 bool command_set_option(command_t *cmd, const char *arg);
@@ -930,6 +939,13 @@ static const struct cmd_param cmd_params_playlist[] = {
       CMD_PARAM_INT, false, NULL, NULL, "0" },
    { NULL }
 };
+#ifdef HAVE_SCREENSHOTS
+static const struct cmd_param cmd_params_get_frame[] = {
+   { "size", "The longest side at most, 64 to 640; 320 when left out.",
+      CMD_PARAM_INT, false, NULL, NULL, NULL },
+   { NULL }
+};
+#endif
 static const struct cmd_param cmd_params_message[] = {
    { "message", "The text.",
       CMD_PARAM_STRING, true, NULL, NULL, NULL },
@@ -1214,6 +1230,9 @@ static const struct cmd_action_map action_map[] = {
 #endif
    { "VERSION",          command_version,          "No argument", "Report the RetroArch version.", CMD_INFO_READ_ONLY | CMD_INFO_NO_TOOL, NULL },
    { "GET_STATUS",       command_get_status,       "No argument", "PLAYING, PAUSED or CONTENTLESS, with the system and the content's file name.", CMD_INFO_READ_ONLY, NULL, &cmd_rows_status },
+#ifdef HAVE_SCREENSHOTS
+   { "GET_FRAME",        command_get_frame,        "[size]", "The content's frame on screen now, as an image scaled down to fit size; nothing is written. For what memory cannot say - a game whose RAM is not charted, or checking it.", CMD_INFO_READ_ONLY, cmd_params_get_frame },
+#endif
    { "GET_OPTION",       command_get_option,       "[option]", "Report an option's value, or list every option with its value.", CMD_INFO_READ_ONLY | CMD_INFO_NO_TOOL, cmd_params_option, &cmd_rows_option },
    { "SET_OPTION",       command_set_option,       "<option> on|off", "Turn an option on or off. Asking for the state it is already in changes nothing.", CMD_INFO_NO_TOOL, cmd_params_option_set, &cmd_rows_option },
    /* GET_OPTION reports these and more; this stays for the clients that

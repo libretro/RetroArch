@@ -689,9 +689,22 @@ picture itself as image content (PNG, up to 4 MiB) and the file's path as
 text, so a client can see the screen without reaching the file - or with
 `SCREENSHOT ERROR` and the reason if it could not be.
 
+`GET_FRAME [size]` is the look without the file: the content's frame
+on screen now, scaled down to fit a square of `size` pixels (64 to
+640, 320 when left out; never scaled up), answered as image content
+with `GET_FRAME 320x240` as its text. Nothing is written - no file, no
+history entry, no notification - so it costs a client only the image.
+It takes the frame the way `SCREENSHOT` does, from the GPU's read-back
+for a hardware-rendered core, and is refused while another screenshot
+is being taken. It is for what memory cannot say: a game whose RAM no
+one has charted, or checking what the RAM says. It is not for the step
+loop, where `WATCH`'s numbers cost far less than a picture. The line
+interfaces carry no image, so there it is refused, pointing to
+`SCREENSHOT`.
+
 Every tool carries hints for the client:
 
-- **read-only**: only reports (`GET_STATUS`, `GET_LOG`, `LIST_CORES`,
+- **read-only**: only reports (`GET_STATUS`, `GET_FRAME`, `GET_LOG`, `LIST_CORES`,
   `LIST_PLAYLISTS`, `GET_PLAYLIST`, `READ_CORE_MEMORY`,
   `GET_MEMORY_MAP`);
 - **destructive**: can lose unsaved progress or data, or loads code

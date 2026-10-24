@@ -563,7 +563,8 @@ static void mcp_schema_rows(rjsonwriter_t *w, const struct cmd_rows *rows,
    "as one answers), " \
    "PRESS ... until, or RUN_UNTIL; RUN_FRAMES runs frames with nothing " \
    "pressed but what INPUT holds. STATE " \
-   "checkpoint before a risky move, and rollback after a mistake. MENU " \
+   "checkpoint before a risky move, and rollback after a mistake. " \
+   "GET_FRAME shows the screen where memory cannot say. MENU " \
    "reads and drives RetroArch's own menu - settings, playlists, cores - " \
    "and answers with what it shows. Tools " \
    "marked destructive can lose unsaved progress or load code."
