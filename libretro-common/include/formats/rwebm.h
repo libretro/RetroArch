@@ -181,6 +181,14 @@ rwebm_t *rwebm_cursor_clone(const rwebm_t *source);
 void rwebm_cursor_copy(rwebm_t *destination, const rwebm_t *source);
 
 int rwebm_num_cues(const rwebm_t *webm);
+/* Optional bounded SeekHead index. Offset is absolute, zero when absent or
+ * already attempted. Supply only resident bytes at that offset. The loader
+ * requests at most 4 MiB, copies index metadata, and filters by TrackNumber.
+ * Returns 1 loaded, 0 needs more, -1 invalid; invalid Cues remain optional. */
+size_t rwebm_cues_offset(const rwebm_t *webm);
+int rwebm_load_cues(rwebm_t *webm, const uint8_t *data, size_t available,
+      int track, size_t *needed);
+
 
 /* Reposition the packet walk to the indexed cluster at or before
  * 'ns'.  Returns the timestamp actually landed on, in nanoseconds,

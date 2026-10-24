@@ -1267,6 +1267,29 @@ static void test_shared_dpb(int depth)
    check("fallback retires resources", live == before);
 }
 
+static void test_packed_vp9_registry(void)
+{
+   mock_t *adapter = mock_new(K_ADAPTER);
+   rvp9_hw_backend_t replacement;
+   memset(&replacement, 0, sizeof(replacement));
+   check("packed renderer starts without taking H264",
+         d3d11_video_decode_init_packed_adapter(adapter, IMAGE_PIXFMT_YUV8_FP16, false)
+         && !d3d11vd.h264_owned);
+   check("packed renderer retains VP9 configuration admission",
+         d3d11vd.vp9.open_config != NULL);
+   check("packed renderer publishes VP9", rvp9_unset_hw_backend(&d3d11vd.vp9));
+   rvp9_set_hw_backend(&d3d11vd.vp9);
+   d3d11_video_decode_deinit();
+   check("packed teardown withdraws VP9", !rvp9_unset_hw_backend(&d3d11vd.vp9));
+   check("packed renderer restarts", d3d11_video_decode_init_packed_adapter(
+            adapter, IMAGE_PIXFMT_YUV8_FP16, false));
+   rvp9_set_hw_backend(&replacement);
+   d3d11_video_decode_deinit();
+   check("packed teardown preserves a replacement VP9 owner",
+         rvp9_unset_hw_backend(&replacement));
+   m_release(adapter);
+}
+
 int main(void)
 {
    ID3D11Device *dev;
@@ -1347,6 +1370,8 @@ int main(void)
    test_shared_dpb(10);
    d3d11_video_decode_deinit();
    check("deinit lets the adapter go", live == live0);
+   test_packed_vp9_registry();
+   check("packed registry releases its adapter", live == live0);
    m_release(m);
    check("no mock object left", live == 0);
    subs_free();

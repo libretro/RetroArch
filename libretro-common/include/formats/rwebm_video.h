@@ -344,6 +344,8 @@ int rwebm_video_stream_seek_movie_step(rwebm_video_stream_t *stream,
  * still requires an admitted decoder on the exclusive stream owner. */
 int rwebm_video_stream_seekable(const rwebm_video_stream_t *stream);
 int rwebm_video_stream_seek_begin_ns(rwebm_video_stream_t *stream, int64_t ns);
+int rwebm_video_stream_seek_span(rwebm_video_stream_t *stream,
+      size_t *lo, size_t *hi);
 int rwebm_video_stream_seek_step(rwebm_video_stream_t *stream,
       int64_t *position_us);
 

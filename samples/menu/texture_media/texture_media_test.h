@@ -102,6 +102,8 @@ static void render(struct menu_state *menu_st)
       if(video->poke&&video->poke->set_texture_enable)
          video->poke->set_texture_enable(video->data,true,false);
       video_driver_frame(native_background,320,240,320*sizeof(uint32_t));
+      if (config_get_ptr()->bools.audio_enable)
+         audio_driver_menu_sample(false);
    }
 }
 

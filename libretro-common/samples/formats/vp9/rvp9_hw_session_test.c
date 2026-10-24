@@ -75,7 +75,7 @@ static size_t existing(unsigned ref, int depth)
 typedef struct mock
 {
    rvp9_hw_picture_t picture;
-   unsigned decodes, outputs, abandoned;
+   unsigned decodes, outputs, abandoned, pixfmt;
    int busy, output_busy, fail, invalid;
    rvp9_dec *software;
    int software_slots[32];
@@ -132,6 +132,8 @@ static int output(void *opaque, unsigned slot, video_hw_frame_t *frame)
    frame->width = m->invalid == 1 ? 0 : m->picture.header.w;
    frame->height = m->picture.header.h;
    frame->pixfmt = m->picture.header.bit_depth == 10 ? IMAGE_PIXFMT_P010 : IMAGE_PIXFMT_NV12;
+   if (m->pixfmt)
+      frame->pixfmt = m->pixfmt;
    if (m->invalid == 2)
       frame->pixfmt = frame->pixfmt == IMAGE_PIXFMT_P010 ? IMAGE_PIXFMT_NV12 : IMAGE_PIXFMT_P010;
    frame->owner = m; frame->abandon = abandon;
@@ -345,10 +347,43 @@ static int stream(const char *path)
    return 0;
 }
 
+static int packed_output(int depth, unsigned pixfmt, int accepted)
+{
+   rvp9_hw_session_t *s = (rvp9_hw_session_t*)calloc(1, sizeof(*s));
+   mock_t *m = (mock_t*)calloc(1, sizeof(*m));
+   rvp9_hw_ops_t ops;
+   video_hw_frame_t frame;
+   size_t len;
+   int result;
+   CHECK(s && m);
+   memset(&ops, 0, sizeof(ops));
+   ops.decoder = m;
+   ops.decode = decode;
+   ops.output = output;
+   m->pixfmt = pixfmt;
+   CHECK(rvp9_hw_session_init(s, &ops, 10));
+   len = coded(1, 1, 255, 0, depth, 0, 0);
+   CHECK(!rvp9_hw_session_submit(s, packet, len));
+   result = rvp9_hw_session_output(s, &frame);
+   CHECK(accepted ? result == 0 && frame.pixfmt == pixfmt
+         : result < 0 && !frame.image && s->broken);
+   if (accepted)
+      video_hw_frame_abandon(&frame);
+   CHECK(m->abandoned == 1);
+   free(m);
+   free(s);
+   return 0;
+}
+
 int main(int argc, char **argv)
 {
    if (argc == 2) return stream(argv[1]);
    if (run(8) || run(10) || packet_mode(8) || packet_mode(10)) return 1;
+   if (packed_output(8, IMAGE_PIXFMT_YUV8_FP16, 1)
+         || packed_output(10, IMAGE_PIXFMT_YUV10_FP16, 1)
+         || packed_output(8, IMAGE_PIXFMT_YUV10_FP16, 0)
+         || packed_output(10, IMAGE_PIXFMT_YUV8_FP16, 0))
+      return 1;
    puts("VP9 hardware-session metadata, retries and lease tests passed (8/10-bit)");
    return 0;
 }

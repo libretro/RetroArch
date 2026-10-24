@@ -41,6 +41,7 @@ static int seek_probe_error;
 static unsigned seek_probe_calls, seek_probe_end, seek_probe_stride;
 static int64_t seek_probe_target;
 static size_t seek_probe_anchor, seek_probe_lo, seek_probe_hi;
+static size_t seek_probe_frontier, seek_probe_avail, seek_probe_pin_lo, seek_probe_pin_hi;
 static unsigned seek_probe_boundary;
 
 settings_t *config_get_ptr(void) { return &settings; }
@@ -77,10 +78,10 @@ void image_transfer_anim_stream_free(void *s, enum image_type_enum t)
 size_t image_transfer_anim_stream_consumed(void *s, enum image_type_enum t)
 { (void)s; (void)t; if (!seek_probe) abort(); return seek_probe_anchor; }
 size_t image_transfer_anim_stream_feed_frontier(void *s, enum image_type_enum t)
-{ (void)s; (void)t; abort(); return 0; }
+{ (void)s; (void)t; if (!seek_probe) abort(); return seek_probe_frontier ? seek_probe_frontier : seek_probe_anchor; }
 void image_transfer_anim_stream_pin_span(void *s, enum image_type_enum t,
       size_t *lo, size_t *hi)
-{ (void)s; (void)t; (void)lo; (void)hi; abort(); }
+{ (void)s; (void)t; if (!seek_probe) abort(); *lo = seek_probe_pin_lo; *hi = seek_probe_pin_hi; }
 int image_transfer_anim_stream_seek_span(void *s, enum image_type_enum t,
       size_t *lo, size_t *hi)
 {
@@ -94,7 +95,7 @@ void image_transfer_anim_stream_next_span(void *s, enum image_type_enum t,
       size_t *lo, size_t *hi)
 { (void)s; (void)t; if (!seek_probe) abort(); *lo=seek_probe_lo; *hi=seek_probe_hi; }
 void image_transfer_anim_stream_set_avail(void *s, enum image_type_enum t, size_t a)
-{ (void)s; (void)t; (void)a; if (!seek_probe) abort(); }
+{ (void)s; (void)t; if (!seek_probe) abort(); seek_probe_avail = a; }
 const uint32_t *image_transfer_anim_stream_next(void *s,
       enum image_type_enum t, int *ms)
 { (void)s; (void)t; (void)ms; abort(); return NULL; }
@@ -110,6 +111,12 @@ int image_transfer_anim_stream_seek_step(void *s, enum image_type_enum t,
    (void)s; (void)t;
    if (!seek_probe) abort();
    seek_probe_calls++;
+   if (seek_probe_frontier)
+   {
+      if (seek_probe_avail < seek_probe_frontier + 32) return 0;
+      *us = seek_probe_target;
+      return 1;
+   }
    if (seek_probe_sparse) seek_probe_anchor += seek_probe_stride;
    if (seek_probe_boundary == 1) seek_probe_anchor = 1;
    if (seek_probe_boundary == 2) seek_probe_anchor = ((gfx_anim_preview_t*)s)->seek_feed_hi;
@@ -1056,6 +1063,26 @@ static int bounded_video_seek(void)
             fprintf(stderr, "distant seek headers: %d bytes for 4 spans\n",
                   retro_atomic_load_relaxed_int(&window_bytes));
 #endif
+            seek_probe_sparse = false;
+            seek_probe_wait = true;
+            seek_probe_frontier = 512 * 1024;
+            seek_probe_anchor = seek_probe_pin_lo = 70000;
+            seek_probe_pin_hi = seek_probe_pin_lo + 32;
+            seek_probe_lo = seek_probe_hi = seek_probe_avail = 0;
+            if (!data_transfer_window_ensure(p.dt, seek_probe_pin_lo, seek_probe_pin_hi))
+               failed = 1;
+            p.seek_phase = 1;
+            p.seek_feed_anchor = p.seek_feed_hi = seek_probe_anchor;
+            if (gfx_anim_preview_seek_step(&p, 0, false, &position)
+                  != VIDEO_PLAYER_SEEK_PROGRESS || p.seek_phase != 2)
+               failed = 1;
+            {
+               size_t length = 0;
+               const unsigned char *base = data_transfer_window_base(p.dt, &length);
+               if (!base || length != p.len || base[seek_probe_pin_lo] != 0)
+                  failed = 1;
+            }
+            seek_probe_frontier = seek_probe_pin_lo = seek_probe_pin_hi = 0;
             seek_probe_sparse = seek_probe_wait = false;
             seek_probe_end = 0;
             data_transfer_free(p.dt);

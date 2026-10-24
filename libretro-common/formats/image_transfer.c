@@ -928,6 +928,10 @@ void image_transfer_anim_stream_pin_span(void *stream, enum image_type_enum type
 int image_transfer_anim_stream_seek_span(void *stream,
       enum image_type_enum type, size_t *lo, size_t *hi)
 {
+#ifdef HAVE_RWEBM
+   if (type == IMAGE_TYPE_WEBM)
+      return rwebm_video_stream_seek_span((rwebm_video_stream_t*)stream, lo, hi);
+#endif
 #ifdef HAVE_RMP4
    if (type == IMAGE_TYPE_MP4)
       return rmp4_video_stream_seek_span((rmp4_video_stream_t*)stream, lo, hi);

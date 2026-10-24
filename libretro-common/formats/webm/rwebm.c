@@ -20,8 +20,8 @@
  * before a timestamp.  A file muxed without Cues, or one whose index
  * lies past a partial read's wall, delivers packets in file order only.
  *
- * What it does not implement: SeekHead (Cues are found by the header
- * walk reaching them, not by following a pointer to them), chapters,
+ * SeekHead may name a bounded Cues span for the input owner to admit.
+ * What it does not implement: chapters,
  * tags, attachments, subtitle tracks, and encrypted streams. Unrecognised
  * codecs retain their raw CodecID so callers can skip their packets.
  *
@@ -39,6 +39,11 @@
 #define ID_EBML            0x1A45DFA3u
 #define ID_SEGMENT         0x18538067u
 #define ID_INFO            0x1549A966u
+#define ID_SEEKHEAD        0x114D9B74u
+#define ID_SEEK            0x4DBBu
+#define ID_SEEKID          0x53ABu
+#define ID_SEEKPOSITION    0x53ACu
+#define ID_CUETRACK        0xF7u
 #define ID_TIMESTAMPSCALE  0x2AD7B1u
 #define ID_DURATION        0x4489u
 #define ID_TRACKS          0x1654AE6Bu
@@ -281,6 +286,8 @@ struct rwebm
     * the header walk before them (they are usually written last). */
    struct rwebm_cue *cues;
    int            num_cues;
+   size_t         cues_at;
+   int            cues_loaded;
    /* End of the bytes that have actually been read into the buffer.
     * Equal to segment_end for a fully-resident file; a partial reader
     * raises it with rwebm_set_avail as bytes arrive.  The packet walk
@@ -308,14 +315,10 @@ struct rwebm
    int            lace_keyframe;
 };
 
-/* Parse a Cues element into the seek index.  Each CuePoint carries a
- * CueTime and one CueTrackPositions per indexed track; for the
- * audio-only files this demuxer is asked to seek in there is one, and
- * where there are more the first serves - every track's positions name
- * the same cluster.  Points that parse short are dropped rather than
- * failing the open: Cues are an optimisation, and a file whose index
- * is damaged is still perfectly playable in file order. */
-static void parse_cues(rwebm_t *w, const uint8_t *p, const uint8_t *end)
+/* Positive TrackNumber selects its positions, including when another
+ * track precedes it in the same CuePoint. Zero retains the legacy first
+ * position. Damaged optional points do not prevent sequential playback. */
+static void parse_cues(rwebm_t *w, const uint8_t *p, const uint8_t *end, int track)
 {
    ebml_reader r;
    int         cap = 0;
@@ -326,7 +329,7 @@ static void parse_cues(rwebm_t *w, const uint8_t *p, const uint8_t *end)
       uint32_t id   = ebml_read_id(&r);
       uint64_t sz   = ebml_read_vint(&r, 1, &ok);
       const uint8_t *body = r.p;
-      if (!id || !ok || body + sz > r.end)
+      if (!id || !ok || sz > (uint64_t)(r.end - body))
          break;
       if (id == ID_CUEPOINT)
       {
@@ -341,13 +344,15 @@ static void parse_cues(rwebm_t *w, const uint8_t *p, const uint8_t *end)
             uint32_t cid  = ebml_read_id(&c);
             uint64_t csz  = ebml_read_vint(&c, 1, &cok);
             const uint8_t *cbody = c.p;
-            if (!cid || !cok || cbody + csz > c.end)
+            if (!cid || !cok || csz > (uint64_t)(c.end - cbody))
                break;
             if (cid == ID_CUETIME)
                t = (int64_t)be_uint(cbody, (size_t)csz);
             else if (cid == ID_CUETRACKPOS && !havep)
             {
                ebml_reader q;
+               uint64_t cue_track = 0, cue_pos = 0;
+               int cue_have_pos = 0;
                q.p = cbody; q.end = cbody + csz;
                while (q.p < q.end)
                {
@@ -355,27 +360,36 @@ static void parse_cues(rwebm_t *w, const uint8_t *p, const uint8_t *end)
                   uint32_t qid  = ebml_read_id(&q);
                   uint64_t qsz  = ebml_read_vint(&q, 1, &qok);
                   const uint8_t *qbody = q.p;
-                  if (!qid || !qok || qbody + qsz > q.end)
+                  if (!qid || !qok || qsz > (uint64_t)(q.end - qbody))
                      break;
                   if (qid == ID_CUECLUSTERPOS)
                   {
-                     pos   = be_uint(qbody, (size_t)qsz);
-                     havep = 1;
+                     cue_pos = be_uint(qbody, (size_t)qsz);
+                     cue_have_pos = 1;
                   }
+                  else if (qid == ID_CUETRACK)
+                     cue_track = be_uint(qbody, (size_t)qsz);
                   q.p = qbody + qsz;
+               }
+               if (cue_have_pos && (!track || cue_track == (uint64_t)track))
+               {
+                  pos = cue_pos;
+                  havep = 1;
                }
             }
             c.p = cbody + csz;
          }
          /* A point is only useful with both halves, and the cluster it
           * names has to be inside the segment. */
-         if (t >= 0 && havep && w->seg_body + pos < w->segment_end)
+         if (t >= 0 && havep && pos < (uint64_t)(w->segment_end - w->seg_body))
          {
             if (w->num_cues >= cap)
             {
                int   ncap = cap ? cap * 2 : 64;
-               void *nb   = realloc(w->cues,
-                     (size_t)ncap * sizeof(*w->cues));
+               void *nb;
+               if (ncap <= w->num_cues)
+                  ncap = w->num_cues + 1;
+               nb = realloc(w->cues, (size_t)ncap * sizeof(*w->cues));
                if (!nb)
                   return;
                w->cues = (struct rwebm_cue*)nb;
@@ -1085,6 +1099,95 @@ int rwebm_read_packet(rwebm_t *webm, rwebm_packet *pkt)
    return 0;
 }
 
+/* SeekHead positions are relative to Segment data, not the file header. */
+static void parse_seekhead(rwebm_t *w, const uint8_t *p, const uint8_t *end)
+{
+   ebml_reader r;
+   r.p = p;
+   r.end = end;
+   while (r.p < r.end)
+   {
+      int ok;
+      uint32_t id = ebml_read_id(&r);
+      uint64_t size = ebml_read_vint(&r, 1, &ok);
+      const uint8_t *body = r.p;
+      if (!id || !ok || size > (uint64_t)(r.end - body))
+         break;
+      if (id == ID_SEEK)
+      {
+         ebml_reader q;
+         uint64_t target = 0, position = 0;
+         int have_position = 0;
+         q.p = body;
+         q.end = body + (size_t)size;
+         while (q.p < q.end)
+         {
+            uint32_t child = ebml_read_id(&q);
+            uint64_t length = ebml_read_vint(&q, 1, &ok);
+            const uint8_t *value = q.p;
+            if (!child || !ok || length > (uint64_t)(q.end - value))
+               break;
+            if (child == ID_SEEKID && length <= 4)
+               target = be_uint(value, (size_t)length);
+            else if (child == ID_SEEKPOSITION && length && length <= 8)
+            {
+               position = be_uint(value, (size_t)length);
+               have_position = 1;
+            }
+            q.p = value + (size_t)length;
+         }
+         if (target == ID_CUES && have_position
+               && position < (uint64_t)(w->segment_end - w->seg_body))
+            w->cues_at = (size_t)(w->seg_body - w->data) + (size_t)position;
+      }
+      r.p = body + (size_t)size;
+   }
+}
+
+size_t rwebm_cues_offset(const rwebm_t *w)
+{
+   return w && !w->cues_loaded ? w->cues_at : 0;
+}
+
+/* Decode only the separately admitted index span. No packet cursor moves. */
+int rwebm_load_cues(rwebm_t *w, const uint8_t *data, size_t available,
+      int track, size_t *needed)
+{
+   ebml_reader r;
+   uint32_t id;
+   uint64_t size;
+   size_t header;
+   int ok;
+   if (needed)
+      *needed = 12;
+   if (!w || !data || !needed || track <= 0
+         || w->cues_at > w->size || available > w->size - w->cues_at)
+      return -1;
+   if (available < 12)
+      return 0;
+   r.p = data;
+   r.end = data + available;
+   id = ebml_read_id(&r);
+   size = ebml_read_vint(&r, 1, &ok);
+   header = (size_t)(r.p - data);
+   if (id != ID_CUES || !ok || size > 4u * 1024u * 1024u
+         || w->cues_at > w->size || header > w->size - w->cues_at
+         || size > w->size - w->cues_at - header)
+   {
+      w->cues_loaded = 1;
+      return -1;
+   }
+   *needed = header + (size_t)size;
+   if (available < *needed)
+      return 0;
+   free(w->cues);
+   w->cues = NULL;
+   w->num_cues = 0;
+   parse_cues(w, r.p, r.p + (size_t)size, track);
+   w->cues_loaded = 1;
+   return 1;
+}
+
 /* ===== Open ===== */
 
 rwebm_t *rwebm_open_memory_avail(const uint8_t *data, size_t size,
@@ -1160,7 +1263,9 @@ rwebm_t *rwebm_open_memory_avail(const uint8_t *data, size_t size,
          const uint8_t *ebody = s.p;
          if (!eid || !ok || ebody + esz > s.end)
             break;
-         if (eid == ID_INFO)
+         if (eid == ID_SEEKHEAD)
+            parse_seekhead(w, ebody, ebody + esz);
+         else if (eid == ID_INFO)
          {
             ebml_reader ir;
             ir.p = ebody; ir.end = ebody + esz;
@@ -1206,7 +1311,7 @@ rwebm_t *rwebm_open_memory_avail(const uint8_t *data, size_t size,
             w->clusters_begin = ebody + esz;
          }
          else if (eid == ID_CUES)
-            parse_cues(w, ebody, ebody + esz);
+            parse_cues(w, ebody, ebody + esz, 0);
          s.p = ebody + esz;
       }
    }

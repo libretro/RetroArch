@@ -110,6 +110,10 @@ struct rwebm_video_stream
    int av1_hdr_initial_set, av1_hdr_initial_error;
 #endif
 #if defined(HAVE_RVP9) || defined(HAVE_RAV1)
+#ifdef HAVE_RVP9
+   rvp9_hdr hw_initial_header;
+   int hw_initial_header_valid;
+#endif
    uint32_t hw_marker;
    video_hw_frame_t hw_frame;
    size_t pending_floor;
@@ -120,6 +124,8 @@ struct rwebm_video_stream
    video_color_metadata_t hw_color;
 #endif
    int seek_active, seek_ready, seek_key, seek_scan;
+   int seek_index_pending, seek_index_verified, seek_scan_from_cue, seek_scan_shown;
+   size_t seek_index_lo, seek_index_hi;
    int64_t seek_target;
    int64_t movie_seek_target_ns;
    size_t seek_floor;
@@ -970,6 +976,8 @@ size_t rwebm_video_stream_consumed(rwebm_video_stream_t *s)
 
 size_t rwebm_video_stream_feed_frontier(rwebm_video_stream_t *s)
 {
+   if (s->seek_index_pending)
+      return s->seek_index_lo;
    if (!s) return 0;
 #ifdef HAVE_RAV1
    if (s->av1_hdr_active)
@@ -979,6 +987,15 @@ size_t rwebm_video_stream_feed_frontier(rwebm_video_stream_t *s)
    if (s->lookahead_ready) return s->lookahead_floor;
    if (s->seek_scan || s->timing_active) return rwebm_consumed(s->timing);
    return rwebm_video_stream_consumed(s);
+}
+
+int rwebm_video_stream_seek_span(rwebm_video_stream_t *s, size_t *lo, size_t *hi)
+{
+   if (!s || !lo || !hi || !s->seek_index_pending)
+      return 0;
+   *lo = s->seek_index_lo;
+   *hi = s->seek_index_hi;
+   return *hi > *lo;
 }
 
 void rwebm_video_stream_pin_span(rwebm_video_stream_t *s, size_t *lo, size_t *hi)
@@ -1543,28 +1560,39 @@ int rwebm_video_stream_set_hw(rwebm_video_stream_t *s, int enable)
                   || t->matrix_coefficients == 1 || t->matrix_coefficients == 5
                   || t->matrix_coefficients == 6))
       return 0;
-   probe = rwebm_open_memory_avail(s->buf, s->len, s->avail, NULL);
-   if (!probe)
-      return 0;
    candidate = (rvp9_hw_session_t *)calloc(1, sizeof(*candidate));
    if (!candidate)
-   {
-      rwebm_close(probe);
       return 0;
-   }
-   for (walked = 0; walked < RWEBM_VIDEO_MAX_TS; walked++)
+   if (s->hw_initial_header_valid)
    {
-      if (rwebm_read_packet(probe, &packet) != 1)
-         break;
-      if (packet.track != s->track)
-         continue;
-      rwebm_video_vp9_superframe(
-            packet.data, packet.size, sizes, RWEBM_VIDEO_MAX_SUPER);
-      found = !rvp9_parse_frame_header(
-            packet.data, sizes[0], NULL, NULL, &candidate->pending.header);
-      break;
+      candidate->pending.header = s->hw_initial_header;
+      found = 1;
    }
-   rwebm_close(probe);
+   else
+   {
+      /* The metadata is already owned by the demuxer. A retained header
+       * lets later seeks reopen without touching released file pages. */
+      probe = rwebm_cursor_clone(s->demux);
+      if (!probe)
+      {
+         free(candidate);
+         return 0;
+      }
+      rwebm_rewind(probe);
+      for (walked = 0; walked < RWEBM_VIDEO_MAX_TS; walked++)
+      {
+         if (rwebm_read_packet(probe, &packet) != 1)
+            break;
+         if (packet.track != s->track)
+            continue;
+         rwebm_video_vp9_superframe(
+               packet.data, packet.size, sizes, RWEBM_VIDEO_MAX_SUPER);
+         found = !rvp9_parse_frame_header(
+               packet.data, sizes[0], NULL, NULL, &candidate->pending.header);
+         break;
+      }
+      rwebm_close(probe);
+   }
    memset(&color, 0, sizeof(color));
    color.primaries = t->primaries;
    color.transfer  = t->transfer_characteristics;
@@ -1611,6 +1639,8 @@ int rwebm_video_stream_set_hw(rwebm_video_stream_t *s, int enable)
       free(candidate);
       return 0;
    }
+   s->hw_initial_header = candidate->pending.header;
+   s->hw_initial_header_valid = 1;
    if (!rvp9_hw_session_init_mode(candidate, &ops, 10, backend.packet_decoder))
    {
       backend.close(&ops);
@@ -1646,6 +1676,7 @@ int rwebm_video_stream_set_hw(rwebm_video_stream_t *s, int enable)
    s->soft_pending = s->timing_active = s->timing_ready = s->lookahead_ready =
          0;
    s->seek_active = s->seek_ready = s->seek_key = s->seek_scan = 0;
+   s->seek_index_pending = 0;
 #ifdef HAVE_RAV1
    s->av1_hdr_active = 0;
 #endif
@@ -2159,6 +2190,7 @@ void rwebm_video_stream_rewind(rwebm_video_stream_t *s)
    s->completed = 0;
    rwebm_rewind(s->demux);
    s->seek_active = s->seek_ready = s->seek_key = s->seek_scan = 0;
+   s->seek_index_pending = 0;
 #ifdef HAVE_RAV1
    s->av1_hdr_active = 0;
 #endif
@@ -2293,6 +2325,18 @@ static void rwebm_video_seek_select(rwebm_video_stream_t *s)
 #endif
 }
 
+static void rwebm_video_seek_scan_begin(rwebm_video_stream_t *s)
+{
+   rwebm_cursor_copy(s->timing, s->demux);
+   if (s->seek_index_verified && s->have_last_shown
+         && rwebm_select_time_ns(s->demux, s->seek_target) >= 0)
+   {
+      rwebm_cursor_copy(s->timing, s->demux);
+      s->seek_scan_from_cue = 1;
+   }
+   s->seek_scan = 1;
+}
+
 int64_t rwebm_video_stream_start_ns(const rwebm_video_stream_t *s)
 {
    return s && s->have_last_shown ? s->first_shown_ts : 0;
@@ -2382,13 +2426,16 @@ int rwebm_video_stream_seek_begin_ns(rwebm_video_stream_t *s, int64_t ns)
       ) return 0;
    s->seek_target = ns;
    s->seek_active = 1;
+   s->seek_index_lo = rwebm_cues_offset(s->demux);
+   s->seek_index_pending = s->seek_index_lo && s->len - s->seek_index_lo >= 12;
+   s->seek_index_hi = s->seek_index_pending ? s->seek_index_lo + 12 : 0;
+   s->seek_scan_from_cue = s->seek_scan_shown = 0;
    if (reuse) return 1;
    if (!s->endpoint_known && (!s->have_last_shown || ns > s->last_shown_ts))
    {
       /* Discover the actual endpoint incrementally, exposing the probe's
        * byte frontier to the same bounded feeder used for seek preroll. */
-      rwebm_cursor_copy(s->timing, s->demux);
-      s->seek_scan = 1;
+      rwebm_video_seek_scan_begin(s);
    }
    else rwebm_video_seek_select(s);
    return 1;
@@ -2487,6 +2534,35 @@ int rwebm_video_stream_seek_step(rwebm_video_stream_t *s,
    }
    if (!s->seek_active) return -1;
    s->waiting = 0;
+   if (s->seek_index_pending)
+   {
+      const rwebm_track *track = rwebm_get_track(s->demux, s->track);
+      size_t needed = 0;
+      int loaded;
+      if (s->avail < s->seek_index_hi)
+      {
+         s->waiting = 1;
+         return 0;
+      }
+      loaded = rwebm_load_cues(s->demux, s->buf + s->seek_index_lo,
+            s->avail - s->seek_index_lo, track ? track->number : 0, &needed);
+      if (!loaded)
+      {
+         s->seek_index_hi = s->seek_index_lo + needed;
+         s->waiting = 1;
+         return 0;
+      }
+      s->seek_index_pending = 0;
+      if (loaded > 0)
+      {
+         s->seek_index_verified = 1;
+         if (s->seek_scan)
+            rwebm_video_seek_scan_begin(s);
+         else
+            rwebm_video_seek_select(s);
+      }
+      return 0;
+   }
    if (s->seek_scan)
    {
       for (walked = 0; walked < 256; walked++)
@@ -2497,17 +2573,33 @@ int rwebm_video_stream_seek_step(rwebm_video_stream_t *s,
          if (ret < 0) goto failed;
          if (!ret)
          {
+            if (s->seek_scan_from_cue && !s->seek_scan_shown)
+            {
+               rwebm_rewind(s->timing);
+               s->seek_scan_from_cue = 0;
+               return 0;
+            }
             if (!s->have_last_shown) goto failed;
             s->endpoint_known = 1;
             rwebm_video_seek_select(s);
             return 0;
          }
+         if (packet.track == s->track && rwebm_video_packet_shown(s, &packet))
+            s->seek_scan_shown = 1;
          if (packet.track == s->track && rwebm_video_packet_shown(s, &packet)
                && (!s->have_last_shown || packet.timestamp > s->last_shown_ts))
          {
             if (!s->have_last_shown) s->first_shown_ts = packet.timestamp;
             s->last_shown_ts = packet.timestamp;
             s->have_last_shown = 1;
+         }
+         /* A shown picture at the target proves that no endpoint clamp is
+          * needed. Leave endpoint discovery lazy instead of reading the
+          * rest of a potentially multi-gigabyte movie before every jump. */
+         if (s->have_last_shown && s->last_shown_ts >= s->seek_target)
+         {
+            rwebm_video_seek_select(s);
+            return 0;
          }
       }
       return 0;

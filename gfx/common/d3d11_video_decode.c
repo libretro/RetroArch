@@ -191,6 +191,9 @@ static struct
    bool packed_yuv;
    bool av1_only;
    bool h264_owned;
+#ifdef HAVE_RVP9
+   bool vp9_owned;
+#endif
 } d3d11vd;
 
 /* ---- teardown ---- */
@@ -1076,6 +1079,7 @@ bool d3d11_video_decode_vp9_open(const rvp9_hdr *header,
    d->profile = header->profile == 2 ? d3d11vd_vp9_profile2 : d3d11vd_vp9_profile0;
    d->format = d->bit_depth == 10 ? DXGI_FORMAT_P010 : DXGI_FORMAT_NV12;
    d->bitstream_raw = 1; d->slots = slots;
+   d->packed_yuv = d3d11vd.packed_yuv;
    d->decoder_w = d->visible_w = (unsigned)header->w;
    d->decoder_h = d->visible_h = (unsigned)header->h;
    /* VP9 surfaces are padded independently of the frame's coded dimensions. */
@@ -1226,6 +1230,19 @@ static bool d3d11vd_av1_open(void *user, const rav1_sequence_t *sequence,
 #endif
 
 #ifdef HAVE_RVP9
+/* Both VPCC 4:2:0 sitings share the same decoded NV12/P010 planes.
+ * The container colour metadata remains attached by the stream owner. */
+static bool d3d11vd_vp9_open_config(void *user, const rvp9_hdr *header,
+      const video_color_metadata_t *color, const rvp9_config_t *config,
+      unsigned slots, rvp9_hw_ops_t *ops)
+{
+   (void)user;
+   (void)color;
+   if (config && config->chroma > 1)
+      return false;
+   return d3d11_video_decode_vp9_open(header, slots, ops);
+}
+
 static bool d3d11vd_vp9_open(void *user, const rvp9_hdr *header,
       unsigned slots, rvp9_hw_ops_t *ops)
 {
@@ -1294,9 +1311,10 @@ static bool d3d11vd_init_adapter(void *adapter, unsigned formats, bool av1_only)
    d3d11vd.vp9.close = d3d11_video_decode_vp9_close;
    d3d11vd.vp9.packet_decoder = false;
    d3d11vd.vp9.open_color = NULL;
-   d3d11vd.vp9.open_config = NULL;
+   d3d11vd.vp9.open_config = d3d11vd_vp9_open_config;
    d3d11vd.vp9.drain = NULL;
-   if (!av1_only) rvp9_set_hw_backend(&d3d11vd.vp9);
+   d3d11vd.vp9_owned = !av1_only;
+   if (d3d11vd.vp9_owned) rvp9_set_hw_backend(&d3d11vd.vp9);
 #endif
 #ifdef HAVE_RAV1
    d3d11vd.av1.packet_decoder = false;
@@ -1315,8 +1333,8 @@ bool d3d11_video_decode_init_adapter_formats(void *adapter, unsigned formats)
    return d3d11vd_init_adapter(adapter, formats, false);
 }
 
-bool d3d11_video_decode_init_packed_adapter(void *adapter, unsigned formats,
-      bool h264)
+static bool d3d11vd_init_packed_adapter(void *adapter, unsigned formats,
+      bool h264, bool vp9)
 {
    unsigned native_formats = 0;
    if (formats & IMAGE_PIXFMT_YUV8_FP16) native_formats |= IMAGE_PIXFMT_NV12;
@@ -1329,13 +1347,28 @@ bool d3d11_video_decode_init_packed_adapter(void *adapter, unsigned formats,
       rh264_set_hw_backend(&d3d11vd.ops);
       d3d11vd.h264_owned = true;
    }
+#ifdef HAVE_RVP9
+   if (vp9)
+   {
+      rvp9_set_hw_backend(&d3d11vd.vp9);
+      d3d11vd.vp9_owned = true;
+   }
+#else
+   (void)vp9;
+#endif
    return true;
+}
+
+bool d3d11_video_decode_init_packed_adapter(void *adapter, unsigned formats,
+      bool h264)
+{
+   return d3d11vd_init_packed_adapter(adapter, formats, h264, true);
 }
 
 #ifdef HAVE_RAV1
 bool d3d11_video_decode_init_av1_adapter(void *adapter, unsigned formats)
 {
-   return d3d11_video_decode_init_packed_adapter(adapter, formats, false);
+   return d3d11vd_init_packed_adapter(adapter, formats, false, false);
 }
 #endif
 
@@ -1376,7 +1409,7 @@ void d3d11_video_decode_deinit(void)
    if (!d3d11vd.av1_only)
       rh265_unset_hw_backend(&d3d11vd.hevc);
 #ifdef HAVE_RVP9
-   if (!d3d11vd.av1_only) rvp9_unset_hw_backend(&d3d11vd.vp9);
+   if (d3d11vd.vp9_owned) rvp9_unset_hw_backend(&d3d11vd.vp9);
 #endif
 #ifdef HAVE_RAV1
    rav1_unset_hw_backend(&d3d11vd.av1);

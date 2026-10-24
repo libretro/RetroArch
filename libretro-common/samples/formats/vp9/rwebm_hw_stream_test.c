@@ -429,6 +429,81 @@ static int config_admission(void)
    return 0;
 }
 
+static void cue_position(unsigned track, size_t offset)
+{
+   size_t p = start(0xb7, 1), value;
+   integer(0xf7, 1, track);
+   value = start(0xf1, 1);
+   file[used++] = (uint8_t)(offset >> 8);
+   file[used++] = (uint8_t)offset;
+   finish(value); finish(p);
+}
+
+static int sparse_cue_index(void)
+{
+   size_t segment, base, head, entry, marker, patch, cluster[2], cues, point;
+   size_t needed, count, i, nk;
+   rwebm_t *demux;
+   rwebm_packet pkt;
+   used = 0;
+   marker = start(0x1a45dfa3, 4); finish(marker);
+   segment = start(0x18538067, 4); base = used;
+   head = start(0x114d9b74, 4); entry = start(0x4dbb, 2);
+   marker = start(0x53ab, 2);
+   file[used++] = 0x1c; file[used++] = 0x53;
+   file[used++] = 0xbb; file[used++] = 0x6b; finish(marker);
+   marker = start(0x53ac, 2); patch = used;
+   file[used++] = 0; file[used++] = 0; finish(marker);
+   finish(entry); finish(head);
+   head = start(0x1654ae6b, 4); entry = start(0xae, 1);
+   integer(0xd7, 1, 1); integer(0x83, 1, 1);
+   marker = start(0x86, 1); memcpy(file + used, "V_VP9", 5); used += 5;
+   finish(marker); marker = start(0xe0, 1);
+   integer(0xb0, 1, 64); integer(0xba, 1, 48);
+   finish(marker); finish(entry); finish(head);
+   fixture_color_space = 2; fixture_full_range = 0;
+   nk = coded(1, 1);
+   for (i = 0; i < 2; i++)
+   {
+      cluster[i] = used - base;
+      marker = start(0x1f43b675, 4);
+      integer(0xe7, 1, (unsigned)i * 80);
+      block(0, 0x80, packet, nk); finish(marker);
+   }
+   prefix = cues = used;
+   marker = start(0x1c53bb6b, 4);
+   for (i = 0; i < 3; i++)
+   {
+      point = start(0xbb, 1);
+      integer(0xb3, 1, (unsigned)i * 80);
+      cue_position(2, cluster[i ? 1 : 0]);
+      if (i < 2) cue_position(1, cluster[i]);
+      finish(point);
+   }
+   finish(marker); finish(segment);
+   file[patch] = (uint8_t)((cues - base) >> 8);
+   file[patch + 1] = (uint8_t)(cues - base);
+   demux = rwebm_open_memory_avail(file, used, prefix, NULL);
+   CHECK(demux && !rwebm_num_cues(demux) && rwebm_cues_offset(demux) == cues);
+   CHECK(rwebm_load_cues(demux, file + cues, (size_t)-1, 1, &needed) < 0);
+   for (i = 0; i < 12; i++)
+      CHECK(!rwebm_load_cues(demux, file + cues, i, 1, &needed) && needed == 12);
+   CHECK(!rwebm_load_cues(demux, file + cues, 12, 1, &needed));
+   CHECK(needed == used - cues);
+   CHECK(rwebm_load_cues(demux, file + cues, needed, 1, &needed) == 1);
+   CHECK(!rwebm_cues_offset(demux) && rwebm_num_cues(demux) == 2);
+   CHECK(rwebm_cue_time_ns(demux, 160000000) == 80000000);
+   memset(file + cues, 0, used - cues);
+   CHECK(rwebm_select_time_ns(demux, 80000000) == 80000000);
+   CHECK(rwebm_read_packet(demux, &pkt) == 1 && pkt.timestamp == 80000000);
+   rwebm_close(demux);
+   demux = rwebm_open_memory_avail(file, used, prefix, NULL);
+   CHECK(demux && rwebm_load_cues(demux, file + cues, used - cues, 1, &count) < 0);
+   CHECK(!rwebm_num_cues(demux) && !rwebm_cues_offset(demux));
+   rwebm_close(demux);
+   return 0;
+}
+
 static unsigned gpu_starts, cpu_starts, presents;
 static int start_cpu(void *user, unsigned w, unsigned h, unsigned slots)
 {
@@ -461,6 +536,9 @@ static int seek_hardware(void)
    s = rwebm_video_stream_open_avail(file, used, prefix, &need_more);
    CHECK(s && rwebm_video_stream_set_hw(s, 1));
    CHECK(rwebm_video_stream_seekable(s));
+   /* Windowed playback may release the parsed file header before seeking.
+    * Reopening hardware must use retained metadata rather than parse it again. */
+   memset(file, 0, 4);
    memset(&held, 0, sizeof(held));
    for (i = 0; i < sizeof(targets) / sizeof(targets[0]); i++)
    {
@@ -481,6 +559,12 @@ static int seek_hardware(void)
          }
       }
       CHECK(tries < 100 && position == (targets[i] == 60000000 ? 80000 : targets[i] / 1000));
+      /* A middle seek must not require discovering the movie's endpoint. */
+      if (!i)
+      {
+         CHECK(!s->endpoint_known);
+         CHECK(rwebm_consumed(s->timing) < used);
+      }
       CHECK(s->hw && !s->vp9 && !s->frame);
       for (tries = 0; tries < 100; tries++)
          if (rwebm_video_stream_next(s, NULL)) break;
@@ -797,6 +881,7 @@ int main(void)
    CHECK(!color_admission());
    CHECK(!terminal_stream());
    CHECK(!config_admission());
+   CHECK(!sparse_cue_index());
    puts("WebM hardware dispatch, seeks, superframe retries, lacing, partial input and leases passed");
    return 0;
 }

@@ -71,7 +71,7 @@ bool d3d11_video_decode_vp9_open(const rvp9_hdr *header,
       unsigned slots, rvp9_hw_ops_t *ops);
 void d3d11_video_decode_vp9_close(rvp9_hw_ops_t *ops);
 
-/* Packed GPU exports, optionally replacing the H.264 backend. */
+/* Packed GPU exports for VP9/AV1, optionally replacing H.264. */
 bool d3d11_video_decode_init_packed_adapter(void *adapter, unsigned formats,
       bool h264);
 

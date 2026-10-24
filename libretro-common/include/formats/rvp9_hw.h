@@ -312,8 +312,10 @@ static INLINE int rvp9_hw_session_output(rvp9_hw_session_t *s,
    if (ret > 0) return 1;
    if (ret < 0 || !frame.image || frame.width != (unsigned)s->header.w
          || frame.height != (unsigned)s->header.h
-         || (s->header.bit_depth == 10 ? frame.pixfmt != IMAGE_PIXFMT_P010
-               : frame.pixfmt && frame.pixfmt != IMAGE_PIXFMT_NV12))
+         || (s->header.bit_depth == 10
+               ? frame.pixfmt != IMAGE_PIXFMT_P010 && frame.pixfmt != IMAGE_PIXFMT_YUV10_FP16
+               : frame.pixfmt && frame.pixfmt != IMAGE_PIXFMT_NV12
+                 && frame.pixfmt != IMAGE_PIXFMT_YUV8_FP16))
    {
       if (!ret) video_hw_frame_abandon(&frame);
       s->broken = 1;

@@ -968,9 +968,12 @@ bool gfx_anim_preview_seek_request(gfx_anim_preview_t *p,
 static bool gfx_anim_preview_seek_feed(gfx_anim_preview_t *p)
 {
    size_t anchor, hi, res_hi, ahead, back, span_lo = 0, span_hi = 0;
+   size_t pin_lo = 0, pin_hi = 0;
    int sparse;
    if (!p->windowed || !p->dt) return true;
-   anchor = image_transfer_anim_stream_consumed(p->stream, p->type);
+   image_transfer_anim_stream_pin_span(p->stream, p->type, &pin_lo, &pin_hi);
+   if (!data_transfer_window_pin(p->dt, pin_lo, pin_hi)) return false;
+   anchor = image_transfer_anim_stream_feed_frontier(p->stream, p->type);
    if (!anchor) anchor = image_transfer_anim_stream_media_floor(p->stream, p->type);
    sparse = image_transfer_anim_stream_seek_span(p->stream, p->type,
          &span_lo, &span_hi);
@@ -1060,7 +1063,7 @@ int gfx_anim_preview_seek_step(void *user, int64_t target_us,
          }
          if (p->windowed && p->dt)
          {
-            size_t anchor = image_transfer_anim_stream_consumed(p->stream, p->type);
+            size_t anchor = image_transfer_anim_stream_feed_frontier(p->stream, p->type);
             size_t lo = 0, hi = 0;
             int sparse = image_transfer_anim_stream_seek_span(p->stream,
                   p->type, &lo, &hi);
@@ -1084,9 +1087,16 @@ int gfx_anim_preview_seek_step(void *user, int64_t target_us,
       } while (--budget);
       if (result != 1)
       {
-         size_t lo, hi;
+         size_t lo = 0, hi = 0;
          bool local_input = p->windowed && p->dt
             && image_transfer_anim_stream_seek_span(p->stream, p->type, &lo, &hi);
+         if (!local_input && p->windowed && p->dt)
+         {
+            size_t frontier = image_transfer_anim_stream_feed_frontier(p->stream, p->type);
+            image_transfer_anim_stream_next_span(p->stream, p->type, &lo, &hi);
+            local_input = (hi > lo && (lo < p->seek_feed_anchor || hi > p->seek_feed_hi))
+               || frontier >= p->seek_feed_hi;
+         }
          return !result && (local_input
                || !image_transfer_anim_stream_waiting(p->stream, p->type))
             ? VIDEO_PLAYER_SEEK_PROGRESS : result;

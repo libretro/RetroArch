@@ -25,7 +25,10 @@ bool vulkan_video_decode_win32_fallback_init(const vulkan_context_t *ctx, unsign
    unsigned index;
    bool ok = false;
    if (!ctx || !vvd.up || vvd.device != ctx->device
-         || !vvd.h264_broken || vvd.win32_fallback
+         || vvd.win32_fallback
+#ifndef HAVE_RVP9
+         || !vvd.h264_broken
+#endif
          || !(ctx->flags & VK_CTX_FLAG_TIMELINE_SEMAPHORE) || !formats)
       return false;
    get_properties = (PFN_vkGetPhysicalDeviceProperties2)
@@ -87,7 +90,8 @@ bool vulkan_video_decode_win32_fallback_init(const vulkan_context_t *ctx, unsign
          bool match = SUCCEEDED(adapter->lpVtbl->GetDesc1(adapter, &description))
             && !memcmp(&description.AdapterLuid, id.deviceLUID, sizeof(description.AdapterLuid));
          if (match)
-            ok = d3d11_video_decode_init_packed_adapter(adapter, formats, true);
+            ok = d3d11_video_decode_init_packed_adapter(adapter, formats,
+                  vvd.h264_broken);
          adapter->lpVtbl->Release(adapter);
          if (match) break;
       }
