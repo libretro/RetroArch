@@ -156,6 +156,10 @@ jobs:
           make clean && make dispatch_test session_integration SANITIZER=thread
           TSAN_OPTIONS=halt_on_error=1 timeout 120 ./dispatch_test
           TSAN_OPTIONS=halt_on_error=1 timeout 120 ./session_integration
+          # one Wine server for the three tests: one each, a test that
+          # starts as the last server leaves is cut off before main()
+          wineserver -p
+          trap 'wineserver -k || true' EXIT
           make clean && make check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
           make clean
 
