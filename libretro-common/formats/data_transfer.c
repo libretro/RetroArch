@@ -1206,18 +1206,20 @@ static size_t data_transfer_prefix_iterate(data_transfer_t *dt,
    return dt->avail;
 }
 
-/* Positioned read that leaves the fill's own file cursor alone. */
+/* Prefix fills retain their cursor; reserved windows own it outright. */
 static int data_transfer_read_at(data_transfer_t *dt, size_t off,
       uint8_t *dst, size_t n)
 {
    int64_t save = filestream_tell(dt->f);
    int64_t r;
    if (save < 0
-         || filestream_seek(dt->f, (int64_t)off,
-               RETRO_VFS_SEEK_POSITION_START) < 0)
+         || (save != (int64_t)off
+            && filestream_seek(dt->f, (int64_t)off,
+               RETRO_VFS_SEEK_POSITION_START) < 0))
       return 0;
    r = filestream_read(dt->f, dst, (int64_t)n);
-   filestream_seek(dt->f, save, RETRO_VFS_SEEK_POSITION_START);
+   if (!dt->window || !dt->map_len)
+      filestream_seek(dt->f, save, RETRO_VFS_SEEK_POSITION_START);
    return r == (int64_t)n;
 }
 

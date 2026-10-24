@@ -67,6 +67,22 @@
 #include <stdint.h>
 #include <formats/data_transfer.h>
 #include <memmap.h>
+#ifdef DT_COUNT_IO
+#include <streams/file_stream.h>
+static unsigned io_seeks, io_reads;
+int64_t __real_filestream_seek(RFILE *stream, int64_t offset, int origin);
+int64_t __real_filestream_read(RFILE *stream, void *data, int64_t length);
+int64_t __wrap_filestream_seek(RFILE *stream, int64_t offset, int origin)
+{
+   io_seeks++;
+   return __real_filestream_seek(stream, offset, origin);
+}
+int64_t __wrap_filestream_read(RFILE *stream, void *data, int64_t length)
+{
+   io_reads++;
+   return __real_filestream_read(stream, data, length);
+}
+#endif
 #if defined(__linux__)
 #include <unistd.h>
 #endif
@@ -917,6 +933,31 @@ int main(void)
    /* the head is resident from the start */
    if (memcmp(base, ref, KEEP)) fail("head contents after open");
    else ok("head resident and correct immediately after open");
+
+#ifdef DT_COUNT_IO
+   if (data_transfer_window_is_reserved(dt))
+   {
+      uint8_t probe[16];
+      io_seeks = io_reads = 0;
+      if (!data_transfer_window_extend(dt, KEEP + 4096)
+            || !data_transfer_window_extend(dt, KEEP + 8192)
+            || memcmp(base + KEEP, ref + KEEP, 8192))
+         fail("consecutive window reads retain exact bytes");
+      if (io_seeks || io_reads != 2)
+         fail("consecutive window reads need no seeks");
+      else ok("consecutive window reads need no seeks");
+      if (!data_transfer_window_peek(dt, KEEP * 3 + 7, probe, 8)
+            || !data_transfer_window_peek(dt, KEEP * 3 + 15, probe + 8, 8)
+            || memcmp(probe, ref + KEEP * 3 + 7, sizeof(probe))
+            || !data_transfer_window_extend(dt, KEEP + 12288)
+            || memcmp(base + KEEP, ref + KEEP, 12288))
+         fail("metadata probes and window refill retain exact bytes");
+      if (io_seeks != 2 || io_reads != 5)
+         fail("metadata probes only seek when changing ranges");
+      else ok("metadata probes only seek when changing ranges");
+      printf("window I/O: %u reads, %u seeks\n", io_reads, io_seeks);
+   }
+#endif
 
    /* play forward, feeding as a decoder would */
    for (tell = 0; tell < n; tell += 32768)
