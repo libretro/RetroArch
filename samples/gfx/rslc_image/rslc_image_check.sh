@@ -17,7 +17,10 @@
 # words must pass rslc's ingest and the picture must not change), -w
 # run a Windows RetroArch under Wine with pattern_core.dll (make
 # CC=x86_64-w64-mingw32-gcc EXT=dll), which is how the D3D drivers run
-# on a Linux box, -D apply the preset after the first frames instead
+# on a Linux box - on Windows itself, from an MSYS2 MINGW64 shell, the
+# script runs retroarch.exe directly with pattern_core.dll (make
+# EXT=dll) and Microsoft's d3dcompiler_47, which is the run of record
+# for d3d11 and d3d12, -D apply the preset after the first frames instead
 # of at start, which takes the deferred path (one pass per frame, the
 # stock chain on screen until the new one is live), -t the same under
 # threaded video, where the passes are built on the video thread, -b
@@ -45,6 +48,16 @@ cached=0
 runner=
 ext=so
 ra_rslc=
+native_win=0
+case $(uname -s) in
+   MINGW*|MSYS*|CYGWIN*) native_win=1; ext=dll ;;
+esac
+# A path as the RetroArch being run reads it: a Windows one from an
+# MSYS2 shell, the path itself on Linux and under Wine (whose Z: drive
+# is /).
+wp() {
+   if [ $native_win = 1 ]; then cygpath -m "$1"; else printf '%s' "$1"; fi
+}
 while [ $# -gt 0 ]; do
    case $1 in
       -d) driver=$2; shift 2 ;;
@@ -101,9 +114,9 @@ menu_show_load_content_animation = "false"
 video_msg_bgcolor_enable = "false"
 notification_show_autoconfig = "false"
 notification_show_screenshot = "false"
-screenshot_directory = "$out"
-cache_directory = "$out/cache_$2"
-video_shader_dir = "$(dirname "$1")"
+screenshot_directory = "$(wp "$out")"
+cache_directory = "$(wp "$out/cache_$2")"
+video_shader_dir = "$(wp "$(dirname "$1")")"
 video_threaded = "$threaded"
 video_shader_delay = "$([ $late = 1 ] && echo 50 || echo 0)"
 video_shader_deferred_loading = "true"
@@ -118,8 +131,9 @@ EOF
    rm -f "$3"
    bin=$ra
    [ "$2" = 2 ] && bin=$ra_rslc
-   $runner "$bin" --verbose --config "$cfg" -L "$core" --set-shader "$1" \
-      --max-frames="$frames" --max-frames-ss --max-frames-ss-path="$3" \
+   $runner "$bin" --verbose --config "$(wp "$cfg")" -L "$(wp "$core")" \
+      --set-shader "$(wp "$1")" \
+      --max-frames="$frames" --max-frames-ss --max-frames-ss-path="$(wp "$3")" \
       > "$4" 2>&1
    [ -s "$3" ]
 }
@@ -130,7 +144,7 @@ for preset in "$@"; do
    case $preset in
       *.slang)
          name=$(basename "$preset" .slang)
-         printf 'shaders = "1"\nshader0 = "%s"\n' "$(cd "$(dirname "$preset")" && pwd)/$(basename "$preset")" > "$out/$name.slangp"
+         printf 'shaders = "1"\nshader0 = "%s"\n' "$(wp "$(cd "$(dirname "$preset")" && pwd)/$(basename "$preset")")" > "$out/$name.slangp"
          preset="$out/$name.slangp" ;;
       *) name=$(basename "$preset" .slangp) ;;
    esac
