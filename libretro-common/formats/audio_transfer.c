@@ -62,6 +62,7 @@
  * contract for that lives with set_demuxed_ptr in the header. */
 
 #include <stdlib.h>
+#include <features/features_cpu.h>
 #include <string.h>
 
 #include <file/file_path.h>
@@ -5578,8 +5579,12 @@ opus_failed:
          const int64_t *pts = rmp4_track_pts(ac->demux, ac->track_idx, &count);
          unsigned walked;
          int found = 0;
+         int64_t started = cpu_features_get_time_usec();
          if (!flen || !pts || !count) goto failed;
-         for (walked = 0; ac->seek_scan < count && walked < 256; walked++)
+         /* These steps inspect resident timing tables, not coded audio.
+          * Yield by elapsed work rather than once per 256 packets: a
+          * long movie otherwise pays a worker wakeup for every batch. */
+         for (walked = 0; ac->seek_scan < count && walked < 65536; walked++)
          {
             size_t frames = (size_t)flen, trimmed;
             int64_t source;
@@ -5600,6 +5605,9 @@ opus_failed:
                      && ac->time.pending + (int64_t)frames > (int64_t)ac->seek_target))
             { found = 1; break; }
             ac->seek_scan++;
+            if (!(walked & 255)
+                  && cpu_features_get_time_usec() - started >= 4000)
+               break;
          }
          if (!found && ac->seek_scan < count) return 0;
          prime = ac->seek_scan > AUDIO_AAC_PREROLL

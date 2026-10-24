@@ -288,6 +288,10 @@ $(AUDIO_TIMELINE_TARGET): $(AUDIO_TIMELINE_SOURCES)
 
 # Independent container movie positions, silence and complete loop period.
 audio-timeline-check: $(AUDIO_TIMELINE_TARGET)
+	mkdir -p fixtures
+	ffmpeg -v error -y -f lavfi -i anullsrc=r=48000:cl=stereo -t 1 -c:a aac fixtures/long-seek-seed.m4a
+	ffmpeg -v error -y -stream_loop -1 -i fixtures/long-seek-seed.m4a -t 7200 -c copy fixtures/long-seek.m4a
+	./$(AUDIO_TIMELINE_TARGET) --long-seek fixtures/long-seek.m4a
 	python3 ../../cores/webm_player/audio_timeline_fixtures.py fixtures/audio-movie-timeline
 	@set -e; for fixture in timeline-control.mp4 timeline-0.mp4 timeline-1.mp4 \
 	   timeline-0.webm timeline-1.webm timeline-gap-libopus.webm \

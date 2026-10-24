@@ -1,6 +1,7 @@
 /* Independent frontend PCM onset conformance. Expected sample positions
  * come from ffmpeg's timestamp-preserving decode, not another mixer. */
 #include <stdio.h>
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
@@ -263,6 +264,56 @@ static int run(const char *path, long expected, int s16,
       || bad || (activity && (!checked || frame < period * 2));
 }
 
+/* A two-hour seek must not require one worker wakeup per 256 AUs.
+ * Compare the resulting PCM with the independent synchronous seek. */
+static int long_seek_conformance(const char *path)
+{
+   FILE *file = fopen(path, "rb");
+   unsigned char *data = NULL;
+   void *seek = NULL, *reference = NULL;
+   float actual[128], expected[128];
+   long length;
+   unsigned rate, channels, steps, pass;
+   size_t got, wanted, i;
+   int result, failed = 1;
+   if (!file) return 1;
+   if (fseek(file, 0, SEEK_END) || (length = ftell(file)) <= 0
+         || fseek(file, 0, SEEK_SET)) goto done;
+   data = (unsigned char*)malloc((size_t)length);
+   if (!data || fread(data, 1, (size_t)length, file) != (size_t)length) goto done;
+   seek = audio_transfer_new(AUDIO_TYPE_AAC);
+   reference = audio_transfer_new(AUDIO_TYPE_AAC);
+   if (!seek || !reference) goto done;
+   audio_transfer_set_buffer_ptr(seek, AUDIO_TYPE_AAC, data, (size_t)length);
+   audio_transfer_set_buffer_ptr(reference, AUDIO_TYPE_AAC, data, (size_t)length);
+   if (!audio_transfer_start(seek, AUDIO_TYPE_AAC)
+         || !audio_transfer_start(reference, AUDIO_TYPE_AAC)
+         || !audio_transfer_info(seek, AUDIO_TYPE_AAC, &channels, &rate, NULL)
+         || !channels || channels > 2 || !rate) goto done;
+   for (pass = 0; pass < 3; pass++)
+   {
+      uint64_t target = pass == 1 ? 113 : (uint64_t)7020 * rate + 13;
+      if (!audio_transfer_seek_begin(seek, AUDIO_TYPE_AAC, target)) goto done;
+      result = 0;
+      for (steps = 0; steps < 128 && !result; steps++)
+         result = audio_transfer_seek_step(seek, AUDIO_TYPE_AAC);
+      printf("long AAC seek: pass=%u steps=%u result=%d\n", pass, steps, result);
+      if (result != 1 || !audio_transfer_seek(reference, AUDIO_TYPE_AAC, target)) goto done;
+      if (audio_transfer_read_f32(seek, AUDIO_TYPE_AAC, actual, 64, &got) < 0
+            || audio_transfer_read_f32(reference, AUDIO_TYPE_AAC, expected, 64, &wanted) < 0
+            || got != 64 || wanted != got) goto done;
+      for (i = 0; i < got * channels; i++)
+         if (fabs(actual[i] - expected[i]) > 0.001) goto done;
+   }
+   failed = 0;
+done:
+   if (seek) audio_transfer_free(seek, AUDIO_TYPE_AAC);
+   if (reference) audio_transfer_free(reference, AUDIO_TYPE_AAC);
+   free(data);
+   fclose(file);
+   return failed;
+}
+
 int main(int argc, char **argv)
 {
    long expected;
@@ -270,6 +321,8 @@ int main(int argc, char **argv)
    unsigned char *activity = NULL;
    long period = 0;
    setvbuf(stdout, NULL, _IONBF, 0);
+   if (argc == 3 && !strcmp(argv[1], "--long-seek"))
+      return long_seek_conformance(argv[2]);
    if (argc == 6 && !strcmp(argv[1], "--edge"))
    {
       long declared = strtol(argv[3], NULL, 10);
