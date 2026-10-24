@@ -8972,6 +8972,15 @@ static bool retroarch_parse_input_and_config(
 
                   drivers_init(settings, reinit_flags, (enum driver_lifetime_flags)0, false);
                   retroarch_init_task_queue();
+#ifdef HAVE_THREADS
+                  /* Threaded for this run whatever the setting: only
+                   * there does the scan get its readers. */
+                  if (!explicit_menu && !task_queue_is_threaded())
+                  {
+                     task_queue_set_threaded();
+                     task_queue_check();
+                  }
+#endif
 
 #ifdef HAVE_MENU
                   if (explicit_menu)
