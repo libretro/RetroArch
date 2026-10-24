@@ -143,49 +143,43 @@ extern void winraw_pump_done(void);
 #define WIN32_RAW_INPUT_PUMP_DONE() ((void)0)
 #endif
 
-static void ui_application_win32_process_events(void)
+static bool ui_application_win32_next_message(void)
 {
    MSG msg;
-
 #ifdef WIN32_RAW_INPUT_PUMP
    if (winraw_poll_owns_thread())
    {
-      /* The raw input driver reads this thread's reports in bulk when
-       * it polls (winraw_input.c, "Read by the poll"). Taking them out
-       * here, one WM_INPUT at a time, is the work that read exists to
-       * save, so this asks for everything below WM_INPUT and
-       * everything above it and leaves the reports in the queue. The
-       * two ranges take turns, so that neither waits for the other to
-       * run dry. */
-      for (;;)
+      bool any = false;
+      if (PeekMessage(&msg, 0, 0, WM_INPUT - 1, PM_REMOVE))
       {
-         bool any = false;
-         if (PeekMessage(&msg, 0, 0, WM_INPUT - 1, PM_REMOVE))
-         {
-            ui_application_win32_dispatch(&msg);
-            any = true;
-         }
-         if (PeekMessage(&msg, 0, WM_INPUT + 1, 0xFFFFFFFF, PM_REMOVE))
-         {
-            ui_application_win32_dispatch(&msg);
-            any = true;
-         }
-         if (!any)
-            break;
-      }
-   }
-   else
-#endif
-   {
-      while (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
          ui_application_win32_dispatch(&msg);
-      /* The raw input driver, where this thread takes its reports:
-       * they are in its state as of now. */
-      WIN32_RAW_INPUT_PUMP_DONE();
+         any = true;
+      }
+      if (PeekMessage(&msg, 0, WM_INPUT + 1, 0xFFFFFFFF, PM_REMOVE))
+      {
+         ui_application_win32_dispatch(&msg);
+         any = true;
+      }
+      return any;
    }
+#endif
+   if (!PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
+      return false;
+   ui_application_win32_dispatch(&msg);
+   return true;
+}
 
-   /* The video thread pumps through here too (win32_check_window);
-    * only the main thread may run the parked commands. */
+static void ui_application_win32_process_events(void)
+{
+#if !defined(_XBOX) && !defined(__WINRT__)
+   if (!win32_message_pump(ui_application_win32_next_message))
+#endif
+      while (ui_application_win32_next_message()) { }
+#ifdef WIN32_RAW_INPUT_PUMP
+   if (!winraw_poll_owns_thread())
+#endif
+      WIN32_RAW_INPUT_PUMP_DONE();
+
    if (task_is_on_main_thread())
       win32_menu_run_deferred();
 }
@@ -977,7 +971,11 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
 {
    WPARAM mode            = wparam & 0xffff;
 
-   if (!task_is_on_main_thread())
+   if (!task_is_on_main_thread()
+#if !defined(_XBOX) && !defined(__WINRT__)
+         || win32_message_dispatching()
+#endif
+      )
    {
       if (mode && !win32_menu_defer(mode))
          RARCH_WARN("[Win32] Menu command %u dropped: too many pending.\n",
@@ -1757,7 +1755,13 @@ int win32_resources_pick_core_dialog(HWND parent, DLGPROC dlg_proc)
 }
 #endif /* !__WINRT__ */
 
-static void ui_companion_win32_deinit(void *data) { }
+static void ui_companion_win32_deinit(void *data)
+{
+   (void)data;
+#if !defined(_XBOX) && !defined(__WINRT__)
+   win32_message_pump_free();
+#endif
+}
 static void *ui_companion_win32_init(void) { return (void*)-1; }
 static void ui_companion_win32_toggle(void *data, bool force) { }
 static void ui_companion_win32_event_command(

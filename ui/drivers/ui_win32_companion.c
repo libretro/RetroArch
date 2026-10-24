@@ -2562,10 +2562,13 @@ static LRESULT CALLBACK cw_float_wndproc(HWND hwnd, UINT msg,
          if (w && p >= 0 && p < COMPANION_DOCK_COUNT && w->floats[p] == hwnd)
             cw_float_moving(w, (enum companion_dock_id)p);
          break;
-      /* A pane drag is a modal loop on the run loop's thread like any
-       * other window's: same pause handling. The drop is applied after
-       * the timer and audio are back, since docking the pane may take
-       * this window down. */
+      /* Apply the drop after the modal loop; docking may destroy it. */
+      case WM_PAINT:
+         {
+            LRESULT result = DefWindowProc(hwnd, msg, wparam, lparam);
+            win32_message_paint(hwnd);
+            return result;
+         }
       case WM_ENTERSIZEMOVE:
       case WM_ENTERMENULOOP:
          win32_sizemove_enter(hwnd);
@@ -2578,16 +2581,11 @@ static LRESULT CALLBACK cw_float_wndproc(HWND hwnd, UINT msg,
          if (w && p >= 0 && p < COMPANION_DOCK_COUNT && w->floats[p] == hwnd)
             cw_float_moved(w, (enum companion_dock_id)p);
          break;
-      case WM_TIMER:
-         if (wparam != WIN32_SIZEMOVE_TIMER_ID)
-            break;
-         win32_sizemove_tick();
-         return 0;
       case WM_DESTROY:
-         win32_sizemove_abort();
+         win32_sizemove_abort(hwnd);
          break;
       case WM_CLOSE:
-         win32_sizemove_abort();
+         win32_sizemove_abort(hwnd);
          if (w && p >= 0 && p < COMPANION_DOCK_COUNT)
             cw_dock_show_pane(w, (enum companion_dock_id)p, false);
          return 0;
@@ -4661,11 +4659,11 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
 
       case WM_CLOSE:
          /* Closing the companion never quits RetroArch. */
-         win32_sizemove_abort();
+         win32_sizemove_abort(hwnd);
          ShowWindow(hwnd, SW_HIDE);
          return 0;
       case WM_DESTROY:
-         win32_sizemove_abort();
+         win32_sizemove_abort(hwnd);
          break;
 
       /* Dragging or sizing this window, or browsing its menu bar, runs
@@ -4679,11 +4677,6 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
       case WM_EXITMENULOOP:
          win32_sizemove_exit(hwnd);
          break;
-      case WM_TIMER:
-         if (wparam != WIN32_SIZEMOVE_TIMER_ID)
-            break;
-         win32_sizemove_tick();
-         return 0;
 
       /* The docks: strips, tabs and gaps are the window's own surface. */
       case WM_PAINT:
@@ -4694,6 +4687,7 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
             if (hdc)
                cw_paint_docks(w, hdc);
             EndPaint(hwnd, &ps);
+            win32_message_paint(hwnd);
             return 0;
          }
          break;

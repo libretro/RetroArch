@@ -133,6 +133,7 @@ bool video_driver_is_threaded(void)                          { return false; }
 uint32_t runloop_get_flags(void)                             { return stub_runloop_st.flags; }
 bool task_is_on_main_thread(void)                            { return true; }
 bool video_thread_host_hold(void (*on_exit)(void))           { return false; }
+bool video_thread_host_set_cleanup(void (*cleanup)(void))    { (void)cleanup; return false; }
 bool video_thread_host_is_held(void)                         { return false; }
 void video_thread_host_stop(void)                            { }
 void *video_driver_get_ptr(void)                             { return NULL; }

@@ -806,110 +806,76 @@ uint16_t win32_get_keyboard_mods(void)
 #define WM_EXITMENULOOP  0x0212
 #endif
 
-/* Title-bar drags, border resizes and menu bars run a modal loop inside
- * DefWindowProc that does not return until the user lets go. With
- * non-threaded video the run loop is on this thread, so content pauses
- * for the duration - that is the norm for a windowed game and is not
- * changed here. What is done: the audio driver is stopped so the sink
- * does not underrun and pop, and a plain timer keeps the last frame on
- * screen at the current window size. Nothing in here runs the run
- * loop, the menu, input or the task queue; running those nested inside
- * a captured-mouse modal loop is what 91920289 did and why it was
- * reverted.
- *
- * Size/move and menu loops can nest (system menu opened while sizing):
- * arm on the first entry, disarm on the last exit. One timer for the
- * process; the window that armed it owns it, so the companion and the
- * main window never kill each other's. */
-#define WIN32_SIZEMOVE_TIMER_ID 0x5241
+#include "win32_pump.h"
+
+#ifndef HAVE_THREADS
+static win32_pump_t win32_messages;
+#elif defined(_MSC_VER)
+static __declspec(thread) win32_pump_t win32_messages;
+#else
+static __thread win32_pump_t win32_messages;
+#endif
 
 static uint8_t win32_sizemove_depth;
-static bool    win32_sizemove_stopped_audio;
-/* The routed window changed size since the last present. A move never
- * invalidates the client area - the compositor keeps the last buffer -
- * so a plain drag presents nothing at all. */
-static bool    win32_sizemove_dirty;
-static HWND    win32_sizemove_timer_hwnd;
+static bool win32_sizemove_stopped_audio;
+
+void win32_message_pump_free(void)
+{
+   win32_pump_free(&win32_messages);
+}
+
+bool win32_message_pump(bool (*next)(void))
+{
+#ifdef HAVE_THREADS
+   if (!win32_messages.messages && !task_is_on_main_thread()
+         && !video_thread_host_set_cleanup(win32_message_pump_free))
+      return false;
+#endif
+   return win32_pump_run(&win32_messages, next);
+}
+
+bool win32_message_dispatching(void)
+{
+   return win32_pump_dispatching(&win32_messages);
+}
+
+bool win32_message_paint(HWND hwnd)
+{
+   return win32_pump_paint(&win32_messages, hwnd);
+}
 
 void win32_sizemove_enter(HWND hwnd)
 {
-   if (win32_sizemove_depth++)
+   if (win32_pump_enter(&win32_messages, hwnd))
       return;
-   /* The window lives on the video thread; the run loop is elsewhere
-    * and keeps going on its own. */
-   if (video_driver_is_threaded())
+   if (win32_sizemove_depth++ || video_driver_is_threaded())
       return;
-
-   /* A user who pressed P already stopped the driver and must not get
-    * it restarted on release. audio_driver_stop() returns false when
-    * the driver is not alive, so the latch is a real transition. */
    win32_sizemove_stopped_audio = false;
    if (!(runloop_state_get_ptr()->flags & RUNLOOP_FLAG_PAUSED))
       win32_sizemove_stopped_audio = audio_driver_stop();
-
-   win32_sizemove_dirty = false;
-   if (SetTimer(hwnd, WIN32_SIZEMOVE_TIMER_ID, 16, NULL))
-      win32_sizemove_timer_hwnd = hwnd;
 }
 
 void win32_sizemove_exit(HWND hwnd)
 {
    (void)hwnd;
-   if (!win32_sizemove_depth || --win32_sizemove_depth)
-      return;
-   if (video_driver_is_threaded())
-      return;
-
-   if (win32_sizemove_timer_hwnd)
+   if (win32_messages.depth)
    {
-      KillTimer(win32_sizemove_timer_hwnd, WIN32_SIZEMOVE_TIMER_ID);
-      win32_sizemove_timer_hwnd = NULL;
+      win32_pump_leave(&win32_messages);
+      return;
    }
-   /* A failed start clears AUDIO_FLAG_ACTIVE for the session; say so. */
+   if (!win32_sizemove_depth || --win32_sizemove_depth
+         || video_driver_is_threaded())
+      return;
    if (win32_sizemove_stopped_audio && !audio_driver_start(false))
       RARCH_WARN("[Win32] Audio did not restart after a window size/move.\n");
    win32_sizemove_stopped_audio = false;
 }
 
-/* A routed window is going away mid-drag. No audio restart: the driver
- * may already be gone, and audio_driver_start() failing mutes the
- * session. */
-void win32_sizemove_abort(void)
+void win32_sizemove_abort(HWND hwnd)
 {
-   if (win32_sizemove_timer_hwnd)
-      KillTimer(win32_sizemove_timer_hwnd, WIN32_SIZEMOVE_TIMER_ID);
-   win32_sizemove_timer_hwnd    = NULL;
+   win32_pump_abort(&win32_messages, hwnd);
    win32_sizemove_depth         = 0;
    win32_sizemove_stopped_audio = false;
-   win32_sizemove_dirty         = false;
-}
-
-/* WM_TIMER with WIN32_SIZEMOVE_TIMER_ID, delivered on the thread that
- * owns the window, which is the thread that created the driver: the
- * video thread when video is threaded, the run loop's otherwise.
- * Either way the two calls below land on the thread that may touch
- * the driver, and video_thread_frame() takes its direct path when it
- * finds itself already on the video thread. Presents only after a resize: with vsync on, a
- * present blocks for a refresh, and one per tick starved the modal
- * loop on D3D12 and Vulkan (drag lagged the mouse, picture refreshed
- * late). Then the same two calls the run loop makes per frame and
- * nothing else: the driver's alive() is where win32_check_window()
- * consumes WIN32_CMN_FLAG_RESIZED and arms the swapchain resize, and
- * video_driver_cached_frame() then presents the last frame into the
- * resized chain - the pause picture. current_video and data have
- * independent lifetimes during teardown, hence both checks. */
-void win32_sizemove_tick(void)
-{
-   video_driver_state_t *video_st = video_state_get_ptr();
-
-   if (!win32_sizemove_depth)
-      return;
-   if (!win32_sizemove_dirty)
-      return;
-   win32_sizemove_dirty = false;
-   if (video_st->current_video && video_st->data)
-      video_st->current_video->alive(video_st->data);
-   video_driver_cached_frame();
 }
 
 /* Older SDK headers stop short of the resume notification. */
@@ -1003,7 +969,7 @@ static LRESULT CALLBACK wnd_proc_common(
       case WM_DESTROY:
       case WM_QUIT:
 #if !defined(_XBOX)
-         win32_sizemove_abort();
+         win32_sizemove_abort(hwnd);
 #endif
          g_win32_flags |= WIN32_CMN_FLAG_QUIT;
          *quit          = true;
@@ -1046,12 +1012,7 @@ static LRESULT CALLBACK wnd_proc_common(
             *quit = true;
             return 0;
          }
-         /* Someone else's timer falls through to DefWindowProc. */
-         if (wparam != WIN32_SIZEMOVE_TIMER_ID)
-            break;
-         win32_sizemove_tick();
-         *quit = true;
-         return 0;
+         break;
 #endif
       case WM_SIZE:
          /* Do not send resize message if we minimize. */
@@ -1064,9 +1025,6 @@ static LRESULT CALLBACK wnd_proc_common(
                g_win32_resize_width  = LOWORD(lparam);
                g_win32_resize_height = HIWORD(lparam);
                g_win32_flags        |= WIN32_CMN_FLAG_RESIZED;
-#if !defined(_XBOX)
-               win32_sizemove_dirty  = true;
-#endif
             }
          }
          *quit = true;
@@ -1678,6 +1636,9 @@ LRESULT CALLBACK win32_window_proc(HWND hwnd, UINT message,
       return 0;
    }
 
+   if (message == WM_PAINT && win32_pump_paint(&win32_messages, hwnd))
+      return 0;
+
 #ifdef HAVE_GDI
    if (message == WM_PAINT && win32_wnd_family == WIN32_WINDOW_GDI)
    {
@@ -1851,6 +1812,8 @@ bool win32_window_keep(void)
          return false;
    }
 
+   if (!win32_pump_cancel(&win32_messages))
+      return false;
    win32_monitor_last = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
 #ifndef _XBOX
    /* The next driver may not take it - another family, another

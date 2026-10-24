@@ -1039,6 +1039,11 @@ void video_thread_set_raise_priority(bool raise);
  */
 bool video_thread_host_hold(void (*on_exit)(void));
 
+#ifdef _WIN32
+/* Set on the host thread; released there after the kept window. */
+bool video_thread_host_set_cleanup(void (*cleanup)(void));
+#endif
+
 /* True while the thread is held and waiting for its next driver. */
 bool video_thread_host_is_held(void);
 

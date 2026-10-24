@@ -3279,6 +3279,9 @@ static struct
    sthread_t *thread;
    thread_video_t *job;     /* published by the release of JOB */
    void (*on_exit)(void);   /* the host thread's own; run before it ends */
+#ifdef _WIN32
+   void (*cleanup)(void);
+#endif
    retro_atomic_int_t flags;
    bool ec_ready;
 } video_thread_host;
@@ -3318,6 +3321,14 @@ static void video_thread_host_loop(void *data)
          video_thread_host.on_exit = NULL;
          if (on_exit)
             on_exit();
+#ifdef _WIN32
+         if (video_thread_host.cleanup)
+         {
+            void (*cleanup)(void) = video_thread_host.cleanup;
+            video_thread_host.cleanup = NULL;
+            cleanup();
+         }
+#endif
          return;
       }
       retro_atomic_fetch_and_int(&video_thread_host.flags,
@@ -3401,6 +3412,21 @@ bool video_thread_host_hold(void (*on_exit)(void))
    video_thread_host.on_exit = on_exit;
    return true;
 }
+
+#ifdef _WIN32
+bool video_thread_host_set_cleanup(void (*cleanup)(void))
+{
+   if (!video_thread_host.thread
+         || sthread_get_thread_id(video_thread_host.thread)
+            != sthread_get_current_thread_id())
+      return false;
+   if (video_thread_host.cleanup && video_thread_host.cleanup != cleanup)
+      return false;
+   video_thread_host.cleanup = cleanup;
+   return true;
+}
+
+#endif
 
 bool video_thread_host_is_held(void)
 {

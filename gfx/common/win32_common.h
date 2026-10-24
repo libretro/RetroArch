@@ -150,14 +150,14 @@ void win32_clip_window(bool grab);
 #endif
 
 #if !defined(_XBOX)
-/* Size/move and menu-loop handling for any window whose wndproc runs on
- * the run loop's thread: content pauses, audio is stopped cleanly and a
- * timer re-presents the last frame. See win32_common.c. */
-#define WIN32_SIZEMOVE_TIMER_ID 0x5241
+/* Yield native size/move and menu loops to their normal frame caller. */
 void win32_sizemove_enter(HWND hwnd);
 void win32_sizemove_exit(HWND hwnd);
-void win32_sizemove_tick(void);
-void win32_sizemove_abort(void);
+bool win32_message_pump(bool (*next)(void));
+bool win32_message_dispatching(void);
+bool win32_message_paint(HWND hwnd);
+void win32_message_pump_free(void);
+void win32_sizemove_abort(HWND hwnd);
 
 /* HID hotplug settle timer. WM_DEVICECHANGE arrives once per HID
  * interface, so one composite device (a headset with volume keys, a
