@@ -138,6 +138,18 @@ int main(int argc,char **argv)
    {
       bool image = image_texture_get_type(argv[1]) != IMAGE_TYPE_MP4
          && image_texture_get_type(argv[1]) != IMAGE_TYPE_WEBM;
+      bool first_frame = getenv("MEDIA_TEST_FIRST_FRAME") != NULL;
+      bool startup_readback = true;
+      unsigned startup_frames = 0, startup_nonblack = 0;
+      int startup_token = menu_driver_media_startup_token();
+      if (getenv("MEDIA_TEST_STARTUP_FAILURE"))
+      {
+         CHECK("failed media releases startup presentation",
+               media_startup_failure_check(menu_st, render));
+         video->poke = old_poke;
+         main_exit(NULL);
+         return failures ? 1 : 0;
+      }
       if (!getenv("MEDIA_TEST_EXTERNAL"))
          CHECK("image browser request accepted", menu_driver_media_open(argv[1]));
       for (tick = 0; tick < 4000; tick++)
@@ -154,10 +166,24 @@ int main(int argc,char **argv)
                config_get_ptr(), MENU_ACTION_NOOP, cpu_features_get_time_usec());
          render(menu_st);
          if (test_showing(viewer) && test_thumbnail(viewer)->texture
-               && (image || viewer->media.controls.target.user)) break;
+               && (image || viewer->media.controls.target.user)
+               && (!first_frame || test_fade_ready(viewer))) break;
+         if (first_frame)
+         {
+            startup_readback = media_native_startup_black(&startup_nonblack)
+               && startup_readback;
+            startup_frames++;
+         }
          retro_sleep(1);
       }
       CHECK("opened file reaches internal fullscreen view", tick < 4000);
+      if (first_frame)
+      {
+         printf("startup presentation: frames=%u nonblack=%u readback=%u\n",
+               startup_frames, startup_nonblack, startup_readback);
+         CHECK("every loading frame can be captured", startup_readback);
+         CHECK("loading frames do not expose the browser", !startup_nonblack);
+      }
       if (tick == 4000)
       {
          file_list_t *items = MENU_LIST_GET_SELECTION(menu_st->entries.list, 0);
@@ -182,6 +208,8 @@ int main(int argc,char **argv)
                && test_showing(viewer));
       CHECK("Back closes internal view", test_action(viewer, MENU_ACTION_CANCEL)
             == MENU_ACTION_NOOP && !test_showing(viewer));
+      CHECK("cancellation and stale startup acknowledgements stay isolated",
+            media_startup_cancellation_check(menu_st, argv[1], startup_token));
       video->poke=old_poke;
       main_exit(NULL);
       printf("external media: %u failure(s)\n", failures);

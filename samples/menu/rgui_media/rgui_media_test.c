@@ -109,6 +109,16 @@ int main(int argc, char **argv)
    {
       bool image = image_texture_get_type(argv[1]) != IMAGE_TYPE_MP4
          && image_texture_get_type(argv[1]) != IMAGE_TYPE_WEBM;
+      bool first_frame = getenv("MEDIA_TEST_FIRST_FRAME") != NULL;
+      bool startup_readback = true;
+      unsigned startup_frames = 0, startup_nonblack = 0;
+      int startup_token = menu_driver_media_startup_token();
+      if (getenv("MEDIA_TEST_STARTUP_FAILURE"))
+      {
+         MEDIA_CHECK("failed media releases startup presentation",
+               media_startup_failure_check(menu_st, media_render));
+         goto cleanup;
+      }
       if (!getenv("MEDIA_TEST_EXTERNAL"))
          MEDIA_CHECK("image browser request accepted", menu_driver_media_open(argv[1]));
       for (tick = 0; tick < 4000; tick++)
@@ -121,9 +131,22 @@ int main(int argc, char **argv)
          if (((rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL) != 0) && (rgui->fs_thumbnail.is_valid
                   || (!image && rgui->media_gpu.texture
                      && rgui->media_gpu.anim_player))) break;
+         if (first_frame)
+         {
+            startup_readback = media_native_startup_black(&startup_nonblack)
+               && startup_readback;
+            startup_frames++;
+         }
          retro_sleep(1);
       }
       MEDIA_CHECK("opened file reaches internal fullscreen view", tick < 4000);
+      if (first_frame)
+      {
+         printf("startup presentation: frames=%u nonblack=%u readback=%u\n",
+               startup_frames, startup_nonblack, startup_readback);
+         MEDIA_CHECK("every loading frame can be captured", startup_readback);
+         MEDIA_CHECK("loading frames do not expose the browser", !startup_nonblack);
+      }
       MEDIA_CHECK("opened file does not launch a content core",
             runloop_state_get_ptr()->current_core_type == CORE_TYPE_DUMMY
             && !*path_get(RARCH_PATH_CONTENT));
@@ -133,6 +156,8 @@ int main(int argc, char **argv)
                   == MENU_ACTION_NOOP && ((rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL) != 0));
       rgui_parse_menu_entry_action(rgui, entry, MENU_ACTION_CANCEL);
       MEDIA_CHECK("Back closes internal view", !((rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL) != 0));
+      MEDIA_CHECK("cancellation and stale startup acknowledgements stay isolated",
+            media_startup_cancellation_check(menu_st, argv[1], startup_token));
       goto cleanup;
    }
    list = MENU_LIST_GET_SELECTION(menu_st->entries.list, 0);

@@ -94,6 +94,8 @@ static gfx_display_t display;
 static settings_t settings;
 static video_driver_state_t video_driver_st;
 static unsigned viewport_dims;
+static int startup_token;
+static int menu_driver_media_startup_token(void) { return startup_token; }
 static gfx_display_t *disp_get_ptr(void) { return &display; }
 static settings_t *config_get_ptr(void) { return &settings; }
 static video_driver_state_t *video_state_get_ptr(void) { return &video_driver_st; }
@@ -192,6 +194,20 @@ static void check_upscale(thread_video_t *thr)
    rgui_set_texture(&rgui);
    taken = (struct video_thread_menu_texture*)retro_triple_buffer_take(&thr->texture.frames);
    assert(taken && taken->dims == VIDEO_SCALE_PACK(4, 4));
+   assert(!memcmp(taken->frame, pixels, sizeof(pixels)));
+   startup_token = 1;
+   display.flags = 0;
+   rgui_set_texture(&rgui);
+   taken = (struct video_thread_menu_texture*)retro_triple_buffer_take(&thr->texture.frames);
+   assert(taken && taken->dims == VIDEO_SCALE_PACK(4, 4));
+   assert(display.flags & GFX_DISP_FLAG_FB_DIRTY);
+   for (i = 0; i < 16; i++)
+      assert(!pixels[i] && !((uint16_t*)taken->frame)[i]);
+   startup_token = 0;
+   for (i = 0; i < 16; i++) pixels[i] = (uint16_t)(i + 10);
+   rgui_set_texture(&rgui);
+   taken = (struct video_thread_menu_texture*)retro_triple_buffer_take(&thr->texture.frames);
+   assert(taken && !(display.flags & GFX_DISP_FLAG_FB_DIRTY));
    assert(!memcmp(taken->frame, pixels, sizeof(pixels)));
 }
 

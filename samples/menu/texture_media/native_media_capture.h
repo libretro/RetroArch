@@ -43,6 +43,88 @@ static bool media_native_capture_region(uint32_t *hash,int ordinal, bool movie_o
    free(pixels);return ok;
 }
 
+static bool media_startup_failure_check(struct menu_state *menu_st,
+      void (*draw_frame)(struct menu_state*))
+{
+   unsigned i;
+   if (!menu_driver_media_startup_token()) return false;
+   for (i = 0; i < 4000; i++)
+   {
+      task_queue_check();
+      menu_driver_iterate(menu_st, disp_get_ptr(), anim_get_ptr(),
+            config_get_ptr(), MENU_ACTION_NOOP, cpu_features_get_time_usec());
+      draw_frame(menu_st);
+      if (!menu_driver_media_startup_token()) return true;
+      retro_sleep(1);
+   }
+   return false;
+}
+
+static bool media_startup_cancellation_check(struct menu_state *menu_st,
+      const char *path, int previous)
+{
+   int token;
+   bool ok;
+   if (!menu_driver_media_open(path)) return false;
+   token = menu_driver_media_startup_token();
+   ok = token != 0 && !(token & 1);
+   menu_driver_media_startup_ready(previous | 1);
+   menu_driver_media_startup_ready(token);
+   ok = menu_driver_media_startup_token() == token && ok;
+   menu_driver_iterate(menu_st, disp_get_ptr(), anim_get_ptr(),
+         config_get_ptr(), MENU_ACTION_CANCEL, cpu_features_get_time_usec());
+   ok = !menu_driver_media_startup_token() && ok;
+   menu_driver_media_startup_ready(token | 1);
+   ok = !menu_driver_media_startup_token() && ok;
+   if (!menu_driver_media_open(path)) return false;
+   previous = menu_driver_media_startup_token();
+   menu_driver_media_startup_ready(token | 1);
+   ok = previous != token && menu_driver_media_startup_token() == previous && ok;
+   menu_driver_media_open(NULL);
+   return ok && !menu_driver_media_startup_token();
+}
+
+static bool media_native_startup_black(unsigned *nonblack)
+{
+   video_driver_state_t *video = video_state_get_ptr();
+   struct video_viewport vp;
+   uint8_t *pixels;
+   size_t count, i;
+   unsigned bpp;
+   bool ok, bottom_up = true;
+   memset(&vp, 0, sizeof(vp));
+   video_driver_get_viewport_info(&vp);
+   count = (size_t)VIDEO_SCALE_W(vp.dims) * VIDEO_SCALE_H(vp.dims);
+   bpp = video->current_video->read_viewport_bgrx ? 4 : 3;
+   if (!count || count > (size_t)-1 / bpp) return false;
+   pixels = (uint8_t*)malloc(count * bpp);
+   if (!pixels) return false;
+   ok = bpp == 4
+      ? video->current_video->read_viewport_bgrx(video->data, pixels, false, &bottom_up)
+      : video->current_video->read_viewport
+         && video->current_video->read_viewport(video->data, pixels, false);
+   if (ok)
+      for (i = 0; i < count; i++)
+         if (pixels[i * bpp] > 2 || pixels[i * bpp + 1] > 2
+               || pixels[i * bpp + 2] > 2)
+         {
+            if (!*nonblack)
+               fprintf(stderr, "startup nonblack pixel %lu: %u,%u,%u\n",
+                     (unsigned long)i, pixels[i * bpp], pixels[i * bpp + 1],
+                     pixels[i * bpp + 2]);
+            *nonblack = 1;
+            break;
+         }
+   free(pixels);
+   if (ok && *nonblack && getenv("MEDIA_TEST_CAPTURE_DIR"))
+   {
+      uint32_t hash;
+      static unsigned capture;
+      media_native_capture_region(&hash, 1000 + capture++, false);
+   }
+   return ok;
+}
+
 static bool media_native_capture(uint32_t *hash, int ordinal)
 {
    return media_native_capture_region(hash, ordinal, false);

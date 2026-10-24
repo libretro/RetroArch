@@ -3212,8 +3212,14 @@ RGUI_NOINLINE static void rgui_media_update(rgui_t *rgui, unsigned dims)
                gfx_thumbnail_cancel_pending_requests();
             gfx_thumbnail_reset(&rgui->media_gpu);
          }
-         else if (!rgui->media_player && !gpu && disp_get_ptr()->dispctx)
-            gfx_thumbnail_request_file(rgui->media_path, &rgui->media_gpu, 0);
+         else if (!rgui->media_player && !gpu)
+         {
+            if (disp_get_ptr()->dispctx)
+               gfx_thumbnail_request_file(rgui->media_path, &rgui->media_gpu, 0);
+            else
+               retro_atomic_store_release_int(&rgui->media_gpu.status,
+                     GFX_THUMBNAIL_STATUS_MISSING);
+         }
       }
    }
    if (rgui->media_gpu.anim_sess)
@@ -3236,8 +3242,14 @@ RGUI_NOINLINE static void rgui_media_update(rgui_t *rgui, unsigned dims)
       {
          gfx_media_cpu_retire(rgui->media_player);
          rgui->media_player = NULL;
-         if (!rgui->fs_thumbnail.is_valid && disp_get_ptr()->dispctx)
-            gfx_thumbnail_request_file(rgui->media_path, &rgui->media_gpu, 0);
+         if (!rgui->fs_thumbnail.is_valid)
+         {
+            if (disp_get_ptr()->dispctx)
+               gfx_thumbnail_request_file(rgui->media_path, &rgui->media_gpu, 0);
+            else
+               retro_atomic_store_release_int(&rgui->media_gpu.status,
+                     GFX_THUMBNAIL_STATUS_MISSING);
+         }
       }
       else if ((rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
             && !(rgui->flags & RGUI_FLAG_SHOW_SCREENSAVER)
@@ -6996,6 +7008,11 @@ static void rgui_render(void *data, unsigned dims,
       }
    }
 
+   if (show_fs_thumbnail && !rgui->thumbnail_queue_size
+         && (rgui->fs_thumbnail.is_valid
+            || (!*rgui->media_requested_path && *rgui->fs_thumbnail.path)
+            || rgui->media_gpu.status == GFX_THUMBNAIL_STATUS_MISSING))
+      menu_driver_media_startup_ready(menu_driver_media_startup_token());
    rgui_media_gpu_cutout(rgui, p_disp->framebuf_dims);
    if (*rgui->msgbox)
    {
@@ -7883,6 +7900,16 @@ static void rgui_set_texture(void *data)
    unsigned internal_upscale_level = settings->uints.menu_rgui_internal_upscale_level;
 #endif
    rgui_t *rgui                    = (rgui_t*)data;
+
+   if (rgui && rgui->frame_buf.data && menu_driver_media_startup_token())
+   {
+      memset(rgui->frame_buf.data, 0,
+            (size_t)VIDEO_SCALE_AREA(p_disp->framebuf_dims) * sizeof(uint16_t));
+      rgui_set_texture_frame(video_st, rgui->frame_buf.data,
+            false, p_disp->framebuf_dims, 1.0f);
+      p_disp->flags |= GFX_DISP_FLAG_FB_DIRTY;
+      return;
+   }
 
    /* Framebuffer is dirty and needs to be updated? */
    if (!rgui || !(p_disp->flags & GFX_DISP_FLAG_FB_DIRTY))
@@ -8998,7 +9025,12 @@ static void rgui_media_gpu_draw(rgui_t *rgui, video_frame_info_t *video_info)
    gfx_media_rect_t *rect = &view->rect;
    unsigned dims = video_info->dims;
    float sx, sy;
+   int startup_token = menu_driver_media_startup_token();
    rgui_media_gpu_consume(rgui);
+   if (startup_token && view->visible && view->texture
+         && view->alpha >= 0.9999f
+         && (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL))
+      menu_driver_media_startup_ready(startup_token);
    if (!view->visible || rect->w <= 0 || rect->h <= 0
          || !VIDEO_SCALE_W(view->source_dims) || !VIDEO_SCALE_H(view->source_dims)) return;
    sx = (float)VIDEO_SCALE_W(dims) / VIDEO_SCALE_W(view->source_dims);

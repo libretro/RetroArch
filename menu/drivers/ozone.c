@@ -8273,6 +8273,17 @@ OZONE_NOINLINE static void ozone_draw_fullscreen_thumbnails(
    static float left_thumbnail_draw_width_prev   = 0.0f;
    static float left_thumbnail_draw_height_prev  = 0.0f;
 
+   int startup_token = menu_driver_media_startup_token();
+
+   if (startup_token
+         && ozone->animations.fullscreen_thumbnail_alpha >= 0.9999f
+         && (ozone->flags2 & OZONE_FLAG2_SHOW_FULLSCREEN_THUMBNAILS)
+         && ((ozone->thumbnails.left.status == GFX_THUMBNAIL_STATUS_AVAILABLE
+               && ozone->thumbnails.left.alpha >= 0.9999f)
+            || (ozone->thumbnails.right.status == GFX_THUMBNAIL_STATUS_AVAILABLE
+               && ozone->thumbnails.right.alpha >= 0.9999f)))
+      menu_driver_media_startup_ready(startup_token);
+
    /* Check whether fullscreen thumbnails are visible */
    if (     (ozone->animations.fullscreen_thumbnail_alpha > 0.0f)
          || (ozone->flags2 & OZONE_FLAG2_WANT_FULLSCREEN_THUMBNAILS))
@@ -10998,6 +11009,7 @@ static void ozone_render(void *data,
       unsigned dims,
       bool is_idle)
 {
+   int startup_token = menu_driver_media_startup_token();
    size_t i;
    /* c.f. https://gcc.gnu.org/bugzilla/show_bug.cgi?id=323
     * On some platforms (e.g. 32-bit x86 without SSE),
@@ -11036,6 +11048,15 @@ static void ozone_render(void *data,
 
    if (!ozone)
       return;
+
+   if (startup_token && ozone->thumbnails.pending == OZONE_PENDING_THUMBNAIL_NONE
+         && (ozone->thumbnails.left.status == GFX_THUMBNAIL_STATUS_MISSING
+            || ozone->thumbnails.right.status == GFX_THUMBNAIL_STATUS_MISSING)
+         && ozone->thumbnails.left.status != GFX_THUMBNAIL_STATUS_PENDING
+         && ozone->thumbnails.right.status != GFX_THUMBNAIL_STATUS_PENDING
+         && ozone->thumbnails.left.status != GFX_THUMBNAIL_STATUS_AVAILABLE
+         && ozone->thumbnails.right.status != GFX_THUMBNAIL_STATUS_AVAILABLE)
+      menu_driver_media_startup_ready(startup_token);
 
    /* The frame path may have detected a system color-theme change;
     * it hands the value here because the main thread owns settings

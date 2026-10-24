@@ -104,6 +104,21 @@ jobs:
         run: make -j2 C89_BUILD=1
       - name: Generate moving VP8 fixture
         run: ffmpeg -v error -y -f lavfi -i "testsrc2=size=320x240:rate=30,hue=h=90*t" -t 3 -c:v libvpx -deadline realtime -cpu-used 8 -g 90 -auto-alt-ref 0 samples/menu/rgui_media/window-toggle.webm
+      - name: External media starts without browser frames and recovers from failure
+        run: |
+          set -eu
+          ffmpeg -v error -y -f lavfi -i color=c=orange:size=32x32 -frames:v 1 -threads 1 samples/menu/rgui_media/startup.png
+          python3 -c "from pathlib import Path; root = Path('samples/menu/rgui_media'); [(root / name).write_bytes(b'not decodable media') for name in ('corrupt.mp4', 'corrupt.png')]"
+          for driver in rgui materialui xmb ozone; do
+            for threaded in '' --threaded; do
+              for fixture in window-toggle.webm startup.png; do
+                xvfb-run -a python3 samples/menu/rgui_media/run.py --c89 --external --first-frame --video-driver gl --driver "$driver" $threaded "samples/menu/rgui_media/$fixture"
+              done
+              for fixture in corrupt.mp4 corrupt.png; do
+                xvfb-run -a python3 samples/menu/rgui_media/run.py --c89 --external --startup-failure --video-driver gl --driver "$driver" $threaded "samples/menu/rgui_media/$fixture"
+              done
+            done
+          done
       - name: Fullscreen window transitions retain movie pixels and seeking
         run: |
           for driver in rgui materialui xmb ozone; do

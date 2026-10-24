@@ -7948,6 +7948,18 @@ MUI_NOINLINE static void materialui_render_fullscreen_thumbnails(materialui_hand
 {
    unsigned video_width  = VIDEO_SCALE_W(video_dims);
    unsigned video_height = VIDEO_SCALE_H(video_dims);
+   int startup_token = menu_driver_media_startup_token();
+   if (startup_token
+         && (mui->flags & MUI_FLAG_SHOW_FULLSCREEN_THUMBNAILS)
+         && mui->fullscreen_thumbnail_alpha >= 0.9999f
+         && mui->browser_thumbnail.status == GFX_THUMBNAIL_STATUS_AVAILABLE
+         && mui->browser_thumbnail.alpha >= 0.9999f)
+      menu_driver_media_startup_ready(startup_token);
+
+   if (startup_token
+         && mui->browser_thumbnail.status == GFX_THUMBNAIL_STATUS_MISSING)
+      menu_driver_media_startup_ready(startup_token);
+
    /* Check whether fullscreen thumbnails are visible */
    if (mui->fullscreen_thumbnail_alpha > 0.0f)
    {

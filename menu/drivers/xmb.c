@@ -7367,6 +7367,7 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
 static void xmb_render(void *data,
       unsigned dims, bool is_idle)
 {
+   int startup_token = menu_driver_media_startup_token();
    size_t i;
    /* c.f. https://gcc.gnu.org/bugzilla/show_bug.cgi?id=323
     * On some platforms (e.g. 32-bit x86 without SSE),
@@ -7396,6 +7397,15 @@ static void xmb_render(void *data,
 
    if (!xmb)
       return;
+
+   if (startup_token && xmb->thumbnails.pending == XMB_PENDING_THUMBNAIL_NONE
+         && (xmb->thumbnails.left.status == GFX_THUMBNAIL_STATUS_MISSING
+            || xmb->thumbnails.right.status == GFX_THUMBNAIL_STATUS_MISSING)
+         && xmb->thumbnails.left.status != GFX_THUMBNAIL_STATUS_PENDING
+         && xmb->thumbnails.right.status != GFX_THUMBNAIL_STATUS_PENDING
+         && xmb->thumbnails.left.status != GFX_THUMBNAIL_STATUS_AVAILABLE
+         && xmb->thumbnails.right.status != GFX_THUMBNAIL_STATUS_AVAILABLE)
+      menu_driver_media_startup_ready(startup_token);
 
    if (xmb->is_file_list && !xmb->show_fullscreen_thumbnails
          && !gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_RIGHT)
@@ -8193,6 +8203,17 @@ XMB_NOINLINE static void xmb_draw_fullscreen_thumbnails(
    static float right_thumbnail_draw_height_prev = 0.0f;
    static float left_thumbnail_draw_width_prev   = 0.0f;
    static float left_thumbnail_draw_height_prev  = 0.0f;
+
+   int startup_token = menu_driver_media_startup_token();
+
+   if (startup_token
+         && xmb->fullscreen_thumbnail_alpha >= 0.9999f
+         && xmb->show_fullscreen_thumbnails
+         && ((xmb->thumbnails.left.status == GFX_THUMBNAIL_STATUS_AVAILABLE
+               && xmb->thumbnails.left.alpha >= 0.9999f)
+            || (xmb->thumbnails.right.status == GFX_THUMBNAIL_STATUS_AVAILABLE
+               && xmb->thumbnails.right.alpha >= 0.9999f)))
+      menu_driver_media_startup_ready(startup_token);
 
    /* Check whether fullscreen thumbnails are visible */
    if (xmb->fullscreen_thumbnail_alpha > 0.0f || xmb->want_fullscreen_thumbnails)

@@ -376,6 +376,9 @@ const menu_ctx_driver_t *menu_ctx_drivers[] = {
 static struct menu_state menu_driver_state = { 0 };
 static char *menu_media_launch_path;
 static bool menu_media_launch_browsing;
+static bool menu_media_launch_activate;
+static unsigned menu_media_launch_serial;
+static retro_atomic_int_t menu_media_startup = RETRO_ATOMIC_INT_INITIALIZER(0);
 
 /* menu_file_list_cbs_t is fixed-size and allocated once per appended
  * entry, so a playlist of any size used to cost one malloc() and one
@@ -4891,6 +4894,19 @@ void menu_driver_frame(bool menu_is_alive, video_frame_info_t *video_info)
       /* Nothing the menu gathered may still be waiting when the frame
        * it belongs to is over */
       gfx_display_flush_batch(p_disp);
+      if (menu_driver_media_startup_token())
+      {
+         static float black[16] = {
+            0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+            0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f
+         };
+         gfx_display_draw_quad(p_disp, video_info->userdata,
+               video_info->dims, 0, 0, video_info->dims,
+               video_info->dims, black, NULL);
+         gfx_display_flush_batch(p_disp);
+         gfx_display_stats_latch(p_disp);
+         return;
+      }
       /* The statistics overlay, on top of the menu when it is not
        * hidden here; drivers only draw it themselves without a menu. */
       if (     video_info->statistics_show
@@ -4907,7 +4923,7 @@ void menu_driver_frame(bool menu_is_alive, video_frame_info_t *video_info)
 void menu_driver_destroy(
       struct menu_state *menu_st)
 {
-   if (!task_content_load_pending())
+   if (!task_content_load_pending() || (menu_driver_media_startup_token() & 1))
       menu_driver_media_open(NULL);
    menu_st->flags &= ~(MENU_ST_FLAG_PENDING_QUICK_MENU
                      | MENU_ST_FLAG_PREVENT_POPULATE
@@ -5178,6 +5194,9 @@ void menu_driver_context_rebuild(void)
 
    if (!menu_st->driver_ctx || !menu_st->userdata)
       return;
+
+   if (menu_driver_media_startup_token() & 1)
+      menu_driver_media_open(NULL);
 
    /* context_reset loads every texture into its slot without looking
     * at what the slot held, so on its own it leaks the set already
@@ -7541,7 +7560,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          }
          break;
       case RARCH_MENU_CTL_DEINIT:
-         if (menu_media_launch_browsing)
+         if (menu_media_launch_browsing || (menu_driver_media_startup_token() & 1))
             menu_driver_media_open(NULL);
          if (     menu_st->driver_ctx
                && menu_st->driver_ctx->context_destroy)
@@ -9053,6 +9072,24 @@ static void menu_driver_pump_pending(struct menu_state *menu_st,
    menu_st->flags &= ~MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
 }
 
+int menu_driver_media_startup_token(void)
+{
+   return retro_atomic_load_acquire_int(&menu_media_startup);
+}
+
+void menu_driver_media_startup_ready(int token)
+{
+   if (token & 1)
+      retro_atomic_cas_int(&menu_media_startup, token, 0);
+}
+
+static void menu_driver_media_launch_clear(void)
+{
+   free(menu_media_launch_path);
+   menu_media_launch_path = NULL;
+   menu_media_launch_browsing = false;
+}
+
 bool menu_driver_media_open(const char *path)
 {
    settings_t *settings = config_get_ptr();
@@ -9062,9 +9099,9 @@ bool menu_driver_media_open(const char *path)
    char *copy;
    if (!path)
    {
-      free(menu_media_launch_path);
-      menu_media_launch_path = NULL;
-      menu_media_launch_browsing = false;
+      menu_driver_media_launch_clear();
+      menu_media_launch_activate = false;
+      retro_atomic_store_release_int(&menu_media_startup, 0);
       return false;
    }
    driver = menu_driver_find_driver(settings, "menu", false);
@@ -9089,7 +9126,11 @@ bool menu_driver_media_open(const char *path)
    }
    free(menu_media_launch_path);
    menu_media_launch_path = copy;
-   menu_media_launch_browsing = false;
+   menu_media_launch_browsing = menu_media_launch_activate = false;
+   menu_media_launch_serial = menu_media_launch_serial >= 0x3fffffffU
+      ? 1 : menu_media_launch_serial + 1;
+   retro_atomic_store_release_int(&menu_media_startup,
+         (int)(menu_media_launch_serial << 1));
    return true;
 }
 
@@ -9098,6 +9139,11 @@ static enum menu_action menu_driver_media_launch(struct menu_state *menu_st,
 {
    file_list_t *list;
    size_t i;
+   if (action != MENU_ACTION_NOOP && menu_driver_media_startup_token())
+   {
+      menu_driver_media_open(NULL);
+      return action;
+   }
    if (!menu_media_launch_path || !menu_st->driver_data
          || !menu_st->entries.list || task_content_load_pending())
       return action;
@@ -9137,7 +9183,8 @@ static enum menu_action menu_driver_media_launch(struct menu_state *menu_st,
          menu_st->selection_ptr = i;
          if (menu_st->driver_ctx->navigation_set)
             menu_st->driver_ctx->navigation_set(menu_st->userdata, true);
-         menu_driver_media_open(NULL);
+         menu_driver_media_launch_clear();
+         menu_media_launch_activate = true;
          return MENU_ACTION_OK;
       }
    menu_driver_media_open(NULL);
@@ -9168,15 +9215,20 @@ bool menu_driver_iterate(
    }
 #endif
 
-   return ( menu_st->driver_data
-         && generic_menu_iterate(
-            menu_st,
-            p_disp,
-            p_anim,
-            settings,
-            menu_st->driver_data,
-            menu_st->userdata, action,
-            current_time) != -1);
+   {
+      bool result = menu_st->driver_data
+         && generic_menu_iterate(menu_st, p_disp, p_anim, settings,
+               menu_st->driver_data, menu_st->userdata, action,
+               current_time) != -1;
+      if (menu_media_launch_activate)
+      {
+         int token = menu_driver_media_startup_token();
+         menu_media_launch_activate = false;
+         if (token)
+            retro_atomic_cas_int(&menu_media_startup, token, token | 1);
+      }
+      return result;
+   }
 }
 
 bool menu_input_dialog_start_search(void)
