@@ -2110,14 +2110,19 @@ ifeq ($(HAVE_SPIRV_CROSS), 1)
 ifneq ($(HAVE_BUILTINSPIRV_CROSS), 0)
    DEFINES += -DHAVE_BUILTINSPIRV_CROSS
    INCLUDE_DIRS += -I$(DEPS_DIR)/SPIRV-Cross
-   OBJ += $(DEPS_DIR)/SPIRV-Cross/spirv_cross.o
-   OBJ += $(DEPS_DIR)/SPIRV-Cross/spirv_cfg.o
-   OBJ += $(DEPS_DIR)/SPIRV-Cross/spirv_glsl.o
-   OBJ += $(DEPS_DIR)/SPIRV-Cross/spirv_hlsl.o
-   OBJ += $(DEPS_DIR)/SPIRV-Cross/spirv_msl.o
-   OBJ += $(DEPS_DIR)/SPIRV-Cross/spirv_parser.o
-   OBJ += $(DEPS_DIR)/SPIRV-Cross/spirv_cross_parsed_ir.o
-   OBJ += $(DEPS_DIR)/SPIRV-Cross/spirv_cross_c.o
+   SPIRV_CROSS_OBJ := \
+      $(DEPS_DIR)/SPIRV-Cross/spirv_cross.o \
+      $(DEPS_DIR)/SPIRV-Cross/spirv_cfg.o \
+      $(DEPS_DIR)/SPIRV-Cross/spirv_glsl.o \
+      $(DEPS_DIR)/SPIRV-Cross/spirv_hlsl.o \
+      $(DEPS_DIR)/SPIRV-Cross/spirv_msl.o \
+      $(DEPS_DIR)/SPIRV-Cross/spirv_parser.o \
+      $(DEPS_DIR)/SPIRV-Cross/spirv_cross_parsed_ir.o \
+      $(DEPS_DIR)/SPIRV-Cross/spirv_cross_c.o
+   OBJ += $(SPIRV_CROSS_OBJ)
+
+   # Hidden, so a core bundling SPIRV-Cross can't bind to this copy.
+   $(addprefix $(OBJDIR)/,$(SPIRV_CROSS_OBJ)): CXXFLAGS += -fvisibility=hidden
    # The C API translation unit compiles its backend wrappers only
    # when these are defined truthy.
    DEFINES += -DSPIRV_CROSS_C_API_GLSL=1
