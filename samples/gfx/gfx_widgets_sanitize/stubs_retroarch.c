@@ -73,6 +73,11 @@
 #include "../../../configuration.h"
 #include "../../../msg_hash.h"
 
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+bool stub_win32_modal_active;
+bool win32_message_modal_active(void) { return stub_win32_modal_active; }
+#endif
+
 /* --- singletons --- */
 static char s_video_state[1 << 16];
 video_driver_state_t *video_state_get_ptr(void)

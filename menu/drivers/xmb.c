@@ -50,6 +50,9 @@
 
 #include "../../gfx/gfx_animation.h"
 #include "../../gfx/gfx_thumbnail.h"
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+#include "../../gfx/common/win32_common.h"
+#endif
 
 #include "../../configuration.h"
 #include "../../content.h"
@@ -7452,6 +7455,14 @@ static void xmb_render(void *data,
    use_ps3_layout                 = xmb_use_ps3_layout(settings->uints.menu_xmb_layout, dims);
    scale_factor                   = xmb_get_scale_factor(settings->floats.menu_scale_factor,
          use_ps3_layout, VIDEO_SCALE_W(dims));
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+   if (xmb->last_scale_factor > 0.0f && win32_message_modal_active())
+   {
+      scale_factor = xmb->last_scale_factor;
+      use_ps3_layout = xmb->last_use_ps3_layout;
+   }
+#endif
+
 
    if (     (use_ps3_layout                       != xmb->last_use_ps3_layout)
          || (xmb->margins_title                   != xmb->last_margins_title)

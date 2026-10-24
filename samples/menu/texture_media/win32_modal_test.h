@@ -16,7 +16,7 @@ typedef struct media_modal_av_probe
    DWORD owner;
    unsigned moves;
    retro_atomic_int_t active, verified, done;
-   bool entered, exited;
+   bool entered, exited, continuous;
 } media_modal_av_probe_t;
 
 static media_modal_av_probe_t media_modal_probe;
@@ -56,8 +56,9 @@ static void media_modal_av_worker(void *data)
             entered_at = cpu_features_get_time_usec();
             probe->entered = true;
          }
-         if (probe->moves < 2 && cpu_features_get_time_usec()
-               >= entered_at + (int64_t)(probe->moves + 1) * 25000)
+         if (!stopping && (probe->continuous || probe->moves < 2)
+               && cpu_features_get_time_usec() >= entered_at
+                  + (int64_t)(probe->moves + 1) * (probe->continuous ? 4000 : 25000))
          {
             probe->moves++;
             if (probe->command == SC_MOVE)
@@ -66,10 +67,16 @@ static void media_modal_av_worker(void *data)
                PostMessage(probe->hwnd, WM_KEYDOWN, VK_DOWN, 0);
             }
             else
-               SetCursorPos(origin.x + (int)probe->moves * 32,
-                     origin.y + (int)probe->moves * 24);
+            {
+               unsigned step = probe->continuous ? probe->moves % 8 : probe->moves;
+               if (probe->continuous && step > 4)
+                  step = 8 - step;
+               SetCursorPos(origin.x + (int)step * (probe->continuous ? 16 : 32),
+                     origin.y + (int)step * (probe->continuous ? 12 : 24));
+            }
          }
-         if (!stopping && retro_atomic_load_acquire_int(&probe->verified))
+         if (!stopping && (!probe->continuous || probe->moves >= 120)
+               && retro_atomic_load_acquire_int(&probe->verified))
          {
             PostMessage(probe->hwnd, WM_KEYDOWN, VK_RETURN, 0);
             stopping = true;
@@ -182,6 +189,7 @@ static bool media_native_modal_playback(struct menu_state *menu_st,
    audio_mixer_voice_t *voice;
    size_t first_frames = 0, frames = 0, first_serial = 0, serial = 0;
    unsigned rate = 0, warmup, live = 0, stable_geometry = 0;
+   int64_t longest_tick = 0, longest_active_tick = 0;
    uint32_t first_hash = 0, last_hash = 0;
    uint64_t first_present = 0, presents = 0;
    int64_t deadline;
@@ -189,6 +197,7 @@ static bool media_native_modal_playback(struct menu_state *menu_st,
    const char *mode = getenv("MEDIA_TEST_MODAL_MODE");
    memset(probe, 0, sizeof(*probe));
    memset(&initial, 0, sizeof(initial));
+   probe->continuous = getenv("MEDIA_TEST_MODAL_CONTINUOUS") != NULL;
    ui_companion_driver_init_first(false, false, false);
    if (!get_target(menu_st, &target)
          || !target.seek(target.user, 0, cpu_features_get_time_usec())
@@ -246,13 +255,24 @@ static bool media_native_modal_playback(struct menu_state *menu_st,
    while (!retro_atomic_load_acquire_int(&probe->done)
          && cpu_features_get_time_usec() < deadline)
    {
+      bool was_active = retro_atomic_load_acquire_int(&probe->active) != 0;
+      int64_t before_tick = cpu_features_get_time_usec();
+      int64_t elapsed;
       if (!media_modal_normal_tick())
       {
          valid = false;
          break;
       }
+      elapsed = cpu_features_get_time_usec() - before_tick;
+      if (elapsed > longest_tick)
+         longest_tick = elapsed;
+      if (was_active && retro_atomic_load_acquire_int(&probe->active)
+            && elapsed > longest_active_tick)
+         longest_active_tick = elapsed;
       if (!retro_atomic_load_acquire_int(&probe->active))
          continue;
+      if (!win32_message_modal_active())
+         valid = false;
       live++;
       if (!get_target(menu_st, &target)
             || !target.state(target.user, cpu_features_get_time_usec(), &current)
@@ -271,23 +291,26 @@ static bool media_native_modal_playback(struct menu_state *menu_st,
          retro_atomic_store_release_int(&probe->verified, 1);
          continue;
       }
-      if (!EqualRect(&live_rect, &sampled_rect))
+      if (!probe->continuous && !EqualRect(&live_rect, &sampled_rect))
       {
          sampled_rect = live_rect;
          stable_geometry = 0;
          sampled = changed = false;
       }
-      if (stable_geometry++ < 5)
+      if (!probe->continuous && stable_geometry++ < 5)
+         continue;
+      if (probe->continuous && sampled && !EqualRect(&live_rect, &sampled_rect))
          continue;
       if (!sampled)
       {
+         sampled_rect = live_rect;
          initial = current;
          first_frames = frames;
          first_serial = serial;
          first_present = presents;
          sampled = media_native_capture_region(&first_hash, -1, true);
       }
-      else if (serial == first_serial && frames - first_frames >= 4096
+      else if (!changed && serial == first_serial && frames - first_frames >= 4096
             && current.position_us >= initial.position_us + 100000)
       {
          changed = media_native_capture_region(&last_hash, -1, true)
@@ -297,6 +320,8 @@ static bool media_native_modal_playback(struct menu_state *menu_st,
       }
    }
    sthread_join(thread);
+   if (win32_message_modal_active())
+      valid = false;
    UnhookWindowsHookEx(hook);
    GetWindowRect(probe->hwnd, &final_rect);
    geometry = mode && !strcmp(mode, "move")
@@ -318,7 +343,10 @@ static bool media_native_modal_playback(struct menu_state *menu_st,
          mode ? mode : "resize", audio_driver_get_ident(), probe->entered,
          probe->exited, live, (unsigned long)(frames - first_frames), rate,
          (unsigned long)(presents - first_present), first_hash, last_hash, valid);
-   return valid && geometry && probe->moves == 2 && probe->entered
+   printf("modal continuous: enabled=%u moves=%u longest_tick_us=%ld active_tick_us=%ld\n",
+         probe->continuous, probe->moves, (long)longest_tick, (long)longest_active_tick);
+   return valid && (probe->continuous || geometry)
+      && (probe->continuous ? probe->moves >= 120 : probe->moves == 2) && probe->entered
       && probe->exited && live >= 2 && changed
       && serial == first_serial && frames - first_frames >= 4096;
 }
@@ -378,6 +406,8 @@ static bool media_native_modal_image(struct menu_state *menu_st,
       }
       if (!retro_atomic_load_acquire_int(&probe->active))
          continue;
+      if (!win32_message_modal_active())
+         valid = false;
       live++;
       if (!GetWindowRect(probe->hwnd, &final_rect))
       {
@@ -407,6 +437,8 @@ static bool media_native_modal_image(struct menu_state *menu_st,
          retro_atomic_store_release_int(&probe->verified, 1);
    }
    sthread_join(thread);
+   if (win32_message_modal_active())
+      valid = false;
    UnhookWindowsHookEx(hook);
    GetWindowRect(probe->hwnd, &final_rect);
    geometry = final_rect.right - final_rect.left != rect.right - rect.left

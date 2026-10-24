@@ -155,6 +155,7 @@ void win32_sizemove_enter(HWND hwnd);
 void win32_sizemove_exit(HWND hwnd);
 bool win32_message_pump(bool (*next)(void));
 bool win32_message_dispatching(void);
+bool win32_message_modal_active(void);
 bool win32_message_paint(HWND hwnd);
 void win32_message_pump_free(void);
 void win32_sizemove_abort(HWND hwnd);

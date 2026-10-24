@@ -808,15 +808,20 @@ uint16_t win32_get_keyboard_mods(void)
 
 #include "win32_pump.h"
 
+static retro_atomic_int_t win32_modal_count = RETRO_ATOMIC_INT_INITIALIZER(0);
+
 #ifndef HAVE_THREADS
+static unsigned win32_modal_depth;
 static win32_pump_t win32_messages;
 static uint8_t win32_sizemove_depth;
 static bool win32_sizemove_stopped_audio;
 #elif defined(_MSC_VER)
+static __declspec(thread) unsigned win32_modal_depth;
 static __declspec(thread) win32_pump_t win32_messages;
 static __declspec(thread) uint8_t win32_sizemove_depth;
 static __declspec(thread) bool win32_sizemove_stopped_audio;
 #else
+static __thread unsigned win32_modal_depth;
 static __thread win32_pump_t win32_messages;
 static __thread uint8_t win32_sizemove_depth;
 static __thread bool win32_sizemove_stopped_audio;
@@ -824,7 +829,11 @@ static __thread bool win32_sizemove_stopped_audio;
 
 void win32_message_pump_free(void)
 {
-   win32_pump_free(&win32_messages);
+   if (win32_pump_free(&win32_messages) && win32_modal_depth)
+   {
+      retro_atomic_fetch_sub_int(&win32_modal_count, (int)win32_modal_depth);
+      win32_modal_depth = 0;
+   }
 }
 
 bool win32_message_pump(bool (*next)(void))
@@ -835,6 +844,11 @@ bool win32_message_pump(bool (*next)(void))
       return false;
 #endif
    return win32_pump_run(&win32_messages, next);
+}
+
+bool win32_message_modal_active(void)
+{
+   return retro_atomic_load_acquire_int(&win32_modal_count) > 0;
 }
 
 bool win32_message_dispatching(void)
@@ -849,6 +863,8 @@ bool win32_message_paint(HWND hwnd)
 
 void win32_sizemove_enter(HWND hwnd)
 {
+   win32_modal_depth++;
+   retro_atomic_fetch_add_int(&win32_modal_count, 1);
    if (win32_pump_enter(&win32_messages, hwnd))
       return;
    if (win32_sizemove_depth++ || video_driver_is_threaded())
@@ -861,6 +877,11 @@ void win32_sizemove_enter(HWND hwnd)
 void win32_sizemove_exit(HWND hwnd)
 {
    (void)hwnd;
+   if (win32_modal_depth)
+   {
+      win32_modal_depth--;
+      retro_atomic_fetch_sub_int(&win32_modal_count, 1);
+   }
    if (win32_messages.depth)
    {
       win32_pump_leave(&win32_messages);
@@ -876,6 +897,12 @@ void win32_sizemove_exit(HWND hwnd)
 
 void win32_sizemove_abort(HWND hwnd)
 {
+   if ((win32_messages.modal_window == hwnd || win32_sizemove_depth)
+         && win32_modal_depth)
+   {
+      retro_atomic_fetch_sub_int(&win32_modal_count, (int)win32_modal_depth);
+      win32_modal_depth = 0;
+   }
    win32_pump_abort(&win32_messages, hwnd);
    win32_sizemove_depth         = 0;
    win32_sizemove_stopped_audio = false;

@@ -17,6 +17,9 @@
 #include <string/stdstring.h>
 
 #include "gfx_display.h"
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+#include "common/win32_common.h"
+#endif
 
 #ifdef HAVE_SDL2
 /* SDL_version.h is needed for the SDL_VERSION_ATLEAST gate on the
@@ -267,6 +270,11 @@ float gfx_display_get_dpi_scale(
 #else /* !HAVE_GFX_WIDGETS */
    float menu_scale_factor                             = settings->floats.menu_scale_factor;
 #endif /* HAVE_GFX_WIDGETS */
+
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+   if (scale_cached && !fullscreen && win32_message_modal_active())
+      dims = last_dims;
+#endif
 
 #ifdef HAVE_GFX_WIDGETS
    if (is_widget)

@@ -317,6 +317,44 @@ static void test_worker_deinit(void)
    video_state_get_ptr()->thread_wrapper_active = false;
 }
 
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+extern bool stub_win32_modal_active;
+
+static void test_modal_scale(void)
+{
+   static video_frame_info_t frame;
+   dispgfx_widget_t *widgets = dispwidget_get_ptr();
+
+   video_state_get_ptr()->thread_wrapper_active = true;
+   CHECK(widgets_up(), "modal widgets initialize");
+   memset(&frame, 0, sizeof(frame));
+   frame.dims                = VIDEO_SCALE_PACK(960, 540);
+   frame.widget_scale_factor = 1.0f;
+   frame.widget_dir_assets   = "/tmp/nonexistent-assets";
+   frame.widget_path_font    = "";
+   frame.menu_ticker_speed   = 1.0f;
+   stub_win32_modal_active   = true;
+   gfx_widgets_worker_step(&frame, "", 0);
+   CHECK(widgets->last_scale_factor == 1.0f,
+         "first modal frame initializes its scale");
+
+   frame.dims                = VIDEO_SCALE_PACK(1280, 720);
+   frame.widget_scale_factor = 1.5f;
+   gfx_widgets_worker_step(&frame, "", 0);
+   CHECK(widgets->last_video_dims == frame.dims,
+         "modal layout follows the window dimensions");
+   CHECK(widgets->last_scale_factor == 1.0f,
+         "modal resize preserves the initialized scale");
+
+   stub_win32_modal_active = false;
+   gfx_widgets_worker_step(&frame, "", 0);
+   CHECK(widgets->last_scale_factor == 1.5f,
+         "modal release applies the final scale");
+   gfx_widgets_deinit(false);
+   video_state_get_ptr()->thread_wrapper_active = false;
+}
+#endif
+
 extern int stub_media_startup_token;
 extern unsigned stub_widget_flushes;
 
@@ -345,6 +383,9 @@ int main(void)
    test_init_deinit_cycles();
    test_icon_draw_size();
    test_worker_deinit();
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+   test_modal_scale();
+#endif
    test_media_startup();
 
    printf("pushes=%d frames=%d\n", pushes, iterations);
