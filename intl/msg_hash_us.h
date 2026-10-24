@@ -31714,6 +31714,10 @@ MSG_HASH( /* The same, when that address is this computer's */
    MENU_ENUM_LABEL_VALUE_PORT_BT_HOST_THIS,
    "- Connects over Bluetooth to: This Computer (%s)"
    )
+MSG_HASH( /* The same, when the controller holds no address: it is paired with no computer */
+   MENU_ENUM_LABEL_VALUE_PORT_BT_HOST_NONE,
+   "- Connects over Bluetooth to: Nothing (not paired)"
+   )
 MSG_HASH( /* Under the same entry: selecting it makes the controller connect to this computer over Bluetooth when it is unplugged */
    MENU_ENUM_LABEL_VALUE_PORT_BT_PAIR,
    "- Pair with This Computer"

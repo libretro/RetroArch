@@ -2995,14 +2995,19 @@ static unsigned menu_displaylist_parse_input_info(file_list_t *list)
          uint8_t pad_host[6];
          if (input_driver_get_bt_host(port, pad_host))
          {
+            static const uint8_t none[6] = { 0 };
             char addr[18];
             bool this_host = host_known && !memcmp(pad_host, host, 6);
             menu_displaylist_bt_addr(addr, sizeof(addr), pad_host);
             snprintf(entry, sizeof(entry), msg_hash_to_str(this_host
                      ? MENU_ENUM_LABEL_VALUE_PORT_BT_HOST_THIS
+                     : !memcmp(pad_host, none, 6)
+                     ? MENU_ENUM_LABEL_VALUE_PORT_BT_HOST_NONE
                      : MENU_ENUM_LABEL_VALUE_PORT_BT_HOST), addr);
+            /* a line of its own: the controller's details are the
+             * port's entry's, not this one's */
             if (menu_entries_append(list, entry, "",
-                  MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
+                  MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
                   MENU_SETTINGS_CORE_INFO_NONE, 0, port, NULL))
                count++;
             if (host_known && !this_host && menu_entries_append(list,
