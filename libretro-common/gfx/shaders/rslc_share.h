@@ -534,6 +534,8 @@ struct rslc_ctx
    uint32_t                version;    /* from #version */
    uint8_t                 err_file;   /* files[] index named in the next error */
    enum rslc_stage         stage;
+   struct rslc_parser     *parser;     /* the front end's, for the remap */
+   enum rslc_remap_result  remap;      /* what opts.remap did */
    bool                    es;         /* #version ... es */
    bool                    failed;
 };
@@ -626,6 +628,18 @@ struct rslc_cval
 bool     rslc_const_eval(struct rslc_ctx *c, uint32_t node, struct rslc_cval *out);
 unsigned rslc_ty_components(const struct rslc_type *t);
 const char *rslc_bfn_name(unsigned id);
+
+/* The frame-rectangle remap (TU 3, opts.remap): run by the front end
+ * on the parsed stage, it sets c->remap and is false only when the
+ * compile fails.  The front end lends it three things: a global
+ * variable bound by name, an unbound copy of a variable, and more
+ * declarations parsed from text at file scope. */
+bool rslc_remap_run(struct rslc_ctx *c);
+struct rslc_var *rslc_front_global(struct rslc_ctx *c, struct rslc_sym *name,
+      const struct rslc_type *type);
+struct rslc_var *rslc_front_var_copy(struct rslc_ctx *c,
+      const struct rslc_var *src);
+bool rslc_front_parse(struct rslc_ctx *c, const char *src, size_t len);
 #define rslc_list_len(c, id)     ((c)->lists[(id)])
 #define rslc_list_item(c, id, i) ((c)->lists[(id) + 1 + (i)])
 
@@ -642,6 +656,10 @@ bool  rslc_emit_text(struct rslc_ctx *c, struct rslc_result *result);
 void     rslc_mark_reach(struct rslc_ctx *c, uint32_t node, uint8_t *reach);
 void     rslc_reach_funcs(struct rslc_ctx *c, uint8_t *reach);
 uint32_t rslc_reflect_len(struct rslc_ctx *c);
+/* Base alignment, size and (array / matrix) stride of a type under
+ * std140 or std430. */
+void rslc_layout_of_type(const struct rslc_type *t, bool std140,
+      uint32_t *align, uint32_t *size, uint32_t *stride);
 uint32_t rslc_layout_field_offset(const struct rslc_type *t, uint32_t field,
       bool std140);
 uint32_t rslc_reflect_write(struct rslc_ctx *c, uint8_t *blob, uint32_t off,

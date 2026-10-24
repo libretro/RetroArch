@@ -191,10 +191,26 @@ struct rslc_blob_hdr
  *
  * The compiler knows nothing of what the samplers mean; it is handed
  * names.  Runs before any backend, so every destination carries the
- * rewrite.  A read the pass cannot keep exact (linear filtering with
- * repeat or mirror, projective or depth sampling) makes the result
- * RSLC_REMAP_UNSUPPORTED and the compile still succeeds unrewritten,
- * which the caller may treat as it likes. */
+ * rewrite: each read becomes a call of a helper that reads the
+ * rectangle as gfx/drivers_shader/slang_rect.c's rewrite of a SPIR-V
+ * module does, operation for operation, and a function the samplers
+ * are passed to is written again for each way they are.  The members
+ * go after what the block holds, at the first multiple of 16 at or
+ * past @offset (a padding member keeps that place), or into a block of
+ * their own, "rarch_rect", when the stage has none; a uniform block at
+ * another set and binding, a block member that is a struct, or a push
+ * block left past RSLC_REMAP_PUSH_LIMIT refuse the stage, as does a
+ * read the pass cannot keep exact (linear filtering with repeat or
+ * mirror, projective sampling, the level queries).  A refused stage,
+ * or one that does not read the samplers, compiles unrewritten and the
+ * result says which, for the caller to treat as it likes.  A build
+ * without the text printers (RSLC_NO_TEXT) refuses every stage. */
+
+/* The largest push block the rewrite may leave (the least any Vulkan
+ * device offers): past it, the caller places the rectangle in the
+ * uniform block. */
+#define RSLC_REMAP_PUSH_LIMIT 128
+
 enum rslc_remap_where
 {
    RSLC_REMAP_PUSH = 0,

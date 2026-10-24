@@ -347,6 +347,33 @@ jobs:
           WINEDEBUG=-all timeout 300 wine ./slang_rect_test.exe
           make clean
 
+      - name: Build and run rslc_remap_test (ASan + UBSan, llvmpipe)
+        shell: bash
+        working-directory: samples/gfx/rslc_remap
+        run: |
+          set -eu
+          # rslc's frame-rectangle remap, which rewrites a stage in the
+          # compiler for every destination: each test shader of
+          # ../slang_rect, sampled each way, comes back as slang_rect.c
+          # says of rslc's own module, prints as GLSL, GLSL ES, HLSL and
+          # MSL, places the rectangle past both stages' blocks, fails
+          # cleanly out of memory; and drawn by Mesa from rslc's GLSL,
+          # every rewritten stage reads the frame bit for bit as the
+          # stage it was reads a texture of its own.
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 \
+             timeout 600 make check CHECK_ARGS=--require-gl
+          make clean
+
+      - name: Build and run rslc_remap_test (mingw-w64, Wine)
+        shell: bash
+        working-directory: samples/gfx/rslc_remap
+        run: |
+          set -eu
+          make clean CC=x86_64-w64-mingw32-gcc && make -j$(nproc) all CC=x86_64-w64-mingw32-gcc LDFLAGS=-static
+          WINEDEBUG=-all timeout 300 wine ./rslc_remap_test.exe
+          make clean
+
   slang-last-pass-target:
     name: Last shader pass renders to the backbuffer
     runs-on: ubuntu-latest

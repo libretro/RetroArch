@@ -5444,6 +5444,68 @@ static bool rslc_p_builtin_var(struct rslc_parser *p, const char *name,
    return rslc_p_bind(p, s, RSLC_DK_VAR, v) != NULL;
 }
 
+/* ---- for the remap (rslc_emit.c) ---- */
+
+#ifndef RSLC_NO_TEXT
+
+struct rslc_var *rslc_front_global(struct rslc_ctx *c, struct rslc_sym *name,
+      const struct rslc_type *type)
+{
+   struct rslc_parser *p = c->parser;
+   struct rslc_var    *v = rslc_p_new_var(p, name, type, 0);
+   if (!v)
+      return NULL;
+   v->global = 1;
+   return rslc_p_bind(p, name, RSLC_DK_VAR, v) ? v : NULL;
+}
+
+struct rslc_var *rslc_front_var_copy(struct rslc_ctx *c, const struct rslc_var *src)
+{
+   struct rslc_prog *pr = &c->prog;
+   struct rslc_var  *v  = (struct rslc_var*)rslc_arena_alloc(c, sizeof(*v));
+   if (!v)
+      return NULL;
+   RSLC_GROW_PTRS(c, pr->vars, pr->nvars, pr->vars_cap, struct rslc_var);
+   memcpy(v, src, sizeof(*v));
+   v->id                 = pr->nvars;
+   pr->vars[pr->nvars++] = v;
+   return v;
+}
+
+/* More declarations at file scope, from @src: in highp whatever the
+ * stage's defaults, with none of its macros, and leaving its #version
+ * as it was. */
+bool rslc_front_parse(struct rslc_ctx *c, const char *src, size_t len)
+{
+   struct rslc_parser *p      = c->parser;
+   uint8_t             prec_f = p->scope->prec_float;
+   uint8_t             prec_i = p->scope->prec_int;
+   uint32_t            ver    = c->version;
+   uint32_t            eof    = c->ntoks - 1;
+   bool                es     = c->es;
+   bool                ok;
+   uint32_t            i;
+
+   for (i = 0; i < c->nsyms; i++)
+      c->syms[i]->macro = NULL;
+   p->scope->prec_float = RSLC_PREC_HIGH;
+   p->scope->prec_int   = RSLC_PREC_HIGH;
+   ok     = rslc_pp_run(c, src, len);
+   p->pos = eof + 1;
+   while (ok && P_TOK(p)->kind != RSLC_TK_EOF)
+   {
+      if (rslc_p_accept(p, RSLC_P_SEMI))
+         continue;
+      ok = rslc_p_declaration(p, true) != 0;
+   }
+   c->version           = ver;
+   c->es                = es;
+   p->scope->prec_float = prec_f;
+   p->scope->prec_int   = prec_i;
+   return ok;
+}
+#endif
+
 /* ---- translation unit ---- */
 
 static bool rslc_p_run(struct rslc_ctx *c)
@@ -5498,7 +5560,16 @@ static bool rslc_p_run(struct rslc_ctx *c)
       rslc_err(c, "main() must return void", NULL, c->prog.main_fn->line);
       return false;
    }
+   if (!c->opts->remap)
+      return true;
+#ifdef RSLC_NO_TEXT
+   /* the remap lives with the printers: the caller rewrites SPIR-V */
+   c->remap = RSLC_REMAP_UNSUPPORTED;
    return true;
+#else
+   c->parser = p;
+   return rslc_remap_run(c);
+#endif
 }
 
 /* ------------------------------------------------------------------ */
@@ -5533,6 +5604,8 @@ bool rslc_compile(const char *glsl, size_t len,
 #endif
    if (ok)
       ok = rslc_emit_dst(&c, result);
+   if (ok)
+      result->remap = c.remap;
 #ifdef RSLC_SPV_TRACE
    fprintf(stderr, "emit: arena used %lu held %lu scratch used %lu held %lu\n",
          (unsigned long)c.arena.used, (unsigned long)c.arena.held,

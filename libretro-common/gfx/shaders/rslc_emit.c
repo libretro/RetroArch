@@ -4574,3 +4574,892 @@ bool rslc_emit_text(struct rslc_ctx *c, struct rslc_result *result)
    }
    return true;
 }
+
+/* ---- frame-rectangle remap (opts.remap) ---- */
+
+/* The stage's reads of the named samplers become calls of helpers
+ * parsed from GLSL this writes for the pass's sampling, which read the
+ * rectangle as gfx/drivers_shader/slang_rect.c's rewrite of a SPIR-V
+ * module does, operation for operation; a function the frame is passed
+ * to is written again for each way it is.  The rectangle's three vec4s
+ * go after what the named block holds (or into a block of their own),
+ * at the first multiple of 16 at or past opts.remap->offset. */
+
+#define RSLC_RM_MAX_SPECS 256
+
+struct rslc_rm_spec
+{
+   uint32_t fid;     /* the function as parsed */
+   uint32_t mask;    /* its parameters that are the frame */
+   uint32_t clone;   /* the function written for it; fid for mask 0 */
+};
+
+struct rslc_rm;
+static uint32_t rslc_rm_helper(struct rslc_rm *r, unsigned bfn, unsigned nargs,
+      const struct rslc_type *sampler);
+
+struct rslc_rm
+{
+   struct rslc_ctx          *c;
+   const struct rslc_remap  *rm;
+   uint8_t                  *frame;     /* by var id: the frame */
+   uint32_t                 *vmap;      /* by var id, while a clone is copied */
+   struct rslc_rm_spec      *specs;
+   uint32_t                  nspecs;
+   uint32_t                  nvars0;    /* vars before cloning */
+   bool                      fail;
+   bool                      touched;
+};
+
+/* Whether a read of the frame, of builtin n->a with @nargs arguments,
+ * has a helper: the builtin's name prefixed and its parameters.  Only
+ * fetches and the size read an integer frame. */
+static bool rslc_rm_supported(const struct rslc_rm *r, const struct rslc_node *n,
+      unsigned nargs, const struct rslc_type *sampler)
+{
+   const struct rslc_remap *rm   = r->rm;
+   const struct rslc_type  *vec4 = rslc_type_basic(r->c, RSLC_TY_VEC,
+         sampler->base, 4, 1);
+   bool lin_ok = !rm->linear
+      || rm->wrap == RSLC_REMAP_WRAP_EDGE || rm->wrap == RSLC_REMAP_WRAP_BORDER;
+   if (     sampler->base != RSLC_BASE_FLOAT
+         && n->a != RSLC_BFN_TEXELFETCH && n->a != RSLC_BFN_TEXELFETCHOFFSET
+         && n->a != RSLC_BFN_TEXTURESIZE)
+      return false;
+   switch (n->a)
+   {
+      case RSLC_BFN_TEXTURE:
+         return (nargs == 2 || nargs == 3) && n->type == vec4 && lin_ok;
+      case RSLC_BFN_TEXTURELOD:
+         return nargs == 3 && n->type == vec4 && lin_ok;
+      case RSLC_BFN_TEXTUREOFFSET:
+         return (nargs == 3 || nargs == 4) && n->type == vec4 && lin_ok;
+      case RSLC_BFN_TEXTURELODOFFSET:
+      case RSLC_BFN_TEXTUREGRAD:
+         return nargs == 4 && n->type == vec4 && lin_ok;
+      case RSLC_BFN_TEXTUREGRADOFFSET:
+         return nargs == 5 && n->type == vec4 && lin_ok;
+      case RSLC_BFN_TEXTUREGATHER:
+         return (nargs == 2 || nargs == 3) && n->type == vec4;
+      case RSLC_BFN_TEXTUREGATHEROFFSET:
+         return (nargs == 3 || nargs == 4) && n->type == vec4;
+      case RSLC_BFN_TEXELFETCH:
+         return nargs == 3 && n->type == vec4;
+      case RSLC_BFN_TEXELFETCHOFFSET:
+         return nargs == 4 && n->type == vec4;
+      case RSLC_BFN_TEXTURESIZE:
+         return nargs == 2;
+      default:
+         break;
+   }
+   return false;
+}
+
+static bool rslc_rm_is_frame(const struct rslc_rm *r, uint32_t node)
+{
+   const struct rslc_node *n = rslc_node_at(r->c, node);
+   return n->op == RSLC_OP_VAR && r->frame[n->a];
+}
+
+/* The spec for @fid called with the frame for @mask, added when new. */
+static struct rslc_rm_spec *rslc_rm_spec(struct rslc_rm *r, uint32_t fid,
+      uint32_t mask)
+{
+   uint32_t i;
+   for (i = 0; i < r->nspecs; i++)
+      if (r->specs[i].fid == fid && r->specs[i].mask == mask)
+         return &r->specs[i];
+   if (r->nspecs >= RSLC_RM_MAX_SPECS)
+   {
+      r->fail = true;
+      return NULL;
+   }
+   r->specs[r->nspecs].fid   = fid;
+   r->specs[r->nspecs].mask  = mask;
+   r->specs[r->nspecs].clone = fid;
+   return &r->specs[r->nspecs++];
+}
+
+/* Which arguments of a call are the frame. */
+static uint32_t rslc_rm_mask(struct rslc_rm *r, const struct rslc_node *n)
+{
+   struct rslc_ctx *c   = r->c;
+   uint32_t         cnt = n->b ? rslc_list_len(c, n->b) : 0;
+   uint32_t         i, mask = 0;
+   for (i = 0; i < cnt; i++)
+      if (rslc_rm_is_frame(r, rslc_list_item(c, n->b, i)))
+      {
+         if (i >= 32)
+            r->fail = true;
+         else
+            mask |= 1u << i;
+      }
+   return mask;
+}
+
+/* Walks @node: with @apply, rewrites the frame's reads and calls;
+ * without, only finds whether it can and what it calls how. */
+static void rslc_rm_walk(struct rslc_rm *r, uint32_t node, bool apply)
+{
+   struct rslc_ctx  *c = r->c;
+   struct rslc_node *n;
+   uint32_t          i, cnt;
+   if (!node || r->fail)
+      return;
+   n = rslc_node_at(c, node);
+   switch (n->op)
+   {
+      case RSLC_OP_CONST:
+         return;
+      case RSLC_OP_VAR:
+         /* the frame anywhere but a read or a call */
+         if (r->frame[n->a])
+            r->fail = true;
+         return;
+      case RSLC_OP_DECL:
+         rslc_rm_walk(r, c->prog.vars[n->a]->init, apply);
+         return;
+      case RSLC_OP_MEMBER: case RSLC_OP_SWIZZLE: case RSLC_OP_CONVERT:
+      case RSLC_OP_EXPR: case RSLC_OP_RETURN: case RSLC_OP_CASE:
+         rslc_rm_walk(r, n->a, apply);
+         return;
+      case RSLC_OP_BUILTIN:
+         cnt = n->b ? rslc_list_len(c, n->b) : 0;
+         if (cnt && rslc_rm_is_frame(r, rslc_list_item(c, n->b, 0)))
+         {
+            const struct rslc_type *st   = rslc_node_at(c,
+                  rslc_list_item(c, n->b, 0))->type;
+            if (!rslc_rm_supported(r, n, cnt, st))
+            {
+               r->fail = true;
+               return;
+            }
+            r->touched = true;
+            for (i = 1; i < cnt; i++)
+               rslc_rm_walk(r, rslc_list_item(c, n->b, i), apply);
+            if (apply)
+            {
+               uint32_t f = rslc_rm_helper(r, n->a, cnt, st);
+               if (!f)
+               {
+                  r->fail = true;
+                  return;
+               }
+               n->op = RSLC_OP_CALL;
+               n->a  = f;
+            }
+            return;
+         }
+         for (i = 0; i < cnt; i++)
+            rslc_rm_walk(r, rslc_list_item(c, n->b, i), apply);
+         return;
+      case RSLC_OP_CALL:
+      {
+         uint32_t             mask = rslc_rm_mask(r, n);
+         uint32_t             nspecs = r->nspecs;
+         struct rslc_rm_spec *s    = rslc_rm_spec(r, n->a, mask);
+         if (!s)
+            return;
+         /* rewriting finds every spec the scan did */
+         if (apply && r->nspecs != nspecs)
+         {
+            r->fail = true;
+            return;
+         }
+         cnt = n->b ? rslc_list_len(c, n->b) : 0;
+         for (i = 0; i < cnt; i++)
+            if (!(mask & (1u << i)))
+               rslc_rm_walk(r, rslc_list_item(c, n->b, i), apply);
+         if (apply)
+            n->a = s->clone;
+         return;
+      }
+      case RSLC_OP_CONSTRUCT: case RSLC_OP_BLOCK: case RSLC_OP_FOR:
+      case RSLC_OP_SWITCH:
+         if (n->op == RSLC_OP_SWITCH)
+            rslc_rm_walk(r, n->a, apply);
+         cnt = n->b ? rslc_list_len(c, n->b) : 0;
+         for (i = 0; i < cnt; i++)
+            rslc_rm_walk(r, rslc_list_item(c, n->b, i), apply);
+         return;
+      default:
+         rslc_rm_walk(r, n->a, apply);
+         rslc_rm_walk(r, n->b, apply);
+         rslc_rm_walk(r, n->c, apply);
+         return;
+   }
+}
+
+/* Every function main reaches, each way the frame is passed to it. */
+static void rslc_rm_scan(struct rslc_rm *r, bool apply)
+{
+   struct rslc_ctx  *c  = r->c;
+   struct rslc_prog *pr = &c->prog;
+   uint32_t          i, k;
+   if (!rslc_rm_spec(r, pr->main_fn->id, 0))
+      return;
+   for (k = 0; k < r->nspecs && !r->fail; k++)
+   {
+      const struct rslc_func *f = pr->funcs[r->specs[k].clone];
+      uint32_t mask = r->specs[k].mask;
+      for (i = 0; i < f->nparams && i < 32; i++)
+         if (mask & (1u << i))
+            r->frame[f->params[i]->id] = 1;
+      rslc_rm_walk(r, f->body, apply);
+      for (i = 0; i < f->nparams && i < 32; i++)
+         if (mask & (1u << i))
+            r->frame[f->params[i]->id] = 0;
+   }
+   for (i = 1; i < pr->nvars && !r->fail; i++)
+      if (pr->vars[i]->global && pr->vars[i]->init)
+         rslc_rm_walk(r, pr->vars[i]->init, apply);
+}
+
+/* ---- cloning ---- */
+
+static struct rslc_var *rslc_rm_var_copy(struct rslc_rm *r, const struct rslc_var *src)
+{
+   struct rslc_var *v = rslc_front_var_copy(r->c, src);
+   if (v && src->id < r->nvars0)
+      r->vmap[src->id] = v->id;
+   return v;
+}
+
+static uint32_t rslc_rm_copy(struct rslc_rm *r, uint32_t node);
+
+static uint32_t rslc_rm_copy_list(struct rslc_rm *r, uint32_t list)
+{
+   struct rslc_ctx *c = r->c;
+   uint32_t         cnt, i, *items, out;
+   struct rslc_mark mark;
+   if (!list)
+      return 0;
+   cnt = rslc_list_len(c, list);
+   rslc_scratch_mark(c, &mark);
+   if (!(items = (uint32_t*)rslc_scratch_alloc(c, (cnt ? cnt : 1) * sizeof(*items))))
+      return 0;
+   for (i = 0; i < cnt; i++)
+   {
+      uint32_t it = rslc_list_item(c, list, i);
+      items[i]    = it ? rslc_rm_copy(r, it) : 0;
+      if (it && !items[i])
+         return 0;
+   }
+   out = rslc_list_new(c, items, cnt);
+   rslc_scratch_release(c, &mark);
+   return out;
+}
+
+/* A copy of the tree at @node with the clone's own variables. */
+static uint32_t rslc_rm_copy(struct rslc_rm *r, uint32_t node)
+{
+   struct rslc_ctx        *c = r->c;
+   const struct rslc_node *n;
+   struct rslc_node        t;
+   uint32_t                id;
+   if (!node || r->fail)
+      return 0;
+   n = rslc_node_at(c, node);
+   t = *n;
+   switch (n->op)
+   {
+      case RSLC_OP_CONST: case RSLC_OP_BREAK: case RSLC_OP_CONTINUE:
+      case RSLC_OP_DISCARD:
+         break;
+      case RSLC_OP_VAR:
+         if (n->a < r->nvars0 && r->vmap[n->a])
+            t.a = r->vmap[n->a];
+         break;
+      case RSLC_OP_DECL:
+      {
+         struct rslc_var *v = rslc_rm_var_copy(r, c->prog.vars[n->a]);
+         if (!v)
+            return 0;
+         if (v->init && !(v->init = rslc_rm_copy(r, v->init)))
+            return 0;
+         t.a = v->id;
+         break;
+      }
+      case RSLC_OP_MEMBER:
+         t.a = rslc_rm_copy(r, n->a);
+         break;
+      case RSLC_OP_CALL: case RSLC_OP_BUILTIN:
+         t.b = rslc_rm_copy_list(r, n->b);
+         break;
+      case RSLC_OP_CONSTRUCT: case RSLC_OP_BLOCK: case RSLC_OP_FOR:
+         t.b = rslc_rm_copy_list(r, n->b);
+         break;
+      case RSLC_OP_SWITCH:
+         t.a = rslc_rm_copy(r, n->a);
+         t.b = rslc_rm_copy_list(r, n->b);
+         break;
+      default:
+         t.a = n->a ? rslc_rm_copy(r, n->a) : 0;
+         t.b = n->b ? rslc_rm_copy(r, n->b) : 0;
+         t.c = n->c ? rslc_rm_copy(r, n->c) : 0;
+         break;
+   }
+   if (c->failed)
+      return 0;
+   if (!(id = rslc_node_new(c, (enum rslc_op)t.op, t.type, t.a, t.b, t.c, t.aux, t.line)))
+      return 0;
+   rslc_node_at(c, id)->prec = t.prec;
+   return id;
+}
+
+/* Function @s->fid written again for spec @s, named apart. */
+static bool rslc_rm_clone(struct rslc_rm *r, struct rslc_rm_spec *s)
+{
+   struct rslc_ctx        *c  = r->c;
+   struct rslc_prog       *pr = &c->prog;
+   const struct rslc_func *src = pr->funcs[s->fid];
+   struct rslc_func       *f;
+   char                    name[96];
+   size_t                  len;
+   uint32_t                i;
+
+   if (!(f = (struct rslc_func*)rslc_arena_zalloc(c, sizeof(*f))))
+      return false;
+   memset(r->vmap, 0, r->nvars0 * sizeof(*r->vmap));
+   len = src->name->len < 64 ? src->name->len : 64;
+   memcpy(name, src->name->str, len);
+   memcpy(name + len, "_rarch_rect", 11);
+   len += 11;
+   {
+      unsigned v = (unsigned)(s - r->specs), d = 100;
+      for (; d; d /= 10)
+         name[len++] = (char)('0' + (v / d) % 10);
+   }
+   if (!(f->name = rslc_sym(c, name, len)))
+      return false;
+   f->ret     = src->ret;
+   f->line    = src->line;
+   f->nparams = src->nparams;
+   if (src->nparams)
+   {
+      if (!(f->params = (struct rslc_var**)rslc_arena_alloc(c,
+                  src->nparams * sizeof(*f->params))))
+         return false;
+      for (i = 0; i < src->nparams; i++)
+         if (!(f->params[i] = rslc_rm_var_copy(r, src->params[i])))
+            return false;
+   }
+   if (!(f->body = rslc_rm_copy(r, src->body)))
+      return false;
+   if (pr->nfuncs == pr->funcs_cap)
+   {
+      uint32_t           ncap = pr->funcs_cap * 2;
+      struct rslc_func **nv   = (struct rslc_func**)rslc_arena_alloc(c, ncap * sizeof(*nv));
+      if (!nv)
+         return false;
+      memcpy(nv, pr->funcs, pr->nfuncs * sizeof(*nv));
+      pr->funcs     = nv;
+      pr->funcs_cap = ncap;
+   }
+   f->id                   = pr->nfuncs;
+   pr->funcs[pr->nfuncs++] = f;
+   s->clone                = f->id;
+   return true;
+}
+
+/* ---- the helpers ---- */
+
+/* The helper parsed for builtin @bfn with @nargs arguments, the first
+ * a @sampler. */
+static uint32_t rslc_rm_helper(struct rslc_rm *r, unsigned bfn, unsigned nargs,
+      const struct rslc_type *sampler)
+{
+   struct rslc_ctx  *c = r->c;
+   const char       *bn = rslc_bfn_name(bfn);
+   char              name[48];
+   size_t            len;
+   struct rslc_sym  *s;
+   uint32_t          i;
+   if (!bn)
+      return 0;
+   len = strlen(bn);
+   if (len > sizeof(name) - 12)
+      return 0;
+   memcpy(name, "rarch_rect_", 11);
+   memcpy(name + 11, bn, len);
+   len += 11;
+   if (!(s = rslc_sym(c, name, len)))
+      return 0;
+   for (i = 1; i < c->prog.nfuncs; i++)
+   {
+      const struct rslc_func *f = c->prog.funcs[i];
+      if (     f->name == s && f->nparams == nargs && f->body
+            && f->params[0]->type == sampler)
+         return f->id;
+   }
+   return 0;
+}
+
+/* @s into @b, "$R", "$C" and "$T" spelled as the rect, clamp and
+ * texels members are named. */
+static bool rslc_rm_text(struct rslc_rm *r, struct rslc_pbuf *b, const char *s)
+{
+   struct rslc_ctx *c = r->c;
+   for (; *s; s++)
+   {
+      if (*s == '$' && (s[1] == 'R' || s[1] == 'C' || s[1] == 'T'))
+      {
+         const char *nm = s[1] == 'R' ? r->rm->rect_name
+            : s[1] == 'C' ? r->rm->clamp_name : r->rm->texels_name;
+         if (!rslc_pbuf_puts(c, b, nm))
+            return false;
+         s++;
+         continue;
+      }
+      if (!rslc_pbuf_putc(c, b, *s))
+         return false;
+   }
+   return true;
+}
+
+/* The nearest texel's helper: with an offset (@off) and for a gather
+ * (@gather), unwrapped. */
+static bool rslc_rm_text_near(struct rslc_rm *r, struct rslc_pbuf *b,
+      bool off, bool gather)
+{
+   enum rslc_remap_wrap w = r->rm->wrap;
+   bool wraps = w == RSLC_REMAP_WRAP_REPEAT || w == RSLC_REMAP_WRAP_MIRROR;
+   bool ok    = rslc_rm_text(r, b, "ivec2 rarch_rect_near")
+      && rslc_rm_text(r, b, off ? "_o" : "")
+      && rslc_rm_text(r, b, gather ? "_g" : "")
+      && rslc_rm_text(r, b, "(vec2 rarch_rect_c, vec2 rarch_rect_z")
+      && rslc_rm_text(r, b, off ? ", ivec2 rarch_rect_o)\n{\n" : ")\n{\n");
+   if (ok && wraps && off)
+      ok = rslc_rm_text(r, b, "rarch_rect_c = rarch_rect_c + vec2(rarch_rect_o) / rarch_rect_z;\n");
+   if (ok && w == RSLC_REMAP_WRAP_REPEAT)
+      ok = rslc_rm_text(r, b, "rarch_rect_c = rarch_rect_c - floor(rarch_rect_c);\n");
+   else if (ok && wraps)
+   {
+      ok = rslc_rm_text(r, b,
+            "vec2 rarch_rect_h = rarch_rect_c * 0.5;\n"
+            "vec2 rarch_rect_f = rarch_rect_h - floor(rarch_rect_h);\n");
+      if (ok && gather)
+         ok = rslc_rm_text(r, b, "rarch_rect_c = rarch_rect_f + rarch_rect_f;\n");
+      else if (ok)
+         ok = rslc_rm_text(r, b,
+               "vec2 rarch_rect_g = 1.0 - rarch_rect_f;\n"
+               "rarch_rect_c = vec2("
+               "rarch_rect_f.x < 0.5 ? rarch_rect_f.x + rarch_rect_f.x : rarch_rect_g.x + rarch_rect_g.x, "
+               "rarch_rect_f.y < 0.5 ? rarch_rect_f.y + rarch_rect_f.y : rarch_rect_g.y + rarch_rect_g.y);\n");
+   }
+   if (ok)
+      ok = rslc_rm_text(r, b, "vec2 rarch_rect_uv = rarch_rect_c * rarch_rect_z;\n");
+   if (ok && gather)
+      ok = rslc_rm_text(r, b, "rarch_rect_uv = rarch_rect_uv - 0.5;\n");
+   if (ok)
+      ok = rslc_rm_text(r, b, "ivec2 rarch_rect_i = ivec2(floor(rarch_rect_uv));\n");
+   if (ok && off && !wraps)
+      ok = rslc_rm_text(r, b, "rarch_rect_i = rarch_rect_i + rarch_rect_o;\n");
+   return ok && rslc_rm_text(r, b, "return rarch_rect_i;\n}\n");
+}
+
+/* Builtin @bn's helper for linear filtering: its parameters after
+ * the coordinate are @params, with an offset (@off) folded into the
+ * coordinate, and the sample is @call at the moved coordinate.  Edge
+ * and border wrap only: linear filtering mixes across the rectangle's
+ * edge with repeat and mirror, which the clamp cannot keep. */
+static bool rslc_rm_text_linear(struct rslc_rm *r, struct rslc_pbuf *b,
+      const char *bn, const char *params, bool off, const char *call)
+{
+   bool border = r->rm->wrap == RSLC_REMAP_WRAP_BORDER;
+   bool ok = rslc_rm_text(r, b, "vec4 rarch_rect_")
+      && rslc_rm_text(r, b, bn)
+      && rslc_rm_text(r, b, "(sampler2D rarch_rect_s, vec2 rarch_rect_c")
+      && rslc_rm_text(r, b, params)
+      && rslc_rm_text(r, b, ")\n{\nvec4 rarch_rect_r = $R;\nvec4 rarch_rect_l = $C;\n");
+   if (ok && off)
+      ok = rslc_rm_text(r, b, "rarch_rect_c = rarch_rect_c + vec2(rarch_rect_o) / $T.xy;\n");
+   if (ok && border)
+      ok = rslc_rm_text(r, b,
+            "vec2 rarch_rect_t = rarch_rect_c * $T.xy - 0.5;\n"
+            "vec2 rarch_rect_lo = clamp(rarch_rect_t + 1.0, 0.0, 1.0);\n"
+            "vec2 rarch_rect_hi = clamp($T.xy - rarch_rect_t, 0.0, 1.0);\n"
+            "vec2 rarch_rect_in = rarch_rect_lo * rarch_rect_hi;\n"
+            "float rarch_rect_inner = rarch_rect_in.x * rarch_rect_in.y;\n");
+   if (ok)
+      ok = rslc_rm_text(r, b,
+            "rarch_rect_c = clamp(rarch_rect_c * rarch_rect_r.xy + rarch_rect_r.zw, "
+            "rarch_rect_l.xy, rarch_rect_l.zw);\nreturn ")
+         && rslc_rm_text(r, b, call)
+         && rslc_rm_text(r, b, border ? " * rarch_rect_inner;\n}\n" : ";\n}\n");
+   return ok;
+}
+
+/* Builtin @bn's helper for nearest filtering: the texel the sampler
+ * picks, fetched; the frame has one level, so a bias, a level or
+ * gradients choose nothing. */
+static bool rslc_rm_text_nearest(struct rslc_rm *r, struct rslc_pbuf *b,
+      const char *bn, const char *params, bool off)
+{
+   return rslc_rm_text(r, b, "vec4 rarch_rect_")
+      && rslc_rm_text(r, b, bn)
+      && rslc_rm_text(r, b, "(sampler2D rarch_rect_s, vec2 rarch_rect_c")
+      && rslc_rm_text(r, b, params)
+      && rslc_rm_text(r, b, ")\n{\nreturn rarch_rect_fetch(rarch_rect_s, rarch_rect_near")
+      && rslc_rm_text(r, b, off ? "_o(rarch_rect_c, $T.xy, rarch_rect_o)"
+            : "(rarch_rect_c, $T.xy)")
+      && rslc_rm_text(r, b, ", ivec2($T.xy), ivec2($T.zw));\n}\n");
+}
+
+static bool rslc_rm_text_gather(struct rslc_rm *r, struct rslc_pbuf *b,
+      bool off, bool comp)
+{
+   static const char *const ends[4] = {
+      "ivec2(rarch_rect_i0.x, rarch_rect_i1.y)", "rarch_rect_i1",
+      "ivec2(rarch_rect_i1.x, rarch_rect_i0.y)", "rarch_rect_i0" };
+   unsigned k;
+   bool ok = rslc_rm_text(r, b, off ? "vec4 rarch_rect_textureGatherOffset"
+            : "vec4 rarch_rect_textureGather")
+      && rslc_rm_text(r, b, "(sampler2D rarch_rect_s, vec2 rarch_rect_c")
+      && rslc_rm_text(r, b, off ? ", ivec2 rarch_rect_o" : "")
+      && rslc_rm_text(r, b, comp ? ", int rarch_rect_k" : "")
+      && rslc_rm_text(r, b, ")\n{\n"
+            "ivec2 rarch_rect_n = ivec2($T.xy);\n"
+            "ivec2 rarch_rect_org = ivec2($T.zw);\n"
+            "ivec2 rarch_rect_i0 = rarch_rect_near")
+      && rslc_rm_text(r, b, off ? "_o_g(rarch_rect_c, $T.xy, rarch_rect_o);\n"
+            : "_g(rarch_rect_c, $T.xy);\n")
+      && rslc_rm_text(r, b, "ivec2 rarch_rect_i1 = rarch_rect_i0 + ivec2(1);\n");
+   for (k = 0; ok && k < 4; k++)
+      ok = rslc_rm_text(r, b, "vec4 rarch_rect_v")
+         && rslc_pbuf_putu(r->c, b, k)
+         && rslc_rm_text(r, b, " = rarch_rect_fetch(rarch_rect_s, ")
+         && rslc_rm_text(r, b, ends[k])
+         && rslc_rm_text(r, b, ", rarch_rect_n, rarch_rect_org);\n");
+   return ok && rslc_rm_text(r, b, comp
+         ? "return vec4(rarch_rect_v0[rarch_rect_k], rarch_rect_v1[rarch_rect_k], "
+           "rarch_rect_v2[rarch_rect_k], rarch_rect_v3[rarch_rect_k]);\n}\n"
+         : "return vec4(rarch_rect_v0[0], rarch_rect_v1[0], "
+           "rarch_rect_v2[0], rarch_rect_v3[0]);\n}\n");
+}
+
+/* The helpers for the pass's sampling, as GLSL. */
+static bool rslc_rm_snippet(struct rslc_rm *r, struct rslc_pbuf *b)
+{
+   enum rslc_remap_wrap w = r->rm->wrap;
+   unsigned i;
+   bool ok = rslc_rm_text(r, b, "#version 450\n");
+
+   /* the texel wrapped into the rectangle: the remainder the float
+    * quotient gives, made exact by two corrections */
+   if (ok && (w == RSLC_REMAP_WRAP_REPEAT || w == RSLC_REMAP_WRAP_MIRROR))
+      ok = rslc_rm_text(r, b,
+            "ivec2 rarch_rect_mod(ivec2 rarch_rect_i, ivec2 rarch_rect_n)\n{\n"
+            "ivec2 rarch_rect_q = ivec2(floor(vec2(rarch_rect_i) / vec2(rarch_rect_n)));\n"
+            "ivec2 rarch_rect_m = rarch_rect_i - rarch_rect_q * rarch_rect_n;\n"
+            "rarch_rect_m = ivec2("
+            "rarch_rect_m.x < 0 ? rarch_rect_m.x + rarch_rect_n.x : rarch_rect_m.x, "
+            "rarch_rect_m.y < 0 ? rarch_rect_m.y + rarch_rect_n.y : rarch_rect_m.y);\n"
+            "return ivec2("
+            "rarch_rect_m.x >= rarch_rect_n.x ? rarch_rect_m.x - rarch_rect_n.x : rarch_rect_m.x, "
+            "rarch_rect_m.y >= rarch_rect_n.y ? rarch_rect_m.y - rarch_rect_n.y : rarch_rect_m.y);\n}\n");
+   if (ok)
+      ok = rslc_rm_text(r, b, "ivec2 rarch_rect_wrap(ivec2 rarch_rect_i, ivec2 rarch_rect_n)\n{\n");
+   if (ok && w == RSLC_REMAP_WRAP_REPEAT)
+      ok = rslc_rm_text(r, b, "return rarch_rect_mod(rarch_rect_i, rarch_rect_n);\n}\n");
+   else if (ok && w == RSLC_REMAP_WRAP_MIRROR)
+      ok = rslc_rm_text(r, b,
+            "ivec2 rarch_rect_n2 = rarch_rect_n + rarch_rect_n;\n"
+            "ivec2 rarch_rect_m = rarch_rect_mod(rarch_rect_i, rarch_rect_n2);\n"
+            "ivec2 rarch_rect_a = rarch_rect_n2 - ivec2(1) - rarch_rect_m;\n"
+            "return ivec2("
+            "rarch_rect_m.x < rarch_rect_n.x ? rarch_rect_m.x : rarch_rect_a.x, "
+            "rarch_rect_m.y < rarch_rect_n.y ? rarch_rect_m.y : rarch_rect_a.y);\n}\n");
+   else if (ok)
+      ok = rslc_rm_text(r, b,
+            "return clamp(rarch_rect_i, ivec2(0), rarch_rect_n - ivec2(1));\n}\n");
+
+   /* a texel of the rectangle, wrapped; border wrap's transparent black
+    * outside it */
+   if (ok)
+      ok = rslc_rm_text(r, b,
+            "vec4 rarch_rect_fetch(sampler2D rarch_rect_s, ivec2 rarch_rect_i, "
+            "ivec2 rarch_rect_n, ivec2 rarch_rect_org)\n{\n");
+   if (ok && w == RSLC_REMAP_WRAP_BORDER)
+      ok = rslc_rm_text(r, b,
+            "bool rarch_rect_in = all(greaterThanEqual(rarch_rect_i, ivec2(0))) "
+            "&& all(lessThan(rarch_rect_i, rarch_rect_n));\n");
+   if (ok)
+      ok = rslc_rm_text(r, b,
+            "vec4 rarch_rect_v = texelFetch(rarch_rect_s, "
+            "rarch_rect_wrap(rarch_rect_i, rarch_rect_n) + rarch_rect_org, 0);\n");
+   if (ok)
+      ok = rslc_rm_text(r, b, w == RSLC_REMAP_WRAP_BORDER
+            ? "return rarch_rect_in ? rarch_rect_v : vec4(0.0);\n}\n"
+            : "return rarch_rect_v;\n}\n");
+
+   ok = ok && rslc_rm_text_near(r, b, false, false)
+      && rslc_rm_text_near(r, b, true, false)
+      && rslc_rm_text_near(r, b, false, true)
+      && rslc_rm_text_near(r, b, true, true);
+
+   /* the samples: linear filtering with repeat or mirror was refused */
+   if (ok && r->rm->linear)
+      ok = rslc_rm_text_linear(r, b, "texture", "", false,
+               "texture(rarch_rect_s, rarch_rect_c)")
+         && rslc_rm_text_linear(r, b, "texture", ", float rarch_rect_b", false,
+               "texture(rarch_rect_s, rarch_rect_c, rarch_rect_b)")
+         && rslc_rm_text_linear(r, b, "textureLod", ", float rarch_rect_b", false,
+               "textureLod(rarch_rect_s, rarch_rect_c, rarch_rect_b)")
+         && rslc_rm_text_linear(r, b, "textureOffset", ", ivec2 rarch_rect_o", true,
+               "texture(rarch_rect_s, rarch_rect_c)")
+         && rslc_rm_text_linear(r, b, "textureOffset",
+               ", ivec2 rarch_rect_o, float rarch_rect_b", true,
+               "texture(rarch_rect_s, rarch_rect_c, rarch_rect_b)")
+         && rslc_rm_text_linear(r, b, "textureLodOffset",
+               ", float rarch_rect_b, ivec2 rarch_rect_o", true,
+               "textureLod(rarch_rect_s, rarch_rect_c, rarch_rect_b)")
+         && rslc_rm_text_linear(r, b, "textureGrad",
+               ", vec2 rarch_rect_dx, vec2 rarch_rect_dy", false,
+               "textureGrad(rarch_rect_s, rarch_rect_c, "
+               "rarch_rect_dx * rarch_rect_r.xy, rarch_rect_dy * rarch_rect_r.xy)")
+         && rslc_rm_text_linear(r, b, "textureGradOffset",
+               ", vec2 rarch_rect_dx, vec2 rarch_rect_dy, ivec2 rarch_rect_o", true,
+               "textureGrad(rarch_rect_s, rarch_rect_c, "
+               "rarch_rect_dx * rarch_rect_r.xy, rarch_rect_dy * rarch_rect_r.xy)");
+   else if (ok)
+      ok = rslc_rm_text_nearest(r, b, "texture", "", false)
+         && rslc_rm_text_nearest(r, b, "texture", ", float rarch_rect_b", false)
+         && rslc_rm_text_nearest(r, b, "textureLod", ", float rarch_rect_b", false)
+         && rslc_rm_text_nearest(r, b, "textureOffset", ", ivec2 rarch_rect_o", true)
+         && rslc_rm_text_nearest(r, b, "textureOffset",
+               ", ivec2 rarch_rect_o, float rarch_rect_b", true)
+         && rslc_rm_text_nearest(r, b, "textureLodOffset",
+               ", float rarch_rect_b, ivec2 rarch_rect_o", true)
+         && rslc_rm_text_nearest(r, b, "textureGrad",
+               ", vec2 rarch_rect_dx, vec2 rarch_rect_dy", false)
+         && rslc_rm_text_nearest(r, b, "textureGradOffset",
+               ", vec2 rarch_rect_dx, vec2 rarch_rect_dy, ivec2 rarch_rect_o", true);
+
+   /* gathers, fetches and the size, whatever the filtering; fetches
+    * and the size of an integer frame too */
+   ok = ok
+      && rslc_rm_text_gather(r, b, false, false)
+      && rslc_rm_text_gather(r, b, false, true)
+      && rslc_rm_text_gather(r, b, true, false)
+      && rslc_rm_text_gather(r, b, true, true);
+   for (i = 0; ok && i < 3; i++)
+   {
+      static const char *const pfx[3] = { "", "i", "u" };
+      ok = rslc_rm_text(r, b, pfx[i])
+         && rslc_rm_text(r, b, "vec4 rarch_rect_texelFetch(")
+         && rslc_rm_text(r, b, pfx[i])
+         && rslc_rm_text(r, b, "sampler2D rarch_rect_s, ivec2 rarch_rect_p, int rarch_rect_b)\n{\n"
+               "return texelFetch(rarch_rect_s, rarch_rect_p + ivec2($T.zw), rarch_rect_b);\n}\n")
+         && rslc_rm_text(r, b, pfx[i])
+         && rslc_rm_text(r, b, "vec4 rarch_rect_texelFetchOffset(")
+         && rslc_rm_text(r, b, pfx[i])
+         && rslc_rm_text(r, b, "sampler2D rarch_rect_s, ivec2 rarch_rect_p, "
+               "int rarch_rect_b, ivec2 rarch_rect_o)\n{\n"
+               "return texelFetch(rarch_rect_s, rarch_rect_p + ivec2($T.zw) + rarch_rect_o, rarch_rect_b);\n}\n"
+               "ivec2 rarch_rect_textureSize(")
+         && rslc_rm_text(r, b, pfx[i])
+         && rslc_rm_text(r, b, "sampler2D rarch_rect_s, int rarch_rect_b)\n{\n"
+               "return ivec2($T.xy);\n}\n");
+   }
+   return ok;
+}
+
+/* ---- the block ---- */
+
+/* Where the block the remap names ends; false for one holding what the
+ * SPIR-V rewrite cannot measure (a struct member) or a uniform block at
+ * another set and binding. */
+static bool rslc_rm_block_end(struct rslc_rm *r, unsigned idx, uint32_t *end)
+{
+   const struct rslc_prog      *pr = &r->c->prog;
+   const struct rslc_blockdecl *b  = &pr->blocks[idx];
+   uint32_t i;
+   *end = 0;
+   if (!pr->has_block[idx])
+      return true;
+   if (     idx == 0
+         && (   (b->set == RSLC_UNSET ? 0 : b->set) != r->rm->set
+             || b->binding != r->rm->binding))
+      return false;
+   for (i = 0; i < b->type->nfields; i++)
+   {
+      const struct rslc_type *t = b->type->fields[i].type;
+      uint32_t a, s, st, off;
+      if (t->kind == RSLC_TY_STRUCT)
+         return false;
+      rslc_layout_of_type(t, b->std140, &a, &s, &st);
+      (void)a;
+      (void)st;
+      off = rslc_layout_field_offset(b->type, i, b->std140);
+      if (off + s > *end)
+         *end = off + s;
+   }
+   return true;
+}
+
+/* The three members, after the block's own at @base, or in a block of
+ * their own; bound by name for the helpers. */
+static bool rslc_rm_block_add(struct rslc_rm *r, unsigned idx, uint32_t end,
+      uint32_t base)
+{
+   struct rslc_ctx       *c   = r->c;
+   struct rslc_prog      *pr  = &c->prog;
+   struct rslc_blockdecl *b   = &pr->blocks[idx];
+   const struct rslc_type *v4 = rslc_type_basic(c, RSLC_TY_VEC, RSLC_BASE_FLOAT, 4, 1);
+   const char *names[3];
+   uint32_t old = pr->has_block[idx] ? b->type->nfields : 0;
+   uint32_t at  = (end + 15) & ~15u;   /* where a vec4 would go */
+   uint32_t pad = (base - at) / 16;
+   uint32_t n   = old + (pad ? 1 : 0) + 3;
+   struct rslc_field *f;
+   struct rslc_type  *st;
+   uint32_t i;
+
+   names[0] = r->rm->rect_name;
+   names[1] = r->rm->clamp_name;
+   names[2] = r->rm->texels_name;
+   if (!v4 || !(f = (struct rslc_field*)rslc_arena_zalloc(c, n * sizeof(*f))))
+      return false;
+   if (old)
+      memcpy(f, b->type->fields, old * sizeof(*f));
+   i = old;
+   if (pad)
+   {
+      f[i].type = pad == 1 ? v4 : rslc_type_array(c, v4, pad);
+      f[i].name = rslc_sym(c, "rarch_rect_pad", 14);
+      if (!f[i].type || !f[i].name)
+         return false;
+      i++;
+   }
+   for (; i < n; i++)
+   {
+      const char *nm = names[i - (n - 3)];
+      f[i].type      = v4;
+      f[i].precision = RSLC_PREC_HIGH;
+      if (!(f[i].name = rslc_sym(c, nm, strlen(nm))))
+         return false;
+   }
+   if (!pr->has_block[idx])
+   {
+      b->instance = rslc_sym(c, "rarch_rect", 10);
+      b->binding  = idx == 0 ? r->rm->binding : RSLC_UNSET;
+      b->set      = idx == 0 ? r->rm->set : RSLC_UNSET;
+      b->line     = 0;
+      b->push     = idx == 1;
+      b->std140   = idx == 0;
+      if (!b->instance)
+         return false;
+   }
+   if (!(st = rslc_type_struct(c, pr->has_block[idx] ? b->type->name
+               : rslc_sym(c, "RARCH_Rect", 10), f, n)))
+      return false;
+   b->type              = st;
+   pr->has_block[idx]   = true;
+   for (i = n - 3; i < n; i++)
+   {
+      struct rslc_var *v = rslc_front_global(c, f[i].name, v4);
+      if (!v)
+         return false;
+      v->storage   = RSLC_ST_MEMBER;
+      v->block     = idx;
+      v->member    = i;
+      v->precision = RSLC_PREC_HIGH;
+   }
+   return true;
+}
+
+bool rslc_remap_run(struct rslc_ctx *c)
+{
+   struct rslc_prog        *pr = &c->prog;
+   const struct rslc_remap *rm = c->opts->remap;
+   struct rslc_rm           r;
+   struct rslc_pbuf         text;
+   unsigned                 idx = rm->where == RSLC_REMAP_UBO ? 0 : 1;
+   uint32_t                 i, k, end, base;
+   bool                     any = false, ok;
+
+   c->remap = RSLC_REMAP_UNSUPPORTED;
+   memset(&r, 0, sizeof(r));
+   r.c  = c;
+   r.rm = rm;
+   if (!(r.frame = (uint8_t*)rslc_arena_zalloc(c, pr->nvars + 1)))
+      return false;
+   for (i = 1; i < pr->nvars; i++)
+   {
+      const struct rslc_var *v = pr->vars[i];
+      if (v->storage != RSLC_ST_SAMPLER || !v->name)
+         continue;
+      for (k = 0; k < rm->sampler_count; k++)
+         if (     strlen(rm->samplers[k]) == v->name->len
+               && !memcmp(rm->samplers[k], v->name->str, v->name->len))
+         {
+            r.frame[i] = 1;
+            any        = true;
+         }
+   }
+   if (!any)
+   {
+      c->remap = RSLC_REMAP_UNCHANGED;
+      return true;
+   }
+   if (!rslc_rm_block_end(&r, idx, &end))
+      return true;
+   base = end > rm->offset ? end : rm->offset;
+   base = (base + 15) & ~15u;
+   if (idx == 1 && base + 48 > RSLC_REMAP_PUSH_LIMIT)
+      return true;
+
+   if (!(r.specs = (struct rslc_rm_spec*)rslc_arena_alloc(c,
+               RSLC_RM_MAX_SPECS * sizeof(*r.specs))))
+      return false;
+   rslc_rm_scan(&r, false);
+   if (c->failed)
+      return false;
+   if (r.fail)
+      return true;
+   if (!r.touched)
+   {
+      c->remap = RSLC_REMAP_UNCHANGED;
+      return true;
+   }
+
+   /* the members, then the helpers parsed after the stage */
+   if (!rslc_rm_block_add(&r, idx, end, base))
+      return false;
+   if (!rslc_pbuf_init(c, &text, 0, 6144))
+      return false;
+   ok = rslc_rm_snippet(&r, &text)
+      && rslc_front_parse(c, (const char*)text.data, text.len);
+   rslc_pbuf_free(c, &text);
+   if (!ok)
+      return false;
+
+   /* the functions the frame is passed to, written again, then every
+    * read rewritten */
+   r.nvars0 = pr->nvars;
+   if (!(r.vmap = (uint32_t*)rslc_arena_alloc(c, (pr->nvars + 1) * sizeof(*r.vmap))))
+      return false;
+   for (k = 0; k < r.nspecs; k++)
+      if (r.specs[k].mask && !rslc_rm_clone(&r, &r.specs[k]))
+         return false;
+   if (!(r.frame = (uint8_t*)rslc_arena_zalloc(c, pr->nvars + 1)))
+      return false;
+   for (i = 1; i < r.nvars0; i++)
+   {
+      const struct rslc_var *v = pr->vars[i];
+      if (v->storage != RSLC_ST_SAMPLER || !v->name)
+         continue;
+      for (k = 0; k < rm->sampler_count; k++)
+         if (     strlen(rm->samplers[k]) == v->name->len
+               && !memcmp(rm->samplers[k], v->name->str, v->name->len))
+            r.frame[i] = 1;
+   }
+   rslc_rm_scan(&r, true);
+   if (!c->failed && r.fail)
+      rslc_err(c, "remap: a read the scan took would not rewrite", NULL, 0);
+   if (c->failed || r.fail)
+      return false;
+   c->remap = RSLC_REMAP_REWRITTEN;
+   return true;
+}
