@@ -7882,7 +7882,13 @@ static void materialui_show_fullscreen_thumbnails(
    animation_entry.userdata     = NULL;
 
    /* Push animation */
-   gfx_animation_push(&animation_entry);
+   if (menu_driver_media_startup_token())
+   {
+      gfx_animation_kill_by_tag(&alpha_tag);
+      mui->fullscreen_thumbnail_alpha = 1.0f;
+   }
+   else
+      gfx_animation_push(&animation_entry);
 
    /* Enable fullscreen thumbnails */
    mui->fullscreen_thumbnail_selection = selection;

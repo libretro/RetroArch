@@ -8252,7 +8252,13 @@ static void ozone_show_fullscreen_thumbnails(ozone_handle_t *ozone)
    animation_entry.userdata     = NULL;
 
    /* Push animation */
-   gfx_animation_push(&animation_entry);
+   if (menu_driver_media_startup_token())
+   {
+      gfx_animation_kill_by_tag(&alpha_tag);
+      ozone->animations.fullscreen_thumbnail_alpha = 1.0f;
+   }
+   else
+      gfx_animation_push(&animation_entry);
 
    /* Enable fullscreen thumbnails */
    ozone->fullscreen_thumbnail_selection = (size_t)ozone->selection;
@@ -11976,7 +11982,8 @@ OZONE_NOINLINE static void ozone_draw_header(
       ticker_smooth.font        = ozone->fonts.title.font;
       ticker_smooth.selected    = true;
       ticker_smooth.field_width = video_width - status_row_size;
-      ticker_smooth.src_str     = (ozone->flags2 & OZONE_FLAG2_WANT_FULLSCREEN_THUMBNAILS)
+      ticker_smooth.src_str     = (ozone->flags2 & (OZONE_FLAG2_WANT_FULLSCREEN_THUMBNAILS
+            | OZONE_FLAG2_SHOW_FULLSCREEN_THUMBNAILS))
             ? ozone->fullscreen_thumbnail_label
             : ozone->title;
       ticker_smooth.dst_str     = title;
@@ -11989,7 +11996,8 @@ OZONE_NOINLINE static void ozone_draw_header(
       ticker.s        = title;
       ticker.s_len    = sizeof(title);
       ticker.len      = video_width - status_row_size / ozone->fonts.title.glyph_width;
-      ticker.str      = (ozone->flags2 & OZONE_FLAG2_WANT_FULLSCREEN_THUMBNAILS)
+      ticker.str      = (ozone->flags2 & (OZONE_FLAG2_WANT_FULLSCREEN_THUMBNAILS
+            | OZONE_FLAG2_SHOW_FULLSCREEN_THUMBNAILS))
             ? ozone->fullscreen_thumbnail_label
             : ozone->title;
       ticker.selected = true;

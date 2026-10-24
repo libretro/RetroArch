@@ -152,6 +152,19 @@ int main(int argc,char **argv)
       }
       if (!getenv("MEDIA_TEST_EXTERNAL"))
          CHECK("image browser request accepted", menu_driver_media_open(argv[1]));
+      if (first_frame)
+      {
+         /* Establish the first readable loading presentation before
+          * pumping tasks that may publish the ready viewer at once. */
+         for (tick = 0; tick < 32; tick++)
+         {
+            render(menu_st);
+            if (media_native_startup_black(&startup_nonblack)) break;
+            retro_sleep(1);
+         }
+         startup_readback = tick < 32;
+         startup_frames++;
+      }
       for (tick = 0; tick < 4000; tick++)
       {
          task_queue_check();
@@ -177,6 +190,8 @@ int main(int argc,char **argv)
          retro_sleep(1);
       }
       CHECK("opened file reaches internal fullscreen view", tick < 4000);
+      CHECK("fullscreen viewer title is the active filename",
+            string_is_equal(viewer->fullscreen_thumbnail_label, path_basename(argv[1])));
       if (first_frame)
       {
          printf("startup presentation: frames=%u nonblack=%u readback=%u\n",

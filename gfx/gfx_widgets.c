@@ -40,6 +40,7 @@
 
 #ifdef HAVE_MENU
 #include "../menu/menu_defines.h"
+#include "../menu/menu_driver.h"
 #endif
 
 #include "../configuration.h"
@@ -2368,6 +2369,10 @@ void gfx_widgets_frame(void *data)
    if (     !retro_atomic_load_acquire_int(&p_dispwidget->worker)
          && p_dispwidget->video_st
          && ((video_driver_state_t*)p_dispwidget->video_st)->thread_wrapper_active)
+      return;
+#endif
+#ifdef HAVE_MENU
+   if (menu_driver_media_startup_token())
       return;
 #endif
    gfx_widgets_frame_state(data);

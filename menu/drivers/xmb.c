@@ -6153,7 +6153,7 @@ static void xmb_show_fullscreen_thumbnails(
          xmb->title_name) == 0)
       xmb->fullscreen_thumbnail_label[0] = '\0';
 
-   if (animate)
+   if (animate && !menu_driver_media_startup_token())
    {
       /* Configure fade in animation */
       animation_entry.easing_enum  = XMB_EASING_ALPHA;

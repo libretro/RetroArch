@@ -192,7 +192,11 @@ void gfx_display_draw(gfx_display_ctx_driver_t *dispctx,
 static gfx_display_t stub_disp;
 gfx_display_t *disp_get_ptr(void) { return &stub_disp; }
 
-void gfx_display_flush_batch(gfx_display_t *p_disp) { (void)p_disp; }
+int stub_media_startup_token;
+unsigned stub_widget_flushes;
+int menu_driver_media_startup_token(void) { return stub_media_startup_token; }
+void gfx_display_flush_batch(gfx_display_t *p_disp)
+{ (void)p_disp; stub_widget_flushes++; }
 
 void gfx_display_blend_begin(gfx_display_ctx_driver_t *dispctx, void *data)
 { (void)dispctx; (void)data; }

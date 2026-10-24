@@ -203,6 +203,7 @@ static gt_blob_t gt_blob;
 void *config_get_ptr(void)        { return &gt_blob; }
 void *disp_get_ptr(void)          { return &gt_blob; }
 void *menu_state_get_ptr(void)    { return &gt_blob; }
+int menu_driver_media_startup_token(void) { return 0; }
 void *runloop_state_get_ptr(void) { return &gt_blob; }
 void *video_state_get_ptr(void)   { return &gt_blob; }
 /* Lane 15 sets these: a content switch and a loaded content */

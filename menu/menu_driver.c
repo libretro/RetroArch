@@ -4900,10 +4900,19 @@ void menu_driver_frame(bool menu_is_alive, video_frame_info_t *video_info)
             0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
             0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f
          };
+         video_driver_state_t *video_st = video_state_get_ptr();
+         /* Menu drivers restore the content viewport before returning.
+          * Cover the entire window, including pillar/letterbox areas. */
+         if (video_st->current_video && video_st->current_video->set_viewport)
+            video_st->current_video->set_viewport(video_st->data,
+                  video_info->dims, true, false);
          gfx_display_draw_quad(p_disp, video_info->userdata,
                video_info->dims, 0, 0, video_info->dims,
                video_info->dims, black, NULL);
          gfx_display_flush_batch(p_disp);
+         if (video_st->current_video && video_st->current_video->set_viewport)
+            video_st->current_video->set_viewport(video_st->data,
+                  video_info->dims, false, true);
          gfx_display_stats_latch(p_disp);
          return;
       }
@@ -9366,7 +9375,8 @@ size_t menu_update_fullscreen_thumbnail_label(
    struct menu_state *menu_st      = &menu_driver_state;
    /* > Get menu entry */
    MENU_ENTRY_INITIALIZE(selected_entry);
-   selected_entry.flags |= MENU_ENTRY_FLAG_LABEL_ENABLED
+   selected_entry.flags |= MENU_ENTRY_FLAG_PATH_ENABLED
+                         | MENU_ENTRY_FLAG_LABEL_ENABLED
                          | MENU_ENTRY_FLAG_RICH_LABEL_ENABLED;
    menu_entry_get(&selected_entry, 0, menu_st->selection_ptr, NULL, true);
    /* > Get entry label */

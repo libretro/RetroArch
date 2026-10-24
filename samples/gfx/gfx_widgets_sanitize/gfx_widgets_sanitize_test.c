@@ -317,6 +317,25 @@ static void test_worker_deinit(void)
    video_state_get_ptr()->thread_wrapper_active = false;
 }
 
+extern int stub_media_startup_token;
+extern unsigned stub_widget_flushes;
+
+static void test_media_startup(void)
+{
+   unsigned before;
+   CHECK(widgets_up(), "startup widgets initialize");
+   before = stub_widget_flushes;
+   stub_media_startup_token = 2;
+   pump(1);
+   stub_media_startup_token = 3;
+   pump(1);
+   CHECK(stub_widget_flushes == before, "startup widgets remain hidden");
+   stub_media_startup_token = 0;
+   pump(1);
+   CHECK(stub_widget_flushes > before, "widgets resume after startup");
+   gfx_widgets_deinit(false);
+}
+
 int main(void)
 {
    task_queue_init(false, NULL);
@@ -326,6 +345,7 @@ int main(void)
    test_init_deinit_cycles();
    test_icon_draw_size();
    test_worker_deinit();
+   test_media_startup();
 
    printf("pushes=%d frames=%d\n", pushes, iterations);
 

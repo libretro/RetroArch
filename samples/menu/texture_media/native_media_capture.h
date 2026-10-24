@@ -92,17 +92,23 @@ static bool media_native_startup_black(unsigned *nonblack)
    size_t count, i;
    unsigned bpp;
    bool ok, bottom_up = true;
+   unsigned dims = video_driver_get_output_dims();
+   bool full_window = getenv("MEDIA_TEST_FULL_WINDOW_CAPTURE") != NULL;
+   if (full_window && video->current_video->set_viewport)
+      video->current_video->set_viewport(video->data, dims, true, false);
    memset(&vp, 0, sizeof(vp));
    video_driver_get_viewport_info(&vp);
    count = (size_t)VIDEO_SCALE_W(vp.dims) * VIDEO_SCALE_H(vp.dims);
    bpp = video->current_video->read_viewport_bgrx ? 4 : 3;
-   if (!count || count > (size_t)-1 / bpp) return false;
+   if (!count || count > (size_t)-1 / bpp) goto failed;
    pixels = (uint8_t*)malloc(count * bpp);
-   if (!pixels) return false;
+   if (!pixels) goto failed;
    ok = bpp == 4
       ? video->current_video->read_viewport_bgrx(video->data, pixels, false, &bottom_up)
       : video->current_video->read_viewport
          && video->current_video->read_viewport(video->data, pixels, false);
+   if (full_window && video->current_video->set_viewport)
+      video->current_video->set_viewport(video->data, dims, false, true);
    if (ok)
       for (i = 0; i < count; i++)
          if (pixels[i * bpp] > 2 || pixels[i * bpp + 1] > 2
@@ -123,6 +129,10 @@ static bool media_native_startup_black(unsigned *nonblack)
       media_native_capture_region(&hash, 1000 + capture++, false);
    }
    return ok;
+failed:
+   if (full_window && video->current_video->set_viewport)
+      video->current_video->set_viewport(video->data, dims, false, true);
+   return false;
 }
 
 static bool media_native_capture(uint32_t *hash, int ordinal)

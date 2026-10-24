@@ -6015,7 +6015,9 @@ static bool gfx_thumbnail_get_label(
 {
    if (!path_data || !label || !*path_data->content_label)
       return false;
-   *label = path_data->content_label;
+   *label = string_is_equal(path_data->content_core_name, "imageviewer")
+      && *path_data->content_path ? path_basename(path_data->content_path)
+      : path_data->content_label;
    return true;
 }
 

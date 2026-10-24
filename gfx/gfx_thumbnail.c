@@ -339,7 +339,11 @@ static void gfx_thumbnail_init_fade(
        || (p_gfx_thumb->fade_missing
        && (GFX_THUMB_STATUS_LOAD(&thumbnail->status) == GFX_THUMBNAIL_STATUS_MISSING)))
    {
-      if (p_gfx_thumb->fade_duration > 0.0f && !runloop_is_content_switching())
+      if (p_gfx_thumb->fade_duration > 0.0f && !runloop_is_content_switching()
+#ifdef HAVE_MENU
+            && !menu_driver_media_startup_token()
+#endif
+            )
       {
          gfx_animation_ctx_entry_t animation_entry;
 
