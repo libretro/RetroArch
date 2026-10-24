@@ -1077,6 +1077,137 @@ static void test_switch2_wake(void)
    winusb_api = saved;
 }
 
+/* ---- the Wii U GameCube adapter on WinUSB ---- */
+
+/* its pipes where the stand-in puts them, to be looked up, not assumed */
+#define GA_IN  0x83
+#define GA_OUT 0x04
+static uint8_t ga_out[8][40];
+static ULONG ga_out_len[8];
+static UCHAR ga_out_pipe[8];
+static int ga_writes;
+static UCHAR ga_read_pipe;
+static bool ga_in_aborted;
+static OVERLAPPED *ga_read_ov;
+
+static BOOL WINAPI ga_iface(void *usb, UCHAR alt, void *d)
+{
+   winusb_interface_desc_t *desc = (winusb_interface_desc_t*)d;
+   memset(desc, 0, sizeof(*desc));
+   desc->bNumEndpoints = 2;
+   return TRUE;
+}
+
+static BOOL WINAPI ga_pipe(void *usb, UCHAR alt, UCHAR i, void *p)
+{
+   winusb_pipe_info_t *pipe = (winusb_pipe_info_t*)p;
+   memset(pipe, 0, sizeof(*pipe));
+   pipe->PipeType          = WINUSB_PIPE_INTERRUPT;
+   pipe->PipeId            = i ? GA_OUT : GA_IN;
+   pipe->MaximumPacketSize = 37;
+   return i < 2;
+}
+
+static BOOL WINAPI ga_write(void *usb, UCHAR pipe, UCHAR *buf, ULONG len,
+      ULONG *got, OVERLAPPED *ov)
+{
+   int i = ga_writes++ & 7;
+   memcpy(ga_out[i], buf, len < 40 ? len : 40);
+   ga_out_len[i]  = len;
+   ga_out_pipe[i] = pipe;
+   SetEvent(ov->hEvent);
+   return TRUE;
+}
+
+/* reads wait until aborted */
+static BOOL WINAPI ga_read(void *usb, UCHAR pipe, UCHAR *buf, ULONG len,
+      ULONG *got, OVERLAPPED *ov)
+{
+   ga_read_pipe = pipe;
+   ga_read_ov   = ov;
+   SetLastError(ERROR_IO_PENDING);
+   return FALSE;
+}
+
+static BOOL WINAPI ga_abort(void *usb, UCHAR pipe)
+{
+   if (pipe == GA_IN)
+      ga_in_aborted = true;
+   if (ga_read_ov && pipe == GA_IN)
+      SetEvent(ga_read_ov->hEvent);
+   return TRUE;
+}
+
+static BOOL WINAPI ga_result(void *usb, OVERLAPPED *ov, ULONG *got, BOOL wait)
+{
+   *got = 0;
+   if (ov == ga_read_ov)
+   {
+      if (wait)
+         WaitForSingleObject(ov->hEvent, INFINITE);
+      SetLastError(ERROR_OPERATION_ABORTED);
+      return FALSE;
+   }
+   return TRUE;
+}
+
+static void test_gc_adapter(const char *path)
+{
+   winusb_api_t saved = winusb_api;
+   winusb_hid_t *hid;
+   int i, setups_before;
+   bool started = false;
+
+   winusb_api.Initialize             = f_initialize;
+   winusb_api.Free                   = f_free;
+   winusb_api.ControlTransfer        = f_control;
+   winusb_api.ReadPipe               = ga_read;
+   winusb_api.WritePipe              = ga_write;
+   winusb_api.AbortPipe              = ga_abort;
+   winusb_api.GetOverlappedResult    = ga_result;
+   winusb_api.QueryInterfaceSettings = ga_iface;
+   winusb_api.QueryPipe              = ga_pipe;
+
+   CHECK(winusb_hid_handled(0x057e, 0x0337),
+         "gc adapter: not taken through WinUSB");
+   CHECK(winusb_hid_handled(0x054c, 0x0268),
+         "gc adapter: the DualShock 3 is no longer taken through WinUSB");
+
+   hid = (winusb_hid_t*)winusb_hid.init();
+   CHECK(hid != NULL, "gc adapter: init failed");
+   if (!hid)
+   {
+      winusb_api = saved;
+      return;
+   }
+   setups_before = n_setups;
+   winusb_hid_open(hid, path, "USB\\VID_057E&PID_0337\\1", 0x057e, 0x0337,
+         false);
+   CHECK(hid->devices != NULL, "gc adapter: not opened");
+   if (hid->devices)
+   {
+      winusb_device_t *dev = hid->devices;
+      CHECK(dev->ep_in == GA_IN && dev->ep_out == GA_OUT,
+            "gc adapter: its interrupt pipes were not the ones it has");
+      /* the start, report 0x13 alone, on the OUT pipe */
+      for (i = 0; i < ga_writes && i < 8; i++)
+         if (ga_out_pipe[i] == GA_OUT && ga_out_len[i] == 1
+               && ga_out[i][0] == 0x13)
+            started = true;
+      CHECK(started, "gc adapter: 0x13 did not go out on its OUT pipe");
+      for (i = setups_before; i < n_setups; i++)
+         CHECK(setups[i & 31].RequestType != 0x21,
+               "gc adapter: output went as SET_REPORT on the control pipe");
+      /* read from its IN pipe, and that read stopped on its way out */
+      for (i = 0; i < 200 && !ga_read_pipe; i++)
+         Sleep(5);
+      CHECK(ga_read_pipe == GA_IN, "gc adapter: not read from its IN pipe");
+   }
+   winusb_hid.free(hid);
+   CHECK(ga_in_aborted, "gc adapter: its read was not stopped at free");
+   winusb_api = saved;
+}
+
 int main(void)
 {
    char path[MAX_PATH], dir[MAX_PATH];
@@ -1227,6 +1358,7 @@ int main(void)
 
    test_hidclass(path);
    test_switch2_wake();
+   test_gc_adapter(path);
 
    CloseHandle(submit_entered);
    CloseHandle(allow_submit);

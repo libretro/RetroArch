@@ -116,7 +116,8 @@ typedef struct
    UCHAR Interval;
 } winusb_pipe_info_t;
 
-#define WINUSB_PIPE_BULK 2
+#define WINUSB_PIPE_BULK      2
+#define WINUSB_PIPE_INTERRUPT 3
 
 /* hid.dll's, and kernel32's reads and writes, for a pad on Windows'
  * HID driver: a test stands in for the device through them. */
@@ -259,6 +260,10 @@ typedef struct winusb_device
    winusb_generic_t gen;
    ULONG in_len;        /* what a read asks for */
    ULONG out_len;       /* an output report's length on this device */
+   /* on WinUSB: the interrupt pipe read, and the one written - 0 where
+    * output goes as SET_REPORT on the control pipe */
+   UCHAR ep_in;
+   UCHAR ep_out;
 
    /* writes, the frontend's: one in flight, the newest waiting behind */
    OVERLAPPED out_ov;
@@ -266,6 +271,7 @@ typedef struct winusb_device
    bool out_failed;     /* a write refused, said once */
    bool out_waiting;
    uint8_t out[2][WINUSB_OUT_MAX];
+   ULONG out_n[2];      /* each one's length, as it goes on WinUSB */
    sthread_t *reader;
    int32_t slot;
    uint16_t vid;
@@ -431,10 +437,12 @@ static bool winusb_api_load(void)
 
 /* The DualShock 3: on WinUSB, and only there. Every other pad is
  * taken on Windows' HID driver. */
+/* Pads read through WinUSB: those Windows' HID driver cannot run */
 static bool winusb_hid_handled(uint16_t vid, uint16_t pid)
 {
    joypad_connection_entry_t *entry = find_connection_entry(vid, pid, "");
-   return entry && entry->iface == &pad_connection_ps3;
+   return entry && (   entry->iface == &pad_connection_ps3
+                    || entry->iface == &pad_connection_wiiugca);
 }
 
 /* A control transfer on the default pipe, waited for: the length moved,
@@ -606,14 +614,14 @@ static void winusb_hid_reader(void *data)
       }
       else
       {
-         ok = winusb_api.ReadPipe(dev->usb, WINUSB_EP_IN, dev->buf[w],
+         ok = winusb_api.ReadPipe(dev->usb, dev->ep_in, dev->buf[w],
                dev->in_len, NULL, &ov);
          if (!ok && GetLastError() == ERROR_IO_PENDING)
          {
             /* Abort only after the reader has submitted its operation. */
             if (WaitForMultipleObjects(2, events, FALSE, INFINITE)
                   != WAIT_OBJECT_0 + 1)
-               winusb_api.AbortPipe(dev->usb, WINUSB_EP_IN);
+               winusb_api.AbortPipe(dev->usb, dev->ep_in);
             ok = winusb_api.GetOverlappedResult(dev->usb, &ov, &got, TRUE);
          }
          else if (ok)
@@ -671,9 +679,18 @@ static void winusb_hid_close(winusb_device_t *dev)
    if (dev->out_busy)
    {
       DWORD n;
+      ULONG got;
       /* the frontend's thread made the write */
-      winusb_hidclass_api.Cancel(dev->file);
-      winusb_hidclass_api.Result(dev->file, &dev->out_ov, &n, TRUE);
+      if (dev->hidclass)
+      {
+         winusb_hidclass_api.Cancel(dev->file);
+         winusb_hidclass_api.Result(dev->file, &dev->out_ov, &n, TRUE);
+      }
+      else
+      {
+         winusb_api.AbortPipe(dev->usb, dev->ep_out);
+         winusb_api.GetOverlappedResult(dev->usb, &dev->out_ov, &got, TRUE);
+      }
    }
    winusb_wgi_unpair(dev->gen.wgi);
    if (dev->gen.pp)
@@ -1106,6 +1123,39 @@ static bool winusb_switch2_bulk_path(winusb_hid_t *hid, const char *instance,
    return found;
 }
 
+/* A pad on WinUSB: its interrupt pipes. The DualShock 3 takes its
+ * output as SET_REPORT on the control pipe, as Sony's driver sends it;
+ * the rest on their interrupt OUT pipe, as libusb sends it. */
+static void winusb_hid_pipes(winusb_device_t *dev, bool control_out)
+{
+   winusb_interface_desc_t desc;
+   UCHAR i;
+
+   dev->ep_in  = WINUSB_EP_IN;
+   dev->ep_out = 0;
+   memset(&desc, 0, sizeof(desc));
+   if (     !winusb_api.QueryInterfaceSettings || !winusb_api.QueryPipe
+         || !winusb_api.QueryInterfaceSettings(dev->usb, 0, &desc))
+      return;
+   for (i = 0; i < desc.bNumEndpoints; i++)
+   {
+      winusb_pipe_info_t pipe;
+      memset(&pipe, 0, sizeof(pipe));
+      if (     !winusb_api.QueryPipe(dev->usb, 0, i, &pipe)
+            || pipe.PipeType != WINUSB_PIPE_INTERRUPT)
+         continue;
+      if (pipe.PipeId & 0x80)
+         dev->ep_in = pipe.PipeId;
+      else if (     !control_out && winusb_api.WritePipe
+               && pipe.MaximumPacketSize
+               && pipe.MaximumPacketSize <= WINUSB_OUT_MAX)
+      {
+         dev->ep_out  = pipe.PipeId;
+         dev->out_len = pipe.MaximumPacketSize;
+      }
+   }
+}
+
 /* That interface opened, and its bulk pipes found, for the reader. */
 static bool winusb_switch2_open(winusb_hid_t *hid, winusb_device_t *dev)
 {
@@ -1240,6 +1290,13 @@ static void winusb_hid_open(winusb_hid_t *hid, const char *path,
       dev->usb = NULL;
       winusb_hid_close(dev);
       return;
+   }
+   if (!hidclass)
+   {
+      winusb_hid_pipes(dev, entry && entry->iface == &pad_connection_ps3);
+      if (     dev->ep_out
+            && !(dev->out_ov.hEvent = CreateEventA(NULL, TRUE, FALSE, NULL)))
+         dev->ep_out = 0;
    }
    /* held by another program, that one woke it */
    if (     hidclass && vid == 0x057e && pid == WINUSB_SWITCH2_PID
@@ -1655,14 +1712,19 @@ static void *winusb_hid_init(void)
 /* Writes to a pad on Windows' HID driver, from the frontend's thread,
  * which never waits on one: a write goes out at once if none is in
  * flight, and otherwise waits behind it, the newest replacing the one
- * waiting, to go at a later poll. Windows wants each output report at
- * the device's length, so it goes padded with noughts. */
+ * waiting, to go at a later poll. Windows' HID driver wants each output
+ * report at the device's length, so it goes padded with noughts; a
+ * WinUSB pad's interrupt pipe takes it at its own. */
 static bool winusb_hidclass_in_flight(winusb_device_t *dev)
 {
    DWORD n;
+   ULONG got;
    if (!dev->out_busy)
       return false;
-   if (     !winusb_hidclass_api.Result(dev->file, &dev->out_ov, &n, FALSE)
+   if (     !(dev->hidclass
+               ? winusb_hidclass_api.Result(dev->file, &dev->out_ov, &n, FALSE)
+               : winusb_api.GetOverlappedResult(dev->usb, &dev->out_ov,
+                  &got, FALSE))
          && GetLastError() == ERROR_IO_INCOMPLETE)
       return true;
    dev->out_busy = false;
@@ -1672,8 +1734,11 @@ static bool winusb_hidclass_in_flight(winusb_device_t *dev)
 static void winusb_hidclass_start_write(winusb_device_t *dev)
 {
    ResetEvent(dev->out_ov.hEvent);
-   if (     winusb_hidclass_api.Write(dev->file, dev->out[0], dev->out_len,
-               NULL, &dev->out_ov)
+   if (     (dev->hidclass
+               ? winusb_hidclass_api.Write(dev->file, dev->out[0],
+                  dev->out_len, NULL, &dev->out_ov)
+               : winusb_api.WritePipe(dev->usb, dev->ep_out, dev->out[0],
+                  dev->out_n[0], NULL, &dev->out_ov))
          || GetLastError() == ERROR_IO_PENDING)
       dev->out_busy = true;
    else if (!dev->out_failed)
@@ -1690,6 +1755,7 @@ static void winusb_hidclass_flush(winusb_device_t *dev)
    if (winusb_hidclass_in_flight(dev))
       return;
    memmove(dev->out[0], dev->out[1], dev->out_len);
+   dev->out_n[0]    = dev->out_n[1];
    dev->out_waiting = false;
    winusb_hidclass_start_write(dev);
 }
@@ -1715,11 +1781,13 @@ static void winusb_hidclass_write(winusb_device_t *dev,
    {
       memcpy(dev->out[1], s, len);
       memset(dev->out[1] + len, 0, dev->out_len - len);
+      dev->out_n[1]    = (ULONG)len;
       dev->out_waiting = true;
       return;
    }
    memcpy(dev->out[0], s, len);
    memset(dev->out[0] + len, 0, dev->out_len - len);
+   dev->out_n[0]    = (ULONG)len;
    dev->out_waiting = false;
    winusb_hidclass_start_write(dev);
 }
@@ -1983,7 +2051,12 @@ static int32_t winusb_hid_get_report(void *handle, uint8_t report_type,
 
 static void winusb_hid_send_control(void *handle, uint8_t *s, size_t len)
 {
-   if (len)
+   winusb_device_t *dev = (winusb_device_t*)handle;
+   if (!len)
+      return;
+   if (dev && !dev->hidclass && dev->ep_out)
+      winusb_hidclass_write(dev, s, len);
+   else
       winusb_hid_set_report(handle, HID_REPORT_OUTPUT, s[0], s, len);
 }
 
