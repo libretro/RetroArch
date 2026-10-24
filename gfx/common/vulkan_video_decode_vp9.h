@@ -61,7 +61,6 @@ static int vvd_vp9_decode(void *dec, const uint8_t *packet, size_t length,
 static bool vvd_vp9_open(void *user, const rvp9_hdr *header,
       unsigned slots, rvp9_hw_ops_t *ops)
 {
-   settings_t *settings = config_get_ptr();
    vvd_dec_t *d;
    VkVideoCapabilitiesKHR caps;
    VkVideoDecodeCapabilitiesKHR decode;
@@ -72,7 +71,6 @@ static bool vvd_vp9_open(void *user, const rvp9_hdr *header,
    memset(ops, 0, sizeof(*ops));
    if (!vvd.up || !header || slots < 10 || slots > VVD_MAX_SLOTS
          || !(vvd.codecs & VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR)
-         || (settings && settings->uints.video_hw_decode == VIDEO_HW_DECODE_OFF)
          || !((header->profile == 0 && header->bit_depth == 8)
             || (header->profile == 2 && header->bit_depth == 10))
          || header->subsampling_x != 1 || header->subsampling_y != 1

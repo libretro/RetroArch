@@ -149,14 +149,12 @@ static int vvd_hevc_decode(void *dec, const rh265_video_params_t *params,
 static bool vvd_hevc_open(void *user, const rh265_video *source,
       const rh265_video_params_t *params, unsigned slots, rh265_hw_ops_t *ops)
 {
-   settings_t *settings = config_get_ptr();
    vvd_dec_t *d;
    VkVideoCapabilitiesKHR caps;
    unsigned lane, gx, gy;
    (void)user;
    if (!vvd.up || !source || !params || !ops || slots > 16
-         || !(vvd.codecs & VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR)
-         || (settings && settings->uints.video_hw_decode == VIDEO_HW_DECODE_OFF)) return false;
+         || !(vvd.codecs & VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR)) return false;
    vvd_grave_reap(false);
    for (lane = 0; lane < vvd.lanes; lane++)
       if (retro_atomic_cas_int(&vvd.lane_busy[lane], 0, 1)) break;

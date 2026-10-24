@@ -115,7 +115,6 @@ static bool vulkan_av1_color(const rav1_sequence_t *sequence)
 static bool vvd_av1_open(void *user, const rav1_sequence_t *sequence,
                          unsigned slots, rav1_hw_ops_t *ops)
 {
-   settings_t *settings = config_get_ptr();
    vulkan_av1_sequence_t mapped;
    vvd_dec_t *d;
    VkVideoCapabilitiesKHR caps;
@@ -130,7 +129,6 @@ static bool vvd_av1_open(void *user, const rav1_sequence_t *sequence,
    memset(ops, 0, sizeof(*ops));
    if (!vvd.up || slots < 9 || slots > VVD_MAX_SLOTS ||
        !(vvd.codecs & VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR) ||
-       (settings && settings->uints.video_hw_decode == VIDEO_HW_DECODE_OFF) ||
        !vulkan_av1_sequence(&mapped, sequence) ||
        sequence->film_grain_params_present ||
        ((sequence->max_width | sequence->max_height) & 1) ||

@@ -1,6 +1,11 @@
 /* Production preview output negotiation and import descriptor. */
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
+#include "configuration.h"
+#include "gfx/gfx_thumbnail.h"
+#include "gfx/gfx_anim_preview.h"
+#include <string/stdstring.h>
 #include "gfx/gfx_surface_player.h"
 static unsigned formats, shown, failures;
 static bool hdr_source, requirements_ok;
@@ -55,7 +60,137 @@ static void abandon(void *owner, uint64_t done, uint64_t value)
    CHECK(owner == &abandoned && done == 88 && value == 7);
    abandoned++;
 }
+/* Constructor dependencies are inert; capture the real sink it publishes. */
+static settings_t policy_settings;
+static bool policy_settings_present;
+static unsigned policy_reads;
+static video_player_sink_t policy_sink;
+settings_t *config_get_ptr(void)
+{
+   policy_reads++;
+   return policy_settings_present ? &policy_settings : NULL;
+}
+video_player_t *video_player_new(void *stream, enum image_type_enum type,
+      int loop_count, const video_player_sink_t *sink, unsigned flags)
+{
+   CHECK(stream == &policy_settings && type == IMAGE_TYPE_MP4);
+   CHECK(loop_count == 1 && flags == VIDEO_PLAYER_INLINE);
+   policy_sink = *sink;
+   return (video_player_t*)&policy_sink;
+}
+static int gfx_surface_player_start(void *user, unsigned w, unsigned h,
+      unsigned slots)
+{
+   (void)user; (void)w; (void)h; (void)slots;
+   return 0;
+}
+static uint32_t *gfx_surface_player_slot_begin(void *user, unsigned slot)
+{
+   (void)user; (void)slot;
+   return NULL;
+}
+static unsigned gfx_surface_player_slot_stride(void *user, unsigned slot)
+{
+   (void)user; (void)slot;
+   return 0;
+}
+static void gfx_surface_player_slot_end(void *user, unsigned slot)
+{
+   (void)user; (void)slot;
+}
+static enum video_player_present gfx_surface_player_present(void *user,
+      const video_player_frame_t *frame)
+{
+   (void)user; (void)frame;
+   return VIDEO_PLAYER_PRESENT_FAILED;
+}
+static bool gfx_surface_player_feed(void *user)
+{
+   (void)user;
+   return false;
+}
+static void gfx_surface_player_decoded(void *user, enum video_player_how how)
+{
+   (void)user; (void)how;
+}
+static unsigned policy_cpu_opens, policy_hw_opens;
+static void gfx_thumbnail_anim_close(gfx_thumbnail_t *thumbnail)
+{
+   (void)thumbnail;
+}
+gfx_anim_preview_t *gfx_anim_preview_open(const char *path, int png_probe)
+{
+   CHECK(!strcmp(path, "policy.mp4") && png_probe == -1);
+   policy_cpu_opens++;
+   return NULL;
+}
+gfx_anim_preview_t *gfx_anim_preview_open_hw(const char *path, int png_probe)
+{
+   CHECK(!strcmp(path, "policy.mp4") && png_probe == -1);
+   policy_hw_opens++;
+   return NULL;
+}
+bool gfx_anim_preview_windowed(const gfx_anim_preview_t *preview)
+{
+   (void)preview;
+   CHECK(false);
+   return false;
+}
+void gfx_anim_preview_release(gfx_anim_preview_t *preview)
+{
+   (void)preview;
+   CHECK(false);
+}
+static bool gfx_thumbnail_anim_install(gfx_thumbnail_t *thumbnail,
+      void *stream, enum image_type_enum type, void *buf, size_t len,
+      struct data_transfer *dt, int windowed, const char *path)
+{
+   (void)thumbnail; (void)stream; (void)type; (void)buf; (void)len;
+   (void)dt; (void)windowed; (void)path;
+   CHECK(false);
+   return false;
+}
 #include "surface.inc"
+static void policy_snapshot(void)
+{
+   gfx_surface_player_cbs_t cb;
+   gfx_thumbnail_t thumbnail;
+   unsigned mode;
+   memset(&cb, 0, sizeof(cb));
+   memset(&thumbnail, 0, sizeof(thumbnail));
+   cb.surface = make_surface;
+   cb.shown = saw;
+   for (mode = 0; mode < 4; mode++)
+   {
+      gfx_surface_player_t *gsp;
+      void *output = &surface;
+      bool enabled = mode == 1 || mode == 3;
+      unsigned flags = VIDEO_PLAYER_INLINE;
+      policy_settings_present = mode != 3;
+      policy_settings.uints.video_hw_decode = (mode == 1 || mode == 2)
+         ? VIDEO_HW_DECODE_AUTO : VIDEO_HW_DECODE_OFF;
+      if (mode != 2)
+         flags |= GFX_SURFACE_PLAYER_GPU;
+      policy_cpu_opens = policy_hw_opens = 0;
+      gfx_thumbnail_anim_open_probed(&thumbnail, "policy.mp4", -1);
+      CHECK(policy_hw_opens == (mode != 0 ? 1u : 0u));
+      CHECK(policy_cpu_opens == (mode == 0 ? 1u : 0u));
+      policy_reads = 0;
+      gsp = gfx_surface_player_new(&policy_settings, IMAGE_TYPE_MP4, 1,
+            &output, &cb, flags);
+      CHECK(gsp != NULL && policy_reads == 1);
+      CHECK((policy_sink.start_hw != NULL) == enabled);
+      /* A changed setting affects the next player, not this sink. Its
+       * native constructor must not query mutable frontend policy. */
+      policy_settings.uints.video_hw_decode = mode == 1
+         ? VIDEO_HW_DECODE_OFF : VIDEO_HW_DECODE_AUTO;
+      if (policy_sink.start_hw)
+         CHECK(policy_sink.start_hw(policy_sink.user, 32, 16, 2) == 0);
+      CHECK((policy_sink.start_hw != NULL) == enabled && policy_reads == 1);
+      free(gsp);
+   }
+}
+
 static void retry_ownership(void)
 {
    static const enum gfx_surface_submit_result results[] = {
@@ -129,6 +264,7 @@ int main(void)
    }
    CHECK(shown == 8);
    retry_ownership();
+   policy_snapshot();
    puts(failures ? "Surface import output: FAIL" : "Surface import output: PASS");
    return failures ? 1 : 0;
 }

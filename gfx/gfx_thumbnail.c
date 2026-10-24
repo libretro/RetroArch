@@ -756,6 +756,9 @@ static void gfx_thumbnail_anim_open_probed(gfx_thumbnail_t *thumbnail,
       const char *path, int png_probe)
 {
    gfx_anim_preview_t *p;
+   settings_t *settings = config_get_ptr();
+   bool hardware = !settings
+      || settings->uints.video_hw_decode != VIDEO_HW_DECODE_OFF;
 
    gfx_thumbnail_anim_close(thumbnail);
 
@@ -766,7 +769,8 @@ static void gfx_thumbnail_anim_open_probed(gfx_thumbnail_t *thumbnail,
     * admission live in gfx_anim_preview (shared with the desktop
     * companions' preview panes). NULL: a still, or not admitted - keep
     * the static thumbnail. */
-   if (!(p = gfx_anim_preview_open_hw(path, png_probe)))
+   if (!(p = hardware ? gfx_anim_preview_open_hw(path, png_probe)
+         : gfx_anim_preview_open(path, png_probe)))
       return;
 
    /* Hand the stream and the mapping to the thumbnail (install borrows

@@ -49,7 +49,6 @@
 #include "vksym.h"
 #include "vulkan_video_planes.h"
 #include "../video_defines.h"
-#include "../../configuration.h"
 #include "../../verbosity.h"
 
 #if defined(_WIN32) && !defined(__WINRT__) \
@@ -948,18 +947,17 @@ static void vvd_lane_release(unsigned lane)
    retro_atomic_store_release_int(&vvd.lane_busy[lane], 0);
 }
 
+/* The player captures application policy before requesting a backend.
+ * Native opens use the renderer capabilities published for this device. */
 static void *vvd_open(void *user, const rh264_hw_sps_t *sps, unsigned slots)
 {
-   settings_t *settings = config_get_ptr();
    VkVideoCapabilitiesKHR caps;
    VkVideoDecodeCapabilitiesKHR dcaps;
    vvd_dec_t *d;
    unsigned lane;
    (void)user;
 
-   if (     !vvd.up || slots > VVD_MAX_SLOTS
-         || (settings && settings->uints.video_hw_decode
-               == VIDEO_HW_DECODE_OFF))
+   if (!vvd.up || slots > VVD_MAX_SLOTS)
       return NULL;
    vvd_grave_reap(false);
    for (lane = 0; lane < vvd.lanes; lane++)

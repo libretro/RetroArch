@@ -18,6 +18,7 @@
 #include "gfx_surface_player.h"
 #include "gfx_instrument.h"
 #include "video_defines.h"
+#include "../configuration.h"
 
 /* An animation's frames are linear scRGB half floats where the source
  * is HDR and the driver offers such a texture (only while the output
@@ -234,13 +235,16 @@ gfx_surface_player_t *gfx_surface_player_new(void *stream,
 {
    video_player_sink_t sink;
    gfx_surface_player_t *gsp;
+   settings_t *settings = config_get_ptr();
+   bool hardware = (flags & GFX_SURFACE_PLAYER_GPU)
+      && (!settings || settings->uints.video_hw_decode != VIDEO_HW_DECODE_OFF);
 
    if (!surface || !cb || !cb->surface || !cb->shown)
       return NULL;
    if (!(gsp = (gfx_surface_player_t*)calloc(1, sizeof(*gsp))))
       return NULL;
-   sink.start_hw   = (flags & GFX_SURFACE_PLAYER_GPU)
-      ? gfx_surface_player_start_hw : NULL;
+   /* Snapshot policy on the polling owner, before any decoder work. */
+   sink.start_hw   = hardware ? gfx_surface_player_start_hw : NULL;
    flags          &= ~GFX_SURFACE_PLAYER_GPU;
    gsp->stream     = stream;
    gsp->type       = type;

@@ -10,21 +10,21 @@ def body(source, signature):
     return source[start:source.index('\n}', start) + 2]
 with tempfile.TemporaryDirectory() as directory:
     tmp = Path(directory)
-    source = (root / 'gfx/video_driver.c').read_text()
+    source = (root / 'gfx/video_driver.c').read_text(encoding='utf-8')
     (tmp / 'front.inc').write_text('\n'.join(body(source, s) for s in
         ('bool video_driver_movie_refresh(', 'void video_driver_movie_clear(')))
-    source = (root / 'gfx/video_thread_wrapper.c').read_text()
+    source = (root / 'gfx/video_thread_wrapper.c').read_text(encoding='utf-8')
     (tmp / 'wrapper.inc').write_text('\n'.join(body(source, sig) for sig in
         ('bool video_thread_movie_supported(',
          'static enum video_texture_update thread_import_movie_frame(')))
     for api in ('d3d11', 'd3d12', 'vulkan'):
-        source = (root / 'gfx/drivers' / (api + '.c')).read_text()
+        source = (root / 'gfx/drivers' / (api + '.c')).read_text(encoding='utf-8')
         (tmp / (api + '.inc')).write_text('\n'.join(body(source, s) for s in
             ('static enum video_texture_update ' + api + '_import_movie_frame(void *data,',
              'static const void *' + api + '_movie_prepare(')))
-    with (tmp / 'vulkan.inc').open('a') as output:
+    with (tmp / 'vulkan.inc').open('a', encoding='utf-8') as output:
         output.write('\n' + body(source, 'static void vulkan_movie_input('))
-    source = (root / 'gfx/video_driver.h').read_text()
+    source = (root / 'gfx/video_driver.h').read_text(encoding='utf-8')
     start = source.index('typedef struct video_frame_import\n')
     (tmp / 'frame.inc').write_text(source[start:source.index('} video_frame_import_t;', start) + len('} video_frame_import_t;')])
     cc = shlex.split(os.environ.get('CC', 'cc'))
@@ -41,11 +41,15 @@ with tempfile.TemporaryDirectory() as directory:
 
 with tempfile.TemporaryDirectory() as directory:
     tmp = Path(directory)
-    source = (root / 'gfx/gfx_surface_player.c').read_text()
+    source = (root / 'gfx/gfx_surface_player.c').read_text(encoding='utf-8')
     (tmp / 'surface.inc').write_text('\n'.join(body(source, s) for s in
         ('static int gfx_surface_player_start_hw(',
          'static enum video_player_present gfx_surface_player_present_hw(',
-         'bool gfx_surface_player_release(')))
+         'bool gfx_surface_player_release(',
+         'gfx_surface_player_t *gfx_surface_player_new(')))
+    with (tmp / 'surface.inc').open('a', encoding='utf-8') as output:
+        output.write('\n' + body((root / 'gfx/gfx_thumbnail.c').read_text(encoding='utf-8'),
+            'static void gfx_thumbnail_anim_open_probed('))
     exe = tmp / ('surface.exe' if 'mingw' in cc[0] or os.name == 'nt' else 'surface')
     subprocess.run(cc + flags + ['-I' + str(tmp), '-I' + str(root),
         '-I' + str(root / 'libretro-common/include'),

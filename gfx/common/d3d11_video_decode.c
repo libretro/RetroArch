@@ -64,7 +64,6 @@
 #include "dxva_av1.h"
 #endif
 #include "../video_defines.h"
-#include "../../configuration.h"
 #include "../../verbosity.h"
 
 #define D3D11VD_MAX_SLOTS  32
@@ -514,17 +513,16 @@ end:
    return ok;
 }
 
+/* The player captures application policy before requesting a backend.
+ * Native opens use the renderer capabilities published for this device. */
 static void *d3d11vd_open(void *user, const rh264_hw_sps_t *sps,
       unsigned slots)
 {
-   settings_t *settings = config_get_ptr();
    unsigned min_targets = 0;
    d3d11vd_dec_t *d;
    (void)user;
 
-   if (     !d3d11vd.up || slots > D3D11VD_MAX_SLOTS
-         || (settings && settings->uints.video_hw_decode
-               == VIDEO_HW_DECODE_OFF))
+   if (!d3d11vd.up || slots > D3D11VD_MAX_SLOTS)
       return NULL;
    d3d11vd_grave_reap(false);
    if (!(d = (d3d11vd_dec_t*)calloc(1, sizeof(*d))))
@@ -933,7 +931,6 @@ static void d3d11vd_close(void *dec)
 bool d3d11_video_decode_hevc_open(const rh265_video_params_t *params,
       unsigned slots, rh265_hw_ops_t *ops)
 {
-   settings_t *settings = config_get_ptr();
    dxva_hevc_picture_t picture;
    d3d11vd_dec_t *d;
    unsigned min_targets = 0;
@@ -954,8 +951,7 @@ bool d3d11_video_decode_hevc_open(const rh265_video_params_t *params,
          || params->crop_bottom >= params->height - params->crop_top
          || ((params->width | params->height | params->crop_left
                | params->crop_right | params->crop_top | params->crop_bottom) & 1)
-         || !dxva_hevc_params_from_rh265(&picture, params)
-         || (settings && settings->uints.video_hw_decode == VIDEO_HW_DECODE_OFF))
+         || !dxva_hevc_params_from_rh265(&picture, params))
       return false;
    d3d11vd_grave_reap(false);
    if (!(d = (d3d11vd_dec_t*)calloc(1, sizeof(*d))))
@@ -1058,7 +1054,6 @@ static int d3d11vd_vp9_decode(void *dec, const uint8_t *packet, size_t size,
 bool d3d11_video_decode_vp9_open(const rvp9_hdr *header,
       unsigned slots, rvp9_hw_ops_t *ops)
 {
-   settings_t *settings = config_get_ptr();
    rvp9_hw_picture_t picture;
    d3d11vd_dec_t *d;
    uint8_t pp[DXVA_VP9_PP_SIZE];
@@ -1069,8 +1064,7 @@ bool d3d11_video_decode_vp9_open(const rvp9_hdr *header,
          || slots < 10 || slots > D3D11VD_MAX_SLOTS
          || header->w <= 0 || header->h <= 0 || ((header->w | header->h) & 1)
          || header->color_space < 0 || (header->color_space > 3 && header->color_space != 5)
-         || !(d3d11vd.import_formats & (header->bit_depth == 10 ? IMAGE_PIXFMT_P010 : IMAGE_PIXFMT_NV12))
-         || (settings && settings->uints.video_hw_decode == VIDEO_HW_DECODE_OFF)) return false;
+         || !(d3d11vd.import_formats & (header->bit_depth == 10 ? IMAGE_PIXFMT_P010 : IMAGE_PIXFMT_NV12))) return false;
    memset(&picture, 0, sizeof(picture));
    picture.header = *header; picture.previous_slot = -1;
    for (i = 0; i < RVP9_REF_FRAMES; i++) picture.reference_slots[i] = -1;
@@ -1184,7 +1178,6 @@ static bool d3d11vd_av1_color(const rav1_sequence_t *sequence)
 bool d3d11_video_decode_av1_open(const rav1_sequence_t *sequence,
       unsigned slots, rav1_hw_ops_t *ops)
 {
-   settings_t *settings = config_get_ptr();
    d3d11vd_dec_t *d;
    unsigned min_targets = 0;
    if (!ops) return false;
@@ -1192,8 +1185,7 @@ bool d3d11_video_decode_av1_open(const rav1_sequence_t *sequence,
    if (!d3d11vd.up || !dxva_av1_sequence(sequence) || slots < 9 || slots > D3D11VD_MAX_SLOTS ||
        sequence->film_grain_params_present || ((sequence->max_width | sequence->max_height) & 1) ||
        !d3d11vd_av1_color(sequence) ||
-       !(d3d11vd.import_formats & (sequence->bit_depth == 10 ? IMAGE_PIXFMT_P010 : IMAGE_PIXFMT_NV12)) ||
-       (settings && settings->uints.video_hw_decode == VIDEO_HW_DECODE_OFF))
+       !(d3d11vd.import_formats & (sequence->bit_depth == 10 ? IMAGE_PIXFMT_P010 : IMAGE_PIXFMT_NV12)))
       return false;
    d3d11vd_grave_reap(false);
    if (!(d = (d3d11vd_dec_t*)calloc(1, sizeof(*d)))) return false;
