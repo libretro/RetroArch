@@ -707,6 +707,16 @@ static enum video_player_state vp_poll_threaded(video_player_t *p,
          p->sink.slot_end(p->sink.user, p->upload ^ 1);
    }
 
+   /* Both presentations may retain their slots until a later poll.
+    * Once both releases arrive there is no READY sibling to trigger
+    * decode-ahead, so restart the next upload job explicitly. */
+   if (su == VP_JOB_IDLE && so == VP_JOB_IDLE)
+   {
+      ju->loops_left = p->loops_left;
+      vp_job_start(p, ju);
+      return VIDEO_PLAYER_PLAYING;
+   }
+
    /* decode-ahead: the due job holds its frame, its sibling is free */
    if (su == VP_JOB_READY && so == VP_JOB_IDLE)
    {

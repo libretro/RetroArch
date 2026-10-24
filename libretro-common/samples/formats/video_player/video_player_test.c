@@ -1213,6 +1213,45 @@ static void lane_movie_stop(bool threaded)
          "movie stop: future hardware leases returned once");
 }
 
+#ifdef HAVE_THREADS
+static void lane_delayed_slot_releases(void)
+{
+   fake_t f;
+   sink_t k;
+   video_player_sink_t sink;
+   video_player_t *player;
+   unsigned tick;
+   fake_init(&f, 8, 10);
+   sink_init(&k, &sink, true);
+   k.queue_every = 1;
+   player = video_player_new(&f, IMAGE_TYPE_WEBM, 1, &sink, 0);
+   CHECK(player != NULL, "delayed release: allocation");
+   if (!player) return;
+   for (tick = 0; tick < 1000 && k.nseen < 2; tick++)
+   {
+      video_player_poll(player, (int64_t)tick * 10000);
+      retro_sleep(1);
+   }
+   CHECK(k.nseen == 2, "delayed release: both slots retained");
+   k.held = -1;
+   video_player_slot_released(player, 0);
+   video_player_slot_released(player, 1);
+   for (; tick < 2000 && k.nseen < 4; tick++)
+   {
+      video_player_poll(player, (int64_t)tick * 10000);
+      retro_sleep(1);
+   }
+   CHECK(k.nseen == 4 && !k.bad_px,
+         "delayed release: decoding resumes after both releases");
+   k.held = -1;
+   video_player_slot_released(player, 0);
+   video_player_slot_released(player, 1);
+   while (!video_player_stop(player)) retro_sleep(1);
+   video_player_free(player);
+   video_player_worker_deinit();
+}
+#endif
+
 int main(void)
 {
    lane_movie_stop(false);
@@ -1245,6 +1284,7 @@ int main(void)
    lane_fp16();
    lane_hw_inline();
 #ifdef HAVE_THREADS
+   lane_delayed_slot_releases();
    lane_hw_threaded();
    lane_threaded(true);
    lane_threaded(false);
