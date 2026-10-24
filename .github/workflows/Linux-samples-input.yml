@@ -480,6 +480,7 @@ jobs:
         shell: bash
         run: |
           set -eu
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           make -C samples/input/hotkey_menu clean check SANITIZER=address,undefined
           make -C samples/input/hotkey_menu clean check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
           make -C samples/input/hotkey_menu clean
@@ -488,6 +489,7 @@ jobs:
         shell: bash
         run: |
           set -eu
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           # A core's pointer read where the input driver has a second
           # list (Android's second display): its fingers go after the
           # overlay's, after none while the overlay blocks the pointer,
@@ -502,6 +504,7 @@ jobs:
         shell: bash
         run: |
           set -eu
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           # RetroArch's focus on Android from its two windows, the
           # Activity's and the second display's, through the sequences
           # the AYN Thor's focus modes and a one-focus system produce.
@@ -513,6 +516,7 @@ jobs:
         shell: bash
         run: |
           set -eu
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           # The second display's surface going: surfaceDestroyed never
           # waits for the renderer, and the next poll lets it go.
           make -C samples/frontend/android_second_surface clean check SANITIZER=address,undefined
@@ -705,6 +709,7 @@ jobs:
         shell: bash
         run: |
           set -eu
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1 ./winraw_mouse_buttons_test
           make clean SANITIZER=thread && make -j$(nproc) all SANITIZER=thread
@@ -718,6 +723,7 @@ jobs:
         shell: bash
         run: |
           set -eu
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1 ./connect_parity_test
           make clean CC=x86_64-w64-mingw32-gcc LDFLAGS=-static && make -j$(nproc) all CC=x86_64-w64-mingw32-gcc LDFLAGS=-static
@@ -729,6 +735,7 @@ jobs:
         shell: bash
         run: |
           set -eu
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1 ./sensor_snap_test
           make clean SANITIZER=thread && make -j$(nproc) all SANITIZER=thread
@@ -742,6 +749,7 @@ jobs:
         shell: bash
         run: |
           set -eu
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           make clean all check
           make clean
           make SANITIZER=address,undefined check
@@ -947,6 +955,7 @@ jobs:
         working-directory: samples/input/net_retropad_repeat
         run: |
           set -eu
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           # The Remote RetroPad core sends a control's state when it
           # changes, by UDP. The real core is driven by a frontend of
           # a few callbacks and its messages read back over loopback:
@@ -967,6 +976,7 @@ jobs:
         working-directory: samples/input/output_writer
         run: |
           set -eu
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           timeout 30 make check
           make clean SANITIZER=thread && make -j$(nproc) all SANITIZER=thread
@@ -1072,6 +1082,7 @@ jobs:
         working-directory: samples/input/xinput_rumble
         run: |
           set -eu
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           # The XInput joypad driver writes rumble from a thread of its
           # own. The real driver is given an XInputSetState that takes
           # 60 ms: the call returns at once, the latest strength is the
