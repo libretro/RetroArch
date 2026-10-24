@@ -177,6 +177,17 @@ jobs:
           # dropped that setting and saved the command-line value.
           make clean && make check SANITIZER=address,undefined
 
+      - name: Build and run float_rows_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/settings/float_rows
+        run: |
+          set -eu
+          # Built without the menu: the float settings that are not the
+          # menu's (aspect ratio, refresh rate, fast-forward ratio, ...)
+          # must still be loaded and saved, and no setting of any kind
+          # may be listed twice.
+          make clean && make check SANITIZER=address,undefined
+
       - name: ccache statistics
         if: ${{ !cancelled() }}
         continue-on-error: true

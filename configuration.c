@@ -3744,8 +3744,8 @@ static struct config_float_setting *populate_settings_float(
    if (!tmp)
       return NULL;
 
-#ifdef HAVE_MENU
    count = config_float_rows_add(tmp, count, cap, settings);
+#ifdef HAVE_MENU
    SETTING_FLOAT("menu_footer_opacity",          &settings->floats.menu_footer_opacity,      true, DEFAULT_MENU_FOOTER_OPACITY, false);
    SETTING_FLOAT("menu_header_opacity",          &settings->floats.menu_header_opacity,      true, DEFAULT_MENU_HEADER_OPACITY, false);
 #ifdef HAVE_OZONE
