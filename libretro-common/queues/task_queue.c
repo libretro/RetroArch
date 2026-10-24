@@ -106,7 +106,9 @@ static retro_atomic_int_t tasks_finished_count = RETRO_ATOMIC_INT_INITIALIZER(0)
 #endif
 
 static struct retro_task_impl *impl_current = NULL;
-static bool task_threaded_enable            = false;
+/* Read by task handlers on the worker. */
+static retro_atomic_int_t task_threaded_enable =
+   RETRO_ATOMIC_INT_INITIALIZER(0);
 
 #ifdef HAVE_THREADS
 static uintptr_t main_thread_id             = 0;
@@ -2236,7 +2238,7 @@ void task_queue_init(bool threaded, retro_task_queue_msg_t msg_push)
     * on true, so init(false) after a threaded session left it on and
     * the next task_queue_check() re-initialised the threaded queue
     * behind the caller's back. */
-   task_threaded_enable = threaded;
+   retro_atomic_store_release_int(&task_threaded_enable, threaded ? 1 : 0);
    if (threaded)
    {
 #ifdef HAVE_GCD
@@ -2262,7 +2264,7 @@ void task_queue_init(bool threaded, retro_task_queue_msg_t msg_push)
     * worker, so run the tasks on the caller's thread instead of
     * accepting work that would never be picked up.  Callers see the
     * outcome through task_queue_is_threaded(). */
-   task_threaded_enable    = false;
+   retro_atomic_store_release_int(&task_threaded_enable, 0);
    impl_current            = &impl_regular;
    impl_current->msg_push  = msg_push;
    impl_current->init();
@@ -2272,17 +2274,17 @@ void task_queue_init(bool threaded, retro_task_queue_msg_t msg_push)
 
 void task_queue_set_threaded(void)
 {
-   task_threaded_enable = true;
+   retro_atomic_store_release_int(&task_threaded_enable, 1);
 }
 
 void task_queue_unset_threaded(void)
 {
-   task_threaded_enable = false;
+   retro_atomic_store_release_int(&task_threaded_enable, 0);
 }
 
 bool task_queue_is_threaded(void)
 {
-   return task_threaded_enable;
+   return retro_atomic_load_acquire_int(&task_threaded_enable) != 0;
 }
 
 #ifdef TASK_PUSH_DEFER
@@ -2353,7 +2355,8 @@ void task_queue_check(void)
 {
 #ifdef HAVE_THREADS
    bool current_threaded = (impl_current != &impl_regular);
-   bool want_threaded    = task_threaded_enable;
+   bool want_threaded    =
+      retro_atomic_load_acquire_int(&task_threaded_enable) != 0;
 
    if (want_threaded != current_threaded)
    {
