@@ -166,12 +166,44 @@ static bool media_native_window_toggle(struct menu_state *menu_st,
       uint32_t first = 0, second = 0, playing = 0;
       if (!command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL))
          return false;
+      /* Exercise rapid reinitializations before a seek can hide a
+       * stalled preview by restarting its decoder jobs. */
+      {
+         unsigned burst;
+         for (burst = 0; burst < 6; burst++)
+         {
+            if (!command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL))
+               return false;
+            draw_frame(menu_st);
+         }
+      }
       until = cpu_features_get_time_usec() + 150000;
       do
       {
          draw_frame(menu_st);
          retro_sleep(1);
       } while (cpu_features_get_time_usec() < until);
+      {
+         uint32_t before = 0, after = 0;
+         int64_t deadline = cpu_features_get_time_usec() + 3000000;
+         bool changed = false;
+         if (!media_native_capture_region(&before, -1, true)) return false;
+         do
+         {
+            draw_frame(menu_st);
+            retro_sleep(1);
+            if (media_native_capture_region(&after, -1, true) && after != before)
+            {
+               changed = true;
+               break;
+            }
+         } while (cpu_features_get_time_usec() < deadline);
+         if (!changed)
+         {
+            fprintf(stderr, "window toggle %u: playback froze before recovery seek\n", cycle);
+            return false;
+         }
+      }
       if (!get_target(menu_st, &target) || !target.pause
             || !target.pause(target.user, true, cpu_features_get_time_usec())
             || !media_native_seek_capture(menu_st, draw_frame, &target,
