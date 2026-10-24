@@ -254,6 +254,9 @@ int rmp4_video_stream_seek_span(rmp4_video_stream_t *s,
 /* Container duration in nanoseconds (mvhd), 0 when absent. */
 int64_t rmp4_video_stream_duration_ns(rmp4_video_stream_t *s);
 
+/* Last advance exhausted input and drained output without failure. */
+int rmp4_video_stream_completed(const rmp4_video_stream_t *stream);
+
 void rmp4_video_stream_rewind(rmp4_video_stream_t *stream);
 
 /* Seek to the display position at or before 'ms' milliseconds: the

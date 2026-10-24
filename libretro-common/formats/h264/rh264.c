@@ -11609,6 +11609,8 @@ int rh264_video_drain(rh264_video *v)
    if (!v) return -1;
    rh264_video_expire_output(v);
    result = rh264_video_drain_internal(v);
+   if (result < 0 && v->hw && v->hw->broken)
+      result = -2;
    v->output_ready = result == 0;
    return result;
 }

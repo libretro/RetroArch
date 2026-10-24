@@ -352,11 +352,14 @@ static void test_restart(void)
    CHECK(!rav1_hw_stream_begin(&stream, packet, packet_size));
    CHECK(rav1_hw_stream_step(&stream, &held, false) == RAV1_HW_STREAM_FRAME);
    CHECK(held.image && stream.session.state.have_previous);
+   CHECK(rav1_hw_stream_step(&stream, &frame, false) == RAV1_HW_STREAM_END);
+   CHECK(rav1_hw_stream_finish(&stream, &frame, false) == RAV1_HW_STREAM_END);
    for (i = 0; i < 4; i++)
    {
       CHECK(rav1_hw_stream_restart(&stream));
       CHECK(opens == before && !stream.packet && !stream.session.phase
-            && !stream.session.state.have_previous && !stream.hdr.present);
+            && !stream.session.state.have_previous && !stream.hdr.present
+            && !stream.ending);
       CHECK(held.image && held.owner == &factory);
       CHECK(!rav1_hw_stream_begin(&stream, packet, packet_size));
       decode_busy = 1;

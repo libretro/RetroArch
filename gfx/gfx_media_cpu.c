@@ -27,6 +27,7 @@ struct gfx_media_cpu
    void *user;
    uint32_t *slots[2];
    unsigned num_slots;
+   bool ended, completed_pending;
    struct gfx_media_cpu *retired_next;
 };
 
@@ -103,9 +104,33 @@ gfx_media_cpu_t *gfx_media_cpu_new(gfx_anim_preview_t *session,
 
 enum video_player_state gfx_media_cpu_poll(gfx_media_cpu_t *p, int64_t wall_us)
 {
-   if (!p) return VIDEO_PLAYER_ENDED;
+   enum video_player_state result;
+   if (!p || p->ended) return VIDEO_PLAYER_ENDED;
    gfx_anim_preview_audio_feed(p->session);
-   return gfx_media_player_poll(p->session, p->player, wall_us);
+   result = gfx_media_player_poll(p->session, p->player, wall_us);
+   if (result == VIDEO_PLAYER_ENDED && video_player_completed(p->player))
+   {
+      p->ended = p->completed_pending = true;
+      gfx_media_player_set_paused(p->session, p->player, true, false, wall_us);
+   }
+   return result;
+}
+
+bool gfx_media_cpu_set_repeat(gfx_media_cpu_t *p, bool repeat)
+{
+   return p && gfx_media_player_set_repeat(p->session, p->player, repeat);
+}
+
+bool gfx_media_cpu_completed(gfx_media_cpu_t *p)
+{
+   return p && p->ended;
+}
+
+bool gfx_media_cpu_take_completed(gfx_media_cpu_t *p)
+{
+   if (!p || !p->completed_pending) return false;
+   p->completed_pending = false;
+   return true;
 }
 
 bool gfx_media_cpu_pause(gfx_media_cpu_t *p, bool paused, int64_t wall_us)
@@ -117,8 +142,10 @@ bool gfx_media_cpu_pause(gfx_media_cpu_t *p, bool paused, int64_t wall_us)
 bool gfx_media_cpu_seek(gfx_media_cpu_t *p, int64_t target_us,
       unsigned mix_rate, bool s16, int64_t wall_us)
 {
-   return p && gfx_media_player_seek(p->session, p->player, target_us,
+   bool result = p && gfx_media_player_seek(p->session, p->player, target_us,
          mix_rate, s16, wall_us);
+   if (result) p->ended = p->completed_pending = false;
+   return result;
 }
 
 bool gfx_media_cpu_state(gfx_media_cpu_t *p, int64_t wall_us,

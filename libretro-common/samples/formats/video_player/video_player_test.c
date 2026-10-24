@@ -72,6 +72,7 @@ typedef struct
    int wait_left;
    int wait_at;
    bool waiting;
+   bool terminal_error;
    int duration_ms;
    int64_t movie_ns, lead_ns;
    int catchup;        /* last value set */
@@ -198,6 +199,14 @@ bool image_transfer_anim_stream_hw_frame(void *stream,
    out->width      = W;
    out->height     = H;
    return true;
+}
+
+bool image_transfer_anim_stream_completed(const void *stream,
+      enum image_type_enum type)
+{
+   const fake_t *f = (const fake_t*)stream;
+   (void)type;
+   return f->pos >= f->frames && !f->waiting && !f->terminal_error;
 }
 
 void image_transfer_anim_stream_rewind(void *stream,
@@ -900,6 +909,7 @@ static void lane_pause(bool threaded)
    video_player_set_paused(p, false, now + 20000000);
    CHECK(video_player_poll(p, now + 20000000) == VIDEO_PLAYER_ENDED,
          "pause: stop cannot resume");
+   CHECK(!video_player_completed(p), "stop is not successful EOF");
    video_player_free(p);
 }
 
@@ -910,20 +920,27 @@ static void lane_input_wait(bool threaded, bool slots)
    video_player_sink_t s;
    video_player_t *p;
    int tick, state = VIDEO_PLAYER_PLAYING;
+   bool finite = false;
    fake_init(&f, 5, 10);
    f.direct = true;
    f.wait_at = 2;
    f.wait_left = 3;
    sink_init(&k, &s, slots);
-   p = video_player_new(&f, IMAGE_TYPE_MP4, 1, &s,
+   p = video_player_new(&f, IMAGE_TYPE_MP4, 0, &s,
          threaded ? 0 : VIDEO_PLAYER_INLINE);
    CHECK(p != NULL, "input wait: allocation");
    if (!p) return;
    for (tick = 0; tick < 1000 && state != VIDEO_PLAYER_ENDED; tick++)
    {
+      if (k.nseen >= 2 && !finite)
+      {
+         CHECK(video_player_set_repeat(p, false), "set one-pass movie policy");
+         finite = true;
+      }
       state = video_player_poll(p, (int64_t)tick * 1000);
       if (threaded) retro_sleep(1);
    }
+   CHECK(video_player_completed(p), "input wait: clean movie EOF");
    video_player_free(p);
    CHECK(state == VIDEO_PLAYER_ENDED && k.nseen == 5
          && seen_in_order(&k, 5) && !k.bad_px,
@@ -1227,6 +1244,8 @@ static void lane_movie(bool threaded, bool hardware, bool pause_lead)
       CHECK(video_player_started(p), "movie: ready during leading interval");
       CHECK(state == (tick < 800 ? VIDEO_PLAYER_PLAYING : VIDEO_PLAYER_ENDED),
             "movie: complete period at tick %d", tick);
+      CHECK(video_player_completed(p) == (tick >= 800),
+            "movie: clean EOF waits for final picture duration");
    }
    CHECK(k.seen[0] == 0 && k.seen[1] == 1
          && k.seen[2] == 0 && k.seen[3] == 1 && !k.bad_px,
@@ -1324,8 +1343,37 @@ static void lane_delayed_slot_releases(void)
 }
 #endif
 
+static void lane_terminal_error(bool threaded)
+{
+   fake_t f;
+   sink_t k;
+   video_player_sink_t s;
+   video_player_t *p;
+   int tick, state = VIDEO_PLAYER_PLAYING;
+   fake_init(&f, 2, 10);
+   f.terminal_error = true;
+   sink_init(&k, &s, true);
+   p = video_player_new(&f, IMAGE_TYPE_MP4, 0, &s,
+         threaded ? 0 : VIDEO_PLAYER_INLINE);
+   CHECK(p != NULL, "terminal failure: allocation");
+   if (!p) return;
+   for (tick = 0; tick < 1000 && state != VIDEO_PLAYER_ENDED; tick++)
+   {
+      state = video_player_poll(p, (int64_t)tick * 1000);
+      if (threaded) retro_sleep(1);
+   }
+   CHECK(state == VIDEO_PLAYER_ENDED && k.nseen == 2,
+         "terminal failure stops instead of rewinding");
+   CHECK(!video_player_completed(p), "decode failure is not clean EOF");
+   video_player_free(p);
+}
+
 int main(void)
 {
+   lane_terminal_error(false);
+#ifdef HAVE_THREADS
+   lane_terminal_error(true);
+#endif
    lane_movie_stop(false);
    lane_movie(false, false, false);
    lane_movie(false, true, true);

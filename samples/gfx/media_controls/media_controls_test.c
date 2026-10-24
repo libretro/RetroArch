@@ -4,21 +4,38 @@
 #include <rthreads/rthreads.h>
 #include "../../../gfx/gfx_media_controls.h"
 #include "../../../menu/menu_media_controls.h"
+#include "../../../menu/menu_media_browser.h"
 #include "../../../gfx/video_defines.h"
 #include "../../../configuration.h"
 #include "../../../tasks/task_subtitle.h"
+
+static struct menu_state test_menu;
+struct menu_state *menu_state_get_ptr(void) { return &test_menu; }
 
 static settings_t test_settings;
 settings_t *config_get_ptr(void) { return &test_settings; }
 
 static unsigned failures;
 static bool drawing;
+static unsigned settings_opened, settings_hidden;
+static bool settings_refused;
+int generic_action_ok_displaylist_push(const char *path, const char *new_path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx,
+      unsigned action_type)
+{
+   (void)path; (void)new_path; (void)label; (void)type;
+   (void)idx; (void)entry_idx; (void)action_type;
+   settings_opened++;
+   return settings_refused ? -1 : 0;
+}
+
 #define CHECK(c) do { if (!(c)) { printf("FAIL line %u: %s\n", (unsigned)__LINE__, #c); failures++; } } while (0)
 typedef struct fake_player
 {
    gfx_thumbnail_playback_state_t state;
    int64_t last_seek;
-   unsigned seeks, pauses;
+   unsigned seeks, pauses, advances;
+   int last_direction;
    bool available, pause_refused;
 } fake_player_t;
 static bool fake_state(void *p, int64_t now, gfx_thumbnail_playback_state_t *out)
@@ -34,6 +51,14 @@ static bool fake_pause(void *p, bool paused, int64_t now)
 }
 static bool fake_seek(void *p, int64_t target, int64_t now)
 { fake_player_t *f = (fake_player_t*)p; (void)now; f->last_seek = target; f->state.position_us = target; f->seeks++; return true; }
+static bool fake_step(void *user, int direction)
+{
+   fake_player_t *f = (fake_player_t*)user;
+   f->last_direction = direction;
+   f->advances++;
+   return true;
+}
+
 /* The thumbnail adapter is not used by this CPU/texture-neutral oracle. */
 bool gfx_thumbnail_get_playback_state(gfx_thumbnail_t *t, retro_time_t n, gfx_thumbnail_playback_state_t *s)
 { (void)t; (void)n; (void)s; abort(); return false; }
@@ -42,16 +67,18 @@ bool gfx_thumbnail_set_paused(gfx_thumbnail_t *t, bool p, retro_time_t n)
 bool gfx_thumbnail_seek(gfx_thumbnail_t *t, int64_t p, retro_time_t n)
 { (void)t; (void)p; (void)n; abort(); return false; }
 
-/* Loading is tested separately; this drawing oracle publishes cue views. */
-task_subtitle_request_t *task_subtitle_load(const char *path)
-{ (void)path; abort(); return NULL; }
-int task_subtitle_status(const task_subtitle_request_t *request)
-{ (void)request; abort(); return -1; }
-rsubtitle_srt_t *task_subtitle_take(task_subtitle_request_t *request)
-{ (void)request; abort(); return NULL; }
-void task_subtitle_release(task_subtitle_request_t *request)
-{ if (request) abort(); }
-
+bool gfx_thumbnail_set_repeat(gfx_thumbnail_t *t, bool repeat)
+{ (void)t; (void)repeat; return false; }
+bool gfx_thumbnail_take_completed(gfx_thumbnail_t *t)
+{ (void)t; return false; }
+bool gfx_thumbnail_has_file(const gfx_thumbnail_t *t, const char *path)
+{ (void)t; (void)path; abort(); return false; }
+void gfx_thumbnail_reset(gfx_thumbnail_t *t) { (void)t; abort(); }
+void gfx_thumbnail_request_file(const char *path, gfx_thumbnail_t *t, unsigned n)
+{ (void)path; (void)t; (void)n; abort(); }
+bool gfx_thumbnail_set_content_image(gfx_thumbnail_path_data_t *p,
+      const char *dir, const char *name)
+{ (void)p; (void)dir; (void)name; abort(); return false; }
 task_subtitle_catalog_t *task_subtitle_discover(const char *path)
 { (void)path; abort(); return NULL; }
 int task_subtitle_catalog_status(const task_subtitle_catalog_t *catalog)
@@ -67,9 +94,74 @@ const char *msg_hash_to_str(enum msg_hash_enums msg)
 
 enum image_type_enum image_texture_get_type(const char *path)
 {
-   (void)path;
-   return IMAGE_TYPE_NONE;
+   const char *ext = path ? strrchr(path, '.') : NULL;
+   if (ext && !strcmp(ext, ".mp4")) return IMAGE_TYPE_MP4;
+   if (ext && !strcmp(ext, ".webm")) return IMAGE_TYPE_WEBM;
+   return IMAGE_TYPE_PNG;
 }
+
+static unsigned navigations;
+static void navigated(void *user, bool scroll)
+{
+   CHECK(user == &test_menu && scroll);
+   navigations++;
+}
+static void folder_queue(void)
+{
+   static menu_list_t lists;
+   static menu_ctx_driver_t driver;
+   file_list_t *selection[1], *stack[1];
+   menu_media_queue_t *queue;
+   selection[0] = (file_list_t*)calloc(1, sizeof(file_list_t));
+   stack[0] = (file_list_t*)calloc(1, sizeof(file_list_t));
+   CHECK(selection[0] && stack[0]);
+   lists.selection_buf = selection; lists.selection_buf_size = 1;
+   lists.menu_stack = stack; lists.menu_stack_size = 1;
+   test_menu.entries.list = &lists;
+   test_menu.driver_ctx = &driver;
+   test_menu.userdata = &test_menu;
+   driver.navigation_set = navigated;
+   CHECK(file_list_append(stack[0], "/shows", "", FILE_TYPE_DIRECTORY, 0, 0));
+   CHECK(file_list_append(selection[0], "episode10.mp4", "", FILE_TYPE_MOVIE, 0, 0));
+   CHECK(file_list_append(selection[0], "episode2.mp4", "", FILE_TYPE_MOVIE, 0, 0));
+   CHECK(file_list_append(selection[0], "cover.png", "", FILE_TYPE_IMAGE, 0, 0));
+   CHECK(file_list_append(selection[0], "episode1.mp4", "", FILE_TYPE_MOVIE, 0, 0));
+   CHECK(file_list_append(selection[0], "episode3.webm", "", FILE_TYPE_MOVIE, 0, 0));
+   CHECK(file_list_append(selection[0], "directory4.mp4", "", FILE_TYPE_DIRECTORY, 0, 0));
+   test_menu.selection_ptr = 1;
+   queue = menu_media_queue_new(&test_menu);
+   CHECK(queue);
+   selection[0]->list[4].type = FILE_TYPE_DIRECTORY;
+   CHECK(!menu_media_queue_step(queue, &test_menu, 1));
+   CHECK(test_menu.selection_ptr == 1 && !navigations);
+   selection[0]->list[4].type = FILE_TYPE_MOVIE;
+   CHECK(menu_media_queue_step(queue, &test_menu, 1) && test_menu.selection_ptr == 4);
+   CHECK(file_list_append(selection[0], "episode4.mp4", "", FILE_TYPE_MOVIE, 0, 0));
+   CHECK(menu_media_queue_step(queue, &test_menu, 1) && test_menu.selection_ptr == 0);
+   CHECK(!menu_media_queue_step(queue, &test_menu, 1));
+   CHECK(menu_media_queue_step(queue, &test_menu, -1) && test_menu.selection_ptr == 4);
+   CHECK(menu_media_queue_step(queue, &test_menu, -1) && test_menu.selection_ptr == 1);
+   CHECK(menu_media_queue_step(queue, &test_menu, -1) && test_menu.selection_ptr == 3);
+   CHECK(!menu_media_queue_step(queue, &test_menu, -1));
+   CHECK(navigations == 5);
+   test_menu.selection_ptr = 2;
+   CHECK(!menu_media_queue_step(queue, &test_menu, 1));
+   menu_media_queue_free(queue);
+   CHECK(!menu_media_queue_new(&test_menu));
+   file_list_free(selection[0]); file_list_free(stack[0]);
+   test_menu.entries.list = NULL;
+   test_menu.driver_ctx = NULL;
+}
+
+/* Loading is tested separately; this drawing oracle publishes cue views. */
+task_subtitle_request_t *task_subtitle_load(const char *path)
+{ (void)path; abort(); return NULL; }
+int task_subtitle_status(const task_subtitle_request_t *request)
+{ (void)request; abort(); return -1; }
+rsubtitle_srt_t *task_subtitle_take(task_subtitle_request_t *request)
+{ (void)request; abort(); return NULL; }
+void task_subtitle_release(task_subtitle_request_t *request)
+{ if (request) abort(); }
 
 int font_driver_get_message_width(void *font, const char *text,
       size_t length, float scale)
@@ -220,7 +312,7 @@ static void menu_transport(void)
    drawing = true;
    menu_media_controls_draw(m, NULL, NULL, VIDEO_SCALE_PACK(640,480), &font);
    drawing = false;
-   CHECK(quads >= 6 && captions == 5);
+   CHECK(quads >= 9 && captions == 8);
    old_quads = quads;
    menu_media_controls_cancel(m);
    CHECK(!menu_media_controls_release(m, (unsigned)x, (unsigned)y, 1013));
@@ -442,6 +534,186 @@ static void playback_preferences(void)
    CHECK(c.seek_seconds == 5);
 }
 
+static void file_buttons(void)
+{
+   gfx_media_controls_t controls;
+   gfx_media_target_t target;
+   fake_player_t player;
+   const gfx_media_rect_t *button;
+   memset(&controls, 0, sizeof(controls));
+   memset(&target, 0, sizeof(target));
+   memset(&player, 0, sizeof(player));
+   player.available = true;
+   target.user = &player; target.identity = &player;
+   target.state = fake_state; target.pause = fake_pause; target.seek = fake_seek;
+   target.navigation_user = &player; target.step = fake_step; target.directions = 3;
+   CHECK(gfx_media_controls_update(&controls, &target, 640, 480, 1));
+   CHECK(controls.layout.button_count == 6);
+   controls.row_focus = true; controls.focus = 3;
+   CHECK(gfx_media_controls_action(&controls, GFX_MEDIA_NEXT, 2));
+   CHECK(controls.focus == 4);
+   CHECK(gfx_media_controls_action(&controls, GFX_MEDIA_ACTIVATE, 3));
+   CHECK(player.last_direction == -1 && player.advances == 1);
+   CHECK(gfx_media_controls_action(&controls, GFX_MEDIA_NEXT, 4));
+   CHECK(gfx_media_controls_action(&controls, GFX_MEDIA_ACTIVATE, 5));
+   CHECK(player.last_direction == 1 && player.advances == 2);
+   target.directions = 1;
+   CHECK(gfx_media_controls_update(&controls, &target, 640, 480, 6));
+   CHECK(!gfx_media_controls_action(&controls, GFX_MEDIA_NEXT_FILE, 7));
+   CHECK(player.advances == 2);
+   target.directions = 3;
+   CHECK(gfx_media_controls_update(&controls, &target, 640, 480, 8));
+   button = &controls.layout.buttons[5];
+   gfx_media_controls_pointer(&controls, 0, 0, false, true, 9);
+   gfx_media_controls_pointer(&controls, button->x + 1, button->y + 1, true, true, 10);
+   gfx_media_controls_release(&controls, button->x + 1, button->y + 1, 11);
+   CHECK(player.last_direction == 1 && player.advances == 3);
+   player.state.paused = true;
+   player.state.duration_us = player.state.position_us = 1000000;
+   CHECK(gfx_media_controls_action(&controls, GFX_MEDIA_PLAY, 12));
+   CHECK(player.seeks == 1 && player.last_seek == 0 && !player.state.paused);
+}
+
+static void settings_hide(void *user)
+{
+   CHECK(user == &test_menu);
+   settings_hidden++;
+}
+
+static void settings_button(void)
+{
+   static menu_media_controls_t media;
+   gfx_media_target_t target;
+   fake_player_t player;
+   const gfx_media_rect_t *button;
+   memset(&media, 0, sizeof(media));
+   memset(&target, 0, sizeof(target));
+   memset(&player, 0, sizeof(player));
+   player.available = true;
+   media.settings_hide = settings_hide;
+   media.settings_user = &test_menu;
+   target.user = target.navigation_user = &player;
+   target.identity = &player;
+   target.state = fake_state;
+   target.pause = fake_pause;
+   target.seek = fake_seek;
+   menu_media_controls_update(&media, &target, 640, 480, NULL, 1);
+   CHECK(media.controls.layout.button_count == 7);
+   media.controls.row_focus = true;
+   media.controls.focus = 5;
+   CHECK(gfx_media_controls_action(&media.controls, GFX_MEDIA_NEXT, 2));
+   CHECK(media.controls.focus == 6);
+   CHECK(gfx_media_controls_action(&media.controls, GFX_MEDIA_ACTIVATE, 3));
+   CHECK(settings_opened == 1 && player.state.paused);
+   CHECK(!media.controls.held && !media.controls.row_focus);
+   menu_media_controls_update(&media, &target, 640, 480, NULL, 4);
+   button = &media.controls.layout.buttons[6];
+   gfx_media_controls_pointer(&media.controls, 0, 0, false, true, 5);
+   gfx_media_controls_pointer(&media.controls, button->x + 1, button->y + 1,
+         true, true, 6);
+   gfx_media_controls_release(&media.controls, button->x + 1, button->y + 1, 7);
+   CHECK(settings_opened == 2 && settings_hidden == 2);
+   player.state.paused = false;
+   player.pause_refused = true;
+   menu_media_controls_update(&media, &target, 640, 480, NULL, 8);
+   CHECK(!gfx_media_controls_action(&media.controls, GFX_MEDIA_SETTINGS, 9));
+   CHECK(settings_opened == 2 && settings_hidden == 2 && !player.state.paused);
+   player.pause_refused = false;
+   settings_refused = true;
+   CHECK(!gfx_media_controls_action(&media.controls, GFX_MEDIA_SETTINGS, 10));
+   CHECK(settings_opened == 3 && settings_hidden == 2 && player.state.paused);
+   settings_refused = false;
+}
+
+static bool toolbar_settings(void *user)
+{
+   unsigned *opened = (unsigned*)user;
+   (*opened)++;
+   return true;
+}
+
+static void combined_subtitle_toolbar(void)
+{
+   static gfx_media_mailbox_t mailbox;
+   gfx_media_view_t view;
+   gfx_media_controls_t controls;
+   gfx_media_target_t target;
+   fake_player_t player;
+   unsigned variant;
+   for (variant = 0; variant < 3; variant++)
+   {
+      unsigned opened = 0;
+      unsigned base = variant == 2 ? 7 : variant == 1 ? 6 : 4;
+      const gfx_media_rect_t *button;
+      memset(&controls, 0, sizeof(controls));
+      memset(&target, 0, sizeof(target));
+      memset(&player, 0, sizeof(player));
+      memset(&mailbox, 0, sizeof(mailbox));
+      player.available = true;
+      target.user = target.navigation_user = &player;
+      target.identity = &player;
+      target.state = fake_state;
+      target.pause = fake_pause;
+      target.seek = fake_seek;
+      target.subtitle_tracks = true;
+      if (variant)
+      {
+         target.step = fake_step;
+         target.directions = 3;
+      }
+      if (variant == 2)
+      {
+         target.settings = toolbar_settings;
+         target.settings_user = &opened;
+      }
+      CHECK(gfx_media_controls_update(&controls, &target, 640, 480, 1));
+      CHECK(controls.layout.button_count == base + 1);
+      controls.row_focus = true;
+      controls.focus = base;
+      CHECK(gfx_media_controls_action(&controls, GFX_MEDIA_ACTIVATE, 2));
+      CHECK(controls.subtitle_requested && !opened && !player.advances);
+      controls.subtitle_requested = false;
+      if (variant)
+      {
+         controls.focus = 4;
+         CHECK(gfx_media_controls_action(&controls, GFX_MEDIA_ACTIVATE, 3));
+         CHECK(player.advances == 1 && player.last_direction == -1);
+      }
+      if (variant == 2)
+      {
+         controls.focus = 6;
+         CHECK(gfx_media_controls_action(&controls, GFX_MEDIA_ACTIVATE, 4));
+         CHECK(opened == 1);
+      }
+      gfx_media_controls_publish(&controls, &mailbox);
+      CHECK(gfx_media_controls_consume(&mailbox, &view));
+      CHECK(view.subtitle_tracks && view.layout.button_count == base + 1);
+      button = &controls.layout.buttons[base];
+      gfx_media_controls_pointer(&controls, 0, 0, false, true, 5);
+      gfx_media_controls_pointer(&controls, button->x + 1, button->y + 1, true, true, 6);
+      gfx_media_controls_release(&controls, button->x + 1, button->y + 1, 7);
+      CHECK(controls.subtitle_requested);
+      CHECK(opened == (variant == 2 ? 1u : 0u));
+      CHECK(player.advances == (variant ? 1u : 0u));
+      controls.subtitle_requested = false;
+      if (!variant)
+      {
+         CHECK(!gfx_media_controls_action(&controls, GFX_MEDIA_PREVIOUS_FILE, 8));
+         CHECK(!gfx_media_controls_action(&controls, GFX_MEDIA_NEXT_FILE, 8));
+         CHECK(!controls.subtitle_requested);
+      }
+      if (variant < 2)
+      {
+         CHECK(!gfx_media_controls_action(&controls, GFX_MEDIA_SETTINGS, 8));
+         CHECK(!controls.subtitle_requested);
+      }
+      target.subtitle_tracks = false;
+      controls.focus = base;
+      CHECK(gfx_media_controls_update(&controls, &target, 640, 480, 8));
+      CHECK(controls.layout.button_count == base && !controls.focus);
+   }
+}
+
 static void subtitle_button(void)
 {
    gfx_media_controls_t c;
@@ -514,6 +786,8 @@ int main(void)
 {
    test_settings.uints.media_player_seek_seconds = 5;
    test_settings.uints.media_player_controls_timeout = 3;
+   folder_queue();
+   combined_subtitle_toolbar();
    subtitle_button();
    subtitles_without_transport();
    playback_preferences();
@@ -522,6 +796,8 @@ int main(void)
    explicit_playback();
    failed_seek_transport();
    menu_transport();
+   file_buttons();
+   settings_button();
 #ifdef HAVE_THREADS
    mailbox_races();
 #endif

@@ -54,6 +54,7 @@ static void end_box(size_t at)
 static void make_mp4_clip(int with_config, int hdr)
 {
    static const uint8_t cll[] = {0x2a, 6, 1, 3, 232, 1, 144, 128};
+   static const uint8_t final_cll[] = {0x2a, 6, 1, 15, 160, 3, 232, 128};
    static const uint8_t changed_cll[] = {0x2a, 6, 1, 7, 208, 2, 88, 128};
    static const uint8_t unknown[] = {0x2a, 2, 0, 128};
    size_t b, moov, trak, mdia, minf, stbl, stsd, entry, chunk;
@@ -155,7 +156,7 @@ static void make_mp4_clip(int with_config, int hdr)
       be32((uint32_t)(sizeof(packet) + sizeof(cll) + 40 * sizeof(unknown)
             + (hdr == 4 ? sizeof(config) - 4 : 0)));
       be32((uint32_t)(sizeof(packet) + (hdr >= 2 ? sizeof(changed_cll) : 0)));
-      if (hdr >= 2) be32(sizeof(packet));
+      if (hdr >= 2) be32(sizeof(packet) + (hdr == 3 ? sizeof(final_cll) : 0));
    }
    end_box(b);
    b = box("stco");
@@ -187,6 +188,7 @@ static void make_mp4_clip(int with_config, int hdr)
    copy(packet, sizeof(packet));
    if (hdr >= 2) copy(changed_cll, sizeof(changed_cll));
    copy(packet, sizeof(packet));
+   if (hdr == 3) copy(final_cll, sizeof(final_cll));
    if (hdr >= 2) copy(packet, sizeof(packet));
    end_box(b);
    patch32(chunk, (uint32_t)media_at);

@@ -8689,6 +8689,14 @@ int64_t audio_driver_mixer_stream_byte_tell(unsigned i)
    return (int64_t)audio_mixer_voice_buffer_tell(voice);
 }
 
+void audio_driver_mixer_stream_set_repeat(unsigned i, bool repeat)
+{
+   if (i < AUDIO_MIXER_MAX_SYSTEM_STREAMS
+         && audio_driver_st.mixer_streams[i].state != AUDIO_STREAM_STATE_NONE)
+      audio_mixer_voice_set_repeat(audio_driver_st.mixer_streams[i].voice,
+            repeat);
+}
+
 void audio_driver_mixer_stream_set_paused(unsigned i, bool paused)
 {
    if (i < AUDIO_MIXER_MAX_SYSTEM_STREAMS

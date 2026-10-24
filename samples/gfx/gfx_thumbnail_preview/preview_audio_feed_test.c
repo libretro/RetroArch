@@ -120,6 +120,14 @@ int image_transfer_anim_stream_seek_step(void *s, enum image_type_enum t,
    *us=seek_probe_target;
    return 1;
 }
+bool image_transfer_anim_stream_completed(const void *stream,
+      enum image_type_enum type)
+{
+   (void)stream;
+   (void)type;
+   return false;
+}
+
 bool image_transfer_anim_stream_waiting(const void *s, enum image_type_enum t)
 { (void)s; (void)t; if (!seek_probe) abort(); return seek_probe_wait; }
 void image_transfer_anim_stream_rewind(void *s, enum image_type_enum t)
@@ -152,6 +160,12 @@ int64_t audio_driver_mixer_stream_byte_tell(unsigned slot)
 
 void audio_driver_mixer_stream_set_avail(unsigned slot, size_t avail)
 { (void)slot; audio_mixer_voice_set_avail(voice, avail); }
+
+void audio_driver_mixer_stream_set_repeat(unsigned i, bool repeat)
+{
+   (void)i;
+   (void)repeat;
+}
 
 void audio_driver_mixer_stream_set_paused(unsigned slot, bool paused)
 { (void)slot; audio_mixer_voice_set_paused(voice, paused); }

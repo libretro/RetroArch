@@ -169,6 +169,10 @@ audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound,
 
 void audio_mixer_stop(audio_mixer_voice_t* voice);
 
+/* The owner of a live voice may change its repeat policy without restarting
+ * it. The mixer samples the request at the next end of the source. */
+void audio_mixer_voice_set_repeat(audio_mixer_voice_t *voice, bool repeat);
+
 /* Retain the exact decoder/resampler/PCM position while paused. Applied
  * at the next mix block boundary; an already mixing block may finish.
  * The caller owns this live voice until stopped, as for gain/volume.

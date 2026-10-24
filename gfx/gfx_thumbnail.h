@@ -204,7 +204,9 @@ enum gfx_thumbnail_flags
    GFX_THUMB_FLAG_FADE_ACTIVE = (1 << 0),
    GFX_THUMB_FLAG_CORE_ASPECT = (1 << 1),
    GFX_THUMB_FLAG_BG_ONLY     = (1 << 2),
-   GFX_THUMB_FLAG_ANIM_ACTIVE = (1 << 3)
+   GFX_THUMB_FLAG_ANIM_ACTIVE = (1 << 3),
+   GFX_THUMB_FLAG_MEDIA_COMPLETED = (1 << 4),
+   GFX_THUMB_FLAG_MEDIA_ENDED = (1 << 5)
 };
 
 /* Holds all runtime parameters associated with
@@ -491,6 +493,8 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
 /* Main-thread media command: retain the current picture and preview PCM.
  * Uses the same monotonic clock as animate. False for a still or a
  * thumbnail whose animation session has not been installed yet. */
+bool gfx_thumbnail_set_repeat(gfx_thumbnail_t *thumbnail, bool repeat);
+bool gfx_thumbnail_take_completed(gfx_thumbnail_t *thumbnail);
 bool gfx_thumbnail_set_paused(gfx_thumbnail_t *thumbnail, bool paused,
       retro_time_t current_time);
 

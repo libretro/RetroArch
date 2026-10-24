@@ -202,6 +202,13 @@ const uint32_t *image_transfer_anim_stream_next(void *stream,
    return gfx_anim_preview_next((gfx_anim_preview_t*)stream, duration_ms,
          &native);
 }
+bool image_transfer_anim_stream_completed(const void *stream,
+      enum image_type_enum type)
+{
+   const fake_sess_t *s = (const fake_sess_t*)stream;
+   return type == IMAGE_TYPE_WEBM && s->frame >= FRAMES;
+}
+
 bool image_transfer_anim_stream_waiting(const void *stream,
       enum image_type_enum type)
 {

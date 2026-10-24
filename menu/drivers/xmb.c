@@ -6139,6 +6139,12 @@ static void xmb_hide_fullscreen_thumbnails(
 
 /* Enables (and triggers a fade in of) the fullscreen
  * thumbnail view */
+static void xmb_media_settings_hide(void *user)
+{
+   xmb_handle_t *xmb = (xmb_handle_t*)user;
+   xmb_hide_fullscreen_thumbnails(xmb, false);
+}
+
 static void xmb_show_fullscreen_thumbnails(
       xmb_handle_t *xmb, struct menu_state *menu_st,
       size_t selection)
@@ -7498,6 +7504,8 @@ static void xmb_render(void *data,
 
    /* Read pointer state */
    menu_input_get_pointer_state(&xmb->pointer);
+   xmb->media.settings_user = xmb;
+   xmb->media.settings_hide = xmb_media_settings_hide;
    menu_media_controls_thumbnail(&xmb->media, &xmb->thumbnails.left,
          &xmb->thumbnails.right,
          xmb->show_fullscreen_thumbnails && !xmb->show_screensaver
@@ -10025,6 +10033,10 @@ static void xmb_navigation_set(void *data, bool scroll)
 {
    xmb_handle_t *xmb = (xmb_handle_t*)data;
    xmb_selection_pointer_changed(xmb, scroll);
+   if (xmb->is_file_list && xmb->show_fullscreen_thumbnails
+         && menu_media_open_selected_file(menu_state_get_ptr(),
+               &xmb->thumbnails.left, &xmb->thumbnails.right))
+      xmb->thumbnails.pending = XMB_PENDING_THUMBNAIL_NONE;
 }
 
 static void xmb_navigation_alphabet(void *data, size_t *unused)

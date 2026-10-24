@@ -87,6 +87,7 @@ static bool media_capture_settled(struct menu_state *menu_st, int ordinal)
    return media_native_capture(&hash, ordinal);
 }
 
+#include "../texture_media/folder_playback_test.h"
 #ifdef _WIN32
 static bool media_current_visible(struct menu_state *menu_st)
 {
@@ -101,6 +102,23 @@ static bool media_current_target(struct menu_state *menu_st,
    rgui_t *rgui = (rgui_t *)menu_st->userdata;
    *target = rgui->media.controls.target;
    return target->user && target->state;
+}
+
+static int media_folder_stage(void *data)
+{
+   rgui_t *rgui = (rgui_t*)data;
+   if (gfx_media_cpu_completed(rgui->media_player)
+         || (rgui->media_gpu.flags & GFX_THUMB_FLAG_MEDIA_ENDED)) return 2;
+   if (media_picture_ready(rgui))
+   {
+      if (!strncmp(path_basename(rgui->media_path), "episode10.", 10)) return 1;
+      if (!strncmp(path_basename(rgui->media_path), "episode2.", 9)) return 3;
+   }
+   return rgui->media_player || rgui->media_gpu.anim_player ? 0 : 2;
+}
+static bool media_folder_shown(void *data)
+{
+   return (((rgui_t*)data)->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL) != 0;
 }
 
 int main(int argc, char **argv)
@@ -118,6 +136,7 @@ int main(int argc, char **argv)
    gfx_media_playback_state_t state;
    uint32_t pixels = 0;
    bool seeking;
+   bool folder = getenv("MEDIA_TEST_CONTINUOUS") != NULL;
    const char *first_video = getenv("MEDIA_TEST_FIRST_VIDEO_US");
    int64_t first_video_us = first_video ? strtol(first_video, NULL, 10) : 0;
    if (argc != 3) return 2;
@@ -195,7 +214,7 @@ int main(int argc, char **argv)
             && runloop_state_get_ptr()->current_core_type == CORE_TYPE_DUMMY
             && startup_core_untouched;
          media_render(menu_st);
-         if (((rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL) != 0) && (rgui->fs_thumbnail.is_valid
+         if (media_folder_shown(rgui) && (rgui->fs_thumbnail.is_valid
                   || (!image && rgui->media_gpu.texture
                      && rgui->media_gpu.anim_player))) break;
          if (first_frame)
@@ -281,7 +300,7 @@ int main(int argc, char **argv)
       if (image)
          MEDIA_CHECK("image confirmation remains in internal view",
                rgui_parse_menu_entry_action(rgui, entry, MENU_ACTION_OK)
-                  == MENU_ACTION_NOOP && ((rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL) != 0));
+                  == MENU_ACTION_NOOP && media_folder_shown(rgui));
 #ifdef _WIN32
       if (getenv("MEDIA_TEST_MODAL_MODE"))
       {
@@ -291,7 +310,7 @@ int main(int argc, char **argv)
       }
 #endif
       rgui_parse_menu_entry_action(rgui, entry, MENU_ACTION_CANCEL);
-      MEDIA_CHECK("Back closes internal view", !((rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL) != 0));
+      MEDIA_CHECK("Back closes internal view", !media_folder_shown(rgui));
       MEDIA_CHECK("cancellation and stale startup acknowledgements stay isolated",
             media_startup_cancellation_check(menu_st, argv[1], startup_token));
       goto cleanup;
@@ -302,9 +321,12 @@ int main(int argc, char **argv)
    file_list_clear(list); file_list_clear(stack);
    MEDIA_CHECK("file-browser stack installed", file_list_append(stack, directory,
          "", FILE_TYPE_PLAIN, 0, 0));
-   MEDIA_CHECK("movie entry installed", file_list_append(list, path_basename(argv[1]),
-         "", FILE_TYPE_MOVIE, 0, 0));
-   menu_st->selection_ptr = 0; menu_st->current_time_us = native_gpu?cpu_features_get_time_usec():1000000;
+   if (folder)
+      MEDIA_CHECK("folder movies installed", media_folder_install(menu_st, list, directory, argv[1]));
+   else
+      MEDIA_CHECK("movie entry installed", file_list_append(list, path_basename(argv[1]),
+            "", FILE_TYPE_MOVIE, 0, 0));
+   menu_st->selection_ptr = folder ? 1 : 0; menu_st->current_time_us = native_gpu?cpu_features_get_time_usec():1000000;
    rgui->flags &= ~(RGUI_FLAG_IS_PLAYLIST | RGUI_FLAG_IS_EXPLORE_LIST | RGUI_FLAG_IS_QUICK_MENU);
    rgui_scan_selected_entry_thumbnail(rgui, true);
    MEDIA_CHECK("file-browser movie resolves without a playlist", *rgui->media_requested_path);
@@ -317,6 +339,17 @@ int main(int argc, char **argv)
       if (media_picture_ready(rgui)) break;
       retro_sleep(1);
    }
+   if (folder)
+   {
+      MEDIA_CHECK("natural folder playback reaches next episode and stops",
+            media_folder_drive(menu_st, &rgui->media, media_render,
+                  media_folder_stage, media_folder_shown, rgui));
+      rgui_parse_menu_entry_action(rgui, entry, MENU_ACTION_CANCEL);
+      media_render(menu_st);
+      MEDIA_CHECK("Back cancels the folder queue", !media_folder_shown(rgui) && !rgui->media.queue);
+      goto cleanup;
+   }
+
    MEDIA_CHECK("real decoder supplies the requested presentation path",
          tick < 2000 && media_picture_ready(rgui));
    if (media_failures) goto cleanup;
@@ -329,7 +362,6 @@ int main(int argc, char **argv)
    for (i = 0; i < VIDEO_SCALE_AREA(rgui->fs_thumbnail.dims); i++) pixels |= rgui->fs_thumbnail.data[i];
    MEDIA_CHECK("decoded movie picture is nonempty",
          gpu_surface ? rgui->media_gpu.texture != 0 : pixels != 0);
-   MEDIA_CHECK("fullscreen shared controller owns the player", rgui->media.controls.target.user == rgui);
 #ifdef _WIN32
    if (getenv("MEDIA_TEST_MODAL_MODE"))
    {
@@ -345,6 +377,7 @@ int main(int argc, char **argv)
                media_current_target));
       goto cleanup;
    }
+   MEDIA_CHECK("fullscreen shared controller owns the player", rgui->media.controls.target.user == rgui);
    MEDIA_CHECK("confirm pauses through the real menu adapter",
          rgui_parse_menu_entry_action(rgui, entry, MENU_ACTION_OK) == MENU_ACTION_NOOP
          && rgui_media_state(rgui, menu_st->current_time_us, &state) && state.paused);

@@ -4337,6 +4337,12 @@ static void materialui_layout(
 
 static void materialui_hide_fullscreen_thumbnails(materialui_handle_t *mui, bool animate);
 
+static void materialui_media_settings_hide(void *user)
+{
+   materialui_handle_t *mui = (materialui_handle_t*)user;
+   materialui_hide_fullscreen_thumbnails(mui, false);
+}
+
 static void materialui_browser_update(materialui_handle_t *mui, struct menu_state *menu_st)
 {
    file_list_t *list = menu_st->entries.list
@@ -4562,6 +4568,8 @@ static void materialui_render(void *data,
       if (shown)
          materialui_get_selected_thumbnails(mui, menu_st->selection_ptr,
                &primary, &secondary);
+      mui->media.settings_user = mui;
+      mui->media.settings_hide = materialui_media_settings_hide;
       menu_media_controls_thumbnail(&mui->media, primary, secondary, shown,
             dims_w > VIDEO_SCALE_W(mui->nav_bar_layout_dims)
                ? dims_w - VIDEO_SCALE_W(mui->nav_bar_layout_dims) : 0,

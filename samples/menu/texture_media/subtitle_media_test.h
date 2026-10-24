@@ -84,19 +84,20 @@ static bool media_test_subtitles(menu_media_controls_t *media,
    valid = valid && strstr(media_test_subtitle_text(media), "Subtitle sidecar");
    printf("subtitle integration restored: %s\n", media_test_subtitle_text(media));
    valid = media_subtitle_capture(22) && valid;
-   valid = valid && media->controls.layout.button_count == 5;
+   valid = valid && media->controls.layout.button_count >= 5
+      && media->controls.target.subtitle_tracks;
    menu_media_controls_action(media, MENU_ACTION_DOWN, menu_st->current_time_us);
    {
       unsigned i;
       gfx_media_subtitle_t *owner;
       const gfx_media_rect_t *button;
-      for (i = 0; i < 4; i++)
+      for (i = 0; i + 1 < media->controls.layout.button_count; i++)
          menu_media_controls_action(media, MENU_ACTION_RIGHT, menu_st->current_time_us);
-      valid = valid && media->controls.focus == 4;
+      valid = valid && media->controls.focus + 1 == media->controls.layout.button_count;
       menu_media_controls_action(media, MENU_ACTION_OK, menu_st->current_time_us);
       valid = media_subtitle_wait(media, menu_st, draw, NULL) && valid;
       valid = media_subtitle_capture(23) && valid;
-      button = &media->controls.layout.buttons[4];
+      button = &media->controls.layout.buttons[media->controls.layout.button_count - 1];
       gfx_media_controls_pointer(&media->controls, button->x + 1, button->y + 1,
             false, true, menu_st->current_time_us);
       gfx_media_controls_pointer(&media->controls, button->x + 1, button->y + 1,

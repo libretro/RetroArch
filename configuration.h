@@ -1073,6 +1073,7 @@ typedef struct settings
       /* Multimedia */
       bool multimedia_builtin_mediaplayer_enable;
       bool multimedia_builtin_imageviewer_enable;
+      bool media_player_continuous;
       bool media_player_subtitles;
 
       /* Bundle */

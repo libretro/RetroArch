@@ -7,7 +7,15 @@ typedef materialui_handle_t test_viewer_t;
 static bool test_showing(test_viewer_t *v) { return (v->flags&MUI_FLAG_SHOW_FULLSCREEN_THUMBNAILS)!=0; }
 static bool test_fade_ready(test_viewer_t *v) { return v->fullscreen_thumbnail_alpha>=0.9999f; }
 static gfx_thumbnail_t *test_thumbnail(test_viewer_t *v) { return &v->browser_thumbnail; }
-static void test_prepare(test_viewer_t *v) { v->flags&=~(MUI_FLAG_IS_PLAYLIST|MUI_FLAG_IS_EXPLORE_LIST);v->flags|=MUI_FLAG_IS_FILE_LIST;v->list_view_type=MUI_LIST_VIEW_DEFAULT; }
+static void test_prepare(test_viewer_t *v)
+{
+   file_list_t *list = MENU_LIST_GET_SELECTION(menu_state_get_ptr()->entries.list, 0);
+   v->flags &= ~(MUI_FLAG_IS_PLAYLIST | MUI_FLAG_IS_EXPLORE_LIST);
+   v->flags |= MUI_FLAG_IS_FILE_LIST;
+   v->list_view_type = MUI_LIST_VIEW_DEFAULT;
+   v->first_onscreen_entry = 0;
+   v->last_onscreen_entry = list && list->size ? list->size - 1 : 0;
+}
 static enum menu_action test_action(test_viewer_t *v,enum menu_action a) { return materialui_parse_menu_entry_action(v,a); }
 static int test_release(test_viewer_t *v,unsigned x,unsigned y) { return materialui_pointer_up(v,x,y,0,MENU_INPUT_GESTURE_TAP,NULL,NULL,0); }
 #elif defined(TEST_XMB)
@@ -113,6 +121,7 @@ static void render_subtitles(struct menu_state *menu_st)
 #include "win32_modal_test.h"
 #include "subtitle_media_test.h"
 
+#include "folder_playback_test.h"
 #ifdef _WIN32
 static bool test_current_visible(struct menu_state *menu_st)
 {
@@ -138,6 +147,24 @@ static bool test_current_target(struct menu_state *menu_st,
    return target->user && target->state;
 }
 
+static int test_folder_stage(void *data)
+{
+   test_viewer_t *viewer = (test_viewer_t*)data;
+   gfx_thumbnail_t *thumbnail = test_thumbnail(viewer);
+   gfx_anim_preview_t *session = (gfx_anim_preview_t*)thumbnail->anim_sess;
+   if (thumbnail->flags & GFX_THUMB_FLAG_MEDIA_ENDED) return 2;
+   if (session && session->path && thumbnail->texture)
+   {
+      if (!strncmp(path_basename(session->path), "episode10.", 10)) return 1;
+      if (!strncmp(path_basename(session->path), "episode2.", 9)) return 3;
+   }
+   return thumbnail->anim_player ? 0 : 2;
+}
+static bool test_folder_shown(void *data)
+{
+   return test_showing((test_viewer_t*)data);
+}
+
 int main(int argc,char **argv)
 {
    struct menu_state *menu_st;
@@ -154,6 +181,7 @@ int main(int argc,char **argv)
    bool seeking=true;
    const char *first_video = getenv("MEDIA_TEST_FIRST_VIDEO_US");
    int64_t first_video_us = first_video ? strtol(first_video, NULL, 10) : 0;
+   bool folder = getenv("MEDIA_TEST_CONTINUOUS") != NULL;
    if(argc!=3)return 2;
    native_gpu=getenv("MEDIA_TEST_GPU")!=NULL;
    config_file_set_io_default(config_file_io_filestream());rtime_init();retroarch_config_init();
@@ -346,9 +374,14 @@ int main(int argc,char **argv)
    list=MENU_LIST_GET_SELECTION(menu_st->entries.list,0);stack=MENU_LIST_GET(menu_st->entries.list,0);
    file_list_clear(list);file_list_clear(stack);fill_pathname_basedir(directory,argv[1],sizeof(directory));
    CHECK("file-browser directory installed",file_list_append(stack,directory,"",FILE_TYPE_PLAIN,0,0));
-   CHECK("movie entry installed",file_list_append(list,path_basename(argv[1]),"",FILE_TYPE_MOVIE,0,0));
-   menu_st->driver_ctx->list_insert(viewer,list,path_basename(argv[1]),directory,"",0,FILE_TYPE_MOVIE);
-   menu_st->selection_ptr=0;menu_st->current_time_us=native_gpu?cpu_features_get_time_usec():1000000;
+   if (folder)
+      CHECK("folder movies installed", media_folder_install(menu_st, list, directory, argv[1]));
+   else
+   {
+      CHECK("movie entry installed",file_list_append(list,path_basename(argv[1]),"",FILE_TYPE_MOVIE,0,0));
+      menu_st->driver_ctx->list_insert(viewer,list,path_basename(argv[1]),directory,"",0,FILE_TYPE_MOVIE);
+   }
+   menu_st->selection_ptr=folder ? 1 : 0;menu_st->current_time_us=native_gpu?cpu_features_get_time_usec():1000000;
    test_prepare(viewer);
    config_get_ptr()->uints.gfx_thumbnails=0;
    config_get_ptr()->uints.menu_left_thumbnails=0;
@@ -387,6 +420,22 @@ int main(int argc,char **argv)
    }
    else CHECK("real movie pixels reach texture boundary",uploads&&uploaded_pixels);
    CHECK("browser media controls are reachable",viewer->media.controls.target.user==test_thumbnail(viewer));
+   if (folder)
+   {
+      CHECK("natural folder playback reaches next episode and stops",
+            media_folder_drive(menu_st, &viewer->media, render,
+                  test_folder_stage, test_folder_shown, viewer));
+      test_action(viewer, MENU_ACTION_CANCEL);
+      render(menu_st);
+      CHECK("Back cancels the folder queue", !test_showing(viewer) && !viewer->media.queue);
+#if defined(TEST_MATERIALUI)
+      gfx_thumbnail_reset(&viewer->browser_thumbnail);
+#else
+      gfx_thumbnail_reset(&viewer->thumbnails.left);
+      gfx_thumbnail_reset(&viewer->thumbnails.right);
+#endif
+      goto media_test_done;
+   }
 #ifdef _WIN32
    if (getenv("MEDIA_TEST_MODAL_MODE"))
    {

@@ -876,6 +876,12 @@ jobs:
           mkdir -p "$capture"
           MEDIA_TEST_CAPTURE_DIR="$capture" MEDIA_TEST_SUBTITLE_CONTEXT=1 \
             python3 samples/menu/rgui_media/run.py --driver rgui --video-driver ${{ matrix.driver }} --gpu-surface --subtitles samples/menu/rgui_media/fixture.mp4
+      - name: RGUI GPU folder playback and settings on ${{ matrix.driver }}
+        shell: msys2 {0}
+        run: |
+          set -eu
+          python3 samples/menu/rgui_media/run.py --driver rgui --video-driver ${{ matrix.driver }} --gpu-surface --fullscreen-settings samples/menu/rgui_media/fixture.mp4
+          python3 samples/menu/rgui_media/run.py --driver rgui --video-driver ${{ matrix.driver }} --gpu-surface --continuous-error samples/menu/rgui_media/fixture.mp4
 
   views-sdl3:
     name: Views on SDL3, end to end (Xvfb, llvmpipe)

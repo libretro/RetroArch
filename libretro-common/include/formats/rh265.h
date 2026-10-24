@@ -233,6 +233,7 @@ int rh265_video_decode(rh265_video *v, const uint8_t *data, size_t len);
  * available through rh265_video_plane, -1 when nothing is pending.
  */
 /* Hardware: 2 busy; retry without waiting. */
+/* -2 on terminal hardware failure; -1 means no pending output. */
 int rh265_video_drain(rh265_video *v);
 
 /* Borrow a decoded plane (0=Y, 1=U, 2=V). Valid until the next decode call. */

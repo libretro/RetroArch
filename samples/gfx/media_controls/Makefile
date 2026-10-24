@@ -7,13 +7,17 @@ CFLAGS += -Wno-c99-extensions
 endif
 LRC := ../../../libretro-common
 SOURCES := media_controls_test.c ../../../gfx/gfx_media_controls.c ../../../menu/menu_media_controls.c \
-           ../../../gfx/gfx_media_subtitle.c $(LRC)/formats/subtitle/rsubtitle_srt.c \
-           $(LRC)/string/stdstring.c $(LRC)/encodings/encoding_utf.c \
-           $(LRC)/compat/compat_strl.c
+ ../../../menu/menu_media_browser.c ../../../libretro-common/lists/file_list.c \
+ ../../../libretro-common/compat/compat_strldup.c ../../../libretro-common/compat/compat_strl.c \
+ ../../../libretro-common/compat/compat_strcasestr.c
+SOURCES += ../../../gfx/gfx_media_subtitle.c $(LRC)/formats/subtitle/rsubtitle_srt.c \
+           $(LRC)/string/stdstring.c $(LRC)/encodings/encoding_utf.c
 ifeq ($(THREADS),1)
 CFLAGS += -DHAVE_THREADS
 SOURCES += ../../../libretro-common/rthreads/rthreads.c
+ifneq ($(OS),Windows_NT)
 LDFLAGS += -lpthread
+endif
 endif
 ifeq ($(OS),Windows_NT)
 TARGET := $(TARGET).exe
@@ -23,6 +27,7 @@ ifneq ($(SANITIZER),)
 CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
+LDFLAGS += -lm
 all: $(TARGET)
 $(TARGET): $(SOURCES) ../../../gfx/gfx_media_controls.h
 	$(CC) $(CFLAGS) $(SOURCES) -o $@ $(LDFLAGS)

@@ -36,3 +36,11 @@ Set `MEDIA_TEST_HDR_TIMELINE=1` with a PQ fixture whose CLL changes from
 metadata after forward, backward and burst seeks.
 
 Readbacks and bounded polling belong to this test harness only.
+
+`--continuous` uses temporary episode1/2/10 links or copies to verify natural
+folder order, clean completion, previous-file navigation, and Stop retaining
+the selected file. `--fullscreen-settings` also opens Media Player settings
+and checks that Back restores browser depth and selection.
+`--continuous-error` instead verifies that a broken episode10 stops before
+episode11. These modes are separate from `--subtitles`, external launch,
+window toggling and modal-loop acceptance; incompatible modes are rejected.

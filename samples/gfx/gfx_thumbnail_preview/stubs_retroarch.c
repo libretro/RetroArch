@@ -368,6 +368,12 @@ void audio_driver_mixer_stream_set_avail(unsigned i, size_t avail)
       hp_aavail = avail;
    hp.audio_avail_raises++;
 }
+void audio_driver_mixer_stream_set_repeat(unsigned i, bool repeat)
+{
+   (void)i;
+   (void)repeat;
+}
+
 void audio_driver_mixer_stream_set_paused(unsigned i, bool paused)
 { (void)i; audio_mixer_voice_set_paused(hp_pcm_voice, paused); }
 /* This edge simulates byte residency, not PCM playback. It has no

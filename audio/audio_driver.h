@@ -1360,6 +1360,7 @@ int64_t audio_driver_mixer_stream_byte_tell(unsigned i);
 
 /* Main-thread transport request; retains queued PCM and decoder state.
  * The mixer applies it at the next block boundary without waiting. */
+void audio_driver_mixer_stream_set_repeat(unsigned i, bool repeat);
 void audio_driver_mixer_stream_set_paused(unsigned i, bool paused);
 
 

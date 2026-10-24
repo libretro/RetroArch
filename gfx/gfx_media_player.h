@@ -9,6 +9,8 @@ struct gfx_anim_preview;
 RETRO_BEGIN_DECLS
 
 /* Main-thread transport shared by CPU and texture sinks. */
+bool gfx_media_player_set_repeat(struct gfx_anim_preview *session,
+      video_player_t *player, bool repeat);
 bool gfx_media_player_set_paused(struct gfx_anim_preview *session,
       video_player_t *player, bool paused, bool audio_ready, int64_t wall_us);
 bool gfx_media_player_state(struct gfx_anim_preview *session,
