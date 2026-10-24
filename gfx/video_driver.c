@@ -1020,9 +1020,23 @@ unsigned video_driver_get_window_displays(video_window_display_t *out,
    return count;
 }
 
-void video_driver_attach_windows(unsigned screens)
+/* windows_failed: the screens in its low byte, the restore count of
+ * the frames they failed in above it */
+#define VIDEO_WINDOWS_FAILED_TAG(restore) ((int)(((restore) & 0x7fffffu) << 8))
+
+void video_driver_attach_windows(unsigned screens, unsigned restore)
 {
-   retro_atomic_fetch_or_int(&video_driver_st.windows_failed, (int)screens);
+   retro_atomic_int_t *word = &video_driver_st.windows_failed;
+   int tag                  = VIDEO_WINDOWS_FAILED_TAG(restore);
+   int was, now;
+   if (!(screens &= 0xffu))
+      return;
+   /* A later restore's failures replace an earlier one's */
+   do
+   {
+      was = retro_atomic_load_acquire_int(word);
+      now = (((was & ~0xff) == tag) ? was : tag) | (int)screens;
+   } while (!retro_atomic_cas_int(word, was, now));
 }
 
 void video_driver_publish_window_layout(unsigned window,
@@ -3830,8 +3844,13 @@ static VIDEO_NOINLINE const video_windows_frame_t *video_driver_windows_frame(
       unsigned count;
       const video_window_display_t *list;
       memset(&route, 0, sizeof(route));
-      video_st->windows_forced_attached |= (unsigned)
-         retro_atomic_exchange_int(&video_st->windows_failed, 0);
+      {
+         /* Not those of frames laid out before the last restore */
+         int failed = retro_atomic_exchange_int(&video_st->windows_failed, 0);
+         if (     (failed & ~0xff)
+               == VIDEO_WINDOWS_FAILED_TAG(video_st->windows_restore))
+            video_st->windows_forced_attached |= (unsigned)failed & 0xffu;
+      }
       list   = video_driver_take_window_displays(video_st, &count);
       forced = video_st->windows_forced_attached;
       if (list)

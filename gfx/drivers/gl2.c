@@ -6645,7 +6645,7 @@ static void gl2_window_attach(gl2_t *gl, const video_windows_frame_t *f,
       unsigned w)
 {
    if (f)
-      video_driver_attach_windows(f->window_screens[w]);
+      video_driver_attach_windows(f->window_screens[w], f->restore);
    gl->windows.held.failed |= 1u << w;
    if (gl->windows.held.live & (1u << w))
       gl2_window_retire(gl, w);

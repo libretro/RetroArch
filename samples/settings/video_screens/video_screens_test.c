@@ -478,8 +478,15 @@ static void test_window_displays(void)
    window_test_run();
    CHECK(window_test_seen.restore == restore + 1);
 
+   /* A failure from a frame laid out before the last restore is not
+    * held against the window the restore asked for */
+   video_driver_attach_windows(2u, window_test_seen.restore - 1);
+   window_test_run();
+   CHECK(window_test_seen.plan.separate_mask == 2u);
+   CHECK(window_test_seen.window_screens[1] == 2u);
+
    /* The renderer could not make it: attached until the next list */
-   video_driver_attach_windows(2u);
+   video_driver_attach_windows(2u, window_test_seen.restore);
    window_test_run();
    CHECK(window_test_seen.plan.main_mask == 3u);
    CHECK(window_test_seen.window_screens[1] == 0u);

@@ -10494,7 +10494,7 @@ static void vulkan_window_attach(vk_t *vk,
       const video_windows_frame_t *f, unsigned w)
 {
    if (f)
-      video_driver_attach_windows(f->window_screens[w]);
+      video_driver_attach_windows(f->window_screens[w], f->restore);
    vk->windows.held.failed |= 1u << w;
    vulkan_window_retire(vk, w);
 }

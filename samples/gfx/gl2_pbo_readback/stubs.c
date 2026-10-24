@@ -62,7 +62,8 @@ bool video_context_driver_set_flags(gfx_ctx_flags_t *flags) { (void)flags; retur
 bool video_coord_array_append(video_coord_array_t *ca,
       const video_coords_t *coords, unsigned count)
 { (void)ca; (void)coords; (void)count; return false; }
-void video_driver_attach_windows(unsigned screens) { (void)screens; }
+void video_driver_attach_windows(unsigned screens, unsigned restore)
+{ (void)screens; (void)restore; }
 void video_driver_cached_frame(void) { }
 void video_driver_cached_frame_retire(void) { }
 uint32_t video_driver_get_disp_flags(void) { return 0; }

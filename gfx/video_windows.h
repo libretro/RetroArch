@@ -289,8 +289,9 @@ void video_driver_window_layout_screens(const video_windows_frame_t *frame,
 
 /* Any thread: the screens in @screens go back to the main window until
  * video_driver_restore_windows(). For a window the renderer could not
- * make or keep. */
-void video_driver_attach_windows(unsigned screens);
+ * make or keep, in a frame of @restore (video_windows_frame_t's): one
+ * laid out before the last restore is ignored. */
+void video_driver_attach_windows(unsigned screens, unsigned restore);
 
 /* Window @window's layout as drawn, from the thread that runs the
  * context, one at a time per window; latest wins. @window_dims are
