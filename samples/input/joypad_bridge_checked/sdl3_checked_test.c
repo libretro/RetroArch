@@ -89,6 +89,72 @@ static unsigned check_pressure(unsigned port)
    return bad;
 }
 
+/* A pad with a touchpad of two fingers: what get_touchpad() hands over
+ * is where SDL has the fingers, the pad's width -0x7fff to 0x7fff, and
+ * the press. */
+static unsigned check_touchpad(void)
+{
+   SDL_VirtualJoystickDesc desc;
+   SDL_VirtualJoystickTouchpadDesc touch;
+   input_pad_view_t view;
+   unsigned bad = 0, i, port = MAX_USERS;
+
+   /* the random states above filled SDL's event queue: a poll empties
+    * it, or the new pad's arrival would not fit */
+   sdl3_joypad_poll();
+   SDL_INIT_INTERFACE(&desc);
+   memset(&touch, 0, sizeof(touch));
+   touch.nfingers  = 2;
+   desc.type       = SDL_JOYSTICK_TYPE_GAMEPAD;
+   /* its own IDs: SDL keeps the mapping it made for the first virtual
+    * pad, which has no touchpad button, for any other with the same */
+   desc.vendor_id  = 0x1209;
+   desc.product_id = 0x7a01;
+   desc.naxes      = 6;
+   desc.nbuttons   = SDL_GAMEPAD_BUTTON_TOUCHPAD + 1;
+   /* every button up to the touchpad's, so it is mapped where it is */
+   desc.button_mask = (1u << (SDL_GAMEPAD_BUTTON_TOUCHPAD + 1)) - 1;
+   desc.ntouchpads = 1;
+   desc.touchpads  = &touch;
+   if (!SDL_AttachVirtualJoystick(&desc))
+   {
+      printf("FAIL sdl3_checked_test: SDL could not attach a pad with a touchpad (%s)\n", SDL_GetError());
+      return 1;
+   }
+   sdl3_joypad_poll();
+   for (i = 0; i < MAX_USERS; i++)
+      if (sdl3_joypads[i].touch_fingers)
+         port = i;
+   if (port == MAX_USERS)
+   {
+      printf("FAIL sdl3_checked_test: the driver did not see the touchpad\n");
+      return 1;
+   }
+   if (sdl3_joypad.get_touchpad(0 == port ? 1 : 0, &view))
+      bad++;   /* a pad without one */
+
+   SDL_SetJoystickVirtualTouchpad(sdl3_joypads[port].joypad, 0, 0, false, 0, 0, 0);
+   SDL_SetJoystickVirtualTouchpad(sdl3_joypads[port].joypad, 0, 1, true, 1.0f, 0.5f, 1.0f);
+   SDL_UpdateJoysticks();
+   memset(&view, 0, sizeof(view));
+   if (!sdl3_joypad.get_touchpad(port, &view) || view.touch_down != 2)
+      bad++;
+   if ((int16_t)(view.touch[1] & 0xffff) != 0x7fff || (int16_t)(view.touch[1] >> 16) != 0)
+      bad++;
+
+   SDL_SetJoystickVirtualTouchpad(sdl3_joypads[port].joypad, 0, 0, true, 0.0f, 0.0f, 1.0f);
+   SDL_SetJoystickVirtualButton(sdl3_joypads[port].joypad, SDL_GAMEPAD_BUTTON_TOUCHPAD, true);
+   SDL_UpdateJoysticks();
+   if (!sdl3_joypad.get_touchpad(port, &view)
+         || view.touch_down != (3 | INPUT_PAD_TOUCH_PRESS)
+         || (int16_t)(view.touch[0] & 0xffff) != -0x7fff
+         || (int16_t)(view.touch[0] >> 16) != -0x7fff)
+      bad++;
+   if (bad)
+      printf("FAIL sdl3_checked_test: the touchpad's fingers were not handed over as SDL has them\n");
+   return bad;
+}
+
 int main(void)
 {
    unsigned n, bad = 0, pads = 0, gamepads = 0, i;
@@ -148,6 +214,8 @@ int main(void)
          bad += bv_compare(&sdl3_joypad, i);
       }
 
+   bad += check_touchpad();
+
    sdl3_joypad_destroy();
    if (bad)
    {
@@ -156,6 +224,7 @@ int main(void)
    }
    printf("PASS sdl3_checked_test: 1500 random states of %u virtual joysticks"
          " (%u opened as a gamepad); what the bridge would read is what the"
-         " driver says\n", pads, gamepads);
+         " driver says; a touchpad's fingers and press as SDL has them\n",
+         pads, gamepads);
    return 0;
 }
