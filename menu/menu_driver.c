@@ -7723,7 +7723,10 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
       case RARCH_MENU_CTL_POINTER_UP:
          {
             menu_ctx_pointer_t *point = (menu_ctx_pointer_t*)data;
-            unsigned dims           = video_driver_get_ui_dims();
+            unsigned dims           = menu_st->driver_ctx
+               && menu_st->driver_ctx->set_texture
+               ? disp_get_ptr()->framebuf_dims
+               : video_driver_get_ui_dims();
             if ((unsigned)point->x >= VIDEO_SCALE_W(dims)
                   || (unsigned)point->y >= VIDEO_SCALE_H(dims))
             {
