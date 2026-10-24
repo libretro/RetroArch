@@ -2934,6 +2934,9 @@ typedef struct d3d11_deferred_state
    bool                      luts_loaded;
    unsigned                  shader_model;
    enum d3d11_feature_level_hint feat_level_hint;
+   /* read at begin: the step's thread reads no driver state */
+   bool                      frame_rect;
+   bool                      frame_smooth;
 } d3d11_deferred_state_t;
 
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
@@ -3055,7 +3058,13 @@ static bool d3d11_shader_load_begin(void *data,
    RARCH_LOG("[D3D11] Deferred: prepared %u passes for \"%s\".\n",
          deferred->total_passes, deferred->preset_path);
 
-   deferred->driver_data = ds;
+   /* A pass is D3DCompile and the device's object creation, both
+    * free-threaded; the context is used in the finalizing step only.
+    * So the passes may be built on the task thread. */
+   deferred->step_any_thread = true;
+   ds->frame_rect            = (d3d11->flags & D3D11_ST_FLAG_HW_IFACE_ENABLE) != 0;
+   ds->frame_smooth          = d3d11->chain.frame_rect.smooth;
+   deferred->driver_data     = ds;
    return true;
 
 error:
@@ -3121,14 +3130,14 @@ static void d3d11_deferred_state_free(
  * the preset's passes are rewritten to read it there where they can,
  * through d3d11->chain.frame_rect. */
 static void d3d11_frame_rect_semantics(d3d11_video_t *d3d11,
-      semantics_map_t *map)
+      semantics_map_t *map, bool enabled, bool smooth)
 {
-   if (!(d3d11->flags & D3D11_ST_FLAG_HW_IFACE_ENABLE))
+   if (!enabled)
       return;
    map->uniforms[SLANG_SEMANTIC_ORIGINAL_RECT]   = d3d11->chain.frame_rect.values;
    map->uniforms[SLANG_SEMANTIC_ORIGINAL_CLAMP]  = d3d11->chain.frame_rect.values + 4;
    map->uniforms[SLANG_SEMANTIC_ORIGINAL_TEXELS] = d3d11->chain.frame_rect.values + 8;
-   map->frame_smooth                             = d3d11->chain.frame_rect.smooth;
+   map->frame_smooth                             = smooth;
 }
 #endif
 
@@ -3225,7 +3234,8 @@ static bool d3d11_shader_load_step(void *data,
                &d3d11->chain.pass[i].passthrough;
          semantics_map.uniforms[SLANG_SEMANTIC_SWAP_COUNT] =
             &d3d11->chain.pass[i].swap_count;
-         d3d11_frame_rect_semantics(d3d11, &semantics_map);
+         d3d11_frame_rect_semantics(d3d11, &semantics_map, ds->frame_rect,
+               ds->frame_smooth);
          if (!slang_process(
                   ds->shader_preset, i, RARCH_SHADER_HLSL,
                   ds->shader_model, &semantics_map,
@@ -3528,7 +3538,9 @@ static bool d3d11_pass_build(d3d11_video_t *d3d11, unsigned i,
          &d3d11->chain.pass[i].passthrough;
    semantics_map.uniforms[SLANG_SEMANTIC_SWAP_COUNT] =
          &d3d11->chain.pass[i].swap_count;
-   d3d11_frame_rect_semantics(d3d11, &semantics_map);
+   d3d11_frame_rect_semantics(d3d11, &semantics_map,
+         (d3d11->flags & D3D11_ST_FLAG_HW_IFACE_ENABLE) != 0,
+         d3d11->chain.frame_rect.smooth);
    if (!slang_process(
             d3d11->chain.shader_preset, i, RARCH_SHADER_HLSL, shader_model,
             &semantics_map,

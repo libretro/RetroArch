@@ -4128,6 +4128,7 @@ typedef struct d3d12_deferred_state
    d3d12_deferred_pass_t  passes[GFX_MAX_SHADERS];
    d3d12_texture_t        luts[GFX_MAX_TEXTURES];
    bool                   luts_loaded;
+   bool                   frame_rect;   /* read at begin: the step's thread reads no flags */
 } d3d12_deferred_state_t;
 
 static unsigned d3d12_hdr_output_mode(const d3d12_video_t *video)
@@ -4220,7 +4221,12 @@ static bool d3d12_shader_load_begin(void *data,
    RARCH_LOG("[D3D12] Deferred: prepared %u passes for \"%s\".\n",
          deferred->total_passes, deferred->preset_path);
 
-   deferred->driver_data = ds;
+   /* A pass is D3DCompile and the device's object creation, both
+    * free-threaded; the context is used in the finalizing step only.
+    * So the passes may be built on the task thread. */
+   deferred->step_any_thread = true;
+   ds->frame_rect            = (d3d12->flags & D3D12_ST_FLAG_HW_IFACE_ENABLE) != 0;
+   deferred->driver_data     = ds;
    return true;
 
 error:
@@ -4285,9 +4291,9 @@ static void d3d12_deferred_state_free(
  * the preset's passes are rewritten to read it there where they can,
  * through d3d12->filter.frame_rect. */
 static void d3d12_frame_rect_semantics(d3d12_video_t *d3d12,
-      semantics_map_t *map)
+      semantics_map_t *map, bool enabled)
 {
-   if (!(d3d12->flags & D3D12_ST_FLAG_HW_IFACE_ENABLE))
+   if (!enabled)
       return;
    map->uniforms[SLANG_SEMANTIC_ORIGINAL_RECT]   = d3d12->filter.frame_rect.values;
    map->uniforms[SLANG_SEMANTIC_ORIGINAL_CLAMP]  = d3d12->filter.frame_rect.values + 4;
@@ -4394,7 +4400,7 @@ static bool d3d12_shader_load_step(void *data,
                &d3d12->filter.pass[i].passthrough;
          semantics_map.uniforms[SLANG_SEMANTIC_SWAP_COUNT] =
             &d3d12->filter.pass[i].swap_count;
-         d3d12_frame_rect_semantics(d3d12, &semantics_map);
+         d3d12_frame_rect_semantics(d3d12, &semantics_map, ds->frame_rect);
          if (!slang_process(
                   ds->shader_preset, i, RARCH_SHADER_HLSL, 50,
                   &semantics_map, &ds->passes[i].semantics))
@@ -4786,7 +4792,8 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
             &d3d12->filter.pass[i].passthrough;
       semantics_map.uniforms[SLANG_SEMANTIC_SWAP_COUNT] =
             &d3d12->filter.pass[i].swap_count;
-      d3d12_frame_rect_semantics(d3d12, &semantics_map);
+      d3d12_frame_rect_semantics(d3d12, &semantics_map,
+            (d3d12->flags & D3D12_ST_FLAG_HW_IFACE_ENABLE) != 0);
       if (!slang_process(
                d3d12->filter.shader_preset, i, RARCH_SHADER_HLSL, 50, &semantics_map,
                &d3d12->filter.pass[i].semantics))
