@@ -909,6 +909,8 @@ struct gl3_common_resources
    float paper_white_nits;
    float peak_nits;
    unsigned expand_gamut;
+   /* The first pass's SourceSize, from the preset; 0 when off. */
+   unsigned sim_source_dims;
 
    /* Frames may come inside a larger texture: passes are built to read
     * them there, sampling as the first pass samples. */
@@ -2334,8 +2336,12 @@ static void gl3_pass_build_semantic_frame_rect(struct gl3_pass *pass,
 static void gl3_pass_build_semantic_texture(struct gl3_pass *pass, uint8_t *buffer,
       enum slang_texture_semantic semantic, const gl3_texture_t *texture)
 {
-   gl3_pass_build_semantic_texture_vec4(pass, buffer, semantic,
-         texture->texture.dims);
+   unsigned dims = texture->texture.dims;
+   if (     semantic == SLANG_TEXTURE_SEMANTIC_SOURCE
+         && pass->pass_number == 0
+         && pass->common->sim_source_dims)
+      dims = pass->common->sim_source_dims;
+   gl3_pass_build_semantic_texture_vec4(pass, buffer, semantic, dims);
    gl3_pass_set_semantic_texture(pass, semantic, texture);
 }
 
@@ -4246,6 +4252,7 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
          gl3_chain_free(chain);
          return NULL;
       }
+   chain->common.sim_source_dims = shader->sim_source_dims;
    chain->common.frame_rect = frame_rect;
    chain->last_pass = last_pass;
 
@@ -4593,6 +4600,7 @@ gl3_filter_chain_t *gl3_filter_chain_create_deferred(
          gl3_chain_free(chain);
          return NULL;
       }
+   chain->common.sim_source_dims = shader->sim_source_dims;
    chain->common.frame_rect = frame_rect;
    chain->last_pass = last_pass;
 

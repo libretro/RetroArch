@@ -251,6 +251,10 @@ struct video_shader
    unsigned param_src_count;
    /* 0: legacy; 1/2/3: explicit SDR/PQ/scRGB final-pass encoding. */
    unsigned hdr_mode;
+   /* The size slang's first pass is told its source has, packed as
+    * VIDEO_SCALE_PACK, or 0 for the real one. Taken from the settings
+    * when the preset is loaded. */
+   unsigned sim_source_dims;
 };
 
 static INLINE int video_shader_get_hdr_mode(const struct video_shader *shader)

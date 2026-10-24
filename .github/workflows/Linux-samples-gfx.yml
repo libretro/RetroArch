@@ -381,6 +381,20 @@ jobs:
           path: ~/.apt-cache
           key: ${{ steps.apt.outputs.key }}
 
+      - name: Build and run slang_hlsl_backend_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/slang_hlsl_backend
+        run: |
+          set -eu
+          # The real slang_process(): a pass comes back as HLSL exactly
+          # when the build has a Direct3D 10/11/12 driver, and a preset's
+          # simulated SourceSize reaches the first pass only, from
+          # storage that outlives the semantics the D3D drivers copy.
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 \
+             timeout 300 make check SANITIZER=address,undefined
+          make clean
+
       - name: Build and run slang_last_pass_target_test (ASan + UBSan)
         shell: bash
         working-directory: samples/gfx/slang_last_pass_target

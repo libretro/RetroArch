@@ -2899,6 +2899,16 @@ end:
    config_file_free(root_conf);
    free(path_to_ref);
 
+   if (ret)
+   {
+      const settings_t *settings = config_get_ptr();
+      unsigned w = settings->uints.video_shader_simulated_input_resolution_width;
+      unsigned h = settings->uints.video_shader_simulated_input_resolution_height;
+      shader->sim_source_dims    = 0;
+      if (settings->bools.video_shader_simulated_input_resolution && w && h)
+         shader->sim_source_dims = VIDEO_SCALE_PACK(w, h);
+   }
+
    return ret;
 }
 

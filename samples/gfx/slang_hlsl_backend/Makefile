@@ -70,7 +70,7 @@ $(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
 spirv_cross_%.o: $(GRIFFIN_CPP)
 	$(CXX) $(DEPFLAGS) $($*_DEFS) -c -o $@ $<
 
-test_%.o: slang_hlsl_backend_test.c stock_spirv.h
+test_%.o: slang_hlsl_backend_test.c stock_spirv.h sized_spirv.h
 	$(CC) $(CFLAGS) $($*_EXPECT) -c -o $@ $<
 
 hlsl_lane_%: test_%.o spirv_cross_%.o $(C_OBJS)

@@ -685,6 +685,17 @@
 
 #define DEFAULT_SHADER_DELAY 0
 
+/* Slang passes see this size as the first pass's SourceSize instead of
+ * the frame's, so resolution-sensitive shaders treat a large frame like
+ * a small one. */
+#define DEFAULT_VIDEO_SHADER_SIMULATED_INPUT_RESOLUTION false
+#define DEFAULT_VIDEO_SHADER_SIMULATED_INPUT_RESOLUTION_WIDTH 320
+#define DEFAULT_VIDEO_SHADER_SIMULATED_INPUT_RESOLUTION_HEIGHT 240
+#define MIN_VIDEO_SHADER_SIMULATED_INPUT_RESOLUTION_WIDTH 150
+#define MAX_VIDEO_SHADER_SIMULATED_INPUT_RESOLUTION_WIDTH 1920
+#define MIN_VIDEO_SHADER_SIMULATED_INPUT_RESOLUTION_HEIGHT 100
+#define MAX_VIDEO_SHADER_SIMULATED_INPUT_RESOLUTION_HEIGHT 1440
+
 /* Only scale in integer steps.
  * The base size depends on system-reported geometry and aspect ratio.
  * If video_force_aspect is not set, X/Y will be integer scaled independently.

@@ -164,6 +164,7 @@
 #include "../settings/settings_def_input_mouse_scale.h"
 #include "../settings/settings_def_black_frame_insertion.h"
 #include "../settings/settings_def_shader_delay.h"
+#include "../settings/settings_def_shader_simulated_resolution.h"
 #include "../settings/settings_def_screen_brightness.h"
 #include "../settings/settings_def_video_rotation.h"
 #include "../settings/settings_def_video_monitor_index.h"
