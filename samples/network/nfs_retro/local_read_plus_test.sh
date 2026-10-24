@@ -33,10 +33,23 @@ python3 fake_nfs42.py $PORT $D > $D/fake.log 2>&1 &
 SRV=$!
 CAP=
 if command -v tshark >/dev/null 2>&1 && [ "$(id -u)" = 0 ]; then
-   tshark -i lo -f "tcp port $PORT" -w $D/rp.pcap -q 2>/dev/null &
+   tshark -i lo -f "tcp port $PORT" -w $D/rp.pcap -q 2>$D/cap.log &
    CAP=$!
+   # on a busy machine tshark takes longer than the server to start
+   n=0
+   until grep -q "Capturing on" $D/cap.log 2>/dev/null; do
+      n=$((n + 1))
+      [ $n -gt 150 ] && { echo "FAIL: tshark did not start capturing: $(cat $D/cap.log)"; exit 1; }
+      sleep 0.2
+   done
 fi
-sleep 2
+# and the server to listen
+n=0
+until python3 -c "import socket,sys; socket.create_connection(('127.0.0.1', int(sys.argv[1])), 1).close()" $PORT 2>/dev/null; do
+   n=$((n + 1))
+   [ $n -gt 150 ] && { echo "FAIL: fake_nfs42.py did not listen: $(cat $D/fake.log)"; exit 1; }
+   sleep 0.2
+done
 local_path=$D/sparse.img
 [ -n "$RUN" ] && local_path="Z:$D/sparse.img"
 if $RUN ./nfs_sparse_test$EXE 127.0.0.1 /export $PORT sparse.img "$local_path" 1048576 plus > $D/res 2>&1; then
