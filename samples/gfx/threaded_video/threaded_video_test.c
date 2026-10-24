@@ -9817,6 +9817,9 @@ static void lane_record_game_only(bool full_read_has_ui)
    settings_t *settings           = config_get_ptr();
    video_driver_state_t *video_st = video_state_get_ptr();
    recording_state_t *rec_st      = recording_state_get_ptr();
+   dylib_t lib                    = runloop_state_get_ptr()->lib_handle;
+   void (*freeze)(unsigned)       = lib
+      ? (void (*)(unsigned))dylib_proc(lib, "harness_core_freeze") : NULL;
    bool saved_game_only           = settings->bools.video_record_game_only;
    bool saved_enable              = rec_st->enable;
    static const char msg[]        = "RECORD GAME ONLY LANE MESSAGE";
@@ -9824,6 +9827,9 @@ static void lane_record_game_only(bool full_read_has_ui)
    size_t len;
    bool ok;
 
+   CHECK(freeze != NULL, "game-only lane: harness core lacks harness_core_freeze");
+   if (!freeze)
+      return;
    set_threaded_via_setting(false);
    run_frames(4);
    if (menu_is_up())
@@ -9834,6 +9840,9 @@ static void lane_record_game_only(bool full_read_has_ui)
       fprintf(stderr, "[skip] game-only lane (no 32-bit readback)\n");
       return;
    }
+   /* Base-size frames only: the dupe of an oversize frame drops the
+    * cached frame, and the paused redraws then have no core image */
+   freeze(1);
    run_frames(2);
    command_event(CMD_EVENT_PAUSE, NULL);
    run_frames(2);
@@ -9869,6 +9878,7 @@ static void lane_record_game_only(bool full_read_has_ui)
    }
 
    command_event(CMD_EVENT_UNPAUSE, NULL);
+   freeze(0);
    run_frames(2);
    if (failures == had)
       fprintf(stderr, "[pass] record game only lane\n");
