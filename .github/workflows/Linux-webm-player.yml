@@ -6,6 +6,7 @@ on:
     paths:
       - 'cores/libretro-media/**'
       - 'samples/cores/webm_player/**'
+      - 'samples/gfx/d3d11_video_decode/**'
       - 'libretro-common/samples/formats/audio_transfer/**'
       - 'libretro-common/formats/**'
       - 'libretro-common/include/formats/**'
@@ -15,6 +16,7 @@ on:
     paths:
       - 'cores/libretro-media/**'
       - 'samples/cores/webm_player/**'
+      - 'samples/gfx/d3d11_video_decode/**'
       - 'libretro-common/samples/formats/audio_transfer/**'
       - 'libretro-common/formats/**'
       - 'libretro-common/include/formats/**'

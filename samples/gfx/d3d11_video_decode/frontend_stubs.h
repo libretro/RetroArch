@@ -5,6 +5,7 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include "../../../configuration.h"
 
 static int stub_quiet;
 

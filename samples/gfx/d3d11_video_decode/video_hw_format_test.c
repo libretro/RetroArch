@@ -6,6 +6,27 @@
 static unsigned imported, shown, failures;
 static uint32_t received;
 
+settings_t *config_get_ptr(void)
+{
+   failures++;
+   return NULL;
+}
+
+bool image_transfer_anim_stream_stop_hw(void *stream, enum image_type_enum type)
+{
+   (void)stream;
+   (void)type;
+   failures++;
+   return false;
+}
+
+bool video_player_request_software(video_player_t *p)
+{
+   (void)p;
+   failures++;
+   return false;
+}
+
 /* The format path must not enter CPU playback or upload methods. */
 bool gfx_surface_slot_writable(gfx_surface_t *s, unsigned slot)
 { (void)s; (void)slot; failures++; return false; }
