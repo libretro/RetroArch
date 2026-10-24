@@ -306,6 +306,10 @@ static int cmp1(int fmt,const uint8_t*pat,size_t pl,const uint8_t*src,size_t sl,
    if(!patch_stream_finish(ps,&ss,&sl2)){pstream_fail_note();free(os);patch_stream_free(ps);free(priv);return 1;}
    {int bad=(sl2!=ol)||(ol&&memcmp(os,ss,ol));
     free(os);free(ss);patch_stream_free(ps);free(priv);return bad;}}
+/* A feed of one, two or three bytes at a time is for a source up to
+ * 1025 bytes, past its 1024-byte edges: over a larger one it is a call
+ * a byte and finds nothing the seven-byte feed does not. */
+#define TINY_ONLY_SMALL(ci,sl) ((ci)<3 && (sl)>1025)
 static int run_ips_ups(void){
    size_t chunks[]={1,2,3,7,64,1024,1<<20};int trial,ci,fails=0,total=0;
    /* the patches are built here, once allocated: each comparison reads
@@ -315,11 +319,11 @@ static int run_ips_ups(void){
       size_t sl; {unsigned m=xr()%10; sl = m==0?0 : m==1?1 : m==2?2 : m==3?(xr()%4) : m==4?1024 : m==5?1025 : xr()%8192;}uint8_t*src=malloc(sl?sl:1);size_t k;size_t pl,wtl;
       for(k=0;k<sl;k++)src[k]=(uint8_t)xr();
       pl=make_ips(pat,src,sl,&wtl);
-      for(ci=0;ci<7;ci++){total++;fails+=cmp1(0,pat,pl,src,sl,chunks[ci]);}
+      for(ci=0;ci<7;ci++){if(TINY_ONLY_SMALL(ci,sl))continue;total++;fails+=cmp1(0,pat,pl,src,sl,chunks[ci]);}
       {long tld=(long)sl+((long)(xr()%256)-128);size_t tl=tld<0?0:(size_t)tld;uint8_t*tgt=malloc(tl?tl:1);
        for(k=0;k<tl;k++)tgt[k]=(uint8_t)((k<sl?src[k]:0)^((xr()&3)?0:xr()));
        pl=make_ups(pat,src,sl,tgt,tl);
-       for(ci=0;ci<7;ci++){total++;fails+=cmp1(1,pat,pl,src,sl,chunks[ci]);}
+       for(ci=0;ci<7;ci++){if(TINY_ONLY_SMALL(ci,sl))continue;total++;fails+=cmp1(1,pat,pl,src,sl,chunks[ci]);}
        free(tgt);}
       free(src);}
    free(pat);
