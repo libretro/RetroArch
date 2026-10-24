@@ -194,6 +194,8 @@ jobs:
             rav1_tiles_test
             rav1_sequence_test
             rav1_container_test
+            subtitle_srt_test
+            subtitle_srt_fault_test
             rtga_test
             rbmp_test
             rbmp_encode_test
