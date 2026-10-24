@@ -212,6 +212,20 @@ int main(int argc, char **argv)
                (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL) != 0);
       }
       if (image)
+      {
+         menu_ctx_pointer_t point;
+         unsigned dims = menu_st->driver_ctx->set_texture
+            ? disp_get_ptr()->framebuf_dims : video_driver_get_ui_dims();
+         memset(&point, 0, sizeof(point));
+         point.x = VIDEO_SCALE_W(dims) + 4;
+         point.y = VIDEO_SCALE_H(dims) / 2;
+         menu_driver_ctl(RARCH_MENU_CTL_POINTER_DOWN, &point);
+         point.x = VIDEO_SCALE_W(dims) / 2;
+         point.gesture = MENU_INPUT_GESTURE_TAP;
+         menu_driver_ctl(RARCH_MENU_CTL_POINTER_UP, &point);
+         MEDIA_CHECK("non-client resize press cannot become an image-dismiss tap", ((rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL) != 0));
+      }
+      if (image)
          MEDIA_CHECK("image confirmation remains in internal view",
                rgui_parse_menu_entry_action(rgui, entry, MENU_ACTION_OK)
                   == MENU_ACTION_NOOP && ((rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL) != 0));

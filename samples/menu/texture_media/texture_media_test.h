@@ -259,6 +259,20 @@ int main(int argc,char **argv)
          CHECK("non-client release retains image viewer", test_showing(viewer));
       }
       if (image)
+      {
+         menu_ctx_pointer_t point;
+         unsigned dims = menu_st->driver_ctx->set_texture
+            ? disp_get_ptr()->framebuf_dims : video_driver_get_ui_dims();
+         memset(&point, 0, sizeof(point));
+         point.x = VIDEO_SCALE_W(dims) + 4;
+         point.y = VIDEO_SCALE_H(dims) / 2;
+         menu_driver_ctl(RARCH_MENU_CTL_POINTER_DOWN, &point);
+         point.x = VIDEO_SCALE_W(dims) / 2;
+         point.gesture = MENU_INPUT_GESTURE_TAP;
+         menu_driver_ctl(RARCH_MENU_CTL_POINTER_UP, &point);
+         CHECK("non-client resize press cannot become an image-dismiss tap", test_showing(viewer));
+      }
+      if (image)
          CHECK("image confirmation remains in internal view",
                test_action(viewer, MENU_ACTION_OK) == MENU_ACTION_NOOP
                && test_showing(viewer));

@@ -374,6 +374,7 @@ const menu_ctx_driver_t *menu_ctx_drivers[] = {
 };
 
 static struct menu_state menu_driver_state = { 0 };
+static bool menu_pointer_outside_press;
 static char *menu_media_launch_path;
 static bool menu_media_launch_browsing;
 static bool menu_media_launch_activate;
@@ -4932,6 +4933,7 @@ void menu_driver_frame(bool menu_is_alive, video_frame_info_t *video_info)
 void menu_driver_destroy(
       struct menu_state *menu_st)
 {
+   menu_pointer_outside_press = false;
    if (!task_content_load_pending() || (menu_driver_media_startup_token() & 1))
       menu_driver_media_open(NULL);
    menu_st->flags &= ~(MENU_ST_FLAG_PENDING_QUICK_MENU
@@ -7709,6 +7711,17 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
       case RARCH_MENU_CTL_POINTER_DOWN:
          {
             menu_ctx_pointer_t *point = (menu_ctx_pointer_t*)data;
+            unsigned dims           = menu_st->driver_ctx
+               && menu_st->driver_ctx->set_texture
+               ? disp_get_ptr()->framebuf_dims
+               : video_driver_get_ui_dims();
+            menu_pointer_outside_press = (unsigned)point->x >= VIDEO_SCALE_W(dims)
+               || (unsigned)point->y >= VIDEO_SCALE_H(dims);
+            if (menu_pointer_outside_press)
+            {
+               point->retcode = 0;
+               return false;
+            }
             if (!menu_st->driver_ctx || !menu_st->driver_ctx->pointer_down)
             {
                point->retcode = 0;
@@ -7727,6 +7740,12 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                && menu_st->driver_ctx->set_texture
                ? disp_get_ptr()->framebuf_dims
                : video_driver_get_ui_dims();
+            if (menu_pointer_outside_press)
+            {
+               menu_pointer_outside_press = false;
+               point->retcode = 0;
+               return false;
+            }
             if ((unsigned)point->x >= VIDEO_SCALE_W(dims)
                   || (unsigned)point->y >= VIDEO_SCALE_H(dims))
             {
