@@ -846,11 +846,12 @@ jobs:
 
           TSAN_OPTIONS=halt_on_error=1 ./crc32_test
 
-      - name: Permanent inert prefix pages, refill and I/O boundaries
+      - name: Prefix refill boundaries and sliding-window I/O
         run: |
-          make -B -C libretro-common/samples/formats/data_transfer data_transfer_prefix_test COUNT_IO=1 SAMPLE_OBJDIR=obj-inert-strict CFLAGS='-Wall -pedantic -std=gnu99 -O2 -g1 -DDT_STRICT -DDT_COUNT_IO -DHAVE_MMAP -D_GNU_SOURCE -I../../../include'
+          make -B -C libretro-common/samples/formats/data_transfer data_transfer_prefix_test data_transfer_window_test COUNT_IO=1 SAMPLE_OBJDIR=obj-inert-strict CFLAGS='-Wall -pedantic -std=gnu99 -O2 -g1 -DDT_STRICT -DDT_COUNT_IO -DHAVE_MMAP -D_GNU_SOURCE -I../../../include'
           cd libretro-common/samples/formats/data_transfer
           INERT_ONLY=1 ./data_transfer_prefix_test
+          ./data_transfer_window_test
 
       - name: ccache statistics
         if: ${{ !cancelled() }}
