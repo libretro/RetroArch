@@ -1484,6 +1484,10 @@ MSG_HASH(
    "input_player%u_aim_stick"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_TOUCHPAD,
+   "input_player%u_touchpad"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_INPUT_JOYPAD_INDEX,
    "input_player%u_joypad_index"
    )

@@ -163,6 +163,8 @@ typedef struct settings
       unsigned input_keyboard_index[MAX_USERS];
       /* 0 off, 1 the left stick, 2 the right: enum input_aim_stick */
       unsigned input_aim_stick[MAX_USERS];
+      /* 0 off, 1 a touchscreen, 2 a mouse: enum input_touchpad */
+      unsigned input_touchpad[MAX_USERS];
 
       unsigned input_libretro_device[MAX_USERS];
       unsigned input_analog_dpad_mode[MAX_USERS];

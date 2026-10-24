@@ -244,6 +244,16 @@ enum input_aim_stick
    INPUT_AIM_STICK_LAST
 };
 
+/* input_playerN_touchpad: what the touchpad of a port's pad is to its
+ * core, where the pad has one */
+enum input_touchpad
+{
+   INPUT_TOUCHPAD_OFF = 0,
+   INPUT_TOUCHPAD_POINTER,   /* a touchscreen */
+   INPUT_TOUCHPAD_MOUSE,
+   INPUT_TOUCHPAD_LAST
+};
+
 /* input_rotation: 0 to 3 are quarter turns, as Video Rotation counts
  * them; this one follows that setting. */
 #define INPUT_ROTATION_AUTO 4

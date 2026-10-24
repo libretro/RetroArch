@@ -8092,6 +8092,142 @@ static void lane_aim_stick(void)
 #endif
 }
 
+/* "Controller Touchpad": a pad's fingers, as its view lends them, are
+ * the port's touchscreen or mouse. */
+static input_pad_view_t touch_lent;
+
+static const input_pad_view_t *touch_view(unsigned pad)
+{
+   static input_pad_view_t none;
+   return pad == syn_pad_index ? &touch_lent : &none;
+}
+
+static void touch_finger(unsigned f, bool down, int x, int y)
+{
+   touch_lent.touch[f] = ((uint32_t)x & 0xffff) | ((uint32_t)y << 16);
+   if (down)
+      touch_lent.touch_down |= (uint8_t)(1u << f);
+   else
+      touch_lent.touch_down &= (uint8_t)~(1u << f);
+}
+
+static void lane_touchpad(void)
+{
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
+   input_driver_state_t *input_st = input_state_get_ptr();
+   settings_t *settings           = config_get_ptr();
+   const input_device_driver_t *joypad_real = input_st->primary_joypad;
+   unsigned had = failures;
+   int px0, py0, pd0, px1, py1, pd1, pc, mx, my, ml, mr;
+#define TOUCH_READ() do { \
+      run_loop_frames(1); \
+      px0 = input_driver_state_wrapper(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X); \
+      py0 = input_driver_state_wrapper(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_Y); \
+      pd0 = input_driver_state_wrapper(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_PRESSED); \
+      px1 = input_driver_state_wrapper(0, RETRO_DEVICE_POINTER, 1, RETRO_DEVICE_ID_POINTER_X); \
+      py1 = input_driver_state_wrapper(0, RETRO_DEVICE_POINTER, 1, RETRO_DEVICE_ID_POINTER_Y); \
+      pd1 = input_driver_state_wrapper(0, RETRO_DEVICE_POINTER, 1, RETRO_DEVICE_ID_POINTER_PRESSED); \
+      pc  = input_driver_state_wrapper(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_COUNT); \
+      mx  = input_driver_state_wrapper(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_X); \
+      my  = input_driver_state_wrapper(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_Y); \
+      ml  = input_driver_state_wrapper(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_LEFT); \
+      mr  = input_driver_state_wrapper(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_RIGHT); \
+   } while (0)
+
+   if (!joypad_real)
+   {
+      CHECK(false, "touchpad: no joypad driver");
+      return;
+   }
+   syn_joypad               = *joypad_real;
+   syn_joypad.button        = syn_button;
+   syn_joypad.axis          = syn_axis;
+   syn_joypad.state         = syn_state;
+   syn_joypad.get_buttons   = syn_get_buttons;
+   syn_joypad.view          = touch_view;
+   input_st->primary_joypad = &syn_joypad;
+   syn_buttons = 0;
+   syn_hat     = 0;
+   memset(syn_axes, 0, sizeof(syn_axes));
+   memset(&touch_lent, 0, sizeof(touch_lent));
+   touch_lent.touchpad = true;
+   fast_forward(true);
+
+   /* the default: a touchscreen. One finger, then a second. */
+   settings->uints.input_touchpad[0] = INPUT_TOUCHPAD_POINTER;
+   touch_finger(1, true, 12000, -20000);
+   TOUCH_READ();
+   CHECK(px0 == 12000 && py0 == -20000 && pd0 && pc == 1 && !pd1,
+         "touchpad: one finger is not one touch where it is");
+   touch_finger(0, true, -3000, 4000);
+   TOUCH_READ();
+   CHECK(px0 == -3000 && py0 == 4000 && pd0 && px1 == 12000 && py1 == -20000
+         && pd1 && pc == 2,
+         "touchpad: two fingers are not two touches, in the pad's order");
+   CHECK(!mx && !my && !ml && !mr, "touchpad: a touchscreen moved the mouse");
+   /* no finger: the screen's own touches, of which there are none */
+   touch_lent.touch_down = 0;
+   TOUCH_READ();
+   CHECK(!pd0 && !pc, "touchpad: no finger on the pad was a touch");
+   /* a pad without one is read as before */
+   touch_lent.touchpad = false;
+   touch_finger(0, true, 5000, 5000);
+   TOUCH_READ();
+   CHECK(!pd0 && px0 != 5000, "touchpad: a pad without a touchpad touched");
+   touch_lent.touchpad = true;
+   /* off */
+   settings->uints.input_touchpad[0] = INPUT_TOUCHPAD_OFF;
+   TOUCH_READ();
+   CHECK(!pd0 && px0 != 5000, "touchpad: off, the pad still touched");
+
+   /* a mouse: moves once a poll, from where the finger landed */
+   settings->uints.input_touchpad[0] = INPUT_TOUCHPAD_MOUSE;
+   touch_lent.touch_down = 0;
+   TOUCH_READ();
+   touch_finger(0, true, 1000, 1000);
+   TOUCH_READ();
+   CHECK(!mx && !my, "touchpad: a finger put down moved the mouse");
+   CHECK(!pd0, "touchpad: a mouse was a touch");
+   touch_finger(0, true, 1000 + 3200, 1000 - 640);
+   TOUCH_READ();
+   if (mx != 100 || my != -20)
+      printf("[info] touchpad: the mouse moved %d %d\n", mx, my);
+   CHECK(mx == 100 && my == -20, "touchpad: the mouse did not move as the finger did");
+   /* asked again in the same poll: the same move, not twice */
+   CHECK(input_driver_state_wrapper(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_X) == 100,
+         "touchpad: a second ask in a poll moved the mouse again");
+   TOUCH_READ();
+   CHECK(!mx && !my, "touchpad: a still finger moved the mouse");
+   /* a move too small for a count is kept until it is one */
+   touch_finger(0, true, 4200 + 20, 360);
+   TOUCH_READ();
+   touch_finger(0, true, 4200 + 40, 360);
+   TOUCH_READ();
+   CHECK(mx == 1, "touchpad: small moves were lost, not added up");
+   CHECK(!ml && !mr, "touchpad: the mouse clicked without the pad pressed");
+   touch_lent.touch_down |= INPUT_PAD_TOUCH_PRESS;
+   TOUCH_READ();
+   CHECK(ml && !mr, "touchpad: pressing the pad with one finger is not a left click");
+   touch_finger(1, true, 0, 0);
+   TOUCH_READ();
+   CHECK(mr && !ml, "touchpad: pressing it with two fingers is not a right click");
+
+   touch_lent.touch_down = 0;
+   settings->uints.input_touchpad[0] = INPUT_TOUCHPAD_POINTER;
+   fast_forward(false);
+   run_loop_frames(3);
+   input_st->primary_joypad = joypad_real;
+#undef TOUCH_READ
+   if (failures == had)
+      printf("[pass] touchpad: as a touchscreen, each finger is a touch where it"
+            " is, the screen's own while there is none; as a mouse, a finger's"
+            " moves once a poll, small ones added up, and a press a left or"
+            " with two fingers a right click; off or without one, nothing\n");
+#else
+   printf("[skip] touchpad: needs the test drivers\n");
+#endif
+}
+
 /* The sensor snapshot is made for a shader that reads sensors, and
  * for nobody else: with no such shader the poll publishes nothing. */
 /* The audio device across what does not change it: a core's new frame
@@ -9530,6 +9666,7 @@ int main(int argc, char *argv[])
       lane_entry_target_pick();
       lane_bind_settings();
       lane_aim_stick();
+      lane_touchpad();
       lane_core_view();
       lane_key_events();
       lane_osk_chinese();

@@ -12546,6 +12546,22 @@ MSG_HASH(
    "Aim From Analog Stick"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCHPAD,
+   "Controller Touchpad"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCHPAD_POINTER,
+   "Touchscreen"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCHPAD_MOUSE,
+   "Mouse"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCHPAD,
+   "What the touchpad on this port's controller is to the core, on a DualShock 4 or DualSense with the 'hid' controller driver. 'Touchscreen': a finger on the pad touches that spot on the screen, two fingers two spots. 'Mouse': moving a finger moves the mouse, and pressing the pad in clicks, with two fingers on it a right click."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AIM_STICK,
    "Lets an analog stick aim this port's lightgun or pointer: where the stick is held is where it points on the screen, with the centre of the stick at the centre. Several players can then each aim without a mouse each. The gun's buttons are bound below as usual."
    )

@@ -5036,6 +5036,127 @@ static bool input_state_device_mask_plain(
    return true;
 }
 
+/* "Controller Touchpad": the touchpad of a port's pad - as the pad's
+ * handler keeps it, lent through the joypad driver's view(), so it is
+ * this poll's and nothing is copied - as the port's touchscreen or
+ * mouse. */
+
+/* the pad's width, -0x7fff to 0x7fff, as about two thousand counts */
+#define INPUT_TOUCHPAD_MOUSE_DIV 32
+
+/* A port's touchpad as its mouse: the finger followed, and its moves
+ * this poll, worked out once at the poll's first ask */
+typedef struct
+{
+   unsigned gen;
+   int32_t  last[2];
+   int32_t  rest[2];   /* what was too small a move to give yet */
+   int16_t  move[2];
+   int8_t   finger;    /* -1: none down */
+} input_touchpad_mouse_t;
+
+static input_touchpad_mouse_t input_touchpad_mice[MAX_USERS];
+
+static INLINE int16_t input_touchpad_x(const input_pad_view_t *view,
+      unsigned f) { return (int16_t)(view->touch[f] & 0xffff); }
+static INLINE int16_t input_touchpad_y(const input_pad_view_t *view,
+      unsigned f) { return (int16_t)(view->touch[f] >> 16); }
+
+static void input_touchpad_mouse_update(input_touchpad_mouse_t *m,
+      const input_pad_view_t *view)
+{
+   unsigned i;
+   int f = m->finger;
+
+   m->gen     = input_poll_generation;
+   m->move[0] = m->move[1] = 0;
+   if (f < 0 || !(view->touch_down & (1 << f)))
+   {
+      /* a finger put down is followed from where it lands */
+      f = (view->touch_down & 1) ? 0 : (view->touch_down & 2) ? 1 : -1;
+      m->finger  = (int8_t)f;
+      m->rest[0] = m->rest[1] = 0;
+      if (f >= 0)
+      {
+         m->last[0] = input_touchpad_x(view, (unsigned)f);
+         m->last[1] = input_touchpad_y(view, (unsigned)f);
+      }
+      return;
+   }
+   for (i = 0; i < 2; i++)
+   {
+      int32_t now = i ? input_touchpad_y(view, (unsigned)f)
+                      : input_touchpad_x(view, (unsigned)f);
+      int32_t d   = now - m->last[i] + m->rest[i];
+      m->last[i]  = now;
+      m->move[i]  = (int16_t)(d / INPUT_TOUCHPAD_MOUSE_DIV);
+      m->rest[i]  = d - m->move[i] * INPUT_TOUCHPAD_MOUSE_DIV;
+   }
+}
+
+/* @ret: what the port's own pointer or mouse says */
+static int16_t input_touchpad_state(const input_driver_state_t *input_st,
+      unsigned mode, unsigned port, unsigned joy_idx,
+      unsigned device, unsigned idx, unsigned id, int16_t ret)
+{
+   const input_device_driver_t *pad = input_st->primary_joypad;
+   const input_pad_view_t *view;
+   unsigned fingers;
+
+   if (     !pad || !pad->view
+         || !(view = pad->view(joy_idx)) || !view->touchpad)
+      return ret;
+   fingers = view->touch_down & 3;
+
+   if (device == RETRO_DEVICE_POINTER)
+   {
+      unsigned f;
+      /* the pad's touches stand in for the screen's while it has any */
+      if (mode != INPUT_TOUCHPAD_POINTER || !fingers)
+         return ret;
+      if (id == RETRO_DEVICE_ID_POINTER_COUNT)
+         return (int16_t)((fingers & 1) + (fingers >> 1));
+      if (id == RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN)
+         return 0;
+      /* the idx-th finger down */
+      f = (idx == 0) ? ((fingers & 1) ? 0 : 1)
+        : (idx == 1 && fingers == 3) ? 1 : 2;
+      if (f > 1)
+         return 0;
+      switch (id)
+      {
+         case RETRO_DEVICE_ID_POINTER_X:
+            return input_touchpad_x(view, f);
+         case RETRO_DEVICE_ID_POINTER_Y:
+            return input_touchpad_y(view, f);
+         case RETRO_DEVICE_ID_POINTER_PRESSED:
+            return 1;
+      }
+      return 0;
+   }
+
+   if (device == RETRO_DEVICE_MOUSE && mode == INPUT_TOUCHPAD_MOUSE)
+   {
+      input_touchpad_mouse_t *m = &input_touchpad_mice[port];
+      bool press                = (view->touch_down & INPUT_PAD_TOUCH_PRESS) != 0;
+      int32_t v;
+      if (m->gen != input_poll_generation)
+         input_touchpad_mouse_update(m, view);
+      switch (id)
+      {
+         case RETRO_DEVICE_ID_MOUSE_X:
+         case RETRO_DEVICE_ID_MOUSE_Y:
+            v = ret + m->move[id];
+            return (int16_t)(v > 0x7fff ? 0x7fff : v < -0x8000 ? -0x8000 : v);
+         case RETRO_DEVICE_ID_MOUSE_LEFT:
+            return (int16_t)(ret || (press && fingers != 3));
+         case RETRO_DEVICE_ID_MOUSE_RIGHT:
+            return (int16_t)(ret || (press && fingers == 3));
+      }
+   }
+   return ret;
+}
+
 static int16_t input_state_internal(
       input_driver_state_t *input_st,
       settings_t *settings,
@@ -5150,6 +5271,12 @@ static int16_t input_state_internal(
                      input_config_binds[mapped_port]);
          }
       }
+
+      if (     settings->uints.input_touchpad[mapped_port]
+            && (device == RETRO_DEVICE_POINTER || device == RETRO_DEVICE_MOUSE))
+         ret = input_touchpad_state(input_st,
+               settings->uints.input_touchpad[mapped_port], mapped_port,
+               joypad_info.joy_idx, device, idx, id, ret);
 
       /* Ignore analog sticks when using Analog to Digital */
       if (     (device == RETRO_DEVICE_ANALOG)

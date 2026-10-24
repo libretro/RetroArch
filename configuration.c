@@ -6204,6 +6204,7 @@ void config_set_defaults(settings_t *target)
       settings->uints.input_mouse_index[i] = (unsigned)i;
       settings->uints.input_keyboard_index[i] = 0;
       settings->uints.input_aim_stick[i]      = INPUT_AIM_STICK_NONE;
+      settings->uints.input_touchpad[i]       = INPUT_TOUCHPAD_POINTER;
    }
 
    custom_vp->dims   = 0;
@@ -7218,6 +7219,11 @@ static bool config_load_file(const char *path, settings_t *settings)
          CONFIG_GET_INT_BASE(conf, settings, uints.input_aim_stick[i], prefix);
          if (settings->uints.input_aim_stick[i] >= INPUT_AIM_STICK_LAST)
             settings->uints.input_aim_stick[i] = INPUT_AIM_STICK_NONE;
+
+         strlcpy_lit(prefix + _len, "_touchpad", sizeof(prefix) - _len);
+         CONFIG_GET_INT_BASE(conf, settings, uints.input_touchpad[i], prefix);
+         if (settings->uints.input_touchpad[i] >= INPUT_TOUCHPAD_LAST)
+            settings->uints.input_touchpad[i] = INPUT_TOUCHPAD_POINTER;
 
          strlcpy_lit(prefix + _len, "_joypad_index", sizeof(prefix) - _len);
          CONFIG_GET_INT_BASE(conf, settings, uints.input_joypad_index[i], prefix);
@@ -9648,6 +9654,13 @@ bool config_save_file(const char *path)
       else
          config_unset(conf, cfg);
 
+      strlcpy_lit(cfg + _len, "_touchpad",          sizeof(cfg) - _len);
+      if (   !minimal
+          || settings->uints.input_touchpad[i] != defaults->uints.input_touchpad[i])
+         config_set_int(conf, cfg, settings->uints.input_touchpad[i]);
+      else
+         config_unset(conf, cfg);
+
       /* What the user configured, which is not what the setting holds
        * while a driver restart has put controllers back on their
        * ports. */
@@ -10258,6 +10271,14 @@ int8_t config_save_overrides(enum override_type type,
             strlcpy_lit(cfg + _len, "_aim_stick", sizeof(cfg) - _len);
             config_set_int(conf, cfg, overrides->uints.input_aim_stick[i]);
             RARCH_DBG("[Override] %s = \"%u\"\n", cfg, overrides->uints.input_aim_stick[i]);
+         }
+
+         if (settings->uints.input_touchpad[i]
+               != overrides->uints.input_touchpad[i])
+         {
+            strlcpy_lit(cfg + _len, "_touchpad", sizeof(cfg) - _len);
+            config_set_int(conf, cfg, overrides->uints.input_touchpad[i]);
+            RARCH_DBG("[Override] %s = \"%u\"\n", cfg, overrides->uints.input_touchpad[i]);
          }
 
          /* The live value is what the user configured, not a port a
