@@ -282,9 +282,15 @@ void menu_media_controls_context_reset(menu_media_controls_t *media)
 void menu_media_controls_subtitle_caption(const gfx_media_subtitle_view_t *view,
       char *text, size_t size)
 {
-   const char *track = view->off ? msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED)
+   const char *track;
+   if (!size)
+      return;
+   text[0] = '\0';
+   if (!view->track_count && !view->discovering)
+      return;
+   track = view->off ? msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED)
       : view->discovering ? msg_hash_to_str(MSG_LOADING)
-      : *view->track ? view->track : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY);
+      : view->track;
    snprintf(text, size, "CC: %s", track);
 }
 
