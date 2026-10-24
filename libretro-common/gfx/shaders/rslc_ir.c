@@ -218,6 +218,13 @@ void rslc_scratch_mark(struct rslc_ctx *c, struct rslc_mark *m)
 void rslc_scratch_release(struct rslc_ctx *c, const struct rslc_mark *m)
 {
    struct rslc_arena *a = &c->scratch;
+   /* a caller's block has no chunks: the mark's point in it is all */
+   if (a->fixed)
+   {
+      a->cur  = m->cur;
+      a->used = m->used;
+      return;
+   }
    while (a->chunks && a->chunks != m->chunk)
    {
       struct rslc_chunk *k = a->chunks;
@@ -515,12 +522,16 @@ void rslc_pbuf_free(struct rslc_ctx *c, struct rslc_pbuf *b)
 
 /* Context */
 
+static uint32_t rslc_list_empty[1];
+
 bool rslc_ctx_init(struct rslc_ctx *c, const struct rslc_opts *opts,
       enum rslc_stage stage)
 {
    memset(c, 0, sizeof(*c));
    c->opts  = opts;
    c->stage = stage;
+   /* list 0, the empty list, reads as empty before any list is made */
+   c->lists = rslc_list_empty;
 
    if ((opts->alloc != NULL) != (opts->free_fn != NULL))
    {

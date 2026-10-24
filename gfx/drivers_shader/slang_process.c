@@ -1217,6 +1217,132 @@ static bool slang_prefer_rslc(const struct slang_text_target *text)
 #endif
 
 #if defined(HAVE_RSLC)
+/* While a deferred load holds the pool, its compiles - on the compile
+ * tasks, several at once, and on the chain's thread - reuse rslc
+ * arenas from it instead of allocating each stage's arena chunk by
+ * chunk; a block lives in its slot until the last holder lets go. */
+#define SLANG_ARENAS    8
+#define SLANG_ARENA_LEN (4u * 1024u * 1024u)
+
+struct slang_arena
+{
+   void              *block;
+   size_t             len;
+   retro_atomic_int_t held;
+};
+
+static struct slang_arena slang_arenas[SLANG_ARENAS];
+static retro_atomic_int_t slang_arena_holders;
+
+static struct slang_arena *slang_arena_take(void)
+{
+   unsigned i;
+   if (!retro_atomic_load_acquire_int(&slang_arena_holders))
+      return NULL;
+   for (i = 0; i < SLANG_ARENAS; i++)
+   {
+      struct slang_arena *a = &slang_arenas[i];
+      if (!retro_atomic_cas_int(&a->held, 0, 1))
+         continue;
+      if (!a->block && (a->block = malloc(SLANG_ARENA_LEN)))
+         a->len = SLANG_ARENA_LEN;
+      if (a->block)
+         return a;
+      retro_atomic_store_release_int(&a->held, 0);
+      return NULL;
+   }
+   return NULL;
+}
+
+static void slang_arena_give(struct slang_arena *a)
+{
+   /* the pool let go while this was out: nothing reuses it */
+   if (!retro_atomic_load_acquire_int(&slang_arena_holders))
+   {
+      free(a->block);
+      a->block = NULL;
+      a->len   = 0;
+   }
+   retro_atomic_store_release_int(&a->held, 0);
+}
+
+/* A larger block for the stages to come, after one outgrew it */
+static void slang_arena_grow(struct slang_arena *a)
+{
+   size_t len = a->len * 2;
+   void  *block;
+   if (len > RSLC_ARENA_CAP_DEFAULT || !(block = malloc(len)))
+      return;
+   free(a->block);
+   a->block = block;
+   a->len   = len;
+}
+
+void slang_arena_pool_hold(void)
+{
+   retro_atomic_fetch_add_int(&slang_arena_holders, 1);
+}
+
+void slang_arena_pool_drop(void)
+{
+   unsigned i;
+   if (retro_atomic_fetch_add_int(&slang_arena_holders, -1) != 1)
+      return;
+   /* the blocks not out now; those out go when given back */
+   for (i = 0; i < SLANG_ARENAS; i++)
+   {
+      struct slang_arena *a = &slang_arenas[i];
+      if (!retro_atomic_cas_int(&a->held, 0, 1))
+         continue;
+      free(a->block);
+      a->block = NULL;
+      a->len   = 0;
+      retro_atomic_store_release_int(&a->held, 0);
+   }
+}
+
+/* rslc_compile, or rslc_compile_spirv with @words, in a pooled arena
+ * when there is one to be had.  A stage the block cannot hold - or
+ * one that fails - is compiled again on the allocator, whose result
+ * and message stand, and the block grows for the stages to come. */
+static bool slang_rslc_run(const char *source, const uint32_t *words,
+      size_t len, enum rslc_stage stage, struct rslc_opts *opts,
+      struct rslc_result *res)
+{
+   struct slang_arena *a = slang_arena_take();
+   bool ok;
+   if (a)
+   {
+      opts->arena     = a->block;
+      opts->arena_len = a->len;
+      ok = words
+         ? rslc_compile_spirv(words, len, stage, opts, res)
+         : rslc_compile(source, len, stage, opts, res);
+      opts->arena     = NULL;
+      opts->arena_len = 0;
+      if (ok)
+      {
+         slang_arena_give(a);
+         return true;
+      }
+   }
+   ok = words
+      ? rslc_compile_spirv(words, len, stage, opts, res)
+      : rslc_compile(source, len, stage, opts, res);
+   if (a)
+   {
+      if (ok)
+         slang_arena_grow(a);
+      slang_arena_give(a);
+   }
+   return ok;
+}
+#else
+void slang_arena_pool_hold(void) { }
+void slang_arena_pool_drop(void) { }
+#endif
+
+#if defined(HAVE_RSLC)
 /* rslc builds the stage in its own arena and returns one blob holding
  * the words and the reflection tables; the output adopts it whole. */
 static bool slang_rslc_compile_stage(const char *source,
@@ -1232,7 +1358,7 @@ static bool slang_rslc_compile_stage(const char *source,
    opts.err_cap = sizeof(err);
    err[0]       = '\0';
 
-   if (!rslc_compile(source, strlen(source),
+   if (!slang_rslc_run(source, NULL, strlen(source),
             stage == GLSLANG_COMPILE_STAGE_VERTEX
             ? RSLC_STAGE_VERTEX : RSLC_STAGE_FRAGMENT, &opts, &res))
    {
@@ -1263,7 +1389,7 @@ static bool slang_rslc_cached_stage_ok(glslang_output *output, bool fragment)
    opts.err     = err;
    opts.err_cap = sizeof(err);
    err[0]       = '\0';
-   if (!rslc_compile_spirv(fragment ? output->fragment : output->vertex,
+   if (!slang_rslc_run(NULL, fragment ? output->fragment : output->vertex,
             fragment ? output->fragment_len : output->vertex_len,
             fragment ? RSLC_STAGE_FRAGMENT : RSLC_STAGE_VERTEX, &opts, &res))
    {
@@ -1305,7 +1431,7 @@ static char *slang_rslc_print_stage(const char *source,
    opts.err     = err;
    opts.err_cap = sizeof(err);
    err[0]       = '\0';
-   if (!rslc_compile(source, strlen(source),
+   if (!slang_rslc_run(source, NULL, strlen(source),
             stage == GLSLANG_COMPILE_STAGE_VERTEX
             ? RSLC_STAGE_VERTEX : RSLC_STAGE_FRAGMENT, &opts, &res))
    {

@@ -436,6 +436,12 @@ void slang_blob_offer(const char *key, struct slang_blob *vs,
 /* Drops the references the offers ring holds. */
 void slang_blob_offers_release(void);
 
+/* While held - by each deferred load in progress - the slang compiles
+ * reuse rslc arenas from a pool of blocks instead of allocating every
+ * stage's arena afresh; the last drop frees the blocks.  Any thread. */
+void slang_arena_pool_hold(void);
+void slang_arena_pool_drop(void);
+
 /* Merge parameters harvested into @meta into @shader, enforcing the
  * duplicate-must-match rule.  @pass is the pass @meta was harvested
  * from, and is recorded on each parameter this call adds, so that a

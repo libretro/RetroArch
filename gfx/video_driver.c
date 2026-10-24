@@ -994,6 +994,7 @@ static void shader_precompile_unref(struct shader_precompile *p)
    free(p->pass);
    free(p->path);
    free(p);
+   slang_arena_pool_drop();
 }
 
 static void shader_precompile_handler(retro_task_t *task)
@@ -1223,6 +1224,8 @@ static struct shader_precompile *shader_precompile_start(
          || !shader->passes
          || !(p = (struct shader_precompile*)calloc(1, sizeof(*p))))
       goto end;
+   /* the load's compiles reuse arenas until the last reference goes */
+   slang_arena_pool_hold();
    p->pass = (struct shader_precompile_pass*)calloc(shader->passes,
          sizeof(*p->pass));
    p->path = (char**)calloc(shader->passes, sizeof(*p->path));

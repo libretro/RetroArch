@@ -2703,7 +2703,8 @@ static bool rslc_p_eval(struct rslc_parser *p, uint32_t e, struct rslc_cval *out
    unsigned          i, nc;
 
    memset(out, 0, sizeof(*out));
-   if (!e)
+   /* a failed compile's nodes may name lists and nodes never made */
+   if (!e || p->c->failed)
       return false;
    switch (n->op)
    {
@@ -4062,6 +4063,8 @@ static uint32_t rslc_p_fold_binary(struct rslc_parser *p, uint32_t e)
 {
    struct rslc_node *n = rslc_p_node(p, e);
    struct rslc_cval  v;
+   if (!e)   /* the node could not be made: the error is set */
+      return 0;
    if (n->type->kind != RSLC_TY_SCALAR)
       return e;
    if (rslc_p_node(p, n->a)->op != RSLC_OP_CONST || rslc_p_node(p, n->b)->op != RSLC_OP_CONST)

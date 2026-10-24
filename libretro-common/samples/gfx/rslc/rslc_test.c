@@ -45,11 +45,17 @@ static int fails;
  * the cap is honoured through opts, not through malloc. */
 static size_t alloc_live;
 static size_t alloc_calls;
+static long   alloc_fail_at = -1; /* the call that is refused */
 
 static void *count_alloc(void *ud, size_t len)
 {
    size_t *p;
    (void)ud;
+   if (alloc_fail_at >= 0 && (long)alloc_calls >= alloc_fail_at)
+   {
+      alloc_calls++;
+      return NULL;
+   }
    p = (size_t*)malloc(len + sizeof(size_t) * 2);
    if (!p)
       return NULL;
@@ -1772,6 +1778,113 @@ static int pp_file(const char *path)
    return 0;
 }
 
+
+/* A compile that runs out of memory - a caller's block too small for
+ * the stage, or an allocator that refuses - fails with a message at
+ * whatever point it ran out, never reads what it could not make, and
+ * returns every allocation.  The stage is long enough for its nodes to
+ * span several node chunks, so the refusals land inside expressions,
+ * declarations and lists alike.  A block large enough compiles the
+ * stage to the same blob as the allocator does, the scratch quarter
+ * rewound at every release. */
+static void test_exhaustion(void)
+{
+   struct rslc_opts   o;
+   struct rslc_result r, ref;
+   char               err[128];
+   char              *src;
+   unsigned char     *block;
+   size_t             len = 0, cap = 160 * 1024, at;
+   size_t             block_len = 4u * 1024u * 1024u;
+   size_t             held;
+   unsigned           i, failed = 0, calls;
+   static const char  head[] =
+      "#version 450\n"
+      "layout(push_constant) uniform Push { vec4 SourceSize; } params;\n"
+      "layout(location = 0) in vec2 vTexCoord;\n"
+      "layout(location = 0) out vec4 FragColor;\n"
+      "const float K[4] = float[](0.25, 0.5, 0.75, 1.0);\n"
+      "float f(vec2 v) {\n"
+      "  return 0.0";
+   static const char  tail[] =
+      ";\n}\n"
+      "void main() {\n"
+      "  vec2 v = vTexCoord * params.SourceSize.xy;\n"
+      "  FragColor = vec4(f(v), K[1] * 2.0 + 1.0, vec2(K[2], K[3]));\n"
+      "}\n";
+
+   if (!(src = (char*)malloc(cap)) || !(block = (unsigned char*)malloc(block_len)))
+   {
+      free(src);
+      CHECK(0);
+      return;
+   }
+   memcpy(src, head, sizeof(head) - 1);
+   len = sizeof(head) - 1;
+   for (i = 0; i < 2600; i++)
+      len += (size_t)sprintf(src + len, " + v.%c * %u.0 / (1.0 + %u.0)",
+            (i & 1) ? 'y' : 'x', i % 97, i % 13);
+   memcpy(src + len, tail, sizeof(tail));
+   len += sizeof(tail) - 1;
+
+   opts_default(&o, err, sizeof(err));
+   o.dst = RSLC_DST_SPIRV;
+   CHECK(rslc_compile(src, len, RSLC_STAGE_FRAGMENT, &o, &ref));
+
+   /* a block it fits in, dirty from the start: the same module */
+   memset(block, 0xa5, block_len);
+   o.arena     = block;
+   o.arena_len = block_len;
+   CHECK(rslc_compile(src, len, RSLC_STAGE_FRAGMENT, &o, &r));
+   if (ref.blob && r.blob)
+   {
+      CHECK(r.blob_len == ref.blob_len);
+      CHECK(!memcmp(r.blob, ref.blob, ref.blob_len));
+      rslc_result_free(&r, &o);
+   }
+
+   /* blocks too small, by steps through the whole compile */
+   for (at = 8192; at < block_len; at += 4096)
+   {
+      memset(block, 0xa5, at);
+      o.arena_len = at;
+      err[0]      = '\0';
+      if (rslc_compile(src, len, RSLC_STAGE_FRAGMENT, &o, &r))
+      {
+         rslc_result_free(&r, &o);
+         break;
+      }
+      CHECK(!strcmp(err, "rslc: caller arena exhausted"));
+      failed++;
+   }
+   CHECK(at < block_len && failed > 32);
+   o.arena     = NULL;
+   o.arena_len = 0;
+
+   /* an allocator refusing its nth call, for every n the compile
+    * makes: nothing kept but the reference module */
+   held        = alloc_live;
+   alloc_calls = 0;
+   CHECK(rslc_compile(src, len, RSLC_STAGE_FRAGMENT, &o, &r));
+   calls = (unsigned)alloc_calls;
+   if (r.blob)
+      rslc_result_free(&r, &o);
+   for (i = 0; i < calls; i++)
+   {
+      alloc_fail_at = (long)i;
+      alloc_calls   = 0;
+      CHECK(!rslc_compile(src, len, RSLC_STAGE_FRAGMENT, &o, &r));
+      CHECK(alloc_live == held);
+   }
+   alloc_fail_at = -1;
+
+   if (ref.blob)
+      rslc_result_free(&ref, &o);
+   CHECK(alloc_live == 0);
+   free(block);
+   free(src);
+}
+
 int main(int argc, char **argv)
 {
    if (argc == 3 && !strcmp(argv[1], "--pp"))
@@ -1807,6 +1920,7 @@ int main(int argc, char **argv)
    test_shapes();
    test_cafe();
    test_ingest();
+   test_exhaustion();
 
    if (fails)
    {
