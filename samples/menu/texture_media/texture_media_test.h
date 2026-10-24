@@ -35,6 +35,9 @@ static int test_release(test_viewer_t *v,unsigned x,unsigned y) { return ozone_p
 #include "../../../paths.h"
 #include "../../../frontend/frontend.h"
 #include <time/rtime.h>
+#ifdef _WIN32
+#include "../../../gfx/common/win32_common.h"
+#endif
 #include <retro_timers.h>
 #include "../../../gfx/gfx_surface_player.h"
 #include "../../../gfx/gfx_anim_preview.h"
@@ -217,6 +220,38 @@ int main(int argc,char **argv)
       CHECK("opened file does not launch a content core",
             runloop_state_get_ptr()->current_core_type == CORE_TYPE_DUMMY
             && !*path_get(RARCH_PATH_CONTENT));
+#ifdef _WIN32
+      if (image && native_gpu)
+      {
+         unsigned resize_tick;
+         ShowWindowAsync(win32_get_window(), SW_MAXIMIZE);
+         for (resize_tick = 0; resize_tick < 30; resize_tick++)
+         {
+            render(menu_st);
+            retro_sleep(1);
+         }
+         CHECK("maximizing retains image viewer",
+               IsZoomed(win32_get_window()) && test_showing(viewer));
+         ShowWindowAsync(win32_get_window(), SW_RESTORE);
+         for (resize_tick = 0; resize_tick < 30; resize_tick++)
+         {
+            render(menu_st);
+            retro_sleep(1);
+         }
+         CHECK("restoring retains image viewer",
+               !IsZoomed(win32_get_window()) && test_showing(viewer));
+      }
+#endif
+      if (image)
+      {
+         menu_ctx_pointer_t point;
+         memset(&point, 0, sizeof(point));
+         point.x = 100;
+         point.y = -20;
+         point.gesture = MENU_INPUT_GESTURE_TAP;
+         menu_driver_ctl(RARCH_MENU_CTL_POINTER_UP, &point);
+         CHECK("non-client release retains image viewer", test_showing(viewer));
+      }
       if (image)
          CHECK("image confirmation remains in internal view",
                test_action(viewer, MENU_ACTION_OK) == MENU_ACTION_NOOP
