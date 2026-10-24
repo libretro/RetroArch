@@ -8677,18 +8677,31 @@ static void lane_surface_4k(void)
       unsigned waited = 0;
       enum gfx_surface_submit_result r;
 
+      /* A released descriptor can still name a GPU-owned lent slot.
+       * Return that slot before writing it, outside the submit timing. */
+      while ((s->inflight || !gfx_surface_slot_writable(s, slot))
+            && waited < 16)
+      {
+         run_frames(1);
+         waited++;
+      }
+      CHECK(!s->inflight && gfx_surface_slot_writable(s, slot),
+            "4K frame %u: slot not writable within 16 frames", i);
+      if (s->inflight || !gfx_surface_slot_writable(s, slot))
+         continue;
+      waited = 0;
+      before = surf_releases;
+
       /* Only the top-left tile is touched: what is measured is the
        * hand-off, not the fill. */
       s->slots[slot][0] = 0xff000000u | i;
       t0 = thread_cpu_usec();
       r  = gfx_surface_submit(s, slot, rgba);
       t1 = thread_cpu_usec();
-      if (r == GFX_SURFACE_SUBMIT_BUSY)
-      {
-         run_frames(1);
+      CHECK(r == GFX_SURFACE_SUBMIT_QUEUED,
+            "4K frame %u: submit returned %d", i, r);
+      if (r != GFX_SURFACE_SUBMIT_QUEUED)
          continue;
-      }
-      CHECK(r == GFX_SURFACE_SUBMIT_QUEUED, "4K frame %u: submit returned %d", i, r);
       submit_us[n_sub++] = t1 - t0;
       submit_total      += t1 - t0;
       while (surf_releases == before && waited < 8)
@@ -11604,6 +11617,12 @@ int main(int argc, char *argv[])
    if (getenv("HARNESS_PREVIEW_FILE"))
    {
       lane_preview_surface(getenv("HARNESS_PREVIEW_FILE"));
+      goto shutdown;
+   }
+
+   if (getenv("HARNESS_SURFACE_4K_ONLY"))
+   {
+      lane_surface_4k();
       goto shutdown;
    }
 

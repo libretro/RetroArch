@@ -866,6 +866,14 @@ jobs:
             SAN=none DRIVER=${{ matrix.driver }} CYCLES=1 GDB=1 make -C samples/gfx/threaded_video check-driver
           make -C samples/gfx/threaded_video clean
 
+      - name: Preserve failed Windows driver harness log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: threaded-video-${{ matrix.driver }}-failure
+          path: samples/gfx/threaded_video/check.log
+          if-no-files-found: ignore
+
       - name: RGUI GPU subtitle output on ${{ matrix.driver }}
         shell: msys2 {0}
         run: |

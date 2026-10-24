@@ -159,8 +159,9 @@ check-driver: all
 	 if [ $$rc -ne 0 ]; then \
 	    grep -vE '^\[(INFO|DEBUG|WARN)\]|XFree86-VidMode' check.log; \
 	    echo "--- last 60 lines of the run log ---"; tail -60 check.log; \
+	 else \
+	    rm -f check.log; \
 	 fi; \
-	 rm -f check.log; \
 	 exit $$rc
 
 # Focused presentation checks with the shipping Vulkan renderer and wrapper.
