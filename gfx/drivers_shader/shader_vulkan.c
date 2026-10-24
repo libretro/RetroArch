@@ -733,6 +733,8 @@ static bool texture_array_resize(Texture **arr, size_t *count,
 
 struct CommonResources
 {
+   /* The first pass's SourceSize, from the preset; 0 when off. */
+   unsigned sim_source_dims;
 
    struct slang_buffer vbo;
    struct slang_buffer ubo;
@@ -4038,8 +4040,12 @@ static void slang_pass_build_semantic_texture(struct slang_pass *pass,
       VkDescriptorImageInfo *image_infos, VkWriteDescriptorSet *writes,
       unsigned *write_count)
 {
-   slang_pass_build_semantic_texture_vec4(pass, buffer, semantic,
-         texture->texture.dims);
+   unsigned dims = texture->texture.dims;
+   if (     semantic == SLANG_TEXTURE_SEMANTIC_SOURCE
+         && pass->pass_number == 0
+         && pass->common->sim_source_dims)
+      dims = pass->common->sim_source_dims;
+   slang_pass_build_semantic_texture_vec4(pass, buffer, semantic, dims);
    slang_pass_set_semantic_texture(pass, set, semantic, texture,
          image_infos, writes, write_count);
 }
@@ -4890,7 +4896,8 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
    chain = slang_chain_new(&tmpinfo);
    if (!chain)
       goto error;
-   chain->last_pass = last_pass;
+   chain->last_pass              = last_pass;
+   chain->common.sim_source_dims = shader->sim_source_dims;
 
    if (shader->luts && !vulkan_filter_chain_load_luts(info, chain, shader))
       goto error;
@@ -5248,6 +5255,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_deferred(
       free(shader);
       return NULL;
    }
+   chain->common.sim_source_dims = shader->sim_source_dims;
 
    if (shader->luts && !vulkan_filter_chain_load_luts(info, chain, shader))
    {

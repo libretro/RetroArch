@@ -209,6 +209,7 @@ bool	audio_fastpath_s16	1	0
 bool	audio_resampler_hq_oversampling	1	0
 bool	video_hdr_use_display_peak	1	0
 bool	video_hdr_send_luminance	1	0
+bool	video_shader_simulated_input_resolution	1	0
 bool	video_window_custom_size_enable	1	0
 bool	input_overlay_auto_scale	1	1
 bool	video_font_enable	1	1
@@ -595,6 +596,8 @@ uint	input_touch_scale	1	1
 uint	video_black_frame_insertion	1	0
 uint	video_bfi_dark_frames	1	1
 uint	video_shader_delay	1	0
+uint	video_shader_simulated_input_resolution_width	1	320
+uint	video_shader_simulated_input_resolution_height	1	240
 uint	screen_brightness	1	100
 uint	video_rotation	1	0
 uint	screen_orientation	1	0
@@ -918,6 +921,7 @@ bool	audio_fastpath_s16	1	0
 bool	audio_resampler_hq_oversampling	1	0
 bool	video_hdr_use_display_peak	1	0
 bool	video_hdr_send_luminance	1	0
+bool	video_shader_simulated_input_resolution	1	0
 bool	video_window_custom_size_enable	1	0
 bool	input_overlay_auto_scale	1	0
 bool	video_font_enable	1	1
@@ -1299,6 +1303,8 @@ uint	input_touch_scale	1	1
 uint	video_black_frame_insertion	1	0
 uint	video_bfi_dark_frames	1	1
 uint	video_shader_delay	1	0
+uint	video_shader_simulated_input_resolution_width	1	320
+uint	video_shader_simulated_input_resolution_height	1	240
 uint	screen_brightness	1	100
 uint	video_rotation	1	0
 uint	screen_orientation	1	0
@@ -1628,6 +1634,7 @@ bool	audio_fastpath_s16	1	0
 bool	audio_resampler_hq_oversampling	1	0
 bool	video_hdr_use_display_peak	1	0
 bool	video_hdr_send_luminance	1	0
+bool	video_shader_simulated_input_resolution	1	0
 bool	video_window_custom_size_enable	1	0
 bool	input_overlay_auto_scale	1	0
 bool	video_font_enable	1	1
@@ -2026,6 +2033,8 @@ uint	input_touch_scale	1	1
 uint	video_black_frame_insertion	1	0
 uint	video_bfi_dark_frames	1	1
 uint	video_shader_delay	1	0
+uint	video_shader_simulated_input_resolution_width	1	320
+uint	video_shader_simulated_input_resolution_height	1	240
 uint	screen_brightness	1	100
 uint	video_rotation	1	0
 uint	screen_orientation	1	0

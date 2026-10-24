@@ -13185,6 +13185,13 @@ static const setting_desc_t sdelay_desc[] = {
 };
 #endif
 
+#ifdef HAVE_SLANG
+static const setting_desc_t simres_desc[] = {
+/* GENERATED: rows come from settings_def_shader_simulated_resolution.h in order. */
+#include "../settings/settings_def_shader_simulated_resolution.h"
+};
+#endif
+
 static const setting_desc_t shader_desc[] = {
 /* GENERATED: rows come from settings_def_shader_watch.h in order. */
 #include "../settings/settings_def_shader_watch.h"
@@ -16154,6 +16161,9 @@ static void settings_build_video(
 #endif
 
                   ADD_DESC(shader_desc);
+#ifdef HAVE_SLANG
+         ADD_DESC(simres_desc);
+#endif
 
          {
 #if defined(HAVE_STEAM) && defined(HAVE_MIST)
@@ -19625,6 +19635,9 @@ static const settings_desc_table_t settings_desc_registry[] = {
    { fdelay_desc, (uint16_t)ARRAY_SIZE(fdelay_desc) },
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    { sdelay_desc, (uint16_t)ARRAY_SIZE(sdelay_desc) },
+#endif
+#ifdef HAVE_SLANG
+   { simres_desc, (uint16_t)ARRAY_SIZE(simres_desc) },
 #endif
    { shader_desc, (uint16_t)ARRAY_SIZE(shader_desc) },
    { vid_desc_21, (uint16_t)ARRAY_SIZE(vid_desc_21) },

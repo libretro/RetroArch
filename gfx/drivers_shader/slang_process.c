@@ -51,7 +51,13 @@ typedef char slang_spvid_word_size_check[
 
 #include "slang_process.h"
 
+#include "../video_defines.h"
 #include "../../verbosity.h"
+
+/* The first pass's SourceSize while the preset carries a simulated
+ * size. A pass's uniforms keep its address after the semantics they
+ * were reflected into are copied and freed, so it lives here. */
+static float slang_simulated_size[4];
 
 static const char *texture_semantic_names[] = {
    "Original",
@@ -776,9 +782,23 @@ static bool slang_process_reflection(
             static const char* names[] = {
                "OriginalSize", "SourceSize", "OriginalHistorySize", "PassOutputSize", "PassFeedbackSize",
             };
+            unsigned sim = 0;
 
-            uniform.data  = (void*)((uintptr_t)map->textures[semantic].size
-                  + index * map->textures[semantic].size_stride);
+            if (     semantic == (int)SLANG_TEXTURE_SEMANTIC_SOURCE
+                  && pass_number == 0)
+               sim = shader_info->sim_source_dims;
+
+            if (sim)
+            {
+               slang_simulated_size[0] = (float)VIDEO_SCALE_W(sim);
+               slang_simulated_size[1] = (float)VIDEO_SCALE_H(sim);
+               slang_simulated_size[2] = 1.0f / slang_simulated_size[0];
+               slang_simulated_size[3] = 1.0f / slang_simulated_size[1];
+               uniform.data            = slang_simulated_size;
+            }
+            else
+               uniform.data  = (void*)((uintptr_t)map->textures[semantic].size
+                     + index * map->textures[semantic].size_stride);
             uniform.param = NULL;
             uniform.size = 4 * sizeof(float);
             if (semantic < (int)SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY)
