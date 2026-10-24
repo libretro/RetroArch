@@ -24,6 +24,23 @@ endif
 DECODERS := $(RA)/libretro-common/formats/mp4/rmp4.c \
             $(RA)/libretro-common/formats/h264/rh264.c
 DEPS     := $(RA)/gfx/common/dxva_h264.h d3d11_video_decode_test_data.h
+
+# rmp4.c and rh264.c, which most of the tests here link: compiled once a
+# build, not once a test, into a directory of the compiler's and the
+# sanitizer's own. Each function in a section of its own, for the tests
+# linked with --gc-sections.
+.DEFAULT_GOAL := all
+comma      := ,
+DEC_OBJDIR := obj/$(subst /,_,$(CC))$(EXE)$(if $(SANITIZER),-$(subst $(comma),-,$(SANITIZER)))
+DEC_OBJS   := $(DEC_OBJDIR)/rmp4.o $(DEC_OBJDIR)/rh264.o
+
+$(DEC_OBJDIR)/rmp4.o: $(RA)/libretro-common/formats/mp4/rmp4.c
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -ffunction-sections -fdata-sections -c -o $@ $<
+
+$(DEC_OBJDIR)/rh264.o: $(RA)/libretro-common/formats/h264/rh264.c
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -ffunction-sections -fdata-sections -c -o $@ $<
 WEBM_DECODERS := $(RA)/libretro-common/formats/webm/rwebm.c \
    $(RA)/libretro-common/formats/webm/rwebm_video.c \
    $(RA)/libretro-common/formats/vp8/rvp8.c \
@@ -88,10 +105,10 @@ AV1_CORE_DEPS := $(RA)/libretro-common/compat/compat_strl.c \
 
 ifeq ($(EXE),.exe)
 av1_decode_test$(EXE): av1_decode_test.c av1_core_decode.h $(RA)/cores/libretro-media/media_core.c $(AV1_CORE_DEPS) d3d11_video_decode_test.c $(BACKEND) \
-      $(RA)/gfx/common/dxva_av1.h $(DECODERS) $(PLAYER_SOURCES) \
+      $(RA)/gfx/common/dxva_av1.h $(DEC_OBJS) $(PLAYER_SOURCES) \
       $(RA)/libretro-common/formats/av1/rav1_hw.c
 	$(CC) $(CFLAGS) $(WINFLAGS) -DHAVE_RAV1 -DHAVE_RWEBM -flto -ffunction-sections -fdata-sections -o $@ \
-	   $< $(DECODERS) $(PLAYER_SOURCES) $(filter-out $(PLAYER_SOURCES),$(AV1_CORE_DEPS)) $(RA)/libretro-common/formats/vp9/rvp9.c \
+	   $< $(DEC_OBJS) $(PLAYER_SOURCES) $(filter-out $(PLAYER_SOURCES),$(AV1_CORE_DEPS)) $(RA)/libretro-common/formats/vp9/rvp9.c \
 	   $(RA)/libretro-common/formats/av1/rav1_hw.c \
 	   $(LDFLAGS) -Wl,--gc-sections -ld3d11 -lm
 else
@@ -140,24 +157,24 @@ dxva_hevc_access_unit_test$(EXE): dxva_hevc_access_unit_test.c \
 	   $(RA)/libretro-common/formats/h265/rh265.c $(LDFLAGS) -lm
 
 
-dxva_h264_test$(EXE): dxva_h264_test.c $(DECODERS) $(DEPS)
-	$(CC) $(CFLAGS) -o $@ dxva_h264_test.c $(DECODERS) $(LDFLAGS) -lm
+dxva_h264_test$(EXE): dxva_h264_test.c $(DEC_OBJS) $(DEPS)
+	$(CC) $(CFLAGS) -o $@ dxva_h264_test.c $(DEC_OBJS) $(LDFLAGS) -lm
 
 d3d11_video_decode_mock_test$(EXE): d3d11_video_decode_mock_test.c \
-      $(DECODERS) $(DEPS) $(BACKEND) dxva_hevc_access_unit_data.h \
+      $(DEC_OBJS) $(DEPS) $(BACKEND) dxva_hevc_access_unit_data.h \
       $(RA)/libretro-common/formats/vp9/rvp9.c \
       $(RA)/libretro-common/formats/h265/rh265.c
 	$(CC) $(CFLAGS) $(WINFLAGS) -o $@ d3d11_video_decode_mock_test.c \
-	   $(DECODERS) $(RA)/libretro-common/formats/h265/rh265.c \
+	   $(DEC_OBJS) $(RA)/libretro-common/formats/h265/rh265.c \
 	   $(RA)/libretro-common/formats/vp9/rvp9.c $(LDFLAGS) -lm
 
 d3d11_video_decode_test$(EXE): d3d11_video_decode_test.c \
       $(WEBM_DECODERS) \
-      $(DECODERS) $(DEPS) $(BACKEND) hevc_device_data.h \
+      $(DEC_OBJS) $(DEPS) $(BACKEND) hevc_device_data.h \
       $(RA)/libretro-common/formats/vp9/rvp9.c $(RA)/libretro-common/formats/vp9/rvp9_recon.inc \
       $(RA)/libretro-common/formats/h265/rh265.c
 	$(CC) $(CFLAGS) $(WINFLAGS) -o $@ d3d11_video_decode_test.c \
-	   $(DECODERS) $(RA)/libretro-common/formats/h265/rh265.c \
+	   $(DEC_OBJS) $(RA)/libretro-common/formats/h265/rh265.c \
 	   $(RA)/libretro-common/formats/vp9/rvp9.c $(WEBM_DECODERS) $(LDFLAGS) -ld3d11 -lm
 
 PLAYER_SOURCES := $(RA)/libretro-common/formats/video_player.c \
@@ -173,27 +190,27 @@ PLAYER_SOURCES := $(RA)/libretro-common/formats/video_player.c \
    $(RA)/libretro-common/time/rtime.c
 
 rh265_hw_stream_test$(EXE): rh265_hw_stream_test.c dxva_hevc_access_unit_data.h \
-      $(DECODERS) $(PLAYER_SOURCES) $(RA)/libretro-common/include/formats/rh265_hw.h \
+      $(DEC_OBJS) $(PLAYER_SOURCES) $(RA)/libretro-common/include/formats/rh265_hw.h \
       $(RA)/libretro-common/include/formats/rh265.h \
       $(RA)/libretro-common/include/formats/rmp4_video.h \
       $(RA)/samples/formats/video_hdr_fp16/fixtures/sdr_hevc.mp4
 	$(CC) $(CFLAGS) -ffunction-sections -fdata-sections -o $@ \
-	   rh265_hw_stream_test.c $(DECODERS) \
+	   rh265_hw_stream_test.c $(DEC_OBJS) \
 	   $(filter-out $(RA)/libretro-common/formats/h265/rh265.c,$(PLAYER_SOURCES)) \
 	   $(LDFLAGS) -Wl,--gc-sections -lm
 
 hevc_color_stream_test$(EXE): hevc_color_stream_test.c hevc_color_data.h \
-      rh265_hw_stream_test.c $(DECODERS) $(PLAYER_SOURCES)
+      rh265_hw_stream_test.c $(DEC_OBJS) $(PLAYER_SOURCES)
 	$(CC) $(CFLAGS) -ffunction-sections -fdata-sections -o $@ \
-	   hevc_color_stream_test.c $(DECODERS) \
+	   hevc_color_stream_test.c $(DEC_OBJS) \
 	   $(filter-out $(RA)/libretro-common/formats/h265/rh265.c $(RA)/libretro-common/formats/mp4/rmp4_video.c,$(PLAYER_SOURCES)) \
 	   $(LDFLAGS) -Wl,--gc-sections -lm
 
 d3d11_backpressure_test$(EXE): d3d11_backpressure_test.c \
-      d3d11_video_decode_test.c $(DECODERS) $(DEPS) $(BACKEND) $(PLAYER_SOURCES) \
+      d3d11_video_decode_test.c $(DEC_OBJS) $(DEPS) $(BACKEND) $(PLAYER_SOURCES) \
       $(RA)/libretro-common/formats/vp9/rvp9.c $(RA)/libretro-common/formats/vp9/rvp9_recon.inc
 	$(CC) $(CFLAGS) $(WINFLAGS) -ffunction-sections -fdata-sections -o $@ \
-	   d3d11_backpressure_test.c $(DECODERS) $(PLAYER_SOURCES) \
+	   d3d11_backpressure_test.c $(DEC_OBJS) $(PLAYER_SOURCES) \
 	   $(RA)/libretro-common/formats/vp9/rvp9.c \
 	   $(LDFLAGS) -Wl,--gc-sections $(if $(filter .exe,$(EXE)),-ld3d11) -lm
 
@@ -224,6 +241,7 @@ ifeq ($(EXE),.exe)
 endif
 
 clean:
+	rm -rf obj
 	rm -f av1_decode_test av1_decode_test.exe
 	rm -f dxva_av1_test dxva_av1_test.exe
 	rm -f av1_profile_probe av1_profile_probe.exe
@@ -233,6 +251,9 @@ clean:
 	rm -f rh265_hw_state_test rh265_hw_state_test.exe
 	rm -f rh265_hw_session_test rh265_hw_session_test.exe
 	rm -f rh265_hw_stream_test rh265_hw_stream_test.exe
+	rm -f rh265_slice_snapshot_test rh265_slice_snapshot_test.exe
+	rm -f hevc_device_fixture_test hevc_device_fixture_test.exe
+	rm -f hevc_color_stream_test hevc_color_stream_test.exe
 	rm -f video_hw_format_test video_hw_format_test.exe
 	rm -f dxva_h264_test dxva_h264_test.exe \
 	   d3d11_video_decode_mock_test.exe d3d11_video_decode_test.exe
