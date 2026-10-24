@@ -10,12 +10,15 @@ native = os.name == "nt"
 compiler = os.environ.get("CC") or shutil.which("gcc" if native else "x86_64-w64-mingw32-gcc")
 if not compiler:
     raise SystemExit("A native Windows compiler or MinGW cross-compiler is required")
+flags = []
+if "clang" in subprocess.check_output([compiler, "--version"], text=True).lower():
+    flags.append("-Wno-c99-extensions")
 with tempfile.TemporaryDirectory(prefix="win32-modal-") as directory:
     temporary = Path(directory)
     executable = temporary / "modal_frame_test.exe"
     subprocess.run([compiler, "-std=c89", "-pedantic", "-Wall", "-Wextra", "-Werror",
                     "-Wno-unused-function", "-Wframe-larger-than=4096",
-                    "-I" + str(root / "libretro-common/include"),
+                    "-I" + str(root / "libretro-common/include")] + flags + [
                     str(Path(__file__).with_name("modal_frame_test.c")),
                     "-o", str(executable), "-lgdi32", "-luser32"], check=True)
     environment = os.environ.copy()
