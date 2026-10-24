@@ -30,7 +30,7 @@ jobs:
     name: Build and run libretro-common/Makefile.test
     runs-on: ubuntu-latest
     env:
-      APT_PKGS: build-essential check pkg-config zlib1g-dev lcov gcc-mingw-w64-x86-64 gcc-mingw-w64-i686 wine wine64 ffmpeg gcc-aarch64-linux-gnu gcc-arm-linux-gnueabihf gcc-mipsel-linux-gnu qemu-user ccache
+      APT_PKGS: build-essential check pkg-config zlib1g-dev gcc-mingw-w64-x86-64 gcc-mingw-w64-i686 wine wine64 ffmpeg gcc-aarch64-linux-gnu gcc-arm-linux-gnueabihf gcc-mipsel-linux-gnu qemu-user ccache
     # The suites and the stack check have grown with the tree; the
     # companion harnesses are a job of their own, run beside this one.
     timeout-minutes: 30
@@ -91,8 +91,7 @@ jobs:
           WINEPREFIX: "/tmp/wineprefix"
         run: |
           set -eu
-          # The recipe builds each suite, runs it, and collects
-          # coverage, in order -- coverage files collide otherwise.
+          # The recipe builds each suite and runs it, in order.
           # Any suite failing to build, or any check failing, or any
           # sanitizer report, fails the job.
           # 'unit-tests' by name: the default goal of Makefile.test is
@@ -100,7 +99,9 @@ jobs:
           # matrix and none of the suites this step exists to run.  The
           # 'all' target adds the concurrency and I/O samples, whose
           # runtime depends on how many processors the runner has.
-          make -f Makefile.test unit-tests \
+          # COVERAGE=0: nothing here reads the coverage, and collecting
+          # it instruments every compile and runs lcov once a suite
+          make -f Makefile.test unit-tests COVERAGE=0 \
              LIBCHECK_CFLAGS="$(pkg-config --cflags check)" \
              CFLAGS="$(pkg-config --cflags check)"
           echo "[pass] libretro-common unit test suites"

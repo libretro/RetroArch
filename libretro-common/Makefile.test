@@ -8,7 +8,21 @@ OBJDIR = ../obj-unix
 LIBCHECK_CFLAGS ?= $(shell pkg-config --cflags check 2>/dev/null)
 LIBCHECK_LIBS   ?= $(shell pkg-config --libs check 2>/dev/null || echo -lcheck)
 
-TEST_UNIT_CFLAGS = $(CFLAGS) -Iinclude $(LDFLAGS) $(LIBCHECK_CFLAGS) -Werror -Wdeclaration-after-statement -fsanitize=address -fsanitize=undefined -ftest-coverage -fprofile-arcs -ggdb
+# Each suite's coverage, collected with lcov. COVERAGE=0 builds and runs
+# the suites without it, for a run where nothing reads it, which saves
+# instrumenting every compile and an lcov pass over the tree per suite.
+COVERAGE ?= 1
+ifeq ($(COVERAGE),1)
+COVERAGE_CFLAGS = -ftest-coverage -fprofile-arcs
+LCOV            = lcov
+GENHTML         = genhtml
+else
+COVERAGE_CFLAGS =
+LCOV            = :
+GENHTML         = :
+endif
+
+TEST_UNIT_CFLAGS = $(CFLAGS) -Iinclude $(LDFLAGS) $(LIBCHECK_CFLAGS) -Werror -Wdeclaration-after-statement -fsanitize=address -fsanitize=undefined $(COVERAGE_CFLAGS) -ggdb
 
 TEST_GENERIC_QUEUE = test/queues/test_generic_queue
 TEST_GENERIC_QUEUE_SRC = test/queues/test_generic_queue.c queues/generic_queue.c
@@ -460,51 +474,51 @@ unit-tests:
 	# string
 	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_STDSTRING_SRC) $(LIBCHECK_LIBS) -o $(TEST_STDSTRING)
 	$(TEST_STDSTRING)
-	lcov -c -d . -o `dirname $(TEST_STDSTRING)`/coverage.info
+	$(LCOV) -c -d . -o `dirname $(TEST_STDSTRING)`/coverage.info
 	# utils
 	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_UTILS_SRC) $(LIBCHECK_LIBS) -o $(TEST_UTILS)
 	$(TEST_UTILS)
-	lcov -c -d . -o `dirname $(TEST_UTILS)`/coverage.info
+	$(LCOV) -c -d . -o `dirname $(TEST_UTILS)`/coverage.info
 	# utils
 	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_HASH_SRC) $(LIBCHECK_LIBS) -o $(TEST_HASH)
 	$(TEST_HASH)
-	lcov -c -d . -o `dirname $(TEST_HASH)`/coverage.info
+	$(LCOV) -c -d . -o `dirname $(TEST_HASH)`/coverage.info
 	# crypto
 	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_CRYPTO_SRC) $(LIBCHECK_LIBS) -o $(TEST_CRYPTO)
 	$(TEST_CRYPTO)
-	lcov -c -d . -o `dirname $(TEST_CRYPTO)`/coverage.info
+	$(LCOV) -c -d . -o `dirname $(TEST_CRYPTO)`/coverage.info
 	# keychain
 	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_KEYCHAIN_SRC) $(LIBCHECK_LIBS) -o $(TEST_KEYCHAIN)
 	$(TEST_KEYCHAIN)
-	lcov -c -d . -o `dirname $(TEST_KEYCHAIN)`/coverage.info
+	$(LCOV) -c -d . -o `dirname $(TEST_KEYCHAIN)`/coverage.info
 	# list
 	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_LINKED_LIST_SRC) $(LIBCHECK_LIBS) -o $(TEST_LINKED_LIST)
 	$(TEST_LINKED_LIST)
-	lcov -c -d . -o `dirname $(TEST_LINKED_LIST)`/coverage.info
+	$(LCOV) -c -d . -o `dirname $(TEST_LINKED_LIST)`/coverage.info
 	# file list
 	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_FILE_LIST_SRC) $(LIBCHECK_LIBS) -o $(TEST_FILE_LIST)
 	$(TEST_FILE_LIST)
-	lcov -c -d . -o `dirname $(TEST_FILE_LIST)`/file_list_coverage.info
+	$(LCOV) -c -d . -o `dirname $(TEST_FILE_LIST)`/file_list_coverage.info
 	# strl
 	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_STRL_SRC) $(LIBCHECK_LIBS) -o $(TEST_STRL)
 	$(TEST_STRL)
-	lcov -c -d . -o `dirname $(TEST_STRL)`/coverage.info
+	$(LCOV) -c -d . -o `dirname $(TEST_STRL)`/coverage.info
 	# menu_str
 	$(CC) $(TEST_UNIT_CFLAGS) -I.. $(TEST_MENU_STR_SRC) $(LIBCHECK_LIBS) -o $(TEST_MENU_STR)
 	$(TEST_MENU_STR)
-	lcov -c -d . -o `dirname $(TEST_MENU_STR)`/coverage.info
+	$(LCOV) -c -d . -o `dirname $(TEST_MENU_STR)`/coverage.info
 	# mempool
 	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_MEMPOOL_SRC) $(LIBCHECK_LIBS) -o $(TEST_MEMPOOL)
 	$(TEST_MEMPOOL)
-	lcov -c -d . -o `dirname $(TEST_MEMPOOL)`/coverage.info
+	$(LCOV) -c -d . -o `dirname $(TEST_MEMPOOL)`/coverage.info
 	# queue
 	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_GENERIC_QUEUE_SRC) $(LIBCHECK_LIBS) -o $(TEST_GENERIC_QUEUE)
 	$(TEST_GENERIC_QUEUE)
-	lcov -c -d . -o `dirname $(TEST_GENERIC_QUEUE)`/coverage.info
+	$(LCOV) -c -d . -o `dirname $(TEST_GENERIC_QUEUE)`/coverage.info
 	# rpng
 	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_RPNG_SRC) $(TEST_RPNG_LIBS) $(LIBCHECK_LIBS) -o $(TEST_RPNG)
 	$(TEST_RPNG)
-	lcov -c -d . -o `dirname $(TEST_RPNG)`/coverage.info
+	$(LCOV) -c -d . -o `dirname $(TEST_RPNG)`/coverage.info
 	# rwav
 	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_RWAV_SRC) $(LIBCHECK_LIBS) -o $(TEST_RWAV)
 	$(TEST_RWAV)
@@ -673,7 +687,7 @@ all: unit-tests console-libc-check darwin-floor-check crypto-aarch64-check crypt
 	# the three Windows A/W configurations, two of which nothing else builds
 	$(MAKE) -f Makefile.test win32-configs
 	
-	lcov -o test/coverage.info \
+	$(LCOV) -o test/coverage.info \
 	     -a test/utils/coverage.info \
 	     -a test/crypto/coverage.info \
 	     -a test/file/coverage.info \
@@ -685,7 +699,7 @@ all: unit-tests console-libc-check darwin-floor-check crypto-aarch64-check crypt
 	     -a test/compat/coverage.info \
 	     -a test/queues/coverage.info \
 	     -a test/formats/coverage.info
-	genhtml -o test/coverage/ test/coverage.info
+	$(GENHTML) -o test/coverage/ test/coverage.info
 
 clean:
 	rm -f *.gcda *.gcno
