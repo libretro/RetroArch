@@ -71,6 +71,8 @@
 #include <libretro.h>
 #include <libretro_d3d11.h>
 #include "../common/d3dcompiler_common.h"
+#include <queues/task_queue.h>
+#include <retro_atomic.h>
 #include "../common/d3d11_deferred_proxy.h"
 #include "../common/d3d11_hw_interface.h"
 /* slang_process.h is self-contained - it only defines types and
@@ -2924,10 +2926,22 @@ typedef struct d3d11_deferred_pass
    d3d11_shader_t    shader;
    pass_semantics_t  semantics;
    D3D11Buffer       buffers[SLANG_CBUFFER_MAX];
+   /* The pass's HLSL and the name it is compiled under, handed from the
+    * step to the build, which frees them */
+   char             *vs_src;
+   char             *ps_src;
+   char             *path;
 } d3d11_deferred_pass_t;
 
+/* A pass is built - its stages compiled, its objects made - on the
+ * task threads, several at once, after the step that processed it.
+ * The load and each build hold a reference to the state; the builds a
+ * load still waits on are counted in building. */
 typedef struct d3d11_deferred_state
 {
+   retro_atomic_int_t        refs;
+   retro_atomic_int_t        building;
+   retro_atomic_int_t        failed;   /* a build failed: the load ends */
    struct video_shader      *shader_preset;
    d3d11_deferred_pass_t     passes[GFX_MAX_SHADERS];
    d3d11_texture_t           luts[GFX_MAX_TEXTURES];
@@ -2994,6 +3008,9 @@ static bool d3d11_shader_load_begin(void *data,
    ds = (d3d11_deferred_state_t*)calloc(1, sizeof(*ds));
    if (!ds)
       return false;
+   retro_atomic_int_init(&ds->refs, 1);
+   retro_atomic_int_init(&ds->building, 0);
+   retro_atomic_int_init(&ds->failed, 0);
 
    ds->shader_preset = (struct video_shader*)calloc(
          1, sizeof(*ds->shader_preset));
@@ -3060,8 +3077,9 @@ static bool d3d11_shader_load_begin(void *data,
 
    /* A pass is D3DCompile and the device's object creation, both
     * free-threaded; the context is used in the finalizing step only.
-    * So the passes may be built on the task thread. */
-   deferred->step_any_thread = true;
+    * So the passes may be built on the task thread, and their builds
+    * several at once, with the compiler loaded here first. */
+   deferred->step_any_thread = d3d_compiler_load();
    ds->frame_rect            = (d3d11->flags & D3D11_ST_FLAG_HW_IFACE_ENABLE) != 0;
    ds->frame_smooth          = d3d11->chain.frame_rect.smooth;
    deferred->driver_data     = ds;
@@ -3082,28 +3100,40 @@ error:
 }
 
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
-static void d3d11_deferred_state_free(
-      d3d11_deferred_state_t *ds,
-      unsigned passes_built)
+/* The last holder frees what the passes made: the load's, or a build
+ * still running when the load ended. */
+static void d3d11_deferred_state_unref(d3d11_deferred_state_t *ds)
+{
+   unsigned i;
+
+   if (retro_atomic_fetch_add_int(&ds->refs, -1) != 1)
+      return;
+
+   for (i = 0; i < GFX_MAX_SHADERS; i++)
+   {
+      unsigned j;
+      d3d11_release_shader(&ds->passes[i].shader);
+      free(ds->passes[i].semantics.textures);
+      for (j = 0; j < SLANG_CBUFFER_MAX; j++)
+      {
+         free(ds->passes[i].semantics.cbuffers[j].uniforms);
+         Release(ds->passes[i].buffers[j]);
+      }
+      free(ds->passes[i].vs_src);
+      free(ds->passes[i].ps_src);
+      free(ds->passes[i].path);
+   }
+   free(ds);
+}
+
+/* The load lets go: the LUTs and the preset now, the passes with the
+ * last build. */
+static void d3d11_deferred_state_free(d3d11_deferred_state_t *ds)
 {
    unsigned i;
 
    if (!ds)
       return;
-
-   for (i = 0; i < passes_built; i++)
-   {
-      unsigned j;
-      d3d11_release_shader(&ds->passes[i].shader);
-      free(ds->passes[i].semantics.textures);
-      ds->passes[i].semantics.textures = NULL;
-      for (j = 0; j < SLANG_CBUFFER_MAX; j++)
-      {
-         free(ds->passes[i].semantics.cbuffers[j].uniforms);
-         ds->passes[i].semantics.cbuffers[j].uniforms = NULL;
-         Release(ds->passes[i].buffers[j]);
-      }
-   }
 
    if (ds->luts_loaded && ds->shader_preset)
    {
@@ -3119,9 +3149,125 @@ static void d3d11_deferred_state_free(
          free(ds->shader_preset->pass[i].source.string.fragment);
       }
       free(ds->shader_preset);
+      ds->shader_preset = NULL;
    }
 
-   free(ds);
+   d3d11_deferred_state_unref(ds);
+}
+
+/* Pass @i's stages compiled and its objects made, on whichever thread:
+ * everything it reads was written before the handoff and nothing else
+ * writes it until building drops. */
+static void d3d11_deferred_build_pass(D3D11Device device,
+      d3d11_deferred_state_t *ds, unsigned i)
+{
+   static const D3D11_INPUT_ELEMENT_DESC desc[] = {
+      { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0,
+         offsetof(d3d11_vertex_t, position),
+         D3D11_INPUT_PER_VERTEX_DATA, 0 },
+      { "TEXCOORD", 1, DXGI_FORMAT_R32G32_FLOAT, 0,
+         offsetof(d3d11_vertex_t, texcoord),
+         D3D11_INPUT_PER_VERTEX_DATA, 0 },
+   };
+   d3d11_deferred_pass_t *p = &ds->passes[i];
+   char _path[PATH_MAX_LENGTH];
+   size_t _len = strlcpy(_path, p->path ? p->path : "", sizeof(_path));
+   unsigned j;
+
+   strlcpy_lit(_path + _len, ".vs.hlsl", sizeof(_path) - _len);
+   d3d11_init_shader(device, p->vs_src, 0,
+         _path, "main", NULL, NULL, desc, countof(desc),
+         &p->shader, ds->feat_level_hint);
+
+   strlcpy_lit(_path + _len, ".ps.hlsl", sizeof(_path) - _len);
+   d3d11_init_shader(device, p->ps_src, 0, _path,
+         NULL, "main", NULL, NULL, 0,
+         &p->shader, ds->feat_level_hint);
+
+   free(p->vs_src);
+   free(p->ps_src);
+   free(p->path);
+   p->vs_src = NULL;
+   p->ps_src = NULL;
+   p->path   = NULL;
+
+   if (!p->shader.vs || !p->shader.ps)
+   {
+      RARCH_ERR("[D3D11] Deferred: failed to compile shader for pass %u.\n", i);
+      retro_atomic_store_release_int(&ds->failed, 1);
+      return;
+   }
+
+   for (j = 0; j < SLANG_CBUFFER_MAX; j++)
+   {
+      D3D11_BUFFER_DESC buf_desc;
+      buf_desc.ByteWidth           = p->semantics.cbuffers[j].size;
+      buf_desc.Usage               = D3D11_USAGE_DYNAMIC;
+      buf_desc.BindFlags           = D3D11_BIND_CONSTANT_BUFFER;
+      buf_desc.CPUAccessFlags      = D3D11_CPU_ACCESS_WRITE;
+      buf_desc.MiscFlags           = 0;
+      buf_desc.StructureByteStride = 0;
+
+      if (!buf_desc.ByteWidth)
+         continue;
+
+      device->lpVtbl->CreateBuffer(device, &buf_desc, NULL, &p->buffers[j]);
+   }
+}
+
+struct d3d11_build_task
+{
+   D3D11Device             device;  /* one reference */
+   d3d11_deferred_state_t *ds;      /* one reference */
+   unsigned                pass;
+};
+
+static void d3d11_build_task_handler(retro_task_t *task)
+{
+   struct d3d11_build_task *b = (struct d3d11_build_task*)task->state;
+   d3d11_deferred_build_pass(b->device, b->ds, b->pass);
+   /* publishes the pass to the step that waits on building */
+   retro_atomic_fetch_add_int(&b->ds->building, -1);
+   Release(b->device);
+   d3d11_deferred_state_unref(b->ds);
+   free(b);
+   task->state = NULL;
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+}
+
+/* Pass @i built beside the frame and the other passes when the task
+ * queue runs on threads; here and now otherwise. */
+static void d3d11_deferred_build(d3d11_video_t *d3d11,
+      d3d11_deferred_state_t *ds, unsigned i)
+{
+   struct d3d11_build_task *b;
+   retro_task_t *task;
+
+   if (     task_queue_is_threaded()
+         && (b = (struct d3d11_build_task*)malloc(sizeof(*b))))
+   {
+      if ((task = task_init()))
+      {
+         b->device = d3d11->device;
+         b->ds     = ds;
+         b->pass   = i;
+         d3d11->device->lpVtbl->AddRef(d3d11->device);
+         retro_atomic_fetch_add_int(&ds->refs, 1);
+         retro_atomic_fetch_add_int(&ds->building, 1);
+         task->handler = d3d11_build_task_handler;
+         task->state   = b;
+         task->flags  |= RETRO_TASK_FLG_MUTE | RETRO_TASK_FLG_PARALLEL;
+         if (task_queue_push(task))
+            return;
+         /* refused: the task is still ours, and the build is too */
+         retro_atomic_fetch_add_int(&ds->building, -1);
+         retro_atomic_fetch_add_int(&ds->refs, -1);
+         Release(d3d11->device);
+         free(task);
+      }
+      free(b);
+   }
+   d3d11_deferred_build_pass(d3d11->device, ds, i);
 }
 #endif
 
@@ -3156,6 +3302,18 @@ static bool d3d11_shader_load_step(void *data,
       return false;
    }
 
+   /* A build that failed ends the load at the next step, as one that
+    * failed in the step itself did; builds still running let go of the
+    * state when they return. */
+   if (     retro_atomic_load_acquire_int(&ds->failed)
+         && deferred->state == SHADER_LOAD_COMPILING)
+   {
+      d3d11_deferred_state_free(ds);
+      deferred->state       = SHADER_LOAD_FAILED;
+      deferred->driver_data = NULL;
+      return false;
+   }
+
    if (pass < deferred->total_passes)
    {
       d3d11_texture_t *source;
@@ -3169,7 +3327,6 @@ static bool d3d11_shader_load_step(void *data,
          : &d3d11->chain.pass[i - 1].rt;
 
       {
-         unsigned j;
          semantics_map_t semantics_map = {
             {
                { &d3d11->chain.history[0].view, 0,
@@ -3242,79 +3399,31 @@ static bool d3d11_shader_load_step(void *data,
                   &ds->passes[i].semantics))
          {
             RARCH_ERR("[D3D11] Deferred: failed to process pass %u.\n", i);
-            d3d11_deferred_state_free(ds, pass);
+            d3d11_deferred_state_free(ds);
             deferred->state       = SHADER_LOAD_FAILED;
             deferred->driver_data = NULL;
             return false;
          }
 
-         /* Compile HLSL and create shader objects */
-         {
-            static const D3D11_INPUT_ELEMENT_DESC desc[] = {
-               { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0,
-                  offsetof(d3d11_vertex_t, position),
-                  D3D11_INPUT_PER_VERTEX_DATA, 0 },
-               { "TEXCOORD", 1, DXGI_FORMAT_R32G32_FLOAT, 0,
-                  offsetof(d3d11_vertex_t, texcoord),
-                  D3D11_INPUT_PER_VERTEX_DATA, 0 },
-            };
-            char _path[PATH_MAX_LENGTH];
-            const char *slang_path =
-               ds->shader_preset->pass[i].source.path;
-            const char *vs_src =
-               ds->shader_preset->pass[i].source.string.vertex;
-            const char *ps_src =
-               ds->shader_preset->pass[i].source.string.fragment;
-            size_t _len = strlcpy(_path, slang_path, sizeof(_path));
-
-            strlcpy_lit(_path + _len, ".vs.hlsl", sizeof(_path) - _len);
-            d3d11_init_shader(d3d11->device, vs_src, 0,
-                  _path, "main", NULL, NULL, desc, countof(desc),
-                  &ds->passes[i].shader, ds->feat_level_hint);
-
-            strlcpy_lit(_path + _len, ".ps.hlsl", sizeof(_path) - _len);
-            d3d11_init_shader(d3d11->device, ps_src, 0, _path,
-                  NULL, "main", NULL, NULL, 0,
-                  &ds->passes[i].shader, ds->feat_level_hint);
-
-            free(ds->shader_preset->pass[i].source.string.vertex);
-            free(ds->shader_preset->pass[i].source.string.fragment);
-            ds->shader_preset->pass[i].source.string.vertex   = NULL;
-            ds->shader_preset->pass[i].source.string.fragment = NULL;
-
-            if (!ds->passes[i].shader.vs || !ds->passes[i].shader.ps)
-            {
-               RARCH_ERR("[D3D11] Deferred: failed to compile shader"
-                     " for pass %u.\n", i);
-               d3d11_deferred_state_free(ds, pass + 1);
-               deferred->state       = SHADER_LOAD_FAILED;
-               deferred->driver_data = NULL;
-               return false;
-            }
-         }
-
-         /* Create cbuffers */
-         for (j = 0; j < SLANG_CBUFFER_MAX; j++)
-         {
-            D3D11_BUFFER_DESC buf_desc;
-            buf_desc.ByteWidth           =
-               ds->passes[i].semantics.cbuffers[j].size;
-            buf_desc.Usage               = D3D11_USAGE_DYNAMIC;
-            buf_desc.BindFlags           = D3D11_BIND_CONSTANT_BUFFER;
-            buf_desc.CPUAccessFlags      = D3D11_CPU_ACCESS_WRITE;
-            buf_desc.MiscFlags           = 0;
-            buf_desc.StructureByteStride = 0;
-
-            if (!buf_desc.ByteWidth)
-               continue;
-
-            d3d11->device->lpVtbl->CreateBuffer(
-                  d3d11->device, &buf_desc, NULL,
-                  &ds->passes[i].buffers[j]);
-         }
+         /* The HLSL to the build, which compiles it and makes the
+          * pass's objects */
+         ds->passes[i].vs_src = ds->shader_preset->pass[i].source.string.vertex;
+         ds->passes[i].ps_src = ds->shader_preset->pass[i].source.string.fragment;
+         ds->passes[i].path   = strdup(ds->shader_preset->pass[i].source.path);
+         ds->shader_preset->pass[i].source.string.vertex   = NULL;
+         ds->shader_preset->pass[i].source.string.fragment = NULL;
+         d3d11_deferred_build(d3d11, ds, i);
       }
 
       deferred->current_pass++;
+      /* a build made here and now that failed ends the load now */
+      if (retro_atomic_load_acquire_int(&ds->failed))
+      {
+         d3d11_deferred_state_free(ds);
+         deferred->state       = SHADER_LOAD_FAILED;
+         deferred->driver_data = NULL;
+         return false;
+      }
       return true;
    }
 
@@ -3322,7 +3431,19 @@ static bool d3d11_shader_load_step(void *data,
    if (deferred->state != SHADER_LOAD_COMPILING)
    {
       RARCH_LOG("[D3D11] Deferred: cancelled, cleaning up.\n");
-      d3d11_deferred_state_free(ds, pass);
+      d3d11_deferred_state_free(ds);
+      deferred->state       = SHADER_LOAD_FAILED;
+      deferred->driver_data = NULL;
+      return false;
+   }
+
+   /* Passes still compiling: the chain goes live once they are in */
+   if (retro_atomic_load_acquire_int(&ds->building))
+      return true;
+   /* the last of them may have failed since the check above */
+   if (retro_atomic_load_acquire_int(&ds->failed))
+   {
+      d3d11_deferred_state_free(ds);
       deferred->state       = SHADER_LOAD_FAILED;
       deferred->driver_data = NULL;
       return false;
@@ -3451,7 +3572,7 @@ static bool d3d11_shader_load_step(void *data,
    deferred->state = SHADER_LOAD_DONE;
    RARCH_LOG("[D3D11] Deferred: shader loaded successfully.\n");
 
-   free(ds);
+   d3d11_deferred_state_unref(ds);
    deferred->driver_data = NULL;
    return false;
 #else

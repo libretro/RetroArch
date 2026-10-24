@@ -77,6 +77,8 @@
 #include "../common/d3d12_hw_interface.h"
 #include "../common/d3d12_upload_heap.h"
 #include "../common/d3dcompiler_common.h"
+#include <queues/task_queue.h>
+#include <retro_atomic.h>
 /* slang_process.h is self-contained - it only defines types and
  * constants used by pass state.  The actual slang_process() call
  * sites remain guarded with HAVE_SLANG+HAVE_SPIRV_CROSS. */
@@ -4120,10 +4122,22 @@ typedef struct d3d12_deferred_pass
    pass_semantics_t       semantics;
    D3D12Resource          buffers[SLANG_CBUFFER_MAX];
    D3D12_CONSTANT_BUFFER_VIEW_DESC buffer_view[SLANG_CBUFFER_MAX];
+   /* The pass's HLSL and the name it is compiled under, handed from the
+    * step to the build, which frees them */
+   char                  *vs_src;
+   char                  *ps_src;
+   char                  *path;
 } d3d12_deferred_pass_t;
 
+/* A pass is built - its stages compiled, its pipeline and buffers made
+ * - on the task threads, several at once, after the step that
+ * processed it.  The load and each build hold a reference to the
+ * state; the builds a load still waits on are counted in building. */
 typedef struct d3d12_deferred_state
 {
+   retro_atomic_int_t     refs;
+   retro_atomic_int_t     building;
+   retro_atomic_int_t     failed;   /* a build failed: the load ends */
    struct video_shader   *shader_preset;
    d3d12_deferred_pass_t  passes[GFX_MAX_SHADERS];
    d3d12_texture_t        luts[GFX_MAX_TEXTURES];
@@ -4159,6 +4173,9 @@ static bool d3d12_shader_load_begin(void *data,
    ds = (d3d12_deferred_state_t*)calloc(1, sizeof(*ds));
    if (!ds)
       return false;
+   retro_atomic_int_init(&ds->refs, 1);
+   retro_atomic_int_init(&ds->building, 0);
+   retro_atomic_int_init(&ds->failed, 0);
 
    ds->shader_preset = (struct video_shader*)calloc(
          1, sizeof(*ds->shader_preset));
@@ -4223,8 +4240,9 @@ static bool d3d12_shader_load_begin(void *data,
 
    /* A pass is D3DCompile and the device's object creation, both
     * free-threaded; the context is used in the finalizing step only.
-    * So the passes may be built on the task thread. */
-   deferred->step_any_thread = true;
+    * So the passes may be built on the task thread, and their builds
+    * several at once, with the compiler loaded here first. */
+   deferred->step_any_thread = d3d_compiler_load();
    ds->frame_rect            = (d3d12->flags & D3D12_ST_FLAG_HW_IFACE_ENABLE) != 0;
    deferred->driver_data     = ds;
    return true;
@@ -4244,29 +4262,42 @@ error:
 }
 
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+/* The last holder frees what the passes made: the load's, or a build
+ * still running when the load ended. */
+static void d3d12_deferred_state_unref(d3d12_deferred_state_t *ds)
+{
+   unsigned i;
+
+   if (retro_atomic_fetch_add_int(&ds->refs, -1) != 1)
+      return;
+
+   for (i = 0; i < GFX_MAX_SHADERS; i++)
+   {
+      unsigned j;
+      Release(ds->passes[i].pipe);
+      free(ds->passes[i].semantics.textures);
+      for (j = 0; j < SLANG_CBUFFER_MAX; j++)
+      {
+         free(ds->passes[i].semantics.cbuffers[j].uniforms);
+         Release(ds->passes[i].buffers[j]);
+      }
+      free(ds->passes[i].vs_src);
+      free(ds->passes[i].ps_src);
+      free(ds->passes[i].path);
+   }
+   free(ds);
+}
+
+/* The load lets go: the LUTs and the preset now, the passes with the
+ * last build. */
 static void d3d12_deferred_state_free(
       d3d12_video_t *d3d12,
-      d3d12_deferred_state_t *ds,
-      unsigned passes_built)
+      d3d12_deferred_state_t *ds)
 {
    unsigned i;
 
    if (!ds)
       return;
-
-   for (i = 0; i < passes_built; i++)
-   {
-      unsigned j;
-      Release(ds->passes[i].pipe);
-      free(ds->passes[i].semantics.textures);
-      ds->passes[i].semantics.textures = NULL;
-      for (j = 0; j < SLANG_CBUFFER_MAX; j++)
-      {
-         free(ds->passes[i].semantics.cbuffers[j].uniforms);
-         ds->passes[i].semantics.cbuffers[j].uniforms = NULL;
-         Release(ds->passes[i].buffers[j]);
-      }
-   }
 
    if (ds->luts_loaded && ds->shader_preset)
    {
@@ -4282,9 +4313,137 @@ static void d3d12_deferred_state_free(
          free(ds->shader_preset->pass[i].source.string.fragment);
       }
       free(ds->shader_preset);
+      ds->shader_preset = NULL;
    }
 
-   free(ds);
+   d3d12_deferred_state_unref(ds);
+}
+
+/* Pass @i's stages compiled and its pipeline and buffers made, on
+ * whichever thread: everything it reads was written before the handoff
+ * and nothing else writes it until building drops. */
+static void d3d12_deferred_build_pass(D3D12Device device,
+      D3D12RootSignature root, D3D12_HEAP_TYPE heap,
+      d3d12_deferred_state_t *ds, unsigned i)
+{
+   static const D3D12_INPUT_ELEMENT_DESC inputElementDesc[] = {
+      { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0,
+         offsetof(d3d12_vertex_t, position),
+         D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+      { "TEXCOORD", 1, DXGI_FORMAT_R32G32_FLOAT, 0,
+         offsetof(d3d12_vertex_t, texcoord),
+         D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+   };
+   d3d12_deferred_pass_t *p = &ds->passes[i];
+   D3D12_GRAPHICS_PIPELINE_STATE_DESC desc = { root };
+   D3DBlob vs_code = NULL;
+   D3DBlob ps_code = NULL;
+   char _path[PATH_MAX_LENGTH];
+   size_t _len = strlcpy(_path, p->path ? p->path : "", sizeof(_path));
+   unsigned j;
+
+   strlcpy_lit(_path + _len, ".vs.hlsl", sizeof(_path) - _len);
+   d3d_compile(p->vs_src, 0, _path, "main", "vs_5_0", &vs_code);
+
+   strlcpy_lit(_path + _len, ".ps.hlsl", sizeof(_path) - _len);
+   d3d_compile(p->ps_src, 0, _path, "main", "ps_5_0", &ps_code);
+
+   desc.BlendState.RenderTarget[0].RenderTargetWriteMask =
+      D3D12_COLOR_WRITE_ENABLE_ALL;
+   desc.RTVFormats[0]                  = glslang_format_to_dxgi(p->semantics.format);
+   desc.PrimitiveTopologyType          = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+   desc.InputLayout.pInputElementDescs = inputElementDesc;
+   desc.InputLayout.NumElements        = countof(inputElementDesc);
+
+   d3d12_init_pipeline(device, vs_code, ps_code, NULL, &desc, &p->pipe);
+
+   free(p->vs_src);
+   free(p->ps_src);
+   free(p->path);
+   p->vs_src = NULL;
+   p->ps_src = NULL;
+   p->path   = NULL;
+
+   Release(vs_code);
+   Release(ps_code);
+
+   if (!p->pipe)
+   {
+      RARCH_ERR("[D3D12] Deferred: failed to create pipeline for pass %u.\n", i);
+      retro_atomic_store_release_int(&ds->failed, 1);
+      return;
+   }
+
+   for (j = 0; j < SLANG_CBUFFER_MAX; j++)
+   {
+      if (!p->semantics.cbuffers[j].size)
+         continue;
+      d3d12_cb_create(device, heap, &p->buffer_view[j],
+            p->semantics.cbuffers[j].size, &p->buffers[j]);
+   }
+}
+
+struct d3d12_build_task
+{
+   D3D12Device             device;  /* one reference */
+   D3D12RootSignature      root;    /* one reference */
+   D3D12_HEAP_TYPE         heap;
+   d3d12_deferred_state_t *ds;      /* one reference */
+   unsigned                pass;
+};
+
+static void d3d12_build_task_handler(retro_task_t *task)
+{
+   struct d3d12_build_task *b = (struct d3d12_build_task*)task->state;
+   d3d12_deferred_build_pass(b->device, b->root, b->heap, b->ds, b->pass);
+   /* publishes the pass to the step that waits on building */
+   retro_atomic_fetch_add_int(&b->ds->building, -1);
+   Release(b->root);
+   Release(b->device);
+   d3d12_deferred_state_unref(b->ds);
+   free(b);
+   task->state = NULL;
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+}
+
+/* Pass @i built beside the frame and the other passes when the task
+ * queue runs on threads; here and now otherwise. */
+static void d3d12_deferred_build(d3d12_video_t *d3d12,
+      d3d12_deferred_state_t *ds, unsigned i)
+{
+   struct d3d12_build_task *b;
+   retro_task_t *task;
+
+   if (     task_queue_is_threaded()
+         && (b = (struct d3d12_build_task*)malloc(sizeof(*b))))
+   {
+      if ((task = task_init()))
+      {
+         b->device = d3d12->device;
+         b->root   = d3d12->desc.sl_rootSignature;
+         b->heap   = d3d12->cpu_write_heap;
+         b->ds     = ds;
+         b->pass   = i;
+         b->device->lpVtbl->AddRef(b->device);
+         b->root->lpVtbl->AddRef(b->root);
+         retro_atomic_fetch_add_int(&ds->refs, 1);
+         retro_atomic_fetch_add_int(&ds->building, 1);
+         task->handler = d3d12_build_task_handler;
+         task->state   = b;
+         task->flags  |= RETRO_TASK_FLG_MUTE | RETRO_TASK_FLG_PARALLEL;
+         if (task_queue_push(task))
+            return;
+         /* refused: the task is still ours, and the build is too */
+         retro_atomic_fetch_add_int(&ds->building, -1);
+         retro_atomic_fetch_add_int(&ds->refs, -1);
+         Release(b->root);
+         Release(b->device);
+         free(task);
+      }
+      free(b);
+   }
+   d3d12_deferred_build_pass(d3d12->device, d3d12->desc.sl_rootSignature,
+         d3d12->cpu_write_heap, ds, i);
 }
 
 /* A hardware core's frame may lie in the corner of a larger texture:
@@ -4318,6 +4477,18 @@ static bool d3d12_shader_load_step(void *data,
       return false;
    }
 
+   /* A build that failed ends the load at the next step, as one that
+    * failed in the step itself did; builds still running let go of the
+    * state when they return. */
+   if (     retro_atomic_load_acquire_int(&ds->failed)
+         && deferred->state == SHADER_LOAD_COMPILING)
+   {
+      d3d12_deferred_state_free(d3d12, ds);
+      deferred->state       = SHADER_LOAD_FAILED;
+      deferred->driver_data = NULL;
+      return false;
+   }
+
    if (pass < deferred->total_passes)
    {
       d3d12_texture_t *source;
@@ -4334,7 +4505,6 @@ static bool d3d12_shader_load_step(void *data,
          : &d3d12->filter.pass[i - 1].rt;
 
       {
-         unsigned j;
          semantics_map_t semantics_map = {
             {
                { &d3d12->filter.history[0], 0,
@@ -4406,86 +4576,31 @@ static bool d3d12_shader_load_step(void *data,
                   &semantics_map, &ds->passes[i].semantics))
          {
             RARCH_ERR("[D3D12] Deferred: failed to process pass %u.\n", i);
-            d3d12_deferred_state_free(d3d12, ds, pass);
+            d3d12_deferred_state_free(d3d12, ds);
             deferred->state      = SHADER_LOAD_FAILED;
             deferred->driver_data = NULL;
             return false;
          }
 
-         /* Compile HLSL and create PSO */
-         {
-            D3DBlob vs_code = NULL;
-            D3DBlob ps_code = NULL;
-            D3D12_GRAPHICS_PIPELINE_STATE_DESC desc =
-            { d3d12->desc.sl_rootSignature };
-            static const D3D12_INPUT_ELEMENT_DESC inputElementDesc[] = {
-               { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0,
-                  offsetof(d3d12_vertex_t, position),
-                  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-               { "TEXCOORD", 1, DXGI_FORMAT_R32G32_FLOAT, 0,
-                  offsetof(d3d12_vertex_t, texcoord),
-                  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-            };
-            char _path[PATH_MAX_LENGTH];
-            const char *slang_path =
-               ds->shader_preset->pass[i].source.path;
-            const char *vs_src =
-               ds->shader_preset->pass[i].source.string.vertex;
-            const char *ps_src =
-               ds->shader_preset->pass[i].source.string.fragment;
-            size_t _len = strlcpy(_path, slang_path, sizeof(_path));
-
-            strlcpy_lit(_path + _len, ".vs.hlsl", sizeof(_path) - _len);
-            d3d_compile(vs_src, 0, _path, "main", "vs_5_0", &vs_code);
-
-            strlcpy_lit(_path + _len, ".ps.hlsl", sizeof(_path) - _len);
-            d3d_compile(ps_src, 0, _path, "main", "ps_5_0", &ps_code);
-
-            desc.BlendState.RenderTarget[0].RenderTargetWriteMask =
-               D3D12_COLOR_WRITE_ENABLE_ALL;
-            desc.RTVFormats[0] = glslang_format_to_dxgi(
-                  ds->passes[i].semantics.format);
-            desc.PrimitiveTopologyType =
-               D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-            desc.InputLayout.pInputElementDescs = inputElementDesc;
-            desc.InputLayout.NumElements = countof(inputElementDesc);
-
-            d3d12_init_pipeline(d3d12->device,
-                  vs_code, ps_code, NULL, &desc,
-                  &ds->passes[i].pipe);
-
-            free(ds->shader_preset->pass[i].source.string.vertex);
-            free(ds->shader_preset->pass[i].source.string.fragment);
-            ds->shader_preset->pass[i].source.string.vertex   = NULL;
-            ds->shader_preset->pass[i].source.string.fragment = NULL;
-
-            Release(vs_code);
-            Release(ps_code);
-
-            if (!ds->passes[i].pipe)
-            {
-               RARCH_ERR("[D3D12] Deferred: failed to create pipeline"
-                     " for pass %u.\n", i);
-               d3d12_deferred_state_free(d3d12, ds, pass + 1);
-               deferred->state       = SHADER_LOAD_FAILED;
-               deferred->driver_data = NULL;
-               return false;
-            }
-         }
-
-         /* Create cbuffers */
-         for (j = 0; j < SLANG_CBUFFER_MAX; j++)
-         {
-            if (!ds->passes[i].semantics.cbuffers[j].size)
-               continue;
-            d3d12_cb_create(d3d12->device, d3d12->cpu_write_heap,
-                  &ds->passes[i].buffer_view[j],
-                  ds->passes[i].semantics.cbuffers[j].size,
-                  &ds->passes[i].buffers[j]);
-         }
+         /* The HLSL to the build, which compiles it and makes the
+          * pass's pipeline and buffers */
+         ds->passes[i].vs_src = ds->shader_preset->pass[i].source.string.vertex;
+         ds->passes[i].ps_src = ds->shader_preset->pass[i].source.string.fragment;
+         ds->passes[i].path   = strdup(ds->shader_preset->pass[i].source.path);
+         ds->shader_preset->pass[i].source.string.vertex   = NULL;
+         ds->shader_preset->pass[i].source.string.fragment = NULL;
+         d3d12_deferred_build(d3d12, ds, i);
       }
 
       deferred->current_pass++;
+      /* a build made here and now that failed ends the load now */
+      if (retro_atomic_load_acquire_int(&ds->failed))
+      {
+         d3d12_deferred_state_free(d3d12, ds);
+         deferred->state       = SHADER_LOAD_FAILED;
+         deferred->driver_data = NULL;
+         return false;
+      }
       return true;
    }
 
@@ -4493,7 +4608,19 @@ static bool d3d12_shader_load_step(void *data,
    if (deferred->state != SHADER_LOAD_COMPILING)
    {
       RARCH_LOG("[D3D12] Deferred: cancelled, cleaning up.\n");
-      d3d12_deferred_state_free(d3d12, ds, pass);
+      d3d12_deferred_state_free(d3d12, ds);
+      deferred->state       = SHADER_LOAD_FAILED;
+      deferred->driver_data = NULL;
+      return false;
+   }
+
+   /* Passes still compiling: the chain goes live once they are in */
+   if (retro_atomic_load_acquire_int(&ds->building))
+      return true;
+   /* the last of them may have failed since the check above */
+   if (retro_atomic_load_acquire_int(&ds->failed))
+   {
+      d3d12_deferred_state_free(d3d12, ds);
       deferred->state       = SHADER_LOAD_FAILED;
       deferred->driver_data = NULL;
       return false;
@@ -4658,7 +4785,7 @@ static bool d3d12_shader_load_step(void *data,
    deferred->state = SHADER_LOAD_DONE;
    RARCH_LOG("[D3D12] Deferred: shader loaded successfully.\n");
 
-   free(ds);
+   d3d12_deferred_state_unref(ds);
    deferred->driver_data = NULL;
    return false;
 #else

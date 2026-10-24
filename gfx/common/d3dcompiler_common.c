@@ -37,6 +37,24 @@ static const char* d3dcompiler_dll_list[] = {
    "D3DCompiler_35.dll", "D3DCompiler_34.dll", "D3DCompiler_33.dll", NULL,
 };
 
+static pD3DCompile d3dcompile_fp;
+
+/* Resolves D3DCompile once.  The deferred shader loads compile on the
+ * task threads, several at a time, so they call this from the thread
+ * that starts the load first and only ever read what it wrote. */
+static bool d3d_compiler_resolve(void)
+{
+   const char** dll_name = d3dcompiler_dll_list;
+   if (d3dcompile_fp)
+      return true;
+   while (!d3dcompiler_dll && *dll_name)
+      d3dcompiler_dll = dylib_load(*dll_name++);
+   if (!d3dcompiler_dll)
+      return false;
+   d3dcompile_fp = (pD3DCompile)dylib_proc(d3dcompiler_dll, "D3DCompile");
+   return d3dcompile_fp != NULL;
+}
+
 HRESULT WINAPI D3DCompile(
       LPCVOID pSrcData,
       SIZE_T  SrcDataSize,
@@ -50,18 +68,10 @@ HRESULT WINAPI D3DCompile(
       ID3DBlob**              ppCode,
       ID3DBlob**              ppErrorMsgs)
 {
-   static pD3DCompile fp;
-   const char** dll_name = d3dcompiler_dll_list;
-   while (!d3dcompiler_dll && *dll_name)
-      d3dcompiler_dll = dylib_load(*dll_name++);
-
-   if (!d3dcompiler_dll)
-      return TYPE_E_CANTLOADLIBRARY;
-
-   if (!fp)
-      if (!(fp = (pD3DCompile)dylib_proc(d3dcompiler_dll, "D3DCompile")))
-         return TYPE_E_DLLFUNCTIONNOTFOUND;
-   return fp(
+   if (!d3d_compiler_resolve())
+      return d3dcompiler_dll ? TYPE_E_DLLFUNCTIONNOTFOUND
+         : TYPE_E_CANTLOADLIBRARY;
+   return d3dcompile_fp(
          pSrcData, SrcDataSize, pSourceName,
          pDefines, pInclude, pEntrypoint, pTarget,
          Flags1,   Flags2, ppCode, ppErrorMsgs);
@@ -117,6 +127,15 @@ HRESULT WINAPI
    return fp(pSrcData, SrcDataSize, pInterface, ppReflector);
 }
 #endif
+
+bool d3d_compiler_load(void)
+{
+#if defined(HAVE_DYLIB) && !defined(__WINRT__)
+   return d3d_compiler_resolve();
+#else
+   return true;
+#endif
+}
 
 bool d3d_compile(const char* src, size_t len,
       LPCSTR src_name, LPCSTR entrypoint, LPCSTR target, D3DBlob* out)
