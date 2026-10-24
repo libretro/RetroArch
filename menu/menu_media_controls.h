@@ -3,18 +3,23 @@
 
 #include "menu_driver.h"
 #include "../gfx/gfx_media_controls.h"
+#include "../gfx/gfx_media_subtitle.h"
 #include "../gfx/gfx_display.h"
 
 typedef struct menu_media_controls
 {
+   gfx_media_subtitle_t *subtitle; /* main thread */
    gfx_media_controls_t controls; /* main thread */
    gfx_media_mailbox_t mailbox;
    gfx_media_view_t view; /* render thread */
+   gfx_media_subtitle_mailbox_t subtitle_mailbox;
+   gfx_media_subtitle_view_t subtitle_view; /* render thread */
+   bool subtitle_seeking; /* main thread */
 } menu_media_controls_t;
 
 RETRO_BEGIN_DECLS
 
-void menu_media_controls_update(menu_media_controls_t *media,
+bool menu_media_controls_update(menu_media_controls_t *media,
       const gfx_media_target_t *target, unsigned width, unsigned height,
       const menu_input_pointer_t *pointer, int64_t now);
 void menu_media_controls_thumbnail(menu_media_controls_t *media,

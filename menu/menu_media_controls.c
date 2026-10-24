@@ -15,16 +15,18 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <string/stdstring.h>
 
 #include "menu_media_controls.h"
 #include "../gfx/video_defines.h"
 #include "../configuration.h"
 
-void menu_media_controls_update(menu_media_controls_t *media,
+bool menu_media_controls_update(menu_media_controls_t *media,
       const gfx_media_target_t *target, unsigned width, unsigned height,
       const menu_input_pointer_t *pointer, int64_t now)
 {
    settings_t *settings = config_get_ptr();
+   bool subtitle_changed = false;
    gfx_media_controls_configure(&media->controls,
          settings->uints.media_player_seek_seconds,
          settings->uints.media_player_controls_timeout);
@@ -39,7 +41,27 @@ void menu_media_controls_update(menu_media_controls_t *media,
             pointer ? VIDEO_POS_Y(pointer->pos) : 0,
             pointer && (pointer->flags & MENU_INP_PTR_FLG_PRESSED), valid, now);
    }
+   {
+      bool changed = false;
+      bool seeking = media->controls.playback.seeking;
+      const char *path = media->controls.target.source_path;
+      enum image_type_enum type = path ? image_texture_get_type(path) : IMAGE_TYPE_NONE;
+      bool enabled = settings->bools.media_player_subtitles
+         && (type == IMAGE_TYPE_MP4 || type == IMAGE_TYPE_WEBM);
+      if (enabled && !media->subtitle)
+         media->subtitle = gfx_media_subtitle_new();
+      if (media->subtitle)
+         changed = gfx_media_subtitle_update(media->subtitle, media->controls.target.identity,
+               path, media->controls.playback.position_us,
+               (int64_t)settings->ints.media_player_subtitle_delay * 1000, enabled);
+      subtitle_changed = changed || seeking != media->subtitle_seeking;
+      if (subtitle_changed)
+         gfx_media_subtitle_publish(&media->subtitle_mailbox,
+               seeking ? NULL : gfx_media_subtitle_view(media->subtitle));
+      media->subtitle_seeking = seeking;
+   }
    gfx_media_controls_publish(&media->controls, &media->mailbox);
+   return subtitle_changed;
 }
 
 void menu_media_controls_thumbnail(menu_media_controls_t *media,
@@ -98,6 +120,10 @@ bool menu_media_controls_release(menu_media_controls_t *media,
 
 void menu_media_controls_cancel(menu_media_controls_t *media)
 {
+   gfx_media_subtitle_free(media->subtitle);
+   media->subtitle = NULL;
+   media->subtitle_seeking = false;
+   gfx_media_subtitle_publish(&media->subtitle_mailbox, NULL);
    gfx_media_controls_reset(&media->controls);
    gfx_media_controls_publish(NULL, &media->mailbox);
 }
@@ -125,6 +151,71 @@ void menu_media_controls_time(char *out, size_t size, int64_t us)
          (unsigned)((seconds / 60) % 60), (unsigned)(seconds % 60));
 }
 
+static void menu_media_subtitle_draw(menu_media_controls_t *media,
+      gfx_display_t *display, void *userdata, unsigned dims,
+      const font_data_t *font)
+{
+   char wrapped[GFX_MEDIA_SUBTITLE_TEXT_SIZE];
+   char *lines[8];
+   char *line;
+   unsigned count = 0, i;
+   int width = VIDEO_SCALE_W(dims);
+   int height = VIDEO_SCALE_H(dims);
+   int line_height, glyph_width, max_width, bottom;
+   float scale;
+   gfx_media_subtitle_consume(&media->subtitle_mailbox, &media->subtitle_view);
+   if (!media->subtitle_view.text[0] || !font || font->size <= 0.0f
+         || width < 96 || height < 96)
+      return;
+   line_height = height / 28;
+   if (line_height < 12)
+      line_height = 12;
+   scale = line_height * 0.8f / font->size;
+   glyph_width = font_driver_get_message_width((void*)font, "M", 1, scale);
+   if (glyph_width <= 0)
+      return;
+   max_width = width * 4 / 5;
+   wrapped[0] = '\0';
+   word_wrap_wideglyph(wrapped, sizeof(wrapped), media->subtitle_view.text,
+         strlen(media->subtitle_view.text), max_width / glyph_width, 200, 8);
+   line = wrapped;
+   while (*line && count < ARRAY_SIZE(lines))
+   {
+      char *next = strchr(line, '\n');
+      lines[count++] = line;
+      if (!next)
+         break;
+      *next = '\0';
+      line = next + 1;
+   }
+   bottom = media->view.visible ? media->view.layout.panel.y - line_height / 2
+      : height - line_height;
+   for (i = 0; i < count; i++)
+   {
+      gfx_media_rect_t background;
+      int text_width = font_driver_get_message_width((void*)font, lines[i],
+            strlen(lines[i]), scale);
+      int y = bottom - ((int)count - (int)i) * line_height;
+      float line_scale = scale;
+      if (y < line_height)
+         continue;
+      if (text_width > max_width)
+      {
+         line_scale *= (float)max_width / text_width;
+         text_width = max_width;
+      }
+      background.x = (width - text_width) / 2 - line_height / 4;
+      background.y = y;
+      background.w = text_width + line_height / 2;
+      background.h = line_height;
+      menu_media_quad(display, userdata, dims, &background,
+            0.0f, 0.0f, 0.0f, 0.75f);
+      gfx_display_draw_text(font, lines[i], width * 0.5f,
+            y + line_height * 0.8f, dims, 0xffffffffU,
+            TEXT_ALIGN_CENTER, line_scale, false, 0.0f, false);
+   }
+}
+
 void menu_media_controls_draw(menu_media_controls_t *media,
       gfx_display_t *display, void *userdata, unsigned dims,
       const font_data_t *font)
@@ -139,6 +230,7 @@ void menu_media_controls_draw(menu_media_controls_t *media,
    float scale;
    gfx_media_controls_consume(&media->mailbox, &media->view);
    view = &media->view;
+   menu_media_subtitle_draw(media, display, userdata, dims, font);
    if (!view->visible || !view->layout.unit) return;
    menu_media_quad(display, userdata, dims, &view->layout.panel, 0.025f, 0.025f, 0.025f, 0.92f);
    bar = view->layout.timeline;

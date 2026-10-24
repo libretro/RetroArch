@@ -6,6 +6,7 @@
 #include "../../../menu/menu_media_controls.h"
 #include "../../../gfx/video_defines.h"
 #include "../../../configuration.h"
+#include "../../../tasks/task_subtitle.h"
 
 static settings_t test_settings;
 settings_t *config_get_ptr(void) { return &test_settings; }
@@ -40,6 +41,30 @@ bool gfx_thumbnail_set_paused(gfx_thumbnail_t *t, bool p, retro_time_t n)
 { (void)t; (void)p; (void)n; abort(); return false; }
 bool gfx_thumbnail_seek(gfx_thumbnail_t *t, int64_t p, retro_time_t n)
 { (void)t; (void)p; (void)n; abort(); return false; }
+
+/* Loading is tested separately; this drawing oracle publishes cue views. */
+task_subtitle_request_t *task_subtitle_load(const char *path)
+{ (void)path; abort(); return NULL; }
+int task_subtitle_status(const task_subtitle_request_t *request)
+{ (void)request; abort(); return -1; }
+rsubtitle_srt_t *task_subtitle_take(task_subtitle_request_t *request)
+{ (void)request; abort(); return NULL; }
+void task_subtitle_release(task_subtitle_request_t *request)
+{ if (request) abort(); }
+
+enum image_type_enum image_texture_get_type(const char *path)
+{
+   (void)path;
+   return IMAGE_TYPE_NONE;
+}
+
+int font_driver_get_message_width(void *font, const char *text,
+      size_t length, float scale)
+{
+   (void)font;
+   (void)text;
+   return (int)(length * 8 * scale);
+}
 
 static unsigned quads, captions, seek_captions;
 static bool dialog_open;
@@ -404,10 +429,40 @@ static void playback_preferences(void)
    CHECK(c.seek_seconds == 5);
 }
 
+static void subtitles_without_transport(void)
+{
+   menu_media_controls_t *media = (menu_media_controls_t*)calloc(1, sizeof(*media));
+   gfx_media_subtitle_view_t view;
+   font_data_t font;
+   unsigned before;
+   CHECK(media != NULL);
+   if (!media)
+      return;
+   memset(&view, 0, sizeof(view));
+   memset(&font, 0, sizeof(font));
+   font.size = 20.0f;
+   strcpy(view.text, "First line\nSecond line");
+   gfx_media_subtitle_publish(&media->subtitle_mailbox, &view);
+   before = captions;
+   drawing = true;
+   menu_media_controls_draw(media, NULL, NULL, VIDEO_SCALE_PACK(640, 480), &font);
+   drawing = false;
+   CHECK(!media->view.visible && captions == before + 2);
+   gfx_media_subtitle_publish(&media->subtitle_mailbox, NULL);
+   before = captions;
+   drawing = true;
+   menu_media_controls_draw(media, NULL, NULL, VIDEO_SCALE_PACK(640, 480), &font);
+   drawing = false;
+   CHECK(captions == before);
+   menu_media_controls_cancel(media);
+   free(media);
+}
+
 int main(void)
 {
    test_settings.uints.media_player_seek_seconds = 5;
    test_settings.uints.media_player_controls_timeout = 3;
+   subtitles_without_transport();
    playback_preferences();
    menu_preferences();
    transport();

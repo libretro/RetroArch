@@ -1745,6 +1745,9 @@ MENU
 #ifdef HAVE_MENU
 #include "../menu/menu_str.c"
 #include "../menu/menu_driver.c"
+#include "../libretro-common/formats/subtitle/rsubtitle_srt.c"
+#include "../tasks/task_subtitle.c"
+#include "../gfx/gfx_media_subtitle.c"
 #include "../menu/menu_media_controls.c"
 #include "../menu/menu_media_browser.c"
 #include "../menu/menu_setting.c"

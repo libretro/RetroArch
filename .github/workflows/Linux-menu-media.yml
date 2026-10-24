@@ -54,6 +54,12 @@ jobs:
         run: python3 samples/menu/rgui_media/run.py --c89 --driver xmb samples/menu/rgui_media/fixture.mp4
       - name: Real Ozone file-browser playback controls
         run: python3 samples/menu/rgui_media/run.py --c89 --driver ozone samples/menu/rgui_media/fixture.mp4
+      - name: UTF-8 subtitle sidecars across all four menus
+        run: |
+          python3 -c "from pathlib import Path; Path('samples/menu/rgui_media/fixture.srt').write_text('1\n00:00:00,000 --> 00:10:00,000\nSubtitle sidecar\nUTF-8 \u00e9\n\n', encoding='utf-8')"
+          for driver in rgui materialui xmb ozone; do
+            python3 samples/menu/rgui_media/run.py --c89 --subtitles --driver "$driver" samples/menu/rgui_media/fixture.mp4
+          done
       - name: External movies and internal image activation across all menus
         run: |
           ffmpeg -v error -y -f lavfi -i color=c=orange:size=32x32 -frames:v 1 -threads 1 samples/menu/rgui_media/fixture.png
@@ -132,4 +138,65 @@ jobs:
         run: |
           for driver in rgui materialui xmb ozone; do
             xvfb-run -a python3 samples/menu/rgui_media/run.py --c89 --video-driver gl --driver "$driver" --first-video-us 200000 samples/menu/rgui_media/delayed.webm
+          done
+
+  subtitle-sidecars:
+    runs-on: ubuntu-latest
+    env:
+      APT_PKGS: build-essential clang
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - name: Apt cache key
+        id: apt
+        run: sh .github/workflows/scripts/apt-cache-key.sh "$APT_PKGS"
+
+      - name: Restore apt cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+          restore-keys: ${{ steps.apt.outputs.prefix }}
+
+      - name: Install dependencies
+        timeout-minutes: 10
+        run: sh .github/workflows/scripts/apt-install.sh $APT_PKGS
+
+      - name: Save apt cache
+        if: env.APT_CACHE_SAVE == '1'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+
+      - name: SubRip parsing, task ownership and drawing (GCC and Clang sanitizers)
+        shell: bash
+        run: |
+          set -eu
+          for compiler in gcc clang; do
+            for sample in libretro-common/samples/formats/subtitle_srt samples/tasks/subtitle_load samples/gfx/media_subtitle samples/gfx/media_controls; do
+              extra_flags=''
+              if [ "$compiler" = clang ]; then extra_flags=-Wno-c99-extensions; fi
+              make -C "$sample" clean
+              ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1 CFLAGS="$extra_flags" \
+                make -C "$sample" check CC="$compiler" SANITIZER=address,undefined
+            done
+          done
+      - name: Subtitle ownership and publication races
+        shell: bash
+        run: |
+          set -eu
+          for sample in samples/tasks/subtitle_load samples/gfx/media_subtitle samples/gfx/media_controls; do
+            make -C "$sample" clean
+            TSAN_OPTIONS=halt_on_error=1 CFLAGS=-Wno-c99-extensions \
+              make -C "$sample" check CC=clang SANITIZER=thread
+          done
+      - name: Threadless subtitle loading and drawing
+        shell: bash
+        run: |
+          set -eu
+          for sample in libretro-common/samples/formats/subtitle_srt samples/tasks/subtitle_load samples/gfx/media_subtitle samples/gfx/media_controls; do
+            make -C "$sample" clean
+            ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1 \
+              make -C "$sample" check THREADS=0 SANITIZER=address,undefined
           done

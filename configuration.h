@@ -556,6 +556,7 @@ typedef struct settings
       int input_overlay_lightgun_port;
 #endif
       int input_turbo_bind;
+      int media_player_subtitle_delay;
    } ints;
 
    struct
@@ -1072,6 +1073,7 @@ typedef struct settings
       /* Multimedia */
       bool multimedia_builtin_mediaplayer_enable;
       bool multimedia_builtin_imageviewer_enable;
+      bool media_player_subtitles;
 
       /* Bundle */
       bool bundle_finished;

@@ -28,6 +28,7 @@ typedef struct gfx_media_target
    bool (*state)(void *user, int64_t now, gfx_media_playback_state_t *out);
    bool (*pause)(void *user, bool paused, int64_t now);
    bool (*seek)(void *user, int64_t target_us, int64_t now);
+   const char *source_path; /* main thread, immutable session path */
 } gfx_media_target_t;
 
 typedef struct gfx_media_controls

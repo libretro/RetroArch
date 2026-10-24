@@ -97,7 +97,20 @@ static void render(struct menu_state *menu_st)
    }
 }
 
+static void render_subtitles(struct menu_state *menu_st)
+{
+   render(menu_st);
+   /* Null video has no frame callback; exercise the shared draw stage. */
+   if (!native_gpu)
+   {
+      test_viewer_t *viewer = (test_viewer_t*)menu_st->userdata;
+      menu_media_controls_draw(&viewer->media, disp_get_ptr(), NULL,
+            VIDEO_SCALE_PACK(640, 480), NULL);
+   }
+}
+
 #include "native_media_capture.h"
+#include "subtitle_media_test.h"
 
 static bool test_current_target(struct menu_state *menu_st,
       gfx_media_target_t *target)
@@ -339,6 +352,8 @@ int main(int argc,char **argv)
    CHECK("confirm pauses through menu adapter",
          test_action(viewer,MENU_ACTION_OK)==MENU_ACTION_NOOP
          &&gfx_thumbnail_get_playback_state(test_thumbnail(viewer),menu_st->current_time_us,&state)&&state.paused);
+   CHECK("sidecar subtitle owner, delay and disable apply",
+         media_test_subtitles(&viewer->media, menu_st, render_subtitles));
    if(native_gpu)
    {
       gfx_media_target_t target=viewer->media.controls.target;

@@ -48,6 +48,31 @@ static void media_render(struct menu_state *menu_st)
 }
 
 #include "../texture_media/native_media_capture.h"
+static bool media_test_subtitle_glyph(void)
+{
+   rgui_t *rgui = (rgui_t*)menu_state_get_ptr()->userdata;
+   unsigned x, y, i, j;
+   unsigned width = rgui->frame_buf.width;
+   unsigned height = rgui->frame_buf.height;
+   int top = rgui->media.view.visible ? rgui->media.view.layout.panel.y - 2
+      : (int)height - (int)rgui->font_height_stride;
+   if (!rgui->frame_buf.data || !rgui->font_width_stride
+         || !rgui->font_height_stride || top < (int)rgui->font_height_stride)
+      return false;
+   x = (width - 7 * rgui->font_width_stride) / 2 + 6 * rgui->font_width_stride;
+   y = top - rgui->font_height_stride;
+   if (x + FONT_WIDTH > width || y + FONT_HEIGHT > height)
+      return false;
+   for (j = 0; j < FONT_HEIGHT; j++)
+      for (i = 0; i < FONT_WIDTH; i++)
+         if (rgui->frame_buf.data[(y + j) * width + x + i]
+               == rgui->colors.normal_color)
+            return true;
+   return false;
+}
+
+#define MEDIA_SUBTITLE_GLYPH_CHECK() media_test_subtitle_glyph()
+#include "../texture_media/subtitle_media_test.h"
 
 static bool media_capture_settled(struct menu_state *menu_st, int ordinal)
 {
@@ -279,6 +304,8 @@ int main(int argc, char **argv)
    MEDIA_CHECK("confirm pauses through the real menu adapter",
          rgui_parse_menu_entry_action(rgui, entry, MENU_ACTION_OK) == MENU_ACTION_NOOP
          && rgui_media_state(rgui, menu_st->current_time_us, &state) && state.paused);
+   MEDIA_CHECK("sidecar subtitle owner, delay and disable apply",
+         media_test_subtitles(&rgui->media, menu_st, media_render));
    if(native_gpu)
    {
       gfx_media_target_t target=rgui->media.controls.target;

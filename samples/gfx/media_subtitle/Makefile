@@ -1,0 +1,51 @@
+include ../../sample_objdir.mk
+
+TARGET := media_subtitle_test
+ROOT := ../../..
+LRC := $(ROOT)/libretro-common
+THREADS ?= 1
+SOURCES := media_subtitle_test.c $(ROOT)/gfx/gfx_media_subtitle.c $(ROOT)/tasks/task_subtitle.c \
+           $(ROOT)/tasks/task_nbio_slice.c \
+           $(LRC)/formats/subtitle/rsubtitle_srt.c \
+           $(LRC)/queues/task_queue.c $(LRC)/rthreads/rthreads.c \
+           $(LRC)/rthreads/retro_eventcount.c \
+           $(LRC)/features/features_cpu.c $(LRC)/time/rtime.c \
+           $(LRC)/streams/file_stream.c $(LRC)/vfs/vfs_implementation.c \
+           $(LRC)/file/file_path.c $(LRC)/file/file_path_io.c \
+           $(LRC)/string/stdstring.c $(LRC)/string/rstrtod.c \
+           $(LRC)/encodings/encoding_utf.c \
+           $(LRC)/compat/compat_strl.c $(LRC)/compat/compat_strldup.c \
+           $(LRC)/compat/fopen_utf8.c
+OBJS := $(call sample_objs,$(SOURCES:.c=.o))
+CFLAGS += -O1 -g1 -std=gnu89 -Wall -Wextra -Wno-unused-parameter \
+          -Werror=declaration-after-statement -Wframe-larger-than=2048 -I$(ROOT) -I$(LRC)/include
+ifeq ($(THREADS),1)
+CFLAGS += -DHAVE_THREADS
+endif
+ifeq ($(OS),Windows_NT)
+LDLIBS += -lwinmm
+else
+LDLIBS += -lpthread -lm
+endif
+ifneq ($(SANITIZER),)
+CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
+LDFLAGS += -fsanitize=$(SANITIZER)
+endif
+
+all: $(TARGET)
+
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(TARGET): $(OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
+
+check: all
+	./$(TARGET)
+
+clean:
+	rm -rf $(SAMPLE_OBJDIR)
+	rm -f $(TARGET) $(TARGET).exe $(OBJS) subtitle-view-*.srt
+
+.PHONY: all check clean

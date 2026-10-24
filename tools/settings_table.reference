@@ -284,6 +284,7 @@ bool	cheevos_verbose_enable	1	1
 bool	cheevos_visibility_account	1	1
 bool	pause_nonactive	1	1
 bool	video_disable_composition	1	0
+bool	media_player_subtitles	1	1
 bool	rgui_inline_thumbnails	1	0
 bool	rgui_swap_thumbnails	1	0
 bool	rgui_thumbnail_dither	1	1
@@ -441,6 +442,7 @@ int	input_overlay_lightgun_port	1	-1
 int	input_turbo_bind	1	-1
 int	menu_xmb_title_margin	1	3
 int	menu_xmb_title_margin_horizontal_offset	1	0
+int	media_player_subtitle_delay	1	0
 int	vulkan_gpu_index	1	0
 uint	video_shader_compiler	1	0
 uint	menu_thumbnails	1	3
@@ -995,6 +997,7 @@ bool	cheevos_verbose_enable	1	1
 bool	cheevos_visibility_account	1	1
 bool	pause_nonactive	1	1
 bool	video_disable_composition	1	0
+bool	media_player_subtitles	1	1
 bool	rgui_inline_thumbnails	1	0
 bool	rgui_swap_thumbnails	1	0
 bool	rgui_thumbnail_dither	1	1
@@ -1149,6 +1152,7 @@ int	input_overlay_lightgun_port	1	-1
 int	input_turbo_bind	1	-1
 int	menu_xmb_title_margin	1	3
 int	menu_xmb_title_margin_horizontal_offset	1	0
+int	media_player_subtitle_delay	1	0
 uint	video_shader_compiler	1	0
 uint	menu_thumbnails	1	3
 uint	menu_left_thumbnails	1	0
@@ -1709,6 +1713,7 @@ bool	cheevos_verbose_enable	1	1
 bool	cheevos_visibility_account	1	1
 bool	pause_nonactive	1	1
 bool	video_disable_composition	1	0
+bool	media_player_subtitles	1	1
 bool	rgui_inline_thumbnails	1	0
 bool	rgui_swap_thumbnails	1	0
 bool	rgui_thumbnail_dither	1	1
@@ -1863,6 +1868,7 @@ int	input_overlay_lightgun_port	1	-1
 int	input_turbo_bind	1	-1
 int	menu_xmb_title_margin	1	3
 int	menu_xmb_title_margin_horizontal_offset	1	0
+int	media_player_subtitle_delay	1	0
 int	vulkan_gpu_index	1	0
 uint	video_shader_compiler	1	0
 uint	menu_thumbnails	1	3

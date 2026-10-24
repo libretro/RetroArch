@@ -3261,9 +3261,11 @@ RGUI_NOINLINE static void rgui_media_update(rgui_t *rgui, unsigned dims)
          target.seek = rgui_media_seek;
       }
    }
+   target.source_path = target.user ? rgui->media_path : NULL;
    menu_input_get_pointer_state(&rgui->media_pointer);
-   menu_media_controls_update(&rgui->media, &target, VIDEO_SCALE_W(dims),
-         VIDEO_SCALE_H(dims), &rgui->media_pointer, now);
+   if (menu_media_controls_update(&rgui->media, &target, VIDEO_SCALE_W(dims),
+            VIDEO_SCALE_H(dims), &rgui->media_pointer, now))
+      rgui->flags |= RGUI_FLAG_FORCE_REDRAW;
    {
       rgui_media_gpu_view_t draw;
       memset(&draw, 0, sizeof(draw));
@@ -6088,6 +6090,64 @@ static void rgui_media_gpu_cutout(rgui_t *rgui, unsigned dims)
          (unsigned)(right - x), (unsigned)(bottom - y), 0);
 }
 
+RGUI_NOINLINE static void rgui_media_subtitle_draw(rgui_t *rgui, unsigned dims)
+{
+   char wrapped[GFX_MEDIA_SUBTITLE_TEXT_SIZE];
+   char *lines[8];
+   char *line;
+   unsigned count = 0, i;
+   unsigned width = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
+   unsigned columns;
+   int bottom;
+   gfx_media_subtitle_consume(&rgui->media.subtitle_mailbox,
+         &rgui->media.subtitle_view);
+   if (!rgui->media.subtitle_view.text[0] || !rgui->font_width_stride
+         || !rgui->font_height_stride || width < 96 || height < 96)
+      return;
+   columns = width * 4 / (5 * rgui->font_width_stride);
+   wrapped[0] = '\0';
+   word_wrap(wrapped, sizeof(wrapped), rgui->media.subtitle_view.text,
+         strlen(rgui->media.subtitle_view.text), columns, 100, 8);
+   line = wrapped;
+   while (*line && count < ARRAY_SIZE(lines))
+   {
+      char *next = strchr(line, '\n');
+      lines[count++] = line;
+      if (!next)
+         break;
+      *next = '\0';
+      line = next + 1;
+   }
+   bottom = rgui->media.view.visible ? rgui->media.view.layout.panel.y - 2
+      : (int)height - (int)rgui->font_height_stride;
+   for (i = 0; i < count; i++)
+   {
+      size_t glyphs = utf8len(lines[i]);
+      int x, y;
+      if (glyphs > columns)
+      {
+         char *end = (char*)utf8skip(lines[i], columns);
+         *end = '\0';
+         glyphs = columns;
+      }
+      x = (width - glyphs * rgui->font_width_stride) / 2;
+      y = bottom - ((int)count - (int)i) * rgui->font_height_stride;
+      if (y < (int)rgui->font_height_stride)
+         continue;
+      rgui_color_rect(rgui->frame_buf.data, dims, x - 2, y - 1,
+            glyphs * rgui->font_width_stride + 4, rgui->font_height_stride,
+            rgui->colors.shadow_color);
+      if (rgui->fonts.regular
+            && rgui->font_dims == VIDEO_SCALE_PACK(FONT_WIDTH, FONT_HEIGHT))
+         rgui_blit_line_extended(rgui, width, x, y, lines[i],
+               rgui->colors.normal_color, rgui->colors.shadow_color);
+      else
+         rgui_blit_line(rgui, width, x, y, lines[i], rgui->colors.normal_color,
+               rgui->colors.shadow_color);
+   }
+}
+
 RGUI_NOINLINE static void rgui_media_draw(rgui_t *rgui, unsigned dims)
 {
    gfx_media_view_t *view = &rgui->media.view;
@@ -6098,6 +6158,7 @@ RGUI_NOINLINE static void rgui_media_draw(rgui_t *rgui, unsigned dims)
    size_t limit;
    const char *labels[4];
    gfx_media_controls_consume(&rgui->media.mailbox, view);
+   rgui_media_subtitle_draw(rgui, dims);
    if (!view->visible || !view->layout.unit) return;
    bar = view->layout.panel;
    rgui_color_rect(rgui->frame_buf.data, dims, bar.x, bar.y, bar.w, bar.h,

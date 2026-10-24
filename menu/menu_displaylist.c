@@ -12778,6 +12778,8 @@ unsigned menu_displaylist_build_list(
             static const menu_displaylist_build_info_t build_list[] = {
                {MENU_ENUM_LABEL_MEDIA_PLAYER_SEEK_SECONDS, PARSE_ONLY_UINT},
                {MENU_ENUM_LABEL_MEDIA_PLAYER_CONTROLS_TIMEOUT, PARSE_ONLY_UINT},
+               {MENU_ENUM_LABEL_MEDIA_PLAYER_SUBTITLES, PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_MEDIA_PLAYER_SUBTITLE_DELAY, PARSE_ONLY_INT},
             };
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,

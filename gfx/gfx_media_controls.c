@@ -1,5 +1,6 @@
 #include <string.h>
 #include "gfx_media_controls.h"
+#include "gfx_anim_preview.h"
 
 static bool gfx_media_inside(const gfx_media_rect_t *r, int x, int y)
 {
@@ -236,6 +237,8 @@ void gfx_media_controls_thumbnail_target(gfx_thumbnail_t *thumbnail, gfx_media_t
    if (!thumbnail) return;
    out->user = thumbnail;
    out->identity = thumbnail->anim_sess;
+   out->source_path = thumbnail->anim_sess
+      ? ((const gfx_anim_preview_t*)thumbnail->anim_sess)->path : NULL;
    out->state = gfx_media_thumbnail_state;
    out->pause = gfx_media_thumbnail_pause;
    out->seek = gfx_media_thumbnail_seek;

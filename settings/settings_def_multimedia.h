@@ -38,3 +38,15 @@ S_UINT(media_player_controls_timeout, MEDIA_PLAYER_CONTROLS_TIMEOUT,
       setting_action_ok_uint, NULL,
       "Controls Auto-Hide Delay (Seconds)",
       "Hide idle fullscreen playback controls after this delay. Zero keeps controls visible. Controls remain visible while paused, seeking or in use.")
+
+S_BOOL(media_player_subtitles, MEDIA_PLAYER_SUBTITLES,
+      "media_player_subtitles",
+      true, SD_FLAG_NONE, 0, CMD_EVENT_NONE,
+      "Subtitles",
+      "Display a UTF-8 SubRip (.srt) file with the same basename as the active movie.")
+S_INT(media_player_subtitle_delay, MEDIA_PLAYER_SUBTITLE_DELAY,
+      "media_player_subtitle_delay",
+      0, SD_FLAG_NONE, SDESC_RANGE_MINMAX, CMD_EVENT_NONE,
+      -600000, 600000, 100, 0, setting_action_ok_uint, NULL,
+      "Subtitle Delay (Milliseconds)",
+      "Positive values display subtitles later; negative values display them earlier.")
