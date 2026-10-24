@@ -17,6 +17,12 @@ struct chain
    union chain_buffer pair_in, pair_out, ready;
 };
 static struct chain chain_state;
+/* A pair's resampler writes at most 128 frames of two channels; the
+ * 512 after its output are watched for an overrun. Not the whole
+ * buffer: filled and read back for every call, that was most of the
+ * test's time with one frame a call. */
+#define CHAIN_PAIR_GUARD (512 * 2 * sizeof(float))
+static unsigned char chain_guard[CHAIN_PAIR_GUARD];
 
 static void chain_init(unsigned channels, unsigned native, unsigned slot,
       double ratio, unsigned hq)
@@ -24,6 +30,7 @@ static void chain_init(unsigned channels, unsigned native, unsigned slot,
    unsigned pair;
    struct chain *s = &chain_state;
    memset(s, 0, sizeof(*s));
+   memset(chain_guard, 0x5a, sizeof(chain_guard));
    s->channels = channels; s->native = native; s->slot = slot; s->nominal = ratio;
    for (pair = 0; pair < (channels + 1) / 2; pair++)
    {
@@ -59,7 +66,7 @@ static void chain_accept(const void *input, size_t frames)
       for (pair = 0; pair < (s->channels + 1) / 2; pair++)
       {
          size_t produced;
-         memset(&s->pair_out, 0x5a, sizeof(s->pair_out));
+         memset(&s->pair_out, 0x5a, CHAIN_PAIR_GUARD);
          for (f = 0; f < n; f++)
             for (c = 0; c < 2; c++)
             {
@@ -87,8 +94,8 @@ static void chain_accept(const void *input, size_t frames)
          CHECK(produced <= 128);
          if (pair) CHECK(produced == output);
          output = produced;
-         for (f = output * 2 * sample; f < sizeof(s->pair_out); f++)
-            CHECK(((unsigned char*)&s->pair_out)[f] == 0x5a);
+         CHECK(memcmp((unsigned char*)&s->pair_out + output * 2 * sample,
+                  chain_guard, CHAIN_PAIR_GUARD - output * 2 * sample) == 0);
          for (f = 0; f < output; f++)
             for (c = 0; c < 2 && pair * 2 + c < s->channels; c++)
                memcpy((char*)&s->ready + (f * s->channels + 2 * pair + c) * sample,
