@@ -2968,15 +2968,6 @@ static GLuint gl3_effect_program(gl3_t *gl, unsigned pipeline_id,
 #ifdef HAVE_SLANG
 static bool gl3_init_pipelines(gl3_t *gl)
 {
-   static const uint32_t hdr_scrgb_vert[] =
-#include "vulkan_shaders/hdr_scrgb.vert.inc"
-      ;
-
-   static const uint32_t hdr_scrgb_frag[] =
-#include "vulkan_shaders/hdr_scrgb.frag.inc"
-      ;
-
-
    if (!gl->pipelines.alpha_blend)
       gl->pipelines.alpha_blend = gl3_cross_compile_program(spirv_alpha_blend_vert, spirv_alpha_blend_vert_size,
                                                              spirv_alpha_blend_frag, spirv_alpha_blend_frag_size,
@@ -2998,8 +2989,8 @@ static bool gl3_init_pipelines(gl3_t *gl)
       return false;
 
    if (gl->scrgb.active && !gl->pipelines.hdr_scrgb)
-      gl->pipelines.hdr_scrgb = gl3_cross_compile_program(hdr_scrgb_vert, sizeof(hdr_scrgb_vert),
-                                                           hdr_scrgb_frag, sizeof(hdr_scrgb_frag),
+      gl->pipelines.hdr_scrgb = gl3_cross_compile_program(spirv_hdr_scrgb_vert, spirv_hdr_scrgb_vert_size,
+                                                           spirv_hdr_scrgb_frag, spirv_hdr_scrgb_frag_size,
                                                            &gl->pipelines.hdr_scrgb_loc, true);
    if (gl->scrgb.active && !gl->pipelines.hdr_scrgb)
       return false;

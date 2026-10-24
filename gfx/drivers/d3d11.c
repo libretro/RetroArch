@@ -77,7 +77,8 @@
 #include "../common/d3d11_hw_interface.h"
 /* slang_process.h is self-contained - it only defines types and
  * constants used by pass state.  The actual slang_process() call
- * sites remain guarded with HAVE_SLANG+HAVE_SPIRV_CROSS. */
+ * sites remain guarded with HAVE_SLANG and a compiler that prints
+ * text: SPIRV-Cross or rslc. */
 #include "../drivers_shader/slang_process.h"
 #include "../drivers_shader/slang_rect.h"
 #ifdef HAVE_THREADS
@@ -2337,7 +2338,7 @@ static uint32_t d3d11_get_flags(void *data)
    BIT32_SET(flags, GFX_CTX_FLAGS_OVERLAY_BEHIND_MENU_SUPPORTED);
    BIT32_SET(flags, GFX_CTX_FLAGS_BLACK_FRAME_INSERTION);
    BIT32_SET(flags, GFX_CTX_FLAGS_SCREENSHOTS_SUPPORTED);
-#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+#if defined(HAVE_SLANG) && (defined(HAVE_SPIRV_CROSS) || defined(HAVE_RSLC))
    BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
    BIT32_SET(flags, GFX_CTX_FLAGS_SUBFRAME_SHADERS);
    BIT32_SET(flags, GFX_CTX_FLAGS_FAST_TOGGLE_SHADERS);
@@ -2752,7 +2753,7 @@ static void d3d11_set_hdr_subpixel_layout(void* data, unsigned subpixel_layout)
 }
 
 /* Only the slang passes set these. */
-#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+#if defined(HAVE_SLANG) && (defined(HAVE_SPIRV_CROSS) || defined(HAVE_RSLC))
 static void d3d11_set_hdr_inverse_tonemap(d3d11_video_t* d3d11, bool inverse_tonemap)
 {
 
@@ -2953,7 +2954,7 @@ typedef struct d3d11_deferred_state
    bool                      frame_smooth;
 } d3d11_deferred_state_t;
 
-#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+#if defined(HAVE_SLANG) && (defined(HAVE_SPIRV_CROSS) || defined(HAVE_RSLC))
 /* Feature Level 11.0 and up should all support Shader Model 5.0 */
 static unsigned d3d11_shader_model(d3d11_video_t *d3d11,
       enum d3d11_feature_level_hint *hint)
@@ -2995,7 +2996,7 @@ static unsigned d3d11_hdr_output_mode(const d3d11_video_t *video)
 static bool d3d11_shader_load_begin(void *data,
       shader_load_deferred_t *deferred)
 {
-#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+#if defined(HAVE_SLANG) && (defined(HAVE_SPIRV_CROSS) || defined(HAVE_RSLC))
    d3d11_video_t *d3d11 = (d3d11_video_t*)data;
    d3d11_deferred_state_t *ds;
 
@@ -3099,7 +3100,7 @@ error:
 #endif
 }
 
-#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+#if defined(HAVE_SLANG) && (defined(HAVE_SPIRV_CROSS) || defined(HAVE_RSLC))
 /* The last holder frees what the passes made: the load's, or a build
  * still running when the load ended. */
 static void d3d11_deferred_state_unref(d3d11_deferred_state_t *ds)
@@ -3271,7 +3272,7 @@ static void d3d11_deferred_build(d3d11_video_t *d3d11,
 }
 #endif
 
-#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+#if defined(HAVE_SLANG) && (defined(HAVE_SPIRV_CROSS) || defined(HAVE_RSLC))
 /* A hardware core's frame may lie in the corner of a larger texture:
  * the preset's passes are rewritten to read it there where they can,
  * through d3d11->chain.frame_rect. */
@@ -3290,7 +3291,7 @@ static void d3d11_frame_rect_semantics(d3d11_video_t *d3d11,
 static bool d3d11_shader_load_step(void *data,
       shader_load_deferred_t *deferred)
 {
-#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+#if defined(HAVE_SLANG) && (defined(HAVE_SPIRV_CROSS) || defined(HAVE_RSLC))
    d3d11_video_t *d3d11          = (d3d11_video_t*)data;
    d3d11_deferred_state_t *ds    =
       (d3d11_deferred_state_t*)deferred->driver_data;
@@ -3581,7 +3582,7 @@ static bool d3d11_shader_load_step(void *data,
 #endif
 }
 
-#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+#if defined(HAVE_SLANG) && (defined(HAVE_SPIRV_CROSS) || defined(HAVE_RSLC))
 /* Pass @i of the preset built: its stages processed and compiled, its
  * buffers made. */
 static bool d3d11_pass_build(d3d11_video_t *d3d11, unsigned i,
@@ -3768,7 +3769,7 @@ static void d3d11_frame_rect_rebuild(d3d11_video_t *d3d11)
 
 static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const char* path)
 {
-#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+#if defined(HAVE_SLANG) && (defined(HAVE_SPIRV_CROSS) || defined(HAVE_RSLC))
    enum d3d11_feature_level_hint feat_level_hint;
    unsigned         i;
    unsigned         shader_model;
@@ -6962,7 +6963,7 @@ static bool d3d11_gfx_frame_body(
       d3d11_hw_v2_yield_end(d3d11);
    }
 
-#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+#if defined(HAVE_SLANG) && (defined(HAVE_SPIRV_CROSS) || defined(HAVE_RSLC))
    if (d3d11->chain.frame_rect.rebuild)
       d3d11_frame_rect_rebuild(d3d11);
 #endif

@@ -23,12 +23,14 @@
  * without the compiler. */
 #include "slang_rect.h"
 #include "slang_blob.h"
+#include "slang_process.h"
 #if defined(HAVE_GLSLANG) || defined(HAVE_RSLC)
 #include "slang_cache.h"
 #endif
 #if defined(HAVE_RSLC)
 #include <gfx/shaders/rslc.h>
 #endif
+#if !defined(SLANG_RSLC_ONLY)
 /* The vendored SPIRV-Cross headers end their enumerator lists with a
  * comma, which the C89 lane rejects under -pedantic; they are upstream
  * files and are not edited here. */
@@ -49,7 +51,19 @@
 typedef char slang_spvid_word_size_check[
       (sizeof(SpvId) == sizeof(uint32_t)) ? 1 : -1];
 
-#include "slang_process.h"
+/* A pass's two stages, parsed by SPIRV-Cross */
+struct slang_spvc_handles
+{
+   spvc_compiler  vs;
+   spvc_compiler  ps;
+   spvc_resources vs_res;
+   spvc_resources ps_res;
+};
+#else
+/* Without SPIRV-Cross every stage is reflected from rslc's tables */
+struct slang_spvc_handles;
+#endif
+
 
 #include "../video_defines.h"
 #include "../../verbosity.h"
@@ -116,6 +130,7 @@ static const char *semantic_uniform_names[] = {
    "Passthrough"
 };
 
+#if !defined(SLANG_RSLC_ONLY)
 static bool slang_reflect(
       spvc_compiler vertex_compiler, spvc_compiler fragment_compiler,
       spvc_resources vertex_resources, spvc_resources fragment_resources,
@@ -132,6 +147,7 @@ static bool spvc_fetch_list(spvc_resources resources,
    return spvc_resources_get_resource_list_for_type(
          resources, type, list, count) == SPVC_SUCCESS;
 }
+#endif
 
 /* ---- C name maps -------------------------------------------------- */
 
@@ -493,12 +509,9 @@ static bool slang_output_has_tables(const glslang_output *output)
 #endif
 }
 
-/* The spvc handles are read only when @output carries no tables. */
+/* @spvc is read only when @output carries no tables. */
 static bool slang_process_reflection(
-      spvc_compiler          vs_compiler,
-      spvc_compiler          ps_compiler,
-      spvc_resources         vs_resources,
-      spvc_resources         ps_resources,
+      const struct slang_spvc_handles *spvc,
       const glslang_output*  output,
       struct video_shader*   shader_info,
       unsigned               pass_number,
@@ -594,8 +607,12 @@ static bool slang_process_reflection(
 #else
          ? true
 #endif
-         : !slang_reflect(vs_compiler, ps_compiler,
-            vs_resources, ps_resources, &sl_reflection))
+#if !defined(SLANG_RSLC_ONLY)
+         : (!spvc || !slang_reflect(spvc->vs, spvc->ps,
+            spvc->vs_res, spvc->ps_res, &sl_reflection)))
+#else
+         : (!spvc || true))
+#endif
    {
       RARCH_ERR("[Slang] Failed to reflect SPIR-V."
             " Resource usage is inconsistent with "
@@ -1424,6 +1441,7 @@ static char *slang_rslc_print_stage(const char *source,
    names.ubo_instance   = t->ubo_instance[stage == GLSLANG_COMPILE_STAGE_VERTEX ? 0 : 1];
    names.push_block     = t->push_block[stage == GLSLANG_COMPILE_STAGE_VERTEX ? 0 : 1];
    names.push_instance  = t->push_instance[stage == GLSLANG_COMPILE_STAGE_VERTEX ? 0 : 1];
+   names.flatten        = t->flatten;
    memset(&opts, 0, sizeof(opts));
    opts.dst     = t->hlsl ? RSLC_DST_HLSL : t->msl ? RSLC_DST_MSL
       : t->es ? RSLC_DST_GLSL_ES : RSLC_DST_GLSL;
@@ -1437,7 +1455,7 @@ static char *slang_rslc_print_stage(const char *source,
             stage == GLSLANG_COMPILE_STAGE_VERTEX
             ? RSLC_STAGE_VERTEX : RSLC_STAGE_FRAGMENT, &opts, &res))
    {
-      RARCH_WARN("[Slang] %s; the driver crosses the SPIR-V instead.\n", err);
+      RARCH_WARN("[Slang] No printed stage: %s\n", err);
       return NULL;
    }
    text = (char*)malloc(res.text_len + 1);
@@ -1445,6 +1463,33 @@ static char *slang_rslc_print_stage(const char *source,
       memcpy(text, res.text, res.text_len + 1);
    rslc_result_free(&res, &opts);
    return text;
+}
+
+char *slang_print_stage(const char *source, bool fragment,
+      const struct slang_text_target *t)
+{
+   return slang_rslc_print_stage(source, fragment
+         ? GLSLANG_COMPILE_STAGE_FRAGMENT : GLSLANG_COMPILE_STAGE_VERTEX,
+         t, NULL);
+}
+
+bool slang_compile_builtin(const char *source, bool fragment,
+      const struct slang_text_target *t, struct slang_blob **blob,
+      char **text)
+{
+   enum glslang_compile_stage stage = fragment
+      ? GLSLANG_COMPILE_STAGE_FRAGMENT : GLSLANG_COMPILE_STAGE_VERTEX;
+   *blob = NULL;
+   *text = NULL;
+   if (!slang_rslc_compile_stage(source, stage, blob))
+      return false;
+   if (t && !(*text = slang_rslc_print_stage(source, stage, t, NULL)))
+   {
+      slang_blob_unref(*blob);
+      *blob = NULL;
+      return false;
+   }
+   return true;
 }
 
 /* Prints both stages of @output for @text, or neither: the driver takes
@@ -2089,15 +2134,16 @@ bool slang_preprocess_parse_parameters_cached(const char *shader_path,
    return false;
 }
 
-bool slang_process(
-      struct video_shader*   shader_info,
-      unsigned               pass_number,
-      enum rarch_shader_type dst_type,
-      unsigned               version,
-      const semantics_map_t* semantics_map,
-      pass_semantics_t*      out)
+#if !defined(SLANG_RSLC_ONLY)
+/* The pass's text and reflection through SPIRV-Cross, for stages the
+ * compiler printed no text or wrote no tables for; @output stays the
+ * caller's. */
+static bool slang_process_cross(glslang_output *output,
+      struct video_shader *shader_info, unsigned pass_number,
+      enum rarch_shader_type dst_type, unsigned version,
+      const semantics_map_t *semantics_map, pass_semantics_t *out)
 {
-   glslang_output          output;
+   struct slang_spvc_handles handles;
    spvc_context            ctx         = NULL;
    spvc_parsed_ir          vs_ir       = NULL;
    spvc_parsed_ir          ps_ir       = NULL;
@@ -2114,153 +2160,6 @@ bool slang_process(
    const spvc_reflected_resource *list = NULL;
    size_t                  list_num    = 0;
    struct video_shader_pass *pass      = &shader_info->pass[pass_number];
-   struct slang_text_target text;
-
-   /* D3D and Metal take the compiler's own HLSL / MSL when it prints
-    * one; the other destinations cross the SPIR-V */
-   memset(&text, 0, sizeof(text));
-   text.version = version;
-   text.hlsl    = dst_type == RARCH_SHADER_HLSL;
-   text.msl     = dst_type == RARCH_SHADER_METAL;
-   if (!glslang_compile_shader_text(pass->source.path, &output, NULL,
-            text.hlsl || text.msl ? &text : NULL))
-      return false;
-
-   if (!slang_preprocess_parse_parameters_meta(&output.meta, shader_info,
-            pass_number))
-   {
-      glslang_output_free(&output);
-      return false;
-   }
-
-   if (!*pass->alias && output.meta.name[0])
-      strlcpy(pass->alias, output.meta.name, sizeof(pass->alias) - 1);
-
-   /* Every pass samples the frame as the first does; one with the
-    * filter unspecified as the smooth setting the driver gives. */
-   out->frame_in_place = false;
-   out->frame_unspec   = false;
-   out->frame_smooth   = semantics_map->frame_smooth;
-   if (semantics_map->uniforms[SLANG_SEMANTIC_ORIGINAL_RECT])
-   {
-      enum slang_rect_result res;
-      enum slang_rect_wrap   wrap   = SLANG_RECT_WRAP_BORDER;
-      unsigned               filter = shader_info->pass[0].filter;
-#if defined(HAVE_RSLC)
-      struct slang_blob     *vb     = NULL;
-      struct slang_blob     *fb     = NULL;
-      char                  *vt     = NULL;
-      char                  *ft     = NULL;
-#endif
-      if (filter == RARCH_FILTER_UNSPEC)
-         filter = semantics_map->frame_smooth
-            ? RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST;
-      switch (shader_info->pass[0].wrap)
-      {
-         case RARCH_WRAP_EDGE:
-            wrap = SLANG_RECT_WRAP_EDGE;
-            break;
-         case RARCH_WRAP_REPEAT:
-            wrap = SLANG_RECT_WRAP_REPEAT;
-            break;
-         case RARCH_WRAP_MIRRORED_REPEAT:
-            wrap = SLANG_RECT_WRAP_MIRROR;
-            break;
-         default:
-            break;
-      }
-#if defined(HAVE_RSLC)
-      /* the compiler printed the stages: it prints them remapped too */
-      if (     output.vertex_text
-            && slang_compile_remapped(pass->source.path,
-                  output.vertex, output.vertex_len,
-                  output.fragment, output.fragment_len,
-                  pass_number == 0, filter == RARCH_FILTER_LINEAR, wrap,
-                  &text, &res, &vb, &fb, &vt, &ft))
-      {
-         if (vb)
-         {
-            glslang_output_set_blob(&output, false, vb);
-            free(output.vertex_text);
-            output.vertex_text   = vt;
-         }
-         if (fb)
-         {
-            glslang_output_set_blob(&output, true, fb);
-            free(output.fragment_text);
-            output.fragment_text = ft;
-         }
-      }
-      else
-#endif
-      {
-         uint32_t *nv = NULL, *nf = NULL;
-         size_t    nvl = 0, nfl = 0;
-         res = slang_rect_remap_pass(
-               output.vertex, output.vertex_len,
-               output.fragment, output.fragment_len,
-               pass_number == 0, filter == RARCH_FILTER_LINEAR, wrap,
-               &nv, &nvl, &nf, &nfl);
-         /* a rewritten stage is a module without tables */
-         if (nv)
-            glslang_output_set_blob(&output, false, slang_blob_adopt_words(nv, nvl));
-         if (nf)
-            glslang_output_set_blob(&output, true, slang_blob_adopt_words(nf, nfl));
-         if ((nv && !output.vertex) || (nf && !output.fragment))
-            goto error;
-         if (res == SLANG_RECT_REWRITTEN)
-         {
-            /* the rewrite is on the SPIR-V: the printed text is behind it */
-            free(output.vertex_text);
-            free(output.fragment_text);
-            output.vertex_text   = NULL;
-            output.fragment_text = NULL;
-         }
-      }
-      out->frame_in_place = res != SLANG_RECT_UNSUPPORTED;
-      out->frame_unspec   = res == SLANG_RECT_REWRITTEN
-         && shader_info->pass[0].filter == RARCH_FILTER_UNSPEC;
-   }
-
-   out->format          = output.meta.rt_format;
-   out->explicit_format = (output.meta.rt_format != SLANG_FORMAT_UNKNOWN);
-
-   if (out->format == SLANG_FORMAT_UNKNOWN)
-   {
-      if (pass->fbo.flags & FBO_SCALE_FLAG_SRGB_FBO)
-         out->format = SLANG_FORMAT_R8G8B8A8_SRGB;
-      else if (pass->fbo.flags & FBO_SCALE_FLAG_FP_FBO)
-         out->format = SLANG_FORMAT_R16G16B16A16_SFLOAT;
-      else if (pass->fbo.flags & FBO_SCALE_FLAG_RGB10_FBO)
-         out->format = SLANG_FORMAT_A2B10G10R10_UNORM_PACK32;
-      else
-         out->format = SLANG_FORMAT_R8G8B8A8_UNORM;
-   }
-
-   out->format = glslang_hdr_output_format(shader_info, pass_number, out->format);
-   if (pass_number + 1 == shader_info->passes
-         && video_shader_get_hdr_mode(shader_info) > 0)
-      out->explicit_format = true;
-
-   pass->source.string.vertex   = NULL;
-   pass->source.string.fragment = NULL;
-
-   if (output.vertex_text && output.fragment_text
-         && slang_output_has_tables(&output))
-   {
-      /* the compiler's text and its tables: nothing for SPIRV-Cross */
-      pass->source.string.vertex   = output.vertex_text;
-      pass->source.string.fragment = output.fragment_text;
-      output.vertex_text           = NULL;
-      output.fragment_text         = NULL;
-      RARCH_LOG("[Slang] Using the compiler's %s and its tables directly.\n",
-            dst_type == RARCH_SHADER_METAL ? "MSL" : "HLSL");
-      if (!slang_process_reflection(NULL, NULL, NULL, NULL, &output,
-               shader_info, pass_number, semantics_map, out))
-         goto error;
-      glslang_output_free(&output);
-      return true;
-   }
 
    switch (dst_type)
    {
@@ -2281,10 +2180,10 @@ bool slang_process(
    if (spvc_context_create(&ctx) != SPVC_SUCCESS)
       goto error;
 
-   if (   spvc_context_parse_spirv(ctx, (const SpvId*)output.vertex,
-            output.vertex_len, &vs_ir) != SPVC_SUCCESS
-       || spvc_context_parse_spirv(ctx, (const SpvId*)output.fragment,
-            output.fragment_len, &ps_ir) != SPVC_SUCCESS
+   if (   spvc_context_parse_spirv(ctx, (const SpvId*)output->vertex,
+            output->vertex_len, &vs_ir) != SPVC_SUCCESS
+       || spvc_context_parse_spirv(ctx, (const SpvId*)output->fragment,
+            output->fragment_len, &ps_ir) != SPVC_SUCCESS
        || spvc_context_create_compiler(ctx, backend, vs_ir,
             SPVC_CAPTURE_MODE_TAKE_OWNERSHIP,
             &vs_compiler) != SPVC_SUCCESS
@@ -2413,14 +2312,14 @@ bool slang_process(
       }
    }
 
-   if (output.vertex_text && output.fragment_text)
+   if (output->vertex_text && output->fragment_text)
    {
       /* the compiler's text, owned by the pass from here; Cross still
        * reflects the SPIR-V */
-      pass->source.string.vertex   = output.vertex_text;
-      pass->source.string.fragment = output.fragment_text;
-      output.vertex_text           = NULL;
-      output.fragment_text         = NULL;
+      pass->source.string.vertex   = output->vertex_text;
+      pass->source.string.fragment = output->fragment_text;
+      output->vertex_text           = NULL;
+      output->fragment_text         = NULL;
       RARCH_LOG("[Slang] Using the compiler's %s directly.\n", backend_name);
    }
    else
@@ -2435,17 +2334,17 @@ bool slang_process(
          goto error;
    }
 
-   if (!slang_process_reflection(
-             vs_compiler, ps_compiler,
-             vs_resources, ps_resources, &output, shader_info, pass_number,
-             semantics_map, out))
+   handles.vs     = vs_compiler;
+   handles.ps     = ps_compiler;
+   handles.vs_res = vs_resources;
+   handles.ps_res = ps_resources;
+   if (!slang_process_reflection(&handles, output, shader_info,
+            pass_number, semantics_map, out))
       goto error;
 
    /* The context owns the IRs, compilers, options, resource lists and
     * compiled source strings (already strdup'd above). */
    spvc_context_destroy(ctx);
-   glslang_output_free(&output);
-
    return true;
 
 spvc_error:
@@ -2453,15 +2352,196 @@ spvc_error:
          spvc_context_get_last_error_string(ctx));
 
 error:
-   free(pass->source.string.vertex);
-   free(pass->source.string.fragment);
+   spvc_context_destroy(ctx);
+   return false;
+}
+#endif
+
+
+bool slang_process(
+      struct video_shader*   shader_info,
+      unsigned               pass_number,
+      enum rarch_shader_type dst_type,
+      unsigned               version,
+      const semantics_map_t* semantics_map,
+      pass_semantics_t*      out)
+{
+   glslang_output          output;
+   struct video_shader_pass *pass      = &shader_info->pass[pass_number];
+   struct slang_text_target text;
+
+   /* D3D and Metal take the compiler's own HLSL / MSL when it prints
+    * one; the other destinations cross the SPIR-V */
+   memset(&text, 0, sizeof(text));
+   text.version = version;
+   text.hlsl    = dst_type == RARCH_SHADER_HLSL;
+   text.msl     = dst_type == RARCH_SHADER_METAL;
+   if (!glslang_compile_shader_text(pass->source.path, &output, NULL,
+            text.hlsl || text.msl ? &text : NULL))
+      return false;
+
+   if (!slang_preprocess_parse_parameters_meta(&output.meta, shader_info,
+            pass_number))
+   {
+      glslang_output_free(&output);
+      return false;
+   }
+
+   if (!*pass->alias && output.meta.name[0])
+      strlcpy(pass->alias, output.meta.name, sizeof(pass->alias) - 1);
+
+   /* Every pass samples the frame as the first does; one with the
+    * filter unspecified as the smooth setting the driver gives. */
+   out->frame_in_place = false;
+   out->frame_unspec   = false;
+   out->frame_smooth   = semantics_map->frame_smooth;
+   if (semantics_map->uniforms[SLANG_SEMANTIC_ORIGINAL_RECT])
+   {
+      enum slang_rect_result res;
+      enum slang_rect_wrap   wrap   = SLANG_RECT_WRAP_BORDER;
+      unsigned               filter = shader_info->pass[0].filter;
+#if defined(HAVE_RSLC)
+      struct slang_blob     *vb     = NULL;
+      struct slang_blob     *fb     = NULL;
+      char                  *vt     = NULL;
+      char                  *ft     = NULL;
+#endif
+      if (filter == RARCH_FILTER_UNSPEC)
+         filter = semantics_map->frame_smooth
+            ? RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST;
+      switch (shader_info->pass[0].wrap)
+      {
+         case RARCH_WRAP_EDGE:
+            wrap = SLANG_RECT_WRAP_EDGE;
+            break;
+         case RARCH_WRAP_REPEAT:
+            wrap = SLANG_RECT_WRAP_REPEAT;
+            break;
+         case RARCH_WRAP_MIRRORED_REPEAT:
+            wrap = SLANG_RECT_WRAP_MIRROR;
+            break;
+         default:
+            break;
+      }
+#if defined(HAVE_RSLC)
+      /* the compiler printed the stages: it prints them remapped too */
+      if (     output.vertex_text
+            && slang_compile_remapped(pass->source.path,
+                  output.vertex, output.vertex_len,
+                  output.fragment, output.fragment_len,
+                  pass_number == 0, filter == RARCH_FILTER_LINEAR, wrap,
+                  &text, &res, &vb, &fb, &vt, &ft))
+      {
+         if (vb)
+         {
+            glslang_output_set_blob(&output, false, vb);
+            free(output.vertex_text);
+            output.vertex_text   = vt;
+         }
+         if (fb)
+         {
+            glslang_output_set_blob(&output, true, fb);
+            free(output.fragment_text);
+            output.fragment_text = ft;
+         }
+      }
+      else
+#endif
+#if !defined(SLANG_RSLC_ONLY)
+      {
+         uint32_t *nv = NULL, *nf = NULL;
+         size_t    nvl = 0, nfl = 0;
+         res = slang_rect_remap_pass(
+               output.vertex, output.vertex_len,
+               output.fragment, output.fragment_len,
+               pass_number == 0, filter == RARCH_FILTER_LINEAR, wrap,
+               &nv, &nvl, &nf, &nfl);
+         /* a rewritten stage is a module without tables */
+         if (nv)
+            glslang_output_set_blob(&output, false, slang_blob_adopt_words(nv, nvl));
+         if (nf)
+            glslang_output_set_blob(&output, true, slang_blob_adopt_words(nf, nfl));
+         if ((nv && !output.vertex) || (nf && !output.fragment))
+            goto error;
+         if (res == SLANG_RECT_REWRITTEN)
+         {
+            /* the rewrite is on the SPIR-V: the printed text is behind it */
+            free(output.vertex_text);
+            free(output.fragment_text);
+            output.vertex_text   = NULL;
+            output.fragment_text = NULL;
+         }
+      }
+#else
+         /* nothing prints a module the SPIR-V rewrite made: the frame
+          * is copied out instead */
+         res = SLANG_RECT_UNSUPPORTED;
+#endif
+      out->frame_in_place = res != SLANG_RECT_UNSUPPORTED;
+      out->frame_unspec   = res == SLANG_RECT_REWRITTEN
+         && shader_info->pass[0].filter == RARCH_FILTER_UNSPEC;
+   }
+
+   out->format          = output.meta.rt_format;
+   out->explicit_format = (output.meta.rt_format != SLANG_FORMAT_UNKNOWN);
+
+   if (out->format == SLANG_FORMAT_UNKNOWN)
+   {
+      if (pass->fbo.flags & FBO_SCALE_FLAG_SRGB_FBO)
+         out->format = SLANG_FORMAT_R8G8B8A8_SRGB;
+      else if (pass->fbo.flags & FBO_SCALE_FLAG_FP_FBO)
+         out->format = SLANG_FORMAT_R16G16B16A16_SFLOAT;
+      else if (pass->fbo.flags & FBO_SCALE_FLAG_RGB10_FBO)
+         out->format = SLANG_FORMAT_A2B10G10R10_UNORM_PACK32;
+      else
+         out->format = SLANG_FORMAT_R8G8B8A8_UNORM;
+   }
+
+   out->format = glslang_hdr_output_format(shader_info, pass_number, out->format);
+   if (pass_number + 1 == shader_info->passes
+         && video_shader_get_hdr_mode(shader_info) > 0)
+      out->explicit_format = true;
 
    pass->source.string.vertex   = NULL;
    pass->source.string.fragment = NULL;
 
-   spvc_context_destroy(ctx);
-   glslang_output_free(&output);
+   if (output.vertex_text && output.fragment_text
+         && slang_output_has_tables(&output))
+   {
+      /* the compiler's text and its tables: nothing for SPIRV-Cross */
+      pass->source.string.vertex   = output.vertex_text;
+      pass->source.string.fragment = output.fragment_text;
+      output.vertex_text           = NULL;
+      output.fragment_text         = NULL;
+      RARCH_LOG("[Slang] Using the compiler's %s and its tables directly.\n",
+            dst_type == RARCH_SHADER_METAL ? "MSL" : "HLSL");
+      if (!slang_process_reflection(NULL, &output,
+               shader_info, pass_number, semantics_map, out))
+         goto error;
+      glslang_output_free(&output);
+      return true;
+   }
 
+#if !defined(SLANG_RSLC_ONLY)
+   if (slang_process_cross(&output, shader_info, pass_number, dst_type,
+            version, semantics_map, out))
+   {
+      glslang_output_free(&output);
+      return true;
+   }
+#else
+   RARCH_ERR("[Slang] No %s with tables for \"%s\"; nothing else prints it.\n",
+         dst_type == RARCH_SHADER_METAL ? "MSL"
+         : dst_type == RARCH_SHADER_HLSL ? "HLSL" : "GLSL",
+         pass->source.path);
+#endif
+
+error:
+   free(pass->source.string.vertex);
+   free(pass->source.string.fragment);
+   pass->source.string.vertex   = NULL;
+   pass->source.string.fragment = NULL;
+   glslang_output_free(&output);
    return false;
 }
 
@@ -2648,6 +2728,7 @@ static bool validate_shape_for_semantic(unsigned kind, unsigned vec,
    return kind == 0 && vec == 4 && cols == 1;
 }
 
+#if !defined(SLANG_RSLC_ONLY)
 static unsigned spvc_kind_of(spvc_type type)
 {
    switch (spvc_type_get_basetype(type))
@@ -2673,6 +2754,7 @@ static bool validate_type_for_texture_semantic(spvc_type type)
           && (spvc_type_get_vector_size(type) == 4)
           && (spvc_type_get_columns(type) == 1);
 }
+#endif
 
 /* Validate that a texture semantic's array index falls inside the
  * range admitted by the host filter chain.  The shader source is
@@ -2739,6 +2821,7 @@ static bool validate_texture_semantic_index(slang_reflection *reflection,
    return true;
 }
 
+#if !defined(SLANG_RSLC_ONLY)
 static bool add_active_buffer_ranges(
       spvc_compiler compiler,
       const spvc_reflected_resource *resource,
@@ -3217,6 +3300,7 @@ static bool slang_reflect(
 
    return true;
 }
+#endif
 
 static bool slang_feedback_name(const struct glslang_last_pass *state,
       const char *name, bool size)
@@ -3233,6 +3317,48 @@ static bool slang_feedback_name(const struct glslang_last_pass *state,
    return !strcmp(name, expected);
 }
 
+#if defined(SLANG_RSLC_ONLY)
+/* The feedback names a stage's tables hold: its samplers, as declared,
+ * and the block members it reads. */
+static void slang_feedback_tables(struct glslang_last_pass *state,
+      const struct slang_blob *blob)
+{
+   const uint8_t             *mem = (const uint8_t*)blob->mem;
+   const struct rslc_reflect *r   = blob->refl;
+   const struct rslc_sampler *smp = (const struct rslc_sampler*)(mem + r->samplers);
+   unsigned i, k;
+   for (i = 0; i < r->sampler_count && !state->needs_target; i++)
+      state->needs_target = slang_feedback_name(state,
+            RSLC_STR(mem, smp[i].name), false);
+   for (k = 0; k < 2 && !state->needs_target; k++)
+   {
+      const struct rslc_block  *b = k ? &r->push : &r->ubo;
+      const struct rslc_member *m = (const struct rslc_member*)(mem + b->members);
+      if (!b->present)
+         continue;
+      for (i = 0; i < b->member_count && !state->needs_target; i++)
+         if (m[i].active)
+            state->needs_target = slang_feedback_name(state,
+                  RSLC_STR(mem, m[i].name), true);
+   }
+}
+
+bool slang_last_pass_feedback(struct glslang_last_pass *state,
+      const glslang_output *output)
+{
+   if (!state->inspect_feedback || state->needs_target)
+      return true;
+   /* a module without tables: assume it reads its feedback */
+   if (!slang_output_has_tables(output))
+   {
+      state->needs_target = true;
+      return true;
+   }
+   slang_feedback_tables(state, output->vertex_blob);
+   slang_feedback_tables(state, output->fragment_blob);
+   return true;
+}
+#else
 bool slang_last_pass_feedback(struct glslang_last_pass *state,
       const glslang_output *output)
 {
@@ -3294,6 +3420,7 @@ end:
    spvc_context_destroy(ctx);
    return ret;
 }
+#endif
 
 #if defined(HAVE_RSLC)
 /* ---- reflection from the compiler's tables ------------------------ */
@@ -3584,6 +3711,43 @@ bool slang_reflect_pass(const struct slang_blob *vertex,
          fragment->words, fragment->nwords, reflection);
 }
 
+#if defined(SLANG_RSLC_ONLY)
+/* One stage's tables, read back from its module by rslc */
+static struct slang_blob *slang_ingest_stage(const uint32_t *words,
+      size_t n, enum rslc_stage stage)
+{
+   struct rslc_opts   opts;
+   struct rslc_result res;
+   char               err[256];
+   memset(&opts, 0, sizeof(opts));
+   opts.dst     = RSLC_DST_SPIRV;
+   opts.err     = err;
+   opts.err_cap = sizeof(err);
+   err[0]       = '\0';
+   if (!slang_rslc_run(NULL, words, n, stage, &opts, &res))
+   {
+      RARCH_ERR("[Slang] %s\n", err);
+      return NULL;
+   }
+   return slang_blob_adopt_result(&res, &opts);
+}
+
+bool slang_reflect_spirv(const uint32_t *vertex, size_t vertex_len,
+      const uint32_t *fragment, size_t fragment_len,
+      slang_reflection *reflection)
+{
+   bool ret              = false;
+   struct slang_blob *vs = slang_ingest_stage(vertex, vertex_len,
+         RSLC_STAGE_VERTEX);
+   struct slang_blob *fs = vs ? slang_ingest_stage(fragment, fragment_len,
+         RSLC_STAGE_FRAGMENT) : NULL;
+   if (fs)
+      ret = slang_reflect_blobs(vs, fs, reflection);
+   slang_blob_unref(vs);
+   slang_blob_unref(fs);
+   return ret;
+}
+#else
 bool slang_reflect_spirv(const uint32_t *vertex, size_t vertex_len,
       const uint32_t *fragment, size_t fragment_len,
       slang_reflection *reflection)
@@ -3632,3 +3796,4 @@ out:
    spvc_context_destroy(ctx);
    return ret;
 }
+#endif

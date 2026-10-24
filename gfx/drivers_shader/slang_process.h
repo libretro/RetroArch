@@ -26,6 +26,12 @@
 #include "glslang_util.h"
 #include "slang_rect.h"
 
+/* Built with rslc and without SPIRV-Cross: rslc's tables and printed
+ * text serve every pass and every driver pipeline. */
+#if defined(HAVE_RSLC) && !defined(HAVE_SPIRV_CROSS)
+#define SLANG_RSLC_ONLY
+#endif
+
 /* Vulkan maximum texture bindings inside shader. 
  * D3D11 has a hard limit of 16 */
 #define SLANG_NUM_BINDINGS 16
@@ -372,6 +378,9 @@ struct slang_text_target
    const char *ubo_instance[2];
    const char *push_block[2];
    const char *push_instance[2];
+   /* GLSL: each block one array of vec4 named as its block, as glcore's
+    * own pipelines upload them (rslc_names.flatten) */
+   bool        flatten;
 };
 
 /* Accumulate active feedback resources from the compiled stages. */
@@ -416,6 +425,19 @@ bool glslang_compile_shader_text(const char *shader_path,
       const struct slang_text_target *text);
 
 #ifdef HAVE_RSLC
+/* One stage of GLSL source - include-expanded, as a driver embeds its
+ * own shaders - printed for @t by rslc; malloc'd, NULL with the reason
+ * logged when it cannot be. */
+char *slang_print_stage(const char *source, bool fragment,
+      const struct slang_text_target *t);
+
+/* One of a driver's own stages built by rslc from its GLSL source, as
+ * a pass is: the module with its tables in *blob and, for @t, its text
+ * in *text (malloc'd).  False with nothing held when it cannot be. */
+bool slang_compile_builtin(const char *source, bool fragment,
+      const struct slang_text_target *t, struct slang_blob **blob,
+      char **text);
+
 /* A pass's frame-rectangle remap (slang_rect.h) done by rslc on the
  * pass's own source: placed from @vs, @fs, the stages as compiled, it
  * hands back the stages it rewrote with their tables and, for @text,

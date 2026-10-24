@@ -9503,7 +9503,7 @@ static bool metal_suppress_screensaver(void *data, bool disable)
 static bool metal_set_shader(void *data,
       enum rarch_shader_type type, const char *path)
 {
-#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+#if defined(HAVE_SLANG) && (defined(HAVE_SPIRV_CROSS) || defined(HAVE_RSLC))
    @autoreleasepool
    {
       MetalDriver *md = (__bridge MetalDriver *)data;
@@ -10180,7 +10180,7 @@ static uint32_t metal_get_flags(void *data)
    BIT32_SET(flags, GFX_CTX_FLAGS_SCREENSHOTS_SUPPORTED);
    BIT32_SET(flags, GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE);
 
-#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+#if defined(HAVE_SLANG) && (defined(HAVE_SPIRV_CROSS) || defined(HAVE_RSLC))
    BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
 #endif
    if (md && retro_atomic_load_acquire_int(&md.views->allowed))

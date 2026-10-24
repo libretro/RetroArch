@@ -1122,6 +1122,84 @@ static void test_glsl(void)
    CHECK(alloc_live == 0);
 }
 
+/* Flattened blocks: each block one vec4 array named for the block,
+ * members read out at their std140 / std430 offsets - a matrix from
+ * its columns, a narrow member through a swizzle, an integer through
+ * a bitcast - so glcore uploads a block's bytes with one glUniform4fv;
+ * a block that does not fit vec4 slots is refused. */
+static void test_glsl_flatten(void)
+{
+   struct rslc_opts   o;
+   struct rslc_result r;
+   struct rslc_names  names;
+   char               err[128];
+   static const char  vert[] =
+      "#version 450\n"
+      "layout(std140, set = 0, binding = 0) uniform UBO {\n"
+      "  mat4 MVP; vec2 size; float alpha; uint mode; mat3 tint; vec4 extra;\n"
+      "} global;\n"
+      "layout(push_constant) uniform Push { float time; vec3 dir; } params;\n"
+      "layout(location = 0) in vec4 Position;\n"
+      "layout(location = 0) out vec4 vColor;\n"
+      "void main() {\n"
+      "  gl_Position = global.MVP * Position;\n"
+      "  vColor = vec4(global.tint * params.dir, global.alpha)\n"
+      "         + vec4(global.size, float(global.mode), params.time) + global.extra;\n"
+      "}\n";
+   static const char  bad[] =
+      "#version 450\n"
+      "layout(std140, set = 0, binding = 0) uniform UBO { mat4 MVP; float w[4]; } global;\n"
+      "layout(location = 0) in vec4 Position;\n"
+      "void main() { gl_Position = global.MVP * Position * global.w[1]; }\n";
+
+   memset(&names, 0, sizeof(names));
+   names.attr_prefix   = "RARCH_ATTRIBUTE_";
+   names.varying_prefix = "RARCH_VARYING_";
+   names.ubo_block     = "RARCH_UBO_VERTEX";
+   names.ubo_instance  = "RARCH_UBO_VERTEX_INSTANCE";
+   names.push_block    = "RARCH_PUSH_VERTEX";
+   names.push_instance = "RARCH_PUSH_VERTEX_INSTANCE";
+   names.flatten       = true;
+   opts_default(&o, err, sizeof(err));
+   o.dst     = RSLC_DST_GLSL;
+   o.version = 330;
+   o.names   = &names;
+   CHECK(rslc_compile(vert, sizeof(vert) - 1, RSLC_STAGE_VERTEX, &o, &r));
+   if (r.text)
+   {
+      /* MVP 0-63, size 64, alpha 72, mode 76, tint 80-127, extra 128 */
+      CHECK(strstr(r.text, "uniform vec4 RARCH_UBO_VERTEX[9];") != NULL);
+      CHECK(strstr(r.text, "mat4(RARCH_UBO_VERTEX[0], RARCH_UBO_VERTEX[1], RARCH_UBO_VERTEX[2], RARCH_UBO_VERTEX[3])") != NULL);
+      CHECK(strstr(r.text, "RARCH_UBO_VERTEX[4].xy") != NULL);
+      CHECK(strstr(r.text, "RARCH_UBO_VERTEX[4].z") != NULL);
+      CHECK(strstr(r.text, "floatBitsToUint(RARCH_UBO_VERTEX[4].w)") != NULL);
+      CHECK(strstr(r.text, "mat3(RARCH_UBO_VERTEX[5].xyz, RARCH_UBO_VERTEX[6].xyz, RARCH_UBO_VERTEX[7].xyz)") != NULL);
+      CHECK(strstr(r.text, "RARCH_UBO_VERTEX[8]") != NULL);
+      /* std430 push: time 0, dir 16 */
+      CHECK(strstr(r.text, "uniform vec4 RARCH_PUSH_VERTEX[2];") != NULL);
+      CHECK(strstr(r.text, "RARCH_PUSH_VERTEX[0].x") != NULL);
+      CHECK(strstr(r.text, "RARCH_PUSH_VERTEX[1].xyz") != NULL);
+      CHECK(strstr(r.text, "INSTANCE") == NULL);
+      CHECK(strstr(r.text, "uniform RARCH_UBO_VERTEX") == NULL);
+      rslc_result_free(&r, &o);
+   }
+   o.dst     = RSLC_DST_GLSL_ES;
+   o.version = 300;
+   CHECK(rslc_compile(vert, sizeof(vert) - 1, RSLC_STAGE_VERTEX, &o, &r));
+   if (r.text)
+   {
+      CHECK(strstr(r.text, "uniform highp vec4 RARCH_UBO_VERTEX[9];") != NULL);
+      rslc_result_free(&r, &o);
+   }
+   /* an array member has no vec4 reading */
+   err[0]    = '\0';
+   o.dst     = RSLC_DST_GLSL;
+   o.version = 330;
+   CHECK(!rslc_compile(bad, sizeof(bad) - 1, RSLC_STAGE_VERTEX, &o, &r));
+   CHECK(strstr(err, "flatten") != NULL);
+   CHECK(alloc_live == 0);
+}
+
 /* The HLSL printer: matrices transposed so cbuffer members overlay
  * std140 and products swap into mul(), the uniform block at b0 and the
  * push block at b1 with packoffsets, Texture2D + SamplerState pairs at
@@ -1915,6 +1993,7 @@ int main(int argc, char **argv)
    test_spirv();
    test_folding();
    test_glsl();
+   test_glsl_flatten();
    test_hlsl();
    test_msl();
    test_shapes();

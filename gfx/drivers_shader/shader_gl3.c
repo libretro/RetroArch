@@ -31,6 +31,7 @@
 #include "slang_rect.h"
 #include "slang_blob.h"
 #include "spirv_opengl.h"
+#if !defined(SLANG_RSLC_ONLY)
 /* The vendored SPIRV-Cross headers end their enumerator lists with a
  * comma, which the C89 lane rejects under -pedantic; they are upstream
  * files and are not edited here. */
@@ -41,6 +42,7 @@
 #include <spirv_cross_c.h>
 #if defined(__GNUC__) || defined(__clang__)
 #pragma GCC diagnostic pop
+#endif
 #endif
 
 #include "../common/gl3_defines.h"
@@ -163,6 +165,7 @@ RETRO_BEGIN_DECLS
 
 RETRO_END_DECLS
 
+#if !defined(SLANG_RSLC_ONLY)
 /* Fetch one reflected-resource list; mirrors slang_process.c's helper. */
 static bool gl3_spvc_list(spvc_resources resources, spvc_resource_type type,
       const spvc_reflected_resource **list, size_t *count)
@@ -190,6 +193,7 @@ static void gl3_spvc_rename_by_location(spvc_compiler compiler,
             SpvDecorationLocation);
    }
 }
+#endif
 
 /* A failed compile fails whether or not the driver wrote a log. */
 static GLuint gl3_compile_shader(GLenum stage, const char *source)
@@ -226,6 +230,10 @@ static GLuint gl3_compile_shader(GLenum stage, const char *source)
    return 0;
 }
 
+static GLuint gl3_text_link_program(const char *vertex_source,
+      const char *fragment_source, gl3_buffer_locations *loc, bool flatten);
+
+#if !defined(SLANG_RSLC_ONLY)
 GLuint gl3_cross_compile_program(
       const uint32_t *vertex, size_t vertex_size,
       const uint32_t *fragment, size_t fragment_size,
@@ -531,13 +539,47 @@ error:
       glDeleteProgram(program);
    return 0;
 }
+#else
+static void gl3_text_target(struct slang_text_target *t);
+
+/* The same program from the stages' GLSL source, printed by rslc:
+ * the driver's own pipelines, whose sources are built in beside their
+ * SPIR-V. */
+GLuint gl3_cross_compile_program(
+      const uint32_t *vertex, size_t vertex_size,
+      const uint32_t *fragment, size_t fragment_size,
+      gl3_buffer_locations *loc, bool flatten)
+{
+   struct slang_text_target text;
+   GLuint      program = 0;
+   const char *vs_src  = spirv_shader_glsl(vertex);
+   const char *fs_src  = spirv_shader_glsl(fragment);
+   char       *vs_text = NULL;
+   char       *fs_text = NULL;
+   (void)vertex_size;
+   (void)fragment_size;
+   if (!vs_src || !fs_src)
+   {
+      RARCH_ERR("[GLCore] No GLSL for the stages, and no SPIRV-Cross to print them.\n");
+      return 0;
+   }
+   gl3_text_target(&text);
+   text.flatten = flatten;
+   if (     (vs_text = slang_print_stage(vs_src, false, &text))
+         && (fs_text = slang_print_stage(fs_src, true, &text)))
+      program = gl3_text_link_program(vs_text, fs_text, loc, flatten);
+   free(vs_text);
+   free(fs_text);
+   return program;
+}
+#endif
 
 /* Links a program from GLSL the compiler printed with the interface
  * named as gl3_cross_compile_program() names it, so the rest of the
  * pass sees no difference: attributes bound by location, blocks and
  * push members looked up by name, samplers set to their bindings. */
 static GLuint gl3_text_link_program(const char *vertex_source,
-      const char *fragment_source, gl3_buffer_locations *loc)
+      const char *fragment_source, gl3_buffer_locations *loc, bool flatten)
 {
    GLuint vertex_shader, fragment_shader, program;
    GLint  status = 0;
@@ -557,9 +599,11 @@ static GLuint gl3_text_link_program(const char *vertex_source,
    program = glCreateProgram();
    glAttachShader(program, vertex_shader);
    glAttachShader(program, fragment_shader);
-   /* slang stages have exactly the two attributes, at 0 and 1 */
+   /* slang stages have the two attributes at 0 and 1; the driver's own
+    * pipelines take a colour at 2 */
    glBindAttribLocation(program, 0, "RARCH_ATTRIBUTE_0");
    glBindAttribLocation(program, 1, "RARCH_ATTRIBUTE_1");
+   glBindAttribLocation(program, 2, "RARCH_ATTRIBUTE_2");
    glLinkProgram(program);
    glDeleteShader(vertex_shader);
    glDeleteShader(fragment_shader);
@@ -592,8 +636,20 @@ static GLuint gl3_text_link_program(const char *vertex_source,
       loc->flat_push_fragment         = -1;
       loc->buffer_index_push_vertex   = GL_INVALID_INDEX;
       loc->buffer_index_push_fragment = GL_INVALID_INDEX;
-      loc->buffer_index_ubo_vertex    = glGetUniformBlockIndex(program, "RARCH_UBO_VERTEX");
-      loc->buffer_index_ubo_fragment  = glGetUniformBlockIndex(program, "RARCH_UBO_FRAGMENT");
+      loc->buffer_index_ubo_vertex    = GL_INVALID_INDEX;
+      loc->buffer_index_ubo_fragment  = GL_INVALID_INDEX;
+      if (flatten)
+      {
+         loc->flat_ubo_vertex         = glGetUniformLocation(program, "RARCH_UBO_VERTEX");
+         loc->flat_ubo_fragment       = glGetUniformLocation(program, "RARCH_UBO_FRAGMENT");
+         loc->flat_push_vertex        = glGetUniformLocation(program, "RARCH_PUSH_VERTEX");
+         loc->flat_push_fragment      = glGetUniformLocation(program, "RARCH_PUSH_FRAGMENT");
+      }
+      else
+      {
+         loc->buffer_index_ubo_vertex   = glGetUniformBlockIndex(program, "RARCH_UBO_VERTEX");
+         loc->buffer_index_ubo_fragment = glGetUniformBlockIndex(program, "RARCH_UBO_FRAGMENT");
+      }
    }
    for (i = 0; i < SLANG_NUM_BINDINGS; i++)
    {
@@ -604,7 +660,8 @@ static GLuint gl3_text_link_program(const char *vertex_source,
          glUniform1i(location, i);
    }
    glUseProgram(0);
-   RARCH_LOG("[GLCore] Linked the compiler's GLSL directly.\n");
+   if (!flatten)
+      RARCH_LOG("[GLCore] Linked the compiler's GLSL directly.\n");
    return program;
 }
 
@@ -1451,8 +1508,10 @@ static void gl3_text_target(struct slang_text_target *t);
 static void gl3_pass_read_frame_in_place(struct gl3_pass *pass)
 {
    enum slang_rect_result res;
+#if !defined(SLANG_RSLC_ONLY)
    uint32_t *nv = NULL, *nf = NULL;
    size_t    nvl = 0, nfl = 0;
+#endif
 #ifdef HAVE_RSLC
    struct slang_text_target   text;
    struct slang_blob         *vb     = NULL;
@@ -1489,6 +1548,7 @@ static void gl3_pass_read_frame_in_place(struct gl3_pass *pass)
       return;
    }
 #endif
+#if !defined(SLANG_RSLC_ONLY)
    res = slang_rect_remap_pass(
          pass->vertex_shader, pass->num_vertex_shader,
          pass->fragment_shader, pass->num_fragment_shader,
@@ -1506,6 +1566,11 @@ static void gl3_pass_read_frame_in_place(struct gl3_pass *pass)
       gl3_pass_set_shader_text(pass, GL_VERTEX_SHADER, NULL);
       gl3_pass_set_shader_text(pass, GL_FRAGMENT_SHADER, NULL);
    }
+#else
+   /* nothing prints a module the SPIR-V rewrite made: the frame is
+    * copied out instead */
+   pass->frame_copy = true;
+#endif
 }
 
 static bool gl3_pass_build(struct gl3_pass *pass)
@@ -1886,7 +1951,7 @@ static bool gl3_pass_link(struct gl3_pass *pass)
 
    if (!p->id && pass->vertex_text && pass->fragment_text)
       p->id = gl3_text_link_program(pass->vertex_text,
-            pass->fragment_text, &p->locations);
+            pass->fragment_text, &p->locations, false);
 
    if (!p->id)
       p->id = gl3_cross_compile_program(
@@ -3540,6 +3605,26 @@ static bool gl3_chain_set_num_passes(struct gl3_filter_chain *chain, unsigned nu
 
 static void gl3_chain_set_shader(struct gl3_filter_chain *chain, unsigned pass, GLenum stage, const uint32_t *spirv, size_t spirv_words)
 {
+#if defined(SLANG_RSLC_ONLY)
+   /* one of the driver's own stages: built from its GLSL, tables and
+    * text, since nothing prints the SPIR-V */
+   const char *source = spirv_shader_glsl(spirv);
+   if (source)
+   {
+      struct slang_text_target text;
+      struct slang_blob       *blob    = NULL;
+      char                    *printed = NULL;
+      gl3_text_target(&text);
+      if (slang_compile_builtin(source, stage == GL_FRAGMENT_SHADER,
+               &text, &blob, &printed))
+      {
+         gl3_pass_set_blob(chain->passes[pass], stage, blob);
+         gl3_pass_set_shader_text(chain->passes[pass], stage, printed);
+         free(printed);
+         return;
+      }
+   }
+#endif
    gl3_pass_set_shader(chain->passes[pass], stage, spirv, spirv_words);
 }
 

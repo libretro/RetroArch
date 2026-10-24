@@ -475,6 +475,89 @@ static const char *pr_msl_instance(struct rslc_pr *p, unsigned block)
    return b->instance ? b->instance->str : (b->push ? "_push" : "_ubo");
 }
 
+/* Flattened blocks (rslc_names.flatten): the vec4 array's name. */
+static const char *pr_flat_name(struct rslc_pr *p, unsigned block)
+{
+   const struct rslc_blockdecl *b = &p->c->prog.blocks[block];
+   const char *forced = b->push ? p->names->push_block : p->names->ubo_block;
+   if (forced)
+      return forced;
+   return b->type->name ? b->type->name->str : (b->push ? "Push" : "UBO");
+}
+
+/* The vec4 slots a flattened block takes; 0 when a member cannot be
+ * read out of them. */
+static uint32_t pr_flat_slots(struct rslc_pr *p, unsigned block)
+{
+   const struct rslc_blockdecl *b = &p->c->prog.blocks[block];
+   bool     std140 = !b->push || b->std140;
+   uint32_t i, end = 0;
+   for (i = 0; i < b->type->nfields; i++)
+   {
+      const struct rslc_type *t = b->type->fields[i].type;
+      uint32_t a, sz, st, off = rslc_layout_field_offset(b->type, i, std140);
+      rslc_layout_of_type(t, std140, &a, &sz, &st);
+      (void)a;
+      if (     (t->kind != RSLC_TY_SCALAR && t->kind != RSLC_TY_VEC
+               && t->kind != RSLC_TY_MAT)
+            || t->base == RSLC_BASE_BOOL
+            || (t->kind == RSLC_TY_MAT && (st != 16 || (off & 15)))
+            || (t->kind != RSLC_TY_MAT && (off & 15) + sz > 16))
+         return 0;
+      if (off + sz > end)
+         end = off + sz;
+   }
+   return (end + 15) / 16;
+}
+
+/* Member @m of flattened block @block, read out of its vec4 array. */
+static void pr_flat_member(struct rslc_pr *p, unsigned block, uint32_t m)
+{
+   const struct rslc_blockdecl *b = &p->c->prog.blocks[block];
+   const struct rslc_type      *t = b->type->fields[m].type;
+   const char *name = pr_flat_name(p, block);
+   uint32_t off  = rslc_layout_field_offset(b->type, m, !b->push || b->std140);
+   uint32_t slot = off / 16, comp = (off & 15) / 4, i, c;
+   if (t->kind == RSLC_TY_MAT)
+   {
+      pr_type(p, t);
+      pr_c(p, '(');
+      for (c = 0; c < t->cols; c++)
+      {
+         if (c)
+            pr_s(p, ", ");
+         pr_s(p, name);
+         pr_c(p, '[');
+         pr_u(p, slot + c);
+         pr_c(p, ']');
+         if (t->rows < 4)
+         {
+            pr_c(p, '.');
+            for (i = 0; i < t->rows; i++)
+               pr_c(p, "xyzw"[i]);
+         }
+      }
+      pr_c(p, ')');
+      return;
+   }
+   if (t->base == RSLC_BASE_INT)
+      pr_s(p, "floatBitsToInt(");
+   else if (t->base == RSLC_BASE_UINT)
+      pr_s(p, "floatBitsToUint(");
+   pr_s(p, name);
+   pr_c(p, '[');
+   pr_u(p, slot);
+   pr_c(p, ']');
+   if (comp || t->rows < 4)
+   {
+      pr_c(p, '.');
+      for (i = 0; i < t->rows; i++)
+         pr_c(p, "xyzw"[comp + i]);
+   }
+   if (t->base == RSLC_BASE_INT || t->base == RSLC_BASE_UINT)
+      pr_c(p, ')');
+}
+
 static void pr_var_name(struct rslc_pr *p, const struct rslc_var *v)
 {
    const struct rslc_names *nm = p->names;
@@ -573,12 +656,23 @@ static void pr_var_name(struct rslc_pr *p, const struct rslc_var *v)
       case RSLC_ST_BLOCK:
       {
          const char *inst = pr_block_instance(p, v->block);
+         if (nm && nm->flatten)
+         {
+            rslc_err(p->c, "glsl: a flattened block used as a value", NULL, v->line);
+            p->ok = false;
+            return;
+         }
          pr_s(p, inst ? inst : v->name->str);
          return;
       }
       case RSLC_ST_MEMBER:
       {
          const char *inst = pr_block_instance(p, v->block);
+         if (nm && nm->flatten)
+         {
+            pr_flat_member(p, v->block, v->member);
+            return;
+         }
          if (inst)
          {
             pr_s(p, inst);
@@ -2002,6 +2096,12 @@ static void pr_expr(struct rslc_pr *p, uint32_t node, int ctx)
             pr_hlsl_member(p, p->c->prog.vars[base->a]->block, n->b);
             break;
          }
+         if (p->names && p->names->flatten && base->op == RSLC_OP_VAR
+               && p->c->prog.vars[base->a]->storage == RSLC_ST_BLOCK)
+         {
+            pr_flat_member(p, p->c->prog.vars[base->a]->block, n->b);
+            break;
+         }
          pr_expr(p, n->a, PR_PREC_POSTFIX);
          pr_c(p, '.');
          pr_s(p, base->type->fields[n->b].name->str);
@@ -3149,6 +3249,23 @@ static void pr_block_decl(struct rslc_pr *p, unsigned idx)
       if (forced)
          type_name = forced;
    }
+   if (p->names && p->names->flatten)
+   {
+      uint32_t slots = pr_flat_slots(p, idx);
+      if (!slots)
+      {
+         rslc_err(p->c, "glsl: the block does not flatten into vec4s", NULL, b->line);
+         p->ok = false;
+         return;
+      }
+      pr_s(p, p->es ? "uniform highp vec4 " : "uniform vec4 ");
+      pr_s(p, type_name);
+      pr_c(p, '[');
+      pr_u(p, slots);
+      pr_s(p, "];");
+      pr_nl(p);
+      return;
+   }
    if (b->push && !p->cafe)
    {
       /* no push constants in GLSL: a struct and one uniform of it */
@@ -3346,6 +3463,19 @@ static bool pr_glsl(struct rslc_pr *p, struct rslc_result *result)
    const struct rslc_prog *pr = &c->prog;
    uint32_t i;
    char     buf[32];
+
+   /* a flattened block reads its integer members through bitcasts */
+   if (p->names && p->names->flatten)
+      for (i = 0; i < 2; i++)
+      {
+         uint32_t k;
+         if (!pr->has_block[i])
+            continue;
+         for (k = 0; k < pr->blocks[i].type->nfields; k++)
+            if (     pr->blocks[i].type->fields[k].type->base == RSLC_BASE_INT
+                  || pr->blocks[i].type->fields[k].type->base == RSLC_BASE_UINT)
+               p->uses_bitcast = true;
+      }
 
    /* version line */
    sprintf(buf, "#version %u%s", p->version % 10000, p->es ? " es" : "");

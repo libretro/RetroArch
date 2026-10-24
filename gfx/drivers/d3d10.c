@@ -56,7 +56,8 @@
 #include "../common/d3dcompiler_common.h"
 /* slang_process.h is self-contained - it only defines types and
  * constants used by pass state.  The actual slang_process() call
- * sites remain guarded with HAVE_SLANG+HAVE_SPIRV_CROSS. */
+ * sites remain guarded with HAVE_SLANG and a compiler that prints
+ * text: SPIRV-Cross or rslc. */
 #include "../drivers_shader/slang_process.h"
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
@@ -2033,7 +2034,7 @@ typedef struct d3d10_deferred_state
 static bool d3d10_shader_load_begin(void *data,
       shader_load_deferred_t *deferred)
 {
-#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+#if defined(HAVE_SLANG) && (defined(HAVE_SPIRV_CROSS) || defined(HAVE_RSLC))
    d3d10_video_t *d3d10 = (d3d10_video_t*)data;
    d3d10_deferred_state_t *ds;
 
@@ -2170,7 +2171,7 @@ static void d3d10_deferred_state_free(
 static bool d3d10_shader_load_step(void *data,
       shader_load_deferred_t *deferred)
 {
-#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+#if defined(HAVE_SLANG) && (defined(HAVE_SPIRV_CROSS) || defined(HAVE_RSLC))
    d3d10_video_t *d3d10          = (d3d10_video_t*)data;
    d3d10_deferred_state_t *ds    =
       (d3d10_deferred_state_t*)deferred->driver_data;
@@ -2378,7 +2379,7 @@ static bool d3d10_shader_load_step(void *data,
 static bool d3d10_gfx_set_shader(void* data,
       enum rarch_shader_type type, const char* path)
 {
-#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+#if defined(HAVE_SLANG) && (defined(HAVE_SPIRV_CROSS) || defined(HAVE_RSLC))
    unsigned         i;
    d3d10_texture_t* source = NULL;
    d3d10_video_t*   d3d10  = (d3d10_video_t*)data;
@@ -5315,7 +5316,7 @@ static uint32_t d3d10_get_flags(void *data)
    BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
    BIT32_SET(flags, GFX_CTX_FLAGS_OVERLAY_BEHIND_MENU_SUPPORTED);
    BIT32_SET(flags, GFX_CTX_FLAGS_BLACK_FRAME_INSERTION);
-#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+#if defined(HAVE_SLANG) && (defined(HAVE_SPIRV_CROSS) || defined(HAVE_RSLC))
    BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
    BIT32_SET(flags, GFX_CTX_FLAGS_SUBFRAME_SHADERS);
 #endif

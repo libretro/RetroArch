@@ -46,8 +46,15 @@ SPIRV_SHADER(pipeline_snow_simple_frag)
 SPIRV_SHADER(pipeline_snow_frag)
 SPIRV_SHADER(pipeline_bokeh_frag)
 SPIRV_SHADER(pipeline_snowflake_frag)
+SPIRV_SHADER(hdr_scrgb_vert)
+SPIRV_SHADER(hdr_scrgb_frag)
 
 #undef SPIRV_SHADER
+
+/* The GLSL a module glcore builds its own pipelines from was compiled
+ * from, for a build without SPIRV-Cross to print instead; NULL for any
+ * other module. */
+const char *spirv_shader_glsl(const uint32_t *spirv);
 
 RETRO_END_DECLS
 

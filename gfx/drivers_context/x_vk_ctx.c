@@ -573,7 +573,7 @@ static uint32_t gfx_ctx_x_vk_get_flags(void *data)
             &x->vk.context.supports_adaptive_vsync))
       BIT32_SET(flags, GFX_CTX_FLAGS_ADAPTIVE_VSYNC);
 
-#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+#if defined(HAVE_SLANG) && (defined(HAVE_SPIRV_CROSS) || defined(HAVE_RSLC))
    BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
 #endif
 

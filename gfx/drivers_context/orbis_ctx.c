@@ -286,7 +286,7 @@ static uint32_t orbis_ctx_get_flags(void *data)
 
    if (string_is_equal(video_driver_get_ident(), "glcore"))
    {
-#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+#if defined(HAVE_SLANG) && (defined(HAVE_SPIRV_CROSS) || defined(HAVE_RSLC))
       BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
 #endif
    }

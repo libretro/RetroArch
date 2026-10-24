@@ -20,7 +20,10 @@
 # on a Linux box, -D apply the preset after the first frames instead
 # of at start, which takes the deferred path (one pass per frame, the
 # stock chain on screen until the new one is live), -t the same under
-# threaded video, where the passes are built on the video thread;
+# threaded video, where the passes are built on the video thread, -b
+# RETROARCH take the rslc runs from that build instead - one configured
+# with rslc alone (--disable-glslang --disable-spirv_cross), so the
+# glslang build's picture is the reference for it;
 # both capture at frame 300 unless -f says otherwise, since the load
 # starts 50 ms in and a frame is not a vblank on a headless box.  With glcore the glslang run crosses the SPIR-V and
 # the rslc run links the GLSL rslc printed; GL_ARB_gl_spirv is kept
@@ -41,6 +44,7 @@ threaded=false
 cached=0
 runner=
 ext=so
+ra_rslc=
 while [ $# -gt 0 ]; do
    case $1 in
       -d) driver=$2; shift 2 ;;
@@ -50,15 +54,17 @@ while [ $# -gt 0 ]; do
       -w) runner=wine; ext=dll; shift ;;
       -D) late=1; shift ;;
       -t) late=1; threaded=true; shift ;;
+      -b) ra_rslc=$2; shift 2 ;;
       *) break ;;
    esac
 done
 if [ $# -lt 2 ]; then
-   echo "usage: $0 [-d driver] [-f frames] [-k] [-c] [-w] [-D|-t] <retroarch> <preset.slangp> ..." >&2
+   echo "usage: $0 [-d driver] [-f frames] [-k] [-c] [-w] [-D|-t] [-b retroarch] <retroarch> <preset.slangp> ..." >&2
    exit 2
 fi
 [ -n "$frames" ] || { [ $late = 1 ] && frames=300 || frames=30; }
 ra=$1; shift
+[ -n "$ra_rslc" ] || ra_rslc=$ra
 case $driver in
    vulkan) ctx=vk_x ;;
    glcore) ctx=x; export RETROARCH_GL3_DISABLE_SPIRV=1 ;;
@@ -110,7 +116,9 @@ EOF
       mkdir -p "$out/cache_$2"
    fi
    rm -f "$3"
-   $runner "$ra" --verbose --config "$cfg" -L "$core" --set-shader "$1" \
+   bin=$ra
+   [ "$2" = 2 ] && bin=$ra_rslc
+   $runner "$bin" --verbose --config "$cfg" -L "$core" --set-shader "$1" \
       --max-frames="$frames" --max-frames-ss --max-frames-ss-path="$3" \
       > "$4" 2>&1
    [ -s "$3" ]

@@ -81,7 +81,8 @@
 #include <retro_atomic.h>
 /* slang_process.h is self-contained - it only defines types and
  * constants used by pass state.  The actual slang_process() call
- * sites remain guarded with HAVE_SLANG+HAVE_SPIRV_CROSS. */
+ * sites remain guarded with HAVE_SLANG and a compiler that prints
+ * text: SPIRV-Cross or rslc. */
 #include "../drivers_shader/slang_process.h"
 #include "../drivers_shader/slang_rect.h"
 #ifdef HAVE_THREADS
@@ -3435,7 +3436,7 @@ static uint32_t d3d12_get_flags(void *data)
    BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
    BIT32_SET(flags, GFX_CTX_FLAGS_OVERLAY_BEHIND_MENU_SUPPORTED);
    BIT32_SET(flags, GFX_CTX_FLAGS_BLACK_FRAME_INSERTION);
-#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+#if defined(HAVE_SLANG) && (defined(HAVE_SPIRV_CROSS) || defined(HAVE_RSLC))
    BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
    BIT32_SET(flags, GFX_CTX_FLAGS_SUBFRAME_SHADERS);
    BIT32_SET(flags, GFX_CTX_FLAGS_FAST_TOGGLE_SHADERS);
@@ -3882,7 +3883,7 @@ static void d3d12_set_hdr_subpixel_layout(void* data, unsigned subpixel_layout)
 }
 
 /* Only the slang passes set these. */
-#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+#if defined(HAVE_SLANG) && (defined(HAVE_SPIRV_CROSS) || defined(HAVE_RSLC))
 static void d3d12_set_hdr_inverse_tonemap(d3d12_video_t* d3d12, bool inverse_tonemap)
 {
    d3d12->hdr.ubo_values.inverse_tonemap  = inverse_tonemap ? 1.0f : 0.0f;
@@ -4160,7 +4161,7 @@ static unsigned d3d12_hdr_output_mode(const d3d12_video_t *video)
 static bool d3d12_shader_load_begin(void *data,
       shader_load_deferred_t *deferred)
 {
-#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+#if defined(HAVE_SLANG) && (defined(HAVE_SPIRV_CROSS) || defined(HAVE_RSLC))
    d3d12_video_t *d3d12 = (d3d12_video_t*)data;
    d3d12_deferred_state_t *ds;
 
@@ -4261,7 +4262,7 @@ error:
 #endif
 }
 
-#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+#if defined(HAVE_SLANG) && (defined(HAVE_SPIRV_CROSS) || defined(HAVE_RSLC))
 /* The last holder frees what the passes made: the load's, or a build
  * still running when the load ended. */
 static void d3d12_deferred_state_unref(d3d12_deferred_state_t *ds)
@@ -4465,7 +4466,7 @@ static void d3d12_frame_rect_semantics(d3d12_video_t *d3d12,
 static bool d3d12_shader_load_step(void *data,
       shader_load_deferred_t *deferred)
 {
-#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+#if defined(HAVE_SLANG) && (defined(HAVE_SPIRV_CROSS) || defined(HAVE_RSLC))
    d3d12_video_t *d3d12          = (d3d12_video_t*)data;
    d3d12_deferred_state_t *ds    =
       (d3d12_deferred_state_t*)deferred->driver_data;
@@ -4796,7 +4797,7 @@ static bool d3d12_shader_load_step(void *data,
 
 static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const char* path)
 {
-#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+#if defined(HAVE_SLANG) && (defined(HAVE_SPIRV_CROSS) || defined(HAVE_RSLC))
    size_t i;
    d3d12_texture_t* source = NULL;
    d3d12_video_t*   d3d12  = (d3d12_video_t*)data;

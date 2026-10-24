@@ -57,7 +57,7 @@
 
 #include "video_shader_parse.h"
 
-#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+#if defined(HAVE_SLANG) && (defined(HAVE_SPIRV_CROSS) || defined(HAVE_RSLC))
 #include "drivers_shader/glslang_util.h"
 #include "drivers_shader/slang_process.h"
 #endif
@@ -1342,7 +1342,7 @@ void video_shader_resolve_parameters(struct video_shader *shader)
    RARCH_DBG("[Shaders] Finding parameters in shader passes (#pragma parameter)...\n");
 #endif
 
-#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+#if defined(HAVE_SLANG) && (defined(HAVE_SPIRV_CROSS) || defined(HAVE_RSLC))
    {
       /* One include cache for the whole walk.  Every pass is expanded
        * here to harvest its '#pragma parameter' lines, and the passes

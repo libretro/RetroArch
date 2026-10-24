@@ -71,7 +71,7 @@ void cocoa_main_thread_sync(void (*func)(void *userdata), void *userdata);
 static uint32_t cocoa_vk_gfx_ctx_get_flags(void *data)
 {
    uint32_t flags = 0;
-#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+#if defined(HAVE_SLANG) && (defined(HAVE_SPIRV_CROSS) || defined(HAVE_RSLC))
    BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
 #endif
    return flags;

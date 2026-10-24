@@ -254,7 +254,15 @@ struct rslc_remap
  * decimal suffix.  The push block has no instance in GLSL or HLSL
  * text; it is printed as a struct of push_block's name with one
  * uniform of push_instance's name, and members are reached through
- * it. */
+ * it.
+ *
+ * flatten (GLSL and GLSL ES): each block is printed instead as one
+ * array of vec4 named ubo_block or push_block, sized to the block, and
+ * a member is read out of it at its layout offset - a matrix rebuilt
+ * from its columns, an integer through floatBitsToInt / Uint - so the
+ * caller uploads the block's bytes with one glUniform4fv.  A block
+ * holding an array, a struct, a bool, or a member that does not sit
+ * inside one vec4 (a column stride other than 16) is refused. */
 struct rslc_names
 {
    const char *attr_prefix;      /* vertex inputs */
@@ -264,6 +272,7 @@ struct rslc_names
    const char *ubo_instance;
    const char *push_block;
    const char *push_instance;
+   bool        flatten;
 };
 
 /* Everything a compile needs from the caller.  Zero-initialise and
