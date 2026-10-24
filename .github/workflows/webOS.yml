@@ -28,21 +28,39 @@ jobs:
       - name: Link with lld
         run: sh .github/workflows/scripts/use-lld.sh
 
-      - name: Download ares-cli-rs
-        uses: robinraju/release-downloader@v1
-        with:
-          repository: "webosbrew/ares-cli-rs"
-          latest: true
-          fileName: "ares-package_*_amd64.deb"
-          out-file-path: "temp"
+      - name: Test webOS dependency fetcher
+        run: sh .github/workflows/scripts/webos-deps-test.sh
 
-      - name: Download Manifest Generator
-        uses: robinraju/release-downloader@v1
+      - name: Resolve webOS tools and NDKs
+        id: webos-deps
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: echo "key=$(sh .github/workflows/scripts/webos-deps.sh key)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore webOS tools and NDKs
+        id: webos-deps-cache
+        uses: actions/cache/restore@v4
         with:
-          repository: "webosbrew/dev-toolbox-cli"
-          latest: true
-          fileName: "webosbrew-toolbox-gen-manifest_*_amd64.deb"
-          out-file-path: "temp"
+          path: /tmp/webos-deps
+          key: webos-deps-${{ steps.webos-deps.outputs.key }}
+          restore-keys: |
+            webos-deps-
+
+      - name: Fetch webOS tools and NDKs
+        if: steps.webos-deps-cache.outputs.cache-hit != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: sh .github/workflows/scripts/webos-deps.sh fetch
+
+      - name: Save webOS tools and NDKs
+        if: >-
+          steps.webos-deps-cache.outputs.cache-hit != 'true' &&
+          steps.webos-deps.outputs.key != 'unresolved' &&
+          github.event_name == 'push' && github.ref == 'refs/heads/master'
+        uses: actions/cache/save@v4
+        with:
+          path: /tmp/webos-deps
+          key: webos-deps-${{ steps.webos-deps.outputs.key }}
 
       - name: Update packages
         timeout-minutes: 5
@@ -59,32 +77,16 @@ jobs:
         run: |
           sudo apt-get -yq install \
             -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
-            ./temp/ares-package_*_amd64.deb \
-            ./temp/webosbrew-toolbox-gen-manifest_*.deb
-
-      - name: Download webOS (arm) NDK
-        uses: robinraju/release-downloader@v1
-        with:
-          repository: "openlgtv/buildroot-nc4"
-          latest: true
-          fileName: "arm-webos-linux-gnueabi_sdk-buildroot-x86_64.tar.gz"
-          out-file-path: "/tmp"
-
-      - name: Download webOS (aarch64) NDK
-        uses: robinraju/release-downloader@v1
-        with:
-          repository: "cscd98/buildroot-nc4"
-          latest: true
-          fileName: "aarch64-webos-linux-gnu_sdk-buildroot-x86_64.tar.gz"
-          out-file-path: "/tmp"
+            /tmp/webos-deps/webosbrew_ares-cli-rs/ares-package_*_amd64.deb \
+            /tmp/webos-deps/webosbrew_dev-toolbox-cli/webosbrew-toolbox-gen-manifest_*.deb
 
       - name: Extract webOS NDKs
         shell: bash
         working-directory: /tmp
         run: |
-          tar xzf arm-webos-linux-gnueabi_sdk-buildroot-x86_64.tar.gz
+          tar xzf /tmp/webos-deps/openlgtv_buildroot-nc4/arm-webos-linux-gnueabi_sdk-buildroot-x86_64.tar.gz
           ./arm-webos-linux-gnueabi_sdk-buildroot/relocate-sdk.sh
-          tar xzf aarch64-webos-linux-gnu_sdk-buildroot-x86_64.tar.gz
+          tar xzf /tmp/webos-deps/cscd98_buildroot-nc4/aarch64-webos-linux-gnu_sdk-buildroot-x86_64.tar.gz
           ./aarch64-webos-linux-gnu_sdk-buildroot/relocate-sdk.sh
 
       - name: Load RARCH_VERSION from version.all
