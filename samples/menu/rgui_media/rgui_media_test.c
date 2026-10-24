@@ -48,6 +48,7 @@ static void media_render(struct menu_state *menu_st)
 }
 
 #include "../texture_media/native_media_capture.h"
+#include "../texture_media/win32_modal_test.h"
 static bool media_test_subtitle_glyph(void)
 {
    rgui_t *rgui = (rgui_t*)menu_state_get_ptr()->userdata;
@@ -133,7 +134,7 @@ int main(int argc, char **argv)
    MENU_ENTRY_INITIALIZE((*entry));
    settings = config_get_ptr();
    settings->bools.menu_rgui_inline_thumbnails = false;
-   settings->bools.menu_thumbnail_preview_audio = false;
+   settings->bools.menu_thumbnail_preview_audio = getenv("MEDIA_TEST_MODAL_MODE") != NULL;
    if (getenv("MEDIA_TEST_EXTERNAL") || getenv("MEDIA_TEST_BROWSER_IMAGE"))
    {
       bool image = image_texture_get_type(argv[1]) != IMAGE_TYPE_MP4
@@ -254,6 +255,15 @@ int main(int argc, char **argv)
          MEDIA_CHECK("image confirmation remains in internal view",
                rgui_parse_menu_entry_action(rgui, entry, MENU_ACTION_OK)
                   == MENU_ACTION_NOOP && ((rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL) != 0));
+#ifdef _WIN32
+      if (getenv("MEDIA_TEST_MODAL_MODE"))
+      {
+         MEDIA_CHECK("movie pixels and audio continue inside the native modal loop",
+               !image && native_gpu
+               && media_native_modal_playback(menu_st, media_current_target));
+         goto cleanup;
+      }
+#endif
       rgui_parse_menu_entry_action(rgui, entry, MENU_ACTION_CANCEL);
       MEDIA_CHECK("Back closes internal view", !((rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL) != 0));
       MEDIA_CHECK("cancellation and stale startup acknowledgements stay isolated",
@@ -294,6 +304,14 @@ int main(int argc, char **argv)
    MEDIA_CHECK("decoded movie picture is nonempty",
          gpu_surface ? rgui->media_gpu.texture != 0 : pixels != 0);
    MEDIA_CHECK("fullscreen shared controller owns the player", rgui->media.controls.target.user == rgui);
+#ifdef _WIN32
+   if (getenv("MEDIA_TEST_MODAL_MODE"))
+   {
+      MEDIA_CHECK("movie pixels and audio continue inside the native modal loop",
+            native_gpu && media_native_modal_playback(menu_st, media_current_target));
+      goto cleanup;
+   }
+#endif
    if (getenv("MEDIA_TEST_WINDOW_TOGGLE"))
    {
       MEDIA_CHECK("window fullscreen toggles retain seeking and updating pixels",

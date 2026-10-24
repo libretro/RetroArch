@@ -110,6 +110,7 @@ static void render_subtitles(struct menu_state *menu_st)
 }
 
 #include "native_media_capture.h"
+#include "win32_modal_test.h"
 #include "subtitle_media_test.h"
 
 static bool test_current_target(struct menu_state *menu_st,
@@ -150,7 +151,7 @@ int main(int argc,char **argv)
    video=video_state_get_ptr();old_poke=video->poke;
    if(!native_gpu)
    { poke.load_texture=memory_texture;poke.unload_texture=memory_unload;video->poke=&poke; }
-   config_get_ptr()->bools.menu_thumbnail_preview_audio=false;
+   config_get_ptr()->bools.menu_thumbnail_preview_audio = getenv("MEDIA_TEST_MODAL_MODE") != NULL;
    if (getenv("MEDIA_TEST_EXTERNAL") || getenv("MEDIA_TEST_BROWSER_IMAGE"))
    {
       bool image = image_texture_get_type(argv[1]) != IMAGE_TYPE_MP4
@@ -289,6 +290,15 @@ int main(int argc,char **argv)
          CHECK("image confirmation remains in internal view",
                test_action(viewer, MENU_ACTION_OK) == MENU_ACTION_NOOP
                && test_showing(viewer));
+#ifdef _WIN32
+      if (getenv("MEDIA_TEST_MODAL_MODE"))
+      {
+         CHECK("movie pixels and audio continue inside the native modal loop",
+               !image && native_gpu
+               && media_native_modal_playback(menu_st, test_current_target));
+         goto media_test_done;
+      }
+#endif
       CHECK("Back closes internal view", test_action(viewer, MENU_ACTION_CANCEL)
             == MENU_ACTION_NOOP && !test_showing(viewer));
       CHECK("cancellation and stale startup acknowledgements stay isolated",
@@ -342,6 +352,14 @@ int main(int argc,char **argv)
    }
    else CHECK("real movie pixels reach texture boundary",uploads&&uploaded_pixels);
    CHECK("browser media controls are reachable",viewer->media.controls.target.user==test_thumbnail(viewer));
+#ifdef _WIN32
+   if (getenv("MEDIA_TEST_MODAL_MODE"))
+   {
+      CHECK("movie pixels and audio continue inside the native modal loop",
+            native_gpu && media_native_modal_playback(menu_st, test_current_target));
+      goto media_test_done;
+   }
+#endif
    if (getenv("MEDIA_TEST_WINDOW_TOGGLE"))
    {
       CHECK("window fullscreen toggles retain seeking and updating pixels",
