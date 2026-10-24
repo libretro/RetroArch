@@ -165,6 +165,10 @@ $(HW_TIMING_OBJ): $(COMMON)/formats/webm/rwebm_video.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -DRWEBM_VIDEO_MAX_TS=2 -c -o $@ $<
 VP9_HW_OBJS := $(filter-out %/formats/webm/rwebm_video.o,$(RESIDENCY_OBJS)) $(HW_TIMING_OBJ)
+WEBM_SEEK_PREFIX_TARGET := webm_seek_prefix_test$(EXE)
+$(WEBM_SEEK_PREFIX_TARGET): webm_seek_test.c $(VP9_HW_OBJS)
+	$(CC) $(CFLAGS) -o $@ webm_seek_test.c $(VP9_HW_OBJS) $(LDFLAGS) $(LDLIBS)
+
 VP9_HW_TARGET := webm_vp9_hw_test$(EXE)
 $(VP9_HW_TARGET): webm_vp9_hw_test.c $(ROOT)/cores/libretro-media/media_core.c $(VP9_HW_OBJS)
 	$(CC) $(CFLAGS) -o $@ webm_vp9_hw_test.c $(VP9_HW_OBJS) $(LDFLAGS) $(LDLIBS)
@@ -188,7 +192,7 @@ $(DEVICE_TARGET): webm_vp9_device_test.c
 endif
 
 check: $(WEBM_TIMING_TARGET) $(VORBIS_SEEK_TARGET) $(OPUS_SEEK_TARGET) $(WEBM_SEEK_TARGET) $(MP4_SEEK_TARGET) $(TARGET) $(HW_TARGET) $(AV1_HW_TARGET) $(RESIDENCY_TARGET) $(VP9_HW_TARGET) $(DEVICE_TARGET) $(AUDIO_START_TARGET)
-check: $(PROGRESSIVE_GROUP_TARGET) $(TIMELINE_TARGET) $(VIDEO_TIMELINE_TARGET) $(VP8_REFERENCE_TARGET)
+check: $(PROGRESSIVE_GROUP_TARGET) $(TIMELINE_TARGET) $(VIDEO_TIMELINE_TARGET) $(VP8_REFERENCE_TARGET) $(WEBM_SEEK_PREFIX_TARGET)
 	$(RUNNER) ./$(VP8_REFERENCE_TARGET) fixtures/vp8-refs.ivf fixtures/vp8-refs.yuv
 	$(RUNNER) ./$(VP8_REFERENCE_TARGET) fixtures/vp8-altref.ivf fixtures/vp8-altref.yuv
 	$(RUNNER) ./$(VP8_REFERENCE_TARGET) fixtures/vp8-resize.ivf fixtures/vp8-resize.yuv
@@ -216,7 +220,8 @@ endif
 	$(RUNNER) ./$(OPUS_SEEK_TARGET) fixtures/vp8-opus.webm fixtures/vp8-seek-opus.webm
 endif
 	$(RUNNER) ./$(WEBM_TIMING_TARGET) fixtures/vp8-long-timing.webm
-	$(RUNNER) ./$(WEBM_SEEK_TARGET) fixtures/vp8-opus.webm fixtures/vp9-vorbis.webm fixtures/vp8-seek-opus.webm fixtures/vp9-seek-vorbis.webm fixtures/vp9-seek-live.webm
+	$(RUNNER) ./$(WEBM_SEEK_TARGET) fixtures/vp8-opus.webm fixtures/vp9-vorbis.webm fixtures/vp8-seek-opus.webm fixtures/vp9-seek-vorbis.webm fixtures/vp9-seek-live.webm fixtures/vp8-altref.webm
+	$(RUNNER) ./$(WEBM_SEEK_PREFIX_TARGET) fixtures/vp8-opus.webm fixtures/vp9-vorbis.webm fixtures/vp8-seek-opus.webm fixtures/vp9-seek-vorbis.webm fixtures/vp9-seek-live.webm fixtures/vp8-altref.webm
 	$(RUNNER) ./$(VP9_HW_TARGET)
 	$(RUNNER) ./$(DEVICE_TARGET)
 	$(RUNNER) ./$(RESIDENCY_TARGET)
@@ -240,6 +245,7 @@ clean:
 	rm -f vorbis_seek_test vorbis_seek_test.exe
 	rm -f opus_seek_test opus_seek_test.exe
 	rm -f webm_seek_test webm_seek_test.exe
+	rm -f webm_seek_prefix_test webm_seek_prefix_test.exe
 	rm -f vp8_reference_test vp8_reference_test.exe
 	rm -f mp4_seek_test mp4_seek_test.exe
 	rm -f webm_audio_start_test webm_audio_start_test.exe webm_av1_hw_test webm_av1_hw_test.exe av1-core-fixture.mp4 av1-core-fixture.webm

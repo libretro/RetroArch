@@ -117,6 +117,8 @@ int main(int argc,char **argv)
    int tick;
    unsigned x,y,selection;
    bool seeking=true;
+   const char *first_video = getenv("MEDIA_TEST_FIRST_VIDEO_US");
+   int64_t first_video_us = first_video ? strtol(first_video, NULL, 10) : 0;
    if(argc!=3)return 2;
    native_gpu=getenv("MEDIA_TEST_GPU")!=NULL;
    config_file_set_io_default(config_file_io_filestream());rtime_init();retroarch_config_init();
@@ -247,18 +249,18 @@ int main(int argc,char **argv)
       for(tick=0;tick<2000&&(test_thumbnail(viewer)->alpha<0.9999f||!test_fade_ready(viewer));tick++)
       { render(menu_st);retro_sleep(1); }
       CHECK("thumbnail fades complete before pixel comparison",test_thumbnail(viewer)->alpha>=0.9999f&&test_fade_ready(viewer));
-      CHECK("paused start picture reaches renderer",media_native_seek_capture(menu_st,render,&target,0,0,0,0,&first));
+      CHECK("paused start picture reaches renderer",media_native_seek_capture(menu_st,render,&target,first_video_us,0,0,0,&first));
       if(getenv("MEDIA_TEST_HDR_TIMELINE"))CHECK("start picture has initial HDR metadata",test_hdr_import_matches(viewer,1000,400));
-      CHECK("seek changes the rendered movie picture",media_native_seek_capture(menu_st,render,&target,375000,first,1,1,&middle));
+      CHECK("seek changes the rendered movie picture",media_native_seek_capture(menu_st,render,&target,first_video_us+375000,first,1,1,&middle));
       if(getenv("MEDIA_TEST_HDR_TIMELINE"))CHECK("forward seek imports changed HDR metadata",test_hdr_import_matches(viewer,2000,600));
-      CHECK("backward seek restores the rendered picture",media_native_seek_capture(menu_st,render,&target,0,first,-1,2,&again));
+      CHECK("backward seek restores the rendered picture",media_native_seek_capture(menu_st,render,&target,first_video_us,first,-1,2,&again));
       if(getenv("MEDIA_TEST_HDR_TIMELINE"))CHECK("backward seek restores initial HDR metadata",test_hdr_import_matches(viewer,1000,400));
       for(burst=0;burst<16;burst++)
       {
-         CHECK("burst request accepted",target.seek(target.user,burst&1?375000:0,cpu_features_get_time_usec()));
+         CHECK("burst request accepted",target.seek(target.user,burst&1?first_video_us+375000:first_video_us,cpu_features_get_time_usec()));
          render(menu_st);retro_sleep(1);
       }
-      CHECK("latest burst target reaches renderer while paused",media_native_seek_capture(menu_st,render,&target,375000,first,1,3,&middle));
+      CHECK("latest burst target reaches renderer while paused",media_native_seek_capture(menu_st,render,&target,first_video_us+375000,first,1,3,&middle));
       if(getenv("MEDIA_TEST_HDR_TIMELINE"))CHECK("latest burst imports changed HDR metadata",test_hdr_import_matches(viewer,2000,600));
       printf("rendered media hashes: %08x %08x %08x\n",first,middle,again);
    }

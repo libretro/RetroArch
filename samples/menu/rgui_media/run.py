@@ -6,7 +6,7 @@ if a.dxgi and (os.name!="nt" or a.video_driver!="vulkan"):p.error("--dxgi needs 
 if a.external and a.browser_image:p.error("choose external or browser-image mode")
 if a.gpu_surface and (a.driver!='rgui' or a.video_driver=='null'):p.error('--gpu-surface requires RGUI and a GPU video driver')
 if a.hardware_decode and not a.gpu_surface:p.error('--hardware-decode requires --gpu-surface')
-if not 0<=a.first_video_us<=2147483647 or (a.first_video_us and a.driver!='rgui'):p.error('--first-video-us requires RGUI and a timestamp from 0 through 2147483647')
+if not 0<=a.first_video_us<=2147483647:p.error('--first-video-us requires a timestamp from 0 through 2147483647')
 here=Path(__file__).resolve().parent;r=here.parents[2]
 test_dir=r/'samples/menu'/((a.driver+'_media') if a.driver!='rgui' else 'rgui_media')
 exe=test_dir/((a.driver+'_media_test')+('.exe' if os.name=='nt' else ''))

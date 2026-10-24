@@ -131,7 +131,9 @@ struct rwebm_video_stream
    int          endpoint_known, have_last_shown;
    int64_t      last_shown_ts, first_shown_ts;
    int64_t      frame_time_ns;
+   int64_t      decode_time_ns;
    int          have_frame_time;
+   int          have_decode_time;
    int          ts_count;   /* entries stored in ts                   */
    int          num_frames; /* total video packets in the stream      */
    int          pkt_idx;    /* ordinal of the next video packet       */
@@ -1085,6 +1087,9 @@ static int rwebm_video_read_packet(rwebm_video_stream_t *s,
 {
    if (s->lookahead_ready)
    {
+      size_t offset = (size_t)(s->lookahead_packet.data - s->buf);
+      if (offset > s->avail || s->lookahead_packet.size > s->avail - offset)
+         return RWEBM_READ_AGAIN;
       *packet = s->lookahead_packet;
       *floor = s->lookahead_floor;
       s->lookahead_ready = 0;
@@ -1948,7 +1953,10 @@ static int rwebm_video_stream_step(rwebm_video_stream_t *s,
                         after rwebm_video_stream_set_avail */
       }
       if (r != 1)
+      {
+         s->have_decode_time = 0;
          break;
+      }
       if (pkt.track != s->track)
          continue;
       idx = s->pkt_idx;
@@ -1960,12 +1968,25 @@ static int rwebm_video_stream_step(rwebm_video_stream_t *s,
       }
       r = rwebm_video_packet_duration(s, idx, pkt.timestamp, &duration);
       if (r == 2) { s->waiting = 1; return 2; }
-      if (r < 0) return -1;
+      if (r < 0)
+      {
+         s->have_decode_time = 0;
+         return -1;
+      }
       s->soft_pending = s->timing_active = s->timing_ready = 0;
       s->pkt_idx++;
       r   = rwebm_video_decode_packet(s, &pkt, discard);
       if (r < 0)
+      {
+         s->have_decode_time = 0;
          return -1;      /* decode error: end the animation */
+      }
+      if (r > 0)
+      {
+         if (!s->have_decode_time || pkt.timestamp > s->decode_time_ns)
+            s->decode_time_ns = pkt.timestamp;
+         s->have_decode_time = 1;
+      }
       if (r == 0)
          return 0;       /* non-shown frame                  */
       if (duration_ms)
@@ -2038,6 +2059,7 @@ void rwebm_video_stream_rewind(rwebm_video_stream_t *s)
    s->soft_pending = s->timing_active = s->timing_ready = s->lookahead_ready = 0;
    s->pkt_idx = 0;
    s->have_frame_time = 0;
+   s->have_decode_time = 0;
    /* The stream restarts at a key frame, so a fresh decoder (empty
     * reference chain, default probabilities) is the correct state. */
    rwebm_video_stream_close_decoder(s);
@@ -2207,8 +2229,38 @@ int rwebm_video_stream_seekable(const rwebm_video_stream_t *s)
 
 int rwebm_video_stream_seek_begin_ns(rwebm_video_stream_t *s, int64_t ns)
 {
+   int reuse = 0;
    if (!rwebm_video_stream_seekable(s)) return 0;
-   rwebm_video_stream_rewind(s);
+   if (ns < 0) ns = 0;
+   if (s->endpoint_known && s->have_last_shown && ns > s->last_shown_ts)
+      ns = s->last_shown_ts;
+   if (s->have_decode_time && ns > s->decode_time_ns
+         && (s->endpoint_known || (s->have_last_shown && ns <= s->last_shown_ts))
+         && rwebm_cue_time_ns(s->demux, ns) <= s->decode_time_ns
+#ifdef HAVE_RVP9
+         && !s->hw
+#endif
+#ifdef HAVE_RAV1
+         && !s->av1
+#endif
+      )
+      reuse = 1;
+   if (!reuse)
+      rwebm_video_stream_rewind(s);
+   else
+   {
+      /* A held picture still precedes the demux cursor and must decode
+       * before the next target, even when its output is discarded. */
+      if (s->soft_pending || s->seek_ready)
+      {
+         s->lookahead_packet = s->soft_pending ? s->soft_packet : s->seek_packet;
+         s->lookahead_floor = s->soft_pending ? s->soft_floor : s->seek_floor;
+         s->lookahead_ready = 1;
+      }
+      s->soft_pending = s->timing_active = s->timing_ready = 0;
+      s->seek_ready = s->seek_scan = s->waiting = 0;
+      s->seek_key = 1;
+   }
    if (!s->vp8
 #ifdef HAVE_RVP9
          && !s->vp9
@@ -2218,9 +2270,9 @@ int rwebm_video_stream_seek_begin_ns(rwebm_video_stream_t *s, int64_t ns)
          && !s->av1
 #endif
       ) return 0;
-   if (ns < 0) ns = 0;
    s->seek_target = ns;
    s->seek_active = 1;
+   if (reuse) return 1;
    if (!s->endpoint_known && (!s->have_last_shown || ns > s->last_shown_ts))
    {
       /* Discover the actual endpoint incrementally, exposing the probe's
@@ -2465,11 +2517,19 @@ int rwebm_video_stream_seek_step(rwebm_video_stream_t *s,
          return 0;
       }
 #endif
-      if (rwebm_video_decode_packet(s, &packet, 1) < 0) goto failed;
+      ret = rwebm_video_decode_packet(s, &packet, 1);
+      if (ret < 0) goto failed;
+      if (ret > 0)
+      {
+         if (!s->have_decode_time || packet.timestamp > s->decode_time_ns)
+            s->decode_time_ns = packet.timestamp;
+         s->have_decode_time = 1;
+      }
       return 0;
    }
    return 0;
 failed:
+   s->have_decode_time = 0;
 #ifdef HAVE_RAV1
    if (s->av1_hdr_active)
    {

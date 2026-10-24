@@ -2729,6 +2729,9 @@ jobs:
           ./preview_audio_feed_test --prepared-webm fixtures/audio_group_opus.webm fixtures/audio_group_vorbis.webm
           AUDIO_FEED_RACE=1 ./preview_audio_feed_test_threaded --continuous-webm fixtures/audio_group_opus.webm
           AUDIO_FEED_RACE=1 ./preview_audio_feed_test_threaded --continuous-webm fixtures/audio_group_vorbis.webm
+          make -B -j2 preview_audio_feed_test preview_audio_feed_test_threaded COUNT_IO=1 SANITIZER=address,undefined
+          ./preview_audio_feed_test --seek-batch
+          ./preview_audio_feed_test_threaded --seek-batch
           CPU_MEDIA=1 TRANSPORT_PAUSE=1 TRANSPORT_SEEK=1 ./gfx_thumbnail_preview_test fixtures/trailing_small.mp4
           CPU_MEDIA=1 TRANSPORT_PAUSE=1 TRANSPORT_SEEK=1 ./gfx_thumbnail_preview_test_threaded fixtures/trailing_small.mp4
           python3 movie_timeline_fixtures.py fixtures/movie-timeline

@@ -1012,7 +1012,8 @@ int gfx_anim_preview_seek_step(void *user, int64_t target_us,
       p->seek_audio = NULL;
       p->seek_format = (unsigned)retro_atomic_load_acquire_int(&p->seek_audio_format);
       p->seek_phase = 1;
-      p->seek_feed_hi = p->seek_feed_anchor = 0;
+      p->seek_feed_hi = p->feed_res_hi;
+      p->seek_feed_anchor = p->feed_tell;
       if (!image_transfer_anim_stream_seek_begin(p->stream, p->type, target_us))
          return -1;
       if (p->windowed && !data_transfer_window_pin(p->dt, 0, 0)) return -1;

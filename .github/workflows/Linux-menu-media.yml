@@ -111,3 +111,10 @@ jobs:
               xvfb-run -a python3 samples/menu/rgui_media/run.py --c89 --window-toggle --video-driver gl --driver "$driver" $threaded samples/menu/rgui_media/window-toggle.webm
             done
           done
+      - name: Generate delayed first-picture fixture
+        run: ffmpeg -v error -y -f lavfi -i "testsrc2=size=320x240:rate=30,hue=h=90*t" -vf "setpts=PTS+0.2/TB" -t 3 -c:v libvpx -deadline realtime -cpu-used 8 -g 90 -auto-alt-ref 0 samples/menu/rgui_media/delayed.webm
+      - name: Compare actual visible pictures after delayed-start seeks
+        run: |
+          for driver in rgui materialui xmb ozone; do
+            xvfb-run -a python3 samples/menu/rgui_media/run.py --c89 --video-driver gl --driver "$driver" --first-video-us 200000 samples/menu/rgui_media/delayed.webm
+          done

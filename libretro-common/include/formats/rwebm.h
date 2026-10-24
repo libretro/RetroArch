@@ -195,6 +195,8 @@ int64_t rwebm_seek_time_ns(rwebm_t *webm, int64_t ns);
  * the owner must feed before read_packet() can resume. */
 int64_t rwebm_select_time_ns(rwebm_t *webm, int64_t ns);
 
+/* Query the selected cue timestamp without changing either cursor or residency. */
+int64_t rwebm_cue_time_ns(const rwebm_t *webm, int64_t ns);
 
 /* Restart packet reading from the first cluster. */
 void rwebm_rewind(rwebm_t *webm);

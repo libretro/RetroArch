@@ -24,6 +24,8 @@ for name, geometry, alternate in [("vp8-refs", "320x180", "0"),
                     str(out / (name + ".yuv"))], check=True)
 
 first = (out / "vp8-refs.ivf").read_bytes()
+subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(out / "vp8-altref.ivf"),
+                "-c:v", "copy", str(out / "vp8-altref.webm")], check=True)
 second = (out / "vp8-altref.ivf").read_bytes()
 (out / "vp8-resize.ivf").write_bytes(first + second[32:] + first[32:])
 with (out / "vp8-resize.yuv").open("wb") as reference:

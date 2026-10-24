@@ -16,9 +16,10 @@ static int check_file(const char *path)
    rwebm_video_stream_t *stream = NULL;
    rwebm_packet packet;
    unsigned width = 0, height = 0;
-   size_t pixels, size;
+   size_t pixels, size, second_end = 0;
    long length;
-   int count = 0, i, probe, ret, steps, duration, status = 1, track = -1;
+   int count = 0, hidden = 0, i, probe, ret, steps, duration, status = 1, track = -1;
+   int forward_steps = 0;
    CHECK((f = fopen(path, "rb")) != NULL);
    CHECK(!fseek(f, 0, SEEK_END) && (length = ftell(f)) > 0 && !fseek(f, 0, SEEK_SET));
    size = (size_t)length;
@@ -30,8 +31,28 @@ static int check_file(const char *path)
       if (rwebm_get_track(demux, i)->type == RWEBM_TRACK_VIDEO) { track = i; break; }
    CHECK(track >= 0);
    while (rwebm_read_packet(demux, &packet) == 1)
-      if (packet.track == track) { CHECK(count < 256); times[count++] = packet.timestamp; }
+      if (packet.track == track)
+      {
+         if (rwebm_get_track(demux, track)->codec == RWEBM_CODEC_VP8
+               && packet.size && !(packet.data[0] & 16))
+         {
+            hidden++;
+            continue;
+         }
+         CHECK(count < 256);
+         if (count == 1) second_end = (size_t)(packet.data - data) + packet.size;
+         times[count++] = packet.timestamp;
+      }
    CHECK(count > 2);
+   {
+      size_t before = rwebm_consumed(demux);
+      int64_t cue = rwebm_cue_time_ns(demux, times[count / 2]);
+      CHECK(rwebm_consumed(demux) == before);
+      rwebm_set_avail(demux, 0);
+      CHECK(rwebm_cue_time_ns(demux, times[count / 2]) == cue);
+      CHECK(rwebm_consumed(demux) == before);
+      rwebm_set_avail(demux, size);
+   }
    {
       int cues = rwebm_num_cues(demux);
       rwebm_t *cursor = rwebm_cursor_clone(demux);
@@ -43,8 +64,9 @@ static int check_file(const char *path)
 
    CHECK((stream = rwebm_video_stream_open(data, size)) != NULL);
    rwebm_video_stream_get_info(stream, &width, &height, NULL, NULL);
-   CHECK(width && height && width <= 256 && height <= 256);
+   CHECK(width && height && width <= 512 && height <= 512);
    pixels = (size_t)width * height;
+   CHECK(pixels <= (64u * 1024 * 1024) / sizeof(uint32_t) / (unsigned)count);
    CHECK((reference = (uint32_t*)malloc(pixels * count * sizeof(uint32_t))) != NULL);
    for (i = 0; i < count; i++)
    {
@@ -67,6 +89,64 @@ static int check_file(const char *path)
          ret = rwebm_video_stream_seek_step(stream, &position);
       CHECK(ret == 1 && position == times[i] / 1000);
       CHECK(rwebm_video_stream_seek_step(stream, &position) == 1);
+      CHECK((picture = rwebm_video_stream_next(stream, &duration)) != NULL);
+      CHECK(!memcmp(reference + i * pixels, picture, pixels * sizeof(uint32_t)));
+   }
+   rwebm_video_stream_rewind(stream);
+   CHECK(rwebm_video_stream_next(stream, NULL));
+   for (i = 1; i < count; i++)
+   {
+      CHECK(rwebm_video_stream_seek_begin_ns(stream, times[i]));
+      ret = 0;
+      for (steps = 0; steps < count + 100 && ret == 0; steps++)
+         ret = rwebm_video_stream_seek_step(stream, &position);
+      CHECK(ret == 1 && position == times[i] / 1000 && (hidden || steps <= 2));
+      forward_steps += steps;
+      CHECK((picture = rwebm_video_stream_next(stream, &duration)) != NULL);
+      CHECK(!memcmp(reference + i * pixels, picture, pixels * sizeof(uint32_t)));
+   }
+   CHECK(forward_steps <= count + hidden + 4);
+   /* Cancel a duration lookahead that still owns an undecoded picture. */
+   rwebm_video_stream_rewind(stream);
+   CHECK(rwebm_video_stream_next(stream, NULL));
+   rwebm_video_stream_set_avail(stream, second_end);
+   picture = rwebm_video_stream_next(stream, NULL);
+   CHECK(picture || rwebm_video_stream_waiting(stream));
+   rwebm_video_stream_set_avail(stream, size);
+   CHECK(rwebm_video_stream_seek_begin_ns(stream, times[2]));
+   ret = 0;
+   for (steps = 0; steps < count + 100 && ret == 0; steps++)
+      ret = rwebm_video_stream_seek_step(stream, &position);
+   CHECK(ret == 1 && position == times[2] / 1000);
+   CHECK((picture = rwebm_video_stream_next(stream, NULL)) != NULL);
+   CHECK(!memcmp(reference + 2 * pixels, picture, pixels * sizeof(uint32_t)));
+
+   /* A replacement behind completed preroll must restart the decoder. */
+   CHECK(rwebm_video_stream_seek_begin_ns(stream, times[count - 1]));
+   for (steps = 0; steps < count / 2; steps++)
+      if (rwebm_video_stream_seek_step(stream, &position) != 0) break;
+   CHECK(rwebm_video_stream_seek_begin_ns(stream, times[1]));
+   ret = 0;
+   for (steps = 0; steps < count + 100 && ret == 0; steps++)
+      ret = rwebm_video_stream_seek_step(stream, &position);
+   CHECK(ret == 1 && position == times[1] / 1000);
+   CHECK((picture = rwebm_video_stream_next(stream, NULL)) != NULL);
+   CHECK(!memcmp(reference + pixels, picture, pixels * sizeof(uint32_t)));
+   /* Retarget a held, undecoded picture without dropping its references. */
+   rwebm_video_stream_rewind(stream);
+   CHECK(rwebm_video_stream_next(stream, NULL));
+   for (i = 2; i < count; i += 2)
+   {
+      CHECK(rwebm_video_stream_seek_begin_ns(stream, times[i - 1]));
+      ret = 0;
+      for (steps = 0; steps < count + 100 && ret == 0; steps++)
+         ret = rwebm_video_stream_seek_step(stream, &position);
+      CHECK(ret == 1);
+      CHECK(rwebm_video_stream_seek_begin_ns(stream, times[i]));
+      ret = 0;
+      for (steps = 0; steps < count + 100 && ret == 0; steps++)
+         ret = rwebm_video_stream_seek_step(stream, &position);
+      CHECK(ret == 1 && position == times[i] / 1000 && (hidden || steps <= 3));
       CHECK((picture = rwebm_video_stream_next(stream, &duration)) != NULL);
       CHECK(!memcmp(reference + i * pixels, picture, pixels * sizeof(uint32_t)));
    }

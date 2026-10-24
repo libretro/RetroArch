@@ -658,7 +658,7 @@ int rwebm_num_cues(const rwebm_t *webm)
    return webm ? webm->num_cues : 0;
 }
 
-static int64_t webm_select_time_ns(rwebm_t *webm, int64_t ns, int resident)
+static int webm_cue_index(const rwebm_t *webm, int64_t ns)
 {
    int64_t ticks;
    int     lo, hi, best;
@@ -686,6 +686,19 @@ static int64_t webm_select_time_ns(rwebm_t *webm, int64_t ns, int resident)
       else
          hi = mid - 1;
    }
+   return best;
+}
+
+int64_t rwebm_cue_time_ns(const rwebm_t *webm, int64_t ns)
+{
+   int best = webm_cue_index(webm, ns);
+   return best < 0 ? -1 : webm->cues[best].time_ticks * webm->timestamp_scale;
+}
+
+static int64_t webm_select_time_ns(rwebm_t *webm, int64_t ns, int resident)
+{
+   int best = webm_cue_index(webm, ns);
+   if (best < 0) return -1;
    {
       const uint8_t *at = webm->seg_body + webm->cues[best].cluster_pos;
       /* Under a partial read the target may be past the wall; say so

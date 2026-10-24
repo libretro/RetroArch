@@ -185,14 +185,14 @@ int main(int argc, char **argv)
       uint32_t first=0,middle=0,again=0;
       unsigned burst;
       MEDIA_CHECK("paused movie picture reaches renderer",media_native_seek_capture(menu_st,media_render,&target,first_video_us,0,0,0,&first));
-      MEDIA_CHECK("movie seek changes rendered picture",media_native_seek_capture(menu_st,media_render,&target,375000,first,1,1,&middle));
+      MEDIA_CHECK("movie seek changes rendered picture",media_native_seek_capture(menu_st,media_render,&target,first_video_us+375000,first,1,1,&middle));
       MEDIA_CHECK("movie backward seek restores picture",media_native_seek_capture(menu_st,media_render,&target,first_video_us,first,-1,2,&again));
       for(burst=0;burst<16;burst++)
       {
-         MEDIA_CHECK("movie burst seek accepted",target.seek(target.user,burst&1?375000:0,cpu_features_get_time_usec()));
+         MEDIA_CHECK("movie burst seek accepted",target.seek(target.user,burst&1?first_video_us+375000:first_video_us,cpu_features_get_time_usec()));
          media_render(menu_st);retro_sleep(1);
       }
-      MEDIA_CHECK("movie latest burst reaches renderer while paused",media_native_seek_capture(menu_st,media_render,&target,375000,first,1,3,&middle));
+      MEDIA_CHECK("movie latest burst reaches renderer while paused",media_native_seek_capture(menu_st,media_render,&target,first_video_us+375000,first,1,3,&middle));
       printf("rendered media hashes: %08x %08x %08x\n",first,middle,again);
    }
    media_render(menu_st);

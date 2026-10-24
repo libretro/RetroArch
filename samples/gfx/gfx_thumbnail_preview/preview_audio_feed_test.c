@@ -8,6 +8,17 @@
 #include <formats/audio.h>
 #include <formats/data_transfer.h>
 #include <memmap.h>
+#ifdef PREVIEW_COUNT_READS
+#include <retro_atomic.h>
+#include <streams/file_stream.h>
+static retro_atomic_int_t window_reads;
+int64_t __real_filestream_read(RFILE *file, void *data, int64_t size);
+int64_t __wrap_filestream_read(RFILE *file, void *data, int64_t size)
+{
+   retro_atomic_fetch_add_int(&window_reads, 1);
+   return __real_filestream_read(file, data, size);
+}
+#endif
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
 #include <retro_atomic.h>
@@ -926,6 +937,21 @@ static int bounded_video_seek(void)
             p.windowed = true;
             p.len = 1024 * 1024;
             p.feed_ahead = 4096;
+#ifdef PREVIEW_COUNT_READS
+            if (!data_transfer_window_extend(p.dt, p.len)) failed = 1;
+            p.feed_tell = seek_probe_anchor = 65536;
+            p.feed_res_hi = p.len;
+            seek_probe_lo = seek_probe_hi = seek_probe_boundary = 0;
+            seek_probe_calls = 0;
+            seek_probe_wait = true;
+            retro_atomic_store_relaxed_int(&window_reads, 0);
+            if (gfx_anim_preview_seek_step(&p, 0, true, &position) != 0
+                  || retro_atomic_load_relaxed_int(&window_reads))
+               failed = 1;
+            fprintf(stderr, "warm seek window: %d reads\n",
+                  retro_atomic_load_relaxed_int(&window_reads));
+            seek_probe_wait = false;
+#endif
             for (i = 1; i <= 3; i++)
             {
                p.seek_phase = 1;

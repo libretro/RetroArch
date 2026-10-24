@@ -312,13 +312,18 @@ audio-timeline-check: $(AUDIO_TIMELINE_TARGET)
 	      ./$(AUDIO_TIMELINE_TARGET) --edge "$$file" "$$declared" "$$empty" "$$expected"; \
 	   done; \
 	done
+ifeq ($(COUNT_IO),1)
+FEED_IO_FLAGS := -DPREVIEW_COUNT_READS
+FEED_IO_LIBS := -Wl,--wrap=filestream_read
+endif
+
 $(AUDIO_FEED_TARGET): $(AUDIO_FEED_SOURCES)
 	$(CC) -o $@ $(AUDIO_FEED_SOURCES) $(DECODE_CFLAGS_COMMON) -DHAVE_RWEBM -DHAVE_ROPUS -DHAVE_RVORBIS \
-	      -I$(REPO_ROOT) -I$(REPO_ROOT)/deps $(LDFLAGS)
+	      -I$(REPO_ROOT) -I$(REPO_ROOT)/deps $(FEED_IO_FLAGS) $(LDFLAGS) $(FEED_IO_LIBS)
 
 $(AUDIO_FEED_THREADED_TARGET): $(AUDIO_FEED_SOURCES) $(THREADED_EXTRA)
 	$(CC) -o $@ $^ $(DECODE_CFLAGS_COMMON) -DHAVE_RWEBM -DHAVE_ROPUS -DHAVE_RVORBIS -DHAVE_THREADS \
-	      -I$(REPO_ROOT) -I$(REPO_ROOT)/deps $(LDFLAGS) -lpthread
+	      -I$(REPO_ROOT) -I$(REPO_ROOT)/deps $(FEED_IO_FLAGS) $(LDFLAGS) $(FEED_IO_LIBS) -lpthread
 
 # The banded colour conversion against the single-threaded one, frame
 # for frame, through the real rmp4_video stream on a real tpool.
