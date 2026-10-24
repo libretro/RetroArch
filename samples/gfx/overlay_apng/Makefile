@@ -47,6 +47,11 @@ CFLAGS  += -Wall -std=gnu99 -g1 -O1 -DHAVE_RPNG -ffunction-sections \
            -I$(REPO_ROOT) -I$(LIBRETRO_COMM_DIR)/include
 LDFLAGS += -Wl,--gc-sections -lm
 
+ifeq ($(OS),Windows_NT)
+CFLAGS += -flto
+LDFLAGS += -flto
+endif
+
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
