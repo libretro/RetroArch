@@ -55,6 +55,10 @@
 /* A snap's buzz as it takes hold: its strength and length (ns). */
 #define INPUT_OPENXR_SNAP_TICK_AMP 0.5f
 #define INPUT_OPENXR_SNAP_TICK_NS  20000000
+/* A hinge's as it takes hold, longer and stronger; snaps' due while it
+ * plays are skipped. */
+#define INPUT_OPENXR_HINGE_BUZZ_AMP 0.8f
+#define INPUT_OPENXR_HINGE_BUZZ_NS  150000000
 /* Half a stick's travel. */
 #define INPUT_OPENXR_YIELD_STICK   0x4000
 /* Polls in a row with neither of edit mode's grab nor its menu bound
@@ -565,12 +569,16 @@ static input_openxr_t input_openxr_st;
  * may still fire, and last poll's free stick past its deadzone, hinge,
  * grip and reset, for their changes; the hinge it last swung on, if
  * lidded, for the stick and the steps once that lets it go, until its
- * edge leaves where that hinge could take it again. */
+ * edge leaves where that hinge could take it again, and if buzzed, its
+ * buzz spent until the edge leaves VIDEO_XR_HINGE_REACH, either ending
+ * as the other hand takes its target; and when its hinge's last buzz
+ * ends (us). */
 typedef struct input_openxr_hold
 {
    video_xr_grab_t g;
    video_xr_pose_t start;
    video_xr_hinge_t lid;
+   retro_time_t buzz_end;
    float scale;
    float scale0;
    float width0;
@@ -581,6 +589,7 @@ typedef struct input_openxr_hold
    bool pushed;
    bool hinged;
    bool lidded;
+   bool buzzed;
    bool grip;
    bool reset;
 } input_openxr_hold_t;
@@ -2478,8 +2487,9 @@ static unsigned input_openxr_edit_holding(const input_openxr_edit_t *e)
    return bits;
 }
 
-/* A short buzz on hand h: a snap took hold. */
-static void input_openxr_edit_tick(input_openxr_t *st, unsigned h)
+/* A buzz on hand h, duration ns at amp. */
+static void input_openxr_edit_tick(input_openxr_t *st, unsigned h,
+      XrDuration duration, float amp)
 {
    XrHapticActionInfo info;
    XrHapticVibration vib;
@@ -2489,9 +2499,9 @@ static void input_openxr_edit_tick(input_openxr_t *st, unsigned h)
    info.subactionPath = st->hands[h];
    vib.type           = XR_TYPE_HAPTIC_VIBRATION;
    vib.next           = NULL;
-   vib.duration       = INPUT_OPENXR_SNAP_TICK_NS;
+   vib.duration       = duration;
    vib.frequency      = XR_FREQUENCY_UNSPECIFIED;
-   vib.amplitude      = INPUT_OPENXR_SNAP_TICK_AMP;
+   vib.amplitude      = amp;
    st->ApplyHapticFeedback(st->session, &info,
          (const XrHapticBaseHeader*)&vib);
 }
@@ -2541,6 +2551,7 @@ static void input_openxr_edit_grab(input_openxr_t *st,
    hold->pushed   = false;
    hold->hinged   = false;
    hold->lidded   = false;
+   hold->buzzed   = false;
    if (q->slot != VIDEO_XR_MENU_SLOT)
       config_get_video_screen_xr(q->slot, &now);
    else if (!config_get_video_menu_xr(&now))
@@ -2561,6 +2572,15 @@ static void input_openxr_edit_grab(input_openxr_t *st,
    hold->height0 = q->height;
 }
 
+/* Whether hinge, engaged, takes hold anew: not the one hold's lid has
+ * buzzed for already. */
+static bool input_openxr_edit_attach(const input_openxr_hold_t *hold,
+      const video_xr_hinge_t *hinge)
+{
+   return !hold->buzzed || hold->lid.slot != hinge->slot
+      || hold->lid.on != hinge->on || hold->lid.edge != hinge->edge;
+}
+
 /* A held item to where the hand puts it now, turned and tilted by the
  * free hand's stick in steps, the turn's from facing head (NULL: none),
  * or swung about a hinge's edge in steps from flat,
@@ -2569,13 +2589,13 @@ static void input_openxr_edit_grab(input_openxr_t *st,
  * fading in from where it was taken, its settings with it. The trigger
  * lets its pitch and roll follow from where it is; a clamp holds it
  * again, so it resumes from the limit. Returns the snaps engaged or
- * pulling (video_xr_snap), and in *stepped whether a step took hold
- * with its buzz armed. */
+ * pulling (video_xr_snap), in *stepped whether a step took hold with
+ * its buzz armed, and in *attached whether a hinge took hold anew. */
 static unsigned input_openxr_edit_move(input_openxr_edit_t *e,
       input_openxr_hold_t *hold, const video_xr_pose_t *aim,
       const video_xr_vec3_t *head, bool tilt, const int16_t *stick,
       const int16_t *free_stick, double dt,
-      const video_xr_quad_set_t *targets, bool *stepped)
+      const video_xr_quad_set_t *targets, bool *stepped, bool *attached)
 {
    unsigned snapped, axes, held;
    video_xr_pose_t inv, pose;
@@ -2645,12 +2665,14 @@ static unsigned input_openxr_edit_move(input_openxr_edit_t *e,
       hold->rest[1] = 0.0f;
       hold->hinged  = hinged;
    }
+   *attached = hinged && input_openxr_edit_attach(hold, &hinge);
    /* As the snaps' buzz, armed by where the item is, however it got
     * there. */
    if (hinged)
    {
       hold->lid    = hinge;
       hold->lidded = true;
+      hold->buzzed = true;
       hold->steps |= (video_xr_grab_off_step(&hold->g, aim, head, e->step,
                hold->rest) & ~hinge.axis)
          | video_xr_grab_off_hinge(&hold->g, aim, &hinge, e->step,
@@ -2663,11 +2685,24 @@ static unsigned input_openxr_edit_move(input_openxr_edit_t *e,
    else
    {
       const video_xr_hinge_t *lid = NULL;
-      /* Out of its hinge's reach, it turns as any free screen. */
+      /* Its target taken by the other hand ends the hinge, so letting
+       * that go takes it again only anew, with the buzz. */
+      if (     hold->buzzed
+            && ((input_openxr_edit_holding(e) >> hold->lid.slot) & 1u))
+      {
+         hold->lidded = false;
+         hold->buzzed = false;
+      }
+      /* Out of its hinge's reach, it turns as any free screen; further
+       * out, the hinge buzzes again. */
       if (     hold->lidded
             && !video_xr_grab_near_hinge(&hold->g, aim, targets,
                &hold->lid, VIDEO_XR_SNAP_DIST))
          hold->lidded = false;
+      if (     hold->buzzed && !hold->lidded
+            && !video_xr_grab_near_hinge(&hold->g, aim, targets,
+               &hold->lid, VIDEO_XR_HINGE_REACH))
+         hold->buzzed = false;
       if (hold->lidded)
          lid = &hold->lid;
       hold->steps |= video_xr_grab_off_step(&hold->g, aim, head, e->step,
@@ -2942,12 +2977,13 @@ static void input_openxr_edit_poll(input_openxr_t *st,
             if (shown && tracked)
             {
                bool stepped;
+               bool attached;
                stick[0] = 0;
                stick[1] = 0;
                /* The grip let go, not the stick: no snap's turn kept. */
                hold->pushed = false;
                input_openxr_edit_move(e, hold, &aim, NULL, tilt, stick,
-                     stick, 0.0, targets, &stepped);
+                     stick, 0.0, targets, &stepped, &attached);
             }
             input_openxr_edit_let_go(e, hold, shown);
          }
@@ -2956,6 +2992,7 @@ static void input_openxr_edit_poll(input_openxr_t *st,
          {
             unsigned snapped;
             bool stepped;
+            bool attached;
             int16_t free_stick[2];
             video_xr_pose_t head;
             const video_xr_vec3_t *at = NULL;
@@ -2976,9 +3013,19 @@ static void input_openxr_edit_poll(input_openxr_t *st,
                at = &head.position;
             }
             snapped = input_openxr_edit_move(e, hold, &aim, at, tilt, stick,
-                  free_stick, dt, targets, &stepped);
-            if ((snapped & hold->armed) || stepped)
-               input_openxr_edit_tick(st, h);
+                  free_stick, dt, targets, &stepped, &attached);
+            /* A new apply cuts the one playing short: ticks due inside
+             * the hinge's buzz are skipped, their snaps still spent. */
+            if (attached)
+            {
+               input_openxr_edit_tick(st, h, INPUT_OPENXR_HINGE_BUZZ_NS,
+                     INPUT_OPENXR_HINGE_BUZZ_AMP);
+               hold->buzz_end = now + INPUT_OPENXR_HINGE_BUZZ_NS / 1000;
+            }
+            else if (((snapped & hold->armed) || stepped)
+                  && now >= hold->buzz_end)
+               input_openxr_edit_tick(st, h, INPUT_OPENXR_SNAP_TICK_NS,
+                     INPUT_OPENXR_SNAP_TICK_AMP);
             hold->armed = input_openxr_edit_armed(hold->armed, snapped);
          }
       }

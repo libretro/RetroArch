@@ -227,15 +227,20 @@ hinge. While a screen is hinged, the other hand's stick swings it
 about the shared edge, the tilt for a top or bottom edge and the
 turn for a side one, and it stays where the swing leaves it. The
 swing lets go just past square, but that axis keeps pivoting it on the
-same edge until the edge is carried out of the hinge's reach; the
-stick's other axis turns or tilts it as before and can pull it off. Past
+same edge until the edge is carried out of the hinge's reach or the
+other hand takes the screen it hinges on; the stick's other axis turns
+or tilts it as before and can pull it off. Past
 each 3 cm range and the 1 cm click the pull fades out over as far again,
 a hinge fades out from 10 to 13 cm, and from 30 to 60 cm away every pull
 fades, so the screen catches up with the hand instead of jumping. A
 screen just taken does not move: snapping fades in as it is carried,
 whole once it is 5 cm or 10 degrees from where it was taken. The holding
 hand gets a short buzz as a snap takes hold, and none again from that
-snap until the screen has left its pull. The menu neither snaps nor is
+snap until the screen has left its pull. A hinge taking hold gets a
+longer, stronger buzz instead, and short buzzes due while it plays are
+skipped; it comes again only once the green line has gone, or for
+another edge, so a swing past square and back, or a wobble where the
+hinge takes hold, does not repeat it. The menu neither snaps nor is
 snapped to. Where it is let go is where it is saved.
 
 **Snap to Angles** (15 degrees by default) is the step the other hand's
@@ -246,8 +251,8 @@ Off turns and tilts it smoothly, with no steps and no buzz.
 **Hinge Gap** (2 cm by default) is the gap Snap to Screens leaves
 between screens that meet edge to edge, side by side, at a corner or
 hinged at an angle: 0, 1, 2, 3, 5 or 10 cm. A screen within 1 cm of it
-clicks to it exactly, with a buzz; anywhere else from touching to
-10 cm the gap stays where the hand puts it, still hinged, and from 10
+clicks to it exactly, with a short buzz; anywhere else from touching
+to 10 cm the gap stays where the hand puts it, still hinged, and from 10
 to 13 cm the hinge lets go. At 0 the edges touch. It does nothing while
 Snap to Screens is off; screens already placed do not move. Pushed
 past touching, a hinged screen stops there, so two screens can be

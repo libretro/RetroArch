@@ -5656,11 +5656,24 @@ def check_edit_handle_sticky(stuck):
 
 # Screen 2 grabbed at its spot and held 0.7-2 cm off standing flush
 # right of screen 1, level and in its plane. The buzz is
-# INPUT_OPENXR_SNAP_TICK_AMP for INPUT_OPENXR_SNAP_TICK_NS.
+# INPUT_OPENXR_SNAP_TICK_AMP for INPUT_OPENXR_SNAP_TICK_NS; a hinge's,
+# INPUT_OPENXR_HINGE_BUZZ_AMP for INPUT_OPENXR_HINGE_BUZZ_NS.
 SNAP_GRAB = (0.0, -0.992, 0.0)
 SNAP_HAND = (1.447, 0.02, 0.02)
 SNAPPED = (1.44, 0.0, -1.8)
 SNAP_TICK = (0.5, 20000000)
+HINGE_BUZZ = (0.8, 150000000)
+
+
+def buzzes(res, kind, start=None, end=None):
+    """The right hand's buzzes of kind (SNAP_TICK or HINGE_BUZZ), after
+    mark start and before mark end."""
+    lo = res.marks[start] * 1e6 if start else float('-inf')
+    hi = res.marks[end] * 1e6 if end else float('inf')
+    return [e for e in haptics(res, 'right') if e['ev'] == 'haptic'
+            and lo < e['t_us'] < hi
+            and abs(e['amplitude'] - kind[0]) < 1e-3
+            and e['duration_ns'] == kind[1]]
 
 
 def straight(p):
@@ -5769,8 +5782,9 @@ def check_edit_snap(snap):
         there until carried; held just off flush right of screen 1: with
         Snap to Screens it shows and is saved touching it, level, in
         its plane, the hinge marked by a green line and its rims gone
-        while held, and the hand gets the snap's buzz; without, it stays
-        where the hand put it, with no buzz."""
+        while held, and the hand gets the snap's buzz, the hinge's long
+        buzz once; without, it stays where the hand put it, with no
+        buzz."""
         want = SNAPPED if snap else (SNAP_HAND[0], SNAP_HAND[1],
                                      SNAP_HAND[2] - 1.8)
         errors = edit_log_errors(res, ['on', 'off'])
@@ -5789,15 +5803,17 @@ def check_edit_snap(snap):
         errors += saved_errors(res, 'screen 2', 'video_screen2_xr_', S1,
                                (want, ID), (1.28, 0.96),
                                last_before(res, 'off', screen2))
-        ticks = [e for e in haptics(res, 'right') if e['ev'] == 'haptic'
-                 and e['t_us'] > res.marks['grab'] * 1e6
-                 and abs(e['amplitude'] - SNAP_TICK[0]) < 1e-3
-                 and e['duration_ns'] == SNAP_TICK[1]]
+        ticks = buzzes(res, SNAP_TICK, 'grab') + buzzes(res, HINGE_BUZZ,
+                                                        'grab')
         if snap and not ticks:
             errors.append('no snap buzz on the right hand: %s'
                           % haptics(res, 'right'))
         if not snap and ticks:
             errors.append('a snap buzz with snapping off: %s' % ticks)
+        hinged = buzzes(res, HINGE_BUZZ, 'grab')
+        if snap and len(hinged) != 1:
+            errors.append('%d hinge buzzes on the right hand, want 1 as it '
+                          'hinged flush: %s' % (len(hinged), hinged))
         if snap:
             # The hand is 0.7 cm off, inside EDIT_POS.
             xs = [(what, q['pose'][0])
@@ -5842,7 +5858,8 @@ def check_edit_snap_edge(res):
     """Screen 2 brought through the fade of its pull to screen 1's
     edge and rested at the end of its whole pull, swaying across it: one
     buzz as it takes hold and none while it sways; 7 cm off and back,
-    one more."""
+    one more; the hinge's long buzz once, on the way, the hinge holding
+    from 7 cm off."""
     errors = edit_log_errors(res, ['on', 'off'])
     for a, b, what in (('edge', 'away', 'resting at the edge'),
                        ('away', 'back', 'back from 7 cm off')):
@@ -5853,6 +5870,11 @@ def check_edit_snap_edge(res):
         if len(ticks) != 1:
             errors.append('%d snap buzzes %s, want 1: %s'
                           % (len(ticks), what, ticks))
+    hinged = buzzes(res, HINGE_BUZZ, 'grab', 'edge')
+    later = buzzes(res, HINGE_BUZZ, 'edge', 'back')
+    if len(hinged) != 1 or later:
+        errors.append('%d hinge buzzes on the way to the edge and %d from '
+                      'there, want 1 and 0' % (len(hinged), len(later)))
     return errors
 
 
@@ -6073,10 +6095,11 @@ def check_edit_hinge_3ds(res, gap=0.0):
     30 degrees from flat, swings it about that edge into the 30 step's
     hold: it shows and is saved there, its top edge Hinge Gap (gap)
     under screen 1's bottom edge, in its plane, and the right hand
-    buzzes once for the step. While hinged a green line runs along the
-    hinge midway across the gap where the edges overlap, screen 1's
-    bottom rim and screen 2's top rim gone; let go, both back. Not a set
-    time: stalled polls cut the swing short."""
+    gets the hinge's long buzz once as it hinges and one tick for the
+    step. While hinged a green line runs along the hinge midway across
+    the gap where the edges overlap, screen 1's bottom rim and screen
+    2's top rim gone; let go, both back. Not a set time: stalled polls
+    cut the swing short."""
     errors = edit_log_errors(res, ['on', 'off'])
     q = last_before(res, 'swung', screen2)
     if not q:
@@ -6122,6 +6145,11 @@ def check_edit_hinge_3ds(res, gap=0.0):
             errors.append('frame %d: a hinge line or cut outline after '
                           'the screen was let go' % f['n'])
             break
+    hinged = buzzes(res, HINGE_BUZZ, 'on', 'held')
+    swing = buzzes(res, HINGE_BUZZ, 'held', 'swung')
+    if len(hinged) != 1 or swing:
+        errors.append('%d hinge buzzes taking screen 2 to the hinge and %d '
+                      'in the swing, want 1 and 0' % (len(hinged), len(swing)))
     return errors + saved_errors(res, 'screen 2', 'video_screen2_xr_', S1,
                                  (tuple(q['pose'][:3]),
                                   tuple(q['pose'][3:])), (1.28, 0.96),
@@ -6146,13 +6174,14 @@ def check_edit_snap_square(res):
     errors += saved_errors(res, 'screen 2', 'video_screen2_xr_', S1,
                            (SQUARED, YAW_M90), (1.28, 0.96),
                            last_before(res, 'off', screen2))
-    ticks = [e for e in haptics(res, 'right') if e['ev'] == 'haptic'
-             and e['t_us'] > res.marks['grab'] * 1e6
-             and abs(e['amplitude'] - SNAP_TICK[0]) < 1e-3
-             and e['duration_ns'] == SNAP_TICK[1]]
+    ticks = buzzes(res, SNAP_TICK, 'grab') + buzzes(res, HINGE_BUZZ, 'grab')
     if not ticks:
         errors.append('no snap buzz on the right hand: %s'
                       % haptics(res, 'right'))
+    hinged = buzzes(res, HINGE_BUZZ, 'grab')
+    if len(hinged) != 1:
+        errors.append('%d hinge buzzes on the right hand, want 1 as the '
+                      'corner hinged: %s' % (len(hinged), hinged))
     return errors
 
 
