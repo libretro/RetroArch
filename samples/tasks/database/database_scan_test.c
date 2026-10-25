@@ -42,6 +42,12 @@
 #include <retro_timers.h>
 #include <streams/file_stream.h>
 #include <compat/strl.h>
+#include <retro_atomic.h>
+#include <features/features_cpu.h>
+#include <streams/interface_stream.h>
+#ifdef HAVE_THREADS
+#include <rthreads/rthreads.h>
+#endif
 
 #include "../../../core_info.h"
 #include "../../../tasks/tasks_internal.h"
@@ -60,7 +66,8 @@
  * configuration.c, but those files transitively require RARCH_INTERNAL
  * which drags in the entire frontend subsystem.  This sample only
  * exercises task_push_dbscan, and msg_hash_to_str_us() is the one stub
- * a check depends on: it names the invalid content message.
+ * checks depend on: it names the invalid content message, and the END
+ * step's message holds that step for reader_list_end_lane().
  *
  * These take enum msg_hash_enums now that configuration.h - included
  * for settings_t - brings msg_hash.h with it.  They used to be
@@ -74,8 +81,44 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
    return 0;
 }
 
+/* With end_hold set, the scan's END step waits up to 2 s for its
+ * readers to leave: end_readers_out is 1 if they did, 0 if not.
+ * end_hold is set only between scans. */
+static bool               end_hold;
+static retro_atomic_int_t end_readers_out;
+
+static bool count_live_reader(retro_task_t *task, void *user_data)
+{
+   uint8_t flags = task_get_flags(task);
+
+   if (     (flags & RETRO_TASK_FLG_PARALLEL)
+         && !(flags & RETRO_TASK_FLG_FINISHED))
+      (*(unsigned*)user_data)++;
+   return false;
+}
+
+static void end_step_hold(void)
+{
+   task_finder_data_t finder;
+   unsigned           i, n = 1;
+
+   end_hold        = false;
+   finder.func     = count_live_reader;
+   finder.userdata = &n;
+   for (i = 0; i < 2000 && n; i++)
+   {
+      n = 0;
+      task_queue_find(&finder);
+      if (n)
+         retro_sleep(1);
+   }
+   retro_atomic_store_release_int(&end_readers_out, n ? 0 : 1);
+}
+
 const char *msg_hash_to_str_us(enum msg_hash_enums msg)
 {
+   if (msg == MSG_SCANNING_OF_DIRECTORY_FINISHED && end_hold)
+      end_step_hold();
    if (msg == MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT)
       return "invalid content";
    return "";
@@ -190,6 +233,203 @@ int __wrap_libretrodb_open(const char *path, libretrodb_t *db, bool write)
    rdb_opens++;
    return __real_libretrodb_open(path, db, write);
 }
+
+/* The scanner's default, for what this build should do. */
+#ifndef SCAN_READERS_MAX
+#define SCAN_READERS_MAX 4
+#endif
+
+/* The readers a scan on the threaded queue pushes on this host. */
+static unsigned readers_expected(void)
+{
+#if defined(HAVE_THREADS) && defined(RETRO_ATOMIC_LOCK_FREE)
+   unsigned n = cpu_features_get_core_amount();
+   if (n > SCAN_READERS_MAX)
+      n = SCAN_READERS_MAX;
+   return n >= 2 ? n : 0;
+#else
+   return 0;
+#endif
+}
+
+/* Linked with --wrap: the parks the scanner asks for. */
+static retro_atomic_int_t scan_parks;
+
+void __real_task_queue_park(retro_task_t *task, retro_time_t horizon_usec);
+void __wrap_task_queue_park(retro_task_t *task, retro_time_t horizon_usec)
+{
+   retro_atomic_fetch_add_int(&scan_parks, 1);
+   __real_task_queue_park(task, horizon_usec);
+}
+
+static uintptr_t current_tid(void)
+{
+#ifdef HAVE_THREADS
+   return sthread_get_current_thread_id();
+#else
+   return 1;
+#endif
+}
+
+/* The thread inside a scan's tick, which the window's open and close
+ * bracket: a read there is the scan's own, any other a reader's.  The
+ * last thread to run a tick stays in scan_thread_tid. */
+static retro_atomic_size_t scan_tick_tid;
+static retro_atomic_size_t scan_thread_tid;
+
+static void scan_tick_open(void)
+{
+   retro_atomic_store_release_size(&scan_tick_tid, (size_t)current_tid());
+   retro_atomic_store_release_size(&scan_thread_tid, (size_t)current_tid());
+}
+
+void __real_task_nbio_slice_close(nbio_budget_t *b);
+void __wrap_task_nbio_slice_close(nbio_budget_t *b)
+{
+   retro_atomic_store_release_size(&scan_tick_tid, 0);
+   __real_task_nbio_slice_close(b);
+}
+
+/* A stream of slow_size bytes sleeps slow_ms before its first quantum;
+ * slow_in counts those sleeps begun, slow_back those ended, and
+ * slow_on_scan those on the thread that last ran the scan: a reader
+ * there holds every other task of the queue, the scan too.  Reads of
+ * streams of watch_size bytes are counted by who makes them, a
+ * reader's on the main thread apart, and those of begun_size bytes as
+ * each begins; so are reads begun once cb_fired is set.  A reader's
+ * read of a stream of fail_size bytes fails, counted in reader_fails.
+ * All set only between scans. */
+static uint32_t           slow_size;
+static unsigned           slow_ms;
+static retro_atomic_int_t slow_in;
+static retro_atomic_int_t slow_back;
+static retro_atomic_int_t slow_on_scan;
+static uint32_t           watch_size;
+static retro_atomic_int_t watch_scan;
+static retro_atomic_int_t watch_reader;
+static retro_atomic_int_t watch_inline;
+static uint32_t           begun_size;
+static retro_atomic_int_t reads_begun;
+static retro_atomic_int_t cb_fired;
+static retro_atomic_int_t reads_after_cb;
+static uint32_t           fail_size;
+static retro_atomic_int_t reader_fails;
+#ifdef HAVE_THREADS
+static uintptr_t          main_tid;
+#endif
+
+int64_t __real_intfstream_crc_step(intfstream_internal_t *intf,
+      uint32_t *accumulator, size_t max_bytes);
+int64_t __wrap_intfstream_crc_step(intfstream_internal_t *intf,
+      uint32_t *accumulator, size_t max_bytes)
+{
+   int64_t size  = intfstream_get_size(intf);
+   bool    first = intfstream_tell(intf) == 0;
+   bool    scan  = retro_atomic_load_acquire_size(&scan_tick_tid)
+      == (size_t)current_tid();
+
+   if (first && retro_atomic_load_acquire_int(&cb_fired))
+      retro_atomic_fetch_add_int(&reads_after_cb, 1);
+   if (slow_size && size == (int64_t)slow_size && first)
+   {
+      if (retro_atomic_load_acquire_size(&scan_thread_tid)
+            == (size_t)current_tid())
+         retro_atomic_fetch_add_int(&slow_on_scan, 1);
+      retro_atomic_fetch_add_int(&slow_in, 1);
+      retro_sleep(slow_ms);
+      retro_atomic_fetch_add_int(&slow_back, 1);
+   }
+   if (begun_size && size == (int64_t)begun_size && first)
+      retro_atomic_fetch_add_int(&reads_begun, 1);
+   if (watch_size && size == (int64_t)watch_size)
+   {
+      if (scan)
+         retro_atomic_fetch_add_int(&watch_scan, 1);
+      else
+      {
+         retro_atomic_fetch_add_int(&watch_reader, 1);
+#ifdef HAVE_THREADS
+         if (current_tid() == main_tid)
+            retro_atomic_fetch_add_int(&watch_inline, 1);
+#endif
+      }
+   }
+   if (fail_size && size == (int64_t)fail_size && !scan)
+   {
+      retro_atomic_fetch_add_int(&reader_fails, 1);
+      return -1;
+   }
+   return __real_intfstream_crc_step(intf, accumulator, max_bytes);
+}
+
+/* The last time the scanner asked rm3u_is_m3u() about each order file.
+ * Its START step asks for every file, in content-list order, after the
+ * directory walk. */
+static unsigned order_stamp;
+static unsigned order_last[2];
+
+bool __real_rm3u_is_m3u(const char *path);
+bool __wrap_rm3u_is_m3u(const char *path)
+{
+   if (path && strstr(path, "reader_order"))
+   {
+      if (strstr(path, "o_a.rd"))
+         order_last[0] = ++order_stamp;
+      else if (strstr(path, "o_b.rd"))
+         order_last[1] = ++order_stamp;
+   }
+   return __real_rm3u_is_m3u(path);
+}
+
+/* Reader pushes, the tasks marked parallel: counted, and from the
+ * push_fail_from'th on refused; with push_cancel_usec, pushed cancelled
+ * to start that long after.  Both set only between scans. */
+static unsigned           push_fail_from;
+static retro_time_t       push_cancel_usec;
+static retro_atomic_int_t pushes_tried;
+static retro_atomic_int_t pushes_ok;
+
+bool __real_task_queue_push(retro_task_t *task);
+bool __wrap_task_queue_push(retro_task_t *task)
+{
+   int n;
+
+   if (!(task_get_flags(task) & RETRO_TASK_FLG_PARALLEL))
+      return __real_task_queue_push(task);
+   n = retro_atomic_fetch_add_int(&pushes_tried, 1) + 1;
+   if (push_fail_from && (unsigned)n >= push_fail_from)
+      return false;
+   retro_atomic_fetch_add_int(&pushes_ok, 1);
+   if (push_cancel_usec)
+   {
+      task_set_flags(task, RETRO_TASK_FLG_CANCELLED, true);
+      task->when = cpu_features_get_time_usec() + push_cancel_usec;
+   }
+   return __real_task_queue_push(task);
+}
+
+#ifdef HAVE_THREADS
+/* Threaded-queue worker starts: the main thread's creates of the
+ * function created while worker_learn was set.  Main thread only. */
+static void   (*worker_func)(void*);
+static bool     worker_learn;
+static unsigned worker_starts;
+
+sthread_t *__real_sthread_create(void (*thread_func)(void*), void *userdata);
+sthread_t *__wrap_sthread_create(void (*thread_func)(void*), void *userdata)
+{
+   sthread_t *thread = __real_sthread_create(thread_func, userdata);
+
+   if (thread && sthread_get_current_thread_id() == main_tid)
+   {
+      if (worker_learn)
+         worker_func = thread_func;
+      else if (thread_func == worker_func)
+         worker_starts++;
+   }
+   return thread;
+}
+#endif
 
 /* ------------------------------------------------------------------
  * crc32, and forcing a buffer to a chosen one
@@ -623,6 +863,7 @@ static int file_contains(const char *path, const char *needle)
 
 static bool loop_active   = true;
 static bool scan_completed = false;
+static retro_time_t cb_usec;
 
 static void scan_cb(retro_task_t *task, void *task_data,
       void *user_data, const char *err)
@@ -630,6 +871,8 @@ static void scan_cb(retro_task_t *task, void *task_data,
    (void)task; (void)task_data; (void)user_data;
    if (err && *err)
       fprintf(stderr, "  scan reported an error: %s\n", err);
+   retro_atomic_store_release_int(&cb_fired, 1);
+   cb_usec        = cpu_features_get_time_usec();
    scan_completed = true;
    loop_active    = false;
 }
@@ -662,12 +905,15 @@ static bool run_scan(const char *dir)
    return true;
 }
 
-/* As run_scan(), but counts the checks the scan took.  Meaningful on
- * the regular queue, where every check runs the handler once and a
- * spent window holds that call to one step. */
+/* As run_scan(), but counts the checks the scan took, less the ones
+ * that parked: on the regular queue every check runs the handler
+ * once, a spent window holds that call to one step, and a call that
+ * parks waits on the readers.  The first park at the end also makes
+ * the end's step, so the count can be one short. */
 static unsigned run_scan_counted(const char *dir)
 {
    unsigned gathers = 0;
+   int      parks   = retro_atomic_load_acquire_int(&scan_parks);
    time_t   started;
 
    loop_active    = true;
@@ -684,7 +930,8 @@ static unsigned run_scan_counted(const char *dir)
       if (difftime(time(NULL), started) > SCAN_TIMEOUT_SECONDS)
          break;
    }
-   return gathers;
+   return gathers
+      - (unsigned)(retro_atomic_load_acquire_int(&scan_parks) - parks);
 }
 
 /* Databases no core claims, and files that match nothing, in the
@@ -1022,6 +1269,1182 @@ end:
    free(kept);
 }
 
+/* The queue the next scans run on: threaded where threads are built,
+ * else the regular one, so every build runs the same checks. */
+static void use_queue(bool threaded)
+{
+   task_queue_deinit();
+#ifdef HAVE_THREADS
+   task_queue_init(threaded, msgq_push);
+#else
+   (void)threaded;
+   task_queue_init(false, msgq_push);
+#endif
+}
+
+static uint32_t lane_ident;
+static int      lane_progress;
+
+/* The lanes run one scan at a time; its readers are passed over. */
+static bool find_scan(retro_task_t *task, void *user_data)
+{
+   (void)user_data;
+   if (task_get_flags(task) & RETRO_TASK_FLG_PARALLEL)
+      return false;
+   lane_ident    = task->ident;
+   lane_progress = task_get_progress(task);
+   return true;
+}
+
+/* As run_scan(), but cancels once progress is above 0, or with
+ * @on_stuck once a slow read has begun.  Returns the microseconds from
+ * the cancel to the callback, or -1. */
+static retro_time_t run_scan_cancelled(const char *dir, bool on_stuck)
+{
+   task_finder_data_t finder;
+   retro_time_t       cancelled = 0;
+   time_t             started;
+
+   loop_active    = true;
+   scan_completed = false;
+   if (!task_push_dbscan(dir, scan_cb))
+      return -1;
+   finder.func     = find_scan;
+   finder.userdata = NULL;
+   started         = time(NULL);
+   while (loop_active)
+   {
+      if (   !cancelled
+          && (on_stuck ? retro_atomic_load_acquire_int(&slow_in) > 0
+                       : (task_queue_find(&finder) && lane_progress > 0)))
+      {
+         if (on_stuck)
+            task_queue_find(&finder);
+         cancelled = cpu_features_get_time_usec();
+         task_queue_cancel_ident(lane_ident);
+      }
+      task_queue_check();
+      if (difftime(time(NULL), started) > SCAN_TIMEOUT_SECONDS)
+         return -1;
+      retro_sleep(1);
+   }
+   return (scan_completed && cancelled) ? cb_usec - cancelled : -1;
+}
+
+/* Reader tasks on the threaded queue's parallel workers.  The cancel
+ * lane's files sleep 2 ms each, so the scan is still running when it
+ * is cancelled. */
+#define READER_CANCEL_FILES 200
+#define READER_CANCEL_RUNS  20
+#define READER_SLOW_SIZE    1000
+/* The stuck set: one file whose read sticks, then four that match and
+ * fillers. */
+#define READER_STUCK_SIZE   1001
+#define READER_STUCK_MS     2600
+#define READER_STUCK_RUNS   2
+#define READER_QUIT_MS      6000
+#define READER_FILLERS      40
+
+static const db_rec_t reader_recs[] = {
+   { "Reader Zero",  NULL, 0x0EAD0000u, 1024 },
+   { "Reader One",   NULL, 0x0EAD0001u, 1024 },
+   { "Reader Two",   NULL, 0x0EAD0002u, 1024 },
+   { "Reader Three", NULL, 0x0EAD0003u, 1024 }
+};
+
+static bool count_reader(retro_task_t *task, void *user_data)
+{
+   if (task_get_flags(task) & RETRO_TASK_FLG_PARALLEL)
+      (*(unsigned*)user_data)++;
+   return false;
+}
+
+/* Whether no reader is left on the queue, checking it for up to 5 s. */
+static bool readers_gone(void)
+{
+   task_finder_data_t finder;
+   unsigned           i, n = 0;
+
+   finder.func     = count_reader;
+   finder.userdata = &n;
+   for (i = 0; i < 5000; i++)
+   {
+      n = 0;
+      task_queue_find(&finder);
+      if (!n)
+         return true;
+      task_queue_check();
+      retro_sleep(1);
+   }
+   return false;
+}
+
+/* Whether every slow read begun has ended, waiting up to 10 s. */
+static bool slow_reads_back(void)
+{
+   unsigned i;
+
+   for (i = 0; i < 10000; i++)
+   {
+      if (  retro_atomic_load_acquire_int(&slow_back)
+         == retro_atomic_load_acquire_int(&slow_in))
+         return true;
+      retro_sleep(1);
+   }
+   return false;
+}
+
+static void slow_reset(uint32_t size, unsigned ms)
+{
+   slow_size = size;
+   slow_ms   = ms;
+   retro_atomic_store_release_int(&slow_in,      0);
+   retro_atomic_store_release_int(&slow_back,    0);
+   retro_atomic_store_release_int(&slow_on_scan, 0);
+}
+
+static void use_db(const char *db_dir)
+{
+   strlcpy(config_get_ptr()->paths.path_content_database, db_dir,
+         sizeof(config_get_ptr()->paths.path_content_database));
+}
+
+static bool write_reader_db(const char *db_dir)
+{
+   char p[1024];
+
+   path_mkdir(db_dir);
+   sprintf(p, "%s/Test Reader.rdb", db_dir);
+   return write_db_set(p, reader_recs, ARRAY_SIZE(reader_recs));
+}
+
+static bool write_cancel_files(char *dir, const char *root)
+{
+   char     p[1024];
+   unsigned i;
+
+   sprintf(dir, "%s/reader_cancel", root);
+   path_mkdir(dir);
+   for (i = 0; i < READER_CANCEL_FILES; i++)
+   {
+      sprintf(p, "%s/k_%03u.rd", dir, i);
+      if (!write_content(p, 0x0EAD1000u + i, READER_SLOW_SIZE))
+      {
+         check(0, "fixture", "crc forcing failed");
+         return false;
+      }
+   }
+   return true;
+}
+
+static bool write_stuck_files(char *dir, const char *root)
+{
+   char     p[1024];
+   unsigned i;
+
+   sprintf(dir, "%s/reader_stuck", root);
+   path_mkdir(dir);
+   sprintf(p, "%s/j_stuck.rd", dir);
+   if (!write_content(p, 0x0EAD2000u, READER_STUCK_SIZE))
+      goto fail;
+   for (i = 0; i < ARRAY_SIZE(reader_recs); i++)
+   {
+      sprintf(p, "%s/s_%u.rd", dir, i);
+      if (!write_content(p, reader_recs[i].crc, reader_recs[i].size))
+         goto fail;
+   }
+   for (i = 0; i < READER_FILLERS; i++)
+   {
+      sprintf(p, "%s/t_%02u.rd", dir, i);
+      if (!write_content(p, 0x0EAD3000u + i, READER_SLOW_SIZE))
+         goto fail;
+   }
+   return true;
+
+fail:
+   check(0, "fixture", "crc forcing failed");
+   return false;
+}
+
+static bool reader_entries(const char *pl_dir)
+{
+   char     lpl[1024];
+   unsigned i;
+
+   sprintf(lpl, "%s/Test Reader.lpl", pl_dir);
+   for (i = 0; i < ARRAY_SIZE(reader_recs); i++)
+      if (!file_contains(lpl, reader_recs[i].name))
+         return false;
+   return true;
+}
+
+static void reader_cancel_lane(const char *root, const char *db_dir,
+      bool threaded)
+{
+   char         dir[512], detail[64], what[80];
+   unsigned     i, done = 0, gone = 0, over = 0, pushed = 0;
+   unsigned     want = threaded ? readers_expected() : 0;
+   int          most = 0;
+   retro_time_t worst = 0;
+   const char  *q = threaded ? "(threaded)" : "(regular)";
+
+   if (!write_cancel_files(dir, root))
+      return;
+
+   use_queue(threaded);
+   use_db(db_dir);
+   slow_reset(READER_SLOW_SIZE, 2);
+   for (i = 0; i < READER_CANCEL_RUNS; i++)
+   {
+      retro_time_t t;
+      int          k;
+
+      retro_atomic_store_release_int(&pushes_ok,      0);
+      retro_atomic_store_release_int(&cb_fired,       0);
+      retro_atomic_store_release_int(&reads_after_cb, 0);
+      t = run_scan_cancelled(dir, false);
+      if (t >= 0)
+      {
+         done++;
+         if (t > worst)
+            worst = t;
+      }
+      if (readers_gone())
+         gone++;
+      k = retro_atomic_load_acquire_int(&reads_after_cb);
+      if (k > (int)want)
+         over++;
+      if (k > most)
+         most = k;
+      pushed += (unsigned)retro_atomic_load_acquire_int(&pushes_ok);
+   }
+   slow_size = 0;
+
+   sprintf(detail, "%u of %u", done, READER_CANCEL_RUNS);
+   sprintf(what, "cancelled reader scans finish %s", q);
+   check(done == READER_CANCEL_RUNS, what, detail);
+   sprintf(detail, "%u pushed in %u scans", pushed, READER_CANCEL_RUNS);
+   sprintf(what, "%s readers %s", threaded ? "min(4, cores)" : "no", q);
+   check(pushed == want * READER_CANCEL_RUNS, what, detail);
+   sprintf(detail, "worst %u ms", (unsigned)(worst / 1000));
+   sprintf(what, "the callback waits for no reader %s", q);
+   check(done == READER_CANCEL_RUNS && worst < 500000, what, detail);
+   sprintf(detail, "%u of %u", gone, READER_CANCEL_RUNS);
+   sprintf(what, "readers leave after the callback %s", q);
+   check(gone == READER_CANCEL_RUNS, what, detail);
+   sprintf(detail, "%u of %u runs over %u, most %d", over,
+         READER_CANCEL_RUNS, want, most);
+   sprintf(what, "a stopped reader opens no new file %s", q);
+   check(over == 0, what, detail);
+}
+
+/* A cancel while a reader is stuck in a read: the scan finishes at
+ * once, unless the reader holds the scan's own worker, and the reader
+ * leaves when the read returns. */
+static void reader_stuck_lane(const char *root, const char *db_dir)
+{
+   char         dir[512], detail[80];
+   unsigned     i, done = 0, back = 0, extra = 0;
+   retro_time_t worst = 0;
+
+   if (!write_stuck_files(dir, root))
+      return;
+   if (!readers_expected())
+   {
+      check(1, "a stuck reader holds no cancel", "no readers");
+      check(1, "a stuck reader leaves once its read returns", "no readers");
+      return;
+   }
+   use_queue(true);
+   use_db(db_dir);
+   for (i = 0; i < READER_STUCK_RUNS; i++)
+   {
+      retro_time_t t;
+
+      slow_reset(READER_STUCK_SIZE, READER_STUCK_MS);
+      t = run_scan_cancelled(dir, true);
+      if (t >= 0)
+         done++;
+      if (t >= 0 && !retro_atomic_load_acquire_int(&slow_on_scan))
+      {
+         extra++;
+         if (t > worst)
+            worst = t;
+      }
+      if (slow_reads_back() && readers_gone())
+         back++;
+   }
+   slow_size = 0;
+   sprintf(detail, "%u of %u, %u on an extra worker, worst %u ms", done,
+         READER_STUCK_RUNS, extra, (unsigned)(worst / 1000));
+   check(done == READER_STUCK_RUNS && worst < 1000000,
+         "a stuck reader holds no cancel", detail);
+   sprintf(detail, "%u of %u", back, READER_STUCK_RUNS);
+   check(back == READER_STUCK_RUNS,
+         "a stuck reader leaves once its read returns", detail);
+}
+
+static bool scan_running(void *data)
+{
+   (void)data;
+   return !scan_completed;
+}
+
+/* retroarch.c's quit with a reader stuck in a read: cancel everything,
+ * drain for up to 3 s, deinit.  The scan's callback ends the drain,
+ * unless the reader holds the scan's own worker, and the deinit leaves
+ * the reader behind after its 1 s bound; its cleanup drops its share
+ * when the read returns (LeakSanitizer sees the rest). */
+static void reader_quit_lane(const char *root, const char *db_dir)
+{
+   char         dir[512], detail[64];
+   retro_time_t t0, took = 0;
+   time_t       started;
+   bool         fired, back, on_scan;
+
+   if (!write_stuck_files(dir, root))
+      return;
+   if (!readers_expected())
+   {
+      check(1, "quit: a stuck reader is left behind after 1 s", "no readers");
+      check(1, "quit: the scan finished before the deinit", "no readers");
+      check(1, "quit: the stuck reader comes back and leaves", "no readers");
+      return;
+   }
+   use_queue(true);
+   use_db(db_dir);
+   slow_reset(READER_STUCK_SIZE, READER_QUIT_MS);
+   loop_active    = true;
+   scan_completed = false;
+   if (!task_push_dbscan(dir, scan_cb))
+   {
+      check(0, "quit: scan started", "task_push_dbscan refused");
+      return;
+   }
+   started = time(NULL);
+   while (   !retro_atomic_load_acquire_int(&slow_in)
+          && difftime(time(NULL), started) <= SCAN_TIMEOUT_SECONDS)
+   {
+      task_queue_check();
+      retro_sleep(1);
+   }
+   task_queue_reset();
+   task_queue_wait_timeout(scan_running, NULL, 3000000);
+   fired   = scan_completed;
+   on_scan = retro_atomic_load_acquire_int(&slow_on_scan) > 0;
+   t0      = cpu_features_get_time_usec();
+   task_queue_deinit();
+   took    = cpu_features_get_time_usec() - t0;
+   use_queue(true);
+   /* Held by the reader, the scan finishes on the next queue. */
+   started = time(NULL);
+   while (   !scan_completed
+          && difftime(time(NULL), started) <= SCAN_TIMEOUT_SECONDS)
+   {
+      task_queue_check();
+      retro_sleep(1);
+   }
+   back    = slow_reads_back() && readers_gone();
+   slow_size = 0;
+
+   sprintf(detail, "deinit %u ms", (unsigned)(took / 1000));
+   check(took >= 900000 && took < 2000000,
+         "quit: a stuck reader is left behind after 1 s", detail);
+   check(fired || (on_scan && scan_completed),
+         "quit: the scan finished before the deinit",
+         fired ? "callback fired" : on_scan ? "reader on the scan's worker"
+                                            : "no callback");
+   check(back, "quit: the stuck reader comes back and leaves",
+         back ? "back" : "still out");
+}
+
+/* A push that fails keeps the readers before it; when none goes, the
+ * scan reads its files itself, and the start is not tried again for
+ * the next file. */
+static void reader_push_lane(const char *root, const char *pl_dir,
+      const char *db_dir)
+{
+   static const unsigned fail_from[2] = { 2, 1 };
+   char     dir[512], p[1024], lpl[1024], detail[64];
+   unsigned i, k;
+
+   sprintf(dir, "%s/reader_push", root);
+   path_mkdir(dir);
+   for (i = 0; i < ARRAY_SIZE(reader_recs); i++)
+   {
+      sprintf(p, "%s/c_%u.rd", dir, i);
+      if (!write_content(p, reader_recs[i].crc, reader_recs[i].size))
+      { check(0, "fixture", "crc forcing failed"); return; }
+   }
+   sprintf(lpl, "%s/Test Reader.lpl", pl_dir);
+
+   use_queue(true);
+   use_db(db_dir);
+   for (k = 0; k < 2; k++)
+   {
+      bool started, counted;
+      int  tried, ok;
+
+      filestream_delete(lpl);
+      retro_atomic_store_release_int(&pushes_tried, 0);
+      retro_atomic_store_release_int(&pushes_ok,    0);
+      push_fail_from = fail_from[k];
+      started        = run_scan(dir);
+      push_fail_from = 0;
+      tried          = retro_atomic_load_acquire_int(&pushes_tried);
+      ok             = retro_atomic_load_acquire_int(&pushes_ok);
+      if (readers_expected())
+         counted = k ? (tried == 1 && ok == 0) : (tried == 2 && ok == 1);
+      else
+         counted = (tried == 0);
+      sprintf(detail, "%d tried, %d pushed", tried, ok);
+      check(started && scan_completed && reader_entries(pl_dir),
+            k ? "first reader push fails: scan whole"
+              : "second reader push fails: scan whole",
+            "four entries");
+      check(counted,
+            k ? "first reader push fails: not retried"
+              : "second reader push fails: one reader",
+            detail);
+   }
+}
+
+/* The files reader_recs match, in root/@name. */
+static bool write_match_files(char *dir, const char *root, const char *name)
+{
+   char     p[1024];
+   unsigned i;
+
+   sprintf(dir, "%s/%s", root, name);
+   path_mkdir(dir);
+   for (i = 0; i < ARRAY_SIZE(reader_recs); i++)
+   {
+      sprintf(p, "%s/m_%u.rd", dir, i);
+      if (!write_content(p, reader_recs[i].crc, reader_recs[i].size))
+      {
+         check(0, "fixture", "crc forcing failed");
+         return false;
+      }
+   }
+   return true;
+}
+
+#define READER_RESET_USEC 250000
+
+/* A reset that reaches the readers before their first call, while the
+ * scan waits on the first file it handed out: they read nothing and
+ * leave, and the last one out wakes the scan, which reads the files
+ * itself instead of sleeping out its park. */
+static void reader_reset_lane(const char *root, const char *pl_dir,
+      const char *db_dir)
+{
+   char         dir[512], lpl[1024], detail[64];
+   retro_time_t t0, took;
+   int          reads;
+   bool         started;
+
+   if (!readers_expected())
+   {
+      check(1, "readers cancelled at once read nothing", "no readers");
+      check(1, "the last cancelled reader wakes the scan", "no readers");
+      return;
+   }
+   if (!write_match_files(dir, root, "reader_reset"))
+      return;
+   sprintf(lpl, "%s/Test Reader.lpl", pl_dir);
+   filestream_delete(lpl);
+   use_queue(true);
+   use_db(db_dir);
+   retro_atomic_store_release_int(&watch_reader, 0);
+   watch_size       = reader_recs[0].size;
+   push_cancel_usec = READER_RESET_USEC;
+   t0               = cpu_features_get_time_usec();
+   started          = run_scan(dir);
+   took             = cpu_features_get_time_usec() - t0;
+   push_cancel_usec = 0;
+   watch_size       = 0;
+   reads            = retro_atomic_load_acquire_int(&watch_reader);
+
+   sprintf(detail, "readers read %d", reads);
+   check(started && scan_completed && reader_entries(pl_dir) && !reads,
+         "readers cancelled at once read nothing", detail);
+   sprintf(detail, "%u ms", (unsigned)(took / 1000));
+   check(started && scan_completed && took < 5000000,
+         "the last cancelled reader wakes the scan", detail);
+}
+
+/* Every reader's read fails: each file goes back, and the scan's own
+ * read of it makes the same match. */
+static void reader_fail_lane(const char *root, const char *pl_dir,
+      const char *db_dir)
+{
+   char dir[512], lpl[1024], detail[64];
+   int  fails;
+   bool started;
+
+   if (!readers_expected())
+   {
+      check(1, "failed reader reads: the same matches", "no readers");
+      return;
+   }
+   if (!write_match_files(dir, root, "reader_fail"))
+      return;
+   sprintf(lpl, "%s/Test Reader.lpl", pl_dir);
+   filestream_delete(lpl);
+   use_queue(true);
+   use_db(db_dir);
+   retro_atomic_store_release_int(&reader_fails, 0);
+   fail_size = reader_recs[0].size;
+   started   = run_scan(dir);
+   fail_size = 0;
+   fails     = retro_atomic_load_acquire_int(&reader_fails);
+
+   sprintf(detail, "%d reader reads failed", fails);
+   check(   started && scan_completed && reader_entries(pl_dir)
+         && fails == (int)ARRAY_SIZE(reader_recs),
+         "failed reader reads: the same matches", detail);
+}
+
+#ifndef SCAN_READER_DEPTH
+#define SCAN_READER_DEPTH 64
+#endif
+
+/* The scanner's window, SCAN_READER_DEPTH requests per reader. */
+static unsigned reader_window(void)
+{
+   unsigned n = cpu_features_get_core_amount();
+   if (n > SCAN_READERS_MAX)
+      n = SCAN_READERS_MAX;
+   return (n >= 2 ? n : 2) * SCAN_READER_DEPTH;
+}
+
+#define ORDER_FIRST_CRC  0x0BD10001u
+#define ORDER_LATE_CRC   0x0BD10002u
+#define ORDER_FIRST_SIZE (60 * 1024)
+#define ORDER_LATE_SIZE  1024
+#define ORDER_SLOW_MS    50
+
+/* @first names the file that matches only in the database probed
+ * second; the other carries the record both databases hold. */
+static bool write_order_files(const char *dir, unsigned first)
+{
+   static const char *const names[2] = { "o_a.rd", "o_b.rd" };
+   char p[1024];
+
+   sprintf(p, "%s/%s", dir, names[first]);
+   if (!write_content(p, ORDER_FIRST_CRC, ORDER_FIRST_SIZE))
+      return false;
+   sprintf(p, "%s/%s", dir, names[!first]);
+   return write_content(p, ORDER_LATE_CRC, ORDER_LATE_SIZE) != 0;
+}
+
+/* One first-match scan of the order set, the first file's read held
+ * ORDER_SLOW_MS.  True when it finished. */
+static bool order_scan(const char *dir, const char *db, retro_time_t *took)
+{
+   retro_time_t t0;
+   bool         started;
+
+   strlcpy(config_get_ptr()->paths.path_content_database, db,
+         sizeof(config_get_ptr()->paths.path_content_database));
+   manual_content_scan_set_menu_scan_method(
+         MANUAL_CONTENT_SCAN_METHOD_CUSTOM);
+   manual_content_scan_set_menu_scan_db_select(
+         MANUAL_CONTENT_SCAN_SELECT_DB_AUTO_FIRST_MATCH, NULL);
+   order_last[0] = 0;
+   order_last[1] = 0;
+   slow_size     = ORDER_FIRST_SIZE;
+   slow_ms       = ORDER_SLOW_MS;
+   t0            = cpu_features_get_time_usec();
+   started       = run_scan(dir);
+   *took         = cpu_features_get_time_usec() - t0;
+   slow_size     = 0;
+   manual_content_scan_set_menu_scan_db_select(
+         MANUAL_CONTENT_SCAN_SELECT_DB_AUTO, NULL);
+   manual_content_scan_set_menu_scan_method(
+         MANUAL_CONTENT_SCAN_METHOD_AUTOMATIC);
+   return started && scan_completed;
+}
+
+/* Results are consumed in content-list order, which first-match
+ * promotion shows: the file the scanner starts first matches only in
+ * the database it probes second and promotes it, so the other file,
+ * which both carry, is filed under that one.  The first file's read is
+ * held, so the other's result is in first. */
+static void order_lane(const char *root, const char *pl_dir,
+      bool threaded)
+{
+   static const char *const db_names[2]   =
+      { "Test Order One", "Test Order Two" };
+   static const char *const late_names[2] =
+      { "Late In One", "Late In Two" };
+   char                db[512], dir[512], p[1024], what[64], detail[64];
+   struct string_list *dbs;
+   db_rec_t            recs[2];
+   unsigned            i, second, first = 0;
+   retro_time_t        took = 0;
+   bool                ran = false, filed;
+   const char         *q = threaded ? "(threaded)" : "(regular)";
+
+   sprintf(db,  "%s/reader_order_db", root);
+   sprintf(dir, "%s/reader_order",    root);
+   path_mkdir(db);
+   path_mkdir(dir);
+   /* Both databases first, so the listing below is the scanner's. */
+   for (i = 0; i < 2; i++)
+   {
+      sprintf(p, "%s/%s.rdb", db, db_names[i]);
+      if (!write_db(p, late_names[i], ORDER_LATE_CRC, ORDER_LATE_SIZE))
+      { check(0, "fixture", "could not write database"); return; }
+   }
+   if (   !(dbs = dir_list_new(db, "rdb", false, false, false, false))
+       || dbs->size != 2)
+   {
+      if (dbs)
+         string_list_free(dbs);
+      check(0, "fixture", "could not list the order databases");
+      return;
+   }
+   second = strstr(dbs->elems[1].data, db_names[1]) ? 1 : 0;
+   string_list_free(dbs);
+   recs[0].name   = "First In Second";
+   recs[0].serial = NULL;
+   recs[0].crc    = ORDER_FIRST_CRC;
+   recs[0].size   = ORDER_FIRST_SIZE;
+   recs[1].name   = late_names[second];
+   recs[1].serial = NULL;
+   recs[1].crc    = ORDER_LATE_CRC;
+   recs[1].size   = ORDER_LATE_SIZE;
+   sprintf(p, "%s/%s.rdb", db, db_names[second]);
+   if (!write_db_set(p, recs, 2))
+   { check(0, "fixture", "could not write database"); return; }
+
+   use_queue(threaded);
+   retro_atomic_store_release_int(&reads_begun, 0);
+   begun_size = ORDER_FIRST_SIZE;
+   /* The slow file goes where the scanner starts. */
+   for (i = 0; i < 2; i++)
+   {
+      if (!write_order_files(dir, first))
+      { check(0, "fixture", "crc forcing failed"); return; }
+      sprintf(p, "%s/%s.lpl", pl_dir, db_names[0]);
+      filestream_delete(p);
+      sprintf(p, "%s/%s.lpl", pl_dir, db_names[1]);
+      filestream_delete(p);
+      if (!(ran = order_scan(dir, db, &took))
+          || !order_last[0] || !order_last[1])
+         break;
+      if ((order_last[0] < order_last[1]) == (first == 0))
+         break;
+      first = !first;
+   }
+
+   begun_size = 0;
+   sprintf(p, "%s/%s.lpl", pl_dir, db_names[second]);
+   filed = file_contains(p, late_names[second]);
+   sprintf(p, "%s/%s.lpl", pl_dir, db_names[!second]);
+   filed = filed && !file_contains(p, late_names[!second]);
+   sprintf(what, "results consumed in list order %s", q);
+   check(ran && i < 2 && filed, what, late_names[second]);
+   /* One scan when the first try already shows the order. */
+   sprintf(detail, "%d reads in %u scans",
+         retro_atomic_load_acquire_int(&reads_begun), i < 2 ? i + 1 : 2);
+   sprintf(what, "each file read once %s", q);
+   check(ran && retro_atomic_load_acquire_int(&reads_begun)
+         == (int)(i < 2 ? i + 1 : 2), what, detail);
+   if (threaded)
+   {
+      sprintf(detail, "%u ms", (unsigned)(took / 1000));
+      check(ran && took < 10000000, "a result wakes the waiting scan",
+            detail);
+   }
+}
+
+static void set_rec(db_rec_t *rec, const char *name, uint32_t crc,
+      uint32_t size)
+{
+   rec->name   = name;
+   rec->serial = NULL;
+   rec->crc    = crc;
+   rec->size   = size;
+}
+
+#define MIX_BIG_ONE 70000
+#define MIX_BIG_TWO 131072
+
+/* Two files over the cutoff, an archive matched by its own CRC, one
+ * expanded into its member, and a cue that prunes its track. */
+static void mix_lane(const char *root, const char *pl_dir, bool threaded)
+{
+   char        db[512], dir[512], p[1024], lpl[1024], what[64];
+   char        crcs[5][16], detail[64];
+   db_rec_t    recs[5];
+   uint8_t    *d   = NULL;
+   int64_t     len = 0;
+   uint32_t    i;
+   int         by_scan, by_reader;
+   bool        started, all = true;
+   const char *q = threaded ? "(threaded)" : "(regular)";
+   FILE       *f;
+
+   sprintf(db,  "%s/reader_mix_db", root);
+   sprintf(dir, "%s/reader_mix",    root);
+   path_mkdir(db);
+   path_mkdir(dir);
+
+   sprintf(p, "%s/m1_big.rd", dir);
+   if (!write_content(p, 0x0B1C0001u, MIX_BIG_ONE))
+      goto fixture;
+   sprintf(p, "%s/m2_big.rd", dir);
+   if (!write_content(p, 0x0B1C0002u, MIX_BIG_TWO))
+      goto fixture;
+   sprintf(p, "%s/m0_disc.bin", dir);
+   if (!write_content(p, 0x0B1C0005u, 4096))
+      goto fixture;
+   sprintf(p, "%s/m0_disc.cue", dir);
+   if (!(f = fopen(p, "w")))
+      goto fixture;
+   fprintf(f,
+         "FILE \"m0_disc.bin\" BINARY\n"
+         "  TRACK 01 MODE1/2352\n"
+         "    INDEX 01 00:00:00\n");
+   fclose(f);
+
+   /* Its member matches nothing; the archive's own CRC does. */
+   if (!(d = (uint8_t*)malloc(2048)))
+      goto fixture;
+   for (i = 0; i < 2048; i++)
+      d[i] = (uint8_t)((i * 29 + 3) & 0xFF);
+   sprintf(p, "%s/m3_whole.zip", dir);
+   if (!write_zip(p, "whole.rd", d, 2048, crc_of(d, 2048)))
+      goto fixture;
+   free(d);
+   d = NULL;
+   if (!filestream_read_file(p, (void**)&d, &len) || !d)
+      goto fixture;
+   set_rec(&recs[2], "Mix Archive", crc_of(d, (size_t)len), (uint32_t)len);
+   free(d);
+   d = NULL;
+
+   /* Its own CRC matches nothing; its member does. */
+   if (!(d = (uint8_t*)malloc(2048)))
+      goto fixture;
+   for (i = 0; i < 2048 - 4; i++)
+      d[i] = (uint8_t)((i * 31 + 5) & 0xFF);
+   crc_force(d, 2048 - 4, 0x0B1C0004u, d + 2048 - 4);
+   sprintf(p, "%s/m4_bundle.zip", dir);
+   if (!write_zip(p, "inner.rd", d, 2048, 0x0B1C0004u))
+      goto fixture;
+   free(d);
+   d = NULL;
+
+   set_rec(&recs[0], "Mix Big One", 0x0B1C0001u, MIX_BIG_ONE);
+   set_rec(&recs[1], "Mix Big Two", 0x0B1C0002u, MIX_BIG_TWO);
+   set_rec(&recs[3], "Mix Member",  0x0B1C0004u, 2048);
+   set_rec(&recs[4], "Mix Disc",    0x0B1C0005u, 4096);
+   sprintf(p, "%s/Test Mix.rdb", db);
+   if (!write_db_set(p, recs, 5))
+      goto fixture;
+   for (i = 0; i < 5; i++)
+      sprintf(crcs[i], "%08X|crc", (unsigned)recs[i].crc);
+
+   sprintf(lpl, "%s/Test Mix.lpl", pl_dir);
+   filestream_delete(lpl);
+   use_queue(threaded);
+   strlcpy(config_get_ptr()->paths.path_content_database, db,
+         sizeof(config_get_ptr()->paths.path_content_database));
+   retro_atomic_store_release_int(&watch_scan,   0);
+   retro_atomic_store_release_int(&watch_reader, 0);
+   watch_size = MIX_BIG_ONE;
+   started    = run_scan(dir);
+   watch_size = 0;
+   by_scan    = retro_atomic_load_acquire_int(&watch_scan);
+   by_reader  = retro_atomic_load_acquire_int(&watch_reader);
+   for (i = 0; i < 5; i++)
+      if (!file_contains(lpl, recs[i].name) || !file_contains(lpl, crcs[i]))
+         all = false;
+   sprintf(what, "every mixed entry by its crc %s", q);
+   check(started && scan_completed && all, what,
+         "big, archive, member, disc");
+   sprintf(what, "a pruned track gets no entry %s", q);
+   check(started && scan_completed && !file_contains(lpl, "m0_disc.bin"),
+         what, "m0_disc.bin");
+   sprintf(detail, "scan %d, readers %d", by_scan, by_reader);
+   sprintf(what, "a file over the cutoff stays on the task %s", q);
+   check(started && scan_completed && by_scan > 0 && by_reader == 0,
+         what, detail);
+   return;
+
+fixture:
+   free(d);
+   check(0, "fixture", "could not write the mixed set");
+}
+
+#define CUE_TRACK_SIZE 5000
+
+/* No reader is sent a cue's or a gdi's track: they sort first, and
+ * each prunes its tracks when the scan reaches it. */
+static void cue_lane(const char *root, const char *db_dir, bool gdi)
+{
+   const char *sheet = gdi ? "gdi" : "cue";
+   char        dir[512], p[1024], detail[64], what[64];
+   unsigned    i;
+   int         by_reader;
+   bool        started;
+   FILE       *f;
+
+   sprintf(dir, "%s/reader_%s", root, sheet);
+   path_mkdir(dir);
+   for (i = 0; i < 2; i++)
+   {
+      sprintf(p, "%s/c%u_disc.bin", dir, i);
+      if (!write_content(p, 0x0C0E0000u + i, CUE_TRACK_SIZE))
+         goto fixture;
+      sprintf(p, "%s/c%u_disc.%s", dir, i, sheet);
+      if (!(f = fopen(p, "w")))
+         goto fixture;
+      if (gdi)
+         fprintf(f, "1\n1 0 4 2352 c%u_disc.bin 0\n", i);
+      else
+         fprintf(f,
+               "FILE \"c%u_disc.bin\" BINARY\n"
+               "  TRACK 01 MODE1/2352\n"
+               "    INDEX 01 00:00:00\n", i);
+      fclose(f);
+      sprintf(p, "%s/c%u_plain.rd", dir, i);
+      if (!write_content(p, 0x0C0E0010u + i, 1024))
+         goto fixture;
+   }
+   use_queue(true);
+   use_db(db_dir);
+   retro_atomic_store_release_int(&watch_reader, 0);
+   watch_size = CUE_TRACK_SIZE;
+   started    = run_scan(dir);
+   watch_size = 0;
+   by_reader  = retro_atomic_load_acquire_int(&watch_reader);
+   sprintf(detail, "readers read %d", by_reader);
+   sprintf(what, "no reader reads a %s's track", sheet);
+   check(started && scan_completed && by_reader == 0, what, detail);
+   return;
+
+fixture:
+   check(0, "fixture", gdi ? "could not write the gdi set"
+                           : "could not write the cue set");
+}
+
+/* Exactly the harness's SCAN_READER_CUTOFF, which is inclusive. */
+#define PADS_SIZE 65536
+
+/* Every small file goes to the readers, also past the first window's
+ * worth; on the regular queue none starts and the scan reads them. */
+static void pads_lane(const char *root, bool threaded)
+{
+   char        dir[512], p[1024], detail[64], what[80];
+   unsigned    i, n = 2 * reader_window();
+   int         by_scan, by_reader, tried;
+   bool        started, ok;
+   const char *q = threaded ? "(threaded)" : "(regular)";
+
+   sprintf(dir, "%s/reader_pads", root);
+   path_mkdir(dir);
+   for (i = 0; i < n; i++)
+   {
+      sprintf(p, "%s/p_%02u.rd", dir, i);
+      if (!write_content(p, 0x0BAD0000u + i, PADS_SIZE))
+      { check(0, "fixture", "crc forcing failed"); return; }
+   }
+   use_queue(threaded);
+   retro_atomic_store_release_int(&watch_scan,   0);
+   retro_atomic_store_release_int(&watch_reader, 0);
+   retro_atomic_store_release_int(&pushes_tried, 0);
+   watch_size = PADS_SIZE;
+   started    = run_scan(dir);
+   watch_size = 0;
+   by_scan    = retro_atomic_load_acquire_int(&watch_scan);
+   by_reader  = retro_atomic_load_acquire_int(&watch_reader);
+   tried      = retro_atomic_load_acquire_int(&pushes_tried);
+   if (threaded && readers_expected())
+      ok = by_scan == 0 && by_reader > 0;
+   else
+      ok = by_reader == 0 && by_scan > 0 && tried == 0;
+   sprintf(detail, "scan %d, readers %d, pushes %d", by_scan, by_reader,
+         tried);
+   sprintf(what, threaded ? "small files read by the readers %s"
+                          : "no readers %s", q);
+   check(started && scan_completed && ok, what, detail);
+}
+
+#define SWITCH_FILES      120
+#define SWITCH_STALL_USEC 2000000
+
+static unsigned file_count(const char *path, const char *needle)
+{
+   int64_t     len  = 0;
+   char       *data = NULL;
+   const char *s;
+   unsigned    n    = 0;
+
+   if (!filestream_read_file(path, (void**)&data, &len) || !data)
+      return 0;
+   for (s = data; (s = strstr(s, needle)); s += strlen(needle))
+      n++;
+   free(data);
+   return n;
+}
+
+/* As run_scan(), switching the queue between its runners every third
+ * check, except that from each start of the threaded runner to the
+ * next move of the scan's progress it asks for none: a switch away
+ * ends every park, so only there can a lost wake stall the scan.  A
+ * stay over SWITCH_STALL_USEC counts in *stalls and ends the stays.
+ * *switches counts the checks asked for the threaded runner that
+ * started a worker.  Returns the longest stay in microseconds. */
+static retro_time_t run_scan_switching(const char *dir, bool *started,
+      unsigned *stalls, unsigned *switches)
+{
+#ifdef HAVE_THREADS
+   task_finder_data_t finder;
+   retro_time_t       now, stay = 0, longest = 0;
+   unsigned           ticks    = 0;
+   unsigned           starts;
+   int                progress = 0;
+   bool               threaded = true;
+   bool               held     = true;
+   bool               found, moved, asked;
+#endif
+   time_t             begun;
+
+   loop_active    = true;
+   scan_completed = false;
+   *stalls        = 0;
+   *switches      = 0;
+   if (!(*started = task_push_dbscan(dir, scan_cb)))
+      return 0;
+#ifdef HAVE_THREADS
+   finder.func     = find_scan;
+   finder.userdata = NULL;
+   stay            = cpu_features_get_time_usec();
+#endif
+   begun = time(NULL);
+   while (loop_active)
+   {
+#ifdef HAVE_THREADS
+      found = task_queue_find(&finder);
+      now   = cpu_features_get_time_usec();
+      asked = false;
+      if (held)
+      {
+         moved = found && lane_progress != progress;
+         if (moved || now - stay > SWITCH_STALL_USEC)
+         {
+            if (!moved)
+               (*stalls)++;
+            if (now - stay > longest)
+               longest = now - stay;
+            held     = false;
+            threaded = false;
+            ticks    = 0;
+            task_queue_unset_threaded();
+         }
+      }
+      else if (++ticks % 3 == 0)
+      {
+         threaded = !threaded;
+         if (threaded)
+         {
+            task_queue_set_threaded();
+            asked = true;
+         }
+         else
+            task_queue_unset_threaded();
+      }
+      starts = worker_starts;
+#endif
+      task_queue_check();
+#ifdef HAVE_THREADS
+      if (asked && worker_starts != starts)
+         (*switches)++;
+      if (worker_starts != starts && !*stalls)
+      {
+         held     = true;
+         stay     = now;
+         if (found)
+            progress = lane_progress;
+      }
+#endif
+      if (difftime(time(NULL), begun) > SCAN_TIMEOUT_SECONDS)
+         break;
+      retro_sleep(1);
+   }
+#ifdef HAVE_THREADS
+   return longest;
+#else
+   return 0;
+#endif
+}
+
+/* The queue switches between its runners under a scan that starts
+ * with readers: the readers leave at the first switch away, none reads
+ * on the main thread, and the scan reads the rest itself. */
+static void switch_lane(const char *root, const char *pl_dir)
+{
+   db_rec_t *recs  = (db_rec_t*)calloc(SWITCH_FILES, sizeof(*recs));
+   char     *names = (char*)calloc(SWITCH_FILES, 16);
+   char      db[512], dir[512], p[1024], lpl[1024], detail[64];
+   unsigned  i, n, stalls = 0, switches = 0;
+   int       inline_reads;
+   retro_time_t longest;
+   bool      started = false;
+
+   if (!recs || !names)
+   {
+      check(0, "fixture", "out of memory");
+      goto end;
+   }
+   sprintf(db,  "%s/reader_switch_db", root);
+   sprintf(dir, "%s/reader_switch",    root);
+   path_mkdir(db);
+   path_mkdir(dir);
+   for (i = 0; i < SWITCH_FILES; i++)
+   {
+      sprintf(names + i * 16, "Switch %03u", i);
+      set_rec(&recs[i], names + i * 16, 0x5A000000u + i, 1024);
+      sprintf(p, "%s/s_%03u.rd", dir, i);
+      if (!write_content(p, recs[i].crc, 1024))
+      { check(0, "fixture", "crc forcing failed"); goto end; }
+   }
+   sprintf(p, "%s/Test Switch.rdb", db);
+   if (!write_db_set(p, recs, SWITCH_FILES))
+   { check(0, "fixture", "could not write database"); goto end; }
+   sprintf(lpl, "%s/Test Switch.lpl", pl_dir);
+   filestream_delete(lpl);
+
+#ifdef HAVE_THREADS
+   worker_learn = true;
+#endif
+   use_queue(true);
+#ifdef HAVE_THREADS
+   worker_learn = false;
+#endif
+   strlcpy(config_get_ptr()->paths.path_content_database, db,
+         sizeof(config_get_ptr()->paths.path_content_database));
+   slow_reset(1024, 5);
+   retro_atomic_store_release_int(&watch_inline, 0);
+   watch_size   = 1024;
+   longest      = run_scan_switching(dir, &started, &stalls, &switches);
+   watch_size   = 0;
+   slow_size    = 0;
+   inline_reads = retro_atomic_load_acquire_int(&watch_inline);
+   use_queue(false);
+
+   n = file_count(lpl, "|crc");
+   check(started && scan_completed, "scan across queue switches completed",
+         scan_completed ? "callback fired" : "timed out");
+   sprintf(detail, "%u of %u", n, (unsigned)SWITCH_FILES);
+   check(n == SWITCH_FILES, "every entry across queue switches", detail);
+   sprintf(detail, "%d reads", inline_reads);
+   check(inline_reads == 0, "no reader reads on the main thread", detail);
+#ifdef HAVE_THREADS
+   sprintf(detail, "%u switches to threaded", switches);
+   check(switches > 0, "the queue switched under the scan", detail);
+   sprintf(detail, "%u stalled, longest %u ms", stalls,
+         (unsigned)(longest / 1000));
+   check(!stalls, "the threaded queue moves the scan in 2 s", detail);
+#else
+   (void)longest;
+   check(1, "the queue switched under the scan", "no threads");
+#endif
+
+end:
+   free(recs);
+   free(names);
+}
+
+/* The queue switches away and straight back while a reader is stuck
+ * in a read: the switch leaves it behind after 1 s and never calls it
+ * again, so its cleanup hands the file back and drops its share when
+ * the read returns (LeakSanitizer sees what it would keep), and the
+ * scan finishes with every entry. */
+static void switch_stuck_lane(const char *root, const char *pl_dir,
+      const char *db_dir)
+{
+   char   dir[512], lpl[1024];
+   time_t started;
+   bool   switched = false, back;
+
+   if (!write_stuck_files(dir, root))
+      return;
+   if (!readers_expected())
+   {
+      check(1, "a switch past a stuck read: scan completes", "no readers");
+      check(1, "a switch past a stuck read: every entry", "no readers");
+      return;
+   }
+   sprintf(lpl, "%s/Test Reader.lpl", pl_dir);
+   filestream_delete(lpl);
+   use_queue(true);
+   use_db(db_dir);
+   slow_reset(READER_STUCK_SIZE, READER_STUCK_MS);
+   loop_active    = true;
+   scan_completed = false;
+   if (!task_push_dbscan(dir, scan_cb))
+   {
+      check(0, "a switch past a stuck read: scan completes",
+            "task_push_dbscan refused");
+      return;
+   }
+   started = time(NULL);
+   while (loop_active)
+   {
+      if (!switched && retro_atomic_load_acquire_int(&slow_in) > 0)
+      {
+         switched = true;
+         task_queue_unset_threaded();
+         task_queue_check();
+         task_queue_set_threaded();
+      }
+      task_queue_check();
+      if (difftime(time(NULL), started) > SCAN_TIMEOUT_SECONDS)
+         break;
+      retro_sleep(1);
+   }
+   back      = slow_reads_back();
+   slow_size = 0;
+   check(started && scan_completed && switched && back,
+         "a switch past a stuck read: scan completes",
+         scan_completed ? "callback fired" : "timed out");
+   check(reader_entries(pl_dir), "a switch past a stuck read: every entry",
+         "four entries");
+   use_queue(false);
+}
+
+/* The list done, the scan stops its readers before M3U and END. */
+static void reader_list_end_lane(const char *root, const char *db_dir)
+{
+   char dir[512];
+   int  out;
+   bool started;
+
+   if (!readers_expected())
+   {
+      check(1, "readers leave once the list is done", "no readers");
+      return;
+   }
+   if (!write_match_files(dir, root, "reader_list_end"))
+      return;
+   use_queue(true);
+   use_db(db_dir);
+   retro_atomic_store_release_int(&end_readers_out, -1);
+   end_hold = true;
+   started  = run_scan(dir);
+   end_hold = false;
+   out      = retro_atomic_load_acquire_int(&end_readers_out);
+   check(started && scan_completed && out == 1,
+         "readers leave once the list is done",
+         out < 0 ? "no END step" : out ? "gone at the END step"
+                                       : "still there at the END step");
+}
+
 int main(int argc, char **argv)
 {
    const char *root = (argc > 1) ? argv[1] : "/tmp";
@@ -1049,6 +2472,10 @@ int main(int argc, char **argv)
    const uint32_t sz_g  = 3072;
 
    setvbuf(stdout, NULL, _IONBF, 0);
+#ifdef HAVE_THREADS
+   main_tid = sthread_get_current_thread_id();
+#endif
+   window_open_hook = scan_tick_open;
    crc_init();
    verbosity_disable();
 
@@ -1190,6 +2617,20 @@ int main(int argc, char **argv)
       fclose(f);
    }
    sprintf(p, "%s/ctr_libretro.so", core_dir);
+   { FILE *f = fopen(p, "wb"); if (f) { fputs("\177ELF", f); fclose(f); } }
+   sprintf(p, "%s/reader_libretro.info", info_dir);
+   {
+      FILE *f = fopen(p, "w");
+      if (!f)
+      { check(0, "fixture", "could not write core info"); return 1; }
+      fprintf(f,
+            "display_name = \"Reader Test\"\n"
+            "corename = \"ReaderTest\"\n"
+            "supported_extensions = \"rd|zip|cue|bin\"\n"
+            "database = \"Test Reader|Test Order One|Test Order Two|Test Mix|Test Switch\"\n");
+      fclose(f);
+   }
+   sprintf(p, "%s/reader_libretro.so", core_dir);
    { FILE *f = fopen(p, "wb"); if (f) { fputs("\177ELF", f); fclose(f); } }
 
 #ifdef HAVE_THREADS
@@ -1616,7 +3057,7 @@ int main(int argc, char **argv)
          { "Strict Nowhere Rev 0",  "CTR-P-SNOW", 0x57A1C030u, CTR_IMAGE_SIZE },
          { "Strict Nowhere Rev 1",  "CTR-P-SNOW", 0x57A1C031u, CTR_IMAGE_SIZE }
       };
-      char strict_db[512], strict_in[512];
+      char strict_db[512], strict_in[512], detail[32];
 
       sprintf(strict_db, "%s/scan_db_3ds_strict", root);
       sprintf(strict_in, "%s/scan_3ds_strict",    root);
@@ -1645,11 +3086,14 @@ int main(int argc, char **argv)
       config_get_ptr()->bools.scan_serial_and_crc = true;
       strlcpy(config_get_ptr()->paths.path_content_database, strict_db,
             sizeof(config_get_ptr()->paths.path_content_database));
+      retro_atomic_store_release_int(&reads_begun, 0);
+      begun_size = CTR_IMAGE_SIZE;
       if (!run_scan(strict_in))
       {
          check(0, "strict 3DS scan started", "task_push_dbscan refused");
          goto done;
       }
+      begun_size = 0;
       config_get_ptr()->bools.scan_serial_and_crc = false;
       strlcpy(config_get_ptr()->paths.path_content_database, db_dir,
             sizeof(config_get_ptr()->paths.path_content_database));
@@ -1672,6 +3116,11 @@ int main(int argc, char **argv)
             "scan_serial_and_crc: shared, crc elsewhere", "57A1C022|crc");
       check(!file_contains(p, "24_strict_nowhere"),
             "scan_serial_and_crc: shared, crc nowhere", "no 24_");
+      sprintf(detail, "%d reads of 5 files",
+            retro_atomic_load_acquire_int(&reads_begun));
+      check(retro_atomic_load_acquire_int(&reads_begun) == 5,
+            "scan_serial_and_crc: the crc lookup reads no file again",
+            detail);
    }
 
    /* First-match selection moves a matched database to the front and
@@ -1983,6 +3432,36 @@ int main(int argc, char **argv)
 
    walk_lane(root, pl_dir, db_dir);
    single_lane(root, pl_dir, crc_a, sz_a);
+   {
+      char reader_db[512];
+
+      sprintf(reader_db, "%s/reader_db", root);
+      if (!write_reader_db(reader_db))
+      { check(0, "fixture", "could not write database"); goto done; }
+      reader_cancel_lane(root, reader_db, true);
+      reader_cancel_lane(root, reader_db, false);
+      reader_stuck_lane(root, reader_db);
+      reader_quit_lane(root, reader_db);
+      reader_push_lane(root, pl_dir, reader_db);
+      reader_reset_lane(root, pl_dir, reader_db);
+      reader_fail_lane(root, pl_dir, reader_db);
+      order_lane(root, pl_dir, true);
+      order_lane(root, pl_dir, false);
+      mix_lane(root, pl_dir, true);
+      mix_lane(root, pl_dir, false);
+      cue_lane(root, reader_db, false);
+      cue_lane(root, reader_db, true);
+      strlcpy(config_get_ptr()->paths.path_content_database, reader_db,
+            sizeof(config_get_ptr()->paths.path_content_database));
+      pads_lane(root, true);
+      pads_lane(root, false);
+      switch_lane(root, pl_dir);
+      switch_stuck_lane(root, pl_dir, reader_db);
+      reader_list_end_lane(root, reader_db);
+      strlcpy(config_get_ptr()->paths.path_content_database, db_dir,
+            sizeof(config_get_ptr()->paths.path_content_database));
+      use_queue(false);
+   }
 
 done:
    printf("\n%d checks, %d failures\n", checks, failures);

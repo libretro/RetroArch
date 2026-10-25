@@ -30,6 +30,10 @@
 #include <encodings/crc32.h>
 #include <streams/interface_stream.h>
 #include <streams/file_stream.h>
+#ifdef HAVE_THREADS
+#include <retro_atomic.h>
+#include <features/features_cpu.h>
+#endif
 #include "tasks_internal.h"
 
 #include "../core_info.h"
@@ -307,6 +311,97 @@ enum db_crc_fail
    DB_CRC_FAIL_ZERO        /* the CRC is 0, so no entry matches */
 };
 
+/* None on Wii U: its newlib and libfat take no locks, and without
+ * libfat its SD layer serialises every call.  None on Vita: Vita3K's
+ * sceIo tables take no lock. */
+#if defined(HAVE_LIBRETRODB) && defined(HAVE_THREADS) \
+ && defined(RETRO_ATOMIC_LOCK_FREE) && !defined(WIIU) && !defined(VITA)
+#define SCAN_HAVE_READERS
+#endif
+
+/* Reader tasks: min(SCAN_READERS_MAX, cores), none below 2, on the
+ * threaded queue's parallel workers.  The scan hands them up to
+ * SCAN_READER_DEPTH files each ahead of it and parks at most
+ * SCAN_READER_PARK_USEC on one still being read; an idle reader parks
+ * as long. */
+#ifndef SCAN_READERS_MAX
+#define SCAN_READERS_MAX 4
+#endif
+#ifndef SCAN_READER_DEPTH
+#define SCAN_READER_DEPTH 64
+#endif
+#ifndef SCAN_READER_PARK_USEC
+#define SCAN_READER_PARK_USEC 100000
+#endif
+/* Files at or under this size are read by the readers. */
+#ifndef SCAN_READER_CUTOFF
+#define SCAN_READER_CUTOFF (128 * 1024 * 1024)
+#endif
+
+#ifdef SCAN_HAVE_READERS
+enum scan_slot_state
+{
+   SCAN_SLOT_EMPTY = 0,
+   SCAN_SLOT_READY,       /* for a reader to claim */
+   SCAN_SLOT_IN_FLIGHT,
+   SCAN_SLOT_OK,
+   SCAN_SLOT_BIG,
+   SCAN_SLOT_FAIL
+};
+
+/* A file handed out.  The scan writes it while EMPTY, its reader while
+ * IN_FLIGHT, and each publishes with the state. */
+typedef struct scan_slot
+{
+   uint64_t           size;
+   size_t             index;   /* in the content list */
+   char              *path;    /* PATH_MAX_LENGTH, its own copy */
+   uint32_t           crc;
+   retro_atomic_int_t state;   /* enum scan_slot_state */
+} scan_slot_t;
+
+/* Shared by the scan and its readers; the last reference frees it.
+ * Fields marked scan are the scan's alone. */
+typedef struct scan_readers
+{
+   scan_slot_t       *win;      /* by fill order % window */
+   char              *paths;
+   uint32_t          *idents;   /* the readers' */
+   size_t             window;
+   size_t             fill;     /* scan: next list index to look at */
+   unsigned           seq;      /* scan: slots filled */
+   unsigned           take;     /* scan: slots given back */
+   unsigned           count;    /* scan: readers pushed */
+   uint32_t           ident;    /* the scan's */
+   retro_atomic_int_t filled;   /* seq, for the readers */
+   retro_atomic_int_t claim;    /* the next slot to claim */
+   retro_atomic_int_t idle;     /* readers parked or parking */
+   retro_atomic_int_t live;     /* readers not yet gone */
+   retro_atomic_int_t quit;
+   retro_atomic_int_t refs;
+   bool               off;      /* scan: the readers are gone or going */
+} scan_readers_t;
+
+/* A reader task's own. */
+typedef struct scan_reader
+{
+   scan_readers_t *blk;
+   scan_slot_t    *slot;   /* the file in hand */
+   intfstream_t   *fd;
+   int64_t         left;
+   uint32_t        acc;
+   bool            parked;
+   bool            gone;   /* left: counted out of live */
+} scan_reader_t;
+
+enum scan_take
+{
+   SCAN_TAKE_NONE = 0,   /* the task reads the file itself */
+   SCAN_TAKE_DONE,
+   SCAN_TAKE_WAIT
+};
+#endif
+
 enum db_flags_enum
 {
    DB_HANDLE_FLAG_IS_DIRECTORY            = (1 << 0),
@@ -389,8 +484,14 @@ typedef struct manual_scan_handle
 #ifdef HAVE_LIBRETRODB
    char *content_database_path;
    database_info_handle_t *handle;
+#ifdef SCAN_HAVE_READERS
+   scan_readers_t *readers;
+#endif
    database_state_handle_t state;
    uint8_t flags;
+#ifdef SCAN_HAVE_READERS
+   bool readers_tried;
+#endif
 #endif
    /* The caller's completion callback, run after the task's own -
     * this is how a task_push_dbscan caller learns the scan finished;
@@ -404,7 +505,9 @@ enum scan_verdict
    SCAN_VERDICT_MATCHED_DB,
    SCAN_VERDICT_ARCHIVE_CONTENTS_ADDED,
    SCAN_VERDICT_NO_DB_MATCH,
-   SCAN_VERDICT_ERROR
+   SCAN_VERDICT_ERROR,
+   /* A reader has the file: park until its result is in. */
+   SCAN_VERDICT_WAIT
 };
 
 static void increase_content_list_index(manual_scan_handle_t *manual_scan)
@@ -977,6 +1080,25 @@ static bool task_database_crc_begin(database_state_handle_t *db_state,
    return true;
 }
 
+/* Hashes up to one quantum of @fd's span.  -1 on a failed read (a span
+ * that ends early is one), 1 at the end of the span, else 0. */
+static int task_database_crc_quantum(intfstream_t *fd, int64_t *left,
+      uint32_t *acc)
+{
+   size_t  want = SCAN_CRC_QUANTUM;
+   int64_t got  = 0;
+
+   if (*left >= 0 && *left < (int64_t)want)
+      want = (size_t)*left;
+   if (want)
+      got = intfstream_crc_step(fd, acc, want);
+   if (got < 0 || (got == 0 && *left > 0))
+      return -1;
+   if (*left > 0)
+      *left -= got;
+   return (got == 0 || *left == 0) ? 1 : 0;
+}
+
 /* One quantum always, then more while the window lasts.  At the end
  * of the span the lookup runs on the next step. */
 static enum scan_verdict task_database_crc_step(
@@ -984,16 +1106,10 @@ static enum scan_verdict task_database_crc_step(
 {
    for (;;)
    {
-      size_t  want = SCAN_CRC_QUANTUM;
-      int64_t got  = 0;
+      int rv = task_database_crc_quantum(db_state->crc_fd,
+            &db_state->crc_left, &db_state->crc_acc);
 
-      if (db_state->crc_left >= 0 && db_state->crc_left < (int64_t)want)
-         want = (size_t)db_state->crc_left;
-      if (want)
-         got = intfstream_crc_step(db_state->crc_fd,
-               &db_state->crc_acc, want);
-      /* A span that ends early is a failed read. */
-      if (got < 0 || (got == 0 && db_state->crc_left > 0))
+      if (rv < 0)
       {
          task_database_crc_close(db_state);
          if (db_state->crc_fail == DB_CRC_FAIL_ERROR)
@@ -1002,9 +1118,7 @@ static enum scan_verdict task_database_crc_step(
          db_state->crc_done = true;
          return SCAN_VERDICT_CONTINUE;
       }
-      if (db_state->crc_left > 0)
-         db_state->crc_left -= got;
-      if (got == 0 || db_state->crc_left == 0)
+      if (rv > 0)
          break;
       if (!task_nbio_slice_within_budget(b, 0, 0))
          return SCAN_VERDICT_CONTINUE;
@@ -1018,6 +1132,390 @@ static enum scan_verdict task_database_crc_step(
    db_state->crc_done = true;
    return SCAN_VERDICT_CONTINUE;
 }
+
+#ifdef SCAN_HAVE_READERS
+static void scan_readers_unref(scan_readers_t *blk)
+{
+   if (retro_atomic_fetch_sub_int(&blk->refs, 1) != 1)
+      return;
+   free(blk->idents);
+   free(blk->paths);
+   free(blk->win);
+   free(blk);
+}
+
+static void scan_readers_wake(scan_readers_t *blk)
+{
+   unsigned r;
+
+   for (r = 0; r < blk->count; r++)
+      task_queue_wake(blk->idents[r]);
+}
+
+/* No I/O: a plain path that the default or the archive branch would
+ * CRC whole. */
+static bool scan_reader_eligible(const char *path)
+{
+   if (   !path
+       || strstr(path, "://")
+       || strlen(path) >= PATH_MAX_LENGTH
+       || path_contains_compressed_file(path))
+      return false;
+   switch (extension_to_file_type(path_get_extension(path)))
+   {
+      case FILE_TYPE_NONE:
+#ifdef HAVE_COMPRESSION
+      case FILE_TYPE_COMPRESSED:
+#endif
+         return true;
+      default:
+         break;
+   }
+   return false;
+}
+
+/* The next filled slot, in order; one the scan took back is passed
+ * over.  False when none is filled. */
+static bool scan_reader_claim(scan_reader_t *rd)
+{
+   scan_readers_t *blk = rd->blk;
+
+   for (;;)
+   {
+      int          c = retro_atomic_load_acquire_int(&blk->claim);
+      scan_slot_t *slot;
+
+      if (c >= retro_atomic_load_seq_cst_int(&blk->filled))
+         return false;
+      if (!retro_atomic_cas_int(&blk->claim, c, c + 1))
+         continue;
+      slot = &blk->win[(size_t)c % blk->window];
+      if (retro_atomic_cas_int(&slot->state, SCAN_SLOT_READY,
+            SCAN_SLOT_IN_FLIGHT))
+      {
+         rd->slot = slot;
+         return true;
+      }
+   }
+}
+
+/* Wakes the scan, which may be parked on this file. */
+static void scan_reader_publish(scan_reader_t *rd, int state)
+{
+   if (rd->fd)
+   {
+      intfstream_close(rd->fd);
+      free(rd->fd);
+      rd->fd = NULL;
+   }
+   if (state == SCAN_SLOT_OK)
+      rd->slot->crc = rd->acc;
+   retro_atomic_store_release_int(&rd->slot->state, state);
+   rd->slot = NULL;
+   task_queue_wake(rd->blk->ident);
+}
+
+/* A file in hand goes back as FAIL, for the scan to read. */
+static void scan_reader_leave(scan_reader_t *rd)
+{
+   scan_readers_t *blk = rd->blk;
+
+   if (rd->slot)
+      scan_reader_publish(rd, SCAN_SLOT_FAIL);
+   if (rd->parked)
+      retro_atomic_fetch_sub_int(&blk->idle, 1);
+   retro_atomic_fetch_add_seq_cst_int(&blk->live, -1);
+   /* With none left, the scan reads what was filled. */
+   task_queue_wake(blk->ident);
+   rd->gone = true;
+}
+
+/* Where every reader drops its share: at its retirement, or on the
+ * worker a queue deinit left it behind on, once its read returns. */
+static void scan_reader_cleanup(retro_task_t *task)
+{
+   scan_reader_t *rd = (scan_reader_t*)task->state;
+
+   if (!rd->gone)
+      scan_reader_leave(rd);
+   scan_readers_unref(rd->blk);
+   free(rd);
+   task->state = NULL;
+}
+
+/* One call: a claim and the open, or one quantum of the file in hand.
+ * Leaves on quit, on cancel and off the threaded queue (whose
+ * unthreaded runner would run it on the main thread). */
+static void scan_reader_handler(retro_task_t *task)
+{
+   scan_reader_t  *rd  = (scan_reader_t*)task->state;
+   scan_readers_t *blk = rd->blk;
+   int             rv;
+
+   if (rd->parked)
+   {
+      rd->parked = false;
+      retro_atomic_fetch_sub_int(&blk->idle, 1);
+   }
+   if (   retro_atomic_load_acquire_int(&blk->quit)
+       || !task_queue_is_threaded()
+       || (task_get_flags(task) & RETRO_TASK_FLG_CANCELLED))
+      goto leave;
+   if (!rd->slot)
+   {
+      uint64_t size = 0;
+
+      if (!scan_reader_claim(rd))
+      {
+         /* seq_cst both ways with the scan's fill: it sees this reader
+          * idle and wakes it, or this sees the fill. */
+         retro_atomic_fetch_add_seq_cst_int(&blk->idle, 1);
+         rd->parked = true;
+         if (!scan_reader_claim(rd))
+         {
+            task_queue_park(task, SCAN_READER_PARK_USEC);
+            return;
+         }
+         rd->parked = false;
+         retro_atomic_fetch_sub_int(&blk->idle, 1);
+      }
+      if (!(rd->fd = task_database_crc_open(rd->slot->path,
+            TASK_DATABASE_CRC_FILE, &rd->left, &size)))
+      {
+         scan_reader_publish(rd, SCAN_SLOT_FAIL);
+         return;
+      }
+      rd->slot->size = size;
+      rd->acc        = 0;
+      if (size > SCAN_READER_CUTOFF)
+      {
+         scan_reader_publish(rd, SCAN_SLOT_BIG);
+         return;
+      }
+   }
+   if ((rv = task_database_crc_quantum(rd->fd, &rd->left, &rd->acc)))
+      scan_reader_publish(rd, rv > 0 ? SCAN_SLOT_OK : SCAN_SLOT_FAIL);
+   return;
+leave:
+   scan_reader_leave(rd);
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+}
+
+/* Readers pushed are kept when a later push fails.  Tried once per
+ * scan. */
+static void scan_readers_start(retro_task_t *task,
+      manual_scan_handle_t *manual_scan)
+{
+   scan_readers_t *blk;
+   size_t          i;
+   unsigned        n = cpu_features_get_core_amount();
+   unsigned        r;
+
+   manual_scan->readers_tried = true;
+   if (n > SCAN_READERS_MAX)
+      n = SCAN_READERS_MAX;
+   if (n < 2 || !task_queue_is_threaded())
+      return;
+   if (!(blk = (scan_readers_t*)calloc(1, sizeof(*blk))))
+      return;
+   retro_atomic_int_init(&blk->refs, 1);
+   blk->window = n * SCAN_READER_DEPTH;
+   if (   !(blk->win    = (scan_slot_t*)calloc(blk->window,
+            sizeof(*blk->win)))
+       || !(blk->paths  = (char*)malloc(blk->window * PATH_MAX_LENGTH))
+       || !(blk->idents = (uint32_t*)calloc(n, sizeof(*blk->idents))))
+   {
+      scan_readers_unref(blk);
+      return;
+   }
+   for (i = 0; i < blk->window; i++)
+   {
+      blk->win[i].path = blk->paths + i * PATH_MAX_LENGTH;
+      retro_atomic_int_init(&blk->win[i].state, SCAN_SLOT_EMPTY);
+   }
+   blk->ident = task->ident;
+   blk->fill  = manual_scan->content_list_index;
+   retro_atomic_int_init(&blk->filled, 0);
+   retro_atomic_int_init(&blk->claim,  0);
+   retro_atomic_int_init(&blk->idle,   0);
+   retro_atomic_int_init(&blk->quit,   0);
+   retro_atomic_int_init(&blk->live,   (int)n);
+   retro_atomic_int_init(&blk->refs,   (int)n + 1);
+   for (r = 0; r < n; r++)
+   {
+      retro_task_t  *rt = NULL;
+      scan_reader_t *rd = (scan_reader_t*)calloc(1, sizeof(*rd));
+
+      if (!rd || !(rt = task_init()))
+      {
+         free(rd);
+         break;
+      }
+      rd->blk              = blk;
+      rt->handler          = scan_reader_handler;
+      rt->cleanup          = scan_reader_cleanup;
+      rt->state            = rd;
+      rt->parallel_workers = n;
+      task_set_flags(rt, RETRO_TASK_FLG_PARALLEL
+            | RETRO_TASK_FLG_DETACHABLE | RETRO_TASK_FLG_MUTE, true);
+      blk->idents[r]       = rt->ident;
+      /* A refused task is still ours. */
+      if (!task_queue_push(rt))
+      {
+         free(rd);
+         free(rt);
+         break;
+      }
+      blk->count++;
+   }
+   for (; r < n; r++)
+   {
+      retro_atomic_fetch_add_int(&blk->live, -1);
+      scan_readers_unref(blk);
+   }
+   if (!blk->count)
+   {
+      scan_readers_unref(blk);
+      return;
+   }
+   manual_scan->readers = blk;
+}
+
+/* The scan lets go: each reader leaves at its next call.  Idempotent. */
+static void scan_readers_stop(manual_scan_handle_t *manual_scan)
+{
+   scan_readers_t *blk = manual_scan->readers;
+
+   if (!blk)
+      return;
+   manual_scan->readers = NULL;
+   retro_atomic_store_release_int(&blk->quit, 1);
+   scan_readers_wake(blk);
+   scan_readers_unref(blk);
+}
+
+/* Free slots take the eligible files of the window ahead, in list
+ * order.  None while the scan is on a cue or gdi: those sort first
+ * (database_info_dir_init_from_list()), and each prunes its tracks
+ * when the scan reaches it. */
+static void scan_readers_fill(manual_scan_handle_t *manual_scan)
+{
+   scan_readers_t     *blk   = manual_scan->readers;
+   struct string_list *list  = manual_scan->content_list;
+   int                 added = 0;
+   size_t              end;
+
+   if (!blk || blk->off)
+      return;
+   if (   !task_queue_is_threaded()
+       || retro_atomic_load_seq_cst_int(&blk->live) <= 0)
+   {
+      blk->off = true;
+      return;
+   }
+   if (manual_scan->content_list_index < list->size)
+      switch (extension_to_file_type(path_get_extension(
+            list->elems[manual_scan->content_list_index].data)))
+      {
+         case FILE_TYPE_CUE:
+         case FILE_TYPE_GDI:
+            return;
+         default:
+            break;
+      }
+   end = manual_scan->content_list_index + blk->window;
+   if (end > list->size)
+      end = list->size;
+   if (blk->fill < manual_scan->content_list_index)
+      blk->fill = manual_scan->content_list_index;
+   while (blk->fill < end && blk->seq - blk->take < blk->window)
+   {
+      const char *path = list->elems[blk->fill].data;
+
+      if (scan_reader_eligible(path))
+      {
+         scan_slot_t *slot = &blk->win[blk->seq % blk->window];
+
+         slot->index = blk->fill;
+         slot->size  = 0;
+         slot->crc   = 0;
+         /* A copy: the list moves and is pruned under the readers. */
+         strlcpy(slot->path, path, PATH_MAX_LENGTH);
+         retro_atomic_store_release_int(&slot->state, SCAN_SLOT_READY);
+         blk->seq++;
+         added++;
+      }
+      blk->fill++;
+   }
+   if (!added)
+      return;
+   /* seq_cst: see scan_reader_handler(). */
+   retro_atomic_fetch_add_seq_cst_int(&blk->filled, added);
+   if (retro_atomic_load_seq_cst_int(&blk->idle) > 0)
+      scan_readers_wake(blk);
+}
+
+/* File content_list_index's result, at its own place only: an OK one
+ * leaves the state a finished stepped CRC leaves.  The slots up to it
+ * go back for refilling; a READY one is the readers' until they are
+ * off. */
+static enum scan_take scan_readers_take(manual_scan_handle_t *manual_scan,
+      database_state_handle_t *db_state, database_info_handle_t *db,
+      const char *name)
+{
+   scan_readers_t *blk = manual_scan->readers;
+   size_t          i   = manual_scan->content_list_index;
+
+   if (!blk)
+      return SCAN_TAKE_NONE;
+   while (blk->take != blk->seq)
+   {
+      scan_slot_t *slot = &blk->win[blk->take % blk->window];
+      int          state;
+
+      if (slot->index > i)
+         break;
+      state = retro_atomic_load_acquire_int(&slot->state);
+      if (state == SCAN_SLOT_IN_FLIGHT)
+         return SCAN_TAKE_WAIT;
+      if (state == SCAN_SLOT_READY)
+      {
+         if (   !blk->off
+             || !retro_atomic_cas_int(&slot->state, SCAN_SLOT_READY,
+                  SCAN_SLOT_EMPTY))
+            return SCAN_TAKE_WAIT;
+         state = SCAN_SLOT_EMPTY;
+      }
+      blk->take++;
+      if (slot->index == i && state == SCAN_SLOT_OK)
+      {
+         if (extension_to_file_type(path_get_extension(name))
+               == FILE_TYPE_COMPRESSED)
+         {
+            db_state->archive_crc  = slot->crc;
+            db_state->archive_size = slot->size;
+         }
+         else
+         {
+            db_state->serial[0] = '\0';
+            db_state->crc       = slot->crc;
+            db_state->size      = slot->size;
+         }
+         db_state->crc_done = true;
+         db->type           = DATABASE_TYPE_CRC_LOOKUP;
+         retro_atomic_store_release_int(&slot->state, SCAN_SLOT_EMPTY);
+         return SCAN_TAKE_DONE;
+      }
+      retro_atomic_store_release_int(&slot->state, SCAN_SLOT_EMPTY);
+      if (slot->index == i)
+         break;
+   }
+   /* The task reads it: not a reader too. */
+   if (blk->fill <= i)
+      blk->fill = i + 1;
+   return SCAN_TAKE_NONE;
+}
+#endif
 
 static void task_database_index_close(database_state_handle_t *db_state)
 {
@@ -2300,6 +2798,17 @@ static int task_database_iterate(
    switch (db->type)
    {
       case DATABASE_TYPE_ITERATE:
+#ifdef SCAN_HAVE_READERS
+         switch (scan_readers_take(_db, db_state, db, name))
+         {
+            case SCAN_TAKE_DONE:
+               return SCAN_VERDICT_CONTINUE;
+            case SCAN_TAKE_WAIT:
+               return SCAN_VERDICT_WAIT;
+            default:
+               break;
+         }
+#endif
          if (task_database_iterate_playlist(_db, db_state, db, name))
             return SCAN_VERDICT_CONTINUE;
          else
@@ -2642,6 +3151,10 @@ static void free_manual_content_scan_handle(manual_scan_handle_t *manual_scan)
 {
    if (!manual_scan)
       return;
+
+#ifdef SCAN_HAVE_READERS
+   scan_readers_stop(manual_scan);
+#endif
 
    if (manual_scan->task_config)
    {
@@ -3463,7 +3976,8 @@ static bool task_manual_scan_begin_tick(retro_task_t *task,
 enum scan_step
 {
    SCAN_STEP_NEXT = 0,
-   SCAN_STEP_FINISHED
+   SCAN_STEP_FINISHED,
+   SCAN_STEP_WAIT
 };
 
 /* One step of the ITERATE family: a cleanup entry, a database probe or
@@ -3476,6 +3990,19 @@ static enum scan_step task_manual_scan_iterate_step(retro_task_t *task,
    database_state_handle_t *dbstate = &manual_scan->state;
 #else
    (void)b;
+#endif
+
+#ifdef SCAN_HAVE_READERS
+   switch (manual_scan->status)
+   {
+      case DATABASE_SCAN_ITERATE_START:
+      case DATABASE_SCAN_ITERATE_CONTENT:
+      case DATABASE_SCAN_ITERATE_NEXT:
+         scan_readers_fill(manual_scan);
+         break;
+      default:
+         break;
+   }
 #endif
 
    switch (manual_scan->status)
@@ -3567,6 +4094,12 @@ static enum scan_step task_manual_scan_iterate_step(retro_task_t *task,
             const char *content_path = manual_scan->content_list->elems[
                   manual_scan->content_list_index].data;
 
+#ifdef SCAN_HAVE_READERS
+            if (   !manual_scan->readers_tried
+                && manual_scan->content_list->size
+                   - manual_scan->content_list_index >= 2)
+               scan_readers_start(task, manual_scan);
+#endif
             /* Check if this is an M3U file and add to list for post-processing */
             if (rm3u_is_m3u_filestream(content_path))
             {
@@ -3631,6 +4164,8 @@ static enum scan_step task_manual_scan_iterate_step(retro_task_t *task,
                   break;
                case SCAN_VERDICT_CONTINUE:
                   break;
+               case SCAN_VERDICT_WAIT:
+                  return SCAN_STEP_WAIT;
             }
          }
          break;
@@ -3808,16 +4343,29 @@ static bool task_manual_scan_iterate_tick(retro_task_t *task,
    task_nbio_slice_open(&b);
    while (task_nbio_slice_within_budget(&b, 0, 0))
    {
-      if (task_manual_scan_iterate_step(task, manual_scan, &b)
-            == SCAN_STEP_FINISHED)
+      enum scan_step step = task_manual_scan_iterate_step(task,
+            manual_scan, &b);
+
+      if (step == SCAN_STEP_FINISHED)
       {
          finished = true;
+         break;
+      }
+      /* A reader's wake ends the park. */
+      if (step == SCAN_STEP_WAIT)
+      {
+         task_queue_park(task, SCAN_READER_PARK_USEC);
          break;
       }
       if (!manual_scan_status_is_iterate(manual_scan->status))
          break;
    }
    task_nbio_slice_close(&b);
+#ifdef SCAN_HAVE_READERS
+   /* The list is done: M3U and END run without the readers. */
+   if (!manual_scan_status_is_iterate(manual_scan->status))
+      scan_readers_stop(manual_scan);
+#endif
    return finished;
 }
 
@@ -3977,6 +4525,10 @@ static void task_manual_content_scan_handler(retro_task_t *task)
    return;
 
 task_finished:
+#ifdef SCAN_HAVE_READERS
+   if (manual_scan)
+      scan_readers_stop(manual_scan);
+#endif
 #ifdef DEBUG
    RARCH_DBG("[Scanner] Task finished\n");
 #endif
