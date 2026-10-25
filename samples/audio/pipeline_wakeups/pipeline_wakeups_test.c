@@ -81,6 +81,7 @@
 
 #include <boolean.h>
 #include <retro_atomic.h>
+#include <retro_timers.h>
 #include <audio/conversion/float_to_s16.h>
 #include <audio/conversion/s16_to_float.h>
 
@@ -107,6 +108,31 @@ static void counted_to_int16(int16_t *out, const float *in, size_t n)
 #undef audio_driver_callback
 #undef convert_s16_to_float
 #undef convert_float_to_s16
+
+static void pipeline_sleep_until(const struct timespec *deadline)
+{
+#ifdef _WIN32
+   struct timespec now;
+   int64_t left;
+   if (clock_gettime(CLOCK_MONOTONIC, &now))
+   {
+      fputs("fixture monotonic clock failed\n", stderr);
+      exit(1);
+   }
+   left = ((int64_t)deadline->tv_sec - now.tv_sec) * 1000000000
+      + deadline->tv_nsec - now.tv_nsec;
+   if (left > 0)
+      retro_sleep_until_us(cpu_features_get_time_usec() + (left + 999) / 1000);
+#else
+   clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, deadline, NULL);
+#endif
+}
+
+static bool menu_source_mode;
+static size_t menu_wait_bytes;
+static retro_atomic_int_t menu_wait_fail = RETRO_ATOMIC_INT_INITIALIZER(0);
+static retro_atomic_int_t menu_partial_write = RETRO_ATOMIC_INT_INITIALIZER(0);
+static retro_atomic_int_t menu_wait_invalid = RETRO_ATOMIC_INT_INITIALIZER(0);
 
 static retro_atomic_size_t int16_src_frames;
 
@@ -282,7 +308,7 @@ static void *dev_thread(void *arg)
       next.tv_nsec += step_ns;
       next.tv_sec  += next.tv_nsec / 1000000000L;
       next.tv_nsec %= 1000000000L;
-      clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &next, NULL);
+      pipeline_sleep_until(&next);
       dev_render();
    }
    return NULL;
@@ -375,6 +401,11 @@ static ssize_t cdev_write(void *data, const void *buf, size_t len)
    if (retro_atomic_load_acquire_int(&dev_fail_now))
       return -1;
 
+   if (menu_source_mode && len > menu_wait_bytes)
+      retro_atomic_store_release_int(&menu_wait_invalid, 1);
+   if (menu_source_mode && dev_backpressure
+         && retro_atomic_fetch_and_int(&menu_partial_write, 0) && samples > channels)
+      samples = channels;
    note_write();
    tap_samples(buf, samples);
    if (dev_backpressure)
@@ -422,6 +453,8 @@ static size_t cdev_wait_writable(void *data, size_t len)
    size_t want = len / device_sample_bytes;
    int    laps = 8;
    (void)data;
+   if (retro_atomic_load_acquire_int(&menu_wait_fail)) return 0;
+   if (menu_source_mode) menu_wait_bytes = len;
    if (want % channels)
       want += channels - want % channels;
    if (want > dev_usable)
@@ -997,6 +1030,146 @@ static void wrapper_restart(void)
    }
 }
 
+static void menu_source_policy(void)
+{
+   audio_driver_state_t *st = &audio_driver_st;
+   runloop_state_t *runloop = runloop_state_get_ptr();
+   uint32_t saved_flags = runloop->flags;
+   bool saved_source = st->menu_source_enabled;
+   size_t piece = 64 * st->pipe_frame_bytes;
+   size_t left;
+   const void *raw = source_float ? (const void*)frame_audio_float : (const void*)frame_audio;
+   int saved_snapshot = retro_atomic_load_acquire_int(&st->runloop_snapshot);
+   st->menu_source_enabled = true;
+   runloop->flags &= ~RUNLOOP_FLAG_CORE_RUNNING;
+   AUDIO_FLAGS_SET(st, AUDIO_FLAG_SUSPENDED);
+   audio_driver_publish_runloop();
+   if (retro_atomic_load_acquire_int(&st->runloop_snapshot) & AUDIO_SNAP_MENU_SOURCE)
+   {
+      fputs("suspended audio retained the menu producer\n", stderr);
+      fixture_failures++;
+   }
+   AUDIO_FLAGS_CLEAR(st, AUDIO_FLAG_SUSPENDED);
+   st->pipe_threaded = false;
+   audio_driver_publish_runloop();
+   if (retro_atomic_load_acquire_int(&st->runloop_snapshot) & AUDIO_SNAP_MENU_SOURCE)
+   {
+      fputs("inline audio retained device menu ownership\n", stderr);
+      fixture_failures++;
+   }
+   st->pipe_threaded = true;
+   if (retro_spsc_write(&st->pipe_ring, raw, piece) != piece) fixture_failures++;
+   audio_driver_publish_runloop();
+   if (retro_spsc_write(&st->pipe_ring, raw, piece) != piece) fixture_failures++;
+   audio_driver_callback();
+   left = retro_spsc_read_avail(&st->pipe_ring);
+   if (left != piece)
+   {
+      fputs("menu ownership discarded newer core audio\n", stderr);
+      fixture_failures++;
+   }
+   if (st->pipe_transport)
+      audio_driver_pipeline_transport_discard(left / st->pipe_frame_bytes);
+   else if (left) retro_spsc_skip(&st->pipe_ring, left);
+   st->pipe_menu_active = false;
+   st->pipe_menu_reset = true;
+   st->pipe_priming = true;
+   dev_write_ptr = dev_read_ptr = 0;
+   retro_atomic_store_release_size(&dev_filled, 0);
+   st->menu_source_enabled = saved_source;
+   runloop->flags = saved_flags;
+   retro_atomic_store_release_int(&st->runloop_snapshot, saved_snapshot);
+}
+
+static void menu_delivery(void *userdata)
+{
+   uint64_t *difference = (uint64_t*)userdata;
+   *difference = audio_driver_st.sink_offered_raw - audio_driver_st.sink_accepted;
+}
+
+static void menu_source_run(void)
+{
+   audio_driver_state_t *st = &audio_driver_st;
+   size_t before = retro_atomic_load_acquire_size(&cnt_writes);
+   unsigned i;
+   uint64_t delivery_before = 0, delivery_after = 0;
+   size_t idle_wakes;
+   retro_time_t failed_at, elapsed;
+   video_state_get_ptr()->av_info.timing.sample_rate = CORE_RATE;
+   video_state_get_ptr()->av_info.timing.fps = FPS;
+   audio_driver_menu_sample(false);
+   if (!(retro_atomic_load_acquire_int(&st->runloop_snapshot) & AUDIO_SNAP_MENU_SOURCE)
+         || !wait_progress(wrote_since, &before))
+   {
+      fprintf(stderr, "menu audio did not start without core input\n");
+      fixture_failures++;
+      return;
+   }
+   for (i = 0; i < 3; i++)
+   {
+      if (i == 1)
+      {
+         audio_thread_apply_control(st->context_audio_data, menu_delivery, &delivery_before);
+         retro_atomic_fetch_or_int(&st->runloop_snapshot,
+               AUDIO_SNAP_FASTMOTION | AUDIO_SNAP_FF_SPEEDUP | AUDIO_SNAP_PAUSED);
+         retro_atomic_store_release_int(&st->pipe_ff_mult_q16, 8 * 65536);
+         retro_atomic_store_release_int(&menu_partial_write, 1);
+      }
+      else if (i == 2)
+      {
+         retro_atomic_fetch_and_int(&st->runloop_snapshot,
+               ~(AUDIO_SNAP_FASTMOTION | AUDIO_SNAP_FF_SPEEDUP));
+         retro_atomic_fetch_or_int(&st->runloop_snapshot, AUDIO_SNAP_SLOWMOTION);
+      }
+      before = retro_atomic_load_acquire_size(&cnt_writes);
+      retro_sleep(100);
+      if (i == 1)
+      {
+         audio_thread_apply_control(st->context_audio_data, menu_delivery, &delivery_after);
+         if (delivery_after != delivery_before)
+         {
+            fputs("paused core dropped the menu audio write tail\n", stderr);
+            fixture_failures++;
+         }
+      }
+      if (retro_atomic_load_acquire_size(&cnt_writes) <= before
+            || retro_spsc_read_avail(&st->pipe_ring))
+      {
+         fprintf(stderr, "menu audio needs frame submissions\n");
+         fixture_failures++;
+      }
+   }
+   before = retro_atomic_load_acquire_size(&cnt_writes);
+   st->menu_source_enabled = false;
+   retro_atomic_fetch_and_int(&st->runloop_snapshot, ~(AUDIO_SNAP_MENU_SOURCE
+            | AUDIO_SNAP_SLOWMOTION | AUDIO_SNAP_FASTMOTION | AUDIO_SNAP_FF_SPEEDUP | AUDIO_SNAP_PAUSED));
+   retro_atomic_store_release_int(&st->pipe_ff_mult_q16, 65536);
+   for (i = 0; i < 3; i++) submit_frame((size_t)(CORE_RATE / FPS), 1);
+   if (!wait_progress(wrote_since, &before))
+   {
+      fprintf(stderr, "core audio did not resume after menu ownership\n");
+      fixture_failures++;
+   }
+   before = retro_atomic_load_acquire_size(&cnt_writes);
+   audio_driver_menu_sample(false);
+   if (!wait_progress(wrote_since, &before)) fixture_failures++;
+   retro_atomic_store_release_int(&menu_wait_fail, 1);
+   idle_wakes = retro_atomic_load_acquire_size(&cnt_wakes);
+   failed_at = cpu_features_get_time_usec();
+   retro_sleep(100);
+   elapsed = cpu_features_get_time_usec() - failed_at;
+   if (elapsed <= 0 || retro_atomic_load_acquire_size(&cnt_wakes) - idle_wakes
+         > (size_t)(elapsed / 250) + 64)
+   {
+      fputs("menu audio spun on a non-writable device\n", stderr);
+      fixture_failures++;
+   }
+   retro_atomic_store_release_int(&menu_wait_fail, 0);
+   before = retro_atomic_load_acquire_size(&cnt_writes);
+   if (!wait_progress(wrote_since, &before)) fixture_failures++;
+
+}
+
 /* --- one run --------------------------------------------------------- */
 
 static int cmp_time(const void *a, const void *b)
@@ -1053,7 +1226,7 @@ static void submit_frame(size_t per_frame, unsigned publishes)
          deadline.tv_nsec += (long)(1e9 / FPS * 0.8 * (k + 1) / publishes);
          deadline.tv_sec += deadline.tv_nsec / 1000000000L;
          deadline.tv_nsec %= 1000000000L;
-         clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &deadline, NULL);
+         pipeline_sleep_until(&deadline);
          slept += cpu_features_get_time_usec() - s0;
       }
       /* The failure mode this harness exists to catch, on demand. A
@@ -1112,6 +1285,7 @@ static void run_one(unsigned publishes, double seconds, bool backpressure)
       return;
    }
 
+   if (menu_source_mode) menu_source_policy();
    retro_atomic_store_release_int(&dev_running, 1);
    retro_atomic_store_release_int(&consumer_run, 1);
    pthread_create(&dev,  NULL, dev_thread, NULL);
@@ -1122,6 +1296,11 @@ static void run_one(unsigned publishes, double seconds, bool backpressure)
    }
    else pthread_create(&cons, NULL, consumer, NULL);
 
+   if (menu_source_mode)
+   {
+      menu_source_run();
+      frames = 0;
+   }
    if (pause_boundary_mode)
    {
       pause_boundary_run();
@@ -1143,7 +1322,7 @@ static void run_one(unsigned publishes, double seconds, bool backpressure)
       next.tv_nsec += step_ns;
       next.tv_sec  += next.tv_nsec / 1000000000L;
       next.tv_nsec %= 1000000000L;
-      clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &next, NULL);
+      pipeline_sleep_until(&next);
       submit_frame(per_frame, publishes);
       /* A second in, drop the startup transient: priming does not
        * repeat, and averaging it into a steady-state rate hides what
@@ -1224,7 +1403,9 @@ static void run_one(unsigned publishes, double seconds, bool backpressure)
    }
 
    if (use_wrapper)
-      printf("wrapper pubs=%u backpressure=%u: %u callbacks, %u writes, 8 restarts\n",
+      printf(menu_source_mode
+            ? "menu source pubs=%u backpressure=%u: %u callbacks, %u writes, ownership and failed-device checks\n"
+            : "wrapper pubs=%u backpressure=%u: %u callbacks, %u writes, 8 restarts\n",
             publishes, backpressure, (unsigned)wakes, (unsigned)writes);
    else printf("  %4u  %8.2f  %8.2f | %7.0f %7.0f %7.0f | %8.1f %5u %7.0f | %5u %5u\n",
          publishes,
@@ -1496,8 +1677,14 @@ int main(int argc, char **argv)
    pause_boundary_mode = getenv("PAUSE_BOUNDARY") != NULL;
    consumer_exit_mode  = getenv("CONSUMER_EXIT") != NULL;
    kept_device_mode    = getenv("KEPT_DEVICE") != NULL;
+   menu_source_mode    = getenv("MENU_SOURCE") != NULL;
    single_lane         = pause_boundary_mode || consumer_exit_mode
-                      || kept_device_mode;
+                      || kept_device_mode || menu_source_mode;
+   if (menu_source_mode && !use_wrapper)
+   {
+      fputs("MENU_SOURCE requires WRAPPER\n", stderr);
+      return 1;
+   }
    if (pause_boundary_mode && (!use_wrapper || !transport))
    {
       fprintf(stderr, "PAUSE_BOUNDARY requires WRAPPER and a TRANSPORT\n");
@@ -1599,7 +1786,7 @@ int main(int argc, char **argv)
    printf("  pubs     wakes/f  writes/f |   wake latency us     |  producer us/frame   | short  pulls\n");
    printf("                             |    p50     p99     max |   mean  blkd   worst |\n");
    }
-   for (i = 0; i < (pause_boundary_mode
+   for (i = 0; i < ((pause_boundary_mode || menu_source_mode)
             ? 1 : sizeof(sweep) / sizeof(sweep[0])); i++)
       run_one(sweep[i], seconds, true);
    /* Both single lanes need a device that pushes back: without it the
@@ -1638,12 +1825,18 @@ report:
          fixture_failures++;
       }
    }
-   if (use_wrapper) printf("native wrapper: 16 runs, 128 restart transactions, %u failures\n", fixture_failures);
+   if (menu_source_mode) printf("menu source: no frame submissions, core resumes, %u failures\n", fixture_failures);
+   else if (use_wrapper) printf("native wrapper: 16 runs, 128 restart transactions, %u failures\n", fixture_failures);
    if (live_controls) printf("live transport: 128 processing changes without metadata reset, %u failures\n", fixture_failures);
    if (live_layouts) printf("live layouts: 128 source layout changes on a fixed 7.1 device, %u failures\n", fixture_failures);
    if (speed_lowpass) printf("speed LPF: 128 coherent tempo/cutoff requests, %u failures\n", fixture_failures);
    if (runloop_policy) printf("runloop policy: 128 speed-state requests, %u failures\n", fixture_failures);
    if (auto_runloop) printf("automatic transport: 128 producer updates, 16 fallbacks/recoveries, %u failures\n", fixture_failures);
+   if (retro_atomic_load_acquire_int(&menu_wait_invalid))
+   {
+      fputs("menu write exceeded the room requested from the device\n", stderr);
+      fixture_failures++;
+   }
    printf("pipeline wakeups: %u fixture failures\n", fixture_failures);
    retro_eventcount_free(&progress_ev);
    return fixture_failures ? 1 : 0;

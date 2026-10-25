@@ -725,6 +725,8 @@ typedef struct
     * pipe's target then, not just a frame. Consumer thread only after
     * init. */
    bool     pipe_priming;
+   bool     pipe_menu_active;
+   bool     pipe_menu_reset;
    /* Main thread: the publish waited for room since the last
     * audio_driver_publish_runloop(), which takes it into the snapshot */
    bool     writer_held;
@@ -812,6 +814,7 @@ typedef struct
     * frame the last feed left owing. */
    retro_time_t menu_feed_last;
    double menu_feed_frac;
+   bool menu_source_enabled;
 
    /* Rate-limit state for the DRC compute.
     *
@@ -1045,6 +1048,8 @@ typedef struct
     * it has acted on in pipe_fade_in_seen instead of clearing the mark,
     * so a mark published while it reads is never cleared unseen. */
    retro_atomic_size_t pipe_discard_to;
+   /* Later core publishes must survive the menu handover. */
+   retro_atomic_size_t pipe_menu_to;
    retro_atomic_int_t  pipe_discard_gen;
    int                 pipe_discard_seen;
    retro_atomic_size_t pipe_fade_in_at;
@@ -1270,7 +1275,8 @@ enum audio_runloop_snapshot_bits
     * pipeline's publish waited for room in it: see
     * audio_driver_compute_rate_adjust() */
    AUDIO_SNAP_AUDIO_PACED   = (1 << 13),
-   AUDIO_SNAP_WRITER_HELD   = (1 << 14)
+   AUDIO_SNAP_WRITER_HELD   = (1 << 14),
+   AUDIO_SNAP_MENU_SOURCE   = (1 << 15)
 };
 
 /**

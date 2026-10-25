@@ -1034,6 +1034,18 @@ static INLINE bool audio_driver_pipe_ahead(const audio_driver_state_t *audio_st,
    return d && d <= audio_st->pipe_ring.capacity;
 }
 
+#ifdef HAVE_MENU
+static size_t audio_driver_menu_discard_bytes(const audio_driver_state_t *st)
+{
+   size_t tail = retro_atomic_load_relaxed_size(&st->pipe_ring.tail);
+   size_t at = retro_atomic_load_acquire_size(&st->pipe_menu_to);
+   size_t available = retro_spsc_read_avail(&st->pipe_ring);
+   size_t bytes = at - tail;
+   if (!audio_driver_pipe_ahead(st, tail, at)) return 0;
+   return bytes < available ? bytes : available;
+}
+#endif
+
 /* The main thread's side of the resume mark: a new sequence, armed at
  * @at or not armed at all. The main thread is the mark's only writer. */
 static void audio_driver_pipe_fade_publish(audio_driver_state_t *audio_st,
@@ -4721,6 +4733,10 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
       retro_atomic_store_release_int(&audio_driver_st.pipe_ctrl_avail, -1);
       audio_driver_st.pipe_underruns_seen = 0;
       audio_driver_st.pipe_priming        = true;
+      audio_driver_st.pipe_menu_active    = false;
+      audio_driver_st.pipe_menu_reset     = false;
+      audio_driver_st.menu_source_enabled = false;
+      retro_atomic_size_init(&audio_driver_st.pipe_menu_to, 0);
       retro_atomic_size_init(&audio_driver_st.pipe_source_waits, 0);
       retro_atomic_size_init(&audio_driver_st.pipe_source_wait_max_us, 0);
       retro_atomic_size_init(&audio_driver_st.pipe_held_min1, 0);
@@ -5224,6 +5240,20 @@ void audio_driver_publish_runloop(void)
 #else
    v |= AUDIO_SNAP_ALLOW_PAUSE;
 #endif
+#endif
+#if defined(HAVE_MENU) && defined(HAVE_THREADS)
+   if (audio_driver_st.pipe_threaded && audio_driver_st.menu_source_enabled
+         && !(AUDIO_FLAGS_GET(&audio_driver_st) & AUDIO_FLAG_SUSPENDED)
+         && (!(rf & RUNLOOP_FLAG_CORE_RUNNING)
+         || ((v & AUDIO_SNAP_MENU_ALIVE)
+            && ((rf & RUNLOOP_FLAG_PAUSED)
+               || ((v & AUDIO_SNAP_MENU_PAUSES) && (v & AUDIO_SNAP_ALLOW_PAUSE))))))
+   {
+      if (!(retro_atomic_load_relaxed_int(&audio_driver_st.runloop_snapshot) & AUDIO_SNAP_MENU_SOURCE))
+         retro_atomic_store_release_size(&audio_driver_st.pipe_menu_to,
+               retro_atomic_load_relaxed_size(&audio_driver_st.pipe_ring.head));
+      v |= AUDIO_SNAP_MENU_SOURCE;
+   }
 #endif
    retro_atomic_store_release_int(&audio_driver_st.runloop_snapshot, v);
 }
@@ -6322,6 +6352,10 @@ static void audio_driver_pipeline_retry(audio_driver_state_t *audio_st)
    const audio_driver_t *audio = audio_st->current_audio;
    int snap;
    snap = retro_atomic_load_acquire_int(&audio_st->runloop_snapshot);
+#ifdef HAVE_MENU
+   if (audio_st->pipe_menu_active && (snap & AUDIO_SNAP_MENU_SOURCE))
+      snap &= ~AUDIO_SNAP_PAUSED;
+#endif
    if ((snap & AUDIO_SNAP_PAUSED)
          || !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE)
          || (audio->underruns && !(snap & AUDIO_SNAP_SYNC)
@@ -6380,14 +6414,28 @@ static INLINE void audio_driver_pipeline_render(audio_driver_state_t *audio_st,
 {
    const void *front = source;
    audio_driver_state_lock();
+#ifdef HAVE_MENU
+   if (audio_st->pipe_menu_reset)
+   {
+      audio_driver_reset_resamplers(audio_st);
+      audio_st->pipe_menu_reset = false;
+   }
+#endif
    /* A pause that landed since this chunk was taken has already ended
     * the stream; the chunk is stale behind its tail. */
    if (retro_atomic_load_acquire_int(&audio_st->pipe_discard_gen)
          != audio_st->pipe_discard_seen)
    {
       audio_st->pipe_arm_fade = false;
-      audio_driver_state_unlock();
-      return;
+#ifdef HAVE_MENU
+      if (snap & AUDIO_SNAP_MENU_SOURCE)
+         audio_st->pipe_discard_seen = retro_atomic_load_acquire_int(&audio_st->pipe_discard_gen);
+      else
+#endif
+      {
+         audio_driver_state_unlock();
+         return;
+      }
    }
    if (audio_st->pipe_arm_fade)
    {
@@ -6621,6 +6669,11 @@ bool audio_driver_pipeline_transport_discard(size_t frames)
    return audio_driver_transport_discard(frames, true);
 }
 
+#ifdef HAVE_MENU
+static const float audio_menu_silence_float[1024] = {0};
+static const int16_t audio_menu_silence_int16[2048] = {0};
+#endif
+
 static bool audio_driver_pipeline_transport_run(struct audio_pipeline_stretch *stage,
       uint32_t *serial, size_t input_budget, size_t output_budget,
       bool finishing, bool *complete, bool *progress)
@@ -6629,6 +6682,9 @@ static bool audio_driver_pipeline_transport_run(struct audio_pipeline_stretch *s
    double ratio;
    size_t frame_bytes, cap, released;
    struct audio_pipeline_stretch_block block;
+#ifdef HAVE_MENU
+   bool menu_source;
+#endif
    audio_driver_state_t *audio_st = &audio_driver_st;
    const audio_driver_t *audio    = audio_st->current_audio;
    *progress = false;
@@ -6638,6 +6694,11 @@ static bool audio_driver_pipeline_transport_run(struct audio_pipeline_stretch *s
    *complete = false;
    if (!output_budget) return true;
    snap = retro_atomic_load_acquire_int(&audio_st->runloop_snapshot);
+#ifdef HAVE_MENU
+   menu_source = (snap & AUDIO_SNAP_MENU_SOURCE) != 0;
+   if (menu_source)
+      snap &= ~(AUDIO_SNAP_PAUSED | AUDIO_SNAP_SLOWMOTION | AUDIO_SNAP_FASTMOTION);
+#endif
    if ((snap & AUDIO_SNAP_PAUSED)
          || !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE)
          || !audio_st->output_samples_buf
@@ -6665,6 +6726,10 @@ static bool audio_driver_pipeline_transport_run(struct audio_pipeline_stretch *s
             ((snap & AUDIO_SNAP_FASTMOTION)
              && (snap & AUDIO_SNAP_FF_SPEEDUP))
                ? audio_driver_ff_mult(audio_st, input_budget) : 1.0);
+#ifdef HAVE_MENU
+   if (menu_source && output_budget > sizeof(audio_menu_silence_float) / audio_st->pipe_frame_bytes)
+      output_budget = sizeof(audio_menu_silence_float) / audio_st->pipe_frame_bytes;
+#endif
    frame_bytes = audio_driver_dev_frame_bytes(audio_st);
    if (output_budget > audio_st->pipe_pass_frames)
       output_budget = audio_st->pipe_pass_frames;
@@ -6693,6 +6758,16 @@ static bool audio_driver_pipeline_transport_run(struct audio_pipeline_stretch *s
       audio_driver_state_unlock();
       *serial = block.reset_serial;
    }
+#ifdef HAVE_MENU
+   if (menu_source && !block.frames)
+   {
+      audio_driver_pipeline_render(audio_st, audio_st->pipe_float
+            ? (const void*)audio_menu_silence_float : (const void*)audio_menu_silence_int16, output_budget,
+            AUDIO_LAYOUT_STEREO, snap);
+      *progress = true;
+      return true;
+   }
+#endif
    released = block.input_used;
    *progress = released || block.frames;
    if (block.frames)
@@ -6792,6 +6867,28 @@ static void audio_driver_transport_consume(audio_driver_state_t *st)
    size_t input_budget         = st->pipe_pass_frames;
    size_t held = retro_spsc_read_avail(&st->pipe_ring) / st->pipe_frame_bytes;
    int snap    = retro_atomic_load_acquire_int(&st->runloop_snapshot);
+#ifdef HAVE_MENU
+   if ((snap & AUDIO_SNAP_MENU_SOURCE) || st->pipe_menu_active)
+   {
+      bool menu_source = (snap & AUDIO_SNAP_MENU_SOURCE) != 0;
+      if (menu_source != st->pipe_menu_active)
+      {
+         if (!audio_driver_transport_discard(menu_source
+                  ? audio_driver_menu_discard_bytes(st) / st->pipe_frame_bytes : 0, false)) return;
+         st->pipe_menu_active = menu_source;
+         st->pipe_priming = !menu_source;
+      }
+      if (menu_source)
+      {
+         if (audio->underruns)
+            st->pipe_underruns_seen = audio->underruns(st->context_audio_data);
+         audio_driver_pipeline_transport_run(st->pipe_transport,
+               &st->pipe_transport_serial, 0, st->pipe_pass_frames,
+               false, &complete, &progress);
+         return;
+      }
+   }
+#endif
    if ((snap & AUDIO_SNAP_PAUSED) || !(AUDIO_FLAGS_GET(st) & AUDIO_FLAG_ACTIVE)
          || !st->output_samples_buf)
    {
@@ -6918,12 +7015,37 @@ static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
    double   out_ratio;
    size_t   frame_bytes, out_bytes, have;
    const audio_driver_t *audio = audio_st->current_audio;
+#ifdef HAVE_MENU
+   bool menu_source = (retro_atomic_load_acquire_int(&audio_st->runloop_snapshot)
+         & AUDIO_SNAP_MENU_SOURCE) != 0;
+#endif
 
    if (audio_st->pipe_pending_bytes)
    {
       audio_driver_pipeline_retry(audio_st);
       return;
    }
+
+#ifdef HAVE_MENU
+   if (menu_source != audio_st->pipe_menu_active)
+   {
+      size_t held = menu_source ? audio_driver_menu_discard_bytes(audio_st) : 0;
+      if (held) retro_spsc_skip(&audio_st->pipe_ring, held);
+      audio_st->pipe_menu_reset = true;
+      if (held) audio_driver_pipeline_pass_done(audio_st, false);
+      audio_st->pipe_menu_active = menu_source;
+      audio_st->pipe_priming = !menu_source;
+   }
+   if (menu_source)
+   {
+      if (!(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE) || !audio_st->output_samples_buf) return;
+      if (audio->underruns && audio_st->context_audio_data)
+         audio_st->pipe_underruns_seen = audio->underruns(audio_st->context_audio_data);
+      have = sizeof(audio_menu_silence_float) / audio_st->pipe_frame_bytes;
+      if (have > audio_st->pipe_pass_frames) have = audio_st->pipe_pass_frames;
+      goto menu_device_bound;
+   }
+#endif
 
    /* First wait: enough published audio for a pass. The producer
     * advances pipe_data_gen and notifies once per frame, not once per
@@ -6953,6 +7075,10 @@ static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
    while (retro_spsc_read_avail(&audio_st->pipe_ring) < need)
    {
       int gen, key;
+#ifdef HAVE_MENU
+      if (retro_atomic_load_acquire_int(&audio_st->runloop_snapshot) & AUDIO_SNAP_MENU_SOURCE)
+         return;
+#endif
       /* Taken again each lap while priming: the fill cap turned on
        * mid-wait lowers it, and a wait for the old figure would hold a
        * producer stopped at the cap until its stall bound. */
@@ -7032,6 +7158,9 @@ static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
     * waited for a third of what the write needed, so a chunk could
     * arrive at a fifo without room for it - and a driver that frames
     * its output, as the AC-3 path does, then wrote part of a burst. */
+#ifdef HAVE_MENU
+menu_device_bound:
+#endif
    frame_bytes = audio_driver_dev_frame_bytes(audio_st);
    /* The ratio the flush will use, needed here as well as at the wait
     * below: the cap and the room asked for have to be the same
@@ -7040,6 +7169,9 @@ static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
     * producer published and does not depend on the frame count passed
     * to it, so taking it before the cap is the same number as after. */
    snap        = retro_atomic_load_acquire_int(&audio_st->runloop_snapshot);
+#ifdef HAVE_MENU
+   if (menu_source) snap &= ~(AUDIO_SNAP_PAUSED | AUDIO_SNAP_SLOWMOTION | AUDIO_SNAP_FASTMOTION);
+#endif
    out_ratio   = audio_driver_effective_ratio(audio_st,
          (snap & AUDIO_SNAP_SLOWMOTION) ? true : false,
          (snap & AUDIO_SNAP_SLOWMOTION)
@@ -7070,6 +7202,10 @@ static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
       if (have > cap)
          have = cap;
    }
+
+#ifdef HAVE_MENU
+   if (menu_source) goto menu_device_write;
+#endif
 
    /* Late audio is not kept. A core that stalls leaves the device
     * playing silence for the stall, then delivers the frames it missed
@@ -7216,9 +7352,22 @@ static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
    /* What this chunk will produce at the ratio the flush will use -
     * slow motion and fast-forward's speedup in, the same composition -
     * so the room waited for is the room the write needs. */
+#ifdef HAVE_MENU
+menu_device_write:
+#endif
    out_bytes   = audio_driver_output_bound(out_ratio, have) * frame_bytes;
    if (!audio->wait_writable(audio_st->context_audio_data, out_bytes))
       return;
+#ifdef HAVE_MENU
+   if (menu_source)
+   {
+      audio_driver_pipeline_render(audio_st, audio_st->pipe_float
+            ? (const void*)audio_menu_silence_float : (const void*)audio_menu_silence_int16, have,
+            AUDIO_LAYOUT_STEREO, snap & ~(AUDIO_SNAP_PAUSED
+               | AUDIO_SNAP_SLOWMOTION | AUDIO_SNAP_FASTMOTION));
+      return;
+   }
+#endif
 
    /* Zero-copy drain: the chunk is rendered where it lies in the ring,
     * span by span, and a frame the physical wrap splits is staged alone,
@@ -9133,11 +9282,19 @@ bool audio_driver_callback(void)
 #ifdef HAVE_THREADS
    if (audio_driver_st.pipe_threaded)
    {
+#ifdef HAVE_MENU
+      uint64_t accepted = (snap & AUDIO_SNAP_MENU_SOURCE) ? audio_driver_st.sink_accepted : 0;
+#endif
       (void)core_paused;
       if (audio_driver_st.pipe_transport)
          audio_driver_transport_consume(&audio_driver_st);
       else
          audio_driver_pipeline_consume(&audio_driver_st);
+#ifdef HAVE_MENU
+      /* Menu silence has no producer wait on a failed sink. */
+      if (snap & AUDIO_SNAP_MENU_SOURCE)
+         return audio_driver_st.sink_accepted != accepted;
+#endif
       return true;
    }
 #endif
@@ -10002,6 +10159,17 @@ void audio_driver_menu_sample(bool by_clock)
    bool check_flush                       = !(
             !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE)
          || !audio_st->output_samples_buf);
+
+#ifdef HAVE_THREADS
+   /* The audio consumer supplies menu silence at the device's cadence. */
+   if (audio_st->pipe_threaded)
+   {
+      audio_st->menu_source_enabled = true;
+      audio_driver_publish_runloop();
+      if (retro_atomic_load_acquire_int(&audio_st->runloop_snapshot) & AUDIO_SNAP_MENU_SOURCE)
+         check_flush = false;
+   }
+#endif
 
    memcpy(&rate_bits, &info->sample_rate, sizeof(rate_bits));
    memcpy(&fps_bits, &info->fps, sizeof(fps_bits));
