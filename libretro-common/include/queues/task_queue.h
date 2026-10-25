@@ -143,21 +143,22 @@ enum retro_task_flags
     */
    RETRO_TASK_FLG_MUTE             = (1 << 3),
    /**
-    * Set by the pusher to promise that \c handler touches nothing
-    * but the task itself - its own state, and the task_set_* and
-    * task_get_* accessors - and nothing that outlives the queue or
-    * is torn down with it: no logging, no pushing other tasks, no
-    * subsystem the frontend frees on the way out.
+    * Set by the pusher to promise that \c handler and \c cleanup
+    * touch nothing but what the task owns - its own state, and the
+    * task_set_* and task_get_* accessors - and nothing that outlives
+    * the queue or is torn down with it: no logging, no pushing other
+    * tasks, no subsystem the frontend frees on the way out.  Either
+    * may call \c task_queue_wake().
     *
-    * In exchange, if \c task_queue_deinit() finds the worker still
-    * inside this task's handler after its bound, it stops waiting:
+    * In exchange, if \c task_queue_deinit() on the threaded runner
+    * finds a worker, the one or an extra one, still inside this task's
+    * handler after its bound, it stops waiting for that worker:
     * the task is taken off the queue and the worker is left to
-    * finish the handler on its own. \c callback and \c cleanup never
-    * run, so whatever they would have released stays allocated; the
-    * task itself is freed when the handler returns. Meant for
-    * handlers that can
-    * block in an OS call for arbitrarily long, such as a device
-    * enumeration.
+    * finish the handler on its own.  When the handler returns, that
+    * worker runs \c cleanup and frees the task; \c callback never
+    * runs.  The GCD runner waits for the handler.  Meant for handlers
+    * that can block in an OS call for arbitrarily long, such as a
+    * device enumeration.
     */
    RETRO_TASK_FLG_DETACHABLE       = (1 << 4),
    /**
@@ -182,8 +183,8 @@ enum retro_task_flags
     * own - a shader stage's compile, a decode into its own buffer.  One
     * task is never in two handlers at once either way, but its calls
     * may each be on a different worker.  Ignored with
-    * \c RETRO_TASK_FLG_DETACHABLE or \c RETRO_TASK_FLG_MAIN_THREAD, and
-    * by the unthreaded runner.  The GCD runner (Apple) already hands
+    * \c RETRO_TASK_FLG_MAIN_THREAD and by the unthreaded runner.  The
+    * GCD runner (Apple) already hands
     * every task to the system's concurrent queue, one run of it at a
     * time, a run on any thread; there the flag changes nothing.  Not
     * changed after the push.

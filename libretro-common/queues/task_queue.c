@@ -136,6 +136,18 @@ enum task_worker_state
    TASK_WORKER_EXITED      /* left the loop; joinable */
 };
 
+/* The primitives of one threaded init.  Deinit holds a reference, and
+ * so does each worker it leaves behind in a detachable handler; the
+ * last of them to let go frees them.  refs is under running_lock. */
+struct task_generation
+{
+   slock_t           *running_lock;
+   slock_t           *finished_lock;
+   scond_t           *worker_cond;
+   scond_t           *finished_cond;
+   unsigned           refs;
+};
+
 struct task_worker
 {
    retro_atomic_int_t state;
@@ -146,13 +158,10 @@ struct task_worker
    unsigned           slot;
    /* The task whose handler it is in; written under running_lock. */
    retro_task_t      *task;
-   /* The primitives of the queue this worker was started for, so an
-    * orphan can find and free its own generation's after deinit has
-    * cleared the globals. Set at init, never changed. */
-   slock_t           *running_lock;
-   slock_t           *finished_lock;
-   scond_t           *worker_cond;
-   scond_t           *finished_cond;
+   /* The init this worker was started for, so an orphan can find its
+    * own generation's primitives after deinit has cleared the globals.
+    * Set at start, never changed. */
+   struct task_generation *gen;
 #ifdef TASK_WORKER_BELOW_CREATOR
    /* The priority the worker runs at: one step below its creator.
     * Level with it, a handler that returns without waiting - polling
@@ -166,7 +175,8 @@ struct task_worker
 };
 
 #ifndef HAVE_GCD
-static struct task_worker *worker_self      = NULL;
+static struct task_worker     *worker_self  = NULL;
+static struct task_generation *task_gen     = NULL;
 #endif
 
 /* The extra workers for RETRO_TASK_FLG_PARALLEL tasks, started by the
@@ -1256,14 +1266,13 @@ static bool task_is_main_thread_task(retro_task_t *task)
 }
 
 #ifndef HAVE_GCD
-/* A task an extra worker may take.  Detachable tasks stay with the one
- * worker deinit knows how to leave behind.  Set before the push and
- * never changed. */
+/* A task an extra worker may take.  Set before the push and never
+ * changed. */
 static bool task_is_parallel(retro_task_t *task)
 {
    int flags = retro_atomic_load_acquire_int(&task->flags);
    return (flags & RETRO_TASK_FLG_PARALLEL)
-      && !(flags & (RETRO_TASK_FLG_DETACHABLE | RETRO_TASK_FLG_MAIN_THREAD));
+      && !(flags & RETRO_TASK_FLG_MAIN_THREAD);
 }
 #endif
 
@@ -1406,6 +1415,15 @@ static void retro_task_threaded_run_main(unsigned due)
 }
 
 #ifndef HAVE_GCD
+static void retro_task_generation_free(struct task_generation *gen)
+{
+   scond_free(gen->worker_cond);
+   scond_free(gen->finished_cond);
+   slock_free(gen->running_lock);
+   slock_free(gen->finished_lock);
+   free(gen);
+}
+
 /* For task_is_queue_thread(): each worker sets its own id before it
  * runs a handler and clears it before it reports that it left, and
  * deinit clears the id of one it leaves behind, so a thread that
@@ -1491,22 +1509,25 @@ static void threaded_worker(void *userdata)
       slock_unlock(running_lock);
       task->handler(task);
 
-      /* Deinit gave up on this handler and is taking the task off the
-       * queue; the queue's globals may belong to a new init by now.
-       * Deinit holds this generation's running_lock until it is done
-       * letting go, so taking it once waits exactly that long. Then
-       * free this generation's primitives and the task, and leave
-       * without touching any global. The task's callback and cleanup
-       * never run. */
+      /* Deinit gave up on this handler and took the task off the
+       * queue; the globals may belong to a new init by now.  Clean up
+       * while the generation is held, so that deinit keeps
+       * property_lock for the cleanup's accessors, then let go of it
+       * under its own running_lock, which deinit holds until it has
+       * let go too.  No global is touched and no callback runs. */
       if (!retro_atomic_cas_int(&self->state,
                TASK_WORKER_IN_HANDLER, TASK_WORKER_IDLE))
       {
-         slock_lock(self->running_lock);
-         slock_unlock(self->running_lock);
-         scond_free(self->worker_cond);
-         scond_free(self->finished_cond);
-         slock_free(self->running_lock);
-         slock_free(self->finished_lock);
+         struct task_generation *gen = self->gen;
+         unsigned                refs;
+
+         if (task->cleanup)
+            task->cleanup(task);
+         slock_lock(gen->running_lock);
+         refs = --gen->refs;
+         slock_unlock(gen->running_lock);
+         if (!refs)
+            retro_task_generation_free(gen);
          free(task->title);
          free(task->error);
          free(task);
@@ -1619,10 +1640,7 @@ static void retro_task_threaded_start_parallel(unsigned needed)
       retro_atomic_store_release_int(&w->state, TASK_WORKER_IDLE);
       w->parallel_only = true;
       w->slot          = 1 + i;
-      w->running_lock  = running_lock;
-      w->finished_lock = finished_lock;
-      w->worker_cond   = worker_cond;
-      w->finished_cond = finished_cond;
+      w->gen           = task_gen;
 #ifdef TASK_WORKER_BELOW_CREATOR
       w->prio          = worker_self->prio;
 #endif
@@ -1639,10 +1657,9 @@ static void retro_task_threaded_start_parallel(unsigned needed)
    }
 }
 
-/* Stops the extra workers and waits for them.  Their tasks are neither
- * detachable nor main-thread ones, so each leaves once its handler
- * returns.  worker_continue is already false. */
-static void retro_task_threaded_stop_parallel(void)
+/* Joins the extra workers deinit did not leave behind, and lets the
+ * next parallel push start them again.  Each has left its loop. */
+static void retro_task_threaded_join_parallel(void)
 {
    unsigned i;
    for (i = 0; i < TASK_PARALLEL_MAX; i++)
@@ -1665,16 +1682,24 @@ static bool retro_task_threaded_init(void)
 
    retro_task_threaded_count_lists();
 
-   if (!(worker_self = (struct task_worker*)calloc(1, sizeof(*worker_self))))
+   worker_self = (struct task_worker*)calloc(1, sizeof(*worker_self));
+   task_gen    = (struct task_generation*)calloc(1, sizeof(*task_gen));
+   if (!worker_self || !task_gen)
    {
+      free(worker_self);
+      free(task_gen);
+      worker_self = NULL;
+      task_gen    = NULL;
       retro_task_sync_primitives_free();
       return false;
    }
+   task_gen->running_lock     = running_lock;
+   task_gen->finished_lock    = finished_lock;
+   task_gen->worker_cond      = worker_cond;
+   task_gen->finished_cond    = finished_cond;
+   task_gen->refs             = 1;
    retro_atomic_store_release_int(&worker_self->state, TASK_WORKER_IDLE);
-   worker_self->running_lock  = running_lock;
-   worker_self->finished_lock = finished_lock;
-   worker_self->worker_cond   = worker_cond;
-   worker_self->finished_cond = finished_cond;
+   worker_self->gen           = task_gen;
 #ifdef TASK_WORKER_BELOW_CREATOR
    worker_self->prio          = 0x2C;
    svcGetThreadPriority(&worker_self->prio, CUR_THREAD_HANDLE);
@@ -1701,69 +1726,30 @@ static bool retro_task_threaded_init(void)
 
    worker_continue = false;
    free(worker_self);
+   free(task_gen);
    worker_self     = NULL;
+   task_gen        = NULL;
    retro_task_sync_primitives_free();
    return false;
 }
 
-/* Called with running_lock held, once the bound has passed and the
- * worker inside a detachable task's handler has been marked orphaned.
- * Takes the task off the queue and clears the globals; the worker,
- * blocked on this generation's running_lock as soon as its handler
- * returns, frees the primitives and the task after the unlock below,
- * which is therefore the last thing done here. property_lock stays:
- * the handler may still be setting task properties through it. */
-static void retro_task_threaded_orphan_worker(retro_task_t *task)
+/* Waits under running_lock, until @deadline, for @w to leave its loop;
+ * only a worker stuck in a handler can outlast the bound.  If that
+ * task is detachable, its handler touches nothing but the task: the
+ * task is taken off the queue and the worker, holding a reference to
+ * its generation, is left to finish alone, and this returns true.
+ * Any other handler may hold state teardown is about to free, so the
+ * wait goes on. */
+static bool retro_task_threaded_stop_worker(struct task_worker *w,
+      retro_time_t deadline)
 {
-   slock_t *lock = running_lock;
-
-   task_queue_remove(&tasks_running, task);
-   retro_atomic_fetch_sub_int(&tasks_running_count, 1);
-
-   sthread_detach(worker_thread);
-
-   worker_thread        = NULL;
-   worker_self          = NULL;
-   property_lock_pinned = true;
-   worker_cond          = NULL;
-   finished_cond        = NULL;
-   running_lock         = NULL;
-   finished_lock        = NULL;
-
-   slock_unlock(lock);
-}
-
-/* Stops the worker, waiting for it with a bound. A worker that is
- * between tasks, or doing the queue's own bookkeeping, leaves as soon
- * as it sees worker_continue, so the bound only ever runs out on one
- * stuck inside a handler. If that task was pushed detachable, its
- * handler promises to touch nothing but the task itself, so the
- * worker is left to finish it alone and deinit returns. Otherwise the
- * handler may be holding state that teardown is about to free, and
- * the only safe thing is to keep waiting for it. */
-static void retro_task_threaded_deinit(void)
-{
-   retro_time_t deadline;
-
-   slock_lock(running_lock);
-   worker_continue = false;
-   scond_broadcast(worker_cond);
-   slock_unlock(running_lock);
-
-   /* The extra workers first, while the queue's primitives are certain
-    * to stay: the one worker may be left behind below. */
-   retro_task_threaded_stop_parallel();
-
-   deadline = cpu_features_get_time_usec() + TASK_QUEUE_DETACH_AFTER_US;
-   slock_lock(running_lock);
-
    for (;;)
    {
-      int          state = retro_atomic_load_acquire_int(&worker_self->state);
+      int          state = retro_atomic_load_acquire_int(&w->state);
       retro_time_t left;
 
       if (state == TASK_WORKER_EXITED)
-         break;
+         return false;
 
       left = deadline - cpu_features_get_time_usec();
       if (left > 0)
@@ -1774,21 +1760,20 @@ static void retro_task_threaded_deinit(void)
 
       if (state == TASK_WORKER_IN_HANDLER)
       {
-         retro_task_t *task = worker_self->task;
+         retro_task_t *task = w->task;
          bool detachable;
 
          detachable = (retro_atomic_load_acquire_int(&task->flags)
                & RETRO_TASK_FLG_DETACHABLE) != 0;
 
-         if (detachable && retro_atomic_cas_int(&worker_self->state,
+         if (detachable && retro_atomic_cas_int(&w->state,
                   TASK_WORKER_IN_HANDLER, TASK_WORKER_ORPHANED))
          {
-            task_worker_tid_set(worker_self->slot, NULL);
-            retro_task_threaded_orphan_worker(task);
-            free(task_report);
-            task_report     = NULL;
-            task_report_cap = 0;
-            return;
+            task_worker_tid_set(w->slot, NULL);
+            task_queue_remove(&tasks_running, task);
+            retro_atomic_fetch_sub_int(&tasks_running_count, 1);
+            w->gen->refs++;
+            return true;
          }
       }
 
@@ -1796,14 +1781,63 @@ static void retro_task_threaded_deinit(void)
        * leave by returning. Wait for its signal, without a bound. */
       scond_wait(worker_cond, running_lock);
    }
+}
 
+/* Stops every worker, the extra ones first, against one bound. A
+ * worker left behind owns its generation's primitives with deinit
+ * until both let go, and property_lock is then kept for the life of
+ * the process: its handler or cleanup may still be setting task
+ * properties through it. */
+static void retro_task_threaded_deinit(void)
+{
+   struct task_generation *gen = task_gen;
+   retro_time_t            deadline;
+   unsigned                refs, i;
+   bool                    left_behind;
+
+   slock_lock(running_lock);
+   worker_continue = false;
+   scond_broadcast(worker_cond);
+
+   deadline = cpu_features_get_time_usec() + TASK_QUEUE_DETACH_AFTER_US;
+   for (i = 0; i < TASK_PARALLEL_MAX; i++)
+   {
+      if (     parallel_self[i]
+            && retro_task_threaded_stop_worker(parallel_self[i], deadline))
+      {
+         sthread_detach(parallel_thread[i]);
+         parallel_self[i]   = NULL;
+         parallel_thread[i] = NULL;
+      }
+   }
+   if ((left_behind = retro_task_threaded_stop_worker(worker_self, deadline)))
+      sthread_detach(worker_thread);
+   refs = --gen->refs;
    slock_unlock(running_lock);
-   sthread_join(worker_thread);
-   retro_task_threaded_unpark_all();
 
-   free(worker_self);
-   retro_task_sync_primitives_free();
+   retro_task_threaded_join_parallel();
+   if (!left_behind)
+   {
+      sthread_join(worker_thread);
+      retro_task_threaded_unpark_all();
+      free(worker_self);
+   }
 
+   if (refs)
+   {
+      property_lock_pinned = true;
+      worker_cond          = NULL;
+      finished_cond        = NULL;
+      running_lock         = NULL;
+      finished_lock        = NULL;
+   }
+   else
+   {
+      retro_task_sync_primitives_free();
+      free(gen);
+   }
+
+   task_gen        = NULL;
    worker_thread   = NULL;
    worker_self     = NULL;
 

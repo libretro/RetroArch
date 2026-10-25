@@ -1429,7 +1429,7 @@ static void lane_worker_id_at_deinit(void)
 
 /* --- the workers' ids with extra workers ------------------------------ */
 
-static victim_t           extra_victims[3];
+static victim_t           extra_victims[5];
 static retro_atomic_int_t hog_inside;
 static retro_atomic_int_t hog_release;
 
@@ -1521,6 +1521,72 @@ static void lane_worker_ids_with_extras(void)
          && victim_retires(&extra_victims[1]),
          "both finders retire cancelled");
    retire_parked();
+   task_queue_deinit();
+   task_queue_set_parallel_workers(0);
+}
+
+static retro_atomic_int_t meet_inside;
+static retro_atomic_int_t meet_met;
+static retro_atomic_int_t meet_done;
+
+/* Two of these meet only on two workers at once. */
+static void meet_handler(retro_task_t *task)
+{
+   retro_time_t until = cpu_features_get_time_usec() + LIMIT_US;
+
+   retro_atomic_fetch_add_int(&meet_inside, 1);
+   while (     retro_atomic_load_acquire_int(&meet_inside) < 2
+            && cpu_features_get_time_usec() < until)
+      retro_sleep(1);
+   if (retro_atomic_load_acquire_int(&meet_inside) >= 2)
+      retro_atomic_store_release_int(&meet_met, 1);
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+   retro_atomic_fetch_add_int(&meet_done, 1);
+}
+
+/* Extra workers live at a switch: the switch stops them with the rest
+ * of the runner, the parallel tasks carry over to the unthreaded queue
+ * and back, and the next threaded runner starts extra workers again. */
+static void lane_switch_with_extras(void)
+{
+   retro_time_t until;
+   uint32_t     a;
+   uint32_t     b;
+   unsigned     i;
+
+   task_queue_set_parallel_workers(2);
+   task_queue_init(true, NULL);
+   a = push_parallel_victim(&extra_victims[3], victim_handler);
+   b = push_parallel_victim(&extra_victims[4], victim_handler);
+   task_queue_unset_threaded();
+   task_queue_check();
+   task_queue_set_threaded();
+   task_queue_check();
+
+   retro_atomic_store_release_int(&meet_inside, 0);
+   retro_atomic_store_release_int(&meet_met, 0);
+   retro_atomic_store_release_int(&meet_done, 0);
+   hog_start();
+   for (i = 0; i < 2; i++)
+   {
+      retro_task_t *task = task_init();
+      task->handler = meet_handler;
+      task_set_flags(task, RETRO_TASK_FLG_PARALLEL, true);
+      task_queue_push(task);
+   }
+   until = cpu_features_get_time_usec() + 2 * LIMIT_US;
+   while (     retro_atomic_load_acquire_int(&meet_done) < 2
+            && cpu_features_get_time_usec() < until)
+   {
+      task_queue_check();
+      retro_sleep(1);
+   }
+   retro_atomic_store_release_int(&hog_release, 1);
+   check(retro_atomic_load_acquire_int(&meet_met) == 1,
+         "after switching back, two parallel tasks meet on extra workers");
+   check(task_queue_cancel_ident(a) && victim_retires(&extra_victims[3])
+         && task_queue_cancel_ident(b) && victim_retires(&extra_victims[4]),
+         "the parallel tasks carried across both switches retire cancelled");
    task_queue_deinit();
    task_queue_set_parallel_workers(0);
 }
@@ -1643,6 +1709,9 @@ int main(void)
    retro_atomic_store_release_int(&probe_ran_on, -1);
    lane_worker_ids_with_extras();
    lane_extra_id_at_deinit();
+
+   printf("extra workers across a switch\n");
+   lane_switch_with_extras();
 #endif
 
    if (failures)
