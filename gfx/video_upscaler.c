@@ -22,6 +22,7 @@
 #include <gfx/nvidia/ngx_loader.h>
 
 #include "../configuration.h"
+#include "../verbosity.h"
 #include "video_upscaler.h"
 
 size_t video_upscaler_dlss_dir(char *s, size_t len)
@@ -60,6 +61,16 @@ size_t video_upscaler_status_string(char *s, size_t len)
          ? ", DLSS runtime: found)" : ", DLSS runtime: not in DLSS Directory)",
          len - _len);
    return _len;
+}
+
+void video_upscaler_log_probe(void)
+{
+   char dir[DIR_MAX_LENGTH];
+   ngx_lib_get();
+   RARCH_LOG("[Video] Temporal Upscaler: %s.\n", ngx_lib_status());
+   video_upscaler_dlss_dir(dir, sizeof(dir));
+   RARCH_LOG("[Video] Temporal Upscaler: DLSS runtime (nvngx_dlss.dll / libnvidia-ngx-dlss.so) %s in \"%s\".\n",
+         ngx_dlss_feature_in(dir) ? "found" : "NOT found", dir);
 }
 
 /* The core's side: the request and the frame's inputs. HW cores run on

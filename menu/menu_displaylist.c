@@ -12615,22 +12615,16 @@ unsigned menu_displaylist_build_list(
                   if (   string_is_equal(ident, "vulkan")
                       || string_is_equal(ident, "d3d12"))
                   {
-                     if (   settings->uints.video_temporal_upscaler
-                         || (video_upscaler_dlss_probe()
-                            & VIDEO_UPSCALER_DLSS_READY)
-                               == VIDEO_UPSCALER_DLSS_READY)
+                     if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                              MENU_ENUM_LABEL_VIDEO_TEMPORAL_UPSCALER,
+                              PARSE_ONLY_UINT, false) == 0)
+                        count++;
+                     if (settings->uints.video_temporal_upscaler)
                      {
                         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                                 MENU_ENUM_LABEL_VIDEO_TEMPORAL_UPSCALER,
+                                 MENU_ENUM_LABEL_VIDEO_TEMPORAL_UPSCALER_QUALITY,
                                  PARSE_ONLY_UINT, false) == 0)
                            count++;
-                        if (settings->uints.video_temporal_upscaler)
-                        {
-                           if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                                    MENU_ENUM_LABEL_VIDEO_TEMPORAL_UPSCALER_QUALITY,
-                                    PARSE_ONLY_UINT, false) == 0)
-                              count++;
-                        }
                      }
                      if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                               MENU_ENUM_LABEL_VIDEO_DLSS_DIRECTORY,

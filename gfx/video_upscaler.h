@@ -46,6 +46,10 @@ enum video_temporal_upscaler
 #define VIDEO_UPSCALER_DLSS_READY \
    (VIDEO_UPSCALER_DLSS_NGX | VIDEO_UPSCALER_DLSS_FEATURE)
 
+/* What the probe found, to the log: the NGX core library, where it
+ * was looked for, and the DLSS runtime in the DLSS directory */
+void video_upscaler_log_probe(void);
+
 /* The DLSS directory in effect into @s: the setting, else the application directory's upscalers/dlss */
 size_t video_upscaler_dlss_dir(char *s, size_t len);
 

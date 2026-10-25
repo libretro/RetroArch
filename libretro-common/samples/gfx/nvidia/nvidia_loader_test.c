@@ -95,6 +95,10 @@ static void test_ngx(void)
    if (!lib)
       return;
    CHECK(lib == ngx_lib_get());
+   /* the status names the library and what it serves */
+   CHECK(strstr(ngx_lib_status(), "NGX core library ") == ngx_lib_status()
+         && (strstr(ngx_lib_status(), "nvngx") != NULL || strstr(ngx_lib_status(), "nvidia-ngx") != NULL)
+         && strstr(ngx_lib_status(), "Vulkan") != NULL);
    CHECK(lib->param.set_i && lib->param.get_i && lib->param.set_void_pointer
          && lib->param.get_d3d12_resource);
    CHECK(lib->vulkan.init_project_id != NULL);

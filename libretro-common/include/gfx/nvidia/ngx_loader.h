@@ -364,6 +364,11 @@ typedef struct ngx_lib
  * lacks the parameter accessors. A found library is kept loaded. */
 const ngx_lib_t *ngx_lib_get(void);
 
+/* What the probe found, for a log: where the library was looked for
+ * and loaded from, and which entry points it lacked. Valid after
+ * ngx_lib_get(); before, "not probed". */
+const char *ngx_lib_status(void);
+
 /* Whether @dir holds a DLSS Super Resolution feature library
  * (nvngx_dlss.dll on Windows, libnvidia-ngx-dlss.so.* on Linux), the
  * file the user supplies. Needs no NGX. */

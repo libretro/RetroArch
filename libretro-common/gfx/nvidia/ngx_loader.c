@@ -106,6 +106,17 @@ bool ngx_dlss_feature_in(const char *dir)
 
 static ngx_lib_t ngx_lib;
 static bool ngx_probed;
+static char ngx_status[512] = "not probed";
+static char ngx_where[DIR_MAX_LENGTH];
+
+static void ngx_status_set(const char *s)
+{
+   strlcpy(ngx_status, s, sizeof(ngx_status));
+}
+static void ngx_status_add(const char *s)
+{
+   strlcat(ngx_status, s, sizeof(ngx_status));
+}
 
 typedef void (*ngx_proc_t)(void);
 
@@ -155,9 +166,13 @@ static ngx_module_t ngx_open_in(wchar_t *dir, size_t dir_chars)
          continue;
       wcscpy(dir + len, names[i]);
       m        = LoadLibraryW(dir);
-      dir[len] = 0;
       if (m)
+      {
+         WideCharToMultiByte(CP_UTF8, 0, dir, -1, ngx_where, sizeof(ngx_where), NULL, NULL);
+         dir[len] = 0;
          return m;
+      }
+      dir[len] = 0;
    }
    return NULL;
 }
@@ -192,6 +207,15 @@ static ngx_module_t ngx_open(void)
       m = LoadLibraryW(L"_nvngx.dll");
    if (!m)
       m = LoadLibraryW(L"nvngx.dll");
+   if (m && !ngx_where[0])
+   {
+      wchar_t path[MAX_PATH];
+      if (GetModuleFileNameW(m, path, MAX_PATH))
+         WideCharToMultiByte(CP_UTF8, 0, path, -1, ngx_where, sizeof(ngx_where), NULL, NULL);
+   }
+   if (!m)
+      ngx_status_set("no NGX core library: _nvngx.dll/nvngx.dll not beside the executable, "
+            "not where the registry's NGXCore NGXPath/FullPath points, not on the library search path (System32)");
    return m;
 }
 #else
@@ -207,7 +231,12 @@ static ngx_proc_t ngx_sym(ngx_module_t m, const char *name)
 
 static ngx_module_t ngx_open(void)
 {
-   return dlopen("libnvidia-ngx.so.1", RTLD_NOW | RTLD_LOCAL);
+   void *m = dlopen("libnvidia-ngx.so.1", RTLD_NOW | RTLD_LOCAL);
+   if (m)
+      strlcpy(ngx_where, "libnvidia-ngx.so.1", sizeof(ngx_where));
+   else
+      ngx_status_set("no NGX core library: libnvidia-ngx.so.1 could not be loaded");
+   return m;
 }
 #endif
 
@@ -216,12 +245,18 @@ static ngx_module_t ngx_open(void)
       ngx_proc_t fn = ngx_sym(m, name); \
       memcpy(&(dst), &fn, sizeof(fn)); \
       if (!fn) \
+      { \
          complete = false; \
+         ngx_status_add(complete_first ? " lacks " : ", "); \
+         ngx_status_add(name); \
+         complete_first = false; \
+      } \
    } while (0)
 
 static bool ngx_resolve_param(ngx_module_t m, ngx_param_api_t *p)
 {
    bool complete = true;
+   bool complete_first = true;
    NGX_SYM(p->set_ull, "NVSDK_NGX_Parameter_SetULL");
    NGX_SYM(p->set_f, "NVSDK_NGX_Parameter_SetF");
    NGX_SYM(p->set_d, "NVSDK_NGX_Parameter_SetD");
@@ -244,6 +279,7 @@ static bool ngx_resolve_param(ngx_module_t m, ngx_param_api_t *p)
 static bool ngx_resolve_d3d12(ngx_module_t m, ngx_d3d12_api_t *a)
 {
    bool complete = true;
+   bool complete_first = true;
    NGX_SYM(a->init_project_id, "NVSDK_NGX_D3D12_Init_ProjectID");
    NGX_SYM(a->shutdown1, "NVSDK_NGX_D3D12_Shutdown1");
    NGX_SYM(a->get_capability_parameters, "NVSDK_NGX_D3D12_GetCapabilityParameters");
@@ -259,6 +295,7 @@ static bool ngx_resolve_d3d12(ngx_module_t m, ngx_d3d12_api_t *a)
 static bool ngx_resolve_vulkan(ngx_module_t m, ngx_vulkan_api_t *a)
 {
    bool complete = true;
+   bool complete_first = true;
    NGX_SYM(a->required_extensions, "NVSDK_NGX_VULKAN_RequiredExtensions");
    NGX_SYM(a->get_feature_instance_extension_requirements,
          "NVSDK_NGX_VULKAN_GetFeatureInstanceExtensionRequirements");
@@ -285,13 +322,18 @@ const ngx_lib_t *ngx_lib_get(void)
       ngx_probed = true;
       if (!(m = ngx_open()))
          return NULL;
+      ngx_status_set("NGX core library ");
+      ngx_status_add(ngx_where);
       d3d12  = ngx_resolve_d3d12(m, &ngx_lib.d3d12);
       vulkan = ngx_resolve_vulkan(m, &ngx_lib.vulkan);
       if (!ngx_resolve_param(m, &ngx_lib.param) || !(d3d12 || vulkan))
       {
+         ngx_status_add(": unusable");
          memset(&ngx_lib, 0, sizeof(ngx_lib));
          return NULL;
       }
+      ngx_status_add(d3d12 && vulkan ? ": Vulkan and Direct3D 12"
+            : vulkan ? ": Vulkan only" : ": Direct3D 12 only");
       if (!d3d12)
          memset(&ngx_lib.d3d12, 0, sizeof(ngx_lib.d3d12));
       if (!vulkan)
@@ -301,11 +343,21 @@ const ngx_lib_t *ngx_lib_get(void)
    return ngx_lib.handle ? &ngx_lib : NULL;
 }
 
+const char *ngx_lib_status(void)
+{
+   return ngx_status;
+}
+
 #else
 
 const ngx_lib_t *ngx_lib_get(void)
 {
    return NULL;
+}
+
+const char *ngx_lib_status(void)
+{
+   return "no NGX on this platform";
 }
 
 #endif

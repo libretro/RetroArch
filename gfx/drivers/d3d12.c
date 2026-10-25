@@ -6961,6 +6961,7 @@ static void *d3d12_gfx_init(const video_info_t* video)
       if (config_get_ptr()->uints.video_temporal_upscaler == VIDEO_TEMPORAL_UPSCALER_DLSS)
       {
          char dir[DIR_MAX_LENGTH];
+         video_upscaler_log_probe();
          video_upscaler_dlss_dir(dir, sizeof(dir));
          d3d12->ngx = d3d12_ngx_init(d3d12->device, dir);
          if (d3d12->ngx)
