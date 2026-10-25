@@ -58,13 +58,14 @@ unsigned test_compiled_feedback(void)
    probe("undefined conditional", "#define USE_FEEDBACK\n#undef USE_FEEDBACK\n"
          "#ifdef USE_FEEDBACK\n#define LAST FinalFeedback\n#else\n#define LAST Source\n#endif",
          "vec4(1.0)", false);
-   /* rslc's tables list samplers as declared: one declared keeps the
-    * target whether or not main reaches it */
    probe("unused declaration", "layout(set=0,binding=1) uniform sampler2D FinalFeedback;",
-         "vec4(1.0)", true);
+         "vec4(1.0)", false);
    probe("uncalled function", "layout(set=0,binding=1) uniform sampler2D FinalFeedback;"
          "vec4 unused_function() { return texture(FinalFeedback, vec2(0.5)); }",
-         "vec4(1.0)", true);
+         "vec4(1.0)", false);
+   probe("sampler handed to a called function", "layout(set=0,binding=1) uniform sampler2D FinalFeedback;"
+         "vec4 at(sampler2D s) { return texture(s, vec2(0.5)); }",
+         "at(FinalFeedback)", true);
    probe("unused macro", "#define UNUSED FinalFeedback", "vec4(1.0)", false);
    probe("other index", "layout(set=0,binding=1) uniform sampler2D PassFeedback0;",
          "texture(PassFeedback0, vec2(0.5))", false);

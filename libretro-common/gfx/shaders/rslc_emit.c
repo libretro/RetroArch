@@ -5055,7 +5055,7 @@ bool rslc_emit_text(struct rslc_ctx *c, struct rslc_result *result)
       if (pr->vars[k]->global && pr->vars[k]->init)
          pr_mark_members(p, pr->vars[k]->init);
 
-   if (!rslc_blob_begin(c, &p->out, 4096, p->active))
+   if (!rslc_blob_begin(c, &p->out, 4096, p->active, p->used))
       return false;
    if (!(p->hlsl ? pr_hlsl(p, result) : p->msl ? pr_msl(p, result) : pr_glsl(p, result)))
    {

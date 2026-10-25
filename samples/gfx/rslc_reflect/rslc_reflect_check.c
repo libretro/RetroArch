@@ -25,7 +25,8 @@
  * of the very same module: block binding, declared size, each
  * member's name, offset and size, the set of members the stage
  * actually reads (Cross's active buffer ranges), and each sampler's
- * name and binding.  slang_process.c derives the filter chain's
+ * name, binding and whether the stage reads it (Cross's active
+ * interface variables).  slang_process.c derives the filter chain's
  * reflection from exactly these Cross calls, so agreement here is
  * what lets the chain read the blob instead.
  *
@@ -283,6 +284,14 @@ static int check_stage(const char *dir, const char *file)
    else
    {
       const struct rslc_sampler *s = (const struct rslc_sampler*)(blob + rf->samplers);
+      spvc_set active_set = NULL;
+      spvc_resources active_rs = NULL;
+      const spvc_reflected_resource *active = NULL;
+      size_t nactive = 0;
+      if (     spvc_compiler_get_active_interface_variables(comp, &active_set) != SPVC_SUCCESS
+            || spvc_compiler_create_shader_resources_for_active_variables(comp, &active_rs, active_set) != SPVC_SUCCESS
+            || spvc_resources_get_resource_list_for_type(active_rs, SPVC_RESOURCE_TYPE_SAMPLED_IMAGE, &active, &nactive) != SPVC_SUCCESS)
+         mismatch(file, "sampler", "active set unavailable");
       for (i = 0; i < n; i++)
       {
          unsigned binding = spvc_compiler_get_decoration(comp, list[i].id, SpvDecorationBinding);
@@ -296,6 +305,18 @@ static int check_stage(const char *dir, const char *file)
                {
                   snprintf(detail, sizeof(detail), "%s binding %u vs %u", list[i].name, binding, s[k].binding);
                   mismatch(file, "sampler", detail);
+               }
+               {
+                  size_t a;
+                  unsigned cross_active = 0;
+                  for (a = 0; a < nactive; a++)
+                     if (active[a].id == list[i].id)
+                        cross_active = 1;
+                  if (cross_active != (s[k].active != 0))
+                  {
+                     snprintf(detail, sizeof(detail), "%s active %u vs %u", list[i].name, cross_active, s[k].active);
+                     mismatch(file, "sampler", detail);
+                  }
                }
                if (spvc_compiler_get_decoration(comp, list[i].id, SpvDecorationDescriptorSet)
                      != (s[k].set == RSLC_NO_BINDING ? 0 : s[k].set))

@@ -126,7 +126,9 @@ struct rslc_sampler
    uint32_t    name;
    uint32_t    binding;  /* RSLC_NO_BINDING when not declared */
    uint32_t    set;      /* descriptor set; RSLC_NO_BINDING when not declared */
-   uint32_t    pad;
+   uint32_t    active;   /* read by code main reaches, or handed to a
+                            call there: what SPIRV-Cross's active
+                            interface variables list */
 };
 
 struct rslc_io
@@ -161,7 +163,7 @@ struct rslc_reflect
  * bytes wherever it lands.  All multi-byte fields are host-endian; a
  * cache is per machine. */
 #define RSLC_BLOB_MAGIC   0x434c5352u  /* 'RSLC' little-endian */
-#define RSLC_BLOB_VERSION 3u
+#define RSLC_BLOB_VERSION 4u
 
 struct rslc_blob_hdr
 {

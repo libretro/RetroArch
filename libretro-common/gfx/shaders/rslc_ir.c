@@ -4122,6 +4122,60 @@ void rslc_reach_funcs(struct rslc_ctx *c, uint8_t *reach)
          rslc_mark_reach(c, pr->vars[i]->init, reach);
 }
 
+/* Marks used[var] for every variable node reaches, without following
+ * calls: the caller walks each reachable function's body. */
+static void rslc_mark_used(struct rslc_ctx *c, uint32_t node, uint8_t *used)
+{
+   const struct rslc_node *n;
+   uint32_t i, cnt;
+   if (!node)
+      return;
+   n = rslc_node_at(c, node);
+   switch (n->op)
+   {
+      case RSLC_OP_CONST:
+         return;
+      case RSLC_OP_VAR:
+         used[n->a] = 1;
+         return;
+      case RSLC_OP_DECL:
+         rslc_mark_used(c, c->prog.vars[n->a]->init, used);
+         return;
+      case RSLC_OP_MEMBER: case RSLC_OP_SWIZZLE: case RSLC_OP_CONVERT:
+      case RSLC_OP_EXPR: case RSLC_OP_RETURN: case RSLC_OP_CASE:
+         rslc_mark_used(c, n->a, used);
+         return;
+      case RSLC_OP_CALL: case RSLC_OP_BUILTIN: case RSLC_OP_CONSTRUCT:
+      case RSLC_OP_BLOCK: case RSLC_OP_FOR: case RSLC_OP_SWITCH:
+         if (n->op == RSLC_OP_SWITCH)
+            rslc_mark_used(c, n->a, used);
+         cnt = n->b ? rslc_list_len(c, n->b) : 0;
+         for (i = 0; i < cnt; i++)
+            rslc_mark_used(c, rslc_list_item(c, n->b, i), used);
+         return;
+      default:
+         rslc_mark_used(c, n->a, used);
+         rslc_mark_used(c, n->b, used);
+         rslc_mark_used(c, n->c, used);
+         return;
+   }
+}
+
+/* Fills used[var] for what the functions reach[] marks and the global
+ * initialisers read: the variables SPIRV-Cross lists as active. */
+void rslc_reach_vars(struct rslc_ctx *c, const uint8_t *reach, uint8_t *used)
+{
+   const struct rslc_prog *pr = &c->prog;
+   uint32_t i;
+   memset(used, 0, pr->nvars + 1);
+   for (i = 1; i < pr->nfuncs; i++)
+      if (reach[i] && pr->funcs[i]->body)
+         rslc_mark_used(c, pr->funcs[i]->body, used);
+   for (i = 1; i < pr->nvars; i++)
+      if (pr->vars[i]->global && pr->vars[i]->init)
+         rslc_mark_used(c, pr->vars[i]->init, used);
+}
+
 /* ---- globals and interface ---- */
 
 static bool spv_global_var(struct spv_emit *e, const struct rslc_var *v)
@@ -4375,10 +4429,10 @@ uint32_t rslc_reflect_len(struct rslc_ctx *c)
 }
 
 /* Writes the reflection section at blob + off; active[k] holds one
- * byte per member of block k (NULL: none active).  Returns bytes
- * used. */
+ * byte per member of block k (NULL: none active), used[] one per
+ * variable (NULL: none read), for the samplers.  Returns bytes used. */
 uint32_t rslc_reflect_write(struct rslc_ctx *c, uint8_t *blob, uint32_t off,
-      uint8_t *const active[2])
+      uint8_t *const active[2], const uint8_t *used)
 {
    const struct rslc_prog *pr = &c->prog;
    struct rslc_reflect *r = (struct rslc_reflect*)(blob + off);
@@ -4441,6 +4495,7 @@ uint32_t rslc_reflect_write(struct rslc_ctx *c, uint8_t *blob, uint32_t off,
          s[i].name    = refl_put_str(blob, &at, pr->samplers[i]->name);
          s[i].binding = pr->samplers[i]->binding;
          s[i].set     = pr->samplers[i]->set;
+         s[i].active  = used ? used[pr->samplers[i]->id] : 0;
       }
    }
    {
@@ -4477,6 +4532,7 @@ static bool rslc_emit_spirv(struct rslc_ctx *c, struct rslc_result *result)
    uint32_t i;
    uint32_t main_id;
    uint8_t *reach;
+   uint8_t *used;
    struct rslc_mark mark;
 
    if (!e)
@@ -4504,13 +4560,15 @@ static bool rslc_emit_spirv(struct rslc_ctx *c, struct rslc_result *result)
 
    /* function ids, for the functions main reaches */
    reach = (uint8_t*)rslc_scratch_alloc(c, pr->nfuncs + 1);
-   if (!reach || !pr->main_fn)
+   used  = (uint8_t*)rslc_scratch_alloc(c, pr->nvars + 1);
+   if (!reach || !used || !pr->main_fn)
    {
       if (!pr->main_fn)
          rslc_err(c, "no main() in stage", NULL, 0);
       return false;
    }
    rslc_reach_funcs(c, reach);
+   rslc_reach_vars(c, reach, used);
    for (i = 1; i < pr->nfuncs; i++)
    {
       if (!pr->funcs[i]->body || !reach[i])
@@ -4571,7 +4629,7 @@ static bool rslc_emit_spirv(struct rslc_ctx *c, struct rslc_result *result)
       uint32_t *out;
       for (s = 0; s < SPV_SEC_COUNT; s++)
          words += e->sec[s].n;
-      if (!rslc_blob_begin(c, &pb, words * 4, e->member_active))
+      if (!rslc_blob_begin(c, &pb, words * 4, e->member_active, used))
          return false;
       out = (uint32_t*)(pb.data + pb.len);
       out[0] = SPV_MAGIC;
@@ -4595,7 +4653,7 @@ static bool rslc_emit_spirv(struct rslc_ctx *c, struct rslc_result *result)
  * 4-aligned payload area of payload_hint bytes.  pb.len is left at the
  * payload offset. */
 bool rslc_blob_begin(struct rslc_ctx *c, struct rslc_pbuf *pb, size_t payload_hint,
-      uint8_t *const active[2])
+      uint8_t *const active[2], const uint8_t *used)
 {
    uint32_t refl_len    = rslc_reflect_len(c);
    uint32_t refl_off    = sizeof(struct rslc_blob_hdr);
@@ -4604,7 +4662,7 @@ bool rslc_blob_begin(struct rslc_ctx *c, struct rslc_pbuf *pb, size_t payload_hi
    if (!rslc_pbuf_init(c, pb, payload_off, payload_hint))
       return false;
    memset(pb->data, 0, payload_off);
-   rslc_reflect_write(c, pb->data, refl_off, active);
+   rslc_reflect_write(c, pb->data, refl_off, active, used);
    h = (struct rslc_blob_hdr*)pb->data;
    h->refl_off    = refl_off;
    h->refl_len    = refl_len;
@@ -4693,6 +4751,7 @@ struct ing_id
    uint8_t        flat;
    uint8_t        builtin;   /* BuiltIn on the id or a member of it */
    uint8_t        merge;     /* a merge block or continue target */
+   uint8_t        sampler;   /* a sampler variable: its index + 1 */
    const struct rslc_type *type;
 };
 
@@ -4709,6 +4768,7 @@ struct ing
    uint32_t        *func_at;    /* function index -> word offset of OpFunction */
    uint8_t         *func_reach;
    uint8_t         *active[2];
+   uint8_t         *used;           /* by sampler index + 1, as rslc_var.id */
    uint32_t         block_var[2];   /* variable ids of the blocks, 0 none */
 };
 
@@ -4975,7 +5035,8 @@ static void ing_reach(struct ing *g, uint32_t entry, uint32_t *stack)
 }
 
 /* The block members the reachable code touches: the first index of an
- * access chain on a block variable, or the whole block loaded. */
+ * access chain on a block variable, or the whole block loaded; and the
+ * samplers it loads or hands to a call. */
 static bool ing_active(struct ing *g)
 {
    uint32_t at = 5, fi = 0, k;
@@ -5009,6 +5070,17 @@ static bool ing_active(struct ing *g)
          for (k = 0; k < 2; k++)
             if (base == g->block_var[k] && g->active[k])
                memset(g->active[k], 1, g->c->prog.blocks[k].type->nfields);
+         if (base < g->bound && g->ids[base].sampler)
+            g->used[g->ids[base].sampler] = 1;
+      }
+      else if (in_reach && op == SpvOpFunctionCall)
+      {
+         for (k = 4; k < len; k++)
+         {
+            uint32_t arg = g->w[at + k];
+            if (arg < g->bound && g->ids[arg].sampler)
+               g->used[g->ids[arg].sampler] = 1;
+         }
       }
       at += len;
    }
@@ -5307,6 +5379,14 @@ bool rslc_compile_spirv(const uint32_t *words, size_t n,
                break;
             }
             v->storage = RSLC_ST_SAMPLER;
+            if (pr->nsamplers >= 255)
+            {
+               ok = ing_fail(&g, "SPIR-V module with too many samplers");
+               break;
+            }
+            /* the reflection writer reads used[] by id */
+            v->id = pr->nsamplers + 1;
+            g.ids[id].sampler = (uint8_t)v->id;
             ok = ing_push(&c, (void***)&pr->samplers, &pr->nsamplers, &pr->samplers_cap, v);
             break;
          case SPV_SC_INPUT:
@@ -5341,7 +5421,8 @@ bool rslc_compile_spirv(const uint32_t *words, size_t n,
    if (ok)
    {
       uint32_t *stack = (uint32_t*)rslc_arena_alloc(&c, g.nfuncs * sizeof(uint32_t));
-      if (!stack)
+      g.used = (uint8_t*)rslc_arena_zalloc(&c, pr->nsamplers + 1);
+      if (!stack || !g.used)
          ok = false;
       else
          ing_reach(&g, g.ids[g.entry].a, stack);
@@ -5351,7 +5432,7 @@ bool rslc_compile_spirv(const uint32_t *words, size_t n,
    if (ok)
    {
       size_t payload = opts->dst == RSLC_DST_SPIRV ? n * 4 : 0;
-      if (!rslc_blob_begin(&c, &pb, payload, g.active))
+      if (!rslc_blob_begin(&c, &pb, payload, g.active, g.used))
          ok = false;
       else
       {

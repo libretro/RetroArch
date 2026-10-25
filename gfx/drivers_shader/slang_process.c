@@ -2925,6 +2925,8 @@ static bool slang_reflect(
    size_t v_num_sbos, v_num_subs, v_num_simgs, v_num_atomics;
    size_t f_num_outputs, f_num_ubos, f_num_pushes, f_num_imgs;
    size_t f_num_sbos, f_num_subs, f_num_simgs, f_num_atomics;
+   const spvc_reflected_resource *f_active_imgs = NULL;
+   size_t f_num_active_imgs = 0;
    uint32_t vertex_ubo, fragment_ubo, vertex_push, fragment_push;
    unsigned vertex_ubo_binding, fragment_ubo_binding, ubo_binding;
    bool has_ubo;
@@ -3159,10 +3161,29 @@ static bool slang_reflect(
    if (has_ubo)
       binding_mask = 1 << ubo_binding;
 
+   /* The samplers the fragment stage reads: SPIRV-Cross's active
+    * interface variables. */
+   {
+      spvc_set       active_set = NULL;
+      spvc_resources active_res = NULL;
+      if (     spvc_compiler_get_active_interface_variables(fragment_compiler,
+                  &active_set) != SPVC_SUCCESS
+            || spvc_compiler_create_shader_resources_for_active_variables(
+                  fragment_compiler, &active_res, active_set) != SPVC_SUCCESS
+            || !spvc_fetch_list(active_res, SPVC_RESOURCE_TYPE_SAMPLED_IMAGE,
+                  &f_active_imgs, &f_num_active_imgs))
+      {
+         RARCH_ERR("[Slang] Failed to enumerate active shader resources.\n");
+         return false;
+      }
+   }
+
    /* On to textures. */
    for (i = 0; i < f_num_imgs; i++)
    {
       unsigned array_index = 0;
+      size_t   j;
+      bool     active      = false;
       unsigned set         = spvc_compiler_get_decoration(fragment_compiler,
             f_imgs[i].id, SpvDecorationDescriptorSet);
       unsigned binding     = spvc_compiler_get_decoration(fragment_compiler,
@@ -3203,6 +3224,14 @@ static bool slang_reflect(
 
       if (!validate_texture_semantic_index(reflection, index, array_index))
          return false;
+
+      /* A sampler nothing main reaches reads is checked as declared and
+       * otherwise left out: no history frame, feedback buffer or bind
+       * is kept for it. */
+      for (j = 0; j < f_num_active_imgs && !active; j++)
+         active = f_active_imgs[j].id == f_imgs[i].id;
+      if (!active)
+         continue;
 
       if (!slang_texture_sem_array_resize_min(
                &reflection->semantic_textures[index], array_index + 1))
@@ -3319,8 +3348,8 @@ static bool slang_feedback_name(const struct glslang_last_pass *state,
 }
 
 #if defined(SLANG_RSLC_ONLY)
-/* The feedback names a stage's tables hold: its samplers, as declared,
- * and the block members it reads. */
+/* The feedback names a stage's tables hold: the samplers and block
+ * members it reads. */
 static void slang_feedback_tables(struct glslang_last_pass *state,
       const struct slang_blob *blob)
 {
@@ -3329,8 +3358,9 @@ static void slang_feedback_tables(struct glslang_last_pass *state,
    const struct rslc_sampler *smp = (const struct rslc_sampler*)(mem + r->samplers);
    unsigned i, k;
    for (i = 0; i < r->sampler_count && !state->needs_target; i++)
-      state->needs_target = slang_feedback_name(state,
-            RSLC_STR(mem, smp[i].name), false);
+      if (smp[i].active)
+         state->needs_target = slang_feedback_name(state,
+               RSLC_STR(mem, smp[i].name), false);
    for (k = 0; k < 2 && !state->needs_target; k++)
    {
       const struct rslc_block  *b = k ? &r->push : &r->ubo;
@@ -3681,6 +3711,12 @@ bool slang_reflect_blobs(const struct slang_blob *vertex,
 
       if (!validate_texture_semantic_index(reflection, index, array_index))
          return false;
+
+      /* A sampler nothing main reaches reads is checked as declared and
+       * otherwise left out: no history frame, feedback buffer or bind
+       * is kept for it. */
+      if (!smp[i].active)
+         continue;
 
       if (!slang_texture_sem_array_resize_min(
                &reflection->semantic_textures[index], array_index + 1))

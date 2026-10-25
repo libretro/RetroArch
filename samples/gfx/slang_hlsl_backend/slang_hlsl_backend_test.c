@@ -178,6 +178,35 @@ static const char sized_slang[] =
       "         vTexCoord * params.SourceSize.zw * params.SourceSize.xy);\n"
       "}\n";
 
+/* A pass that declares a history frame and its own feedback and reads
+ * neither. */
+static const char unread_slang[] =
+      "#version 450\n"
+      "layout(set = 0, binding = 0, std140) uniform UBO\n"
+      "{\n"
+      "   mat4 MVP;\n"
+      "} global;\n"
+      "#pragma stage vertex\n"
+      "layout(location = 0) in vec4 Position;\n"
+      "layout(location = 1) in vec2 TexCoord;\n"
+      "layout(location = 0) out vec2 vTexCoord;\n"
+      "void main()\n"
+      "{\n"
+      "   gl_Position = global.MVP * Position;\n"
+      "   vTexCoord   = TexCoord;\n"
+      "}\n"
+      "#pragma stage fragment\n"
+      "layout(location = 0) in vec2 vTexCoord;\n"
+      "layout(location = 0) out vec4 FragColor;\n"
+      "layout(set = 0, binding = 2) uniform sampler2D Source;\n"
+      "layout(set = 0, binding = 3) uniform sampler2D OriginalHistory3;\n"
+      "layout(set = 0, binding = 4) uniform sampler2D PassFeedback0;\n"
+      "vec4 never() { return texture(OriginalHistory3, vTexCoord); }\n"
+      "void main()\n"
+      "{\n"
+      "   FragColor = texture(Source, vTexCoord);\n"
+      "}\n";
+
 bool video_shader_source_read(const char *ident, char **buf, int64_t *len)
 {
    const char *src;
@@ -188,6 +217,8 @@ bool video_shader_source_read(const char *ident, char **buf, int64_t *len)
       src = stock_slang;
    else if (!strcmp(ident, "sized.slang"))
       src = sized_slang;
+   else if (!strcmp(ident, "unread.slang"))
+      src = unread_slang;
    else
       return false;
    n = strlen(src);
@@ -321,6 +352,42 @@ static void check_simulated_source_size(void)
    free_pass(&shader, 0, &sem);
 }
 
+/* Samplers the pass never reads are left out: no texture to bind, no
+ * history frame kept, no feedback buffer. */
+static void check_unread_samplers(void)
+{
+   static struct video_shader shader;
+   semantics_map_t map;
+   pass_semantics_t sem;
+   float mvp[16];
+   void *views[4] = { NULL, NULL, NULL, NULL };
+   float sizes[4][4];
+   unsigned i;
+
+   memset(&map, 0, sizeof(map));
+   memset(&sem, 0, sizeof(sem));
+   map.textures[SLANG_TEXTURE_SEMANTIC_SOURCE].image           = &views[0];
+   map.textures[SLANG_TEXTURE_SEMANTIC_SOURCE].size            = sizes[0];
+   map.textures[SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY].image = &views[1];
+   map.textures[SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY].size  = sizes[1];
+   map.textures[SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK].image    = &views[2];
+   map.textures[SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK].size     = sizes[2];
+   map.uniforms[SLANG_SEMANTIC_MVP]                            = mvp;
+
+   shader.passes = 1;
+   strcpy(shader.pass[0].source.path, "unread.slang");
+   CHECK(slang_process(&shader, 0, RARCH_SHADER_HLSL, 50, &map, &sem),
+         "the pass with unread samplers did not translate");
+   CHECK(sem.texture_count == 1, "an unread sampler is bound");
+   CHECK(shader.history_size == 0, "an unread history frame is kept");
+   CHECK(!shader.pass[0].feedback, "an unread feedback buffer is kept");
+   free(shader.pass[0].source.string.vertex);
+   free(shader.pass[0].source.string.fragment);
+   free(sem.textures);
+   for (i = 0; i < SLANG_CBUFFER_MAX; i++)
+      free(sem.cbuffers[i].uniforms);
+}
+
 /* --- the lane ------------------------------------------------------- */
 
 int main(void)
@@ -369,6 +436,7 @@ int main(void)
    }
 
    check_simulated_source_size();
+   check_unread_samplers();
 
    printf("%s slang_hlsl_backend\n", failures ? "[FAIL]" : "[pass]");
    return failures ? 1 : 0;

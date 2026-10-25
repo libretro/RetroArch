@@ -656,6 +656,7 @@ bool  rslc_emit_text(struct rslc_ctx *c, struct rslc_result *result);
  * reflection section, and the blob around a payload. */
 void     rslc_mark_reach(struct rslc_ctx *c, uint32_t node, uint8_t *reach);
 void     rslc_reach_funcs(struct rslc_ctx *c, uint8_t *reach);
+void     rslc_reach_vars(struct rslc_ctx *c, const uint8_t *reach, uint8_t *used);
 uint32_t rslc_reflect_len(struct rslc_ctx *c);
 /* Base alignment, size and (array / matrix) stride of a type under
  * std140 or std430. */
@@ -664,9 +665,9 @@ void rslc_layout_of_type(const struct rslc_type *t, bool std140,
 uint32_t rslc_layout_field_offset(const struct rslc_type *t, uint32_t field,
       bool std140);
 uint32_t rslc_reflect_write(struct rslc_ctx *c, uint8_t *blob, uint32_t off,
-      uint8_t *const active[2]);
+      uint8_t *const active[2], const uint8_t *used);
 bool     rslc_blob_begin(struct rslc_ctx *c, struct rslc_pbuf *pb, size_t payload_hint,
-      uint8_t *const active[2]);
+      uint8_t *const active[2], const uint8_t *used);
 void     rslc_blob_end(struct rslc_ctx *c, struct rslc_pbuf *pb, enum rslc_dst dst,
       struct rslc_result *result);
 

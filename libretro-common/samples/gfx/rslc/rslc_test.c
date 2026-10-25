@@ -1891,7 +1891,10 @@ static void test_ingest(void)
    s  = (const struct rslc_sampler*)(b + r.refl->samplers);
    si = (const struct rslc_sampler*)(bi + ri.refl->samplers);
    for (i = 0; i < 2; i++)
-      CHECK(!strcmp(RSLC_STR(b, s[i].name), RSLC_STR(bi, si[i].name)) && s[i].binding == si[i].binding);
+      CHECK(!strcmp(RSLC_STR(b, s[i].name), RSLC_STR(bi, si[i].name)) && s[i].binding == si[i].binding
+            && s[i].active == si[i].active);
+   /* Source is read in main; Other is declared and never read */
+   CHECK(si[0].active && !si[1].active);
    CHECK(ri.refl->input_count == 2 && ri.refl->output_count == 1);
    io  = (const struct rslc_io*)(b + r.refl->inputs);
    ioi = (const struct rslc_io*)(bi + ri.refl->inputs);
@@ -1999,6 +2002,68 @@ static int pp_file(const char *path)
  * declarations and lists alike.  A block large enough compiles the
  * stage to the same blob as the allocator does, the scratch quarter
  * rewound at every release. */
+/* A sampler is active when code main reaches reads it or hands it to
+ * a call, as SPIRV-Cross's active interface variables say: every
+ * destination's tables and the ingest of the SPIR-V agree. */
+static void test_sampler_active(void)
+{
+   static const char frag[] =
+      "#version 450\n"
+      "layout(location = 0) in vec2 vTexCoord;\n"
+      "layout(location = 0) out vec4 FragColor;\n"
+      "layout(set = 0, binding = 1) uniform sampler2D Read;\n"
+      "layout(set = 0, binding = 2) uniform sampler2D Handed;\n"
+      "layout(set = 0, binding = 3) uniform sampler2D Uncalled;\n"
+      "layout(set = 0, binding = 4) uniform sampler2D Declared;\n"
+      "vec4 at(sampler2D s, vec2 uv) { return texture(s, uv); }\n"
+      "vec4 never() { return texture(Uncalled, vec2(0.5)); }\n"
+      "void main() { FragColor = texture(Read, vTexCoord) + at(Handed, vTexCoord); }\n";
+   static const enum rslc_dst dsts[] = {
+      RSLC_DST_SPIRV, RSLC_DST_REFLECT, RSLC_DST_GLSL, RSLC_DST_HLSL, RSLC_DST_MSL };
+   static const unsigned expect[4] = { 1, 1, 0, 0 };
+   struct rslc_opts   o, oi;
+   struct rslc_result r, ri;
+   char               err[128], erri[128];
+   unsigned           d, i;
+
+   for (d = 0; d < sizeof(dsts) / sizeof(dsts[0]); d++)
+   {
+      const struct rslc_sampler *smp;
+      opts_default(&o, err, sizeof(err));
+      o.dst = dsts[d];
+      CHECK(rslc_compile(frag, sizeof(frag) - 1, RSLC_STAGE_FRAGMENT, &o, &r));
+      if (!r.blob)
+      {
+         fprintf(stderr, "  dst %u: %s\n", (unsigned)dsts[d], err);
+         continue;
+      }
+      CHECK(r.refl->sampler_count == 4);
+      smp = (const struct rslc_sampler*)((const uint8_t*)r.blob + r.refl->samplers);
+      for (i = 0; i < 4 && i < r.refl->sampler_count; i++)
+         if (smp[i].active != expect[i])
+         {
+            fprintf(stderr, "  dst %u: %s active %u\n", (unsigned)dsts[d],
+                  RSLC_STR((const uint8_t*)r.blob, smp[i].name), smp[i].active);
+            CHECK(0);
+         }
+      if (dsts[d] == RSLC_DST_SPIRV)
+      {
+         opts_default(&oi, erri, sizeof(erri));
+         oi.dst = RSLC_DST_REFLECT;
+         CHECK(rslc_compile_spirv(r.spirv, r.spirv_len, RSLC_STAGE_FRAGMENT, &oi, &ri));
+         if (ri.blob)
+         {
+            smp = (const struct rslc_sampler*)((const uint8_t*)ri.blob + ri.refl->samplers);
+            CHECK(ri.refl->sampler_count == 4);
+            for (i = 0; i < 4 && i < ri.refl->sampler_count; i++)
+               CHECK(smp[i].active == expect[i]);
+            rslc_result_free(&ri, &oi);
+         }
+      }
+      rslc_result_free(&r, &o);
+   }
+}
+
 static void test_exhaustion(void)
 {
    struct rslc_opts   o;
@@ -2135,6 +2200,7 @@ int main(int argc, char **argv)
    test_shapes();
    test_cafe();
    test_ingest();
+   test_sampler_active();
    test_exhaustion();
 
    if (fails)
