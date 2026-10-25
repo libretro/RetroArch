@@ -558,6 +558,41 @@ static void pr_flat_member(struct rslc_pr *p, unsigned block, uint32_t m)
       pr_c(p, ')');
 }
 
+/* Whether an expression reads another variable named like v.  In
+ * GLSL a local's name comes into scope after its initializer, so
+ * vec2 x = x; reads the outer x; in HLSL it would read itself. */
+static bool pr_reads_namesake(struct rslc_pr *p, uint32_t node, const struct rslc_var *v)
+{
+   const struct rslc_node *n;
+   uint32_t i, cnt;
+   if (!node)
+      return false;
+   n = rslc_node_at(p->c, node);
+   switch (n->op)
+   {
+      case RSLC_OP_CONST:
+         return false;
+      case RSLC_OP_VAR:
+         return p->c->prog.vars[n->a] != v && p->c->prog.vars[n->a]->name == v->name;
+      case RSLC_OP_MEMBER:
+      case RSLC_OP_SWIZZLE:
+      case RSLC_OP_CONVERT:
+      case RSLC_OP_UNARY:
+         return pr_reads_namesake(p, n->a, v);
+      case RSLC_OP_CALL:
+      case RSLC_OP_BUILTIN:
+      case RSLC_OP_CONSTRUCT:
+         cnt = n->b ? rslc_list_len(p->c, n->b) : 0;
+         for (i = 0; i < cnt; i++)
+            if (pr_reads_namesake(p, rslc_list_item(p->c, n->b, i), v))
+               return true;
+         return false;
+      default:
+         return pr_reads_namesake(p, n->a, v) || pr_reads_namesake(p, n->b, v)
+            || pr_reads_namesake(p, n->c, v);
+   }
+}
+
 static void pr_var_name(struct rslc_pr *p, const struct rslc_var *v)
 {
    const struct rslc_names *nm = p->names;
@@ -612,9 +647,11 @@ static void pr_var_name(struct rslc_pr *p, const struct rslc_var *v)
                pr_ident(p, v->name);
             else
                pr_c(p, '_');
-            if (p->lifted[v->id] && !v->global)
+            if (!v->global && (p->lifted[v->id]
+                  || (v->init && v->name && pr_reads_namesake(p, v->init, v))))
             {
-               /* a local moved to file scope: unique by id */
+               /* a local moved to file scope, or one whose initializer
+                * reads its namesake: unique by id */
                pr_c(p, '_');
                pr_u(p, v->id);
             }
@@ -2484,6 +2521,16 @@ static void pr_decl(struct rslc_pr *p, const struct rslc_var *v, bool with_init)
       else
          pr_expr(p, v->init, PR_PREC_ASSIGN);
    }
+   else if (p->hlsl && with_init && v->storage == RSLC_ST_LOCAL && !v->global
+         && !p->lifted[v->id] && (v->type->kind == RSLC_TY_SCALAR
+            || v->type->kind == RSLC_TY_VEC || v->type->kind == RSLC_TY_MAT))
+   {
+      /* GLSL reads an unset local as undefined; D3DCompile refuses a
+       * read it cannot prove follows a write, so the local starts at 0 */
+      pr_s(p, " = (");
+      pr_type(p, v->type);
+      pr_s(p, ")0");
+   }
 }
 
 static bool pr_hoist_add(struct rslc_pr *p, uint32_t node, uint32_t temp)
@@ -2830,6 +2877,35 @@ static void pr_stmt_list(struct rslc_pr *p, uint32_t list)
    }
 }
 
+/* An expression statement.  HLSL takes no assignment inside ?: and
+ * evaluates both of its operands, so a c ? a = x : b = y statement is
+ * printed as the if / else it means. */
+static void pr_expr_stmt(struct rslc_pr *p, uint32_t expr)
+{
+   const struct rslc_node *e = rslc_node_at(p->c, expr);
+   if (p->hlsl && e->op == RSLC_OP_TERNARY)
+   {
+      pr_s(p, "if (");
+      pr_expr(p, e->a, PR_PREC_SEQ);
+      pr_s(p, ") {");
+      p->indent++;
+      pr_nl(p);
+      pr_expr_stmt(p, e->b);
+      p->indent--;
+      pr_nl(p);
+      pr_s(p, "} else {");
+      p->indent++;
+      pr_nl(p);
+      pr_expr_stmt(p, e->c);
+      p->indent--;
+      pr_nl(p);
+      pr_c(p, '}');
+      return;
+   }
+   pr_expr(p, expr, PR_PREC_SEQ);
+   pr_c(p, ';');
+}
+
 static void pr_stmt(struct rslc_pr *p, uint32_t node)
 {
    const struct rslc_node *n = rslc_node_at(p->c, node);
@@ -2873,8 +2949,7 @@ static void pr_stmt(struct rslc_pr *p, uint32_t node)
          pr_c(p, ';');
          break;
       case RSLC_OP_EXPR:
-         pr_expr(p, n->a, PR_PREC_SEQ);
-         pr_c(p, ';');
+         pr_expr_stmt(p, n->a);
          break;
       case RSLC_OP_IF:
          pr_s(p, "if (");
@@ -3043,6 +3118,31 @@ static void pr_struct(struct rslc_pr *p, const struct rslc_type *t, const char *
    pr_nl(p);
    pr_s(p, "};");
    pr_nl(p);
+}
+
+/* Whether control can reach the end of a statement: a return or
+ * discard ends it, an if ends when both arms do, and a block when its
+ * last statement does. */
+static bool pr_falls_off(struct rslc_pr *p, uint32_t node)
+{
+   const struct rslc_node *n;
+   uint32_t cnt;
+   if (!node)
+      return true;
+   n = rslc_node_at(p->c, node);
+   switch (n->op)
+   {
+      case RSLC_OP_RETURN:
+      case RSLC_OP_DISCARD:
+         return false;
+      case RSLC_OP_IF:
+         return !n->c || pr_falls_off(p, n->b) || pr_falls_off(p, n->c);
+      case RSLC_OP_BLOCK:
+         cnt = n->b ? rslc_list_len(p->c, n->b) : 0;
+         return !cnt || pr_falls_off(p, rslc_list_item(p->c, n->b, cnt - 1));
+      default:
+         return true;
+   }
 }
 
 static void pr_func_head(struct rslc_pr *p, const struct rslc_func *f)
@@ -3430,6 +3530,22 @@ static void pr_globals_and_funcs(struct rslc_pr *p)
             pr_c(p, ';');
          }
          pr_stmt_list(p, body->b);
+         p->indent--;
+         pr_nl(p);
+         pr_c(p, '}');
+      }
+      else if (p->hlsl && f->ret->kind != RSLC_TY_VOID && pr_falls_off(p, f->body))
+      {
+         /* GLSL leaves the value of a function that runs off its end
+          * undefined; D3DCompile refuses the function, so it returns 0 */
+         const struct rslc_node *body = rslc_node_at(c, f->body);
+         pr_c(p, '{');
+         p->indent++;
+         pr_stmt_list(p, body->b);
+         pr_nl(p);
+         pr_s(p, "return (");
+         pr_type(p, f->ret);
+         pr_s(p, ")0;");
          p->indent--;
          pr_nl(p);
          pr_c(p, '}');

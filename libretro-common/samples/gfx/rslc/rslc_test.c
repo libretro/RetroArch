@@ -1289,6 +1289,56 @@ static void test_hlsl(void)
    CHECK(alloc_live == 0);
 }
 
+/* HLSL scoping and ?: as Microsoft's D3DCompile reads them: a ?:
+ * statement with assignments for operands is printed as if / else
+ * (HLSL takes no assignment there and evaluates both operands), and a
+ * local whose initializer reads the global of its name is renamed,
+ * since in HLSL the initializer would read the local itself; a local
+ * declared without a value starts at 0, and a function that can run
+ * off its end returns 0 there, since D3DCompile refuses a read it
+ * cannot prove follows a write and a path that returns nothing. */
+static void test_hlsl_scoping(void)
+{
+   struct rslc_opts   o;
+   struct rslc_result r;
+   char               err[128];
+   static const char  frag[] =
+      "#version 450\n"
+      "layout(push_constant) uniform Push { float bgr; float lit; } params;\n"
+      "layout(location = 0) in vec2 vTexCoord;\n"
+      "layout(location = 1) in vec2 vStep;\n"
+      "layout(location = 0) out vec4 FragColor;\n"
+      "vec2 step_ = vec2(0.0);\n"
+      "float half_(float x) { if (x > 0.5) return 1.0; }\n"
+      "void main() {\n"
+      "  vec3 mask = vec3(0.0);\n"
+      "  step_ = vStep;\n"
+      "  params.bgr == 1.0 ? mask.z = params.lit : mask.x = params.lit;\n"
+      "  if (vTexCoord.x > 0.5) { vec2 step_ = step_ * 2.0; mask.xy += step_; }\n"
+      "  float u;\n"
+      "  if (vTexCoord.y > 0.5) u = 1.0;\n"
+      "  FragColor = vec4(mask, u * half_(vTexCoord.x));\n"
+      "}\n";
+
+   opts_default(&o, err, sizeof(err));
+   o.dst     = RSLC_DST_HLSL;
+   o.version = 50;
+   CHECK(rslc_compile(frag, sizeof(frag) - 1, RSLC_STAGE_FRAGMENT, &o, &r));
+   if (!r.text)
+      return;
+   CHECK(strstr(r.text, "float u = (float)0;") != NULL);
+   CHECK(strstr(r.text, "return (float)0;") != NULL);
+   CHECK(strstr(r.text, " ? ") == NULL);
+   CHECK(strstr(r.text, "if (params_bgr == 1.0f) {") != NULL);
+   CHECK(strstr(r.text, "mask.z = params_lit;") != NULL);
+   CHECK(strstr(r.text, "} else {") != NULL);
+   CHECK(strstr(r.text, "mask.x = params_lit;") != NULL);
+   CHECK(strstr(r.text, "float2 step__") != NULL);
+   CHECK(strstr(r.text, "float2 step_ = step_") == NULL);
+   rslc_result_free(&r, &o);
+   CHECK(alloc_live == 0);
+}
+
 /* The MSL printer: no globals, so every function takes what it
  * reaches by reference (blocks as constant references, samplers as
  * texture + sampler pairs) and main0 holds the stage's variables;
@@ -1995,6 +2045,7 @@ int main(int argc, char **argv)
    test_glsl();
    test_glsl_flatten();
    test_hlsl();
+   test_hlsl_scoping();
    test_msl();
    test_shapes();
    test_cafe();
