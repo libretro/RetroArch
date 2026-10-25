@@ -7679,7 +7679,6 @@ static void vulkan_init_hw_render(vk_t *vk)
    if (config_get_ptr()->uints.video_temporal_upscaler == VIDEO_TEMPORAL_UPSCALER_DLSS)
    {
       char dir[DIR_MAX_LENGTH];
-      video_upscaler_log_probe();
       video_upscaler_dlss_dir(dir, sizeof(dir));
       vk->ngx = vulkan_ngx_init(vk->context->instance, vk->context->gpu,
             vk->context->device, vulkan_symbol_wrapper_instance_proc_addr(),
@@ -7979,6 +7978,11 @@ static void *vulkan_init(const video_info_t *video)
 
    RARCH_LOG("[Vulkan] Using resolution %ux%u.\n",
          VIDEO_SCALE_W(temp_dims), VIDEO_SCALE_H(temp_dims));
+#ifdef HAVE_NGX
+   /* (what the upscaler would find, with or without a core to draw for it) */
+   if (config_get_ptr()->uints.video_temporal_upscaler == VIDEO_TEMPORAL_UPSCALER_DLSS)
+      video_upscaler_log_probe();
+#endif
 
    if (!vk->ctx_driver || !vk->ctx_driver->get_context_data)
    {
