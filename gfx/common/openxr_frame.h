@@ -76,12 +76,15 @@ typedef struct openxr_aims
 } openxr_aims_t;
 
 /* Where a hand's held item was last shown, for the hold (slot and
- * state) it was shown for. */
+ * state) it was shown for, and the hinge it last held whole, if
+ * hinged: until it leaves that hinge's reach, in the screens' frame. */
 typedef struct openxr_held
 {
    video_xr_pose_t pose;
+   video_xr_hinge_t hinge;
    unsigned slot;
    unsigned state;
+   bool hinged;
 } openxr_held_t;
 
 /* What the XR thread publishes for the drawing thread. */
@@ -182,6 +185,9 @@ typedef struct openxr_frame
    retro_atomic_int_t grabs_words[2 * OPENXR_WORDS(openxr_grabs_t)];
    openxr_grabs_t grabs;           /* the frame loop's */
    openxr_held_t held[2];          /* the frame loop's */
+   /* Each held hinge where this frame draws, bit h for hand h's. */
+   video_xr_hinge_t hinges[2];     /* the frame loop's */
+   unsigned hinged;                /* the frame loop's */
    /* Edit Smoothing's aims as the frame loop publishes them. */
    retro_atomic_int_t aims_seq;
    retro_atomic_int_t aims_words[2 * OPENXR_WORDS(openxr_aims_t)];

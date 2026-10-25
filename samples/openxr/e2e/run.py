@@ -4150,16 +4150,21 @@ BACK_CELL = BACK_DIM + 2 * BACK_MARGIN
 BACK_X = BEAM_X[1] + BEAM_LEN + 1
 BACK_Y = (OUTLINE_DIM - BACK_CELL) // 2
 BACK_RECT = (BACK_X + BACK_MARGIN, BACK_Y + BACK_MARGIN, BACK_DIM, BACK_DIM)
+# A hinge's green strip after the back's cell, centred on the middle
+# row.
+HINGE_COLS, HINGE_ROWS = 128, 4
+HINGE_X = BACK_X + BACK_CELL + 1
+HINGE_Y = (OUTLINE_DIM - HINGE_ROWS) // 2
 # Edit mode's tags, one cell for each item it can choose (0, the laser;
-# a slot plus one), after the back's cell, each centred on the middle
+# a slot plus one), after the hinge's strip, each centred on the middle
 # row.
 TAG_COLS, TAG_ROWS, TAGS = 128, 30, 10
-TAG_X = tuple(BACK_X + BACK_CELL + 1 + k * (TAG_COLS + 1)
+TAG_X = tuple(HINGE_X + HINGE_COLS + 1 + k * (TAG_COLS + 1)
               for k in range(TAGS))
 TAG_Y = (OUTLINE_DIM - TAG_ROWS) // 2
 CURSOR_W = TAG_X[-1] + TAG_COLS
 # Its width without the tags, for runtimes too narrow for them.
-CURSOR_PLAIN_W = BACK_X + BACK_CELL
+CURSOR_PLAIN_W = HINGE_X + HINGE_COLS
 TAG_HEIGHT, TAG_LIFT, TAG_FAINT = 0.02, 0.05, 160
 CURSOR_H = OUTLINE_DIM
 # The beam: VIDEO_XR_BEAM_WIDTH, _REACH and _LEVEL; AIM_GUN's and

@@ -375,6 +375,24 @@ unsigned video_xr_snap_hinge(const video_xr_quad_set_t *set, unsigned slot,
 float video_xr_hinge_angle(const video_xr_hinge_t *h,
       const video_xr_quat_t *q);
 
+/* Where hinge h shows its line, its held screen width x height metres,
+ * on target: from a to b along h->dir where the held edge and target's
+ * edge h->on overlap, midway across the gap; this wide, drawn as the
+ * beam is. False where they do not overlap. */
+#define VIDEO_XR_HINGE_WIDTH 0.006f
+bool video_xr_hinge_line(const video_xr_hinge_t *h, float width,
+      float height, const video_xr_quad_t *target, video_xr_vec3_t *a,
+      video_xr_vec3_t *b);
+
+/* h, its slots and edges kept, placed on those edges as they are now:
+ * its held one, of a screen width x height metres at pose, and
+ * target's. Its line runs midway between their ways through the held
+ * edge's middle (point), flat and gap from the target's edge to it, so
+ * it lies midway across and in depth; crossed, across on the edge drawn
+ * over the other (the held one's if over). */
+void video_xr_hinge_place(video_xr_hinge_t *h, const video_xr_pose_t *pose,
+      float width, float height, const video_xr_quad_t *target, bool over);
+
 /* video_xr_grab_pose with targets and no settings, also giving the
  * hinge it holds (VIDEO_XR_SNAP_HINGE in the snaps returned, never
  * with a clamp holding it back, nor unless the item's own edge is
@@ -388,12 +406,15 @@ unsigned video_xr_grab_hinge(const video_xr_grab_t *g,
 
 /* Whether g's item, where it is with no snap, has its edge h->edge where
  * h's hinge could take it again, against h's target where targets has
- * it now: within VIDEO_XR_SNAP_DIST metres of its plane, at a gap the
- * hinge reaches, fades included, and overlapping its edge along the
- * line. */
+ * it now: within reach metres of its plane, at a gap the hinge
+ * reaches, fades included, and overlapping its edge along the line.
+ * The stick swings about it within VIDEO_XR_SNAP_DIST; a hinge's mark
+ * and buzz keep it within VIDEO_XR_HINGE_REACH, past where it takes
+ * hold, so a wobble there neither flickers nor buzzes again. */
+#define VIDEO_XR_HINGE_REACH (1.5f * VIDEO_XR_SNAP_DIST)
 bool video_xr_grab_near_hinge(const video_xr_grab_t *g,
       const video_xr_pose_t *aim, const video_xr_quad_set_t *targets,
-      const video_xr_hinge_t *h);
+      const video_xr_hinge_t *h, float reach);
 
 /* g holds its item at pose for aim, its place and its turn. */
 void video_xr_grab_put(video_xr_grab_t *g, const video_xr_pose_t *aim,
@@ -593,10 +614,11 @@ void video_xr_place_window(const video_xr_params_t *p, bool menu,
  * band; the beam's strips to the dot and into nothing (miss 0 and 1),
  * VIDEO_XR_BEAM_LEN long from the hand along x; a screen's back, a
  * solid VIDEO_XR_BACK_CELL square whose middle VIDEO_XR_BACK_DIM square
- * a back shows, so filtering takes in nothing else; edit mode's tags, one
- * for each item it can choose (0, the laser; a slot plus one, a screen
- * or the menu), VIDEO_XR_TAG_COLS by VIDEO_XR_TAG_ROWS, written by
- * video_xr_tag_pixels. */
+ * a back shows, so filtering takes in nothing else; a hinge's line, a
+ * solid VIDEO_XR_HINGE_COLS by VIDEO_XR_HINGE_ROWS strip; edit mode's
+ * tags, one for each item it can choose (0, the laser; a slot plus one,
+ * a screen or the menu), VIDEO_XR_TAG_COLS by VIDEO_XR_TAG_ROWS,
+ * written by video_xr_tag_pixels. */
 #define VIDEO_XR_CURSOR_DIM     32
 #define VIDEO_XR_OUTLINE_DIM    256
 #define VIDEO_XR_OUTLINE_BAND   2
@@ -606,6 +628,8 @@ void video_xr_place_window(const video_xr_params_t *p, bool menu,
 #define VIDEO_XR_HANDLE_ROWS    8
 #define VIDEO_XR_BEAM_LEN       128
 #define VIDEO_XR_BEAM_ROWS      4
+#define VIDEO_XR_HINGE_COLS     128
+#define VIDEO_XR_HINGE_ROWS     4
 #define VIDEO_XR_TAGS           (VIDEO_XR_MAX_SLOTS + 1)
 #define VIDEO_XR_TAG_COLS       128
 #define VIDEO_XR_TAG_ROWS \
@@ -619,10 +643,11 @@ void video_xr_place_window(const video_xr_params_t *p, bool menu,
 #define VIDEO_XR_BACK_DIM       8
 #define VIDEO_XR_BACK_MARGIN    4
 #define VIDEO_XR_BACK_CELL      (VIDEO_XR_BACK_DIM + 2 * VIDEO_XR_BACK_MARGIN)
-/* Before the tags, so a runtime too narrow for them keeps it. */
+/* Before the tags, so a runtime too narrow for the tags keeps these. */
 #define VIDEO_XR_BACK_X         VIDEO_XR_BEAM_X(2)
+#define VIDEO_XR_HINGE_X        (VIDEO_XR_BACK_X + VIDEO_XR_BACK_CELL + 1)
 #define VIDEO_XR_TAG_X(tag) \
-   (VIDEO_XR_BACK_X + VIDEO_XR_BACK_CELL + 1 \
+   (VIDEO_XR_HINGE_X + VIDEO_XR_HINGE_COLS + 1 \
     + (tag) * (VIDEO_XR_TAG_COLS + 1))
 #define VIDEO_XR_CURSOR_W \
    (VIDEO_XR_TAG_X(VIDEO_XR_TAGS - 1) + VIDEO_XR_TAG_COLS)
@@ -635,6 +660,7 @@ void video_xr_place_window(const video_xr_params_t *p, bool menu,
 #define VIDEO_XR_BEAM_Y         ((VIDEO_XR_CURSOR_H - VIDEO_XR_BEAM_ROWS) / 2)
 #define VIDEO_XR_TAG_Y          ((VIDEO_XR_CURSOR_H - VIDEO_XR_TAG_ROWS) / 2)
 #define VIDEO_XR_BACK_Y         ((VIDEO_XR_CURSOR_H - VIDEO_XR_BACK_CELL) / 2)
+#define VIDEO_XR_HINGE_Y        ((VIDEO_XR_CURSOR_H - VIDEO_XR_HINGE_ROWS) / 2)
 /* The beam's strips: white at this level, fading in over their first
  * FADE_IN texels; the one into nothing out over its last FADE_OUT. */
 #define VIDEO_XR_BEAM_LEVEL     160
@@ -642,12 +668,16 @@ void video_xr_place_window(const video_xr_params_t *p, bool menu,
 #define VIDEO_XR_BEAM_FADE_OUT  32
 /* A back's grey, opaque. */
 #define VIDEO_XR_BACK_LEVEL     40
+/* A hinge's line: green, red and blue equal, at this alpha. */
+#define VIDEO_XR_HINGE_RB       60
+#define VIDEO_XR_HINGE_G        220
+#define VIDEO_XR_HINGE_LEVEL    166
 
-/* Its pixels, RGBA8 premultiplied, grey so RGBA and BGRA hold the same
- * bytes: a white dot with a dark rim and a one-pixel soft edge; outline
- * rims and handle bars in black and white, the faint ones at
- * VIDEO_XR_OUTLINE_FAINT alpha; white beam strips; the back's grey
- * cell. px holds
+/* Its pixels, RGBA8 premultiplied, grey or with red equal to blue, so
+ * RGBA and BGRA hold the same bytes: a white dot with a dark rim and a
+ * one-pixel soft edge; outline rims and handle bars in black and white,
+ * the faint ones at VIDEO_XR_OUTLINE_FAINT alpha; white beam strips;
+ * the back's grey cell; the hinge's green strip. px holds
  * VIDEO_XR_CURSOR_W by VIDEO_XR_CURSOR_H times four bytes. */
 void video_xr_cursor_pixels(uint8_t *px);
 
@@ -746,6 +776,17 @@ void video_xr_tag(const video_xr_vec3_t *hand, const video_xr_vec3_t *eye,
  * metres outside q's on every side. */
 #define VIDEO_XR_OUTLINE_GAP 0.005f
 void video_xr_outline(const video_xr_quad_t *q, video_xr_quad_t *out);
+
+/* Outline o, as video_xr_outline made it and turned to the head when
+ * back, without the rims of its item's edges in hide (bit e for edge
+ * e: 0 top, 1 bottom, 2 right, 3 left; one, or two opposite): turned a
+ * quarter about its face for a top or bottom, then cut to the *w texels
+ * of its square's x from *x. VIDEO_XR_OUTLINE_CROP texels go at a
+ * side, so filtering's half texel there meets its clear middle; never
+ * its y, which GL's bottom-up rows would flip. */
+#define VIDEO_XR_OUTLINE_CROP 8
+void video_xr_outline_crop(video_xr_quad_t *o, unsigned hide, bool back,
+      unsigned *x, unsigned *w);
 
 /* Headset pacing. The XR thread's filter over each frame's predicted
  * display period: a period is published once VIDEO_XR_PERIODS frames

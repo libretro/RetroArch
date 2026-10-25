@@ -2930,11 +2930,11 @@ static void test_cursor_pixels(void)
             + VIDEO_XR_BEAM_ROWS)[3]);
 }
 
-/* Edit mode's tags: a cell for each item it can choose after the beam
- * strips, each centred on the middle row with a clear column between,
- * empty until text goes in. Text is light over a dark halo two texels
- * wide, at the tag's faint level; bottom up, its rows mirror within the
- * cell. */
+/* Edit mode's tags: a cell for each item it can choose after the
+ * hinge's strip, each centred on the middle row with a clear column
+ * between, empty until text goes in. Text is light over a dark halo two
+ * texels wide, at the tag's faint level; bottom up, its rows mirror
+ * within the cell. */
 static void test_tag_pixels(void)
 {
    static uint8_t cov[VIDEO_XR_TAG_COLS * VIDEO_XR_TAG_ROWS];
@@ -2945,7 +2945,7 @@ static void test_tag_pixels(void)
    unsigned x, y;
    int clear = 1;
    CHECK(VIDEO_XR_TAGS == VIDEO_XR_MENU_SLOT + 2);
-   CHECK(VIDEO_XR_TAG_X(0) == VIDEO_XR_BACK_X + VIDEO_XR_BACK_CELL + 1);
+   CHECK(VIDEO_XR_TAG_X(0) == VIDEO_XR_HINGE_X + VIDEO_XR_HINGE_COLS + 1);
    CHECK(VIDEO_XR_TAG_X(VIDEO_XR_TAGS - 1) + VIDEO_XR_TAG_COLS
          == VIDEO_XR_CURSOR_W);
    CHECK(2 * VIDEO_XR_TAG_Y + VIDEO_XR_TAG_ROWS == VIDEO_XR_CURSOR_H);
@@ -2990,7 +2990,7 @@ static void test_back_pixels(void)
    CHECK(VIDEO_XR_BACK_CELL
          == VIDEO_XR_BACK_DIM + 2 * VIDEO_XR_BACK_MARGIN);
    CHECK(VIDEO_XR_BACK_MARGIN >= 2);
-   CHECK(VIDEO_XR_CURSOR_UNTAGGED_W == x0 + VIDEO_XR_BACK_CELL);
+   CHECK(VIDEO_XR_HINGE_X == x0 + VIDEO_XR_BACK_CELL + 1);
    CHECK(2 * VIDEO_XR_BACK_Y + VIDEO_XR_BACK_CELL == VIDEO_XR_CURSOR_H);
    CHECK(l > 0 && l < 64);
    video_xr_cursor_pixels(t_atlas);
@@ -3001,6 +3001,36 @@ static void test_back_pixels(void)
    CHECK(solid);
    CHECK(column_clear(x0 - 1) && column_clear(x0 + VIDEO_XR_BACK_CELL));
    CHECK(!texel(x0, y0 - 1)[3] && !texel(x0, y0 + VIDEO_XR_BACK_CELL)[3]);
+}
+
+/* A hinge's line: a uniform green strip, red equal to blue so RGBA and
+ * BGRA hold the same bytes, premultiplied at VIDEO_XR_HINGE_LEVEL;
+ * after the back's cell and before the tags, so a runtime too narrow
+ * for the tags keeps it; centred on the middle row, a clear column
+ * either side. */
+static void test_hinge_pixels(void)
+{
+   const unsigned x0 = VIDEO_XR_HINGE_X;
+   const unsigned y0 = VIDEO_XR_HINGE_Y;
+   const unsigned rb = (VIDEO_XR_HINGE_RB * VIDEO_XR_HINGE_LEVEL + 127) / 255;
+   const unsigned g  = (VIDEO_XR_HINGE_G * VIDEO_XR_HINGE_LEVEL + 127) / 255;
+   unsigned x, y;
+   int solid = 1;
+   CHECK(VIDEO_XR_HINGE_X == VIDEO_XR_BACK_X + VIDEO_XR_BACK_CELL + 1);
+   CHECK(VIDEO_XR_TAG_X(0) == VIDEO_XR_HINGE_X + VIDEO_XR_HINGE_COLS + 1);
+   CHECK(VIDEO_XR_CURSOR_UNTAGGED_W == x0 + VIDEO_XR_HINGE_COLS);
+   CHECK(2 * VIDEO_XR_HINGE_Y + VIDEO_XR_HINGE_ROWS == VIDEO_XR_CURSOR_H);
+   CHECK(VIDEO_XR_HINGE_G > VIDEO_XR_HINGE_RB && g > rb);
+   video_xr_cursor_pixels(t_atlas);
+   for (y = y0; y < y0 + VIDEO_XR_HINGE_ROWS; y++)
+      for (x = x0; x < x0 + VIDEO_XR_HINGE_COLS; x++)
+         solid &= texel(x, y)[0] == rb && texel(x, y)[1] == g
+            && texel(x, y)[2] == rb
+            && texel(x, y)[3] == VIDEO_XR_HINGE_LEVEL;
+   CHECK(solid);
+   CHECK(column_clear(x0 - 1) && column_clear(x0 + VIDEO_XR_HINGE_COLS));
+   CHECK(!texel(x0 + 64, y0 - 1)[3]
+         && !texel(x0 + 64, y0 + VIDEO_XR_HINGE_ROWS)[3]);
 }
 
 /* A quad's back: its plane, its front the other way, its up the same;
@@ -4429,6 +4459,201 @@ static void test_gap_click(void)
          && angle_near((float)snap_yaw(&p), 90.0f));
 }
 
+/* A hinge's line: along it where the held edge overlaps the target's,
+ * midway across the gap; on the edges at gap 0; none without overlap.
+ * Hand-built under screen 1 of hinge_set: a 1.28 m edge 6 cm along and
+ * 2 cm under runs -0.58 to 0.70 at y -0.49, from either end as its way
+ * turns; 1.2 m along it stops at screen 1's end, 1.5 m along there is
+ * none; moved and turned with screen 1, the same ends moved. Snapped:
+ * the 3DS pair folded 30, the square corner, and side by side 2 cm
+ * apart. */
+static void test_hinge_line(void)
+{
+   video_xr_quad_set_t set;
+   video_xr_quad_t moved;
+   video_xr_pose_t p, inv, at;
+   video_xr_quat_t tip, off, q;
+   video_xr_hinge_t h, m;
+   video_xr_vec3_t a, b;
+   t_gap = 0.0f;
+   hinge_set(&set);
+   memset(&h, 0, sizeof(h));
+   h.point.x = 0.06f;
+   h.point.y = -0.50f;
+   h.point.z = -1.8f;
+   h.dir.x   = 1.0f;
+   h.flat.y  = -1.0f;
+   h.gap     = 0.02f;
+   h.edge    = 0;
+   h.on      = 1;
+   CHECK(video_xr_hinge_line(&h, 1.28f, 0.96f, &set.quads[0], &a, &b));
+   CHECK(vec_is(&a, -0.58, -0.49, -1.8) && vec_is(&b, 0.70, -0.49, -1.8));
+   video_xr_pose_identity(&p);
+   hinge_turn(&p.orientation, 1.0, 2.0, 0.5, 40.0);
+   p.position.x = 0.3f;
+   p.position.y = 1.1f;
+   p.position.z = 0.4f;
+   moved        = set.quads[0];
+   video_xr_compose(&p, &set.quads[0].pose, &moved.pose);
+   m            = h;
+   video_xr_pose_identity(&at);
+   at.position  = h.point;
+   video_xr_compose(&p, &at, &at);
+   m.point      = at.position;
+   video_xr_rotate(&p.orientation, &h.dir, &m.dir);
+   video_xr_rotate(&p.orientation, &h.flat, &m.flat);
+   CHECK(video_xr_hinge_line(&m, 1.28f, 0.96f, &moved, &a, &b));
+   video_xr_pose_invert(&p, &inv);
+   at.position = a;
+   video_xr_compose(&inv, &at, &at);
+   CHECK(vec_is(&at.position, -0.58, -0.49, -1.8));
+   at.position = b;
+   video_xr_compose(&inv, &at, &at);
+   CHECK(vec_is(&at.position, 0.70, -0.49, -1.8));
+   h.dir.x = -1.0f;
+   CHECK(video_xr_hinge_line(&h, 1.28f, 0.96f, &set.quads[0], &a, &b));
+   CHECK(vec_is(&a, 0.70, -0.49, -1.8) && vec_is(&b, -0.58, -0.49, -1.8));
+   h.dir.x   = 1.0f;
+   h.point.x = 1.2f;
+   CHECK(video_xr_hinge_line(&h, 1.28f, 0.96f, &set.quads[0], &a, &b));
+   CHECK(vec_is(&a, 0.56, -0.49, -1.8) && vec_is(&b, 0.8, -0.49, -1.8));
+   h.point.x = 1.5f;
+   CHECK(!video_xr_hinge_line(&h, 1.28f, 0.96f, &set.quads[0], &a, &b));
+   h.point.x = 0.06f;
+   h.point.y = -0.48f;
+   h.gap     = 0.0f;
+   CHECK(video_xr_hinge_line(&h, 1.28f, 0.96f, &set.quads[0], &a, &b));
+   CHECK(vec_is(&a, -0.58, -0.48, -1.8) && vec_is(&b, 0.70, -0.48, -1.8));
+   /* The 3DS pair as test_hinge_3ds takes it, folded 30, touching. */
+   hinge_turn(&tip, 1.0, 0.0, 0.0, -30.0);
+   hinge_turn(&off, 0.0, 1.0, 0.0, 3.0);
+   hinge_then(&off, &tip, &q);
+   hinge_place(&p, &q, 0.0, 0.48, 0.0, -0.488, -1.787);
+   CHECK(hinge_snap(&set, &p, 1.0f, &h) & VIDEO_XR_SNAP_HINGE);
+   CHECK(video_xr_hinge_line(&h, 1.28f, 0.96f, &set.quads[0], &a, &b));
+   CHECK(vec_is(&a, -0.64, -0.48, -1.8) && vec_is(&b, 0.64, -0.48, -1.8));
+   /* The square corner of test_hinge_flush_corner, up screen 1's right
+    * edge. */
+   hinge_turn(&q, 0.0, 1.0, 0.0, 88.0);
+   hinge_place(&p, &q, 0.64, 0.0, 0.805, 0.01, -1.81);
+   CHECK(hinge_snap(&set, &p, 1.0f, &h) & VIDEO_XR_SNAP_HINGE);
+   CHECK(h.edge == 2
+         && video_xr_hinge_line(&h, 1.28f, 0.96f, &set.quads[0], &a, &b));
+   CHECK(vec_is(&a, 0.8, -0.48, -1.8) && vec_is(&b, 0.8, 0.48, -1.8));
+   /* Side by side at Hinge Gap 2 cm, as test_gap_click clicks it: up
+    * the gap's middle. */
+   snap_set(&set);
+   snap_pose(&p, 1.30 + 0.02 + 0.008, 0.01, -1.98, 0.0);
+   CHECK(video_xr_snap_hinge(&set, 1, 0, 1.0f, 0.6f, 0.02f, 1.0f, &p, &h)
+         & VIDEO_XR_SNAP_HINGE);
+   CHECK(video_xr_hinge_line(&h, 1.0f, 0.6f, &set.quads[0], &a, &b));
+   CHECK(vec_is(&a, 0.81, -0.3, -2.0) && vec_is(&b, 0.81, 0.3, -2.0));
+}
+
+/* Metres from v to x, y, z. */
+static double pt_off(const video_xr_vec3_t *v, double x, double y,
+      double z)
+{
+   double dx = v->x - x;
+   double dy = v->y - y;
+   double dz = v->z - z;
+   return sqrt(dx * dx + dy * dy + dz * dz);
+}
+
+/* Screen 2 (1.28 x 0.96) at p under screen 1 of set, hinged by k as
+ * kept: placed on its edges, the middle of its line (false without
+ * one), and its gap. */
+static bool place_mid(const video_xr_quad_set_t *set,
+      const video_xr_hinge_t *k, const video_xr_pose_t *p, bool over,
+      video_xr_vec3_t *mid, float *gap)
+{
+   video_xr_vec3_t a, b;
+   video_xr_hinge_t h = *k;
+   video_xr_hinge_place(&h, p, 1.28f, 0.96f, &set->quads[0], over);
+   if (!video_xr_hinge_line(&h, 1.28f, 0.96f, &set->quads[0], &a, &b))
+      return false;
+   mid->x = (a.x + b.x) * 0.5f;
+   mid->y = (a.y + b.y) * 0.5f;
+   mid->z = (a.z + b.z) * 0.5f;
+   *gap   = h.gap;
+   return true;
+}
+
+/* A kept hinge's line on the real edges: whole, where the snap's own
+ * hinge draws it, the 3DS pair folded 30 at gaps 0 and 2; 1 cm and
+ * 0 apart, midway across; 1 to 3 cm crossed, on the held edge drawn
+ * over the other, else on the other's; 1 cm under and 3.5 cm in front,
+ * midway in depth too; turned 3 degrees in the plane, its way midway
+ * and its middle midway between them. */
+static void test_hinge_place(void)
+{
+   static const float gaps[] = { 0.0f, 0.02f };
+   static const double ys[] = { -0.488, -0.508 };
+   unsigned i;
+   float gap;
+   video_xr_quad_set_t set;
+   video_xr_pose_t p;
+   video_xr_quat_t tip;
+   video_xr_hinge_t k, w;
+   video_xr_vec3_t a, b, c, m;
+   hinge_set(&set);
+   hinge_turn(&tip, 1.0, 0.0, 0.0, -30.0);
+   for (i = 0; i < 2; i++)
+   {
+      hinge_place(&p, &tip, 0.0, 0.48, 0.06, ys[i], -1.787);
+      CHECK(video_xr_snap_hinge(&set, 1, 0, 1.28f, 0.96f, gaps[i], 1.0f,
+               &p, &k) & VIDEO_XR_SNAP_HINGE);
+      CHECK(video_xr_hinge_line(&k, 1.28f, 0.96f, &set.quads[0], &a, &b));
+      w = k;
+      video_xr_hinge_place(&w, &p, 1.28f, 0.96f, &set.quads[0], true);
+      CHECK(video_xr_hinge_line(&w, 1.28f, 0.96f, &set.quads[0], &c, &m));
+      CHECK(     pt_off(&c, a.x, a.y, a.z) < 1e-6
+            && pt_off(&m, b.x, b.y, b.z) < 1e-6
+            && fabs(w.gap - k.gap) < 1e-6);
+      CHECK(place_mid(&set, &k, &p, true, &m, &gap)
+            && pt_off(&m, 0.06, -0.48 - gaps[i] * 0.5, -1.8) < 1e-5);
+   }
+   memset(&k, 0, sizeof(k));
+   k.point.y = -0.50f;
+   k.point.z = -1.8f;
+   k.dir.x   = 1.0f;
+   k.flat.y  = -1.0f;
+   k.gap     = 0.02f;
+   k.on      = 1;
+   video_xr_pose_identity(&p);
+   for (i = 0; i < 2; i++)
+   {
+      p.position.x = -0.2f;
+      p.position.y = (float)(-0.96 - 0.01 * i);
+      p.position.z = -1.8f;
+      CHECK(place_mid(&set, &k, &p, i == 0, &m, &gap)
+            && pt_off(&m, -0.18, -0.48 - 0.005 * i, -1.8) < 1e-5
+            && fabs(gap - 0.01 * i) < 1e-5);
+   }
+   for (i = 1; i <= 3; i++)
+   {
+      p.position.y = (float)(-0.96 + 0.01 * i);
+      CHECK(place_mid(&set, &k, &p, true, &m, &gap)
+            && pt_off(&m, -0.18, -0.48 + 0.01 * i, -1.8) < 1e-5
+            && gap < 1e-5);
+      CHECK(place_mid(&set, &k, &p, false, &m, &gap)
+            && pt_off(&m, -0.18, -0.48, -1.8) < 1e-5
+            && gap < 1e-5);
+   }
+   hinge_place(&p, &tip, 0.0, 0.48, 0.0, -0.49, -1.765);
+   CHECK(place_mid(&set, &k, &p, true, &m, &gap)
+         && pt_off(&m, 0.0, -0.485, -1.7825) < 1e-5
+         && fabs(gap - sqrt(0.01 * 0.01 + 0.035 * 0.035)) < 1e-5);
+   hinge_turn(&p.orientation, 0.0, 0.0, 1.0, 3.0);
+   hinge_place(&p, &p.orientation, 0.0, 0.48, 0.0, -0.49, -1.8);
+   w = k;
+   video_xr_hinge_place(&w, &p, 1.28f, 0.96f, &set.quads[0], true);
+   CHECK(     vec_is(&w.dir, cos(1.5 * M_PI / 180.0),
+            sin(1.5 * M_PI / 180.0), 0.0)
+         && place_mid(&set, &k, &p, true, &m, &gap));
+   CHECK(fabs(m.y + 0.485) < 5e-4 && fabs(m.z + 1.8) < 1e-5);
+}
+
 /* Elsewhere from touching to 10 cm the gap stays where the hand puts
  * it, hinged: side by side at 4 and 8 cm, the 3DS pair at 30 degrees
  * at 8; 2.8 cm under clicks to 2, 3.5 to 3 (half way); an edge 2 cm
@@ -5755,20 +5980,38 @@ static void test_near_hinge(void)
             0.0);
       g.width  = 1.0f;
       g.height = 0.6f;
-      CHECK(video_xr_grab_near_hinge(&g, &aim, &set, &h)
-            == (at[k][3] != 0.0));
+      CHECK(video_xr_grab_near_hinge(&g, &aim, &set, &h,
+               VIDEO_XR_SNAP_DIST) == (at[k][3] != 0.0));
    }
    step_grab(&g, &aim, 0.0, 0.0, -1.8, 0.0, 0.0);
    g.width  = 1.0f;
    g.height = 0.6f;
    set.quads[0].pose.position.z = -1.765f;
-   CHECK(!video_xr_grab_near_hinge(&g, &aim, &set, &h));
+   CHECK(!video_xr_grab_near_hinge(&g, &aim, &set, &h,
+            VIDEO_XR_SNAP_DIST));
    set.quads[0].pose.position.z = -1.79f;
-   CHECK(video_xr_grab_near_hinge(&g, &aim, &set, &h));
+   CHECK(video_xr_grab_near_hinge(&g, &aim, &set, &h, VIDEO_XR_SNAP_DIST));
    h.slot = 2;
-   CHECK(!video_xr_grab_near_hinge(&g, &aim, &set, &h));
+   CHECK(!video_xr_grab_near_hinge(&g, &aim, &set, &h,
+            VIDEO_XR_SNAP_DIST));
    h.slot = 0;
-   CHECK(!video_xr_grab_near_hinge(&g, &aim, NULL, &h));
+   CHECK(!video_xr_grab_near_hinge(&g, &aim, NULL, &h,
+            VIDEO_XR_SNAP_DIST));
+   /* A hinge's mark and buzz reach 4.5 cm off its plane. */
+   CHECK(fabs(VIDEO_XR_HINGE_REACH - 0.045) < 1e-6);
+   set.quads[0].pose.position.z = -1.8f;
+   step_grab(&g, &aim, 0.0, 0.0, -1.8 + 0.044, 0.0, 0.0);
+   g.width  = 1.0f;
+   g.height = 0.6f;
+   CHECK(     video_xr_grab_near_hinge(&g, &aim, &set, &h,
+               VIDEO_XR_HINGE_REACH)
+         && !video_xr_grab_near_hinge(&g, &aim, &set, &h,
+               VIDEO_XR_SNAP_DIST));
+   step_grab(&g, &aim, 0.0, 0.0, -1.8 - 0.046, 0.0, 0.0);
+   g.width  = 1.0f;
+   g.height = 0.6f;
+   CHECK(!video_xr_grab_near_hinge(&g, &aim, &set, &h,
+            VIDEO_XR_HINGE_REACH));
 }
 
 #define SMOOTH_MAX 400
@@ -6090,6 +6333,96 @@ static void test_outline(void)
    CHECK(NEAR(o.height * (1.0 - 2.0 * f), 0.06));
 }
 
+/* An outline hiding an edge's rim: VIDEO_XR_OUTLINE_CROP texels cut
+ * on its x at that side, the rest where it was, so its other sides
+ * stay; a top or bottom turned a quarter about its face first, its
+ * sides swapped; turned to the head, left and right swap, so the same
+ * side of the item goes; opposite edges both go. 1 x 0.5 m: a cut is
+ * 3.125 cm across, 1.5625 cm turned. */
+static void test_outline_crop(void)
+{
+   unsigned x, w;
+   video_xr_quad_t o, c;
+   video_xr_vec3_t ax, unit_x;
+   const unsigned cut = VIDEO_XR_OUTLINE_DIM - VIDEO_XR_OUTLINE_CROP;
+   const unsigned both = VIDEO_XR_OUTLINE_DIM - 2 * VIDEO_XR_OUTLINE_CROP;
+   CHECK(VIDEO_XR_OUTLINE_CROP > VIDEO_XR_OUTLINE_EDGE);
+   memset(&o, 0, sizeof(o));
+   video_xr_pose_identity(&o.pose);
+   o.pose.position.z = -1.8f;
+   o.width           = 1.0f;
+   o.height          = 0.5f;
+   unit_x.x          = 1.0f;
+   unit_x.y          = 0.0f;
+   unit_x.z          = 0.0f;
+   c = o;
+   video_xr_outline_crop(&c, 0, false, &x, &w);
+   CHECK(x == 0 && w == VIDEO_XR_OUTLINE_DIM && pose_same(&c.pose, &o.pose)
+         && c.width == 1.0f && c.height == 0.5f);
+   /* Right: its high texels; its left side stays at x -0.5. */
+   c = o;
+   video_xr_outline_crop(&c, 1u << 2, false, &x, &w);
+   CHECK(x == 0 && w == cut && fabs(c.width - 0.96875) < 1e-6
+         && fabs(c.height - 0.5) < 1e-6
+         && fabs(c.pose.position.x + 0.015625) < 1e-6
+         && turn_apart(&c.pose.orientation, &o.pose.orientation) < 1e-3);
+   c = o;
+   video_xr_outline_crop(&c, 1u << 3, false, &x, &w);
+   CHECK(x == VIDEO_XR_OUTLINE_CROP && w == cut
+         && fabs(c.pose.position.x - 0.015625) < 1e-6);
+   /* Right, turned to the head: its low texels, the same side in the
+    * room; left, its high ones. */
+   c = o;
+   video_xr_turn_back(&c.pose);
+   video_xr_outline_crop(&c, 1u << 2, true, &x, &w);
+   CHECK(x == VIDEO_XR_OUTLINE_CROP && w == cut
+         && fabs(c.width - 0.96875) < 1e-6
+         && fabs(c.pose.position.x + 0.015625) < 1e-6);
+   c = o;
+   video_xr_turn_back(&c.pose);
+   video_xr_outline_crop(&c, 1u << 3, true, &x, &w);
+   CHECK(x == 0 && w == cut && fabs(c.width - 0.96875) < 1e-6
+         && fabs(c.pose.position.x - 0.015625) < 1e-6);
+   /* Top: its x up the item, its high texels; its bottom stays at
+    * y -0.25. */
+   c = o;
+   video_xr_outline_crop(&c, 1u << 0, false, &x, &w);
+   video_xr_rotate(&c.pose.orientation, &unit_x, &ax);
+   CHECK(x == 0 && w == cut && vec_is(&ax, 0.0, 1.0, 0.0)
+         && fabs(c.width - 0.484375) < 1e-6 && fabs(c.height - 1.0) < 1e-6
+         && fabs(c.pose.position.y + 0.0078125) < 1e-6
+         && fabs(c.pose.position.x) < 1e-6);
+   c = o;
+   video_xr_outline_crop(&c, 1u << 1, false, &x, &w);
+   CHECK(x == VIDEO_XR_OUTLINE_CROP
+         && fabs(c.pose.position.y - 0.0078125) < 1e-6);
+   /* Top, turned to the head: still its high texels; bottom, its low
+    * ones. */
+   c = o;
+   video_xr_turn_back(&c.pose);
+   video_xr_outline_crop(&c, 1u << 0, true, &x, &w);
+   video_xr_rotate(&c.pose.orientation, &unit_x, &ax);
+   CHECK(x == 0 && vec_is(&ax, 0.0, 1.0, 0.0)
+         && fabs(c.pose.position.y + 0.0078125) < 1e-6);
+   c = o;
+   video_xr_turn_back(&c.pose);
+   video_xr_outline_crop(&c, 1u << 1, true, &x, &w);
+   video_xr_rotate(&c.pose.orientation, &unit_x, &ax);
+   CHECK(x == VIDEO_XR_OUTLINE_CROP && w == cut && vec_is(&ax, 0.0, 1.0, 0.0)
+         && fabs(c.pose.position.y - 0.0078125) < 1e-6);
+   /* Opposite edges: both sides, the middle kept. */
+   c = o;
+   video_xr_outline_crop(&c, 3u, false, &x, &w);
+   CHECK(x == VIDEO_XR_OUTLINE_CROP && w == both
+         && fabs(c.width - 0.46875) < 1e-6
+         && fabs(c.pose.position.y) < 1e-6);
+   c = o;
+   video_xr_outline_crop(&c, 12u, false, &x, &w);
+   CHECK(x == VIDEO_XR_OUTLINE_CROP && w == both
+         && fabs(c.width - 0.9375) < 1e-6
+         && fabs(c.pose.position.x) < 1e-6);
+}
+
 static void test_compose(void)
 {
    unsigned i;
@@ -6406,6 +6739,8 @@ int main(void)
    test_hinge_step_put();
    test_hinge_put_still();
    test_gap_click();
+   test_hinge_line();
+   test_hinge_place();
    test_gap_free();
    test_gap_fade_out();
    test_gap_stop();
@@ -6468,9 +6803,11 @@ int main(void)
    test_cursor_pixels();
    test_tag_pixels();
    test_back_pixels();
+   test_hinge_pixels();
    test_back_pick();
    test_tag_pose();
    test_outline();
+   test_outline_crop();
    test_compose();
    test_lazy_follow();
    test_lazy_edges();

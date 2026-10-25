@@ -2551,7 +2551,7 @@ static unsigned input_openxr_edit_move(input_openxr_edit_t *e,
       /* Out of its hinge's reach, it turns as any free screen. */
       if (     hold->lidded
             && !video_xr_grab_near_hinge(&hold->g, aim, targets,
-               &hold->lid))
+               &hold->lid, VIDEO_XR_SNAP_DIST))
          hold->lidded = false;
       if (hold->lidded)
          lid = &hold->lid;

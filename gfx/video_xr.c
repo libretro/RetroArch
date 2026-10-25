@@ -1150,6 +1150,52 @@ void video_xr_outline(const video_xr_quad_t *q, video_xr_quad_t *out)
    out->height = (q->height + 2.0f * VIDEO_XR_OUTLINE_GAP) / inner;
 }
 
+void video_xr_outline_crop(video_xr_quad_t *o, unsigned hide, bool back,
+      unsigned *x, unsigned *w)
+{
+   unsigned lo, hi;
+   float texel;
+   video_xr_vec3_t shift, world;
+   *x = 0;
+   *w = VIDEO_XR_OUTLINE_DIM;
+   if (!hide)
+      return;
+   /* Turned to the head, its x runs the item's other way. */
+   if (back)
+      hide = (hide & 3u) | ((hide & 4u) << 1) | ((hide & 8u) >> 1);
+   if (hide & 3u)
+   {
+      video_xr_pose_t turn;
+      float t;
+      video_xr_pose_identity(&turn);
+      turn.orientation.z = 0.70710678f;
+      turn.orientation.w = 0.70710678f;
+      video_xr_compose(&o->pose, &turn, &o->pose);
+      t         = o->width;
+      o->width  = o->height;
+      o->height = t;
+      hi        = hide & 1u;
+      lo        = (hide >> 1) & 1u;
+   }
+   else
+   {
+      hi = (hide >> 2) & 1u;
+      lo = (hide >> 3) & 1u;
+   }
+   *x       = lo * VIDEO_XR_OUTLINE_CROP;
+   *w       = VIDEO_XR_OUTLINE_DIM - (lo + hi) * VIDEO_XR_OUTLINE_CROP;
+   texel    = o->width / VIDEO_XR_OUTLINE_DIM;
+   shift.x  = 0.5f * texel * VIDEO_XR_OUTLINE_CROP
+      * ((float)lo - (float)hi);
+   shift.y  = 0.0f;
+   shift.z  = 0.0f;
+   video_xr_rotate(&o->pose.orientation, &shift, &world);
+   o->pose.position.x += world.x;
+   o->pose.position.y += world.y;
+   o->pose.position.z += world.z;
+   o->width  = texel * (float)*w;
+}
+
 /* A pull's share: whole within r, none from 2r, falling between. */
 static double video_xr_snap_share(double d, double r)
 {
@@ -1854,6 +1900,116 @@ float video_xr_hinge_angle(const video_xr_hinge_t *h,
    video_xr_snap_across(f, d);
    video_xr_snap_across(g, d);
    return (float)video_xr_snap_about(g, f, d);
+}
+
+bool video_xr_hinge_line(const video_xr_hinge_t *h, float width,
+      float height, const video_xr_quad_t *target, video_xr_vec3_t *a,
+      video_xr_vec3_t *b)
+{
+   unsigned run;
+   double lh, lt, s, k, lo, hi, g;
+   video_xr_vec3_t mid, out, e;
+   video_xr_snap_edge(h->edge, width * 0.5, height * 0.5, &mid, &out, &lh);
+   run = video_xr_snap_edge(h->on, target->width * 0.5,
+         target->height * 0.5, &mid, &out, &lt);
+   video_xr_rotate(&target->pose.orientation, &mid, &e);
+   /* Along the line from the held edge's middle: the target edge's
+    * middle, and half its length seen along the line. */
+   s = ((double)target->pose.position.x + e.x - h->point.x) * h->dir.x
+      + ((double)target->pose.position.y + e.y - h->point.y) * h->dir.y
+      + ((double)target->pose.position.z + e.z - h->point.z) * h->dir.z;
+   mid.x = run ? 0.0f : 1.0f;
+   mid.y = run ? 1.0f : 0.0f;
+   mid.z = 0.0f;
+   video_xr_rotate(&target->pose.orientation, &mid, &e);
+   k  = lt * fabs((double)e.x * h->dir.x + (double)e.y * h->dir.y
+         + (double)e.z * h->dir.z);
+   lo = (s - k > -lh) ? s - k : -lh;
+   hi = (s + k < lh) ? s + k : lh;
+   if (hi - lo <= VIDEO_XR_SNAP_TIE)
+      return false;
+   g    = h->gap * 0.5;
+   a->x = (float)(h->point.x + h->dir.x * lo - h->flat.x * g);
+   a->y = (float)(h->point.y + h->dir.y * lo - h->flat.y * g);
+   a->z = (float)(h->point.z + h->dir.z * lo - h->flat.z * g);
+   b->x = (float)(h->point.x + h->dir.x * hi - h->flat.x * g);
+   b->y = (float)(h->point.y + h->dir.y * hi - h->flat.y * g);
+   b->z = (float)(h->point.z + h->dir.z * hi - h->flat.z * g);
+   return true;
+}
+
+void video_xr_hinge_place(video_xr_hinge_t *h, const video_xr_pose_t *pose,
+      float width, float height, const video_xr_quad_t *target, bool over)
+{
+   unsigned i, run;
+   double half, n, x;
+   double m[3], d[3], e[3], f[3], g[3];
+   video_xr_vec3_t mid, out, v;
+   run  = video_xr_snap_edge(h->edge, width * 0.5, height * 0.5, &mid,
+         &out, &half);
+   video_xr_rotate(&pose->orientation, &mid, &v);
+   m[0] = (double)pose->position.x + v.x;
+   m[1] = (double)pose->position.y + v.y;
+   m[2] = (double)pose->position.z + v.z;
+   mid.x = run ? 0.0f : 1.0f;
+   mid.y = run ? 1.0f : 0.0f;
+   mid.z = 0.0f;
+   video_xr_rotate(&pose->orientation, &mid, &v);
+   d[0] = v.x;
+   d[1] = v.y;
+   d[2] = v.z;
+   run  = video_xr_snap_edge(h->on, target->width * 0.5,
+         target->height * 0.5, &mid, &out, &half);
+   video_xr_rotate(&target->pose.orientation, &mid, &v);
+   g[0] = m[0] - target->pose.position.x - v.x;
+   g[1] = m[1] - target->pose.position.y - v.y;
+   g[2] = m[2] - target->pose.position.z - v.z;
+   video_xr_rotate(&target->pose.orientation, &out, &v);
+   f[0] = v.x;
+   f[1] = v.y;
+   f[2] = v.z;
+   mid.x = run ? 0.0f : 1.0f;
+   mid.y = run ? 1.0f : 0.0f;
+   mid.z = 0.0f;
+   video_xr_rotate(&target->pose.orientation, &mid, &v);
+   e[0] = v.x;
+   e[1] = v.y;
+   e[2] = v.z;
+   /* The line's way midway between the edges'. */
+   x    = (video_xr_snap_dot(d, e) < 0.0) ? -1.0 : 1.0;
+   for (i = 0; i < 3; i++)
+   {
+      e[i] *= x;
+      d[i] += e[i];
+   }
+   n = sqrt(video_xr_snap_dot(d, d));
+   for (i = 0; i < 3; i++)
+      d[i] /= n;
+   /* From the target's edge to the held edge's middle, square to both
+    * edges, so the line's ends stay where the held edge's are. */
+   video_xr_snap_across(g, e);
+   video_xr_snap_across(g, d);
+   x = video_xr_snap_dot(g, f);
+   if (x < 0.0)
+   {
+      for (i = 0; i < 3; i++)
+      {
+         g[i] -= x * f[i];
+         if (!over)
+            m[i] -= x * f[i];
+      }
+   }
+   n          = sqrt(video_xr_snap_dot(g, g));
+   h->point.x = (float)m[0];
+   h->point.y = (float)m[1];
+   h->point.z = (float)m[2];
+   h->dir.x   = (float)d[0];
+   h->dir.y   = (float)d[1];
+   h->dir.z   = (float)d[2];
+   h->flat.x  = (float)((n > VIDEO_XR_SNAP_TIE) ? g[0] / n : f[0]);
+   h->flat.y  = (float)((n > VIDEO_XR_SNAP_TIE) ? g[1] / n : f[1]);
+   h->flat.z  = (float)((n > VIDEO_XR_SNAP_TIE) ? g[2] / n : f[2]);
+   h->gap     = (float)n;
 }
 
 unsigned video_xr_snap_hinge(const video_xr_quad_set_t *set, unsigned slot,
@@ -2714,7 +2870,7 @@ static bool video_xr_hinge_whole(const video_xr_grab_t *g,
 
 bool video_xr_grab_near_hinge(const video_xr_grab_t *g,
       const video_xr_pose_t *aim, const video_xr_quad_set_t *targets,
-      const video_xr_hinge_t *h)
+      const video_xr_hinge_t *h, float reach)
 {
    unsigned i;
    video_xr_pose_t pose, inv, rel;
@@ -2732,7 +2888,7 @@ bool video_xr_grab_near_hinge(const video_xr_grab_t *g,
       video_xr_snap_pair(&rel, q->width * 0.5, q->height * 0.5,
             g->width * 0.5, g->height * 0.5, h->edge, h->on,
             g->gap * 0.01f, &p);
-      return fabs(p.plane) <= VIDEO_XR_SNAP_DIST
+      return fabs(p.plane) <= reach
          && video_xr_snap_gap_share(p.across, g->gap * 0.01f) > 0.0
          && p.overlap > 0.0;
    }
@@ -3035,6 +3191,18 @@ void video_xr_cursor_pixels(uint8_t *px)
       for (x = 0; x < VIDEO_XR_BACK_CELL; x++)
          video_xr_cursor_texel(px, VIDEO_XR_BACK_X + x, VIDEO_XR_BACK_Y + y,
                VIDEO_XR_BACK_LEVEL, 255);
+   for (y = 0; y < VIDEO_XR_HINGE_ROWS; y++)
+      for (x = 0; x < VIDEO_XR_HINGE_COLS; x++)
+      {
+         uint8_t *p = px + ((size_t)(VIDEO_XR_HINGE_Y + y)
+               * VIDEO_XR_CURSOR_W + VIDEO_XR_HINGE_X + x) * 4;
+         p[0] = (uint8_t)((VIDEO_XR_HINGE_RB * VIDEO_XR_HINGE_LEVEL + 127)
+               / 255);
+         p[1] = (uint8_t)((VIDEO_XR_HINGE_G * VIDEO_XR_HINGE_LEVEL + 127)
+               / 255);
+         p[2] = p[0];
+         p[3] = VIDEO_XR_HINGE_LEVEL;
+      }
 }
 
 void video_xr_tag_pixels(uint8_t *px, unsigned tag, const uint8_t *cov,

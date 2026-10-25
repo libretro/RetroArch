@@ -199,7 +199,8 @@ static void openxr_frame_hold_slot(video_xr_quad_set_t *set, unsigned slot,
  * frame showed it); one let go stays where it was left until quads
  * planned at its release or later show it. A held screen snaps, as
  * Snap to Screens asks, to the screens no hand holds, as the main
- * thread snaps it. */
+ * thread snaps it, and keeps the hinge it last held whole until it
+ * leaves that hinge's reach, drawn on the edges as they are. */
 static void openxr_frame_hold(openxr_frame_t *f, XrTime time,
       video_xr_quad_set_t *set)
 {
@@ -220,6 +221,7 @@ static void openxr_frame_hold(openxr_frame_t *f, XrTime time,
             && f->grabs.hand[h].slot < VIDEO_XR_MAX_SLOTS)
          holding |= 1u << f->grabs.hand[h].slot;
    video_xr_pose_invert(&f->screens.pose, &inv);
+   f->hinged = 0;
    for (h = 0; h < 2; h++)
    {
       video_xr_pose_t aim;
@@ -227,19 +229,69 @@ static void openxr_frame_hold(openxr_frame_t *f, XrTime time,
       openxr_held_t *held      = &f->held[h];
       if (held->state != g->state || held->slot != g->slot)
       {
-         held->pose  = g->last;
-         held->slot  = g->slot;
-         held->state = g->state;
+         held->pose   = g->last;
+         held->slot   = g->slot;
+         held->state  = g->state;
+         held->hinged = false;
       }
       if (g->state != VIDEO_XR_GRAB_HELD || g->slot >= VIDEO_XR_MAX_SLOTS)
          continue;
       if (f->aim && time && f->aim(f->extra_user, h, space, time, &aim))
       {
+         video_xr_hinge_t whole;
+         const video_xr_quad_set_t *targets = f->grabs.snap ? set : NULL;
          video_xr_compose(&inv, &aim, &aim);
-         video_xr_grab_pose(g, &aim, f->grabs.snap ? set : NULL, holding,
-               &f->grabs.start[h], &held->pose, NULL, NULL);
+         if (video_xr_grab_hinge(g, &aim, targets, holding,
+                  &f->grabs.start[h], &held->pose, &whole)
+               & VIDEO_XR_SNAP_HINGE)
+         {
+            held->hinge  = whole;
+            held->hinged = true;
+         }
+         /* Kept within VIDEO_XR_HINGE_REACH, past where it takes hold,
+          * so a wobble at the hinge's limits does not flicker it. */
+         else if (held->hinged && !video_xr_grab_near_hinge(g, &aim,
+                  targets, &held->hinge, VIDEO_XR_HINGE_REACH))
+            held->hinged = false;
       }
       openxr_frame_hold_slot(set, g->slot, &held->pose, g);
+      /* Kept while the hand is lost, it can name a screen since taken. */
+      if (held->hinged && (holding & (1u << held->hinge.slot)))
+         held->hinged = false;
+      if (held->hinged)
+      {
+         unsigned i;
+         video_xr_pose_t at;
+         video_xr_vec3_t dir, flat;
+         video_xr_hinge_t *k = &f->hinges[h];
+         unsigned ti         = set->num_quads;
+         unsigned hi         = set->num_quads;
+         *k                  = held->hinge;
+         /* On the edges as they are; crossed, on the one drawn later,
+          * as the quads draw in order. */
+         for (i = 0; i < set->num_quads; i++)
+         {
+            const video_xr_quad_t *q = &set->quads[i];
+            if (q->kind == VIDEO_XR_QUAD_MENU)
+               continue;
+            if (ti == set->num_quads && q->slot == k->slot)
+               ti = i;
+            if (hi == set->num_quads && q->slot == g->slot)
+               hi = i;
+         }
+         if (ti < set->num_quads)
+            video_xr_hinge_place(k, &held->pose, g->width, g->height,
+                  &set->quads[ti], hi > ti);
+         video_xr_pose_identity(&at);
+         at.position = k->point;
+         video_xr_compose(&f->screens.pose, &at, &at);
+         k->point = at.position;
+         dir      = k->dir;
+         flat     = k->flat;
+         video_xr_rotate(&f->screens.pose.orientation, &dir, &k->dir);
+         video_xr_rotate(&f->screens.pose.orientation, &flat, &k->flat);
+         f->hinged |= 1u << h;
+      }
    }
 }
 

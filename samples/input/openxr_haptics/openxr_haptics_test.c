@@ -191,8 +191,8 @@ unsigned video_xr_grab_turn_lid(video_xr_grab_t *g,
 { (void)g; (void)aim; (void)lid; (void)x; (void)y; (void)dt; return 0; }
 bool video_xr_grab_near_hinge(const video_xr_grab_t *g,
       const video_xr_pose_t *aim, const video_xr_quad_set_t *targets,
-      const video_xr_hinge_t *h)
-{ (void)g; (void)aim; (void)targets; (void)h; return false; }
+      const video_xr_hinge_t *h, float reach)
+{ (void)g; (void)aim; (void)targets; (void)h; (void)reach; return false; }
 unsigned video_xr_grab_hinge(const video_xr_grab_t *g,
       const video_xr_pose_t *aim, const video_xr_quad_set_t *targets,
       unsigned skip, const video_xr_pose_t *start, video_xr_pose_t *pose,
