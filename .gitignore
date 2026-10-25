@@ -379,3 +379,5 @@ samples/gfx/integer_scale_axis/integer_scale_axis_test
 # wiiu/slang host tool
 /wiiu/slang/slang-cafe
 /wiiu/slang/slang-cafe.exe
+samples/gfx/vulkan_upscaler/Zdir/
+samples/gfx/d3d12_upscaler/Zdir/

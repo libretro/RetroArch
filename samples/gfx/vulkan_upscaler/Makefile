@@ -82,6 +82,6 @@ check: all
 
 clean:
 	rm -f $(TARGET) $(TARGET).exe $(TARGET).o _nvngx.dll libnvidia-ngx.so.1
-	rm -rf $(SAMPLE_OBJDIR)
+	rm -rf $(SAMPLE_OBJDIR) Zdir
 
 .PHONY: all check clean

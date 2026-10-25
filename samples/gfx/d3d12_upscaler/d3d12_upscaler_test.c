@@ -26,7 +26,23 @@
 #include "../../../configuration.h"
 #include "../../../gfx/video_upscaler.h"
 #include "../../../gfx/common/d3d12_ngx.h"
+#include <file/file_path.h>
 #include "fake_ngx.h"
+
+/* The DLSS runtime in @dir: an empty file with the runtime's name */
+static void plant_dlss_runtime(const char *dir)
+{
+   char path[256];
+   FILE *f;
+   path_mkdir(dir);
+#if defined(_WIN32)
+   snprintf(path, sizeof(path), "%s/nvngx_dlss.dll", dir);
+#else
+   snprintf(path, sizeof(path), "%s/libnvidia-ngx-dlss.so.1", dir);
+#endif
+   if ((f = fopen(path, "wb")))
+      fclose(f);
+}
 
 static int failures;
 
@@ -359,6 +375,10 @@ int main(void)
    /* The session: init with the project, the path list carrying the
     * DLSS directory, the capability set read */
    settings->uints.video_temporal_upscaler = VIDEO_TEMPORAL_UPSCALER_DLSS;
+   /* no runtime in the directory: the driver library is never called */
+   CHECK(d3d12_ngx_init(device, "Zdir") == NULL);
+   CHECK(rec->init_calls == 0);
+   plant_dlss_runtime("Zdir");
    rec->unavailable = 1;
    CHECK(d3d12_ngx_init(device, "Zdir") == NULL);
    CHECK(rec->init_calls == 1 && rec->shutdown_calls == 1);
