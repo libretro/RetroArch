@@ -51,32 +51,25 @@ struct vulkan_ngx
    VkDevice device;
    VkPhysicalDeviceMemoryProperties memory_properties;
    vulkan_ngx_retired_t retired[VULKAN_NGX_RETIRED_MAX];
-   /* What the feature was made for */
-   unsigned feature_out_w;
-   unsigned feature_out_h;
-   unsigned feature_max_w;
-   unsigned feature_max_h;
-   unsigned feature_flags;
-   unsigned feature_quality;
    /* The output image, the feature's size */
    VkImage out_image;
    VkImageView out_view;
    VkDeviceMemory out_memory;
    VkFormat out_format;
+   /* What the feature was made for; sizes are VIDEO_SCALE_PACK */
+   unsigned feature_out_dims;
+   unsigned feature_max_dims;
+   unsigned feature_flags;
+   unsigned feature_quality;
    /* The last optimal query, kept for the request each frame */
    unsigned opt_quality;
-   unsigned opt_out_w;
-   unsigned opt_out_h;
-   unsigned opt_render_w;
-   unsigned opt_render_h;
-   unsigned opt_min_w;
-   unsigned opt_min_h;
-   unsigned opt_max_w;
-   unsigned opt_max_h;
+   unsigned opt_out_dims;
+   unsigned opt_render_dims;
+   unsigned opt_min_dims;
+   unsigned opt_max_dims;
    /* What failed last, create or evaluate: not tried again until the
     * output size or mode changes, the frames shown as they are */
-   unsigned failed_out_w;
-   unsigned failed_out_h;
+   unsigned failed_out_dims;
    unsigned failed_quality;
    bool opt_valid;
    bool reset_pending;
@@ -273,55 +266,52 @@ vulkan_ngx_t *vulkan_ngx_init(VkInstance instance, VkPhysicalDevice gpu,
 }
 
 bool vulkan_ngx_optimal(vulkan_ngx_t *ngx, unsigned quality,
-      unsigned out_w, unsigned out_h,
-      unsigned *render_w, unsigned *render_h,
-      unsigned *min_w, unsigned *min_h,
-      unsigned *max_w, unsigned *max_h)
+      unsigned out_dims, unsigned *render_dims,
+      unsigned *min_dims, unsigned *max_dims)
 {
    const ngx_lib_t *lib;
    void *callback = NULL;
    ngx_result_t (NGX_CONV *optimal)(ngx_parameter_t *p);
-   if (!ngx || !out_w || !out_h)
+   if (!ngx || !VIDEO_SCALE_W(out_dims) || !VIDEO_SCALE_H(out_dims))
       return false;
    lib = ngx->lib;
    if (!ngx->opt_valid || ngx->opt_quality != quality
-         || ngx->opt_out_w != out_w || ngx->opt_out_h != out_h)
+         || ngx->opt_out_dims != out_dims)
    {
       ngx_parameter_t *p = ngx->caps;
+      unsigned rw = 0, rh = 0, mnw, mnh, mxw, mxh;
       ngx->opt_valid = false;
       lib->param.get_void_pointer(p, NGX_PARAM_DLSS_OPTIMAL_SETTINGS_CALLBACK,
             &callback);
       if (!callback)
          return false;
       memcpy(&optimal, &callback, sizeof(optimal));
-      lib->param.set_ui(p, NGX_PARAM_WIDTH, out_w);
-      lib->param.set_ui(p, NGX_PARAM_HEIGHT, out_h);
+      lib->param.set_ui(p, NGX_PARAM_WIDTH, VIDEO_SCALE_W(out_dims));
+      lib->param.set_ui(p, NGX_PARAM_HEIGHT, VIDEO_SCALE_H(out_dims));
       lib->param.set_i(p, NGX_PARAM_PERF_QUALITY, (int)quality);
       lib->param.set_i(p, NGX_PARAM_RTX_VALUE, 0);
       if (NGX_FAILED(optimal(p)))
          return false;
-      ngx->opt_render_w = ngx->opt_render_h = 0;
-      lib->param.get_ui(p, NGX_PARAM_OUT_WIDTH, &ngx->opt_render_w);
-      lib->param.get_ui(p, NGX_PARAM_OUT_HEIGHT, &ngx->opt_render_h);
-      if (!ngx->opt_render_w || !ngx->opt_render_h)
+      lib->param.get_ui(p, NGX_PARAM_OUT_WIDTH, &rw);
+      lib->param.get_ui(p, NGX_PARAM_OUT_HEIGHT, &rh);
+      if (!rw || !rh)
          return false;
-      ngx->opt_max_w = ngx->opt_min_w = ngx->opt_render_w;
-      ngx->opt_max_h = ngx->opt_min_h = ngx->opt_render_h;
-      lib->param.get_ui(p, NGX_PARAM_DLSS_DYNAMIC_MAX_RENDER_WIDTH, &ngx->opt_max_w);
-      lib->param.get_ui(p, NGX_PARAM_DLSS_DYNAMIC_MAX_RENDER_HEIGHT, &ngx->opt_max_h);
-      lib->param.get_ui(p, NGX_PARAM_DLSS_DYNAMIC_MIN_RENDER_WIDTH, &ngx->opt_min_w);
-      lib->param.get_ui(p, NGX_PARAM_DLSS_DYNAMIC_MIN_RENDER_HEIGHT, &ngx->opt_min_h);
-      ngx->opt_quality = quality;
-      ngx->opt_out_w   = out_w;
-      ngx->opt_out_h   = out_h;
-      ngx->opt_valid   = true;
+      mxw = mnw = rw;
+      mxh = mnh = rh;
+      lib->param.get_ui(p, NGX_PARAM_DLSS_DYNAMIC_MAX_RENDER_WIDTH, &mxw);
+      lib->param.get_ui(p, NGX_PARAM_DLSS_DYNAMIC_MAX_RENDER_HEIGHT, &mxh);
+      lib->param.get_ui(p, NGX_PARAM_DLSS_DYNAMIC_MIN_RENDER_WIDTH, &mnw);
+      lib->param.get_ui(p, NGX_PARAM_DLSS_DYNAMIC_MIN_RENDER_HEIGHT, &mnh);
+      ngx->opt_render_dims = VIDEO_SCALE_PACK(rw, rh);
+      ngx->opt_min_dims    = VIDEO_SCALE_PACK(mnw, mnh);
+      ngx->opt_max_dims    = VIDEO_SCALE_PACK(mxw, mxh);
+      ngx->opt_quality     = quality;
+      ngx->opt_out_dims    = out_dims;
+      ngx->opt_valid       = true;
    }
-   *render_w = ngx->opt_render_w;
-   *render_h = ngx->opt_render_h;
-   *min_w    = ngx->opt_min_w;
-   *min_h    = ngx->opt_min_h;
-   *max_w    = ngx->opt_max_w;
-   *max_h    = ngx->opt_max_h;
+   *render_dims = ngx->opt_render_dims;
+   *min_dims    = ngx->opt_min_dims;
+   *max_dims    = ngx->opt_max_dims;
    return true;
 }
 
@@ -390,7 +380,7 @@ void vulkan_ngx_frame_done(vulkan_ngx_t *ngx)
 }
 
 static bool vulkan_ngx_create_output(vulkan_ngx_t *ngx, VkFormat format,
-      unsigned w, unsigned h)
+      unsigned dims)
 {
    VkImageCreateInfo image;
    VkImageViewCreateInfo view;
@@ -404,8 +394,8 @@ static bool vulkan_ngx_create_output(vulkan_ngx_t *ngx, VkFormat format,
    image.flags                 = 0;
    image.imageType             = VK_IMAGE_TYPE_2D;
    image.format                = format;
-   image.extent.width          = w;
-   image.extent.height         = h;
+   image.extent.width          = VIDEO_SCALE_W(dims);
+   image.extent.height         = VIDEO_SCALE_H(dims);
    image.extent.depth          = 1;
    image.mipLevels             = 1;
    image.arrayLayers           = 1;
@@ -478,26 +468,25 @@ fail:
 
 static bool vulkan_ngx_create_feature(vulkan_ngx_t *ngx,
       VkCommandBuffer cmd, VkFormat format, unsigned quality,
-      unsigned flags, unsigned out_w, unsigned out_h,
-      unsigned max_w, unsigned max_h)
+      unsigned flags, unsigned out_dims, unsigned max_dims)
 {
    const ngx_lib_t *lib = ngx->lib;
    ngx_parameter_t *p   = ngx->params;
    ngx_result_t res;
 
    vulkan_ngx_retire(ngx);
-   if (!vulkan_ngx_create_output(ngx, format, out_w, out_h))
+   if (!vulkan_ngx_create_output(ngx, format, out_dims))
    {
       RARCH_ERR("[Vulkan] Temporal Upscaler: no output image of %ux%u.\n",
-            out_w, out_h);
+            VIDEO_SCALE_W(out_dims), VIDEO_SCALE_H(out_dims));
       return false;
    }
    lib->param.set_ui(p, NGX_PARAM_CREATION_NODE_MASK, 1);
    lib->param.set_ui(p, NGX_PARAM_VISIBILITY_NODE_MASK, 1);
-   lib->param.set_ui(p, NGX_PARAM_WIDTH, max_w);
-   lib->param.set_ui(p, NGX_PARAM_HEIGHT, max_h);
-   lib->param.set_ui(p, NGX_PARAM_OUT_WIDTH, out_w);
-   lib->param.set_ui(p, NGX_PARAM_OUT_HEIGHT, out_h);
+   lib->param.set_ui(p, NGX_PARAM_WIDTH, VIDEO_SCALE_W(max_dims));
+   lib->param.set_ui(p, NGX_PARAM_HEIGHT, VIDEO_SCALE_H(max_dims));
+   lib->param.set_ui(p, NGX_PARAM_OUT_WIDTH, VIDEO_SCALE_W(out_dims));
+   lib->param.set_ui(p, NGX_PARAM_OUT_HEIGHT, VIDEO_SCALE_H(out_dims));
    lib->param.set_i(p, NGX_PARAM_PERF_QUALITY, (int)quality);
    lib->param.set_i(p, NGX_PARAM_DLSS_CREATE_FLAGS, (int)flags);
    lib->param.set_i(p, NGX_PARAM_DLSS_ENABLE_OUTPUT_SUBRECTS, 0);
@@ -506,23 +495,22 @@ static bool vulkan_ngx_create_feature(vulkan_ngx_t *ngx,
    if (NGX_FAILED(res))
    {
       RARCH_ERR("[Vulkan] Temporal Upscaler: DLSS feature %ux%u -> %ux%u failed (0x%08x).\n",
-            max_w, max_h, out_w, out_h, (unsigned)res);
+            VIDEO_SCALE_W(max_dims), VIDEO_SCALE_H(max_dims),
+            VIDEO_SCALE_W(out_dims), VIDEO_SCALE_H(out_dims), (unsigned)res);
       ngx->feature = NULL;
       vulkan_ngx_retire(ngx);
-      ngx->failed_out_w   = out_w;
-      ngx->failed_out_h   = out_h;
-      ngx->failed_quality = quality;
+      ngx->failed_out_dims = out_dims;
+      ngx->failed_quality  = quality;
       return false;
    }
-   ngx->feature_out_w   = out_w;
-   ngx->feature_out_h   = out_h;
-   ngx->feature_max_w   = max_w;
-   ngx->feature_max_h   = max_h;
-   ngx->feature_flags   = flags;
-   ngx->feature_quality = quality;
-   ngx->reset_pending   = true;
+   ngx->feature_out_dims = out_dims;
+   ngx->feature_max_dims = max_dims;
+   ngx->feature_flags    = flags;
+   ngx->feature_quality  = quality;
+   ngx->reset_pending    = true;
    RARCH_LOG("[Vulkan] Temporal Upscaler: DLSS feature up to %ux%u -> %ux%u, flags 0x%x.\n",
-         max_w, max_h, out_w, out_h, flags);
+         VIDEO_SCALE_W(max_dims), VIDEO_SCALE_H(max_dims),
+         VIDEO_SCALE_W(out_dims), VIDEO_SCALE_H(out_dims), flags);
    return true;
 }
 
@@ -570,30 +558,31 @@ static void vulkan_ngx_move_input(VkCommandBuffer cmd,
 bool vulkan_ngx_upscale(vulkan_ngx_t *ngx, VkCommandBuffer cmd,
       const vulkan_ngx_image_t *color,
       const struct retro_hw_upscaler_inputs *inputs,
-      unsigned quality, unsigned out_w, unsigned out_h,
-      vulkan_ngx_image_t *out)
+      unsigned quality, unsigned out_dims, vulkan_ngx_image_t *out)
 {
    const ngx_lib_t *lib;
    ngx_parameter_t *p;
    ngx_vk_resource_t r_color, r_output, r_depth, r_mv, r_exposure, r_mask;
    struct retro_hw_upscaler_image color_img;
-   unsigned render_w, render_h, min_w, min_h, max_w, max_h;
+   unsigned render_dims, min_dims, max_dims;
    unsigned flags;
    ngx_result_t res;
 
    if (!ngx || !inputs || !color->image || !inputs->motion_vectors.image
-         || !inputs->depth.image || out_w < 32 || out_h < 32)
+         || !inputs->depth.image
+         || VIDEO_SCALE_W(out_dims) < 32 || VIDEO_SCALE_H(out_dims) < 32)
       return false;
-   if (ngx->failed_out_w == out_w && ngx->failed_out_h == out_h
-         && ngx->failed_quality == quality)
+   if (ngx->failed_out_dims == out_dims && ngx->failed_quality == quality)
       return false;
    lib = ngx->lib;
    p   = ngx->params;
-   if (!vulkan_ngx_optimal(ngx, quality, out_w, out_h, &render_w, &render_h,
-            &min_w, &min_h, &max_w, &max_h))
+   if (!vulkan_ngx_optimal(ngx, quality, out_dims, &render_dims, &min_dims,
+            &max_dims))
       return false;
-   if (     color->width  < min_w || color->width  > max_w
-         || color->height < min_h || color->height > max_h)
+   if (     VIDEO_SCALE_W(color->dims) < VIDEO_SCALE_W(min_dims)
+         || VIDEO_SCALE_W(color->dims) > VIDEO_SCALE_W(max_dims)
+         || VIDEO_SCALE_H(color->dims) < VIDEO_SCALE_H(min_dims)
+         || VIDEO_SCALE_H(color->dims) > VIDEO_SCALE_H(max_dims))
       return false;
 
    flags = 0;
@@ -609,13 +598,13 @@ bool vulkan_ngx_upscale(vulkan_ngx_t *ngx, VkCommandBuffer cmd,
       flags |= NGX_DLSS_FLAG_AUTO_EXPOSURE;
 
    if (   !ngx->feature
-       || ngx->feature_out_w != out_w || ngx->feature_out_h != out_h
-       || ngx->feature_max_w != max_w || ngx->feature_max_h != max_h
+       || ngx->feature_out_dims != out_dims
+       || ngx->feature_max_dims != max_dims
        || ngx->feature_flags != flags || ngx->feature_quality != quality
        || ngx->out_format != color->format)
    {
       if (!vulkan_ngx_create_feature(ngx, cmd, color->format, quality,
-               flags, out_w, out_h, max_w, max_h))
+               flags, out_dims, max_dims))
          return false;
    }
 
@@ -637,15 +626,15 @@ bool vulkan_ngx_upscale(vulkan_ngx_t *ngx, VkCommandBuffer cmd,
    color_img.view   = (uint64_t)(uintptr_t)color->view;
    color_img.format = (unsigned)color->format;
    color_img.state  = (unsigned)color->layout;
-   color_img.width  = color->width;
-   color_img.height = color->height;
+   color_img.width  = VIDEO_SCALE_W(color->dims);
+   color_img.height = VIDEO_SCALE_H(color->dims);
    vulkan_ngx_vk_resource(&r_color, &color_img, false);
    vulkan_ngx_vk_resource(&r_depth, &inputs->depth, false);
    vulkan_ngx_vk_resource(&r_mv, &inputs->motion_vectors, false);
    color_img.image  = (uint64_t)(uintptr_t)ngx->out_image;
    color_img.view   = (uint64_t)(uintptr_t)ngx->out_view;
-   color_img.width  = out_w;
-   color_img.height = out_h;
+   color_img.width  = VIDEO_SCALE_W(out_dims);
+   color_img.height = VIDEO_SCALE_H(out_dims);
    vulkan_ngx_vk_resource(&r_output, &color_img, true);
    if (inputs->exposure.image)
       vulkan_ngx_vk_resource(&r_exposure, &inputs->exposure, false);
@@ -674,8 +663,8 @@ bool vulkan_ngx_upscale(vulkan_ngx_t *ngx, VkCommandBuffer cmd,
    lib->param.set_f(p, NGX_PARAM_DLSS_EXPOSURE_SCALE,
          inputs->exposure_scale == 0.0f ? 1.0f : inputs->exposure_scale);
    lib->param.set_f(p, NGX_PARAM_FRAME_TIME_DELTA_MS, inputs->frame_time_ms);
-   lib->param.set_ui(p, NGX_PARAM_DLSS_RENDER_SUBRECT_WIDTH, color->width);
-   lib->param.set_ui(p, NGX_PARAM_DLSS_RENDER_SUBRECT_HEIGHT, color->height);
+   lib->param.set_ui(p, NGX_PARAM_DLSS_RENDER_SUBRECT_WIDTH, VIDEO_SCALE_W(color->dims));
+   lib->param.set_ui(p, NGX_PARAM_DLSS_RENDER_SUBRECT_HEIGHT, VIDEO_SCALE_H(color->dims));
    lib->param.set_ui(p, NGX_PARAM_DLSS_INPUT_COLOR_SUBRECT_X, 0);
    lib->param.set_ui(p, NGX_PARAM_DLSS_INPUT_COLOR_SUBRECT_Y, 0);
    lib->param.set_ui(p, NGX_PARAM_DLSS_INPUT_DEPTH_SUBRECT_X, 0);
@@ -702,17 +691,15 @@ bool vulkan_ngx_upscale(vulkan_ngx_t *ngx, VkCommandBuffer cmd,
    {
       RARCH_ERR("[Vulkan] Temporal Upscaler: evaluate failed (0x%08x).\n",
             (unsigned)res);
-      ngx->failed_out_w   = out_w;
-      ngx->failed_out_h   = out_h;
-      ngx->failed_quality = quality;
+      ngx->failed_out_dims = out_dims;
+      ngx->failed_quality  = quality;
       return false;
    }
    out->image  = ngx->out_image;
    out->view   = ngx->out_view;
    out->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
    out->format = ngx->out_format;
-   out->width  = out_w;
-   out->height = out_h;
+   out->dims   = out_dims;
    return true;
 }
 

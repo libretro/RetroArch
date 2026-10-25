@@ -403,12 +403,11 @@ static void set_input(struct retro_hw_upscaler_image *dst, const image_t *src)
    dst->height = src->height;
 }
 
-static bool optimal_cb(void *data, unsigned mode, unsigned out_w,
-      unsigned out_h, unsigned *rw, unsigned *rh, unsigned *mnw,
-      unsigned *mnh, unsigned *mxw, unsigned *mxh)
+static bool optimal_cb(void *data, unsigned mode, unsigned out_dims,
+      unsigned *render_dims, unsigned *min_dims, unsigned *max_dims)
 {
-   return vulkan_ngx_optimal((vulkan_ngx_t*)data, mode, out_w, out_h,
-         rw, rh, mnw, mnh, mxw, mxh);
+   return vulkan_ngx_optimal((vulkan_ngx_t*)data, mode, out_dims,
+         render_dims, min_dims, max_dims);
 }
 
 int main(void)
@@ -422,7 +421,7 @@ int main(void)
    struct retro_hw_upscaler_request req;
    video_upscaler_backend_t backend;
    const struct retro_hw_render_upscaler_interface *iface;
-   unsigned rw, rh, mnw, mnh, mxw, mxh;
+   unsigned render_dims, min_dims, max_dims;
    unsigned i;
 
    if (!setup_vulkan())
@@ -457,16 +456,18 @@ int main(void)
    CHECK(rec->init_path0 == 'Z');
 
    /* The mode's sizes, through the capability callback, cached */
-   CHECK(vulkan_ngx_optimal(ngx, NGX_PERF_QUALITY_MAX_QUALITY, 1920, 1080,
-            &rw, &rh, &mnw, &mnh, &mxw, &mxh));
-   CHECK(rw == 1280 && rh == 720 && mxw == 1920 && mxh == 1080 && mnw == 640 && mnh == 360);
-   CHECK(vulkan_ngx_optimal(ngx, NGX_PERF_QUALITY_MAX_QUALITY, 1920, 1080,
-            &rw, &rh, &mnw, &mnh, &mxw, &mxh));
+   CHECK(vulkan_ngx_optimal(ngx, NGX_PERF_QUALITY_MAX_QUALITY,
+            VIDEO_SCALE_PACK(1920, 1080), &render_dims, &min_dims, &max_dims));
+   CHECK(render_dims == VIDEO_SCALE_PACK(1280, 720)
+         && max_dims == VIDEO_SCALE_PACK(1920, 1080)
+         && min_dims == VIDEO_SCALE_PACK(640, 360));
+   CHECK(vulkan_ngx_optimal(ngx, NGX_PERF_QUALITY_MAX_QUALITY,
+            VIDEO_SCALE_PACK(1920, 1080), &render_dims, &min_dims, &max_dims));
    CHECK(rec->optimal_calls == 1);
-   CHECK(!vulkan_ngx_optimal(ngx, NGX_PERF_QUALITY_ULTRA_QUALITY, 1920, 1080,
-            &rw, &rh, &mnw, &mnh, &mxw, &mxh));
-   CHECK(!vulkan_ngx_optimal(ngx, NGX_PERF_QUALITY_MAX_QUALITY, 0, 1080,
-            &rw, &rh, &mnw, &mnh, &mxw, &mxh));
+   CHECK(!vulkan_ngx_optimal(ngx, NGX_PERF_QUALITY_ULTRA_QUALITY,
+            VIDEO_SCALE_PACK(1920, 1080), &render_dims, &min_dims, &max_dims));
+   CHECK(!vulkan_ngx_optimal(ngx, NGX_PERF_QUALITY_MAX_QUALITY,
+            VIDEO_SCALE_PACK(0, 1080), &render_dims, &min_dims, &max_dims));
 
    /* The core's request, through the frontend module */
    backend.data    = ngx;
@@ -476,7 +477,7 @@ int main(void)
    CHECK(iface && iface->interface_version == RETRO_HW_RENDER_UPSCALER_INTERFACE_VERSION);
    memset(&req, 0, sizeof(req));
    CHECK(!iface->get_request(iface->handle, &req));   /* no output size yet */
-   video_upscaler_set_output(1920, 1080);
+   video_upscaler_set_output(VIDEO_SCALE_PACK(1920, 1080));
    settings->uints.video_temporal_upscaler_quality = VIDEO_TEMPORAL_UPSCALER_QUALITY_AUTO;
    CHECK(iface->get_request(iface->handle, &req));
    CHECK(req.output_width == 1920 && req.output_height == 1080);
@@ -488,14 +489,14 @@ int main(void)
    settings->uints.video_temporal_upscaler_quality = VIDEO_TEMPORAL_UPSCALER_QUALITY_NATIVE;
    CHECK(iface->get_request(iface->handle, &req) && req.render_width == 1920
          && fabs(req.mip_bias + 1.0) < 1e-5);
-   video_upscaler_set_output(3840, 2160);
+   video_upscaler_set_output(VIDEO_SCALE_PACK(3840, 2160));
    settings->uints.video_temporal_upscaler_quality = VIDEO_TEMPORAL_UPSCALER_QUALITY_AUTO;
    CHECK(iface->get_request(iface->handle, &req) && req.render_width == (unsigned)(3840 * 0.58));
    settings->uints.video_temporal_upscaler = 0;
    CHECK(!iface->get_request(iface->handle, &req));
    settings->uints.video_temporal_upscaler = VIDEO_TEMPORAL_UPSCALER_DLSS;
    settings->uints.video_temporal_upscaler_quality = VIDEO_TEMPORAL_UPSCALER_QUALITY_QUALITY;
-   video_upscaler_set_output(1920, 1080);
+   video_upscaler_set_output(VIDEO_SCALE_PACK(1920, 1080));
 
    /* The inputs: set before the frame, taken in it, once */
    memset(&inputs, 0, sizeof(inputs));
@@ -529,8 +530,7 @@ int main(void)
    in.view   = color.view;
    in.layout = color.layout;
    in.format = color.format;
-   in.width  = color.width;
-   in.height = color.height;
+   in.dims   = VIDEO_SCALE_PACK(color.width, color.height);
    set_input(&inputs.motion_vectors, &mv);
    set_input(&inputs.depth, &depth);
    inputs.flags      = RETRO_HW_UPSCALER_DEPTH_INVERTED | RETRO_HW_UPSCALER_MV_JITTERED;
@@ -543,7 +543,7 @@ int main(void)
    begin_frame();
    memset(&out, 0, sizeof(out));
    CHECK(vulkan_ngx_upscale(ngx, cmd, &in, &inputs, NGX_PERF_QUALITY_MAX_QUALITY,
-            1920, 1080, &out));
+            VIDEO_SCALE_PACK(1920, 1080), &out));
    end_frame();
    vulkan_ngx_frame_done(ngx);
    CHECK(rec->creates == 1 && rec->evals == 1);
@@ -578,21 +578,21 @@ int main(void)
    CHECK(rec->eval[0].frame_time == 16.6f);
    CHECK(rec->eval[0].reset == 1);   /* a new feature starts over */
    CHECK(rec->eval[0].subrect_w == 1280 && rec->eval[0].subrect_h == 720);
-   CHECK(out.width == 1920 && out.height == 1080 && out.format == VK_FORMAT_R8G8B8A8_UNORM
+   CHECK(out.dims == VIDEO_SCALE_PACK(1920, 1080) && out.format == VK_FORMAT_R8G8B8A8_UNORM
          && out.layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
    /* The next frame: the same feature, no reset, the core's reset
     * honoured when asked */
    begin_frame();
    CHECK(vulkan_ngx_upscale(ngx, cmd, &in, &inputs, NGX_PERF_QUALITY_MAX_QUALITY,
-            1920, 1080, &out));
+            VIDEO_SCALE_PACK(1920, 1080), &out));
    end_frame();
    vulkan_ngx_frame_done(ngx);
    CHECK(rec->creates == 1 && rec->evals == 2 && rec->eval[1].reset == 0);
    inputs.flags |= RETRO_HW_UPSCALER_RESET;
    begin_frame();
    CHECK(vulkan_ngx_upscale(ngx, cmd, &in, &inputs, NGX_PERF_QUALITY_MAX_QUALITY,
-            1920, 1080, &out));
+            VIDEO_SCALE_PACK(1920, 1080), &out));
    end_frame();
    vulkan_ngx_frame_done(ngx);
    CHECK(rec->evals == 3 && rec->eval[2].reset == 1 && rec->creates == 1);
@@ -600,47 +600,44 @@ int main(void)
 
    /* A smaller frame within the range: the same feature, the subrect
     * says the size; one outside: refused */
-   in.width  = 960;
-   in.height = 540;
+   in.dims   = VIDEO_SCALE_PACK(960, 540);
    begin_frame();
    CHECK(vulkan_ngx_upscale(ngx, cmd, &in, &inputs, NGX_PERF_QUALITY_MAX_QUALITY,
-            1920, 1080, &out));
+            VIDEO_SCALE_PACK(1920, 1080), &out));
    end_frame();
    vulkan_ngx_frame_done(ngx);
    CHECK(rec->creates == 1 && rec->evals == 4
          && rec->eval[3].subrect_w == 960 && rec->eval[3].subrect_h == 540);
    in.image  = color_big.image;
    in.view   = color_big.view;
-   in.width  = color_big.width;
-   in.height = color_big.height;
+   in.dims   = VIDEO_SCALE_PACK(color_big.width, color_big.height);
    begin_frame();
    CHECK(!vulkan_ngx_upscale(ngx, cmd, &in, &inputs, NGX_PERF_QUALITY_MAX_QUALITY,
-            1920, 1080, &out));
+            VIDEO_SCALE_PACK(1920, 1080), &out));
    end_frame();
    vulkan_ngx_frame_done(ngx);
    CHECK(rec->evals == 4);
    in.image  = color.image;
    in.view   = color.view;
-   in.width  = color.width;
-   in.height = color.height;
+   in.dims   = VIDEO_SCALE_PACK(color.width, color.height);
 
    /* No inputs, no motion vectors: refused */
    CHECK(!vulkan_ngx_upscale(ngx, cmd, &in, NULL, NGX_PERF_QUALITY_MAX_QUALITY,
-            1920, 1080, &out));
+            VIDEO_SCALE_PACK(1920, 1080), &out));
    inputs.motion_vectors.image = 0;
    CHECK(!vulkan_ngx_upscale(ngx, cmd, &in, &inputs, NGX_PERF_QUALITY_MAX_QUALITY,
-            1920, 1080, &out));
+            VIDEO_SCALE_PACK(1920, 1080), &out));
    set_input(&inputs.motion_vectors, &mv);
 
    /* A resize: a new feature and output, the old retired and released
     * once the frames that could read them are through */
    begin_frame();
    CHECK(vulkan_ngx_upscale(ngx, cmd, &in, &inputs, NGX_PERF_QUALITY_MAX_QUALITY,
-            2560, 1440, &out));
+            VIDEO_SCALE_PACK(2560, 1440), &out));
    end_frame();
    vulkan_ngx_frame_done(ngx);
    CHECK(rec->creates == 2 && rec->create[1].width == 2560 && rec->create[1].out_width == 2560);
-   CHECK(out.width == 2560 && out.height == 1440);
+   CHECK(out.dims == VIDEO_SCALE_PACK(2560, 1440));
    CHECK(rec->releases == 0);
    CHECK(rec->eval[4].reset == 1);
    for (i = 0; i < 30 && rec->releases == 0; i++)
@@ -651,7 +648,7 @@ int main(void)
    /* A mode change makes a new feature too */
    begin_frame();
    CHECK(vulkan_ngx_upscale(ngx, cmd, &in, &inputs, NGX_PERF_QUALITY_BALANCED,
-            2560, 1440, &out));
+            VIDEO_SCALE_PACK(2560, 1440), &out));
    end_frame();
    vulkan_ngx_frame_done(ngx);
    CHECK(rec->creates == 3 && rec->create[2].quality == NGX_PERF_QUALITY_BALANCED);
@@ -661,18 +658,18 @@ int main(void)
    rec->eval_fails = 1;
    begin_frame();
    CHECK(!vulkan_ngx_upscale(ngx, cmd, &in, &inputs, NGX_PERF_QUALITY_BALANCED,
-            2560, 1440, &out));
+            VIDEO_SCALE_PACK(2560, 1440), &out));
    end_frame();
    vulkan_ngx_frame_done(ngx);
    rec->eval_fails = 0;
    begin_frame();
    CHECK(!vulkan_ngx_upscale(ngx, cmd, &in, &inputs, NGX_PERF_QUALITY_BALANCED,
-            2560, 1440, &out));
+            VIDEO_SCALE_PACK(2560, 1440), &out));
    end_frame();
    vulkan_ngx_frame_done(ngx);
    begin_frame();
    CHECK(vulkan_ngx_upscale(ngx, cmd, &in, &inputs, NGX_PERF_QUALITY_MAX_QUALITY,
-            2560, 1440, &out));
+            VIDEO_SCALE_PACK(2560, 1440), &out));
    end_frame();
    vulkan_ngx_frame_done(ngx);
    CHECK(rec->creates == 4);
@@ -681,7 +678,7 @@ int main(void)
    rec->create_fails = 1;
    begin_frame();
    CHECK(!vulkan_ngx_upscale(ngx, cmd, &in, &inputs, NGX_PERF_QUALITY_MAX_PERF,
-            2560, 1440, &out));
+            VIDEO_SCALE_PACK(2560, 1440), &out));
    end_frame();
    vulkan_ngx_frame_done(ngx);
    rec->create_fails = 0;

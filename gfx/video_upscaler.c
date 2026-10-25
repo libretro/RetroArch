@@ -67,13 +67,11 @@ size_t video_upscaler_status_string(char *s, size_t len)
  * one video_refresh. */
 static const video_upscaler_backend_t *upscaler_backend;
 static const struct retro_hw_upscaler_inputs *upscaler_inputs;
-static unsigned upscaler_out_w;
-static unsigned upscaler_out_h;
+static unsigned upscaler_out_dims;
 
-unsigned video_upscaler_mode(unsigned out_w, unsigned out_h)
+unsigned video_upscaler_mode(unsigned out_dims)
 {
    unsigned q = config_get_ptr()->uints.video_temporal_upscaler_quality;
-   (void)out_w;
    switch (q)
    {
       case VIDEO_TEMPORAL_UPSCALER_QUALITY_NATIVE:
@@ -90,7 +88,8 @@ unsigned video_upscaler_mode(unsigned out_w, unsigned out_h)
          break;
    }
    /* Auto: the sharper mode up to 1440 lines, Balanced from there */
-   return out_h > 1440 ? NGX_PERF_QUALITY_BALANCED : NGX_PERF_QUALITY_MAX_QUALITY;
+   return VIDEO_SCALE_H(out_dims) > 1440
+      ? NGX_PERF_QUALITY_BALANCED : NGX_PERF_QUALITY_MAX_QUALITY;
 }
 
 void video_upscaler_attach(const video_upscaler_backend_t *backend)
@@ -104,37 +103,37 @@ void video_upscaler_detach(void)
    upscaler_inputs  = NULL;
 }
 
-void video_upscaler_set_output(unsigned width, unsigned height)
+void video_upscaler_set_output(unsigned dims)
 {
-   upscaler_out_w = width;
-   upscaler_out_h = height;
+   upscaler_out_dims = dims;
 }
 
 static bool video_upscaler_get_request(void *handle,
       struct retro_hw_upscaler_request *request)
 {
    unsigned mode;
-   unsigned render_w, render_h, min_w, min_h, max_w, max_h;
+   unsigned render_dims, min_dims, max_dims;
    const video_upscaler_backend_t *backend = upscaler_backend;
    (void)handle;
-   if (!backend || !upscaler_out_w || !upscaler_out_h
+   if (!backend || !VIDEO_SCALE_W(upscaler_out_dims)
+         || !VIDEO_SCALE_H(upscaler_out_dims)
          || !config_get_ptr()->uints.video_temporal_upscaler)
       return false;
-   mode = video_upscaler_mode(upscaler_out_w, upscaler_out_h);
-   if (!backend->optimal(backend->data, mode, upscaler_out_w, upscaler_out_h,
-            &render_w, &render_h, &min_w, &min_h, &max_w, &max_h))
+   mode = video_upscaler_mode(upscaler_out_dims);
+   if (!backend->optimal(backend->data, mode, upscaler_out_dims,
+            &render_dims, &min_dims, &max_dims))
       return false;
-   request->output_width      = upscaler_out_w;
-   request->output_height     = upscaler_out_h;
-   request->render_width      = render_w;
-   request->render_height     = render_h;
-   request->min_render_width  = min_w;
-   request->min_render_height = min_h;
-   request->max_render_width  = max_w;
-   request->max_render_height = max_h;
+   request->output_width      = VIDEO_SCALE_W(upscaler_out_dims);
+   request->output_height     = VIDEO_SCALE_H(upscaler_out_dims);
+   request->render_width      = VIDEO_SCALE_W(render_dims);
+   request->render_height     = VIDEO_SCALE_H(render_dims);
+   request->min_render_width  = VIDEO_SCALE_W(min_dims);
+   request->min_render_height = VIDEO_SCALE_H(min_dims);
+   request->max_render_width  = VIDEO_SCALE_W(max_dims);
+   request->max_render_height = VIDEO_SCALE_H(max_dims);
    request->flags             = 0;
-   request->mip_bias          = (float)(log((double)render_w
-            / (double)upscaler_out_w) / log(2.0)) - 1.0f;
+   request->mip_bias          = (float)(log((double)request->render_width
+            / (double)request->output_width) / log(2.0)) - 1.0f;
    return true;
 }
 

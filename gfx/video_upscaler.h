@@ -21,6 +21,8 @@
 #include <retro_common_api.h>
 #include <libretro.h>
 
+#include "video_defines.h"
+
 RETRO_BEGIN_DECLS
 
 /* The temporal upscaler (video_temporal_upscaler): a backend the Vulkan
@@ -67,28 +69,29 @@ enum video_temporal_upscaler_quality
    VIDEO_TEMPORAL_UPSCALER_QUALITY_LAST
 };
 
-/* The quality for an output of @out_h lines: the setting, Auto resolved.
- * The backend's own mode value, an enum ngx_perf_quality. */
-unsigned video_upscaler_mode(unsigned out_w, unsigned out_h);
+/* The quality for an output of @out_dims (VIDEO_SCALE_PACK): the
+ * setting, Auto resolved. The backend's own mode value, an enum
+ * ngx_perf_quality. */
+unsigned video_upscaler_mode(unsigned out_dims);
 
 /* A video driver's upscaler, attached while its session is up:
  * optimal names the mode's render sizes for an output size, false
- * when the session cannot. @data is the driver's. */
+ * when the session cannot; sizes are VIDEO_SCALE_PACK. @data is the
+ * driver's. */
 typedef struct video_upscaler_backend
 {
    void *data;
-   bool (*optimal)(void *data, unsigned mode, unsigned out_w, unsigned out_h,
-         unsigned *render_w, unsigned *render_h,
-         unsigned *min_w, unsigned *min_h,
-         unsigned *max_w, unsigned *max_h);
+   bool (*optimal)(void *data, unsigned mode, unsigned out_dims,
+         unsigned *render_dims, unsigned *min_dims, unsigned *max_dims);
 } video_upscaler_backend_t;
 
 void video_upscaler_attach(const video_upscaler_backend_t *backend);
 void video_upscaler_detach(void);
 
-/* The content's size on screen, the output the core is asked to aim
- * for; the driver reports it at init and whenever it changes. */
-void video_upscaler_set_output(unsigned width, unsigned height);
+/* The content's size on screen (VIDEO_SCALE_PACK), the output the core
+ * is asked to aim for; the driver reports it at init and whenever it
+ * changes. */
+void video_upscaler_set_output(unsigned dims);
 
 /* The interface handed to the core (RETRO_ENVIRONMENT_GET_HW_RENDER_
  * UPSCALER_INTERFACE); NULL without HAVE_NGX or a driver that can. */

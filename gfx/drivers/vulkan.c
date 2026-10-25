@@ -7595,14 +7595,12 @@ static void vulkan_invalidate_hw_render_cache(void *data)
 
 #ifdef HAVE_NGX
 static bool vulkan_upscaler_optimal(void *data, unsigned mode,
-      unsigned out_w, unsigned out_h,
-      unsigned *render_w, unsigned *render_h,
-      unsigned *min_w, unsigned *min_h,
-      unsigned *max_w, unsigned *max_h)
+      unsigned out_dims, unsigned *render_dims,
+      unsigned *min_dims, unsigned *max_dims)
 {
    vk_t *vk = (vk_t*)data;
-   return vulkan_ngx_optimal(vk->ngx, mode, out_w, out_h,
-         render_w, render_h, min_w, min_h, max_w, max_h);
+   return vulkan_ngx_optimal(vk->ngx, mode, out_dims, render_dims,
+         min_dims, max_dims);
 }
 
 static video_upscaler_backend_t vulkan_upscaler_backend = {
@@ -7617,19 +7615,17 @@ static void vulkan_upscale_input(vk_t *vk, const void *frame,
 {
    vulkan_ngx_image_t color;
    const struct retro_hw_upscaler_inputs *inputs = video_upscaler_take_inputs();
-   unsigned out_w = VIDEO_SCALE_W(vk->vp.dims);
-   unsigned out_h = VIDEO_SCALE_H(vk->vp.dims);
-   video_upscaler_set_output(out_w, out_h);
+   unsigned out_dims = vk->vp.dims;
+   video_upscaler_set_output(out_dims);
    if (frame)
    {
       color.image  = input->image;
       color.view   = input->view;
       color.layout = input->layout;
       color.format = input->format;
-      color.width  = VIDEO_SCALE_W(input->dims);
-      color.height = VIDEO_SCALE_H(input->dims);
+      color.dims   = input->dims;
       if (!inputs || !vulkan_ngx_upscale(vk->ngx, vk->cmd, &color, inputs,
-               video_upscaler_mode(out_w, out_h), out_w, out_h, &vk->ngx_out))
+               video_upscaler_mode(out_dims), out_dims, &vk->ngx_out))
       {
          vk->ngx_out.image = VK_NULL_HANDLE;
          return;
@@ -7641,7 +7637,7 @@ static void vulkan_upscale_input(vk_t *vk, const void *frame,
    input->view   = vk->ngx_out.view;
    input->layout = vk->ngx_out.layout;
    input->format = vk->ngx_out.format;
-   input->dims   = VIDEO_SCALE_PACK(vk->ngx_out.width, vk->ngx_out.height);
+   input->dims   = vk->ngx_out.dims;
 }
 #endif
 
@@ -7691,8 +7687,7 @@ static void vulkan_init_hw_render(vk_t *vk)
       {
          vulkan_upscaler_backend.data = vk;
          video_upscaler_attach(&vulkan_upscaler_backend);
-         video_upscaler_set_output(VIDEO_SCALE_W(vk->vp.dims),
-               VIDEO_SCALE_H(vk->vp.dims));
+         video_upscaler_set_output(vk->vp.dims);
       }
    }
 #endif
