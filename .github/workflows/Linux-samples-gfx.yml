@@ -2842,13 +2842,17 @@ jobs:
           CPU_GAP=1 CPU_GROUP=1 CPU_GAP_FRAMES=48 ./gfx_thumbnail_preview_test_threaded fixtures/video_group.webm
           GROUP_SEEK=1 ./gfx_thumbnail_preview_test fixtures/video_group.webm
           GROUP_SEEK=1 ./gfx_thumbnail_preview_test_threaded fixtures/video_group.webm
-          ./preview_audio_feed_test --continuous-webm fixtures/audio_group_opus.webm
-          ./preview_audio_feed_test --continuous-webm fixtures/audio_group_vorbis.webm
-          AUDIO_MOVIE_LOOPS=1 ./preview_audio_feed_test --continuous-webm fixtures/audio_group_aac.mkv
+          for codec in opus vorbis; do
+            python3 webm_audio_padding.py --audio-group-void fixtures/audio_group_"$codec".webm fixtures/audio_refill_"$codec".webm
+          done
+          python3 webm_audio_padding.py --audio-group-void fixtures/audio_group_aac.mkv fixtures/audio_refill_aac.mkv
+          ./preview_audio_feed_test --continuous-webm fixtures/audio_refill_opus.webm
+          ./preview_audio_feed_test --continuous-webm fixtures/audio_refill_vorbis.webm
+          AUDIO_MOVIE_LOOPS=1 ./preview_audio_feed_test --continuous-webm fixtures/audio_refill_aac.mkv
           ./preview_audio_feed_test --prepared-webm fixtures/audio_group_aac.mkv
           ./preview_audio_feed_test --prepared-webm fixtures/audio_group_opus.webm fixtures/audio_group_vorbis.webm
-          AUDIO_FEED_RACE=1 ./preview_audio_feed_test_threaded --continuous-webm fixtures/audio_group_opus.webm
-          AUDIO_FEED_RACE=1 ./preview_audio_feed_test_threaded --continuous-webm fixtures/audio_group_vorbis.webm
+          AUDIO_FEED_RACE=1 ./preview_audio_feed_test_threaded --continuous-webm fixtures/audio_refill_opus.webm
+          AUDIO_FEED_RACE=1 ./preview_audio_feed_test_threaded --continuous-webm fixtures/audio_refill_vorbis.webm
           make -B -j2 preview_audio_feed_test preview_audio_feed_test_threaded COUNT_IO=1 SANITIZER=address,undefined
           ./preview_audio_feed_test --seek-batch
           ./preview_audio_feed_test_threaded --seek-batch
@@ -2878,10 +2882,10 @@ jobs:
           done
           for codec in opus vorbis; do
             AUDIO_MOVIE_LOOPS=1 AUDIO_FEED_RACE=1 TSAN_OPTIONS=halt_on_error=1 timeout 120 \
-              ./preview_audio_feed_test_threaded --continuous-webm fixtures/audio_group_"$codec".webm
+              ./preview_audio_feed_test_threaded --continuous-webm fixtures/audio_refill_"$codec".webm
           done
           AUDIO_MOVIE_LOOPS=1 AUDIO_FEED_RACE=1 TSAN_OPTIONS=halt_on_error=1 timeout 120 \
-            ./preview_audio_feed_test_threaded --continuous-webm fixtures/audio_group_aac.mkv
+            ./preview_audio_feed_test_threaded --continuous-webm fixtures/audio_refill_aac.mkv
           # The pool and the tile-column threads under TSan: the
           # shared frame buffers and contexts are written in disjoint
           # columns, the counts merged after the join.

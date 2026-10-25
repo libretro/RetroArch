@@ -102,6 +102,8 @@ typedef struct
     * nanoseconds of decoded output at the END of this block are not
     * meant to be played (Opus end trimming).  0 when absent. */
    int64_t        discard_padding;
+   /* Unlaced BlockDuration: -1 absent, -2 invalid/unrepresentable. */
+   int64_t        duration_ns;
 } rwebm_packet;
 
 typedef struct rwebm rwebm_t;

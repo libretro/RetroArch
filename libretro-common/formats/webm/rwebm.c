@@ -74,6 +74,7 @@
 #define ID_SIMPLEBLOCK     0xA3u
 #define ID_BLOCKGROUP      0xA0u
 #define ID_BLOCK           0xA1u
+#define ID_BLOCKDURATION   0x9Bu
 #define ID_DISCARDPADDING  0x75A2u
 #define ID_CUES            0x1C53BB6Bu
 #define ID_CUEPOINT        0xBBu
@@ -302,6 +303,7 @@ struct rwebm
    int64_t        cluster_ts;       /* current cluster timestamp (ticks)   */
    /* Lacing: a SimpleBlock may carry several frames; we emit them one at a
     * time, so remember where we are within a block. */
+   int64_t pending_duration;
    int64_t pending_discard;         /* DiscardPadding for the next Block   */
    int64_t lace_discard;            /* padding owed by the laced block     */
    const uint8_t *lace_data;        /* payload after the block header      */
@@ -727,6 +729,7 @@ static int64_t webm_select_time_ns(rwebm_t *webm, int64_t ns, int resident)
    webm->lace_count      = 0;
    webm->lace_index      = 0;
    webm->pending_discard = 0;
+   webm->pending_duration = -1;
    webm->need_hi         = 0;
    return webm->cues[best].time_ticks * webm->timestamp_scale;
 }
@@ -749,6 +752,7 @@ void rwebm_rewind(rwebm_t *webm)
    webm->cluster_ts = 0;
    webm->lace_count = 0;
    webm->lace_index = 0;
+   webm->pending_duration = -1;
    webm->need_hi    = 0;
 }
 
@@ -794,6 +798,94 @@ static int64_t webm_group_discard(rwebm_t *webm, const uint8_t *p,
    return v;
 }
 
+static int64_t webm_duration_ns(rwebm_t *webm, const uint8_t *data, size_t size)
+{
+   uint64_t ticks, limit = (~(uint64_t)0) >> 1;
+   if (!size || size > 8 || webm->timestamp_scale <= 0)
+      return -2;
+   ticks = be_uint(data, size);
+   if (ticks > limit / (uint64_t)webm->timestamp_scale)
+      return -2;
+   return (int64_t)(ticks * (uint64_t)webm->timestamp_scale);
+}
+
+static int64_t webm_group_duration(rwebm_t *webm, const uint8_t *p,
+      const uint8_t *group_end)
+{
+   int64_t duration = webm->pending_duration;
+   ebml_reader reader;
+   webm->pending_duration = -1;
+   reader.p = p; reader.end = group_end;
+   while (reader.p < reader.end)
+   {
+      int ok;
+      uint32_t id = ebml_read_id(&reader);
+      uint64_t size = ebml_read_vint(&reader, 1, &ok);
+      if (!id || !ok || size > (uint64_t)(reader.end - reader.p))
+         break;
+      if (id == ID_BLOCKDURATION)
+         duration = webm_duration_ns(webm, reader.p, (size_t)size);
+      reader.p += (size_t)size;
+   }
+   return duration;
+}
+
+static int webm_group_selected(rwebm_t *webm, const uint8_t *body,
+      size_t size, int selected)
+{
+   const uint8_t *end = body + size;
+   ebml_reader group;
+   unsigned walked = 0;
+   group.p = body;
+   group.end = end < webm->avail_end ? end : webm->avail_end;
+   while (group.p < end)
+   {
+      int ok;
+      uint32_t id;
+      uint64_t length;
+      const uint8_t *child = group.p;
+      if (walked++ == 256) return 1;
+      id = ebml_read_id(&group);
+      length = ebml_read_vint(&group, 1, &ok);
+      if (!id || !ok)
+      {
+         size_t prefix = (size_t)(end - child);
+         if (prefix > 12) prefix = 12;
+         if ((size_t)(group.end - child) >= prefix) return -1;
+         webm->need_hi = (size_t)(child - webm->data) + prefix;
+         return RWEBM_READ_AGAIN;
+      }
+      if (length > (uint64_t)(end - group.p)) return -1;
+      if (id == ID_BLOCK)
+      {
+         uint64_t number;
+         size_t prefix = length < 11 ? (size_t)length : 11;
+         ebml_reader block;
+         block.p = group.p;
+         block.end = length < (uint64_t)(group.end - group.p)
+            ? group.p + (size_t)length : group.end;
+         number = ebml_read_vint(&block, 1, &ok);
+         if (!ok || block.end - block.p < 3)
+         {
+            if ((size_t)(group.end - group.p) >= prefix) return -1;
+            webm->need_hi = (size_t)(group.p - webm->data) + prefix;
+            return RWEBM_READ_AGAIN;
+         }
+         return number == (uint64_t)webm->tracks[selected].number;
+      }
+      group.p += (size_t)length;
+      if (group.p > group.end)
+      {
+         size_t prefix = (size_t)(end - group.p);
+         if (!prefix) return -1;
+         if (prefix > 12) prefix = 12;
+         webm->need_hi = (size_t)(group.p - webm->data) + prefix;
+         return RWEBM_READ_AGAIN;
+      }
+   }
+   return -1;
+}
+
 static int rwebm_read_packet_filtered(rwebm_t *webm, rwebm_packet *pkt,
       int selected)
 {
@@ -803,6 +895,7 @@ static int rwebm_read_packet_filtered(rwebm_t *webm, rwebm_packet *pkt,
       return -1;
    webm->need_hi = 0;
    pkt->timestamp_continuation = 0;
+   pkt->duration_ns = -1;
 
    /* A caller changing tracks must not receive the previous track's lace. */
    if (selected >= 0 && webm->lace_track != selected)
@@ -882,6 +975,17 @@ static int rwebm_read_packet_filtered(rwebm_t *webm, rwebm_packet *pkt,
          continue;
       }
       if (sz > (uint64_t)(webm->segment_end - body)) return -1;
+      if (selected >= 0 && id == ID_BLOCKGROUP)
+      {
+         int match = webm_group_selected(webm, body, (size_t)sz, selected);
+         if (match < 0 || match == RWEBM_READ_AGAIN) return match;
+         if (!match)
+         {
+            r.p = body + (size_t)sz;
+            webm->cur = r.p;
+            continue;
+         }
+      }
       if (selected >= 0 && id == ID_SIMPLEBLOCK)
       {
          ebml_reader block;
@@ -935,8 +1039,15 @@ static int rwebm_read_packet_filtered(rwebm_t *webm, rwebm_packet *pkt,
          /* Descend: BlockGroup wraps a single Block (plus
           * DiscardPadding/duration/refs). Scan children. */
          webm->pending_discard = 0;
+         webm->pending_duration = -1;
          r.p   = body;
          r.end = body + sz;
+         continue;
+      }
+      if (id == ID_BLOCKDURATION)
+      {
+         webm->pending_duration = webm_duration_ns(webm, body, (size_t)sz);
+         r.p = body + sz;
          continue;
       }
       if (id == ID_DISCARDPADDING)
@@ -991,6 +1102,8 @@ static int rwebm_read_packet_filtered(rwebm_t *webm, rwebm_packet *pkt,
                               webm->timestamp_scale);
                pkt->keyframe  = (id == ID_SIMPLEBLOCK)
                               ? ((flags & 0x80) != 0) : 1;
+               if (id == ID_BLOCK)
+                  pkt->duration_ns = webm_group_duration(webm, body + sz, r.end);
                pkt->discard_padding = (id == ID_BLOCK)
                   ? webm_group_discard(webm, body + sz, r.end) : 0;
                webm->cur      = body + sz;

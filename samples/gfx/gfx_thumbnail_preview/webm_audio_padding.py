@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Enlarge video blocks to stress audio-only WebM window traversal.
+"""Pad WebM blocks to stress bounded audio/video window traversal.
 
 This fixture exercises demux/audio residency, not video decoding. Drop
 position-bearing indexes and rewrite container sizes after adding padding.
@@ -61,8 +61,8 @@ def pad(source, destination, amount=512 * 1024):
 
 
 def insert_void(source, destination, amount=12 * 1024 * 1024, after_picture=2,
-                in_group=False):
-    """Put legal padding after picture two; preserve playable codec bytes."""
+                in_group=False, track=1):
+    """Put legal padding after a selected packet; preserve codec bytes."""
     output = bytearray()
     seen = 0
     for ident, body in elements(Path(source).read_bytes()):
@@ -76,13 +76,13 @@ def insert_void(source, destination, amount=12 * 1024 * 1024, after_picture=2,
             if child == 0x1F43B675:
                 cluster = bytearray()
                 for block, packet in elements(payload):
-                    if block == 0xA3 and vint(packet, 0)[0] == 1:
+                    if block == 0xA3 and vint(packet, 0)[0] == track:
                         seen += 1
                         if seen == after_picture and in_group:
                             # A Block has no SimpleBlock keyframe flag. An
                             # independent BlockGroup has no ReferenceBlock.
                             flags = vint(packet, 0)[1] + 2
-                            if not packet[flags] & 0x80:
+                            if track == 1 and not packet[flags] & 0x80:
                                 raise ValueError('group fixture must wrap a key picture')
                             packet = bytearray(packet)
                             packet[flags] &= 0x0f
@@ -103,7 +103,10 @@ def insert_void(source, destination, amount=12 * 1024 * 1024, after_picture=2,
 
 
 if __name__ == '__main__':
-    if sys.argv[1] == '--group-void':
+    if sys.argv[1] == '--audio-group-void':
+        insert_void(sys.argv[2], sys.argv[3], after_picture=65,
+                    in_group=True, track=2)
+    elif sys.argv[1] == '--group-void':
         insert_void(sys.argv[2], sys.argv[3],
                     after_picture=int(sys.argv[4]) if len(sys.argv) > 4 else 31,
                     in_group=True)

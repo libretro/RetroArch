@@ -23,7 +23,7 @@ typedef char rvp9_backend_callback_appended[
    offsetof(rvp9_hw_backend_t, open_color) >= sizeof(rvp9_backend_v1_t) ? 1 : -1];
 
 #define CHECK(x) do { if (!(x)) { fprintf(stderr, "line %d: %s\n", __LINE__, #x); return 1; } } while (0)
-static uint8_t file[4096], packet[64], key[64], hidden[64], shown[64];
+static uint8_t file[16384], packet[64], key[64], hidden[64], shown[64];
 static size_t used, prefix;
 static unsigned bitpos, tail_hidden, terminal_mode;
 static unsigned fixture_chroma_horz, fixture_chroma_vert;
@@ -504,9 +504,69 @@ static int sparse_cue_index(void)
    return 0;
 }
 
-static int filtered_payload(unsigned blocks)
+static int text_durations(void)
 {
-   size_t marker, segment, tracks, entry, body = 0, after = 0, lo, hi;
+   size_t marker, segment, tracks, entry, cluster, group, partial = 0;
+   unsigned i;
+   rwebm_t *demux;
+   rwebm_packet pkt;
+   static const int64_t expected[] = {12000000, 34000000, -1, 0, -2, -2};
+   used = 0;
+   marker = start(0x1a45dfa3, 4); finish(marker);
+   segment = start(0x18538067, 4);
+   tracks = start(0x1654ae6b, 4);
+   entry = start(0xae, 1);
+   integer(0xd7, 1, 1); integer(0x83, 1, 17);
+   marker = start(0x86, 1);
+   memcpy(file + used, "S_TEXT/UTF8", 11); used += 11;
+   finish(marker); finish(entry); finish(tracks);
+   cluster = start(0x1f43b675, 4);
+   integer(0xe7, 1, 0);
+   for (i = 0; i < 6; i++)
+   {
+      group = 0;
+      if (i != 2) group = start(0xa0, 1);
+      if (!i) integer(0x9b, 1, 12);
+      marker = start(i == 2 ? 0xa3 : 0xa1, 1);
+      file[used++] = 0x81; file[used++] = 0;
+      file[used++] = (uint8_t)(i * 40); file[used++] = 0;
+      file[used++] = 'h'; file[used++] = 'i';
+      finish(marker);
+      if (i == 1) partial = used;
+      if (i == 1 || i == 3) integer(0x9b, 1, i == 1 ? 34 : 0);
+      if (i >= 4)
+      {
+         marker = start(0x9b, 1);
+         memset(file + used, 255, i == 4 ? 9 : 8);
+         used += i == 4 ? 9 : 8;
+         finish(marker);
+      }
+      if (i != 2) finish(group);
+   }
+   finish(cluster); finish(segment);
+   demux = rwebm_open_memory(file, used);
+   CHECK(demux && rwebm_num_tracks(demux) == 1);
+   for (i = 0; i < 6; i++)
+   {
+      CHECK(rwebm_read_packet_track(demux, 0, &pkt) == 1);
+      CHECK(pkt.duration_ns == expected[i] && pkt.timestamp == (int64_t)i * 40000000);
+      CHECK(pkt.size == 2 && !memcmp(pkt.data, "hi", 2));
+   }
+   rwebm_rewind(demux);
+   CHECK(rwebm_read_packet(demux, &pkt) == 1 && pkt.duration_ns == expected[0]);
+   rwebm_close(demux);
+   demux = rwebm_open_memory_avail(file, used, partial, NULL);
+   CHECK(demux && rwebm_read_packet_track(demux, 0, &pkt) == 1);
+   CHECK(rwebm_read_packet_track(demux, 0, &pkt) == RWEBM_READ_AGAIN);
+   rwebm_set_avail(demux, used);
+   CHECK(rwebm_read_packet_track(demux, 0, &pkt) == 1 && pkt.duration_ns == 34000000);
+   rwebm_close(demux);
+   return 0;
+}
+
+static int filtered_payload(unsigned blocks, int grouped)
+{
+   size_t marker, segment, tracks, entry, group = 0, body = 0, after = 0, lo, hi;
    unsigned i;
    rwebm_t *demux;
    rwebm_packet pkt;
@@ -529,12 +589,20 @@ static int filtered_payload(unsigned blocks)
    integer(0xe7, 1, 0);
    for (i = 0; i < blocks; i++)
    {
-      marker = start(0xa3, 1); body = used;
+      if (grouped)
+      {
+         group = start(0xa0, 1);
+         integer(0x9b, 1, 20);
+         integer(0xec, 1, 0);
+      }
+      marker = start(grouped ? 0xa1 : 0xa3, 1); body = used;
       file[used++] = 0x81; file[used++] = 0;
       file[used++] = 0; file[used++] = 0x80;
       memset(file + used, 0xa5, blocks == 1 ? 512 : 1);
       used += blocks == 1 ? 512 : 1;
-      finish(marker); after = used;
+      finish(marker);
+      if (grouped) { integer(0x9b, 1, 20); finish(group); }
+      after = used;
    }
    finish(tracks);
    tracks = start(0x1f43b675, 4);
@@ -951,9 +1019,13 @@ int main(void)
    CHECK(!terminal_stream());
    CHECK(!config_admission());
    CHECK(!sparse_cue_index());
-   CHECK(!filtered_payload(1));
-   CHECK(!filtered_payload(2));
-   CHECK(!filtered_payload(300));
+   CHECK(!text_durations());
+   CHECK(!filtered_payload(1, 0));
+   CHECK(!filtered_payload(1, 1));
+   CHECK(!filtered_payload(2, 0));
+   CHECK(!filtered_payload(2, 1));
+   CHECK(!filtered_payload(300, 0));
+   CHECK(!filtered_payload(300, 1));
    puts("WebM hardware dispatch, seeks, superframe retries, lacing, partial input and leases passed");
    return 0;
 }
