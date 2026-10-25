@@ -263,7 +263,7 @@ static void *sdl3_display_server_get_resolution_list(void *data,
 static float sdl3_display_server_get_refresh_rate(void *data)
 {
    const SDL_DisplayMode *cur = SDL_GetCurrentDisplayMode(sdl3_display_server_display());
-   return cur ? cur->refresh_rate : 0.0f;
+   return cur ? (float)sdl3_display_server_mode_hz(cur) : 0.0f;
 }
 
 static void sdl3_display_server_get_video_output_size(void *data,
