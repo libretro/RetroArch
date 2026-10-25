@@ -7,6 +7,8 @@ THREADS ?= 1
 SOURCES := subtitle_load_test.c $(ROOT)/tasks/task_subtitle.c \
            $(ROOT)/tasks/task_nbio_slice.c \
            $(LRC)/formats/subtitle/rsubtitle_srt.c \
+           $(LRC)/formats/mp4/rmp4.c $(LRC)/formats/data_transfer.c \
+           $(LRC)/memmap/memmap.c \
            $(LRC)/queues/task_queue.c $(LRC)/rthreads/rthreads.c \
            $(LRC)/rthreads/retro_eventcount.c \
            $(LRC)/features/features_cpu.c $(LRC)/time/rtime.c \
@@ -17,10 +19,14 @@ SOURCES := subtitle_load_test.c $(ROOT)/tasks/task_subtitle.c \
            $(LRC)/compat/compat_strl.c $(LRC)/compat/compat_strldup.c \
            $(LRC)/compat/fopen_utf8.c
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
-CFLAGS += -O1 -g1 -std=gnu89 -Wall -Wextra -Wno-unused-parameter \
+LDFLAGS += -Wl,--wrap=filestream_read
+CFLAGS += -DHAVE_RMP4 -O1 -g1 -std=gnu89 -Wall -Wextra -Wno-unused-parameter \
           -Werror=declaration-after-statement -I$(ROOT) -I$(LRC)/include
 ifeq ($(THREADS),1)
 CFLAGS += -DHAVE_THREADS
+endif
+ifneq ($(OS),Windows_NT)
+CFLAGS += -DHAVE_MMAP -D_GNU_SOURCE
 endif
 ifeq ($(OS),Windows_NT)
 LDLIBS += -lwinmm
@@ -43,6 +49,7 @@ $(TARGET): $(OBJS)
 
 check: all
 	./$(TARGET)
+	python3 embedded_check.py --malformed ./$(TARGET)
 
 clean:
 	rm -rf $(SAMPLE_OBJDIR)

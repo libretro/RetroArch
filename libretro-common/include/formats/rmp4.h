@@ -185,6 +185,15 @@ int rmp4_track_sample_key(const rmp4_t *mp4, int track, uint32_t sample);
 int rmp4_track_sample_span(const rmp4_t *mp4, int track, uint32_t sample,
       size_t *begin, size_t *end);
 
+/* Exact text/other sample duration in nanoseconds, -1 if unavailable.
+ * Video/audio tracks do not retain an extra duration table. */
+int64_t rmp4_track_text_duration(const rmp4_t *mp4, int track, uint32_t sample);
+
+/* Text interval in movie nanoseconds, clipped to the supported edit.
+ * Equal endpoints mean the sample is outside that edit. No media reads. */
+int rmp4_track_text_time(const rmp4_t *mp4, int track, uint32_t sample,
+      int64_t *start, int64_t *end);
+
 /* Read only this track from sample onward until rewind. Other tracks
  * are parked at their ends. No sample bytes are read; the next read
  * still obeys the current availability bound. Invalid input leaves

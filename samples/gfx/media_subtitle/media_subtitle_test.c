@@ -341,8 +341,61 @@ static void track_selection(bool threaded)
          threaded ? "threaded" : "regular");
 }
 
-int main(void)
+static void embedded_selection(const char *path, bool threaded)
 {
+   gfx_media_subtitle_t *owner;
+   int64_t until;
+   unsigned choice;
+   const char *first = getenv("SUBTITLE_EXPECT_UTF16")
+      ? "Z\360\237\230\200" : "first caf\303\251";
+   task_queue_init(threaded, NULL);
+   owner = gfx_media_subtitle_new();
+   assert(owner);
+   gfx_media_subtitle_update(owner, &source_a, path, 500000, 0, true);
+   for (choice = 0; choice < 4; choice++)
+   {
+      const gfx_media_subtitle_view_t *view;
+      gfx_media_subtitle_next(owner);
+      until = cpu_features_get_time_usec() + 10000000;
+      do
+      {
+         task_queue_check();
+         gfx_media_subtitle_update(owner, &source_a, path, 500000, 0, true);
+         view = gfx_media_subtitle_view(owner);
+         if (view->track_count == 2 && (choice == 2 ? view->off
+                  : !strcmp(view->text, first)
+                  && strstr(view->track, choice == 1 ? "[2]" : "[1]")))
+            break;
+         retro_sleep(1);
+      } while (cpu_features_get_time_usec() < until);
+      assert(view->track_count == 2);
+      if (choice == 2) assert(view->off && !*view->text);
+      else
+      {
+         assert(!strcmp(view->text, first));
+         assert(strstr(view->track, choice == 1 ? "[2]" : "[1]"));
+      }
+   }
+   gfx_media_subtitle_suspend(owner);
+   gfx_media_subtitle_update(owner, NULL, NULL, 0, 0, true);
+   gfx_media_subtitle_update(owner, &source_b, path, 2500000, 0, true);
+   assert(!strcmp(gfx_media_subtitle_view(owner)->text, "second \360\237\230\200"));
+   gfx_media_subtitle_free(owner);
+   drain();
+   task_queue_deinit();
+   puts("PASS: embedded track identities, text, Off and context restoration");
+}
+
+int main(int argc, char **argv)
+{
+   if (argc == 2)
+   {
+      embedded_selection(argv[1], false);
+#ifdef HAVE_THREADS
+      embedded_selection(argv[1], true);
+#endif
+      return 0;
+   }
    sprintf(media_path, "subtitle-view-%lu.mp4", (unsigned long)sample_getpid());
    sprintf(subtitle_path, "subtitle-view-%lu.srt", (unsigned long)sample_getpid());
    sprintf(other_path, "subtitle-view-%lu-missing.mp4", (unsigned long)sample_getpid());

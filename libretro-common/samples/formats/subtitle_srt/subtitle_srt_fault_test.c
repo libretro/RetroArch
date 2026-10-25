@@ -75,6 +75,49 @@ static void fault_free(void *p)
 #undef realloc
 #undef free
 
+static void test_cue_failures(void)
+{
+   unsigned failure;
+   for (failure = 1; failure <= 16; failure++)
+   {
+      char *text;
+      rsubtitle_srt_span_t *spans;
+      rsubtitle_srt_t *track;
+      unsigned i, observed;
+      int status = -1;
+      fail_at = 0;
+      text = (char*)fault_malloc(2);
+      spans = (rsubtitle_srt_span_t*)fault_malloc(80 * sizeof(*spans));
+      assert(text && spans);
+      memcpy(text, "a", 2);
+      for (i = 0; i < 80; i++)
+      {
+         spans[i].start_us = 80 - i;
+         spans[i].end_us = 100;
+         spans[i].offset = 0;
+         spans[i].length = 1;
+      }
+      calls = 0;
+      fail_at = failure;
+      track = rsubtitle_srt_begin_cues(text, 2, spans, 80);
+      if (track)
+         do
+         {
+            status = rsubtitle_srt_iterate(track, 1);
+         } while (!status);
+      observed = calls;
+      if (failure > observed)
+         assert(track && status == 1 && rsubtitle_srt_count(track) == 80);
+      else
+         assert(!track || status == -1);
+      rsubtitle_srt_free(track);
+      assert(!live);
+      if (failure > observed)
+         break;
+   }
+   assert(failure > 3 && failure < 16);
+}
+
 int main(void)
 {
    unsigned failure;
@@ -108,6 +151,7 @@ int main(void)
       if (failure > observed) break;
    }
    assert(failure > 3 && failure < 16);
+   test_cue_failures();
    puts("PASS: SubRip allocation failures release adopted input and cue storage");
    return 0;
 }

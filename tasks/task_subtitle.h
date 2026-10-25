@@ -29,10 +29,26 @@ typedef struct task_subtitle_request task_subtitle_request_t;
 
 typedef struct task_subtitle_catalog task_subtitle_catalog_t;
 
+enum task_subtitle_source
+{
+   TASK_SUBTITLE_SIDECAR = 0,
+   TASK_SUBTITLE_MP4
+};
+
+typedef struct task_subtitle_entry
+{
+   const char *path;
+   enum task_subtitle_source source;
+   int track;
+} task_subtitle_entry_t;
+
 RETRO_BEGIN_DECLS
 
 /* Main-thread owner. No file access occurs until the task handler runs. */
 task_subtitle_request_t *task_subtitle_load(const char *path);
+/* Container track index; decoding and file access stay on the worker. */
+task_subtitle_request_t *task_subtitle_load_embedded(const char *path, int track);
+task_subtitle_request_t *task_subtitle_load_entry(const task_subtitle_entry_t *entry);
 /* -1 failed, 0 pending, 1 ready, 2 already taken. */
 int task_subtitle_status(const task_subtitle_request_t *request);
 rsubtitle_srt_t *task_subtitle_take(task_subtitle_request_t *request);
@@ -46,6 +62,8 @@ size_t task_subtitle_catalog_count(const task_subtitle_catalog_t *catalog);
 /* Borrowed until release; available only after discovery completes. */
 const char *task_subtitle_catalog_path(const task_subtitle_catalog_t *catalog,
       size_t index);
+const task_subtitle_entry_t *task_subtitle_catalog_entry(
+      const task_subtitle_catalog_t *catalog, size_t index);
 void task_subtitle_catalog_release(task_subtitle_catalog_t *catalog);
 
 RETRO_END_DECLS

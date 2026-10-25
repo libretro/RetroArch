@@ -156,6 +156,10 @@ size_t task_subtitle_catalog_count(const task_subtitle_catalog_t *catalog)
 { if (catalog) abort(); return 0; }
 const char *task_subtitle_catalog_path(const task_subtitle_catalog_t *catalog, size_t index)
 { (void)catalog; (void)index; abort(); return NULL; }
+const task_subtitle_entry_t *task_subtitle_catalog_entry(const task_subtitle_catalog_t *catalog, size_t index)
+{ (void)catalog; (void)index; abort(); return NULL; }
+task_subtitle_request_t *task_subtitle_load_entry(const task_subtitle_entry_t *entry)
+{ if (entry) abort(); return NULL; }
 void task_subtitle_catalog_release(task_subtitle_catalog_t *catalog)
 { if (catalog) abort(); }
 const char *msg_hash_to_str(enum msg_hash_enums msg)

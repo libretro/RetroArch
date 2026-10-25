@@ -22,6 +22,9 @@
 
 #include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <retro_atomic.h>
+#include <streams/file_stream.h>
 #include <string.h>
 #ifdef _WIN32
 #include <process.h>
@@ -34,6 +37,16 @@
 #include <queues/task_queue.h>
 #include <retro_timers.h>
 #include "../../../tasks/task_subtitle.h"
+
+static retro_atomic_int_t embedded_read_bytes;
+int64_t __real_filestream_read(RFILE *stream, void *data, int64_t length);
+int64_t __wrap_filestream_read(RFILE *stream, void *data, int64_t length)
+{
+   int64_t got = __real_filestream_read(stream, data, length);
+   if (got > 0 && got < 16777216)
+      retro_atomic_fetch_add_int(&embedded_read_bytes, (int)got);
+   return got;
+}
 
 static char fixture[64];
 
@@ -200,8 +213,92 @@ static void run_mode(bool threaded)
          threaded ? "threaded" : "regular");
 }
 
-int main(void)
+#ifdef HAVE_RMP4
+static void embedded(const char *path, bool threaded)
 {
+   task_subtitle_request_t *request;
+   rsubtitle_srt_t *track;
+   const rsubtitle_srt_cue_t *cue;
+   unsigned i;
+   task_subtitle_catalog_t *catalog;
+   const task_subtitle_entry_t *entry;
+   if (threaded) task_queue_set_threaded();
+   else task_queue_unset_threaded();
+   task_queue_init(threaded, NULL);
+   retro_atomic_store_release_int(&embedded_read_bytes, 0);
+   catalog = task_subtitle_discover(path);
+   assert(catalog);
+   drain();
+   assert(task_subtitle_catalog_status(catalog) == 1);
+   assert(task_subtitle_catalog_count(catalog) == 2);
+   entry = task_subtitle_catalog_entry(catalog, 0);
+   assert(entry && entry->source == TASK_SUBTITLE_MP4 && entry->track == 0);
+   assert(!strcmp(entry->path, path));
+   request = task_subtitle_load_entry(entry);
+   task_subtitle_catalog_release(catalog);
+   assert(request && !task_subtitle_status(request));
+   await(request);
+   if (getenv("SUBTITLE_EXPECT_FAILURE"))
+   {
+      assert(task_subtitle_status(request) == -1 && !task_subtitle_take(request));
+      assert(retro_atomic_load_acquire_int(&embedded_read_bytes) < 262144);
+      task_subtitle_release(request);
+      drain();
+      task_queue_deinit();
+      puts("PASS: malformed embedded text refused without publishing cues");
+      return;
+   }
+   assert(task_subtitle_status(request) == 1);
+   assert(retro_atomic_load_acquire_int(&embedded_read_bytes) < 262144);
+   track = task_subtitle_take(request);
+   assert(track && rsubtitle_srt_count(track) == 2);
+   cue = rsubtitle_srt_cue(track, 0);
+   assert(cue && cue->start_us == 100000 && cue->end_us == 1200000);
+   assert(!strcmp(cue->text, getenv("SUBTITLE_EXPECT_UTF16")
+            ? "Z\360\237\230\200" : "first caf\303\251"));
+   cue = rsubtitle_srt_cue(track, 1);
+   assert(cue && cue->start_us == 2000000 && cue->end_us == 3500000);
+   assert(!strcmp(cue->text, "second \360\237\230\200"));
+   rsubtitle_srt_free(track);
+   task_subtitle_release(request);
+   drain();
+   request = task_subtitle_load_embedded(path, 9);
+   assert(request);
+   await(request);
+   assert(task_subtitle_status(request) == -1);
+   task_subtitle_release(request);
+   drain();
+   for (i = 0; i < 32; i++)
+   {
+      request = task_subtitle_load_embedded(path, 0);
+      assert(request);
+      if (!threaded)
+      {
+         unsigned step;
+         for (step = 0; step < i % 12; step++) task_queue_check();
+      }
+      task_subtitle_release(request);
+   }
+   drain();
+   task_queue_deinit();
+   puts("PASS: embedded tx3g text, movie intervals, invalid track and cancellation");
+}
+#endif
+
+int main(int argc, char **argv)
+{
+#ifdef HAVE_RMP4
+   if (argc == 2)
+   {
+      embedded(argv[1], false);
+#ifdef HAVE_THREADS
+      embedded(argv[1], true);
+#endif
+      return 0;
+   }
+#else
+   (void)argc; (void)argv;
+#endif
    sprintf(fixture, "subtitle-load-%lu.srt", (unsigned long)sample_getpid());
    assert(!task_subtitle_load(NULL) && !task_subtitle_load(""));
    assert(task_subtitle_status(NULL) == -1 && !task_subtitle_take(NULL));

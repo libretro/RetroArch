@@ -32,19 +32,21 @@ typedef struct rsubtitle_srt_entry
 
 enum srt_stage
 {
-   SRT_NORMALIZE, SRT_LINES, SRT_SORT, SRT_INDEX, SRT_READY, SRT_ERROR
+   SRT_NORMALIZE, SRT_LINES, SRT_CUES, SRT_SORT, SRT_INDEX, SRT_READY, SRT_ERROR
 };
 
 struct rsubtitle_srt
 {
    char *data;
    rsubtitle_srt_entry_t *entries, *scratch;
+   rsubtitle_srt_span_t *spans;
    int64_t *index;
    rsubtitle_srt_cue_t pending;
    size_t count, capacity, size, read, written;
    size_t scan, line_begin, text_begin, text_end;
    size_t width, run, left, left_end, right, right_end, output;
    size_t index_base, index_cursor;
+   size_t span_count, span_cursor;
    enum srt_stage stage;
    unsigned line_kind;
    int line_blank, text_seen, unordered;
@@ -233,6 +235,32 @@ rsubtitle_srt_t *rsubtitle_srt_begin(char *data, size_t size)
    return track;
 }
 
+rsubtitle_srt_t *rsubtitle_srt_begin_cues(char *data, size_t size,
+      rsubtitle_srt_span_t *spans, size_t count)
+{
+   rsubtitle_srt_t *track;
+   if (!data || !size || size > RSUBTITLE_SRT_MAX_INPUT
+         || !spans || !count || count > 65536)
+   {
+      free(data);
+      free(spans);
+      return NULL;
+   }
+   track = (rsubtitle_srt_t*)calloc(1, sizeof(*track));
+   if (!track)
+   {
+      free(data);
+      free(spans);
+      return NULL;
+   }
+   track->data = data;
+   track->size = size;
+   track->spans = spans;
+   track->span_count = count;
+   track->stage = SRT_CUES;
+   return track;
+}
+
 static void srt_merge_run(rsubtitle_srt_t *track)
 {
    track->left = track->run;
@@ -259,6 +287,61 @@ static int srt_complete_cue(rsubtitle_srt_t *track)
    return 1;
 }
 
+static int srt_prepare_index(rsubtitle_srt_t *track)
+{
+   track->stage = SRT_INDEX;
+   if (track->unordered)
+   {
+      track->scratch = (rsubtitle_srt_entry_t*)malloc(
+            track->count * sizeof(*track->scratch));
+      if (!track->scratch)
+         return 0;
+      track->stage = SRT_SORT;
+      track->width = 1;
+      srt_merge_run(track);
+   }
+   return 1;
+}
+
+static int srt_cues_step(rsubtitle_srt_t *track)
+{
+   const rsubtitle_srt_span_t *span;
+   if (track->span_cursor == track->span_count)
+   {
+      free(track->spans);
+      track->spans = NULL;
+      return srt_prepare_index(track);
+   }
+   span = &track->spans[track->span_cursor];
+   if (!track->scan)
+   {
+      if (!span->length || span->length > 65536
+            || span->offset >= track->size
+            || span->length >= track->size - span->offset
+            || track->data[span->offset + span->length]
+            || span->end_us <= span->start_us)
+         return 0;
+      track->pending.start_us = span->start_us;
+      track->pending.end_us = span->end_us;
+      track->pending.text = track->data + span->offset;
+      track->pending.length = span->length;
+   }
+   if (track->scan < span->length)
+   {
+      unsigned length = srt_utf8_scalar(track->pending.text + track->scan,
+            span->length - track->scan);
+      if (!length)
+         return 0;
+      track->scan += length;
+      return 1;
+   }
+   if (!srt_append(track, &track->pending))
+      return 0;
+   track->span_cursor++;
+   track->scan = 0;
+   return 1;
+}
+
 static int srt_lines_step(rsubtitle_srt_t *track)
 {
    size_t end = track->scan;
@@ -277,18 +360,7 @@ static int srt_lines_step(rsubtitle_srt_t *track)
       if ((track->line_kind == 2 && !srt_complete_cue(track))
             || track->line_kind == 1 || !track->count)
          return 0;
-      track->stage = SRT_INDEX;
-      if (track->unordered)
-      {
-         track->scratch = (rsubtitle_srt_entry_t*)malloc(
-               track->count * sizeof(*track->scratch));
-         if (!track->scratch)
-            return 0;
-         track->stage = SRT_SORT;
-         track->width = 1;
-         srt_merge_run(track);
-      }
-      return 1;
+      return srt_prepare_index(track);
    }
    next = end < track->written ? end + 1 : end;
    line = track->data + track->line_begin;
@@ -399,6 +471,10 @@ int rsubtitle_srt_iterate(rsubtitle_srt_t *track, size_t work)
             if (!srt_lines_step(track))
                track->stage = SRT_ERROR;
             break;
+         case SRT_CUES:
+            if (!srt_cues_step(track))
+               track->stage = SRT_ERROR;
+            break;
          case SRT_SORT:
             srt_sort_step(track);
             break;
@@ -462,6 +538,7 @@ void rsubtitle_srt_free(rsubtitle_srt_t *track)
    free(track->index);
    free(track->entries);
    free(track->scratch);
+   free(track->spans);
    free(track->data);
    free(track);
 }

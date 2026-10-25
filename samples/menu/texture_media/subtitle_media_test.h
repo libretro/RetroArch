@@ -44,6 +44,39 @@ static bool media_subtitle_wait(menu_media_controls_t *media,
    return false;
 }
 
+static bool media_test_embedded_subtitles(menu_media_controls_t *media,
+      struct menu_state *menu_st, void (*draw)(struct menu_state *))
+{
+   unsigned choice, i;
+   gfx_media_subtitle_t *owner;
+   if (!media->controls.target.subtitle_tracks)
+      return false;
+   for (choice = 0; choice < 3; choice++)
+   {
+      menu_media_controls_action(media, MENU_ACTION_DOWN, menu_st->current_time_us);
+      for (i = 0; i + 1 < media->controls.layout.button_count; i++)
+         menu_media_controls_action(media, MENU_ACTION_RIGHT, menu_st->current_time_us);
+      menu_media_controls_action(media, MENU_ACTION_OK, menu_st->current_time_us);
+      if (!media_subtitle_wait(media, menu_st, draw,
+               choice == 2 ? NULL : choice == 1 ? "Embedded second" : "Embedded first"))
+         return false;
+      if (choice != 2)
+      {
+         const gfx_media_subtitle_view_t *view = gfx_media_subtitle_view(media->subtitle);
+         if (!view || view->track_count != 2 || !strstr(view->text, "UTF-8 \303\251"))
+            return false;
+         owner = media->subtitle;
+         menu_media_controls_context_reset(media);
+         if (!media_subtitle_wait(media, menu_st, draw,
+                  choice == 1 ? "Embedded second" : "Embedded first")
+               || media->subtitle != owner)
+            return false;
+      }
+   }
+   puts("embedded subtitles: both tracks, UTF-8, context retention and Off passed");
+   return true;
+}
+
 /* Runs against the real menu adapter and asynchronous sidecar loader. */
 static bool media_test_subtitles(menu_media_controls_t *media,
       struct menu_state *menu_st, void (*draw)(struct menu_state *))
@@ -51,6 +84,8 @@ static bool media_test_subtitles(menu_media_controls_t *media,
    settings_t *settings = config_get_ptr();
    int64_t deadline;
    bool valid;
+   if (getenv("MEDIA_TEST_EMBEDDED_SUBTITLES"))
+      return media_test_embedded_subtitles(media, menu_st, draw);
    if (!getenv("MEDIA_TEST_SUBTITLES"))
       return true;
    printf("subtitle integration: enabled=%u path=%s\n",

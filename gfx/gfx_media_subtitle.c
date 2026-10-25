@@ -12,6 +12,8 @@ struct gfx_media_subtitle
    const void *identity;
    char *path, *selected;
    unsigned pending_cycles;
+   enum task_subtitle_source selected_source;
+   int selected_track;
    bool off, rebind;
    gfx_media_subtitle_view_t view;
 };
@@ -28,6 +30,8 @@ static void media_subtitle_reset(gfx_media_subtitle_t *subtitle)
    subtitle->path = NULL;
    subtitle->identity = NULL;
    subtitle->selected = NULL;
+   subtitle->selected_source = TASK_SUBTITLE_SIDECAR;
+   subtitle->selected_track = -1;
    subtitle->catalog = NULL;
    subtitle->pending_cycles = 0;
    subtitle->off = subtitle->rebind = false;
@@ -76,6 +80,8 @@ static bool media_subtitle_open(gfx_media_subtitle_t *subtitle,
    memcpy(sidecar + end, ".srt", sizeof(".srt"));
    subtitle->request = task_subtitle_load(sidecar);
    subtitle->selected = sidecar;
+   subtitle->selected_source = TASK_SUBTITLE_SIDECAR;
+   subtitle->selected_track = -1;
    return subtitle->request != NULL;
 }
 
@@ -102,6 +108,7 @@ static void media_subtitle_select(gfx_media_subtitle_t *subtitle)
 {
    size_t count, index, next, length;
    const char *path;
+   const task_subtitle_entry_t *entry;
    char *selected = NULL;
    if (!subtitle->pending_cycles
          || !task_subtitle_catalog_status(subtitle->catalog))
@@ -115,17 +122,21 @@ static void media_subtitle_select(gfx_media_subtitle_t *subtitle)
    index = count;
    if (!subtitle->off && subtitle->selected)
       for (index = 0; index < count; index++)
+      {
+         entry = task_subtitle_catalog_entry(subtitle->catalog, index);
+         if (entry && entry->source == subtitle->selected_source
+               && entry->track == subtitle->selected_track
 #if defined(_WIN32)
-         if (string_is_equal_noncase(subtitle->selected,
-                  task_subtitle_catalog_path(subtitle->catalog, index)))
+               && string_is_equal_noncase(subtitle->selected, entry->path))
 #else
-         if (!strcmp(subtitle->selected,
-                  task_subtitle_catalog_path(subtitle->catalog, index)))
+               && !strcmp(subtitle->selected, entry->path))
 #endif
             break;
+      }
    next = (index + subtitle->pending_cycles % (count + 1)) % (count + 1);
    subtitle->pending_cycles = 0;
-   path = task_subtitle_catalog_path(subtitle->catalog, next);
+   entry = task_subtitle_catalog_entry(subtitle->catalog, next);
+   path = entry ? entry->path : NULL;
    if (path)
    {
       length = strlen(path);
@@ -140,7 +151,9 @@ static void media_subtitle_select(gfx_media_subtitle_t *subtitle)
    subtitle->selected = selected;
    subtitle->off = selected == NULL;
    subtitle->track = NULL;
-   subtitle->request = selected ? task_subtitle_load(selected) : NULL;
+   subtitle->selected_source = entry ? entry->source : TASK_SUBTITLE_SIDECAR;
+   subtitle->selected_track = entry ? entry->track : -1;
+   subtitle->request = task_subtitle_load_entry(entry);
 }
 
 static void media_subtitle_track_view(gfx_media_subtitle_t *subtitle,
@@ -148,6 +161,7 @@ static void media_subtitle_track_view(gfx_media_subtitle_t *subtitle,
 {
    const char *name = subtitle->selected, *p;
    size_t used = 0;
+   size_t limit = sizeof(view->track) - (subtitle->selected_track >= 0 ? 16 : 1);
    view->off = subtitle->off;
    view->discovering = subtitle->catalog
       && !task_subtitle_catalog_status(subtitle->catalog);
@@ -162,7 +176,7 @@ static void media_subtitle_track_view(gfx_media_subtitle_t *subtitle,
       unsigned lead = (unsigned char)*name;
       size_t length = lead < 0x80 ? 1 : lead < 0xe0 ? 2 : lead < 0xf0 ? 3 : 4;
       size_t i;
-      if (used + length >= sizeof(view->track))
+      if (used + length > limit)
          break;
       for (i = 0; i < length; i++)
          if (!name[i])
@@ -170,6 +184,22 @@ static void media_subtitle_track_view(gfx_media_subtitle_t *subtitle,
       memcpy(view->track + used, name, length);
       used += length;
       name += length;
+   }
+   if (subtitle->selected_track >= 0)
+   {
+      char digits[12];
+      unsigned number = (unsigned)subtitle->selected_track + 1;
+      size_t count = 0;
+      do
+      {
+         digits[count++] = (char)('0' + number % 10);
+         number /= 10;
+      } while (number && count < sizeof(digits));
+      view->track[used++] = ' ';
+      view->track[used++] = '[';
+      while (count) view->track[used++] = digits[--count];
+      view->track[used++] = ']';
+      view->track[used] = 0;
    }
 }
 

@@ -131,6 +131,7 @@ typedef struct
    /* Per-sample tables (parallel arrays, 'count' entries). */
    uint64_t   *off;
    uint32_t   *size;
+   uint32_t   *duration;       /* text sample duration in media ticks */
    int64_t    *pts;            /* nanoseconds                        */
    uint8_t    *key;
    uint32_t    count;
@@ -555,7 +556,7 @@ typedef struct
 /* Append one sample to a track's parallel arrays, growing them as
  * movie fragments arrive. Returns 0 on allocation or budget failure. */
 static int rmp4_track_append(rmp4_itrack *t, uint64_t off, uint32_t size,
-      int64_t pts_ns, uint8_t key)
+      int64_t pts_ns, uint32_t duration, uint8_t key)
 {
    if (t->count >= RMP4_MAX_SAMPLES)
       return 0;
@@ -572,6 +573,13 @@ static int rmp4_track_append(rmp4_itrack *t, uint64_t off, uint32_t size,
       if (!nsize)
          return 0;
       t->size = nsize;
+      if (t->pub.type == RMP4_TRACK_OTHER)
+      {
+         nsize = (uint32_t*)realloc(t->duration, (size_t)ncap * sizeof(uint32_t));
+         if (!nsize)
+            return 0;
+         t->duration = nsize;
+      }
       npts  = (int64_t*) realloc(t->pts,  (size_t)ncap * sizeof(int64_t));
       if (!npts)
          return 0;
@@ -584,6 +592,8 @@ static int rmp4_track_append(rmp4_itrack *t, uint64_t off, uint32_t size,
    }
    t->off[t->count]  = off;
    t->size[t->count] = size;
+   if (t->duration)
+      t->duration[t->count] = duration;
    t->pts[t->count]  = pts_ns;
    t->key[t->count]  = key;
    t->count++;
@@ -614,6 +624,12 @@ static int rmp4_build_samples(rmp4_itrack *t, const rmp4_stbl *s,
    t->key  = (uint8_t*) malloc((size_t)count);
    if (!t->off || !t->size || !t->pts || !t->key)
       return 0;
+   if (t->pub.type == RMP4_TRACK_OTHER)
+   {
+      t->duration = (uint32_t*)calloc(count, sizeof(uint32_t));
+      if (!t->duration)
+         return 0;
+   }
    t->cap = count;
 
    for (i = 0; i < count; i++)
@@ -634,6 +650,8 @@ static int rmp4_build_samples(rmp4_itrack *t, const rmp4_stbl *s,
          uint32_t sd = rmp4_be32(s->stts + 8 + e * 8 + 4);
          while (sc-- && filled < count)
          {
+            if (t->duration)
+               t->duration[filled] = sd;
             t->pts[filled++] = (int64_t)dts;
             dts             += sd;
          }
@@ -890,6 +908,7 @@ static void rmp4_parse_trak(rmp4_t *m, const uint8_t *body, uint64_t size)
    {
       free(t->off);  t->off  = NULL;
       free(t->size); t->size = NULL;
+      free(t->duration); t->duration = NULL;
       free(t->pts);  t->pts  = NULL;
       free(t->key);  t->key  = NULL;
       t->count = 0;
@@ -1123,7 +1142,7 @@ static void rmp4_parse_traf(rmp4_t *m, const uint8_t *body, uint64_t size,
                if (doff > (uint64_t)m->len
                      || sz > (uint64_t)m->len - doff)
                   return;
-               if (!rmp4_track_append(t, doff, sz, pts,
+               if (!rmp4_track_append(t, doff, sz, pts, dur,
                         (uint8_t)!((fl >> 16) & 1)))
                {
                   m->sample_error = 1;
@@ -1330,6 +1349,57 @@ int rmp4_track_sample_span(const rmp4_t *m, int track, uint32_t sample,
    return 1;
 }
 
+int64_t rmp4_track_text_duration(const rmp4_t *m, int track, uint32_t sample)
+{
+   const rmp4_itrack *t;
+   if (!m || track < 0 || track >= m->num_tracks)
+      return -1;
+   t = &m->trk[track];
+   if (!t->duration || sample >= t->count)
+      return -1;
+   return rmp4_ticks_to_ns(t->duration[sample], t->timescale);
+}
+
+int rmp4_track_text_time(const rmp4_t *m, int track, uint32_t sample,
+      int64_t *start, int64_t *end)
+{
+   const rmp4_itrack *t;
+   int64_t duration, first, last, skip, delay;
+   uint64_t seconds, fraction, limit = (~(uint64_t)0) >> 1;
+   if (!start || !end || (duration = rmp4_track_text_duration(m, track, sample)) < 0)
+      return 0;
+   t = &m->trk[track];
+   if (!t->timescale)
+      return 0;
+   seconds = t->pub.media_skip / t->timescale;
+   fraction = (t->pub.media_skip % t->timescale) * 1000000000u / t->timescale;
+   if (seconds > limit / 1000000000u
+         || seconds * 1000000000u > limit - fraction)
+      return 0;
+   skip = (int64_t)(seconds * 1000000000u + fraction);
+   first = t->pts[sample];
+   if (first < -(int64_t)limit + skip
+         || first > (int64_t)limit - duration)
+      return 0;
+   last = first + duration - skip;
+   first -= skip;
+   if (first < 0) first = 0;
+   if (last < 0) last = 0;
+   if (t->pub.presentation_duration_ns >= 0)
+   {
+      if (first > t->pub.presentation_duration_ns)
+         first = t->pub.presentation_duration_ns;
+      if (last > t->pub.presentation_duration_ns)
+         last = t->pub.presentation_duration_ns;
+   }
+   delay = t->pub.presentation_delay_ns;
+   if (delay < 0 || last > (int64_t)limit - delay)
+      return 0;
+   *start = first + delay;
+   *end = last + delay;
+   return 1;
+}
+
 int rmp4_select_track_sample(rmp4_t *m, int track, uint32_t sample)
 {
    rmp4_itrack *t;
@@ -1373,6 +1443,7 @@ void rmp4_close(rmp4_t *m)
    {
       free(m->trk[i].off);
       free(m->trk[i].size);
+      free(m->trk[i].duration);
       free(m->trk[i].pts);
       free(m->trk[i].key);
       free(m->trk[i].codec_private_owned);

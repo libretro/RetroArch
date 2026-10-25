@@ -38,6 +38,12 @@ typedef struct rsubtitle_srt_cue
    size_t length;
 } rsubtitle_srt_cue_t;
 
+typedef struct rsubtitle_srt_span
+{
+   int64_t start_us, end_us;
+   size_t offset, length;
+} rsubtitle_srt_span_t;
+
 RETRO_BEGIN_DECLS
 
 /* Consumes malloc-allocated UTF-8 input on success or failure.
@@ -48,6 +54,11 @@ rsubtitle_srt_t *rsubtitle_srt_take(char *data, size_t size);
  * pending and 1 when immutable queries become available. Each work
  * item handles at most one UTF-8 scalar, input byte or cue entry. */
 rsubtitle_srt_t *rsubtitle_srt_begin(char *data, size_t size);
+/* Consumes both malloc-allocated inputs, including on failure. Each span
+ * names UTF-8 text followed by a NUL within size. No SRT text conversion.
+ * Uses the same input/cue/text limits and incremental validation/indexing. */
+rsubtitle_srt_t *rsubtitle_srt_begin_cues(char *data, size_t size,
+      rsubtitle_srt_span_t *spans, size_t count);
 int rsubtitle_srt_iterate(rsubtitle_srt_t *track, size_t work);
 void rsubtitle_srt_free(rsubtitle_srt_t *track);
 size_t rsubtitle_srt_count(const rsubtitle_srt_t *track);

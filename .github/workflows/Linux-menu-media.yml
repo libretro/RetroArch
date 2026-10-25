@@ -61,6 +61,13 @@ jobs:
           for driver in rgui materialui xmb ozone; do
             python3 samples/menu/rgui_media/run.py --c89 --subtitles --driver "$driver" samples/menu/rgui_media/fixture.mp4
           done
+      - name: Embedded MP4 subtitles across all four menus
+        run: |
+          python3 -c "from pathlib import Path; [Path('samples/menu/rgui_media/embedded-'+n+'.srt').write_text('1\n00:00:00,000 --> 00:10:00,000\nEmbedded '+n+' UTF-8 \u00e9\n', encoding='utf-8') for n in ('first', 'second')]"
+          ffmpeg -v error -y -i samples/menu/rgui_media/fixture.mp4 -i samples/menu/rgui_media/embedded-first.srt -i samples/menu/rgui_media/embedded-second.srt -map 0:v:0 -map 1:0 -map 2:0 -c:v copy -c:s mov_text samples/menu/rgui_media/embedded.mp4
+          for driver in rgui materialui xmb ozone; do
+            MEDIA_TEST_EMBEDDED_SUBTITLES=1 python3 samples/menu/rgui_media/run.py --c89 --driver "$driver" samples/menu/rgui_media/embedded.mp4
+          done
       - name: Folder playback and fullscreen settings across all menus
         run: |
           for driver in rgui materialui xmb ozone; do
@@ -158,7 +165,7 @@ jobs:
   subtitle-sidecars:
     runs-on: ubuntu-latest
     env:
-      APT_PKGS: build-essential clang
+      APT_PKGS: build-essential clang ffmpeg
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v6
