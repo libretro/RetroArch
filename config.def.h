@@ -1776,6 +1776,7 @@
  * Resolution where the NGX and DLSS runtimes are found. */
 #define DEFAULT_VIDEO_TEMPORAL_UPSCALER 0
 #define DEFAULT_VIDEO_TEMPORAL_UPSCALER_QUALITY 0
+#define DEFAULT_VIDEO_TEMPORAL_UPSCALER_PRESET 0
 
 /* The menu runs at the display's refresh rate while content is loaded */
 #define DEFAULT_MENU_FRAME_RATE MENU_FRAME_RATE_DISPLAY

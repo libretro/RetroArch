@@ -80,7 +80,7 @@ static const video_upscaler_backend_t *upscaler_backend;
 static const struct retro_hw_upscaler_inputs *upscaler_inputs;
 static unsigned upscaler_out_dims;
 
-unsigned video_upscaler_mode(unsigned out_dims)
+static unsigned video_upscaler_quality(unsigned out_dims)
 {
    unsigned q = config_get_ptr()->uints.video_temporal_upscaler_quality;
    switch (q)
@@ -101,6 +101,23 @@ unsigned video_upscaler_mode(unsigned out_dims)
    /* Auto: the sharper mode up to 1440 lines, Balanced from there */
    return VIDEO_SCALE_H(out_dims) > 1440
       ? NGX_PERF_QUALITY_BALANCED : NGX_PERF_QUALITY_MAX_QUALITY;
+}
+
+unsigned video_upscaler_mode(unsigned out_dims)
+{
+   unsigned preset = NGX_DLSS_PRESET_DEFAULT;
+   switch (config_get_ptr()->uints.video_temporal_upscaler_preset)
+   {
+      case VIDEO_TEMPORAL_UPSCALER_PRESET_J:
+         preset = NGX_DLSS_PRESET_J;
+         break;
+      case VIDEO_TEMPORAL_UPSCALER_PRESET_K:
+         preset = NGX_DLSS_PRESET_K;
+         break;
+      default:
+         break;
+   }
+   return NGX_MODE_PACK(video_upscaler_quality(out_dims), preset);
 }
 
 void video_upscaler_attach(const video_upscaler_backend_t *backend)

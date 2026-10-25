@@ -284,6 +284,7 @@ typedef struct settings
       unsigned video_driver_pacing;
       unsigned video_temporal_upscaler;
       unsigned video_temporal_upscaler_quality;
+      unsigned video_temporal_upscaler_preset;
       unsigned video_hard_sync_frames;
       unsigned video_frame_delay;
       unsigned video_scanline_sync_offset;

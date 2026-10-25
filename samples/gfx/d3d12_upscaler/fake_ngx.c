@@ -223,6 +223,7 @@ EXPORT int CONV NVSDK_NGX_D3D12_CreateFeature(void *cmd, int feature, param_t *p
    c->quality    = get_i(p, "PerfQualityValue");
    c->flags      = get_i(p, "DLSS.Feature.Create.Flags");
    c->node_mask  = get_ui(p, "CreationNodeMask") | (get_ui(p, "VisibilityNodeMask") << 8);
+   c->preset     = get_ui(p, "DLSS.Hint.Render.Preset.Quality");
    rec.creates++;
    handles[features_made % 8] = (int)(features_made + 1);
    *out = &handles[features_made % 8];

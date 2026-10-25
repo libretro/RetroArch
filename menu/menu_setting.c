@@ -8037,6 +8037,24 @@ static size_t setting_get_string_representation_uint_video_temporal_upscaler_qua
    return 0;
 }
 
+static size_t setting_get_string_representation_uint_video_temporal_upscaler_preset(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   static const enum msg_hash_enums names[VIDEO_TEMPORAL_UPSCALER_PRESET_LAST] = {
+      MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_DEFAULT,
+      MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_J,
+      MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_K
+   };
+   if (setting)
+   {
+      unsigned q = *setting->value.target.unsigned_integer;
+      if (q >= VIDEO_TEMPORAL_UPSCALER_PRESET_LAST)
+         q = VIDEO_TEMPORAL_UPSCALER_PRESET_DEFAULT;
+      return strlcpy(s, msg_hash_to_str(names[q]), len);
+   }
+   return 0;
+}
+
 static size_t setting_get_string_representation_uint_video_temporal_upscaler(
       rarch_setting_t *setting, char *s, size_t len)
 {

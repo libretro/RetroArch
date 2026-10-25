@@ -74,9 +74,18 @@ enum video_temporal_upscaler_quality
    VIDEO_TEMPORAL_UPSCALER_QUALITY_LAST
 };
 
-/* The quality for an output of @out_dims (VIDEO_SCALE_PACK): the
- * setting, Auto resolved. The backend's own mode value, an enum
- * ngx_perf_quality. */
+/* video_temporal_upscaler_preset: the DLSS model (ngx_dlss_render_preset) */
+enum video_temporal_upscaler_preset
+{
+   VIDEO_TEMPORAL_UPSCALER_PRESET_DEFAULT = 0,
+   VIDEO_TEMPORAL_UPSCALER_PRESET_J,
+   VIDEO_TEMPORAL_UPSCALER_PRESET_K,
+   VIDEO_TEMPORAL_UPSCALER_PRESET_LAST
+};
+
+/* The mode for an output of @out_dims (VIDEO_SCALE_PACK): the quality
+ * setting, Auto resolved, and the preset, as one word (NGX_MODE_PACK:
+ * an enum ngx_perf_quality and an enum ngx_dlss_render_preset). */
 unsigned video_upscaler_mode(unsigned out_dims);
 
 /* A video driver's upscaler, attached while its session is up:

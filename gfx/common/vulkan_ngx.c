@@ -285,6 +285,45 @@ vulkan_ngx_t *vulkan_ngx_init(VkInstance instance, VkPhysicalDevice gpu,
    return ngx;
 }
 
+/* The mode's name for the log: the quality, and the preset when one is asked for */
+static const char *ngx_quality_name(unsigned mode)
+{
+   switch (NGX_MODE_QUALITY(mode))
+   {
+      case NGX_PERF_QUALITY_MAX_PERF:          return "Performance";
+      case NGX_PERF_QUALITY_BALANCED:          return "Balanced";
+      case NGX_PERF_QUALITY_MAX_QUALITY:       return "Quality";
+      case NGX_PERF_QUALITY_ULTRA_PERFORMANCE: return "Ultra Performance";
+      case NGX_PERF_QUALITY_ULTRA_QUALITY:     return "Ultra Quality";
+      case NGX_PERF_QUALITY_DLAA:              return "DLAA";
+      default:                                 break;
+   }
+   return "?";
+}
+
+static const char *ngx_preset_name(unsigned mode)
+{
+   switch (NGX_MODE_PRESET(mode))
+   {
+      case NGX_DLSS_PRESET_J: return ", preset J";
+      case NGX_DLSS_PRESET_K: return ", preset K";
+      default:                break;
+   }
+   return "";
+}
+
+/* The render preset hints, one a quality: the one asked for, or the library's default */
+static void ngx_set_preset(const ngx_lib_t *lib, ngx_parameter_t *p, unsigned mode)
+{
+   const unsigned preset = NGX_MODE_PRESET(mode);
+   lib->param.set_ui(p, NGX_PARAM_DLSS_PRESET_DLAA, preset);
+   lib->param.set_ui(p, NGX_PARAM_DLSS_PRESET_QUALITY, preset);
+   lib->param.set_ui(p, NGX_PARAM_DLSS_PRESET_BALANCED, preset);
+   lib->param.set_ui(p, NGX_PARAM_DLSS_PRESET_PERFORMANCE, preset);
+   lib->param.set_ui(p, NGX_PARAM_DLSS_PRESET_ULTRA_PERFORMANCE, preset);
+   lib->param.set_ui(p, NGX_PARAM_DLSS_PRESET_ULTRA_QUALITY, preset);
+}
+
 bool vulkan_ngx_optimal(vulkan_ngx_t *ngx, unsigned quality,
       unsigned out_dims, unsigned *render_dims,
       unsigned *min_dims, unsigned *max_dims)
@@ -295,7 +334,7 @@ bool vulkan_ngx_optimal(vulkan_ngx_t *ngx, unsigned quality,
    if (!ngx || !VIDEO_SCALE_W(out_dims) || !VIDEO_SCALE_H(out_dims))
       return false;
    lib = ngx->lib;
-   if (!ngx->opt_valid || ngx->opt_quality != quality
+   if (!ngx->opt_valid || ngx->opt_quality != NGX_MODE_QUALITY(quality)
          || ngx->opt_out_dims != out_dims)
    {
       ngx_parameter_t *p = ngx->caps;
@@ -308,7 +347,7 @@ bool vulkan_ngx_optimal(vulkan_ngx_t *ngx, unsigned quality,
       memcpy(&optimal, &callback, sizeof(optimal));
       lib->param.set_ui(p, NGX_PARAM_WIDTH, VIDEO_SCALE_W(out_dims));
       lib->param.set_ui(p, NGX_PARAM_HEIGHT, VIDEO_SCALE_H(out_dims));
-      lib->param.set_i(p, NGX_PARAM_PERF_QUALITY, (int)quality);
+      lib->param.set_i(p, NGX_PARAM_PERF_QUALITY, (int)NGX_MODE_QUALITY(quality));
       lib->param.set_i(p, NGX_PARAM_RTX_VALUE, 0);
       if (NGX_FAILED(optimal(p)))
          return false;
@@ -325,7 +364,7 @@ bool vulkan_ngx_optimal(vulkan_ngx_t *ngx, unsigned quality,
       ngx->opt_render_dims = VIDEO_SCALE_PACK(rw, rh);
       ngx->opt_min_dims    = VIDEO_SCALE_PACK(mnw, mnh);
       ngx->opt_max_dims    = VIDEO_SCALE_PACK(mxw, mxh);
-      ngx->opt_quality     = quality;
+      ngx->opt_quality     = NGX_MODE_QUALITY(quality);
       ngx->opt_out_dims    = out_dims;
       ngx->opt_valid       = true;
    }
@@ -508,7 +547,8 @@ static bool vulkan_ngx_create_feature(vulkan_ngx_t *ngx,
    lib->param.set_ui(p, NGX_PARAM_HEIGHT, VIDEO_SCALE_H(max_dims));
    lib->param.set_ui(p, NGX_PARAM_OUT_WIDTH, VIDEO_SCALE_W(out_dims));
    lib->param.set_ui(p, NGX_PARAM_OUT_HEIGHT, VIDEO_SCALE_H(out_dims));
-   lib->param.set_i(p, NGX_PARAM_PERF_QUALITY, (int)quality);
+   lib->param.set_i(p, NGX_PARAM_PERF_QUALITY, (int)NGX_MODE_QUALITY(quality));
+   ngx_set_preset(lib, p, quality);
    lib->param.set_i(p, NGX_PARAM_DLSS_CREATE_FLAGS, (int)flags);
    lib->param.set_i(p, NGX_PARAM_DLSS_ENABLE_OUTPUT_SUBRECTS, 0);
    res = lib->vulkan.create_feature1((void*)ngx->device, (void*)cmd,
@@ -529,9 +569,10 @@ static bool vulkan_ngx_create_feature(vulkan_ngx_t *ngx,
    ngx->feature_flags    = flags;
    ngx->feature_quality  = quality;
    ngx->reset_pending    = true;
-   RARCH_LOG("[Vulkan] Temporal Upscaler: DLSS feature up to %ux%u -> %ux%u, flags 0x%x.\n",
+   RARCH_LOG("[Vulkan] Temporal Upscaler: DLSS feature up to %ux%u -> %ux%u (%s%s), flags 0x%x.\n",
          VIDEO_SCALE_W(max_dims), VIDEO_SCALE_H(max_dims),
-         VIDEO_SCALE_W(out_dims), VIDEO_SCALE_H(out_dims), flags);
+         VIDEO_SCALE_W(out_dims), VIDEO_SCALE_H(out_dims),
+         ngx_quality_name(quality), ngx_preset_name(quality), flags);
    return true;
 }
 

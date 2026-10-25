@@ -44,6 +44,18 @@ static void plant_dlss_runtime(const char *dir)
       fclose(f);
 }
 
+/* ...and none there (a run before may have left one) */
+static void clear_dlss_runtime(const char *dir)
+{
+   char path[256];
+#if defined(_WIN32)
+   snprintf(path, sizeof(path), "%s/nvngx_dlss.dll", dir);
+#else
+   snprintf(path, sizeof(path), "%s/libnvidia-ngx-dlss.so.1", dir);
+#endif
+   remove(path);
+}
+
 static int failures;
 
 #define CHECK(cond) \
@@ -376,6 +388,7 @@ int main(void)
     * DLSS directory, the capability set read */
    settings->uints.video_temporal_upscaler = VIDEO_TEMPORAL_UPSCALER_DLSS;
    /* no runtime in the directory: the driver library is never called */
+   clear_dlss_runtime("Zdir");
    CHECK(d3d12_ngx_init(device, "Zdir") == NULL);
    CHECK(rec->init_calls == 0);
    plant_dlss_runtime("Zdir");
@@ -569,6 +582,28 @@ int main(void)
    end_frame();
    d3d12_ngx_frame_done(ngx);
    CHECK(rec->creates == 3 && rec->create[2].quality == NGX_PERF_QUALITY_BALANCED);
+   CHECK(rec->create[2].preset == NGX_DLSS_PRESET_DEFAULT);
+
+   /* The render preset in the mode word: a new feature with the hint set */
+   begin_frame();
+   CHECK(d3d12_ngx_upscale(ngx, cmd, &in, &inputs, (NGX_MODE_PACK(NGX_PERF_QUALITY_BALANCED, NGX_DLSS_PRESET_K)),
+            VIDEO_SCALE_PACK(2560, 1440), &out));
+   end_frame();
+   d3d12_ngx_frame_done(ngx);
+   CHECK(rec->creates == 4 && rec->create[3].quality == NGX_PERF_QUALITY_BALANCED
+         && rec->create[3].preset == NGX_DLSS_PRESET_K);
+   begin_frame();
+   CHECK(d3d12_ngx_upscale(ngx, cmd, &in, &inputs, (NGX_MODE_PACK(NGX_PERF_QUALITY_BALANCED, NGX_DLSS_PRESET_K)),
+            VIDEO_SCALE_PACK(2560, 1440), &out));
+   end_frame();
+   d3d12_ngx_frame_done(ngx);
+   CHECK(rec->creates == 4);
+   begin_frame();
+   CHECK(d3d12_ngx_upscale(ngx, cmd, &in, &inputs, NGX_PERF_QUALITY_BALANCED,
+            VIDEO_SCALE_PACK(2560, 1440), &out));
+   end_frame();
+   d3d12_ngx_frame_done(ngx);
+   CHECK(rec->creates == 5 && rec->create[4].preset == NGX_DLSS_PRESET_DEFAULT);
 
    /* An evaluate that fails: the frame shown as it is, the feature left
     * alone until something new is asked of it */
@@ -589,7 +624,7 @@ int main(void)
             VIDEO_SCALE_PACK(2560, 1440), &out));
    end_frame();
    d3d12_ngx_frame_done(ngx);
-   CHECK(rec->creates == 4);
+   CHECK(rec->creates == 6);
 
    /* A feature that will not create: refused, nothing leaks */
    rec->create_fails = 1;
@@ -604,7 +639,7 @@ int main(void)
    {
       unsigned releases = rec->releases;
       d3d12_ngx_free(ngx);
-      CHECK(rec->releases == releases + 3);  /* the three retired */
+      CHECK(rec->releases == releases + 5);  /* the five retired */
       CHECK(rec->shutdown_calls == 2 && rec->params_destroyed == 2);
       CHECK(rec->shutdown_path0 == 'Z');
    }

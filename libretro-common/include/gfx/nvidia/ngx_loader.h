@@ -100,6 +100,21 @@ enum ngx_perf_quality
    NGX_PERF_QUALITY_DLAA
 };
 
+/* NVSDK_NGX_DLSS_Hint_Render_Preset: the ones an application picks
+ * (the others are deprecated or revert to the default) */
+enum ngx_dlss_render_preset
+{
+   NGX_DLSS_PRESET_DEFAULT = 0,
+   NGX_DLSS_PRESET_J       = 10,   /* transformer: less ghosting, some flicker */
+   NGX_DLSS_PRESET_K       = 11    /* transformer: the default of DLAA, Quality, Balanced */
+};
+
+/* A mode as the frontend passes it, one word: the quality (an
+ * ngx_perf_quality) and the render preset */
+#define NGX_MODE_PACK(quality, preset) ((unsigned)(quality) | ((unsigned)(preset) << 8))
+#define NGX_MODE_QUALITY(mode)         ((mode) & 0xffu)
+#define NGX_MODE_PRESET(mode)          ((mode) >> 8)
+
 /* NVSDK_NGX_DLSS_Feature_Flags */
 #define NGX_DLSS_FLAG_IS_HDR          (1 << 0)
 #define NGX_DLSS_FLAG_MV_LOW_RES      (1 << 1)
@@ -139,6 +154,13 @@ enum ngx_perf_quality
 #define NGX_PARAM_TRANSPARENCY_MASK "TransparencyMask"
 #define NGX_PARAM_EXPOSURE_TEXTURE  "ExposureTexture"
 #define NGX_PARAM_DLSS_CREATE_FLAGS "DLSS.Feature.Create.Flags"
+/* The render preset a mode uses (ngx_dlss_render_preset), one hint a mode */
+#define NGX_PARAM_DLSS_PRESET_DLAA        "DLSS.Hint.Render.Preset.DLAA"
+#define NGX_PARAM_DLSS_PRESET_QUALITY     "DLSS.Hint.Render.Preset.Quality"
+#define NGX_PARAM_DLSS_PRESET_BALANCED    "DLSS.Hint.Render.Preset.Balanced"
+#define NGX_PARAM_DLSS_PRESET_PERFORMANCE "DLSS.Hint.Render.Preset.Performance"
+#define NGX_PARAM_DLSS_PRESET_ULTRA_PERFORMANCE "DLSS.Hint.Render.Preset.UltraPerformance"
+#define NGX_PARAM_DLSS_PRESET_ULTRA_QUALITY "DLSS.Hint.Render.Preset.UltraQuality"
 #define NGX_PARAM_FRAME_TIME_DELTA_MS "FrameTimeDeltaInMsec"
 #define NGX_PARAM_DLSS_ENABLE_OUTPUT_SUBRECTS "DLSS.Enable.Output.Subrects"
 #define NGX_PARAM_DLSS_RENDER_SUBRECT_WIDTH  "DLSS.Render.Subrect.Dimensions.Width"

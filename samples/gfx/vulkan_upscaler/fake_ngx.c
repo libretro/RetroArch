@@ -247,6 +247,7 @@ EXPORT int CONV NVSDK_NGX_VULKAN_CreateFeature1(void *dev, void *cmd, int featur
    c->quality    = get_i(p, "PerfQualityValue");
    c->flags      = get_i(p, "DLSS.Feature.Create.Flags");
    c->node_mask  = get_ui(p, "CreationNodeMask") | (get_ui(p, "VisibilityNodeMask") << 8);
+   c->preset     = get_ui(p, "DLSS.Hint.Render.Preset.Quality");
    rec.creates++;
    handles[features_made % 8] = (int)(features_made + 1);
    *out = &handles[features_made % 8];

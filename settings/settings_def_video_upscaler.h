@@ -17,6 +17,11 @@ S_UINT(video_temporal_upscaler_quality, VIDEO_TEMPORAL_UPSCALER_QUALITY,
       DEFAULT_VIDEO_TEMPORAL_UPSCALER_QUALITY, SD_FLAG_NONE, SDESC_RANGE_MINMAX, CMD_EVENT_NONE, 0, 5, 1, 0, setting_action_ok_uint, setting_get_string_representation_uint_video_temporal_upscaler_quality,
       "Temporal Upscaler Quality",
       "The upscaler's mode: how much smaller than the screen the core renders. Quality renders at 2/3 of the output size, Balanced at 58%, Performance at 1/2, Ultra Performance at 1/3; Native keeps the output size and only anti-aliases (DLAA). Auto picks Quality, or Balanced above 1440 lines. The core is told the size each frame.")
+S_UINT(video_temporal_upscaler_preset, VIDEO_TEMPORAL_UPSCALER_PRESET,
+      "video_temporal_upscaler_preset",
+      DEFAULT_VIDEO_TEMPORAL_UPSCALER_PRESET, SD_FLAG_NONE, SDESC_RANGE_MINMAX, CMD_EVENT_NONE, 0, 2, 1, 0, setting_action_ok_uint, setting_get_string_representation_uint_video_temporal_upscaler_preset,
+      "Temporal Upscaler Preset",
+      "The DLSS model the upscaler runs. Default lets the runtime pick (its transformer model for Native, Quality and Balanced). Preset K is that transformer model in every mode: the best image at a higher GPU cost. Preset J is its sibling with slightly less ghosting and some more flicker. Takes effect on the next frame.")
 /* config key "video_dlss_directory" is a path; the configuration.c row
  * stays literal for this setting. */
 #ifndef SETTINGS_DEF_CONFIG_PASS

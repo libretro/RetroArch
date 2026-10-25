@@ -26,6 +26,7 @@ typedef struct fake_ngx_create
    int quality;
    int flags;
    unsigned node_mask;
+   unsigned preset;   /* the Quality mode's render preset hint */
 } fake_ngx_create_t;
 
 typedef struct fake_ngx_eval
