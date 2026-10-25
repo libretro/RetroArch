@@ -34,6 +34,9 @@
 
 #ifdef HAVE_OPENGL
 #include "../common/gl2_common.h"
+#if defined(HAVE_OPENGLES) && !defined(CGGL_NO_OPENGL)
+#define CGGL_NO_OPENGL
+#endif
 #include "../include/Cg/cgGL.h"
 #endif
 

@@ -1107,6 +1107,12 @@ platform_video "vulkan shader back end" "$GFXDEFS -DHAVE_VULKAN" "" \
    gfx/drivers_shader/shader_vulkan.c "$VK_H"
 check "cg shader back end" "$GFXDEFS -DHAVE_CG -DHAVE_OPENGL" \
    gfx/drivers_shader/shader_gl_cg.c
+for api in OPENGLES2 OPENGLES3; do
+   defs="$GFXDEFS -DHAVE_CG -DHAVE_OPENGL -DHAVE_OPENGLES -DHAVE_$api"
+   check "cg shader back end: $api" "$defs" gfx/drivers_shader/shader_gl_cg.c
+   d3d_video "cg shader back end: $api mingw" "$defs -Igfx/include/ANGLE" \
+      gfx/drivers_shader/shader_gl_cg.c
+done
 check "framebuffer back ends" "$GFXDEFS" \
    gfx/drivers/fpga_gfx.c gfx/drivers/hub75_gfx.c gfx/drivers/sunxi_gfx.c
 X11_H=/usr/include/X11/Xlib.h
