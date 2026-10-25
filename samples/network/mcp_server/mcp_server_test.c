@@ -60,8 +60,10 @@ static void check(const char *what, bool ok)
 static command_t *later_cmd;
 static void      *later_dest;
 
+/* how many times PING ran */
+static unsigned pings = 0;
 static bool act_ping(command_t *cmd, const char *arg)
-{ (void)arg; cmd->replier(cmd, "PONG\n", 5); return true; }
+{ (void)arg; pings++; cmd->replier(cmd, "PONG\n", 5); return true; }
 /* a path with an accent, then a character cut short, as a log line
  * truncated mid-character ends */
 #define MOJI_TEXT "caf\xC3\xA9 \xE6\x97\n"
@@ -436,6 +438,10 @@ bool command_event(enum event_command action, void *data)
       quits++;
    return true;
 }
+
+/* set where the test plays achievements in hardcore mode */
+static const char *test_refused = NULL;
+const char *command_tools_refused(void) { return test_refused; }
 
 bool command_run(command_t *handle, const char *name, const char *arg)
 {
@@ -962,6 +968,21 @@ int main(void)
    st = post(cmd, PORT_OPEN, NULL, call("PING", NULL), out, sizeof(out), NULL);
    check("a reply is the result",
          st == 200 && strstr(out, "PONG") && strstr(out, "\"isError\":false"));
+   /* achievements in hardcore mode: no tool runs, and the client is
+    * told why as the tool's own failure; the list still answers */
+   test_refused = "achievements hardcore mode is on";
+   pings = 0;
+   st = post(cmd, PORT_OPEN, NULL, call("PING", NULL), out, sizeof(out), NULL);
+   check("in hardcore mode a tool call is refused, as the tool's failure",
+         st == 200 && json_valid(body_of(out)) && pings == 0
+         && strstr(out, "PING ERROR achievements hardcore mode is on")
+         && strstr(out, "\"isError\":true") && !strstr(out, "\"error\""));
+   st = post(cmd, PORT_OPEN, NULL,
+         "{\"jsonrpc\":\"2.0\",\"id\":9,\"method\":\"tools/list\"}",
+         out, sizeof(out), NULL);
+   check("and the tool list still answers", st == 200
+         && strstr(out, "\"name\":\"PING\""));
+   test_refused = NULL;
    st = post(cmd, PORT_OPEN, NULL, call("FAIL", NULL), out, sizeof(out), NULL);
    check("a command that fails is an error",
          st == 200 && strstr(out, "\"isError\":true"));
