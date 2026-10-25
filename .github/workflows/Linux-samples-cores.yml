@@ -42,7 +42,7 @@ jobs:
     name: Build and run samples/cores
     runs-on: ubuntu-latest
     env:
-      APT_PKGS: build-essential pkg-config ffmpeg libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev libv4l-dev libasound2-dev ccache libavdevice-dev libavfilter-dev libpipewire-0.3-dev
+      APT_PKGS: build-essential pkg-config ffmpeg libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev libv4l-dev libasound2-dev ccache libavdevice-dev libavfilter-dev libpipewire-0.3-dev mesa-vulkan-drivers
     timeout-minutes: 25
 
     steps:
@@ -70,6 +70,18 @@ jobs:
         with:
           path: ~/.apt-cache
           key: ${{ steps.apt.outputs.key }}
+
+      - name: Select software Vulkan for CPU fixtures
+        run: |
+          set -eu
+          for icd in /usr/share/vulkan/icd.d/lvp_icd*.json; do
+            if [ -f "$icd" ]; then
+              printf 'VK_ICD_FILENAMES=%s\n' "$icd" >> "$GITHUB_ENV"
+              exit 0
+            fi
+          done
+          echo "Lavapipe ICD is missing" >&2
+          exit 1
 
       - name: Link with lld
         run: sh .github/workflows/scripts/use-lld.sh
