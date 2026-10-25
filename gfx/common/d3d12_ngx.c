@@ -169,7 +169,7 @@ d3d12_ngx_t *d3d12_ngx_init(ID3D12Device *device, const char *dlss_dir)
 }
 
 /* The mode's name for the log: the quality, and the preset when one is asked for */
-static const char *ngx_quality_name(unsigned mode)
+static const char *d3d12_ngx_quality_name(unsigned mode)
 {
    switch (NGX_MODE_QUALITY(mode))
    {
@@ -184,7 +184,7 @@ static const char *ngx_quality_name(unsigned mode)
    return "?";
 }
 
-static const char *ngx_preset_name(unsigned mode)
+static const char *d3d12_ngx_preset_name(unsigned mode)
 {
    switch (NGX_MODE_PRESET(mode))
    {
@@ -196,7 +196,7 @@ static const char *ngx_preset_name(unsigned mode)
 }
 
 /* The render preset hints, one a quality: the one asked for, or the library's default */
-static void ngx_set_preset(const ngx_lib_t *lib, ngx_parameter_t *p, unsigned mode)
+static void d3d12_ngx_set_preset(const ngx_lib_t *lib, ngx_parameter_t *p, unsigned mode)
 {
    const unsigned preset = NGX_MODE_PRESET(mode);
    lib->param.set_ui(p, NGX_PARAM_DLSS_PRESET_DLAA, preset);
@@ -361,7 +361,7 @@ static bool d3d12_ngx_create_feature(d3d12_ngx_t *ngx,
    lib->param.set_ui(p, NGX_PARAM_OUT_WIDTH, VIDEO_SCALE_W(out_dims));
    lib->param.set_ui(p, NGX_PARAM_OUT_HEIGHT, VIDEO_SCALE_H(out_dims));
    lib->param.set_i(p, NGX_PARAM_PERF_QUALITY, (int)NGX_MODE_QUALITY(quality));
-   ngx_set_preset(lib, p, quality);
+   d3d12_ngx_set_preset(lib, p, quality);
    lib->param.set_i(p, NGX_PARAM_DLSS_CREATE_FLAGS, (int)flags);
    lib->param.set_i(p, NGX_PARAM_DLSS_ENABLE_OUTPUT_SUBRECTS, 0);
    res = lib->d3d12.create_feature((void*)cmd, NGX_FEATURE_SUPER_SAMPLING,
@@ -385,7 +385,7 @@ static bool d3d12_ngx_create_feature(d3d12_ngx_t *ngx,
    RARCH_LOG("[D3D12] Temporal Upscaler: DLSS feature up to %ux%u -> %ux%u (%s%s), flags 0x%x.\n",
          VIDEO_SCALE_W(max_dims), VIDEO_SCALE_H(max_dims),
          VIDEO_SCALE_W(out_dims), VIDEO_SCALE_H(out_dims),
-         ngx_quality_name(quality), ngx_preset_name(quality), flags);
+         d3d12_ngx_quality_name(quality), d3d12_ngx_preset_name(quality), flags);
    return true;
 }
 
