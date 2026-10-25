@@ -36,7 +36,11 @@ void retro_set_environment(retro_environment_t cb)
    desc[1].select=0; desc[1].addrspace="ram";
    desc[1].flags=RETRO_MEMDESC_SYSTEM_RAM;
    map.descriptors=desc; map.num_descriptors=2;
+   /* built with HARNESS_NO_MAP, it publishes no map, as snes9x does, and
+    * hands its RAM over through retro_get_memory_data alone */
+#ifndef HARNESS_NO_MAP
    cb(RETRO_ENVIRONMENT_SET_MEMORY_MAPS,&map);
+#endif
 }
 void retro_set_video_refresh(retro_video_refresh_t cb) { video=cb; }
 void retro_set_audio_sample(retro_audio_sample_t cb) { (void)cb; }
@@ -85,5 +89,10 @@ bool retro_load_game(const struct retro_game_info *g) { (void)g;return true; }
 bool retro_load_game_special(unsigned t,const struct retro_game_info *g,size_t n) { (void)t;(void)g;(void)n;return false; }
 void retro_unload_game(void) { }
 unsigned retro_get_region(void) { return RETRO_REGION_NTSC; }
+#ifdef HARNESS_NO_MAP
+void *retro_get_memory_data(unsigned id) { return id==RETRO_MEMORY_SYSTEM_RAM?(void*)ram:id==RETRO_MEMORY_SAVE_RAM?(void*)ram2:NULL; }
+size_t retro_get_memory_size(unsigned id) { return id==RETRO_MEMORY_SYSTEM_RAM?sizeof(ram):id==RETRO_MEMORY_SAVE_RAM?sizeof(ram2):0; }
+#else
 void *retro_get_memory_data(unsigned id) { return id==RETRO_MEMORY_SYSTEM_RAM?&frame:NULL; }
 size_t retro_get_memory_size(unsigned id) { return id==RETRO_MEMORY_SYSTEM_RAM?sizeof(frame):0; }
+#endif

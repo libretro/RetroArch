@@ -7,11 +7,15 @@ notifications/message, and quitting when stdin closes.
 The harness core, from samples/network/command_frames, maps memory, which
 the tools that read it need.
 
+The same core built with HARNESS_NO_MAP publishes no memory map and hands
+its RAM over through retro_get_memory_data alone, as snes9x does.
+
 Usage: stdio_e2e.py <retroarch> <video_views_libretro.so> <harness_core.so>
+                    <harness_core_nomap.so>
 """
 import base64, json, os, shutil, subprocess, sys, tempfile, time, select
 
-ra, core, mem_core = sys.argv[1], sys.argv[2], sys.argv[3]
+ra, core, mem_core, nomap_core = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
 cfgdir = tempfile.mkdtemp()
 cfg = os.path.join(cfgdir, 'retroarch.cfg')
 # a cores directory for LIST_CORES, and a playlist for the playlist tools
@@ -176,9 +180,9 @@ check('the rows commands declare an outputSchema: %d' % len(schemas),
       and 'GET_PLAYLIST' in schemas)
 # What a model is handed of each tool is its name, description and
 # input schema: that is context a client pays for before it does
-# anything, 11959 bytes at 30 tools, held under 15000. Titles,
+# anything, 12055 bytes at 30 tools, held under 15000. Titles,
 # annotations and output schemas are for the client and cost the model
-# nothing, so the whole list has a looser ceiling, 25000 (21748 now),
+# nothing, so the whole list has a looser ceiling, 25000 (21844 now),
 # and the 1800 on each tool catches prose an average would not.
 seen = sum(len(json.dumps({'name': t['name'],
                            'description': t.get('description', ''),
@@ -606,6 +610,29 @@ msg, t, _ = call(278, 'RUN_UNTIL', {'address': '1007', 'condition': '!=',
 sc = msg and msg['result'].get('structuredContent') or {}
 check('RUN_UNTIL waits on a byte: %s' % sc,
       'met' in sc and sc.get('value', 0) != 0)
+
+# A core with no memory map: its RAM, as it hands it over - system RAM
+# from 0, save RAM straight after - is what every memory tool reads.
+msg, t, _ = call(279, 'LOAD_CONTENT', {'core': nomap_core, 'content': rom,
+                                       'paused': 'on'})
+msg, t, _ = call(280, 'GET_MEMORY_MAP', {})
+rows = (msg and msg['result'].get('structuredContent') or {}).get('rows', [])
+check('a core with no map lists the RAM it hands over: %s'
+      % [(r['start'], r['length'], r['kind'], r['space']) for r in rows],
+      [(r['start'], r['length'], r['kind'], r['space']) for r in rows]
+      == [('0', '10', 'system', 'core'), ('10', '10', 'save', 'core')])
+msg, t, _ = call(281, 'READ_CORE_MEMORY', {'address': 'e', 'bytes': 4})
+sc = msg and msg['result'].get('structuredContent') or {}
+check('and reads it, across into save RAM: %s' % sc,
+      sc == {'address': 'e', 'bytes': '0E 0F 10 11'})
+msg, t, _ = call(282, 'WATCH', {'watches': 'f 7'})
+check('WATCH watches it: ' + (t or '').strip().replace('\n', ' | '),
+      msg and not msg['result']['isError'])
+msg, t, _ = call(283, 'RUN_UNTIL', {'address': '7', 'condition': '!=',
+                                    'value': 7})
+sc = msg and msg['result'].get('structuredContent') or {}
+check('and a condition waits on it: %s' % sc, 'met' in sc)
+call(284, 'WATCH', {'watches': 'f off'})
 
 missing = sorted(set(out_schemas) - schema_checked)
 check('every tool with an outputSchema was checked: %s' % (missing or 'all'),
