@@ -35,6 +35,7 @@ if [ $# -lt 3 ]; then
    exit 2
 fi
 ra=$1
+[ -f "$ra" ] || { echo "$ra: no such RetroArch" >&2; exit 2; }
 shaders=$(cd "$2" && pwd)
 shift 2
 list="$here/out/presets.txt"

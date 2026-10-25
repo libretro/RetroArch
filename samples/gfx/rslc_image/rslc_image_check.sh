@@ -87,6 +87,12 @@ here=$(cd "$(dirname "$0")" && pwd)
 core="$here/pattern_core.$ext"
 out="$here/out"
 [ -f "$core" ] || { echo "build $core first (make)" >&2; exit 2; }
+# a RetroArch that is missing, or that Windows cannot start (a DLL not
+# found beside it or on PATH), would fail every preset with no log
+for b in "$ra" "$ra_rslc"; do
+   $runner "$b" --version > /dev/null 2>&1 \
+      || { echo "$b does not start (missing, or a DLL it needs is not found)" >&2; exit 2; }
+done
 mkdir -p "$out"
 
 capture() {

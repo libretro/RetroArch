@@ -1218,17 +1218,19 @@ static bool glslang_parse_meta(const struct shader_line_buf *lines,
 
 /* Auto per driver.  Vulkan and glcore have met their gate (the whole
  * corpus with zero reflection diffs, every non-bezel preset of
- * slang-shaders pixel-identical to glslang+Cross on both), so a caller
- * that wants no text (vulkan) or GLSL text (glcore) gets rslc; d3d and
- * metal, which ask for HLSL or MSL, stay with glslang until the fxc and
- * xcrun runs of the same gate are in. */
+ * slang-shaders pixel-identical to glslang+Cross on both), and so have
+ * d3d11 and d3d12 through Microsoft's d3dcompiler_47 (every non-bezel
+ * preset the same picture, or within the last bit where D3DCompile
+ * orders the float math of the two texts differently), so a caller
+ * that wants no text, GLSL or HLSL gets rslc; metal, which asks for
+ * MSL, stays with glslang until the xcrun run of the same gate is in. */
 static bool slang_prefer_rslc(const struct slang_text_target *text)
 {
    const settings_t *settings = config_get_ptr();
    unsigned choice            = settings
       ? settings->uints.video_shader_compiler : SLANG_COMPILER_AUTO;
    if (choice == SLANG_COMPILER_AUTO)
-      return !text || (!text->hlsl && !text->msl);
+      return !text || !text->msl;
    return choice == SLANG_COMPILER_RSLC;
 }
 #endif
