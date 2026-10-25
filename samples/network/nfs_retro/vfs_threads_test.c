@@ -181,6 +181,25 @@ int main(int argc, char **argv)
             failures++;
          }
       }
+      /* a read-only open asking to be mapped, as the archive layer's
+       * does: a network stream has no descriptor to map, so it must still
+       * open, seek and read through its own backend */
+      {
+         RFILE *mf = filestream_open(url_file, RETRO_VFS_FILE_ACCESS_READ,
+               RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS);
+         uint8_t buf2[16];
+         if (     !mf
+               || filestream_get_size(mf) <= 0
+               || filestream_seek(mf, 100, RETRO_VFS_SEEK_POSITION_START) != 0
+               || filestream_read(mf, buf2, sizeof(buf2)) != (int64_t)sizeof(buf2)
+               || buf2[0] != 0x5a)
+         {
+            fprintf(stderr, "FAIL: open asking for a mapping\n");
+            failures++;
+         }
+         if (mf)
+            filestream_close(mf);
+      }
       nfs_shutdown();
    }
    if (failures)

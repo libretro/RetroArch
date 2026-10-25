@@ -7,6 +7,9 @@ SRC = nfs_test.c $(COMMON)/net/net_nfs3.c $(COMMON)/net/net_socket.c $(COMMON)/n
       $(COMMON)/string/stdstring.c $(COMMON)/encodings/encoding_utf.c
 ifneq (,$(findstring mingw,$(CC))$(findstring MINGW,$(MSYSTEM))$(findstring Windows,$(OS)))
    LDLIBS += -lws2_32 -liphlpapi
+else
+   # file mapping as the shipping build has it (Win32 maps without it)
+   MMAP_FLAGS = -DHAVE_MMAP
 endif
 all: nfs_test nfs_sparse_test nfs_idle_test vfs_test vfs_threads_test
 
@@ -27,7 +30,7 @@ vfs_test: $(VFS_SRC)
 	$(CC) $(CPPFLAGS) -DHAVE_NFSCLIENT -I$(ROOT) $(CFLAGS) $(VFS_SRC) $(LDLIBS) -o $@
 THR_SRC = vfs_threads_test.c $(filter-out vfs_test.c,$(VFS_SRC)) $(COMMON)/rthreads/rthreads.c $(COMMON)/rthreads/retro_eventcount.c
 vfs_threads_test: $(THR_SRC)
-	$(CC) $(CPPFLAGS) -DHAVE_NFSCLIENT -DHAVE_THREADS -I$(ROOT) $(CFLAGS) $(THR_SRC) $(LDLIBS) -lpthread -o $@
+	$(CC) $(CPPFLAGS) -DHAVE_NFSCLIENT -DHAVE_THREADS $(MMAP_FLAGS) -I$(ROOT) $(CFLAGS) $(THR_SRC) $(LDLIBS) -lpthread -o $@
 clean:
 	rm -f nfs_test nfs_test.exe nfs_sparse_test nfs_sparse_test.exe nfs_idle_test nfs_idle_test.exe vfs_test vfs_test.exe vfs_threads_test vfs_threads_test.exe
 .PHONY: all clean

@@ -775,7 +775,17 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
       stream->orig_path = strdup(path);
 
 #ifdef VFS_HAVE_FILE_MAPPING
-   if (stream->hints & RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS && mode == RETRO_VFS_FILE_ACCESS_READ)
+   /* Only a descriptor can be mapped: plain files, and SAF, which the
+    * descriptor branch opens. cdrom://, smb:// and nfs:// streams are
+    * opened by their own backends in the buffered branch and read
+    * through them, unmapped. */
+   if (     (stream->hints & RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS)
+         && mode == RETRO_VFS_FILE_ACCESS_READ
+         && (     stream->scheme == VFS_SCHEME_NONE
+#if defined(ANDROID) && defined(HAVE_SAF)
+               || stream->scheme == VFS_SCHEME_SAF
+#endif
+            ))
       stream->hints |= RFILE_HINT_UNBUFFERED;
    else
 #endif
