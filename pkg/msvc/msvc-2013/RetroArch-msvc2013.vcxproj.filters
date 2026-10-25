@@ -21,7 +21,7 @@
     <ClCompile Include="..\..\..\griffin\griffin_cpp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\griffin\griffin_glslang.cpp">
+    <ClCompile Include="..\..\..\griffin\griffin_rslc.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -3,6 +3,5 @@
   <ItemGroup>
     <ClCompile Include="..\..\..\..\griffin\griffin.c" />
     <ClCompile Include="..\..\..\..\griffin\griffin_cpp.cpp" />
-    <ClCompile Include="..\..\..\..\griffin\griffin_glslang.cpp" />
   </ItemGroup>
 </Project>

@@ -46,7 +46,7 @@
     <ClCompile Include="..\..\..\uwp\uwp_main.cpp">
       <Filter>uwp</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\griffin\griffin_glslang.cpp">
+    <ClCompile Include="..\..\..\griffin\griffin_rslc.c">
       <Filter>griffin</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\libretro-common\vfs\vfs_implementation_uwp.cpp">

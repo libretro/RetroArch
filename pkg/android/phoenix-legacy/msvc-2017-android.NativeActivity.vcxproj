@@ -55,16 +55,6 @@
       <CppLanguageStandard Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">c++11</CppLanguageStandard>
       <CppLanguageStandard Condition="'$(Configuration)|$(Platform)'=='Release|x64'">c++11</CppLanguageStandard>
     </ClCompile>
-    <ClCompile Include="..\..\..\griffin\griffin_glslang.cpp">
-      <CppLanguageStandard Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">c++11</CppLanguageStandard>
-      <CppLanguageStandard Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">c++11</CppLanguageStandard>
-      <CppLanguageStandard Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">c++11</CppLanguageStandard>
-      <CppLanguageStandard Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">c++11</CppLanguageStandard>
-      <CppLanguageStandard Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">c++11</CppLanguageStandard>
-      <CppLanguageStandard Condition="'$(Configuration)|$(Platform)'=='Release|x86'">c++11</CppLanguageStandard>
-      <CppLanguageStandard Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">c++11</CppLanguageStandard>
-      <CppLanguageStandard Condition="'$(Configuration)|$(Platform)'=='Release|x64'">c++11</CppLanguageStandard>
-    </ClCompile>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{e27d73ec-6148-4817-b75c-adaa0c563939}</ProjectGuid>
@@ -175,7 +165,7 @@
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <CompileAs>CompileAsCpp</CompileAs>
-      <AdditionalIncludeDirectories>$(SolutionDir)\..\..\..\libretro-common\include;$(SolutionDir)\..\..\..\deps;$(SolutionDir)\..\..\..\deps\stb;$(SolutionDir)\..\..\..\deps\7zip;$(SolutionDir)\..\..\..\gfx\include;$(SolutionDir)\..\..\..\deps\glslang;$(SolutionDir)\..\..\..\deps\glslang\glslang\Public;$(SolutionDir)\..\..\..\deps\glslang\glslang\MachineIndependent;$(SolutionDir)\..\..\..\deps\glslang\glslang\SPIRV;$(SolutionDir)\..\..\..\deps\SPIRV-Cross;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\..\..\..\libretro-common\include;$(SolutionDir)\..\..\..\deps;$(SolutionDir)\..\..\..\deps\stb;$(SolutionDir)\..\..\..\deps\7zip;$(SolutionDir)\..\..\..\gfx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>HAVE_OPENGLES2;RARCH_MOBILE;HAVE_GRIFFIN;HAVE_RVORBIS;HAVE_LANGEXTRA;ANDROID;HAVE_DYNAMIC;HAVE_OPENGL;HAVE_OVERLAY;HAVE_OPENGLES;HAVE_DYLIB;HAVE_EGL;HAVE_GLSL;HAVE_MENU;HAVE_CONFIGFILE;HAVE_RGUI;HAVE_RPNG;HAVE_RWEBP;HAVE_RDDS;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;INLINE=inline;HAVE_THREADS;__LIBRETRO__;HAVE_RSOUND;HAVE_NETWORKGAMEPAD;HAVE_NETWORKING;HAVE_IFINFO;RARCH_INTERNAL;HAVE_FILTERS_BUILTIN;HAVE_MATERIALUI;HAVE_XMB;HAVE_SHADERPIPELINE;HAVE_LIBRETRODB;HAVE_STB_FONT;HAVE_UPDATE_ASSETS;HAVE_CC_RESAMPLER;HAVE_KEYMAPPER;HAVE_RFLAC;HAVE_DR_FLAC;HAVE_DR_MP3;HAVE_CHD;HAVE_RCHD;HAVE_RZSTD;HAVE_RUNAHEAD;WANT_IFADDRS;HAVE_7ZIP;HAVE_CHEEVOS;HAVE_SL;__STDC_LIMIT_MACROS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ExceptionHandling>Enabled</ExceptionHandling>
     </ClCompile>
@@ -187,7 +177,7 @@
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <CompileAs>CompileAsCpp</CompileAs>
-      <AdditionalIncludeDirectories>$(SolutionDir)\..\..\..\libretro-common\include;$(SolutionDir)\..\..\..\deps;$(SolutionDir)\..\..\..\deps\stb;$(SolutionDir)\..\..\..\deps\7zip;$(SolutionDir)\..\..\..\gfx\include;$(SolutionDir)\..\..\..\deps\glslang;$(SolutionDir)\..\..\..\deps\glslang\glslang\Public;$(SolutionDir)\..\..\..\deps\glslang\glslang\MachineIndependent;$(SolutionDir)\..\..\..\deps\glslang\glslang\SPIRV;$(SolutionDir)\..\..\..\deps\SPIRV-Cross;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\..\..\..\libretro-common\include;$(SolutionDir)\..\..\..\deps;$(SolutionDir)\..\..\..\deps\stb;$(SolutionDir)\..\..\..\deps\7zip;$(SolutionDir)\..\..\..\gfx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>HAVE_OPENGLES2;RARCH_MOBILE;HAVE_GRIFFIN;HAVE_RVORBIS;HAVE_LANGEXTRA;ANDROID;HAVE_DYNAMIC;HAVE_OPENGL;HAVE_OVERLAY;HAVE_OPENGLES;HAVE_DYLIB;HAVE_EGL;HAVE_GLSL;HAVE_MENU;HAVE_RGUI;HAVE_RPNG;HAVE_RWEBP;HAVE_RDDS;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;INLINE=inline;HAVE_THREADS;__LIBRETRO__;HAVE_RSOUND;HAVE_NETWORKGAMEPAD;HAVE_NETWORKING;HAVE_IFINFO;RARCH_INTERNAL;HAVE_FILTERS_BUILTIN;HAVE_MATERIALUI;HAVE_XMB;HAVE_SHADERPIPELINE;HAVE_LIBRETRODB;HAVE_STB_FONT;HAVE_UPDATE_ASSETS;HAVE_CC_RESAMPLER;HAVE_KEYMAPPER;HAVE_RFLAC;HAVE_DR_FLAC;HAVE_DR_MP3;HAVE_CHD;HAVE_RCHD;HAVE_RZSTD;HAVE_RUNAHEAD;WANT_IFADDRS;HAVE_7ZIP;HAVE_CHEEVOS;HAVE_SL;__STDC_LIMIT_MACROS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ExceptionHandling>Enabled</ExceptionHandling>
     </ClCompile>
@@ -199,7 +189,7 @@
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <CompileAs>CompileAsCpp</CompileAs>
-      <AdditionalIncludeDirectories>$(SolutionDir)\..\..\..\libretro-common\include;$(SolutionDir)\..\..\..\deps;$(SolutionDir)\..\..\..\deps\stb;$(SolutionDir)\..\..\..\deps\7zip;$(SolutionDir)\..\..\..\gfx\include;$(SolutionDir)\..\..\..\deps\glslang;$(SolutionDir)\..\..\..\deps\glslang\glslang\Public;$(SolutionDir)\..\..\..\deps\glslang\glslang\MachineIndependent;$(SolutionDir)\..\..\..\deps\glslang\glslang\SPIRV;$(SolutionDir)\..\..\..\deps\SPIRV-Cross;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\..\..\..\libretro-common\include;$(SolutionDir)\..\..\..\deps;$(SolutionDir)\..\..\..\deps\stb;$(SolutionDir)\..\..\..\deps\7zip;$(SolutionDir)\..\..\..\gfx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>HAVE_OPENGLES2;RARCH_MOBILE;HAVE_GRIFFIN;HAVE_RVORBIS;HAVE_LANGEXTRA;ANDROID;HAVE_DYNAMIC;HAVE_OPENGL;HAVE_OVERLAY;HAVE_OPENGLES;HAVE_DYLIB;HAVE_EGL;HAVE_GLSL;HAVE_MENU;HAVE_RGUI;HAVE_RPNG;HAVE_RWEBP;HAVE_RDDS;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;INLINE=inline;HAVE_THREADS;__LIBRETRO__;HAVE_RSOUND;HAVE_NETWORKGAMEPAD;HAVE_NETWORKING;HAVE_IFINFO;RARCH_INTERNAL;HAVE_FILTERS_BUILTIN;HAVE_MATERIALUI;HAVE_XMB;HAVE_SHADERPIPELINE;HAVE_LIBRETRODB;HAVE_STB_FONT;HAVE_UPDATE_ASSETS;HAVE_CC_RESAMPLER;HAVE_KEYMAPPER;HAVE_RFLAC;HAVE_DR_FLAC;HAVE_DR_MP3;HAVE_CHD;HAVE_RCHD;HAVE_RZSTD;HAVE_RUNAHEAD;WANT_IFADDRS;HAVE_7ZIP;HAVE_CHEEVOS;HAVE_SL;__STDC_LIMIT_MACROS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ExceptionHandling>Enabled</ExceptionHandling>
     </ClCompile>
@@ -211,7 +201,7 @@
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <CompileAs>CompileAsCpp</CompileAs>
-      <AdditionalIncludeDirectories>$(SolutionDir)\..\..\..\libretro-common\include;$(SolutionDir)\..\..\..\deps;$(SolutionDir)\..\..\..\deps\stb;$(SolutionDir)\..\..\..\deps\7zip;$(SolutionDir)\..\..\..\gfx\include;$(SolutionDir)\..\..\..\deps\glslang;$(SolutionDir)\..\..\..\deps\glslang\glslang\Public;$(SolutionDir)\..\..\..\deps\glslang\glslang\MachineIndependent;$(SolutionDir)\..\..\..\deps\glslang\glslang\SPIRV;$(SolutionDir)\..\..\..\deps\SPIRV-Cross;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\..\..\..\libretro-common\include;$(SolutionDir)\..\..\..\deps;$(SolutionDir)\..\..\..\deps\stb;$(SolutionDir)\..\..\..\deps\7zip;$(SolutionDir)\..\..\..\gfx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>HAVE_OPENGLES2;RARCH_MOBILE;HAVE_GRIFFIN;HAVE_RVORBIS;HAVE_LANGEXTRA;ANDROID;HAVE_DYNAMIC;HAVE_OPENGL;HAVE_OVERLAY;HAVE_OPENGLES;HAVE_DYLIB;HAVE_EGL;HAVE_GLSL;HAVE_MENU;HAVE_RGUI;HAVE_RPNG;HAVE_RWEBP;HAVE_RDDS;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;INLINE=inline;HAVE_THREADS;__LIBRETRO__;HAVE_RSOUND;HAVE_NETWORKGAMEPAD;HAVE_NETWORKING;HAVE_IFINFO;RARCH_INTERNAL;HAVE_FILTERS_BUILTIN;HAVE_MATERIALUI;HAVE_XMB;HAVE_SHADERPIPELINE;HAVE_LIBRETRODB;HAVE_STB_FONT;HAVE_UPDATE_ASSETS;HAVE_CC_RESAMPLER;HAVE_KEYMAPPER;HAVE_RFLAC;HAVE_DR_FLAC;HAVE_DR_MP3;HAVE_CHD;HAVE_RCHD;HAVE_RZSTD;HAVE_RUNAHEAD;WANT_IFADDRS;HAVE_7ZIP;HAVE_CHEEVOS;HAVE_SL;__STDC_LIMIT_MACROS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ExceptionHandling>Enabled</ExceptionHandling>
     </ClCompile>
@@ -223,7 +213,7 @@
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <CompileAs>CompileAsCpp</CompileAs>
-      <AdditionalIncludeDirectories>$(SolutionDir)\..\..\..\libretro-common\include;$(SolutionDir)\..\..\..\deps;$(SolutionDir)\..\..\..\deps\stb;$(SolutionDir)\..\..\..\deps\7zip;$(SolutionDir)\..\..\..\gfx\include;$(SolutionDir)\..\..\..\deps\glslang;$(SolutionDir)\..\..\..\deps\glslang\glslang\Public;$(SolutionDir)\..\..\..\deps\glslang\glslang\MachineIndependent;$(SolutionDir)\..\..\..\deps\glslang\glslang\SPIRV;$(SolutionDir)\..\..\..\deps\SPIRV-Cross;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\..\..\..\libretro-common\include;$(SolutionDir)\..\..\..\deps;$(SolutionDir)\..\..\..\deps\stb;$(SolutionDir)\..\..\..\deps\7zip;$(SolutionDir)\..\..\..\gfx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>HAVE_OPENGLES2;RARCH_MOBILE;HAVE_GRIFFIN;HAVE_RVORBIS;HAVE_LANGEXTRA;ANDROID;HAVE_DYNAMIC;HAVE_OPENGL;HAVE_OVERLAY;HAVE_OPENGLES;HAVE_DYLIB;HAVE_EGL;HAVE_GLSL;HAVE_MENU;HAVE_RGUI;HAVE_RPNG;HAVE_RWEBP;HAVE_RDDS;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;INLINE=inline;HAVE_THREADS;__LIBRETRO__;HAVE_RSOUND;HAVE_NETWORKGAMEPAD;HAVE_NETWORKING;HAVE_IFINFO;RARCH_INTERNAL;HAVE_FILTERS_BUILTIN;HAVE_MATERIALUI;HAVE_XMB;HAVE_SHADERPIPELINE;HAVE_LIBRETRODB;HAVE_STB_FONT;HAVE_UPDATE_ASSETS;HAVE_CC_RESAMPLER;HAVE_KEYMAPPER;HAVE_RFLAC;HAVE_DR_FLAC;HAVE_DR_MP3;HAVE_CHD;HAVE_RCHD;HAVE_RZSTD;HAVE_RUNAHEAD;WANT_IFADDRS;HAVE_7ZIP;HAVE_CHEEVOS;HAVE_SL;__STDC_LIMIT_MACROS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ExceptionHandling>Enabled</ExceptionHandling>
     </ClCompile>
@@ -235,7 +225,7 @@
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <CompileAs>CompileAsCpp</CompileAs>
-      <AdditionalIncludeDirectories>$(SolutionDir)\..\..\..\libretro-common\include;$(SolutionDir)\..\..\..\deps;$(SolutionDir)\..\..\..\deps\stb;$(SolutionDir)\..\..\..\deps\7zip;$(SolutionDir)\..\..\..\gfx\include;$(SolutionDir)\..\..\..\deps\glslang;$(SolutionDir)\..\..\..\deps\glslang\glslang\Public;$(SolutionDir)\..\..\..\deps\glslang\glslang\MachineIndependent;$(SolutionDir)\..\..\..\deps\glslang\glslang\SPIRV;$(SolutionDir)\..\..\..\deps\SPIRV-Cross;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\..\..\..\libretro-common\include;$(SolutionDir)\..\..\..\deps;$(SolutionDir)\..\..\..\deps\stb;$(SolutionDir)\..\..\..\deps\7zip;$(SolutionDir)\..\..\..\gfx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>HAVE_OPENGLES2;RARCH_MOBILE;HAVE_GRIFFIN;HAVE_RVORBIS;HAVE_LANGEXTRA;ANDROID;HAVE_DYNAMIC;HAVE_OPENGL;HAVE_OVERLAY;HAVE_OPENGLES;HAVE_DYLIB;HAVE_EGL;HAVE_GLSL;HAVE_MENU;HAVE_RGUI;HAVE_RPNG;HAVE_RWEBP;HAVE_RDDS;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;INLINE=inline;HAVE_THREADS;__LIBRETRO__;HAVE_RSOUND;HAVE_NETWORKGAMEPAD;HAVE_NETWORKING;HAVE_IFINFO;RARCH_INTERNAL;HAVE_FILTERS_BUILTIN;HAVE_MATERIALUI;HAVE_XMB;HAVE_SHADERPIPELINE;HAVE_LIBRETRODB;HAVE_STB_FONT;HAVE_UPDATE_ASSETS;HAVE_CC_RESAMPLER;HAVE_KEYMAPPER;HAVE_RFLAC;HAVE_DR_FLAC;HAVE_DR_MP3;HAVE_CHD;HAVE_RCHD;HAVE_RZSTD;HAVE_RUNAHEAD;WANT_IFADDRS;HAVE_7ZIP;HAVE_CHEEVOS;HAVE_SL;__STDC_LIMIT_MACROS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ExceptionHandling>Enabled</ExceptionHandling>
     </ClCompile>
@@ -247,7 +237,7 @@
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <CompileAs>CompileAsCpp</CompileAs>
-      <AdditionalIncludeDirectories>$(SolutionDir)\..\..\..\libretro-common\include;$(SolutionDir)\..\..\..\deps;$(SolutionDir)\..\..\..\deps\stb;$(SolutionDir)\..\..\..\deps\7zip;$(SolutionDir)\..\..\..\gfx\include;$(SolutionDir)\..\..\..\deps\glslang;$(SolutionDir)\..\..\..\deps\glslang\glslang\Public;$(SolutionDir)\..\..\..\deps\glslang\glslang\MachineIndependent;$(SolutionDir)\..\..\..\deps\glslang\glslang\SPIRV;$(SolutionDir)\..\..\..\deps\SPIRV-Cross;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\..\..\..\libretro-common\include;$(SolutionDir)\..\..\..\deps;$(SolutionDir)\..\..\..\deps\stb;$(SolutionDir)\..\..\..\deps\7zip;$(SolutionDir)\..\..\..\gfx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>HAVE_OPENGLES2;RARCH_MOBILE;HAVE_GRIFFIN;HAVE_RVORBIS;HAVE_LANGEXTRA;ANDROID;HAVE_DYNAMIC;HAVE_OPENGL;HAVE_OVERLAY;HAVE_OPENGLES;HAVE_DYLIB;HAVE_EGL;HAVE_GLSL;HAVE_MENU;HAVE_RGUI;HAVE_RPNG;HAVE_RWEBP;HAVE_RDDS;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;INLINE=inline;HAVE_THREADS;__LIBRETRO__;HAVE_RSOUND;HAVE_NETWORKGAMEPAD;HAVE_NETWORKING;HAVE_IFINFO;RARCH_INTERNAL;HAVE_FILTERS_BUILTIN;HAVE_MATERIALUI;HAVE_XMB;HAVE_SHADERPIPELINE;HAVE_LIBRETRODB;HAVE_STB_FONT;HAVE_UPDATE_ASSETS;HAVE_CC_RESAMPLER;HAVE_KEYMAPPER;HAVE_RFLAC;HAVE_DR_FLAC;HAVE_DR_MP3;HAVE_CHD;HAVE_RCHD;HAVE_RZSTD;HAVE_RUNAHEAD;WANT_IFADDRS;HAVE_7ZIP;HAVE_CHEEVOS;HAVE_SL;__STDC_LIMIT_MACROS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ExceptionHandling>Enabled</ExceptionHandling>
     </ClCompile>
@@ -259,7 +249,7 @@
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <CompileAs>CompileAsCpp</CompileAs>
-      <AdditionalIncludeDirectories>$(SolutionDir)\..\..\..\libretro-common\include;$(SolutionDir)\..\..\..\deps;$(SolutionDir)\..\..\..\deps\stb;$(SolutionDir)\..\..\..\deps\7zip;$(SolutionDir)\..\..\..\gfx\include;$(SolutionDir)\..\..\..\deps\glslang;$(SolutionDir)\..\..\..\deps\glslang\glslang\Public;$(SolutionDir)\..\..\..\deps\glslang\glslang\MachineIndependent;$(SolutionDir)\..\..\..\deps\glslang\glslang\SPIRV;$(SolutionDir)\..\..\..\deps\SPIRV-Cross;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\..\..\..\libretro-common\include;$(SolutionDir)\..\..\..\deps;$(SolutionDir)\..\..\..\deps\stb;$(SolutionDir)\..\..\..\deps\7zip;$(SolutionDir)\..\..\..\gfx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>HAVE_OPENGLES2;RARCH_MOBILE;HAVE_GRIFFIN;HAVE_RVORBIS;HAVE_LANGEXTRA;ANDROID;HAVE_DYNAMIC;HAVE_OPENGL;HAVE_OVERLAY;HAVE_OPENGLES;HAVE_DYLIB;HAVE_EGL;HAVE_GLSL;HAVE_MENU;HAVE_RGUI;HAVE_RPNG;HAVE_RWEBP;HAVE_RDDS;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;INLINE=inline;HAVE_THREADS;__LIBRETRO__;HAVE_RSOUND;HAVE_NETWORKGAMEPAD;HAVE_NETWORKING;HAVE_IFINFO;RARCH_INTERNAL;HAVE_FILTERS_BUILTIN;HAVE_MATERIALUI;HAVE_XMB;HAVE_SHADERPIPELINE;HAVE_LIBRETRODB;HAVE_STB_FONT;HAVE_UPDATE_ASSETS;HAVE_CC_RESAMPLER;HAVE_KEYMAPPER;HAVE_RFLAC;HAVE_DR_FLAC;HAVE_DR_MP3;HAVE_CHD;HAVE_RCHD;HAVE_RZSTD;HAVE_RUNAHEAD;WANT_IFADDRS;HAVE_7ZIP;HAVE_CHEEVOS;HAVE_SL;__STDC_LIMIT_MACROS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ExceptionHandling>Enabled</ExceptionHandling>
     </ClCompile>
