@@ -215,6 +215,13 @@ static bool sdl3_vk_ctx_set_video_mode(void *data,
             SDL_WINDOW_VULKAN))
       goto error;
 
+   /* The window was restyled in place; its surface stays valid. */
+   if (sdl->vk.vk_surface != VK_NULL_HANDLE)
+   {
+      sdl->vk.flags |= VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
+      return true;
+   }
+
    sdl3_window_get_video_size(sdl->win, &win_dims);
 
    if (!vulkan_surface_create(&sdl->vk, VULKAN_WSI_SDL3,

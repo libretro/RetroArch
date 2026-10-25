@@ -373,6 +373,7 @@ enum sdl3_audio_park_for
 };
 
 static size_t sdl3_audio_write_avail(void *data);
+static bool sdl3_audio_stream_ok(sdl3_audio_t *sdl);
 
 static bool sdl3_audio_ready(sdl3_audio_t *ctx,
       enum sdl3_audio_park_for what, size_t need, size_t cap)
@@ -481,6 +482,9 @@ static void sdl3_audio_prime_stream(sdl3_audio_t *sdl)
    SDL_SetAtomicU32(&sdl->devid, SDL_GetAudioStreamDevice(sdl->stream));
    SDL_SetAudioStreamGetCallback(sdl->stream, sdl3_audio_out_stream_cb, sdl);
 
+   /* A reopen keeps the stream, and with it the raw path's controls. */
+   SDL_SetAudioStreamFrequencyRatio(sdl->stream, 1.0f);
+   SDL_SetAudioStreamGain(sdl->stream, 1.0f);
    sdl->raw_rate = 0;
    sdl->in_cap = sdl->buffer_size;
    sdl->ratio = 1.0f;
@@ -702,7 +706,10 @@ static size_t sdl3_audio_wait_writable(void *data, size_t len)
 
    for (;;)
    {
-      if (SDL_GetAtomicInt(&sdl->device_removed))
+      /* The threaded pipeline writes only after this reports room,
+       * so the reopen write() would do has to happen here. */
+      if (     SDL_GetAtomicInt(&sdl->device_removed)
+            && !sdl3_audio_stream_ok(sdl))
          break;
       avail = sdl3_audio_write_avail(sdl);
       if (avail >= len)
@@ -1269,6 +1276,18 @@ static size_t sdl3_microphone_wait_readable(void *driver_context,
       return 0;
 
    timeout_ms = sdl3_microphone_wait_ms(mic);
+
+   /* Gone for good: pace the capture worker's retries, not spin it. */
+   if (SDL_GetAtomicInt(&mic->device_removed))
+   {
+#ifdef HAVE_THREADS
+      int key = retro_eventcount_prepare_wait(&mic->park);
+      retro_eventcount_commit_wait_timeout(&mic->park, key,
+            (int64_t)timeout_ms * 1000);
+#endif
+      return 0;
+   }
+
    want       = (int)len;
    if (mic->period_frames > 0)
    {

@@ -107,6 +107,10 @@ static bool sdl3_init_renderer(sdl3_video_t *vid)
    vsync = vid->video.vsync ?
          ((vid->video.swap_interval > 0) ? vid->video.swap_interval : 1) :
          SDL_RENDERER_VSYNC_DISABLED;
+   if (     vsync == 1
+         && vid->video.adaptive_vsync
+         && (vid->flags & SDL3_FLAG_ADAPTIVE_VSYNC))
+      vsync = SDL_RENDERER_VSYNC_ADAPTIVE;
 
    if (!SDL_SetRenderVSync(vid->renderer, vsync) && vsync != SDL_RENDERER_VSYNC_DISABLED)
       SDL_SetRenderVSync(vid->renderer, (vsync > (int)vid->swap_interval_cap)
@@ -1084,7 +1088,7 @@ static void sdl3_gfx_set_nonblock_state(void *data, bool toggle,
     * 2: every other */
    if (toggle)
       vsync = SDL_RENDERER_VSYNC_DISABLED;
-   else if (adaptive_vsync_enabled)
+   else if (adaptive_vsync_enabled && swap_interval <= 1)
       vsync = SDL_RENDERER_VSYNC_ADAPTIVE;
    else
       vsync = (swap_interval > 0) ? (int)swap_interval : 1;

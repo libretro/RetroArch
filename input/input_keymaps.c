@@ -961,6 +961,7 @@ const struct rarch_key_map rarch_key_map_sdl3[] = {
    { SDLK_SYSREQ, RETROK_SYSREQ },
    { SDLK_PAUSE, RETROK_BREAK },
    { SDLK_MENU, RETROK_MENU },
+   { SDLK_APPLICATION, RETROK_MENU },
    { SDLK_POWER, RETROK_POWER },
    { SDLK_UNDO, RETROK_UNDO },
    { SDLK_MEDIA_NEXT_TRACK,     RETROK_MEDIA_NEXT },

@@ -1042,8 +1042,15 @@ static void sdl3_input_poll(void *data)
       }
       else if (event.type == SDL_EVENT_MOUSE_WHEEL)
       {
+#if SDL_VERSION_ATLEAST(3, 2, 12)
+         /* Whole ticks, so a smooth wheel's fractions don't each
+          * count as one. */
+         float wx = (float)event.wheel.integer_x;
+         float wy = (float)event.wheel.integer_y;
+#else
          float wx = event.wheel.x;
          float wy = event.wheel.y;
+#endif
 
          /* FLIPPED = "natural" scrolling: SDL delivers inverted
           * signs and expects the caller to negate them. */

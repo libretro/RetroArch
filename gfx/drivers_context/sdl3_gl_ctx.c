@@ -39,6 +39,7 @@ typedef struct gfx_ctx_sdl3_data
                      * sdl3_ctx_* callbacks. */
    SDL_GLContext ctx;
    SDL_GLContext shared_ctx;
+   int interval;
    bool core_hw_context_enable;
    bool adaptive_vsync;
 } gfx_ctx_sdl3_data_t;
@@ -161,6 +162,9 @@ static bool sdl3_ctx_bind_api(void *data,
 
 static void sdl3_ctx_swap_interval(void *data, int interval)
 {
+   gfx_ctx_sdl3_data_t *sdl = (gfx_ctx_sdl3_data_t*)data;
+   if (sdl)
+      sdl->interval = interval;
    /* Adaptive vsync and multi-frame intervals aren't supported
     * everywhere. Fallback to 1-frame interval rather than reverting
     * to the previous setting. */
@@ -245,7 +249,7 @@ static bool sdl3_ctx_set_video_mode(void *data,
     * cached path too: this instance is freshly alloc'd on reinit, so
     * the flag would otherwise be lost with the old instance. */
    sdl->adaptive_vsync = SDL_GL_SetSwapInterval(-1);
-   SDL_GL_SetSwapInterval(0);
+   sdl3_ctx_swap_interval(sdl, sdl->interval);
 
    return true;
 
