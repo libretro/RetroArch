@@ -989,6 +989,9 @@ struct vulkan_filter_chain
    /* See vulkan_filter_chain_create_info. */
    void *queue_lock_handle;
    void (*wait_submissions)(void *handle);
+
+   /* What the LUTs upload through, once the passes say which they read */
+   struct vulkan_filter_chain_create_info lut_info;
 };
 
 static struct vulkan_filter_chain *slang_chain_new(
@@ -1443,16 +1446,56 @@ error:
    return false;
 }
 
+/* The preset's LUTs, by name only: the semantic map is built from the
+ * names, and each image is loaded once a pass is known to read it. */
 static bool vulkan_filter_chain_load_luts(
       const struct vulkan_filter_chain_create_info *info,
       vulkan_filter_chain *chain,
       struct video_shader *shader)
 {
    size_t i;
+   chain->lut_info = *info;
+   for (i = 0; i < shader->luts; i++)
+   {
+      struct slang_static_texture entry;
+      memset(&entry, 0, sizeof(entry));
+      entry.device = info->device;
+      if (!(entry.id = strdup(shader->lut[i].id)))
+         return false;
+      if (!slang_chain_add_static_texture(chain, &entry))
+      {
+         free(entry.id);
+         return false;
+      }
+   }
+   return true;
+}
+
+/* Loads the LUTs some pass reads and that are not loaded yet; one no
+ * pass reads is never decoded or uploaded. */
+static bool slang_chain_load_luts(vulkan_filter_chain *chain)
+{
+   size_t i;
+   uint8_t read[GFX_MAX_TEXTURES];
+   bool any                                      = false;
+   const struct vulkan_filter_chain_create_info *info = &chain->lut_info;
+   struct video_shader *shader                   = chain->common.shader_preset;
    VkSubmitInfo submit_info;
    VkCommandBufferAllocateInfo cmd_info;
    VkCommandBufferBeginInfo begin_info;
    VkCommandBuffer cmd                           = VK_NULL_HANDLE;
+
+   if (!shader || !chain->common.num_luts)
+      return true;
+   memset(read, 0, sizeof(read));
+   for (i = 0; i < chain->pass_count; i++)
+      slang_reflection_luts_read(&chain->passes[i]->reflection, read,
+            (unsigned)chain->common.num_luts);
+   for (i = 0; i < chain->common.num_luts; i++)
+      if (read[i] && chain->common.luts[i].image == VK_NULL_HANDLE)
+         any = true;
+   if (!any)
+      return true;
 
    cmd_info.sType                                = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
    cmd_info.pNext                                = NULL;
@@ -1474,9 +1517,11 @@ static bool vulkan_filter_chain_load_luts(
       return false;
    }
 
-   for (i = 0; i < shader->luts; i++)
+   for (i = 0; i < chain->common.num_luts; i++)
    {
       struct slang_static_texture image;
+      if (!read[i] || chain->common.luts[i].image != VK_NULL_HANDLE)
+         continue;
       memset(&image, 0, sizeof(image));
       if (!vulkan_filter_chain_load_lut(&image, cmd, info, chain,
                &shader->lut[i]))
@@ -1487,13 +1532,8 @@ static bool vulkan_filter_chain_load_luts(
             vkFreeCommandBuffers(info->device, info->command_pool, 1, &cmd);
          return false;
       }
-      if (!slang_chain_add_static_texture(chain, &image))
-      {
-         slang_static_texture_free(&image);
-         vkEndCommandBuffer(cmd);
-         vkFreeCommandBuffers(info->device, info->command_pool, 1, &cmd);
-         return false;
-      }
+      slang_static_texture_free(&chain->common.luts[i]);
+      chain->common.luts[i] = image;
    }
 
    if (vkEndCommandBuffer(cmd) != VK_SUCCESS)
@@ -2377,6 +2417,8 @@ static bool slang_chain_init(struct vulkan_filter_chain *chain)
     * buffers with undefined contents for that first frame.
     * slang_chain_build_offscreen_passes() is the only place that clears
     * it, once the clear has actually been recorded. */
+   if (!slang_chain_load_luts(chain))
+      return false;
    if (!slang_chain_init_ubo(chain))
       return false;
    RARCH_DBG("[Vulkan] Chain UBO ready.\n");
@@ -2718,6 +2760,8 @@ static bool slang_chain_finalize(struct vulkan_filter_chain *chain)
     * buffers with undefined contents for that first frame.
     * slang_chain_build_offscreen_passes() is the only place that clears
     * it, once the clear has actually been recorded. */
+   if (!slang_chain_load_luts(chain))
+      return false;
    if (!slang_chain_init_ubo(chain))
       return false;
    if (!slang_chain_init_history(chain))

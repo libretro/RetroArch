@@ -108,10 +108,16 @@ static void APIENTRY mock_draw(GLenum mode, GLint first, GLsizei count)
 #define glBindTexture mock_bind_texture
 #define glTexParameteri mock_tex_parameter
 #define glDrawArrays mock_draw
+bool test_image_load(struct texture_image *img, const char *path);
+void test_image_free(struct texture_image *img);
+#define image_texture_load test_image_load
+#define image_texture_free test_image_free
 #define calloc(n, size) test_calloc(n, size)
 #define malloc(size) test_malloc(size)
 #define realloc(p, size) test_realloc(p, size)
 #include "../../../gfx/drivers_shader/shader_gl3.c"
+#undef image_texture_load
+#undef image_texture_free
 #undef calloc
 #undef malloc
 #undef realloc
@@ -308,6 +314,70 @@ static void test_shared_programs(void)
    check_gl_objects();
 }
 
+/* LUT images decoded, by path */
+static unsigned used_loads, unused_loads;
+bool test_image_load(struct texture_image *img, const char *path)
+{
+   if (!strcmp(path, "used.png"))
+      used_loads++;
+   else
+      unused_loads++;
+   img->width  = 4;
+   img->height = 4;
+   img->pixels = (uint32_t*)calloc(16, sizeof(uint32_t));
+   return img->pixels != NULL;
+}
+void test_image_free(struct texture_image *img)
+{
+   free(img->pixels);
+   img->pixels = NULL;
+}
+
+/* A LUT no pass reads is named for the semantic map and never loaded;
+ * one a pass reads is loaded once, however often the chain is built. */
+static void test_unread_luts(void)
+{
+   static slang_texture_semantic_meta reads[1];
+   struct gl3_filter_chain *chain = gl3_chain_new(1);
+   struct video_shader *preset    = (struct video_shader*)calloc(1, sizeof(*preset));
+   slang_texture_semantic_array *user;
+
+   CHECK(chain && preset, "a chain and a preset");
+   if (!chain || !preset)
+   {
+      free(preset);
+      gl3_chain_free(chain);
+      return;
+   }
+   preset->luts = 2;
+   strcpy(preset->lut[0].id, "Used");
+   strcpy(preset->lut[0].path, "used.png");
+   strcpy(preset->lut[1].id, "Unused");
+   strcpy(preset->lut[1].path, "unused.png");
+   used_loads = unused_loads = 0;
+   CHECK(gl3_filter_chain_load_luts(chain, preset), "the LUTs are named");
+   gl3_chain_set_shader_preset(chain, preset);
+   CHECK(chain->common.num_luts == 2 && !strcmp(chain->common.luts[1].id, "Unused"),
+         "both LUTs are named");
+   CHECK(!used_loads && !unused_loads, "nothing is loaded before the passes are reflected");
+
+   memset(reads, 0, sizeof(reads));
+   reads[0].texture = true;
+   user       = &chain->passes[0]->reflection.semantic_textures[SLANG_TEXTURE_SEMANTIC_USER];
+   user->data = reads;
+   user->size = 1;
+   CHECK(gl3_chain_load_luts(chain), "the read LUT loads");
+   CHECK(gl3_chain_load_luts(chain), "a rebuild loads nothing new");
+   CHECK(used_loads == 1, "the read LUT is decoded once: %u", used_loads);
+   CHECK(!unused_loads, "the unread LUT is never decoded: %u", unused_loads);
+   CHECK(chain->common.luts[0].image && !chain->common.luts[1].image,
+         "only the read LUT has a texture");
+   user->data = NULL;
+   user->size = 0;
+   gl3_chain_free(chain);
+   check_gl_objects();
+}
+
 static void test_shrink_chain(void)
 {
    struct gl3_filter_chain *chain;
@@ -395,6 +465,7 @@ int main(void)
 
    test_shrink_chain();
    test_shared_programs();
+   test_unread_luts();
 
    if (failures)
    {

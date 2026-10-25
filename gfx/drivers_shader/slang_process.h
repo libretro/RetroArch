@@ -20,6 +20,7 @@
 #include <stdint.h>
 #include <boolean.h>
 #include <retro_common_api.h>
+#include <retro_inline.h>
 
 #include "../video_shader_parse.h"
 #include "../../retroarch.h"
@@ -528,6 +529,21 @@ void slang_semantic_name_map_free(slang_semantic_name_map *map);
  * init()ed before slang_reflect_spirv() and free()d afterwards. */
 bool slang_reflection_init(slang_reflection *reflection);
 void slang_reflection_free(slang_reflection *reflection);
+
+/* Sets read[i] for each of the first @count LUTs the pass samples or
+ * takes the size of; the others are left as they are. */
+static INLINE void slang_reflection_luts_read(
+      const slang_reflection *reflection, uint8_t *read, unsigned count)
+{
+   unsigned i;
+   const slang_texture_semantic_array *luts =
+      &reflection->semantic_textures[SLANG_TEXTURE_SEMANTIC_USER];
+   for (i = 0; i < luts->size && i < count; i++)
+      if (     luts->data[i].texture
+            || luts->data[i].uniform
+            || luts->data[i].push_constant)
+         read[i] = 1;
+}
 
 /* Reflect the two SPIR-V stages into @reflection.  The name-map
  * pointers and pass_number must be set by the caller after init(). */

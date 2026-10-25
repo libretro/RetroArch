@@ -3084,6 +3084,7 @@ static bool gl3_chain_compile_full_pass(struct gl3_filter_chain *chain, unsigned
       glslang_filter_chain_filter default_filter);
 static bool gl3_chain_init_alias_early(struct gl3_filter_chain *chain);
 static bool gl3_chain_finalize(struct gl3_filter_chain *chain);
+static bool gl3_chain_load_luts(struct gl3_filter_chain *chain);
 static void gl3_chain_clear_history_and_feedback(struct gl3_filter_chain *chain);
 static void gl3_chain_set_input_texture(struct gl3_filter_chain *chain, const gl3_filter_chain_texture texture);
 static bool gl3_chain_add_static_texture(struct gl3_filter_chain *chain, const struct gl3_static_texture *texture);
@@ -3688,6 +3689,8 @@ static bool gl3_chain_init(struct gl3_filter_chain *chain)
          return false;
    }
 
+   if (!gl3_chain_load_luts(chain))
+      return false;
    chain->require_clear = false;
    if (!gl3_chain_init_history(chain))
       return false;
@@ -3997,6 +4000,8 @@ static bool gl3_chain_finalize(struct gl3_filter_chain *chain)
       chain->alias_initialized = true;
    }
 
+   if (!gl3_chain_load_luts(chain))
+      return false;
    chain->require_clear = false;
    if (!gl3_chain_init_history(chain))
       return false;
@@ -4232,6 +4237,8 @@ static bool gl3_filter_chain_load_lut(
    return true;
 }
 
+/* The preset's LUTs, by name only: the semantic map is built from the
+ * names, and each image is loaded once a pass is known to read it. */
 static bool gl3_filter_chain_load_luts(
       struct gl3_filter_chain *chain,
       struct video_shader *shader)
@@ -4239,20 +4246,46 @@ static bool gl3_filter_chain_load_luts(
    unsigned i;
    for (i = 0; i < shader->luts; i++)
    {
+      struct gl3_static_texture entry;
+      memset(&entry, 0, sizeof(entry));
+      if (!(entry.id = strdup(shader->lut[i].id)))
+         return false;
+      if (!gl3_chain_add_static_texture(chain, &entry))
+      {
+         free(entry.id);
+         return false;
+      }
+   }
+
+   return true;
+}
+
+/* Loads the LUTs some pass reads and that are not loaded yet; one no
+ * pass reads is never decoded or uploaded. */
+static bool gl3_chain_load_luts(struct gl3_filter_chain *chain)
+{
+   unsigned i;
+   uint8_t read[GFX_MAX_TEXTURES];
+   struct video_shader *shader = chain->common.shader_preset;
+   if (!shader || !chain->common.num_luts)
+      return true;
+   memset(read, 0, sizeof(read));
+   for (i = 0; i < chain->num_passes; i++)
+      slang_reflection_luts_read(&chain->passes[i]->reflection, read,
+            (unsigned)chain->common.num_luts);
+   for (i = 0; i < chain->common.num_luts; i++)
+   {
       struct gl3_static_texture image;
+      if (!read[i] || chain->common.luts[i].image)
+         continue;
       if (!gl3_filter_chain_load_lut(chain, &shader->lut[i], &image))
       {
          RARCH_ERR("[GLCore] Failed to load LUT \"%s\".\n", shader->lut[i].path);
          return false;
       }
-
-      if (!gl3_chain_add_static_texture(chain, &image))
-      {
-         gl3_static_texture_free(&image);
-         return false;
-      }
+      gl3_static_texture_free(&chain->common.luts[i]);
+      chain->common.luts[i] = image;
    }
-
    return true;
 }
 
