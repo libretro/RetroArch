@@ -30,8 +30,9 @@ RETRO_BEGIN_DECLS
  * jitter a hardware-rendered core exports. DLSS Super Resolution runs
  * on NVIDIA's NGX, loaded at run time (libretro-common gfx/nvidia):
  * the driver's NGX core library, and the DLSS feature library the user
- * puts in the DLSS directory (video_dlss_directory, <system>/dlss when
- * empty). Nothing NVIDIA is built in or shipped. */
+ * puts in the DLSS directory (video_dlss_directory; the application
+ * directory's upscalers/dlss when empty). Nothing NVIDIA is built in or
+ * shipped. */
 enum video_temporal_upscaler
 {
    VIDEO_TEMPORAL_UPSCALER_OFF = 0,
@@ -45,7 +46,7 @@ enum video_temporal_upscaler
 #define VIDEO_UPSCALER_DLSS_READY \
    (VIDEO_UPSCALER_DLSS_NGX | VIDEO_UPSCALER_DLSS_FEATURE)
 
-/* The DLSS directory in effect into @s: the setting, else <system>/dlss */
+/* The DLSS directory in effect into @s: the setting, else the application directory's upscalers/dlss */
 size_t video_upscaler_dlss_dir(char *s, size_t len);
 
 /* The VIDEO_UPSCALER_DLSS_* bits found now: the menu offers DLSS when

@@ -29,8 +29,8 @@ size_t video_upscaler_dlss_dir(char *s, size_t len)
    settings_t *settings = config_get_ptr();
    if (!string_is_empty(settings->paths.directory_dlss))
       return strlcpy(s, settings->paths.directory_dlss, len);
-   return fill_pathname_join_special(s,
-         settings->paths.directory_system, "dlss", len);
+   /* the application directory's: beside shaders and system */
+   return fill_pathname_expand_special(s, ":/upscalers/dlss", len);
 }
 
 unsigned video_upscaler_dlss_probe(void)

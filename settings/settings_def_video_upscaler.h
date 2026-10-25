@@ -24,6 +24,6 @@ S_DIR(directory_dlss, VIDEO_DLSS_DIRECTORY,
       "video_dlss_directory",
       "", DIRECTORY_DEFAULT, SD_FLAG_NONE, 0, directory_action_start_generic,
       "DLSS Directory",
-      "The directory the DLSS runtime is loaded from. Default: the 'dlss' directory under the System/BIOS directory.")
+      "The directory the DLSS runtime is loaded from. Default: 'upscalers/dlss' in the RetroArch directory.")
 #endif
 #endif
