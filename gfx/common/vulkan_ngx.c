@@ -728,8 +728,14 @@ void vulkan_ngx_free(vulkan_ngx_t *ngx)
    for (i = 0; i < VULKAN_NGX_RETIRED_MAX; i++)
       ngx->retired[i].frames = ngx->retired[i].frames ? 1 : 0;
    vulkan_ngx_frame_done(ngx);
+   RARCH_LOG("[Vulkan] Temporal Upscaler: DLSS feature released.\n");
    if (ngx->params)
       ngx->lib->vulkan.destroy_parameters(ngx->params);
-   ngx->lib->vulkan.shutdown1((void*)ngx->device);
+   if (ngx->caps)
+      ngx->lib->vulkan.destroy_parameters(ngx->caps);
+   RARCH_LOG("[Vulkan] Temporal Upscaler: NGX parameters destroyed.\n");
+   /* NULL: every device's, as the SDK asks */
+   ngx->lib->vulkan.shutdown1(NULL);
+   RARCH_LOG("[Vulkan] Temporal Upscaler: NGX shut down.\n");
    free(ngx);
 }

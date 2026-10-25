@@ -710,7 +710,7 @@ int main(void)
       unsigned releases = rec->releases;
       vulkan_ngx_free(ngx);
       CHECK(rec->releases == releases + 3);  /* the three retired */
-      CHECK(rec->shutdown_calls == 2 && rec->params_destroyed == 1);
+      CHECK(rec->shutdown_calls == 2 && rec->params_destroyed == 2);
    }
    video_upscaler_detach();
    CHECK(video_upscaler_get_interface() == NULL);

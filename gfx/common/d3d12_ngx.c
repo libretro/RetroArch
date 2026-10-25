@@ -492,8 +492,13 @@ void d3d12_ngx_free(d3d12_ngx_t *ngx)
    for (i = 0; i < D3D12_NGX_RETIRED_MAX; i++)
       ngx->retired[i].frames = ngx->retired[i].frames ? 1 : 0;
    d3d12_ngx_frame_done(ngx);
+   RARCH_LOG("[D3D12] Temporal Upscaler: DLSS feature released.\n");
    if (ngx->params)
       ngx->lib->d3d12.destroy_parameters(ngx->params);
-   ngx->lib->d3d12.shutdown1((void*)ngx->device);
+   if (ngx->caps)
+      ngx->lib->d3d12.destroy_parameters(ngx->caps);
+   RARCH_LOG("[D3D12] Temporal Upscaler: NGX parameters destroyed.\n");
+   ngx->lib->d3d12.shutdown1(NULL);
+   RARCH_LOG("[D3D12] Temporal Upscaler: NGX shut down.\n");
    free(ngx);
 }
