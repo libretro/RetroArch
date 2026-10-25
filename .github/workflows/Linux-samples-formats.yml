@@ -20,8 +20,8 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
 
 jobs:
-  samples-formats:
-    name: Build and run samples/formats
+  formats-core:
+    name: Core format decoders and containers
     runs-on: ubuntu-latest
     env:
       APT_PKGS: build-essential ffmpeg clang ccache
@@ -241,20 +241,6 @@ jobs:
           make av1_params_test SANITIZER=address,undefined
           python3 av1_fixtures.py
 
-      - name: VP9 sessions and WebM GPU dispatch (ASan + UBSan)
-        working-directory: libretro-common/samples/formats/vp9
-        run: |
-          make check stream-check h26x-check h26x-color-check pixel-check SANITIZER=address,undefined
-          make stack-check CC=gcc
-          make stack-check CC=clang
-          H26X_TEST_THREADS=4 make h26x-check h26x-color-check SANITIZER=address,undefined
-
-      - name: Matroska concurrent decode and output ownership (TSan)
-        working-directory: libretro-common/samples/formats/vp9
-        run: |
-          make -B rwebm_h26x_stream_test rwebm_h26x_hw_test SANITIZER=thread
-          H26X_TEST_THREADS=4 TSAN_OPTIONS=halt_on_error=1 make h26x-check SANITIZER=thread
-
       - name: Build and run video_hdr_fp16_test (ASan + UBSan + LSan)
         shell: bash
         working-directory: samples/formats/video_hdr_fp16
@@ -300,3 +286,99 @@ jobs:
         with:
           path: ~/.ccache
           key: ccache-${{ github.workflow }}-${{ github.job }}-${{ github.sha }}
+
+  vp9-matroska:
+    name: VP9 and Matroska codec conformance
+    runs-on: ubuntu-latest
+    env:
+      APT_PKGS: build-essential ffmpeg clang ccache
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Apt cache key
+        id: apt
+        run: sh .github/workflows/scripts/apt-cache-key.sh "$APT_PKGS"
+
+      - name: Restore apt cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+          restore-keys: ${{ steps.apt.outputs.prefix }}
+
+      - name: Install dependencies
+        timeout-minutes: 20
+        run: sh .github/workflows/scripts/apt-install.sh $APT_PKGS
+
+      - name: Save apt cache
+        if: env.APT_CACHE_SAVE == '1'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+
+      - name: Link with lld
+        run: sh .github/workflows/scripts/use-lld.sh
+
+      - name: Restore ccache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ github.workflow }}-${{ github.job }}-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ github.workflow }}-${{ github.job }}-
+
+      - name: Enable ccache
+        run: |
+          set -eu
+          export CCACHE_DIR="$HOME/.ccache"
+          echo "CCACHE_DIR=$CCACHE_DIR" >> "$GITHUB_ENV"
+          echo "/usr/lib/ccache" >> "$GITHUB_PATH"
+          ccache -M 250M
+          ccache -z
+
+      - name: VP9 sessions and WebM GPU dispatch (ASan + UBSan)
+        working-directory: libretro-common/samples/formats/vp9
+        run: |
+          make check stream-check h26x-check h26x-color-check pixel-check SANITIZER=address,undefined
+          make stack-check CC=gcc
+          make stack-check CC=clang
+          H26X_TEST_THREADS=4 make h26x-check h26x-color-check SANITIZER=address,undefined
+
+      - name: Matroska concurrent decode and output ownership (TSan)
+        working-directory: libretro-common/samples/formats/vp9
+        run: |
+          make -B rwebm_h26x_stream_test rwebm_h26x_hw_test SANITIZER=thread
+          H26X_TEST_THREADS=4 TSAN_OPTIONS=halt_on_error=1 make h26x-check SANITIZER=thread
+
+      - name: ccache statistics
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        run: ccache -sv
+
+      - name: Save ccache
+        # Only master's pushes keep a cache: pull requests restore
+        # master's, so one push does not evict the next one's.
+        if: success() && github.event_name == 'push' && github.ref == 'refs/heads/master'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ github.workflow }}-${{ github.job }}-${{ github.sha }}
+
+  samples-formats:
+    name: Build and run samples/formats
+    runs-on: ubuntu-latest
+    needs: [formats-core, vp9-matroska]
+    if: always()
+    timeout-minutes: 1
+    steps:
+      - name: Require both format suites
+        env:
+          FORMATS_RESULT: ${{ needs.formats-core.result }}
+          CODECS_RESULT: ${{ needs.vp9-matroska.result }}
+        run: |
+          test "$FORMATS_RESULT" = success
+          test "$CODECS_RESULT" = success
