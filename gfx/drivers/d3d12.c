@@ -72,6 +72,10 @@
 
 #include "../common/d3d_common.h"
 #include "../common/dxgi_common.h"
+#ifdef HAVE_NGX
+#include "../common/d3d12_ngx.h"
+#include "../video_upscaler.h"
+#endif
 #include <libretro.h>
 #include <libretro_d3d12.h>
 #include "../common/d3d12_hw_interface.h"
@@ -536,6 +540,10 @@ typedef struct
    struct retro_hw_render_interface_d3d12 hw_iface;
    D3D12Resource hw_render_texture;
    DXGI_FORMAT hw_render_texture_format;
+#ifdef HAVE_NGX
+   d3d12_ngx_t *ngx;
+   d3d12_ngx_image_t ngx_out;
+#endif
    /* The threaded wrapper's hardware ring: a copy of the core's texture
     * per slot, captured on the core's thread with this list and
     * allocator, which are the main thread's own. See the hw_ring pokes
@@ -5628,6 +5636,14 @@ static void d3d12_gfx_free(void* data)
       return;
 
    d3d12_queue_drain(d3d12);
+#ifdef HAVE_NGX
+   if (d3d12->ngx)
+   {
+      video_upscaler_detach();
+      d3d12_ngx_free(d3d12->ngx);
+      d3d12->ngx = NULL;
+   }
+#endif
    d3d12_views_release(d3d12);
 #ifdef D3D12_FRAME_IMPORT
    d3d12_frame_import_deinit(d3d12);
@@ -6614,6 +6630,57 @@ static void d3d12_hw_v2_set_texture_fenced(void *data, ID3D12Resource *texture,
       d3d12->queue.handle->lpVtbl->Wait(d3d12->queue.handle, fence, value);
 }
 
+#ifdef HAVE_NGX
+static bool d3d12_upscaler_optimal(void *data, unsigned mode,
+      unsigned out_dims, unsigned *render_dims,
+      unsigned *min_dims, unsigned *max_dims)
+{
+   d3d12_video_t *d3d12 = (d3d12_video_t*)data;
+   return d3d12_ngx_optimal(d3d12->ngx, mode, out_dims, render_dims,
+         min_dims, max_dims);
+}
+
+static video_upscaler_backend_t d3d12_upscaler_backend = {
+   NULL, d3d12_upscaler_optimal
+};
+
+/* The core's texture through the upscaler, when it brought the inputs
+ * and the sizes fit: the output takes its place for the frame, in the
+ * state set_texture hands textures over in. A repeated frame shows
+ * the last output. */
+static void d3d12_upscale_input(d3d12_video_t *d3d12,
+      D3D12GraphicsCommandList cmd, const void *frame, unsigned *dims)
+{
+   d3d12_ngx_image_t color;
+   const struct retro_hw_upscaler_inputs *inputs = video_upscaler_take_inputs();
+   unsigned out_dims = d3d12->vp.dims;
+   video_upscaler_set_output(out_dims);
+   if (frame != RETRO_HW_FRAME_BUFFER_VALID)
+      return;
+   if (d3d12->hw_render_texture)
+   {
+      color.texture = d3d12->hw_render_texture;
+      color.format  = d3d12->hw_render_texture_format;
+      color.state   = D3D12_RESOURCE_STATE_COPY_SOURCE;
+      color.dims    = *dims;
+      if (!inputs || !d3d12_ngx_upscale(d3d12->ngx, cmd, &color, inputs,
+               video_upscaler_mode(out_dims), out_dims, &d3d12->ngx_out))
+      {
+         d3d12->ngx_out.texture = NULL;
+         return;
+      }
+   }
+   else if (!d3d12->ngx_out.texture)
+      return;
+   /* Copied like any texture the core hands over; the output is not
+    * the core's to keep, so not drawn in place. */
+   d3d12->hw_render_texture        = d3d12->ngx_out.texture;
+   d3d12->hw_render_texture_format = d3d12->ngx_out.format;
+   d3d12->hw_direct.eligible       = false;
+   *dims                           = d3d12->ngx_out.dims;
+}
+#endif
+
 static void *d3d12_gfx_init(const video_info_t* video)
 {
 #ifdef HAVE_MONITOR
@@ -6890,6 +6957,20 @@ static void *d3d12_gfx_init(const video_info_t* video)
       d3d12->hw_iface.required_state    = D3D12_RESOURCE_STATE_COPY_SOURCE;
       d3d12->hw_iface.set_texture       = d3d12_set_hw_render_texture;
       d3d12->hw_iface.D3DCompile        = D3DCompile;
+#ifdef HAVE_NGX
+      if (config_get_ptr()->uints.video_temporal_upscaler == VIDEO_TEMPORAL_UPSCALER_DLSS)
+      {
+         char dir[DIR_MAX_LENGTH];
+         video_upscaler_dlss_dir(dir, sizeof(dir));
+         d3d12->ngx = d3d12_ngx_init(d3d12->device, dir);
+         if (d3d12->ngx)
+         {
+            d3d12_upscaler_backend.data = d3d12;
+            video_upscaler_attach(&d3d12_upscaler_backend);
+            video_upscaler_set_output(d3d12->vp.dims);
+         }
+      }
+#endif
       /* Version 2 only for a core that asked for it; every other core
        * compares interface_version against 1 and refuses anything else. */
       if (d3d12_hw_interface_negotiated_version()
@@ -9619,6 +9700,16 @@ recording_resize_deferred:;
    cmd->lpVtbl->IASetPrimitiveTopology(cmd,
          D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
+#ifdef HAVE_NGX
+   if (d3d12->ngx && frame)
+   {
+      unsigned up_dims = VIDEO_SCALE_PACK(width, height);
+      d3d12_upscale_input(d3d12, cmd, frame, &up_dims);
+      width  = VIDEO_SCALE_W(up_dims);
+      height = VIDEO_SCALE_H(up_dims);
+   }
+#endif
+
    if (frame && width && height)
    {
       DXGI_FORMAT source_format = frame == RETRO_HW_FRAME_BUFFER_VALID
@@ -10545,6 +10636,10 @@ recording_resize_deferred:;
       d3d12_record_free(d3d12);
 
    d3d12_cmd_execute(d3d12);
+#ifdef HAVE_NGX
+   if (d3d12->ngx)
+      d3d12_ngx_frame_done(d3d12->ngx);
+#endif
    if (video_info->recording_gpu_capture
          && !(d3d12->flags & D3D12_ST_FLAG_FRAME_DUPE_LOCK))
       record_nvenc_gpu_capture(video_info->recording_gpu,

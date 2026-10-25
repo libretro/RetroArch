@@ -637,6 +637,9 @@ VIDEO DRIVER
 #ifdef HAVE_VULKAN
 #include "../gfx/common/vulkan_ngx.c"
 #endif
+#ifdef HAVE_D3D12
+#include "../gfx/common/d3d12_ngx.c"
+#endif
 #endif
 #if defined(HAVE_D3D)
 #include "../gfx/common/d3d_common.c"

@@ -2013,6 +2013,9 @@ ifneq ($(findstring 1,$(HAVE_VULKAN) $(HAVE_D3D12)),)
       ifeq ($(HAVE_VULKAN), 1)
          OBJ += gfx/common/vulkan_ngx.o
       endif
+      ifeq ($(HAVE_D3D12), 1)
+         OBJ += gfx/common/d3d12_ngx.o
+      endif
    endif
 endif
 
