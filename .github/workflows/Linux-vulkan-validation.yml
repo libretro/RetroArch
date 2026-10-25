@@ -1033,6 +1033,7 @@ jobs:
         shell: bash
         run: |
           set -eu
+          python3 samples/cores/video_views/e2e/test_wm_ready.py
           # The CPU drivers' views: each view scaled straight out of the
           # frame into the window's surface or image, the anaglyph and
           # interlaced canvas blended on the CPU, views read exactly out

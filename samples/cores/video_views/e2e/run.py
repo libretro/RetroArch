@@ -730,6 +730,45 @@ def free_display():
 WM_DRIVERS = ('sdl',)
 
 
+def wm_ready_probe(timeout=10):
+    """Require the WM to manage a new client, not just publish its identity."""
+    x11 = ctypes.CDLL('libX11.so.6')
+    pointer, window_type = ctypes.c_void_p, ctypes.c_ulong
+    x11.XOpenDisplay.argtypes = [ctypes.c_char_p]
+    x11.XOpenDisplay.restype = pointer
+    x11.XDefaultRootWindow.argtypes = [pointer]
+    x11.XDefaultRootWindow.restype = window_type
+    x11.XCreateSimpleWindow.argtypes = [
+        pointer, window_type, ctypes.c_int, ctypes.c_int,
+        ctypes.c_uint, ctypes.c_uint, ctypes.c_uint, window_type, window_type]
+    x11.XCreateSimpleWindow.restype = window_type
+    for name in ('XMapWindow', 'XDestroyWindow'):
+        getattr(x11, name).argtypes = [pointer, window_type]
+    for name in ('XFlush', 'XCloseDisplay'):
+        getattr(x11, name).argtypes = [pointer]
+    display = x11.XOpenDisplay(os.environ['DISPLAY'].encode())
+    if not display:
+        return 1
+    window = x11.XCreateSimpleWindow(
+        display, x11.XDefaultRootWindow(display), 0, 0, 32, 32, 0, 0, 0)
+    try:
+        x11.XMapWindow(display, window)
+        x11.XFlush(display)
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            state = subprocess.run(
+                ['xprop', '-id', hex(window), 'WM_STATE'],
+                stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+                timeout=3, text=True)
+            if state.returncode == 0 and 'window state: Normal' in state.stdout:
+                return 0
+            time.sleep(0.02)
+        return 1
+    finally:
+        x11.XDestroyWindow(display, window)
+        x11.XCloseDisplay(display)
+
+
 def wm_start(env):
     """openbox on env's display."""
     p = subprocess.Popen(['openbox'], stdout=subprocess.DEVNULL,
@@ -749,7 +788,11 @@ def wm_start(env):
             except subprocess.TimeoutExpired:
                 continue
             if probe.returncode == 0 and 'window id #' in probe.stdout:
-                return p
+                ready = subprocess.run(
+                    [sys.executable, os.path.abspath(__file__), '--wm-ready'],
+                    env=env, timeout=max(0.1, deadline - time.monotonic()))
+                if ready.returncode == 0 and p.poll() is None:
+                    return p
             time.sleep(0.05)
         raise RuntimeError('openbox did not become ready on ' + env['DISPLAY'])
     except BaseException:
@@ -777,10 +820,20 @@ def xvfb_start(env):
                          stderr=subprocess.DEVNULL, env=env,
                          start_new_session=True)
     deadline = time.time() + 10
-    while (time.time() < deadline
+    while (p.poll() is None and time.time() < deadline
            and not os.path.exists('/tmp/.X11-unix/X%d' % n)):
         time.sleep(0.1)
     time.sleep(0.5)
+    if p.poll() is not None or not os.path.exists('/tmp/.X11-unix/X%d' % n):
+        if p.poll() is None:
+            p.terminate()
+            try:
+                p.wait(5)
+            except subprocess.TimeoutExpired:
+                p.kill()
+                p.wait()
+        release_display(':%d' % n)
+        raise RuntimeError('Xvfb did not become ready on :%d' % n)
     return p, ':%d' % n
 
 
@@ -1627,6 +1680,8 @@ def driver_jobs(retroarch, root, driver):
 
 
 def main():
+    if len(sys.argv) == 2 and sys.argv[1] == '--wm-ready':
+        return wm_ready_probe()
     if sys.argv[1:2] == ['--pointer']:
         return pointer_helper(sys.argv[2])
     if len(sys.argv) < 4:
