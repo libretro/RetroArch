@@ -200,7 +200,7 @@ vulkan_ngx_t *vulkan_ngx_init(VkInstance instance, VkPhysicalDevice gpu,
    int available = 0;
    const ngx_lib_t *lib = ngx_lib_get();
 
-   if (!lib || !lib->vulkan.init_with_project_id)
+   if (!lib || !lib->vulkan.init_project_id)
    {
       RARCH_LOG("[Vulkan] Temporal Upscaler: no NGX core library.\n");
       return NULL;
@@ -217,10 +217,10 @@ vulkan_ngx_t *vulkan_ngx_init(VkInstance instance, VkPhysicalDevice gpu,
    memset(&info, 0, sizeof(info));
    info.path_list.path   = paths;
    info.path_list.length = 1;
-   res = lib->vulkan.init_with_project_id(VULKAN_NGX_PROJECT_ID,
+   res = lib->vulkan.init_project_id(VULKAN_NGX_PROJECT_ID,
          NGX_ENGINE_TYPE_CUSTOM, VULKAN_NGX_ENGINE_VERSION, wdir,
          (void*)instance, (void*)gpu, (void*)device, (ngx_vk_proc_t)gipa,
-         (ngx_vk_proc_t)gdpa, &info, NGX_VERSION_API);
+         (ngx_vk_proc_t)gdpa, NGX_VERSION_API, &info);
    free(wdir);
    if (NGX_FAILED(res))
    {

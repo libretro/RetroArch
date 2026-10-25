@@ -126,9 +126,9 @@ static int CONV optimal_cb(param_t *p)
    return OK;
 }
 
-EXPORT int CONV NVSDK_NGX_D3D12_Init_with_ProjectID(const char *project, int engine,
+EXPORT int CONV NVSDK_NGX_D3D12_Init_ProjectID(const char *project, int engine,
       const char *engine_version, const wchar_t *data_path, void *dev,
-      const void *common_info, int sdk_version)
+      int sdk_version, const void *common_info)
 {
    const wchar_t *const *const *paths = (const wchar_t *const *const *)common_info;
    (void)engine_version; (void)data_path;
@@ -241,7 +241,7 @@ static void copy_in(ID3D12GraphicsCommandList *cmd, ID3D12Resource *color,
    ID3D12GraphicsCommandList_ResourceBarrier(cmd, 2, b);
 }
 
-EXPORT int CONV NVSDK_NGX_D3D12_EvaluateFeature_C(void *cmd, const int *h, param_t *p, void *cb)
+EXPORT int CONV NVSDK_NGX_D3D12_EvaluateFeature(void *cmd, const int *h, param_t *p, void *cb)
 {
    fake_ngx_eval_t *e = &rec.eval[rec.evals % FAKE_NGX_MAX];
    (void)cb;

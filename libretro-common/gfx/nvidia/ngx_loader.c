@@ -187,6 +187,11 @@ static ngx_module_t ngx_open(void)
                L"SOFTWARE\\NVIDIA Corporation\\Global\\NGXCore",
                L"FullPath")))
       m = ngx_open_in(dir, MAX_PATH);
+   /* the driver installs it in System32 too: the library search */
+   if (!m)
+      m = LoadLibraryW(L"_nvngx.dll");
+   if (!m)
+      m = LoadLibraryW(L"nvngx.dll");
    return m;
 }
 #else
@@ -239,7 +244,7 @@ static bool ngx_resolve_param(ngx_module_t m, ngx_param_api_t *p)
 static bool ngx_resolve_d3d12(ngx_module_t m, ngx_d3d12_api_t *a)
 {
    bool complete = true;
-   NGX_SYM(a->init_with_project_id, "NVSDK_NGX_D3D12_Init_with_ProjectID");
+   NGX_SYM(a->init_project_id, "NVSDK_NGX_D3D12_Init_ProjectID");
    NGX_SYM(a->shutdown1, "NVSDK_NGX_D3D12_Shutdown1");
    NGX_SYM(a->get_capability_parameters, "NVSDK_NGX_D3D12_GetCapabilityParameters");
    NGX_SYM(a->allocate_parameters, "NVSDK_NGX_D3D12_AllocateParameters");
@@ -247,7 +252,7 @@ static bool ngx_resolve_d3d12(ngx_module_t m, ngx_d3d12_api_t *a)
    NGX_SYM(a->get_feature_requirements, "NVSDK_NGX_D3D12_GetFeatureRequirements");
    NGX_SYM(a->create_feature, "NVSDK_NGX_D3D12_CreateFeature");
    NGX_SYM(a->release_feature, "NVSDK_NGX_D3D12_ReleaseFeature");
-   NGX_SYM(a->evaluate_feature, "NVSDK_NGX_D3D12_EvaluateFeature_C");
+   NGX_SYM(a->evaluate_feature, "NVSDK_NGX_D3D12_EvaluateFeature");
    return complete;
 }
 
@@ -260,14 +265,14 @@ static bool ngx_resolve_vulkan(ngx_module_t m, ngx_vulkan_api_t *a)
    NGX_SYM(a->get_feature_device_extension_requirements,
          "NVSDK_NGX_VULKAN_GetFeatureDeviceExtensionRequirements");
    NGX_SYM(a->get_feature_requirements, "NVSDK_NGX_VULKAN_GetFeatureRequirements");
-   NGX_SYM(a->init_with_project_id, "NVSDK_NGX_VULKAN_Init_with_ProjectID");
+   NGX_SYM(a->init_project_id, "NVSDK_NGX_VULKAN_Init_ProjectID");
    NGX_SYM(a->shutdown1, "NVSDK_NGX_VULKAN_Shutdown1");
    NGX_SYM(a->get_capability_parameters, "NVSDK_NGX_VULKAN_GetCapabilityParameters");
    NGX_SYM(a->allocate_parameters, "NVSDK_NGX_VULKAN_AllocateParameters");
    NGX_SYM(a->destroy_parameters, "NVSDK_NGX_VULKAN_DestroyParameters");
    NGX_SYM(a->create_feature1, "NVSDK_NGX_VULKAN_CreateFeature1");
    NGX_SYM(a->release_feature, "NVSDK_NGX_VULKAN_ReleaseFeature");
-   NGX_SYM(a->evaluate_feature, "NVSDK_NGX_VULKAN_EvaluateFeature_C");
+   NGX_SYM(a->evaluate_feature, "NVSDK_NGX_VULKAN_EvaluateFeature");
    return complete;
 }
 

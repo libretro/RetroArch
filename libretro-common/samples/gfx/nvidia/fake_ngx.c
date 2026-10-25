@@ -85,9 +85,9 @@ EXPORT int CONV NVSDK_NGX_VULKAN_GetFeatureRequirements(void *inst, void *pd, co
 {
    (void)inst; (void)pd; (void)info; memset(out, 0, 4 + 4 + 255); return OK;
 }
-EXPORT int CONV NVSDK_NGX_VULKAN_Init_with_ProjectID(const char *project, int engine,
+EXPORT int CONV NVSDK_NGX_VULKAN_Init_ProjectID(const char *project, int engine,
       const char *engine_version, const wchar_t *data_path, void *inst, void *pd,
-      void *dev, void *gipa, void *gdpa, const void *common_info, int sdk_version)
+      void *dev, void *gipa, void *gdpa, int sdk_version, const void *common_info)
 {
    /* ngx_feature_common_info_t: path list first */
    const wchar_t *const *const *paths = (const wchar_t *const *const *)common_info;
@@ -117,7 +117,7 @@ EXPORT int CONV NVSDK_NGX_VULKAN_CreateFeature1(void *dev, void *cmd, int featur
    return OK;
 }
 EXPORT int CONV NVSDK_NGX_VULKAN_ReleaseFeature(int *h) { *h = 0; return OK; }
-EXPORT int CONV NVSDK_NGX_VULKAN_EvaluateFeature_C(void *cmd, const int *h, param_t *p, void *cb)
+EXPORT int CONV NVSDK_NGX_VULKAN_EvaluateFeature(void *cmd, const int *h, param_t *p, void *cb)
 {
    int *s = slot(p, "Evaluated", 1);
    (void)cmd; (void)cb;
@@ -129,9 +129,9 @@ EXPORT int CONV NVSDK_NGX_VULKAN_EvaluateFeature_C(void *cmd, const int *h, para
 }
 
 #if defined(_WIN32)
-EXPORT int CONV NVSDK_NGX_D3D12_Init_with_ProjectID(const char *project, int engine,
+EXPORT int CONV NVSDK_NGX_D3D12_Init_ProjectID(const char *project, int engine,
       const char *engine_version, const wchar_t *data_path, void *dev,
-      const void *common_info, int sdk_version)
+      int sdk_version, const void *common_info)
 {
    (void)engine_version; (void)data_path; (void)common_info;
    if (!project || !dev || engine != 0 || sdk_version != 0x15)
@@ -160,8 +160,8 @@ EXPORT int CONV NVSDK_NGX_D3D12_CreateFeature(void *cmd, int feature, param_t *p
    return OK;
 }
 EXPORT int CONV NVSDK_NGX_D3D12_ReleaseFeature(int *h) { *h = 0; return OK; }
-EXPORT int CONV NVSDK_NGX_D3D12_EvaluateFeature_C(void *cmd, const int *h, param_t *p, void *cb)
+EXPORT int CONV NVSDK_NGX_D3D12_EvaluateFeature(void *cmd, const int *h, param_t *p, void *cb)
 {
-   return NVSDK_NGX_VULKAN_EvaluateFeature_C(cmd, h, p, cb);
+   return NVSDK_NGX_VULKAN_EvaluateFeature(cmd, h, p, cb);
 }
 #endif

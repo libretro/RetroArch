@@ -89,7 +89,7 @@ d3d12_ngx_t *d3d12_ngx_init(ID3D12Device *device, const char *dlss_dir)
    int available = 0;
    const ngx_lib_t *lib = ngx_lib_get();
 
-   if (!lib || !lib->d3d12.init_with_project_id)
+   if (!lib || !lib->d3d12.init_project_id)
    {
       RARCH_LOG("[D3D12] Temporal Upscaler: no NGX core library.\n");
       return NULL;
@@ -106,9 +106,9 @@ d3d12_ngx_t *d3d12_ngx_init(ID3D12Device *device, const char *dlss_dir)
    memset(&info, 0, sizeof(info));
    info.path_list.path   = paths;
    info.path_list.length = 1;
-   res = lib->d3d12.init_with_project_id(D3D12_NGX_PROJECT_ID,
+   res = lib->d3d12.init_project_id(D3D12_NGX_PROJECT_ID,
          NGX_ENGINE_TYPE_CUSTOM, D3D12_NGX_ENGINE_VERSION, wdir,
-         (void*)device, &info, NGX_VERSION_API);
+         (void*)device, NGX_VERSION_API, &info);
    free(wdir);
    if (NGX_FAILED(res))
    {

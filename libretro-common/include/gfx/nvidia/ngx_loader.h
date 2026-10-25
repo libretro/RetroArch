@@ -292,10 +292,13 @@ typedef struct ngx_param_api
  * the COM interfaces. All NULL where the library has no D3D12 (Linux). */
 typedef struct ngx_d3d12_api
 {
-   ngx_result_t (NGX_CONV *init_with_project_id)(const char *project_id,
+   /* NVSDK_NGX_D3D12_Init_ProjectID: the SDK version before the
+    * feature info, as the library has it (the SDK's static library
+    * shows applications the other order under Init_with_ProjectID) */
+   ngx_result_t (NGX_CONV *init_project_id)(const char *project_id,
          int engine_type, const char *engine_version,
          const wchar_t *application_data_path, void *device,
-         const ngx_feature_common_info_t *info, int sdk_version);
+         int sdk_version, const ngx_feature_common_info_t *info);
    ngx_result_t (NGX_CONV *shutdown1)(void *device);
    ngx_result_t (NGX_CONV *get_capability_parameters)(ngx_parameter_t **out);
    ngx_result_t (NGX_CONV *allocate_parameters)(ngx_parameter_t **out);
@@ -327,13 +330,15 @@ typedef struct ngx_vulkan_api
    ngx_result_t (NGX_CONV *get_feature_requirements)(void *instance,
          void *physical_device, const ngx_feature_discovery_info_t *info,
          ngx_feature_requirement_t *out);
-   ngx_result_t (NGX_CONV *init_with_project_id)(const char *project_id,
+   /* NVSDK_NGX_VULKAN_Init_ProjectID (as the D3D12 one: the SDK
+    * version before the feature info) */
+   ngx_result_t (NGX_CONV *init_project_id)(const char *project_id,
          int engine_type, const char *engine_version,
          const wchar_t *application_data_path, void *instance,
          void *physical_device, void *device,
          ngx_vk_proc_t get_instance_proc_addr,
          ngx_vk_proc_t get_device_proc_addr,
-         const ngx_feature_common_info_t *info, int sdk_version);
+         int sdk_version, const ngx_feature_common_info_t *info);
    ngx_result_t (NGX_CONV *shutdown1)(void *device);
    ngx_result_t (NGX_CONV *get_capability_parameters)(ngx_parameter_t **out);
    ngx_result_t (NGX_CONV *allocate_parameters)(ngx_parameter_t **out);
@@ -349,8 +354,8 @@ typedef struct ngx_lib
 {
    void *handle;
    ngx_param_api_t param;
-   ngx_d3d12_api_t d3d12;      /* d3d12.init_with_project_id NULL: no D3D12 */
-   ngx_vulkan_api_t vulkan;    /* vulkan.init_with_project_id NULL: no Vulkan */
+   ngx_d3d12_api_t d3d12;      /* d3d12.init_project_id NULL: no D3D12 */
+   ngx_vulkan_api_t vulkan;    /* vulkan.init_project_id NULL: no Vulkan */
 } ngx_lib_t;
 
 /* The NGX core library, found and loaded the first time, with every
