@@ -18,6 +18,7 @@ SOURCES := webm_player_test.c \
  $(COMMON)/file/file_path.c \
  $(COMMON)/file/file_path_io.c \
  $(COMMON)/formats/data_transfer.c \
+ $(COMMON)/formats/h264/rh264.c $(COMMON)/formats/h265/rh265.c \
  $(COMMON)/formats/audio_transfer.c \
  $(COMMON)/formats/image/image_yuv_blit.c \
  $(COMMON)/formats/image/image_hdr_blit.c \
@@ -46,8 +47,7 @@ endif
 ifeq ($(MP4),1)
 CFLAGS += -DHAVE_RMP4 -DHAVE_RH264 -DHAVE_RH265
 SOURCES += $(COMMON)/formats/mp4/rmp4.c \
- $(COMMON)/formats/mp4/rmp4_video.c \
- $(COMMON)/formats/h264/rh264.c $(COMMON)/formats/h265/rh265.c
+ $(COMMON)/formats/mp4/rmp4_video.c
 endif
 ifeq ($(AUDIO),1)
 CFLAGS += -DHAVE_RAAC -DHAVE_ROPUS -DHAVE_RVORBIS
