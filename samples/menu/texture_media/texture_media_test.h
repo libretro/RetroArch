@@ -185,6 +185,7 @@ int main(int argc,char **argv)
    const char *first_video = getenv("MEDIA_TEST_FIRST_VIDEO_US");
    int64_t first_video_us = first_video ? strtol(first_video, NULL, 10) : 0;
    bool folder = getenv("MEDIA_TEST_CONTINUOUS") != NULL;
+   setvbuf(stdout, NULL, _IONBF, 0);
    if(argc!=3)return 2;
    native_gpu=getenv("MEDIA_TEST_GPU")!=NULL;
    config_file_set_io_default(config_file_io_filestream());rtime_init();retroarch_config_init();
@@ -396,6 +397,7 @@ int main(int argc,char **argv)
    CHECK("movie activation is consumed before core launch",
          test_action(viewer,MENU_ACTION_OK)==MENU_ACTION_NOOP
          &&test_showing(viewer));
+   if(failures)goto media_test_done;
    for(tick=0;tick<2000;tick++)
    {
       render(menu_st);

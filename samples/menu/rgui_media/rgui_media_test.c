@@ -229,6 +229,7 @@ int main(int argc, char **argv)
    retro_atomic_int_init(&cold_finished, 0);
    cold_poll_owner = sthread_get_current_thread_id();
 #endif
+   setvbuf(stdout, NULL, _IONBF, 0);
    if (argc != 3) return 2;
    native_gpu=getenv("MEDIA_TEST_GPU")!=NULL;
    gpu_surface=getenv("MEDIA_TEST_GPU_SURFACE")!=NULL;

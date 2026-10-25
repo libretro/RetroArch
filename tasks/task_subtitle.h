@@ -32,7 +32,8 @@ typedef struct task_subtitle_catalog task_subtitle_catalog_t;
 enum task_subtitle_source
 {
    TASK_SUBTITLE_SIDECAR = 0,
-   TASK_SUBTITLE_MP4
+   TASK_SUBTITLE_MP4,
+   TASK_SUBTITLE_WEBM
 };
 
 typedef struct task_subtitle_entry

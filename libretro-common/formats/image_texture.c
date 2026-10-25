@@ -70,6 +70,12 @@ enum image_type_enum image_texture_get_type(const char *path)
    switch (len)
    {
       case 3:
+#ifdef HAVE_RWEBM
+         if ((ext[0] | 0x20) == 'm' &&
+             (ext[1] | 0x20) == 'k' &&
+             (ext[2] | 0x20) == 'v')
+            return IMAGE_TYPE_WEBM;
+#endif
 #ifdef HAVE_RPNG
          if ((ext[0] | 0x20) == 'p' &&
              (ext[1] | 0x20) == 'n' &&

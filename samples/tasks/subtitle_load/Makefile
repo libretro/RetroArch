@@ -7,7 +7,7 @@ THREADS ?= 1
 SOURCES := subtitle_load_test.c $(ROOT)/tasks/task_subtitle.c \
            $(ROOT)/tasks/task_nbio_slice.c \
            $(LRC)/formats/subtitle/rsubtitle_srt.c \
-           $(LRC)/formats/mp4/rmp4.c $(LRC)/formats/data_transfer.c \
+           $(LRC)/formats/mp4/rmp4.c $(LRC)/formats/webm/rwebm.c $(LRC)/formats/data_transfer.c \
            $(LRC)/memmap/memmap.c \
            $(LRC)/queues/task_queue.c $(LRC)/rthreads/rthreads.c \
            $(LRC)/rthreads/retro_eventcount.c \
@@ -20,7 +20,7 @@ SOURCES := subtitle_load_test.c $(ROOT)/tasks/task_subtitle.c \
            $(LRC)/compat/fopen_utf8.c
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 LDFLAGS += -Wl,--wrap=filestream_read
-CFLAGS += -DHAVE_RMP4 -O1 -g1 -std=gnu89 -Wall -Wextra -Wno-unused-parameter \
+CFLAGS += -DHAVE_RMP4 -DHAVE_RWEBM -O1 -g1 -std=gnu89 -Wall -Wextra -Wno-unused-parameter \
           -Werror=declaration-after-statement -I$(ROOT) -I$(LRC)/include
 ifeq ($(THREADS),1)
 CFLAGS += -DHAVE_THREADS
@@ -50,6 +50,7 @@ $(TARGET): $(OBJS)
 check: all
 	./$(TARGET)
 	python3 embedded_check.py --malformed ./$(TARGET)
+	python3 webm_check.py --malformed ./$(TARGET)
 
 clean:
 	rm -rf $(SAMPLE_OBJDIR)

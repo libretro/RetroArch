@@ -3242,6 +3242,7 @@ bool gfx_thumbnail_update_path_cfg(
 #endif
 #ifdef HAVE_RWEBM
          ".webm",
+         ".mkv",
 #endif
 #ifdef HAVE_RMP4
          ".mp4",

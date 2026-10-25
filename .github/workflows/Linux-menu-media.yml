@@ -68,6 +68,12 @@ jobs:
           for driver in rgui materialui xmb ozone; do
             MEDIA_TEST_EMBEDDED_SUBTITLES=1 python3 samples/menu/rgui_media/run.py --c89 --driver "$driver" samples/menu/rgui_media/embedded.mp4
           done
+      - name: Embedded Matroska subtitles across all four menus
+        run: |
+          ffmpeg -v error -y -f lavfi -i testsrc2=size=320x240:rate=30 -i samples/menu/rgui_media/embedded-first.srt -i samples/menu/rgui_media/embedded-second.srt -map 0:v:0 -map 1:0 -map 2:0 -t 4 -c:v libvpx-vp9 -deadline realtime -cpu-used 8 -g 30 -auto-alt-ref 0 -threads 1 -c:s srt samples/menu/rgui_media/embedded.mkv
+          for driver in rgui materialui xmb ozone; do
+            MEDIA_TEST_EMBEDDED_SUBTITLES=1 python3 samples/menu/rgui_media/run.py --c89 --driver "$driver" samples/menu/rgui_media/embedded.mkv
+          done
       - name: Folder playback and fullscreen settings across all menus
         run: |
           for driver in rgui materialui xmb ozone; do

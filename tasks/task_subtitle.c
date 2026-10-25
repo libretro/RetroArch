@@ -34,9 +34,12 @@
 #include "task_subtitle.h"
 #include "tasks_internal.h"
 
+#if defined(HAVE_RMP4) || defined(HAVE_RWEBM)
+#include <formats/data_transfer.h>
+#endif
+
 #ifdef HAVE_RMP4
 #include <formats/rmp4.h>
-#include <formats/data_transfer.h>
 
 struct subtitle_mp4
 {
@@ -50,6 +53,20 @@ struct subtitle_mp4
 };
 #endif
 
+#ifdef HAVE_RWEBM
+#include <formats/rwebm.h>
+
+struct subtitle_webm
+{
+   data_transfer_t *window;
+   rwebm_t *demux;
+   rsubtitle_srt_span_t *spans;
+   char *text;
+   size_t length, avail, need_hi, feed_from;
+   size_t used, capacity, count, span_capacity;
+};
+#endif
+
 struct task_subtitle_request
 {
    char *path, *input;
@@ -57,11 +74,184 @@ struct task_subtitle_request
    rsubtitle_srt_t *track;
    size_t size, done;
    int embedded_track;
+   enum task_subtitle_source source_kind;
 #ifdef HAVE_RMP4
    struct subtitle_mp4 *mp4;
 #endif
+#ifdef HAVE_RWEBM
+   struct subtitle_webm *webm;
+#endif
    retro_atomic_int_t refs, cancelled, status;
 };
+
+#ifdef HAVE_RWEBM
+static void subtitle_webm_free(struct subtitle_webm *webm)
+{
+   if (!webm) return;
+   rwebm_close(webm->demux);
+   data_transfer_free(webm->window);
+   free(webm->spans);
+   free(webm->text);
+   free(webm);
+}
+
+static int subtitle_webm_open(struct subtitle_webm *webm, const char *path)
+{
+   const uint8_t *base;
+   int more = 0;
+   size_t end;
+   if (!webm->window)
+   {
+      RFILE *file = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ,
+            RETRO_VFS_FILE_ACCESS_HINT_NONE);
+      int64_t size = file ? filestream_get_size(file) : -1;
+      if (file) filestream_close(file);
+      if (size <= 0 || (uint64_t)size > (size_t)-1
+            || (!data_transfer_reserve_supported()
+               && (uint64_t)size > RSUBTITLE_SRT_MAX_INPUT))
+         return -1;
+      webm->window = data_transfer_open_window(path, 4096);
+      if (!webm->window) return -1;
+      base = data_transfer_window_base(webm->window, &webm->length);
+      if (!base || !webm->length) return -1;
+      webm->avail = webm->length < 4096 ? webm->length : 4096;
+      return 0;
+   }
+   base = data_transfer_window_base(webm->window, NULL);
+   webm->demux = rwebm_open_memory_avail(base, webm->length, webm->avail, &more);
+   if (webm->demux)
+      return data_transfer_window_grow_keep(webm->window,
+            rwebm_media_floor(webm->demux)) ? 1 : -1;
+   if (!more || webm->avail == webm->length
+         || webm->avail >= RSUBTITLE_SRT_MAX_INPUT)
+      return -1;
+   end = webm->avail + 65536;
+   if (end > RSUBTITLE_SRT_MAX_INPUT) end = RSUBTITLE_SRT_MAX_INPUT;
+   if (end > webm->length) end = webm->length;
+   if (!data_transfer_window_extend(webm->window, end)) return -1;
+   webm->avail = end;
+   return 0;
+}
+
+static int subtitle_webm_step(task_subtitle_request_t *request)
+{
+   struct subtitle_webm *webm = request->webm;
+   const rwebm_track *track;
+   rwebm_packet packet;
+   int result;
+   int64_t first, last, duration;
+   uint64_t limit = (~(uint64_t)0) >> 1;
+   size_t lo, hi, end, i, written;
+   if (!webm)
+   {
+      request->webm = (struct subtitle_webm*)calloc(1, sizeof(*webm));
+      return request->webm ? 0 : -1;
+   }
+   if (!webm->demux)
+   {
+      result = subtitle_webm_open(webm, request->path);
+      if (result != 1) return result;
+      track = rwebm_get_track(webm->demux, request->embedded_track);
+      if (!track || track->type != RWEBM_TRACK_OTHER
+            || strcmp(track->codec_id, "S_TEXT/UTF8"))
+         return -1;
+      return 0;
+   }
+   if (webm->need_hi)
+   {
+      data_transfer_window_skip(webm->window, webm->feed_from);
+      data_transfer_window_advance(webm->window, webm->feed_from);
+      if (webm->avail < webm->feed_from) webm->avail = webm->feed_from;
+      end = webm->need_hi - webm->avail > 65536
+         ? webm->avail + 65536 : webm->need_hi;
+      if (!data_transfer_window_extend(webm->window, end)) return -1;
+      webm->avail = end;
+      rwebm_set_avail(webm->demux, end);
+      if (end == webm->need_hi) webm->need_hi = 0;
+      return 0;
+   }
+   result = rwebm_read_packet_track(webm->demux, request->embedded_track, &packet);
+   if (result == RWEBM_READ_YIELD) return 0;
+   if (result == RWEBM_READ_AGAIN)
+   {
+      webm->feed_from = rwebm_consumed(webm->demux);
+      rwebm_read_span(webm->demux, &lo, &hi);
+      if (!hi)
+      {
+         hi = webm->avail > webm->feed_from ? webm->avail : webm->feed_from;
+         hi = webm->length - hi < 64 ? webm->length : hi + 64;
+      }
+      if (hi <= webm->avail || hi > webm->length
+            || hi < webm->feed_from
+            || hi - webm->feed_from > RSUBTITLE_SRT_MAX_INPUT)
+         return -1;
+      webm->need_hi = hi;
+      return 0;
+   }
+   if (result < 0) return -1;
+   if (!result)
+   {
+      char *text = webm->text;
+      rsubtitle_srt_span_t *spans = webm->spans;
+      webm->text = NULL; webm->spans = NULL;
+      request->track = rsubtitle_srt_begin_cues(text, webm->used, spans, webm->count);
+      return request->track ? 1 : -1;
+   }
+   if (packet.track != request->embedded_track || !packet.size) return 0;
+   track = rwebm_get_track(webm->demux, request->embedded_track);
+   duration = packet.duration_ns;
+   if (duration == -1 && track->default_duration_ns <= limit)
+      duration = (int64_t)track->default_duration_ns;
+   if (duration < 0 || (!duration && packet.duration_ns == -1)
+         || packet.timestamp_continuation || packet.size > 65536
+         || track->codec_delay_ns > limit
+         || packet.timestamp < -(int64_t)limit + (int64_t)track->codec_delay_ns)
+      return -1;
+   first = packet.timestamp - (int64_t)track->codec_delay_ns;
+   if (first > (int64_t)limit - duration) return -1;
+   last = first + duration;
+   if (first < 0) first = 0;
+   if (last / 1000 <= first / 1000) return 0;
+   if (webm->count == 65536 || webm->used > RSUBTITLE_SRT_MAX_INPUT - packet.size - 1)
+      return -1;
+   end = webm->used + packet.size + 1;
+   if (end > webm->capacity)
+   {
+      size_t capacity = webm->capacity ? webm->capacity * 2 : 65536;
+      char *text;
+      if (capacity < end) capacity = end;
+      if (capacity > RSUBTITLE_SRT_MAX_INPUT) capacity = RSUBTITLE_SRT_MAX_INPUT;
+      text = (char*)realloc(webm->text, capacity);
+      if (!text) return -1;
+      webm->text = text; webm->capacity = capacity;
+   }
+   if (webm->count == webm->span_capacity)
+   {
+      size_t capacity = webm->span_capacity ? webm->span_capacity * 2 : 64;
+      rsubtitle_srt_span_t *spans = (rsubtitle_srt_span_t*)realloc(webm->spans,
+            capacity * sizeof(*spans));
+      if (!spans) return -1;
+      webm->spans = spans; webm->span_capacity = capacity;
+   }
+   for (i = 0, written = 0; i < packet.size; i++)
+   {
+      char c = (char)packet.data[i];
+      if (c == '\r')
+      {
+         c = '\n';
+         if (i + 1 < packet.size && packet.data[i + 1] == '\n') i++;
+      }
+      webm->text[webm->used + written++] = c;
+   }
+   webm->text[webm->used + written] = 0;
+   webm->spans[webm->count].start_us = first / 1000;
+   webm->spans[webm->count].end_us = last / 1000;
+   webm->spans[webm->count].offset = webm->used;
+   webm->spans[webm->count++].length = written;
+   webm->used += written + 1;
+   return 0;
+}
+#endif
 
 #ifdef HAVE_RMP4
 static void subtitle_mp4_free(struct subtitle_mp4 *mp4)
@@ -273,6 +463,10 @@ static void subtitle_task_close(task_subtitle_request_t *request)
    subtitle_mp4_free(request->mp4);
    request->mp4 = NULL;
 #endif
+#ifdef HAVE_RWEBM
+   subtitle_webm_free(request->webm);
+   request->webm = NULL;
+#endif
    free(request->input);
    request->input = NULL;
 }
@@ -323,6 +517,17 @@ static void subtitle_task_handler(retro_task_t *task)
       task_nbio_slice_close(&budget);
       if (status)
          subtitle_task_finish(task, status);
+      return;
+   }
+   if (request->source_kind == TASK_SUBTITLE_WEBM)
+   {
+#ifdef HAVE_RWEBM
+      int status = subtitle_webm_step(request);
+      if (status < 0) subtitle_task_finish(task, -1);
+      else if (status > 0) subtitle_task_close(request);
+#else
+      subtitle_task_finish(task, -1);
+#endif
       return;
    }
    if (request->embedded_track >= 0)
@@ -390,7 +595,8 @@ static void subtitle_task_cleanup(retro_task_t *task)
    subtitle_task_unref(request);
 }
 
-static task_subtitle_request_t *subtitle_task_create(const char *path, int embedded_track)
+static task_subtitle_request_t *subtitle_task_create(const char *path, int embedded_track,
+      enum task_subtitle_source source_kind)
 {
    task_subtitle_request_t *request;
    retro_task_t *task;
@@ -411,6 +617,7 @@ static task_subtitle_request_t *subtitle_task_create(const char *path, int embed
    }
    memcpy(request->path, path, length + 1);
    request->embedded_track = embedded_track;
+   request->source_kind = source_kind;
    task = task_init();
    if (!task)
    {
@@ -437,12 +644,12 @@ static task_subtitle_request_t *subtitle_task_create(const char *path, int embed
 
 task_subtitle_request_t *task_subtitle_load(const char *path)
 {
-   return subtitle_task_create(path, -1);
+   return subtitle_task_create(path, -1, TASK_SUBTITLE_SIDECAR);
 }
 
 task_subtitle_request_t *task_subtitle_load_embedded(const char *path, int track)
 {
-   return track >= 0 ? subtitle_task_create(path, track) : NULL;
+   return track >= 0 ? subtitle_task_create(path, track, TASK_SUBTITLE_MP4) : NULL;
 }
 
 task_subtitle_request_t *task_subtitle_load_entry(const task_subtitle_entry_t *entry)
@@ -450,6 +657,8 @@ task_subtitle_request_t *task_subtitle_load_entry(const task_subtitle_entry_t *e
    if (!entry) return NULL;
    if (entry->source == TASK_SUBTITLE_SIDECAR)
       return task_subtitle_load(entry->path);
+   if (entry->source == TASK_SUBTITLE_WEBM && entry->track >= 0)
+      return subtitle_task_create(entry->path, entry->track, TASK_SUBTITLE_WEBM);
    if (entry->source == TASK_SUBTITLE_MP4)
       return task_subtitle_load_embedded(entry->path, entry->track);
    return NULL;
@@ -491,6 +700,9 @@ struct task_subtitle_catalog
 #ifdef HAVE_RMP4
    struct subtitle_mp4 *mp4;
 #endif
+#ifdef HAVE_RWEBM
+   struct subtitle_webm *webm;
+#endif
    size_t count, stem_length;
    retro_atomic_int_t refs, cancelled, status;
 };
@@ -516,6 +728,10 @@ static void subtitle_catalog_finish(retro_task_t *task, int status)
 #ifdef HAVE_RMP4
    subtitle_mp4_free(catalog->mp4);
    catalog->mp4 = NULL;
+#endif
+#ifdef HAVE_RWEBM
+   subtitle_webm_free(catalog->webm);
+   catalog->webm = NULL;
 #endif
    retro_atomic_store_release_int(&catalog->status, status);
    task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
@@ -565,6 +781,38 @@ static bool subtitle_catalog_add(task_subtitle_catalog_t *catalog,
    return true;
 }
 
+#ifdef HAVE_RWEBM
+static int subtitle_catalog_webm(task_subtitle_catalog_t *catalog)
+{
+   const rwebm_track *track;
+   char *path;
+   size_t length;
+   if (!catalog->webm)
+   {
+      catalog->webm = (struct subtitle_webm*)calloc(1, sizeof(*catalog->webm));
+      return catalog->webm ? 0 : -1;
+   }
+   if (!catalog->webm->demux)
+      return subtitle_webm_open(catalog->webm, catalog->movie) < 0 ? 1 : 0;
+   if (catalog->embedded_cursor >= (unsigned)rwebm_num_tracks(catalog->webm->demux)
+         || catalog->count == SUBTITLE_CATALOG_LIMIT)
+      return 1;
+   track = rwebm_get_track(catalog->webm->demux, catalog->embedded_cursor);
+   if (track && track->type == RWEBM_TRACK_OTHER && !strcmp(track->codec_id, "S_TEXT/UTF8"))
+   {
+      length = strlen(catalog->movie);
+      path = (char*)malloc(length + 1);
+      if (!path) return -1;
+      memcpy(path, catalog->movie, length + 1);
+      catalog->entries[catalog->count].path = path;
+      catalog->entries[catalog->count].source = TASK_SUBTITLE_WEBM;
+      catalog->entries[catalog->count++].track = (int)catalog->embedded_cursor;
+   }
+   catalog->embedded_cursor++;
+   return 0;
+}
+#endif
+
 static int subtitle_catalog_embedded(task_subtitle_catalog_t *catalog)
 {
 #ifdef HAVE_RMP4
@@ -573,6 +821,14 @@ static int subtitle_catalog_embedded(task_subtitle_catalog_t *catalog)
    int result;
    char *path;
    size_t length;
+#endif
+#ifdef HAVE_RWEBM
+   const char *webm_extension = strrchr(catalog->movie, '.');
+   if (webm_extension && (string_is_equal_noncase(webm_extension, ".webm")
+            || string_is_equal_noncase(webm_extension, ".mkv")))
+      return subtitle_catalog_webm(catalog);
+#endif
+#ifdef HAVE_RMP4
    if (!extension || (!string_is_equal_noncase(extension, ".mp4")
             && !string_is_equal_noncase(extension, ".mov")
             && !string_is_equal_noncase(extension, ".m4v")))

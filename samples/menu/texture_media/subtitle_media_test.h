@@ -71,6 +71,12 @@ static bool media_test_embedded_subtitles(menu_media_controls_t *media,
                   choice == 1 ? "Embedded second" : "Embedded first")
                || media->subtitle != owner)
             return false;
+         if (getenv("MEDIA_TEST_SUBTITLE_CONTEXT"))
+            for (i = 0; i < 2; i++)
+               if (!command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL)
+                     || !media_subtitle_wait(media, menu_st, draw,
+                        choice == 1 ? "Embedded second" : "Embedded first"))
+                  return false;
       }
    }
    puts("embedded subtitles: both tracks, UTF-8, context retention and Off passed");

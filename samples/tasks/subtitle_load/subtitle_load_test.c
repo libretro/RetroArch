@@ -222,6 +222,7 @@ static void embedded(const char *path, bool threaded)
    unsigned i;
    task_subtitle_catalog_t *catalog;
    const task_subtitle_entry_t *entry;
+   task_subtitle_entry_t selected;
    if (threaded) task_queue_set_threaded();
    else task_queue_unset_threaded();
    task_queue_init(threaded, NULL);
@@ -232,7 +233,10 @@ static void embedded(const char *path, bool threaded)
    assert(task_subtitle_catalog_status(catalog) == 1);
    assert(task_subtitle_catalog_count(catalog) == 2);
    entry = task_subtitle_catalog_entry(catalog, 0);
-   assert(entry && entry->source == TASK_SUBTITLE_MP4 && entry->track == 0);
+   assert(entry && entry->source == (getenv("SUBTITLE_EXPECT_WEBM")
+            ? TASK_SUBTITLE_WEBM : TASK_SUBTITLE_MP4) && entry->track == 0);
+   selected = *entry;
+   selected.path = path;
    assert(!strcmp(entry->path, path));
    request = task_subtitle_load_entry(entry);
    task_subtitle_catalog_release(catalog);
@@ -257,12 +261,14 @@ static void embedded(const char *path, bool threaded)
    assert(!strcmp(cue->text, getenv("SUBTITLE_EXPECT_UTF16")
             ? "Z\360\237\230\200" : "first caf\303\251"));
    cue = rsubtitle_srt_cue(track, 1);
-   assert(cue && cue->start_us == 2000000 && cue->end_us == 3500000);
+   assert(cue && cue->start_us == 2000000
+         && cue->end_us == (getenv("SUBTITLE_EXPECT_DEFAULT") ? 3100000 : 3500000));
    assert(!strcmp(cue->text, "second \360\237\230\200"));
    rsubtitle_srt_free(track);
    task_subtitle_release(request);
    drain();
-   request = task_subtitle_load_embedded(path, 9);
+   selected.track = 9;
+   request = task_subtitle_load_entry(&selected);
    assert(request);
    await(request);
    assert(task_subtitle_status(request) == -1);
@@ -270,7 +276,8 @@ static void embedded(const char *path, bool threaded)
    drain();
    for (i = 0; i < 32; i++)
    {
-      request = task_subtitle_load_embedded(path, 0);
+      selected.track = 0;
+      request = task_subtitle_load_entry(&selected);
       assert(request);
       if (!threaded)
       {
@@ -281,7 +288,7 @@ static void embedded(const char *path, bool threaded)
    }
    drain();
    task_queue_deinit();
-   puts("PASS: embedded tx3g text, movie intervals, invalid track and cancellation");
+   puts("PASS: embedded text, container intervals, invalid track and cancellation");
 }
 #endif
 
