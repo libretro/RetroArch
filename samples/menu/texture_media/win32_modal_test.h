@@ -11,12 +11,17 @@
 
 typedef struct media_modal_av_probe
 {
-   HWND hwnd;
+   MSG messages[32], lifecycle[16], last_mouse;
+   RECT first_sizing, last_sizing;
+   HWND hwnd, exit_foreground, exit_capture;
    WPARAM command;
-   DWORD owner;
+   DWORD owner, exit_pid;
    unsigned moves, capture_serial;
+   unsigned sizing, size, canceled, capture_lost, message_count, lifecycle_count;
+   unsigned mouse_moves;
    retro_atomic_int_t active, verified, done, capture, capture_ready, moved;
    bool entered, exited, continuous, uniform;
+   char exit_class[64];
 } media_modal_av_probe_t;
 
 static media_modal_av_probe_t media_modal_probe;
@@ -28,10 +33,76 @@ static LRESULT CALLBACK media_modal_message(int code, WPARAM wp, LPARAM lp)
       const CWPSTRUCT *message = (const CWPSTRUCT*)lp;
       if (message->hwnd == media_modal_probe.hwnd)
       {
+         if ((retro_atomic_load_acquire_int(&media_modal_probe.active)
+                  || message->message == WM_ENTERSIZEMOVE)
+               && (message->message == WM_ACTIVATE
+                  || message->message == WM_ACTIVATEAPP
+                  || message->message == WM_SETFOCUS
+                  || message->message == WM_KILLFOCUS
+                  || message->message == WM_CANCELMODE
+                  || message->message == WM_CAPTURECHANGED
+                  || message->message == WM_ENTERSIZEMOVE
+                  || message->message == WM_EXITSIZEMOVE
+                  || message->message == WM_DESTROY))
+         {
+            MSG *event = &media_modal_probe.lifecycle[
+               media_modal_probe.lifecycle_count++ % 16];
+            event->message = message->message;
+            event->wParam = message->wParam;
+            event->lParam = message->lParam;
+            event->time = GetTickCount();
+         }
+         if (message->message == WM_SIZING)
+         {
+            const RECT *rect = (const RECT*)message->lParam;
+            if (!media_modal_probe.sizing)
+               media_modal_probe.first_sizing = *rect;
+            media_modal_probe.last_sizing = *rect;
+            media_modal_probe.sizing++;
+         }
+         else if (message->message == WM_SIZE)
+            media_modal_probe.size++;
+         else if (message->message == WM_CANCELMODE)
+            media_modal_probe.canceled++;
+         else if (message->message == WM_CAPTURECHANGED)
+            media_modal_probe.capture_lost++;
          if (message->message == WM_ENTERSIZEMOVE)
             retro_atomic_store_release_int(&media_modal_probe.active, 1);
          else if (message->message == WM_EXITSIZEMOVE)
+         {
+            media_modal_probe.exit_foreground = GetForegroundWindow();
+            GetWindowThreadProcessId(media_modal_probe.exit_foreground,
+                  &media_modal_probe.exit_pid);
+            GetClassNameA(media_modal_probe.exit_foreground,
+                  media_modal_probe.exit_class, sizeof(media_modal_probe.exit_class));
+            media_modal_probe.exit_capture = GetCapture();
             retro_atomic_store_release_int(&media_modal_probe.active, 0);
+         }
+      }
+   }
+   return CallNextHookEx(NULL, code, wp, lp);
+}
+
+static LRESULT CALLBACK media_modal_queue_message(int code, WPARAM wp, LPARAM lp)
+{
+   if (code >= 0 && wp == PM_REMOVE)
+   {
+      const MSG *message = (const MSG*)lp;
+      if (retro_atomic_load_acquire_int(&media_modal_probe.active))
+      {
+         if (message->message == WM_MOUSEMOVE
+               || message->message == WM_NCMOUSEMOVE)
+         {
+            media_modal_probe.mouse_moves++;
+            media_modal_probe.last_mouse = *message;
+         }
+         else if ((message->message >= WM_KEYFIRST
+                  && message->message <= WM_KEYLAST)
+               || (message->message >= WM_MOUSEFIRST
+                  && message->message <= WM_MOUSELAST)
+               || (message->message >= WM_NCLBUTTONDOWN
+                  && message->message <= WM_NCMBUTTONDBLCLK))
+            media_modal_probe.messages[media_modal_probe.message_count++ % 32] = *message;
       }
    }
    return CallNextHookEx(NULL, code, wp, lp);
@@ -62,6 +133,8 @@ static void media_modal_av_worker(void *data)
                if (origin.y + 48 >= clip.bottom)
                   direction_y = -1;
             }
+            if (getenv("MEDIA_TEST_MODAL_SHRINK") && probe->command != SC_MOVE)
+               direction_x = direction_y = -1;
             entered_at = cpu_features_get_time_usec();
             probe->entered = true;
          }
@@ -77,6 +150,13 @@ static void media_modal_av_worker(void *data)
             {
                PostMessage(probe->hwnd, WM_KEYDOWN, VK_RIGHT, 0);
                PostMessage(probe->hwnd, WM_KEYDOWN, VK_DOWN, 0);
+            }
+            else if (!probe->continuous && getenv("MEDIA_TEST_MODAL_KEYS"))
+            {
+               PostMessage(probe->hwnd, WM_KEYDOWN,
+                     direction_x < 0 ? VK_LEFT : VK_RIGHT, 0);
+               PostMessage(probe->hwnd, WM_KEYDOWN,
+                     direction_y < 0 ? VK_UP : VK_DOWN, 0);
             }
             else
             {
@@ -219,6 +299,75 @@ static bool media_modal_capture(media_modal_av_probe_t *probe, uint32_t *hash,
    return ok;
 }
 
+typedef struct media_modal_placement
+{
+   HWND hwnd;
+   RECT rect;
+   UINT message;
+   BOOL result;
+   retro_atomic_int_t ready, done, busy;
+} media_modal_placement_t;
+
+static media_modal_placement_t media_placement;
+
+static LRESULT CALLBACK media_modal_place_message(int code, WPARAM wp, LPARAM lp)
+{
+   if (code >= 0 && wp == PM_REMOVE)
+   {
+      const MSG *message = (const MSG*)lp;
+      if (message->hwnd == media_placement.hwnd
+            && message->message == media_placement.message
+            && retro_atomic_load_acquire_int(&media_placement.ready))
+      {
+         media_placement.result = SetWindowPos(message->hwnd, NULL,
+               media_placement.rect.left, media_placement.rect.top,
+               media_placement.rect.right - media_placement.rect.left,
+               media_placement.rect.bottom - media_placement.rect.top,
+               SWP_NOZORDER | SWP_NOACTIVATE);
+         retro_atomic_store_release_int(&media_placement.done, 1);
+      }
+   }
+   return CallNextHookEx(NULL, code, wp, lp);
+}
+
+static bool media_modal_place(HWND hwnd, const RECT *rect)
+{
+   HHOOK hook;
+   DWORD owner = GetWindowThreadProcessId(hwnd, NULL);
+   int64_t deadline;
+   bool applied;
+   if (owner == GetCurrentThreadId())
+      return SetWindowPos(hwnd, NULL, rect->left, rect->top,
+            rect->right - rect->left, rect->bottom - rect->top,
+            SWP_NOZORDER | SWP_NOACTIVATE) != 0;
+   if (!retro_atomic_cas_int(&media_placement.busy, 0, 1))
+      return false;
+   media_placement.hwnd = hwnd;
+   media_placement.rect = *rect;
+   media_placement.result = FALSE;
+   media_placement.message = RegisterWindowMessageA("RetroArch media placement test");
+   retro_atomic_store_relaxed_int(&media_placement.done, 0);
+   hook = SetWindowsHookEx(WH_GETMESSAGE, media_modal_place_message, NULL, owner);
+   if (!hook || !media_placement.message)
+   {
+      if (hook) UnhookWindowsHookEx(hook);
+      retro_atomic_store_release_int(&media_placement.busy, 0);
+      return false;
+   }
+   retro_atomic_store_release_int(&media_placement.ready, 1);
+   PostMessage(hwnd, media_placement.message, 0, 0);
+   deadline = cpu_features_get_time_usec() + 2000000;
+   while (!retro_atomic_load_acquire_int(&media_placement.done)
+         && cpu_features_get_time_usec() < deadline)
+      if (!media_modal_normal_tick()) break;
+   applied = retro_atomic_load_acquire_int(&media_placement.done) != 0;
+   retro_atomic_store_release_int(&media_placement.ready, 0);
+   UnhookWindowsHookEx(hook);
+   if (!applied) return false;
+   retro_atomic_store_release_int(&media_placement.busy, 0);
+   return media_placement.result != FALSE;
+}
+
 static bool media_modal_fit_window(void)
 {
    RECT window, clip;
@@ -226,19 +375,24 @@ static bool media_modal_fit_window(void)
    if (!GetWindowRect(hwnd, &window) || !GetClipCursor(&clip)
          || clip.right - clip.left <= 64 || clip.bottom - clip.top <= 64)
       return false;
-   return SetWindowPos(hwnd, NULL, clip.left + 16, clip.top + 16,
-         MIN(window.right - window.left, clip.right - clip.left - 32),
-         MIN(window.bottom - window.top, clip.bottom - clip.top - 32),
-         SWP_NOZORDER | SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS) != 0;
+   window.right = clip.left + 16
+      + MIN(window.right - window.left, clip.right - clip.left - 32);
+   window.bottom = clip.top + 16
+      + MIN(window.bottom - window.top, clip.bottom - clip.top - 32);
+   window.left = clip.left + 16;
+   window.top = clip.top + 16;
+   return media_modal_place(hwnd, &window);
 }
 
 static bool media_native_modal_audio_ready(void)
 {
    const char *cold_audio = getenv("MEDIA_TEST_MODAL_AUDIO_COLD");
    settings_t *settings = config_get_ptr();
-   if (!getenv("MEDIA_TEST_MODAL_MODE")
-         || strcmp(settings->arrays.audio_driver, "wasapi"))
+   if (!getenv("MEDIA_TEST_MODAL_MODE") || !strcmp(settings->arrays.audio_driver, "null"))
       return true;
+   if (strcmp(settings->arrays.audio_driver, "wasapi"))
+      return (AUDIO_FLAGS_GET(audio_state_get_ptr()) & AUDIO_FLAG_ACTIVE)
+         && !strcmp(settings->arrays.audio_driver, audio_driver_get_ident());
    if (cold_audio)
    {
       settings->bools.audio_enable = false;
@@ -271,12 +425,14 @@ static bool media_native_modal_playback(struct menu_state *menu_st,
    RECT rect, final_rect, sampled_rect, live_rect;
    audio_mixer_voice_t *voice;
    size_t first_frames = 0, frames = 0, first_serial = 0, serial = 0;
+   size_t first_underruns = 0, exit_underruns = 0, restored_underruns = 0, last_underruns = 0;
    unsigned rate = 0, warmup, live = 0, stable_geometry = 0;
    int64_t longest_tick = 0, longest_active_tick = 0;
    uint32_t first_hash = 0, last_hash = 0;
    uint64_t first_present = 0, presents = 0;
    int64_t deadline;
    bool sampled = false, changed = false, geometry = false, valid = true;
+   bool audio_only = getenv("MEDIA_TEST_MODAL_AUDIO_ONLY") != NULL;
    const char *mode = getenv("MEDIA_TEST_MODAL_MODE");
    memset(probe, 0, sizeof(*probe));
    memset(&initial, 0, sizeof(initial));
@@ -307,6 +463,7 @@ static bool media_native_modal_playback(struct menu_state *menu_st,
             config_get_ptr()->bools.menu_thumbnail_preview_audio);
       return false;
    }
+   first_underruns = audio_driver_get_underruns();
    probe->hwnd = win32_get_window();
    probe->owner = GetWindowThreadProcessId(probe->hwnd, NULL);
    printf("modal window: hwnd=%p owner=%lu current=%lu style=%lx visible=%u fullscreen=%u ui=%s\n",
@@ -401,18 +558,19 @@ static bool media_native_modal_playback(struct menu_state *menu_st,
          first_frames = frames;
          first_serial = serial;
          first_present = presents;
-         sampled = media_modal_capture(probe, &first_hash, &sampled_rect, true);
+         sampled = audio_only || media_modal_capture(probe, &first_hash, &sampled_rect, true);
       }
       else if (!changed && serial == first_serial && frames - first_frames >= 4096
             && current.position_us >= initial.position_us + 100000)
       {
-         changed = media_modal_capture(probe, &last_hash, &sampled_rect, false)
-            && media_modal_pixels_changed(first_hash, last_hash, probe->uniform);
+         changed = audio_only || (media_modal_capture(probe, &last_hash, &sampled_rect, false)
+            && media_modal_pixels_changed(first_hash, last_hash, probe->uniform));
          if (changed)
             retro_atomic_store_release_int(&probe->verified, 1);
       }
    }
    sthread_join(thread);
+   exit_underruns = audio_driver_get_underruns();
    if (win32_message_modal_active())
       valid = false;
    UnhookWindowsHookEx(hook);
@@ -421,14 +579,24 @@ static bool media_native_modal_playback(struct menu_state *menu_st,
       ? final_rect.left != rect.left || final_rect.top != rect.top
       : final_rect.right - final_rect.left != rect.right - rect.left
          || final_rect.bottom - final_rect.top != rect.bottom - rect.top;
-   SetWindowPos(probe->hwnd, NULL, rect.left, rect.top,
-         rect.right - rect.left, rect.bottom - rect.top, SWP_NOZORDER | SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS);
+   if (!media_modal_place(probe->hwnd, &rect))
+      valid = false;
+   restored_underruns = audio_driver_get_underruns();
    SetCursorPos(cursor.x, cursor.y);
    for (warmup = 0; warmup < 4; warmup++)
       if (!media_modal_normal_tick()) valid = false;
    if (!get_target(menu_st, &target) || media_modal_audio_voice() != voice
          || !audio_mixer_voice_clock(voice, NULL, NULL, &serial)
          || serial != first_serial) valid = false;
+   printf("modal snapshot: value=%x menu=%x runloop=%x initialized=%u\n",
+         retro_atomic_load_acquire_int(&audio_state_get_ptr()->runloop_snapshot),
+         menu_st->flags, runloop_get_flags(), !!runloop_is_inited());
+   printf("modal source: device=%u\n", !!(retro_atomic_load_acquire_int(
+            &audio_state_get_ptr()->runloop_snapshot) & AUDIO_SNAP_MENU_SOURCE));
+   if (getenv("MEDIA_TEST_MODAL_DEVICE_SOURCE") && !(retro_atomic_load_acquire_int(
+            &audio_state_get_ptr()->runloop_snapshot) & AUDIO_SNAP_MENU_SOURCE)) valid = false;
+   last_underruns = audio_driver_get_underruns();
+   if (last_underruns != first_underruns) valid = false;
    printf("modal geometry: commands=%u changed=%u before=%ld,%ld,%ld,%ld after=%ld,%ld,%ld,%ld\n",
          probe->moves, geometry, rect.left, rect.top, rect.right, rect.bottom,
          final_rect.left, final_rect.top, final_rect.right, final_rect.bottom);
@@ -436,6 +604,9 @@ static bool media_native_modal_playback(struct menu_state *menu_st,
          mode ? mode : "resize", audio_driver_get_ident(), probe->entered,
          probe->exited, live, (unsigned long)(frames - first_frames), rate,
          (unsigned long)(presents - first_present), first_hash, last_hash, valid);
+   printf("modal audio: capture_disabled=%u underruns=%lu/%lu/%lu/%lu\n",
+         audio_only, (unsigned long)first_underruns, (unsigned long)exit_underruns,
+         (unsigned long)restored_underruns, (unsigned long)last_underruns);
    printf("modal continuous: enabled=%u moves=%u longest_tick_us=%ld active_tick_us=%ld\n",
          probe->continuous, probe->moves, (long)longest_tick, (long)longest_active_tick);
    return valid && (probe->continuous || geometry)
@@ -444,11 +615,11 @@ static bool media_native_modal_playback(struct menu_state *menu_st,
       && serial == first_serial && frames - first_frames >= 4096;
 }
 
-static bool media_native_modal_image(struct menu_state *menu_st,
+static bool media_native_modal_image_once(struct menu_state *menu_st,
       bool (*visible)(struct menu_state*))
 {
    media_modal_av_probe_t *probe = &media_modal_probe;
-   HHOOK hook;
+   HHOOK hook, queue_hook;
    sthread_t *thread;
    POINT cursor;
    RECT rect, final_rect, live_rect, client;
@@ -456,6 +627,7 @@ static bool media_native_modal_image(struct menu_state *menu_st,
    uint64_t first_present = 0, presents = 0;
    unsigned live = 0, stable = 0;
    int64_t deadline;
+   const char *mode = getenv("MEDIA_TEST_MODAL_MODE");
    bool valid = true, sampled = false, geometry = false, restored = false;
    memset(probe, 0, sizeof(*probe));
    ui_companion_driver_init_first(false, false, false);
@@ -470,7 +642,8 @@ static bool media_native_modal_image(struct menu_state *menu_st,
       return false;
    probe->hwnd = win32_get_window();
    probe->owner = GetWindowThreadProcessId(probe->hwnd, NULL);
-   probe->command = SC_SIZE | WMSZ_BOTTOMRIGHT;
+   probe->command = mode && !strcmp(mode, "move")
+      ? SC_MOVE : (SC_SIZE | WMSZ_BOTTOMRIGHT);
    retro_atomic_int_init(&probe->active, 0);
    retro_atomic_int_init(&probe->verified, 0);
    retro_atomic_int_init(&probe->done, 0);
@@ -480,15 +653,26 @@ static bool media_native_modal_image(struct menu_state *menu_st,
    hook = SetWindowsHookEx(WH_CALLWNDPROC, media_modal_message, NULL, probe->owner);
    if (!hook)
       return false;
+   queue_hook = SetWindowsHookEx(WH_GETMESSAGE, media_modal_queue_message,
+         NULL, probe->owner);
+   if (!queue_hook)
+   {
+      UnhookWindowsHookEx(hook);
+      return false;
+   }
    GetCursorPos(&cursor);
    GetWindowRect(probe->hwnd, &rect);
    live_rect = rect;
-   SetCursorPos(rect.right - 4, rect.bottom - 4);
+   if (probe->command == SC_MOVE)
+      SetCursorPos(rect.left + 100, rect.top + 20);
+   else
+      SetCursorPos(rect.right - 4, rect.bottom - 4);
    thread = sthread_create(media_modal_av_worker, probe);
    if (!thread)
    {
       SetCursorPos(cursor.x, cursor.y);
       UnhookWindowsHookEx(hook);
+      UnhookWindowsHookEx(queue_hook);
       return false;
    }
    deadline = cpu_features_get_time_usec() + 6000000;
@@ -507,6 +691,8 @@ static bool media_native_modal_image(struct menu_state *menu_st,
       if (!win32_message_modal_active())
          valid = false;
       live++;
+      if (retro_atomic_load_acquire_int(&probe->verified))
+         continue;
       if (!GetWindowRect(probe->hwnd, &final_rect))
       {
          valid = false;
@@ -538,12 +724,14 @@ static bool media_native_modal_image(struct menu_state *menu_st,
    if (win32_message_modal_active())
       valid = false;
    UnhookWindowsHookEx(hook);
+   UnhookWindowsHookEx(queue_hook);
    GetWindowRect(probe->hwnd, &final_rect);
-   geometry = final_rect.right - final_rect.left != rect.right - rect.left
-      || final_rect.bottom - final_rect.top != rect.bottom - rect.top;
-   SetWindowPos(probe->hwnd, NULL, rect.left, rect.top,
-         rect.right - rect.left, rect.bottom - rect.top,
-         SWP_NOZORDER | SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS);
+   geometry = probe->command == SC_MOVE
+      ? final_rect.left != rect.left || final_rect.top != rect.top
+      : final_rect.right - final_rect.left != rect.right - rect.left
+         || final_rect.bottom - final_rect.top != rect.bottom - rect.top;
+   if (!media_modal_place(probe->hwnd, &rect))
+      valid = false;
    SetCursorPos(cursor.x, cursor.y);
    deadline = cpu_features_get_time_usec() + 2000000;
    stable = 0;
@@ -570,12 +758,66 @@ static bool media_native_modal_image(struct menu_state *menu_st,
       else
          stable = 0;
    } while (cpu_features_get_time_usec() < deadline);
+   printf("modal image messages: sizing=%u size=%u cancel=%u capture_lost=%u\n",
+         probe->sizing, probe->size, probe->canceled, probe->capture_lost);
+   printf("modal sizing rectangles: first=%ld,%ld,%ld,%ld last=%ld,%ld,%ld,%ld\n",
+         probe->first_sizing.left, probe->first_sizing.top,
+         probe->first_sizing.right, probe->first_sizing.bottom,
+         probe->last_sizing.left, probe->last_sizing.top,
+         probe->last_sizing.right, probe->last_sizing.bottom);
+   printf("modal image geometry: mode=%s before=%ld,%ld,%ld,%ld after=%ld,%ld,%ld,%ld\n",
+         mode ? mode : "resize", rect.left, rect.top, rect.right, rect.bottom,
+         final_rect.left, final_rect.top, final_rect.right, final_rect.bottom);
    printf("modal image: entered=%u exited=%u ticks=%u commands=%u geometry=%u presents=%lu pixels=%08x/%08x/%08x restored=%u visible=%u valid=%u\n",
          probe->entered, probe->exited, live, probe->moves, geometry,
          (unsigned long)(presents - first_present), before, during, after,
          restored, visible(menu_st), valid);
+   if (!geometry || !sampled)
+   {
+      unsigned i = probe->lifecycle_count > 16 ? probe->lifecycle_count - 16 : 0;
+      printf("modal exit: hwnd=%p foreground=%p capture=%p pid=%lu class=%s\n",
+            (void*)probe->hwnd, (void*)probe->exit_foreground,
+            (void*)probe->exit_capture, (unsigned long)probe->exit_pid,
+            probe->exit_class);
+      for (; i < probe->lifecycle_count; i++)
+      {
+         const MSG *event = &probe->lifecycle[i % 16];
+         printf("modal lifecycle: message=%x wparam=%lu lparam=%p time=%lu\n",
+               event->message, (unsigned long)event->wParam,
+               (void*)event->lParam, (unsigned long)event->time);
+      }
+      printf("modal mouse: count=%u hwnd=%p message=%x position=%ld time=%lu\n",
+            probe->mouse_moves, (void*)probe->last_mouse.hwnd,
+            probe->last_mouse.message, (long)probe->last_mouse.lParam,
+            (unsigned long)probe->last_mouse.time);
+      i = probe->message_count > 32 ? probe->message_count - 32 : 0;
+      for (; i < probe->message_count; i++)
+      {
+         const MSG *message = &probe->messages[i % 32];
+         printf("modal input: hwnd=%p message=%x key=%lu position=%ld time=%lu\n",
+               (void*)message->hwnd, message->message, (unsigned long)message->wParam,
+               (long)message->lParam, (unsigned long)message->time);
+      }
+   }
    return valid && geometry && restored && sampled && probe->moves == 2
       && probe->entered && probe->exited && presents - first_present >= 8;
+}
+
+static bool media_native_modal_image(struct menu_state *menu_st,
+      bool (*visible)(struct menu_state*))
+{
+   const char *value = getenv("MEDIA_TEST_MODAL_REPEATS");
+   unsigned long count = value ? strtoul(value, NULL, 10) : 1;
+   unsigned long i;
+   if (!count || count > 16)
+      return false;
+   for (i = 0; i < count; i++)
+   {
+      if (!media_native_modal_image_once(menu_st, visible))
+         return false;
+      printf("modal image repeat: %lu/%lu\n", i + 1, count);
+   }
+   return true;
 }
 
 #endif

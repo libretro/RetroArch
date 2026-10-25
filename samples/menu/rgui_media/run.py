@@ -4,7 +4,10 @@ p=argparse.ArgumentParser();p.add_argument('fixture');p.add_argument('--objdir',
 p.add_argument('--first-import-refusal',action='store_true',help='require recovery after a real asynchronous native import is refused')
 p.add_argument('--cold-cancel',action='store_true',help='close and reopen while native decoder admission is held on the worker')
 p.add_argument('--cold-reset',action='store_true',help='reinitialize video while native decoder admission is held on the worker')
+p.add_argument('--audio-latency',type=int)
+p.add_argument('--audio-sync',choices=['true','false'])
 a=p.parse_args()
+if a.audio_latency is not None and a.audio_latency<0:p.error("--audio-latency must be nonnegative")
 if a.cadence_hz is not None and not 5<=a.cadence_hz<=240:p.error('--cadence-hz needs a rate from 5 through 240')
 if a.refresh_pixels:a.desktop_refresh=True
 if a.refresh_pixels and a.video_driver=='null':p.error('--refresh-pixels needs a native video driver')
@@ -56,6 +59,8 @@ with tempfile.TemporaryDirectory(prefix='rgui-media-') as temp:
  if a.desktop_refresh:values.update(media_player_crt_switch='false',media_player_refresh_rate='true',crt_switch_resolution='0')
  if a.refresh_pixels:values['video_monitor_index']='1'
  if a.modal:values.update(audio_enable='true',audio_driver=a.audio_driver,menu_thumbnail_preview_audio='true')
+ if a.audio_latency is not None:values['audio_latency']=str(a.audio_latency)
+ if a.audio_sync is not None:values['audio_sync']=a.audio_sync
  if a.modal and a.audio_driver=='wasapi':values.update(audio_wasapi_exclusive_mode='false',audio_format_negotiation='1',audio_output_layout='0',audio_out_rate='48000',log_verbosity='true')
  if a.dxgi:values.update(video_dxgi_present='true',log_verbosity='true')
  # Loading suppression must also cover controller/OSD widgets.

@@ -395,7 +395,9 @@ int main(int argc, char **argv)
 #ifdef _WIN32
       if (getenv("MEDIA_TEST_MODAL_MODE"))
       {
-         MEDIA_CHECK("movie pixels and audio continue inside the native modal loop",
+         MEDIA_CHECK(getenv("MEDIA_TEST_MODAL_AUDIO_ONLY")
+            ? "movie audio continues inside the native modal loop without capture"
+            : "movie pixels and audio continue inside the native modal loop",
                native_gpu && media_native_modal_playback(menu_st, media_current_target));
          goto cleanup;
       }
@@ -501,7 +503,9 @@ int main(int argc, char **argv)
 #ifdef _WIN32
    if (getenv("MEDIA_TEST_MODAL_MODE"))
    {
-      MEDIA_CHECK("movie pixels and audio continue inside the native modal loop",
+      MEDIA_CHECK(getenv("MEDIA_TEST_MODAL_AUDIO_ONLY")
+            ? "movie audio continues inside the native modal loop without capture"
+            : "movie pixels and audio continue inside the native modal loop",
             native_gpu && media_native_modal_playback(menu_st, media_current_target));
       goto cleanup;
    }
