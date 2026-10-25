@@ -26,11 +26,11 @@ HAVE_RETRONFS := 1
 # EDID reader behind Information > Display Information > EDID.
 HAVE_MODELINE := 1
 HAVE_OPENXR ?= 0
-# slang shaders (Vulkan): compiled by rslc, with glslang and SPIRV-Cross
-# behind it for a stage rslc refuses; HAVE_RSLC_ONLY=1 builds without
-# those two.
+# slang shaders (Vulkan, GLES 3): compiled by rslc alone;
+# HAVE_RSLC_ONLY=0 builds glslang and SPIRV-Cross in behind it for a
+# stage rslc refuses.
 HAVE_RSLC      ?= 1
-HAVE_RSLC_ONLY ?= 0
+HAVE_RSLC_ONLY ?= 1
 ifeq ($(HAVE_RSLC_ONLY),1)
    HAVE_RSLC := 1
 endif

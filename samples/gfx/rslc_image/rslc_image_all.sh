@@ -9,8 +9,9 @@
 #   ./rslc_image_all.sh ../../../retroarch ../../../../slang-shaders vulkan glcore
 #
 # On Windows, from an MSYS2 MINGW64 shell, with a retroarch.exe built
-# with both compilers (MSYS2 ./configure --enable-rslc, or an MSVC
-# build), for the D3D drivers through Microsoft's d3dcompiler_47:
+# with both compilers (./configure --enable-builtinglslang
+# --enable-builtinspirv_cross, or an MSVC build), for the D3D drivers
+# through Microsoft's d3dcompiler_47:
 #
 #   make EXT=dll
 #   ./rslc_image_all.sh ../../../retroarch.exe ../../../../slang-shaders d3d11 d3d12

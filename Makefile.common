@@ -2168,9 +2168,9 @@ ifeq ($(HAVE_SPIRV_CROSS), 1)
    DEFINES += -DHAVE_SPIRV_CROSS
 # Default to the vendored (builtin) SPIRV-Cross unless it was explicitly
 # turned off via 'configure --disable-builtinspirv_cross', which writes
-# HAVE_BUILTINSPIRV_CROSS=0 to config.mk. An unset value (every platform
-# Makefile that sets HAVE_SPIRV_CROSS=1 directly, e.g. Makefile.wiiu) is
-# treated as builtin, so existing builds are unaffected. Note: griffin
+# HAVE_BUILTINSPIRV_CROSS=0 to config.mk. An unset value (a platform
+# Makefile that sets HAVE_SPIRV_CROSS=1 directly) is treated as
+# builtin, so existing builds are unaffected. Note: griffin
 # console builds pull the vendored sources in via griffin_cpp.cpp guarded
 # by -DHAVE_SPIRV_CROSS and never reach this block.
 ifneq ($(HAVE_BUILTINSPIRV_CROSS), 0)

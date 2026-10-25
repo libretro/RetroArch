@@ -4736,17 +4736,43 @@ static bool ing_push(struct rslc_ctx *c, void ***arr, uint32_t *n, uint32_t *cap
    return true;
 }
 
+/* Byte i of the literal string at w: SPIR-V packs a string's bytes
+ * into its words lowest byte first, whatever the host's byte order. */
+#define ING_STR_BYTE(w, i) ((char)(((w)[(i) >> 2] >> (8 * ((i) & 3))) & 0xffu))
+
+/* Whether the literal string at w (words of the instruction left from
+ * it) reads s. */
+static bool ing_str_is(const uint32_t *w, uint32_t words, const char *s)
+{
+   uint32_t i;
+   for (i = 0; i < words * 4; i++)
+   {
+      if (ING_STR_BYTE(w, i) != s[i])
+         return false;
+      if (!s[i])
+         return true;
+   }
+   return false;
+}
+
 static struct rslc_sym *ing_name(struct ing *g, uint32_t at)
 {
-   const char *s;
-   size_t len = 0;
+   const uint32_t *w;
+   char            buf[256];
+   char           *s = buf;
+   size_t          len = 0, i;
    if (!at)
       return NULL;
-   s = (const char*)(g->w + at);
-   while (s[len])
+   w = g->w + at;
+   /* the instruction was checked to end in a NUL */
+   while (ING_STR_BYTE(w, len))
       len++;
    if (!len)
       return NULL;
+   if (len > sizeof(buf) && !(s = (char*)rslc_arena_alloc(g->c, len)))
+      return NULL;
+   for (i = 0; i < len; i++)
+      s[i] = ING_STR_BYTE(w, i);
    return rslc_sym(g->c, s, len);
 }
 
@@ -5030,7 +5056,7 @@ static bool ing_scan(struct ing *g)
       if (len < need)
          return ing_fail(g, "SPIR-V instruction is short");
       if ((op == SpvOpName || op == SpvOpMemberName || op == SpvOpExtInstImport)
-            && ((const char*)(w + len))[-1])
+            && (w[len - 1] >> 24))
          return ing_fail(g, "SPIR-V string runs past its instruction");
       switch (op)
       {
@@ -5039,7 +5065,7 @@ static bool ing_scan(struct ing *g)
                return ing_fail(g, "SPIR-V capability beyond Shader");
             break;
          case SpvOpExtInstImport:
-            if (strcmp((const char*)(w + 2), "GLSL.std.450"))
+            if (!ing_str_is(w + 2, len - 2, "GLSL.std.450"))
                return ing_fail(g, "SPIR-V extended instruction set beyond GLSL.std.450");
             break;
          case SpvOpEntryPoint:
