@@ -102,6 +102,7 @@ static void test_ngx(void)
    CHECK(lib->param.set_i && lib->param.get_i && lib->param.set_void_pointer
          && lib->param.get_d3d12_resource);
    CHECK(lib->vulkan.init_project_id != NULL);
+   CHECK(lib->vulkan.init_project_id_ext != NULL);
 #if defined(_WIN32)
    CHECK(lib->d3d12.init_project_id != NULL);
 #else
@@ -122,12 +123,12 @@ static void test_ngx(void)
    info.path_list.path   = paths;
    info.path_list.length = 1;
    CHECK(lib->vulkan.init_project_id("project-id", NGX_ENGINE_TYPE_CUSTOM,
-         "1.0", dir, &device, &device, &device, NULL, NULL,
+         "1.0", dir, &device, &device, &device,
          NGX_VERSION_API, &info) == NGX_RESULT_SUCCESS);
    CHECK(NGX_FAILED(lib->vulkan.init_project_id(NULL, NGX_ENGINE_TYPE_CUSTOM,
-         "1.0", dir, &device, &device, &device, NULL, NULL,
+         "1.0", dir, &device, &device, &device,
          NGX_VERSION_API, &info)));
-   CHECK(lib->vulkan.init_project_id("project-id", NGX_ENGINE_TYPE_CUSTOM,
+   CHECK(lib->vulkan.init_project_id_ext("project-id", NGX_ENGINE_TYPE_CUSTOM,
          "1.0", dir, &device, &device, &device, NULL, NULL,
          NGX_VERSION_API, &info) == NGX_RESULT_SUCCESS);
    CHECK(NGX_SUCCEEDED(lib->vulkan.get_capability_parameters(&caps)) && caps);

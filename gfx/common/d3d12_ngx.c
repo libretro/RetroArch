@@ -92,8 +92,15 @@ d3d12_ngx_t *d3d12_ngx_init(ID3D12Device *device, const char *dlss_dir)
    d3d12_ngx_t *ngx;
    ngx_result_t res;
    int available = 0;
-   const ngx_lib_t *lib = ngx_lib_get();
+   const ngx_lib_t *lib;
 
+   if (!ngx_dlss_feature_in(dlss_dir ? dlss_dir : ""))
+   {
+      RARCH_LOG("[D3D12] Temporal Upscaler: no DLSS runtime in \"%s\", upscaler off.\n",
+            dlss_dir ? dlss_dir : "");
+      return NULL;
+   }
+   lib = ngx_lib_get();
    if (!lib || !lib->d3d12.init_project_id)
    {
       RARCH_LOG("[D3D12] Temporal Upscaler: no NGX core library.\n");

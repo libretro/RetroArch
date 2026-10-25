@@ -176,7 +176,7 @@ EXPORT int CONV NVSDK_NGX_VULKAN_GetFeatureRequirements(void *inst, void *pd, co
 {
    (void)inst; (void)pd; (void)info; memset(out, 0, 4 + 4 + 255); return OK;
 }
-EXPORT int CONV NVSDK_NGX_VULKAN_Init_ProjectID(const char *project, int engine,
+EXPORT int CONV NVSDK_NGX_VULKAN_Init_ProjectID_Ext(const char *project, int engine,
       const char *engine_version, const wchar_t *data_path, void *inst, void *pd,
       void *dev, void *gipa, void *gdpa, int sdk_version, const void *common_info)
 {
@@ -201,6 +201,14 @@ EXPORT int CONV NVSDK_NGX_VULKAN_Init_ProjectID(const char *project, int engine,
    inited = 1;
    return OK;
 }
+EXPORT int CONV NVSDK_NGX_VULKAN_Init_ProjectID(const char *project, int engine,
+      const char *engine_version, const wchar_t *data_path, void *inst, void *pd,
+      void *dev, int sdk_version, const void *common_info)
+{
+   return NVSDK_NGX_VULKAN_Init_ProjectID_Ext(project, engine, engine_version,
+         data_path, inst, pd, dev, (void*)1, (void*)1, sdk_version, common_info);
+}
+
 EXPORT int CONV NVSDK_NGX_VULKAN_Shutdown1(void *dev)
 {
    (void)dev; inited = 0; rec.shutdown_calls++; return OK;

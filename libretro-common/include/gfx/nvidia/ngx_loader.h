@@ -332,8 +332,16 @@ typedef struct ngx_vulkan_api
          void *physical_device, const ngx_feature_discovery_info_t *info,
          ngx_feature_requirement_t *out);
    /* NVSDK_NGX_VULKAN_Init_ProjectID (as the D3D12 one: the SDK
-    * version before the feature info) */
+    * version before the feature info); the library resolves the
+    * Vulkan entry points itself */
    ngx_result_t (NGX_CONV *init_project_id)(const char *project_id,
+         int engine_type, const char *engine_version,
+         const wchar_t *application_data_path, void *instance,
+         void *physical_device, void *device,
+         int sdk_version, const ngx_feature_common_info_t *info);
+   /* NVSDK_NGX_VULKAN_Init_ProjectID_Ext: the same, with the
+    * application's proc-address getters; NULL in older libraries */
+   ngx_result_t (NGX_CONV *init_project_id_ext)(const char *project_id,
          int engine_type, const char *engine_version,
          const wchar_t *application_data_path, void *instance,
          void *physical_device, void *device,

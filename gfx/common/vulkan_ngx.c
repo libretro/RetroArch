@@ -198,8 +198,15 @@ vulkan_ngx_t *vulkan_ngx_init(VkInstance instance, VkPhysicalDevice gpu,
    vulkan_ngx_t *ngx;
    ngx_result_t res;
    int available = 0;
-   const ngx_lib_t *lib = ngx_lib_get();
+   const ngx_lib_t *lib;
 
+   if (!ngx_dlss_feature_in(dlss_dir ? dlss_dir : ""))
+   {
+      RARCH_LOG("[Vulkan] Temporal Upscaler: no DLSS runtime in \"%s\", upscaler off.\n",
+            dlss_dir ? dlss_dir : "");
+      return NULL;
+   }
+   lib = ngx_lib_get();
    if (!lib || !lib->vulkan.init_project_id)
    {
       RARCH_LOG("[Vulkan] Temporal Upscaler: no NGX core library.\n");
@@ -217,10 +224,17 @@ vulkan_ngx_t *vulkan_ngx_init(VkInstance instance, VkPhysicalDevice gpu,
    memset(&info, 0, sizeof(info));
    info.path_list.path   = paths;
    info.path_list.length = 1;
-   res = lib->vulkan.init_project_id(VULKAN_NGX_PROJECT_ID,
-         NGX_ENGINE_TYPE_CUSTOM, VULKAN_NGX_ENGINE_VERSION, wdir,
-         (void*)instance, (void*)gpu, (void*)device, (ngx_vk_proc_t)gipa,
-         (ngx_vk_proc_t)gdpa, NGX_VERSION_API, &info);
+   if (lib->vulkan.init_project_id_ext)
+      res = lib->vulkan.init_project_id_ext(VULKAN_NGX_PROJECT_ID,
+            NGX_ENGINE_TYPE_CUSTOM, VULKAN_NGX_ENGINE_VERSION, wdir,
+            (void*)instance, (void*)gpu, (void*)device,
+            (ngx_vk_proc_t)gipa, (ngx_vk_proc_t)gdpa,
+            NGX_VERSION_API, &info);
+   else
+      res = lib->vulkan.init_project_id(VULKAN_NGX_PROJECT_ID,
+            NGX_ENGINE_TYPE_CUSTOM, VULKAN_NGX_ENGINE_VERSION, wdir,
+            (void*)instance, (void*)gpu, (void*)device,
+            NGX_VERSION_API, &info);
    free(wdir);
    if (NGX_FAILED(res))
    {
@@ -229,6 +243,8 @@ vulkan_ngx_t *vulkan_ngx_init(VkInstance instance, VkPhysicalDevice gpu,
       free(ngx);
       return NULL;
    }
+   RARCH_LOG("[Vulkan] Temporal Upscaler: NGX initialised (%s).\n",
+         lib->vulkan.init_project_id_ext ? "Init_ProjectID_Ext" : "Init_ProjectID");
    ngx->lib    = lib;
    ngx->device = device;
    ngx->memory_properties = *memory_properties;

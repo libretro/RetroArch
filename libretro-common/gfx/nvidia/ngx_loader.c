@@ -240,6 +240,12 @@ static ngx_module_t ngx_open(void)
 }
 #endif
 
+#define NGX_SYM_OPT(dst, name) \
+   do { \
+      ngx_proc_t fn = ngx_sym(m, name); \
+      memcpy(&(dst), &fn, sizeof(fn)); \
+   } while (0)
+
 #define NGX_SYM(dst, name) \
    do { \
       ngx_proc_t fn = ngx_sym(m, name); \
@@ -360,6 +366,7 @@ static bool ngx_resolve_vulkan(ngx_module_t m, ngx_vulkan_api_t *a)
          "NVSDK_NGX_VULKAN_GetFeatureDeviceExtensionRequirements");
    NGX_SYM(a->get_feature_requirements, "NVSDK_NGX_VULKAN_GetFeatureRequirements");
    NGX_SYM(a->init_project_id, "NVSDK_NGX_VULKAN_Init_ProjectID");
+   NGX_SYM_OPT(a->init_project_id_ext, "NVSDK_NGX_VULKAN_Init_ProjectID_Ext");
    NGX_SYM(a->shutdown1, "NVSDK_NGX_VULKAN_Shutdown1");
    NGX_SYM(a->get_capability_parameters, "NVSDK_NGX_VULKAN_GetCapabilityParameters");
    NGX_SYM(a->allocate_parameters, "NVSDK_NGX_VULKAN_AllocateParameters");
