@@ -76,9 +76,11 @@ jobs:
           done
       - name: Folder playback and fullscreen settings across all menus
         run: |
+          ffmpeg -v error -y -i samples/menu/rgui_media/embedded.mkv -map 0:v:0 -c:v copy samples/menu/rgui_media/folder.mkv
           for driver in rgui materialui xmb ozone; do
             python3 samples/menu/rgui_media/run.py --c89 --desktop-refresh --driver "$driver" samples/menu/rgui_media/fixture.mp4
             python3 samples/menu/rgui_media/run.py --c89 --continuous-error --driver "$driver" samples/menu/rgui_media/fixture.mp4
+            python3 samples/menu/rgui_media/run.py --c89 --continuous --driver "$driver" samples/menu/rgui_media/folder.mkv
           done
       - name: External movies and internal image activation across all menus
         run: |

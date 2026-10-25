@@ -60,7 +60,7 @@
 #include "../common/win_vulkan_dxgi.h"
 #endif
 #include "../common/vulkan_memory_type.h"
-#ifdef HAVE_RMP4
+#if defined(HAVE_RMP4) || defined(HAVE_RWEBM)
 #include "../common/vulkan_video_decode.h"
 #endif
 #include "../common/rgba16_pack.h"
@@ -8024,7 +8024,7 @@ static void *vulkan_init(const video_info_t *video)
 
       vulkan_init_frame_resources(vk, 0);
 
-#ifdef HAVE_RMP4
+#if defined(HAVE_RMP4) || defined(HAVE_RWEBM)
       /* previews decoded on the GPU, where the device can */
       vulkan_video_decode_init(vk->context);
 #if defined(_WIN32) && !defined(__WINRT__) \

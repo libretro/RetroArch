@@ -139,7 +139,13 @@ static bool media_folder_drive(struct menu_state *menu_st,
          shown(viewer), media->queue == identity);
    if (!ended || !shown(viewer) || media->queue != identity
          || menu_st->selection_ptr != 0 || (check_pixels && captures != 3))
+   {
+      printf("folder state: stage=%d position=%.6f duration=%.6f paused=%u seeking=%u\n",
+            stage(viewer), (double)media->controls.playback.position_us / 1000000.0,
+            (double)media->controls.playback.duration_us / 1000000.0,
+            media->controls.playback.paused, media->controls.playback.seeking);
       return false;
+   }
    {
       int64_t until = cpu_features_get_time_usec() + 500000;
       for (tick = 0; cpu_features_get_time_usec() < until; tick++)

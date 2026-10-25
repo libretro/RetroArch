@@ -11,6 +11,7 @@ PIXEL_SOURCES += ../../../rthreads/rthreads.c ../../../rthreads/retro_eventcount
 endif
 
 WEBM_SOURCES := ../../../formats/vp9/rvp9.c ../../../formats/webm/rwebm.c \
+ ../../../formats/h264/rh264.c ../../../formats/h265/rh265.c \
  ../../../formats/video_player.c \
  ../../../formats/image_transfer.c ../../../formats/vp8/rvp8.c \
  ../../../formats/image/image_blit_bands.c ../../../formats/image/image_hdr_blit.c \
@@ -23,10 +24,21 @@ endif
 
 all: $(TARGETS)
 
+rwebm_h26x_stream_test: rwebm_h26x_stream_test.c $(WEBM_SOURCES) ../../../formats/webm/rwebm_video.c
+	$(CC) $(CFLAGS) $(PIXEL_FLAGS) -D_POSIX_C_SOURCE=200809L -DHAVE_RWEBM -DHAVE_RVP9 \
+	 rwebm_h26x_stream_test.c $(WEBM_SOURCES) $(PIXEL_SOURCES) \
+	 ../../../formats/webm/rwebm_video.c -o $@ $(LDFLAGS) -lm
+
+rwebm_h26x_hw_test: rwebm_h26x_hw_test.c $(WEBM_SOURCES) ../../../formats/webm/rwebm_video.c
+	$(CC) $(CFLAGS) $(PIXEL_FLAGS) -D_POSIX_C_SOURCE=200809L -DHAVE_RWEBM -DHAVE_RVP9 \
+	 rwebm_h26x_hw_test.c $(WEBM_SOURCES) $(PIXEL_SOURCES) \
+	 ../../../formats/webm/rwebm_video.c -o $@ $(LDFLAGS) -lm
+
 MP4_SOURCES := ../../../formats/mp4/rmp4.c ../../../formats/vp9/rvp9.c \
  ../../../formats/vp8/rvp8.c ../../../formats/h264/rh264.c ../../../formats/h265/rh265.c \
  ../../../formats/image/image_blit_bands.c ../../../formats/image/image_hdr_blit.c \
  ../../../features/features_cpu.c ../../../time/rtime.c
+
 rmp4_h26x_stream_test: rmp4_h26x_stream_test.c $(MP4_SOURCES) ../../../formats/mp4/rmp4_video.c
 	$(CC) $(CFLAGS) $(PIXEL_FLAGS) -D_POSIX_C_SOURCE=200809L -DHAVE_RMP4 -DHAVE_RVP9 \
 	 rmp4_h26x_stream_test.c $(MP4_SOURCES) $(PIXEL_SOURCES) \
@@ -66,6 +78,22 @@ check: $(TARGETS)
 stream-check: rvp9_hw_session_test
 	python3 check_streams.py ./rvp9_hw_session_test
 
+h26x-check: rwebm_h26x_stream_test rwebm_h26x_hw_test
+	python3 check_h26x.py
+	python3 check_h26x.py --laced
+
+mp4-h26x-check: rmp4_h26x_stream_test rmp4_h26x_hw_test check_mp4_h26x.py h26x_fixture.py
+	python3 check_mp4_h26x.py
+
+h26x-color-check: rwebm_h26x_stream_test rwebm_h26x_hw_test
+	python3 check_h26x.py --codec h264 --pixel-format yuv422p
+	python3 check_h26x.py --codec h264 --pixel-format yuv422p10le
+	python3 check_h26x.py --codec h264 --pixel-format yuv444p
+	python3 check_h26x.py --codec h264 --pixel-format yuv444p10le
+	python3 check_h26x.py --pixel-format yuv420p10le
+	python3 check_h26x.py --full-range
+	python3 check_h26x.py --pixel-format yuv420p10le --full-range
+
 stack-check:
 	CC="$(CC)" python3 check_stack.py
 
@@ -78,11 +106,8 @@ rvp9_pixel_test: rvp9_pixel_test.c ../../../formats/vp9/rvp9.c ../../../formats/
 clean:
 	rm -f rmp4_h26x_stream_test rmp4_h26x_stream_test.exe rmp4_h26x_hw_test rmp4_h26x_hw_test.exe
 	rm -f rvp9_pixel_test rvp9_pixel_test.exe
+	rm -f rwebm_h26x_stream_test rwebm_h26x_stream_test.exe
+	rm -f rwebm_h26x_hw_test rwebm_h26x_hw_test.exe
 	rm -f $(TARGETS) $(addsuffix .exe,$(TARGETS))
 
-.PHONY: all check stream-check pixel-check stack-check clean
-
-mp4-h26x-check: rmp4_h26x_stream_test rmp4_h26x_hw_test check_mp4_h26x.py h26x_fixture.py
-	python3 check_mp4_h26x.py
-
-.PHONY: mp4-h26x-check
+.PHONY: all check stream-check h26x-check mp4-h26x-check h26x-color-check pixel-check stack-check clean

@@ -1304,7 +1304,7 @@ done:
 }
 /* METAL_FRAME_CV_POOL_SETUP_END */
 
-#if defined(HAVE_RMP4) && defined(HAVE_THREADS) \
+#if (defined(HAVE_RMP4) || defined(HAVE_RWEBM)) && defined(HAVE_THREADS) \
       && ((defined(__MAC_OS_X_VERSION_MAX_ALLOWED) && __MAC_OS_X_VERSION_MAX_ALLOWED >= 101300) \
          || (defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= 110000) \
          || (defined(__TV_OS_VERSION_MAX_ALLOWED) && __TV_OS_VERSION_MAX_ALLOWED >= 110000))

@@ -38,7 +38,7 @@ subprocess.run(cmd,cwd=r,env=build_env,check=True)
 with tempfile.TemporaryDirectory(prefix='rgui-media-') as temp:
  fixture=Path(a.fixture).resolve()
  if a.continuous:
-  if fixture.suffix.lower() not in ('.mp4','.webm'):p.error('--continuous needs an MP4 or WebM fixture')
+  if fixture.suffix.lower() not in ('.mp4','.webm','.mkv'):p.error('--continuous needs an MP4, WebM or Matroska fixture')
   for episode in ((1,2,10,11) if a.continuous_error else (1,2,10)):
    target=Path(temp)/('episode'+str(episode)+fixture.suffix)
    try:os.link(fixture,target)

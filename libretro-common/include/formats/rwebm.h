@@ -45,7 +45,8 @@ enum rwebm_codec
    RWEBM_CODEC_FLAC,  /* A_FLAC: CodecPrivate is a whole fLaC header -
                        * magic and metadata blocks - and each block is
                        * one raw FLAC frame                            */
-   RWEBM_CODEC_AV1    /* V_AV1: CodecPrivate is the av1C record         */
+   RWEBM_CODEC_AV1,   /* V_AV1: CodecPrivate is the av1C record         */
+   RWEBM_CODEC_H265   /* V_MPEGH/ISO/HEVC: CodecPrivate is hvcC         */
 };
 
 typedef struct
@@ -95,14 +96,14 @@ typedef struct
    int            track;     /* index into the track array (0-based)     */
    int64_t        timestamp; /* in nanoseconds (scaled by TimestampScale) */
    int            keyframe;
-   /* Later laces share the block timestamp; their audio continues at
-    * the preceding lace's decoded endpoint, not at that timestamp. */
+   /* Audio laces continue at the preceding decoded endpoint. Video
+    * laces use BlockDuration or DefaultDuration for each timestamp. */
    int            timestamp_continuation;
    /* Matroska DiscardPadding in nanoseconds: when positive, this many
     * nanoseconds of decoded output at the END of this block are not
     * meant to be played (Opus end trimming).  0 when absent. */
    int64_t        discard_padding;
-   /* Unlaced BlockDuration: -1 absent, -2 invalid/unrepresentable. */
+   /* Per-frame BlockDuration: -1 absent, -2 invalid/unrepresentable. */
    int64_t        duration_ns;
 } rwebm_packet;
 

@@ -307,6 +307,7 @@ struct rwebm
    int64_t pending_duration;
    int64_t pending_discard;         /* DiscardPadding for the next Block   */
    int64_t lace_discard;            /* padding owed by the laced block     */
+   int64_t lace_duration;
    const uint8_t *lace_data;        /* payload after the block header      */
    const uint32_t *lace_sizes;      /* not used (see note); kept simple    */
    int            lace_count;
@@ -424,6 +425,7 @@ static enum rwebm_codec codec_from_id(const char *id)
    if (!strcmp(id, "A_VORBIS")) return RWEBM_CODEC_VORBIS;
    if (!strcmp(id, "A_OPUS"))   return RWEBM_CODEC_OPUS;
    if (!strcmp(id, "V_MPEG4/ISO/AVC")) return RWEBM_CODEC_H264;
+   if (!strcmp(id, "V_MPEGH/ISO/HEVC")) return RWEBM_CODEC_H265;
    /* A_AAC with a profile suffix (e.g. A_AAC/MPEG4/LC) appears in older
     * muxes; the CodecPrivate AudioSpecificConfig is authoritative
     * either way. */
@@ -894,6 +896,35 @@ static int webm_group_selected(rwebm_t *webm, const uint8_t *body,
    return -1;
 }
 
+static int webm_lace_time(rwebm_t *webm, rwebm_packet *pkt, unsigned index)
+{
+   const rwebm_track *track = &webm->tracks[webm->lace_track];
+   uint64_t offset, limit = (~(uint64_t)0) >> 1;
+   if (track->type != RWEBM_TRACK_VIDEO)
+      return 1;
+   if (webm->lace_duration == -2)
+      return -1;
+   if (webm->lace_duration >= 0)
+   {
+      uint64_t duration = (uint64_t)webm->lace_duration;
+      uint64_t count = (unsigned)webm->lace_count;
+      uint64_t whole = duration / count, part = duration % count;
+      offset = whole * index + part * index / count;
+      pkt->duration_ns = (int64_t)(whole * (index + 1)
+            + part * (index + 1) / count - offset);
+   }
+   else
+   {
+      if (index && track->default_duration_ns > limit / index)
+         return -1;
+      offset = track->default_duration_ns * index;
+   }
+   if (pkt->timestamp > (int64_t)(limit - offset))
+      return -1;
+   pkt->timestamp += (int64_t)offset;
+   return 1;
+}
+
 static int rwebm_read_packet_filtered(rwebm_t *webm, rwebm_packet *pkt,
       int selected)
 {
@@ -920,7 +951,7 @@ static int rwebm_read_packet_filtered(rwebm_t *webm, rwebm_packet *pkt,
       pkt->keyframe  = webm->lace_keyframe;
       pkt->discard_padding = (webm->lace_index == webm->lace_count)
          ? webm->lace_discard : 0;
-      return 1;
+      return webm_lace_time(webm, pkt, (unsigned)i);
    }
 
    /* Parse against the available prefix only: bytes past avail_end are
@@ -1230,6 +1261,8 @@ static int rwebm_read_packet_filtered(rwebm_t *webm, rwebm_packet *pkt,
                                      webm->timestamp_scale);
                   webm->lace_keyframe = (id == ID_SIMPLEBLOCK)
                                       ? ((flags & 0x80) != 0) : 1;
+                  webm->lace_duration = (id == ID_BLOCK)
+                     ? webm_group_duration(webm, body + sz, r.end) : -1;
                   webm->lace_discard = (id == ID_BLOCK)
                      ? webm_group_discard(webm, body + sz, r.end,
                            &webm->lace_keyframe) : 0;
@@ -1251,7 +1284,7 @@ static int rwebm_read_packet_filtered(rwebm_t *webm, rwebm_packet *pkt,
                      pkt->discard_padding =
                         (webm->lace_index == webm->lace_count)
                         ? webm->lace_discard : 0;
-                     return 1;
+                     return webm_lace_time(webm, pkt, (unsigned)i);
                   }
                }
             }

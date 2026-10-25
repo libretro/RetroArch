@@ -244,9 +244,16 @@ jobs:
       - name: VP9 sessions and WebM GPU dispatch (ASan + UBSan)
         working-directory: libretro-common/samples/formats/vp9
         run: |
-          make check stream-check pixel-check SANITIZER=address,undefined
+          make check stream-check h26x-check h26x-color-check pixel-check SANITIZER=address,undefined
           make stack-check CC=gcc
           make stack-check CC=clang
+          H26X_TEST_THREADS=4 make h26x-check h26x-color-check SANITIZER=address,undefined
+
+      - name: Matroska concurrent decode and output ownership (TSan)
+        working-directory: libretro-common/samples/formats/vp9
+        run: |
+          make -B rwebm_h26x_stream_test rwebm_h26x_hw_test SANITIZER=thread
+          H26X_TEST_THREADS=4 TSAN_OPTIONS=halt_on_error=1 make h26x-check SANITIZER=thread
 
       - name: Build and run video_hdr_fp16_test (ASan + UBSan + LSan)
         shell: bash

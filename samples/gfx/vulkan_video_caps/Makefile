@@ -27,6 +27,8 @@ endif
 
 all: av1_params_test$(EXE) vp9_picture_test$(EXE) $(TARGET) $(PARAMS) video_layout_test$(EXE)
 
+hevc_decode_test$(EXE) hevc_render_test$(EXE): h26x_webm_decode.h ../video_fixture_stream.h
+
 $(PARAMS): hevc_params_test.c $(HEVC_DEPS) $(DECODERS)
 	$(CC) $(CFLAGS) -o $@ hevc_params_test.c $(DECODERS) $(LDFLAGS) -lm
 
@@ -131,6 +133,9 @@ direct-check: hevc_decode_test$(EXE) hevc_render_test$(EXE) import_test$(EXE)
 decode-check: hevc_decode_test$(EXE)
 	$(RUNNER) ./hevc_decode_test$(EXE)
 
+matroska-check: hevc_decode_test$(EXE)
+	python3 check_matroska.py --vulkan-test ./hevc_decode_test$(EXE) --codec $(or $(MATROSKA_CODEC),both)
+
 clean:
 	rm -f av1_params_test av1_params_test.exe av1_session_test av1_session_test.exe
 	rm -f vp9_picture_test vp9_picture_test.exe
@@ -139,4 +144,4 @@ clean:
 	rm -f hevc_decode_test hevc_decode_test.exe hevc_render_test hevc_render_test.exe
 	rm -f import_test import_test.exe video_layout_test video_layout_test.exe
 
-.PHONY: all check av1-session-check session-check decode-check import-check render-check direct-check clean
+.PHONY: all check av1-session-check session-check decode-check matroska-check import-check render-check direct-check clean

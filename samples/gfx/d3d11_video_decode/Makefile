@@ -169,13 +169,15 @@ d3d11_video_decode_mock_test$(EXE): d3d11_video_decode_mock_test.c \
 	   $(RA)/libretro-common/formats/vp9/rvp9.c $(LDFLAGS) -lm
 
 d3d11_video_decode_test$(EXE): d3d11_video_decode_test.c \
+      ../video_fixture_stream.h $(RA)/libretro-common/formats/mp4/rmp4_video.c \
       $(WEBM_DECODERS) \
       $(DEC_OBJS) $(DEPS) $(BACKEND) hevc_device_data.h \
       $(RA)/libretro-common/formats/vp9/rvp9.c $(RA)/libretro-common/formats/vp9/rvp9_recon.inc \
       $(RA)/libretro-common/formats/h265/rh265.c
 	$(CC) $(CFLAGS) $(WINFLAGS) -o $@ d3d11_video_decode_test.c \
 	   $(DEC_OBJS) $(RA)/libretro-common/formats/h265/rh265.c \
-	   $(RA)/libretro-common/formats/vp9/rvp9.c $(WEBM_DECODERS) $(LDFLAGS) -ld3d11 -lm
+	   $(RA)/libretro-common/formats/vp9/rvp9.c $(WEBM_DECODERS) \
+	   $(RA)/libretro-common/formats/mp4/rmp4_video.c $(LDFLAGS) -ld3d11 -lm
 
 PLAYER_SOURCES := $(RA)/libretro-common/formats/video_player.c \
    $(RA)/libretro-common/formats/image_transfer.c \
@@ -260,4 +262,7 @@ clean:
 	rm -f d3d11_backpressure_test d3d11_backpressure_test.exe
 	rm -f vulkan_win32_import_test vulkan_win32_import_test.exe
 
-.PHONY: all check clean
+matroska-check: d3d11_video_decode_test$(EXE)
+	python3 ../vulkan_video_caps/check_matroska.py --d3d11-test ./d3d11_video_decode_test$(EXE) --codec $(or $(MATROSKA_CODEC),both)
+
+.PHONY: all check matroska-check clean

@@ -504,7 +504,7 @@ static int sparse_cue_index(void)
    return 0;
 }
 
-static int block_references(void)
+static int block_references(int hevc)
 {
    size_t marker, segment, tracks, entry, cluster, group, partial = 0;
    unsigned i, pass;
@@ -520,9 +520,9 @@ static int block_references(void)
    entry = start(0xae, 1);
    integer(0xd7, 1, 1); integer(0x83, 1, 1);
    marker = start(0x86, 1);
-   memcpy(file + used, "V_MPEG4/ISO/AVC",
-         15);
-   used += 15;
+   memcpy(file + used, hevc ? "V_MPEGH/ISO/HEVC" : "V_MPEG4/ISO/AVC",
+         hevc ? 16 : 15);
+   used += hevc ? 16 : 15;
    finish(marker);
    marker = start(0x63a2, 2);
    memcpy(file + used, "\1\2\3\4", 4); used += 4;
@@ -558,7 +558,7 @@ static int block_references(void)
    demux = rwebm_open_memory(file, used);
    CHECK(demux);
    track = rwebm_get_track(demux, 0);
-   CHECK(track && track->codec == RWEBM_CODEC_H264);
+   CHECK(track && track->codec == (hevc ? RWEBM_CODEC_H265 : RWEBM_CODEC_H264));
    CHECK(track->codec_private_size == 4
          && !memcmp(track->codec_private, "\1\2\3\4", 4));
    for (pass = 0; pass < 3; pass++)
@@ -1109,7 +1109,8 @@ int main(void)
    CHECK(!terminal_stream());
    CHECK(!config_admission());
    CHECK(!sparse_cue_index());
-   CHECK(!block_references());
+   CHECK(!block_references(0));
+   CHECK(!block_references(1));
    CHECK(!text_durations());
    CHECK(!filtered_payload(1, 0));
    CHECK(!filtered_payload(1, 1));

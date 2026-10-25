@@ -26,7 +26,7 @@
 #endif
 
 #include "vulkan_common.h"
-#ifdef HAVE_RMP4
+#if defined(HAVE_RMP4) || defined(HAVE_RWEBM)
 #include "vulkan_video_decode.h"
 #endif
 #include "vulkan_video_caps.h"
@@ -5376,7 +5376,7 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
 #endif
       if (vk->context.device)
       {
-#ifdef HAVE_RMP4
+#if defined(HAVE_RMP4) || defined(HAVE_RWEBM)
          vulkan_video_decode_deinit();
 #endif
          /* Call the frontend's destroy_device callback BEFORE

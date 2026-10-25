@@ -73,6 +73,15 @@ RETRO_BEGIN_DECLS
 
 typedef struct rh264_video rh264_video;
 
+typedef struct rh264_video_color
+{
+   unsigned primaries, transfer, matrix, full_range;
+   int video_signal_present, description_present;
+} rh264_video_color_t;
+
+/* SPS VUI color; unspecified CICP values are 2. Failure clears out. */
+int rh264_video_get_color(const rh264_video *v, rh264_video_color_t *out);
+
 /* Create a decoder. Returns NULL on allocation failure. */
 rh264_video *rh264_video_open(void);
 
@@ -165,6 +174,7 @@ void rh264_video_row_wait_stats(int *waits, int *rows_short_x100);
 int rh264_video_jobs_at_once(void);
 
 int rh264_video_bit_depth(const rh264_video *v);
+unsigned rh264_video_reorder_depth(const rh264_video *v);
 
 /* Borrow a decoded plane (0=Y, 1=U, 2=V). Valid until the next decode call. */
 const uint8_t *rh264_video_plane(const rh264_video *v, int plane,

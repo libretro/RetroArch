@@ -6381,3 +6381,13 @@ int rh265_video_bit_depth(const rh265_video *v)
 {
    return (v && v->cur->bd) ? v->cur->bd : 8;
 }
+
+unsigned rh265_video_reorder_depth(const rh265_video *v)
+{
+   unsigned i, depth = 0;
+   if (!v) return 0;
+   for (i = 0; i < RH265_MAX_SPS; i++)
+      if (v->sps[i].valid && v->sps[i].max_num_reorder_pics > (int)depth)
+         depth = (unsigned)v->sps[i].max_num_reorder_pics;
+   return depth;
+}

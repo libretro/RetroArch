@@ -229,6 +229,8 @@ void rwebm_video_stream_stop_hw(rwebm_video_stream_t *stream);
 int rwebm_video_stream_hw_frame(rwebm_video_stream_t *stream,
       video_hw_frame_t *out);
 int rwebm_video_stream_waiting(const rwebm_video_stream_t *stream);
+void *rwebm_video_stream_h264(rwebm_video_stream_t *stream);
+void *rwebm_video_stream_h265(rwebm_video_stream_t *stream);
 
 /* Select the channel order of subsequent frames: non-zero emits ARGB
  * words (memory order B,G,R,A on little-endian), zero restores the

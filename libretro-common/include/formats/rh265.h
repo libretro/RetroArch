@@ -274,6 +274,7 @@ void rh265_video_set_skip_nonref(rh265_video *v, int skip);
 int rh265_video_dropped(const rh265_video *v);
 
 int rh265_video_bit_depth(const rh265_video *v);
+unsigned rh265_video_reorder_depth(const rh265_video *v);
 
 const uint8_t *rh265_video_plane(const rh265_video *v, int plane,
       int *stride, int *width, int *height);

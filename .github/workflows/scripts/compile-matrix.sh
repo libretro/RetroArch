@@ -926,6 +926,12 @@ check "AV1 hardware registry: threads" "-DHAVE_RAV1" libretro-common/formats/av1
 check_nothreads "no threads: AV1 hardware registry" "-DHAVE_RAV1" libretro-common/formats/av1/rav1_hw.c
 check "vp9/h265/video streams: threads" "-DHAVE_RVP9 -DHAVE_RVP8 -DHAVE_RWEBM -DHAVE_RMP4 -DHAVE_RH264 -DHAVE_RH265" libretro-common/formats/vp9/rvp9.c libretro-common/formats/h265/rh265.c libretro-common/formats/webm/rwebm_video.c libretro-common/formats/mp4/rmp4_video.c libretro-common/formats/image/image_blit_bands.c
 check_nothreads "no threads: vp9/h265/video streams" "-DHAVE_RVP9 -DHAVE_RVP8 -DHAVE_RWEBM -DHAVE_RMP4 -DHAVE_RH264 -DHAVE_RH265" libretro-common/formats/vp9/rvp9.c libretro-common/formats/h265/rh265.c libretro-common/formats/webm/rwebm_video.c libretro-common/formats/mp4/rmp4_video.c libretro-common/formats/image/image_blit_bands.c
+check "Matroska AVC/HEVC without MP4 or VP9" "-DHAVE_RWEBM" \
+   libretro-common/formats/h264/rh264.c libretro-common/formats/h265/rh265.c \
+   libretro-common/formats/webm/rwebm_video.c libretro-common/formats/image_transfer.c
+check_nothreads "no threads: Matroska AVC/HEVC without MP4 or VP9" "-DHAVE_RWEBM" \
+   libretro-common/formats/h264/rh264.c libretro-common/formats/h265/rh265.c \
+   libretro-common/formats/webm/rwebm_video.c libretro-common/formats/image_transfer.c
 check "gfx_surface: threads" "$GLINC" gfx/gfx_surface.c gfx/gfx_thumbnail.c gfx/gfx_surface_player.c libretro-common/formats/video_player.c
 check_nothreads "no threads: gfx_surface" "$GLINC" gfx/gfx_surface.c gfx/gfx_thumbnail.c gfx/gfx_surface_player.c libretro-common/formats/video_player.c
 check_nothreads "no threads: gl2"          "$GLDEFS $GLINC"       gfx/drivers/gl2.c
@@ -1087,6 +1093,8 @@ GFXDEFS="-DHAVE_RGUI -DHAVE_OVERLAY -DHAVE_GFX_WIDGETS"
 VK_H=/usr/include/vulkan/vulkan.h
 platform_video "vulkan back end" "$GFXDEFS -DHAVE_VULKAN" "" \
    gfx/drivers/vulkan.c "$VK_H"
+check "Vulkan Video: Matroska without MP4" "-DHAVE_VULKAN -DHAVE_RWEBM -DHAVE_DYLIB -Igfx/include" \
+   gfx/common/vulkan_common.c gfx/common/vulkan_video_decode.c
 check "Vulkan Video: AV1 disabled" "-DHAVE_VULKAN -DHAVE_RMP4 -DHAVE_DYLIB -Igfx/include" gfx/common/vulkan_common.c gfx/common/vulkan_video_decode.c
 check "Vulkan Video: AV1 enabled, VP9 disabled" "-DHAVE_VULKAN -DHAVE_RMP4 -DHAVE_RAV1 -DHAVE_DYLIB -Igfx/include" gfx/common/vulkan_common.c gfx/common/vulkan_video_decode.c
 platform_video "vulkan shader back end" "$GFXDEFS -DHAVE_VULKAN" "" \
@@ -1117,7 +1125,7 @@ check "runahead: both"             "$RADEFS -DHAVE_DYNAMIC -DHAVE_DYLIB" runahea
 # the stand-ins do not declare is an error: a new Metal call needs its
 # declaration added there.
 if command -v clang > /dev/null 2>&1; then
-   for metal_features in "" "-DHAVE_RMP4 -DHAVE_THREADS"; do
+   for metal_features in "" "-DHAVE_RMP4 -DHAVE_THREADS" "-DHAVE_RWEBM -DHAVE_THREADS"; do
    for metal_ownership in "" "-fobjc-arc"; do
    if ! out=$(clang -x objective-c -fobjc-runtime=macosx-10.13 -fblocks $metal_ownership \
          -fsyntax-only -Wall -Wno-unused-function -Werror=objc-method-access \

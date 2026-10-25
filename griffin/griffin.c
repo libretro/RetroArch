@@ -569,9 +569,11 @@ VIDEO IMAGE
 #include "../libretro-common/formats/webm/rwebm_audio.c"
 #endif
 
-#ifdef HAVE_RMP4
+#if defined(HAVE_RMP4) || defined(HAVE_RWEBM)
 #include "../libretro-common/formats/h264/rh264.c"
 #include "../libretro-common/formats/h265/rh265.c"
+#endif
+#ifdef HAVE_RMP4
 #include "../libretro-common/formats/mp4/rmp4.c"
 #include "../libretro-common/formats/mp4/rmp4_video.c"
 #include "../libretro-common/formats/mp4/rmp4_audio.c"
@@ -585,9 +587,7 @@ VIDEO IMAGE
 #include "../libretro-common/formats/mpeg1/rmpeg1_ps.c"
 #include "../libretro-common/formats/mpeg1/rmpeg1_video.c"
 #endif
-#if defined(HAVE_RVP9) || defined(HAVE_RMP4)
-/* Shared 10-bit / HDR I420->RGB blits: used by the webm/mp4 rvp9 paths
- * and by rmp4_video's H.265 Main10 arm, so RMP4 alone needs them too. */
+#if defined(HAVE_RVP9) || defined(HAVE_RMP4) || defined(HAVE_RWEBM)
 #include "../libretro-common/formats/image/image_hdr_blit.c"
 #endif
 #if defined(HAVE_RWEBM) || defined(HAVE_RMP4)
@@ -662,7 +662,8 @@ VIDEO DRIVER
 #include "../gfx/common/d3d11_deferred_proxy.c"
 #endif
 
-#if (defined(HAVE_D3D11) || defined(HAVE_D3D12)) && defined(HAVE_RMP4) \
+#if (defined(HAVE_D3D11) || defined(HAVE_D3D12)) \
+ && (defined(HAVE_RMP4) || defined(HAVE_RWEBM)) \
  && !defined(__WINRT__)
 #include "../gfx/common/d3d11_video_decode.c"
 #endif

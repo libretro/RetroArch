@@ -217,6 +217,7 @@ typedef struct { int valid,profile_idc,level_idc,log2_max_frame_num,pic_order_cn
    /* kept for a hardware decoder (rh264_hw_sps_t) */
    sps_id, constraint_flags, gaps_allowed, frame_cropping,
    crop_l, crop_r, crop_t, crop_b;
+   rh264_video_color_t color;
    int32_t poc1_offset_ref[256]; /* offset_for_ref_frame (POC type 1)  */
    int bit_depth_luma, bit_depth_chroma;   /* 8 outside the High profiles */
    int scaling_present;         /* seq_scaling_matrix_present_flag */
@@ -404,11 +405,19 @@ static int rh264_parse_sps(const uint8_t *rbsp,size_t size,rh264_sps *s){
     * and so sets the display reorder delay. Absent VUI or an early end of
     * data leaves it unsignalled (-1). */
    s->vui_num_reorder=-1;
+   s->color.primaries=s->color.transfer=s->color.matrix=2;
    if(rh264_u1(&b)){
       if(rh264_u1(&b)){ if(rh264_un(&b,8)==255){ rh264_un(&b,16); rh264_un(&b,16); } }
       if(rh264_u1(&b)) rh264_u1(&b);
-      if(rh264_u1(&b)){ rh264_un(&b,3); rh264_u1(&b);
-         if(rh264_u1(&b)){ rh264_un(&b,8); rh264_un(&b,8); rh264_un(&b,8); } }
+      if(rh264_u1(&b)){ rh264_un(&b,3);
+         s->color.video_signal_present=1;
+         s->color.full_range=rh264_u1(&b);
+         if(rh264_u1(&b)){
+            if(b.bitpos>b.size*8||b.size*8-b.bitpos<24) return 0;
+            s->color.description_present=1;
+            s->color.primaries=rh264_un(&b,8);
+            s->color.transfer=rh264_un(&b,8);
+            s->color.matrix=rh264_un(&b,8); } }
       if(rh264_u1(&b)){ rh264_ue(&b); rh264_ue(&b); }
       if(rh264_u1(&b)){ rh264_un(&b,32); rh264_un(&b,32); rh264_u1(&b); }
       { int hrd0,hrd1,k;
@@ -11423,6 +11432,20 @@ void rh264_video_set_thread_pool(rh264_video *v, void *pool, int threads)
 #else
    (void)v; (void)pool; (void)threads;
 #endif
+}
+
+unsigned rh264_video_reorder_depth(const rh264_video *v)
+{
+   return v && v->reorder_delay > 0 ? (unsigned)v->reorder_delay : 0;
+}
+
+int rh264_video_get_color(const rh264_video *v, rh264_video_color_t *out)
+{
+   if (!out) return -1;
+   memset(out, 0, sizeof(*out));
+   if (!v || !v->have_sps) return -1;
+   *out = v->sps.color;
+   return 0;
 }
 
 int rh264_video_bit_depth(const rh264_video *v)

@@ -37,7 +37,7 @@ static int test_qm_raster;
 
 #include <d3d12.h>
 #include <formats/rmp4.h>
-#include <formats/rwebm_video.h>
+#include "../video_fixture_stream.h"
 #include "d3d11_video_decode_test_data.h"
 #include "hevc_device_data.h"
 
@@ -1221,13 +1221,226 @@ done:
    rh265_video_close(v);
 }
 
-int main(void)
+static int fixture_frame_equal(const frames_t *reference, unsigned index,
+      const frames_t *actual, unsigned depth)
+{
+   unsigned plane;
+   if (index >= (unsigned)reference->n || actual->n != 1
+         || reference->w != actual->w || reference->h != actual->h) return 0;
+   for (plane = 0; plane < 2; plane++)
+   {
+      size_t at, samples = (size_t)reference->w * reference->h / (plane ? 2 : 1);
+      const uint8_t *a = plane ? reference->uv[index] : reference->y[index];
+      const uint8_t *b = plane ? actual->uv[0] : actual->y[0];
+      for (at = 0; at < samples; at++)
+         if (depth == 10 ? (((const uint16_t*)a)[at] >> 6)
+               != (((const uint16_t*)b)[at] >> 6) : a[at] != b[at]) return 0;
+   }
+   return 1;
+}
+
+static int test_media_file(const char *path, int expect_pq, int expect_709)
+{
+   FILE *file = fopen(path, "rb");
+   long length;
+   const char *container = "Media";
+   uint8_t *data = NULL;
+   video_fixture_stream_t *stream = NULL;
+   frames_t sw, hw;
+   frames_t *seek_hw = NULL;
+   opened_t opened;
+   unsigned pass = 0, polls;
+   int result = 1, duration, first, worst, depth = 8;
+   int64_t times[2][MAX_FRAMES];
+   int durations[2][MAX_FRAMES];
+   memset(&sw, 0, sizeof(sw));
+   memset(&hw, 0, sizeof(hw));
+   memset(&opened, 0, sizeof(opened));
+   if (!file || fseek(file, 0, SEEK_END)) goto done;
+   length = ftell(file);
+   if (length < 4 || length > 64 * 1024 * 1024 || fseek(file, 0, SEEK_SET)) goto done;
+   data = (uint8_t*)malloc((size_t)length);
+   if (!data || fread(data, 1, (size_t)length, file) != (size_t)length) goto done;
+   container = memcmp(data, "\x1a\x45\xdf\xa3", 4) ? "MP4" : "Matroska";
+   for (pass = 0; pass < 2; pass++)
+   {
+      stream = video_fixture_stream_open(data, (size_t)length);
+      if (!stream) goto done;
+      if (expect_pq && !video_fixture_stream_is_hdr(stream)) goto done;
+      if (expect_709 && video_fixture_stream_is_hdr(stream)) goto done;
+      if (pass && !video_fixture_stream_set_hw(stream, 1))
+      {
+         rh265_video *source = (rh265_video*)video_fixture_stream_h265(stream);
+         rh265_video_params_t *params = (rh265_video_params_t*)calloc(1, sizeof(*params));
+         dxva_hevc_picture_t *picture = (dxva_hevc_picture_t*)calloc(1, sizeof(*picture));
+         ID3D11VideoDevice *video = NULL;
+         unsigned pps;
+         if (source && params && picture)
+         {
+            rh265_video_color_t color;
+            int color_result = rh265_video_get_color(source, 0, &color);
+            printf("Matroska HEVC admission: hdr=%d, direct opt-in=%d\n",
+                  video_fixture_stream_is_hdr(stream), rh265_video_set_hw(source, 1));
+            printf("Matroska HEVC source color: result=%d, present=%d, matrix=%u, transfer=%u, primaries=%u\n",
+                  color_result, color.description_present, color.matrix,
+                  color.transfer, color.primaries);
+            for (pps = 0; pps < 64; pps++)
+               if (!rh265_video_get_params(source, pps, params))
+               {
+                  printf("Matroska HEVC admission: %dx%d, depth=%d, dpb=%d, DXVA params=%d\n",
+                        params->width, params->height, params->bit_depth,
+                        params->max_dec_pic_buffering,
+                        dxva_hevc_params_from_rh265(picture, params));
+                  if (SUCCEEDED(dev->lpVtbl->QueryInterface(dev,
+                           &d3d11vd_iid_video_device, (void**)&video)))
+                  {
+                     BOOL supported = FALSE;
+                     UINT configs = 0;
+                     D3D11_VIDEO_DECODER_DESC desc;
+                     HRESULT hr;
+                     memset(&desc, 0, sizeof(desc));
+                     desc.Guid = params->bit_depth == 10
+                        ? d3d11vd_hevc_main10 : d3d11vd_hevc_main;
+                     desc.SampleWidth = (UINT)params->width;
+                     desc.SampleHeight = (UINT)params->height;
+                     desc.OutputFormat = params->bit_depth == 10
+                        ? DXGI_FORMAT_P010 : DXGI_FORMAT_NV12;
+                     hr = video->lpVtbl->CheckVideoDecoderFormat(video,
+                           &desc.Guid, desc.OutputFormat, &supported);
+                     video->lpVtbl->GetVideoDecoderConfigCount(video, &desc, &configs);
+                     printf("Matroska HEVC device: format=%d, hr=%lx, configs=%u\n",
+                           supported, (unsigned long)hr, (unsigned)configs);
+                     D3D11VD_RELEASE(video);
+                  }
+                  break;
+               }
+         }
+         free(picture);
+         free(params);
+         printf("Matroska: SKIP (codec not admitted by the GPU)\n");
+         result = 77;
+         goto done;
+      }
+      cpu_readbacks = 0;
+      for (polls = 0; polls < 2048; polls++)
+      {
+         if (video_fixture_stream_next(stream, &duration))
+         {
+            int index = pass ? hw.n : sw.n;
+            if (index >= MAX_FRAMES) goto done;
+            times[pass][index] = video_fixture_stream_frame_time_ns(stream);
+            durations[pass][index] = duration;
+            if (pass)
+            {
+               video_hw_frame_t frame;
+               if (!video_fixture_stream_hw_frame(stream, &frame)) goto done;
+               if ((depth == 10 && frame.pixfmt != IMAGE_PIXFMT_P010)
+                     || (expect_pq && (frame.color.transfer != 16
+                           || frame.color.primaries != 9 || frame.color.matrix != 9))
+                     || (expect_709 && (frame.color.transfer != 1
+                           || frame.color.primaries != 1 || frame.color.matrix != 1))
+                     || (video_fixture_stream_is_hdr(stream)
+                        && frame.color.transfer != 16 && frame.color.transfer != 18))
+               {
+                  fprintf(stderr, "Matroska D3D11 lease: depth=%d format=%u color=%u/%u/%u\n",
+                        depth, frame.pixfmt, frame.color.primaries,
+                        frame.color.transfer, frame.color.matrix);
+                  video_hw_frame_abandon(&frame);
+                  goto done;
+               }
+               if (!take_hw(&hw, &opened, &frame)) goto done;
+            }
+            else if (video_fixture_stream_h264(stream))
+               take_sw(&sw, (rh264_video*)video_fixture_stream_h264(stream));
+            else
+            {
+               rh265_video *source = (rh265_video*)video_fixture_stream_h265(stream);
+               depth = rh265_video_bit_depth(source);
+               if (!take_sw_hevc(&sw, source, depth)) goto done;
+            }
+         }
+         else if (video_fixture_stream_completed(stream)) break;
+         else if (!video_fixture_stream_waiting(stream)) goto done;
+      }
+      if (polls == 2048 || (pass && cpu_readbacks)) goto done;
+      video_fixture_stream_close(stream);
+      stream = NULL;
+   }
+   result = sw.n != 24 || hw.n != sw.n || sw.w != hw.w || sw.h != hw.h;
+   if (!result && depth == 8) result = compare(&sw, &hw, &first, &worst);
+   for (pass = 0; !result && pass < (unsigned)sw.n; pass++)
+   {
+      unsigned plane;
+      if (times[0][pass] != times[1][pass]
+            || durations[0][pass] != durations[1][pass]) result = 1;
+      for (plane = 0; !result && depth == 10 && plane < 2; plane++)
+      {
+         const uint16_t *a = (const uint16_t*)(plane ? sw.uv[pass] : sw.y[pass]);
+         const uint16_t *b = (const uint16_t*)(plane ? hw.uv[pass] : hw.y[pass]);
+         size_t at, samples = (size_t)sw.w * sw.h / (plane ? 2 : 1);
+         for (at = 0; at < samples; at++)
+            if ((a[at] >> 6) != (b[at] >> 6)) { result = 1; break; }
+      }
+   }
+   if (!result && !strcmp(container, "MP4"))
+   {
+      static const unsigned targets[] = {12, 3, 23};
+      unsigned seek;
+      result = 1;
+      seek_hw = (frames_t*)calloc(1, sizeof(*seek_hw));
+      stream = video_fixture_stream_open(data, (size_t)length);
+      if (!seek_hw || !stream || !video_fixture_stream_set_hw(stream, 1)) goto done;
+      for (seek = 0; seek < 3; seek++)
+      {
+         unsigned index = targets[seek];
+         int ret = 0;
+         int64_t position = -1;
+         video_hw_frame_t frame;
+         if (!video_fixture_stream_seek_begin(stream, times[0][index])) goto done;
+         for (polls = 0; polls < 2048 && !ret; polls++)
+            ret = video_fixture_stream_seek_step(stream, &position);
+         if (ret != 1 || position != times[0][index] / 1000) goto done;
+         for (polls = 0; polls < 2048; polls++)
+         {
+            if (video_fixture_stream_next(stream, &duration)) break;
+            if (!video_fixture_stream_waiting(stream)) goto done;
+         }
+         if (polls == 2048 || duration != durations[0][index]
+               || video_fixture_stream_frame_time_ns(stream) != times[0][index]
+               || !video_fixture_stream_hw_frame(stream, &frame)) goto done;
+         frames_free(seek_hw);
+         if (!take_hw(seek_hw, &opened, &frame)
+               || !fixture_frame_equal(&sw, index, seek_hw, (unsigned)depth)) goto done;
+      }
+      if (cpu_readbacks) goto done;
+      puts("MP4 native D3D11: 3 seek pictures, exact planes and timing PASS");
+      result = 0;
+   }
+   printf("%s native D3D11: %d software frames, %d GPU frames, %s\n",
+         container, sw.n, hw.n, result ? "FAIL" : "PASS");
+done:
+   if (result == 1)
+      fprintf(stderr, "Matroska D3D11 failure: pass=%u software=%d hardware=%d readbacks=%d\n",
+            pass, sw.n, hw.n, cpu_readbacks);
+   video_fixture_stream_close(stream);
+   opened_clear(&opened);
+   frames_free(&sw);
+   frames_free(&hw);
+   if (seek_hw) frames_free(seek_hw);
+   free(seek_hw);
+   free(data);
+   if (file) fclose(file);
+   return result;
+}
+
+int main(int argc, char **argv)
 {
    static const D3D_FEATURE_LEVEL levels[2] = {
       D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_11_0 };
    frames_t sw, hw;
    unsigned i;
    int zigzag_ok = 0, raster_ok = 0, lists_seen = 0;
+   int file_result = 0;
 
    setvbuf(stdout, NULL, _IONBF, 0);
    if (     FAILED(D3D11CreateDevice(NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, 0,
@@ -1238,17 +1451,24 @@ int main(void)
                (void**)&ctx4)))
    {
       printf("d3d11_video_decode_test: SKIP (no D3D11.4 device)\n");
-      return 0;
+      return argc > 1 ? 77 : 0;
    }
    if (!d3d11_video_decode_init_formats(dev,
             IMAGE_PIXFMT_NV12 | IMAGE_PIXFMT_P010
             | (getenv("D3D11_TEST_SHARED_DPB") ? D3D11_VIDEO_DECODE_SHARED_DPB : 0)))
    {
       printf("d3d11_video_decode_test: SKIP (the backend did not start)\n");
-      return 0;
+      return argc > 1 ? 77 : 0;
    }
 
    d3d11vd.ops.readback = counted_readback;
+   if (argc > 1)
+   {
+      file_result = test_media_file(argv[1], argc > 2 && !strcmp(argv[2], "pq"),
+            argc > 2 && !strcmp(argv[2], "709"));
+      if (file_result != 77) check("Media external file", file_result == 0);
+      goto file_done;
+   }
    if (!getenv("D3D11_TEST_H264_ONLY"))
    {
       test_hevc_main(8);
@@ -1398,6 +1618,7 @@ int main(void)
             : (raster_ok && !zigzag_ok) ? "raster (NOT as sent)"
             : (zigzag_ok && raster_ok) ? "either" : "neither");
 
+file_done:
    d3d11_video_decode_deinit();
    check("every decoder closed", !retro_atomic_load_acquire_int(&d3d11vd.live));
    D3D11VD_RELEASE(ctx4);
@@ -1405,6 +1626,7 @@ int main(void)
    D3D11VD_RELEASE(ctx);
    D3D11VD_RELEASE(dev);
    printf("d3d11_video_decode_test: %s (%d failure%s)\n",
-         fails ? "FAIL" : "PASS", fails, fails == 1 ? "" : "s");
-   return fails ? 1 : 0;
+         file_result == 77 ? "SKIP" : (fails ? "FAIL" : "PASS"),
+         fails, fails == 1 ? "" : "s");
+   return file_result ? file_result : (fails ? 1 : 0);
 }

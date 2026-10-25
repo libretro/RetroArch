@@ -38,6 +38,8 @@
 #include <formats/image.h>
 #include <formats/rwebm.h>
 #include <formats/rvp8.h>
+#include <formats/rh264.h>
+#include <formats/rh265.h>
 #ifdef HAVE_RVP9
 #include <formats/rvp9_hw.h>
 #include <formats/rvp9_color.h>
@@ -61,6 +63,7 @@
 
 /* A VP9 superframe carries at most 8 sub-frames. */
 #define RWEBM_VIDEO_MAX_SUPER    8
+#define RWEBM_VIDEO_MAX_REORDER 64
 
 #ifdef HAVE_RAV1
 typedef struct rwebm_av1_hdr_point
@@ -84,6 +87,20 @@ struct rwebm_video_stream
    int soft_pending, timing_active, timing_ready, timing_duration, timing_eof;
    rwebm_t     *demux;
    rvp8_video  *vp8;
+   rh264_video *h264;
+   rh265_video *h265;
+   rh265_output_timing_t h265_timing;
+   int64_t h26x_timestamp[RWEBM_VIDEO_MAX_REORDER];
+   int64_t h26x_span[RWEBM_VIDEO_MAX_REORDER];
+   unsigned h26x_count;
+   unsigned h26x_remainder;
+   int h26x_duration, h26x_ready;
+   int h26x_picture_pending, h26x_consumed;
+   int h26x_timeline_complete;
+   unsigned h265_scan_packets, h265_scan_count, h265_scan_first;
+   unsigned h265_scan_pending[RWEBM_VIDEO_MAX_REORDER];
+   unsigned h26x_probe_count;
+   int64_t h26x_picture_span, h26x_next_timestamp;
 #ifdef HAVE_RVP9
    rvp9_dec    *vp9;
    rvp9_hw_session_t *hw;
@@ -109,7 +126,6 @@ struct rwebm_video_stream
    int av1_hdr_active, av1_hdr_pending, av1_hdr_yield;
    int av1_hdr_initial_set, av1_hdr_initial_error;
 #endif
-#if defined(HAVE_RVP9) || defined(HAVE_RAV1)
 #ifdef HAVE_RVP9
    rvp9_hdr hw_initial_header;
    int hw_initial_header_valid;
@@ -122,7 +138,6 @@ struct rwebm_video_stream
    int hw_want, hw_untaken, hw_skip;
    unsigned hw_yuv_mask, hw_yuv;
    video_color_metadata_t hw_color;
-#endif
    int seek_active, seek_ready, seek_key, seek_scan;
    int seek_index_pending, seek_index_verified, seek_scan_from_cue, seek_scan_shown;
    size_t seek_index_lo, seek_index_hi;
@@ -233,10 +248,10 @@ static const int16_t *rwebm_video_coefs(unsigned matrix, unsigned height)
 /* BT.601 limited-range I420 -> ABGR words (memory R,G,B,A on LE),     */
 /* the packing the animated-WebP stream emits.                         */
 /* ------------------------------------------------------------------ */
-static INLINE uint32_t rwebm_video_yuv_px(int y, int u, int v,
-      const int16_t *k, int argb)
+static INLINE uint32_t rwebm_video_yuv_range_px(int y, int u, int v,
+      const int16_t *k, int argb, int full)
 {
-   int c = 298 * (y - 16);
+   int c = (full ? 256 : 298) * (y - (full ? 0 : 16));
    int d = u - 128;
    int e = v - 128;
    int r = (c + k[0] * e + 128) >> 8;
@@ -263,6 +278,12 @@ static INLINE uint32_t rwebm_video_yuv_px(int y, int u, int v,
         | ((uint32_t)b << 16)
         | ((uint32_t)g << 8)
         |  (uint32_t)r;
+}
+
+static INLINE uint32_t rwebm_video_yuv_px(int y, int u, int v,
+      const int16_t *k, int argb)
+{
+   return rwebm_video_yuv_range_px(y, u, v, k, argb, 0);
 }
 
 #if defined(__SSE2__)
@@ -504,10 +525,139 @@ whole:
 /* ------------------------------------------------------------------ */
 /* Decoder lifecycle                                                   */
 /* ------------------------------------------------------------------ */
+/* 2 marks a random-access picture; 1 is another coded picture. */
+static int rwebm_video_h26x_vcl(const rwebm_video_stream_t *s,
+      const rwebm_packet *packet, int *shown, rh265_slice_info_t *info)
+{
+   const rwebm_track *track = rwebm_get_track(s->demux, s->track);
+   size_t offset = 0;
+   unsigned width, i;
+   if (shown) *shown = 0;
+   if (!track || !track->codec_private) return -1;
+   i = s->codec == RWEBM_CODEC_H264 ? 4 : 21;
+   if (track->codec_private_size <= i || track->codec_private[0] != 1)
+      return -1;
+   width = 1 + (track->codec_private[i] & 3);
+   while (offset < packet->size)
+   {
+      size_t length = 0;
+      unsigned type;
+      if (packet->size - offset < width) return -1;
+      for (i = 0; i < width; i++)
+         length = (length << 8) | packet->data[offset++];
+      if (!length || length > packet->size - offset) return -1;
+      if (s->codec == RWEBM_CODEC_H264)
+      {
+         type = packet->data[offset] & 31;
+         if (type >= 1 && type <= 5)
+         {
+            if (shown) *shown = 1;
+            return type == 5 ? 2 : 1;
+         }
+      }
+      else
+      {
+         if (length < 2) return -1;
+         type = (packet->data[offset] >> 1) & 63;
+         if (type <= 31)
+         {
+            if (shown || info)
+            {
+               rh265_slice_info_t slice;
+               if (rh265_video_get_slice(s->h265, packet->data + offset,
+                        length, &slice) < 0)
+                  return -1;
+               if (shown) *shown = slice.pic_output_flag;
+               if (info) *info = slice;
+            }
+            return type >= 16 && type <= 21 ? 2 : 1;
+         }
+      }
+      offset += length;
+   }
+   return 0;
+}
+
+static void rwebm_video_h26x_color(rwebm_video_stream_t *s, const rwebm_track *t)
+{
+   unsigned pps;
+   rh265_video_color_t color;
+   rh264_video_color_t avc;
+   memset(&s->hw_color, 0, sizeof(s->hw_color));
+   if (!t) return;
+   s->hw_color.primaries = t->primaries;
+   s->hw_color.transfer = t->transfer_characteristics;
+   s->hw_color.matrix = t->matrix_coefficients;
+   s->hw_color.range = t->colour_range;
+   s->hw_color.mastering = t->mastering;
+   s->hw_color.max_cll = t->max_cll;
+   s->hw_color.max_fall = t->max_fall;
+   if (s->h264)
+   {
+      if (rh264_video_get_color(s->h264, &avc)) return;
+      color.primaries = avc.primaries;
+      color.transfer = avc.transfer;
+      color.matrix = avc.matrix;
+      color.full_range = avc.full_range;
+      color.video_signal_present = avc.video_signal_present;
+      color.description_present = avc.description_present;
+   }
+   else
+   {
+      if (!s->h265) return;
+      for (pps = 0; pps < 64; pps++)
+         if (!rh265_video_get_color(s->h265, pps, &color)) break;
+      if (pps == 64) return;
+   }
+   if (color.description_present)
+   {
+      if (!t->primaries || t->primaries == 2)
+         s->hw_color.primaries = color.primaries;
+      if (!t->transfer_characteristics || t->transfer_characteristics == 2)
+         s->hw_color.transfer = color.transfer;
+      if (!t->matrix_coefficients || t->matrix_coefficients == 2)
+         s->hw_color.matrix = color.matrix == 2 ? 0 : color.matrix;
+   }
+   if (!t->colour_range && color.video_signal_present)
+      s->hw_color.range = color.full_range ? 2 : 1;
+}
+
 static bool rwebm_video_stream_open_decoder(rwebm_video_stream_t *s)
 {
    switch (s->codec)
    {
+      case RWEBM_CODEC_H264:
+      {
+         const rwebm_track *t = rwebm_get_track(s->demux, s->track);
+         if (!(s->h264 = rh264_video_open()))
+            return false;
+         if (!t || !t->codec_private_size
+               || rh264_video_set_extradata(s->h264, t->codec_private,
+                  t->codec_private_size) < 0)
+            return false;
+         if (s->blit_pool && s->blit_bands > 1)
+            rh264_video_set_thread_pool(s->h264, s->blit_pool,
+                  (int)s->blit_bands);
+         rwebm_video_h26x_color(s, t);
+         if (s->hw_want) rh264_video_set_hw(s->h264, 1);
+         return true;
+      }
+      case RWEBM_CODEC_H265:
+      {
+         const rwebm_track *t = rwebm_get_track(s->demux, s->track);
+         if (!(s->h265 = rh265_video_open()))
+            return false;
+         if (s->hw_want && rh265_video_retain_parameter_sets(s->h265) < 0)
+            return false;
+         if (!t || !t->codec_private_size
+               || rh265_video_set_extradata(s->h265, t->codec_private,
+                  t->codec_private_size) < 0)
+            return false;
+         rh265_video_set_thread_pool(s->h265, s->blit_pool, s->blit_bands);
+         rwebm_video_h26x_color(s, t);
+         if (s->hw_want) rh265_video_set_hw(s->h265, 1);
+         return true;
+      }
 #ifdef HAVE_RAV1
       case RWEBM_CODEC_AV1:
          return true;
@@ -532,17 +682,23 @@ static bool rwebm_video_stream_open_decoder(rwebm_video_stream_t *s)
 static void rwebm_video_stream_close_decoder(rwebm_video_stream_t *s)
 {
    s->soft_pending = s->timing_active = s->timing_ready = s->lookahead_ready = 0;
+   if (s->hw_untaken) video_hw_frame_abandon(&s->hw_frame);
+   s->hw_untaken = 0;
+   memset(&s->hw_frame, 0, sizeof(s->hw_frame));
+   rh264_video_close(s->h264);
+   s->h264 = NULL;
+   rh265_video_close(s->h265);
+   s->h265 = NULL;
+   s->h26x_count = 0;
+   s->h26x_remainder = 0;
+   s->h26x_ready = 0;
+   s->h26x_picture_pending = 0;
    if (s->vp8)
    {
       rvp8_video_close(s->vp8);
       s->vp8 = NULL;
    }
-#if defined(HAVE_RVP9) || defined(HAVE_RAV1)
-   if (s->hw_untaken) video_hw_frame_abandon(&s->hw_frame);
-   s->hw_untaken = 0;
-   memset(&s->hw_frame, 0, sizeof(s->hw_frame));
    s->pending = s->waiting = 0;
-#endif
 #ifdef HAVE_RAV1
    s->av1_display_recorded = 0;
    if (s->av1)
@@ -611,6 +767,7 @@ static rwebm_video_stream_t *rwebm_video_stream_open_begin(
       if (t->width < 1 || t->height < 1)
          continue;
       if (t->codec != RWEBM_CODEC_VP8
+          && t->codec != RWEBM_CODEC_H264 && t->codec != RWEBM_CODEC_H265
 #ifdef HAVE_RVP9
           && t->codec != RWEBM_CODEC_VP9
 #endif
@@ -634,6 +791,9 @@ static rwebm_video_stream_t *rwebm_video_stream_open_begin(
    if (!(s->ts = (int64_t*)malloc(RWEBM_VIDEO_MAX_TS * sizeof(int64_t))))
       goto fail;
    if (!(s->timing = rwebm_cursor_clone(s->demux))) goto fail;
+   if ((s->codec == RWEBM_CODEC_H264 || s->codec == RWEBM_CODEC_H265)
+         && !rwebm_video_stream_open_decoder(s))
+      goto fail;
 
    return s;
 
@@ -644,6 +804,66 @@ fail:
 
 static int rwebm_video_packet_shown(rwebm_video_stream_t *s,
       const rwebm_packet *packet);
+
+static int rwebm_video_scan_h265(rwebm_video_stream_t *s,
+      const rwebm_packet *packet)
+{
+   rh265_slice_info_t slice;
+   rh265_sequence_info_t sequence;
+   unsigned i, first, depth;
+   int shown, vcl = rwebm_video_h26x_vcl(s, packet, &shown, &slice);
+   if (vcl <= 0) return vcl;
+   if (rh265_video_get_sequence(s->h265, (unsigned)slice.pps_id, &sequence))
+      return -1;
+   depth = sequence.max_num_reorder_pics[sequence.max_sub_layers_minus1];
+   if (depth >= RWEBM_VIDEO_MAX_REORDER) return -1;
+   if ((slice.nal_type >= 16 && slice.nal_type <= 20)
+         || (slice.nal_type == 21 && !s->h265_scan_first))
+   {
+      while (s->h265_scan_count && slice.no_output_of_prior_pics)
+      {
+         unsigned index;
+         first = 0;
+         for (i = 1; i < s->h265_scan_count; i++)
+            if (s->h265_scan_pending[i] > s->h265_scan_pending[first]) first = i;
+         index = s->h265_scan_pending[first];
+         memmove(s->ts + index, s->ts + index + 1,
+               (size_t)(s->ts_count - (int)index - 1) * sizeof(*s->ts));
+         s->ts_count--;
+         s->num_frames--;
+         s->h265_scan_pending[first] = s->h265_scan_pending[--s->h265_scan_count];
+      }
+      s->h265_scan_count = 0;
+      s->have_last_shown = s->ts_count != 0;
+      if (s->ts_count)
+      {
+         s->first_shown_ts = s->last_shown_ts = s->ts[0];
+         for (i = 1; i < (unsigned)s->ts_count; i++)
+         {
+            if (s->ts[i] < s->first_shown_ts) s->first_shown_ts = s->ts[i];
+            if (s->ts[i] > s->last_shown_ts) s->last_shown_ts = s->ts[i];
+         }
+      }
+   }
+   s->h265_scan_first = 1;
+   if (!shown) return 0;
+   if (!s->have_last_shown || packet->timestamp < s->first_shown_ts)
+      s->first_shown_ts = packet->timestamp;
+   if (!s->have_last_shown || packet->timestamp > s->last_shown_ts)
+      s->last_shown_ts = packet->timestamp;
+   s->have_last_shown = 1;
+   s->h265_scan_pending[s->h265_scan_count++] = (unsigned)s->ts_count;
+   s->ts[s->ts_count++] = packet->timestamp;
+   s->num_frames++;
+   if (s->h265_scan_count > depth)
+   {
+      first = 0;
+      for (i = 1; i < s->h265_scan_count; i++)
+         if (s->ts[s->h265_scan_pending[i]] < s->ts[s->h265_scan_pending[first]]) first = i;
+      s->h265_scan_pending[first] = s->h265_scan_pending[--s->h265_scan_count];
+   }
+   return 1;
+}
 
 /* Pre-scan: count the track's packets and record their timestamps so
  * frame durations come straight from the container. This walks block
@@ -666,7 +886,7 @@ static int rwebm_video_stream_scan_step(rwebm_video_stream_t *s,
 
    while (s->num_frames < RWEBM_VIDEO_MAX_TS)
    {
-      int r;
+      int r, shown;
       if (max_packets > 0 && walked >= max_packets)
          return 0;
       r = rwebm_read_packet(s->demux, &pkt);
@@ -680,10 +900,22 @@ static int rwebm_video_stream_scan_step(rwebm_video_stream_t *s,
       walked++;
       if (pkt.track != s->track)
          continue;
-      if (rwebm_video_packet_shown(s, &pkt))
+      if (s->codec == RWEBM_CODEC_H265)
       {
-         if (!s->have_last_shown) s->first_shown_ts = pkt.timestamp;
-         s->last_shown_ts = pkt.timestamp;
+         if (s->h265_scan_packets == (unsigned)-1) return -1;
+         s->h265_scan_packets++;
+         if (rwebm_video_scan_h265(s, &pkt) < 0) return -1;
+         continue;
+      }
+      shown = rwebm_video_packet_shown(s, &pkt);
+      if ((s->codec == RWEBM_CODEC_H264 || s->codec == RWEBM_CODEC_H265) && !shown)
+         continue;
+      if (shown)
+      {
+         if (!s->have_last_shown || pkt.timestamp < s->first_shown_ts)
+            s->first_shown_ts = pkt.timestamp;
+         if (!s->have_last_shown || pkt.timestamp > s->last_shown_ts)
+            s->last_shown_ts = pkt.timestamp;
          s->have_last_shown = 1;
       }
       s->ts[s->ts_count++] = pkt.timestamp;
@@ -692,13 +924,31 @@ static int rwebm_video_stream_scan_step(rwebm_video_stream_t *s,
    return 1;
 }
 
+static int rwebm_video_compare_timestamp(const void *a, const void *b)
+{
+   int64_t x = *(const int64_t*)a, y = *(const int64_t*)b;
+   return x < y ? -1 : x > y;
+}
+
+static void rwebm_video_h26x_sort(rwebm_video_stream_t *s)
+{
+   if ((s->codec == RWEBM_CODEC_H264 || s->codec == RWEBM_CODEC_H265)
+         && s->endpoint_known && s->num_frames < RWEBM_VIDEO_MAX_TS)
+   {
+      qsort(s->ts, (size_t)s->ts_count, sizeof(*s->ts),
+            rwebm_video_compare_timestamp);
+      s->h26x_timeline_complete = 1;
+   }
+}
+
 static int rwebm_video_stream_open_finish(rwebm_video_stream_t *s)
 {
    if (s->num_frames < 1)
       return -1;
+   rwebm_video_h26x_sort(s);
    rwebm_rewind(s->demux);
 
-   if (!rwebm_video_stream_open_decoder(s))
+   if (!s->h264 && !s->h265 && !rwebm_video_stream_open_decoder(s))
       return -1;
 
    if ((size_t)s->width > SIZE_MAX / sizeof(uint32_t) / s->height)
@@ -714,7 +964,11 @@ rwebm_video_stream_t *rwebm_video_stream_open(const uint8_t *buf,
 
    if (!(s = rwebm_video_stream_open_begin(buf, len, len, NULL, 0)))
       return NULL;
-   rwebm_video_stream_scan_step(s, 0);
+   if (rwebm_video_stream_scan_step(s, 0) < 0)
+   {
+      rwebm_video_stream_close(s);
+      return NULL;
+   }
    if (rwebm_video_stream_open_finish(s) != 0)
    {
       rwebm_video_stream_close(s);
@@ -743,6 +997,11 @@ static rwebm_video_stream_t *rwebm_video_stream_open_avail_internal(
     * file has fully arrived.  Below two frames the caller feeds more
     * bytes and retries. */
    sr = rwebm_video_stream_scan_step(s, 0);
+   if (sr < 0)
+   {
+      rwebm_video_stream_close(s);
+      return NULL;
+   }
    if (sr == 2 && s->num_frames < 2)
    {
       if (need_more)
@@ -843,6 +1102,8 @@ int rwebm_video_stream_is_hdr(const rwebm_video_stream_t *s)
 {
    const rwebm_track *t = (s && s->demux)
       ? rwebm_get_track(s->demux, s->track) : NULL;
+   if (s && (s->h264 || s->h265))
+      return s->hw_color.transfer == 16 || s->hw_color.transfer == 18;
    return t && (     t->transfer_characteristics == 16
                   || t->transfer_characteristics == 18);
 }
@@ -854,6 +1115,10 @@ void rwebm_video_stream_set_blit_pool(rwebm_video_stream_t *s,
       return;
    s->blit_pool  = pool;
    s->blit_bands = bands;
+   if (s->h264)
+      rh264_video_set_thread_pool(s->h264, pool, (int)bands);
+   if (s->h265)
+      rh265_video_set_thread_pool(s->h265, pool, bands);
 #ifdef HAVE_RVP9
    /* VP9 tile columns decode on the same pool, one per thread. */
    if (s->vp9)
@@ -874,10 +1139,48 @@ typedef struct
    unsigned matrix, transfer, range, max_cll, primaries;
    const rwebm_video_hdr_tone_t *tone;
    int argb;
+   int chsh, cvsh, depth;
    int kind;                /* 0: 8-bit, 1: hbd to 8-bit, 2: 10-bit,
                                3: HDR to scRGB half floats, whose
-                               rows are dst_stride 8-byte pixels */
+                               rows are dst_stride 8-byte pixels;
+                               4: generic SDR chroma/depth/range */
 } rwebm_blit_ctx_t;
+
+static void rwebm_video_blit_generic_rows(const rwebm_blit_ctx_t *c,
+      unsigned row0, unsigned rows)
+{
+   static const int16_t full601[4] = {359, 88, 183, 454};
+   static const int16_t full709[4] = {403, 48, 120, 475};
+   static const int16_t full2020[4] = {377, 42, 146, 482};
+   const int16_t *k = rwebm_video_coefs(c->matrix, 0);
+   unsigned j, i;
+   int full = c->range == 2, shift = c->depth - 8;
+   if (full)
+      k = c->matrix == 1 ? full709
+         : (c->matrix == 9 || c->matrix == 10 ? full2020 : full601);
+   for (j = row0; j < row0 + rows; j++)
+   {
+      uint32_t *dst = c->dst + (size_t)j * c->dst_stride;
+      size_t luma = (size_t)j * c->ys;
+      size_t chroma = (size_t)(j >> c->cvsh) * c->uvs;
+      for (i = 0; i < c->w; i++)
+      {
+         size_t at = chroma + (i >> c->chsh);
+         int y, u, v;
+         if (c->depth == 8)
+         {
+            y = c->y[luma + i]; u = c->u[at]; v = c->v[at];
+         }
+         else
+         {
+            y = ((const uint16_t*)c->y)[luma + i] >> shift;
+            u = ((const uint16_t*)c->u)[at] >> shift;
+            v = ((const uint16_t*)c->v)[at] >> shift;
+         }
+         dst[i] = rwebm_video_yuv_range_px(y, u, v, k, c->argb, full);
+      }
+   }
+}
 
 static void rwebm_video_blit_rows(void *arg, unsigned row0, unsigned rows)
 {
@@ -885,6 +1188,9 @@ static void rwebm_video_blit_rows(void *arg, unsigned row0, unsigned rows)
    uint32_t *dst             = c->dst + (size_t)row0 * c->dst_stride;
    switch (c->kind)
    {
+      case 4:
+         rwebm_video_blit_generic_rows(c, row0, rows);
+         break;
       case 0:
          rwebm_video_blit_i420(dst, c->dst_stride, c->w, rows,
                c->y + (size_t)row0 * c->ys, c->ys,
@@ -924,14 +1230,18 @@ static void rwebm_video_blit_frame(rwebm_video_stream_t *s,
       rwebm_blit_ctx_t *c, unsigned h)
 {
    const rwebm_track *ct = rwebm_get_track(s->demux, s->track);
-   c->primaries = ct ? ct->primaries : 0;
+   const video_color_metadata_t *color = (s->h264 || s->h265) ? &s->hw_color : NULL;
+   c->primaries = color ? color->primaries : (ct ? ct->primaries : 0);
    c->max_cll = video_color_tonemap_peak_nits(c->transfer,
-         ct ? ct->max_cll : 0, ct ? &ct->mastering : NULL);
+         color ? color->max_cll : (ct ? ct->max_cll : 0),
+         color ? &color->mastering : (ct ? &ct->mastering : NULL));
    c->tone = &s->tone;
    if (c->kind > 0 && c->kind < 3 && c->transfer == 16
          && (!s->tone.ready || s->tone.peak != c->max_cll))
       rwebm_video_hdr_tone_init(&s->tone, c->max_cll);
-   if (c->kind == 0 && !(c->matrix == 1 || c->matrix == 5
+   if ((c->kind == 0 || c->kind == 4
+            || ((s->h264 || s->h265) && c->transfer != 16 && c->transfer != 18))
+         && !(c->matrix == 1 || c->matrix == 5
             || c->matrix == 6 || c->matrix == 9 || c->matrix == 10))
       c->matrix = h >= 720 ? 1 : 5;
    image_blit_bands(s->blit_pool, s->blit_bands, h, 2,
@@ -1044,7 +1354,8 @@ void rwebm_video_stream_complete_scan(rwebm_video_stream_t *s,
 {
    rwebm_t *d;
    rwebm_packet pkt;
-   int skip, ret;
+   unsigned skip;
+   int ret;
 
    if (!s || s->num_frames >= RWEBM_VIDEO_MAX_TS)
       return;
@@ -1059,20 +1370,38 @@ void rwebm_video_stream_complete_scan(rwebm_video_stream_t *s,
     * nothing is appended - harmless. */
    if (!(d = rwebm_open_memory(buf, len)))
       return;
-   skip = s->ts_count;
+   skip = s->codec == RWEBM_CODEC_H265 ? s->h265_scan_packets : (unsigned)s->ts_count;
    while ((ret = rwebm_read_packet(d, &pkt)) == 1)
    {
+      int shown = -1;
       if (pkt.track != s->track)
          continue;
+      if (s->codec == RWEBM_CODEC_H265)
+      {
+         if (skip > 0) { skip--; continue; }
+         if (s->h265_scan_packets == (unsigned)-1) { ret = -1; break; }
+         s->h265_scan_packets++;
+         if (rwebm_video_scan_h265(s, &pkt) < 0) { ret = -1; break; }
+         if (s->num_frames >= RWEBM_VIDEO_MAX_TS) break;
+         continue;
+      }
+      if (s->codec == RWEBM_CODEC_H264 || s->codec == RWEBM_CODEC_H265)
+      {
+         shown = rwebm_video_packet_shown(s, &pkt);
+         if (!shown) continue;
+      }
       if (skip > 0)
       {
          skip--;
          continue;
       }
-      if (rwebm_video_packet_shown(s, &pkt))
+      if (shown < 0) shown = rwebm_video_packet_shown(s, &pkt);
+      if (shown)
       {
-         if (!s->have_last_shown) s->first_shown_ts = pkt.timestamp;
-         s->last_shown_ts = pkt.timestamp;
+         if (!s->have_last_shown || pkt.timestamp < s->first_shown_ts)
+            s->first_shown_ts = pkt.timestamp;
+         if (!s->have_last_shown || pkt.timestamp > s->last_shown_ts)
+            s->last_shown_ts = pkt.timestamp;
          s->have_last_shown = 1;
       }
       s->ts[s->ts_count++] = pkt.timestamp;
@@ -1081,6 +1410,7 @@ void rwebm_video_stream_complete_scan(rwebm_video_stream_t *s,
          break;
    }
    if (!ret) s->endpoint_known = 1;
+   rwebm_video_h26x_sort(s);
    rwebm_close(d);
 }
 
@@ -1535,6 +1865,34 @@ int rwebm_video_stream_set_hw(rwebm_video_stream_t *s, int enable)
    size_t sizes[RWEBM_VIDEO_MAX_SUPER];
    unsigned walked;
    int found = 0;
+#endif
+   if (s && (s->h264 || s->h265))
+   {
+      if (enable && !s->hw_want)
+      {
+         const rwebm_track *track = rwebm_get_track(s->demux, s->track);
+         if (!track || track->colour_range > 2 || track->chroma_siting_horz > 1
+               || track->chroma_siting_vert > 2)
+            return 0;
+         if (rwebm_video_stream_is_hdr(s))
+         {
+            if (!(s->hw_color.matrix == 0 || s->hw_color.matrix == 2
+                     || s->hw_color.matrix == 1 || s->hw_color.matrix == 9)
+                  || !(s->hw_color.primaries == 0 || s->hw_color.primaries == 2
+                     || s->hw_color.primaries == 1 || s->hw_color.primaries == 9))
+               return 0;
+         }
+         else if (!(s->hw_color.matrix == 0 || s->hw_color.matrix == 2
+                  || s->hw_color.matrix == 1 || s->hw_color.matrix == 5
+                  || s->hw_color.matrix == 6))
+            return 0;
+         s->hw_want = 1;
+         rwebm_video_stream_rewind(s);
+      }
+      return s->h265 ? rh265_video_is_hw(s->h265)
+         : s->h264 && rh264_video_is_hw(s->h264);
+   }
+#ifdef HAVE_RVP9
 #ifdef HAVE_RAV1
    if (s && s->codec == RWEBM_CODEC_AV1)
       return s->av1 ? 1 : (enable ? rwebm_video_av1_open(s) : 0);
@@ -1694,21 +2052,26 @@ int rwebm_video_stream_set_hw(rwebm_video_stream_t *s, int enable)
 
 int rwebm_video_stream_hw_frame(rwebm_video_stream_t *s, video_hw_frame_t *out)
 {
-#if defined(HAVE_RVP9) || defined(HAVE_RAV1)
-   if (!s || !out || !s->hw_untaken) return 0;
+   if (!s || !out || !s->hw_untaken || s->h26x_picture_pending) return 0;
    *out = s->hw_frame;
    s->hw_untaken = 0;
    memset(&s->hw_frame, 0, sizeof(s->hw_frame));
    return 1;
-#else
-   (void)s; (void)out;
-   return 0;
-#endif
 }
 
 int rwebm_video_stream_waiting(const rwebm_video_stream_t *s)
 {
    return s && s->waiting;
+}
+
+void *rwebm_video_stream_h264(rwebm_video_stream_t *s)
+{
+   return s ? s->h264 : NULL;
+}
+
+void *rwebm_video_stream_h265(rwebm_video_stream_t *s)
+{
+   return s ? s->h265 : NULL;
 }
 
 #ifdef HAVE_RVP9
@@ -1885,6 +2248,366 @@ static uint32_t *rwebm_video_output(rwebm_video_stream_t *s)
    return s->frame;
 }
 
+static void rwebm_video_h265_ready(rh265_output_timing_t *timing,
+      int64_t timestamp, int64_t after)
+{
+   if (timestamp > after
+         && (!timing->next_valid || timestamp < timing->next_timestamp))
+   {
+      timing->next_timestamp = timestamp;
+      timing->next_valid = 1;
+   }
+}
+
+static int rwebm_video_h265_probe(rwebm_video_stream_t *s,
+      const rwebm_packet *packet, int64_t after)
+{
+   rh265_slice_info_t slice;
+   int vcl = rwebm_video_h26x_vcl(s, packet, NULL, &slice);
+   if (vcl <= 0) return vcl;
+   return rh265_video_output_timing_advance(s->h265, &s->h265_timing,
+         &slice, packet->timestamp, after);
+}
+
+static int rwebm_video_h265_next_time(rwebm_video_stream_t *s,
+      int64_t timestamp)
+{
+   rh265_output_timing_t *timing = &s->h265_timing;
+   unsigned walked;
+   if (!s->timing_active)
+   {
+      if (rh265_video_output_timing(s->h265, timestamp, timing)) return -1;
+      rwebm_cursor_copy(s->timing, s->demux);
+      s->timing_active = 1;
+      s->timing_eof = 0;
+      if (!timing->next_valid && s->soft_pending && !s->h26x_consumed
+            && rwebm_video_h265_probe(s, &s->soft_packet, timestamp) < 0)
+         return -1;
+   }
+   for (walked = 0; !timing->next_valid && walked < 16; walked++)
+   {
+      rwebm_packet packet;
+      int ret = rwebm_read_packet_track(s->timing, s->track, &packet);
+      if (ret == RWEBM_READ_AGAIN || ret == RWEBM_READ_YIELD) return 2;
+      if (ret < 0) return -1;
+      if (!ret)
+      {
+         unsigned i;
+         for (i = 0; i < timing->count; i++)
+            rwebm_video_h265_ready(timing, timing->pending[i], timestamp);
+         s->timing_eof = !timing->next_valid;
+         break;
+      }
+      if (packet.track == s->track
+            && rwebm_video_h265_probe(s, &packet, timestamp) < 0) return -1;
+   }
+   if (!timing->next_valid && !s->timing_eof) return 2;
+   s->h26x_next_timestamp = timing->next_valid
+      ? timing->next_timestamp : timestamp;
+   s->timing_active = 0;
+   return 1;
+}
+
+static int rwebm_video_h26x_next_time(rwebm_video_stream_t *s, int64_t timestamp)
+{
+   unsigned walked, limit = 1 + (s->h264
+         ? rh264_video_reorder_depth(s->h264) : rh265_video_reorder_depth(s->h265));
+   if (limit > RWEBM_VIDEO_MAX_REORDER) return -1;
+   if (s->h26x_timeline_complete)
+   {
+      int lo = 0, hi = s->ts_count;
+      while (lo < hi)
+      {
+         int mid = lo + (hi - lo) / 2;
+         if (s->ts[mid] <= timestamp) lo = mid + 1;
+         else hi = mid;
+      }
+      s->h26x_next_timestamp = lo < s->ts_count ? s->ts[lo] : timestamp;
+      s->timing_eof = lo == s->ts_count;
+      s->timing_active = 0;
+      return 1;
+   }
+   if (s->h265) return rwebm_video_h265_next_time(s, timestamp);
+   if (!s->timing_active)
+   {
+      unsigned i;
+      rwebm_cursor_copy(s->timing, s->demux);
+      s->timing_active = 1;
+      s->timing_eof = 0;
+      s->h26x_probe_count = 0;
+      s->h26x_next_timestamp = timestamp;
+      for (i = 0; i < s->h26x_count; i++)
+         if (s->h26x_timestamp[i] > timestamp
+               && (s->h26x_next_timestamp == timestamp
+                  || s->h26x_timestamp[i] < s->h26x_next_timestamp))
+            s->h26x_next_timestamp = s->h26x_timestamp[i];
+      if (s->soft_pending && !s->h26x_consumed
+            && rwebm_video_packet_shown(s, &s->soft_packet)
+            && s->soft_packet.timestamp > timestamp
+            && (s->h26x_next_timestamp == timestamp
+               || s->soft_packet.timestamp < s->h26x_next_timestamp))
+         s->h26x_next_timestamp = s->soft_packet.timestamp;
+   }
+   for (walked = 0; walked < 16; walked++)
+   {
+      rwebm_packet packet;
+      int ret = rwebm_read_packet_track(s->timing, s->track, &packet);
+      if (ret == RWEBM_READ_AGAIN || ret == RWEBM_READ_YIELD) return 2;
+      if (ret < 0) return -1;
+      if (!ret) { s->timing_eof = 1; break; }
+      if (packet.track != s->track) continue;
+      ret = rwebm_video_packet_shown(s, &packet);
+      if (!ret) continue;
+      if (packet.timestamp > timestamp
+            && (s->h26x_next_timestamp == timestamp
+               || packet.timestamp < s->h26x_next_timestamp))
+         s->h26x_next_timestamp = packet.timestamp;
+      if (++s->h26x_probe_count >= limit) break;
+   }
+   if (walked == 16) return 2;
+   s->timing_active = 0;
+   return 1;
+}
+
+static int rwebm_video_h26x_picture(rwebm_video_stream_t *s,
+      const rwebm_packet *pkt, int discard, int render_only)
+{
+   const rwebm_track *t = rwebm_get_track(s->demux, s->track);
+   const uint8_t *y, *u, *v;
+   int ret, ys, uvs, w, h, cw, ch, depth, vcl = 0, shown = 0;
+   int64_t timestamp = 0, span;
+   unsigned i, first = 0;
+   rwebm_blit_ctx_t c;
+   if (render_only)
+   {
+      ret = 1;
+      goto render;
+   }
+   if (s->h26x_picture_pending) goto timing;
+   s->h26x_consumed = 0;
+   if (pkt)
+   {
+      vcl = rwebm_video_h26x_vcl(s, pkt, &shown, NULL);
+      if (vcl < 0) return -1;
+   }
+   if (s->hw_untaken)
+   {
+      video_hw_frame_abandon(&s->hw_frame);
+      s->hw_untaken = 0;
+   }
+   if (shown && s->h26x_count == RWEBM_VIDEO_MAX_REORDER)
+      return -1;
+   ret = s->h264 ? (pkt ? rh264_video_decode(s->h264, pkt->data, pkt->size)
+         : rh264_video_drain(s->h264))
+      : (pkt ? rh265_video_decode_timed(s->h265, pkt->data, pkt->size,
+               pkt->timestamp, &timestamp)
+         : rh265_video_drain_timed(s->h265, &timestamp));
+   if (ret == 2)
+   {
+      s->waiting = 1;
+      return 2;
+   }
+   if (ret < 0) return pkt || ret != -1 ? -1 : -2;
+   s->h26x_consumed = ret != 3;
+   if (shown && ret != 3)
+   {
+      unsigned n = s->h26x_count++;
+      s->h26x_timestamp[n] = pkt->timestamp;
+      s->h26x_span[n] = pkt->duration_ns;
+   }
+   if (pkt && !ret) return 0;
+   if (s->h264 ? rh264_video_is_hw(s->h264) : rh265_video_is_hw(s->h265))
+   {
+      video_hw_frame_t frame;
+      if ((s->h264 ? rh264_video_hw_frame(s->h264, &frame)
+            : rh265_video_hw_frame(s->h265, &frame)) != 0)
+         return -1;
+      if (frame.width < s->width || frame.height < s->height)
+      {
+         video_hw_frame_abandon(&frame);
+         return -1;
+      }
+      frame.width = s->width;
+      frame.height = s->height;
+      if (s->hw_color.primaries && s->hw_color.primaries != 2)
+         frame.color.primaries = s->hw_color.primaries;
+      if (s->hw_color.transfer && s->hw_color.transfer != 2)
+         frame.color.transfer = s->hw_color.transfer;
+      if (s->hw_color.matrix && s->hw_color.matrix != 2)
+         frame.color.matrix = s->hw_color.matrix;
+      if (s->hw_color.range) frame.color.range = s->hw_color.range;
+      if (t)
+      {
+         if (t->primaries && t->primaries != 2) frame.color.primaries = t->primaries;
+         if (t->transfer_characteristics && t->transfer_characteristics != 2)
+            frame.color.transfer = t->transfer_characteristics;
+         if (t->matrix_coefficients && t->matrix_coefficients != 2)
+            frame.color.matrix = t->matrix_coefficients;
+         if (t->colour_range) frame.color.range = t->colour_range;
+         if (t->mastering.present) frame.color.mastering = t->mastering;
+         if (t->max_cll) frame.color.max_cll = t->max_cll;
+         if (t->max_fall) frame.color.max_fall = t->max_fall;
+      }
+      if (frame.color.matrix == 1) frame.yuv |= IMAGE_YUV_FLAG_BT709;
+      else if (frame.color.matrix == 5 || frame.color.matrix == 6)
+         frame.yuv &= ~IMAGE_YUV_FLAG_BT709;
+      if (frame.color.range == 2) frame.yuv |= IMAGE_YUV_FLAG_FULL_RANGE;
+      else if (frame.color.range == 1) frame.yuv &= ~IMAGE_YUV_FLAG_FULL_RANGE;
+      s->hw_frame = frame;
+      s->hw_untaken = 1;
+   }
+   if (!s->h26x_count) return -1;
+   if (s->h265)
+   {
+      for (first = 0; first < s->h26x_count; first++)
+         if (s->h26x_timestamp[first] == timestamp) break;
+      if (first == s->h26x_count) return -1;
+   }
+   else
+      for (i = 1; i < s->h26x_count; i++)
+         if (s->h26x_timestamp[i] < s->h26x_timestamp[first]) first = i;
+   timestamp = s->h26x_timestamp[first];
+   span = s->h26x_span[first];
+   s->h26x_count--;
+   s->h26x_timestamp[first] = s->h26x_timestamp[s->h26x_count];
+   s->h26x_span[first] = s->h26x_span[s->h26x_count];
+   if (s->h265)
+      for (i = 0; i < s->h26x_count; )
+      {
+         if (s->h26x_timestamp[i] < timestamp)
+         {
+            s->h26x_count--;
+            s->h26x_timestamp[i] = s->h26x_timestamp[s->h26x_count];
+            s->h26x_span[i] = s->h26x_span[s->h26x_count];
+         }
+         else i++;
+      }
+   s->frame_time_ns = timestamp;
+   s->have_frame_time = 1;
+   s->h26x_picture_span = span;
+   s->h26x_picture_pending = 1;
+timing:
+   timestamp = s->frame_time_ns;
+   span = s->h26x_picture_span;
+   ret = s->h26x_consumed ? 1 : 3;
+   if (span <= 0)
+   {
+      int ready = rwebm_video_h26x_next_time(s, timestamp);
+      if (ready < 0) return -1;
+      if (ready == 2) { s->waiting = 1; return 2; }
+      if (s->h26x_next_timestamp > timestamp)
+      {
+         uint64_t delta = (uint64_t)s->h26x_next_timestamp - (uint64_t)timestamp;
+         if (delta > ((~(uint64_t)0) >> 1)) return -1;
+         span = (int64_t)delta;
+      }
+      else if (s->timing_eof && (!t || !t->default_duration_ns))
+      {
+         int64_t end = rwebm_duration_ns(s->demux);
+         uint64_t delta = (uint64_t)end - (uint64_t)timestamp;
+         if (end > timestamp && delta <= ((~(uint64_t)0) >> 1))
+            span = (int64_t)delta;
+      }
+   }
+   if (span <= 0 && t && t->default_duration_ns
+         && t->default_duration_ns <= ((~(uint64_t)0) >> 1))
+   {
+      uint64_t duration = t->default_duration_ns / 1000000;
+      unsigned remainder = s->h26x_remainder
+         + (unsigned)(t->default_duration_ns % 1000000);
+      duration += remainder / 1000000;
+      s->h26x_remainder = remainder % 1000000;
+      s->h26x_duration = duration < 2147483647 ? (int)duration : 0;
+   }
+   else
+   {
+      if (span <= 0)
+         for (i = 0; i < s->h26x_count; i++)
+            if (s->h26x_timestamp[i] > timestamp)
+            {
+               uint64_t delta = (uint64_t)s->h26x_timestamp[i] - (uint64_t)timestamp;
+               if (delta <= ((~(uint64_t)0) >> 1)
+                     && (span <= 0 || delta < (uint64_t)span))
+                  span = (int64_t)delta;
+            }
+      s->h26x_duration = span > 0 && span / 1000000 < 2147483647
+         ? (int)(span / 1000000 + ((timestamp % 1000000 + span % 1000000)
+                  / 1000000)) : 0;
+   }
+   s->frame_time_ns = timestamp;
+   s->have_frame_time = 1;
+   s->h26x_picture_pending = 0;
+   if (s->hw_untaken && (discard || (s->seek_active && timestamp < s->seek_target)))
+   {
+      video_hw_frame_abandon(&s->hw_frame);
+      s->hw_untaken = 0;
+   }
+   if (discard || s->seek_active)
+      return ret == 3 ? 3 : 1;
+render:
+   if (s->h264 ? rh264_video_is_hw(s->h264) : rh265_video_is_hw(s->h265))
+      return s->hw_untaken ? (ret == 3 ? 3 : 1) : -1;
+   if (s->h264)
+   {
+      y = rh264_video_plane(s->h264, 0, &ys, &w, &h);
+      u = rh264_video_plane(s->h264, 1, &uvs, &cw, &ch);
+      v = rh264_video_plane(s->h264, 2, NULL, NULL, NULL);
+      depth = rh264_video_bit_depth(s->h264);
+   }
+   else
+   {
+      y = rh265_video_plane(s->h265, 0, &ys, &w, &h);
+      u = rh265_video_plane(s->h265, 1, &uvs, &cw, &ch);
+      v = rh265_video_plane(s->h265, 2, NULL, NULL, NULL);
+      depth = rh265_video_bit_depth(s->h265);
+   }
+   if (!y || !u || !v || w <= 0 || h <= 0
+         || (cw != (w + 1) / 2 && cw != w)
+         || (ch != (h + 1) / 2 && ch != h)
+         || depth < 8 || depth > 14) return -1;
+   memset(&c, 0, sizeof(c));
+   if (!(c.dst = rwebm_video_output(s))) return -1;
+   c.dst_stride = s->out && s->out_stride ? s->out_stride : s->width;
+   c.w = (unsigned)w < s->width ? (unsigned)w : s->width;
+   c.y = y; c.u = u; c.v = v; c.ys = ys; c.uvs = uvs;
+   c.matrix = s->hw_color.matrix;
+   c.transfer = s->hw_color.transfer;
+   c.range = s->hw_color.range;
+   s->is10 = s->is_fp16 = 0;
+   if (cw != (w + 1) / 2 || ch != (h + 1) / 2
+         || (depth != 8 && depth != 10) || (depth == 8 && c.range == 2))
+   {
+      c.kind = 4;
+      c.chsh = cw < w ? 1 : 0;
+      c.cvsh = ch < h ? 1 : 0;
+      c.depth = depth;
+      c.argb = s->emit_argb;
+   }
+   else if (depth == 10)
+   {
+      if (s->want_fp16 && s->out && (c.transfer == 16 || c.transfer == 18))
+      {
+         c.kind = 3;
+         s->is_fp16 = 1;
+      }
+      else if (s->want10)
+      {
+         c.kind = 2;
+         s->is10 = 1;
+      }
+      else
+      {
+         c.kind = 1;
+         c.argb = !s->emit_argb;
+      }
+   }
+   else
+      c.argb = s->emit_argb;
+   rwebm_video_blit_frame(s, &c,
+         (unsigned)h < s->height ? (unsigned)h : s->height);
+   return ret == 3 ? 3 : 1;
+}
+
 /* 1 displayed picture, 0 hidden packet, negative decode failure. */
 static int rwebm_video_decode_packet(rwebm_video_stream_t *s,
       const rwebm_packet *pkt, int discard)
@@ -2029,6 +2752,18 @@ static int rwebm_video_stream_step(rwebm_video_stream_t *s,
 {
    rwebm_packet pkt;
    s->waiting = 0;
+   if (s->h26x_picture_pending)
+   {
+      int ret = rwebm_video_h26x_picture(s, NULL, discard, 0);
+      if (duration_ms) *duration_ms = s->h26x_duration;
+      return ret == 3 ? 1 : ret;
+   }
+   if (s->h26x_ready)
+   {
+      s->h26x_ready = 0;
+      if (duration_ms) *duration_ms = s->h26x_duration;
+      return discard ? 1 : rwebm_video_h26x_picture(s, NULL, 0, 1);
+   }
 #ifdef HAVE_RAV1
    if (s->codec == RWEBM_CODEC_AV1)
       return rwebm_video_av1_step(s, duration_ms, discard);
@@ -2073,18 +2808,53 @@ static int rwebm_video_stream_step(rwebm_video_stream_t *s,
       }
       if (r != 1)
       {
+         if (!r && (s->h264 || s->h265))
+         {
+            r = rwebm_video_h26x_picture(s, NULL, discard, 0);
+            if (r >= 0)
+            {
+               if (duration_ms) *duration_ms = s->h26x_duration;
+               return r;
+            }
+            s->completed = r == -2;
+            s->have_decode_time = 0;
+            return -1;
+         }
          s->completed = r == 0;
          s->have_decode_time = 0;
          break;
       }
       if (pkt.track != s->track)
          continue;
+      if ((s->h264 || s->h265) && s->seek_active && !s->seek_key)
+      {
+         /* A lace's key flag describes all its pictures together. */
+         if (!pkt.keyframe && rwebm_video_h26x_vcl(s, &pkt, NULL, NULL) != 2)
+            return 0;
+         s->seek_key = 1;
+      }
       idx = s->pkt_idx;
       if (!s->soft_pending)
       {
          s->soft_packet = pkt;
          s->soft_floor = floor;
          s->soft_pending = 1;
+      }
+      if (s->h264 || s->h265)
+      {
+         r = rwebm_video_h26x_picture(s, &pkt, discard, 0);
+         if (s->h26x_consumed)
+         {
+            s->soft_pending = 0;
+            s->pkt_idx++;
+         }
+         if (r > 0 && r != 2)
+         {
+            s->decode_time_ns = s->frame_time_ns;
+            s->have_decode_time = 1;
+            if (duration_ms) *duration_ms = s->h26x_duration;
+         }
+         return r == 3 ? 1 : r;
       }
       r = rwebm_video_packet_duration(s, idx, pkt.timestamp, &duration);
       if (r == 2) { s->waiting = 1; return 2; }
@@ -2151,6 +2921,9 @@ const uint32_t *rwebm_video_stream_next(rwebm_video_stream_t *s,
 {
    if (rwebm_video_stream_advance(s, duration_ms, 0) != 1)
       return NULL;
+   if ((s->h264 && rh264_video_is_hw(s->h264))
+         || (s->h265 && rh265_video_is_hw(s->h265)))
+      return &s->hw_marker;
 #ifdef HAVE_RAV1
    if (s->codec == RWEBM_CODEC_AV1)
       return &s->hw_marker;
@@ -2172,9 +2945,7 @@ void rwebm_video_stream_stop_hw(rwebm_video_stream_t *s)
 {
    if (!s)
       return;
-#if defined(HAVE_RVP9) || defined(HAVE_RAV1)
    s->hw_want = 0;
-#endif
    rwebm_video_stream_rewind(s);
 }
 
@@ -2203,9 +2974,7 @@ void rwebm_video_stream_rewind(rwebm_video_stream_t *s)
    rwebm_video_stream_close_decoder(s);
    rwebm_video_stream_open_decoder(s);
    s->waiting = 0;
-#if defined(HAVE_RVP9) || defined(HAVE_RAV1)
    if (s->hw_want) rwebm_video_stream_set_hw(s, 1);
-#endif
 }
 
 #ifdef HAVE_RAV1
@@ -2368,6 +3137,7 @@ int rwebm_video_stream_seek_movie_step(rwebm_video_stream_t *s,
 int rwebm_video_stream_seekable(const rwebm_video_stream_t *s)
 {
    if (!s) return 0;
+   if (s->h264 || s->h265) return 1;
 #ifdef HAVE_RAV1
    /* Format capability is known before deferred native admission. The
     * seek operation itself still requires an admitted decoder. */
@@ -2388,7 +3158,7 @@ int rwebm_video_stream_seek_begin_ns(rwebm_video_stream_t *s, int64_t ns)
    if (ns < 0) ns = 0;
    if (s->endpoint_known && s->have_last_shown && ns > s->last_shown_ts)
       ns = s->last_shown_ts;
-   if (s->have_decode_time && ns > s->decode_time_ns
+   if (!s->h264 && !s->h265 && s->have_decode_time && ns > s->decode_time_ns
          && (s->endpoint_known || (s->have_last_shown && ns <= s->last_shown_ts))
          && rwebm_cue_time_ns(s->demux, ns) <= s->decode_time_ns
 #ifdef HAVE_RVP9
@@ -2416,6 +3186,7 @@ int rwebm_video_stream_seek_begin_ns(rwebm_video_stream_t *s, int64_t ns)
       s->seek_key = 1;
    }
    if (!s->vp8
+         && !s->h264 && !s->h265
 #ifdef HAVE_RVP9
          && !s->vp9
          && !s->hw
@@ -2448,6 +3219,11 @@ static int rwebm_video_packet_shown(rwebm_video_stream_t *s,
       const rwebm_packet *packet)
 {
    if (!packet->size) return 0;
+   if (s->codec == RWEBM_CODEC_H264 || s->codec == RWEBM_CODEC_H265)
+   {
+      int shown;
+      return rwebm_video_h26x_vcl(s, packet, &shown, NULL) > 0 && shown;
+   }
 #ifdef HAVE_RAV1
    if (s->codec == RWEBM_CODEC_AV1)
    {
@@ -2527,6 +3303,11 @@ int rwebm_video_stream_seek_step(rwebm_video_stream_t *s,
 {
    int walked;
    if (!s) return -1;
+   if (s->h26x_ready)
+   {
+      if (position_us) *position_us = s->frame_time_ns / 1000;
+      return 1;
+   }
    if (s->seek_ready)
    {
       if (position_us) *position_us = s->seek_packet.timestamp / 1000;
@@ -2601,6 +3382,19 @@ int rwebm_video_stream_seek_step(rwebm_video_stream_t *s,
             rwebm_video_seek_select(s);
             return 0;
          }
+      }
+      return 0;
+   }
+   if (s->h264 || s->h265)
+   {
+      int ret = rwebm_video_stream_step(s, NULL, 0);
+      if (ret < 0) goto failed;
+      if (ret == 1 && s->frame_time_ns >= s->seek_target)
+      {
+         s->h26x_ready = 1;
+         s->seek_active = 0;
+         if (position_us) *position_us = s->frame_time_ns / 1000;
+         return 1;
       }
       return 0;
    }
@@ -2894,6 +3688,7 @@ int rwebm_video_process_image(rwebm_video_t *webm, void **buf,
       {
          int sr = rwebm_video_stream_scan_step(webm->stream,
                RWEBM_VIDEO_SCAN_SLICE);
+         if (sr < 0) return IMAGE_PROCESS_ERROR;
          if (sr == 0)
             return IMAGE_PROCESS_NEXT;
          if (sr == 2)

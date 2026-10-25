@@ -96,7 +96,7 @@
 
 /* Frames rh264's D3D11 video backend decodes, opened through their
  * shared NT handles and fences (import_texture) */
-#if defined(HAVE_RMP4) && !defined(__WINRT__)
+#if (defined(HAVE_RMP4) || defined(HAVE_RWEBM)) && !defined(__WINRT__)
 #define D3D12_FRAME_IMPORT
 #include "../common/d3d11_video_decode.h"
 #define D3D12_IMPORT_TEXTURES 8

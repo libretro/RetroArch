@@ -87,7 +87,7 @@
 
 /* Frames a hardware decoder made on a device of its own, through
  * shared NT handles and fences (import_texture) */
-#if defined(HAVE_RMP4) && !defined(__WINRT__)
+#if (defined(HAVE_RMP4) || defined(HAVE_RWEBM)) && !defined(__WINRT__)
 #define D3D11_FRAME_IMPORT
 #include <d3d11_4.h>
 #include "../common/d3d11_video_decode.h"
