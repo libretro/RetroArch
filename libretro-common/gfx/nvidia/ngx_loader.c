@@ -30,10 +30,10 @@
 
 #include <gfx/nvidia/ngx_loader.h>
 
-#if defined(_WIN32) && !defined(__WINRT__) && !defined(_XBOX)
+#if defined(_WIN64) && !defined(__WINRT__) && !defined(_XBOX)
 #define NGX_HAVE_LOADER 1
 #include <windows.h>
-#elif defined(__linux__)
+#elif defined(__linux__) && (defined(__x86_64__) || defined(__aarch64__))
 #define NGX_HAVE_LOADER 1
 #include <dlfcn.h>
 #endif
@@ -195,7 +195,8 @@ typedef void *ngx_module_t;
 static ngx_proc_t ngx_sym(ngx_module_t m, const char *name)
 {
    ngx_proc_t p;
-   *(void**)&p = dlsym(m, name);
+   void *sym = dlsym(m, name);
+   memcpy(&p, &sym, sizeof(p));
    return p;
 }
 
@@ -207,8 +208,9 @@ static ngx_module_t ngx_open(void)
 
 #define NGX_SYM(dst, name) \
    do { \
-      *(ngx_proc_t*)&(dst) = ngx_sym(m, name); \
-      if (!(dst)) \
+      ngx_proc_t fn = ngx_sym(m, name); \
+      memcpy(&(dst), &fn, sizeof(fn)); \
+      if (!fn) \
          complete = false; \
    } while (0)
 

@@ -285,6 +285,56 @@ jobs:
           make -C samples/gfx/vulkan_driver_pacing CC=x86_64-w64-mingw32-gcc RUNNER=wine check
           make -C samples/gfx/vulkan_driver_pacing clean
 
+  vulkan-upscaler:
+    name: Vulkan temporal upscaler glue (lavapipe, stand-in NGX)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      APT_PKGS: libvulkan-dev mesa-vulkan-drivers vulkan-validationlayers gcc-mingw-w64-x86-64 wine64
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Apt cache key
+        id: apt
+        run: sh .github/workflows/scripts/apt-cache-key.sh "$APT_PKGS"
+
+      - name: Restore apt cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+          restore-keys: ${{ steps.apt.outputs.prefix }}
+
+      - name: Install dependencies
+        timeout-minutes: 15
+        run: sh .github/workflows/scripts/apt-install.sh $APT_PKGS
+
+      - name: Save apt cache
+        if: env.APT_CACHE_SAVE == '1'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+
+      - name: Regression test
+        run: |
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
+          # gfx/common/vulkan_ngx.c and gfx/video_upscaler.c on lavapipe
+          # under the validation layer, against a stand-in NGX core
+          # library: the session, the core's request, a frame's feature
+          # and evaluate parameters, resizes retiring the old output,
+          # refused frames, teardown.
+          make -C samples/gfx/vulkan_upscaler check
+          make -C samples/gfx/vulkan_upscaler clean
+          make -C samples/gfx/vulkan_upscaler SANITIZER=address,undefined check
+          make -C samples/gfx/vulkan_upscaler clean
+          # Windows: the same glue built with mingw; Wine has no Vulkan
+          # device here, so the run only proves the build and the skip
+          make -C samples/gfx/vulkan_upscaler CC=x86_64-w64-mingw32-gcc RUNNER=wine check
+          make -C samples/gfx/vulkan_upscaler clean
+
   slang-rect:
     name: Presets read frames where they lie
     runs-on: ubuntu-latest

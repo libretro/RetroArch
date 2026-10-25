@@ -8016,6 +8016,27 @@ static size_t setting_get_string_representation_uint_menu_frame_rate(
 }
 
 #ifdef HAVE_NGX
+static size_t setting_get_string_representation_uint_video_temporal_upscaler_quality(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   static const enum msg_hash_enums names[VIDEO_TEMPORAL_UPSCALER_QUALITY_LAST] = {
+      MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_AUTO,
+      MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_NATIVE,
+      MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_QUALITY,
+      MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_BALANCED,
+      MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_PERFORMANCE,
+      MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_ULTRA_PERFORMANCE
+   };
+   if (setting)
+   {
+      unsigned q = *setting->value.target.unsigned_integer;
+      if (q >= VIDEO_TEMPORAL_UPSCALER_QUALITY_LAST)
+         q = VIDEO_TEMPORAL_UPSCALER_QUALITY_AUTO;
+      return strlcpy(s, msg_hash_to_str(names[q]), len);
+   }
+   return 0;
+}
+
 static size_t setting_get_string_representation_uint_video_temporal_upscaler(
       rarch_setting_t *setting, char *s, size_t len)
 {

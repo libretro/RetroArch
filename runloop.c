@@ -223,6 +223,9 @@ bool android_get_vfs_authorized_locations(
 #include "gfx/video_thread_wrapper.h"
 #endif
 #include "gfx/video_display_server.h"
+#ifdef HAVE_NGX
+#include "gfx/video_upscaler.h"
+#endif
 #ifdef HAVE_MODELINE
 #include "gfx/video_crt_switch.h"
 #endif
@@ -3794,6 +3797,17 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             return true;
          }
 
+         return false;
+      }
+
+      case RETRO_ENVIRONMENT_GET_HW_RENDER_UPSCALER_INTERFACE:
+      {
+#ifdef HAVE_NGX
+         const struct retro_hw_render_upscaler_interface **iface =
+            (const struct retro_hw_render_upscaler_interface **)data;
+         if (iface && (*iface = video_upscaler_get_interface()))
+            return true;
+#endif
          return false;
       }
 

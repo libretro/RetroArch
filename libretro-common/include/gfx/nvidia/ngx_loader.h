@@ -44,8 +44,9 @@ RETRO_BEGIN_DECLS
  * ids, layouts) restated, only what Super Resolution takes.
  *
  * Loaded the first time it is asked for and kept, one load per module
- * that links this, frontend or core alike. Windows and Linux; every
- * other platform answers "no NGX". Needs encodings/encoding_utf.c for
+ * that links this, frontend or core alike. 64-bit Windows and Linux,
+ * the only builds NVIDIA ships NGX for; every other platform answers
+ * "no NGX". Needs encodings/encoding_utf.c for
  * ngx_utf8_to_wide(). */
 
 #if defined(_WIN32)
@@ -147,6 +148,17 @@ enum ngx_perf_quality
 #define NGX_PARAM_DLSS_INDICATOR_INVERT_Y "DLSS.Indicator.Invert.Y.Axis"
 #define NGX_PARAM_DLSS_INDICATOR_INVERT_X "DLSS.Indicator.Invert.X.Axis"
 #define NGX_PARAM_DLSS_OPTIMAL_SETTINGS_CALLBACK "DLSSOptimalSettingsCallback"
+#define NGX_PARAM_RTX_VALUE      "RTXValue"
+#define NGX_PARAM_CREATION_NODE_MASK   "CreationNodeMask"
+#define NGX_PARAM_VISIBILITY_NODE_MASK "VisibilityNodeMask"
+#define NGX_PARAM_DLSS_INPUT_COLOR_SUBRECT_X "DLSS.Input.Color.Subrect.Base.X"
+#define NGX_PARAM_DLSS_INPUT_COLOR_SUBRECT_Y "DLSS.Input.Color.Subrect.Base.Y"
+#define NGX_PARAM_DLSS_INPUT_DEPTH_SUBRECT_X "DLSS.Input.Depth.Subrect.Base.X"
+#define NGX_PARAM_DLSS_INPUT_DEPTH_SUBRECT_Y "DLSS.Input.Depth.Subrect.Base.Y"
+#define NGX_PARAM_DLSS_INPUT_MV_SUBRECT_X    "DLSS.Input.MV.Subrect.Base.X"
+#define NGX_PARAM_DLSS_INPUT_MV_SUBRECT_Y    "DLSS.Input.MV.Subrect.Base.Y"
+#define NGX_PARAM_DLSS_OUTPUT_SUBRECT_X      "DLSS.Output.Subrect.Base.X"
+#define NGX_PARAM_DLSS_OUTPUT_SUBRECT_Y      "DLSS.Output.Subrect.Base.Y"
 #define NGX_PARAM_DLSS_DYNAMIC_MAX_RENDER_WIDTH  "DLSS.Get.Dynamic.Max.Render.Width"
 #define NGX_PARAM_DLSS_DYNAMIC_MAX_RENDER_HEIGHT "DLSS.Get.Dynamic.Max.Render.Height"
 #define NGX_PARAM_DLSS_DYNAMIC_MIN_RENDER_WIDTH  "DLSS.Get.Dynamic.Min.Render.Width"
@@ -156,6 +168,10 @@ enum ngx_perf_quality
 #define NGX_PARAM_DLSS_HINT_PRESET_BALANCED    "DLSS.Hint.Render.Preset.Balanced"
 #define NGX_PARAM_DLSS_HINT_PRESET_PERFORMANCE "DLSS.Hint.Render.Preset.Performance"
 #define NGX_PARAM_DLSS_HINT_PRESET_ULTRA_PERFORMANCE "DLSS.Hint.Render.Preset.UltraPerformance"
+
+/* A Vulkan proc-address getter (PFN_vkGetInstanceProcAddr,
+ * PFN_vkGetDeviceProcAddr), cast to this */
+typedef void (*ngx_vk_proc_t)(void);
 
 /* Opaque to the caller: NVSDK_NGX_Handle, NVSDK_NGX_Parameter */
 typedef struct ngx_handle ngx_handle_t;
@@ -314,9 +330,10 @@ typedef struct ngx_vulkan_api
    ngx_result_t (NGX_CONV *init_with_project_id)(const char *project_id,
          int engine_type, const char *engine_version,
          const wchar_t *application_data_path, void *instance,
-         void *physical_device, void *device, void *get_instance_proc_addr,
-         void *get_device_proc_addr, const ngx_feature_common_info_t *info,
-         int sdk_version);
+         void *physical_device, void *device,
+         ngx_vk_proc_t get_instance_proc_addr,
+         ngx_vk_proc_t get_device_proc_addr,
+         const ngx_feature_common_info_t *info, int sdk_version);
    ngx_result_t (NGX_CONV *shutdown1)(void *device);
    ngx_result_t (NGX_CONV *get_capability_parameters)(ngx_parameter_t **out);
    ngx_result_t (NGX_CONV *allocate_parameters)(ngx_parameter_t **out);

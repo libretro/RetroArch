@@ -56,6 +56,10 @@
 
 #include "../common/vulkan_common.h"
 #include "../common/spirv_shaders.h"
+#ifdef HAVE_NGX
+#include "../common/vulkan_ngx.h"
+#include "../video_upscaler.h"
+#endif
 #if defined(_WIN32) && !defined(__WINRT__)
 #include "../common/win_vulkan_dxgi.h"
 #endif
@@ -722,6 +726,14 @@ typedef struct vk
       uint32_t src_queue_family;
 
    } hw;
+
+#ifdef HAVE_NGX
+   /* The temporal upscaler's session on this device, up while a
+    * hardware core runs with the setting on; its output of the last
+    * frame it took, which a repeated frame shows again. */
+   vulkan_ngx_t *ngx;
+   vulkan_ngx_image_t ngx_out;
+#endif
 
    /* Textures released through vulkan_unload_texture, kept alive
     * until enough frames have been submitted that neither the GPU
@@ -7304,6 +7316,14 @@ static void vulkan_free(void *data)
    {
       vulkan_import_movie_frame(vk, NULL);
       vulkan_wait_own_submissions(vk);
+#ifdef HAVE_NGX
+      if (vk->ngx)
+      {
+         video_upscaler_detach();
+         vulkan_ngx_free(vk->ngx);
+         vk->ngx = NULL;
+      }
+#endif
 #ifdef HAVE_VIDEO_WINDOWS
       /* Before the context's destroy, which takes the instance */
       vulkan_windows_free(vk);
@@ -7573,6 +7593,58 @@ static void vulkan_invalidate_hw_render_cache(void *data)
    vk->flags              &= ~VK_FLAG_HW_VALID_SEMAPHORE;
 }
 
+#ifdef HAVE_NGX
+static bool vulkan_upscaler_optimal(void *data, unsigned mode,
+      unsigned out_w, unsigned out_h,
+      unsigned *render_w, unsigned *render_h,
+      unsigned *min_w, unsigned *min_h,
+      unsigned *max_w, unsigned *max_h)
+{
+   vk_t *vk = (vk_t*)data;
+   return vulkan_ngx_optimal(vk->ngx, mode, out_w, out_h,
+         render_w, render_h, min_w, min_h, max_w, max_h);
+}
+
+static video_upscaler_backend_t vulkan_upscaler_backend = {
+   NULL, vulkan_upscaler_optimal
+};
+
+/* The core's frame through the upscaler, when it brought the inputs
+ * and the sizes fit: *@input becomes the output. A repeated frame
+ * shows the last output. */
+static void vulkan_upscale_input(vk_t *vk, const void *frame,
+      struct vulkan_filter_chain_texture *input)
+{
+   vulkan_ngx_image_t color;
+   const struct retro_hw_upscaler_inputs *inputs = video_upscaler_take_inputs();
+   unsigned out_w = VIDEO_SCALE_W(vk->vp.dims);
+   unsigned out_h = VIDEO_SCALE_H(vk->vp.dims);
+   video_upscaler_set_output(out_w, out_h);
+   if (frame)
+   {
+      color.image  = input->image;
+      color.view   = input->view;
+      color.layout = input->layout;
+      color.format = input->format;
+      color.width  = VIDEO_SCALE_W(input->dims);
+      color.height = VIDEO_SCALE_H(input->dims);
+      if (!inputs || !vulkan_ngx_upscale(vk->ngx, vk->cmd, &color, inputs,
+               video_upscaler_mode(out_w, out_h), out_w, out_h, &vk->ngx_out))
+      {
+         vk->ngx_out.image = VK_NULL_HANDLE;
+         return;
+      }
+   }
+   else if (!vk->ngx_out.image)
+      return;
+   input->image  = vk->ngx_out.image;
+   input->view   = vk->ngx_out.view;
+   input->layout = vk->ngx_out.layout;
+   input->format = vk->ngx_out.format;
+   input->dims   = VIDEO_SCALE_PACK(vk->ngx_out.width, vk->ngx_out.height);
+}
+#endif
+
 static void vulkan_init_hw_render(vk_t *vk)
 {
    struct retro_hw_render_interface_vulkan *iface   =
@@ -7606,6 +7678,24 @@ static void vulkan_init_hw_render(vk_t *vk)
 
    iface->get_device_proc_addr   = vkGetDeviceProcAddr;
    iface->get_instance_proc_addr = vulkan_symbol_wrapper_instance_proc_addr();
+
+#ifdef HAVE_NGX
+   if (config_get_ptr()->uints.video_temporal_upscaler == VIDEO_TEMPORAL_UPSCALER_DLSS)
+   {
+      char dir[DIR_MAX_LENGTH];
+      video_upscaler_dlss_dir(dir, sizeof(dir));
+      vk->ngx = vulkan_ngx_init(vk->context->instance, vk->context->gpu,
+            vk->context->device, vulkan_symbol_wrapper_instance_proc_addr(),
+            vkGetDeviceProcAddr, &vk->context->memory_properties, dir);
+      if (vk->ngx)
+      {
+         vulkan_upscaler_backend.data = vk;
+         video_upscaler_attach(&vulkan_upscaler_backend);
+         video_upscaler_set_output(VIDEO_SCALE_W(vk->vp.dims),
+               VIDEO_SCALE_H(vk->vp.dims));
+      }
+   }
+#endif
 }
 
 /* recording: whether GPU recording is on. VK_FLAG_GPU_RECORDING at
@@ -12504,6 +12594,10 @@ static bool vulkan_frame(void *data, const void *frame,
 
             /* The format can change on a whim. */
             input.format       = vk->hw.image->create_info.format;
+#ifdef HAVE_NGX
+            if (vk->ngx)
+               vulkan_upscale_input(vk, frame, &input);
+#endif
          }
          else
          {
@@ -13335,6 +13429,10 @@ static bool vulkan_frame(void *data, const void *frame,
    vulkan_check_device_lost(vk, vkQueueSubmit(vk->context->queue, 1,
          &submit_info, vk->context->swapchain_fences[frame_index]));
    vk->context->swapchain_fences_signalled[frame_index] = true;
+#ifdef HAVE_NGX
+   if (vk->ngx)
+      vulkan_ngx_frame_done(vk->ngx);
+#endif
 #ifdef HAVE_OPENXR
    /* The quads with their images, before the XR thread's next frame. */
    if (xr_draw)

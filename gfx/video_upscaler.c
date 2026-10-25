@@ -13,6 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <math.h>
 #include <string.h>
 
 #include <compat/strl.h>
@@ -59,4 +60,108 @@ size_t video_upscaler_status_string(char *s, size_t len)
          ? ", DLSS runtime: found)" : ", DLSS runtime: not in DLSS Directory)",
          len - _len);
    return _len;
+}
+
+/* The core's side: the request and the frame's inputs. HW cores run on
+ * the thread that presents, so a frame's inputs are set and taken in
+ * one video_refresh. */
+static const video_upscaler_backend_t *upscaler_backend;
+static const struct retro_hw_upscaler_inputs *upscaler_inputs;
+static unsigned upscaler_out_w;
+static unsigned upscaler_out_h;
+
+unsigned video_upscaler_mode(unsigned out_w, unsigned out_h)
+{
+   unsigned q = config_get_ptr()->uints.video_temporal_upscaler_quality;
+   (void)out_w;
+   switch (q)
+   {
+      case VIDEO_TEMPORAL_UPSCALER_QUALITY_NATIVE:
+         return NGX_PERF_QUALITY_DLAA;
+      case VIDEO_TEMPORAL_UPSCALER_QUALITY_QUALITY:
+         return NGX_PERF_QUALITY_MAX_QUALITY;
+      case VIDEO_TEMPORAL_UPSCALER_QUALITY_BALANCED:
+         return NGX_PERF_QUALITY_BALANCED;
+      case VIDEO_TEMPORAL_UPSCALER_QUALITY_PERFORMANCE:
+         return NGX_PERF_QUALITY_MAX_PERF;
+      case VIDEO_TEMPORAL_UPSCALER_QUALITY_ULTRA_PERFORMANCE:
+         return NGX_PERF_QUALITY_ULTRA_PERFORMANCE;
+      default:
+         break;
+   }
+   /* Auto: the sharper mode up to 1440 lines, Balanced from there */
+   return out_h > 1440 ? NGX_PERF_QUALITY_BALANCED : NGX_PERF_QUALITY_MAX_QUALITY;
+}
+
+void video_upscaler_attach(const video_upscaler_backend_t *backend)
+{
+   upscaler_backend = backend;
+}
+
+void video_upscaler_detach(void)
+{
+   upscaler_backend = NULL;
+   upscaler_inputs  = NULL;
+}
+
+void video_upscaler_set_output(unsigned width, unsigned height)
+{
+   upscaler_out_w = width;
+   upscaler_out_h = height;
+}
+
+static bool video_upscaler_get_request(void *handle,
+      struct retro_hw_upscaler_request *request)
+{
+   unsigned mode;
+   unsigned render_w, render_h, min_w, min_h, max_w, max_h;
+   const video_upscaler_backend_t *backend = upscaler_backend;
+   (void)handle;
+   if (!backend || !upscaler_out_w || !upscaler_out_h
+         || !config_get_ptr()->uints.video_temporal_upscaler)
+      return false;
+   mode = video_upscaler_mode(upscaler_out_w, upscaler_out_h);
+   if (!backend->optimal(backend->data, mode, upscaler_out_w, upscaler_out_h,
+            &render_w, &render_h, &min_w, &min_h, &max_w, &max_h))
+      return false;
+   request->output_width      = upscaler_out_w;
+   request->output_height     = upscaler_out_h;
+   request->render_width      = render_w;
+   request->render_height     = render_h;
+   request->min_render_width  = min_w;
+   request->min_render_height = min_h;
+   request->max_render_width  = max_w;
+   request->max_render_height = max_h;
+   request->flags             = 0;
+   request->mip_bias          = (float)(log((double)render_w
+            / (double)upscaler_out_w) / log(2.0)) - 1.0f;
+   return true;
+}
+
+static void video_upscaler_set_inputs(void *handle,
+      const struct retro_hw_upscaler_inputs *inputs)
+{
+   (void)handle;
+   upscaler_inputs = inputs;
+}
+
+const struct retro_hw_upscaler_inputs *video_upscaler_take_inputs(void)
+{
+   const struct retro_hw_upscaler_inputs *inputs = upscaler_inputs;
+   upscaler_inputs = NULL;
+   return inputs;
+}
+
+static const struct retro_hw_render_upscaler_interface upscaler_iface = {
+   RETRO_HW_RENDER_UPSCALER_INTERFACE_VERSION,
+   NULL,
+   video_upscaler_get_request,
+   video_upscaler_set_inputs
+};
+
+const struct retro_hw_render_upscaler_interface *video_upscaler_get_interface(void)
+{
+   if (!upscaler_backend)
+      return NULL;
+   return &upscaler_iface;
 }

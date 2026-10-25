@@ -634,6 +634,9 @@ VIDEO DRIVER
 #ifdef HAVE_NGX
 #include "../gfx/video_upscaler.c"
 #include "../libretro-common/gfx/nvidia/ngx_loader.c"
+#ifdef HAVE_VULKAN
+#include "../gfx/common/vulkan_ngx.c"
+#endif
 #endif
 #if defined(HAVE_D3D)
 #include "../gfx/common/d3d_common.c"

@@ -26,6 +26,10 @@
 #endif
 
 #include "vulkan_common.h"
+#ifdef HAVE_NGX
+#include "vulkan_ngx.h"
+#include "../video_upscaler.h"
+#endif
 #if defined(HAVE_RMP4) || defined(HAVE_RWEBM)
 #include "vulkan_video_decode.h"
 #endif
@@ -1114,6 +1118,24 @@ static unsigned vulkan_optional_device_count(const gfx_ctx_vulkan_data_t *vk)
 
 /* vkCreateDevice, or the runtime's, which adds what it needs. A device
  * the runtime refuses drops the headset, not the device. */
+/* The temporal upscaler's device extensions, the ones @gpu has, when
+ * the setting is on: a device made without them cannot run it */
+#ifdef HAVE_NGX
+#define VULKAN_UPSCALER_EXTS VULKAN_NGX_MAX_EXTS
+static unsigned vulkan_upscaler_device_exts(gfx_ctx_vulkan_data_t *vk,
+      VkPhysicalDevice gpu, const char **list, unsigned count, unsigned cap)
+{
+   if (!config_get_ptr()->uints.video_temporal_upscaler)
+      return count;
+   return vulkan_ngx_device_extensions(gpu,
+         vulkan_symbol_wrapper_instance_proc_addr(), vk->context.instance,
+         list, count, cap);
+}
+#else
+#define VULKAN_UPSCALER_EXTS 0
+#define vulkan_upscaler_device_exts(vk, gpu, list, count, cap) (count)
+#endif
+
 static VkResult vulkan_context_create_device(gfx_ctx_vulkan_data_t *vk,
       VkPhysicalDevice gpu, const VkDeviceCreateInfo *info,
       VkDevice *device)
@@ -1220,11 +1242,13 @@ static VkDevice vulkan_context_create_device_wrapper(
    VkPhysicalDeviceTimelineSemaphoreFeaturesKHR ll_timeline;
    VkPhysicalDeviceAntiLagFeaturesAMD anti_lag_features;
    bool timeline_named            = false;
-   const char **device_extensions = (const char **)malloc(
-         (info.enabledExtensionCount +
+   unsigned device_extensions_cap = info.enabledExtensionCount +
                ARRAY_SIZE(vulkan_device_extensions) +
                ARRAY_SIZE(vulkan_optional_device_extensions) +
-               ARRAY_SIZE(vulkan_video_device_extensions)) * sizeof(const char *));
+               ARRAY_SIZE(vulkan_video_device_extensions) +
+               VULKAN_UPSCALER_EXTS;
+   const char **device_extensions = (const char **)malloc(
+         device_extensions_cap * sizeof(const char *));
 
    memcpy((void*)device_extensions, info.ppEnabledExtensionNames, info.enabledExtensionCount * sizeof(const char *));
    info.ppEnabledExtensionNames = device_extensions;
@@ -1242,6 +1266,8 @@ static VkDevice vulkan_context_create_device_wrapper(
 
    vk->context.gpu = gpu;
    vkGetPhysicalDeviceProperties(gpu, &vk->context.gpu_properties);
+   info.enabledExtensionCount = vulkan_upscaler_device_exts(vk, gpu,
+         device_extensions, info.enabledExtensionCount, device_extensions_cap);
    vulkan_low_latency_note_exts(vk, device_extensions,
          info.enabledExtensionCount);
    /* Reserve video queues without sharing the core's graphics queue. */
@@ -1411,7 +1437,8 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
    unsigned i;
    const char *enabled_device_extensions[ARRAY_SIZE(vulkan_device_extensions)
       + ARRAY_SIZE(vulkan_optional_device_extensions)
-      + ARRAY_SIZE(vulkan_video_device_extensions)];
+      + ARRAY_SIZE(vulkan_video_device_extensions)
+      + VULKAN_UPSCALER_EXTS];
    VkDeviceCreateInfo device_info;
    VkDeviceQueueCreateInfo queue_info;
    static const float one                  = 1.0f;
@@ -1521,24 +1548,31 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
       }
       else
       {
-#ifdef HAVE_OPENXR
          const char *dev_exts[ARRAY_SIZE(vulkan_device_extensions)
-            + VULKAN_OPENXR_MAX_EXTS];
+            + VULKAN_UPSCALER_EXTS
+#ifdef HAVE_OPENXR
+            + VULKAN_OPENXR_MAX_EXTS
+#endif
+            ];
          uint32_t num_dev_exts = 0;
+#ifdef HAVE_OPENXR
          vulkan_context_openxr_device_exts(vk, dev_exts, &num_dev_exts,
                ARRAY_SIZE(dev_exts));
+#else
+         for (i = 0; i < ARRAY_SIZE(vulkan_device_extensions); i++)
+            dev_exts[num_dev_exts++] = vulkan_device_extensions[i];
 #endif
+         /* A core making the device itself (v1) gets them as required:
+          * only those the GPU has are listed */
+         if (vk->context.gpu != VK_NULL_HANDLE)
+            num_dev_exts = vulkan_upscaler_device_exts(vk, vk->context.gpu,
+                  dev_exts, num_dev_exts, ARRAY_SIZE(dev_exts));
          ret = iface->create_device(&context, vk->context.instance,
                vk->context.gpu,
                vk->vk_surface,
                vulkan_symbol_wrapper_instance_proc_addr(),
-#ifdef HAVE_OPENXR
                dev_exts,
                num_dev_exts,
-#else
-               vulkan_device_extensions,
-               ARRAY_SIZE(vulkan_device_extensions),
-#endif
                NULL,
                0,
                &features);
@@ -1698,6 +1732,10 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
           RARCH_ERR("[Vulkan] Could not find required device extensions.\n");
           return false;
       }
+      enabled_device_extension_count = vulkan_upscaler_device_exts(vk,
+            vk->context.gpu, enabled_device_extensions,
+            enabled_device_extension_count,
+            ARRAY_SIZE(enabled_device_extensions));
 
       vk->fse_supported = false;
       for (i = 0; i < enabled_device_extension_count; i++)
@@ -2061,9 +2099,11 @@ static VkInstance vulkan_context_create_instance_wrapper(void *opaque, const VkI
    /* Room for VK_KHR_surface, WSI, SDL3, the debug extension and a headset runtime's. */
    const char *required_extensions[32];
    uint32_t required_extension_count = 0;
-   const char **instance_extensions = (const char**)malloc((info.enabledExtensionCount
+   unsigned instance_extensions_cap = info.enabledExtensionCount
                                                           + ARRAY_SIZE(required_extensions)
-                                                          + ARRAY_SIZE(vulkan_optional_instance_extensions)) * sizeof(const char *));
+                                                          + ARRAY_SIZE(vulkan_optional_instance_extensions)
+                                                          + VULKAN_UPSCALER_EXTS;
+   const char **instance_extensions = (const char**)malloc(instance_extensions_cap * sizeof(const char *));
    const char **instance_layers     = (const char**)malloc((info.enabledLayerCount     + 1)                * sizeof(const char *));
 
    /* Both mallocs must have succeeded before the memcpy / field
@@ -2170,6 +2210,12 @@ static VkInstance vulkan_context_create_instance_wrapper(void *opaque, const VkI
       RARCH_ERR("[Vulkan] Instance does not support required extensions.\n");
       goto end;
    }
+#ifdef HAVE_NGX
+   if (config_get_ptr()->uints.video_temporal_upscaler)
+      info.enabledExtensionCount = vulkan_ngx_instance_extensions(
+            instance_extensions, info.enabledExtensionCount,
+            instance_extensions_cap);
+#endif
 
 #ifdef VULKAN_HDR_SWAPCHAIN
    /* Check if HDR colorspace extension was enabled */

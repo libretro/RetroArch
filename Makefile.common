@@ -2010,6 +2010,9 @@ ifneq ($(findstring 1,$(HAVE_VULKAN) $(HAVE_D3D12)),)
       DEFINES += -DHAVE_NGX
       OBJ += gfx/video_upscaler.o \
              $(LIBRETRO_COMM_DIR)/gfx/nvidia/ngx_loader.o
+      ifeq ($(HAVE_VULKAN), 1)
+         OBJ += gfx/common/vulkan_ngx.o
+      endif
    endif
 endif
 
