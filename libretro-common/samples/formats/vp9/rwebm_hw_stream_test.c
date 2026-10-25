@@ -504,6 +504,96 @@ static int sparse_cue_index(void)
    return 0;
 }
 
+static int block_references(void)
+{
+   size_t marker, segment, tracks, entry, cluster, group, partial = 0;
+   unsigned i, pass;
+   int result;
+   rwebm_t *demux;
+   const rwebm_track *track;
+   rwebm_packet pkt;
+   static const int expected[] = {1, 0, 0, 0, 0, 1, 0};
+   used = 0;
+   marker = start(0x1a45dfa3, 4); finish(marker);
+   segment = start(0x18538067, 4);
+   tracks = start(0x1654ae6b, 4);
+   entry = start(0xae, 1);
+   integer(0xd7, 1, 1); integer(0x83, 1, 1);
+   marker = start(0x86, 1);
+   memcpy(file + used, "V_MPEG4/ISO/AVC",
+         15);
+   used += 15;
+   finish(marker);
+   marker = start(0x63a2, 2);
+   memcpy(file + used, "\1\2\3\4", 4); used += 4;
+   finish(marker); finish(entry); finish(tracks);
+   cluster = start(0x1f43b675, 4);
+   integer(0xe7, 1, 0);
+   for (i = 0; i < 6; i++)
+   {
+      group = 0;
+      if (i < 4) group = start(0xa0, 1);
+      if (i == 1) integer(0xfb, 1, 255);
+      if (i == 1)
+      {
+         unsigned j;
+         for (j = 0; j < 300; j++) integer(0xec, 1, 0);
+      }
+      marker = start(i < 4 ? 0xa1 : 0xa3, 1);
+      file[used++] = 0x81; file[used++] = 0;
+      file[used++] = (uint8_t)(i * 10);
+      file[used++] = i == 3 ? 2 : (i == 4 ? 128 : 0);
+      if (i == 3)
+      {
+         file[used++] = 1;
+         file[used++] = 2;
+      }
+      memcpy(file + used, "abcd", 4); used += 4;
+      finish(marker);
+      if (i == 2) partial = used;
+      if (i == 2 || i == 3) integer(0xfb, 1, 255);
+      if (i < 4) finish(group);
+   }
+   finish(cluster); finish(segment);
+   demux = rwebm_open_memory(file, used);
+   CHECK(demux);
+   track = rwebm_get_track(demux, 0);
+   CHECK(track && track->codec == RWEBM_CODEC_H264);
+   CHECK(track->codec_private_size == 4
+         && !memcmp(track->codec_private, "\1\2\3\4", 4));
+   for (pass = 0; pass < 3; pass++)
+   {
+      for (i = 0; i < sizeof(expected) / sizeof(expected[0]); i++)
+      {
+         do
+         {
+            result = pass == 2 ? rwebm_read_packet(demux, &pkt)
+               : rwebm_read_packet_track(demux, 0, &pkt);
+         } while (result == RWEBM_READ_YIELD);
+         CHECK(result == 1);
+         CHECK(pkt.keyframe == expected[i]);
+      }
+      CHECK(rwebm_read_packet_track(demux, 0, &pkt) == 0);
+      rwebm_rewind(demux);
+   }
+   rwebm_close(demux);
+   demux = rwebm_open_memory_avail(file, used, partial, NULL);
+   CHECK(demux);
+   for (i = 0; i < 2; i++)
+   {
+      do
+      {
+         result = rwebm_read_packet_track(demux, 0, &pkt);
+      } while (result == RWEBM_READ_YIELD);
+      CHECK(result == 1 && pkt.keyframe == expected[i]);
+   }
+   CHECK(rwebm_read_packet_track(demux, 0, &pkt) == RWEBM_READ_AGAIN);
+   rwebm_set_avail(demux, used);
+   CHECK(rwebm_read_packet_track(demux, 0, &pkt) == 1 && !pkt.keyframe);
+   rwebm_close(demux);
+   return 0;
+}
+
 static int text_durations(void)
 {
    size_t marker, segment, tracks, entry, cluster, group, partial = 0;
@@ -1019,6 +1109,7 @@ int main(void)
    CHECK(!terminal_stream());
    CHECK(!config_admission());
    CHECK(!sparse_cue_index());
+   CHECK(!block_references());
    CHECK(!text_durations());
    CHECK(!filtered_payload(1, 0));
    CHECK(!filtered_payload(1, 1));

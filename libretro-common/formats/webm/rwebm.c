@@ -76,6 +76,7 @@
 #define ID_BLOCK           0xA1u
 #define ID_BLOCKDURATION   0x9Bu
 #define ID_DISCARDPADDING  0x75A2u
+#define ID_REFERENCEBLOCK  0xFBu
 #define ID_CUES            0x1C53BB6Bu
 #define ID_CUEPOINT        0xBBu
 #define ID_CUETIME         0xB3u
@@ -315,6 +316,7 @@ struct rwebm
    int            lace_track;
    int64_t        lace_ts;
    int            lace_keyframe;
+   int            pending_reference;
 };
 
 /* Positive TrackNumber selects its positions, including when another
@@ -730,6 +732,7 @@ static int64_t webm_select_time_ns(rwebm_t *webm, int64_t ns, int resident)
    webm->lace_index      = 0;
    webm->pending_discard = 0;
    webm->pending_duration = -1;
+   webm->pending_reference = 0;
    webm->need_hi         = 0;
    return webm->cues[best].time_ticks * webm->timestamp_scale;
 }
@@ -753,6 +756,7 @@ void rwebm_rewind(rwebm_t *webm)
    webm->lace_count = 0;
    webm->lace_index = 0;
    webm->pending_duration = -1;
+   webm->pending_reference = 0;
    webm->need_hi    = 0;
 }
 
@@ -777,10 +781,12 @@ void rwebm_set_inert_callback(rwebm_t *webm,
  * the Block (already captured in pending_discard) or after it within
  * the same BlockGroup, so scan the remaining group siblings. */
 static int64_t webm_group_discard(rwebm_t *webm, const uint8_t *p,
-      const uint8_t *group_end)
+      const uint8_t *group_end, int *keyframe)
 {
    int64_t v = webm->pending_discard;
    ebml_reader s;
+   *keyframe = !webm->pending_reference;
+   webm->pending_reference = 0;
    webm->pending_discard = 0;
    s.p   = p;
    s.end = group_end;
@@ -793,6 +799,8 @@ static int64_t webm_group_discard(rwebm_t *webm, const uint8_t *p,
          break;
       if (id == ID_DISCARDPADDING && sz >= 1 && sz <= 8)
          v = ebml_sint(s.p, (size_t)sz);
+      if (id == ID_REFERENCEBLOCK)
+         *keyframe = 0;
       s.p += sz;
    }
    return v;
@@ -1039,9 +1047,16 @@ static int rwebm_read_packet_filtered(rwebm_t *webm, rwebm_packet *pkt,
          /* Descend: BlockGroup wraps a single Block (plus
           * DiscardPadding/duration/refs). Scan children. */
          webm->pending_discard = 0;
+         webm->pending_reference = 0;
          webm->pending_duration = -1;
          r.p   = body;
          r.end = body + sz;
+         continue;
+      }
+      if (id == ID_REFERENCEBLOCK)
+      {
+         webm->pending_reference = 1;
+         r.p = body + sz;
          continue;
       }
       if (id == ID_BLOCKDURATION)
@@ -1105,7 +1120,8 @@ static int rwebm_read_packet_filtered(rwebm_t *webm, rwebm_packet *pkt,
                if (id == ID_BLOCK)
                   pkt->duration_ns = webm_group_duration(webm, body + sz, r.end);
                pkt->discard_padding = (id == ID_BLOCK)
-                  ? webm_group_discard(webm, body + sz, r.end) : 0;
+                  ? webm_group_discard(webm, body + sz, r.end,
+                        &pkt->keyframe) : 0;
                webm->cur      = body + sz;
                return 1;
             }
@@ -1212,10 +1228,11 @@ static int rwebm_read_packet_filtered(rwebm_t *webm, rwebm_packet *pkt,
                   webm->lace_ts    = webm_scale_ts(
                                      webm->cluster_ts + rel_ts,
                                      webm->timestamp_scale);
-               webm->lace_discard = (id == ID_BLOCK)
-                  ? webm_group_discard(webm, body + sz, r.end) : 0;
                   webm->lace_keyframe = (id == ID_SIMPLEBLOCK)
                                       ? ((flags & 0x80) != 0) : 1;
+                  webm->lace_discard = (id == ID_BLOCK)
+                     ? webm_group_discard(webm, body + sz, r.end,
+                           &webm->lace_keyframe) : 0;
                   for (j = 0; j < nframes; j++)
                   {
                      webm->lace_frame[j]     = sizes[j];
