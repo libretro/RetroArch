@@ -4155,6 +4155,13 @@ BACK_RECT = (BACK_X + BACK_MARGIN, BACK_Y + BACK_MARGIN, BACK_DIM, BACK_DIM)
 HINGE_COLS, HINGE_ROWS = 128, 4
 HINGE_X = BACK_X + BACK_CELL + 1
 HINGE_Y = (OUTLINE_DIM - HINGE_ROWS) // 2
+# The hinge's line, VIDEO_XR_HINGE_WIDTH wide, each end
+# VIDEO_XR_HINGE_LIFT nearer the head; its strip's green,
+# VIDEO_XR_HINGE_RB/_G at VIDEO_XR_HINGE_LEVEL, premultiplied. An
+# outline hides an edge's rim by VIDEO_XR_OUTLINE_CROP texels of x.
+HINGE_WIDTH, HINGE_LIFT = 0.006, 0.01
+HINGE_LEVEL, HINGE_RB, HINGE_G = 166, 60, 220
+OUTLINE_CROP = 8
 # Edit mode's tags, one cell for each item it can choose (0, the laser;
 # a slot plus one), after the hinge's strip, each centred on the middle
 # row.
@@ -4284,10 +4291,18 @@ def menu_quad(frame):
 
 
 def outlines(frame, lit=None):
-    """Edit mode's outlines; lit: only the bright (1) or faint (0)."""
+    """Edit mode's outlines, whole or cut to hide an edge's rim; lit:
+    only the bright (1) or faint (0)."""
     xs = OUTLINE_X if lit is None else (OUTLINE_X[lit],)
     return [q for q in quads(frame)
-            if q['flags'] & BLEND and q['rect'][0] in xs]
+            if q['flags'] & BLEND and q['rect'][3] == OUTLINE_DIM
+            and any(q['rect'][0] in (x, x + OUTLINE_CROP) for x in xs)]
+
+
+def hinge_lines(frame):
+    """Edit mode's green hinge lines."""
+    return [q for q in quads(frame)
+            if q['flags'] & BLEND and q['rect'][0] == HINGE_X + 1]
 
 
 def handles(frame, lit=None):
@@ -4947,10 +4962,21 @@ def band_errors(res, f, q, level, what):
     return errors
 
 
+def outline_whole(o, q):
+    """Outline o's size uncut, along item q's own x and y."""
+    w = o['size'][0] * OUTLINE_DIM / o['rect'][2]
+    ox = qrot(tuple(o['pose'][3:]), (1.0, 0.0, 0.0))
+    qx = qrot(tuple(q['pose'][3:]), (1.0, 0.0, 0.0))
+    if abs(sum(a * b for a, b in zip(ox, qx))) < 0.5:
+        return (o['size'][1], w)
+    return (w, o['size'][1])
+
+
 def outline_gap_errors(frame):
     """Every outline's clear middle, where filtering leaves its rim,
     OUTLINE_GAP wider each side than the item it is round: the rim never
-    covers the picture."""
+    covers the picture. An outline cut to hide an edge's rim counts at
+    its whole size, turned back for a top or bottom edge."""
     items = [q for q in quads(frame) if not q['flags'] & BLEND] \
         + menus(frame)
     if not items:
@@ -4960,7 +4986,7 @@ def outline_gap_errors(frame):
         q = min(items, key=lambda i: sum(
             (a - b) ** 2 for a, b in zip(i['pose'][:3], o['pose'][:3])))
         gaps = [(s * (1.0 - 2.0 * OUTLINE_F) - w) / 2.0
-                for s, w in zip(o['size'], q['size'])]
+                for s, w in zip(outline_whole(o, q), q['size'])]
         if any(abs(g - OUTLINE_GAP) > 0.001 for g in gaps):
             errors.append('the outline at %s is %s clear of its item, '
                           'want %.3f' % (
@@ -5642,12 +5668,108 @@ def straight(p):
     return aim_line(p, (p[0], p[1], p[2] - 1.8))
 
 
+def span(a0, a1, b0, b1):
+    """The middle and length of where [a0, a1] and [b0, b1] overlap."""
+    lo, hi = max(a0, b0), min(a1, b1)
+    return (lo + hi) / 2.0, hi - lo
+
+
+def hinge_line_errors(frames, want, axis):
+    """frames each show one hinge line: the green strip a texel in from
+    each end, HINGE_WIDTH wide, along world axis axis, each end
+    HINGE_LIFT from where want(frame) puts the line (its middle and
+    length, on the edges midway across the gap) toward the head the
+    ribbon faces. The head, both ends and the ribbon's normal share a
+    plane, so neither end moves out of it."""
+    if not frames:
+        return ['no frames to check for a hinge line']
+    for f in frames:
+        ls = hinge_lines(f)
+        if len(ls) != 1:
+            return ['frame %d: %d hinge lines, want 1' % (f['n'], len(ls))]
+        line = ls[0]
+        mid, length = want(f)
+        turn = tuple(line['pose'][3:])
+        along = qrot(turn, (1.0, 0.0, 0.0))
+        side = qrot(turn, (0.0, 1.0, 0.0))
+        facing = qrot(turn, (0.0, 0.0, 1.0))
+        way = [0.0, 0.0, 0.0]
+        way[axis] = 1.0 if along[axis] > 0.0 else -1.0
+        lifts = []
+        for s in (-1.0, 1.0):
+            shown = [c + s * line['size'][0] / 2.0 * a
+                     for c, a in zip(line['pose'][:3], along)]
+            seam = [m + s * length / 2.0 * w for m, w in zip(mid, way)]
+            lifts.append([a - b for a, b in zip(shown, seam)])
+        if (tuple(line['rect']) != (HINGE_X + 1, HINGE_Y, HINGE_COLS - 2,
+                                    HINGE_ROWS)
+                or abs(line['size'][1] - HINGE_WIDTH) > 1e-4
+                or abs(abs(along[axis]) - 1.0) > 1e-3
+                or any(abs(math.sqrt(sum(v * v for v in d)) - HINGE_LIFT)
+                       > HINGE_GAP_POS
+                       or sum(v * w for v, w in zip(d, facing))
+                       < 0.8 * HINGE_LIFT
+                       or abs(sum(v * w for v, w in zip(d, side)))
+                       > HINGE_GAP_POS for d in lifts)):
+            return ['frame %d: the hinge line shows %s at %s, %s, along %s, '
+                    'its ends moved %s; want %s, %.3f long, %.3f wide, '
+                    'each end %.3f toward the head' % (
+                        f['n'], line['rect'],
+                        [round(v, 4) for v in line['pose'][:3]],
+                        line['size'], [round(v, 3) for v in along],
+                        [[round(v, 4) for v in d] for d in lifts],
+                        [round(v, 4) for v in mid], length, HINGE_WIDTH,
+                        HINGE_LIFT)]
+    return []
+
+
+def cut_outline_errors(frame, want):
+    """frame's outlines all whole but those want lists, (the middle of
+    the item it is round, the texels its square starts in, turned a
+    quarter for a top or bottom edge)."""
+    cut = [o for o in outlines(frame) if o['rect'][2] != OUTLINE_DIM]
+    if len(cut) != len(want):
+        return ['frame %d: %d outlines cut, want %d'
+                % (frame['n'], len(cut), len(want))]
+    errors = []
+    for mid, off, turned in want:
+        o = min(cut, key=lambda c: sum((a - b) ** 2 for a, b in
+                                       zip(c['pose'][:3], mid)))
+        base = OUTLINE_X[1] if o['rect'][0] >= OUTLINE_X[1] else OUTLINE_X[0]
+        x = qrot(tuple(o['pose'][3:]), (1.0, 0.0, 0.0))
+        if (o['rect'][0] - base != off
+                or o['rect'][2] != OUTLINE_DIM - OUTLINE_CROP
+                or (abs(x[0]) < 1e-3) != turned):
+            errors.append('frame %d: the outline round %s shows %s, x %s; '
+                          'want %d in, turned %s' % (
+                              frame['n'], [round(v, 3) for v in mid],
+                              o['rect'], [round(v, 3) for v in x], off,
+                              turned))
+    return errors
+
+
+def hinge_texel_errors(res, f):
+    """The hinge line's strip in f's image: green, red equal to blue,
+    premultiplied at HINGE_LEVEL."""
+    line = hinge_lines(f)[0]
+    rgb, alpha = rect_texel(res, f, line, line['rect'][2] // 2,
+                            HINGE_ROWS // 2)
+    rb = (HINGE_RB * HINGE_LEVEL + 127) // 255
+    g = (HINGE_G * HINGE_LEVEL + 127) // 255
+    if (abs(alpha - HINGE_LEVEL) > 2 or abs(rgb[0] - rb) > 2
+            or abs(rgb[1] - g) > 2 or rgb[0] != rgb[2]):
+        return ['the hinge line shows %s alpha %d, want (%d, %d, %d) '
+                'alpha %d' % (rgb, alpha, rb, g, rb, HINGE_LEVEL)]
+    return []
+
+
 def check_edit_snap(snap):
     def check(res):
         """Screen 2, taken at its spot 3.2 cm under screen 1, stays
         there until carried; held just off flush right of screen 1: with
         Snap to Screens it shows and is saved touching it, level, in
-        its plane, and the hand gets the snap's buzz; without, it stays
+        its plane, the hinge marked by a green line and its rims gone
+        while held, and the hand gets the snap's buzz; without, it stays
         where the hand put it, with no buzz."""
         want = SNAPPED if snap else (SNAP_HAND[0], SNAP_HAND[1],
                                      SNAP_HAND[2] - 1.8)
@@ -5691,6 +5813,27 @@ def check_edit_snap(snap):
                     errors.append('screen 2 %s at x %.4f, want %.3f'
                                   % (what, x, SNAPPED[0]))
                     break
+            # Flush right of screen 1 it hinges on that edge: the line
+            # up the gap's middle where the edges overlap, both rims gone.
+            held = [f for f in between(res, 'held', 'released', delay=0.5)
+                    if screen2(f)]
+
+            def flush(f):
+                s = screen2(f)['pose']
+                y, length = span(s[1] - 0.48, s[1] + 0.48, -0.48, 0.48)
+                gap = s[0] - 0.64 - 0.8
+                return (0.8 + gap / 2.0, y, -1.8), length
+            errors += hinge_line_errors(held, flush, 1)
+            for f in held[-1:]:
+                errors += cut_outline_errors(f, [
+                    (S0, 0, False),
+                    (tuple(screen2(f)['pose'][:3]), OUTLINE_CROP, False)])
+        for f in between(res, 'released', 'off', delay=0.5):
+            if hinge_lines(f) or any(o['rect'][2] != OUTLINE_DIM
+                                     for o in outlines(f)):
+                errors.append('frame %d: a hinge line or cut outline after '
+                              'the screen was let go' % f['n'])
+                break
         return errors
     return check
 
@@ -5930,8 +6073,10 @@ def check_edit_hinge_3ds(res, gap=0.0):
     30 degrees from flat, swings it about that edge into the 30 step's
     hold: it shows and is saved there, its top edge Hinge Gap (gap)
     under screen 1's bottom edge, in its plane, and the right hand
-    buzzes once for the step. Not a set time: stalled polls cut the
-    swing short."""
+    buzzes once for the step. While hinged a green line runs along the
+    hinge midway across the gap where the edges overlap, screen 1's
+    bottom rim and screen 2's top rim gone; let go, both back. Not a set
+    time: stalled polls cut the swing short."""
     errors = edit_log_errors(res, ['on', 'off'])
     q = last_before(res, 'swung', screen2)
     if not q:
@@ -5953,6 +6098,30 @@ def check_edit_hinge_3ds(res, gap=0.0):
     if len(ticks) != 1:
         errors.append('%d buzzes on the right hand in the swing, want 1: %s'
                       % (len(ticks), ticks))
+    held = [f for f in between(res, 'held', 'swung', delay=0.2)
+            if screen2(f)]
+
+    def hinge(f):
+        x, length = span(screen2(f)['pose'][0] - 0.64,
+                         screen2(f)['pose'][0] + 0.64, -0.8, 0.8)
+        return (x, -0.48 - gap / 2.0, -1.8), length
+    errors += hinge_line_errors(held, hinge, 0)
+    for f in held[:1] + held[-1:]:
+        errors += cut_outline_errors(f, [
+            (S0, OUTLINE_CROP, True),
+            (tuple(screen2(f)['pose'][:3]), 0, True)])
+    errors += outline_gap_errors(held[0]) if held else ['no hinged frame']
+    snaps = [f for f in held if f['snap'] and hinge_lines(f)]
+    if snaps:
+        errors += hinge_texel_errors(res, snaps[-1])
+    elif gap == 0.0:
+        errors.append('no image of a hinged frame')
+    for f in between(res, 'released', 'off', delay=0.5):
+        if hinge_lines(f) or any(o['rect'][2] != OUTLINE_DIM
+                                 for o in outlines(f)):
+            errors.append('frame %d: a hinge line or cut outline after '
+                          'the screen was let go' % f['n'])
+            break
     return errors + saved_errors(res, 'screen 2', 'video_screen2_xr_', S1,
                                  (tuple(q['pose'][:3]),
                                   tuple(q['pose'][3:])), (1.28, 0.96),
@@ -6710,6 +6879,7 @@ EDIT_CASES += [
      'check': check_edit_snap_sticks},
     {'name': 'edit-hinge-3ds', 'map': '3ds', 'settings': HINGE_3DS,
      'script': HEAD_AT_ORIGIN,
+     'env': {'RA_XR_LAYER_SNAP_EVERY': '10'},
      'steps': edit_start(edit_aim()) + edit_tap(EDIT_NEXT, edit_aim())
      + edit_tap(EDIT_NEXT, edit_aim()) + [
          ('script', script(edit_aim(), EDIT_GRIP)), ('wait', 1),
@@ -6720,6 +6890,7 @@ EDIT_CASES += [
          ('until', ('screen 2 at 30', screen2_at_pitch(30.0), 10)),
          ('script', script(edit_aim(x=0.06), EDIT_GRIP)),
          ('wait', 1), ('mark', 'swung'), ('script', edit_aim(x=0.06)),
+         ('mark', 'released'),
          ('wait', 1), ('send', EDIT), ('wait', 2), ('mark', 'off'),
          ('wait', 1)],
      'check': check_edit_hinge_3ds},
@@ -6735,6 +6906,7 @@ EDIT_CASES += [
          ('until', ('screen 2 at 30', screen2_at_pitch(30.0), 10)),
          ('script', script(edit_aim(x=0.06), EDIT_GRIP)),
          ('wait', 1), ('mark', 'swung'), ('script', edit_aim(x=0.06)),
+         ('mark', 'released'),
          ('wait', 1), ('send', EDIT), ('wait', 2), ('mark', 'off'),
          ('wait', 1)],
      'check': check_edit_hinge_gap},

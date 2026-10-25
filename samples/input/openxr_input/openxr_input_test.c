@@ -5365,6 +5365,280 @@ static void t_snap_under(double fold)
    t_aim[2].position.y     = q->pose.position.y;
 }
 
+/* A hinge line from a to b as its layer shows it, each end
+ * VIDEO_XR_HINGE_LIFT nearer the head at the origin: its middle and
+ * length. */
+static void t_lifted(float ax, float ay, float az, float bx, float by,
+      float bz, video_xr_vec3_t *mid, float *len)
+{
+   double sa = 1.0 - VIDEO_XR_HINGE_LIFT
+      / sqrt((double)ax * ax + (double)ay * ay + (double)az * az);
+   double sb = 1.0 - VIDEO_XR_HINGE_LIFT
+      / sqrt((double)bx * bx + (double)by * by + (double)bz * bz);
+   double dx = bx * sb - ax * sa;
+   double dy = by * sb - ay * sa;
+   double dz = bz * sb - az * sa;
+   mid->x    = (float)((ax * sa + bx * sb) / 2.0);
+   mid->y    = (float)((ay * sa + by * sb) / 2.0);
+   mid->z    = (float)((az * sa + bz * sb) / 2.0);
+   *len      = (float)sqrt(dx * dx + dy * dy + dz * dz);
+}
+
+/* The frame loop's hinges: the held screen's paired edge and its
+ * target's lose their rim, the rest of each outline as before; a green
+ * line along each hinge where the edges overlap, midway across the
+ * gap, facing the head, after the outlines and before the beams. Short
+ * of layers the beams go first, then the line; the rims go whatever the
+ * room. Two hands, two lines, the first hand's first; on a target's
+ * opposite edges both rims go, on adjacent ones the first hand's. */
+static void test_edit_hinge_layers(void)
+{
+   static const float gaps[] = { 0.0f, 0.001f, 0.002f, 0.004f, 0.006f,
+      0.01f };
+   unsigned i, n;
+   video_xr_vec3_t ax, az;
+   video_xr_vec3_t m;
+   float len;
+   video_xr_quad_set_t shown;
+   video_xr_hinge_t *k;
+   const XrCompositionLayerQuad *q;
+   const XrCompositionLayerBaseHeader *layers[OPENXR_MAX_EXTRA_LAYERS];
+   const float cut  = (float)(VIDEO_XR_OUTLINE_DIM - VIDEO_XR_OUTLINE_CROP)
+      / VIDEO_XR_OUTLINE_DIM;
+   const float both = (float)(VIDEO_XR_OUTLINE_DIM
+         - 2 * VIDEO_XR_OUTLINE_CROP) / VIDEO_XR_OUTLINE_DIM;
+   const float half = (float)VIDEO_XR_OUTLINE_CROP
+      / (2.0f * VIDEO_XR_OUTLINE_DIM);
+   XrSpace local    = XR_NULL_HANDLE;
+   t_edit_start();
+   t_snap_under(0.0);
+   local            = t_xr_session.local_space;
+   t_aim_tracked[1] = false;
+   t_head_tracked   = true;
+   t_cursor         = true;
+   shown            = t_quads;
+   /* Screen 2 held 2 cm under screen 1, the right hand on it. */
+   shown.quads[2].pose.position.y = -0.80f;
+   t_xr_frame.held[1].slot        = 1;
+   t_xr_frame.held[1].state       = VIDEO_XR_GRAB_HELD;
+   t_xr_frame.hinged              = 2u;
+   k                              = &t_xr_frame.hinges[1];
+   memset(k, 0, sizeof(*k));
+   k->point.y = -0.50f;
+   k->point.z = -1.8f;
+   k->dir.x   = 1.0f;
+   k->flat.y  = -1.0f;
+   k->gap     = 0.02f;
+   k->edge    = 0;
+   k->slot    = 0;
+   k->on      = 1;
+   n = t_hooks.frame_layers(t_hooks.user, t_time, &shown, local, layers,
+         OPENXR_MAX_EXTRA_LAYERS, &t_under);
+   CHECK(n == 7 && t_under == 2, "%u layers, %u under: want the screens' "
+         "outlines under, the menu's and its handle, a line, a beam and a "
+         "dot", n, t_under);
+   q = (const XrCompositionLayerQuad*)layers[0];
+   t_layer_axis(q, 1.0f, 0.0f, 0.0f, &ax);
+   CHECK(     q->subImage.imageRect.offset.x
+            == VIDEO_XR_OUTLINE_X(0) + VIDEO_XR_OUTLINE_CROP
+         && q->subImage.imageRect.offset.y == 0
+         && q->subImage.imageRect.extent.width
+            == VIDEO_XR_OUTLINE_DIM - VIDEO_XR_OUTLINE_CROP
+         && q->subImage.imageRect.extent.height == VIDEO_XR_OUTLINE_DIM
+         && t_near(ax.y, 1.0f)
+         && t_near(q->size.width, t_outline(0.96f) * cut)
+         && t_near(q->size.height, t_outline(1.6f))
+         && t_near(q->pose.position.y, t_outline(0.96f) * half)
+         && t_near(q->pose.position.z, -1.8f + VIDEO_XR_CURSOR_LIFT),
+         "screen 1's outline without its bottom rim: offset %d, %.4f x "
+         "%.4f at y %.4f", (int)q->subImage.imageRect.offset.x,
+         q->size.width, q->size.height, q->pose.position.y);
+   q = (const XrCompositionLayerQuad*)layers[1];
+   t_layer_axis(q, 1.0f, 0.0f, 0.0f, &ax);
+   CHECK(     q->subImage.imageRect.offset.x == VIDEO_XR_OUTLINE_X(1)
+         && q->subImage.imageRect.extent.width
+            == VIDEO_XR_OUTLINE_DIM - VIDEO_XR_OUTLINE_CROP
+         && t_near(ax.y, 1.0f)
+         && t_near(q->size.width, t_outline(0.6f) * cut)
+         && t_near(q->pose.position.y, -0.80f - t_outline(0.6f) * half),
+         "screen 2's outline without its top rim: offset %d at y %.4f",
+         (int)q->subImage.imageRect.offset.x, q->pose.position.y);
+   q = (const XrCompositionLayerQuad*)layers[2];
+   CHECK(q->subImage.imageRect.offset.x == VIDEO_XR_OUTLINE_X(0)
+         && q->subImage.imageRect.extent.width == VIDEO_XR_OUTLINE_DIM,
+         "the menu's outline was cut");
+   q = (const XrCompositionLayerQuad*)layers[4];
+   t_layer_axis(q, 1.0f, 0.0f, 0.0f, &ax);
+   t_layer_axis(q, 0.0f, 0.0f, 1.0f, &az);
+   /* Each end a centimetre toward the head, so the line shows over both
+    * screens whatever order the runtime draws them in. */
+   t_lifted(-0.4f, -0.49f, -1.8f, 0.4f, -0.49f, -1.8f, &m, &len);
+   CHECK(     q->subImage.imageRect.offset.x == VIDEO_XR_HINGE_X + 1
+         && q->subImage.imageRect.offset.y == VIDEO_XR_HINGE_Y
+         && q->subImage.imageRect.extent.width == VIDEO_XR_HINGE_COLS - 2
+         && q->subImage.imageRect.extent.height == VIDEO_XR_HINGE_ROWS
+         && q->subImage.swapchain == (XrSwapchain)(uintptr_t)0x51
+         && q->space == local
+         && (q->layerFlags
+            & XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT)
+         && t_near(q->size.width, len)
+         && t_near(q->size.height, VIDEO_XR_HINGE_WIDTH)
+         && t_near(q->pose.position.x, m.x)
+         && t_near(q->pose.position.y, m.y)
+         && t_near(q->pose.position.z, m.z)
+         && t_near(ax.x, 1.0f)
+         && t_near(az.y, 0.2627f) && t_near(az.z, 0.9649f),
+         "the line: offset %d, %.4f x %.4f at %.4f,%.4f,%.4f facing "
+         "%.3f,%.3f,%.3f; want %.4f long at %.4f,%.4f,%.4f",
+         (int)q->subImage.imageRect.offset.x, q->size.width,
+         q->size.height, q->pose.position.x, q->pose.position.y,
+         q->pose.position.z, az.x, az.y, az.z, len, m.x, m.y, m.z);
+   q = (const XrCompositionLayerQuad*)layers[5];
+   CHECK(q->subImage.imageRect.offset.x == VIDEO_XR_BEAM_X(0),
+         "the beam is not after the line");
+   /* 6 mm wide at every gap. */
+   for (i = 0; i < 6; i++)
+   {
+      k->gap     = gaps[i];
+      k->point.y = -0.48f - gaps[i];
+      n = t_hooks.frame_layers(t_hooks.user, t_time, &shown, local, layers,
+            OPENXR_MAX_EXTRA_LAYERS, &t_under);
+      q = (const XrCompositionLayerQuad*)layers[4];
+      CHECK(     n == 7
+            && q->subImage.imageRect.offset.x == VIDEO_XR_HINGE_X + 1
+            && fabs(q->size.height - VIDEO_XR_HINGE_WIDTH) < 1e-6,
+            "a %.3f gap: the line %.4f wide, want %.4f", gaps[i],
+            q->size.height, VIDEO_XR_HINGE_WIDTH);
+   }
+   k->gap     = 0.02f;
+   k->point.y = -0.50f;
+   /* Short of layers: the beam goes, then the line; the rims stay cut. */
+   n = t_hooks.frame_layers(t_hooks.user, t_time, &shown, local, layers,
+         OPENXR_KEPT_EXTRA_LAYERS + 5, &t_under);
+   q = (const XrCompositionLayerQuad*)layers[4];
+   CHECK(n == 6 && q->subImage.imageRect.offset.x == VIDEO_XR_HINGE_X + 1,
+         "one layer past the outlines: %u layers, the line not kept", n);
+   n = t_hooks.frame_layers(t_hooks.user, t_time, &shown, local, layers,
+         OPENXR_KEPT_EXTRA_LAYERS + 4, &t_under);
+   q = (const XrCompositionLayerQuad*)layers[4];
+   CHECK(n == 5 && q->subImage.imageRect.extent.width == VIDEO_XR_CURSOR_DIM,
+         "room for the outlines alone: %u layers", n);
+   n = t_hooks.frame_layers(t_hooks.user, t_time, &shown, local, layers,
+         OPENXR_KEPT_EXTRA_LAYERS + 2, &t_under);
+   q = (const XrCompositionLayerQuad*)layers[0];
+   CHECK(n == 3 && q->subImage.imageRect.offset.x
+         == VIDEO_XR_OUTLINE_X(0) + VIDEO_XR_OUTLINE_CROP,
+         "room for two outlines: %u layers, screen 1's offset %d", n,
+         (int)q->subImage.imageRect.offset.x);
+   /* No head: no line, nor beam; the rims still go. */
+   t_head_tracked = false;
+   n = t_hooks.frame_layers(t_hooks.user, t_time, &shown, local, layers,
+         OPENXR_MAX_EXTRA_LAYERS, &t_under);
+   q = (const XrCompositionLayerQuad*)layers[0];
+   CHECK(     n == 5 && t_under == 2
+         && q->subImage.imageRect.offset.x
+            == VIDEO_XR_OUTLINE_X(0) + VIDEO_XR_OUTLINE_CROP
+         && ((const XrCompositionLayerQuad*)layers[1])
+            ->subImage.imageRect.extent.width
+            == VIDEO_XR_OUTLINE_DIM - VIDEO_XR_OUTLINE_CROP
+         && ((const XrCompositionLayerQuad*)layers[4])
+            ->subImage.imageRect.extent.width == VIDEO_XR_CURSOR_DIM,
+         "no head: %u layers, screen 1's offset %d", n,
+         (int)q->subImage.imageRect.offset.x);
+   t_head_tracked = true;
+
+   /* The left hand holds screen 3, on screen 1's top edge: both rims of
+    * screen 1 go, two lines, the left hand's first. */
+   shown.quads[3]                 = shown.quads[2];
+   shown.quads[3].pose.position.y = 0.78f;
+   shown.quads[3].screen          = 2;
+   shown.quads[3].slot            = 2;
+   shown.num_quads                = 4;
+   t_xr_frame.held[0].slot        = 2;
+   t_xr_frame.held[0].state       = VIDEO_XR_GRAB_HELD;
+   t_xr_frame.hinged              = 3u;
+   k                              = &t_xr_frame.hinges[0];
+   memset(k, 0, sizeof(*k));
+   k->point.y = 0.48f;
+   k->point.z = -1.8f;
+   k->dir.x   = 1.0f;
+   k->flat.y  = 1.0f;
+   k->edge    = 1;
+   k->slot    = 0;
+   k->on      = 0;
+   n = t_hooks.frame_layers(t_hooks.user, t_time, &shown, local, layers,
+         OPENXR_MAX_EXTRA_LAYERS, &t_under);
+   q = (const XrCompositionLayerQuad*)layers[0];
+   CHECK(     n == 9 && t_under == 3
+         && q->subImage.imageRect.offset.x
+            == VIDEO_XR_OUTLINE_X(0) + VIDEO_XR_OUTLINE_CROP
+         && q->subImage.imageRect.extent.width
+            == VIDEO_XR_OUTLINE_DIM - 2 * VIDEO_XR_OUTLINE_CROP
+         && t_near(q->size.width, t_outline(0.96f) * both)
+         && t_near(q->pose.position.y, 0.0f),
+         "two hands, opposite edges: %u layers, screen 1's offset %d "
+         "width %d", n, (int)q->subImage.imageRect.offset.x,
+         (int)q->subImage.imageRect.extent.width);
+   q = (const XrCompositionLayerQuad*)layers[5];
+   t_lifted(-0.4f, 0.48f, -1.8f, 0.4f, 0.48f, -1.8f, &m, &len);
+   CHECK(q->subImage.imageRect.offset.x == VIDEO_XR_HINGE_X + 1
+         && t_near(q->pose.position.y, m.y)
+         && t_near(q->pose.position.z, m.z),
+         "the left hand's line is not first");
+   q = (const XrCompositionLayerQuad*)layers[6];
+   t_lifted(-0.4f, -0.49f, -1.8f, 0.4f, -0.49f, -1.8f, &m, &len);
+   CHECK(q->subImage.imageRect.offset.x == VIDEO_XR_HINGE_X + 1
+         && t_near(q->pose.position.y, m.y)
+         && t_near(q->pose.position.z, m.z),
+         "the right hand's line is not second");
+
+   /* Screen 3 on screen 1's right edge instead, adjacent to its bottom:
+    * the left hand's rim alone goes there; both lines show. Screen 3
+    * seen from behind loses the same side's rim, its left. */
+   shown.quads[3].pose.position.x = 1.2f;
+   shown.quads[3].pose.position.y = 0.0f;
+   t_xr_frame.backs               = 1u << 3;
+   memset(k, 0, sizeof(*k));
+   k->point.x = 0.8f;
+   k->point.z = -1.8f;
+   k->dir.y   = 1.0f;
+   k->flat.x  = 1.0f;
+   k->edge    = 3;
+   k->slot    = 0;
+   k->on      = 2;
+   n = t_hooks.frame_layers(t_hooks.user, t_time, &shown, local, layers,
+         OPENXR_MAX_EXTRA_LAYERS, &t_under);
+   q = (const XrCompositionLayerQuad*)layers[0];
+   t_layer_axis(q, 1.0f, 0.0f, 0.0f, &ax);
+   CHECK(     n == 9 && q->subImage.imageRect.offset.x == VIDEO_XR_OUTLINE_X(0)
+         && q->subImage.imageRect.extent.width
+            == VIDEO_XR_OUTLINE_DIM - VIDEO_XR_OUTLINE_CROP
+         && t_near(ax.x, 1.0f)
+         && t_near(q->pose.position.x, -t_outline(1.6f) * half),
+         "adjacent edges: %u layers, screen 1's offset %d at x %.4f", n,
+         (int)q->subImage.imageRect.offset.x, q->pose.position.x);
+   q = (const XrCompositionLayerQuad*)layers[2];
+   t_layer_axis(q, 1.0f, 0.0f, 0.0f, &ax);
+   CHECK(     q->subImage.imageRect.offset.x == VIDEO_XR_OUTLINE_X(0)
+         && q->subImage.imageRect.extent.width
+            == VIDEO_XR_OUTLINE_DIM - VIDEO_XR_OUTLINE_CROP
+         && t_near(ax.x, -1.0f)
+         && t_near(q->pose.position.x, 1.2f + t_outline(0.8f) * half),
+         "screen 3 from behind: offset %d at x %.4f",
+         (int)q->subImage.imageRect.offset.x, q->pose.position.x);
+   q = (const XrCompositionLayerQuad*)layers[5];
+   t_lifted(0.8f, -0.3f, -1.8f, 0.8f, 0.3f, -1.8f, &m, &len);
+   CHECK(q->subImage.imageRect.offset.x == VIDEO_XR_HINGE_X + 1
+         && t_near(q->pose.position.x, m.x)
+         && t_near(q->size.width, len),
+         "the side line: at x %.4f, %.4f long; want %.4f, %.4f",
+         q->pose.position.x, q->size.width, m.x, len);
+   t_xr_frame.hinged = 0;
+   t_xr_frame.backs  = 0;
+   t_head_tracked    = false;
+   t_edit_end();
+}
+
 /* n polls 10 ms apart, the right hand gripping, its trigger held if
  * tilt, and the left stick at y. */
 static void t_tilt_polls(unsigned n, float y, bool tilt)
@@ -6531,6 +6805,7 @@ int main(void)
    test_edit_hinge_hold();
    test_edit_hinge_rearm();
    test_edit_hinge_drop();
+   test_edit_hinge_layers();
    test_edit_hinge_under();
    test_edit_hinge_flick();
    test_edit_hinge_lid_ends();

@@ -119,8 +119,14 @@ on what a hand holds, and on what a laser points at unless an item is
 chosen (below). Both hands have a laser whatever **Laser Pointer** is
 set to, with a beam unless **Laser Beam** is Off. The menu also shows a
 handle bar under it in the same light and dark, faint, and bright when
-the menu's outline is. The headset's controllers only
-edit; keyboards and other gamepads still reach the content. The desktop
+the menu's outline is. While a held screen is hinged (see **Snap to
+Screens**), its edge and the edge it hinges on lose their outline, and a
+6 mm green line runs along the hinge where the two overlap, midway
+between the edges and drawn a centimetre nearer the eye so it shows
+over both screens, from when the hinge takes hold until the screen
+leaves its reach.
+The headset's controllers only edit;
+keyboards and other gamepads still reach the content. The desktop
 window shows a notice when editing starts, with the controls, for
 about 8 seconds, and a short one when it stops. **Select
 Next** and **Select Previous** choose an item, below.
@@ -214,10 +220,12 @@ other where the two overlap along it, top, bottom or side, within 5
 degrees of parallel and 3 cm of its plane, up to 10 cm out from the
 edge: it turns exactly parallel to that edge and moves into the other's
 plane, keeping its gap from that edge, centres or ends level along it,
-keeping its angle, like the two halves of a DS. Screens that would
-overlap do not hinge. While a screen is hinged, the other hand's stick
-swings it about the shared edge, the tilt for a top or bottom edge and
-the turn for a side one, and it stays where the swing leaves it. The
+keeping its angle, like the two halves of a DS. The green line
+shows from then until the edge is 4.5 cm off the other's plane, 13 cm
+out from its edge or past its ends. Screens that would overlap do not
+hinge. While a screen is hinged, the other hand's stick swings it
+about the shared edge, the tilt for a top or bottom edge and the
+turn for a side one, and it stays where the swing leaves it. The
 swing lets go just past square, but that axis keeps pivoting it on the
 same edge until the edge is carried out of the hinge's reach; the
 stick's other axis turns or tilts it as before and can pull it off. Past

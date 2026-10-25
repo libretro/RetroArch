@@ -377,9 +377,11 @@ float video_xr_hinge_angle(const video_xr_hinge_t *h,
 
 /* Where hinge h shows its line, its held screen width x height metres,
  * on target: from a to b along h->dir where the held edge and target's
- * edge h->on overlap, midway across the gap; this wide, drawn as the
- * beam is. False where they do not overlap. */
+ * edge h->on overlap, midway across the gap; its layer is drawn as the
+ * beam is, VIDEO_XR_HINGE_WIDTH wide, each end VIDEO_XR_HINGE_LIFT
+ * nearer the eye. False where they do not overlap. */
 #define VIDEO_XR_HINGE_WIDTH 0.006f
+#define VIDEO_XR_HINGE_LIFT  0.01f
 bool video_xr_hinge_line(const video_xr_hinge_t *h, float width,
       float height, const video_xr_quad_t *target, video_xr_vec3_t *a,
       video_xr_vec3_t *b);

@@ -230,6 +230,16 @@ void video_xr_menu_handle(const video_xr_quad_t *menu, video_xr_quad_t *out)
 { *out = *menu; }
 void video_xr_outline(const video_xr_quad_t *q, video_xr_quad_t *out)
 { *out = *q; }
+void video_xr_outline_crop(video_xr_quad_t *o, unsigned hide, bool back,
+      unsigned *x, unsigned *w)
+{ (void)o; (void)hide; (void)back; *x = 0; *w = VIDEO_XR_OUTLINE_DIM; }
+bool video_xr_hinge_line(const video_xr_hinge_t *h, float width,
+      float height, const video_xr_quad_t *target, video_xr_vec3_t *a,
+      video_xr_vec3_t *b)
+{
+   (void)h; (void)width; (void)height; (void)target; (void)a; (void)b;
+   return false;
+}
 void openxr_frame_publish_grabs(openxr_frame_t *f, const openxr_grabs_t *g)
 { (void)f; (void)g; }
 void video_xr_smooth_step(video_xr_smooth_t *s, unsigned level,

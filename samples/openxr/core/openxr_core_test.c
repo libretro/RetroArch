@@ -1663,7 +1663,8 @@ static void test_frame(void)
    /* The host's layers follow the screens. */
    f.extra_layers = t_extra_layers;
    openxr_frame_run(&f);
-   CHECK(t_last_layer_count == 2 && t_extra_cap == OPENXR_MAX_EXTRA_LAYERS,
+   CHECK(     t_last_layer_count == 2
+         && t_extra_cap == XR_MIN_COMPOSITION_LAYERS_SUPPORTED - 1,
          "%u layers with the host's, cap %u", t_last_layer_count, t_extra_cap);
 
    /* Each frame counts toward the tick: the ninth at interval 3 makes
@@ -4858,7 +4859,8 @@ static void test_input_hooks(void)
    openxr_session_set_alive(&s, true);
    retro_atomic_store_release_int(&s.state, XR_SESSION_STATE_FOCUSED);
    openxr_frame_run(&f);
-   CHECK(t_last_layer_count == 1 && t_extra_cap == OPENXR_MAX_EXTRA_LAYERS,
+   CHECK(     t_last_layer_count == 1
+         && t_extra_cap == XR_MIN_COMPOSITION_LAYERS_SUPPORTED,
          "%u layers with the input's, cap %u", t_last_layer_count,
          t_extra_cap);
 
@@ -8692,8 +8694,8 @@ static void test_frame_layer_budget(void)
    openxr_frame_run(&f);
    CHECK(t_extra_cap == OPENXR_MAX_EXTRA_LAYERS
          && OPENXR_MAX_EXTRA_LAYERS == OPENXR_KEPT_EXTRA_LAYERS
-            + OPENXR_BEAM_LAYERS + OPENXR_TAG_LAYERS + VIDEO_XR_MAX_SLOTS
-            + 1,
+            + OPENXR_HINGE_LAYERS + OPENXR_BEAM_LAYERS + OPENXR_TAG_LAYERS
+            + VIDEO_XR_MAX_SLOTS + 1,
          "with room to spare, cap %u", t_extra_cap);
    t_grab_free(&rt, &s, &sc, &f);
 }

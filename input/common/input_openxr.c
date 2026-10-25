@@ -545,11 +545,12 @@ typedef struct input_openxr
    unsigned last_sticks[INPUT_OPENXR_PADS];
 
    /* XR thread: the dots, the beams, edit mode's outlines, the menu's
-    * handle and the tag, and Edit Smoothing's filters and the aims they
-    * published. */
+    * handle, the hinges' lines and the tag, and Edit Smoothing's
+    * filters and the aims they published. */
    XrCompositionLayerQuad cursors[INPUT_OPENXR_HANDS];
    XrCompositionLayerQuad beams[INPUT_OPENXR_HANDS];
    XrCompositionLayerQuad outlines[VIDEO_XR_MAX_SLOTS + 1];
+   XrCompositionLayerQuad hinge_lines[INPUT_OPENXR_HANDS];
    XrCompositionLayerQuad tag;
    input_openxr_smooth_t smooth[INPUT_OPENXR_HANDS];
    openxr_aims_t aims;
@@ -1625,15 +1626,58 @@ static const XrCompositionLayerBaseHeader *input_openxr_edit_layer(
    return (const XrCompositionLayerBaseHeader*)l;
 }
 
+/* This frame's hinges, as the frame loop found them: in hide, by slot,
+ * the edges whose rims go, each held screen's paired edge and its
+ * target's (of a target's two adjacent ones, the first hand's); from a
+ * to b each line set shows. Returns the lines. */
+static unsigned input_openxr_hinges(const openxr_frame_t *f,
+      const video_xr_quad_set_t *set, unsigned *hide, video_xr_vec3_t *a,
+      video_xr_vec3_t *b)
+{
+   unsigned h, i;
+   unsigned lines = 0;
+   memset(hide, 0, VIDEO_XR_MAX_SLOTS * sizeof(*hide));
+   for (h = 0; h < INPUT_OPENXR_HANDS; h++)
+   {
+      const video_xr_hinge_t *k     = &f->hinges[h];
+      const video_xr_quad_t *held   = NULL;
+      const video_xr_quad_t *target = NULL;
+      unsigned beside;
+      if (!((f->hinged >> h) & 1u))
+         continue;
+      /* The target's sides either side of its edge. */
+      beside = (k->on < 2) ? 12u : 3u;
+      hide[f->held[h].slot] |= 1u << k->edge;
+      if (!(hide[k->slot] & beside))
+         hide[k->slot] |= 1u << k->on;
+      for (i = 0; i < set->num_quads; i++)
+      {
+         const video_xr_quad_t *q = &set->quads[i];
+         if (q->kind == VIDEO_XR_QUAD_MENU)
+            continue;
+         if (!held && q->slot == f->held[h].slot)
+            held = q;
+         if (!target && q->slot == k->slot)
+            target = q;
+      }
+      if (     held && target
+            && video_xr_hinge_line(k, held->width, held->height, target,
+               &a[lines], &b[lines]))
+         lines++;
+   }
+   return lines;
+}
+
 /* Edit mode's outlines after layers' first n, of the menu or of every
  * other item: one an item (a stereo screen's two quads are one, a fixed
- * slot none), each just outside its item, the menu's handle after its
- * outline: bright for the slots in lit, faint for the rest; up to cap
- * in all; turned to the head with an item the frame shows by its back. */
+ * slot none), each just outside its item without the rims of its edges
+ * in hide (by slot), the menu's handle after its outline: bright for
+ * the slots in lit, faint for the rest; up to cap in all; turned to the
+ * head with an item the frame shows by its back. */
 static unsigned input_openxr_outlines(input_openxr_t *st,
       const video_xr_quad_set_t *set, XrSpace space, XrSwapchain cursor,
-      unsigned lit, bool menu, const XrCompositionLayerBaseHeader **layers,
-      unsigned n, unsigned cap)
+      unsigned lit, const unsigned *hide, bool menu,
+      const XrCompositionLayerBaseHeader **layers, unsigned n, unsigned cap)
 {
    unsigned i;
    unsigned done = 0;
@@ -1642,6 +1686,7 @@ static unsigned input_openxr_outlines(input_openxr_t *st,
       const video_xr_quad_t *q = &set->quads[i];
       video_xr_quad_t outline;
       unsigned bright;
+      unsigned x, w;
       bool back = ((st->frame->backs >> i) & 1u) != 0;
       if (     q->slot >= VIDEO_XR_MAX_SLOTS || (done & (1u << q->slot))
             || set->slots[q->slot].fixed
@@ -1652,9 +1697,10 @@ static unsigned input_openxr_outlines(input_openxr_t *st,
       video_xr_outline(q, &outline);
       if (back)
          video_xr_turn_back(&outline.pose);
+      video_xr_outline_crop(&outline, hide[q->slot], back, &x, &w);
       layers[n] = input_openxr_edit_layer(&st->outlines[n], &outline,
-            space, cursor, VIDEO_XR_OUTLINE_X(bright), 0,
-            VIDEO_XR_OUTLINE_DIM, VIDEO_XR_OUTLINE_DIM);
+            space, cursor, (int32_t)(VIDEO_XR_OUTLINE_X(bright) + x), 0,
+            (int32_t)w, VIDEO_XR_OUTLINE_DIM);
       n++;
       if (q->kind == VIDEO_XR_QUAD_MENU && n < cap)
       {
@@ -1719,6 +1765,69 @@ static const XrCompositionLayerBaseHeader *input_openxr_beam_layer(
    return (const XrCompositionLayerBaseHeader*)l;
 }
 
+/* p moved VIDEO_XR_HINGE_LIFT toward eye: a runtime need not draw
+ * overlapping quads in order, and SteamVR draws screens over a line on
+ * their seam. */
+static void input_openxr_hinge_lift(const video_xr_vec3_t *p,
+      const video_xr_vec3_t *eye, video_xr_vec3_t *out)
+{
+   video_xr_vec3_t t;
+   float n, s;
+   t.x    = eye->x - p->x;
+   t.y    = eye->y - p->y;
+   t.z    = eye->z - p->z;
+   n      = (float)sqrt(t.x * t.x + t.y * t.y + t.z * t.z);
+   s      = (n > VIDEO_XR_HINGE_LIFT) ? VIDEO_XR_HINGE_LIFT / n : 0.0f;
+   out->x = p->x + t.x * s;
+   out->y = p->y + t.y * s;
+   out->z = p->z + t.z * s;
+}
+
+/* A hinge's line from a to b, each end lifted toward eye and the ribbon
+ * facing it; the strip a texel in from each end, so filtering there
+ * meets green alone. */
+static const XrCompositionLayerBaseHeader *input_openxr_hinge_layer(
+      XrCompositionLayerQuad *l, const video_xr_vec3_t *a,
+      const video_xr_vec3_t *b, const video_xr_vec3_t *eye,
+      XrSpace space, XrSwapchain cursor)
+{
+   video_xr_pose_t pose;
+   video_xr_vec3_t p, q, d;
+   float len;
+   input_openxr_hinge_lift(a, eye, &p);
+   input_openxr_hinge_lift(b, eye, &q);
+   d.x  = q.x - p.x;
+   d.y  = q.y - p.y;
+   d.z  = q.z - p.z;
+   len  = (float)sqrt(d.x * d.x + d.y * d.y + d.z * d.z);
+   d.x /= len;
+   d.y /= len;
+   d.z /= len;
+   video_xr_beam(&p, &d, len, eye, &pose);
+   l->type                             = XR_TYPE_COMPOSITION_LAYER_QUAD;
+   l->next                             = NULL;
+   l->subImage.imageArrayIndex         = 0;
+   l->layerFlags                       =
+      XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT;
+   l->space                            = space;
+   l->eyeVisibility                    = XR_EYE_VISIBILITY_BOTH;
+   l->subImage.swapchain               = cursor;
+   l->subImage.imageRect.offset.x      = VIDEO_XR_HINGE_X + 1;
+   l->subImage.imageRect.offset.y      = VIDEO_XR_HINGE_Y;
+   l->subImage.imageRect.extent.width  = VIDEO_XR_HINGE_COLS - 2;
+   l->subImage.imageRect.extent.height = VIDEO_XR_HINGE_ROWS;
+   l->pose.orientation.x               = pose.orientation.x;
+   l->pose.orientation.y               = pose.orientation.y;
+   l->pose.orientation.z               = pose.orientation.z;
+   l->pose.orientation.w               = pose.orientation.w;
+   l->pose.position.x                  = pose.position.x;
+   l->pose.position.y                  = pose.position.y;
+   l->pose.position.z                  = pose.position.z;
+   l->size.width                       = len;
+   l->size.height                      = VIDEO_XR_HINGE_WIDTH;
+   return (const XrCompositionLayerBaseHeader*)l;
+}
+
 /* Edit mode's tag over the hand at o, facing eye: tag's cell, the
  * chosen item's words. */
 static const XrCompositionLayerBaseHeader *input_openxr_tag_layer(
@@ -1779,15 +1888,10 @@ static unsigned input_openxr_edit_lit(const openxr_grabs_t *g,
    return lit;
 }
 
-/* The XR thread, each headset frame: a dot where each hand points at a
- * live quad of set (in edit mode with the menu's handle stuck as the
- * main thread says), from its own locate at the frame's display time;
- * in edit mode an outline round every item first, in the layers the
- * dots do not keep, the screens' to go under the screens so a flush
- * neighbour covers them; then in edit mode a tag over the hand that
- * last chose, naming the chosen item, in what the outlines leave; then,
- * as Laser Beam says, each tracked hand's beam facing the head, in what
- * is left; tag and beams only with something live to point at. */
+/* The XR thread, each headset frame, from each hand's own locate: its
+ * dot on a live quad; in edit mode, in the layers left, the outlines
+ * (screens' under the screens, but rims a hinge pairs), the hinge lines
+ * and the chosen item's tag; then the beams, as Laser Beam says. */
 static unsigned input_openxr_frame_layers(void *user, XrTime time,
       const video_xr_quad_set_t *set, XrSpace space,
       const XrCompositionLayerBaseHeader **layers, unsigned cap,
@@ -1806,6 +1910,10 @@ static unsigned input_openxr_frame_layers(void *user, XrTime time,
    bool live, tagged, beaming;
    const openxr_grabs_t *g;
    unsigned lit;
+   unsigned hide[VIDEO_XR_MAX_SLOTS];
+   video_xr_vec3_t from[INPUT_OPENXR_HANDS];
+   video_xr_vec3_t to[INPUT_OPENXR_HANDS];
+   unsigned lines     = 0;
    unsigned n         = 0;
    unsigned dots      = 0;
    unsigned rays      = 0;
@@ -1887,30 +1995,37 @@ static unsigned input_openxr_frame_layers(void *user, XrTime time,
    }
    if (laser == VIDEO_XR_LIVE_EDIT && cap > OPENXR_KEPT_EXTRA_LAYERS)
    {
+      lines  = input_openxr_hinges(st->frame, set, hide, from, to);
       lit    = input_openxr_edit_lit(&st->frame->grabs, pointed);
-      n      = input_openxr_outlines(st, set, space, cursor, lit, false,
-            layers, 0, cap - OPENXR_KEPT_EXTRA_LAYERS);
+      n      = input_openxr_outlines(st, set, space, cursor, lit, hide,
+            false, layers, 0, cap - OPENXR_KEPT_EXTRA_LAYERS);
       *under = n;
-      n      = input_openxr_outlines(st, set, space, cursor, lit, true,
-            layers, n, cap - OPENXR_KEPT_EXTRA_LAYERS);
+      n      = input_openxr_outlines(st, set, space, cursor, lit, hide,
+            true, layers, n, cap - OPENXR_KEPT_EXTRA_LAYERS);
+      if (lines > cap - OPENXR_KEPT_EXTRA_LAYERS - n)
+         lines = cap - OPENXR_KEPT_EXTRA_LAYERS - n;
    }
-   /* The tag in what the outlines leave, the beams in what it leaves;
-    * drawn beams first, so the tag is over them. */
+   /* The lines in what the outlines leave, the tag in what they leave,
+    * the beams in what it leaves; drawn lines and beams first, so the
+    * tag is over them. */
    g       = &st->frame->grabs;
    live    = input_openxr_any_live(set, (unsigned)laser, menu_open);
    tagged  = live && laser == VIDEO_XR_LIVE_EDIT
       && g->tag < INPUT_OPENXR_HANDS && ray_of[g->tag] >= 0
-      && n + OPENXR_KEPT_EXTRA_LAYERS < cap
+      && n + lines + OPENXR_KEPT_EXTRA_LAYERS < cap
       && openxr_frame_cursor_w(st->frame) == VIDEO_XR_CURSOR_W;
    beaming = live && rays
-      && n + (tagged ? 1u : 0u) + OPENXR_KEPT_EXTRA_LAYERS < cap
+      && n + lines + (tagged ? 1u : 0u) + OPENXR_KEPT_EXTRA_LAYERS < cap
       && (beam == VIDEO_OPENXR_LASER_BEAM_ALWAYS
          || (beam == VIDEO_OPENXR_LASER_BEAM_EDIT
             && laser == VIDEO_XR_LIVE_EDIT));
-   if (     (tagged || beaming)
+   if (     (lines || tagged || beaming)
          && input_openxr_locate(st, st->frame->session->view_space, space,
             time, &head))
    {
+      for (h = 0; h < lines; h++)
+         layers[n++] = input_openxr_hinge_layer(&st->hinge_lines[h],
+               &from[h], &to[h], &head.position, space, cursor);
       if (beaming)
          for (h = 0; h < rays && n + (tagged ? 1u : 0u)
                + OPENXR_KEPT_EXTRA_LAYERS < cap; h++)

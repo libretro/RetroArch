@@ -38,14 +38,15 @@ RETRO_BEGIN_DECLS
 
 /* Layers the input may add to the screens: the laser's dots, kept
  * where the screens must make room, then edit mode's outlines and the
- * menu's handle, then its tag, then the beams, only in room they
- * leave. */
+ * menu's handle, then its hinges' lines, then its tag, then the beams,
+ * only in room they leave. */
 #define OPENXR_KEPT_EXTRA_LAYERS 2
+#define OPENXR_HINGE_LAYERS      2
 #define OPENXR_BEAM_LAYERS       2
 #define OPENXR_TAG_LAYERS        1
 #define OPENXR_MAX_EXTRA_LAYERS  \
-   (OPENXR_KEPT_EXTRA_LAYERS + OPENXR_BEAM_LAYERS + OPENXR_TAG_LAYERS \
-    + VIDEO_XR_MAX_SLOTS + 1)
+   (OPENXR_KEPT_EXTRA_LAYERS + OPENXR_HINGE_LAYERS + OPENXR_BEAM_LAYERS \
+    + OPENXR_TAG_LAYERS + VIDEO_XR_MAX_SLOTS + 1)
 
 /* Edit mode's hands, the main thread's for the frame loop: what each
  * holds and where its item was as it took it (snapping fades in from
