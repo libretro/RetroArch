@@ -187,7 +187,10 @@ enum video_driver_state_flags
     * for video until a real frame comes */
    VIDEO_FLAG_FF_FRAME_OWED                       = (1 << 24),
    /* main_flags: a frameskip decision waits for its frame */
-   VIDEO_FLAG_FF_DECIDED                          = (1 << 25)
+   VIDEO_FLAG_FF_DECIDED                          = (1 << 25),
+   /* main_flags: frames go to video_null.frame, whichever driver
+    * is up (video_driver_set_stub_frame) */
+   VIDEO_FLAG_STUB_FRAME                          = (1 << 26)
 };
 
 /* Driver pacing: the graphics driver releases each frame (NVIDIA
@@ -1813,7 +1816,6 @@ typedef struct
    /* Used for 15-bit -> 16-bit conversions that take place before
     * being passed to video driver. */
    video_pixel_scaler_t *scaler_ptr;
-   video_driver_frame_t frame_bak;  /* ptr alignment */
 
    void *current_display_server_data;
 

@@ -4632,25 +4632,12 @@ void video_driver_lock_new(void)
 
 void video_driver_set_stub_frame(void)
 {
-   video_driver_state_t *video_st = &video_driver_st;
-   video_driver_t *vid            = video_st->current_video;
-
-   /* no driver yet or stub already installed */
-   if (!vid || !vid->frame || video_st->frame_bak)
-      return;
-
-   video_st->frame_bak            = vid->frame;
-   vid->frame                     = video_null.frame;
+   video_driver_st.main_flags |= VIDEO_FLAG_STUB_FRAME;
 }
 
 void video_driver_unset_stub_frame(void)
 {
-   video_driver_state_t *video_st = &video_driver_st;
-   video_driver_t *vid            = video_st->current_video;
-   if (vid && video_st->frame_bak)
-      vid->frame                  = video_st->frame_bak;
-
-   video_st->frame_bak            = NULL;
+   video_driver_st.main_flags &= ~VIDEO_FLAG_STUB_FRAME;
 }
 
 /* Time between the last two frames in usec (microseconds), as the
@@ -9686,6 +9673,14 @@ void video_driver_frame(const void *data, unsigned width,
     * the next frame after drivers_init() presents normally. */
    if (render_frame && vid && vid->frame && video_st->data)
    {
+#ifdef ANDROID
+      video_driver_frame_t frame_cb =
+            (video_st->main_flags & VIDEO_FLAG_STUB_FRAME)
+            ? video_null.frame
+            : vid->frame;
+#else
+      video_driver_frame_t frame_cb = vid->frame;
+#endif
       video_info.current_subframe = 0;
 #ifdef HAVE_THREADS
       /* The video thread owns and stamps this under the wrapper. */
@@ -9704,7 +9699,7 @@ void video_driver_frame(const void *data, unsigned width,
  * there instead */
 if (!VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st))
    font_driver_frame_begin();
-      if (vid->frame(
+      if (frame_cb(
                video_st->data, data, dims,
                video_st->frame_count, (unsigned)pitch,
 #if HAVE_MENU
