@@ -653,6 +653,13 @@ void command_menu_closed(void);
 #endif
 void command_run_frames_cancel(const char *why);
 void command_run_frames_forget(void);
+
+/* Achievements in hardcore mode are the player's own, as they forbid
+ * rewind and cheats: tools_refused is why an assistant's tool calls are
+ * refused now, or NULL; hardcore_entered stops what one left running -
+ * a frame job, a queue, held input - as hardcore mode takes effect. */
+const char *command_tools_refused(void);
+void command_hardcore_entered(void);
 void command_run_frames_free_frame(void);
 
 /* SET_INPUT <player> <control> <value> / RELEASE_INPUT [player], and

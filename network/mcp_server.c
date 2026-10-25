@@ -567,7 +567,8 @@ static void mcp_schema_rows(rjsonwriter_t *w, const struct cmd_rows *rows,
    "GET_FRAME shows the screen where memory cannot say. MENU " \
    "reads and drives RetroArch's own menu - settings, playlists, cores - " \
    "and answers with what it shows. Tools " \
-   "marked destructive can lose unsaved progress or load code."
+   "marked destructive can lose unsaved progress or load code. No tool " \
+   "runs while achievements hardcore mode is on."
 
 /* A tool's title, from its name: RUN_FRAMES is "Run frames". */
 static void mcp_title(char *s, size_t len, const char *name)
@@ -1992,6 +1993,20 @@ static void mcp_handle(mcp_server_t *mcp, command_t *cmd, int ci,
          goto end;
       }
       act = mcp_tool_action(r.name);
+      /* nothing runs for an assistant while achievements are hardcore */
+      {
+         const char *why = command_tools_refused();
+         if (why)
+         {
+            char msg[192];
+            int  n = snprintf(msg, sizeof(msg), "%.64s ERROR %s",
+                  r.name, why);
+            mcp_tool_result(c, r.id, modern, NULL, msg,
+                  n > 0 && (size_t)n < sizeof(msg) ? (size_t)n
+                  : strlen(msg), true);
+            goto end;
+         }
+      }
       if ((invalid = mcp_unknown_arg(act, &r)))
       {
          char msg[128];

@@ -739,6 +739,19 @@ not probed. A stale library or something renamed would otherwise
 unload the running core and then fail, costing the game that was
 running.
 
+## Achievements hardcore mode
+
+While RetroAchievements' hardcore mode is on, the server runs no tool:
+every `tools/call` is answered as the tool's own failure, `<NAME> ERROR
+achievements hardcore mode is on; the player can turn it off`. Hardcore
+achievements are the player's own, as the mode's ban on rewind, slow
+motion, cheats and states already says. The handshake and `tools/list`
+still answer, so a client can connect and learn why. When hardcore mode
+takes effect - switched on, or a game loaded with it on - what a client
+left playing stops with it, as slow motion does: a running or queued
+step job ends, and what `INPUT` holds is let go. Turning hardcore mode
+off is the player's, in RetroArch.
+
 ## Security
 
 An MCP client with the token can do what the tools allow, and `CORE load`

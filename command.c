@@ -3674,6 +3674,23 @@ void command_run_frames_free_frame(void)
    runloop_frame_work_set(RUNLOOP_WORK_FREE_FRAME, false);
 }
 
+const char *command_tools_refused(void)
+{
+#ifdef HAVE_CHEEVOS
+   if (rcheevos_hardcore_active())
+      return "achievements hardcore mode is on; the player can turn it off";
+#endif
+   return NULL;
+}
+
+void command_hardcore_entered(void)
+{
+   if (runloop_state_get_ptr()->frame_work & RUNLOOP_WORK_RUN_FRAMES)
+      command_run_frames_cancel("achievements hardcore mode is on");
+   command_run_frames_forget();
+   input_driver_command_release(MAX_USERS);
+}
+
 void command_run_frames_forget(void)
 {
    if (command_run_frames_st.prev[0])
