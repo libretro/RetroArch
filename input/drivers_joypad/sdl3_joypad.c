@@ -168,6 +168,12 @@ static void sdl3_joypad_show_player(unsigned slot)
       SDL_SetJoystickLED(joypad, 0, 0, 0);
 }
 
+/* The gamepad subsystem is SDL's own, not the video driver's */
+static bool sdl3_joypad_survives_video(void)
+{
+   return SDL_WasInit(SDL_INIT_GAMEPAD) != 0;
+}
+
 static void sdl3_joypad_set_player(unsigned pad, unsigned player)
 {
    if (pad >= MAX_USERS)
@@ -856,7 +862,7 @@ input_device_driver_t sdl3_joypad = {
    "sdl3",
    NULL, /* get_bt_host */
    NULL, /* set_bt_host */
-   NULL, /* survives_video */
+   sdl3_joypad_survives_video,
    sdl3_joypad_set_player,
    NULL, /* view */
    sdl3_joypad_get_touchpad

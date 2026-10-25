@@ -34,7 +34,10 @@ enum sdl3_flags
    SDL3_FLAG_ADAPTIVE_VSYNC   = (1 << 2),
    /* The overlay textures are the overlay pack's (load_textures),
     * not this driver's to destroy. */
-   SDL3_FLAG_OVERLAY_BORROWED = (1 << 3)
+   SDL3_FLAG_OVERLAY_BORROWED = (1 << 3),
+   /* The renderer takes these 16-bit formats as they are */
+   SDL3_FLAG_NATIVE_RGB565    = (1 << 4),
+   SDL3_FLAG_NATIVE_RGBA4444  = (1 << 5)
 };
 
 typedef struct sdl3_tex
@@ -43,6 +46,9 @@ typedef struct sdl3_tex
 
    unsigned w;
    unsigned h;
+   /* The 16-bit source a 32-bit texture is widened from on upload,
+    * SDL_PIXELFORMAT_UNKNOWN when uploads are copied as they are */
+   SDL_PixelFormat widen;
    bool active;
    bool rgb32;
    bool failed; /* creating it at w x h failed */
@@ -187,6 +193,10 @@ void sdl3_ctx_input_driver(void *data, const char *name);
  * sdl3 video driver, or when ctx_ident is explicitly configured
  * as the context driver. */
 bool sdl3_ctx_enabled(const char *ctx_ident);
+
+/* Whether the settings make the next video driver's window an SDL3
+ * one, as sdl3_ctx_enabled() decides it. */
+bool sdl3_next_window_is_sdl3(void);
 
 void sdl3_ctx_get_video_size(void *data, unsigned *dims);
 float sdl3_ctx_get_refresh_rate(void *data);

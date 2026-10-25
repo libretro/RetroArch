@@ -308,6 +308,7 @@ static uint32_t sdl3_ctx_get_flags(void *data)
       BIT32_SET(flags, GFX_CTX_FLAGS_NO_SHARED_CONTEXT);
    /* set_video_mode restyles the window it has */
    BIT32_SET(flags, GFX_CTX_FLAGS_FULLSCREEN_IN_PLACE);
+   BIT32_SET(flags, GFX_CTX_FLAGS_FULLSCREEN_EXCLUSIVE_IN_PLACE);
    BIT32_SET(flags, GFX_CTX_FLAGS_WINDOW_RESIZE_IN_PLACE);
 
    if (sdl3_gl_core_profile(sdl))
