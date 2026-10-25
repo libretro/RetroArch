@@ -155,14 +155,10 @@ static unsigned check_touchpad(void)
    return bad;
 }
 
-/* set_player() shows the port's player on the pad, none for 0; and a
- * pad turned away with every slot taken gets the first one freed. */
-static unsigned check_players_and_slots(void)
+/* set_player() shows the port's player on the pad, none for 0 */
+static unsigned check_players(void)
 {
-   SDL_VirtualJoystickDesc desc;
-   SDL_JoystickID ids[MAX_USERS + 1];
-   SDL_JoystickID freed;
-   unsigned bad = 0, i, n = 0, slot = MAX_USERS;
+   unsigned bad = 0, i, slot = MAX_USERS;
 
    for (i = 0; i < MAX_USERS; i++)
       if (sdl3_joypads[i].joypad)
@@ -175,41 +171,6 @@ static unsigned check_players_and_slots(void)
       bad++;
    if (bad)
       printf("FAIL sdl3_checked_test: set_player() did not reach the pad\n");
-
-   sdl3_joypad_poll();
-   SDL_INIT_INTERFACE(&desc);
-   desc.type     = SDL_JOYSTICK_TYPE_GAMEPAD;
-   desc.naxes    = 6;
-   desc.nbuttons = 15;
-   for (i = 0; i < MAX_USERS; i++)
-      if (!sdl3_joypads[i].joypad)
-         n++;
-   /* every free slot, and one pad more */
-   for (i = 0; i <= n; i++)
-      if (!(ids[i] = SDL_AttachVirtualJoystick(&desc)))
-      {
-         printf("FAIL sdl3_checked_test: SDL could not attach pad %u (%s)\n", i, SDL_GetError());
-         return bad + 1;
-      }
-   sdl3_joypad_poll();
-   if (!sdl3_joypad_waiting)
-   {
-      printf("FAIL sdl3_checked_test: a pad with no slot was not kept waiting\n");
-      return bad + 1;
-   }
-   for (i = 0; i < MAX_USERS && sdl3_joypads[i].jid != ids[0]; i++);
-   slot  = i;
-   freed = ids[0];
-   SDL_DetachVirtualJoystick(freed);
-   sdl3_joypad_poll();
-   if (slot == MAX_USERS || sdl3_joypads[slot].jid != ids[n])
-   {
-      printf("FAIL sdl3_checked_test: the waiting pad did not take the slot freed\n");
-      bad++;
-   }
-   for (i = 1; i <= n; i++)
-      SDL_DetachVirtualJoystick(ids[i]);
-   sdl3_joypad_poll();
    return bad;
 }
 
@@ -273,7 +234,7 @@ int main(void)
       }
 
    bad += check_touchpad();
-   bad += check_players_and_slots();
+   bad += check_players();
 
    sdl3_joypad_destroy();
    if (bad)
@@ -284,7 +245,7 @@ int main(void)
    printf("PASS sdl3_checked_test: 1500 random states of %u virtual joysticks"
          " (%u opened as a gamepad); what the bridge would read is what the"
          " driver says; a touchpad's fingers and press as SDL has them;"
-         " set_player() reaches the pad; a pad without a slot takes the next freed\n",
+         " set_player() reaches the pad\n",
          pads, gamepads);
    return 0;
 }

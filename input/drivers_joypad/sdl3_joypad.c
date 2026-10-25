@@ -60,9 +60,6 @@ static sdl3_joypad_t sdl3_joypads[MAX_USERS];
 #define SDL3_PLAYER_UNTOLD 0xFF
 static uint8_t sdl3_joypad_players[MAX_USERS];
 
-/* A pad was turned away for want of a slot; a disconnect retries it. */
-static bool    sdl3_joypad_waiting;
-
 static const uint8_t sdl3_joypad_led[MAX_USERS][3] = {
    {   0,   0, 255 }, /* Blue */
    { 255,   0,   0 }, /* Red */
@@ -252,7 +249,6 @@ static void sdl3_joypad_connect(SDL_JoystickID jid)
    if (slot < 0)
    {
       RARCH_WARN("[SDL3] No free joypad slots for joystick %" SDL_PRIu32 ".\n", jid);
-      sdl3_joypad_waiting = true;
       if (gamepad)
          SDL_CloseGamepad(gamepad);
       else
@@ -393,23 +389,6 @@ static void sdl3_joypad_disconnect(SDL_JoystickID jid)
          sdl3_joypads[i].sensor_accel = sensor_accel;
          sdl3_joypads[i].sensor_gyro  = sensor_gyro;
       }
-
-      if (sdl3_joypad_waiting)
-      {
-         int count;
-         SDL_JoystickID *ids = SDL_GetJoysticks(&count);
-         sdl3_joypad_waiting = false;
-         if (ids)
-         {
-            /* Connected ones return at once; one still without a
-             * slot sets the flag again. */
-            int j;
-            for (j = 0; j < count; j++)
-               if (ids[j] != jid)
-                  sdl3_joypad_connect(ids[j]);
-            SDL_free(ids);
-         }
-      }
       return;
    }
 }
@@ -427,7 +406,6 @@ static void sdl3_joypad_destroy(void)
    }
 
    memset(sdl3_joypads, 0, sizeof(sdl3_joypads));
-   sdl3_joypad_waiting = false;
    SDL_QuitSubSystem(SDL_INIT_GAMEPAD);
 }
 
