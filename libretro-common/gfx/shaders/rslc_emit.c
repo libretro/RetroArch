@@ -389,7 +389,7 @@ static bool pr_name_reserved(struct rslc_pr *p, const struct rslc_sym *name)
       "sampler3DRect", "texture", "precise", "coherent", "restrict",
       "readonly", "writeonly", "buffer", "shared", "image1D", "image2D",
       "atomic_uint", "double", "dvec2", "dvec3", "dvec4", "dmat2", "dmat3",
-      "dmat4", NULL
+      "dmat4", "packed", "row_major", "attribute", "varying", NULL
    };
    /* HLSL keywords, type names and intrinsics that are not GLSL's */
    static const char *const hlsl_words[] = {
@@ -467,10 +467,13 @@ static void pr_hlsl_member(struct rslc_pr *p, unsigned block, uint32_t member)
    const struct rslc_blockdecl *b = &p->c->prog.blocks[block];
    if (b->instance)
    {
+      /* the prefix keeps it clear of every reserved word */
       pr_s(p, b->instance->str);
       pr_c(p, '_');
+      pr_s(p, b->type->fields[member].name->str);
+      return;
    }
-   pr_s(p, b->type->fields[member].name->str);
+   pr_ident(p, b->type->fields[member].name);
 }
 
 /* MSL: the block instance a function or the entry point receives. */
@@ -608,7 +611,7 @@ static void pr_var_name(struct rslc_pr *p, const struct rslc_var *v)
          case RSLC_ST_MEMBER:
             pr_s(p, pr_msl_instance(p, v->block));
             pr_c(p, '.');
-            pr_s(p, p->c->prog.blocks[v->block].type->fields[v->member].name->str);
+            pr_ident(p, p->c->prog.blocks[v->block].type->fields[v->member].name);
             return;
          case RSLC_ST_BLOCK:
             pr_s(p, pr_msl_instance(p, v->block));
@@ -720,7 +723,7 @@ static void pr_var_name(struct rslc_pr *p, const struct rslc_var *v)
             pr_s(p, inst);
             pr_c(p, '.');
          }
-         pr_s(p, p->c->prog.blocks[v->block].type->fields[v->member].name->str);
+         pr_ident(p, p->c->prog.blocks[v->block].type->fields[v->member].name);
          return;
       }
       case RSLC_ST_BUILTIN:
@@ -2254,7 +2257,7 @@ static void pr_expr(struct rslc_pr *p, uint32_t node, int ctx)
          }
          pr_expr(p, n->a, PR_PREC_POSTFIX);
          pr_c(p, '.');
-         pr_s(p, base->type->fields[n->b].name->str);
+         pr_ident(p, base->type->fields[n->b].name);
          break;
       }
       case RSLC_OP_INDEX:
@@ -3236,7 +3239,7 @@ static void pr_struct(struct rslc_pr *p, const struct rslc_type *t, const char *
       pr_precision(p, f->precision, f->type);
       pr_type(p, f->type);
       pr_c(p, ' ');
-      pr_s(p, f->name->str);
+      pr_ident(p, f->name);
       pr_array_suffix(p, f->type);
       pr_c(p, ';');
    }
@@ -3520,7 +3523,7 @@ static void pr_block_decl(struct rslc_pr *p, unsigned idx)
       pr_precision(p, f->precision, f->type);
       pr_type(p, f->type);
       pr_c(p, ' ');
-      pr_s(p, f->name->str);
+      pr_ident(p, f->name);
       pr_array_suffix(p, f->type);
       pr_c(p, ';');
    }
@@ -4535,7 +4538,7 @@ static void pr_msl_block(struct rslc_pr *p, unsigned idx)
       else
          pr_type(p, f->type);
       pr_c(p, ' ');
-      pr_s(p, f->name->str);
+      pr_ident(p, f->name);
       pr_c(p, ';');
       cur = off + size;
    }
@@ -4609,11 +4612,12 @@ static void pr_msl_io_walk(struct rslc_pr *p, const struct rslc_var *v,
       if (t->kind == RSLC_TY_STRUCT)
       {
          const char *fn = t->fields[i].name ? t->fields[i].name->str : "_";
+         const char *rn = t->fields[i].name && pr_name_reserved(p, t->fields[i].name) ? "_" : "";
          et = t->fields[i].type;
-         if (sl + strlen(fn) + 2 >= suf_len || al + strlen(fn) + 2 >= acc_len)
+         if (sl + strlen(fn) + 3 >= suf_len || al + strlen(fn) + 3 >= acc_len)
             break;
-         sprintf(suf + sl, "_%s", fn);
-         sprintf(acc + al, ".%s", fn);
+         sprintf(suf + sl, "_%s%s", fn, rn);
+         sprintf(acc + al, ".%s%s", fn, rn);
       }
       else
       {

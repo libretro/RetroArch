@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 #include <gfx/shaders/rslc.h>
 #include "rslc_share.h"
@@ -1122,6 +1123,65 @@ static void test_glsl(void)
    CHECK(alloc_live == 0);
 }
 
+/* Words Vulkan GLSL leaves free and GLSL 3.30 or ES 3.00 reserve -
+ * packed, as scanline-classic names a local and a parameter - are
+ * printed renamed, every use with its declaration. */
+static void test_glsl_reserved(void)
+{
+   static const char frag[] =
+      "#version 450\n"
+      "layout(location = 0) in vec2 vTexCoord;\n"
+      "layout(location = 0) out vec4 FragColor;\n"
+      "layout(set = 0, binding = 2) uniform sampler2D Source;\n"
+      "struct S { float row_major; };\n"
+      "float unpack(float packed) { return packed * 2.0; }\n"
+      "void main() {\n"
+      "  vec3 packed = texture(Source, vTexCoord).rgb;\n"
+      "  S varying; varying.row_major = packed.r;\n"
+      "  float attribute = unpack(varying.row_major);\n"
+      "  FragColor = vec4(packed, attribute);\n"
+      "}\n";
+   static const enum rslc_dst dsts[] = { RSLC_DST_GLSL, RSLC_DST_GLSL_ES };
+   static const char *const words[] = { "packed", "row_major", "varying", "attribute" };
+   struct rslc_opts   o;
+   struct rslc_result r;
+   char               err[128];
+   unsigned           d, w;
+
+   for (d = 0; d < 2; d++)
+   {
+      opts_default(&o, err, sizeof(err));
+      o.dst = dsts[d];
+      CHECK(rslc_compile(frag, sizeof(frag) - 1, RSLC_STAGE_FRAGMENT, &o, &r));
+      if (!r.text)
+      {
+         fprintf(stderr, "  %s\n", err);
+         continue;
+      }
+      for (w = 0; w < 4; w++)
+      {
+         const char *at = r.text;
+         size_t      n  = strlen(words[w]);
+         while ((at = strstr(at, words[w])))
+         {
+            /* a whole word, not followed by the rename's underscore */
+            bool start = at == r.text || !(isalnum((unsigned char)at[-1]) || at[-1] == '_');
+            bool whole = !(isalnum((unsigned char)at[n]) || at[n] == '_');
+            if (start && whole)
+            {
+               fprintf(stderr, "  dst %u prints %s bare\n", (unsigned)dsts[d], words[w]);
+               CHECK(0);
+               break;
+            }
+            at += n;
+         }
+      }
+      CHECK(strstr(r.text, "packed_") != NULL);
+      rslc_result_free(&r, &o);
+   }
+   CHECK(alloc_live == 0);
+}
+
 /* Flattened blocks: each block one vec4 array named for the block,
  * members read out at their std140 / std430 offsets - a matrix from
  * its columns, a narrow member through a swizzle, an integer through
@@ -2192,6 +2252,7 @@ int main(int argc, char **argv)
    test_spirv();
    test_folding();
    test_glsl();
+   test_glsl_reserved();
    test_glsl_flatten();
    test_hlsl();
    test_hlsl_scoping();
