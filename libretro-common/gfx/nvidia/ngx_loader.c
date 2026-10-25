@@ -253,27 +253,84 @@ static ngx_module_t ngx_open(void)
       } \
    } while (0)
 
-static bool ngx_resolve_param(ngx_module_t m, ngx_param_api_t *p)
+/* NVSDK_NGX_Parameter is a C++ interface: the core library exports no
+ * accessors, the SDK's static library calls the object's virtual
+ * methods. So does this, through the slots the SDK's static libraries
+ * use (read from them): on MSVC the overloads of Set and of Get sit in
+ * the vtable in the reverse of their declared order, on the Itanium
+ * ABI in that order. Set(ull, f, d, ui, i, ID3D11Resource*,
+ * ID3D12Resource*, void*), Get(the same, through pointers), Reset. The
+ * methods take the object first, as a C call does on both ABIs. */
+#if defined(_MSC_VER) || defined(_WIN32)
+#define NGX_SLOT_SET(declared)   (7 - (declared))
+#define NGX_SLOT_GET(declared)   (15 - (declared))
+#else
+#define NGX_SLOT_SET(declared)   (declared)
+#define NGX_SLOT_GET(declared)   (8 + (declared))
+#endif
+
+typedef void (NGX_CONV *ngx_method_t)(void);
+
+static ngx_method_t ngx_param_slot(ngx_parameter_t *p, unsigned slot)
 {
-   bool complete = true;
-   bool complete_first = true;
-   NGX_SYM(p->set_ull, "NVSDK_NGX_Parameter_SetULL");
-   NGX_SYM(p->set_f, "NVSDK_NGX_Parameter_SetF");
-   NGX_SYM(p->set_d, "NVSDK_NGX_Parameter_SetD");
-   NGX_SYM(p->set_ui, "NVSDK_NGX_Parameter_SetUI");
-   NGX_SYM(p->set_i, "NVSDK_NGX_Parameter_SetI");
-   NGX_SYM(p->set_d3d11_resource, "NVSDK_NGX_Parameter_SetD3d11Resource");
-   NGX_SYM(p->set_d3d12_resource, "NVSDK_NGX_Parameter_SetD3d12Resource");
-   NGX_SYM(p->set_void_pointer, "NVSDK_NGX_Parameter_SetVoidPointer");
-   NGX_SYM(p->get_ull, "NVSDK_NGX_Parameter_GetULL");
-   NGX_SYM(p->get_f, "NVSDK_NGX_Parameter_GetF");
-   NGX_SYM(p->get_d, "NVSDK_NGX_Parameter_GetD");
-   NGX_SYM(p->get_ui, "NVSDK_NGX_Parameter_GetUI");
-   NGX_SYM(p->get_i, "NVSDK_NGX_Parameter_GetI");
-   NGX_SYM(p->get_d3d11_resource, "NVSDK_NGX_Parameter_GetD3d11Resource");
-   NGX_SYM(p->get_d3d12_resource, "NVSDK_NGX_Parameter_GetD3d12Resource");
-   NGX_SYM(p->get_void_pointer, "NVSDK_NGX_Parameter_GetVoidPointer");
-   return complete;
+   ngx_method_t m;
+   const ngx_method_t *const *vtable = (const ngx_method_t *const *)p;
+   memcpy(&m, &(*vtable)[slot], sizeof(m));
+   return m;
+}
+
+#define NGX_PARAM_SET(suffix, type, declared) \
+   static void NGX_CONV ngx_param_set_##suffix(ngx_parameter_t *p, const char *name, type v) \
+   { \
+      void (NGX_CONV *fn)(ngx_parameter_t*, const char*, type); \
+      ngx_method_t m = ngx_param_slot(p, NGX_SLOT_SET(declared)); \
+      memcpy(&fn, &m, sizeof(fn)); \
+      fn(p, name, v); \
+   }
+#define NGX_PARAM_GET(suffix, type, declared) \
+   static ngx_result_t NGX_CONV ngx_param_get_##suffix(ngx_parameter_t *p, const char *name, type *v) \
+   { \
+      ngx_result_t (NGX_CONV *fn)(ngx_parameter_t*, const char*, type*); \
+      ngx_method_t m = ngx_param_slot(p, NGX_SLOT_GET(declared)); \
+      memcpy(&fn, &m, sizeof(fn)); \
+      return fn(p, name, v); \
+   }
+
+NGX_PARAM_SET(ull, uint64_t, 0)
+NGX_PARAM_SET(f, float, 1)
+NGX_PARAM_SET(d, double, 2)
+NGX_PARAM_SET(ui, unsigned, 3)
+NGX_PARAM_SET(i, int, 4)
+NGX_PARAM_SET(d3d11_resource, void *, 5)
+NGX_PARAM_SET(d3d12_resource, void *, 6)
+NGX_PARAM_SET(void_pointer, void *, 7)
+NGX_PARAM_GET(ull, uint64_t, 0)
+NGX_PARAM_GET(f, float, 1)
+NGX_PARAM_GET(d, double, 2)
+NGX_PARAM_GET(ui, unsigned, 3)
+NGX_PARAM_GET(i, int, 4)
+NGX_PARAM_GET(d3d11_resource, void *, 5)
+NGX_PARAM_GET(d3d12_resource, void *, 6)
+NGX_PARAM_GET(void_pointer, void *, 7)
+
+static void ngx_param_api_init(ngx_param_api_t *p)
+{
+   p->set_ull            = ngx_param_set_ull;
+   p->set_f              = ngx_param_set_f;
+   p->set_d              = ngx_param_set_d;
+   p->set_ui             = ngx_param_set_ui;
+   p->set_i              = ngx_param_set_i;
+   p->set_d3d11_resource = ngx_param_set_d3d11_resource;
+   p->set_d3d12_resource = ngx_param_set_d3d12_resource;
+   p->set_void_pointer   = ngx_param_set_void_pointer;
+   p->get_ull            = ngx_param_get_ull;
+   p->get_f              = ngx_param_get_f;
+   p->get_d              = ngx_param_get_d;
+   p->get_ui             = ngx_param_get_ui;
+   p->get_i              = ngx_param_get_i;
+   p->get_d3d11_resource = ngx_param_get_d3d11_resource;
+   p->get_d3d12_resource = ngx_param_get_d3d12_resource;
+   p->get_void_pointer   = ngx_param_get_void_pointer;
 }
 
 static bool ngx_resolve_d3d12(ngx_module_t m, ngx_d3d12_api_t *a)
@@ -326,7 +383,8 @@ const ngx_lib_t *ngx_lib_get(void)
       ngx_status_add(ngx_where);
       d3d12  = ngx_resolve_d3d12(m, &ngx_lib.d3d12);
       vulkan = ngx_resolve_vulkan(m, &ngx_lib.vulkan);
-      if (!ngx_resolve_param(m, &ngx_lib.param) || !(d3d12 || vulkan))
+      ngx_param_api_init(&ngx_lib.param);
+      if (!(d3d12 || vulkan))
       {
          ngx_status_add(": unusable");
          memset(&ngx_lib, 0, sizeof(ngx_lib));

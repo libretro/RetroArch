@@ -28,7 +28,8 @@ typedef struct param_slot
    int kind;  /* 1 ull, 2 f, 3 d, 4 ui, 5 i, 6 pointer */
 } param_slot_t;
 
-typedef struct param { param_slot_t slot[64]; unsigned n; } param_t;
+typedef struct param { const void *const *vtable; param_slot_t slot[64]; unsigned n; } param_t;
+static const void *const param_vtable[17];
 static param_t params[4];
 static unsigned params_used;
 static param_t caps;
@@ -54,10 +55,10 @@ static param_slot_t *slot(param_t *p, const char *name, int make)
 }
 
 #define SETTER(suffix, type, field, k) \
-   EXPORT void CONV NVSDK_NGX_Parameter_Set##suffix(param_t *p, const char *n, type v) \
+   static void CONV NVSDK_NGX_Parameter_Set##suffix(param_t *p, const char *n, type v) \
    { param_slot_t *s = slot(p, n, 1); if (s) { s->v.field = v; s->kind = k; } }
 #define GETTER(suffix, type, field, k) \
-   EXPORT int CONV NVSDK_NGX_Parameter_Get##suffix(param_t *p, const char *n, type *v) \
+   static int CONV NVSDK_NGX_Parameter_Get##suffix(param_t *p, const char *n, type *v) \
    { param_slot_t *s = slot(p, n, 0); if (!s) return FAIL; *v = s->v.field; return OK; }
 
 SETTER(ULL, uint64_t, ull, 1)
@@ -76,6 +77,35 @@ GETTER(I, int, i, 5)
 GETTER(D3d11Resource, void *, p, 6)
 GETTER(D3d12Resource, void *, p, 6)
 GETTER(VoidPointer, void *, p, 6)
+
+/* The object's vtable, as the real library's: NVSDK_NGX_Parameter's
+ * virtual Set and Get overloads, in MSVC's order (each overload group
+ * reversed) on Windows and the Itanium ABI's elsewhere, then Reset. */
+static void CONV NVSDK_NGX_Parameter_Reset(param_t *p) { (void)p; }
+#define M(f) ((const void*)(size_t)(f))
+static const void *const param_vtable[17] = {
+#if defined(_WIN32)
+   M(NVSDK_NGX_Parameter_SetVoidPointer), M(NVSDK_NGX_Parameter_SetD3d12Resource),
+   M(NVSDK_NGX_Parameter_SetD3d11Resource), M(NVSDK_NGX_Parameter_SetI),
+   M(NVSDK_NGX_Parameter_SetUI), M(NVSDK_NGX_Parameter_SetD),
+   M(NVSDK_NGX_Parameter_SetF), M(NVSDK_NGX_Parameter_SetULL),
+   M(NVSDK_NGX_Parameter_GetVoidPointer), M(NVSDK_NGX_Parameter_GetD3d12Resource),
+   M(NVSDK_NGX_Parameter_GetD3d11Resource), M(NVSDK_NGX_Parameter_GetI),
+   M(NVSDK_NGX_Parameter_GetUI), M(NVSDK_NGX_Parameter_GetD),
+   M(NVSDK_NGX_Parameter_GetF), M(NVSDK_NGX_Parameter_GetULL),
+#else
+   M(NVSDK_NGX_Parameter_SetULL), M(NVSDK_NGX_Parameter_SetF),
+   M(NVSDK_NGX_Parameter_SetD), M(NVSDK_NGX_Parameter_SetUI),
+   M(NVSDK_NGX_Parameter_SetI), M(NVSDK_NGX_Parameter_SetD3d11Resource),
+   M(NVSDK_NGX_Parameter_SetD3d12Resource), M(NVSDK_NGX_Parameter_SetVoidPointer),
+   M(NVSDK_NGX_Parameter_GetULL), M(NVSDK_NGX_Parameter_GetF),
+   M(NVSDK_NGX_Parameter_GetD), M(NVSDK_NGX_Parameter_GetUI),
+   M(NVSDK_NGX_Parameter_GetI), M(NVSDK_NGX_Parameter_GetD3d11Resource),
+   M(NVSDK_NGX_Parameter_GetD3d12Resource), M(NVSDK_NGX_Parameter_GetVoidPointer),
+#endif
+   M(NVSDK_NGX_Parameter_Reset)
+};
+#undef M
 
 static unsigned get_ui(param_t *p, const char *n)
 {
@@ -159,6 +189,7 @@ EXPORT int CONV NVSDK_NGX_VULKAN_Init_ProjectID(const char *project, int engine,
    rec.init_device   = dev;
    rec.init_path0    = (paths[0] && paths[0][0]) ? paths[0][0][0] : 0;
    memset(&caps, 0, sizeof(caps));
+   caps.vtable = param_vtable;
    NVSDK_NGX_Parameter_SetI(&caps, "SuperSampling.Available", rec.unavailable ? 0 : 1);
    NVSDK_NGX_Parameter_SetI(&caps, "SuperSampling.NeedsUpdatedDriver", 0);
    {
@@ -184,6 +215,7 @@ EXPORT int CONV NVSDK_NGX_VULKAN_AllocateParameters(param_t **out)
 {
    if (params_used >= 4) return FAIL;
    memset(&params[params_used], 0, sizeof(params[0]));
+   params[params_used].vtable = param_vtable;
    *out = &params[params_used++];
    return OK;
 }

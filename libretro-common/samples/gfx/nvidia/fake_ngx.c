@@ -19,7 +19,8 @@
 #define OK   0x1
 #define FAIL ((int)0xBAD00000)
 
-typedef struct param { char name[8][48]; int value[8]; unsigned n; } param_t;
+typedef struct param { const void *const *vtable; char name[8][48]; int value[8]; unsigned n; } param_t;
+static const void *const param_vtable[17];
 static param_t params[4];
 static unsigned params_used;
 static int handles[4];
@@ -31,6 +32,7 @@ static param_t *get_param(void)
    if (params_used >= 4)
       return NULL;
    memset(&params[params_used], 0, sizeof(params[0]));
+   params[params_used].vtable = param_vtable;
    return &params[params_used++];
 }
 
@@ -46,22 +48,51 @@ static int *slot(param_t *p, const char *name, int make)
    return &p->value[p->n++];
 }
 
-EXPORT void CONV NVSDK_NGX_Parameter_SetULL(param_t *p, const char *n, uint64_t v) { int *s = slot(p, n, 1); if (s) *s = (int)v; }
-EXPORT void CONV NVSDK_NGX_Parameter_SetF(param_t *p, const char *n, float v) { int *s = slot(p, n, 1); if (s) *s = (int)v; }
-EXPORT void CONV NVSDK_NGX_Parameter_SetD(param_t *p, const char *n, double v) { int *s = slot(p, n, 1); if (s) *s = (int)v; }
-EXPORT void CONV NVSDK_NGX_Parameter_SetUI(param_t *p, const char *n, unsigned v) { int *s = slot(p, n, 1); if (s) *s = (int)v; }
-EXPORT void CONV NVSDK_NGX_Parameter_SetI(param_t *p, const char *n, int v) { int *s = slot(p, n, 1); if (s) *s = v; }
-EXPORT void CONV NVSDK_NGX_Parameter_SetD3d11Resource(param_t *p, const char *n, void *v) { int *s = slot(p, n, 1); if (s) *s = v ? 1 : 0; }
-EXPORT void CONV NVSDK_NGX_Parameter_SetD3d12Resource(param_t *p, const char *n, void *v) { int *s = slot(p, n, 1); if (s) *s = v ? 1 : 0; }
-EXPORT void CONV NVSDK_NGX_Parameter_SetVoidPointer(param_t *p, const char *n, void *v) { int *s = slot(p, n, 1); if (s) *s = v ? 1 : 0; }
-EXPORT int CONV NVSDK_NGX_Parameter_GetULL(param_t *p, const char *n, uint64_t *v) { int *s = slot(p, n, 0); if (!s) return FAIL; *v = (uint64_t)*s; return OK; }
-EXPORT int CONV NVSDK_NGX_Parameter_GetF(param_t *p, const char *n, float *v) { int *s = slot(p, n, 0); if (!s) return FAIL; *v = (float)*s; return OK; }
-EXPORT int CONV NVSDK_NGX_Parameter_GetD(param_t *p, const char *n, double *v) { int *s = slot(p, n, 0); if (!s) return FAIL; *v = (double)*s; return OK; }
-EXPORT int CONV NVSDK_NGX_Parameter_GetUI(param_t *p, const char *n, unsigned *v) { int *s = slot(p, n, 0); if (!s) return FAIL; *v = (unsigned)*s; return OK; }
-EXPORT int CONV NVSDK_NGX_Parameter_GetI(param_t *p, const char *n, int *v) { int *s = slot(p, n, 0); if (!s) return FAIL; *v = *s; return OK; }
-EXPORT int CONV NVSDK_NGX_Parameter_GetD3d11Resource(param_t *p, const char *n, void **v) { int *s = slot(p, n, 0); if (!s) return FAIL; *v = *s ? p : NULL; return OK; }
-EXPORT int CONV NVSDK_NGX_Parameter_GetD3d12Resource(param_t *p, const char *n, void **v) { int *s = slot(p, n, 0); if (!s) return FAIL; *v = *s ? p : NULL; return OK; }
-EXPORT int CONV NVSDK_NGX_Parameter_GetVoidPointer(param_t *p, const char *n, void **v) { int *s = slot(p, n, 0); if (!s) return FAIL; *v = *s ? p : NULL; return OK; }
+static void CONV NVSDK_NGX_Parameter_SetULL(param_t *p, const char *n, uint64_t v) { int *s = slot(p, n, 1); if (s) *s = (int)v; }
+static void CONV NVSDK_NGX_Parameter_SetF(param_t *p, const char *n, float v) { int *s = slot(p, n, 1); if (s) *s = (int)v; }
+static void CONV NVSDK_NGX_Parameter_SetD(param_t *p, const char *n, double v) { int *s = slot(p, n, 1); if (s) *s = (int)v; }
+static void CONV NVSDK_NGX_Parameter_SetUI(param_t *p, const char *n, unsigned v) { int *s = slot(p, n, 1); if (s) *s = (int)v; }
+static void CONV NVSDK_NGX_Parameter_SetI(param_t *p, const char *n, int v) { int *s = slot(p, n, 1); if (s) *s = v; }
+static void CONV NVSDK_NGX_Parameter_SetD3d11Resource(param_t *p, const char *n, void *v) { int *s = slot(p, n, 1); if (s) *s = v ? 1 : 0; }
+static void CONV NVSDK_NGX_Parameter_SetD3d12Resource(param_t *p, const char *n, void *v) { int *s = slot(p, n, 1); if (s) *s = v ? 1 : 0; }
+static void CONV NVSDK_NGX_Parameter_SetVoidPointer(param_t *p, const char *n, void *v) { int *s = slot(p, n, 1); if (s) *s = v ? 1 : 0; }
+static int CONV NVSDK_NGX_Parameter_GetULL(param_t *p, const char *n, uint64_t *v) { int *s = slot(p, n, 0); if (!s) return FAIL; *v = (uint64_t)*s; return OK; }
+static int CONV NVSDK_NGX_Parameter_GetF(param_t *p, const char *n, float *v) { int *s = slot(p, n, 0); if (!s) return FAIL; *v = (float)*s; return OK; }
+static int CONV NVSDK_NGX_Parameter_GetD(param_t *p, const char *n, double *v) { int *s = slot(p, n, 0); if (!s) return FAIL; *v = (double)*s; return OK; }
+static int CONV NVSDK_NGX_Parameter_GetUI(param_t *p, const char *n, unsigned *v) { int *s = slot(p, n, 0); if (!s) return FAIL; *v = (unsigned)*s; return OK; }
+static int CONV NVSDK_NGX_Parameter_GetI(param_t *p, const char *n, int *v) { int *s = slot(p, n, 0); if (!s) return FAIL; *v = *s; return OK; }
+static int CONV NVSDK_NGX_Parameter_GetD3d11Resource(param_t *p, const char *n, void **v) { int *s = slot(p, n, 0); if (!s) return FAIL; *v = *s ? p : NULL; return OK; }
+static int CONV NVSDK_NGX_Parameter_GetD3d12Resource(param_t *p, const char *n, void **v) { int *s = slot(p, n, 0); if (!s) return FAIL; *v = *s ? p : NULL; return OK; }
+static int CONV NVSDK_NGX_Parameter_GetVoidPointer(param_t *p, const char *n, void **v) { int *s = slot(p, n, 0); if (!s) return FAIL; *v = *s ? p : NULL; return OK; }
+
+/* The object's vtable, as the real library's: NVSDK_NGX_Parameter's
+ * virtual Set and Get overloads, in MSVC's order (each overload group
+ * reversed) on Windows and the Itanium ABI's elsewhere, then Reset. */
+static void CONV NVSDK_NGX_Parameter_Reset(param_t *p) { (void)p; }
+#define M(f) ((const void*)(size_t)(f))
+static const void *const param_vtable[17] = {
+#if defined(_WIN32)
+   M(NVSDK_NGX_Parameter_SetVoidPointer), M(NVSDK_NGX_Parameter_SetD3d12Resource),
+   M(NVSDK_NGX_Parameter_SetD3d11Resource), M(NVSDK_NGX_Parameter_SetI),
+   M(NVSDK_NGX_Parameter_SetUI), M(NVSDK_NGX_Parameter_SetD),
+   M(NVSDK_NGX_Parameter_SetF), M(NVSDK_NGX_Parameter_SetULL),
+   M(NVSDK_NGX_Parameter_GetVoidPointer), M(NVSDK_NGX_Parameter_GetD3d12Resource),
+   M(NVSDK_NGX_Parameter_GetD3d11Resource), M(NVSDK_NGX_Parameter_GetI),
+   M(NVSDK_NGX_Parameter_GetUI), M(NVSDK_NGX_Parameter_GetD),
+   M(NVSDK_NGX_Parameter_GetF), M(NVSDK_NGX_Parameter_GetULL),
+#else
+   M(NVSDK_NGX_Parameter_SetULL), M(NVSDK_NGX_Parameter_SetF),
+   M(NVSDK_NGX_Parameter_SetD), M(NVSDK_NGX_Parameter_SetUI),
+   M(NVSDK_NGX_Parameter_SetI), M(NVSDK_NGX_Parameter_SetD3d11Resource),
+   M(NVSDK_NGX_Parameter_SetD3d12Resource), M(NVSDK_NGX_Parameter_SetVoidPointer),
+   M(NVSDK_NGX_Parameter_GetULL), M(NVSDK_NGX_Parameter_GetF),
+   M(NVSDK_NGX_Parameter_GetD), M(NVSDK_NGX_Parameter_GetUI),
+   M(NVSDK_NGX_Parameter_GetI), M(NVSDK_NGX_Parameter_GetD3d11Resource),
+   M(NVSDK_NGX_Parameter_GetD3d12Resource), M(NVSDK_NGX_Parameter_GetVoidPointer),
+#endif
+   M(NVSDK_NGX_Parameter_Reset)
+};
+#undef M
 
 /* Vulkan: init records the project id as parameter "Project" of the
  * capability set, and the first path of the list as "Paths" */
@@ -95,6 +126,7 @@ EXPORT int CONV NVSDK_NGX_VULKAN_Init_ProjectID(const char *project, int engine,
    if (!project || !dev || engine != 0 || sdk_version != 0x15)
       return FAIL;
    memset(&caps, 0, sizeof(caps));
+   caps.vtable = param_vtable;
    *slot(&caps, "SuperSampling.Available", 1) = 1;
    *slot(&caps, "Project", 1) = (int)strlen(project);
    *slot(&caps, "Paths", 1) = (common_info && paths[0] && paths[0][0])
@@ -137,6 +169,7 @@ EXPORT int CONV NVSDK_NGX_D3D12_Init_ProjectID(const char *project, int engine,
    if (!project || !dev || engine != 0 || sdk_version != 0x15)
       return FAIL;
    memset(&caps, 0, sizeof(caps));
+   caps.vtable = param_vtable;
    *slot(&caps, "SuperSampling.Available", 1) = 1;
    inited = 1;
    return OK;

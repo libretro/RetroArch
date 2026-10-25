@@ -267,7 +267,8 @@ typedef struct ngx_vk_resource
    unsigned char read_write;
 } ngx_vk_resource_t;
 
-/* NVSDK_NGX_Parameter's accessors, as the core library exports them */
+/* NVSDK_NGX_Parameter's accessors: the object's own virtual methods,
+ * called through its vtable (the library exports no C accessors) */
 typedef struct ngx_param_api
 {
    void (NGX_CONV *set_ull)(ngx_parameter_t *p, const char *name, uint64_t v);
