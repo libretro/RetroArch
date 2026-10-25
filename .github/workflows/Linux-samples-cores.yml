@@ -153,6 +153,16 @@ jobs:
              timeout 60 ./pipewire_poll_test
           echo "[pass] pipewire_poll_test (ASan)"
 
+      - name: FFmpeg hardware-context replacement (plain, ASan + UBSan)
+        working-directory: samples/cores/ffmpeg_hw_context
+        run: |
+          set -eu
+          make clean
+          make check
+          make clean
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 \
+            make check SANITIZER=address,undefined
+
       - name: Build and run ffmpeg_sweep_test (plain, ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/cores/ffmpeg_sweep

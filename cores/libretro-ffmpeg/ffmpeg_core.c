@@ -3153,7 +3153,10 @@ exit:
          decoder_pix_fmt = AV_PIX_FMT_NONE;
       }
       else
+      {
+         av_buffer_unref(&ctx->hw_device_ctx);
          ctx->hw_device_ctx = hw_device_ctx; /* the context owns it */
+      }
    }
 
    return decoder_pix_fmt;
