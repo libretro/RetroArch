@@ -66,6 +66,10 @@ jobs:
           gcc -O1 -shared -fPIC -Ilibretro-common/include \
             -o samples/network/command_frames/harness_core.so \
             samples/network/command_frames/harness_core.c
+          # and one that maps none, handing its RAM over as snes9x does
+          gcc -O1 -shared -fPIC -DHARNESS_NO_MAP -Ilibretro-common/include \
+            -o samples/network/command_frames/harness_core_nomap.so \
+            samples/network/command_frames/harness_core.c
 
       - name: MCP over stdin and stdout, end to end
         shell: bash
@@ -74,4 +78,5 @@ jobs:
           # null drivers: no display on the runner
           timeout 300 python3 samples/network/mcp_server/stdio_e2e.py \
             ./retroarch samples/cores/video_views/video_views_libretro.so \
-            samples/network/command_frames/harness_core.so
+            samples/network/command_frames/harness_core.so \
+            samples/network/command_frames/harness_core_nomap.so

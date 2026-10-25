@@ -603,6 +603,17 @@ name. A region with a select mask answers every address that agrees
 with its start in the selected bits, not only start to start plus
 length.
 
+A core that publishes no memory map - snes9x among them - still hands
+its RAM over through `retro_get_memory_data`, and every memory tool reads
+that instead: system RAM from address 0 and save RAM straight after it,
+the layout RetroArch's achievements use when they know no console.
+`GET_MEMORY_MAP` lists the two as `system` and `save`, in the address
+space `core`. These are offsets into the core's RAM, not the console's
+addresses: the SNES's work RAM at `$7E0000` is `0` here, which is also the
+address RetroAchievements' notes give for it. Reads run across from one
+to the other, `WATCH` and conditions take them, and `WRITE_CORE_MEMORY`
+writes them.
+
 To find something to play, an assistant lists the playlists with
 `LIST_PLAYLISTS`, reads one with `GET_PLAYLIST` (index, label, content
 path and core path per entry, 200 at a time; `MORE <next>` gives the

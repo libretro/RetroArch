@@ -5782,13 +5782,62 @@ static const rarch_memory_descriptor_t* command_memory_get_descriptor(const rarc
    return NULL;
 }
 
+/* A core with no memory map still hands over its RAM as blocks: system
+ * RAM from address 0, save RAM straight after it, as the achievements
+ * lay them out when they know no console - so system RAM is at the
+ * addresses RetroAchievements' notes give. @n is 0 for system RAM, 1 for
+ * save RAM; NULL where the core has none. */
+static uint8_t *command_memory_core_block(unsigned n, size_t *start,
+      size_t *size)
+{
+   runloop_state_t        *runloop_st = runloop_state_get_ptr();
+   retro_ctx_memory_info_t sys;
+   retro_ctx_memory_info_t save;
+   if (     !runloop_st->current_core.retro_get_memory_data
+         || !runloop_st->current_core.retro_get_memory_size)
+      return NULL;
+   sys.id = RETRO_MEMORY_SYSTEM_RAM;
+   core_get_memory(&sys);
+   if (!sys.data)
+      sys.size = 0;
+   *start = 0;
+   *size  = sys.size;
+   if (n == 0)
+      return sys.size ? (uint8_t*)sys.data : NULL;
+   save.id = RETRO_MEMORY_SAVE_RAM;
+   core_get_memory(&save);
+   *start = sys.size;
+   *size  = save.data ? save.size : 0;
+   return *size ? (uint8_t*)save.data : NULL;
+}
+
 static uint8_t *command_memory_get_pointer(
       const rarch_system_info_t* sys_info,
       unsigned address, unsigned int* max_bytes,
       int for_write, char *s, size_t len)
 {
    if (!sys_info || sys_info->mmaps.num_descriptors == 0)
-      strlcpy_lit(s, " -1 no memory map defined\n", len);
+   {
+      unsigned n;
+      bool     any = false;
+      for (n = 0; n < 2; n++)
+      {
+         size_t   start = 0;
+         size_t   size  = 0;
+         uint8_t *block = command_memory_core_block(n, &start, &size);
+         if (block)
+            any = true;
+         if (block && address >= start && address < start + size)
+         {
+            *max_bytes = (unsigned int)(start + size - address);
+            return block + (address - start);
+         }
+      }
+      if (any)
+         strlcpy_lit(s, " -1 no descriptor for address\n", len);
+      else
+         strlcpy_lit(s, " -1 no memory map defined\n", len);
+   }
    else
    {
       size_t offset;
@@ -5841,16 +5890,39 @@ bool command_get_memory_map(command_t *cmd, const char *arg)
    const rarch_memory_map_t *mmap  = runloop_st ? &runloop_st->system.mmaps
                                                 : NULL;
 
-   if (!mmap || !mmap->num_descriptors)
-   {
-      command_reply_error(cmd, "GET_MEMORY_MAP",
-            "the running core has no memory map");
-      return false;
-   }
    if (!(reply = (char*)malloc(COMMAND_LIST_REPLY_MAX + 1)))
    {
       command_reply_error(cmd, "GET_MEMORY_MAP", "out of memory");
       return false;
+   }
+   /* no map: the RAM the core hands over, where READ_CORE_MEMORY reads
+    * it, in an address space named core */
+   if (!mmap || !mmap->num_descriptors)
+   {
+      for (i = 0; i < 2; i++)
+      {
+         size_t start = 0;
+         size_t size  = 0;
+         char   s_start[24], s_len[24];
+         if (!command_memory_core_block(i, &start, &size))
+            continue;
+         command_hex(s_start, start);
+         command_hex(s_len,   size);
+         _len += (size_t)snprintf(reply + _len,
+               COMMAND_LIST_REPLY_MAX + 1 - _len,
+               "%s\t%s\t0\t0\t%s\trw\tlittle\tcore\n", s_start, s_len,
+               i ? "save" : "system");
+      }
+      if (!_len)
+      {
+         free(reply);
+         command_reply_error(cmd, "GET_MEMORY_MAP",
+               "the running core has no memory map, and hands over no RAM");
+         return false;
+      }
+      cmd->replier(cmd, reply, _len);
+      free(reply);
+      return true;
    }
 
    for (i = 0; i < mmap->num_descriptors; i++)
