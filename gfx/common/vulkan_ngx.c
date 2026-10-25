@@ -200,6 +200,7 @@ vulkan_ngx_t *vulkan_ngx_init(VkInstance instance, VkPhysicalDevice gpu,
    vulkan_ngx_t *ngx;
    ngx_result_t res;
    int available = 0;
+   int in_use = 0;
    const ngx_lib_t *lib;
 
    if (!ngx_dlss_feature_in(dlss_dir ? dlss_dir : ""))
@@ -268,14 +269,14 @@ vulkan_ngx_t *vulkan_ngx_init(VkInstance instance, VkPhysicalDevice gpu,
       else
          RARCH_WARN("[Vulkan] Temporal Upscaler: DLSS Super Resolution not available on this device (0x%08x).\n",
                (unsigned)init_result);
-      lib->vulkan.shutdown1((void*)device);
+      lib->vulkan.shutdown1((void*)device, &in_use);
       free(ngx->wdir);
       free(ngx);
       return NULL;
    }
    if (NGX_FAILED(lib->vulkan.allocate_parameters(&ngx->params)))
    {
-      lib->vulkan.shutdown1((void*)device);
+      lib->vulkan.shutdown1((void*)device, &in_use);
       free(ngx->wdir);
       free(ngx);
       return NULL;
@@ -379,6 +380,7 @@ static void vulkan_ngx_retire(vulkan_ngx_t *ngx)
 void vulkan_ngx_frame_done(vulkan_ngx_t *ngx)
 {
    unsigned i;
+   int in_use = 0;
    if (!ngx)
       return;
    for (i = 0; i < VULKAN_NGX_RETIRED_MAX; i++)
@@ -725,6 +727,7 @@ bool vulkan_ngx_upscale(vulkan_ngx_t *ngx, VkCommandBuffer cmd,
 void vulkan_ngx_free(vulkan_ngx_t *ngx)
 {
    unsigned i;
+   int in_use = 0;
    if (!ngx)
       return;
    vulkan_ngx_retire(ngx);
@@ -737,8 +740,7 @@ void vulkan_ngx_free(vulkan_ngx_t *ngx)
    if (ngx->caps)
       ngx->lib->vulkan.destroy_parameters(ngx->caps);
    RARCH_LOG("[Vulkan] Temporal Upscaler: NGX parameters destroyed.\n");
-   /* NULL: every device's, as the SDK asks */
-   ngx->lib->vulkan.shutdown1(NULL);
+   ngx->lib->vulkan.shutdown1((void*)ngx->device, &in_use);
    RARCH_LOG("[Vulkan] Temporal Upscaler: NGX shut down.\n");
    free(ngx->wdir);
    free(ngx);

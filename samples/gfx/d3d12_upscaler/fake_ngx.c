@@ -182,10 +182,10 @@ EXPORT int CONV NVSDK_NGX_D3D12_Init_ProjectID(const char *project, int engine,
    inited = 1;
    return OK;
 }
-EXPORT int CONV NVSDK_NGX_D3D12_Shutdown1(void *dev)
+EXPORT int CONV NVSDK_NGX_D3D12_Shutdown1(void *dev, int *in_use)
 {
    const wchar_t *const *const *paths = (const wchar_t *const *const *)init_info;
-   (void)dev; inited = 0; rec.shutdown_calls++;
+   (void)dev; *in_use = 0; inited = 0; rec.shutdown_calls++;
    rec.shutdown_path0 = (paths && paths[0] && paths[0][0]) ? paths[0][0][0] : 0;
    return OK;
 }

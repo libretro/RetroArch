@@ -142,7 +142,7 @@ EXPORT int CONV NVSDK_NGX_VULKAN_Init_ProjectID(const char *project, int engine,
          data_path, inst, pd, dev, (void*)1, (void*)1, sdk_version, common_info);
 }
 
-EXPORT int CONV NVSDK_NGX_VULKAN_Shutdown1(void *dev) { (void)dev; inited = 0; return OK; }
+EXPORT int CONV NVSDK_NGX_VULKAN_Shutdown1(void *dev, int *in_use) { (void)dev; *in_use = 0; inited = 0; return OK; }
 EXPORT int CONV NVSDK_NGX_VULKAN_GetCapabilityParameters(param_t **out) { if (!inited) return FAIL | 7; *out = &caps; return OK; }
 EXPORT int CONV NVSDK_NGX_VULKAN_AllocateParameters(param_t **out) { *out = get_param(); return *out ? OK : FAIL; }
 EXPORT int CONV NVSDK_NGX_VULKAN_DestroyParameters(param_t *p) { (void)p; return OK; }
@@ -182,7 +182,7 @@ EXPORT int CONV NVSDK_NGX_D3D12_Init_ProjectID(const char *project, int engine,
    inited = 1;
    return OK;
 }
-EXPORT int CONV NVSDK_NGX_D3D12_Shutdown1(void *dev) { (void)dev; inited = 0; return OK; }
+EXPORT int CONV NVSDK_NGX_D3D12_Shutdown1(void *dev, int *in_use) { (void)dev; *in_use = 0; inited = 0; return OK; }
 EXPORT int CONV NVSDK_NGX_D3D12_GetCapabilityParameters(param_t **out) { if (!inited) return FAIL | 7; *out = &caps; return OK; }
 EXPORT int CONV NVSDK_NGX_D3D12_AllocateParameters(param_t **out) { *out = get_param(); return *out ? OK : FAIL; }
 EXPORT int CONV NVSDK_NGX_D3D12_DestroyParameters(param_t *p) { (void)p; return OK; }

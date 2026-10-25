@@ -300,7 +300,10 @@ typedef struct ngx_d3d12_api
          int engine_type, const char *engine_version,
          const wchar_t *application_data_path, void *device,
          int sdk_version, const ngx_feature_common_info_t *info);
-   ngx_result_t (NGX_CONV *shutdown1)(void *device);
+   /* NVSDK_NGX_*_Shutdown1 as the library exports it: the SDK's static
+    * library hands it an int it writes (whether the library is still
+    * in use), which the SDK's own prototype leaves out */
+   ngx_result_t (NGX_CONV *shutdown1)(void *device, int *in_use);
    ngx_result_t (NGX_CONV *get_capability_parameters)(ngx_parameter_t **out);
    ngx_result_t (NGX_CONV *allocate_parameters)(ngx_parameter_t **out);
    ngx_result_t (NGX_CONV *destroy_parameters)(ngx_parameter_t *p);
@@ -348,7 +351,10 @@ typedef struct ngx_vulkan_api
          ngx_vk_proc_t get_instance_proc_addr,
          ngx_vk_proc_t get_device_proc_addr,
          int sdk_version, const ngx_feature_common_info_t *info);
-   ngx_result_t (NGX_CONV *shutdown1)(void *device);
+   /* NVSDK_NGX_*_Shutdown1 as the library exports it: the SDK's static
+    * library hands it an int it writes (whether the library is still
+    * in use), which the SDK's own prototype leaves out */
+   ngx_result_t (NGX_CONV *shutdown1)(void *device, int *in_use);
    ngx_result_t (NGX_CONV *get_capability_parameters)(ngx_parameter_t **out);
    ngx_result_t (NGX_CONV *allocate_parameters)(ngx_parameter_t **out);
    ngx_result_t (NGX_CONV *destroy_parameters)(ngx_parameter_t *p);

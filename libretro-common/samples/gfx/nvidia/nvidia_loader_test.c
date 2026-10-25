@@ -88,6 +88,7 @@ static void test_ngx(void)
    ngx_handle_t *h       = NULL;
    int device            = 1;
    int v                 = 0;
+   int in_use            = 0;
    unsigned ic = 0, dc = 0;
    const char **ie = NULL, **de = NULL;
 
@@ -152,7 +153,8 @@ static void test_ngx(void)
    CHECK(lib->vulkan.release_feature(h) == NGX_RESULT_SUCCESS);
    CHECK(lib->vulkan.evaluate_feature(&device, h, p, NULL) == NGX_RESULT_FAIL_FEATURE_NOT_FOUND);
    CHECK(lib->vulkan.destroy_parameters(p) == NGX_RESULT_SUCCESS);
-   CHECK(lib->vulkan.shutdown1(&device) == NGX_RESULT_SUCCESS);
+   in_use = 1;
+   CHECK(lib->vulkan.shutdown1(&device, &in_use) == NGX_RESULT_SUCCESS && in_use == 0);
    CHECK(NGX_FAILED(lib->vulkan.get_capability_parameters(&caps)));
 
 #if defined(_WIN32)
@@ -167,7 +169,8 @@ static void test_ngx(void)
    CHECK(lib->param.get_i(p, "Evaluated", &v) == NGX_RESULT_SUCCESS && v == 320);
    CHECK(lib->d3d12.release_feature(h) == NGX_RESULT_SUCCESS);
    CHECK(lib->d3d12.destroy_parameters(p) == NGX_RESULT_SUCCESS);
-   CHECK(lib->d3d12.shutdown1(&device) == NGX_RESULT_SUCCESS);
+   in_use = 1;
+   CHECK(lib->d3d12.shutdown1(&device, &in_use) == NGX_RESULT_SUCCESS && in_use == 0);
 #endif
 }
 

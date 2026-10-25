@@ -94,6 +94,7 @@ d3d12_ngx_t *d3d12_ngx_init(ID3D12Device *device, const char *dlss_dir)
    d3d12_ngx_t *ngx;
    ngx_result_t res;
    int available = 0;
+   int in_use = 0;
    const ngx_lib_t *lib;
 
    if (!ngx_dlss_feature_in(dlss_dir ? dlss_dir : ""))
@@ -151,14 +152,14 @@ d3d12_ngx_t *d3d12_ngx_init(ID3D12Device *device, const char *dlss_dir)
       else
          RARCH_WARN("[D3D12] Temporal Upscaler: DLSS Super Resolution not available on this device (0x%08x).\n",
                (unsigned)init_result);
-      lib->d3d12.shutdown1((void*)device);
+      lib->d3d12.shutdown1((void*)device, &in_use);
       free(ngx->wdir);
       free(ngx);
       return NULL;
    }
    if (NGX_FAILED(lib->d3d12.allocate_parameters(&ngx->params)))
    {
-      lib->d3d12.shutdown1((void*)device);
+      lib->d3d12.shutdown1((void*)device, &in_use);
       free(ngx->wdir);
       free(ngx);
       return NULL;
@@ -250,6 +251,7 @@ static void d3d12_ngx_retire(d3d12_ngx_t *ngx)
 void d3d12_ngx_frame_done(d3d12_ngx_t *ngx)
 {
    unsigned i;
+   int in_use = 0;
    if (!ngx)
       return;
    for (i = 0; i < D3D12_NGX_RETIRED_MAX; i++)
@@ -489,6 +491,7 @@ bool d3d12_ngx_upscale(d3d12_ngx_t *ngx, ID3D12GraphicsCommandList *cmd,
 void d3d12_ngx_free(d3d12_ngx_t *ngx)
 {
    unsigned i;
+   int in_use = 0;
    if (!ngx)
       return;
    d3d12_ngx_retire(ngx);
@@ -501,7 +504,7 @@ void d3d12_ngx_free(d3d12_ngx_t *ngx)
    if (ngx->caps)
       ngx->lib->d3d12.destroy_parameters(ngx->caps);
    RARCH_LOG("[D3D12] Temporal Upscaler: NGX parameters destroyed.\n");
-   ngx->lib->d3d12.shutdown1(NULL);
+   ngx->lib->d3d12.shutdown1((void*)ngx->device, &in_use);
    RARCH_LOG("[D3D12] Temporal Upscaler: NGX shut down.\n");
    free(ngx->wdir);
    free(ngx);
