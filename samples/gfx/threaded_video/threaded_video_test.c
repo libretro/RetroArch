@@ -675,11 +675,14 @@ static void lane_stub_frame_switch(void)
    run_frames(3);
    av = 0;
    runloop_environment_cb(RETRO_ENVIRONMENT_GET_AUDIO_VIDEO_ENABLE, &av);
+   /* Only Android's frame path honours the stub */
+#ifdef ANDROID
    CHECK(!retro_atomic_load_acquire_int(&stub_a_frames)
          && !retro_atomic_load_acquire_int(&stub_b_frames),
          "stub-frame lane: %d frames drew while stubbed",
          retro_atomic_load_acquire_int(&stub_a_frames)
          + retro_atomic_load_acquire_int(&stub_b_frames));
+#endif
    CHECK(!(av & RETRO_AV_ENABLE_VIDEO),
          "stub-frame lane: video reported enabled while stubbed");
    video_driver_unset_stub_frame();
@@ -715,10 +718,12 @@ static void lane_stub_frame_switch(void)
    retro_atomic_store_release_int(&stub_inner_frames, 0);
    run_frames(3);
    video_thread_wait_idle();
+#ifdef ANDROID
    CHECK(!retro_atomic_load_acquire_int(&stub_inner_frames),
          "stub-frame lane: %d frames drew behind a wrapper rebuilt "
          "while stubbed",
          retro_atomic_load_acquire_int(&stub_inner_frames));
+#endif
    video_driver_unset_stub_frame();
    run_frames(5);
    video_thread_wait_idle();

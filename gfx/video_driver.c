@@ -4632,9 +4632,6 @@ void video_driver_lock_new(void)
 
 void video_driver_set_stub_frame(void)
 {
-   /* no driver yet */
-   if (!video_driver_st.current_video)
-      return;
    video_driver_st.main_flags |= VIDEO_FLAG_STUB_FRAME;
 }
 
@@ -9676,10 +9673,14 @@ void video_driver_frame(const void *data, unsigned width,
     * the next frame after drivers_init() presents normally. */
    if (render_frame && vid && vid->frame && video_st->data)
    {
+#ifdef ANDROID
       video_driver_frame_t frame_cb =
             (video_st->main_flags & VIDEO_FLAG_STUB_FRAME)
             ? video_null.frame
             : vid->frame;
+#else
+      video_driver_frame_t frame_cb = vid->frame;
+#endif
       video_info.current_subframe = 0;
 #ifdef HAVE_THREADS
       /* The video thread owns and stamps this under the wrapper. */
