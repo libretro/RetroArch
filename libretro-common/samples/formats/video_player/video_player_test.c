@@ -1253,6 +1253,86 @@ static void lane_seek_progress(bool threaded)
    video_player_worker_deinit();
 }
 
+typedef struct
+{
+   fake_t stream[2];
+   sink_t output[2];
+   video_player_sink_t sink[2];
+   seek_test_t seek;
+} seek_peer_t;
+
+static void lane_seek_peer(bool threaded, bool progress)
+{
+   seek_peer_t *test = (seek_peer_t*)calloc(1, sizeof(*test));
+   video_player_t *pending, *peer;
+   int tick;
+   int64_t position = -1;
+   int64_t now = 1000000;
+   CHECK(test != NULL, "seek peer: allocation");
+   if (!test)
+      return;
+   fake_init(&test->stream[0], 12, 10);
+   fake_init(&test->stream[1], 5, 10);
+   sink_init(&test->output[0], &test->sink[0], true);
+   sink_init(&test->output[1], &test->sink[1], true);
+   test->seek.stream = &test->stream[0];
+   test->seek.progress = progress;
+   pending = video_player_new(&test->stream[0], IMAGE_TYPE_WEBM, 1,
+         &test->sink[0], threaded ? 0 : VIDEO_PLAYER_INLINE);
+   peer = video_player_new(&test->stream[1], IMAGE_TYPE_WEBM, 1,
+         &test->sink[1], threaded ? 0 : VIDEO_PLAYER_INLINE);
+   CHECK(pending && peer, "seek peer: players");
+   if (!pending || !peer)
+      goto cleanup;
+   CHECK(video_player_set_seek_handler(pending, seek_step, &test->seek),
+         "seek peer: handler");
+   video_player_set_paused(pending, true, now);
+   CHECK(video_player_seek(pending, 40000), "seek peer: request");
+   for (tick = 0; tick < 1000
+         && !retro_atomic_load_acquire_int(&test->seek.steps); tick++)
+   {
+      video_player_poll(pending, now);
+      if (threaded)
+         retro_sleep(1);
+   }
+   CHECK(retro_atomic_load_acquire_int(&test->seek.steps) > 0,
+         "seek peer: pending work started");
+   for (tick = 0; tick < 1000 && !video_player_completed(peer); tick++)
+   {
+      video_player_poll(pending, now);
+      video_player_poll(peer, now);
+      now += 10000;
+      if (threaded)
+         retro_sleep(1);
+   }
+   CHECK(video_player_completed(peer) && test->output[1].nseen == 5
+         && seen_in_order(&test->output[1], 5) && !test->output[1].bad_px,
+         "seek peer: other player reaches EOF (%d/%d)", threaded, progress);
+   CHECK(video_player_seeking(pending) && !test->output[0].nseen
+         && !video_player_seek_position(pending, &position),
+         "seek peer: pending seek publishes nothing");
+   CHECK(video_player_seek(pending, 20000), "seek peer: replace target");
+   retro_atomic_store_release_int(&test->seek.gate, 1);
+   for (tick = 0; tick < 1000 && (video_player_seeking(pending)
+            || !test->output[0].nseen); tick++)
+   {
+      video_player_poll(pending, now);
+      if (threaded)
+         retro_sleep(1);
+   }
+   CHECK(video_player_seek_position(pending, &position) && position == 20000
+         && test->output[0].nseen == 1 && test->output[0].seen[0] == 2,
+         "seek peer: only replacement picture published");
+cleanup:
+   video_player_free(pending);
+   video_player_free(peer);
+   video_player_worker_deinit();
+   CHECK(!test->output[0].begun[0] && !test->output[0].begun[1]
+         && !test->output[1].begun[0] && !test->output[1].begun[1],
+         "seek peer: presentation slots retired");
+   free(test);
+}
+
 static void lane_seek_stop(bool threaded)
 {
    fake_t f;
@@ -2163,6 +2243,8 @@ int main(void)
    lane_seek(false, true);
    lane_seek_stop(false);
    lane_seek_progress(false);
+   lane_seek_peer(false, false);
+   lane_seek_peer(false, true);
    lane_pause(false);
 #ifdef HAVE_THREADS
    lane_input_wait(true, true);
@@ -2170,6 +2252,8 @@ int main(void)
    lane_seek(true, true);
    lane_seek_stop(true);
    lane_seek_progress(true);
+   lane_seek_peer(true, false);
+   lane_seek_peer(true, true);
    lane_pause(true);
 #endif
    lane_cadence_loops(false);
