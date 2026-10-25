@@ -73,6 +73,12 @@ jobs:
           ccache -M 250M
           ccache -z
 
+      - name: HEVC hidden pictures and prior-output discard
+        run: make -C libretro-common/samples/formats/h265 output-flags-check SANITIZER=address,undefined
+
+      - name: MP4 hidden-picture timestamps, seeks and partial input
+        run: make -C libretro-common/samples/formats/vp9 mp4-h26x-check SANITIZER=address,undefined
+
       - name: Build and run dts_lpcm_test (plain, ASan + UBSan)
         shell: bash
         working-directory: samples/formats/dts_lpcm

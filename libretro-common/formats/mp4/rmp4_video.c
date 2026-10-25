@@ -93,6 +93,11 @@ struct rmp4_video_stream
 #endif
    rh264_video *h264;
    rh265_video *h265;
+   rh265_output_timing_t h265_timing;
+   int64_t h265_timestamp, h265_display_timestamp;
+   size_t h265_probe_offset, h265_probe_need, h265_need_lo, h265_need_hi;
+   uint32_t h265_decode_sample, h265_probe_sample;
+   int h265_picture_pending, h265_timing_active, h265_have_time;
 #ifdef HAVE_RAV1
    rav1_hw_stream_t *av1;
    uint8_t *av1_sequence_bytes;
@@ -1131,6 +1136,127 @@ static int rmp4_video_duration_ms(const rmp4_video_stream_t *s, int idx)
    return (int)(t1 / 1000000 - t0 / 1000000);
 }
 
+static int rmp4_video_timestamp_index(const rmp4_video_stream_t *s, int64_t time)
+{
+   int lo = 0, hi = s->ts_count;
+   while (lo < hi)
+   {
+      int mid = lo + (hi - lo) / 2;
+      if (s->ts[mid] < time) lo = mid + 1;
+      else hi = mid;
+   }
+   return lo;
+}
+
+static int rmp4_video_h265_probe(rmp4_video_stream_t *s,
+      const int64_t *pts)
+{
+   const rmp4_track *track = rmp4_get_track(s->demux, s->track);
+   rh265_slice_info_t slice;
+   size_t begin, end, length = 0, bytes;
+   unsigned i, width, type;
+   int ret;
+   if (!track || track->codec_private_size < 22) return -1;
+   width = 1 + (track->codec_private[21] & 3);
+   if (!rmp4_track_sample_span(s->demux, s->track, s->h265_probe_sample,
+            &begin, &end) || s->h265_probe_offset > end - begin) return -1;
+   begin += s->h265_probe_offset;
+   if (begin == end)
+   {
+      s->h265_probe_sample++;
+      s->h265_probe_offset = s->h265_probe_need = 0;
+      return 0;
+   }
+   if (end - begin < width + 2) return -1;
+   s->h265_need_lo = begin;
+   s->h265_need_hi = begin + width + 2;
+   if (s->h265_need_hi > s->input_avail) return 2;
+   for (i = 0; i < width; i++) length = (length << 8) | s->input[begin + i];
+   if (length < 2 || length > end - begin - width) return -1;
+   begin += width;
+   type = (s->input[begin] >> 1) & 63;
+   if (type > 31)
+   {
+      s->h265_probe_offset += width + length;
+      return 0;
+   }
+   bytes = s->h265_probe_need ? s->h265_probe_need : 256;
+   if (bytes > length) bytes = length;
+   s->h265_need_hi = begin + bytes;
+   if (s->h265_need_hi > s->input_avail) return 2;
+   ret = rh265_video_get_slice(s->h265, s->input + begin, bytes, &slice);
+   if (ret < 0)
+   {
+      if (bytes == length || bytes >= 65536) return -1;
+      s->h265_probe_need = bytes * 2;
+      return 0;
+   }
+   ret = rh265_video_output_timing_advance(s->h265, &s->h265_timing,
+         &slice, pts[s->h265_probe_sample], s->h265_timestamp);
+   s->h265_probe_sample++;
+   s->h265_probe_offset = s->h265_probe_need = 0;
+   return ret < 0 ? -1 : 0;
+}
+
+static int rmp4_video_h265_picture(rmp4_video_stream_t *s, int *duration_ms)
+{
+   rh265_output_timing_t *timing = &s->h265_timing;
+   uint32_t count = 0;
+   const int64_t *pts = rmp4_track_pts(s->demux, s->track, &count);
+   unsigned budget = 16;
+   if (!pts) return -1;
+   if (!s->h265_timing_active)
+   {
+      if (rh265_video_output_timing(s->h265, s->h265_timestamp, timing)) return -1;
+      s->h265_probe_sample = s->h265_decode_sample;
+      s->h265_probe_offset = s->h265_probe_need = 0;
+      s->h265_timing_active = 1;
+   }
+   while (!timing->next_valid && s->h265_probe_sample < count && budget--)
+   {
+      int ret = rmp4_video_h265_probe(s, pts);
+      if (ret < 0) return -1;
+      if (ret == 2)
+      {
+         s->waiting = RMP4_VIDEO_WAIT_INPUT;
+         return 2;
+      }
+   }
+   if (!timing->next_valid && s->h265_probe_sample < count)
+   {
+      s->waiting = RMP4_VIDEO_WAIT_DECODER;
+      return 2;
+   }
+   if (!timing->next_valid)
+   {
+      unsigned i;
+      for (i = 0; i < timing->count; i++)
+         if (timing->pending[i] > s->h265_timestamp
+               && (!timing->next_valid || timing->pending[i] < timing->next_timestamp))
+         {
+            timing->next_timestamp = timing->pending[i];
+            timing->next_valid = 1;
+         }
+   }
+   s->disp_idx = timing->next_valid
+      ? rmp4_video_timestamp_index(s, timing->next_timestamp) : s->ts_count;
+   if (duration_ms)
+   {
+      if (timing->next_valid)
+      {
+         int64_t delta = timing->next_timestamp / 1000000
+            - s->h265_timestamp / 1000000;
+         *duration_ms = delta > 0 && delta <= 2147483647 ? (int)delta : 0;
+      }
+      else *duration_ms = rmp4_video_duration_ms(s, s->ts_count - 1);
+   }
+   s->h265_have_time = 1;
+   s->h265_display_timestamp = s->h265_timestamp;
+   s->h265_picture_pending = s->h265_timing_active = 0;
+   s->h265_need_lo = s->h265_need_hi = 0;
+   return 1;
+}
+
 #ifdef HAVE_RAV1
 static int rmp4_video_av1_hdr_point(rmp4_video_stream_t *s, uint32_t sample);
 
@@ -1357,11 +1483,14 @@ static int rmp4_video_decode_packet(rmp4_video_stream_t *s,
       if (s->wait_key && !pkt->keyframe)
       {
          s->disp_idx++;  /* the sample's presentation slot is gone */
+         s->h265_decode_sample++;
          return 0;
       }
-      dec = rh265_video_decode(s->h265, pkt->data, pkt->size);
+      dec = rh265_video_decode_timed(s->h265, pkt->data, pkt->size,
+            pkt->timestamp, &s->h265_timestamp);
       if (dec == 2) return 2;
       if (dec == 3) return rmp4_video_hwf_take(s) == 0 ? 3 : -1;
+      s->h265_decode_sample++;
       if (dec < 0)
       {
          if (pkt->keyframe)
@@ -1403,6 +1532,9 @@ static int rmp4_video_stream_step(rmp4_video_stream_t *s,
 #ifdef HAVE_RAV1
    int av1_eof = 0;
 #endif
+
+   if (s->h265_picture_pending)
+      return rmp4_video_h265_picture(s, duration_ms);
 
    for (;;)
    {
@@ -1461,6 +1593,11 @@ static int rmp4_video_stream_step(rmp4_video_stream_t *s,
             s->waiting = RMP4_VIDEO_WAIT_DECODER;
             return 2;
          }
+         if (s->h265)
+         {
+            s->h265_picture_pending = 1;
+            return rmp4_video_h265_picture(s, duration_ms);
+         }
          if (duration_ms) *duration_ms = rmp4_video_duration_ms(s, s->disp_idx);
          s->disp_idx++;
          return 1;
@@ -1470,6 +1607,11 @@ static int rmp4_video_stream_step(rmp4_video_stream_t *s,
          return -1;      /* decode error: end the animation */
       if (r == 0)
          return 0;       /* non-shown frame                  */
+      if (s->h265)
+      {
+         s->h265_picture_pending = 1;
+         return rmp4_video_h265_picture(s, duration_ms);
+      }
       if (duration_ms)
          *duration_ms = rmp4_video_duration_ms(s, s->disp_idx);
       s->disp_idx++;
@@ -1527,7 +1669,8 @@ static int rmp4_video_stream_step(rmp4_video_stream_t *s,
          return 1;
       }
    }
-   if (s->h265 && (drained = rh265_video_drain(s->h265)) == 2)
+   if (s->h265 && (drained = rh265_video_drain_timed(s->h265,
+               &s->h265_timestamp)) == 2)
    {
       s->waiting = RMP4_VIDEO_WAIT_DECODER;
       return 2;
@@ -1540,17 +1683,14 @@ static int rmp4_video_stream_step(rmp4_video_stream_t *s,
       if (rh265_video_is_hw(s->h265))
       {
          if (rmp4_video_hwf_take(s) != 0) return -1;
-         if (duration_ms) *duration_ms = rmp4_video_duration_ms(s, s->disp_idx);
-         s->disp_idx++;
-         return 1;
+         s->h265_picture_pending = 1;
+         return rmp4_video_h265_picture(s, duration_ms);
       }
       if (rh265_video_plane(s->h265, 0, NULL, NULL, NULL))
       {
          s->rndr_kind = 4;
-         if (duration_ms)
-            *duration_ms = rmp4_video_duration_ms(s, s->disp_idx);
-         s->disp_idx++;
-         return 1;
+         s->h265_picture_pending = 1;
+         return rmp4_video_h265_picture(s, duration_ms);
       }
    }
    s->completed = 1;
@@ -1668,7 +1808,7 @@ void rmp4_video_stream_stop_hw(rmp4_video_stream_t *s)
 int rmp4_video_stream_hw_frame(rmp4_video_stream_t *s,
       video_hw_frame_t *out)
 {
-   if (!s || s->rndr_kind != 5 || !s->hwf_untaken || !out)
+   if (!s || s->h265_picture_pending || s->rndr_kind != 5 || !s->hwf_untaken || !out)
       return 0;
    *out           = s->hwf;
    s->hwf_untaken = 0;
@@ -1915,14 +2055,24 @@ int rmp4_video_stream_seek_span(rmp4_video_stream_t *s,
 
 size_t rmp4_video_stream_consumed(rmp4_video_stream_t *s)
 {
-   size_t lo, hi;
+   size_t lo, hi, consumed;
    if (rmp4_video_stream_seek_span(s, &lo, &hi)) return lo;
-   return s ? (s->pending ? s->pending_floor : rmp4_consumed(s->demux)) : 0;
+   if (!s) return 0;
+   consumed = s->pending ? s->pending_floor : rmp4_consumed(s->demux);
+   if (s->h265_picture_pending && s->h265_need_hi
+         && s->h265_need_lo < consumed) consumed = s->h265_need_lo;
+   return consumed;
 }
 
 void rmp4_video_stream_read_span(const rmp4_video_stream_t *s,
       size_t *lo, size_t *hi)
 {
+   if (s && s->h265_picture_pending && s->h265_need_hi > s->input_avail)
+   {
+      if (lo) *lo = s->h265_need_lo;
+      if (hi) *hi = s->h265_need_hi;
+      return;
+   }
    rmp4_read_span(s && !s->pending ? s->demux : NULL, lo, hi);
 }
 
@@ -1934,7 +2084,7 @@ int64_t rmp4_video_stream_duration_ns(rmp4_video_stream_t *s)
 const uint32_t *rmp4_video_stream_render(rmp4_video_stream_t *s)
 {
    uint32_t *dst;
-   if (!s)
+   if (!s || s->h265_picture_pending)
       return NULL;
    dst        = s->out ? s->out : s->frame;
    s->is_fp16 = 0;
@@ -2149,6 +2299,9 @@ void rmp4_video_stream_rewind(rmp4_video_stream_t *s)
       return;
    s->completed = 0;
    s->pending = s->waiting = s->seek_state = 0;
+   s->h265_decode_sample = 0;
+   s->h265_picture_pending = s->h265_timing_active = s->h265_have_time = 0;
+   s->h265_need_lo = s->h265_need_hi = 0;
 #ifdef HAVE_RAV1
    s->av1_hdr_probe_started = 0;
    s->av1_decode_sample = 0;
@@ -2198,6 +2351,9 @@ static int64_t rmp4_video_stream_movie_time_ns(const rmp4_video_stream_t *s,
 
 int64_t rmp4_video_stream_frame_time_ns(const rmp4_video_stream_t *s)
 {
+   if (s && s->h265)
+      return s->h265_have_time ? rmp4_video_stream_movie_time_ns(s,
+            rmp4_video_timestamp_index(s, s->h265_display_timestamp)) : -1;
    return s ? rmp4_video_stream_movie_time_ns(s, s->disp_idx - 1) : -1;
 }
 
@@ -2523,6 +2679,7 @@ int rmp4_video_stream_seek_step(rmp4_video_stream_t *s, int64_t *position_us)
                else hi = mid;
             }
             s->disp_idx = lo;
+            s->h265_decode_sample = (uint32_t)sample;
             s->seek_state = 2;
             return 0;
          }
@@ -2632,6 +2789,7 @@ int64_t rmp4_video_stream_seek_frame(rmp4_video_stream_t *s, int frame)
       n++;
    }
    s->disp_idx = kf;
+   s->h265_decode_sample = (uint32_t)kf;
    while (s->disp_idx < tidx)
       if (rmp4_video_stream_discard(s, NULL) != 1)
          break;

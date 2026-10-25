@@ -27,6 +27,16 @@ MP4_SOURCES := ../../../formats/mp4/rmp4.c ../../../formats/vp9/rvp9.c \
  ../../../formats/vp8/rvp8.c ../../../formats/h264/rh264.c ../../../formats/h265/rh265.c \
  ../../../formats/image/image_blit_bands.c ../../../formats/image/image_hdr_blit.c \
  ../../../features/features_cpu.c ../../../time/rtime.c
+rmp4_h26x_stream_test: rmp4_h26x_stream_test.c $(MP4_SOURCES) ../../../formats/mp4/rmp4_video.c
+	$(CC) $(CFLAGS) $(PIXEL_FLAGS) -D_POSIX_C_SOURCE=200809L -DHAVE_RMP4 -DHAVE_RVP9 \
+	 rmp4_h26x_stream_test.c $(MP4_SOURCES) $(PIXEL_SOURCES) \
+	 ../../../formats/mp4/rmp4_video.c -o $@ $(LDFLAGS) -lm
+
+rmp4_h26x_hw_test: rmp4_h26x_hw_test.c $(MP4_SOURCES) ../../../formats/mp4/rmp4_video.c
+	$(CC) $(CFLAGS) $(PIXEL_FLAGS) -D_POSIX_C_SOURCE=200809L -DHAVE_RMP4 -DHAVE_RVP9 \
+	 rmp4_h26x_hw_test.c $(MP4_SOURCES) $(PIXEL_SOURCES) \
+	 ../../../formats/mp4/rmp4_video.c -o $@ $(LDFLAGS) -lm
+
 rmp4_vp9_config_test: rmp4_vp9_config_test.c rvp9_mp4_fixture.h $(MP4_SOURCES) \
  ../../../formats/mp4/rmp4_video.c ../../../include/formats/rvp9_config.h ../../../include/formats/rvp9_color.h
 	$(CC) $(CFLAGS) -D_POSIX_C_SOURCE=200809L -DHAVE_RMP4 -DHAVE_RVP9 \
@@ -66,7 +76,13 @@ rvp9_pixel_test: rvp9_pixel_test.c ../../../formats/vp9/rvp9.c ../../../formats/
 	$(CC) $(CFLAGS) $(PIXEL_FLAGS) rvp9_pixel_test.c ../../../formats/vp9/rvp9.c $(PIXEL_SOURCES) -o $@ $(LDFLAGS)
 
 clean:
+	rm -f rmp4_h26x_stream_test rmp4_h26x_stream_test.exe rmp4_h26x_hw_test rmp4_h26x_hw_test.exe
 	rm -f rvp9_pixel_test rvp9_pixel_test.exe
 	rm -f $(TARGETS) $(addsuffix .exe,$(TARGETS))
 
 .PHONY: all check stream-check pixel-check stack-check clean
+
+mp4-h26x-check: rmp4_h26x_stream_test rmp4_h26x_hw_test check_mp4_h26x.py h26x_fixture.py
+	python3 check_mp4_h26x.py
+
+.PHONY: mp4-h26x-check

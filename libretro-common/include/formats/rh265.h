@@ -236,6 +236,28 @@ int rh265_video_decode(rh265_video *v, const uint8_t *data, size_t len);
 /* -2 on terminal hardware failure; -1 means no pending output. */
 int rh265_video_drain(rh265_video *v);
 
+/* Owner-thread timed submission. Use for every access unit, retaining the
+ * timestamp on busy/unconsumed retries. Decode 1/3 or drain 0 returns that
+ * picture's original timestamp; other results leave output_timestamp alone. */
+int rh265_video_decode_timed(rh265_video *v, const uint8_t *data, size_t len,
+      int64_t timestamp, int64_t *output_timestamp);
+int rh265_video_drain_timed(rh265_video *v, int64_t *output_timestamp);
+
+typedef struct rh265_output_timing
+{
+   int64_t pending[32], next_timestamp;
+   unsigned count;
+   int next_valid, started, rasl_skip, skip_nonref;
+} rh265_output_timing_t;
+
+/* Owner-thread metadata snapshot for bounded container lookahead. Queued
+ * output is final; pending pictures may be discarded by a later IRAP. */
+int rh265_video_output_timing(const rh265_video *v, int64_t after,
+      rh265_output_timing_t *out);
+int rh265_video_output_timing_advance(const rh265_video *v,
+      rh265_output_timing_t *timing, const rh265_slice_info_t *slice,
+      int64_t timestamp, int64_t after);
+
 /* Borrow a decoded plane (0=Y, 1=U, 2=V). Valid until the next decode call. */
 /* Active luma bit depth of the stream (8 or 10).  At 10 bits the
  * plane pointers reference uint16_t samples: cast the returned byte

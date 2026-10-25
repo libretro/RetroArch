@@ -85,10 +85,25 @@ $(TARGET_MALFORMED): $(MALFORMED_OBJS)
 $(TARGET_WEIGHT): rh265_weight_test.c $(LIBRETRO_COMM_DIR)/formats/h265/rh265.c $(LIBRETRO_COMM_DIR)/formats/h265/rh265_bd.inc $(LIBRETRO_COMM_DIR)/include/formats/rh265.h
 	$(CC) $(filter-out -DHAVE_THREADS,$(CFLAGS)) -O3 $< -o $@ $(LDFLAGS) -lm
 
+FLAGS_OBJS := rh265_output_flags_test.o $(filter-out rh265_lossless_test.o,$(OBJS))
+FLAGS_NT_OBJS := rh265_output_flags_test.nt.o $(filter-out rh265_lossless_test.nt.o,$(NOTHREADS_OBJS))
+
+rh265_output_flags_test: $(FLAGS_OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
+
+rh265_output_flags_test_nothreads: $(FLAGS_NT_OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS) $(filter-out -lpthread,$(LDLIBS))
+
+output-flags-check: rh265_output_flags_test rh265_output_flags_test_nothreads check_output_flags.py ../vp9/h26x_fixture.py
+	python3 check_output_flags.py ./rh265_output_flags_test ./rh265_output_flags_test_nothreads
+
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(TARGET) $(OBJS) $(TARGET_TEST) $(NOTHREADS_OBJS) \
 	   $(TARGET_VOLATILE) $(VOLATILE_OBJS) \
 	   $(TARGET_MALFORMED) rh265_malformed_test.o $(TARGET_WEIGHT)
+	rm -f rh265_output_flags_test rh265_output_flags_test.exe \
+	   rh265_output_flags_test_nothreads rh265_output_flags_test_nothreads.exe \
+	   rh265_output_flags_test.o rh265_output_flags_test.nt.o
 
-.PHONY: clean
+.PHONY: clean output-flags-check
