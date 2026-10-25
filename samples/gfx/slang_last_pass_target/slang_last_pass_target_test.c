@@ -201,6 +201,21 @@ int main(void)
    s->pass[1].fbo.flags = 0;
    expect(s, false, "no scale on the last pass");
 
+   /* An unscaled last pass may read its own feedback, which needs the
+    * target that only the compiled pass can tell it about; it takes no
+    * format, from the preset or the shader. */
+   {
+      struct glslang_last_pass state;
+      preset(s, "first.slang", "last.slang");
+      s->pass[1].fbo.flags = 0;
+      glslang_last_pass_init(s, NULL, &state);
+      CHECK(state.inspect_feedback && !state.needs_target,
+            "an unscaled last pass waits on its compiled feedback");
+      preset(s, "first.slang", "format_last.slang");
+      s->pass[1].fbo.flags = FBO_SCALE_FLAG_FP_FBO;
+      expect(s, false, "no scale: no format from the preset or shader");
+   }
+
    preset(s, "first.slang", "last.slang");
    expect(s, false, "viewport at 1.0");
 

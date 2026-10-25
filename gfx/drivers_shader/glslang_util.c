@@ -618,15 +618,17 @@ void glslang_last_pass_init(const struct video_shader *shader,
    const struct video_shader_pass *pass;
    struct shader_line_buf lines;
    void *own = NULL;
+   bool scaled;
    memset(state, 0, sizeof(*state));
    if (!shader || !shader->passes)
       return;
    state->index = shader->passes - 1;
    pass = &shader->pass[state->index];
-   if (!(pass->fbo.flags & FBO_SCALE_FLAG_VALID))
-      return;
+   /* Without a scale the last pass draws at the viewport and takes no
+    * format, but may still read its own feedback. */
+   scaled = (pass->fbo.flags & FBO_SCALE_FLAG_VALID) != 0;
    state->needs_target = true;
-   if (!GFX_FBO_SCALE_IS_VIEWPORT(&pass->fbo))
+   if (scaled && !GFX_FBO_SCALE_IS_VIEWPORT(&pass->fbo))
       return;
    if (!cache && !(cache = own = glslang_include_cache_new()))
       return;
@@ -644,7 +646,7 @@ void glslang_last_pass_init(const struct video_shader *shader,
       const char *line = shader_line_buf_get(&lines, k);
       if (!line)
          continue;
-      if (!memcmp(line, "#pragma format ", sizeof("#pragma format ") - 1))
+      if (scaled && !memcmp(line, "#pragma format ", sizeof("#pragma format ") - 1))
          state->needs_target = true;
       if (!state->name[0]
             && !memcmp(line, "#pragma name ", sizeof("#pragma name ") - 1))

@@ -252,7 +252,8 @@ struct glslang_last_pass
 };
 
 /* Scale and format requirements are known before compilation. Reserve
- * an optional final copy until compiled feedback usage is known. */
+ * an optional final copy until compiled feedback usage is known, for a
+ * last pass with no scale as for one at the viewport. */
 void glslang_last_pass_init(const struct video_shader *shader,
       void *cache, struct glslang_last_pass *state);
 
