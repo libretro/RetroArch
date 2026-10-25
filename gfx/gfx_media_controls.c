@@ -284,6 +284,7 @@ void gfx_media_controls_publish(const gfx_media_controls_t *c, gfx_media_mailbox
    if (slot == 3) return;
    v = &m->views[slot];
    memset(v, 0, sizeof(*v));
+   if (c) v->settings_preview = c->settings_preview;
    if (c && c->target.user)
    {
       v->layout = c->layout;

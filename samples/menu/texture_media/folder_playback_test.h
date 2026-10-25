@@ -234,7 +234,17 @@ static bool media_folder_drive(struct menu_state *menu_st,
       size_t selected = menu_st->selection_ptr;
       file_list_t *entries;
       size_t row;
-      bool found = false;
+      bool found = false, valid;
+      gfx_media_target_t playing = media->controls.target;
+      gfx_media_playback_state_t state;
+      int64_t position;
+      if (!gfx_media_controls_action(&media->controls, GFX_MEDIA_PLAY,
+               menu_st->current_time_us))
+         return false;
+      draw(menu_st);
+      if (!playing.state(playing.user, menu_st->current_time_us, &state) || state.paused)
+         return false;
+      position = state.position_us;
       if (!gfx_media_controls_action(&media->controls, GFX_MEDIA_SETTINGS,
                menu_st->current_time_us))
          return false;
@@ -253,8 +263,24 @@ static bool media_folder_drive(struct menu_state *menu_st,
             found = true;
       if (!found) return false;
       printf("fullscreen settings: showing=%u\n", shown(viewer));
-      if (shown(viewer))
+      if (shown(viewer) || !media->settings_open)
          return false;
+      for (tick = 0; tick < 1000; tick++)
+      {
+         draw(menu_st);
+         if (!playing.state(playing.user, menu_st->current_time_us, &state) || state.paused)
+            return false;
+         if (state.position_us > position + 100000)
+            break;
+         retro_sleep(1);
+      }
+      if (tick == 1000)
+         return false;
+      if ((getenv("MEDIA_TEST_CAPTURE_DIR") || getenv("MEDIA_TEST_SETTINGS_ORANGE"))
+            && getenv("MEDIA_TEST_GPU")
+            && !media_native_capture(&picture, 50))
+         return false;
+      puts("fullscreen settings: original media keeps playing in preview");
       if (getenv("MEDIA_TEST_CADENCE"))
       {
          bool crt_found = false, refresh_found = false;
@@ -302,11 +328,54 @@ static bool media_folder_drive(struct menu_state *menu_st,
 
       if (action_cancel_pop_default(NULL, NULL, 0, 0) != 0)
          return false;
-      draw(menu_st);
+      for (tick = 0; tick < 1000; tick++)
+      {
+         task_queue_check();
+         menu_driver_iterate(menu_st, disp_get_ptr(), anim_get_ptr(),
+               config_get_ptr(), MENU_ACTION_NOOP, menu_st->current_time_us);
+         draw(menu_st);
+         if (!media->settings_open && shown(viewer)) break;
+         retro_sleep(1);
+      }
+      if (tick == 1000) return false;
       stack = MENU_LIST_GET(menu_st->entries.list, 0);
-      if (stack->size != depth || menu_st->selection_ptr != selected)
+      valid = playing.state(playing.user, menu_st->current_time_us, &state);
+      if (stack->size != depth || menu_st->selection_ptr != selected
+            || !shown(viewer) || media->settings_open || !valid || state.paused
+            || state.position_us <= position)
+      {
+         printf("settings return: depth=%lu/%lu selection=%lu/%lu fullscreen=%u open=%u returning=%u valid=%u paused=%u\n",
+               (unsigned long)stack->size, (unsigned long)depth,
+               (unsigned long)menu_st->selection_ptr, (unsigned long)selected,
+               shown(viewer), media->settings_open, media->settings_returning,
+               valid, state.paused);
          return false;
-      puts("fullscreen settings: Back restores browser depth and selection");
+      }
+      if (!gfx_media_controls_action(&media->controls, GFX_MEDIA_PAUSE,
+               menu_st->current_time_us)
+            || !gfx_media_controls_action(&media->controls, GFX_MEDIA_SETTINGS,
+               menu_st->current_time_us))
+         return false;
+      menu_driver_iterate(menu_st, disp_get_ptr(), anim_get_ptr(),
+            config_get_ptr(), MENU_ACTION_NOOP, menu_st->current_time_us);
+      draw(menu_st);
+      if (shown(viewer) || !playing.state(playing.user, menu_st->current_time_us, &state) || !state.paused)
+         return false;
+      if (action_cancel_pop_default(NULL, NULL, 0, 0) != 0)
+         return false;
+      for (tick = 0; tick < 1000; tick++)
+      {
+         task_queue_check();
+         menu_driver_iterate(menu_st, disp_get_ptr(), anim_get_ptr(),
+               config_get_ptr(), MENU_ACTION_NOOP, menu_st->current_time_us);
+         draw(menu_st);
+         if (!media->settings_open && shown(viewer)) break;
+         retro_sleep(1);
+      }
+      if (tick == 1000) return false;
+      if (!shown(viewer) || !playing.state(playing.user, menu_st->current_time_us, &state) || !state.paused)
+         return false;
+      puts("fullscreen settings: Back restores viewer and preserves pause state");
    }
    return true;
 }

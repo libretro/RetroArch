@@ -1976,7 +1976,7 @@ static void xmb_update_thumbnail_image(void *data)
    xmb_handle_t *xmb          = (xmb_handle_t*)data;
    struct menu_state *menu_st = menu_state_get_ptr();
 
-   if (!xmb)
+   if (!xmb || menu_media_controls_settings_active(&xmb->media))
       return;
 
    xmb->thumbnails.pending = XMB_PENDING_THUMBNAIL_NONE;
@@ -2111,7 +2111,7 @@ static void xmb_set_thumbnail_content(void *data, const char *s)
    struct menu_state *menu_st = menu_state_get_ptr();
    size_t selection           = menu_st->selection_ptr;
 
-   if (!xmb)
+   if (!xmb || menu_media_controls_settings_active(&xmb->media))
       return;
 
    /* Disable fullscreen thumbnails by default,
@@ -2538,7 +2538,7 @@ static void xmb_selection_pointer_changed(
          else if (xmb->is_db_manager_list && depth == 5)
             xmb->skip_thumbnail_reset = true;
          /* Filebrowser image updates */
-         else if (xmb->is_file_list)
+         else if (xmb->is_file_list && !menu_media_controls_settings_active(&xmb->media))
          {
             menu_entry_t entry;
             MENU_ENTRY_INITIALIZE(entry);
@@ -4227,7 +4227,7 @@ static void xmb_populate_entries(void *data,
     * via 'load content'. We have to work around
     * this by resetting thumbnails whenever a
     * file list is populated... */
-   else if (xmb->is_file_list)
+   else if (xmb->is_file_list && !menu_media_controls_settings_active(&xmb->media))
    {
       xmb->fullscreen_thumbnails_available = false;
       xmb->thumbnails.pending              = XMB_PENDING_THUMBNAIL_NONE;
@@ -6139,6 +6139,16 @@ static void xmb_hide_fullscreen_thumbnails(
 
 /* Enables (and triggers a fade in of) the fullscreen
  * thumbnail view */
+static void xmb_show_fullscreen_thumbnails(xmb_handle_t *data,
+      struct menu_state *menu_st, size_t selection);
+
+static void xmb_media_settings_show(void *user)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   xmb_show_fullscreen_thumbnails((xmb_handle_t*)user,
+         menu_st, menu_st->selection_ptr);
+}
+
 static void xmb_media_settings_hide(void *user)
 {
    xmb_handle_t *xmb = (xmb_handle_t*)user;
@@ -7396,6 +7406,8 @@ static void xmb_render(void *data,
    if (!xmb)
       return;
 
+   menu_media_controls_settings_iterate(&xmb->media);
+
    if (startup_token && xmb->thumbnails.pending == XMB_PENDING_THUMBNAIL_NONE
          && (xmb->thumbnails.left.status == GFX_THUMBNAIL_STATUS_MISSING
             || xmb->thumbnails.right.status == GFX_THUMBNAIL_STATUS_MISSING)
@@ -7405,7 +7417,8 @@ static void xmb_render(void *data,
          && xmb->thumbnails.right.status != GFX_THUMBNAIL_STATUS_AVAILABLE)
       menu_driver_media_startup_ready(startup_token);
 
-   if (xmb->is_file_list && !xmb->show_fullscreen_thumbnails
+   if (!menu_media_controls_settings_active(&xmb->media)
+         && xmb->is_file_list && !xmb->show_fullscreen_thumbnails
          && !gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_RIGHT)
          && !gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_LEFT)
          && (xmb->thumbnails.left.anim_player || xmb->thumbnails.right.anim_player))
@@ -7506,6 +7519,7 @@ static void xmb_render(void *data,
    menu_input_get_pointer_state(&xmb->pointer);
    xmb->media.settings_user = xmb;
    xmb->media.settings_hide = xmb_media_settings_hide;
+   xmb->media.settings_show = xmb_media_settings_show;
    menu_media_controls_thumbnail(&xmb->media, &xmb->thumbnails.left,
          &xmb->thumbnails.right,
          xmb->show_fullscreen_thumbnails && !xmb->show_screensaver
@@ -9145,7 +9159,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                   NULL);
       }
    }
-   else if (xmb->fullscreen_thumbnails_available && !xmb->show_fullscreen_thumbnails)
+   else if (xmb->fullscreen_thumbnails_available && !xmb->show_fullscreen_thumbnails
+         && !xmb->media.view.settings_preview)
    {
       float background_color[16] = {
             0.0f, 0.0f, 0.0f, 1.0f,
@@ -9676,6 +9691,17 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          video_info, selection);
    menu_media_controls_draw(&xmb->media, p_disp, userdata,
          video_info->dims, xmb->font2 ? xmb->font2 : xmb->font);
+   if (xmb->media.view.settings_preview)
+   {
+      unsigned preview_width = video_width / 4;
+      unsigned preview_height = video_height / 2;
+      gfx_thumbnail_t *preview = xmb->thumbnails.right.status == GFX_THUMBNAIL_STATUS_AVAILABLE
+         ? &xmb->thumbnails.right : &xmb->thumbnails.left;
+      gfx_thumbnail_draw(userdata, video_info->dims, preview,
+            (float)(video_width - preview_width), (float)(video_height / 4),
+            VIDEO_SCALE_PACK(preview_width, preview_height),
+            GFX_THUMBNAIL_ALIGN_CENTRE, 1.0f, 1.0f, NULL);
+   }
 
    if (input_dialog_display_kb)
    {

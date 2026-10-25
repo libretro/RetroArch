@@ -49,6 +49,7 @@ typedef struct gfx_media_controls
    unsigned focus;
    unsigned seek_seconds, hide_seconds;
    bool configured, subtitle_requested;
+   bool settings_preview;
    bool visible, row_focus, held, dragging, release_inhibit;
 } gfx_media_controls_t;
 
@@ -65,6 +66,7 @@ typedef struct gfx_media_view
    unsigned directions;
    int hover;
    bool visible, row_focus, dragging, subtitle_tracks;
+   bool settings_preview;
 } gfx_media_view_t;
 typedef struct gfx_media_mailbox
 {

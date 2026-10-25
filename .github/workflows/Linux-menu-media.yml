@@ -129,7 +129,9 @@ jobs:
       - name: Build shipping frontend
         run: make -j2 C89_BUILD=1
       - name: Generate moving VP8 fixture
-        run: ffmpeg -v error -y -f lavfi -i "testsrc2=size=320x240:rate=30,hue=h=90*t" -t 3 -c:v libvpx -deadline realtime -cpu-used 8 -g 90 -auto-alt-ref 0 samples/menu/rgui_media/window-toggle.webm
+        run: |
+          ffmpeg -v error -y -f lavfi -i "testsrc2=size=320x240:rate=30,hue=h=90*t" -t 3 -c:v libvpx -deadline realtime -cpu-used 8 -g 90 -auto-alt-ref 0 samples/menu/rgui_media/window-toggle.webm
+          ffmpeg -v error -y -f lavfi -i "color=orange:size=320x240:rate=30" -t 3 -c:v libvpx -deadline realtime -cpu-used 8 -g 90 -auto-alt-ref 0 samples/menu/rgui_media/settings-preview.webm
       - name: External media starts without browser frames and recovers from failure
         run: |
           set -eu
@@ -156,7 +158,7 @@ jobs:
         run: |
           for driver in rgui materialui xmb ozone; do
             for threaded in '' --threaded; do
-              xvfb-run -a python3 samples/menu/rgui_media/run.py --c89 --fullscreen-settings --video-driver gl --driver "$driver" $threaded samples/menu/rgui_media/window-toggle.webm
+              MEDIA_TEST_SETTINGS_ORANGE=1 xvfb-run -a python3 samples/menu/rgui_media/run.py --c89 --fullscreen-settings --video-driver gl --driver "$driver" $threaded samples/menu/rgui_media/settings-preview.webm
               xvfb-run -a python3 samples/menu/rgui_media/run.py --c89 --continuous-error --video-driver gl --driver "$driver" $threaded samples/menu/rgui_media/window-toggle.webm
             done
           done

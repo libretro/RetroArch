@@ -410,8 +410,9 @@ int main(int argc, char **argv)
    stack = MENU_LIST_GET(menu_st->entries.list, 0);
    fill_pathname_basedir(directory, argv[1], sizeof(directory));
    file_list_clear(list); file_list_clear(stack);
-   MEDIA_CHECK("file-browser stack installed", file_list_append(stack, directory,
-         "", FILE_TYPE_PLAIN, 0, 0));
+   MEDIA_CHECK("file-browser stack installed", menu_entries_append(stack, directory,
+         MENU_ENUM_LABEL_FAVORITES_STR, MENU_ENUM_LABEL_FAVORITES,
+         FILE_TYPE_DIRECTORY, 0, 0, NULL));
    if (folder)
       MEDIA_CHECK("folder movies installed", media_folder_install(menu_st, list, directory, argv[1]));
    else

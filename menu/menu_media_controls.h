@@ -13,6 +13,9 @@ typedef struct menu_media_controls
    struct menu_media_queue *queue;
    void *settings_user;
    void (*settings_hide)(void *user);
+   void (*settings_show)(void *user);
+   size_t settings_depth, settings_selection;
+   uintptr_t settings_parent;
    gfx_media_subtitle_t *subtitle; /* main thread */
    gfx_media_controls_t controls; /* main thread */
    gfx_media_mailbox_t mailbox;
@@ -20,11 +23,14 @@ typedef struct menu_media_controls
    gfx_media_subtitle_mailbox_t subtitle_mailbox;
    gfx_media_subtitle_view_t subtitle_view; /* render thread */
    bool subtitle_seeking, context_reset; /* main thread */
+   bool settings_open, settings_returning; /* main thread */
 } menu_media_controls_t;
 
 RETRO_BEGIN_DECLS
 
 bool menu_media_controls_display(unsigned *dims, float *hz);
+void menu_media_controls_settings_iterate(menu_media_controls_t *media);
+bool menu_media_controls_settings_active(const menu_media_controls_t *media);
 
 bool menu_media_controls_continuous(menu_media_controls_t *media, bool shown);
 bool menu_media_controls_complete(menu_media_controls_t *media);

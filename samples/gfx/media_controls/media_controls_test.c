@@ -18,8 +18,9 @@ settings_t *config_get_ptr(void) { return &test_settings; }
 
 static unsigned failures;
 static bool drawing;
-static unsigned settings_opened, settings_hidden;
-static bool settings_refused;
+static unsigned settings_opened, settings_hidden, settings_shown;
+static bool settings_refused, settings_walk_pending;
+bool menu_dirwalk_pending(void) { return settings_walk_pending; }
 int generic_action_ok_displaylist_push(const char *path, const char *new_path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
       unsigned action_type)
@@ -653,49 +654,104 @@ static void settings_hide(void *user)
    settings_hidden++;
 }
 
+static void settings_show(void *user)
+{
+   CHECK(user == &test_menu);
+   settings_shown++;
+}
+
 static void settings_button(void)
 {
    static menu_media_controls_t media;
    gfx_media_target_t target;
+   gfx_media_view_t view;
    fake_player_t player;
-   const gfx_media_rect_t *button;
+   menu_list_t lists;
+   file_list_t *stack[1];
+   unsigned paused;
    memset(&media, 0, sizeof(media));
    memset(&target, 0, sizeof(target));
    memset(&player, 0, sizeof(player));
+   memset(&lists, 0, sizeof(lists));
+   memset(&view, 0, sizeof(view));
+   stack[0] = (file_list_t*)calloc(1, sizeof(file_list_t));
+   CHECK(stack[0]);
+   lists.menu_stack = stack; lists.menu_stack_size = 1;
+   test_menu.entries.list = &lists;
+   CHECK(file_list_append(stack[0], "/shows", "", FILE_TYPE_DIRECTORY, 0, 0));
    player.available = true;
    media.settings_hide = settings_hide;
+   media.settings_show = settings_show;
    media.settings_user = &test_menu;
    target.user = target.navigation_user = &player;
    target.identity = &player;
    target.state = fake_state;
    target.pause = fake_pause;
    target.seek = fake_seek;
-   menu_media_controls_update(&media, &target, 640, 480, NULL, 1);
-   CHECK(media.controls.layout.button_count == 7);
-   media.controls.row_focus = true;
-   media.controls.focus = 5;
-   CHECK(gfx_media_controls_action(&media.controls, GFX_MEDIA_NEXT, 2));
-   CHECK(media.controls.focus == 6);
-   CHECK(gfx_media_controls_action(&media.controls, GFX_MEDIA_ACTIVATE, 3));
-   CHECK(settings_opened == 1 && player.state.paused);
-   CHECK(!media.controls.held && !media.controls.row_focus);
-   menu_media_controls_update(&media, &target, 640, 480, NULL, 4);
-   button = &media.controls.layout.buttons[6];
-   gfx_media_controls_pointer(&media.controls, 0, 0, false, true, 5);
-   gfx_media_controls_pointer(&media.controls, button->x + 1, button->y + 1,
-         true, true, 6);
-   gfx_media_controls_release(&media.controls, button->x + 1, button->y + 1, 7);
-   CHECK(settings_opened == 2 && settings_hidden == 2);
-   player.state.paused = false;
-   player.pause_refused = true;
-   menu_media_controls_update(&media, &target, 640, 480, NULL, 8);
-   CHECK(!gfx_media_controls_action(&media.controls, GFX_MEDIA_SETTINGS, 9));
-   CHECK(settings_opened == 2 && settings_hidden == 2 && !player.state.paused);
-   player.pause_refused = false;
+   for (paused = 0; paused < 2; paused++)
+   {
+      player.state.paused = paused != 0;
+      player.pause_refused = true;
+      menu_media_controls_update(&media, &target, 640, 480, NULL, 1);
+      CHECK(media.controls.layout.button_count == 7);
+      if (!paused)
+      {
+         media.controls.row_focus = true;
+         media.controls.focus = 6;
+         CHECK(gfx_media_controls_action(&media.controls, GFX_MEDIA_ACTIVATE, 2));
+      }
+      else
+      {
+         gfx_media_rect_t button = media.controls.layout.buttons[6];
+         gfx_media_controls_pointer(&media.controls, 0, 0, false, true, 2);
+         gfx_media_controls_pointer(&media.controls, button.x + 1, button.y + 1,
+               true, true, 3);
+         gfx_media_controls_release(&media.controls, button.x + 1, button.y + 1, 4);
+      }
+      CHECK(settings_opened == paused + 1 && settings_hidden == paused + 1);
+      CHECK(player.state.paused == (paused != 0));
+      CHECK(!media.controls.held && !media.controls.row_focus);
+      CHECK(gfx_media_controls_consume(&media.mailbox, &view));
+      CHECK(view.settings_preview && !view.visible);
+      menu_media_controls_context_reset(&media);
+      CHECK(gfx_media_controls_consume(&media.mailbox, &view));
+      CHECK(view.settings_preview && !view.visible);
+      CHECK(file_list_append(stack[0], "/settings", "", 0, 0, 0));
+      menu_media_controls_settings_iterate(&media);
+      CHECK(media.settings_open && !media.settings_returning);
+      CHECK(!menu_media_controls_update(&media, &target, 640, 480, NULL, 3));
+      CHECK(file_list_append(stack[0], "/nested", "", 0, 0, 0));
+      menu_media_controls_settings_iterate(&media);
+      CHECK(media.settings_open);
+      file_list_pop(stack[0], NULL);
+      menu_media_controls_settings_iterate(&media);
+      CHECK(media.settings_open);
+      file_list_pop(stack[0], NULL);
+      settings_walk_pending = true;
+      menu_media_controls_settings_iterate(&media);
+      CHECK(media.settings_open && settings_shown == paused);
+      settings_walk_pending = false;
+      test_menu.flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+      menu_media_controls_settings_iterate(&media);
+      CHECK(media.settings_open && settings_shown == paused);
+      test_menu.flags &= ~MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+      menu_media_controls_settings_iterate(&media);
+      CHECK(!media.settings_open && media.settings_returning);
+      CHECK(settings_shown == paused + 1);
+      menu_media_controls_update(&media, &target, 640, 480, NULL, 4);
+      CHECK(!menu_media_controls_settings_active(&media));
+      CHECK(player.state.paused == (paused != 0));
+      CHECK(gfx_media_controls_consume(&media.mailbox, &view));
+      CHECK(!view.settings_preview && view.visible);
+   }
    settings_refused = true;
-   CHECK(!gfx_media_controls_action(&media.controls, GFX_MEDIA_SETTINGS, 10));
+   CHECK(!gfx_media_controls_action(&media.controls, GFX_MEDIA_SETTINGS, 5));
    CHECK(settings_opened == 3 && settings_hidden == 2 && player.state.paused);
+   CHECK(!menu_media_controls_settings_active(&media));
    settings_refused = false;
+   menu_media_controls_cancel(&media);
+   file_list_free(stack[0]);
+   test_menu.entries.list = NULL;
 }
 
 static void desktop_refresh_lifecycle(void)

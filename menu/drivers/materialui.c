@@ -4337,10 +4337,22 @@ static void materialui_layout(
 
 static void materialui_hide_fullscreen_thumbnails(materialui_handle_t *mui, bool animate);
 
+static void materialui_show_fullscreen_thumbnails(materialui_handle_t *data,
+      struct menu_state *menu_st, size_t selection);
+
+static void materialui_media_settings_show(void *user)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   materialui_handle_t *mui = (materialui_handle_t*)user;
+   materialui_show_fullscreen_thumbnails(mui, menu_st, menu_st->selection_ptr);
+   mui->flags |= MUI_FLAG_NEED_COMPUTE;
+}
+
 static void materialui_media_settings_hide(void *user)
 {
    materialui_handle_t *mui = (materialui_handle_t*)user;
    materialui_hide_fullscreen_thumbnails(mui, false);
+   mui->flags |= MUI_FLAG_NEED_COMPUTE;
 }
 
 static void materialui_browser_update(materialui_handle_t *mui, struct menu_state *menu_st)
@@ -4351,6 +4363,11 @@ static void materialui_browser_update(materialui_handle_t *mui, struct menu_stat
       ? MENU_LIST_GET(menu_st->entries.list, 0) : NULL;
    const char *directory = NULL, *name = NULL;
    gfx_media_playback_state_t state;
+   if (menu_media_controls_settings_active(&mui->media))
+   {
+      gfx_thumbnail_animate(&mui->browser_thumbnail, menu_driver_get_current_time());
+      return;
+   }
    if ((mui->flags & MUI_FLAG_IS_FILE_LIST) && list && stack && stack->size
          && menu_st->selection_ptr < list->size)
    {
@@ -4459,6 +4476,8 @@ static void materialui_render(void *data,
    if (!mui || !list)
       return;
 
+   menu_media_controls_settings_iterate(&mui->media);
+
    /* Check whether screen dimensions, menu scale
     * factor or layout optimisation settings have changed */
    scale_factor = gfx_display_get_dpi_scale(p_disp, settings,
@@ -4523,7 +4542,8 @@ static void materialui_render(void *data,
       }
 
       if (mui->font_data.list.font && mui->font_data.hint.font)
-         materialui_compute_entries_box(mui, dims, header_height);
+         materialui_compute_entries_box(mui, mui->media.settings_open
+               ? VIDEO_SCALE_PACK(dims_w - dims_w / 4, dims_h) : dims, header_height);
 
       if (preserve)
       {
@@ -4570,6 +4590,7 @@ static void materialui_render(void *data,
                &primary, &secondary);
       mui->media.settings_user = mui;
       mui->media.settings_hide = materialui_media_settings_hide;
+      mui->media.settings_show = materialui_media_settings_show;
       menu_media_controls_thumbnail(&mui->media, primary, secondary, shown,
             dims_w > VIDEO_SCALE_W(mui->nav_bar_layout_dims)
                ? dims_w - VIDEO_SCALE_W(mui->nav_bar_layout_dims) : 0,
@@ -8672,6 +8693,18 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
          video_info->dims, header_height, selection);
    menu_media_controls_draw(&mui->media, p_disp, userdata,
          video_info->dims, mui->font_data.hint.font);
+   if (mui->media.view.settings_preview)
+   {
+      unsigned preview_width = video_width / 4;
+      unsigned preview_height = video_height / 4;
+      unsigned right = video_width > VIDEO_SCALE_W(mui->nav_bar_layout_dims)
+         ? video_width - VIDEO_SCALE_W(mui->nav_bar_layout_dims) : video_width;
+      gfx_thumbnail_draw(userdata, video_info->dims, &mui->browser_thumbnail,
+            (float)(right > preview_width ? right - preview_width : 0),
+            (float)(video_height - preview_height) / 2.0f,
+            VIDEO_SCALE_PACK(preview_width, preview_height), GFX_THUMBNAIL_ALIGN_CENTRE,
+            1.0f, 1.0f, NULL);
+   }
 
    /* Draw title + system bar */
    materialui_render_header(mui, tex_list, menu_st, menu_list,

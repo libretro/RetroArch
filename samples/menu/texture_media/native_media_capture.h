@@ -15,7 +15,7 @@ static bool media_native_capture_region(uint32_t *hash,int ordinal, bool movie_o
    struct video_viewport vp;
    uint8_t *pixels;
    unsigned w,h,x,y,ch,bpp;
-   bool ok,bottom_up=true;
+   bool ok,bottom_up=true,preview_ok=true;
    const char *directory=getenv("MEDIA_TEST_CAPTURE_DIR");
    memset(&vp,0,sizeof(vp));video_driver_get_viewport_info(&vp);
    w=VIDEO_SCALE_W(vp.dims);h=VIDEO_SCALE_H(vp.dims);
@@ -46,6 +46,21 @@ static bool media_native_capture_region(uint32_t *hash,int ordinal, bool movie_o
    else
    for(y=h/4;ok&&y<(movie_only?h/2:h*3/4);y++)for(x=w/4;x<w*3/4;x++)for(ch=0;ch<3;ch++)
       *hash=(*hash^pixels[((size_t)y*w+x)*bpp+ch])*UINT32_C(16777619);
+   if (ok && ordinal == 50 && getenv("MEDIA_TEST_SETTINGS_ORANGE"))
+   {
+      unsigned matching = 0, sampled = 0;
+      for (y = h / 8; y < h * 7 / 8; y++)
+         for (x = w * 3 / 4; x < w; x++)
+         {
+            size_t at = ((size_t)y * w + x) * bpp;
+            if (pixels[at + 2] > 180 && pixels[at + 1] > 80
+                  && pixels[at + 1] < 220 && pixels[at] < 60)
+               matching++;
+            sampled++;
+         }
+      printf("settings preview pixels: orange=%u sampled=%u\n", matching, sampled);
+      preview_ok = matching > sampled / 20;
+   }
    if(ok&&directory&&ordinal>=0)
    {
       char path[512];
@@ -65,7 +80,7 @@ static bool media_native_capture_region(uint32_t *hash,int ordinal, bool movie_o
          if(fclose(file))ok=false;
       }
    }
-   free(pixels);return ok;
+   free(pixels);return ok && preview_ok;
 }
 
 static bool media_startup_failure_check(struct menu_state *menu_st,

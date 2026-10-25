@@ -19,6 +19,7 @@
 
 #include "menu_media_controls.h"
 #include "menu_media_browser.h"
+#include "menu_dirwalk.h"
 #include "menu_cbs.h"
 #include "../gfx/video_defines.h"
 #include "../configuration.h"
@@ -86,7 +87,7 @@ bool menu_media_controls_display(unsigned *dims, float *hz)
 
 bool menu_media_controls_continuous(menu_media_controls_t *media, bool shown)
 {
-   if (!shown)
+   if (!shown && !menu_media_controls_settings_active(media))
    {
       menu_media_queue_free(media->queue);
       media->queue = NULL;
@@ -115,17 +116,54 @@ static bool menu_media_controls_settings(void *user)
    struct menu_state *menu_st = menu_state_get_ptr();
    void (*hide)(void *) = media->settings_hide;
    void *hide_user = media->settings_user;
-   if (!gfx_media_controls_action(&media->controls, GFX_MEDIA_PAUSE,
-            media->controls.last_activity))
+   file_list_t *stack = menu_st->entries.list
+      ? MENU_LIST_GET(menu_st->entries.list, 0) : NULL;
+   if (!stack || !stack->size || !media->settings_show)
       return false;
-   gfx_media_controls_cancel(&media->controls);
+   media->settings_depth = stack->size;
+   media->settings_selection = menu_st->selection_ptr;
+   media->settings_parent = (uintptr_t)stack->list[stack->size - 1].path;
+   media->settings_open = true;
    if (generic_action_ok_displaylist_push(NULL, NULL, "", 0,
             menu_st->selection_ptr, 0, ACTION_OK_DL_MEDIA_PLAYER_SETTINGS_LIST) != 0)
+   {
+      media->settings_open = false;
       return false;
+   }
    menu_media_display_publish(media, true);
+   gfx_media_controls_reset(&media->controls);
+   media->controls.settings_preview = true;
+   gfx_media_controls_publish(&media->controls, &media->mailbox);
    if (hide)
       hide(hide_user);
    return true;
+}
+
+bool menu_media_controls_settings_active(const menu_media_controls_t *media)
+{
+   return media->settings_open || media->settings_returning;
+}
+
+void menu_media_controls_settings_iterate(menu_media_controls_t *media)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   file_list_t *stack;
+   if (!media->settings_open) return;
+   stack = menu_st->entries.list ? MENU_LIST_GET(menu_st->entries.list, 0) : NULL;
+   if (!stack || stack->size < media->settings_depth)
+      media->settings_open = false;
+   else if (stack->size == media->settings_depth)
+   {
+      if (menu_dirwalk_pending() || MENU_ENTRIES_NEEDS_REFRESH(menu_st)) return;
+      media->settings_open = false;
+      if (stack->size && media->settings_show
+            && (uintptr_t)stack->list[stack->size - 1].path == media->settings_parent
+            && menu_st->selection_ptr == media->settings_selection)
+      {
+         media->settings_returning = true;
+         media->settings_show(media->settings_user);
+      }
+   }
 }
 
 bool menu_media_controls_update(menu_media_controls_t *media,
@@ -135,6 +173,7 @@ bool menu_media_controls_update(menu_media_controls_t *media,
    settings_t *settings = config_get_ptr();
    gfx_media_target_t active;
    bool subtitle_changed = false;
+   if (media->settings_open) return false;
    memset(&active, 0, sizeof(active));
    if (target)
    {
@@ -191,7 +230,10 @@ bool menu_media_controls_update(menu_media_controls_t *media,
                seeking ? NULL : gfx_media_subtitle_view(media->subtitle));
       media->subtitle_seeking = seeking;
       if (media->controls.target.identity)
+      {
          media->context_reset = false;
+         media->settings_returning = false;
+      }
    }
    gfx_media_controls_publish(&media->controls, &media->mailbox);
    menu_media_display_publish(media, false);
@@ -205,8 +247,10 @@ void menu_media_controls_thumbnail(menu_media_controls_t *media,
 {
    gfx_media_target_t target;
    gfx_media_playback_state_t state;
-   bool once = menu_media_controls_continuous(media, shown);
-   bool completed = gfx_thumbnail_take_completed(primary);
+   bool once, completed;
+   if (media->settings_open) return;
+   once = menu_media_controls_continuous(media, shown);
+   completed = gfx_thumbnail_take_completed(primary);
    completed = gfx_thumbnail_take_completed(secondary) || completed;
    memset(&target, 0, sizeof(target));
    if (once && completed)
@@ -276,7 +320,8 @@ void menu_media_controls_context_reset(menu_media_controls_t *media)
    media->subtitle_seeking = false;
    gfx_media_subtitle_publish(&media->subtitle_mailbox, NULL);
    gfx_media_controls_reset(&media->controls);
-   gfx_media_controls_publish(NULL, &media->mailbox);
+   media->controls.settings_preview = media->settings_open;
+   gfx_media_controls_publish(&media->controls, &media->mailbox);
 }
 
 void menu_media_controls_subtitle_caption(const gfx_media_subtitle_view_t *view,
@@ -302,6 +347,7 @@ void menu_media_controls_cancel(menu_media_controls_t *media)
    gfx_media_subtitle_free(media->subtitle);
    media->subtitle = NULL;
    media->context_reset = false;
+   media->settings_open = media->settings_returning = false;
    media->subtitle_seeking = false;
    gfx_media_subtitle_publish(&media->subtitle_mailbox, NULL);
    gfx_media_controls_reset(&media->controls);

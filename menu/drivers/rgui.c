@@ -3174,6 +3174,12 @@ static bool rgui_media_gpu_supported(void)
       || info.api == VIDEO_DEVICE_D3D12;
 }
 
+static void rgui_media_settings_show(void *user)
+{
+   rgui_t *rgui = (rgui_t*)user;
+   rgui->flags |= RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL | RGUI_FLAG_FORCE_REDRAW;
+}
+
 static void rgui_media_settings_hide(void *user)
 {
    rgui_t *rgui = (rgui_t*)user;
@@ -3192,10 +3198,13 @@ RGUI_NOINLINE static void rgui_media_update(rgui_t *rgui, unsigned dims)
    bool old_seeking = controls->playback.seeking, old_focus = controls->row_focus;
    unsigned old_button = controls->focus;
    int old_hover = controls->hover;
-   bool wanted = *rgui->media_requested_path
+   bool wanted, once;
+   menu_media_controls_settings_iterate(&rgui->media);
+   wanted = *rgui->media_requested_path
       && ((rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
-            || settings->bools.menu_rgui_inline_thumbnails);
-   bool once = menu_media_controls_continuous(&rgui->media,
+            || settings->bools.menu_rgui_inline_thumbnails
+            || menu_media_controls_settings_active(&rgui->media));
+   once = menu_media_controls_continuous(&rgui->media,
          (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL) != 0);
    gfx_media_cpu_reap();
    memset(&target, 0, sizeof(target));
@@ -3237,7 +3246,7 @@ RGUI_NOINLINE static void rgui_media_update(rgui_t *rgui, unsigned dims)
    {
       gfx_thumbnail_set_repeat(&rgui->media_gpu, !once);
       gfx_thumbnail_animate(&rgui->media_gpu, now);
-      if (gfx_thumbnail_take_completed(&rgui->media_gpu) && once)
+      if (!rgui->media.settings_open && gfx_thumbnail_take_completed(&rgui->media_gpu) && once)
          menu_media_controls_complete(&rgui->media);
       if ((rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
             && !(rgui->flags & RGUI_FLAG_SHOW_SCREENSAVER)
@@ -3257,7 +3266,7 @@ RGUI_NOINLINE static void rgui_media_update(rgui_t *rgui, unsigned dims)
       {
          if (gfx_media_cpu_completed(rgui->media_player))
          {
-            if (gfx_media_cpu_take_completed(rgui->media_player) && once)
+            if (!rgui->media.settings_open && gfx_media_cpu_take_completed(rgui->media_player) && once)
                menu_media_controls_complete(&rgui->media);
          }
          else
@@ -3288,6 +3297,7 @@ RGUI_NOINLINE static void rgui_media_update(rgui_t *rgui, unsigned dims)
    menu_input_get_pointer_state(&rgui->media_pointer);
    rgui->media.settings_user = rgui;
    rgui->media.settings_hide = rgui_media_settings_hide;
+   rgui->media.settings_show = rgui_media_settings_show;
    if (menu_media_controls_update(&rgui->media, &target, VIDEO_SCALE_W(dims),
             VIDEO_SCALE_H(dims), &rgui->media_pointer, now))
       rgui->flags |= RGUI_FLAG_FORCE_REDRAW;
@@ -6330,6 +6340,7 @@ static void rgui_render(void *data, unsigned dims,
    }
 
    rgui_media_update(rgui, p_disp->framebuf_dims);
+   show_fs_thumbnail = (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL);
    current_display_cb = menu_input_dialog_get_display_kb();
 
    if (!(rgui->flags & RGUI_FLAG_FORCE_REDRAW))
@@ -6572,11 +6583,11 @@ static void rgui_render(void *data, unsigned dims,
       unsigned sublabel_y            = (rgui->term_layout.height * rgui->font_height_stride) + rgui->term_layout.start_y + 4;
       unsigned term_end_x            = rgui->term_layout.start_x + (rgui->term_layout.width * rgui->font_width_stride);
       bool show_entries              = (rgui->flags & RGUI_FLAG_DRAW_ENTRY_SKIP) ? false : true;
-      bool show_mini_thumbnails      = rgui_inline_thumbnails
+      bool show_mini_thumbnails      = rgui->media.settings_open || (rgui_inline_thumbnails
             && rgui->playlist_index >= 0
             && (   (rgui->flags & RGUI_FLAG_IS_PLAYLIST)
                ||  (rgui->flags & RGUI_FLAG_IS_EXPLORE_LIST)
-               || ((rgui->flags & RGUI_FLAG_IS_QUICK_MENU) && !menu_is_running_quick_menu()));
+               || ((rgui->flags & RGUI_FLAG_IS_QUICK_MENU) && !menu_is_running_quick_menu())));
       bool show_thumbnail            = false;
       bool show_left_thumbnail       = false;
       bool show_savestate_thumbnail  = (*rgui->savestate_thumbnail_file_path
@@ -6592,7 +6603,7 @@ static void rgui_render(void *data, unsigned dims,
       if (show_mini_thumbnails)
       {
          /* Get whether each thumbnail type is enabled */
-         show_thumbnail      = (rgui->flags & RGUI_FLAG_ENTRY_HAS_THUMBNAIL)
+         show_thumbnail      = (rgui->media.settings_open || (rgui->flags & RGUI_FLAG_ENTRY_HAS_THUMBNAIL))
                && (rgui->mini_thumbnail.is_valid || (rgui->thumbnail_queue_size > 0));
          show_left_thumbnail = (rgui->flags & RGUI_FLAG_ENTRY_HAS_LEFT_THUMBNAIL)
                && (rgui->mini_left_thumbnail.is_valid || (rgui->left_thumbnail_queue_size > 0));
@@ -8365,6 +8376,7 @@ static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
    size_t list_size                  = list ? list->size : 0;
    unsigned menu_rgui_thumbnail_delay= settings->uints.menu_rgui_thumbnail_delay;
    bool network_on_demand_thumbnails = settings->bools.network_on_demand_thumbnails;
+   if (menu_media_controls_settings_active(&rgui->media)) return;
    rgui->flags                      &= ~(RGUI_FLAG_THUMBNAIL_LOAD_PENDING
                                        | RGUI_FLAG_ENTRY_HAS_THUMBNAIL
                                        | RGUI_FLAG_ENTRY_HAS_LEFT_THUMBNAIL
