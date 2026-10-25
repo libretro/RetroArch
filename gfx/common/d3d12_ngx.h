@@ -16,6 +16,11 @@
 #ifndef _D3D12_NGX_H
 #define _D3D12_NGX_H
 
+/* (the C interfaces, before the header is first seen: in a unity build
+ * everything after shares this inclusion of it) */
+#ifndef COBJMACROS
+#define COBJMACROS
+#endif
 #include <d3d12.h>
 
 #include <boolean.h>

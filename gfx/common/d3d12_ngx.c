@@ -13,6 +13,11 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/* (the C interfaces, before any Direct3D header: in a unity build
+ * everything after shares the first inclusion) */
+#ifndef COBJMACROS
+#define COBJMACROS
+#endif
 #include <stdlib.h>
 #include <string.h>
 
