@@ -73,6 +73,7 @@ typedef struct sdl3_audio
    float gain; /**< Gain currently set on the stream, to skip redundant sets. */
    SDL_AtomicInt device_removed; /**< Becomes true when the stream's device is unplugged; the watch wakes any waiter. */
    bool nonblock; /**< When true, drop samples instead of waiting for the device to clear. */
+   bool write_failed; /**< A write failure was logged; the next stay quiet until a reopen. */
    SDL_AtomicInt defunct; /**< True when the device has completely failed. Saves from retrying each frame. */
 
    /* Frames the device has taken since the stream opened, for the sink
@@ -485,6 +486,7 @@ static void sdl3_audio_prime_stream(sdl3_audio_t *sdl)
    /* A reopen keeps the stream, and with it the raw path's controls. */
    SDL_SetAudioStreamFrequencyRatio(sdl->stream, 1.0f);
    SDL_SetAudioStreamGain(sdl->stream, 1.0f);
+   sdl->write_failed = false;
    sdl->raw_rate = 0;
    sdl->in_cap = sdl->buffer_size;
    sdl->ratio = 1.0f;
@@ -654,8 +656,17 @@ static size_t sdl3_audio_frames_consumed(void *data)
  * main thread's event pump. Without an SDL3 window nothing else pumps. */
 static void sdl3_audio_pump_events(void)
 {
+   /* write_avail() runs several times a frame; a removal noticed a
+    * few milliseconds late costs nothing. */
+   static Uint64 last_ns = 0;
+   Uint64 now_ns;
+
    if (SDL_WasInit(SDL_INIT_VIDEO) || !SDL_IsMainThread())
       return;
+   now_ns = SDL_GetTicksNS();
+   if (last_ns && now_ns - last_ns < 4 * SDL_NS_PER_MS)
+      return;
+   last_ns = now_ns;
    SDL_PumpEvents();
    /* The watch has seen them; nothing else reads them */
    SDL_FlushEvents(SDL_EVENT_TERMINATING, SDL_EVENT_SYSTEM_THEME_CHANGED);
@@ -788,6 +799,15 @@ static bool sdl3_audio_stream_ok(sdl3_audio_t *sdl)
    return true;
 }
 
+/* Writes run every frame: a stream that keeps failing is said once. */
+static void sdl3_audio_write_error(sdl3_audio_t *sdl, const char *what)
+{
+   if (sdl->write_failed)
+      return;
+   sdl->write_failed = true;
+   RARCH_ERR("[SDL3 audio] Failed to %s: %s.\n", what, SDL_GetError());
+}
+
 /**
  * Queues frame-aligned data up to the given cap.
  *
@@ -841,7 +861,7 @@ static ssize_t sdl3_audio_queue(sdl3_audio_t *sdl, const void *s,
          size_t write_amt = MIN(len - size, avail);
          if (!SDL_PutAudioStreamData(sdl->stream, (const char*)s + size, (int)write_amt))
          {
-            RARCH_ERR("[SDL3 audio] Failed to write to audio stream: %s.\n", SDL_GetError());
+            sdl3_audio_write_error(sdl, "write to audio stream");
             if (size == 0)
                return -1;
             break;
@@ -893,7 +913,7 @@ static ssize_t sdl3_audio_write(void *data, const void *s, size_t len)
       if (!sdl3_audio_set_controls(sdl, 1.0f, 1.0f)) return -1;
       if (!SDL_SetAudioStreamFormat(sdl->stream, &sdl->spec, NULL))
       {
-         RARCH_ERR("[SDL3 audio] Failed to restore stream format: %s.\n", SDL_GetError());
+         sdl3_audio_write_error(sdl, "restore stream format");
          return -1;
       }
       sdl->raw_rate = 0;
@@ -939,7 +959,7 @@ static ssize_t sdl3_audio_write_raw(void *data, const int16_t *samples,
       in_spec.freq = (int)input_rate;
       if (!SDL_SetAudioStreamFormat(sdl->stream, &in_spec, NULL))
       {
-         RARCH_ERR("[SDL3 audio] Failed to set raw input format: %s.\n", SDL_GetError());
+         sdl3_audio_write_error(sdl, "set raw input format");
          return -1;
       }
       sdl->raw_rate = (int)input_rate;

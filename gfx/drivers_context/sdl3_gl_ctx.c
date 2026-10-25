@@ -42,6 +42,8 @@ typedef struct gfx_ctx_sdl3_data
    int interval;
    bool core_hw_context_enable;
    bool adaptive_vsync;
+   bool use_hw_ctx;    /* a shared context is wanted */
+   bool shared_failed; /* and it could not be made */
 } gfx_ctx_sdl3_data_t;
 
 /* bind_api runs before init (see video_context_driver_init), so there
@@ -172,6 +174,26 @@ static void sdl3_ctx_swap_interval(void *data, int interval)
       SDL_GL_SetSwapInterval(1);
 }
 
+/* Makes the core's shared context; the main one is current after. */
+static bool sdl3_ctx_create_shared(gfx_ctx_sdl3_data_t *sdl)
+{
+   SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 1);
+   SDL_GL_MakeCurrent(sdl->win, sdl->ctx);
+   sdl->shared_ctx = SDL_GL_CreateContext(sdl->win);
+   /* Reset the attribute so later SDL_GL_CreateContext calls
+    * (video reinit) don't silently inherit sharing. */
+   SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 0);
+   SDL_GL_MakeCurrent(sdl->win, sdl->ctx);
+   if (!sdl->shared_ctx)
+   {
+      RARCH_ERR("[SDL3 GL] Failed to create shared GL context, the core shares the main one: %s.\n",
+            SDL_GetError());
+      sdl->shared_failed = true;
+      return false;
+   }
+   return true;
+}
+
 static bool sdl3_ctx_set_video_mode(void *data,
       unsigned dims,
       bool fullscreen)
@@ -251,6 +273,11 @@ static bool sdl3_ctx_set_video_mode(void *data,
    sdl->adaptive_vsync = SDL_GL_SetSwapInterval(-1);
    sdl3_ctx_swap_interval(sdl, sdl->interval);
 
+   /* Made now, so a context that cannot share says so by the time
+    * the video driver asks (GFX_CTX_FLAGS_NO_SHARED_CONTEXT). */
+   if (sdl->use_hw_ctx && !sdl->shared_ctx && !sdl->shared_failed)
+      sdl3_ctx_create_shared(sdl);
+
    return true;
 
 error:
@@ -277,6 +304,11 @@ static uint32_t sdl3_ctx_get_flags(void *data)
 
    if (sdl && sdl->adaptive_vsync)
       BIT32_SET(flags, GFX_CTX_FLAGS_ADAPTIVE_VSYNC);
+   if (sdl && sdl->shared_failed)
+      BIT32_SET(flags, GFX_CTX_FLAGS_NO_SHARED_CONTEXT);
+   /* set_video_mode restyles the window it has */
+   BIT32_SET(flags, GFX_CTX_FLAGS_FULLSCREEN_IN_PLACE);
+   BIT32_SET(flags, GFX_CTX_FLAGS_WINDOW_RESIZE_IN_PLACE);
 
    if (sdl3_gl_core_profile(sdl))
       BIT32_SET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
@@ -310,28 +342,19 @@ static void sdl3_ctx_bind_hw_render(void *data, bool enable)
 {
    gfx_ctx_sdl3_data_t *sdl = (gfx_ctx_sdl3_data_t*)data;
 
-   if (!sdl || !sdl->win || !sdl->ctx)
+   if (!sdl)
+      return;
+   /* Told before the window is up, too */
+   if (enable)
+      sdl->use_hw_ctx = true;
+   if (!sdl->win || !sdl->ctx)
       return;
 
-   if (enable)
-   {
-      if (!sdl->shared_ctx)
-      {
-         SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 1);
-         SDL_GL_MakeCurrent(sdl->win, sdl->ctx);
-         sdl->shared_ctx = SDL_GL_CreateContext(sdl->win);
-         /* Reset the attribute so later SDL_GL_CreateContext calls
-          * (video reinit) don't silently inherit sharing. */
-         SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 0);
-         if (!sdl->shared_ctx)
-         {
-            RARCH_ERR("[SDL3 GL] Failed to create shared GL context: %s.\n",
-                  SDL_GetError());
-            return;
-         }
-      }
+   /* Without a shared context the core has the main one */
+   if (     enable
+         && (sdl->shared_ctx
+            || (!sdl->shared_failed && sdl3_ctx_create_shared(sdl))))
       SDL_GL_MakeCurrent(sdl->win, sdl->shared_ctx);
-   }
    else
       SDL_GL_MakeCurrent(sdl->win, sdl->ctx);
 }

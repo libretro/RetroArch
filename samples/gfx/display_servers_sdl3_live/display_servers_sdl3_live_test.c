@@ -253,6 +253,45 @@ int main(void)
          break;
       }
    }
+
+   /* Rates that round alike are set apart: 59.94 is not 60 */
+   {
+      int j, pairs = 0;
+      for (i = 0; i < (int)nlist; i++)
+         for (j = 0; j < (int)nlist; j++)
+         {
+            float got;
+            if (     i == j
+                  || list[i].dims != list[j].dims
+                  || list[i].refreshrate != list[j].refreshrate)
+               continue;
+            if (!dispserv_sdl3.set_resolution(data, list[i].dims,
+                     (int)list[i].refreshrate, list[i].refreshrate_float,
+                     0, 0, 0, 0))
+            {
+               fprintf(stderr, "FAIL: set_resolution %ux%u@%.3f\n",
+                     VIDEO_SCALE_W(list[i].dims), VIDEO_SCALE_H(list[i].dims),
+                     list[i].refreshrate_float);
+               return 1;
+            }
+            SDL_PumpEvents();
+            got = dispserv_sdl3.get_refresh_rate(data);
+            if (got < list[i].refreshrate_float - 0.005f
+                  || got > list[i].refreshrate_float + 0.005f)
+            {
+               fprintf(stderr, "FAIL: asked for %ux%u@%.3f, the display is at %.3f Hz\n",
+                     VIDEO_SCALE_W(list[i].dims), VIDEO_SCALE_H(list[i].dims),
+                     list[i].refreshrate_float, got);
+               return 1;
+            }
+            pairs++;
+         }
+      if (pairs)
+         printf("[pass] set_resolution: %d listed rates told apart from those rounding alike\n",
+               pairs);
+      else
+         puts("[skip] no two listed rates round alike");
+   }
    free(list);
 
    /* Close restores the desktop mode */

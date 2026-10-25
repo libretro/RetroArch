@@ -45,6 +45,7 @@ typedef struct sdl3_tex
    unsigned h;
    bool active;
    bool rgb32;
+   bool failed; /* creating it at w x h failed */
 } sdl3_tex_t;
 
 #ifdef HAVE_OVERLAY
@@ -147,8 +148,10 @@ void sdl3_set_handles(SDL_Window *window);
 void sdl3_pump_window_events(bool *quit, bool *resize);
 
 /* Pumps the SDL event queue for the input drivers, unless the video
- * thread owns the window and pumps it already. */
-void sdl3_pump_input_events(void);
+ * thread owns the window and pumps it already. A pump also updates
+ * joysticks and sensors; false when it was left to the video thread,
+ * and the caller updates them itself. */
+bool sdl3_pump_input_events(void);
 
 /* Creates or resizes the window, or toggles fullscreen. */
 bool sdl3_window_set_video_mode(SDL_Window **win,

@@ -64,6 +64,29 @@ static int sdl3_display_server_refresh_label(const SDL_DisplayMode *dm)
    return (int)floor(dm->refresh_rate + 0.5f);
 }
 
+/* Exact where SDL has the ratio: 59.94 is not 60 */
+static double sdl3_display_server_mode_hz(const SDL_DisplayMode *dm)
+{
+   if (dm->refresh_rate_numerator > 0 && dm->refresh_rate_denominator > 0)
+      return (double)dm->refresh_rate_numerator
+         / (double)dm->refresh_rate_denominator;
+   return dm->refresh_rate;
+}
+
+/* Modes are sized in points; the frontend's sizes are pixels */
+static unsigned sdl3_display_server_mode_dims(const SDL_DisplayMode *dm)
+{
+   float d = dm->pixel_density > 0.0f ? dm->pixel_density : 1.0f;
+   return VIDEO_SCALE_PACK((unsigned)(dm->w * d + 0.5f),
+         (unsigned)(dm->h * d + 0.5f));
+}
+
+/* SDL lists a rate under every pixel format and density */
+static bool sdl3_display_server_same_hz(double a, double b)
+{
+   return fabs(a - b) < 0.005;
+}
+
 static void *sdl3_display_server_init(void)
 {
    return calloc(1, sizeof(dispserv_sdl3_t));
@@ -80,30 +103,38 @@ static void sdl3_display_server_destroy(void *data)
    free(dispserv);
 }
 
-/* Apply a listed WxH@R to the window: the closest listed mode as the
- * window's fullscreen mode, then fullscreen. */
+/* Apply a listed WxH@R, in pixels, to the window: the listed mode of
+ * that size nearest the rate as its fullscreen mode, then fullscreen. */
 static bool sdl3_display_server_apply(dispserv_sdl3_t *dispserv,
-      unsigned dims, int refresh)
+      unsigned dims, double hz)
 {
-   int w = (int)VIDEO_SCALE_W(dims);
-   int h = (int)VIDEO_SCALE_H(dims);
+   int i, n;
    SDL_DisplayMode got;
+   SDL_DisplayMode **modes;
+   const SDL_DisplayMode *best = NULL;
    SDL_Window *win = sdl3_display_server_window();
 
    if (!win)
       return false;
 
-   if (!SDL_GetClosestFullscreenDisplayMode(dispserv->display, w, h,
-            (float)refresh, false, &got))
-   {
-      RARCH_ERR("[SDL3] No listed mode close to %dx%d@%d: %s\n",
-            w, h, refresh, SDL_GetError());
+   if (!(modes = SDL_GetFullscreenDisplayModes(dispserv->display, &n)))
       return false;
-   }
-   if (got.w != w || got.h != h)
+   for (i = 0; i < n; i++)
    {
-      RARCH_ERR("[SDL3] Closest listed mode is %dx%d@%.2f, not %dx%d\n",
-            got.w, got.h, got.refresh_rate, w, h);
+      if (sdl3_display_server_mode_dims(modes[i]) != dims)
+         continue;
+      if (     !best
+            || fabs(sdl3_display_server_mode_hz(modes[i]) - hz)
+             < fabs(sdl3_display_server_mode_hz(best) - hz))
+         best = modes[i];
+   }
+   if (best)
+      got = *best;
+   SDL_free(modes);
+   if (!best)
+   {
+      RARCH_ERR("[SDL3] No listed mode is %ux%u\n",
+            VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims));
       return false;
    }
 
@@ -129,6 +160,7 @@ static bool sdl3_display_server_set_resolution(void *data,
       int center, int monitor_index, int xoffset, int padjust)
 {
    const SDL_DisplayMode *cur;
+   double rate               = hz > 0.0f ? (double)hz : (double)int_hz;
    dispserv_sdl3_t *dispserv = (dispserv_sdl3_t*)data;
    if (!dispserv)
       return false;
@@ -146,15 +178,16 @@ static bool sdl3_display_server_set_resolution(void *data,
    cur = SDL_GetCurrentDisplayMode(dispserv->display);
    if (cur)
    {
+      unsigned cur_dims = sdl3_display_server_mode_dims(cur);
       if (VIDEO_SCALE_W(dims) == 0)
-         VIDEO_SCALE_PUT_W(dims, cur->w);
+         VIDEO_SCALE_PUT_W(dims, VIDEO_SCALE_W(cur_dims));
       if (VIDEO_SCALE_H(dims) == 0)
-         VIDEO_SCALE_PUT_H(dims, cur->h);
-      if (int_hz == 0)
-         int_hz = sdl3_display_server_refresh_label(cur);
+         VIDEO_SCALE_PUT_H(dims, VIDEO_SCALE_H(cur_dims));
+      if (rate <= 0.0)
+         rate = sdl3_display_server_mode_hz(cur);
    }
 
-   return sdl3_display_server_apply(dispserv, dims, int_hz);
+   return sdl3_display_server_apply(dispserv, dims, rate);
 }
 
 static int sdl3_display_server_resolution_list_qsort(
@@ -195,14 +228,28 @@ static void *sdl3_display_server_get_resolution_list(void *data,
 
    for (i = 0, j = 0; i < n; i++)
    {
+      int k;
       const SDL_DisplayMode *dm = modes[i];
-      conf[j].dims = VIDEO_SCALE_PACK(dm->w, dm->h);
+      unsigned dims             = sdl3_display_server_mode_dims(dm);
+      double   hz               = sdl3_display_server_mode_hz(dm);
+      bool     current          = cur
+         && dims == sdl3_display_server_mode_dims(cur)
+         && sdl3_display_server_same_hz(hz, sdl3_display_server_mode_hz(cur));
+      for (k = 0; k < j; k++)
+         if (     conf[k].dims == dims
+               && sdl3_display_server_same_hz(conf[k].refreshrate_float, hz))
+            break;
+      if (k < j)
+      {
+         conf[k].current |= current;
+         continue;
+      }
+      conf[j].dims              = dims;
       conf[j].bpp               = SDL_BITSPERPIXEL(dm->format);
       conf[j].refreshrate       = sdl3_display_server_refresh_label(dm);
-      conf[j].refreshrate_float = dm->refresh_rate;
+      conf[j].refreshrate_float = (float)hz;
       conf[j].idx               = j;
-      conf[j].current           = cur && dm->w == cur->w && dm->h == cur->h
-         && dm->refresh_rate == cur->refresh_rate && dm->format == cur->format;
+      conf[j].current           = current;
       j++;
    }
    SDL_free(modes);
@@ -226,7 +273,7 @@ static void sdl3_display_server_get_video_output_size(void *data,
    if (!cur)
       return;
    if (dims)
-      *dims = VIDEO_SCALE_PACK(cur->w, cur->h);
+      *dims = sdl3_display_server_mode_dims(cur);
 }
 
 static uint32_t sdl3_display_server_get_flags(void *data)
@@ -344,14 +391,15 @@ static int sdl3_display_server_modeline_enum(void *data,
    for (i = 0, j = 0; i < n && j < max; i++)
    {
       const SDL_DisplayMode *dm = list[i];
-      int refresh = sdl3_display_server_refresh_label(dm);
+      unsigned dims = sdl3_display_server_mode_dims(dm);
+      double   hz   = sdl3_display_server_mode_hz(dm);
       int k;
       bool dup = false;
-      /* One entry per WxH@R; SDL lists every pixel format and density */
+      /* One entry per WxH@R */
       for (k = 0; k < j; k++)
       {
-         if (modes[k].dims == VIDEO_SCALE_PACK(dm->w, dm->h)
-               && modes[k].refresh == refresh)
+         if (modes[k].dims == dims
+               && sdl3_display_server_same_hz(modes[k].vfreq, hz))
          {
             dup = true;
             break;
@@ -360,16 +408,18 @@ static int sdl3_display_server_modeline_enum(void *data,
       if (dup)
          continue;
       memset(&modes[j], 0, sizeof(modes[j]));
-      modes[j].dims    = VIDEO_SCALE_PACK(dm->w, dm->h);
-      modes[j].hactive = dm->w;
-      modes[j].vactive = dm->h;
-      modes[j].refresh = refresh;
-      modes[j].vfreq   = dm->refresh_rate;
+      modes[j].dims    = dims;
+      modes[j].hactive = VIDEO_SCALE_W(dims);
+      modes[j].vactive = VIDEO_SCALE_H(dims);
+      modes[j].refresh = sdl3_display_server_refresh_label(dm);
+      modes[j].vfreq   = hz;
       /* Labels only: SDL does not expose the timing behind a mode */
       modes[j].type    = MODELINE_TIMING_SYSTEM;
       modes[j].platform_data = (uint64_t)dm->format;
-      if (desktop && dm->w == desktop->w && dm->h == desktop->h
-            && refresh == sdl3_display_server_refresh_label(desktop))
+      if (     desktop
+            && dims == sdl3_display_server_mode_dims(desktop)
+            && sdl3_display_server_same_hz(hz,
+               sdl3_display_server_mode_hz(desktop)))
          modes[j].type |= MODELINE_DESKTOP;
       j++;
    }
@@ -383,7 +433,8 @@ static bool sdl3_display_server_modeline_set(void *data,
    dispserv_sdl3_t *dispserv = (dispserv_sdl3_t*)data;
    if (!dispserv || !dispserv->opened || !mode)
       return false;
-   return sdl3_display_server_apply(dispserv, mode->dims, mode->refresh);
+   return sdl3_display_server_apply(dispserv, mode->dims,
+         mode->vfreq > 0.0 ? mode->vfreq : (double)mode->refresh);
 }
 
 static bool sdl3_display_server_modeline_flush(void *data)

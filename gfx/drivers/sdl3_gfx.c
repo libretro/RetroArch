@@ -64,6 +64,20 @@ static void sdl3_overlay_free(sdl3_video_t *vid);
 static void sdl3_overlays_render(sdl3_video_t *vid);
 #endif
 
+/* Sharp scaling picks pixel art's filter, which is nearest at whole
+ * scales and keeps pixels even at the others. */
+static void sdl3_set_frame_scale_mode(SDL_Texture *tex, bool smooth)
+{
+   if (smooth)
+      SDL_SetTextureScaleMode(tex, SDL_SCALEMODE_LINEAR);
+#if SDL_VERSION_ATLEAST(3, 4, 0)
+   else if (SDL_SetTextureScaleMode(tex, SDL_SCALEMODE_PIXELART))
+      return;
+#endif
+   else
+      SDL_SetTextureScaleMode(tex, SDL_SCALEMODE_NEAREST);
+}
+
 static INLINE void sdl3_tex_zero(sdl3_tex_t *t)
 {
    if (t->tex)
@@ -165,11 +179,12 @@ static void sdl3_refresh_input_size(sdl3_video_t *vid, bool menu, bool rgb32,
 
    /* Pitch is deliberately not part of the recreate check: the texture
     * doesn't depend on source pitch (uploads pass it per call), so a
-    * core varying pitch at the same dimensions won't churn textures. */
-   if (!target->tex ||
-         target->w != width ||
-         target->h != height ||
-         target->rgb32 != rgb32)
+    * core varying pitch at the same dimensions won't churn textures.
+    * A size that failed is retried only once it changes. */
+   if (     (!target->tex && !target->failed)
+         || target->w != width
+         || target->h != height
+         || target->rgb32 != rgb32)
    {
       SDL_PixelFormat format;
 
@@ -180,8 +195,12 @@ static void sdl3_refresh_input_size(sdl3_video_t *vid, bool menu, bool rgb32,
       else /* assumes the frontend converts 0RGB1555 to RGB565 */
          format = rgb32 ? SDL_PIXELFORMAT_ARGB8888 : SDL_PIXELFORMAT_RGB565;
 
-      target->tex = SDL_CreateTexture(vid->renderer, format,
+      target->tex    = SDL_CreateTexture(vid->renderer, format,
             SDL_TEXTUREACCESS_STREAMING, width, height);
+      target->w      = width;
+      target->h      = height;
+      target->rgb32  = rgb32;
+      target->failed = !target->tex;
 
       if (!target->tex)
       {
@@ -190,18 +209,15 @@ static void sdl3_refresh_input_size(sdl3_video_t *vid, bool menu, bool rgb32,
          return;
       }
 
-      SDL_SetTextureScaleMode(target->tex,
-            (menu || !vid->video.smooth)
-            ? SDL_SCALEMODE_NEAREST : SDL_SCALEMODE_LINEAR);
+      if (menu)
+         SDL_SetTextureScaleMode(target->tex, SDL_SCALEMODE_NEAREST);
+      else
+         sdl3_set_frame_scale_mode(target->tex, vid->video.smooth);
 
       /* Blend when displaying the menu, but disable it otherwise
        * because the alpha byte may be 0 like when rendering
        * XRGB8888 content. */
       SDL_SetTextureBlendMode(target->tex, menu ? SDL_BLENDMODE_BLEND : SDL_BLENDMODE_NONE);
-
-      target->w     = width;
-      target->h     = height;
-      target->rgb32 = rgb32;
    }
 }
 
@@ -234,12 +250,15 @@ static void sdl3_stream_upload(sdl3_tex_t *target, const void *src,
 
    in  = (const uint8_t*)src;
    out = (uint8_t*)dst;
-   for (y = 0; y < target->h; y++)
-   {
-      memcpy(out, in, len);
-      in  += src_pitch;
-      out += dst_pitch;
-   }
+   if (len == src_pitch && len == (size_t)dst_pitch)
+      memcpy(out, in, len * target->h);
+   else
+      for (y = 0; y < target->h; y++)
+      {
+         memcpy(out, in, len);
+         in  += src_pitch;
+         out += dst_pitch;
+      }
 
    SDL_UnlockTexture(target->tex);
 }
@@ -395,7 +414,7 @@ static bool sdl3_capture_viewport(sdl3_video_t *vid, uint8_t *buffer,
       bool bgrx)
 {
    SDL_Surface *surf;
-   int w, h, y;
+   int w, h;
    bool ok = true;
    size_t bpp           = bgrx ? 4 : 3;
    SDL_PixelFormat fmt  = bgrx ? SDL_PIXELFORMAT_BGRA32
@@ -418,21 +437,18 @@ static bool sdl3_capture_viewport(sdl3_video_t *vid, uint8_t *buffer,
    if (w < (int)VIDEO_SCALE_W(vid->vp.dims) || h < (int)VIDEO_SCALE_H(vid->vp.dims))
       memset(buffer, 0, VIDEO_SCALE_AREA(vid->vp.dims) * bpp);
 
-   for (y = 0; y < h; y++)
-   {
-      int dst_row = bgrx ? y : (h - 1 - y);
-      if (!SDL_ConvertPixels(w, 1, surf->format,
-            (const uint8_t*)surf->pixels + (size_t)y * surf->pitch,
-            surf->pitch,
-            fmt,
-            buffer + (size_t)dst_row * VIDEO_SCALE_W(vid->vp.dims) * bpp,
+   /* BGR24 is wanted bottom-up; the surface is ours to flip. Only the
+    * rows that fit are read, so they are flipped to the buffer's end. */
+   if (     !(bgrx || SDL_FlipSurface(surf, SDL_FLIP_VERTICAL))
+         || !SDL_ConvertPixels(w, h, surf->format,
+            (const uint8_t*)surf->pixels
+            + (bgrx ? 0 : (size_t)(surf->h - h) * surf->pitch),
+            surf->pitch, fmt, buffer,
             (int)(VIDEO_SCALE_W(vid->vp.dims) * bpp)))
-      {
-         RARCH_WARN("[SDL3] Failed to convert viewport data: %s.\n",
-               SDL_GetError());
-         ok = false;
-         break;
-      }
+   {
+      RARCH_WARN("[SDL3] Failed to convert viewport data: %s.\n",
+            SDL_GetError());
+      ok = false;
    }
 
    SDL_DestroySurface(surf);
@@ -990,6 +1006,10 @@ static bool sdl3_gfx_frame(void *data, const void *frame,
    bool views_blend  = false;
    bool views_per_eye, views_ui, views;
 
+   /* No programmable pipeline: XMB's animated backgrounds can't draw,
+    * so it falls back to its gradient rather than a wasted quad. */
+   video_info->menu_shader_pipeline = 0;
+
    if (frame)
    {
       if (dims != vid->views.frame_dims)
@@ -1238,14 +1258,12 @@ static void sdl3_poke_set_filtering(void *data, unsigned index, bool smooth, boo
    /* SDL3 can retag the sampler in place - no need to drop and
     * recreate the streaming texture. */
    if (vid->frame.tex)
-      SDL_SetTextureScaleMode(vid->frame.tex,
-            smooth ? SDL_SCALEMODE_LINEAR : SDL_SCALEMODE_NEAREST);
+      sdl3_set_frame_scale_mode(vid->frame.tex, smooth);
    {
       unsigned i;
       for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
          if (vid->views.tex[i])
-            SDL_SetTextureScaleMode(vid->views.tex[i],
-                  smooth ? SDL_SCALEMODE_LINEAR : SDL_SCALEMODE_NEAREST);
+            sdl3_set_frame_scale_mode(vid->views.tex[i], smooth);
    }
 }
 
@@ -1279,7 +1297,10 @@ static void sdl3_get_video_output_size(void *data,
       return;
    }
 
-   *dims = VIDEO_SCALE_PACK((unsigned)mode->w, (unsigned)mode->h);
+   /* A mode is sized in points */
+   *dims = VIDEO_SCALE_PACK(
+         (unsigned)(mode->w * (mode->pixel_density > 0.0f ? mode->pixel_density : 1.0f) + 0.5f),
+         (unsigned)(mode->h * (mode->pixel_density > 0.0f ? mode->pixel_density : 1.0f) + 0.5f));
    SDL_snprintf(desc, desc_len, "%.2f Hz", mode->refresh_rate);
 }
 
@@ -1397,6 +1418,9 @@ static uint32_t sdl3_get_flags(void *data)
     * recording never holds the menu or messages. */
    BIT32_SET(flags, GFX_CTX_FLAGS_RECORD_GAME_ONLY);
    BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
+   /* set_video_mode restyles the window it has */
+   BIT32_SET(flags, GFX_CTX_FLAGS_FULLSCREEN_IN_PLACE);
+   BIT32_SET(flags, GFX_CTX_FLAGS_WINDOW_RESIZE_IN_PLACE);
    if (vid && retro_atomic_load_acquire_int(&vid->views.allowed))
       BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS);
    if (vid && retro_atomic_load_acquire_int(&vid->views.fallback))

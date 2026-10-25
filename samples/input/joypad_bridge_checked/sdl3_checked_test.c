@@ -12,7 +12,7 @@
 #include "bridge_view.h"
 
 /* No video thread here: the driver pumps the queue itself. */
-void sdl3_pump_input_events(void) { SDL_PumpEvents(); }
+bool sdl3_pump_input_events(void) { SDL_PumpEvents(); return true; }
 
 static void randomise(sdl3_joypad_t *pad)
 {
@@ -155,6 +155,64 @@ static unsigned check_touchpad(void)
    return bad;
 }
 
+/* set_player() shows the port's player on the pad, none for 0; and a
+ * pad turned away with every slot taken gets the first one freed. */
+static unsigned check_players_and_slots(void)
+{
+   SDL_VirtualJoystickDesc desc;
+   SDL_JoystickID ids[MAX_USERS + 1];
+   SDL_JoystickID freed;
+   unsigned bad = 0, i, n = 0, slot = MAX_USERS;
+
+   for (i = 0; i < MAX_USERS; i++)
+      if (sdl3_joypads[i].joypad)
+         slot = i;
+   sdl3_joypad.set_player(slot, 3);
+   if (SDL_GetJoystickPlayerIndex(sdl3_joypads[slot].joypad) != 2)
+      bad++;
+   sdl3_joypad.set_player(slot, 0);
+   if (SDL_GetJoystickPlayerIndex(sdl3_joypads[slot].joypad) != -1)
+      bad++;
+   if (bad)
+      printf("FAIL sdl3_checked_test: set_player() did not reach the pad\n");
+
+   sdl3_joypad_poll();
+   SDL_INIT_INTERFACE(&desc);
+   desc.type     = SDL_JOYSTICK_TYPE_GAMEPAD;
+   desc.naxes    = 6;
+   desc.nbuttons = 15;
+   for (i = 0; i < MAX_USERS; i++)
+      if (!sdl3_joypads[i].joypad)
+         n++;
+   /* every free slot, and one pad more */
+   for (i = 0; i <= n; i++)
+      if (!(ids[i] = SDL_AttachVirtualJoystick(&desc)))
+      {
+         printf("FAIL sdl3_checked_test: SDL could not attach pad %u (%s)\n", i, SDL_GetError());
+         return bad + 1;
+      }
+   sdl3_joypad_poll();
+   if (!sdl3_joypad_waiting)
+   {
+      printf("FAIL sdl3_checked_test: a pad with no slot was not kept waiting\n");
+      return bad + 1;
+   }
+   for (i = 0; i < MAX_USERS && sdl3_joypads[i].jid != ids[0]; i++);
+   slot  = i;
+   freed = ids[0];
+   SDL_DetachVirtualJoystick(freed);
+   sdl3_joypad_poll();
+   if (slot == MAX_USERS || sdl3_joypads[slot].jid != ids[n])
+   {
+      printf("FAIL sdl3_checked_test: the waiting pad did not take the slot freed\n");
+      bad++;
+   }
+   for (i = 1; i <= n; i++)
+      SDL_DetachVirtualJoystick(ids[i]);
+   sdl3_joypad_poll();
+   return bad;
+}
+
 int main(void)
 {
    unsigned n, bad = 0, pads = 0, gamepads = 0, i;
@@ -215,6 +273,7 @@ int main(void)
       }
 
    bad += check_touchpad();
+   bad += check_players_and_slots();
 
    sdl3_joypad_destroy();
    if (bad)
@@ -224,7 +283,8 @@ int main(void)
    }
    printf("PASS sdl3_checked_test: 1500 random states of %u virtual joysticks"
          " (%u opened as a gamepad); what the bridge would read is what the"
-         " driver says; a touchpad's fingers and press as SDL has them\n",
+         " driver says; a touchpad's fingers and press as SDL has them;"
+         " set_player() reaches the pad; a pad without a slot takes the next freed\n",
          pads, gamepads);
    return 0;
 }

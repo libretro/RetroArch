@@ -25,7 +25,7 @@ void input_driver_set_native_keyboard_available(bool available) { (void)availabl
 void input_driver_set_native_keyboard_shown(bool shown) { (void)shown; }
 enum input_text_type input_driver_text_entry_type(void) { return (enum input_text_type)0; }
 SDL_Window *sdl3_get_window(void) { return NULL; }
-void sdl3_pump_input_events(void) { SDL_PumpEvents(); }
+bool sdl3_pump_input_events(void) { SDL_PumpEvents(); return true; }
 bool sdl3_uses_screen_keyboard(void) { return false; }
 uint32_t utf8_walk(const char **string) { return (uint32_t)(unsigned char)*(*string)++; }
 
