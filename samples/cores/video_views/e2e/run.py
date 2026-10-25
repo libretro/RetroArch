@@ -558,7 +558,7 @@ def expected_status(driver, settings):
 
 
 def wait_for_views(p, d, timeout=60):
-    """Wait for a Wine launch to reach the core before timing the case."""
+    """Wait for initialization to reach the core before timing the case."""
     deadline = time.monotonic() + timeout
     while p.poll() is None:
         for name in ('run.log', 'retroarch.log'):
@@ -955,8 +955,7 @@ def run_case(retroarch, root, driver, case, hw='off', menu=False,
                          env=env, start_new_session=True)
     shot = None
     try:
-        if WINE:
-            wait_for_views(p, d)
+        wait_for_views(p, d)
         if gpu is None:
             wait_settled(p, d, expected_status(driver, settings))
         settle = time.time() + 5
