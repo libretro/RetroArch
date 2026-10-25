@@ -164,6 +164,98 @@ static VkResult VKAPI_CALL mock_create_render_pass(VkDevice d,
    return VK_SUCCESS;
 }
 
+/* What a pass's commands did to its target */
+static VkImageLayout first_old_layout;
+static unsigned      barriers, clears;
+static VkRect2D      render_area;
+static void VKAPI_CALL mock_barrier(VkCommandBuffer c, VkPipelineStageFlags s,
+      VkPipelineStageFlags d, VkDependencyFlags f, uint32_t mn,
+      const VkMemoryBarrier *m, uint32_t bn, const VkBufferMemoryBarrier *b,
+      uint32_t in, const VkImageMemoryBarrier *i)
+{
+   (void)c; (void)s; (void)d; (void)f; (void)mn; (void)m; (void)bn; (void)b;
+   if (in && !barriers++)
+      first_old_layout = i[0].oldLayout;
+}
+static void VKAPI_CALL mock_clear_image(VkCommandBuffer c, VkImage i,
+      VkImageLayout l, const VkClearColorValue *v, uint32_t n,
+      const VkImageSubresourceRange *r)
+{ (void)c; (void)i; (void)l; (void)v; (void)n; (void)r; clears++; }
+static void VKAPI_CALL mock_begin_render_pass(VkCommandBuffer c,
+      const VkRenderPassBeginInfo *info, VkSubpassContents s)
+{ (void)c; (void)s; render_area = info->renderArea; }
+static void VKAPI_CALL mock_cmd_nop(void) { }
+
+/* A subframe of the rolling scanline simulation draws one band of a
+ * pass's target and keeps the rest: the render area is the band and
+ * the target is not discarded, cleared once when new; any other frame
+ * draws the whole target from undefined contents. */
+static void test_scanline_band(struct vulkan_filter_chain *chain)
+{
+   struct slang_pass *pass = chain->passes[0];
+   struct slang_framebuffer fb;
+   Texture original, source;
+   VkViewport vp;
+   VkDescriptorSet sets[INDICES];
+   unsigned frame;
+
+   vkCmdPipelineBarrier   = mock_barrier;
+   vkCmdClearColorImage   = mock_clear_image;
+   vkCmdBeginRenderPass   = mock_begin_render_pass;
+   vkCmdBindPipeline      = (PFN_vkCmdBindPipeline)mock_cmd_nop;
+   vkCmdBindDescriptorSets= (PFN_vkCmdBindDescriptorSets)mock_cmd_nop;
+   vkCmdBindVertexBuffers = (PFN_vkCmdBindVertexBuffers)mock_cmd_nop;
+   vkCmdSetViewport       = (PFN_vkCmdSetViewport)mock_cmd_nop;
+   vkCmdSetScissor        = (PFN_vkCmdSetScissor)mock_cmd_nop;
+   vkCmdDraw              = (PFN_vkCmdDraw)mock_cmd_nop;
+   vkCmdEndRenderPass     = (PFN_vkCmdEndRenderPass)mock_cmd_nop;
+
+   memset(&fb, 0, sizeof(fb));
+   fb.size_dims   = VIDEO_SCALE_PACK(64, 64);
+   fb.image       = (VkImage)(uintptr_t)0x3000;
+   fb.levels      = 1;
+   memset(&original, 0, sizeof(original));
+   memset(&source, 0, sizeof(source));
+   original.texture.dims = source.texture.dims = VIDEO_SCALE_PACK(64, 64);
+   memset(&vp, 0, sizeof(vp));
+   memset(sets, 0, sizeof(sets));
+   pass->framebuffer            = &fb;
+   pass->sets                   = sets;
+   pass->final_pass             = false;
+   pass->pass_info.scale_type_x = GLSLANG_FILTER_CHAIN_SCALE_SOURCE;
+   pass->pass_info.scale_type_y = GLSLANG_FILTER_CHAIN_SCALE_SOURCE;
+   pass->pass_info.scale_x      = 1.0f;
+   pass->pass_info.scale_y      = 1.0f;
+
+   pass->common->simulate_scanline = true;
+   pass->common->total_subframes   = 4;
+   for (frame = 0; frame < 2; frame++)
+   {
+      pass->common->current_subframe = 2;
+      barriers = clears = 0;
+      slang_pass_build_commands(pass, NULL, VK_NULL_HANDLE, &original,
+            &source, &vp, NULL, true);
+      CHECK(render_area.offset.y == 16 && render_area.extent.height == 16
+            && render_area.extent.width == 64,
+            "subframe 2 of 4 draws rows 16-31: %d + %u", render_area.offset.y,
+            render_area.extent.height);
+      CHECK(clears == (frame ? 0u : 1u), "the new target is cleared once: %u", clears);
+      CHECK(first_old_layout == (frame ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+               : VK_IMAGE_LAYOUT_UNDEFINED) && fb.defined,
+            "the target keeps its contents");
+   }
+
+   pass->common->simulate_scanline = false;
+   barriers = clears = 0;
+   slang_pass_build_commands(pass, NULL, VK_NULL_HANDLE, &original,
+         &source, &vp, NULL, true);
+   CHECK(render_area.offset.y == 0 && render_area.extent.height == 64 && !clears
+         && first_old_layout == VK_IMAGE_LAYOUT_UNDEFINED,
+         "without the simulation the whole target is drawn, contents discarded");
+   pass->framebuffer = NULL;
+   pass->sets        = NULL;
+}
+
 /* A pass whose fragment stage can discard draws to a target cleared to
  * transparent black, as glcore and D3D clear theirs; one that writes
  * every pixel keeps the cheaper don't-care load. */
@@ -253,6 +345,13 @@ int main(void)
    }
 
    test_discard_clears();
+   chain = slang_chain_new(&info);
+   CHECK(chain != NULL, "a chain");
+   if (chain)
+   {
+      test_scanline_band(chain);
+      slang_chain_free(chain);
+   }
 
    if (failures)
    {

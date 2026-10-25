@@ -695,6 +695,8 @@ struct slang_framebuffer
    VkRenderPass render_pass;
    /* Cleared as it is drawn to: a pass that can discard */
    bool clear;
+   /* Its contents are defined: drawn or cleared since it was built */
+   bool defined;
    struct
    {
       size_t size;
@@ -2788,7 +2790,10 @@ static void slang_chain_clear_history_and_feedback(struct vulkan_filter_chain *c
    {
       struct slang_framebuffer *fb = chain->passes[i]->fb_feedback;
       if (fb)
+      {
          vulkan_framebuffer_clear(fb->image, cmd);
+         fb->defined = true;
+      }
    }
 }
 
@@ -4397,7 +4402,42 @@ static void slang_pass_build_commands(struct slang_pass *pass,
    if (!pass->final_pass)
    {
       VkRenderPassBeginInfo rp_info;
+      VkRect2D area;
+      area.offset.x      = 0;
+      area.offset.y      = 0;
+      area.extent.width  = VIDEO_SCALE_W(size_dims);
+      area.extent.height = VIDEO_SCALE_H(size_dims);
 
+#ifdef VULKAN_ROLLING_SCANLINE_SIMULATION
+      /* A subframe draws one band and keeps the rest of the target as
+       * the earlier subframes left it: the render area is the band, and
+       * the image keeps its contents, cleared once when new. */
+      if (pass->common->simulate_scanline)
+      {
+         area.offset.y      = (int32_t)(((float)(VIDEO_SCALE_H(size_dims))
+                  / (float)(pass->common->total_subframes))
+               * (float)(pass->common->current_subframe - 1));
+         area.extent.height = (uint32_t)((float)(VIDEO_SCALE_H(size_dims))
+               / (float)(pass->common->total_subframes));
+         if (!pass->framebuffer->defined)
+         {
+            vulkan_framebuffer_clear(pass->framebuffer->image, cmd);
+            pass->framebuffer->defined = true;
+         }
+         VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd,
+               pass->framebuffer->image, 1,
+               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+               VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+               VK_ACCESS_SHADER_READ_BIT,
+               VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
+               VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+               VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+               VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+               VK_QUEUE_FAMILY_IGNORED,
+               VK_QUEUE_FAMILY_IGNORED);
+      }
+      else
+#endif /* VULKAN_ROLLING_SCANLINE_SIMULATION */
       /* Render.  The image transitions from UNDEFINED (contents
        * discarded), so no prior work needs to complete — use
        * TOP_OF_PIPE_BIT as the source stage. */
@@ -4417,10 +4457,7 @@ static void slang_pass_build_commands(struct slang_pass *pass,
       rp_info.pNext                    = NULL;
       rp_info.renderPass               = pass->framebuffer->render_pass;
       rp_info.framebuffer              = pass->framebuffer->framebuffer;
-      rp_info.renderArea.offset.x      = 0;
-      rp_info.renderArea.offset.y      = 0;
-      rp_info.renderArea.extent.width  = VIDEO_SCALE_W(size_dims);
-      rp_info.renderArea.extent.height = VIDEO_SCALE_H(size_dims);
+      rp_info.renderArea               = area;
       rp_info.clearValueCount          = 0;
       rp_info.pClearValues             = NULL;
       if (pass->framebuffer->clear)
@@ -4552,6 +4589,7 @@ static void slang_pass_build_commands(struct slang_pass *pass,
                VK_QUEUE_FAMILY_IGNORED,
                VK_QUEUE_FAMILY_IGNORED);
       }
+      pass->framebuffer->defined = true;
    }
 }
 
@@ -4739,6 +4777,7 @@ static bool slang_framebuffer_build(struct slang_framebuffer *fb)
    fb->memory.type   = new_memory_type;
    fb->memory.size   = new_memory_size;
    fb->memory.memory = new_memory;
+   fb->defined       = false;
    return true;
 
 error:
