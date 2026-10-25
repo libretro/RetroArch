@@ -44,13 +44,18 @@ mkdir -p "$here/out"
 find "$shaders" -name '*.slangp' ! -path '*/bezel/*' | LC_ALL=C sort > "$list"
 echo "$(wc -l < "$list") presets under $shaders"
 
+# macOS has no timeout(1) unless coreutils is installed
+to="timeout ${PRESET_TIMEOUT:-1200}"
+command -v timeout > /dev/null 2>&1 || to=
+command -v gtimeout > /dev/null 2>&1 && [ -z "$to" ] && to="gtimeout ${PRESET_TIMEOUT:-1200}"
+
 status=0
 for driver in "$@"; do
    log="$here/out/gate_$driver.log"
    touch "$log"
    while read -r preset; do
       grep -qF "	$preset" "$log" && continue
-      verdict=$(timeout "${PRESET_TIMEOUT:-1200}" "$here/rslc_image_check.sh" \
+      verdict=$($to "$here/rslc_image_check.sh" \
             -d "$driver" $opts "$ra" "$preset" 2>&1 \
          | grep -E "^(same|DIFF|FAIL|vary)" | head -1)
       [ -n "$verdict" ] || verdict="FAIL  $(basename "$preset" .slangp): no verdict (timeout?)"

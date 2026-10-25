@@ -52,6 +52,7 @@ ra_rslc=
 native_win=0
 case $(uname -s) in
    MINGW*|MSYS*|CYGWIN*) native_win=1; ext=dll ;;
+   Darwin) ext=dylib ;;
 esac
 # A path as the RetroArch being run reads it: a Windows one from an
 # MSYS2 shell, the path itself on Linux and under Wine (whose Z: drive
@@ -183,6 +184,10 @@ for preset in "$@"; do
    case $driver in d3d1*)
       if ! grep -q "Using the compiler's HLSL" "$lr"; then
          echo "FAIL  $name: the rslc run did not compile rslc's HLSL (see $lr)"; bad=$((bad + 1)); continue
+      fi ;;
+   metal)
+      if ! grep -q "Using the compiler's MSL" "$lr"; then
+         echo "FAIL  $name: the rslc run did not compile rslc's MSL (see $lr)"; bad=$((bad + 1)); continue
       fi ;;
    esac
    if ! cmp -s "$g" "$r"; then

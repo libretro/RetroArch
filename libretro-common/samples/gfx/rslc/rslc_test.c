@@ -1346,6 +1346,90 @@ static void test_hlsl_scoping(void)
  * tail is taken; arrays as metal::array with braced initialisers; a
  * vector component passed to an out parameter through a temporary;
  * the interface at the chain's buffer, texture and sampler indices. */
+/* MSL as Apple's compiler takes it: array, matrix and struct varyings
+ * one member per element, column or field at consecutive locations;
+ * length / distance / dot / normalize of scalars spelled out; x *= M
+ * as x = x * M; constructor arguments that mix scalars and vectors for
+ * a matrix, or run past a vector, as components; program-scope
+ * constants built from columns of literals (a matrix of scalars or a
+ * constant naming another needs a global constructor, which Metal
+ * refuses); and names Metal's headers take renamed. */
+static void test_msl_apple(void)
+{
+   struct rslc_opts   o;
+   struct rslc_result r;
+   char               err[128];
+   static const char  vert[] =
+      "#version 450\n"
+      "layout(std140, set = 0, binding = 0) uniform UBO { mat4 MVP; } global;\n"
+      "layout(location = 0) in vec4 Position;\n"
+      "struct P { vec2 a; float b; };\n"
+      "layout(location = 0) out vec2 vTap[3];\n"
+      "layout(location = 3) out mat2 vRot;\n"
+      "layout(location = 5) out P vP;\n"
+      "void main() {\n"
+      "  gl_Position = global.MVP * Position;\n"
+      "  vTap[0] = Position.xy; vTap[1] = Position.yx; vTap[2] = Position.zw;\n"
+      "  vRot = mat2(Position.x, Position.yz, 1.0);\n"
+      "  vP.a = Position.xy; vP.b = Position.w;\n"
+      "}\n";
+   static const char  frag[] =
+      "#version 450\n"
+      "layout(location = 0) in vec2 vTap[3];\n"
+      "layout(location = 3) in mat2 vRot;\n"
+      "layout(location = 0) out vec4 FragColor;\n"
+      "const mat2 kA = mat2(1.0, 2.0, 3.0, 4.0);\n"
+      "const mat2 kB[2] = mat2[2](kA, mat2(1.0));\n"
+      "const float decay = 2.0;\n"
+      "void main() {\n"
+      "  mat2 m = vRot;\n"
+      "  m *= kB[1];\n"
+      "  vec2 v = vTap[1] * m;\n"
+      "  v *= kA;\n"
+      "  float l = length(v.x) + distance(v.x, v.y) + dot(v.x, v.y) + normalize(v.y);\n"
+      "  FragColor = vec4(vec3(v, v + decay), l);\n"
+      "}\n";
+
+   opts_default(&o, err, sizeof(err));
+   o.dst = RSLC_DST_MSL;
+   CHECK(rslc_compile(vert, sizeof(vert) - 1, RSLC_STAGE_VERTEX, &o, &r));
+   if (r.text)
+   {
+      CHECK(strstr(r.text, "float2 vTap_0 [[user(locn0)]];") != NULL);
+      CHECK(strstr(r.text, "float2 vTap_2 [[user(locn2)]];") != NULL);
+      CHECK(strstr(r.text, "float2 vRot_1 [[user(locn4)]];") != NULL);
+      CHECK(strstr(r.text, "float2 vP_a [[user(locn5)]];") != NULL);
+      CHECK(strstr(r.text, "float vP_b [[user(locn6)]];") != NULL);
+      CHECK(strstr(r.text, "out.vTap_1 = vTap[1];") != NULL);
+      CHECK(strstr(r.text, "out.vRot_0 = vRot[0];") != NULL);
+      CHECK(strstr(r.text, "out.vP_b = vP.b;") != NULL);
+      CHECK(strstr(r.text, "array<float2, 3> vTap [[") == NULL);
+      CHECK(strstr(r.text, "(Position.yz).x, (Position.yz).y") != NULL);
+      rslc_result_free(&r, &o);
+   }
+   CHECK(rslc_compile(frag, sizeof(frag) - 1, RSLC_STAGE_FRAGMENT, &o, &r));
+   if (r.text)
+   {
+      CHECK(strstr(r.text, "vTap[1] = in.vTap_1;") != NULL);
+      CHECK(strstr(r.text, "vRot[1] = in.vRot_1;") != NULL);
+      CHECK(strstr(r.text, "m = m * ") != NULL);
+      CHECK(strstr(r.text, "v = v * ") != NULL);
+      CHECK(strstr(r.text, "*=") == NULL);
+      CHECK(strstr(r.text, "abs(v.x)") != NULL);
+      CHECK(strstr(r.text, "abs(v.x - v.y)") != NULL);
+      CHECK(strstr(r.text, "(v.x * v.y)") != NULL);
+      CHECK(strstr(r.text, "sign(v.y)") != NULL);
+      CHECK(strstr(r.text, "length(") == NULL);
+      CHECK(strstr(r.text, "float2x2(float2(1.0f, 2.0f), float2(3.0f, 4.0f))") != NULL);
+      CHECK(strstr(r.text, "float2x2(1.0f, 2.0f") == NULL);
+      CHECK(strstr(r.text, "decay_") != NULL);
+      CHECK(strstr(r.text, "float3(v, (v + decay_).x)") != NULL);
+      CHECK(strstr(r.text, "array<float2x2, 2>{{ float2x2(float2(1.0f, 2.0f), float2(3.0f, 4.0f)), float2x2(float2(1.0f, 0.0f), float2(0.0f, 1.0f)) }}") != NULL);
+      rslc_result_free(&r, &o);
+   }
+   CHECK(alloc_live == 0);
+}
+
 static void test_msl(void)
 {
    struct rslc_opts   o;
@@ -2047,6 +2131,7 @@ int main(int argc, char **argv)
    test_hlsl();
    test_hlsl_scoping();
    test_msl();
+   test_msl_apple();
    test_shapes();
    test_cafe();
    test_ingest();

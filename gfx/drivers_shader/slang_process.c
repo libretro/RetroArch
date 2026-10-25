@@ -1203,35 +1203,26 @@ static bool glslang_parse_meta(const struct shader_line_buf *lines,
 
 /* -----------------------------------------------------------------------
  * Stage compilation.  A build with one compiler uses it.  A build with
- * both follows video_shader_compiler: 1 glslang, 2 rslc, 0 the
- * per-driver default, which is glslang until a driver's rslc corpus
- * gate (zero reflection and pixel diffs against glslang+Cross) is met
- * and rslc after; glslang stays behind rslc as the fallback for a
- * stage rslc rejects until every driver is there.
+ * both follows video_shader_compiler: 1 glslang, anything else rslc,
+ * with glslang behind it as the fallback for a stage rslc rejects.
  * ----------------------------------------------------------------------- */
 #if defined(HAVE_RSLC) && defined(HAVE_GLSLANG)
 #include "../../configuration.h"
 
-#define SLANG_COMPILER_AUTO    0
 #define SLANG_COMPILER_GLSLANG 1
-#define SLANG_COMPILER_RSLC    2
 
-/* Auto per driver.  Vulkan and glcore have met their gate (the whole
- * corpus with zero reflection diffs, every non-bezel preset of
- * slang-shaders pixel-identical to glslang+Cross on both), and so have
- * d3d11 and d3d12 through Microsoft's d3dcompiler_47 (every non-bezel
- * preset the same picture, or within the last bit where D3DCompile
- * orders the float math of the two texts differently), so a caller
- * that wants no text, GLSL or HLSL gets rslc; metal, which asks for
- * MSL, stays with glslang until the xcrun run of the same gate is in. */
-static bool slang_prefer_rslc(const struct slang_text_target *text)
+/* Auto is rslc for every driver: Vulkan and glcore have met their
+ * gate (the whole corpus with zero reflection diffs, every non-bezel
+ * preset of slang-shaders pixel-identical to glslang+Cross), and so
+ * have d3d11 and d3d12 through Microsoft's d3dcompiler_47 and metal
+ * through Apple's (every non-bezel preset the same picture, or within
+ * the rounding where the driver's compiler orders the float math of
+ * the two texts differently). */
+static bool slang_prefer_rslc(void)
 {
    const settings_t *settings = config_get_ptr();
-   unsigned choice            = settings
-      ? settings->uints.video_shader_compiler : SLANG_COMPILER_AUTO;
-   if (choice == SLANG_COMPILER_AUTO)
-      return !text || !text->msl;
-   return choice == SLANG_COMPILER_RSLC;
+   return !settings
+      || settings->uints.video_shader_compiler != SLANG_COMPILER_GLSLANG;
 }
 #endif
 
@@ -1536,7 +1527,7 @@ static bool slang_compile_stage(const char *source,
 #endif
 #if defined(HAVE_RSLC)
 #if defined(HAVE_GLSLANG)
-   if (slang_prefer_rslc(text))
+   if (slang_prefer_rslc())
 #endif
    {
       char err[256];
@@ -1644,7 +1635,7 @@ static bool slang_compile_pass(const char *shader_path,
       char *fragment_source = NULL;
       const char *compiler  =
 #if defined(HAVE_RSLC) && defined(HAVE_GLSLANG)
-         slang_prefer_rslc(text) ? "rslc" : "glslang";
+         slang_prefer_rslc() ? "rslc" : "glslang";
 #elif defined(HAVE_RSLC)
          "rslc";
 #else
@@ -1840,15 +1831,11 @@ bool slang_compile_pass_detached(const char *shader_path, bool hlsl_or_msl,
       glslang_output *output, char *key)
 {
 #if defined(HAVE_RSLC)
-#if defined(HAVE_GLSLANG)
-   struct slang_text_target text;
-   memset(&text, 0, sizeof(text));
-   text.hlsl = hlsl_or_msl;
-   /* under glslang the chain's thread compiles, as before */
-   if (!slang_prefer_rslc(hlsl_or_msl ? &text : NULL))
-      return false;
-#else
    (void)hlsl_or_msl;
+#if defined(HAVE_GLSLANG)
+   /* under glslang the chain's thread compiles, as before */
+   if (!slang_prefer_rslc())
+      return false;
 #endif
    return slang_compile_pass(shader_path, output, NULL, NULL, true, key);
 #else

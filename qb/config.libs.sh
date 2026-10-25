@@ -980,10 +980,10 @@ if [ "$HAVE_MIST" = 'yes' ]; then
    add_define MAKEFILE MIST_PATH "$MIST_PATH"
 fi
 
-# rslc compiles slang for every driver but Metal, so outside Apple
-# glslang and SPIRV-Cross are only built when asked for (--enable-glslang
-# or --enable-builtinglslang, and the same for spirv_cross)
-if [ "$HAVE_RSLC" != no ] && [ "$OS" != 'Darwin' ]; then
+# rslc compiles slang for every driver, so glslang and SPIRV-Cross are
+# only built when asked for (--enable-glslang or --enable-builtinglslang,
+# and the same for spirv_cross)
+if [ "$HAVE_RSLC" != no ]; then
    if [ "$HAVE_GLSLANG" = auto ] && [ "$HAVE_BUILTINGLSLANG" != yes ]; then
       HAVE_GLSLANG=no
    fi

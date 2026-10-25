@@ -78,6 +78,10 @@ struct rslc_pr
     * local of the function being printed is suffixed too (renamed) */
    uint8_t                 *symfn;
    uint8_t                 *renamed;
+   /* MSL: printing a program-scope constant's initialiser, where a
+    * constant it names prints as its value (Metal builds no global
+    * constructors to copy one constant into another) */
+   bool                     msl_ginit;
    uint8_t                 *active[2];
    unsigned                 version;
    unsigned                 indent;
@@ -436,7 +440,8 @@ static bool pr_name_reserved(struct rslc_pr *p, const struct rslc_sym *name)
       "smoothstep", "clamp", "length", "distance", "dot", "cross", "normalize",
       "reflect", "refract", "faceforward", "any", "all", "isnan", "isinf",
       "transpose", "determinant", "fma", "modf", "frexp", "ldexp", "fwidth",
-      "pack_float_to_unorm4x8", "unpack_unorm4x8_to_float", NULL
+      "pack_float_to_unorm4x8", "unpack_unorm4x8_to_float", "decay", "quad",
+      "simd_broadcast", "vec", "ushort", "uchar", NULL
    };
    const char *const *list = p->hlsl ? hlsl_words : p->msl ? msl_words : words;
    unsigned i;
@@ -741,6 +746,10 @@ static void pr_var_name(struct rslc_pr *p, const struct rslc_var *v)
 static void pr_cval(struct rslc_pr *p, const struct rslc_type *t, const struct rslc_cval *cv)
 {
    unsigned i, n = rslc_ty_components(t);
+   /* Metal's matrix of scalars is no constant expression, its matrix
+    * of columns is: a program-scope constant built from the former
+    * needs a global constructor, which Metal refuses */
+   bool cols = p->msl && t->kind == RSLC_TY_MAT;
    if (t->kind != RSLC_TY_SCALAR)
    {
       pr_type(p, t);
@@ -748,7 +757,14 @@ static void pr_cval(struct rslc_pr *p, const struct rslc_type *t, const struct r
    }
    for (i = 0; i < n; i++)
    {
-      if (i)
+      if (cols && i % t->rows == 0)
+      {
+         if (i)
+            pr_s(p, "), ");
+         pr_type(p, rslc_type_basic(p->c, RSLC_TY_VEC, (enum rslc_base)t->base, t->rows, 1));
+         pr_c(p, '(');
+      }
+      else if (i)
          pr_s(p, ", ");
       switch (t->base)
       {
@@ -764,6 +780,8 @@ static void pr_cval(struct rslc_pr *p, const struct rslc_type *t, const struct r
          }
       }
    }
+   if (cols && n)
+      pr_c(p, ')');
    if (t->kind != RSLC_TY_SCALAR)
       pr_c(p, ')');
 }
@@ -1277,6 +1295,27 @@ static void pr_msl_builtin(struct rslc_pr *p, const struct rslc_node *n)
          pr_s(p, bfn == RSLC_BFN_RADIANS ? " * 0.0174532924" : " * 57.2957802");
          pr_c(p, ')');
          return;
+      case RSLC_BFN_LENGTH:
+      case RSLC_BFN_DISTANCE:
+      case RSLC_BFN_DOT:
+      case RSLC_BFN_NORMALIZE:
+         /* Metal has these for vectors only; of scalars they are |x|,
+          * |a - b|, a * b and sign(x) */
+         if (pr_arg_type(p, list, 0)->kind == RSLC_TY_SCALAR)
+         {
+            pr_s(p, bfn == RSLC_BFN_DOT ? "(" : bfn == RSLC_BFN_NORMALIZE ? "sign(" : "abs(");
+            pr_expr(p, rslc_list_item(p->c, list, 0),
+                  cnt == 2 ? PR_PREC_MUL : PR_PREC_SEQ);
+            if (cnt == 2)
+            {
+               pr_s(p, bfn == RSLC_BFN_DOT ? " * " : " - ");
+               pr_expr(p, rslc_list_item(p->c, list, 1), PR_PREC_MUL);
+            }
+            pr_c(p, ')');
+            return;
+         }
+         name = rslc_bfn_name(bfn);
+         break;
       case RSLC_BFN_MOD:
          name = "mod";   /* the helper: x - y * floor(x / y) */
          break;
@@ -1838,6 +1877,71 @@ static void pr_msl_construct(struct rslc_pr *p, uint32_t node)
    }
    pr_type(p, t);
    pr_c(p, '(');
+   if (t->kind == RSLC_TY_VEC || t->kind == RSLC_TY_MAT)
+   {
+      /* GLSL lets the last argument run past the components and a
+       * matrix take scalars and vectors mixed; Metal takes neither, so
+       * the components are spelled out where the arguments are not
+       * whole columns, and what runs past is left off */
+      unsigned want = t->kind == RSLC_TY_VEC ? t->rows : (unsigned)t->rows * t->cols;
+      unsigned have = 0, k;
+      bool     split = false;
+      for (i = 0; i < cnt; i++)
+      {
+         const struct rslc_type *at = rslc_node_at(p->c, rslc_list_item(p->c, n->b, i))->type;
+         unsigned c = at->kind == RSLC_TY_VEC ? at->rows : 1;
+         if (t->kind == RSLC_TY_MAT && !(cnt == t->cols && at->kind == RSLC_TY_VEC
+                  && at->rows == t->rows))
+            split = split || at->kind == RSLC_TY_VEC;
+         have += c;
+      }
+      if (have > want || split)
+      {
+         unsigned out = 0;
+         for (i = 0; i < cnt && out < want; i++)
+         {
+            uint32_t an = rslc_list_item(p->c, n->b, i);
+            const struct rslc_type *at = rslc_node_at(p->c, an)->type;
+            unsigned c = at->kind == RSLC_TY_VEC ? at->rows : 1;
+            if (out)
+               pr_s(p, ", ");
+            if (c == 1)
+            {
+               pr_expr(p, an, PR_PREC_ASSIGN);
+               out++;
+               continue;
+            }
+            if (!split)
+            {
+               /* the vector whole, or the part of it that fits */
+               unsigned use = c < want - out ? c : want - out;
+               if (use == c)
+                  pr_expr(p, an, PR_PREC_ASSIGN);
+               else
+               {
+                  pr_c(p, '(');
+                  pr_expr(p, an, PR_PREC_SEQ);
+                  pr_s(p, ").");
+                  for (k = 0; k < use; k++)
+                     pr_c(p, comps[k]);
+               }
+               out += use;
+               continue;
+            }
+            for (k = 0; k < c && out < want; k++, out++)
+            {
+               if (k)
+                  pr_s(p, ", ");
+               pr_c(p, '(');
+               pr_expr(p, an, PR_PREC_SEQ);
+               pr_s(p, ").");
+               pr_c(p, comps[k]);
+            }
+         }
+         pr_c(p, ')');
+         return;
+      }
+   }
    for (i = 0; i < cnt; i++)
    {
       if (i)
@@ -2101,6 +2205,15 @@ static void pr_expr(struct rslc_pr *p, uint32_t node, int ctx)
       pr_cval(p, n->type, &cv);
       if (neg && ctx < PR_PREC_UNARY)
          pr_c(p, ')');
+      return;
+   }
+
+   if (p->msl_ginit && n->type && (n->type->kind == RSLC_TY_SCALAR
+            || n->type->kind == RSLC_TY_VEC || n->type->kind == RSLC_TY_MAT)
+         && rslc_const_eval(p->c, node, &cv))
+   {
+      /* a program-scope constant's value, whatever names it */
+      pr_cval(p, n->type, &cv);
       return;
    }
 
@@ -2414,6 +2527,19 @@ static void pr_expr(struct rslc_pr *p, uint32_t node, int ctx)
             pr_c(p, '(');
          pr_expr(p, n->a, PR_PREC_UNARY);
          pr_c(p, ' ');
+         if (p->msl && n->aux == RSLC_BIN_MUL
+               && (rslc_node_at(p->c, n->b)->type->kind == RSLC_TY_MAT
+                  || n->type->kind == RSLC_TY_MAT))
+         {
+            /* Metal has no *= with a matrix operand: x = x * M */
+            pr_s(p, "= ");
+            pr_expr(p, n->a, PR_PREC_MUL);
+            pr_s(p, " * ");
+            pr_expr(p, n->b, PR_PREC_MUL);
+            if (PR_PREC_ASSIGN > ctx)
+               pr_c(p, ')');
+            break;
+         }
          if (p->hlsl && n->aux == RSLC_BIN_MUL
                && rslc_node_at(p->c, n->b)->type->kind == RSLC_TY_MAT)
          {
@@ -3480,7 +3606,9 @@ static void pr_globals_and_funcs(struct rslc_pr *p)
          continue;   /* printed ahead of everything else */
       if (p->msl && !(v->storage == RSLC_ST_CONST && pr_global_init_in_place(p, v)))
          continue;   /* a mutable global lives in main0 and travels by reference */
+      p->msl_ginit = p->msl;
       pr_decl(p, v, pr_global_init_in_place(p, v));
+      p->msl_ginit = false;
       pr_c(p, ';');
       pr_nl(p);
    }
@@ -4417,14 +4545,121 @@ static void pr_msl_block(struct rslc_pr *p, unsigned idx)
    pr_nl(p);
 }
 
+/* Metal takes only scalars and vectors in the stage structs: an array,
+ * matrix or struct goes in one member per element, column or field
+ * (v_0, v_1 ... v_field), at consecutive locations, as the GLSL
+ * locations of their parts count. */
+#define PR_MSL_IO_DECL 0
+#define PR_MSL_IO_IN   1
+#define PR_MSL_IO_OUT  2
+
+static bool pr_msl_io_flat(const struct rslc_type *t)
+{
+   return t->kind == RSLC_TY_SCALAR || t->kind == RSLC_TY_VEC;
+}
+
+static void pr_msl_io_leaf(struct rslc_pr *p, const struct rslc_var *v,
+      const struct rslc_type *t, bool is_in, uint32_t loc);
+
+static void pr_msl_io_walk(struct rslc_pr *p, const struct rslc_var *v,
+      const struct rslc_type *t, bool is_in, int mode, uint32_t *loc,
+      char *suf, size_t suf_len, char *acc, size_t acc_len)
+{
+   uint32_t i, n;
+   if (pr_msl_io_flat(t))
+   {
+      pr_nl(p);
+      if (mode == PR_MSL_IO_DECL)
+      {
+         pr_type(p, t);
+         pr_c(p, ' ');
+         pr_var_name(p, v);
+         pr_s(p, suf);
+         pr_msl_io_leaf(p, v, t, is_in, *loc);
+      }
+      else if (mode == PR_MSL_IO_IN)
+      {
+         pr_var_name(p, v);
+         pr_s(p, acc);
+         pr_s(p, " = in.");
+         pr_var_name(p, v);
+         pr_s(p, suf);
+         pr_c(p, ';');
+      }
+      else
+      {
+         pr_s(p, "out.");
+         pr_var_name(p, v);
+         pr_s(p, suf);
+         pr_s(p, " = ");
+         pr_var_name(p, v);
+         pr_s(p, acc);
+         pr_c(p, ';');
+      }
+      (*loc)++;
+      return;
+   }
+   n = t->kind == RSLC_TY_MAT ? t->cols
+      : t->kind == RSLC_TY_ARRAY ? t->array_len
+      : t->kind == RSLC_TY_STRUCT ? t->nfields : 0;
+   for (i = 0; i < n; i++)
+   {
+      size_t sl = strlen(suf), al = strlen(acc);
+      const struct rslc_type *et;
+      if (t->kind == RSLC_TY_STRUCT)
+      {
+         const char *fn = t->fields[i].name ? t->fields[i].name->str : "_";
+         et = t->fields[i].type;
+         if (sl + strlen(fn) + 2 >= suf_len || al + strlen(fn) + 2 >= acc_len)
+            break;
+         sprintf(suf + sl, "_%s", fn);
+         sprintf(acc + al, ".%s", fn);
+      }
+      else
+      {
+         et = t->kind == RSLC_TY_MAT
+            ? rslc_type_basic(p->c, RSLC_TY_VEC, (enum rslc_base)t->base, t->rows, 1)
+            : t->elem;
+         if (sl + 12 >= suf_len || al + 13 >= acc_len)
+            break;
+         sprintf(suf + sl, "_%u", (unsigned)i);
+         sprintf(acc + al, "[%u]", (unsigned)i);
+      }
+      if (et)
+         pr_msl_io_walk(p, v, et, is_in, mode, loc, suf, suf_len, acc, acc_len);
+      suf[sl] = '\0';
+      acc[al] = '\0';
+   }
+}
+
+static void pr_msl_io(struct rslc_pr *p, const struct rslc_var *v, bool is_in, int mode)
+{
+   char     suf[256], acc[256];
+   uint32_t loc = v->location == RSLC_UNSET ? 0 : v->location;
+   suf[0] = acc[0] = '\0';
+   pr_msl_io_walk(p, v, v->type, is_in, mode, &loc, suf, sizeof(suf), acc, sizeof(acc));
+}
+
 /* [[attribute(n)]], [[user(locnN)]], [[color(n)]] and the builtins. */
 static void pr_msl_io_field(struct rslc_pr *p, const struct rslc_var *v, bool is_in)
 {
-   bool fragment = p->c->stage == RSLC_STAGE_FRAGMENT;
+   if (v->storage != RSLC_ST_BUILTIN && !pr_msl_io_flat(v->type))
+   {
+      pr_msl_io(p, v, is_in, PR_MSL_IO_DECL);
+      return;
+   }
    pr_nl(p);
    pr_type(p, v->type);
    pr_c(p, ' ');
    pr_var_name(p, v);
+   pr_msl_io_leaf(p, v, v->type, is_in,
+         v->location == RSLC_UNSET ? 0 : v->location);
+}
+
+static void pr_msl_io_leaf(struct rslc_pr *p, const struct rslc_var *v,
+      const struct rslc_type *t, bool is_in, uint32_t loc)
+{
+   bool fragment = p->c->stage == RSLC_STAGE_FRAGMENT;
    pr_s(p, " [[");
    if (v->storage == RSLC_ST_BUILTIN)
    {
@@ -4439,23 +4674,23 @@ static void pr_msl_io_field(struct rslc_pr *p, const struct rslc_var *v, bool is
    else if (!fragment && is_in)
    {
       pr_s(p, "attribute(");
-      pr_u(p, v->location == RSLC_UNSET ? 0 : v->location);
+      pr_u(p, loc);
       pr_c(p, ')');
    }
    else if (fragment && !is_in)
    {
       pr_s(p, "color(");
-      pr_u(p, v->location == RSLC_UNSET ? 0 : v->location);
+      pr_u(p, loc);
       pr_c(p, ')');
    }
    else
    {
       pr_s(p, "user(locn");
-      pr_u(p, v->location == RSLC_UNSET ? 0 : v->location);
+      pr_u(p, loc);
       pr_c(p, ')');
       if (fragment)
       {
-         if (v->interp == RSLC_INTERP_FLAT || pr_type_is_integer(v->type))
+         if (v->interp == RSLC_INTERP_FLAT || pr_type_is_integer(t))
             pr_s(p, ", flat");
          else if (v->interp == RSLC_INTERP_NOPERSPECTIVE)
             pr_s(p, ", center_no_perspective");
@@ -4642,6 +4877,12 @@ static bool pr_msl(struct rslc_pr *p, struct rslc_result *result)
             pr_type(p, v->type);
             pr_c(p, ' ');
             pr_var_name(p, v);
+            if (!pr_msl_io_flat(v->type))
+            {
+               pr_s(p, " = {};");
+               pr_msl_io(p, v, true, PR_MSL_IO_IN);
+               break;
+            }
             pr_s(p, " = in.");
             pr_var_name(p, v);
             pr_c(p, ';');
@@ -4701,6 +4942,11 @@ static bool pr_msl(struct rslc_pr *p, struct rslc_result *result)
       const struct rslc_var *v = pr->outputs[i];
       if (!menv[v->id])
          continue;
+      if (!pr_msl_io_flat(v->type))
+      {
+         pr_msl_io(p, v, false, PR_MSL_IO_OUT);
+         continue;
+      }
       pr_nl(p);
       pr_s(p, "out.");
       pr_var_name(p, v);

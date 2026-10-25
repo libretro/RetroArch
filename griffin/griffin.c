@@ -456,6 +456,12 @@ VIDEO SHADERS
 #include "../gfx/video_shader_parse.c"
 #endif
 
+/* The Xcode projects take rslc in here; the other griffin builds
+ * compile griffin_rslc.c on its own. */
+#ifdef HAVE_RSLC_GRIFFIN
+#include "griffin_rslc.c"
+#endif
+
 #ifdef HAVE_SLANG
 #include "../gfx/drivers_shader/glslang_util.c"
 #include "../gfx/drivers_shader/slang_cache.c"
