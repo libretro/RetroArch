@@ -443,11 +443,30 @@ static int prepared_session(const char *path, bool s16, bool webm,
    /* Cancel an unpublished preparation, then prepare its replacement. */
    if (gfx_anim_preview_audio_prepare_step(a) < 0) goto mixer_done;
    gfx_anim_preview_audio_prepare_free(a);
-   a = gfx_anim_preview_audio_prepare_new(p, target_us, rate, s16);
-   if (!a) goto mixer_done;
-   for (steps = 0; steps < 10000 && !result; steps++)
-      result = gfx_anim_preview_audio_prepare_step(a);
-   if (result != 1) goto mixer_done;
+   a = NULL;
+   retro_atomic_store_relaxed_int(&p->seek_audio_format,
+         (int)(rate | (s16 ? 0x40000000U : 0)));
+   seek_probe = true;
+   seek_probe_calls = 0;
+   seek_probe_end = 1;
+   {
+      int64_t position = -1;
+      if (gfx_anim_preview_seek_step(p, target_us, true, &position)
+            != VIDEO_PLAYER_SEEK_PROGRESS || p->seek_audio)
+         goto mixer_done;
+      if (gfx_anim_preview_seek_step(p, target_us, false, &position)
+            != VIDEO_PLAYER_SEEK_PROGRESS || !p->seek_audio)
+         goto mixer_done;
+      for (steps = 0; steps < 10000; steps++)
+      {
+         result = gfx_anim_preview_seek_step(p, target_us, false, &position);
+         if (result != VIDEO_PLAYER_SEEK_PROGRESS && result != 0) break;
+      }
+      if (result != 1 || position != target_us) goto mixer_done;
+   }
+   a = p->seek_audio;
+   p->seek_audio = NULL;
+   seek_probe = false;
    result = gfx_anim_preview_audio_adopt(p, a);
    a = NULL;
    if (!result || !p->audio_voice || !p->audio_owner) goto mixer_done;
@@ -479,6 +498,8 @@ static int prepared_session(const char *path, bool s16, bool webm,
    }
    failed = peak > (webm ? 0.0001 : s16 ? 0.00004 : 0.0000001);
  mixer_done:
+   seek_probe = false;
+   seek_probe_calls = seek_probe_end = 0;
    gfx_anim_preview_audio_prepare_free(a); a = NULL;
    gfx_anim_preview_release(p); p = NULL;
    audio_mixer_done();

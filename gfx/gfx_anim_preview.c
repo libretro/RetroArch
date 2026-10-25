@@ -1104,14 +1104,18 @@ int gfx_anim_preview_seek_step(void *user, int64_t target_us,
       }
       p->seek_video_us = p->seek_video_us > p->timeline_start_us
          ? p->seek_video_us - p->timeline_start_us : 0;
-      if (p->seek_format & 0x3fffffffU)
-         p->seek_audio = gfx_anim_preview_audio_prepare_new(p, p->seek_video_us,
-               p->seek_format & 0x3fffffffU, (p->seek_format & 0x40000000U) != 0);
       p->seek_phase = 2;
       return VIDEO_PLAYER_SEEK_PROGRESS;
    }
-   if (p->seek_phase != 2) return -1;
-   if (p->seek_audio)
+   if (p->seek_phase == 2 && (p->seek_format & 0x3fffffffU))
+   {
+      p->seek_audio = gfx_anim_preview_audio_prepare_new(p, p->seek_video_us,
+            p->seek_format & 0x3fffffffU, (p->seek_format & 0x40000000U) != 0);
+      p->seek_phase = 3;
+      return VIDEO_PLAYER_SEEK_PROGRESS;
+   }
+   if (p->seek_phase < 2 || p->seek_phase > 4) return -1;
+   if (p->seek_phase == 3 && p->seek_audio)
    {
       result = gfx_anim_preview_audio_prepare_step(p->seek_audio);
       if (!result) return VIDEO_PLAYER_SEEK_PROGRESS;
@@ -1121,6 +1125,8 @@ int gfx_anim_preview_seek_step(void *user, int64_t target_us,
          gfx_anim_preview_audio_prepare_free(p->seek_audio);
          p->seek_audio = NULL;
       }
+      p->seek_phase = 4;
+      return VIDEO_PLAYER_SEEK_PROGRESS;
    }
    *position_us = p->seek_video_us;
    return 1;
