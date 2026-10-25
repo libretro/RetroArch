@@ -985,7 +985,7 @@ jobs:
     name: Views on SDL 1.2, XShm and XVideo, end to end (Xvfb, sdl12-compat)
     runs-on: ubuntu-latest
     env:
-      APT_PKGS: build-essential xvfb x11-utils imagemagick openbox libx11-dev libxext-dev libxv-dev libsdl1.2-dev libgl1-mesa-dri libgl-dev zlib1g-dev libfreetype6-dev libasound2-dev
+      APT_PKGS: build-essential gdb xvfb x11-utils imagemagick openbox libx11-dev libxext-dev libxv-dev libsdl1.2-dev libgl1-mesa-dri libgl-dev zlib1g-dev libfreetype6-dev libasound2-dev
     timeout-minutes: 45
 
     steps:

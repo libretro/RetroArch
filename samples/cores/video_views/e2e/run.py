@@ -566,10 +566,30 @@ def wait_for_views(p, d, timeout=60):
             if os.path.exists(path):
                 with open(path, errors='replace') as f:
                     if STATUS_RE.search(f.read()):
-                        return
+                        return True
         if time.monotonic() >= deadline:
-            return
+            return False
         time.sleep(0.1)
+
+
+
+def startup_stack(p, d):
+    """Keep the native initialization fault site before terminating a case."""
+    if WINE or not XVFB or os.name != 'posix' or p.poll() is not None:
+        return
+    debugger = shutil.which('gdb')
+    if not debugger:
+        return
+    command = [debugger, '-batch', '-ex', 'set pagination off',
+               '-ex', 'thread apply all bt', '-p', str(p.pid)]
+    if os.environ.get('GITHUB_ACTIONS') == 'true' and os.geteuid() != 0:
+        command = ['sudo', '-n'] + command
+    with open(os.path.join(d, 'startup-stack.log'), 'w') as log:
+        try:
+            subprocess.run(command, stdout=log, stderr=subprocess.STDOUT,
+                           timeout=15)
+        except (OSError, subprocess.TimeoutExpired) as error:
+            log.write(str(error) + '\n')
 
 
 def last_status(d):
@@ -955,7 +975,8 @@ def run_case(retroarch, root, driver, case, hw='off', menu=False,
                          env=env, start_new_session=True)
     shot = None
     try:
-        wait_for_views(p, d)
+        if not wait_for_views(p, d):
+            startup_stack(p, d)
         if gpu is None:
             wait_settled(p, d, expected_status(driver, settings))
         settle = time.time() + 5
