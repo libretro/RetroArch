@@ -56,6 +56,11 @@
 #define COINIT_DISABLE_OLE1DDE 0x4
 #endif
 
+/* not in the Windows SDK MSVC 2005 ships */
+#ifndef DM_INTERLACED
+#define DM_INTERLACED 0x00000002
+#endif
+
 #ifndef COBJMACROS
 #define COBJMACROS
 #define COBJMACROS_DEFINED
@@ -1239,10 +1244,6 @@ static bool win32_display_server_get_metrics(void *data,
 
 #ifdef HAVE_MODELINE
 #define WIN32_MODELINE_DISPLAY_MAX 16
-
-#ifndef DM_INTERLACED
-#define DM_INTERLACED 0x00000002
-#endif
 
 typedef struct
 {
