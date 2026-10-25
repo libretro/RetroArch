@@ -502,6 +502,15 @@ void sdl3_ctx_input_driver(void *data,
    sdl3_input_driver(name);
 }
 
+bool sdl3_next_window_is_sdl3(void)
+{
+   settings_t *settings = config_get_ptr();
+   const char *video    = settings->arrays.video_driver;
+   return string_is_equal(video, "sdl3")
+       || string_is_equal(settings->arrays.video_context_driver,
+             string_is_equal(video, "vulkan") ? "vk_sdl3" : "gl_sdl3");
+}
+
 bool sdl3_ctx_enabled(const char *ctx_ident)
 {
    settings_t *settings = config_get_ptr();

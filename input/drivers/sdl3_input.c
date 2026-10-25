@@ -79,6 +79,8 @@ typedef struct sdl3_input
    unsigned touch_recheck;
    /* Fingers were read once; they change only with finger events. */
    bool touch_read;
+   /* The video driver's window last polled through, 0 for none */
+   SDL_WindowID window_id;
 
    /* Number of active fingers across all touch devices. */
    int num_touches;
@@ -337,6 +339,14 @@ static int16_t sdl3_input_state(
    }
 
    return 0;
+}
+
+/* Nothing here is the video driver's: the window is looked up at every
+ * poll, and the keyboard state SDL hands out is global. Kept only for
+ * another SDL3 window; any other has an input driver of its own. */
+static bool sdl3_input_survives_video(void *data)
+{
+   return data && sdl3_get_window() && sdl3_next_window_is_sdl3();
 }
 
 static void sdl3_input_free(void *data)
@@ -915,7 +925,21 @@ static void sdl3_input_poll(void *data)
 
    /* Find the SDL window, so that window coordinates can be calculated
     * properly. */
-   if (!(sdl->window = sdl3_get_window()))
+   sdl->window = sdl3_get_window();
+   {
+      /* Kept across a video restart: what was read through the window
+       * before went with it. */
+      SDL_WindowID id = sdl->window ? SDL_GetWindowID(sdl->window) : 0;
+      if (id != sdl->window_id)
+      {
+         sdl->window_id        = id;
+         sdl->touch_read       = false;
+         sdl->num_touches      = 0;
+         sdl->pen_in_proximity = false;
+         sdl->pen_down         = false;
+      }
+   }
+   if (!sdl->window)
       sdl->window = SDL_GetMouseFocus();
 
    sdl3_manage_text_input();
@@ -1129,6 +1153,6 @@ input_driver_t input_sdl3 = {
    sdl3_grab_mouse,
    NULL,                   /* grab_stdin */
    NULL,                   /* keypress_vibrate */
-   NULL,
+   sdl3_input_survives_video,
    sdl3_keys_down
 };

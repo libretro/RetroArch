@@ -271,6 +271,10 @@ static uint32_t sdl3_vk_ctx_get_flags(void *data)
    /* set_video_mode restyles the window it has, and keeps its surface */
    BIT32_SET(flags, GFX_CTX_FLAGS_FULLSCREEN_IN_PLACE);
    BIT32_SET(flags, GFX_CTX_FLAGS_WINDOW_RESIZE_IN_PLACE);
+   /* As w_vk: the emulated mailbox's thread presents to the swapchain
+    * a mode change rebuilds */
+   if (sdl && sdl->vk.mailbox.swapchain == VK_NULL_HANDLE)
+      BIT32_SET(flags, GFX_CTX_FLAGS_FULLSCREEN_EXCLUSIVE_IN_PLACE);
 
 #if defined(HAVE_SLANG) && (defined(HAVE_SPIRV_CROSS) || defined(HAVE_RSLC))
    BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);

@@ -78,6 +78,18 @@ static void sdl3_set_frame_scale_mode(SDL_Texture *tex, bool smooth)
       SDL_SetTextureScaleMode(tex, SDL_SCALEMODE_NEAREST);
 }
 
+static bool sdl3_renderer_has_format(SDL_Renderer *renderer,
+      SDL_PixelFormat format)
+{
+   const SDL_PixelFormat *f = (const SDL_PixelFormat*)SDL_GetPointerProperty(
+         SDL_GetRendererProperties(renderer),
+         SDL_PROP_RENDERER_TEXTURE_FORMATS_POINTER, NULL);
+   for (; f && *f != SDL_PIXELFORMAT_UNKNOWN; f++)
+      if (*f == format)
+         return true;
+   return false;
+}
+
 static INLINE void sdl3_tex_zero(sdl3_tex_t *t)
 {
    if (t->tex)
@@ -104,6 +116,15 @@ static bool sdl3_init_renderer(sdl3_video_t *vid)
    }
 
    RARCH_LOG("[SDL3] Renderer: %s.\n", SDL_GetRendererName(vid->renderer));
+
+   /* SDL keeps a 16-bit texture the renderer lacks as a copy it
+    * converts at every unlock; converting into a 32-bit one is a pass
+    * less. */
+   vid->flags &= ~(SDL3_FLAG_NATIVE_RGB565 | SDL3_FLAG_NATIVE_RGBA4444);
+   if (sdl3_renderer_has_format(vid->renderer, SDL_PIXELFORMAT_RGB565))
+      vid->flags |= SDL3_FLAG_NATIVE_RGB565;
+   if (sdl3_renderer_has_format(vid->renderer, SDL_PIXELFORMAT_RGBA4444))
+      vid->flags |= SDL3_FLAG_NATIVE_RGBA4444;
 
    /* Try setting vsync in order to determine whether or not it's supported. */
    if (SDL_SetRenderVSync(vid->renderer, SDL_RENDERER_VSYNC_ADAPTIVE))
@@ -195,6 +216,16 @@ static void sdl3_refresh_input_size(sdl3_video_t *vid, bool menu, bool rgb32,
       else /* assumes the frontend converts 0RGB1555 to RGB565 */
          format = rgb32 ? SDL_PIXELFORMAT_ARGB8888 : SDL_PIXELFORMAT_RGB565;
 
+      target->widen = SDL_PIXELFORMAT_UNKNOWN;
+      if (     (format == SDL_PIXELFORMAT_RGB565
+               && !(vid->flags & SDL3_FLAG_NATIVE_RGB565))
+            || (format == SDL_PIXELFORMAT_RGBA4444
+               && !(vid->flags & SDL3_FLAG_NATIVE_RGBA4444)))
+      {
+         target->widen = format;
+         format        = SDL_PIXELFORMAT_ARGB8888;
+      }
+
       target->tex    = SDL_CreateTexture(vid->renderer, format,
             SDL_TEXTUREACCESS_STREAMING, width, height);
       target->w      = width;
@@ -250,7 +281,13 @@ static void sdl3_stream_upload(sdl3_tex_t *target, const void *src,
 
    in  = (const uint8_t*)src;
    out = (uint8_t*)dst;
-   if (len == src_pitch && len == (size_t)dst_pitch)
+   if (target->widen == SDL_PIXELFORMAT_RGB565)
+      conv_rgb565_argb8888(out, in, (int)target->w, (int)target->h,
+            dst_pitch, (int)src_pitch);
+   else if (target->widen == SDL_PIXELFORMAT_RGBA4444)
+      conv_rgba4444_argb8888(out, in, (int)target->w, (int)target->h,
+            dst_pitch, (int)src_pitch);
+   else if (len == src_pitch && len == (size_t)dst_pitch)
       memcpy(out, in, len * target->h);
    else
       for (y = 0; y < target->h; y++)
@@ -1420,6 +1457,7 @@ static uint32_t sdl3_get_flags(void *data)
    BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
    /* set_video_mode restyles the window it has */
    BIT32_SET(flags, GFX_CTX_FLAGS_FULLSCREEN_IN_PLACE);
+   BIT32_SET(flags, GFX_CTX_FLAGS_FULLSCREEN_EXCLUSIVE_IN_PLACE);
    BIT32_SET(flags, GFX_CTX_FLAGS_WINDOW_RESIZE_IN_PLACE);
    if (vid && retro_atomic_load_acquire_int(&vid->views.allowed))
       BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS);
