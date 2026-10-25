@@ -152,6 +152,50 @@ static void wait_submissions(void *handle) { (void)handle; }
 #define PASSES  3
 #define INDICES 3
 
+/* The render pass a target is drawn with, as created */
+static VkAttachmentLoadOp last_load_op;
+static VkResult VKAPI_CALL mock_create_render_pass(VkDevice d,
+      const VkRenderPassCreateInfo *info, const VkAllocationCallbacks *a,
+      VkRenderPass *out)
+{
+   (void)d; (void)a;
+   last_load_op = info->pAttachments[0].loadOp;
+   *out = (VkRenderPass)(uintptr_t)0x2000;
+   return VK_SUCCESS;
+}
+
+/* A pass whose fragment stage can discard draws to a target cleared to
+ * transparent black, as glcore and D3D clear theirs; one that writes
+ * every pixel keeps the cheaper don't-care load. */
+static void test_discard_clears(void)
+{
+   /* header; OpConstant %t %c 252 (an operand that looks like OpKill);
+    * then OpKill, OpTerminateInvocation or OpDemoteToHelperInvocation */
+   uint32_t words[10] = { 0x07230203, 0x10000, 0, 16, 0,
+      (4u << 16) | 43, 1, 2, 252, 0 };
+   VkRenderPass rp = VK_NULL_HANDLE;
+
+   words[9] = (1u << 16) | 253;   /* OpReturn */
+   CHECK(!spirv_can_discard(words, 10), "a stage without discard");
+   words[9] = (1u << 16) | 252;
+   CHECK(spirv_can_discard(words, 10), "OpKill");
+   words[9] = (1u << 16) | 4416;
+   CHECK(spirv_can_discard(words, 10), "OpTerminateInvocation");
+   words[9] = (1u << 16) | 5380;
+   CHECK(spirv_can_discard(words, 10), "OpDemoteToHelperInvocation");
+   CHECK(!spirv_can_discard(NULL, 0), "no stage");
+
+   vkCreateRenderPass = mock_create_render_pass;
+   CHECK(vulkan_initialize_render_pass((VkDevice)(uintptr_t)0x1000,
+            VK_FORMAT_R8G8B8A8_UNORM, true, &rp)
+         && last_load_op == VK_ATTACHMENT_LOAD_OP_CLEAR,
+         "a discarding pass's target is cleared");
+   CHECK(vulkan_initialize_render_pass((VkDevice)(uintptr_t)0x1000,
+            VK_FORMAT_R8G8B8A8_UNORM, false, &rp)
+         && last_load_op == VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+         "any other pass's target is not");
+}
+
 static bool chain_whole(const struct vulkan_filter_chain *chain)
 {
    return chain->pass_count == PASSES && chain->num_deferred == INDICES;
@@ -207,6 +251,8 @@ int main(void)
             "objects were left", k, allocs, live_objects);
       live_objects = 0;
    }
+
+   test_discard_clears();
 
    if (failures)
    {

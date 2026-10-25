@@ -78,7 +78,7 @@ typedef struct vulkan_filter_chain_create_info vulkan_filter_chain_create_info;
 
 
    static bool vulkan_initialize_render_pass(VkDevice device, VkFormat format,
-         VkRenderPass *render_pass)
+         bool clear, VkRenderPass *render_pass)
    {
       VkAttachmentReference color_ref;
       VkRenderPassCreateInfo rp_info;
@@ -98,12 +98,14 @@ typedef struct vulkan_filter_chain_create_info vulkan_filter_chain_create_info;
       color_ref.attachment         = 0;
       color_ref.layout             = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-      /* We will always write to the entire framebuffer,
-       * so we don't really need to clear. */
+      /* A pass writes the whole target unless its fragment stage can
+       * discard; what one that can leaves unwritten is transparent
+       * black, as glcore and D3D clear their targets to. */
       attachment.flags             = 0;
       attachment.format            = format;
       attachment.samples           = VK_SAMPLE_COUNT_1_BIT;
-      attachment.loadOp            = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+      attachment.loadOp            = clear ? VK_ATTACHMENT_LOAD_OP_CLEAR
+                                           : VK_ATTACHMENT_LOAD_OP_DONT_CARE;
       attachment.storeOp           = VK_ATTACHMENT_STORE_OP_STORE;
       attachment.stencilLoadOp     = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
       attachment.stencilStoreOp    = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -691,6 +693,8 @@ struct slang_framebuffer
    unsigned levels;
    VkFramebuffer framebuffer;
    VkRenderPass render_pass;
+   /* Cleared as it is drawn to: a pass that can discard */
+   bool clear;
    struct
    {
       size_t size;
@@ -711,7 +715,7 @@ static void slang_framebuffer_free(struct slang_framebuffer *fb);
 static struct slang_framebuffer *slang_framebuffer_new(VkDevice device,
       const VkPhysicalDeviceMemoryProperties *mem_props,
       unsigned max_width, unsigned max_height,
-      VkFormat format, unsigned max_levels,
+      VkFormat format, unsigned max_levels, bool clear,
       FramebufferMemoryPool *mem_pool);
 /* Frees *fb if set and nulls it. */
 static void slang_framebuffer_delete(struct slang_framebuffer **fb);
@@ -2094,7 +2098,7 @@ static bool slang_chain_init_history(struct vulkan_filter_chain *chain)
                VIDEO_SCALE_W(chain->max_input_size_dims),
                VIDEO_SCALE_H(chain->max_input_size_dims),
                chain->original_format,
-               1, &chain->common.framebuffer_pool)))
+               1, false, &chain->common.framebuffer_pool)))
          return false;
       chain->num_history++;
    }
@@ -3735,6 +3739,7 @@ static bool slang_pass_init_feedback(struct slang_pass *pass)
          VIDEO_SCALE_W(pass->current_framebuffer_size_dims),
          VIDEO_SCALE_H(pass->current_framebuffer_size_dims),
          pass->pass_info.rt_format, pass->pass_info.max_levels,
+         pass->framebuffer && pass->framebuffer->clear,
          pass->common ? &pass->common->framebuffer_pool : NULL);
    return pass->fb_feedback != NULL;
 }
@@ -3795,6 +3800,26 @@ static bool slang_pass_build(struct slang_pass *pass)
    return slang_pass_build_layout(pass) && slang_pass_init_pipeline(pass);
 }
 
+/* A fragment stage that can leave a pixel unwritten: OpKill,
+ * OpTerminateInvocation or OpDemoteToHelperInvocation. */
+static bool spirv_can_discard(const uint32_t *words, size_t n)
+{
+   size_t at = 5;
+   if (!words)
+      return false;
+   while (at < n)
+   {
+      uint32_t op  = words[at] & 0xffffu;
+      uint32_t len = words[at] >> 16;
+      if (op == 252 || op == 4416 || op == 5380)
+         return true;
+      if (!len)
+         break;
+      at += len;
+   }
+   return false;
+}
+
 /* All of a pass but its pipeline */
 static bool slang_pass_build_layout(struct slang_pass *pass)
 {
@@ -3820,6 +3845,7 @@ static bool slang_pass_build_layout(struct slang_pass *pass)
                VIDEO_SCALE_W(pass->current_framebuffer_size_dims),
                VIDEO_SCALE_H(pass->current_framebuffer_size_dims),
                pass->pass_info.rt_format, pass->pass_info.max_levels,
+               spirv_can_discard(pass->fragment_shader, pass->num_fragment_shader),
                &pass->common->framebuffer_pool)))
          return false;
    }
@@ -4397,6 +4423,12 @@ static void slang_pass_build_commands(struct slang_pass *pass,
       rp_info.renderArea.extent.height = VIDEO_SCALE_H(size_dims);
       rp_info.clearValueCount          = 0;
       rp_info.pClearValues             = NULL;
+      if (pass->framebuffer->clear)
+      {
+         static const VkClearValue black = { { { 0.0f, 0.0f, 0.0f, 0.0f } } };
+         rp_info.clearValueCount       = 1;
+         rp_info.pClearValues          = &black;
+      }
 
       vkCmdBeginRenderPass(cmd, &rp_info, VK_SUBPASS_CONTENTS_INLINE);
    }
@@ -4526,7 +4558,7 @@ static void slang_pass_build_commands(struct slang_pass *pass,
 static struct slang_framebuffer *slang_framebuffer_new(VkDevice device,
       const VkPhysicalDeviceMemoryProperties *mem_props,
       unsigned max_width, unsigned max_height,
-      VkFormat format, unsigned max_levels,
+      VkFormat format, unsigned max_levels, bool clear,
       FramebufferMemoryPool *mem_pool)
 {
    struct slang_framebuffer *fb = (struct slang_framebuffer*)
@@ -4539,10 +4571,11 @@ static struct slang_framebuffer *slang_framebuffer_new(VkDevice device,
    fb->memory_properties = mem_props;
    fb->device            = device;
    fb->mem_pool          = mem_pool;
+   fb->clear             = clear;
 
    RARCH_LOG("[Vulkan] Creating framebuffer %ux%u (max %u level(s)).\n",
          max_width, max_height, max_levels);
-   if (!vulkan_initialize_render_pass(device, format, &fb->render_pass))
+   if (!vulkan_initialize_render_pass(device, format, clear, &fb->render_pass))
    {
       RARCH_ERR("[Vulkan] Failed to create render pass for "
             "framebuffer %ux%u.\n", max_width, max_height);
@@ -4747,7 +4780,8 @@ static bool slang_framebuffer_set_size(struct slang_framebuffer *fb,
 
    if (format_changed)
    {
-      if (!vulkan_initialize_render_pass(fb->device, fb->format, &fb->render_pass))
+      if (!vulkan_initialize_render_pass(fb->device, fb->format, fb->clear,
+               &fb->render_pass))
       {
          fb->size_dims   = old_size_dims;
          fb->format = old_format;
