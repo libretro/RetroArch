@@ -2240,16 +2240,12 @@ bool win32_has_focus(void *data)
          && !settings->bools.video_fullscreen
          && !settings->bools.video_window_save_positions)
    {
-      unsigned video_scale        = settings->uints.video_scale;
       unsigned extra_width        = 0;
       unsigned extra_height       = 0;
       unsigned min_width          = 0;
       unsigned min_height         = 0;
 
       win32_get_av_info_geometry(&min_width, &min_height);
-
-      min_width                  *= video_scale;
-      min_height                 *= video_scale;
 
       if (settings->bools.video_window_show_decorations)
       {

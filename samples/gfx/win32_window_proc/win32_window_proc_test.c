@@ -399,6 +399,47 @@ int main(int argc, char **argv)
                resized++;
          }
 
+         {
+            unsigned old_scale = settings->uints.video_scale;
+            bool old_save = settings->bools.video_window_save_positions;
+            int core;
+            settings->uints.video_scale = 3;
+            settings->bools.video_window_save_positions = false;
+            for (core = 0; core < 2; core++)
+            {
+               RECT requested, before, after;
+               bool same;
+               stub_set_geometry(320, 240);
+               requested.left = requested.top = 0;
+               requested.right = 900;
+               requested.bottom = 660;
+               AdjustWindowRectEx(&requested,
+                     GetWindowLongPtr(hwnd, GWL_STYLE), GetMenu(hwnd) != NULL,
+                     GetWindowLongPtr(hwnd, GWL_EXSTYLE));
+               SetWindowPos(hwnd, NULL, 0, 0,
+                     requested.right - requested.left,
+                     requested.bottom - requested.top,
+                     SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
+               pump();
+               GetWindowRect(hwnd, &before);
+               if (core)
+                  stub_set_geometry(960, 720);
+               win32_has_focus(NULL);
+               pump();
+               GetWindowRect(hwnd, &after);
+               same = EqualRect(&before, &after) != 0;
+               if (same != (core == 0))
+               {
+                  fprintf(stderr, "FAIL focus geometry: changed=%u unchanged=%u\n",
+                        core != 0, same);
+                  return 1;
+               }
+            }
+            stub_set_geometry(320, 240);
+            settings->uints.video_scale = old_scale;
+            settings->bools.video_window_save_positions = old_save;
+         }
+
          /* A core whose picture is bigger than the window asked for,
           * with the menu bar on. The window code does not let a window
           * be smaller than the core's picture, so the window that
