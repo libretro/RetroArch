@@ -194,11 +194,19 @@ static bool test_device(void)
     * what the frontend has already seen must still hold. */
    under_starved += under_fed;
    stream = ((sdl3_audio_t*)ctx)->stream;
+   /* What the raw path leaves set on the stream */
+   SDL_SetAudioStreamFrequencyRatio(stream, 1.01f);
+   SDL_SetAudioStreamGain(stream, 0.5f);
    if (sdl3_audio_reopen_default((sdl3_audio_t*)ctx))
    {
       /* The main thread may be reading the stream as it reopens */
       CHECK(((sdl3_audio_t*)ctx)->stream == stream,
             "a reopen replaced the stream other threads read");
+      CHECK(SDL_GetAudioStreamFrequencyRatio(stream) == 1.0f
+            && SDL_GetAudioStreamGain(stream) == 1.0f,
+            "a reopen kept ratio %f and gain %f the cache says are 1",
+            (double)SDL_GetAudioStreamFrequencyRatio(stream),
+            (double)SDL_GetAudioStreamGain(stream));
       under_reopen = d->underruns(ctx);
       printf("after reopen:  %u underruns\n", (unsigned)under_reopen);
       CHECK(under_reopen >= under_starved,
@@ -207,6 +215,17 @@ static bool test_device(void)
    }
    else
       printf("after reopen:  skipped, no default device to reopen on\n");
+
+   /* The threaded pipeline only writes once wait_writable reports
+    * room, so a removal has to be reopened from there. */
+   SDL_SetAtomicInt(&((sdl3_audio_t*)ctx)->device_removed, 1);
+   SDL_SetAtomicInt(&((sdl3_audio_t*)ctx)->defunct, 0);
+   if (d->wait_writable(ctx, block))
+      CHECK(!SDL_GetAtomicInt(&((sdl3_audio_t*)ctx)->device_removed),
+            "room reported for a removed device");
+   else
+      CHECK(SDL_GetAtomicInt(&((sdl3_audio_t*)ctx)->defunct),
+            "a removed device was neither reopened nor given up on");
 
    d->stop(ctx);
    free(buf);

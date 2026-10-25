@@ -418,6 +418,8 @@ static void *sdl3_joypad_init(void *data)
    /* Gamepad driver hints. */
    SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_WII, "1");
 #endif
+   /* input_joypad_background gates unfocused pads in the frontend. */
+   SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
 
    sdl_subsystem_flags = SDL_WasInit(0);
 

@@ -154,10 +154,15 @@ int main(void)
    CHECK(got == 0);
    CHECK(elapsed < 150);
 
-   /* And a device already gone is answered without waiting at all. */
-   t0 = SDL_GetTicks();
-   CHECK(sdl3_microphone_wait_readable(NULL, &slow, WORKER_SLICE) == 0);
-   CHECK(SDL_GetTicks() - t0 < 50);
+   /* A device already gone is answered after one bounded wait, so
+    * the capture worker retrying it doesn't spin. */
+   SDL_SetAtomicInt(&mic.device_removed, 1);
+   t0      = SDL_GetTicks();
+   got     = sdl3_microphone_wait_readable(NULL, &mic, WORKER_SLICE);
+   elapsed = SDL_GetTicks() - t0;
+   CHECK(got == 0);
+   CHECK(elapsed >= 15 && elapsed < 100);
+   SDL_SetAtomicInt(&mic.device_removed, 0);
 
    /* A stream that fails: every read comes back -1, and a second of
     * frames asking says nothing. */
