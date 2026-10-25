@@ -594,13 +594,64 @@ static int block_references(int hevc)
    return 0;
 }
 
+static int block_additions(void)
+{
+   static const uint8_t explicit_id[] = {
+      0xa6, 0x88, 0xee, 0x81, 1, 0xa5, 0x83, 'x', '\n', '\n'
+   };
+   static const uint8_t default_id[] = {0xa6, 0x85, 0xa5, 0x83, 'x', '\n', '\n'};
+   static const uint8_t empty[] = {0xa6, 0x82, 0xa5, 0x80};
+   static const uint8_t missing[] = {0xa6, 0x83, 0xee, 0x81, 1};
+   rwebm_packet packet;
+   const uint8_t *data;
+   size_t size;
+   unsigned i;
+   memset(&packet, 0, sizeof(packet));
+   CHECK(!rwebm_packet_addition(&packet, 1, &data, &size) && !data && !size);
+   packet.block_additions = default_id;
+   packet.block_additions_size = sizeof(default_id);
+   CHECK(rwebm_packet_addition(&packet, 1, &data, &size) == 1
+         && size == 3 && !memcmp(data, "x\n\n", 3));
+   CHECK(!rwebm_packet_addition(&packet, 2, &data, &size) && !data && !size);
+   packet.block_additions = empty;
+   packet.block_additions_size = sizeof(empty);
+   CHECK(rwebm_packet_addition(&packet, 1, &data, &size) == 1 && !size);
+   packet.block_additions = missing;
+   packet.block_additions_size = sizeof(missing);
+   CHECK(rwebm_packet_addition(&packet, 1, &data, &size) == -1);
+   memcpy(file, explicit_id, sizeof(explicit_id));
+   memcpy(file + sizeof(explicit_id), explicit_id, sizeof(explicit_id));
+   packet.block_additions = file;
+   packet.block_additions_size = 2 * sizeof(explicit_id);
+   CHECK(rwebm_packet_addition(&packet, 1, &data, &size) == -1);
+   file[4] = 2;
+   CHECK(rwebm_packet_addition(&packet, 1, &data, &size) == 1
+         && size == 3 && !memcmp(data, "x\n\n", 3));
+   file[4] = 0;
+   CHECK(rwebm_packet_addition(&packet, 1, &data, &size) == -1);
+   for (i = 0; i < 257; i++)
+   {
+      file[2 * i] = 0xec;
+      file[2 * i + 1] = 0x80;
+   }
+   packet.block_additions_size = 514;
+   CHECK(rwebm_packet_addition(&packet, 1, &data, &size) == -1);
+   packet.block_additions = NULL;
+   CHECK(rwebm_packet_addition(&packet, 1, &data, &size) == -1);
+   return 0;
+}
+
 static int text_durations(void)
 {
-   size_t marker, segment, tracks, entry, cluster, group, partial = 0;
+   size_t marker, segment, tracks, entry, cluster, group, partial = 0, additions_at = 0;
+   int result;
    unsigned i;
    rwebm_t *demux;
    rwebm_packet pkt;
    static const int64_t expected[] = {12000000, 34000000, -1, 0, -2, -2};
+   static const uint8_t additions[] = {
+      0xa6, 0x88, 0xee, 0x81, 1, 0xa5, 0x83, 'x', '\n', '\n'
+   };
    used = 0;
    marker = start(0x1a45dfa3, 4); finish(marker);
    segment = start(0x18538067, 4);
@@ -617,12 +668,30 @@ static int text_durations(void)
       group = 0;
       if (i != 2) group = start(0xa0, 1);
       if (!i) integer(0x9b, 1, 12);
+      if (!i)
+      {
+         marker = start(0x75a1, 2);
+         additions_at = used;
+         memcpy(file + used, additions, sizeof(additions));
+         used += sizeof(additions); finish(marker);
+         for (marker = 0; marker < 300; marker++)
+         {
+            size_t empty = start(0xec, 1);
+            finish(empty);
+         }
+      }
       marker = start(i == 2 ? 0xa3 : 0xa1, 1);
       file[used++] = 0x81; file[used++] = 0;
       file[used++] = (uint8_t)(i * 40); file[used++] = 0;
       file[used++] = 'h'; file[used++] = 'i';
       finish(marker);
       if (i == 1) partial = used;
+      if (i == 1)
+      {
+         marker = start(0x75a1, 2);
+         memcpy(file + used, additions, sizeof(additions));
+         used += sizeof(additions); finish(marker);
+      }
       if (i == 1 || i == 3) integer(0x9b, 1, i == 1 ? 34 : 0);
       if (i >= 4)
       {
@@ -638,18 +707,36 @@ static int text_durations(void)
    CHECK(demux && rwebm_num_tracks(demux) == 1);
    for (i = 0; i < 6; i++)
    {
-      CHECK(rwebm_read_packet_track(demux, 0, &pkt) == 1);
+      do
+      {
+         result = rwebm_read_packet_track(demux, 0, &pkt);
+         if (result == RWEBM_READ_YIELD && !i)
+            CHECK(rwebm_consumed(demux) <= additions_at);
+      } while (result == RWEBM_READ_YIELD);
+      CHECK(result == 1);
       CHECK(pkt.duration_ns == expected[i] && pkt.timestamp == (int64_t)i * 40000000);
       CHECK(pkt.size == 2 && !memcmp(pkt.data, "hi", 2));
+      if (i < 2)
+         CHECK(pkt.block_additions_size == sizeof(additions)
+               && pkt.block_additions >= file && pkt.block_additions < file + used
+               && !memcmp(pkt.block_additions, additions, sizeof(additions)));
+      else
+         CHECK(!pkt.block_additions && !pkt.block_additions_size);
    }
    rwebm_rewind(demux);
    CHECK(rwebm_read_packet(demux, &pkt) == 1 && pkt.duration_ns == expected[0]);
+   CHECK(pkt.block_additions_size == sizeof(additions));
    rwebm_close(demux);
    demux = rwebm_open_memory_avail(file, used, partial, NULL);
-   CHECK(demux && rwebm_read_packet_track(demux, 0, &pkt) == 1);
+   CHECK(demux);
+   do result = rwebm_read_packet_track(demux, 0, &pkt);
+   while (result == RWEBM_READ_YIELD);
+   CHECK(result == 1);
    CHECK(rwebm_read_packet_track(demux, 0, &pkt) == RWEBM_READ_AGAIN);
    rwebm_set_avail(demux, used);
    CHECK(rwebm_read_packet_track(demux, 0, &pkt) == 1 && pkt.duration_ns == 34000000);
+   CHECK(pkt.block_additions_size == sizeof(additions)
+         && !memcmp(pkt.block_additions, additions, sizeof(additions)));
    rwebm_close(demux);
    return 0;
 }
@@ -1111,6 +1198,7 @@ int main(void)
    CHECK(!sparse_cue_index());
    CHECK(!block_references(0));
    CHECK(!block_references(1));
+   CHECK(!block_additions());
    CHECK(!text_durations());
    CHECK(!filtered_payload(1, 0));
    CHECK(!filtered_payload(1, 1));

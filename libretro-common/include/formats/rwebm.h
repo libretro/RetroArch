@@ -93,6 +93,9 @@ typedef struct
 {
    const uint8_t *data;     /* aliases into the input buffer            */
    size_t         size;
+   /* Encoded BlockAdditions payload for an unlaced Block; borrowed. */
+   const uint8_t *block_additions;
+   size_t block_additions_size;
    int            track;     /* index into the track array (0-based)     */
    int64_t        timestamp; /* in nanoseconds (scaled by TimestampScale) */
    int            keyframe;
@@ -106,6 +109,11 @@ typedef struct
    /* Per-frame BlockDuration: -1 absent, -2 invalid/unrepresentable. */
    int64_t        duration_ns;
 } rwebm_packet;
+
+/* Returns 1 found, 0 absent, -1 invalid or over 256 metadata elements.
+ * The default BlockAddID is 1. Returned data remains borrowed. */
+int rwebm_packet_addition(const rwebm_packet *packet, uint64_t wanted,
+      const uint8_t **data, size_t *size);
 
 typedef struct rwebm rwebm_t;
 
@@ -126,7 +134,7 @@ int                rwebm_num_tracks(const rwebm_t *webm);
 size_t             rwebm_media_floor(const rwebm_t *m);
 size_t             rwebm_tell(const rwebm_t *m);
 /* Earliest byte still needed by the next read, including pending laces.
- * Callers retaining a returned packet must also pin its borrowed data. */
+ * Callers retaining a returned packet must pin its data and additions. */
 size_t             rwebm_consumed(const rwebm_t *m);
 const rwebm_track *rwebm_get_track(const rwebm_t *webm, int index);
 

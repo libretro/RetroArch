@@ -10,7 +10,9 @@ SOURCES := media_controls_test.c ../../../gfx/gfx_media_display.c ../../../gfx/g
  ../../../menu/menu_media_browser.c ../../../libretro-common/lists/file_list.c \
  ../../../libretro-common/compat/compat_strldup.c ../../../libretro-common/compat/compat_strl.c \
  ../../../libretro-common/compat/compat_strcasestr.c
-SOURCES += ../../../gfx/gfx_media_subtitle.c $(LRC)/formats/subtitle/rsubtitle_srt.c \
+SOURCES += ../../../gfx/gfx_media_subtitle.c $(LRC)/formats/subtitle/rsubtitle_srt.c $(LRC)/formats/subtitle/rsubtitle_vtt.c \
+           $(LRC)/formats/subtitle/rsubtitle_vtt_css.c $(LRC)/formats/subtitle/rsubtitle_vtt_css_tree.c \
+           $(LRC)/formats/subtitle/rsubtitle_vtt_selector.c \
            $(LRC)/string/stdstring.c $(LRC)/encodings/encoding_utf.c
 ifeq ($(THREADS),1)
 CFLAGS += -DHAVE_THREADS

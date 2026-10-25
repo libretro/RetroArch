@@ -1775,6 +1775,10 @@ MENU
 #ifdef HAVE_MENU
 #include "../menu/menu_str.c"
 #include "../menu/menu_driver.c"
+#include "../libretro-common/formats/subtitle/rsubtitle_vtt.c"
+#include "../libretro-common/formats/subtitle/rsubtitle_vtt_css.c"
+#include "../libretro-common/formats/subtitle/rsubtitle_vtt_css_tree.c"
+#include "../libretro-common/formats/subtitle/rsubtitle_vtt_selector.c"
 #include "../libretro-common/formats/subtitle/rsubtitle_srt.c"
 #include "../tasks/task_subtitle.c"
 #include "../gfx/gfx_media_subtitle.c"

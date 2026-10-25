@@ -1061,6 +1061,10 @@ ifeq ($(HAVE_MENU_COMMON), 1)
           gfx/gfx_media_subtitle.o \
           tasks/task_subtitle.o \
           $(LIBRETRO_COMM_DIR)/formats/subtitle/rsubtitle_srt.o \
+          $(LIBRETRO_COMM_DIR)/formats/subtitle/rsubtitle_vtt.o \
+          $(LIBRETRO_COMM_DIR)/formats/subtitle/rsubtitle_vtt_css.o \
+          $(LIBRETRO_COMM_DIR)/formats/subtitle/rsubtitle_vtt_css_tree.o \
+          $(LIBRETRO_COMM_DIR)/formats/subtitle/rsubtitle_vtt_selector.o \
           menu/menu_media_browser.o \
           menu/menu_str.o \
           menu/cbs/menu_cbs_ok.o \

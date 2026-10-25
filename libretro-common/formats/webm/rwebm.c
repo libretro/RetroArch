@@ -75,6 +75,7 @@
 #define ID_BLOCKGROUP      0xA0u
 #define ID_BLOCK           0xA1u
 #define ID_BLOCKDURATION   0x9Bu
+#define ID_BLOCKADDITIONS  0x75A1u
 #define ID_DISCARDPADDING  0x75A2u
 #define ID_REFERENCEBLOCK  0xFBu
 #define ID_CUES            0x1C53BB6Bu
@@ -298,6 +299,8 @@ struct rwebm
    const uint8_t *avail_end;
    /* Packet-read cursor. */
    const uint8_t *cur;              /* walk position inside the segment    */
+   const uint8_t *pending_additions;
+   size_t pending_additions_size;
    size_t         need_hi;          /* blocked element end, or zero         */
    rwebm_inert_range_cb_t inert_cb;
    void *inert_user;
@@ -628,6 +631,8 @@ size_t rwebm_consumed(const rwebm_t *m)
    const uint8_t *next;
    if (!m || !m->cur) return 0;
    next = m->cur;
+   if (m->pending_additions && m->pending_additions < next)
+      next = m->pending_additions;
    if (m->lace_index < m->lace_count && m->lace_frame_ptr[m->lace_index] < next)
       next = m->lace_frame_ptr[m->lace_index];
    return (size_t)(next - m->data);
@@ -734,6 +739,8 @@ static int64_t webm_select_time_ns(rwebm_t *webm, int64_t ns, int resident)
    webm->lace_index      = 0;
    webm->pending_discard = 0;
    webm->pending_duration = -1;
+   webm->pending_additions = NULL;
+   webm->pending_additions_size = 0;
    webm->pending_reference = 0;
    webm->need_hi         = 0;
    return webm->cues[best].time_ticks * webm->timestamp_scale;
@@ -758,6 +765,8 @@ void rwebm_rewind(rwebm_t *webm)
    webm->lace_count = 0;
    webm->lace_index = 0;
    webm->pending_duration = -1;
+   webm->pending_additions = NULL;
+   webm->pending_additions_size = 0;
    webm->pending_reference = 0;
    webm->need_hi    = 0;
 }
@@ -819,12 +828,16 @@ static int64_t webm_duration_ns(rwebm_t *webm, const uint8_t *data, size_t size)
    return (int64_t)(ticks * (uint64_t)webm->timestamp_scale);
 }
 
-static int64_t webm_group_duration(rwebm_t *webm, const uint8_t *p,
-      const uint8_t *group_end)
+static void webm_group_metadata(rwebm_t *webm, const uint8_t *p,
+      const uint8_t *group_end, rwebm_packet *pkt)
 {
-   int64_t duration = webm->pending_duration;
    ebml_reader reader;
+   pkt->duration_ns = webm->pending_duration;
+   pkt->block_additions = webm->pending_additions;
+   pkt->block_additions_size = webm->pending_additions_size;
    webm->pending_duration = -1;
+   webm->pending_additions = NULL;
+   webm->pending_additions_size = 0;
    reader.p = p; reader.end = group_end;
    while (reader.p < reader.end)
    {
@@ -834,10 +847,85 @@ static int64_t webm_group_duration(rwebm_t *webm, const uint8_t *p,
       if (!id || !ok || size > (uint64_t)(reader.end - reader.p))
          break;
       if (id == ID_BLOCKDURATION)
-         duration = webm_duration_ns(webm, reader.p, (size_t)size);
+         pkt->duration_ns = webm_duration_ns(webm, reader.p, (size_t)size);
+      else if (id == ID_BLOCKADDITIONS)
+      {
+         pkt->block_additions = reader.p;
+         pkt->block_additions_size = (size_t)size;
+      }
       reader.p += (size_t)size;
    }
-   return duration;
+}
+
+int rwebm_packet_addition(const rwebm_packet *packet, uint64_t wanted,
+      const uint8_t **data, size_t *size)
+{
+   ebml_reader reader;
+   unsigned walked = 0;
+   int found = 0;
+   if (!packet || !data || !size || !wanted)
+      return -1;
+   *data = NULL;
+   *size = 0;
+   if (!packet->block_additions_size)
+      return 0;
+   if (!packet->block_additions)
+      return -1;
+   reader.p = packet->block_additions;
+   reader.end = reader.p + packet->block_additions_size;
+   while (reader.p < reader.end)
+   {
+      int ok;
+      uint32_t id;
+      uint64_t length;
+      if (++walked > 256) return -1;
+      id = ebml_read_id(&reader);
+      length = ebml_read_vint(&reader, 1, &ok);
+      if (!id || !ok || length > (uint64_t)(reader.end - reader.p)) return -1;
+      if (id == 0xa6)
+      {
+         ebml_reader more;
+         uint64_t add_id = 1;
+         const uint8_t *payload = NULL;
+         size_t payload_size = 0;
+         int have_id = 0;
+         more.p = reader.p;
+         more.end = more.p + (size_t)length;
+         while (more.p < more.end)
+         {
+            uint32_t child;
+            uint64_t bytes;
+            if (++walked > 256) return -1;
+            child = ebml_read_id(&more);
+            bytes = ebml_read_vint(&more, 1, &ok);
+            if (!child || !ok || bytes > (uint64_t)(more.end - more.p)) return -1;
+            if (child == 0xee)
+            {
+               if (have_id || !bytes || bytes > 8) return -1;
+               add_id = be_uint(more.p, (size_t)bytes);
+               if (!add_id) return -1;
+               have_id = 1;
+            }
+            else if (child == 0xa5)
+            {
+               if (payload) return -1;
+               payload = more.p;
+               payload_size = (size_t)bytes;
+            }
+            more.p += (size_t)bytes;
+         }
+         if (!payload) return -1;
+         if (add_id == wanted)
+         {
+            if (found) return -1;
+            found = 1;
+            *data = payload;
+            *size = payload_size;
+         }
+      }
+      reader.p += (size_t)length;
+   }
+   return found;
 }
 
 static int webm_group_selected(rwebm_t *webm, const uint8_t *body,
@@ -935,6 +1023,8 @@ static int rwebm_read_packet_filtered(rwebm_t *webm, rwebm_packet *pkt,
    webm->need_hi = 0;
    pkt->timestamp_continuation = 0;
    pkt->duration_ns = -1;
+   pkt->block_additions = NULL;
+   pkt->block_additions_size = 0;
 
    /* A caller changing tracks must not receive the previous track's lace. */
    if (selected >= 0 && webm->lace_track != selected)
@@ -1080,6 +1170,8 @@ static int rwebm_read_packet_filtered(rwebm_t *webm, rwebm_packet *pkt,
          webm->pending_discard = 0;
          webm->pending_reference = 0;
          webm->pending_duration = -1;
+         webm->pending_additions = NULL;
+         webm->pending_additions_size = 0;
          r.p   = body;
          r.end = body + sz;
          continue;
@@ -1093,6 +1185,13 @@ static int rwebm_read_packet_filtered(rwebm_t *webm, rwebm_packet *pkt,
       if (id == ID_BLOCKDURATION)
       {
          webm->pending_duration = webm_duration_ns(webm, body, (size_t)sz);
+         r.p = body + sz;
+         continue;
+      }
+      if (id == ID_BLOCKADDITIONS)
+      {
+         webm->pending_additions = body;
+         webm->pending_additions_size = (size_t)sz;
          r.p = body + sz;
          continue;
       }
@@ -1149,7 +1248,7 @@ static int rwebm_read_packet_filtered(rwebm_t *webm, rwebm_packet *pkt,
                pkt->keyframe  = (id == ID_SIMPLEBLOCK)
                               ? ((flags & 0x80) != 0) : 1;
                if (id == ID_BLOCK)
-                  pkt->duration_ns = webm_group_duration(webm, body + sz, r.end);
+                  webm_group_metadata(webm, body + sz, r.end, pkt);
                pkt->discard_padding = (id == ID_BLOCK)
                   ? webm_group_discard(webm, body + sz, r.end,
                         &pkt->keyframe) : 0;
@@ -1261,8 +1360,15 @@ static int rwebm_read_packet_filtered(rwebm_t *webm, rwebm_packet *pkt,
                                      webm->timestamp_scale);
                   webm->lace_keyframe = (id == ID_SIMPLEBLOCK)
                                       ? ((flags & 0x80) != 0) : 1;
-                  webm->lace_duration = (id == ID_BLOCK)
-                     ? webm_group_duration(webm, body + sz, r.end) : -1;
+                  webm->lace_duration = -1;
+                  if (id == ID_BLOCK)
+                  {
+                     webm_group_metadata(webm, body + sz, r.end, pkt);
+                     webm->lace_duration = pkt->duration_ns;
+                     pkt->duration_ns = -1;
+                     pkt->block_additions = NULL;
+                     pkt->block_additions_size = 0;
+                  }
                   webm->lace_discard = (id == ID_BLOCK)
                      ? webm_group_discard(webm, body + sz, r.end,
                            &webm->lace_keyframe) : 0;

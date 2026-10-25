@@ -31,6 +31,7 @@
 #include <string/stdstring.h>
 #include <queues/task_queue.h>
 #include <streams/file_stream.h>
+#include <formats/rsubtitle_vtt.h>
 #include "task_subtitle.h"
 #include "tasks_internal.h"
 
@@ -61,9 +62,12 @@ struct subtitle_webm
    data_transfer_t *window;
    rwebm_t *demux;
    rsubtitle_srt_span_t *spans;
-   char *text;
+   rsubtitle_vtt_span_t *metadata;
+   char *text, *header;
    size_t length, avail, need_hi, feed_from;
    size_t used, capacity, count, span_capacity;
+   size_t header_size, header_done;
+   bool vtt;
 };
 #endif
 
@@ -91,6 +95,8 @@ static void subtitle_webm_free(struct subtitle_webm *webm)
    rwebm_close(webm->demux);
    data_transfer_free(webm->window);
    free(webm->spans);
+   free(webm->metadata);
+   free(webm->header);
    free(webm->text);
    free(webm);
 }
@@ -133,15 +139,38 @@ static int subtitle_webm_open(struct subtitle_webm *webm, const char *path)
    return 0;
 }
 
+static int subtitle_webm_vtt_metadata(const rwebm_packet *packet,
+      const uint8_t **identifier, size_t *identifier_size,
+      const uint8_t **settings, size_t *settings_size)
+{
+   const uint8_t *data, *line;
+   size_t size;
+   int status = rwebm_packet_addition(packet, 1, &data, &size);
+   *identifier = *settings = (const uint8_t*)"";
+   *identifier_size = *settings_size = 0;
+   if (status <= 0) return status >= 0;
+   if (size > 65536 || !(line = (const uint8_t*)memchr(data, '\n', size)))
+      return 0;
+   *settings = data;
+   *settings_size = (size_t)(line - data);
+   *identifier = line + 1;
+   size -= *settings_size + 1;
+   line = (const uint8_t*)memchr(*identifier, '\n', size);
+   *identifier_size = line ? (size_t)(line - *identifier) : size;
+   return *identifier_size <= 128 && *settings_size <= 128;
+}
+
 static int subtitle_webm_step(task_subtitle_request_t *request)
 {
    struct subtitle_webm *webm = request->webm;
    const rwebm_track *track;
    rwebm_packet packet;
    int result;
-   int64_t first, last, duration;
+   int64_t first, last, duration, origin_ns;
    uint64_t limit = (~(uint64_t)0) >> 1;
-   size_t lo, hi, end, i, written;
+   size_t lo, hi, end, i, written, extra = 0;
+   size_t identifier_size = 0, settings_size = 0;
+   const uint8_t *identifier = NULL, *settings = NULL;
    if (!webm)
    {
       request->webm = (struct subtitle_webm*)calloc(1, sizeof(*webm));
@@ -153,8 +182,28 @@ static int subtitle_webm_step(task_subtitle_request_t *request)
       if (result != 1) return result;
       track = rwebm_get_track(webm->demux, request->embedded_track);
       if (!track || track->type != RWEBM_TRACK_OTHER
-            || strcmp(track->codec_id, "S_TEXT/UTF8"))
+            || (strcmp(track->codec_id, "S_TEXT/UTF8")
+               && strcmp(track->codec_id, "S_TEXT/WEBVTT")))
          return -1;
+      webm->vtt = !strcmp(track->codec_id, "S_TEXT/WEBVTT");
+      if (webm->vtt)
+      {
+         webm->header_size = track->codec_private_size;
+         if (!webm->header_size || webm->header_size >= RSUBTITLE_SRT_MAX_INPUT)
+            return -1;
+         webm->header = (char*)malloc(webm->header_size);
+         if (!webm->header) return -1;
+      }
+      return 0;
+   }
+   if (webm->header_done < webm->header_size)
+   {
+      size_t bytes = webm->header_size - webm->header_done;
+      if (bytes > 65536) bytes = 65536;
+      track = rwebm_get_track(webm->demux, request->embedded_track);
+      memcpy(webm->header + webm->header_done,
+            track->codec_private + webm->header_done, bytes);
+      webm->header_done += bytes;
       return 0;
    }
    if (webm->need_hi)
@@ -194,7 +243,16 @@ static int subtitle_webm_step(task_subtitle_request_t *request)
       char *text = webm->text;
       rsubtitle_srt_span_t *spans = webm->spans;
       webm->text = NULL; webm->spans = NULL;
-      request->track = rsubtitle_srt_begin_cues(text, webm->used, spans, webm->count);
+      if (webm->vtt)
+      {
+         char *header = webm->header;
+         rsubtitle_vtt_span_t *metadata = webm->metadata;
+         webm->header = NULL; webm->metadata = NULL;
+         request->track = rsubtitle_vtt_begin_cues(text, webm->used, spans,
+               webm->count, metadata, header, webm->header_size);
+      }
+      else
+         request->track = rsubtitle_srt_begin_cues(text, webm->used, spans, webm->count);
       return request->track ? 1 : -1;
    }
    if (packet.track != request->embedded_track || !packet.size) return 0;
@@ -208,19 +266,30 @@ static int subtitle_webm_step(task_subtitle_request_t *request)
          || packet.timestamp < -(int64_t)limit + (int64_t)track->codec_delay_ns)
       return -1;
    first = packet.timestamp - (int64_t)track->codec_delay_ns;
+   origin_ns = first;
    if (first > (int64_t)limit - duration) return -1;
    last = first + duration;
    if (first < 0) first = 0;
    if (last / 1000 <= first / 1000) return 0;
-   if (webm->count == 65536 || webm->used > RSUBTITLE_SRT_MAX_INPUT - packet.size - 1)
+   if (webm->vtt)
+   {
+      if (!subtitle_webm_vtt_metadata(&packet, &identifier, &identifier_size,
+               &settings, &settings_size))
+         return -1;
+      extra = identifier_size + settings_size + 2;
+   }
+   end = packet.size + 1 + extra;
+   if (webm->count == 65536 || end > RSUBTITLE_SRT_MAX_INPUT - webm->header_size
+         || webm->used > RSUBTITLE_SRT_MAX_INPUT - webm->header_size - end)
       return -1;
-   end = webm->used + packet.size + 1;
+   end += webm->used;
    if (end > webm->capacity)
    {
       size_t capacity = webm->capacity ? webm->capacity * 2 : 65536;
       char *text;
       if (capacity < end) capacity = end;
-      if (capacity > RSUBTITLE_SRT_MAX_INPUT) capacity = RSUBTITLE_SRT_MAX_INPUT;
+      if (capacity > RSUBTITLE_SRT_MAX_INPUT - webm->header_size)
+         capacity = RSUBTITLE_SRT_MAX_INPUT - webm->header_size;
       text = (char*)realloc(webm->text, capacity);
       if (!text) return -1;
       webm->text = text; webm->capacity = capacity;
@@ -231,7 +300,15 @@ static int subtitle_webm_step(task_subtitle_request_t *request)
       rsubtitle_srt_span_t *spans = (rsubtitle_srt_span_t*)realloc(webm->spans,
             capacity * sizeof(*spans));
       if (!spans) return -1;
-      webm->spans = spans; webm->span_capacity = capacity;
+      webm->spans = spans;
+      if (webm->vtt)
+      {
+         rsubtitle_vtt_span_t *metadata = (rsubtitle_vtt_span_t*)realloc(
+               webm->metadata, capacity * sizeof(*metadata));
+         if (!metadata) return -1;
+         webm->metadata = metadata;
+      }
+      webm->span_capacity = capacity;
    }
    for (i = 0, written = 0; i < packet.size; i++)
    {
@@ -247,8 +324,25 @@ static int subtitle_webm_step(task_subtitle_request_t *request)
    webm->spans[webm->count].start_us = first / 1000;
    webm->spans[webm->count].end_us = last / 1000;
    webm->spans[webm->count].offset = webm->used;
-   webm->spans[webm->count++].length = written;
+   webm->spans[webm->count].length = written;
    webm->used += written + 1;
+   if (webm->vtt)
+   {
+      rsubtitle_vtt_span_t *metadata = &webm->metadata[webm->count];
+      metadata->timestamp_origin_ns = origin_ns;
+      metadata->flags = RSUBTITLE_VTT_CUE_RELATIVE_TIMESTAMPS;
+      metadata->identifier_offset = webm->used;
+      metadata->identifier_length = identifier_size;
+      memcpy(webm->text + webm->used, identifier, identifier_size);
+      webm->used += identifier_size;
+      webm->text[webm->used++] = 0;
+      metadata->settings_offset = webm->used;
+      metadata->settings_length = settings_size;
+      memcpy(webm->text + webm->used, settings, settings_size);
+      webm->used += settings_size;
+      webm->text[webm->used++] = 0;
+   }
+   webm->count++;
    return 0;
 }
 #endif
@@ -573,9 +667,12 @@ static void subtitle_task_handler(retro_task_t *task)
       if (request->done == request->size)
       {
          char *input = request->input;
+         const char *extension = strrchr(request->path, '.');
          request->input = NULL;
          subtitle_task_close(request);
-         request->track = rsubtitle_srt_begin(input, request->size);
+         request->track = extension && string_is_equal_noncase(extension, ".vtt")
+            ? rsubtitle_vtt_begin(input, request->size)
+            : rsubtitle_srt_begin(input, request->size);
          if (!request->track)
             subtitle_task_finish(task, -1);
       }
@@ -749,7 +846,8 @@ static bool subtitle_catalog_add(task_subtitle_catalog_t *catalog,
          || memcmp(name, catalog->stem, catalog->stem_length)
 #endif
          || name[catalog->stem_length] != '.'
-         || !string_is_equal_noncase(name + length - 4, ".srt"))
+         || (!string_is_equal_noncase(name + length - 4, ".srt")
+            && !string_is_equal_noncase(name + length - 4, ".vtt")))
       return true;
    if (retro_dirent_is_dir(catalog->directory, NULL))
       return true;
@@ -798,7 +896,9 @@ static int subtitle_catalog_webm(task_subtitle_catalog_t *catalog)
          || catalog->count == SUBTITLE_CATALOG_LIMIT)
       return 1;
    track = rwebm_get_track(catalog->webm->demux, catalog->embedded_cursor);
-   if (track && track->type == RWEBM_TRACK_OTHER && !strcmp(track->codec_id, "S_TEXT/UTF8"))
+   if (track && track->type == RWEBM_TRACK_OTHER
+         && (!strcmp(track->codec_id, "S_TEXT/UTF8")
+            || !strcmp(track->codec_id, "S_TEXT/WEBVTT")))
    {
       length = strlen(catalog->movie);
       path = (char*)malloc(length + 1);
