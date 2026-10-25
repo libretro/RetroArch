@@ -17,7 +17,11 @@ CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
 
-all: $(TARGET) subtitle_srt_fault_test subtitle_cues_test subtitle_vtt_test subtitle_css_test subtitle_selector_test
+all: $(TARGET) subtitle_srt_fault_test subtitle_cues_test subtitle_vtt_test subtitle_css_test \
+     subtitle_selector_test subtitle_language_registry_test
+
+subtitle_language_registry_test: subtitle_language_registry_test.c $(ROOT)/formats/subtitle/rsubtitle_languages.h
+	$(CC) $(CFLAGS) $< -o $@ $(LDFLAGS)
 
 subtitle_selector_test: subtitle_selector_test.c $(SUBTITLE_SOURCES) $(HEADERS)
 	$(CC) $(CFLAGS) subtitle_selector_test.c $(SUBTITLE_SOURCES) -o $@ $(LDFLAGS)
@@ -44,10 +48,12 @@ check: all
 	./subtitle_vtt_test
 	./subtitle_css_test
 	./subtitle_selector_test
+	./subtitle_language_registry_test
 
 clean:
 	rm -f $(TARGET) $(TARGET).exe subtitle_srt_fault_test subtitle_srt_fault_test.exe
 	rm -f subtitle_cues_test subtitle_cues_test.exe subtitle_vtt_test subtitle_vtt_test.exe
 	rm -f subtitle_css_test subtitle_css_test.exe subtitle_selector_test subtitle_selector_test.exe
+	rm -f subtitle_language_registry_test subtitle_language_registry_test.exe
 
 .PHONY: all check clean
