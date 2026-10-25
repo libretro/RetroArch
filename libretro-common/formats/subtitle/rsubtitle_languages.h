@@ -7,12 +7,6 @@
 
 #include <stdint.h>
 
-enum vtt_language_kind
-{
-   VTT_LANGUAGE_PRIMARY, VTT_LANGUAGE_EXTLANG, VTT_LANGUAGE_SCRIPT,
-   VTT_LANGUAGE_REGION, VTT_LANGUAGE_VARIANT, VTT_LANGUAGE_TAG
-};
-
 struct vtt_language_alias
 {
    uint16_t key, preferred, extlang_prefix;

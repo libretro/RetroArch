@@ -31,7 +31,9 @@ LDFLAGS += -fsanitize=$(SANITIZER)
 endif
 LDFLAGS += -lm
 all: $(TARGET)
-$(TARGET): $(SOURCES) ../../../gfx/gfx_media_controls.h
+$(TARGET): $(SOURCES) ../../../gfx/gfx_media_controls.h \
+           $(LRC)/formats/subtitle/rsubtitle_vtt_internal.h \
+           $(LRC)/formats/subtitle/rsubtitle_languages.h
 	$(CC) $(CFLAGS) $(SOURCES) -o $@ $(LDFLAGS)
 check: all
 	./$(TARGET)

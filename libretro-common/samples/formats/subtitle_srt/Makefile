@@ -8,6 +8,7 @@ SUBTITLE_SOURCES := $(ROOT)/formats/subtitle/rsubtitle_srt.c \
 HEADERS := $(ROOT)/include/formats/rsubtitle_srt.h \
            $(ROOT)/include/formats/rsubtitle_vtt.h \
            $(ROOT)/formats/subtitle/rsubtitle_vtt_internal.h \
+           $(ROOT)/formats/subtitle/rsubtitle_languages.h \
            $(ROOT)/formats/subtitle/rsubtitle_entities.h
 SOURCES := subtitle_srt_test.c $(SUBTITLE_SOURCES)
 CFLAGS += -std=c89 -pedantic -Wall -Wextra -Werror -Wno-long-long \
@@ -20,8 +21,8 @@ endif
 all: $(TARGET) subtitle_srt_fault_test subtitle_cues_test subtitle_vtt_test subtitle_css_test \
      subtitle_selector_test subtitle_language_registry_test
 
-subtitle_language_registry_test: subtitle_language_registry_test.c $(ROOT)/formats/subtitle/rsubtitle_languages.h
-	$(CC) $(CFLAGS) $< -o $@ $(LDFLAGS)
+subtitle_language_registry_test: subtitle_language_registry_test.c $(SUBTITLE_SOURCES) $(HEADERS)
+	$(CC) $(CFLAGS) $< $(SUBTITLE_SOURCES) -o $@ $(LDFLAGS)
 
 subtitle_selector_test: subtitle_selector_test.c $(SUBTITLE_SOURCES) $(HEADERS)
 	$(CC) $(CFLAGS) subtitle_selector_test.c $(SUBTITLE_SOURCES) -o $@ $(LDFLAGS)

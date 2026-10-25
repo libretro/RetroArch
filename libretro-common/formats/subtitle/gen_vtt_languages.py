@@ -73,9 +73,6 @@ def generate(raw):
              " * SHA-256: " + hashlib.sha256(raw).hexdigest() + " */",
              "#ifndef LIBRETRO_RSUBTITLE_LANGUAGES_H",
              "#define LIBRETRO_RSUBTITLE_LANGUAGES_H", "", "#include <stdint.h>", "",
-             "enum vtt_language_kind", "{",
-             "   VTT_LANGUAGE_PRIMARY, VTT_LANGUAGE_EXTLANG, VTT_LANGUAGE_SCRIPT,",
-             "   VTT_LANGUAGE_REGION, VTT_LANGUAGE_VARIANT, VTT_LANGUAGE_TAG", "};", "",
              "struct vtt_language_alias", "{", "   uint16_t key, preferred, extlang_prefix;",
              "   uint8_t kind;", "};", "",
              "static const char vtt_language_strings[] =", "{"]

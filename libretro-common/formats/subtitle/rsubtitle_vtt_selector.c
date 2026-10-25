@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "rsubtitle_vtt_internal.h"
+#include "rsubtitle_languages.h"
 
 struct rsubtitle_vtt_selector_pattern
 {
@@ -42,6 +43,92 @@ static unsigned vtt_selector_fold(unsigned c, unsigned insensitive)
 static int vtt_selector_space(unsigned c)
 {
    return c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f';
+}
+
+int rsubtitle_vtt_alias_begin(rsubtitle_vtt_alias_lookup_t *lookup,
+      enum rsubtitle_vtt_alias_kind kind, const char *key, size_t length)
+{
+   if (!lookup)
+      return 0;
+   memset(lookup, 0, sizeof(*lookup));
+   if ((unsigned)kind > RSUBTITLE_ALIAS_TAG || (!key && length))
+      return 0;
+   lookup->key    = key ? key : "";
+   lookup->length = length;
+   lookup->kind   = kind;
+   lookup->upper  = sizeof(vtt_language_aliases) / sizeof(vtt_language_aliases[0]);
+   lookup->begun  = 1;
+   if (!length || length > 64)
+      lookup->result = 2;
+   return 1;
+}
+
+int rsubtitle_vtt_alias_step(rsubtitle_vtt_alias_lookup_t *lookup)
+{
+   const struct vtt_language_alias *row;
+   unsigned a, b;
+   if (!lookup || !lookup->begun)
+      return -1;
+   if (lookup->result)
+      return lookup->result;
+   if (!lookup->comparing)
+   {
+      if (lookup->lower == lookup->upper)
+      {
+         lookup->result = 2;
+         return 2;
+      }
+      lookup->middle = lookup->lower + (lookup->upper - lookup->lower) / 2;
+      row = &vtt_language_aliases[lookup->middle];
+      if (row->kind < (unsigned)lookup->kind)
+         lookup->lower = lookup->middle + 1;
+      else if (row->kind > (unsigned)lookup->kind)
+         lookup->upper = lookup->middle;
+      else
+      {
+         lookup->position = 0;
+         lookup->comparing = 1;
+      }
+      return 0;
+   }
+   row = &vtt_language_aliases[lookup->middle];
+   a = (unsigned char)vtt_language_strings[row->key + lookup->position];
+   b = lookup->position < lookup->length
+      ? vtt_selector_fold((unsigned char)lookup->key[lookup->position], 1) : 0;
+   if (!b && lookup->position < lookup->length)
+      lookup->result = 2;
+   else if (a < b)
+   {
+      lookup->lower = lookup->middle + 1;
+      lookup->comparing = 0;
+   }
+   else if (a > b)
+   {
+      lookup->upper = lookup->middle;
+      lookup->comparing = 0;
+   }
+   else if (!a)
+      lookup->result = 1;
+   else
+      lookup->position++;
+   return lookup->result;
+}
+
+int rsubtitle_vtt_alias_result(const rsubtitle_vtt_alias_lookup_t *lookup,
+      rsubtitle_vtt_alias_value_t *value)
+{
+   const struct vtt_language_alias *row;
+   if (!value)
+      return 0;
+   memset(value, 0, sizeof(*value));
+   if (!lookup || !lookup->begun || lookup->result != 1)
+      return 0;
+   row = &vtt_language_aliases[lookup->middle];
+   value->preferred = vtt_language_strings + row->preferred;
+   value->preferred_length = strlen(value->preferred);
+   value->extlang_prefix = vtt_language_strings + row->extlang_prefix;
+   value->extlang_prefix_length = strlen(value->extlang_prefix);
+   return 1;
 }
 
 int rsubtitle_vtt_language_begin(rsubtitle_vtt_language_match_t *match,

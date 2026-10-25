@@ -73,6 +73,29 @@ enum rsubtitle_vtt_selector_kind
 
 typedef struct rsubtitle_vtt_selector_pattern rsubtitle_vtt_selector_pattern_t;
 
+enum rsubtitle_vtt_alias_kind
+{
+   RSUBTITLE_ALIAS_LANGUAGE, RSUBTITLE_ALIAS_EXTLANG, RSUBTITLE_ALIAS_SCRIPT,
+   RSUBTITLE_ALIAS_REGION, RSUBTITLE_ALIAS_VARIANT, RSUBTITLE_ALIAS_TAG
+};
+
+typedef struct rsubtitle_vtt_alias_lookup
+{
+   const char *key;
+   size_t length, lower, upper, middle, position;
+   enum rsubtitle_vtt_alias_kind kind;
+   unsigned begun, comparing;
+   int result;
+} rsubtitle_vtt_alias_lookup_t;
+
+typedef struct rsubtitle_vtt_alias_value
+{
+   const char *preferred;
+   size_t preferred_length;
+   const char *extlang_prefix;
+   size_t extlang_prefix_length;
+} rsubtitle_vtt_alias_value_t;
+
 typedef struct rsubtitle_vtt_language_match
 {
    const char *range, *tag;
@@ -101,6 +124,14 @@ typedef struct rsubtitle_vtt_selector_subject
 } rsubtitle_vtt_selector_subject_t;
 
 RETRO_BEGIN_DECLS
+/* Borrows key until completion. A miss does not invalidate a language tag. */
+int rsubtitle_vtt_alias_begin(rsubtitle_vtt_alias_lookup_t *lookup,
+      enum rsubtitle_vtt_alias_kind kind, const char *key, size_t length);
+/* One byte or kind comparison: -1 invalid, 0 pending, 1 found, 2 absent. */
+int rsubtitle_vtt_alias_step(rsubtitle_vtt_alias_lookup_t *lookup);
+/* Static borrowed spans; an empty preferred value leaves a recognized tag unchanged. */
+int rsubtitle_vtt_alias_result(const rsubtitle_vtt_alias_lookup_t *lookup,
+      rsubtitle_vtt_alias_value_t *value);
 /* Inputs borrow canonicalized BCP47 text. Empty range matches untagged text. */
 int rsubtitle_vtt_language_begin(rsubtitle_vtt_language_match_t *match,
       const char *range, size_t range_length, const char *tag, size_t tag_length);
