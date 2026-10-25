@@ -26,9 +26,9 @@ def main():
     passed = []
     with tempfile.TemporaryDirectory(prefix='hevc-output-flags-') as directory:
         root = Path(directory)
-        for discard in (False, True):
+        for reordered, discard in ((False, False), (True, False), (True, True)):
             movie, _, times = fixtures.hevc_nonoutput_fixture(
-                args.ffmpeg, root, reordered=True, discard_prior=discard)
+                args.ffmpeg, root, reordered=reordered, discard_prior=discard)
             mp4, reference = root / 'fixture.mp4', root / 'reference.yuv'
             subprocess.run([args.ffmpeg, '-v', 'error', '-y', '-i', str(movie),
                             '-c:v', 'copy', str(mp4)], check=True)
@@ -43,7 +43,7 @@ def main():
                     if contexts == 4:
                         command.append('4')
                     subprocess.run(command, check=True)
-                    passed.append({'test': test, 'discard': discard, 'contexts': contexts})
+                    passed.append({'test': test, 'discard': discard, 'contexts': contexts, 'reordered': reordered})
     print(json.dumps({'passed': passed}))
 
 

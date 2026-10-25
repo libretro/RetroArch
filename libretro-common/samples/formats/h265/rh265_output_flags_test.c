@@ -80,6 +80,7 @@ int main(int argc, char **argv)
    if (argc == 5)
    {
       rh265_video_set_contexts(decoder, 4);
+      rh265_video_set_publish_delay(200);
 #ifdef HAVE_THREADS
       pool = tpool_create_with_stack_size(3, 512 * 1024);
       CHECK(pool);
@@ -93,6 +94,8 @@ int main(int argc, char **argv)
    {
       int64_t previous = timestamp;
       if (packet.track != selected) continue;
+      CHECK(!rh265_video_set_extradata(decoder,
+               track->codec_private, track->codec_private_size));
       ret = rh265_video_decode_timed(decoder, packet.data, packet.size,
             packet.timestamp, &timestamp);
       CHECK(ret == 0 || ret == 1);

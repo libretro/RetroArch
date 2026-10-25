@@ -1708,8 +1708,7 @@ typedef struct
     * read reaches and no more; on one thread it is complete before
     * anyone asks. */
    retro_atomic_int_t rows_final;
-   /* pictures in flight predicting from this one: a slot with readers
-    * is nobody's to take, whatever the DPB says of it */
+   /* In-flight decoding and reference users retain the slot. */
    retro_atomic_int_t readers;
 } rh265_pic;
 
@@ -1717,6 +1716,13 @@ typedef struct
 
 typedef struct
 {
+   rh265_sps sps;
+   rh265_pps pps;
+} rh265_pic_params;
+
+typedef struct
+{
+   rh265_pic_params *params;
    const rh265_sps *sps;
    const rh265_pps *pps;
    rh265_shdr sh;
@@ -4902,6 +4908,8 @@ static void rh265_ctx_post(rh265_video *v, rh265_dec *d)
 #ifdef HAVE_THREADS
    if (v->threaded && v->pool)
    {
+      d->pinned[d->npinned++] = d->cur;
+      retro_atomic_fetch_add_int(&d->cur->readers, 1);
       retro_atomic_store_release_int(&d->busy, 1);
       if (tpool_add_work((tpool_t*)v->pool, rh265_ctx_job, d))
          return;
@@ -5249,6 +5257,21 @@ static int rh265_handle_nal(rh265_video *v, const uint8_t *nal, size_t len)
             v->cur->job_rc    = 0;
             v->cur->ctb_end   = 0;
             v->cur->cur       = NULL;
+         }
+         if (v->threaded)
+         {
+            if (!v->cur->params || shp->first_slice_in_pic || !v->cur->cur)
+            {
+               if (!v->cur->params)
+               {
+                  v->cur->params = (rh265_pic_params*)malloc(sizeof(*v->cur->params));
+                  if (!v->cur->params) return -1;
+               }
+               memcpy(&v->cur->params->sps, sps, sizeof(*sps));
+               memcpy(&v->cur->params->pps, pps, sizeof(*pps));
+            }
+            sps = &v->cur->params->sps;
+            pps = &v->cur->params->pps;
          }
          v->cur->sps = sps;
          v->cur->pps = pps;
@@ -5623,6 +5646,7 @@ void rh265_video_close(rh265_video *v)
          free(v->ctx[k].sao_band[0]);
          free(v->ctx[k].sao_band[1]);
          free(v->ctx[k].sao_band[2]);
+         free(v->ctx[k].params);
       }
    }
    free(v);

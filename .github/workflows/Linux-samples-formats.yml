@@ -76,6 +76,9 @@ jobs:
       - name: HEVC hidden pictures and prior-output discard
         run: make -C libretro-common/samples/formats/h265 output-flags-check SANITIZER=address,undefined
 
+      - name: HEVC parameter replacement and output ownership (TSan)
+        run: TSAN_OPTIONS=halt_on_error=1 make -C libretro-common/samples/formats/h265 -B output-flags-check SANITIZER=thread
+
       - name: MP4 hidden-picture timestamps, seeks and partial input
         run: make -C libretro-common/samples/formats/vp9 mp4-h26x-check SANITIZER=address,undefined
 
