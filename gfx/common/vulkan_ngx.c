@@ -49,6 +49,11 @@ struct vulkan_ngx
    ngx_parameter_t *params;
    ngx_handle_t *feature;
    VkDevice device;
+   /* What Init was given, alive until after Shutdown: NGX keeps
+    * reading it */
+   wchar_t *wdir;
+   const wchar_t *paths[1];
+   ngx_feature_common_info_t info;
    VkPhysicalDeviceMemoryProperties memory_properties;
    vulkan_ngx_retired_t retired[VULKAN_NGX_RETIRED_MAX];
    /* The output image, the feature's size */
@@ -192,9 +197,6 @@ vulkan_ngx_t *vulkan_ngx_init(VkInstance instance, VkPhysicalDevice gpu,
       const char *dlss_dir)
 {
    /* The path list and the data path, wide as NGX takes them */
-   wchar_t *wdir;
-   const wchar_t *paths[1];
-   ngx_feature_common_info_t info;
    vulkan_ngx_t *ngx;
    ngx_result_t res;
    int available = 0;
@@ -214,32 +216,31 @@ vulkan_ngx_t *vulkan_ngx_init(VkInstance instance, VkPhysicalDevice gpu,
    }
    if (!(ngx = (vulkan_ngx_t*)calloc(1, sizeof(*ngx))))
       return NULL;
-   if (!(wdir = (wchar_t*)calloc(DIR_MAX_LENGTH, sizeof(wchar_t))))
+   if (!(ngx->wdir = (wchar_t*)calloc(DIR_MAX_LENGTH, sizeof(wchar_t))))
    {
       free(ngx);
       return NULL;
    }
-   ngx_utf8_to_wide(wdir, DIR_MAX_LENGTH, dlss_dir ? dlss_dir : "");
-   paths[0]              = wdir;
-   memset(&info, 0, sizeof(info));
-   info.path_list.path   = paths;
-   info.path_list.length = 1;
+   ngx_utf8_to_wide(ngx->wdir, DIR_MAX_LENGTH, dlss_dir ? dlss_dir : "");
+   ngx->paths[0]              = ngx->wdir;
+   ngx->info.path_list.path   = ngx->paths;
+   ngx->info.path_list.length = 1;
    if (lib->vulkan.init_project_id_ext)
       res = lib->vulkan.init_project_id_ext(VULKAN_NGX_PROJECT_ID,
-            NGX_ENGINE_TYPE_CUSTOM, VULKAN_NGX_ENGINE_VERSION, wdir,
+            NGX_ENGINE_TYPE_CUSTOM, VULKAN_NGX_ENGINE_VERSION, ngx->wdir,
             (void*)instance, (void*)gpu, (void*)device,
             (ngx_vk_proc_t)gipa, (ngx_vk_proc_t)gdpa,
-            NGX_VERSION_API, &info);
+            NGX_VERSION_API, &ngx->info);
    else
       res = lib->vulkan.init_project_id(VULKAN_NGX_PROJECT_ID,
-            NGX_ENGINE_TYPE_CUSTOM, VULKAN_NGX_ENGINE_VERSION, wdir,
+            NGX_ENGINE_TYPE_CUSTOM, VULKAN_NGX_ENGINE_VERSION, ngx->wdir,
             (void*)instance, (void*)gpu, (void*)device,
-            NGX_VERSION_API, &info);
-   free(wdir);
+            NGX_VERSION_API, &ngx->info);
    if (NGX_FAILED(res))
    {
       RARCH_WARN("[Vulkan] Temporal Upscaler: NGX init failed (0x%08x).\n",
             (unsigned)res);
+      free(ngx->wdir);
       free(ngx);
       return NULL;
    }
@@ -268,12 +269,14 @@ vulkan_ngx_t *vulkan_ngx_init(VkInstance instance, VkPhysicalDevice gpu,
          RARCH_WARN("[Vulkan] Temporal Upscaler: DLSS Super Resolution not available on this device (0x%08x).\n",
                (unsigned)init_result);
       lib->vulkan.shutdown1((void*)device);
+      free(ngx->wdir);
       free(ngx);
       return NULL;
    }
    if (NGX_FAILED(lib->vulkan.allocate_parameters(&ngx->params)))
    {
       lib->vulkan.shutdown1((void*)device);
+      free(ngx->wdir);
       free(ngx);
       return NULL;
    }
@@ -737,5 +740,6 @@ void vulkan_ngx_free(vulkan_ngx_t *ngx)
    /* NULL: every device's, as the SDK asks */
    ngx->lib->vulkan.shutdown1(NULL);
    RARCH_LOG("[Vulkan] Temporal Upscaler: NGX shut down.\n");
+   free(ngx->wdir);
    free(ngx);
 }

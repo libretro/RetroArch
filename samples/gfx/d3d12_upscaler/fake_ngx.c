@@ -29,6 +29,7 @@ typedef struct param_slot
 } param_slot_t;
 
 typedef struct param { const void *const *vtable; param_slot_t slot[64]; unsigned n; } param_t;
+static const void *init_info;
 static const void *const param_vtable[17];
 static param_t params[4];
 static unsigned params_used;
@@ -167,6 +168,7 @@ EXPORT int CONV NVSDK_NGX_D3D12_Init_ProjectID(const char *project, int engine,
    rec.init_calls++;
    rec.init_device   = dev;
    rec.init_path0    = (paths[0] && paths[0][0]) ? paths[0][0][0] : 0;
+   init_info         = common_info;
    memset(&caps, 0, sizeof(caps));
    caps.vtable = param_vtable;
    NVSDK_NGX_Parameter_SetI(&caps, "SuperSampling.Available", rec.unavailable ? 0 : 1);
@@ -182,7 +184,10 @@ EXPORT int CONV NVSDK_NGX_D3D12_Init_ProjectID(const char *project, int engine,
 }
 EXPORT int CONV NVSDK_NGX_D3D12_Shutdown1(void *dev)
 {
-   (void)dev; inited = 0; rec.shutdown_calls++; return OK;
+   const wchar_t *const *const *paths = (const wchar_t *const *const *)init_info;
+   (void)dev; inited = 0; rec.shutdown_calls++;
+   rec.shutdown_path0 = (paths && paths[0] && paths[0][0]) ? paths[0][0][0] : 0;
+   return OK;
 }
 EXPORT int CONV NVSDK_NGX_D3D12_GetCapabilityParameters(param_t **out)
 {

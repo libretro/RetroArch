@@ -34,6 +34,7 @@ typedef struct fake_ngx_record
    unsigned init_calls, shutdown_calls, params_destroyed;
    int last_released;
    int init_path0;
+   int shutdown_path0;   /* the path list Init was given, read again at Shutdown1 */
    /* Knobs the test turns */
    int unavailable;
    int create_fails;

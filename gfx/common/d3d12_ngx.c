@@ -47,6 +47,11 @@ struct d3d12_ngx
    ngx_parameter_t *params;
    ngx_handle_t *feature;
    ID3D12Device *device;
+   /* What Init was given, alive until after Shutdown: NGX keeps
+    * reading it */
+   wchar_t *wdir;
+   const wchar_t *paths[1];
+   ngx_feature_common_info_t info;
    ID3D12Resource *out_texture;
    d3d12_ngx_retired_t retired[D3D12_NGX_RETIRED_MAX];
    DXGI_FORMAT out_format;
@@ -86,9 +91,6 @@ static void d3d12_ngx_transition(ID3D12GraphicsCommandList *cmd,
 
 d3d12_ngx_t *d3d12_ngx_init(ID3D12Device *device, const char *dlss_dir)
 {
-   wchar_t *wdir;
-   const wchar_t *paths[1];
-   ngx_feature_common_info_t info;
    d3d12_ngx_t *ngx;
    ngx_result_t res;
    int available = 0;
@@ -108,24 +110,23 @@ d3d12_ngx_t *d3d12_ngx_init(ID3D12Device *device, const char *dlss_dir)
    }
    if (!(ngx = (d3d12_ngx_t*)calloc(1, sizeof(*ngx))))
       return NULL;
-   if (!(wdir = (wchar_t*)calloc(DIR_MAX_LENGTH, sizeof(wchar_t))))
+   if (!(ngx->wdir = (wchar_t*)calloc(DIR_MAX_LENGTH, sizeof(wchar_t))))
    {
       free(ngx);
       return NULL;
    }
-   ngx_utf8_to_wide(wdir, DIR_MAX_LENGTH, dlss_dir ? dlss_dir : "");
-   paths[0]              = wdir;
-   memset(&info, 0, sizeof(info));
-   info.path_list.path   = paths;
-   info.path_list.length = 1;
+   ngx_utf8_to_wide(ngx->wdir, DIR_MAX_LENGTH, dlss_dir ? dlss_dir : "");
+   ngx->paths[0]              = ngx->wdir;
+   ngx->info.path_list.path   = ngx->paths;
+   ngx->info.path_list.length = 1;
    res = lib->d3d12.init_project_id(D3D12_NGX_PROJECT_ID,
-         NGX_ENGINE_TYPE_CUSTOM, D3D12_NGX_ENGINE_VERSION, wdir,
-         (void*)device, NGX_VERSION_API, &info);
-   free(wdir);
+         NGX_ENGINE_TYPE_CUSTOM, D3D12_NGX_ENGINE_VERSION, ngx->wdir,
+         (void*)device, NGX_VERSION_API, &ngx->info);
    if (NGX_FAILED(res))
    {
       RARCH_WARN("[D3D12] Temporal Upscaler: NGX init failed (0x%08x).\n",
             (unsigned)res);
+      free(ngx->wdir);
       free(ngx);
       return NULL;
    }
@@ -151,12 +152,14 @@ d3d12_ngx_t *d3d12_ngx_init(ID3D12Device *device, const char *dlss_dir)
          RARCH_WARN("[D3D12] Temporal Upscaler: DLSS Super Resolution not available on this device (0x%08x).\n",
                (unsigned)init_result);
       lib->d3d12.shutdown1((void*)device);
+      free(ngx->wdir);
       free(ngx);
       return NULL;
    }
    if (NGX_FAILED(lib->d3d12.allocate_parameters(&ngx->params)))
    {
       lib->d3d12.shutdown1((void*)device);
+      free(ngx->wdir);
       free(ngx);
       return NULL;
    }
@@ -500,5 +503,6 @@ void d3d12_ngx_free(d3d12_ngx_t *ngx)
    RARCH_LOG("[D3D12] Temporal Upscaler: NGX parameters destroyed.\n");
    ngx->lib->d3d12.shutdown1(NULL);
    RARCH_LOG("[D3D12] Temporal Upscaler: NGX shut down.\n");
+   free(ngx->wdir);
    free(ngx);
 }
