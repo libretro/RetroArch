@@ -32,6 +32,7 @@ static size_t  captured_frames, device_bytes;
 static unsigned device_opens, device_frees, device_stops, device_starts, failures;
 static unsigned start_refusals, open_refusals;
 extern unsigned pipeline_control_calls;
+extern unsigned pipeline_mixer_inits, pipeline_mixer_dones;
 
 static void *test_init(const char *device, unsigned rate, unsigned latency,
       unsigned *new_rate)
@@ -468,6 +469,76 @@ static void keep_refused_case(void)
       failures++;
 }
 
+static void mixer_session_case(bool threaded, bool playing)
+{
+   static unsigned char bytes[64];
+   audio_driver_state_t *st = &audio_driver_st;
+   audio_mixer_stream_params_t params;
+   audio_mixer_sound_t *sound;
+   audio_mixer_voice_t *voice;
+   void *lock;
+   char *name;
+   unsigned inits, dones, cycle;
+   int slot = -1;
+   bool ok;
+
+   setup(true, threaded, false, 22050.0);
+   memset(&params, 0, sizeof(params));
+   params.buf                 = bytes;
+   params.bufsize             = sizeof(bytes);
+   params.basename            = "persistent music";
+   params.volume              = 0.375f;
+   params.slot_selection_type = AUDIO_MIXER_SLOT_SELECTION_AUTOMATIC;
+   params.stream_type         = AUDIO_STREAM_TYPE_USER;
+   params.type                = AUDIO_MIXER_TYPE_WAV_STREAM;
+   params.state               = playing ? AUDIO_STREAM_STATE_PLAYING_LOOPED
+                                       : AUDIO_STREAM_STATE_STOPPED;
+   params.out_slot            = &slot;
+   if (!audio_driver_mixer_add_stream(&params) || slot < 0)
+      abort();
+   sound = st->mixer_streams[slot].handle;
+   voice = st->mixer_streams[slot].voice;
+   name  = st->mixer_streams[slot].name;
+   lock  = st->state_lock;
+   inits = pipeline_mixer_inits;
+   dones = pipeline_mixer_dones;
+   ok    = sound != NULL && lock != NULL && (playing == (voice != NULL));
+
+   for (cycle = 0; cycle < 3; cycle++)
+   {
+      audio_driver_keep_device(true);
+      audio_driver_deinit_for_reinit();
+      ok = ok && st->state_lock == lock;
+      st->input = 32000.0f;
+      video_state_get_ptr()->av_info.timing.sample_rate = 32000.0;
+      if (!audio_driver_init_internal(config_get_ptr(), false))
+         abort();
+      /* A core can initialize audio before drivers_init repeats it. */
+      if (!audio_driver_init_internal(config_get_ptr(), false))
+         abort();
+      ok = ok && pipeline_mixer_inits == inits
+         && pipeline_mixer_dones == dones
+         && st->mixer_streams[slot].handle == sound
+         && st->mixer_streams[slot].voice == voice
+         && st->mixer_streams[slot].name == name
+         && st->mixer_streams[slot].volume == params.volume
+         && st->mixer_streams[slot].state == params.state
+         && st->state_lock == lock
+         && (AUDIO_FLAGS_GET(st) & AUDIO_FLAG_MIXER_INITED);
+   }
+   audio_driver_deinit();
+   ok = ok && pipeline_mixer_dones == dones + 1
+      && !(AUDIO_FLAGS_GET(st) & AUDIO_FLAG_MIXER_INITED)
+      && !st->mixer_streams[slot].handle
+      && !st->mixer_streams[slot].voice;
+   ok = ok && !st->state_lock;
+   printf("mixer session, %s, %s: %s\n",
+         threaded ? "threaded" : "inline", playing ? "playing" : "stopped",
+         ok ? "retained until shutdown" : "LOST");
+   if (!ok)
+      failures++;
+}
+
 int main(void)
 {
    unsigned format, threaded;
@@ -480,6 +551,11 @@ int main(void)
    audio_null.write_avail   = test_avail;
    audio_null.buffer_size   = test_avail;
    audio_null.wait_writable = test_wait;
+
+   mixer_session_case(false, false);
+   mixer_session_case(false, true);
+   mixer_session_case(true, false);
+   mixer_session_case(true, true);
 
    for (format = 0; format < 2; format++)
       for (threaded = 0; threaded < 2; threaded++)

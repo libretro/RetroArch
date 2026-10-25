@@ -1313,13 +1313,15 @@ static bool audio_driver_deinit_internal(bool audio_enable)
    audio_st->pipe_park_ready          = false;
    retro_eventcount_free(&audio_st->pipe_space);
    retro_eventcount_free(&audio_st->pipe_data);
-   /* Last: everything above may have taken it, and audio->free() at
-    * the top of this function joined the thread that contends for it.
-    * Nothing that runs after this point may touch the mixer or the
-    * DSP filter from another thread - see audio_driver_state_lock(). */
-   if (audio_st->state_lock)
-      slock_free(audio_st->state_lock);
-   audio_st->state_lock               = NULL;
+   /* Mixer tasks outlive a core. */
+#ifdef HAVE_AUDIOMIXER
+   if (!(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_MIXER_INITED))
+#endif
+   {
+      if (audio_st->state_lock)
+         slock_free(audio_st->state_lock);
+      audio_st->state_lock            = NULL;
+   }
 #endif
    audio_st->pipe_threaded            = false;
    audio_st->input_data_int16         = NULL;
@@ -1389,6 +1391,11 @@ bool audio_driver_deinit(void)
 #ifdef HAVE_AUDIOMIXER
    audio_driver_mixer_deinit();
 #endif
+   return audio_driver_deinit_for_reinit();
+}
+
+bool audio_driver_deinit_for_reinit(void)
+{
    audio_driver_free_devices_list();
    return audio_driver_deinit_internal(config_get_ptr()->bools.audio_enable);
 }
@@ -4565,7 +4572,7 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
     * one's. A core that sends SET_SYSTEM_AV_INFO from retro_load_game
     * has audio brought up by that reinit and again by drivers_init(). */
    if (audio_driver_st.context_audio_data)
-      audio_driver_deinit();
+      audio_driver_deinit_for_reinit();
 
    convert_s16_to_float_init_simd();
    convert_float_to_s16_init_simd();
@@ -5103,9 +5110,15 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
    audio_driver_update_drc_threshold(&audio_driver_st);
 
 #ifdef HAVE_AUDIOMIXER
-   audio_mixer_init(settings->uints.audio_output_sample_rate);
-   audio_driver_mixer_init_rate = settings->uints.audio_output_sample_rate;
-   AUDIO_FLAGS_SET(&audio_driver_st, AUDIO_FLAG_MIXER_INITED);
+   if (     (AUDIO_FLAGS_GET(&audio_driver_st) & AUDIO_FLAG_MIXER_INITED)
+         && audio_driver_mixer_init_rate != settings->uints.audio_output_sample_rate)
+      audio_driver_mixer_deinit();
+   if (!(AUDIO_FLAGS_GET(&audio_driver_st) & AUDIO_FLAG_MIXER_INITED))
+   {
+      audio_mixer_init(settings->uints.audio_output_sample_rate);
+      audio_driver_mixer_init_rate = settings->uints.audio_output_sample_rate;
+      AUDIO_FLAGS_SET(&audio_driver_st, AUDIO_FLAG_MIXER_INITED);
+   }
 #endif
 
    if (!audio_driver_transport_configure(settings))
@@ -5267,14 +5280,9 @@ static void audio_driver_pipeline_signal(audio_driver_state_t *audio_st)
 /**
  * audio_driver_state_lock:
  *
- * Guards the mixer streams and the DSP filter against the audio
- * thread. The NULL test is not optional locking: the lock is created
- * before that thread exists and freed after audio->free() has joined
- * it, so every moment at which a second thread can reach this state
- * is a moment at which the lock is there. A caller that reaches the
- * mixer from another thread outside an initialised audio driver would
- * find no lock and no diagnostic, so anything that widens who touches
- * that state has to widen this lifetime with it.
+ * Guards mixer streams and the DSP filter against the audio thread.
+ * Created before consumers start; retained until both the pipeline
+ * and mixer are torn down.
  *
  * This lock is the deliberate remainder of the subsystem's threading
  * design, not a candidate for the atomics treatment the rest of the

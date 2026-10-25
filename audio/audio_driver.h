@@ -1419,6 +1419,9 @@ bool audio_driver_init_internal(void *data, bool audio_cb_inited);
 
 bool audio_driver_deinit(void);
 
+/* Retain mixer voices while replacing the core audio pipeline. */
+bool audio_driver_deinit_for_reinit(void);
+
 /* Rebuild audio_driver_st.devices_list from the driver that is, or
  * would be, in use. Does not require the driver to be initialised. */
 void audio_driver_refresh_devices_list(void);
