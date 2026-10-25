@@ -56,6 +56,7 @@ enum
    V_IDLE,
    V_ASPM,
    V_USB,
+   V_USB3,
    V_COUNT
 };
 
@@ -81,6 +82,8 @@ static const GUID g_sub_usb   = { 0x2a737441, 0x1930, 0x4402,
    { 0x8d, 0x77, 0xb2, 0xbe, 0xbb, 0xa3, 0x08, 0xa3 } };
 static const GUID g_usb       = { 0x48e6b7a6, 0x50f5, 0x4782,
    { 0xa5, 0xd4, 0x53, 0xbb, 0x8f, 0x07, 0xe2, 0x26 } };
+static const GUID g_usb3      = { 0xd4e98f31, 0x5ffe, 0x4ce1,
+   { 0xbe, 0x31, 0x1b, 0x38, 0xb3, 0x84, 0xc0, 0x09 } };
 
 /* The user's plans: one that caps the processor at 99%, and another */
 static const GUID g_user  = { 0x11111111, 0x2222, 0x3333,
@@ -136,7 +139,11 @@ static int value_index(const GUID *sub, const GUID *setting)
    if (!memcmp(sub, &g_sub_pcie, sizeof(GUID)))
       return memcmp(setting, &g_aspm, sizeof(GUID)) ? -1 : V_ASPM;
    if (!memcmp(sub, &g_sub_usb, sizeof(GUID)))
-      return memcmp(setting, &g_usb, sizeof(GUID)) ? -1 : V_USB;
+   {
+      if (!memcmp(setting, &g_usb, sizeof(GUID)))
+         return V_USB;
+      return memcmp(setting, &g_usb3, sizeof(GUID)) ? -1 : V_USB3;
+   }
    if (memcmp(sub, &g_sub, sizeof(GUID)))
       return -1;
    if (!memcmp(setting, &g_epp, sizeof(GUID)))
@@ -203,7 +210,8 @@ static DWORD WINAPI fake_write_ac(HKEY root, const GUID *scheme,
       return 5; /* access denied by policy */
    if (sc == SC_IDLEFAIL && i == V_IDLE)
       return 5;
-   if (sc == SC_MISSING && (i == V_EPP || i == V_ASPM || i == V_USB))
+   if (sc == SC_MISSING && (i == V_EPP || i == V_ASPM || i == V_USB
+            || i == V_USB3))
       return 0x490; /* ERROR_NOT_FOUND: no such setting here */
    writes++;
    p->ac[i] = value;
@@ -371,7 +379,8 @@ static void expect_original_untouched(void)
    expect(u && u->ac[V_PERFCHECK] == 15 && u->ac[V_MIN] == 5
          && u->ac[V_MAX] == 99 && u->ac[V_PARKING] == 10
          && u->ac[V_EPP] == 33 && u->ac[V_IDLE] == 0
-         && u->ac[V_ASPM] == 2 && u->ac[V_USB] == 1,
+         && u->ac[V_ASPM] == 2 && u->ac[V_USB] == 1
+         && u->ac[V_USB3] == 3,
          "the user's own plan keeps its values");
 }
 
@@ -388,13 +397,15 @@ static void expect_copy_active(void)
          "maximum processor state is 100% though the original caps it");
    expect(c->ac[V_PARKING] == 100, "no cores are parked");
    if (sc == SC_MISSING)
-      expect(c->ac[V_EPP] == 33 && c->ac[V_ASPM] == 2 && c->ac[V_USB] == 1,
+      expect(c->ac[V_EPP] == 33 && c->ac[V_ASPM] == 2 && c->ac[V_USB] == 1
+            && c->ac[V_USB3] == 3,
             "settings the system lacks are left as copied");
    else
    {
       expect(c->ac[V_EPP] == 0, "the energy preference favours performance");
       expect(c->ac[V_ASPM] == 0, "PCI Express link power management is off");
       expect(c->ac[V_USB] == 0, "USB selective suspend is off");
+      expect(c->ac[V_USB3] == 0, "USB 3 link power management is off");
    }
 }
 
@@ -437,6 +448,7 @@ int main(int argc, char **argv)
    u->ac[V_IDLE]      = 0;
    u->ac[V_ASPM]      = 2;
    u->ac[V_USB]       = 1;
+   u->ac[V_USB3]      = 3;
    add(&g_other);
    active = g_user;
 

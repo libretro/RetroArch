@@ -805,6 +805,9 @@ static const GUID win32_power_sub_usb =
 static const GUID win32_power_usb_suspend =
    { 0x48e6b7a6, 0x50f5, 0x4782,
       { 0xa5, 0xd4, 0x53, 0xbb, 0x8f, 0x07, 0xe2, 0x26 } };
+static const GUID win32_power_usb3_lpm =
+   { 0xd4e98f31, 0x5ffe, 0x4ce1,
+      { 0xbe, 0x31, 0x1b, 0x38, 0xb3, 0x84, 0xc0, 0x09 } };
 
 /* Writes the 36 hex-and-dash characters of a GUID, no braces. */
 static void win32_power_guid_to_wstr(const GUID *g, WCHAR *s)
@@ -999,9 +1002,9 @@ static void win32_power_plan_restore(win32_powrprof_t *p)
  * re-evaluation at its longest interval.  Minimum and maximum processor
  * state and unparked cores are pinned at 100% - the original may cap
  * the maximum - so there is nothing left for that check to decide.
- * The energy preference favours performance, and PCI Express links and
- * USB ports are kept out of low-power states they take time to wake
- * from; a system without one of those settings goes without it.  With
+ * The energy preference favours performance, and PCI Express links,
+ * USB ports and USB 3 links are kept out of low-power states they take
+ * time to wake from; a system without one of those settings goes without it.  With
  * idle_disable the processor also never enters an idle state.  Only AC
  * values change; on battery the copy behaves like the original. */
 static bool win32_power_plan_apply(win32_powrprof_t *p, bool idle_disable)
@@ -1052,6 +1055,8 @@ static bool win32_power_plan_apply(win32_powrprof_t *p, bool idle_disable)
                &win32_power_aspm, 0);
          p->write_ac(NULL, &copy, &win32_power_sub_usb,
                &win32_power_usb_suspend, 0);
+         p->write_ac(NULL, &copy, &win32_power_sub_usb,
+               &win32_power_usb3_lpm, 0);
          if (idle_disable)
             ok = p->write_ac(NULL, &copy, &win32_power_sub_processor,
                      &win32_power_idle_disable, 1) == ERROR_SUCCESS;
