@@ -20,18 +20,16 @@
 #include "d3d_driver_pacing.h"
 
 #if defined(_WIN32) && !defined(__WINRT__) && !defined(_XBOX)
-#include <windows.h>
+#include <gfx/nvidia/nvapi_loader.h>
 #endif
 
 #if defined(_WIN32) && !defined(__WINRT__) && !defined(_XBOX)
 
-/* NVAPI, by its published interface ids (nvapi_interface.h, MIT):
- * resolved once for the process through nvapi_QueryInterface, never
- * linked, so a machine without the driver's nvapi loses nothing. The
+/* NVAPI's Reflex entry points by their published interface ids
+ * (nvapi_interface.h, MIT), through libretro-common's loader. The
  * structs are the header's, declared here so no SDK is needed; their
  * version word is sizeof | (revision << 16), as MAKE_NVAPI_VERSION
  * makes it. */
-#define NVAPI_ID_INITIALIZE          0x0150e828
 #define NVAPI_ID_D3D_SET_SLEEP_MODE  0xac1ca9e0
 #define NVAPI_ID_D3D_SLEEP           0x852cd1d2
 #define NVAPI_ID_D3D_SET_LATENCY_MARKER 0xd9984c05
@@ -63,9 +61,6 @@ typedef struct
 #define NVAPI_LATENCY_MARKER_PARAMS_VER \
    ((uint32_t)(sizeof(nvapi_latency_marker_params_t) | (1u << 16)))
 
-typedef void  (*nvapi_proc_t)(void);
-typedef nvapi_proc_t (__cdecl *nvapi_query_interface_t)(unsigned int id);
-typedef int   (__cdecl *nvapi_initialize_t)(void);
 typedef int   (__cdecl *nvapi_set_sleep_mode_t)(void *device,
       nvapi_sleep_mode_params_t *params);
 typedef int   (__cdecl *nvapi_sleep_t)(void *device);
@@ -79,30 +74,14 @@ static bool                       nvapi_probed;
 
 static bool d3d_driver_pacing_probe(void)
 {
-   HMODULE dll;
-   nvapi_query_interface_t query;
-   nvapi_initialize_t init;
    if (nvapi_probed)
       return nvapi_set_sleep_mode != NULL;
    nvapi_probed = true;
-#ifdef _WIN64
-   dll   = LoadLibraryA("nvapi64.dll");
-#else
-   dll   = LoadLibraryA("nvapi.dll");
-#endif
-   if (!dll)
-      return false;
-   query = (nvapi_query_interface_t)GetProcAddress(dll, "nvapi_QueryInterface");
-   if (!query)
-      return false;
-   init  = (nvapi_initialize_t)query(NVAPI_ID_INITIALIZE);
-   if (!init || init() != 0)
-      return false;
    nvapi_set_sleep_mode     = (nvapi_set_sleep_mode_t)
-      query(NVAPI_ID_D3D_SET_SLEEP_MODE);
-   nvapi_sleep              = (nvapi_sleep_t)query(NVAPI_ID_D3D_SLEEP);
+      nvapi_query(NVAPI_ID_D3D_SET_SLEEP_MODE);
+   nvapi_sleep              = (nvapi_sleep_t)nvapi_query(NVAPI_ID_D3D_SLEEP);
    nvapi_set_latency_marker = (nvapi_set_latency_marker_t)
-      query(NVAPI_ID_D3D_SET_LATENCY_MARKER);
+      nvapi_query(NVAPI_ID_D3D_SET_LATENCY_MARKER);
    if (!nvapi_set_sleep_mode || !nvapi_sleep || !nvapi_set_latency_marker)
    {
       nvapi_set_sleep_mode = NULL;

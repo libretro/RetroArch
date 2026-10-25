@@ -27,6 +27,7 @@ SOURCES := vulkan_driver_pacing_test.c \
 ifneq ($(findstring mingw,$(CC)),)
    EXE     := .exe
    SOURCES += $(REPO_ROOT)/gfx/common/d3d_driver_pacing.c \
+              $(LIBRETRO_COMM_DIR)/gfx/nvidia/nvapi_loader.c \
               $(LIBRETRO_COMM_DIR)/time/rtime.c
    NVAPI   := nvapi64.dll
    LDLIBS  := -lm

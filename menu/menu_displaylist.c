@@ -123,6 +123,9 @@
 #include <file/file_watch.h>
 #include "../ui/ui_companion_driver.h"
 #include "../gfx/video_display_server.h"
+#ifdef HAVE_NGX
+#include "../gfx/video_upscaler.h"
+#endif
 #ifdef HAVE_MODELINE
 #include "../gfx/modeline/modeline_edid.h"
 #endif
@@ -2342,6 +2345,20 @@ static unsigned menu_displaylist_parse_display_info(file_list_t *list)
                0, 0, NULL))
             count++;
       }
+#ifdef HAVE_NGX
+      /* Whether the upscaler can be offered, and where its runtime is
+       * looked for: the setting is hidden until both are found. */
+      video_upscaler_status_string(pbuf, sizeof(pbuf));
+      _len  = strlcpy(entry,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_TEMPORAL_UPSCALER),
+            sizeof(entry));
+      _len +=  strlcpy_lit(entry + _len, ": ", sizeof(entry) - _len);
+      strlcpy(entry + _len, pbuf, sizeof(entry) - _len);
+      if (menu_entries_append(list, entry, "",
+            MENU_ENUM_LABEL_DISPLAY_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
+            0, 0, NULL))
+         count++;
+#endif
    }
 
    /* Display Width / Height (mm), DPI: the context's metrics */
@@ -12588,6 +12605,33 @@ unsigned menu_displaylist_build_list(
                         MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y,
                         PARSE_ONLY_FLOAT, false) == 0)
                   count++;
+#ifdef HAVE_NGX
+               {
+                  /* The drivers with a backend. The upscaler itself only
+                   * with its runtimes found, and kept while on so it can
+                   * be turned off; the directory always, so the runtime
+                   * can be pointed at. */
+                  const char *ident = video_driver_get_ident();
+                  if (   string_is_equal(ident, "vulkan")
+                      || string_is_equal(ident, "d3d12"))
+                  {
+                     if (   settings->uints.video_temporal_upscaler
+                         || (video_upscaler_dlss_probe()
+                            & VIDEO_UPSCALER_DLSS_READY)
+                               == VIDEO_UPSCALER_DLSS_READY)
+                     {
+                        if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                                 MENU_ENUM_LABEL_VIDEO_TEMPORAL_UPSCALER,
+                                 PARSE_ONLY_UINT, false) == 0)
+                           count++;
+                     }
+                     if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                              MENU_ENUM_LABEL_VIDEO_DLSS_DIRECTORY,
+                              PARSE_ONLY_DIR, false) == 0)
+                        count++;
+                  }
+               }
+#endif
 #if defined(RARCH_MOBILE)
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                         MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,

@@ -1772,6 +1772,10 @@
  * what it was; VIDEO_DRIVER_PACING_ON or VIDEO_DRIVER_PACING_BOOST to use it. */
 #define DEFAULT_VIDEO_DRIVER_PACING 0
 
+/* Temporal Upscaler: off; VIDEO_TEMPORAL_UPSCALER_DLSS runs DLSS Super
+ * Resolution where the NGX and DLSS runtimes are found. */
+#define DEFAULT_VIDEO_TEMPORAL_UPSCALER 0
+
 /* The menu runs at the display's refresh rate while content is loaded */
 #define DEFAULT_MENU_FRAME_RATE MENU_FRAME_RATE_DISPLAY
 

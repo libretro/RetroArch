@@ -1,0 +1,304 @@
+/* Copyright  (C) 2010-2026 The RetroArch team
+ *
+ * ---------------------------------------------------------------------------------------
+ * The following license statement only applies to this file (ngx_loader.c).
+ * ---------------------------------------------------------------------------------------
+ *
+ * Permission is hereby granted, free of charge,
+ * to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
+ * and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+#include <string.h>
+
+#include <encodings/utf.h>
+#include <file/file_path.h>
+#include <retro_dirent.h>
+#include <retro_miscellaneous.h>
+#include <string/stdstring.h>
+
+#include <gfx/nvidia/ngx_loader.h>
+
+#if defined(_WIN32) && !defined(__WINRT__) && !defined(_XBOX)
+#define NGX_HAVE_LOADER 1
+#include <windows.h>
+#elif defined(__linux__)
+#define NGX_HAVE_LOADER 1
+#include <dlfcn.h>
+#endif
+
+bool ngx_utf8_to_wide(wchar_t *out, size_t out_chars, const char *utf8)
+{
+   size_t i = 0;
+   if (!out_chars)
+      return false;
+   while (*utf8)
+   {
+      const char *at = utf8;
+      uint32_t c     = utf8_walk(&utf8);
+#if defined(_WIN32)
+      if (c >= 0x10000)
+      {
+         if (i + 2 >= out_chars)
+         {
+            utf8 = at;
+            break;
+         }
+         c     -= 0x10000;
+         out[i++] = (wchar_t)(0xD800 | (c >> 10));
+         out[i++] = (wchar_t)(0xDC00 | (c & 0x3FF));
+         continue;
+      }
+#endif
+      if (i + 1 >= out_chars)
+      {
+         utf8 = at;
+         break;
+      }
+      out[i++] = (wchar_t)c;
+   }
+   out[i] = 0;
+   if (*utf8)
+   {
+      out[0] = 0;
+      return false;
+   }
+   return true;
+}
+
+bool ngx_dlss_feature_in(const char *dir)
+{
+#if defined(_WIN32)
+   char path[DIR_MAX_LENGTH];
+   if (string_is_empty(dir))
+      return false;
+   fill_pathname_join_special(path, dir, "nvngx_dlss.dll", sizeof(path));
+   return path_is_valid(path);
+#else
+   bool found = false;
+   struct RDIR *rdir;
+   if (string_is_empty(dir))
+      return false;
+   if (!(rdir = retro_opendir(dir)))
+      return false;
+   while (!found && retro_readdir(rdir))
+   {
+      const char *name = retro_dirent_get_name(rdir);
+      found = name && string_starts_with(name, "libnvidia-ngx-dlss.so");
+   }
+   retro_closedir(rdir);
+   return found;
+#endif
+}
+
+#ifdef NGX_HAVE_LOADER
+
+static ngx_lib_t ngx_lib;
+static bool ngx_probed;
+
+typedef void (*ngx_proc_t)(void);
+
+#if defined(_WIN32)
+typedef HMODULE ngx_module_t;
+
+static ngx_proc_t ngx_sym(ngx_module_t m, const char *name)
+{
+   return (ngx_proc_t)GetProcAddress(m, name);
+}
+
+/* NGXPath under the display driver's service key (declarative
+ * installs), then the legacy FullPath Wine and Proton set */
+static bool ngx_registry_dir(wchar_t *out, DWORD out_bytes,
+      const wchar_t *key, const wchar_t *value)
+{
+   HKEY hkey;
+   DWORD type = 0;
+   DWORD len  = out_bytes - sizeof(wchar_t);
+   LONG res;
+   if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, key, 0, KEY_READ, &hkey)
+         != ERROR_SUCCESS)
+      return false;
+   res = RegQueryValueExW(hkey, value, NULL, &type, (LPBYTE)out, &len);
+   RegCloseKey(hkey);
+   if (res != ERROR_SUCCESS || type != REG_SZ || len < sizeof(wchar_t))
+      return false;
+   out[len / sizeof(wchar_t)] = 0;
+   return true;
+}
+
+static ngx_module_t ngx_open_in(wchar_t *dir, size_t dir_chars)
+{
+   static const wchar_t *const names[] = {
+#if defined(_M_ARM64) || defined(__aarch64__)
+      L"\\_arm64_nvngx.dll"
+#else
+      L"\\_nvngx.dll", L"\\nvngx.dll"
+#endif
+   };
+   size_t len = wcslen(dir);
+   size_t i;
+   for (i = 0; i < sizeof(names) / sizeof(names[0]); i++)
+   {
+      HMODULE m;
+      if (len + wcslen(names[i]) + 1 > dir_chars)
+         continue;
+      wcscpy(dir + len, names[i]);
+      m        = LoadLibraryW(dir);
+      dir[len] = 0;
+      if (m)
+         return m;
+   }
+   return NULL;
+}
+
+static ngx_module_t ngx_open(void)
+{
+   wchar_t dir[MAX_PATH + 32];
+   HMODULE m = NULL;
+   DWORD n   = GetModuleFileNameW(NULL, dir, MAX_PATH);
+   if (n && n < MAX_PATH)
+   {
+      wchar_t *slash = wcsrchr(dir, L'\\');
+      if (slash)
+      {
+         *slash = 0;
+         m      = ngx_open_in(dir, MAX_PATH);
+      }
+   }
+   if (!m && (
+            ngx_registry_dir(dir, MAX_PATH * sizeof(wchar_t),
+               L"System\\CurrentControlSet\\Services\\nvlddmkm\\Parameters\\NGXCore",
+               L"NGXPath")
+         || ngx_registry_dir(dir, MAX_PATH * sizeof(wchar_t),
+               L"System\\CurrentControlSet\\Services\\nvlddmkm\\NGXCore",
+               L"NGXPath")
+         || ngx_registry_dir(dir, MAX_PATH * sizeof(wchar_t),
+               L"SOFTWARE\\NVIDIA Corporation\\Global\\NGXCore",
+               L"FullPath")))
+      m = ngx_open_in(dir, MAX_PATH);
+   return m;
+}
+#else
+typedef void *ngx_module_t;
+
+static ngx_proc_t ngx_sym(ngx_module_t m, const char *name)
+{
+   ngx_proc_t p;
+   *(void**)&p = dlsym(m, name);
+   return p;
+}
+
+static ngx_module_t ngx_open(void)
+{
+   return dlopen("libnvidia-ngx.so.1", RTLD_NOW | RTLD_LOCAL);
+}
+#endif
+
+#define NGX_SYM(dst, name) \
+   do { \
+      *(ngx_proc_t*)&(dst) = ngx_sym(m, name); \
+      if (!(dst)) \
+         complete = false; \
+   } while (0)
+
+static bool ngx_resolve_param(ngx_module_t m, ngx_param_api_t *p)
+{
+   bool complete = true;
+   NGX_SYM(p->set_ull, "NVSDK_NGX_Parameter_SetULL");
+   NGX_SYM(p->set_f, "NVSDK_NGX_Parameter_SetF");
+   NGX_SYM(p->set_d, "NVSDK_NGX_Parameter_SetD");
+   NGX_SYM(p->set_ui, "NVSDK_NGX_Parameter_SetUI");
+   NGX_SYM(p->set_i, "NVSDK_NGX_Parameter_SetI");
+   NGX_SYM(p->set_d3d11_resource, "NVSDK_NGX_Parameter_SetD3d11Resource");
+   NGX_SYM(p->set_d3d12_resource, "NVSDK_NGX_Parameter_SetD3d12Resource");
+   NGX_SYM(p->set_void_pointer, "NVSDK_NGX_Parameter_SetVoidPointer");
+   NGX_SYM(p->get_ull, "NVSDK_NGX_Parameter_GetULL");
+   NGX_SYM(p->get_f, "NVSDK_NGX_Parameter_GetF");
+   NGX_SYM(p->get_d, "NVSDK_NGX_Parameter_GetD");
+   NGX_SYM(p->get_ui, "NVSDK_NGX_Parameter_GetUI");
+   NGX_SYM(p->get_i, "NVSDK_NGX_Parameter_GetI");
+   NGX_SYM(p->get_d3d11_resource, "NVSDK_NGX_Parameter_GetD3d11Resource");
+   NGX_SYM(p->get_d3d12_resource, "NVSDK_NGX_Parameter_GetD3d12Resource");
+   NGX_SYM(p->get_void_pointer, "NVSDK_NGX_Parameter_GetVoidPointer");
+   return complete;
+}
+
+static bool ngx_resolve_d3d12(ngx_module_t m, ngx_d3d12_api_t *a)
+{
+   bool complete = true;
+   NGX_SYM(a->init_with_project_id, "NVSDK_NGX_D3D12_Init_with_ProjectID");
+   NGX_SYM(a->shutdown1, "NVSDK_NGX_D3D12_Shutdown1");
+   NGX_SYM(a->get_capability_parameters, "NVSDK_NGX_D3D12_GetCapabilityParameters");
+   NGX_SYM(a->allocate_parameters, "NVSDK_NGX_D3D12_AllocateParameters");
+   NGX_SYM(a->destroy_parameters, "NVSDK_NGX_D3D12_DestroyParameters");
+   NGX_SYM(a->get_feature_requirements, "NVSDK_NGX_D3D12_GetFeatureRequirements");
+   NGX_SYM(a->create_feature, "NVSDK_NGX_D3D12_CreateFeature");
+   NGX_SYM(a->release_feature, "NVSDK_NGX_D3D12_ReleaseFeature");
+   NGX_SYM(a->evaluate_feature, "NVSDK_NGX_D3D12_EvaluateFeature_C");
+   return complete;
+}
+
+static bool ngx_resolve_vulkan(ngx_module_t m, ngx_vulkan_api_t *a)
+{
+   bool complete = true;
+   NGX_SYM(a->required_extensions, "NVSDK_NGX_VULKAN_RequiredExtensions");
+   NGX_SYM(a->get_feature_instance_extension_requirements,
+         "NVSDK_NGX_VULKAN_GetFeatureInstanceExtensionRequirements");
+   NGX_SYM(a->get_feature_device_extension_requirements,
+         "NVSDK_NGX_VULKAN_GetFeatureDeviceExtensionRequirements");
+   NGX_SYM(a->get_feature_requirements, "NVSDK_NGX_VULKAN_GetFeatureRequirements");
+   NGX_SYM(a->init_with_project_id, "NVSDK_NGX_VULKAN_Init_with_ProjectID");
+   NGX_SYM(a->shutdown1, "NVSDK_NGX_VULKAN_Shutdown1");
+   NGX_SYM(a->get_capability_parameters, "NVSDK_NGX_VULKAN_GetCapabilityParameters");
+   NGX_SYM(a->allocate_parameters, "NVSDK_NGX_VULKAN_AllocateParameters");
+   NGX_SYM(a->destroy_parameters, "NVSDK_NGX_VULKAN_DestroyParameters");
+   NGX_SYM(a->create_feature1, "NVSDK_NGX_VULKAN_CreateFeature1");
+   NGX_SYM(a->release_feature, "NVSDK_NGX_VULKAN_ReleaseFeature");
+   NGX_SYM(a->evaluate_feature, "NVSDK_NGX_VULKAN_EvaluateFeature_C");
+   return complete;
+}
+
+const ngx_lib_t *ngx_lib_get(void)
+{
+   if (!ngx_probed)
+   {
+      ngx_module_t m;
+      bool d3d12, vulkan;
+      ngx_probed = true;
+      if (!(m = ngx_open()))
+         return NULL;
+      d3d12  = ngx_resolve_d3d12(m, &ngx_lib.d3d12);
+      vulkan = ngx_resolve_vulkan(m, &ngx_lib.vulkan);
+      if (!ngx_resolve_param(m, &ngx_lib.param) || !(d3d12 || vulkan))
+      {
+         memset(&ngx_lib, 0, sizeof(ngx_lib));
+         return NULL;
+      }
+      if (!d3d12)
+         memset(&ngx_lib.d3d12, 0, sizeof(ngx_lib.d3d12));
+      if (!vulkan)
+         memset(&ngx_lib.vulkan, 0, sizeof(ngx_lib.vulkan));
+      ngx_lib.handle = (void*)m;
+   }
+   return ngx_lib.handle ? &ngx_lib : NULL;
+}
+
+#else
+
+const ngx_lib_t *ngx_lib_get(void)
+{
+   return NULL;
+}
+
+#endif

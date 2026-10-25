@@ -1584,6 +1584,10 @@ MSG_HASH(
    "Driver Pacing"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_TEMPORAL_UPSCALER,
+   "Temporal Upscaler"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH,
    "Display Width (mm)"
    )
@@ -7521,6 +7525,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_SUPER,
    "Super"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_DLSS,
+   "NVIDIA DLSS Super Resolution"
+   )
 /* GENERATED REGION: HDR toggle group, stereo 3D & screens group and headset group (see settings_def_video_hdr_toggles.h, settings_def_video_stereo.h and settings_def_video_headset.h). */
 #define SETTINGS_DEF_STRINGS_PASS
 #define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
@@ -7599,6 +7607,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
 #define S_ACTION_EX_NS(T, n, sd, ok, rp, c, us) \
 MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
 #include "../settings/settings_def_video_hdr_toggles.h"
+#include "../settings/settings_def_video_upscaler.h"
 #include "../settings/settings_def_video_stereo.h"
 #include "../settings/settings_def_video_headset.h"
 #undef S_BOOL

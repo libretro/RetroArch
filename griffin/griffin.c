@@ -629,6 +629,11 @@ VIDEO DRIVER
 ============================================================ */
 #if defined(_WIN32) && (defined(HAVE_D3D) || defined(HAVE_VULKAN))
 #include "../gfx/common/d3d_driver_pacing.c"
+#include "../libretro-common/gfx/nvidia/nvapi_loader.c"
+#endif
+#ifdef HAVE_NGX
+#include "../gfx/video_upscaler.c"
+#include "../libretro-common/gfx/nvidia/ngx_loader.c"
 #endif
 #if defined(HAVE_D3D)
 #include "../gfx/common/d3d_common.c"

@@ -131,6 +131,7 @@
 #include "../settings/settings_def_ozone_sidebar.h"
 #include "../settings/settings_def_input_bind_timeouts.h"
 #include "../settings/settings_def_video_hdr_toggles.h"
+#include "../settings/settings_def_video_upscaler.h"
 #include "../settings/settings_def_video_stereo.h"
 #include "../settings/settings_def_video_headset.h"
 #include "../settings/settings_def_rewind.h"

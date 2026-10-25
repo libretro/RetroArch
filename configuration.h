@@ -282,6 +282,7 @@ typedef struct settings
       unsigned video_filter_threads;
       unsigned video_swap_interval;
       unsigned video_driver_pacing;
+      unsigned video_temporal_upscaler;
       unsigned video_hard_sync_frames;
       unsigned video_frame_delay;
       unsigned video_scanline_sync_offset;
@@ -1430,6 +1431,7 @@ typedef struct settings
       char directory_osk_overlay[DIR_MAX_LENGTH];
       char directory_screenshot[DIR_MAX_LENGTH];
       char directory_system[DIR_MAX_LENGTH];
+      char directory_dlss[DIR_MAX_LENGTH];
       char directory_cache[DIR_MAX_LENGTH];
       char directory_playlist[DIR_MAX_LENGTH];
       char directory_content_favorites[DIR_MAX_LENGTH];

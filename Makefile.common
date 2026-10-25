@@ -1998,7 +1998,18 @@ endif
 # when it presents through DXGI
 ifneq ($(findstring Win32,$(OS)),)
    ifneq ($(findstring 1,$(HAVE_D3D_COMMON) $(HAVE_VULKAN)),)
-      OBJ += gfx/common/d3d_driver_pacing.o
+      OBJ += gfx/common/d3d_driver_pacing.o \
+             $(LIBRETRO_COMM_DIR)/gfx/nvidia/nvapi_loader.o
+   endif
+endif
+
+# Temporal Upscaler: DLSS Super Resolution through NGX, loaded at run
+# time, for the Vulkan and Direct3D 12 drivers where the driver has NGX
+ifneq ($(findstring 1,$(HAVE_VULKAN) $(HAVE_D3D12)),)
+   ifneq ($(findstring Win32,$(OS))$(findstring Linux,$(OS)),)
+      DEFINES += -DHAVE_NGX
+      OBJ += gfx/video_upscaler.o \
+             $(LIBRETRO_COMM_DIR)/gfx/nvidia/ngx_loader.o
    endif
 endif
 

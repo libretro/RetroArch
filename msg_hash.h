@@ -9272,6 +9272,7 @@ enum msg_hash_enums
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_EXPANDED,
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_WIDE,
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_SUPER,
+   MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_DLSS,
    /* GENERATED REGION: HDR toggle group, stereo 3D & screens group and headset group enum rows (see settings/settings_def_video_hdr_toggles.h, settings/settings_def_video_stereo.h and settings/settings_def_video_headset.h). */
 #define SETTINGS_DEF_ENUM_PASS
 #define SETTINGS_DEF_STRINGS_PASS
@@ -9336,6 +9337,7 @@ enum msg_hash_enums
 #define S_ACTION_EX_H(T, n, sd, ok, rp, c, us, sub) MENU_LBL_H(T),
 #define S_ACTION_EX_NS_H(T, n, sd, ok, rp, c, us) MENU_LBL_H(T),
 #include "settings/settings_def_video_hdr_toggles.h"
+#include "settings/settings_def_video_upscaler.h"
 #include "settings/settings_def_video_stereo.h"
 #include "settings/settings_def_video_headset.h"
 #undef S_BOOL
@@ -31697,6 +31699,7 @@ enum msg_hash_enums
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VIDEO_CONTEXT_DRIVER,
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PACING,
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DRIVER_PACING,
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_TEMPORAL_UPSCALER,
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH,
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT,
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI,

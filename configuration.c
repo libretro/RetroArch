@@ -2198,6 +2198,9 @@ static struct config_path_setting *populate_settings_path(
    SETTING_PATH("audio_filter_dir",              settings->paths.directory_audio_filter, true, NULL, true);
    SETTING_PATH("video_shader_dir",              settings->paths.directory_video_shader, true, NULL, true);
    SETTING_PATH("video_filter_dir",              settings->paths.directory_video_filter, true, NULL, true);
+#ifdef HAVE_NGX
+   SETTING_PATH("video_dlss_directory",          settings->paths.directory_dlss, true, NULL, true);
+#endif
    SETTING_PATH("video_filter",                  settings->paths.path_softfilter_plugin, false, NULL, true);
    SETTING_PATH("video_font_path",               settings->paths.path_font, false, NULL, true);
    SETTING_PATH("video_record_config",           settings->paths.path_record_config, false, NULL, true);
@@ -2497,6 +2500,7 @@ static const struct config_bool_row config_bool_rows[] = {
 #endif
 #include "settings/settings_def_input_bind_timeouts.h"
 #include "settings/settings_def_video_hdr_toggles.h"
+#include "settings/settings_def_video_upscaler.h"
 #include "settings/settings_def_video_stereo.h"
 #include "settings/settings_def_video_headset.h"
 #include "settings/settings_def_rewind.h"
@@ -3333,6 +3337,7 @@ static const struct config_float_row config_float_rows[] = {
 #endif
 #include "settings/settings_def_input_bind_timeouts.h"
 #include "settings/settings_def_video_hdr_toggles.h"
+#include "settings/settings_def_video_upscaler.h"
 #include "settings/settings_def_video_stereo.h"
 #include "settings/settings_def_video_headset.h"
 #include "settings/settings_def_rewind.h"
@@ -3976,6 +3981,7 @@ static const struct config_uint_row config_uint_rows[] = {
 #endif
 #include "settings/settings_def_input_bind_timeouts.h"
 #include "settings/settings_def_video_hdr_toggles.h"
+#include "settings/settings_def_video_upscaler.h"
 #include "settings/settings_def_video_stereo.h"
 #include "settings/settings_def_video_headset.h"
 #include "settings/settings_def_rewind.h"
@@ -4771,6 +4777,7 @@ static const struct config_int_row config_int_rows[] = {
 #endif
 #include "settings/settings_def_input_bind_timeouts.h"
 #include "settings/settings_def_video_hdr_toggles.h"
+#include "settings/settings_def_video_upscaler.h"
 #include "settings/settings_def_video_stereo.h"
 #include "settings/settings_def_video_headset.h"
 #include "settings/settings_def_rewind.h"
@@ -5413,6 +5420,7 @@ static struct config_int_setting *populate_settings_int(
 #endif
 #include "settings/settings_def_input_bind_timeouts.h"
 #include "settings/settings_def_video_hdr_toggles.h"
+#include "settings/settings_def_video_upscaler.h"
 #include "settings/settings_def_video_stereo.h"
 #include "settings/settings_def_video_headset.h"
 #include "settings/settings_def_rewind.h"
@@ -6273,6 +6281,7 @@ void config_set_defaults(settings_t *target)
    *settings->paths.directory_video_shader = '\0';
    *settings->paths.directory_video_filter = '\0';
    *settings->paths.directory_audio_filter = '\0';
+   *settings->paths.directory_dlss = '\0';
 
    retroarch_ctl(RARCH_CTL_UNSET_UPS_PREF, NULL);
    retroarch_ctl(RARCH_CTL_UNSET_BPS_PREF, NULL);
@@ -7628,6 +7637,8 @@ static bool config_load_file(const char *path, settings_t *settings)
 
    if (string_is_equal(settings->paths.directory_audio_filter, "default"))
       *settings->paths.directory_audio_filter = '\0';
+   if (string_is_equal(settings->paths.directory_dlss, "default"))
+      *settings->paths.directory_dlss = '\0';
    if (string_is_equal(settings->paths.directory_core_assets, "default"))
       *settings->paths.directory_core_assets = '\0';
 

@@ -35,7 +35,8 @@ ifeq ($(findstring mingw,$(CC))$(filter Windows_NT,$(OS)),)
    CFLAGS  += -DHAVE_XLIB
    LDFLAGS += -lpthread -ldl
 else
-   SOURCES += $(REPO_ROOT)/gfx/common/d3d_driver_pacing.c
+   SOURCES += $(REPO_ROOT)/gfx/common/d3d_driver_pacing.c \
+              $(LIBRETRO_COMM_DIR)/gfx/nvidia/nvapi_loader.c
 endif
 
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
