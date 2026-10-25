@@ -1121,8 +1121,89 @@ static void presentation_hints(void)
    }
 }
 
+static void applicable_languages(void)
+{
+   static const char input[] =
+      "WEBVTT\n\n00:00:03.000 --> 00:00:04.000\n"
+      "<lang fr><b>French</b><lang><i>Untagged</i></lang>French"
+      "<lang not well formed><u>Raw</u></lang></lang><c>Fallback</c>\n\n"
+      "00:00:01.000 --> 00:00:02.000\n"
+      "<lang en-US><c><lang de>German</lang>English</c></lang>Fallback\n\n";
+   static const char *fallbacks[] = { "en", "fr-CA", "", "not well formed" };
+   rsubtitle_srt_t *track = parse(input, 1);
+   size_t cue, i, j;
+   assert(track);
+   for (cue = 0; cue < rsubtitle_srt_count(track); cue++)
+      for (i = 0; i < rsubtitle_vtt_node_count(track, cue); i++)
+         for (j = 0; j < sizeof(fallbacks) / sizeof(*fallbacks); j++)
+         {
+            const rsubtitle_vtt_node_t *node = rsubtitle_vtt_node(track, cue, i);
+            const rsubtitle_vtt_node_t *ancestor = node;
+            const char *expected = fallbacks[j];
+            const char *value;
+            size_t length = strlen(expected), actual = 999, depth = 0;
+            if (node->kind == RSUBTITLE_VTT_TEXT || node->kind == RSUBTITLE_VTT_TIMESTAMP)
+            {
+               expected = NULL;
+               length = 0;
+            }
+            else
+               for (;;)
+               {
+                  assert(depth++ <= 128);
+                  if (ancestor->kind == RSUBTITLE_VTT_LANGUAGE)
+                  {
+                     expected = ancestor->value;
+                     length = ancestor->value_length;
+                     break;
+                  }
+                  if (ancestor->parent == RSUBTITLE_VTT_NO_NODE)
+                     break;
+                  ancestor = rsubtitle_vtt_node(track, cue, ancestor->parent);
+                  assert(ancestor);
+               }
+            value = rsubtitle_vtt_node_language(track, cue, i,
+                  fallbacks[j], strlen(fallbacks[j]), &actual);
+            assert(value == expected && actual == length);
+         }
+   assert(!rsubtitle_vtt_node_language(track, 999, 0, "en", 2, NULL));
+   assert(!rsubtitle_vtt_node_language(track, 0, 999, "en", 2, NULL));
+   assert(!rsubtitle_vtt_node_language(track, 0, 0, NULL, 1, NULL));
+   assert(!*rsubtitle_vtt_node_language(track, 0, 0, NULL, 0, NULL));
+   rsubtitle_srt_free(track);
+   for (j = 0; j < 2; j++)
+   {
+      char *body = (char*)malloc(4096);
+      size_t used = 0, length = 999;
+      const char *value;
+      assert(body);
+      for (i = 0; i < 126; i++)
+      {
+         const char *tag = j && i == 125 ? "<lang>" : "<lang fr>";
+         memcpy(body + used, tag, strlen(tag));
+         used += strlen(tag);
+      }
+      memcpy(body + used, "<c>x</c>", 8);
+      used += 8;
+      for (i = 0; i < 126; i++)
+      {
+         memcpy(body + used, "</lang>", 7);
+         used += 7;
+      }
+      body[used] = 0;
+      track = text_track(body, 1);
+      assert(track);
+      value = rsubtitle_vtt_node_language(track, 0, 127, "en", 2, &length);
+      assert(value && length == (j ? 0 : 2));
+      assert(!memcmp(value, j ? "" : "fr", length));
+      rsubtitle_srt_free(track);
+      free(body);
+   }
+}
+
 int main(void)
 {
+   applicable_languages();
    metadata();
    embedded();
    timestamp_clock();

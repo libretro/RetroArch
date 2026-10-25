@@ -73,6 +73,15 @@ enum rsubtitle_vtt_selector_kind
 
 typedef struct rsubtitle_vtt_selector_pattern rsubtitle_vtt_selector_pattern_t;
 
+typedef struct rsubtitle_vtt_language_match
+{
+   const char *range, *tag;
+   size_t range_length, tag_length, range_position, tag_position;
+   size_t position, subtag_length;
+   unsigned phase, first, wildcard;
+   int result;
+} rsubtitle_vtt_language_match_t;
+
 typedef struct rsubtitle_vtt_selector_match
 {
    const rsubtitle_vtt_selector_pattern_t *pattern;
@@ -92,6 +101,12 @@ typedef struct rsubtitle_vtt_selector_subject
 } rsubtitle_vtt_selector_subject_t;
 
 RETRO_BEGIN_DECLS
+/* Inputs borrow canonicalized BCP47 text. Empty range matches untagged text. */
+int rsubtitle_vtt_language_begin(rsubtitle_vtt_language_match_t *match,
+      const char *range, size_t range_length, const char *tag, size_t tag_length);
+/* RFC4647 extended filtering: -1 invalid, 0 pending, 1 match, 2 no match.
+ * One validation byte or at most one eight-byte subtag pair; no allocation. */
+int rsubtitle_vtt_language_step(rsubtitle_vtt_language_match_t *match);
 rsubtitle_vtt_css_t *rsubtitle_vtt_css_new(void);
 void rsubtitle_vtt_css_free(rsubtitle_vtt_css_t *css);
 /* Borrows a normalized STYLE block, at most 65536 bytes. */

@@ -354,6 +354,30 @@ const char *rsubtitle_vtt_node_class(const rsubtitle_srt_t *track,
    return rsubtitle_vtt_text_class(track->vtt_text, entry->first_node + node, index, length);
 }
 
+const char *rsubtitle_vtt_node_language(const rsubtitle_srt_t *track,
+      size_t cue, size_t index, const char *fallback, size_t fallback_length,
+      size_t *length)
+{
+   const rsubtitle_vtt_node_t *node = rsubtitle_vtt_node(track, cue, index);
+   if (length)
+      *length = 0;
+   if (!node || (!fallback && fallback_length)
+         || node->kind == RSUBTITLE_VTT_TEXT || node->kind == RSUBTITLE_VTT_TIMESTAMP)
+      return NULL;
+   if (node->language_node)
+   {
+      node = rsubtitle_vtt_node(track, cue, node->language_node - 1);
+      if (!node || node->kind != RSUBTITLE_VTT_LANGUAGE)
+         return NULL;
+      if (length)
+         *length = node->value_length;
+      return node->value;
+   }
+   if (length)
+      *length = fallback_length;
+   return fallback ? fallback : "";
+}
+
 unsigned rsubtitle_vtt_node_state(const rsubtitle_srt_t *track,
       size_t cue, size_t index, int64_t position_us)
 {

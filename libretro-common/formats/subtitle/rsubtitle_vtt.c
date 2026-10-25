@@ -1120,6 +1120,11 @@ int rsubtitle_vtt_text_seal(rsubtitle_vtt_text_t *text)
    if (text->seal_stage == VTT_SEAL_RELATIVE)
    {
       if (node->view.kind == RSUBTITLE_VTT_ROOT) text->base = text->seal;
+      if (node->view.kind == RSUBTITLE_VTT_LANGUAGE)
+         node->view.language_node = (uint32_t)(text->seal - text->base + 1);
+      else if (node->view.parent != RSUBTITLE_VTT_NO_NODE)
+         node->view.language_node = vtt_text_at(text,
+               text->base + node->view.parent)->view.language_node;
       if (node->view.past_timestamp) node->view.past_timestamp -= (uint32_t)text->base;
       if (node->view.future_timestamp) node->view.future_timestamp -= (uint32_t)text->base;
       text->seal++;

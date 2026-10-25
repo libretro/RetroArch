@@ -210,9 +210,86 @@ static void subjects(void)
    rsubtitle_vtt_selector_pattern_free(pattern); rsubtitle_srt_free(track);
 }
 
+static int language(const char *range, const char *tag)
+{
+   rsubtitle_vtt_language_match_t state;
+   size_t ticks = 0;
+   size_t bound = 4 * (strlen(range) + strlen(tag)) + 8;
+   int result = 0;
+   assert(rsubtitle_vtt_language_begin(&state, range, strlen(range), tag, strlen(tag)));
+   while (!result && ticks++ < bound)
+      result = rsubtitle_vtt_language_step(&state);
+   assert(result && ticks <= bound);
+   assert(rsubtitle_vtt_language_step(&state) == result);
+   return result;
+}
+
+static void languages(void)
+{
+   static const char *yes[] = {
+      "de-DE", "de-de", "de-Latn-DE", "de-Latf-DE", "de-DE-x-goethe",
+      "de-Latn-DE-1996", "de-Deva-DE"
+   };
+   static const char *no[] = { "de", "de-x-DE", "de-Deva" };
+   static const char *invalid[] = {
+      "-en", "en-", "en--US", "en-**", "e*", "1n", "en_US",
+      "abcdefghi", "en-abcdefghi", "en- a", "en-\200", "en-*x"
+   };
+   rsubtitle_vtt_language_match_t state;
+   char *large;
+   size_t i;
+   for (i = 0; i < sizeof(yes) / sizeof(*yes); i++)
+   {
+      assert(language("de-*-DE", yes[i]) == 1);
+      assert(language("de-DE", yes[i]) == 1);
+   }
+   for (i = 0; i < sizeof(no) / sizeof(*no); i++)
+      assert(language("de-*-DE", no[i]) == 2);
+   for (i = 0; i < sizeof(invalid) / sizeof(*invalid); i++)
+      assert(language(invalid[i], "en-US") == -1);
+   assert(language("", "") == 1);
+   assert(language("", "en") == 2);
+   assert(language("*", "") == 2);
+   assert(language("*-*-*", "en") == 1);
+   assert(language("*-US", "en-Latn-US") == 1);
+   assert(language("*-US", "en-x-US") == 2);
+   assert(language("en-x-US", "en-x-US") == 1);
+   assert(language("en-a-foo", "en-a-foo") == 1);
+   assert(language("en-foo", "en-a-foo") == 2);
+   assert(language("en-419", "EN-Latn-419") == 1);
+   assert(language("zh-Hant", "zh-Hans") == 2);
+   assert(language("en", "english") == 2);
+   assert(language("*", "en-") == -1);
+   assert(!rsubtitle_vtt_language_begin(NULL, "", 0, "", 0));
+   assert(!rsubtitle_vtt_language_begin(&state, NULL, 1, "", 0));
+   assert(!rsubtitle_vtt_language_begin(&state, "", 0, NULL, 1));
+   assert(!rsubtitle_vtt_language_begin(&state, "en", 65537, "", 0));
+   assert(rsubtitle_vtt_language_step(NULL) == -1);
+   large = (char*)malloc(65537);
+   assert(large);
+   large[0] = 'e';
+   large[1] = 'n';
+   for (i = 2; i < 65536; i++)
+      large[i] = i & 1 ? '*' : '-';
+   large[65536] = 0;
+   assert(language(large, "en") == 1);
+   assert(rsubtitle_vtt_language_begin(&state, large, 65536, "en", 2));
+   for (i = 0; i < 256; i++)
+      assert(!rsubtitle_vtt_language_step(&state));
+   assert(rsubtitle_vtt_language_begin(&state, "fr", 2, "en", 2));
+   while (!state.result)
+      rsubtitle_vtt_language_step(&state);
+   assert(state.result == 2);
+   large[65535] = 'x';
+   assert(language(large, "en") == 2);
+   large[65535] = '-';
+   assert(language(large, "en") == -1);
+   free(large);
+}
+
 int main(void)
 {
-   strings(); linear_limits(); subjects();
-   puts("PASS: bounded selector values, linear search, cue types, IDs, classes, attributes and temporal predicates");
+   strings(); linear_limits(); subjects(); languages();
+   puts("PASS: bounded selector values, language filtering, cue types, IDs, classes, attributes and temporal predicates");
    return 0;
 }

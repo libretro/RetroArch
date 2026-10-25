@@ -111,6 +111,8 @@ typedef struct rsubtitle_vtt_node
    rsubtitle_vtt_hints_t hints;
    /* One-based cue-relative timestamp nodes; zero means no boundary. */
    uint32_t past_timestamp, future_timestamp;
+   /* One-based cue-relative language node; zero uses the track fallback. */
+   uint32_t language_node;
    enum rsubtitle_vtt_node_kind kind;
 } rsubtitle_vtt_node_t;
 
@@ -194,6 +196,10 @@ const rsubtitle_vtt_settings_t *rsubtitle_vtt_cue_settings(
 size_t rsubtitle_vtt_node_count(const rsubtitle_srt_t *track, size_t cue);
 const rsubtitle_vtt_node_t *rsubtitle_vtt_node(const rsubtitle_srt_t *track,
       size_t cue, size_t node);
+/* Raw applicable language for internal nodes, borrowed from track or fallback. */
+const char *rsubtitle_vtt_node_language(const rsubtitle_srt_t *track,
+      size_t cue, size_t node, const char *fallback, size_t fallback_length,
+      size_t *length);
 /* Strict clock comparisons; leaf nodes cannot match CSS pseudo-classes. */
 unsigned rsubtitle_vtt_node_state(const rsubtitle_srt_t *track,
       size_t cue, size_t node, int64_t position_us);

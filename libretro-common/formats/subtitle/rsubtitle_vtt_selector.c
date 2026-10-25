@@ -44,6 +44,109 @@ static int vtt_selector_space(unsigned c)
    return c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f';
 }
 
+int rsubtitle_vtt_language_begin(rsubtitle_vtt_language_match_t *match,
+      const char *range, size_t range_length, const char *tag, size_t tag_length)
+{
+   if (!match || (!range && range_length) || (!tag && tag_length)
+         || range_length > 65536 || tag_length > 65536)
+      return 0;
+   memset(match, 0, sizeof(*match));
+   match->range        = range ? range : "";
+   match->tag          = tag ? tag : "";
+   match->range_length = range_length;
+   match->tag_length   = tag_length;
+   match->first        = 1;
+   return 1;
+}
+
+int rsubtitle_vtt_language_step(rsubtitle_vtt_language_match_t *match)
+{
+   const char *text;
+   size_t length, r, t, i;
+   unsigned c, equal;
+   if (!match || !match->range || !match->tag)
+      return -1;
+   if (match->result)
+      return match->result;
+   if (match->phase < 2)
+   {
+      text   = match->phase ? match->tag : match->range;
+      length = match->phase ? match->tag_length : match->range_length;
+      if (match->position == length)
+      {
+         if (length && !match->subtag_length)
+            match->result = -1;
+         else
+         {
+            match->phase++;
+            match->position = match->subtag_length = 0;
+            match->first = 1;
+            match->wildcard = 0;
+         }
+         return match->result;
+      }
+      c = (unsigned char)text[match->position++];
+      if (c == '-')
+      {
+         if (!match->subtag_length)
+            match->result = -1;
+         match->subtag_length = 0;
+         match->wildcard = 0;
+         match->first = 0;
+      }
+      else if (!match->phase && c == '*' && !match->subtag_length)
+      {
+         match->subtag_length = 1;
+         match->wildcard = 1;
+      }
+      else
+      {
+         c = vtt_selector_fold(c, 1);
+         if (match->wildcard || ++match->subtag_length > 8
+               || !((c >= 'a' && c <= 'z')
+                  || (!match->first && c >= '0' && c <= '9')))
+            match->result = -1;
+      }
+      return match->result;
+   }
+   if (!match->range_length)
+      match->result = match->tag_length ? 2 : 1;
+   else if (match->range_position == match->range_length)
+      match->result = 1;
+   else if (!match->tag_length)
+      match->result = 2;
+   if (match->result)
+      return match->result;
+   r = match->range_position;
+   while (r < match->range_length && match->range[r] != '-')
+      r++;
+   if (!match->first && match->range[match->range_position] == '*')
+   {
+      match->range_position = r + (r < match->range_length);
+      return 0;
+   }
+   if (match->tag_position == match->tag_length)
+   {
+      match->result = 2;
+      return 2;
+   }
+   t = match->tag_position;
+   while (t < match->tag_length && match->tag[t] != '-')
+      t++;
+   length = r - match->range_position;
+   equal  = length == t - match->tag_position;
+   for (i = 0; equal && i < length; i++)
+      equal = vtt_selector_fold((unsigned char)match->range[match->range_position + i], 1)
+         == vtt_selector_fold((unsigned char)match->tag[match->tag_position + i], 1);
+   if (equal || match->range[match->range_position] == '*')
+      match->range_position = r + (r < match->range_length);
+   else if (match->first || t - match->tag_position == 1)
+      match->result = 2;
+   match->tag_position = t + (t < match->tag_length);
+   match->first = 0;
+   return match->result;
+}
+
 rsubtitle_vtt_selector_pattern_t *rsubtitle_vtt_selector_pattern_new(void)
 {
    return (rsubtitle_vtt_selector_pattern_t*)calloc(1, sizeof(rsubtitle_vtt_selector_pattern_t));
