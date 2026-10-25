@@ -530,6 +530,30 @@ void slang_semantic_name_map_free(slang_semantic_name_map *map);
 bool slang_reflection_init(slang_reflection *reflection);
 void slang_reflection_free(slang_reflection *reflection);
 
+/* The same for a pass processed by slang_process(), whose LUT views
+ * and sizes were mapped from @views and @sizes, @stride apart. */
+static INLINE void slang_semantics_luts_read(const pass_semantics_t *sem,
+      const void *views, const void *sizes, size_t stride, unsigned count,
+      uint8_t *read)
+{
+   int i, j;
+   uintptr_t v = (uintptr_t)views, z = (uintptr_t)sizes;
+   uintptr_t n = (uintptr_t)stride * count;
+   for (i = 0; i < sem->texture_count; i++)
+   {
+      uintptr_t t = (uintptr_t)sem->textures[i].texture_data;
+      if (t >= v && t - v < n && !((t - v) % stride))
+         read[(t - v) / stride] = 1;
+   }
+   for (j = 0; j < SLANG_CBUFFER_MAX; j++)
+      for (i = 0; i < sem->cbuffers[j].uniform_count; i++)
+      {
+         uintptr_t u = (uintptr_t)sem->cbuffers[j].uniforms[i].data;
+         if (u >= z && u - z < n && !((u - z) % stride))
+            read[(u - z) / stride] = 1;
+      }
+}
+
 /* Sets read[i] for each of the first @count LUTs the pass samples or
  * takes the size of; the others are left as they are. */
 static INLINE void slang_reflection_luts_read(

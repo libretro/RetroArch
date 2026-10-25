@@ -4149,8 +4149,6 @@ typedef struct d3d12_deferred_state
    retro_atomic_int_t     failed;   /* a build failed: the load ends */
    struct video_shader   *shader_preset;
    d3d12_deferred_pass_t  passes[GFX_MAX_SHADERS];
-   d3d12_texture_t        luts[GFX_MAX_TEXTURES];
-   bool                   luts_loaded;
    bool                   frame_rect;   /* read at begin: the step's thread reads no flags */
 } d3d12_deferred_state_t;
 
@@ -4165,6 +4163,56 @@ static unsigned d3d12_hdr_output_mode(const d3d12_video_t *video)
 #endif
    return 0;
 }
+
+#if defined(HAVE_SLANG) && (defined(HAVE_SPIRV_CROSS) || defined(HAVE_RSLC))
+/* The preset's LUTs some pass samples or takes the size of, loaded
+ * once every pass is processed; one no pass reads is never decoded.
+ * Each is uploaded by the next frame's command list. */
+static bool d3d12_load_luts(d3d12_video_t *d3d12)
+{
+   unsigned i;
+   uint8_t read[GFX_MAX_TEXTURES];
+   const struct video_shader *preset = d3d12->filter.shader_preset;
+   memset(read, 0, sizeof(read));
+   for (i = 0; i < preset->passes; i++)
+      slang_semantics_luts_read(&d3d12->filter.pass[i].semantics,
+            &d3d12->filter.luts[0], &d3d12->filter.luts[0].size_data,
+            sizeof(*d3d12->filter.luts), preset->luts, read);
+   for (i = 0; i < preset->luts; i++)
+   {
+      struct texture_image image;
+      if (!read[i])
+         continue;
+      memset(&image, 0, sizeof(image));
+      image.supports_rgba        = true;
+
+      if (!image_texture_load(&image, preset->lut[i].path))
+      {
+         RARCH_ERR("[D3D12] Failed to load LUT: \"%s\".\n", preset->lut[i].path);
+         return false;
+      }
+
+      d3d12->filter.luts[i].desc.Width  = image.width;
+      d3d12->filter.luts[i].desc.Height = image.height;
+      d3d12->filter.luts[i].desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+      d3d12->filter.luts[i].srv_heap    = &d3d12->desc.srv_heap;
+
+      if (preset->lut[i].mipmap)
+         d3d12->filter.luts[i].desc.MipLevels = UINT16_MAX;
+
+      d3d12_release_texture(d3d12, &d3d12->filter.luts[i]);
+      d3d12_init_texture(d3d12->device, &d3d12->filter.luts[i]);
+
+      if (d3d12->filter.luts[i].upload_buffer)
+         d3d12_update_texture(
+               image.width, image.height, 0, DXGI_FORMAT_R8G8B8A8_UNORM, image.pixels,
+               &d3d12->filter.luts[i]);
+
+      image_texture_free(&image);
+   }
+   return true;
+}
+#endif
 
 static bool d3d12_shader_load_begin(void *data,
       shader_load_deferred_t *deferred)
@@ -4205,45 +4253,6 @@ static bool d3d12_shader_load_begin(void *data,
 
    deferred->total_passes = ds->shader_preset->passes;
 
-   /* Load LUTs synchronously (same as before) */
-   {
-      unsigned i;
-      for (i = 0; i < ds->shader_preset->luts; i++)
-      {
-         struct texture_image image;
-         /* pix10 is a request the load reads: cleared with the rest */
-         memset(&image, 0, sizeof(image));
-         image.supports_rgba = true;
-
-         if (!image_texture_load(&image,
-                  ds->shader_preset->lut[i].path))
-         {
-            RARCH_ERR("[D3D12] Deferred: failed to load LUT: \"%s\".\n",
-                  ds->shader_preset->lut[i].path);
-            goto error;
-         }
-
-         ds->luts[i].desc.Width  = image.width;
-         ds->luts[i].desc.Height = image.height;
-         ds->luts[i].desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-         ds->luts[i].srv_heap    = &d3d12->desc.srv_heap;
-
-         if (ds->shader_preset->lut[i].mipmap)
-            ds->luts[i].desc.MipLevels = UINT16_MAX;
-
-         d3d12_init_texture(d3d12->device, &ds->luts[i]);
-
-         if (ds->luts[i].upload_buffer)
-            d3d12_update_texture(
-                  image.width, image.height, 0,
-                  DXGI_FORMAT_R8G8B8A8_UNORM, image.pixels,
-                  &ds->luts[i]);
-
-         image_texture_free(&image);
-      }
-      ds->luts_loaded = true;
-   }
-
    RARCH_LOG("[D3D12] Deferred: prepared %u passes for \"%s\".\n",
          deferred->total_passes, deferred->preset_path);
 
@@ -4255,16 +4264,6 @@ static bool d3d12_shader_load_begin(void *data,
    ds->frame_rect            = (d3d12->flags & D3D12_ST_FLAG_HW_IFACE_ENABLE) != 0;
    deferred->driver_data     = ds;
    return true;
-
-error:
-   {
-      unsigned j;
-      for (j = 0; j < ds->shader_preset->luts; j++)
-         d3d12_release_texture(d3d12, &ds->luts[j]);
-   }
-   free(ds->shader_preset);
-   free(ds);
-   return false;
 #else
    return false;
 #endif
@@ -4307,12 +4306,6 @@ static void d3d12_deferred_state_free(
 
    if (!ds)
       return;
-
-   if (ds->luts_loaded && ds->shader_preset)
-   {
-      for (i = 0; i < ds->shader_preset->luts; i++)
-         d3d12_release_texture(d3d12, &ds->luts[i]);
-   }
 
    if (ds->shader_preset)
    {
@@ -4530,10 +4523,7 @@ static bool d3d12_shader_load_step(void *data,
                { &d3d12->filter.pass[0].feedback, sizeof(*d3d12->filter.pass),
                   &d3d12->filter.pass[0].feedback.size_data,
                   sizeof(*d3d12->filter.pass) },
-               /* Point at d3d12->filter.luts, not ds->luts — the stored
-                * texture_data pointers must remain valid after ds
-                * is freed. LUT contents are memcpy'd here on
-                * completion. */
+               /* the LUTs are the filter's, loaded at the install */
                { &d3d12->filter.luts[0], sizeof(*d3d12->filter.luts),
                   &d3d12->filter.luts[0].size_data, sizeof(*d3d12->filter.luts) },
             },
@@ -4648,11 +4638,6 @@ static bool d3d12_shader_load_step(void *data,
    d3d12->filter.shader_preset = ds->shader_preset;
    ds->shader_preset    = NULL; /* ownership transferred */
 
-   /* Install LUTs */
-   memcpy(d3d12->filter.luts, ds->luts, sizeof(ds->luts));
-   memset(ds->luts, 0, sizeof(ds->luts));
-   ds->luts_loaded = false;
-
    /* Install per-pass state */
    {
       unsigned i;
@@ -4707,6 +4692,16 @@ static bool d3d12_shader_load_step(void *data,
                + i * SLANG_NUM_BINDINGS * d3d12->desc.srv_heap.stride
             : 0;
       }
+   }
+
+   /* The LUTs the installed passes read */
+   if (!d3d12_load_luts(d3d12))
+   {
+      d3d12_free_shader_preset(d3d12);
+      d3d12_deferred_state_free(d3d12, ds);
+      deferred->state       = SHADER_LOAD_FAILED;
+      deferred->driver_data = NULL;
+      return false;
    }
 
 #ifdef HAVE_DXGI_HDR
@@ -5108,33 +5103,8 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
    }
 #endif /* HAVE_DXGI_HDR */
 
-   for (i = 0; i < d3d12->filter.shader_preset->luts; i++)
-   {
-      struct texture_image image;
-      memset(&image, 0, sizeof(image));
-      image.supports_rgba        = true;
-
-      if (!image_texture_load(&image, d3d12->filter.shader_preset->lut[i].path))
-         goto error;
-
-      d3d12->filter.luts[i].desc.Width  = image.width;
-      d3d12->filter.luts[i].desc.Height = image.height;
-      d3d12->filter.luts[i].desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-      d3d12->filter.luts[i].srv_heap    = &d3d12->desc.srv_heap;
-
-      if (d3d12->filter.shader_preset->lut[i].mipmap)
-         d3d12->filter.luts[i].desc.MipLevels = UINT16_MAX;
-
-      d3d12_release_texture(d3d12, &d3d12->filter.luts[i]);
-      d3d12_init_texture(d3d12->device, &d3d12->filter.luts[i]);
-
-      if (d3d12->filter.luts[i].upload_buffer)
-         d3d12_update_texture(
-               image.width, image.height, 0, DXGI_FORMAT_R8G8B8A8_UNORM, image.pixels,
-               &d3d12->filter.luts[i]);
-
-      image_texture_free(&image);
-   }
+   if (!d3d12_load_luts(d3d12))
+      goto error;
 
    d3d12->flags |= D3D12_ST_FLAG_INIT_HISTORY | D3D12_ST_FLAG_RESIZE_RTS;
 
@@ -9731,8 +9701,9 @@ recording_resize_deferred:;
 
       if (d3d12->filter.shader_preset)
       {
-         if (d3d12->filter.shader_preset->luts && d3d12->filter.luts[0].dirty)
-            for (i = 0; i < d3d12->filter.shader_preset->luts; i++)
+         /* the loaded LUTs, an unread one has nothing to upload */
+         for (i = 0; i < d3d12->filter.shader_preset->luts; i++)
+            if (d3d12->filter.luts[i].dirty)
                d3d12_upload_texture(cmd, &d3d12->filter.luts[i],
                      d3d12);
 
