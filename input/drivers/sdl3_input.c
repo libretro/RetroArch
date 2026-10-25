@@ -77,6 +77,8 @@ typedef struct sdl3_input
     * every frame. */
    int num_touch_devices;
    unsigned touch_recheck;
+   /* Fingers were read once; they change only with finger events. */
+   bool touch_read;
 
    /* Number of active fingers across all touch devices. */
    int num_touches;
@@ -535,6 +537,13 @@ static void sdl3_poll_touch(sdl3_input_t *sdl)
    int num_direct = 0;
    SDL_TouchID *devices     = NULL;
 
+   /* Without finger events the fingers last read still hold, so the
+    * lists SDL allocates are only asked for when one moves. */
+   if (     sdl->num_touch_devices
+         && sdl->touch_read
+         && !SDL_HasEvents(SDL_EVENT_FINGER_DOWN, SDL_EVENT_FINGER_CANCELED))
+      return;
+
    sdl->num_touches = 0;
 
    /* Skip the per-frame device query on touch-less setups; re-probe
@@ -586,6 +595,7 @@ static void sdl3_poll_touch(sdl3_input_t *sdl)
    }
 
    SDL_free(devices);
+   sdl->touch_read = true;
 
    /* Count touchscreens only, so a machine whose sole touch device is
     * a trackpad still takes the cheap early-out above. */
@@ -895,12 +905,13 @@ static void sdl3_input_poll(void *data)
 {
    SDL_Event event;
    sdl3_input_t *sdl = (sdl3_input_t*)data;
+   bool pumped;
 
    /* SDL only emits keyboard/mouse-wheel events for a window that owns
     * the input focus. Without an SDL3 video driver to create and pump
     * that window, this queue drains nothing and key/wheel state below
     * never updates. */
-   sdl3_pump_input_events();
+   pumped = sdl3_pump_input_events();
 
    /* Find the SDL window, so that window coordinates can be calculated
     * properly. */
@@ -913,7 +924,7 @@ static void sdl3_input_poll(void *data)
    sdl3_poll_touch(sdl);
 
    /* SDL_UpdateSensors works without a focused window. */
-   if (sdl->accel || sdl->gyro)
+   if ((sdl->accel || sdl->gyro) && !pumped)
       SDL_UpdateSensors();
 
    sdl->mouse_wu = false;

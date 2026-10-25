@@ -1615,6 +1615,9 @@ jobs:
              ninja -C /tmp/sdl3-build > /tmp/sdl3-build.log
              sudo ninja -C /tmp/sdl3-build install > /tmp/sdl3-install.log
           fi
+          # A 59.94 mode beside the desktop's 60, which rounds alike
+          xrandr --newmode "1280x720_59.94" 74.176 1280 1390 1430 1650 720 725 730 750 +hsync +vsync
+          xrandr --addmode DUMMY0 1280x720_59.94
           (cd samples/gfx/display_servers_sdl3_live \
              && PKG_CONFIG_PATH=/opt/sdl3/lib/pkgconfig make clean all SANITIZER=address,undefined \
              && LD_LIBRARY_PATH=/opt/sdl3/lib \

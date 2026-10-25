@@ -54,6 +54,34 @@ typedef struct _sdl3_joypad
  */
 static sdl3_joypad_t sdl3_joypads[MAX_USERS];
 
+/* The player each slot's lights show, as set_player() told it, from 1;
+ * 0 for none, SDL3_PLAYER_UNTOLD for the slot's own. Kept across a
+ * disconnect, so a pad plugged in there is lit as it starts. */
+#define SDL3_PLAYER_UNTOLD 0xFF
+static uint8_t sdl3_joypad_players[MAX_USERS];
+
+/* A pad was turned away for want of a slot; a disconnect retries it. */
+static bool    sdl3_joypad_waiting;
+
+static const uint8_t sdl3_joypad_led[MAX_USERS][3] = {
+   {   0,   0, 255 }, /* Blue */
+   { 255,   0,   0 }, /* Red */
+   {   0, 255,   0 }, /* Green */
+   { 255, 255,   0 }, /* Yellow */
+   {   0, 255, 255 }, /* Cyan */
+   { 255,   0, 255 }, /* Magenta */
+   {   0,   0, 128 }, /* Navy */
+   { 128,   0,   0 }, /* Maroon */
+   {   0, 128,   0 }, /* Dark Green */
+   { 128, 128,   0 }, /* Olive */
+   {   0, 128, 128 }, /* Teal */
+   { 128,   0, 128 }, /* Purple */
+   { 128, 128, 255 }, /* Sky Blue */
+   { 255, 128, 128 }, /* Light Pink */
+   { 255, 255, 255 }, /* White */
+   { 128, 128, 128 }  /* Gray */
+};
+
 static const char *sdl3_joypad_name(unsigned pad)
 {
    if (pad >= MAX_USERS || !sdl3_joypads[pad].jid)
@@ -124,6 +152,38 @@ static bool sdl3_joypad_set_rumble_gain(unsigned pad, unsigned gain)
    return true;
 }
 
+/* Shows the slot's player on the pad: its player number, and its LED
+ * in that player's colour. The slot's own until set_player() says. */
+static void sdl3_joypad_show_player(unsigned slot)
+{
+   SDL_Joystick *joypad = sdl3_joypads[slot].joypad;
+   unsigned player      = sdl3_joypad_players[slot] == SDL3_PLAYER_UNTOLD
+      ? slot + 1 : sdl3_joypad_players[slot];
+
+   if (!joypad)
+      return;
+   if (SDL_GetJoystickPlayerIndex(joypad) != (int)player - 1)
+      SDL_SetJoystickPlayerIndex(joypad, (int)player - 1);
+   if (player > 0 && player <= MAX_USERS)
+      SDL_SetJoystickLED(joypad, sdl3_joypad_led[player - 1][0],
+            sdl3_joypad_led[player - 1][1], sdl3_joypad_led[player - 1][2]);
+   else
+      SDL_SetJoystickLED(joypad, 0, 0, 0);
+}
+
+static void sdl3_joypad_set_player(unsigned pad, unsigned player)
+{
+   if (pad >= MAX_USERS)
+      return;
+   if (player > MAX_USERS)
+      player = 0;
+   if (sdl3_joypad_players[pad] == player)
+      return;
+   sdl3_joypad_players[pad] = (uint8_t)player;
+   if (sdl3_joypads[pad].jid)
+      sdl3_joypad_show_player(pad);
+}
+
 static void sdl3_joypad_connect(SDL_JoystickID jid)
 {
    int i;
@@ -148,13 +208,16 @@ static void sdl3_joypad_connect(SDL_JoystickID jid)
 
       if (!gamepad || !joypad)
       {
-         RARCH_ERR("[SDL3] Couldn't open gamepad %" SDL_PRIu32 ": %s.\n", jid, SDL_GetError());
+         RARCH_WARN("[SDL3] Couldn't open gamepad %" SDL_PRIu32 ", opening it as a joystick: %s.\n",
+               jid, SDL_GetError());
          if (gamepad)
             SDL_CloseGamepad(gamepad);
-         return;
+         gamepad = NULL;
+         joypad  = NULL;
       }
    }
-   else
+
+   if (!joypad)
    {
       joypad = SDL_OpenJoystick(jid);
       if (!joypad)
@@ -189,6 +252,7 @@ static void sdl3_joypad_connect(SDL_JoystickID jid)
    if (slot < 0)
    {
       RARCH_WARN("[SDL3] No free joypad slots for joystick %" SDL_PRIu32 ".\n", jid);
+      sdl3_joypad_waiting = true;
       if (gamepad)
          SDL_CloseGamepad(gamepad);
       else
@@ -224,37 +288,14 @@ static void sdl3_joypad_connect(SDL_JoystickID jid)
          return;
       }
 #endif
-
-      /* Ensure the player index matches the slot. */
-      if (SDL_GetGamepadPlayerIndex(gamepad) != slot)
-         SDL_SetGamepadPlayerIndex(gamepad, slot);
-
-      /* Set the LED to match the player number. */
-      switch (slot) {
-         case 0: SDL_SetGamepadLED(gamepad, 0, 0, 255); break;       /* Blue */
-         case 1: SDL_SetGamepadLED(gamepad, 255, 0, 0); break;       /* Red */
-         case 2: SDL_SetGamepadLED(gamepad, 0, 255, 0); break;       /* Green */
-         case 3: SDL_SetGamepadLED(gamepad, 255, 255, 0); break;     /* Yellow */
-         case 4: SDL_SetGamepadLED(gamepad, 0, 255, 255); break;     /* Cyan */
-         case 5: SDL_SetGamepadLED(gamepad, 255, 0, 255); break;     /* Magenta */
-         case 6: SDL_SetGamepadLED(gamepad, 0, 0, 128); break;       /* Navy */
-         case 7: SDL_SetGamepadLED(gamepad, 128, 0, 0); break;       /* Maroon */
-         case 8: SDL_SetGamepadLED(gamepad, 0, 128, 0); break;       /* Dark Green */
-         case 9: SDL_SetGamepadLED(gamepad, 128, 128, 0); break;     /* Olive */
-         case 10: SDL_SetGamepadLED(gamepad, 0, 128, 128); break;    /* Teal */
-         case 11: SDL_SetGamepadLED(gamepad, 128, 0, 128); break;    /* Purple */
-         case 12: SDL_SetGamepadLED(gamepad, 128, 128, 255); break;  /* Sky Blue */
-         case 13: SDL_SetGamepadLED(gamepad, 255, 128, 128); break;  /* Light Pink */
-         case 14: SDL_SetGamepadLED(gamepad, 255, 255, 255); break;  /* White */
-         case 15: SDL_SetGamepadLED(gamepad, 128, 128, 128); break;  /* Gray */
-         default: SDL_SetGamepadLED(gamepad, 0, 0, 0); break;
-      }
    }
    else
    {
       vendor = SDL_GetJoystickVendor(joypad);
       product = SDL_GetJoystickProduct(joypad);
    }
+
+   sdl3_joypad_show_player((unsigned)slot);
 
    input_autoconfigure_connect_ex(
          sdl3_joypad_name(slot),
@@ -352,6 +393,23 @@ static void sdl3_joypad_disconnect(SDL_JoystickID jid)
          sdl3_joypads[i].sensor_accel = sensor_accel;
          sdl3_joypads[i].sensor_gyro  = sensor_gyro;
       }
+
+      if (sdl3_joypad_waiting)
+      {
+         int count;
+         SDL_JoystickID *ids = SDL_GetJoysticks(&count);
+         sdl3_joypad_waiting = false;
+         if (ids)
+         {
+            /* Connected ones return at once; one still without a
+             * slot sets the flag again. */
+            int j;
+            for (j = 0; j < count; j++)
+               if (ids[j] != jid)
+                  sdl3_joypad_connect(ids[j]);
+            SDL_free(ids);
+         }
+      }
       return;
    }
 }
@@ -369,6 +427,7 @@ static void sdl3_joypad_destroy(void)
    }
 
    memset(sdl3_joypads, 0, sizeof(sdl3_joypads));
+   sdl3_joypad_waiting = false;
    SDL_QuitSubSystem(SDL_INIT_GAMEPAD);
 }
 
@@ -436,6 +495,7 @@ static void *sdl3_joypad_init(void *data)
 
    /* Set the initial state of the joypad system. */
    memset(sdl3_joypads, 0, sizeof(sdl3_joypads));
+   memset(sdl3_joypad_players, SDL3_PLAYER_UNTOLD, sizeof(sdl3_joypad_players));
    sdl3_joypad_load_gamecontrollerdb();
 
    /* Ensure we know about any already connected devices. */
@@ -595,10 +655,10 @@ static void sdl3_joypad_poll(void)
 {
    SDL_Event event;
 
-   sdl3_pump_input_events();
    /* Detects devices too: before the read, so the flush below can't
     * drop what it adds. */
-   SDL_UpdateGamepads();
+   if (!sdl3_pump_input_events())
+      SDL_UpdateGamepads();
 
    while (SDL_PeepEvents(&event, 1, SDL_GETEVENT,
             SDL_EVENT_JOYSTICK_ADDED, SDL_EVENT_JOYSTICK_REMOVED) > 0)
@@ -643,11 +703,11 @@ static bool sdl3_joypad_set_rumble(unsigned pad,
    low  = (uint16_t)((sdl3_joypads[pad].rumble[RETRO_RUMBLE_STRONG] * sdl3_joypads[pad].rumble_gain) / 100);
    high = (uint16_t)((sdl3_joypads[pad].rumble[RETRO_RUMBLE_WEAK] * sdl3_joypads[pad].rumble_gain) / 100);
 
-   /* The frontend re-issues rumble every frame, so just use an arbitrary duration. */
+   /* A core may set rumble once and leave it on: ~32 s, as udev */
    if (sdl3_joypads[pad].gamepad)
-      return SDL_RumbleGamepad(sdl3_joypads[pad].gamepad, low, high, 5000);
+      return SDL_RumbleGamepad(sdl3_joypads[pad].gamepad, low, high, 0x7FFF);
    else if (sdl3_joypads[pad].joypad)
-      return SDL_RumbleJoystick(sdl3_joypads[pad].joypad, low, high, 5000);
+      return SDL_RumbleJoystick(sdl3_joypads[pad].joypad, low, high, 0x7FFF);
 
    return false;
 }
@@ -819,7 +879,7 @@ input_device_driver_t sdl3_joypad = {
    NULL, /* get_bt_host */
    NULL, /* set_bt_host */
    NULL, /* survives_video */
-   NULL, /* set_player */
+   sdl3_joypad_set_player,
    NULL, /* view */
    sdl3_joypad_get_touchpad
 };

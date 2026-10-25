@@ -6,7 +6,7 @@
 #include "../../../input/drivers_joypad/sdl3_joypad.c"
 
 /* No video thread here: the driver pumps the queue itself. */
-void sdl3_pump_input_events(void) { SDL_PumpEvents(); }
+bool sdl3_pump_input_events(void) { SDL_PumpEvents(); return true; }
 
 static SDL_JoystickID attach_pad(Uint16 vendor, Uint16 product)
 {

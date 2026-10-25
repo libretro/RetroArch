@@ -109,14 +109,24 @@ static void sdl3_flush_unread_events(void)
          SDL_EVENT_RENDER_DEVICE_LOST);
 }
 
-void sdl3_pump_input_events(void)
+bool sdl3_pump_input_events(void)
 {
+   /* The joypad and input polls run back to back: one backend round
+    * trip serves both. */
+   static Uint64 last_ns = 0;
+   Uint64 now_ns;
+
    /* Two threads pumping at once deadlock in the X11 backend. */
    if (     video_driver_thread_wrapper_active()
          && SDL_WasInit(SDL_INIT_VIDEO))
-      return;
+      return false;
+   now_ns = SDL_GetTicksNS();
+   if (last_ns && now_ns - last_ns < SDL_NS_PER_MS)
+      return true;
+   last_ns = now_ns;
    SDL_PumpEvents();
    sdl3_flush_unread_events();
+   return true;
 }
 
 void sdl3_pump_window_events(bool *quit, bool *resize)
@@ -429,11 +439,14 @@ void sdl3_window_get_video_size(SDL_Window *win,
       return;
    }
 
-   /* The window doesn't exist yet, so report the desktop size. */
+   /* The window doesn't exist yet, so report the desktop size, which
+    * a mode gives in points. */
    mode = SDL_GetCurrentDisplayMode(SDL_GetPrimaryDisplay());
    if (mode)
    {
-      *dims = VIDEO_SCALE_PACK(mode->w, mode->h);
+      float d = mode->pixel_density > 0.0f ? mode->pixel_density : 1.0f;
+      *dims   = VIDEO_SCALE_PACK((unsigned)(mode->w * d + 0.5f),
+            (unsigned)(mode->h * d + 0.5f));
    }
 }
 

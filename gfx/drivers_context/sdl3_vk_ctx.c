@@ -268,6 +268,9 @@ static uint32_t sdl3_vk_ctx_get_flags(void *data)
          && retro_atomic_load_acquire_int(
             &sdl->vk.context.supports_adaptive_vsync))
       BIT32_SET(flags, GFX_CTX_FLAGS_ADAPTIVE_VSYNC);
+   /* set_video_mode restyles the window it has, and keeps its surface */
+   BIT32_SET(flags, GFX_CTX_FLAGS_FULLSCREEN_IN_PLACE);
+   BIT32_SET(flags, GFX_CTX_FLAGS_WINDOW_RESIZE_IN_PLACE);
 
 #if defined(HAVE_SLANG) && (defined(HAVE_SPIRV_CROSS) || defined(HAVE_RSLC))
    BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
