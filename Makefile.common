@@ -1812,8 +1812,6 @@ endif
 ifeq ($(HAVE_VULKAN), 1)
    ifneq ($(findstring Win32,$(OS)),)
       OBJ += gfx/drivers_context/w_vk_ctx.o
-      # Trivial temporary workaround for MinGW and glslang.
-      CXXFLAGS += -fpermissive
    endif
 
    CXXFLAGS += -Wno-switch -Wno-sign-compare -fno-strict-aliasing -Wno-reorder -Wno-parentheses
@@ -2110,42 +2108,13 @@ ifeq ($(HAVE_OPENXR), 1)
    $(addprefix $(OBJDIR)/,$(OPENXR_SOURCES:.cpp=.o)): CXXFLAGS += -std=gnu++17 -fno-exceptions
 endif
 
-ifeq ($(HAVE_BUILTINGLSLANG), 1)
+# glslang and SPIRV-Cross are the system's, and only when configure
+# was asked for them (--enable-glslang --enable-spirv_cross); rslc
+# compiles slang without them.
+ifeq ($(HAVE_GLSLANG), 1)
    NEED_CXX_LINKER = 1
-   HAVE_GLSLANG_COMMON = 1
-
-   ifneq ($(findstring Win32,$(OS)),)
-      GLSLANG_PLATFORM := Windows
-   else
-      GLSLANG_PLATFORM := Unix
-   endif
-
-   DEFINES += -DHAVE_BUILTINGLSLANG
-
-   INCLUDE_DIRS += \
-      -I$(DEPS_DIR)/glslang/glslang/glslang/OSDependent/$(GLSLANG_PLATFORM) \
-      -I$(DEPS_DIR)/glslang/glslang/OGLCompilersDLL \
-      -I$(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent \
-      -I$(DEPS_DIR)/glslang/glslang/glslang/Public \
-      -I$(DEPS_DIR)/glslang/glslang/SPIRV
-
-   GLSLANG_SOURCES := \
-      gfx/drivers_shader/glslang.cpp \
-		$(DEPS_DIR)/glslang/glslang/SPIRV/GlslangToSpv.cpp \
-		$(DEPS_DIR)/glslang/glslang/SPIRV/InReadableOrder.cpp \
-		$(DEPS_DIR)/glslang/glslang/SPIRV/Logger.cpp \
-		$(DEPS_DIR)/glslang/glslang/SPIRV/SpvBuilder.cpp \
-      $(wildcard $(DEPS_DIR)/glslang/glslang/glslang/GenericCodeGen/*.cpp) \
-      $(wildcard $(DEPS_DIR)/glslang/glslang/OGLCompilersDLL/*.cpp) \
-      $(wildcard $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent/*.cpp) \
-      $(wildcard $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent/preprocessor/*.cpp) \
-      $(DEPS_DIR)/glslang/glslang/glslang/OSDependent/$(GLSLANG_PLATFORM)/ossource.cpp
-
-   # Hidden, so a core bundling glslang can't bind to this copy.
-   $(addprefix $(OBJDIR)/,$(GLSLANG_SOURCES:.cpp=.o)): CXXFLAGS += -fvisibility=hidden
-else ifeq ($(HAVE_GLSLANG),1)
-   HAVE_GLSLANG_COMMON = 1
-   GLSLANG_SOURCES := gfx/drivers_shader/glslang.cpp
+   DEFINES += -DHAVE_GLSLANG
+   OBJ += gfx/drivers_shader/glslang.o
 
    # The order of these libs are somewhat specific
    LIBS += $(GLSLANG_LIBS) \
@@ -2158,50 +2127,12 @@ else ifeq ($(HAVE_GLSLANG),1)
            $(GLSLANG_SPIRV_TOOLS_LIBS)
 endif
 
-ifeq ($(HAVE_GLSLANG_COMMON), 1)
-   DEFINES += -DHAVE_GLSLANG
-   OBJ += $(GLSLANG_SOURCES_C:.c=.o)
-   OBJ += $(GLSLANG_SOURCES:.cpp=.o)
-endif
-
 ifeq ($(HAVE_SPIRV_CROSS), 1)
    DEFINES += -DHAVE_SPIRV_CROSS
-# Default to the vendored (builtin) SPIRV-Cross unless it was explicitly
-# turned off via 'configure --disable-builtinspirv_cross', which writes
-# HAVE_BUILTINSPIRV_CROSS=0 to config.mk. An unset value (a platform
-# Makefile that sets HAVE_SPIRV_CROSS=1 directly) is treated as
-# builtin, so existing builds are unaffected. Note: griffin
-# console builds pull the vendored sources in via griffin_cpp.cpp guarded
-# by -DHAVE_SPIRV_CROSS and never reach this block.
-ifneq ($(HAVE_BUILTINSPIRV_CROSS), 0)
-   DEFINES += -DHAVE_BUILTINSPIRV_CROSS
-   INCLUDE_DIRS += -I$(DEPS_DIR)/SPIRV-Cross
-   SPIRV_CROSS_OBJ := \
-      $(DEPS_DIR)/SPIRV-Cross/spirv_cross.o \
-      $(DEPS_DIR)/SPIRV-Cross/spirv_cfg.o \
-      $(DEPS_DIR)/SPIRV-Cross/spirv_glsl.o \
-      $(DEPS_DIR)/SPIRV-Cross/spirv_hlsl.o \
-      $(DEPS_DIR)/SPIRV-Cross/spirv_msl.o \
-      $(DEPS_DIR)/SPIRV-Cross/spirv_parser.o \
-      $(DEPS_DIR)/SPIRV-Cross/spirv_cross_parsed_ir.o \
-      $(DEPS_DIR)/SPIRV-Cross/spirv_cross_c.o
-   OBJ += $(SPIRV_CROSS_OBJ)
-
-   # Hidden, so a core bundling SPIRV-Cross can't bind to this copy.
-   $(addprefix $(OBJDIR)/,$(SPIRV_CROSS_OBJ)): CXXFLAGS += -fvisibility=hidden
-   # The C API translation unit compiles its backend wrappers only
-   # when these are defined truthy.
-   DEFINES += -DSPIRV_CROSS_C_API_GLSL=1
-   DEFINES += -DSPIRV_CROSS_C_API_HLSL=1
-   DEFINES += -DSPIRV_CROSS_C_API_MSL=1
-   DEFINES += -DSPIRV_CROSS_C_API_CPP=0
-   DEFINES += -DSPIRV_CROSS_C_API_REFLECT=0
-else
    # slang_process.c is C: the header path must reach the C compiler too.
    CFLAGS   += $(SPIRV_CROSS_CFLAGS)
    CXXFLAGS += $(SPIRV_CROSS_CFLAGS)
    LIBS     += $(SPIRV_CROSS_LIBS)
-endif
 endif
 
 ifeq ($(WANT_WGL), 1)

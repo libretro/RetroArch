@@ -7728,6 +7728,17 @@ static size_t setting_get_string_representation_uint_cheat_browse_address(
 }
 #endif
 
+#if defined(HAVE_RSLC) && defined(HAVE_GLSLANG)
+static size_t setting_get_string_representation_video_shader_compiler(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (!setting)
+      return 0;
+   return strlcpy(s, *setting->value.target.unsigned_integer
+         ? "glslang + SPIRV-Cross" : "rslc", len);
+}
+#endif
+
 static size_t setting_get_string_representation_video_swap_interval(rarch_setting_t *setting,
       char *s, size_t len)
 {
@@ -13282,6 +13293,13 @@ static const setting_desc_t avsync_desc[] = {
 #include "../settings/settings_def_video_adaptive_vsync.h"
 };
 
+#if defined(HAVE_RSLC) && defined(HAVE_GLSLANG)
+static const setting_desc_t shader_compiler_desc[] = {
+/* GENERATED: rows come from settings_def_shader_compiler.h in order. */
+#include "../settings/settings_def_shader_compiler.h"
+};
+#endif
+
 #if defined(HAVE_OPENGL_CORE) && defined(HAVE_SLANG)
 static const setting_desc_t glspirv_desc[] = {
 /* GENERATED: rows come from settings_def_video_gl_direct_spirv.h in order. */
@@ -14813,6 +14831,10 @@ static void settings_build_drivers(
                   == MENU_ENUM_LABEL_AUDIO_DRIVER)
                SETTINGS_ACTION_SET(change, &(*list)[list_info->index - 1], audio_driver_write_handler)
          }
+
+#if defined(HAVE_RSLC) && defined(HAVE_GLSLANG)
+         ADD_DESC(shader_compiler_desc);
+#endif
 
          GROUP_END();
 
@@ -19816,6 +19838,9 @@ static const settings_desc_table_t settings_desc_registry[] = {
    { avsync_desc, (uint16_t)ARRAY_SIZE(avsync_desc) },
 #if defined(HAVE_OPENGL_CORE) && defined(HAVE_SLANG)
    { glspirv_desc, (uint16_t)ARRAY_SIZE(glspirv_desc) },
+#endif
+#if defined(HAVE_RSLC) && defined(HAVE_GLSLANG)
+   { shader_compiler_desc, (uint16_t)ARRAY_SIZE(shader_compiler_desc) },
 #endif
    { fdelay_desc, (uint16_t)ARRAY_SIZE(fdelay_desc) },
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)

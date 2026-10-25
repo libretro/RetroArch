@@ -9,16 +9,15 @@ static unsigned failures;
 static const char vertex[] =
    "#version 450\nvoid main() { gl_Position = vec4(0.0); }\n";
 
-/* Compiles one stage with glslang and hands the words to the output as
- * a blob, as slang_process.c does. */
+/* Compiles one stage with rslc and hands the blob to the output, as
+ * slang_process.c does. */
 static bool compile_into(glslang_output *output, bool fragment, const char *src)
 {
-   uint32_t *words = NULL;
-   size_t    n     = 0;
-   if (!glslang_compile_spirv(src, fragment ? GLSLANG_COMPILE_STAGE_FRAGMENT
-            : GLSLANG_COMPILE_STAGE_VERTEX, &words, &n))
+   struct slang_blob *blob = NULL;
+   char              *text = NULL;
+   if (!slang_compile_builtin(src, fragment, NULL, &blob, &text))
       return false;
-   glslang_output_set_blob(output, fragment, slang_blob_adopt_words(words, n));
+   glslang_output_set_blob(output, fragment, blob);
    return fragment ? output->fragment != NULL : output->vertex != NULL;
 }
 
@@ -59,11 +58,13 @@ unsigned test_compiled_feedback(void)
    probe("undefined conditional", "#define USE_FEEDBACK\n#undef USE_FEEDBACK\n"
          "#ifdef USE_FEEDBACK\n#define LAST FinalFeedback\n#else\n#define LAST Source\n#endif",
          "vec4(1.0)", false);
+   /* rslc's tables list samplers as declared: one declared keeps the
+    * target whether or not main reaches it */
    probe("unused declaration", "layout(set=0,binding=1) uniform sampler2D FinalFeedback;",
-         "vec4(1.0)", false);
+         "vec4(1.0)", true);
    probe("uncalled function", "layout(set=0,binding=1) uniform sampler2D FinalFeedback;"
          "vec4 unused_function() { return texture(FinalFeedback, vec2(0.5)); }",
-         "vec4(1.0)", false);
+         "vec4(1.0)", true);
    probe("unused macro", "#define UNUSED FinalFeedback", "vec4(1.0)", false);
    probe("other index", "layout(set=0,binding=1) uniform sampler2D PassFeedback0;",
          "texture(PassFeedback0, vec2(0.5))", false);
@@ -87,7 +88,7 @@ unsigned test_compiled_feedback(void)
    {
       struct glslang_last_pass state;
       glslang_output output;
-      const uint32_t invalid[] = { 0 };
+      uint32_t *bare;
       bool ok;
       memset(&state, 0, sizeof(state));
       memset(&output, 0, sizeof(output));
@@ -106,12 +107,14 @@ unsigned test_compiled_feedback(void)
          failures++;
       }
       state.needs_target = false;
-      /* a malformed vertex stage in place of the real one */
-      output.vertex = invalid;
-      output.vertex_len = 1;
-      if (slang_last_pass_feedback(&state, &output))
+      /* a vertex stage without tables in place of the real one: nothing
+       * says what it reads, so it keeps the target */
+      if ((bare = (uint32_t*)calloc(1, sizeof(*bare))))
+         glslang_output_set_blob(&output, false, slang_blob_adopt_words(bare, 1));
+      if (!bare || !slang_last_pass_feedback(&state, &output)
+            || !state.needs_target)
       {
-         printf("FAIL malformed SPIR-V must refuse analysis\n");
+         printf("FAIL a stage without tables must keep the target\n");
          failures++;
       }
       glslang_output_free(&output);

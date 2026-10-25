@@ -223,7 +223,8 @@ static struct slang_blob *stock_blob(const uint32_t *words, size_t len)
 }
 
 /* @passes passes binding @vs/@fs by reference, as a preset's passes do
- * once the blob table hands the same stages to each of them. */
+ * once the blob table hands the same stages to each of them, with the
+ * text rslc printed for them. */
 static struct gl3_filter_chain *chain_of(unsigned passes,
       struct slang_blob *vs, struct slang_blob *fs)
 {
@@ -246,6 +247,8 @@ static struct gl3_filter_chain *chain_of(unsigned passes,
       gl3_chain_set_pass_info(chain, i, pass_info);
       gl3_chain_set_blob(chain, i, GL_VERTEX_SHADER, slang_blob_ref(vs));
       gl3_chain_set_blob(chain, i, GL_FRAGMENT_SHADER, slang_blob_ref(fs));
+      gl3_pass_set_shader_text(chain->passes[i], GL_VERTEX_SHADER, "void main() {}\n");
+      gl3_pass_set_shader_text(chain->passes[i], GL_FRAGMENT_SHADER, "void main() {}\n");
    }
    if (!gl3_chain_init(chain))
    {

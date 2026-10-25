@@ -55,12 +55,12 @@ check: all
 # is no X and the desktop is always there.
 # Under a sanitizer (SAN=thread or SAN=address, matching the tree's
 # build) the uninstrumented layer and ICD are suppressed through
-# tsan-vulkan.supp / ubsan-vulkan.supp; frontend reports still fail.
+# tsan-vulkan.supp; frontend reports still fail.
 check-vulkan: all
 	@if [ -z "$$DISPLAY" ] && [ "$${OS:-}" != Windows_NT ]; then echo "check-vulkan: no DISPLAY, skipping"; exit 77; fi; \
 	 HARNESS_VIDEO_DRIVER=vulkan HARNESS_VERBOSE=1 HARNESS_MENU_UPSCALE=2 \
 	 ASAN_OPTIONS=detect_leaks=0:abort_on_error=1 \
-	 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1:suppressions=ubsan-vulkan.supp \
+	 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
 	 TSAN_OPTIONS=halt_on_error=1:second_deadlock_stack=1:suppressions=tsan-vulkan.supp \
 	 ./$(TARGET) $(CYCLES) > check.log 2>&1; rc=$$?; \
 	 grep -E '\[pass\]|\[baseline\]|\[info\]|\[skip\]|FAIL|all lanes|Validation Error' check.log | grep -v 'XFree86-VidMode'; \
@@ -152,7 +152,7 @@ check-driver: all
 	 if [ -z "$(DRIVER)" ]; then echo "check-driver: DRIVER=<video driver> required"; exit 2; fi; \
 	 HARNESS_VIDEO_DRIVER=$(DRIVER) HARNESS_VERBOSE=1 \
 	 ASAN_OPTIONS=detect_leaks=0:abort_on_error=1 \
-	 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1:suppressions=ubsan-vulkan.supp \
+	 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
 	 TSAN_OPTIONS=halt_on_error=1:second_deadlock_stack=1:suppressions=tsan-gl.supp \
 	 $(RUNNER) ./$(TARGET) $(CYCLES) > check.log 2>&1; rc=$$?; \
 	 grep -E '\[pass\]|FAIL|all lanes' check.log | grep -v 'XFree86-VidMode'; \

@@ -1,10 +1,38 @@
 /* What gfx/drivers_shader/shader_gl3.c links against beyond the code
- * under test: none of it is reached by gl3_cross_compile_program, so
- * each is an empty stand-in. Declared here without the headers, as
- * only their names have to resolve. */
+ * under test: none of it but rslc's printer is reached by
+ * gl3_cross_compile_program, so each is an empty stand-in. Declared
+ * here without the headers, as only their names have to resolve. */
 
 #include <stddef.h>
 #include <stdint.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
+
+/* rslc: a source for each stage it prints, and for each of the
+ * driver's own stages a one-word module beside it */
+static char *stub_text(void)
+{
+   static const char text[] = "void main() {}\n";
+   char *s = (char*)malloc(sizeof(text));
+   if (s)
+      memcpy(s, text, sizeof(text));
+   return s;
+}
+char *slang_print_stage(const char *source, bool fragment, const void *t)
+{ (void)source; (void)fragment; (void)t; return stub_text(); }
+struct slang_blob *slang_blob_adopt_words(uint32_t *words, size_t nwords);
+bool slang_compile_builtin(const char *source, bool fragment,
+      const void *t, struct slang_blob **blob, char **text)
+{
+   uint32_t *word = (uint32_t*)calloc(1, sizeof(*word));
+   (void)source; (void)fragment; (void)t;
+   *blob = word ? slang_blob_adopt_words(word, 1) : NULL;
+   *text = stub_text();
+   return *blob && *text;
+}
+bool slang_compile_remapped(void) { return false; }
+void rslc_result_free(void *r) { (void)r; }
 
 void RARCH_LOG(const char *fmt, ...)  { (void)fmt; }
 void RARCH_WARN(const char *fmt, ...) { (void)fmt; }

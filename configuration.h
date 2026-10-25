@@ -325,7 +325,9 @@ typedef struct settings
       unsigned video_shader_delay;
       unsigned video_shader_simulated_input_resolution_width;
       unsigned video_shader_simulated_input_resolution_height;
+#if defined(HAVE_RSLC) && defined(HAVE_GLSLANG)
       unsigned video_shader_compiler;
+#endif
 #ifdef HAVE_SCREENSHOTS
       unsigned notification_show_screenshot_duration;
       unsigned notification_show_screenshot_flash;

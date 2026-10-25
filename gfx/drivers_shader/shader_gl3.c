@@ -32,9 +32,8 @@
 #include "slang_blob.h"
 #include "spirv_opengl.h"
 #if !defined(SLANG_RSLC_ONLY)
-/* The vendored SPIRV-Cross headers end their enumerator lists with a
- * comma, which the C89 lane rejects under -pedantic; they are upstream
- * files and are not edited here. */
+/* The SPIRV-Cross C header ends its enumerator lists with a
+ * comma, which the C89 lane rejects under -pedantic. */
 #if defined(__GNUC__) || defined(__clang__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"

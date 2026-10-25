@@ -28,6 +28,8 @@ void glslang_last_pass_init(const void *s, void *c, void *state)
 { (void)s; (void)c; (void)state; }
 int slang_last_pass_feedback(void *s, const void *o)
 { (void)s; (void)o; return 0; }
+int  slang_compile_remapped(void) { return 0; }
+void rslc_result_free(void *r) { (void)r; }
 unsigned glslang_num_miplevels(unsigned w, unsigned h) { (void)w; (void)h; return 1; }
 void glslang_output_free(void *o) { (void)o; }
 void glslang_output_init(void *o) { (void)o; }

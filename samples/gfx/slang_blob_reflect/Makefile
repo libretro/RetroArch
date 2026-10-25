@@ -13,6 +13,12 @@ include ../../sample_objdir.mk
 
 TARGET := slang_blob_reflect_check
 
+# SPIRV-Cross is the system's (spirv-cross-c-shared), the reference the
+# tables are held against.
+SPIRV_CROSS_CFLAGS := $(shell pkg-config --cflags spirv-cross-c-shared)
+SPIRV_CROSS_LIBS   := $(shell pkg-config --libs spirv-cross-c-shared)
+
+
 REPO_ROOT         := ../../..
 LIBRETRO_COMM_DIR := $(REPO_ROOT)/libretro-common
 
@@ -32,7 +38,7 @@ SOURCES := slang_blob_reflect_check.c \
 
 CFLAGS  += -Wall -std=gnu99 -Wno-overlength-strings -g1 -O1 -DRARCH_INTERNAL -DHAVE_SLANG -DHAVE_RSLC -DHAVE_SPIRV_CROSS \
            -I. -I$(REPO_ROOT) -I$(LIBRETRO_COMM_DIR)/include -I$(LIBRETRO_COMM_DIR)/gfx/shaders \
-           -I$(REPO_ROOT)/deps -I$(REPO_ROOT)/deps/SPIRV-Cross
+           -I$(REPO_ROOT)/deps $(SPIRV_CROSS_CFLAGS)
 
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)
@@ -41,20 +47,10 @@ endif
 
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
-DEPFLAGS := -O0 -w -std=c++11 -DHAVE_SPIRV_CROSS \
-            -I$(LIBRETRO_COMM_DIR)/include -I$(REPO_ROOT)/deps \
-            -I$(REPO_ROOT)/deps/SPIRV-Cross
-ifneq ($(filter Windows_NT,$(OS))$(findstring mingw,$(CXX)),)
-DEPFLAGS += -Wa,-mbig-obj
-endif
-
 all: $(TARGET)
 
-spirv_cross.o: $(REPO_ROOT)/griffin/griffin_cpp.cpp
-	$(CXX) $(DEPFLAGS) -c -o $@ $<
-
-$(TARGET): $(OBJS) spirv_cross.o
-	$(CXX) -o $@ $^ $(LDFLAGS) -lm
+$(TARGET): $(OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS) $(SPIRV_CROSS_LIBS) -lm
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
@@ -65,6 +61,6 @@ $(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
 
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
-	rm -f $(OBJS) spirv_cross.o $(TARGET) $(TARGET).exe
+	rm -f $(OBJS) $(TARGET) $(TARGET).exe
 
 .PHONY: all clean

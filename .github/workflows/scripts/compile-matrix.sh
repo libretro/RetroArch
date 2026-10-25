@@ -596,7 +596,7 @@ check "gl2: GLES3 on KMS" \
 check "gl2: desktop on KMS" \
    "$GLDEFS -DHAVE_EGL -DHAVE_KMS $GLINC $KMSINC" \
    gfx/drivers/gl2.c gfx/common/egl_gbm_frames.c
-GL3DEFS="-DHAVE_OPENGL -DHAVE_OPENGL_CORE -DHAVE_SLANG -DHAVE_GLSLANG -DHAVE_SPIRV_CROSS -DHAVE_REWIND -DHAVE_OVERLAY -Ideps/SPIRV-Cross"
+GL3DEFS="-DHAVE_OPENGL -DHAVE_OPENGL_CORE -DHAVE_SLANG -DHAVE_RSLC -DHAVE_REWIND -DHAVE_OVERLAY"
 check "gl3: desktop" \
    "$GL3DEFS $GLINC" gfx/drivers/gl3.c
 check "gl3: GLES3" \
@@ -1237,7 +1237,7 @@ UNITY_DIR=$(mktemp -d)
 printf '#include "gfx/drivers/gl2.c"\n#include "gfx/drivers/gl3.c"\n#include "gfx/drivers/vulkan.c"\n' \
    > "$UNITY_DIR/unity_gfx.c"
 check "unity: gl2 + gl3 + vulkan in one translation unit" \
-   "-Igfx/include -DHAVE_OPENGL -DHAVE_OPENGL_CORE -DHAVE_GLSL -DHAVE_VULKAN -DHAVE_SLANG -DHAVE_SHADERPIPELINE -DHAVE_SPIRV_CROSS -DHAVE_GFX_WIDGETS -DHAVE_OVERLAY -DHAVE_X11" \
+   "-Igfx/include -DHAVE_OPENGL -DHAVE_OPENGL_CORE -DHAVE_GLSL -DHAVE_VULKAN -DHAVE_SLANG -DHAVE_SHADERPIPELINE -DHAVE_RSLC -DHAVE_GFX_WIDGETS -DHAVE_OVERLAY -DHAVE_X11" \
    "$UNITY_DIR/unity_gfx.c"
 rm -rf "$UNITY_DIR"
 

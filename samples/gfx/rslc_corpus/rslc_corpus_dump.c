@@ -2,7 +2,7 @@
  *
  * Takes .slang files through the frontend's own path: include
  * expansion and stage split by gfx/drivers_shader/glslang_util.c, each
- * stage compiled by the vendored glslang through glslang_compile_spirv.
+ * stage compiled by the system's glslang through glslang_compile_spirv.
  * Writes, per shader, the two stage sources and the two SPIR-V modules
  * under a name derived from the shader's path, plus one manifest line:
  *

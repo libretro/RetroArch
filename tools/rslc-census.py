@@ -372,7 +372,7 @@ def main(argv):
              'spv-imgop', 'spv-loopctl', 'spv-std450', 'spv-op', 'spirv']
     with open(out_md, 'w') as f:
         f.write('# rslc corpus census\n\n')
-        f.write('Dump: `%s`. %d shaders compile with the vendored glslang '
+        f.write('Dump: `%s`. %d shaders compile with glslang '
                 '(%d stages); %d do not and are excluded.\n\n'
                 % (dumpdir, len(ok), c.stages, len(bad)))
         f.write('Every row is a construct, the number of stages that use '

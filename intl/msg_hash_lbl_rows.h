@@ -276,6 +276,7 @@
 #include "../settings/settings_def_video_frame_time_sample.h"
 #include "../settings/settings_def_video_adaptive_vsync.h"
 #include "../settings/settings_def_video_gl_direct_spirv.h"
+#include "../settings/settings_def_shader_compiler.h"
 #include "../settings/settings_def_video_smooth.h"
 #include "../settings/settings_def_frame_time_counter.h"
 #include "../settings/settings_def_menu_filebrowser.h"

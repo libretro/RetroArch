@@ -2763,6 +2763,7 @@ static const struct config_bool_row config_bool_rows[] = {
 #include "settings/settings_def_video_frame_time_sample.h"
 #include "settings/settings_def_video_adaptive_vsync.h"
 #include "settings/settings_def_video_gl_direct_spirv.h"
+#include "settings/settings_def_shader_compiler.h"
 #include "settings/settings_def_video_smooth.h"
 #include "settings/settings_def_frame_time_counter.h"
 #include "settings/settings_def_menu_filebrowser.h"
@@ -3598,6 +3599,7 @@ static const struct config_float_row config_float_rows[] = {
 #include "settings/settings_def_video_frame_time_sample.h"
 #include "settings/settings_def_video_adaptive_vsync.h"
 #include "settings/settings_def_video_gl_direct_spirv.h"
+#include "settings/settings_def_shader_compiler.h"
 #include "settings/settings_def_video_smooth.h"
 #include "settings/settings_def_frame_time_counter.h"
 #include "settings/settings_def_menu_filebrowser.h"
@@ -4240,6 +4242,7 @@ static const struct config_uint_row config_uint_rows[] = {
 #include "settings/settings_def_video_frame_time_sample.h"
 #include "settings/settings_def_video_adaptive_vsync.h"
 #include "settings/settings_def_video_gl_direct_spirv.h"
+#include "settings/settings_def_shader_compiler.h"
 #include "settings/settings_def_video_smooth.h"
 #include "settings/settings_def_frame_time_counter.h"
 #include "settings/settings_def_menu_filebrowser.h"
@@ -4416,7 +4419,6 @@ static struct config_uint_setting *populate_settings_uint(
    if (!tmp)
       return NULL;
 
-   SETTING_UINT("video_shader_compiler",         &settings->uints.video_shader_compiler, true, DEFAULT_VIDEO_SHADER_COMPILER, false);
 #ifdef HAVE_NFSCLIENT
    SETTING_UINT("nfs_timeout",                   &settings->uints.nfs_timeout, true, DEFAULT_NFS_TIMEOUT, false);
    SETTING_UINT("nfs_num_contexts",              &settings->uints.nfs_num_contexts, true, DEFAULT_NFS_NUM_CONTEXTS, false);
@@ -5035,6 +5037,7 @@ static const struct config_int_row config_int_rows[] = {
 #include "settings/settings_def_video_frame_time_sample.h"
 #include "settings/settings_def_video_adaptive_vsync.h"
 #include "settings/settings_def_video_gl_direct_spirv.h"
+#include "settings/settings_def_shader_compiler.h"
 #include "settings/settings_def_video_smooth.h"
 #include "settings/settings_def_frame_time_counter.h"
 #include "settings/settings_def_menu_filebrowser.h"
@@ -5676,6 +5679,7 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_video_frame_time_sample.h"
 #include "settings/settings_def_video_adaptive_vsync.h"
 #include "settings/settings_def_video_gl_direct_spirv.h"
+#include "settings/settings_def_shader_compiler.h"
 #include "settings/settings_def_video_smooth.h"
 #include "settings/settings_def_frame_time_counter.h"
 #include "settings/settings_def_menu_filebrowser.h"

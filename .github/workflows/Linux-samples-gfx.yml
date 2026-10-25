@@ -291,7 +291,7 @@ jobs:
     timeout-minutes: 20
 
     env:
-      APT_PKGS: build-essential libegl-dev libgl-dev libegl-mesa0 libgl1-mesa-dri gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 wine64
+      APT_PKGS: build-essential libegl-dev libgl-dev libegl-mesa0 libgl1-mesa-dri libspirv-cross-c-shared-dev gcc-mingw-w64-x86-64 wine64
 
     steps:
       - name: Checkout
@@ -338,17 +338,6 @@ jobs:
              timeout 600 make check CHECK_ARGS=--require-gl
           make clean
 
-      - name: Build and run slang_rect_test (mingw-w64, Wine)
-        shell: bash
-        working-directory: samples/gfx/slang_rect
-        run: |
-          set -eu
-          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
-          make clean CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++ && make -j$(nproc) all CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++ \
-             LDFLAGS=-static
-          WINEDEBUG=-all timeout 300 wine ./slang_rect_test.exe
-          make clean
-
       - name: Build and run rslc_remap_test (ASan + UBSan, llvmpipe)
         shell: bash
         working-directory: samples/gfx/rslc_remap
@@ -383,7 +372,7 @@ jobs:
     timeout-minutes: 20
 
     env:
-      APT_PKGS: build-essential libgl-dev gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 wine64
+      APT_PKGS: build-essential libgl-dev gcc-mingw-w64-x86-64 wine64
 
     steps:
       - name: Checkout
@@ -416,9 +405,9 @@ jobs:
         working-directory: samples/gfx/slang_hlsl_backend
         run: |
           set -eu
-          # The real slang_process(): a pass comes back as HLSL exactly
-          # when the build has a Direct3D 10/11/12 driver, and a preset's
-          # simulated SourceSize reaches the first pass only, from
+          # The real slang_process(): rslc hands a pass back as HLSL for
+          # the Direct3D 10/11/12 drivers, and a preset's simulated
+          # SourceSize reaches the first pass only, from
           # storage that outlives the semantics the D3D drivers copy.
           make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 \
@@ -446,7 +435,7 @@ jobs:
         run: |
           set -eu
           . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
-          make clean CC=x86_64-w64-mingw32-gcc && make -j$(nproc) all CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++ LDFLAGS="-static -Wl,--gc-sections"
+          make clean CC=x86_64-w64-mingw32-gcc && make -j$(nproc) all CC=x86_64-w64-mingw32-gcc LDFLAGS="-static -Wl,--gc-sections"
           WINEDEBUG=-all timeout 300 wine ./slang_last_pass_target_test.exe
           make clean
 
@@ -469,7 +458,7 @@ jobs:
         run: |
           set -eu
           . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
-          make clean CC=x86_64-w64-mingw32-gcc && make -j$(nproc) all CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++ LDFLAGS="-static"
+          make clean CC=x86_64-w64-mingw32-gcc && make -j$(nproc) all CC=x86_64-w64-mingw32-gcc LDFLAGS="-static"
           WINEDEBUG=-all timeout 300 wine ./shader_chain_test.exe
           make clean
 

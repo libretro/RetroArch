@@ -1,19 +1,11 @@
 /* A slang pass translated for the Direct3D 10/11/12 drivers.
  *
- * The real slang_process() and glslang_util.c, with SPIRV-Cross built
- * the way the unity build carries it (griffin/griffin_cpp.cpp) for the
- * configuration the Makefile names. Only the GLSL to SPIR-V step is
- * stood in for: glslang_compile_spirv() hands back stock.slang's
- * stages, compiled once with glslangValidator (stock_spirv.h), and the
- * pass source is read from here rather than from a file.
+ * The real slang_process() and glslang_util.c, with rslc compiling the
+ * pass and printing its HLSL; only the pass source is read from here
+ * rather than from a file. The pass must come back as HLSL source, and
+ * a preset's simulated SourceSize reaches the first pass only.
  *
- * Every build that has a Direct3D 10, 11 or 12 driver has to turn a
- * slang pass into HLSL, whether or not it also has the Direct3D 9
- * HLSL driver: the pass must come back as HLSL source. A build with
- * neither has no HLSL emitter, and asking for HLSL must fail rather
- * than hand back something else.
- *
- * The stages, as compiled into stock_spirv.h:
+ * The stages:
  *
  *   #version 450
  *   layout(set = 0, binding = 0, std140) uniform UBO
@@ -49,12 +41,9 @@
 
 #include "gfx/video_shader_parse.h"
 #include "gfx/drivers_shader/slang_process.h"
-#include "gfx/drivers_shader/glslang_compile.h"
 
 #include "gfx/video_defines.h"
 
-#include "stock_spirv.h"
-#include "sized_spirv.h"
 
 static unsigned failures = 0;
 
@@ -66,38 +55,6 @@ static unsigned failures = 0;
          failures++; \
       } \
    } while (0)
-
-/* --- the GLSL to SPIR-V step --------------------------------------- */
-
-static uint32_t *spirv_copy(const uint32_t *words, size_t n, size_t *len)
-{
-   uint32_t *out = (uint32_t*)malloc(n * sizeof(*out));
-   if (!out)
-      return NULL;
-   memcpy(out, words, n * sizeof(*out));
-   *len = n;
-   return out;
-}
-
-bool glslang_compile_spirv(const char *source,
-      enum glslang_compile_stage stage,
-      uint32_t **spirv, size_t *spirv_len)
-{
-   bool sized = source && strstr(source, "SourceSize");
-   if (stage == GLSLANG_COMPILE_STAGE_VERTEX)
-      *spirv = sized
-         ? spirv_copy(sized_vert,
-               sizeof(sized_vert) / sizeof(sized_vert[0]), spirv_len)
-         : spirv_copy(stock_vert,
-               sizeof(stock_vert) / sizeof(stock_vert[0]), spirv_len);
-   else
-      *spirv = sized
-         ? spirv_copy(sized_frag,
-               sizeof(sized_frag) / sizeof(sized_frag[0]), spirv_len)
-         : spirv_copy(stock_frag,
-               sizeof(stock_frag) / sizeof(stock_frag[0]), spirv_len);
-   return *spirv != NULL;
-}
 
 /* --- the SPIR-V cache: always a miss, nothing kept ------------------ */
 
@@ -191,7 +148,7 @@ static const char stock_slang[] =
       "   FragColor = texture(Source, vTexCoord);\n"
       "}\n";
 
-/* A pass that reads SourceSize, as compiled into sized_spirv.h. */
+/* A pass that reads SourceSize. */
 static const char sized_slang[] =
       "#version 450\n"
       "layout(set = 0, binding = 0, std140) uniform UBO\n"
@@ -275,7 +232,6 @@ void runloop_msg_queue_push(const char *msg, size_t len, unsigned prio,
 
 /* --- the simulated SourceSize ------------------------------------- */
 
-#if defined(EXPECT_HLSL)
 static const uniform_sem_t *find_uniform(const pass_semantics_t *sem,
       const char *id)
 {
@@ -364,7 +320,6 @@ static void check_simulated_source_size(void)
          "the first pass lost its real size with none simulated");
    free_pass(&shader, 0, &sem);
 }
-#endif
 
 /* --- the lane ------------------------------------------------------- */
 
@@ -379,11 +334,6 @@ int main(void)
    bool ok;
    const char *vs;
    const char *ps;
-#if defined(EXPECT_HLSL)
-   const char *label = "HLSL wanted";
-#else
-   const char *label = "no HLSL emitter";
-#endif
 
    memset(&map, 0, sizeof(map));
    memset(&sem, 0, sizeof(sem));
@@ -398,7 +348,6 @@ int main(void)
    vs = shader.pass[0].source.string.vertex;
    ps = shader.pass[0].source.string.fragment;
 
-#if defined(EXPECT_HLSL)
    if (!ok)
       printf("   slang_process failed: %s", last_error);
    CHECK(ok, "a slang pass did not translate to HLSL");
@@ -409,13 +358,6 @@ int main(void)
    CHECK(ps && !strstr(ps, "#version"),
          "the fragment stage came back as GLSL");
    CHECK(sem.texture_count == 1, "the pass's Source texture was not found");
-#else
-   CHECK(!ok, "HLSL was asked of a build with no HLSL emitter and "
-         "the pass was accepted");
-   CHECK(!vs && !ps, "a build with no HLSL emitter handed back source");
-   CHECK(strstr(last_error, "HLSL") != NULL,
-         "the failure did not say the HLSL backend is missing");
-#endif
 
    free(shader.pass[0].source.string.vertex);
    free(shader.pass[0].source.string.fragment);
@@ -426,11 +368,8 @@ int main(void)
          free(sem.cbuffers[i].uniforms);
    }
 
-#if defined(EXPECT_HLSL)
    check_simulated_source_size();
-#endif
 
-   printf("%s %s (%s)\n", failures ? "[FAIL]" : "[pass]",
-         "slang_hlsl_backend", label);
+   printf("%s slang_hlsl_backend\n", failures ? "[FAIL]" : "[pass]");
    return failures ? 1 : 0;
 }

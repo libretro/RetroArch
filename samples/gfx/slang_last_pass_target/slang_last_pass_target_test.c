@@ -34,6 +34,7 @@ unsigned test_compiled_feedback(void);
 
 void RARCH_ERR(const char *fmt, ...) { (void)fmt; }
 void RARCH_DBG(const char *fmt, ...) { (void)fmt; }
+void RARCH_WARN(const char *fmt, ...) { (void)fmt; }
 
 /* ---- the sources ---- */
 struct source

@@ -170,14 +170,10 @@ HAVE_CG=auto               # Cg shader support
 HAVE_HLSL=no               # HLSL9 shader support (for Direct3D9)
 HAVE_SLANG=auto            # slang support
 C89_SLANG=no
-HAVE_GLSLANG=auto          # glslang support (requires C++11)
+HAVE_GLSLANG=no            # the system's glslang, next to rslc (requires C++11 and SPIRV-Cross)
 C89_GLSLANG=no
-HAVE_BUILTINGLSLANG=auto   # Bake in glslang support
-C89_BUILTINGLSLANG=no
-HAVE_SPIRV_CROSS=auto      # SPIRV-Cross support (requires C++11)
+HAVE_SPIRV_CROSS=no        # the system's SPIRV-Cross, next to rslc (requires C++11 and glslang)
 C89_SPIRV_CROSS=no
-HAVE_BUILTINSPIRV_CROSS=auto # Bake in SPIRV-Cross support
-C89_BUILTINSPIRV_CROSS=no
 HAVE_RSLC=yes              # rslc clean-room slang compiler (C89, libretro-common)
 
 # Audio drivers and resamplers

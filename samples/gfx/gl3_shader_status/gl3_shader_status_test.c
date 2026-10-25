@@ -7,8 +7,9 @@
  * log, and - for the one that succeeds - checks a program comes back.
  *
  * The GL entry points are the real glsym table pointed at mocks that
- * track live objects; SPIRV-Cross is stood in for here, handing back a
- * source for each stage and no resources. */
+ * track live objects; the stages are the driver's own opaque pair, and
+ * rslc's printer is stood in for in stubs.c, handing back a source for
+ * each stage. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,16 +19,8 @@
 #include <boolean.h>
 #include <glsym/glsym.h>
 
-#if defined(__GNUC__) || defined(__clang__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpedantic"
-#endif
-#include <spirv_cross_c.h>
-#if defined(__GNUC__) || defined(__clang__)
-#pragma GCC diagnostic pop
-#endif
-
 #include "gfx/drivers_shader/shader_gl3.h"
+#include "gfx/common/spirv_shaders.h"
 
 static unsigned failures = 0;
 static unsigned err_lines = 0;
@@ -111,6 +104,9 @@ static void APIENTRY mock_get_program_log(GLuint p, GLsizei n, GLsizei *len,
       *len = 0;
 }
 static void APIENTRY mock_use_program(GLuint p) { (void)p; }
+static GLint APIENTRY mock_get_uniform_location(GLuint p, const GLchar *n)
+{ (void)p; (void)n; return -1; }
+static void APIENTRY mock_uniform1i(GLint l, GLint v) { (void)l; (void)v; }
 
 static void mock_install(void)
 {
@@ -128,10 +124,11 @@ static void mock_install(void)
    __rglgen_glGetProgramiv      = (RGLSYMGLGETPROGRAMIVPROC)mock_get_programiv;
    __rglgen_glGetProgramInfoLog = (RGLSYMGLGETPROGRAMINFOLOGPROC)mock_get_program_log;
    __rglgen_glUseProgram        = (RGLSYMGLUSEPROGRAMPROC)mock_use_program;
+   __rglgen_glGetUniformLocation= (RGLSYMGLGETUNIFORMLOCATIONPROC)mock_get_uniform_location;
+   __rglgen_glUniform1i         = (RGLSYMGLUNIFORM1IPROC)mock_uniform1i;
 }
 
 /* ---- the cases ---- */
-static const uint32_t spirv[4];
 
 static void run(const char *name, GLint vertex, GLint fragment, GLint link,
       GLint log, int expect_program)
@@ -145,8 +142,9 @@ static void run(const char *name, GLint vertex, GLint fragment, GLint link,
    live_programs = 0;
    err_lines     = 0;
 
-   prog = gl3_cross_compile_program(spirv, sizeof(spirv),
-         spirv, sizeof(spirv), NULL, true);
+   prog = gl3_cross_compile_program(
+         spirv_opaque_vert, spirv_opaque_vert_size,
+         spirv_opaque_frag, spirv_opaque_frag_size, NULL, true);
 
    if (expect_program)
    {

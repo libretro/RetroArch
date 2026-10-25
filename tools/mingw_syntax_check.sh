@@ -26,7 +26,7 @@ command -v "$CC" >/dev/null 2>&1 || { echo "no $CC" >&2; exit 2; }
 FLAGS="-fsyntax-only -std=gnu99 -I. -Ilibretro-common/include -Ideps \
  -Ideps/stb -Igfx/include \
  -DRARCH_INTERNAL -DHAVE_THREADS -DHAVE_CONFIGFILE -DHAVE_MENU \
- -DHAVE_VULKAN -DHAVE_SLANG -DHAVE_SPIRV_CROSS -DHAVE_D3D11 -DHAVE_D3D12 \
+ -DHAVE_VULKAN -DHAVE_SLANG -DHAVE_RSLC -DHAVE_D3D11 -DHAVE_D3D12 \
  -DHAVE_D3DKMT -DHAVE_DINPUT -DHAVE_XINPUT -DHAVE_WASAPI -DHAVE_XAUDIO \
  -DHAVE_NETWORKING -DHAVE_CHEEVOS -DHAVE_RUNAHEAD -DHAVE_REWIND \
  -DHAVE_OVERLAY -DHAVE_RGUI -DHAVE_XMB -DHAVE_OZONE -DHAVE_MATERIALUI \
@@ -173,7 +173,7 @@ for f in $FILES; do
    # it the pairing the real builds have.
    case "$f" in
       *gl3.c|*shader_gl3.c|*slang_process.c|*glslang_util.c)
-         c89defs="-DHAVE_SLANG -DHAVE_SPIRV_CROSS -DHAVE_OPENGL_CORE"
+         c89defs="-DHAVE_SLANG -DHAVE_RSLC -DHAVE_OPENGL_CORE"
          ;;
       # built only with the HID joypad driver, which defines it
       */connect/*|*_hid.c|*hid_joypad.c|*input_hid_common.c)

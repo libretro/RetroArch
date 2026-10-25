@@ -2,7 +2,7 @@ include ../../sample_objdir.mk
 
 # rslc_corpus_dump: expands and stage-splits .slang files exactly as
 # RetroArch does (gfx/drivers_shader/glslang_util.c) and compiles each
-# stage with the vendored glslang through the same C ABI RetroArch
+# stage with the system's glslang through the same C ABI RetroArch
 # uses (gfx/drivers_shader/glslang.cpp). It writes the per-stage GLSL
 # and SPIR-V to a directory and a manifest of what compiled. This is
 # the authoritative "works today" the rslc census and corpus check are
@@ -18,7 +18,6 @@ TARGET := rslc_corpus_dump
 
 REPO_ROOT         := ../../..
 LIBRETRO_COMM_DIR := $(REPO_ROOT)/libretro-common
-GLSLANG           := $(REPO_ROOT)/deps/glslang/glslang
 
 C_SOURCES := rslc_corpus_dump.c \
              $(REPO_ROOT)/gfx/drivers_shader/glslang_util.c \
@@ -28,31 +27,21 @@ C_SOURCES := rslc_corpus_dump.c \
              $(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
              $(LIBRETRO_COMM_DIR)/time/rtime.c
 
-CXX_SOURCES := $(REPO_ROOT)/gfx/drivers_shader/glslang.cpp \
-               $(GLSLANG)/SPIRV/GlslangToSpv.cpp \
-               $(GLSLANG)/SPIRV/InReadableOrder.cpp \
-               $(GLSLANG)/SPIRV/Logger.cpp \
-               $(GLSLANG)/SPIRV/SpvBuilder.cpp \
-               $(wildcard $(GLSLANG)/glslang/GenericCodeGen/*.cpp) \
-               $(wildcard $(GLSLANG)/OGLCompilersDLL/*.cpp) \
-               $(wildcard $(GLSLANG)/glslang/MachineIndependent/*.cpp) \
-               $(wildcard $(GLSLANG)/glslang/MachineIndependent/preprocessor/*.cpp)
+CXX_SOURCES := $(REPO_ROOT)/gfx/drivers_shader/glslang.cpp
 
-ifneq ($(findstring mingw,$(CC)),)
-   CXX_SOURCES += $(GLSLANG)/glslang/OSDependent/Windows/ossource.cpp
-   OS_INC := -I$(GLSLANG)/glslang/OSDependent/Windows
-else
-   CXX_SOURCES += $(GLSLANG)/glslang/OSDependent/Unix/ossource.cpp
-   OS_INC := -I$(GLSLANG)/glslang/OSDependent/Unix
+# glslang is the system's: newer releases carry MachineIndependent,
+# OSDependent and GenericCodeGen in libglslang itself
+GLSLANG_LIBS := -lglslang $(foreach l,MachineIndependent OSDependent GenericCodeGen OGLCompiler,\
+                   $(if $(wildcard $(addsuffix /lib$(l).*,/usr/lib /usr/lib/$(shell $(CC) -dumpmachine) /usr/local/lib)),-l$(l))) \
+                -lSPIRV -lSPIRV-Tools-opt -lSPIRV-Tools
+ifeq ($(findstring mingw,$(CC)),)
    LDLIBS += -lpthread
 endif
+LDLIBS += $(GLSLANG_LIBS)
 
-INCS := -I$(REPO_ROOT) -I$(LIBRETRO_COMM_DIR)/include \
-        -I$(GLSLANG) $(OS_INC) -I$(GLSLANG)/OGLCompilersDLL \
-        -I$(GLSLANG)/glslang/MachineIndependent -I$(GLSLANG)/glslang/Public \
-        -I$(GLSLANG)/SPIRV
+INCS := -I$(REPO_ROOT) -I$(LIBRETRO_COMM_DIR)/include
 
-DEFS := -DRARCH_INTERNAL -DHAVE_SLANG -DHAVE_GLSLANG -DHAVE_BUILTINGLSLANG
+DEFS := -DRARCH_INTERNAL -DHAVE_SLANG -DHAVE_GLSLANG
 
 # The harness itself is C89; the frontend units it links are built
 # with the flags their own lanes use.

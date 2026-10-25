@@ -26,14 +26,6 @@ HAVE_RETRONFS := 1
 # EDID reader behind Information > Display Information > EDID.
 HAVE_MODELINE := 1
 HAVE_OPENXR ?= 0
-# slang shaders (Vulkan, GLES 3): compiled by rslc alone;
-# HAVE_RSLC_ONLY=0 builds glslang and SPIRV-Cross in behind it for a
-# stage rslc refuses.
-HAVE_RSLC      ?= 1
-HAVE_RSLC_ONLY ?= 1
-ifeq ($(HAVE_RSLC_ONLY),1)
-   HAVE_RSLC := 1
-endif
 
 INCFLAGS    :=
 DEFINES     :=
@@ -213,18 +205,11 @@ DEFINES += -DHAVE_GFX_WIDGETS
 endif
 
 ifeq ($(HAVE_VULKAN),1)
+# slang shaders (Vulkan, GLES 3) are compiled by rslc
 DEFINES += -DHAVE_VULKAN \
 	   -DHAVE_SLANG \
+	   -DHAVE_RSLC \
 	   -D__STDC_LIMIT_MACROS
-ifeq ($(HAVE_RSLC),1)
-DEFINES += -DHAVE_RSLC
-endif
-ifneq ($(HAVE_RSLC_ONLY),1)
-DEFINES += -DHAVE_GLSLANG \
-	   -DHAVE_BUILTINGLSLANG \
-	   -DHAVE_SPIRV_CROSS \
-	   -DWANT_GLSLANG
-endif
 endif
 
 DEFINES += -DHAVE_7ZIP \
@@ -290,23 +275,9 @@ ifeq ($(HAVE_VULKAN),1)
 INCFLAGS         += $(LOCAL_PATH)/$(RARCH_DIR)/gfx/include
 
 LOCAL_C_INCLUDES += $(INCFLAGS)
-# slang_process.c is C and amalgamated into griffin.c; it includes
-# <spirv_cross_c.h>, so the SPIRV-Cross directory must be on the C
-# include path, not just LOCAL_CPPFLAGS.  LOCAL_C_INCLUDES applies to
-# both C and C++ compiles under ndk-build.
-LOCAL_C_INCLUDES += $(LOCAL_PATH)/$(DEPS_DIR)/SPIRV-Cross
-LOCAL_CPPFLAGS   += -I$(LOCAL_PATH)/$(DEPS_DIR)/glslang \
-		    -I$(LOCAL_PATH)/$(DEPS_DIR)/glslang/glslang/glslang/Public \
-		    -I$(LOCAL_PATH)/$(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent \
-		    -I$(LOCAL_PATH)/$(DEPS_DIR)/glslang/glslang/SPIRV
 
 LOCAL_CFLAGS    += -Wno-sign-compare -Wno-unused-variable -Wno-parentheses
-ifneq ($(HAVE_RSLC_ONLY),1)
-LOCAL_SRC_FILES += $(RARCH_DIR)/griffin/griffin_glslang.cpp
-endif
-ifeq ($(HAVE_RSLC),1)
 LOCAL_SRC_FILES += $(RARCH_DIR)/griffin/griffin_rslc.c
-endif
 endif
 
 LOCAL_LDLIBS += -lOpenSLES

@@ -6,7 +6,7 @@
 RA      := ../../..
 SAN     ?= address,undefined
 CFLAGS  := -std=gnu99 -g1 -O1 -fsanitize=$(SAN) -DRARCH_INTERNAL \
-           -DHAVE_SLANG -DHAVE_GLSLANG \
+           -DHAVE_SLANG -DHAVE_RSLC \
            -I$(RA) -I$(RA)/libretro-common/include -I$(RA)/deps
 SRC     := slang_cache_test.c \
            $(RA)/gfx/drivers_shader/slang_cache.c \

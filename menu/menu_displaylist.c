@@ -14144,6 +14144,9 @@ unsigned menu_displaylist_build_list(
 #endif
                {MENU_ENUM_LABEL_CAMERA_DRIVER,         PARSE_ONLY_STRING_OPTIONS},
                {MENU_ENUM_LABEL_LOCATION_DRIVER,       PARSE_ONLY_STRING_OPTIONS},
+#if defined(HAVE_RSLC) && defined(HAVE_GLSLANG)
+               {MENU_ENUM_LABEL_VIDEO_SHADER_COMPILER, PARSE_ONLY_UINT},
+#endif
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)

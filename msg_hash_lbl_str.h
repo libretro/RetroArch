@@ -3976,6 +3976,11 @@ extern const struct msg_hash_us_lbl_blob_s msg_hash_us_lbl_blob;
 #else
 #define MENU_ENUM_LABEL_MENU_SHOW_CORE_MANAGER_STEAM_STR "menu_show_core_manager_steam"
 #endif
+#if defined(HAVE_MENU) && (((defined(HAVE_RSLC) && defined(HAVE_GLSLANG))))
+#define MENU_ENUM_LABEL_VIDEO_SHADER_COMPILER_STR (msg_hash_us_lbl_blob.m_MENU_ENUM_LABEL_VIDEO_SHADER_COMPILER)
+#else
+#define MENU_ENUM_LABEL_VIDEO_SHADER_COMPILER_STR "video_shader_compiler"
+#endif
 #if defined(HAVE_MENU) && (((defined(UDEV_TOUCH_SUPPORT))))
 #define MENU_ENUM_LABEL_INPUT_TOUCH_VMOUSE_POINTER_STR (msg_hash_us_lbl_blob.m_MENU_ENUM_LABEL_INPUT_TOUCH_VMOUSE_POINTER)
 #else

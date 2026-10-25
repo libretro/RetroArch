@@ -980,41 +980,28 @@ if [ "$HAVE_MIST" = 'yes' ]; then
    add_define MAKEFILE MIST_PATH "$MIST_PATH"
 fi
 
-# rslc compiles slang for every driver, so glslang and SPIRV-Cross are
-# only built when asked for (--enable-glslang or --enable-builtinglslang,
-# and the same for spirv_cross)
-if [ "$HAVE_RSLC" != no ]; then
-   if [ "$HAVE_GLSLANG" = auto ] && [ "$HAVE_BUILTINGLSLANG" != yes ]; then
-      HAVE_GLSLANG=no
-   fi
-   if [ "$HAVE_SPIRV_CROSS" = auto ] && [ "$HAVE_BUILTINSPIRV_CROSS" != yes ]; then
-      HAVE_SPIRV_CROSS=no
-   fi
-fi
-
 check_enabled 'CXX RSLC' SLANG slang 'The C++ compiler is' false
 check_enabled CXX GLSLANG glslang 'The C++ compiler is' false
 check_enabled CXX SPIRV_CROSS SPIRV-Cross 'The C++ compiler is' false
 
-check_enabled GLSLANG BUILTINGLSLANG 'builtin glslang' 'glslang is' true
-
-check_enabled SPIRV_CROSS BUILTINSPIRV_CROSS 'builtin spirv-cross' 'spirv-cross is' true
-
-if [ "$HAVE_SPIRV_CROSS" != no ] && [ "$HAVE_BUILTINSPIRV_CROSS" = no ]; then
+# glslang and SPIRV-Cross are the system's, and only when asked for
+# (--enable-glslang --enable-spirv_cross): what is found is built in
+# next to rslc, what is not is left out with a notice.
+if [ "$HAVE_SPIRV_CROSS" != no ]; then
    # The slang stack uses the SPIRV-Cross C API, so only the
-   # spirv-cross-c-shared package can satisfy an external build; the
-   # C++ libraries carry no spvc_* symbols.  When it is absent we fall
-   # through to the builtin sources below.
+   # spirv-cross-c-shared package can satisfy it; the C++ libraries
+   # carry no spvc_* symbols.
+   HAVE_SPIRV_CROSS=auto
+   USER_SPIRV_CROSS=
    check_pkgconf SPIRV_CROSS spirv-cross-c-shared
-
    if [ "$HAVE_SPIRV_CROSS" = no ]; then
-      die : 'Notice: System SPIRV-Cross not found, enabling builtin SPIRV-Cross.'
-      HAVE_BUILTINSPIRV_CROSS=yes
-      HAVE_SPIRV_CROSS=yes
+      die : 'Notice: System SPIRV-Cross (spirv-cross-c-shared) not found, disabling SPIRV-Cross support.'
    fi
 fi
 
 if [ "$HAVE_GLSLANG" != no ]; then
+   HAVE_GLSLANG=auto
+   USER_GLSLANG=
    check_header cxx GLSLANG \
       glslang/Public/ShaderLang.h \
       glslang/SPIRV/GlslangToSpv.h
@@ -1029,20 +1016,27 @@ if [ "$HAVE_GLSLANG" != no ]; then
    check_lib cxx GLSLANG_SPIRV_TOOLS_OPT -lSPIRV-Tools-opt
    check_lib cxx GLSLANG_SPIRV_TOOLS -lSPIRV-Tools
 
+   # newer glslang carries HLSL, OSDependent, OGLCompiler and
+   # MachineIndependent in libglslang itself: those link when present
    if [ "$HAVE_GLSLANG" = no ] ||
-      [ "$HAVE_GLSLANG_HLSL" = no ] ||
       [ "$HAVE_GLSLANG_SPIRV" = no ] ||
       [ "$HAVE_GLSLANG_SPIRV_TOOLS_OPT" = no ] ||
       [ "$HAVE_GLSLANG_SPIRV_TOOLS" = no ]; then
-      if [ "$HAVE_BUILTINGLSLANG" != yes ]; then
-         die : 'Notice: System glslang libraries not found, disabling glslang support.'
-         HAVE_GLSLANG=no
-      else
-         HAVE_GLSLANG=yes
-      fi
+      die : 'Notice: System glslang libraries not found, disabling glslang support.'
+      HAVE_GLSLANG=no
    else
       HAVE_GLSLANG=yes
    fi
+fi
+
+# glslang compiles and SPIRV-Cross reflects and prints, so one is no
+# use without the other
+if [ "$HAVE_GLSLANG" != "$HAVE_SPIRV_CROSS" ]; then
+   die : 'Notice: glslang and SPIRV-Cross are built in together, leaving both out; rslc compiles slang.'
+   HAVE_GLSLANG=no
+   HAVE_SPIRV_CROSS=no
+   USER_GLSLANG=
+   USER_SPIRV_CROSS=
 fi
 
 # The modeline engine is C89 with no libraries of its own, so it is on

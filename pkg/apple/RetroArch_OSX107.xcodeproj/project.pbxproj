@@ -22,7 +22,6 @@
 		509F0C9D1AA23AFC00619ECC /* griffin_objc.m in Sources */ = {isa = PBXBuildFile; fileRef = 509F0C9C1AA23AFC00619ECC /* griffin_objc.m */; };
 		50BD99D5226FF5BA00CD6BAB /* griffin_cpp.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 50BD99D4226FF5BA00CD6BAB /* griffin_cpp.cpp */; };
 		50BD99D6226FF5F200CD6BAB /* griffin_cpp.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 50BD99D4226FF5BA00CD6BAB /* griffin_cpp.cpp */; };
-		50F0B420226FFA6400E03AA6 /* griffin_glslang.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 50F0B41F226FFA6400E03AA6 /* griffin_glslang.cpp */; };
 		840222FC1A889EE2009AB261 /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = 840222FB1A889EE2009AB261 /* griffin.c */; };
 		84DD5EA31A89E2AA007336C1 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 29B97324FDCFA39411CA2CEA /* AppKit.framework */; };
 		84DD5EA91A89E4BE007336C1 /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84DD5EA81A89E4BE007336C1 /* CoreAudio.framework */; };
@@ -80,7 +79,6 @@
 		5061C8A31AE47E510080AE14 /* libz.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.dylib; path = usr/lib/libz.dylib; sourceTree = SDKROOT; };
 		509F0C9C1AA23AFC00619ECC /* griffin_objc.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = griffin_objc.m; path = ../../griffin/griffin_objc.m; sourceTree = "<group>"; };
 		50BD99D4226FF5BA00CD6BAB /* griffin_cpp.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = griffin_cpp.cpp; path = ../../griffin/griffin_cpp.cpp; sourceTree = "<group>"; };
-		50F0B41F226FFA6400E03AA6 /* griffin_glslang.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = griffin_glslang.cpp; path = ../../griffin/griffin_glslang.cpp; sourceTree = "<group>"; };
 		840222FB1A889EE2009AB261 /* griffin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = griffin.c; path = ../../griffin/griffin.c; sourceTree = SOURCE_ROOT; };
 		84DD5E9E1A88E45B007336C1 /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = /System/Library/Frameworks/CoreVideo.framework; sourceTree = "<absolute>"; };
 		84DD5EA61A89E406007336C1 /* CoreLocation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreLocation.framework; path = /System/Library/Frameworks/CoreLocation.framework; sourceTree = "<absolute>"; };
@@ -211,7 +209,6 @@
 		840222FA1A889EA2009AB261 /* Core */ = {
 			isa = PBXGroup;
 			children = (
-				50F0B41F226FFA6400E03AA6 /* griffin_glslang.cpp */,
 				50BD99D4226FF5BA00CD6BAB /* griffin_cpp.cpp */,
 				509F0C9C1AA23AFC00619ECC /* griffin_objc.m */,
 				840222FB1A889EE2009AB261 /* griffin.c */,
@@ -320,7 +317,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				50F0B420226FFA6400E03AA6 /* griffin_glslang.cpp in Sources */,
 				50BD99D5226FF5BA00CD6BAB /* griffin_cpp.cpp in Sources */,
 				500845291B89300700CE6073 /* griffin_objc.m in Sources */,
 				5008452A1B89300700CE6073 /* griffin.c in Sources */,
@@ -369,14 +365,6 @@
 					"$(SRCROOT)/../..",
 					"$(SRCROOT)/../../gfx/include",
 					"$(SRCROOT)/../../libretro-common/include",
-					"$(SRCROOT)/../../deps/SPIRV-Cross",
-					"$(SRCROOT)/../../deps/glslang/glslang/OSDependent/Unix",
-					"$(SRCROOT)/../../deps/glslang/glslang/OGLCompilersDLL",
-					"$(SRCROOT)/../../deps/glslang/glslang",
-					"$(SRCROOT)/../../deps/glslang/glslang/MachineIndependent",
-					"$(SRCROOT)/../../deps/glslang/glslang/Public",
-					"$(SRCROOT)/../../deps/glslang/glslang/SPIRV",
-					"$(SRCROOT)/../../deps/glslang/",
 					"$(SRCROOT)/../../deps/rcheevos/include",
 					"$(SRCROOT)/../../deps/stb",
 					"$(SRCROOT)/../../deps",
@@ -410,14 +398,6 @@
 					"$(SRCROOT)/../..",
 					"$(SRCROOT)/../../gfx/include",
 					"$(SRCROOT)/../../libretro-common/include",
-					"$(SRCROOT)/../../deps/SPIRV-Cross",
-					"$(SRCROOT)/../../deps/glslang/glslang/OSDependent/Unix",
-					"$(SRCROOT)/../../deps/glslang/glslang/OGLCompilersDLL",
-					"$(SRCROOT)/../../deps/glslang/glslang",
-					"$(SRCROOT)/../../deps/glslang/glslang/MachineIndependent",
-					"$(SRCROOT)/../../deps/glslang/glslang/Public",
-					"$(SRCROOT)/../../deps/glslang/glslang/SPIRV",
-					"$(SRCROOT)/../../deps/glslang/",
 					"$(SRCROOT)/../../deps/rcheevos/include",
 					"$(SRCROOT)/../../deps/stb",
 					"$(SRCROOT)/../../deps",
@@ -453,14 +433,6 @@
 					"$(SRCROOT)/../..",
 					"$(SRCROOT)/../../gfx/include",
 					"$(SRCROOT)/../../libretro-common/include",
-					"$(SRCROOT)/../../deps/SPIRV-Cross",
-					"$(SRCROOT)/../../deps/glslang/glslang/OSDependent/Unix",
-					"$(SRCROOT)/../../deps/glslang/glslang/OGLCompilersDLL",
-					"$(SRCROOT)/../../deps/glslang/glslang",
-					"$(SRCROOT)/../../deps/glslang/glslang/MachineIndependent",
-					"$(SRCROOT)/../../deps/glslang/glslang/Public",
-					"$(SRCROOT)/../../deps/glslang/glslang/SPIRV",
-					"$(SRCROOT)/../../deps/glslang/",
 					"$(SRCROOT)/../../deps/rcheevos/include",
 					"$(SRCROOT)/../../deps/stb",
 					"$(SRCROOT)/../../deps",
@@ -490,25 +462,9 @@
 					"$(SRCROOT)/../..",
 					"$(SRCROOT)/../../gfx/include",
 					"$(SRCROOT)/../../libretro-common/include",
-					"$(SRCROOT)/../../deps/SPIRV-Cross",
-					"$(SRCROOT)/../../deps/glslang/glslang/OSDependent/Unix",
-					"$(SRCROOT)/../../deps/glslang/glslang/OGLCompilersDLL",
-					"$(SRCROOT)/../../deps/glslang/glslang",
-					"$(SRCROOT)/../../deps/glslang/glslang/MachineIndependent",
-					"$(SRCROOT)/../../deps/glslang/glslang/Public",
-					"$(SRCROOT)/../../deps/glslang/glslang/SPIRV",
-					"$(SRCROOT)/../../deps/glslang/",
 					"$(SRCROOT)/../../deps/rcheevos/include",
 					"$(SRCROOT)/../../deps/stb",
 					"$(SRCROOT)/../../deps",
-					"$(DEPS_DIR)/SPIRV-Cross",
-					"$(SRCROOT)/../../deps/glslang/glslang/OSDependent/Unix",
-					"$(SRCROOT)/../../deps/glslang/glslang/OGLCompilersDLL",
-					"$(SRCROOT)/../../deps/glslang/glslang",
-					"$(SRCROOT)/../../deps/glslang/glslang/MachineIndependent",
-					"$(SRCROOT)/../../deps/glslang/glslang/Public",
-					"$(SRCROOT)/../../deps/glslang/glslang/SPIRV",
-					"$(SRCROOT)/../../deps/glslang/",
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/OSX/Info.plist";
 				INSTALL_PATH = "$(HOME)/Applications";

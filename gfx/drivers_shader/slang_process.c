@@ -31,9 +31,8 @@
 #include <gfx/shaders/rslc.h>
 #endif
 #if !defined(SLANG_RSLC_ONLY)
-/* The vendored SPIRV-Cross headers end their enumerator lists with a
- * comma, which the C89 lane rejects under -pedantic; they are upstream
- * files and are not edited here. */
+/* The SPIRV-Cross C header ends its enumerator lists with a
+ * comma, which the C89 lane rejects under -pedantic. */
 #if defined(__GNUC__) || defined(__clang__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
@@ -1203,21 +1202,17 @@ static bool glslang_parse_meta(const struct shader_line_buf *lines,
 
 /* -----------------------------------------------------------------------
  * Stage compilation.  A build with one compiler uses it.  A build with
- * both follows video_shader_compiler: 1 glslang, anything else rslc,
- * with glslang behind it as the fallback for a stage rslc rejects.
+ * both (rslc and the system's glslang + SPIRV-Cross) follows the
+ * Shader Compiler driver setting: 1 glslang, anything else rslc, with
+ * glslang behind rslc as the fallback for a stage rslc rejects.
  * ----------------------------------------------------------------------- */
 #if defined(HAVE_RSLC) && defined(HAVE_GLSLANG)
 #include "../../configuration.h"
 
 #define SLANG_COMPILER_GLSLANG 1
 
-/* Auto is rslc for every driver: Vulkan and glcore have met their
- * gate (the whole corpus with zero reflection diffs, every non-bezel
- * preset of slang-shaders pixel-identical to glslang+Cross), and so
- * have d3d11 and d3d12 through Microsoft's d3dcompiler_47 and metal
- * through Apple's (every non-bezel preset the same picture, or within
- * the rounding where the driver's compiler orders the float math of
- * the two texts differently). */
+/* rslc unless the setting names glslang: one byte read per stage, the
+ * path redirected, nothing copied. */
 static bool slang_prefer_rslc(void)
 {
    const settings_t *settings = config_get_ptr();

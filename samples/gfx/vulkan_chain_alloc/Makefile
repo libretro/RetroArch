@@ -18,10 +18,9 @@ SOURCES := vulkan_chain_alloc_test.c \
            $(LIBRETRO_COMM_DIR)/compat/compat_strl.c
 
 CFLAGS  += -Wall -Wno-unused-function -std=gnu99 -g1 -O1 -DRARCH_INTERNAL \
-           -DHAVE_THREADS -DHAVE_VULKAN -DHAVE_SLANG -DHAVE_GLSLANG \
-           -DHAVE_SPIRV_CROSS \
-           -I$(REPO_ROOT) -I$(LIBRETRO_COMM_DIR)/include -I$(REPO_ROOT)/deps \
-           -I$(REPO_ROOT)/deps/SPIRV-Cross -I$(REPO_ROOT)/gfx/include
+           -DHAVE_THREADS -DHAVE_VULKAN -DHAVE_SLANG -DHAVE_RSLC \
+           -I$(REPO_ROOT) -I$(LIBRETRO_COMM_DIR)/include \
+           -I$(LIBRETRO_COMM_DIR)/gfx/shaders -I$(REPO_ROOT)/gfx/include
 
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)

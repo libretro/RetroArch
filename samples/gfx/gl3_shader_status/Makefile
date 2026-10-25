@@ -8,14 +8,12 @@ LIBRETRO_COMM_DIR := $(REPO_ROOT)/libretro-common
 
 # The real gfx/drivers_shader/shader_gl3.c, with GL entry points through
 # the real glsym table the test points at its own mocks, the real
-# slang_rect.c it rewrites stages with, the SPIR-V it loads, and
-# SPIRV-Cross and the rest of the frontend stubbed in stubs.c.
+# slang_rect.c it rewrites stages with, the SPIR-V and GLSL it loads,
+# and rslc's printer and the rest of the frontend stubbed in stubs.c.
 COMMON  := stubs.c \
            $(REPO_ROOT)/gfx/drivers_shader/slang_rect.c \
            $(REPO_ROOT)/gfx/drivers_shader/slang_blob.c \
            $(REPO_ROOT)/gfx/common/spirv_shaders.c \
-           spvc_stubs.c \
-           $(REPO_ROOT)/gfx/drivers_shader/slang_rect.c \
            $(LIBRETRO_COMM_DIR)/glsym/glsym_gl.c \
            $(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
            $(LIBRETRO_COMM_DIR)/string/stdstring.c \
@@ -28,9 +26,9 @@ SOURCES := gl3_shader_status_test.c \
 CHAIN_SOURCES := gl3_chain_alloc_test.c $(COMMON)
 
 CFLAGS  += -Wall -std=gnu99 -g1 -O1 -DRARCH_INTERNAL \
-           -DHAVE_OPENGL_CORE -DHAVE_SLANG -DHAVE_SPIRV_CROSS -DHAVE_GLSLANG \
-           -I$(REPO_ROOT) -I$(LIBRETRO_COMM_DIR)/include -I$(REPO_ROOT)/deps \
-           -I$(REPO_ROOT)/deps/SPIRV-Cross -I$(REPO_ROOT)/gfx/include \
+           -DHAVE_OPENGL_CORE -DHAVE_SLANG -DHAVE_RSLC \
+           -I$(REPO_ROOT) -I$(LIBRETRO_COMM_DIR)/include \
+           -I$(LIBRETRO_COMM_DIR)/gfx/shaders -I$(REPO_ROOT)/gfx/include \
            -I$(REPO_ROOT)/gfx/include/MESA
 
 # <GL/gl.h> is the tree's own copy under gfx/include/MESA, so the test

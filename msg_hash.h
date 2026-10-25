@@ -6850,6 +6850,7 @@ enum msg_hash_enums
 #define S_ACTION_EX_NS_H(T, n, sd, ok, rp, c, us) MENU_LBL_H(T),
 #include "settings/settings_def_video_adaptive_vsync.h"
 #include "settings/settings_def_video_gl_direct_spirv.h"
+#include "settings/settings_def_shader_compiler.h"
 #undef S_BOOL
 #undef S_BOOL_NS
 #undef S_BOOL_H

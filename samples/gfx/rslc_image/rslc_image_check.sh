@@ -3,9 +3,9 @@
 # core, through the same preset, captured from one RetroArch build
 # with video_shader_compiler forced to glslang and then to rslc, must
 # be the same picture.  Needs a RetroArch built with both compilers
-# (HAVE_GLSLANG and HAVE_RSLC: ./configure --enable-builtinglslang
-# --enable-builtinspirv_cross) and a Vulkan device; on a headless box
-# lavapipe under Xvfb is enough:
+# (HAVE_GLSLANG and HAVE_RSLC: ./configure --enable-glslang
+# --enable-spirv_cross, with the system's glslang and SPIRV-Cross) and a
+# Vulkan device; on a headless box lavapipe under Xvfb is enough:
 #
 #   Xvfb :99 -screen 0 1280x720x24 & export DISPLAY=:99
 #   make                                     builds pattern_core.so

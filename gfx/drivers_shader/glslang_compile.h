@@ -16,16 +16,11 @@
 #define __GLSLANG_COMPILE_H
 
 /* Minimal C ABI between the slang stack and the glslang bridge
- * (glslang.cpp).  This header is deliberately tiny and must stay
- * free of platform headers: it is the only RetroArch header the
- * bridge includes, and the bridge is amalgamated with the vendored
- * glslang library sources in griffin/griffin_glslang.cpp.  Pulling
- * <windows.h> into that translation unit breaks it in either
- * direction: included before the library, its function-like
- * min()/max() macros mangle glslang's std::numeric_limits uses;
- * included after, its BOOL/INT/UINT/FLOAT typedefs collide with the
- * global token enumerators of glslang's generated parser.  Keep the
- * include set here to stdint/stddef/boolean/retro_common_api. */
+ * (glslang.cpp), the only RetroArch header the bridge includes.  It
+ * stays free of platform headers: <windows.h> in the bridge's
+ * translation unit mangles glslang's headers (min()/max() macros,
+ * BOOL/INT/UINT/FLOAT typedefs).  Keep the include set here to
+ * stdint/stddef/boolean/retro_common_api. */
 
 #include <stdint.h>
 #include <stddef.h>
@@ -40,12 +35,12 @@ enum glslang_compile_stage
    GLSLANG_COMPILE_STAGE_FRAGMENT
 };
 
-/* Compile a single GLSL stage to SPIR-V via the bundled glslang.
+/* Compile a single GLSL stage to SPIR-V via the system's glslang.
  * On success *spirv points at a malloc'd array of *spirv_len words
  * which the caller must free().  On failure *spirv is NULL and
  * *spirv_len is 0.  Implemented in glslang.cpp - the one translation
- * unit in the slang stack that must remain C++, since the vendored
- * glslang only exposes a C++ API. */
+ * unit in the slang stack that must remain C++, since glslang only
+ * exposes a C++ API. */
 bool glslang_compile_spirv(const char *source,
       enum glslang_compile_stage stage,
       uint32_t **spirv, size_t *spirv_len);
