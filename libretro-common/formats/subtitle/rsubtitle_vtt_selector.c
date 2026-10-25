@@ -35,6 +35,26 @@ struct rsubtitle_vtt_selector_pattern
    unsigned insensitive, space, ready, begun;
 };
 
+enum vtt_tag_grammar
+{
+   VTT_TAG_FIRST, VTT_TAG_EXTLANG, VTT_TAG_SCRIPT, VTT_TAG_REGION,
+   VTT_TAG_VARIANT, VTT_TAG_EXTENSION, VTT_TAG_PRIVATE
+};
+
+struct rsubtitle_vtt_tag
+{
+   uint64_t key, singletons;
+   uint64_t *variants;
+   const char *text;
+   size_t length, position, count, capacity, clearing, probe;
+   rsubtitle_vtt_alias_lookup_t alias;
+   uint32_t hash;
+   enum vtt_tag_grammar grammar;
+   unsigned begun, whole, alpha, digit, first_digit, extlangs;
+   unsigned need_value, ended, hashing, cleared;
+   int result;
+};
+
 static unsigned vtt_selector_fold(unsigned c, unsigned insensitive)
 {
    return insensitive && c >= 'A' && c <= 'Z' ? c + 'a' - 'A' : c;
@@ -43,6 +63,225 @@ static unsigned vtt_selector_fold(unsigned c, unsigned insensitive)
 static int vtt_selector_space(unsigned c)
 {
    return c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f';
+}
+
+rsubtitle_vtt_tag_t *rsubtitle_vtt_tag_new(void)
+{
+   return (rsubtitle_vtt_tag_t*)calloc(1, sizeof(rsubtitle_vtt_tag_t));
+}
+
+void rsubtitle_vtt_tag_free(rsubtitle_vtt_tag_t *tag)
+{
+   if (!tag)
+      return;
+   free(tag->variants);
+   free(tag);
+}
+
+int rsubtitle_vtt_tag_begin(rsubtitle_vtt_tag_t *tag,
+      const char *text, size_t length)
+{
+   uint64_t *variants;
+   size_t capacity;
+   if (!tag)
+      return 0;
+   variants = tag->variants;
+   capacity = tag->capacity;
+   memset(tag, 0, sizeof(*tag));
+   tag->variants = variants;
+   tag->capacity = capacity;
+   if ((!text && length) || length > 65536)
+      return 0;
+   tag->text   = text ? text : "";
+   tag->length = length;
+   tag->begun  = 1;
+   tag->whole  = 1;
+   tag->alpha  = tag->digit = 1;
+   tag->hash   = 2166136261U;
+   if (!length)
+      tag->result = 2;
+   return rsubtitle_vtt_alias_begin(&tag->alias, RSUBTITLE_ALIAS_TAG,
+         tag->text, length);
+}
+
+static int vtt_tag_variant(rsubtitle_vtt_tag_t *tag)
+{
+   size_t capacity = 8;
+   if (!tag->cleared)
+   {
+      while (capacity < (tag->length / 5 + 1) * 2)
+         capacity *= 2;
+      if (capacity != tag->capacity)
+      {
+         uint64_t *variants = (uint64_t*)malloc(capacity * sizeof(*variants));
+         if (!variants)
+            return -1;
+         free(tag->variants);
+         tag->variants = variants;
+         tag->capacity = capacity;
+      }
+   }
+   tag->probe   = tag->hash & (tag->capacity - 1);
+   tag->hashing = 1;
+   return 0;
+}
+
+static int vtt_tag_singleton(rsubtitle_vtt_tag_t *tag)
+{
+   unsigned c = (unsigned)tag->key;
+   unsigned index;
+   uint64_t bit;
+   if (c == 'x')
+      tag->grammar = VTT_TAG_PRIVATE;
+   else
+   {
+      index = c >= 'a' ? c - 'a' + 10 : c - '0';
+      bit = (uint64_t)1 << index;
+      if (tag->singletons & bit)
+         return 2;
+      tag->singletons |= bit;
+      tag->grammar = VTT_TAG_EXTENSION;
+   }
+   tag->need_value = 1;
+   return 0;
+}
+
+static int vtt_tag_subtag(rsubtitle_vtt_tag_t *tag)
+{
+   size_t n = tag->count;
+   if (tag->grammar == VTT_TAG_FIRST)
+   {
+      if (n == 1 && tag->key == 'x')
+         return vtt_tag_singleton(tag);
+      if (!tag->alpha || n < 2)
+         return 2;
+      tag->grammar = n <= 3 ? VTT_TAG_EXTLANG : VTT_TAG_SCRIPT;
+      return 0;
+   }
+   if (tag->grammar == VTT_TAG_EXTLANG)
+   {
+      if (n == 3 && tag->alpha && tag->extlangs < 3)
+      {
+         tag->extlangs++;
+         return 0;
+      }
+      tag->grammar = VTT_TAG_SCRIPT;
+   }
+   if (tag->grammar == VTT_TAG_SCRIPT)
+   {
+      tag->grammar = VTT_TAG_REGION;
+      if (n == 4 && tag->alpha)
+         return 0;
+   }
+   if (tag->grammar == VTT_TAG_REGION)
+   {
+      tag->grammar = VTT_TAG_VARIANT;
+      if ((n == 2 && tag->alpha) || (n == 3 && tag->digit))
+         return 0;
+   }
+   if (tag->grammar == VTT_TAG_VARIANT)
+   {
+      if (n >= 5 || (n == 4 && tag->first_digit))
+         return vtt_tag_variant(tag);
+      return n == 1 ? vtt_tag_singleton(tag) : 2;
+   }
+   if (tag->grammar == VTT_TAG_PRIVATE)
+   {
+      tag->need_value = 0;
+      return 0;
+   }
+   if (n > 1)
+      tag->need_value = 0;
+   else if (!tag->need_value)
+      return vtt_tag_singleton(tag);
+   else
+      return 2;
+   return 0;
+}
+
+static void vtt_tag_reset_subtag(rsubtitle_vtt_tag_t *tag)
+{
+   tag->key         = 0;
+   tag->count       = 0;
+   tag->alpha       = tag->digit = 1;
+   tag->first_digit = 0;
+   tag->hash        = 2166136261U;
+}
+
+int rsubtitle_vtt_tag_step(rsubtitle_vtt_tag_t *tag)
+{
+   unsigned c, alpha, digit;
+   int status;
+   if (!tag || !tag->begun)
+      return -1;
+   if (tag->result)
+      return tag->result;
+   if (tag->whole)
+   {
+      status = rsubtitle_vtt_alias_step(&tag->alias);
+      if (status == 1)
+         tag->result = 1;
+      else if (status == 2)
+         tag->whole = 0;
+      return tag->result;
+   }
+   if (tag->hashing)
+   {
+      if (!tag->cleared)
+      {
+         tag->variants[tag->clearing++] = 0;
+         if (tag->clearing == tag->capacity)
+            tag->cleared = 1;
+      }
+      else if (tag->variants[tag->probe] == tag->key)
+         tag->result = 2;
+      else if (!tag->variants[tag->probe])
+      {
+         tag->variants[tag->probe] = tag->key;
+         tag->hashing = 0;
+         vtt_tag_reset_subtag(tag);
+      }
+      else
+         tag->probe = (tag->probe + 1) & (tag->capacity - 1);
+      return tag->result;
+   }
+   if (tag->ended)
+   {
+      tag->result = tag->need_value ? 2 : 1;
+      return tag->result;
+   }
+   c = tag->position < tag->length ? (unsigned char)tag->text[tag->position] : 0;
+   if (tag->position == tag->length || c == '-')
+   {
+      if (!tag->count)
+         tag->result = 2;
+      else
+      {
+         tag->ended = tag->position == tag->length;
+         tag->result = vtt_tag_subtag(tag);
+         if (!tag->hashing)
+            vtt_tag_reset_subtag(tag);
+         tag->position++;
+      }
+      return tag->result;
+   }
+   c = vtt_selector_fold(c, 1);
+   alpha = c >= 'a' && c <= 'z';
+   digit = c >= '0' && c <= '9';
+   if ((!alpha && !digit) || tag->count == 8)
+      tag->result = 2;
+   else
+   {
+      tag->alpha &= alpha;
+      tag->digit &= digit;
+      if (!tag->count)
+         tag->first_digit = digit;
+      tag->count++;
+      tag->position++;
+      tag->key = (tag->key << 8) | c;
+      tag->hash = (tag->hash ^ c) * 16777619U;
+   }
+   return tag->result;
 }
 
 int rsubtitle_vtt_alias_begin(rsubtitle_vtt_alias_lookup_t *lookup,

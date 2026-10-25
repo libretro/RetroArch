@@ -22,6 +22,7 @@
 
 #include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "../../../formats/subtitle/rsubtitle_vtt_internal.h"
 #include "../../../formats/subtitle/rsubtitle_languages.h"
@@ -94,11 +95,111 @@ static void mapping(unsigned kind, const char *key,
    assert(!strcmp(text(row->extlang_prefix), prefix));
 }
 
+static void grammar(rsubtitle_vtt_tag_t *tag, const char *input,
+      size_t length, int expected)
+{
+   size_t ticks = 0, bound = (length + 1) * 128 + 1024;
+   int status = 0;
+   assert(rsubtitle_vtt_tag_begin(tag, input, length));
+   while (!status && ticks++ < bound)
+      status = rsubtitle_vtt_tag_step(tag);
+   if (ticks > bound || status != expected)
+      fprintf(stderr, "tag %.*s: got %d, expected %d after %lu steps\n",
+            (int)(length < 80 ? length : 80), input ? input : "",
+            status, expected, (unsigned long)ticks);
+   assert(ticks <= bound && status == expected);
+   assert(rsubtitle_vtt_tag_step(tag) == status);
+}
+
+static void tag_grammar(void)
+{
+   static const char *valid[] = {
+      "en", "de-CH-1901", "sl-rozaj-biske-1994", "en-Latn-US",
+      "zh-cmn-Hans-CN", "zh-abc-def-ghi-Hans-419-1abc-abcde",
+      "abcd-Latn-US", "abcdefgh-Latn-419", "qaa-Qaaa-QM",
+      "en-b-ccc-bbb-a-aaa-X-xyz", "x-a-b-c", "x-i-default",
+      "en-a-aaa-x-a-a", "en-abcde-abcdef-1234-a-aa-b-bb", "en-a-aa-Latn-US"
+   };
+   static const char *invalid[] = {
+      "", "a", "i-unknown", "e1", "1en", "en_Us", "-en", "en-",
+      "en--US", "en-abcdefghi", "en-Latn-Cyrl", "en-US-US",
+      "zh-abc-def-ghi-jkl", "abcd-abc", "en-a", "x", "en-x",
+      "en-a-x-foo", "en-a-b-foo", "en-a-aa-A-bb", "en-0-aa-0-bb",
+      "sl-rozaj-ROZAJ", "de-1901-1901", "en-abcde-abcdef-AbCdE",
+      "en-!", "en-\300", "en-abc-1a"
+   };
+   rsubtitle_vtt_tag_t *tag = rsubtitle_vtt_tag_new();
+   char singletons[256];
+   char *many = (char*)malloc(65537);
+   size_t i, n = 2;
+   unsigned c;
+   assert(tag && many);
+   assert(rsubtitle_vtt_tag_step(tag) == -1);
+   for (i = 0; i < sizeof(valid) / sizeof(valid[0]); i++)
+      grammar(tag, valid[i], strlen(valid[i]), 1);
+   for (i = 0; i < sizeof(invalid) / sizeof(invalid[0]); i++)
+      grammar(tag, invalid[i], strlen(invalid[i]), 2);
+   grammar(tag, "en\0US", 5, 2);
+   for (i = 0; i < ALIAS_COUNT; i++)
+      if (vtt_language_aliases[i].kind == RSUBTITLE_ALIAS_TAG)
+      {
+         const char *key = text(vtt_language_aliases[i].key);
+         grammar(tag, key, strlen(key), 1);
+      }
+   memcpy(singletons, "en", 2);
+   for (c = '0'; c <= 'z'; c++)
+      if ((c <= '9' || c >= 'a') && c != 'x')
+      {
+         singletons[n++] = '-';
+         singletons[n++] = (char)c;
+         memcpy(singletons + n, "-aa", 3);
+         n += 3;
+      }
+   grammar(tag, singletons, n, 1);
+   memcpy(singletons + n, "-a-bb", 5);
+   grammar(tag, singletons, n + 5, 2);
+   memcpy(many, "en", 2);
+   n = 2;
+   for (i = 0; i < 9000; i++)
+   {
+      unsigned value = (unsigned)i, j;
+      many[n++] = '-';
+      many[n++] = 'a';
+      for (j = 0; j < 4; j++)
+      {
+         many[n++] = (char)('a' + value % 26);
+         value /= 26;
+      }
+   }
+   grammar(tag, many, n, 1);
+   memcpy(many + n, "-aaaaa", 6);
+   grammar(tag, many, n + 6, 2);
+   for (i = 0; i < 128; i++)
+   {
+      size_t j;
+      assert(rsubtitle_vtt_tag_begin(tag, "en-abcde-abcde", 14));
+      for (j = 0; j < i; j++)
+         if (rsubtitle_vtt_tag_step(tag))
+            break;
+      grammar(tag, "en-abcde-abcdef", 15, 1);
+   }
+   assert(!rsubtitle_vtt_tag_begin(tag, many, 65537));
+   assert(rsubtitle_vtt_tag_step(tag) == -1);
+   assert(!rsubtitle_vtt_tag_begin(tag, NULL, 1));
+   grammar(tag, NULL, 0, 2);
+   assert(!rsubtitle_vtt_tag_begin(NULL, "en", 2));
+   assert(rsubtitle_vtt_tag_step(NULL) == -1);
+   rsubtitle_vtt_tag_free(tag);
+   rsubtitle_vtt_tag_free(NULL);
+   free(many);
+}
+
 int main(void)
 {
    static const unsigned expected[] = {112, 258, 0, 6, 1, 51};
    unsigned counts[6] = {0, 0, 0, 0, 0, 0};
    size_t i;
+   tag_grammar();
    assert(ALIAS_COUNT == 428);
    assert(vtt_language_strings[0] == 0 && sizeof(vtt_language_strings) < 65536);
    for (i = 0; i < ALIAS_COUNT; i++)

@@ -72,6 +72,7 @@ enum rsubtitle_vtt_selector_kind
 };
 
 typedef struct rsubtitle_vtt_selector_pattern rsubtitle_vtt_selector_pattern_t;
+typedef struct rsubtitle_vtt_tag rsubtitle_vtt_tag_t;
 
 enum rsubtitle_vtt_alias_kind
 {
@@ -124,6 +125,14 @@ typedef struct rsubtitle_vtt_selector_subject
 } rsubtitle_vtt_selector_subject_t;
 
 RETRO_BEGIN_DECLS
+rsubtitle_vtt_tag_t *rsubtitle_vtt_tag_new(void);
+void rsubtitle_vtt_tag_free(rsubtitle_vtt_tag_t *tag);
+/* Borrows at most 65536 bytes; checks grammar, not registry membership. */
+int rsubtitle_vtt_tag_begin(rsubtitle_vtt_tag_t *tag,
+      const char *text, size_t length);
+/* One byte, alias step or variant-table probe: -1 error, 0 pending,
+ * 1 well-formed, 2 malformed. Empty text is untagged, not a language tag. */
+int rsubtitle_vtt_tag_step(rsubtitle_vtt_tag_t *tag);
 /* Borrows key until completion. A miss does not invalidate a language tag. */
 int rsubtitle_vtt_alias_begin(rsubtitle_vtt_alias_lookup_t *lookup,
       enum rsubtitle_vtt_alias_kind kind, const char *key, size_t length);
