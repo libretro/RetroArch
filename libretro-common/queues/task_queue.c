@@ -169,18 +169,18 @@ struct task_worker
 static struct task_worker *worker_self      = NULL;
 #endif
 
-/* The extra workers for RETRO_TASK_FLG_PARALLEL tasks, started the first
- * time one is pushed: as many as task_queue_set_parallel_workers() last
- * asked for, at most TASK_PARALLEL_MAX; none until it is called, and
- * then such tasks run on the one worker.  Written under running_lock by
- * the push that starts them; read by deinit, which no push runs
- * beside. */
+/* The extra workers for RETRO_TASK_FLG_PARALLEL tasks, started by the
+ * push that first needs them.  parallel_started only grows until
+ * deinit: a push that needs more raises it under running_lock and
+ * fills the entries it claimed, also under running_lock.  Atomic, so
+ * a push with enough skips the lock.  Read by deinit, which no push
+ * runs beside. */
 #define TASK_PARALLEL_MAX 8
 #ifndef HAVE_GCD
 static struct task_worker *parallel_self[TASK_PARALLEL_MAX];
 static sthread_t          *parallel_thread[TASK_PARALLEL_MAX];
 static unsigned            parallel_count   = 0;
-static bool                parallel_started = false;
+static retro_atomic_int_t  parallel_started = RETRO_ATOMIC_INT_INITIALIZER(0);
 #endif
 static retro_atomic_int_t  parallel_wanted  = RETRO_ATOMIC_INT_INITIALIZER(0);
 
@@ -766,13 +766,13 @@ static void task_queue_remove(task_queue_t *queue, retro_task_t *task)
 }
 
 #ifndef HAVE_GCD
-static void retro_task_threaded_start_parallel(void);
+static void retro_task_threaded_start_parallel(unsigned needed);
 static bool task_is_parallel(retro_task_t *task);
 
 static void retro_task_threaded_push_running(retro_task_t *task)
 {
-   if (!parallel_started && task_is_parallel(task))
-      retro_task_threaded_start_parallel();
+   if (task_is_parallel(task))
+      retro_task_threaded_start_parallel(task->parallel_workers);
    slock_lock(running_lock);
    task_queue_put(&tasks_running, task);
    retro_atomic_fetch_add_int(&tasks_running_count, 1);
@@ -1590,27 +1590,27 @@ static void retro_task_threaded_count_lists(void)
 }
 
 #ifndef HAVE_GCD
-/* The extra workers, once: the first push of a parallel task starts
- * them, on whatever thread it is made; the queue's lock decides which
- * push that is. */
-static void retro_task_threaded_start_parallel(void)
+/* Starts on the pushing thread whatever extra workers are missing;
+ * running_lock decides which push starts which. */
+static void retro_task_threaded_start_parallel(unsigned needed)
 {
-   unsigned want, i;
+   unsigned want = (unsigned)retro_atomic_load_acquire_int(&parallel_wanted);
+   unsigned from, i;
 
-   slock_lock(running_lock);
-   if (parallel_started)
-   {
-      slock_unlock(running_lock);
-      return;
-   }
-   parallel_started = true;
-   slock_unlock(running_lock);
-
-   want = (unsigned)retro_atomic_load_acquire_int(&parallel_wanted);
+   if (needed > want)
+      want = needed;
    if (want > TASK_PARALLEL_MAX)
       want = TASK_PARALLEL_MAX;
+   if ((unsigned)retro_atomic_load_acquire_int(&parallel_started) >= want)
+      return;
 
-   for (i = 0; i < want; i++)
+   slock_lock(running_lock);
+   from = (unsigned)retro_atomic_load_acquire_int(&parallel_started);
+   if (from < want)
+      retro_atomic_store_release_int(&parallel_started, (int)want);
+   slock_unlock(running_lock);
+
+   for (i = from; i < want; i++)
    {
       struct task_worker *w = (struct task_worker*)calloc(1, sizeof(*w));
       sthread_t          *t;
@@ -1632,8 +1632,8 @@ static void retro_task_threaded_start_parallel(void)
          break;
       }
       slock_lock(running_lock);
-      parallel_self[parallel_count]   = w;
-      parallel_thread[parallel_count] = t;
+      parallel_self[i]   = w;
+      parallel_thread[i] = t;
       parallel_count++;
       slock_unlock(running_lock);
    }
@@ -1645,15 +1645,17 @@ static void retro_task_threaded_start_parallel(void)
 static void retro_task_threaded_stop_parallel(void)
 {
    unsigned i;
-   for (i = 0; i < parallel_count; i++)
+   for (i = 0; i < TASK_PARALLEL_MAX; i++)
    {
+      if (!parallel_thread[i])
+         continue;
       sthread_join(parallel_thread[i]);
       free(parallel_self[i]);
       parallel_thread[i] = NULL;
       parallel_self[i]   = NULL;
    }
-   parallel_count   = 0;
-   parallel_started = false;
+   parallel_count = 0;
+   retro_atomic_store_release_int(&parallel_started, 0);
 }
 
 static bool retro_task_threaded_init(void)
@@ -2952,6 +2954,7 @@ retro_task_t *task_init(void)
    task->parked            = false;
    task->woken             = false;
    task->busy              = false;
+   task->parallel_workers  = 0;
 
    return task;
 }

@@ -13,7 +13,9 @@
  *  - with none asked for there are no extra workers and every parallel
  *    task still runs, on the one worker;
  *  - a deinit with parallel tasks queued stops every worker, and the
- *    next init starts the extra workers again.
+ *    next init starts the extra workers again;
+ *  - a task names the extra workers it needs: its push starts those
+ *    missing, up to eight, and the pool never shrinks until deinit.
  * On the unthreaded runner the flag changes nothing.
  */
 
@@ -116,14 +118,21 @@ static void count_retired(retro_task_t *task, void *task_data,
    retro_atomic_fetch_add_int(&retired, 1);
 }
 
+static void push_asking(retro_task_handler_t handler, struct job *j,
+      int flags, unsigned workers)
+{
+   retro_task_t *task     = task_init();
+   task->handler          = handler;
+   task->callback         = count_retired;
+   task->user_data        = j;
+   task->flags           |= flags | RETRO_TASK_FLG_MUTE;
+   task->parallel_workers = workers;
+   task_queue_push(task);
+}
+
 static void push(retro_task_handler_t handler, struct job *j, int flags)
 {
-   retro_task_t *task = task_init();
-   task->handler   = handler;
-   task->callback  = count_retired;
-   task->user_data = j;
-   task->flags    |= flags | RETRO_TASK_FLG_MUTE;
-   task_queue_push(task);
+   push_asking(handler, j, flags, 0);
 }
 
 static bool not_all_retired(void *data)
@@ -241,7 +250,8 @@ int main(void)
    task_queue_reset();
    wait_retired(4);
    task_queue_deinit();
-   CHECK(parallel_count == 0 && !parallel_started, "deinit stopped the extra workers");
+   CHECK(parallel_count == 0 && !retro_atomic_load_acquire_int(&parallel_started),
+         "deinit stopped the extra workers");
 
    task_queue_set_parallel_workers(0);
    task_queue_init(true, NULL);
@@ -276,6 +286,88 @@ int main(void)
          "two extra workers: three handlers at once (saw %d)",
          retro_atomic_load_acquire_int(&most));
    task_queue_deinit();
+
+   /* a task names the extra workers it needs; without the flag the
+    * number is ignored */
+   task_queue_set_parallel_workers(0);
+   task_queue_init(true, NULL);
+   reset_counts();
+   job_init(&probe, 1);
+   push_asking(serial_handler, &probe, 0, 3);
+   wait_retired(1);
+   CHECK(parallel_count == 0, "a plain task asking three starts none (%u)",
+         parallel_count);
+
+   reset_counts();
+   gather_goal = 4;
+   for (i = 0; i < 4; i++)
+   {
+      job_init(&par[i], 1);
+      push_asking(parallel_handler, &par[i], RETRO_TASK_FLG_PARALLEL, 3);
+   }
+   wait_retired(4);
+   CHECK(parallel_count == 3, "a task asking three starts three extra workers (%u)",
+         parallel_count);
+   CHECK(retro_atomic_load_acquire_int(&most) == 4,
+         "three extra workers: four handlers at once (saw %d)",
+         retro_atomic_load_acquire_int(&most));
+
+   /* grow-only: fewer starts none, more starts the rest, up to eight */
+   reset_counts();
+   gather_goal = 1;
+   job_init(&par[0], 1);
+   push_asking(parallel_handler, &par[0], RETRO_TASK_FLG_PARALLEL, 2);
+   wait_retired(1);
+   CHECK(parallel_count == 3, "a later task asking two starts none (%u)",
+         parallel_count);
+   reset_counts();
+   job_init(&par[0], 1);
+   push_asking(parallel_handler, &par[0], RETRO_TASK_FLG_PARALLEL, 20);
+   wait_retired(1);
+   CHECK(parallel_count == TASK_PARALLEL_MAX,
+         "one asking twenty brings them to eight (%u)", parallel_count);
+   task_queue_deinit();
+
+   /* a task that leaves the number alone asks for none, whatever its
+    * memory held before task_init() */
+   task_queue_init(true, NULL);
+   reset_counts();
+   {
+      void *junk = malloc(sizeof(retro_task_t));
+      if (junk)
+      {
+         memset(junk, 0x7f, sizeof(retro_task_t));
+         free(junk);
+      }
+   }
+   job_init(&par[0], 1);
+   {
+      retro_task_t *task = task_init();
+      task->handler      = parallel_handler;
+      task->callback     = count_retired;
+      task->user_data    = &par[0];
+      task->flags       |= RETRO_TASK_FLG_PARALLEL | RETRO_TASK_FLG_MUTE;
+      task_queue_push(task);
+   }
+   wait_retired(1);
+   CHECK(parallel_count == 0, "a task that names no number starts none (%u)",
+         parallel_count);
+   task_queue_deinit();
+   CHECK(parallel_count == 0 && !retro_atomic_load_acquire_int(&parallel_started),
+         "deinit stops every one of them");
+
+   /* the frontend's number holds for a task asking fewer */
+   task_queue_set_parallel_workers(2);
+   task_queue_init(true, NULL);
+   reset_counts();
+   job_init(&par[0], 1);
+   push_asking(parallel_handler, &par[0], RETRO_TASK_FLG_PARALLEL, 1);
+   wait_retired(1);
+   CHECK(parallel_count == 2,
+         "a task asking one, with two from the frontend, starts two (%u)",
+         parallel_count);
+   task_queue_deinit();
+   task_queue_set_parallel_workers(0);
 
    /* unthreaded: the flag changes nothing */
    task_queue_init(false, NULL);

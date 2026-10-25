@@ -373,6 +373,17 @@ struct retro_task
    retro_atomic_int_t flags;
 
    /**
+    * With \c RETRO_TASK_FLG_PARALLEL: how many extra workers the task
+    * needs.  Its push starts as many as are missing, at most 8 in all,
+    * to be shared with every other parallel task until
+    * task_queue_deinit(); 0, the default, needs no more than
+    * task_queue_set_parallel_workers() asked for.  Ignored without the
+    * flag, by the unthreaded runner and by GCD.  Set by the pusher
+    * before \c task_queue_push and not changed after.
+    */
+   unsigned parallel_workers;
+
+   /**
     * Parked: \c when is a horizon from task_queue_park(), not a start
     * time the caller set, so waits on the queue still count the task
     * as running.  Woken: task_queue_wake() named the task since its
@@ -778,10 +789,13 @@ void task_queue_set_prefer_fast_cores(bool prefer);
  * How many extra workers the threaded runner starts for
  * RETRO_TASK_FLG_PARALLEL tasks, beside the one worker every task runs
  * on; at most 8.  They start the first time such a task is pushed after
- * a task_queue_init(), and stop at task_queue_deinit().  None by
- * default: a parallel task then runs on the one worker like any other.
- * The frontend sizes it to the machine; the queue reads no core count.
- * No effect on the GCD runner, whose concurrency is the system's.
+ * a task_queue_init(), and stop at task_queue_deinit().  A task whose
+ * \c parallel_workers asks for more starts the rest; the extra workers
+ * only grow until the deinit, a lower number here stopping none.  None
+ * by default: a parallel task then runs on the one worker like any
+ * other.  The frontend sizes it to the machine; the queue reads no core
+ * count.  No effect on the GCD runner, whose concurrency is the
+ * system's.
  */
 void task_queue_set_parallel_workers(unsigned count);
 
