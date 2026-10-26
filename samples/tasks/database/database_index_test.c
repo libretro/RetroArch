@@ -201,19 +201,52 @@ static void buint8(buf_t *b, uint8_t v) { bbyte(b, 0xcc); bbyte(b, v); }
 static void buint16(buf_t *b, uint16_t v)
 { bbyte(b, 0xcd); bbyte(b, (uint8_t)(v >> 8)); bbyte(b, (uint8_t)v); }
 
+/* Writes @body's records to @path as libretrodb lays a database out:
+ * the header, the records, a nil, then the {count} map the header
+ * points at.  Frees @body. */
+static int write_rdb(const char *path, buf_t *body)
+{
+   buf_t    meta;
+   FILE    *f;
+   uint8_t  hdr[16];
+   uint64_t off;
+   int      i, ok = 0;
+
+   memset(&meta, 0, sizeof(meta));
+   bbyte(body, 0xc0);
+   bfixmap(&meta, 1);
+   bfixstr(&meta, "count");
+   buint8(&meta, 1);
+
+   off = 16 + (uint64_t)body->len;
+   memcpy(hdr, "RARCHDB", 7);
+   hdr[7] = 0;
+   for (i = 0; i < 8; i++)
+      hdr[8 + i] = (uint8_t)(off >> (56 - 8 * i));
+
+   if ((f = fopen(path, "wb")))
+   {
+      fwrite(hdr, 1, sizeof(hdr), f);
+      fwrite(body->data, 1, body->len, f);
+      fwrite(meta.data, 1, meta.len, f);
+      fclose(f);
+      ok = 1;
+   }
+
+   free(body->data);
+   free(meta.data);
+   return ok;
+}
+
 /* One database: @count records named "<tag> NNN", carrying crcs from
  * @crc_base upwards and a serial built from @tag. */
 static int write_db(const char *path, const char *tag, uint32_t crc_base,
       int count)
 {
-   buf_t    body, meta;
-   FILE    *f;
-   uint8_t  hdr[16];
-   uint64_t off;
-   int      i;
+   buf_t body;
+   int   i;
 
    memset(&body, 0, sizeof(body));
-   memset(&meta, 0, sizeof(meta));
 
    for (i = 0; i < count; i++)
    {
@@ -232,28 +265,7 @@ static int write_db(const char *path, const char *tag, uint32_t crc_base,
       bfixstr(&body, "serial"); bbin(&body, serial, (uint8_t)strlen(serial));
       bfixstr(&body, "size");   buint8(&body, (uint8_t)(16 + i));
    }
-   bbyte(&body, 0xc0);
-
-   bfixmap(&meta, 1);
-   bfixstr(&meta, "count");
-   buint8(&meta, 1);
-
-   off = 16 + (uint64_t)body.len;
-   memcpy(hdr, "RARCHDB", 7);
-   hdr[7] = 0;
-   for (i = 0; i < 8; i++)
-      hdr[8 + i] = (uint8_t)(off >> (56 - 8 * i));
-
-   if (!(f = fopen(path, "wb")))
-      return 0;
-   fwrite(hdr, 1, sizeof(hdr), f);
-   fwrite(body.data, 1, body.len, f);
-   fwrite(meta.data, 1, meta.len, f);
-   fclose(f);
-
-   free(body.data);
-   free(meta.data);
-   return 1;
+   return write_rdb(path, &body);
 }
 
 
@@ -266,14 +278,10 @@ static int write_db(const char *path, const char *tag, uint32_t crc_base,
 static int write_db_sizes(const char *path, int count, int zero_at,
       int crcless_at)
 {
-   buf_t    body, meta;
-   FILE    *f;
-   uint8_t  hdr[16];
-   uint64_t off;
-   int      i;
+   buf_t body;
+   int   i;
 
    memset(&body, 0, sizeof(body));
-   memset(&meta, 0, sizeof(meta));
 
    for (i = 0; i < count; i++)
    {
@@ -300,32 +308,54 @@ static int write_db_sizes(const char *path, int count, int zero_at,
          bfixstr(&body, "size"); buint16(&body, (uint16_t)size);
       }
    }
-   bbyte(&body, 0xc0);
+   return write_rdb(path, &body);
+}
 
-   bfixmap(&meta, 1);
-   bfixstr(&meta, "count");
-   buint8(&meta, 1);
+/* The crc of record @i of write_db_many(): scattered, so that the
+ * index has to sort them, and every hundredth repeats the one before
+ * it. */
+static uint32_t many_crc(int i)
+{
+   if (i % 100 == 99)
+      i--;
+   return (uint32_t)i * 2654435761u;
+}
 
-   off = 16 + (uint64_t)body.len;
-   memcpy(hdr, "RARCHDB", 7);
-   hdr[7] = 0;
-   for (i = 0; i < 8; i++)
-      hdr[8 + i] = (uint8_t)(off >> (56 - 8 * i));
+/* @count records named "Many NNNN", with many_crc()'s crcs, sizes from
+ * 1000 up, and a serial "Many-NNNN" on the even ones. */
+static int write_db_many(const char *path, int count)
+{
+   buf_t body;
+   int   i;
 
-   if (!(f = fopen(path, "wb")))
-      return 0;
-   fwrite(hdr, 1, sizeof(hdr), f);
-   fwrite(body.data, 1, body.len, f);
-   fwrite(meta.data, 1, meta.len, f);
-   fclose(f);
+   memset(&body, 0, sizeof(body));
 
-   free(body.data);
-   free(meta.data);
-   return 1;
+   for (i = 0; i < count; i++)
+   {
+      char     name[16], serial[16];
+      uint8_t  crc[4];
+      uint32_t c = many_crc(i);
+
+      sprintf(name,   "Many %04d", i);
+      sprintf(serial, "Many-%04d", i);
+      crc[0] = (uint8_t)(c >> 24); crc[1] = (uint8_t)(c >> 16);
+      crc[2] = (uint8_t)(c >> 8);  crc[3] = (uint8_t)c;
+
+      bfixmap(&body, (i % 2) ? 3 : 4);
+      bfixstr(&body, "name"); bfixstr(&body, name);
+      bfixstr(&body, "crc");  bbin(&body, crc, 4);
+      if (!(i % 2))
+      {
+         bfixstr(&body, "serial");
+         bbin(&body, serial, (uint8_t)strlen(serial));
+      }
+      bfixstr(&body, "size"); buint16(&body, (uint16_t)(1000 + i));
+   }
+   return write_rdb(path, &body);
 }
 
 /* Name of the first record a lookup returns, or "" for none. */
-static void crc_lookup(const database_info_crc_index_t *idx,
+static void crc_lookup(database_info_crc_index_t *idx,
       const char *path, uint32_t crc, char *out, size_t len)
 {
    database_info_list_t *l = database_info_list_new_crc(idx, path, crc, 0,
@@ -343,7 +373,7 @@ static void crc_lookup(const database_info_crc_index_t *idx,
    out[len - 1] = '\0';
 }
 
-static void serial_lookup(const database_info_serial_index_t *idx,
+static void serial_lookup(database_info_serial_index_t *idx,
       const char *path, const char *serial, char *out, size_t len)
 {
    database_info_list_t *l = database_info_list_new_serial(idx, path,
@@ -359,6 +389,362 @@ static void serial_lookup(const database_info_serial_index_t *idx,
    else
       strncpy(out, "(refused)", len - 1);
    out[len - 1] = '\0';
+}
+
+/* A job stepped until it is done: the one-shot build the stepped jobs
+ * below are held to. */
+static void index_new(const char *path, size_t max_bytes,
+      database_info_crc_index_t **crc,
+      database_info_serial_index_t **serial, bool *has_serial)
+{
+   database_info_index_job_t *job;
+   unsigned                   want = 0;
+
+   if (crc)
+      want |= DATABASE_INFO_INDEX_CRC;
+   if (serial)
+      want |= DATABASE_INFO_INDEX_SERIAL;
+   if (has_serial)
+      want |= DATABASE_INFO_INDEX_HAS_SERIAL;
+   job = database_info_index_job_new(path, max_bytes, want);
+   while (job && !database_info_index_job_step(job, 4096, 65536))
+      ;
+   database_info_index_job_finish(job, crc, serial, has_serial);
+}
+
+static database_info_crc_index_t *crc_index_new(const char *path,
+      size_t max_bytes)
+{
+   database_info_crc_index_t *idx;
+   index_new(path, max_bytes, &idx, NULL, NULL);
+   return idx;
+}
+
+static database_info_serial_index_t *serial_index_new(const char *path,
+      size_t max_bytes)
+{
+   database_info_serial_index_t *idx;
+   index_new(path, max_bytes, NULL, &idx, NULL);
+   return idx;
+}
+
+/* Builds @path's indexes in one walk under @max and as two builds, the
+ * crc index first and the serial index on what it leaves.  False when
+ * the two disagree on which come back; *@crc_only says the one walk
+ * held the crc index alone. */
+static int split_agrees(const char *path, size_t max, int *crc_only)
+{
+   database_info_crc_index_t    *ci = NULL, *ci1;
+   database_info_serial_index_t *si = NULL, *si1;
+   size_t left = max;
+   int    agree;
+
+   ci1 = crc_index_new(path, max);
+   if (ci1)
+      left = (database_info_crc_index_bytes(ci1) < max)
+         ? max - database_info_crc_index_bytes(ci1) : 0;
+   si1 = left ? serial_index_new(path, left) : NULL;
+   index_new(path, max, &ci, &si, NULL);
+   agree     = (!ci == !ci1) && (!si == !si1);
+   *crc_only = ci && !si;
+   database_info_crc_index_free(ci);
+   database_info_serial_index_free(si);
+   database_info_crc_index_free(ci1);
+   database_info_serial_index_free(si1);
+   return agree;
+}
+
+/* index_new() builds in one walk what the two builders
+ * build in two, so its indexes have to answer as theirs do, and a
+ * budget has to be spent as when the crc index was built first and
+ * the serial index got the rest. */
+static void check_one_walk(const char *dir, const char *path_a)
+{
+   database_info_crc_index_t    *ci = NULL, *ci1;
+   database_info_serial_index_t *si = NULL, *si1;
+   bool   has_serial = false;
+   int    i, same    = 1;
+   char   a[256], b[256];
+   char  *path       = (char*)malloc(1024);
+
+   if (!path)
+   {
+      check(0, "one walk", "out of memory");
+      return;
+   }
+
+   index_new(path_a, 0, &ci, &si, &has_serial);
+   ci1 = crc_index_new(path_a, 0);
+   si1 = serial_index_new(path_a, 0);
+   check(   ci && si && ci1 && si1 && has_serial
+         && database_info_crc_index_count(ci)
+            == database_info_crc_index_count(ci1)
+         && database_info_serial_index_count(si)
+            == database_info_serial_index_count(si1),
+         "one walk builds both indexes", "crc and serial, 40 each");
+
+   for (i = 0; ci && si && ci1 && si1 && i < 40; i++)
+   {
+      char serial[32];
+
+      crc_lookup(ci,  path_a, 0x1000 + (uint32_t)i, a, sizeof(a));
+      crc_lookup(ci1, path_a, 0x1000 + (uint32_t)i, b, sizeof(b));
+      if (!a[0] || strcmp(a, b))
+         same = 0;
+      sprintf(serial, "Alpha-%03d", i);
+      serial_lookup(si,  path_a, serial, a, sizeof(a));
+      serial_lookup(si1, path_a, serial, b, sizeof(b));
+      if (!a[0] || strcmp(a, b))
+         same = 0;
+   }
+   {
+      int64_t lo = 0, hi = 0, lo1 = 1, hi1 = 1;
+
+      if (   !database_info_crc_index_size_range(ci,  &lo,  &hi)
+          || !database_info_crc_index_size_range(ci1, &lo1, &hi1)
+          || lo != lo1 || hi != hi1)
+         same = 0;
+   }
+   check(same, "one walk answers as the two builds",
+         "every crc, every serial, the size range");
+   database_info_crc_index_free(ci);
+   database_info_serial_index_free(si);
+   database_info_crc_index_free(ci1);
+   database_info_serial_index_free(si1);
+
+   {
+      size_t   max, edge;
+      unsigned tight = 0;
+      int      agree = 1, crc_only;
+      char     detail[64];
+
+      for (max = 1024; max <= 32768; max += 256)
+      {
+         if (!split_agrees(path_a, max, &crc_only))
+            agree = 0;
+         if (crc_only)
+            tight++;
+      }
+
+      /* The serial build's first table, 1024 entries of 8 bytes, fits
+       * what the crc index leaves of @edge and not a byte less. */
+      ci1  = crc_index_new(path_a, 0);
+      edge = database_info_crc_index_bytes(ci1) + 8192;
+      database_info_crc_index_free(ci1);
+      if (   !split_agrees(path_a, edge - 1, &crc_only) || !crc_only
+          || !split_agrees(path_a, edge, &crc_only)     ||  crc_only)
+         agree = 0;
+      sprintf(detail, "%u budgets hold the crc index only", tight);
+      check(agree && tight, "budget split as the two builds split it",
+            detail);
+   }
+
+   /* The crc lookup asks only whether serials are there. */
+   sprintf(path, "%s/sizes.rdb", dir);
+   index_new(path_a, 0, &ci, NULL, &has_serial);
+   i = ci && has_serial;
+   database_info_crc_index_free(ci);
+   index_new(path, 0, &ci, NULL, &has_serial);
+   check(i && ci && !has_serial, "serials seen without a serial index",
+         "Alpha has them, sizes.rdb not");
+   database_info_crc_index_free(ci);
+
+   index_new(path, 0, &ci, &si, &has_serial);
+   check(   ci && si && !has_serial
+         && database_info_serial_index_count(si) == 0,
+         "no serials: an empty serial index", "sizes.rdb");
+   database_info_crc_index_free(ci);
+   database_info_serial_index_free(si);
+   free(path);
+}
+
+/* Records in the index job's database: hundreds of steps at the
+ * sizes below, and a dozen merge passes. */
+#define JOB_RECORDS 3000
+
+/* database_info_index_job_*() spreads a build over calls of a few
+ * records or entries each.  Its indexes have to answer every crc and
+ * serial of a database whose crcs come in no order, as index_new()'s
+ * do, and a job freed part way must not leak. */
+static void check_index_job(const char *dir)
+{
+   static const unsigned stop_at[] = { 100, 3000, 9000 };
+   database_info_crc_index_t    *ci  = NULL, *ci1 = NULL;
+   database_info_serial_index_t *si  = NULL, *si1 = NULL;
+   database_info_index_job_t    *job;
+   bool     has_serial = false;
+   unsigned steps      = 0;
+   int      i, ok      = 1;
+   char     want[32], got[64], detail[64];
+   char    *path       = (char*)malloc(1024);
+
+   if (!path)
+   {
+      check(0, "index job", "out of memory");
+      return;
+   }
+   sprintf(path, "%s/index_job.rdb", dir);
+   if (!write_db_many(path, JOB_RECORDS))
+   {
+      check(0, "index job", "could not write database");
+      free(path);
+      return;
+   }
+
+   job = database_info_index_job_new(path, 0,
+         DATABASE_INFO_INDEX_CRC | DATABASE_INFO_INDEX_SERIAL);
+   while (job && !database_info_index_job_step(job, 7, 5))
+      steps++;
+   database_info_index_job_finish(job, &ci, &si, &has_serial);
+   index_new(path, 0, &ci1, &si1, NULL);
+   printf("  info  index job steps for %d records: %u\n", JOB_RECORDS,
+         steps);
+   sprintf(detail, "%u steps of 7 records or 5 entries", steps);
+   check(   ci && si && has_serial
+         && steps > JOB_RECORDS / 7
+         && database_info_crc_index_count(ci) == JOB_RECORDS
+         && database_info_serial_index_count(si) == JOB_RECORDS / 2,
+         "index job built in steps", detail);
+
+   for (i = 0; ci && si && ci1 && si1 && i < JOB_RECORDS; i++)
+   {
+      char serial[16];
+
+      sprintf(want, "Many %04d", (i % 100 == 99) ? i - 1 : i);
+      crc_lookup(ci,  path, many_crc(i), got, sizeof(got));
+      if (strcmp(got, want))
+         ok = 0;
+      crc_lookup(ci1, path, many_crc(i), got, sizeof(got));
+      if (strcmp(got, want))
+         ok = 0;
+      if (i % 2)
+         continue;
+      sprintf(want,   "Many %04d", i);
+      sprintf(serial, "Many-%04d", i);
+      serial_lookup(si,  path, serial, got, sizeof(got));
+      if (strcmp(got, want))
+         ok = 0;
+      serial_lookup(si1, path, serial, got, sizeof(got));
+      if (strcmp(got, want))
+         ok = 0;
+   }
+   {
+      int64_t lo = 0, hi = 0, lo1 = 1, hi1 = 1;
+
+      if (   !ci || !ci1
+          || !database_info_crc_index_size_range(ci,  &lo,  &hi)
+          || !database_info_crc_index_size_range(ci1, &lo1, &hi1)
+          || lo != 1000 || hi != 1000 + JOB_RECORDS - 1
+          || lo != lo1  || hi != hi1)
+         ok = 0;
+   }
+   check(ok && si1, "index job answers every crc and serial",
+         "stepped and one-shot, and the size range");
+   database_info_crc_index_free(ci);
+   database_info_serial_index_free(si);
+   database_info_crc_index_free(ci1);
+   database_info_serial_index_free(si1);
+
+   /* Freed in the walk, the crc sort and the serial sort; a leak
+    * shows under ASan. */
+   for (i = 0; i < 3; i++)
+   {
+      job = database_info_index_job_new(path, 0,
+            DATABASE_INFO_INDEX_CRC | DATABASE_INFO_INDEX_SERIAL);
+      for (steps = 0; job && steps < stop_at[i]; steps++)
+         if (database_info_index_job_step(job, 7, 5))
+            break;
+      ok = (job != NULL) && steps == stop_at[i];
+      database_info_index_job_free(job);
+      if (!ok)
+         break;
+   }
+   check(ok, "index job freed part way", "in the walk and in both sorts");
+   free(path);
+}
+
+/* A run of records that ends on the last one still finishes the walk,
+ * and a record that cannot be read fails the job. */
+static void check_index_job_edges(const char *dir)
+{
+   database_info_crc_index_t    *ci = NULL;
+   database_info_serial_index_t *si = NULL;
+   database_info_index_job_t    *job;
+   bool     has_serial = false;
+   unsigned steps      = 0;
+   long     len, i;
+   int      ok         = 0;
+   int      made;
+   char     detail[64];
+   char    *path       = (char*)malloc(1024);
+   uint8_t *data       = NULL;
+   FILE    *f;
+
+   if (!path)
+   {
+      check(0, "index job edges", "out of memory");
+      return;
+   }
+   sprintf(path, "%s/index_edges.rdb", dir);
+   if (!write_db_many(path, JOB_RECORDS))
+   {
+      check(0, "index job edges", "could not write database");
+      free(path);
+      return;
+   }
+
+   job = database_info_index_job_new(path, 0,
+         DATABASE_INFO_INDEX_CRC | DATABASE_INFO_INDEX_SERIAL);
+   while (job && !database_info_index_job_step(job, 5, 4096))
+      steps++;
+   database_info_index_job_finish(job, &ci, &si, &has_serial);
+   sprintf(detail, "%u steps of 5 records", steps);
+   check(   ci && si && has_serial
+         && database_info_crc_index_count(ci) == JOB_RECORDS
+         && database_info_serial_index_count(si) == JOB_RECORDS / 2,
+         "index job whose last run ends on the last record", detail);
+   database_info_crc_index_free(ci);
+   database_info_serial_index_free(si);
+   ci = NULL;
+   si = NULL;
+
+   /* An unused msgpack type where record 1500's map begins. */
+   if (   (f = fopen(path, "r+b"))
+       && !fseek(f, 0, SEEK_END)
+       && (len = ftell(f)) > 0
+       && (data = (uint8_t*)malloc((size_t)len))
+       && !fseek(f, 0, SEEK_SET)
+       && fread(data, 1, (size_t)len, f) == (size_t)len)
+   {
+      for (i = 7; i + 9 <= len; i++)
+         if (!memcmp(data + i, "Many 1500", 9))
+            break;
+      if (   i + 9 <= len
+          && !fseek(f, i - 7, SEEK_SET)
+          && fputc(0xc1, f) != EOF)
+         ok = 1;
+   }
+   if (f)
+      fclose(f);
+   free(data);
+   if (!ok)
+   {
+      check(0, "index job edges", "could not damage the database");
+      free(path);
+      return;
+   }
+   job = database_info_index_job_new(path, 0,
+         DATABASE_INFO_INDEX_CRC | DATABASE_INFO_INDEX_SERIAL);
+   made = (job != NULL);
+   for (steps = 0; job && steps < JOB_RECORDS; steps++)
+      if (database_info_index_job_step(job, 7, 5))
+         break;
+   database_info_index_job_finish(job, &ci, &si, &has_serial);
+   check(   made && steps < JOB_RECORDS && !ci && !si,
+         "index job fails at a record it cannot read", "no index");
+   database_info_crc_index_free(ci);
+   database_info_serial_index_free(si);
+   free(path);
 }
 
 int main(int argc, char **argv)
@@ -382,10 +768,10 @@ int main(int argc, char **argv)
       return 1;
     }
 
-   cia = database_info_crc_index_new(path_a, 0);
-   cib = database_info_crc_index_new(path_b, 0);
-   sia = database_info_serial_index_new(path_a, 0);
-   sib = database_info_serial_index_new(path_b, 0);
+   cia = crc_index_new(path_a, 0);
+   cib = crc_index_new(path_b, 0);
+   sia = serial_index_new(path_a, 0);
+   sib = serial_index_new(path_b, 0);
 
    if (!cia || !cib || !sia || !sib)
    {
@@ -447,14 +833,14 @@ int main(int argc, char **argv)
     * is the failure the whole fallback design exists to avoid. */
    {
       database_info_crc_index_t *tiny =
-         database_info_crc_index_new(path_a, 64);
+         crc_index_new(path_a, 64);
       check(tiny == NULL, "index refused when over budget",
             tiny ? "built anyway" : "refused");
       database_info_crc_index_free(tiny);
    }
    {
       database_info_crc_index_t *ample =
-         database_info_crc_index_new(path_a, 1024 * 1024);
+         crc_index_new(path_a, 1024 * 1024);
       char tmp[256];
       check(ample != NULL, "index built when within budget",
             ample ? "built" : "refused");
@@ -491,7 +877,7 @@ int main(int argc, char **argv)
       {
          check(0, "size-range fixture written", "write failed");
       }
-      else if (!(idx = database_info_crc_index_new(path, 0)))
+      else if (!(idx = crc_index_new(path, 0)))
       {
          check(0, "size-range index built", "no index");
       }
@@ -507,6 +893,10 @@ int main(int argc, char **argv)
          database_info_crc_index_free(idx);
       }
    }
+
+   check_one_walk(dir, path_a);
+   check_index_job(dir);
+   check_index_job_edges(dir);
 
    printf("\n%d checks, %d failures\n", checks, failures);
    return failures ? 1 : 0;

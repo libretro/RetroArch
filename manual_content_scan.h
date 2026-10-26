@@ -111,7 +111,7 @@ typedef struct
    char core_name[NAME_MAX_LENGTH];
    char system_name[NAME_MAX_LENGTH];
    char database_name[NAME_MAX_LENGTH];
-   char content_dir[DIR_MAX_LENGTH];
+   char content_dir[PATH_MAX_LENGTH];
    char playlist_file[PATH_MAX_LENGTH];
    char core_path[PATH_MAX_LENGTH];
    char file_exts[PATH_MAX_LENGTH];
@@ -125,6 +125,7 @@ typedef struct
    bool validate_entries;
    bool omit_db_reference;
    bool target_is_single_determined_playlist;
+   bool content_is_file;
    enum manual_content_scan_db_usage db_usage;
    enum manual_content_scan_db_selection db_selection;
    /* Captured when the config is built, on the main thread: the scan
@@ -187,7 +188,6 @@ size_t manual_content_scan_get_dat_file_path_size(void);
  * 'search_recursively' bool */
 bool *manual_content_scan_get_search_recursively_ptr(void);
 
-bool *manual_content_scan_get_scan_single_file_ptr(void);
 bool *manual_content_scan_get_omit_db_ref_ptr(void);
 /* Returns a pointer to the internal
  * 'search_archives' bool */

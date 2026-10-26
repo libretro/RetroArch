@@ -1926,7 +1926,6 @@ static const struct
    char s_df763da7[14];
    char s_69dad0e6[49];
    char s_1532af95[59];
-   char s_03fb590d[22];
    char s_7c2f8b04[24];
    char s_b443c25e[16];
    char s_4ad9adf8[27];
@@ -3396,7 +3395,6 @@ static const struct
    char s_34a76adb[54];
    char s_88021a14[169];
    char s_fe1a9203[261];
-   char s_2222a23b[121];
    char s_8213bb32[244];
    char s_48462dac[364];
    char s_631de1a2[120];
@@ -6423,7 +6421,6 @@ static const struct
    "Personalizado",
    "Pular Refer\303\252ncias de Banco de Dados da Playlist",
    "Verificar CRC em Poss\303\255veis Duplicatas durante a Varredura",
-   "Buscar Arquivo \303\232nico",
    "Playlist para Atualizar",
    "<Personalizado>",
    "<Analisar este diret\303\263rio>",
@@ -8420,8 +8417,6 @@ static const struct
    "e no serial pode fazer o scanner colocar o conte\303\272do no sistema errado. Isso adiciona uma "
    "verifica\303\247\303\243o de CRC, que deixa a varredura bem mais lenta, mas pode ser mais precis"
    "a.",
-   "Verifica apenas um arquivo em vez de um diret\303\263rio. Selecione novamente o local do conte"
-   "\303\272do ap\303\263s alterar esta entrada.",
    "Os resultados s\303\243o adicionados a esta playlist. No caso de Auto - Qualquer, m\303\272ltipl"
    "as playlists de sistema podem ser atualizadas. Personalizado sem refer\303\252ncia de banco de d"
    "ados n\303\243o vincular\303\241 as entradas a nenhum banco de dados na playlist.",
@@ -9518,7 +9513,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pt_br_blob_check[
-      (sizeof(msg_hash_pt_br_blob) == (194337u
+      (sizeof(msg_hash_pt_br_blob) == (194194u
 #ifdef ANDROID
        + 352u
 #endif
@@ -11903,7 +11898,6 @@ static const msg_hash_id_t msg_hash_pt_br_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_METHOD_CUSTOM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_OMIT_DB_REF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_SERIAL_AND_CRC,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_SINGLE_FILE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_CUSTOM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_THIS_DIRECTORY,
@@ -13372,7 +13366,6 @@ static const msg_hash_id_t msg_hash_pt_br_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_METHOD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_OMIT_DB_REF,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_SERIAL_AND_CRC,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_SINGLE_FILE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_TARGET_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_USE_DB,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_WITHOUT_CORE_MATCH,

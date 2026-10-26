@@ -1716,6 +1716,115 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
    task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 }
 
+/* A connect or disconnect reported on another thread, copied for the
+ * main thread.  There the queue is searched exactly, which another
+ * thread's task_queue_find() is not, and settings and the port's
+ * state are read where they are written. */
+typedef struct
+{
+   char    *name;
+   char    *display_name;
+   char    *phys;
+   char    *driver;
+   unsigned port;
+   unsigned vid;
+   unsigned pid;
+   uint8_t  flags;
+   uint8_t  is_connect;
+} autoconfig_handoff_t;
+
+static bool input_autoconfigure_connect_main(const char *name,
+      const char *display_name, const char *phys, const char *driver,
+      unsigned port, unsigned vid, unsigned pid, uint8_t flags);
+static bool input_autoconfigure_disconnect_main(unsigned port,
+      const char *name);
+
+static void free_autoconfig_handoff(autoconfig_handoff_t *handoff)
+{
+   free(handoff->name);
+   free(handoff->display_name);
+   free(handoff->phys);
+   free(handoff->driver);
+   free(handoff);
+}
+
+static void input_autoconfigure_handoff_free(retro_task_t *task)
+{
+   autoconfig_handoff_t *handoff = (autoconfig_handoff_t*)task->state;
+
+   if (!handoff)
+      return;
+   free_autoconfig_handoff(handoff);
+   task->state = NULL;
+}
+
+static void input_autoconfigure_handoff_handler(retro_task_t *task)
+{
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+}
+
+/* In the callback, not the handler: the unthreaded queue's find does
+ * not see the tasks its gather has taken off to run.  A main-thread
+ * task's callbacks come in push order. */
+static void cb_input_autoconfigure_handoff(retro_task_t *task,
+      void *task_data, void *user_data, const char *err)
+{
+   autoconfig_handoff_t *handoff = (autoconfig_handoff_t*)task->state;
+
+   if (!handoff || (task_get_flags(task) & RETRO_TASK_FLG_CANCELLED))
+      return;
+   if (handoff->is_connect)
+      input_autoconfigure_connect_main(handoff->name,
+            handoff->display_name, handoff->phys, handoff->driver,
+            handoff->port, handoff->vid, handoff->pid, handoff->flags);
+   else
+      input_autoconfigure_disconnect_main(handoff->port, handoff->name);
+}
+
+static bool input_autoconfigure_handoff_dup(char **dst, const char *s)
+{
+   if (s && *s && !(*dst = strdup(s)))
+      return false;
+   return true;
+}
+
+/* True once queued; the main thread decides what it does. */
+static bool input_autoconfigure_handoff(bool is_connect,
+      const char *name, const char *display_name, const char *phys,
+      const char *driver, unsigned port, unsigned vid, unsigned pid,
+      uint8_t flags)
+{
+   retro_task_t *task;
+   autoconfig_handoff_t *handoff = (autoconfig_handoff_t*)
+      calloc(1, sizeof(*handoff));
+
+   if (!handoff)
+      return false;
+   handoff->port       = port;
+   handoff->vid        = vid;
+   handoff->pid        = pid;
+   handoff->flags      = flags;
+   handoff->is_connect = is_connect ? 1 : 0;
+
+   if (     !input_autoconfigure_handoff_dup(&handoff->name, name)
+         || !input_autoconfigure_handoff_dup(&handoff->display_name,
+               display_name)
+         || !input_autoconfigure_handoff_dup(&handoff->phys, phys)
+         || !input_autoconfigure_handoff_dup(&handoff->driver, driver)
+         || !(task = task_init()))
+   {
+      free_autoconfig_handoff(handoff);
+      return false;
+   }
+   task->handler  = input_autoconfigure_handoff_handler;
+   task->callback = cb_input_autoconfigure_handoff;
+   task->cleanup  = input_autoconfigure_handoff_free;
+   task->state    = handoff;
+   task_set_flags(task, RETRO_TASK_FLG_MAIN_THREAD, true);
+   task_queue_push(task);
+   return true;
+}
+
 static void input_autoconfigure_disconnect_handler(retro_task_t *task);
 
 /* Records the newest connect or disconnect still queued for a port.
@@ -1757,7 +1866,8 @@ static bool autoconfigure_any_finder(retro_task_t *task, void *user_data)
 {
    return task
       && (   task->handler == input_autoconfigure_connect_handler
-          || task->handler == input_autoconfigure_disconnect_handler);
+          || task->handler == input_autoconfigure_disconnect_handler
+          || task->handler == input_autoconfigure_handoff_handler);
 }
 
 /* Whether a connect or disconnect on any port has yet to be applied.
@@ -1804,6 +1914,26 @@ bool input_autoconfigure_connect(
  * @see input_autoconfigure_connect()
  */
 bool input_autoconfigure_connect_ex(
+      const char *name,
+      const char *display_name,
+      const char *phys,
+      const char *driver,
+      unsigned port,
+      unsigned vid,
+      unsigned pid,
+      uint8_t flags)
+{
+   if (port >= MAX_INPUT_DEVICES)
+      return false;
+   /* Reported on a driver's own thread. */
+   if (!task_is_on_main_thread())
+      return input_autoconfigure_handoff(true, name, display_name, phys,
+            driver, port, vid, pid, flags);
+   return input_autoconfigure_connect_main(name, display_name, phys,
+         driver, port, vid, pid, flags);
+}
+
+static bool input_autoconfigure_connect_main(
       const char *name,
       const char *display_name,
       const char *phys,
@@ -2097,6 +2227,17 @@ static void input_autoconfigure_disconnect_handler(retro_task_t *task)
  * - By using a task for both 'connect' and 'disconnect',
  *   we ensure uniformity of OSD status messages */
 bool input_autoconfigure_disconnect(unsigned port, const char *name)
+{
+   if (port >= MAX_INPUT_DEVICES)
+      return false;
+   if (!task_is_on_main_thread())
+      return input_autoconfigure_handoff(false, name, NULL, NULL, NULL,
+            port, 0, 0, 0);
+   return input_autoconfigure_disconnect_main(port, name);
+}
+
+static bool input_autoconfigure_disconnect_main(unsigned port,
+      const char *name)
 {
    task_finder_data_t find_data;
    autoconfig_port_pending_t pending;

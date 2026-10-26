@@ -52,7 +52,6 @@ typedef struct
 
    bool search_recursively;
    bool search_archives;
-   bool scan_single_file;
    bool omit_db_ref;
    bool filter_dat_content;
    bool overwrite_playlist;
@@ -78,7 +77,6 @@ static scan_settings_t scan_settings = {
    true,                                        /* search_recursively */
    true,                                        /* search_archives */
    false,
-   false,
    false,                                       /* filter_dat_content */
    false,                                       /* overwrite_playlist */
    false                                        /* validate_entries */
@@ -92,7 +90,8 @@ static char scan_core_path[PATH_MAX_LENGTH];
 static char scan_file_exts_core[PATH_MAX_LENGTH];
 static char scan_file_exts_custom[PATH_MAX_LENGTH];
 static char scan_dat_file_path[PATH_MAX_LENGTH];
-static char scan_content_dir[DIR_MAX_LENGTH];
+/* A folder or a file */
+static char scan_content_dir[PATH_MAX_LENGTH];
 /* Number of bytes held back when populating
  * manual_content_scan_task_config_t::system_name, so that the file
  * extensions appended to it downstream (".lpl", ".rdb") still fit in
@@ -191,11 +190,6 @@ bool *manual_content_scan_get_search_recursively_ptr(void)
 bool *manual_content_scan_get_search_archives_ptr(void)
 {
    return &scan_settings.search_archives;
-}
-
-bool *manual_content_scan_get_scan_single_file_ptr(void)
-{
-   return &scan_settings.scan_single_file;
 }
 
 bool *manual_content_scan_get_omit_db_ref_ptr(void)
@@ -373,6 +367,7 @@ enum manual_content_scan_dat_file_path_status
 bool manual_content_scan_set_menu_content_dir(const char *content_dir)
 {
    size_t _len;
+   int path_stats;
    const char *dir_name = NULL;
    char _tmpbuf[PATH_MAX_LENGTH];
 
@@ -389,21 +384,10 @@ bool manual_content_scan_set_menu_content_dir(const char *content_dir)
    if (!*content_dir)
       goto error;
 
-   /* Copy directory path to settings struct.
-    * Remove trailing slash, if required.
-    *
-    * strlcpy() returns the length of its source, not the number of
-    * bytes it wrote, and the source can be longer than the
-    * destination here: _tmpbuf is PATH_MAX_LENGTH while
-    * scan_content_dir is DIR_MAX_LENGTH, which is half of it on
-    * every platform.  Indexing with the return value therefore ran
-    * off the end of the buffer for any content directory longer than
-    * DIR_MAX_LENGTH - a deeply nested folder picked in the file
-    * browser is enough:
-    *
-    *   AddressSanitizer: heap-buffer-overflow
-    *   READ of size 1 ... located 1022 bytes after 1024-byte region
-    */
+   /* Copy the path to the settings struct and remove a trailing
+    * slash.  strlcpy() returns the length of its source, which can
+    * exceed the buffer: it is only used as an index once the check
+    * below has shown that it fits. */
    _len = strlcpy(scan_content_dir, content_dir,
          sizeof(scan_content_dir));
 
@@ -439,6 +423,15 @@ bool manual_content_scan_set_menu_content_dir(const char *content_dir)
 
    if (!dir_name || !*dir_name)
       goto error;
+
+   /* A file takes the name of the folder that holds it,
+    * as a scan of that folder would */
+   path_stats = path_stat(scan_content_dir);
+   if (      (path_stats & RETRO_VFS_STAT_IS_VALID)
+         && !(path_stats & RETRO_VFS_STAT_IS_DIRECTORY)
+         &&  fill_pathname_parent_dir_name(scan_system_name_content_dir,
+               scan_content_dir, sizeof(scan_system_name_content_dir)))
+      return true;
 
    /* Copy directory name to settings struct */
    strlcpy(
@@ -1380,19 +1373,12 @@ bool manual_content_scan_get_task_config(
       scan_file_exts_custom[0] = '\0';
       scan_settings.search_recursively = true;
       scan_settings.search_archives = true;
-      scan_settings.scan_single_file = false;     
    }
    /* Get content directory */
    if (!*scan_content_dir)
       return false;
 
-   if (!path_is_directory(scan_content_dir))
-   {
-      scan_settings.scan_single_file = true;
-      scan_settings.search_recursively = false;
-   }
-   else
-      scan_settings.scan_single_file = false;
+   task_config->content_is_file = !path_is_directory(scan_content_dir);
 
    strlcpy(
          task_config->content_dir,
@@ -1588,8 +1574,10 @@ bool manual_content_scan_get_task_config(
    /* Set up filter if DB usage requires */
    task_config->filter_dat_content = 
       (scan_settings.db_usage == MANUAL_CONTENT_SCAN_USE_DB_DAT_STRICT) ? true : false;
-   /* Copy 'overwrite playlist' setting */
-   task_config->overwrite_playlist = scan_settings.overwrite_playlist;
+   /* Copy 'overwrite playlist' setting.
+    * A file is only added to its playlist. */
+   task_config->overwrite_playlist = scan_settings.overwrite_playlist
+         && !task_config->content_is_file;
    /* Copy 'validate_entries' setting */
    task_config->validate_entries   = scan_settings.validate_entries;
    

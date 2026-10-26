@@ -143,7 +143,16 @@ SOURCES_C := \
 	$(LIBRETRO_COMM_DIR)/time/rtime.c \
 	$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c
 
-DEFINES    = -DHAVE_LIBRETRODB -DHAVE_COMPRESSION
+# For the scan test: a lost wake, the scan's or a reader's, shows as a
+# stall rather than a 100 ms watchdog, and the reader cutoff suits its
+# fixtures.  The objects are shared, so the index and budget tests and
+# database_task build task_database.c with these too.
+# SCAN_TEST_DEFINES= clears them, and SCAN_DEFINES adds more
+# (-DSCAN_READERS_MAX=0).
+SCAN_TEST_DEFINES ?= -DSCAN_READER_PARK_USEC=30000000 \
+	-DSCAN_READER_CUTOFF=65536
+DEFINES    = -DHAVE_LIBRETRODB -DHAVE_COMPRESSION \
+	$(SCAN_TEST_DEFINES) $(SCAN_DEFINES)
 
 LIBS += -lm
 
@@ -220,11 +229,22 @@ $(INDEX_TEST)$(EXE_EXT): $(INDEX_TEST_OBJECTS)
 	$(LD)  $(LINKOUT)$@ $(SHARED) $(INDEX_TEST_OBJECTS) $(LDFLAGS) $(LIBS)
 
 # Builds its own databases, so it needs nothing but a writable dir.
+# The wraps count the scanner's database walks and parks, slow chosen
+# reads and tell the scan's own from its readers', spend its window,
+# count and refuse reader pushes, and count queue worker starts.
+SCAN_TEST_WRAPS := -Wl,--wrap=libretrodb_open -Wl,--wrap=task_queue_park \
+	-Wl,--wrap=intfstream_crc_step -Wl,--wrap=rm3u_is_m3u \
+	-Wl,--wrap=task_nbio_slice_open -Wl,--wrap=task_nbio_slice_close \
+	-Wl,--wrap=task_queue_push
+ifeq ($(HAVE_THREADS), 1)
+SCAN_TEST_WRAPS += -Wl,--wrap=sthread_create
+endif
 $(SCAN_TEST)$(EXE_EXT): $(SCAN_TEST_OBJECTS)
-	$(LD)  $(LINKOUT)$@ $(SHARED) $(SCAN_TEST_OBJECTS) $(LDFLAGS) $(LIBS)
+	$(LD)  $(LINKOUT)$@ $(SHARED) $(SCAN_TEST_OBJECTS) $(LDFLAGS) $(SCAN_TEST_WRAPS) $(LIBS)
 
 $(BEGIN_TEST)$(EXE_EXT): $(BEGIN_TEST_OBJECTS)
-	$(LD)  $(LINKOUT)$@ $(SHARED) $(BEGIN_TEST_OBJECTS) $(LDFLAGS) $(LIBS)
+	$(LD)  $(LINKOUT)$@ $(SHARED) $(BEGIN_TEST_OBJECTS) $(LDFLAGS) \
+	      -Wl,--wrap=task_nbio_slice_open $(LIBS)
 
 check: $(INDEX_TEST)$(EXE_EXT) $(SCAN_TEST)$(EXE_EXT) $(BEGIN_TEST)$(EXE_EXT)
 	./$(INDEX_TEST)$(EXE_EXT)

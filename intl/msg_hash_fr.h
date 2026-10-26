@@ -2066,7 +2066,6 @@ static const struct
    char s_df763da7[14];
    char s_69dad0e6[68];
    char s_1532af95[55];
-   char s_03fb590d[27];
    char s_7c2f8b04[35];
    char s_fdbd73a3[30];
    char s_b443c25e[16];
@@ -3747,7 +3746,6 @@ static const struct
    char s_34a76adb[60];
    char s_88021a14[200];
    char s_fe1a9203[326];
-   char s_2222a23b[125];
    char s_8213bb32[278];
    char s_48462dac[385];
    char s_631de1a2[120];
@@ -7061,7 +7059,6 @@ static const struct
    "Personnalis\303\251",
    "Ignorer les r\303\251f\303\251rences en base de donn\303\251es de la liste de lecture",
    "L'analyse v\303\251rifie le CRC en cas de doublons possibles",
-   "Analyser un fichier unique",
    "Liste de lecture \303\240 mettre \303\240 jour",
    "<Automatique/nom du syst\303\250me>",
    "<Personnalis\303\251>",
@@ -9652,8 +9649,6 @@ static const struct
    "/PSN. En se basant uniquement sur le num\303\251ro de s\303\251rie, l'analyse peut parfois mettr"
    "e du contenu dans le mauvais syst\303\250me. Ce r\303\251glage ajoute une v\303\251rification CR"
    "C, qui ralentit consid\303\251rablement l'analyse, mais peut la rendre plus pr\303\251cise.",
-   "Analyser un seul fichier au lieu d'un dossier. Res\303\251lectionnez l'emplacement du contenu ap"
-   "r\303\250s avoir modifi\303\251 cette entr\303\251e.",
    "Les r\303\251sultats sont ajout\303\251s \303\240 cette liste de lecture. Dans le cas de Auto - "
    "Toute, plusieurs listes de lecture syst\303\250me peuvent \303\252tre mises \303\240 jour. Perso"
    "nnalis\303\251 sans r\303\251f\303\251rence en base de donn\303\251es ne liera pas les entr\303"
@@ -11029,7 +11024,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fr_blob_check[
-      (sizeof(msg_hash_fr_blob) == (258880u
+      (sizeof(msg_hash_fr_blob) == (258728u
 #ifdef ANDROID
        + 373u
 #endif
@@ -13646,7 +13641,6 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_METHOD_CUSTOM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_OMIT_DB_REF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_SERIAL_AND_CRC,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_SINGLE_FILE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_AUTO_ANY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_CUSTOM,
@@ -15312,7 +15306,6 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_METHOD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_OMIT_DB_REF,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_SERIAL_AND_CRC,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_SINGLE_FILE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_TARGET_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_USE_DB,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_WITHOUT_CORE_MATCH,

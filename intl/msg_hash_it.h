@@ -1819,7 +1819,6 @@ static const struct
    char s_5f6853c5[25];
    char s_df763da7[15];
    char s_1532af95[37];
-   char s_03fb590d[23];
    char s_b443c25e[17];
    char s_4ad9adf8[44];
    char s_6cead93e[19];
@@ -6067,7 +6066,6 @@ static const struct
    "Completamente Automatico",
    "Personalizzato",
    "Scansiona CRC su possibili duplicati",
-   "Scansiona File Singolo",
    "<Personalizzato>",
    "<Effettua la scansione di questa directory>",
    "Controllo database",
@@ -8824,7 +8822,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_it_blob_check[
-      (sizeof(msg_hash_it_blob) == (182883u
+      (sizeof(msg_hash_it_blob) == (182860u
 #ifdef ANDROID
        + 376u
 #endif
@@ -11074,7 +11072,6 @@ static const msg_hash_id_t msg_hash_it_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_METHOD_AUTO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_METHOD_CUSTOM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_SERIAL_AND_CRC,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_SINGLE_FILE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_CUSTOM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_THIS_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_USE_DB,

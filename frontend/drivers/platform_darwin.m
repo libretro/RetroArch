@@ -714,7 +714,7 @@ static int frontend_darwin_parse_drive_list(void *data, bool load_content)
 
 #if !TARGET_OS_TV
    if (   filebrowser_get_type() == FILEBROWSER_NONE ||
-          filebrowser_get_type() == FILEBROWSER_SCAN_FILE ||
+          filebrowser_get_type() == FILEBROWSER_MANUAL_SCAN_DIR ||
           filebrowser_get_type() == FILEBROWSER_SELECT_FILE)
       menu_entries_append(list,
                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_PICKER),

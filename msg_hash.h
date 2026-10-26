@@ -267,6 +267,8 @@ enum msg_file_type
 
    FILE_TYPE_PBP,
 
+   FILE_TYPE_3DS,
+
    FILE_TYPE_LAST
 };
 
@@ -19674,7 +19676,6 @@ enum msg_hash_enums
    MENU_LABEL(SCAN_USE_DB),
    MENU_LABEL(SCAN_DB_SELECT),
    MENU_LABEL(SCAN_TARGET_PLAYLIST),
-   MENU_LABEL(SCAN_SINGLE_FILE),
    MENU_LABEL(SCAN_OMIT_DB_REF),
    /* GENERATED REGION: netplay visibility group enum rows (see settings/settings_def_netplay_visibility.h). */
 #define SETTINGS_DEF_ENUM_PASS

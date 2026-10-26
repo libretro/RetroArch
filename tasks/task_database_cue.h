@@ -36,6 +36,7 @@ int detect_psp_game(intfstream_t *fd, char *s, size_t len,
       const char *filename);
 int detect_pbp_game(intfstream_t *fd, char *s, size_t len,
       const char *filename);
+int detect_3ds_game(intfstream_t *fd, char *s, size_t len);
 size_t detect_gc_game(intfstream_t *fd, char *s, size_t len,
       const char *filename);
 int detect_scd_game(intfstream_t *fd, char *s, size_t len,
@@ -67,17 +68,22 @@ int task_database_gdi_get_serial(const char *name, char *s, size_t len,
       uint64_t *filesize);
 int task_database_pbp_get_serial(const char *name, char *s, size_t len,
       uint64_t *filesize);
+int task_database_3ds_get_serial(const char *name, char *s, size_t len,
+      uint64_t *filesize);
 bool is_chd_file_cdi(const char *path);
 int task_database_chd_get_serial(const char *name, char *serial, size_t len,
       uint64_t *filesize);
-bool intfstream_file_get_crc_and_size(const char *name,
-      uint64_t offset, int64_t len, uint32_t *crc, uint64_t *size);
-int task_database_cue_get_crc_and_size(const char *name, uint32_t *crc,
-      uint64_t *size);
-int task_database_gdi_get_crc_and_size(const char *name, uint32_t *crc,
-      uint64_t *size);
-bool task_database_chd_get_crc_and_size(const char *name, uint32_t *crc,
-      uint64_t *size);
+
+enum task_database_crc_kind
+{
+   TASK_DATABASE_CRC_FILE = 0,
+   TASK_DATABASE_CRC_CUE,
+   TASK_DATABASE_CRC_GDI,
+   TASK_DATABASE_CRC_CHD
+};
+
+intfstream_t *task_database_crc_open(const char *name,
+      enum task_database_crc_kind kind, int64_t *span, uint64_t *size);
 
 RETRO_END_DECLS
 

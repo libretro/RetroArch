@@ -1892,7 +1892,6 @@ static const struct
    char s_df763da7[7];
    char s_69dad0e6[45];
    char s_1532af95[43];
-   char s_03fb590d[23];
    char s_7c2f8b04[22];
    char s_fdbd73a3[25];
    char s_b443c25e[9];
@@ -3362,7 +3361,6 @@ static const struct
    char s_34a76adb[47];
    char s_88021a14[114];
    char s_fe1a9203[274];
-   char s_2222a23b[102];
    char s_8213bb32[210];
    char s_48462dac[298];
    char s_631de1a2[93];
@@ -6299,7 +6297,6 @@ static const struct
    "Propra",
    "Preterpasi datumbazaj referencoj de ludlisto",
    "Skanado kontrolas CRC sur eblaj duobla\304\265oj",
-   "Skani ununura dosieron",
    "Ludlisto \304\235isdatigota",
    "<A\305\255tomata/sistema nomo>",
    "<Propra>",
@@ -8147,8 +8144,6 @@ static const struct
    "ro kelkfoje povas ka\305\255zi, ke la skanilo metu enhavon en la mal\304\235usta sistemo. \304"
    "\210i tio aldonas kontrolon CRC, kio plimalrapidigas skanadon nemalmulte, sed povas esti pli pre"
    "ciza.",
-   "Skani nur unu dosieron anstata\305\255 dosierujon. Reelektu enhavan dosieron post \305\235an\304"
-   "\235inte \304\211i tiun eron.",
    "Rezultoj estas aldonataj al \304\211i tiu ludlisto. Kaze de \"A\305\255tomate/Ajna\", pluraj sis"
    "temaj ludlistoj povas esti \304\235isdatigitaj. Tajlorite sen datumbaza referenco ne ligos la er"
    "ojn al ajna datumbazo en la ludlisto.",
@@ -9157,7 +9152,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_eo_blob_check[
-      (sizeof(msg_hash_eo_blob) == (171474u
+      (sizeof(msg_hash_eo_blob) == (171349u
 #ifdef ANDROID
        + 312u
 #endif
@@ -11479,7 +11474,6 @@ static const msg_hash_id_t msg_hash_eo_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_METHOD_CUSTOM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_OMIT_DB_REF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_SERIAL_AND_CRC,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_SINGLE_FILE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_AUTO_ANY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_CUSTOM,
@@ -12949,7 +12943,6 @@ static const msg_hash_id_t msg_hash_eo_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_METHOD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_OMIT_DB_REF,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_SERIAL_AND_CRC,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_SINGLE_FILE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_TARGET_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_USE_DB,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_WITHOUT_CORE_MATCH,

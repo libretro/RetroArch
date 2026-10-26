@@ -674,9 +674,11 @@ retro_time_t cocoa_last_vblank_time(void)
    if ([[url path] rangeOfString:documentsDir].location == NSNotFound)
       if (![manager fileExistsAtPath:destination])
          [manager copyItemAtPath:[url path] toPath:destination error:&error];
-   if (filebrowser_get_type() == FILEBROWSER_SCAN_FILE)
-      action_scan_file(fullpath, NULL, 0, 0);
+#ifdef HAVE_MENU
+   if (action_ok_manual_content_scan_dir_browsing())
+      action_ok_manual_content_scan_set_dir(fullpath);
    else
+#endif
    {
       cocoa_file_load_with_detect_core(fullpath);
    }

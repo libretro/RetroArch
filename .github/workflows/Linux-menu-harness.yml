@@ -430,7 +430,9 @@ jobs:
           set -eu
           # Load Content with no core lists every file an installed core
           # or a built-in player opens, however long the installed cores'
-          # extensions run together.
+          # extensions run together. Content Scan's Content Location
+          # lists files and folders, and Import Content offers Content
+          # Scan alone.
           samples/menu/load_content_filter/build.sh
           ./samples/menu/load_content_filter/load_content_filter_test
           make -C samples/menu/load_content_filter clean

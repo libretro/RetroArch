@@ -30,6 +30,10 @@
 #include <encodings/crc32.h>
 #include <streams/interface_stream.h>
 #include <streams/file_stream.h>
+#ifdef HAVE_THREADS
+#include <retro_atomic.h>
+#include <features/features_cpu.h>
+#endif
 #include "tasks_internal.h"
 
 #include "../core_info.h"
@@ -223,6 +227,20 @@ static size_t task_database_index_budget(void)
 }
 #endif
 
+/* Bytes a stepped CRC reads between two looks at the window. */
+#ifndef SCAN_CRC_QUANTUM
+#define SCAN_CRC_QUANTUM (256 * 1024)
+#endif
+
+/* Records an index build walks, and entries it merges, between two
+ * looks at the window. */
+#ifndef SCAN_INDEX_RECORDS
+#define SCAN_INDEX_RECORDS 1024
+#endif
+#ifndef SCAN_INDEX_ENTRIES
+#define SCAN_INDEX_ENTRIES 32768
+#endif
+
 typedef struct database_state_handle
 {
    database_info_list_t *info;
@@ -263,7 +281,126 @@ typedef struct database_state_handle
     * for the whole scan, so without a ceiling a large database set
     * costs tens of megabytes.  See task_database_index_budget(). */
    size_t index_budget;
+   /* A CRC hashed a few quanta per step by task_database_crc_step():
+    * the open span or NULL, the bytes left (-1: to the end) and the
+    * running value.  crc_done says crc (or, for DB_CRC_DEST_ARCHIVE,
+    * archive_crc) holds this file's value, which may be 0. */
+   intfstream_t *crc_fd;
+   int64_t crc_left;
+   uint32_t crc_acc;
+   uint8_t crc_dest;  /* enum db_crc_dest */
+   uint8_t crc_fail;  /* enum db_crc_fail */
+   bool crc_done;
+   /* The index build in flight, run by task_database_index_step()
+    * until index_ready, then taken by the lookup that began it. */
+   database_info_index_job_t *index_job;
+   bool index_ready;
 } database_state_handle_t;
+
+/* Where a stepped CRC and its size go. */
+enum db_crc_dest
+{
+   DB_CRC_DEST_FILE = 0,
+   DB_CRC_DEST_ARCHIVE
+};
+
+/* What a failed read of a stepped CRC does. */
+enum db_crc_fail
+{
+   DB_CRC_FAIL_ERROR = 0,  /* the file errors out */
+   DB_CRC_FAIL_ZERO        /* the CRC is 0, so no entry matches */
+};
+
+/* None on Wii U: its newlib and libfat take no locks, and without
+ * libfat its SD layer serialises every call.  None on Vita: Vita3K's
+ * sceIo tables take no lock. */
+#if defined(HAVE_LIBRETRODB) && defined(HAVE_THREADS) \
+ && defined(RETRO_ATOMIC_LOCK_FREE) && !defined(WIIU) && !defined(VITA)
+#define SCAN_HAVE_READERS
+#endif
+
+/* Reader tasks: min(SCAN_READERS_MAX, cores), none below 2, on the
+ * threaded queue's parallel workers.  The scan hands them up to
+ * SCAN_READER_DEPTH files each ahead of it and parks at most
+ * SCAN_READER_PARK_USEC on one still being read; an idle reader parks
+ * as long. */
+#ifndef SCAN_READERS_MAX
+#define SCAN_READERS_MAX 4
+#endif
+#ifndef SCAN_READER_DEPTH
+#define SCAN_READER_DEPTH 64
+#endif
+#ifndef SCAN_READER_PARK_USEC
+#define SCAN_READER_PARK_USEC 100000
+#endif
+/* Files at or under this size are read by the readers. */
+#ifndef SCAN_READER_CUTOFF
+#define SCAN_READER_CUTOFF (128 * 1024 * 1024)
+#endif
+
+#ifdef SCAN_HAVE_READERS
+enum scan_slot_state
+{
+   SCAN_SLOT_EMPTY = 0,
+   SCAN_SLOT_READY,       /* for a reader to claim */
+   SCAN_SLOT_IN_FLIGHT,
+   SCAN_SLOT_OK,
+   SCAN_SLOT_BIG,
+   SCAN_SLOT_FAIL
+};
+
+/* A file handed out.  The scan writes it while EMPTY, its reader while
+ * IN_FLIGHT, and each publishes with the state. */
+typedef struct scan_slot
+{
+   uint64_t           size;
+   size_t             index;   /* in the content list */
+   char              *path;    /* PATH_MAX_LENGTH, its own copy */
+   uint32_t           crc;
+   retro_atomic_int_t state;   /* enum scan_slot_state */
+} scan_slot_t;
+
+/* Shared by the scan and its readers; the last reference frees it.
+ * Fields marked scan are the scan's alone. */
+typedef struct scan_readers
+{
+   scan_slot_t       *win;      /* by fill order % window */
+   char              *paths;
+   uint32_t          *idents;   /* the readers' */
+   size_t             window;
+   size_t             fill;     /* scan: next list index to look at */
+   unsigned           seq;      /* scan: slots filled */
+   unsigned           take;     /* scan: slots given back */
+   unsigned           count;    /* scan: readers pushed */
+   uint32_t           ident;    /* the scan's */
+   retro_atomic_int_t filled;   /* seq, for the readers */
+   retro_atomic_int_t claim;    /* the next slot to claim */
+   retro_atomic_int_t idle;     /* readers parked or parking */
+   retro_atomic_int_t live;     /* readers not yet gone */
+   retro_atomic_int_t quit;
+   retro_atomic_int_t refs;
+   bool               off;      /* scan: the readers are gone or going */
+} scan_readers_t;
+
+/* A reader task's own. */
+typedef struct scan_reader
+{
+   scan_readers_t *blk;
+   scan_slot_t    *slot;   /* the file in hand */
+   intfstream_t   *fd;
+   int64_t         left;
+   uint32_t        acc;
+   bool            parked;
+   bool            gone;   /* left: counted out of live */
+} scan_reader_t;
+
+enum scan_take
+{
+   SCAN_TAKE_NONE = 0,   /* the task reads the file itself */
+   SCAN_TAKE_DONE,
+   SCAN_TAKE_WAIT
+};
+#endif
 
 enum db_flags_enum
 {
@@ -347,8 +484,14 @@ typedef struct manual_scan_handle
 #ifdef HAVE_LIBRETRODB
    char *content_database_path;
    database_info_handle_t *handle;
+#ifdef SCAN_HAVE_READERS
+   scan_readers_t *readers;
+#endif
    database_state_handle_t state;
    uint8_t flags;
+#ifdef SCAN_HAVE_READERS
+   bool readers_tried;
+#endif
 #endif
    /* The caller's completion callback, run after the task's own -
     * this is how a task_push_dbscan caller learns the scan finished;
@@ -362,7 +505,9 @@ enum scan_verdict
    SCAN_VERDICT_MATCHED_DB,
    SCAN_VERDICT_ARCHIVE_CONTENTS_ADDED,
    SCAN_VERDICT_NO_DB_MATCH,
-   SCAN_VERDICT_ERROR
+   SCAN_VERDICT_ERROR,
+   /* A reader has the file: park until its result is in. */
+   SCAN_VERDICT_WAIT
 };
 
 static void increase_content_list_index(manual_scan_handle_t *manual_scan)
@@ -893,7 +1038,532 @@ static enum msg_file_type extension_to_file_type(const char *ext)
       return FILE_TYPE_PBP;
    if (string_is_equal(ext_lower, "lutro"))
       return FILE_TYPE_LUTRO;
+   if (
+            string_is_equal(ext_lower, "3ds")
+         || string_is_equal(ext_lower, "cci")
+         || string_is_equal(ext_lower, "cxi")
+      )
+      return FILE_TYPE_3DS;
    return FILE_TYPE_NONE;
+}
+
+static void task_database_crc_close(database_state_handle_t *db_state)
+{
+   if (db_state->crc_fd)
+   {
+      intfstream_close(db_state->crc_fd);
+      free(db_state->crc_fd);
+      db_state->crc_fd = NULL;
+   }
+   db_state->crc_done = false;
+}
+
+/* Opens @name's CRC span for task_database_crc_step() to hash over
+ * the steps that follow, and records its size. */
+static bool task_database_crc_begin(database_state_handle_t *db_state,
+      const char *name, enum task_database_crc_kind kind,
+      enum db_crc_dest dest, enum db_crc_fail fail)
+{
+   uint64_t size = 0;
+
+   task_database_crc_close(db_state);
+   if (!(db_state->crc_fd = task_database_crc_open(name, kind,
+         &db_state->crc_left, &size)))
+      return false;
+   db_state->crc_acc  = 0;
+   db_state->crc_dest = (uint8_t)dest;
+   db_state->crc_fail = (uint8_t)fail;
+   if (dest == DB_CRC_DEST_ARCHIVE)
+      db_state->archive_size = size;
+   else
+      db_state->size         = size;
+   return true;
+}
+
+/* Hashes up to one quantum of @fd's span.  -1 on a failed read (a span
+ * that ends early is one), 1 at the end of the span, else 0. */
+static int task_database_crc_quantum(intfstream_t *fd, int64_t *left,
+      uint32_t *acc)
+{
+   size_t  want = SCAN_CRC_QUANTUM;
+   int64_t got  = 0;
+
+   if (*left >= 0 && *left < (int64_t)want)
+      want = (size_t)*left;
+   if (want)
+      got = intfstream_crc_step(fd, acc, want);
+   if (got < 0 || (got == 0 && *left > 0))
+      return -1;
+   if (*left > 0)
+      *left -= got;
+   return (got == 0 || *left == 0) ? 1 : 0;
+}
+
+/* One quantum always, then more while the window lasts.  At the end
+ * of the span the lookup runs on the next step. */
+static enum scan_verdict task_database_crc_step(
+      database_state_handle_t *db_state, nbio_budget_t *b)
+{
+   for (;;)
+   {
+      int rv = task_database_crc_quantum(db_state->crc_fd,
+            &db_state->crc_left, &db_state->crc_acc);
+
+      if (rv < 0)
+      {
+         task_database_crc_close(db_state);
+         if (db_state->crc_fail == DB_CRC_FAIL_ERROR)
+            return SCAN_VERDICT_ERROR;
+         db_state->crc      = 0;
+         db_state->crc_done = true;
+         return SCAN_VERDICT_CONTINUE;
+      }
+      if (rv > 0)
+         break;
+      if (!task_nbio_slice_within_budget(b, 0, 0))
+         return SCAN_VERDICT_CONTINUE;
+   }
+
+   if (db_state->crc_dest == DB_CRC_DEST_ARCHIVE)
+      db_state->archive_crc = db_state->crc_acc;
+   else
+      db_state->crc         = db_state->crc_acc;
+   task_database_crc_close(db_state);
+   db_state->crc_done = true;
+   return SCAN_VERDICT_CONTINUE;
+}
+
+#ifdef SCAN_HAVE_READERS
+static void scan_readers_unref(scan_readers_t *blk)
+{
+   if (retro_atomic_fetch_sub_int(&blk->refs, 1) != 1)
+      return;
+   free(blk->idents);
+   free(blk->paths);
+   free(blk->win);
+   free(blk);
+}
+
+static void scan_readers_wake(scan_readers_t *blk)
+{
+   unsigned r;
+
+   for (r = 0; r < blk->count; r++)
+      task_queue_wake(blk->idents[r]);
+}
+
+/* No I/O: a plain path that the default or the archive branch would
+ * CRC whole. */
+static bool scan_reader_eligible(const char *path)
+{
+   if (   !path
+       || strstr(path, "://")
+       || strlen(path) >= PATH_MAX_LENGTH
+       || path_contains_compressed_file(path))
+      return false;
+   switch (extension_to_file_type(path_get_extension(path)))
+   {
+      case FILE_TYPE_NONE:
+#ifdef HAVE_COMPRESSION
+      case FILE_TYPE_COMPRESSED:
+#endif
+         return true;
+      default:
+         break;
+   }
+   return false;
+}
+
+/* The next filled slot, in order; one the scan took back is passed
+ * over.  False when none is filled. */
+static bool scan_reader_claim(scan_reader_t *rd)
+{
+   scan_readers_t *blk = rd->blk;
+
+   for (;;)
+   {
+      int          c = retro_atomic_load_acquire_int(&blk->claim);
+      scan_slot_t *slot;
+
+      if (c >= retro_atomic_load_seq_cst_int(&blk->filled))
+         return false;
+      if (!retro_atomic_cas_int(&blk->claim, c, c + 1))
+         continue;
+      slot = &blk->win[(size_t)c % blk->window];
+      if (retro_atomic_cas_int(&slot->state, SCAN_SLOT_READY,
+            SCAN_SLOT_IN_FLIGHT))
+      {
+         rd->slot = slot;
+         return true;
+      }
+   }
+}
+
+/* Wakes the scan, which may be parked on this file. */
+static void scan_reader_publish(scan_reader_t *rd, int state)
+{
+   if (rd->fd)
+   {
+      intfstream_close(rd->fd);
+      free(rd->fd);
+      rd->fd = NULL;
+   }
+   if (state == SCAN_SLOT_OK)
+      rd->slot->crc = rd->acc;
+   retro_atomic_store_release_int(&rd->slot->state, state);
+   rd->slot = NULL;
+   task_queue_wake(rd->blk->ident);
+}
+
+/* A file in hand goes back as FAIL, for the scan to read. */
+static void scan_reader_leave(scan_reader_t *rd)
+{
+   scan_readers_t *blk = rd->blk;
+
+   if (rd->slot)
+      scan_reader_publish(rd, SCAN_SLOT_FAIL);
+   if (rd->parked)
+      retro_atomic_fetch_sub_int(&blk->idle, 1);
+   retro_atomic_fetch_add_seq_cst_int(&blk->live, -1);
+   /* With none left, the scan reads what was filled. */
+   task_queue_wake(blk->ident);
+   rd->gone = true;
+}
+
+/* Where every reader drops its share: at its retirement, or on the
+ * worker a queue deinit left it behind on, once its read returns. */
+static void scan_reader_cleanup(retro_task_t *task)
+{
+   scan_reader_t *rd = (scan_reader_t*)task->state;
+
+   if (!rd->gone)
+      scan_reader_leave(rd);
+   scan_readers_unref(rd->blk);
+   free(rd);
+   task->state = NULL;
+}
+
+/* One call: a claim and the open, or one quantum of the file in hand.
+ * Leaves on quit, on cancel and off the threaded queue (whose
+ * unthreaded runner would run it on the main thread). */
+static void scan_reader_handler(retro_task_t *task)
+{
+   scan_reader_t  *rd  = (scan_reader_t*)task->state;
+   scan_readers_t *blk = rd->blk;
+   int             rv;
+
+   if (rd->parked)
+   {
+      rd->parked = false;
+      retro_atomic_fetch_sub_int(&blk->idle, 1);
+   }
+   if (   retro_atomic_load_acquire_int(&blk->quit)
+       || !task_queue_is_threaded()
+       || (task_get_flags(task) & RETRO_TASK_FLG_CANCELLED))
+      goto leave;
+   if (!rd->slot)
+   {
+      uint64_t size = 0;
+
+      if (!scan_reader_claim(rd))
+      {
+         /* seq_cst both ways with the scan's fill: it sees this reader
+          * idle and wakes it, or this sees the fill. */
+         retro_atomic_fetch_add_seq_cst_int(&blk->idle, 1);
+         rd->parked = true;
+         if (!scan_reader_claim(rd))
+         {
+            task_queue_park(task, SCAN_READER_PARK_USEC);
+            return;
+         }
+         rd->parked = false;
+         retro_atomic_fetch_sub_int(&blk->idle, 1);
+      }
+      if (!(rd->fd = task_database_crc_open(rd->slot->path,
+            TASK_DATABASE_CRC_FILE, &rd->left, &size)))
+      {
+         scan_reader_publish(rd, SCAN_SLOT_FAIL);
+         return;
+      }
+      rd->slot->size = size;
+      rd->acc        = 0;
+      if (size > SCAN_READER_CUTOFF)
+      {
+         scan_reader_publish(rd, SCAN_SLOT_BIG);
+         return;
+      }
+   }
+   if ((rv = task_database_crc_quantum(rd->fd, &rd->left, &rd->acc)))
+      scan_reader_publish(rd, rv > 0 ? SCAN_SLOT_OK : SCAN_SLOT_FAIL);
+   return;
+leave:
+   scan_reader_leave(rd);
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+}
+
+/* Readers pushed are kept when a later push fails.  Tried once per
+ * scan. */
+static void scan_readers_start(retro_task_t *task,
+      manual_scan_handle_t *manual_scan)
+{
+   scan_readers_t *blk;
+   size_t          i;
+   unsigned        n = cpu_features_get_core_amount();
+   unsigned        r;
+
+   manual_scan->readers_tried = true;
+   if (n > SCAN_READERS_MAX)
+      n = SCAN_READERS_MAX;
+   if (n < 2 || !task_queue_is_threaded())
+      return;
+   if (!(blk = (scan_readers_t*)calloc(1, sizeof(*blk))))
+      return;
+   retro_atomic_int_init(&blk->refs, 1);
+   blk->window = n * SCAN_READER_DEPTH;
+   if (   !(blk->win    = (scan_slot_t*)calloc(blk->window,
+            sizeof(*blk->win)))
+       || !(blk->paths  = (char*)malloc(blk->window * PATH_MAX_LENGTH))
+       || !(blk->idents = (uint32_t*)calloc(n, sizeof(*blk->idents))))
+   {
+      scan_readers_unref(blk);
+      return;
+   }
+   for (i = 0; i < blk->window; i++)
+   {
+      blk->win[i].path = blk->paths + i * PATH_MAX_LENGTH;
+      retro_atomic_int_init(&blk->win[i].state, SCAN_SLOT_EMPTY);
+   }
+   blk->ident = task->ident;
+   blk->fill  = manual_scan->content_list_index;
+   retro_atomic_int_init(&blk->filled, 0);
+   retro_atomic_int_init(&blk->claim,  0);
+   retro_atomic_int_init(&blk->idle,   0);
+   retro_atomic_int_init(&blk->quit,   0);
+   retro_atomic_int_init(&blk->live,   (int)n);
+   retro_atomic_int_init(&blk->refs,   (int)n + 1);
+   for (r = 0; r < n; r++)
+   {
+      retro_task_t  *rt = NULL;
+      scan_reader_t *rd = (scan_reader_t*)calloc(1, sizeof(*rd));
+
+      if (!rd || !(rt = task_init()))
+      {
+         free(rd);
+         break;
+      }
+      rd->blk              = blk;
+      rt->handler          = scan_reader_handler;
+      rt->cleanup          = scan_reader_cleanup;
+      rt->state            = rd;
+      rt->parallel_workers = n;
+      task_set_flags(rt, RETRO_TASK_FLG_PARALLEL
+            | RETRO_TASK_FLG_DETACHABLE | RETRO_TASK_FLG_MUTE, true);
+      blk->idents[r]       = rt->ident;
+      /* A refused task is still ours. */
+      if (!task_queue_push(rt))
+      {
+         free(rd);
+         free(rt);
+         break;
+      }
+      blk->count++;
+   }
+   for (; r < n; r++)
+   {
+      retro_atomic_fetch_add_int(&blk->live, -1);
+      scan_readers_unref(blk);
+   }
+   if (!blk->count)
+   {
+      scan_readers_unref(blk);
+      return;
+   }
+   manual_scan->readers = blk;
+}
+
+/* The scan lets go: each reader leaves at its next call.  Idempotent. */
+static void scan_readers_stop(manual_scan_handle_t *manual_scan)
+{
+   scan_readers_t *blk = manual_scan->readers;
+
+   if (!blk)
+      return;
+   manual_scan->readers = NULL;
+   retro_atomic_store_release_int(&blk->quit, 1);
+   scan_readers_wake(blk);
+   scan_readers_unref(blk);
+}
+
+/* Free slots take the eligible files of the window ahead, in list
+ * order.  None while the scan is on a cue or gdi: those sort first
+ * (database_info_dir_init_from_list()), and each prunes its tracks
+ * when the scan reaches it. */
+static void scan_readers_fill(manual_scan_handle_t *manual_scan)
+{
+   scan_readers_t     *blk   = manual_scan->readers;
+   struct string_list *list  = manual_scan->content_list;
+   int                 added = 0;
+   size_t              end;
+
+   if (!blk || blk->off)
+      return;
+   if (   !task_queue_is_threaded()
+       || retro_atomic_load_seq_cst_int(&blk->live) <= 0)
+   {
+      blk->off = true;
+      return;
+   }
+   if (manual_scan->content_list_index < list->size)
+      switch (extension_to_file_type(path_get_extension(
+            list->elems[manual_scan->content_list_index].data)))
+      {
+         case FILE_TYPE_CUE:
+         case FILE_TYPE_GDI:
+            return;
+         default:
+            break;
+      }
+   end = manual_scan->content_list_index + blk->window;
+   if (end > list->size)
+      end = list->size;
+   if (blk->fill < manual_scan->content_list_index)
+      blk->fill = manual_scan->content_list_index;
+   while (blk->fill < end && blk->seq - blk->take < blk->window)
+   {
+      const char *path = list->elems[blk->fill].data;
+
+      if (scan_reader_eligible(path))
+      {
+         scan_slot_t *slot = &blk->win[blk->seq % blk->window];
+
+         slot->index = blk->fill;
+         slot->size  = 0;
+         slot->crc   = 0;
+         /* A copy: the list moves and is pruned under the readers. */
+         strlcpy(slot->path, path, PATH_MAX_LENGTH);
+         retro_atomic_store_release_int(&slot->state, SCAN_SLOT_READY);
+         blk->seq++;
+         added++;
+      }
+      blk->fill++;
+   }
+   if (!added)
+      return;
+   /* seq_cst: see scan_reader_handler(). */
+   retro_atomic_fetch_add_seq_cst_int(&blk->filled, added);
+   if (retro_atomic_load_seq_cst_int(&blk->idle) > 0)
+      scan_readers_wake(blk);
+}
+
+/* File content_list_index's result, at its own place only: an OK one
+ * leaves the state a finished stepped CRC leaves.  The slots up to it
+ * go back for refilling; a READY one is the readers' until they are
+ * off. */
+static enum scan_take scan_readers_take(manual_scan_handle_t *manual_scan,
+      database_state_handle_t *db_state, database_info_handle_t *db,
+      const char *name)
+{
+   scan_readers_t *blk = manual_scan->readers;
+   size_t          i   = manual_scan->content_list_index;
+
+   if (!blk)
+      return SCAN_TAKE_NONE;
+   while (blk->take != blk->seq)
+   {
+      scan_slot_t *slot = &blk->win[blk->take % blk->window];
+      int          state;
+
+      if (slot->index > i)
+         break;
+      state = retro_atomic_load_acquire_int(&slot->state);
+      if (state == SCAN_SLOT_IN_FLIGHT)
+         return SCAN_TAKE_WAIT;
+      if (state == SCAN_SLOT_READY)
+      {
+         if (   !blk->off
+             || !retro_atomic_cas_int(&slot->state, SCAN_SLOT_READY,
+                  SCAN_SLOT_EMPTY))
+            return SCAN_TAKE_WAIT;
+         state = SCAN_SLOT_EMPTY;
+      }
+      blk->take++;
+      if (slot->index == i && state == SCAN_SLOT_OK)
+      {
+         if (extension_to_file_type(path_get_extension(name))
+               == FILE_TYPE_COMPRESSED)
+         {
+            db_state->archive_crc  = slot->crc;
+            db_state->archive_size = slot->size;
+         }
+         else
+         {
+            db_state->serial[0] = '\0';
+            db_state->crc       = slot->crc;
+            db_state->size      = slot->size;
+         }
+         db_state->crc_done = true;
+         db->type           = DATABASE_TYPE_CRC_LOOKUP;
+         retro_atomic_store_release_int(&slot->state, SCAN_SLOT_EMPTY);
+         return SCAN_TAKE_DONE;
+      }
+      retro_atomic_store_release_int(&slot->state, SCAN_SLOT_EMPTY);
+      if (slot->index == i)
+         break;
+   }
+   /* The task reads it: not a reader too. */
+   if (blk->fill <= i)
+      blk->fill = i + 1;
+   return SCAN_TAKE_NONE;
+}
+#endif
+
+static void task_database_index_close(database_state_handle_t *db_state)
+{
+   database_info_index_job_free(db_state->index_job);
+   db_state->index_job   = NULL;
+   db_state->index_ready = false;
+}
+
+/* Begins the current database's index build, or takes what it built.
+ * False while it runs: the caller returns SCAN_VERDICT_CONTINUE, the
+ * steps that follow run the build, and the caller comes back here for
+ * it.  A build that cannot begin gives nothing, as a failed one. */
+static bool task_database_index_take(database_state_handle_t *db_state,
+      database_info_crc_index_t **crc,
+      database_info_serial_index_t **serial, bool *has_serial)
+{
+   if (!db_state->index_job)
+   {
+      unsigned want = 0;
+
+      if (crc)
+         want |= DATABASE_INFO_INDEX_CRC;
+      if (serial)
+         want |= DATABASE_INFO_INDEX_SERIAL;
+      if (has_serial)
+         want |= DATABASE_INFO_INDEX_HAS_SERIAL;
+      if ((db_state->index_job = database_info_index_job_new(
+            db_state->list->elems[db_state->list_index].data,
+            db_state->index_budget, want)))
+         return false;
+   }
+   database_info_index_job_finish(db_state->index_job, crc, serial,
+         has_serial);
+   db_state->index_job   = NULL;
+   db_state->index_ready = false;
+   return true;
+}
+
+/* One unit of the build always, then more while the window lasts. */
+static enum scan_verdict task_database_index_step(
+      database_state_handle_t *db_state, nbio_budget_t *b)
+{
+   while (!database_info_index_job_step(db_state->index_job,
+            SCAN_INDEX_RECORDS, SCAN_INDEX_ENTRIES))
+      if (!task_nbio_slice_within_budget(b, 0, 0))
+         return SCAN_VERDICT_CONTINUE;
+   db_state->index_ready = true;
+   return SCAN_VERDICT_CONTINUE;
 }
 
 static int task_database_iterate_playlist(
@@ -907,9 +1577,9 @@ static int task_database_iterate_playlist(
 #ifdef HAVE_COMPRESSION
          db->type = DATABASE_TYPE_CRC_LOOKUP;
          /* first check crc of archive itself */
-         return intfstream_file_get_crc_and_size(name,
-               0, INT64_MAX, &db_state->archive_crc,
-               &db_state->archive_size);
+         return task_database_crc_begin(db_state, name,
+               TASK_DATABASE_CRC_FILE, DB_CRC_DEST_ARCHIVE,
+               DB_CRC_FAIL_ERROR);
 #else
          break;
 #endif
@@ -924,7 +1594,8 @@ static int task_database_iterate_playlist(
             db->type = DATABASE_TYPE_CRC_LOOKUP;
             db_state->serial[0] = '\0';
             RARCH_DBG("[Scanner] CUE file serial not detected, fallback to crc.\n");
-            return task_database_cue_get_crc_and_size(name, &db_state->crc, &db_state->size);
+            return task_database_crc_begin(db_state, name,
+                  TASK_DATABASE_CRC_CUE, DB_CRC_DEST_FILE, DB_CRC_FAIL_ERROR);
          }
          break;
       case FILE_TYPE_GDI:
@@ -938,7 +1609,8 @@ static int task_database_iterate_playlist(
             db->type = DATABASE_TYPE_CRC_LOOKUP;
             db_state->serial[0] = '\0';
             RARCH_DBG("[Scanner] GDI file serial not detected, fallback to crc.\n");
-            return task_database_gdi_get_crc_and_size(name, &db_state->crc, &db_state->size);
+            return task_database_crc_begin(db_state, name,
+                  TASK_DATABASE_CRC_GDI, DB_CRC_DEST_FILE, DB_CRC_FAIL_ERROR);
          }
          break;
       /* Consider WBFS, RVZ and WIA files similar to ISO files. */
@@ -963,7 +1635,8 @@ static int task_database_iterate_playlist(
             db->type         = DATABASE_TYPE_CRC_LOOKUP;
             db_state->serial[0] = '\0';
             RARCH_DBG("[Scanner] CHD file serial not detected, fallback to crc.\n");
-            return task_database_chd_get_crc_and_size(name, &db_state->crc, &db_state->size);
+            return task_database_crc_begin(db_state, name,
+                  TASK_DATABASE_CRC_CHD, DB_CRC_DEST_FILE, DB_CRC_FAIL_ERROR);
          }
          break;
       case FILE_TYPE_PBP:
@@ -975,7 +1648,21 @@ static int task_database_iterate_playlist(
             db->type         = DATABASE_TYPE_CRC_LOOKUP;
             db_state->serial[0] = '\0';
             RARCH_DBG("[Scanner] PBP file serial not detected, fallback to crc.\n");
-            return intfstream_file_get_crc_and_size(name, 0, INT64_MAX, &db_state->crc, &db_state->size);
+            return task_database_crc_begin(db_state, name,
+                  TASK_DATABASE_CRC_FILE, DB_CRC_DEST_FILE, DB_CRC_FAIL_ERROR);
+         }
+         break;
+      case FILE_TYPE_3DS:
+         db_state->serial[0] = '\0';
+         if (task_database_3ds_get_serial(name, db_state->serial, sizeof(db_state->serial),&db_state->size))
+            db->type         = DATABASE_TYPE_SERIAL_LOOKUP;
+         else
+         {
+            db->type         = DATABASE_TYPE_CRC_LOOKUP;
+            db_state->serial[0] = '\0';
+            RARCH_DBG("[Scanner] 3DS file serial not detected, fallback to crc.\n");
+            return task_database_crc_begin(db_state, name,
+                  TASK_DATABASE_CRC_FILE, DB_CRC_DEST_FILE, DB_CRC_FAIL_ERROR);
          }
          break;
       case FILE_TYPE_LUTRO:
@@ -984,7 +1671,8 @@ static int task_database_iterate_playlist(
       default:
          db_state->serial[0] = '\0';
          db->type            = DATABASE_TYPE_CRC_LOOKUP;
-         return intfstream_file_get_crc_and_size(name, 0, INT64_MAX, &db_state->crc, &db_state->size);
+         return task_database_crc_begin(db_state, name,
+               TASK_DATABASE_CRC_FILE, DB_CRC_DEST_FILE, DB_CRC_FAIL_ERROR);
    }
 
    return 1;
@@ -1061,6 +1749,7 @@ static enum scan_verdict database_info_list_iterate_end_no_match(
    db_state->size         = 0;
    db_state->archive_size = 0;
    db_state->serial[0]    = '\0';
+   task_database_crc_close(db_state);
 
    if (db_state->crc != 0)
       db_state->crc = 0;
@@ -1149,7 +1838,7 @@ static enum scan_verdict database_info_list_iterate_found_match(
     * db_info_entry likewise: taking the matched entry as
     * &info->list[entry_index] unconditionally reads info and indexes
     * list on nothing but the caller's word.  Every caller
-    * does test both - each of the four reaches this function from
+    * does test both - each reaches this function from
     * inside an "info && entry_index < info->count" - so this is the
     * invariant being stated where it is relied on rather than a
     * reachable fault.  It is the same shape as the two the callers
@@ -1235,6 +1924,7 @@ static enum scan_verdict database_info_list_iterate_found_match(
    db_state->size         = 0;
    db_state->archive_size = 0;
    db_state->serial[0]    = '\0';
+   task_database_crc_close(db_state);
 
    /* Move database to start since we are likely to match against it
       again */
@@ -1364,42 +2054,53 @@ static bool task_database_state_alloc_arrays(
    return true;
 }
 
-static void task_database_fill_db_min_max(database_state_handle_t *db_state)
+/* False while the index walk it began runs: it is called again once
+ * the walk is done. */
+static bool task_database_fill_db_min_max(database_state_handle_t *db_state,
+      database_info_serial_index_t **serial)
 {
+   const char *rdb        = db_state->list->elems[db_state->list_index].data;
+   bool        has_serial = false;
    char query[50];
    query[0] = '\0';
-
-   /* Marked up front so that every exit below - including the ones
-    * that record a placeholder range - counts as having been asked.
-    * This is what stops the two walks repeating per content file. */
-   db_state->flags[db_state->list_index] |= DB_STATE_FLAG_SIZE_CHECKED;
 
    /* The crc index collects the size range while it walks, so build
     * it here and take the range from it: one walk instead of this
     * function's two, and the crc lookup then finds the index already
-    * built.  The queries below still run for a database the index
-    * cannot cover. */
+    * built.  The same walk sees whether any record carries a serial
+    * and, given @serial, builds the serial index too, so the serial
+    * lookup reads the database once. */
+   if (   rdb && *rdb
+       && !db_state->crc_index[db_state->list_index]
+       && db_state->index_budget)
    {
-      const char *rdb = db_state->list->elems[db_state->list_index].data;
-      int64_t     lo  = 0;
-      int64_t     hi  = 0;
+      database_info_crc_index_t *ci = NULL;
+
+      if (!task_database_index_take(db_state, &ci, serial, &has_serial))
+         return false;
+      if (ci)
+      {
+         size_t used = database_info_crc_index_bytes(ci);
+         db_state->index_budget = (used < db_state->index_budget)
+            ? db_state->index_budget - used : 0;
+         db_state->crc_index[db_state->list_index] = ci;
+      }
+   }
+
+   /* Marked once the walk is in, so that every exit below - including
+    * the ones that record a placeholder range - counts as having been
+    * asked.  This is what stops the walks repeating per content
+    * file. */
+   db_state->flags[db_state->list_index] |= DB_STATE_FLAG_SIZE_CHECKED;
+
+   /* The queries below still run for a database the index cannot
+    * cover. */
+   {
+      int64_t lo = 0;
+      int64_t hi = 0;
 
       if (rdb && *rdb)
       {
-         if (   !db_state->crc_index[db_state->list_index]
-             && db_state->index_budget)
-         {
-            database_info_crc_index_t *ci =
-               database_info_crc_index_new(rdb, db_state->index_budget);
-            if (ci)
-            {
-               size_t used = database_info_crc_index_bytes(ci);
-               db_state->index_budget = (used < db_state->index_budget)
-                  ? db_state->index_budget - used : 0;
-               db_state->crc_index[db_state->list_index] = ci;
-            }
-         }
-
          if (   db_state->crc_index[db_state->list_index]
              && database_info_crc_index_size_range(
                    db_state->crc_index[db_state->list_index], &lo, &hi))
@@ -1409,21 +2110,16 @@ static void task_database_fill_db_min_max(database_state_handle_t *db_state)
             db_state->flags[db_state->list_index]    |=
                DB_STATE_FLAG_HAS_SIZE;
 
-            /* HAS_SERIAL gates a skip in the serial lookup, and this
-             * walk does not observe serial keys - it scans crc with
-             * size alongside.  Set it rather than leave it clear:
-             * clear would skip every database for disc content, which
-             * is a missed match, while set costs at most one wasted
-             * serial-index build for a database that carries none.
-             * Every database shipped today carries serials.
-             *
-             * HAS_CRC is set for symmetry; nothing reads it beyond a
-             * debug line. */
-            db_state->flags[db_state->list_index] |=
-               DB_STATE_FLAG_HAS_CRC | DB_STATE_FLAG_HAS_SERIAL;
+            /* HAS_SERIAL gates a skip in the serial lookup.  HAS_CRC
+             * is set for symmetry; nothing reads it beyond a debug
+             * line. */
+            db_state->flags[db_state->list_index] |= DB_STATE_FLAG_HAS_CRC;
+            if (has_serial)
+               db_state->flags[db_state->list_index] |=
+                  DB_STATE_FLAG_HAS_SERIAL;
 
             db_state->entry_index = 0;
-            return;
+            return true;
          }
       }
    }
@@ -1441,7 +2137,7 @@ static void task_database_fill_db_min_max(database_state_handle_t *db_state)
       db_state->min_sizes[db_state->list_index] = -1;
       db_state->max_sizes[db_state->list_index] = -1;
       db_state->entry_index                     = 0;
-      return;
+      return true;
    }
 
    if (db_state->info->count > 0)
@@ -1484,6 +2180,32 @@ static void task_database_fill_db_min_max(database_state_handle_t *db_state)
 #endif
    }
    db_state->entry_index = 0;
+   return true;
+}
+
+/* Passes over the run of databases, from the current one, that no
+ * installed core claims @name for.  True when it passed over any. */
+static bool task_database_skip_unclaimed(database_state_handle_t *db_state,
+      const char *name, bool path_contains_compressed_file)
+{
+   /* Every database the gate refuses is passed over in this one
+    * step, so a file costs a step per database it can match rather
+    * than one per database in the directory. */
+   const char *ext = path_get_extension(name);
+   bool skipped    = false;
+
+   while (   db_state->list_index < db_state->list->size
+          && (   !string_list_find_elem(
+                     db_state->claim_exts[db_state->list_index], ext)
+              || (   !path_contains_compressed_file
+                  && (db_state->flags[db_state->list_index]
+                     & DB_STATE_FLAG_ARCHIVE_MEMBER))))
+   {
+      database_info_list_iterate_next(db_state);
+      skipped = true;
+   }
+
+   return skipped;
 }
 
 static enum scan_verdict task_database_iterate_crc_lookup(
@@ -1528,33 +2250,15 @@ static enum scan_verdict task_database_iterate_crc_lookup(
     * including the ones no installed core claims and which can never
     * match - 200 MB of .rdb reads to scan a 70 MB set with the
     * shipped database directory.  Ask the cheap question first. */
-   if (!(_db->flags & DB_HANDLE_FLAG_SCAN_WITHOUT_CORE_MATCH))
-   {
-      /* Every database the gate refuses is passed over in this one
-       * step, so a file costs a handler call per database it can
-       * match rather than one per database in the directory - under
-       * the regular task queue that is a frame each. */
-      const char *ext = path_get_extension(name);
-      bool skipped    = false;
-
-      while (   db_state->list_index < db_state->list->size
-             && (   !string_list_find_elem(
-                        db_state->claim_exts[db_state->list_index], ext)
-                 || (   !path_contains_compressed_file
-                     && (db_state->flags[db_state->list_index]
-                        & DB_STATE_FLAG_ARCHIVE_MEMBER))))
-      {
-         database_info_list_iterate_next(db_state);
-         skipped = true;
-      }
-
-      if (skipped)
-         return SCAN_VERDICT_CONTINUE;
-   }
+   if (   !(_db->flags & DB_HANDLE_FLAG_SCAN_WITHOUT_CORE_MATCH)
+       && task_database_skip_unclaimed(db_state, name,
+            path_contains_compressed_file))
+      return SCAN_VERDICT_CONTINUE;
 
    /* If size boundaries are not filled for this DB, run the queries */
-   if (!(db_state->flags[db_state->list_index] & DB_STATE_FLAG_SIZE_CHECKED))
-      task_database_fill_db_min_max(db_state);
+   if (   !(db_state->flags[db_state->list_index] & DB_STATE_FLAG_SIZE_CHECKED)
+       && !task_database_fill_db_min_max(db_state, NULL))
+      return SCAN_VERDICT_CONTINUE;
 
    if (db_state->min_sizes[db_state->list_index] > 0)
    {
@@ -1617,8 +2321,10 @@ static enum scan_verdict task_database_iterate_crc_lookup(
          if (   !db_state->crc_index[db_state->list_index]
              && db_state->index_budget)
          {
-            database_info_crc_index_t *ci =
-               database_info_crc_index_new(rdb, db_state->index_budget);
+            database_info_crc_index_t *ci = NULL;
+
+            if (!task_database_index_take(db_state, &ci, NULL, NULL))
+               return SCAN_VERDICT_CONTINUE;
             if (ci)
             {
                size_t used = database_info_crc_index_bytes(ci);
@@ -1767,6 +2473,9 @@ static int task_database_iterate_serial_lookup(
       bool path_contains_compressed_file,
       bool size_hint_allowed)
 {
+   /* The serial index the size walk builds: taken below, or freed
+    * where a gate passes the database over. */
+   database_info_serial_index_t *si = NULL;
 #ifdef DEBUG
    RARCH_DBG("[Scanner] Serial check, list_idx %d/%d, entry_idx %d.\n",
          db_state->list_index, db_state->list->size, db_state->entry_index);
@@ -1779,12 +2488,38 @@ static int task_database_iterate_serial_lookup(
          && db_state->list_index > 0 
          && db_state->flags[0] & DB_STATE_FLAG_MATCHED)
       )
+   {
+      /* A 3DS file the serial pass left unmatched goes to the crc
+       * lookup, reusing any crc the serial check computed. */
+      if (   db_state->list
+          && extension_to_file_type(path_get_extension(name)) == FILE_TYPE_3DS)
+      {
+         db_state->serial[0]   = '\0';
+         db_state->list_index  = 0;
+         db_state->entry_index = 0;
+         db->type              = DATABASE_TYPE_CRC_LOOKUP;
+         if (   !db_state->crc_done
+             && !task_database_crc_begin(db_state, name,
+                  TASK_DATABASE_CRC_FILE, DB_CRC_DEST_FILE,
+                  DB_CRC_FAIL_ERROR))
+            return SCAN_VERDICT_ERROR;
+         return SCAN_VERDICT_CONTINUE;
+      }
       return database_info_list_iterate_end_no_match(_db, db, db_state, name,
             path_contains_compressed_file);
+   }
+
+   /* 3DS images, unlike discs, keep the crc lookup's core gate. */
+   if (   !(_db->flags & DB_HANDLE_FLAG_SCAN_WITHOUT_CORE_MATCH)
+       && extension_to_file_type(path_get_extension(name)) == FILE_TYPE_3DS
+       && task_database_skip_unclaimed(db_state, name,
+            path_contains_compressed_file))
+      return SCAN_VERDICT_CONTINUE;
 
    /* If size boundaries are not filled for this DB, run the queries */
-   if (!(db_state->flags[db_state->list_index] & DB_STATE_FLAG_SIZE_CHECKED))
-      task_database_fill_db_min_max(db_state);
+   if (   !(db_state->flags[db_state->list_index] & DB_STATE_FLAG_SIZE_CHECKED)
+       && !task_database_fill_db_min_max(db_state, &si))
+      return SCAN_VERDICT_CONTINUE;
 
    if (db_state->min_sizes[db_state->list_index] > 0)
    {
@@ -1793,6 +2528,7 @@ static int task_database_iterate_serial_lookup(
 #ifdef DEBUG
          RARCH_DBG("[Scanner] Skipping DB, no serials here.\n");
 #endif
+         database_info_serial_index_free(si);
          return database_info_list_iterate_next(db_state);
       }
 
@@ -1817,6 +2553,7 @@ static int task_database_iterate_serial_lookup(
             RARCH_DBG("[Scanner] Skipping DB, neither archive nor uncompressed size %ld/%ld is in range.\n",
                   db_state->archive_size, db_state->size);
 #endif
+            database_info_serial_index_free(si);
             return database_info_list_iterate_next(db_state);
          }
       }
@@ -1828,6 +2565,7 @@ static int task_database_iterate_serial_lookup(
 #ifdef DEBUG
          RARCH_DBG("[Scanner] Skipping DB, file size %ld not in range.\n", db_state->size);
 #endif
+         database_info_serial_index_free(si);
          return database_info_list_iterate_next(db_state);
       }
    }
@@ -1849,18 +2587,17 @@ static int task_database_iterate_serial_lookup(
        * still runs. */
       if (rdb && *rdb)
       {
-         if (   !db_state->serial_index[db_state->list_index]
-             && db_state->index_budget)
+         if (   !si
+             && !db_state->serial_index[db_state->list_index]
+             && db_state->index_budget
+             && !task_database_index_take(db_state, NULL, &si, NULL))
+            return SCAN_VERDICT_CONTINUE;
+         if (si)
          {
-            database_info_serial_index_t *si =
-               database_info_serial_index_new(rdb, db_state->index_budget);
-            if (si)
-            {
-               size_t used = database_info_serial_index_bytes(si);
-               db_state->index_budget = (used < db_state->index_budget)
-                  ? db_state->index_budget - used : 0;
-               db_state->serial_index[db_state->list_index] = si;
-            }
+            size_t used = database_info_serial_index_bytes(si);
+            db_state->index_budget = (used < db_state->index_budget)
+               ? db_state->index_budget - used : 0;
+            db_state->serial_index[db_state->list_index] = si;
          }
 
          if (db_state->serial_index[db_state->list_index])
@@ -1943,6 +2680,28 @@ serial_query_done:
 
    if (db_state->info)
    {
+      /* A 3DS product code is shared by a title's revisions and
+       * regions: the crc picks among them, and the first stands in
+       * when it matches none.  scan_serial_and_crc makes the crc a
+       * requirement, as it is for PSP and Dreamcast. */
+      size_t ctr_first = db_state->info->count;
+      size_t ctr_hits  = 0;
+      bool   ctr_crc   = false;
+
+      if (extension_to_file_type(path_get_extension(name)) == FILE_TYPE_3DS)
+      {
+         size_t i;
+         for (i = 0; i < db_state->info->count; i++)
+         {
+            const char *serial = db_state->info->list[i].serial;
+            if (!serial || !string_is_equal(db_state->serial, serial))
+               continue;
+            if (!ctr_hits++)
+               ctr_first = i;
+         }
+         ctr_crc = ctr_hits > 1 || _db->task_config->scan_serial_and_crc;
+      }
+
       /* "<=" walked one element past the end of the list and then
        * dereferenced it: db_info_entry->serial reads a pointer out of
        * whatever follows the allocation and hands it to
@@ -1960,15 +2719,22 @@ serial_query_done:
          {
             if (string_is_equal(db_state->serial, db_info_entry->serial))
             {
-               if (task_database_check_serial_and_crc(db_state,
+               if (   ctr_crc
+                   || task_database_check_serial_and_crc(db_state,
                      _db->task_config->scan_serial_and_crc))
                {
-                  if (db_state->crc == 0)
+                  /* Resumes at this entry once the CRC is in.  A file
+                   * that cannot be read keeps a CRC of 0. */
+                  if (!db_state->crc_done)
                   {
-                     if (extension_to_file_type(path_get_extension(name)) == FILE_TYPE_GDI)
-                        task_database_gdi_get_crc_and_size(name, &db_state->crc, &db_state->size);
-                     else
-                        intfstream_file_get_crc_and_size(name, 0, INT64_MAX, &db_state->crc, &db_state->size);
+                     if (task_database_crc_begin(db_state, name,
+                           extension_to_file_type(path_get_extension(name))
+                              == FILE_TYPE_GDI
+                           ? TASK_DATABASE_CRC_GDI : TASK_DATABASE_CRC_FILE,
+                           DB_CRC_DEST_FILE, DB_CRC_FAIL_ZERO))
+                        return SCAN_VERDICT_CONTINUE;
+                     db_state->crc      = 0;
+                     db_state->crc_done = true;
                   }
 
                   if (db_state->crc == db_info_entry->crc32)
@@ -1981,6 +2747,13 @@ serial_query_done:
             }
          }
          db_state->entry_index++;
+      }
+
+      if (ctr_hits > 1 && !_db->task_config->scan_serial_and_crc)
+      {
+         db_state->entry_index = ctr_first;
+         return database_info_list_iterate_found_match(_db,
+               db_state, db, NULL);
       }
    }
 
@@ -2006,8 +2779,13 @@ static int task_database_iterate(
       const char *name,
       database_state_handle_t *db_state,
       database_info_handle_t *db,
-      bool path_contains_compressed_file)
+      bool path_contains_compressed_file,
+      nbio_budget_t *b)
 {
+   if (db_state->crc_fd)
+      return task_database_crc_step(db_state, b);
+   if (db_state->index_job && !db_state->index_ready)
+      return task_database_index_step(db_state, b);
 #ifdef DEBUG
    RARCH_DBG("[Scanner] Type %d, \"%s\" against \"%s\".\n", db->type, name, database_info_get_current_name(db_state));
    /* list_index == list->size is a valid state here (every database
@@ -2020,6 +2798,17 @@ static int task_database_iterate(
    switch (db->type)
    {
       case DATABASE_TYPE_ITERATE:
+#ifdef SCAN_HAVE_READERS
+         switch (scan_readers_take(_db, db_state, db, name))
+         {
+            case SCAN_TAKE_DONE:
+               return SCAN_VERDICT_CONTINUE;
+            case SCAN_TAKE_WAIT:
+               return SCAN_VERDICT_WAIT;
+            default:
+               break;
+         }
+#endif
          if (task_database_iterate_playlist(_db, db_state, db, name))
             return SCAN_VERDICT_CONTINUE;
          else
@@ -2060,6 +2849,8 @@ static void task_database_cleanup_state(database_state_handle_t *db_state)
    if (db_state->buf)
       free(db_state->buf);
    db_state->buf = NULL;
+   task_database_crc_close(db_state);
+   task_database_index_close(db_state);
 }
 #endif
 /* Batch update playlists from accumulated scan results */
@@ -2195,8 +2986,10 @@ static bool manual_scan_end_flush_tick(
           * fallback below */
          manual_scan->flush_dedup = playlist_dedup_init();
 
-         /* Set default core, if required */
-         if (manual_scan->task_config->core_set)
+         /* Set default core, if required.
+          * A file is only added: the playlist keeps its own. */
+         if (    manual_scan->task_config->core_set
+             && !manual_scan->task_config->content_is_file)
          {
             playlist_set_default_core_path(manual_scan->flush_playlist,
                   manual_scan->task_config->core_path);
@@ -2205,30 +2998,35 @@ static bool manual_scan_end_flush_tick(
          }
 
          /* Record remaining scan parameters to enable
-          * subsequent 'refresh playlist' operations */
-         playlist_set_scan_content_dir(manual_scan->flush_playlist,
-               manual_scan->task_config->content_dir);
-         playlist_set_scan_file_exts(manual_scan->flush_playlist,
-               manual_scan->task_config->file_exts_custom_set ?
-                     manual_scan->task_config->file_exts : NULL);
-         if (manual_scan->task_config->db_usage == MANUAL_CONTENT_SCAN_USE_DB_DAT_LOOSE ||
-             manual_scan->task_config->db_usage == MANUAL_CONTENT_SCAN_USE_DB_DAT_STRICT)
-            playlist_set_scan_dat_file_path(manual_scan->flush_playlist,
-                  manual_scan->task_config->dat_file_path);
-         playlist_set_scan_database_name(manual_scan->flush_playlist,
-                  manual_scan->task_config->database_name);
-         playlist_set_scan_search_recursively(manual_scan->flush_playlist,
-               manual_scan->task_config->search_recursively);
-         playlist_set_scan_search_archives(manual_scan->flush_playlist,
-               manual_scan->task_config->search_archives);
-         playlist_set_scan_filter_dat_content(manual_scan->flush_playlist,
-               manual_scan->task_config->filter_dat_content);
-         playlist_set_scan_overwrite_playlist(manual_scan->flush_playlist,
-               manual_scan->task_config->overwrite_playlist);
-         playlist_set_scan_db_usage(manual_scan->flush_playlist,
-               manual_scan->task_config->db_usage);
-         playlist_set_scan_omit_db_ref(manual_scan->flush_playlist,
-               manual_scan->task_config->omit_db_reference);
+          * subsequent 'refresh playlist' operations.
+          * A file is only added, so the playlist keeps its folder's scan
+          * settings. */
+         if (!manual_scan->task_config->content_is_file)
+         {
+            playlist_set_scan_content_dir(manual_scan->flush_playlist,
+                  manual_scan->task_config->content_dir);
+            playlist_set_scan_file_exts(manual_scan->flush_playlist,
+                  manual_scan->task_config->file_exts_custom_set ?
+                        manual_scan->task_config->file_exts : NULL);
+            if (manual_scan->task_config->db_usage == MANUAL_CONTENT_SCAN_USE_DB_DAT_LOOSE ||
+                manual_scan->task_config->db_usage == MANUAL_CONTENT_SCAN_USE_DB_DAT_STRICT)
+               playlist_set_scan_dat_file_path(manual_scan->flush_playlist,
+                     manual_scan->task_config->dat_file_path);
+            playlist_set_scan_database_name(manual_scan->flush_playlist,
+                     manual_scan->task_config->database_name);
+            playlist_set_scan_search_recursively(manual_scan->flush_playlist,
+                  manual_scan->task_config->search_recursively);
+            playlist_set_scan_search_archives(manual_scan->flush_playlist,
+                  manual_scan->task_config->search_archives);
+            playlist_set_scan_filter_dat_content(manual_scan->flush_playlist,
+                  manual_scan->task_config->filter_dat_content);
+            playlist_set_scan_overwrite_playlist(manual_scan->flush_playlist,
+                  manual_scan->task_config->overwrite_playlist);
+            playlist_set_scan_db_usage(manual_scan->flush_playlist,
+                  manual_scan->task_config->db_usage);
+            playlist_set_scan_omit_db_ref(manual_scan->flush_playlist,
+                  manual_scan->task_config->omit_db_reference);
+         }
 
          RARCH_LOG("[Scanner] Processing playlist: \"%s\".\n", result->db_name);
       }
@@ -2354,6 +3152,10 @@ static void free_manual_content_scan_handle(manual_scan_handle_t *manual_scan)
    if (!manual_scan)
       return;
 
+#ifdef SCAN_HAVE_READERS
+   scan_readers_stop(manual_scan);
+#endif
+
    if (manual_scan->task_config)
    {
       free(manual_scan->task_config);
@@ -2460,6 +3262,8 @@ static void free_manual_content_scan_handle(manual_scan_handle_t *manual_scan)
           * returns then drives the loops below. */
          size_t db_count = dbstate->list ? dbstate->list->size : 0;
 
+         task_database_crc_close(dbstate);
+         task_database_index_close(dbstate);
          if (dbstate->list)
          {
             dir_list_free(dbstate->list);
@@ -3053,8 +3857,10 @@ static bool manual_scan_begin_playlist(retro_task_t *task,
    manual_scan->playlist_size =
       playlist_size(manual_scan->playlist);
 
-   /* Set default core, if required */
-   if (manual_scan->task_config->core_set)
+   /* Set default core, if required.
+    * A file is only added: the playlist keeps its own. */
+   if (    manual_scan->task_config->core_set
+       && !manual_scan->task_config->content_is_file)
    {
       playlist_set_default_core_path(manual_scan->playlist,
             manual_scan->task_config->core_path);
@@ -3063,37 +3869,44 @@ static bool manual_scan_begin_playlist(retro_task_t *task,
    }
 
    /* Record remaining scan parameters to enable
-    * subsequent 'refresh playlist' operations */
-   playlist_set_scan_content_dir(manual_scan->playlist,
-         manual_scan->task_config->content_dir);
-   playlist_set_scan_file_exts(manual_scan->playlist,
-         manual_scan->task_config->file_exts_custom_set ?
-               manual_scan->task_config->file_exts : NULL);
-   if (manual_scan->task_config->db_usage == MANUAL_CONTENT_SCAN_USE_DB_DAT_LOOSE ||
-       manual_scan->task_config->db_usage == MANUAL_CONTENT_SCAN_USE_DB_DAT_STRICT)
-      playlist_set_scan_dat_file_path(manual_scan->playlist,
-            manual_scan->task_config->dat_file_path);
-   playlist_set_scan_database_name(manual_scan->playlist,
-         manual_scan->task_config->database_name);
-   playlist_set_scan_search_recursively(manual_scan->playlist,
-         manual_scan->task_config->search_recursively);
-   playlist_set_scan_search_archives(manual_scan->playlist,
-         manual_scan->task_config->search_archives);
-   playlist_set_scan_filter_dat_content(manual_scan->playlist,
-         manual_scan->task_config->filter_dat_content);
-   playlist_set_scan_overwrite_playlist(manual_scan->playlist,
-         manual_scan->task_config->overwrite_playlist);
-   playlist_set_scan_db_usage(manual_scan->playlist,
-         manual_scan->task_config->db_usage);
-   playlist_set_scan_omit_db_ref(manual_scan->playlist,
-         manual_scan->task_config->omit_db_reference);
+    * subsequent 'refresh playlist' operations.
+    * A file is only added, so the playlist keeps its folder's scan
+    * settings. */
+   if (!manual_scan->task_config->content_is_file)
+   {
+      playlist_set_scan_content_dir(manual_scan->playlist,
+            manual_scan->task_config->content_dir);
+      playlist_set_scan_file_exts(manual_scan->playlist,
+            manual_scan->task_config->file_exts_custom_set ?
+                  manual_scan->task_config->file_exts : NULL);
+      if (manual_scan->task_config->db_usage == MANUAL_CONTENT_SCAN_USE_DB_DAT_LOOSE ||
+          manual_scan->task_config->db_usage == MANUAL_CONTENT_SCAN_USE_DB_DAT_STRICT)
+         playlist_set_scan_dat_file_path(manual_scan->playlist,
+               manual_scan->task_config->dat_file_path);
+      playlist_set_scan_database_name(manual_scan->playlist,
+            manual_scan->task_config->database_name);
+      playlist_set_scan_search_recursively(manual_scan->playlist,
+            manual_scan->task_config->search_recursively);
+      playlist_set_scan_search_archives(manual_scan->playlist,
+            manual_scan->task_config->search_archives);
+      playlist_set_scan_filter_dat_content(manual_scan->playlist,
+            manual_scan->task_config->filter_dat_content);
+      playlist_set_scan_overwrite_playlist(manual_scan->playlist,
+            manual_scan->task_config->overwrite_playlist);
+      playlist_set_scan_db_usage(manual_scan->playlist,
+            manual_scan->task_config->db_usage);
+      playlist_set_scan_omit_db_ref(manual_scan->playlist,
+            manual_scan->task_config->omit_db_reference);
+   }
 
    /* All good - can start iterating
     * > If playlist has content and 'validate
     *   entries' is enabled, go to clean-up phase
+    *   (a file is only added, so its scan prunes nothing)
     * > Otherwise go straight to content scan phase */
-   if (manual_scan->task_config->validate_entries &&
-       (manual_scan->playlist_size > 0))
+   if (    manual_scan->task_config->validate_entries
+       && !manual_scan->task_config->content_is_file
+       && (manual_scan->playlist_size > 0))
       manual_scan->status = MANUAL_SCAN_ITERATE_CLEAN;
    else
    {
@@ -3159,59 +3972,41 @@ static bool task_manual_scan_begin_tick(retro_task_t *task,
    return error;
 }
 
-static void task_manual_content_scan_handler(retro_task_t *task)
+/* What an ITERATE step leaves for the tick to do. */
+enum scan_step
 {
-   uint8_t flg;
-   manual_scan_handle_t *manual_scan = NULL;
+   SCAN_STEP_NEXT = 0,
+   SCAN_STEP_FINISHED,
+   SCAN_STEP_WAIT
+};
+
+/* One step of the ITERATE family: a cleanup entry, a database probe or
+ * a playlist add. */
+static enum scan_step task_manual_scan_iterate_step(retro_task_t *task,
+      manual_scan_handle_t *manual_scan, nbio_budget_t *b)
+{
 #ifdef HAVE_LIBRETRODB
-   database_info_handle_t  *dbinfo   = NULL;
-   database_state_handle_t *dbstate  = NULL;
+   database_info_handle_t  *dbinfo  = manual_scan->handle;
+   database_state_handle_t *dbstate = &manual_scan->state;
+#else
+   (void)b;
 #endif
 
-   if (!task)
-      goto task_finished;
-
-   if (!(manual_scan = (manual_scan_handle_t*)task->state))
-      goto task_finished;
-
-#ifdef HAVE_LIBRETRODB
-   dbinfo  = manual_scan->handle;
-   dbstate = &manual_scan->state;
+#ifdef SCAN_HAVE_READERS
+   switch (manual_scan->status)
+   {
+      case DATABASE_SCAN_ITERATE_START:
+      case DATABASE_SCAN_ITERATE_CONTENT:
+      case DATABASE_SCAN_ITERATE_NEXT:
+         scan_readers_fill(manual_scan);
+         break;
+      default:
+         break;
+   }
 #endif
-
-   flg = task_get_flags(task);
-
-   if ((flg & RETRO_TASK_FLG_CANCELLED) > 0)
-      goto task_finished;
-
-#ifdef DEBUG
-   RARCH_DBG("[Scanner] Task handler started, status %d\n",manual_scan->status);
-#endif
-
-/* Improvements / shortcomings:
-- default extension list could be the core supported list, instead
-- pushing "scan" twice on the same file in the file browser will freeze, if there is still task feedback widget on screen (?)
-    this also happened before rework, prob menu related
-- test with desktop menu
-*/
 
    switch (manual_scan->status)
    {
-      case MANUAL_SCAN_BEGIN:
-      case MANUAL_SCAN_BEGIN_DIR_LIST:
-      case MANUAL_SCAN_BEGIN_DAT_LOAD:
-      case MANUAL_SCAN_BEGIN_PLAYLIST:
-         if (task_manual_scan_begin_tick(task, manual_scan))
-            goto task_finished;
-#ifdef HAVE_LIBRETRODB
-         /* The BEGIN family may have created the database handle
-          * this invocation; refresh the locals the ITERATE cases
-          * of later ticks are fetched from at handler entry. */
-         dbinfo  = manual_scan->handle;
-         dbstate = &manual_scan->state;
-#endif
-         break;
-
       case MANUAL_SCAN_ITERATE_CLEAN:
          {
             const struct playlist_entry *entry = NULL;
@@ -3299,6 +4094,12 @@ static void task_manual_content_scan_handler(retro_task_t *task)
             const char *content_path = manual_scan->content_list->elems[
                   manual_scan->content_list_index].data;
 
+#ifdef SCAN_HAVE_READERS
+            if (   !manual_scan->readers_tried
+                && manual_scan->content_list->size
+                   - manual_scan->content_list_index >= 2)
+               scan_readers_start(task, manual_scan);
+#endif
             /* Check if this is an M3U file and add to list for post-processing */
             if (rm3u_is_m3u_filestream(content_path))
             {
@@ -3324,7 +4125,7 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                   manual_scan->content_list_index].data;
             enum scan_verdict current_verdict;
             if (!content_path)
-               goto task_finished;
+               return SCAN_STEP_FINISHED;
 
             path_contains_compressed_file      = path_contains_compressed_file(content_path);
             /* Reminder - remove this shortcut when serial scan inside zip is solved */
@@ -3333,7 +4134,7 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                   dbinfo->type   = DATABASE_TYPE_ITERATE_ARCHIVE;
 
             current_verdict = (enum scan_verdict)task_database_iterate(manual_scan, content_path, dbstate, dbinfo,
-                     path_contains_compressed_file);
+                     path_contains_compressed_file, b);
 #ifdef DEBUG
             RARCH_DBG("[Scanner] Scan verdict is %d for %s\n", current_verdict, content_path);
 #endif
@@ -3363,6 +4164,8 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                   break;
                case SCAN_VERDICT_CONTINUE:
                   break;
+               case SCAN_VERDICT_WAIT:
+                  return SCAN_STEP_WAIT;
             }
          }
          break;
@@ -3504,6 +4307,118 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                   manual_scan->status = MANUAL_SCAN_ITERATE_CONTENT;
          }
          break;
+      default:
+         break;
+   }
+
+   return SCAN_STEP_NEXT;
+}
+
+static bool manual_scan_status_is_iterate(enum manual_scan_status status)
+{
+   switch (status)
+   {
+      case MANUAL_SCAN_ITERATE_CLEAN:
+#ifdef HAVE_LIBRETRODB
+      case DATABASE_SCAN_ITERATE_START:
+      case DATABASE_SCAN_ITERATE_CONTENT:
+      case DATABASE_SCAN_ITERATE_NEXT:
+#endif
+      case MANUAL_SCAN_ITERATE_CONTENT:
+         return true;
+      default:
+         break;
+   }
+   return false;
+}
+
+/* Runs ITERATE steps while the shared window lasts, timed rather than
+ * counted; its floor pays for the first, so every call makes progress. */
+static bool task_manual_scan_iterate_tick(retro_task_t *task,
+      manual_scan_handle_t *manual_scan)
+{
+   nbio_budget_t b;
+   bool finished = false;
+
+   task_nbio_slice_open(&b);
+   while (task_nbio_slice_within_budget(&b, 0, 0))
+   {
+      enum scan_step step = task_manual_scan_iterate_step(task,
+            manual_scan, &b);
+
+      if (step == SCAN_STEP_FINISHED)
+      {
+         finished = true;
+         break;
+      }
+      /* A reader's wake ends the park. */
+      if (step == SCAN_STEP_WAIT)
+      {
+         task_queue_park(task, SCAN_READER_PARK_USEC);
+         break;
+      }
+      if (!manual_scan_status_is_iterate(manual_scan->status))
+         break;
+   }
+   task_nbio_slice_close(&b);
+#ifdef SCAN_HAVE_READERS
+   /* The list is done: M3U and END run without the readers. */
+   if (!manual_scan_status_is_iterate(manual_scan->status))
+      scan_readers_stop(manual_scan);
+#endif
+   return finished;
+}
+
+static void task_manual_content_scan_handler(retro_task_t *task)
+{
+   uint8_t flg;
+   manual_scan_handle_t *manual_scan = NULL;
+#ifdef HAVE_LIBRETRODB
+   database_state_handle_t *dbstate  = NULL;
+#endif
+
+   if (!task)
+      goto task_finished;
+
+   if (!(manual_scan = (manual_scan_handle_t*)task->state))
+      goto task_finished;
+
+#ifdef HAVE_LIBRETRODB
+   dbstate = &manual_scan->state;
+#endif
+
+   flg = task_get_flags(task);
+
+   if ((flg & RETRO_TASK_FLG_CANCELLED) > 0)
+      goto task_finished;
+
+#ifdef DEBUG
+   RARCH_DBG("[Scanner] Task handler started, status %d\n",manual_scan->status);
+#endif
+
+/* Improvements / shortcomings:
+- default extension list could be the core supported list, instead
+- pushing "scan" twice on the same file in the file browser will freeze, if there is still task feedback widget on screen (?)
+    this also happened before rework, prob menu related
+- test with desktop menu
+*/
+
+   if (manual_scan_status_is_iterate(manual_scan->status))
+   {
+      if (task_manual_scan_iterate_tick(task, manual_scan))
+         goto task_finished;
+      return;
+   }
+
+   switch (manual_scan->status)
+   {
+      case MANUAL_SCAN_BEGIN:
+      case MANUAL_SCAN_BEGIN_DIR_LIST:
+      case MANUAL_SCAN_BEGIN_DAT_LOAD:
+      case MANUAL_SCAN_BEGIN_PLAYLIST:
+         if (task_manual_scan_begin_tick(task, manual_scan))
+            goto task_finished;
+         break;
       case MANUAL_SCAN_ITERATE_M3U:
          {
             const char *m3u_path = manual_scan->m3u_list->elems[
@@ -3610,6 +4525,10 @@ static void task_manual_content_scan_handler(retro_task_t *task)
    return;
 
 task_finished:
+#ifdef SCAN_HAVE_READERS
+   if (manual_scan)
+      scan_readers_stop(manual_scan);
+#endif
 #ifdef DEBUG
    RARCH_DBG("[Scanner] Task finished\n");
 #endif

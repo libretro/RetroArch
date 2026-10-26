@@ -57,9 +57,11 @@ int libretrodb_create_index(libretrodb_t *db, const char *name,
 int libretrodb_find_entry(libretrodb_t *db, const char *index_name,
         const void *key, struct rmsgpack_dom_value *out);
 
-/* Reported once per record that carries the scanned field or the
- * companion one: the field's binary value, the offset of the record,
- * and the companion numeric value when present (NULL otherwise).
+/* Reported once per record that carries the scanned field, the second
+ * field or the companion one: the binary values of the two fields, the
+ * offset of the record, and the companion numeric value when present
+ * (NULL otherwise).  A field the record lacks comes as NULL with a
+ * length of zero.
  *
  * A record that has only the companion is reported with @key NULL and
  * @key_len zero, so a caller accumulating over the companion sees
@@ -68,15 +70,29 @@ int libretrodb_find_entry(libretrodb_t *db, const char *index_name,
  * indexers here do.
  *
  * Returning non-zero stops the scan. */
-typedef int (*libretrodb_scan_cb)(void *ctx, const uint8_t *key,
-      size_t key_len, uint64_t offset, const uint64_t *aux);
+typedef int (*libretrodb_scan2_cb)(void *ctx, const uint8_t *key,
+      size_t key_len, const uint8_t *key2, size_t key2_len,
+      uint64_t offset, const uint64_t *aux);
 
-/* @aux_field may be NULL.  Naming one lets a caller collect a numeric
- * field in the same pass rather than walking the database again for
- * it, and makes the callback fire for records carrying only that
- * field. */
-int libretrodb_scan_field(libretrodb_t *db, const char *field,
-      const char *aux_field, libretrodb_scan_cb cb, void *ctx);
+/* Walks a database a run of records at a time, reporting @field and
+ * @field2, either of which may be NULL but not both, so a caller
+ * indexing both walks it once.  @aux_field may be NULL; naming one
+ * collects a numeric field in the same pass and reports the records
+ * carrying only it.  The scan reads through a stream of its own, so
+ * @db may be closed once it has begun.  The field names are not
+ * copied and must outlive the scan. */
+typedef struct libretrodb_scan libretrodb_scan_t;
+
+libretrodb_scan_t *libretrodb_scan_begin(libretrodb_t *db,
+      const char *field, const char *field2, const char *aux_field);
+
+/* Reports up to @max_records records, which must be non-zero.
+ * Returns 1 while records remain, 0 once the walk is complete or @cb
+ * stopped it, -1 on a read error. */
+int libretrodb_scan_step(libretrodb_scan_t *scan, unsigned max_records,
+      libretrodb_scan2_cb cb, void *ctx);
+
+void libretrodb_scan_end(libretrodb_scan_t *scan);
 
 int libretrodb_read_at(libretrodb_t *db, uint64_t offset,
       struct rmsgpack_dom_value *out);

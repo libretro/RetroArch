@@ -1957,7 +1957,6 @@ static const struct
    char s_df763da7[14];
    char s_69dad0e6[62];
    char s_1532af95[45];
-   char s_03fb590d[26];
    char s_7c2f8b04[35];
    char s_fdbd73a3[30];
    char s_b443c25e[16];
@@ -3475,7 +3474,6 @@ static const struct
    char s_34a76adb[54];
    char s_88021a14[158];
    char s_fe1a9203[282];
-   char s_2222a23b[126];
    char s_8213bb32[268];
    char s_48462dac[335];
    char s_631de1a2[120];
@@ -6552,7 +6550,6 @@ static const struct
    "Personalizado",
    "Omitir referencias de bases de datos na lista de reproduci\303\263n",
    "Escanear verifica CRC en posibles duplicados",
-   "Buscar un \303\272nico ficheiro",
    "Lista de reproduci\303\263n a actualizar",
    "<Autom\303\241tico/Nome do sistema>",
    "<Personalizado>",
@@ -8654,8 +8651,6 @@ static const struct
    "\303\263 no serial \303\241s veces pode facer que o esc\303\241ner po\303\261a contido no sistem"
    "a incorrecto. Isto engade unha comprobaci\303\263n CRC, que ralentiza considerablemente a explor"
    "aci\303\263n, pero pode ser m\303\241is precisa.",
-   "Explora s\303\263 un ficheiro en vez dun directorio. Selecciona de novo a localizaci\303\263n do"
-   " contido despois de cambiar esta opci\303\263n.",
    "Os resultados eng\303\241dense a esta lista de reproduci\303\263n. No caso de Auto - Calquera, v"
    "arias listas de reproduci\303\263n do sistema poden actualizarse. Personalizado sen base de dato"
    "s de referencia non vincular\303\241 as entradas a ningunha base de datos na lista de reproduci"
@@ -9781,7 +9776,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_gl_blob_check[
-      (sizeof(msg_hash_gl_blob) == (211656u
+      (sizeof(msg_hash_gl_blob) == (211504u
 #ifdef ANDROID
        + 365u
 #endif
@@ -12184,7 +12179,6 @@ static const msg_hash_id_t msg_hash_gl_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_METHOD_CUSTOM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_OMIT_DB_REF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_SERIAL_AND_CRC,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_SINGLE_FILE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_AUTO_ANY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_CUSTOM,
@@ -13696,7 +13690,6 @@ static const msg_hash_id_t msg_hash_gl_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_METHOD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_OMIT_DB_REF,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_SERIAL_AND_CRC,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_SINGLE_FILE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_TARGET_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_USE_DB,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_WITHOUT_CORE_MATCH,

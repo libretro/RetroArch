@@ -2014,7 +2014,6 @@ static const struct
    char s_df763da7[18];
    char s_69dad0e6[52];
    char s_1532af95[47];
-   char s_03fb590d[23];
    char s_7c2f8b04[35];
    char s_fdbd73a3[25];
    char s_b443c25e[20];
@@ -3686,7 +3685,6 @@ static const struct
    char s_34a76adb[55];
    char s_88021a14[165];
    char s_fe1a9203[326];
-   char s_2222a23b[141];
    char s_8213bb32[271];
    char s_48462dac[427];
    char s_631de1a2[137];
@@ -6923,7 +6921,6 @@ static const struct
    "Benutzerdefiniert",
    "Datenbankverweise aus Wiedergabeliste \303\274berspringen",
    "Per Checksumme auf m\303\266gliche Duplikate scannen",
-   "Einzelne Datei scannen",
    "Zu aktualisierende Wiedergabeliste",
    "<Automatisch/Systemname>",
    "<Benutzerdefiniert>",
@@ -9317,8 +9314,6 @@ static const struct
    "riennummer zu verlassen, kann manchmal dazu f\303\274hren, da\303\237 der Scanner Inhalte in das"
    " falsche System einf\303\274gt. Dadurch wird eine CRC-Pr\303\274fung hinzugef\303\274gt, die das"
    " Scannen erheblich verlangsamt, aber m\303\266glicherweise pr\303\244ziser ist.",
-   "Scannt nur eine Datei statt eines Verzeichnisses. Nach \303\204nderung dieses Eintrags muss der "
-   "Speicherort des Inhalts erneut ausgew\303\244hlt werden.",
    "Die Ergebnisse werden dieser Wiedergabeliste hinzugef\303\274gt. Bei \342\200\236Auto \342\200"
    "\223 Beliebig\342\200\234 k\303\266nnen mehrere Systemwiedergabelisten aktualisiert werden. Bei "
    "\342\200\236Angepasst ohne Datenbankverweis\342\200\234 werden die Eintr\303\244ge nicht mit ein"
@@ -10663,7 +10658,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_de_blob_check[
-      (sizeof(msg_hash_de_blob) == (238498u
+      (sizeof(msg_hash_de_blob) == (238334u
 #ifdef ANDROID
        + 358u
 #endif
@@ -13240,7 +13235,6 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_METHOD_CUSTOM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_OMIT_DB_REF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_SERIAL_AND_CRC,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_SINGLE_FILE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_AUTO_ANY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_CUSTOM,
@@ -14903,7 +14897,6 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_METHOD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_OMIT_DB_REF,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_SERIAL_AND_CRC,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_SINGLE_FILE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_TARGET_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_USE_DB,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_WITHOUT_CORE_MATCH,

@@ -463,6 +463,9 @@ enum autoconfig_handle_flags
 
 void input_autoconfigure_blissbox_override_handler(
       int vid, int pid, char *device_name, size_t len);
+/* From a thread other than the main one, a connect or disconnect is
+ * handed to the main thread and returns true once it is queued; what
+ * it does is decided there. */
 bool input_autoconfigure_connect(
       const char *name,
       const char *display_name,

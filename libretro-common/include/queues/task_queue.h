@@ -143,21 +143,22 @@ enum retro_task_flags
     */
    RETRO_TASK_FLG_MUTE             = (1 << 3),
    /**
-    * Set by the pusher to promise that \c handler touches nothing
-    * but the task itself - its own state, and the task_set_* and
-    * task_get_* accessors - and nothing that outlives the queue or
-    * is torn down with it: no logging, no pushing other tasks, no
-    * subsystem the frontend frees on the way out.
+    * Set by the pusher to promise that \c handler and \c cleanup
+    * touch nothing but what the task owns - its own state, and the
+    * task_set_* and task_get_* accessors - and nothing that outlives
+    * the queue or is torn down with it: no logging, no pushing other
+    * tasks, no subsystem the frontend frees on the way out.  Either
+    * may call \c task_queue_wake().
     *
-    * In exchange, if \c task_queue_deinit() finds the worker still
-    * inside this task's handler after its bound, it stops waiting:
+    * In exchange, if \c task_queue_deinit() on the threaded runner
+    * finds a worker, the one or an extra one, still inside this task's
+    * handler after its bound, it stops waiting for that worker:
     * the task is taken off the queue and the worker is left to
-    * finish the handler on its own. \c callback and \c cleanup never
-    * run, so whatever they would have released stays allocated; the
-    * task itself is freed when the handler returns. Meant for
-    * handlers that can
-    * block in an OS call for arbitrarily long, such as a device
-    * enumeration.
+    * finish the handler on its own.  When the handler returns, that
+    * worker runs \c cleanup and frees the task; \c callback never
+    * runs.  The GCD runner waits for the handler.  Meant for handlers
+    * that can block in an OS call for arbitrarily long, such as a
+    * device enumeration.
     */
    RETRO_TASK_FLG_DETACHABLE       = (1 << 4),
    /**
@@ -182,8 +183,8 @@ enum retro_task_flags
     * own - a shader stage's compile, a decode into its own buffer.  One
     * task is never in two handlers at once either way, but its calls
     * may each be on a different worker.  Ignored with
-    * \c RETRO_TASK_FLG_DETACHABLE or \c RETRO_TASK_FLG_MAIN_THREAD, and
-    * by the unthreaded runner.  The GCD runner (Apple) already hands
+    * \c RETRO_TASK_FLG_MAIN_THREAD and by the unthreaded runner.  The
+    * GCD runner (Apple) already hands
     * every task to the system's concurrent queue, one run of it at a
     * time, a run on any thread; there the flag changes nothing.  Not
     * changed after the push.
@@ -373,6 +374,17 @@ struct retro_task
    retro_atomic_int_t flags;
 
    /**
+    * With \c RETRO_TASK_FLG_PARALLEL: how many extra workers the task
+    * needs.  Its push starts as many as are missing, at most 8 in all,
+    * to be shared with every other parallel task until
+    * task_queue_deinit(); 0, the default, needs no more than
+    * task_queue_set_parallel_workers() asked for.  Ignored without the
+    * flag, by the unthreaded runner and by GCD.  Set by the pusher
+    * before \c task_queue_push and not changed after.
+    */
+   unsigned parallel_workers;
+
+   /**
     * Parked: \c when is a horizon from task_queue_park(), not a start
     * time the caller set, so waits on the queue still count the task
     * as running.  Woken: task_queue_wake() named the task since its
@@ -511,11 +523,33 @@ void task_queue_retriever_info_free(task_retriever_info_t *list);
 /**
  * Cancels the provided task.
  * The task should finish its work as soon as possible afterward.
+ * Only on the thread that drives the queue or from a handler the queue
+ * runs: from another thread, use task_queue_cancel_ident().
  *
  * @param task The task to cancel.
  * @see task_set_cancelled
  */
 void task_queue_cancel_task(void *task);
+
+/**
+ * task_queue_cancel_ident:
+ * @ident : The task::ident of the task to cancel.
+ *
+ * Cancels a running task as task_queue_cancel_task() does, or one
+ * pushed from another thread and still held for the next gather,
+ * which then retires it cancelled without running it; its callback
+ * still runs.  Does nothing for a task that is no longer running.
+ * Safe from any thread where the platform has lock-free atomics;
+ * elsewhere, only where task_queue_cancel_task() is.  From a handler
+ * on the unthreaded queue it misses, as task_queue_find() does, the
+ * tasks that the check running that handler has taken off the queue.
+ * From another thread, while the queue switches, while it is
+ * unthreaded, or while pushes from other threads are held, the cancel
+ * is made at the next gather.
+ *
+ * @return \c false only when such a cancel could not be recorded.
+ */
+bool task_queue_cancel_ident(uint32_t ident);
 
 /**
  * task_queue_park:
@@ -541,7 +575,11 @@ void task_queue_park(retro_task_t *task, retro_time_t horizon_usec);
  * from any thread, and does nothing for a task that is not parked or
  * is no longer running.  A wake that arrives while the handler is
  * running cancels the park that pass asks for, so a waker publishes
- * whatever the handler checks first and wakes after.
+ * whatever the handler checks first and wakes after.  A switch between
+ * the threaded and the unthreaded queue ends every park, unless it
+ * leaves a stuck handler behind.  A wake from another thread that meets
+ * the switch is dropped, and one already in flight puts the switch off
+ * to the next task_queue_check().
  */
 void task_queue_wake(uint32_t ident);
 
@@ -752,10 +790,13 @@ void task_queue_set_prefer_fast_cores(bool prefer);
  * How many extra workers the threaded runner starts for
  * RETRO_TASK_FLG_PARALLEL tasks, beside the one worker every task runs
  * on; at most 8.  They start the first time such a task is pushed after
- * a task_queue_init(), and stop at task_queue_deinit().  None by
- * default: a parallel task then runs on the one worker like any other.
- * The frontend sizes it to the machine; the queue reads no core count.
- * No effect on the GCD runner, whose concurrency is the system's.
+ * a task_queue_init(), and stop at task_queue_deinit().  A task whose
+ * \c parallel_workers asks for more starts the rest; the extra workers
+ * only grow until the deinit, a lower number here stopping none.  None
+ * by default: a parallel task then runs on the one worker like any
+ * other.  The frontend sizes it to the machine; the queue reads no core
+ * count.  No effect on the GCD runner, whose concurrency is the
+ * system's.
  */
 void task_queue_set_parallel_workers(unsigned count);
 
@@ -763,6 +804,13 @@ void task_queue_set_parallel_workers(unsigned count);
  * Calls the function given in \c find_data for each task
  * until it returns \c true for one of them,
  * or until all tasks have been searched.
+ *
+ * On the thread that drives the queue it also sees tasks pushed from
+ * other threads and held for the next gather.  From a thread other
+ * than that one and the queue's own, it never sees held pushes, and it
+ * reports \c false unless the queue is threaded with no switch under
+ * way.  Such a find can miss a task, its own thread's held push
+ * included, so a push it guards against may be made twice.
  *
  * @param find_data Parameters for the search.
  * Behavior is undefined if \c NULL.
@@ -802,6 +850,16 @@ uint8_t task_get_flags(retro_task_t *task);
  * Tasks with the same \c task::when value
  * will be executed in the order they were scheduled.
  *
+ * Where the platform has lock-free atomics, a push from a thread other
+ * than the one that drives the queue, made while the queue switches
+ * between threaded and unthreaded, while it is unthreaded, or while
+ * earlier held pushes still wait, is held for the next gather, by
+ * task_queue_check(), a wait or a reset, and returns true. A thread's
+ * pushes start in the order it made them. A \c TASK_TYPE_BLOCKING task
+ * refused there is cancelled, and its callback still runs. Elsewhere
+ * such a push goes straight in, as one from the thread that drives the
+ * queue does.
+ *
  * @param task The task to schedule.
  * @return \c true unless \c task's type is \c TASK_TYPE_BLOCKING
  * and there's already a blocking task in the queue.
@@ -811,6 +869,7 @@ bool task_queue_push(retro_task_t *task);
 /**
  * Block until all active (i.e. current time > \c task::when) tasks have finished,
  * or until the given function returns \c false.
+ * A held push counts as active.
  * If a scheduled task's \c when is passed while within this function,
  * it will start executing.
  *
@@ -853,7 +912,8 @@ bool task_queue_wait_timeout(retro_task_condition_fn_t cond, void *data,
       retro_time_t timeout_usec);
 
 /**
- * Marks all tasks in the queue as cancelled.
+ * Marks all tasks in the queue as cancelled,
+ * held pushes included.
  *
  * The tasks won't immediately be terminated;
  * each task may finish its work,
@@ -871,6 +931,10 @@ void task_queue_reset(void);
 /**
  * Deinitializes the task system.
  *
+ * Cancels held for the next gather are applied;
+ * held pushes stay held for the next runner.
+ * No task callback runs here.
+ * No other thread may be inside a task_queue call.
  * Outstanding tasks will not be cleaned up;
  * if the intent is to finish the core or frontend's work,
  * then all tasks must be finished before calling this function.

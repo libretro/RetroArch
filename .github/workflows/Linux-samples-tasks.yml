@@ -1122,6 +1122,35 @@ jobs:
           make clean
           echo "[pass] database_scan_test (ASan)"
 
+      - name: Build and run database_scan_test (TSan, no threads, no readers)
+        shell: bash
+        working-directory: samples/tasks/database
+        run: |
+          set -eu
+          # The scan's reader tasks under TSan; then the same checks
+          # in a build without threads, with the budget test too, and in
+          # one whose readers are compiled in but never start.
+          make clean SANITIZER=thread && make -j$(nproc) database_scan_test SANITIZER=thread
+          scan_root="$(mktemp -d)"
+          TSAN_OPTIONS=halt_on_error=1 timeout 900 ./database_scan_test "$scan_root"
+          rm -rf "${scan_root:?}"
+          make clean && make -j$(nproc) database_scan_test scan_begin_budget_test HAVE_THREADS=0
+          scan_root="$(mktemp -d)"
+          timeout 900 ./database_scan_test "$scan_root"
+          rm -rf "${scan_root:?}"
+          budget_root="$(mktemp -d)"
+          TMPDIR="$budget_root" timeout 600 ./scan_begin_budget_test
+          rm -rf "${budget_root:?}"
+          make clean && make -j$(nproc) database_scan_test SANITIZER=address,undefined \
+             SCAN_DEFINES=-DSCAN_READERS_MAX=0
+          scan_root="$(mktemp -d)"
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 900 \
+             ./database_scan_test "$scan_root"
+          rm -rf "${scan_root:?}"
+          make clean
+          echo "[pass] database_scan_test (TSan, HAVE_THREADS=0, SCAN_READERS_MAX=0)"
+
       - name: Build and run pl_manager_budget_test (plain, ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/tasks/playlist_manager
@@ -1321,6 +1350,26 @@ jobs:
           make clean >/dev/null
           make all SANITIZER=thread -j$(nproc)
           TSAN_OPTIONS=halt_on_error=1 ./task_ordering_test
+          make clean >/dev/null
+
+      - name: Build and run autodetect_handoff_test (plain, ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/tasks/autodetect_handoff
+        run: |
+          set -eu
+          # Autoconfig reports from a driver's own thread are made on
+          # the main thread, in order, where the queue's answer is exact.
+          make clean >/dev/null
+          make all -j$(nproc)
+          ./autodetect_handoff_test
+          make clean >/dev/null
+          make all SANITIZER=address,undefined -j$(nproc)
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+          UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+            ./autodetect_handoff_test
+          make clean >/dev/null
+          make all SANITIZER=thread -j$(nproc)
+          TSAN_OPTIONS=halt_on_error=1 ./autodetect_handoff_test
           make clean >/dev/null
 
       - name: Build and run task_watchdog_test (plain, ASan + UBSan, TSan)

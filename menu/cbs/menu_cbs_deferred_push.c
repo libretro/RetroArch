@@ -558,10 +558,14 @@ static int general_push(menu_displaylist_info_t *info,
    }
 #endif
 
-   if (     string_is_equal(info->label, MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DIR_STR)
-         && manual_content_scan_get_scan_method_enum() == MANUAL_CONTENT_SCAN_METHOD_CUSTOM)
+   /* Content Location lists what the scan reads: in Custom its
+    * extensions, in Automatic every file */
+   if (string_is_equal(info->label, MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DIR_STR))
    {
-      strlcpy(ext_filter, manual_content_scan_get_file_exts(), ext_size);
+      if (manual_content_scan_get_scan_method_enum() == MANUAL_CONTENT_SCAN_METHOD_CUSTOM)
+         strlcpy(ext_filter, manual_content_scan_get_file_exts(), ext_size);
+      else
+         ext_filter[0] = '\0';
       string_replace_all_chars(ext_filter, ' ', '|');
    }
 

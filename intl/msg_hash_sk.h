@@ -2029,7 +2029,6 @@ static const struct
    char s_df763da7[9];
    char s_69dad0e6[56];
    char s_1532af95[53];
-   char s_03fb590d[23];
    char s_7c2f8b04[33];
    char s_fdbd73a3[30];
    char s_4ad9adf8[29];
@@ -3685,7 +3684,6 @@ static const struct
    char s_34a76adb[55];
    char s_88021a14[158];
    char s_fe1a9203[277];
-   char s_2222a23b[103];
    char s_8213bb32[230];
    char s_48462dac[291];
    char s_631de1a2[101];
@@ -6985,7 +6983,6 @@ static const struct
    "Vlastn\303\251",
    "Presko\304\215i\305\245 referencie na datab\303\241zu zo zoznamu skladieb",
    "Skenovanie kontroluje CRC pri mo\305\276n\303\275ch duplik\303\241toch",
-   "Skenova\305\245 jeden s\303\272bor",
    "Zoznam skladieb na aktualiz\303\241ciu",
    "<Automaticky/n\303\241zov syst\303\251mu>",
    "<Skenova\305\245 tento prie\304\215inok>",
@@ -9630,8 +9627,6 @@ static const struct
    "sp\303\264sobi\305\245, \305\276e skener vlo\305\276\303\255 obsah do nespr\303\241vneho syst"
    "\303\251mu. Toto prid\303\241va CRC kontrolu, ktor\303\241 v\303\275razne spomal\303\255 skenova"
    "nie, ale m\303\264\305\276e by\305\245 presnej\305\241ia.",
-   "Skenuje iba jeden s\303\272bor namiesto adres\303\241ra. Po zmene tejto polo\305\276ky znovu vyb"
-   "erte umiestnenie obsahu.",
    "V\303\275sledky sa pridaj\303\272 do tohto zoznamu skladieb. V pr\303\255pade Auto - Any sa m"
    "\303\264\305\276u aktualizova\305\245 viacer\303\251 syst\303\251mov\303\251 zoznamy skladieb. C"
    "ustom bez referencie na datab\303\241zu nepripoj\303\255 polo\305\276ky k \305\276iadnej datab"
@@ -11076,7 +11071,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sk_blob_check[
-      (sizeof(msg_hash_sk_blob) == (218064u
+      (sizeof(msg_hash_sk_blob) == (217938u
 #ifdef ANDROID
        + 389u
 #endif
@@ -13663,7 +13658,6 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_METHOD_CUSTOM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_OMIT_DB_REF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_SERIAL_AND_CRC,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_SINGLE_FILE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_AUTO_ANY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SCAN_THIS_DIRECTORY,
@@ -15312,7 +15306,6 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_METHOD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_OMIT_DB_REF,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_SERIAL_AND_CRC,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_SINGLE_FILE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_TARGET_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_USE_DB,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SCAN_WITHOUT_CORE_MATCH,
