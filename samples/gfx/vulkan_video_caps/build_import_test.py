@@ -28,7 +28,8 @@ with tempfile.TemporaryDirectory() as directory:
     (tmp / 'import_win32_types.inc').write_text(win32_types)
     (tmp / 'import_win32_functions.inc').write_text(separator + win32_functions)
     (tmp / 'import_types.inc').write_text('\n'.join(types))
-    bodies = [function(common, 'uint32_t vulkan_find_memory_type_fallback(')]
+    bodies = [function(common, 'uint32_t vulkan_find_memory_type_fallback('),
+              function(common, 'VkResult vulkan_queue_signal_fence(')]
     for signature in ('static bool vulkan_import_buffer(',
                       'static struct vk_stream_state *vulkan_import_state_get(',
                       'static enum video_texture_update vulkan_import_convert(',
