@@ -9345,7 +9345,7 @@ static void vulkan_hw_ring_fence_signal(void *data, void *fence)
 #ifdef HAVE_THREADS
    slock_lock(vk->context->queue_lock);
 #endif
-   vkQueueSubmit(vk->context->queue, 0, NULL, (VkFence)(uintptr_t)fence);
+   vulkan_queue_signal_fence(vk->context->queue, (VkFence)(uintptr_t)fence);
 #ifdef HAVE_THREADS
    slock_unlock(vk->context->queue_lock);
 #endif
@@ -14282,8 +14282,8 @@ static enum video_texture_update vulkan_stream_submit(vk_t *vk,
     * slot would stay busy, so an empty submission signals it instead;
     * a device that refuses that too is lost. */
    if (res != VK_SUCCESS)
-      vulkan_check_device_lost(vk, vkQueueSubmit(vk->context->queue, 0,
-               NULL, st->fence[slot]));
+      vulkan_check_device_lost(vk, vulkan_queue_signal_fence(
+               vk->context->queue, st->fence[slot]));
 #ifdef HAVE_THREADS
    slock_unlock(vk->context->queue_lock);
 #endif
@@ -15012,8 +15012,8 @@ static enum video_texture_update vulkan_import_convert(vk_t *vk,
 #endif
    res = vkQueueSubmit(vk->context->queue, 1, &submit_info, st->fence[slot]);
    if (res != VK_SUCCESS)
-      vulkan_check_device_lost(vk, vkQueueSubmit(vk->context->queue, 0,
-               NULL, st->fence[slot]));
+      vulkan_check_device_lost(vk, vulkan_queue_signal_fence(
+               vk->context->queue, st->fence[slot]));
 #ifdef HAVE_THREADS
    slock_unlock(vk->context->queue_lock);
 #endif

@@ -2578,7 +2578,7 @@ static void vulkan_context_wait_frames(gfx_ctx_vulkan_data_t *vk)
 #ifdef HAVE_THREADS
          slock_lock(vk->context.queue_lock);
 #endif
-         res = vkQueueSubmit(vk->context.queue, 0, NULL, present_fence);
+         res = vulkan_queue_signal_fence(vk->context.queue, present_fence);
 #ifdef HAVE_THREADS
          slock_unlock(vk->context.queue_lock);
 #endif
@@ -3249,7 +3249,7 @@ static bool vulkan_output_release(vulkan_output_t *output)
 #ifdef HAVE_THREADS
    slock_lock(ctx->queue_lock);
 #endif
-   res = vkQueueSubmit(ctx->queue, 0, NULL, r->fence);
+   res = vulkan_queue_signal_fence(ctx->queue, r->fence);
 #ifdef HAVE_THREADS
    slock_unlock(ctx->queue_lock);
 #endif
@@ -3689,6 +3689,14 @@ uint32_t vulkan_find_memory_type(
 
    RARCH_ERR("[Vulkan] Failed to find valid memory type. This should never happen.");
    abort();
+}
+
+VkResult vulkan_queue_signal_fence(VkQueue queue, VkFence fence)
+{
+   VkSubmitInfo submit;
+   memset(&submit, 0, sizeof(submit));
+   submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+   return vkQueueSubmit(queue, 1, &submit, fence);
 }
 
 VkResult vulkan_allocate_cpu_write_memory(VkDevice device,

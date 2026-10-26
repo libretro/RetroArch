@@ -222,6 +222,7 @@ error:
  * only, so a core in lock_queue is never parked behind the drain. */
 static VkResult ra_vulkan_dxgi_drain(ra_vulkan_dxgi_t *p)
 {
+   VkSubmitInfo submit;
    VkResult result;
    if (!p->resize_fence)
    {
@@ -236,7 +237,10 @@ static VkResult ra_vulkan_dxgi_drain(ra_vulkan_dxgi_t *p)
 #ifdef HAVE_THREADS
    if (p->queue_lock) slock_lock((slock_t *)p->queue_lock);
 #endif
-   result = vkQueueSubmit(p->queue, 0, NULL, p->resize_fence);
+   /* an empty batch, not a NULL one: OptiScaler refuses a NULL pSubmits */
+   memset(&submit, 0, sizeof(submit));
+   submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+   result = vkQueueSubmit(p->queue, 1, &submit, p->resize_fence);
    if (result == VK_SUCCESS)
       p->submitted = 1;
 #ifdef HAVE_THREADS

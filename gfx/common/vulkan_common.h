@@ -631,6 +631,11 @@ uint32_t vulkan_find_memory_type(
       const VkPhysicalDeviceMemoryProperties *mem_props,
       uint32_t device_reqs, uint32_t host_reqs);
 
+/* Signals @fence once the work already on @queue is done: an empty
+ * batch, not a NULL one, as layers such as OptiScaler refuse a NULL
+ * pSubmits. The caller holds the queue lock. */
+VkResult vulkan_queue_signal_fence(VkQueue queue, VkFence fence);
+
 /* Allocates alloc->allocationSize for a buffer the CPU only writes and
  * the GPU reads. alloc->memoryTypeIndex is the caller's host-visible
  * choice; it is used as given unless the device maps all of its memory

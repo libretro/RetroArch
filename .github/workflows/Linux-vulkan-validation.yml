@@ -118,6 +118,20 @@ jobs:
           set -eu
           tools/check.sh tools/vulkan_idle_wait_check.c
 
+      - name: Vulkan NULL-submit check, self-test
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: |
+          set -eu
+          tools/check.sh tools/vulkan_null_submit_check.c --selftest
+
+      - name: Vulkan NULL-submit check, tree check
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: |
+          set -eu
+          tools/check.sh tools/vulkan_null_submit_check.c
+
       - name: D3D12 wait allowlist, self-test
         if: ${{ !cancelled() }}
         shell: bash
