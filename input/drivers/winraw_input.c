@@ -2270,14 +2270,12 @@ static int16_t winraw_input_state(
 
    if (port < MAX_USERS)
    {
-      int16_t ret           = 0;
       winraw_input_t *wr    = (winraw_input_t*)data;
       /* the one keyboard this port was given, if it was given one */
       const uint8_t *own    = winraw_port_keys(wr, port);
       /* In the background, keys play the game only: they work no
        * hotkey, and nothing while the menu is up. */
       bool keys_ok          = wr->focus;
-      bool meta_ok          = wr->focus;
       bool process_mouse    =
          (device == RETRO_DEVICE_JOYPAD)
          || (device == RETRO_DEVICE_MOUSE)
