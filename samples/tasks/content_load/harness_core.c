@@ -55,6 +55,25 @@ static void harness_key_event(bool down, unsigned keycode,
 static unsigned hw_resets;
 static unsigned hw_destroys;
 
+/* The MIDI interface the frontend handed over at load (HARNESS_CORE_MIDI
+ * set), played the way a core plays music: every retro_run sends a
+ * note-on through it while output_enabled() says yes, and retro_deinit
+ * sends the note-off. The harness counts what reaches the driver. */
+static struct retro_midi_interface midi_if;
+static bool     midi_asked;
+static unsigned midi_runs;      /* retro_run calls that found the output enabled */
+static unsigned midi_notes;     /* notes written and flushed in full */
+RETRO_API unsigned harness_core_midi_runs(void)  { return midi_runs; }
+RETRO_API unsigned harness_core_midi_notes(void) { return midi_notes; }
+
+static bool midi_send(uint8_t status, uint8_t key, uint8_t velocity)
+{
+   return midi_if.write(status, 0)
+       && midi_if.write(key, 0)
+       && midi_if.write(velocity, 0)
+       && midi_if.flush();
+}
+
 /* RETRO_API, like the core's own entry points: a Windows DLL exports
  * only what is marked, and the harness looks these up by name. */
 RETRO_API unsigned harness_core_inits(void)       { return inits; }
@@ -120,7 +139,12 @@ void retro_set_input_state(retro_input_state_t cb) { (void)cb; }
 #ifndef HARNESS_CORE_NO_INIT
 void retro_init(void) { inits++; harness_init_tid = harness_self_tid(); }
 #endif
-void retro_deinit(void) { }
+void retro_deinit(void)
+{
+   if (midi_asked && midi_if.output_enabled())
+      midi_send(0x80, 0x3C, 0x00);
+   midi_asked = false;
+}
 unsigned retro_api_version(void) { return RETRO_API_VERSION; }
 void retro_get_system_info(struct retro_system_info *info)
 {
@@ -149,6 +173,12 @@ void retro_run(void)
    for (i = 0; i < W * H; i++)
       frame[i] = (uint16_t)(runs + i);
    video_cb(frame, W, H, W * 2);
+   if (midi_asked && midi_if.output_enabled())
+   {
+      midi_runs++;
+      if (midi_send(0x90, 0x3C, 0x40))
+         midi_notes++;
+   }
 }
 /* A state large enough that the save task writes it over several
  * checks (task_save writes one chunk per tick at least, and a chunk
@@ -193,11 +223,9 @@ bool retro_load_game(const struct retro_game_info *game)
     * cores that play music through it do */
    {
       const char *midi = getenv("HARNESS_CORE_MIDI");
-      if (midi && *midi)
-      {
-         struct retro_midi_interface midi_cb;
-         environ_cb(RETRO_ENVIRONMENT_GET_MIDI_INTERFACE, &midi_cb);
-      }
+      midi_runs = midi_notes = 0;
+      midi_asked = midi && *midi
+         && environ_cb(RETRO_ENVIRONMENT_GET_MIDI_INTERFACE, &midi_if);
    }
    (void)game;
    return true;

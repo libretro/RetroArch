@@ -20,9 +20,11 @@
  *    refused, and the first still completes;
  *  - reinit deferred: a driver reinit asked for while the load is in
  *    flight leaves the drivers as they are - the load rebuilds them;
- *  - midi requested: a core that asks for the MIDI interface while it
- *    loads has the output open once the load has rebuilt the drivers;
- *    the next core, which does not ask, has it shut;
+ *  - midi boot / midi requested: a core that asks for the MIDI
+ *    interface in its load - at boot, or in a staged load on the old
+ *    session's drivers - plays through the device, through a driver
+ *    reinit too; its note-off at unload reaches the device, and a core
+ *    that does not ask has it shut;
  *  - fallback: a core that cannot be loaded ends on the dummy core
  *    with the drivers rebuilt and the menu up;
  *  - not a core: a library that opens but lacks retro_init does the
@@ -53,6 +55,7 @@
 #include <dynamic/dylib.h>
 #include <file/config_file.h>
 #include <file/file_path.h>
+#include <lists/string_list.h>
 #include <streams/file_stream.h>
 #include <time/rtime.h>
 #include <retro_timers.h>
@@ -500,13 +503,114 @@ static void lane_audio_kept(void)
             " a content load; with keeping off it is closed and opened\n");
 }
 
-/* The MIDI device of a core that asks for the interface while it loads:
- * the ask comes before the load rebuilds the drivers, and the device
- * is open on the rebuilt ones. A core that does not ask leaves it shut. */
+/* ------------------------------------------------------------------ */
+/* Lanes: MIDI                                                         */
+/* ------------------------------------------------------------------ */
+
+/* Stands in for the null MIDI driver (same ident, same one "Null"
+ * output), installed in midi_drivers[] before the frontend boots, and
+ * counts what reaches it: device opens and frees, and the note-ons and
+ * note-offs the harness core plays through its interface. */
+static unsigned midi_opens, midi_frees, midi_note_ons, midi_note_offs;
+static int      midi_token;
+static bool count_midi_avail(struct string_list *list)
+{
+   union string_list_elem_attr attr;
+   attr.i = 0;
+   return string_list_append(list, "Null", attr);
+}
+static void *count_midi_init(const char *input, const char *output)
+{
+   (void)input; (void)output;
+   midi_opens++;
+   return &midi_token;
+}
+static void count_midi_free(void *p) { (void)p; midi_frees++; }
+static bool count_midi_set(void *p, const char *name)
+{ (void)p; return !name || string_is_equal(name, "Null"); }
+static bool count_midi_read(void *p, midi_event_t *event)
+{ (void)p; (void)event; return false; }
+static bool count_midi_write(void *p, const midi_event_t *event)
+{
+   (void)p;
+   if (event->data_size == 3 && (event->data[0] & 0xF0) == 0x90)
+      midi_note_ons++;
+   else if (event->data_size == 3 && (event->data[0] & 0xF0) == 0x80)
+      midi_note_offs++;
+   return true;
+}
+static bool count_midi_flush(void *p) { (void)p; return true; }
+static midi_driver_t count_midi = {
+   "null",
+   count_midi_avail,
+   count_midi_avail,
+   count_midi_init,
+   count_midi_free,
+   count_midi_set,
+   count_midi_set,
+   count_midi_read,
+   count_midi_write,
+   count_midi_flush
+};
+
+static void midi_install_counting_driver(void)
+{
+   unsigned i;
+   /* "null" is always the last entry */
+   for (i = 0; !string_is_equal(midi_drivers[i]->ident, "null"); i++) { }
+   midi_drivers[i] = &count_midi;
+}
+
+/* The core plays a note per frame while its output is enabled: every
+ * note it plays reaches the driver. */
+static void midi_check_plays(const char *when)
+{
+   unsigned core_before   = core_export("harness_core_midi_notes");
+   unsigned driver_before = midi_note_ons;
+   unsigned core_played, driver_got;
+
+   CHECK(midi_driver_output_enabled(),
+         "%s: the core asked for MIDI and the output is shut", when);
+   pump(3);
+   core_played = core_export("harness_core_midi_notes") - core_before;
+   driver_got  = midi_note_ons - driver_before;
+   CHECK(core_played >= 1 && driver_got == core_played,
+         "%s: over 3 frames the core played %u note(s), the driver got %u",
+         when, core_played, driver_got);
+}
+
+/* Boot with -L: the core asks in its load, before the first
+ * drivers_init. HARNESS_CORE_MIDI was set for the boot by main(). */
+static void lane_midi_boot(void)
+{
+   unsigned had = failures;
+
+   putenv((char*)"HARNESS_CORE_MIDI=");
+   CHECK(midi_opens >= 1, "the MIDI device was never opened at boot");
+   /* The core plays only while it runs */
+   if (menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   midi_check_plays("boot");
+
+   if (failures == had)
+      fprintf(stderr, "[pass] midi boot lane: a core asking at boot plays"
+            " through the device\n");
+}
+
+/* What a core's MIDI request has to outlive, and where it ends:
+ *  - a staged load: the ask comes on the old session's drivers, which
+ *    the load then rebuilds - the device is open on the new ones;
+ *  - a driver reinit while it runs (DRIVER_LIFETIME_RESET, as
+ *    SET_SYSTEM_AV_INFO does);
+ *  - its unload: the note-off it sends from retro_deinit reaches the
+ *    device, then the device is shut - closing content and starting a
+ *    core that does not ask leaves it shut, nothing left open. */
 static void lane_midi_requested(void)
 {
    struct load_frame log[LOAD_FRAMES];
+   struct menu_state *menu_st = menu_state_get_ptr();
    unsigned had = failures;
+   unsigned offs_before;
    unsigned n;
 
    putenv((char*)"HARNESS_CORE_MIDI=1");
@@ -514,29 +618,52 @@ static void lane_midi_requested(void)
    CHECK(task_push_load_contentless_core_from_menu(core_path),
          "the load was not started");
    n = run_load(log, LOAD_FRAMES);
+   putenv((char*)"HARNESS_CORE_MIDI=");
    CHECK(n < LOAD_FRAMES && core_is_up(),
          "the load did not bring the core up within %u frames", LOAD_FRAMES);
-   CHECK(midi_driver_output_enabled(),
-         "the core asked for MIDI while loading, and no output is open "
-         "after the load");
-   pump(2);
-   CHECK(midi_driver_output_enabled(),
-         "the MIDI output closed once the core ran");
+   midi_check_plays("staged load");
 
-   putenv((char*)"HARNESS_CORE_MIDI=");
+   command_event(CMD_EVENT_REINIT, NULL);
+   pump(1);
+   midi_check_plays("driver reinit");
+
+   offs_before = midi_note_offs;
    open_menu();
-   CHECK(task_push_load_contentless_core_from_menu(core_path),
-         "the second load was not started");
+   path_set(RARCH_PATH_CORE_LAST, core_path);
+   menu_st->flags |= MENU_ST_FLAG_PENDING_CLOSE_CONTENT;
+   pump(1);
    n = run_load(log, LOAD_FRAMES);
-   CHECK(n < LOAD_FRAMES && core_is_up(),
-         "the second load did not bring the core up within %u frames",
-         LOAD_FRAMES);
-   CHECK(!midi_driver_output_enabled(),
-         "the MIDI output is open for a core that never asked for it");
+   CHECK(n < LOAD_FRAMES && !runloop_is_content_switching(),
+         "the close did not finish within %u frames", LOAD_FRAMES);
+   pump(2);
+   CHECK(midi_note_offs == offs_before + 1,
+         "the core's note-off at unload reached the device %u time(s)",
+         midi_note_offs - offs_before);
+   CHECK(!midi_driver_output_enabled() && midi_opens == midi_frees,
+         "after the close the MIDI output is %s, opened %u freed %u",
+         midi_driver_output_enabled() ? "open" : "shut",
+         midi_opens, midi_frees);
+
+   /* Start Core, as the menu would: a core that does not ask */
+   {
+      content_ctx_info_t content_info = {0};
+      CHECK(task_push_start_current_core(&content_info),
+            "Start Core was not started");
+      n = run_load(log, LOAD_FRAMES);
+      CHECK(n < LOAD_FRAMES && core_is_up()
+            && runloop_state_get_ptr()->current_core_type != CORE_TYPE_DUMMY,
+            "Start Core did not go through");
+      pump(2);
+   }
+   CHECK(!midi_driver_output_enabled() && midi_opens == midi_frees,
+         "for a core that never asked the MIDI output is %s, opened %u "
+         "freed %u", midi_driver_output_enabled() ? "open" : "shut",
+         midi_opens, midi_frees);
 
    if (failures == had)
-      fprintf(stderr, "[pass] midi requested lane: the output is open for"
-            " a core that asks while loading, shut for one that does not\n");
+      fprintf(stderr, "[pass] midi requested lane: the device plays across"
+            " a staged load and a reinit, takes the note-off at unload,"
+            " and is shut for a core that does not ask\n");
 }
 
 
@@ -2805,6 +2932,9 @@ int main(int argc, char *argv[])
 
    if (getenv("HARNESS_VERBOSE"))
       verbosity_enable();
+   midi_install_counting_driver();
+   /* The boot core asks for MIDI in its load: lane_midi_boot */
+   putenv((char*)"HARNESS_CORE_MIDI=1");
 
    config_file_set_io_default(config_file_io_filestream());
    rtime_init();
@@ -2852,6 +2982,7 @@ int main(int argc, char *argv[])
          "harness core did not start (dummy core running)");
 
    lane_user_dirs_held(dir);
+   lane_midi_boot();
    lane_staged();
    lane_core_opened_once();
    lane_audio_kept();
