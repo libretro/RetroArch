@@ -286,6 +286,11 @@ typedef struct settings
       unsigned video_temporal_upscaler_quality;
       unsigned video_temporal_upscaler_preset;
       unsigned video_temporal_upscaler_sharpness;
+      unsigned video_dlss_nr_preset;
+      unsigned video_dlss_nr_style;
+      unsigned video_dlss_nr_intensity;
+      unsigned video_dlss_nr_local_structure;
+      unsigned video_dlss_nr_local_tone;
       unsigned video_hard_sync_frames;
       unsigned video_frame_delay;
       unsigned video_scanline_sync_offset;
@@ -525,6 +530,7 @@ typedef struct settings
       int crt_switch_porch_adjust;
       int crt_switch_vertical_adjust;
       int video_max_frame_latency;
+      int video_dlss_nr_skin_structure;
 #ifdef HAVE_VULKAN
       int vulkan_gpu_index;
 #endif
@@ -730,6 +736,8 @@ typedef struct settings
       bool video_wiiu_prefer_drc;
       bool video_notch_write_over_enable;
       bool video_hdr_scanlines;
+      bool video_dlss_nr_enable;
+      bool video_dlss_nr_auto_mask;
       bool video_hdr_use_display_peak;
       bool video_hdr_send_luminance;
       bool video_use_metal_arg_buffers;

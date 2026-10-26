@@ -1168,6 +1168,10 @@ MSG_HASH(
    "deferred_video_stereo_settings_list"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_VIDEO_DLSS_NR_SETTINGS_LIST,
+   "deferred_video_dlss_nr_settings_list"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MODE,
    "video_screen%u_window_mode"
    )

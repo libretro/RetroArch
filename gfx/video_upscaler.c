@@ -18,6 +18,7 @@
 #include <string.h>
 
 #include <compat/strl.h>
+#include <retro_atomic.h>
 #include <file/file_path.h>
 #include <string/stdstring.h>
 #include <gfx/nvidia/ngx_loader.h>
@@ -110,6 +111,79 @@ uint32_t video_upscaler_preset_min_version(enum video_temporal_upscaler_preset p
    return 0;
 }
 
+static uint32_t upscaler_dlssnr_version;
+static bool upscaler_dlssnr_found;
+static char upscaler_dlssnr_dir[DIR_MAX_LENGTH];
+/* What a session's NGX said of Neural Rendering: UPSCALER_NR_* */
+static retro_atomic_int_t upscaler_nr_state;
+#define UPSCALER_NR_UNKNOWN     0
+#define UPSCALER_NR_SUPPORTED   1
+#define UPSCALER_NR_UNSUPPORTED 2
+
+static void video_upscaler_dlssnr_probe(void)
+{
+   char dir[DIR_MAX_LENGTH];
+   video_upscaler_dir(VIDEO_TEMPORAL_UPSCALER_DLSS, dir, sizeof(dir));
+   if (strcmp(dir, upscaler_dlssnr_dir))
+   {
+      strlcpy(upscaler_dlssnr_dir, dir, sizeof(upscaler_dlssnr_dir));
+      upscaler_dlssnr_found   = ngx_dlssnr_feature_in(dir);
+      upscaler_dlssnr_version = upscaler_dlssnr_found
+         ? ngx_dlssnr_feature_version(dir) : 0;
+   }
+}
+
+uint32_t video_upscaler_dlssnr_version(void)
+{
+   video_upscaler_dlssnr_probe();
+   return upscaler_dlssnr_version;
+}
+
+bool video_upscaler_nr_available(void)
+{
+   video_upscaler_dlssnr_probe();
+   return upscaler_dlssnr_found
+      && retro_atomic_load_relaxed_int(&upscaler_nr_state) != UPSCALER_NR_UNSUPPORTED
+      && !video_upscaler_optiscaler();
+}
+
+void video_upscaler_note_nr(bool supported)
+{
+   retro_atomic_store_relaxed_int(&upscaler_nr_state,
+         supported ? UPSCALER_NR_SUPPORTED : UPSCALER_NR_UNSUPPORTED);
+}
+
+unsigned video_upscaler_nr_mode(void)
+{
+   settings_t *settings = config_get_ptr();
+   unsigned preset, style, intensity, structure, tone, skin;
+   int skin_set;
+   if (!settings->bools.video_dlss_nr_enable)
+      return 0;
+   preset    = settings->uints.video_dlss_nr_preset;
+   style     = settings->uints.video_dlss_nr_style;
+   intensity = settings->uints.video_dlss_nr_intensity / 5;
+   structure = settings->uints.video_dlss_nr_local_structure / 5;
+   tone      = settings->uints.video_dlss_nr_local_tone / 5;
+   skin_set  = settings->ints.video_dlss_nr_skin_structure;
+   skin      = skin_set < 0 ? 0 : 1 + (unsigned)skin_set / 5;
+   if (preset > 3)
+      preset = 0;
+   if (style > 2)
+      style = 0;
+   if (intensity > 40)
+      intensity = 40;
+   if (structure > 40)
+      structure = 40;
+   if (tone > 40)
+      tone = 40;
+   if (skin > 41)
+      skin = 41;
+   return VIDEO_UPSCALER_NR_PACK(VIDEO_UPSCALER_NR_ON
+         | (settings->bools.video_dlss_nr_auto_mask ? VIDEO_UPSCALER_NR_AUTO_MASK : 0),
+         preset, style, intensity, structure, tone, skin);
+}
+
 bool video_upscaler_optiscaler(void)
 {
    char dir[DIR_MAX_LENGTH];
@@ -164,6 +238,7 @@ unsigned video_upscaler_probe(enum video_temporal_upscaler kind)
          /* (a probe reads the runtime's version again: it may have
           * been put there since) */
          upscaler_dlss_version_dir[0] = '\0';
+         upscaler_dlssnr_dir[0]       = '\0';
          break;
       case VIDEO_TEMPORAL_UPSCALER_FSR:
          if (ffx_runtime_in(FFX_API_D3D12, dir) || ffx_runtime_in(FFX_API_VULKAN, dir))
@@ -207,8 +282,22 @@ size_t video_upscaler_status_string(char *s, size_t len)
             _len += strlcpy(s + _len, (found & VIDEO_UPSCALER_FOUND_RUNTIME)
                   ? ", DLSS runtime: found" : ", DLSS runtime: not in DLSS Directory",
                   len - _len);
+         video_upscaler_dlssnr_probe();
          if (video_upscaler_optiscaler())
             _len += strlcpy(s + _len, ", via OptiScaler", len - _len);
+         else if (upscaler_dlssnr_found)
+         {
+            uint32_t nr = upscaler_dlssnr_version;
+            if (retro_atomic_load_relaxed_int(&upscaler_nr_state) == UPSCALER_NR_UNSUPPORTED)
+               _len += strlcpy(s + _len, ", Neural Rendering: needs a newer driver",
+                     len - _len);
+            else if (nr)
+               _len += snprintf(s + _len, len - _len, ", Neural Rendering %u.%u.%u",
+                     (unsigned)NGX_VERSION_MAJOR(nr), (unsigned)NGX_VERSION_MINOR(nr),
+                     (unsigned)NGX_VERSION_PATCH(nr));
+            else
+               _len += strlcpy(s + _len, ", Neural Rendering: found", len - _len);
+         }
          _len += strlcpy(s + _len, ")", len - _len);
          break;
       }
@@ -253,6 +342,13 @@ void video_upscaler_log_probe(enum video_temporal_upscaler kind)
          else
             RARCH_LOG("[Video] Temporal Upscaler: DLSS runtime (nvngx_dlss.dll / libnvidia-ngx-dlss.so) %s in \"%s\".\n",
                   ngx_dlss_feature_in(dir) ? "found" : "NOT found", dir);
+         if (ngx_dlssnr_feature_in(dir))
+         {
+            uint32_t nr = video_upscaler_dlssnr_version();
+            RARCH_LOG("[Video] Temporal Upscaler: DLSS Neural Rendering runtime %u.%u.%u in \"%s\".\n",
+                  (unsigned)NGX_VERSION_MAJOR(nr), (unsigned)NGX_VERSION_MINOR(nr),
+                  (unsigned)NGX_VERSION_PATCH(nr), dir);
+         }
          break;
       }
       case VIDEO_TEMPORAL_UPSCALER_FSR:

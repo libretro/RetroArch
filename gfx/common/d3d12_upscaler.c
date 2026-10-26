@@ -103,7 +103,8 @@ bool d3d12_upscaler_upscale(d3d12_upscaler_t *up, ID3D12GraphicsCommandList *cmd
          in.state   = color->state;
          in.dims    = color->dims;
          if (!d3d12_ngx_upscale(up->ngx, cmd, &in, inputs,
-                  video_upscaler_mode_ngx(mode), out_dims, &res))
+                  video_upscaler_mode_ngx(mode), video_upscaler_nr_mode(),
+                  out_dims, &res))
             return false;
          out->texture = res.texture;
          out->format  = res.format;

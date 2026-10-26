@@ -27,6 +27,50 @@ S_UINT(video_temporal_upscaler_sharpness, VIDEO_TEMPORAL_UPSCALER_SHARPNESS,
       DEFAULT_VIDEO_TEMPORAL_UPSCALER_SHARPNESS, SD_FLAG_NONE, SDESC_RANGE_MINMAX, CMD_EVENT_NONE, 0, 100, 5, 0, setting_action_ok_uint, setting_get_string_representation_percentage,
       "Temporal Upscaler Sharpness",
       "Sharpening applied by the upscaler to its output, in percent; 0 is off. FSR sharpens with its own pass. DLSS 2.5.1 and newer have no sharpening and ignore it, but OptiScaler applies its RCAS pass at this strength to DLSS and XeSS alike. Takes effect on the next frame.")
+S_ACTION(VIDEO_DLSS_NR_SETTINGS,
+      "video_dlss_nr_settings",
+      "DLSS Neural Rendering",
+      "DLSS 5's Neural Rendering model, run over DLSS's output. Needs nvngx_dlssnr.dll in the DLSS Directory and an NVIDIA driver that has it.")
+S_BOOL(video_dlss_nr_enable, VIDEO_DLSS_NR_ENABLE,
+      "video_dlss_nr_enable",
+      DEFAULT_VIDEO_DLSS_NR_ENABLE, SD_FLAG_NONE, SDESC_FLG_REFRESH, CMD_EVENT_NONE,
+      "Neural Rendering",
+      "Run DLSS 5's Neural Rendering model over the upscaled frame. It reworks lighting and materials with the depth and motion the core exports, and costs a few milliseconds a frame. Takes effect on the next frame.")
+S_UINT(video_dlss_nr_preset, VIDEO_DLSS_NR_PRESET,
+      "video_dlss_nr_preset",
+      DEFAULT_VIDEO_DLSS_NR_PRESET, SD_FLAG_NONE, SDESC_RANGE_MINMAX, CMD_EVENT_NONE, 0, 3, 1, 0, setting_action_ok_uint, setting_get_string_representation_uint_video_dlss_nr_preset,
+      "Model Preset",
+      "The Neural Rendering model to use. Default lets the runtime pick. Not numbered as the Temporal Upscaler Preset is.")
+S_UINT(video_dlss_nr_style, VIDEO_DLSS_NR_STYLE,
+      "video_dlss_nr_style",
+      DEFAULT_VIDEO_DLSS_NR_STYLE, SD_FLAG_NONE, SDESC_RANGE_MINMAX, CMD_EVENT_NONE, 0, 2, 1, 0, setting_action_ok_uint, setting_get_string_representation_uint_video_dlss_nr_style,
+      "Style",
+      "The model's processing profile. Default is the strongest: more local contrast and deeper lighting, at times oversaturated. Natural does the same work more gently and keeps the tones closer to the core's. Cinematic tones down the shine for a film-like look.")
+S_UINT(video_dlss_nr_intensity, VIDEO_DLSS_NR_INTENSITY,
+      "video_dlss_nr_intensity",
+      DEFAULT_VIDEO_DLSS_NR_INTENSITY, SD_FLAG_NONE, SDESC_RANGE_MINMAX, CMD_EVENT_NONE, 0, 200, 5, 0, setting_action_ok_uint, setting_get_string_representation_percentage,
+      "Intensity",
+      "The model's overall strength, in percent.")
+S_UINT(video_dlss_nr_local_structure, VIDEO_DLSS_NR_LOCAL_STRUCTURE,
+      "video_dlss_nr_local_structure",
+      DEFAULT_VIDEO_DLSS_NR_LOCAL_STRUCTURE, SD_FLAG_NONE, SDESC_RANGE_MINMAX, CMD_EVENT_NONE, 0, 200, 5, 0, setting_action_ok_uint, setting_get_string_representation_percentage,
+      "Local Structure",
+      "How strongly the model works fine detail and surface structure, in percent.")
+S_UINT(video_dlss_nr_local_tone, VIDEO_DLSS_NR_LOCAL_TONE,
+      "video_dlss_nr_local_tone",
+      DEFAULT_VIDEO_DLSS_NR_LOCAL_TONE, SD_FLAG_NONE, SDESC_RANGE_MINMAX, CMD_EVENT_NONE, 0, 200, 5, 0, setting_action_ok_uint, setting_get_string_representation_percentage,
+      "Local Tone",
+      "How strongly the model reworks local light and shade, in percent.")
+S_INT(video_dlss_nr_skin_structure, VIDEO_DLSS_NR_SKIN_STRUCTURE,
+      "video_dlss_nr_skin_structure",
+      DEFAULT_VIDEO_DLSS_NR_SKIN_STRUCTURE, SD_FLAG_NONE, SDESC_RANGE_MINMAX, CMD_EVENT_NONE, -5, 200, 5, 0, setting_action_ok_uint, setting_get_string_representation_int_video_dlss_nr_skin_structure,
+      "Skin Structure",
+      "The structure strength on skin, in percent. Follow Local Structure, the model's default, uses Local Structure there too.")
+S_BOOL(video_dlss_nr_auto_mask, VIDEO_DLSS_NR_AUTO_MASK,
+      "video_dlss_nr_auto_mask",
+      DEFAULT_VIDEO_DLSS_NR_AUTO_MASK, SD_FLAG_NONE, 0, CMD_EVENT_NONE,
+      "Auto Skin Mask",
+      "Let the model find skin itself and treat it apart from the rest of the frame.")
 /* config keys "video_dlss_directory" and its siblings are paths; the
  * configuration.c rows stay literal for these settings. */
 #ifndef SETTINGS_DEF_CONFIG_PASS

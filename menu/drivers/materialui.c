@@ -12782,6 +12782,7 @@ static void materialui_list_insert(void *userdata,
                   || string_is_equal(label, MENU_ENUM_LABEL_VIDEO_SCALING_SETTINGS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_VIDEO_HDR_SETTINGS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_VIDEO_STEREO_SETTINGS_STR)
+                  || string_is_equal(label, MENU_ENUM_LABEL_VIDEO_DLSS_NR_SETTINGS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_AUDIO_SETTINGS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_AUDIO_OUTPUT_SETTINGS_STR)
 #ifdef HAVE_MICROPHONE

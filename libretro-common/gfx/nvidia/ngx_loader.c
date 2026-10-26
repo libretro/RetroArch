@@ -78,18 +78,21 @@ bool ngx_utf8_to_wide(wchar_t *out, size_t out_chars, const char *utf8)
    return true;
 }
 
-/* The feature library's file in @dir into @path: Windows' fixed name,
- * Linux's versioned soname */
-static bool ngx_dlss_feature_path(const char *dir, char *path, size_t len)
+/* A feature library's file in @dir into @path: @dll on Windows, on
+ * Linux the first file named @so (a soname, versioned after it) */
+static bool ngx_feature_path(const char *dir, const char *dll,
+      const char *so, char *path, size_t len)
 {
 #if defined(_WIN32)
+   (void)so;
    if (string_is_empty(dir))
       return false;
-   fill_pathname_join_special(path, dir, "nvngx_dlss.dll", len);
+   fill_pathname_join_special(path, dir, dll, len);
    return path_is_valid(path);
 #else
    bool found = false;
    struct RDIR *rdir;
+   (void)dll;
    if (string_is_empty(dir))
       return false;
    if (!(rdir = retro_opendir(dir)))
@@ -97,7 +100,7 @@ static bool ngx_dlss_feature_path(const char *dir, char *path, size_t len)
    while (!found && retro_readdir(rdir))
    {
       const char *name = retro_dirent_get_name(rdir);
-      if (name && string_starts_with(name, "libnvidia-ngx-dlss.so"))
+      if (name && string_starts_with(name, so))
       {
          fill_pathname_join_special(path, dir, name, len);
          found = true;
@@ -108,10 +111,26 @@ static bool ngx_dlss_feature_path(const char *dir, char *path, size_t len)
 #endif
 }
 
+#define NGX_DLSS_DLL   "nvngx_dlss.dll"
+#define NGX_DLSS_SO    "libnvidia-ngx-dlss.so"
+#define NGX_DLSSNR_DLL "nvngx_dlssnr.dll"
+#define NGX_DLSSNR_SO  "libnvidia-ngx-dlssnr.so"
+
+static bool ngx_dlss_feature_path(const char *dir, char *path, size_t len)
+{
+   return ngx_feature_path(dir, NGX_DLSS_DLL, NGX_DLSS_SO, path, len);
+}
+
 bool ngx_dlss_feature_in(const char *dir)
 {
    char path[DIR_MAX_LENGTH];
    return ngx_dlss_feature_path(dir, path, sizeof(path));
+}
+
+bool ngx_dlssnr_feature_in(const char *dir)
+{
+   char path[DIR_MAX_LENGTH];
+   return ngx_feature_path(dir, NGX_DLSSNR_DLL, NGX_DLSSNR_SO, path, sizeof(path));
 }
 
 uint32_t ngx_snippet_version(uint32_t snippet)
@@ -322,6 +341,20 @@ uint32_t ngx_dlss_feature_version(const char *dir)
    return snippet ? ngx_snippet_version(snippet()) : 0;
 }
 
+uint32_t ngx_dlssnr_feature_version(const char *dir)
+{
+   char path[DIR_MAX_LENGTH];
+   wchar_t wpath[DIR_MAX_LENGTH];
+   uint32_t version = 0;
+   /* (the file version alone: the library is far too big to load
+    * for a version) */
+   if (     !ngx_feature_path(dir, NGX_DLSSNR_DLL, NGX_DLSSNR_SO, path, sizeof(path))
+         || !ngx_utf8_to_wide(wpath, DIR_MAX_LENGTH, path)
+         || !ngx_file_version(wpath, NULL, NULL, 0, &version))
+      return 0;
+   return version;
+}
+
 /* Where the core library may be, in the order it is looked for: the
  * executable's directory (a copy put there wins), then NGXPath under
  * the display driver's service key (declarative installs), then the
@@ -487,17 +520,11 @@ static void ngx_note_optiscaler(ngx_module_t m)
    (void)m;
 }
 
-uint32_t ngx_dlss_feature_version(const char *dir)
+/* A feature library's file name: <soname>.<major>.<minor>.<patch> */
+static uint32_t ngx_so_version(const char *path)
 {
-   char path[DIR_MAX_LENGTH];
-   const char *dot;
-   void *m;
-   void *sym;
-   uint32_t (*snippet)(void);
-   if (!ngx_dlss_feature_path(dir, path, sizeof(path)))
-      return 0;
-   /* The file name: libnvidia-ngx-dlss.so.<major>.<minor>.<patch> */
-   if ((dot = strstr(path_basename(path), ".so.")))
+   const char *dot = strstr(path_basename(path), ".so.");
+   if (dot)
    {
       unsigned v[3] = { 0, 0, 0 };
       unsigned i    = 0;
@@ -515,6 +542,28 @@ uint32_t ngx_dlss_feature_version(const char *dir)
          return NGX_VERSION_PACK(v[0], v[1] > 0xff ? 0xff : v[1],
                v[2] > 0xff ? 0xff : v[2]);
    }
+   return 0;
+}
+
+uint32_t ngx_dlssnr_feature_version(const char *dir)
+{
+   char path[DIR_MAX_LENGTH];
+   if (!ngx_feature_path(dir, NGX_DLSSNR_DLL, NGX_DLSSNR_SO, path, sizeof(path)))
+      return 0;
+   return ngx_so_version(path);
+}
+
+uint32_t ngx_dlss_feature_version(const char *dir)
+{
+   char path[DIR_MAX_LENGTH];
+   void *m;
+   void *sym;
+   uint32_t (*snippet)(void);
+   uint32_t version;
+   if (!ngx_dlss_feature_path(dir, path, sizeof(path)))
+      return 0;
+   if ((version = ngx_so_version(path)))
+      return version;
    if (!(m = dlopen(path, RTLD_NOW | RTLD_LOCAL)))
       return 0;
    sym = dlsym(m, "NVSDK_NGX_GetSnippetVersion");
@@ -743,6 +792,12 @@ bool ngx_lib_is_optiscaler(void)
 #else
 
 uint32_t ngx_dlss_feature_version(const char *dir)
+{
+   (void)dir;
+   return 0;
+}
+
+uint32_t ngx_dlssnr_feature_version(const char *dir)
 {
    (void)dir;
    return 0;

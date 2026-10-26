@@ -155,7 +155,8 @@ bool vulkan_upscaler_upscale(vulkan_upscaler_t *up, VkCommandBuffer cmd,
          in.format = color->format;
          in.dims   = color->dims;
          if (!vulkan_ngx_upscale(up->ngx, cmd, &in, inputs,
-                  video_upscaler_mode_ngx(mode), out_dims, &res))
+                  video_upscaler_mode_ngx(mode), video_upscaler_nr_mode(),
+                  out_dims, &res))
             return false;
          out->image  = res.image;
          out->view   = res.view;

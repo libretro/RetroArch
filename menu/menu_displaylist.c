@@ -12436,6 +12436,28 @@ unsigned menu_displaylist_build_list(
             }
          }
          break;
+#ifdef HAVE_NGX
+      case DISPLAYLIST_VIDEO_DLSS_NR_SETTINGS_LIST:
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_VIDEO_DLSS_NR_ENABLE,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (settings->bools.video_dlss_nr_enable)
+         {
+            static const menu_displaylist_settings_row_t dl_rows_nr[] = {
+               { MENU_ENUM_LABEL_VIDEO_DLSS_NR_PRESET, PARSE_ONLY_UINT, false },
+               { MENU_ENUM_LABEL_VIDEO_DLSS_NR_STYLE, PARSE_ONLY_UINT, false },
+               { MENU_ENUM_LABEL_VIDEO_DLSS_NR_INTENSITY, PARSE_ONLY_UINT, false },
+               { MENU_ENUM_LABEL_VIDEO_DLSS_NR_LOCAL_STRUCTURE, PARSE_ONLY_UINT, false },
+               { MENU_ENUM_LABEL_VIDEO_DLSS_NR_LOCAL_TONE, PARSE_ONLY_UINT, false },
+               { MENU_ENUM_LABEL_VIDEO_DLSS_NR_SKIN_STRUCTURE, PARSE_ONLY_INT, false },
+               { MENU_ENUM_LABEL_VIDEO_DLSS_NR_AUTO_MASK, PARSE_ONLY_BOOL, false },
+            };
+            count += menu_displaylist_parse_settings_rows(list, settings,
+                  dl_rows_nr, (unsigned)ARRAY_SIZE(dl_rows_nr));
+         }
+         break;
+#endif
       case DISPLAYLIST_VIDEO_STEREO_SETTINGS_LIST:
 #ifdef HAVE_OPENXR
          /* A headset gives each eye its own image. */
@@ -12635,6 +12657,13 @@ unsigned menu_displaylist_build_list(
                                  MENU_ENUM_LABEL_VIDEO_TEMPORAL_UPSCALER_SHARPNESS,
                                  PARSE_ONLY_UINT, false) == 0)
                            count++;
+                        /* (DLSS 5's model, where its library is found) */
+                        if (     settings->uints.video_temporal_upscaler == VIDEO_TEMPORAL_UPSCALER_DLSS
+                              && video_upscaler_nr_available())
+                           if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                                    MENU_ENUM_LABEL_VIDEO_DLSS_NR_SETTINGS,
+                                    PARSE_ACTION, false) == 0)
+                              count++;
                      }
                      if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                               MENU_ENUM_LABEL_VIDEO_DLSS_DIRECTORY,
@@ -17166,6 +17195,7 @@ static bool menu_displaylist_ctl_internal(
          case DISPLAYLIST_VIDEO_OUTPUT_SETTINGS_LIST:
          case DISPLAYLIST_VIDEO_HDR_SETTINGS_LIST:
          case DISPLAYLIST_VIDEO_STEREO_SETTINGS_LIST:
+         case DISPLAYLIST_VIDEO_DLSS_NR_SETTINGS_LIST:
          case DISPLAYLIST_VIDEO_SYNCHRONIZATION_SETTINGS_LIST:
          case DISPLAYLIST_VIDEO_SCALING_SETTINGS_LIST:
          case DISPLAYLIST_OPTIONS_DISK:

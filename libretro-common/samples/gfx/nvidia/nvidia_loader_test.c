@@ -85,7 +85,28 @@ static void test_feature_dir(void)
 #else
    CHECK(ngx_dlss_feature_version(dir) == NGX_VERSION_PACK(310, 1, 0));
 #endif
+   /* DLSS Neural Rendering's library beside it, never taken for
+    * Super Resolution's nor it for that; its version never loads it */
+   CHECK(!ngx_dlssnr_feature_in(dir));
    remove(file);
+#if defined(_WIN32)
+   fill_pathname_join_special(file, dir, "nvngx_dlssnr.dll", sizeof(file));
+#else
+   fill_pathname_join_special(file, dir, "libnvidia-ngx-dlssnr.so.310.8.0", sizeof(file));
+#endif
+   f = fopen(file, "wb");
+   if (f)
+      fclose(f);
+   CHECK(ngx_dlssnr_feature_in(dir));
+   CHECK(!ngx_dlss_feature_in(dir));
+#if defined(_WIN32)
+   CHECK(ngx_dlssnr_feature_version(dir) == 0);
+#else
+   CHECK(ngx_dlssnr_feature_version(dir) == NGX_VERSION_PACK(310, 8, 0));
+#endif
+   remove(file);
+   CHECK(!ngx_dlssnr_feature_in(dir));
+   CHECK(ngx_dlssnr_feature_version(dir) == 0);
    CHECK(!ngx_dlss_feature_in(dir));
    remove(dir);
    /* The stand-in feature library built beside the test: its version

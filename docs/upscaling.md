@@ -122,6 +122,41 @@ All of these are in **Settings > Video > Scaling**:
   sharpening and ignore this setting, unless OptiScaler is in use (see
   below).
 
+## DLSS Neural Rendering (DLSS 5)
+
+With DLSS, RetroArch can also run NVIDIA's DLSS 5 Neural Rendering
+model over the upscaled frame. The model reworks lighting and materials
+using the depth and motion the core exports. It needs:
+
+- An RTX 50 series card and an NVIDIA driver that has it (616.64 or
+  newer).
+- `nvngx_dlssnr.dll` in the DLSS directory (`upscalers/dlss`), next to
+  `nvngx_dlss.dll`.
+- **Temporal Upscaler** set to **DLSS**, and no OptiScaler in the DLSS
+  directory.
+
+When all that is in place, **Settings > Video > Scaling** has a **DLSS
+Neural Rendering** entry:
+
+- **Neural Rendering**: on or off. It costs a few milliseconds a frame.
+- **Model Preset**: Default lets the runtime choose.
+- **Style**: Default is the strongest, with more local contrast and
+  deeper lighting. Natural is gentler and keeps the tones closer to the
+  core's. Cinematic tones down the shine for a film-like look.
+- **Intensity**, **Local Structure**, **Local Tone**: the model's
+  strengths, in percent.
+- **Skin Structure**: the structure strength on skin. Follow Local
+  Structure uses Local Structure there too.
+- **Auto Skin Mask**: lets the model find skin and treat it apart.
+
+Turning it on or off applies on the next frame. A change to the other
+settings applies once it has held for half a second, because the model
+reads them only when it is set up.
+
+System Information shows **Neural Rendering** with its version, or
+**Neural Rendering: needs a newer driver** when the driver does not
+have it, in which case the entry is not shown.
+
 ## Checking that it works
 
 Open **Information > System Information** and look for the **Temporal

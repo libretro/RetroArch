@@ -119,6 +119,34 @@ uint32_t video_upscaler_dlss_version(void);
  * letters every one has */
 uint32_t video_upscaler_preset_min_version(enum video_temporal_upscaler_preset preset);
 
+/* DLSS Neural Rendering (DLSS 5), run over DLSS Super Resolution's
+ * output: its feature library in the DLSS directory, as
+ * NGX_VERSION_PACK has it (0 when none is found or it does not say),
+ * read once a directory; whether it can be offered (the library is
+ * there, NGX is not OptiScaler's, and no session has found the driver
+ * without it). A session notes what NGX said of the feature. */
+uint32_t video_upscaler_dlssnr_version(void);
+bool video_upscaler_nr_available(void);
+void video_upscaler_note_nr(bool supported);
+
+/* The Neural Rendering settings as one word, 0 when it is off: flags,
+ * the model's preset and style, and its strengths in 5% steps (0 to
+ * 40); skin structure 0 follows local structure, else 1 + its steps */
+#define VIDEO_UPSCALER_NR_ON          0x1u
+#define VIDEO_UPSCALER_NR_AUTO_MASK   0x2u
+#define VIDEO_UPSCALER_NR_PACK(flags, preset, style, intensity, structure, tone, skin) \
+   ((unsigned)(flags) | ((unsigned)(preset) << 2) | ((unsigned)(style) << 4) \
+    | ((unsigned)(intensity) << 6) | ((unsigned)(structure) << 12) \
+    | ((unsigned)(tone) << 18) | ((unsigned)(skin) << 24))
+#define VIDEO_UPSCALER_NR_PRESET(w)    (((w) >> 2) & 0x3u)
+#define VIDEO_UPSCALER_NR_STYLE(w)     (((w) >> 4) & 0x3u)
+#define VIDEO_UPSCALER_NR_INTENSITY(w) (((w) >> 6) & 0x3fu)
+#define VIDEO_UPSCALER_NR_STRUCTURE(w) (((w) >> 12) & 0x3fu)
+#define VIDEO_UPSCALER_NR_TONE(w)      (((w) >> 18) & 0x3fu)
+#define VIDEO_UPSCALER_NR_SKIN(w)      (((w) >> 24) & 0x3fu)
+#define VIDEO_UPSCALER_NR_STEP         0.05f
+unsigned video_upscaler_nr_mode(void);
+
 /* Whether NGX's calls are answered by OptiScaler: known from the NGX
  * library's own module at the probe, or from a session's parameters
  * (the backends note it). */

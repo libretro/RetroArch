@@ -8101,6 +8101,53 @@ static size_t setting_get_string_representation_uint_video_temporal_upscaler(
    }
    return 0;
 }
+
+static size_t setting_get_string_representation_uint_video_dlss_nr_preset(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   static const enum msg_hash_enums names[4] = {
+      MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_PRESET_DEFAULT,
+      MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_PRESET_1,
+      MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_PRESET_2,
+      MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_PRESET_3
+   };
+   if (setting)
+   {
+      unsigned q = *setting->value.target.unsigned_integer;
+      return strlcpy(s, msg_hash_to_str(names[q < 4 ? q : 0]), len);
+   }
+   return 0;
+}
+
+static size_t setting_get_string_representation_uint_video_dlss_nr_style(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   static const enum msg_hash_enums names[3] = {
+      MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_STYLE_DEFAULT,
+      MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_STYLE_NATURAL,
+      MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_STYLE_CINEMATIC
+   };
+   if (setting)
+   {
+      unsigned q = *setting->value.target.unsigned_integer;
+      return strlcpy(s, msg_hash_to_str(names[q < 3 ? q : 0]), len);
+   }
+   return 0;
+}
+
+static size_t setting_get_string_representation_int_video_dlss_nr_skin_structure(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      int v = *setting->value.target.integer;
+      if (v < 0)
+         return strlcpy(s, msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_SKIN_STRUCTURE_FOLLOW), len);
+      return snprintf(s, len, "%d%%", v);
+   }
+   return 0;
+}
 #endif
 
 static size_t setting_get_string_representation_uint_video_driver_pacing(

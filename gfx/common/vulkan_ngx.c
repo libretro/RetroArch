@@ -33,6 +33,10 @@
  * for, past the swapchain's depth */
 #define VULKAN_NGX_RETIRE_FRAMES 20
 #define VULKAN_NGX_RETIRED_MAX   8
+/* Frames a changed Neural Rendering setting holds before the feature is
+ * made again with it: the model reads its tuning only at creation, and
+ * a feature made every frame of a slider's travel exhausts the driver */
+#define VULKAN_NGX_NR_SETTLE     30
 
 typedef struct vulkan_ngx_retired
 {
@@ -77,6 +81,23 @@ struct vulkan_ngx
     * output size or mode changes, the frames shown as they are */
    unsigned failed_out_dims;
    unsigned failed_quality;
+   /* DLSS Neural Rendering over the output: its own parameters,
+    * feature and output image, made for nr_dims with the settings word
+    * nr_word (VIDEO_UPSCALER_NR_*); a changed word waits in nr_pending */
+   ngx_parameter_t *nr_params;
+   ngx_handle_t *nr_feature;
+   VkImage nr_image;
+   VkImageView nr_view;
+   VkDeviceMemory nr_memory;
+   VkFormat nr_format;
+   unsigned nr_dims;
+   unsigned nr_word;
+   unsigned nr_pending;
+   unsigned nr_pending_frames;
+   unsigned nr_failed_word;
+   unsigned nr_failed_dims;
+   bool nr_reset;
+   bool nr_unsupported;
    bool opt_valid;
    bool reset_pending;
 };
@@ -141,8 +162,9 @@ static bool vulkan_ngx_in_list(const char **list, unsigned count,
  * device's, into @names: from NVSDK_NGX_VULKAN_RequiredExtensions where
  * the library has it, else from the feature requirements API that
  * replaced it (OptiScaler has only that). The names are NGX's own. */
-static unsigned vulkan_ngx_names(const ngx_lib_t *lib, VkInstance instance,
-      VkPhysicalDevice gpu, const char **names)
+static unsigned vulkan_ngx_feature_names(const ngx_lib_t *lib,
+      VkInstance instance, VkPhysicalDevice gpu, int feature,
+      const char **names, unsigned out)
 {
    ngx_feature_discovery_info_t disc;
    ngx_feature_common_info_t info;
@@ -151,10 +173,10 @@ static unsigned vulkan_ngx_names(const ngx_lib_t *lib, VkInstance instance,
    wchar_t *wdir;
    char dir[DIR_MAX_LENGTH];
    uint32_t n = 0;
-   unsigned i, out = 0;
+   unsigned i;
    ngx_result_t res = NGX_RESULT_FAIL;
 
-   if (lib->vulkan.required_extensions)
+   if (feature == NGX_FEATURE_SUPER_SAMPLING && lib->vulkan.required_extensions)
    {
       unsigned ic = 0, dc = 0;
       const char **ie = NULL, **de = NULL;
@@ -171,12 +193,12 @@ static unsigned vulkan_ngx_names(const ngx_lib_t *lib, VkInstance instance,
     * vkCreateDevice hooks, and asking it recurses through them until
     * the stack runs out */
    if (ngx_lib_is_optiscaler())
-      return 0;
+      return out;
    if (gpu ? !lib->vulkan.get_feature_device_extension_requirements
            : !lib->vulkan.get_feature_instance_extension_requirements)
-      return 0;
+      return out;
    if (!(wdir = (wchar_t*)calloc(DIR_MAX_LENGTH, sizeof(wchar_t))))
-      return 0;
+      return out;
    video_upscaler_dir(VIDEO_TEMPORAL_UPSCALER_DLSS, dir, sizeof(dir));
    ngx_utf8_to_wide(wdir, DIR_MAX_LENGTH, dir);
    memset(&info, 0, sizeof(info));
@@ -185,7 +207,7 @@ static unsigned vulkan_ngx_names(const ngx_lib_t *lib, VkInstance instance,
    info.path_list.length       = 1;
    memset(&disc, 0, sizeof(disc));
    disc.sdk_version            = NGX_VERSION_API;
-   disc.feature_id             = NGX_FEATURE_SUPER_SAMPLING;
+   disc.feature_id             = feature;
    disc.identifier_type        = 1;
    disc.v.project.project_id   = VULKAN_NGX_PROJECT_ID;
    disc.v.project.engine_type  = NGX_ENGINE_TYPE_CUSTOM;
@@ -202,6 +224,21 @@ static unsigned vulkan_ngx_names(const ngx_lib_t *lib, VkInstance instance,
       for (i = 0; i < n && out < VULKAN_NGX_NAMES; i++)
          names[out++] = props[i].extensionName;
    free(wdir);
+   return out;
+}
+
+/* Super Resolution's, and Neural Rendering's where its library is in
+ * the DLSS directory */
+static unsigned vulkan_ngx_names(const ngx_lib_t *lib, VkInstance instance,
+      VkPhysicalDevice gpu, const char **names)
+{
+   char dir[DIR_MAX_LENGTH];
+   unsigned out = vulkan_ngx_feature_names(lib, instance, gpu,
+         NGX_FEATURE_SUPER_SAMPLING, names, 0);
+   video_upscaler_dir(VIDEO_TEMPORAL_UPSCALER_DLSS, dir, sizeof(dir));
+   if (ngx_dlssnr_feature_in(dir))
+      out = vulkan_ngx_feature_names(lib, instance, gpu,
+            NGX_FEATURE_DLSS_NR, names, out);
    return out;
 }
 
@@ -259,6 +296,8 @@ unsigned vulkan_ngx_device_extensions(VkPhysicalDevice gpu,
    free(props);
    return count;
 }
+
+static void vulkan_ngx_nr_unsupported(vulkan_ngx_t *ngx, ngx_result_t res);
 
 vulkan_ngx_t *vulkan_ngx_init(VkInstance instance, VkPhysicalDevice gpu,
       VkDevice device, PFN_vkGetInstanceProcAddr gipa,
@@ -356,6 +395,19 @@ vulkan_ngx_t *vulkan_ngx_init(VkInstance instance, VkPhysicalDevice gpu,
       video_upscaler_note_optiscaler();
       RARCH_LOG("[Vulkan] Temporal Upscaler: NGX answered by OptiScaler.\n");
    }
+   else if (ngx_dlssnr_feature_in(dlss_dir ? dlss_dir : ""))
+   {
+      /* What the core says of Neural Rendering: a core without it has
+       * no such capability */
+      int nr = 0;
+      if (     NGX_FAILED(lib->param.get_i(ngx->caps, NGX_PARAM_DLSSNR_AVAILABLE, &nr))
+            || !nr)
+      {
+         int init_result = 0;
+         lib->param.get_i(ngx->caps, NGX_PARAM_DLSSNR_FEATURE_INIT_RESULT, &init_result);
+         vulkan_ngx_nr_unsupported(ngx, (ngx_result_t)init_result);
+      }
+   }
    RARCH_LOG("[Vulkan] Temporal Upscaler: DLSS Super Resolution ready.\n");
    return ngx;
 }
@@ -449,13 +501,15 @@ bool vulkan_ngx_optimal(vulkan_ngx_t *ngx, unsigned quality,
    return true;
 }
 
-/* The feature and output image go to the retired ring, destroyed once
- * every frame that could use them has gone by */
-static void vulkan_ngx_retire(vulkan_ngx_t *ngx)
+/* A feature and its output image go to the retired ring, destroyed
+ * once every frame that could use them has gone by; the handles are
+ * cleared */
+static void vulkan_ngx_retire_one(vulkan_ngx_t *ngx, ngx_handle_t **feature,
+      VkImage *image, VkImageView *view, VkDeviceMemory *memory)
 {
    unsigned i;
    vulkan_ngx_retired_t *slot = NULL;
-   if (!ngx->feature && !ngx->out_image)
+   if (!*feature && !*image)
       return;
    for (i = 0; i < VULKAN_NGX_RETIRED_MAX; i++)
       if (!ngx->retired[i].frames)
@@ -480,15 +534,28 @@ static void vulkan_ngx_retire(vulkan_ngx_t *ngx)
       if (slot->memory)
          vkFreeMemory(ngx->device, slot->memory, NULL);
    }
-   slot->feature   = ngx->feature;
-   slot->image     = ngx->out_image;
-   slot->view      = ngx->out_view;
-   slot->memory    = ngx->out_memory;
-   slot->frames    = VULKAN_NGX_RETIRE_FRAMES;
-   ngx->feature    = NULL;
-   ngx->out_image  = VK_NULL_HANDLE;
-   ngx->out_view   = VK_NULL_HANDLE;
-   ngx->out_memory = VK_NULL_HANDLE;
+   slot->feature = *feature;
+   slot->image   = *image;
+   slot->view    = *view;
+   slot->memory  = *memory;
+   slot->frames  = VULKAN_NGX_RETIRE_FRAMES;
+   *feature      = NULL;
+   *image        = VK_NULL_HANDLE;
+   *view         = VK_NULL_HANDLE;
+   *memory       = VK_NULL_HANDLE;
+}
+
+static void vulkan_ngx_retire(vulkan_ngx_t *ngx)
+{
+   vulkan_ngx_retire_one(ngx, &ngx->feature, &ngx->out_image,
+         &ngx->out_view, &ngx->out_memory);
+}
+
+static void vulkan_ngx_nr_retire(vulkan_ngx_t *ngx)
+{
+   vulkan_ngx_retire_one(ngx, &ngx->nr_feature, &ngx->nr_image,
+         &ngx->nr_view, &ngx->nr_memory);
+   ngx->nr_dims = 0;
 }
 
 void vulkan_ngx_frame_done(vulkan_ngx_t *ngx)
@@ -515,7 +582,8 @@ void vulkan_ngx_frame_done(vulkan_ngx_t *ngx)
 }
 
 static bool vulkan_ngx_create_output(vulkan_ngx_t *ngx, VkFormat format,
-      unsigned dims)
+      unsigned dims, VkImage *out_image, VkImageView *out_view,
+      VkDeviceMemory *out_memory)
 {
    VkImageCreateInfo image;
    VkImageViewCreateInfo view;
@@ -543,10 +611,10 @@ static bool vulkan_ngx_create_output(vulkan_ngx_t *ngx, VkFormat format,
    image.queueFamilyIndexCount = 0;
    image.pQueueFamilyIndices   = NULL;
    image.initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED;
-   if (vkCreateImage(ngx->device, &image, NULL, &ngx->out_image) != VK_SUCCESS)
+   if (vkCreateImage(ngx->device, &image, NULL, out_image) != VK_SUCCESS)
       return false;
 
-   vkGetImageMemoryRequirements(ngx->device, ngx->out_image, &reqs);
+   vkGetImageMemoryRequirements(ngx->device, *out_image, &reqs);
    type = ngx->memory_properties.memoryTypeCount;
    for (i = 0; i < ngx->memory_properties.memoryTypeCount; i++)
       if (   (reqs.memoryTypeBits & (1u << i))
@@ -568,14 +636,14 @@ static bool vulkan_ngx_create_output(vulkan_ngx_t *ngx, VkFormat format,
    alloc.allocationSize  = reqs.size;
    alloc.memoryTypeIndex = type;
    if (   type == ngx->memory_properties.memoryTypeCount
-       || vkAllocateMemory(ngx->device, &alloc, NULL, &ngx->out_memory) != VK_SUCCESS
-       || vkBindImageMemory(ngx->device, ngx->out_image, ngx->out_memory, 0) != VK_SUCCESS)
+       || vkAllocateMemory(ngx->device, &alloc, NULL, out_memory) != VK_SUCCESS
+       || vkBindImageMemory(ngx->device, *out_image, *out_memory, 0) != VK_SUCCESS)
       goto fail;
 
    view.sType                           = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
    view.pNext                           = NULL;
    view.flags                           = 0;
-   view.image                           = ngx->out_image;
+   view.image                           = *out_image;
    view.viewType                        = VK_IMAGE_VIEW_TYPE_2D;
    view.format                          = format;
    view.components.r                    = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -587,17 +655,16 @@ static bool vulkan_ngx_create_output(vulkan_ngx_t *ngx, VkFormat format,
    view.subresourceRange.levelCount     = 1;
    view.subresourceRange.baseArrayLayer = 0;
    view.subresourceRange.layerCount     = 1;
-   if (vkCreateImageView(ngx->device, &view, NULL, &ngx->out_view) != VK_SUCCESS)
+   if (vkCreateImageView(ngx->device, &view, NULL, out_view) != VK_SUCCESS)
       goto fail;
-   ngx->out_format = format;
    return true;
 
 fail:
-   if (ngx->out_memory)
-      vkFreeMemory(ngx->device, ngx->out_memory, NULL);
-   vkDestroyImage(ngx->device, ngx->out_image, NULL);
-   ngx->out_image  = VK_NULL_HANDLE;
-   ngx->out_memory = VK_NULL_HANDLE;
+   if (*out_memory)
+      vkFreeMemory(ngx->device, *out_memory, NULL);
+   vkDestroyImage(ngx->device, *out_image, NULL);
+   *out_image  = VK_NULL_HANDLE;
+   *out_memory = VK_NULL_HANDLE;
    return false;
 }
 
@@ -610,12 +677,14 @@ static bool vulkan_ngx_create_feature(vulkan_ngx_t *ngx,
    ngx_result_t res;
 
    vulkan_ngx_retire(ngx);
-   if (!vulkan_ngx_create_output(ngx, format, out_dims))
+   if (!vulkan_ngx_create_output(ngx, format, out_dims, &ngx->out_image,
+            &ngx->out_view, &ngx->out_memory))
    {
       RARCH_ERR("[Vulkan] Temporal Upscaler: no output image of %ux%u.\n",
             VIDEO_SCALE_W(out_dims), VIDEO_SCALE_H(out_dims));
       return false;
    }
+   ngx->out_format = format;
    lib->param.set_ui(p, NGX_PARAM_CREATION_NODE_MASK, 1);
    lib->param.set_ui(p, NGX_PARAM_VISIBILITY_NODE_MASK, 1);
    lib->param.set_ui(p, NGX_PARAM_WIDTH, VIDEO_SCALE_W(max_dims));
@@ -692,10 +761,221 @@ static void vulkan_ngx_move_input(VkCommandBuffer cmd,
          to_read ? VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT : VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
 }
 
+/* Whether a create's result says NGX's core has no Neural Rendering */
+static bool vulkan_ngx_nr_missing(ngx_result_t res)
+{
+   return res == NGX_RESULT_FAIL_OUT_OF_DATE
+       || res == NGX_RESULT_FAIL_FEATURE_NOT_SUPPORTED
+       || res == NGX_RESULT_FAIL_NOT_IMPLEMENTED;
+}
+
+static void vulkan_ngx_nr_unsupported(vulkan_ngx_t *ngx, ngx_result_t res)
+{
+   ngx->nr_unsupported = true;
+   video_upscaler_note_nr(false);
+   RARCH_WARN("[Vulkan] Temporal Upscaler: DLSS Neural Rendering needs a newer NVIDIA driver (0x%08x).\n",
+         (unsigned)res);
+}
+
+static bool vulkan_ngx_nr_create(vulkan_ngx_t *ngx, VkCommandBuffer cmd,
+      VkFormat format, unsigned dims, unsigned nr)
+{
+   const ngx_lib_t *lib = ngx->lib;
+   ngx_parameter_t *p;
+   unsigned skin;
+   ngx_result_t res;
+
+   vulkan_ngx_nr_retire(ngx);
+   if (!ngx->nr_params && NGX_FAILED(lib->vulkan.allocate_parameters(&ngx->nr_params)))
+   {
+      ngx->nr_params = NULL;
+      return false;
+   }
+   p = ngx->nr_params;
+   if (!vulkan_ngx_create_output(ngx, format, dims, &ngx->nr_image,
+            &ngx->nr_view, &ngx->nr_memory))
+   {
+      RARCH_ERR("[Vulkan] Temporal Upscaler: no Neural Rendering image of %ux%u.\n",
+            VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims));
+      return false;
+   }
+   skin = VIDEO_UPSCALER_NR_SKIN(nr);
+   lib->param.set_ui(p, NGX_PARAM_CREATION_NODE_MASK, 1);
+   lib->param.set_ui(p, NGX_PARAM_VISIBILITY_NODE_MASK, 1);
+   lib->param.set_ui(p, NGX_PARAM_DLSSNR_ENABLED, 1);
+   lib->param.set_ui(p, NGX_PARAM_DLSSNR_WIDTH, VIDEO_SCALE_W(dims));
+   lib->param.set_ui(p, NGX_PARAM_DLSSNR_HEIGHT, VIDEO_SCALE_H(dims));
+   lib->param.set_ui(p, NGX_PARAM_DLSSNR_PRESET, VIDEO_UPSCALER_NR_PRESET(nr));
+   lib->param.set_ui(p, NGX_PARAM_DLSSNR_STYLE, VIDEO_UPSCALER_NR_STYLE(nr));
+   lib->param.set_f(p, NGX_PARAM_DLSSNR_INTENSITY,
+         VIDEO_UPSCALER_NR_INTENSITY(nr) * VIDEO_UPSCALER_NR_STEP);
+   lib->param.set_f(p, NGX_PARAM_DLSSNR_LOCAL_STRUCTURE,
+         VIDEO_UPSCALER_NR_STRUCTURE(nr) * VIDEO_UPSCALER_NR_STEP);
+   lib->param.set_f(p, NGX_PARAM_DLSSNR_LOCAL_TONE,
+         VIDEO_UPSCALER_NR_TONE(nr) * VIDEO_UPSCALER_NR_STEP);
+   lib->param.set_f(p, NGX_PARAM_DLSSNR_SKIN_STRUCTURE,
+         skin ? (skin - 1) * VIDEO_UPSCALER_NR_STEP : -1.0f);
+   lib->param.set_ui(p, NGX_PARAM_DLSSNR_AUTO_MASK,
+         (nr & VIDEO_UPSCALER_NR_AUTO_MASK) ? 1 : 0);
+   res = lib->vulkan.create_feature1((void*)ngx->device, (void*)cmd,
+         NGX_FEATURE_DLSS_NR, p, &ngx->nr_feature);
+   if (NGX_FAILED(res))
+   {
+      ngx->nr_feature = NULL;
+      vulkan_ngx_nr_retire(ngx);
+      if (vulkan_ngx_nr_missing(res))
+         vulkan_ngx_nr_unsupported(ngx, res);
+      else
+         RARCH_ERR("[Vulkan] Temporal Upscaler: DLSS Neural Rendering feature %ux%u failed (0x%08x).\n",
+               VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), (unsigned)res);
+      ngx->nr_failed_word = nr;
+      ngx->nr_failed_dims = dims;
+      return false;
+   }
+   video_upscaler_note_nr(true);
+   ngx->nr_dims           = dims;
+   ngx->nr_word           = nr;
+   ngx->nr_pending        = nr;
+   ngx->nr_pending_frames = 0;
+   ngx->nr_format         = format;
+   ngx->nr_reset          = true;
+   RARCH_LOG("[Vulkan] Temporal Upscaler: DLSS Neural Rendering feature at %ux%u.\n",
+         VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims));
+   return true;
+}
+
+/* Neural Rendering over @io, Super Resolution's output, recorded into
+ * @cmd: @io names its output on success. The core's guides are its
+ * render size, @render_dims. */
+static bool vulkan_ngx_nr(vulkan_ngx_t *ngx, VkCommandBuffer cmd,
+      const struct retro_hw_upscaler_inputs *inputs, unsigned render_dims,
+      unsigned nr, bool reset, vulkan_ngx_image_t *io)
+{
+   const ngx_lib_t *lib = ngx->lib;
+   ngx_parameter_t *p;
+   ngx_vk_resource_t r_color, r_output, r_depth, r_mv;
+   struct retro_hw_upscaler_image img;
+   unsigned mv_dims;
+   ngx_result_t res;
+
+   if (!(nr & VIDEO_UPSCALER_NR_ON))
+   {
+      if (ngx->nr_feature)
+         vulkan_ngx_nr_retire(ngx);
+      return false;
+   }
+   if (ngx->nr_unsupported
+         || (ngx->nr_failed_word == nr && ngx->nr_failed_dims == io->dims))
+      return false;
+   if (!ngx->nr_feature || ngx->nr_dims != io->dims || ngx->nr_format != io->format)
+   {
+      if (!vulkan_ngx_nr_create(ngx, cmd, io->format, io->dims, nr))
+         return false;
+   }
+   else if (nr != ngx->nr_word)
+   {
+      /* (made again once the change has held) */
+      if (nr != ngx->nr_pending)
+      {
+         ngx->nr_pending        = nr;
+         ngx->nr_pending_frames = 0;
+      }
+      else if (++ngx->nr_pending_frames >= VULKAN_NGX_NR_SETTLE
+            && !vulkan_ngx_nr_create(ngx, cmd, io->format, io->dims, nr))
+         return false;
+   }
+   p = ngx->nr_params;
+
+   vulkan_ngx_barrier(cmd, ngx->nr_image, VK_IMAGE_ASPECT_COLOR_BIT,
+         ngx->nr_reset ? VK_IMAGE_LAYOUT_UNDEFINED
+                       : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+         VK_IMAGE_LAYOUT_GENERAL,
+         VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_SHADER_WRITE_BIT,
+         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+         VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+   if (vulkan_ngx_input_needs_move(&inputs->motion_vectors))
+      vulkan_ngx_move_input(cmd, &inputs->motion_vectors, true);
+   if (vulkan_ngx_input_needs_move(&inputs->depth))
+      vulkan_ngx_move_input(cmd, &inputs->depth, true);
+
+   img.image  = (uint64_t)(uintptr_t)io->image;
+   img.view   = (uint64_t)(uintptr_t)io->view;
+   img.format = (unsigned)io->format;
+   img.state  = (unsigned)io->layout;
+   img.width  = VIDEO_SCALE_W(io->dims);
+   img.height = VIDEO_SCALE_H(io->dims);
+   vulkan_ngx_vk_resource(&r_color, &img, false);
+   img.image  = (uint64_t)(uintptr_t)ngx->nr_image;
+   img.view   = (uint64_t)(uintptr_t)ngx->nr_view;
+   vulkan_ngx_vk_resource(&r_output, &img, true);
+   vulkan_ngx_vk_resource(&r_depth, &inputs->depth, false);
+   vulkan_ngx_vk_resource(&r_mv, &inputs->motion_vectors, false);
+   mv_dims = (inputs->flags & RETRO_HW_UPSCALER_MV_OUTPUT_RES)
+      ? io->dims : render_dims;
+
+   lib->param.set_void_pointer(p, NGX_PARAM_DLSSNR_COLOR, &r_color);
+   lib->param.set_void_pointer(p, NGX_PARAM_DLSSNR_OUTPUT, &r_output);
+   lib->param.set_void_pointer(p, NGX_PARAM_DLSSNR_DEPTH, &r_depth);
+   lib->param.set_void_pointer(p, NGX_PARAM_DLSSNR_MVEC, &r_mv);
+   lib->param.set_ui(p, NGX_PARAM_DLSSNR_ENABLED, 1);
+   lib->param.set_ui(p, NGX_PARAM_DLSSNR_WIDTH, VIDEO_SCALE_W(io->dims));
+   lib->param.set_ui(p, NGX_PARAM_DLSSNR_HEIGHT, VIDEO_SCALE_H(io->dims));
+   lib->param.set_ui(p, NGX_PARAM_DLSSNR_DEPTH_INVERTED,
+         (inputs->flags & RETRO_HW_UPSCALER_DEPTH_INVERTED) ? 1 : 0);
+   lib->param.set_ui(p, NGX_PARAM_DLSSNR_RESET,
+         (ngx->nr_reset || reset) ? 1 : 0);
+   lib->param.set_f(p, NGX_PARAM_DLSSNR_MVEC_SCALE_X,
+         inputs->mv_scale_x == 0.0f ? 1.0f : inputs->mv_scale_x);
+   lib->param.set_f(p, NGX_PARAM_DLSSNR_MVEC_SCALE_Y,
+         inputs->mv_scale_y == 0.0f ? 1.0f : inputs->mv_scale_y);
+   lib->param.set_ui(p, NGX_PARAM_DLSSNR_COLOR_SUBRECT "BaseX", 0);
+   lib->param.set_ui(p, NGX_PARAM_DLSSNR_COLOR_SUBRECT "BaseY", 0);
+   lib->param.set_ui(p, NGX_PARAM_DLSSNR_COLOR_SUBRECT "Width", VIDEO_SCALE_W(io->dims));
+   lib->param.set_ui(p, NGX_PARAM_DLSSNR_COLOR_SUBRECT "Height", VIDEO_SCALE_H(io->dims));
+   lib->param.set_ui(p, NGX_PARAM_DLSSNR_OUTPUT_SUBRECT "BaseX", 0);
+   lib->param.set_ui(p, NGX_PARAM_DLSSNR_OUTPUT_SUBRECT "BaseY", 0);
+   lib->param.set_ui(p, NGX_PARAM_DLSSNR_OUTPUT_SUBRECT "Width", VIDEO_SCALE_W(io->dims));
+   lib->param.set_ui(p, NGX_PARAM_DLSSNR_OUTPUT_SUBRECT "Height", VIDEO_SCALE_H(io->dims));
+   lib->param.set_ui(p, NGX_PARAM_DLSSNR_DEPTH_SUBRECT "BaseX", 0);
+   lib->param.set_ui(p, NGX_PARAM_DLSSNR_DEPTH_SUBRECT "BaseY", 0);
+   lib->param.set_ui(p, NGX_PARAM_DLSSNR_DEPTH_SUBRECT "Width", VIDEO_SCALE_W(render_dims));
+   lib->param.set_ui(p, NGX_PARAM_DLSSNR_DEPTH_SUBRECT "Height", VIDEO_SCALE_H(render_dims));
+   lib->param.set_ui(p, NGX_PARAM_DLSSNR_MVEC_SUBRECT "BaseX", 0);
+   lib->param.set_ui(p, NGX_PARAM_DLSSNR_MVEC_SUBRECT "BaseY", 0);
+   lib->param.set_ui(p, NGX_PARAM_DLSSNR_MVEC_SUBRECT "Width", VIDEO_SCALE_W(mv_dims));
+   lib->param.set_ui(p, NGX_PARAM_DLSSNR_MVEC_SUBRECT "Height", VIDEO_SCALE_H(mv_dims));
+   res = lib->vulkan.evaluate_feature((void*)cmd, ngx->nr_feature, p, NULL);
+   ngx->nr_reset = false;
+
+   if (vulkan_ngx_input_needs_move(&inputs->motion_vectors))
+      vulkan_ngx_move_input(cmd, &inputs->motion_vectors, false);
+   if (vulkan_ngx_input_needs_move(&inputs->depth))
+      vulkan_ngx_move_input(cmd, &inputs->depth, false);
+   vulkan_ngx_barrier(cmd, ngx->nr_image, VK_IMAGE_ASPECT_COLOR_BIT,
+         VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+         VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+         VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+   if (NGX_FAILED(res))
+   {
+      RARCH_ERR("[Vulkan] Temporal Upscaler: DLSS Neural Rendering evaluate failed (0x%08x).\n",
+            (unsigned)res);
+      ngx->nr_failed_word = nr;
+      ngx->nr_failed_dims = io->dims;
+      return false;
+   }
+   io->image  = ngx->nr_image;
+   io->view   = ngx->nr_view;
+   io->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+   io->format = ngx->nr_format;
+   return true;
+}
+
 bool vulkan_ngx_upscale(vulkan_ngx_t *ngx, VkCommandBuffer cmd,
       const vulkan_ngx_image_t *color,
       const struct retro_hw_upscaler_inputs *inputs,
-      unsigned quality, unsigned out_dims, vulkan_ngx_image_t *out)
+      unsigned quality, unsigned nr, unsigned out_dims,
+      vulkan_ngx_image_t *out)
 {
    const ngx_lib_t *lib;
    ngx_parameter_t *p;
@@ -704,6 +984,7 @@ bool vulkan_ngx_upscale(vulkan_ngx_t *ngx, VkCommandBuffer cmd,
    unsigned render_dims, min_dims, max_dims;
    unsigned flags;
    ngx_result_t res;
+   bool reset;
 
    if (!ngx || !inputs || !color->image || !inputs->motion_vectors.image
          || !inputs->depth.image
@@ -813,6 +1094,7 @@ bool vulkan_ngx_upscale(vulkan_ngx_t *ngx, VkCommandBuffer cmd,
    lib->param.set_ui(p, NGX_PARAM_DLSS_OUTPUT_SUBRECT_Y, 0);
    lib->param.set_i(p, NGX_PARAM_DLSS_INDICATOR_INVERT_X, 0);
    lib->param.set_i(p, NGX_PARAM_DLSS_INDICATOR_INVERT_Y, 0);
+   reset = ngx->reset_pending || (inputs->flags & RETRO_HW_UPSCALER_RESET);
    res = lib->vulkan.evaluate_feature((void*)cmd, ngx->feature, p, NULL);
    ngx->reset_pending = false;
 
@@ -838,6 +1120,9 @@ bool vulkan_ngx_upscale(vulkan_ngx_t *ngx, VkCommandBuffer cmd,
    out->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
    out->format = ngx->out_format;
    out->dims   = out_dims;
+   /* (Super Resolution's frame stands where Neural Rendering does not
+    * run) */
+   vulkan_ngx_nr(ngx, cmd, inputs, color->dims, nr, reset, out);
    return true;
 }
 
@@ -848,10 +1133,13 @@ void vulkan_ngx_free(vulkan_ngx_t *ngx)
    if (!ngx)
       return;
    vulkan_ngx_retire(ngx);
+   vulkan_ngx_nr_retire(ngx);
    for (i = 0; i < VULKAN_NGX_RETIRED_MAX; i++)
       ngx->retired[i].frames = ngx->retired[i].frames ? 1 : 0;
    vulkan_ngx_frame_done(ngx);
    RARCH_LOG("[Vulkan] Temporal Upscaler: DLSS feature released.\n");
+   if (ngx->nr_params)
+      ngx->lib->vulkan.destroy_parameters(ngx->nr_params);
    if (ngx->params)
       ngx->lib->vulkan.destroy_parameters(ngx->params);
    if (ngx->caps)

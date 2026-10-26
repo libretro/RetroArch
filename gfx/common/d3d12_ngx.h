@@ -55,13 +55,16 @@ bool d3d12_ngx_optimal(d3d12_ngx_t *ngx, unsigned quality,
       unsigned out_dims, unsigned *render_dims,
       unsigned *min_dims, unsigned *max_dims);
 
-/* Records into @cmd the upscale of @color with @inputs to @out_dims and
- * names the output in *@out; false, nothing recorded, when the frame
- * cannot be taken. Once per frame, before anything that reads *@out. */
+/* Records into @cmd the upscale of @color with @inputs to @out_dims,
+ * then DLSS Neural Rendering over it where @nr (video_upscaler_nr_mode)
+ * turns it on and it runs, and names the output in *@out; false,
+ * nothing recorded, when the frame cannot be taken. Once per frame,
+ * before anything that reads *@out. */
 bool d3d12_ngx_upscale(d3d12_ngx_t *ngx, ID3D12GraphicsCommandList *cmd,
       const d3d12_ngx_image_t *color,
       const struct retro_hw_upscaler_inputs *inputs,
-      unsigned quality, unsigned out_dims, d3d12_ngx_image_t *out);
+      unsigned quality, unsigned nr, unsigned out_dims,
+      d3d12_ngx_image_t *out);
 
 void d3d12_ngx_frame_done(d3d12_ngx_t *ngx);
 

@@ -7629,6 +7629,38 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_NOT_IN_RUNTIME,
    " (not in this DLSS runtime)"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_PRESET_DEFAULT,
+   "Default"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_PRESET_1,
+   "Preset 1"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_PRESET_2,
+   "Preset 2"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_PRESET_3,
+   "Preset 3"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_STYLE_DEFAULT,
+   "Default"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_STYLE_NATURAL,
+   "Natural"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_STYLE_CINEMATIC,
+   "Cinematic"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_SKIN_STRUCTURE_FOLLOW,
+   "Follow Local Structure"
+   )
 /* GENERATED REGION: HDR toggle group, stereo 3D & screens group and headset group (see settings_def_video_hdr_toggles.h, settings_def_video_stereo.h and settings_def_video_headset.h). */
 #define SETTINGS_DEF_STRINGS_PASS
 #define S_BOOL(f, T, n, d, sd, df, c, us, sub) \

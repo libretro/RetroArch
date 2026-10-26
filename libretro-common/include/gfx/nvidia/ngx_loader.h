@@ -83,8 +83,11 @@ typedef int ngx_result_t;
 /* NVSDK_NGX_Version_API this interface restates */
 #define NGX_VERSION_API 0x0000015
 
-/* NVSDK_NGX_Feature */
+/* NVSDK_NGX_Feature: DLSS Super Resolution, and DLSS Neural Rendering
+ * (DLSS 5, nvngx_dlssnr.dll), which NGX cores older than its driver
+ * answer with NGX_RESULT_FAIL_OUT_OF_DATE */
 #define NGX_FEATURE_SUPER_SAMPLING 1
+#define NGX_FEATURE_DLSS_NR        18
 
 /* NVSDK_NGX_EngineType */
 #define NGX_ENGINE_TYPE_CUSTOM 0
@@ -220,6 +223,35 @@ enum ngx_dlss_render_preset
 #define NGX_PARAM_DLSS_HINT_PRESET_BALANCED    "DLSS.Hint.Render.Preset.Balanced"
 #define NGX_PARAM_DLSS_HINT_PRESET_PERFORMANCE "DLSS.Hint.Render.Preset.Performance"
 #define NGX_PARAM_DLSS_HINT_PRESET_ULTRA_PERFORMANCE "DLSS.Hint.Render.Preset.UltraPerformance"
+
+/* DLSS Neural Rendering's parameters. The capability set says whether
+ * it is there (a core without it has no such key); the model's tuning
+ * is read when the feature is created, the rest at every evaluate. */
+#define NGX_PARAM_DLSSNR_AVAILABLE       "DLSSNR.Available"
+#define NGX_PARAM_DLSSNR_FEATURE_INIT_RESULT "DLSSNR.FeatureInitResult"
+#define NGX_PARAM_DLSSNR_ENABLED         "DLSSNR.Enabled"
+#define NGX_PARAM_DLSSNR_WIDTH           "DLSSNR.Width"
+#define NGX_PARAM_DLSSNR_HEIGHT          "DLSSNR.Height"
+#define NGX_PARAM_DLSSNR_PRESET          "DLSSNR.Hint.Render.Preset"
+#define NGX_PARAM_DLSSNR_STYLE           "DLSSNR.Style"
+#define NGX_PARAM_DLSSNR_INTENSITY       "DLSSNR.Intensity"
+#define NGX_PARAM_DLSSNR_LOCAL_STRUCTURE "DLSSNR.LocalStructureStrength"
+#define NGX_PARAM_DLSSNR_LOCAL_TONE      "DLSSNR.LocalToneStrength"
+#define NGX_PARAM_DLSSNR_SKIN_STRUCTURE  "DLSSNR.SkinStructureStrength"
+#define NGX_PARAM_DLSSNR_AUTO_MASK       "DLSSNR.UseAutoMask"
+#define NGX_PARAM_DLSSNR_COLOR           "DLSSNR.Color"
+#define NGX_PARAM_DLSSNR_DEPTH           "DLSSNR.Depth"
+#define NGX_PARAM_DLSSNR_MVEC            "DLSSNR.MVec"
+#define NGX_PARAM_DLSSNR_OUTPUT          "DLSSNR.Output"
+#define NGX_PARAM_DLSSNR_DEPTH_INVERTED  "DLSSNR.DepthInverted"
+#define NGX_PARAM_DLSSNR_RESET           "DLSSNR.Reset"
+#define NGX_PARAM_DLSSNR_MVEC_SCALE_X    "DLSSNR.MVecScaleX"
+#define NGX_PARAM_DLSSNR_MVEC_SCALE_Y    "DLSSNR.MVecScaleY"
+/* Each resource's subrect: base x and y, width and height */
+#define NGX_PARAM_DLSSNR_COLOR_SUBRECT   "DLSSNR.ColorSubrect"
+#define NGX_PARAM_DLSSNR_DEPTH_SUBRECT   "DLSSNR.DepthSubrect"
+#define NGX_PARAM_DLSSNR_MVEC_SUBRECT    "DLSSNR.MVecSubrect"
+#define NGX_PARAM_DLSSNR_OUTPUT_SUBRECT  "DLSSNR.OutputSubrect"
 
 /* A Vulkan proc-address getter (PFN_vkGetInstanceProcAddr,
  * PFN_vkGetDeviceProcAddr), cast to this */
@@ -449,6 +481,13 @@ bool ngx_dlss_feature_in(const char *dir);
  * not say. Loading the library for the export keeps it loaded (NGX
  * loads the same file from the directory later). */
 uint32_t ngx_dlss_feature_version(const char *dir);
+
+/* Whether @dir holds the DLSS Neural Rendering feature library
+ * (nvngx_dlssnr.dll; libnvidia-ngx-dlssnr.so.* on Linux), and its
+ * version (its file version, on Linux its file name's; 0 where there
+ * is none or it does not say). The library is never loaded for it. */
+bool ngx_dlssnr_feature_in(const char *dir);
+uint32_t ngx_dlssnr_feature_version(const char *dir);
 
 /* NVSDK_NGX_GetSnippetVersion's word as NGX_VERSION_PACK: major in the
  * high half, minor and patch a byte each below it */

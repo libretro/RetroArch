@@ -13,6 +13,10 @@ typedef struct fake_ngx_create
    unsigned node_mask;
    void *cmd;
    unsigned preset;   /* the Quality mode's render preset hint */
+   int feature;
+   /* Neural Rendering's (feature 18) tuning */
+   unsigned nr_preset, nr_style, nr_auto_mask;
+   float nr_intensity, nr_structure, nr_tone, nr_skin;
 } fake_ngx_create_t;
 
 typedef struct fake_ngx_eval
@@ -24,6 +28,10 @@ typedef struct fake_ngx_eval
    int reset;
    unsigned subrect_w, subrect_h;
    int feature;
+   /* Neural Rendering's: the guides' subrects, the depth's sense */
+   int nr;
+   unsigned depth_w, depth_h, mv_w, mv_h;
+   int depth_inverted;
 } fake_ngx_eval_t;
 
 typedef struct fake_ngx_record
@@ -41,6 +49,7 @@ typedef struct fake_ngx_record
    int create_fails;
    int optiscaler;    /* the tables carry OptiScaler's key, as its stand-in's do */
    int eval_fails;
+   int nr_missing;    /* the core has no Neural Rendering, as before its driver */
 } fake_ngx_record_t;
 
 #endif
