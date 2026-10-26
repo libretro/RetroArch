@@ -112,8 +112,12 @@ uint32_t video_upscaler_preset_min_version(enum video_temporal_upscaler_preset p
 
 bool video_upscaler_optiscaler(void)
 {
-   return (upscaler_flags & UPSCALER_FLAG_OPTISCALER)
-      || (ngx_lib_present() & NGX_PRESENT_OPTISCALER);
+   char dir[DIR_MAX_LENGTH];
+   if (     (upscaler_flags & UPSCALER_FLAG_OPTISCALER)
+         || (ngx_lib_present() & NGX_PRESENT_OPTISCALER))
+      return true;
+   video_upscaler_dir(VIDEO_TEMPORAL_UPSCALER_DLSS, dir, sizeof(dir));
+   return ngx_stand_in_in(dir);
 }
 
 void video_upscaler_note_optiscaler(void)
@@ -128,7 +132,16 @@ bool video_upscaler_wanted(void)
 
 void video_upscaler_note_wanted(void)
 {
+   char dir[DIR_MAX_LENGTH];
+   if (upscaler_flags & UPSCALER_FLAG_WANTED)
+      return;
    upscaler_flags |= UPSCALER_FLAG_WANTED;
+   if (config_get_ptr()->uints.video_temporal_upscaler != VIDEO_TEMPORAL_UPSCALER_DLSS)
+      return;
+   /* ahead of NGX, which it then hooks */
+   video_upscaler_dir(VIDEO_TEMPORAL_UPSCALER_DLSS, dir, sizeof(dir));
+   if (ngx_lib_load_stand_in(dir))
+      RARCH_LOG("[Video] Temporal Upscaler: OptiScaler loaded from \"%s\".\n", dir);
 }
 
 void video_upscaler_clear_wanted(void)

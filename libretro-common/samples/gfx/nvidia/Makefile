@@ -33,7 +33,7 @@ OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 ifneq ($(findstring mingw,$(CC)),)
    EXE     := .exe
    FAKES   := _nvngx.dll nvapi64.dll nvidia_loader_test_feature/nvngx_dlss.dll \
-              nvidia_loader_test_snippet/nvngx_dlss.dll
+              nvidia_loader_test_snippet/nvngx_dlss.dll nvidia_loader_test_feature/OptiScaler.dll
    LDLIBS  := -ladvapi32
    RUNNER  ?= wine
    WINDRES ?= $(patsubst %gcc,%windres,$(CC))
@@ -69,6 +69,12 @@ nvidia_loader_test_feature/nvngx_dlss.dll: fake_dlss.c fake_dlss.rc
 	$(CC) -shared -O1 -Wall -o $@ $< fake_dlss_res.o
 
 nvidia_loader_test_snippet/nvngx_dlss.dll: fake_dlss.c
+	@mkdir -p $(@D)
+	$(CC) -shared -O1 -Wall -o $@ $<
+
+# (OptiScaler under its own name in the DLSS directory: any library
+# will do for the load)
+nvidia_loader_test_feature/OptiScaler.dll: fake_dlss.c
 	@mkdir -p $(@D)
 	$(CC) -shared -O1 -Wall -o $@ $<
 

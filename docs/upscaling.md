@@ -149,28 +149,26 @@ wherever a program asks for DLSS, including on AMD and Intel cards.
 
 To use it with RetroArch:
 
-1. Put OptiScaler's DLL in the RetroArch folder, next to
-   `retroarch.exe`, renamed to `winmm.dll`. Put OptiScaler's
-   `OptiScaler.ini` next to it.
-2. Keep a `nvngx_dlss.dll` in `upscalers/dlss`. RetroArch needs one
-   there before it uses DLSS.
-3. Set **Temporal Upscaler** to **DLSS**.
+1. Put OptiScaler's `OptiScaler.dll`, under that name, and its
+   `OptiScaler.ini` in the DLSS directory (`upscalers/dlss`), next to
+   `nvngx_dlss.dll`. RetroArch still needs that `nvngx_dlss.dll` there.
+2. Set **Temporal Upscaler** to **DLSS**.
 
-Don't name it `nvngx.dll`. Next to `retroarch.exe` under that name,
-OptiScaler takes itself for NVIDIA's NGX library and passes every call
-back to itself, and RetroArch freezes or crashes when content starts.
-As `winmm.dll` it loads when RetroArch starts and passes the calls on
-to NVIDIA's own NGX library.
+RetroArch loads `OptiScaler.dll` when content starts with a core that
+asks for the upscaler, just before NVIDIA's NGX library, which
+OptiScaler then hooks and answers for. Other cores never load it. Once
+loaded, it stays loaded until you quit RetroArch.
 
-System Information then shows **via OptiScaler**, and the log names
-OptiScaler as the NGX library. OptiScaler's own menu opens with the
-Insert key. The **Temporal Upscaler Sharpness** setting drives
-OptiScaler's sharpening pass for every upscaler it runs.
+Don't put OptiScaler next to `retroarch.exe` as `nvngx.dll`. Under that
+name it takes itself for NVIDIA's NGX library, passes every call back
+to itself, and RetroArch freezes or crashes when content starts.
 
-Loaded as `winmm.dll`, OptiScaler hooks into RetroArch for every core,
-not just the ones that use the upscaler. If a core misbehaves with it,
-rename or remove `winmm.dll`; RetroArch then uses NVIDIA's NGX library
-directly.
+System Information shows **via OptiScaler**, and the log says when it
+was loaded. OptiScaler's own menu opens with the Insert key. The
+**Temporal Upscaler Sharpness** setting drives OptiScaler's sharpening
+pass for every upscaler it runs. In OptiScaler 0.9.4, turning on
+**Output Scaling** in its menu crashes on Vulkan when its sharpening
+pass is not running.
 
 ## Troubleshooting
 

@@ -142,6 +142,24 @@ static void test_present(void)
 #endif
 }
 
+/* OptiScaler under its own name in the DLSS directory, loaded ahead of
+ * the core library (Windows); nowhere else, and never after it */
+static void test_stand_in(void)
+{
+#if defined(_WIN32)
+   CHECK(ngx_stand_in_in("nvidia_loader_test_feature"));
+   CHECK(!ngx_stand_in_in("nvidia_loader_test_snippet"));
+   CHECK(!ngx_lib_load_stand_in("nvidia_loader_test_snippet"));
+   CHECK(GetModuleHandleW(L"OptiScaler.dll") == NULL);
+   CHECK(ngx_lib_load_stand_in("nvidia_loader_test_feature"));
+   CHECK(GetModuleHandleW(L"OptiScaler.dll") != NULL);
+   CHECK(ngx_lib_load_stand_in("nvidia_loader_test_feature"));
+#else
+   CHECK(!ngx_stand_in_in("nvidia_loader_test_feature"));
+   CHECK(!ngx_lib_load_stand_in("nvidia_loader_test_feature"));
+#endif
+}
+
 static void test_ngx(void)
 {
    const ngx_lib_t *lib = ngx_lib_get();
@@ -268,6 +286,7 @@ int main(void)
    test_wide();
    test_feature_dir();
    test_present();
+   test_stand_in();
    test_ngx();
    test_nvapi();
    if (failures)

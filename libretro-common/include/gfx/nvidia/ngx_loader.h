@@ -459,6 +459,19 @@ uint32_t ngx_snippet_version(uint32_t snippet);
  * version. Valid after ngx_lib_get(). */
 bool ngx_lib_is_optiscaler(void);
 
+/* OptiScaler's own file name. Put in the DLSS directory it is loaded
+ * ahead of the NGX core library, which it then hooks and answers for,
+ * instead of standing beside the executable under a system DLL's name.
+ * Windows only. */
+#define NGX_STAND_IN_NAME "OptiScaler.dll"
+
+/* Whether @dir holds NGX_STAND_IN_NAME; needs no NGX, loads nothing */
+bool ngx_stand_in_in(const char *dir);
+
+/* Loads NGX_STAND_IN_NAME from @dir, kept loaded: only before
+ * ngx_lib_get() has loaded the core library. True once it is in. */
+bool ngx_lib_load_stand_in(const char *dir);
+
 /* Whether there is an NGX core library to load (NGX_PRESENT_FOUND)
  * and whether it is OptiScaler (NGX_PRESENT_OPTISCALER), as a status
  * shows it. On Windows the file is found and read without loading it:

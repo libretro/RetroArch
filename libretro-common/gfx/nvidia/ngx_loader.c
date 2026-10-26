@@ -417,6 +417,46 @@ static bool ngx_find(wchar_t *path)
    return false;
 }
 
+static HMODULE ngx_stand_in;
+
+static bool ngx_stand_in_path(const char *dir, wchar_t *wpath)
+{
+   char path[DIR_MAX_LENGTH];
+   DWORD attr;
+   if (!dir || !*dir)
+      return false;
+   fill_pathname_join_special(path, dir, NGX_STAND_IN_NAME, sizeof(path));
+   if (!ngx_utf8_to_wide(wpath, DIR_MAX_LENGTH, path))
+      return false;
+   attr = GetFileAttributesW(wpath);
+   return attr != INVALID_FILE_ATTRIBUTES && !(attr & FILE_ATTRIBUTE_DIRECTORY);
+}
+
+bool ngx_stand_in_in(const char *dir)
+{
+   bool found;
+   wchar_t *wpath = (wchar_t*)malloc(DIR_MAX_LENGTH * sizeof(wchar_t));
+   if (!wpath)
+      return false;
+   found = ngx_stand_in_path(dir, wpath);
+   free(wpath);
+   return found;
+}
+
+bool ngx_lib_load_stand_in(const char *dir)
+{
+   wchar_t *wpath;
+   if (ngx_stand_in)
+      return true;
+   /* it has to be in before the core library is, to hook its load */
+   if (ngx_probed || !(wpath = (wchar_t*)malloc(DIR_MAX_LENGTH * sizeof(wchar_t))))
+      return false;
+   if (ngx_stand_in_path(dir, wpath))
+      ngx_stand_in = LoadLibraryExW(wpath, NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
+   free(wpath);
+   return ngx_stand_in != NULL;
+}
+
 unsigned ngx_lib_present(void)
 {
    wchar_t path[MAX_PATH + 32];
@@ -496,6 +536,18 @@ static ngx_module_t ngx_open(void)
 unsigned ngx_lib_present(void)
 {
    return ngx_lib_get() ? NGX_PRESENT_FOUND : 0;
+}
+
+bool ngx_stand_in_in(const char *dir)
+{
+   (void)dir;
+   return false;
+}
+
+bool ngx_lib_load_stand_in(const char *dir)
+{
+   (void)dir;
+   return false;
 }
 #endif
 
@@ -704,6 +756,18 @@ bool ngx_lib_is_optiscaler(void)
 unsigned ngx_lib_present(void)
 {
    return 0;
+}
+
+bool ngx_stand_in_in(const char *dir)
+{
+   (void)dir;
+   return false;
+}
+
+bool ngx_lib_load_stand_in(const char *dir)
+{
+   (void)dir;
+   return false;
 }
 
 const ngx_lib_t *ngx_lib_get(void)
