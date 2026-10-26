@@ -60,6 +60,7 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
   static final int FLAG_ON       = 4;
   static final int FLAG_PRIVATE  = 8;
   static final int FLAG_PHYSICAL = 16;
+  static final int FLAG_REFUSED  = 32;
 
   private static final String TAG = "RetroArch";
 
@@ -76,8 +77,8 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
   private int wantedId = -1;
   /* The request that asked for it; its Presentations' surfaces carry it */
   private int wantedRequest;
-  /* Displays show() failed on, published invalid until the list
-   * changes or onStart */
+  /* Displays show() failed on, published refused until onStart or a
+   * list change other than RetroArch's own display */
   private final SparseBooleanArray failedIds = new SparseBooleanArray();
   private boolean started;
   private boolean publishPending;
@@ -112,10 +113,11 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
             return;
           list = listDisplays();
           /* A Presentation coming or going may report a change that
-           * is none; failed displays must stay invalid through it */
+           * is none; failed displays must stay refused through it */
           if (list.sameAs(published))
             return;
-          failedIds.clear();
+          if (!list.sameAsBut(published, FLAG_OWN))
+            failedIds.clear();
           publish(list);
         }
       };
@@ -239,6 +241,7 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
         ? own.getDisplayId() : Display.DEFAULT_DISPLAY;
     DisplayList list   = new DisplayList(displays.length);
     Point size         = new Point();
+    boolean ownListed  = false;
 
     for (int i = 0; i < displays.length; i++)
     {
@@ -246,13 +249,17 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
       int f       = 0;
       list.ids[i] = d.getDisplayId();
       if (list.ids[i] == ownId)
+      {
         f |= FLAG_OWN;
+        ownListed = true;
+      }
       if (d.isValid())
         f |= FLAG_VALID;
       if (Build.VERSION.SDK_INT < 20 || d.getState() == Display.STATE_ON)
         f |= FLAG_ON;
       if ((d.getFlags() & Display.FLAG_PRIVATE) != 0)
         f |= FLAG_PRIVATE;
+      list.models[i] = "";
       if (Build.VERSION.SDK_INT >= 31)
       {
         int connection = ProductInfo.connection(d);
@@ -261,6 +268,7 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
           f |= FLAG_PHYSICAL;
           list.connections[i] = connection;
         }
+        list.models[i] = ProductInfo.model(d);
       }
       list.flags[i] = f;
       /* From API 31 getRealSize() can report the Activity's window,
@@ -273,6 +281,11 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
       list.heights[i] = size.y;
       list.names[i]   = d.getName();
     }
+    /* A removed display's Activity moves to the default display */
+    if (!ownListed)
+      for (int i = 0; i < displays.length; i++)
+        if (list.ids[i] == Display.DEFAULT_DISPLAY)
+          list.flags[i] |= FLAG_OWN;
     return list;
   }
 
@@ -306,10 +319,10 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
     int[] flags = list.flags.clone();
     for (int i = 0; i < flags.length; i++)
       if (failedIds.get(list.ids[i]))
-        flags[i] &= ~FLAG_VALID;
+        flags[i] |= FLAG_REFUSED;
     published = list;
     nativeDisplaysChanged(list.connections, flags, list.widths,
-        list.heights, list.names);
+        list.heights, list.names, list.models);
   }
 
   private void showOn(int displayId)
@@ -496,6 +509,7 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
     final int[] widths;
     final int[] heights;
     final String[] names;
+    final String[] models;
 
     DisplayList(int count)
     {
@@ -505,16 +519,26 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
       widths      = new int[count];
       heights     = new int[count];
       names       = new String[count];
+      models      = new String[count];
     }
 
     boolean sameAs(DisplayList o)
     {
-      return Arrays.equals(ids, o.ids)
-          && Arrays.equals(connections, o.connections)
-          && Arrays.equals(flags, o.flags)
+      return sameAsBut(o, 0);
+    }
+
+    boolean sameAsBut(DisplayList o, int ignoredFlags)
+    {
+      if (!Arrays.equals(ids, o.ids))
+        return false;
+      for (int i = 0; i < flags.length; i++)
+        if (((flags[i] ^ o.flags[i]) & ~ignoredFlags) != 0)
+          return false;
+      return Arrays.equals(connections, o.connections)
           && Arrays.equals(widths, o.widths)
           && Arrays.equals(heights, o.heights)
-          && Arrays.equals(names, o.names);
+          && Arrays.equals(names, o.names)
+          && Arrays.equals(models, o.models);
     }
   }
 
@@ -629,10 +653,18 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
       DeviceProductInfo info = display.getDeviceProductInfo();
       return info != null ? info.getConnectionToSinkType() : -1;
     }
+
+    /* The product's name, "" without product info */
+    static String model(Display display)
+    {
+      DeviceProductInfo info = display.getDeviceProductInfo();
+      String name            = info != null ? info.getName() : null;
+      return name != null ? name : "";
+    }
   }
 
   static native void nativeDisplaysChanged(int[] connections, int[] flags,
-      int[] widths, int[] heights, String[] names);
+      int[] widths, int[] heights, String[] names, String[] models);
   static native int nativeSurfaceChanged(Surface surface, int width,
       int height, int request);
   static native void nativeSurfaceDestroyed();

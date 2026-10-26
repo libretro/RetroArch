@@ -339,9 +339,31 @@ static void android_second_surface_term(struct android_app *android_app)
       android_app_write_cmd(android_app, APP_CMD_SECOND_WINDOW_CHANGED);
 }
 
+/* Element @i of @strings into @s, "" for none */
+static void android_jni_string_at(JNIEnv *env, jobjectArray strings,
+      jsize i, char *s, size_t len)
+{
+   jstring str = (jstring)(*env)->GetObjectArrayElement(env, strings, i);
+   s[0]        = '\0';
+   if (!str)
+      return;
+   {
+      const char *utf = (*env)->GetStringUTFChars(env, str, NULL);
+      if (utf)
+      {
+         strlcpy(s, utf, len);
+         (*env)->ReleaseStringUTFChars(env, str, utf);
+      }
+      else
+         JNI_EXCEPTION(env);
+   }
+   (*env)->DeleteLocalRef(env, str);
+}
+
 JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_SecondDisplayController_nativeDisplaysChanged(
       JNIEnv *env, jclass clazz, jintArray connections, jintArray flags,
-      jintArray widths, jintArray heights, jobjectArray names)
+      jintArray widths, jintArray heights, jobjectArray names,
+      jobjectArray models)
 {
    video_window_display_t list[VIDEO_WINDOW_DISPLAYS_MAX];
    jint conn[VIDEO_WINDOW_DISPLAYS_MAX];
@@ -352,7 +374,7 @@ JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_SecondDisplayCon
    struct android_app *android_app = g_android_early;
 
    if (     !android_app || !connections || !flags || !widths || !heights
-         || !names)
+         || !names || !models)
       return;
    count = (*env)->GetArrayLength(env, connections);
    if (count > VIDEO_WINDOW_DISPLAYS_MAX)
@@ -360,7 +382,8 @@ JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_SecondDisplayCon
    if (     (*env)->GetArrayLength(env, flags)   < count
          || (*env)->GetArrayLength(env, widths)  < count
          || (*env)->GetArrayLength(env, heights) < count
-         || (*env)->GetArrayLength(env, names)   < count)
+         || (*env)->GetArrayLength(env, names)   < count
+         || (*env)->GetArrayLength(env, models)  < count)
       return;
    (*env)->GetIntArrayRegion(env, connections, 0, count, conn);
    (*env)->GetIntArrayRegion(env, flags, 0, count, bits);
@@ -370,8 +393,6 @@ JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_SecondDisplayCon
    for (i = 0; i < count; i++)
    {
       video_window_display_t *d = &list[i];
-      jstring name              = (jstring)
-         (*env)->GetObjectArrayElement(env, names, i);
       memset(d, 0, sizeof(*d));
       d->ordinal    = (unsigned)i + 1;
       d->connection = (conn[i] >= 0
@@ -382,20 +403,11 @@ JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_SecondDisplayCon
       d->on         = (bits[i] & ANDROID_DISPLAY_ON)       != 0;
       d->is_private = (bits[i] & ANDROID_DISPLAY_PRIVATE)  != 0;
       d->physical   = (bits[i] & ANDROID_DISPLAY_PHYSICAL) != 0;
+      d->refused    = (bits[i] & ANDROID_DISPLAY_REFUSED)  != 0;
       d->dims       = (w[i] > 0 && h[i] > 0)
          ? VIDEO_SCALE_PACK(w[i], h[i]) : 0;
-      if (name)
-      {
-         const char *utf = (*env)->GetStringUTFChars(env, name, NULL);
-         if (utf)
-         {
-            strlcpy(d->name, utf, sizeof(d->name));
-            (*env)->ReleaseStringUTFChars(env, name, utf);
-         }
-         else
-            JNI_EXCEPTION(env);
-         (*env)->DeleteLocalRef(env, name);
-      }
+      android_jni_string_at(env, names, i, d->name, sizeof(d->name));
+      android_jni_string_at(env, models, i, d->model, sizeof(d->model));
    }
 
    video_driver_publish_window_displays(list, (unsigned)count);
