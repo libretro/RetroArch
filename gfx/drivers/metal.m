@@ -8738,6 +8738,7 @@ error:
    @try
    {
       unsigned i;
+      uint8_t lut_read[GFX_MAX_TEXTURES];
       texture_t *source = NULL;
       if (!video_shader_load_preset_into_shader(path.UTF8String, shader)
             || !video_shader_check_hdr_output(shader, _context.hdrOutputMode))
@@ -9000,9 +9001,19 @@ error:
       
       id<MTLBlitCommandEncoder> bce = [_context.blitCommandBuffer blitCommandEncoder];
 
+      /* The LUTs some pass samples or takes the size of: one no pass
+       * reads is never decoded */
+      memset(lut_read, 0, sizeof(lut_read));
+      for (i = 0; i < shader->passes; i++)
+         slang_semantics_luts_read(&_engine.pass[i].semantics,
+               &_engine.luts[0].view, &_engine.luts[0].size_data,
+               sizeof(*_engine.luts), shader->luts, lut_read);
+
       for (i = 0; i < shader->luts; i++)
       {
          struct texture_image image;
+         if (!lut_read[i])
+            continue;
          memset(&image, 0, sizeof(image));
          image.supports_rgba        = true;
 
