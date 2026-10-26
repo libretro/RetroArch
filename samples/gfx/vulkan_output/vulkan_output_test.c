@@ -358,8 +358,17 @@ static VKAPI_ATTR VkResult VKAPI_CALL fake_submit(VkQueue q, uint32_t n,
       const VkSubmitInfo *s, VkFence f)
 {
    int *st = fence_state(f);
-   (void)q; (void)s;
-   CHECK(n == 0);
+   (void)q;
+   CHECK(n == 1 && s);
+   if (n == 1 && s)
+   {
+      CHECK(s->sType == VK_STRUCTURE_TYPE_SUBMIT_INFO);
+      CHECK(s->pNext == NULL);
+      CHECK(s->waitSemaphoreCount == 0 && s->pWaitSemaphores == NULL);
+      CHECK(s->pWaitDstStageMask == NULL);
+      CHECK(s->commandBufferCount == 0 && s->pCommandBuffers == NULL);
+      CHECK(s->signalSemaphoreCount == 0 && s->pSignalSemaphores == NULL);
+   }
    empty_submits++;
    if (st)
       *st = gpu_done ? FENCE_SIGNALED : FENCE_GPU;
