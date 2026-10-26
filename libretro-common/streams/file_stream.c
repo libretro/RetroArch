@@ -156,6 +156,9 @@ struct RFILE
    size_t rbuf_len;
    size_t rbuf_pos;
    int64_t rbuf_file_off;
+   /* filestream_vprintf()'s, grown to the longest line printed */
+   char *pbuf;
+   size_t pbuf_cap;
    /* C89 7.9.5.3: on an update stream, output followed by input (or
     * input followed by output, short of EOF) requires an intervening
     * file positioning or flush call.  Backends over stdio really do
@@ -459,6 +462,8 @@ RFILE* filestream_open(const char *path, unsigned mode, unsigned hints)
    output->rbuf_len      = 0;
    output->rbuf_pos      = 0;
    output->rbuf_file_off = 0;
+   output->pbuf          = NULL;
+   output->pbuf_cap      = 0;
    output->last_io       = FILESTREAM_LAST_IO_NONE;
    return output;
 }
@@ -1953,16 +1958,48 @@ int filestream_putc(RFILE *stream, int c)
       : EOF;
 }
 
+#define FILESTREAM_PRINTF_CAP 1024
+
 int filestream_vprintf(RFILE *stream, const char* format, va_list args)
 {
-   static char buffer[8 * 1024];
-   int _len = vsnprintf(buffer, sizeof(buffer),
-         format, args);
+   va_list args_copy;
+   int     _len;
+
+   if (!stream)
+      return -1;
+   if (!stream->pbuf)
+   {
+      if (!(stream->pbuf = (char*)malloc(FILESTREAM_PRINTF_CAP)))
+         return -1;
+      stream->pbuf_cap = FILESTREAM_PRINTF_CAP;
+   }
+
+#ifdef __va_copy
+   __va_copy(args_copy, args);
+#else
+   va_copy(args_copy, args);
+#endif
+   _len = vsnprintf(stream->pbuf, stream->pbuf_cap, format, args);
+   /* a longer line: once more, into room for it, kept for the next */
+   if (_len >= 0 && (size_t)_len >= stream->pbuf_cap)
+   {
+      char *grown = (char*)malloc((size_t)_len + 1);
+      if (grown)
+      {
+         free(stream->pbuf);
+         stream->pbuf     = grown;
+         stream->pbuf_cap = (size_t)_len + 1;
+         vsnprintf(stream->pbuf, stream->pbuf_cap, format, args_copy);
+      }
+      else
+         _len = -1;
+   }
+   va_end(args_copy);
    if (_len < 0)
       return -1;
-   else if (_len == 0)
+   if (_len == 0)
       return 0;
-   return (int)filestream_write(stream, buffer, _len);
+   return (int)filestream_write(stream, stream->pbuf, _len);
 }
 
 int filestream_printf(RFILE *stream, const char* format, ...)
@@ -1993,6 +2030,7 @@ int filestream_close(RFILE *stream)
 
    /* VFS close consumes the handle even on failure (VFS API v1). */
    free(stream->rbuf);
+   free(stream->pbuf);
    free(stream);
 
    return output;
