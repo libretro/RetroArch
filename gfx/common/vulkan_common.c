@@ -996,10 +996,11 @@ static bool vulkan_video_probe(gfx_ctx_vulkan_data_t *vk,
          || !(out->codecs = vulkan_video_supported_codecs(props, nprops)))
       goto end;
 
-   sync2.sType            =
+   sync2.sType        =
       VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES_KHR;
-   memset(&vp9, 0, sizeof(vp9));
-   vp9.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_DECODE_VP9_FEATURES_KHR;
+   vp9.sType          = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_DECODE_VP9_FEATURES_KHR;
+   vp9.pNext          = NULL;
+   vp9.videoDecodeVP9 = VK_FALSE;
    out->codecs &= allowed;
 #ifndef HAVE_RAV1
    out->codecs &= ~VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR;
@@ -1166,15 +1167,17 @@ static VkResult vulkan_context_create_device(gfx_ctx_vulkan_data_t *vk,
       VkPhysicalDevice gpu, const VkDeviceCreateInfo *info,
       VkDevice *device)
 {
-   VkDeviceCreateInfo local = *info;
+   unsigned i;
+   const VkBaseInStructure *chain;
    VkPhysicalDeviceUnifiedImageLayoutsFeaturesKHR unified;
    VkPhysicalDeviceFeatures2 features;
-   const VkBaseInStructure *chain;
    PFN_vkGetPhysicalDeviceFeatures2 get;
-   unsigned i;
-   bool enabled = false;
-   memset(&unified, 0, sizeof(unified));
+   VkDeviceCreateInfo local         = *info;
+   bool enabled                     = false;
    unified.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_UNIFIED_IMAGE_LAYOUTS_FEATURES_KHR;
+   unified.pNext                    = NULL;
+   unified.unifiedImageLayouts      = VK_FALSE;
+   unified.unifiedImageLayoutsVideo = VK_FALSE;
    for (chain = (const VkBaseInStructure*)info->pNext; chain; chain = chain->pNext)
       if (chain->sType == unified.sType)
       {
@@ -1191,19 +1194,21 @@ static VkResult vulkan_context_create_device(gfx_ctx_vulkan_data_t *vk,
             memset(&features, 0, sizeof(features));
             features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
             features.pNext = &unified;
-            if (get) get(gpu, &features);
+            if (get)
+               get(gpu, &features);
             if (unified.unifiedImageLayoutsVideo)
             {
                unified.pNext = (void*)local.pNext;
-               local.pNext = &unified;
-               enabled = true;
+               local.pNext   = &unified;
+               enabled       = true;
             }
             break;
          }
    local.pNext = vulkan_upscaler_features(vk, gpu, local.pNext);
    info = &local;
    vk->context.flags &= ~VK_CTX_FLAG_VIDEO_GENERAL;
-   if (enabled) vk->context.flags |= VK_CTX_FLAG_VIDEO_GENERAL;
+   if (enabled)
+      vk->context.flags |= VK_CTX_FLAG_VIDEO_GENERAL;
 #ifdef HAVE_OPENXR
    if (vk->context.xr && vulkan_openxr_uses_enable2(vk->context.xr))
    {
