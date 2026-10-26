@@ -1,8 +1,8 @@
 /* A stand-in DLSS feature library (nvngx_dlss.dll on Windows,
  * libnvidia-ngx-dlss.so.* on Linux). Its file version (fake_dlss.rc;
  * on Linux the file name's) says 310.2.1; the snippet word says
- * 310.2.2, packed as the real libraries pack it (patch and build a
- * nibble each in the low byte), so a test sees which was read. */
+ * 310.2.2, packed as the real libraries pack it, so a test sees which
+ * was read. */
 #include <stdint.h>
 
 #if defined(_WIN32)
@@ -15,5 +15,5 @@
 
 EXPORT uint32_t CONV NVSDK_NGX_GetSnippetVersion(void)
 {
-   return (310u << 16) | (2u << 8) | (2u << 4) | 0u;
+   return (310u << 16) | (2u << 8) | 2u;
 }

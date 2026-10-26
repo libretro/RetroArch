@@ -95,8 +95,9 @@ static void test_feature_dir(void)
    CHECK(ngx_dlss_feature_version("nvidia_loader_test_feature") == NGX_VERSION_PACK(310, 2, 1));
    CHECK(ngx_dlss_feature_in("nvidia_loader_test_snippet"));
    CHECK(ngx_dlss_feature_version("nvidia_loader_test_snippet") == NGX_VERSION_PACK(310, 2, 2));
-   /* The snippet word as the libraries pack it: 310.9.1.0, 3.5.0 */
-   CHECK(ngx_snippet_version(0x01360910u) == NGX_VERSION_PACK(310, 9, 1));
+   /* The snippet word as the libraries pack it: 310.9.16 (its file
+    * version says so), 3.5.0 */
+   CHECK(ngx_snippet_version(0x01360910u) == NGX_VERSION_PACK(310, 9, 16));
    CHECK(ngx_snippet_version(0x00030500u) == NGX_VERSION_PACK(3, 5, 0));
    CHECK(NGX_VERSION_MAJOR(NGX_VERSION_PACK(310, 2, 1)) == 310
          && NGX_VERSION_MINOR(NGX_VERSION_PACK(310, 2, 1)) == 2
