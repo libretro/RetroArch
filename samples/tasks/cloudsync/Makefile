@@ -58,7 +58,8 @@ ADDS_SOURCES := cloudsync_manifest_adds_test.c \
 	$(LIBRETRO_COMM_DIR)/utils/md5.c \
 	$(LIBRETRO_COMM_DIR)/queues/task_queue.c \
 	$(LIBRETRO_COMM_DIR)/features/features_cpu.c \
-	$(LIBRETRO_COMM_DIR)/rthreads/rthreads.c
+	$(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
+	$(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c
 PACING_TARGET := cloudsync_pacing_test
 COMMIT_TARGET := cloudsync_commit_test
 
@@ -66,6 +67,7 @@ ASYNC_TARGET  := cloudsync_async_test
 ASYNC_SOURCES := cloudsync_async_test.c \
 	$(CORE_DIR)/network/cloud_sync_driver.c \
 	$(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
+	$(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c \
 	$(LIBRETRO_COMM_DIR)/features/features_cpu.c \
 	$(LIBRETRO_COMM_DIR)/streams/file_stream.c \
 	$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c \

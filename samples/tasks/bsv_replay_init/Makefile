@@ -29,6 +29,7 @@ SOURCES := bsv_replay_init_test.c \
            $(LIBRETRO_COMM_DIR)/lists/string_list.c \
            $(LIBRETRO_COMM_DIR)/queues/task_queue.c \
            $(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
+           $(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c \
            $(LIBRETRO_COMM_DIR)/streams/file_stream.c \
            $(LIBRETRO_COMM_DIR)/streams/interface_stream.c \
            $(LIBRETRO_COMM_DIR)/streams/memory_stream.c \
