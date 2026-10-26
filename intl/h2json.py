@@ -15,7 +15,7 @@ except IndexError:
     print("Usage: ./h2json.py msg_has_us.h")
     sys.exit(1)
 
-if h_filename == 'msg_hash_lbl.h':
+if os.path.basename(h_filename) in ('msg_hash_lbl.h', 'msg_hash_lbl_rows.h'):
     print("Skip")
     sys.exit(0)
 

@@ -112,6 +112,9 @@ jobs:
           # format argument today and twenty-nine of them are not MSG_*.
           tools/check.sh tools/msg_hash_format_check.c
 
+      - name: Internal headers survive translation conversion
+        run: python3 tools/intl_conversion_check.py
+
       - name: Label macros current
         shell: bash
         run: |

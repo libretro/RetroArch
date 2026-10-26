@@ -645,8 +645,8 @@ if __name__ == '__main__':
     h_basename = os.path.basename(h_filename)
     json_basename = os.path.basename(json_filename) if json_filename else None
 
-    if h_basename in ('msg_hash_us.h', 'msg_hash_lbl.h') or (
-          json_basename in ('msg_hash_us.json', 'msg_hash_lbl.json')):
+    if h_basename in ('msg_hash_us.h', 'msg_hash_lbl.h', 'msg_hash_lbl_rows.h') or (
+          json_basename in ('msg_hash_us.json', 'msg_hash_lbl.json', 'msg_hash_lbl_rows.json')):
         print("Skip")
         sys.exit(0)
 
