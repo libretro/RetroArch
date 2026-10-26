@@ -141,7 +141,7 @@ RSLC_FN1(ceil) RSLC_FN1(fract) RSLC_FN1(normalize) RSLC_FN1(saturate) RSLC_FN1(d
 RSLC_FN1(dfdy) RSLC_FN1(fwidth) RSLC_FN1(popcount) RSLC_FN1(reverse_bits) RSLC_FN1(ctz)
 RSLC_FN1(clz)
 RSLC_FN2(pow) RSLC_FN2(atan2) RSLC_FN2(min) RSLC_FN2(max) RSLC_FN2(fmod) RSLC_FN2(reflect)
-RSLC_FN2(ldexp) RSLC_FN2(modf) RSLC_FN2(frexp)
+RSLC_FN2(ldexp) RSLC_FN2(modf) RSLC_FN2(frexp) RSLC_FN2(powr)
 RSLC_FN3(clamp) RSLC_FN3(mix) RSLC_FN3(fma) RSLC_FN3(refract) RSLC_FN3(faceforward)
 RSLC_FN3(select) RSLC_FN3(extract_bits)
 template<typename T, typename U> U step(T edge, U x) { return x; }

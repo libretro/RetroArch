@@ -1490,6 +1490,76 @@ static void test_msl_apple(void)
    CHECK(alloc_live == 0);
 }
 
+/* Metal's fast-math pow() takes |x|: pow() goes out as powr(),
+ * undefined below zero as in GLSL, unless the base is a constant
+ * known >= 0, where pow() is the same and more exact. */
+static void test_msl_powr(void)
+{
+   struct rslc_opts   o;
+   struct rslc_result r;
+   char               err[128];
+   static const char  frag[] =
+      "#version 450\n"
+      "layout(location = 0) in vec4 vColor;\n"
+      "layout(location = 0) out vec4 FragColor;\n"
+      "const float powr = 2.0;\n"
+      "void main() {\n"
+      "  vec2 e = vColor.xy;\n"
+      "  FragColor = pow(vColor * powr, vec4(1.0 / 2.2));\n"
+      "  FragColor.xy += pow(vec2(2.0, 10.0), e);\n"
+      "  FragColor.z += pow(2.0, e.x);\n"
+      "  FragColor.w += pow(-2.0, e.y);\n"
+      "  FragColor.x += pow(vec2(2.0, -1.0), e).x;\n"
+      "}\n";
+
+   opts_default(&o, err, sizeof(err));
+   o.dst = RSLC_DST_MSL;
+   CHECK(rslc_compile(frag, sizeof(frag) - 1, RSLC_STAGE_FRAGMENT, &o, &r));
+   if (r.text)
+   {
+      CHECK(strstr(r.text, "powr(vColor * powr_, ") != NULL);
+      CHECK(strstr(r.text, " pow(float2(2.0f, 10.0f), e)") != NULL);
+      CHECK(strstr(r.text, " pow(2.0f, e.x)") != NULL);
+      CHECK(strstr(r.text, "powr(-2.0f, e.y)") != NULL);
+      CHECK(strstr(r.text, "powr(float2(2.0f, -1.0f), e)") != NULL);
+      rslc_result_free(&r, &o);
+   }
+   CHECK(alloc_live == 0);
+}
+
+/* Every function but main0 is printed static inline always_inline,
+ * as SPIRV-Cross prints them: under fast math a call rounds
+ * differently from the same code inlined. */
+static void test_msl_inline(void)
+{
+   struct rslc_opts   o;
+   struct rslc_result r;
+   char               err[128];
+   static const char  frag[] =
+      "#version 450\n"
+      "layout(location = 0) in vec4 vColor;\n"
+      "layout(location = 0) out vec4 FragColor;\n"
+      "float half_of(float x);\n"
+      "void main() {\n"
+      "  FragColor = vColor * half_of(vColor.x);\n"
+      "}\n"
+      "float half_of(float x) { return x * 0.5; }\n";
+
+   opts_default(&o, err, sizeof(err));
+   o.dst = RSLC_DST_MSL;
+   CHECK(rslc_compile(frag, sizeof(frag) - 1, RSLC_STAGE_FRAGMENT, &o, &r));
+   if (r.text)
+   {
+      CHECK(strstr(r.text, "static inline __attribute__((always_inline)) float half_of(float x);") != NULL);
+      CHECK(strstr(r.text, "static inline __attribute__((always_inline)) float half_of(float x) {") != NULL);
+      CHECK(strstr(r.text, "static inline __attribute__((always_inline)) void rslc_main(") != NULL);
+      CHECK(strstr(r.text, "always_inline)) fragment") == NULL);
+      CHECK(strstr(r.text, " main0(") != NULL);
+      rslc_result_free(&r, &o);
+   }
+   CHECK(alloc_live == 0);
+}
+
 static void test_msl(void)
 {
    struct rslc_opts   o;
@@ -2258,6 +2328,8 @@ int main(int argc, char **argv)
    test_hlsl_scoping();
    test_msl();
    test_msl_apple();
+   test_msl_powr();
+   test_msl_inline();
    test_shapes();
    test_cafe();
    test_ingest();
