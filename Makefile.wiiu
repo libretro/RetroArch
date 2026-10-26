@@ -43,6 +43,7 @@ OBJ += wiiu/system/memory.o
 OBJ += wiiu/system/atomic.o
 OBJ += wiiu/system/exception_handler.o
 OBJ += wiiu/system/missing_libc_functions.o
+OBJ += wiiu/system/newlib_locks.o
 OBJ += wiiu/fs/sd_fat_devoptab.o
 OBJ += wiiu/fs/fs_utils.o
 OBJ += wiiu/hbl.o

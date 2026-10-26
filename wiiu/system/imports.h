@@ -17,6 +17,7 @@ IMPORT(OSSavesDone_ReadyToRelease);
 IMPORT(OSInitMutex);
 IMPORT(OSLockMutex);
 IMPORT(OSUnlockMutex);
+IMPORT(OSTryLockMutex);
 IMPORT(OSInitCond);
 IMPORT(OSWaitCond);
 IMPORT(OSSignalCond);
