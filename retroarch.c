@@ -9777,6 +9777,19 @@ bool retroarch_main_init_drivers(bool staged,
    game_ai_init();
 #endif
 
+#if !defined(HAVE_DYNAMIC)
+   /* The first time this process's drivers are up, the core salamander
+    * launched has started. */
+   {
+      static bool salamander_cleared = false;
+      if (!salamander_cleared)
+      {
+         config_clear_salamander_pending();
+         salamander_cleared = true;
+      }
+   }
+#endif
+
    rarch_st.flags &= ~RARCH_FLAGS_INIT_IN_PROGRESS;
    return true;
 }

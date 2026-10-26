@@ -1715,6 +1715,7 @@ void config_load(void);
  *   when launching a salamander build */
 void config_load_file_salamander(void);
 void config_save_file_salamander(void);
+void config_clear_salamander_pending(void);
 #endif
 
 void retroarch_config_init(void);

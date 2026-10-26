@@ -11178,6 +11178,31 @@ void config_save_file_salamander(void)
    if (conf)
       config_file_free(conf);
 }
+
+/* This frontend came up: the core salamander launched is not to be
+ * passed over at the next boot. */
+void config_clear_salamander_pending(void)
+{
+   config_file_t *conf = NULL;
+   char config_path[PATH_MAX_LENGTH];
+   char pending[PATH_MAX_LENGTH];
+
+   if (!config_file_salamander_get_path(config_path, sizeof(config_path)))
+      return;
+   if (!(conf = config_file_new_from_path_to_string(config_path)))
+      return;
+
+   if (config_get_path(conf, SALAMANDER_CONFIG_PENDING_KEY,
+            pending, sizeof(pending)))
+   {
+      config_unset(conf, SALAMANDER_CONFIG_PENDING_KEY);
+      if (!config_file_write(conf, config_path, false))
+         RARCH_ERR("[Config] Failed to update salamander config file in: \"%s\".\n",
+               config_path);
+   }
+
+   config_file_free(conf);
+}
 #endif
 
 bool input_config_bind_map_get_valid(unsigned bind_index)
