@@ -172,14 +172,15 @@ static int subtitle_webm_language(struct subtitle_webm *webm, int index)
    const char *end, *mapped = NULL;
    char code[3];
    unsigned i;
-   if (!raw || size > 65536) return 0;
+   if (!raw) return 0;
    if (!size && kind == RWEBM_LANGUAGE_LEGACY)
    {
       raw = "eng";
       size = 3;
    }
-   end = (const char*)memchr(raw, 0, size);
+   end = (const char*)memchr(raw, 0, size > 65536 ? 65537 : size);
    if (end) size = (size_t)(end - raw);
+   if (size > 65536) return 0;
    if (kind == RWEBM_LANGUAGE_LEGACY && size >= 3 && (size == 3 || raw[3] == '-'))
    {
       for (i = 0; i < 3; i++)

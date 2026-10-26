@@ -97,13 +97,16 @@ def webvtt(data, mode):
 
 def languages(data, fields):
     output = bytearray()
+    first_track = True
     for ident, body in ebml.elements(data):
         if ident in (0xBF, 0x114D9B74, 0x1C53BB6B, 0x22B59C, 0x22B59D):
             continue
-        if ident in (0x18538067, 0x1654AE6B, 0xAE):
+        if ident in (0x18538067, 0x1654AE6B):
             body = languages(body, fields)
-            if ident == 0xAE:
-                body += b"".join(ebml.element(key, value) for key, value in fields)
+        elif ident == 0xAE and first_track:
+            body = languages(body, fields)
+            body += b"".join(ebml.element(key, value) for key, value in fields)
+            first_track = False
         output += ebml.element(ident, body)
     return output
 
@@ -129,6 +132,7 @@ with tempfile.TemporaryDirectory(prefix="subtitle-webm-") as temporary:
              ([(legacy, b"")], "en", "en"),
              ([(legacy, b"\0")], "", ""),
              ([(legacy, b"fre-ca\0ignored")], "fr-ca", "fr-ca"),
+             ([(legacy, b"eng\0" + bytes(65536))], "en", "en"),
              ([(bcp47, b"eng")], "eng", "eng"),
              ([(bcp47, b"iw")], "iw", "he"),
              ([(bcp47, b"en-GB\0ignored")], "en-GB", "en-GB"),
