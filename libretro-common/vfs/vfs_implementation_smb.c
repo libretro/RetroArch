@@ -1056,6 +1056,35 @@ bool retro_vfs_file_open_smb(libretro_vfs_implementation_file *stream,
    return true;
 }
 
+/* Lends what the prefetcher holds at the position, without a copy;
+ * -1 when it holds nothing there, and the caller reads instead. */
+int64_t retro_vfs_file_view_smb(libretro_vfs_implementation_file *stream,
+   uint64_t len, const uint8_t **ptr)
+{
+   struct smb_prefetch *sp;
+   struct smb2_context *ctx;
+   struct smb2fh       *fh;
+   uint64_t             pos = 0;
+   int64_t              got;
+
+   if (!stream || !stream->smb_prefetch || !stream->smb_fh)
+      return -1;
+   ctx = (struct smb2_context *)(void *)(uintptr_t)stream->smb_ctx;
+   fh  = (struct smb2fh *)(intptr_t)stream->smb_fh;
+   if (!ctx || !fh || !smb_ctx_active(ctx))
+      return -1;
+   if (smb2_lseek(ctx, fh, 0, SEEK_CUR, &pos) == -EINVAL)
+      return -1;
+   sp = (struct smb_prefetch*)(void*)(uintptr_t)stream->smb_prefetch;
+   if ((got = vfs_prefetch_view(sp->p, pos, ptr)) <= 0)
+      return got;
+   if ((uint64_t)got > len)
+      got = (int64_t)len;
+   smb2_lseek(ctx, fh, got, SEEK_CUR, NULL);
+   sp->from_window += (uint64_t)got;
+   return got;
+}
+
 int64_t retro_vfs_file_read_smb(libretro_vfs_implementation_file *stream,
    void *s, uint64_t len)
 {

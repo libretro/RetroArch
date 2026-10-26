@@ -1785,8 +1785,6 @@ const char* filestream_get_path(RFILE *stream)
 bool filestream_matches_buf(const char *path, const void *data, size_t len)
 {
    const uint8_t *mem     = (const uint8_t*)data;
-   const uint8_t *map     = NULL;
-   int64_t        map_len = 0;
    bool           match   = false;
    RFILE         *file;
 
@@ -1803,33 +1801,22 @@ bool filestream_matches_buf(const char *path, const void *data, size_t len)
    if (filestream_get_size(file) != (int64_t)len)
       goto done;
 
-   if ((map = filestream_get_mapped_ptr(file, &map_len)))
    {
-      /* A view that does not span the file would compare the wrong
-       * bytes; fall through to the copying path rather than guess. */
-      if (map_len == (int64_t)len)
-      {
-         match = (len == 0) || (memcmp(map, mem, len) == 0);
-         goto done;
-      }
-      if (filestream_seek(file, 0, RETRO_VFS_SEEK_POSITION_START) != 0)
-         goto done;
-   }
-
-   {
-      /* FILESTREAM_MATCHES_BUF_WINDOW, which is sized by the smallest
-       * thread stack in the tree rather than by throughput.  GEKKO
-       * threads get 8 KiB (STACKSIZE in rthreads.c), 3DS and PSP
-       * 32 KiB and Vita 64 KiB - and this is libretro-common API, so
-       * a caller on a spawned thread is not hypothetical.  The 8 KiB
-       * floor is GEKKO's.
+      /* Compared where it lies when the stream can lend it - the
+       * mapping, which covers the whole file in one call, or a network
+       * stream's read-ahead - and through FILESTREAM_MATCHES_BUF_WINDOW
+       * otherwise.  The window is sized by the smallest thread stack in
+       * the tree rather than by throughput.  GEKKO threads get 8 KiB
+       * (STACKSIZE in rthreads.c), 3DS and PSP 32 KiB and Vita 64 KiB -
+       * and this is libretro-common API, so a caller on a spawned
+       * thread is not hypothetical.  The 8 KiB floor is GEKKO's.
        *
        * Bigger reads are faster, and at or above the VFS's own 64 KiB
        * stdio buffer they skip it entirely: measured on the unchanged
        * case, which reads every byte, 1 KiB against 4 KiB against
        * 64 KiB is 1753 / 1432 / 1153 us on an 8 MiB file.  The
        * platforms paying that are the ones with no memory mapping -
-       * the mapped branch above copies nothing - which are the same
+       * a mapping copies nothing - which are the same
        * ones with the 8 KiB stacks, and this runs when a save is
        * written rather than in a frame. */
       uint8_t window[FILESTREAM_MATCHES_BUF_WINDOW];
@@ -1838,21 +1825,31 @@ bool filestream_matches_buf(const char *path, const void *data, size_t len)
       match = true;
       while (off < len)
       {
-         int64_t got;
-         size_t  want = len - off;
+         const uint8_t *ptr = NULL;
+         int64_t        got = filestream_view(file,
+               (int64_t)(len - off), &ptr);
 
-         if (want > sizeof(window))
-            want = sizeof(window);
-
-         if ((got = filestream_read(file, window, (int64_t)want))
-               != (int64_t)want)
+         if (got < 0)
+         {
+            size_t want = len - off;
+            if (want > sizeof(window))
+               want = sizeof(window);
+            if ((got = filestream_read(file, window, (int64_t)want))
+                  != (int64_t)want)
+            {
+               match = false;
+               break;
+            }
+            ptr = window;
+         }
+         else if (!got)
          {
             match = false;
             break;
          }
          /* Stop at the first difference: the caller asked a yes/no
           * question and a 'no' is final. */
-         if (memcmp(window, mem + off, (size_t)got) != 0)
+         if (memcmp(ptr, mem + off, (size_t)got) != 0)
          {
             match = false;
             break;
@@ -1917,6 +1914,55 @@ const uint8_t *filestream_get_mapped_ptr(RFILE *stream, int64_t *len)
    }
    return retro_vfs_file_get_mapped_ptr_impl(
          (libretro_vfs_implementation_file*)stream->hfile, len);
+}
+
+int64_t filestream_view(RFILE *stream, int64_t len, const uint8_t **ptr)
+{
+   if (!stream || !ptr || len < 0)
+      return -1;
+   if (!len)
+      return 0;
+
+   if (stream->rbuf_pos < stream->rbuf_len)
+   {
+      size_t n = stream->rbuf_len - stream->rbuf_pos;
+      if ((uint64_t)len < (uint64_t)n)
+         n = (size_t)len;
+      *ptr              = stream->rbuf + stream->rbuf_pos;
+      stream->rbuf_pos += n;
+      /* emptied, it is refilled only by the next gets/getc */
+      if (stream->rbuf_pos == stream->rbuf_len)
+      {
+         stream->rbuf_pos = 0;
+         stream->rbuf_len = 0;
+      }
+      return (int64_t)n;
+   }
+
+   if (stream->last_io == FILESTREAM_LAST_IO_WRITE)
+      filestream_raw_seek(stream, 0, RETRO_VFS_SEEK_POSITION_CURRENT);
+   stream->last_io = FILESTREAM_LAST_IO_READ;
+
+   if (filestream_read_cb)
+   {
+      /* a frontend's mapping, which starts at the start of the file */
+      int64_t        mlen = 0;
+      int64_t        pos;
+      const uint8_t *map  = filestream_mapped_ptr_cb
+         ? filestream_mapped_ptr_cb(stream->hfile, &mlen) : NULL;
+      if (!map || (pos = filestream_raw_tell(stream)) < 0 || pos >= mlen)
+         return -1;
+      if (len > mlen - pos)
+         len = mlen - pos;
+      if (filestream_raw_seek(stream, pos + len,
+               RETRO_VFS_SEEK_POSITION_START) < 0)
+         return -1;
+      *ptr = map + pos;
+      return len;
+   }
+   return retro_vfs_file_view_impl(
+         (libretro_vfs_implementation_file*)stream->hfile,
+         (uint64_t)len, ptr);
 }
 
 int64_t filestream_write(RFILE *stream, const void *s, int64_t len)

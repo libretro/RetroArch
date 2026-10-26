@@ -1699,6 +1699,43 @@ int64_t retro_vfs_file_seek_impl(libretro_vfs_implementation_file *stream,
    return retro_vfs_file_seek_internal(stream, offset, seek_position);
 }
 
+int64_t retro_vfs_file_view_impl(libretro_vfs_implementation_file *stream,
+      uint64_t len, const uint8_t **ptr)
+{
+   if (!stream || !ptr || len > (uint64_t)INT64_MAX)
+      return -1;
+
+   if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
+   {
+#ifdef HAVE_SMBCLIENT
+      if (stream->scheme == VFS_SCHEME_SMB)
+         return retro_vfs_file_view_smb(stream, len, ptr);
+#endif
+#ifdef HAVE_NFSCLIENT
+      if (stream->scheme == VFS_SCHEME_NFS)
+         return retro_vfs_file_view_nfs(stream, len, ptr);
+#endif
+      return -1;
+   }
+#ifdef VFS_HAVE_FILE_MAPPING
+   if (stream->mapped
+         && (stream->hints & RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS))
+   {
+      if (stream->mappos >= stream->mapsize)
+         return stream->mappos == stream->mapsize ? 0 : -1;
+      if (len > stream->mapsize - stream->mappos)
+         len = stream->mapsize - stream->mappos;
+#if defined(_WIN32) && !defined(_XBOX) && !defined(HAVE_MMAP)
+      vfs_win32_readahead(stream, stream->mappos, len);
+#endif
+      *ptr             = &stream->mapped[stream->mappos];
+      stream->mappos  += len;
+      return (int64_t)len;
+   }
+#endif
+   return -1;
+}
+
 int64_t retro_vfs_file_read_impl(libretro_vfs_implementation_file *stream,
       void *s, uint64_t len)
 {

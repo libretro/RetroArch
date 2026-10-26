@@ -539,6 +539,19 @@ const char* filestream_get_path(RFILE *stream);
  */
 const uint8_t *filestream_get_mapped_ptr(RFILE *stream, int64_t *len);
 
+/**
+ * filestream_read() without the copy: points \c ptr at up to \c len
+ * octets at the stream position - in the lookahead, the file's
+ * mapping or a network stream's read-ahead window - and moves past
+ * them, as a read of that many would.
+ *
+ * @return The octets lent, 0 at the end of the file, or -1 when
+ * nothing there can be lent; the caller then reads as before. Lent
+ * octets stay valid until the next call on \c stream and must not be
+ * written.
+ */
+int64_t filestream_view(RFILE *stream, int64_t len, const uint8_t **ptr);
+
 typedef const uint8_t *(*filestream_mapped_ptr_cb_t)(void *hfile, int64_t *len);
 void filestream_set_mapped_ptr_cb(filestream_mapped_ptr_cb_t cb);
 

@@ -885,10 +885,7 @@ void SHA1Digest(const uint8_t* data, size_t len, uint8_t digest[20])
 int sha1_calculate(const char *path, char *result)
 {
    struct sha1_state sha;
-   const uint8_t *map = NULL;
-   int64_t        map_len = 0;
    unsigned char *buff = NULL;
-   int rv    = 1;
    /* Ask for a mapping: where the platform provides one the whole
     * file is already addressable and there is nothing to copy. */
    RFILE *fd = filestream_open(path,
@@ -900,34 +897,33 @@ int sha1_calculate(const char *path, char *result)
 
    SHA1Reset(&sha);
 
-   if ((map = filestream_get_mapped_ptr(fd, &map_len)) && map_len >= 0)
-      SHA1Input(&sha, map, (unsigned)map_len);
-   else
+   /* Hashed where it lies when the stream can lend it - a mapping, or
+    * a network stream's read-ahead - and a block at a time through a
+    * heap buffer otherwise: as unsigned char buff[4096] this was a
+    * 4304-byte frame, over half of the 8 KiB a GEKKO thread gets (the
+    * GEKKO STACKSIZE in rthreads.c). A block far larger than a page
+    * keeps the number of reads down, which is what this path costs on
+    * a VFS where each one is a round trip. */
+   for (;;)
    {
-      /* No mapping, so copy a block at a time.  The buffer is heap
-       * rather than a local: as unsigned char buff[4096] this was a
-       * 4304-byte frame, over half of the 8 KiB a GEKKO thread gets
-       * (the GEKKO STACKSIZE in rthreads.c), and hashing a whole
-       * file dwarfs one allocation either way.
-       *
-       * A block far larger than a page keeps the number of reads down,
-       * which is what this path costs on a VFS where each one is a
-       * round trip rather than a memcpy out of the page cache. */
-      if (!(buff = (unsigned char*)malloc(SHA1_FILE_BLOCK_SIZE)))
-         goto error;
+      const uint8_t *ptr = NULL;
+      int64_t        n   = filestream_view(fd, SHA1_FILE_BLOCK_SIZE, &ptr);
 
-      do
+      if (n < 0)
       {
-         rv = (int)filestream_read(fd, buff, SHA1_FILE_BLOCK_SIZE);
-         if (rv < 0)
+         if (     !buff
+               && !(buff = (unsigned char*)malloc(SHA1_FILE_BLOCK_SIZE)))
             goto error;
-
-         SHA1Input(&sha, buff, rv);
-      } while (rv);
-
-      free(buff);
-      buff = NULL;
+         if ((n = filestream_read(fd, buff, SHA1_FILE_BLOCK_SIZE)) < 0)
+            goto error;
+         ptr = buff;
+      }
+      if (!n)
+         break;
+      SHA1Input(&sha, ptr, (unsigned)n);
    }
+   free(buff);
+   buff = NULL;
 
    if (!SHA1Result(&sha, NULL))
       goto error;

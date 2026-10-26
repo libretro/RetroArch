@@ -75,6 +75,8 @@ bool retro_vfs_file_open_nfs(libretro_vfs_implementation_file *stream,
       const char *path, unsigned mode, unsigned hints);
 int64_t retro_vfs_file_read_nfs(libretro_vfs_implementation_file *stream,
       void *s, uint64_t len);
+int64_t retro_vfs_file_view_nfs(libretro_vfs_implementation_file *stream,
+      uint64_t len, const uint8_t **ptr);
 int64_t retro_vfs_file_write_nfs(libretro_vfs_implementation_file *stream,
       const void *s, uint64_t len);
 int64_t retro_vfs_file_seek_nfs(libretro_vfs_implementation_file *stream,

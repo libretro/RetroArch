@@ -552,6 +552,27 @@ bool retro_vfs_file_open_nfs(libretro_vfs_implementation_file *stream,
    return true;
 }
 
+/* Lends what the prefetcher holds at the position, without a copy;
+ * -1 when it holds nothing there, and the caller reads instead. */
+int64_t retro_vfs_file_view_nfs(libretro_vfs_implementation_file *stream,
+      uint64_t len, const uint8_t **ptr)
+{
+   struct nfs_stream   *ns = (struct nfs_stream*)stream->nfs_fh;
+   struct nfs_prefetch *np;
+   int64_t              got;
+
+   if (!ns || !stream->nfs_prefetch)
+      return -1;
+   np = (struct nfs_prefetch*)(void*)(uintptr_t)stream->nfs_prefetch;
+   if ((got = vfs_prefetch_view(np->p, (uint64_t)rnfs_tell(ns->f), ptr)) <= 0)
+      return got;
+   if ((uint64_t)got > len)
+      got = (int64_t)len;
+   rnfs_seek(NULL, ns->f, got, 1);
+   np->from_window += (uint64_t)got;
+   return got;
+}
+
 int64_t retro_vfs_file_read_nfs(libretro_vfs_implementation_file *stream,
       void *buf, uint64_t len)
 {

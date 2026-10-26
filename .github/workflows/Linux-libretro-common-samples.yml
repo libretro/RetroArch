@@ -151,6 +151,7 @@ jobs:
             vfs_mapped_ptr_test
             vfs_prefetch_test
             vfs_readahead_test
+            vfs_view_test
             vfs_prefetch_retarget_test
             vfs_prefetch_view_test
             vfs_large_file_test

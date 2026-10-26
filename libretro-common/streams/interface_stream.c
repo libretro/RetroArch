@@ -904,29 +904,18 @@ int64_t intfstream_crc_step(intfstream_internal_t *intf,
    if (!step_len)
       return 0;
 
-   /* A file the VFS has mapped whole (opened with
-    * RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS) is hashed in place:
-    * no scratch, no copy, the page cache read straight into the CRC.
-    * Whole file or nothing, so the offsets below are file offsets. */
+   /* Hashed where it lies when the stream can lend it: a file the VFS
+    * has mapped (RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS), or a
+    * network stream's read-ahead window. */
    if (intf->type == INTFSTREAM_FILE && intf->file.fp)
    {
-      int64_t map_len    = 0;
-      const uint8_t *map = filestream_get_mapped_ptr(intf->file.fp, &map_len);
-      if (map && map_len == filestream_get_size(intf->file.fp))
+      const uint8_t *ptr = NULL;
+      if ((data_read = filestream_view(intf->file.fp,
+                  (int64_t)step_len, &ptr)) >= 0)
       {
-         int64_t pos = filestream_tell(intf->file.fp);
-         if (pos < 0)
-            return -1;
-         if (pos >= map_len)
-            return 0;
-         data_read = map_len - pos;
-         if (data_read > (int64_t)step_len)
-            data_read = (int64_t)step_len;
-         *accumulator = encoding_crc32(*accumulator, map + pos,
-               (size_t)data_read);
-         if (filestream_seek(intf->file.fp, pos + data_read,
-                  RETRO_VFS_SEEK_POSITION_START) < 0)
-            return -1;
+         if (data_read > 0)
+            *accumulator = encoding_crc32(*accumulator, ptr,
+                  (size_t)data_read);
          return data_read;
       }
    }

@@ -87,6 +87,19 @@ const uint8_t *retro_vfs_file_get_mapped_ptr_impl(
       libretro_vfs_implementation_file *stream, int64_t *len);
 
 /**
+ * retro_vfs_file_view_impl:
+ *
+ * retro_vfs_file_read_impl() without the copy: points @ptr at up to
+ * @len octets at the position, in the file's mapping or in a network
+ * stream's read-ahead window, and moves past them. They stay valid
+ * until the next call on @stream. Returns the octets lent, 0 at the
+ * end of the file, or -1 when nothing there can be lent; the caller
+ * then reads.
+ **/
+int64_t retro_vfs_file_view_impl(libretro_vfs_implementation_file *stream,
+      uint64_t len, const uint8_t **ptr);
+
+/**
  * retro_vfs_file_prefetch_impl:
  * @offset : first byte of the range about to be read
  * @len    : bytes of it

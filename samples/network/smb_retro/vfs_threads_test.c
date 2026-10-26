@@ -199,6 +199,69 @@ int main(int argc, char **argv)
             failures++;
          }
       }
+      /* the whole file lent where read-ahead holds it and read where it
+       * does not, as a hash loop takes it: every octet in order, some
+       * lent with read-ahead on and none with it off, and a read after
+       * the lends picks up where they stopped. A first octet sends the
+       * prefetcher to the start, as above; on a loopback the reader's
+       * own reads would otherwise outrun it to the end of the file. */
+      if ((f = filestream_open(url_file, RETRO_VFS_FILE_ACCESS_READ,
+                  RETRO_VFS_FILE_ACCESS_HINT_NONE)))
+      {
+         static uint8_t chunk[4096];
+         int64_t  size  = filestream_get_size(f);
+         uint64_t at    = 1, lent = 0;
+         bool     ok    = size > 64;
+         uint8_t  tail[16];
+
+         if (filestream_read(f, tail, 1) != 1 || tail[0] != 7)
+            ok = false;
+         retro_sleep(200);
+
+         /* all but the last 16, which the read after takes */
+         while (ok && at + 16 < (uint64_t)size)
+         {
+            const uint8_t *ptr  = NULL;
+            int64_t        rest = size - 16 - (int64_t)at;
+            int64_t        n    = filestream_view(f, rest, &ptr);
+            uint32_t       j;
+            if (n < 0)
+            {
+               n   = filestream_read(f, chunk,
+                     rest < (int64_t)sizeof(chunk) ? rest : (int64_t)sizeof(chunk));
+               ptr = chunk;
+            }
+            else
+               lent += (uint64_t)n;
+            if (n <= 0)
+               ok = false;
+            for (j = 0; ok && j < (uint32_t)n; j++)
+               if (ptr[j] != (uint8_t)((at + j) * 31 + 7))
+                  ok = false;
+            at += (uint64_t)n;
+         }
+         if (ok && (filestream_read(f, tail, 16) != 16
+                  || tail[0] != (uint8_t)(at * 31 + 7)))
+            ok = false;
+         filestream_close(f);
+         /* taken so the next phase counts only its own streams */
+         {
+            unsigned window_kib, direct_kib;
+            smb_take_readahead_stats(&window_kib, &direct_kib);
+         }
+         if (!ok)
+         {
+            fprintf(stderr, "FAIL: read through lends, read-ahead %u KiB\n",
+                  cfg.readahead);
+            failures++;
+         }
+         if ((lent != 0) != (phase != 0))
+         {
+            fprintf(stderr, "FAIL: read-ahead %u KiB lent %llu octets\n",
+                  cfg.readahead, (unsigned long long)lent);
+            failures++;
+         }
+      }
       /* a read-only open asking to be mapped, as the archive layer's
        * does: a network stream has no descriptor to map, so it must still
        * open, seek and read through its own backend */
