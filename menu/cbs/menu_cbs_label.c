@@ -49,6 +49,9 @@ FILL_LABEL_MACRO(action_bind_label_internal_memory,          MSG_INTERNAL_STORAG
 FILL_LABEL_MACRO(action_bind_label_removable_storage,        MSG_REMOVABLE_STORAGE)
 FILL_LABEL_MACRO(action_bind_label_external_application_dir, MSG_EXTERNAL_APPLICATION_DIR)
 FILL_LABEL_MACRO(action_bind_label_application_dir,          MSG_APPLICATION_DIR)
+#if defined(ANDROID)
+FILL_LABEL_MACRO(action_bind_label_video_windows_enable_android, MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWS_ENABLE_ANDROID)
+#endif
 
 static int action_bind_label_playlist_collection_entry(
       file_list_t *list,
@@ -142,6 +145,11 @@ int menu_cbs_init_bind_label(menu_file_list_cbs_t *cbs,
          break;
       case MENU_ENUM_LABEL_RDB_ENTRY_DETAIL:
          BIND_ACTION_LABEL(cbs, action_bind_label_rdb_entry_detail);
+         break;
+      case MENU_ENUM_LABEL_VIDEO_WINDOWS_ENABLE:
+#if defined(ANDROID)
+         BIND_ACTION_LABEL(cbs, action_bind_label_video_windows_enable_android);
+#endif
          break;
       default:
          break;

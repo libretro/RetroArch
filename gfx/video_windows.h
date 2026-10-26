@@ -27,6 +27,19 @@ enum video_window_mode
    VIDEO_WINDOW_HIDDEN
 };
 
+/* video_screen%u_display's value for a screen that is not shown */
+#define VIDEO_WINDOW_DISPLAY_OFF "off"
+
+/* video_menu_follows below this: the screen the menu goes with, 0 for
+ * Game Screen 1; this value: a display of the menu's own */
+#define VIDEO_MENU_FOLLOWS_SEPARATE RETRO_VIDEO_VIEWS_MAX
+
+enum video_notifications_window
+{
+   VIDEO_NOTIFICATIONS_WITH_GAME = 0,
+   VIDEO_NOTIFICATIONS_WITH_MENU
+};
+
 typedef struct video_window_settings
 {
    unsigned pos;

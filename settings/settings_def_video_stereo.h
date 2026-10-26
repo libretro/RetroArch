@@ -29,4 +29,14 @@ S_BOOL(video_windows_enable, VIDEO_WINDOWS_ENABLE,
       DEFAULT_VIDEO_WINDOWS_ENABLE, SD_FLAG_NONE, SDESC_FLG_REFRESH, 0,
       "Separate Screen Windows",
       "Allow secondary screens to use separate desktop windows.")
+S_UINT_EX(video_menu_follows, VIDEO_MENU_FOLLOWS,
+      "video_menu_follows",
+      0, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, VIDEO_MENU_FOLLOWS_SEPARATE, 1, 0, setting_action_ok_uint, setting_get_string_representation_video_menu_follows, NULL, NULL, setting_uint_action_left_video_menu_follows, setting_uint_action_right_video_menu_follows, ST_UI_TYPE_UINT_COMBOBOX,
+      "Menu Follows",
+      "Puts the menu on this game screen's display, with or without a game. Separate gives it a display of its own.")
+S_UINT_EX(video_notifications_window, VIDEO_NOTIFICATIONS_WINDOW,
+      "video_notifications_window",
+      0, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, 1, 1, 0, setting_action_ok_uint, setting_get_string_representation_video_notifications_window, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,
+      "Notifications",
+      "Where notifications appear when the menu is on another display than the game.")
 #endif
