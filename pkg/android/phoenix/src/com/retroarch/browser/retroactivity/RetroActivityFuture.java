@@ -6,6 +6,7 @@ import android.util.Log;
 import android.view.Display;
 import android.view.DisplayCutout;
 import android.view.Gravity;
+import android.view.InputDevice;
 import android.view.PointerIcon;
 import android.view.View;
 import android.view.WindowInsets;
@@ -68,6 +69,19 @@ public final class RetroActivityFuture extends RetroActivityCamera {
     
     isRunning = true;
     mDecorView = getWindow().getDecorView();
+
+    // Stick moves and touch drags as they come, not batched to the next
+    // display frame. The request only takes on an attached view.
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+      final View decor = mDecorView;
+      decor.post(new Runnable() {
+        @Override
+        public void run() {
+          decor.requestUnbufferedDispatch(
+              InputDevice.SOURCE_CLASS_JOYSTICK | InputDevice.SOURCE_CLASS_POINTER);
+        }
+      });
+    }
 
     // If QUITFOCUS parameter is provided then enable that Retroarch quits when focus is lost
     quitfocus = getIntent().hasExtra("QUITFOCUS");
