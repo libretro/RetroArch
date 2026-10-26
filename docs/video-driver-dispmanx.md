@@ -1,0 +1,75 @@
+# RetroArch dispmanx video driver
+
+The dispmanx video driver puts the emulator framebuffer on screen through DispmanX, the display API of the Raspberry Pi's VideoCore firmware. Each frame is handed to the firmware as an image resource, and the HVS (the Pi's hardware video scaler) scales it to the screen as it scans the display out. Scaling, flipping and blending cost the ARM nothing, and nothing goes through the GPU's 3D pipeline.
+
+## Reasons to use the driver
+
+On a Pi Zero, 1, 2 or 3, or a Compute Module of those generations, the driver gets a software-rendered core on screen with the least CPU and memory bandwidth there is: the frame goes from the core's own buffer to the VideoCore, and everything after that is done by the display hardware. It has no shaders, no XMB/Ozone, and no on-screen messages; for those, use the gl driver.
+
+## Requirements
+
+DispmanX belongs to the legacy firmware graphics stack. It needs the VideoCore userland (`bcm_host.h`, `libbcm_host`, `libvchiq_arm`, `libvcos`), traditionally installed in `/opt/vc`, and a system that has not handed the display to the kernel: no `dtoverlay=vc4-kms-v3d` in `config.txt`. Under full KMS the firmware no longer owns the display; use the `drm` driver there. Current Raspberry Pi OS releases ship without `/opt/vc` and drive the display through KMS, so the driver is for the older stack.
+
+Build RetroArch with `--enable-dispmanx`. Configure turns the driver off with a notice when the VideoCore headers are not found.
+
+If the console framebuffer has overscan set, put `overscan_scale=1` in `config.txt`, so the console and DispmanX see the same screen size.
+
+## Configuration
+
+The video driver name is 'dispmanx'. It honors the following video settings:
+
+   - the aspect ratio, from the core or as chosen, `video_force_aspect`
+   - `video_scale_integer`, with the scaling axis and overscale settings the frontend has
+   - the custom viewport; the part of it that falls off the screen is cut from the source
+   - `video_smooth`, at start and when changed in the menu
+   - `video_rotation` and the core's rotation (`RETRO_ENVIRONMENT_SET_ROTATION`)
+   - `video_vsync`
+   - `video_max_swapchain_images` (2 to 4 pages for the frame)
+   - a core's views, composed and scaled by the HVS over the whole screen
+
+### Aspect ratio, integer scale and the viewport
+
+The frontend lays the frame out exactly as it does for every other driver, and the driver places the frame's DispmanX element on that rectangle. The rest of the screen is black: a full-screen black layer sits under the frame and hides the console. A change of aspect, scale or viewport moves the element in the same update as the next page flip, so it shows on the next vsync and nothing is made again.
+
+### Filtering
+
+The HVS scales with a polyphase filter whose kernel is global to the display. With `video_smooth` off, the driver loads a nearest-neighbour kernel (`vc_gencmd_send("scaling_kernel ...")`), at start and whenever the setting is turned off in the menu; turned on, it loads the smooth kernel. With `video_smooth` on from the start, the driver leaves the firmware's kernel alone, so a `scaling_kernel` set in `config.txt` stands. The kernel outlives the process, so a driver that loaded the nearest kernel puts the smooth one back on exit.
+
+Nearest neighbour gives even pixels only at whole multiples: use it together with `video_scale_integer`.
+
+### Rotation
+
+The HVS can flip an image but cannot turn it a quarter. A half turn is done by the HVS (`DISPMANX_ROTATE_180`) at no cost. For a quarter turn the CPU turns the frame a quarter counter-clockwise as it lays it out for the firmware, and three quarters is that turn with the HVS's half on top, so only one CPU turn exists. A turned frame is therefore copied once on the CPU.
+
+### vsync
+
+With vsync on, a frame waits for the flip before it to be done, as DispmanX takes one flip in flight. With vsync off (fast-forward included), a frame that comes while a flip is still pending is not shown, and nothing waits: the core runs as fast as it can and the screen shows a frame every vsync.
+
+### The menu
+
+RGUI is drawn on a DispmanX layer of its own above the frame, blended by its own alpha as the other drivers blend it, where the frame shows or over the whole screen when the menu asks for that. It is uploaded only when RGUI redraws. XMB, Ozone and MaterialUI draw through a GPU display driver, which this driver does not have; RGUI is the menu to use with it.
+
+## How a frame reaches the screen
+
+The firmware copies a resource's rows from the frame in one bulk transfer (`vc_dispmanx_resource_write_data`): the VideoCore reads the frame from the ARM's memory itself, and the call returns once it has. Its rows must be the resource's: the firmware keeps a resource's rows 16 pixels aligned and reads the frame's rows that far apart.
+
+   - A frame whose rows are already that far apart goes to the firmware from where the core put it, with no copy on the ARM. A core whose rows carry padding sends the padding with them.
+   - A core that asks for a framebuffer to render into (`RETRO_ENVIRONMENT_GET_CURRENT_SOFTWARE_FRAMEBUFFER`) is given one with the firmware's row pitch, so its frame goes as it is, whatever its width, without the padding of the core's own buffer. It is ordinary cached memory, so a core that reads its frame back is given it too. Not while a quarter turn is set, nor while views draw.
+   - Under threaded video, the wrapper's frame buffers come from the driver with the firmware's row pitch: the copy the wrapper makes anyway lays the rows out, and the frame goes from there.
+   - Any other frame - an odd width in the core's own buffer, or a quarter turn - is laid out once by the CPU into a buffer the surface keeps, and goes from there.
+
+The bulk transfer is the one copy the public DispmanX API leaves: it has no resource the ARM can write in place (`vc_dispmanx_resource_write_data_handle`, which reads VideoCore memory, exists only for code running on the VideoCore).
+
+Three pages (`video_max_swapchain_images`) let the core fill one while one is on screen and one waits for the vsync. The vsync callback frees the page that was on screen; the frame thread waits on a lock-free eventcount when no page is free.
+
+## Issues and TODOs
+
+   - Input overlays are not drawn. Each overlay image could be a DispmanX element of its own (ARGB8888, blended by its own alpha and scaled by the HVS), costing the CPU nothing per frame.
+   - On-screen messages, notifications and statistics are not drawn. A small RGBA layer the font renderer draws into, uploaded only when the text changes, would carry them.
+   - `video_monitor_index` is not honoured: the driver opens the firmware's default display. On boards with two outputs, the index could select `DISPMANX_ID_HDMI0`, `DISPMANX_ID_HDMI1` or the LCD.
+   - Screenshots and GPU recording read nothing back (`read_viewport` is not implemented). `vc_dispmanx_snapshot` into an offscreen resource, read with `vc_dispmanx_resource_read_data`, would capture the screen as shown.
+   - The display mode is the one the firmware booted with; `set_video_mode` (through the firmware's TV service) would let `video_fullscreen_x`/`_y` and the refresh rate pick another, and CRT SwitchRes drive it.
+   - RGUI's upscaled path and a menu of an odd width are laid out once by the CPU before upload; a menu framebuffer loan (`get_menu_framebuffer`) at the firmware's pitch would remove that copy. RGUI uploads only when it redraws, so this costs little.
+   - A core's views are composed on the CPU and drawn without its rotation.
+
+The driver is tested against a fake VideoCore in `samples/gfx/dispmanx_display`, which keeps each resource at its own row pitch as the firmware does, so a frame laid out wrongly shows up skewed. It builds for Linux and, cross-compiled with mingw-w64, for Windows.

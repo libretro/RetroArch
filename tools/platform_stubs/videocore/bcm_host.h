@@ -33,7 +33,9 @@ typedef enum
 {
    VC_IMAGE_MIN      = 0,
    VC_IMAGE_RGB565   = 1,
-   VC_IMAGE_RGBA16   = 22,
+   VC_IMAGE_RGBA32   = 15,
+   VC_IMAGE_RGBA16   = 18,
+   VC_IMAGE_ARGB8888 = 43,
    VC_IMAGE_XRGB8888 = 44
 } VC_IMAGE_TYPE_T;
 
@@ -42,7 +44,9 @@ typedef enum
    DISPMANX_FLAGS_ALPHA_FROM_SOURCE       = 0,
    DISPMANX_FLAGS_ALPHA_FIXED_ALL_PIXELS  = 1,
    DISPMANX_FLAGS_ALPHA_FIXED_NON_ZERO    = 2,
-   DISPMANX_FLAGS_ALPHA_FIXED_EXCEED_0X07 = 3
+   DISPMANX_FLAGS_ALPHA_FIXED_EXCEED_0X07 = 3,
+   DISPMANX_FLAGS_ALPHA_PREMULT           = 1 << 16,
+   DISPMANX_FLAGS_ALPHA_MIX               = 1 << 17
 } DISPMANX_FLAGS_ALPHA_T;
 
 typedef struct
@@ -56,7 +60,12 @@ typedef struct DISPMANX_CLAMP_T DISPMANX_CLAMP_T;
 
 typedef enum
 {
-   DISPMANX_NO_ROTATE = 0
+   DISPMANX_NO_ROTATE  = 0,
+   DISPMANX_ROTATE_90  = 1,
+   DISPMANX_ROTATE_180 = 2,
+   DISPMANX_ROTATE_270 = 3,
+   DISPMANX_FLIP_HRIZ  = 1 << 16,
+   DISPMANX_FLIP_VERT  = 1 << 17
 } DISPMANX_TRANSFORM_T;
 
 typedef void (*DISPMANX_CALLBACK_FUNC_T)(DISPMANX_UPDATE_HANDLE_T u,
@@ -88,6 +97,11 @@ DISPMANX_ELEMENT_HANDLE_T vc_dispmanx_element_add(
       DISPMANX_CLAMP_T *clamp, DISPMANX_TRANSFORM_T transform);
 int vc_dispmanx_element_change_source(DISPMANX_UPDATE_HANDLE_T update,
       DISPMANX_ELEMENT_HANDLE_T element, DISPMANX_RESOURCE_HANDLE_T src);
+int vc_dispmanx_element_change_attributes(
+      DISPMANX_UPDATE_HANDLE_T update, DISPMANX_ELEMENT_HANDLE_T element,
+      uint32_t change_flags, int32_t layer, uint8_t opacity,
+      const VC_RECT_T *dest_rect, const VC_RECT_T *src_rect,
+      DISPMANX_RESOURCE_HANDLE_T mask, DISPMANX_TRANSFORM_T transform);
 int vc_dispmanx_element_remove(DISPMANX_UPDATE_HANDLE_T update,
       DISPMANX_ELEMENT_HANDLE_T element);
 int vc_dispmanx_update_submit(DISPMANX_UPDATE_HANDLE_T update,
