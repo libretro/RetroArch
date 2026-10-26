@@ -48,6 +48,9 @@ struct chdstream
    /* rchd never touches a file: it names the byte ranges it needs and
     * this supplies them, so the stream owns the handle. */
    RFILE    *file;
+   /* What rchd asks for is read here before it is fed; one per stream,
+    * since streams open and read on whichever thread holds them. */
+   uint8_t  *pump;
    uint32_t  hunk_bytes;
    uint32_t  unit_bytes;
 #else
@@ -387,11 +390,11 @@ chdstream_find_track(chd_file *fd, int32_t track, metadata_t *meta)
 /* Drives an rchd step loop, supplying whatever range it asks for from
  * the open file. rchd asks for one range at a time and says so by
  * returning RCHD_PENDING, so this is the whole of the I/O. */
-static bool chdstream_pump(RFILE *f, rchd_t *chd, int opening,
-      rchd_request_t *rq)
-{
-   static uint8_t buf[65536];
+#define CHDSTREAM_PUMP_BYTES 65536
 
+static bool chdstream_pump(RFILE *f, rchd_t *chd, uint8_t *buf,
+      int opening, rchd_request_t *rq)
+{
    for (;;)
    {
       int    e = opening ? rchd_open_step(chd, rq)
@@ -403,7 +406,8 @@ static bool chdstream_pump(RFILE *f, rchd_t *chd, int opening,
       if (e != RCHD_PENDING)
          return false;
 
-      want = rq->length > sizeof(buf) ? sizeof(buf) : rq->length;
+      want = rq->length > CHDSTREAM_PUMP_BYTES
+           ? CHDSTREAM_PUMP_BYTES : rq->length;
       if (filestream_seek(f, (int64_t)rq->offset,
                RETRO_VFS_SEEK_POSITION_START) < 0)
          return false;
@@ -484,15 +488,18 @@ chdstream_t *chdstream_open(const char *path, int32_t track)
    rchd_request_t      rq;
    chdstream_t        *stream = NULL;
    rchd_t             *chd    = NULL;
+   uint8_t            *pump   = NULL;
    RFILE              *file   = filestream_open(path,
          RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
    uint32_t            pregap = 0;
 
    if (!file)
       return NULL;
+   if (!(pump = (uint8_t*)malloc(CHDSTREAM_PUMP_BYTES)))
+      goto error;
    if (!(chd = rchd_new()))
       goto error;
-   if (!chdstream_pump(file, chd, 1, &rq))
+   if (!chdstream_pump(file, chd, pump, 1, &rq))
       goto error;
    if (!(t = chdstream_track_of(chd, track)))
       goto error;
@@ -502,6 +509,7 @@ chdstream_t *chdstream_open(const char *path, int32_t track)
    info                    = rchd_info(chd);
    stream->chd             = NULL;
    stream->file            = NULL;
+   stream->pump            = NULL;
    stream->hunk_bytes      = info->hunk_bytes;
    stream->unit_bytes      = info->unit_bytes;
    stream->swab            = false;
@@ -548,6 +556,7 @@ chdstream_t *chdstream_open(const char *path, int32_t track)
 
    stream->chd             = chd;
    stream->file            = file;
+   stream->pump            = pump;
    stream->frames_per_hunk = info->hunk_bytes / info->unit_bytes;
    stream->track_frame     = (uint32_t)(t->logical_offset
                                         / info->unit_bytes);
@@ -562,6 +571,7 @@ error:
       free(stream->hunkmem);
       free(stream);
    }
+   free(pump);
    if (chd)
       rchd_free(chd);
    if (file)
@@ -652,6 +662,7 @@ void chdstream_close(chdstream_t *stream)
    if (stream->hunkmem)
       free(stream->hunkmem);
 #ifdef HAVE_RCHD
+   free(stream->pump);
    if (stream->chd)
       rchd_free(stream->chd);
    if (stream->file)
@@ -678,7 +689,8 @@ chdstream_load_hunk(chdstream_t *stream, uint32_t hunknum)
       if (rchd_read_hunk_begin(stream->chd, hunknum,
                stream->hunkmem) != RCHD_OK)
          return false;
-      if (!chdstream_pump(stream->file, stream->chd, 0, &rq))
+      if (!chdstream_pump(stream->file, stream->chd, stream->pump,
+               0, &rq))
          return false;
    }
 #else
@@ -758,10 +770,10 @@ int chdstream_getc(chdstream_t *stream)
 {
    char c = 0;
 
-   if (chdstream_read(stream, &c, sizeof(c) != sizeof(c)))
+   if (chdstream_read(stream, &c, sizeof(c)) != sizeof(c))
       return EOF;
 
-   return c;
+   return (unsigned char)c;
 }
 
 char *chdstream_gets(chdstream_t *stream, char *s, size_t len)
