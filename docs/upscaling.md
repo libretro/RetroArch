@@ -150,27 +150,27 @@ wherever a program asks for DLSS, including on AMD and Intel cards.
 To use it with RetroArch:
 
 1. Put OptiScaler's DLL in the RetroArch folder, next to
-   `retroarch.exe`, renamed to `nvngx.dll`. RetroArch looks there
-   before the NVIDIA driver's copy. Put OptiScaler's `OptiScaler.ini`
-   next to it.
+   `retroarch.exe`, renamed to `winmm.dll`. Put OptiScaler's
+   `OptiScaler.ini` next to it.
 2. Keep a `nvngx_dlss.dll` in `upscalers/dlss`. RetroArch needs one
    there before it uses DLSS.
 3. Set **Temporal Upscaler** to **DLSS**.
 
-System Information then shows **via OptiScaler**. The
-**Temporal Upscaler Sharpness** setting drives OptiScaler's sharpening
-pass for every upscaler it runs.
+Don't name it `nvngx.dll`. Next to `retroarch.exe` under that name,
+OptiScaler takes itself for NVIDIA's NGX library and passes every call
+back to itself, and RetroArch freezes or crashes when content starts.
+As `winmm.dll` it loads when RetroArch starts and passes the calls on
+to NVIDIA's own NGX library.
 
-OptiScaler hooks into the whole program as soon as it is loaded.
-Because of that, RetroArch loads it only when content starts with a
-core that asks for the upscaler. Other cores never load it. Once it has
-been loaded, it stays loaded until you quit RetroArch.
+System Information then shows **via OptiScaler**, and the log names
+OptiScaler as the NGX library. OptiScaler's own menu opens with the
+Insert key. The **Temporal Upscaler Sharpness** setting drives
+OptiScaler's sharpening pass for every upscaler it runs.
 
-With OptiScaler 0.9.4, Vulkan content can freeze at its first frame or
-crash at start. Its Vulkan hooks drop the program's GPU work or call
-the driver on a device that no longer exists. If that happens, use
-**d3d12** instead of vulkan, or remove `nvngx.dll` from the RetroArch
-folder. RetroArch then uses NVIDIA's own NGX library again.
+Loaded as `winmm.dll`, OptiScaler hooks into RetroArch for every core,
+not just the ones that use the upscaler. If a core misbehaves with it,
+rename or remove `winmm.dll`; RetroArch then uses NVIDIA's NGX library
+directly.
 
 ## Troubleshooting
 
