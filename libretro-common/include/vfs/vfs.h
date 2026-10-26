@@ -95,7 +95,6 @@ typedef struct
 #if defined(VFS_HAVE_FILE_MAPPING) \
  || defined(VITA) \
  || defined(_3DS) \
- || defined(WIIU) \
  || defined(__SWITCH__) \
  || defined(GEKKO) \
  || defined(PSP) \
