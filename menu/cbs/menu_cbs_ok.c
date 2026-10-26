@@ -2652,11 +2652,19 @@ static int generic_action_ok(const char *path,
          break;
       case ACTION_OK_LOAD_OVERRIDE_FILE:
 #ifdef HAVE_CONFIGFILE
-         flush_char = msg_hash_to_str(flush_id);
-         config_unload_override();
+         {
+            uint8_t before[MAX_USERS];
+            input_config_plays_as_players(before);
+            flush_char = msg_hash_to_str(flush_id);
+            config_unload_override();
 
-         if (!config_load_override_file(action_path))
-            return -1;
+            if (!config_load_override_file(action_path))
+            {
+               input_autoconfigure_plays_as_reread(before);
+               return -1;
+            }
+            input_autoconfigure_plays_as_reread(before);
+         }
 #endif
          break;
       case ACTION_OK_LOAD_CHEAT_FILE:
@@ -4523,12 +4531,15 @@ static int action_ok_override_unload(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
 #ifdef HAVE_CONFIGFILE
+   uint8_t before[MAX_USERS];
+   input_config_plays_as_players(before);
    if (config_unload_override())
    {
       const char *_msg = msg_hash_to_str(MSG_OVERRIDES_UNLOADED_SUCCESSFULLY);
       runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_SUCCESS);
    }
+   input_autoconfigure_plays_as_reread(before);
 #endif
    return 0;
 }

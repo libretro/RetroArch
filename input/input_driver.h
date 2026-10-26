@@ -2041,6 +2041,18 @@ bool input_config_plays_as_place(unsigned slot);
  * Users now, one whose player was above Max Users when controllers
  * were last placed and is within it now, and the headset's. */
 void input_config_plays_as_max_users_changed(uint8_t *again);
+/* Into @players, by slot, each controller's player as it plays now, 0
+ * for none: taken before a config reload, for
+ * input_config_plays_as_reread(). */
+void input_config_plays_as_players(uint8_t *players);
+/* The entries and the ports were read again: @again gets, for each of
+ * the MAX_USERS slots, whether its controller is placed again - all of
+ * them where the reload read the configured ports over the moves, else
+ * those whose player is not @before's and, where Max Users changed,
+ * those with no port below it and the headset's; none with no player
+ * in effect either side, or while the joypad driver reports them after
+ * a restart. */
+void input_config_plays_as_reread(const uint8_t *before, uint8_t *again);
 /* The controller in @slot is gone. */
 void input_config_plays_as_release(unsigned slot);
 /* The user whose player user @user's controller plays as: the one it
@@ -2620,6 +2632,11 @@ void input_entries_write(void *conf);
  * there are written, keys an entry has no value for taken out. */
 void input_plays_as_read(void *conf);
 void input_plays_as_write(void *conf);
+/* A later file's entries over the ones there are, by controller, not
+ * by number: the file gives a controller it names all its entries, in
+ * its order, an Auto one with no hotkeys of its own taking it back to
+ * Auto; one it does not name keeps its own. */
+void input_plays_as_merge(void *conf);
 /* A copy of the entries and the claims on them, put back after a load
  * made only to compare against, as the binds' copy is. NULL if there
  * is no memory for it. */
@@ -2627,6 +2644,12 @@ typedef struct input_plays_as_copy input_plays_as_copy_t;
 input_plays_as_copy_t *input_plays_as_copy_new(void);
 void input_plays_as_copy_restore(const input_plays_as_copy_t *copy);
 void input_plays_as_copy_free(input_plays_as_copy_t *copy);
+/* Into the override @conf, against the entries there are (the main
+ * config's, between the load made to compare against and the
+ * restore): all of each controller's entries in @copy where they
+ * differ, and Auto for one with entries there and none in @copy. */
+void input_plays_as_write_changed(void *conf,
+      const input_plays_as_copy_t *copy);
 
 /* The Plays As entries laid out as input_plays_as_write() writes them:
  * each model's in start order at its own entries' places, with an Auto

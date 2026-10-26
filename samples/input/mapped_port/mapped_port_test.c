@@ -502,6 +502,18 @@ static void t_entries(const char *text)
    config_file_free(conf);
 }
 
+/* An override's @text read over the entries there are, as its file is
+ * appended. */
+static void t_merge(const char *text)
+{
+   char buf[1024];
+   config_file_t *conf;
+   strlcpy(buf, text, sizeof(buf));
+   conf = config_file_new_from_string(buf, NULL);
+   input_plays_as_merge(conf);
+   config_file_free(conf);
+}
+
 /* Whether @conf has @key, and as @value where that is not NULL. */
 static bool t_conf_is(config_file_t *conf, const char *key,
       const char *value)
@@ -2087,6 +2099,871 @@ static void test_plays_as_write_twins_full(void)
          && input_config_plays_as_player(2) == 5,
          "writing a full table changed a controller's player");
    config_file_free(conf);
+}
+
+/* An override's entries go over the main config's by controller, not
+ * by number: the last file naming a controller gives it its whole
+ * entry in place, one no file names keeps its own, and a file with no
+ * entries changes nothing. */
+static void test_plays_as_merge(void)
+{
+   uint16_t k;
+   uint32_t a;
+   t_reset();
+   t_dev(0, "A", 1, 1);
+   t_dev(1, "B", 2, 2);
+   t_entries(
+         "input_plays_as_device_1 = \"0001:0001 A\"\n"
+         "input_plays_as_player_1 = \"2\"\n"
+         "input_plays_as_device_2 = \"0002:0002 B\"\n"
+         "input_plays_as_player_2 = \"3\"\n"
+         "input_plays_as_toggle_fast_forward_btn_2 = \"8\"\n");
+   t_merge(
+         "input_plays_as_device_1 = \"0002:0002 B Renamed\"\n"
+         "input_plays_as_player_1 = \"4\"\n");
+   CHECK(input_config_plays_as_entry(0) == 0
+         && input_config_plays_as_player(0) == 2,
+         "a controller the override does not name lost its entry");
+   CHECK(input_config_plays_as_entry(1) == 1
+         && input_config_plays_as_player(1) == 4
+         && input_config_plays_as_entry_name(1)
+         && !strcmp(input_config_plays_as_entry_name(1), "B Renamed"),
+         "the override's entry 1 did not take B's entry 2 in its place");
+   input_config_plays_as_hotkey(1, RARCH_FAST_FORWARD_KEY, &k, &a);
+   CHECK(k == NO_BTN && a == AXIS_NONE,
+         "an override entry naming no hotkeys kept the main config's");
+
+   t_merge(
+         "input_plays_as_device_3 = \"0001:0001 A\"\n"
+         "input_plays_as_player_3 = \"1\"\n"
+         "input_plays_as_menu_toggle_btn_3 = \"5\"\n");
+   input_config_plays_as_hotkey(0, RARCH_MENU_TOGGLE, &k, &a);
+   CHECK(input_config_plays_as_entry(0) == 0
+         && input_config_plays_as_player(0) == 1 && k == 5
+         && input_config_plays_as_player(1) == 4,
+         "a later file did not give A its whole entry, or B lost the earlier file's");
+
+   t_merge("input_max_users = \"2\"\n");
+   CHECK(input_config_plays_as_player(0) == 1
+         && input_config_plays_as_player(1) == 4,
+         "an override with no entries changed them");
+}
+
+/* Auto in an override takes a controller back to Auto; a controller
+ * the main config has no entry for is added; two of a model take the
+ * file's entries for it in order, any they have more of let go. */
+static void test_plays_as_merge_auto(void)
+{
+   t_reset();
+   t_dev(0, "A", 1, 1);
+   t_dev(2, "C", 3, 3);
+   t_entries(
+         "input_plays_as_device_1 = \"0001:0001 A\"\n"
+         "input_plays_as_player_1 = \"2\"\n");
+   t_merge(
+         "input_plays_as_device_1 = \"0001:0001 A\"\n"
+         "input_plays_as_player_1 = \"0\"\n"
+         "input_plays_as_device_2 = \"0003:0003 C\"\n"
+         "input_plays_as_player_2 = \"1\"\n");
+   CHECK(input_config_plays_as_entry(0) == -1
+         && input_config_plays_as_player(0) == 0,
+         "Auto in an override did not take A back to Auto");
+   CHECK(input_config_plays_as_entry(2) == 0
+         && input_config_plays_as_player(2) == 1,
+         "a controller the main config has no entry for was not added in the first free entry");
+
+   t_reset();
+   t_dev(0, "Pad", 1, 1);
+   t_dev(1, "Pad", 1, 1);
+   t_entries(
+         "input_plays_as_device_1 = \"0001:0001 Pad\"\n"
+         "input_plays_as_player_1 = \"2\"\n"
+         "input_plays_as_device_2 = \"0001:0001 Pad\"\n"
+         "input_plays_as_player_2 = \"3\"\n");
+   CHECK(input_config_plays_as_entry(0) == 0
+         && input_config_plays_as_entry(1) == 1,
+         "fixture: the two pads did not take an entry each");
+   t_merge(
+         "input_plays_as_device_1 = \"0001:0001 Pad\"\n"
+         "input_plays_as_player_1 = \"4\"\n");
+   CHECK(input_config_plays_as_entry(0) == 0
+         && input_config_plays_as_player(0) == 4
+         && input_config_plays_as_entry(1) == -1
+         && !input_config_plays_as_entry_name(1),
+         "one override entry for two of a model did not take the first's place and let the second's go");
+   t_merge(
+         "input_plays_as_device_1 = \"0001:0001 Pad\"\n"
+         "input_plays_as_player_1 = \"1\"\n"
+         "input_plays_as_device_2 = \"0001:0001 Pad\"\n"
+         "input_plays_as_player_2 = \"2\"\n");
+   CHECK(input_config_plays_as_player(0) == 1
+         && input_config_plays_as_player(1) == 2,
+         "two override entries for two of a model were not taken in order");
+}
+
+/* With all sixteen entries in use, an override's new controller is
+ * dropped; one it names takes its entry in place; one it sets back to
+ * Auto makes room for a new one, wherever the file lists it. */
+static void test_plays_as_merge_cap(void)
+{
+   unsigned e;
+   char name[32];
+   t_reset();
+   for (e = 0; e < MAX_USERS; e++)
+   {
+      snprintf(name, sizeof(name), "Gone %u", e);
+      t_dev(1, name, (uint16_t)(e + 2), 1);
+      input_config_plays_as_set(1, 1);
+      t_disconnect(1);
+   }
+   t_merge(
+         "input_plays_as_device_1 = \"00ff:0001 New\"\n"
+         "input_plays_as_player_1 = \"2\"\n"
+         "input_plays_as_device_2 = \"0005:0001 Gone 3\"\n"
+         "input_plays_as_player_2 = \"4\"\n");
+   CHECK(input_config_plays_as_entry_player(3) == 4
+         && input_config_plays_as_entry_name(3)
+         && !strcmp(input_config_plays_as_entry_name(3), "Gone 3"),
+         "a named controller did not keep its entry with all sixteen in use");
+   for (e = 0; e < MAX_USERS; e++)
+      CHECK(input_config_plays_as_entry_name(e)
+            && strcmp(input_config_plays_as_entry_name(e), "New"),
+            "a seventeenth controller took an entry");
+
+   t_merge(
+         "input_plays_as_device_1 = \"00fe:0001 Newer\"\n"
+         "input_plays_as_player_1 = \"2\"\n"
+         "input_plays_as_device_2 = \"0007:0001 Gone 5\"\n"
+         "input_plays_as_player_2 = \"0\"\n");
+   CHECK(input_config_plays_as_entry_name(5)
+         && !strcmp(input_config_plays_as_entry_name(5), "Newer")
+         && input_config_plays_as_entry_player(5) == 2,
+         "a new controller listed before one set back to Auto found no room");
+}
+
+/* A hand-written Auto entry is an entry to an override: two of a
+ * model take the file's entries in order, the Auto one's pad the
+ * first, and a lone controller's is put in its place. */
+static void test_plays_as_merge_main_auto(void)
+{
+   t_reset();
+   t_dev(0, "Pad", 1, 1);
+   t_dev(1, "Pad", 1, 1);
+   t_dev(2, "A", 2, 2);
+   t_entries(
+         "input_plays_as_device_1 = \"0001:0001 Pad\"\n"
+         "input_plays_as_player_1 = \"0\"\n"
+         "input_plays_as_device_2 = \"0001:0001 Pad\"\n"
+         "input_plays_as_player_2 = \"3\"\n"
+         "input_plays_as_device_3 = \"0002:0002 A\"\n"
+         "input_plays_as_player_3 = \"0\"\n");
+   CHECK(input_config_plays_as_entry(0) == 0
+         && input_config_plays_as_entry(1) == 1
+         && input_config_plays_as_entry(2) == 2,
+         "fixture: the main config's Auto entries were not kept");
+   t_merge(
+         "input_plays_as_device_1 = \"0001:0001 Pad\"\n"
+         "input_plays_as_player_1 = \"2\"\n"
+         "input_plays_as_device_2 = \"0002:0002 A\"\n"
+         "input_plays_as_player_2 = \"4\"\n");
+   CHECK(input_config_plays_as_player(0) == 2
+         && input_config_plays_as_entry(1) == -1,
+         "an override's one entry for two of a model did not go to the first, on a hand-written Auto");
+   CHECK(input_config_plays_as_player(2) == 4,
+         "an override's entry did not reach a controller on a hand-written Auto");
+
+   t_reset();
+   t_dev(0, "Pad", 1, 1);
+   t_dev(1, "Pad", 1, 1);
+   t_entries(
+         "input_plays_as_device_1 = \"0001:0001 Pad\"\n"
+         "input_plays_as_player_1 = \"0\"\n"
+         "input_plays_as_device_2 = \"0001:0001 Pad\"\n"
+         "input_plays_as_player_2 = \"3\"\n");
+   t_merge(
+         "input_plays_as_device_1 = \"0001:0001 Pad\"\n"
+         "input_plays_as_player_1 = \"1\"\n"
+         "input_plays_as_device_2 = \"0001:0001 Pad\"\n"
+         "input_plays_as_player_2 = \"2\"\n");
+   CHECK(input_config_plays_as_player(0) == 1
+         && input_config_plays_as_player(1) == 2,
+         "an override's entry for each of two pads, one on a hand-written Auto, came back reversed");
+}
+
+/* A 0000:0000 entry, as the headset's controllers have, is one
+ * controller by the name after it: the same as an entry of that name
+ * with no vid:pid, not another 0000:0000 one, nor one with a real
+ * vid:pid. */
+static void test_plays_as_merge_zero(void)
+{
+   t_reset();
+   t_dev(0, "Left", 0, 0);
+   t_dev(1, "Right", 0, 0);
+   t_dev(2, "Pad", 0x045e, 0x028e);
+   t_entries(
+         "input_plays_as_device_1 = \"0000:0000 Left\"\n"
+         "input_plays_as_player_1 = \"2\"\n"
+         "input_plays_as_device_2 = \"0000:0000 Right\"\n"
+         "input_plays_as_player_2 = \"3\"\n"
+         "input_plays_as_device_3 = \"045e:028e Pad\"\n"
+         "input_plays_as_player_3 = \"4\"\n");
+   t_merge(
+         "input_plays_as_device_1 = \"0000:0000 Left\"\n"
+         "input_plays_as_player_1 = \"1\"\n");
+   CHECK(input_config_plays_as_entry(0) == 0
+         && input_config_plays_as_player(0) == 1
+         && input_config_plays_as_entry(1) == 1
+         && input_config_plays_as_player(1) == 3,
+         "an override for one 0000:0000 controller took another's entry");
+   t_merge(
+         "input_plays_as_device_1 = \"Right\"\n"
+         "input_plays_as_player_1 = \"4\"\n");
+   CHECK(input_config_plays_as_entry(1) == 1
+         && input_config_plays_as_player(1) == 4,
+         "an entry by name did not take a 0000:0000 one of that name in its place");
+   t_merge(
+         "input_plays_as_device_1 = \"0000:0000 Pad\"\n"
+         "input_plays_as_player_1 = \"1\"\n");
+   CHECK(input_config_plays_as_entry(2) == 2
+         && input_config_plays_as_player(2) == 4,
+         "a 0000:0000 entry took the place of one with a real vid:pid");
+}
+
+/* What saving an override writes, as config_save_overrides() does it:
+ * a copy of the session's entries (@live_text's, or with NULL the
+ * ones there are), the main config read to compare against, the copy
+ * written against it, then put back. */
+static config_file_t *t_override(const char *main_text,
+      const char *live_text)
+{
+   input_plays_as_copy_t *copy;
+   config_file_t *conf = config_file_new_alloc();
+   if (live_text)
+      t_entries(live_text);
+   copy = input_plays_as_copy_new();
+   CHECK(copy, "no copy of the entries");
+   if (!copy)
+      return conf;
+   t_entries(main_text);
+   input_plays_as_write_changed(conf, copy);
+   input_plays_as_copy_restore(copy);
+   input_plays_as_copy_free(copy);
+   return conf;
+}
+
+static const char t_main_ab[] =
+      "input_plays_as_device_1 = \"0001:0001 A\"\n"
+      "input_plays_as_player_1 = \"2\"\n"
+      "input_plays_as_device_2 = \"0002:0002 B\"\n"
+      "input_plays_as_player_2 = \"3\"\n"
+      "input_plays_as_toggle_fast_forward_btn_2 = \"8\"\n";
+
+/* Saving an override writes a controller's whole entry where its
+ * player or own hotkeys differ from the main config's, a new
+ * controller's, Auto where the main config gives one an entry and the
+ * session none, and nothing for one that is the same. */
+static void test_plays_as_write_changed(void)
+{
+   config_file_t *conf;
+
+   t_reset();
+   conf = t_override(t_main_ab, t_main_ab);
+   CHECK(!t_conf_is(conf, "input_plays_as_device_1", NULL)
+         && !(conf->flags & CONF_FILE_FLG_MODIFIED),
+         "entries the same as the main config's were written");
+   config_file_free(conf);
+
+   conf = t_override(t_main_ab,
+         "input_plays_as_device_1 = \"0001:0001 A\"\n"
+         "input_plays_as_player_1 = \"4\"\n"
+         "input_plays_as_device_2 = \"0002:0002 B\"\n"
+         "input_plays_as_player_2 = \"3\"\n"
+         "input_plays_as_toggle_fast_forward_btn_2 = \"8\"\n");
+   CHECK(t_conf_is(conf, "input_plays_as_device_1", "0001:0001 A")
+         && t_conf_is(conf, "input_plays_as_player_1", "4")
+         && !t_conf_is(conf, "input_plays_as_device_2", NULL),
+         "a changed player was not written alone, as entry 1");
+   config_file_free(conf);
+
+   conf = t_override(t_main_ab,
+         "input_plays_as_device_1 = \"0002:0002 B\"\n"
+         "input_plays_as_player_1 = \"3\"\n"
+         "input_plays_as_toggle_fast_forward_btn_1 = \"9\"\n"
+         "input_plays_as_device_2 = \"0001:0001 A\"\n"
+         "input_plays_as_player_2 = \"2\"\n");
+   CHECK(t_conf_is(conf, "input_plays_as_device_1", "0002:0002 B")
+         && t_conf_is(conf, "input_plays_as_player_1", "3")
+         && t_conf_is(conf, "input_plays_as_toggle_fast_forward_btn_1", "9")
+         && !t_conf_is(conf, "input_plays_as_device_2", NULL),
+         "a changed hotkey did not write the whole entry, or one the same under another number was written");
+   config_file_free(conf);
+
+   conf = t_override(t_main_ab,
+         "input_plays_as_device_1 = \"0002:0002 B\"\n"
+         "input_plays_as_player_1 = \"3\"\n"
+         "input_plays_as_toggle_fast_forward_btn_1 = \"8\"\n"
+         "input_plays_as_device_2 = \"0003:0003 C\"\n"
+         "input_plays_as_player_2 = \"1\"\n");
+   CHECK(t_conf_is(conf, "input_plays_as_device_1", "0003:0003 C")
+         && t_conf_is(conf, "input_plays_as_player_1", "1")
+         && t_conf_is(conf, "input_plays_as_device_2", "0001:0001 A")
+         && t_conf_is(conf, "input_plays_as_player_2", "0")
+         && !t_conf_is(conf, "input_plays_as_toggle_fast_forward_btn_2", NULL)
+         && !t_conf_is(conf, "input_plays_as_device_3", NULL),
+         "a new controller, or Auto for one the session has no entry for, was not written");
+   config_file_free(conf);
+}
+
+/* What an override saved gives back, read over the main config's. */
+static void test_plays_as_override_round_trip(void)
+{
+   uint16_t k;
+   uint32_t a;
+   config_file_t *conf;
+   t_reset();
+   t_dev(0, "A", 1, 1);
+   t_dev(1, "B", 2, 2);
+   t_dev(2, "C", 3, 3);
+   conf = t_override(t_main_ab,
+         "input_plays_as_device_1 = \"0002:0002 B\"\n"
+         "input_plays_as_player_1 = \"1\"\n"
+         "input_plays_as_device_2 = \"0003:0003 C\"\n"
+         "input_plays_as_player_2 = \"4\"\n");
+   t_entries(t_main_ab);
+   input_plays_as_merge(conf);
+   config_file_free(conf);
+   input_config_plays_as_hotkey(1, RARCH_FAST_FORWARD_KEY, &k, &a);
+   CHECK(input_config_plays_as_player(0) == 0
+         && input_config_plays_as_player(1) == 1 && k == NO_BTN
+         && input_config_plays_as_player(2) == 4,
+         "the saved override read over the main config did not give back the session's entries");
+}
+
+/* Two of a model: an override saved with one pad's player changed
+ * gives each pad back its own, also where the session gave the second
+ * pad an entry below the first's. */
+static void test_plays_as_override_twins(void)
+{
+   config_file_t *conf;
+   static const char main_twins[] =
+         "input_plays_as_device_1 = \"0001:0001 Pad\"\n"
+         "input_plays_as_player_1 = \"2\"\n"
+         "input_plays_as_device_2 = \"0001:0001 Pad\"\n"
+         "input_plays_as_player_2 = \"3\"\n";
+   static const char main_b_pad[] =
+         "input_plays_as_device_1 = \"0002:0002 B\"\n"
+         "input_plays_as_player_1 = \"3\"\n"
+         "input_plays_as_device_2 = \"0001:0001 Pad\"\n"
+         "input_plays_as_player_2 = \"2\"\n";
+   static const char main_one[] =
+         "input_plays_as_device_1 = \"0001:0001 Pad\"\n"
+         "input_plays_as_player_1 = \"3\"\n";
+   static const char main_auto_pad[] =
+         "input_plays_as_device_1 = \"0001:0001 Pad\"\n"
+         "input_plays_as_player_1 = \"0\"\n"
+         "input_plays_as_device_2 = \"0001:0001 Pad\"\n"
+         "input_plays_as_player_2 = \"3\"\n";
+   static const char main_mixed[] =
+         "input_plays_as_device_1 = \"0001:0001 Pad\"\n"
+         "input_plays_as_player_1 = \"2\"\n"
+         "input_plays_as_device_2 = \"Pad\"\n"
+         "input_plays_as_player_2 = \"3\"\n"
+         "input_plays_as_device_3 = \"0001:0001 Pad\"\n"
+         "input_plays_as_player_3 = \"4\"\n";
+
+   t_reset();
+   t_dev(0, "Pad", 1, 1);
+   t_dev(1, "Pad", 1, 1);
+   t_entries(main_twins);
+   input_config_plays_as_set(1, 4);
+   conf = t_override(main_twins, NULL);
+   t_entries(main_twins);
+   input_plays_as_merge(conf);
+   config_file_free(conf);
+   CHECK(input_config_plays_as_player(0) == 2
+         && input_config_plays_as_player(1) == 4,
+         "an override saved with the second of two pads changed did not give each pad its player back");
+
+   t_reset();
+   t_dev(0, "Pad", 1, 1);
+   t_dev(1, "Pad", 1, 1);
+   t_dev(2, "B", 2, 2);
+   t_entries(main_b_pad);
+   input_config_plays_as_set(2, 0);
+   input_config_plays_as_set(1, 4);
+   CHECK(input_config_plays_as_entry(1) == 0
+         && input_config_plays_as_entry(0) == 1,
+         "fixture: the second pad's entry did not take the one B let go");
+   conf = t_override(main_b_pad, NULL);
+   t_entries(main_b_pad);
+   input_plays_as_merge(conf);
+   config_file_free(conf);
+   CHECK(input_config_plays_as_player(0) == 2
+         && input_config_plays_as_player(1) == 4
+         && input_config_plays_as_player(2) == 0,
+         "an override saved with the second pad's entry below the first's did not give each pad its player back");
+   t_entries(main_b_pad);
+   CHECK(input_config_plays_as_player(0) == 2
+         && input_config_plays_as_player(1) == 0
+         && input_config_plays_as_player(2) == 3,
+         "unloading the override did not give back the main config's");
+
+   /* the first pad on Auto, the second keeping its player */
+   t_reset();
+   t_dev(0, "Pad", 1, 1);
+   t_dev(1, "Pad", 1, 1);
+   t_entries(main_twins);
+   input_config_plays_as_set(0, 0);
+   conf = t_override(main_twins, NULL);
+   CHECK(t_conf_is(conf, "input_plays_as_device_1", "0001:0001 Pad")
+         && t_conf_is(conf, "input_plays_as_player_1", "0")
+         && t_conf_is(conf, "input_plays_as_player_2", "3")
+         && !t_conf_is(conf, "input_plays_as_device_3", NULL),
+         "the first of two pads on Auto was not saved as an Auto entry before the second's");
+   t_entries(main_twins);
+   input_plays_as_merge(conf);
+   config_file_free(conf);
+   CHECK(input_config_plays_as_player(0) == 0
+         && input_config_plays_as_player(1) == 3,
+         "an override saved with the first of two pads on Auto gave the second's player to the first");
+
+   /* both on Auto: one Auto entry takes both back */
+   t_reset();
+   t_dev(0, "Pad", 1, 1);
+   t_dev(1, "Pad", 1, 1);
+   t_entries(main_twins);
+   input_config_plays_as_set(0, 0);
+   input_config_plays_as_set(1, 0);
+   conf = t_override(main_twins, NULL);
+   CHECK(t_conf_is(conf, "input_plays_as_player_1", "0")
+         && !t_conf_is(conf, "input_plays_as_device_2", NULL),
+         "two pads set back to Auto were not saved as one Auto entry");
+   t_entries(main_twins);
+   input_plays_as_merge(conf);
+   config_file_free(conf);
+   CHECK(input_config_plays_as_player(0) == 0
+         && input_config_plays_as_player(1) == 0,
+         "an override with two pads on Auto left one a player");
+
+   /* an Auto entry in the main config, the session the same */
+   t_reset();
+   t_dev(0, "Pad", 1, 1);
+   t_dev(1, "Pad", 1, 1);
+   t_entries(main_auto_pad);
+   conf = t_override(main_auto_pad, NULL);
+   CHECK(!t_conf_is(conf, "input_plays_as_device_1", NULL),
+         "two pads as the main config has them, one on Auto, were saved");
+   config_file_free(conf);
+   input_config_plays_as_set(0, 2);
+   input_config_plays_as_set(0, 0);
+   CHECK(input_config_plays_as_entry(0) == -1,
+         "fixture: the first pad kept an entry on Auto");
+   conf = t_override(main_auto_pad, NULL);
+   CHECK(!t_conf_is(conf, "input_plays_as_device_1", NULL),
+         "a pad on Auto with no entry, where the main config has an Auto one, was saved");
+   config_file_free(conf);
+
+   /* read at a start, before the pads are reported */
+   t_reset();
+   t_entries(main_b_pad);
+   t_merge(
+         "input_plays_as_device_1 = \"0001:0001 Pad\"\n"
+         "input_plays_as_player_1 = \"2\"\n"
+         "input_plays_as_device_2 = \"0001:0001 Pad\"\n"
+         "input_plays_as_player_2 = \"4\"\n"
+         "input_plays_as_device_3 = \"0002:0002 B\"\n"
+         "input_plays_as_player_3 = \"0\"\n");
+   t_connect(0, "Pad", 1, 1);
+   t_connect(1, "Pad", 1, 1);
+   t_connect(2, "B", 2, 2);
+   CHECK(input_config_plays_as_player(0) == 2
+         && input_config_plays_as_player(1) == 4
+         && input_config_plays_as_player(2) == 0,
+         "an override read before the pads were reported gave them each other's players");
+
+   /* the main config's one entry moved to the second pad in the
+    * session: saved, for a start to give it back */
+   t_reset();
+   t_dev(0, "Pad", 1, 1);
+   t_dev(1, "Pad", 1, 1);
+   t_entries(main_one);
+   input_config_plays_as_set(0, 0);
+   input_config_plays_as_set(1, 3);
+   conf = t_override(main_one, NULL);
+   CHECK(t_conf_is(conf, "input_plays_as_player_1", "0")
+         && t_conf_is(conf, "input_plays_as_player_2", "3"),
+         "the main config's one entry moved to the second pad was not saved");
+   t_reset();
+   t_entries(main_one);
+   input_plays_as_merge(conf);
+   config_file_free(conf);
+   t_connect(0, "Pad", 1, 1);
+   t_connect(1, "Pad", 1, 1);
+   CHECK(input_config_plays_as_player(0) == 0
+         && input_config_plays_as_player(1) == 3,
+         "at a start, the override did not give the second pad the player it had");
+
+   /* a pad on Auto takes the file's entry at its place, not the one
+    * of a pad that is gone */
+   t_reset();
+   t_dev(0, "Pad", 1, 1);
+   t_dev(1, "Pad", 1, 1);
+   t_dev(2, "Pad", 1, 1);
+   t_entries(
+         "input_plays_as_device_1 = \"0001:0001 Pad\"\n"
+         "input_plays_as_player_1 = \"5\"\n"
+         "input_plays_as_device_2 = \"0001:0001 Pad\"\n"
+         "input_plays_as_player_2 = \"2\"\n"
+         "input_plays_as_device_3 = \"0001:0001 Pad\"\n"
+         "input_plays_as_player_3 = \"3\"\n");
+   input_config_plays_as_set(1, 0);
+   t_disconnect(0);
+   t_merge(
+         "input_plays_as_device_1 = \"0001:0001 Pad\"\n"
+         "input_plays_as_player_1 = \"5\"\n"
+         "input_plays_as_device_2 = \"0001:0001 Pad\"\n"
+         "input_plays_as_player_2 = \"6\"\n"
+         "input_plays_as_device_3 = \"0001:0001 Pad\"\n"
+         "input_plays_as_player_3 = \"3\"\n");
+   CHECK(input_config_plays_as_player(1) == 6
+         && input_config_plays_as_player(2) == 3,
+         "a pad on Auto took the entry of a pad that is gone");
+
+   /* two models' entries naming the same pads, interleaved: saved,
+    * unloaded and loaded again, each keeps its own */
+   t_reset();
+   t_entries(main_mixed);
+   t_connect(0, "Pad", 1, 1);
+   t_connect(1, "Pad", 1, 1);
+   t_connect(2, "Pad", 1, 1);
+   CHECK(input_config_plays_as_player(0) == 2
+         && input_config_plays_as_player(1) == 3
+         && input_config_plays_as_player(2) == 4,
+         "fixture: the pads did not take the entries in slot order");
+   conf = t_override(main_mixed, NULL);
+   CHECK(!t_conf_is(conf, "input_plays_as_device_1", NULL),
+         "pads two models' entries name, as the main config has them, were saved");
+   t_entries(main_mixed);
+   t_entries(main_mixed);
+   input_plays_as_merge(conf);
+   config_file_free(conf);
+   CHECK(input_config_plays_as_player(0) == 2
+         && input_config_plays_as_player(1) == 3
+         && input_config_plays_as_player(2) == 4,
+         "an override of pads two models' entries name, unchanged, did not give each its own back");
+   input_config_plays_as_set(1, 6);
+   input_config_plays_as_set(2, 5);
+   conf = t_override(main_mixed, NULL);
+   t_entries(main_mixed);
+   CHECK(input_config_plays_as_player(0) == 2
+         && input_config_plays_as_player(1) == 3
+         && input_config_plays_as_player(2) == 4,
+         "unloading an override of pads two models' entries name did not give back the main config's");
+   t_entries(main_mixed);
+   input_plays_as_merge(conf);
+   CHECK(input_config_plays_as_player(0) == 2
+         && input_config_plays_as_player(1) == 6
+         && input_config_plays_as_player(2) == 5,
+         "an override of pads two models' entries name, two changed, did not give each its own back");
+   t_reset();
+   t_entries(main_mixed);
+   input_plays_as_merge(conf);
+   config_file_free(conf);
+   t_connect(0, "Pad", 1, 1);
+   t_connect(1, "Pad", 1, 1);
+   t_connect(2, "Pad", 1, 1);
+   CHECK(input_config_plays_as_player(0) == 2
+         && input_config_plays_as_player(1) == 6
+         && input_config_plays_as_player(2) == 5,
+         "at a start, an override of pads two models' entries name gave them each other's players");
+
+   /* the first on Auto: one Auto entry, for the model whose entry it
+    * sits before comes first in the main config */
+   t_reset();
+   t_entries(main_mixed);
+   t_connect(0, "Pad", 1, 1);
+   t_connect(1, "Pad", 1, 1);
+   t_connect(2, "Pad", 1, 1);
+   input_config_plays_as_set(0, 0);
+   conf = t_override(main_mixed, NULL);
+   CHECK(t_conf_is(conf, "input_plays_as_device_1", "0001:0001 Pad")
+         && t_conf_is(conf, "input_plays_as_player_1", "0")
+         && !t_conf_is(conf, "input_plays_as_device_3", NULL),
+         "a pad on Auto two models' entries name was saved with an Auto entry for each");
+   t_entries(main_mixed);
+   t_entries(main_mixed);
+   input_plays_as_merge(conf);
+   CHECK(input_config_plays_as_player(0) == 0
+         && input_config_plays_as_player(1) == 3
+         && input_config_plays_as_player(2) == 4,
+         "an override of pads two models' entries name, the first on Auto, took the second's player");
+   t_reset();
+   t_entries(main_mixed);
+   input_plays_as_merge(conf);
+   config_file_free(conf);
+   t_connect(0, "Pad", 1, 1);
+   t_connect(1, "Pad", 1, 1);
+   t_connect(2, "Pad", 1, 1);
+   CHECK(input_config_plays_as_player(0) == 0
+         && input_config_plays_as_player(1) == 3
+         && input_config_plays_as_player(2) == 4,
+         "at a start, an override of pads two models' entries name, the first on Auto, took the second's player");
+
+   /* an Auto pad before an entry of each model: written for the one
+    * whose entry comes first in the main config, not the one whose
+    * first entry does */
+   t_reset();
+   t_entries(main_mixed);
+   t_connect(0, "Pad", 1, 1);
+   t_connect(3, "Pad", 1, 1);
+   t_connect(2, "Pad", 1, 1);
+   t_connect(1, "Pad", 1, 1);
+   CHECK(input_config_plays_as_entry(1) == -1
+         && input_config_plays_as_entry(3) == 1,
+         "fixture: the pads did not take the entries in the order they came");
+   conf = t_override(main_mixed, NULL);
+   t_entries(main_mixed);
+   t_entries(main_mixed);
+   input_plays_as_merge(conf);
+   CHECK(input_config_plays_as_player(0) == 2
+         && input_config_plays_as_player(1) == 0
+         && input_config_plays_as_player(2) == 4
+         && input_config_plays_as_player(3) == 3,
+         "an override of pads two models' entries name, one on Auto between, gave them each other's players");
+   t_reset();
+   t_entries(main_mixed);
+   input_plays_as_merge(conf);
+   config_file_free(conf);
+   t_connect(0, "Pad", 1, 1);
+   t_connect(1, "Pad", 1, 1);
+   t_connect(2, "Pad", 1, 1);
+   t_connect(3, "Pad", 1, 1);
+   CHECK(input_config_plays_as_player(0) == 2
+         && input_config_plays_as_player(1) == 0
+         && input_config_plays_as_player(2) == 4
+         && input_config_plays_as_player(3) == 3,
+         "at a start, an override of pads two models' entries name, one on Auto between, gave them each other's players");
+
+   /* the same with the third pad changed: read back, the Auto pad is
+    * left out of the other model's entries too */
+   t_reset();
+   t_entries(main_mixed);
+   t_connect(0, "Pad", 1, 1);
+   t_connect(3, "Pad", 1, 1);
+   t_connect(2, "Pad", 1, 1);
+   t_connect(1, "Pad", 1, 1);
+   input_config_plays_as_set(2, 5);
+   CHECK(input_config_plays_as_entry(1) == -1
+         && input_config_plays_as_player(2) == 5
+         && input_config_plays_as_player(3) == 3,
+         "fixture: the third pad was not set to 5 beside one on Auto");
+   conf = t_override(main_mixed, NULL);
+   t_entries(main_mixed);
+   t_entries(main_mixed);
+   input_plays_as_merge(conf);
+   CHECK(input_config_plays_as_player(0) == 2
+         && input_config_plays_as_player(1) == 0
+         && input_config_plays_as_player(2) == 5
+         && input_config_plays_as_player(3) == 3,
+         "an override of pads two models' entries name, one on Auto between and one changed, gave them each other's players");
+   t_reset();
+   t_entries(main_mixed);
+   input_plays_as_merge(conf);
+   config_file_free(conf);
+   t_connect(0, "Pad", 1, 1);
+   t_connect(1, "Pad", 1, 1);
+   t_connect(2, "Pad", 1, 1);
+   t_connect(3, "Pad", 1, 1);
+   CHECK(input_config_plays_as_player(0) == 2
+         && input_config_plays_as_player(1) == 0
+         && input_config_plays_as_player(2) == 5
+         && input_config_plays_as_player(3) == 3,
+         "at a start, an override of pads two models' entries name, one on Auto between and one changed, gave them each other's players");
+}
+
+/* With all sixteen entries in use, an Auto entry for two of a model is
+ * neither read nor saved in place of another controller's. */
+static void test_plays_as_override_twins_full(void)
+{
+   unsigned e;
+   char key[48];
+   char name[32];
+   bool set  = false;
+   bool none = true;
+   config_file_t *conf;
+
+   /* fifteen gone controllers' entries, two pads on Auto */
+   t_reset();
+   for (e = 0; e + 1 < MAX_USERS; e++)
+   {
+      snprintf(name, sizeof(name), "Gone %u", e);
+      t_dev(2, name, (uint16_t)(e + 2), 1);
+      input_config_plays_as_set(2, 1);
+      t_disconnect(2);
+   }
+   t_dev(0, "Pad", 1, 1);
+   t_dev(1, "Pad", 1, 1);
+   t_merge(
+         "input_plays_as_device_1 = \"0001:0001 Pad\"\n"
+         "input_plays_as_player_1 = \"0\"\n"
+         "input_plays_as_device_2 = \"0001:0001 Pad\"\n"
+         "input_plays_as_player_2 = \"3\"\n");
+   CHECK(input_config_plays_as_player(0) == 0
+         && input_config_plays_as_player(1) == 3,
+         "with one entry free, an override's Auto entry for two of a model took it from the other's");
+
+   /* all sixteen in use, the second pad's among them, the first on Auto */
+   t_reset();
+   for (e = 0; e + 1 < MAX_USERS; e++)
+   {
+      snprintf(name, sizeof(name), "Gone %u", e);
+      t_dev(2, name, (uint16_t)(e + 2), 1);
+      input_config_plays_as_set(2, 1);
+      t_disconnect(2);
+   }
+   t_dev(0, "Pad", 1, 1);
+   t_dev(1, "Pad", 1, 1);
+   input_config_plays_as_set(1, 3);
+   conf = t_override("", NULL);
+   for (e = 0; e < MAX_USERS; e++)
+   {
+      char pkey[48];
+      snprintf(key, sizeof(key), "input_plays_as_device_%u", e + 1);
+      snprintf(pkey, sizeof(pkey), "input_plays_as_player_%u", e + 1);
+      if (!t_conf_is(conf, key, "0001:0001 Pad"))
+         continue;
+      if (t_conf_is(conf, pkey, "3"))
+         set = true;
+      if (t_conf_is(conf, pkey, "0"))
+         none = false;
+   }
+   CHECK(set && none,
+         "with all sixteen in use, an Auto entry for two of a model was saved in place of the other's");
+   config_file_free(conf);
+}
+
+/* As input_autoconfigure_plays_as_reread() places them, after an
+ * override is loaded or unloaded from the menu. */
+static void t_place_reread(const uint8_t *before)
+{
+   unsigned s;
+   uint8_t again[MAX_USERS];
+   input_config_plays_as_reread(before, again);
+   for (s = 0; s < MAX_USERS; s++)
+      if (again[s] && input_config_get_device_name(s))
+         input_config_plays_as_place(s);
+   input_config_binds_changed();
+}
+
+/* An override loaded or unloaded from the menu places the controllers
+ * again at once: those whose player it changed, and all of them where
+ * the reload read the configured ports back over the moves; none with
+ * no player in effect either side, and none while the joypad driver
+ * reports them again after a restart. */
+static void test_plays_as_reread(void)
+{
+   unsigned u;
+   uint8_t before[MAX_USERS];
+   static const char *a2 =
+         "input_plays_as_device_1 = \"0001:0001 A\"\n"
+         "input_plays_as_player_1 = \"2\"\n";
+
+   /* B given player 1: it and A move at once */
+   t_reset();
+   t_connect(0, "A", 1, 1);
+   t_connect(1, "B", 2, 2);
+   input_driver_ports_runtime_moved();
+   input_config_plays_as_players(before);
+   t_entries(
+         "input_plays_as_device_1 = \"0002:0002 B\"\n"
+         "input_plays_as_player_1 = \"1\"\n");
+   t_place_reread(before);
+   CHECK(t_user_of(1) == 0 && t_user_of(0) == 1,
+         "a reload that gave B player 1 did not place B and A at once");
+
+   /* only what it changed: C stays above port 2, emptied before */
+   t_reset();
+   t_connect(0, "A", 1, 1);
+   t_connect(1, "X", 9, 9);
+   t_connect(2, "C", 3, 3);
+   t_disconnect(1);
+   input_driver_ports_runtime_moved();
+   input_config_plays_as_players(before);
+   t_entries(
+         "input_plays_as_device_1 = \"0001:0001 A\"\n"
+         "input_plays_as_player_1 = \"1\"\n");
+   t_place_reread(before);
+   CHECK(t_user_of(0) == 0 && t_user_of(2) == 2,
+         "a reload that changed A moved C into a port emptied before");
+
+   /* the configured ports read back over the moves: all placed again */
+   t_reset();
+   t_entries(a2);
+   t_connect(0, "A", 1, 1);
+   t_connect(1, "B", 2, 2);
+   CHECK(t_user_of(0) == 1 && t_user_of(1) == 0,
+         "fixture: A is not on port 2");
+   input_config_plays_as_players(before);
+   for (u = 0; u < MAX_USERS; u++)
+      settings.uints.input_joypad_index[u] = u;
+   t_entries(a2);
+   t_place_reread(before);
+   CHECK(t_user_of(0) == 1 && t_user_of(1) == 0,
+         "a reload that read the configured ports back left A off port 2");
+
+   /* no player either side: a Device Index swap stays */
+   t_reset();
+   settings.uints.input_joypad_index[0] = 1;
+   settings.uints.input_joypad_index[1] = 0;
+   t_dev(0, "A", 1, 1);
+   t_dev(1, "B", 2, 2);
+   input_driver_ports_runtime_moved();
+   input_config_plays_as_players(before);
+   t_entries("input_max_users = \"4\"\n");
+   t_place_reread(before);
+   CHECK(t_user_of(0) == 1 && t_user_of(1) == 0,
+         "a reload with no player in effect moved a controller");
+
+   /* Max Users 2 from the reload: the Auto pad past it takes port 2, as
+    * a Max Users edit places it */
+   t_reset();
+   t_entries(
+         "input_plays_as_device_1 = \"0001:0001 A\"\n"
+         "input_plays_as_player_1 = \"1\"\n");
+   t_connect(0, "A", 1, 1);
+   t_connect(1, "X", 9, 9);
+   t_connect(2, "B", 2, 2);
+   t_disconnect(1);
+   input_driver_ports_runtime_moved();
+   input_config_plays_as_players(before);
+   settings.uints.input_max_users = 2;
+   t_entries(
+         "input_plays_as_device_1 = \"0001:0001 A\"\n"
+         "input_plays_as_player_1 = \"1\"\n");
+   t_place_reread(before);
+   CHECK(t_user_of(0) == 0 && t_user_of(2) == 1,
+         "a reload's Max Users left the Auto pad past it with no port");
+
+   /* the joypad driver reporting them again places them itself */
+   t_reset();
+   t_plug(0, "A", 1, 1);
+   t_plug(1, "B", 2, 2);
+   input_driver_ports_runtime_moved();
+   input_config_plays_as_players(before);
+   input_driver_registry_restart();
+   t_entries(
+         "input_plays_as_device_1 = \"0002:0002 B\"\n"
+         "input_plays_as_player_1 = \"1\"\n");
+   t_place_reread(before);
+   CHECK(t_user_of(0) == 0 && t_user_of(1) == 1,
+         "controllers were placed while the joypad driver restarts");
+   /* the restart finished, so no later test sees it */
+   t_plug(0, "A", 1, 1);
+   t_plug(1, "B", 2, 2);
+   CHECK(t_user_of(1) == 0 && t_user_of(0) == 1,
+         "the restart's connects did not place by the new table");
+   input_driver_registry_disconnect(0);
+   input_driver_registry_disconnect(1);
 }
 
 #define T_ENABLE 20
@@ -4861,6 +5738,16 @@ int main(void)
    test_plays_as_copy();
    test_plays_as_write_twins();
    test_plays_as_write_twins_full();
+   test_plays_as_merge();
+   test_plays_as_merge_auto();
+   test_plays_as_merge_cap();
+   test_plays_as_merge_main_auto();
+   test_plays_as_merge_zero();
+   test_plays_as_write_changed();
+   test_plays_as_override_round_trip();
+   test_plays_as_override_twins();
+   test_plays_as_override_twins_full();
+   test_plays_as_reread();
    test_menu_shared();
    test_hotkeys_shared();
    test_hotkey_enable_shared();

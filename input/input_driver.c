@@ -11214,15 +11214,15 @@ static void input_plays_as_drop(unsigned e)
          input_plays_as_claim[s] = 0;
 }
 
-/* Whether entry @e still has a hotkey of its own. */
-static void input_plays_as_hot_count(unsigned e)
+/* Whether entry @t still has a hotkey of its own. */
+static void input_plays_as_hot_count(input_plays_as_entry_t *t)
 {
    unsigned h;
-   input_plays_as[e].own_hot = false;
+   t->own_hot = false;
    for (h = 0; h < INPUT_PLAYS_AS_HOTKEYS; h++)
-      if (     input_plays_as[e].hot_key[h]  != NO_BTN
-            || input_plays_as[e].hot_axis[h] != AXIS_NONE)
-         input_plays_as[e].own_hot = true;
+      if (     t->hot_key[h]  != NO_BTN
+            || t->hot_axis[h] != AXIS_NONE)
+         t->own_hot = true;
 }
 
 /* Entry @e is let go once it holds nothing a controller would not
@@ -11361,7 +11361,7 @@ bool input_config_plays_as_set_hotkey(unsigned slot, unsigned id,
       return false;
    input_plays_as[e].hot_key[id - RARCH_FIRST_META_KEY]  = joykey;
    input_plays_as[e].hot_axis[id - RARCH_FIRST_META_KEY] = joyaxis;
-   input_plays_as_hot_count((unsigned)e);
+   input_plays_as_hot_count(&input_plays_as[e]);
    input_plays_as_tidy((unsigned)e);
    input_config_binds_changed();
    return true;
@@ -11379,7 +11379,7 @@ void input_config_plays_as_clear_hotkey(unsigned id)
          continue;
       input_plays_as[e].hot_key[id - RARCH_FIRST_META_KEY]  = NO_BTN;
       input_plays_as[e].hot_axis[id - RARCH_FIRST_META_KEY] = AXIS_NONE;
-      input_plays_as_hot_count(e);
+      input_plays_as_hot_count(&input_plays_as[e]);
       input_plays_as_tidy(e);
    }
    input_config_binds_changed();
@@ -11619,10 +11619,11 @@ void input_config_format_joyaxis(char *s, size_t len, uint32_t joyaxis)
       snprintf(s, len, "+%lu", (unsigned long)AXIS_POS_GET(joyaxis));
 }
 
-/* Entry @e's own hotkeys, input_plays_as_<hotkey>_btn_N and _axis_N
- * with N its number from 1, in the hotkeys' own form: "8", "h0up",
- * "+1". */
-static void input_plays_as_hot_read(config_file_t *conf, unsigned e)
+/* Entry @t's own hotkeys from a file's entry @n (from 1),
+ * input_plays_as_<hotkey>_btn_N and _axis_N, in the hotkeys' own form:
+ * "8", "h0up", "+1". */
+static void input_plays_as_hot_read(config_file_t *conf,
+      input_plays_as_entry_t *t, unsigned n)
 {
    unsigned i;
    char key[96];
@@ -11634,36 +11635,37 @@ static void input_plays_as_hot_read(config_file_t *conf, unsigned e)
       const char *base = input_config_bind_map_get_base(i);
       if (!base || !input_config_bind_map_get_valid(i))
          continue;
-      snprintf(key, sizeof(key), "input_plays_as_%s_btn_%u", base, e + 1);
+      snprintf(key, sizeof(key), "input_plays_as_%s_btn_%u", base, n);
       if (config_get_array(conf, key, val, sizeof(val)))
-         input_config_parse_joykey(val, &input_plays_as[e].hot_key[h]);
-      snprintf(key, sizeof(key), "input_plays_as_%s_axis_%u", base, e + 1);
+         input_config_parse_joykey(val, &t->hot_key[h]);
+      snprintf(key, sizeof(key), "input_plays_as_%s_axis_%u", base, n);
       if (config_get_array(conf, key, val, sizeof(val)))
-         input_config_parse_joyaxis(val, &input_plays_as[e].hot_axis[h]);
+         input_config_parse_joyaxis(val, &t->hot_axis[h]);
    }
-   input_plays_as_hot_count(e);
+   input_plays_as_hot_count(t);
 }
 
-/* Entry @e's own hotkeys written, each only where it has one: a key it
- * no longer has is taken out. */
-static void input_plays_as_hot_write(config_file_t *conf, unsigned e)
+/* Entry @t's own hotkeys written as a file's entry @n (from 1), each
+ * only where it has one: a key it no longer has is taken out. */
+static void input_plays_as_hot_write(config_file_t *conf,
+      const input_plays_as_entry_t *t, unsigned n)
 {
    unsigned i;
    char key[96];
    char val[16];
    /* an entry no config read has cleared is all zeroes: none */
-   bool own = input_plays_as[e].own_hot;
+   bool own = t->own_hot;
 
    for (i = RARCH_FIRST_META_KEY; i < RARCH_BIND_LIST_END; i++)
    {
       uint16_t joykey  = own
-         ? input_plays_as[e].hot_key[i - RARCH_FIRST_META_KEY]  : NO_BTN;
+         ? t->hot_key[i - RARCH_FIRST_META_KEY]  : NO_BTN;
       uint32_t joyaxis = own
-         ? input_plays_as[e].hot_axis[i - RARCH_FIRST_META_KEY] : AXIS_NONE;
+         ? t->hot_axis[i - RARCH_FIRST_META_KEY] : AXIS_NONE;
       const char *base = input_config_bind_map_get_base(i);
       if (!base || !input_config_bind_map_get_valid(i))
          continue;
-      snprintf(key, sizeof(key), "input_plays_as_%s_btn_%u", base, e + 1);
+      snprintf(key, sizeof(key), "input_plays_as_%s_btn_%u", base, n);
       if (joykey == NO_BTN)
          config_unset(conf, key);
       else
@@ -11671,7 +11673,7 @@ static void input_plays_as_hot_write(config_file_t *conf, unsigned e)
          input_config_format_joykey(val, sizeof(val), joykey);
          config_set_string(conf, key, val);
       }
-      snprintf(key, sizeof(key), "input_plays_as_%s_axis_%u", base, e + 1);
+      snprintf(key, sizeof(key), "input_plays_as_%s_axis_%u", base, n);
       if (joyaxis == AXIS_NONE)
          config_unset(conf, key);
       else
@@ -11704,7 +11706,7 @@ void input_plays_as_read(void *data)
       snprintf(key, sizeof(key), "input_plays_as_player_%u", e + 1);
       if (config_get_uint(conf, key, &player) && player <= MAX_USERS)
          input_plays_as[e].player = player;
-      input_plays_as_hot_read(conf, e);
+      input_plays_as_hot_read(conf, &input_plays_as[e], e + 1);
    }
    input_plays_as_reclaim();
    input_plays_as_gen++;
@@ -11879,7 +11881,7 @@ void input_plays_as_write(void *data)
          config_set_uint(conf, key, input_plays_as[e].player);
       else
          config_unset(conf, key);
-      input_plays_as_hot_write(conf, e);
+      input_plays_as_hot_write(conf, &input_plays_as[e], e + 1);
    }
    if (was)
    {
@@ -11887,6 +11889,252 @@ void input_plays_as_write(void *data)
       input_plays_as_copy_free(was);
       memcpy(input_plays_as_held, held, sizeof(held));
    }
+}
+
+/* Whether entry @t gives its controller anything: a player or a hotkey
+ * of its own. */
+static bool input_plays_as_used(const input_plays_as_entry_t *t)
+{
+   return *t->device && (t->player || t->own_hot);
+}
+
+/* The @k-th entry of @t naming the controller @device names; -1 for
+ * none. */
+static int input_plays_as_nth(const input_plays_as_entry_t *t,
+      const char *device, unsigned k)
+{
+   unsigned e;
+   for (e = 0; e < MAX_USERS; e++)
+      if (*t[e].device && input_plays_as_same(t[e].device, device) && !k--)
+         return (int)e;
+   return -1;
+}
+
+/* How many of the entries @e of @t, @n of them, are left up to the last
+ * that gives a controller anything. */
+static unsigned input_plays_as_cut(const input_plays_as_entry_t *t,
+      const int *e, unsigned n)
+{
+   while (n && (e[n - 1] < 0 || !input_plays_as_used(&t[e[n - 1]])))
+      n--;
+   return n;
+}
+
+/* In @own, by slot, the model (its first entry in @t, plus one) whose
+ * entries hold the Auto entry of an Auto pad two models name, with
+ * @claim: as in input_plays_as_lay_out(), the one whose entry the pad
+ * sits before comes first, but among the entries there are, where an
+ * override's land. */
+static void input_plays_as_owners(const input_plays_as_entry_t *t,
+      const uint8_t *claim, uint8_t *own)
+{
+   unsigned e, j, k, n;
+   int place[MAX_INPUT_DEVICES];
+
+   memset(own, 0, MAX_INPUT_DEVICES);
+   for (e = 0; e < MAX_USERS; e++)
+   {
+      int x[MAX_USERS + MAX_INPUT_DEVICES];
+      int slot[MAX_USERS + MAX_INPUT_DEVICES];
+      if (!*t[e].device || input_plays_as_nth(t, t[e].device, 0) != (int)e)
+         continue;
+      n = input_plays_as_cut(t, x,
+            input_plays_as_order(t, claim, t[e].device, x, slot));
+      for (j = 0, k = 0; j < n; j++)
+      {
+         int i;
+         if (x[j] >= 0)
+         {
+            k++;
+            continue;
+         }
+         /* the model's k-th entry there is; else after them all */
+         if ((i = input_plays_as_nth(input_plays_as, t[e].device, k)) < 0)
+            i = MAX_USERS + input_plays_as_nth(t, t[e].device, k);
+         if (!own[slot[j]] || i < place[slot[j]])
+         {
+            place[slot[j]] = i;
+            own[slot[j]]   = (uint8_t)(e + 1);
+         }
+      }
+   }
+}
+
+/* @e and @slot, @n of them, as input_plays_as_order() gives them for
+ * the model whose first entry is @model - 1, without the Auto pads
+ * @own puts with another; returns how many are left. */
+static unsigned input_plays_as_unowned(int *e, int *slot, unsigned n,
+      const uint8_t *own, int model)
+{
+   unsigned i;
+   unsigned m = 0;
+   for (i = 0; i < n; i++)
+      if (e[i] >= 0 || !own[slot[i]] || own[slot[i]] == model)
+      {
+         e[m]      = e[i];
+         slot[m++] = slot[i];
+      }
+   return m;
+}
+
+void input_plays_as_merge(void *data)
+{
+   unsigned i, j, h, pass;
+   char key[48];
+   uint8_t had[MAX_INPUT_DEVICES];
+   uint8_t own[MAX_INPUT_DEVICES];
+   uint8_t done[MAX_USERS];
+   /* by file entry: the entry it goes in (-1 a new one, -2 none), and
+    * the slot whose controller it is for (-1 none) */
+   int at[MAX_USERS];
+   int to[MAX_USERS];
+   unsigned count               = 0;
+   config_file_t *conf          = (config_file_t*)data;
+   /* sixteen entries are several KiB: off the stack */
+   input_plays_as_entry_t *file = NULL;
+
+   if (!conf || !(file = (input_plays_as_entry_t*)
+            malloc(MAX_USERS * sizeof(*file))))
+      return;
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      unsigned player           = 0;
+      input_plays_as_entry_t *t = &file[count];
+      snprintf(key, sizeof(key), "input_plays_as_device_%u", i + 1);
+      if (     !config_get_array(conf, key, t->device, sizeof(t->device))
+            || !*t->device)
+         continue;
+      snprintf(key, sizeof(key), "input_plays_as_player_%u", i + 1);
+      t->player = (config_get_uint(conf, key, &player)
+            && player <= MAX_USERS) ? player : 0;
+      for (h = 0; h < INPUT_PLAYS_AS_HOTKEYS; h++)
+      {
+         t->hot_key[h]  = NO_BTN;
+         t->hot_axis[h] = AXIS_NONE;
+      }
+      input_plays_as_hot_read(conf, t, i + 1);
+      count++;
+   }
+   if (!count)
+   {
+      free(file);
+      return;
+   }
+   memcpy(had, input_plays_as_claim, sizeof(had));
+   memset(done, 0, sizeof(done));
+   input_plays_as_owners(input_plays_as, had, own);
+   /* the file's entries for a controller, in order, go one for one
+    * with its entries in the order a fresh start hands them out */
+   for (i = 0; i < count; i++)
+   {
+      unsigned n, k;
+      unsigned last = 0;
+      int e[MAX_USERS + MAX_INPUT_DEVICES];
+      int slot[MAX_USERS + MAX_INPUT_DEVICES];
+
+      if (done[i])
+         continue;
+      n = input_plays_as_order(input_plays_as, had, file[i].device,
+            e, slot);
+      /* an Auto pad two models name is saved with one only */
+      n = input_plays_as_unowned(e, slot, n, own,
+            input_plays_as_nth(input_plays_as, file[i].device, 0) + 1);
+      /* an Auto one with no hotkeys of its own after the last other is
+       * none */
+      for (j = i, k = 0; j < count; j++)
+      {
+         if (!input_plays_as_same(file[j].device, file[i].device))
+            continue;
+         k++;
+         if (file[j].player || file[j].own_hot)
+            last = k;
+      }
+      for (j = i, k = 0; j < count; j++)
+      {
+         if (     done[j]
+               || !input_plays_as_same(file[j].device, file[i].device))
+            continue;
+         done[j] = 1;
+         at[j]   = -2;
+         to[j]   = -1;
+         if (k < last)
+         {
+            at[j] = (k < n) ? e[k]    : -1;
+            to[j] = (k < n) ? slot[k] : -1;
+            if (at[j] >= 0)
+               input_plays_as[at[j]] = file[j];
+         }
+         k++;
+      }
+      for (k = last; k < n; k++)
+      {
+         if (e[k] >= 0)
+            input_plays_as_drop((unsigned)e[k]);
+         if (slot[k] >= 0)
+            had[slot[k]] = 0;
+      }
+   }
+   /* new ones once every controller has let its go, so what fits is
+    * not down to the file's order: those giving a controller something
+    * first, an Auto one only in the room they leave */
+   for (pass = 0; pass < 2; pass++)
+      for (j = 0; j < count; j++)
+      {
+         unsigned e;
+         bool used = file[j].player || file[j].own_hot;
+         if (at[j] != -1 || used == (pass != 0))
+            continue;
+         for (e = 0; e < MAX_USERS && *input_plays_as[e].device; e++) { }
+         if (e >= MAX_USERS)
+            break;
+         input_plays_as[e] = file[j];
+         at[j]             = (int)e;
+         /* one another model's entries also name has one already */
+         if (to[j] >= 0 && !had[to[j]])
+            had[to[j]] = (uint8_t)(e + 1);
+         else
+            to[j] = -1;
+      }
+   /* those no connected controller holds in the file's order, as a
+    * start takes them */
+   memset(done, 0, sizeof(done));
+   for (i = 0; i < count; i++)
+   {
+      unsigned a, b;
+      unsigned n = 0;
+      int idx[MAX_USERS];
+      unsigned src[MAX_USERS];
+
+      if (done[i])
+         continue;
+      for (j = i; j < count; j++)
+      {
+         if (!input_plays_as_same(file[j].device, file[i].device))
+            continue;
+         done[j] = 1;
+         if (at[j] >= 0 && to[j] < 0)
+         {
+            idx[n]   = at[j];
+            src[n++] = j;
+         }
+      }
+      for (a = 1; a < n; a++)
+         for (b = a; b && idx[b - 1] > idx[b]; b--)
+         {
+            int x      = idx[b];
+            idx[b]     = idx[b - 1];
+            idx[b - 1] = x;
+         }
+      for (a = 0; a < n; a++)
+         input_plays_as[idx[a]] = file[src[a]];
+   }
+   free(file);
+   /* for input_plays_as_reclaim() to keep those still named */
+   memcpy(input_plays_as_claim, had, sizeof(had));
+   input_plays_as_reclaim();
+   input_plays_as_gen++;
+   /* the hotkeys read through these */
+   input_config_binds_changed();
 }
 
 /* @slot's player, as it plays now: Auto past Max Users, and the
@@ -12118,6 +12366,54 @@ void input_config_plays_as_max_users_changed(uint8_t *again)
    }
 }
 
+void input_config_plays_as_players(uint8_t *players)
+{
+   unsigned s;
+   unsigned max_users = config_get_ptr()->uints.input_max_users;
+
+   if (max_users > MAX_USERS)
+      max_users = MAX_USERS;
+   for (s = 0; s < MAX_USERS; s++)
+      players[s] = (uint8_t)input_plays_as_now(s, max_users);
+}
+
+void input_config_plays_as_reread(const uint8_t *before, uint8_t *again)
+{
+   unsigned s;
+   uint8_t now[MAX_USERS];
+   settings_t *settings = config_get_ptr();
+   unsigned max_users   = settings->uints.input_max_users;
+   bool any             = input_config_plays_as_any_player();
+   /* the reload read the configured ports over the moves: all of them
+    * are placed again */
+   bool undone          = input_ports_runtime_active
+      && memcmp(settings->uints.input_joypad_index,
+            input_ports_runtime, sizeof(input_ports_runtime)) != 0;
+   bool users;
+
+   if (max_users > MAX_USERS)
+      max_users = MAX_USERS;
+   /* Max Users changed with the reload: what an edit of it places too */
+   users = max_users != input_plays_as_placed_max_users;
+   input_config_plays_as_players(now);
+   for (s = 0; s < MAX_USERS; s++)
+      if (before[s] || now[s])
+         any = true;
+   /* the joypad driver reports them again: its connects place them */
+   if (input_plays_as_reporting())
+      any = false;
+   for (s = 0; s < MAX_USERS; s++)
+   {
+      again[s] = (uint8_t)(any
+            && *input_driver_st.input_device_info[s].name
+            && (undone || before[s] != now[s]
+               || (users && (input_config_slot_user(s) >= MAX_USERS
+                  || input_plays_as_headset_slot(s)))));
+      if (again[s])
+         input_plays_as_was[s] = before[s] != 0;
+   }
+}
+
 /* By user: for a controller playing as another user's player, that
  * user and one; 0 for none. Made by the port map's rebuild, and never
  * saved. */
@@ -12236,6 +12532,137 @@ void input_plays_as_copy_restore(const input_plays_as_copy_t *copy)
 void input_plays_as_copy_free(input_plays_as_copy_t *copy)
 {
    free(copy);
+}
+
+/* In @e, the entries of @t of the controller @device names, as
+ * input_plays_as_order() gives them with @claim (NULL: as a start reads
+ * them), but for Auto pads @own puts with another model, up to the last
+ * that gives a controller anything; returns how many. */
+static unsigned input_plays_as_given(const input_plays_as_entry_t *t,
+      const uint8_t *claim, const uint8_t *own, const char *device, int *e)
+{
+   int slot[MAX_USERS + MAX_INPUT_DEVICES];
+   unsigned n = input_plays_as_order(t, claim, device, e, slot);
+   if (own)
+      n = input_plays_as_unowned(e, slot, n, own,
+            input_plays_as_nth(t, device, 0) + 1);
+   return input_plays_as_cut(t, e, n);
+}
+
+/* Whether the session's entries @live, with @claim and @own, give the
+ * controller @device names the players and own hotkeys the entries
+ * there are give it at a start, in the same order; an Auto one with no
+ * hotkeys of its own is the same as none. */
+static bool input_plays_as_unchanged(const input_plays_as_entry_t *live,
+      const uint8_t *claim, const uint8_t *own, const char *device)
+{
+   unsigned k, h;
+   int x[MAX_USERS + MAX_INPUT_DEVICES];
+   int y[MAX_USERS + MAX_INPUT_DEVICES];
+   unsigned n = input_plays_as_given(live, claim, own, device, x);
+
+   if (n != input_plays_as_given(input_plays_as, NULL, NULL, device, y))
+      return false;
+   for (k = 0; k < n; k++)
+   {
+      const input_plays_as_entry_t *a = (x[k] < 0) ? NULL : &live[x[k]];
+      const input_plays_as_entry_t *b = (y[k] < 0) ? NULL
+         : &input_plays_as[y[k]];
+      bool used                       = a && input_plays_as_used(a);
+      if (used != (b && input_plays_as_used(b)))
+         return false;
+      if (!used)
+         continue;
+      if (     a->player  != b->player
+            || a->own_hot != b->own_hot)
+         return false;
+      if (a->own_hot)
+         for (h = 0; h < INPUT_PLAYS_AS_HOTKEYS; h++)
+            if (     a->hot_key[h]  != b->hot_key[h]
+                  || a->hot_axis[h] != b->hot_axis[h])
+               return false;
+   }
+   return true;
+}
+
+/* @device at @player as a file's entry after @n, with @t's own
+ * hotkeys, or none where @t is NULL; only counted with @conf NULL.
+ * Returns the number it took, or @n with all sixteen taken. */
+static unsigned input_plays_as_put(config_file_t *conf, unsigned n,
+      const char *device, unsigned player, const input_plays_as_entry_t *t)
+{
+   char key[48];
+   if (n >= MAX_USERS)
+      return n;
+   if (!conf)
+      return n + 1;
+   snprintf(key, sizeof(key), "input_plays_as_device_%u", n + 1);
+   config_set_string(conf, key, device);
+   snprintf(key, sizeof(key), "input_plays_as_player_%u", n + 1);
+   config_set_uint(conf, key, player);
+   if (t)
+      input_plays_as_hot_write(conf, t, n + 1);
+   return n + 1;
+}
+
+/* Each controller whose entries changed, all of them, in the order a
+ * start hands them out, so that a load gives each its own; Auto where
+ * the entries there are give it something and the session's nothing.
+ * One on Auto before another of its model only in @room. Written into
+ * @conf, or with it NULL only counted; returns how many. */
+static unsigned input_plays_as_changed(config_file_t *conf,
+      const input_plays_as_copy_t *copy, unsigned room)
+{
+   unsigned e, k;
+   uint8_t own[MAX_INPUT_DEVICES];
+   unsigned n                         = 0;
+   const input_plays_as_entry_t *live = copy->entries;
+
+   input_plays_as_owners(copy->entries, copy->claim, own);
+   for (e = 0; e < MAX_USERS; e++)
+   {
+      int x[MAX_USERS + MAX_INPUT_DEVICES];
+      unsigned m;
+      if (     !*live[e].device
+            || input_plays_as_nth(live, live[e].device, 0) != (int)e
+            || input_plays_as_unchanged(live, copy->claim, own,
+               live[e].device))
+         continue;
+      if (!(m = input_plays_as_given(live, copy->claim, own,
+                  live[e].device, x)))
+         n = input_plays_as_put(conf, n, live[e].device, 0, NULL);
+      for (k = 0; k < m; k++)
+      {
+         const input_plays_as_entry_t *t = (x[k] < 0) ? NULL : &live[x[k]];
+         if (!t && !room)
+            continue;
+         if (!t)
+            room--;
+         n = input_plays_as_put(conf, n, t ? t->device : live[e].device,
+               t ? t->player : 0, t);
+      }
+   }
+   for (e = 0; e < MAX_USERS; e++)
+      if (     *input_plays_as[e].device
+            && input_plays_as_nth(input_plays_as,
+               input_plays_as[e].device, 0) == (int)e
+            && input_plays_as_nth(live, input_plays_as[e].device, 0) < 0
+            && !input_plays_as_unchanged(live, copy->claim, own,
+               input_plays_as[e].device))
+         n = input_plays_as_put(conf, n, input_plays_as[e].device, 0, NULL);
+   return n;
+}
+
+void input_plays_as_write_changed(void *data,
+      const input_plays_as_copy_t *copy)
+{
+   config_file_t *conf = (config_file_t*)data;
+
+   if (!conf || !copy)
+      return;
+   /* the room the others leave, counted first */
+   input_plays_as_changed(conf, copy,
+         MAX_USERS - input_plays_as_changed(NULL, copy, 0));
 }
 
 /* Adds an index to devices with the same name,
@@ -12794,8 +13221,6 @@ void config_read_keybinds_conf(void *data)
 
    /* and the entries, input_combo_1 and up */
    input_entries_read(conf);
-   /* and the controllers' own players */
-   input_plays_as_read(conf);
 }
 
 #ifdef HAVE_COMMAND

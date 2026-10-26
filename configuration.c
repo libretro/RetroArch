@@ -7174,6 +7174,10 @@ static bool config_load_file(const char *path, settings_t *settings)
       check_verbosity_settings(conf, settings);
    }
 
+   /* the controllers' own players, the main config's; each override's
+    * go over them by controller as it is appended */
+   input_plays_as_read(conf);
+
    if (!path_is_empty(RARCH_PATH_CONFIG_OVERRIDE) && !without_overrides)
    {
       char tmp_append_path[PATH_MAX_LENGTH];
@@ -7193,7 +7197,14 @@ static bool config_load_file(const char *path, settings_t *settings)
             *next++ = '\0';
 
          {
-            bool result = config_append_file(conf, extra_path);
+            bool result          = false;
+            config_file_t *extra =
+               config_file_new_from_path_to_string(extra_path);
+            if (extra)
+            {
+               input_plays_as_merge(extra);
+               result = config_file_append_conf(conf, extra);
+            }
             if (!first_load)
             {
                RARCH_LOG("[Config] Appending override config: \"%s\".\n", extra_path);
@@ -10545,6 +10556,9 @@ int8_t config_save_overrides(enum override_type type,
                input_config_save_keybinds_user_override(conf, i, j, override_bind);
          }
       }
+
+      /* the controllers' own players and hotkeys, where they differ */
+      input_plays_as_write_changed(conf, input_override_plays_as);
 
       ret = 0;
 

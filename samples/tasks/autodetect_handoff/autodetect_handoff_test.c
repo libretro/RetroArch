@@ -169,6 +169,8 @@ bool input_config_parse_vid_pid(const char *s, unsigned long *vid,
 void input_config_plays_as_max_users_changed(uint8_t *again) { }
 bool input_config_plays_as_place(unsigned slot) { return false; }
 void input_config_plays_as_release(unsigned slot) { }
+void input_config_plays_as_reread(const uint8_t *before,
+      uint8_t *again) { }
 void input_config_reset_autoconfig_binds(unsigned port) { }
 bool input_config_sanitize_joypad_indices(void) { return false; }
 void input_config_set_autoconfig_binds(unsigned port, void *data) { }

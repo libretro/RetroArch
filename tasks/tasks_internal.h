@@ -500,6 +500,10 @@ bool input_autoconfigure_reconnect(unsigned port);
  * any it pushes off a port; @slot MAX_USERS: those a change of Max
  * Users moves. No driver restarted. Main thread. */
 void input_autoconfigure_reallocate_ports(unsigned slot);
+/* An override was loaded or unloaded from the menu: the controllers
+ * the reload moved are placed again at once, @before from
+ * input_config_plays_as_players() taken before it. Main thread. */
+void input_autoconfigure_plays_as_reread(const uint8_t *before);
 #if defined(HAVE_TEST_DRIVERS) || defined(HAVE_OPENXR)
 bool input_autoconfigure_pending(void);
 #endif
