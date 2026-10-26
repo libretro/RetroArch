@@ -1990,6 +1990,8 @@ public class RetroActivityCommon extends NativeActivity
   @Override
   public void onWindowFocusChanged(boolean hasFocus) {
     super.onWindowFocusChanged(hasFocus);
+    if (secondDisplay != null)
+      secondDisplay.onFocusChanged(hasFocus);
     if (hasFocus && keyboardActive && keyboardEditText != null)
       keyboardEditText.post(new Runnable() {
         @Override public void run() {

@@ -65,6 +65,7 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
   static final int FLAG_REFUSED  = 32;
 
   private static final String TAG = "RetroArch";
+  private static final int REFOCUS_TIMEOUT_MS = 1000;
 
   private final RetroActivityCommon activity;
   private final DisplayManager displayManager;
@@ -91,6 +92,13 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
   private Screen surfaceOwner;
   /* What native code was last told of the Presentation's focus */
   private boolean presentationFocused;
+  /* The display a move went to, -1 for none, until the Activity has
+   * held the focus since */
+  private int movedId = -1;
+  /* Moves started, so a gain's check never ends a later move */
+  private int moves;
+  /* refocusAfterMove() has made the window unfocusable */
+  private boolean refocusing;
 
   /* nativeMotion()'s axes, ANDROID_JOYSTICK_AXES' order */
   private static final int[] AXES = {
@@ -121,8 +129,17 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
           if (!list.sameAsBut(published, FLAG_OWN))
             failedIds.clear();
           publish(list);
+          refocusAfterMove();
         }
       };
+
+  /* Android had no focus to take: the loss was real */
+  private final Runnable refocusTimeout = new Runnable() {
+    @Override public void run() {
+      endRefocus();
+      movedId = -1;
+    }
+  };
 
   private final Runnable reshow = new Runnable() {
     @Override public void run() {
@@ -222,9 +239,13 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
       moveFailed(id, null);
       return;
     }
+    if (refocusing)
+      endRefocus();
     try
     {
       startOn(id);
+      movedId = id;
+      moves++;
     }
     catch (RuntimeException e)
     {
@@ -245,6 +266,78 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
     move.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
     options.setLaunchDisplayId(displayId);
     activity.startActivity(move, options.toBundle());
+  }
+
+  /** The Activity's window gained or lost the focus. */
+  void onFocusChanged(boolean focused)
+  {
+    final int move     = moves;
+    final boolean held = refocusing;
+    /* Android has answered the flag; a loss is the focus it took, and
+     * clearing the flag gives it back */
+    if (held)
+      endRefocus();
+    if (!focused)
+    {
+      if (!held)
+        refocusAfterMove();
+      return;
+    }
+    if (movedId < 0)
+      return;
+    /* The old display's loss can still follow: the move ends only
+     * once the gain has outlasted a traversal */
+    Choreographer.getInstance().postFrameCallback(
+        new Choreographer.FrameCallback() {
+          private boolean traversed;
+          @Override public void doFrame(long frameTimeNanos) {
+            if (!traversed)
+            {
+              traversed = true;
+              Choreographer.getInstance().postFrameCallback(this);
+              return;
+            }
+            /* Behind a focus message already read */
+            handler.post(new Runnable() {
+              @Override public void run() {
+                Display own = activity.getWindowManager().getDefaultDisplay();
+                if (started && move == moves && own != null
+                    && own.getDisplayId() == movedId
+                    && activity.hasWindowFocus())
+                  movedId = -1;
+              }
+            });
+          }
+        });
+  }
+
+  /* A focused window moved to another display can hear the old
+   * display's focus loss after the new display's gain: unfocused
+   * while it is the focused window, RetroArch would pause for good.
+   * Unfocusable until Android has taken the focus, the window is then
+   * sent the gain again; a loaded system can miss a shorter toggle. */
+  private void refocusAfterMove()
+  {
+    Window window = activity.getWindow();
+    Display own   = activity.getWindowManager().getDefaultDisplay();
+    if (movedId < 0 || refocusing || !started || window == null
+        || own == null || own.getDisplayId() != movedId
+        || activity.hasWindowFocus())
+      return;
+    if (presentationFocused)
+      return;
+    refocusing = true;
+    window.addFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE);
+    handler.postDelayed(refocusTimeout, REFOCUS_TIMEOUT_MS);
+  }
+
+  private void endRefocus()
+  {
+    Window window = activity.getWindow();
+    refocusing    = false;
+    handler.removeCallbacks(refocusTimeout);
+    if (window != null)
+      window.clearFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE);
   }
 
   private void moveFailed(int displayId, RuntimeException e)
