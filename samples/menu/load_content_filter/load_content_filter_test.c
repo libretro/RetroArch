@@ -447,6 +447,42 @@ static void content_location_lanes(void)
       free(cfg);
    }
 
+   /* A file deeper than a folder-sized buffer is kept whole */
+   {
+      char   deep[PATH_MAX_LENGTH];
+      char   file[PATH_MAX_LENGTH];
+      char   seg[201];
+      size_t len;
+      int    depth = 0;
+      FILE  *f     = NULL;
+
+      memset(seg, 'd', sizeof(seg) - 1);
+      seg[sizeof(seg) - 1] = '\0';
+      len = strlcpy(deep, dir_content, sizeof(deep));
+      while (   len < DIR_MAX_LENGTH + 64
+             && len + sizeof(seg) + 16 < sizeof(deep))
+      {
+         len = fill_pathname_join_special(deep, deep, seg, sizeof(deep));
+         if (!path_mkdir(deep))
+            break;
+         depth++;
+      }
+      fill_pathname_join_special(file, deep, "deep.zzz", sizeof(file));
+      if (len >= DIR_MAX_LENGTH + 64 && (f = fopen(file, "wb")))
+         fclose(f);
+      CHECK(f != NULL, "could not write the deep Content Location fixture");
+      CHECK(   manual_content_scan_set_menu_content_dir(file)
+            && string_is_equal(manual_content_scan_get_content_dir_ptr(),
+               file),
+            "a file path longer than a folder buffer is cut short");
+      remove(file);
+      while (depth--)
+      {
+         path_rmdir(deep);
+         path_parent_dir(deep, strlen(deep));
+      }
+   }
+
    /* No Scan Single File, even with Search Recursively off */
    *manual_content_scan_get_search_recursively_ptr() = false;
    CHECK(open_content_scan(), "Content Scan did not open");

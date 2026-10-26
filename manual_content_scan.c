@@ -90,7 +90,8 @@ static char scan_core_path[PATH_MAX_LENGTH];
 static char scan_file_exts_core[PATH_MAX_LENGTH];
 static char scan_file_exts_custom[PATH_MAX_LENGTH];
 static char scan_dat_file_path[PATH_MAX_LENGTH];
-static char scan_content_dir[DIR_MAX_LENGTH];
+/* A folder or a file */
+static char scan_content_dir[PATH_MAX_LENGTH];
 /* Number of bytes held back when populating
  * manual_content_scan_task_config_t::system_name, so that the file
  * extensions appended to it downstream (".lpl", ".rdb") still fit in
@@ -383,21 +384,10 @@ bool manual_content_scan_set_menu_content_dir(const char *content_dir)
    if (!*content_dir)
       goto error;
 
-   /* Copy directory path to settings struct.
-    * Remove trailing slash, if required.
-    *
-    * strlcpy() returns the length of its source, not the number of
-    * bytes it wrote, and the source can be longer than the
-    * destination here: _tmpbuf is PATH_MAX_LENGTH while
-    * scan_content_dir is DIR_MAX_LENGTH, which is half of it on
-    * every platform.  Indexing with the return value therefore ran
-    * off the end of the buffer for any content directory longer than
-    * DIR_MAX_LENGTH - a deeply nested folder picked in the file
-    * browser is enough:
-    *
-    *   AddressSanitizer: heap-buffer-overflow
-    *   READ of size 1 ... located 1022 bytes after 1024-byte region
-    */
+   /* Copy the path to the settings struct and remove a trailing
+    * slash.  strlcpy() returns the length of its source, which can
+    * exceed the buffer: it is only used as an index once the check
+    * below has shown that it fits. */
    _len = strlcpy(scan_content_dir, content_dir,
          sizeof(scan_content_dir));
 

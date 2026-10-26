@@ -4528,7 +4528,7 @@ void action_ok_manual_content_scan_set_dir(const char *content_dir)
     * can start with /private and this ensures the path starts with it.
     * This will allow the path to be properly substituted when
     * fill_pathname_expand_special() is called. */
-   char tmp_dir[DIR_MAX_LENGTH];
+   char tmp_dir[PATH_MAX_LENGTH];
    char *real_dir = NULL;
    fill_pathname_expand_special(tmp_dir, content_dir, sizeof(tmp_dir));
    if ((real_dir = realpath(tmp_dir, NULL)))
@@ -4576,7 +4576,7 @@ static int action_ok_path_manual_scan_directory(const char *path,
 #if TARGET_OS_IPHONE
    char dir_path[DIR_MAX_LENGTH];
 #endif
-   char content_dir[DIR_MAX_LENGTH];
+   char content_dir[PATH_MAX_LENGTH];
    const char *menu_path  = NULL;
 
    content_dir[0]         = '\0';
@@ -4595,7 +4595,11 @@ static int action_ok_path_manual_scan_directory(const char *path,
       fill_pathname_expand_special(dir_path, menu_path, sizeof(dir_path));
       menu_path = dir_path;
 #endif
-      fill_pathname_join_special(content_dir, menu_path, path, sizeof(content_dir));
+      /* A path that does not fit is refused, not cut short */
+      if (   !menu_path
+          || fill_pathname_join_special(content_dir, menu_path, path,
+               sizeof(content_dir)) >= sizeof(content_dir))
+         return 0;
    }
 
    action_ok_manual_content_scan_set_dir(content_dir);
