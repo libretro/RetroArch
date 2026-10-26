@@ -1950,6 +1950,20 @@ public class RetroActivityCommon extends NativeActivity
   }
 
   /**
+   * Moves this Activity onto display ordinal of the last published
+   * list. Called from native code on any thread; posts to the UI
+   * thread and returns.
+   */
+  public void moveToDisplay(final int ordinal) {
+    runOnUiThread(new Runnable() {
+      @Override public void run() {
+        if (secondDisplay != null)
+          secondDisplay.moveTo(ordinal);
+      }
+    });
+  }
+
+  /**
    * Dismisses the system keyboard.
    *
    * Called from native code and after the user confirms or cancels.

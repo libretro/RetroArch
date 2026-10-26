@@ -318,6 +318,32 @@ void android_second_display_request(unsigned ordinal, bool given_up)
          android_app->setSecondDisplay, (jint)ordinal, (jint)number);
 }
 
+void android_activity_move_request(unsigned ordinal)
+{
+   JNIEnv *env;
+   struct android_app *android_app = (struct android_app*)g_android;
+
+   if (!android_app)
+      return;
+   /* Not asked is a failure placement hears of on the next frame */
+   if (     !android_app->moveToDisplay
+         || !(env = jni_thread_getenv()))
+   {
+      retro_atomic_store_release_int(
+            &android_app->second_display.move_failed, 1);
+      return;
+   }
+   CALL_VOID_METHOD_PARAM(env, android_app->activity->clazz,
+         android_app->moveToDisplay, (jint)ordinal);
+}
+
+bool android_activity_move_failed(void)
+{
+   struct android_app *android_app = (struct android_app*)g_android;
+   return android_app && retro_atomic_exchange_int(
+         &android_app->second_display.move_failed, 0) != 0;
+}
+
 /* UI thread: the second display's window goes. Never waits for the
  * renderer: its own references keep the window alive, a frame still
  * drawing into it gets an error from the abandoned queue, and the
@@ -609,6 +635,18 @@ JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_SecondDisplayCon
    if (android_app)
       android_app_write_cmd(android_app, focused != JNI_FALSE
             ? APP_CMD_SECOND_GAINED_FOCUS : APP_CMD_SECOND_LOST_FOCUS);
+}
+
+/* Java could not start the move android_activity_move_request() asked
+ * for */
+JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_SecondDisplayController_nativeMoveFailed(
+      JNIEnv *env, jclass clazz)
+{
+   struct android_app *android_app = g_android_early;
+
+   if (android_app)
+      retro_atomic_store_release_int(
+            &android_app->second_display.move_failed, 1);
 }
 
 /* Upper bound on how long a lifecycle callback will block waiting for the
@@ -4088,6 +4126,8 @@ static void frontend_unix_init(void *data)
          "hideKeyboard", "()V");
    GET_METHOD_ID(env, android_app->setSecondDisplay, class,
          "setSecondDisplay", "(II)V");
+   GET_METHOD_ID(env, android_app->moveToDisplay, class,
+         "moveToDisplay", "(I)V");
 #ifdef HAVE_VULKAN_CUSTOM_DRIVER
    GET_METHOD_ID(env, android_app->addSafeStartShortcut, class,
          "addSafeStartShortcut", "()V");
