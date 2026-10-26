@@ -1,0 +1,83 @@
+name: CI Linux (aarch64, OpenXR)
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  repository_dispatch:
+    types: [run_build]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 30
+    env:
+      APT_PKGS: >-
+        build-essential pkg-config
+        libwayland-dev wayland-protocols libxkbcommon-dev libdecor-0-dev
+        libx11-dev libxext-dev libxrandr-dev libxinerama-dev libxxf86vm-dev
+        libxi-dev libx11-xcb-dev libxcb1-dev
+        libegl-dev libgl-dev libgles-dev libgbm-dev libdrm-dev libvulkan-dev
+        libasound2-dev libpulse-dev libpipewire-0.3-dev
+        libudev-dev libusb-1.0-0-dev libdbus-1-dev libsystemd-dev
+        libfreetype-dev libfontconfig-dev zlib1g-dev libsdl2-dev libv4l-dev
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Apt cache key
+        id: apt
+        run: sh .github/workflows/scripts/apt-cache-key.sh "$APT_PKGS"
+
+      - name: Restore apt cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+          restore-keys: ${{ steps.apt.outputs.prefix }}
+
+      - name: Install dependencies
+        timeout-minutes: 10
+        run: sh .github/workflows/scripts/apt-install.sh $APT_PKGS
+
+      - name: Save apt cache
+        if: env.APT_CACHE_SAVE == '1'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+
+      - name: Configure
+        run: |
+          ./configure --disable-qt --disable-ffmpeg --disable-cg --disable-xscrnsaver --enable-openxr
+          grep -q '^HAVE_OPENXR = 1' config.mk
+
+      - name: Compile RA
+        run: make -j$(getconf _NPROCESSORS_ONLN)
+
+      - name: Check and strip
+        run: |
+          ./retroarch --version
+          strip retroarch
+
+      - name: Get short SHA
+        id: slug
+        run: echo "sha8=$(echo ${GITHUB_SHA} | cut -c1-8)" >> $GITHUB_OUTPUT
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: retroarch-linux-aarch64-${{ steps.slug.outputs.sha8 }}
+          path: retroarch
+          if-no-files-found: error

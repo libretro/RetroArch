@@ -69,15 +69,20 @@ done
 
 # Fetch first, under a bound: a download is safe to stop and resumes, an
 # install is not. A mirror that stalls is left for the main archive.
+main=archive.ubuntu.com/ubuntu
+case $(dpkg --print-architecture) in
+   amd64|i386) ;;
+   *) main=ports.ubuntu.com/ubuntu-ports ;;
+esac
 for i in 1 2 3; do
    sudo timeout 240 apt-get install -y --download-only $dirs $net $opts $pkgs \
       && break
    [ $i = 3 ] && exit 1
-   echo "package download failed or stalled (attempt $i); retrying from archive.ubuntu.com"
+   echo "package download failed or stalled (attempt $i); retrying from ${main%%/*}"
    for f in /etc/apt/sources.list /etc/apt/sources.list.d/*; do
       [ -f "$f" ] || continue
-      sudo sed -i -e 's#mirror+file:/etc/apt/apt-mirrors.txt#http://archive.ubuntu.com/ubuntu/#g' \
-         -e 's#http://azure\.archive\.ubuntu\.com/ubuntu#http://archive.ubuntu.com/ubuntu#g' "$f"
+      sudo sed -i -e "s#mirror+file:/etc/apt/apt-mirrors.txt#http://$main/#g" \
+         -e "s#http://azure\.$main#http://$main#g" "$f"
    done
    sudo timeout 120 apt-get update -y $dirs $upd || true
 done
