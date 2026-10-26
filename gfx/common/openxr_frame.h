@@ -38,33 +38,32 @@ RETRO_BEGIN_DECLS
 
 /* Layers the input may add to the screens: the laser's dots, kept
  * where the screens must make room, then edit mode's outlines and the
- * menu's handle, then its hinges' lines, then its tag, then the beams,
- * only in room they leave. */
+ * menu's handle, then its hinges' lines, each hand's, then up to
+ * OPENXR_REST_HINGES between screens at rest, then its tag, then the
+ * beams, only in room they leave. */
 #define OPENXR_KEPT_EXTRA_LAYERS 2
-#define OPENXR_HINGE_LAYERS      2
+/* The most edge to edge pairs eight equal screens make in a plane. */
+#define OPENXR_REST_HINGES       10
+#define OPENXR_HINGE_LAYERS      (2 + OPENXR_REST_HINGES)
 #define OPENXR_BEAM_LAYERS       2
 #define OPENXR_TAG_LAYERS        1
 #define OPENXR_MAX_EXTRA_LAYERS  \
    (OPENXR_KEPT_EXTRA_LAYERS + OPENXR_HINGE_LAYERS + OPENXR_BEAM_LAYERS \
     + OPENXR_TAG_LAYERS + VIDEO_XR_MAX_SLOTS + 1)
 
-/* Edit mode's hands, the main thread's for the frame loop: what each
- * holds and where its item was as it took it (snapping fades in from
- * there), each slot's last let-go hold, kept after its hand takes
- * another item until quads planned at its release show it, the item
- * chosen to edit (its slot plus one; 0, the laser's), the hands whose
- * laser has the menu's handle stuck (bit h for hand h), the hand whose
- * Select Next or Previous was pressed last, for the tag (0, the left),
- * and whether held screens snap (Snap to Screens). */
+/* Edit mode's hands, published by the main thread for the frame loop. */
 typedef struct openxr_grabs
 {
    video_xr_grab_t hand[2];
-   video_xr_pose_t start[2];
+   video_xr_pose_t start[2]; /* items as taken; snaps fade in */
+   /* Each slot's last let-go, until quads planned at it show it. */
    video_xr_grab_t let_go[VIDEO_XR_MAX_SLOTS];
-   unsigned chosen;
-   unsigned stuck;
-   unsigned tag;
-   bool snap;
+   unsigned chosen;    /* its slot plus one, 0 the laser's */
+   unsigned stuck;     /* hands with the menu's handle stuck, bits */
+   unsigned tag;       /* the hand that chose last (0, the left) */
+   unsigned num_rests; /* screens no hand holds resting in a hinge */
+   video_xr_rest_t rests[OPENXR_REST_HINGES];
+   bool snap;          /* Snap to Screens */
 } openxr_grabs_t;
 
 /* Edit Smoothing's aims, the frame loop's for the main thread: each

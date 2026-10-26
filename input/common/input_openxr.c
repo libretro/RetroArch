@@ -554,7 +554,7 @@ typedef struct input_openxr
    XrCompositionLayerQuad cursors[INPUT_OPENXR_HANDS];
    XrCompositionLayerQuad beams[INPUT_OPENXR_HANDS];
    XrCompositionLayerQuad outlines[VIDEO_XR_MAX_SLOTS + 1];
-   XrCompositionLayerQuad hinge_lines[INPUT_OPENXR_HANDS];
+   XrCompositionLayerQuad hinge_lines[OPENXR_HINGE_LAYERS];
    XrCompositionLayerQuad tag;
    input_openxr_smooth_t smooth[INPUT_OPENXR_HANDS];
    openxr_aims_t aims;
@@ -613,6 +613,11 @@ typedef struct input_openxr_edit
    float step;        /* Snap to Angles in degrees, 0 Off */
    unsigned char gap; /* Hinge Gap in whole centimetres */
    unsigned smoothing; /* Edit Smoothing, as edit mode started */
+   /* Its screens at rest as it last counted their hinges: their slots,
+    * as bits, each one's first quad, and whether a count is due. */
+   unsigned rest_shown;
+   video_xr_quad_t rest_at[VIDEO_XR_MAX_SLOTS];
+   bool rests_due;
    bool next;         /* last poll's Select Next and Previous */
    bool prev;
 } input_openxr_edit_t;
@@ -1635,30 +1640,38 @@ static const XrCompositionLayerBaseHeader *input_openxr_edit_layer(
    return (const XrCompositionLayerBaseHeader*)l;
 }
 
-/* This frame's hinges, as the frame loop found them: in hide, by slot,
- * the edges whose rims go, each held screen's paired edge and its
- * target's (of a target's two adjacent ones, the first hand's); from a
- * to b each line set shows. Returns the lines. */
+/* Edge's rim of slot to hide, unless one beside it already is: one crop
+ * hides one edge or two opposite. */
+static void input_openxr_hinge_hide(unsigned *hide, unsigned slot,
+      unsigned edge)
+{
+   unsigned beside = (edge < 2) ? 12u : 3u;
+   if (!(hide[slot] & beside))
+      hide[slot] |= 1u << edge;
+}
+
+/* This frame's hinges: in hide, by slot, the edges whose rims go, each
+ * held screen's paired edge and its target's, then both edges of each
+ * pair at rest no hand holds (of a screen's two adjacent ones, the
+ * first); from a to b each line set shows, the hands' first. Returns
+ * the lines. */
 static unsigned input_openxr_hinges(const openxr_frame_t *f,
       const video_xr_quad_set_t *set, unsigned *hide, video_xr_vec3_t *a,
       video_xr_vec3_t *b)
 {
-   unsigned h, i;
-   unsigned lines = 0;
+   unsigned h, i, r;
+   unsigned holding = 0;
+   unsigned lines   = 0;
    memset(hide, 0, VIDEO_XR_MAX_SLOTS * sizeof(*hide));
    for (h = 0; h < INPUT_OPENXR_HANDS; h++)
    {
       const video_xr_hinge_t *k     = &f->hinges[h];
       const video_xr_quad_t *held   = NULL;
       const video_xr_quad_t *target = NULL;
-      unsigned beside;
       if (!((f->hinged >> h) & 1u))
          continue;
-      /* The target's sides either side of its edge. */
-      beside = (k->on < 2) ? 12u : 3u;
       hide[f->held[h].slot] |= 1u << k->edge;
-      if (!(hide[k->slot] & beside))
-         hide[k->slot] |= 1u << k->on;
+      input_openxr_hinge_hide(hide, k->slot, k->on);
       for (i = 0; i < set->num_quads; i++)
       {
          const video_xr_quad_t *q = &set->quads[i];
@@ -1671,6 +1684,47 @@ static unsigned input_openxr_hinges(const openxr_frame_t *f,
       }
       if (     held && target
             && video_xr_hinge_line(k, held->width, held->height, target,
+               &a[lines], &b[lines]))
+         lines++;
+   }
+   for (h = 0; h < INPUT_OPENXR_HANDS; h++)
+      if (     f->grabs.hand[h].state == VIDEO_XR_GRAB_HELD
+            && f->grabs.hand[h].slot < VIDEO_XR_MAX_SLOTS)
+         holding |= 1u << f->grabs.hand[h].slot;
+   for (r = 0; r < f->grabs.num_rests && r < OPENXR_REST_HINGES; r++)
+   {
+      video_xr_hinge_t k;
+      const video_xr_rest_t *p      = &f->grabs.rests[r];
+      const video_xr_quad_t *held   = NULL;
+      const video_xr_quad_t *target = NULL;
+      bool over                     = false;
+      if (((holding >> p->slot) | (holding >> p->target)) & 1u)
+         continue;
+      for (i = 0; i < set->num_quads; i++)
+      {
+         const video_xr_quad_t *q = &set->quads[i];
+         if (q->kind == VIDEO_XR_QUAD_MENU)
+            continue;
+         if (!held && q->slot == p->slot)
+         {
+            held = q;
+            over = target != NULL;
+         }
+         if (!target && q->slot == p->target)
+            target = q;
+      }
+      if (!held || !target)
+         continue;
+      input_openxr_hinge_hide(hide, p->slot, p->edge);
+      input_openxr_hinge_hide(hide, p->target, p->on);
+      memset(&k, 0, sizeof(k));
+      k.edge = p->edge;
+      k.slot = p->target;
+      k.on   = p->on;
+      /* On the edges as they are; crossed, on the one drawn later. */
+      video_xr_hinge_place(&k, &held->pose, held->width, held->height,
+            target, over);
+      if (video_xr_hinge_line(&k, held->width, held->height, target,
                &a[lines], &b[lines]))
          lines++;
    }
@@ -1920,8 +1974,8 @@ static unsigned input_openxr_frame_layers(void *user, XrTime time,
    const openxr_grabs_t *g;
    unsigned lit;
    unsigned hide[VIDEO_XR_MAX_SLOTS];
-   video_xr_vec3_t from[INPUT_OPENXR_HANDS];
-   video_xr_vec3_t to[INPUT_OPENXR_HANDS];
+   video_xr_vec3_t from[OPENXR_HINGE_LAYERS];
+   video_xr_vec3_t to[OPENXR_HINGE_LAYERS];
    unsigned lines     = 0;
    unsigned n         = 0;
    unsigned dots      = 0;
@@ -2487,6 +2541,43 @@ static unsigned input_openxr_edit_holding(const input_openxr_edit_t *e)
    return bits;
 }
 
+/* The screens no hand holds that rest in a hinge, for the frame loop:
+ * counted again only when one came, went, moved or was let go, or edit
+ * mode began. */
+static void input_openxr_edit_rests(input_openxr_edit_t *e,
+      const video_xr_quad_set_t *set)
+{
+   unsigned i;
+   unsigned skip  = input_openxr_edit_holding(e);
+   unsigned shown = 0;
+   bool due       = e->rests_due;
+   for (i = 0; i < set->num_quads; i++)
+   {
+      const video_xr_quad_t *q = &set->quads[i];
+      video_xr_quad_t *at;
+      if (     q->slot >= VIDEO_XR_MENU_SLOT || set->slots[q->slot].fixed
+            || (((skip | shown) >> q->slot) & 1u))
+         continue;
+      shown |= 1u << q->slot;
+      at     = &e->rest_at[q->slot];
+      if (     memcmp(&at->pose, &q->pose, sizeof(q->pose))
+            || at->width != q->width || at->height != q->height)
+      {
+         *at = *q;
+         due = true;
+      }
+   }
+   if (shown != e->rest_shown)
+      due = true;
+   e->rest_shown = shown;
+   e->rests_due  = false;
+   if (due)
+      e->grabs.num_rests = (e->on && e->snap)
+         ? video_xr_rest_hinges(set, skip, e->gap * 0.01f, e->grabs.rests,
+               OPENXR_REST_HINGES)
+         : 0;
+}
+
 /* A buzz on hand h, duration ns at amp. */
 static void input_openxr_edit_tick(input_openxr_t *st, unsigned h,
       XrDuration duration, float amp)
@@ -2772,8 +2863,11 @@ static void input_openxr_edit_let_go_all(input_openxr_edit_t *e)
       if (e->hand[h].g.state == VIDEO_XR_GRAB_HELD)
       {
          input_openxr_edit_let_go(e, &e->hand[h], true);
+         input_openxr_edit_place(&input_openxr_st.quads, &e->hand[h].g);
          let_go = true;
       }
+   if (let_go)
+      input_openxr_edit_rests(e, &input_openxr_st.quads);
    if (let_go || e->on)
       input_openxr_edit_publish(&input_openxr_st, e);
 }
@@ -2816,6 +2910,7 @@ static void input_openxr_edit_start(input_openxr_edit_t *e, bool pause,
    e->chosen  = -1;
    e->stuck   = 0;
    e->tag     = 0;
+   e->rests_due = true;
    /* Held as it starts (the menu's OK on A, which is Reset): no press
     * until let go. */
    for (h = 0; h < INPUT_OPENXR_HANDS; h++)
@@ -2852,6 +2947,9 @@ static void input_openxr_edit_stop(input_openxr_edit_t *e)
    e->tag    = 0;
    input_openxr_edit_let_go_all(e);
    e->on = false;
+   /* No hinges at rest outside edit mode, from its next frame. */
+   e->grabs.num_rests = 0;
+   input_openxr_edit_publish(&input_openxr_st, e);
    if (e->paused && (runloop_get_flags() & RUNLOOP_FLAG_PAUSED))
       input_driver_platform_request(INPUT_PLATFORM_UNPAUSE);
    e->paused = false;
@@ -2986,6 +3084,9 @@ static void input_openxr_edit_poll(input_openxr_t *st,
                      stick, 0.0, targets, &stepped, &attached);
             }
             input_openxr_edit_let_go(e, hold, shown);
+            /* Where it rests now, for the hinges counted below. */
+            if (shown)
+               input_openxr_edit_place(&st->quads, &hold->g);
          }
          /* Untracked, the item holds still. */
          else if (tracked)
@@ -3036,6 +3137,7 @@ static void input_openxr_edit_poll(input_openxr_t *st,
       else if (reset_pressed && target >= 0)
          input_openxr_edit_reset(e, st->quads.quads[target].slot);
    }
+   input_openxr_edit_rests(e, &st->quads);
    input_openxr_edit_publish(st, e);
 }
 

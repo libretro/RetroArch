@@ -35,12 +35,14 @@
 #include "../../verbosity.h"
 
 /* The seqlock's copy holds the largest thing it publishes. */
+#define OPENXR_SEQ_WORDS \
+   ((OPENXR_WORDS(openxr_grabs_t) > OPENXR_WORDS(video_xr_quad_set_t)) \
+    ? OPENXR_WORDS(openxr_grabs_t) : OPENXR_WORDS(video_xr_quad_set_t))
 typedef char openxr_seq_fits[
-      (   OPENXR_WORDS(openxr_tracked_t)    <= OPENXR_WORDS(video_xr_quad_set_t)
-       && OPENXR_WORDS(openxr_screens_t)    <= OPENXR_WORDS(video_xr_quad_set_t)
-       && OPENXR_WORDS(openxr_projection_t) <= OPENXR_WORDS(video_xr_quad_set_t)
-       && OPENXR_WORDS(openxr_grabs_t)      <= OPENXR_WORDS(video_xr_quad_set_t)
-       && OPENXR_WORDS(openxr_aims_t)       <= OPENXR_WORDS(video_xr_quad_set_t))
+      (   OPENXR_WORDS(openxr_tracked_t)    <= OPENXR_SEQ_WORDS
+       && OPENXR_WORDS(openxr_screens_t)    <= OPENXR_SEQ_WORDS
+       && OPENXR_WORDS(openxr_projection_t) <= OPENXR_SEQ_WORDS
+       && OPENXR_WORDS(openxr_aims_t)       <= OPENXR_SEQ_WORDS)
       ? 1 : -1];
 
 /* A latched seqlock: two copies of the words, one writer, any number
@@ -61,7 +63,7 @@ static void openxr_seq_store(retro_atomic_int_t *words,
 static void openxr_seq_publish(retro_atomic_int_t *seq,
       retro_atomic_int_t *words, const void *src, size_t len)
 {
-   int tmp[OPENXR_WORDS(video_xr_quad_set_t)];
+   int tmp[OPENXR_SEQ_WORDS];
    size_t n = (len + sizeof(int) - 1) / sizeof(int);
    int s    = retro_atomic_load_relaxed_int(seq);
 
@@ -78,7 +80,7 @@ static void openxr_seq_publish(retro_atomic_int_t *seq,
 static void openxr_seq_read(retro_atomic_int_t *seq,
       retro_atomic_int_t *words, void *dst, size_t len)
 {
-   int tmp[OPENXR_WORDS(video_xr_quad_set_t)];
+   int tmp[OPENXR_SEQ_WORDS];
    size_t n = (len + sizeof(int) - 1) / sizeof(int);
    for (;;)
    {

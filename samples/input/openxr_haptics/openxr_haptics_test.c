@@ -240,6 +240,18 @@ bool video_xr_hinge_line(const video_xr_hinge_t *h, float width,
    (void)h; (void)width; (void)height; (void)target; (void)a; (void)b;
    return false;
 }
+void video_xr_hinge_place(video_xr_hinge_t *h, const video_xr_pose_t *pose,
+      float width, float height, const video_xr_quad_t *target, bool over)
+{
+   (void)h; (void)pose; (void)width; (void)height; (void)target;
+   (void)over;
+}
+unsigned video_xr_rest_hinges(const video_xr_quad_set_t *set,
+      unsigned skip, float gap, video_xr_rest_t *rest, unsigned max)
+{
+   (void)set; (void)skip; (void)gap; (void)rest; (void)max;
+   return 0;
+}
 void openxr_frame_publish_grabs(openxr_frame_t *f, const openxr_grabs_t *g)
 { (void)f; (void)g; }
 void video_xr_smooth_step(video_xr_smooth_t *s, unsigned level,

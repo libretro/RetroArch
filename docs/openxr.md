@@ -125,6 +125,11 @@ Screens**), its edge and the edge it hinges on lose their outline, and a
 between the edges and drawn a centimetre nearer the eye so it shows
 over both screens, from when the hinge takes hold until the screen
 leaves its reach.
+Two screens no hand holds that rest exactly where a hinge holds one of
+them, so that taking it up would leave it there, show the same: any
+screen let go where a hinge holds it, or set out so. Screens only near
+a hinge show nothing until hinged once. A screen hinged at rest on two
+edges at a corner keeps one of those two rims.
 The headset's controllers only edit;
 keyboards and other gamepads still reach the content. The desktop
 window shows a notice when editing starts, with the controls, for
@@ -222,7 +227,8 @@ edge: it turns exactly parallel to that edge and moves into the other's
 plane, keeping its gap from that edge, centres or ends level along it,
 keeping its angle, like the two halves of a DS. The green line
 shows from then until the edge is 4.5 cm off the other's plane, 13 cm
-out from its edge or past its ends. Screens that would overlap do not
+out from its edge or past its ends, and stays when the screen is let go
+there. Screens that would overlap do not
 hinge. While a screen is hinged, the other hand's stick swings it
 about the shared edge, the tilt for a top or bottom edge and the
 turn for a side one, and it stays where the swing leaves it. The

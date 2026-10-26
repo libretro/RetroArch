@@ -5782,9 +5782,9 @@ def check_edit_snap(snap):
         there until carried; held just off flush right of screen 1: with
         Snap to Screens it shows and is saved touching it, level, in
         its plane, the hinge marked by a green line and its rims gone
-        while held, and the hand gets the snap's buzz, the hinge's long
-        buzz once; without, it stays where the hand put it, with no
-        buzz."""
+        while held and once let go there, and the hand gets the snap's
+        buzz, the hinge's long buzz once; without, it stays where the
+        hand put it, with no buzz."""
         want = SNAPPED if snap else (SNAP_HAND[0], SNAP_HAND[1],
                                      SNAP_HAND[2] - 1.8)
         errors = edit_log_errors(res, ['on', 'off'])
@@ -5815,6 +5815,14 @@ def check_edit_snap(snap):
             errors.append('%d hinge buzzes on the right hand, want 1 as it '
                           'hinged flush: %s' % (len(hinged), hinged))
         if snap:
+            # At Hinge Gap 0 its spot, 3.2 cm under screen 1 and
+            # centred, is a free gap the hinge holds exactly: shown from
+            # edit mode's start.
+            def spot(f):
+                return (0.0, -0.496, -1.8), 1.28
+            errors += hinge_line_errors(
+                [f for f in between(res, 'on', 'grab', delay=0.5)
+                 if screen2(f)], spot, 0)
             # The hand is 0.7 cm off, inside EDIT_POS.
             xs = [(what, q['pose'][0])
                   for a, b, what in (('held', 'released', 'held'),
@@ -5844,12 +5852,24 @@ def check_edit_snap(snap):
                 errors += cut_outline_errors(f, [
                     (S0, 0, False),
                     (tuple(screen2(f)['pose'][:3]), OUTLINE_CROP, False)])
-        for f in between(res, 'released', 'off', delay=0.5):
-            if hinge_lines(f) or any(o['rect'][2] != OUTLINE_DIM
-                                     for o in outlines(f)):
-                errors.append('frame %d: a hinge line or cut outline after '
-                              'the screen was let go' % f['n'])
-                break
+            # Let go flush, it rests hinged: the line and the cut rims
+            # stay.
+            rest = [f for f in between(res, 'released', 'resting',
+                                       delay=0.5) if screen2(f)]
+            errors += hinge_line_errors(rest, flush, 1)
+            for f in rest[-1:]:
+                errors += cut_outline_errors(f, [
+                    (S0, 0, False),
+                    (tuple(screen2(f)['pose'][:3]), OUTLINE_CROP, False)])
+            if not rest:
+                errors.append('no frame of screen 2 let go')
+        else:
+            for f in between(res, 'released', 'off', delay=0.5):
+                if hinge_lines(f) or any(o['rect'][2] != OUTLINE_DIM
+                                         for o in outlines(f)):
+                    errors.append('frame %d: a hinge line or cut outline '
+                                  'with Snap to Screens off' % f['n'])
+                    break
         return errors
     return check
 
@@ -5907,7 +5927,8 @@ EDIT_SNAP_STEPS = edit_start(straight(SNAP_GRAB), 1) + [
     step for p in ((0.5, -0.6, 0.0), (1.0, -0.2, 0.0), SNAP_HAND)
     for step in (('script', script(straight(p), EDIT_GRIP)), ('wait', 0.3))
 ] + [('mark', 'held'), ('wait', 1.5), ('script', straight(SNAP_HAND)),
-     ('mark', 'released'), ('wait', 1.5), ('send', EDIT), ('wait', 2),
+     ('mark', 'released'), ('wait', 1.5), ('mark', 'resting'),
+     ('send', EDIT), ('wait', 2),
      ('mark', 'off'), ('wait', 1)]
 # Screen 2 carried 7 cm off flush right of screen 1, then 1.5 cm off,
 # in the edge's fade, then 0.9 cm off, inside its whole pull, swaying
@@ -6098,9 +6119,18 @@ def check_edit_hinge_3ds(res, gap=0.0):
     gets the hinge's long buzz once as it hinges and one tick for the
     step. While hinged a green line runs along the hinge midway across
     the gap where the edges overlap, screen 1's bottom rim and screen
-    2's top rim gone; let go, both back. Not a set time: stalled polls
-    cut the swing short."""
+    2's top rim gone; let go there, it rests hinged: both stay until
+    edit mode ends. Not a set time: stalled polls cut the swing
+    short."""
     errors = edit_log_errors(res, ['on', 'off'])
+    # Near the hinge but not held there (7 mm into Hinge Gap 0's click,
+    # 1.6 cm against 2 cm), nothing shows until it is hinged.
+    for f in between(res, 'on', 'grab', delay=0.5):
+        if hinge_lines(f) or any(o['rect'][2] != OUTLINE_DIM
+                                 for o in outlines(f)):
+            errors.append('frame %d: a hinge line or cut outline before '
+                          'screen 2 was hinged' % f['n'])
+            break
     q = last_before(res, 'swung', screen2)
     if not q:
         return errors + ['no frame of screen 2 before the stick let go']
@@ -6139,11 +6169,22 @@ def check_edit_hinge_3ds(res, gap=0.0):
         errors += hinge_texel_errors(res, snaps[-1])
     elif gap == 0.0:
         errors.append('no image of a hinged frame')
-    for f in between(res, 'released', 'off', delay=0.5):
-        if hinge_lines(f) or any(o['rect'][2] != OUTLINE_DIM
-                                 for o in outlines(f)):
-            errors.append('frame %d: a hinge line or cut outline after '
-                          'the screen was let go' % f['n'])
+    # Let go there, it rests hinged: the line and the cut rims stay,
+    # with no frame between carried and resting.
+    rest = [f for f in between(res, 'released', 'resting', delay=0.2)
+            if screen2(f)]
+    errors += hinge_line_errors(
+        [f for f in between(res, 'held', 'resting') if screen2(f)], hinge, 0)
+    for f in rest[:1] + rest[-1:]:
+        errors += cut_outline_errors(f, [
+            (S0, OUTLINE_CROP, True),
+            (tuple(screen2(f)['pose'][:3]), 0, True)])
+    errors += outline_gap_errors(rest[-1]) if rest else \
+        ['no frame of screen 2 let go']
+    for f in between(res, 'off', delay=0.5):
+        if hinge_lines(f):
+            errors.append('frame %d: a hinge line after edit mode ended'
+                          % f['n'])
             break
     hinged = buzzes(res, HINGE_BUZZ, 'on', 'held')
     swing = buzzes(res, HINGE_BUZZ, 'held', 'swung')
@@ -6911,6 +6952,7 @@ EDIT_CASES += [
      'env': {'RA_XR_LAYER_SNAP_EVERY': '10'},
      'steps': edit_start(edit_aim()) + edit_tap(EDIT_NEXT, edit_aim())
      + edit_tap(EDIT_NEXT, edit_aim()) + [
+         ('mark', 'grab'),
          ('script', script(edit_aim(), EDIT_GRIP)), ('wait', 1),
          ('script', script(edit_aim(x=0.06), EDIT_GRIP)), ('wait', 1),
          ('mark', 'held'),
@@ -6920,13 +6962,15 @@ EDIT_CASES += [
          ('script', script(edit_aim(x=0.06), EDIT_GRIP)),
          ('wait', 1), ('mark', 'swung'), ('script', edit_aim(x=0.06)),
          ('mark', 'released'),
-         ('wait', 1), ('send', EDIT), ('wait', 2), ('mark', 'off'),
+         ('wait', 1), ('mark', 'resting'),
+         ('send', EDIT), ('wait', 2), ('mark', 'off'),
          ('wait', 1)],
      'check': check_edit_hinge_3ds},
     {'name': 'edit-hinge-gap', 'map': '3ds', 'settings': HINGE_GAP,
      'script': HEAD_AT_ORIGIN,
      'steps': edit_start(edit_aim()) + edit_tap(EDIT_NEXT, edit_aim())
      + edit_tap(EDIT_NEXT, edit_aim()) + [
+         ('mark', 'grab'),
          ('script', script(edit_aim(), EDIT_GRIP)), ('wait', 1),
          ('script', script(edit_aim(x=0.06), EDIT_GRIP)), ('wait', 1),
          ('mark', 'held'),
@@ -6936,7 +6980,8 @@ EDIT_CASES += [
          ('script', script(edit_aim(x=0.06), EDIT_GRIP)),
          ('wait', 1), ('mark', 'swung'), ('script', edit_aim(x=0.06)),
          ('mark', 'released'),
-         ('wait', 1), ('send', EDIT), ('wait', 2), ('mark', 'off'),
+         ('wait', 1), ('mark', 'resting'),
+         ('send', EDIT), ('wait', 2), ('mark', 'off'),
          ('wait', 1)],
      'check': check_edit_hinge_gap},
     {'name': 'edit-smooth', 'map': '3ds',

@@ -5366,8 +5366,9 @@ static void test_edit_hinge_drop(void)
 }
 
 /* Screen 2 under screen 1, its top edge on screen 1's bottom edge,
- * folded fold degrees from flat toward the viewer: the 3DS layout. */
-static void t_snap_under(double fold)
+ * folded fold degrees from flat toward the viewer: the 3DS layout,
+ * apart metres in front of screen 1's plane. */
+static void t_under_at(double fold, float apart)
 {
    double r = fold * M_PI / 180.0;
    video_xr_quad_t *q = &t_quads.quads[t_quads.num_quads++];
@@ -5375,7 +5376,7 @@ static void t_snap_under(double fold)
    q->pose.orientation.x   = (float)-sin(r / 2.0);
    q->pose.orientation.w   = (float)cos(r / 2.0);
    q->pose.position.y      = (float)(-0.48 - 0.3 * cos(r));
-   q->pose.position.z      = (float)(-1.8 + 0.3 * sin(r));
+   q->pose.position.z      = (float)(-1.8 + 0.3 * sin(r)) + apart;
    q->width                = 0.8f;
    q->height               = 0.6f;
    q->kind                 = VIDEO_XR_QUAD_SCREEN;
@@ -5384,6 +5385,17 @@ static void t_snap_under(double fold)
    t_quads.slots[1].base.y = q->pose.position.y;
    t_quads.slots[1].base.z = q->pose.position.z;
    t_aim[2].position.y     = q->pose.position.y;
+}
+
+static void t_snap_under(double fold)
+{
+   t_under_at(fold, 0.0f);
+}
+
+/* Screen 2 in the 3DS layout resting in its hinge on screen 1. */
+static void t_rest_under(double fold)
+{
+   t_under_at(fold, 0.0f);
 }
 
 /* A hinge line from a to b as its layer shows it, each end
@@ -5691,6 +5703,244 @@ static void t_take_under(double fold, bool tilt)
          "took slot %u under", input_openxr_edit.hand[1].g.slot);
    t_aim[2].position.x = 0.07f;
    t_tilt_polls(1, 0.0f, tilt);
+}
+
+/* Screens resting in a hinge, as the main thread counts them for the
+ * frame loop. Let go hinged, screen 2 rests on screen 1's bottom edge,
+ * in the record that lets it go. So the frame that first sees the
+ * release draws the line and hides both rims, as every frame after;
+ * a hand holding screen 2 again makes it give way; short of room the
+ * line goes, the rims stay cut. Nothing is counted again in a poll
+ * where nothing changed, and a moved screen is. A layout loaded
+ * hinged counts once edit mode starts, again when it starts again;
+ * edit mode's end and Snap to Screens off count none. */
+static void test_edit_rest(void)
+{
+   unsigned i, n;
+   float len, x;
+   video_xr_vec3_t m, ax;
+   video_xr_quad_set_t shown;
+   const XrCompositionLayerQuad *q;
+   const XrCompositionLayerBaseHeader *layers[OPENXR_MAX_EXTRA_LAYERS];
+   XrSpace local;
+
+   t_take_under(0.0, false);
+   CHECK(     input_openxr_edit.hand[1].hinged && t_grabs.num_rests == 0,
+         "carried hinged: hinged %d, %u at rest",
+         (int)input_openxr_edit.hand[1].hinged, t_grabs.num_rests);
+   t_let_go();
+   t_edit_poll();
+   CHECK(     t_grabs.hand[1].state == VIDEO_XR_GRAB_RELEASED
+         && t_grabs.num_rests == 1
+         && t_grabs.rests[0].slot == 0 && t_grabs.rests[0].edge == 1
+         && t_grabs.rests[0].target == 1 && t_grabs.rests[0].on == 0,
+         "let go: state %u, %u at rest, the first %u's edge %u on %u's %u",
+         t_grabs.hand[1].state, t_grabs.num_rests, t_grabs.rests[0].slot,
+         t_grabs.rests[0].edge, t_grabs.rests[0].target,
+         t_grabs.rests[0].on);
+
+   /* The frame loop with that record, the screen let go where it is. */
+   local               = t_xr_session.local_space;
+   t_xr_frame.grabs    = t_grabs;
+   t_xr_frame.hinged   = 0;
+   t_aim_tracked[1]    = false;
+   t_aim_tracked[2]    = false;
+   t_head_tracked      = true;
+   t_cursor            = true;
+   shown               = t_quads;
+   shown.quads[2].pose = t_grabs.let_go[1].last;
+   x                   = shown.quads[2].pose.position.x;
+   t_lifted(x - 0.4f, -0.48f, -1.8f, x + 0.4f, -0.48f, -1.8f, &m, &len);
+   for (i = 0; i < 2; i++)
+   {
+      n = t_hooks.frame_layers(t_hooks.user, t_time, &shown, local, layers,
+            OPENXR_MAX_EXTRA_LAYERS, &t_under);
+      q = (const XrCompositionLayerQuad*)layers[0];
+      t_layer_axis(q, 1.0f, 0.0f, 0.0f, &ax);
+      CHECK(     n == 5 && t_under == 2
+            && q->subImage.imageRect.offset.x
+               == VIDEO_XR_OUTLINE_X(0) + VIDEO_XR_OUTLINE_CROP
+            && q->subImage.imageRect.extent.width
+               == VIDEO_XR_OUTLINE_DIM - VIDEO_XR_OUTLINE_CROP
+            && t_near(ax.y, 1.0f),
+            "frame %u at rest: %u layers, %u under, screen 1's offset %d",
+            i, n, t_under, (int)q->subImage.imageRect.offset.x);
+      q = (const XrCompositionLayerQuad*)layers[1];
+      CHECK(     q->subImage.imageRect.offset.x == VIDEO_XR_OUTLINE_X(0)
+            && q->subImage.imageRect.extent.width
+               == VIDEO_XR_OUTLINE_DIM - VIDEO_XR_OUTLINE_CROP,
+            "frame %u at rest: screen 2's top rim not cut", i);
+      q = (const XrCompositionLayerQuad*)layers[4];
+      CHECK(     q->subImage.imageRect.offset.x == VIDEO_XR_HINGE_X + 1
+            && t_near(q->size.width, len)
+            && t_near(q->pose.position.x, m.x)
+            && t_near(q->pose.position.y, m.y)
+            && t_near(q->pose.position.z, m.z),
+            "frame %u at rest: the line %.4f long at %.4f,%.4f,%.4f, want "
+            "%.4f at %.4f,%.4f,%.4f", i, q->size.width, q->pose.position.x,
+            q->pose.position.y, q->pose.position.z, len, m.x, m.y, m.z);
+   }
+   /* Short of room: the line goes, the rims stay cut. */
+   n = t_hooks.frame_layers(t_hooks.user, t_time, &shown, local, layers,
+         OPENXR_KEPT_EXTRA_LAYERS + 4, &t_under);
+   q = (const XrCompositionLayerQuad*)layers[0];
+   CHECK(n == 4 && q->subImage.imageRect.offset.x
+         == VIDEO_XR_OUTLINE_X(0) + VIDEO_XR_OUTLINE_CROP,
+         "room for the outlines alone: %u layers, screen 1's offset %d", n,
+         (int)q->subImage.imageRect.offset.x);
+   /* Held again, its pair gives way. */
+   t_xr_frame.grabs.hand[1].state = VIDEO_XR_GRAB_HELD;
+   n = t_hooks.frame_layers(t_hooks.user, t_time, &shown, local, layers,
+         OPENXR_MAX_EXTRA_LAYERS, &t_under);
+   q = (const XrCompositionLayerQuad*)layers[0];
+   CHECK(     n == 4
+         && q->subImage.imageRect.offset.x == VIDEO_XR_OUTLINE_X(0)
+         && q->subImage.imageRect.extent.width == VIDEO_XR_OUTLINE_DIM,
+         "held again: %u layers, screen 1's offset %d width %d", n,
+         (int)q->subImage.imageRect.offset.x,
+         (int)q->subImage.imageRect.extent.width);
+
+   /* The drawing thread plans it there; then nothing changes. */
+   t_quads.quads[2].pose = t_grabs.let_go[1].last;
+   t_edit_poll();
+   input_openxr_edit.grabs.num_rests = 0;
+   t_edit_poll();
+   CHECK(t_grabs.num_rests == 0, "counted again with nothing changed");
+   t_quads.quads[0].pose.position.x += 0.001f;
+   t_edit_poll();
+   CHECK(t_grabs.num_rests == 1, "screen 1 moved: %u at rest",
+         t_grabs.num_rests);
+   t_take_end();
+
+   /* Hinged again by the poll that lets it go, it rests in its record. */
+   t_take_under(0.0, false);
+   t_aim[2].position.z += 0.1f;
+   t_tilt_polls(1, 0.0f, false);
+   CHECK(     !input_openxr_edit.hand[1].hinged && t_grabs.num_rests == 0,
+         "carried off: hinged %d, %u at rest",
+         (int)input_openxr_edit.hand[1].hinged, t_grabs.num_rests);
+   t_aim[2].position.z -= 0.1f;
+   t_let_go();
+   t_edit_poll();
+   CHECK(     t_grabs.hand[1].state == VIDEO_XR_GRAB_RELEASED
+         && t_grabs.num_rests == 1,
+         "let go as it hinged: state %u, %u at rest",
+         t_grabs.hand[1].state, t_grabs.num_rests);
+   t_take_end();
+
+   t_snap = true;
+   t_edit_start();
+   t_rest_under(0.0);
+   t_edit_poll();
+   CHECK(t_grabs.num_rests == 1, "loaded hinged: %u at rest",
+         t_grabs.num_rests);
+   input_openxr_edit_toggle();
+   t_edit_on(false);
+   t_edit_poll();
+   CHECK(t_grabs.num_rests == 1, "on again, nothing moved: %u at rest",
+         t_grabs.num_rests);
+   t_edit_end();
+   CHECK(t_grabs.num_rests == 0, "edit mode's end left %u at rest",
+         t_grabs.num_rests);
+   t_snap = false;
+   t_edit_start();
+   t_rest_under(0.0);
+   t_edit_poll();
+   CHECK(t_grabs.num_rests == 0, "Snap to Screens off: %u at rest",
+         t_grabs.num_rests);
+   memset(&t_xr_frame.grabs, 0, sizeof(t_xr_frame.grabs));
+   t_cursor       = false;
+   t_head_tracked = false;
+   t_edit_end();
+}
+
+/* At rest on two adjacent edges, screen 1 loses only the first one's
+ * rim, each neighbour its own; both lines show, in the list's order,
+ * the first kept when there is room for one. */
+static void test_edit_rest_corner(void)
+{
+   unsigned n;
+   float len;
+   video_xr_vec3_t m, ax;
+   video_xr_quad_set_t shown;
+   const XrCompositionLayerQuad *q;
+   const XrCompositionLayerBaseHeader *layers[OPENXR_MAX_EXTRA_LAYERS];
+   XrSpace local;
+   t_edit_start();
+   local            = t_xr_session.local_space;
+   t_aim_tracked[1] = false;
+   t_aim_tracked[2] = false;
+   t_head_tracked   = true;
+   t_cursor         = true;
+   shown            = t_quads;
+   /* Screen 2 right of screen 1, screen 3 under it, all touching. */
+   shown.quads[2]                 = shown.quads[0];
+   shown.quads[2].pose.position.x = 1.6f;
+   shown.quads[2].slot            = 1;
+   shown.quads[2].screen          = 1;
+   shown.quads[3]                 = shown.quads[0];
+   shown.quads[3].pose.position.y = -0.96f;
+   shown.quads[3].slot            = 2;
+   shown.quads[3].screen          = 2;
+   shown.num_quads                = 4;
+   memset(&t_xr_frame.grabs, 0, sizeof(t_xr_frame.grabs));
+   t_xr_frame.hinged                = 0;
+   t_xr_frame.grabs.num_rests       = 2;
+   t_xr_frame.grabs.rests[0].slot   = 0;
+   t_xr_frame.grabs.rests[0].edge   = 2;
+   t_xr_frame.grabs.rests[0].target = 1;
+   t_xr_frame.grabs.rests[0].on     = 3;
+   t_xr_frame.grabs.rests[1].slot   = 0;
+   t_xr_frame.grabs.rests[1].edge   = 1;
+   t_xr_frame.grabs.rests[1].target = 2;
+   t_xr_frame.grabs.rests[1].on     = 0;
+   n = t_hooks.frame_layers(t_hooks.user, t_time, &shown, local, layers,
+         OPENXR_MAX_EXTRA_LAYERS, &t_under);
+   CHECK(n == 7 && t_under == 3, "%u layers, %u under: want three "
+         "outlines under, the menu's and its handle, two lines", n, t_under);
+   q = (const XrCompositionLayerQuad*)layers[0];
+   t_layer_axis(q, 1.0f, 0.0f, 0.0f, &ax);
+   CHECK(     q->subImage.imageRect.offset.x == VIDEO_XR_OUTLINE_X(0)
+         && q->subImage.imageRect.extent.width
+            == VIDEO_XR_OUTLINE_DIM - VIDEO_XR_OUTLINE_CROP
+         && t_near(ax.x, 1.0f),
+         "screen 1: its right rim alone cut: offset %d width %d",
+         (int)q->subImage.imageRect.offset.x,
+         (int)q->subImage.imageRect.extent.width);
+   q = (const XrCompositionLayerQuad*)layers[1];
+   CHECK(     q->subImage.imageRect.offset.x
+            == VIDEO_XR_OUTLINE_X(0) + VIDEO_XR_OUTLINE_CROP
+         && q->subImage.imageRect.extent.width
+            == VIDEO_XR_OUTLINE_DIM - VIDEO_XR_OUTLINE_CROP,
+         "screen 2: its left rim not cut");
+   q = (const XrCompositionLayerQuad*)layers[2];
+   t_layer_axis(q, 1.0f, 0.0f, 0.0f, &ax);
+   CHECK(     q->subImage.imageRect.offset.x == VIDEO_XR_OUTLINE_X(0)
+         && q->subImage.imageRect.extent.width
+            == VIDEO_XR_OUTLINE_DIM - VIDEO_XR_OUTLINE_CROP
+         && t_near(ax.y, 1.0f),
+         "screen 3: its top rim not cut");
+   q = (const XrCompositionLayerQuad*)layers[5];
+   t_lifted(0.8f, -0.48f, -1.8f, 0.8f, 0.48f, -1.8f, &m, &len);
+   CHECK(q->subImage.imageRect.offset.x == VIDEO_XR_HINGE_X + 1
+         && t_near(q->pose.position.x, m.x) && t_near(q->size.width, len),
+         "the first line not on screen 1's right edge");
+   q = (const XrCompositionLayerQuad*)layers[6];
+   t_lifted(-0.8f, -0.48f, -1.8f, 0.8f, -0.48f, -1.8f, &m, &len);
+   CHECK(q->subImage.imageRect.offset.x == VIDEO_XR_HINGE_X + 1
+         && t_near(q->pose.position.y, m.y) && t_near(q->size.width, len),
+         "the second line not on screen 1's bottom edge");
+   n = t_hooks.frame_layers(t_hooks.user, t_time, &shown, local, layers,
+         OPENXR_KEPT_EXTRA_LAYERS + 6, &t_under);
+   q = (const XrCompositionLayerQuad*)layers[5];
+   t_lifted(0.8f, -0.48f, -1.8f, 0.8f, 0.48f, -1.8f, &m, &len);
+   CHECK(n == 6 && q->subImage.imageRect.offset.x == VIDEO_XR_HINGE_X + 1
+         && t_near(q->pose.position.x, m.x),
+         "room for one line: %u layers, not the first", n);
+   memset(&t_xr_frame.grabs, 0, sizeof(t_xr_frame.grabs));
+   t_cursor       = false;
+   t_head_tracked = false;
+   t_edit_end();
 }
 
 /* Flat under screen 1, screen 2 is hinged on screen 1's bottom edge:
@@ -7151,6 +7401,8 @@ int main(void)
    test_edit_hinge_rearm();
    test_edit_hinge_drop();
    test_edit_hinge_layers();
+   test_edit_rest();
+   test_edit_rest_corner();
    test_edit_hinge_under();
    test_edit_hinge_flick();
    test_edit_hinge_lid_ends();

@@ -8700,6 +8700,37 @@ static void test_frame_layer_budget(void)
    t_grab_free(&rt, &s, &sc, &f);
 }
 
+/* The screens at rest in a hinge ride the hands' record to the frame
+ * loop, the whole list. */
+static void test_frame_grabs_rests(void)
+{
+   openxr_runtime_t rt;
+   openxr_session_t s;
+   openxr_swapchains_t sc;
+   openxr_frame_t f;
+   video_xr_quad_set_t set;
+   openxr_grabs_t grabs;
+   XrCompositionLayerQuad layers[VIDEO_XR_MAX_QUADS];
+   const XrCompositionLayerBaseHeader *ptrs[VIDEO_XR_MAX_QUADS];
+
+   t_grab_frame(&rt, &s, &sc, &f, &set);
+   memset(&grabs, 0, sizeof(grabs));
+   grabs.num_rests                            = OPENXR_REST_HINGES;
+   grabs.rests[0].edge                        = 1;
+   grabs.rests[0].target                      = 1;
+   grabs.rests[OPENXR_REST_HINGES - 1].slot   = 1;
+   grabs.rests[OPENXR_REST_HINGES - 1].on     = 3;
+   openxr_frame_publish_grabs(&f, &grabs);
+   openxr_frame_place_screens(&f, 1000);
+   openxr_frame_layers(&f, 1000, layers, ptrs);
+   CHECK(     f.grabs.num_rests == OPENXR_REST_HINGES
+         && f.grabs.rests[0].edge == 1 && f.grabs.rests[0].target == 1
+         && f.grabs.rests[OPENXR_REST_HINGES - 1].slot == 1
+         && f.grabs.rests[OPENXR_REST_HINGES - 1].on == 3,
+         "the frame loop sees %u at rest", f.grabs.num_rests);
+   t_grab_free(&rt, &s, &sc, &f);
+}
+
 /* Whether l is the back of q, a quad facing +Z: the laser image's
  * dark square in q's place at its size, opaque, facing -Z, up still
  * up. */
@@ -8978,6 +9009,7 @@ int main(void)
    test_frame_grabs_hinge_reach();
    test_frame_grabs_threaded();
    test_frame_layer_budget();
+   test_frame_grabs_rests();
    test_frame_backs();
    test_cursor_backs();
    test_cursor_tags();
