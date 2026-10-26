@@ -441,7 +441,7 @@ static bool pr_name_reserved(struct rslc_pr *p, const struct rslc_sym *name)
       "reflect", "refract", "faceforward", "any", "all", "isnan", "isinf",
       "transpose", "determinant", "fma", "modf", "frexp", "ldexp", "fwidth",
       "pack_float_to_unorm4x8", "unpack_unorm4x8_to_float", "decay", "quad",
-      "simd_broadcast", "vec", "ushort", "uchar", NULL
+      "simd_broadcast", "vec", "ushort", "uchar", "powr", NULL
    };
    const char *const *list = p->hlsl ? hlsl_words : p->msl ? msl_words : words;
    unsigned i;
@@ -1248,6 +1248,23 @@ static void pr_msl_builtin(struct rslc_pr *p, const struct rslc_node *n)
       case RSLC_BFN_ATAN:          name = cnt == 2 ? "atan2" : "atan"; break;
       case RSLC_BFN_INVERSESQRT:   name = "rsqrt"; break;
       case RSLC_BFN_ROUNDEVEN:     name = "rint"; break;
+      case RSLC_BFN_POW:
+      {
+         /* fast-math pow() takes |x|; powr() leaves x < 0 undefined
+          * as GLSL does, but a constant base >= 0 keeps the more exact pow() */
+         unsigned i, ncomp = 0;
+         name = "powr";
+         if (cnt == 2 && rslc_const_eval(p->c, rslc_list_item(p->c, list, 0), &cv))
+         {
+            ncomp = rslc_ty_components(cv.type);
+            for (i = 0; i < ncomp; i++)
+               if (!(cv.d[i] >= 0.0))
+                  break;
+            if (i == ncomp)
+               name = "pow";
+         }
+         break;
+      }
       case RSLC_BFN_DFDX:
       case RSLC_BFN_DFDXFINE:
       case RSLC_BFN_DFDXCOARSE:    name = "dfdx"; break;
