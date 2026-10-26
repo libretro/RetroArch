@@ -33,9 +33,9 @@ S_ACTION(VIDEO_DLSS_NR_SETTINGS,
       "DLSS 5's Neural Rendering model, run over DLSS's output. Needs nvngx_dlssnr.dll in the DLSS Directory and an NVIDIA driver that has it.")
 S_BOOL(video_dlss_nr_enable, VIDEO_DLSS_NR_ENABLE,
       "video_dlss_nr_enable",
-      DEFAULT_VIDEO_DLSS_NR_ENABLE, SD_FLAG_CMD_APPLY_AUTO, SDESC_FLG_REFRESH, CMD_EVENT_REINIT,
+      DEFAULT_VIDEO_DLSS_NR_ENABLE, SD_FLAG_NONE, SDESC_FLG_REFRESH, CMD_EVENT_NONE,
       "Neural Rendering",
-      "Run DLSS 5's Neural Rendering model over the upscaled frame. It reworks lighting and materials with the depth and motion the core exports, and costs a few milliseconds a frame. Turning it on or off restarts the video driver, so that its library is only loaded while it is on.")
+      "Run DLSS 5's Neural Rendering model over the upscaled frame. It reworks lighting and materials with the depth and motion the core exports, and costs a few milliseconds a frame. Takes effect on the next frame.")
 S_UINT(video_dlss_nr_preset, VIDEO_DLSS_NR_PRESET,
       "video_dlss_nr_preset",
       DEFAULT_VIDEO_DLSS_NR_PRESET, SD_FLAG_NONE, SDESC_RANGE_MINMAX, CMD_EVENT_NONE, 0, 3, 1, 0, setting_action_ok_uint, setting_get_string_representation_uint_video_dlss_nr_preset,

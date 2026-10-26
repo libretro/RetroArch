@@ -18,6 +18,7 @@
 
 #include <retro_miscellaneous.h>
 #include <compat/strl.h>
+#include <features/features_cpu.h>
 #include <gfx/nvidia/ngx_loader.h>
 #include <vulkan/vulkan_symbol_wrapper.h>
 
@@ -106,6 +107,8 @@ struct vulkan_ngx
    unsigned nr_failed_word;
    unsigned nr_failed_dims;
    bool nr_reset;
+   /* turned off, the feature kept for when it is turned on again */
+   bool nr_idle;
    bool nr_unsupported;
    bool reset_pending;
 };
@@ -253,9 +256,8 @@ typedef struct vulkan_ngx_name_cache
 static vulkan_ngx_name_cache_t vulkan_ngx_instance_cache;
 static vulkan_ngx_name_cache_t vulkan_ngx_device_cache;
 
-/* Super Resolution's, and Neural Rendering's while it is turned on and
- * its library is in the DLSS directory (turning it on remakes the
- * context) */
+/* Super Resolution's, and Neural Rendering's while its library is in
+ * the DLSS directory, so that it can be turned on at any time */
 static unsigned vulkan_ngx_names(const ngx_lib_t *lib, VkInstance instance,
       VkPhysicalDevice gpu, PFN_vkGetInstanceProcAddr gipa,
       const char **names)
@@ -269,8 +271,7 @@ static unsigned vulkan_ngx_names(const ngx_lib_t *lib, VkInstance instance,
    bool nr = false;
 
    video_upscaler_dir(VIDEO_TEMPORAL_UPSCALER_DLSS, dir, sizeof(dir));
-   if (video_upscaler_nr_mode() & VIDEO_UPSCALER_NR_ON)
-      nr = ngx_dlssnr_feature_in(dir);
+   nr = ngx_dlssnr_feature_in(dir);
    memset(&props, 0, sizeof(props));
    if (gpu && gipa)
       get_props = (PFN_vkGetPhysicalDeviceProperties)
@@ -378,6 +379,7 @@ vulkan_ngx_t *vulkan_ngx_init(VkInstance instance, VkPhysicalDevice gpu,
    int available = 0;
    int in_use = 0;
    const ngx_lib_t *lib;
+   retro_time_t start = cpu_features_get_time_usec();
 
    if (!ngx_dlss_feature_in(dlss_dir ? dlss_dir : ""))
    {
@@ -421,8 +423,9 @@ vulkan_ngx_t *vulkan_ngx_init(VkInstance instance, VkPhysicalDevice gpu,
       free(ngx);
       return NULL;
    }
-   RARCH_LOG("[Vulkan] Temporal Upscaler: NGX initialised (%s).\n",
-         lib->vulkan.init_project_id_ext ? "Init_ProjectID_Ext" : "Init_ProjectID");
+   RARCH_LOG("[Vulkan] Temporal Upscaler: NGX initialised (%s) in %u ms.\n",
+         lib->vulkan.init_project_id_ext ? "Init_ProjectID_Ext" : "Init_ProjectID",
+         (unsigned)((cpu_features_get_time_usec() - start) / 1000));
    ngx->lib    = lib;
    ngx->device = device;
    ngx->memory_properties = *memory_properties;
@@ -462,8 +465,7 @@ vulkan_ngx_t *vulkan_ngx_init(VkInstance instance, VkPhysicalDevice gpu,
       video_upscaler_note_optiscaler();
       RARCH_LOG("[Vulkan] Temporal Upscaler: NGX answered by OptiScaler.\n");
    }
-   else if (     (video_upscaler_nr_mode() & VIDEO_UPSCALER_NR_ON)
-            && ngx_dlssnr_feature_in(dlss_dir ? dlss_dir : ""))
+   else if (ngx_dlssnr_feature_in(dlss_dir ? dlss_dir : ""))
    {
       /* What the core says of Neural Rendering: a core without it has
        * no such capability */
@@ -476,7 +478,8 @@ vulkan_ngx_t *vulkan_ngx_init(VkInstance instance, VkPhysicalDevice gpu,
          vulkan_ngx_nr_unsupported(ngx, (ngx_result_t)init_result);
       }
    }
-   RARCH_LOG("[Vulkan] Temporal Upscaler: DLSS Super Resolution ready.\n");
+   RARCH_LOG("[Vulkan] Temporal Upscaler: DLSS Super Resolution ready in %u ms.\n",
+         (unsigned)((cpu_features_get_time_usec() - start) / 1000));
    return ngx;
 }
 
@@ -734,6 +737,15 @@ void vulkan_ngx_frame_done(vulkan_ngx_t *ngx)
    }
 }
 
+/* NGX unloads its feature libraries at every shutdown: kept, a context
+ * made again (content loaded, the driver restarted) finds them in */
+static void vulkan_ngx_keep_features(void)
+{
+   char dir[DIR_MAX_LENGTH];
+   video_upscaler_dir(VIDEO_TEMPORAL_UPSCALER_DLSS, dir, sizeof(dir));
+   ngx_lib_keep_features(dir);
+}
+
 static bool vulkan_ngx_create_output(vulkan_ngx_t *ngx, VkFormat format,
       unsigned dims, VkImage *out_image, VkImageView *out_view,
       VkDeviceMemory *out_memory)
@@ -828,6 +840,7 @@ static bool vulkan_ngx_create_feature(vulkan_ngx_t *ngx,
    const ngx_lib_t *lib = ngx->lib;
    ngx_parameter_t *p   = ngx->params;
    ngx_result_t res;
+   retro_time_t start;
 
    vulkan_ngx_retire(ngx);
    if (!vulkan_ngx_create_output(ngx, format, out_dims, &ngx->out_image,
@@ -848,7 +861,8 @@ static bool vulkan_ngx_create_feature(vulkan_ngx_t *ngx,
    vulkan_ngx_set_preset(lib, p, quality);
    lib->param.set_i(p, NGX_PARAM_DLSS_CREATE_FLAGS, (int)flags);
    lib->param.set_i(p, NGX_PARAM_DLSS_ENABLE_OUTPUT_SUBRECTS, 0);
-   res = lib->vulkan.create_feature1((void*)ngx->device, (void*)cmd,
+   start = cpu_features_get_time_usec();
+   res   = lib->vulkan.create_feature1((void*)ngx->device, (void*)cmd,
          NGX_FEATURE_SUPER_SAMPLING, p, &ngx->feature);
    if (NGX_FAILED(res))
    {
@@ -866,10 +880,12 @@ static bool vulkan_ngx_create_feature(vulkan_ngx_t *ngx,
    ngx->feature_flags    = flags;
    ngx->feature_quality  = NGX_MODE_FEATURE(quality);
    ngx->reset_pending    = true;
-   RARCH_LOG("[Vulkan] Temporal Upscaler: DLSS feature up to %ux%u -> %ux%u (%s%s), flags 0x%x.\n",
+   vulkan_ngx_keep_features();
+   RARCH_LOG("[Vulkan] Temporal Upscaler: DLSS feature up to %ux%u -> %ux%u (%s%s), flags 0x%x, in %u ms.\n",
          VIDEO_SCALE_W(max_dims), VIDEO_SCALE_H(max_dims),
          VIDEO_SCALE_W(out_dims), VIDEO_SCALE_H(out_dims),
-         vulkan_ngx_quality_name(quality), vulkan_ngx_preset_name(quality), flags);
+         vulkan_ngx_quality_name(quality), vulkan_ngx_preset_name(quality), flags,
+         (unsigned)((cpu_features_get_time_usec() - start) / 1000));
    return true;
 }
 
@@ -937,6 +953,7 @@ static bool vulkan_ngx_nr_create(vulkan_ngx_t *ngx, VkCommandBuffer cmd,
    ngx_parameter_t *p;
    unsigned skin;
    ngx_result_t res;
+   retro_time_t start;
 
    vulkan_ngx_nr_retire(ngx);
    if (!ngx->nr_params && NGX_FAILED(lib->vulkan.allocate_parameters(&ngx->nr_params)))
@@ -970,7 +987,8 @@ static bool vulkan_ngx_nr_create(vulkan_ngx_t *ngx, VkCommandBuffer cmd,
          skin ? (skin - 1) * VIDEO_UPSCALER_NR_STEP : -1.0f);
    lib->param.set_ui(p, NGX_PARAM_DLSSNR_AUTO_MASK,
          (nr & VIDEO_UPSCALER_NR_AUTO_MASK) ? 1 : 0);
-   res = lib->vulkan.create_feature1((void*)ngx->device, (void*)cmd,
+   start = cpu_features_get_time_usec();
+   res   = lib->vulkan.create_feature1((void*)ngx->device, (void*)cmd,
          NGX_FEATURE_DLSS_NR, p, &ngx->nr_feature);
    if (NGX_FAILED(res))
    {
@@ -992,8 +1010,10 @@ static bool vulkan_ngx_nr_create(vulkan_ngx_t *ngx, VkCommandBuffer cmd,
    ngx->nr_pending_frames = 0;
    ngx->nr_format         = format;
    ngx->nr_reset          = true;
-   RARCH_LOG("[Vulkan] Temporal Upscaler: DLSS Neural Rendering feature at %ux%u.\n",
-         VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims));
+   vulkan_ngx_keep_features();
+   RARCH_LOG("[Vulkan] Temporal Upscaler: DLSS Neural Rendering feature at %ux%u, in %u ms.\n",
+         VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims),
+         (unsigned)((cpu_features_get_time_usec() - start) / 1000));
    return true;
 }
 
@@ -1013,9 +1033,14 @@ static bool vulkan_ngx_nr(vulkan_ngx_t *ngx, VkCommandBuffer cmd,
 
    if (!(nr & VIDEO_UPSCALER_NR_ON))
    {
-      if (ngx->nr_feature)
-         vulkan_ngx_nr_retire(ngx);
+      ngx->nr_idle = ngx->nr_feature != NULL;
       return false;
+   }
+   if (ngx->nr_idle)
+   {
+      /* (its history is from before it was turned off) */
+      ngx->nr_idle = false;
+      reset        = true;
    }
    if (ngx->nr_unsupported
          || (ngx->nr_failed_word == nr && ngx->nr_failed_dims == io->dims))

@@ -152,10 +152,14 @@ Neural Rendering** entry:
   Structure uses Local Structure there too.
 - **Auto Skin Mask**: lets the model find skin and treat it apart.
 
-Turning it on or off restarts the video driver: its library is only
-loaded while it is on, which keeps it out of every core's start-up
-otherwise. A change to the other settings applies once it has held for
+Turning it on or off takes effect on the next frame; the model is set
+up the first time it is turned on and kept, so turning it on again is
+instant. A change to the other settings applies once it has held for
 half a second, because the model reads them only when it is set up.
+
+Once loaded, the DLSS libraries stay loaded until RetroArch quits:
+loading other content or restarting the video driver sets DLSS up for
+the new device without loading them again.
 
 System Information shows **Neural Rendering** with its version, or
 **Neural Rendering: needs a newer driver** when the driver does not

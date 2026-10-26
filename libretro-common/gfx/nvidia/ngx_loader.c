@@ -490,6 +490,31 @@ bool ngx_lib_load_stand_in(const char *dir)
    return ngx_stand_in != NULL;
 }
 
+/* GetModuleHandleExW's GET_MODULE_HANDLE_EX_FLAG_PIN (XP and up) */
+#define NGX_MODULE_PIN 0x00000001u
+typedef BOOL (WINAPI *ngx_get_module_ex_t)(DWORD, LPCWSTR, HMODULE*);
+
+void ngx_lib_keep_features(const char *dir)
+{
+   static const wchar_t *names[2] = { L"nvngx_dlss.dll", L"nvngx_dlssnr.dll" };
+   static bool kept[2];
+   ngx_get_module_ex_t get_module = NULL;
+   HMODULE kernel = GetModuleHandleW(L"kernel32.dll");
+   FARPROC p;
+   unsigned i;
+   (void)dir;
+   if (!kernel || !(p = GetProcAddress(kernel, "GetModuleHandleExW")))
+      return;
+   memcpy(&get_module, &p, sizeof(get_module));
+   /* (by name: whichever copy NGX loaded, the directory's or another) */
+   for (i = 0; i < 2; i++)
+   {
+      HMODULE m;
+      if (!kept[i] && get_module(NGX_MODULE_PIN, names[i], &m))
+         kept[i] = true;
+   }
+}
+
 unsigned ngx_lib_present(void)
 {
    wchar_t path[MAX_PATH + 32];
@@ -597,6 +622,25 @@ bool ngx_lib_load_stand_in(const char *dir)
 {
    (void)dir;
    return false;
+}
+
+void ngx_lib_keep_features(const char *dir)
+{
+#if defined(RTLD_NOLOAD) && defined(RTLD_NODELETE)
+   static bool kept[2];
+   char path[DIR_MAX_LENGTH];
+   /* (a reference that is never closed, on an object already in) */
+   if (     !kept[0]
+         && ngx_dlss_feature_path(dir, path, sizeof(path))
+         && dlopen(path, RTLD_NOW | RTLD_LOCAL | RTLD_NOLOAD | RTLD_NODELETE))
+      kept[0] = true;
+   if (     !kept[1]
+         && ngx_feature_path(dir, NGX_DLSSNR_DLL, NGX_DLSSNR_SO, path, sizeof(path))
+         && dlopen(path, RTLD_NOW | RTLD_LOCAL | RTLD_NOLOAD | RTLD_NODELETE))
+      kept[1] = true;
+#else
+   (void)dir;
+#endif
 }
 #endif
 
@@ -823,6 +867,11 @@ bool ngx_lib_load_stand_in(const char *dir)
 {
    (void)dir;
    return false;
+}
+
+void ngx_lib_keep_features(const char *dir)
+{
+   (void)dir;
 }
 
 const ngx_lib_t *ngx_lib_get(void)

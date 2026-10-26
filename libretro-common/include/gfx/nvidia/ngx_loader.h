@@ -511,6 +511,12 @@ bool ngx_stand_in_in(const char *dir);
  * ngx_lib_get() has loaded the core library. True once it is in. */
 bool ngx_lib_load_stand_in(const char *dir);
 
+/* Keeps the feature libraries NGX has loaded from @dir (DLSS's, Neural
+ * Rendering's) loaded until the process ends, so that NGX made again on
+ * another device finds them in instead of loading them again. Call
+ * after a feature is made; loads nothing itself. */
+void ngx_lib_keep_features(const char *dir);
+
 /* Whether there is an NGX core library to load (NGX_PRESENT_FOUND)
  * and whether it is OptiScaler (NGX_PRESENT_OPTISCALER), as a status
  * shows it. On Windows the file is found and read without loading it:

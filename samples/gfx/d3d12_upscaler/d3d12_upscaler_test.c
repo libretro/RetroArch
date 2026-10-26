@@ -847,7 +847,7 @@ static void test_nr(settings_t *settings, texture_t *color, texture_t *mv,
    struct retro_hw_upscaler_inputs inputs;
    char status[256];
    unsigned char px[4];
-   unsigned nr, nr2, creates, evals, releases, i, sr;
+   unsigned nr, nr2, creates, evals, releases, i, sr, made;
 
    settings->uints.video_temporal_upscaler = VIDEO_TEMPORAL_UPSCALER_DLSS;
    clear_dlssnr_runtime("Zdir");
@@ -939,7 +939,11 @@ static void test_nr(settings_t *settings, texture_t *color, texture_t *mv,
    CHECK(rec->create[i].feature == 18 && rec->create[i].nr_intensity == 1.5f
          && rec->create[i].nr_auto_mask == 0);
 
-   /* Off: Super Resolution's frame, the model's released in time */
+   /* Off: Super Resolution's frame, the model kept; on again, the same
+    * model, its history reset once, its output read as before */
+   for (i = 0; i < 30; i++)
+      d3d12_ngx_frame_done(ngx);
+   made     = rec->creates;
    releases = rec->releases;
    evals    = rec->evals;
    begin_frame();
@@ -950,10 +954,26 @@ static void test_nr(settings_t *settings, texture_t *color, texture_t *mv,
          && rec->eval[evals % FAKE_NGX_MAX].output == (void*)out.texture);
    for (i = 0; i < 30; i++)
       d3d12_ngx_frame_done(ngx);
-   CHECK(rec->releases >= releases + 2);
+   CHECK(rec->releases == releases);
+   for (i = 0; i < 2; i++)
+   {
+      evals = rec->evals;
+      begin_frame();
+      CHECK(d3d12_ngx_upscale(ngx, cmd, &in, &inputs, NGX_PERF_QUALITY_MAX_QUALITY, nr2,
+               VIDEO_SCALE_PACK(1920, 1080), &out));
+      end_frame();
+      d3d12_ngx_frame_done(ngx);
+      CHECK(rec->creates == made && rec->evals == evals + 2
+            && rec->eval[(evals + 1) % FAKE_NGX_MAX].nr
+            && rec->eval[(evals + 1) % FAKE_NGX_MAX].reset == (i == 0));
+      CHECK(out.state == D3D12_RESOURCE_STATE_COPY_SOURCE
+            && read_pixel(out.texture, 1920, 1080, 300, 200, px)
+            && px[0] == (300 & 0xff) && px[1] == 200);
+   }
    d3d12_ngx_free(ngx);
 
-   /* Off, the core is not asked about the model */
+   /* Off too, the core is asked about the model, so that turning it on
+    * needs nothing made again: a core without it is found out */
    video_upscaler_note_nr(true);
    rec->nr_missing = 1;
    settings->bools.video_dlss_nr_enable = false;
@@ -961,7 +981,7 @@ static void test_nr(settings_t *settings, texture_t *color, texture_t *mv,
    CHECK(ngx != NULL);
    if (ngx)
    {
-      CHECK(video_upscaler_nr_available());
+      CHECK(!video_upscaler_nr_available());
       d3d12_ngx_free(ngx);
    }
 

@@ -114,6 +114,6 @@ check: all
 
 clean:
 	rm -f $(TARGET) $(TARGET).exe $(TARGET).o _nvngx.dll libnvidia-ngx.so.1 nvngx_dlss.dll libnvidia-ngx-dlss.so.310.2.1 fake_dlss_res.o
-	rm -rf $(SAMPLE_OBJDIR) Zdir Zdir_fsr Zdir_xess Zdir_none
+	rm -rf $(SAMPLE_OBJDIR) Zdir Zdir_fsr Zdir_xess Zdir_none Zdir_keep
 
 .PHONY: all check clean
