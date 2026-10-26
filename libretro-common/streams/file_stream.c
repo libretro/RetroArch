@@ -47,6 +47,10 @@
 #include <vfs/vfs_implementation.h>
 #include <string/rstrtod.h>
 
+#if defined(VFS_DESCRIPTOR_READ_ALIGN)
+#include <malloc.h>
+#endif
+
 #define VFS_ERROR_RETURN_VALUE -1
 
 /* Size of the per-handle sequential lookahead buffer filled by
@@ -2072,6 +2076,9 @@ int64_t filestream_read_file(const char *path, void **buf, int64_t *len)
    int64_t ret              = 0;
    int64_t content_buf_size = 0;
    void *content_buf        = NULL;
+#if defined(VFS_DESCRIPTOR_READ_ALIGN)
+   size_t content_buf_cap   = 0;
+#endif
    /* This function is the definition of a bulk sequential read: open,
     * take the whole file in one go, close.  Saying so lets the VFS
     * skip a read buffer that cannot be reused - the bytes are already
@@ -2143,8 +2150,19 @@ int64_t filestream_read_file(const char *path, void **buf, int64_t *len)
          || (uint64_t)content_buf_size >  FILESTREAM_READ_FILE_MAX)
       goto error;
 
+#if defined(VFS_DESCRIPTOR_READ_ALIGN)
+   /* Whole lines from a line boundary, with a line past them for the
+    * terminator, so each request below can ask for whole lines and
+    * the read lands in place. memalign()ed storage is what free()
+    * takes on the targets that set this. */
+   content_buf_cap = (((size_t)content_buf_size + VFS_DESCRIPTOR_READ_ALIGN - 1)
+         & ~(size_t)(VFS_DESCRIPTOR_READ_ALIGN - 1)) + VFS_DESCRIPTOR_READ_ALIGN;
+   if (!(content_buf = memalign(VFS_DESCRIPTOR_READ_ALIGN, content_buf_cap)))
+      goto error;
+#else
    if (!(content_buf = malloc((size_t)content_buf_size + 1)))
       goto error;
+#endif
 
    /* Read in a loop rather than trusting a single call to satisfy the
     * whole request.  A read is permitted to come up short and try
@@ -2171,6 +2189,16 @@ int64_t filestream_read_file(const char *path, void **buf, int64_t *len)
 
       if (want > FILESTREAM_BULK_READ_MAX)
          want = FILESTREAM_BULK_READ_MAX;
+#if defined(VFS_DESCRIPTOR_READ_ALIGN)
+      /* Up to the next whole line: the file ends inside it and the
+       * read stops there. The terminator's line stays out of reach. */
+      want = (want + VFS_DESCRIPTOR_READ_ALIGN - 1)
+            & ~(int64_t)(VFS_DESCRIPTOR_READ_ALIGN - 1);
+      if ((uint64_t)want > (uint64_t)(content_buf_cap
+               - VFS_DESCRIPTOR_READ_ALIGN) - (uint64_t)ret)
+         want = (int64_t)(content_buf_cap - VFS_DESCRIPTOR_READ_ALIGN
+               - (size_t)ret);
+#endif
 
       if ((got = filestream_read(file, (uint8_t*)content_buf + ret, want)) < 0)
          goto error;

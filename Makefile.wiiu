@@ -8,6 +8,7 @@ SALAMANDER_BUILD           = 0
 HAVE_STATIC_DUMMY ?= 0
 WHOLE_ARCHIVE_LINK         = 0
 WIIU_HID                   = 1
+HAVE_WIIU_DESCRIPTOR_IO   ?= 0
 HAVE_THREADS               = 1
 HAVE_HID                   = 1
 HAVE_RUNAHEAD              = 1
@@ -188,6 +189,12 @@ OBJ := $(addprefix $(BUILD_DIR)/,$(OBJ))
 # Compile flags
 
 DEFINES += -DWIIU -D__WUT__ -DHW_WUP -D__wiiu__
+
+# Whole-file reads on open()/read() straight into a line-aligned buffer
+# instead of through stdio's. Off until it has run on hardware.
+ifeq ($(HAVE_WIIU_DESCRIPTOR_IO), 1)
+   DEFINES += -DHAVE_WIIU_DESCRIPTOR_IO
+endif
 DEFINES += -DHAVE_MAIN
 DEFINES += -DRARCH_CONSOLE
 

@@ -95,12 +95,24 @@ typedef struct
 #if defined(VFS_HAVE_FILE_MAPPING) \
  || defined(VITA) \
  || defined(_3DS) \
+ || (defined(WIIU) && defined(HAVE_WIIU_DESCRIPTOR_IO)) \
  || defined(__SWITCH__) \
  || defined(GEKKO) \
  || defined(PSP) \
  || defined(PS2)
 #define VFS_HAVE_DESCRIPTOR_IO 1
 #endif
+#endif
+
+/* Wii U takes the descriptor path only when built with
+ * HAVE_WIIU_DESCRIPTOR_IO (Makefile.wiiu), until it has run on
+ * hardware. Its SD reads land by DMA in whole cache lines, so a
+ * whole-file read there allocates its buffer on a line and asks for
+ * whole lines, which lets the read land in place in one FS call;
+ * VFS_DESCRIPTOR_READ_ALIGN is that line. */
+#if defined(WIIU) && defined(HAVE_WIIU_DESCRIPTOR_IO) \
+ && !defined(VFS_DESCRIPTOR_READ_ALIGN)
+#define VFS_DESCRIPTOR_READ_ALIGN 64
 #endif
 
 /* Descriptor-backed I/O for one-shot writers as well: a stream opened
