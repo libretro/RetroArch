@@ -228,7 +228,12 @@ plane, keeping its gap from that edge, centres or ends level along it,
 keeping its angle, like the two halves of a DS. The green line
 shows from then until the edge is 4.5 cm off the other's plane, 13 cm
 out from its edge or past its ends, and stays when the screen is let go
-there. Screens that would overlap do not
+where the hinge holds it. A screen taken up where it rests
+hinged starts hinged, with no buzz, until it is carried out of
+that reach, another hinge takes hold or the other hand takes
+the screen it hinges on. At a fold or a square corner with a gap
+only the screen carried in does: the other one's edge is off its
+plane, so it is taken up free. Screens that would overlap do not
 hinge. While a screen is hinged, the other hand's stick swings it
 about the shared edge, the tilt for a top or bottom edge and the
 turn for a side one, and it stays where the swing leaves it. The
@@ -240,9 +245,10 @@ each 3 cm range and the 1 cm click the pull fades out over as far again,
 a hinge fades out from 10 to 13 cm, and from 30 to 60 cm away every pull
 fades, so the screen catches up with the hand instead of jumping. A
 screen just taken does not move: snapping fades in as it is carried,
-whole once it is 5 cm or 10 degrees from where it was taken. The holding
-hand gets a short buzz as a snap takes hold, and none again from that
-snap until the screen has left its pull. A hinge taking hold gets a
+whole once it is 5 cm or 10 degrees from where it was taken, but a
+hinge it rests in, where holding it moves nothing, holds at once. The
+holding hand gets a short buzz as a snap takes hold, and none again from
+that snap until the screen has left its pull. A hinge taking hold gets a
 longer, stronger buzz instead, and short buzzes due while it plays are
 skipped; it comes again only once the green line has gone, or for
 another edge, so a swing past square and back, or a wobble where the

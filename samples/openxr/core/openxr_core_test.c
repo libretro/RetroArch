@@ -8731,6 +8731,123 @@ static void test_frame_grabs_rests(void)
    t_grab_free(&rt, &s, &sc, &f);
 }
 
+/* A hold taken where its screen rests hinged shows that hinge from its
+ * first frame, tracked or not, and stays where it was taken while the
+ * grab's fade is none; the same hold without it is not hinged there;
+ * 5 cm toward the viewer, out of the hinge's reach, it lets go. The
+ * held item's bottom edge rests on screen 2's top edge, touching. */
+static void test_frame_grabs_rest_kept(void)
+{
+   unsigned i;
+   openxr_runtime_t rt;
+   openxr_session_t s;
+   openxr_swapchains_t sc;
+   openxr_frame_t f;
+   video_xr_quad_set_t set;
+   openxr_grabs_t grabs;
+   video_xr_pose_t aim;
+   XrCompositionLayerQuad layers[VIDEO_XR_MAX_QUADS];
+   const XrCompositionLayerBaseHeader *ptrs[VIDEO_XR_MAX_QUADS];
+
+   for (i = 0; i < 2; i++)
+   {
+      unsigned want = i ? 0u : 2u;
+      t_grab_frame(&rt, &s, &sc, &f, &set);
+      t_grab_held(&grabs);
+      grabs.snap                    = true;
+      grabs.hand[1].last.position.y = 0.08f;
+      grabs.start[1]                = grabs.hand[1].last;
+      if (!i)
+      {
+         grabs.hand[1].rest_slot = 2;
+         grabs.hand[1].rest_on   = 0;
+         grabs.hand[1].rest_edge = 1;
+      }
+      openxr_frame_publish_grabs(&f, &grabs);
+      openxr_frame_place_screens(&f, 1000);
+      t_aim_ok = false;
+      openxr_frame_layers(&f, 1000, layers, ptrs);
+      CHECK(     f.hinged == want
+            && (i || (f.hinges[1].slot == 1 && f.hinges[1].on == 0
+                  && f.hinges[1].edge == 1)),
+            "%s, untracked first frame: hinged %#x",
+            i ? "taken free" : "taken hinged", f.hinged);
+      video_xr_pose_identity(&aim);
+      aim.position.y = 0.08f;
+      aim.position.z = -0.8f;
+      video_xr_compose(&f.screens.pose, &aim, &t_aim_pose);
+      t_aim_ok = true;
+      openxr_frame_layers(&f, 2000, layers, ptrs);
+      CHECK(     f.hinged == want
+            && t_near(layers[0].pose.position.y, 0.08f)
+            && t_near(layers[0].pose.position.z, -1.8f),
+            "%s, tracked where taken: hinged %#x at %.4f,%.4f",
+            i ? "taken free" : "taken hinged", f.hinged,
+            layers[0].pose.position.y, layers[0].pose.position.z);
+      if (!i)
+      {
+         aim.position.z += 0.05f;
+         video_xr_compose(&f.screens.pose, &aim, &t_aim_pose);
+         openxr_frame_layers(&f, 3000, layers, ptrs);
+         CHECK(f.hinged == 0u, "5 cm toward the viewer: hinged %#x",
+               f.hinged);
+      }
+      t_grab_free(&rt, &s, &sc, &f);
+   }
+}
+
+/* A hold taken where its screen rests hinged, pulled straight off
+ * screen 2's plane 2 mm a frame to 4.8 cm and back: no frame moves it
+ * more than twice the hand, though the hinge's reach ends with the
+ * grab's fade short of whole. The line shows to 4.4 cm, not from 4.6,
+ * nor back at 3.2 cm; back in the plane, the hinge whole, it does. */
+static void test_frame_grabs_rest_out(void)
+{
+   unsigned i;
+   float last = 0.0f;
+   openxr_runtime_t rt;
+   openxr_session_t s;
+   openxr_swapchains_t sc;
+   openxr_frame_t f;
+   video_xr_quad_set_t set;
+   openxr_grabs_t grabs;
+   video_xr_pose_t aim;
+   XrCompositionLayerQuad layers[VIDEO_XR_MAX_QUADS];
+   const XrCompositionLayerBaseHeader *ptrs[VIDEO_XR_MAX_QUADS];
+
+   t_grab_frame(&rt, &s, &sc, &f, &set);
+   t_grab_held(&grabs);
+   grabs.snap                    = true;
+   grabs.hand[1].last.position.y = 0.08f;
+   grabs.start[1]                = grabs.hand[1].last;
+   grabs.hand[1].rest_slot       = 2;
+   grabs.hand[1].rest_on         = 0;
+   grabs.hand[1].rest_edge       = 1;
+   openxr_frame_publish_grabs(&f, &grabs);
+   t_aim_ok = true;
+   for (i = 0; i <= 48; i++)
+   {
+      unsigned k  = (i <= 24) ? i : 48 - i;
+      XrTime time = 1000 + (XrTime)i * 11111111;
+      video_xr_pose_identity(&aim);
+      aim.position.y = 0.08f;
+      aim.position.z = -0.8f + 0.002f * k;
+      video_xr_compose(&f.screens.pose, &aim, &t_aim_pose);
+      openxr_frame_place_screens(&f, time);
+      openxr_frame_layers(&f, time, layers, ptrs);
+      if (i)
+         CHECK(fabs(layers[0].pose.position.z - last) <= 0.00401,
+               "%s %.1f cm off: moved %.2f mm", (i <= 24) ? "out" : "back",
+               0.2 * k, fabs(layers[0].pose.position.z - last) * 1e3);
+      last = layers[0].pose.position.z;
+      if (i <= 24 || k == 16 || k == 0)
+         CHECK(f.hinged == ((i <= 24 ? k <= 22 : k == 0) ? 2u : 0u),
+               "%s %.1f cm off: hinged %#x", (i <= 24) ? "out" : "back",
+               0.2 * k, f.hinged);
+   }
+   t_grab_free(&rt, &s, &sc, &f);
+}
+
 /* Whether l is the back of q, a quad facing +Z: the laser image's
  * dark square in q's place at its size, opaque, facing -Z, up still
  * up. */
@@ -9010,6 +9127,8 @@ int main(void)
    test_frame_grabs_threaded();
    test_frame_layer_budget();
    test_frame_grabs_rests();
+   test_frame_grabs_rest_kept();
+   test_frame_grabs_rest_out();
    test_frame_backs();
    test_cursor_backs();
    test_cursor_tags();

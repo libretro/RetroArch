@@ -6120,7 +6120,9 @@ def check_edit_hinge_3ds(res, gap=0.0):
     step. While hinged a green line runs along the hinge midway across
     the gap where the edges overlap, screen 1's bottom rim and screen
     2's top rim gone; let go there, it rests hinged: both stay until
-    edit mode ends. Not a set time: stalled polls cut the swing
+    edit mode ends. Taken again where it rests, it is hinged from its
+    first frame: the line and the cut rims never go, it does not move,
+    nothing buzzes. Not a set time: stalled polls cut the swing
     short."""
     errors = edit_log_errors(res, ['on', 'off'])
     # Near the hinge but not held there (7 mm into Hinge Gap 0's click,
@@ -6181,6 +6183,26 @@ def check_edit_hinge_3ds(res, gap=0.0):
             (tuple(screen2(f)['pose'][:3]), 0, True)])
     errors += outline_gap_errors(rest[-1]) if rest else \
         ['no frame of screen 2 let go']
+    # Taken again where it rests, it is hinged from its first frame.
+    again = [f for f in between(res, 'resting', 'dropped') if screen2(f)]
+    errors += hinge_line_errors(again, hinge, 0)
+    for f in again[:1] + again[-1:]:
+        errors += cut_outline_errors(f, [
+            (S0, OUTLINE_CROP, True),
+            (tuple(screen2(f)['pose'][:3]), 0, True)])
+    if rest and again:
+        at = tuple(screen2(rest[-1])['pose'][:3])
+        moved = [f['n'] for f in again
+                 if not near3(screen2(f)['pose'][:3], at, HINGE_GAP_POS)]
+        if moved:
+            errors.append('screen 2 moved taken again, frames %s' % moved)
+    elif not again:
+        errors.append('no frame of screen 2 taken again')
+    taken = (buzzes(res, HINGE_BUZZ, 'resting', 'dropped')
+             + buzzes(res, SNAP_TICK, 'resting', 'dropped'))
+    if taken:
+        errors.append('%d buzzes taking screen 2 again where it rests '
+                      'hinged, want 0: %s' % (len(taken), taken))
     for f in between(res, 'off', delay=0.5):
         if hinge_lines(f):
             errors.append('frame %d: a hinge line after edit mode ended'
@@ -6963,6 +6985,8 @@ EDIT_CASES += [
          ('wait', 1), ('mark', 'swung'), ('script', edit_aim(x=0.06)),
          ('mark', 'released'),
          ('wait', 1), ('mark', 'resting'),
+         ('script', script(edit_aim(x=0.06), EDIT_GRIP)), ('wait', 1),
+         ('script', edit_aim(x=0.06)), ('mark', 'dropped'), ('wait', 1),
          ('send', EDIT), ('wait', 2), ('mark', 'off'),
          ('wait', 1)],
      'check': check_edit_hinge_3ds},
@@ -6981,6 +7005,8 @@ EDIT_CASES += [
          ('wait', 1), ('mark', 'swung'), ('script', edit_aim(x=0.06)),
          ('mark', 'released'),
          ('wait', 1), ('mark', 'resting'),
+         ('script', script(edit_aim(x=0.06), EDIT_GRIP)), ('wait', 1),
+         ('script', edit_aim(x=0.06)), ('mark', 'dropped'), ('wait', 1),
          ('send', EDIT), ('wait', 2), ('mark', 'off'),
          ('wait', 1)],
      'check': check_edit_hinge_gap},

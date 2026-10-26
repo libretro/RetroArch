@@ -252,6 +252,21 @@ unsigned video_xr_rest_hinges(const video_xr_quad_set_t *set,
    (void)set; (void)skip; (void)gap; (void)rest; (void)max;
    return 0;
 }
+bool video_xr_rest_hinge(const video_xr_quad_set_t *set, unsigned slot,
+      unsigned skip, float width, float height, float gap,
+      const video_xr_pose_t *pose, video_xr_hinge_t *hinge)
+{
+   (void)set; (void)slot; (void)skip; (void)width; (void)height;
+   (void)gap; (void)pose; (void)hinge;
+   return false;
+}
+bool video_xr_grab_kept(const video_xr_grab_t *g,
+      const video_xr_pose_t *aim, const video_xr_quad_set_t *targets,
+      const video_xr_pose_t *start, video_xr_hinge_t *kept)
+{
+   (void)g; (void)aim; (void)targets; (void)start; (void)kept;
+   return false;
+}
 void openxr_frame_publish_grabs(openxr_frame_t *f, const openxr_grabs_t *g)
 { (void)f; (void)g; }
 void video_xr_smooth_step(video_xr_smooth_t *s, unsigned level,

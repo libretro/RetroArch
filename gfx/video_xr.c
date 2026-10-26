@@ -2094,25 +2094,31 @@ static unsigned video_xr_snap_hinge_at(const video_xr_quad_set_t *set,
    if (!nh)
       return 0;
 
-   /* The turn: of two in its whole snap, to the nearer, so it turns to
-    * the screen it hinges to; else to the target whose pull leaves it
-    * nearest parallel or square, then the stronger pull, the smaller
-    * turn, the nearer, the first. */
+   /* The turn: while the rest fade in, to a screen pulling whole, not a
+    * nearer one still fading; of two in its whole snap, to the nearer,
+    * so it turns to the screen it hinges to; else to the target whose
+    * pull leaves it nearest parallel or square, then the stronger pull,
+    * the smaller turn, the nearer, the first. */
    for (i = 0; i < n; i++)
    {
       double k = video_xr_snap_turn(&t[i]);
       int c    = -1;
+      int lead = (ref >= 0 && fade < 1.0f)
+         ? (int)((whole >> t[ref].q->slot) & 1u)
+            - (int)((whole >> t[i].q->slot) & 1u) : 0;
       if (ref >= 0)
       {
-         bool whole = t[i].angle <= VIDEO_XR_SNAP_ANGLE
+         bool both = t[i].angle <= VIDEO_XR_SNAP_ANGLE
             && t[ref].angle <= VIDEO_XR_SNAP_ANGLE;
-         c = whole ? video_xr_snap_cmp(t[i].dist, t[ref].dist) : 0;
+         c = lead;
+         if (!c && both)
+            c = video_xr_snap_cmp(t[i].dist, t[ref].dist);
          if (!c)
             c = video_xr_snap_cmp(t[i].angle * (1.0 - k),
                   t[ref].angle * (1.0 - turn));
          if (!c)
             c = (k > turn) ? -1 : (k < turn) ? 1 : 0;
-         if (!c && !whole)
+         if (!c && !both)
             c = (t[i].angle < t[ref].angle) ? -1
                : (t[i].angle > t[ref].angle) ? 1 : 0;
          if (!c && t[i].dist < t[ref].dist)
@@ -2540,6 +2546,42 @@ unsigned video_xr_rest_hinges(const video_xr_quad_set_t *set,
    return n;
 }
 
+bool video_xr_rest_hinge(const video_xr_quad_set_t *set, unsigned slot,
+      unsigned skip, float width, float height, float gap,
+      const video_xr_pose_t *pose, video_xr_hinge_t *hinge)
+{
+   unsigned i, n;
+   video_xr_quad_t c;
+   video_xr_rest_t r;
+   video_xr_pose_t moved;
+   const video_xr_quad_t *s[RETRO_VIDEO_VIEWS_MAX];
+   unsigned on = 0;
+   if (!set || slot >= VIDEO_XR_MENU_SLOT)
+      return false;
+   memset(&c, 0, sizeof(c));
+   c.pose   = *pose;
+   c.width  = width;
+   c.height = height;
+   c.slot   = slot;
+   n        = video_xr_rest_screens(set, skip | (1u << slot), s);
+   for (i = 0; i < n; i++)
+      if (video_xr_rest_on(set, &c, s[i], skip, gap, &r))
+         on |= 1u << s[i]->slot;
+   if (!on)
+      return false;
+   /* Of those, the one the snap ranks best; it may rank another edge of
+    * that screen, which must rest exactly too. */
+   moved = *pose;
+   if (!(video_xr_snap_hinge(set, slot, ~on, width, height, gap, 1.0f,
+            &moved, hinge) & VIDEO_XR_SNAP_HINGE))
+      return false;
+   for (i = 0; i < n; i++)
+      if (s[i]->slot == hinge->slot)
+         break;
+   return i < n && video_xr_rest_exact(set, &c, s[i], skip, hinge->edge,
+         hinge->on, gap);
+}
+
 /* Past this pitch of the ray, in degrees, its heading blends evenly
  * into the one the hand's up gives, which straight up or down is the
  * only one: so it never jumps there, but a twist there turns it. */
@@ -2594,15 +2636,10 @@ void video_xr_grab_hold(video_xr_grab_t *g, const video_xr_pose_t *aim,
    g->turn = turn.orientation;
 }
 
-/* video_xr_grab_pose, and the hinge the snap holds unless NULL. */
-static bool video_xr_grab_snapped(const video_xr_grab_t *g,
-      const video_xr_pose_t *aim, const video_xr_quad_set_t *targets,
-      unsigned skip, const video_xr_pose_t *start, video_xr_pose_t *pose,
-      video_screen_xr_t *out, unsigned *snapped, video_xr_hinge_t *hinge)
+/* Where g puts its item for an aim pose, with no snap or clamp. */
+static void video_xr_grab_aimed(const video_xr_grab_t *g,
+      const video_xr_pose_t *aim, video_xr_pose_t *pose)
 {
-   video_screen_xr_t s, c;
-   bool clamped;
-   unsigned snaps = 0;
    video_xr_compose(aim, &g->rel, pose);
    if (!g->tilt)
    {
@@ -2613,10 +2650,27 @@ static bool video_xr_grab_snapped(const video_xr_grab_t *g,
       video_xr_compose(&head, &turn, &turn);
       pose->orientation = turn.orientation;
    }
+}
+
+/* video_xr_grab_pose, and the hinge the snap holds unless NULL. */
+static bool video_xr_grab_snapped(const video_xr_grab_t *g,
+      const video_xr_pose_t *aim, const video_xr_quad_set_t *targets,
+      unsigned skip, const video_xr_pose_t *start, video_xr_pose_t *pose,
+      video_screen_xr_t *out, unsigned *snapped, video_xr_hinge_t *hinge)
+{
+   video_screen_xr_t s, c;
+   bool clamped;
+   unsigned snaps = 0;
+   video_xr_grab_aimed(g, aim, pose);
    if (targets)
-      snaps = video_xr_snap_hinge(targets, g->slot, skip, g->width,
-            g->height, g->gap * 0.01f, video_xr_snap_fade(start, pose),
-            pose, hinge);
+   {
+      video_xr_hinge_t kept;
+      unsigned whole = video_xr_grab_kept(g, aim, targets, start, &kept)
+         ? 1u << kept.slot : 0u;
+      snaps = video_xr_snap_hinge_at(targets, g->slot, skip, whole,
+            g->width, g->height, g->gap * 0.01f,
+            video_xr_snap_fade(start, pose), pose, hinge);
+   }
    if (snapped)
       *snapped = snaps;
    video_views_xr_reset(&s, 1);
@@ -3034,6 +3088,24 @@ bool video_xr_grab_near_hinge(const video_xr_grab_t *g,
          && p.overlap > 0.0;
    }
    return false;
+}
+
+bool video_xr_grab_kept(const video_xr_grab_t *g,
+      const video_xr_pose_t *aim, const video_xr_quad_set_t *targets,
+      const video_xr_pose_t *start, video_xr_hinge_t *kept)
+{
+   video_xr_pose_t pose;
+   if (!g->rest_slot || !targets)
+      return false;
+   memset(kept, 0, sizeof(*kept));
+   kept->slot = g->rest_slot - 1u;
+   kept->on   = g->rest_on;
+   kept->edge = g->rest_edge;
+   if (video_xr_grab_near_hinge(g, aim, targets, kept,
+            VIDEO_XR_HINGE_REACH))
+      return true;
+   video_xr_grab_aimed(g, aim, &pose);
+   return video_xr_snap_fade(start, &pose) < 1.0f;
 }
 
 unsigned video_xr_grab_hinge(const video_xr_grab_t *g,

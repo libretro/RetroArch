@@ -218,18 +218,25 @@ typedef struct video_xr_grab
    unsigned state;         /* enum video_xr_grab_state */
    bool tilt;              /* its pitch and roll follow the hand too */
    unsigned char gap;      /* Hinge Gap, whole centimetres */
+   /* The hinge it rested in as it was taken, whole from the grab while
+    * video_xr_grab_kept: its target's slot plus one (0, none), the
+    * target's edge and its own. */
+   unsigned char rest_slot;
+   unsigned char rest_on;
+   unsigned char rest_edge;
 } video_xr_grab_t;
 
 /* Where g puts its item for an aim pose: the aim composed with g->rel,
  * its turn g->turn from the aim's heading unless g->tilt, snapped to
  * the screens of targets but those in skip, fading in from start, the
  * item's pose as it was grabbed (video_xr_snap, video_xr_snap_fade;
- * NULL targets: none, and start unread), its offsets from g->base
- * clamped to the settings' range. Writes the pose and, unless NULL, the
- * offsets and turn and the snaps engaged or pulling (video_xr_snap).
- * Returns whether a clamp held it back, never for a snap alone; the
- * caller then holds g->rel again from pose, so the item resumes from
- * the limit. */
+ * NULL targets: none, and start unread), the target of the hinge it was
+ * taken in pulling whole while video_xr_grab_kept, its offsets from
+ * g->base clamped to the settings' range. Writes the pose and, unless
+ * NULL, the offsets and turn and the snaps engaged or pulling
+ * (video_xr_snap). Returns whether a clamp held it back, never for a
+ * snap alone; the caller then holds g->rel again from pose, so the item
+ * resumes from the limit. */
 bool video_xr_grab_pose(const video_xr_grab_t *g, const video_xr_pose_t *aim,
       const video_xr_quad_set_t *targets, unsigned skip,
       const video_xr_pose_t *start, video_xr_pose_t *pose,
@@ -415,6 +422,15 @@ typedef struct video_xr_rest
 unsigned video_xr_rest_hinges(const video_xr_quad_set_t *set,
       unsigned skip, float gap, video_xr_rest_t *rest, unsigned max);
 
+/* The hinge a screen in slot, width x height metres resting at pose, is
+ * taken in: of the hinges it rests in carried, on screens of set but
+ * those in skip, gap metres apart, the one video_xr_snap_hinge ranks
+ * best, if holding it whole there, nothing else pulling yet, moves
+ * nothing. False with none. */
+bool video_xr_rest_hinge(const video_xr_quad_set_t *set, unsigned slot,
+      unsigned skip, float width, float height, float gap,
+      const video_xr_pose_t *pose, video_xr_hinge_t *hinge);
+
 /* video_xr_grab_pose with targets and no settings, also giving the
  * hinge it holds (VIDEO_XR_SNAP_HINGE in the snaps returned, never
  * with a clamp holding it back, nor unless the item's own edge is
@@ -437,6 +453,15 @@ unsigned video_xr_grab_hinge(const video_xr_grab_t *g,
 bool video_xr_grab_near_hinge(const video_xr_grab_t *g,
       const video_xr_pose_t *aim, const video_xr_quad_set_t *targets,
       const video_xr_hinge_t *h, float reach);
+
+/* Whether g still carries the hinge it was taken in (g->rest_slot): its
+ * edge within VIDEO_XR_HINGE_REACH of where that hinge could take it
+ * again (video_xr_grab_near_hinge), or past that while its fade from
+ * start is short of whole (video_xr_snap_fade), so leaving the reach
+ * does not hop it. Writes that hinge's slots and edges to kept. */
+bool video_xr_grab_kept(const video_xr_grab_t *g,
+      const video_xr_pose_t *aim, const video_xr_quad_set_t *targets,
+      const video_xr_pose_t *start, video_xr_hinge_t *kept);
 
 /* g holds its item at pose for aim, its place and its turn. */
 void video_xr_grab_put(video_xr_grab_t *g, const video_xr_pose_t *aim,

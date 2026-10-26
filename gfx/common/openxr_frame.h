@@ -76,8 +76,9 @@ typedef struct openxr_aims
 } openxr_aims_t;
 
 /* Where a hand's held item was last shown, for the hold (slot and
- * state) it was shown for, and the hinge it last held whole, if
- * hinged: until it leaves that hinge's reach, in the screens' frame. */
+ * state) it was shown for, and the hinge it last held whole, or was
+ * taken in, if hinged: until it leaves that hinge's reach, in the
+ * screens' frame. */
 typedef struct openxr_held
 {
    video_xr_pose_t pose;

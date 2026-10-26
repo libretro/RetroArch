@@ -2643,6 +2643,20 @@ static void input_openxr_edit_grab(input_openxr_t *st,
    hold->hinged   = false;
    hold->lidded   = false;
    hold->buzzed   = false;
+   /* Taken where it rests hinged, it carries that hinge from the start,
+    * its buzz and its snaps' spent: nothing new took hold. */
+   if (     e->snap && q->slot < VIDEO_XR_MENU_SLOT
+         && video_xr_rest_hinge(&st->quads, q->slot,
+               input_openxr_edit_holding(e), q->width, q->height,
+               e->gap * 0.01f, &q->pose, &hold->lid))
+   {
+      hold->g.rest_slot = (unsigned char)(hold->lid.slot + 1);
+      hold->g.rest_on   = (unsigned char)hold->lid.on;
+      hold->g.rest_edge = (unsigned char)hold->lid.edge;
+      hold->armed       = 0;
+      hold->lidded      = true;
+      hold->buzzed      = true;
+   }
    if (q->slot != VIDEO_XR_MENU_SLOT)
       config_get_video_screen_xr(q->slot, &now);
    else if (!config_get_video_menu_xr(&now))
@@ -2725,6 +2739,19 @@ static unsigned input_openxr_edit_move(input_openxr_edit_t *e,
       snapped = video_xr_grab_hinge(&hold->g, aim, targets,
             input_openxr_edit_holding(e), &hold->start, &pose, &hinge);
       hinged  = (snapped & VIDEO_XR_SNAP_HINGE) != 0;
+      /* Ends as a carried hinge does: out of reach (once the fade is
+       * whole), another hinge taking hold, or the other hand taking its
+       * target. */
+      if (hold->g.rest_slot)
+      {
+         video_xr_hinge_t kept;
+         if (     !video_xr_grab_kept(&hold->g, aim, targets, &hold->start,
+                     &kept)
+               || ((input_openxr_edit_holding(e) >> kept.slot) & 1u)
+               || (hinged && (hinge.slot != kept.slot
+                     || hinge.on != kept.on || hinge.edge != kept.edge)))
+            hold->g.rest_slot = 0;
+      }
       if (pushed != hold->pushed)
       {
          if (hinged)

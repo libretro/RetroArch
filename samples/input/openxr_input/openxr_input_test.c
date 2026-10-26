@@ -4650,23 +4650,28 @@ static void test_edit_tag(void)
    t_edit_end();
 }
 
+/* A tenth of a millimetre in front of screen 1's plane: no screen rests
+ * in a hinge there, so cases about carrying one into its hinge do not
+ * take it hinged. */
+#define T_APART 0.0001f
+
 /* Screen 2, 0.8 x 0.6, at its spot 1.245 m right of screen 1's middle,
  * 4.5 cm off standing flush beside it: a free gap, past the edge's
- * click. */
+ * click, a hair off screen 1's plane (T_APART). */
 static void t_snap_beside(void)
 {
    video_xr_quad_t *q = &t_quads.quads[t_quads.num_quads++];
    memset(q, 0, sizeof(*q));
    video_xr_pose_identity(&q->pose);
    q->pose.position.x      = 1.245f;
-   q->pose.position.z      = -1.8f;
+   q->pose.position.z      = -1.8f + T_APART;
    q->width                = 0.8f;
    q->height               = 0.6f;
    q->kind                 = VIDEO_XR_QUAD_SCREEN;
    q->screen               = 1;
    q->slot                 = 1;
    t_quads.slots[1].base.x = 1.245f;
-   t_quads.slots[1].base.z = -1.8f;
+   t_quads.slots[1].base.z = -1.8f + T_APART;
 }
 
 /* Snap to Screens on the main thread: a screen taken near a line
@@ -5387,9 +5392,10 @@ static void t_under_at(double fold, float apart)
    t_aim[2].position.y     = q->pose.position.y;
 }
 
+/* Screen 2 in the 3DS layout a hair off its hinge (T_APART). */
 static void t_snap_under(double fold)
 {
-   t_under_at(fold, 0.0f);
+   t_under_at(fold, T_APART);
 }
 
 /* Screen 2 in the 3DS layout resting in its hinge on screen 1. */
@@ -5941,6 +5947,372 @@ static void test_edit_rest_corner(void)
    t_cursor       = false;
    t_head_tracked = false;
    t_edit_end();
+}
+
+/* Taken where it rests hinged, screen 2 carries that hinge, its lid and
+ * buzz seeded at the grab, and is hinged from the first poll that
+ * moves it: no long buzz, no tick, nothing moves. Pulled 6 cm off
+ * screen 1's plane it lets go; carried back 7 cm along, it hinges with
+ * the long buzz. */
+static void test_edit_rest_take(void)
+{
+   unsigned n, l;
+   video_xr_pose_t at;
+   const input_openxr_hold_t *hold = &input_openxr_edit.hand[1];
+   t_snap = true;
+   t_edit_start();
+   t_rest_under(0.0);
+   at = t_quads.quads[2].pose;
+   n  = t_applies[2];
+   l  = t_longs[2];
+   /* The grip's poll takes it; the next is the carry's first. */
+   t_tilt_polls(1, 0.0f, false);
+   CHECK(     hold->g.state == VIDEO_XR_GRAB_HELD && hold->g.slot == 1
+         && hold->g.rest_slot == 1 && hold->g.rest_on == 1
+         && hold->g.rest_edge == 0 && hold->lidded && hold->buzzed
+         && !hold->armed && t_grabs.hand[1].rest_slot == 1,
+         "taken resting hinged: kept %u, lidded %d, buzzed %d, armed %#x",
+         (unsigned)hold->g.rest_slot, (int)hold->lidded, (int)hold->buzzed,
+         hold->armed);
+   t_tilt_polls(1, 0.0f, false);
+   CHECK(     hold->hinged && hold->g.rest_slot == 1
+         && hold->lid.slot == 0 && hold->lid.on == 1 && hold->lid.edge == 0
+         && t_applies[2] == n
+         && fabs(hold->g.last.position.x - at.position.x) < 1e-5
+         && fabs(hold->g.last.position.y - at.position.y) < 1e-5
+         && fabs(hold->g.last.position.z - at.position.z) < 1e-5,
+         "first carried poll: hinged %d, kept %u, lid %u/%u/%u, %u "
+         "buzzes, at %.5f,%.5f,%.5f", (int)hold->hinged,
+         (unsigned)hold->g.rest_slot, hold->lid.slot, hold->lid.on,
+         hold->lid.edge, t_applies[2] - n, hold->g.last.position.x,
+         hold->g.last.position.y, hold->g.last.position.z);
+   t_tilt_polls(10, 0.0f, false);
+   CHECK(hold->hinged && t_applies[2] == n,
+         "held still: hinged %d, %u buzzes", (int)hold->hinged,
+         t_applies[2] - n);
+   t_aim[2].position.z += 0.06f;
+   t_tilt_polls(1, 0.0f, false);
+   CHECK(!hold->hinged && !hold->g.rest_slot && !hold->buzzed,
+         "6 cm off: hinged %d, kept %u, buzzed %d", (int)hold->hinged,
+         (unsigned)hold->g.rest_slot, (int)hold->buzzed);
+   t_aim[2].position.z -= 0.06f;
+   t_aim[2].position.x  = 0.07f;
+   t_tilt_polls(1, 0.0f, false);
+   CHECK(hold->hinged && t_longs[2] == l + 1,
+         "carried back: hinged %d, %u long buzzes", (int)hold->hinged,
+         t_longs[2] - l);
+   t_take_end();
+}
+
+/* Taken resting hinged, the free hand's stick swings screen 2 about the
+ * shared edge at once, the edge staying on screen 1's bottom edge. */
+static void test_edit_rest_swing(void)
+{
+   video_xr_vec3_t mid, edge;
+   video_xr_pose_t at;
+   const input_openxr_hold_t *hold = &input_openxr_edit.hand[1];
+   t_snap = true;
+   t_edit_start();
+   t_rest_under(0.0);
+   at = t_quads.quads[2].pose;
+   t_tilt_polls(20, 0.5f, false);
+   mid.x = 0.0f;
+   mid.y = 0.3f;
+   mid.z = 0.0f;
+   video_xr_rotate(&hold->g.last.orientation, &mid, &edge);
+   edge.x += hold->g.last.position.x;
+   edge.y += hold->g.last.position.y;
+   edge.z += hold->g.last.position.z;
+   CHECK(     hold->hinged
+         && fabs(hold->g.last.position.z - at.position.z) > 0.005
+         && t_near(edge.y, -0.48f) && t_near(edge.z, -1.8f),
+         "swung at once: hinged %d, middle z %.4f from %.4f, top edge at "
+         "%.4f,%.4f", (int)hold->hinged, hold->g.last.position.z,
+         at.position.z, edge.y, edge.z);
+   t_take_end();
+}
+
+/* Resting hinged to screen 1 above and screen 3 4 cm under, screen 2 is
+ * taken on the hinge the snap ranks best: screen 1's, touching. */
+static void test_edit_rest_take_two(void)
+{
+   video_xr_quad_t *q;
+   const input_openxr_hold_t *hold = &input_openxr_edit.hand[1];
+   t_snap = true;
+   t_edit_start();
+   t_rest_under(0.0);
+   q                       = &t_quads.quads[t_quads.num_quads++];
+   *q                      = t_quads.quads[2];
+   q->pose.position.y      = -0.48f - 0.6f - 0.04f - 0.3f;
+   q->slot                 = 2;
+   q->screen               = 2;
+   t_quads.slots[2].base.y = q->pose.position.y;
+   t_quads.slots[2].base.z = -1.8f;
+   t_tilt_polls(2, 0.0f, false);
+   CHECK(     hold->g.slot == 1 && hold->hinged && hold->g.rest_slot == 1
+         && hold->lid.slot == 0 && hold->lid.on == 1 && hold->lid.edge == 0,
+         "two neighbours: hinged %d, kept %u, lid on slot %u's edge %u",
+         (int)hold->hinged, (unsigned)hold->g.rest_slot, hold->lid.slot,
+         hold->lid.on);
+   t_take_end();
+}
+
+/* With the left hand holding screen 1, screen 2 is taken as any screen:
+ * not hinged, no lid. */
+static void test_edit_rest_take_other(void)
+{
+   const input_openxr_hold_t *hold = &input_openxr_edit.hand[1];
+   t_snap = true;
+   t_edit_start();
+   t_rest_under(0.0);
+   t_let_go();
+   t_hold("edit/grab", 1, 1.0f, 0.0f);
+   t_clock += 10000;
+   t_edit_poll();
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_clock += 10000;
+   t_edit_poll();
+   t_clock += 10000;
+   t_edit_poll();
+   CHECK(     input_openxr_edit.hand[0].g.state == VIDEO_XR_GRAB_HELD
+         && input_openxr_edit.hand[0].g.slot == 0
+         && hold->g.state == VIDEO_XR_GRAB_HELD && hold->g.slot == 1
+         && !hold->hinged && !hold->g.rest_slot && !hold->lidded,
+         "the other hand on screen 1: hinged %d, kept %u, lidded %d",
+         (int)hold->hinged, (unsigned)hold->g.rest_slot,
+         (int)hold->lidded);
+   t_take_end();
+}
+
+/* Screen 2 taken resting hinged 2 cm under screen 1 at Hinge Gap 2;
+ * the left hand then takes screen 1, which ends the hinge kept: it is
+ * no longer hinged, nor kept, its buzz spent no more. Screen 1 let go
+ * 5 mm higher, screen 2 stays where the hand holds it, as the grab's
+ * fade of none has it, not hopping into the hinge; carried 7 cm along,
+ * it hinges anew with the long buzz. */
+static void test_edit_rest_take_target(void)
+{
+   unsigned l;
+   video_xr_pose_t at;
+   const input_openxr_hold_t *hold = &input_openxr_edit.hand[1];
+   t_gap  = VIDEO_OPENXR_EDIT_HINGE_GAP_2;
+   t_snap = true;
+   t_edit_start();
+   t_rest_under(0.0);
+   t_quads.quads[2].pose.position.y -= 0.02f;
+   t_quads.slots[1].base.y          -= 0.02f;
+   t_aim[2].position.y              -= 0.02f;
+   t_tilt_polls(2, 0.0f, false);
+   at = hold->g.last;
+   l  = t_longs[2];
+   CHECK(hold->hinged && hold->g.rest_slot == 1,
+         "taken resting hinged: hinged %d, kept %u", (int)hold->hinged,
+         (unsigned)hold->g.rest_slot);
+   t_hold("edit/grab", 1, 1.0f, 0.0f);
+   t_clock += 10000;
+   t_edit_poll();
+   CHECK(     input_openxr_edit.hand[0].g.state == VIDEO_XR_GRAB_HELD
+         && input_openxr_edit.hand[0].g.slot == 0 && !hold->hinged
+         && !hold->g.rest_slot && !hold->buzzed && !hold->lidded
+         && !t_grabs.hand[1].rest_slot,
+         "screen 1 taken: hinged %d, kept %u, buzzed %d, lidded %d, "
+         "published %u", (int)hold->hinged, (unsigned)hold->g.rest_slot,
+         (int)hold->buzzed, (int)hold->lidded,
+         (unsigned)t_grabs.hand[1].rest_slot);
+   t_aim[1].position.y              += 0.005f;
+   t_quads.quads[0].pose.position.y += 0.005f;
+   t_clock += 10000;
+   t_edit_poll();
+   t_let_go();
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_clock += 10000;
+   t_edit_poll();
+   t_clock += 10000;
+   t_edit_poll();
+   CHECK(     input_openxr_edit.hand[0].g.state != VIDEO_XR_GRAB_HELD
+         && !hold->hinged && !hold->g.rest_slot && t_longs[2] == l
+         && fabs(hold->g.last.position.x - at.position.x) < 1e-5
+         && fabs(hold->g.last.position.y - at.position.y) < 1e-5
+         && fabs(hold->g.last.position.z - at.position.z) < 1e-5,
+         "screen 1 let go 5 mm up: hinged %d, kept %u, %u long buzzes, "
+         "at %.5f,%.5f,%.5f", (int)hold->hinged,
+         (unsigned)hold->g.rest_slot, t_longs[2] - l,
+         hold->g.last.position.x, hold->g.last.position.y,
+         hold->g.last.position.z);
+   t_aim[2].position.x = 0.07f;
+   t_tilt_polls(3, 0.0f, false);
+   CHECK(hold->hinged && t_longs[2] == l + 1,
+         "carried 7 cm along: hinged %d, %u long buzzes",
+         (int)hold->hinged, t_longs[2] - l);
+   t_take_end();
+   t_gap = VIDEO_OPENXR_EDIT_HINGE_GAP_0;
+}
+
+/* Screen 2 taken resting hinged on screen 1 at Hinge Gap 0, a third
+ * screen level 10 cm under it. Carried 6 cm down, still in reach of
+ * screen 1's edge, the third's 4 cm free gap is nearer: its hinge takes
+ * hold, which ends the one kept, with the long buzz once; held there,
+ * the hinge stays and nothing moves. Back 3 cm up, screen 1 pulls only
+ * as the fade has it, not whole. */
+static void test_edit_rest_take_over(void)
+{
+   unsigned l;
+   video_xr_pose_t at;
+   video_xr_quad_t *q;
+   const input_openxr_hold_t *hold = &input_openxr_edit.hand[1];
+   t_snap = true;
+   t_edit_start();
+   t_rest_under(0.0);
+   q                       = &t_quads.quads[t_quads.num_quads++];
+   *q                      = t_quads.quads[2];
+   q->pose.position.y      = -0.48f - 0.6f - 0.1f - 0.3f;
+   q->slot                 = 2;
+   q->screen               = 2;
+   t_quads.slots[2].base.y = q->pose.position.y;
+   t_quads.slots[2].base.z = -1.8f;
+   t_tilt_polls(2, 0.0f, false);
+   l = t_longs[2];
+   CHECK(hold->hinged && hold->g.rest_slot == 1 && hold->lid.slot == 0,
+         "taken resting hinged: hinged %d, kept %u, lid on slot %u",
+         (int)hold->hinged, (unsigned)hold->g.rest_slot, hold->lid.slot);
+   t_aim[2].position.y -= 0.06f;
+   t_tilt_polls(1, 0.0f, false);
+   at = hold->g.last;
+   CHECK(     hold->hinged && hold->lid.slot == 2 && hold->lid.on == 0
+         && hold->lid.edge == 1 && !hold->g.rest_slot
+         && t_longs[2] == l + 1,
+         "carried 6 cm down: hinged %d, lid %u/%u/%u, kept %u, %u long "
+         "buzzes, at %.5f", (int)hold->hinged, hold->lid.slot,
+         hold->lid.on, hold->lid.edge, (unsigned)hold->g.rest_slot,
+         t_longs[2] - l, hold->g.last.position.y);
+   t_tilt_polls(3, 0.0f, false);
+   CHECK(     hold->hinged && hold->lid.slot == 2 && t_longs[2] == l + 1
+         && fabs(hold->g.last.position.x - at.position.x) < 1e-5
+         && fabs(hold->g.last.position.y - at.position.y) < 1e-5
+         && fabs(hold->g.last.position.z - at.position.z) < 1e-5,
+         "held there: hinged %d, lid on slot %u, %u long buzzes, at "
+         "%.5f,%.5f,%.5f from %.5f,%.5f,%.5f", (int)hold->hinged,
+         hold->lid.slot, t_longs[2] - l, hold->g.last.position.x,
+         hold->g.last.position.y, hold->g.last.position.z, at.position.x,
+         at.position.y, at.position.z);
+   t_aim[2].position.y += 0.03f;
+   t_tilt_polls(1, 0.0f, false);
+   CHECK(     !(hold->hinged && hold->lid.slot == 0)
+         && t_longs[2] == l + 1,
+         "back 3 cm up: hinged %d, lid on slot %u, %u long buzzes",
+         (int)hold->hinged, hold->lid.slot, t_longs[2] - l);
+   t_take_end();
+}
+
+/* Screen 2 taken resting hinged on screen 1, then pulled straight off
+ * screen 1's plane 2 mm a poll to 4.8 cm and back: no poll moves it
+ * more than twice the hand, though the hinge's reach ends with the
+ * grab's fade short of whole; its buzz is spent to 4.4 cm, not from
+ * 4.6. Back in the plane, the fade still short, it hinges only anew,
+ * with the long buzz once. Taken again and pulled 7 cm off, the hinge
+ * kept lasts past the reach until the fade is whole. */
+static void test_edit_rest_take_out(void)
+{
+   unsigned i, l;
+   float z;
+   const input_openxr_hold_t *hold = &input_openxr_edit.hand[1];
+   t_snap = true;
+   t_edit_start();
+   t_rest_under(0.0);
+   t_tilt_polls(2, 0.0f, false);
+   l = t_longs[2];
+   z = hold->g.last.position.z;
+   CHECK(hold->hinged && hold->g.rest_slot == 1,
+         "taken resting hinged: hinged %d, kept %u", (int)hold->hinged,
+         (unsigned)hold->g.rest_slot);
+   for (i = 1; i <= 48; i++)
+   {
+      unsigned k = (i <= 24) ? i : 48 - i;
+      t_aim[2].position.z = 0.002f * k;
+      t_tilt_polls(1, 0.0f, false);
+      CHECK(fabs(hold->g.last.position.z - z) <= 0.00401,
+            "%s %.1f cm off: moved %.2f mm", (i <= 24) ? "out" : "back",
+            0.2 * k, fabs(hold->g.last.position.z - z) * 1e3);
+      if (i <= 24)
+         CHECK(hold->buzzed == (k <= 22),
+               "out %.1f cm off: buzzed %d", 0.2 * k, (int)hold->buzzed);
+      CHECK(!hold->hinged || t_longs[2] == l + (i <= 24 ? 0u : 1u),
+            "%s %.1f cm off: hinged %d, %u long buzzes",
+            (i <= 24) ? "out" : "back", 0.2 * k, (int)hold->hinged,
+            t_longs[2] - l);
+      z = hold->g.last.position.z;
+   }
+   CHECK(hold->hinged && t_longs[2] == l + 1,
+         "back in the plane: hinged %d, %u long buzzes", (int)hold->hinged,
+         t_longs[2] - l);
+   t_take_end();
+   t_snap = true;
+   t_edit_start();
+   t_rest_under(0.0);
+   t_tilt_polls(2, 0.0f, false);
+   z = hold->g.last.position.z;
+   for (i = 1; i <= 35; i++)
+   {
+      t_aim[2].position.z = 0.002f * i;
+      t_tilt_polls(1, 0.0f, false);
+      CHECK(fabs(hold->g.last.position.z - z) <= 0.00401,
+            "%.1f cm off: moved %.2f mm", 0.2 * i,
+            fabs(hold->g.last.position.z - z) * 1e3);
+      if (i == 24 || i >= 26)
+         CHECK(     (hold->g.rest_slot != 0) == (i == 24)
+               && t_grabs.hand[1].rest_slot == hold->g.rest_slot,
+               "%.1f cm off: kept %u, published %u", 0.2 * i,
+               (unsigned)hold->g.rest_slot,
+               (unsigned)t_grabs.hand[1].rest_slot);
+      z = hold->g.last.position.z;
+   }
+   t_take_end();
+}
+
+/* Flat at Hinge Gap 0, the pair shown at rest (screen 1 carried) is
+ * taken hinged from screen 1's side too, by the quads' own sizes as the
+ * list tests them: hinged on screen 2's top edge from the first poll
+ * that moves it, no buzz, unmoved. */
+static void test_edit_rest_take_sides(void)
+{
+   unsigned n;
+   video_xr_pose_t at;
+   const input_openxr_hold_t *hold = &input_openxr_edit.hand[0];
+   t_snap = true;
+   t_edit_start();
+   t_rest_under(0.0);
+   t_edit_poll();
+   CHECK(     t_grabs.num_rests == 1 && t_grabs.rests[0].slot == 0
+         && t_grabs.rests[0].edge == 1 && t_grabs.rests[0].target == 1
+         && t_grabs.rests[0].on == 0,
+         "at rest: %u, the first %u's edge %u on %u's %u",
+         t_grabs.num_rests, t_grabs.rests[0].slot, t_grabs.rests[0].edge,
+         t_grabs.rests[0].target, t_grabs.rests[0].on);
+   at = t_quads.quads[0].pose;
+   n  = t_applies[1];
+   t_let_go();
+   t_hold("edit/grab", 1, 1.0f, 0.0f);
+   t_clock += 10000;
+   t_edit_poll();
+   CHECK(     hold->g.state == VIDEO_XR_GRAB_HELD && hold->g.slot == 0
+         && hold->g.rest_slot == 2 && hold->g.rest_on == 0
+         && hold->g.rest_edge == 1 && hold->lidded && hold->buzzed,
+         "screen 1 taken resting hinged: kept %u/%u/%u, lidded %d",
+         (unsigned)hold->g.rest_slot, (unsigned)hold->g.rest_on,
+         (unsigned)hold->g.rest_edge, (int)hold->lidded);
+   t_clock += 10000;
+   t_edit_poll();
+   CHECK(     hold->hinged && hold->lid.slot == 1 && hold->lid.on == 0
+         && hold->lid.edge == 1 && t_applies[1] == n
+         && fabs(hold->g.last.position.x - at.position.x) < 1e-5
+         && fabs(hold->g.last.position.y - at.position.y) < 1e-5
+         && fabs(hold->g.last.position.z - at.position.z) < 1e-5,
+         "screen 1 carried: hinged %d, lid %u/%u/%u, %u buzzes, at "
+         "%.5f,%.5f,%.5f", (int)hold->hinged, hold->lid.slot,
+         hold->lid.on, hold->lid.edge, t_applies[1] - n,
+         hold->g.last.position.x, hold->g.last.position.y,
+         hold->g.last.position.z);
+   t_take_end();
 }
 
 /* Flat under screen 1, screen 2 is hinged on screen 1's bottom edge:
@@ -7403,6 +7775,14 @@ int main(void)
    test_edit_hinge_layers();
    test_edit_rest();
    test_edit_rest_corner();
+   test_edit_rest_take();
+   test_edit_rest_swing();
+   test_edit_rest_take_two();
+   test_edit_rest_take_other();
+   test_edit_rest_take_sides();
+   test_edit_rest_take_target();
+   test_edit_rest_take_over();
+   test_edit_rest_take_out();
    test_edit_hinge_under();
    test_edit_hinge_flick();
    test_edit_hinge_lid_ends();

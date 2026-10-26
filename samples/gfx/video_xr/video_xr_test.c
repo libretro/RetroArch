@@ -3676,6 +3676,215 @@ static void test_rest_hinges(void)
    CHECK(video_xr_rest_hinges(&set, 0, 0.0f, r, 8) == 0);
 }
 
+/* Whether a and b are the same pose to rounding. */
+static int pose_near(const video_xr_pose_t *a, const video_xr_pose_t *b)
+{
+   return fabs(a->position.x - b->position.x) < 1e-5
+      && fabs(a->position.y - b->position.y) < 1e-5
+      && fabs(a->position.z - b->position.z) < 1e-5
+      && fabs(a->orientation.x - b->orientation.x) < 1e-5
+      && fabs(a->orientation.y - b->orientation.y) < 1e-5
+      && fabs(a->orientation.z - b->orientation.z) < 1e-5
+      && fabs(a->orientation.w - b->orientation.w) < 1e-5;
+}
+
+/* The hinge a screen is taken in where it rests, by the same test that
+ * shows it: the 3DS pair folded 2 cm apart, shown, and taken hinged
+ * from screen 2's side alone (one-sided at a fold: screen 1's edge lies
+ * 1 cm off screen 2's plane), not with screen 1 held; neither shown
+ * nor taken hinged where the hinge, whole, would still move it (7 mm
+ * into Hinge Gap 0's click); of two, the one the snap ranks best:
+ * screen 1's touching edge over screen 3's 4 cm away. */
+static void test_rest_hinge(void)
+{
+   video_xr_quad_set_t set;
+   video_xr_pose_t p;
+   video_xr_hinge_t h;
+   video_xr_rest_t r[2];
+   rest_under(&set, 30.0, 0.02);
+   CHECK(video_xr_rest_hinges(&set, 0, 0.02f, r, 2) == 1
+         && rest_is(&r[0], 1, 0, 0, 1));
+   CHECK(video_xr_rest_hinge(&set, 1, 0, 1.28f, 0.96f, 0.02f,
+            &set.quads[1].pose, &h)
+         && h.slot == 0 && h.on == 1 && h.edge == 0
+         && h.axis == VIDEO_XR_STEP_TILT);
+   CHECK(!video_xr_rest_hinge(&set, 0, 0, 1.6f, 0.96f, 0.02f,
+            &set.quads[0].pose, &h));
+   CHECK(!video_xr_rest_hinge(&set, 1, 1u << 0, 1.28f, 0.96f, 0.02f,
+            &set.quads[1].pose, &h));
+   rest_under(&set, 0.0, 0.007);
+   CHECK(video_xr_rest_hinges(&set, 0, 0.0f, r, 2) == 0);
+   CHECK(!video_xr_rest_hinge(&set, 1, 0, 1.28f, 0.96f, 0.0f,
+            &set.quads[1].pose, &h));
+   rest_under(&set, 0.0, 0.0);
+   snap_pose(&p, 0.0, -0.48 - 0.96 - 0.04 - 0.48, -1.8, 0.0);
+   rest_add(&set, 2, 1.28f, 0.96f, &p);
+   CHECK(video_xr_rest_hinge(&set, 1, 0, 1.28f, 0.96f, 0.0f,
+            &set.quads[1].pose, &h)
+         && h.slot == 0 && h.on == 1 && h.edge == 0);
+}
+
+/* The 3DS pair resting folded 30 degrees 2 cm apart, screen 2 gripped
+ * where it rests by an aim at the origin, as edit mode takes it. */
+static void rest_grab(video_xr_quad_set_t *set, video_xr_grab_t *g,
+      video_xr_pose_t *aim)
+{
+   rest_under(set, 30.0, 0.02);
+   memset(g, 0, sizeof(*g));
+   video_xr_pose_identity(aim);
+   g->rel    = set->quads[1].pose;
+   g->turn   = g->rel.orientation;
+   g->last   = g->rel;
+   g->base   = g->rel.position;
+   g->width  = 1.28f;
+   g->height = 0.96f;
+   g->slot   = 1;
+   g->state  = VIDEO_XR_GRAB_HELD;
+   g->gap    = 2;
+}
+
+/* A grab carrying the hinge its screen rested in is hinged whole where
+ * it was taken, its fade still none, nothing moved; 2 cm toward the
+ * user it is still held on the line, where the fade alone would not
+ * hold it; without the hinge, neither. 4.8 cm off, past
+ * VIDEO_XR_HINGE_REACH, it holds no hinge but its target still pulls
+ * whole, the fade short of whole; 6 cm off, the hinge kept ends. */
+static void test_grab_kept(void)
+{
+   video_xr_quad_set_t set;
+   video_xr_grab_t g;
+   video_xr_pose_t aim, start, pose;
+   video_xr_hinge_t h;
+   rest_grab(&set, &g, &aim);
+   start = g.last;
+   CHECK(!video_xr_grab_kept(&g, &aim, &set, &start, &h));
+   CHECK(!(video_xr_grab_hinge(&g, &aim, &set, 0, &start, &pose, &h)
+            & VIDEO_XR_SNAP_HINGE));
+   g.rest_slot = 1;
+   g.rest_on   = 1;
+   g.rest_edge = 0;
+   CHECK(video_xr_grab_kept(&g, &aim, &set, &start, &h)
+         && h.slot == 0 && h.on == 1 && h.edge == 0);
+   CHECK((video_xr_grab_hinge(&g, &aim, &set, 0, &start, &pose, &h)
+            & VIDEO_XR_SNAP_HINGE)
+         && h.slot == 0 && h.on == 1 && h.edge == 0
+         && pose_near(&pose, &start));
+   aim.position.z = 0.02f;
+   CHECK((video_xr_grab_hinge(&g, &aim, &set, 0, &start, &pose, &h)
+            & VIDEO_XR_SNAP_HINGE)
+         && NEAR(pose.position.z, start.position.z));
+   g.rest_slot = 0;
+   CHECK(!(video_xr_grab_hinge(&g, &aim, &set, 0, &start, &pose, &h)
+            & VIDEO_XR_SNAP_HINGE));
+   g.rest_slot    = 1;
+   aim.position.z = 0.048f;
+   CHECK(video_xr_grab_kept(&g, &aim, &set, &start, &h));
+   CHECK(!(video_xr_grab_hinge(&g, &aim, &set, 0, &start, &pose, &h)
+            & VIDEO_XR_SNAP_HINGE));
+   aim.position.z = 0.06f;
+   CHECK(!video_xr_grab_kept(&g, &aim, &set, &start, &h));
+   CHECK(!(video_xr_grab_hinge(&g, &aim, &set, 0, &start, &pose, &h)
+            & VIDEO_XR_SNAP_HINGE));
+}
+
+/* Whether set's screen in slot, w x 0.96 where it rests, is taken in
+ * the hinge of its edge edge on target's edge on, gap metres apart. */
+static int rest_takes(const video_xr_quad_set_t *set, unsigned slot,
+      float w, float gap, unsigned edge, unsigned target, unsigned on)
+{
+   video_xr_hinge_t h;
+   return video_xr_rest_hinge(set, slot, 0, w, 0.96f, gap,
+         &set->quads[slot].pose, &h)
+      && h.edge == edge && h.slot == target && h.on == on;
+}
+
+/* Flat, or at Hinge Gap 0, a pair resting hinged is taken hinged from
+ * either side: the 3DS pair flat touching and 2 cm apart, folded 30
+ * degrees touching, and a square corner touching. */
+static void test_rest_hinge_sides(void)
+{
+   video_xr_quad_set_t set;
+   video_xr_pose_t p;
+   rest_under(&set, 0.0, 0.0);
+   CHECK(rest_takes(&set, 1, 1.28f, 0.0f, 0, 0, 1));
+   CHECK(rest_takes(&set, 0, 1.6f, 0.0f, 1, 1, 0));
+   rest_under(&set, 0.0, 0.02);
+   CHECK(rest_takes(&set, 1, 1.28f, 0.02f, 0, 0, 1));
+   CHECK(rest_takes(&set, 0, 1.6f, 0.02f, 1, 1, 0));
+   rest_under(&set, 30.0, 0.0);
+   CHECK(rest_takes(&set, 1, 1.28f, 0.0f, 0, 0, 1));
+   CHECK(rest_takes(&set, 0, 1.6f, 0.0f, 1, 1, 0));
+   hinge_set(&set);
+   snap_pose(&p, 0.8, 0.0, -1.16, -90.0);
+   rest_add(&set, 1, 1.28f, 0.96f, &p);
+   CHECK(rest_takes(&set, 0, 1.6f, 0.0f, 2, 1, 3));
+   CHECK(rest_takes(&set, 1, 1.28f, 0.0f, 3, 0, 2));
+}
+
+/* The pick-up tests the size it is given, as the pairs at rest test
+ * each quad's own: given the quad's, it agrees with them; 2 cm taller,
+ * screen 2's top edge 1 cm into the 2 cm gap's click, it is not taken
+ * hinged. */
+static void test_rest_hinge_size(void)
+{
+   video_xr_quad_set_t set;
+   video_xr_hinge_t h;
+   video_xr_rest_t r[2];
+   const video_xr_quad_t *q = &set.quads[1];
+   rest_under(&set, 0.0, 0.02);
+   CHECK(video_xr_rest_hinges(&set, 0, 0.02f, r, 2) == 1
+         && rest_is(&r[0], 0, 1, 1, 0));
+   CHECK(video_xr_rest_hinge(&set, 1, 0, q->width, q->height, 0.02f,
+            &q->pose, &h)
+         && h.slot == 0 && h.on == 1 && h.edge == 0);
+   CHECK(!video_xr_rest_hinge(&set, 1, 0, q->width, q->height + 0.02f,
+            0.02f, &q->pose, &h));
+}
+
+/* The hinge a grab was taken in turns it whole whatever the fade, even
+ * with a nearer screen still fading in: screen 2 of the flat 3DS pair
+ * at Hinge Gap 0, its kept hinge on screen 1, held 5 mm toward the user
+ * and tipped 2 degrees, with a third screen 2 cm right of it in the
+ * hand's plane; taken there (a fade of none) or where it rests (fading
+ * in), it is hinged flat where it rests, as without the third. */
+static void test_grab_kept_turn(void)
+{
+   unsigned i;
+   video_xr_quad_set_t set;
+   video_xr_grab_t g;
+   video_xr_pose_t aim, rest, start, pose, p;
+   video_xr_hinge_t h;
+   for (i = 0; i < 2; i++)
+   {
+      rest_under(&set, 0.0, 0.0);
+      rest = set.quads[1].pose;
+      memset(&g, 0, sizeof(g));
+      video_xr_pose_identity(&aim);
+      g.rel             = rest;
+      g.rel.position.z += 0.005f;
+      hinge_turn(&g.rel.orientation, 1.0, 0.0, 0.0, 2.0);
+      g.turn            = g.rel.orientation;
+      g.last            = g.rel;
+      g.base            = rest.position;
+      g.width           = 1.28f;
+      g.height          = 0.96f;
+      g.slot            = 1;
+      g.state           = VIDEO_XR_GRAB_HELD;
+      g.rest_slot       = 1;
+      g.rest_on         = 1;
+      g.rest_edge       = 0;
+      start             = i ? rest : g.rel;
+      CHECK((video_xr_grab_hinge(&g, &aim, &set, 0, &start, &pose, &h)
+               & VIDEO_XR_SNAP_HINGE)
+            && h.slot == 0 && pose_near(&pose, &rest));
+      snap_pose(&p, 1.28 + 0.02, -0.96, -1.795, 0.0);
+      rest_add(&set, 2, 1.28f, 0.96f, &p);
+      CHECK((video_xr_grab_hinge(&g, &aim, &set, 0, &start, &pose, &h)
+               & VIDEO_XR_SNAP_HINGE)
+            && h.slot == 0 && pose_near(&pose, &rest));
+   }
+}
+
 #define HINGE_LINES (VIDEO_XR_SNAP_X | VIDEO_XR_SNAP_Y | VIDEO_XR_SNAP_Z)
 
 /* The 3DS pair: screen 2 tipped 30 degrees toward the user about its
@@ -6878,6 +7087,11 @@ int main(void)
    test_turn_lid();
    test_near_hinge();
    test_rest_hinges();
+   test_rest_hinge();
+   test_grab_kept();
+   test_rest_hinge_sides();
+   test_rest_hinge_size();
+   test_grab_kept_turn();
    test_smooth_steady();
    test_smooth_tremor();
    test_smooth_sweep();

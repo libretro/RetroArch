@@ -201,8 +201,9 @@ static void openxr_frame_hold_slot(video_xr_quad_set_t *set, unsigned slot,
  * frame showed it); one let go stays where it was left until quads
  * planned at its release or later show it. A held screen snaps, as
  * Snap to Screens asks, to the screens no hand holds, as the main
- * thread snaps it, and keeps the hinge it last held whole until it
- * leaves that hinge's reach, drawn on the edges as they are. */
+ * thread snaps it, and keeps the hinge it last held whole, or from its
+ * grab the hinge it was taken in, until it leaves that hinge's reach,
+ * drawn on the edges as they are. */
 static void openxr_frame_hold(openxr_frame_t *f, XrTime time,
       video_xr_quad_set_t *set)
 {
@@ -235,6 +236,17 @@ static void openxr_frame_hold(openxr_frame_t *f, XrTime time,
          held->slot   = g->slot;
          held->state  = g->state;
          held->hinged = false;
+         /* Taken where it rests hinged: that hinge from its first frame,
+          * placed below as any. */
+         if (     g->state == VIDEO_XR_GRAB_HELD && g->rest_slot
+               && g->slot < VIDEO_XR_MAX_SLOTS)
+         {
+            memset(&held->hinge, 0, sizeof(held->hinge));
+            held->hinge.slot = g->rest_slot - 1u;
+            held->hinge.on   = g->rest_on;
+            held->hinge.edge = g->rest_edge;
+            held->hinged     = true;
+         }
       }
       if (g->state != VIDEO_XR_GRAB_HELD || g->slot >= VIDEO_XR_MAX_SLOTS)
          continue;
