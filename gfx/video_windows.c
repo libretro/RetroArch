@@ -77,6 +77,32 @@ static unsigned video_windows_auto_display(
    return best;
 }
 
+void video_windows_display_key(const video_window_display_t *displays,
+      unsigned index, char *out, size_t size)
+{
+   unsigned j;
+   size_t len;
+   unsigned n       = 1;
+   const char *name = displays[index].name;
+   if (!size)
+      return;
+   for (j = 0; j < index; j++)
+      if (!strcmp(displays[j].name, name))
+         n++;
+   len = strlen(name);
+   if (n > 1 && size > 3 && len > size - 3)
+      len = size - 3;
+   else if (len > size - 1)
+      len = size - 1;
+   memcpy(out, name, len);
+   if (n > 1 && n < 10 && len + 2 < size)
+   {
+      out[len++] = ' ';
+      out[len++] = (char)('0' + n);
+   }
+   out[len] = '\0';
+}
+
 /* Display @ordinal, named by a screen's setting */
 static bool video_windows_named(const video_window_display_t *displays,
       unsigned count, unsigned ordinal)
