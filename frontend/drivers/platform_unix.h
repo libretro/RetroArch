@@ -46,6 +46,7 @@
 #include <rthreads/rthreads.h>
 #include <retro_atomic.h>
 #include <retro_spsc.h>
+#include <rthreads/retro_eventcount.h>
 
 #include "android_lifecycle.h"
 #include "../../input/drivers/android_focus.h"
@@ -86,16 +87,64 @@ struct android_app;
  * queue or from the second display's window */
 typedef struct android_input_fields
 {
-   int64_t event_time; /* a key's, ns, AKeyEvent_getEventTime()'s clock */
+   int64_t event_time; /* ns, AKeyEvent_getEventTime()'s clock */
    int32_t type;       /* AINPUT_EVENT_TYPE_KEY or _MOTION */
    int32_t device_id;
    int32_t source;
-   int32_t action;     /* a key's */
+   int32_t action;
    int32_t keycode;
    int32_t flags;
    int32_t meta_state;
    float axes[ANDROID_JOYSTICK_AXES]; /* a move's */
 } android_input_fields_t;
+
+/* An event from the input queue as the input reader copied it: a key
+ * or a joystick move in @fields; for a touch, a mouse or a pen, its
+ * pointers, and what native input reads at the action's pointer */
+typedef struct android_input_event
+{
+   android_input_fields_t fields;
+   int64_t down_time;
+   int32_t button_state;
+   int32_t tool_type;
+   int32_t pointer_count;
+   int32_t pointer_id[MAX_TOUCH];
+   float x[MAX_TOUCH];
+   float y[MAX_TOUCH];
+   float pressure;
+   float distance;
+   float vscroll;
+   float relative_x;
+   float relative_y;
+} android_input_event_t;
+
+/* The least number of events the input reader's ring holds. Full, it
+ * leaves the rest in the input queue until the app thread makes room. */
+#define ANDROID_INPUT_EVENTS 256
+
+/* The input queue is read on a thread of its own
+ * (input/drivers/android_input.c): Android sends a window its next key
+ * only once the last is finished, so the queue is drained, and each
+ * event finished, as it comes, not once a frame */
+struct android_input_reader
+{
+   /* android_input_event_t records, reader thread to app thread */
+   retro_spsc_t events;
+   /* What the reader waits on while @events is full: room made, a
+    * queue handed over, or the stop */
+   retro_eventcount_t room;
+   sthread_t *thread;
+   /* The reader's looper, NULL until it runs */
+   retro_atomic_ptr_t looper;
+   /* App thread to reader: the queue to read, and how many times one
+    * was handed over */
+   retro_atomic_ptr_t queue;
+   retro_atomic_int_t queue_seq;
+   /* An input driver has started. Until one has, events are finished
+    * unread: nothing would take them. */
+   retro_atomic_int_t active;
+   retro_atomic_int_t quit;
+};
 
 /* The least number of keys and stick moves the second display's ring
  * holds; a down or a move leaves room for this many ups */
@@ -169,10 +218,6 @@ struct android_app
 
    /* The ALooper associated with the app's thread. */
    ALooper* looper;
-
-   /* When non-NULL, this is the input queue from which the app will
-    * receive user input events. */
-   AInputQueue* inputQueue;
 
    /* The window, the activity state the app thread has acknowledged,
     * and every other answer a lifecycle callback on the UI thread
@@ -297,6 +342,7 @@ struct android_app
       retro_atomic_int_t changed;
    } content_rect;
    struct android_second_display second_display;
+   struct android_input_reader input_reader;
    uint16_t rumble_last_strength_strong[MAX_USERS];
    uint16_t rumble_last_strength_weak[MAX_USERS];
    uint16_t rumble_last_strength[MAX_USERS];
@@ -455,6 +501,11 @@ void android_input_flush_pending_state(void);
  * the same reason as the flush above, and only from there: entering Java
  * is only safe on the OS stack. No-op when nothing is pending. */
 void android_input_flush_pending_haptics(void);
+
+/* App thread: the input reader, started before the first command is
+ * read and stopped at teardown. False if it could not be started. */
+bool android_input_reader_start(struct android_app *android_app);
+void android_input_reader_stop(struct android_app *android_app);
 
 /* One command through the pipe. 'arg' is the window or input queue
  * that APP_CMD_INIT_WINDOW and APP_CMD_INPUT_CHANGED hand over, NULL

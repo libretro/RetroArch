@@ -405,6 +405,26 @@ jobs:
           make clean
           echo "[pass] android_key_state_test (ASan)"
 
+      - name: Build and run android_poll_changes_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/input/android_poll_changes
+        run: |
+          set -eu
+          # What one Android input poll applies. The input queue is
+          # read on a thread of its own, so a poll is handed every
+          # event since the last, and a key, a finger or a mouse
+          # button can go down and back up in between. Pins that such a
+          # press is shown for one poll, that the order is kept, that
+          # a repeat never holds anything back, and that rows,
+          # devices, fingers and buttons are told apart. A drain that
+          # applies everything it has is put back and asserted to be
+          # caught.
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 60 ./android_poll_changes_test
+          make clean
+          echo "[pass] android_poll_changes_test (ASan)"
+
       - name: Build and run output_store_test (ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/input/output_store
