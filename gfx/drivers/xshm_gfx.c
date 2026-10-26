@@ -520,6 +520,8 @@ static void xshm_views_render(xshm_t *xshm,
       const video_frame_info_t *video_info, const void *frame,
       unsigned pitch)
 {
+   /* Each view turned in its own place, as the layout laid them out */
+   xshm->cpu.rot = video_driver_get_rotation_snapshot();
    video_views_cpu_compose(&xshm->cpu, &video_info->views,
          &video_info->views_layout, frame, pitch, xshm->fmt,
          xshm->smooth ? SCALER_TYPE_BILINEAR : SCALER_TYPE_POINT, 1.0f,

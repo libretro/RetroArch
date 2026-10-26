@@ -873,6 +873,8 @@ static bool sunxi_views_frame(struct sunxi_video *_dispvars,
       RARCH_LOG("[Sunxi] Views drawn straight from the frame.\n");
    }
 
+   /* Each view turned in its own place, as the layout laid them out */
+   _dispvars->views_cpu.rot = video_driver_get_rotation_snapshot();
    video_views_cpu_compose(&_dispvars->views_cpu, &info->views, layout,
          frame, pitch,
          _dispvars->bytes_per_pixel == 4

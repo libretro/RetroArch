@@ -910,6 +910,29 @@ int main(void)
             "the frame's surface and the views': %u buffers, %u fbs",
             count(dumb_alive), count(fb_alive));
 
+      /* a core's rotation: laid out turned, each view turned in its
+       * own place - its top left the view's top right */
+      drm_set_rotation(v, 1);
+      lp.rotation = 1;
+      video_views_layout(&lp, &info.views_layout);
+      drm_frame(v, frame_px, VIDEO_SCALE_PACK(256, 384), 0, 256 * 4, NULL,
+            &info);
+      if (v->views_surface)
+      {
+         video_views_rect_t d;
+         float sc = video_views_cpu_scale(&info.views, &info.views_layout);
+         video_views_cpu_rect(&info.views_layout.placements[0].dst, sc, &d);
+         page = &v->views_surface->pages[!v->views_surface->flip_page];
+         px   = ((const uint32_t*)page->buf.map)[(size_t)VIDEO_POS_Y(d.pos)
+            * (page->buf.stride / 4) + VIDEO_POS_X(d.pos)];
+         CHECK((px & 0xffffff) == (frame_px[255] & 0xffffff),
+               "a turned view not turned in its place (%06x)",
+               px & 0xffffff);
+      }
+      drm_set_rotation(v, 0);
+      lp.rotation = 0;
+      video_views_layout(&lp, &info.views_layout);
+
       /* the map goes: the frame is shown whole again */
       memset(&info.views, 0, sizeof(info.views));
       drm_frame(v, frame_px, VIDEO_SCALE_PACK(256, 384), 0, 256 * 4, NULL,

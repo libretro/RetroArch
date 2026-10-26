@@ -974,7 +974,6 @@ static void omap_render_msg(omap_video_t *vid, const char *msg)
 /* FIXME/TODO: Filters not supported. */
 static void *omap_init(const video_info_t *video)
 {
-   settings_t *settings = config_get_ptr();
    omap_video_t *vid    = (omap_video_t*)calloc(1, sizeof(omap_video_t));
    if (!vid)
       return NULL;
@@ -1094,6 +1093,8 @@ static void omap_views_draw(omap_video_t *vid, const void *frame,
       vid->views_seen = true;
       RARCH_LOG("[Omap] Views drawn straight from the frame.\n");
    }
+   /* Each view turned in its own place, as the layout laid them out */
+   vid->views_cpu.rot = video_driver_get_rotation_snapshot();
    video_views_cpu_compose(&vid->views_cpu, &info->views, layout,
          frame, pitch, direct ? SCALER_FMT_ARGB8888 : SCALER_FMT_RGB565,
          info->video_smooth ? SCALER_TYPE_BILINEAR : SCALER_TYPE_POINT,

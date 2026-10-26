@@ -2312,6 +2312,9 @@ static bool drm_views_frame(struct drm_video *v, const void *frame,
    }
 
    page = &v->views_surface->pages[v->views_surface->flip_page];
+   /* Each view turned in its own place, as the layout laid them out:
+    * the views surface itself is never turned */
+   v->views_cpu.rot = v->rotation & 3;
    video_views_cpu_compose(&v->views_cpu, &info->views, layout, frame,
          pitch, v->rgb32 ? SCALER_FMT_ARGB8888 : SCALER_FMT_RGB565,
          info->video_smooth ? SCALER_TYPE_BILINEAR : SCALER_TYPE_POINT,
