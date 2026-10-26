@@ -271,6 +271,9 @@ static void embedded(const char *path, bool threaded)
       value = rsubtitle_vtt_track_language(track, &length);
       assert(value && length == strlen(expected) && !memcmp(value, expected, length));
       value = rsubtitle_vtt_track_language_key(track, &length);
+      if (!value || length != strlen(expected_key) || memcmp(value, expected_key, length))
+         fprintf(stderr, "language key: expected [%s], got [%.*s]\n",
+               expected_key, (int)length, value ? value : "");
       assert(value && length == strlen(expected_key) && !memcmp(value, expected_key, length));
    }
    cue = rsubtitle_srt_cue(track, 0);

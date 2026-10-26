@@ -37,17 +37,20 @@
 
 #if defined(HAVE_RMP4) || defined(HAVE_RWEBM)
 #include <formats/data_transfer.h>
+#include "subtitle_iso639.h"
 #endif
 
 #ifdef HAVE_RMP4
 #include <formats/rmp4.h>
+#include "subtitle_mac_language.h"
 
 struct subtitle_mp4
 {
    data_transfer_t *window;
    rmp4_t *demux;
    rsubtitle_srt_span_t *spans;
-   char *text;
+   char *text, *language;
+   size_t language_size;
    size_t length, avail, need_lo, need_hi, admitted;
    size_t used, capacity, count, span_capacity;
    uint32_t sample, samples;
@@ -56,7 +59,6 @@ struct subtitle_mp4
 
 #ifdef HAVE_RWEBM
 #include <formats/rwebm.h>
-#include "subtitle_iso639.h"
 
 struct subtitle_webm
 {
@@ -89,6 +91,23 @@ struct task_subtitle_request
 #endif
    retro_atomic_int_t refs, cancelled, status;
 };
+
+#if defined(HAVE_RMP4) || defined(HAVE_RWEBM)
+static const char *subtitle_iso639(const char *code)
+{
+   size_t low = 0;
+   size_t high = sizeof(subtitle_iso639_pairs) / sizeof(subtitle_iso639_pairs[0]);
+   while (low < high)
+   {
+      size_t mid = low + (high - low) / 2;
+      int order = memcmp(code, subtitle_iso639_pairs[mid], 3);
+      if (order < 0) high = mid;
+      else if (order > 0) low = mid + 1;
+      else return subtitle_iso639_pairs[mid] + 3;
+   }
+   return NULL;
+}
+#endif
 
 #ifdef HAVE_RWEBM
 static void subtitle_webm_free(struct subtitle_webm *webm)
@@ -165,8 +184,7 @@ static int subtitle_webm_vtt_metadata(const rwebm_packet *packet,
 
 static int subtitle_webm_language(struct subtitle_webm *webm, int index)
 {
-   size_t size, output, low = 0;
-   size_t high = sizeof(subtitle_iso639_pairs) / sizeof(subtitle_iso639_pairs[0]);
+   size_t size, output;
    enum rwebm_language_kind kind;
    const char *raw = rwebm_get_track_language(webm->demux, index, &size, &kind);
    const char *end, *mapped = NULL;
@@ -185,18 +203,7 @@ static int subtitle_webm_language(struct subtitle_webm *webm, int index)
    {
       for (i = 0; i < 3; i++)
          code[i] = raw[i] >= 'A' && raw[i] <= 'Z' ? raw[i] + ('a' - 'A') : raw[i];
-      while (low < high)
-      {
-         size_t mid = low + (high - low) / 2;
-         int order = memcmp(code, subtitle_iso639_pairs[mid], 3);
-         if (order < 0) high = mid;
-         else if (order > 0) low = mid + 1;
-         else
-         {
-            mapped = subtitle_iso639_pairs[mid] + 3;
-            break;
-         }
-      }
+      mapped = subtitle_iso639(code);
    }
    output = size - (mapped ? 1 : 0);
    webm->language = (char*)malloc(output ? output : 1);
@@ -415,7 +422,56 @@ static void subtitle_mp4_free(struct subtitle_mp4 *mp4)
    data_transfer_free(mp4->window);
    free(mp4->spans);
    free(mp4->text);
+   free(mp4->language);
    free(mp4);
+}
+
+static int subtitle_mp4_language(struct subtitle_mp4 *mp4, int index)
+{
+   const uint8_t *raw;
+   const char *value = "", *mapped;
+   enum rmp4_language_kind kind;
+   size_t size, length = 0;
+   char code[3];
+   unsigned packed, i;
+   raw = rmp4_get_track_language(mp4->demux, index, &size, &kind);
+   if (raw && kind == RMP4_LANGUAGE_BCP47)
+   {
+      const uint8_t *end = (const uint8_t*)memchr(raw, 0,
+            size > 65536 ? 65537 : size);
+      length = end ? (size_t)(end - raw) : size;
+      if (length > 65536) return 0;
+      value = (const char*)raw;
+   }
+   else if (raw && kind == RMP4_LANGUAGE_MDHD && size == 2)
+   {
+      packed = ((unsigned)raw[0] << 8) | raw[1];
+      if (packed < sizeof(subtitle_mac_language) / sizeof(subtitle_mac_language[0]))
+      {
+         value = subtitle_mac_language[packed];
+         length = strlen(value);
+      }
+      else if (packed >= 0x400 && packed < 0x7fff)
+      {
+         for (i = 0; i < 3; i++)
+         {
+            unsigned c = (packed >> (10 - i * 5)) & 31;
+            if (!c || c > 26) break;
+            code[i] = (char)(c + 'a' - 1);
+         }
+         if (i == 3)
+         {
+            mapped = subtitle_iso639(code);
+            value = mapped ? mapped : code;
+            length = mapped ? 2 : 3;
+         }
+      }
+   }
+   mp4->language = (char*)malloc(length ? length : 1);
+   if (!mp4->language) return 0;
+   memcpy(mp4->language, value, length);
+   mp4->language_size = length;
+   return 1;
 }
 
 static int subtitle_mp4_open(struct subtitle_mp4 *mp4, const char *path)
@@ -570,7 +626,8 @@ static int subtitle_mp4_step(task_subtitle_request_t *request)
       track = rmp4_get_track(mp4->demux, request->embedded_track);
       if (!track || track->type != RMP4_TRACK_OTHER || strcmp(track->codec_id, "tx3g")
             || !rmp4_track_pts(mp4->demux, request->embedded_track, &mp4->samples)
-            || mp4->samples > 65536)
+            || mp4->samples > 65536
+            || !subtitle_mp4_language(mp4, request->embedded_track))
          return -1;
       return 0;
    }
@@ -580,7 +637,14 @@ static int subtitle_mp4_step(task_subtitle_request_t *request)
       rsubtitle_srt_span_t *spans = mp4->spans;
       mp4->text = NULL; mp4->spans = NULL;
       request->track = rsubtitle_srt_begin_cues(text, mp4->used, spans, mp4->count);
-      return request->track ? 1 : -1;
+      if (request->track)
+      {
+         char *language = mp4->language;
+         mp4->language = NULL;
+         return rsubtitle_vtt_take_language(request->track, language,
+               mp4->language_size) ? 1 : -1;
+      }
+      return -1;
    }
    if (!rmp4_track_sample_span(mp4->demux, request->embedded_track,
             mp4->sample, &lo, &hi)
