@@ -12,7 +12,7 @@ IMPORT(OSFatal);
 IMPORT(OSDynLoad_Acquire);
 IMPORT(OSDynLoad_FindExport);
 IMPORT(OSDynLoad_Release);
-IMPORT(OSSetExceptionCallback);
+IMPORT(OSSetExceptionCallbackEx);
 IMPORT(OSSavesDone_ReadyToRelease);
 IMPORT(OSInitMutex);
 IMPORT(OSLockMutex);

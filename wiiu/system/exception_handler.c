@@ -86,8 +86,17 @@ typedef struct _framerec
 size_t wiiu_exception_handler_pos = 0;
 char* exception_msgbuf;
 
+/* Set by the first core to fault; one shared buffer, one report. */
+static volatile int exception_entered = 0;
+
 void __attribute__((__noreturn__)) exception_cb(OSContext* ctx, OSExceptionType type)
 {
+   /* A second core faulting while the first one reports parks here,
+    * so the buffer is written by one core only. */
+   if (__atomic_exchange_n(&exception_entered, 1, __ATOMIC_ACQ_REL))
+      for (;;)
+         OSSuspendThread(OSGetCurrentThread());
+
    /*	No message buffer available, fall back onto MEM1 */
    if (!exception_msgbuf || !OSEffectiveToPhysical(exception_msgbuf))
       exception_msgbuf = (char*)0xF4000000;
@@ -282,9 +291,14 @@ void exception_print_symbol(uint32_t addr)
 void setup_os_exceptions(void)
 {
    exception_msgbuf = malloc(4096);
-   OSSetExceptionCallback(OS_EXCEPTION_TYPE_DSI, exception_dsi_cb);
-   OSSetExceptionCallback(OS_EXCEPTION_TYPE_ISI, exception_isi_cb);
-   OSSetExceptionCallback(OS_EXCEPTION_TYPE_PROGRAM, exception_prog_cb);
+   /* On every core: the frontend's threads are not confined to the
+    * core that installs the handler. */
+   OSSetExceptionCallbackEx(OS_EXCEPTION_MODE_GLOBAL_ALL_CORES,
+         OS_EXCEPTION_TYPE_DSI, exception_dsi_cb);
+   OSSetExceptionCallbackEx(OS_EXCEPTION_MODE_GLOBAL_ALL_CORES,
+         OS_EXCEPTION_TYPE_ISI, exception_isi_cb);
+   OSSetExceptionCallbackEx(OS_EXCEPTION_MODE_GLOBAL_ALL_CORES,
+         OS_EXCEPTION_TYPE_PROGRAM, exception_prog_cb);
    test_os_exceptions();
 }
 

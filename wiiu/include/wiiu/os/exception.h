@@ -28,7 +28,16 @@ typedef enum OSExceptionType
 
 OSExceptionCallbackFn OSSetExceptionCallback(OSExceptionType exceptionType,
       OSExceptionCallbackFn callback);
-OSExceptionCallbackFn OSSetExceptionCallbackEx(int unknown, OSExceptionType exceptionType,
+typedef enum OSExceptionMode
+{
+   OS_EXCEPTION_MODE_SYSTEM           = 0,
+   OS_EXCEPTION_MODE_THREAD           = 1,
+   OS_EXCEPTION_MODE_GLOBAL           = 2,
+   OS_EXCEPTION_MODE_THREAD_ALL_CORES = 3,
+   OS_EXCEPTION_MODE_GLOBAL_ALL_CORES = 4
+} OSExceptionMode;
+
+OSExceptionCallbackFn OSSetExceptionCallbackEx(OSExceptionMode mode, OSExceptionType exceptionType,
       OSExceptionCallbackFn callback);
 
 #ifdef __cplusplus
