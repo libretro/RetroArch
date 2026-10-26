@@ -39,7 +39,8 @@ tls_http: $(HTTP_SRC)
 SSL_BACKEND ?= retro
 STALL_BASE = tls_stall.c $(COMMON)/net/net_socket.c $(COMMON)/net/net_compat.c \
       $(COMMON)/features/features_cpu.c $(COMMON)/compat/compat_strl.c $(COMMON)/string/stdstring.c \
-      $(COMMON)/encodings/encoding_utf.c $(COMMON)/rthreads/rthreads.c $(COMMON)/file/file_path.c \
+      $(COMMON)/encodings/encoding_utf.c $(COMMON)/rthreads/rthreads.c \
+      $(COMMON)/rthreads/retro_eventcount.c $(COMMON)/file/file_path.c \
       $(COMMON)/time/rtime.c $(COMMON)/streams/file_stream.c $(COMMON)/vfs/vfs_implementation.c \
       $(COMMON)/file/file_path_io.c $(COMMON)/compat/fopen_utf8.c $(COMMON)/string/rstrtod.c
 ifeq ($(SSL_BACKEND),mbed)
@@ -51,7 +52,8 @@ else ifeq ($(SSL_BACKEND),bear)
    STALL_FLAGS = -I$(COMMON)/include -DHAVE_SSL -DHAVE_BEARSSL -D_GNU_SOURCE
    STALL_LIBS  = -lbearssl
 else
-   STALL_SRC   = tls_stall.c $(filter-out tls_fetch.c,$(SRC)) $(COMMON)/rthreads/rthreads.c
+   STALL_SRC   = tls_stall.c $(filter-out tls_fetch.c,$(SRC)) $(COMMON)/rthreads/rthreads.c \
+      $(COMMON)/rthreads/retro_eventcount.c
    STALL_FLAGS = $(CPPFLAGS)
 endif
 tls_stall: $(STALL_SRC)
@@ -60,7 +62,8 @@ tls_stall: $(STALL_SRC)
 HOOK_SRC = $(patsubst tls_stall.c,tls_verify_hook.c,$(STALL_SRC))
 tls_verify_hook: $(HOOK_SRC)
 	$(CC) $(STALL_FLAGS) -DHAVE_THREADS $(CFLAGS) $(HOOK_SRC) $(STALL_LIBS) $(LDLIBS) -lpthread -o $@
-THR_SRC = tls_threads.c $(filter-out tls_fetch.c,$(SRC)) $(COMMON)/rthreads/rthreads.c
+THR_SRC = tls_threads.c $(filter-out tls_fetch.c,$(SRC)) $(COMMON)/rthreads/rthreads.c \
+      $(COMMON)/rthreads/retro_eventcount.c
 tls_threads: $(THR_SRC)
 	$(CC) $(CPPFLAGS) -DHAVE_THREADS $(CFLAGS) $(THR_SRC) $(LDLIBS) -lpthread -o $@
 clean:
