@@ -148,6 +148,9 @@ enum vk_flags
    /* A headset's own context: the window is images nothing presents,
     * and the headset's frame is begun and ended around this one. */
    VK_FLAG_OPEN_XR              = (1 << 22),
+   /* RETROARCH_VULKAN_RESIZE_LATE=1: a pending resize is applied after
+    * the frame is drawn rather than before it. */
+   VK_FLAG_RESIZE_LATE          = (1 << 23),
    /* Held across creating a texture a compute shader writes */
    VK_FLAG_TEXTURE_FOR_STORAGE  = (1 << 24)
 };

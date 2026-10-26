@@ -8013,6 +8013,11 @@ static void *vulkan_init(const video_info_t *video)
       vk->flags         |=  VK_FLAG_VSYNC;
    else
       vk->flags         &= ~VK_FLAG_VSYNC;
+   {
+      const char *env = getenv("RETROARCH_VULKAN_RESIZE_LATE");
+      if (env && env[0] == '1')
+         vk->flags      |=  VK_FLAG_RESIZE_LATE;
+   }
    if (video->fullscreen || force_fullscreen)
       vk->flags         |=  VK_FLAG_FULLSCREEN;
    else
@@ -11886,16 +11891,8 @@ static bool vulkan_frame(void *data, const void *frame,
 
    /* A resize known of before this frame is drawn is done now, so
     * that the frame is drawn at the new size. */
-   {
-      static int resize_late = -1;
-      if (resize_late < 0)
-      {
-         const char *env = getenv("RETROARCH_VULKAN_RESIZE_LATE");
-         resize_late     = (env && env[0] == '1') ? 1 : 0;
-      }
-      if (!resize_late)
-         vulkan_apply_pending_resize(vk, video_info);
-   }
+   if (!(vk->flags & VK_FLAG_RESIZE_LATE))
+      vulkan_apply_pending_resize(vk, video_info);
 
    /* The context may recreate its swapchain while acquiring the next
     * image. Rebuild driver-owned framebuffers before recording commands

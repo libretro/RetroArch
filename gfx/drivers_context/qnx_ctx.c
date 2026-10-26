@@ -176,7 +176,10 @@ static void *gfx_ctx_qnx_init(void *video_driver)
    }
 
 #ifndef HAVE_BB10
-   angle = atoi(getenv("ORIENTATION"));
+   {
+      const char *orientation = getenv("ORIENTATION");
+      angle = orientation ? atoi(orientation) : 0;
+   }
 
    if (screen_get_display_property_pv(qnx->screen_disp,
             SCREEN_PROPERTY_MODE, (void**)&screen_mode))
