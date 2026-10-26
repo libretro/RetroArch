@@ -9,7 +9,8 @@
  * - Combined: one pad from both hands, sticks with Y down, analog and
  *   digital L2/R2; Separate: a pad per hand, the other set unread. Each
  *   pad is a joypad device in a slot, read through the joypad driver
- *   the module wraps; other slots reach the driver under it.
+ *   the module wraps; other slots reach the driver under it, the views
+ *   it lends too.
  * - The devices: connected at the first free slot once a session's
  *   controllers are up, renamed and added or dropped by a mode switch,
  *   gone with the session; a pad that takes a slot moves the headset's
@@ -1694,6 +1695,7 @@ static void test_joypad_wrapped(void)
          && !strcmp(j->name(s), INPUT_OPENXR_JOYPAD_COMBINED)
          && !strcmp(j->ident, "test"),
          "the device's slot %u is not answered as a device", s);
+   CHECK(!j->view, "a driver that lends no view is wrapped with one");
 
    for (id = 0; id < RARCH_FIRST_CUSTOM_BIND; id++)
    {
@@ -1798,6 +1800,68 @@ static void test_joypad_wrapped(void)
    t_forget_devices();
 }
 
+/* The driver under it lending its pads, as udev and winraw do: every
+ * slot's view, all zero. */
+static input_pad_view_t      t_lent[MAX_USERS];
+static input_device_driver_t t_lender;
+static const input_pad_view_t *t_inner_view(unsigned pad)
+{
+   return pad < MAX_USERS ? &t_lent[pad] : NULL;
+}
+
+/* A pad as the snapshot bridge takes it (input_snapshot_pad_take()):
+ * the view the driver lends, or else a copy through its calls. */
+static const input_pad_view_t *t_bridge_take(
+      const input_device_driver_t *j, unsigned pad)
+{
+   static input_pad_view_t copy;
+   unsigned i;
+   const input_pad_view_t *lent = j->view ? j->view(pad) : NULL;
+   if (lent)
+      return lent;
+   memset(&copy, 0, sizeof(copy));
+   j->get_buttons(pad, &copy.buttons);
+   for (i = 0; i < INPUT_PAD_VIEW_AXES; i++)
+      copy.axes[i] = (int16_t)(j->axis(pad, AXIS_POS(i))
+            + j->axis(pad, AXIS_NEG(i)));
+   return &copy;
+}
+
+/* Under a driver that lends its pads, the bridge reads the device's
+ * slot from the device, and other slots from the driver's views. */
+static void test_joypad_lent(void)
+{
+   unsigned s;
+   const input_pad_view_t *v;
+   const input_device_driver_t *j;
+
+   t_lender      = t_joypad;
+   t_lender.view = t_inner_view;
+   t_let_go();
+   t_forget_devices();
+   t_fresh_session();
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   s = (unsigned)t_slot(0);
+   j = input_openxr_joypad(&t_lender);
+   t_hold("combined/b", 0, 1.0f, 0.0f);
+   t_hold("combined/left_stick", 0, 0.5f, 0.5f);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   v = t_bridge_take(j, s);
+   CHECK(v != &t_lent[s]
+         && BIT256_GET_PTR(&v->buttons, RETRO_DEVICE_ID_JOYPAD_B)
+         && v->axes[0] == 16383 && v->axes[1] == -16383,
+         "slot %u reads the driver's view: B %d, axes %d %d", s,
+         BIT256_GET_PTR(&v->buttons, RETRO_DEVICE_ID_JOYPAD_B) ? 1 : 0,
+         v->axes[0], v->axes[1]);
+   CHECK(t_bridge_take(j, 5) == &t_lent[5],
+         "slot 5 does not read the driver's view");
+
+   t_hooks.session_destroying(t_hooks.user);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   t_let_go();
+   t_forget_devices();
+}
+
 int main(void)
 {
    t_forget_devices();
@@ -1817,6 +1881,7 @@ int main(void)
    test_devices();
    test_device_taken();
    test_joypad_wrapped();
+   test_joypad_lent();
    test_joints();
    test_session_restart_trigger();
    if (failures)
