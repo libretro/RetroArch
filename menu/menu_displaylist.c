@@ -10379,7 +10379,7 @@ unsigned menu_displaylist_build_list(
          }
          break;
       case DISPLAYLIST_ADD_CONTENT_LIST:
-#if 0
+#ifdef HAVE_LIBRETRODB
          if (menu_entries_append(list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY),
                   MENU_ENUM_LABEL_SCAN_DIRECTORY_STR,

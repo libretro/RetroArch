@@ -4561,6 +4561,15 @@ bool action_ok_manual_content_scan_dir_browsing(void)
          MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DIR_STR);
 }
 
+#ifdef HAVE_LIBRETRODB
+/* Scan File: OK on a file scans it, as the Scan action does. */
+static int action_ok_path_scan_file(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return action_scan_file(path, label, type, idx);
+}
+#endif
+
 static int action_ok_path_manual_scan_directory(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -10429,6 +10438,12 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             {
                BIND_ACTION_OK(cbs, action_ok_path_manual_scan_directory);
             }
+#ifdef HAVE_LIBRETRODB
+            else if (filebrowser_get_type() == FILEBROWSER_SCAN_FILE)
+            {
+               BIND_ACTION_OK(cbs, action_ok_path_scan_file);
+            }
+#endif
 #ifdef HAVE_COMPRESSION
             else if (filebrowser_get_type() == FILEBROWSER_SELECT_OVERLAY)
             {
@@ -10591,6 +10606,12 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             {
                BIND_ACTION_OK(cbs, action_ok_path_manual_scan_directory);
             }
+#ifdef HAVE_LIBRETRODB
+            else if (filebrowser_get_type() == FILEBROWSER_SCAN_FILE)
+            {
+               BIND_ACTION_OK(cbs, action_ok_path_scan_file);
+            }
+#endif
             else if (cbs->enum_idx != MSG_UNKNOWN)
             {
                switch (cbs->enum_idx)

@@ -463,10 +463,28 @@ static void content_location_lanes(void)
             MENU_ENUM_LABEL_ADD_CONTENT_LIST,
             DISPLAYLIST_ADD_CONTENT_LIST),
          "Import Content did not open");
+#ifdef HAVE_LIBRETRODB
    CHECK(   listed_label(MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_LIST_STR)
-         && !listed_label(MENU_ENUM_LABEL_SCAN_FILE_STR)
-         && !listed_label(MENU_ENUM_LABEL_SCAN_DIRECTORY_STR),
-         "Import Content offers more than Content Scan");
+         && listed_label(MENU_ENUM_LABEL_SCAN_FILE_STR)
+         && listed_label(MENU_ENUM_LABEL_SCAN_DIRECTORY_STR),
+         "Import Content does not offer Scan Directory, Scan File "
+         "and Content Scan");
+
+   /* Scan File: OK on a file scans that file */
+   manual_content_scan_set_menu_content_dir(dir_content);
+   CHECK(ok_on(MENU_ENUM_LABEL_SCAN_FILE_STR, true),
+         "Import Content has no Scan File entry");
+   wait_listed("unclaimed.zzz");
+   CHECK(   ok_on("unclaimed.zzz", false)
+         && string_is_equal(manual_content_scan_get_content_dir_ptr(),
+            want),
+         "OK on a file in Scan File does not scan it");
+   task_queue_reset();
+   pump(2);
+#else
+   CHECK(listed_label(MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_LIST_STR),
+         "Import Content does not offer Content Scan");
+#endif
 
    unlink_in(dir_content, "unclaimed.zzz");
    path_rmdir(sub);
