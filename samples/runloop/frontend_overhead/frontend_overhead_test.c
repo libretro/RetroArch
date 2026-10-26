@@ -821,6 +821,175 @@ static void lane_shared_ports(void)
 #endif
 }
 
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
+/* The Plays As entries a configuration's @text gives. */
+static void plays_as_entries(const char *text)
+{
+   char buf[256];
+   config_file_t *conf;
+   strlcpy(buf, text, sizeof(buf));
+   conf = config_file_new_from_string(buf, NULL);
+   input_plays_as_read(conf);
+   config_file_free(conf);
+}
+#endif
+
+/* Two pads of one model and a Plays As entry for one: Update Controller
+ * Profiles reports the connected pads again and none takes an entry,
+ * so the one on Auto does not take the unplugged one's. A driver's
+ * report during the update's scan gives one toast, not two. A joypad
+ * driver restart's own reports still take, a profile update queued
+ * among them or not. */
+static void lane_plays_as_reconnect(void)
+{
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
+   settings_t *settings = config_get_ptr();
+   unsigned had         = failures;
+   unsigned i;
+
+   fast_forward(true);
+   plays_as_entries(
+         "input_plays_as_device_1 = \"2222:0001 Twin pad\"\n"
+         "input_plays_as_player_1 = \"2\"\n");
+   input_autoconfigure_connect("Twin pad", NULL, NULL, "test", 0, 0x2222, 0x0001);
+   input_autoconfigure_connect("Twin pad", NULL, NULL, "test", 1, 0x2222, 0x0001);
+   run_loop_frames(20);
+   CHECK(input_config_plays_as_entry(0) == 0
+         && input_config_plays_as_entry(1) == -1,
+         "plays as: the first twin does not hold the entry, or the second does");
+
+   /* the first unplugged, profiles updated */
+   input_autoconfigure_disconnect(0, "Twin pad");
+   run_loop_frames(20);
+   input_autoconfigure_reconnect(1);
+   run_loop_frames(20);
+   CHECK(input_config_plays_as_entry(1) == -1
+         && input_config_plays_as_player(1) == 0,
+         "plays as: reported again by a profile update, the Auto twin took the unplugged one's entry");
+   input_autoconfigure_connect("Twin pad", NULL, NULL, "test", 0, 0x2222, 0x0001);
+   run_loop_frames(20);
+   CHECK(input_config_plays_as_entry(0) == 0
+         && input_config_plays_as_player(0) == 2,
+         "plays as: the unplugged twin, back, does not play its own Player 2");
+
+   /* the driver's report during a profile update's scan: one toast.
+    * Each check is a pass of the scans, and with no frame nothing pulls
+    * the toasts; the harness starts no message queue of its own. */
+   if (!task_queue_is_threaded())
+   {
+      runloop_state_t *runloop_st = runloop_state_get_ptr();
+      msg_queue_t *queue          = &runloop_st->msg_queue;
+      bool started                = !queue->size
+            && msg_queue_initialize(queue, 8);
+      msg_queue_clear(queue);
+      input_autoconfigure_reconnect(1);
+      input_autoconfigure_connect("Twin pad", NULL, NULL, "test", 1, 0x2222, 0x0001);
+      for (i = 0; i < 30; i++)
+         task_queue_check();
+      CHECK(msg_queue_size(queue) == 1,
+            "plays as: a profile update the driver's report superseded did not show one toast");
+      if (started)
+      {
+         msg_queue_deinitialize(queue);
+         runloop_st->msg_queue_size = 0;
+      }
+   }
+
+   /* a restart, a profile update queued before the driver's report */
+   input_driver_registry_restart();
+   input_autoconfigure_reconnect(0);
+   input_autoconfigure_connect("Twin pad", NULL, NULL, "test", 0, 0x2222, 0x0001);
+   input_autoconfigure_reconnect(1);
+   input_autoconfigure_connect("Twin pad", NULL, NULL, "test", 1, 0x2222, 0x0001);
+   run_loop_frames(30);
+   CHECK(input_config_plays_as_entry(0) == 0
+         && input_config_plays_as_player(0) == 2
+         && input_config_plays_as_entry(1) == -1,
+         "plays as: after a restart with a profile update queued, the first reported does not take the entry");
+
+   /* back to the pads and the mapping the other lanes expect */
+   plays_as_entries("");
+   for (i = 0; i < MAX_USERS; i++)
+      settings->uints.input_joypad_index[i] = i;
+   input_driver_deadzones_refresh();
+   input_driver_registry_restart();
+   for (i = 0; i < 8; i++)
+      input_autoconfigure_connect("Harness pad", NULL, NULL,
+            "test", i, 0x045e, 0x028e);
+   run_loop_frames(30);
+   CHECK(pad_connected(0) && settings->uints.input_joypad_index[0] == 0
+         && settings->uints.input_joypad_index[1] == 1
+         && input_config_plays_as_entry(0) == -1,
+         "plays as: the lane did not leave the pads as it found them");
+
+   fast_forward(false);
+   if (failures == had)
+      printf("[pass] plays as: a profile update leaves an Auto twin on Auto"
+            " with the other unplugged, and one a driver's report supersedes"
+            " shows no toast; a restart's reports still take the entry\n");
+#else
+   printf("[skip] plays-as lane: need the test drivers\n");
+#endif
+}
+
+/* A connect a disconnect on its port supersedes still shows its
+ * "configured" toast: the disconnect shows only its own. */
+static void lane_superseded_connect_toast(void)
+{
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
+   unsigned had = failures;
+
+   /* as in lane_plays_as_reconnect: no frame pulls the toasts */
+   if (!task_queue_is_threaded())
+   {
+      runloop_state_t *runloop_st = runloop_state_get_ptr();
+      msg_queue_t *queue          = &runloop_st->msg_queue;
+      bool started                = !queue->size
+            && msg_queue_initialize(queue, 8);
+      msg_queue_entry_t entry;
+      char want[128];
+      unsigned i;
+      unsigned seen               = 0;
+
+      input_autoconfigure_disconnect(7, "Harness pad");
+      for (i = 0; i < 30; i++)
+         task_queue_check();
+      msg_queue_clear(queue);
+      input_autoconfigure_connect("Harness pad", NULL, NULL,
+            "test", 7, 0x045e, 0x028e);
+      input_autoconfigure_disconnect(7, "Harness pad");
+      for (i = 0; i < 30; i++)
+         task_queue_check();
+      snprintf(want, sizeof(want),
+            msg_hash_to_str(MSG_DEVICE_CONFIGURED_IN_PORT_NR),
+            "Harness pad", 8);
+      while (msg_queue_extract(queue, &entry))
+         if (strstr(entry.msg, want))
+            seen++;
+      CHECK(seen == 1,
+            "autoconfig: a connect a disconnect superseded did not show its \"configured\" toast");
+      if (started)
+      {
+         msg_queue_deinitialize(queue);
+         runloop_st->msg_queue_size = 0;
+      }
+   }
+
+   /* back to the pads the other lanes expect */
+   input_autoconfigure_connect("Harness pad", NULL, NULL,
+         "test", 7, 0x045e, 0x028e);
+   run_loop_frames(30);
+   CHECK(pad_connected(7),
+         "autoconfig: the lane did not leave the pads as it found them");
+
+   if (failures == had)
+      printf("[pass] autoconfig: a connect a disconnect superseded still"
+            " shows its \"configured\" toast\n");
+#else
+   printf("[skip] superseded-connect lane: need the test drivers\n");
+#endif
+}
+
 /* Where in a frame the frontend polls. The joypad driver's poll is
  * counted, and the count is read at four points of the core's
  * retro_run() and at both ends of the iterate. */
@@ -10259,6 +10428,8 @@ int main(int argc, char *argv[])
       lane_input_poll_modes();
       lane_device_registry();
       lane_shared_ports();
+      lane_plays_as_reconnect();
+      lane_superseded_connect_toast();
       lane_input_poll_sites(load_poll_name[load_poll]);
       lane_output_store();
       /* before the core-view lane, whose netplay check leaves the

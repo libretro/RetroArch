@@ -499,6 +499,7 @@ static void t_entries(const char *text)
    strlcpy(buf, text, sizeof(buf));
    conf = config_file_new_from_string(buf, NULL);
    input_plays_as_read(conf);
+   input_plays_as_hand_out();
    config_file_free(conf);
 }
 
@@ -511,6 +512,7 @@ static void t_merge(const char *text)
    strlcpy(buf, text, sizeof(buf));
    conf = config_file_new_from_string(buf, NULL);
    input_plays_as_merge(conf);
+   input_plays_as_hand_out();
    config_file_free(conf);
 }
 
@@ -628,6 +630,7 @@ static void test_plays_as_round_trip(void)
    input_plays_as_read(NULL);
    CHECK(input_config_plays_as_player(0) == 0, "the entries outlived a read");
    input_plays_as_read(conf);
+   input_plays_as_hand_out();
    CHECK(input_config_plays_as_entry(0) == 0
          && input_config_plays_as_player(0) == 2,
          "the entry did not come back");
@@ -680,7 +683,7 @@ static void t_connect(unsigned slot, const char *name, uint16_t vid,
       uint16_t pid)
 {
    t_dev(slot, name, vid, pid);
-   input_config_plays_as_place(slot);
+   input_config_plays_as_place(slot, true);
 }
 
 /* The user reading @slot below Max Users, or MAX_USERS. */
@@ -699,12 +702,12 @@ static void test_place_auto(void)
 {
    t_reset();
    t_dev(2, "Pad", 1, 1);
-   CHECK(!input_config_plays_as_place(2) && t_user_of(2) == 2,
+   CHECK(!input_config_plays_as_place(2, true) && t_user_of(2) == 2,
          "with no entries Plays As placed an Auto controller");
    t_entries(
          "input_plays_as_device_1 = \"Away\"\n"
          "input_plays_as_player_1 = \"4\"\n");
-   CHECK(input_config_plays_as_place(2) && t_user_of(2) == 0,
+   CHECK(input_config_plays_as_place(2, true) && t_user_of(2) == 0,
          "an Auto controller is not on the first free port");
 }
 
@@ -758,7 +761,7 @@ static void test_place_limits(void)
          "input_plays_as_device_1 = \"0002:0002 B\"\n"
          "input_plays_as_player_1 = \"1\"\n");
    t_dev(0, "Res", 5, 5);
-   CHECK(!input_config_plays_as_place(0),
+   CHECK(!input_config_plays_as_place(0, true),
          "an Auto controller was placed with a reservation set");
    t_connect(1, "B", 2, 2);
    CHECK(t_user_of(0) == 0 && t_user_of(1) == 3,
@@ -836,7 +839,8 @@ static void test_place_reservation_order(void)
          "input_plays_as_device_1 = \"0002:0002 B\"\n"
          "input_plays_as_player_1 = \"1\"\n");
    t_dev(0, "Res", 5, 5);
-   CHECK(!input_config_plays_as_place(0), "the reservation did not place");
+   CHECK(!input_config_plays_as_place(0, true),
+         "the reservation did not place");
    t_connect(1, "B", 2, 2);
    CHECK(t_user_of(0) == 0 && t_user_of(1) == 3,
          "reserved first: Player 1 did not share");
@@ -851,7 +855,7 @@ static void test_place_reservation_order(void)
          "input_plays_as_player_1 = \"1\"\n");
    t_connect(0, "B", 2, 2);
    t_dev(1, "Res", 5, 5);
-   CHECK(input_config_plays_as_place(1)
+   CHECK(input_config_plays_as_place(1, true)
          && t_user_of(0) == 0 && t_user_of(1) == 3,
          "Player 1 first: the reserved controller did not share");
 
@@ -871,7 +875,7 @@ static void test_place_reservation_order(void)
          "input_plays_as_player_1 = \"1\"\n");
    t_connect(0, "Res", 5, 5);
    t_dev(1, "Res", 5, 5);
-   CHECK(!input_config_plays_as_place(1)
+   CHECK(!input_config_plays_as_place(1, true)
          && t_user_of(0) == 0 && t_user_of(1) == 1,
          "a twin reserved for port 2 shared Player 1");
 }
@@ -898,8 +902,8 @@ static void test_place_leave_and_change(void)
    t_connect(0, "A", 1, 1);
    t_connect(1, "B", 2, 2);
    CHECK(input_config_plays_as_set(1, 1), "Player 1 took no entry");
-   input_config_plays_as_place(0);
-   input_config_plays_as_place(1);
+   input_config_plays_as_place(0, true);
+   input_config_plays_as_place(1, true);
    CHECK(t_user_of(1) == 0 && t_user_of(0) == 1,
          "connected again, the controller set to Player 1 is not on port 1");
 }
@@ -921,7 +925,7 @@ static void t_place_again(unsigned slot)
       input_config_plays_as_max_users_changed(again);
    for (s = 0; s < MAX_USERS; s++)
       if (again[s] && input_config_get_device_name(s))
-         input_config_plays_as_place(s);
+         input_config_plays_as_place(s, false);
    input_config_binds_changed();
 }
 
@@ -970,6 +974,61 @@ static void test_place_again_player(void)
    t_place_again(0);
    CHECK(t_user_of(0) == 0 && t_user_of(2) == 2,
          "A's Player changed, B left port 3");
+}
+
+static const char t_twins_2_3[] =
+      "input_plays_as_device_1 = \"0001:0001 Pad\"\n"
+      "input_plays_as_player_1 = \"2\"\n"
+      "input_plays_as_device_2 = \"0001:0001 Pad\"\n"
+      "input_plays_as_player_2 = \"3\"\n";
+
+/* Two of a model on 2 and 3, the first gone: placed again, the other
+ * keeps its own entry, or none, and never takes the gone one's. */
+static void test_place_again_gone_twin(void)
+{
+   t_reset();
+   t_entries(t_twins_2_3);
+   t_connect(0, "Pad", 1, 1);
+   t_connect(1, "Pad", 1, 1);
+   t_disconnect(0);
+   CHECK(input_config_plays_as_set(1, 4), "Player 4 was refused");
+   t_place_again(1);
+   CHECK(input_config_plays_as_entry(1) == 1
+         && input_config_plays_as_player(1) == 4 && t_user_of(1) == 3,
+         "set to Player 4, the twin left took the gone one's entry");
+   t_connect(0, "Pad", 1, 1);
+   CHECK(input_config_plays_as_player(0) == 2 && t_user_of(0) == 1,
+         "the gone twin, back, does not play its own Player 2");
+
+   t_reset();
+   t_entries(t_twins_2_3);
+   t_connect(0, "Pad", 1, 1);
+   t_connect(1, "Pad", 1, 1);
+   t_disconnect(0);
+   CHECK(input_config_plays_as_set(1, 0), "Auto was refused");
+   t_place_again(1);
+   CHECK(input_config_plays_as_entry(1) == -1
+         && input_config_plays_as_player(1) == 0,
+         "set to Auto, the twin left took the gone one's entry");
+   CHECK(input_config_plays_as_set(1, 0), "Auto again was refused");
+   t_place_again(1);
+   CHECK(input_config_plays_as_entry_player(0) == 2,
+         "Auto again dropped the gone twin's entry");
+   t_connect(0, "Pad", 1, 1);
+   CHECK(input_config_plays_as_player(0) == 2 && t_user_of(0) == 1,
+         "the gone twin, back, does not play its own Player 2");
+
+   t_reset();
+   t_entries(t_twins_2_3);
+   t_connect(0, "Pad", 1, 1);
+   t_connect(1, "Pad", 1, 1);
+   t_disconnect(0);
+   settings.uints.input_max_users = 2;
+   t_place_again(MAX_USERS);
+   settings.uints.input_max_users = 4;
+   t_place_again(MAX_USERS);
+   CHECK(input_config_plays_as_entry(1) == 1 && t_user_of(1) == 2,
+         "Max Users 2 and back, the twin left took the gone one's entry");
 }
 
 /* A Max Users change places again only the controllers left with no
@@ -1466,10 +1525,10 @@ static void test_place_no_player(void)
          "input_plays_as_player_2 = \"5\"\n");
    CHECK(input_config_plays_as_active(), "the entries are not in use");
    t_dev(0, "A", 1, 1);
-   CHECK(!input_config_plays_as_place(0) && t_user_of(0) == 1,
+   CHECK(!input_config_plays_as_place(0, true) && t_user_of(0) == 1,
          "an entry with no player undid a Device Index swap");
    t_dev(2, "C", 3, 3);
-   CHECK(!input_config_plays_as_place(2) && t_user_of(2) == 2,
+   CHECK(!input_config_plays_as_place(2, true) && t_user_of(2) == 2,
          "an entry with no player moved an Auto controller");
    t_connect(1, "B", 2, 2);
    CHECK(t_user_of(1) == 0 && t_user_of(0) == 1,
@@ -1524,7 +1583,7 @@ static void t_plug_twin(unsigned slot, const char *phys)
 {
    t_dev(slot, "Pad", 1, 1);
    input_config_set_device_phys(slot, phys);
-   input_config_plays_as_place(slot);
+   input_config_plays_as_place(slot, true);
    input_driver_registry_connect(slot, "x", "Pad", phys, 1, 1);
 }
 
@@ -1542,7 +1601,7 @@ static void test_place_restart_twins(void)
    t_plug_twin(0, "usb-1");
    t_plug_twin(1, "usb-2");
    CHECK(input_config_plays_as_set(1, 2), "Player 2 was refused");
-   input_config_plays_as_place(1);
+   input_config_plays_as_place(1, false);
    t_entries(p2);
    CHECK(input_config_plays_as_entry(0) == -1
          && input_config_plays_as_entry(1) == 0,
@@ -1575,7 +1634,7 @@ static void test_place_restart_twins(void)
    t_plug_twin(0, "usb-0000:00:14.0-1.4.1/input0"
          "0123456789abcdef0123456789abcdef0123456789");
    CHECK(input_config_plays_as_set(0, 2), "Player 2 was refused");
-   input_config_plays_as_place(0);
+   input_config_plays_as_place(0, false);
    input_driver_registry_restart();
    t_plug_twin(0, "usb-0000:00:14.0-1.4.1/input0"
          "0123456789abcdef0123456789abcdef0123456789");
@@ -1583,6 +1642,45 @@ static void test_place_restart_twins(void)
          "a pad with a long place lost its entry after a restart");
    input_driver_registry_disconnect(0);
    input_config_set_device_phys(0, "");
+}
+
+/* A connected pad reported again keeps the entry it holds, its twin
+ * unplugged or not. A joypad driver restart lets every claim go, so
+ * pads known by no place take the entries afresh in the order they
+ * are reported, as at a start. */
+static void test_reconnect_gone_twin(void)
+{
+   t_reset();
+   t_entries(t_twins_2_3);
+   t_connect(0, "Pad", 1, 1);
+   t_connect(1, "Pad", 1, 1);
+   t_connect(1, "Pad", 1, 1);
+   t_connect(0, "Pad", 1, 1);
+   CHECK(input_config_plays_as_entry(0) == 0
+         && input_config_plays_as_entry(1) == 1,
+         "reported again, the twins changed entries");
+   t_disconnect(0);
+   t_connect(1, "Pad", 1, 1);
+   CHECK(input_config_plays_as_entry(1) == 1
+         && input_config_plays_as_player(1) == 3 && t_user_of(1) == 2,
+         "reported again, the twin left took the gone one's entry");
+   t_connect(0, "Pad", 1, 1);
+   CHECK(input_config_plays_as_entry(0) == 0
+         && input_config_plays_as_player(0) == 2 && t_user_of(0) == 1,
+         "the gone twin, back, does not play its own Player 2");
+
+   t_reset();
+   t_entries(t_twins_2_3);
+   t_plug(0, "Pad", 1, 1);
+   t_plug(1, "Pad", 1, 1);
+   input_driver_registry_restart();
+   t_plug(1, "Pad", 1, 1);
+   t_plug(0, "Pad", 1, 1);
+   CHECK(input_config_plays_as_player(1) == 2
+         && input_config_plays_as_player(0) == 3,
+         "a restart did not hand the entries out in the order reported");
+   input_driver_registry_disconnect(0);
+   input_driver_registry_disconnect(1);
 }
 
 /* The reservations writing the ports after a Plays As move, as
@@ -1752,6 +1850,18 @@ static void test_plays_as_copy(void)
          "the entries read to compare against outlived the copy");
 }
 
+/* The next start, the controllers in the slots below @n connected:
+ * a start reads the file @conf into no entries. */
+static void t_next_start(config_file_t *conf, unsigned n)
+{
+   unsigned s;
+   for (s = 0; s < n; s++)
+      input_config_plays_as_release(s);
+   input_plays_as_read(NULL);
+   input_plays_as_read(conf);
+   input_plays_as_hand_out();
+}
+
 /* Two of a model are written lowest slot first, one on Auto before
  * another given a player as an Auto entry of its own: the next start
  * gives each its own back, and so does a reload once the session's are
@@ -1807,12 +1917,11 @@ static void test_plays_as_write_twins(void)
          && input_config_plays_as_player(2) == 0,
          "laying out the entries changed a controller's player");
    input_plays_as_read(conf);
+   input_plays_as_hand_out();
    CHECK(input_config_plays_as_player(0) == 2
          && input_config_plays_as_player(1) == 4,
          "a reload of the entries written swapped two of a model");
-   for (s = 0; s < 3; s++)
-      input_config_plays_as_release(s);
-   input_plays_as_read(conf);
+   t_next_start(conf, 3);
    CHECK(input_config_plays_as_player(0) == 2
          && input_config_plays_as_player(1) == 4
          && input_config_plays_as_player(2) == 0,
@@ -1851,9 +1960,7 @@ static void test_plays_as_write_twins(void)
          && t_conf_is(conf, "input_plays_as_player_2", "0")
          && t_conf_is(conf, "input_plays_as_player_3", "4"),
          "one on Auto before another of its model was not written as Auto");
-   for (s = 0; s < 3; s++)
-      input_config_plays_as_release(s);
-   input_plays_as_read(conf);
+   t_next_start(conf, 3);
    CHECK(input_config_plays_as_player(0) == 2
          && input_config_plays_as_player(1) == 0
          && input_config_plays_as_player(2) == 4,
@@ -1872,16 +1979,12 @@ static void test_plays_as_write_twins(void)
          && t_conf_is(conf, "input_plays_as_player_2", "0")
          && t_conf_is(conf, "input_plays_as_player_3", "4"),
          "one on Auto was not written before a gone one's entry");
-   for (s = 0; s < 2; s++)
-      input_config_plays_as_release(s);
-   input_plays_as_read(conf);
+   t_next_start(conf, 2);
    CHECK(input_config_plays_as_player(0) == 2
          && input_config_plays_as_player(1) == 0,
          "the next start with the same pads gave the one on Auto the gone one's player");
    t_dev(2, "Pad", 1, 1);
-   for (s = 0; s < 3; s++)
-      input_config_plays_as_release(s);
-   input_plays_as_read(conf);
+   t_next_start(conf, 3);
    CHECK(input_config_plays_as_player(0) == 2
          && input_config_plays_as_player(1) == 0
          && input_config_plays_as_player(2) == 4,
@@ -1916,16 +2019,12 @@ static void test_plays_as_write_twins(void)
          && t_conf_is(conf, "input_plays_as_player_2", "0")
          && t_conf_is(conf, "input_plays_as_player_3", "4"),
          "a gone pad's entry did not keep its place before one on Auto");
-   for (s = 0; s < 3; s++)
-      input_config_plays_as_release(s);
-   input_plays_as_read(conf);
+   t_next_start(conf, 3);
    CHECK(input_config_plays_as_player(1) == 2
          && input_config_plays_as_player(2) == 0,
          "the next start without the gone pad did not move the others up one");
    t_dev(0, "Pad", 1, 1);
-   for (s = 0; s < 3; s++)
-      input_config_plays_as_release(s);
-   input_plays_as_read(conf);
+   t_next_start(conf, 3);
    CHECK(input_config_plays_as_player(0) == 2
          && input_config_plays_as_player(1) == 0
          && input_config_plays_as_player(2) == 4,
@@ -1946,9 +2045,7 @@ static void test_plays_as_write_twins(void)
          && t_conf_is(conf, "input_plays_as_player_2", "2")
          && t_conf_is(conf, "input_plays_as_player_3", "4"),
          "two of a model were not written lowest slot first, or one gone moved");
-   for (s = 0; s < 3; s++)
-      input_config_plays_as_release(s);
-   input_plays_as_read(conf);
+   t_next_start(conf, 3);
    CHECK(input_config_plays_as_player(0) == 3
          && input_config_plays_as_player(2) == 2,
          "the next start swapped two of a model, one being gone");
@@ -2048,9 +2145,7 @@ static void test_plays_as_write_twins(void)
          && t_conf_is(conf, "input_plays_as_player_2", "3")
          && t_conf_is(conf, "input_plays_as_player_3", "4"),
          "an entry was moved past another model's");
-   for (s = 0; s < 3; s++)
-      input_config_plays_as_release(s);
-   input_plays_as_read(conf);
+   t_next_start(conf, 3);
    CHECK(input_config_plays_as_player(0) == 2
          && input_config_plays_as_player(1) == 3
          && input_config_plays_as_player(2) == 4,
@@ -2431,6 +2526,7 @@ static void test_plays_as_override_round_trip(void)
          "input_plays_as_player_2 = \"4\"\n");
    t_entries(t_main_ab);
    input_plays_as_merge(conf);
+   input_plays_as_hand_out();
    config_file_free(conf);
    input_config_plays_as_hotkey(1, RARCH_FAST_FORWARD_KEY, &k, &a);
    CHECK(input_config_plays_as_player(0) == 0
@@ -2479,6 +2575,7 @@ static void test_plays_as_override_twins(void)
    conf = t_override(main_twins, NULL);
    t_entries(main_twins);
    input_plays_as_merge(conf);
+   input_plays_as_hand_out();
    config_file_free(conf);
    CHECK(input_config_plays_as_player(0) == 2
          && input_config_plays_as_player(1) == 4,
@@ -2497,6 +2594,7 @@ static void test_plays_as_override_twins(void)
    conf = t_override(main_b_pad, NULL);
    t_entries(main_b_pad);
    input_plays_as_merge(conf);
+   input_plays_as_hand_out();
    config_file_free(conf);
    CHECK(input_config_plays_as_player(0) == 2
          && input_config_plays_as_player(1) == 4
@@ -2522,6 +2620,7 @@ static void test_plays_as_override_twins(void)
          "the first of two pads on Auto was not saved as an Auto entry before the second's");
    t_entries(main_twins);
    input_plays_as_merge(conf);
+   input_plays_as_hand_out();
    config_file_free(conf);
    CHECK(input_config_plays_as_player(0) == 0
          && input_config_plays_as_player(1) == 3,
@@ -2540,6 +2639,7 @@ static void test_plays_as_override_twins(void)
          "two pads set back to Auto were not saved as one Auto entry");
    t_entries(main_twins);
    input_plays_as_merge(conf);
+   input_plays_as_hand_out();
    config_file_free(conf);
    CHECK(input_config_plays_as_player(0) == 0
          && input_config_plays_as_player(1) == 0,
@@ -2596,6 +2696,7 @@ static void test_plays_as_override_twins(void)
    t_reset();
    t_entries(main_one);
    input_plays_as_merge(conf);
+   input_plays_as_hand_out();
    config_file_free(conf);
    t_connect(0, "Pad", 1, 1);
    t_connect(1, "Pad", 1, 1);
@@ -2646,6 +2747,7 @@ static void test_plays_as_override_twins(void)
    t_entries(main_mixed);
    t_entries(main_mixed);
    input_plays_as_merge(conf);
+   input_plays_as_hand_out();
    config_file_free(conf);
    CHECK(input_config_plays_as_player(0) == 2
          && input_config_plays_as_player(1) == 3
@@ -2661,6 +2763,7 @@ static void test_plays_as_override_twins(void)
          "unloading an override of pads two models' entries name did not give back the main config's");
    t_entries(main_mixed);
    input_plays_as_merge(conf);
+   input_plays_as_hand_out();
    CHECK(input_config_plays_as_player(0) == 2
          && input_config_plays_as_player(1) == 6
          && input_config_plays_as_player(2) == 5,
@@ -2668,6 +2771,7 @@ static void test_plays_as_override_twins(void)
    t_reset();
    t_entries(main_mixed);
    input_plays_as_merge(conf);
+   input_plays_as_hand_out();
    config_file_free(conf);
    t_connect(0, "Pad", 1, 1);
    t_connect(1, "Pad", 1, 1);
@@ -2693,6 +2797,7 @@ static void test_plays_as_override_twins(void)
    t_entries(main_mixed);
    t_entries(main_mixed);
    input_plays_as_merge(conf);
+   input_plays_as_hand_out();
    CHECK(input_config_plays_as_player(0) == 0
          && input_config_plays_as_player(1) == 3
          && input_config_plays_as_player(2) == 4,
@@ -2700,6 +2805,7 @@ static void test_plays_as_override_twins(void)
    t_reset();
    t_entries(main_mixed);
    input_plays_as_merge(conf);
+   input_plays_as_hand_out();
    config_file_free(conf);
    t_connect(0, "Pad", 1, 1);
    t_connect(1, "Pad", 1, 1);
@@ -2725,6 +2831,7 @@ static void test_plays_as_override_twins(void)
    t_entries(main_mixed);
    t_entries(main_mixed);
    input_plays_as_merge(conf);
+   input_plays_as_hand_out();
    CHECK(input_config_plays_as_player(0) == 2
          && input_config_plays_as_player(1) == 0
          && input_config_plays_as_player(2) == 4
@@ -2733,6 +2840,7 @@ static void test_plays_as_override_twins(void)
    t_reset();
    t_entries(main_mixed);
    input_plays_as_merge(conf);
+   input_plays_as_hand_out();
    config_file_free(conf);
    t_connect(0, "Pad", 1, 1);
    t_connect(1, "Pad", 1, 1);
@@ -2761,6 +2869,7 @@ static void test_plays_as_override_twins(void)
    t_entries(main_mixed);
    t_entries(main_mixed);
    input_plays_as_merge(conf);
+   input_plays_as_hand_out();
    CHECK(input_config_plays_as_player(0) == 2
          && input_config_plays_as_player(1) == 0
          && input_config_plays_as_player(2) == 5
@@ -2769,6 +2878,7 @@ static void test_plays_as_override_twins(void)
    t_reset();
    t_entries(main_mixed);
    input_plays_as_merge(conf);
+   input_plays_as_hand_out();
    config_file_free(conf);
    t_connect(0, "Pad", 1, 1);
    t_connect(1, "Pad", 1, 1);
@@ -2851,7 +2961,7 @@ static void t_place_reread(const uint8_t *before)
    input_config_plays_as_reread(before, again);
    for (s = 0; s < MAX_USERS; s++)
       if (again[s] && input_config_get_device_name(s))
-         input_config_plays_as_place(s);
+         input_config_plays_as_place(s, false);
    input_config_binds_changed();
 }
 
@@ -2944,6 +3054,44 @@ static void test_plays_as_reread(void)
    CHECK(t_user_of(0) == 0 && t_user_of(2) == 1,
          "a reload's Max Users left the Auto pad past it with no port");
 
+   /* two of a model, the first gone: the other keeps its own entry,
+    * through an override with no entries and one giving it player 4 */
+   t_reset();
+   t_entries(t_twins_2_3);
+   t_connect(0, "Pad", 1, 1);
+   t_connect(1, "Pad", 1, 1);
+   input_driver_ports_runtime_moved();
+   t_disconnect(0);
+   input_config_plays_as_players(before);
+   for (u = 0; u < MAX_USERS; u++)
+      settings.uints.input_joypad_index[u] = u;
+   t_entries(t_twins_2_3);
+   t_merge("video_fullscreen = \"true\"\n");
+   t_place_reread(before);
+   CHECK(input_config_plays_as_entry(1) == 1
+         && input_config_plays_as_player(1) == 3 && t_user_of(1) == 2,
+         "a reload gave the twin left the gone one's entry");
+
+   t_reset();
+   t_entries(t_twins_2_3);
+   t_connect(0, "Pad", 1, 1);
+   t_connect(1, "Pad", 1, 1);
+   input_driver_ports_runtime_moved();
+   t_disconnect(0);
+   input_config_plays_as_players(before);
+   for (u = 0; u < MAX_USERS; u++)
+      settings.uints.input_joypad_index[u] = u;
+   t_entries(t_twins_2_3);
+   t_merge(
+         "input_plays_as_device_1 = \"0001:0001 Pad\"\n"
+         "input_plays_as_player_1 = \"2\"\n"
+         "input_plays_as_device_2 = \"0001:0001 Pad\"\n"
+         "input_plays_as_player_2 = \"4\"\n");
+   t_place_reread(before);
+   CHECK(input_config_plays_as_entry(1) == 1
+         && input_config_plays_as_player(1) == 4 && t_user_of(1) == 3,
+         "an override giving the twin left player 4 did not place it on 4");
+
    /* the joypad driver reporting them again places them itself */
    t_reset();
    t_plug(0, "A", 1, 1);
@@ -2964,6 +3112,378 @@ static void test_plays_as_reread(void)
          "the restart's connects did not place by the new table");
    input_driver_registry_disconnect(0);
    input_driver_registry_disconnect(1);
+}
+
+/* One of two of a model on Auto with no entry, the other unplugged: a
+ * reload, judged as a whole, gives it only an entry the reload added
+ * for the model, never the unplugged twin's, changed or not. One that
+ * an override newly names still gets the override's. */
+static void test_plays_as_reread_auto_twin(void)
+{
+   unsigned i;
+   uint8_t before[MAX_USERS];
+   static const char one[] =
+         "input_plays_as_device_1 = \"0001:0001 Pad\"\n"
+         "input_plays_as_player_1 = \"2\"\n";
+   static const char five[] =
+         "input_plays_as_device_1 = \"0001:0001 Pad\"\n"
+         "input_plays_as_player_1 = \"5\"\n";
+
+   /* an override with no entries, then Unload */
+   t_reset();
+   t_entries(one);
+   t_connect(0, "Pad", 1, 1);
+   t_connect(1, "Pad", 1, 1);
+   CHECK(input_config_plays_as_entry(1) == -1,
+         "fixture: the second pad holds an entry");
+   t_disconnect(0);
+   input_config_plays_as_players(before);
+   t_entries(one);
+   t_merge("video_fullscreen = \"true\"\n");
+   t_place_reread(before);
+   CHECK(input_config_plays_as_entry(1) == -1
+         && input_config_plays_as_player(1) == 0,
+         "a reload gave the Auto twin the gone one's entry");
+   input_config_plays_as_players(before);
+   t_entries(one);
+   t_place_reread(before);
+   CHECK(input_config_plays_as_entry(1) == -1
+         && input_config_plays_as_player(1) == 0,
+         "an Unload gave the Auto twin the gone one's entry");
+   t_connect(0, "Pad", 1, 1);
+   CHECK(input_config_plays_as_entry(0) == 0
+         && input_config_plays_as_player(0) == 2,
+         "the gone twin, back, does not play its own Player 2");
+
+   /* set to Auto with the other gone: a reload gives back its own
+    * entry, which the reload adds, not the gone one's */
+   t_reset();
+   t_entries(t_twins_2_3);
+   t_connect(0, "Pad", 1, 1);
+   t_connect(1, "Pad", 1, 1);
+   t_disconnect(0);
+   CHECK(input_config_plays_as_set(1, 0), "Auto was refused");
+   t_place_again(1);
+   input_config_plays_as_players(before);
+   t_entries(t_twins_2_3);
+   t_merge("video_fullscreen = \"true\"\n");
+   t_place_reread(before);
+   CHECK(input_config_plays_as_entry(1) == 1
+         && input_config_plays_as_player(1) == 3,
+         "set to Auto, after a reload the twin left took the gone one's entry");
+   t_connect(0, "Pad", 1, 1);
+   CHECK(input_config_plays_as_entry(0) == 0
+         && input_config_plays_as_player(0) == 2,
+         "the gone twin, back, does not play its own Player 2");
+
+   /* an override's entry, gone with Unload while the other is unplugged */
+   t_reset();
+   t_entries(one);
+   t_connect(0, "Pad", 1, 1);
+   t_connect(1, "Pad", 1, 1);
+   input_config_plays_as_players(before);
+   t_entries(one);
+   t_merge(
+         "input_plays_as_device_1 = \"0001:0001 Pad\"\n"
+         "input_plays_as_player_1 = \"2\"\n"
+         "input_plays_as_device_2 = \"0001:0001 Pad\"\n"
+         "input_plays_as_player_2 = \"4\"\n");
+   t_place_reread(before);
+   CHECK(input_config_plays_as_player(1) == 4,
+         "fixture: the override did not give the Auto twin player 4");
+   t_disconnect(0);
+   input_config_plays_as_players(before);
+   t_entries(one);
+   t_place_reread(before);
+   CHECK(input_config_plays_as_entry(1) == -1
+         && input_config_plays_as_player(1) == 0,
+         "an Unload gave the twin left the gone one's entry");
+   t_connect(0, "Pad", 1, 1);
+   CHECK(input_config_plays_as_entry(0) == 0
+         && input_config_plays_as_player(0) == 2,
+         "the gone twin, back, does not play its own Player 2");
+
+   /* the gone one's entry changed by the reload: still the gone one's */
+   t_reset();
+   t_entries(one);
+   t_connect(0, "Pad", 1, 1);
+   t_connect(1, "Pad", 1, 1);
+   t_disconnect(0);
+   input_config_plays_as_players(before);
+   t_entries(five);
+   t_place_reread(before);
+   CHECK(input_config_plays_as_entry(1) == -1
+         && input_config_plays_as_player(1) == 0,
+         "a reload that changed the gone one's entry gave it to the Auto twin");
+   t_connect(0, "Pad", 1, 1);
+   CHECK(input_config_plays_as_entry(0) == 0
+         && input_config_plays_as_player(0) == 5,
+         "the gone twin, back, does not play its changed Player 5");
+
+   /* an override naming the model once, the first of it gone: the
+    * gone one's entry, not a new one */
+   t_reset();
+   t_entries(one);
+   t_connect(0, "Pad", 1, 1);
+   t_connect(1, "Pad", 1, 1);
+   t_disconnect(0);
+   input_config_plays_as_players(before);
+   t_entries(one);
+   t_merge(
+         "input_plays_as_device_1 = \"0001:0001 Pad\"\n"
+         "input_plays_as_player_1 = \"4\"\n");
+   t_place_reread(before);
+   CHECK(input_config_plays_as_entry(1) == -1
+         && input_config_plays_as_player(1) == 0,
+         "an override naming the model once gave the Auto twin the gone one's entry");
+   t_connect(0, "Pad", 1, 1);
+   CHECK(input_config_plays_as_entry(0) == 0
+         && input_config_plays_as_player(0) == 4,
+         "the gone twin, back, does not play the override's Player 4");
+
+   /* an override gave the first Player 5; it gone, Unload: the Auto
+    * twin stays on Auto */
+   t_reset();
+   t_entries(one);
+   t_connect(0, "Pad", 1, 1);
+   t_connect(1, "Pad", 1, 1);
+   input_config_plays_as_players(before);
+   t_entries(one);
+   t_merge(five);
+   t_place_reread(before);
+   CHECK(input_config_plays_as_player(0) == 5
+         && input_config_plays_as_entry(1) == -1,
+         "fixture: the override did not give the first twin player 5");
+   t_disconnect(0);
+   input_config_plays_as_players(before);
+   t_entries(one);
+   t_place_reread(before);
+   CHECK(input_config_plays_as_entry(1) == -1
+         && input_config_plays_as_player(1) == 0,
+         "an Unload gave the Auto twin the gone one's entry the override changed");
+   t_connect(0, "Pad", 1, 1);
+   CHECK(input_config_plays_as_entry(0) == 0
+         && input_config_plays_as_player(0) == 2,
+         "the gone twin, back, does not play its main Player 2");
+
+   /* the same, then the same override loaded again: Start on its row,
+    * then Load Override, which unloads first */
+   for (i = 0; i < 2; i++)
+   {
+      t_reset();
+      t_entries(one);
+      t_connect(0, "Pad", 1, 1);
+      t_connect(1, "Pad", 1, 1);
+      input_config_plays_as_players(before);
+      t_entries(one);
+      t_merge(five);
+      t_place_reread(before);
+      t_disconnect(0);
+      input_config_plays_as_players(before);
+      if (i)
+         t_entries(one);
+      t_entries(one);
+      t_merge(five);
+      t_place_reread(before);
+      CHECK(input_config_plays_as_entry(1) == -1
+            && input_config_plays_as_player(1) == 0,
+            "the override loaded again gave the Auto twin the gone one's entry");
+      t_connect(0, "Pad", 1, 1);
+      CHECK(input_config_plays_as_entry(0) == 0
+            && input_config_plays_as_player(0) == 5,
+            "the gone twin, back, does not play the override's Player 5");
+   }
+}
+
+/* @main_text read and @override_text over it, then the hand-out once,
+ * as config_load_file() reloads. */
+static void t_load(const char *main_text, const char *override_text)
+{
+   char buf[1024];
+   config_file_t *conf;
+   strlcpy(buf, main_text, sizeof(buf));
+   conf = config_file_new_from_string(buf, NULL);
+   input_plays_as_read(conf);
+   config_file_free(conf);
+   strlcpy(buf, override_text, sizeof(buf));
+   conf = config_file_new_from_string(buf, NULL);
+   input_plays_as_merge(conf);
+   config_file_free(conf);
+   input_plays_as_hand_out();
+}
+
+/* An unplugged pad's entry stays its own for the rest of the session:
+ * a reload pairs it as still held, a joypad driver restart's reports
+ * leave it be, and the saves keep it the pad's. Only a connect takes
+ * it. */
+static void test_plays_as_unplugged_kept(void)
+{
+   unsigned i;
+   uint8_t before[MAX_USERS];
+   config_file_t *conf;
+   static const char one[] =
+         "input_plays_as_device_1 = \"0001:0001 Pad\"\n"
+         "input_plays_as_player_1 = \"2\"\n";
+   static const char two[] =
+         "input_plays_as_device_1 = \"0001:0001 Pad\"\n"
+         "input_plays_as_player_1 = \"2\"\n"
+         "input_plays_as_device_2 = \"0001:0001 Pad\"\n"
+         "input_plays_as_player_2 = \"4\"\n";
+   static const char five_six[] =
+         "input_plays_as_device_1 = \"0001:0001 Pad\"\n"
+         "input_plays_as_player_1 = \"5\"\n"
+         "input_plays_as_device_2 = \"0001:0001 Pad\"\n"
+         "input_plays_as_player_2 = \"6\"\n";
+   static const char x_pad[] =
+         "input_plays_as_device_1 = \"0002:0002 X\"\n"
+         "input_plays_as_player_1 = \"1\"\n"
+         "input_plays_as_device_2 = \"0001:0001 Pad\"\n"
+         "input_plays_as_player_2 = \"2\"\n";
+
+   /* the first unplugged, the second on Auto: an override naming two
+    * of the model, loaded the first time */
+   t_reset();
+   t_entries(one);
+   t_connect(0, "Pad", 1, 1);
+   t_connect(1, "Pad", 1, 1);
+   t_disconnect(0);
+   input_config_plays_as_players(before);
+   t_load(one, two);
+   t_place_reread(before);
+   CHECK(input_config_plays_as_entry(1) == 1
+         && input_config_plays_as_player(1) == 4,
+         "with its twin unplugged, the Auto twin did not get the override's new entry");
+   t_connect(0, "Pad", 1, 1);
+   CHECK(input_config_plays_as_entry(0) == 0
+         && input_config_plays_as_player(0) == 2,
+         "the unplugged twin, back, does not play its own Player 2");
+   input_config_plays_as_players(before);
+   t_load(one, two);
+   t_place_reread(before);
+   CHECK(input_config_plays_as_player(0) == 2
+         && input_config_plays_as_player(1) == 4,
+         "the override loaded again with both twins in moved one");
+
+   /* the override gave the second Player 4; the first unplugged, the
+    * same override again: Start on its row, then Load Override, which
+    * unloads first */
+   for (i = 0; i < 2; i++)
+   {
+      t_reset();
+      t_entries(one);
+      t_connect(0, "Pad", 1, 1);
+      t_connect(1, "Pad", 1, 1);
+      input_config_plays_as_players(before);
+      t_load(one, two);
+      t_place_reread(before);
+      CHECK(input_config_plays_as_player(0) == 2
+            && input_config_plays_as_player(1) == 4,
+            "fixture: the override did not give the second twin Player 4");
+      t_disconnect(0);
+      input_config_plays_as_players(before);
+      if (i)
+         t_load(one, "");
+      t_load(one, two);
+      t_place_reread(before);
+      CHECK(input_config_plays_as_entry(1) == 1
+            && input_config_plays_as_player(1) == 4,
+            "the override loaded again moved the twin left off its Player 4");
+      t_connect(0, "Pad", 1, 1);
+      CHECK(input_config_plays_as_entry(0) == 0
+            && input_config_plays_as_player(0) == 2,
+            "the unplugged twin, back, does not play its own Player 2");
+   }
+
+   /* a joypad driver restart: the twin left, reported again, does not
+    * take the unplugged one's entry; that one, back, does */
+   t_reset();
+   t_entries(one);
+   t_plug(0, "Pad", 1, 1);
+   t_plug(1, "Pad", 1, 1);
+   t_disconnect(0);
+   input_driver_registry_disconnect(0);
+   input_driver_registry_restart();
+   t_plug(1, "Pad", 1, 1);
+   CHECK(input_config_plays_as_entry(1) == -1
+         && input_config_plays_as_player(1) == 0,
+         "a restart's report gave the twin left the unplugged one's entry");
+   t_plug(0, "Pad", 1, 1);
+   CHECK(input_config_plays_as_entry(0) == 0
+         && input_config_plays_as_player(0) == 2,
+         "the unplugged twin, back after a restart, does not play its own Player 2");
+   input_driver_registry_disconnect(0);
+   input_driver_registry_disconnect(1);
+
+   /* the saves: nothing changed, the unplugged one's entry is still
+    * its own, so no override and no Auto entry ahead of it */
+   t_reset();
+   t_entries(one);
+   t_connect(0, "Pad", 1, 1);
+   t_connect(1, "Pad", 1, 1);
+   t_disconnect(0);
+   conf = t_override(one, NULL);
+   CHECK(!t_conf_is(conf, "input_plays_as_device_1", NULL),
+         "Save Override wrote two of a model, one unplugged, nothing changed");
+   config_file_free(conf);
+   conf = config_file_new_alloc();
+   input_plays_as_write(conf);
+   CHECK(t_conf_is(conf, "input_plays_as_player_1", "2")
+         && !t_conf_is(conf, "input_plays_as_device_2", NULL),
+         "Save Configuration put the Auto twin ahead of the unplugged one");
+   config_file_free(conf);
+   input_plays_as_lay_out();
+   t_connect(0, "Pad", 1, 1);
+   CHECK(input_config_plays_as_player(0) == 2
+         && input_config_plays_as_entry(1) == -1,
+         "after the save, the unplugged twin, back, does not play its own Player 2");
+
+   /* both unplugged, connected in the other order: each one's entry
+    * gets the override's at its pad's place */
+   t_reset();
+   t_entries(t_twins_2_3);
+   t_connect(1, "Pad", 1, 1);
+   t_connect(0, "Pad", 1, 1);
+   CHECK(input_config_plays_as_entry(0) == 1
+         && input_config_plays_as_entry(1) == 0,
+         "fixture: the twins did not take the entries in the order they came");
+   t_disconnect(0);
+   t_disconnect(1);
+   t_merge(five_six);
+   CHECK(input_config_plays_as_entry_player(1) == 5
+         && input_config_plays_as_entry_player(0) == 6,
+         "an override swapped two unplugged twins' entries");
+
+   /* laid out by a save with one unplugged, its entry moved: still its
+    * own */
+   t_reset();
+   t_entries(t_twins_2_3);
+   t_connect(1, "Pad", 1, 1);
+   t_connect(0, "Pad", 1, 1);
+   t_disconnect(0);
+   input_plays_as_lay_out();
+   t_merge(five_six);
+   CHECK(input_config_plays_as_player(1) == 6,
+         "after a save's lay-out, an override moved the twin left");
+   t_connect(0, "Pad", 1, 1);
+   CHECK(input_config_plays_as_player(0) == 5,
+         "after a save's lay-out, the unplugged twin, back, does not play the override's Player 5");
+
+   /* Save Override's load to compare against, with another model at
+    * the unplugged one's entry's place, leaves it its own */
+   t_reset();
+   t_entries(x_pad);
+   t_connect(0, "Pad", 1, 1);
+   t_connect(1, "Pad", 1, 1);
+   t_connect(2, "X", 2, 2);
+   t_disconnect(0);
+   conf = t_override(one, NULL);
+   config_file_free(conf);
+   t_merge(two);
+   CHECK(input_config_plays_as_player(1) == 4,
+         "after Save Override, an override gave the Auto twin the unplugged one's entry");
+   t_connect(0, "Pad", 1, 1);
+   CHECK(input_config_plays_as_player(0) == 2,
+         "after Save Override, the unplugged twin, back, does not play its own Player 2");
 }
 
 #define T_ENABLE 20
@@ -4592,6 +5112,7 @@ static void test_hotkey_own_storage(void)
 
    input_plays_as_read(NULL);
    input_plays_as_read(conf);
+   input_plays_as_hand_out();
    input_config_plays_as_hotkey(0, RARCH_MENU_TOGGLE, &k, &a);
    CHECK(k == HAT_MAP(0, HAT_UP_MASK) && a == AXIS_NEG(2),
          "own hotkeys did not come back");
@@ -5069,7 +5590,7 @@ static void t_headset(unsigned slot, const char *name)
 {
    t_dev(slot, name, 0, 0);
    input_config_set_device_joypad_driver(slot, INPUT_OPENXR_JOYPAD);
-   input_config_plays_as_place(slot);
+   input_config_plays_as_place(slot, true);
 }
 
 /* The headset on Auto shares player 1 with no entry, from the highest
@@ -5490,12 +6011,12 @@ static void test_headset_reserved(void)
          sizeof(settings.arrays.input_reserved_devices[1]));
    t_dev(1, INPUT_OPENXR_JOYPAD_COMBINED, 0, 0);
    input_config_set_device_joypad_driver(1, INPUT_OPENXR_JOYPAD);
-   CHECK(!input_config_plays_as_place(1),
+   CHECK(!input_config_plays_as_place(1, true),
          "the headset a reservation names was not left to it");
    CHECK(!input_config_plays_as_any_player(),
          "the headset a reservation places put Plays As in effect");
    CHECK(input_config_plays_as_set(1, 3)
-         && input_config_plays_as_place(1),
+         && input_config_plays_as_place(1, false),
          "the headset on 3 was left to the reservation");
    input_driver_poll();
    CHECK(t_user_of(1) == 3 && input_remapping_join_user(3) == 2,
@@ -5712,6 +6233,7 @@ int main(void)
    test_place_leave_and_change();
    test_place_again();
    test_place_again_player();
+   test_place_again_gone_twin();
    test_place_again_max_users();
    test_place_again_last_player();
    test_place_again_never_in_effect();
@@ -5732,6 +6254,7 @@ int main(void)
    test_place_no_player();
    test_place_restart();
    test_place_restart_twins();
+   test_reconnect_gone_twin();
    test_place_saved_ports();
    test_place_reload_kept();
    test_own_hotkey_kept();
@@ -5748,6 +6271,8 @@ int main(void)
    test_plays_as_override_twins();
    test_plays_as_override_twins_full();
    test_plays_as_reread();
+   test_plays_as_reread_auto_twin();
+   test_plays_as_unplugged_kept();
    test_menu_shared();
    test_hotkeys_shared();
    test_hotkey_enable_shared();

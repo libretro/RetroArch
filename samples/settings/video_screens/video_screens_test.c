@@ -1289,8 +1289,9 @@ static void test_plays_as_override(void)
       input_config_set_device_display_name(1, "B");
       input_config_set_device_vid(1, 2);
       input_config_set_device_pid(1, 2);
-      input_autoconfigure_reallocate_ports(0);
-      input_autoconfigure_reallocate_ports(1);
+      /* connected: only a connect takes an entry */
+      input_config_plays_as_place(0, true);
+      input_config_plays_as_place(1, true);
       CHECK(input_config_plays_as_player(1) == 3);
       CHECK(settings->uints.input_joypad_index[2] == 1);
       CHECK(input_config_plays_as_set(0, 2));
@@ -1374,6 +1375,141 @@ static void test_plays_as_override(void)
    load_fixture("");
 }
 
+/* A pad of one model connected in @slot, or unplugged from it. */
+static void plays_as_pad(unsigned slot, bool connected)
+{
+   input_config_set_device_vid(slot, connected ? 1 : 0);
+   input_config_set_device_pid(slot, connected ? 1 : 0);
+   if (connected)
+   {
+      input_config_set_device_name(slot, "Pad");
+      input_config_set_device_display_name(slot, "Pad");
+      input_config_plays_as_place(slot, true);
+      return;
+   }
+   input_config_clear_device_name(slot);
+   input_config_clear_device_display_name(slot);
+   input_config_plays_as_release(slot);
+}
+
+/* Two of a model, a game override giving the first Player 5: with it
+ * unplugged, Unload Override, Load Override and Start on the override
+ * row leave the other on Auto, and the first plays its own back. */
+static void test_plays_as_override_twin(void)
+{
+   static rarch_system_info_t system_info;
+   settings_t *settings = config_get_ptr();
+   uint8_t before[MAX_USERS];
+   char path[2048];
+   unsigned step, u;
+
+   memset(&system_info, 0, sizeof(system_info));
+   system_info.info.library_name = "video_screens_test";
+   for (step = 0; step < 3; step++)
+   {
+      load_fixture("input_max_users = \"4\"\n"
+            "input_plays_as_device_1 = \"0001:0001 Pad\"\n"
+            "input_plays_as_player_1 = \"2\"\n");
+      for (u = 0; u < MAX_USERS; u++)
+         settings->uints.input_joypad_index[u] = u;
+      plays_as_pad(0, true);
+      plays_as_pad(1, true);
+      CHECK(input_config_plays_as_player(0) == 2);
+      CHECK(input_config_plays_as_entry(1) == -1);
+      CHECK(input_config_plays_as_set(0, 5));
+      input_autoconfigure_reallocate_ports(0);
+      path_set(RARCH_PATH_BASENAME, "plays_as_twin.rom");
+      CHECK(config_save_overrides(OVERRIDE_GAME, &system_info, false, NULL) == 1);
+      strlcpy(path, path_get(RARCH_PATH_CONFIG_OVERRIDE), sizeof(path));
+
+      plays_as_pad(0, false);
+      input_config_plays_as_players(before);
+      if (step == 0)
+         CHECK(config_unload_override());
+      else if (step == 1)
+      {
+         config_unload_override();
+         CHECK(config_load_override_file(path));
+      }
+      else
+         CHECK(config_load_override(&system_info));
+      input_autoconfigure_plays_as_reread(before);
+      CHECK(input_config_plays_as_entry(1) == -1);
+      CHECK(input_config_plays_as_player(1) == 0);
+      plays_as_pad(0, true);
+      CHECK(input_config_plays_as_player(0) == (step ? 5u : 2u));
+
+      config_unload_override();
+      path_clear(RARCH_PATH_BASENAME);
+      for (u = 0; u < 2; u++)
+         plays_as_pad(u, false);
+   }
+   load_fixture("");
+}
+
+/* Two of a model, the second given Player 4 by a game override: with
+ * the first unplugged, loading it the first time, Start on its row and
+ * Load Override give the second its Player 4, and the first, back,
+ * plays its own. */
+static void test_plays_as_override_unplugged(void)
+{
+   static rarch_system_info_t system_info;
+   settings_t *settings = config_get_ptr();
+   uint8_t before[MAX_USERS];
+   char path[2048];
+   unsigned step, u;
+
+   memset(&system_info, 0, sizeof(system_info));
+   system_info.info.library_name = "video_screens_test";
+   for (step = 0; step < 3; step++)
+   {
+      load_fixture("input_max_users = \"4\"\n"
+            "input_plays_as_device_1 = \"0001:0001 Pad\"\n"
+            "input_plays_as_player_1 = \"2\"\n");
+      for (u = 0; u < MAX_USERS; u++)
+         settings->uints.input_joypad_index[u] = u;
+      plays_as_pad(0, true);
+      plays_as_pad(1, true);
+      CHECK(input_config_plays_as_set(1, 4));
+      input_autoconfigure_reallocate_ports(1);
+      path_set(RARCH_PATH_BASENAME, "plays_as_unplugged.rom");
+      CHECK(config_save_overrides(OVERRIDE_GAME, &system_info, false, NULL) == 1);
+      strlcpy(path, path_get(RARCH_PATH_CONFIG_OVERRIDE), sizeof(path));
+      /* the first time: from the main config, the second on Auto */
+      if (step == 0)
+      {
+         input_config_plays_as_players(before);
+         CHECK(config_unload_override());
+         input_autoconfigure_plays_as_reread(before);
+         CHECK(input_config_plays_as_entry(1) == -1);
+      }
+
+      plays_as_pad(0, false);
+      input_config_plays_as_players(before);
+      if (step == 0)
+         CHECK(config_load_override_file(path));
+      else if (step == 1)
+         CHECK(config_load_override(&system_info));
+      else
+      {
+         config_unload_override();
+         CHECK(config_load_override_file(path));
+      }
+      input_autoconfigure_plays_as_reread(before);
+      CHECK(input_config_plays_as_entry(1) == 1);
+      CHECK(input_config_plays_as_player(1) == 4);
+      plays_as_pad(0, true);
+      CHECK(input_config_plays_as_entry(0) == 0);
+      CHECK(input_config_plays_as_player(0) == 2);
+
+      config_unload_override();
+      path_clear(RARCH_PATH_BASENAME);
+      for (u = 0; u < 2; u++)
+         plays_as_pad(u, false);
+   }
+   load_fixture("");
+}
+
 int main(int argc, char **argv)
 {
    if (argc != 2)
@@ -1399,6 +1535,8 @@ int main(int argc, char **argv)
    test_window_menu_list();
    test_window_redraw();
    test_plays_as_override();
+   test_plays_as_override_twin();
+   test_plays_as_override_unplugged();
    menu_setting_free(menu_state_get_ptr()->entries.list_settings);
    free(menu_state_get_ptr()->entries.list_settings);
    menu_state_get_ptr()->entries.list_settings = NULL;

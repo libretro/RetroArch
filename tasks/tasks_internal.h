@@ -468,7 +468,14 @@ enum autoconfig_handle_flags
     *
     * This is used in the SDL3 driver, for instance, where mappings are provided directly.
     */
-   AUTOCONF_FLAG_HAS_STANDARD_MAPPING = (1 << 3)
+   AUTOCONF_FLAG_HAS_STANDARD_MAPPING = (1 << 3),
+   /**
+    * Device reported again while it stays connected: it keeps the Plays As
+    * entry it holds, or none, and takes no other.
+    *
+    * @see input_autoconfigure_reconnect()
+    */
+   AUTOCONF_FLAG_RECONNECT = (1 << 4)
 };
 
 void input_autoconfigure_blissbox_override_handler(

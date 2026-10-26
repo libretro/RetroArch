@@ -2033,9 +2033,11 @@ unsigned input_config_plays_as_named(const char *name);
 /* Moves on whenever an entry's controller or player may have: a cache
  * of input_config_plays_as_named() looks again when it does. */
 unsigned input_config_plays_as_generation(void);
-/* The controller just connected in @slot takes its entry and its port:
- * true when it was placed, false for one the reservations place. */
-bool input_config_plays_as_place(unsigned slot);
+/* The controller in @slot takes its port: true when it was placed,
+ * false for one the reservations place. Only a connect (@connect)
+ * takes an entry, and one reported again keeps the entry it holds, so
+ * a controller holding one never moves onto an unplugged twin's. */
+bool input_config_plays_as_place(unsigned slot, bool connect);
 /* Max Users has changed: @again gets, for each of the MAX_USERS slots,
  * whether its controller is placed again - one with no port below Max
  * Users now, one whose player was above Max Users when controllers
@@ -2053,7 +2055,8 @@ void input_config_plays_as_players(uint8_t *players);
  * in effect either side, or while the joypad driver reports them after
  * a restart. */
 void input_config_plays_as_reread(const uint8_t *before, uint8_t *again);
-/* The controller in @slot is gone. */
+/* The controller in @slot is gone. Its entry stays its own for the
+ * session, until a connect takes it. */
 void input_config_plays_as_release(unsigned slot);
 /* The user whose player user @user's controller plays as: the one it
  * shares, else @user (also with no controller). */
@@ -2637,6 +2640,10 @@ void input_plays_as_write(void *conf);
  * its order, an Auto one with no hotkeys of its own taking it back to
  * Auto; one it does not name keeps its own. */
 void input_plays_as_merge(void *conf);
+/* After the reload of the config and its overrides: a controller keeps
+ * or takes an entry it did not hold before the reload only where the
+ * reload added it for its model, so never an unplugged twin's. */
+void input_plays_as_hand_out(void);
 /* A copy of the entries and the claims on them, put back after a load
  * made only to compare against, as the binds' copy is. NULL if there
  * is no memory for it. */
