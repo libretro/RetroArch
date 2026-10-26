@@ -785,13 +785,10 @@ jobs:
         run: |
           set -eu
           # input/drivers/winraw_input.c with its keyboard and mouse
-          # read in bulk by the poll (the default;
-          # RETROARCH_RAWINPUT_POLL=0 turns it off). The real
-          # driver under Wine on a virtual display, with the focused
-          # window made and pumped by a second thread as the video
-          # thread does, and the driver started from that thread. With
-          # the switch off the driver is as it was. With it on: init
-          # makes no window and the first poll does, on the polling
+          # read in bulk by the poll. The real driver under Wine on a
+          # virtual display, with the focused window made and pumped by
+          # a second thread as the video thread does, and the driver
+          # started from that thread: init makes no window and the first poll does, on the polling
           # thread; six keys injected with SendInput() while nothing
           # pumps are read by one bulk read, none as a message, none
           # left in the queue, and come out of the poll as six key
@@ -1134,9 +1131,8 @@ jobs:
           set -eu
           # input/drivers_joypad/winraw_joypad.c with its controllers
           # read by the poll. The real driver under Wine, started from
-          # a second thread as it is from the video thread: with
-          # RETROARCH_RAWINPUT_POLL=0 init makes the window as it
-          # always did; otherwise init makes none and the first poll
+          # a second thread as it is from the video thread: init makes
+          # no window and the first poll
           # does, on the polling thread, marking it as one whose pump
           # leaves raw input alone, with one bulk read a poll; a device
           # change waiting for the window is taken by the poll;

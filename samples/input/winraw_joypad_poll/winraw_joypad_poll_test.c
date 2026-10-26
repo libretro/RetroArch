@@ -1,4 +1,4 @@
-/* winraw joypad: its window, when raw input is read by the poll.
+/* winraw joypad: its window, made and read by the poll.
  *
  * The real driver, cross-built with mingw-w64 and run under Wine. The
  * driver is started from a second thread, as it is from the video
@@ -6,10 +6,7 @@
  *
  * Checked here:
  *
- * - not read by the poll (RETROARCH_RAWINPUT_POLL=0): init makes the
- *   window, on init's thread, as it always did, and the poll makes no
- *   bulk read;
- * - read by the poll: init makes no window; the first poll does, on
+ * - init makes no window; the first poll does, on
  *   the polling thread, and marks that thread as one whose pump leaves
  *   raw input alone; every poll makes one bulk read;
  * - an arrival or removal waiting for the window is taken within eight
@@ -52,11 +49,9 @@ bool input_autoconfigure_disconnect(unsigned port, const char *name)
 { (void)port; (void)name; return true; }
 
 /* winraw_input.c's side of reading by the poll */
-static bool polled;
 static unsigned queue_reads;
 static int  claims;
 static DWORD claim_tid;
-bool winraw_raw_input_polled(void) { return polled; }
 void winraw_queue_read(void)       { queue_reads++; }
 void winraw_queue_claim_thread(bool claim)
 {
@@ -129,21 +124,7 @@ int main(void)
    HWND  w;
    MSG   probe;
 
-   /* ---- not read by the poll: as it was -------------------------- */
-   polled = false;
-   CHECK(winraw_joypad_joypad_init(NULL) != NULL, "init, not read by the poll");
-   w = winraw_joypad_msg_window;
-   CHECK(w && GetWindowThreadProcessId(w, NULL) == main_tid,
-         "not read by the poll: init did not make the window on its own thread");
-   winraw_joypad_joypad_poll();
-   CHECK(queue_reads == 0 && claims == 0,
-         "not read by the poll: %u bulk reads, %d threads marked", queue_reads, claims);
-   winraw_joypad_joypad_destroy();
-   CHECK(!IsWindow(w), "not read by the poll: destroy left the window");
-   printf("   ok   =0: the window is made by init, no bulk read, no thread marked\n");
-
    /* ---- read by the poll ----------------------------------------- */
-   polled = true;
    on_other_thread(do_init);
    CHECK(other_result != NULL, "init on the other thread");
    CHECK(!winraw_joypad_msg_window, "init made the window");

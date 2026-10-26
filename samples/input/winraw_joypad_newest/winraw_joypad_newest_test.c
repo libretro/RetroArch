@@ -183,7 +183,6 @@ bool input_autoconfigure_connect(const char *name, const char *display_name,
 }
 bool input_autoconfigure_disconnect(unsigned port, const char *name)
 { (void)port; (void)name; return true; }
-bool winraw_raw_input_polled(void) { return true; }
 void winraw_queue_read(void) { }
 void winraw_queue_claim_thread(bool claim) { (void)claim; }
 
@@ -274,7 +273,6 @@ int main(void)
             HAT_UP_MASK, HAT_DOWN_MASK, HAT_LEFT_MASK, HAT_RIGHT_MASK };
          const input_pad_view_t *v;
          unsigned k, d, off = 0;
-         winraw_joypad_by_poll = true;
          v = winraw_joypad_joypad_view(0);
          for (k = 0; k < 256; k++)
             if ((BIT256_GET(v->buttons, k) != 0)

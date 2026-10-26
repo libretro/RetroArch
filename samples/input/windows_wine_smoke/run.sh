@@ -36,12 +36,6 @@
 #                               video driver, and works after it.
 #   video not threaded          as the first, with the window, the pump
 #                               and the poll all on one thread.
-#   RETROARCH_RAWINPUT_POLL=0   the driver as it was before any of
-#                               this: no bulk reads, restarted with
-#                               the video driver, still works - and
-#                               says, each time it is freed, how old
-#                               what the poll read was (the wait that
-#                               reading by the poll removes).
 #   DirectInput                 the other input driver a Windows window
 #                               can get, with its joypad driver:
 #                               started by the same code, restarted
@@ -322,7 +316,7 @@ failures=0
 # passes through
 scenario() {
    local name=$1 threaded=$2 want_bulk=$3 want_joy=$4 nomsg=$5
-   local log="$work/$name.log" try rc video bulk joy msg ok b_down b_up j_seq stale win off byname deferred kbd menus
+   local log="$work/$name.log" try rc video bulk joy msg ok b_down b_up j_seq win off byname deferred kbd menus
    local want_video=${WANT_VIDEO:-3}
    if [ -n "${ONLY:-}" ]; then
       case "$name" in
@@ -382,28 +376,17 @@ scenario() {
          [ "$deferred" = 0 ] || ok=no
       fi
       [ "$nomsg" != nomsg ] || [ "$msg" = 0 ] || ok=no
-      # the old path measures the wait the new one removes; the new
-      # one has nothing to measure
       win="$(count "$log" 'window is left up') $(count "$log" 'Took the window left up') $(count "$log" 'not one this driver takes')"
       [ "$win" = "${WANT_WINDOW:-2 2 0}" ] || ok=no
-      stale=$(count "$log" "Taken by the window's thread: at the poll")
-      if [ "$name" = "RETROARCH_RAWINPUT_POLL=0" ]; then
-         [ "$stale" = 3 ] || ok=no
-      else
-         [ "$stale" = 0 ] || ok=no
-      fi
       [ "$ok" = yes ] && break
    done
    if [ "$ok" = yes ]; then
       echo "[pass] $name: video driver started $video times, input driver $bulk by the poll," \
            "joypad driver $joy; the core saw B twice and J's down and up twice; quit on Escape"
-      sed 's/\x1b\[[0-9;]*m//g' "$log" | tr -d '\r' \
-         | grep -a "Taken by the window's thread" | sed 's/.*\[WinRaw\] /       /'
    else
       echo "[FAIL] $name: quit by itself: $([ "$rc" = 0 ] && echo yes || echo no);" \
            "video driver started $video (want $want_video), input driver by the poll $bulk (want $want_bulk)," \
            "joypad driver started $joy (want $want_joy);" \
-           "lines on how old the state was at the poll: $stale;" \
            "window left up, taken, not taken: $win (want ${WANT_WINDOW:-2 2 0});" \
            "the core saw B pressed $b_down and released $b_up (want 2 and 2), J: ${j_seq:-nothing}(want down up down up)," \
            "key events on a thread that is not the core's: $off (want 0)," \
@@ -423,7 +406,6 @@ scenario() {
 scenario "read by the poll, kept" true 1 2 nomsg
 RETROARCH_INPUT_KEEP=0 scenario "RETROARCH_INPUT_KEEP=0" true 3 4 nomsg
 scenario "video not threaded" false 1 2 any
-RETROARCH_RAWINPUT_POLL=0 scenario "RETROARCH_RAWINPUT_POLL=0" true 0 4 any
 scenario "DirectInput" true 0 4 any dinput dinput
 WANT_WINDOW="0 0 0" RETROARCH_WINDOW_KEEP=0 scenario "RETROARCH_WINDOW_KEEP=0" true 1 2 nomsg
 WANT_WINDOW="2 0 2" RETROARCH_WINDOW_KEEP=2 scenario "window left up and not taken" true 1 2 nomsg

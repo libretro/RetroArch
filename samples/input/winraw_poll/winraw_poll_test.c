@@ -1,5 +1,4 @@
-/* winraw: the keyboard and mouse read in bulk by the poll (the
- * default; RETROARCH_RAWINPUT_POLL=0 turns it off).
+/* winraw: the keyboard and mouse read in bulk by the poll.
  *
  * The real driver, cross-built with mingw-w64 and run under Wine on a
  * virtual display. The window that has the focus is made and pumped
@@ -9,10 +8,7 @@
  *
  * Checked here:
  *
- * - with the switch off the driver is as it was: its window is made by
- *   init, on init's thread, and nothing is read in bulk;
- * - with it on, init makes no window; the first poll does, on the
- *   polling thread;
+ * - init makes no window; the first poll does, on the polling thread;
  * - keys injected with SendInput() while nothing pumps are all there
  *   after one poll: in the key table, and as key events delivered on
  *   the polling thread, in order, with the modifier held at the time;
@@ -35,8 +31,6 @@
  *   driver;
  * - which modifier keys are held is read from the key table, and only
  *   the lock keys' toggles from the published value;
- * - background input is refused, unless registered as a sink with the
- *   main window focused;
  * - free takes the window down, and twenty restarts each do the same;
  * - with everything on one thread, as without threaded video, the
  *   same holds.
@@ -323,36 +317,10 @@ int main(void)
    if (!vt_window)
       printf("   note no display for a window: injected input is not checked\n");
 
-   /* ---- the switch off: as it was -------------------------------- */
-   _putenv("RETROARCH_RAWINPUT_POLL=0");
    wr = (winraw_input_t*)init_on_video_thread();
-   CHECK(wr != NULL, "init with the switch off");
+   CHECK(wr != NULL, "init");
    if (!wr)
       return 1;
-   CHECK(!wr->poll_drain, "reading in bulk with the switch off");
-   CHECK(wr->window && GetWindowThreadProcessId(wr->window, NULL) == vt_tid,
-         "with the switch off the window is not made by init, on init's thread");
-   CHECK(winraw_drain_tid == 0, "a bulk-read thread is set with the switch off");
-   CHECK(!input_winraw.survives_video(wr),
-         "not read by the poll, the driver says it survives a video restart");
-   winraw_poll(wr);
-   CHECK(wr->drain_reads == 0, "a bulk read was made with the switch off");
-   raw_window = wr->window;
-   /* destroyed by its own thread, as the frontend does */
-   SetWindowLongPtr(raw_window, GWLP_USERDATA, 0);
-   PostMessageA(raw_window, WM_CLOSE, 0, 0);
-   wr->window = NULL;
-   winraw_free(wr);
-   printf("   ok   =0: the window is made by init on init's thread, nothing read in bulk\n");
-
-   /* ---- the switch on -------------------------------------------- */
-   /* unset: on is the default */
-   _putenv("RETROARCH_RAWINPUT_POLL=");
-   wr = (winraw_input_t*)init_on_video_thread();
-   CHECK(wr != NULL, "init with nothing set");
-   if (!wr)
-      return 1;
-   CHECK(wr->poll_drain && !wr->sink, "not reading in bulk by default");
    CHECK(!wr->window, "init made the window");
    winraw_poll(wr);
    raw_window = wr->window;
@@ -362,7 +330,7 @@ int main(void)
          "the window belongs to thread %lu; the poll's is %lu, init's %lu",
          (unsigned long)GetWindowThreadProcessId(raw_window, NULL),
          (unsigned long)main_tid, (unsigned long)vt_tid);
-   printf("   ok   by default: init makes no window; the first poll does, on the polling thread\n");
+   printf("   ok   init makes no window; the first poll does, on the polling thread\n");
 
    /* ---- left running across a video driver restart ---------------- */
    /* Read by the poll: yes. The joypad driver answers for itself. */
@@ -618,22 +586,6 @@ int main(void)
       memset(wr->kb_keys, 0, SC_LAST);
       published_mods = 0;
       printf("   ok   modifiers: held keys from the key table, toggles from the published value\n");
-   }
-
-   /* ---- background input ----------------------------------------- */
-   {
-      CHECK(!winraw_in_background(wr, RIM_INPUT), "foreground input refused");
-      CHECK(winraw_in_background(wr, RIM_INPUTSINK), "background input taken");
-      wr->sink     = true;
-      retro_atomic_store_release_int(&winraw_focus_flag, 0);
-      CHECK(winraw_in_background(wr, RIM_INPUTSINK),
-            "a sink took input with the main window unfocused");
-      retro_atomic_store_release_int(&winraw_focus_flag, 1);
-      CHECK(!winraw_in_background(wr, RIM_INPUTSINK),
-            "a sink refused input with the main window focused");
-      wr->sink     = false;
-      retro_atomic_store_release_int(&winraw_focus_flag, 0);
-      printf("   ok   background input: refused, unless a sink with the main window focused\n");
    }
 
    /* ---- focus, read once a poll ---------------------------------- */

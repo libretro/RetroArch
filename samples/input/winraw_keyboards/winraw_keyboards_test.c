@@ -431,7 +431,7 @@ int main(void)
    /* ---- two keyboards and a mouse when the driver starts --------- */
    devices(3, K(2), M(1), K(1));
    wr = (winraw_input_t*)winraw_init("null");
-   CHECK(wr && wr->poll_drain, "the driver did not start read by the poll");
+   CHECK(wr != NULL, "the driver did not start");
    if (!wr)
       return 1;
    retro_atomic_store_release_int(&winraw_focus_flag, 1);

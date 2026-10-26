@@ -52,82 +52,28 @@ extern "C" {
 
 /* Threading model
  * ---------------
- * (This is how the driver was, and is with RETROARCH_RAWINPUT_POLL=0
- * in the environment. By default the window is the polling thread's
- * and the reports are read in bulk by the poll: see "Read by the
- * poll" further down.)
+ * The keyboard and mouse window is made by the first winraw_poll(), on
+ * the thread that polls, and every poll starts with one bulk read
+ * (GetRawInputBuffer()) of what is waiting for it. That thread's pump
+ * leaves raw input in the queue for the read (winraw_poll_owns_thread());
+ * a report some other pump comes across - a modal loop Windows runs for
+ * a menu or a dragged window - is taken by winraw_callback(), which then
+ * reads the rest in bulk. A report's handler cannot read its own report
+ * in bulk: it has already left the queue with its message.
  *
- * On every Windows video driver that can actually use this input
- * driver, it is built by the video context driver's input_driver
- * callback - gfx_ctx_wgl_input_driver() and the w_vk / d3d_common /
- * gdi equivalents - rather than by the runloop. Under video_threaded
- * the video driver's init() runs on the video thread
- * (video_thread_wrapper.c, CMD_INIT), so winraw_init() and therefore
- * winraw_create_window() run there too.
+ * A bulk read takes every report waiting on the thread, whichever
+ * window it was for. winraw_joypad's, when its window is on this thread
+ * too, are handed to it (winraw_joypad_take_hid()), and the two drivers
+ * make one read between them (winraw_queue_read()).
  *
- * There is a second path. A video driver may leave *input NULL, and
- * video_driver_init_input() then picks the configured driver itself -
- * on the main thread, since video_driver_init_internal() calls it
- * after the video thread has been spun up. A winraw window created
- * that way would not share a thread with the pump and would never see
- * WM_INPUT. The only Windows driver that takes that path is sdl2,
- * which sets *input = NULL at sdl2_gfx.c:470, and that combination is
- * already unusable and warned about for an unrelated reason - see the
- * note at the end of this comment. Worth knowing if another driver
- * ever stops providing one.
+ * Key events are held until the end of the poll and delivered there.
+ * Which modifiers are held is read from the key table; only the lock
+ * keys come from win32_get_keyboard_mods(), which the main window's
+ * thread publishes and which can be a frame behind.
  *
- * That matters because RegisterRawInputDevices() targets wr->window,
- * a HWND_MESSAGE window, and WM_INPUT is delivered to the queue of the
- * thread that created it. The pump,
- * ui_application_win32_process_events(), uses
- * PeekMessage(&msg, 0, 0, 0, PM_REMOVE), which retrieves messages for
- * every window belonging to the calling thread - and it runs on the
- * main thread when video is not threaded (runloop.c) or on the video
- * thread when it is (win32_check_window()). Either way the pump and
- * wr->window are on the same thread, so WM_INPUT is dispatched in both
- * configurations.
- *
- * The split that does exist: winraw_callback() runs on whichever
- * thread owns the window, while winraw_poll() is called from
- * input_driver_poll() in the runloop, always on the main thread. Every
- * field the two share crosses a thread boundary. dlt, whl,
- * pos_pending, abs_pending and abs_pos are
- * retro_atomic_int_t for that reason.
- *
- * pos is a plain word because it has exactly one writer:
- * winraw_poll(). The wndproc never reads or writes it. It publishes
- * what it knows - an accumulated delta, a request to sample the system
- * cursor, or an absolute position - and poll derives the position from
- * whichever applies, once per frame. The wndproc turns successive
- * absolute positions into deltas from abs_pos, which it alone writes,
- * without reading the position it does not own.
- *
- * It used to be two writers both doing read-modify-write, which was a
- * lost-update race that atomics would not have fixed - only made to
- * look synchronised.
- *
- * Note also that whoever drains raw input owns it process-wide: the
- * SDL2 video driver calls RegisterRawInputDevices() and
- * GetRawInputBuffer() internally, which takes the WM_INPUT stream away
- * from this driver entirely. See the warning in gfx/drivers/sdl2_gfx.c.
- *
- * That cuts both ways, and it is the reason GetRawInputBuffer() is not
- * used here. It drains the queue for the whole thread, not for one
- * window, so a drain in winraw_callback() also takes the joystick and
- * gamepad records that winraw_joypad registered against its own
- * HWND_MESSAGE window - created on this same thread by
- * input_driver_init_joypads(), immediately after winraw_init(). This
- * was tried in d087a820cd and reverted in 7858994d45: forwarding the
- * RIM_TYPEHID records back to the joypad driver restored pad input, but
- * keyboard and mouse buttons stayed broken for a reason that was never
- * established, while mouse coordinates kept working. Anyone trying
- * again needs to be the single drain point for the entire process,
- * which means winraw_joypad giving up its own window and its own
- * GetRawInputData() call, and should know the prize is small: measured
- * at 8.32 reports per frame with a 1000 Hz mouse at 120 fps, the drain
- * removes about seven of the roughly seventeen syscalls per frame,
- * since WM_INPUT is still posted per report and PeekMessage() with
- * PM_REMOVE has no user-mode fast path.
+ * Whoever drains raw input owns it process-wide: the SDL2 video driver
+ * takes the stream away from this driver entirely. See the warning in
+ * gfx/drivers/sdl2_gfx.c.
  */
 
 #include "../../configuration.h"
@@ -272,13 +218,6 @@ typedef struct
    bool kb_background;
    bool kb_taking;
 
-   /* Read in bulk by the poll: see "Read by the poll" below. All of
-    * this is unused, and zero, unless that is switched on. */
-   bool poll_drain;
-   /* Registered as a sink: input arrives whether or not the
-    * application is in the foreground, and the main window's focus
-    * decides what is taken. */
-   bool sink;
    bool window_failed;
    DWORD window_tid;   /* the thread that made the window */
    /* the "disable Windows keys" setting the keyboard is registered
@@ -325,11 +264,6 @@ typedef struct
    unsigned long drain_empty;    /* reads that found nothing waiting */
    unsigned long by_message;     /* reports that came as a message */
    unsigned long kev_dropped;
-   /* Taken by the window's thread: how old, at each poll, what that
-    * thread had taken was (see winraw_pump_done()). */
-   uint64_t      stale_sum;      /* microseconds, summed */
-   uint32_t      stale_max;
-   unsigned long stale_polls;
    /* The menu is up or an overlay is configured: every mouse is placed
     * by the cursor. Poll publishes it to the window's thread. */
    retro_atomic_int_t cursor_for_all;
@@ -1300,13 +1234,9 @@ done:
          if (!wr->kb_keys[mcode])
             continue;
          wr->kb_keys[mcode] = 0;
-         if (wr->poll_drain && wr->kev_n < WINRAW_KEV_SIZE)
+         if (wr->kev_n < WINRAW_KEV_SIZE)
             wr->kev[wr->kev_n++] =
                WINRAW_KEV_PACK(mcode, 0, winraw_held_mods(wr));
-         else if (!wr->poll_drain)
-            input_keyboard_event(0,
-                  input_keymaps_translate_keysym_to_rk(mcode),
-                  0, win32_get_keyboard_mods(), RETRO_DEVICE_KEYBOARD);
       }
    }
 
@@ -1521,93 +1451,6 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
    }
 }
 
-/* Read by the poll
- * ----------------
- * The keyboard and mouse window is made by the first winraw_poll(),
- * on the thread that polls, and the reports waiting for it are read
- * in bulk - one GetRawInputBuffer() for all of them - at the start of
- * every poll. RETROARCH_RAWINPUT_POLL=0 in the environment turns this
- * off and leaves the driver as the threading note at the top has it,
- * should something need telling apart from it.
- *
- * As it was (the threading note at the top), the window is
- * made on whichever thread runs the video driver's init, and each
- * report is a WM_INPUT message taken when that thread pumps: a
- * PeekMessage() and a GetRawInputData() per report, once per video
- * frame, and not at all while that thread waits in a present. Two
- * things follow.
- *
- * Latency. The poll, on the main thread, reads what the last pump
- * left. A key or a mouse report that arrived since is in the queue,
- * not in the state, and the core gets it a frame later. Read by the
- * poll itself, the state is whatever the devices had sent at the
- * moment of the poll - with late polling, the moment the core asks.
- *
- * Cost. Two system calls a report: at 60 fps a 1000 Hz mouse is some
- * 33 a frame and an 8000 Hz one some 270. A bulk read is one call for
- * all of them, and there is no message to dispatch. No thread is
- * added for this and nothing waits or wakes: the reads happen where
- * the frontend already is.
- *
- * What it costs when nothing is happening is the poll's one read a
- * frame, which then finds nothing: knowing what the devices have sent
- * at the moment of the poll means asking at the moment of the poll.
- * That is the only read made unasked.
- *
- * The thread's pump leaves raw input in the queue for that read
- * (winraw_poll_owns_thread()): it asks for the messages below WM_INPUT
- * and the ones above it, which is how Microsoft's own sample of a
- * buffered read keeps its pump off the reports. Before it did, a
- * session with the mouse in use had the pump take 1398 of 4578
- * reports out one message at a time, each with a read of its own and
- * a bulk read behind it, and the calls saved over the old path came
- * to a few per cent. Some other pump can still come across a report
- * as a message - a modal loop Windows runs for a menu or a window
- * being dragged - and then the callback takes that one and reads the
- * rest in bulk (below).
- *
- * And the window is no longer the video driver's thread's, which has
- * to be true before the input driver can stop being restarted with
- * the video driver. (It still is restarted with it: a later step.)
- *
- * What else differs when this is on:
- *
- * - Key events. A report's key is written to the key table when the
- *   report is read. The call to input_keyboard_event() - into the
- *   menu's state and the core's keyboard callback - is held until the
- *   end of the poll, and so is made on the main thread; as it is
- *   otherwise, under threaded video it is made from the video thread.
- *
- * - Modifiers. win32_get_keyboard_mods() is what the main window's
- *   thread last published from its own key messages, which can be a
- *   frame behind a report just read. Which modifier keys are held is
- *   read from the key table instead; only the lock keys' toggles are
- *   taken from the published value.
- *
- * - A bulk read takes every raw input report waiting on the thread,
- *   whichever window it was for. If winraw_joypad's window is on this
- *   thread too (video not threaded), its reports come out here and
- *   are passed to it (winraw_joypad_take_hid()). An attempt at bulk
- *   reads before this one, d087a820cd, read from inside the WM_INPUT
- *   handler and lost keys and buttons; the report a WM_INPUT message
- *   carries has already left the queue by the time its handler runs,
- *   so a bulk read there never sees it, and a key press is usually
- *   the only report waiting. Here a report that arrives as a message
- *   - the pump got to it before a poll did - is read from its message
- *   first, as it always was, and only then is the rest read in bulk.
- *
- * Raw input goes to a window only while its application is in the
- * foreground, and under threaded video this window's thread is not
- * the one with the focus. Windows judges the foreground by process,
- * not by thread: tried on Windows with threaded video, the reports
- * arrive. RETROARCH_RAWINPUT_POLL=2 is kept for a system where they
- * do not: it registers as a sink, so that everything arrives, and
- * the main window's focus (winraw_focus) decides whether it is taken.
- *
- * Measured there, a minute of play with a 1000 Hz mouse in use: 9714
- * reports in 7679 reads, one read an iteration, none taken by the
- * pump. The old path's two calls a report would have been 19428. */
-
 extern void winraw_joypad_take_hid(HANDLE device, const BYTE *data,
       DWORD report_size, DWORD count);
 
@@ -1701,7 +1544,7 @@ static bool winraw_take(winraw_input_t *wr, DWORD type, HANDLE device,
       void *payload)
 {
    unsigned i;
-   unsigned mcode, flags, down, mod;
+   unsigned mcode, flags, down;
 
    switch (type)
    {
@@ -1711,7 +1554,6 @@ static bool winraw_take(winraw_input_t *wr, DWORD type, HANDLE device,
             mcode = kb->MakeCode;
             flags = kb->Flags;
             down  = (flags & RI_KEY_BREAK) ? 0 : 1;
-            mod   = 0;
 
             /* Extended scancodes */
             if (flags & RI_KEY_E0)
@@ -1741,8 +1583,6 @@ static bool winraw_take(winraw_input_t *wr, DWORD type, HANDLE device,
                case 0xE0B6:
                   return false;
             }
-
-            mod = win32_get_keyboard_mods();
 
             /* From a keyboard the list does not have: one plugged in
              * since the list was made. (No handle at all is a key
@@ -1792,8 +1632,7 @@ static bool winraw_take(winraw_input_t *wr, DWORD type, HANDLE device,
                      }
                   }
                }
-               else if (  wr->poll_drain
-                       && device != wr->kb_not_listed
+               else if (  device != wr->kb_not_listed
                        && wr->kb_cnt < WINRAW_KB_RAW_MAX)
                {
                   wr->kb_unknown      = device;
@@ -1802,19 +1641,12 @@ static bool winraw_take(winraw_input_t *wr, DWORD type, HANDLE device,
             }
 
             wr->kb_keys[mcode] = down;
-            if (wr->poll_drain)
-            {
-               /* held until the end of the poll */
-               if (wr->kev_n < WINRAW_KEV_SIZE)
-                  wr->kev[wr->kev_n++] =
-                     WINRAW_KEV_PACK(mcode, down, winraw_held_mods(wr));
-               else
-                  wr->kev_dropped++;
-            }
+            /* held until the end of the poll */
+            if (wr->kev_n < WINRAW_KEV_SIZE)
+               wr->kev[wr->kev_n++] =
+                  WINRAW_KEV_PACK(mcode, down, winraw_held_mods(wr));
             else
-               input_keyboard_event(down,
-                     input_keymaps_translate_keysym_to_rk(mcode),
-                     0, mod, RETRO_DEVICE_KEYBOARD);
+               wr->kev_dropped++;
          }
          break;
       case RIM_TYPEMOUSE:
@@ -1831,7 +1663,6 @@ static bool winraw_take(winraw_input_t *wr, DWORD type, HANDLE device,
           * the list was made. (No handle at all is input something
           * injected, not a device.) */
          if (     i == wr->mouse_cnt
-               && wr->poll_drain
                && device
                && device != wr->mouse_not_listed)
          {
@@ -1891,12 +1722,8 @@ static void winraw_drain(winraw_input_t *wr)
          else if (wr)
          {
             wr->drained++;
-            /* as a sink, background input arrives as well */
-            if (     !wr->sink || winraw_focus
-                  || (   wr->kb_background
-                      && ri->header.dwType == RIM_TYPEKEYBOARD))
-               winraw_take(wr, ri->header.dwType, ri->header.hDevice,
-                     payload);
+            winraw_take(wr, ri->header.dwType, ri->header.hDevice,
+                  payload);
          }
 
          p += (ri->header.dwSize + align - 1) & ~(align - 1);
@@ -1936,50 +1763,6 @@ void winraw_queue_claim_thread(bool claim)
       retro_atomic_fetch_add_int(&winraw_drain_claims, -1);
 }
 
-/* Whether raw input is read by the poll at all: on, unless
- * RETROARCH_RAWINPUT_POLL=0. */
-bool winraw_raw_input_polled(void)
-{
-   const char *env = getenv("RETROARCH_RAWINPUT_POLL");
-   return !(env && env[0] == '0');
-}
-
-/* Taken by the window's thread - the driver as it was, and as it is
- * with RETROARCH_RAWINPUT_POLL=0 - a report gets into the state the
- * poll reads when that thread pumps its messages, which the video
- * thread does once a frame. So what the poll reads is as old as that
- * thread's last pump: whatever a device has sent since waits for the
- * poll after the next one. Read by the poll that wait is not there,
- * which is the point of reading by the poll; this measures it where it
- * still exists, so that there is a number for it and not an argument.
- *
- * The thread that made the window stamps the clock each time its pump
- * has run dry; the poll, in winraw_poll(), takes the stamp's age. The
- * figures are logged when the driver is freed. Nothing here runs when
- * the poll reads. */
-static DWORD              winraw_legacy_tid;
-static retro_atomic_int_t winraw_legacy_pumped;
-static LARGE_INTEGER      winraw_legacy_freq;
-
-/* microseconds, the low 32 bits: for differences */
-static uint32_t winraw_legacy_now(void)
-{
-   LARGE_INTEGER now;
-   QueryPerformanceCounter(&now);
-   return (uint32_t)(
-           (now.QuadPart / winraw_legacy_freq.QuadPart) * 1000000
-         + (now.QuadPart % winraw_legacy_freq.QuadPart) * 1000000
-               / winraw_legacy_freq.QuadPart);
-}
-
-void winraw_pump_done(void)
-{
-   if (     winraw_legacy_tid
-         && GetCurrentThreadId() == winraw_legacy_tid)
-      retro_atomic_store_release_int(&winraw_legacy_pumped,
-            (int)(winraw_legacy_now() | 1));
-}
-
 /* For a thread's pump (ui_application_win32_process_events()): true
  * on the thread whose raw input the poll reads in bulk. The pump then
  * leaves raw input where it is - in the queue, for the poll - instead
@@ -1988,17 +1771,6 @@ bool winraw_poll_owns_thread(void)
 {
    return retro_atomic_load_relaxed_int(&winraw_drain_claims) > 0
       && GetCurrentThreadId() == winraw_drain_tid;
-}
-
-/* Input that came while the application was in the background is not
- * taken - unless the driver registered as a sink, where everything
- * that is not foreground input comes marked that way and the main
- * window's focus decides. */
-static bool winraw_in_background(const winraw_input_t *wr, WPARAM wpar)
-{
-   if (GET_RAWINPUT_CODE_WPARAM(wpar) == RIM_INPUT)
-      return false;
-   return !(wr->sink && winraw_focus);
 }
 
 static LRESULT CALLBACK winraw_callback(
@@ -2018,7 +1790,7 @@ static LRESULT CALLBACK winraw_callback(
       return DefWindowProcA(wnd, msg, wpar, lpar);
 
    if (!(
-          winraw_in_background(wr, wpar)
+          GET_RAWINPUT_CODE_WPARAM(wpar) != RIM_INPUT
        || GetRawInputData((HRAWINPUT)lpar, RID_INPUT,
          data, &size, sizeof(RAWINPUTHEADER)) == (UINT)-1))
    {
@@ -2026,14 +1798,9 @@ static LRESULT CALLBACK winraw_callback(
       wr->by_message++;
       taken = winraw_take(wr, ri->header.dwType, ri->header.hDevice,
             &ri->data);
-      /* The pump came across a report before a poll read it. This one
-       * has left the queue with its message and had to be read on its
-       * own; whatever is waiting behind it is read in bulk now, rather
-       * than dispatched by the pump one message at a time. Nothing is
-       * read here when no report is waiting, so a pump that finds none
-       * costs nothing extra. */
-      if (wr->poll_drain)
-         winraw_drain(wr);
+      /* whatever is waiting behind it is read in bulk now, rather than
+       * dispatched one message at a time */
+      winraw_drain(wr);
       if (!taken)
          return 0;
    }
@@ -2048,13 +1815,12 @@ static LRESULT CALLBACK winraw_callback(
 static bool winraw_poll_window_up(winraw_input_t *wr)
 {
    RAWINPUTDEVICE rid[2];
-   DWORD base = wr->sink ? RIDEV_INPUTSINK : 0;
 
    if (!(wr->window = winraw_create_window(winraw_callback)))
       return false;
    SetWindowLongPtr(wr->window, GWLP_USERDATA, (LONG_PTR)wr);
 
-   rid[0].dwFlags     = base;
+   rid[0].dwFlags     = 0;
    rid[0].hwndTarget  = wr->window;
    rid[0].usUsagePage = 0x01; /* Generic desktop */
    rid[0].usUsage     = 0x06; /* Keyboard */
@@ -2067,7 +1833,7 @@ static bool winraw_poll_window_up(winraw_input_t *wr)
    if (wr->kb_background)
       rid[0].dwFlags |= RIDEV_INPUTSINK;
 
-   rid[1].dwFlags     = base;
+   rid[1].dwFlags     = 0;
    rid[1].hwndTarget  = wr->window;
    rid[1].usUsagePage = 0x01; /* generic desktop */
    rid[1].usUsage     = 0x02; /* mouse */
@@ -2079,8 +1845,7 @@ static bool winraw_poll_window_up(winraw_input_t *wr)
       winraw_drain_wr = wr;
       winraw_queue_claim_thread(true);
       RARCH_LOG("[WinRaw] Keyboard and mouse are read in bulk by the poll"
-            " (thread %lu)%s.\n", (unsigned long)wr->window_tid,
-            wr->sink ? ", registered as a sink" : "");
+            " (thread %lu).\n", (unsigned long)wr->window_tid);
       return true;
    }
 
@@ -2088,15 +1853,6 @@ static bool winraw_poll_window_up(winraw_input_t *wr)
    DestroyWindow(wr->window);
    wr->window = NULL;
    return false;
-}
-
-/* On, unless RETROARCH_RAWINPUT_POLL=0. 2 registers as a sink as
- * well. */
-static bool winraw_poll_wanted(bool *sink)
-{
-   const char *env = getenv("RETROARCH_RAWINPUT_POLL");
-   *sink           = (env && env[0] == '2');
-   return winraw_raw_input_polled();
 }
 
 /* Two things the driver used to pick up only by being started again,
@@ -2170,7 +1926,7 @@ static void winraw_nowinkey_apply(winraw_input_t *wr, bool enable,
       bool background)
 {
    RAWINPUTDEVICE rid;
-   rid.dwFlags     = ((wr->sink || background) ? RIDEV_INPUTSINK : 0)
+   rid.dwFlags     = (background ? RIDEV_INPUTSINK : 0)
                    | (enable   ? RIDEV_NOHOTKEYS : 0);
    rid.hwndTarget  = wr->window;
    rid.usUsagePage = 0x01; /* Generic desktop */
@@ -2184,8 +1940,6 @@ static void winraw_nowinkey_apply(winraw_input_t *wr, bool enable,
 
 static void *winraw_init(const char *joypad_driver)
 {
-   RAWINPUTDEVICE rid;
-   bool input_nowinkey_enable = input_config_get_nowinkey_enable();
    winraw_input_t *wr   = (winraw_input_t *)
       calloc(1, sizeof(winraw_input_t));
 
@@ -2195,112 +1949,23 @@ static void *winraw_init(const char *joypad_driver)
 
    input_keymaps_init_keyboard_lut(rarch_key_map_winraw);
 
-   /* Read in bulk by the poll, if asked for: the window is then made
-    * by the first poll, on the thread that polls, not here. */
-   if (winraw_poll_wanted(&wr->sink))
-   {
-      wr->poll_drain = true;
-      if (!winraw_init_devices(&g_mice, &wr->mouse_cnt))
-         goto error;
-      winraw_keyboards_list(wr);
-      if (wr->mouse_cnt)
-      {
-         if (!(wr->mice = (winraw_mouse_t*)
-            malloc(wr->mouse_cnt * sizeof(winraw_mouse_t))))
-            goto error;
-         memcpy(wr->mice, g_mice, wr->mouse_cnt * sizeof(winraw_mouse_t));
-      }
-      return wr;
-   }
-
-   if (!(wr->window = winraw_create_window(winraw_callback)))
-      goto error;
+   /* The window is made by the first poll, on the thread that polls. */
    if (!winraw_init_devices(&g_mice, &wr->mouse_cnt))
       goto error;
    winraw_keyboards_list(wr);
-
    if (wr->mouse_cnt)
    {
       if (!(wr->mice = (winraw_mouse_t*)
          malloc(wr->mouse_cnt * sizeof(winraw_mouse_t))))
          goto error;
-
       memcpy(wr->mice, g_mice, wr->mouse_cnt * sizeof(winraw_mouse_t));
    }
-
-   rid.dwFlags     = (wr->window) ? 0 : RIDEV_REMOVE;
-   rid.hwndTarget  = wr->window;
-   rid.usUsagePage = 0x01; /* Generic desktop */
-   rid.usUsage     = 0x06; /* Keyboard */
-   if (input_nowinkey_enable)
-      rid.dwFlags |= RIDEV_NOHOTKEYS; /* Disable win keys while focused */
-
-   if (!RegisterRawInputDevices(&rid, 1, sizeof(RAWINPUTDEVICE)))
-      goto error;
-
-   rid.dwFlags     = wr->window ? 0 : RIDEV_REMOVE;
-   rid.hwndTarget  = wr->window;
-   rid.usUsagePage = 0x01; /* generic desktop */
-   rid.usUsage     = 0x02; /* mouse */
-
-   if (!RegisterRawInputDevices(&rid, 1, sizeof(RAWINPUTDEVICE)))
-      goto error;
-
-   SetWindowLongPtr(wr->window, GWLP_USERDATA, (LONG_PTR)wr);
-   retro_atomic_store_release_int(&winraw_legacy_pumped, 0);
-   if (QueryPerformanceFrequency(&winraw_legacy_freq)
-         && winraw_legacy_freq.QuadPart > 0)
-      winraw_legacy_tid = GetCurrentThreadId();
-
-#ifndef _XBOX
-   /* wr->window was created on this thread, so WM_INPUT is posted to
-    * this thread's queue and only a pump running here will dispatch it.
-    * The pump belongs to whichever thread owns the main window - the
-    * video thread under video_threaded. See the threading note at the
-    * top of this file: every Windows video driver that supports this
-    * input driver builds it from its own context callback, so the two
-    * match, but the video_driver_init_input() fallback runs on the main
-    * thread after the video thread already exists. Say so rather than
-    * leaving the user with silently dead input. */
-   {
-      DWORD self_tid = GetCurrentThreadId();
-      DWORD wnd_tid  = main_window.hwnd
-         ? GetWindowThreadProcessId(main_window.hwnd, NULL) : 0;
-
-      if (wnd_tid && wnd_tid != self_tid)
-         RARCH_ERR("[WinRaw] Raw input window is on thread %lu but the "
-               "message pump runs on thread %lu - WM_INPUT will not be "
-               "dispatched and keyboard/mouse input will not work.\n",
-               (unsigned long)self_tid, (unsigned long)wnd_tid);
-   }
-#endif
-
    return wr;
 
 error:
-   if (wr && wr->window)
-   {
-      rid.dwFlags     = RIDEV_REMOVE;
-      rid.hwndTarget  = NULL;
-      rid.usUsagePage = 0x01; /* generic desktop */
-      rid.usUsage     = 0x02; /* mouse */
-
-      RegisterRawInputDevices(&rid, 1, sizeof(RAWINPUTDEVICE));
-
-      rid.dwFlags     = RIDEV_REMOVE;
-      rid.hwndTarget  = NULL;
-      rid.usUsagePage = 0x01; /* Generic desktop */
-      rid.usUsage     = 0x06; /* Keyboard */
-      if (input_nowinkey_enable)
-         rid.dwFlags |= RIDEV_NOHOTKEYS; /* Disable win keys while focused */
-
-      RegisterRawInputDevices(&rid, 1, sizeof(RAWINPUTDEVICE));
-      DestroyWindow(wr->window);
-      UnregisterClassA("winraw-input", NULL);
-   }
    free(g_mice);
-   if (wr)
-      free(wr->mice);
+   g_mice = NULL;
+   free(wr->mice);
    free(wr);
    return NULL;
 }
@@ -2389,38 +2054,17 @@ static void winraw_poll(void *data)
 
    /* Everything the devices have sent up to now, before any of it is
     * looked at below. */
-   if (wr->poll_drain)
+   if (     !wr->window && !wr->window_failed
+         && !winraw_poll_window_up(wr))
    {
-      if (     !wr->window && !wr->window_failed
-            && !winraw_poll_window_up(wr))
-      {
-         wr->window_failed = true;
-         RARCH_ERR("[WinRaw] Could not make the keyboard and mouse window.\n");
-      }
-      /* winraw_joypad's poll, just before this one, has already made
-       * the read for both when it is the joypad driver */
-      if (wr->window && !winraw_queue_was_read)
-         winraw_drain(wr);
-      winraw_queue_was_read = false;
+      wr->window_failed = true;
+      RARCH_ERR("[WinRaw] Could not make the keyboard and mouse window.\n");
    }
-   else
-   {
-      /* how old what the window's thread has taken is, now that it is
-       * read (winraw_pump_done()) */
-      int at = retro_atomic_load_acquire_int(&winraw_legacy_pumped);
-      if (at)
-      {
-         uint32_t age = winraw_legacy_now() - (uint32_t)at;
-         /* a pause, a dragged window: not a frame's wait */
-         if (age < 250000)
-         {
-            wr->stale_sum += age;
-            if (age > wr->stale_max)
-               wr->stale_max = age;
-            wr->stale_polls++;
-         }
-      }
-   }
+   /* winraw_joypad's poll, just before this one, has already made the
+    * read for both when it is the joypad driver */
+   if (wr->window && !winraw_queue_was_read)
+      winraw_drain(wr);
+   winraw_queue_was_read = false;
 
    /* Fix coordinates after a resolution change. Runs here rather than
     * in the wndproc so that active_rect, view_abs_ratio_* and the
@@ -2565,21 +2209,18 @@ static void winraw_poll(void *data)
       RARCH_LOG("[WinRaw] Keyboard list made again: %u.\n", wr->kg_cnt);
    }
 
-   if (wr->poll_drain)
+   if (wr->mouse_unknown_seen)
+      winraw_mice_refresh(wr);
+   if (wr->kb_unknown_seen)
+      winraw_keyboards_refresh(wr);
+   if (wr->window)
    {
-      if (wr->mouse_unknown_seen)
-         winraw_mice_refresh(wr);
-      if (wr->kb_unknown_seen)
-         winraw_keyboards_refresh(wr);
-      if (wr->window)
-      {
-         bool nowinkey   = input_config_get_nowinkey_enable();
-         bool background = input_config_get_keyboard_background();
-         if (nowinkey != wr->nowinkey || background != wr->kb_background)
-            winraw_nowinkey_apply(wr, nowinkey, background);
-      }
-      winraw_kev_deliver(wr);
+      bool nowinkey   = input_config_get_nowinkey_enable();
+      bool background = input_config_get_keyboard_background();
+      if (nowinkey != wr->nowinkey || background != wr->kb_background)
+         winraw_nowinkey_apply(wr, nowinkey, background);
    }
+   winraw_kev_deliver(wr);
 }
 
 /* Which of @keys are down for @port: bit n of @down for keys[n]. A
@@ -2738,82 +2379,42 @@ bool winraw_handle_message(UINT msg,
 
 static void winraw_free(void *data)
 {
-   RAWINPUTDEVICE rid;
-   winraw_input_t *wr         = (winraw_input_t*)data;
-   bool input_nowinkey_enable = input_config_get_nowinkey_enable();
+   winraw_input_t *wr = (winraw_input_t*)data;
 
-   if (wr->poll_drain)
-   {
-      if (wr->window)
-      {
-         rid.dwFlags     = RIDEV_REMOVE;
-         rid.hwndTarget  = NULL;
-         rid.usUsagePage = 0x01; /* generic desktop */
-         rid.usUsage     = 0x02; /* mouse */
-         RegisterRawInputDevices(&rid, 1, sizeof(RAWINPUTDEVICE));
-         rid.usUsage     = 0x06; /* Keyboard */
-         RegisterRawInputDevices(&rid, 1, sizeof(RAWINPUTDEVICE));
-
-         SetWindowLongPtr(wr->window, GWLP_USERDATA, 0);
-         /* A window is destroyed by the thread that made it. That is
-          * the polling thread, which is also the one that frees the
-          * driver; if it ever is not, the window is asked to close
-          * and goes when its own thread next pumps. */
-         if (GetCurrentThreadId() == wr->window_tid)
-         {
-            DestroyWindow(wr->window);
-            UnregisterClassA("winraw-input", NULL);
-         }
-         else
-            PostMessageA(wr->window, WM_CLOSE, 0, 0);
-         winraw_queue_claim_thread(false);
-      }
-      if (winraw_drain_wr == wr)
-         winraw_drain_wr = NULL;
-      RARCH_DBG("[WinRaw] Read by the poll: %lu keyboard and mouse reports"
-            " and %lu of controllers in %lu bulk reads, %lu as messages;"
-            " %lu reads found nothing waiting (%lu key events dropped).\n",
-            wr->drained, wr->drained_hid, wr->drain_reads, wr->by_message,
-            wr->drain_empty, wr->kev_dropped);
-      free(g_mice);
-      free(wr->mice);
-      free(data);
-      return;
-   }
-
-   rid.dwFlags          = RIDEV_REMOVE;
-   rid.hwndTarget       = NULL;
-   rid.usUsagePage      = 0x01; /* generic desktop */
-   rid.usUsage          = 0x02; /* mouse */
-
-   RegisterRawInputDevices(&rid, 1, sizeof(RAWINPUTDEVICE));
-
-   rid.dwFlags          = RIDEV_REMOVE;
-   rid.hwndTarget       = NULL;
-   rid.usUsagePage      = 0x01; /* Generic desktop */
-   rid.usUsage          = 0x06; /* Keyboard */
-   if (input_nowinkey_enable)
-      rid.dwFlags      |= RIDEV_NOHOTKEYS; /* Disable win keys while focused */
-
-   RegisterRawInputDevices(&rid, 1, sizeof(RAWINPUTDEVICE));
-
-   SetWindowLongPtr(wr->window, GWLP_USERDATA, 0);
    if (wr->window)
    {
-      DestroyWindow(wr->window);
-      UnregisterClassA("winraw-input", NULL);
+      RAWINPUTDEVICE rid;
+      rid.dwFlags     = RIDEV_REMOVE;
+      rid.hwndTarget  = NULL;
+      rid.usUsagePage = 0x01; /* generic desktop */
+      rid.usUsage     = 0x02; /* mouse */
+      RegisterRawInputDevices(&rid, 1, sizeof(RAWINPUTDEVICE));
+      rid.usUsage     = 0x06; /* Keyboard */
+      RegisterRawInputDevices(&rid, 1, sizeof(RAWINPUTDEVICE));
+
+      SetWindowLongPtr(wr->window, GWLP_USERDATA, 0);
+      /* A window is destroyed by the thread that made it. That is the
+       * polling thread, which is also the one that frees the driver; if
+       * it ever is not, the window is asked to close and goes when its
+       * own thread next pumps. */
+      if (GetCurrentThreadId() == wr->window_tid)
+      {
+         DestroyWindow(wr->window);
+         UnregisterClassA("winraw-input", NULL);
+      }
+      else
+         PostMessageA(wr->window, WM_CLOSE, 0, 0);
+      winraw_queue_claim_thread(false);
    }
-   winraw_legacy_tid = 0;
-   if (wr->stale_polls)
-      RARCH_DBG("[WinRaw] Taken by the window's thread: at the poll,"
-            " what that thread had taken was %.2f ms old on average and"
-            " %.2f ms at the most, over %lu polls. Read by the poll,"
-            " which is the default, that wait is not there.\n",
-            (double)wr->stale_sum / (double)wr->stale_polls / 1000.0,
-            (double)wr->stale_max / 1000.0, wr->stale_polls);
+   if (winraw_drain_wr == wr)
+      winraw_drain_wr = NULL;
+   RARCH_DBG("[WinRaw] Read by the poll: %lu keyboard and mouse reports"
+         " and %lu of controllers in %lu bulk reads, %lu as messages;"
+         " %lu reads found nothing waiting (%lu key events dropped).\n",
+         wr->drained, wr->drained_hid, wr->drain_reads, wr->by_message,
+         wr->drain_empty, wr->kev_dropped);
    free(g_mice);
    free(wr->mice);
-
    free(data);
 }
 
@@ -2836,9 +2437,9 @@ static void winraw_grab_mouse(void *d, bool state)
    if (curr_state == state)
       return;
 
-   /* read by the poll, and its first poll has not made the window
-    * yet: there is nothing to register again */
-   if (wr->poll_drain && !wr->window)
+   /* the first poll has not made the window yet: there is nothing to
+    * register again */
+   if (!wr->window)
    {
       if (state)
          wr->flags |=  WRAW_INP_FLG_MOUSE_GRAB;
@@ -2850,8 +2451,7 @@ static void winraw_grab_mouse(void *d, bool state)
       return;
    }
 
-   rid.dwFlags        = (wr->window)
-      ? (wr->sink ? RIDEV_INPUTSINK : 0) : RIDEV_REMOVE;
+   rid.dwFlags        = 0;
    rid.hwndTarget     = wr->window;
    rid.usUsagePage    = 0x01; /* generic desktop */
    rid.usUsage        = 0x02; /* mouse */
@@ -2868,20 +2468,13 @@ static void winraw_grab_mouse(void *d, bool state)
    }
 }
 
-/* Left running across a video driver restart
- * (input_driver_t::survives_video) when it is read by the poll. Its
- * window is then the polling thread's, not the video driver's
- * thread's; it looks the main window up afresh at every poll; and the
- * two things it used to pick up only by being restarted - a mouse
- * plugged in, the Windows-key setting - it does itself
- * (winraw_mice_refresh(), winraw_nowinkey_apply()). The joypad driver
- * is kept with it and answers for itself. With
- * RETROARCH_RAWINPUT_POLL=0 the driver is restarted with the video
- * driver as it always was. */
+/* Left running across a video driver restart: its window is the
+ * polling thread's, it looks the main window up afresh at every poll,
+ * and it picks up a mouse plugged in and the Windows-key setting itself
+ * (winraw_mice_refresh(), winraw_nowinkey_apply()). */
 static bool winraw_survives_video(void *data)
 {
-   winraw_input_t *wr = (winraw_input_t*)data;
-   return wr && wr->poll_drain;
+   return data != NULL;
 }
 
 input_driver_t input_winraw = {

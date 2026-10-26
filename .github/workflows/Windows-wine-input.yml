@@ -7,14 +7,13 @@ name: CI Windows raw input under Wine
 # input driver and the raw input joypad driver, presses keys in its
 # window and reads its log.
 #
-# It runs a small core that writes to the log what reaches it. Five
+# It runs a small core that writes to the log what reaches it. Four
 # scenarios, each: two keys, a fullscreen toggle (which restarts the
 # GDI video driver), the two keys again, quit with Escape - and in each
 # the core must have seen its button and its key events before the
 # restart and after it. Read by the poll and kept across the restart
 # (the default); restarted with the video driver
-# (RETROARCH_INPUT_KEEP=0); threaded video off; the raw driver as it
-# was before any of this (RETROARCH_RAWINPUT_POLL=0); and DirectInput.
+# (RETROARCH_INPUT_KEEP=0); threaded video off; and DirectInput.
 # In all of those the window is left up across both restarts and
 # taken back; two more destroy it with the driver as before
 # (RETROARCH_WINDOW_KEEP=0) and leave it up without taking it (=2).

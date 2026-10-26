@@ -138,7 +138,6 @@ bool input_autoconfigure_connect(const char *name, const char *display_name,
 }
 bool input_autoconfigure_disconnect(unsigned port, const char *name)
 { (void)port; (void)name; disconnects++; return true; }
-bool winraw_raw_input_polled(void) { return true; }
 void winraw_queue_read(void) { }
 void winraw_queue_claim_thread(bool claim) { (void)claim; }
 

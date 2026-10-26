@@ -214,7 +214,7 @@ int main(void)
    fake_mice[0] = M(1);
    fake_mice_n  = 1;
    wr = (winraw_input_t*)winraw_init("null");
-   CHECK(wr && wr->poll_drain && wr->mouse_cnt == 1, "start with one mouse");
+   CHECK(wr && wr->mouse_cnt == 1, "start with one mouse");
    if (!wr)
       return 1;
    /* focused: without the focus the poll lets go of mouse buttons */
