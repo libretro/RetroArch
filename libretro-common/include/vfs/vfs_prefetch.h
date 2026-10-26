@@ -71,6 +71,17 @@ struct vfs_prefetch *vfs_prefetch_new(vfs_prefetch_fetch_t fetch, void *user,
 int64_t vfs_prefetch_read(struct vfs_prefetch *p, uint64_t off, uint8_t *buf, size_t len);
 
 /**
+ * vfs_prefetch_view:
+ *
+ * vfs_prefetch_read() without the copy: points @ptr at the octets at
+ * @off in a ready window and returns how many follow there, to the end
+ * of that window; 0 at the end of the file, -1 on a miss, which
+ * retargets the thread as a read's miss does. Only the reader recycles
+ * windows, so @ptr stays valid until its next read, view or seek.
+ **/
+int64_t vfs_prefetch_view(struct vfs_prefetch *p, uint64_t off, const uint8_t **ptr);
+
+/**
  * vfs_prefetch_seek:
  *
  * The reader will continue at @off: when that is outside what is

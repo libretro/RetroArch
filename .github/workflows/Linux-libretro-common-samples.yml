@@ -152,6 +152,7 @@ jobs:
             vfs_prefetch_test
             vfs_readahead_test
             vfs_prefetch_retarget_test
+            vfs_prefetch_view_test
             vfs_large_file_test
             vfs_seek_contract_test
             vfs_bulk_read_test

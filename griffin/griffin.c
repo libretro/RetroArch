@@ -2054,9 +2054,8 @@ SMB CLIENT
 #include "../libretro-common/net/net_nfs3.c"
 #include "../libretro-common/vfs/vfs_implementation_nfs.c"
 #endif
-#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+/* Always: statically linked cores read ahead through it too */
 #include "../libretro-common/vfs/vfs_prefetch.c"
-#endif
 
 #if defined(_WIN32) && !defined(__WINRT__)
 #if defined(HAVE_VULKAN) || defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE) || defined(HAVE_OPENGLES)

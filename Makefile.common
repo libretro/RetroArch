@@ -3082,11 +3082,10 @@ ifeq ($(HAVE_RETRONFS), 1)
               $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation_nfs.o
 endif
 
-# The background prefetcher the network backends read through; once,
-# whichever of them are built.
-ifneq (,$(filter 1,$(HAVE_RETRONFS) $(HAVE_RETROSMB) $(HAVE_SMBCLIENT)))
-   OBJ += $(LIBRETRO_COMM_DIR)/vfs/vfs_prefetch.o
-endif
+# The background prefetcher the network backends read through, built
+# always: statically linked cores read ahead through it too. Without
+# HAVE_THREADS it is stubs.
+OBJ += $(LIBRETRO_COMM_DIR)/vfs/vfs_prefetch.o
 
 # The built-in SMB2/3 client (libretro-common/net/net_smb2.c) stands in
 # for libsmb2: the same HAVE_SMBCLIENT surface for the menu, VFS and

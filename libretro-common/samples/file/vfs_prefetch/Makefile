@@ -1,20 +1,21 @@
 include ../../sample_objdir.mk
 
 TARGET := vfs_prefetch_retarget_test
+TARGET_VIEW := vfs_prefetch_view_test
 
 LIBRETRO_COMM_DIR := ../../..
 
 # vfs_prefetch.c, the read-ahead thread behind smb:// and nfs://
 # streams, driven with a fetch callback in place of a network share.
-SOURCES := \
-	vfs_prefetch_retarget_test.c \
+COMMON := \
 	$(LIBRETRO_COMM_DIR)/vfs/vfs_prefetch.c \
 	$(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c \
 	$(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
 	$(LIBRETRO_COMM_DIR)/features/features_cpu.c \
 	$(LIBRETRO_COMM_DIR)/time/rtime.c
 
-OBJS := $(call sample_objs,$(SOURCES:.c=.o))
+COMMON_OBJS := $(call sample_objs,$(COMMON:.c=.o))
+OBJS := vfs_prefetch_retarget_test.o vfs_prefetch_view_test.o $(COMMON_OBJS)
 
 CFLAGS  += -Wall -W -std=gnu99 -g1 -O1 \
            -DHAVE_THREADS -I$(LIBRETRO_COMM_DIR)/include
@@ -29,7 +30,7 @@ ifneq ($(SANITIZER),)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
 
-all: $(TARGET)
+all: $(TARGET) $(TARGET_VIEW)
 
 %.o: %.c Makefile
 	$(CC) $(CFLAGS) -c -o $@ $<
@@ -38,14 +39,18 @@ $(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c Makefile
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-$(TARGET): $(OBJS)
+$(TARGET): vfs_prefetch_retarget_test.o $(COMMON_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
-check: $(TARGET)
+$(TARGET_VIEW): vfs_prefetch_view_test.o $(COMMON_OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS)
+
+check: $(TARGET) $(TARGET_VIEW)
 	./$(TARGET)
+	./$(TARGET_VIEW)
 
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
-	rm -f $(TARGET) $(OBJS)
+	rm -f $(TARGET) $(TARGET_VIEW) $(OBJS)
 
 .PHONY: all check clean
