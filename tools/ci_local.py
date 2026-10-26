@@ -37,7 +37,8 @@ needed; the YAML the workflows use is read by the small parser below.
 
 Actions are not run. actions/checkout is the checkout itself (another
 repository is cloned instead), setup-python is the host's Python, and
-cache and artifact steps are skipped. A job using any other action is
+setup-emsdk verifies that the host emcc matches the pinned version.
+Cache and artifact steps are skipped. A job using any other action is
 refused unless --force is given, which skips it.
 """
 import fnmatch, json, os, re, shlex, shutil, subprocess, sys, tempfile, time
@@ -971,6 +972,7 @@ STAND_INS = {
    'actions/checkout': 'checkout',
    'taiki-e/checkout-action': 'checkout',
    'actions/setup-python': 'host',
+   'emscripten-core/setup-emsdk': 'emsdk',
    'actions/cache': 'skip',
    'actions/cache/restore': 'skip',
    'actions/cache/save': 'skip',
@@ -1215,7 +1217,7 @@ class Runner:
          except Unresolved:
             env[k] = ''
       if 'uses' in step:
-         return self.run_action(step, name, ctx, env, status, workspace, record)
+         return self.run_action(step, name, ctx, env, status, workspace, record, extra_path)
       script = step.get('run')
       if script is None:
          return status
@@ -1306,7 +1308,7 @@ class Runner:
                % (proc.returncode if proc is not None else '?'))
       return 'failure'
 
-   def run_action(self, step, name, ctx, env, status, workspace, record):
+   def run_action(self, step, name, ctx, env, status, workspace, record, extra_path=()):
       kind = action_kind(step['uses'])
       record['outcome'] = record['conclusion'] = 'success'
       w = {}
@@ -1332,6 +1334,34 @@ class Runner:
          if subprocess.run(args).returncode:
             record['outcome'] = record['conclusion'] = 'failure'
             return 'failure'
+         return status
+      if kind == 'emsdk':
+         version = w.get('version', '')
+         if self.opts.dry_run:
+            self.say('-- %s: requires host emcc %s' % (name, version))
+            return status
+         run_env = dict(os.environ)
+         run_env.update(env)
+         if extra_path:
+            run_env['PATH'] = os.pathsep.join(list(extra_path) + [run_env.get('PATH', '')])
+         command = shutil.which('emcc', path=run_env.get('PATH'))
+         result = None
+         if command and re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+', version):
+            try:
+               result = subprocess.run([command, '--version'], cwd=workspace,
+                     env=run_env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                     text=True, timeout=30)
+            except (OSError, subprocess.TimeoutExpired):
+               pass
+         line = result.stdout.splitlines()[0] if result and result.stdout else ''
+         found = re.search(r'\)\s+([0-9]+\.[0-9]+\.[0-9]+)(?:\s|$)', line)
+         if not result or result.returncode or not line.startswith('emcc ') \
+               or not found or found.group(1) != version:
+            self.say('-- %s: install the pinned host emcc %s before running this job'
+                  % (name, version))
+            record['outcome'] = record['conclusion'] = 'failure'
+            return 'failure'
+         self.say('-- %s: host emcc %s verified' % (name, version))
          return status
       if kind in ('checkout', 'host'):
          self.say('-- %s: this checkout / host tools stand in' % name)
@@ -1747,8 +1777,66 @@ def _run_fixture():
       shutil.rmtree(ws, ignore_errors=True)
 
 
+def _emsdk_fixture():
+   from unittest import mock
+   class Opts:
+      dry_run = False
+   runner = Runner(Opts())
+   runner.say = lambda msg: None
+   step = {'uses': 'emscripten-core/setup-emsdk@v15',
+           'with': {'version': '${{ env.EM_VERSION }}'}}
+   failures = 0
+   for tool, requested, code, output, expected in [
+         ('emcc', '5.0.1', 0, 'emcc (Emscripten) 5.0.1 (hash)\n', 'success'),
+         ('emcc', '5.0.1', 0, 'emcc (Emscripten) 5.0.10 (hash)\n', 'failure'),
+         ('emcc', '5.0.1', 1, 'emcc (Emscripten) 5.0.1\n', 'failure'),
+         ('emcc', '5.0.1', 0, '', 'failure'),
+         ('emcc', '5.0.1', 0, 'clang (LLVM) 5.0.1\n', 'failure'),
+         (None, '5.0.1', 0, '', 'failure'),
+         ('emcc', 'latest', 0, '', 'failure')]:
+      ctx = {'env': {'EM_VERSION': requested}, 'github': {'repository': 'test/repo'}}
+      record = {}
+      result = subprocess.CompletedProcess([], code, stdout=output)
+      with mock.patch.dict(os.environ, {'EM_CONFIG': 'fixture-sdk'}), \
+            mock.patch.object(shutil, 'which', return_value=tool), \
+            mock.patch.object(subprocess, 'run', return_value=result) as run:
+         status = runner.run_action(step, 'SDK', ctx, ctx['env'], 'success', ROOT, record)
+         failures += status != expected or record.get('conclusion') != expected
+         if tool and requested == '5.0.1':
+            failures += run.call_count != 1
+            failures += run.call_args[1]['env'].get('EM_CONFIG') != 'fixture-sdk'
+            failures += run.call_args[1]['env'].get('EM_VERSION') != requested
+         else:
+            failures += run.call_count != 0
+   ctx['env']['EM_VERSION'] = '5.0.1'
+   for error in (OSError('not executable'), subprocess.TimeoutExpired(['emcc'], 30)):
+      with mock.patch.object(shutil, 'which', return_value='emcc'), \
+            mock.patch.object(subprocess, 'run', side_effect=error) as run:
+         record = {}
+         status = runner.run_action(step, 'SDK', ctx, ctx['env'], 'success', ROOT, record)
+         failures += status != 'failure' or record.get('conclusion') != 'failure'
+         failures += run.call_count != 1
+   ctx['env']['PATH'] = 'workflow-path'
+   with mock.patch.object(shutil, 'which', return_value='emcc') as which, \
+         mock.patch.object(subprocess, 'run', return_value=
+               subprocess.CompletedProcess([], 0, stdout='emcc (SDK) 5.0.1\n')) as run:
+      record = {}
+      status = runner.run_action(step, 'SDK', ctx, ctx['env'], 'success', ROOT,
+            record, ['ci-sdk'])
+      expected_path = os.pathsep.join(['ci-sdk', 'workflow-path'])
+      failures += status != 'success'
+      failures += which.call_args[1].get('path') != expected_path
+      failures += run.call_args[1]['env'].get('PATH') != expected_path
+   runner.opts.dry_run = True
+   with mock.patch.object(subprocess, 'run') as run:
+      record = {}
+      runner.run_action(step, 'SDK', ctx, ctx['env'], 'success', ROOT, record)
+      failures += run.call_count != 0
+   return failures
+
+
 def cmd_selftest():
-   bad = 0
+   bad = _emsdk_fixture()
    try:
       import yaml
    except ImportError:
