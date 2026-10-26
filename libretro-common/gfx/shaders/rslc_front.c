@@ -1833,13 +1833,14 @@ static struct rslc_decl *rslc_p_find_here(struct rslc_parser *p, struct rslc_sym
 
 /* ---- program tables ---- */
 
-#define RSLC_GROW_PTRS(c, arr, n, cap, T) \
+/* fail: what the function returns when the arena is out */
+#define RSLC_GROW_PTRS(c, arr, n, cap, T, fail) \
    do { \
       if ((n) == (cap)) \
       { \
          uint32_t ncap_ = (cap) ? (cap) * 2 : 16; \
          T **nv_ = (T**)rslc_arena_alloc((c), ncap_ * sizeof(*nv_)); \
-         if (!nv_) return NULL; \
+         if (!nv_) return fail; \
          if (n) memcpy(nv_, (arr), (n) * sizeof(*nv_)); \
          (arr) = nv_; (cap) = ncap_; \
       } \
@@ -1854,11 +1855,11 @@ static struct rslc_var *rslc_p_new_var(struct rslc_parser *p, struct rslc_sym *n
       return NULL;
    if (pr->nvars == 0)
    {
-      RSLC_GROW_PTRS(p->c, pr->vars, pr->nvars, pr->vars_cap, struct rslc_var);
+      RSLC_GROW_PTRS(p->c, pr->vars, pr->nvars, pr->vars_cap, struct rslc_var, NULL);
       pr->vars[0] = NULL;
       pr->nvars   = 1;   /* id 0 is "no var" */
    }
-   RSLC_GROW_PTRS(p->c, pr->vars, pr->nvars, pr->vars_cap, struct rslc_var);
+   RSLC_GROW_PTRS(p->c, pr->vars, pr->nvars, pr->vars_cap, struct rslc_var, NULL);
    v->name     = name;
    v->type     = type;
    v->line     = line;
@@ -1878,11 +1879,11 @@ static struct rslc_func *rslc_p_new_func(struct rslc_parser *p, struct rslc_sym 
       return NULL;
    if (pr->nfuncs == 0)
    {
-      RSLC_GROW_PTRS(p->c, pr->funcs, pr->nfuncs, pr->funcs_cap, struct rslc_func);
+      RSLC_GROW_PTRS(p->c, pr->funcs, pr->nfuncs, pr->funcs_cap, struct rslc_func, NULL);
       pr->funcs[0] = NULL;
       pr->nfuncs   = 1;
    }
-   RSLC_GROW_PTRS(p->c, pr->funcs, pr->nfuncs, pr->funcs_cap, struct rslc_func);
+   RSLC_GROW_PTRS(p->c, pr->funcs, pr->nfuncs, pr->funcs_cap, struct rslc_func, NULL);
    f->name = name;
    f->ret  = ret;
    f->line = line;
@@ -2444,7 +2445,7 @@ static bool rslc_p_eval_builtin(struct rslc_parser *p, const struct rslc_node *n
          default:
             if (nargs != 2 || !rslc_p_eval(p, rslc_list_item(p->c, n->b, 1), &a[1]))
                return false;
-            for (i = 0; i < mt->rows * mt->cols; i++)
+            for (i = 0; i < (unsigned)(mt->rows * mt->cols); i++)
                rslc_cval_set_float(out, i, a[0].d[i] * a[1].d[i]);
             return true;
       }
@@ -4570,7 +4571,7 @@ static const struct rslc_type *rslc_p_struct_def(struct rslc_parser *p)
    }
    {
       struct rslc_prog *pr = &p->c->prog;
-      RSLC_GROW_PTRS(p->c, pr->structs, pr->nstructs, pr->structs_cap, struct rslc_type);
+      RSLC_GROW_PTRS(p->c, pr->structs, pr->nstructs, pr->structs_cap, struct rslc_type, NULL);
       pr->structs[pr->nstructs++] = st;
    }
    return st;
@@ -5262,15 +5263,15 @@ static bool rslc_p_add_interface(struct rslc_parser *p, struct rslc_var *v)
    switch (v->storage)
    {
       case RSLC_ST_SAMPLER:
-         RSLC_GROW_PTRS(p->c, pr->samplers, pr->nsamplers, pr->samplers_cap, struct rslc_var);
+         RSLC_GROW_PTRS(p->c, pr->samplers, pr->nsamplers, pr->samplers_cap, struct rslc_var, false);
          pr->samplers[pr->nsamplers++] = v;
          return true;
       case RSLC_ST_IN:
-         RSLC_GROW_PTRS(p->c, pr->inputs, pr->ninputs, pr->inputs_cap, struct rslc_var);
+         RSLC_GROW_PTRS(p->c, pr->inputs, pr->ninputs, pr->inputs_cap, struct rslc_var, false);
          pr->inputs[pr->ninputs++] = v;
          return true;
       case RSLC_ST_OUT:
-         RSLC_GROW_PTRS(p->c, pr->outputs, pr->noutputs, pr->outputs_cap, struct rslc_var);
+         RSLC_GROW_PTRS(p->c, pr->outputs, pr->noutputs, pr->outputs_cap, struct rslc_var, false);
          pr->outputs[pr->noutputs++] = v;
          return true;
       default:
@@ -5493,7 +5494,7 @@ struct rslc_var *rslc_front_var_copy(struct rslc_ctx *c, const struct rslc_var *
    struct rslc_var  *v  = (struct rslc_var*)rslc_arena_alloc(c, sizeof(*v));
    if (!v)
       return NULL;
-   RSLC_GROW_PTRS(c, pr->vars, pr->nvars, pr->vars_cap, struct rslc_var);
+   RSLC_GROW_PTRS(c, pr->vars, pr->nvars, pr->vars_cap, struct rslc_var, NULL);
    memcpy(v, src, sizeof(*v));
    v->id                 = pr->nvars;
    pr->vars[pr->nvars++] = v;

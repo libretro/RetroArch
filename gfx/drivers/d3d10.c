@@ -4164,7 +4164,7 @@ static bool d3d10_gfx_frame(
 {
    unsigned width = VIDEO_SCALE_W(dims);
    unsigned height = VIDEO_SCALE_H(dims);
-   unsigned           i, k, m;
+   unsigned           k, m;
    UINT offset = 0, stride    = 0;
    d3d10_texture_t*   texture = NULL;
    d3d10_video_t      * d3d10 = (d3d10_video_t*)data;
