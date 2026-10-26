@@ -16,9 +16,11 @@ package com.retroarch.browser.retroactivity;
 
 import android.annotation.TargetApi;
 import android.app.ActivityManager;
+import android.app.ActivityOptions;
 import android.app.Presentation;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.graphics.Point;
@@ -205,6 +207,50 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
     wantedRequest = request;
     if (started)
       showOn(wantedId);
+  }
+
+  /** Moves the Activity onto display @ordinal of the last published
+   * list. Native code hears back only when the move cannot start; one
+   * that starts but never shows is its timeout's to find. */
+  void moveTo(int ordinal)
+  {
+    int id = ordinal > 0 && ordinal <= published.ids.length
+        ? published.ids[ordinal - 1] : -1;
+    if (Build.VERSION.SDK_INT < 26 || id < 0
+        || displayManager.getDisplay(id) == null)
+    {
+      moveFailed(id, null);
+      return;
+    }
+    try
+    {
+      startOn(id);
+    }
+    catch (RuntimeException e)
+    {
+      moveFailed(id, e);
+    }
+  }
+
+  /* The running Activity, as a copy of its own intent so onNewIntent()
+   * sees the same content; the flags of the launch it came from would
+   * clear the task */
+  @TargetApi(26)
+  private void startOn(int displayId)
+  {
+    Intent move = activity.getIntent() != null
+        ? new Intent(activity.getIntent()) : new Intent();
+    ActivityOptions options = ActivityOptions.makeBasic();
+    move.setClass(activity, activity.getClass());
+    move.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+    options.setLaunchDisplayId(displayId);
+    activity.startActivity(move, options.toBundle());
+  }
+
+  private void moveFailed(int displayId, RuntimeException e)
+  {
+    Log.w(TAG, "[SecondDisplay] Cannot move to display " + displayId, e);
+    nativeMoveFailed();
   }
 
   @Override public void onDisplayAdded(int displayId)
@@ -675,4 +721,5 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
   static native void nativeMotion(int deviceId, int source,
       float[] axes);
   static native void nativeFocusChanged(boolean focused);
+  static native void nativeMoveFailed();
 }

@@ -222,6 +222,9 @@ struct android_second_display
    /* Video thread: a hide sent while no window held anything; the
     * surfaces made for earlier requests are given up, 0 none */
    retro_atomic_int_t released;
+   /* UI thread in, or the app thread when it could not ask; app thread
+    * out: Java could not start the last move */
+   retro_atomic_int_t move_failed;
 };
 
 /* Request number @a was sent before @b; wrap-safe */
@@ -354,6 +357,7 @@ struct android_app
    jmethodID showKeyboard;
    jmethodID hideKeyboard;
    jmethodID setSecondDisplay;
+   jmethodID moveToDisplay;
 #ifdef HAVE_VULKAN_CUSTOM_DRIVER
    jmethodID addSafeStartShortcut;
 #endif
@@ -572,6 +576,13 @@ extern struct android_app *g_android;
  * display's surfaces: those made for earlier requests are dropped as
  * they arrive. */
 void android_second_display_request(unsigned ordinal, bool given_up);
+
+/* App thread: asks Java to move RetroArch's Activity onto display
+ * @ordinal of the last published list. One-way: posts and returns. */
+void android_activity_move_request(unsigned ordinal);
+
+/* App thread: true once after Java could not start a move. */
+bool android_activity_move_failed(void);
 
 /* Releases a surface's window and frees it. Any thread that owns it. */
 void android_second_surface_free(struct android_second_surface *node);
