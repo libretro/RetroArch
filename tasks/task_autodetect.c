@@ -1399,22 +1399,13 @@ static void reallocate_port_if_needed(
       input_driver_ports_runtime_moved();
 }
 
-/* Only what a Player or Max Users change moves is placed again, as its
- * connect placed it: no other controller moves into a port emptied
- * since. No driver restarts; the headset's hands follow on the next
- * poll. */
-void input_autoconfigure_reallocate_ports(unsigned slot)
+/* Only what a Player, Max Users or override change moves is placed
+ * again, as its connect placed it: no other controller moves into a
+ * port emptied since. No driver restarts; the headset's hands follow
+ * on the next poll. */
+static void input_autoconfigure_place_again(const uint8_t *again)
 {
    unsigned s;
-   uint8_t again[MAX_USERS];
-
-   if (slot < MAX_USERS)
-   {
-      memset(again, 0, sizeof(again));
-      again[slot] = 1;
-   }
-   else
-      input_config_plays_as_max_users_changed(again);
    for (s = 0; s < MAX_USERS; s++)
    {
       const char *name = input_config_get_device_name(s);
@@ -1430,6 +1421,27 @@ void input_autoconfigure_reallocate_ports(unsigned slot)
     * and the hotkeys a sharer reads by its controller */
    input_driver_deadzones_refresh();
    input_config_binds_changed();
+}
+
+void input_autoconfigure_reallocate_ports(unsigned slot)
+{
+   uint8_t again[MAX_USERS];
+
+   if (slot < MAX_USERS)
+   {
+      memset(again, 0, sizeof(again));
+      again[slot] = 1;
+   }
+   else
+      input_config_plays_as_max_users_changed(again);
+   input_autoconfigure_place_again(again);
+}
+
+void input_autoconfigure_plays_as_reread(const uint8_t *before)
+{
+   uint8_t again[MAX_USERS];
+   input_config_plays_as_reread(before, again);
+   input_autoconfigure_place_again(again);
 }
 
 #ifdef HAVE_MENU
