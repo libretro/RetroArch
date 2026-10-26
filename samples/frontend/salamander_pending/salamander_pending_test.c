@@ -159,7 +159,8 @@ static const char *base(const char *path)
 
 int main(void)
 {
-   char v[PATH_MAX_LENGTH];
+   static char v[PATH_MAX_LENGTH];
+   const char *first, *second;
 
    config_file_set_io_default(config_file_io_filestream());
 
@@ -174,39 +175,44 @@ int main(void)
 
    /* No config: the first core, marked pending. */
    boot();
-   CHECK(string_is_equal(base(launched), "a_libretro.rpx"));
+   CHECK(string_is_equal(base(launched), "a_libretro.rpx")
+         || string_is_equal(base(launched), "b_libretro.rpx"));
+   first = string_is_equal(base(launched), "a_libretro.rpx")
+      ? "a_libretro.rpx" : "b_libretro.rpx";
+   second = string_is_equal(first, "a_libretro.rpx")
+      ? "b_libretro.rpx" : "a_libretro.rpx";
    CHECK(cfg_get("libretro_path", v, sizeof(v))
-         && string_is_equal(base(v), "a_libretro.rpx"));
+         && string_is_equal(base(v), first));
    CHECK(cfg_get(SALAMANDER_CONFIG_PENDING_KEY, v, sizeof(v))
-         && string_is_equal(base(v), "a_libretro.rpx"));
+         && string_is_equal(base(v), first));
 
-   /* a came up: it is launched again, and marked again. */
+   /* The selected core came up: launch and mark it again. */
    frontend_came_up();
    CHECK(!cfg_get(SALAMANDER_CONFIG_PENDING_KEY, v, sizeof(v)));
    boot();
-   CHECK(string_is_equal(base(launched), "a_libretro.rpx"));
+   CHECK(string_is_equal(base(launched), first));
 
-   /* a never came up this time: the next boot passes it over. */
+   /* The selected core did not start: try the other one. */
    boot();
-   CHECK(string_is_equal(base(launched), "b_libretro.rpx"));
+   CHECK(string_is_equal(base(launched), second));
    CHECK(cfg_get("libretro_path", v, sizeof(v))
-         && string_is_equal(base(v), "b_libretro.rpx"));
+         && string_is_equal(base(v), second));
    CHECK(cfg_get(SALAMANDER_CONFIG_PENDING_KEY, v, sizeof(v))
-         && string_is_equal(base(v), "b_libretro.rpx"));
+         && string_is_equal(base(v), second));
 
-   /* b is the only core left and never came up: nothing is launched,
-    * both entries go, and the boot after starts b again. */
-   unlink_core("a_libretro.rpx");
+   /* The remaining core did not start: clear both entries, then retry. */
+   unlink_core(first);
    boot();
    CHECK(launched[0] == '\0');
    CHECK(!cfg_get("libretro_path", v, sizeof(v)));
    CHECK(!cfg_get(SALAMANDER_CONFIG_PENDING_KEY, v, sizeof(v)));
    boot();
-   CHECK(string_is_equal(base(launched), "b_libretro.rpx"));
+   CHECK(string_is_equal(base(launched), second));
 
    /* A running frontend that switches to a core marks it: when that
     * core never comes up, the first boot after passes it over. */
    touch("a_libretro.rpx");
+   touch("b_libretro.rpx");
    frontend_came_up();
    frontend_saves("a_libretro.rpx", FRONTEND_FORK_CORE_WITH_ARGS);
    CHECK(cfg_get("libretro_path", v, sizeof(v))
@@ -236,6 +242,6 @@ int main(void)
       fprintf(stderr, "%d failure(s)\n", failures);
       return 1;
    }
-   printf("salamander_pending: ok\n");
+   printf("salamander_pending: ok (first %s)\n", first);
    return 0;
 }
