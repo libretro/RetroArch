@@ -8,7 +8,7 @@ LIBRETRO_COMM_DIR := $(RARCH_DIR)/libretro-common
 
 CFLAGS  += -Wall -std=gnu99 -g1 -O1 -DRARCH_INTERNAL -DWIIU -DHAVE_HID \
            -DWIIU_HID -I$(RARCH_DIR) -I$(RARCH_DIR)/input/include \
-           -I$(RARCH_DIR)/wiiu/include -I$(LIBRETRO_COMM_DIR)/include
+           -I$(RARCH_DIR)/os/wiiu/include -I$(LIBRETRO_COMM_DIR)/include
 
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)
