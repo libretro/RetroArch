@@ -32,6 +32,8 @@
 #ifdef HAVE_RCHD
 #include <formats/rchd.h>
 #include <streams/file_stream.h>
+#include <vfs/vfs_prefetch.h>
+#include <features/features_cpu.h>
 #else
 #include <libchdr/chd.h>
 #endif
@@ -40,6 +42,31 @@
 #define SECTOR_SIZE 2048
 #define SUBCODE_SIZE 96
 #define TRACK_PAD 4
+
+#ifdef HAVE_RCHD
+/* Sequential hunk loads before a stream starts decoding ahead, and the
+ * odd hunks the thread keeps decoded ahead of the reader. Starting
+ * costs about a hunk's decode, so a reader taking a sector at a time
+ * has to have shown it reads on for a while; one read call spanning
+ * two hunks says so at once. */
+#define CHDSTREAM_AHEAD_AFTER 32
+#define CHDSTREAM_AHEAD_SLOTS 4
+
+/* The decode-ahead thread's own image: a file and a decoder of its
+ * own, opened on that thread at its first fetch. It decodes the odd
+ * hunks, window i holding hunk 2i + 1, while the reader decodes the
+ * even ones itself: the two split the work rather than race for it. */
+struct chdstream_ahead
+{
+   char     *path;
+   RFILE    *file;
+   rchd_t   *chd;
+   uint8_t  *pump;
+   uint32_t  hunk_count;
+   int       failed;
+   bool      swab;
+};
+#endif
 
 struct chdstream
 {
@@ -51,13 +78,19 @@ struct chdstream
    /* What rchd asks for is read here before it is fed; one per stream,
     * since streams open and read on whichever thread holds them. */
    uint8_t  *pump;
+   char     *path;
+   struct vfs_prefetch    *ahead;
+   struct chdstream_ahead *ahead_state;
    uint32_t  hunk_bytes;
    uint32_t  unit_bytes;
+   uint32_t  sequential;
 #else
    chd_file *chd;
 #endif
    /* Loaded hunk */
    uint8_t *hunkmem;
+   /* The loaded hunk's octets: hunkmem, or a window decoded ahead */
+   const uint8_t *hunk;
    /* Byte offset where track data starts (after pregap) */
    size_t track_start;
    /* Byte offset where track data ends */
@@ -76,6 +109,10 @@ struct chdstream
    uint32_t track_frame;
    /* Should we swap bytes? */
    bool swab;
+#ifdef HAVE_RCHD
+   /* decode-ahead was refused once; not asked again */
+   bool ahead_off;
+#endif
 };
 
 #ifndef HAVE_RCHD
@@ -419,6 +456,99 @@ static bool chdstream_pump(RFILE *f, rchd_t *chd, uint8_t *buf,
    }
 }
 
+static void chdstream_swab(uint8_t *hunk, uint32_t bytes)
+{
+   uint16_t *array = (uint16_t*)hunk;
+   uint32_t  count = bytes / 2;
+   uint32_t  i;
+   for (i = 0; i < count; ++i)
+      array[i] = SWAP16(array[i]);
+}
+
+/* Runs on the decode-ahead thread: decodes the odd hunk window
+ * @off / @len stands for into @buf. */
+static int64_t chdstream_ahead_fetch(void *user, uint64_t off,
+      uint8_t *buf, size_t len)
+{
+   struct chdstream_ahead *a = (struct chdstream_ahead*)user;
+   rchd_request_t rq;
+   uint32_t hunk;
+
+   if (a->failed)
+      return -1;
+   if (!a->chd)
+   {
+      if (     !(a->file = filestream_open(a->path,
+                  RETRO_VFS_FILE_ACCESS_READ,
+                  RETRO_VFS_FILE_ACCESS_HINT_NONE))
+            || !(a->chd  = rchd_new())
+            || !chdstream_pump(a->file, a->chd, a->pump, 1, &rq))
+      {
+         a->failed = 1;
+         return -1;
+      }
+   }
+   hunk = (uint32_t)(off / len) * 2 + 1;
+   if (hunk >= a->hunk_count)
+      return 0;
+   if (     rchd_read_hunk_begin(a->chd, hunk, buf) != RCHD_OK
+         || !chdstream_pump(a->file, a->chd, a->pump, 0, &rq))
+      return -1;
+   if (a->swab)
+      chdstream_swab(buf, (uint32_t)len);
+   return (int64_t)len;
+}
+
+static void chdstream_ahead_free(chdstream_t *stream)
+{
+   struct chdstream_ahead *a = stream->ahead_state;
+
+   /* joins the thread, so nothing below is in use */
+   vfs_prefetch_free(stream->ahead);
+   stream->ahead       = NULL;
+   stream->ahead_state = NULL;
+   if (!a)
+      return;
+   if (a->chd)
+      rchd_free(a->chd);
+   if (a->file)
+      filestream_close(a->file);
+   free(a->pump);
+   free(a);
+}
+
+static void chdstream_ahead_start(chdstream_t *stream, uint32_t hunk)
+{
+   struct chdstream_ahead *a;
+
+   if (stream->ahead_off)
+      return;
+   stream->ahead_off = true;
+   /* on one core the thread only takes the reader's time */
+   if (cpu_features_get_core_amount() < 2)
+      return;
+   if (!(a = (struct chdstream_ahead*)calloc(1, sizeof(*a))))
+      return;
+   if (!(a->pump = (uint8_t*)malloc(CHDSTREAM_PUMP_BYTES)))
+   {
+      free(a);
+      return;
+   }
+   a->path       = stream->path;
+   a->hunk_count = rchd_info(stream->chd)->hunk_count;
+   a->swab       = stream->swab;
+   if (!(stream->ahead = vfs_prefetch_new(chdstream_ahead_fetch, a,
+               stream->hunk_bytes, CHDSTREAM_AHEAD_SLOTS,
+               (uint64_t)(hunk / 2) * stream->hunk_bytes)))
+   {
+      free(a->pump);
+      free(a);
+      return;
+   }
+   stream->ahead_state = a;
+   stream->ahead_off   = false;
+}
+
 /* The track the caller asked for. Track numbers are 1-based and need
  * not be contiguous, so this searches rather than indexes; the special
  * values match what the libchdr path accepted. */
@@ -510,6 +640,12 @@ chdstream_t *chdstream_open(const char *path, int32_t track)
    stream->chd             = NULL;
    stream->file            = NULL;
    stream->pump            = NULL;
+   stream->path            = NULL;
+   stream->ahead           = NULL;
+   stream->ahead_state     = NULL;
+   stream->hunk            = NULL;
+   stream->sequential      = 0;
+   stream->ahead_off       = false;
    stream->hunk_bytes      = info->hunk_bytes;
    stream->unit_bytes      = info->unit_bytes;
    stream->swab            = false;
@@ -523,6 +659,12 @@ chdstream_t *chdstream_open(const char *path, int32_t track)
    stream->hunknum         = -1;
    if (!(stream->hunkmem = (uint8_t*)malloc(info->hunk_bytes)))
       goto error;
+   {
+      size_t len = strlen(path) + 1;
+      if (!(stream->path = (char*)malloc(len)))
+         goto error;
+      memcpy(stream->path, path, len);
+   }
 
    /* rchd reports the track's type rather than the text it was written
     * as, so this is a switch on a number where the libchdr path parsed
@@ -568,6 +710,7 @@ chdstream_t *chdstream_open(const char *path, int32_t track)
 error:
    if (stream)
    {
+      free(stream->path);
       free(stream->hunkmem);
       free(stream);
    }
@@ -605,6 +748,7 @@ chdstream_t *chdstream_open(const char *path, int32_t track)
    stream->track_end       = 0;
    stream->offset          = 0;
    stream->hunkmem         = NULL;
+   stream->hunk            = NULL;
    stream->hunknum         = -1;
    hd                      = chd_get_header(chd);
    hunkmem                 = (uint8_t*)malloc(hd->hunkbytes);
@@ -662,6 +806,8 @@ void chdstream_close(chdstream_t *stream)
    if (stream->hunkmem)
       free(stream->hunkmem);
 #ifdef HAVE_RCHD
+   chdstream_ahead_free(stream);
+   free(stream->path);
    free(stream->pump);
    if (stream->chd)
       rchd_free(stream->chd);
@@ -677,7 +823,9 @@ void chdstream_close(chdstream_t *stream)
 static bool
 chdstream_load_hunk(chdstream_t *stream, uint32_t hunknum)
 {
+#ifndef HAVE_RCHD
    uint16_t *array;
+#endif
 
    if ((int)hunknum == stream->hunknum)
       return true;
@@ -685,6 +833,37 @@ chdstream_load_hunk(chdstream_t *stream, uint32_t hunknum)
 #ifdef HAVE_RCHD
    {
       rchd_request_t rq;
+      bool started = false;
+
+      if ((int)hunknum == stream->hunknum + 1)
+      {
+         if (     !stream->ahead
+               && ++stream->sequential == CHDSTREAM_AHEAD_AFTER)
+         {
+            chdstream_ahead_start(stream, hunknum + 1);
+            started = true;
+         }
+      }
+      else
+         stream->sequential = 0;
+
+      /* the window the old hunk was lent from may be recycled below */
+      stream->hunknum = -1;
+
+      /* A window lent here stays valid until the next view, which is
+       * the next odd hunk. A miss retargets the thread here. */
+      if (stream->ahead && !started && (hunknum & 1))
+      {
+         const uint8_t *ptr = NULL;
+         if (vfs_prefetch_view(stream->ahead,
+                  (uint64_t)(hunknum / 2) * stream->hunk_bytes, &ptr)
+               == (int64_t)stream->hunk_bytes)
+         {
+            stream->hunk    = ptr;
+            stream->hunknum = hunknum;
+            return true;
+         }
+      }
 
       if (rchd_read_hunk_begin(stream->chd, hunknum,
                stream->hunkmem) != RCHD_OK)
@@ -692,25 +871,24 @@ chdstream_load_hunk(chdstream_t *stream, uint32_t hunknum)
       if (!chdstream_pump(stream->file, stream->chd, stream->pump,
                0, &rq))
          return false;
+      if (stream->swab)
+         chdstream_swab(stream->hunkmem, stream->hunk_bytes);
    }
 #else
    if (chd_read(stream->chd, hunknum, stream->hunkmem) != CHDERR_NONE)
       return false;
-#endif
 
    if (stream->swab)
    {
       uint32_t i;
-#ifdef HAVE_RCHD
-      uint32_t count = stream->hunk_bytes / 2;
-#else
       uint32_t count = chd_get_header(stream->chd)->hunkbytes / 2;
-#endif
       array          = (uint16_t*)stream->hunkmem;
       for (i = 0; i < count; ++i)
          array[i] = SWAP16(array[i]);
    }
+#endif
 
+   stream->hunk    = stream->hunkmem;
    stream->hunknum = hunknum;
    return true;
 }
@@ -731,6 +909,20 @@ ssize_t chdstream_read(chdstream_t *stream, void *data, size_t bytes)
       bytes             = stream->track_end - stream->offset;
 
    end                  = stream->offset + bytes;
+
+#ifdef HAVE_RCHD
+   if (     !stream->ahead
+         && bytes >= (size_t)stream->hunk_bytes * 2
+         && end > stream->track_start)
+   {
+      size_t   at    = stream->offset > stream->track_start
+                     ? stream->offset : stream->track_start;
+      uint32_t frame = (uint32_t)(stream->track_frame
+            + (at - stream->track_start) / stream->frame_size);
+      chdstream_ahead_start(stream, frame / stream->frames_per_hunk + 1);
+      stream->sequential = CHDSTREAM_AHEAD_AFTER;
+   }
+#endif
 
    while (stream->offset < end)
    {
@@ -755,7 +947,7 @@ ssize_t chdstream_read(chdstream_t *stream, void *data, size_t bytes)
             return -1;
 
          memcpy(out + data_offset,
-                stream->hunkmem + frame_offset
+                stream->hunk + frame_offset
                 + hunk_offset + stream->frame_offset, amount);
       }
 

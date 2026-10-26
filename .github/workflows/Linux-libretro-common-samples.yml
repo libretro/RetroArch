@@ -176,6 +176,7 @@ jobs:
             cdfs_io_error_test
             chd_meta_overflow_test
             chd_stream_threads_test
+            chd_stream_ahead_test
             strlcpy_append_test
             http_parse_test
             rjson_test
