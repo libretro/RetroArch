@@ -1472,6 +1472,8 @@ static bool dispmanx_views_frame(struct dispmanx_video *_dispvars,
       RARCH_LOG("[Dispmanx] Views drawn straight from the frame.\n");
    }
 
+   /* Each view turned in its own place, as the layout laid them out */
+   _dispvars->views_cpu.rot = _dispvars->rotation;
    video_views_cpu_compose(&_dispvars->views_cpu, &info->views, layout,
          frame, pitch,
          _dispvars->rgb32 ? SCALER_FMT_ARGB8888 : SCALER_FMT_RGB565,

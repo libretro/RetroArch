@@ -900,7 +900,37 @@ static void test_cpu_compose(void)
    CHECK((out[0] & 0xffffff) == (frame[0] & 0xffffff));
    CHECK((out[256] & 0xffffff) == (frame[0] & 0xffffff));
 
+   /* Turned a quarter counter-clockwise, each view in its own place:
+    * the top screen's right column read downward becomes its top row */
+   p.dims        = VIDEO_SCALE_PACK(384, 512);
+   p.stereo_mode = VIDEO_STEREO_MODE_2D;
+   p.stretch     = true;
+   p.rotation    = 1;
+   video_views_layout(&p, &l);
+   cpu.rot       = 1;
+   memset(out, 0, sizeof(out));
+   video_views_cpu_compose(&cpu, &map, &l, frame, 256 * 4,
+         SCALER_FMT_ARGB8888, SCALER_TYPE_POINT, 1.0f, p.dims, out, 384,
+         NULL);
+   {
+      video_views_rect_t r = l.placements[0].dst;
+      int px = VIDEO_POS_X(r.pos), py = VIDEO_POS_Y(r.pos);
+      unsigned rw = VIDEO_SCALE_W(r.dims), rh = VIDEO_SCALE_H(r.dims);
+      /* Turned, the view stands taller than it is wide */
+      CHECK(rw > 0 && rh > rw);
+      /* Its top left is the view's top right; its bottom left the
+       * view's top left */
+      CHECK((out[(size_t)py * 384 + px] & 0xffffff)
+            == (frame[255] & 0xffffff));
+      CHECK((out[(size_t)(py + rh - 1) * 384 + px] & 0xffffff)
+            == (frame[0] & 0xffffff));
+   }
+   cpu.rot       = 0;
+   p.rotation    = 0;
+   p.stretch     = false;
+
    /* Interlaced is composed at the screen's own size. */
+   p.dims        = VIDEO_SCALE_PACK(512, 384);
    p.stereo_mode = VIDEO_STEREO_MODE_INTERLACED;
    video_views_layout(&p, &l);
    CHECK(video_views_cpu_scale(&map, &l) == 1.0f);

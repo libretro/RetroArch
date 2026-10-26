@@ -29,6 +29,7 @@
 
 #include "video_views.h"
 #include "video_defines.h"
+#include "video_turn.h"
 
 typedef struct video_views_cpu
 {
@@ -36,7 +37,14 @@ typedef struct video_views_cpu
    /* A placement the surface cuts, scaled whole */
    uint32_t *scratch;
    size_t scratch_size;
+   /* A view turned, ahead of its scaling */
+   uint8_t *turned;
+   size_t turned_size;
    unsigned next;
+   /* Quarter turns counter-clockwise each view is drawn at, in its own
+    * placement, as the layout laid it out for the core's rotation; set
+    * by a driver that does not turn the composed surface itself */
+   unsigned rot;
 } video_views_cpu_t;
 
 static INLINE void video_views_cpu_free(video_views_cpu_t *cpu)
@@ -45,8 +53,11 @@ static INLINE void video_views_cpu_free(video_views_cpu_t *cpu)
    for (i = 0; i < VIDEO_VIEWS_MAX_PLACEMENTS; i++)
       scaler_ctx_gen_reset(&cpu->scalers[i]);
    free(cpu->scratch);
+   free(cpu->turned);
    cpu->scratch      = NULL;
    cpu->scratch_size = 0;
+   cpu->turned       = NULL;
+   cpu->turned_size  = 0;
 }
 
 /* A scaler from @in_w x @in_h to @out_w x @out_h through @type: one
@@ -147,10 +158,34 @@ static INLINE void video_views_cpu_draw_view(video_views_cpu_t *cpu,
       uint8_t *pixels, unsigned stride,
       const video_views_rect_t *dst, const video_views_rect_t *cut)
 {
-   unsigned bpp = (fmt == SCALER_FMT_RGB565) ? 2 : 4;
-   video_views_cpu_draw(cpu, fmt, type,
-         (const uint8_t*)frame + (size_t)v->y * pitch + (size_t)v->x * bpp,
-         v->width, v->height, pitch, pixels, stride, dst, cut);
+   unsigned tw, th;
+   size_t size;
+   unsigned bpp      = (fmt == SCALER_FMT_RGB565) ? 2 : 4;
+   const uint8_t *in = (const uint8_t*)frame + (size_t)v->y * pitch
+      + (size_t)v->x * bpp;
+
+   if (!(cpu->rot & 3))
+   {
+      video_views_cpu_draw(cpu, fmt, type, in, v->width, v->height, pitch,
+            pixels, stride, dst, cut);
+      return;
+   }
+   /* Turned first, then scaled like any other */
+   tw   = (cpu->rot & 1) ? v->height : v->width;
+   th   = (cpu->rot & 1) ? v->width  : v->height;
+   size = (size_t)tw * th * bpp;
+   if (size > cpu->turned_size)
+   {
+      uint8_t *grown = (uint8_t*)realloc(cpu->turned, size);
+      if (!grown)
+         return;
+      cpu->turned      = grown;
+      cpu->turned_size = size;
+   }
+   video_turn_copy(cpu->turned, (size_t)tw * bpp, in, pitch,
+         v->width, v->height, bpp, cpu->rot & 3);
+   video_views_cpu_draw(cpu, fmt, type, cpu->turned, tw, th, tw * bpp,
+         pixels, stride, dst, cut);
 }
 
 /* The scale a driver whose display hardware scales a surface to the

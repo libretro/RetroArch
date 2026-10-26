@@ -29,7 +29,7 @@ The video driver name is 'dispmanx'. It honors the following video settings:
    - `video_font_enable`, `video_font_path` and `video_font_size`, with the message position and colour
    - the on-screen statistics
    - `video_max_swapchain_images` (2 to 4 pages for the frame)
-   - a core's views, composed and scaled by the HVS over the whole screen
+   - a core's views, composed on the CPU at the size that draws none larger than it is and scaled by the HVS over the whole screen; under a rotation each view is turned in its own place, as the frontend lays them out
 
 ### Aspect ratio, integer scale and the viewport
 
@@ -85,7 +85,6 @@ Three pages (`video_max_swapchain_images`) let the core fill one while one is on
 ## Issues and TODOs
 
    - The display mode is the one the firmware set up, or the CRT modeline the videocore display server switched to (which remakes the driver at the new size); `video_fullscreen_x`/`_y` and the refresh rate do not pick another.
-   - A core's views are composed on the CPU and drawn without its rotation.
 
 The HVS composes every element anew each scanline, and a display list that does not fit its budget underflows: an overlay with dozens of images visible at once costs more of it than one with a few.
 
