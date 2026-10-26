@@ -372,7 +372,7 @@ EXPORT int CONV NVSDK_NGX_VULKAN_EvaluateFeature(void *cmd, const int *h, param_
    copy_res(&e->depth, get_p(p, "Depth"));
    copy_res(&e->motion_vectors, get_p(p, "MotionVectors"));
    copy_res(&e->exposure, get_p(p, "ExposureTexture"));
-   copy_res(&e->transparency, get_p(p, "TransparencyMask"));
+   copy_res(&e->transparency, get_p(p, "DLSS.Input.Bias.Current.Color.Mask"));
    e->jitter_x   = get_f(p, "Jitter.Offset.X");
    e->jitter_y   = get_f(p, "Jitter.Offset.Y");
    e->mv_scale_x = get_f(p, "MV.Scale.X");

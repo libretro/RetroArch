@@ -841,8 +841,10 @@ bool d3d12_ngx_upscale(d3d12_ngx_t *ngx, ID3D12GraphicsCommandList *cmd,
          D3D12_NGX_RES(&inputs->motion_vectors));
    lib->param.set_d3d12_resource(p, NGX_PARAM_EXPOSURE_TEXTURE,
          inputs->exposure.image ? D3D12_NGX_RES(&inputs->exposure) : NULL);
-   lib->param.set_d3d12_resource(p, NGX_PARAM_TRANSPARENCY_MASK,
+   lib->param.set_d3d12_resource(p, NGX_PARAM_BIAS_CURRENT_COLOR_MASK,
          inputs->transparency_mask.image ? D3D12_NGX_RES(&inputs->transparency_mask) : NULL);
+   lib->param.set_ui(p, NGX_PARAM_BIAS_CURRENT_COLOR_BASE_X, 0);
+   lib->param.set_ui(p, NGX_PARAM_BIAS_CURRENT_COLOR_BASE_Y, 0);
    lib->param.set_f(p, NGX_PARAM_JITTER_OFFSET_X, inputs->jitter_x);
    lib->param.set_f(p, NGX_PARAM_JITTER_OFFSET_Y, inputs->jitter_y);
    lib->param.set_f(p, NGX_PARAM_SHARPNESS, (float)NGX_MODE_SHARPNESS(quality) / 100.0f);

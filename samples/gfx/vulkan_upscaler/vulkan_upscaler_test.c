@@ -1591,14 +1591,20 @@ int main(void)
    end_frame();
    vulkan_ngx_frame_done(ngx);
    CHECK(rec->creates == 1 && rec->evals == 2 && rec->eval[1].reset == 0);
+   /* (and the core's transparency mask reaches DLSS as the mask it
+    * reads, the current color's bias; a stand-in image) */
    inputs.flags |= RETRO_HW_UPSCALER_RESET;
+   set_input(&inputs.transparency_mask, &mv);
    begin_frame();
    CHECK(vulkan_ngx_upscale(ngx, cmd, &in, &inputs, NGX_PERF_QUALITY_MAX_QUALITY, 0,
             VIDEO_SCALE_PACK(1920, 1080), &out));
    end_frame();
    vulkan_ngx_frame_done(ngx);
    CHECK(rec->evals == 3 && rec->eval[2].reset == 1 && rec->creates == 1);
+   CHECK(rec->eval[2].transparency.present
+         && rec->eval[2].transparency.image == (uint64_t)(uintptr_t)mv.image);
    inputs.flags &= ~RETRO_HW_UPSCALER_RESET;
+   memset(&inputs.transparency_mask, 0, sizeof(inputs.transparency_mask));
 
    /* A smaller frame within the range: the same feature, the subrect
     * says the size; one outside: refused */

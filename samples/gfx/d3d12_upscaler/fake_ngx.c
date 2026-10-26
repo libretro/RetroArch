@@ -351,7 +351,7 @@ EXPORT int CONV NVSDK_NGX_D3D12_EvaluateFeature(void *cmd, const int *h, param_t
    e->depth          = get_p(p, "Depth");
    e->motion_vectors = get_p(p, "MotionVectors");
    e->exposure       = get_p(p, "ExposureTexture");
-   e->transparency   = get_p(p, "TransparencyMask");
+   e->transparency   = get_p(p, "DLSS.Input.Bias.Current.Color.Mask");
    e->jitter_x       = get_f(p, "Jitter.Offset.X");
    e->jitter_y       = get_f(p, "Jitter.Offset.Y");
    e->mv_scale_x     = get_f(p, "MV.Scale.X");

@@ -184,7 +184,11 @@ enum ngx_dlss_render_preset
 #define NGX_PARAM_PERF_QUALITY   "PerfQualityValue"
 #define NGX_PARAM_JITTER_OFFSET_X "Jitter.Offset.X"
 #define NGX_PARAM_JITTER_OFFSET_Y "Jitter.Offset.Y"
-#define NGX_PARAM_TRANSPARENCY_MASK "TransparencyMask"
+/* The mask of pixels to take from this frame over the history
+ * (particles, translucency): "TransparencyMask" is reserved, unread */
+#define NGX_PARAM_BIAS_CURRENT_COLOR_MASK   "DLSS.Input.Bias.Current.Color.Mask"
+#define NGX_PARAM_BIAS_CURRENT_COLOR_BASE_X "DLSS.Input.Bias.Current.Color.Subrect.Base.X"
+#define NGX_PARAM_BIAS_CURRENT_COLOR_BASE_Y "DLSS.Input.Bias.Current.Color.Subrect.Base.Y"
 #define NGX_PARAM_EXPOSURE_TEXTURE  "ExposureTexture"
 #define NGX_PARAM_DLSS_CREATE_FLAGS "DLSS.Feature.Create.Flags"
 /* The render preset a mode uses (ngx_dlss_render_preset), one hint a mode */

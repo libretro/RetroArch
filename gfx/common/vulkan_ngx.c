@@ -1254,8 +1254,10 @@ bool vulkan_ngx_upscale(vulkan_ngx_t *ngx, VkCommandBuffer cmd,
    lib->param.set_void_pointer(p, NGX_PARAM_MOTION_VECTORS, &r_mv);
    lib->param.set_void_pointer(p, NGX_PARAM_EXPOSURE_TEXTURE,
          inputs->exposure.image ? (void*)&r_exposure : NULL);
-   lib->param.set_void_pointer(p, NGX_PARAM_TRANSPARENCY_MASK,
+   lib->param.set_void_pointer(p, NGX_PARAM_BIAS_CURRENT_COLOR_MASK,
          inputs->transparency_mask.image ? (void*)&r_mask : NULL);
+   lib->param.set_ui(p, NGX_PARAM_BIAS_CURRENT_COLOR_BASE_X, 0);
+   lib->param.set_ui(p, NGX_PARAM_BIAS_CURRENT_COLOR_BASE_Y, 0);
    lib->param.set_f(p, NGX_PARAM_JITTER_OFFSET_X, inputs->jitter_x);
    lib->param.set_f(p, NGX_PARAM_JITTER_OFFSET_Y, inputs->jitter_y);
    lib->param.set_f(p, NGX_PARAM_SHARPNESS, (float)NGX_MODE_SHARPNESS(quality) / 100.0f);
