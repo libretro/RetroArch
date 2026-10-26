@@ -689,6 +689,15 @@ static void test_menu(void)
          + v->page_stride * 4 * 224, "menu over the pages");
    push(v, f, 256, 224, 512);
    check(__LINE__, set_src.width == 320, "a frame flipped under the menu");
+   /* A screenshot under the menu is of the menu: red */
+   {
+      uint8_t *shot = (uint8_t*)malloc((size_t)XRES * YRES * 3);
+      check(__LINE__, sunxi_read_viewport(v, shot, false)
+            && shot[0] == 0 && shot[1] == 0 && shot[2] == 0xff,
+            "screenshot under the menu %02x %02x %02x", shot[0], shot[1],
+            shot[2]);
+      free(shot);
+   }
    sunxi_set_texture_enable(v, false, false);
 
    /* Pages grown into where the menu was: it finds a place past them,

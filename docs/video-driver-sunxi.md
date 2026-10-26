@@ -50,7 +50,7 @@ RGUI is converted to XRGB8888 at the end of the framebuffer, past the pages, and
 
 ### Screenshots
 
-Screenshots read the page on the screen and scale it to the viewport's size.
+Screenshots read what is on the screen - the menu while it is up, else the page last flipped to - and scale it to the viewport's size.
 
 ## How a frame reaches the screen
 
@@ -64,6 +64,6 @@ The page handed over for a flip is the one not on the screen, and is written onl
 ## Issues and TODOs
 
    - The input overlay is not drawn. The display engine has more layers than the driver uses, but blending one over the scaled layer needs the pipes and priorities the legacy API sets per board.
-   - Screenshots and messages are of the frame's page; the menu is not in them.
+   - Messages and statistics are not drawn while the menu is up.
 
 The driver is tested against a fake display engine and framebuffer in `samples/gfx/sunxi_display`, Linux only, as the driver is built against `linux/fb.h`.

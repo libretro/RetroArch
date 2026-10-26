@@ -1188,30 +1188,37 @@ static void sunxi_viewport_info(void *data, struct video_viewport *vp)
    }
 }
 
-/* The frame on the screen, at the viewport's size: BGR24, bottom row
- * first, scaled from the page last flipped to */
+/* What is on the screen, at the viewport's size: BGR24, bottom row
+ * first, scaled from the menu's frame while it is up, else from the
+ * page last flipped to */
 static bool sunxi_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
-   unsigned x, y, vw, vh, pw, ph;
+   unsigned x, y, vw, vh, pw, ph, stride;
    video_viewport_t vp;
    const uint32_t *page;
    struct sunxi_video *_dispvars = (struct sunxi_video*)data;
+   bool menu;
 
-   if (!_dispvars || !buffer || !_dispvars->page_dims)
+   if (!_dispvars || !buffer)
+      return false;
+   menu = _dispvars->menu_active && _dispvars->menu_dims;
+   if (!menu && !_dispvars->page_dims)
       return false;
    sunxi_viewport_info(_dispvars, &vp);
-   vw   = VIDEO_SCALE_W(vp.dims);
-   vh   = VIDEO_SCALE_H(vp.dims);
-   pw   = VIDEO_SCALE_W(_dispvars->page_dims);
-   ph   = VIDEO_SCALE_H(_dispvars->page_dims);
-   page = _dispvars->pages[_dispvars->shown].address;
+   vw     = VIDEO_SCALE_W(vp.dims);
+   vh     = VIDEO_SCALE_H(vp.dims);
+   pw     = VIDEO_SCALE_W(menu ? _dispvars->menu_dims : _dispvars->page_dims);
+   ph     = VIDEO_SCALE_H(menu ? _dispvars->menu_dims : _dispvars->page_dims);
+   page   = menu ? _dispvars->menu_page.address
+      : _dispvars->pages[_dispvars->shown].address;
+   stride = menu ? _dispvars->menu_stride : _dispvars->page_stride;
    if (!vw || !vh)
       return false;
 
    for (y = 0; y < vh; y++)
    {
       const uint32_t *row = page + (size_t)((uint64_t)(vh - 1 - y) * ph / vh)
-         * _dispvars->page_stride;
+         * stride;
       uint8_t *out        = buffer + (size_t)y * vw * 3;
       for (x = 0; x < vw; x++, out += 3)
       {
