@@ -1093,15 +1093,6 @@ static bool input_snapshot_driver_checked(const input_device_driver_t *drv)
               * does not, and its button() has pads its get_buttons()
               * does not */
              || (string_is_equal(drv->ident, "hid") && drv->view));
-      /* While drivers are being switched over: RETROARCH_INPUT_SNAPSHOT=0
-       * in the environment reads the driver directly, so a problem can
-       * be tried with and without the bridge on one build. */
-      if (answer)
-      {
-         const char *env = getenv("RETROARCH_INPUT_SNAPSHOT");
-         if (env && env[0] == '0')
-            answer = false;
-      }
       if (answer && drv->get_buttons && drv->button && drv->axis)
          RARCH_LOG("[Input] Controllers of the \"%s\" driver are read"
                " through a snapshot taken once a poll.\n", drv->ident);

@@ -8013,11 +8013,6 @@ static void *vulkan_init(const video_info_t *video)
       vk->flags         |=  VK_FLAG_VSYNC;
    else
       vk->flags         &= ~VK_FLAG_VSYNC;
-   {
-      const char *env = getenv("RETROARCH_VULKAN_RESIZE_LATE");
-      if (env && env[0] == '1')
-         vk->flags      |=  VK_FLAG_RESIZE_LATE;
-   }
    if (video->fullscreen || force_fullscreen)
       vk->flags         |=  VK_FLAG_FULLSCREEN;
    else
@@ -9976,19 +9971,9 @@ static void vulkan_run_hdr_pipeline(VkPipeline pipeline, VkRenderPass render_pas
  * again for it, and what the driver has built on it follows
  * (vulkan_check_swapchain(), from the caller).
  *
- * This ran once a frame, after the frame had been presented. A window
- * resized between two frames is known of before the second is drawn -
- * vulkan_alive() has been told - so that frame was drawn at the old
- * size into a swapchain image the window no longer matched, its
- * present came back "out of date", the swapchain was thrown away and
- * made again for that, and only then was it made for the new size.
- * vulkan_frame() now runs this first as well, before it draws: the
- * frame after a resize is drawn at the new size, into the new
- * swapchain, and presented. The run after the present stays, for a
- * change that comes up while a frame is being drawn.
- *
- * RETROARCH_VULKAN_RESIZE_LATE=1 in the environment leaves it to the
- * end of the frame alone, as it was. */
+ * Run before the frame is drawn, so the frame after a resize is drawn
+ * at the new size, and again after the present, for a change that
+ * comes up while a frame is being drawn. */
 static void vulkan_apply_pending_resize(vk_t *vk,
       const video_frame_info_t *video_info)
 {
@@ -11891,8 +11876,7 @@ static bool vulkan_frame(void *data, const void *frame,
 
    /* A resize known of before this frame is drawn is done now, so
     * that the frame is drawn at the new size. */
-   if (!(vk->flags & VK_FLAG_RESIZE_LATE))
-      vulkan_apply_pending_resize(vk, video_info);
+   vulkan_apply_pending_resize(vk, video_info);
 
    /* The context may recreate its swapchain while acquiring the next
     * image. Rebuild driver-owned framebuffers before recording commands
