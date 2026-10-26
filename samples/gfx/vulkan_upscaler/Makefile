@@ -83,7 +83,12 @@ _nvngx.dll: fake_ngx.c fake_ngx.h
 libnvidia-ngx.so.1: fake_ngx.c fake_ngx.h
 	$(CC) -shared -fPIC -O1 -Wall -Wl,-soname,libnvidia-ngx.so.1 -o $@ $<
 
-nvngx_dlss.dll libnvidia-ngx-dlss.so.310.2.1: $(FAKE_DLSS)
+# (with its file version resource on Windows, as the real one has)
+nvngx_dlss.dll: $(FAKE_DLSS) $(FAKE_DLSS:.c=.rc)
+	$(patsubst %gcc,%windres,$(CC)) -o fake_dlss_res.o $(FAKE_DLSS:.c=.rc)
+	$(CC) -shared -O1 -Wall -o $@ $< fake_dlss_res.o
+
+libnvidia-ngx-dlss.so.310.2.1: $(FAKE_DLSS)
 	$(CC) -shared $(SOFLAGS) -O1 -Wall -o $@ $<
 
 Zdir_fsr/amd_fidelityfx_vk.dll Zdir_fsr/libamd_fidelityfx_vk.so: $(FAKE_FFX) $(FAKE_FFX:.c=.h)
@@ -108,7 +113,7 @@ check: all
 	$(RUNNER) ./$(TARGET)$(EXE)
 
 clean:
-	rm -f $(TARGET) $(TARGET).exe $(TARGET).o _nvngx.dll libnvidia-ngx.so.1 nvngx_dlss.dll libnvidia-ngx-dlss.so.310.2.1
+	rm -f $(TARGET) $(TARGET).exe $(TARGET).o _nvngx.dll libnvidia-ngx.so.1 nvngx_dlss.dll libnvidia-ngx-dlss.so.310.2.1 fake_dlss_res.o
 	rm -rf $(SAMPLE_OBJDIR) Zdir Zdir_fsr Zdir_xess Zdir_none
 
 .PHONY: all check clean

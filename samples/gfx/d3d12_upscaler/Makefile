@@ -71,8 +71,10 @@ FAKE_XESS := $(LIBRETRO_COMM_DIR)/samples/gfx/intel/fake_xess.c
 
 all: $(TARGET).exe _nvngx.dll nvngx_dlss.dll Zdir_fsr/amd_fidelityfx_dx12.dll Zdir_xess/libxess.dll
 
-nvngx_dlss.dll: $(FAKE_DLSS)
-	$(CC) -shared -O1 -Wall -o $@ $<
+# (with its file version resource, as the real one has)
+nvngx_dlss.dll: $(FAKE_DLSS) $(FAKE_DLSS:.c=.rc)
+	$(patsubst %gcc,%windres,$(CC)) -o fake_dlss_res.o $(FAKE_DLSS:.c=.rc)
+	$(CC) -shared -O1 -Wall -o $@ $< fake_dlss_res.o
 
 _nvngx.dll: fake_ngx.c fake_ngx.h
 	$(CC) -shared -O1 -Wall -o $@ $< -ldxguid
@@ -99,7 +101,7 @@ check: all
 	$(RUNNER) ./$(TARGET).exe
 
 clean:
-	rm -f $(TARGET).exe $(TARGET).o _nvngx.dll nvngx_dlss.dll
+	rm -f $(TARGET).exe $(TARGET).o _nvngx.dll nvngx_dlss.dll fake_dlss_res.o
 	rm -rf $(SAMPLE_OBJDIR) Zdir Zdir_fsr Zdir_xess Zdir_none
 
 .PHONY: all check clean

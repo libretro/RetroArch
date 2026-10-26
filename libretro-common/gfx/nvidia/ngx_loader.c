@@ -114,6 +114,14 @@ bool ngx_dlss_feature_in(const char *dir)
    return ngx_dlss_feature_path(dir, path, sizeof(path));
 }
 
+uint32_t ngx_snippet_version(uint32_t snippet)
+{
+   /* The low byte holds the patch and build a nibble each: 310.9.1.0
+    * reads 0x01360910 */
+   return NGX_VERSION_PACK(snippet >> 16, (snippet >> 8) & 0xffu,
+         (snippet >> 4) & 0xfu);
+}
+
 #ifdef NGX_HAVE_LOADER
 
 static ngx_lib_t ngx_lib;
@@ -190,21 +198,25 @@ static ngx_module_t ngx_open_in(wchar_t *dir, size_t dir_chars)
    return NULL;
 }
 
-/* The module's ProductName and ProductVersion from its version
- * resource, through version.dll resolved at run time (no import: the
- * oldest toolchains build without it). OptiScaler's stand-in names
- * itself there whatever file name it was loaded under. */
-static bool ngx_module_product(HMODULE m, wchar_t *name, size_t name_chars,
-      wchar_t *version, size_t version_chars)
+/* A file's version resource, through version.dll resolved at run time
+ * (no import: the oldest toolchains build without it): its
+ * ProductName and ProductVersion strings (@name, @version; either may
+ * be NULL) and the fixed file version, packed as NGX_VERSION_PACK has
+ * it (@fixed). OptiScaler's stand-in names itself there whatever file
+ * name it was loaded under; the DLSS feature library's file version
+ * is its version. */
+static bool ngx_file_version(const wchar_t *path, wchar_t *name,
+      wchar_t *version, size_t chars, uint32_t *fixed)
 {
    typedef DWORD (WINAPI *size_fn)(LPCWSTR, LPDWORD);
    typedef BOOL (WINAPI *info_fn)(LPCWSTR, DWORD, DWORD, LPVOID);
    typedef BOOL (WINAPI *query_fn)(LPCVOID, LPCWSTR, LPVOID*, PUINT);
+   /* (VS_FIXEDFILEINFO's leading fields, as the SDK lays them out) */
+   typedef struct { DWORD signature, struc_version, ms, ls; } fixed_t;
    static const wchar_t *const keys[2] = {
       L"\\StringFileInfo\\040904b0\\ProductName",
       L"\\StringFileInfo\\040904b0\\ProductVersion"
    };
-   wchar_t path[MAX_PATH];
    HMODULE ver;
    size_fn get_size;
    info_fn get_info;
@@ -212,12 +224,15 @@ static bool ngx_module_product(HMODULE m, wchar_t *name, size_t name_chars,
    DWORD size, handle = 0;
    void *data;
    wchar_t *outs[2];
-   size_t chars[2];
    unsigned i;
    bool ok = false;
-   name[0] = version[0] = 0;
-   if (!GetModuleFileNameW(m, path, MAX_PATH))
-      return false;
+   outs[0] = name;
+   outs[1] = version;
+   for (i = 0; i < 2; i++)
+      if (outs[i])
+         outs[i][0] = 0;
+   if (fixed)
+      *fixed = 0;
    if (!(ver = LoadLibraryW(L"version.dll")))
       return false;
    get_size = (size_fn)GetProcAddress(ver, "GetFileVersionInfoSizeW");
@@ -229,23 +244,38 @@ static bool ngx_module_product(HMODULE m, wchar_t *name, size_t name_chars,
       FreeLibrary(ver);
       return false;
    }
-   outs[0]  = name;
-   outs[1]  = version;
-   chars[0] = name_chars;
-   chars[1] = version_chars;
    if (get_info(path, 0, size, data))
+   {
+      void *value = NULL;
+      UINT len    = 0;
       for (i = 0; i < 2; i++)
       {
-         void *value = NULL;
-         UINT len    = 0;
+         if (!outs[i])
+            continue;
+         value = NULL;
+         len   = 0;
          if (query(data, keys[i], &value, &len) && value && len)
          {
-            size_t n = len < chars[i] ? len : chars[i] - 1;
+            size_t n = len < chars ? len : chars - 1;
             memcpy(outs[i], value, n * sizeof(wchar_t));
             outs[i][n] = 0;
             ok = true;
          }
       }
+      value = NULL;
+      len   = 0;
+      if (fixed && query(data, L"\\", &value, &len) && value
+            && len >= sizeof(fixed_t)
+            && ((const fixed_t*)value)->signature == 0xFEEF04BDu)
+      {
+         const fixed_t *f = (const fixed_t*)value;
+         unsigned minor   = f->ms & 0xffffu;
+         unsigned patch   = f->ls >> 16;
+         *fixed = NGX_VERSION_PACK(f->ms >> 16,
+               minor > 0xff ? 0xff : minor, patch > 0xff ? 0xff : patch);
+         ok = true;
+      }
+   }
    free(data);
    FreeLibrary(ver);
    return ok;
@@ -253,9 +283,12 @@ static bool ngx_module_product(HMODULE m, wchar_t *name, size_t name_chars,
 
 static void ngx_note_optiscaler(HMODULE m)
 {
+   wchar_t path[MAX_PATH];
    wchar_t name[64], version[64];
    char narrow[64];
-   if (!ngx_module_product(m, name, 64, version, 64))
+   if (!GetModuleFileNameW(m, path, MAX_PATH))
+      return;
+   if (!ngx_file_version(path, name, version, 64, NULL))
       return;
    if (wcscmp(name, L"OptiScaler"))
       return;
@@ -271,17 +304,21 @@ uint32_t ngx_dlss_feature_version(const char *dir)
    char path[DIR_MAX_LENGTH];
    wchar_t wpath[DIR_MAX_LENGTH];
    HMODULE m;
-   uint32_t (NGX_CONV *version)(void);
+   uint32_t (NGX_CONV *snippet)(void);
+   uint32_t version = 0;
    FARPROC p;
    if (!ngx_dlss_feature_path(dir, path, sizeof(path)))
       return 0;
    if (!ngx_utf8_to_wide(wpath, DIR_MAX_LENGTH, path))
       return 0;
+   /* The file version: what the file's properties show */
+   if (ngx_file_version(wpath, NULL, NULL, 0, &version) && version)
+      return version;
    if (!(m = LoadLibraryExW(wpath, NULL, LOAD_WITH_ALTERED_SEARCH_PATH)))
       return 0;
    p = GetProcAddress(m, "NVSDK_NGX_GetSnippetVersion");
-   memcpy(&version, &p, sizeof(version));
-   return version ? version() : 0;
+   memcpy(&snippet, &p, sizeof(snippet));
+   return snippet ? ngx_snippet_version(snippet()) : 0;
 }
 
 static ngx_module_t ngx_open(void)
@@ -344,16 +381,36 @@ static void ngx_note_optiscaler(ngx_module_t m)
 uint32_t ngx_dlss_feature_version(const char *dir)
 {
    char path[DIR_MAX_LENGTH];
+   const char *dot;
    void *m;
    void *sym;
-   uint32_t (*version)(void);
+   uint32_t (*snippet)(void);
    if (!ngx_dlss_feature_path(dir, path, sizeof(path)))
       return 0;
+   /* The file name: libnvidia-ngx-dlss.so.<major>.<minor>.<patch> */
+   if ((dot = strstr(path_basename(path), ".so.")))
+   {
+      unsigned v[3] = { 0, 0, 0 };
+      unsigned i    = 0;
+      const char *c = dot + 4;
+      for (; *c && i < 3; c++)
+      {
+         if (*c == '.')
+            i++;
+         else if (*c >= '0' && *c <= '9' && v[i] < 0x10000u)
+            v[i] = v[i] * 10 + (unsigned)(*c - '0');
+         else
+            break;
+      }
+      if (!*c && v[0] && v[0] < 0x10000u)
+         return NGX_VERSION_PACK(v[0], v[1] > 0xff ? 0xff : v[1],
+               v[2] > 0xff ? 0xff : v[2]);
+   }
    if (!(m = dlopen(path, RTLD_NOW | RTLD_LOCAL)))
       return 0;
    sym = dlsym(m, "NVSDK_NGX_GetSnippetVersion");
-   memcpy(&version, &sym, sizeof(version));
-   return version ? version() : 0;
+   memcpy(&snippet, &sym, sizeof(snippet));
+   return snippet ? ngx_snippet_version(snippet()) : 0;
 }
 
 static ngx_module_t ngx_open(void)

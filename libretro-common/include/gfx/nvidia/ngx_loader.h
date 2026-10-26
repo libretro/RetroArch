@@ -137,7 +137,8 @@ enum ngx_dlss_render_preset
 #define NGX_MODE_SHARPNESS(mode)       (((mode) >> 16) & 0xffu)
 #define NGX_MODE_FEATURE(mode)         ((mode) & 0xffffu)   /* what a feature is made for */
 
-/* NVSDK_NGX_GetSnippetVersion's word: the feature library's version */
+/* A feature library's version, major.minor.patch, as
+ * ngx_dlss_feature_version returns it */
 #define NGX_VERSION_PACK(major, minor, patch) \
    (((uint32_t)(major) << 16) | ((uint32_t)(minor) << 8) | (uint32_t)(patch))
 #define NGX_VERSION_MAJOR(v) ((v) >> 16)
@@ -440,11 +441,17 @@ const char *ngx_lib_status(void);
  * file the user supplies. Needs no NGX. */
 bool ngx_dlss_feature_in(const char *dir);
 
-/* The version of the feature library in @dir, as its
- * NVSDK_NGX_GetSnippetVersion packs it (NGX_VERSION_): 0 where there
- * is none, or one without the export. Loads the library, which is
- * kept (NGX loads the same file from the directory later). */
+/* The version of the feature library in @dir (NGX_VERSION_PACK): on
+ * Windows its file version, on Linux its file name's; else what its
+ * NVSDK_NGX_GetSnippetVersion says. 0 where there is none, or it does
+ * not say. Loading the library for the export keeps it loaded (NGX
+ * loads the same file from the directory later). */
 uint32_t ngx_dlss_feature_version(const char *dir);
+
+/* NVSDK_NGX_GetSnippetVersion's word as NGX_VERSION_PACK: major in the
+ * high half, minor in the next byte, patch and build a nibble each in
+ * the low byte */
+uint32_t ngx_snippet_version(uint32_t snippet);
 
 /* Whether the NGX core library the probe found is OptiScaler standing
  * in for it (its module says so, on Windows); the status names its

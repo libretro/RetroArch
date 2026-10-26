@@ -77,15 +77,26 @@ static void test_feature_dir(void)
    if (f)
       fclose(f);
    CHECK(ngx_dlss_feature_in(dir));
-   /* (an empty file: no version to read) */
+   /* (an empty file: on Linux its name says the version, on Windows
+    * nothing does) */
+#if defined(_WIN32)
    CHECK(ngx_dlss_feature_version(dir) == 0);
+#else
+   CHECK(ngx_dlss_feature_version(dir) == NGX_VERSION_PACK(310, 1, 0));
+#endif
    remove(file);
    CHECK(!ngx_dlss_feature_in(dir));
    remove(dir);
    /* The stand-in feature library built beside the test: its version
-    * read before NGX has it */
+    * read before NGX has it, from its file version (Windows) or file
+    * name (Linux); without either, from the snippet word */
    CHECK(ngx_dlss_feature_in("nvidia_loader_test_feature"));
    CHECK(ngx_dlss_feature_version("nvidia_loader_test_feature") == NGX_VERSION_PACK(310, 2, 1));
+   CHECK(ngx_dlss_feature_in("nvidia_loader_test_snippet"));
+   CHECK(ngx_dlss_feature_version("nvidia_loader_test_snippet") == NGX_VERSION_PACK(310, 2, 2));
+   /* The snippet word as the libraries pack it: 310.9.1.0, 3.5.0 */
+   CHECK(ngx_snippet_version(0x01360910u) == NGX_VERSION_PACK(310, 9, 1));
+   CHECK(ngx_snippet_version(0x00030500u) == NGX_VERSION_PACK(3, 5, 0));
    CHECK(NGX_VERSION_MAJOR(NGX_VERSION_PACK(310, 2, 1)) == 310
          && NGX_VERSION_MINOR(NGX_VERSION_PACK(310, 2, 1)) == 2
          && NGX_VERSION_PATCH(NGX_VERSION_PACK(310, 2, 1)) == 1);
