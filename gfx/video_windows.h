@@ -183,11 +183,11 @@ enum video_window_connection
 
 #define VIDEO_WINDOW_DISPLAYS_MAX      8
 #define VIDEO_WINDOW_DISPLAY_NAME_SIZE 64
+#define VIDEO_WINDOW_DISPLAY_MODEL_SIZE 32
 
 typedef struct video_window_display
 {
-   /* 1-based place in the platform's list, as the monitor setting
-    * counts */
+   /* 1-based place in the platform's list */
    unsigned ordinal;
    unsigned connection;
    /* The main window is on it */
@@ -197,7 +197,11 @@ typedef struct video_window_display
    bool is_private;
    /* A real panel or monitor: false for casts, and where unknown */
    bool physical;
+   /* A Presentation failed on it since the list last changed */
+   bool refused;
    char name[VIDEO_WINDOW_DISPLAY_NAME_SIZE];
+   /* The product's name, for the menu only; empty where unknown */
+   char model[VIDEO_WINDOW_DISPLAY_MODEL_SIZE];
    /* VIDEO_SCALE_PACK of its size in the platform's logical pixels,
     * 0 where unknown */
    unsigned dims;
@@ -252,6 +256,12 @@ void video_windows_plan(const video_views_map_t *map,
       const video_window_settings_t *settings, bool enabled,
       bool supported, unsigned forced_attached, unsigned attached,
       video_windows_plan_t *out);
+
+/* Display @index (< VIDEO_WINDOW_DISPLAYS_MAX) as a screen's display
+ * setting names it: its name, " 2" or " 3" added for the second or
+ * third listed with that name. */
+void video_windows_display_key(const video_window_display_t *displays,
+      unsigned index, char *out, size_t size);
 
 /* Which display the Separate screens of a @num_screens map go to. A
  * screen's monitor N names the display of ordinal N; 0 is Auto: an

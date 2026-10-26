@@ -307,6 +307,42 @@ static void test_windows_route(void)
    CHECK(test_routed(&r, 3, 0xfdu, 0u, 1));
 }
 
+static void test_display_key(void)
+{
+   video_window_display_t d[3];
+   char key[VIDEO_WINDOW_DISPLAY_NAME_SIZE];
+   char small[6];
+   unsigned i;
+   memset(d, 0, sizeof(d));
+   strcpy(d[0].name, "Built-in Screen");
+   strcpy(d[1].name, "Screen-2");
+   video_windows_display_key(d, 0, key, sizeof(key));
+   CHECK(!strcmp(key, "Built-in Screen"));
+   video_windows_display_key(d, 1, key, sizeof(key));
+   CHECK(!strcmp(key, "Screen-2"));
+   /* A repeated name counts in list order */
+   strcpy(d[0].name, "HDMI");
+   strcpy(d[1].name, "HDMI");
+   strcpy(d[2].name, "HDMI");
+   video_windows_display_key(d, 0, key, sizeof(key));
+   CHECK(!strcmp(key, "HDMI"));
+   video_windows_display_key(d, 1, key, sizeof(key));
+   CHECK(!strcmp(key, "HDMI 2"));
+   video_windows_display_key(d, 2, key, sizeof(key));
+   CHECK(!strcmp(key, "HDMI 3"));
+   /* A long name gives way to its count */
+   for (i = 0; i < VIDEO_WINDOW_DISPLAY_NAME_SIZE - 1; i++)
+      d[0].name[i] = d[1].name[i] = 'a';
+   d[0].name[i] = d[1].name[i] = '\0';
+   video_windows_display_key(d, 1, key, sizeof(key));
+   CHECK(strlen(key) == VIDEO_WINDOW_DISPLAY_NAME_SIZE - 1);
+   CHECK(!strcmp(key + VIDEO_WINDOW_DISPLAY_NAME_SIZE - 3, " 2"));
+   video_windows_display_key(d, 0, small, sizeof(small));
+   CHECK(!strcmp(small, "aaaaa"));
+   video_windows_display_key(d, 1, small, sizeof(small));
+   CHECK(!strcmp(small, "aaa 2"));
+}
+
 static void test_selected_layout(void)
 {
    video_views_map_t map;
@@ -688,6 +724,7 @@ int main(void)
    test_windows_policy();
    test_windows_attached();
    test_windows_route();
+   test_display_key();
    test_selected_layout();
    test_second_output_touch();
    test_window_events();
