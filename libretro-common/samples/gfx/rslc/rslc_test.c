@@ -1527,6 +1527,39 @@ static void test_msl_powr(void)
    CHECK(alloc_live == 0);
 }
 
+/* Every function but main0 is printed static inline always_inline,
+ * as SPIRV-Cross prints them: under fast math a call rounds
+ * differently from the same code inlined. */
+static void test_msl_inline(void)
+{
+   struct rslc_opts   o;
+   struct rslc_result r;
+   char               err[128];
+   static const char  frag[] =
+      "#version 450\n"
+      "layout(location = 0) in vec4 vColor;\n"
+      "layout(location = 0) out vec4 FragColor;\n"
+      "float half_of(float x);\n"
+      "void main() {\n"
+      "  FragColor = vColor * half_of(vColor.x);\n"
+      "}\n"
+      "float half_of(float x) { return x * 0.5; }\n";
+
+   opts_default(&o, err, sizeof(err));
+   o.dst = RSLC_DST_MSL;
+   CHECK(rslc_compile(frag, sizeof(frag) - 1, RSLC_STAGE_FRAGMENT, &o, &r));
+   if (r.text)
+   {
+      CHECK(strstr(r.text, "static inline __attribute__((always_inline)) float half_of(float x);") != NULL);
+      CHECK(strstr(r.text, "static inline __attribute__((always_inline)) float half_of(float x) {") != NULL);
+      CHECK(strstr(r.text, "static inline __attribute__((always_inline)) void rslc_main(") != NULL);
+      CHECK(strstr(r.text, "always_inline)) fragment") == NULL);
+      CHECK(strstr(r.text, " main0(") != NULL);
+      rslc_result_free(&r, &o);
+   }
+   CHECK(alloc_live == 0);
+}
+
 static void test_msl(void)
 {
    struct rslc_opts   o;
@@ -2296,6 +2329,7 @@ int main(int argc, char **argv)
    test_msl();
    test_msl_apple();
    test_msl_powr();
+   test_msl_inline();
    test_shapes();
    test_cafe();
    test_ingest();

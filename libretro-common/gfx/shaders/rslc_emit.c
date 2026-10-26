@@ -3300,6 +3300,8 @@ static void pr_func_head(struct rslc_pr *p, const struct rslc_func *f)
       p->ok = false;
       return;
    }
+   if (p->msl)   /* fast math rounds a call differently from inlined code */
+      pr_s(p, "static inline __attribute__((always_inline)) ");
    pr_type_full(p, f->ret);
    pr_c(p, ' ');
    if ((p->hlsl || p->msl) && f == p->c->prog.main_fn)
