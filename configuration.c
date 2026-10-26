@@ -7378,6 +7378,9 @@ static bool config_load_file(const char *path, settings_t *settings)
 #endif
    }
 
+   /* once every override is in, against the entries before the read */
+   input_plays_as_hand_out();
+
    /* Special case for perfcnt_enable */
    {
       bool tmp = false;

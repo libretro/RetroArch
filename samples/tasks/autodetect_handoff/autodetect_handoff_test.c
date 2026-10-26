@@ -167,7 +167,8 @@ uint16_t input_config_get_device_vid(unsigned port) { return 0; }
 bool input_config_parse_vid_pid(const char *s, unsigned long *vid,
       unsigned long *pid, const char **name) { return false; }
 void input_config_plays_as_max_users_changed(uint8_t *again) { }
-bool input_config_plays_as_place(unsigned slot) { return false; }
+bool input_config_plays_as_place(unsigned slot,
+      bool connect) { return false; }
 void input_config_plays_as_release(unsigned slot) { }
 void input_config_plays_as_reread(const uint8_t *before,
       uint8_t *again) { }
