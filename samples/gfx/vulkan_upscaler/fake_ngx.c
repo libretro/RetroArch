@@ -133,7 +133,8 @@ static void *get_p(param_t *p, const char *n)
 }
 
 /* Quality: 0 MaxPerf 1/2, 1 Balanced 0.58, 2 MaxQuality 2/3,
- * 3 UltraPerformance 1/3, 5 DLAA 1; dynamic range 1/2 .. 1 of optimal
+ * 3 UltraPerformance 1/3, 5 DLAA 1; dynamic range from 1/2 of optimal
+ * to the output
  * (a quality the library has not got, 4 UltraQuality, answers 0) */
 static int CONV optimal_cb(param_t *p)
 {
@@ -169,6 +170,7 @@ static int CONV optimal_cb(param_t *p)
 EXPORT int CONV NVSDK_NGX_VULKAN_GetFeatureInstanceExtensionRequirements(const void *info, uint32_t *count, void **props)
 {
    rec.ext_feature_id = info ? ((const int*)info)[1] : -1;
+   rec.ext_calls++;
    strcpy(inst_exts[0].name, "VK_KHR_get_physical_device_properties2");
    *count = 1; *props = inst_exts; return OK;
 }
@@ -176,6 +178,7 @@ EXPORT int CONV NVSDK_NGX_VULKAN_GetFeatureDeviceExtensionRequirements(void *ins
 {
    (void)inst; (void)pd;
    rec.ext_feature_id = info ? ((const int*)info)[1] : -1;
+   rec.ext_calls++;
    if (rec.ext_feature_id == 18 && rec.nr_missing)
    {
       *count = 0;

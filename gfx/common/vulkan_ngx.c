@@ -17,6 +17,7 @@
 #include <string.h>
 
 #include <retro_miscellaneous.h>
+#include <compat/strl.h>
 #include <gfx/nvidia/ngx_loader.h>
 #include <vulkan/vulkan_symbol_wrapper.h>
 
@@ -33,6 +34,8 @@
  * for, past the swapchain's depth */
 #define VULKAN_NGX_RETIRE_FRAMES 20
 #define VULKAN_NGX_RETIRED_MAX   8
+/* NGX_PERF_QUALITY_MAX_PERF .. DLAA */
+#define VULKAN_NGX_MODES         6
 /* Frames a changed Neural Rendering setting holds before the feature is
  * made again with it: the model reads its tuning only at creation, and
  * a feature made every frame of a slider's travel exhausts the driver */
@@ -72,11 +75,17 @@ struct vulkan_ngx
    unsigned feature_flags;
    unsigned feature_quality;
    /* The last optimal query, kept for the request each frame */
-   unsigned opt_quality;
+   /* DLSS's sizes for opt_out_dims, per mode (NGX_PERF_QUALITY_*):
+    * optimal, and the range of each; opt_valid has a bit per mode
+    * asked, opt_ok one per mode that answered */
    unsigned opt_out_dims;
-   unsigned opt_render_dims;
-   unsigned opt_min_dims;
-   unsigned opt_max_dims;
+   unsigned opt_valid;
+   unsigned opt_ok;
+   unsigned opt_render_dims[VULKAN_NGX_MODES];
+   unsigned opt_min_dims[VULKAN_NGX_MODES];
+   unsigned opt_max_dims[VULKAN_NGX_MODES];
+   /* A frame no mode takes, said once */
+   unsigned unfit_dims;
    /* What failed last, create or evaluate: not tried again until the
     * output size or mode changes, the frames shown as they are */
    unsigned failed_out_dims;
@@ -98,7 +107,6 @@ struct vulkan_ngx
    unsigned nr_failed_dims;
    bool nr_reset;
    bool nr_unsupported;
-   bool opt_valid;
    bool reset_pending;
 };
 
@@ -227,18 +235,77 @@ static unsigned vulkan_ngx_feature_names(const ngx_lib_t *lib,
    return out;
 }
 
-/* Super Resolution's, and Neural Rendering's where its library is in
- * the DLSS directory */
+/* The names asked last, the instance's and the device's: what NGX
+ * answers does not change while RetroArch runs, and asking loads and
+ * checks the feature libraries, every time a context is made */
+typedef struct vulkan_ngx_name_cache
+{
+   char names[VULKAN_NGX_NAMES][VK_MAX_EXTENSION_NAME_SIZE];
+   unsigned count;
+   /* what they were asked for: the GPU, and Neural Rendering's too */
+   uint32_t vendor_id;
+   uint32_t device_id;
+   uint32_t driver_version;
+   bool nr;
+   bool valid;
+} vulkan_ngx_name_cache_t;
+
+static vulkan_ngx_name_cache_t vulkan_ngx_instance_cache;
+static vulkan_ngx_name_cache_t vulkan_ngx_device_cache;
+
+/* Super Resolution's, and Neural Rendering's while it is turned on and
+ * its library is in the DLSS directory (turning it on remakes the
+ * context) */
 static unsigned vulkan_ngx_names(const ngx_lib_t *lib, VkInstance instance,
-      VkPhysicalDevice gpu, const char **names)
+      VkPhysicalDevice gpu, PFN_vkGetInstanceProcAddr gipa,
+      const char **names)
 {
    char dir[DIR_MAX_LENGTH];
-   unsigned out = vulkan_ngx_feature_names(lib, instance, gpu,
-         NGX_FEATURE_SUPER_SAMPLING, names, 0);
+   VkPhysicalDeviceProperties props;
+   PFN_vkGetPhysicalDeviceProperties get_props = NULL;
+   vulkan_ngx_name_cache_t *cache = gpu
+      ? &vulkan_ngx_device_cache : &vulkan_ngx_instance_cache;
+   unsigned out, i;
+   bool nr = false;
+
    video_upscaler_dir(VIDEO_TEMPORAL_UPSCALER_DLSS, dir, sizeof(dir));
-   if (ngx_dlssnr_feature_in(dir))
+   if (video_upscaler_nr_mode() & VIDEO_UPSCALER_NR_ON)
+      nr = ngx_dlssnr_feature_in(dir);
+   memset(&props, 0, sizeof(props));
+   if (gpu && gipa)
+      get_props = (PFN_vkGetPhysicalDeviceProperties)
+         gipa(instance, "vkGetPhysicalDeviceProperties");
+   if (get_props)
+      get_props(gpu, &props);
+   if (     cache->valid
+         && cache->nr             == nr
+         && cache->vendor_id      == props.vendorID
+         && cache->device_id      == props.deviceID
+         && cache->driver_version == props.driverVersion)
+   {
+      for (i = 0; i < cache->count; i++)
+         names[i] = cache->names[i];
+      return cache->count;
+   }
+
+   out = vulkan_ngx_feature_names(lib, instance, gpu,
+         NGX_FEATURE_SUPER_SAMPLING, names, 0);
+   if (nr)
       out = vulkan_ngx_feature_names(lib, instance, gpu,
             NGX_FEATURE_DLSS_NR, names, out);
+
+   /* (the names are NGX's: copies go in the cache, and out) */
+   for (i = 0; i < out; i++)
+   {
+      strlcpy(cache->names[i], names[i], sizeof(cache->names[i]));
+      names[i] = cache->names[i];
+   }
+   cache->count          = out;
+   cache->vendor_id      = props.vendorID;
+   cache->device_id      = props.deviceID;
+   cache->driver_version = props.driverVersion;
+   cache->nr             = nr;
+   cache->valid          = true;
    return out;
 }
 
@@ -250,7 +317,7 @@ unsigned vulkan_ngx_instance_extensions(const char **list,
    unsigned n, i;
    if (!lib)
       return count;
-   n = vulkan_ngx_names(lib, VK_NULL_HANDLE, VK_NULL_HANDLE, names);
+   n = vulkan_ngx_names(lib, VK_NULL_HANDLE, VK_NULL_HANDLE, NULL, names);
    for (i = 0; i < n && count < cap; i++)
       if (!vulkan_ngx_in_list(list, count, names[i]))
          list[count++] = names[i];
@@ -269,7 +336,7 @@ unsigned vulkan_ngx_device_extensions(VkPhysicalDevice gpu,
    unsigned n, i, j;
    if (!lib || !gpu)
       return count;
-   if (!(n = vulkan_ngx_names(lib, instance, gpu, names)))
+   if (!(n = vulkan_ngx_names(lib, instance, gpu, gipa, names)))
       return count;
    enumerate = (PFN_vkEnumerateDeviceExtensionProperties)
       gipa(instance, "vkEnumerateDeviceExtensionProperties");
@@ -395,7 +462,8 @@ vulkan_ngx_t *vulkan_ngx_init(VkInstance instance, VkPhysicalDevice gpu,
       video_upscaler_note_optiscaler();
       RARCH_LOG("[Vulkan] Temporal Upscaler: NGX answered by OptiScaler.\n");
    }
-   else if (ngx_dlssnr_feature_in(dlss_dir ? dlss_dir : ""))
+   else if (     (video_upscaler_nr_mode() & VIDEO_UPSCALER_NR_ON)
+            && ngx_dlssnr_feature_in(dlss_dir ? dlss_dir : ""))
    {
       /* What the core says of Neural Rendering: a core without it has
        * no such capability */
@@ -451,54 +519,139 @@ static void vulkan_ngx_set_preset(const ngx_lib_t *lib, ngx_parameter_t *p, unsi
    lib->param.set_ui(p, NGX_PARAM_DLSS_PRESET_ULTRA_QUALITY, preset);
 }
 
+/* DLSS's sizes for mode @q (NGX_PERF_QUALITY_*) and @out_dims,
+ * asked of NGX once per output size */
+static bool vulkan_ngx_mode_sizes(vulkan_ngx_t *ngx, unsigned q, unsigned out_dims)
+{
+   const ngx_lib_t *lib = ngx->lib;
+   ngx_parameter_t *p   = ngx->caps;
+   void *callback       = NULL;
+   unsigned rw = 0, rh = 0, mnw, mnh, mxw, mxh;
+   ngx_result_t (NGX_CONV *optimal)(ngx_parameter_t *p);
+   if (q >= VULKAN_NGX_MODES)
+      return false;
+   if (ngx->opt_out_dims != out_dims)
+   {
+      ngx->opt_out_dims = out_dims;
+      ngx->opt_valid    = 0;
+      ngx->opt_ok       = 0;
+   }
+   if (ngx->opt_valid & (1u << q))
+      return (ngx->opt_ok & (1u << q)) != 0;
+   ngx->opt_valid |= 1u << q;
+   lib->param.get_void_pointer(p, NGX_PARAM_DLSS_OPTIMAL_SETTINGS_CALLBACK,
+         &callback);
+   if (!callback)
+      return false;
+   memcpy(&optimal, &callback, sizeof(optimal));
+   lib->param.set_ui(p, NGX_PARAM_WIDTH, VIDEO_SCALE_W(out_dims));
+   lib->param.set_ui(p, NGX_PARAM_HEIGHT, VIDEO_SCALE_H(out_dims));
+   lib->param.set_i(p, NGX_PARAM_PERF_QUALITY, (int)q);
+   lib->param.set_i(p, NGX_PARAM_RTX_VALUE, 0);
+   if (NGX_FAILED(optimal(p)))
+      return false;
+   lib->param.get_ui(p, NGX_PARAM_OUT_WIDTH, &rw);
+   lib->param.get_ui(p, NGX_PARAM_OUT_HEIGHT, &rh);
+   if (!rw || !rh)
+      return false;
+   mxw = mnw = rw;
+   mxh = mnh = rh;
+   lib->param.get_ui(p, NGX_PARAM_DLSS_DYNAMIC_MAX_RENDER_WIDTH, &mxw);
+   lib->param.get_ui(p, NGX_PARAM_DLSS_DYNAMIC_MAX_RENDER_HEIGHT, &mxh);
+   lib->param.get_ui(p, NGX_PARAM_DLSS_DYNAMIC_MIN_RENDER_WIDTH, &mnw);
+   lib->param.get_ui(p, NGX_PARAM_DLSS_DYNAMIC_MIN_RENDER_HEIGHT, &mnh);
+   if (mxw < rw || mxh < rh)
+   {
+      mxw = rw;
+      mxh = rh;
+   }
+   if (!mnw || !mnh || mnw > rw || mnh > rh)
+   {
+      mnw = rw;
+      mnh = rh;
+   }
+   ngx->opt_render_dims[q] = VIDEO_SCALE_PACK(rw, rh);
+   ngx->opt_min_dims[q]    = VIDEO_SCALE_PACK(mnw, mnh);
+   ngx->opt_max_dims[q]    = VIDEO_SCALE_PACK(mxw, mxh);
+   ngx->opt_ok            |= 1u << q;
+   return true;
+}
+
+static bool vulkan_ngx_mode_takes(const vulkan_ngx_t *ngx, unsigned q, unsigned dims)
+{
+   return  VIDEO_SCALE_W(dims) >= VIDEO_SCALE_W(ngx->opt_min_dims[q])
+        && VIDEO_SCALE_W(dims) <= VIDEO_SCALE_W(ngx->opt_max_dims[q])
+        && VIDEO_SCALE_H(dims) >= VIDEO_SCALE_H(ngx->opt_min_dims[q])
+        && VIDEO_SCALE_H(dims) <= VIDEO_SCALE_H(ngx->opt_max_dims[q]);
+}
+
+/* The size @quality's mode wants, and the range DLSS takes over all its
+ * modes: a core that renders in coarse steps (a factor of the console's
+ * resolution) may land outside the one mode's range, and then gets the
+ * mode whose range it is in (vulkan_ngx_mode_for) */
 bool vulkan_ngx_optimal(vulkan_ngx_t *ngx, unsigned quality,
       unsigned out_dims, unsigned *render_dims,
       unsigned *min_dims, unsigned *max_dims)
 {
-   const ngx_lib_t *lib;
-   void *callback = NULL;
-   ngx_result_t (NGX_CONV *optimal)(ngx_parameter_t *p);
+   unsigned q, mnw = 0, mnh = 0, mxw = 0, mxh = 0;
    if (!ngx || !VIDEO_SCALE_W(out_dims) || !VIDEO_SCALE_H(out_dims))
       return false;
-   lib = ngx->lib;
-   if (!ngx->opt_valid || ngx->opt_quality != NGX_MODE_QUALITY(quality)
-         || ngx->opt_out_dims != out_dims)
+   if (!vulkan_ngx_mode_sizes(ngx, NGX_MODE_QUALITY(quality), out_dims))
+      return false;
+   for (q = 0; q < VULKAN_NGX_MODES; q++)
    {
-      ngx_parameter_t *p = ngx->caps;
-      unsigned rw = 0, rh = 0, mnw, mnh, mxw, mxh;
-      ngx->opt_valid = false;
-      lib->param.get_void_pointer(p, NGX_PARAM_DLSS_OPTIMAL_SETTINGS_CALLBACK,
-            &callback);
-      if (!callback)
-         return false;
-      memcpy(&optimal, &callback, sizeof(optimal));
-      lib->param.set_ui(p, NGX_PARAM_WIDTH, VIDEO_SCALE_W(out_dims));
-      lib->param.set_ui(p, NGX_PARAM_HEIGHT, VIDEO_SCALE_H(out_dims));
-      lib->param.set_i(p, NGX_PARAM_PERF_QUALITY, (int)NGX_MODE_QUALITY(quality));
-      lib->param.set_i(p, NGX_PARAM_RTX_VALUE, 0);
-      if (NGX_FAILED(optimal(p)))
-         return false;
-      lib->param.get_ui(p, NGX_PARAM_OUT_WIDTH, &rw);
-      lib->param.get_ui(p, NGX_PARAM_OUT_HEIGHT, &rh);
-      if (!rw || !rh)
-         return false;
-      mxw = mnw = rw;
-      mxh = mnh = rh;
-      lib->param.get_ui(p, NGX_PARAM_DLSS_DYNAMIC_MAX_RENDER_WIDTH, &mxw);
-      lib->param.get_ui(p, NGX_PARAM_DLSS_DYNAMIC_MAX_RENDER_HEIGHT, &mxh);
-      lib->param.get_ui(p, NGX_PARAM_DLSS_DYNAMIC_MIN_RENDER_WIDTH, &mnw);
-      lib->param.get_ui(p, NGX_PARAM_DLSS_DYNAMIC_MIN_RENDER_HEIGHT, &mnh);
-      ngx->opt_render_dims = VIDEO_SCALE_PACK(rw, rh);
-      ngx->opt_min_dims    = VIDEO_SCALE_PACK(mnw, mnh);
-      ngx->opt_max_dims    = VIDEO_SCALE_PACK(mxw, mxh);
-      ngx->opt_quality     = NGX_MODE_QUALITY(quality);
-      ngx->opt_out_dims    = out_dims;
-      ngx->opt_valid       = true;
+      unsigned mn, mx;
+      if (!vulkan_ngx_mode_sizes(ngx, q, out_dims))
+         continue;
+      mn = ngx->opt_min_dims[q];
+      mx = ngx->opt_max_dims[q];
+      if (!mnw || VIDEO_SCALE_W(mn) < mnw)
+         mnw = VIDEO_SCALE_W(mn);
+      if (!mnh || VIDEO_SCALE_H(mn) < mnh)
+         mnh = VIDEO_SCALE_H(mn);
+      if (VIDEO_SCALE_W(mx) > mxw)
+         mxw = VIDEO_SCALE_W(mx);
+      if (VIDEO_SCALE_H(mx) > mxh)
+         mxh = VIDEO_SCALE_H(mx);
    }
-   *render_dims = ngx->opt_render_dims;
-   *min_dims    = ngx->opt_min_dims;
-   *max_dims    = ngx->opt_max_dims;
+   *render_dims = ngx->opt_render_dims[NGX_MODE_QUALITY(quality)];
+   *min_dims    = VIDEO_SCALE_PACK(mnw, mnh);
+   *max_dims    = VIDEO_SCALE_PACK(mxw, mxh);
    return true;
+}
+
+/* The mode word for a frame of @dims: @quality's when its mode takes
+ * it, else the mode taking it whose wanted size is nearest; ~0u when
+ * none does. *@max_dims is that mode's largest size. */
+static unsigned vulkan_ngx_mode_for(vulkan_ngx_t *ngx, unsigned quality,
+      unsigned out_dims, unsigned dims, unsigned *max_dims)
+{
+   unsigned q, best = ~0u, best_distance = 0;
+   unsigned want = NGX_MODE_QUALITY(quality);
+   if (     vulkan_ngx_mode_sizes(ngx, want, out_dims)
+         && vulkan_ngx_mode_takes(ngx, want, dims))
+      best = want;
+   else
+      for (q = 0; q < VULKAN_NGX_MODES; q++)
+      {
+         unsigned w, distance;
+         if (     !vulkan_ngx_mode_sizes(ngx, q, out_dims)
+               || !vulkan_ngx_mode_takes(ngx, q, dims))
+            continue;
+         w        = VIDEO_SCALE_W(ngx->opt_render_dims[q]);
+         distance = w > VIDEO_SCALE_W(dims) ? w - VIDEO_SCALE_W(dims)
+                                            : VIDEO_SCALE_W(dims) - w;
+         if (best == ~0u || distance < best_distance)
+         {
+            best          = q;
+            best_distance = distance;
+         }
+      }
+   if (best == ~0u)
+      return ~0u;
+   *max_dims = ngx->opt_max_dims[best];
+   return NGX_MODE_PACK_SHARP(best, NGX_MODE_PRESET(quality),
+         NGX_MODE_SHARPNESS(quality));
 }
 
 /* A feature and its output image go to the retired ring, destroyed
@@ -990,17 +1143,27 @@ bool vulkan_ngx_upscale(vulkan_ngx_t *ngx, VkCommandBuffer cmd,
          || !inputs->depth.image
          || VIDEO_SCALE_W(out_dims) < 32 || VIDEO_SCALE_H(out_dims) < 32)
       return false;
-   if (ngx->failed_out_dims == out_dims && ngx->failed_quality == quality)
-      return false;
    lib = ngx->lib;
    p   = ngx->params;
    if (!vulkan_ngx_optimal(ngx, quality, out_dims, &render_dims, &min_dims,
             &max_dims))
       return false;
-   if (     VIDEO_SCALE_W(color->dims) < VIDEO_SCALE_W(min_dims)
-         || VIDEO_SCALE_W(color->dims) > VIDEO_SCALE_W(max_dims)
-         || VIDEO_SCALE_H(color->dims) < VIDEO_SCALE_H(min_dims)
-         || VIDEO_SCALE_H(color->dims) > VIDEO_SCALE_H(max_dims))
+   if ((quality = vulkan_ngx_mode_for(ngx, quality, out_dims, color->dims,
+               &max_dims)) == ~0u)
+   {
+      unsigned unfit = color->dims ^ (out_dims * 31u);
+      if (ngx->unfit_dims != unfit)
+      {
+         ngx->unfit_dims = unfit;
+         RARCH_WARN("[Vulkan] Temporal Upscaler: a %ux%u frame is outside DLSS's %ux%u to %ux%u for %ux%u; shown without upscaling.\n",
+               VIDEO_SCALE_W(color->dims), VIDEO_SCALE_H(color->dims),
+               VIDEO_SCALE_W(min_dims), VIDEO_SCALE_H(min_dims),
+               VIDEO_SCALE_W(max_dims), VIDEO_SCALE_H(max_dims),
+               VIDEO_SCALE_W(out_dims), VIDEO_SCALE_H(out_dims));
+      }
+      return false;
+   }
+   if (ngx->failed_out_dims == out_dims && ngx->failed_quality == quality)
       return false;
 
    flags = 0;

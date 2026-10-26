@@ -64,9 +64,10 @@ vulkan_ngx_t *vulkan_ngx_init(VkInstance instance, VkPhysicalDevice gpu,
       const VkPhysicalDeviceMemoryProperties *memory_properties,
       const char *dlss_dir);
 
-/* The mode's render sizes for an output of @out_dims: what it wants,
- * and the range it accepts, each VIDEO_SCALE_PACK. @quality is an enum
- * ngx_perf_quality. */
+/* The mode's render size for an output of @out_dims, and the range
+ * DLSS takes over all its modes (a frame outside the mode's own range
+ * runs in the mode whose range it is in), each VIDEO_SCALE_PACK.
+ * @quality is an enum ngx_perf_quality. */
 bool vulkan_ngx_optimal(vulkan_ngx_t *ngx, unsigned quality,
       unsigned out_dims, unsigned *render_dims,
       unsigned *min_dims, unsigned *max_dims);
@@ -74,8 +75,8 @@ bool vulkan_ngx_optimal(vulkan_ngx_t *ngx, unsigned quality,
 /* Records into @cmd the upscale of @color with @inputs to @out_dims,
  * then DLSS Neural Rendering over it where @nr (video_upscaler_nr_mode)
  * turns it on and it runs, and names the output in *@out. False,
- * nothing recorded, when the frame cannot be taken (a size outside the
- * mode's range, a feature that would not create): the caller shows the
+ * nothing recorded, when the frame cannot be taken (a size no mode
+ * takes, a feature that would not create): the caller shows the
  * color image as it is. Call once per frame, before anything that reads
  * *@out. */
 bool vulkan_ngx_upscale(vulkan_ngx_t *ngx, VkCommandBuffer cmd,

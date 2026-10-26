@@ -777,6 +777,61 @@ static void test_xess(settings_t *settings, texture_t *color, texture_t *mv,
    video_upscaler_detach();
 }
 
+/* A frame below its mode's range but in another's runs in that mode,
+ * the nearest taking it, and back; one no mode takes is refused */
+static void test_mode_for(texture_t *color, texture_t *mv, texture_t *depth)
+{
+   fake_ngx_record_t *rec = record();
+   d3d12_ngx_t *ngx;
+   d3d12_ngx_image_t in, out;
+   struct retro_hw_upscaler_inputs inputs;
+   unsigned creates, evals;
+
+   ngx = d3d12_ngx_init(device, "Zdir");
+   CHECK(ngx != NULL);
+   if (!ngx)
+      return;
+   memset(&inputs, 0, sizeof(inputs));
+   set_input(&inputs.motion_vectors, mv);
+   set_input(&inputs.depth, depth);
+   in.texture = color->resource;
+   in.format  = color->format;
+   in.state   = color->state;
+   creates    = rec->creates;
+   evals      = rec->evals;
+
+   in.dims    = VIDEO_SCALE_PACK(400, 225);
+   begin_frame();
+   CHECK(d3d12_ngx_upscale(ngx, cmd, &in, &inputs, NGX_PERF_QUALITY_MAX_QUALITY, 0,
+            VIDEO_SCALE_PACK(1920, 1080), &out));
+   end_frame();
+   d3d12_ngx_frame_done(ngx);
+   CHECK(rec->creates == creates + 1 && rec->evals == evals + 1);
+   CHECK(rec->create[creates % FAKE_NGX_MAX].quality == NGX_PERF_QUALITY_ULTRA_PERFORMANCE
+         && rec->create[creates % FAKE_NGX_MAX].width == 1920);
+   CHECK(rec->eval[evals % FAKE_NGX_MAX].subrect_w == 400
+         && rec->eval[evals % FAKE_NGX_MAX].subrect_h == 225);
+
+   in.dims    = VIDEO_SCALE_PACK(1280, 720);
+   begin_frame();
+   CHECK(d3d12_ngx_upscale(ngx, cmd, &in, &inputs, NGX_PERF_QUALITY_MAX_QUALITY, 0,
+            VIDEO_SCALE_PACK(1920, 1080), &out));
+   end_frame();
+   d3d12_ngx_frame_done(ngx);
+   CHECK(rec->creates == creates + 2
+         && rec->create[(creates + 1) % FAKE_NGX_MAX].quality == NGX_PERF_QUALITY_MAX_QUALITY);
+
+   in.dims    = VIDEO_SCALE_PACK(200, 112);
+   begin_frame();
+   CHECK(!d3d12_ngx_upscale(ngx, cmd, &in, &inputs, NGX_PERF_QUALITY_MAX_QUALITY, 0,
+            VIDEO_SCALE_PACK(1920, 1080), &out));
+   end_frame();
+   d3d12_ngx_frame_done(ngx);
+   CHECK(rec->creates == creates + 2 && rec->evals == evals + 2);
+
+   d3d12_ngx_free(ngx);
+}
+
 /* DLSS Neural Rendering over Super Resolution's output: offered only
  * with its library in the DLSS directory, the feature made with the
  * model's tuning and evaluated on Super Resolution's output with the
@@ -898,9 +953,21 @@ static void test_nr(settings_t *settings, texture_t *color, texture_t *mv,
    CHECK(rec->releases >= releases + 2);
    d3d12_ngx_free(ngx);
 
+   /* Off, the core is not asked about the model */
+   video_upscaler_note_nr(true);
+   rec->nr_missing = 1;
+   settings->bools.video_dlss_nr_enable = false;
+   ngx = d3d12_ngx_init(device, "Zdir");
+   CHECK(ngx != NULL);
+   if (ngx)
+   {
+      CHECK(video_upscaler_nr_available());
+      d3d12_ngx_free(ngx);
+   }
+
    /* A core without the model, as before its driver: not offered, said
     * so, and Super Resolution goes on */
-   rec->nr_missing = 1;
+   settings->bools.video_dlss_nr_enable = true;
    ngx = d3d12_ngx_init(device, "Zdir");
    CHECK(ngx != NULL);
    CHECK(!video_upscaler_nr_available());
@@ -918,6 +985,7 @@ static void test_nr(settings_t *settings, texture_t *color, texture_t *mv,
             && rec->create[creates % FAKE_NGX_MAX].feature == 1);
       d3d12_ngx_free(ngx);
    }
+   settings->bools.video_dlss_nr_enable = false;
    rec->nr_missing = 0;
    video_upscaler_note_nr(true);
    clear_dlssnr_runtime("Zdir");
@@ -984,15 +1052,18 @@ int main(void)
    CHECK(rec->init_calls == 2 && rec->init_device == (void*)device);
    CHECK(rec->init_path0 == 'Z');
 
-   /* The mode's sizes, through the capability callback, cached */
+   /* The mode's size and the range over all modes (Ultra Performance's
+    * half of 640x360 the floor), through the capability callback,
+    * asked once a mode */
    CHECK(d3d12_ngx_optimal(ngx, NGX_PERF_QUALITY_MAX_QUALITY,
             VIDEO_SCALE_PACK(1920, 1080), &render_dims, &min_dims, &max_dims));
    CHECK(render_dims == VIDEO_SCALE_PACK(1280, 720)
          && max_dims == VIDEO_SCALE_PACK(1920, 1080)
-         && min_dims == VIDEO_SCALE_PACK(640, 360));
+         && min_dims == VIDEO_SCALE_PACK(320, 180));
+   CHECK(rec->optimal_calls == 6);
    CHECK(d3d12_ngx_optimal(ngx, NGX_PERF_QUALITY_MAX_QUALITY,
             VIDEO_SCALE_PACK(1920, 1080), &render_dims, &min_dims, &max_dims));
-   CHECK(rec->optimal_calls == 1);
+   CHECK(rec->optimal_calls == 6);
    CHECK(!d3d12_ngx_optimal(ngx, NGX_PERF_QUALITY_ULTRA_QUALITY,
             VIDEO_SCALE_PACK(1920, 1080), &render_dims, &min_dims, &max_dims));
    CHECK(!d3d12_ngx_optimal(ngx, NGX_PERF_QUALITY_MAX_QUALITY,
@@ -1011,7 +1082,7 @@ int main(void)
    CHECK(iface->get_request(iface->handle, &req));
    CHECK(req.output_width == 1920 && req.output_height == 1080);
    CHECK(req.render_width == 1280 && req.render_height == 720);
-   CHECK(req.min_render_width == 640 && req.max_render_width == 1920);
+   CHECK(req.min_render_width == 320 && req.max_render_width == 1920);
    CHECK(fabs(req.mip_bias - (log(1280.0 / 1920.0) / log(2.0) - 1.0)) < 1e-5);
    settings->uints.video_temporal_upscaler_quality = VIDEO_TEMPORAL_UPSCALER_QUALITY_PERFORMANCE;
    CHECK(iface->get_request(iface->handle, &req) && req.render_width == 960);
@@ -1227,6 +1298,7 @@ int main(void)
    video_upscaler_detach();
    CHECK(video_upscaler_get_interface() == NULL);
 
+   test_mode_for(&color, &mv, &depth);
    test_nr(settings, &color, &mv, &depth);
 
    /* DLSS behind the dispatch: the frontend's mode word translated to

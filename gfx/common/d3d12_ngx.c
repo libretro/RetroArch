@@ -33,6 +33,8 @@
 #define D3D12_NGX_ENGINE_VERSION "1.0"
 #define D3D12_NGX_RETIRE_FRAMES  20
 #define D3D12_NGX_RETIRED_MAX    8
+/* NGX_PERF_QUALITY_MAX_PERF .. DLAA */
+#define D3D12_NGX_MODES          6
 /* Frames a changed Neural Rendering setting holds before the feature is
  * made again with it: the model reads its tuning only at creation, and
  * a feature made every frame of a slider's travel exhausts the driver */
@@ -66,11 +68,17 @@ struct d3d12_ngx
    unsigned feature_flags;
    unsigned feature_quality;
    /* The last optimal query */
-   unsigned opt_quality;
+   /* DLSS's sizes for opt_out_dims, per mode (NGX_PERF_QUALITY_*):
+    * optimal, and the range of each; opt_valid has a bit per mode
+    * asked, opt_ok one per mode that answered */
    unsigned opt_out_dims;
-   unsigned opt_render_dims;
-   unsigned opt_min_dims;
-   unsigned opt_max_dims;
+   unsigned opt_valid;
+   unsigned opt_ok;
+   unsigned opt_render_dims[D3D12_NGX_MODES];
+   unsigned opt_min_dims[D3D12_NGX_MODES];
+   unsigned opt_max_dims[D3D12_NGX_MODES];
+   /* A frame no mode takes, said once */
+   unsigned unfit_dims;
    /* What failed last: not tried again until the output or mode changes */
    unsigned failed_out_dims;
    unsigned failed_quality;
@@ -90,7 +98,6 @@ struct d3d12_ngx
    unsigned nr_failed_dims;
    bool nr_reset;
    bool nr_unsupported;
-   bool opt_valid;
    bool reset_pending;
 };
 
@@ -190,7 +197,8 @@ d3d12_ngx_t *d3d12_ngx_init(ID3D12Device *device, const char *dlss_dir)
       video_upscaler_note_optiscaler();
       RARCH_LOG("[D3D12] Temporal Upscaler: NGX answered by OptiScaler.\n");
    }
-   else if (ngx_dlssnr_feature_in(dlss_dir ? dlss_dir : ""))
+   else if (     (video_upscaler_nr_mode() & VIDEO_UPSCALER_NR_ON)
+            && ngx_dlssnr_feature_in(dlss_dir ? dlss_dir : ""))
    {
       /* What the core says of Neural Rendering: a core without it has
        * no such capability */
@@ -246,54 +254,139 @@ static void d3d12_ngx_set_preset(const ngx_lib_t *lib, ngx_parameter_t *p, unsig
    lib->param.set_ui(p, NGX_PARAM_DLSS_PRESET_ULTRA_QUALITY, preset);
 }
 
+/* DLSS's sizes for mode @q (NGX_PERF_QUALITY_*) and @out_dims,
+ * asked of NGX once per output size */
+static bool d3d12_ngx_mode_sizes(d3d12_ngx_t *ngx, unsigned q, unsigned out_dims)
+{
+   const ngx_lib_t *lib = ngx->lib;
+   ngx_parameter_t *p   = ngx->caps;
+   void *callback       = NULL;
+   unsigned rw = 0, rh = 0, mnw, mnh, mxw, mxh;
+   ngx_result_t (NGX_CONV *optimal)(ngx_parameter_t *p);
+   if (q >= D3D12_NGX_MODES)
+      return false;
+   if (ngx->opt_out_dims != out_dims)
+   {
+      ngx->opt_out_dims = out_dims;
+      ngx->opt_valid    = 0;
+      ngx->opt_ok       = 0;
+   }
+   if (ngx->opt_valid & (1u << q))
+      return (ngx->opt_ok & (1u << q)) != 0;
+   ngx->opt_valid |= 1u << q;
+   lib->param.get_void_pointer(p, NGX_PARAM_DLSS_OPTIMAL_SETTINGS_CALLBACK,
+         &callback);
+   if (!callback)
+      return false;
+   memcpy(&optimal, &callback, sizeof(optimal));
+   lib->param.set_ui(p, NGX_PARAM_WIDTH, VIDEO_SCALE_W(out_dims));
+   lib->param.set_ui(p, NGX_PARAM_HEIGHT, VIDEO_SCALE_H(out_dims));
+   lib->param.set_i(p, NGX_PARAM_PERF_QUALITY, (int)q);
+   lib->param.set_i(p, NGX_PARAM_RTX_VALUE, 0);
+   if (NGX_FAILED(optimal(p)))
+      return false;
+   lib->param.get_ui(p, NGX_PARAM_OUT_WIDTH, &rw);
+   lib->param.get_ui(p, NGX_PARAM_OUT_HEIGHT, &rh);
+   if (!rw || !rh)
+      return false;
+   mxw = mnw = rw;
+   mxh = mnh = rh;
+   lib->param.get_ui(p, NGX_PARAM_DLSS_DYNAMIC_MAX_RENDER_WIDTH, &mxw);
+   lib->param.get_ui(p, NGX_PARAM_DLSS_DYNAMIC_MAX_RENDER_HEIGHT, &mxh);
+   lib->param.get_ui(p, NGX_PARAM_DLSS_DYNAMIC_MIN_RENDER_WIDTH, &mnw);
+   lib->param.get_ui(p, NGX_PARAM_DLSS_DYNAMIC_MIN_RENDER_HEIGHT, &mnh);
+   if (mxw < rw || mxh < rh)
+   {
+      mxw = rw;
+      mxh = rh;
+   }
+   if (!mnw || !mnh || mnw > rw || mnh > rh)
+   {
+      mnw = rw;
+      mnh = rh;
+   }
+   ngx->opt_render_dims[q] = VIDEO_SCALE_PACK(rw, rh);
+   ngx->opt_min_dims[q]    = VIDEO_SCALE_PACK(mnw, mnh);
+   ngx->opt_max_dims[q]    = VIDEO_SCALE_PACK(mxw, mxh);
+   ngx->opt_ok            |= 1u << q;
+   return true;
+}
+
+static bool d3d12_ngx_mode_takes(const d3d12_ngx_t *ngx, unsigned q, unsigned dims)
+{
+   return  VIDEO_SCALE_W(dims) >= VIDEO_SCALE_W(ngx->opt_min_dims[q])
+        && VIDEO_SCALE_W(dims) <= VIDEO_SCALE_W(ngx->opt_max_dims[q])
+        && VIDEO_SCALE_H(dims) >= VIDEO_SCALE_H(ngx->opt_min_dims[q])
+        && VIDEO_SCALE_H(dims) <= VIDEO_SCALE_H(ngx->opt_max_dims[q]);
+}
+
+/* The size @quality's mode wants, and the range DLSS takes over all its
+ * modes: a core that renders in coarse steps (a factor of the console's
+ * resolution) may land outside the one mode's range, and then gets the
+ * mode whose range it is in (d3d12_ngx_mode_for) */
 bool d3d12_ngx_optimal(d3d12_ngx_t *ngx, unsigned quality,
       unsigned out_dims, unsigned *render_dims,
       unsigned *min_dims, unsigned *max_dims)
 {
-   const ngx_lib_t *lib;
-   void *callback = NULL;
-   ngx_result_t (NGX_CONV *optimal)(ngx_parameter_t *p);
+   unsigned q, mnw = 0, mnh = 0, mxw = 0, mxh = 0;
    if (!ngx || !VIDEO_SCALE_W(out_dims) || !VIDEO_SCALE_H(out_dims))
       return false;
-   lib = ngx->lib;
-   if (!ngx->opt_valid || ngx->opt_quality != NGX_MODE_QUALITY(quality)
-         || ngx->opt_out_dims != out_dims)
+   if (!d3d12_ngx_mode_sizes(ngx, NGX_MODE_QUALITY(quality), out_dims))
+      return false;
+   for (q = 0; q < D3D12_NGX_MODES; q++)
    {
-      ngx_parameter_t *p = ngx->caps;
-      unsigned rw = 0, rh = 0, mnw, mnh, mxw, mxh;
-      ngx->opt_valid = false;
-      lib->param.get_void_pointer(p, NGX_PARAM_DLSS_OPTIMAL_SETTINGS_CALLBACK,
-            &callback);
-      if (!callback)
-         return false;
-      memcpy(&optimal, &callback, sizeof(optimal));
-      lib->param.set_ui(p, NGX_PARAM_WIDTH, VIDEO_SCALE_W(out_dims));
-      lib->param.set_ui(p, NGX_PARAM_HEIGHT, VIDEO_SCALE_H(out_dims));
-      lib->param.set_i(p, NGX_PARAM_PERF_QUALITY, (int)NGX_MODE_QUALITY(quality));
-      lib->param.set_i(p, NGX_PARAM_RTX_VALUE, 0);
-      if (NGX_FAILED(optimal(p)))
-         return false;
-      lib->param.get_ui(p, NGX_PARAM_OUT_WIDTH, &rw);
-      lib->param.get_ui(p, NGX_PARAM_OUT_HEIGHT, &rh);
-      if (!rw || !rh)
-         return false;
-      mxw = mnw = rw;
-      mxh = mnh = rh;
-      lib->param.get_ui(p, NGX_PARAM_DLSS_DYNAMIC_MAX_RENDER_WIDTH, &mxw);
-      lib->param.get_ui(p, NGX_PARAM_DLSS_DYNAMIC_MAX_RENDER_HEIGHT, &mxh);
-      lib->param.get_ui(p, NGX_PARAM_DLSS_DYNAMIC_MIN_RENDER_WIDTH, &mnw);
-      lib->param.get_ui(p, NGX_PARAM_DLSS_DYNAMIC_MIN_RENDER_HEIGHT, &mnh);
-      ngx->opt_render_dims = VIDEO_SCALE_PACK(rw, rh);
-      ngx->opt_min_dims    = VIDEO_SCALE_PACK(mnw, mnh);
-      ngx->opt_max_dims    = VIDEO_SCALE_PACK(mxw, mxh);
-      ngx->opt_quality     = NGX_MODE_QUALITY(quality);
-      ngx->opt_out_dims    = out_dims;
-      ngx->opt_valid       = true;
+      unsigned mn, mx;
+      if (!d3d12_ngx_mode_sizes(ngx, q, out_dims))
+         continue;
+      mn = ngx->opt_min_dims[q];
+      mx = ngx->opt_max_dims[q];
+      if (!mnw || VIDEO_SCALE_W(mn) < mnw)
+         mnw = VIDEO_SCALE_W(mn);
+      if (!mnh || VIDEO_SCALE_H(mn) < mnh)
+         mnh = VIDEO_SCALE_H(mn);
+      if (VIDEO_SCALE_W(mx) > mxw)
+         mxw = VIDEO_SCALE_W(mx);
+      if (VIDEO_SCALE_H(mx) > mxh)
+         mxh = VIDEO_SCALE_H(mx);
    }
-   *render_dims = ngx->opt_render_dims;
-   *min_dims    = ngx->opt_min_dims;
-   *max_dims    = ngx->opt_max_dims;
+   *render_dims = ngx->opt_render_dims[NGX_MODE_QUALITY(quality)];
+   *min_dims    = VIDEO_SCALE_PACK(mnw, mnh);
+   *max_dims    = VIDEO_SCALE_PACK(mxw, mxh);
    return true;
+}
+
+/* The mode word for a frame of @dims: @quality's when its mode takes
+ * it, else the mode taking it whose wanted size is nearest; ~0u when
+ * none does. *@max_dims is that mode's largest size. */
+static unsigned d3d12_ngx_mode_for(d3d12_ngx_t *ngx, unsigned quality,
+      unsigned out_dims, unsigned dims, unsigned *max_dims)
+{
+   unsigned q, best = ~0u, best_distance = 0;
+   unsigned want = NGX_MODE_QUALITY(quality);
+   if (     d3d12_ngx_mode_sizes(ngx, want, out_dims)
+         && d3d12_ngx_mode_takes(ngx, want, dims))
+      best = want;
+   else
+      for (q = 0; q < D3D12_NGX_MODES; q++)
+      {
+         unsigned w, distance;
+         if (     !d3d12_ngx_mode_sizes(ngx, q, out_dims)
+               || !d3d12_ngx_mode_takes(ngx, q, dims))
+            continue;
+         w        = VIDEO_SCALE_W(ngx->opt_render_dims[q]);
+         distance = w > VIDEO_SCALE_W(dims) ? w - VIDEO_SCALE_W(dims)
+                                            : VIDEO_SCALE_W(dims) - w;
+         if (best == ~0u || distance < best_distance)
+         {
+            best          = q;
+            best_distance = distance;
+         }
+      }
+   if (best == ~0u)
+      return ~0u;
+   *max_dims = ngx->opt_max_dims[best];
+   return NGX_MODE_PACK_SHARP(best, NGX_MODE_PRESET(quality),
+         NGX_MODE_SHARPNESS(quality));
 }
 
 static void d3d12_ngx_retire_one(d3d12_ngx_t *ngx, ngx_handle_t **feature,
@@ -650,17 +743,27 @@ bool d3d12_ngx_upscale(d3d12_ngx_t *ngx, ID3D12GraphicsCommandList *cmd,
          || !inputs->depth.image
          || VIDEO_SCALE_W(out_dims) < 32 || VIDEO_SCALE_H(out_dims) < 32)
       return false;
-   if (ngx->failed_out_dims == out_dims && ngx->failed_quality == quality)
-      return false;
    lib = ngx->lib;
    p   = ngx->params;
    if (!d3d12_ngx_optimal(ngx, quality, out_dims, &render_dims, &min_dims,
             &max_dims))
       return false;
-   if (     VIDEO_SCALE_W(color->dims) < VIDEO_SCALE_W(min_dims)
-         || VIDEO_SCALE_W(color->dims) > VIDEO_SCALE_W(max_dims)
-         || VIDEO_SCALE_H(color->dims) < VIDEO_SCALE_H(min_dims)
-         || VIDEO_SCALE_H(color->dims) > VIDEO_SCALE_H(max_dims))
+   if ((quality = d3d12_ngx_mode_for(ngx, quality, out_dims, color->dims,
+               &max_dims)) == ~0u)
+   {
+      unsigned unfit = color->dims ^ (out_dims * 31u);
+      if (ngx->unfit_dims != unfit)
+      {
+         ngx->unfit_dims = unfit;
+         RARCH_WARN("[D3D12] Temporal Upscaler: a %ux%u frame is outside DLSS's %ux%u to %ux%u for %ux%u; shown without upscaling.\n",
+               VIDEO_SCALE_W(color->dims), VIDEO_SCALE_H(color->dims),
+               VIDEO_SCALE_W(min_dims), VIDEO_SCALE_H(min_dims),
+               VIDEO_SCALE_W(max_dims), VIDEO_SCALE_H(max_dims),
+               VIDEO_SCALE_W(out_dims), VIDEO_SCALE_H(out_dims));
+      }
+      return false;
+   }
+   if (ngx->failed_out_dims == out_dims && ngx->failed_quality == quality)
       return false;
 
    flags = 0;

@@ -128,7 +128,8 @@ static void *get_p(param_t *p, const char *n)
 }
 
 /* Quality: 0 MaxPerf 1/2, 1 Balanced 0.58, 2 MaxQuality 2/3,
- * 3 UltraPerformance 1/3, 5 DLAA 1; dynamic range 1/2 .. 1 of optimal
+ * 3 UltraPerformance 1/3, 5 DLAA 1; dynamic range from 1/2 of optimal
+ * to the output
  * (a quality the library has not got, 4 UltraQuality, answers 0) */
 static int CONV optimal_cb(param_t *p)
 {

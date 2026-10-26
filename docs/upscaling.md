@@ -106,7 +106,10 @@ All of these are in **Settings > Video > Scaling**:
   - Native: full size, anti-aliasing only.
   - Auto: Quality, or Balanced above 1440 lines.
 
-  A lower setting is faster but softer.
+  A lower setting is faster but softer. A core that can only render
+  in steps (a multiple of the console's resolution) gets the nearest
+  step DLSS accepts, and DLSS runs that frame in whichever mode takes
+  its size.
 - **Temporal Upscaler Preset** (DLSS only): which DLSS model runs.
   - Default lets the DLSS runtime choose.
   - **K** is the DLSS 4 transformer model. It gives the best picture
@@ -149,9 +152,10 @@ Neural Rendering** entry:
   Structure uses Local Structure there too.
 - **Auto Skin Mask**: lets the model find skin and treat it apart.
 
-Turning it on or off applies on the next frame. A change to the other
-settings applies once it has held for half a second, because the model
-reads them only when it is set up.
+Turning it on or off restarts the video driver: its library is only
+loaded while it is on, which keeps it out of every core's start-up
+otherwise. A change to the other settings applies once it has held for
+half a second, because the model reads them only when it is set up.
 
 System Information shows **Neural Rendering** with its version, or
 **Neural Rendering: needs a newer driver** when the driver does not
