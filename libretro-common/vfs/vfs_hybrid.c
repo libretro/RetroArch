@@ -460,6 +460,12 @@ static const uint8_t *hyb_mapped_ptr( void *fh, int64_t *len ) {
 	return retro_vfs_file_get_mapped_ptr_impl( (libretro_vfs_implementation_file *)f->h, len );
 }
 
+static void hyb_prefetch( void *fh, uint64_t offset, uint64_t len ) {
+	hyb_file_t *f = (hyb_file_t *)fh;
+	if ( f && f->be == HYB_LOCAL )
+		retro_vfs_file_prefetch_impl( (libretro_vfs_implementation_file *)f->h, offset, len );
+}
+
 static struct retro_vfs_interface hyb_iface = {
 	/* v1 */
 	hyb_get_path, hyb_open, hyb_close, hyb_size, hyb_tell, hyb_seek,
@@ -510,6 +516,7 @@ void vfs_hybrid_init( retro_environment_t env_cb, retro_log_printf_t log ) {
 		dirent_vfs_init( &ours );
 	}
 	filestream_set_mapped_ptr_cb( hyb_mapped_ptr );
+	filestream_set_prefetch_cb( hyb_prefetch );
 
 	if ( log )
 		log( RETRO_LOG_INFO,

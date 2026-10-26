@@ -141,11 +141,19 @@ struct libretro_vfs_implementation_file
    int64_t size;
    uint64_t mappos;
    uint64_t mapsize;
+#if defined(_WIN32) && !defined(_XBOX) && !defined(HAVE_MMAP)
+   /* mapped read-ahead: where the next hint is due, the last read's end */
+   uint64_t ra_next;
+   uint64_t ra_last;
+#endif
    FILE *fp;
 #ifdef _WIN32
    HANDLE fh;
    /* CreateFileMapping handle backing `mapped`; NULL when unmapped */
    HANDLE map_handle;
+#if !defined(_XBOX) && !defined(HAVE_MMAP)
+   void *warm;   /* pre-Windows 8 read-ahead thread, NULL until used */
+#endif
 #endif
    char *buf;
    char* orig_path;

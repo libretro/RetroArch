@@ -35,6 +35,8 @@ CFLAGS += -Wall -pedantic -std=gnu99 -g1 -DHAVE_MMAP \
 # chosen moment. Kept out of the sources themselves - nothing in
 # vfs_hybrid.c knows this is happening.
 LDFLAGS += -Wl,--wrap=calloc
+# and counts the read-ahead hints that reach the local implementation
+LDFLAGS += -Wl,--wrap=retro_vfs_file_prefetch_impl
 
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)

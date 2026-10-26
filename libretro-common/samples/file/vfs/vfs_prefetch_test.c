@@ -127,6 +127,18 @@ static int64_t fe_read(struct retro_vfs_file_handle *h, void *s,
    return 0;
 }
 
+static int      prefetch_calls;
+static uint64_t prefetch_off, prefetch_len;
+static void    *prefetch_handle;
+
+static void prefetch_cb(void *h, uint64_t off, uint64_t len)
+{
+   prefetch_calls++;
+   prefetch_handle = h;
+   prefetch_off    = off;
+   prefetch_len    = len;
+}
+
 int main(void)
 {
    char   path[256];
@@ -171,7 +183,7 @@ int main(void)
       iface.open  = fe_open;
       iface.close = fe_close;
       iface.read  = fe_read;
-      info.required_interface_version = 1;
+      info.required_interface_version = FILESTREAM_REQUIRED_VFS_VERSION;
       info.iface                      = &iface;
       filestream_vfs_init(&info);
 
@@ -184,6 +196,13 @@ int main(void)
          filestream_prefetch(f, 0, 65536);
          filestream_prefetch(f, FIXTURE_LEN + 1, 1);
          CHECK(frontend_calls == before, "frontend VFS sees no prefetch");
+         filestream_set_prefetch_cb(prefetch_cb);
+         filestream_prefetch(f, 4096, 8192);
+         CHECK(prefetch_calls == 1 && prefetch_off == 4096
+               && prefetch_len == 8192 && prefetch_handle == (void*)&frontend_calls,
+               "an installed prefetch callback gets the hint");
+         CHECK(frontend_calls == before, "and the frontend still none");
+         filestream_set_prefetch_cb(NULL);
          filestream_close(f);
       }
    }

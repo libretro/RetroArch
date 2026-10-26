@@ -209,6 +209,19 @@
 #include <compat/fopen_utf8.h>
 #include <file/file_path.h>
 #include <string/stdstring.h>
+#if defined(_WIN32) && !defined(_XBOX) && !defined(HAVE_MMAP) && defined(HAVE_THREADS)
+#include <retro_atomic.h>
+#include <rthreads/rthreads.h>
+#include <rthreads/retro_eventcount.h>
+#endif
+
+#if defined(_WIN32) && !defined(_XBOX) && !defined(HAVE_MMAP)
+static void vfs_win32_readahead(libretro_vfs_implementation_file *stream,
+      uint64_t pos, uint64_t len);
+#ifdef HAVE_THREADS
+static void vfs_win32_warm_free(void *data);
+#endif
+#endif
 
 /* VFS API v5 metadata operations (read-only state, modification time)
  * are implemented on the platforms whose libc exposes chmod()/utimes()
@@ -1251,6 +1264,11 @@ int retro_vfs_file_close_impl(libretro_vfs_implementation_file *stream)
 #if defined(HAVE_MMAP)
          munmap(stream->mapped, stream->mapsize);
 #else
+#ifdef HAVE_THREADS
+         if (stream->warm)
+            vfs_win32_warm_free(stream->warm);
+         stream->warm = NULL;
+#endif
          UnmapViewOfFile(stream->mapped);
          if (stream->map_handle)
          {
@@ -1757,6 +1775,9 @@ int64_t retro_vfs_file_read_impl(libretro_vfs_implementation_file *stream,
             len = remaining;
       }
 
+#if defined(_WIN32) && !defined(_XBOX) && !defined(HAVE_MMAP)
+      vfs_win32_readahead(stream, stream->mappos, len);
+#endif
       memcpy(s, &stream->mapped[stream->mappos], (size_t)len);
       stream->mappos += len;
 
@@ -2313,21 +2334,183 @@ typedef struct
 typedef BOOL (WINAPI *vfs_prefetch_t)(HANDLE, ULONG_PTR,
       vfs_win32_memory_range_t*, ULONG);
 
-static vfs_prefetch_t vfs_win32_prefetch(void)
+static vfs_prefetch_t vfs_win32_p_prefetch;
+/* 0 unresolved, 1 PrefetchVirtualMemory, 2 toucher thread, 3 nothing */
+static int            vfs_win32_prefetch_mode;
+
+/* RETRO_VFS_PREFETCH=touch|none overrides the choice, for tests */
+static int vfs_win32_prefetch_resolve(void)
 {
-   static vfs_prefetch_t p_prefetch;
-   static int            resolved;
-
-   if (!resolved)
+   if (!vfs_win32_prefetch_mode)
    {
-      HMODULE k32 = GetModuleHandleA("kernel32.dll");
+      const char *force = getenv("RETRO_VFS_PREFETCH");
+      HMODULE     k32   = GetModuleHandleA("kernel32.dll");
+      int         mode  = 2;
 
-      resolved = 1;
-      if (k32)
-         p_prefetch = (vfs_prefetch_t)GetProcAddress(k32,
+      if (force && !*force)
+         force = NULL;
+      if (k32 && !force)
+         vfs_win32_p_prefetch = (vfs_prefetch_t)GetProcAddress(k32,
                "PrefetchVirtualMemory");
+      if (vfs_win32_p_prefetch)
+         mode = 1;
+      if (force && !strcmp(force, "none"))
+         mode = 3;
+#ifndef HAVE_THREADS
+      if (mode == 2)
+         mode = 3;
+#endif
+      vfs_win32_prefetch_mode = mode;
    }
-   return p_prefetch;
+   return vfs_win32_prefetch_mode;
+}
+
+/* Distance read ahead of a sequential reader, how far past the last
+ * read's end the next read may start and still count as sequential,
+ * and the toucher's step. */
+#define VFS_RA_AHEAD (4u * 1024u * 1024u)
+#define VFS_RA_GAP   (256u * 1024u)
+#define VFS_WARM_UNIT (64u * 1024u)
+
+#ifdef HAVE_THREADS
+/* Before Windows 8: a thread touches the view ahead of the reader, one
+ * read per page. The fault brings the page into the process as a
+ * mapped read would, so the reader finds it resident, with nothing
+ * copied. The range is published as unit indices and a generation;
+ * a torn pair only warms a stale range once, and is clamped. */
+typedef struct vfs_win32_warm
+{
+   uint64_t                size;
+   const volatile uint8_t *base;
+   sthread_t              *thread;
+   size_t                  page;
+   retro_eventcount_t      ec;
+   retro_atomic_int_t      lo;
+   retro_atomic_int_t      hi;
+   retro_atomic_int_t      gen;
+   retro_atomic_int_t      stop;
+   int                     req_lo;   /* reader side only */
+   int                     req_hi;
+} vfs_win32_warm_t;
+
+static void vfs_win32_warm_thread(void *data)
+{
+   vfs_win32_warm_t *w    = (vfs_win32_warm_t*)data;
+   int               seen = 0;
+   int               cur  = 0;
+   int               hi   = 0;
+   unsigned          sink = 0;
+
+   for (;;)
+   {
+      int g;
+
+      if (retro_atomic_load_acquire_int(&w->stop))
+         break;
+      g = retro_atomic_load_acquire_int(&w->gen);
+      if (g != seen)
+      {
+         int lo = retro_atomic_load_acquire_int(&w->lo);
+         seen   = g;
+         hi     = retro_atomic_load_acquire_int(&w->hi);
+         if (cur < lo || cur >= hi)
+            cur = lo;
+      }
+      if (cur < hi)
+      {
+         uint64_t o   = (uint64_t)cur * VFS_WARM_UNIT;
+         uint64_t end = o + VFS_WARM_UNIT;
+         if (end > w->size)
+            end = w->size;
+         for (; o < end; o += w->page)
+            sink += w->base[o];
+         cur++;
+         continue;
+      }
+      {
+         int key = retro_eventcount_prepare_wait(&w->ec);
+         if (     retro_atomic_load_acquire_int(&w->stop)
+               || retro_atomic_load_acquire_int(&w->gen) != seen)
+            retro_eventcount_cancel_wait(&w->ec);
+         else
+            retro_eventcount_commit_wait(&w->ec, key);
+      }
+   }
+   (void)sink;
+}
+
+static void vfs_win32_warm_free(void *data)
+{
+   vfs_win32_warm_t *w = (vfs_win32_warm_t*)data;
+   if (w->thread)
+   {
+      retro_atomic_store_release_int(&w->stop, 1);
+      retro_eventcount_notify(&w->ec);
+      sthread_join(w->thread);
+      retro_eventcount_free(&w->ec);
+   }
+   free(w);
+}
+
+static void vfs_win32_warm(libretro_vfs_implementation_file *stream,
+      size_t lo_byte, size_t hi_byte, size_t page)
+{
+   vfs_win32_warm_t *w = (vfs_win32_warm_t*)stream->warm;
+   int               lo, hi;
+
+   if (!w)
+   {
+      if (!(w = (vfs_win32_warm_t*)calloc(1, sizeof(*w))))
+         return;
+      stream->warm = w;
+      w->base      = stream->mapped;
+      w->size      = stream->mapsize;
+      w->page      = page;
+      retro_atomic_int_init(&w->lo, 0);
+      retro_atomic_int_init(&w->hi, 0);
+      retro_atomic_int_init(&w->gen, 0);
+      retro_atomic_int_init(&w->stop, 0);
+      if (retro_eventcount_init(&w->ec))
+      {
+         if (!(w->thread = sthread_create(vfs_win32_warm_thread, w)))
+            retro_eventcount_free(&w->ec);
+      }
+   }
+   /* a failed start stays failed: the hint is dropped from then on */
+   if (!w->thread)
+      return;
+   lo = (int)(lo_byte / VFS_WARM_UNIT);
+   hi = (int)((hi_byte + VFS_WARM_UNIT - 1) / VFS_WARM_UNIT);
+   if (lo >= w->req_lo && hi <= w->req_hi)
+      return;
+   w->req_lo = lo;
+   w->req_hi = hi;
+   retro_atomic_store_release_int(&w->lo, lo);
+   retro_atomic_store_release_int(&w->hi, hi);
+   retro_atomic_fetch_add_int(&w->gen, 1);
+   retro_eventcount_notify(&w->ec);
+}
+#endif
+
+/* A mapped read that follows on from the last one hints the next
+ * VFS_RA_AHEAD bytes each time half of the hinted span is used up.
+ * The view itself starts no read-ahead on Windows. */
+static void vfs_win32_readahead(libretro_vfs_implementation_file *stream,
+      uint64_t pos, uint64_t len)
+{
+   uint64_t end = pos + len;
+   int      seq = pos >= stream->ra_last
+         && pos - stream->ra_last <= VFS_RA_GAP;
+
+   stream->ra_last = end;
+   /* a jump starts over, so the next read in order hints at once */
+   if (!seq)
+      stream->ra_next = 0;
+   /* nothing left ahead: a read to the end, a whole-file load */
+   if (!seq || end <= stream->ra_next || end >= stream->mapsize)
+      return;
+   stream->ra_next = end + VFS_RA_AHEAD / 2;
+   retro_vfs_file_prefetch_impl(stream, pos, len + VFS_RA_AHEAD);
 }
 #endif
 
@@ -2376,15 +2559,23 @@ void retro_vfs_file_prefetch_impl(
       posix_madvise(stream->mapped + lo, hi - lo, POSIX_MADV_WILLNEED);
 #endif
 #else
+      switch (vfs_win32_prefetch_resolve())
       {
-         vfs_prefetch_t            prefetch = vfs_win32_prefetch();
-         vfs_win32_memory_range_t  range;
-
-         if (!prefetch)
-            return;
-         range.VirtualAddress = stream->mapped + lo;
-         range.NumberOfBytes  = hi - lo;
-         prefetch(GetCurrentProcess(), 1, &range, 0);
+         case 1:
+            {
+               vfs_win32_memory_range_t range;
+               range.VirtualAddress = stream->mapped + lo;
+               range.NumberOfBytes  = hi - lo;
+               vfs_win32_p_prefetch(GetCurrentProcess(), 1, &range, 0);
+            }
+            break;
+#ifdef HAVE_THREADS
+         case 2:
+            vfs_win32_warm(stream, lo, hi, page);
+            break;
+#endif
+         default:
+            break;
       }
 #endif
       return;

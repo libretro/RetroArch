@@ -150,6 +150,7 @@ jobs:
             vfs_read_overflow_test
             vfs_mapped_ptr_test
             vfs_prefetch_test
+            vfs_readahead_test
             vfs_prefetch_retarget_test
             vfs_large_file_test
             vfs_seek_contract_test
@@ -1246,6 +1247,22 @@ jobs:
             t=$(sed -nE 's/^TARGET[[:space:]]*:?=[[:space:]]*//p' "$d/Makefile")
             ( cd "$d" && make clean && make CC=x86_64-w64-mingw32-gcc all && timeout 120 wine "./$t.exe" && make clean )
           done
+
+      - name: Build and run the mapped read-ahead test under Wine
+        shell: bash
+        working-directory: libretro-common/samples/file/vfs
+        env:
+          WINEDEBUG: -all
+        run: |
+          set -eu
+          set -o pipefail
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
+          make clean MMAP=0
+          make CC=x86_64-w64-mingw32-gcc MMAP=0 vfs_readahead_test
+          timeout 120 wine ./vfs_readahead_test.exe
+          RETRO_VFS_PREFETCH=touch timeout 120 wine ./vfs_readahead_test.exe
+          RETRO_VFS_PREFETCH=none timeout 120 wine ./vfs_readahead_test.exe
+          make clean MMAP=0
 
       - name: Build and run native DVD packets under Wine
         shell: bash

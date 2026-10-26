@@ -9,6 +9,7 @@ TARGET_TEST5 := filestream_rbuf_fault_test
 TARGET_TEST6 := vfs_v5_metadata_test
 TARGET_TEST7 := vfs_rename_replace_test
 TARGET_TEST8 := vfs_prefetch_test
+TARGET_TEST9 := vfs_readahead_test
 
 LIBRETRO_COMM_DIR := ../../..
 
@@ -29,7 +30,7 @@ OBJS        := vfs_read_overflow_test.o vfs_mapped_ptr_test.o \
 	vfs_large_file_test.o vfs_seek_contract_test.o \
 	vfs_bulk_read_test.o filestream_rbuf_fault_test.o \
 	vfs_v5_metadata_test.o vfs_rename_replace_test.o \
-	vfs_prefetch_test.o $(COMMON_OBJS)
+	vfs_prefetch_test.o vfs_readahead_test.o $(COMMON_OBJS)
 
 # filestream_rbuf_fault_test drives the two arms on which
 # filestream_rbuf_fill() gives up and hands the caller back to the
@@ -43,6 +44,15 @@ OBJS        := vfs_read_overflow_test.o vfs_mapped_ptr_test.o \
 FAULT_FS_OBJ := file_stream_rbuf_fault.o
 FAULT_OBJS   := $(filter-out %/file_stream.o,$(COMMON_OBJS)) \
 	$(FAULT_FS_OBJ)
+
+# vfs_readahead_test needs the read-ahead thread, so that one target
+# links a vfs_implementation.o built with HAVE_THREADS and the threads.
+RA_VFS_OBJ := vfs_implementation_threads.o
+RA_OBJS    := $(filter-out %/vfs_implementation.o,$(COMMON_OBJS)) \
+	$(RA_VFS_OBJ) rthreads_ra.o retro_eventcount_ra.o
+ifeq ($(UNAME_S),Linux)
+   RA_LIBS := -lpthread
+endif
 
 # vfs_rename_replace_test runs the replace-on-rename branch the consoles
 # take, so that one target links its own vfs_implementation.o built
@@ -118,7 +128,7 @@ ifeq ($(UNAME_S),Linux)
 endif
 
 all: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4) \
-	$(TARGET_TEST5) $(TARGET_TEST6) $(TARGET_TEST8) $(RENAME_TARGET)
+	$(TARGET_TEST5) $(TARGET_TEST6) $(TARGET_TEST8) $(TARGET_TEST9) $(RENAME_TARGET)
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -135,6 +145,18 @@ $(TARGET_TEST): vfs_mapped_ptr_test.o $(COMMON_OBJS)
 
 $(TARGET_TEST8): vfs_prefetch_test.o $(COMMON_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
+
+$(RA_VFS_OBJ): $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c
+	$(CC) -c -o $@ $< $(CFLAGS) -DHAVE_THREADS
+
+rthreads_ra.o: $(LIBRETRO_COMM_DIR)/rthreads/rthreads.c
+	$(CC) -c -o $@ $< $(CFLAGS) -DHAVE_THREADS
+
+retro_eventcount_ra.o: $(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c
+	$(CC) -c -o $@ $< $(CFLAGS) -DHAVE_THREADS
+
+$(TARGET_TEST9): vfs_readahead_test.o $(RA_OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS) $(RA_LIBS)
 
 # vfs_large_file_test builds sparse fixtures of 3 GiB and 5 GiB.  They
 # cost no space on a filesystem with sparse files and are removed
@@ -184,10 +206,11 @@ clean:
 	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) \
 		$(TARGET_TEST4) $(TARGET_TEST5) $(TARGET_TEST6) \
-		$(TARGET_TEST7) $(TARGET_TEST8) $(OBJS) $(FAULT_FS_OBJ) $(RENAME_VFS_OBJ)
+		$(TARGET_TEST7) $(TARGET_TEST8) $(TARGET_TEST9) $(OBJS) $(FAULT_FS_OBJ) $(RENAME_VFS_OBJ) \
+		$(RA_VFS_OBJ) rthreads_ra.o retro_eventcount_ra.o
 	rm -rf v5_meta_dir
 	rm -f large_3gib.bin large_5gib.bin seek_small.bin seek_4gib.bin
-	rm -f rbuf_fault.txt
+	rm -f rbuf_fault.txt vfs_readahead_fixture.bin
 	rm -f rename_replace.bin rename_replace.bin.old rename_replace.bin.tmp
 	rm -f bulk_select.bin bulk_select_w.bin bulk_roundtrip.bin \
 		bulk_short.bin bulk_shrank.bin bulk_error.bin \

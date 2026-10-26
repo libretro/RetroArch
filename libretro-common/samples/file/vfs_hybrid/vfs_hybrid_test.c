@@ -224,6 +224,20 @@ void *__wrap_calloc(size_t n, size_t size)
    return __real_calloc(n, size);
 }
 
+static int prefetch_local;
+
+void __real_retro_vfs_file_prefetch_impl(
+      libretro_vfs_implementation_file *stream, uint64_t offset,
+      uint64_t len);
+
+void __wrap_retro_vfs_file_prefetch_impl(
+      libretro_vfs_implementation_file *stream, uint64_t offset,
+      uint64_t len)
+{
+   prefetch_local++;
+   __real_retro_vfs_file_prefetch_impl(stream, offset, len);
+}
+
 int main(void)
 {
    /* ---- 1: a v1 frontend must not have its v2 members called ---- */
@@ -324,6 +338,12 @@ int main(void)
          }
          else
             printf("skip: no mapping available on this build\n");
+
+         prefetch_local = 0;
+         filestream_prefetch(f, 0, len);
+         CHECK(prefetch_local == 1,
+               "local: the read-ahead hint reaches the local handle");
+         CHECK(fe_file_opens == 0, "local: and not the frontend");
 
          filestream_close(f);
       }
