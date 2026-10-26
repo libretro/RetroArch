@@ -964,6 +964,8 @@ static const struct
    char s_980ef0e8[6];
    char s_fcf05466[18];
    char s_da16c634[19];
+   char s_acfde8f7[5];
+   char s_ca2f1e0f[11];
    char s_d042d680[6];
    char s_16cacb01[12];
 #ifdef UDEV_TOUCH_SUPPORT
@@ -1215,7 +1217,9 @@ static const struct
    char s_b201bb70[39];
    char s_b66840e9[29];
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
    char s_f0db2883[11];
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -2347,6 +2351,10 @@ static const struct
    char s_c017f975[10];
    char s_730df420[11];
    char s_bcddf275[10];
+   char s_bddbac76[10];
+   char s_a72a3c80[10];
+   char s_482ee1f1[14];
+   char s_214b7699[11];
    char s_f90edcc2[55];
    char s_ad14307a[12];
 #if defined(RARCH_MOBILE)
@@ -2754,7 +2762,6 @@ static const struct
    char s_df4225b9[60];
    char s_a5b7b768[48];
    char s_d0b943e8[69];
-   char s_4f2077b6[144];
    char s_5b920f01[98];
    char s_5d20ea2c[47];
    char s_b339b327[145];
@@ -5356,6 +5363,8 @@ static const struct
    "Enigo",
    "Malgranda klavaro",
    "Apartigita Joy-Con",
+   "Muso",
+   "Tu\305\235ekrano",
    "Tu\305\235o",
    "Tu\305\235a skalo",
 #ifdef UDEV_TOUCH_SUPPORT
@@ -5607,7 +5616,9 @@ static const struct
    "Horizontala de\305\235ovo de titola mar\304\235eno",
    "Vertikala malaperiga faktoro",
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
    "rarapidigo",
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -6748,6 +6759,10 @@ static const struct
    "A\305\255tomate",
    "Sinkronigo",
    "Videa\304\265oj",
+   "Defa\305\255lta",
+   "A\305\255tomata",
+   "Ekvilibrigita",
+   "Rendimento",
    "Uzi argumentajn bufrojn de Metal (bezonas restartigon)",
    "Malflagrilo",
 #if defined(RARCH_MOBILE)
@@ -7260,8 +7275,6 @@ static const struct
    "Rekomencigi la enigajn agordojn al ties defa\305\255ltaj valoroj.",
    "Kvanto da sekundoj teni enigon por asigni \304\235in.",
    "Kiomo da sekundoj atendi anta\305\255 ol procedi al la sekva klavasignado.",
-   "La nombro da milisekundoj atendi por akiri kompletan enigan ekzemplon. Uzu \304\235in se vi hava"
-   "s problemojn kun samtempaj butonpremoj (nur Android).",
    "Kiel malproksime akso devas esti inklinita por rezulti en premo de butono kiam uzante \"Bitigilo"
    "\".",
    "La fizika regilo, kiel agnoskita de RetroArch.",
@@ -9144,7 +9157,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_eo_blob_check[
-      (sizeof(msg_hash_eo_blob) == (171557u
+      (sizeof(msg_hash_eo_blob) == (171474u
 #ifdef ANDROID
        + 312u
 #endif
@@ -9230,7 +9243,9 @@ typedef char msg_hash_eo_blob_check[
 #endif
 #endif
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
        + 11u
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -10537,6 +10552,8 @@ static const msg_hash_id_t msg_hash_eo_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCHPAD_MOUSE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCHPAD_POINTER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_SCALE,
 #ifdef UDEV_TOUCH_SUPPORT
@@ -10788,7 +10805,9 @@ static const msg_hash_id_t msg_hash_eo_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_VERTICAL_FADE_FACTOR,
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -11919,6 +11938,10 @@ static const msg_hash_id_t msg_hash_eo_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_DEFAULT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_AUTO,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_BALANCED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_PERFORMANCE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
 #if defined(RARCH_MOBILE)
@@ -12326,7 +12349,6 @@ static const msg_hash_id_t msg_hash_eo_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BIND_DEFAULTS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BIND_HOLD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BLOCK_TIMEOUT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_DEVICE_INDEX,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_DEVICE_RESERVATION_TYPE,

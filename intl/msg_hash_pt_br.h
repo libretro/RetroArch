@@ -1006,6 +1006,7 @@ static const struct
    char s_4c636851[18];
    char s_a8f7398d[36];
 #endif
+   char s_ca2f1e0f[24];
    char s_d042d680[16];
    char s_16cacb01[16];
 #ifdef UDEV_TOUCH_SUPPORT
@@ -1252,7 +1253,9 @@ static const struct
    char s_b201bb70[45];
    char s_b66840e9[24];
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
    char s_f0db2883[33];
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -2374,6 +2377,10 @@ static const struct
    char s_c017f975[12];
    char s_730df420[16];
    char s_bcddf275[8];
+   char s_bddbac76[8];
+   char s_a72a3c80[12];
+   char s_482ee1f1[11];
+   char s_214b7699[11];
    char s_f90edcc2[61];
    char s_ad14307a[31];
 #if defined(RARCH_MOBILE)
@@ -2786,7 +2793,6 @@ static const struct
    char s_df4225b9[76];
    char s_a5b7b768[65];
    char s_d0b943e8[77];
-   char s_4f2077b6[175];
    char s_5b920f01[122];
    char s_5d20ea2c[57];
    char s_b339b327[161];
@@ -5485,6 +5491,7 @@ static const struct
    "Suporte \303\240 Stylus",
    "Sensibilidade de Press\303\243o da Stylus",
 #endif
+   "Tela sens\303\255vel ao toque",
    "Habilitar toque",
    "Escala de toque",
 #ifdef UDEV_TOUCH_SUPPORT
@@ -5731,7 +5738,9 @@ static const struct
    "Deslocamento horizontal da margem do t\303\255tulo",
    "Desvanecimento vertical",
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
    "Quadros de Bloqueio do Microfone",
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -6867,6 +6876,10 @@ static const struct
    "Autom\303\241tico",
    "Sincroniza\303\247\303\243o",
    "V\303\255deos",
+   "Padr\303\243o",
+   "Autom\303\241tico",
+   "Balanceado",
+   "Desempenho",
    "Usar Buffers de Argumento do Metal (Requer renicializa\303\247\303\243o)",
    "Reduzir tremula\303\247\303\243o de v\303\255deo",
 #if defined(RARCH_MOBILE)
@@ -7440,9 +7453,6 @@ static const struct
    "\303\243o.",
    "Quantidade de segundos para manter uma entrada para vincul\303\241-la.",
    "Quantidade de segundos para aguardar at\303\251 proceder para o pr\303\263ximo v\303\255nculo.",
-   "O n\303\272mero de milissegundos a aguardar para obter uma amostra de entrada completa. Use-a se"
-   " voc\303\252 tiver problemas com pressionamentos de bot\303\243o simult\303\242neos (somente And"
-   "roid).",
    "Define o qu\303\243o longe um eixo deve ser inclinado para ativar o pressionamento de bot\303"
    "\243o ao usar \"anal\303\263gico para digital\".",
    "O controle f\303\255sico, conforme reconhecido pelo RetroArch.",
@@ -9508,7 +9518,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pt_br_blob_check[
-      (sizeof(msg_hash_pt_br_blob) == (194446u
+      (sizeof(msg_hash_pt_br_blob) == (194337u
 #ifdef ANDROID
        + 352u
 #endif
@@ -9603,7 +9613,9 @@ typedef char msg_hash_pt_br_blob_check[
 #endif
 #endif
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
        + 33u
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -10972,6 +10984,7 @@ static const msg_hash_id_t msg_hash_pt_br_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_STYLUS_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_STYLUS_PRESSURE_SENSITIVITY,
 #endif
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCHPAD_POINTER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_SCALE,
 #ifdef UDEV_TOUCH_SUPPORT
@@ -11218,7 +11231,9 @@ static const msg_hash_id_t msg_hash_pt_br_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_VERTICAL_FADE_FACTOR,
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -12339,6 +12354,10 @@ static const msg_hash_id_t msg_hash_pt_br_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_DEFAULT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_AUTO,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_BALANCED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_PERFORMANCE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
 #if defined(RARCH_MOBILE)
@@ -12750,7 +12769,6 @@ static const msg_hash_id_t msg_hash_pt_br_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BIND_DEFAULTS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BIND_HOLD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BLOCK_TIMEOUT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_DEVICE_INDEX,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_DEVICE_RESERVATION_TYPE,

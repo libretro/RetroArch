@@ -290,6 +290,7 @@ static const struct
    char s_d2c6b214[27];
    char s_dad749ea[32];
    char s_980ef0e8[8];
+   char s_ca2f1e0f[13];
    char s_75851363[12];
    char s_f07432ff[13];
    char s_df29ad9e[13];
@@ -650,6 +651,8 @@ static const struct
    char s_c017f975[9];
    char s_730df420[13];
    char s_bcddf275[6];
+   char s_a72a3c80[9];
+   char s_214b7699[8];
    char s_92a02470[28];
    char s_b7ef9e17[27];
    char s_8f37930f[30];
@@ -1268,6 +1271,7 @@ static const struct
    "Simpan Profil Stik Kendali",
    "Aktifkan Input Sensor Auxiliary",
    "Masukan",
+   "Layar Sentuh",
    "Tekan Turbo",
    "Pemeta Turbo",
    "Tombol Turbo",
@@ -1628,6 +1632,8 @@ static const struct
    "Otomatis",
    "Sinkronisasi",
    "Video",
+   "Otomatis",
+   "Kinerja",
    "Rasio Aspek Kustom (Tinggi)",
    "Rasio Aspek Kustom (Lebar)",
    "Rasio Aspek Kustom (Posisi X)",
@@ -2012,7 +2018,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_id_blob_check[
-      (sizeof(msg_hash_id_blob) == (26691u
+      (sizeof(msg_hash_id_blob) == (26721u
 #ifdef HAVE_MIST
        + 10u
 #endif
@@ -2399,6 +2405,7 @@ static const msg_hash_id_t msg_hash_id_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCHPAD_POINTER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BIND,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BUTTON,
@@ -2759,6 +2766,8 @@ static const msg_hash_id_t msg_hash_id_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_AUTO,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_PERFORMANCE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,

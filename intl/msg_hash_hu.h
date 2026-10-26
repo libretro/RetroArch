@@ -954,6 +954,8 @@ static const struct
    char s_980ef0e8[8];
    char s_fcf05466[18];
    char s_da16c634[19];
+   char s_acfde8f7[6];
+   char s_ca2f1e0f[19];
    char s_d042d680[19];
    char s_16cacb01[32];
 #ifdef UDEV_TOUCH_SUPPORT
@@ -1192,7 +1194,9 @@ static const struct
    char s_b201bb70[37];
    char s_b66840e9[39];
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
    char s_f0db2883[30];
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -2279,6 +2283,10 @@ static const struct
    char s_c017f975[12];
    char s_730df420[17];
    char s_bcddf275[8];
+   char s_bddbac76[17];
+   char s_a72a3c80[12];
+   char s_482ee1f1[18];
+   char s_214b7699[15];
    char s_f90edcc2[65];
    char s_ad14307a[24];
 #if defined(RARCH_MOBILE)
@@ -2667,7 +2675,6 @@ static const struct
    char s_df4225b9[71];
    char s_a5b7b768[73];
    char s_d0b943e8[71];
-   char s_4f2077b6[153];
    char s_5b920f01[125];
    char s_5d20ea2c[52];
    char s_b339b327[171];
@@ -5389,6 +5396,8 @@ static const struct
    "Bemenet",
    "Kis billenty\305\261zet",
    "Megosztott joy-con",
+   "Eg\303\251r",
+   "\303\211rint\305\221k\303\251perny\305\221",
    "\303\211rint\305\221k\303\251perny\305\221",
    "\303\211rint\305\221k\303\251perny\305\221 m\303\251retez\303\251se",
 #ifdef UDEV_TOUCH_SUPPORT
@@ -5631,7 +5640,9 @@ static const struct
    "C\303\255msor marg\303\263 v\303\255zszintes eltol\303\241sa",
    "F\303\274gg\305\221leges elhalv\303\241nyod\303\241s m\303\251rt\303\251ke",
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
    "Mikrofon keretek blokkonk\303\251nt",
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -6756,6 +6767,10 @@ static const struct
    "Automatikus",
    "Szinkroniz\303\241l\303\241s",
    "Vide\303\263k",
+   "Alap\303\251rtelmezett",
+   "Automatikus",
+   "Kiegyens\303\272lyozott",
+   "Teljes\303\255tm\303\251ny",
    "Metal argumens pufferek haszn\303\241lata (\303\272jraind\303\255t\303\241s sz\303\274ks\303\251"
    "ges)",
    "Vill\303\263dz\303\241smentes\303\255t\303\251s",
@@ -7401,9 +7416,6 @@ static const struct
    "Ennyi m\303\241sodpercig kell nyomni a gombot, hogy a p\303\241ros\303\255t\303\241st elfogadja.",
    "Ennyi m\303\241sodperc telik el a k\303\266vetkez\305\221 p\303\241ros\303\255t\303\241sra l\303"
    "\251p\303\251s el\305\221tt.",
-   "Ennyi ezredm\303\241sodpercig v\303\241rakoz\303\241s az \303\266sszes bemenet \303\251rz\303"
-   "\251kel\303\251s\303\251hez. Akkor kell, ha gond van t\303\266bb gomb egyidej\305\261 megnyom"
-   "\303\241s\303\241val (csak Androidon).",
    "Anal\303\263gr\303\263l digit\303\241lis bemenetre lek\303\251pez\303\251s eset\303\251n mennyir"
    "e kell a kart elmozd\303\255tani, hogy az gombnyom\303\241st eredm\303\251nyezzen.",
    "A RetroArch \303\241ltal felismert t\303\251nyleges kontroller.",
@@ -9794,7 +9806,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_hu_blob_check[
-      (sizeof(msg_hash_hu_blob) == (187915u
+      (sizeof(msg_hash_hu_blob) == (187849u
 #ifdef ANDROID
        + 316u
 #endif
@@ -9878,7 +9890,9 @@ typedef char msg_hash_hu_blob_check[
 #endif
 #endif
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
        + 30u
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -11177,6 +11191,8 @@ static const msg_hash_id_t msg_hash_hu_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCHPAD_MOUSE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCHPAD_POINTER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_SCALE,
 #ifdef UDEV_TOUCH_SUPPORT
@@ -11415,7 +11431,9 @@ static const msg_hash_id_t msg_hash_hu_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_VERTICAL_FADE_FACTOR,
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -12501,6 +12519,10 @@ static const msg_hash_id_t msg_hash_hu_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_DEFAULT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_AUTO,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_BALANCED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_PERFORMANCE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
 #if defined(RARCH_MOBILE)
@@ -12887,7 +12909,6 @@ static const msg_hash_id_t msg_hash_hu_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BIND_DEFAULTS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BIND_HOLD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BLOCK_TIMEOUT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_DEVICE_INDEX,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_DEVICE_RESERVATION_TYPE,

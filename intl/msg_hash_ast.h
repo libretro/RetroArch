@@ -253,6 +253,8 @@ static const struct
    char s_90402655[31];
    char s_956c0935[28];
    char s_980ef0e8[10];
+   char s_acfde8f7[4];
+   char s_ca2f1e0f[17];
    char s_ff1b8ce5[24];
    char s_9e66791a[12];
    char s_c64d260f[10];
@@ -758,6 +760,7 @@ static const struct
    char s_45816e1d[56];
    char s_730df420[16];
    char s_bcddf275[8];
+   char s_214b7699[12];
    char s_6c52dfb1[25];
    char s_84c46931[35];
    char s_ebf10493[12];
@@ -1262,6 +1265,8 @@ static const struct
    "Sensibilid\303\241 del aceler\303\263metru",
    "Sensibilid\303\241 del xiroscopiu",
    "Controles",
+   "Mur",
+   "Pantalla t\303\241ctil",
    "Controles del puertu %u",
    "Controlador",
    "Servicios",
@@ -1768,6 +1773,7 @@ static const struct
    "Intervalu d'intercamb\303\251u de la sincronizaci\303\263n vertical",
    "Sincronizaci\303\263n",
    "V\303\255deos",
+   "Rindimientu",
    "Sincronizaci\303\263n vertical",
    "Mou de ventana a pantalla completa",
    "Mou ventana",
@@ -2074,7 +2080,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ast_blob_check[
-      (sizeof(msg_hash_ast_blob) == (24516u
+      (sizeof(msg_hash_ast_blob) == (24549u
 #ifdef HAVE_MIST
        + 20u
 #endif
@@ -2401,6 +2407,8 @@ static const msg_hash_id_t msg_hash_ast_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCHPAD_MOUSE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCHPAD_POINTER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES,
@@ -2906,6 +2914,7 @@ static const msg_hash_id_t msg_hash_ast_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_PERFORMANCE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,

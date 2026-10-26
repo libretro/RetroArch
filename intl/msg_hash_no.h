@@ -879,6 +879,7 @@ static const struct
    char s_d2fe3ed2[17];
    char s_730df420[15];
    char s_bcddf275[8];
+   char s_482ee1f1[10];
    char s_92a02470[41];
    char s_b7ef9e17[41];
    char s_8f37930f[45];
@@ -2157,6 +2158,7 @@ static const struct
    "Str\303\270mmekvalitet",
    "Synkronisering",
    "Videoer",
+   "Balansert",
    "Egendefinert st\303\270rrelsesforhold (h\303\270yde)",
    "Egendefinert st\303\270rrelsesforhold (bredde)",
    "Egendefinert st\303\270rrelsesforhold (X posisjon)",
@@ -2623,7 +2625,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_no_blob_check[
-      (sizeof(msg_hash_no_blob) == (29302u
+      (sizeof(msg_hash_no_blob) == (29312u
 #ifdef HAVE_LAKKA
        + 178u
 #endif
@@ -3632,6 +3634,7 @@ static const msg_hash_id_t msg_hash_no_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAM_QUALITY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_BALANCED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,

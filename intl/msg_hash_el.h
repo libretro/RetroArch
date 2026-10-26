@@ -1001,6 +1001,9 @@ static const struct
    char s_c017f975[17];
    char s_730df420[34];
    char s_bcddf275[13];
+   char s_bddbac76[29];
+   char s_a72a3c80[17];
+   char s_214b7699[15];
    char s_92a02470[64];
    char s_b7ef9e17[68];
    char s_8f37930f[77];
@@ -3381,6 +3384,10 @@ static const struct
    "\316\243\317\205\316\263\317\207\317\201\316\277\316\275\316\271\317\203\316\274\317\214\317\202"
    " \316\211\317\207\316\277\317\205",
    "\316\222\316\257\316\275\317\204\316\265\316\277",
+   "\316\240\317\201\316\277\316\272\316\261\316\270\316\277\317\201\316\271\317\203\316\274\316\255"
+   "\316\275\316\277",
+   "\316\221\317\205\317\204\317\214\316\274\316\261\317\204\316\277",
+   "\316\225\317\200\316\257\316\264\316\277\317\203\316\267",
    "\316\240\317\201\316\277\317\204\316\271\316\274\317\216\316\274\316\265\316\275\316\277 \316"
    "\216\317\210\316\277\317\202 \316\221\316\275\316\261\316\273\316\277\316\263\316\257\316\261"
    "\317\202 \316\237\316\270\317\214\316\275\316\267\317\202",
@@ -4739,7 +4746,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_el_blob_check[
-      (sizeof(msg_hash_el_blob) == (68346u
+      (sizeof(msg_hash_el_blob) == (68407u
 #ifdef HAVE_LAKKA
        + 35u
 #endif
@@ -5827,6 +5834,9 @@ static const msg_hash_id_t msg_hash_el_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_DEFAULT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_AUTO,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_PERFORMANCE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,

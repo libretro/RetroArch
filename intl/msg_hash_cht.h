@@ -876,6 +876,8 @@ static const struct
    char s_980ef0e8[7];
    char s_fcf05466[10];
    char s_da16c634[26];
+   char s_acfde8f7[7];
+   char s_ca2f1e0f[13];
    char s_d042d680[7];
    char s_16cacb01[22];
    char s_75851363[13];
@@ -1098,7 +1100,9 @@ static const struct
    char s_b201bb70[25];
    char s_b66840e9[25];
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
    char s_f0db2883[22];
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -2138,6 +2142,10 @@ static const struct
    char s_c017f975[7];
    char s_730df420[7];
    char s_bcddf275[7];
+   char s_bddbac76[7];
+   char s_a72a3c80[7];
+   char s_482ee1f1[7];
+   char s_214b7699[7];
    char s_ad14307a[13];
 #if defined(RARCH_MOBILE)
    char s_774121c7[34];
@@ -2476,7 +2484,6 @@ static const struct
    char s_a17a67e1[99];
    char s_a5b7b768[46];
    char s_d0b943e8[46];
-   char s_4f2077b6[110];
    char s_5b920f01[154];
    char s_bd0737d6[46];
    char s_475ff311[127];
@@ -5205,6 +5212,8 @@ static const struct
    "\350\274\270\345\205\245",
    "\345\260\217\351\215\265\347\233\244",
    "\345\217\226\344\270\213\346\216\247\345\210\266\345\231\250 (Joy-Con)",
+   "\346\273\221\351\274\240",
+   "\350\247\270\346\216\247\350\236\242\345\271\225",
    "\350\247\270\346\216\247",
    "\350\247\270\346\216\247\346\204\237\346\207\211\345\215\200\347\270\256\346\224\276",
    "\351\200\243\347\231\274\350\250\255\345\256\232",
@@ -5444,7 +5453,9 @@ static const struct
    "\346\250\231\347\261\244\351\202\212\350\267\235\346\260\264\345\271\263\345\201\217\347\247\273",
    "\351\201\270\345\226\256\345\236\202\347\233\264\346\267\241\345\214\226\344\277\202\346\225\270",
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
    "\351\272\245\345\205\213\351\242\250\345\215\200\345\241\212\345\271\200\346\225\270",
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -6672,6 +6683,10 @@ static const struct
    "\350\207\252\345\213\225",
    "\345\220\214\346\255\245",
    "\345\275\261\347\211\207",
+   "\351\240\220\350\250\255",
+   "\350\207\252\345\213\225",
+   "\345\271\263\345\235\207",
+   "\346\225\210\350\203\275",
    "\351\231\215\344\275\216\351\226\203\347\210\215",
 #if defined(RARCH_MOBILE)
    "\350\246\226\347\252\227\351\214\250\351\273\236 X \350\273\270\345\201\217\347\247\273 (\350"
@@ -7484,11 +7499,6 @@ static const struct
    "\351\234\200\346\214\211\344\275\217\347\232\204\346\231\202\351\226\223\343\200\202",
    "\350\250\255\345\256\232\346\214\211\351\215\265\346\231\202\347\255\211\345\200\231\350\243\235"
    "\347\275\256\350\274\270\345\205\245\347\232\204\346\231\202\351\226\223\343\200\202",
-   "\347\255\211\345\276\205\346\257\253\347\247\222\346\225\270\345\217\226\345\276\227\350\274\270"
-   "\345\205\245\346\250\243\346\234\254, \345\220\214\346\231\202\346\214\211\345\244\232\345\200"
-   "\213\351\215\265\346\234\203\351\201\207\345\210\260\345\225\217\351\241\214\346\231\202, \350"
-   "\253\213\344\275\277\347\224\250\346\255\244\351\201\270\351\240\205(\345\203\205\351\231\220And"
-   "roid)\343\200\202",
    "\345\203\205\351\231\220\343\200\214\345\215\201\345\255\227\351\215\265\344\275\277\347\224\250"
    "\351\241\236\346\257\224\346\220\226\346\241\277\343\200\215\350\207\252\350\250\202\346\231\202"
    "\344\275\277\347\224\250, \350\250\255\345\256\232\351\241\236\346\257\224\346\226\271\345\220"
@@ -10467,7 +10477,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_cht_blob_check[
-      (sizeof(msg_hash_cht_blob) == (120830u
+      (sizeof(msg_hash_cht_blob) == (120768u
 #ifdef ANDROID
        + 157u
 #endif
@@ -10532,7 +10542,9 @@ typedef char msg_hash_cht_blob_check[
 #endif
 #endif
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
        + 22u
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -11647,6 +11659,8 @@ static const msg_hash_id_t msg_hash_cht_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCHPAD_MOUSE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCHPAD_POINTER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_SCALE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
@@ -11869,7 +11883,9 @@ static const msg_hash_id_t msg_hash_cht_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_VERTICAL_FADE_FACTOR,
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -12908,6 +12924,10 @@ static const msg_hash_id_t msg_hash_cht_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_DEFAULT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_AUTO,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_BALANCED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_PERFORMANCE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
 #if defined(RARCH_MOBILE)
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
@@ -13246,7 +13266,6 @@ static const msg_hash_id_t msg_hash_cht_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_AUTO_MOUSE_GRAB,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BIND_HOLD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BLOCK_TIMEOUT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_DEVICE_TYPE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_DRIVER,

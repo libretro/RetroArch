@@ -98,6 +98,7 @@ static const struct
    char s_f9ee4a82[12];
    char s_87071f08[6];
    char s_ec502f2a[26];
+   char s_acfde8f7[5];
    char s_9e66791a[10];
    char s_84d3d068[10];
    char s_6107eb09[15];
@@ -254,6 +255,7 @@ static const struct
    char s_c017f975[11];
    char s_730df420[15];
    char s_bcddf275[12];
+   char s_214b7699[12];
    char s_0f5266ce[15];
    char s_30140cb5[16];
    char s_65e6ea7c[7];
@@ -383,6 +385,7 @@ static const struct
    "ISKLJU\304\214ENO",
    "Izlaz",
    "Ponovno pokreni RetroArch",
+   "Mi\305\241",
    "Kontroler",
    "Latencija",
    "U\304\215itaj arhivu",
@@ -539,6 +542,7 @@ static const struct
    "Automatski",
    "Sinkronizacija",
    "Videozapisi",
+   "Performanse",
    "Visina prozora",
    "\305\240irina prozora",
    "Ni\305\241ta",
@@ -591,7 +595,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_hr_blob_check[
-      (sizeof(msg_hash_hr_blob) == (4232u
+      (sizeof(msg_hash_hr_blob) == (4249u
 #ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
        + 12u
@@ -719,6 +723,7 @@ static const msg_hash_id_t msg_hash_hr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCHPAD_MOUSE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE,
@@ -875,6 +880,7 @@ static const msg_hash_id_t msg_hash_hr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_PERFORMANCE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,

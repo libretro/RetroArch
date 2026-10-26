@@ -328,6 +328,7 @@ static const struct
    char s_9a57d328[28];
 #endif
 #endif
+   char s_682e6742[21];
 #ifdef _3DS
    char s_22a46583[37];
    char s_a4d079f8[19];
@@ -853,6 +854,7 @@ static const struct
    char s_3518bec3[44];
    char s_54e5819b[26];
    char s_009a10e3[15];
+   char s_7a9cbfe8[34];
    char s_22c19b64[30];
    char s_58de51be[7];
    char s_aded1e43[41];
@@ -1050,6 +1052,8 @@ static const struct
    char s_16430f5d[34];
 #endif
    char s_a310fe56[112];
+   char s_873828af[20];
+   char s_acfde8f7[5];
    char s_d042d680[25];
    char s_16cacb01[23];
 #ifdef UDEV_TOUCH_SUPPORT
@@ -1191,6 +1195,9 @@ static const struct
    char s_337429c4[11];
    char s_4c78a5a2[15];
    char s_dbd59c7e[16];
+   char s_0a01c40d[44];
+   char s_e371b6a9[23];
+   char s_02688604[12];
    char s_e22edcd8[7];
    char s_d86adca1[25];
    char s_a17f6a67[62];
@@ -1314,7 +1321,9 @@ static const struct
    char s_b201bb70[35];
    char s_b66840e9[30];
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
    char s_f0db2883[21];
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -2489,6 +2498,9 @@ static const struct
    char s_bdaa2cfe[51];
    char s_ec9ccdc3[26];
    char s_8bf6ccd4[45];
+   char s_d59de774[29];
+   char s_75c24fec[17];
+   char s_697c4a13[18];
    char s_2cb6ab5c[19];
    char s_552163d9[40];
    char s_ef3d53d8[20];
@@ -2510,6 +2522,9 @@ static const struct
    char s_45816e1d[21];
    char s_c017f975[12];
    char s_730df420[16];
+   char s_bddbac76[9];
+   char s_482ee1f1[11];
+   char s_214b7699[9];
    char s_258060bf[23];
    char s_3bbc8b05[30];
    char s_e595f6df[37];
@@ -2543,6 +2558,7 @@ static const struct
    char s_ea2674d4[31];
    char s_2d8cb7ce[18];
    char s_68190518[36];
+   char s_6448376a[9];
    char s_b9e24170[29];
    char s_30140cb5[14];
    char s_25a21976[69];
@@ -2974,7 +2990,7 @@ static const struct
    char s_df4225b9[68];
    char s_a5b7b768[77];
    char s_d0b943e8[76];
-   char s_4f2077b6[197];
+   char s_4f2077b6[294];
    char s_5b920f01[116];
    char s_a8576709[242];
    char s_71b76e1b[479];
@@ -3135,6 +3151,7 @@ static const struct
    char s_d1b3c47b[248];
    char s_27919f0b[244];
 #endif
+   char s_96ff4e5d[438];
    char s_f9db39ef[103];
 #ifdef UDEV_TOUCH_SUPPORT
    char s_d46604e4[92];
@@ -3218,6 +3235,9 @@ static const struct
    char s_168498b2[331];
    char s_55248110[26];
    char s_f9fce5ac[153];
+   char s_a58207fb[213];
+   char s_9ac13397[72];
+   char s_c4d2bbf2[69];
    char s_b3c6310f[74];
    char s_b1305e15[88];
    char s_2b2a7762[82];
@@ -3869,6 +3889,8 @@ static const struct
 #endif
    char s_ab839b13[132];
    char s_135d20b8[54];
+   char s_62e196a9_0[500];
+   char s_62e196a9_1[120];
    char s_5767a1f8_0[500];
    char s_5767a1f8_1[27];
    char s_17663212[197];
@@ -3981,6 +4003,9 @@ static const struct
    char s_3a4b246c[101];
    char s_2ceab671[152];
    char s_977f8e82[299];
+   char s_e65dcca2[198];
+   char s_b0e2d55a[69];
+   char s_7acad9c1[70];
    char s_3c679f0a[336];
    char s_5b059407[144];
    char s_36033606[199];
@@ -3992,6 +4017,7 @@ static const struct
    char s_7e96b5ce[44];
    char s_3547866d_0[500];
    char s_3547866d_1[74];
+   char s_d73ccef3[471];
    char s_81163acd[467];
    char s_ecc9b2c5[352];
    char s_c2314d30[214];
@@ -4028,8 +4054,6 @@ static const struct
    char s_6ac06624[138];
    char s_f765b650[54];
    char s_7059a595[59];
-   char s_c7d672df_0[500];
-   char s_c7d672df_1[87];
    char s_c85b2f0f[328];
    char s_6d1448c0[40];
    char s_cf0b487b[93];
@@ -4081,6 +4105,11 @@ static const struct
    char s_ac3c4c54[33];
    char s_a7a47ea6[15];
    char s_09a5996c[35];
+   char s_d80c36a8[198];
+   char s_0d8a28d5[20];
+   char s_becf560a[28];
+   char s_b0ec1b4e[40];
+   char s_353aa616[124];
    char s_73c9507b[74];
    char s_825152dd[30];
    char s_19e809ad[33];
@@ -4336,6 +4365,11 @@ static const struct
    char s_a9f3b2c3[18];
    char s_0e7aca8a[17];
    char s_ab1afe7c[18];
+   char s_58ec4881[68];
+   char s_c1c1065c[102];
+   char s_9dfbac4f[69];
+   char s_e046c812[174];
+   char s_c0aeb71e[56];
    char s_b6b13e9f[26];
    char s_1492e328[47];
    char s_026b7f11[18];
@@ -5191,6 +5225,7 @@ static const struct
    "Bluetooth ERTM deaktivieren",
 #endif
 #endif
+   "Nach Ger\303\244ten suchen",
 #ifdef _3DS
    "Unterer Bildschirm Asset-Verzeichnis",
    "Schriftfarbe: Blau",
@@ -5719,6 +5754,7 @@ static const struct
    "Rechten Analogstick f\303\274r Men\303\274 deaktivieren",
    "Suchen-Taste deaktivieren",
    "Eingabetreiber",
+   "Wii-U-GameCube-Adapter aktivieren",
    "Haptisches Feedback/Vibration",
    "Halten",
    "Hotkey-Aktivierungsverz\303\266gerung (Frames)",
@@ -5917,6 +5953,8 @@ static const struct
 #endif
    "Der Eingabetreiber \342\200\236%s\342\200\234 erkennt diese als ein einziges Ger\303\244t und ka"
    "nn sie nicht voneinander unterscheiden.",
+   "Controller-Touchpad",
+   "Maus",
    "Touch-Eingabe aktivieren",
    "Touchscreen-Skalierung",
 #ifdef UDEV_TOUCH_SUPPORT
@@ -6058,6 +6096,9 @@ static const struct
    "MCP-Server",
    "MCP-Serverport",
    "MCP-Servertoken",
+   "Steuerung automatisch ausblenden (Sekunden)",
+   "Suchschritt (Sekunden)",
+   "Mediaplayer",
    "Medium",
    "Speichernutzung anzeigen",
    "Aktualisierungsintervall f\303\274r die Speichernutzung (In Frames)",
@@ -6181,7 +6222,9 @@ static const struct
    "Horizontaler Versatz der Randtitel",
    "Vertikaler Verblassungsfaktor",
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
    "Mikrofon-Blockframes",
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -7366,6 +7409,9 @@ static const struct
    "Voreinstellung des Inhaltsverzeichnisses speichern",
    "Einfache Voreinstellungen",
    "Zuletzt verwendetes Shaderverzeichnis merken",
+   "Simulierte Eingabeaufl\303\266sung",
+   "Simulierte H\303\266he",
+   "Simulierte Breite",
    "Shader-Unterbilder",
    "Gemeinsamen Hardware-Kontext aktivieren",
    "Bilineare Filterung",
@@ -7387,6 +7433,9 @@ static const struct
    "VSync Swap-Intervall",
    "Automatisch",
    "Synchronisation",
+   "Standard",
+   "Ausgewogen",
+   "Leistung",
    "Threaded-Videopipeline",
    "Threaded-Video-Anzeigetaktung",
    "Bildwiederholung f\303\274r Threaded Video",
@@ -7420,6 +7469,7 @@ static const struct
    "Vertikaler Versatz der Anzeige",
    "Fenster-Deckkraft",
    "Fensterposition und -gr\303\266\303\237e merken",
+   "Getrennt",
    "Fensterdekorationen anzeigen",
    "Fensterbreite",
    "Mit exakter Inhaltssignalfrequenz synchronisieren (G-Sync, FreeSync)",
@@ -8091,9 +8141,10 @@ static const struct
    "Die Einstellungen f\303\274r die Zuordnung auf ihre Standardwerte setzen.",
    "Zeit in Sekunden, f\303\274r die eine Taste bei der Belegung gehalten werden muss.",
    "Zeitdauer in Sekunden, nach der die n\303\244chste Tastenbelegung abgefragt wird.",
-   "Anzahl an Millisekunden, die gewartet werden, bevor eine vollst\303\244ndige Eingabe get\303\244"
-   "tigt wird. Verwende diese Option, wenn Probleme beim gleichzeitigen Dr\303\274cken von Tasten au"
-   "ftreten (nur Android).",
+   "Legt fest, wie lange ein Tastendruck des Controllers in Millisekunden zur\303\274ckgehalten wird"
+   ", damit die \303\274brigen Tasten eines gleichzeitigen Tastendrucks ebenfalls erfasst werden. Ve"
+   "rwenden, wenn gleichzeitige Tastendr\303\274cke eines Controllers mit einem Frame Abstand erkann"
+   "t werden (nur Android).",
    "Wie weit eine Achse gekippt werden muss, um einen Tastendruck zu bewirken, wenn \"Analog zu Digi"
    "tal\" verwendet wird.",
    "Wie weit jede Taste der Kombination gedr\303\274ckt werden muss, bevor sie ausgel\303\266st wird"
@@ -8379,6 +8430,12 @@ static const struct
    "US: Der Stift kann einen Klick ausl\303\266sen, indem er den Bildschirm ber\303\274hrt ODER inde"
    "m er \303\274ber dem Bildschirm schwebt und die Seitentaste gedr\303\274ckt wird.",
 #endif
+   "Legt fest, wie der Core das Touchpad des Controllers an diesem Port interpretiert. Funktioniert "
+   "mit einem DualShock 4 oder DualSense und dem \342\200\236hid\342\200\234-Controllertreiber. \342"
+   "\200\236Touchscreen\342\200\234: Ein Finger auf dem Touchpad ber\303\274hrt die entsprechende St"
+   "elle auf dem Bildschirm, zwei Finger zwei Stellen. \342\200\236Maus\342\200\234: Eine Fingerbewe"
+   "gung bewegt den Mauszeiger; Druck auf das Touchpad klickt. Mit zwei Fingern auf dem Touchpad wir"
+   "d rechtsgeklickt.",
    "Die x/y-Skalierung der Touchscreen-Koordinaten an die Anzeigenskalierung des Betriebssystems anp"
    "assen.",
 #ifdef UDEV_TOUCH_SUPPORT
@@ -8518,6 +8575,11 @@ static const struct
    "TCP-Port des MCP-Servers.",
    "Das Tr\303\244gertoken, das ein MCP-Client senden muss. Es wird beim ersten Start des Servers er"
    "stellt; es muss in den Client-Einstellungen eingegeben werden.",
+   "Vollbild-Steuerelemente bei Inaktivit\303\244t nach dieser Verz\303\266gerung ausblenden. Mit 0 "
+   "bleiben sie sichtbar. W\303\244hrend der Wiedergabeunterbrechung, beim Spulen oder bei Verwendun"
+   "g bleiben die Steuerelemente sichtbar.",
+   "Legt fest, wie weit die Vollbildmediensteuerung vor- oder zur\303\274ckspult.",
+   "Einstellungen f\303\274r die integrierte Vollbildmedienwiedergabe \303\244ndern.",
    "Die verwendete und die gesamte Arbeitsspeichermenge des Systems anzeigen.",
    "Die Anzeige der Speichernutzung wird im eingestellten Intervall in Frames aktualisiert.",
    "Zur\303\274ck zum Hauptmen\303\274 aus Registerkarten/Seitenleiste beim Dr\303\274cken von Zur"
@@ -9535,6 +9597,15 @@ static const struct
    "Fenstermanager verwenden Desktopgestaltung, um unter anderem visuelle Effekte anzuwenden und nic"
    "ht reagierende Fenster zu erkennen.",
    "Zu verwendender Videotreiber. (Neustart erforderlich)",
+   "Den Grafiktreiber Frames mit geringer Eingabeverz\303\266gerung und kurzer Warteschlange takten "
+   "lassen. Verwendet NVIDIA Reflex (VK_NV_low_latency2 bei Vulkan, NVAPI bei Direct3D 11/12 oder Vu"
+   "lkan \303\274ber DXGI) oder AMD Anti-Lag bei Vulkan (VK_AMD_anti_lag). Den Status unter \342\200"
+   "\236Statistiken\342\200\234 oder \342\200\236Systeminformationen\342\200\234 pr\303\274fen. \342"
+   "\200\236Ein und Boost\342\200\234 erh\303\266ht die GPU-Taktraten. Nicht verf\303\274gbar mit Sc"
+   "anline Sync. Die Threaded-Video-Anzeigetaktung erh\303\244lt die Bildschirmaktualisierungsrate; "
+   "der Treiber be",
+   "grenzt die Inhaltsrate, wenn kein anderer Limiter aktiv ist. Die \342\200\236Bildverz\303\266ger"
+   "ung\342\200\234 wird w\303\244hrenddessen ausgesetzt.",
    "Eine DXGI-Swapchain im Flip-Modell mit den glcore- und Vulkan-Treibern unter Windows verwenden. "
    "Dadurch werden Funktionen des Anzeigetreibers wie NVIDIA Smooth Motion aktiviert. Bei fehlender "
    "Unterst\303\274tzung wird auf die native Bildausgabe zur\303\274ckgegriffen; au\303\237erdem kan"
@@ -9785,6 +9856,11 @@ static const struct
    "eten Verzeichnis \303\266ffnen. Die Tastenkombinationen N\303\244chster/Vorheriger Shader starte"
    "n von der aktuellen Voreinstellung aus weiter, anstatt innerhalb des Stammverzeichnisses \342"
    "\200\236Videoshaders\342\200\234 durchzuwechseln.",
+   "Dem ersten Shaderdurchlauf die unten angegebene Bildgr\303\266\303\237e statt der tats\303\244ch"
+   "lichen Gr\303\266\303\237e mitteilen, damit aufl\303\266sungsabh\303\244ngige Shader bei gro\303"
+   "\237en Bildern genauso funktionieren wie bei kleinen.",
+   "H\303\266he, die dem ersten Shaderdurchlauf f\303\274r das Bild vorgegeben wird.",
+   "Breite, die dem ersten Shaderdurchlauf f\303\274r das Bild vorgegeben wird.",
    "WARNUNG: Schnelles Flackern kann auf manchen Bildschirmen zu einem Nachleuchten des Bildes f\303"
    "\274hren. Verwendung auf eigene Gefahr // Simuliert eine einfache rollende Scanline \303\274ber "
    "mehrere Unterbilder, indem der Bildschirm vertikal aufgeteilt wird und jeder Teil des Bildschirm"
@@ -9821,6 +9897,12 @@ static const struct
    "ufen mit den Vulkan-, Direct3D 11-, Direct3D 12- und gl-Treibern im Thread-Modus; mit anderen Tr"
    "ei",
    "bern laufen sie unabh\303\244ngig von dieser Einstellung im Nicht-Thread-Modus.",
+   "Bei aktiviertem Threaded Video jedes Core-Frame anhand der gemessenen Core- und Renderzeiten so "
+   "sp\303\244t starten, wie es die n\303\244chste Bildschirmaktualisierung zul\303\244sst, statt na"
+   "ch einem festen Timer. Senkt die Latenz bei nicht-threaded Video auf das Niveau, das die \342"
+   "\200\236Bildverz\303\266gerung\342\200\234 erreicht, und wiederholt ein zu lange laufendes Frame"
+   ", statt es auszulassen. Bei aktiver Treibertaktung gibt der Treiber jedes Frame stattdessen frei"
+   ". Aus: Wie bisher taktet der Timer.",
    "Mit \342\200\236Threaded Video\342\200\234 wird weiterhin das letzte Bild mit der Bildwiederholf"
    "requenz des Displays dargestellt, w\303\244hrend der Core hinterherhinkt, anstatt das vorherige "
    "Bild auf dem Bildschirm stehen zu lassen. Dies sorgt daf\303\274r, dass die Einblendung schwarze"
@@ -9886,13 +9968,6 @@ static const struct
    "er Synchronisierung (G-Sync, FreeSync, HDMI 2.1 VRR).",
    "Zu verwendender WLAN-Treiber. (Neustart erforderlich)",
    "Nach drahtlosen Netzwerken suchen und mit ihnen verbinden.",
-   "Wechselt zu einer Kopie des aktiven Windows-Energiesparplans, die den Prozessor mit voller Gesch"
-   "windigkeit betreibt \342\200\223 minimaler und maximaler Prozessorzustand auf 100 %, Energieeins"
-   "tellung auf \342\200\236Leistung\342\200\234 \342\200\223, keine Kerne parkt, die Leistungszust"
-   "\303\244nde alle 5 Sekunden statt alle 15 ms neu bewertet und PCI-Express-Verbindungen sowie USB"
-   "-Anschl\303\274sse aus dem Energiesparmodus heraush\303\244lt. Dadurch werden die Kernel-Interru"
-   "pt-Aktivit\303\244t und Aufweckverz\303\266gerungen reduziert. Gilt nur bei angeschloss",
-   "enem Netzteil. Der urspr\303\274ngliche Energiesparplan wird beim Beenden wiederhergestellt.",
    "H\303\244lt bei aktiviertem Energiesparplan f\303\274r niedrige Latenz zus\303\244tzlich jeden P"
    "rozessorkern aus seinen Leerlaufzust\303\244nden heraus, sodass kein Kern vor der Ausf\303\274hr"
    "ung aufgeweckt werden muss. Der Prozessor verbraucht dann auch bei ausbleibender Auslastung die "
@@ -9954,6 +10029,14 @@ static const struct
    "Zustand automatisch speichern in",
    "Sichere Core: ",
    "\303\234berschreiben des SRAM blockieren",
+   "Der Bluetooth-Adapter dieses Computers verwendet den generischen Windows-Treiber, der h\303\244u"
+   "fig keine Ger\303\244te findet. Bitte den Bluetooth-Treiber des Computer- oder Mainboardherstell"
+   "ers installieren.",
+   "\342\200\236%s\342\200\234 gekoppelt.",
+   "\342\200\236%s\342\200\234 wird gekoppelt \342\200\246",
+   "\342\200\236%s\342\200\234 konnte nicht gekoppelt werden.",
+   "\342\200\236%s\342\200\234 konnte nicht gekoppelt werden. Die Sync-Taste dr\303\274cken und das "
+   "Ger\303\244t erneut ausw\303\244hlen, solange die LEDs blinken.",
    "Kopplung entfernt. RetroArch neu starten, um erneut zu verbinden/koppeln.",
    "Bluetooth-Scan abgeschlossen.",
    "Starte Befehlsinterface auf Port",
@@ -10228,6 +10311,14 @@ static const struct
    "Passwort eingeben",
    "Passwort falsch.",
    "Passwort korrekt.",
+   "GameCube-Adaptertreiber wird ge\303\244ndert: Im Windows-Dialog zulassen.",
+   "Der Treiber des GameCube-Adapters wurde nicht ge\303\244ndert: Es wurden keine Administratorrech"
+   "te erteilt.",
+   "GameCube-Adapter aktiviert. Er verbindet sich wieder selbstst\303\244ndig.",
+   "\342\200\236Wii U GameCube\342\200\234-Adapter gefunden, der mit dem Windows-eigenen Treiber nic"
+   "ht funktionert: \342\200\236Informationen > Eingabeinformationen > Wii-U-GameCube-Adapter aktivi"
+   "eren\342\200\234.",
+   "Der Treiber des GameCube konnte nicht ge\303\244ndert werden.",
    "Schl\303\274sselbund-Passphrase",
    "Neue Schl\303\274sselbund-Passphrase (leer entfernt)",
    "Passwort eingeben",
@@ -10572,7 +10663,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_de_blob_check[
-      (sizeof(msg_hash_de_blob) == (235628u
+      (sizeof(msg_hash_de_blob) == (238498u
 #ifdef ANDROID
        + 358u
 #endif
@@ -10675,7 +10766,9 @@ typedef char msg_hash_de_blob_check[
 #endif
 #endif
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
        + 21u
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -11462,6 +11555,7 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BLUETOOTH_ERTM_DISABLE,
 #endif
 #endif
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BLUETOOTH_SCAN,
 #ifdef _3DS
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BOTTOM_ASSETS_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_BLUE,
@@ -11987,6 +12081,7 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_SEARCH_BUTTON,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_DRIVER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_GCA_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_HOLD,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BLOCK_DELAY,
@@ -12184,6 +12279,8 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_STYLUS_REQUIRE_CONTACT_FOR_CLICK,
 #endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_SYSTEM_DEVICE_INFO,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCHPAD,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCHPAD_MOUSE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_SCALE,
 #ifdef UDEV_TOUCH_SUPPORT
@@ -12325,6 +12422,9 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MCP_SERVER_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MCP_SERVER_PORT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MCP_SERVER_TOKEN,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MEDIA_PLAYER_CONTROLS_TIMEOUT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MEDIA_PLAYER_SEEK_SECONDS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MEDIA_PLAYER_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MEDIA_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MEMORY_SHOW,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MEMORY_UPDATE_INTERVAL,
@@ -12448,7 +12548,9 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_VERTICAL_FADE_FACTOR,
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -13622,6 +13724,9 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_PARENT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_REMEMBER_LAST_DIR,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SIMULATED_INPUT_RES,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SIMULATED_INPUT_RES_HEIGHT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SIMULATED_INPUT_RES_WIDTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
@@ -13643,6 +13748,9 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_DEFAULT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_BALANCED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_PERFORMANCE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED_DISPLAY_PACING,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED_PRESENT_REPEAT,
@@ -13676,6 +13784,7 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SEPARATE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
@@ -14259,6 +14368,7 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_STYLUS_PRESSURE_SENSITIVITY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_STYLUS_REQUIRE_CONTACT_FOR_CLICK,
 #endif
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_TOUCHPAD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_SCALE,
 #ifdef UDEV_TOUCH_SUPPORT
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_GESTURE,
@@ -14342,6 +14452,9 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MCP_SERVER_ENABLE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MCP_SERVER_PORT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MCP_SERVER_TOKEN,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_MEDIA_PLAYER_CONTROLS_TIMEOUT,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_MEDIA_PLAYER_SEEK_SECONDS,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_MEDIA_PLAYER_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MEMORY_SHOW,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MEMORY_UPDATE_INTERVAL,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_ALLOW_TABS_BACK,
@@ -14993,6 +15106,7 @@ static const msg_hash_id_t msg_hash_de_ids[] =
 #endif
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DRIVER_PACING,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DXGI_PRESENT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_DIR,
@@ -15100,6 +15214,9 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_PARENT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SIMULATED_INPUT_RES,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SIMULATED_INPUT_RES_HEIGHT,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SIMULATED_INPUT_RES_WIDTH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
@@ -15110,6 +15227,7 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED_DISPLAY_PACING,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED_PRESENT_REPEAT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_THREAD_PRIORITY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
@@ -15146,7 +15264,6 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_WIFI_DRIVER,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_WIFI_SETTINGS,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_WIN32_POWER_PLAN,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_WIN32_POWER_PLAN_IDLE_DISABLE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_XMB_ALPHA_FACTOR,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_XMB_CURRENT_MENU_ICON,
@@ -15198,6 +15315,11 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MSG_AUTO_SAVE_STATE_TO,
    (msg_hash_id_t)MSG_BACKING_UP_CORE,
    (msg_hash_id_t)MSG_BLOCKING_SRAM_OVERWRITE,
+   (msg_hash_id_t)MSG_BLUETOOTH_ADAPTER_GENERIC_DRIVER,
+   (msg_hash_id_t)MSG_BLUETOOTH_PAIRED,
+   (msg_hash_id_t)MSG_BLUETOOTH_PAIRING,
+   (msg_hash_id_t)MSG_BLUETOOTH_PAIRING_FAILED,
+   (msg_hash_id_t)MSG_BLUETOOTH_PAIRING_FAILED_WII,
    (msg_hash_id_t)MSG_BLUETOOTH_PAIRING_REMOVED,
    (msg_hash_id_t)MSG_BLUETOOTH_SCAN_COMPLETE,
    (msg_hash_id_t)MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
@@ -15453,6 +15575,11 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD,
    (msg_hash_id_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK,
    (msg_hash_id_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_OK,
+   (msg_hash_id_t)MSG_INPUT_GCA_ASKING,
+   (msg_hash_id_t)MSG_INPUT_GCA_DECLINED,
+   (msg_hash_id_t)MSG_INPUT_GCA_ENABLED,
+   (msg_hash_id_t)MSG_INPUT_GCA_NEEDS_ENABLING,
+   (msg_hash_id_t)MSG_INPUT_GCA_NOT_CHANGED,
    (msg_hash_id_t)MSG_INPUT_KEYCHAIN_PASSPHRASE,
    (msg_hash_id_t)MSG_INPUT_KEYCHAIN_PASSPHRASE_NEW,
    (msg_hash_id_t)MSG_INPUT_KIOSK_MODE_PASSWORD,

@@ -56,6 +56,7 @@ static const struct
    char s_534cf44d[93];
    char s_5f9d9369[59];
    char s_6e51030f[56];
+   char s_18e73263[206];
    char s_d32da23d[18];
    char s_551f3071[28];
    char s_1f6e5f89[36];
@@ -333,6 +334,7 @@ static const struct
    char s_9a57d328[25];
 #endif
 #endif
+   char s_682e6742[22];
 #ifdef _3DS
    char s_22a46583[40];
    char s_a4d079f8[21];
@@ -860,6 +862,7 @@ static const struct
    char s_8b9af73a[36];
    char s_66389548[33];
    char s_926f9e93[39];
+   char s_c546f81b[18];
    char s_539024ed[12];
    char s_3703a97b[10];
    char s_933104ed[22];
@@ -1075,6 +1078,8 @@ static const struct
    char s_16430f5d[33];
 #endif
    char s_a310fe56[85];
+   char s_acfde8f7[5];
+   char s_ca2f1e0f[18];
    char s_d042d680[6];
    char s_16cacb01[16];
 #ifdef UDEV_TOUCH_SUPPORT
@@ -1330,7 +1335,9 @@ static const struct
    char s_b201bb70[34];
    char s_b66840e9[33];
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
    char s_f0db2883[29];
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -1653,6 +1660,8 @@ static const struct
    char s_3936fe87[96];
    char s_393985fc[30];
    char s_57110ba8[42];
+   char s_973fff7c[31];
+   char s_54463db9[29];
    char s_56e21ee1[19];
    char s_b152eb42[30];
    char s_f70406ce[19];
@@ -2207,6 +2216,7 @@ static const struct
    char s_8356c98c[14];
    char s_5c7bbce1[23];
    char s_cd916c68[23];
+   char s_f017f754[23];
    char s_8fe41f79[37];
    char s_2c296537[17];
    char s_519cd5f8[19];
@@ -2346,6 +2356,7 @@ static const struct
 #endif
    char s_f4341e25[38];
    char s_b9d37039[165];
+   char s_79f9b43b[23];
    char s_1249554a[22];
    char s_d0a04fe4[13];
    char s_c682e4e2[13];
@@ -2513,6 +2524,9 @@ static const struct
    char s_45816e1d[23];
    char s_730df420[16];
    char s_bcddf275[7];
+   char s_bddbac76[12];
+   char s_482ee1f1[12];
+   char s_214b7699[7];
    char s_258060bf[29];
    char s_3bbc8b05[42];
    char s_e595f6df[39];
@@ -2546,6 +2560,7 @@ static const struct
    char s_ea2674d4[24];
    char s_2d8cb7ce[20];
    char s_68190518[38];
+   char s_6448376a[10];
    char s_b9e24170[27];
    char s_30140cb5[13];
    char s_25a21976[75];
@@ -2978,8 +2993,10 @@ static const struct
    char s_df4225b9[65];
    char s_a5b7b768[79];
    char s_d0b943e8[57];
-   char s_4f2077b6[151];
+   char s_4f2077b6[224];
    char s_5b920f01[115];
+   char s_a8576709[237];
+   char s_71b76e1b[418];
    char s_f96ddf69[83];
    char s_d84f519b[212];
    char s_5d20ea2c[44];
@@ -3871,6 +3888,8 @@ static const struct
 #endif
    char s_ab839b13[116];
    char s_135d20b8[52];
+   char s_62e196a9_0[499];
+   char s_62e196a9_1[67];
    char s_5767a1f8[412];
    char s_17663212[191];
    char s_e4aa2e10[64];
@@ -3989,6 +4008,8 @@ static const struct
    char s_7e96b5ce[40];
    char s_3547866d_0[500];
    char s_3547866d_1[35];
+   char s_d73ccef3_0[500];
+   char s_d73ccef3_1[37];
    char s_81163acd[400];
    char s_ecc9b2c5[311];
    char s_c2314d30[190];
@@ -4025,8 +4046,6 @@ static const struct
    char s_6ac06624[148];
    char s_f765b650[52];
    char s_7059a595[55];
-   char s_c7d672df_0[500];
-   char s_c7d672df_1[5];
    char s_c85b2f0f[286];
    char s_6d1448c0[51];
    char s_cf0b487b[98];
@@ -4078,6 +4097,7 @@ static const struct
    char s_ac3c4c54[32];
    char s_a7a47ea6[21];
    char s_09a5996c[22];
+   char s_d80c36a8[204];
    char s_73c9507b[86];
    char s_825152dd[38];
    char s_19e809ad[44];
@@ -4315,11 +4335,20 @@ static const struct
    char s_59212b5f[15];
    char s_f26b6cff[33];
    char s_58909bc7[14];
+   char s_33aefb0e[20];
    char s_bd1fdff6[10];
    char s_d9d9a1be[11];
    char s_a63c824a[10];
+   char s_94d1736a[18];
    char s_b969706a[231];
    char s_a3f6ebc3[21];
+   char s_11b4cc97[23];
+   char s_a8fa00e0[63];
+   char s_4c1e527b[71];
+   char s_efc0708e[67];
+   char s_98ba6f71[96];
+   char s_33a982dd[45];
+   char s_5d9ea02b[46];
    char s_a9f3b2c3[14];
    char s_0e7aca8a[18];
    char s_ab1afe7c[19];
@@ -4388,6 +4417,7 @@ static const struct
    char s_583a8462[26];
    char s_3c214e5f[36];
    char s_2ada2134[22];
+   char s_d3bcc29d[69];
    char s_00fc26e4[8];
    char s_d66d432f[18];
    char s_15c0f14a[20];
@@ -4616,6 +4646,8 @@ static const struct
    char s_94fc1cd0[16];
    char s_2aaf8414[23];
    char s_28a4c280[20];
+   char s_33d728a4[23];
+   char s_344809fa[9];
    char s_ae2838e7[24];
    char s_f5c32889[23];
    char s_d085ad84[48];
@@ -4681,6 +4713,10 @@ static const struct
    ",system:playback_2).",
    "Vlastn\303\241 hodnota cesty pre ovl\303\241da\304\215 OSS (napr. /dev/dsp).",
    "Vlastn\303\241 IP adresa servera RSound pre ovl\303\241da\304\215 RSound.",
+   "Ovl\303\241da\304\215 AAudio, Android 8.0 a nov\305\241\303\255. Ni\305\276\305\241ia latencia a"
+   "ko OpenSL; priestorov\303\251 rozlo\305\276enia id\303\272 na v\303\275stup, ktor\303\275 prij"
+   "\303\255ma len stereo PCM, ako AC-3, ak ho dok\303\241\305\276e dek\303\263dova\305\245 (Android"
+   " 14 a nov\305\241\303\255).",
    "OpenAL ovl\303\241da\304\215.",
    "Predvolen\303\275 ALSA ovl\303\241da\304\215.",
    "ALSA ovl\303\241da\304\215 s podporou vl\303\241kien.",
@@ -5233,6 +5269,7 @@ static const struct
    "Zak\303\241za\305\245 Bluetooth ERTM",
 #endif
 #endif
+   "Vyh\304\276ada\305\245 zariadenia",
 #ifdef _3DS
    "Adres\303\241r prostriedkov spodnej obrazovky",
    "Farba p\303\255sma: modr\303\241",
@@ -5766,6 +5803,7 @@ static const struct
    "\304\214asov\303\275 limit p\303\241rovania tla\304\215idla",
    "\304\214asov\303\275 limit blokovania vstupu",
    "Odch\303\275lka osi pri stla\304\215en\303\255 tla\304\215idla",
+   "H\304\272bka stla\304\215enia",
    "\304\214as odozvy",
    "Podr\305\276a\305\245",
    "\304\214o kombin\303\241cia rob\303\255",
@@ -5982,6 +6020,8 @@ static const struct
 #endif
    "Vstupn\303\275 ovl\303\241da\304\215 \342\200\236%s\342\200\234 ich \304\215\303\255ta ako jedno"
    " zariadenie a nevie ich rozl\303\255\305\241i\305\245.",
+   "My\305\241",
+   "Dotykov\303\275 displej",
    "Dotyk",
    "Stupnica dotyku",
 #ifdef UDEV_TOUCH_SUPPORT
@@ -6237,7 +6277,9 @@ static const struct
    "Horizont\303\241lny posun okraja n\303\241zvu",
    "Faktor vertik\303\241lneho prel\303\255nania",
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
    "Sn\303\255mky mikrof\303\263nnych blokov",
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -6564,6 +6606,8 @@ static const struct
    ": %s\nVID/PID zariadenia: %d/%d",
    "Port %d n\303\241zov zariadenia: %s",
    "\305\275iadny profil automatickej konfigur\303\241cie",
+   "- Zapn\303\272\305\245 podporu DualShock 3",
+   "- Obnovi\305\245 ovl\303\241da\304\215 Windows",
    "Spr\303\241va nap\303\241jania",
    "Po\304\215et preempt\303\255vnych sn\303\255mok",
    "Teraz volite\304\276n\303\251:",
@@ -7129,6 +7173,7 @@ static const struct
    "DPI obrazovky",
    "V\303\275\305\241ka obrazovky (mm)",
    "\305\240\303\255rka obrazovky (mm)",
+   "\304\214asovanie ovl\303\241da\304\215om",
    "Identifik\303\241tor klientskeho rozhrania",
    "N\303\241zov frontendu",
    "Opera\304\215n\303\275 syst\303\251m",
@@ -7271,6 +7316,7 @@ static const struct
    "V\303\241\305\241 grafick\303\275 ovl\303\241da\304\215 nie je kompatibiln\303\275 s aktu\303"
    "\241lnym video ovl\303\241da\304\215om v RetroArch, prep\303\255na sa na ovl\303\241da\304\215 %"
    "s. Pre uplatnenie zmien re\305\241tartujte RetroArch.",
+   "\304\214asovanie ovl\303\241da\304\215om",
    "Prezent\303\241cia cez DXGI",
    "Video filter",
    "Video filtre",
@@ -7438,6 +7484,9 @@ static const struct
    "Interval v\303\275meny VSync",
    "Synchroniz\303\241cia",
    "Vide\303\241",
+   "Predvolen\303\251",
+   "Vyv\303\241\305\276en\303\251",
+   "V\303\275kon",
    "Vl\303\241knov\303\251 spracovanie videa",
    "\304\214asovanie zobrazenia vo Vl\303\241knovom videu",
    "Opakovanie sn\303\255mok vo Vl\303\241knovom videu",
@@ -7471,6 +7520,7 @@ static const struct
    "Zvisl\303\275 posun obrazovky",
    "Prieh\304\276adnos\305\245 okna",
    "Zapam\303\244ta\305\245 poz\303\255ciu a ve\304\276kos\305\245 okna",
+   "Oddelen\303\251",
    "Zobrazi\305\245 dekor\303\241cie okien",
    "\305\240\303\255rka okna",
    "Synchronizova\305\245 s presnou sn\303\255mkovou frekvenciou obsahu (G-Sync, FreeSync)",
@@ -8255,11 +8305,25 @@ static const struct
    "Po\304\215et sek\303\272nd, po\304\215as ktor\303\275ch sa m\303\241 tla\304\215idlo podr\305"
    "\276a\305\245, aby sa sp\303\241rovalo.",
    "\304\214as v sekund\303\241ch, k\303\275m sa prejde na \304\217al\305\241ie tla\304\215idlo.",
-   "Po\304\215et milisek\303\272nd \304\215akania na z\303\255skanie kompletnej vzorky vstupu. Pou"
-   "\305\276ite, ak m\303\241te probl\303\251my so s\303\272\304\215asn\303\275mi stla\304\215eniami"
-   " tla\304\215idiel (iba Android).",
+   "Ako dlho, v milisekund\303\241ch, sa stla\304\215enie na kontroleri zdr\305\276\303\255, aby k n"
+   "emu stihlo pr\303\255s\305\245 zvy\305\241n\303\251 stla\304\215enie viacer\303\275ch tla\304"
+   "\215idiel naraz. Pou\305\276ite, ak kontroler berie s\303\272\304\215asn\303\251 stla\304\215eni"
+   "a o sn\303\255mku od seba (len Android).",
    "Ako \304\217aleko mus\303\255 by\305\245 os naklonen\303\241, aby vy\303\272stila do stla\304"
    "\215enia tla\304\215idla pri pou\305\276it\303\255 'Anal\303\263g na digit\303\241lne'.",
+   "Ako hlboko mus\303\255 by\305\245 zatla\304\215en\303\251 ka\305\276d\303\251 tla\304\215idlo ko"
+   "mbin\303\241cie, k\303\275m zareaguje: pre anal\303\263gov\303\251 sp\303\272\305\241\305\245a"
+   "\304\215e a tla\304\215idl\303\241 citliv\303\251 na tlak. Tla\304\215idlo, ktor\303\251 rozli"
+   "\305\241uje len stla\304\215en\303\251 a nestla\304\215en\303\251, sa po\304\215\303\255ta ako z"
+   "atla\304\215en\303\251 \303\272plne.",
+   "Okam\305\276ite reaguje vo chv\303\255li, ke\304\217 s\303\272 stla\304\215en\303\251 v\305\241e"
+   "tky tla\304\215idl\303\241. Podr\305\276a\305\245 \304\215ak\303\241, k\303\275m ich nedr\305"
+   "\276\303\255te spolu po dobu, ktor\303\272 zvol\303\255te potom, tak\305\276e kr\303\241tke stla"
+   "\304\215enie \342\200\223 napr\303\255klad uprostred hry \342\200\223 ni\304\215 nesprav\303\255"
+   ". H\304\272bka stla\304\215enia \304\215ak\303\241, k\303\275m ich nezatla\304\215\303\255te tak"
+   " hlboko, ako zvol\303\255te potom, tak\305\276e anal\303\263gov\303\251 sp\303\272\305\241\305"
+   "\245a\304\215e a tla\304\215idl\303\241 citliv\303\251 na tlak (DualShock 2 a 3) reaguj\303\272 "
+   "len pri silnom stla\304\215en\303\255.",
    "Ako dlho musia by\305\245 v\305\241etky tla\304\215idl\303\241 kombin\303\241cie dr\305\276an"
    "\303\251 spolu, k\303\275m zareaguje.",
    "\304\214o sa stane, ke\304\217 s\303\272 v\305\241etky tla\304\215idl\303\241 kombin\303\241cie "
@@ -9886,6 +9950,15 @@ static const struct
    "Window mana\305\276\303\251ri pou\305\276\303\255vaj\303\272 kompoz\303\255ciu na aplik\303\241c"
    "iu vizu\303\241lnych efektov, detekciu nereaguj\303\272cich okien a in\303\251.",
    "Ak\303\275 ovl\303\241da\304\215 videa pou\305\276i\305\245. (Vy\305\276aduje re\305\241tart)",
+   "Nech\303\241 grafick\303\275 ovl\303\241da\304\215 \304\215asova\305\245 sn\303\255mky s neskor"
+   "\303\275m vstupom a kr\303\241tkym frontom. Pou\305\276\303\255va NVIDIA Reflex (Vulkan VK_NV_lo"
+   "w_latency2, D3D11/12 NVAPI alebo Vulkan cez DXGI) alebo Vulkan AMD Anti-Lag (VK_AMD_anti_lag). S"
+   "tav n\303\241jdete v \305\240tatistike a Syst\303\251mov\303\275ch inform\303\241ci\303\241ch. "
+   "\342\200\236Zapnut\303\251 + zr\303\275chlenie\342\200\234 zv\303\275\305\241i takty GPU. Nedost"
+   "upn\303\251 so Scanline Sync. \304\214asovanie zobrazenia vo Vl\303\241knovom videu zachov\303"
+   "\241 obnovovaciu frekvenciu displeja; ovl\303\241da\304\215 obmedzuje r\303\275chlos\305\245 obs"
+   "ahu, ke\304\217 to nerob\303\255 in",
+   "\303\275 obmedzova\304\215. Oneskorenie sn\303\255mky sa po\304\215as aktivity nepou\305\276ije.",
    "Pou\305\276i\305\245 swap chain DXGI s flip modelom s ovl\303\241da\304\215mi glcore a Vulkan vo"
    " Windows. Zapne funkcie ovl\303\241da\304\215a displeja, ako je NVIDIA Smooth Motion. Ak nie je "
    "podporovan\303\275, vr\303\241ti sa k nat\303\255vnej prezent\303\241cii a m\303\264\305\276e zm"
@@ -10207,6 +10280,15 @@ static const struct
    ", be\305\276ia vl\303\241knovo s ovl\303\241da\304\215mi Vulkan, Direct3D 11, Direct3D 12 a gl; "
    "s ostatn\303\275mi ovl\303\241da\304\215mi be\305\276ia nevl\303\241kno",
    "vo bez oh\304\276adu na toto nastavenie.",
+   "Pri Vl\303\241knovom spracovan\303\255 videa spust\303\255 ka\305\276d\303\272 sn\303\255mku jad"
+   "ra tak neskoro, ako to \304\217al\305\241ie obnovenie displeja dovol\303\255, pod\304\276a namer"
+   "an\303\275ch \304\215asov jadra a vykres\304\276ovania, namiesto pevn\303\251ho \304\215asova"
+   "\304\215a. Zni\305\276uje latenciu na \303\272rove\305\210, ak\303\272 dosahuje Oneskorenie sn"
+   "\303\255mky bez vl\303\241knov\303\251ho videa, a sn\303\255mka, ktor\303\241 trv\303\241 dlh"
+   "\305\241ie, sa zopakuje namiesto vynechania. Ke\304\217 je akt\303\255vne \304\214asovanie ovl"
+   "\303\241da\304\215om, ka\305\276d\303\272 sn\303\255mku uvo\304\276\305\210uje ovl\303\241da\304"
+   "\215 a zdr\305\276anie ju len dr\305\276\303\255 na obnovovacej frekvencii displeja. Vypnu",
+   "t\303\251: \304\215asuje \304\215asova\304\215, ako doteraz.",
    "Pri Vl\303\241knovom videu zobrazuje posledn\303\272 sn\303\255mku \304\217alej v obnovovacej fr"
    "ekvencii displeja, ke\304\217 jadro zaost\303\241va, namiesto ponechania predch\303\241dzaj\303"
    "\272ceho zobrazenia na obrazovke. Udr\305\276\303\255 Vkladanie \304\215iernych sn\303\255mok a "
@@ -10281,15 +10363,6 @@ static const struct
    "e pre obrazovky s premenlivou obnovovacou frekvenciou (G-Sync, FreeSync, HDMI 2,1 VRR).",
    "Ak\303\275 ovl\303\241da\304\215 Wi-Fi pou\305\276i\305\245. (Vy\305\276aduje re\305\241tart)",
    "Vyh\304\276ada\305\245 bezdr\303\264tov\303\251 siete a nadviaza\305\245 pripojenie.",
-   "Prepne na k\303\263piu akt\303\255vneho pl\303\241nu nap\303\241jania Windows, ktor\303\241 dr"
-   "\305\276\303\255 procesor na plnej r\303\275chlosti - minim\303\241lny aj maxim\303\241lny stav "
-   "procesora na 100 %, energetick\303\241 preferencia na v\303\275kon - bez zaparkovan\303\275ch ja"
-   "dier, prehodnocuje v\303\275konov\303\251 stavy ka\305\276d\303\275ch 5 sek\303\272nd namiesto k"
-   "a\305\276d\303\275ch 15 ms a dr\305\276\303\255 linky PCI Express a porty USB mimo \303\272spory"
-   " energie, \304\215\303\255m obmedz\303\255 preru\305\241enia v jadre syst\303\251mu a oneskoreni"
-   "a pri preb\303\272dzan\303\255. Plat\303\255 len pri nap\303\241jan\303\255 zo siete. P\303\264v"
-   "odn\303\275 pl\303\241n sa obnov\303\255 pri ukon\304\215e",
-   "n\303\255.",
    "Pri zapnutom pl\303\241ne nap\303\241jania s n\303\255zkou latenciou udr\305\276iava\305\245 aj "
    "v\305\241etky jadr\303\241 procesora mimo stavov ne\304\215innosti, aby sa \305\276iadne nemusel"
    "o pred spusten\303\255m preb\303\272dza\305\245. Procesor potom odober\303\241 pln\303\275 v\303"
@@ -10354,6 +10427,10 @@ static const struct
    "Automatick\303\251 ulo\305\276enie stavu do",
    "Z\303\241lohuje sa jadro: ",
    "Blokova\305\245 prepis SRAM",
+   "Bluetooth adapt\303\251r tohto po\304\215\303\255ta\304\215a be\305\276\303\255 na v\305\241eobe"
+   "cnom ovl\303\241da\304\215i Windows, ktor\303\275 \304\215asto nen\303\241jde \305\276iadne zari"
+   "adenia. Nain\305\241talujte ovl\303\241da\304\215 Bluetooth od v\303\275robcu po\304\215\303\255"
+   "ta\304\215a alebo z\303\241kladnej dosky.",
    "P\303\241rovanie odstr\303\241nen\303\251. Re\305\241tartujte RetroArch pre op\303\244tovn\303"
    "\251 pripojenie/p\303\241rovanie.",
    "Preh\304\276ad\303\241vanie Bluetooth ukon\304\215en\303\251.",
@@ -10617,14 +10694,25 @@ static const struct
    "Vstupn\303\275 cheat",
    "N\303\241zov s\303\272boru vstupn\303\251ho cheatu",
    "Vybra\305\245 akciu",
+   "Zatla\304\215en\303\251 na %u%%",
    "Podr\305\276a\305\245",
    "%s sek\303\272nd",
    "Okam\305\276ite",
+   "H\304\272bka stla\304\215enia",
    "Tla\304\215idl\303\241 dr\305\276an\303\251 spolu, ktor\303\251 spustia kl\303\241vesov\303\272 "
    "skratku, pr\303\255kaz alebo makro. Vpravo: podr\305\276te tla\304\215idl\303\241, ktor\303\251 "
    "chcete pou\305\276i\305\245, a potom vyberte, \304\215o robia. V\304\276avo: vyberte, \304\215o "
    "robia. OK: nap\303\255\305\241te to. Start: odstr\303\241ni\305\245.",
    "Nastavi\305\245 tla\304\215idl\303\241",
+   "zdie\304\276an\303\251 s portom %u",
+   "Men\303\255 sa ovl\303\241da\304\215 DualShock 3: povo\304\276te to vo v\303\275zve Windows.",
+   "Ovl\303\241da\304\215 DualShock 3 nebol zmenen\303\275: neboli udelen\303\251 pr\303\241va spr"
+   "\303\241vcu.",
+   "Podpora DualShock 3 je zapnut\303\241. Kontroler sa pripoj\303\255 znova s\303\241m.",
+   "%s (port %u) treba zapn\303\272\305\245: Inform\303\241cie > Inform\303\241cie o vstupe > Zapn"
+   "\303\272\305\245 podporu DualShock 3.",
+   "Ovl\303\241da\304\215 DualShock 3 sa nepodarilo zmeni\305\245.",
+   "DualShock 3 bol vr\303\241ten\303\275 ovl\303\241da\304\215u Windows.",
    "Zadajte heslo",
    "Nespr\303\241vne heslo.",
    "Heslo je spr\303\241vne.",
@@ -10703,6 +10791,8 @@ static const struct
    "\304\214istia sa z\303\241znamy M3U: ",
    "Kontroluj\303\272 sa aktu\303\241lne polo\305\276ky: ",
    "Preh\304\276ad\303\241vam obsah: ",
+   "Server MCP nemohol po\304\215\303\272va\305\245 na %s:%u. Nebe\305\276\303\255 u\305\276 in\303"
+   "\275 RetroArch?",
    "Pam\303\244\305\245",
    "Frekvencia obsahu",
    "Frekvencia displeja",
@@ -10962,6 +11052,8 @@ static const struct
    "Re\305\241tartujem...",
    "Prebieha vyp\303\255nanie...",
    "Verzia libretro API",
+   "Zapnut\303\251 + zr\303\275chlenie",
+   "Zapnut\303\251",
    "Video filter: Zak\303\241za\305\245",
    "Video filter: Povoli\305\245",
    "Obnovovacia frekvencia videa zmenen\303\241 na %s Hz.",
@@ -10984,7 +11076,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sk_blob_check[
-      (sizeof(msg_hash_sk_blob) == (215568u
+      (sizeof(msg_hash_sk_blob) == (218064u
 #ifdef ANDROID
        + 389u
 #endif
@@ -11087,7 +11179,9 @@ typedef char msg_hash_sk_blob_check[
 #endif
 #endif
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
        + 29u
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -11601,6 +11695,7 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_JACK,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_OSS,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_RSOUND,
+   (msg_hash_id_t)MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_AAUDIO,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_AL,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ALSA,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ALSATHREAD,
@@ -11874,6 +11969,7 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BLUETOOTH_ERTM_DISABLE,
 #endif
 #endif
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BLUETOOTH_SCAN,
 #ifdef _3DS
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BOTTOM_ASSETS_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_BLUE,
@@ -12401,6 +12497,7 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_BLOCK_TIMEOUT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_COMBO_DEPTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_COMBO_HOLD,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_COMBO_HOLD_TIME,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_COMBO_TARGET,
@@ -12616,6 +12713,8 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_STYLUS_REQUIRE_CONTACT_FOR_CLICK,
 #endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_SYSTEM_DEVICE_INFO,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCHPAD_MOUSE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCHPAD_POINTER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_SCALE,
 #ifdef UDEV_TOUCH_SUPPORT
@@ -12871,7 +12970,9 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_VERTICAL_FADE_FACTOR,
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -13194,6 +13295,8 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NO_PROFILE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PORT_DS3_ENABLE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PORT_DS3_RESTORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PREEMPT_FRAMES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL,
@@ -13747,6 +13850,7 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DRIVER_PACING,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_NAME,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS,
@@ -13886,6 +13990,7 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
 #endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_PACING,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DXGI_PRESENT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_DIR,
@@ -14053,6 +14158,9 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_DEFAULT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_BALANCED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_PERFORMANCE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED_DISPLAY_PACING,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED_PRESENT_REPEAT,
@@ -14086,6 +14194,7 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SEPARATE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
@@ -14513,6 +14622,8 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BLOCK_TIMEOUT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_COMBO_DEPTH,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_COMBO_HOLD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_COMBO_HOLD_TIME,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_COMBO_TARGET,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_DEVICE_INDEX,
@@ -15404,6 +15515,7 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
 #endif
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DRIVER_PACING,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DXGI_PRESENT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_DIR,
@@ -15521,6 +15633,7 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED_DISPLAY_PACING,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED_PRESENT_REPEAT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_THREAD_PRIORITY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
@@ -15557,7 +15670,6 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_WIFI_DRIVER,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_WIFI_SETTINGS,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_WIN32_POWER_PLAN,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_WIN32_POWER_PLAN_IDLE_DISABLE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_XMB_ALPHA_FACTOR,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_XMB_CURRENT_MENU_ICON,
@@ -15609,6 +15721,7 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MSG_AUTO_SAVE_STATE_TO,
    (msg_hash_id_t)MSG_BACKING_UP_CORE,
    (msg_hash_id_t)MSG_BLOCKING_SRAM_OVERWRITE,
+   (msg_hash_id_t)MSG_BLUETOOTH_ADAPTER_GENERIC_DRIVER,
    (msg_hash_id_t)MSG_BLUETOOTH_PAIRING_REMOVED,
    (msg_hash_id_t)MSG_BLUETOOTH_SCAN_COMPLETE,
    (msg_hash_id_t)MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
@@ -15846,11 +15959,20 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MSG_INPUT_CHEAT,
    (msg_hash_id_t)MSG_INPUT_CHEAT_FILENAME,
    (msg_hash_id_t)MSG_INPUT_COMBO_CHOOSE_ACTION,
+   (msg_hash_id_t)MSG_INPUT_COMBO_DEPTH_PERCENT,
    (msg_hash_id_t)MSG_INPUT_COMBO_HOLD_FOR,
    (msg_hash_id_t)MSG_INPUT_COMBO_HOLD_SECONDS,
    (msg_hash_id_t)MSG_INPUT_COMBO_INSTANT,
+   (msg_hash_id_t)MSG_INPUT_COMBO_PRESS_DEPTH,
    (msg_hash_id_t)MSG_INPUT_COMBO_ROW_SUBLABEL,
    (msg_hash_id_t)MSG_INPUT_COMBO_SET_BUTTONS,
+   (msg_hash_id_t)MSG_INPUT_DEVICE_INDEX_SHARED,
+   (msg_hash_id_t)MSG_INPUT_DS3_ASKING,
+   (msg_hash_id_t)MSG_INPUT_DS3_DECLINED,
+   (msg_hash_id_t)MSG_INPUT_DS3_ENABLED,
+   (msg_hash_id_t)MSG_INPUT_DS3_NEEDS_ENABLING,
+   (msg_hash_id_t)MSG_INPUT_DS3_NOT_CHANGED,
+   (msg_hash_id_t)MSG_INPUT_DS3_RESTORED,
    (msg_hash_id_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD,
    (msg_hash_id_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK,
    (msg_hash_id_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_OK,
@@ -15919,6 +16041,7 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MSG_MANUAL_CONTENT_SCAN_M3U_CLEANUP,
    (msg_hash_id_t)MSG_MANUAL_CONTENT_SCAN_PLAYLIST_CLEANUP,
    (msg_hash_id_t)MSG_MANUAL_CONTENT_SCAN_START,
+   (msg_hash_id_t)MSG_MCP_SERVER_NOT_LISTENING,
    (msg_hash_id_t)MSG_MEMORY,
    (msg_hash_id_t)MSG_MENU_FRAME_RATE_CONTENT,
    (msg_hash_id_t)MSG_MENU_FRAME_RATE_DISPLAY,
@@ -16147,6 +16270,8 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MSG_VALUE_REBOOTING,
    (msg_hash_id_t)MSG_VALUE_SHUTTING_DOWN,
    (msg_hash_id_t)MSG_VERSION_OF_LIBRETRO_API,
+   (msg_hash_id_t)MSG_VIDEO_DRIVER_PACING_BOOST,
+   (msg_hash_id_t)MSG_VIDEO_DRIVER_PACING_ON,
    (msg_hash_id_t)MSG_VIDEO_FILTER_ENABLE_OFF,
    (msg_hash_id_t)MSG_VIDEO_FILTER_ENABLE_ON,
    (msg_hash_id_t)MSG_VIDEO_REFRESH_RATE_CHANGED,

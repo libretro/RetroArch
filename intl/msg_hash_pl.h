@@ -1056,6 +1056,8 @@ static const struct
    char s_16430f5d[31];
 #endif
    char s_a310fe56[90];
+   char s_acfde8f7[5];
+   char s_ca2f1e0f[15];
    char s_d042d680[14];
    char s_16cacb01[13];
 #ifdef UDEV_TOUCH_SUPPORT
@@ -1318,7 +1320,9 @@ static const struct
    char s_b201bb70[42];
    char s_b66840e9[33];
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
    char s_f0db2883[26];
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -2491,6 +2495,10 @@ static const struct
    char s_c017f975[13];
    char s_730df420[15];
    char s_bcddf275[6];
+   char s_bddbac76[10];
+   char s_a72a3c80[13];
+   char s_482ee1f1[13];
+   char s_214b7699[12];
    char s_f90edcc2[54];
    char s_ad14307a[26];
 #if defined(RARCH_MOBILE)
@@ -2932,7 +2940,6 @@ static const struct
    char s_df4225b9[68];
    char s_a5b7b768[61];
    char s_d0b943e8[67];
-   char s_4f2077b6[161];
    char s_5b920f01[121];
    char s_5d20ea2c[47];
    char s_b339b327[175];
@@ -5780,6 +5787,8 @@ static const struct
 #endif
    "Sterownik wej\305\233cia \"%s\" odczytuje je jako jedno urz\304\205dzenie i nie mo\305\274e ich "
    "odr\303\263\305\274nia\304\207.",
+   "Mysz",
+   "Ekran dotykowy",
    "W\305\202\304\205cz dotyk",
    "Skala dotyku",
 #ifdef UDEV_TOUCH_SUPPORT
@@ -6042,7 +6051,9 @@ static const struct
    "Przesuni\304\231cie odst\304\231pu tytu\305\202u w poziomie",
    "Pionowy wsp\303\263\305\202czynnik zanikania",
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
    "Ramki blokuj\304\205ce mikrofon",
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -7230,6 +7241,10 @@ static const struct
    "Automatyczny",
    "Synchronizacja",
    "Filmy",
+   "Domy\305\233lny",
+   "Automatyczny",
+   "Zbalansowany",
+   "Wydajno\305\233\304\207",
    "U\305\274ywaj bufor\303\263w argument\303\263w Metal (Wymagany restart)",
    "Pozbywanie si\304\231 migotania",
 #if defined(RARCH_MOBILE)
@@ -7891,9 +7906,6 @@ static const struct
    ".",
    "Ilo\305\233\304\207 sekund na utrzymanie wej\305\233cia w celu powi\304\205zania go.",
    "Ilo\305\233\304\207 sekund oczekiwania na przej\305\233cie do nast\304\231pnego wi\304\205zania.",
-   "Liczba milisekund oczekiwania na pobranie pe\305\202nej pr\303\263bki wej\305\233ciowej. U\305"
-   "\274yj go, je\305\233li masz problemy z jednoczesnymi naci\305\233ni\304\231ciami przycisku (tyl"
-   "ko Android).",
    "Jak daleko o\305\233 musi by\304\207 przechylona, aby doprowadzi\304\207 do naci\305\233ni\304"
    "\231cia przycisku podczas u\305\274ywania 'Analog do Digital'.",
    "Fizyczny kontroler rozpoznany przez RetroArch.",
@@ -10210,7 +10222,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pl_blob_check[
-      (sizeof(msg_hash_pl_blob) == (200538u
+      (sizeof(msg_hash_pl_blob) == (200445u
 #ifdef ANDROID
        + 385u
 #endif
@@ -10310,7 +10322,9 @@ typedef char msg_hash_pl_blob_check[
 #endif
 #endif
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
        + 26u
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -11768,6 +11782,8 @@ static const msg_hash_id_t msg_hash_pl_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_STYLUS_REQUIRE_CONTACT_FOR_CLICK,
 #endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_SYSTEM_DEVICE_INFO,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCHPAD_MOUSE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCHPAD_POINTER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_SCALE,
 #ifdef UDEV_TOUCH_SUPPORT
@@ -12030,7 +12046,9 @@ static const msg_hash_id_t msg_hash_pl_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_VERTICAL_FADE_FACTOR,
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -13202,6 +13220,10 @@ static const msg_hash_id_t msg_hash_pl_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_DEFAULT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_AUTO,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_BALANCED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_PERFORMANCE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
 #if defined(RARCH_MOBILE)
@@ -13640,7 +13662,6 @@ static const msg_hash_id_t msg_hash_pl_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BIND_DEFAULTS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BIND_HOLD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BLOCK_TIMEOUT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_DEVICE_INDEX,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_DEVICE_RESERVATION_TYPE,

@@ -1041,6 +1041,8 @@ static const struct
    char s_a7da7dc1[26];
    char s_980ef0e8[8];
    char s_fcf05466[16];
+   char s_acfde8f7[5];
+   char s_ca2f1e0f[17];
    char s_d042d680[6];
    char s_16cacb01[12];
 #ifdef UDEV_TOUCH_SUPPORT
@@ -1284,7 +1286,9 @@ static const struct
    char s_b201bb70[39];
    char s_b66840e9[32];
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
    char s_f0db2883[31];
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -2395,6 +2399,9 @@ static const struct
    char s_45816e1d[31];
    char s_730df420[16];
    char s_bcddf275[8];
+   char s_bddbac76[12];
+   char s_482ee1f1[12];
+   char s_214b7699[11];
    char s_3bbc8b05[37];
    char s_e595f6df[45];
    char s_f90edcc2[56];
@@ -2849,7 +2856,6 @@ static const struct
    char s_df4225b9[80];
    char s_a5b7b768[63];
    char s_d0b943e8[71];
-   char s_4f2077b6[176];
    char s_5b920f01[94];
    char s_5d20ea2c[49];
    char s_b339b327[160];
@@ -5619,6 +5625,8 @@ static const struct
    "Sensores de movemento/luz",
    "Entrada",
    "Teclado pequeno",
+   "Rato",
+   "Pantalla t\303\241ctil",
    "Tocar",
    "Toca Escala",
 #ifdef UDEV_TOUCH_SUPPORT
@@ -5862,7 +5870,9 @@ static const struct
    "Desfase horizontal da marxe do t\303\255tulo",
    "Factor de esvaecemento vertical",
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
    "Marcos de bloque de micr\303\263fono",
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -6986,6 +6996,9 @@ static const struct
    "Intervalo de intercambio VSync",
    "Sincronizaci\303\263n",
    "V\303\255deos",
+   "Por defecto",
+   "Equilibrado",
+   "Rendemento",
    "Ritmo da pantalla de v\303\255deo en f\303\255os",
    "Repetici\303\263n de fotogramas de v\303\255deo en f\303\255os",
    "Usar b\303\272feres de argumentos de Metal (require reinicio)",
@@ -7651,9 +7664,6 @@ static const struct
    "Borra a configuraci\303\263n de ligaz\303\263n de entrada aos seus valores predeterminados.",
    "Cantidade de segundos para manter unha entrada para vinculala.",
    "Cantidade de segundos para esperar ata pasar \303\241 seguinte vinculaci\303\263n.",
-   "O n\303\272mero de milisegundos que hai que esperar para obter unha mostra de entrada completa. "
-   "Util\303\255zao se tes problemas coas pulsaci\303\263ns de bot\303\263ns simult\303\241neas (s"
-   "\303\263 en Android).",
    "Ata onde se debe inclinar un eixe para que se prema un bot\303\263n ao usar \"Anal\303\263xico a"
    " dixital\".",
    "O controlador f\303\255sico reco\303\261ecido por RetroArch.",
@@ -9771,7 +9781,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_gl_blob_check[
-      (sizeof(msg_hash_gl_blob) == (211775u
+      (sizeof(msg_hash_gl_blob) == (211656u
 #ifdef ANDROID
        + 365u
 #endif
@@ -9856,7 +9866,9 @@ typedef char msg_hash_gl_blob_check[
        + 29u
 #endif
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
        + 31u
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -11257,6 +11269,8 @@ static const msg_hash_id_t msg_hash_gl_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCHPAD_MOUSE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCHPAD_POINTER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_SCALE,
 #ifdef UDEV_TOUCH_SUPPORT
@@ -11500,7 +11514,9 @@ static const msg_hash_id_t msg_hash_gl_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_VERTICAL_FADE_FACTOR,
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -12610,6 +12626,9 @@ static const msg_hash_id_t msg_hash_gl_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_DEFAULT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_BALANCED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_PERFORMANCE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED_DISPLAY_PACING,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED_PRESENT_REPEAT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
@@ -13058,7 +13077,6 @@ static const msg_hash_id_t msg_hash_gl_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BIND_DEFAULTS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BIND_HOLD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BLOCK_TIMEOUT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_DEVICE_INDEX,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_DEVICE_RESERVATION_TYPE,

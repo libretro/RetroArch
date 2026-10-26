@@ -426,7 +426,9 @@ static const struct
    char s_7816d5d5[29];
    char s_b00815b8[13];
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
    char s_f0db2883[36];
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -840,6 +842,7 @@ static const struct
    char s_c017f975[12];
    char s_730df420[16];
    char s_bcddf275[8];
+   char s_a72a3c80[12];
    char s_92a02470[45];
    char s_b7ef9e17[46];
    char s_8f37930f[50];
@@ -1875,7 +1878,9 @@ static const struct
    "Mostrar 'Atualizador online'",
    "Sons do Menu",
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
    "Estruturas de bloqueio do microfone",
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -2299,6 +2304,7 @@ static const struct
    "Autom\303\241tico",
    "Sincroniza\303\247\303\243o",
    "V\303\255deos",
+   "Autom\303\241tico",
    "Propor\303\247\303\243o personalizada da altura do ecr\303\243",
    "Propor\303\247\303\243o personalizada da largura do ecr\303\243",
    "Propor\303\247\303\243o personalizada do ecr\303\243 na posi\303\247\303\243o X",
@@ -3012,7 +3018,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pt_pt_blob_check[
-      (sizeof(msg_hash_pt_pt_blob) == (55101u
+      (sizeof(msg_hash_pt_pt_blob) == (55113u
 #ifdef HAVE_LAKKA
        + 17u
 #endif
@@ -3022,7 +3028,9 @@ typedef char msg_hash_pt_pt_blob_check[
 #endif
 #endif
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
        + 36u
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -3528,7 +3536,9 @@ static const msg_hash_id_t msg_hash_pt_pt_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -3941,6 +3951,7 @@ static const msg_hash_id_t msg_hash_pt_pt_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_AUTO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,

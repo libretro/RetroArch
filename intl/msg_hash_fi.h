@@ -788,6 +788,8 @@ static const struct
    char s_980ef0e8[7];
    char s_fcf05466[21];
    char s_da16c634[12];
+   char s_acfde8f7[6];
+   char s_ca2f1e0f[17];
    char s_d042d680[9];
    char s_16cacb01[19];
    char s_75851363[13];
@@ -1018,7 +1020,9 @@ static const struct
    char s_b201bb70[46];
    char s_b66840e9[28];
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
    char s_f0db2883[21];
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -2054,6 +2058,10 @@ static const struct
    char s_c017f975[14];
    char s_730df420[13];
    char s_bcddf275[7];
+   char s_bddbac76[7];
+   char s_a72a3c80[14];
+   char s_482ee1f1[15];
+   char s_214b7699[13];
    char s_ad14307a[21];
    char s_92a02470[31];
    char s_b7ef9e17[30];
@@ -2361,7 +2369,6 @@ static const struct
    char s_a17a67e1[61];
    char s_a5b7b768[72];
    char s_d0b943e8[78];
-   char s_4f2077b6[161];
    char s_bd0737d6[38];
    char s_475ff311[108];
    char s_2e4a5d12[50];
@@ -4320,6 +4327,8 @@ static const struct
    "Sy\303\266te",
    "Pieni n\303\244pp\303\244imist\303\266",
    "Jaa Joy-Con",
+   "Hiiri",
+   "Kosketusn\303\244ytt\303\266",
    "Kosketus",
    "Kosketuksen skaala",
    "Turbotulitus",
@@ -4550,7 +4559,9 @@ static const struct
    "Otsikon marginaalin vaakasuuntainen siirtym\303\244",
    "Pystysuora h\303\244ivytyskerroin",
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
    "Mikrofonin estokuvat",
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -5596,6 +5607,10 @@ static const struct
    "Automaattinen",
    "Synkronointi",
    "Videot",
+   "Oletus",
+   "Automaattinen",
+   "Tasapainotettu",
+   "Suorituskyky",
    "Vilkkumisen poistaja",
    "Mukautettu kuvasuhde (Korkeus)",
    "Mukautettu kuvasuhde (Leveys)",
@@ -6000,9 +6015,6 @@ static const struct
    "ritet\303\244\303\244n.",
    "Odotettavien sekuntien m\303\244\303\244r\303\244 ennen seuraavaan m\303\244\303\244ritykseen si"
    "irtymist\303\244.",
-   "Millisekuntien m\303\244\303\244r\303\244 saadaksesi kokonaisen sy\303\266tteen painalluksen. K"
-   "\303\244yt\303\244 t\303\244t\303\244, jos sinulla on ongelmia samanaikaisten painallusten kanss"
-   "a (vain Android).",
    "M\303\244\303\244ritt\303\244\303\244 emuloidun ohjaintyypin.",
    "K\303\244ytett\303\244v\303\244 sy\303\266teajuri. Jotkin videoajurit pakottavat eri sy\303\266t"
    "eajurin. (Vaatii uudelleenk\303\244ynnistyksen)",
@@ -7547,7 +7559,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fi_blob_check[
-      (sizeof(msg_hash_fi_blob) == (123713u
+      (sizeof(msg_hash_fi_blob) == (123624u
 #ifdef HAVE_LAKKA
        + 257u
 #endif
@@ -7604,7 +7616,9 @@ typedef char msg_hash_fi_blob_check[
 #endif
 #endif
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
        + 21u
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -8659,6 +8673,8 @@ static const msg_hash_id_t msg_hash_fi_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCHPAD_MOUSE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCHPAD_POINTER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_SCALE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
@@ -8889,7 +8905,9 @@ static const msg_hash_id_t msg_hash_fi_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_VERTICAL_FADE_FACTOR,
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -9924,6 +9942,10 @@ static const msg_hash_id_t msg_hash_fi_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_DEFAULT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_AUTO,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_BALANCED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_PERFORMANCE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
@@ -10231,7 +10253,6 @@ static const msg_hash_id_t msg_hash_fi_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_AUTO_MOUSE_GRAB,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BIND_HOLD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BLOCK_TIMEOUT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_DEVICE_TYPE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_DRIVER,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,

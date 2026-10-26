@@ -1142,7 +1142,9 @@ static const struct
    char s_b201bb70[43];
    char s_b66840e9[27];
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
    char s_f0db2883[23];
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -2210,6 +2212,9 @@ static const struct
    char s_c017f975[12];
    char s_730df420[21];
    char s_bcddf275[8];
+   char s_bddbac76[10];
+   char s_a72a3c80[12];
+   char s_482ee1f1[13];
    char s_f90edcc2[49];
    char s_ad14307a[11];
 #if defined(RARCH_MOBILE)
@@ -2593,7 +2598,6 @@ static const struct
    char s_df4225b9[55];
    char s_a5b7b768[64];
    char s_d0b943e8[72];
-   char s_4f2077b6[187];
    char s_5b920f01[121];
    char s_5d20ea2c[50];
    char s_b339b327[168];
@@ -5309,7 +5313,9 @@ static const struct
    "Horizontale verschuiving van de titelmarge",
    "Verticale vervagingsfactor",
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
    "Microfoon block frames",
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -6384,6 +6390,9 @@ static const struct
    "Automatisch",
    "Audio Synchronizatie",
    "Video's",
+   "Standaard",
+   "Automatisch",
+   "Gebalanceerd",
    "Gebruik Metal-Argumentbuffers (herstart vereist)",
    "Ontflikker",
 #if defined(RARCH_MOBILE)
@@ -6854,9 +6863,6 @@ static const struct
    "Reset de invoerinstellingen naar de standaard waarden.",
    "Aantal seconden om een invoer vast te houden om deze te binden.",
    "Aantal seconden om te wachten tot je doorgaat naar de volgende binding.",
-   "Het aantal milliseconden dat gewacht moet worden om een \342\200\213\342\200\213volledig invoers"
-   "ignaal te ontvangen. Gebruik dit als je problemen ondervindt met gelijktijdige knopdrukken (alle"
-   "en Android).",
    "Hoe ver een as moet worden gekanteld om te resulteren in een druk op de knop bij het gebruik van"
    " 'Analoog tot Digitaal'.",
    "De fysieke controller als herkend door RetroArch.",
@@ -8644,7 +8650,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_nl_blob_check[
-      (sizeof(msg_hash_nl_blob) == (173358u
+      (sizeof(msg_hash_nl_blob) == (173206u
 #ifdef ANDROID
        + 375u
 #endif
@@ -8728,7 +8734,9 @@ typedef char msg_hash_nl_blob_check[
 #endif
 #endif
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
        + 23u
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -10218,7 +10226,9 @@ static const msg_hash_id_t msg_hash_nl_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_VERTICAL_FADE_FACTOR,
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -11285,6 +11295,9 @@ static const msg_hash_id_t msg_hash_nl_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_DEFAULT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_AUTO,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_BALANCED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
 #if defined(RARCH_MOBILE)
@@ -11668,7 +11681,6 @@ static const msg_hash_id_t msg_hash_nl_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BIND_DEFAULTS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BIND_HOLD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BLOCK_TIMEOUT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_DEVICE_INDEX,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_DEVICE_RESERVATION_TYPE,

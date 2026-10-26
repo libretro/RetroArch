@@ -1081,6 +1081,8 @@ static const struct
    char s_16430f5d[46];
 #endif
    char s_a310fe56[100];
+   char s_acfde8f7[7];
+   char s_ca2f1e0f[15];
    char s_d042d680[8];
    char s_16cacb01[20];
 #ifdef UDEV_TOUCH_SUPPORT
@@ -1354,7 +1356,9 @@ static const struct
    char s_b201bb70[42];
    char s_b66840e9[26];
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
    char s_f0db2883[27];
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -2573,6 +2577,9 @@ static const struct
    char s_45816e1d[29];
    char s_730df420[23];
    char s_bcddf275[8];
+   char s_bddbac76[12];
+   char s_482ee1f1[11];
+   char s_214b7699[13];
    char s_258060bf[48];
    char s_3bbc8b05[82];
    char s_e595f6df[66];
@@ -2607,6 +2614,7 @@ static const struct
    char s_ea2674d4[31];
    char s_2d8cb7ce[24];
    char s_68190518[34];
+   char s_6448376a[9];
    char s_b9e24170[38];
    char s_30140cb5[20];
    char s_25a21976[67];
@@ -3049,7 +3057,6 @@ static const struct
    char s_df4225b9[79];
    char s_a5b7b768[76];
    char s_d0b943e8[84];
-   char s_4f2077b6[207];
    char s_5b920f01[133];
    char s_f96ddf69[148];
    char s_d84f519b[245];
@@ -4100,8 +4107,6 @@ static const struct
    char s_6ac06624[185];
    char s_f765b650[48];
    char s_7059a595[57];
-   char s_c7d672df_0[500];
-   char s_c7d672df_1[93];
    char s_c85b2f0f[351];
    char s_6d1448c0[57];
    char s_cf0b487b[101];
@@ -6058,6 +6063,8 @@ static const struct
 #endif
    "Le pilote d'entr\303\251e \"%s\" les consid\303\250re comme un seul p\303\251riph\303\251rique e"
    "t ne peut pas les distinguer.",
+   "Souris",
+   "\303\211cran tactile",
    "Tactile",
    "\303\211chelle du tactile",
 #ifdef UDEV_TOUCH_SUPPORT
@@ -6331,7 +6338,9 @@ static const struct
    "D\303\251calage horizontal de la marge du titre",
    "Facteur de fondu vertical",
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
    "Images blocs du microphone",
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -7566,6 +7575,9 @@ static const struct
    "Intervalle d'\303\251change V-Sync",
    "Synchronisation vid\303\251o",
    "Vid\303\251os",
+   "Par d\303\251faut",
+   "Equilibr\303\251",
+   "Performances",
    "Pipeline vid\303\251o sur plusieurs fils d'ex\303\251cution",
    "R\303\251gulation de la cadence d'affichage avec vid\303\251o sur plusieurs fils d'ex\303\251cut"
    "ion",
@@ -7601,6 +7613,7 @@ static const struct
    "D\303\251calage vertical de l'\303\251cran",
    "Opacit\303\251 de la fen\303\252tre",
    "Restaurer l'aspect de la fen\303\252tre",
+   "S\303\251par\303\251",
    "Afficher les d\303\251corations de fen\303\252tre",
    "Largeur de fen\303\252tre",
    "Synchroniser \303\240 la fr\303\251quence exacte du contenu (G-Sync, FreeSync)",
@@ -8352,9 +8365,6 @@ static const struct
    "\251faut.",
    "Nombre de secondes \303\240 maintenir une touche avant qu'elle ne soit assign\303\251e.",
    "Nombre de secondes \303\240 attendre avant de passer \303\240 l'assignation de touche suivante.",
-   "Temps d'attente en millisecondes pour obtenir un \303\251chantillon complet des touches press"
-   "\303\251es. Utilisez cette option si vous avez des probl\303\250mes avec les touches press\303"
-   "\251es simultan\303\251ment (Android uniquement).",
    "Jusqu'o\303\271 un axe doit \303\252tre inclin\303\251 pour r\303\251sulter en un appui sur la t"
    "ouche lors de l'utilisation de 'Analogique vers num\303\251rique'.",
    "La dur\303\251e pendant laquelle tous les boutons de la combinaison doivent \303\252tre maintenu"
@@ -10331,15 +10341,6 @@ static const struct
    " (G-Sync, FreeSync, HDMI 2.1 VRR).",
    "Pilote Wi-Fi \303\240 utiliser. (Red\303\251marrage requis)",
    "Analyser les r\303\251seaux sans fil et \303\251tablir la connexion.",
-   "Bascule vers une copie du plan d'alimentation actif de Windows qui maintient le processeur \303"
-   "\240 pleine vitesse - \303\251tat minimal et maximum du processeur \303\240 100\302\240%, pr\303"
-   "\251f\303\251rence \303\251nerg\303\251tique sur les performances - sans c\305\223urs stationn"
-   "\303\251s, r\303\251\303\251value les \303\251tats de performances toutes les 5\302\240secondes "
-   "au lieu de 15\302\240ms, et conserve les liens PCI\302\240Express et les ports USB hors des mode"
-   "s d'\303\251conomie d'\303\251nergie, de la r\303\251duction de l'activit\303\251 d'interruption"
-   " du noyau et des d\303\251lais de r\303\251veil. S'applique",
-   " uniquement lorsque l'ordinateur est branch\303\251. Le plan d'origine est restaur\303\251 \303"
-   "\240 la sortie.",
    "Lorsque le mode de gestion de l'alimentation \303\240 faible latence est activ\303\251, tous les"
    " c\305\223urs du processeur restent actifs, \303\251vitant ainsi qu'ils n'aient \303\240 se r"
    "\303\251veiller avant de fonctionner. Le processeur consomme alors toute sa puissance et chauffe"
@@ -11028,7 +11029,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fr_blob_check[
-      (sizeof(msg_hash_fr_blob) == (259613u
+      (sizeof(msg_hash_fr_blob) == (258880u
 #ifdef ANDROID
        + 373u
 #endif
@@ -11131,7 +11132,9 @@ typedef char msg_hash_fr_blob_check[
 #endif
 #endif
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
        + 27u
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -12659,6 +12662,8 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_STYLUS_REQUIRE_CONTACT_FOR_CLICK,
 #endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_SYSTEM_DEVICE_INFO,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCHPAD_MOUSE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCHPAD_POINTER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_SCALE,
 #ifdef UDEV_TOUCH_SUPPORT
@@ -12932,7 +12937,9 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_VERTICAL_FADE_FACTOR,
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -14150,6 +14157,9 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_DEFAULT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_BALANCED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_PERFORMANCE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED_DISPLAY_PACING,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED_PRESENT_REPEAT,
@@ -14184,6 +14194,7 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SEPARATE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
@@ -14613,7 +14624,6 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BIND_DEFAULTS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BIND_HOLD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BLOCK_TIMEOUT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_COMBO_HOLD_TIME,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_COMBO_TARGET,
@@ -15655,7 +15665,6 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_WIFI_DRIVER,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_WIFI_SETTINGS,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_WIN32_POWER_PLAN,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_WIN32_POWER_PLAN_IDLE_DISABLE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_XMB_ALPHA_FACTOR,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_XMB_CURRENT_MENU_ICON,

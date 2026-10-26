@@ -944,6 +944,7 @@ static const struct
    char s_a7da7dc1[26];
    char s_fcf05466[27];
    char s_da16c634[18];
+   char s_ca2f1e0f[16];
    char s_16cacb01[12];
 #ifdef UDEV_TOUCH_SUPPORT
    char s_3326ea36[19];
@@ -1172,7 +1173,9 @@ static const struct
    char s_b201bb70[43];
    char s_b66840e9[33];
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
    char s_f0db2883[23];
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -2251,6 +2254,9 @@ static const struct
    char s_45816e1d[25];
    char s_730df420[23];
    char s_bcddf275[6];
+   char s_bddbac76[12];
+   char s_482ee1f1[11];
+   char s_214b7699[12];
    char s_f90edcc2[51];
    char s_ad14307a[21];
 #if defined(RARCH_MOBILE)
@@ -2629,7 +2635,6 @@ static const struct
    char s_df4225b9[71];
    char s_a5b7b768[68];
    char s_d0b943e8[67];
-   char s_4f2077b6[162];
    char s_5b920f01[105];
    char s_5d20ea2c[48];
    char s_b339b327[165];
@@ -5181,6 +5186,7 @@ static const struct
    "Sensori Di Movimento/Luce",
    "Piccola Tastiera Abilitata",
    "Splitta i Joy-Con",
+   "Schermo tattile",
    "Scala Tocco",
 #ifdef UDEV_TOUCH_SUPPORT
    "Gesti Tocco VMouse",
@@ -5409,7 +5415,9 @@ static const struct
    "Scostamento Margine del Titolo Orizzontale",
    "Fattore Di Dissolvenza Verticale",
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
    "Frame blocco microfono",
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -6495,6 +6503,9 @@ static const struct
    "Intervallo Scambio VSync",
    "Sincronizzazione audio",
    "Video",
+   "Predefinito",
+   "Bilanciato",
+   "Prestazioni",
    "Usa i buffer di argomenti Metal (richiede riavvio)",
    "Eliminazione flicker",
 #if defined(RARCH_MOBILE)
@@ -6964,8 +6975,6 @@ static const struct
    "Cancella le impostazioni del bind di input ai loro valori predefiniti.",
    "Quantit\303\240 di secondi per tenere premuto un pulsante per collegarlo.",
    "Quantit\303\240 di secondi da attendere fino alla prossima associazione.",
-   "Il numero di millisecondi da attendere per ottenere un campione di input completo. Usalo se hai "
-   "problemi con le pressioni simultanee dei pulsanti (solo Android).",
    "Quanto deve essere inclinato un asse per ottenere un pulsante premere quando si usa 'Analog to D"
    "igital'.",
    "Il controller fisico riconosciuto da RetroArch.",
@@ -8815,7 +8824,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_it_blob_check[
-      (sizeof(msg_hash_it_blob) == (182994u
+      (sizeof(msg_hash_it_blob) == (182883u
 #ifdef ANDROID
        + 376u
 #endif
@@ -8899,7 +8908,9 @@ typedef char msg_hash_it_blob_check[
 #endif
 #endif
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
        + 23u
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -10189,6 +10200,7 @@ static const msg_hash_id_t msg_hash_it_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCHPAD_POINTER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_SCALE,
 #ifdef UDEV_TOUCH_SUPPORT
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_GESTURE,
@@ -10417,7 +10429,9 @@ static const msg_hash_id_t msg_hash_it_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_VERTICAL_FADE_FACTOR,
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -11495,6 +11509,9 @@ static const msg_hash_id_t msg_hash_it_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_DEFAULT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_BALANCED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_PERFORMANCE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
 #if defined(RARCH_MOBILE)
@@ -11873,7 +11890,6 @@ static const msg_hash_id_t msg_hash_it_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BIND_DEFAULTS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BIND_HOLD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BLOCK_TIMEOUT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_DEVICE_INDEX,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_DEVICE_RESERVATION_TYPE,

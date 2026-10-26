@@ -339,6 +339,7 @@ static const struct
    char s_9a57d328[28];
 #endif
 #endif
+   char s_682e6742[18];
 #ifdef _3DS
    char s_22a46583[46];
    char s_a4d079f8[22];
@@ -1081,6 +1082,8 @@ static const struct
    char s_16430f5d[40];
 #endif
    char s_a310fe56[85];
+   char s_acfde8f7[8];
+   char s_ca2f1e0f[17];
    char s_d042d680[8];
    char s_16cacb01[15];
 #ifdef UDEV_TOUCH_SUPPORT
@@ -1344,7 +1347,9 @@ static const struct
    char s_b201bb70[47];
    char s_b66840e9[31];
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
    char s_f0db2883[29];
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -2566,6 +2571,10 @@ static const struct
    char s_c017f975[11];
    char s_730df420[16];
    char s_bcddf275[8];
+   char s_bddbac76[12];
+   char s_a72a3c80[11];
+   char s_482ee1f1[11];
+   char s_214b7699[10];
    char s_258060bf[33];
    char s_3bbc8b05[47];
    char s_e595f6df[47];
@@ -2600,6 +2609,7 @@ static const struct
    char s_ea2674d4[38];
    char s_2d8cb7ce[24];
    char s_68190518[42];
+   char s_6448376a[8];
    char s_b9e24170[35];
    char s_30140cb5[23];
    char s_25a21976[85];
@@ -3034,7 +3044,7 @@ static const struct
    char s_df4225b9[75];
    char s_a5b7b768[68];
    char s_d0b943e8[81];
-   char s_4f2077b6[188];
+   char s_4f2077b6[273];
    char s_5b920f01[98];
    char s_a8576709[228];
    char s_71b76e1b_0[500];
@@ -3930,6 +3940,8 @@ static const struct
 #endif
    char s_ab839b13[131];
    char s_135d20b8[58];
+   char s_62e196a9_0[500];
+   char s_62e196a9_1[109];
    char s_5767a1f8[480];
    char s_17663212[175];
    char s_e4aa2e10[65];
@@ -4050,6 +4062,8 @@ static const struct
    char s_7e96b5ce[49];
    char s_3547866d_0[500];
    char s_3547866d_1[132];
+   char s_d73ccef3_0[500];
+   char s_d73ccef3_1[85];
    char s_81163acd[470];
    char s_ecc9b2c5[370];
    char s_c2314d30[278];
@@ -4086,8 +4100,6 @@ static const struct
    char s_6ac06624[155];
    char s_f765b650[56];
    char s_7059a595[51];
-   char s_c7d672df_0[500];
-   char s_c7d672df_1[12];
    char s_c85b2f0f[344];
    char s_6d1448c0[55];
    char s_cf0b487b[101];
@@ -4139,6 +4151,7 @@ static const struct
    char s_ac3c4c54[33];
    char s_a7a47ea6[32];
    char s_09a5996c[45];
+   char s_d80c36a8[227];
    char s_73c9507b[109];
    char s_825152dd[40];
    char s_19e809ad[54];
@@ -4383,6 +4396,7 @@ static const struct
    char s_94d1736a[24];
    char s_b969706a[241];
    char s_a3f6ebc3[16];
+   char s_11b4cc97[25];
    char s_a8fa00e0[74];
    char s_4c1e527b[84];
    char s_efc0708e[89];
@@ -5270,6 +5284,7 @@ static const struct
    "Deshabilitar bluetooth ERTM",
 #endif
 #endif
+   "Cerca dispositius",
 #ifdef _3DS
    "Directori de recursos de la pantalla inferior",
    "Color blau de la font",
@@ -6016,6 +6031,8 @@ static const struct
    "Cal contacte del llapis amb la pantalla",
 #endif
    "El controlador d'entrada \"%s\" ho llegeix com un sol dispositiu i no els pot separar.",
+   "Ratol\303\255",
+   "Pantalla t\303\240ctil",
    "T\303\240ctil",
    "Escala t\303\240ctil",
 #ifdef UDEV_TOUCH_SUPPORT
@@ -6279,7 +6296,9 @@ static const struct
    "Despla\303\247ament horitzontal del marge del t\303\255tol",
    "Factor d\342\200\231esva\303\257ment vertical",
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
    "Marcs de blocs del micr\303\262fon",
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -7515,6 +7534,10 @@ static const struct
    "Autom\303\240tic",
    "Sincronitzaci\303\263",
    "V\303\255deos",
+   "Per defecte",
+   "Autom\303\240tic",
+   "Equilibrat",
+   "Rendiment",
    "Canalitzaci\303\263 multifil de v\303\255deo",
    "Ritme de visualitzaci\303\263 amb el v\303\255deo multifil",
    "Repetici\303\263 de fotogrames en el v\303\255deo multifil",
@@ -7551,6 +7574,7 @@ static const struct
    "Despla\303\247ament vertical de la pantalla",
    "Opacitat de la finestra",
    "Recorda la posici\303\263 i mida de la finestra",
+   "Separat",
    "Mostra les decoracions de finestra",
    "Amplada de la finestra",
    "Sincronitzaci\303\263 a la velocitat de fotogrames del contingut exacta (S-Sync, FreeSync)",
@@ -8241,9 +8265,10 @@ static const struct
    "Restableix la configuraci\303\263 de les assignacions als valors predeterminats.",
    "La quantitat de segons que se sost\303\251 una entrada per a assignar-la.",
    "La quantitat de segons que s'espera abans de procedir a la seg\303\274ent assignaci\303\263.",
-   "Indica el nombre de mil\302\267lisegons a esperar per aconseguir una mostra completa d'entrada. "
-   "Fes-ho servir en cas de tenir problemes en clicar diversos botons a la vegada (nom\303\251s a An"
-   "droid).",
+   "Durada, en mil\302\267lisegons, durant la qual es ret\303\251 la pulsaci\303\263 d'un comandamen"
+   "t per tal que hi arribin alhora les pulsacions d'altres botons. Utilitzeu-ho si les pulsacions s"
+   "imult\303\240nies al comandament es registren amb una difer\303\250ncia d'un fotograma (nom\303"
+   "\251s per a Android).",
    "Quant s'ha d'inclinar per esdevenir una pulsaci\303\263 de bot\303\263 quan s'utilitza 'Anal\303"
    "\262gic a Digital'.",
    "Fins a quin punt s'han de pr\303\251mer els botons d'una combinaci\303\263 perqu\303\250 s'activ"
@@ -9730,6 +9755,14 @@ static const struct
    "Els gestors de finestres usen la composici\303\263 per aplicar efectes visuals i detectar finest"
    "res que no responen, entre altres coses.",
    "Controlador de v\303\255deo que es far\303\240 servir (cal reiniciar)",
+   "Permet que el controlador gr\303\240fic reguli el ritme dels fotogrames amb entrada tardana i un"
+   "a cua curta. Utilitza NVIDIA Reflex (Vulkan VK_NV_low_latency2, D3D11/12 NVAPI o Vulkan via DXGI"
+   ") o Vulkan AMD Anti-Lag (VK_AMD_anti_lag). Vegeu Estad\303\255stiques/Informaci\303\263 del sist"
+   "ema per a l'estat. 'Activat + Boost' augmenta els rellotges de la GPU. No disponible amb Scanlin"
+   "e Sync. El ritme de visualitzaci\303\263 de v\303\255deo per fils conserva l'actualitzaci\303"
+   "\263 de la pantalla; el controlador limita la velocitat del",
+   " contingut quan no ho fa cap altre limitador. El retard de fotogrames es mant\303\251 al marge m"
+   "entre est\303\240 actiu.",
    "Utilitzeu una cadena d'intercanvi de models invertits DXGI amb controladors glcore i Vulkan de W"
    "indows. Habilita funcions del controlador de pantalla com ara NVIDIA Smooth Motion. Torna a la p"
    "resentaci\303\263 nativa si no \303\251s compatible i pot canviar la lat\303\250ncia dels fotogr"
@@ -10011,6 +10044,13 @@ static const struct
    "ulkan, Dire",
    "ct3D 11, Direct3D 12 i gl; amb altres controladors, s'executen sense fils separats, independentm"
    "ent de la configuraci\303\263 establerta.",
+   "Amb el v\303\255deo en fils, inicia cada fotograma principal tan tard com ho permeti la seg\303"
+   "\274ent actualitzaci\303\263 de la pantalla, a partir dels temps de renderitzaci\303\263 i del n"
+   "ucli mesurats, en lloc de fer-ho en un temporitzador fix. Redueix la lat\303\250ncia al que arri"
+   "ba al retard de fotograma en v\303\255deo sense fils, i un fotograma que s'executa durant molt d"
+   "e temps es repeteix en lloc de perdre's. Amb el ritme del controlador activat, el controlador al"
+   "libera cada fotograma i la retenci\303\263 nom\303\251s el mant\303\251 a l",
+   "'actualitzaci\303\263 de la pantalla. Desactivat: el temporitzador fa un ritme, com abans.",
    "Amb Threaded Video, es continua mostrant l'\303\272ltim fotograma a la freq\303\274\303\250ncia "
    "d'actualitzaci\303\263 de la pantalla mentre el nucli es retarda, en lloc de deixar l'anterior a"
    " la pantalla. Mant\303\251 estables la inserci\303\263 de fotogrames negres (Black Frame Inserti"
@@ -10084,13 +10124,6 @@ static const struct
    "q\303\274\303\250ncies d'actualitzaci\303\263 variable (G-Sync, FreeSync, HDMI 2.1 VRR).",
    "Controlador de wifi que es far\303\240 servir (cal reiniciar)",
    "Escaneja per xarxes wifi i estableix la connexi\303\263.",
-   "Canvia a una c\303\262pia del pla d'energia actiu de Windows que mant\303\251 el processador a t"
-   "ota velocitat (estat del processador m\303\255nim i m\303\240xim al 100%, prefer\303\250ncia ene"
-   "rg\303\250tica sobre el rendiment) sense nuclis aparcats, reavalua els estats de rendiment cada "
-   "5 segons en lloc de cada 15 ms i mant\303\251 els enlla\303\247os PCI Express i els ports USB fo"
-   "ra de l'estalvi d'energia, tallant l'activitat d'interrupci\303\263 del nucli i retards d'activa"
-   "ci\303\263. Nom\303\251s s'aplica quan est\303\240 connectat. El pla original es restaura a ",
-   "la sortida.",
    "Amb el pla d'energia de baixa lat\303\250ncia activat, tamb\303\251 mantingueu tots els nuclis d"
    "el processador fora dels seus estats d'inactivitat, de manera que cap no s'hagi d'activar abans "
    "d'executar-se. Aleshores, el processador consumeix tota la pot\303\250ncia i funciona a plena po"
@@ -10151,6 +10184,9 @@ static const struct
    "Desa l\342\200\231estat autom\303\240ticament a",
    "C\303\262pia de seguretat del nucli: ",
    "S\342\200\231est\303\240 blocant la sobreescriptura de SRAM",
+   "L'adaptador Bluetooth d'aquest ordinador utilitza el controlador gen\303\250ric de Windows, el q"
+   "ual sovint no detecta cap dispositiu. Instal\302\267leu el controlador Bluetooth proporcionat pe"
+   "l fabricant de l'ordinador o de la placa base.",
    "S\342\200\231ha eliminat l\342\200\231emparellament. Reinicieu el RetroArch per tornar a connect"
    "ar o emparellar un dispositiu.",
    "S\342\200\231ha completat la cerca de Bluetooth.",
@@ -10418,6 +10454,7 @@ static const struct
    "nt\303\251n premuts els botons per utilitzar-los i, despr\303\251s, tria qu\303\250 fan. Esquerr"
    "a: tria qu\303\250 fan. D'acord: introdueix l'acci\303\263. Inici: elimina-la.",
    "Establir botons",
+   "compartit amb el port %u",
    "Canviant el controlador de DualShock 3: permet en el terminal de Windows.",
    "El controlador DualShock 3 no ha canviat: No es van concedir drets d'administrador.",
    "S'ha activat el suport de DualShock 3. El controlador torna a connectar autom\303\240ticament.",
@@ -10788,7 +10825,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ca_blob_check[
-      (sizeof(msg_hash_ca_blob) == (242997u
+      (sizeof(msg_hash_ca_blob) == (244111u
 #ifdef ANDROID
        + 281u
 #endif
@@ -10891,7 +10928,9 @@ typedef char msg_hash_ca_blob_check[
 #endif
 #endif
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
        + 29u
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -11676,6 +11715,7 @@ static const msg_hash_id_t msg_hash_ca_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BLUETOOTH_ERTM_DISABLE,
 #endif
 #endif
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BLUETOOTH_SCAN,
 #ifdef _3DS
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BOTTOM_ASSETS_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_BLUE,
@@ -12418,6 +12458,8 @@ static const msg_hash_id_t msg_hash_ca_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_STYLUS_REQUIRE_CONTACT_FOR_CLICK,
 #endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_SYSTEM_DEVICE_INFO,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCHPAD_MOUSE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCHPAD_POINTER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_SCALE,
 #ifdef UDEV_TOUCH_SUPPORT
@@ -12681,7 +12723,9 @@ static const msg_hash_id_t msg_hash_ca_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_VERTICAL_FADE_FACTOR,
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -13902,6 +13946,10 @@ static const msg_hash_id_t msg_hash_ca_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_DEFAULT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_AUTO,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_BALANCED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_PERFORMANCE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED_DISPLAY_PACING,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED_PRESENT_REPEAT,
@@ -13936,6 +13984,7 @@ static const msg_hash_id_t msg_hash_ca_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SEPARATE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
@@ -15258,6 +15307,7 @@ static const msg_hash_id_t msg_hash_ca_ids[] =
 #endif
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DRIVER_PACING,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DXGI_PRESENT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_DIR,
@@ -15375,6 +15425,7 @@ static const msg_hash_id_t msg_hash_ca_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED_DISPLAY_PACING,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED_PRESENT_REPEAT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_THREAD_PRIORITY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
@@ -15411,7 +15462,6 @@ static const msg_hash_id_t msg_hash_ca_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_WIFI_DRIVER,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_WIFI_SETTINGS,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_WIN32_POWER_PLAN,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_WIN32_POWER_PLAN_IDLE_DISABLE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_XMB_ALPHA_FACTOR,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_XMB_CURRENT_MENU_ICON,
@@ -15463,6 +15513,7 @@ static const msg_hash_id_t msg_hash_ca_ids[] =
    (msg_hash_id_t)MSG_AUTO_SAVE_STATE_TO,
    (msg_hash_id_t)MSG_BACKING_UP_CORE,
    (msg_hash_id_t)MSG_BLOCKING_SRAM_OVERWRITE,
+   (msg_hash_id_t)MSG_BLUETOOTH_ADAPTER_GENERIC_DRIVER,
    (msg_hash_id_t)MSG_BLUETOOTH_PAIRING_REMOVED,
    (msg_hash_id_t)MSG_BLUETOOTH_SCAN_COMPLETE,
    (msg_hash_id_t)MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
@@ -15707,6 +15758,7 @@ static const msg_hash_id_t msg_hash_ca_ids[] =
    (msg_hash_id_t)MSG_INPUT_COMBO_PRESS_DEPTH,
    (msg_hash_id_t)MSG_INPUT_COMBO_ROW_SUBLABEL,
    (msg_hash_id_t)MSG_INPUT_COMBO_SET_BUTTONS,
+   (msg_hash_id_t)MSG_INPUT_DEVICE_INDEX_SHARED,
    (msg_hash_id_t)MSG_INPUT_DS3_ASKING,
    (msg_hash_id_t)MSG_INPUT_DS3_DECLINED,
    (msg_hash_id_t)MSG_INPUT_DS3_ENABLED,

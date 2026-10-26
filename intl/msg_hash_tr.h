@@ -930,6 +930,8 @@ static const struct
    char s_a7da7dc1[27];
    char s_980ef0e8[7];
    char s_fcf05466[12];
+   char s_acfde8f7[5];
+   char s_ca2f1e0f[17];
    char s_d042d680[11];
    char s_16cacb01[21];
 #ifdef UDEV_TOUCH_SUPPORT
@@ -1161,7 +1163,9 @@ static const struct
    char s_b201bb70[27];
    char s_b66840e9[19];
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
    char s_f0db2883[25];
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -2190,6 +2194,10 @@ static const struct
    char s_c017f975[9];
    char s_730df420[12];
    char s_bcddf275[9];
+   char s_bddbac76[12];
+   char s_a72a3c80[9];
+   char s_482ee1f1[8];
+   char s_214b7699[11];
    char s_f90edcc2[64];
 #if defined(RARCH_MOBILE)
    char s_774121c7[49];
@@ -2558,7 +2566,6 @@ static const struct
    char s_df4225b9[65];
    char s_a5b7b768[53];
    char s_d0b943e8[71];
-   char s_4f2077b6[155];
    char s_5b920f01[106];
    char s_5d20ea2c[52];
    char s_b339b327[152];
@@ -5160,6 +5167,8 @@ static const struct
    "Hareket/I\305\237\304\261k Sens\303\266rleri",
    "Giri\305\237",
    "Ufak Klavye",
+   "Fare",
+   "Dokunmatik Ekran",
    "Dokunmatik",
    "Dokunmatik \303\226l\303\247e\304\237i",
 #ifdef UDEV_TOUCH_SUPPORT
@@ -5394,7 +5403,9 @@ static const struct
    "Ba\305\237l\304\261k Pay\304\261 Yatay Ofset",
    "Dikey Solma Etkeni",
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
    "Mikrofon Kare Engeliyici",
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -6450,6 +6461,10 @@ static const struct
    "Otomatik",
    "E\305\237itleyici",
    "Videolar",
+   "Varsay\304\261lan",
+   "Otomatik",
+   "Dengeli",
+   "Performans",
    "Metal Arg\303\274man Arabelleklerini Kullan (Yeniden ba\305\237lat\304\261lmal\304\261)",
 #if defined(RARCH_MOBILE)
    "G\303\266r\303\274n\303\274m Ba\304\237lant\304\261 Noktas\304\261 X (Portre Y\303\266n\303\274)",
@@ -7022,9 +7037,6 @@ static const struct
    "Girdi ba\304\237lama ayarlar\304\261n\304\261 varsay\304\261lan de\304\237erlerine temizleyin.",
    "Bir giri\305\237i ba\304\237lamak i\303\247in tutulan saniye miktar\304\261.",
    "Bir sonraki bas\304\261l\304\261 tutma i\305\237lemine kadar bekleyecek saniye miktar\304\261.",
-   "Tam bir girdi \303\266rne\304\237i almak i\303\247in beklenecek milisaniye say\304\261s\304\261."
-   " E\305\237 zamanl\304\261 d\303\274\304\237meye basma ile ilgili sorunlar\304\261n\304\261z vars"
-   "a kullan\304\261n (Android i\303\247in).",
    "'Analogdan Dijitale' ge\303\247i\305\237te bir d\303\274\304\237meye bas\304\261lmas\304\261 i"
    "\303\247in bir eksenin ne kadar e\304\237ilmesi gerekti\304\237i.",
    "RetroArch taraf\304\261ndan tan\304\261nan fiziksel kontrolc\303\274.",
@@ -9174,7 +9186,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_tr_blob_check[
-      (sizeof(msg_hash_tr_blob) == (170048u
+      (sizeof(msg_hash_tr_blob) == (169955u
 #ifdef ANDROID
        + 340u
 #endif
@@ -9257,7 +9269,9 @@ typedef char msg_hash_tr_blob_check[
 #endif
 #endif
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
        + 25u
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -10463,6 +10477,8 @@ static const msg_hash_id_t msg_hash_tr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCHPAD_MOUSE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCHPAD_POINTER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_SCALE,
 #ifdef UDEV_TOUCH_SUPPORT
@@ -10694,7 +10710,9 @@ static const msg_hash_id_t msg_hash_tr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_VERTICAL_FADE_FACTOR,
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -11722,6 +11740,10 @@ static const msg_hash_id_t msg_hash_tr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_DEFAULT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_AUTO,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_BALANCED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_PERFORMANCE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
 #if defined(RARCH_MOBILE)
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
@@ -12090,7 +12112,6 @@ static const msg_hash_id_t msg_hash_tr_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BIND_DEFAULTS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BIND_HOLD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BLOCK_TIMEOUT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_DEVICE_INDEX,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_DEVICE_RESERVATION_TYPE,

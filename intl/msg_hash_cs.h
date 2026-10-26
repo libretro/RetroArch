@@ -898,6 +898,8 @@ static const struct
    char s_980ef0e8[6];
    char s_fcf05466[18];
    char s_da16c634[18];
+   char s_acfde8f7[5];
+   char s_ca2f1e0f[20];
    char s_d042d680[6];
    char s_16cacb01[16];
 #ifdef UDEV_TOUCH_SUPPORT
@@ -1119,7 +1121,9 @@ static const struct
    char s_b201bb70[31];
    char s_b66840e9[32];
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
    char s_f0db2883[29];
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -2098,6 +2102,9 @@ static const struct
    char s_45816e1d[24];
    char s_730df420[14];
    char s_bcddf275[6];
+   char s_bddbac76[10];
+   char s_482ee1f1[12];
+   char s_214b7699[7];
 #if defined(RARCH_MOBILE)
    char s_774121c7[62];
    char s_774121c8[62];
@@ -2442,7 +2449,6 @@ static const struct
    char s_df4225b9[57];
    char s_a5b7b768[69];
    char s_d0b943e8[75];
-   char s_4f2077b6[178];
    char s_5b920f01[120];
    char s_5d20ea2c[51];
    char s_b339b327[175];
@@ -4946,6 +4952,8 @@ static const struct
    "Vstup",
    "Mal\303\241 kl\303\241vesnice",
    "Rozd\304\233lit Joy-Con",
+   "My\305\241",
+   "Dotykov\303\241 Obrazovka",
    "Dotyk",
    "Stupnice dotyku",
 #ifdef UDEV_TOUCH_SUPPORT
@@ -5168,7 +5176,9 @@ static const struct
    "Vodorovn\303\275 posun okraje n\303\241zvu",
    "Faktor vertik\303\241ln\303\255ho blednut\303\255",
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
    "Sn\303\255mky mikrofonn\303\255ch blok\305\257",
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -6173,6 +6183,9 @@ static const struct
    "Interval v\303\275m\304\233ny VSync",
    "Synchronizace",
    "Videa",
+   "V\303\275choz\303\255",
+   "Vyv\303\241\305\276en\303\241",
+   "V\303\275kon",
 #if defined(RARCH_MOBILE)
    "P\305\231edsazen\303\255 kotvy panelu zobrazen\303\255 X (orientace na v\303\275\305\241ku)",
    "P\305\231edsazen\303\255 kotvy panelu zobrazen\303\255 Y (orientace na v\303\275\305\241ku)",
@@ -6719,9 +6732,6 @@ static const struct
    "\303\241n.",
    "Po\304\215et sekund, kter\303\251 je t\305\231eba po\304\215kat, ne\305\276 se p\305\231ejde na "
    "dal\305\241\303\255 vazbu.",
-   "Po\304\215et milisekund, kter\303\251 je t\305\231eba po\304\215kat na z\303\255sk\303\241n\303"
-   "\255 kompletn\303\255ho vstupn\303\255ho vzorku. Pou\305\276ijte jej, pokud m\303\241te probl"
-   "\303\251my se sou\304\215asn\303\275m stiskem tla\304\215\303\255tek (pouze Android).",
    "Jak daleko mus\303\255 b\303\275t osa naklon\304\233na, aby do\305\241lo ke stisknut\303\255 tla"
    "\304\215\303\255tka p\305\231i pou\305\276it\303\255 funkce 'Analogu do Digit\303\241lu'.",
    "Fyzick\303\275 ovlada\304\215 rozpoznan\303\275 aplikac\303\255 RetroArch.",
@@ -8792,7 +8802,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_cs_blob_check[
-      (sizeof(msg_hash_cs_blob) == (162231u
+      (sizeof(msg_hash_cs_blob) == (162107u
 #ifdef ANDROID
        + 390u
 #endif
@@ -8870,7 +8880,9 @@ typedef char msg_hash_cs_blob_check[
 #endif
 #endif
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
        + 29u
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -10040,6 +10052,8 @@ static const msg_hash_id_t msg_hash_cs_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCHPAD_MOUSE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCHPAD_POINTER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_SCALE,
 #ifdef UDEV_TOUCH_SUPPORT
@@ -10261,7 +10275,9 @@ static const msg_hash_id_t msg_hash_cs_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_VERTICAL_FADE_FACTOR,
 #ifdef HAVE_MICROPHONE
+#if defined(RARCH_MOBILE)
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
+#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -11239,6 +11255,9 @@ static const msg_hash_id_t msg_hash_cs_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_DEFAULT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_BALANCED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_PERFORMANCE,
 #if defined(RARCH_MOBILE)
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
@@ -11583,7 +11602,6 @@ static const msg_hash_id_t msg_hash_cs_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BIND_DEFAULTS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BIND_HOLD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BLOCK_TIMEOUT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_DEVICE_INDEX,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_DEVICE_RESERVATION_TYPE,
