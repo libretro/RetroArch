@@ -51,13 +51,15 @@ typedef int bool;
 #define HW_CTX_FREE 0
 #define HW_CTX_MAIN 1
 #define HW_CTX_VIDEO 2
+#define HW_CTX_HOLDER 3
+#define HW_CTX_GRANT 4
+#define HW_CTX_WANT(who) (4 << (who))
 #define HW_API_GL 7
 typedef struct { unsigned flags; } gfx_ctx_flags_t;
 typedef struct { struct { unsigned context_type; } hw_render; } video_driver_state_t;
 typedef struct { int (*hw_ring_context_new)(void *, void **); int hw_ring_framebuffer;
    int hw_ring_capture, hw_ring_present_slot, hw_ring_fence_new; } poke_t;
-typedef struct { void *core_ctx; int handoff, api, ctx_owner, ctx_free, ctx_turns;
-   int turns_at_release; } hw_ring_t;
+typedef struct { void *core_ctx; int handoff, api, ctx_owner, ctx_free; } hw_ring_t;
 typedef struct { void *driver_data; poke_t *poke;
    struct { hw_ring_t *hw_ring; int hw_handoff; } frame; } thread_video_t;
 static hw_ring_t storage;
@@ -79,7 +81,6 @@ static int retro_atomic_load_acquire_int(int *v) { return *v; }
 static void retro_atomic_store_release_int(int *v, int n) { *v = n; }
 static int retro_atomic_cas_int(int *v, int old, int n)
 { if (*v != old) return 0; *v = n; return 1; }
-static void retro_atomic_fetch_add_int(int *v, int n) { *v += n; }
 static int retro_eventcount_prepare_wait(int *v) { (void)v; assert(0); return 0; }
 static void retro_eventcount_cancel_wait(int *v) { (void)v; assert(0); }
 static void retro_eventcount_commit_wait(int *v, int key) { (void)v; (void)key; assert(0); }
@@ -142,7 +143,8 @@ int main(void)
 '''
 # Resolve the definition after the forward declaration.
 handoff = source.index("static hw_ring_t *hw_handoff_ring(thread_video_t *thr)\n{")
-parts = [function("hw_handoff_ring", handoff),
+parts = [function("hw_ctx_hand"),
+         function("hw_handoff_ring", handoff),
          function("video_thread_hw_ctx_take"),
          function("video_thread_hw_ctx_release"),
          function("video_thread_hw_prepare_context"),

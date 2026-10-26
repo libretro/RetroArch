@@ -4353,10 +4353,10 @@ static bool video_thread_frame(void *data, const void *frame_,
 
    video_thread_pace_hold(thr, now, video_info->driver_pacing_id != 0);
 
-   /* One GL context: the video thread's turn with it - the present of
-    * what was just pushed - comes between the release above and this. */
+   /* One GL context: the publish handed it to the video thread with
+    * the frame; taken back once that pass is done with it. */
    if (ctx_held)
-      video_thread_hw_ctx_retake(thr);
+      video_thread_hw_ctx_take(thr, false);
 
    thr->last_time = cpu_features_get_time_usec();
    thr->run_start = thr->last_time;
