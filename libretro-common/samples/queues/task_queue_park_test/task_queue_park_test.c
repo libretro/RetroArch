@@ -93,8 +93,10 @@ static void waiter_callback(retro_task_t *task, void *task_data,
    retro_atomic_fetch_add_int(&w->retired, 1);
 }
 
+/* (@wake_inside set before the push: the worker may run the first
+ * pass before the push returns) */
 static retro_task_t *push_waiter_with(struct waiter *w, retro_time_t horizon,
-      retro_task_handler_t handler)
+      retro_task_handler_t handler, int wake_inside)
 {
    retro_task_t *task = task_init();
    if (!task)
@@ -103,7 +105,7 @@ static retro_task_t *push_waiter_with(struct waiter *w, retro_time_t horizon,
    retro_atomic_int_init(&w->passes, 0);
    retro_atomic_int_init(&w->retired, 0);
    w->horizon      = horizon;
-   w->wake_inside  = 0;
+   w->wake_inside  = wake_inside;
    w->child        = NULL;
    w->ident        = task->ident;
    task->handler   = handler;
@@ -116,7 +118,7 @@ static retro_task_t *push_waiter_with(struct waiter *w, retro_time_t horizon,
 
 static retro_task_t *push_waiter(struct waiter *w, retro_time_t horizon)
 {
-   return push_waiter_with(w, horizon, waiter_handler);
+   return push_waiter_with(w, horizon, waiter_handler, 0);
 }
 
 /* Checks until @w retires or the deadline; returns how long it took. */
@@ -188,8 +190,7 @@ static void lane_wake_inside_pass(void)
    unsigned      had = failures;
    retro_time_t  took;
 
-   CHECK(push_waiter(&w, LONG_HORIZON) != NULL, "push");
-   w.wake_inside = 1;
+   CHECK(push_waiter_with(&w, LONG_HORIZON, waiter_handler, 1) != NULL, "push");
    took = pump(&w);
 
    CHECK(retro_atomic_load_acquire_int(&w.retired) == 1,
@@ -252,7 +253,7 @@ static void lane_wake_from_child_callback(void)
    retro_task_t *task;
    retro_time_t  took;
 
-   CHECK((task = push_waiter_with(&w, LONG_HORIZON, parent_handler)) != NULL,
+   CHECK((task = push_waiter_with(&w, LONG_HORIZON, parent_handler, 0)) != NULL,
          "push");
    took = pump(&w);
 
