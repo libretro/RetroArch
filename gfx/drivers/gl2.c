@@ -6677,7 +6677,7 @@ static void gl2_window_retire(gl2_t *gl, unsigned w)
    struct gl2_window *win = &gl->windows.win[w];
    gl2_vv_target_drop(gl, &win->canvas_target, &win->canvas);
    gl->ctx_driver->windows->destroy(gl->ctx_data, &win->native);
-   video_driver_publish_window_layout(w, 0, NULL, NULL, 0, 0);
+   video_driver_publish_window_layout(w, 0, 0, NULL, NULL, 0, 0);
    memset(win, 0, sizeof(*win));
    gl->windows.held.live &= ~(1u << w);
 }
@@ -6794,8 +6794,8 @@ static bool gl2_window_draw(gl2_t *gl,
    /* False: not shown this time, its last image stays */
    ctx->present_gl(gl->ctx_data, &win->native);
    ctx->bind_gl(gl->ctx_data, NULL);
-   video_driver_publish_window_layout(w, win->native.generation, layout,
-         &f->core, f->core_dims, dims);
+   video_driver_publish_window_layout(w, win->native.generation,
+         gl->windows.held.display[w], layout, &f->core, f->core_dims, dims);
    return true;
 }
 

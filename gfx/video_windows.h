@@ -222,18 +222,126 @@ typedef struct video_window_display
    unsigned dims;
 } video_window_display_t;
 
-/* Where the Separate screens go: one display at a time */
+/* The UI drawn over the screens, as placement sends it to a window */
+enum video_window_ui_layer
+{
+   VIDEO_WINDOW_UI_MENU = 0,
+   VIDEO_WINDOW_UI_NOTIFICATIONS,
+   VIDEO_WINDOW_UI_LAYERS
+};
+
+#define VIDEO_WINDOW_UI_BIT(layer) (1u << (layer))
+
+/* The window placed on a display of its own: the Presentation */
+#define VIDEO_WINDOWS_PRESENTATION 1
+
+/* Placement calls the display RetroArch moved onto keeps its
+ * Presentation, so the main window has drawn under it */
+#define VIDEO_WINDOWS_HOLD_FRAMES 3
+
+/* How long a UI layer waits for its window to show */
+#define VIDEO_WINDOWS_UI_WAIT_USEC 1000000
+
+/* What placement reads, one frame's worth */
+typedef struct video_windows_place_in
+{
+   const video_window_display_t *displays;
+   unsigned count;
+   /* Each screen's video_screen%u_display */
+   const char (*screen_display)[VIDEO_WINDOW_DISPLAY_NAME_SIZE];
+   /* video_menu_display */
+   const char *menu_display;
+   unsigned menu_follows;
+   unsigned notifications;
+   /* The running content's screens, 0 with none; a core with no views
+    * map has 1, and mapless */
+   unsigned num_screens;
+   /* The display the Presentation's window has drawn on since it was
+    * made, 0 for none (video_driver_window_shown()) */
+   unsigned shown;
+   retro_time_t now;
+   bool mapless;
+   bool menu_open;
+   bool move_failed;
+   /* A staged content load is under way (content_switching) */
+   bool switching;
+} video_windows_place_in_t;
+
+/* Where the screens, the menu and the notifications go, by display
+ * ordinal */
 typedef struct video_windows_route
 {
-   /* The display's ordinal, 0 for none */
+   /* Each screen's display; 0 for an Off one or one past the content */
+   unsigned target[RETRO_VIDEO_VIEWS_MAX];
+   /* The menu's display, open or not */
+   unsigned menu;
+   /* RetroArch's display, the list's own; 0 when nothing is routed */
+   unsigned own;
+   /* The Presentation's display, 0 for none */
    unsigned display;
-   /* A bit a screen: those that go to it */
+   /* A bit a screen: those on the Presentation */
    unsigned screens;
-   /* A bit a screen: Separate, with no display to go to */
-   unsigned unplaced;
-   /* video_windows_plan()'s @attached */
-   unsigned attached;
+   /* A bit a screen: those shown in the main window */
+   unsigned main_screens;
+   /* VIDEO_WINDOW_UI_BIT()s: the layers drawn in the Presentation's
+    * window; the menu's counted as if open */
+   unsigned ui;
+   /* A display whose Presentation stays up with its last image, 0 for
+    * none */
+   unsigned keep;
+   /* The display RetroArch is to move onto, this frame only; 0 for
+    * none */
+   unsigned move;
+   /* The main window has nothing to show: the idle logo */
+   bool logo;
 } video_windows_route_t;
+
+/* How long a move may take before its display is given up on */
+#define VIDEO_WINDOWS_MOVE_USEC 2000000
+
+/* Placement from one frame to the next */
+typedef struct video_windows_host
+{
+   /* A map change before this time is still the start's; 0 for none */
+   retro_time_t start_ends;
+   /* When the pending move was asked for */
+   retro_time_t asked;
+   /* The list's names and on/valid flags, hashed */
+   unsigned names;
+   /* The screens' and the menu's display settings, hashed */
+   unsigned settings;
+   /* A bit an ordinal, bit 0 for 1: refusals since the names last
+    * changed */
+   unsigned refused;
+   /* A bit an ordinal: displays that could not take RetroArch, until
+    * the names change */
+   unsigned unable;
+   /* The main window's display as last decided, 0 undecided */
+   unsigned host;
+   /* The display a move was asked onto, 0 for none */
+   unsigned moving;
+   /* RetroArch's display, whose Presentation must show before the
+    * move to host is asked; 0 for none */
+   unsigned make;
+   /* The display whose Presentation is kept, and the calls left */
+   unsigned keep;
+   unsigned keep_frames;
+   /* The content as last seen, and whether it was being replaced */
+   unsigned num_screens;
+   bool switching;
+   bool mapless;
+} video_windows_host_t;
+
+/* Where a UI layer is drawn this frame */
+typedef struct video_window_ui_target
+{
+   /* Window id: 0 the main window */
+   unsigned window;
+   /* VIDEO_SCALE_PACK: the size the app thread laid it out at */
+   unsigned dims;
+   /* Its window is still being made: drawn nowhere until it shows */
+   bool wait;
+} video_window_ui_target_t;
 
 /* What a driver needs to make, place and lay out the screens' own
  * windows for one frame, without reading settings */
@@ -252,6 +360,16 @@ typedef struct video_windows_frame
    /* The screens each window shows, by window id; [0] is the main
     * window's and stays 0 */
    unsigned window_screens[RETRO_VIDEO_VIEWS_MAX];
+   /* Each UI layer's window and size */
+   video_window_ui_target_t ui[VIDEO_WINDOW_UI_LAYERS];
+   /* By window id, VIDEO_WINDOW_UI_BIT()s: the layers it shows */
+   unsigned window_ui[RETRO_VIDEO_VIEWS_MAX];
+   /* A bit a window id: kept with its last image, not drawn */
+   unsigned window_keep;
+   /* The idle logo's texture, 0 for black only */
+   uintptr_t logo_texture;
+   /* The main window shows the idle logo */
+   bool logo;
    /* The main window's layout parameters, for a window's own */
    float single_aspect;
    unsigned stereo_mode;
@@ -265,12 +383,13 @@ typedef struct video_windows_frame
 /* Any thread; zero means the lifetime counter is exhausted. */
 unsigned video_driver_window_generation(void);
 
-/* @attached stays in the main window whatever its mode, and screen 0
- * takes its mode; one that @map does not have counts as 0. */
+/* Without @route, screen 0 stays in the main window whatever its mode
+ * and the others go by theirs; with one, a screen goes where @route
+ * puts it. */
 void video_windows_plan(const video_views_map_t *map,
       const video_window_settings_t *settings, bool enabled,
-      bool supported, unsigned forced_attached, unsigned attached,
-      video_windows_plan_t *out);
+      bool supported, unsigned forced_attached,
+      const video_windows_route_t *route, video_windows_plan_t *out);
 
 /* Display @index (< VIDEO_WINDOW_DISPLAYS_MAX) as a screen's display
  * setting names it: its name, " 2" or " 3" added for the second or
@@ -278,13 +397,13 @@ void video_windows_plan(const video_views_map_t *map,
 void video_windows_display_key(const video_window_display_t *displays,
       unsigned index, char *out, size_t size);
 
-/* Which display the Separate screens of a @num_screens map go to. A
- * screen's monitor N names the display of ordinal N; 0 is Auto: an
- * external display before a built-in one, then the lowest ordinal. On
- * an external one Auto puts screen 0, and screen 1 stays attached. */
-void video_windows_route(const video_window_display_t *displays,
-      unsigned count, const video_window_settings_t *settings,
-      unsigned num_screens, video_windows_route_t *out);
+/* App thread, each frame windows are on: where the screens, the menu
+ * and notifications go, and RetroArch's moves. Pure. */
+void video_windows_place(video_windows_host_t *host,
+      const video_windows_place_in_t *in, video_windows_route_t *out);
+
+/* A host that decides afresh on its next call */
+void video_windows_host_reset(video_windows_host_t *host);
 
 /* Screen @screen's own window at @dims, from a frame's snapshot: its
  * map with every other screen left out. */
@@ -297,8 +416,8 @@ void video_driver_restore_windows(void);
 
 /* UI thread, the only publisher: the platform's displays, latest wins,
  * at most VIDEO_WINDOW_DISPLAYS_MAX kept. Once a list is published,
- * every frame routes the Separate screens through video_windows_route();
- * count 0 stops routing. */
+ * every frame places the screens and the menu through
+ * video_windows_place(); count 0 stops it. */
 void video_driver_publish_window_displays(
       const video_window_display_t *displays, unsigned count);
 
@@ -318,11 +437,13 @@ void video_driver_window_layout_screens(const video_windows_frame_t *frame,
  * laid out before the last restore is ignored. */
 void video_driver_attach_windows(unsigned screens, unsigned restore);
 
-/* Window @window's layout as drawn, from the thread that runs the
+/* Window @window's layout as drawn on display @display (an ordinal, 0
+ * where the native layer placed it), from the thread that runs the
  * context, one at a time per window; latest wins. @window_dims are
  * client pixels, which input points arrive in. NULL clears it. */
 void video_driver_publish_window_layout(unsigned window,
-      unsigned generation, const video_views_layout_t *layout,
+      unsigned generation, unsigned display,
+      const video_views_layout_t *layout,
       const video_views_map_t *core_map, unsigned core_dims,
       unsigned window_dims);
 
@@ -333,6 +454,11 @@ void video_driver_publish_window_layout(unsigned window,
 bool video_driver_translate_window_point(unsigned window,
       unsigned generation, int x, int y, bool report_oob,
       uint32_t *result);
+
+/* App thread: the display window @window has drawn on since it was
+ * made, 0 while it has not or is gone; its client size in *@dims
+ * (may be NULL) */
+unsigned video_driver_window_shown(unsigned window, unsigned *dims);
 
 /* A renderer's screen windows from one frame to the next, a bit a
  * window id; id 0, the main window, is never set */
@@ -349,11 +475,11 @@ typedef struct video_windows_held
 } video_windows_held_t;
 
 /* For @frame, NULL while windows are off: in *@retire the live ids to
- * let go of, those with no screens now or made for another display; in
- * *@create the ids with screens and no window, those that failed since
- * the restore count last moved left out. An id in both is made again.
- * The caller keeps live, failed and display as it makes and lets go of
- * windows. Pure, any thread. */
+ * let go of, those with nothing to show now or made for another
+ * display; in *@create the ids with screens, UI layers or a keep and no
+ * window, those that failed since the restore count last moved left
+ * out. An id in both is made again. The caller keeps live, failed and
+ * display as it makes and lets go of windows. Pure, any thread. */
 void video_windows_steps(video_windows_held_t *held,
       const video_windows_frame_t *frame, unsigned *retire,
       unsigned *create);
