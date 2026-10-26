@@ -135,19 +135,88 @@ static bool vulkan_ngx_in_list(const char **list, unsigned count,
    return false;
 }
 
+#define VULKAN_NGX_NAMES 32
+
+/* The extension names NGX needs, the instance's or (@gpu set) the
+ * device's, into @names: from NVSDK_NGX_VULKAN_RequiredExtensions where
+ * the library has it, else from the feature requirements API that
+ * replaced it (OptiScaler has only that). The names are NGX's own. */
+static unsigned vulkan_ngx_names(const ngx_lib_t *lib, VkInstance instance,
+      VkPhysicalDevice gpu, const char **names)
+{
+   ngx_feature_discovery_info_t disc;
+   ngx_feature_common_info_t info;
+   const wchar_t *paths[1];
+   VkExtensionProperties *props = NULL;
+   wchar_t *wdir;
+   char dir[DIR_MAX_LENGTH];
+   uint32_t n = 0;
+   unsigned i, out = 0;
+   ngx_result_t res = NGX_RESULT_FAIL;
+
+   if (lib->vulkan.required_extensions)
+   {
+      unsigned ic = 0, dc = 0;
+      const char **ie = NULL, **de = NULL;
+      if (!NGX_FAILED(lib->vulkan.required_extensions(&ic, &ie, &dc, &de)))
+      {
+         const char **from = gpu ? de : ie;
+         unsigned count    = gpu ? dc : ic;
+         for (i = 0; i < count && out < VULKAN_NGX_NAMES; i++)
+            names[out++] = from[i];
+         return out;
+      }
+   }
+   /* OptiScaler adds NGX's extensions in its own vkCreateInstance and
+    * vkCreateDevice hooks, and asking it recurses through them until
+    * the stack runs out */
+   if (ngx_lib_is_optiscaler())
+      return 0;
+   if (gpu ? !lib->vulkan.get_feature_device_extension_requirements
+           : !lib->vulkan.get_feature_instance_extension_requirements)
+      return 0;
+   if (!(wdir = (wchar_t*)calloc(DIR_MAX_LENGTH, sizeof(wchar_t))))
+      return 0;
+   video_upscaler_dir(VIDEO_TEMPORAL_UPSCALER_DLSS, dir, sizeof(dir));
+   ngx_utf8_to_wide(wdir, DIR_MAX_LENGTH, dir);
+   memset(&info, 0, sizeof(info));
+   paths[0]                    = wdir;
+   info.path_list.path         = paths;
+   info.path_list.length       = 1;
+   memset(&disc, 0, sizeof(disc));
+   disc.sdk_version            = NGX_VERSION_API;
+   disc.feature_id             = NGX_FEATURE_SUPER_SAMPLING;
+   disc.identifier_type        = 1;
+   disc.v.project.project_id   = VULKAN_NGX_PROJECT_ID;
+   disc.v.project.engine_type  = NGX_ENGINE_TYPE_CUSTOM;
+   disc.v.project.engine_version = VULKAN_NGX_ENGINE_VERSION;
+   disc.application_data_path  = wdir;
+   disc.feature_info           = &info;
+   if (gpu)
+      res = lib->vulkan.get_feature_device_extension_requirements(
+            (void*)instance, (void*)gpu, &disc, &n, (void**)&props);
+   else
+      res = lib->vulkan.get_feature_instance_extension_requirements(
+            &disc, &n, (void**)&props);
+   if (!NGX_FAILED(res) && props)
+      for (i = 0; i < n && out < VULKAN_NGX_NAMES; i++)
+         names[out++] = props[i].extensionName;
+   free(wdir);
+   return out;
+}
+
 unsigned vulkan_ngx_instance_extensions(const char **list,
       unsigned count, unsigned cap)
 {
    const ngx_lib_t *lib = ngx_lib_get();
-   unsigned ic = 0, dc = 0, i;
-   const char **ie = NULL, **de = NULL;
-   if (!lib || !lib->vulkan.required_extensions)
+   const char *names[VULKAN_NGX_NAMES];
+   unsigned n, i;
+   if (!lib)
       return count;
-   if (NGX_FAILED(lib->vulkan.required_extensions(&ic, &ie, &dc, &de)))
-      return count;
-   for (i = 0; i < ic && count < cap; i++)
-      if (!vulkan_ngx_in_list(list, count, ie[i]))
-         list[count++] = ie[i];
+   n = vulkan_ngx_names(lib, VK_NULL_HANDLE, VK_NULL_HANDLE, names);
+   for (i = 0; i < n && count < cap; i++)
+      if (!vulkan_ngx_in_list(list, count, names[i]))
+         list[count++] = names[i];
    return count;
 }
 
@@ -156,14 +225,14 @@ unsigned vulkan_ngx_device_extensions(VkPhysicalDevice gpu,
       const char **list, unsigned count, unsigned cap)
 {
    const ngx_lib_t *lib = ngx_lib_get();
+   const char *names[VULKAN_NGX_NAMES];
    PFN_vkEnumerateDeviceExtensionProperties enumerate;
    VkExtensionProperties *props = NULL;
    uint32_t nprops = 0;
-   unsigned ic = 0, dc = 0, i, j;
-   const char **ie = NULL, **de = NULL;
-   if (!lib || !lib->vulkan.required_extensions)
+   unsigned n, i, j;
+   if (!lib || !gpu)
       return count;
-   if (NGX_FAILED(lib->vulkan.required_extensions(&ic, &ie, &dc, &de)) || !dc)
+   if (!(n = vulkan_ngx_names(lib, instance, gpu, names)))
       return count;
    enumerate = (PFN_vkEnumerateDeviceExtensionProperties)
       gipa(instance, "vkEnumerateDeviceExtensionProperties");
@@ -176,14 +245,14 @@ unsigned vulkan_ngx_device_extensions(VkPhysicalDevice gpu,
       free(props);
       return count;
    }
-   for (i = 0; i < dc && count < cap; i++)
+   for (i = 0; i < n && count < cap; i++)
    {
-      if (vulkan_ngx_in_list(list, count, de[i]))
+      if (vulkan_ngx_in_list(list, count, names[i]))
          continue;
       for (j = 0; j < nprops; j++)
-         if (!strcmp(props[j].extensionName, de[i]))
+         if (!strcmp(props[j].extensionName, names[i]))
          {
-            list[count++] = de[i];
+            list[count++] = names[i];
             break;
          }
    }

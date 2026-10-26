@@ -116,10 +116,9 @@ bool ngx_dlss_feature_in(const char *dir)
 
 uint32_t ngx_snippet_version(uint32_t snippet)
 {
-   /* The low byte holds the patch and build a nibble each: 310.9.1.0
-    * reads 0x01360910 */
+   /* 310.9.16 reads 0x01360910 */
    return NGX_VERSION_PACK(snippet >> 16, (snippet >> 8) & 0xffu,
-         (snippet >> 4) & 0xfu);
+         snippet & 0xffu);
 }
 
 #ifdef NGX_HAVE_LOADER
@@ -619,11 +618,21 @@ static bool ngx_resolve_vulkan(ngx_module_t m, ngx_vulkan_api_t *a)
 {
    bool complete = true;
    bool complete_first = true;
-   NGX_SYM(a->required_extensions, "NVSDK_NGX_VULKAN_RequiredExtensions");
-   NGX_SYM(a->get_feature_instance_extension_requirements,
+   /* the deprecated call or the two that replaced it, either: OptiScaler
+    * has only the newer pair */
+   NGX_SYM_OPT(a->required_extensions, "NVSDK_NGX_VULKAN_RequiredExtensions");
+   NGX_SYM_OPT(a->get_feature_instance_extension_requirements,
          "NVSDK_NGX_VULKAN_GetFeatureInstanceExtensionRequirements");
-   NGX_SYM(a->get_feature_device_extension_requirements,
+   NGX_SYM_OPT(a->get_feature_device_extension_requirements,
          "NVSDK_NGX_VULKAN_GetFeatureDeviceExtensionRequirements");
+   if (!a->required_extensions && !(a->get_feature_instance_extension_requirements
+            && a->get_feature_device_extension_requirements))
+   {
+      complete = false;
+      ngx_status_add(complete_first ? " lacks " : ", ");
+      ngx_status_add("NVSDK_NGX_VULKAN_RequiredExtensions");
+      complete_first = false;
+   }
    NGX_SYM(a->get_feature_requirements, "NVSDK_NGX_VULKAN_GetFeatureRequirements");
    NGX_SYM(a->init_project_id, "NVSDK_NGX_VULKAN_Init_ProjectID");
    NGX_SYM_OPT(a->init_project_id_ext, "NVSDK_NGX_VULKAN_Init_ProjectID_Ext");

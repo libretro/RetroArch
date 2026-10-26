@@ -38,8 +38,10 @@ static int inited;
 static unsigned features_made;
 static int handles[8];
 
-static const char *inst_exts[]   = { "VK_KHR_get_physical_device_properties2" };
-static const char *device_exts[] = { "VK_KHR_maintenance1", "VK_NVX_binary_import" };
+/* VkExtensionProperties; filled at the first query */
+typedef struct ext_props { char name[256]; uint32_t spec; } ext_props_t;
+static ext_props_t inst_exts[1];
+static ext_props_t device_exts[2];
 
 static fake_ngx_record_t rec;
 
@@ -160,18 +162,22 @@ static int CONV optimal_cb(param_t *p)
    return OK;
 }
 
-EXPORT int CONV NVSDK_NGX_VULKAN_RequiredExtensions(unsigned *ic, const char ***ie, unsigned *dc, const char ***de)
-{
-   *ic = 1; *ie = inst_exts; *dc = 2; *de = device_exts;
-   return OK;
-}
+/* OptiScaler's shape: no NVSDK_NGX_VULKAN_RequiredExtensions, only the
+ * feature requirement calls; the discovery info's feature id (its
+ * second int) is recorded */
 EXPORT int CONV NVSDK_NGX_VULKAN_GetFeatureInstanceExtensionRequirements(const void *info, uint32_t *count, void **props)
 {
-   (void)info; *count = 0; *props = NULL; return OK;
+   rec.ext_feature_id = info ? ((const int*)info)[1] : -1;
+   strcpy(inst_exts[0].name, "VK_KHR_get_physical_device_properties2");
+   *count = 1; *props = inst_exts; return OK;
 }
 EXPORT int CONV NVSDK_NGX_VULKAN_GetFeatureDeviceExtensionRequirements(void *inst, void *pd, const void *info, uint32_t *count, void **props)
 {
-   (void)inst; (void)pd; (void)info; *count = 0; *props = NULL; return OK;
+   (void)inst; (void)pd;
+   rec.ext_feature_id = info ? ((const int*)info)[1] : -1;
+   strcpy(device_exts[0].name, "VK_KHR_maintenance1");
+   strcpy(device_exts[1].name, "VK_NVX_binary_import");
+   *count = 2; *props = device_exts; return OK;
 }
 EXPORT int CONV NVSDK_NGX_VULKAN_GetFeatureRequirements(void *inst, void *pd, const void *info, void *out)
 {

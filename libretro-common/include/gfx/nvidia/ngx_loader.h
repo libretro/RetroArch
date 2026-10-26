@@ -373,6 +373,8 @@ typedef struct ngx_d3d12_api
  * buffer and the two proc-address getters are Vulkan's own handles. */
 typedef struct ngx_vulkan_api
 {
+   /* NULL where the library has only the two feature requirement
+    * calls after it, which then are both set */
    ngx_result_t (NGX_CONV *required_extensions)(unsigned *instance_count,
          const char ***instance_exts, unsigned *device_count,
          const char ***device_exts);
@@ -449,8 +451,7 @@ bool ngx_dlss_feature_in(const char *dir);
 uint32_t ngx_dlss_feature_version(const char *dir);
 
 /* NVSDK_NGX_GetSnippetVersion's word as NGX_VERSION_PACK: major in the
- * high half, minor in the next byte, patch and build a nibble each in
- * the low byte */
+ * high half, minor and patch a byte each below it */
 uint32_t ngx_snippet_version(uint32_t snippet);
 
 /* Whether the NGX core library the probe found is OptiScaler standing

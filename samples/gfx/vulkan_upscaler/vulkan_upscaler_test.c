@@ -102,6 +102,7 @@ static void clear_dlss_runtime(const char *dir)
 }
 
 static int failures;
+static fake_ngx_record_t *record(void);
 static int checks;
 static int validation_errors;
 
@@ -260,6 +261,14 @@ static bool setup_vulkan(void)
    num_dev_exts = vulkan_ngx_device_extensions(gpu, vkGetInstanceProcAddr,
          instance, dev_exts, 0, VULKAN_NGX_MAX_EXTS);
    CHECK(num_dev_exts == 1 && !strcmp(dev_exts[0], "VK_KHR_maintenance1"));
+   /* asked through the feature requirement calls, for DLSS: the stand-in,
+    * as OptiScaler, has no NVSDK_NGX_VULKAN_RequiredExtensions */
+   CHECK(record() && record()->ext_feature_id == NGX_FEATURE_SUPER_SAMPLING);
+   {
+      const char *inst[4];
+      CHECK(vulkan_ngx_instance_extensions(inst, 0, 4) == 1
+            && !strcmp(inst[0], "VK_KHR_get_physical_device_properties2"));
+   }
    /* already there: not twice */
    dev_exts[0]  = "VK_KHR_maintenance1";
    num_dev_exts = vulkan_ngx_device_extensions(gpu, vkGetInstanceProcAddr,

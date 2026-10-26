@@ -49,6 +49,7 @@ typedef struct fake_ngx_record
    int last_released;
    int init_path0;
    int shutdown_path0;   /* the path list Init was given, read again at Shutdown1 */
+   int ext_feature_id;   /* the feature the last extension query named */
    /* Knobs the test turns */
    int unavailable;
    int create_fails;
