@@ -2167,6 +2167,7 @@ FRAME_BINDS = set([
     ('edit/select_next', _FL + 'dpad_right/click'),
     ('edit/select_previous', _FL + 'dpad_left/click'),
     ('pointer/aim', _FL + 'aim/pose'), ('pointer/aim', _FR + 'aim/pose'),
+    ('pointer/grip', _FL + 'grip/pose'), ('pointer/grip', _FR + 'grip/pose'),
     ('pointer/rumble', '/user/hand/left/output/haptic'),
     ('pointer/rumble', '/user/hand/right/output/haptic')])
 
