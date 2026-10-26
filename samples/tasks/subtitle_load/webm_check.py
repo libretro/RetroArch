@@ -95,6 +95,19 @@ def webvtt(data, mode):
     return output
 
 
+def languages(data, fields):
+    output = bytearray()
+    for ident, body in ebml.elements(data):
+        if ident in (0xBF, 0x114D9B74, 0x1C53BB6B, 0x22B59C, 0x22B59D):
+            continue
+        if ident in (0x18538067, 0x1654AE6B, 0xAE):
+            body = languages(body, fields)
+            if ident == 0xAE:
+                body += b"".join(ebml.element(key, value) for key, value in fields)
+        output += ebml.element(ident, body)
+    return output
+
+
 with tempfile.TemporaryDirectory(prefix="subtitle-webm-") as temporary:
     root = Path(temporary)
     source = root / "captions.srt"
@@ -107,6 +120,31 @@ with tempfile.TemporaryDirectory(prefix="subtitle-webm-") as temporary:
     env = dict(os.environ, SUBTITLE_EXPECT_WEBM="1")
     subprocess.run([str(binary), str(movie)], check=True, env=env)
     original = movie.read_bytes()
+    legacy, bcp47 = 0x22B59C, 0x22B59D
+    cases = [([], "en", "en"), ([(legacy, b"eng")], "en", "en"),
+             ([(legacy, b"fre-ca")], "fr-ca", "fr-ca"),
+             ([(legacy, b"deu")], "de", "de"),
+             ([(legacy, b"FRE-CA")], "fr-CA", "fr-CA"),
+             ([(legacy, b"qaa")], "qaa", "qaa"),
+             ([(legacy, b"")], "en", "en"),
+             ([(legacy, b"\0")], "", ""),
+             ([(legacy, b"fre-ca\0ignored")], "fr-ca", "fr-ca"),
+             ([(bcp47, b"eng")], "eng", "eng"),
+             ([(bcp47, b"iw")], "iw", "he"),
+             ([(bcp47, b"en-GB\0ignored")], "en-GB", "en-GB"),
+             ([(legacy, b"ger"), (bcp47, b"fr-FR")], "fr-FR", "fr-FR"),
+             ([(bcp47, b"fr-FR"), (legacy, b"ger")], "fr-FR", "fr-FR"),
+             ([(legacy, b"ger"), (bcp47, b"")], "", ""),
+             ([(bcp47, b""), (legacy, b"ger")], "", ""),
+             ([(bcp47, b"en--US")], "en--US", "en--US")]
+    language_file = root / "language.mkv"
+    for fields, expected, key in cases:
+        language_file.write_bytes(languages(original, fields))
+        subprocess.run([str(binary), str(language_file)], check=True,
+                       env=dict(env, SUBTITLE_EXPECT_LANGUAGE_SET="1",
+                                SUBTITLE_EXPECT_LANGUAGE=expected,
+                                SUBTITLE_EXPECT_LANGUAGE_KEY=key))
+    print("PASS: owned Matroska track language, legacy conversion and BCP47 precedence", flush=True)
     output = bytearray()
     for ident, body in ebml.elements(original):
         if ident == 0x18538067:

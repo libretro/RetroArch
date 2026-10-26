@@ -259,6 +259,19 @@ static void embedded(const char *path, bool threaded)
    assert(retro_atomic_load_acquire_int(&embedded_read_bytes) < 262144);
    track = task_subtitle_take(request);
    assert(track && rsubtitle_srt_count(track) == 2);
+   if (getenv("SUBTITLE_EXPECT_LANGUAGE_SET"))
+   {
+      const char *expected = getenv("SUBTITLE_EXPECT_LANGUAGE");
+      const char *expected_key = getenv("SUBTITLE_EXPECT_LANGUAGE_KEY");
+      const char *value;
+      size_t length;
+      if (!expected) expected = "";
+      if (!expected_key) expected_key = expected;
+      value = rsubtitle_vtt_track_language(track, &length);
+      assert(value && length == strlen(expected) && !memcmp(value, expected, length));
+      value = rsubtitle_vtt_track_language_key(track, &length);
+      assert(value && length == strlen(expected_key) && !memcmp(value, expected_key, length));
+   }
    cue = rsubtitle_srt_cue(track, 0);
    assert(cue && cue->start_us == (delayed ? 0 : 100000)
          && cue->end_us == 1200000 - shift_us);

@@ -56,6 +56,7 @@ struct subtitle_mp4
 
 #ifdef HAVE_RWEBM
 #include <formats/rwebm.h>
+#include "subtitle_iso639.h"
 
 struct subtitle_webm
 {
@@ -63,7 +64,8 @@ struct subtitle_webm
    rwebm_t *demux;
    rsubtitle_srt_span_t *spans;
    rsubtitle_vtt_span_t *metadata;
-   char *text, *header;
+   char *text, *header, *language;
+   size_t language_size;
    size_t length, avail, need_hi, feed_from;
    size_t used, capacity, count, span_capacity;
    size_t header_size, header_done;
@@ -98,6 +100,7 @@ static void subtitle_webm_free(struct subtitle_webm *webm)
    free(webm->metadata);
    free(webm->header);
    free(webm->text);
+   free(webm->language);
    free(webm);
 }
 
@@ -160,6 +163,54 @@ static int subtitle_webm_vtt_metadata(const rwebm_packet *packet,
    return *identifier_size <= 128 && *settings_size <= 128;
 }
 
+static int subtitle_webm_language(struct subtitle_webm *webm, int index)
+{
+   size_t size, output, low = 0;
+   size_t high = sizeof(subtitle_iso639_pairs) / sizeof(subtitle_iso639_pairs[0]);
+   enum rwebm_language_kind kind;
+   const char *raw = rwebm_get_track_language(webm->demux, index, &size, &kind);
+   const char *end, *mapped = NULL;
+   char code[3];
+   unsigned i;
+   if (!raw || size > 65536) return 0;
+   if (!size && kind == RWEBM_LANGUAGE_LEGACY)
+   {
+      raw = "eng";
+      size = 3;
+   }
+   end = (const char*)memchr(raw, 0, size);
+   if (end) size = (size_t)(end - raw);
+   if (kind == RWEBM_LANGUAGE_LEGACY && size >= 3 && (size == 3 || raw[3] == '-'))
+   {
+      for (i = 0; i < 3; i++)
+         code[i] = raw[i] >= 'A' && raw[i] <= 'Z' ? raw[i] + ('a' - 'A') : raw[i];
+      while (low < high)
+      {
+         size_t mid = low + (high - low) / 2;
+         int order = memcmp(code, subtitle_iso639_pairs[mid], 3);
+         if (order < 0) high = mid;
+         else if (order > 0) low = mid + 1;
+         else
+         {
+            mapped = subtitle_iso639_pairs[mid] + 3;
+            break;
+         }
+      }
+   }
+   output = size - (mapped ? 1 : 0);
+   webm->language = (char*)malloc(output ? output : 1);
+   if (!webm->language) return 0;
+   if (mapped)
+   {
+      memcpy(webm->language, mapped, 2);
+      memcpy(webm->language + 2, raw + 3, size - 3);
+   }
+   else
+      memcpy(webm->language, raw, size);
+   webm->language_size = output;
+   return 1;
+}
+
 static int subtitle_webm_step(task_subtitle_request_t *request)
 {
    struct subtitle_webm *webm = request->webm;
@@ -185,6 +236,7 @@ static int subtitle_webm_step(task_subtitle_request_t *request)
             || (strcmp(track->codec_id, "S_TEXT/UTF8")
                && strcmp(track->codec_id, "S_TEXT/WEBVTT")))
          return -1;
+      if (!subtitle_webm_language(webm, request->embedded_track)) return -1;
       webm->vtt = !strcmp(track->codec_id, "S_TEXT/WEBVTT");
       if (webm->vtt)
       {
@@ -253,7 +305,14 @@ static int subtitle_webm_step(task_subtitle_request_t *request)
       }
       else
          request->track = rsubtitle_srt_begin_cues(text, webm->used, spans, webm->count);
-      return request->track ? 1 : -1;
+      if (request->track)
+      {
+         char *language = webm->language;
+         webm->language = NULL;
+         return rsubtitle_vtt_take_language(request->track, language,
+               webm->language_size) ? 1 : -1;
+      }
+      return -1;
    }
    if (packet.track != request->embedded_track || !packet.size) return 0;
    track = rwebm_get_track(webm->demux, request->embedded_track);

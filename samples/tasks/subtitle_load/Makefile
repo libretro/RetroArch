@@ -46,6 +46,8 @@ $(call sample_objs,$(LRC)/formats/subtitle/rsubtitle_vtt_selector.o): \
    $(LRC)/formats/subtitle/rsubtitle_vtt_internal.h \
    $(LRC)/formats/subtitle/rsubtitle_languages.h
 
+$(call sample_objs,$(ROOT)/tasks/task_subtitle.o): $(ROOT)/tasks/subtitle_iso639.h
+
 $(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -c $< -o $@
