@@ -4,9 +4,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <wiiu/gx2.h>
-#include <wiiu/system/memory.h>
-#include <wiiu/shader_utils.h>
-#include <wiiu/wiiu_dbg.h>
+#include <os/wiiu/system/memory.h>
+#include <os/wiiu/shader_utils.h>
+#include <os/wiiu/wiiu_dbg.h>
 
 /* this is a hack for elf builds since their data section is below 0x10000000
  * and thus can't be accessed by the GX2 hardware */

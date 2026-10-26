@@ -1,4 +1,4 @@
-/* wiiu/system/exception_handler.c against stand-in coreinit: the DSI,
+/* os/wiiu/system/exception_handler.c against stand-in coreinit: the DSI,
  * ISI and program handlers are installed for every core (global
  * all-cores mode), a fault produces one fatal report, and a second
  * fault while that report is being made parks its thread rather than
@@ -89,7 +89,7 @@ int OSDynLoad_FindExport(void *handle, int is_data, const char *name,
 }
 void OSDynLoad_Release(void *handle) { (void)handle; }
 
-#include "../../../wiiu/system/exception_handler.c"
+#include "../../../os/wiiu/system/exception_handler.c"
 
 static OSExceptionCallbackFn installed(OSExceptionType type)
 {

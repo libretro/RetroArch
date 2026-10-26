@@ -1,4 +1,4 @@
-/* wiiu/fs/sd_fat_devoptab.c against a stand-in Cafe FS that models how
+/* os/wiiu/fs/sd_fat_devoptab.c against a stand-in Cafe FS that models how
  * a read lands: by DMA, with every cache line it covers invalidated
  * whole, so whatever the CPU last wrote to the rest of the last line is
  * lost. The devoptab's read must therefore leave every byte past the
@@ -33,7 +33,7 @@ static void test_free(void *p) { if (p) free(((void**)p)[-1]); }
 #define memalign test_memalign
 #define malloc   test_malloc
 #define free     test_free
-#include "../../../wiiu/fs/sd_fat_devoptab.c"
+#include "../../../os/wiiu/fs/sd_fat_devoptab.c"
 #undef memalign
 #undef malloc
 #undef free

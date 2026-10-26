@@ -1,4 +1,4 @@
-/* wiiu/system/newlib_locks.c against stand-in Cafe OS mutexes: newlib's
+/* os/wiiu/system/newlib_locks.c against stand-in Cafe OS mutexes: newlib's
  * lock word starts at 0, several threads race to create its mutex,
  * exactly one mutex is published and kept, and it excludes. The
  * recursive, try and close paths are checked on one thread and
@@ -101,7 +101,7 @@ void OSUnlockMutex(OSMutex *mutex)
 
 #define malloc test_malloc
 #define free   test_free
-#include "../../../wiiu/system/newlib_locks.c"
+#include "../../../os/wiiu/system/newlib_locks.c"
 #undef malloc
 #undef free
 

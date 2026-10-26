@@ -1,10 +1,10 @@
 TARGET := wiiu_ax_test
 
 LIBRETRO_COMM_DIR := ../../../libretro-common
-# The Wii U headers are the tree's own (wiiu/include); the functions
+# The Wii U headers are the tree's own (os/wiiu/include); the functions
 # behind them are the test's.
-INCDIRS := -I. -I$(LIBRETRO_COMM_DIR)/include -I../../.. -I../../../wiiu \
-	-I../../../wiiu/include
+INCDIRS := -I. -I$(LIBRETRO_COMM_DIR)/include -I../../.. -I../../../os/wiiu \
+	-I../../../os/wiiu/include
 
 CFLAGS  += -std=gnu99 -Wall $(INCDIRS) -DRARCH_INTERNAL -DHAVE_THREADS \
 	-D_GNU_SOURCE

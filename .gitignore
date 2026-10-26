@@ -125,7 +125,7 @@ shaders/shaders_slang
 *.depend
 *.rpx
 *.last
-wiiu/wut/elf2rpl/elf2rpl
+os/wiiu/wut/elf2rpl/elf2rpl
 /pkg/wiiu/retroarch
 /pkg/wiiu/wiiu
 /pkg/wiiu/rpx
@@ -376,9 +376,9 @@ samples/gfx/integer_scale_axis/integer_scale_driver.h
 samples/gfx/coord_array/coord_array_driver.h
 samples/gfx/integer_scale_axis/integer_scale_axis_test
 
-# wiiu/slang host tool
-/wiiu/slang/slang-cafe
-/wiiu/slang/slang-cafe.exe
+# os/wiiu/slang host tool
+/os/wiiu/slang/slang-cafe
+/os/wiiu/slang/slang-cafe.exe
 samples/gfx/vulkan_upscaler/Zdir/
 samples/gfx/vulkan_upscaler/Zdir_fsr/
 samples/gfx/vulkan_upscaler/Zdir_xess/

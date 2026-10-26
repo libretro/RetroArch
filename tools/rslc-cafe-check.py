@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Print every corpus stage as CafeGLSL-shaped GLSL (what wiiu/slang/
+"""Print every corpus stage as CafeGLSL-shaped GLSL (what os/wiiu/slang/
 slang-cafe hands Nintendo's compiler) and have glslangValidator accept
 it as GLSL 150.
 

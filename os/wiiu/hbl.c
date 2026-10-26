@@ -27,7 +27,7 @@
 #include "hbl.h"
 
 #ifdef WIIU_LOG_RPX
-#include "../verbosity.h"
+#include "../../verbosity.h"
 #endif
 
 #define MEM_AREA_TABLE              ((s_mem_area*)(MEM_BASE + 0x1600))

@@ -3,8 +3,8 @@
 # defines Makefile.wiiu actually uses, on a PowerPC cross compiler.
 #
 # Why this exists: the Wii U build does not point at wut. It ships its
-# own coreinit headers under wiiu/include/wiiu/os and compiles with
-# -Iwiiu -Iwiiu/include, so <coreinit/event.h> does not resolve there
+# own coreinit headers under os/wiiu/include/wiiu/os and compiles with
+# -Ios/wiiu -Ios/wiiu/include, so <coreinit/event.h> does not resolve there
 # and a file checked against wut alone passes while the real build
 # fails. The spellings differ too (OSMicroseconds, not
 # OSMicrosecondsToTicks). This check compiles against the tree's own
@@ -31,7 +31,7 @@ command -v "${CC%% *}" >/dev/null 2>&1 || { echo "no $CC" >&2; exit 2; }
 
 FLAGS="-fsyntax-only -mcpu=750 -Werror=implicit-function-declaration \
  -U__linux__ -U__linux -Ulinux -U__gnu_linux__ -U__unix__ -U__unix -Uunix \
- -I. -Ilibretro-common/include -Iwiiu -Iwiiu/include \
+ -I. -Ilibretro-common/include -Ios/wiiu -Ios/wiiu/include \
  -DWIIU -D__WUT__ -DHW_WUP -D__wiiu__ -DHAVE_MAIN -DRARCH_CONSOLE \
  -DRARCH_INTERNAL -DHAVE_THREADS $EXTRA"
 

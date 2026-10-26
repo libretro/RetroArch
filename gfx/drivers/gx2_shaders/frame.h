@@ -16,7 +16,7 @@
 #ifndef __FRAME_SHADER_H_
 #define __FRAME_SHADER_H_
 
-#include <wiiu/shader_utils.h>
+#include <os/wiiu/shader_utils.h>
 
 #ifdef __cplusplus
 extern "C" {

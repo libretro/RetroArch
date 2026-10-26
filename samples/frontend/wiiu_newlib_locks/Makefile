@@ -1,11 +1,11 @@
-# wiiu/system/newlib_locks.c, the newlib lock hooks on Cafe OS mutexes,
+# os/wiiu/system/newlib_locks.c, the newlib lock hooks on Cafe OS mutexes,
 # against stand-in OSMutex functions. The Wii U headers are the tree's
-# own (wiiu/include). Builds for Linux and, with
+# own (os/wiiu/include). Builds for Linux and, with
 # CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine, for Windows.
 TARGET   := wiiu_newlib_locks_test$(EXE)
 CORE_DIR := ../../..
 
-CFLAGS  += -std=gnu89 -Wall -g1 -O1 -I$(CORE_DIR)/wiiu/include
+CFLAGS  += -std=gnu89 -Wall -g1 -O1 -I$(CORE_DIR)/os/wiiu/include
 LDFLAGS += -lpthread
 
 # The lock word is an int holding a mutex address, as on the Wii U, so
@@ -25,14 +25,14 @@ endif
 
 all: $(TARGET)
 
-$(TARGET): wiiu_newlib_locks_test.c $(CORE_DIR)/wiiu/system/newlib_locks.c
+$(TARGET): wiiu_newlib_locks_test.c $(CORE_DIR)/os/wiiu/system/newlib_locks.c
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
 
 # The same checks against the hooks newlib before 4.3 calls, the set
 # the Wii U toolchain's newlib 4.2 uses.
 TARGET_PRE43 := wiiu_newlib_locks_pre43_test$(EXE)
 
-$(TARGET_PRE43): wiiu_newlib_locks_test.c $(CORE_DIR)/wiiu/system/newlib_locks.c
+$(TARGET_PRE43): wiiu_newlib_locks_test.c $(CORE_DIR)/os/wiiu/system/newlib_locks.c
 	$(CC) $(CFLAGS) -D__NEWLIB__=4 -D__NEWLIB_MINOR__=2 -o $@ $< $(LDFLAGS)
 
 check: all $(TARGET_PRE43)

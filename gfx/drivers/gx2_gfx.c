@@ -56,8 +56,8 @@
 #include "gx2_shaders/tex.h"
 #include "gx2_shaders/sprite.h"
 #include "gx2_shaders/menu_shaders.h"
-#include "../../wiiu/system/memory.h"
-#include "../../wiiu/wiiu_dbg.h"
+#include "../../os/wiiu/system/memory.h"
+#include "../../os/wiiu/wiiu_dbg.h"
 
 #include "../font_driver.h"
 

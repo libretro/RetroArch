@@ -16,7 +16,7 @@
 #ifndef SPRITE_SHADER_H
 #define SPRITE_SHADER_H
 
-#include <wiiu/shader_utils.h>
+#include <os/wiiu/shader_utils.h>
 
 #ifdef __cplusplus
 extern "C" {

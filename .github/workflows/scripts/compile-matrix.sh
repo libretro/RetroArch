@@ -182,14 +182,14 @@ console_set "switch tls"    "-I$STUBS/libnx"              "-DHAVE_LIBNX -DSWITCH
 # The built-in NFS client, which the 3DS, Vita, Switch and Wii U
 # build, under the defines their Makefiles set (RARCH_CONSOLE for the
 # console sleep and the 3DS transfer cap, Vita's legacy socket layer):
-# Wii U against its own wiiu/include, Vita against stubs of vitasdk's
+# Wii U against its own os/wiiu/include, Vita against stubs of vitasdk's
 # socket headers.
 NFS_SET="libretro-common/net/net_nfs3.c libretro-common/vfs/vfs_implementation_nfs.c libretro-common/vfs/vfs_prefetch.c"
 NFSD="-DHAVE_RETRONFS -DHAVE_NFSCLIENT"
 console_set "3ds nfs"       "-Itools/platform_stubs/ctr $NFSD"  "-D_3DS -DARM11 -DRARCH_CONSOLE" $NFS_SET
 console_set "vita nfs"      "-Itools/platform_stubs/vita $NFSD" "-DVITA -DRARCH_CONSOLE -DHAVE_SOCKET_LEGACY" $NFS_SET
 console_set "switch nfs"    "-I$STUBS/libnx $NFSD"              "-DHAVE_LIBNX -DSWITCH -D__SWITCH__ -DRARCH_CONSOLE" $NFS_SET
-console_set "wiiu nfs"      "-Iwiiu/include -Itools/platform_stubs/wiiu $NFSD" "-DWIIU -D__WUT__ -DHW_WUP -D__wiiu__ -DRARCH_CONSOLE" $NFS_SET
+console_set "wiiu nfs"      "-Ios/wiiu/include -Itools/platform_stubs/wiiu $NFSD" "-DWIIU -D__WUT__ -DHW_WUP -D__wiiu__ -DRARCH_CONSOLE" $NFS_SET
 # The built-in SMB and Kerberos clients, which the 3DS, Vita and Switch
 # build on their crypto (the Wii U has no kernel RNG for it to draw on).
 SMB_SET="libretro-common/net/net_smb2.c libretro-common/net/net_krb5.c libretro-common/vfs/vfs_implementation_smb.c"
@@ -344,7 +344,7 @@ platform_video "dingux video"   "-DDINGUX" "-I/usr/include/SDL" \
 platform_video "rs90 video"     "-DDINGUX -DRS90" "-I/usr/include/SDL" \
    gfx/drivers/sdl_rs90_gfx.c /usr/include/SDL/SDL.h
 platform_video "wiiu gx2 video" "-DWIIU $HOSTOFF" \
-   "-Iwiiu/include -Iwiiu" gfx/drivers/gx2_gfx.c ""
+   "-Ios/wiiu/include -Ios/wiiu" gfx/drivers/gx2_gfx.c ""
 platform_video "hub75 video" "" "" gfx/drivers/hub75_gfx.c ""
 platform_video "openvg video" "-DHAVE_VG -DHAVE_EGL" \
    "-Itools/platform_stubs/openvg" gfx/drivers/vg.c ""
@@ -1259,7 +1259,7 @@ font_layout "font layout: ps2" "" \
     -Wno-declaration-after-statement" \
    gfx/drivers/ps2_gfx.c
 font_layout "font layout: gx2" "" \
-   "-DWIIU $HOSTOFF -Iwiiu/include -Iwiiu -Wno-declaration-after-statement" \
+   "-DWIIU $HOSTOFF -Ios/wiiu/include -Ios/wiiu -Wno-declaration-after-statement" \
    gfx/drivers/gx2_gfx.c
 font_layout "font layout: glcore" "" \
    "-DHAVE_OPENGL -DHAVE_OPENGL_CORE -DHAVE_SLANG" gfx/drivers/gl3.c

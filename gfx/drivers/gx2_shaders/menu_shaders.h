@@ -16,7 +16,7 @@
 #ifndef _GX2_MENU_SHADERS_H
 #define _GX2_MENU_SHADERS_H
 
-#include <wiiu/shader_utils.h>
+#include <os/wiiu/shader_utils.h>
 
 #ifdef __cplusplus
 extern "C" {

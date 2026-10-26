@@ -23,8 +23,8 @@
 #include <wiiu/os.h>
 #include <wiiu/ax.h>
 
-#include "../../wiiu/wiiu_dbg.h"
-#include "../../wiiu/system/memory.h"
+#include "../../os/wiiu/wiiu_dbg.h"
+#include "../../os/wiiu/system/memory.h"
 
 #include "../audio_driver.h"
 

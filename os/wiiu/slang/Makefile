@@ -41,7 +41,7 @@ endif
 
 SLANG_PARSER = ./slang-cafe$(EXE_EXT)
 
-REPO_ROOT         := ../..
+REPO_ROOT         := ../../..
 LIBRETRO_COMM_DIR := $(REPO_ROOT)/libretro-common
 
 PARSER_SOURCES := slang-cafe.c \

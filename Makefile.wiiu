@@ -38,19 +38,19 @@ INCDIRS :=
 #-----------------------------
 # Features and object files
 
-OBJ += wiiu/main.o
-OBJ += wiiu/system/memory.o
-OBJ += wiiu/system/atomic.o
-OBJ += wiiu/system/exception_handler.o
-OBJ += wiiu/system/missing_libc_functions.o
-OBJ += wiiu/system/newlib_locks.o
-OBJ += wiiu/fs/sd_fat_devoptab.o
-OBJ += wiiu/fs/fs_utils.o
-OBJ += wiiu/hbl.o
+OBJ += os/wiiu/main.o
+OBJ += os/wiiu/system/memory.o
+OBJ += os/wiiu/system/atomic.o
+OBJ += os/wiiu/system/exception_handler.o
+OBJ += os/wiiu/system/missing_libc_functions.o
+OBJ += os/wiiu/system/newlib_locks.o
+OBJ += os/wiiu/fs/sd_fat_devoptab.o
+OBJ += os/wiiu/fs/fs_utils.o
+OBJ += os/wiiu/hbl.o
 
-RPX_OBJ = $(BUILD_DIR)/wiiu/system/stubs_rpl.o
-HBL_ELF_OBJ = $(BUILD_DIR)/wiiu/system/dynamic.o \
-              $(BUILD_DIR)/wiiu/system/stubs_elf.o
+RPX_OBJ = $(BUILD_DIR)/os/wiiu/system/stubs_rpl.o
+HBL_ELF_OBJ = $(BUILD_DIR)/os/wiiu/system/dynamic.o \
+              $(BUILD_DIR)/os/wiiu/system/stubs_elf.o
 
 ifeq ($(SALAMANDER_BUILD),1)
    DEFINES += -DRARCH_CONSOLE -DIS_SALAMANDER
@@ -97,7 +97,7 @@ ifeq ($(LOAD_WITHOUT_CORE_INFO),1)
    DEFINES += -DLOAD_WITHOUT_CORE_INFO
 endif
 
-   OBJ += wiiu/shader_utils.o
+   OBJ += os/wiiu/shader_utils.o
    OBJ += gfx/drivers/gx2_shaders/tex.o
    OBJ += gfx/drivers/gx2_shaders/sprite.o
    OBJ += gfx/drivers/gx2_shaders/frame.o
@@ -201,8 +201,8 @@ endif
 
 INCDIRS += -I.
 INCDIRS += -Ilibretro-common/include
-INCDIRS += -Iwiiu
-INCDIRS += -Iwiiu/include
+INCDIRS += -Ios/wiiu
+INCDIRS += -Ios/wiiu/include
 
 CFLAGS  := -mcpu=750 -meabi -mhard-float
 CFLAGS  += -Werror=implicit-function-declaration
@@ -245,10 +245,10 @@ LDFLAGS += -Wl,--gc-sections
 
 RPX_LDFLAGS      := -pie -fPIE
 RPX_LDFLAGS      += -z common-page-size=64 -z max-page-size=64
-RPX_LDFLAGS      += -T wiiu/link_rpl.ld
+RPX_LDFLAGS      += -T os/wiiu/link_rpl.ld
 RPX_LDFLAGS      += -nostartfiles
 
-HBL_ELF_LDFLAGS  := -T wiiu/link_elf.ld
+HBL_ELF_LDFLAGS  := -T os/wiiu/link_elf.ld
 
 #-----------------------------
 # Compiler setup
@@ -273,7 +273,7 @@ STRIP   := $(PREFIX)strip
 NM      := $(PREFIX)nm
 LD      := $(CXX)
 
-ELF2RPL   := wiiu/wut/elf2rpl/elf2rpl
+ELF2RPL   := os/wiiu/wut/elf2rpl/elf2rpl
 
 ifneq ($(findstring Linux,$(shell uname -a)),)
 else ifneq ($(findstring Darwin,$(shell uname -a)),)
@@ -360,14 +360,14 @@ $(BUILD_DIR)/%.o: %.s %.depend
 
 $(ELF2RPL):
 	@$(if $(Q), echo MAKE $@,)
-	$(Q)$(MAKE) -C wiiu/wut/elf2rpl/
+	$(Q)$(MAKE) -C os/wiiu/wut/elf2rpl/
 
-$(BUILD_DIR)/$(TARGET).elf: $(OBJ) $(HBL_ELF_OBJ) libretro_wiiu.a wiiu/link_elf.ld .$(TARGET).elf.last
+$(BUILD_DIR)/$(TARGET).elf: $(OBJ) $(HBL_ELF_OBJ) libretro_wiiu.a os/wiiu/link_elf.ld .$(TARGET).elf.last
 	@$(if $(Q), echo LD $@,)
 	@touch .$(TARGET).elf.last
 	$(Q)$(LD) $(OBJ) $(HBL_ELF_OBJ) $(LDFLAGS) $(HBL_ELF_LDFLAGS) $(LIBDIRS) $(LIBS) -o $@
 
-$(BUILD_DIR)/$(TARGET).rpx.elf: $(OBJ) $(RPX_OBJ) libretro_wiiu.a wiiu/link_elf.ld
+$(BUILD_DIR)/$(TARGET).rpx.elf: $(OBJ) $(RPX_OBJ) libretro_wiiu.a os/wiiu/link_elf.ld
 	@$(if $(Q), echo LD $@,)
 	$(Q)$(LD) $(OBJ) $(RPX_OBJ) $(LDFLAGS) $(RPX_LDFLAGS) $(LIBDIRS)  $(LIBS) -o $@
 
@@ -387,7 +387,7 @@ clean:
 	$(Q)rm -f $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).rpx.elf $(BUILD_DIR)/$(TARGET).large.rpx $(BUILD_DIR)/$(TARGET).rpx
 	$(Q)rm -f .$(TARGET).elf.last .$(TARGET).rpx.elf.last .$(TARGET).rpx.large.last .$(TARGET).rpx.last
 	$(Q)rm -f $(OBJ:.o=.depend) $(RPX_OBJ:.o=.depend) $(HBL_ELF_OBJ:.o=.depend)
-	$(Q)$(MAKE) -C wiiu/wut/elf2rpl/ clean
+	$(Q)$(MAKE) -C os/wiiu/wut/elf2rpl/ clean
 
 .PHONY: clean all
 .PRECIOUS: %.depend %.last
