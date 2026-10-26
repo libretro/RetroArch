@@ -9598,15 +9598,18 @@ static enum menu_action rgui_parse_menu_entry_action(
                || list->list[menu_st->selection_ptr].type == FILE_TYPE_IMAGEVIEWER))
       {
          bool fullscreen = (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL) != 0;
+         /* OK views only viewer content; an image pick keeps its action */
+         bool viewable   = list->list[menu_st->selection_ptr].type
+            == FILE_TYPE_IMAGEVIEWER;
          if (action == MENU_ACTION_START || action == MENU_ACTION_SELECT
-               || (action == MENU_ACTION_OK && !fullscreen)
+               || (action == MENU_ACTION_OK && !fullscreen && viewable)
                || (action == MENU_ACTION_CANCEL && fullscreen))
          {
             rgui_toggle_fs_thumbnail(rgui, config_get_ptr()->bools.menu_rgui_inline_thumbnails);
             rgui->flags |= RGUI_FLAG_FORCE_REDRAW;
             return MENU_ACTION_NOOP;
          }
-         if (fullscreen && action == MENU_ACTION_OK)
+         if (fullscreen && action == MENU_ACTION_OK && viewable)
             return MENU_ACTION_NOOP;
       }
    }

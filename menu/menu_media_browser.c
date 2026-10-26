@@ -199,6 +199,19 @@ bool menu_media_queue_step(
    return false;
 }
 
+bool menu_media_selected_is_viewable(struct menu_state *menu_st)
+{
+   file_list_t *list;
+   unsigned type;
+   if (!menu_st || !menu_st->entries.list)
+      return false;
+   list = MENU_LIST_GET_SELECTION(menu_st->entries.list, 0);
+   if (!list || menu_st->selection_ptr >= list->size)
+      return false;
+   type = list->list[menu_st->selection_ptr].type;
+   return type != FILE_TYPE_DIRECTORY && type != FILE_TYPE_IMAGE;
+}
+
 bool menu_media_open_selected_file(struct menu_state *menu_st,
       gfx_thumbnail_t *primary, gfx_thumbnail_t *secondary)
 {
@@ -210,7 +223,7 @@ bool menu_media_open_selected_file(struct menu_state *menu_st,
    list = MENU_LIST_GET_SELECTION(menu_st->entries.list, 0);
    stack = MENU_LIST_GET(menu_st->entries.list, 0);
    if (!list || menu_st->selection_ptr >= list->size || !stack || !stack->size) return false;
-   if (list->list[menu_st->selection_ptr].type == FILE_TYPE_DIRECTORY) return false;
+   if (!menu_media_selected_is_viewable(menu_st)) return false;
    name = list->list[menu_st->selection_ptr].path;
    directory = stack->list[stack->size - 1].path;
    type = image_texture_get_type(name);

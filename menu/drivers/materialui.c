@@ -42,6 +42,7 @@
 #include "../../ui/ui_companion_driver.h"
 
 #include "../menu_driver.h"
+#include "../menu_media_browser.h"
 #include "../menu_media_controls.h"
 #include "../menu_screensaver.h"
 
@@ -11077,7 +11078,8 @@ static enum menu_action materialui_parse_menu_entry_action(
 
    if ((mui->flags & MUI_FLAG_IS_FILE_LIST)
          && !(mui->flags & MUI_FLAG_SHOW_FULLSCREEN_THUMBNAILS)
-         && (action == MENU_ACTION_OK || action == MENU_ACTION_SELECT || action == MENU_ACTION_START))
+         && (action == MENU_ACTION_OK || action == MENU_ACTION_SELECT || action == MENU_ACTION_START)
+         && menu_media_selected_is_viewable(menu_st))
    {
       materialui_browser_update(mui, menu_st);
       if (*mui->browser_path)
@@ -11093,7 +11095,8 @@ static enum menu_action materialui_parse_menu_entry_action(
       return MENU_ACTION_NOOP;
    if ((mui->flags & MUI_FLAG_IS_FILE_LIST)
          && (mui->flags & MUI_FLAG_SHOW_FULLSCREEN_THUMBNAILS)
-         && action == MENU_ACTION_OK)
+         && action == MENU_ACTION_OK
+         && menu_media_selected_is_viewable(menu_st))
       return MENU_ACTION_NOOP;
 
    /* Scan user inputs */

@@ -6231,7 +6231,8 @@ static enum menu_action xmb_parse_menu_entry_action(
             menu_driver_get_current_time()))
       return MENU_ACTION_NOOP;
    if (xmb->is_file_list && xmb->show_fullscreen_thumbnails
-         && action == MENU_ACTION_OK)
+         && action == MENU_ACTION_OK
+         && menu_media_selected_is_viewable(menu_st))
       return MENU_ACTION_NOOP;
 
    /* Scan user inputs */

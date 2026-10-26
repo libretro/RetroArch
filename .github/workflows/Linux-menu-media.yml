@@ -90,6 +90,12 @@ jobs:
             python3 samples/menu/rgui_media/run.py --c89 --external --driver "$driver" samples/menu/rgui_media/fixture.png
             python3 samples/menu/rgui_media/run.py --c89 --browser-image --driver "$driver" samples/menu/rgui_media/fixture.png
           done
+      - name: Background setting browser picks images instead of viewing them
+        run: |
+          ffmpeg -v error -y -f lavfi -i color=c=orange:size=32x32 -frames:v 1 -threads 1 samples/menu/rgui_media/fixture.png
+          for driver in xmb materialui; do
+            python3 samples/menu/rgui_media/run.py --c89 --wallpaper-pick --driver "$driver" samples/menu/rgui_media/fixture.png
+          done
       - name: Generate WebM transport fixtures
         run: |
           ffmpeg -v error -y -f lavfi -i testsrc2=size=320x240:rate=30 -f lavfi -i sine=frequency=440:sample_rate=48000 -t 3 -c:v libvpx -deadline realtime -cpu-used 8 -g 30 -auto-alt-ref 0 -c:a libopus -shortest samples/menu/rgui_media/fixture-opus.webm

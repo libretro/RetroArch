@@ -9187,7 +9187,8 @@ static enum menu_action ozone_parse_menu_entry_action(
       return MENU_ACTION_NOOP;
    if ((ozone->flags & OZONE_FLAG_IS_FILE_LIST)
          && (ozone->flags2 & OZONE_FLAG2_SHOW_FULLSCREEN_THUMBNAILS)
-         && action == MENU_ACTION_OK)
+         && action == MENU_ACTION_OK
+         && menu_media_selected_is_viewable(menu_st))
       return MENU_ACTION_NOOP;
 
    /* We have to override the thumbnail stream

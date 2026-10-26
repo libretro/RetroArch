@@ -125,6 +125,7 @@ static void render_subtitles(struct menu_state *menu_st)
 
 #include "folder_playback_test.h"
 #include "media_cadence_test.h"
+#include "wallpaper_pick_test.h"
 #ifdef _WIN32
 static bool test_current_visible(struct menu_state *menu_st)
 {
@@ -213,6 +214,16 @@ int main(int argc,char **argv)
    if(!native_gpu)
    { poke.load_texture=memory_texture;poke.unload_texture=memory_unload;video->poke=&poke; }
    config_get_ptr()->bools.menu_thumbnail_preview_audio = getenv("MEDIA_TEST_MODAL_MODE") != NULL;
+   if (getenv("MEDIA_TEST_WALLPAPER_PICK"))
+   {
+      CHECK("Background browser picks the image",
+            media_wallpaper_pick_check(menu_st, argv[1],
+               test_folder_shown, render));
+      video->poke = old_poke;
+      main_exit(NULL);
+      printf("wallpaper pick: %u failure(s)\n", failures);
+      return failures ? 1 : 0;
+   }
    if (getenv("MEDIA_TEST_EXTERNAL") || getenv("MEDIA_TEST_BROWSER_IMAGE"))
    {
       bool image = image_texture_get_type(argv[1]) != IMAGE_TYPE_MP4
