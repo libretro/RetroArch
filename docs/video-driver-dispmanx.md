@@ -4,7 +4,7 @@ The dispmanx video driver puts the emulator framebuffer on screen through Dispma
 
 ## Reasons to use the driver
 
-On a Pi Zero, 1, 2 or 3, or a Compute Module of those generations, the driver gets a software-rendered core on screen with the least CPU and memory bandwidth there is: the frame goes from the core's own buffer to the VideoCore, and everything after that is done by the display hardware. It has no shaders, no XMB/Ozone, and no on-screen messages; for those, use the gl driver.
+On a Pi Zero, 1, 2 or 3, or a Compute Module of those generations, the driver gets a software-rendered core on screen with the least CPU and memory bandwidth there is: the frame goes from the core's own buffer to the VideoCore, and everything after that is done by the display hardware. It has no shaders and no XMB/Ozone; for those, use the gl driver.
 
 ## Requirements
 
@@ -26,6 +26,8 @@ The video driver name is 'dispmanx'. It honors the following video settings:
    - `video_vsync`
    - `video_monitor_index`
    - the input overlay, its opacity and full-screen settings
+   - `video_font_enable`, `video_font_path` and `video_font_size`, with the message position and colour
+   - the on-screen statistics
    - `video_max_swapchain_images` (2 to 4 pages for the frame)
    - a core's views, composed and scaled by the HVS over the whole screen
 
@@ -59,9 +61,13 @@ RGUI is drawn on a DispmanX layer of its own above the frame, blended by its own
 
 Each overlay image is a DispmanX element of its own, above the menu, over a resource that holds the image as loaded. The HVS crops it to its texture coordinates, scales it, mirrors it and blends it by its own alpha times the image's opacity. Moving, fading, mirroring or switching the overlay off changes the elements in the same update as the next page flip; nothing is drawn or uploaded by the CPU after the overlay is loaded. An image that is switched off, fully transparent or wholly off the screen has no element, so the HVS spends nothing on it.
 
+### Messages and statistics
+
+On-screen messages and the statistics are each drawn on a DispmanX layer of their own, at the top, at the screen's resolution rather than the frame's. A layer is as large as its text, drawn and uploaded only when the text, its place or its colour changes, into the one of its two resources not on the screen; the next page flip shows it. Unchanged text costs nothing per frame. Notifications drawn as widgets need a GPU display driver; without one, notifications come as these messages.
+
 ### Screenshots
 
-Screenshots take the screen as the HVS composes it - frame, menu and overlay - with `vc_dispmanx_snapshot`, and cut it to the frame's viewport. Off the screen is black.
+Screenshots take the screen as the HVS composes it - frame, menu, overlay and text - with `vc_dispmanx_snapshot`, and cut it to the frame's viewport. Off the screen is black. Recording takes the core's frames.
 
 ## How a frame reaches the screen
 
@@ -78,10 +84,7 @@ Three pages (`video_max_swapchain_images`) let the core fill one while one is on
 
 ## Issues and TODOs
 
-   - On-screen messages, notifications and statistics are not drawn. A small RGBA layer the font renderer draws into, uploaded only when the text changes, would carry them.
-   - GPU recording reads nothing back (`record_read` is not implemented); screenshots do.
-   - The display mode is the one the firmware booted with; `set_video_mode` (through the firmware's TV service) would let `video_fullscreen_x`/`_y` and the refresh rate pick another, and CRT SwitchRes drive it.
-   - RGUI's upscaled path and a menu of an odd width are laid out once by the CPU before upload; a menu framebuffer loan (`get_menu_framebuffer`) at the firmware's pitch would remove that copy. RGUI uploads only when it redraws, so this costs little.
+   - The display mode is the one the firmware set up, or the CRT modeline the videocore display server switched to (which remakes the driver at the new size); `video_fullscreen_x`/`_y` and the refresh rate do not pick another.
    - A core's views are composed on the CPU and drawn without its rotation.
 
 The HVS composes every element anew each scanline, and a display list that does not fit its budget underflows: an overlay with dozens of images visible at once costs more of it than one with a few.

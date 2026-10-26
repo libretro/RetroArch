@@ -30,6 +30,51 @@ void RARCH_DBG(const char *fmt, ...) { (void)fmt; }
 void RARCH_WARN(const char *fmt, ...) { (void)fmt; }
 void RARCH_ERR(const char *fmt, ...) { (void)fmt; }
 
+/* A font of one glyph, 'A': a solid 3x5 block drawn from its top left
+ * at the pen, lines 10 high */
+static uint8_t           font_cov[16 * 16];
+static struct font_atlas font_atl;
+static struct font_glyph font_a;
+static unsigned          font_made, font_freed, font_asked;
+static void *fake_font_init(uint8_t *d, size_t l, unsigned f, float sz,
+      enum font_atlas_format fmt)
+{ (void)d; (void)l; (void)f; (void)sz; (void)fmt; return &font_atl; }
+static struct font_atlas *fake_font_atlas(void *d) { (void)d; return &font_atl; }
+static const struct font_glyph *fake_font_glyph(void *d, uint32_t c)
+{ (void)d; return c == 'A' ? &font_a : NULL; }
+static void fake_font_free(void *d) { (void)d; font_freed++; }
+static void fake_font_metrics(void *d, struct font_line_metrics **m)
+{
+   static struct font_line_metrics lm = { 10.0f, 8.0f, 2.0f };
+   (void)d;
+   *m = &lm;
+}
+static font_renderer_driver_t fake_font = { fake_font_init,
+   fake_font_atlas, fake_font_glyph, fake_font_free, NULL, "fake",
+   fake_font_metrics, false };
+int font_renderer_create_default(const font_renderer_driver_t **drv,
+      void **handle, const char *path, unsigned size,
+      enum font_atlas_format fmt)
+{
+   unsigned y, x;
+   (void)path; (void)fmt;
+   font_made++;
+   font_asked = size;
+   memset(font_cov, 0, sizeof(font_cov));
+   for (y = 0; y < 5; y++)
+      for (x = 0; x < 3; x++)
+         font_cov[y * 16 + x] = 255;
+   font_atl.buffer  = font_cov;
+   font_atl.width   = 16;
+   font_atl.height  = 16;
+   font_a.dims      = VIDEO_SCALE_PACK(3, 5);
+   font_a.atlas_pos = 0;
+   font_a.advance_x = 4;
+   *drv             = &fake_font;
+   *handle          = &font_atl;
+   return 1;
+}
+
 static settings_t settings;
 settings_t *config_get_ptr(void) { return &settings; }
 
@@ -799,6 +844,115 @@ static void test_overlay(void)
    lay_dims = 0;
 }
 
+static void push_msg(void *d, const uint16_t *f, const char *msg,
+      bool stats)
+{
+   video_frame_info_t fi;
+   frame_info(&fi);
+   fi.font_size        = 24.0f;
+   fi.font_msg_pos_x   = 0.05f;
+   fi.font_msg_pos_y   = 0.05f;
+   fi.font_msg_color_r = 1.0f;
+   fi.font_msg_color_g = 0.5f;
+   fi.font_msg_color_b = 0.0f;
+   if (stats)
+   {
+      fi.statistics_show   = true;
+      fi.stat_text         = "AA\nA";
+      fi.stat_text_len     = 4;
+      fi.osd_stat_params.x = 0.0f;
+      fi.osd_stat_params.y = 1.0f;
+   }
+   frame_base = (const uint8_t*)f;
+   frame_size = (size_t)640 * 240;
+   dispmanx_frame(d, f, VIDEO_SCALE_PACK(320, 240), 0, 640, msg, &fi);
+}
+
+static void test_text(void)
+{
+   void *d;
+   video_info_t info;
+   uint16_t *f = make_frame(320, 240, 640);
+   struct felem *e;
+   unsigned w, a, shown;
+   static char long_msg[64];
+
+   memset(&info, 0, sizeof(info));
+   info.vsync       = true;
+   info.smooth      = true;
+   info.force_aspect = true;
+   info.font_enable = true;
+   d = dispmanx_init(&info);
+
+   push_msg(d, f, "AA", false);
+   e = elem_on(DISPMANX_TEXT_LAYER);
+   /* Baseline at 1080 * 0.95 = 1026, two glyphs 4 apart, 3x5 each */
+   check(__LINE__, e && e->dst.x == 96 && e->dst.y == 1026
+         && e->dst.width == 7 && e->dst.height == 5
+         && e->src.width == (7 << 16) && e->aflags
+            == DISPMANX_FLAGS_ALPHA_FROM_SOURCE,
+         "message at %d,%d %dx%d", e ? e->dst.x : -1, e ? e->dst.y : -1,
+         e ? e->dst.width : -1, e ? e->dst.height : -1);
+   check(__LINE__, font_asked == 24, "font made at %u pixels", font_asked);
+   check(__LINE__, e && res_px(e, 0, 0) == 0xffff7f00u && res_px(e, 3, 0) == 0
+         && res_px(e, 4, 4) == 0xffff7f00u,
+         "message pixels %08x %08x", e ? res_px(e, 0, 0) : 0,
+         e ? res_px(e, 3, 0) : 0);
+   shown = e ? e->res : 0;
+
+   /* The same message: nothing drawn, nothing told */
+   w = writes;
+   a = attr_changes;
+   push_msg(d, f, "AA", false);
+   check(__LINE__, writes == w + 1 && attr_changes == a,
+         "unchanged message redrawn (%u writes, %u changes)",
+         writes - w, attr_changes - a);
+
+   /* A new one goes into the other resource, which the flip shows */
+   push_msg(d, f, "A", false);
+   e = elem_on(DISPMANX_TEXT_LAYER);
+   check(__LINE__, e && e->res != shown && e->dst.width == 3,
+         "changed message not flipped to the other resource");
+
+   /* Outgrowing the resources: made again, the old ones go once the
+    * flip that took them off has landed */
+   memset(long_msg, 'A', 40);
+   push_msg(d, f, long_msg, false);
+   e = elem_on(DISPMANX_TEXT_LAYER);
+   check(__LINE__, e && e->dst.width == 159 && res[e->res].w >= 159,
+         "long message %d wide", e ? e->dst.width : -1);
+
+   /* Statistics on a layer of their own, lines 10 apart */
+   push_msg(d, f, NULL, true);
+   check(__LINE__, !elem_on(DISPMANX_TEXT_LAYER), "message left up");
+   e = elem_on(DISPMANX_TEXT_LAYER + 1);
+   check(__LINE__, e && e->dst.x == 0 && e->dst.width == 7
+         && e->dst.height == 15, "statistics at %d %dx%d",
+         e ? e->dst.x : -1, e ? e->dst.width : -1, e ? e->dst.height : -1);
+   push_msg(d, f, NULL, false);
+   check(__LINE__, !elem_on(DISPMANX_TEXT_LAYER + 1), "statistics left up");
+
+   dispmanx_free(d);
+   check(__LINE__, font_freed == font_made, "font left made");
+
+   /* Freed right after outgrowing: the retired resources go too */
+   d = dispmanx_init(&info);
+   push_msg(d, f, "A", false);
+   push_msg(d, f, long_msg, false);
+   dispmanx_free(d);
+   for (w = 0; w < MAX_RES; w++)
+      check(__LINE__, !res[w].live, "resource %u left after free", w);
+
+   /* Messages off: nothing */
+   info.font_enable = false;
+   d = dispmanx_init(&info);
+   push_msg(d, f, "AA", true);
+   check(__LINE__, !elem_on(DISPMANX_TEXT_LAYER)
+         && !elem_on(DISPMANX_TEXT_LAYER + 1), "text drawn with fonts off");
+   dispmanx_free(d);
+   free(f);
+}
+
 static void test_screen(void)
 {
    void *d;
@@ -860,6 +1014,7 @@ int main(void)
    test_nonblock();
    test_overlay();
    test_screen();
+   test_text();
    test_filtering();
    test_menu();
 

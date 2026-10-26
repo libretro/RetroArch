@@ -16,6 +16,8 @@ SOURCES   := dispmanx_display_test.c \
              $(LRC)/rthreads/retro_eventcount.c \
              $(LRC)/rthreads/rthreads.c \
              $(LRC)/memmap/memalign.c \
+             $(LRC)/compat/compat_strl.c \
+             $(LRC)/encodings/encoding_utf.c \
              $(LRC)/gfx/scaler/scaler.c \
              $(LRC)/gfx/scaler/scaler_filter.c \
              $(LRC)/gfx/scaler/scaler_int.c \

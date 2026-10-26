@@ -20,6 +20,8 @@
 
 #include <bcm_host.h>
 
+#include <compat/strl.h>
+#include <encodings/utf.h>
 #include <memalign.h>
 #include <rthreads/rthreads.h>
 #include <rthreads/retro_eventcount.h>
@@ -39,6 +41,7 @@
 #include "../video_views.h"
 #include "../video_views_cpu.h"
 #include "../video_turn.h"
+#include "../font_driver.h"
 #include "../../configuration.h"
 
 #ifdef HAVE_OVERLAY
@@ -157,6 +160,34 @@ struct dispmanx_overlay
 #define DISPMANX_OVERLAY_LAYER 2
 #endif
 
+/* A line of text on the screen - the message, or the statistics - on a
+ * layer of its own at the screen's resolution: drawn and uploaded only
+ * when it changes, into the resource not on the screen, which the next
+ * flip shows */
+struct dispmanx_text
+{
+   uint32_t *buf;
+   char *text;
+   VC_RECT_T dst_rect;
+   DISPMANX_RESOURCE_HANDLE_T res[2];
+   /* Outgrown, still shown until the flip that took them off lands */
+   DISPMANX_RESOURCE_HANDLE_T retired[2];
+   DISPMANX_ELEMENT_HANDLE_T element;
+   size_t text_len;
+   size_t text_cap;
+   /* What the resources hold room for, 64 pixels a step */
+   unsigned cap_dims;
+   unsigned shown;
+   unsigned color;
+   unsigned px;
+   int x;
+   int y;
+   int32_t layer;
+};
+
+/* Text sits above everything else */
+#define DISPMANX_TEXT_LAYER 0x7000
+
 struct dispmanx_video
 {
    DISPMANX_DISPLAY_HANDLE_T display;
@@ -223,6 +254,18 @@ struct dispmanx_video
    /* The driver loaded a scaler kernel of its own */
    bool kernel_loaded;
    bool views_seen;
+   bool font_enable;
+
+   /* On-screen messages and statistics */
+   const font_renderer_driver_t *font_driver;
+   void *font;
+   struct dispmanx_text msg_text;
+   struct dispmanx_text stat_text;
+   /* What the frame being drawn carries, for the flip to show */
+   const char *pending_msg;
+   const video_frame_info_t *pending_info;
+   unsigned font_px;
+   char font_path[PATH_MAX_LENGTH];
 };
 
 /* Park until every issued flip has been reported by the vsync
@@ -855,6 +898,331 @@ static void dispmanx_get_overlay_interface(void *data,
 }
 #endif
 
+/* The font at @px pixels, made again when the size changes */
+static bool dispmanx_font(struct dispmanx_video *_dispvars, unsigned px)
+{
+   if (px < 8)
+      px = 8;
+   if (_dispvars->font && _dispvars->font_px == px)
+      return true;
+   if (_dispvars->font)
+      _dispvars->font_driver->free(_dispvars->font);
+   _dispvars->font = NULL;
+   if (!font_renderer_create_default(&_dispvars->font_driver,
+            &_dispvars->font,
+            *_dispvars->font_path ? _dispvars->font_path : NULL,
+            px, FONT_ATLAS_FORMAT_A8))
+   {
+      _dispvars->font_enable = false;
+      return false;
+   }
+   _dispvars->font_px = px;
+   /* Glyphs are read from the atlas in memory: it may grow */
+   _dispvars->font_driver->get_atlas(_dispvars->font)->max_dims
+      = VIDEO_SCALE_PACK(2048, 2048);
+   return true;
+}
+
+/* The rectangle @msg covers with its baseline starting at @base_x,
+ * @base_y, as x0, y0, x1, y1 */
+static void dispmanx_text_measure(struct dispmanx_video *_dispvars,
+      const char *msg, size_t msg_len, int base_x, int base_y, int *r)
+{
+   void *font_data = _dispvars->font;
+   const struct font_glyph *(*get_glyph)(void*, uint32_t)
+      = _dispvars->font_driver->get_glyph;
+   const struct font_glyph *glyph_q = get_glyph(font_data, '?');
+   struct font_line_metrics *line_metrics = NULL;
+   int line_h = 0, line_x = base_x, line_y = base_y;
+
+   if (_dispvars->font_driver->get_line_metrics)
+      _dispvars->font_driver->get_line_metrics(font_data, &line_metrics);
+   if (line_metrics)
+      line_h = (int)line_metrics->height;
+   r[0] = r[1] = 0x7fffffff;
+   r[2] = r[3] = -0x7fffffff;
+
+#define FONT_LAYOUT_ALIGNED 0
+#define FONT_LAYOUT_LINE(line, line_width, count, bytes) \
+   do \
+   { \
+      (void)(line_width); (void)(count); (void)(bytes); \
+      line_x = base_x; \
+      line_y = base_y + (line) * line_h; \
+   } while (0)
+#define FONT_LAYOUT_GLYPH(glyph, pen_x, pen_y) \
+   do \
+   { \
+      int gx = line_x + (pen_x) + (glyph)->draw_offset_x; \
+      int gy = line_y + (pen_y) + (glyph)->draw_offset_y; \
+      int gw = (int)VIDEO_SCALE_W((glyph)->dims); \
+      int gh = (int)VIDEO_SCALE_H((glyph)->dims); \
+      if (gw > 0 && gh > 0) \
+      { \
+         if (gx < r[0]) r[0] = gx; \
+         if (gy < r[1]) r[1] = gy; \
+         if (gx + gw > r[2]) r[2] = gx + gw; \
+         if (gy + gh > r[3]) r[3] = gy + gh; \
+      } \
+   } while (0)
+#include "../font_layout.h"
+}
+
+/* @msg drawn into @out, rows @stride pixels apart, whose top left is
+ * the screen's @ox, @oy: @color with the glyphs' coverage as alpha */
+static void dispmanx_text_draw(struct dispmanx_video *_dispvars,
+      const char *msg, size_t msg_len, int base_x, int base_y,
+      uint32_t *out, unsigned stride, int ox, int oy, unsigned ow,
+      unsigned oh, uint32_t color)
+{
+   int x, y;
+   void *font_data = _dispvars->font;
+   const struct font_glyph *(*get_glyph)(void*, uint32_t)
+      = _dispvars->font_driver->get_glyph;
+   const struct font_glyph *glyph_q = get_glyph(font_data, '?');
+   const struct font_atlas *atlas;
+   struct font_line_metrics *line_metrics = NULL;
+   int line_h = 0, line_x = base_x, line_y = base_y;
+
+   if (_dispvars->font_driver->get_line_metrics)
+      _dispvars->font_driver->get_line_metrics(font_data, &line_metrics);
+   if (line_metrics)
+      line_h = (int)line_metrics->height;
+
+#define FONT_LAYOUT_ALIGNED 0
+#define FONT_LAYOUT_LINE(line, line_width, count, bytes) \
+   do \
+   { \
+      (void)(line_width); (void)(count); (void)(bytes); \
+      line_x = base_x; \
+      line_y = base_y + (line) * line_h; \
+   } while (0)
+#define FONT_LAYOUT_GLYPH(glyph, pen_x, pen_y) \
+   do \
+   { \
+      int gx = line_x + (pen_x) + (glyph)->draw_offset_x - ox; \
+      int gy = line_y + (pen_y) + (glyph)->draw_offset_y - oy; \
+      int gw = (int)VIDEO_SCALE_W((glyph)->dims); \
+      int gh = (int)VIDEO_SCALE_H((glyph)->dims); \
+      const uint8_t *gsrc; \
+      atlas = _dispvars->font_driver->get_atlas(font_data); \
+      gsrc  = atlas->buffer + VIDEO_SCALE_W((glyph)->atlas_pos) \
+         + (size_t)VIDEO_SCALE_H((glyph)->atlas_pos) * atlas->width; \
+      for (y = 0; y < gh; y++) \
+      { \
+         int py = gy + y; \
+         if (py < 0 || py >= (int)oh) \
+            continue; \
+         for (x = 0; x < gw; x++) \
+         { \
+            int px = gx + x; \
+            uint32_t a = gsrc[(size_t)y * atlas->width + x]; \
+            uint32_t *d; \
+            if (!a || px < 0 || px >= (int)ow) \
+               continue; \
+            d = out + (size_t)py * stride + px; \
+            if (a > (*d >> 24)) \
+               *d = (a << 24) | color; \
+         } \
+      } \
+   } while (0)
+#include "../font_layout.h"
+}
+
+/* Every resource and the element of @t gone */
+static void dispmanx_text_free(struct dispmanx_video *_dispvars,
+      struct dispmanx_text *t)
+{
+   unsigned i;
+
+   if (t->element)
+   {
+      dispmanx_drain_flips(_dispvars);
+      _dispvars->update = vc_dispmanx_update_start(0);
+      vc_dispmanx_element_remove(_dispvars->update, t->element);
+      vc_dispmanx_update_submit_sync(_dispvars->update);
+      t->element = 0;
+   }
+   for (i = 0; i < 2; i++)
+   {
+      if (t->res[i])
+         vc_dispmanx_resource_delete(t->res[i]);
+      if (t->retired[i])
+         vc_dispmanx_resource_delete(t->retired[i]);
+      t->res[i] = t->retired[i] = 0;
+   }
+   t->cap_dims = 0;
+   free(t->buf);
+   t->buf      = NULL;
+}
+
+/* @msg at @base_x, @base_y in @color, told to the HVS in @update: drawn
+ * and uploaded only when it is not what @t shows already */
+static void dispmanx_text_commit(struct dispmanx_video *_dispvars,
+      struct dispmanx_text *t, DISPMANX_UPDATE_HANDLE_T update,
+      const char *msg, size_t msg_len, int base_x, int base_y,
+      uint32_t color)
+{
+   int r[4];
+   unsigned w, h, cw, ch, next, y;
+   VC_RECT_T src, rect;
+   VC_DISPMANX_ALPHA_T alpha;
+   int dw = (int)VIDEO_SCALE_W(_dispvars->disp_dims);
+   int dh = (int)VIDEO_SCALE_H(_dispvars->disp_dims);
+
+   /* The flips are drained: what the last one took off is free */
+   for (y = 0; y < 2; y++)
+      if (t->retired[y])
+      {
+         vc_dispmanx_resource_delete(t->retired[y]);
+         t->retired[y] = 0;
+      }
+
+   if (!msg || !msg_len)
+   {
+      if (t->element)
+         vc_dispmanx_element_remove(update, t->element);
+      t->element  = 0;
+      t->text_len = 0;
+      return;
+   }
+   if (     t->element && msg_len == t->text_len && color == t->color
+         && base_x == t->x && base_y == t->y && t->px == _dispvars->font_px
+         && !memcmp(msg, t->text, msg_len))
+      return;
+
+   if (msg_len + 1 > t->text_cap)
+   {
+      char *grown = (char*)realloc(t->text, msg_len + 1);
+      if (!grown)
+         return;
+      t->text     = grown;
+      t->text_cap = msg_len + 1;
+   }
+   memcpy(t->text, msg, msg_len);
+   t->text[msg_len] = '\0';
+   t->text_len      = msg_len;
+   t->color         = color;
+   t->x             = base_x;
+   t->y             = base_y;
+   t->px            = _dispvars->font_px;
+
+   dispmanx_text_measure(_dispvars, msg, msg_len, base_x, base_y, r);
+   if (r[0] < 0)  r[0] = 0;
+   if (r[1] < 0)  r[1] = 0;
+   if (r[2] > dw) r[2] = dw;
+   if (r[3] > dh) r[3] = dh;
+   if (r[2] <= r[0] || r[3] <= r[1])
+   {
+      if (t->element)
+         vc_dispmanx_element_remove(update, t->element);
+      t->element = 0;
+      return;
+   }
+   w = (unsigned)(r[2] - r[0]);
+   h = (unsigned)(r[3] - r[1]);
+
+   /* Room for it, both resources, in steps so a growing line does not
+    * make them again every frame */
+   if (w > VIDEO_SCALE_W(t->cap_dims) || h > VIDEO_SCALE_H(t->cap_dims))
+   {
+      uint32_t vc_image_ptr = 0;
+      cw = (w + 63) & ~63u;
+      ch = (h + 63) & ~63u;
+      /* The element comes off with this flip; its resources go once
+       * the flip has landed */
+      if (t->element)
+         vc_dispmanx_element_remove(update, t->element);
+      t->element    = 0;
+      t->retired[0] = t->res[0];
+      t->retired[1] = t->res[1];
+      free(t->buf);
+      t->res[0]   = vc_dispmanx_resource_create(VC_IMAGE_ARGB8888, cw, ch,
+            &vc_image_ptr);
+      t->res[1]   = vc_dispmanx_resource_create(VC_IMAGE_ARGB8888, cw, ch,
+            &vc_image_ptr);
+      t->buf      = (uint32_t*)malloc((size_t)cw * ch * 4);
+      t->cap_dims = (t->res[0] && t->res[1] && t->buf)
+         ? VIDEO_SCALE_PACK(cw, ch) : 0;
+      if (!t->cap_dims)
+      {
+         t->text_len = 0;
+         return;
+      }
+   }
+   cw = VIDEO_SCALE_W(t->cap_dims);
+
+   for (y = 0; y < h; y++)
+      memset(t->buf + (size_t)y * cw, 0, (size_t)w * 4);
+   dispmanx_text_draw(_dispvars, msg, msg_len, base_x, base_y, t->buf, cw,
+         r[0], r[1], w, h, color);
+
+   /* Into the resource not on the screen; the flip shows it */
+   next = t->element ? (t->shown ^ 1) : 0;
+   vc_dispmanx_rect_set(&rect, 0, 0, w, h);
+   vc_dispmanx_resource_write_data(t->res[next], VC_IMAGE_ARGB8888,
+         (int)(cw * 4), t->buf, &rect);
+   vc_dispmanx_rect_set(&t->dst_rect, (uint32_t)r[0], (uint32_t)r[1], w, h);
+   vc_dispmanx_rect_set(&src, 0, 0, w << 16, h << 16);
+   t->shown = next;
+
+   if (!t->element)
+   {
+      alpha.flags   = DISPMANX_FLAGS_ALPHA_FROM_SOURCE;
+      alpha.opacity = 255;
+      alpha.mask    = 0;
+      t->element    = vc_dispmanx_element_add(update, _dispvars->display,
+            t->layer, &t->dst_rect, t->res[next], &src,
+            DISPMANX_PROTECTION_NONE, &alpha, 0, DISPMANX_NO_ROTATE);
+   }
+   else
+   {
+      vc_dispmanx_element_change_source(update, t->element, t->res[next]);
+      vc_dispmanx_element_change_attributes(update, t->element,
+            DISPMANX_CHANGE_DEST_RECT | DISPMANX_CHANGE_SRC_RECT,
+            0, 255, &t->dst_rect, &src, 0, DISPMANX_NO_ROTATE);
+   }
+}
+
+/* The message and the statistics the frame carries, in @update */
+static void dispmanx_texts_commit(struct dispmanx_video *_dispvars,
+      DISPMANX_UPDATE_HANDLE_T update)
+{
+   uint32_t color;
+   float cr, cg, cb;
+   const video_frame_info_t *info = _dispvars->pending_info;
+   const char *msg                = _dispvars->pending_msg;
+   const char *stat               = NULL;
+   int dw = (int)VIDEO_SCALE_W(_dispvars->disp_dims);
+   int dh = (int)VIDEO_SCALE_H(_dispvars->disp_dims);
+
+   if (!_dispvars->font_enable || !info)
+      return;
+   if (info->statistics_show && info->stat_text_len)
+      stat = info->stat_text;
+   if (     ((msg && *msg) || stat)
+         && !dispmanx_font(_dispvars, (unsigned)(info->font_size + 0.5f)))
+      return;
+
+   cr    = info->font_msg_color_r < 0.0f ? 0.0f
+      : info->font_msg_color_r > 1.0f ? 1.0f : info->font_msg_color_r;
+   cg    = info->font_msg_color_g < 0.0f ? 0.0f
+      : info->font_msg_color_g > 1.0f ? 1.0f : info->font_msg_color_g;
+   cb    = info->font_msg_color_b < 0.0f ? 0.0f
+      : info->font_msg_color_b > 1.0f ? 1.0f : info->font_msg_color_b;
+   color = ((uint32_t)(cr * 255.0f) << 16) | ((uint32_t)(cg * 255.0f) << 8)
+      | (uint32_t)(cb * 255.0f);
+
+   dispmanx_text_commit(_dispvars, &_dispvars->msg_text, update,
+         msg, msg ? strlen(msg) : 0,
+         (int)(info->font_msg_pos_x * dw),
+         (int)((1.0f - info->font_msg_pos_y) * dh), color);
+   dispmanx_text_commit(_dispvars, &_dispvars->stat_text, update,
+         stat, stat ? info->stat_text_len : 0,
+         (int)(info->osd_stat_params.x * dw),
+         (int)((1.0f - info->osd_stat_params.y) * dh), color);
+}
+
 static void dispmanx_surface_update(struct dispmanx_video *_dispvars,
       const void *frame, unsigned pitch, struct dispmanx_surface *surface)
 {
@@ -883,6 +1251,7 @@ static void dispmanx_surface_update(struct dispmanx_video *_dispvars,
 #ifdef HAVE_OVERLAY
    dispmanx_overlay_commit(_dispvars, _dispvars->update);
 #endif
+   dispmanx_texts_commit(_dispvars, _dispvars->update);
 
    retro_atomic_fetch_add_int(&_dispvars->pageflip_pending, 1);
 
@@ -988,6 +1357,12 @@ static void *dispmanx_init(const video_info_t *video)
    _dispvars->smooth      = video->smooth;
    _dispvars->menu_alpha  = 1.0f;
    _dispvars->nonblock    = !video->vsync;
+   _dispvars->font_enable = video->font_enable;
+   _dispvars->msg_text.layer  = DISPMANX_TEXT_LAYER;
+   _dispvars->stat_text.layer = DISPMANX_TEXT_LAYER + 1;
+   if (video->path_font)
+      strlcpy(_dispvars->font_path, video->path_font,
+            sizeof(_dispvars->font_path));
 
    if (!retro_eventcount_init(&_dispvars->vsync_ec))
    {
@@ -1121,6 +1496,9 @@ static bool dispmanx_frame(void *data, const void *frame,
 
    if (!frame)
       return true;
+
+   _dispvars->pending_msg  = msg;
+   _dispvars->pending_info = video_info;
 
    if (dispmanx_views_frame(_dispvars, frame, dims, pitch, video_info))
    {
@@ -1559,6 +1937,12 @@ static void dispmanx_free(void *data)
 #ifdef HAVE_OVERLAY
    dispmanx_overlay_free(_dispvars);
 #endif
+   dispmanx_text_free(_dispvars, &_dispvars->msg_text);
+   dispmanx_text_free(_dispvars, &_dispvars->stat_text);
+   free(_dispvars->msg_text.text);
+   free(_dispvars->stat_text.text);
+   if (_dispvars->font)
+      _dispvars->font_driver->free(_dispvars->font);
 
    /* The console and whatever runs next scale smooth again */
    if (_dispvars->kernel_loaded && !_dispvars->smooth)
