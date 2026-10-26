@@ -11173,6 +11173,10 @@ void config_save_file_salamander(void)
 
    /* Update config file */
    config_set_path(conf, "libretro_path", libretro_path);
+   /* Leaving for another core: it stays marked, as salamander marks a
+    * core it launches, until its frontend comes up. */
+   if (frontend_driver_get_fork() != FRONTEND_FORK_NONE)
+      config_set_path(conf, SALAMANDER_CONFIG_PENDING_KEY, libretro_path);
 
    /* Save config file
     * > Only one entry - no need to sort */

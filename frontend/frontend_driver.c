@@ -312,7 +312,15 @@ bool frontend_driver_set_fork(enum frontend_fork fork_mode)
    frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
    if (!frontend || !frontend_driver_has_fork())
       return false;
-   return frontend->set_fork(fork_mode);
+   if (!frontend->set_fork(fork_mode))
+      return false;
+   frontend_st->fork_mode = fork_mode;
+   return true;
+}
+
+enum frontend_fork frontend_driver_get_fork(void)
+{
+   return frontend_driver_st.fork_mode;
 }
 
 void frontend_driver_process_args(int *argc, char *argv[])

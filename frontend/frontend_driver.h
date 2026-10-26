@@ -112,6 +112,7 @@ typedef struct frontend_ctx_driver
 typedef struct
 {
    frontend_ctx_driver_t *current_frontend_ctx; /* ptr alignment */
+   enum frontend_fork fork_mode; /* the last mode the driver accepted */
 } frontend_state_t;
 
 /**
@@ -166,6 +167,10 @@ void frontend_driver_deinit(void *args);
 void frontend_driver_exitspawn(char *s, size_t len, char *args);
 
 bool frontend_driver_has_fork(void);
+
+/* The fork the driver last accepted, FRONTEND_FORK_NONE when none:
+ * what exitspawn will launch on the way out. */
+enum frontend_fork frontend_driver_get_fork(void);
 
 size_t frontend_driver_get_core_extension(char *s, size_t len);
 

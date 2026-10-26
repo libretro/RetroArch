@@ -1,6 +1,8 @@
 # frontend/frontend_salamander.c, the static-platform launcher, linked
 # with the libretro-common units a salamander build links (see
-# Makefile.vita.salamander) and a stand-in frontend driver. Builds for
+# Makefile.vita.salamander) and a stand-in frontend driver, plus the
+# frontend's salamander config functions taken out of configuration.c
+# by ../android_second_surface/extract.awk. Builds for
 # Linux and, with CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine, for
 # Windows.
 TARGET   := salamander_pending_test$(EXE)
@@ -39,7 +41,13 @@ endif
 
 all: $(TARGET)
 
-$(TARGET): $(SOURCES)
+# The frontend's salamander config functions, out of configuration.c.
+salamander_config.h: ../android_second_surface/extract.awk $(CORE_DIR)/configuration.c
+	awk -v FUNCS=config_file_salamander_get_path,config_save_file_salamander,config_clear_salamander_pending \
+	   -f ../android_second_surface/extract.awk $(CORE_DIR)/configuration.c > $@.tmp
+	mv $@.tmp $@
+
+$(TARGET): $(SOURCES) salamander_config.h
 	$(CC) $(CFLAGS) -o $@ $(SOURCES) $(LDFLAGS)
 
 check: all
@@ -47,6 +55,6 @@ check: all
 
 clean:
 	rm -rf salamander_pending_test salamander_pending_test.exe \
-	       salamander_pending.tmp
+	       salamander_pending.tmp salamander_config.h salamander_config.h.tmp
 
 .PHONY: all check clean
