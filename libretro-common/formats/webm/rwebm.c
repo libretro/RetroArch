@@ -52,6 +52,8 @@
 #define ID_TRACKTYPE       0x83u
 #define ID_CODECID         0x86u
 #define ID_CODECPRIVATE    0x63A2u
+#define ID_LANGUAGE        0x22B59Cu
+#define ID_LANGUAGEBCP47   0x22B59Du
 #define ID_CODECDELAY      0x56AAu
 #define ID_DEFAULTDURATION 0x23E383u
 #define ID_VIDEO           0xE0u
@@ -270,6 +272,13 @@ struct rwebm_cue
    uint64_t cluster_pos;   /* CueClusterPosition, from seg_body         */
 };
 
+struct rwebm_language
+{
+   const char *text;
+   size_t length;
+   enum rwebm_language_kind kind;
+};
+
 struct rwebm
 {
    const uint8_t *data;
@@ -321,6 +330,7 @@ struct rwebm
    int64_t        lace_ts;
    int            lace_keyframe;
    int            pending_reference;
+   struct rwebm_language languages[RWEBM_MAX_TRACKS];
 };
 
 /* Positive TrackNumber selects its positions, including when another
@@ -533,11 +543,14 @@ static void parse_track_av(const uint8_t *p, const uint8_t *end,
 
 /* Parse one TrackEntry into 'trk'. Range is [p,end). */
 static void parse_track_entry(const uint8_t *p, const uint8_t *end,
-      rwebm_track *trk)
+      rwebm_track *trk, struct rwebm_language *language)
 {
    ebml_reader r;
    r.p = p; r.end = end;
    memset(trk, 0, sizeof(*trk));
+   language->text = "eng";
+   language->length = 3;
+   language->kind = RWEBM_LANGUAGE_LEGACY;
    while (r.p < r.end)
    {
       int      ok;
@@ -569,6 +582,18 @@ static void parse_track_entry(const uint8_t *p, const uint8_t *end,
             trk->codec       = codec_from_id(trk->codec_id);
             break;
          }
+         case ID_LANGUAGE:
+            if (language->kind == RWEBM_LANGUAGE_BCP47)
+               break;
+            language->text = (const char*)body;
+            language->length = (size_t)sz;
+            language->kind = RWEBM_LANGUAGE_LEGACY;
+            break;
+         case ID_LANGUAGEBCP47:
+            language->text = (const char*)body;
+            language->length = (size_t)sz;
+            language->kind = RWEBM_LANGUAGE_BCP47;
+            break;
          case ID_CODECPRIVATE:
             trk->codec_private      = body;
             trk->codec_private_size = (size_t)sz;
@@ -643,6 +668,20 @@ const rwebm_track *rwebm_get_track(const rwebm_t *webm, int index)
    if (!webm || index < 0 || index >= webm->num_tracks)
       return NULL;
    return &webm->tracks[index];
+}
+
+const char *rwebm_get_track_language(const rwebm_t *webm, int index,
+      size_t *length, enum rwebm_language_kind *kind)
+{
+   const struct rwebm_language *language;
+   if (length) *length = 0;
+   if (kind) *kind = RWEBM_LANGUAGE_NONE;
+   if (!webm || index < 0 || index >= webm->num_tracks)
+      return NULL;
+   language = &webm->languages[index];
+   if (length) *length = language->length;
+   if (kind) *kind = language->kind;
+   return language->text;
 }
 
 void rwebm_close(rwebm_t *webm)
@@ -1627,8 +1666,11 @@ rwebm_t *rwebm_open_memory_avail(const uint8_t *data, size_t size,
                if (!tid || !tok || tbody + tsz > tr.end)
                   break;
                if (tid == ID_TRACKENTRY)
+               {
                   parse_track_entry(tbody, tbody + tsz,
-                        &w->tracks[w->num_tracks++]);
+                        &w->tracks[w->num_tracks], &w->languages[w->num_tracks]);
+                  w->num_tracks++;
+               }
                tr.p = tbody + tsz;
             }
             /* First cluster/data starts right after Tracks. */

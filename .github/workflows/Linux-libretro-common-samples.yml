@@ -326,6 +326,7 @@ jobs:
             rvp9_config_test
             rvp9_reference_test
             rvp9_hw_session_test
+            rwebm_language_test
             rwebm_hw_stream_test
             # The NGX and NVAPI loaders against a stand-in NGX core
             # library on LD_LIBRARY_PATH; the Windows discovery runs

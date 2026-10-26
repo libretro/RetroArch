@@ -25,6 +25,13 @@
 
 RETRO_BEGIN_DECLS
 
+enum rwebm_language_kind
+{
+   RWEBM_LANGUAGE_NONE = 0,
+   RWEBM_LANGUAGE_LEGACY,
+   RWEBM_LANGUAGE_BCP47
+};
+
 enum rwebm_track_type
 {
    RWEBM_TRACK_NONE = 0,
@@ -137,6 +144,11 @@ size_t             rwebm_tell(const rwebm_t *m);
  * Callers retaining a returned packet must pin its data and additions. */
 size_t             rwebm_consumed(const rwebm_t *m);
 const rwebm_track *rwebm_get_track(const rwebm_t *webm, int index);
+/* Raw string span, including EBML padding; borrowed with the input.
+ * BCP47 overrides legacy Language, which defaults to eng when absent. */
+const char *rwebm_get_track_language(const rwebm_t *webm, int index,
+      size_t *length, enum rwebm_language_kind *kind);
+
 
 /* Total duration in nanoseconds (Duration * TimestampScale), or 0 if the
  * file does not declare one. */
