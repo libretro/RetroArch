@@ -149,8 +149,7 @@ static ngx_proc_t ngx_sym(ngx_module_t m, const char *name)
    return (ngx_proc_t)GetProcAddress(m, name);
 }
 
-/* NGXPath under the display driver's service key (declarative
- * installs), then the legacy FullPath Wine and Proton set */
+/* A REG_SZ value under HKEY_LOCAL_MACHINE */
 static bool ngx_registry_dir(wchar_t *out, DWORD out_bytes,
       const wchar_t *key, const wchar_t *value)
 {
@@ -169,23 +168,26 @@ static bool ngx_registry_dir(wchar_t *out, DWORD out_bytes,
    return true;
 }
 
+static const wchar_t *const ngx_core_names[] = {
+#if defined(_M_ARM64) || defined(__aarch64__)
+   L"_arm64_nvngx.dll"
+#else
+   L"_nvngx.dll", L"nvngx.dll"
+#endif
+};
+#define NGX_CORE_NAMES (sizeof(ngx_core_names) / sizeof(ngx_core_names[0]))
+
 static ngx_module_t ngx_open_in(wchar_t *dir, size_t dir_chars)
 {
-   static const wchar_t *const names[] = {
-#if defined(_M_ARM64) || defined(__aarch64__)
-      L"\\_arm64_nvngx.dll"
-#else
-      L"\\_nvngx.dll", L"\\nvngx.dll"
-#endif
-   };
    size_t len = wcslen(dir);
    size_t i;
-   for (i = 0; i < sizeof(names) / sizeof(names[0]); i++)
+   for (i = 0; i < NGX_CORE_NAMES; i++)
    {
       HMODULE m;
-      if (len + wcslen(names[i]) + 1 > dir_chars)
+      if (len + wcslen(ngx_core_names[i]) + 2 > dir_chars)
          continue;
-      wcscpy(dir + len, names[i]);
+      dir[len] = L'\\';
+      wcscpy(dir + len + 1, ngx_core_names[i]);
       m        = LoadLibraryW(dir);
       if (m)
       {
@@ -321,31 +323,51 @@ uint32_t ngx_dlss_feature_version(const char *dir)
    return snippet ? ngx_snippet_version(snippet()) : 0;
 }
 
+/* Where the core library may be, in the order it is looked for: the
+ * executable's directory (a copy put there wins), then NGXPath under
+ * the display driver's service key (declarative installs), then the
+ * legacy FullPath Wine and Proton set. @which from 0; false past the
+ * last, or where that one is not set. */
+static bool ngx_core_dir(unsigned which, wchar_t *dir)
+{
+   switch (which)
+   {
+      case 0:
+      {
+         DWORD n = GetModuleFileNameW(NULL, dir, MAX_PATH);
+         wchar_t *slash;
+         if (!n || n >= MAX_PATH || !(slash = wcsrchr(dir, L'\\')))
+            return false;
+         *slash = 0;
+         return true;
+      }
+      case 1:
+         return ngx_registry_dir(dir, MAX_PATH * sizeof(wchar_t),
+               L"System\\CurrentControlSet\\Services\\nvlddmkm\\Parameters\\NGXCore",
+               L"NGXPath");
+      case 2:
+         return ngx_registry_dir(dir, MAX_PATH * sizeof(wchar_t),
+               L"System\\CurrentControlSet\\Services\\nvlddmkm\\NGXCore",
+               L"NGXPath");
+      case 3:
+         return ngx_registry_dir(dir, MAX_PATH * sizeof(wchar_t),
+               L"SOFTWARE\\NVIDIA Corporation\\Global\\NGXCore",
+               L"FullPath");
+      default:
+         break;
+   }
+   return false;
+}
+#define NGX_CORE_DIRS 4
+
 static ngx_module_t ngx_open(void)
 {
    wchar_t dir[MAX_PATH + 32];
    HMODULE m = NULL;
-   DWORD n   = GetModuleFileNameW(NULL, dir, MAX_PATH);
-   if (n && n < MAX_PATH)
-   {
-      wchar_t *slash = wcsrchr(dir, L'\\');
-      if (slash)
-      {
-         *slash = 0;
-         m      = ngx_open_in(dir, MAX_PATH);
-      }
-   }
-   if (!m && (
-            ngx_registry_dir(dir, MAX_PATH * sizeof(wchar_t),
-               L"System\\CurrentControlSet\\Services\\nvlddmkm\\Parameters\\NGXCore",
-               L"NGXPath")
-         || ngx_registry_dir(dir, MAX_PATH * sizeof(wchar_t),
-               L"System\\CurrentControlSet\\Services\\nvlddmkm\\NGXCore",
-               L"NGXPath")
-         || ngx_registry_dir(dir, MAX_PATH * sizeof(wchar_t),
-               L"SOFTWARE\\NVIDIA Corporation\\Global\\NGXCore",
-               L"FullPath")))
-      m = ngx_open_in(dir, MAX_PATH);
+   unsigned which;
+   for (which = 0; !m && which < NGX_CORE_DIRS; which++)
+      if (ngx_core_dir(which, dir))
+         m = ngx_open_in(dir, MAX_PATH);
    /* the driver installs it in System32 too: the library search */
    if (!m)
       m = LoadLibraryW(L"_nvngx.dll");
@@ -361,6 +383,54 @@ static ngx_module_t ngx_open(void)
       ngx_status_set("no NGX core library: _nvngx.dll/nvngx.dll not beside the executable, "
             "not where the registry's NGXCore NGXPath/FullPath points, not on the library search path (System32)");
    return m;
+}
+
+/* The file ngx_open would load, into @path (MAX_PATH + 32), without
+ * loading it: a stand-in such as OptiScaler hooks the process as soon
+ * as it is loaded. The library search is taken as SearchPath has it. */
+static bool ngx_find(wchar_t *path)
+{
+   unsigned which, i;
+   for (which = 0; which < NGX_CORE_DIRS; which++)
+   {
+      size_t len;
+      if (!ngx_core_dir(which, path))
+         continue;
+      len = wcslen(path);
+      for (i = 0; i < NGX_CORE_NAMES; i++)
+      {
+         DWORD attr;
+         if (len + wcslen(ngx_core_names[i]) + 2 > MAX_PATH)
+            continue;
+         path[len] = L'\\';
+         wcscpy(path + len + 1, ngx_core_names[i]);
+         attr = GetFileAttributesW(path);
+         if (attr != INVALID_FILE_ATTRIBUTES && !(attr & FILE_ATTRIBUTE_DIRECTORY))
+            return true;
+      }
+   }
+   for (i = 0; i < NGX_CORE_NAMES; i++)
+   {
+      DWORD n = SearchPathW(NULL, ngx_core_names[i], NULL, MAX_PATH, path, NULL);
+      if (n && n < MAX_PATH)
+         return true;
+   }
+   return false;
+}
+
+unsigned ngx_lib_present(void)
+{
+   wchar_t path[MAX_PATH + 32];
+   wchar_t name[64];
+   unsigned present;
+   if (ngx_lib.handle)
+      return NGX_PRESENT_FOUND | (ngx_optiscaler ? NGX_PRESENT_OPTISCALER : 0);
+   if (!ngx_find(path))
+      return 0;
+   present = NGX_PRESENT_FOUND;
+   if (ngx_file_version(path, name, NULL, 64, NULL) && !wcscmp(name, L"OptiScaler"))
+      present |= NGX_PRESENT_OPTISCALER;
+   return present;
 }
 #else
 typedef void *ngx_module_t;
@@ -421,6 +491,12 @@ static ngx_module_t ngx_open(void)
    else
       ngx_status_set("no NGX core library: libnvidia-ngx.so.1 could not be loaded");
    return m;
+}
+
+/* (the driver's own library, found only by loading it) */
+unsigned ngx_lib_present(void)
+{
+   return ngx_lib_get() ? NGX_PRESENT_FOUND : 0;
 }
 #endif
 
@@ -614,6 +690,11 @@ uint32_t ngx_dlss_feature_version(const char *dir)
 bool ngx_lib_is_optiscaler(void)
 {
    return false;
+}
+
+unsigned ngx_lib_present(void)
+{
+   return 0;
 }
 
 const ngx_lib_t *ngx_lib_get(void)

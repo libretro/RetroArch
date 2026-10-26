@@ -1027,10 +1027,27 @@ int main(void)
    unsigned render_dims, min_dims, max_dims;
    unsigned i;
 
+   /* Until a core asks for it, nothing loads the NGX library: not the
+    * log of what the upscaler would find, nor (on Windows, where a
+    * stand-in hooks the process) the status */
+   settings->uints.video_temporal_upscaler = VIDEO_TEMPORAL_UPSCALER_DLSS;
+   CHECK(!video_upscaler_wanted());
+   video_upscaler_log_probe(VIDEO_TEMPORAL_UPSCALER_DLSS);
+   CHECK(video_upscaler_probe(VIDEO_TEMPORAL_UPSCALER_DLSS) & VIDEO_UPSCALER_FOUND_LIBRARY);
+#if defined(_WIN32)
+   CHECK(GetModuleHandleW(L"_nvngx.dll") == NULL);
+#endif
+   video_upscaler_note_wanted();
+   CHECK(video_upscaler_wanted());
+   video_upscaler_clear_wanted();
+   CHECK(!video_upscaler_wanted());
+   video_upscaler_note_wanted();
+   settings->uints.video_temporal_upscaler = 0;
+
    if (!setup_vulkan())
    {
       printf("vulkan_upscaler_test: no Vulkan device, skipped\n");
-      return 0;
+      return failures ? 1 : 0;
    }
    rec = record();
    CHECK(rec != NULL);

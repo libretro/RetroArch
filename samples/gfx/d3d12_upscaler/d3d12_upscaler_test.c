@@ -763,6 +763,8 @@ int main(void)
    unsigned char px[4];
    unsigned i;
 
+   /* as a core does in retro_load_game */
+   video_upscaler_note_wanted();
    if (!setup_d3d12())
    {
       printf("d3d12_upscaler_test: no Direct3D 12 device, skipped\n");

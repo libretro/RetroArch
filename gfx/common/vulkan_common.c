@@ -1124,8 +1124,9 @@ static unsigned vulkan_optional_device_count(const gfx_ctx_vulkan_data_t *vk)
 #define VULKAN_UPSCALER_EXTS VULKAN_UPSCALER_MAX_EXTS
 static enum video_temporal_upscaler vulkan_upscaler_kind(char *dir, size_t len)
 {
-   enum video_temporal_upscaler kind = (enum video_temporal_upscaler)
-      config_get_ptr()->uints.video_temporal_upscaler;
+   enum video_temporal_upscaler kind = video_upscaler_wanted()
+      ? (enum video_temporal_upscaler)config_get_ptr()->uints.video_temporal_upscaler
+      : VIDEO_TEMPORAL_UPSCALER_OFF;
    video_upscaler_dir(kind, dir, len);
    return kind;
 }

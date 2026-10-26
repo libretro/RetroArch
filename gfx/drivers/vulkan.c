@@ -7676,7 +7676,7 @@ static void vulkan_init_hw_render(vk_t *vk)
    iface->get_instance_proc_addr = vulkan_symbol_wrapper_instance_proc_addr();
 
 #ifdef HAVE_NGX
-   if (config_get_ptr()->uints.video_temporal_upscaler)
+   if (config_get_ptr()->uints.video_temporal_upscaler && video_upscaler_wanted())
    {
       enum video_temporal_upscaler kind = (enum video_temporal_upscaler)
          config_get_ptr()->uints.video_temporal_upscaler;

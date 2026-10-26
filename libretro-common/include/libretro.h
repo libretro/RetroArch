@@ -3460,7 +3460,11 @@ struct retro_vr_controller_poses
  * it wants, and how it hands over the depth, motion vectors and jitter
  * the upscaler needs beside the color image it already presents.
  *
- * Call after the hardware context is reset (context_reset), once; the
+ * Call it first in retro_load_game, beside SET_HW_RENDER: there it
+ * returns false and tells the frontend to make the context for the
+ * upscaler, which loads its libraries and adds what they need to the
+ * context; a frontend does neither for a core that has not asked. Then
+ * call after the hardware context is reset (context_reset), once; the
  * interface is valid until context_destroy. Returns false when the
  * frontend has no upscaler for this context type or video driver; the
  * core then renders as it always has. A core that never calls this is

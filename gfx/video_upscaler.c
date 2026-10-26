@@ -82,7 +82,10 @@ static enum ffx_api video_upscaler_ffx_api(void)
 
 static uint32_t upscaler_dlss_version;
 static char upscaler_dlss_version_dir[DIR_MAX_LENGTH];
-static bool upscaler_optiscaler_noted;
+/* UPSCALER_FLAG_* */
+static unsigned upscaler_flags;
+#define UPSCALER_FLAG_WANTED     0x1u
+#define UPSCALER_FLAG_OPTISCALER 0x2u
 
 uint32_t video_upscaler_dlss_version(void)
 {
@@ -109,12 +112,28 @@ uint32_t video_upscaler_preset_min_version(enum video_temporal_upscaler_preset p
 
 bool video_upscaler_optiscaler(void)
 {
-   return upscaler_optiscaler_noted || ngx_lib_is_optiscaler();
+   return (upscaler_flags & UPSCALER_FLAG_OPTISCALER)
+      || (ngx_lib_present() & NGX_PRESENT_OPTISCALER);
 }
 
 void video_upscaler_note_optiscaler(void)
 {
-   upscaler_optiscaler_noted = true;
+   upscaler_flags |= UPSCALER_FLAG_OPTISCALER;
+}
+
+bool video_upscaler_wanted(void)
+{
+   return (upscaler_flags & UPSCALER_FLAG_WANTED) != 0;
+}
+
+void video_upscaler_note_wanted(void)
+{
+   upscaler_flags |= UPSCALER_FLAG_WANTED;
+}
+
+void video_upscaler_clear_wanted(void)
+{
+   upscaler_flags &= ~UPSCALER_FLAG_WANTED;
 }
 
 unsigned video_upscaler_probe(enum video_temporal_upscaler kind)
@@ -125,7 +144,7 @@ unsigned video_upscaler_probe(enum video_temporal_upscaler kind)
    switch (kind)
    {
       case VIDEO_TEMPORAL_UPSCALER_DLSS:
-         if (ngx_lib_get())
+         if (ngx_lib_present() & NGX_PRESENT_FOUND)
             found |= VIDEO_UPSCALER_FOUND_LIBRARY;
          if (ngx_dlss_feature_in(dir))
             found |= VIDEO_UPSCALER_FOUND_RUNTIME;
@@ -201,6 +220,11 @@ size_t video_upscaler_status_string(char *s, size_t len)
 void video_upscaler_log_probe(enum video_temporal_upscaler kind)
 {
    char dir[DIR_MAX_LENGTH];
+   if (!video_upscaler_wanted())
+   {
+      RARCH_LOG("[Video] Temporal Upscaler: not loaded, the core does not ask for it.\n");
+      return;
+   }
    video_upscaler_dir(kind, dir, sizeof(dir));
    switch (kind)
    {

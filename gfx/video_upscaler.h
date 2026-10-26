@@ -125,6 +125,14 @@ uint32_t video_upscaler_preset_min_version(enum video_temporal_upscaler_preset p
 bool video_upscaler_optiscaler(void);
 void video_upscaler_note_optiscaler(void);
 
+/* Whether the running core asked for the upscaler before its context
+ * was made (RETRO_ENVIRONMENT_GET_HW_RENDER_UPSCALER_INTERFACE during
+ * retro_load_game): only then are its libraries loaded and the
+ * context made for it. Cleared when the core unloads. */
+bool video_upscaler_wanted(void);
+void video_upscaler_note_wanted(void);
+void video_upscaler_clear_wanted(void);
+
 /* The mode for an output of @out_dims (VIDEO_SCALE_PACK): the quality
  * setting, Auto resolved, the preset and the sharpness (percent), as
  * one word (VIDEO_UPSCALER_MODE_PACK), the backends' own mode words by

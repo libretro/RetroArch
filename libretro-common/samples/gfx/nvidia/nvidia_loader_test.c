@@ -1,6 +1,7 @@
 /* gfx/nvidia: the NGX and NVAPI loaders against stand-in libraries.
  *
- * ngx_utf8_to_wide and ngx_dlss_feature_in need no library. ngx_lib_get
+ * ngx_utf8_to_wide and ngx_dlss_feature_in need no library, nor does
+ * ngx_lib_present on Windows. ngx_lib_get
  * finds the stand-in NGX core (fake_ngx.c, _nvngx.dll beside the test
  * on Windows, libnvidia-ngx.so.1 on LD_LIBRARY_PATH on Linux), resolves
  * every table and the test calls through them with the SDK's layouts:
@@ -128,6 +129,18 @@ static void test_optiscaler(const ngx_lib_t *lib, ngx_parameter_t *caps)
       set(1);
 }
 
+/* Found and named before anything loads it: a stand-in hooks the
+ * process once loaded, so a status must not load it on Windows */
+static void test_present(void)
+{
+#if defined(_WIN32)
+   CHECK(ngx_lib_present() == (NGX_PRESENT_FOUND | NGX_PRESENT_OPTISCALER));
+   CHECK(GetModuleHandleW(L"_nvngx.dll") == NULL);
+#else
+   CHECK(ngx_lib_present() == NGX_PRESENT_FOUND);
+#endif
+}
+
 static void test_ngx(void)
 {
    const ngx_lib_t *lib = ngx_lib_get();
@@ -253,6 +266,7 @@ int main(void)
 {
    test_wide();
    test_feature_dir();
+   test_present();
    test_ngx();
    test_nvapi();
    if (failures)

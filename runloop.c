@@ -3805,6 +3805,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 #ifdef HAVE_NGX
          const struct retro_hw_render_upscaler_interface **iface =
             (const struct retro_hw_render_upscaler_interface **)data;
+         video_upscaler_note_wanted();
          if (iface && (*iface = video_upscaler_get_interface()))
             return true;
 #endif
@@ -5450,6 +5451,9 @@ static bool core_unload_game(void)
    runloop_state_t *runloop_st    = &runloop_state;
 
    video_driver_free_hw_context();
+#ifdef HAVE_NGX
+   video_upscaler_clear_wanted();
+#endif
 
    /* The core owns the buffer the cache points at and is about to
     * close: wait out any reader before it goes. */

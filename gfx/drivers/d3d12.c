@@ -6933,7 +6933,7 @@ static void *d3d12_gfx_init(const video_info_t* video)
       d3d12->hw_iface.set_texture       = d3d12_set_hw_render_texture;
       d3d12->hw_iface.D3DCompile        = D3DCompile;
 #ifdef HAVE_NGX
-      if (config_get_ptr()->uints.video_temporal_upscaler)
+      if (config_get_ptr()->uints.video_temporal_upscaler && video_upscaler_wanted())
       {
          enum video_temporal_upscaler kind = (enum video_temporal_upscaler)
             config_get_ptr()->uints.video_temporal_upscaler;

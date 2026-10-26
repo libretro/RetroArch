@@ -458,6 +458,14 @@ uint32_t ngx_snippet_version(uint32_t snippet);
  * version. Valid after ngx_lib_get(). */
 bool ngx_lib_is_optiscaler(void);
 
+/* Whether there is an NGX core library to load (NGX_PRESENT_FOUND)
+ * and whether it is OptiScaler (NGX_PRESENT_OPTISCALER), as a status
+ * shows it. On Windows the file is found and read without loading it:
+ * a stand-in hooks the process once loaded. */
+#define NGX_PRESENT_FOUND      0x1u
+#define NGX_PRESENT_OPTISCALER 0x2u
+unsigned ngx_lib_present(void);
+
 /* Whether the parameter table @p (the capability parameters, or any
  * allocated) came from OptiScaler: its tables carry the "OptiScaler"
  * key. Catches OptiScaler reached through a proxy of another name
