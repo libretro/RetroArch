@@ -1310,8 +1310,54 @@ static void prepared_languages(void)
    }
 }
 
+static void track_languages(void)
+{
+   static const char input[] = "WEBVTT\n\n00:00.000 --> 00:01.000\n<b>x</b><lang >y</lang><lang iw>z</lang>\n";
+   static const char *raw[] = { "iw", "en-US", "en--US", "" };
+   static const char *key[] = { "he", "en-US", "en--US", "" };
+   size_t i;
+   for (i = 0; i < sizeof(raw) / sizeof(raw[0]); i++)
+   {
+      size_t n = strlen(raw[i]), length = 99, steps = 0;
+      char *data = (char*)malloc(sizeof(input) - 1);
+      char *language = (char*)malloc(n ? n : 1);
+      rsubtitle_srt_t *track;
+      const char *value;
+      int status = 0;
+      assert(data && language);
+      memcpy(data, input, sizeof(input) - 1);
+      memcpy(language, raw[i], n);
+      track = rsubtitle_vtt_begin(data, sizeof(input) - 1);
+      assert(track && rsubtitle_vtt_take_language(track, language, n));
+      assert(!rsubtitle_vtt_track_language(track, &length) && !length);
+      assert(!rsubtitle_vtt_track_language_key(track, &length) && !length);
+      assert(!rsubtitle_vtt_take_language(track, (char*)malloc(1), 0));
+      while (!status && steps++ < 10000)
+         status = rsubtitle_srt_iterate(track, 1);
+      assert(status == 1);
+      value = rsubtitle_vtt_track_language(track, &length);
+      assert(value == language && length == n && !memcmp(value, raw[i], n));
+      value = rsubtitle_vtt_track_language_key(track, &length);
+      assert(value && length == strlen(key[i]) && !memcmp(value, key[i], length));
+      value = rsubtitle_vtt_node_language(track, 0, 1, NULL, 0, &length);
+      assert(value == language && length == n);
+      value = rsubtitle_vtt_node_language_key(track, 0, 1, NULL, 0, &length);
+      assert(value && length == strlen(key[i]) && !memcmp(value, key[i], length));
+      value = rsubtitle_vtt_node_language(track, 0, 1, "", 0, &length);
+      assert(value && !length);
+      value = rsubtitle_vtt_node_language_key(track, 0, 5, NULL, 0, &length);
+      assert(value && length == 2 && !memcmp(value, "he", 2));
+      assert(!rsubtitle_vtt_take_language(track, (char*)malloc(1), 0));
+      rsubtitle_srt_free(track);
+   }
+   assert(!rsubtitle_vtt_track_language(NULL, NULL));
+   assert(!rsubtitle_vtt_track_language_key(NULL, NULL));
+   assert(!rsubtitle_vtt_take_language(NULL, (char*)malloc(1), 0));
+}
+
 int main(void)
 {
+   track_languages();
    prepared_languages();
    applicable_languages();
    metadata();

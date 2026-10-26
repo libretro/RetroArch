@@ -428,6 +428,60 @@ static void test_language_key_failures(void)
    }
 }
 
+static void test_track_language_failures(void)
+{
+   static const char input[] = "WEBVTT\n\n00:00.000 --> 00:01.000\nx\n";
+   unsigned failure, steps = 0, cut;
+   for (failure = 1; failure < 128; failure++)
+   {
+      char *data, *language;
+      rsubtitle_srt_t *track;
+      unsigned observed;
+      int status = 0, adopted;
+      fail_at = 0;
+      data = (char*)fault_malloc(sizeof(input) - 1);
+      language = (char*)fault_malloc(2);
+      assert(data && language);
+      memcpy(data, input, sizeof(input) - 1);
+      memcpy(language, "iw", 2);
+      track = rsubtitle_vtt_begin(data, sizeof(input) - 1);
+      assert(track);
+      calls = 0;
+      fail_at = failure;
+      adopted = rsubtitle_vtt_take_language(track, language, 2);
+      if (adopted)
+         while (!status && steps++ < 10000)
+            status = rsubtitle_srt_iterate(track, 1);
+      observed = calls;
+      assert(failure > observed ? adopted && status == 1 : !adopted || status == -1);
+      rsubtitle_srt_free(track);
+      assert(!live);
+      if (failure > observed) break;
+      steps = 0;
+   }
+   assert(failure < 128 && steps);
+   for (cut = 0; cut <= steps; cut++)
+   {
+      char *data, *language;
+      rsubtitle_srt_t *track;
+      unsigned i;
+      int status = 0;
+      fail_at = 0;
+      data = (char*)fault_malloc(sizeof(input) - 1);
+      language = (char*)fault_malloc(2);
+      assert(data && language);
+      memcpy(data, input, sizeof(input) - 1);
+      memcpy(language, "iw", 2);
+      track = rsubtitle_vtt_begin(data, sizeof(input) - 1);
+      assert(track && rsubtitle_vtt_take_language(track, language, 2));
+      for (i = 0; !status && i < cut; i++)
+         status = rsubtitle_srt_iterate(track, 1);
+      assert(status >= 0);
+      rsubtitle_srt_free(track);
+      assert(!live);
+   }
+}
+
 int main(void)
 {
    unsigned failure;
@@ -468,6 +522,7 @@ int main(void)
    test_css_tree_failures();
    test_selector_failures();
    test_language_key_failures();
+   test_track_language_failures();
    puts("PASS: subtitle allocation failures release adopted input, cues and metadata");
    return 0;
 }

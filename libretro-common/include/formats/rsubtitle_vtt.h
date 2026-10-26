@@ -196,11 +196,18 @@ const rsubtitle_vtt_settings_t *rsubtitle_vtt_cue_settings(
 size_t rsubtitle_vtt_node_count(const rsubtitle_srt_t *track, size_t cue);
 const rsubtitle_vtt_node_t *rsubtitle_vtt_node(const rsubtitle_srt_t *track,
       size_t cue, size_t node);
-/* Raw applicable language for internal nodes, borrowed from track or fallback. */
+/* Consumes malloc-allocated applicable BCP47 language, including on failure.
+ * Set once before parsing completes, on the loading worker. The raw span is
+ * retained; comparison keys are prepared within iterate's work budget. */
+int rsubtitle_vtt_take_language(rsubtitle_srt_t *track, char *language, size_t length);
+const char *rsubtitle_vtt_track_language(const rsubtitle_srt_t *track, size_t *length);
+const char *rsubtitle_vtt_track_language_key(const rsubtitle_srt_t *track, size_t *length);
+/* Raw applicable language for internal nodes. NULL fallback uses the track;
+ * a non-NULL empty span explicitly overrides it. */
 const char *rsubtitle_vtt_node_language(const rsubtitle_srt_t *track,
       size_t cue, size_t node, const char *fallback, size_t fallback_length,
       size_t *length);
-/* Load-prepared comparison key; borrows the caller's prepared fallback.
+/* Load-prepared comparison key; NULL fallback uses the track key.
  * Malformed annotations retain raw text, never become an empty language. */
 const char *rsubtitle_vtt_node_language_key(const rsubtitle_srt_t *track,
       size_t cue, size_t node, const char *fallback, size_t fallback_length,

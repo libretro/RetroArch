@@ -82,6 +82,11 @@ struct rsubtitle_srt
    int vtt_text_started, vtt_text_done;
    int vtt_arrow;
    int line_blank, text_seen, unordered;
+   char *language;
+   size_t language_length;
+   rsubtitle_vtt_normalize_t *language_normal;
+   rsubtitle_vtt_language_key_t language_key;
+   int language_set;
 };
 
 static unsigned srt_utf8_scalar(const char *data, size_t size)
@@ -354,6 +359,45 @@ const char *rsubtitle_vtt_node_class(const rsubtitle_srt_t *track,
    return rsubtitle_vtt_text_class(track->vtt_text, entry->first_node + node, index, length);
 }
 
+int rsubtitle_vtt_take_language(rsubtitle_srt_t *track, char *language, size_t length)
+{
+   if (!track || !language || length > 65536 || track->language_set
+         || track->stage == SRT_READY || track->stage == SRT_ERROR)
+   {
+      free(language);
+      return 0;
+   }
+   track->language_normal = rsubtitle_vtt_normalize_new();
+   if (!track->language_normal || !rsubtitle_vtt_normalize_begin(
+            track->language_normal, language, length, RSUBTITLE_NORMALIZE_EXTLANG))
+   {
+      rsubtitle_vtt_normalize_free(track->language_normal);
+      track->language_normal = NULL;
+      free(language);
+      return 0;
+   }
+   track->language = language;
+   track->language_length = length;
+   track->language_set = 1;
+   return 1;
+}
+
+const char *rsubtitle_vtt_track_language(const rsubtitle_srt_t *track, size_t *length)
+{
+   if (length) *length = 0;
+   if (!track || track->stage != SRT_READY) return NULL;
+   if (length) *length = track->language_length;
+   return track->language ? track->language : "";
+}
+
+const char *rsubtitle_vtt_track_language_key(const rsubtitle_srt_t *track, size_t *length)
+{
+   if (length) *length = 0;
+   if (!track || track->stage != SRT_READY) return NULL;
+   if (length) *length = track->language_key.length;
+   return track->language_key.text ? track->language_key.text : "";
+}
+
 const char *rsubtitle_vtt_node_language(const rsubtitle_srt_t *track,
       size_t cue, size_t index, const char *fallback, size_t fallback_length,
       size_t *length)
@@ -373,9 +417,11 @@ const char *rsubtitle_vtt_node_language(const rsubtitle_srt_t *track,
          *length = node->value_length;
       return node->value;
    }
+   if (!fallback)
+      return rsubtitle_vtt_track_language(track, length);
    if (length)
       *length = fallback_length;
-   return fallback ? fallback : "";
+   return fallback;
 }
 
 const char *rsubtitle_vtt_node_language_key(const rsubtitle_srt_t *track,
@@ -395,8 +441,10 @@ const char *rsubtitle_vtt_node_language_key(const rsubtitle_srt_t *track,
       return rsubtitle_vtt_text_language_key(track->vtt_text,
             entry->first_node + node->language_node - 1, length);
    }
+   if (!fallback)
+      return rsubtitle_vtt_track_language_key(track, length);
    if (length) *length = fallback_length;
-   return fallback ? fallback : "";
+   return fallback;
 }
 
 unsigned rsubtitle_vtt_node_state(const rsubtitle_srt_t *track,
@@ -1123,6 +1171,23 @@ int rsubtitle_srt_iterate(rsubtitle_srt_t *track, size_t work)
       return -1;
    while (work-- && track->stage != SRT_READY && track->stage != SRT_ERROR)
    {
+      if (track->language_normal)
+      {
+         int status = rsubtitle_vtt_normalize_step(track->language_normal);
+         if (status < 0)
+            track->stage = SRT_ERROR;
+         else if (status)
+         {
+            track->language_key.text = track->language;
+            track->language_key.length = track->language_length;
+            if (status == 1 && !rsubtitle_vtt_normalize_take(
+                     track->language_normal, &track->language_key))
+               track->stage = SRT_ERROR;
+            rsubtitle_vtt_normalize_free(track->language_normal);
+            track->language_normal = NULL;
+         }
+         continue;
+      }
       switch (track->stage)
       {
          case SRT_NORMALIZE:
@@ -1252,6 +1317,9 @@ void rsubtitle_srt_free(rsubtitle_srt_t *track)
    free(track->scratch);
    free(track->spans);
    free(track->data);
+   rsubtitle_vtt_normalize_free(track->language_normal);
+   free(track->language_key.owned);
+   free(track->language);
    free(track);
 }
 
