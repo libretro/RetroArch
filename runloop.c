@@ -10359,10 +10359,21 @@ end:
       {
          const retro_time_t end_frame_time = pace_now;
 
-         const retro_time_t to_sleep_us = runloop_pace_schedule(
-               &runloop_st->frame_limit_anchor_ns,
-               pace_limit_ns ? pace_limit_ns : (int64_t)frame_limit_min * 1000,
-               end_frame_time);
+         const int64_t period_ns = pace_limit_ns ? pace_limit_ns
+               : (int64_t)frame_limit_min * 1000;
+         /* VRR presents have no vblank phase to catch up to. A frame
+          * delayed by the GPU, audio or the OS must not make the next
+          * frame shorter in an attempt to recover the lost time. */
+         const bool vrr_content = (pace_facts & (PACE_FACT_VRR | PACE_FACT_CORE_RAN))
+               == (PACE_FACT_VRR | PACE_FACT_CORE_RAN)
+               && !(pace_facts & PACE_FACT_FASTMOTION);
+         const retro_time_t to_sleep_us = vrr_content
+               ? runloop_pace_schedule_vrr(
+                    &runloop_st->frame_limit_anchor_ns, period_ns,
+                    end_frame_time)
+               : runloop_pace_schedule(
+                    &runloop_st->frame_limit_anchor_ns, period_ns,
+                    end_frame_time);
          if (to_sleep_us > 0)
          {
 #if defined(__EMSCRIPTEN__) && !defined(EMSCRIPTEN_ASYNCIFY) && !defined(PROXY_TO_PTHREAD)
@@ -10404,9 +10415,12 @@ end:
       }
    }
 
-   /* Frame delay. */
-   if (     !(input_st->flags & INP_FLAG_NONBLOCKING)
-         || (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION))
+   /* The frame limiter owns the deadline even when that deadline was
+    * missed. Running Frame Delay on those frames would insert a second
+    * sleep after an overrun, turning a small hitch into a larger one. */
+   if (     !(runloop_st->pace & RUNLOOP_PACE_TIMER)
+         && (   !(input_st->flags & INP_FLAG_NONBLOCKING)
+             || (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION)))
       video_frame_delay(video_st, settings);
 
 driver_paced:

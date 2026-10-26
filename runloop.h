@@ -599,6 +599,24 @@ static INLINE retro_time_t runloop_pace_schedule(int64_t *anchor_ns,
    return 0;
 }
 
+/* Under VRR there is no fixed vblank phase to recover: if a present,
+ * audio write or OS wake makes a frame late, scheduling the next one
+ * earlier creates a visible long/short pair. Preserve nanosecond phase
+ * precision while on time, but start a fresh period after any late frame.
+ * Non-VRR and fast-forward retain the catch-up limiter above. */
+static INLINE retro_time_t runloop_pace_schedule_vrr(int64_t *anchor_ns,
+      int64_t period_ns, retro_time_t now_us)
+{
+   int64_t now = (int64_t)now_us * 1000;
+   int64_t due = *anchor_ns + period_ns;
+   if (now >= due && now - due < period_ns)
+   {
+      *anchor_ns = now;
+      return 0;
+   }
+   return runloop_pace_schedule(anchor_ns, period_ns, now_us);
+}
+
 /* The longest sleep overshoot the margin follows whatever the period:
  * the coarsest timer a supported OS sleeps on, with headroom. */
 #define RUNLOOP_PACE_MARGIN_FLOOR_US 2000

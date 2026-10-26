@@ -412,6 +412,33 @@ static void test_schedule(void)
    }
 }
 
+/* VRR is phase-free: a delayed frame must not shorten the next one.
+ * Fixed-rate and fast-forward keep their original phase catch-up. */
+static void test_vrr_schedule(void)
+{
+   const int64_t period = 16683350;
+   int64_t anchor = 1000000000LL;
+   retro_time_t late = 1000000 + 16683 + 1500;
+   retro_time_t wait;
+
+   wait = runloop_pace_schedule_vrr(&anchor, period, late);
+   check(wait == 0 && anchor == late * 1000LL,
+         "VRR: late frame reanchors to actual completion time");
+   wait = runloop_pace_schedule_vrr(&anchor, period, late + 2000);
+   check(wait == 14684,
+         "VRR: next frame gets a full period, not catch-up short-frame");
+
+   anchor = 1000000000LL;
+   wait = runloop_pace_schedule_vrr(&anchor, period, 1000000 + 12000);
+   check(wait == 4684 && anchor == 1000000000LL + period,
+         "VRR: on-time frames retain nanosecond-accurate schedule");
+   anchor = 1000000000LL;
+   wait = runloop_pace_schedule_vrr(&anchor, period, 1000000 + 3 * 16683);
+   check(wait == 0 && anchor == (1000000 + 3 * 16683) * 1000LL,
+         "VRR: stalls still reset the scheduler");
+   puts("   VRR schedule: a late frame never forces a catch-up short frame");
+}
+
 /* --- the sleep margin ------------------------------------------------ */
 
 static void test_margin(void)
@@ -902,6 +929,7 @@ int main(void)
    test_frame_period();
    test_sample_filter();
    test_schedule();
+   test_vrr_schedule();
    test_margin();
    test_fastforward_ratios();
    test_ff_frameskip();
