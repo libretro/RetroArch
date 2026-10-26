@@ -179,6 +179,7 @@ jobs:
             rjson_test
             rm3u_test
             rmp4_fragment_test
+            rmp4_language_test
             rav1_test
             rav1_picture_test
             rav1_reference_test

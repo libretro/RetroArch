@@ -46,6 +46,13 @@ enum rmp4_track_type
    RMP4_TRACK_OTHER
 };
 
+enum rmp4_language_kind
+{
+   RMP4_LANGUAGE_NONE = 0,
+   RMP4_LANGUAGE_MDHD,
+   RMP4_LANGUAGE_BCP47
+};
+
 enum rmp4_codec
 {
    RMP4_CODEC_UNKNOWN = 0,
@@ -129,6 +136,11 @@ int               rmp4_num_tracks(const rmp4_t *mp4);
 size_t            rmp4_media_floor(const rmp4_t *m);
 size_t            rmp4_consumed(const rmp4_t *m);
 const rmp4_track *rmp4_get_track(const rmp4_t *mp4, int index);
+/* Raw mdhd two-byte field or elng bytes (including terminator/padding).
+ * Borrowed with the input; supported elng takes precedence. No language
+ * validation or conversion, including Macintosh versus packed ISO639 mdhd codes. */
+const uint8_t *rmp4_get_track_language(const rmp4_t *mp4, int index,
+      size_t *length, enum rmp4_language_kind *kind);
 
 /* Total duration in nanoseconds (from mvhd), or 0 if the file does not
  * declare one. */

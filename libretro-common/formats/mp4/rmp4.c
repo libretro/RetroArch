@@ -144,6 +144,13 @@ typedef struct
    uint8_t     opus_head[RMP4_OPUS_HEAD_MAX];
 } rmp4_itrack;
 
+struct rmp4_language
+{
+   const uint8_t *value;
+   size_t length;
+   enum rmp4_language_kind kind;
+};
+
 struct rmp4
 {
    const uint8_t *buf;
@@ -160,6 +167,7 @@ struct rmp4
    uint64_t       media_max_end;   /* highest sample end delivered   */
    uint32_t       movie_timescale;
    uint64_t       movie_duration;   /* in movie timescale ticks       */
+   struct rmp4_language language[RMP4_MAX_TRACKS];
 };
 
 /* ticks (may be negative via ctts v1) -> nanoseconds, without overflow:
@@ -768,6 +776,7 @@ static void rmp4_parse_trak(rmp4_t *m, const uint8_t *body, uint64_t size)
 {
    rmp4_box mdia, mdhd, hdlr, minf, stbl, b;
    rmp4_itrack *t;
+   struct rmp4_language *language;
    rmp4_stbl tabs;
    uint64_t pos, next;
 
@@ -790,6 +799,8 @@ static void rmp4_parse_trak(rmp4_t *m, const uint8_t *body, uint64_t size)
 
    t = &m->trk[m->num_tracks];
    memset(t, 0, sizeof(*t));
+   language = &m->language[m->num_tracks];
+   memset(language, 0, sizeof(*language));
    t->pub.presentation_duration_ns = -1;
    t->pub.number = m->num_tracks + 1;
 
@@ -853,6 +864,23 @@ static void rmp4_parse_trak(rmp4_t *m, const uint8_t *body, uint64_t size)
    }
    if (!t->timescale)
       return;
+   if (mdhd.size >= 4 && mdhd.body[0] <= 1)
+   {
+      uint64_t off = mdhd.body[0] ? 32 : 20;
+      if (mdhd.size >= off + 2)
+      {
+         language->value = mdhd.body + off;
+         language->length = 2;
+         language->kind = RMP4_LANGUAGE_MDHD;
+      }
+   }
+   if (rmp4_find_child(mdia.body, mdia.size, RMP4_FOURCC('e','l','n','g'), &b)
+         && b.size >= 4 && !rmp4_be32(b.body))
+   {
+      language->value = b.body + 4;
+      language->length = (size_t)(b.size - 4);
+      language->kind = RMP4_LANGUAGE_BCP47;
+   }
 
    /* hdlr: handler_type at offset 8 of the payload. */
    if (hdlr.size >= 12)
@@ -1478,6 +1506,19 @@ const rmp4_track *rmp4_get_track(const rmp4_t *m, int index)
    if (!m || index < 0 || index >= m->num_tracks)
       return NULL;
    return &m->trk[index].pub;
+}
+
+const uint8_t *rmp4_get_track_language(const rmp4_t *m, int index,
+      size_t *length, enum rmp4_language_kind *kind)
+{
+   const struct rmp4_language *language;
+   if (length) *length = 0;
+   if (kind) *kind = RMP4_LANGUAGE_NONE;
+   if (!m || index < 0 || index >= m->num_tracks) return NULL;
+   language = &m->language[index];
+   if (length) *length = language->length;
+   if (kind) *kind = language->kind;
+   return language->value;
 }
 
 int64_t rmp4_duration_ns(const rmp4_t *m)
