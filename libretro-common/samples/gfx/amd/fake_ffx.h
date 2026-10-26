@@ -34,7 +34,7 @@ typedef struct fake_ffx_dispatch
    float jitter_x, jitter_y, mv_scale_x, mv_scale_y;
    uint32_t render_w, render_h, upscale_w, upscale_h;
    int sharpening, reset;
-   float frame_time, pre_exposure, camera_near, camera_far, fov;
+   float sharpness, frame_time, pre_exposure, camera_near, camera_far, fov;
    uint32_t flags;
 } fake_ffx_dispatch_t;
 

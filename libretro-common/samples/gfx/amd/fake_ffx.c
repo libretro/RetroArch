@@ -220,6 +220,7 @@ EXPORT uint32_t ffxDispatch(void **context, const sdk_header *desc)
       d->upscale_w    = u->upscaleSize.width;
       d->upscale_h    = u->upscaleSize.height;
       d->sharpening   = u->enableSharpening;
+      d->sharpness    = u->sharpness;
       d->reset        = u->reset;
       d->frame_time   = u->frameTimeDelta;
       d->pre_exposure = u->preExposure;

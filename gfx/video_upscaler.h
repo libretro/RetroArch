@@ -86,30 +86,67 @@ enum video_temporal_upscaler_quality
    VIDEO_TEMPORAL_UPSCALER_QUALITY_LAST
 };
 
-/* video_temporal_upscaler_preset: the DLSS model (ngx_dlss_render_preset) */
+/* video_temporal_upscaler_preset: the DLSS model, numbered as NGX
+ * numbers its render presets (ngx_dlss_render_preset: 0 default, A to
+ * O 1 to 15) */
 enum video_temporal_upscaler_preset
 {
    VIDEO_TEMPORAL_UPSCALER_PRESET_DEFAULT = 0,
+   VIDEO_TEMPORAL_UPSCALER_PRESET_A,
+   VIDEO_TEMPORAL_UPSCALER_PRESET_B,
+   VIDEO_TEMPORAL_UPSCALER_PRESET_C,
+   VIDEO_TEMPORAL_UPSCALER_PRESET_D,
+   VIDEO_TEMPORAL_UPSCALER_PRESET_E,
+   VIDEO_TEMPORAL_UPSCALER_PRESET_F,
+   VIDEO_TEMPORAL_UPSCALER_PRESET_G,
+   VIDEO_TEMPORAL_UPSCALER_PRESET_H,
+   VIDEO_TEMPORAL_UPSCALER_PRESET_I,
    VIDEO_TEMPORAL_UPSCALER_PRESET_J,
    VIDEO_TEMPORAL_UPSCALER_PRESET_K,
+   VIDEO_TEMPORAL_UPSCALER_PRESET_L,
+   VIDEO_TEMPORAL_UPSCALER_PRESET_M,
+   VIDEO_TEMPORAL_UPSCALER_PRESET_N,
+   VIDEO_TEMPORAL_UPSCALER_PRESET_O,
    VIDEO_TEMPORAL_UPSCALER_PRESET_LAST
 };
 
+/* The DLSS feature library in the DLSS directory, as NGX_VERSION_PACK
+ * has it (NGX_VERSION_MAJOR and so on); 0 when none is found or it
+ * does not say. Read once a directory. */
+uint32_t video_upscaler_dlss_version(void);
+
+/* The oldest DLSS feature library known to carry @preset; 0 for the
+ * letters every one has */
+uint32_t video_upscaler_preset_min_version(enum video_temporal_upscaler_preset preset);
+
+/* Whether NGX's calls are answered by OptiScaler: known from the NGX
+ * library's own module at the probe, or from a session's parameters
+ * (the backends note it). */
+bool video_upscaler_optiscaler(void);
+void video_upscaler_note_optiscaler(void);
+
 /* The mode for an output of @out_dims (VIDEO_SCALE_PACK): the quality
- * setting, Auto resolved, and the preset, as one word
- * (VIDEO_UPSCALER_MODE_PACK), the backends' own mode words by the
- * translations below. */
+ * setting, Auto resolved, the preset and the sharpness (percent), as
+ * one word (VIDEO_UPSCALER_MODE_PACK), the backends' own mode words by
+ * the translations below. */
 #define VIDEO_UPSCALER_MODE_PACK(quality, preset) ((unsigned)(quality) | ((unsigned)(preset) << 8))
-#define VIDEO_UPSCALER_MODE_QUALITY(mode)         ((mode) & 0xffu)   /* enum video_temporal_upscaler_quality, never Auto */
-#define VIDEO_UPSCALER_MODE_PRESET(mode)          ((mode) >> 8)      /* enum video_temporal_upscaler_preset */
+#define VIDEO_UPSCALER_MODE_PACK_SHARP(quality, preset, sharpness) \
+   (VIDEO_UPSCALER_MODE_PACK(quality, preset) | ((unsigned)(sharpness) << 16))
+#define VIDEO_UPSCALER_MODE_QUALITY(mode)         ((mode) & 0xffu)          /* enum video_temporal_upscaler_quality, never Auto */
+#define VIDEO_UPSCALER_MODE_PRESET(mode)          (((mode) >> 8) & 0xffu)   /* enum video_temporal_upscaler_preset */
+#define VIDEO_UPSCALER_MODE_SHARPNESS(mode)       (((mode) >> 16) & 0xffu)  /* 0 to 100 */
 unsigned video_upscaler_mode(unsigned out_dims);
 
-/* NGX_MODE_PACK: an enum ngx_perf_quality and an enum
- * ngx_dlss_render_preset */
+/* NGX_MODE_PACK_SHARP: an enum ngx_perf_quality, an enum
+ * ngx_dlss_render_preset and the sharpness */
 unsigned video_upscaler_mode_ngx(unsigned mode);
-/* An FFX_UPSCALE_MODE_ (the preset has no FSR meaning) */
+/* An FFX_UPSCALE_MODE_ in the low byte, the sharpness above (bit 16;
+ * FFX_MODE_QUALITY and FFX_MODE_SHARPNESS take them apart); the preset
+ * has no FSR meaning */
 unsigned video_upscaler_mode_ffx(unsigned mode);
-/* An XESS_QUALITY_ */
+#define FFX_MODE_QUALITY(mode)   ((mode) & 0xffu)
+#define FFX_MODE_SHARPNESS(mode) (((mode) >> 16) & 0xffu)
+/* An XESS_QUALITY_ (XeSS sharpens nothing) */
 unsigned video_upscaler_mode_xess(unsigned mode);
 
 /* A video driver's upscaler, attached while its session is up:

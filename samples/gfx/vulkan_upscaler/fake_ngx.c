@@ -194,6 +194,8 @@ EXPORT int CONV NVSDK_NGX_VULKAN_Init_ProjectID_Ext(const char *project, int eng
    caps.vtable = param_vtable;
    NVSDK_NGX_Parameter_SetI(&caps, "SuperSampling.Available", rec.unavailable ? 0 : 1);
    NVSDK_NGX_Parameter_SetI(&caps, "SuperSampling.NeedsUpdatedDriver", 0);
+   if (rec.optiscaler)
+      NVSDK_NGX_Parameter_SetI(&caps, "OptiScaler", 1);
    {
       void *cb;
       int (CONV *fn)(param_t*) = optimal_cb;
@@ -311,6 +313,7 @@ EXPORT int CONV NVSDK_NGX_VULKAN_EvaluateFeature(void *cmd, const int *h, param_
    e->exposure_scale = get_f(p, "DLSS.Exposure.Scale");
    e->frame_time = get_f(p, "FrameTimeDeltaInMsec");
    e->reset      = get_i(p, "Reset");
+   e->sharpness = get_f(p, "Sharpness");
    e->subrect_w  = get_ui(p, "DLSS.Render.Subrect.Dimensions.Width");
    e->subrect_h  = get_ui(p, "DLSS.Render.Subrect.Dimensions.Height");
    rec.evals++;

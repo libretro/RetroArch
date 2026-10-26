@@ -97,6 +97,9 @@ static const void *const param_vtable[17] = {
 /* Vulkan: init records the project id as parameter "Project" of the
  * capability set, and the first path of the list as "Paths" */
 static param_t caps;
+/* The test's knob: the tables carry OptiScaler's key, as its stand-in's do */
+static int optiscaler;
+EXPORT void fake_ngx_set_optiscaler(int on) { optiscaler = on; }
 static int inited;
 
 EXPORT int CONV NVSDK_NGX_VULKAN_RequiredExtensions(unsigned *ic, const char ***ie, unsigned *dc, const char ***de)
@@ -131,6 +134,8 @@ EXPORT int CONV NVSDK_NGX_VULKAN_Init_ProjectID_Ext(const char *project, int eng
    *slot(&caps, "Project", 1) = (int)strlen(project);
    *slot(&caps, "Paths", 1) = (common_info && paths[0] && paths[0][0])
       ? (int)paths[0][0][0] : -1;
+   if (optiscaler)
+      *slot(&caps, "OptiScaler", 1) = 1;
    inited = 1;
    return OK;
 }

@@ -40,19 +40,31 @@
 
 extern const char *stub_video_ident;
 
-/* The DLSS runtime in @dir: an empty file with the runtime's name */
+/* The DLSS runtime in @dir: the stand-in feature library built beside
+ * the test, under the runtime's name, so its version can be read */
 static void plant_dlss_runtime(const char *dir)
 {
    char path[256];
-   FILE *f;
+   char buf[4096];
+   FILE *in, *out;
+   size_t n;
    path_mkdir(dir);
 #if defined(_WIN32)
+   in = fopen("nvngx_dlss.dll", "rb");
    snprintf(path, sizeof(path), "%s/nvngx_dlss.dll", dir);
 #else
-   snprintf(path, sizeof(path), "%s/libnvidia-ngx-dlss.so.1", dir);
+   in = fopen("libnvidia-ngx-dlss.so.310.2.1", "rb");
+   snprintf(path, sizeof(path), "%s/libnvidia-ngx-dlss.so.310.2.1", dir);
 #endif
-   if ((f = fopen(path, "wb")))
-      fclose(f);
+   if (!in)
+      return;
+   if ((out = fopen(path, "wb")))
+   {
+      while ((n = fread(buf, 1, sizeof(buf), in)) > 0)
+         fwrite(buf, 1, n, out);
+      fclose(out);
+   }
+   fclose(in);
 }
 
 /* ...and none there (a run before may have left one) */
@@ -61,10 +73,13 @@ static void clear_dlss_runtime(const char *dir)
    char path[256];
 #if defined(_WIN32)
    snprintf(path, sizeof(path), "%s/nvngx_dlss.dll", dir);
+   remove(path);
 #else
    snprintf(path, sizeof(path), "%s/libnvidia-ngx-dlss.so.1", dir);
-#endif
    remove(path);
+   snprintf(path, sizeof(path), "%s/libnvidia-ngx-dlss.so.310.2.1", dir);
+   remove(path);
+#endif
 }
 
 static int failures;
@@ -555,12 +570,14 @@ static void test_ffx(settings_t *settings, texture_t *color, texture_t *mv,
    CHECK(rec->dispatches == 4);
    inputs.flags |= RETRO_HW_UPSCALER_HDR;
    begin_frame();
-   CHECK(d3d12_upscaler_upscale(up, cmd, &in, &inputs, QUALITY(QUALITY),
+   CHECK(d3d12_upscaler_upscale(up, cmd, &in, &inputs,
+            VIDEO_UPSCALER_MODE_PACK_SHARP(VIDEO_TEMPORAL_UPSCALER_QUALITY_QUALITY, 0, 30),
             VIDEO_SCALE_PACK(2560, 1440), &out));
    end_frame();
    d3d12_upscaler_frame_done(up);
    CHECK(rec->creates == 3 && rec->dispatches == 5 && rec->dispatch[4].flags == 0
          && (rec->create[2].flags & FFX_UPSCALE_ENABLE_HIGH_DYNAMIC_RANGE));
+   CHECK(rec->dispatch[4].sharpening && rec->dispatch[4].sharpness == 0.3f);
 
    /* No inputs: refused */
    CHECK(!d3d12_upscaler_upscale(up, cmd, &in, NULL, QUALITY(QUALITY),
@@ -766,9 +783,18 @@ int main(void)
    settings->uints.video_temporal_upscaler = VIDEO_TEMPORAL_UPSCALER_DLSS;
    /* no runtime in the directory: the driver library is never called */
    clear_dlss_runtime("Zdir");
+   CHECK(video_upscaler_dlss_version() == 0);
    CHECK(d3d12_ngx_init(device, "Zdir") == NULL);
    CHECK(rec->init_calls == 0);
    plant_dlss_runtime("Zdir");
+   CHECK(video_upscaler_probe(VIDEO_TEMPORAL_UPSCALER_DLSS) == VIDEO_UPSCALER_READY);
+   CHECK(video_upscaler_dlss_version() == NGX_VERSION_PACK(310, 2, 1));
+   {
+      char status[256];
+      video_upscaler_status_string(status, sizeof(status));
+      CHECK(!strcmp(status, "DLSS (NGX: found, DLSS runtime 310.2.1)"));
+   }
+   CHECK(!video_upscaler_optiscaler());
    rec->unavailable = 1;
    CHECK(d3d12_ngx_init(device, "Zdir") == NULL);
    CHECK(rec->init_calls == 1 && rec->shutdown_calls == 1);
@@ -1024,12 +1050,18 @@ int main(void)
    CHECK(video_upscaler_get_interface() == NULL);
 
    /* DLSS behind the dispatch: the frontend's mode word translated to
-    * NGX's quality and preset */
+    * NGX's quality, preset and sharpness; the session's tables name
+    * OptiScaler, so the status does */
+   rec->optiscaler = 1;
    {
       d3d12_upscaler_t *up = d3d12_upscaler_init(VIDEO_TEMPORAL_UPSCALER_DLSS, device, "Zdir");
       d3d12_upscaler_image_t din, dout;
       unsigned creates = rec->creates;
+      char status[256];
       CHECK(up != NULL);
+      CHECK(video_upscaler_optiscaler());
+      video_upscaler_status_string(status, sizeof(status));
+      CHECK(!strcmp(status, "DLSS (NGX: found, DLSS runtime 310.2.1, via OptiScaler)"));
       if (up)
       {
          CHECK(d3d12_upscaler_optimal(up,
@@ -1053,6 +1085,15 @@ int main(void)
                && rec->create[creates].out_width == 1920);
          CHECK(dout.dims == VIDEO_SCALE_PACK(1920, 1080)
                && dout.state == D3D12_RESOURCE_STATE_COPY_SOURCE);
+         CHECK(rec->eval[rec->evals - 1].sharpness == 0.0f);
+         begin_frame();
+         CHECK(d3d12_upscaler_upscale(up, cmd, &din, &inputs,
+                  VIDEO_UPSCALER_MODE_PACK_SHARP(VIDEO_TEMPORAL_UPSCALER_QUALITY_QUALITY,
+                     VIDEO_TEMPORAL_UPSCALER_PRESET_K, 50),
+                  VIDEO_SCALE_PACK(1920, 1080), &dout));
+         end_frame();
+         d3d12_upscaler_frame_done(up);
+         CHECK(rec->creates == creates + 1 && rec->eval[rec->evals - 1].sharpness == 0.5f);
          d3d12_upscaler_free(up);
       }
    }

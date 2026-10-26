@@ -41,17 +41,18 @@ uint64_t ffx_common_version(const ffx_lib_t *lib, void *device,
 
 /* The mode's render size for @out_dims from the library, else by the
  * mode's ratio; the range it accepts: a third of the output up to the
- * output. */
+ * output. @mode as video_upscaler_mode_ffx packs it. */
 bool ffx_common_optimal(const ffx_lib_t *lib, unsigned mode,
       unsigned out_dims, unsigned *render_dims,
       unsigned *min_dims, unsigned *max_dims);
 
 /* The dispatch's scalars: jitter, motion vector scale, sizes, exposure,
- * frame time, the camera, the sRGB flag of an SDR frame. The resources
- * and command list are the API's. */
+ * frame time, the camera, the sharpening (@sharpness percent, 0 off),
+ * the sRGB flag of an SDR frame. The resources and command list are
+ * the API's. */
 void ffx_common_dispatch(ffx_upscale_dispatch_t *d,
       const struct retro_hw_upscaler_inputs *inputs,
-      unsigned render_dims, unsigned out_dims, bool reset);
+      unsigned render_dims, unsigned out_dims, bool reset, unsigned sharpness);
 
 /* The runtime's message callback: to the log */
 void ffx_common_message(uint32_t type, const wchar_t *message);

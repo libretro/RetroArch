@@ -100,20 +100,49 @@ enum ngx_perf_quality
    NGX_PERF_QUALITY_DLAA
 };
 
-/* NVSDK_NGX_DLSS_Hint_Render_Preset: the ones an application picks
- * (the others are deprecated or revert to the default) */
+/* NVSDK_NGX_DLSS_Hint_Render_Preset: the letters as the SDK numbers
+ * them. A letter the loaded feature library does not know reverts to
+ * its default; A to G are the CNN models (DLSS 3), J and K the
+ * transformer models (DLSS 310.x), the rest the runtime's to define. */
 enum ngx_dlss_render_preset
 {
    NGX_DLSS_PRESET_DEFAULT = 0,
+   NGX_DLSS_PRESET_A       = 1,
+   NGX_DLSS_PRESET_B       = 2,
+   NGX_DLSS_PRESET_C       = 3,
+   NGX_DLSS_PRESET_D       = 4,
+   NGX_DLSS_PRESET_E       = 5,
+   NGX_DLSS_PRESET_F       = 6,
+   NGX_DLSS_PRESET_G       = 7,
+   NGX_DLSS_PRESET_H       = 8,
+   NGX_DLSS_PRESET_I       = 9,
    NGX_DLSS_PRESET_J       = 10,   /* transformer: less ghosting, some flicker */
-   NGX_DLSS_PRESET_K       = 11    /* transformer: the default of DLAA, Quality, Balanced */
+   NGX_DLSS_PRESET_K       = 11,   /* transformer: the default of DLAA, Quality, Balanced */
+   NGX_DLSS_PRESET_L       = 12,
+   NGX_DLSS_PRESET_M       = 13,
+   NGX_DLSS_PRESET_N       = 14,
+   NGX_DLSS_PRESET_O       = 15,
+   NGX_DLSS_PRESET_LAST
 };
 
 /* A mode as the frontend passes it, one word: the quality (an
- * ngx_perf_quality) and the render preset */
+ * ngx_perf_quality), the render preset, and the sharpness in percent
+ * (the Sharpness parameter: honoured by DLSS 2.5.0 and older, and by
+ * OptiScaler's RCAS; later DLSS ignores it) */
 #define NGX_MODE_PACK(quality, preset) ((unsigned)(quality) | ((unsigned)(preset) << 8))
+#define NGX_MODE_PACK_SHARP(quality, preset, sharpness) \
+   (NGX_MODE_PACK(quality, preset) | ((unsigned)(sharpness) << 16))
 #define NGX_MODE_QUALITY(mode)         ((mode) & 0xffu)
-#define NGX_MODE_PRESET(mode)          ((mode) >> 8)
+#define NGX_MODE_PRESET(mode)          (((mode) >> 8) & 0xffu)
+#define NGX_MODE_SHARPNESS(mode)       (((mode) >> 16) & 0xffu)
+#define NGX_MODE_FEATURE(mode)         ((mode) & 0xffffu)   /* what a feature is made for */
+
+/* NVSDK_NGX_GetSnippetVersion's word: the feature library's version */
+#define NGX_VERSION_PACK(major, minor, patch) \
+   (((uint32_t)(major) << 16) | ((uint32_t)(minor) << 8) | (uint32_t)(patch))
+#define NGX_VERSION_MAJOR(v) ((v) >> 16)
+#define NGX_VERSION_MINOR(v) (((v) >> 8) & 0xffu)
+#define NGX_VERSION_PATCH(v) ((v) & 0xffu)
 
 /* NVSDK_NGX_DLSS_Feature_Flags */
 #define NGX_DLSS_FLAG_IS_HDR          (1 << 0)
@@ -410,6 +439,23 @@ const char *ngx_lib_status(void);
  * (nvngx_dlss.dll on Windows, libnvidia-ngx-dlss.so.* on Linux), the
  * file the user supplies. Needs no NGX. */
 bool ngx_dlss_feature_in(const char *dir);
+
+/* The version of the feature library in @dir, as its
+ * NVSDK_NGX_GetSnippetVersion packs it (NGX_VERSION_): 0 where there
+ * is none, or one without the export. Loads the library, which is
+ * kept (NGX loads the same file from the directory later). */
+uint32_t ngx_dlss_feature_version(const char *dir);
+
+/* Whether the NGX core library the probe found is OptiScaler standing
+ * in for it (its module says so, on Windows); the status names its
+ * version. Valid after ngx_lib_get(). */
+bool ngx_lib_is_optiscaler(void);
+
+/* Whether the parameter table @p (the capability parameters, or any
+ * allocated) came from OptiScaler: its tables carry the "OptiScaler"
+ * key. Catches OptiScaler reached through a proxy of another name
+ * too. */
+bool ngx_params_from_optiscaler(const ngx_lib_t *lib, ngx_parameter_t *p);
 
 /* @utf8 as the wide string NGX takes for its paths, into @out of
  * @out_chars (wchar_t), always terminated; false, and @out empty, when

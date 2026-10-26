@@ -65,10 +65,14 @@ LDLIBS  += -ld3d12 -ldxguid -luuid -ladvapi32
 
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
+FAKE_DLSS := $(LIBRETRO_COMM_DIR)/samples/gfx/nvidia/fake_dlss.c
 FAKE_FFX  := $(LIBRETRO_COMM_DIR)/samples/gfx/amd/fake_ffx.c
 FAKE_XESS := $(LIBRETRO_COMM_DIR)/samples/gfx/intel/fake_xess.c
 
-all: $(TARGET).exe _nvngx.dll Zdir_fsr/amd_fidelityfx_dx12.dll Zdir_xess/libxess.dll
+all: $(TARGET).exe _nvngx.dll nvngx_dlss.dll Zdir_fsr/amd_fidelityfx_dx12.dll Zdir_xess/libxess.dll
+
+nvngx_dlss.dll: $(FAKE_DLSS)
+	$(CC) -shared -O1 -Wall -o $@ $<
 
 _nvngx.dll: fake_ngx.c fake_ngx.h
 	$(CC) -shared -O1 -Wall -o $@ $< -ldxguid
@@ -95,7 +99,7 @@ check: all
 	$(RUNNER) ./$(TARGET).exe
 
 clean:
-	rm -f $(TARGET).exe $(TARGET).o _nvngx.dll
+	rm -f $(TARGET).exe $(TARGET).o _nvngx.dll nvngx_dlss.dll
 	rm -rf $(SAMPLE_OBJDIR) Zdir Zdir_fsr Zdir_xess Zdir_none
 
 .PHONY: all check clean

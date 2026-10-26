@@ -31,15 +31,16 @@ SOURCES := \
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
 ifneq ($(findstring mingw,$(CC)),)
-   EXE    := .exe
-   FAKES  := _nvngx.dll nvapi64.dll
-   LDLIBS := -ladvapi32
-   RUNNER ?= wine
+   EXE     := .exe
+   FAKES   := _nvngx.dll nvapi64.dll nvidia_loader_test_feature/nvngx_dlss.dll
+   LDLIBS  := -ladvapi32
+   RUNNER  ?= wine
+   WINDRES ?= $(patsubst %gcc,%windres,$(CC))
 else
-   EXE    :=
-   FAKES  := libnvidia-ngx.so.1
-   LDLIBS := -ldl
-   RUNNER ?= env LD_LIBRARY_PATH=.
+   EXE     :=
+   FAKES   := libnvidia-ngx.so.1 nvidia_loader_test_feature/libnvidia-ngx-dlss.so.310.2.1
+   LDLIBS  := -ldl
+   RUNNER  ?= env LD_LIBRARY_PATH=.
 endif
 
 CFLAGS += -Wall -pedantic -std=c89 -Wno-long-long -Wno-variadic-macros -D_GNU_SOURCE -g1 \
@@ -53,8 +54,19 @@ endif
 
 all: $(TARGET)$(EXE) $(FAKES)
 
-_nvngx.dll: fake_ngx.c
+# (the core stand-in carries OptiScaler's product name on Windows, so
+# the version-resource check runs under Wine)
+_nvngx.dll: fake_ngx.c fake_ngx.rc
+	$(WINDRES) -o fake_ngx_res.o fake_ngx.rc
+	$(CC) -shared -O1 -Wall -o $@ $< fake_ngx_res.o
+
+nvidia_loader_test_feature/nvngx_dlss.dll: fake_dlss.c
+	@mkdir -p $(@D)
 	$(CC) -shared -O1 -Wall -o $@ $<
+
+nvidia_loader_test_feature/libnvidia-ngx-dlss.so.310.2.1: fake_dlss.c
+	@mkdir -p $(@D)
+	$(CC) -shared -fPIC -O1 -Wall -o $@ $<
 
 nvapi64.dll: fake_nvapi.c
 	$(CC) -shared -O1 -Wall -o $@ $<
@@ -76,7 +88,7 @@ check: all
 	$(RUNNER) ./$(TARGET)$(EXE)
 
 clean:
-	rm -f $(TARGET) $(TARGET).exe $(TARGET).o _nvngx.dll nvapi64.dll libnvidia-ngx.so.1
-	rm -rf $(SAMPLE_OBJDIR) nvidia_loader_test_dir
+	rm -f $(TARGET) $(TARGET).exe $(TARGET).o _nvngx.dll nvapi64.dll libnvidia-ngx.so.1 fake_ngx_res.o
+	rm -rf $(SAMPLE_OBJDIR) nvidia_loader_test_dir nvidia_loader_test_feature
 
 .PHONY: all check clean

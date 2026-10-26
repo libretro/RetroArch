@@ -20,6 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <stdlib.h>
 #include <string.h>
 
 #include <encodings/utf.h>
@@ -77,13 +78,14 @@ bool ngx_utf8_to_wide(wchar_t *out, size_t out_chars, const char *utf8)
    return true;
 }
 
-bool ngx_dlss_feature_in(const char *dir)
+/* The feature library's file in @dir into @path: Windows' fixed name,
+ * Linux's versioned soname */
+static bool ngx_dlss_feature_path(const char *dir, char *path, size_t len)
 {
 #if defined(_WIN32)
-   char path[DIR_MAX_LENGTH];
    if (string_is_empty(dir))
       return false;
-   fill_pathname_join_special(path, dir, "nvngx_dlss.dll", sizeof(path));
+   fill_pathname_join_special(path, dir, "nvngx_dlss.dll", len);
    return path_is_valid(path);
 #else
    bool found = false;
@@ -95,17 +97,28 @@ bool ngx_dlss_feature_in(const char *dir)
    while (!found && retro_readdir(rdir))
    {
       const char *name = retro_dirent_get_name(rdir);
-      found = name && string_starts_with(name, "libnvidia-ngx-dlss.so");
+      if (name && string_starts_with(name, "libnvidia-ngx-dlss.so"))
+      {
+         fill_pathname_join_special(path, dir, name, len);
+         found = true;
+      }
    }
    retro_closedir(rdir);
    return found;
 #endif
 }
 
+bool ngx_dlss_feature_in(const char *dir)
+{
+   char path[DIR_MAX_LENGTH];
+   return ngx_dlss_feature_path(dir, path, sizeof(path));
+}
+
 #ifdef NGX_HAVE_LOADER
 
 static ngx_lib_t ngx_lib;
 static bool ngx_probed;
+static bool ngx_optiscaler;
 static char ngx_status[512] = "not probed";
 static char ngx_where[DIR_MAX_LENGTH];
 
@@ -177,6 +190,100 @@ static ngx_module_t ngx_open_in(wchar_t *dir, size_t dir_chars)
    return NULL;
 }
 
+/* The module's ProductName and ProductVersion from its version
+ * resource, through version.dll resolved at run time (no import: the
+ * oldest toolchains build without it). OptiScaler's stand-in names
+ * itself there whatever file name it was loaded under. */
+static bool ngx_module_product(HMODULE m, wchar_t *name, size_t name_chars,
+      wchar_t *version, size_t version_chars)
+{
+   typedef DWORD (WINAPI *size_fn)(LPCWSTR, LPDWORD);
+   typedef BOOL (WINAPI *info_fn)(LPCWSTR, DWORD, DWORD, LPVOID);
+   typedef BOOL (WINAPI *query_fn)(LPCVOID, LPCWSTR, LPVOID*, PUINT);
+   static const wchar_t *const keys[2] = {
+      L"\\StringFileInfo\\040904b0\\ProductName",
+      L"\\StringFileInfo\\040904b0\\ProductVersion"
+   };
+   wchar_t path[MAX_PATH];
+   HMODULE ver;
+   size_fn get_size;
+   info_fn get_info;
+   query_fn query;
+   DWORD size, handle = 0;
+   void *data;
+   wchar_t *outs[2];
+   size_t chars[2];
+   unsigned i;
+   bool ok = false;
+   name[0] = version[0] = 0;
+   if (!GetModuleFileNameW(m, path, MAX_PATH))
+      return false;
+   if (!(ver = LoadLibraryW(L"version.dll")))
+      return false;
+   get_size = (size_fn)GetProcAddress(ver, "GetFileVersionInfoSizeW");
+   get_info = (info_fn)GetProcAddress(ver, "GetFileVersionInfoW");
+   query    = (query_fn)GetProcAddress(ver, "VerQueryValueW");
+   if (!get_size || !get_info || !query || !(size = get_size(path, &handle))
+         || !(data = malloc(size)))
+   {
+      FreeLibrary(ver);
+      return false;
+   }
+   outs[0]  = name;
+   outs[1]  = version;
+   chars[0] = name_chars;
+   chars[1] = version_chars;
+   if (get_info(path, 0, size, data))
+      for (i = 0; i < 2; i++)
+      {
+         void *value = NULL;
+         UINT len    = 0;
+         if (query(data, keys[i], &value, &len) && value && len)
+         {
+            size_t n = len < chars[i] ? len : chars[i] - 1;
+            memcpy(outs[i], value, n * sizeof(wchar_t));
+            outs[i][n] = 0;
+            ok = true;
+         }
+      }
+   free(data);
+   FreeLibrary(ver);
+   return ok;
+}
+
+static void ngx_note_optiscaler(HMODULE m)
+{
+   wchar_t name[64], version[64];
+   char narrow[64];
+   if (!ngx_module_product(m, name, 64, version, 64))
+      return;
+   if (wcscmp(name, L"OptiScaler"))
+      return;
+   ngx_optiscaler = true;
+   ngx_status_add(" (OptiScaler ");
+   WideCharToMultiByte(CP_UTF8, 0, version, -1, narrow, sizeof(narrow), NULL, NULL);
+   ngx_status_add(narrow);
+   ngx_status_add(")");
+}
+
+uint32_t ngx_dlss_feature_version(const char *dir)
+{
+   char path[DIR_MAX_LENGTH];
+   wchar_t wpath[DIR_MAX_LENGTH];
+   HMODULE m;
+   uint32_t (NGX_CONV *version)(void);
+   FARPROC p;
+   if (!ngx_dlss_feature_path(dir, path, sizeof(path)))
+      return 0;
+   if (!ngx_utf8_to_wide(wpath, DIR_MAX_LENGTH, path))
+      return 0;
+   if (!(m = LoadLibraryExW(wpath, NULL, LOAD_WITH_ALTERED_SEARCH_PATH)))
+      return 0;
+   p = GetProcAddress(m, "NVSDK_NGX_GetSnippetVersion");
+   memcpy(&version, &p, sizeof(version));
+   return version ? version() : 0;
+}
+
 static ngx_module_t ngx_open(void)
 {
    wchar_t dir[MAX_PATH + 32];
@@ -227,6 +334,26 @@ static ngx_proc_t ngx_sym(ngx_module_t m, const char *name)
    void *sym = dlsym(m, name);
    memcpy(&p, &sym, sizeof(p));
    return p;
+}
+
+static void ngx_note_optiscaler(ngx_module_t m)
+{
+   (void)m;
+}
+
+uint32_t ngx_dlss_feature_version(const char *dir)
+{
+   char path[DIR_MAX_LENGTH];
+   void *m;
+   void *sym;
+   uint32_t (*version)(void);
+   if (!ngx_dlss_feature_path(dir, path, sizeof(path)))
+      return 0;
+   if (!(m = dlopen(path, RTLD_NOW | RTLD_LOCAL)))
+      return 0;
+   sym = dlsym(m, "NVSDK_NGX_GetSnippetVersion");
+   memcpy(&version, &sym, sizeof(version));
+   return version ? version() : 0;
 }
 
 static ngx_module_t ngx_open(void)
@@ -388,6 +515,7 @@ const ngx_lib_t *ngx_lib_get(void)
          return NULL;
       ngx_status_set("NGX core library ");
       ngx_status_add(ngx_where);
+      ngx_note_optiscaler(m);
       d3d12  = ngx_resolve_d3d12(m, &ngx_lib.d3d12);
       vulkan = ngx_resolve_vulkan(m, &ngx_lib.vulkan);
       ngx_param_api_init(&ngx_lib.param);
@@ -413,7 +541,23 @@ const char *ngx_lib_status(void)
    return ngx_status;
 }
 
+bool ngx_lib_is_optiscaler(void)
+{
+   return ngx_optiscaler;
+}
+
 #else
+
+uint32_t ngx_dlss_feature_version(const char *dir)
+{
+   (void)dir;
+   return 0;
+}
+
+bool ngx_lib_is_optiscaler(void)
+{
+   return false;
+}
 
 const ngx_lib_t *ngx_lib_get(void)
 {
@@ -426,3 +570,11 @@ const char *ngx_lib_status(void)
 }
 
 #endif
+
+bool ngx_params_from_optiscaler(const ngx_lib_t *lib, ngx_parameter_t *p)
+{
+   int v = 0;
+   if (!lib || !p || !lib->param.get_i)
+      return false;
+   return !NGX_FAILED(lib->param.get_i(p, "OptiScaler", &v)) && v != 0;
+}

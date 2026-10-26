@@ -24,6 +24,7 @@
 
 #include "../../verbosity.h"
 #include "dxgi_common.h"
+#include "../video_upscaler.h"
 #include "ffx_common.h"
 #include "d3d12_ffx.h"
 
@@ -309,7 +310,8 @@ bool d3d12_ffx_upscale(d3d12_ffx_t *ffx, ID3D12GraphicsCommandList *cmd,
    d3d12_ffx_resource(&d.output, ffx->out.texture, ffx->out.format,
          VIDEO_SCALE_W(out_dims), VIDEO_SCALE_H(out_dims),
          FFX_USAGE_UAV, FFX_STATE_UNORDERED_ACCESS);
-   ffx_common_dispatch(&d, inputs, color->dims, out_dims, ffx->reset_pending);
+   ffx_common_dispatch(&d, inputs, color->dims, out_dims, ffx->reset_pending,
+         FFX_MODE_SHARPNESS(mode));
    res = ffx->lib->dispatch(&ffx->context, &d.header);
    ffx->reset_pending = false;
 

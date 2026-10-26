@@ -16,6 +16,7 @@
 #include <string.h>
 
 #include "../../verbosity.h"
+#include "../video_upscaler.h"
 #include "ffx_common.h"
 
 unsigned ffx_common_create_flags(const struct retro_hw_upscaler_inputs *inputs)
@@ -58,6 +59,7 @@ bool ffx_common_optimal(const ffx_lib_t *lib, unsigned mode,
    ffx_query_render_of_mode_t q;
    uint32_t rw = 0, rh = 0;
    unsigned ow = VIDEO_SCALE_W(out_dims), oh = VIDEO_SCALE_H(out_dims);
+   mode = FFX_MODE_QUALITY(mode);
    if (!ow || !oh || mode > FFX_UPSCALE_MODE_ULTRA_PERFORMANCE)
       return false;
    memset(&q, 0, sizeof(q));
@@ -88,8 +90,10 @@ bool ffx_common_optimal(const ffx_lib_t *lib, unsigned mode,
 
 void ffx_common_dispatch(ffx_upscale_dispatch_t *d,
       const struct retro_hw_upscaler_inputs *inputs,
-      unsigned render_dims, unsigned out_dims, bool reset)
+      unsigned render_dims, unsigned out_dims, bool reset, unsigned sharpness)
 {
+   if (sharpness > 100)
+      sharpness = 100;
    d->header.type           = FFX_TYPE_UPSCALE_DISPATCH;
    d->jitter_offset.x       = inputs->jitter_x;
    d->jitter_offset.y       = inputs->jitter_y;
@@ -99,8 +103,8 @@ void ffx_common_dispatch(ffx_upscale_dispatch_t *d,
    d->render_size.height    = VIDEO_SCALE_H(render_dims);
    d->upscale_size.width    = VIDEO_SCALE_W(out_dims);
    d->upscale_size.height   = VIDEO_SCALE_H(out_dims);
-   d->enable_sharpening     = 0;
-   d->sharpness             = 0.0f;
+   d->enable_sharpening     = sharpness ? 1 : 0;
+   d->sharpness             = (float)sharpness / 100.0f;
    d->frame_time_delta      = inputs->frame_time_ms > 0.0f ? inputs->frame_time_ms : 16.667f;
    d->pre_exposure          = inputs->pre_exposure == 0.0f ? 1.0f : inputs->pre_exposure;
    d->reset                 = (reset || (inputs->flags & RETRO_HW_UPSCALER_RESET)) ? 1 : 0;

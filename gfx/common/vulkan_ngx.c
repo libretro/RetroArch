@@ -21,6 +21,7 @@
 #include <vulkan/vulkan_symbol_wrapper.h>
 
 #include "../../verbosity.h"
+#include "../video_upscaler.h"
 #include "vulkan_ngx.h"
 
 /* RetroArch's NGX project: an id of its own, as NGX asks of applications
@@ -280,6 +281,11 @@ vulkan_ngx_t *vulkan_ngx_init(VkInstance instance, VkPhysicalDevice gpu,
       free(ngx->wdir);
       free(ngx);
       return NULL;
+   }
+   if (ngx_params_from_optiscaler(lib, ngx->caps))
+   {
+      video_upscaler_note_optiscaler();
+      RARCH_LOG("[Vulkan] Temporal Upscaler: NGX answered by OptiScaler.\n");
    }
    RARCH_LOG("[Vulkan] Temporal Upscaler: DLSS Super Resolution ready.\n");
    return ngx;
@@ -567,7 +573,7 @@ static bool vulkan_ngx_create_feature(vulkan_ngx_t *ngx,
    ngx->feature_out_dims = out_dims;
    ngx->feature_max_dims = max_dims;
    ngx->feature_flags    = flags;
-   ngx->feature_quality  = quality;
+   ngx->feature_quality  = NGX_MODE_FEATURE(quality);
    ngx->reset_pending    = true;
    RARCH_LOG("[Vulkan] Temporal Upscaler: DLSS feature up to %ux%u -> %ux%u (%s%s), flags 0x%x.\n",
          VIDEO_SCALE_W(max_dims), VIDEO_SCALE_H(max_dims),
@@ -662,7 +668,8 @@ bool vulkan_ngx_upscale(vulkan_ngx_t *ngx, VkCommandBuffer cmd,
    if (   !ngx->feature
        || ngx->feature_out_dims != out_dims
        || ngx->feature_max_dims != max_dims
-       || ngx->feature_flags != flags || ngx->feature_quality != quality
+       || ngx->feature_flags != flags
+       || ngx->feature_quality != NGX_MODE_FEATURE(quality)
        || ngx->out_format != color->format)
    {
       if (!vulkan_ngx_create_feature(ngx, cmd, color->format, quality,
@@ -713,7 +720,7 @@ bool vulkan_ngx_upscale(vulkan_ngx_t *ngx, VkCommandBuffer cmd,
          inputs->transparency_mask.image ? (void*)&r_mask : NULL);
    lib->param.set_f(p, NGX_PARAM_JITTER_OFFSET_X, inputs->jitter_x);
    lib->param.set_f(p, NGX_PARAM_JITTER_OFFSET_Y, inputs->jitter_y);
-   lib->param.set_f(p, NGX_PARAM_SHARPNESS, 0.0f);
+   lib->param.set_f(p, NGX_PARAM_SHARPNESS, (float)NGX_MODE_SHARPNESS(quality) / 100.0f);
    lib->param.set_i(p, NGX_PARAM_RESET,
          (ngx->reset_pending || (inputs->flags & RETRO_HW_UPSCALER_RESET)) ? 1 : 0);
    lib->param.set_f(p, NGX_PARAM_MV_SCALE_X,

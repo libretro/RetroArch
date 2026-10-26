@@ -15,6 +15,11 @@
 #include <retro_miscellaneous.h>
 #include <gfx/nvidia/ngx_loader.h>
 #include <gfx/nvidia/nvapi_loader.h>
+#if defined(_WIN32)
+#include <windows.h>
+#else
+#include <dlfcn.h>
+#endif
 
 static int failures;
 
@@ -72,9 +77,44 @@ static void test_feature_dir(void)
    if (f)
       fclose(f);
    CHECK(ngx_dlss_feature_in(dir));
+   /* (an empty file: no version to read) */
+   CHECK(ngx_dlss_feature_version(dir) == 0);
    remove(file);
    CHECK(!ngx_dlss_feature_in(dir));
    remove(dir);
+   /* The stand-in feature library built beside the test: its version
+    * read before NGX has it */
+   CHECK(ngx_dlss_feature_in("nvidia_loader_test_feature"));
+   CHECK(ngx_dlss_feature_version("nvidia_loader_test_feature") == NGX_VERSION_PACK(310, 2, 1));
+   CHECK(NGX_VERSION_MAJOR(NGX_VERSION_PACK(310, 2, 1)) == 310
+         && NGX_VERSION_MINOR(NGX_VERSION_PACK(310, 2, 1)) == 2
+         && NGX_VERSION_PATCH(NGX_VERSION_PACK(310, 2, 1)) == 1);
+   CHECK(ngx_dlss_feature_version("nvidia_loader_test_missing") == 0);
+   CHECK(ngx_dlss_feature_version("") == 0);
+}
+
+/* OptiScaler in NGX's place: the module says so on Windows (the
+ * stand-in core carries its product name there), and its parameter
+ * tables carry its key on every platform */
+static void test_optiscaler(const ngx_lib_t *lib, ngx_parameter_t *caps)
+{
+   void (*set)(int) = NULL;
+#if defined(_WIN32)
+   FARPROC p = GetProcAddress((HMODULE)lib->handle, "fake_ngx_set_optiscaler");
+   CHECK(ngx_lib_is_optiscaler());
+   CHECK(strstr(ngx_lib_status(), "(OptiScaler 0.7.7-test)") != NULL);
+#else
+   void *p = dlsym(lib->handle, "fake_ngx_set_optiscaler");
+   CHECK(!ngx_lib_is_optiscaler());
+   CHECK(strstr(ngx_lib_status(), "OptiScaler") == NULL);
+#endif
+   memcpy(&set, &p, sizeof(set));
+   CHECK(set != NULL);
+   CHECK(!ngx_params_from_optiscaler(lib, caps));
+   CHECK(!ngx_params_from_optiscaler(lib, NULL));
+   CHECK(!ngx_params_from_optiscaler(NULL, caps));
+   if (set)
+      set(1);
 }
 
 static void test_ngx(void)
@@ -138,6 +178,15 @@ static void test_ngx(void)
    CHECK(lib->param.get_i(caps, "Project", &v) == NGX_RESULT_SUCCESS && v == 10);
    CHECK(lib->param.get_i(caps, "Paths", &v) == NGX_RESULT_SUCCESS && v == 'Z');
    CHECK(NGX_FAILED(lib->param.get_i(caps, "Nothing", &v)));
+   test_optiscaler(lib, caps);
+   /* (the knob set: the next session's tables carry the key) */
+   in_use = 1;
+   CHECK(lib->vulkan.shutdown1(&device, &in_use) == NGX_RESULT_SUCCESS);
+   CHECK(lib->vulkan.init_project_id_ext("project-id", NGX_ENGINE_TYPE_CUSTOM,
+         "1.0", dir, &device, &device, &device, NULL, NULL,
+         NGX_VERSION_API, &info) == NGX_RESULT_SUCCESS);
+   CHECK(NGX_SUCCEEDED(lib->vulkan.get_capability_parameters(&caps)) && caps);
+   CHECK(ngx_params_from_optiscaler(lib, caps));
 
    CHECK(lib->vulkan.allocate_parameters(&p) == NGX_RESULT_SUCCESS && p);
    CHECK(NGX_FAILED(lib->vulkan.create_feature1(&device, &device,

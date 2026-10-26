@@ -21,6 +21,7 @@
 #include <vulkan/vulkan_symbol_wrapper.h>
 
 #include "../../verbosity.h"
+#include "../video_upscaler.h"
 #include "ffx_common.h"
 #include "vulkan_ffx.h"
 
@@ -417,7 +418,8 @@ bool vulkan_ffx_upscale(vulkan_ffx_t *ffx, VkCommandBuffer cmd,
    img.width  = VIDEO_SCALE_W(out_dims);
    img.height = VIDEO_SCALE_H(out_dims);
    vulkan_ffx_resource(&d.output, &img, FFX_USAGE_UAV, FFX_STATE_UNORDERED_ACCESS);
-   ffx_common_dispatch(&d, inputs, color->dims, out_dims, ffx->reset_pending);
+   ffx_common_dispatch(&d, inputs, color->dims, out_dims, ffx->reset_pending,
+         FFX_MODE_SHARPNESS(mode));
    res = ffx->lib->dispatch(&ffx->context, &d.header);
    ffx->reset_pending = false;
 

@@ -8042,15 +8042,38 @@ static size_t setting_get_string_representation_uint_video_temporal_upscaler_pre
 {
    static const enum msg_hash_enums names[VIDEO_TEMPORAL_UPSCALER_PRESET_LAST] = {
       MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_DEFAULT,
+      MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_A,
+      MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_B,
+      MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_C,
+      MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_D,
+      MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_E,
+      MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_F,
+      MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_G,
+      MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_H,
+      MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_I,
       MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_J,
-      MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_K
+      MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_K,
+      MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_L,
+      MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_M,
+      MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_N,
+      MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_O
    };
    if (setting)
    {
       unsigned q = *setting->value.target.unsigned_integer;
+      uint32_t version;
+      size_t _len;
       if (q >= VIDEO_TEMPORAL_UPSCALER_PRESET_LAST)
          q = VIDEO_TEMPORAL_UPSCALER_PRESET_DEFAULT;
-      return strlcpy(s, msg_hash_to_str(names[q]), len);
+      _len = strlcpy(s, msg_hash_to_str(names[q]), len);
+      /* (a letter the DLSS runtime found is too old for: said so) */
+      version = video_upscaler_dlss_version();
+      if (version && version < video_upscaler_preset_min_version(
+               (enum video_temporal_upscaler_preset)q))
+         _len += strlcpy(s + _len, msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_NOT_IN_RUNTIME),
+               len - _len);
+      return _len;
    }
    return 0;
 }

@@ -19,9 +19,14 @@ S_UINT(video_temporal_upscaler_quality, VIDEO_TEMPORAL_UPSCALER_QUALITY,
       "The upscaler's mode: how much smaller than the screen the core renders. Quality renders at about 2/3 of the output size, Balanced at about 58%, Performance at 1/2, Ultra Performance at 1/3 (each upscaler's own ratios); Native keeps the output size and only anti-aliases. Auto picks Quality, or Balanced above 1440 lines. The core is told the size each frame.")
 S_UINT(video_temporal_upscaler_preset, VIDEO_TEMPORAL_UPSCALER_PRESET,
       "video_temporal_upscaler_preset",
-      DEFAULT_VIDEO_TEMPORAL_UPSCALER_PRESET, SD_FLAG_NONE, SDESC_RANGE_MINMAX, CMD_EVENT_NONE, 0, 2, 1, 0, setting_action_ok_uint, setting_get_string_representation_uint_video_temporal_upscaler_preset,
+      DEFAULT_VIDEO_TEMPORAL_UPSCALER_PRESET, SD_FLAG_NONE, SDESC_RANGE_MINMAX, CMD_EVENT_NONE, 0, 15, 1, 0, setting_action_ok_uint, setting_get_string_representation_uint_video_temporal_upscaler_preset,
       "Temporal Upscaler Preset",
-      "The DLSS model the upscaler runs (DLSS only). Default lets the runtime pick (its transformer model for Native, Quality and Balanced). Preset K is that transformer model in every mode: the best image at a higher GPU cost. Preset J is its sibling with slightly less ghosting and some more flicker. Takes effect on the next frame.")
+      "The DLSS model the upscaler runs (DLSS only; under OptiScaler, whichever upscaler it substitutes). Default lets the runtime pick. A to G are the CNN models of DLSS 2 and 3; K is the transformer model of DLSS 4, the best image at a higher GPU cost, J its sibling with less ghosting and some flicker; the later letters are those of newer runtimes. A letter the loaded runtime does not have falls back to Default. Takes effect on the next frame.")
+S_UINT(video_temporal_upscaler_sharpness, VIDEO_TEMPORAL_UPSCALER_SHARPNESS,
+      "video_temporal_upscaler_sharpness",
+      DEFAULT_VIDEO_TEMPORAL_UPSCALER_SHARPNESS, SD_FLAG_NONE, SDESC_RANGE_MINMAX, CMD_EVENT_NONE, 0, 100, 5, 0, setting_action_ok_uint, setting_get_string_representation_percentage,
+      "Temporal Upscaler Sharpness",
+      "Sharpening applied by the upscaler to its output, in percent; 0 is off. FSR sharpens with its own pass. DLSS 2.5.1 and newer have no sharpening and ignore it, but OptiScaler applies its RCAS pass at this strength to DLSS and XeSS alike. Takes effect on the next frame.")
 /* config keys "video_dlss_directory" and its siblings are paths; the
  * configuration.c rows stay literal for these settings. */
 #ifndef SETTINGS_DEF_CONFIG_PASS

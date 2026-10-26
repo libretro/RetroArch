@@ -20,7 +20,7 @@ typedef struct fake_ngx_eval
    void *color, *output, *depth, *motion_vectors, *exposure, *transparency;
    void *cmd;
    float jitter_x, jitter_y, mv_scale_x, mv_scale_y;
-   float pre_exposure, exposure_scale, frame_time;
+   float pre_exposure, exposure_scale, frame_time, sharpness;
    int reset;
    unsigned subrect_w, subrect_h;
    int feature;
@@ -39,6 +39,7 @@ typedef struct fake_ngx_record
    /* Knobs the test turns */
    int unavailable;
    int create_fails;
+   int optiscaler;    /* the tables carry OptiScaler's key, as its stand-in's do */
    int eval_fails;
 } fake_ngx_record_t;
 
