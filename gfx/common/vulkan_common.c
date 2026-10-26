@@ -3694,8 +3694,15 @@ uint32_t vulkan_find_memory_type(
 VkResult vulkan_queue_signal_fence(VkQueue queue, VkFence fence)
 {
    VkSubmitInfo submit;
-   memset(&submit, 0, sizeof(submit));
-   submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+   submit.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+   submit.pNext                = NULL;
+   submit.waitSemaphoreCount   = 0;
+   submit.pWaitSemaphores      = NULL;
+   submit.pWaitDstStageMask    = NULL;
+   submit.commandBufferCount   = 0;
+   submit.pCommandBuffers      = NULL;
+   submit.signalSemaphoreCount = 0;
+   submit.pSignalSemaphores    = NULL;
    return vkQueueSubmit(queue, 1, &submit, fence);
 }
 
