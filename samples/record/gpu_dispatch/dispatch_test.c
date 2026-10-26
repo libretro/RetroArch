@@ -16,12 +16,14 @@ struct record_gpu_session_d3d12
    bool video_closed, audio_closed, cancelled;
 };
 static HANDLE start, completion, reset_entered, reset_release, wait_entered, wait_release;
+static HANDLE capture_entered, capture_release;
 static DWORD controller;
 static bool fail_start, signaled_busy, completion_busy, fail_event, fail_thread;
-static unsigned retries;
+static unsigned retries, scenario;
 static retro_atomic_int_t calls, freed, seen, busy_gate, pause_reset, pause_wait;
 static retro_atomic_int_t idle_waits, timed_waits, completion_waits, fail_wait;
 static retro_atomic_int_t gpu_ready, capture_frees, capture_attempts, capture_reaps;
+static retro_atomic_int_t pause_capture;
 static BOOL WINAPI test_reset(HANDLE h)
 {
    BOOL result = ResetEvent(h);
@@ -132,6 +134,11 @@ bool record_gpu_capture_d3d12_free(record_gpu_capture_d3d12_t *c)
    CHECK(GetCurrentThreadId() != controller && retro_atomic_load_acquire_int(&c->closed));
    retro_atomic_fetch_add_int(&capture_attempts, 1);
    if (!retro_atomic_load_acquire_int(&gpu_ready)) return false;
+   if (retro_atomic_cas_int(&pause_capture, 1, 0))
+   {
+      SetEvent(capture_entered);
+      CHECK(WaitForSingleObject(capture_release, 10000) == WAIT_OBJECT_0);
+   }
    free(c); retro_atomic_fetch_add_int(&capture_frees, 1); return true;
 }
 static void setup(record_gpu_capture_d3d12_t *c, nvenc_d3d12_config_t *e, record_gpu_output_config_t *o)
@@ -145,14 +152,18 @@ static void setup(record_gpu_capture_d3d12_t *c, nvenc_d3d12_config_t *e, record
    retro_atomic_int_init(&idle_waits, 0); retro_atomic_int_init(&timed_waits, 0); retro_atomic_int_init(&completion_waits, 0); retro_atomic_int_init(&fail_wait, 0);
    retro_atomic_int_init(&gpu_ready, 1); retro_atomic_int_init(&capture_frees, 0);
    retro_atomic_int_init(&capture_attempts, 0); retro_atomic_int_init(&capture_reaps, 0);
+   retro_atomic_int_init(&pause_capture, 0);
    fail_start = signaled_busy = completion_busy = fail_event = fail_thread = false; retries = 0;
    start = CreateEventA(NULL, TRUE, FALSE, NULL); completion = CreateEventA(NULL, TRUE, FALSE, NULL);
    reset_entered = CreateEventA(NULL, TRUE, FALSE, NULL); reset_release = CreateEventA(NULL, TRUE, FALSE, NULL);
    wait_entered = CreateEventA(NULL, TRUE, FALSE, NULL); wait_release = CreateEventA(NULL, TRUE, FALSE, NULL);
+   capture_entered = CreateEventA(NULL, TRUE, FALSE, NULL);
+   capture_release = CreateEventA(NULL, TRUE, FALSE, NULL);
    CHECK(start && completion && reset_entered && reset_release && wait_entered && wait_release);
+   CHECK(capture_entered && capture_release);
 }
 static void cleanup(void)
-{ CloseHandle(start); CloseHandle(completion); CloseHandle(reset_entered); CloseHandle(reset_release); CloseHandle(wait_entered); CloseHandle(wait_release); }
+{ CloseHandle(start); CloseHandle(completion); CloseHandle(reset_entered); CloseHandle(reset_release); CloseHandle(wait_entered); CloseHandle(wait_release); CloseHandle(capture_entered); CloseHandle(capture_release); }
 static void wait_counter(retro_atomic_int_t *p, int n)
 {
    unsigned i;
@@ -175,6 +186,14 @@ static void collect(record_gpu_dispatch_d3d12_t *j, enum record_gpu_dispatch_sta
       if (s == RECORD_GPU_DISPATCH_DONE || s == RECORD_GPU_DISPATCH_FAILED) break;
       Sleep(1);
    }
+   if (i == 10000 || record_gpu_dispatch_d3d12_status(j, NULL, NULL, NULL) != expected)
+      fprintf(stderr, "collect scenario=%u state=%d expected=%d iterations=%u error=%d os=%d closed=%d/%d epoch=%d\n",
+            scenario, (int)record_gpu_dispatch_d3d12_status(j, NULL, NULL, NULL),
+            (int)expected, i, retro_atomic_load_acquire_int(&j->error),
+            retro_atomic_load_acquire_int(&j->system_error),
+            retro_atomic_load_acquire_int(&j->video_closed),
+            retro_atomic_load_acquire_int(&j->audio_closed),
+            retro_atomic_load_acquire_int(&j->epoch));
    CHECK(i < 10000 && record_gpu_dispatch_d3d12_status(j, NULL, NULL, NULL) == expected);
    for (i = 0; i < 10000 && !record_gpu_dispatch_d3d12_free(j); i++) Sleep(1);
    CHECK(i < 10000);
@@ -349,8 +368,15 @@ static void owned_lifecycle(unsigned mode)
    CHECK(!retro_atomic_load_acquire_int(&capture_frees));
    CHECK(!record_gpu_dispatch_d3d12_free(j));
    if (mode == 5) record_gpu_dispatch_d3d12_cancel(j);
+   if (mode == 6) retro_atomic_store_release_int(&pause_capture, 1);
    retro_atomic_store_release_int(&gpu_ready, 1);
-   collect(j, mode == 1 || mode == 2 || mode == 4 || mode == 5 ? RECORD_GPU_DISPATCH_FAILED : RECORD_GPU_DISPATCH_DONE);
+   if (mode == 6)
+   {
+      CHECK(WaitForSingleObject(capture_entered, 10000) == WAIT_OBJECT_0);
+      record_gpu_dispatch_d3d12_cancel(j);
+      SetEvent(capture_release);
+   }
+   collect(j, mode == 1 || mode == 2 || mode == 4 || mode == 5 || mode == 6 ? RECORD_GPU_DISPATCH_FAILED : RECORD_GPU_DISPATCH_DONE);
    CHECK(retro_atomic_load_acquire_int(&capture_frees) == 1);
    CHECK(retro_atomic_load_acquire_int(&freed) == (fail_start ? 0 : 1));
    cleanup();
@@ -358,9 +384,22 @@ static void owned_lifecycle(unsigned mode)
 int main(void)
 {
    unsigned i;
-   for (i = 0; i < 8; i++) lifecycle(i);
-   startup_boundaries(); producers(false); producers(true);
-   for (i = 0; i < 6; i++) owned_lifecycle(i);
+   for (i = 0; i < 8; i++)
+   {
+      scenario = i;
+      lifecycle(i);
+   }
+   scenario = 8;
+   startup_boundaries();
+   scenario = 9;
+   producers(false);
+   scenario = 10;
+   producers(true);
+   for (i = 0; i < 7; i++)
+   {
+      scenario = 11 + i;
+      owned_lifecycle(i);
+   }
    puts("PASS: dispatcher startup, idle/completion/retry waits, closure races and retirement");
    return 0;
 }

@@ -147,6 +147,12 @@ static DWORD WINAPI record_gpu_dispatch_run(void *opaque)
       if (waited == WAIT_FAILED) record_gpu_dispatch_os_error(j);
       retro_atomic_fetch_and_int(&j->epoch, ~1);
    }
+   if (retro_atomic_load_acquire_int(&j->cancelled))
+   {
+      retro_atomic_cas_int(&j->error, RECORD_GPU_SESSION_ERROR_NONE,
+            RECORD_GPU_SESSION_ERROR_CANCELLED);
+      result = RECORD_GPU_OUTPUT_ERROR;
+   }
    retro_atomic_store_release_int(&j->state, result == RECORD_GPU_OUTPUT_END
          && !retro_atomic_load_acquire_int(&j->system_error)
          ? RECORD_GPU_DISPATCH_DONE : RECORD_GPU_DISPATCH_FAILED);
