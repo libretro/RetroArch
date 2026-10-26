@@ -2549,6 +2549,15 @@ static const char *input_openxr_joypad_name(unsigned pad)
    return input_openxr_inner->name ? input_openxr_inner->name(pad) : NULL;
 }
 
+/* The controllers' slots have no view to lend: the snapshot copies
+ * them through the calls above. */
+static const input_pad_view_t *input_openxr_joypad_view(unsigned pad)
+{
+   if (input_openxr_slot_pad(pad))
+      return NULL;
+   return input_openxr_inner->view ? input_openxr_inner->view(pad) : NULL;
+}
+
 /* Whether set shows slot's item, and as one. */
 static bool input_openxr_edit_shown(const video_xr_quad_set_t *set,
       unsigned slot)
@@ -3707,6 +3716,8 @@ const input_device_driver_t *input_openxr_joypad(
       wrap->name             = input_openxr_joypad_name;
       if (joypad->get_buttons)
          wrap->get_buttons   = input_openxr_joypad_get_buttons;
+      if (joypad->view)
+         wrap->view          = input_openxr_joypad_view;
       input_openxr_inner     = joypad;
    }
    return &input_openxr_wrap[input_openxr_wrap_cur];
