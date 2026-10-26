@@ -1025,10 +1025,10 @@ static bool midi_driver_init(void *data)
    return true;
 }
 
-void midi_driver_request(void)
+void midi_driver_request(bool requested)
 {
-   rarch_midi_drv_requested = true;
-   if (rarch_midi_drv_inited)
+   rarch_midi_drv_requested = requested;
+   if (requested && rarch_midi_drv_inited)
       midi_driver_open(config_get_ptr());
 }
 
@@ -2254,13 +2254,11 @@ void driver_uninit(int flags, enum driver_lifetime_flags lifetime_flags)
       microphone_driver_deinit(lifetime_flags & DRIVER_LIFETIME_RESET);
 #endif
 
+   /* The core's request outlives this: a staged content load frees
+    * the drivers after the new core has asked, and drivers_init
+    * reopens for it. The request ends with the core's unload. */
    if (flags & DRIVER_MIDI_MASK)
-   {
       midi_driver_free();
-      /* Reopen after a reinit, not after the core is unloaded */
-      if (!(lifetime_flags & DRIVER_LIFETIME_RESET))
-         rarch_midi_drv_requested = false;
-   }
 
 #ifdef HAVE_LAKKA
    cpu_scaling_driver_free();

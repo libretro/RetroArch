@@ -230,8 +230,10 @@ bool midi_driver_set_volume(unsigned volume);
 bool midi_driver_set_input(const char *input);
 bool midi_driver_set_output(void *data, const char *output);
 
-/* Opens the devices on behalf of a core, now or at the next driver init */
-void midi_driver_request(void);
+/* true: opens the devices on behalf of a core, now or at the next
+ * driver init, and at every driver init until the core is unloaded.
+ * false: the core is unloaded; the next driver init leaves them shut. */
+void midi_driver_request(bool requested);
 
 /**
  * midi_driver_get_event_size:

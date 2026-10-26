@@ -20,6 +20,9 @@
  *    refused, and the first still completes;
  *  - reinit deferred: a driver reinit asked for while the load is in
  *    flight leaves the drivers as they are - the load rebuilds them;
+ *  - midi requested: a core that asks for the MIDI interface while it
+ *    loads has the output open once the load has rebuilt the drivers;
+ *    the next core, which does not ask, has it shut;
  *  - fallback: a core that cannot be loaded ends on the dummy core
  *    with the drivers rebuilt and the menu up;
  *  - not a core: a library that opens but lacks retro_init does the
@@ -66,6 +69,7 @@
 #include "../../../verbosity.h"
 #include "../../../gfx/video_driver.h"
 #include "../../../audio/audio_driver.h"
+#include "../../../midi_driver.h"
 #include "../../../gfx/video_defines.h"
 #include "../../../menu/menu_driver.h"
 #include "../../../tasks/task_content.h"
@@ -494,6 +498,45 @@ static void lane_audio_kept(void)
    if (failures == had)
       fprintf(stderr, "[pass] audio kept lane: the device stays open across"
             " a content load; with keeping off it is closed and opened\n");
+}
+
+/* The MIDI device of a core that asks for the interface while it loads:
+ * the ask comes before the load rebuilds the drivers, and the device
+ * is open on the rebuilt ones. A core that does not ask leaves it shut. */
+static void lane_midi_requested(void)
+{
+   struct load_frame log[LOAD_FRAMES];
+   unsigned had = failures;
+   unsigned n;
+
+   putenv((char*)"HARNESS_CORE_MIDI=1");
+   open_menu();
+   CHECK(task_push_load_contentless_core_from_menu(core_path),
+         "the load was not started");
+   n = run_load(log, LOAD_FRAMES);
+   CHECK(n < LOAD_FRAMES && core_is_up(),
+         "the load did not bring the core up within %u frames", LOAD_FRAMES);
+   CHECK(midi_driver_output_enabled(),
+         "the core asked for MIDI while loading, and no output is open "
+         "after the load");
+   pump(2);
+   CHECK(midi_driver_output_enabled(),
+         "the MIDI output closed once the core ran");
+
+   putenv((char*)"HARNESS_CORE_MIDI=");
+   open_menu();
+   CHECK(task_push_load_contentless_core_from_menu(core_path),
+         "the second load was not started");
+   n = run_load(log, LOAD_FRAMES);
+   CHECK(n < LOAD_FRAMES && core_is_up(),
+         "the second load did not bring the core up within %u frames",
+         LOAD_FRAMES);
+   CHECK(!midi_driver_output_enabled(),
+         "the MIDI output is open for a core that never asked for it");
+
+   if (failures == had)
+      fprintf(stderr, "[pass] midi requested lane: the output is open for"
+            " a core that asks while loading, shut for one that does not\n");
 }
 
 
@@ -2735,6 +2778,9 @@ int main(int argc, char *argv[])
       fprintf(cfg, "savestate_auto_save = \"false\"\n");
       fprintf(cfg, "menu_show_load_content_animation = \"false\"\n");
       fprintf(cfg, "threaded_data_runloop_enable = \"false\"\n");
+      /* The null MIDI driver's one output: the MIDI lane's device */
+      fprintf(cfg, "midi_driver = \"null\"\n");
+      fprintf(cfg, "midi_output = \"Null\"\n");
       /* The records of the cores asked live next to the info cache */
       fprintf(cfg, "libretro_info_path = \"%s\"\n", dir);
       /* Where a contentless core's states go, named after the core:
@@ -2809,6 +2855,7 @@ int main(int argc, char *argv[])
    lane_staged();
    lane_core_opened_once();
    lane_audio_kept();
+   lane_midi_requested();
 #if defined(HAVE_DYNAMIC)
    lane_probe_cached();
 #endif

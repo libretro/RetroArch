@@ -4041,7 +4041,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
          if (midi_interface)
          {
-            midi_driver_request();
+            midi_driver_request(true);
             midi_interface->input_enabled  = midi_driver_input_enabled;
             midi_interface->output_enabled = midi_driver_output_enabled;
             midi_interface->read           = midi_driver_read;
@@ -5732,6 +5732,8 @@ void runloop_event_deinit_core(void)
     * follows to write that. */
    input_driver_flush_rumble();
    led_driver_flush();
+   /* After retro_deinit, which may still send its notes-off */
+   midi_driver_request(false);
 
    /* retro_deinit() may call
     * RETRO_ENVIRONMENT_SET_FASTFORWARDING_OVERRIDE

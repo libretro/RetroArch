@@ -2,6 +2,7 @@
  * content, pushes a frame per retro_run, and counts its own
  * retro_init calls behind an export, so the harness can tell exactly
  * which frame the frontend brought it up on. */
+#include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
 #include <libretro.h>
@@ -188,6 +189,16 @@ bool retro_load_game(const struct retro_game_info *game)
    hw.context_destroy = hw_context_destroy;
    environ_cb(RETRO_ENVIRONMENT_SET_HW_RENDER, &hw);
 #endif
+   /* HARNESS_CORE_MIDI set: the MIDI interface is asked for here, as
+    * cores that play music through it do */
+   {
+      const char *midi = getenv("HARNESS_CORE_MIDI");
+      if (midi && *midi)
+      {
+         struct retro_midi_interface midi_cb;
+         environ_cb(RETRO_ENVIRONMENT_GET_MIDI_INTERFACE, &midi_cb);
+      }
+   }
    (void)game;
    return true;
 }
