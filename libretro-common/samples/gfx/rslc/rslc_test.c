@@ -1544,6 +1544,16 @@ static void test_msl_inline(void)
       "  FragColor = vColor * half_of(vColor.x);\n"
       "}\n"
       "float half_of(float x) { return x * 0.5; }\n";
+   static const char  helpers[] =
+      "#version 450\n"
+      "layout(location = 0) in vec4 vColor;\n"
+      "layout(location = 0) out vec4 FragColor;\n"
+      "void main() {\n"
+      "  mat2 m = mat2(vColor);\n"
+      "  mat2 k = inverse(m) + matrixCompMult(m, m);\n"
+      "  FragColor = mod(vColor, 3.0) + vec4(k[0], k[1]);\n"
+      "  FragColor.x += float(findLSB(int(vColor.w)));\n"
+      "}\n";
 
    opts_default(&o, err, sizeof(err));
    o.dst = RSLC_DST_MSL;
@@ -1555,6 +1565,20 @@ static void test_msl_inline(void)
       CHECK(strstr(r.text, "static inline __attribute__((always_inline)) void rslc_main(") != NULL);
       CHECK(strstr(r.text, "always_inline)) fragment") == NULL);
       CHECK(strstr(r.text, " main0(") != NULL);
+      rslc_result_free(&r, &o);
+   }
+   CHECK(alloc_live == 0);
+
+   /* the helpers rslc prints for GLSL builtins MSL lacks, too */
+   CHECK(rslc_compile(helpers, sizeof(helpers) - 1, RSLC_STAGE_FRAGMENT, &o, &r));
+   if (r.text)
+   {
+      CHECK(strstr(r.text, "template<typename Tx, typename Ty> static inline __attribute__((always_inline)) Tx mod(") != NULL);
+      CHECK(strstr(r.text, "static inline __attribute__((always_inline)) float2x2 rslc_inverse2(") != NULL);
+      CHECK(strstr(r.text, "static inline __attribute__((always_inline)) float2x2 rslc_cmul(") != NULL);
+      CHECK(strstr(r.text, "template<typename T> static inline __attribute__((always_inline)) T rslc_findlsb(") != NULL);
+      CHECK(strstr(r.text, "\ninline ") == NULL);
+      CHECK(strstr(r.text, "> inline ") == NULL);
       rslc_result_free(&r, &o);
    }
    CHECK(alloc_live == 0);
@@ -1619,7 +1643,7 @@ static void test_msl(void)
    CHECK(rslc_compile(frag, sizeof(frag) - 1, RSLC_STAGE_FRAGMENT, &o, &r));
    if (r.text)
    {
-      CHECK(strstr(r.text, "inline Tx mod(Tx x, Ty y)") != NULL);
+      CHECK(strstr(r.text, "always_inline)) Tx mod(Tx x, Ty y)") != NULL);
       CHECK(strstr(r.text, "constant Push& params [[buffer(1)]]") != NULL);
       CHECK(strstr(r.text, "texture2d<float> Source [[texture(2)]], sampler SourceSmplr [[sampler(2)]]") != NULL);
       CHECK(strstr(r.text, "float4 gl_FragCoord [[position]]") != NULL);

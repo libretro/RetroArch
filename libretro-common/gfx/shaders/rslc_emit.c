@@ -109,6 +109,9 @@ struct rslc_pr
    bool                     uses_gather_comp; /* ... with a component other than 0 */
 };
 
+/* MSL functions but main0: under fast math a call rounds apart from inlined code */
+#define RSLC_MSL_FN "static inline __attribute__((always_inline)) "
+
 /* HLSL helper functions, printed once when used. */
 #define RSLC_HL_MOD           (1u << 0)
 #define RSLC_HL_SIZE_F        (1u << 1)
@@ -3300,8 +3303,8 @@ static void pr_func_head(struct rslc_pr *p, const struct rslc_func *f)
       p->ok = false;
       return;
    }
-   if (p->msl)   /* fast math rounds a call differently from inlined code */
-      pr_s(p, "static inline __attribute__((always_inline)) ");
+   if (p->msl)
+      pr_s(p, RSLC_MSL_FN);
    pr_type_full(p, f->ret);
    pr_c(p, ' ');
    if ((p->hlsl || p->msl) && f == p->c->prog.main_fn)
@@ -4399,14 +4402,14 @@ static void pr_msl_helpers(struct rslc_pr *p)
    unsigned k;
    if (p->hl_uses & RSLC_HL_MOD)
    {
-      pr_s(p, "template<typename Tx, typename Ty> inline Tx mod(Tx x, Ty y) { return x - y * floor(x / y); }");
+      pr_s(p, "template<typename Tx, typename Ty> " RSLC_MSL_FN "Tx mod(Tx x, Ty y) { return x - y * floor(x / y); }");
       pr_nl(p);
    }
    for (k = 0; k < 3; k++)
    {
       if (!(p->hl_uses & (RSLC_HL_SIZE_F << k)))
          continue;
-      pr_s(p, "inline int2 rslc_size(texture2d<");
+      pr_s(p, RSLC_MSL_FN "int2 rslc_size(texture2d<");
       pr_s(p, tex[k]);
       pr_s(p, "> t, uint lod) { return int2(t.get_width(lod), t.get_height(lod)); }");
       pr_nl(p);
@@ -4417,7 +4420,7 @@ static void pr_msl_helpers(struct rslc_pr *p)
       unsigned c;
       if (!(p->hl_uses & (RSLC_HL_CMUL2 << (k - 2))))
          continue;
-      pr_s(p, "inline float");
+      pr_s(p, RSLC_MSL_FN "float");
       pr_c(p, n);
       pr_c(p, 'x');
       pr_c(p, n);
@@ -4447,21 +4450,21 @@ static void pr_msl_helpers(struct rslc_pr *p)
       pr_s(p, "); }");
       pr_nl(p);
    }
-   pr_inverse_helpers(p, "inline ");
+   pr_inverse_helpers(p, RSLC_MSL_FN);
    if (p->hl_uses & RSLC_HL_FINDLSB)
    {
-      pr_s(p, "template<typename T> inline T rslc_findlsb(T v) { return select(T(ctz(v)), T(-1), v == T(0)); }");
+      pr_s(p, "template<typename T> " RSLC_MSL_FN "T rslc_findlsb(T v) { return select(T(ctz(v)), T(-1), v == T(0)); }");
       pr_nl(p);
    }
    if (p->hl_uses & RSLC_HL_FINDMSB_U)
    {
-      pr_s(p, "template<typename T> inline T rslc_findmsb(T v) { return select(T(31) - T(clz(v)), T(-1), v == T(0)); }");
+      pr_s(p, "template<typename T> " RSLC_MSL_FN "T rslc_findmsb(T v) { return select(T(31) - T(clz(v)), T(-1), v == T(0)); }");
       pr_nl(p);
    }
    if (p->hl_uses & RSLC_HL_FINDMSB_I)
    {
       /* a negative number's highest zero bit */
-      pr_s(p, "template<typename T> inline T rslc_findmsb(T v) { T w = select(v, ~v, v < T(0)); return select(T(31) - T(clz(w)), T(-1), w == T(0)); }");
+      pr_s(p, "template<typename T> " RSLC_MSL_FN "T rslc_findmsb(T v) { T w = select(v, ~v, v < T(0)); return select(T(31) - T(clz(w)), T(-1), w == T(0)); }");
       pr_nl(p);
    }
 }
