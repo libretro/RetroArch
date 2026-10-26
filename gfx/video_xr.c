@@ -1752,6 +1752,23 @@ static bool video_xr_snap_on_line(const video_xr_snap_pair_t *p,
    return fabs(p->plane) + tip <= VIDEO_XR_SNAP_TIE;
 }
 
+/* Whether a held edge half long lies where its hinge engages: in the
+ * target's plane on its line, free or at the set gap (the click's fade
+ * leaves it between), overlapping the target's by VIDEO_XR_SNAP_DIST,
+ * flat to square. */
+static bool video_xr_snap_engaged(const video_xr_snap_pair_t *p,
+      double half, double gap)
+{
+   return p->angle < 2.0 * VIDEO_XR_SNAP_ANGLE
+      && video_xr_snap_on_line(p, half)
+      && p->hold >= 1.0
+      && (     fabs(p->across - gap) <= VIDEO_XR_SNAP_TIE
+         || (     p->across >= -VIDEO_XR_SNAP_TIE
+               && p->across <= VIDEO_XR_SNAP_FREE + VIDEO_XR_SNAP_TIE))
+      && p->overlap >= VIDEO_XR_SNAP_DIST
+      && fabs(p->fold) <= 90.0 + VIDEO_XR_SNAP_FOLD_TIE;
+}
+
 /* The edges' overlap as a share: whole from VIDEO_XR_SNAP_DIST, none
  * without, so a hinge slides off an end smoothly. */
 static double video_xr_snap_overlap(const video_xr_snap_pair_t *p)
@@ -2012,9 +2029,13 @@ void video_xr_hinge_place(video_xr_hinge_t *h, const video_xr_pose_t *pose,
    h->gap     = (float)n;
 }
 
-unsigned video_xr_snap_hinge(const video_xr_quad_set_t *set, unsigned slot,
-      unsigned skip, float width, float height, float gap, float fade,
-      video_xr_pose_t *pose, video_xr_hinge_t *hinge)
+/* video_xr_snap_hinge, but the screens in whole (slots, as bits) pull
+ * whole whatever fade: a hinge's target as a grab taken in it, or
+ * taking a screen where it rests, holds it. */
+static unsigned video_xr_snap_hinge_at(const video_xr_quad_set_t *set,
+      unsigned slot, unsigned skip, unsigned whole, float width,
+      float height, float gap, float fade, video_xr_pose_t *pose,
+      video_xr_hinge_t *hinge)
 {
    unsigned i, he, te;
    double e;
@@ -2043,12 +2064,13 @@ unsigned video_xr_snap_hinge(const video_xr_quad_set_t *set, unsigned slot,
    double hin       = 0.0;
    double hk_line   = 0.0;
    double hk_stop   = 0.0;
+   double hf        = 0.0;
    bool joined      = false;
    bool pressed     = false;
    double a         = width * 0.5;
    double b         = height * 0.5;
 
-   if (!set || slot >= VIDEO_XR_MENU_SLOT || fade <= 0.0f)
+   if (!set || slot >= VIDEO_XR_MENU_SLOT || (fade <= 0.0f && !whole))
       return 0;
    video_xr_pose_invert(pose, &inv);
    for (i = 0; i < set->num_quads && nh < RETRO_VIDEO_VIEWS_MAX; i++)
@@ -2063,7 +2085,7 @@ unsigned video_xr_snap_hinge(const video_xr_quad_set_t *set, unsigned slot,
       h[nh++] = q;
       if (video_xr_snap_target(q, pose, a, b, &t[n]))
       {
-         t[n].share *= fade;
+         t[n].share *= ((whole >> q->slot) & 1u) ? 1.0 : fade;
          t[n].dist   = video_xr_snap_edge_dist(q, &inv, a, b, gap,
                t[n].dist);
          n++;
@@ -2109,6 +2131,7 @@ unsigned video_xr_snap_hinge(const video_xr_quad_set_t *set, unsigned slot,
     * the turn does not go to, only as far as that turn leaves it free. */
    for (i = 0; i < nh; i++)
    {
+      double f = ((whole >> h[i]->slot) & 1u) ? 1.0 : fade;
       video_xr_compose(&inv, &h[i]->pose, &rel);
       for (he = 0; he < 4; he++)
       {
@@ -2120,7 +2143,7 @@ unsigned video_xr_snap_hinge(const video_xr_quad_set_t *set, unsigned slot,
                   h[i]->height * 0.5, a, b, he, te, gap, &p);
             if (p.angle >= 2.0 * VIDEO_XR_SNAP_ANGLE)
                continue;
-            k = video_xr_snap_hinge_share(&p, fade);
+            k = video_xr_snap_hinge_share(&p, f);
             if (k <= 0.0)
                continue;
             if (ref >= 0 && t[ref].q != h[i])
@@ -2147,7 +2170,8 @@ unsigned video_xr_snap_hinge(const video_xr_quad_set_t *set, unsigned slot,
                hg  = p.gap;
                hn  = p.hold;
                hw  = p.hold * video_xr_snap_overlap(&p);
-               hs  = video_xr_snap_hinge_share(&p, fade);
+               hs  = video_xr_snap_hinge_share(&p, f);
+               hf  = f;
                hin = p.angle;
             }
          }
@@ -2233,7 +2257,7 @@ unsigned video_xr_snap_hinge(const video_xr_quad_set_t *set, unsigned slot,
        * with it; folded as the turn put it, square to rounding while
        * that is whole. */
       fold    = fabs(p.fold) - VIDEO_XR_SNAP_FOLD_TIE;
-      hk_stop = fade * hw
+      hk_stop = hf * hw
          * video_xr_snap_share((fold > 0.0) ? fold : 0.0, 90.0);
    }
    for (i = 0; i < n; i++)
@@ -2332,24 +2356,14 @@ unsigned video_xr_snap_hinge(const video_xr_quad_set_t *set, unsigned slot,
    pose->position.y += world.y;
    pose->position.z += world.z;
 
-   /* Engaged, by whatever pull put it there: that hinge's edge in the
-    * other's plane, free or at the set gap (the click's fade leaves it
-    * between), overlapping the other's by VIDEO_XR_SNAP_DIST, flat to
-    * square, the grab's fade whole. */
-   if (hq >= 0 && fade >= 1.0f)
+   /* Engaged, by whatever pull put it there, its fade whole. */
+   if (hq >= 0 && hf >= 1.0)
    {
       video_xr_pose_invert(pose, &inv);
       video_xr_compose(&inv, &h[hq]->pose, &rel);
       video_xr_snap_pair(&rel, h[hq]->width * 0.5, h[hq]->height * 0.5,
             a, b, hhe, hte, gap, &p);
-      if (     p.angle < 2.0 * VIDEO_XR_SNAP_ANGLE
-            && video_xr_snap_on_line(&p, hhe < 2 ? a : b)
-            && p.hold >= 1.0
-            && (     fabs(p.across - gap) <= VIDEO_XR_SNAP_TIE
-               || (     p.across >= -VIDEO_XR_SNAP_TIE
-                     && p.across <= VIDEO_XR_SNAP_FREE + VIDEO_XR_SNAP_TIE))
-            && p.overlap >= VIDEO_XR_SNAP_DIST
-            && fabs(p.fold) <= 90.0 + VIDEO_XR_SNAP_FOLD_TIE)
+      if (video_xr_snap_engaged(&p, hhe < 2 ? a : b, gap))
       {
          snapped |= VIDEO_XR_SNAP_HINGE;
          if (     fabs(p.across - gap) <= VIDEO_XR_SNAP_TIE
@@ -2391,12 +2405,139 @@ unsigned video_xr_snap_hinge(const video_xr_quad_set_t *set, unsigned slot,
    return snapped;
 }
 
+unsigned video_xr_snap_hinge(const video_xr_quad_set_t *set, unsigned slot,
+      unsigned skip, float width, float height, float gap, float fade,
+      video_xr_pose_t *pose, video_xr_hinge_t *hinge)
+{
+   return video_xr_snap_hinge_at(set, slot, skip, 0, width, height, gap,
+         fade, pose, hinge);
+}
+
 unsigned video_xr_snap(const video_xr_quad_set_t *set, unsigned slot,
       unsigned skip, float width, float height, float fade,
       video_xr_pose_t *pose)
 {
    return video_xr_snap_hinge(set, slot, skip, width, height, 0.0f, fade,
          pose, NULL);
+}
+
+/* The screens of set a hinge can take, but those in skip (slots, as
+ * bits), as video_xr_snap_hinge's targets: a stereo pair once, at most
+ * RETRO_VIDEO_VIEWS_MAX into s. Returns how many. */
+static unsigned video_xr_rest_screens(const video_xr_quad_set_t *set,
+      unsigned skip, const video_xr_quad_t **s)
+{
+   unsigned i;
+   unsigned n    = 0;
+   unsigned done = 0;
+   for (i = 0; i < set->num_quads && n < RETRO_VIDEO_VIEWS_MAX; i++)
+   {
+      const video_xr_quad_t *q = &set->quads[i];
+      if (     q->slot >= VIDEO_XR_MENU_SLOT
+            || q->kind == VIDEO_XR_QUAD_MENU
+            || (((skip | done) >> q->slot) & 1u)
+            || set->slots[q->slot].fixed)
+         continue;
+      done  |= 1u << q->slot;
+      s[n++] = q;
+   }
+   return n;
+}
+
+/* Whether a screen a by b metres from its middle to its sides, inv its
+ * pose's inverse, rests with its edge he where a hinge whole at gap
+ * metres engages it on q's edge te. Unmoved, its edge is the hinge's
+ * own, so whole is the engaged test's hold. */
+static bool video_xr_rest_pair(const video_xr_quad_t *q,
+      const video_xr_pose_t *inv, double a, double b, unsigned he,
+      unsigned te, double gap)
+{
+   video_xr_pose_t rel;
+   video_xr_snap_pair_t p;
+   video_xr_compose(inv, &q->pose, &rel);
+   video_xr_snap_pair(&rel, q->width * 0.5, q->height * 0.5, a, b, he, te,
+         gap, &p);
+   return video_xr_snap_engaged(&p, (he < 2) ? a : b, gap);
+}
+
+/* Whether screen c, taken where it rests with nothing else pulling yet
+ * (a grab's fade of none), stays unmoved held whole by the hinge of
+ * its edge edge on target's edge on, the screens in skip held; so a
+ * hinge shown at rest stays hinged when its screen is taken. */
+static bool video_xr_rest_holds(const video_xr_quad_set_t *set,
+      const video_xr_quad_t *c, unsigned skip, unsigned target,
+      unsigned edge, unsigned on, float gap)
+{
+   video_xr_hinge_t k;
+   video_xr_pose_t moved    = c->pose;
+   const video_xr_quat_t *q = &c->pose.orientation;
+   const video_xr_quat_t *m = &moved.orientation;
+   /* The turn by its dot over both lengths: video_xr_quat_angle reads a
+    * float turn, unit only to rounding, hundredths of a degree off
+    * itself. */
+   return (video_xr_snap_hinge_at(set, c->slot, skip, 1u << target,
+            c->width, c->height, gap, 0.0f, &moved, &k)
+         & VIDEO_XR_SNAP_HINGE)
+      && k.slot == target && k.edge == edge && k.on == on
+      && fabs((double)moved.position.x - c->pose.position.x)
+         <= VIDEO_XR_SNAP_TIE
+      && fabs((double)moved.position.y - c->pose.position.y)
+         <= VIDEO_XR_SNAP_TIE
+      && fabs((double)moved.position.z - c->pose.position.z)
+         <= VIDEO_XR_SNAP_TIE
+      && fabs(video_xr_quat_dot(m, q))
+         >= sqrt(video_xr_quat_dot(m, m) * video_xr_quat_dot(q, q))
+         * cos(VIDEO_XR_SNAP_FOLD_TIE * VIDEO_XR_PI / 360.0);
+}
+
+/* Whether screen c, carried, rests exactly in the hinge of its edge he
+ * on target's edge te: engaged as the poses are, and held there
+ * unmoved. The one test for both a hinge shown at rest and one taken
+ * up. */
+static bool video_xr_rest_exact(const video_xr_quad_set_t *set,
+      const video_xr_quad_t *c, const video_xr_quad_t *target,
+      unsigned skip, unsigned he, unsigned te, float gap)
+{
+   video_xr_pose_t inv;
+   video_xr_pose_invert(&c->pose, &inv);
+   return video_xr_rest_pair(target, &inv, c->width * 0.5,
+            c->height * 0.5, he, te, gap)
+      && video_xr_rest_holds(set, c, skip, target->slot, he, te, gap);
+}
+
+/* The first edge of screen c resting exactly hinged on an edge of
+ * target, c carried: into r; false with none. */
+static bool video_xr_rest_on(const video_xr_quad_set_t *set,
+      const video_xr_quad_t *c, const video_xr_quad_t *target,
+      unsigned skip, float gap, video_xr_rest_t *r)
+{
+   unsigned he, te;
+   for (he = 0; he < 4; he++)
+      for (te = 0; te < 4; te++)
+         if (video_xr_rest_exact(set, c, target, skip, he, te, gap))
+         {
+            r->slot   = (unsigned char)c->slot;
+            r->edge   = (unsigned char)he;
+            r->target = (unsigned char)target->slot;
+            r->on     = (unsigned char)te;
+            return true;
+         }
+   return false;
+}
+
+unsigned video_xr_rest_hinges(const video_xr_quad_set_t *set,
+      unsigned skip, float gap, video_xr_rest_t *rest, unsigned max)
+{
+   unsigned i, j;
+   const video_xr_quad_t *s[RETRO_VIDEO_VIEWS_MAX];
+   unsigned n  = 0;
+   unsigned ns = set ? video_xr_rest_screens(set, skip, s) : 0;
+   for (i = 0; i < ns; i++)
+      for (j = i + 1; j < ns && n < max; j++)
+         if (     video_xr_rest_on(set, s[i], s[j], skip, gap, &rest[n])
+               || video_xr_rest_on(set, s[j], s[i], skip, gap, &rest[n]))
+            n++;
+   return n;
 }
 
 /* Past this pitch of the ray, in degrees, its heading blends evenly

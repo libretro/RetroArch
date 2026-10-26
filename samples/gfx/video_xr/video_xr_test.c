@@ -3565,6 +3565,117 @@ static unsigned hinge_snap(const video_xr_quad_set_t *set,
    return video_xr_snap_hinge(set, 1, 0, 1.28f, 0.96f, t_gap, fade, p, h);
 }
 
+/* Screen in slot, w x h, at p, added to set. */
+static void rest_add(video_xr_quad_set_t *set, unsigned slot, float w,
+      float h, const video_xr_pose_t *p)
+{
+   video_xr_quad_t *q = &set->quads[set->num_quads++];
+   memset(q, 0, sizeof(*q));
+   q->pose   = *p;
+   q->width  = w;
+   q->height = h;
+   q->kind   = VIDEO_XR_QUAD_SCREEN;
+   q->slot   = slot;
+   q->screen = slot;
+}
+
+/* hinge_set's screen 1 and the 3DS layout's screen 2 resting under it,
+ * tipped fold degrees toward the user about its top edge, that edge
+ * gap metres under screen 1's bottom edge, in its plane. */
+static void rest_under(video_xr_quad_set_t *set, double fold, double gap)
+{
+   video_xr_pose_t p;
+   video_xr_quat_t q;
+   hinge_set(set);
+   hinge_turn(&q, 1.0, 0.0, 0.0, -fold);
+   hinge_place(&p, &q, 0.0, 0.48, 0.0, -0.48 - gap, -1.8);
+   rest_add(set, 1, 1.28f, 0.96f, &p);
+}
+
+/* Whether r is slot's edge edge on target's edge on. */
+static int rest_is(const video_xr_rest_t *r, unsigned slot, unsigned edge,
+      unsigned target, unsigned on)
+{
+   return r->slot == slot && r->edge == edge && r->target == target
+      && r->on == on;
+}
+
+/* Screens resting exactly where a hinge holds one carried, each pair
+ * once: the 3DS pair flat, 2 cm apart and folded 30 degrees, screen 1
+ * carried where either can be, screen 2 where only it can (folded 2 cm
+ * apart, screen 1's edge lies 1 cm off screen 2's plane); side by side;
+ * a square corner; a 2 x 2 grid's four sides, not its corners. None
+ * 12 cm apart, 1 mm out of the plane, skipped or fixed; max caps them.
+ * None only near a hinge: 7 mm into Hinge Gap 0's click, 3.2 cm apart
+ * at Hinge Gap 2 (inside its click), centres 2 cm off level; 3.2 cm at
+ * Hinge Gap 0 is a free gap, held there. */
+static void test_rest_hinges(void)
+{
+   unsigned i;
+   video_xr_quad_set_t set;
+   video_xr_pose_t p;
+   video_xr_rest_t r[8];
+   static const double grid[4][2] = {
+      { -0.8, 0.48 }, { 0.8, 0.48 }, { -0.8, -0.48 }, { 0.8, -0.48 } };
+
+   rest_under(&set, 0.0, 0.0);
+   CHECK(video_xr_rest_hinges(&set, 0, 0.0f, r, 8) == 1
+         && rest_is(&r[0], 0, 1, 1, 0));
+   rest_under(&set, 0.0, 0.02);
+   CHECK(video_xr_rest_hinges(&set, 0, 0.02f, r, 8) == 1
+         && rest_is(&r[0], 0, 1, 1, 0));
+   rest_under(&set, 30.0, 0.0);
+   CHECK(video_xr_rest_hinges(&set, 0, 0.0f, r, 8) == 1
+         && rest_is(&r[0], 0, 1, 1, 0));
+   rest_under(&set, 30.0, 0.02);
+   CHECK(video_xr_rest_hinges(&set, 0, 0.02f, r, 8) == 1
+         && rest_is(&r[0], 1, 0, 0, 1));
+
+   hinge_set(&set);
+   snap_pose(&p, 1.44, 0.0, -1.8, 0.0);
+   rest_add(&set, 1, 1.28f, 0.96f, &p);
+   CHECK(video_xr_rest_hinges(&set, 0, 0.0f, r, 8) == 1
+         && rest_is(&r[0], 0, 2, 1, 3));
+   hinge_set(&set);
+   snap_pose(&p, 0.8, 0.0, -1.16, -90.0);
+   rest_add(&set, 1, 1.28f, 0.96f, &p);
+   CHECK(video_xr_rest_hinges(&set, 0, 0.0f, r, 8) == 1
+         && rest_is(&r[0], 0, 2, 1, 3));
+
+   memset(&set, 0, sizeof(set));
+   for (i = 0; i < 4; i++)
+   {
+      snap_pose(&p, grid[i][0], grid[i][1], -1.8, 0.0);
+      rest_add(&set, i, 1.6f, 0.96f, &p);
+   }
+   CHECK(video_xr_rest_hinges(&set, 0, 0.0f, r, 8) == 4
+         && rest_is(&r[0], 0, 2, 1, 3) && rest_is(&r[1], 0, 1, 2, 0)
+         && rest_is(&r[2], 1, 1, 3, 0) && rest_is(&r[3], 2, 2, 3, 3));
+   CHECK(video_xr_rest_hinges(&set, 0, 0.0f, r, 2) == 2);
+   CHECK(video_xr_rest_hinges(&set, 1u << 0, 0.0f, r, 8) == 2
+         && rest_is(&r[0], 1, 1, 3, 0) && rest_is(&r[1], 2, 2, 3, 3));
+
+   rest_under(&set, 0.0, 0.12);
+   CHECK(video_xr_rest_hinges(&set, 0, 0.0f, r, 8) == 0);
+   rest_under(&set, 0.0, 0.0);
+   set.quads[1].pose.position.z += 0.001f;
+   CHECK(video_xr_rest_hinges(&set, 0, 0.0f, r, 8) == 0);
+   rest_under(&set, 0.0, 0.0);
+   CHECK(video_xr_rest_hinges(&set, 1u << 1, 0.0f, r, 8) == 0);
+   set.slots[1].fixed = true;
+   CHECK(video_xr_rest_hinges(&set, 0, 0.0f, r, 8) == 0);
+
+   rest_under(&set, 0.0, 0.007);
+   CHECK(video_xr_rest_hinges(&set, 0, 0.0f, r, 8) == 0);
+   rest_under(&set, 0.0, 0.032);
+   CHECK(video_xr_rest_hinges(&set, 0, 0.02f, r, 8) == 0);
+   CHECK(video_xr_rest_hinges(&set, 0, 0.0f, r, 8) == 1
+         && rest_is(&r[0], 0, 1, 1, 0));
+   rest_under(&set, 0.0, 0.0);
+   set.quads[1].pose.position.x = 0.02f;
+   CHECK(video_xr_rest_hinges(&set, 0, 0.0f, r, 8) == 0);
+}
+
 #define HINGE_LINES (VIDEO_XR_SNAP_X | VIDEO_XR_SNAP_Y | VIDEO_XR_SNAP_Z)
 
 /* The 3DS pair: screen 2 tipped 30 degrees toward the user about its
@@ -6766,6 +6877,7 @@ int main(void)
    test_step_lid();
    test_turn_lid();
    test_near_hinge();
+   test_rest_hinges();
    test_smooth_steady();
    test_smooth_tremor();
    test_smooth_sweep();

@@ -395,6 +395,26 @@ bool video_xr_hinge_line(const video_xr_hinge_t *h, float width,
 void video_xr_hinge_place(video_xr_hinge_t *h, const video_xr_pose_t *pose,
       float width, float height, const video_xr_quad_t *target, bool over);
 
+/* Two screens at rest where a hinge would hold one of them carried:
+ * slot's edge edge (0 top, 1 bottom, 2 right, 3 left) on target's edge
+ * on. */
+typedef struct video_xr_rest
+{
+   unsigned char slot;
+   unsigned char edge;
+   unsigned char target;
+   unsigned char on;
+} video_xr_rest_t;
+
+/* The screens of set but those in skip (slots, as bits) resting
+ * exactly in a hinge, as video_xr_snap_hinge's targets go: each pair
+ * whose poses pass the test that engages a carried screen's hinge, gap
+ * metres apart, with either carried (the earlier in set first if
+ * both), where that hinge held whole, nothing else pulling, leaves the
+ * carried one unmoved; up to max into rest. Returns how many. */
+unsigned video_xr_rest_hinges(const video_xr_quad_set_t *set,
+      unsigned skip, float gap, video_xr_rest_t *rest, unsigned max);
+
 /* video_xr_grab_pose with targets and no settings, also giving the
  * hinge it holds (VIDEO_XR_SNAP_HINGE in the snaps returned, never
  * with a clamp holding it back, nor unless the item's own edge is
