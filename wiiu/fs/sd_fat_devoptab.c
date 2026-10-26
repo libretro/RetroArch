@@ -227,10 +227,12 @@ static int sd_fat_close_r (struct _reent *r, void* fd)
 
 static off_t sd_fat_seek_r (struct _reent *r, void* fd, off_t pos, int dir)
 {
+    int result;
+    off_t target;
     sd_fat_file_state_t *file = (sd_fat_file_state_t *)fd;
     if(!file->dev) {
         r->_errno = ENODEV;
-        return 0;
+        return -1;
     }
 
     OSLockMutex(file->dev->pMutex);
@@ -238,29 +240,39 @@ static off_t sd_fat_seek_r (struct _reent *r, void* fd, off_t pos, int dir)
     switch(dir)
     {
     case SEEK_SET:
-        file->pos = pos;
+        target = pos;
         break;
     case SEEK_CUR:
-        file->pos += pos;
+        target = file->pos + pos;
         break;
     case SEEK_END:
-        file->pos = file->len + pos;
+        target = file->len + pos;
         break;
     default:
+        OSUnlockMutex(file->dev->pMutex);
         r->_errno = EINVAL;
         return -1;
     }
 
-    int result = FSSetPosFile(file->dev->pClient, file->dev->pCmd, file->fd, file->pos, -1);
+    if (target < 0)
+    {
+        OSUnlockMutex(file->dev->pMutex);
+        r->_errno = EINVAL;
+        return -1;
+    }
+
+    result = FSSetPosFile(file->dev->pClient, file->dev->pCmd, file->fd, target, -1);
+    if (result == 0)
+        file->pos = target;
 
     OSUnlockMutex(file->dev->pMutex);
 
-    if(result == 0)
+    if (result != 0)
     {
-        return file->pos;
+        r->_errno = EIO;
+        return -1;
     }
-
-    return result;
+    return target;
 }
 
 static ssize_t sd_fat_write_r (struct _reent *r, void* fd, const char *ptr, size_t len)
@@ -268,24 +280,25 @@ static ssize_t sd_fat_write_r (struct _reent *r, void* fd, const char *ptr, size
     sd_fat_file_state_t *file = (sd_fat_file_state_t *)fd;
     if(!file->dev) {
         r->_errno = ENODEV;
-        return 0;
+        return -1;
     }
 
     if(!file->write)
     {
         r->_errno = EACCES;
-        return 0;
+        return -1;
     }
 
     OSLockMutex(file->dev->pMutex);
 
     size_t done = 0;
+    int failed  = 0;
 
     /* fast path: buffer is already correctly aligned */
     if (!((uintptr_t)ptr & (FS_ALIGNMENT-1))) {
         int result = FSWriteFile(file->dev->pClient, file->dev->pCmd, (uint8_t*)ptr, 1, len, file->fd, 0, -1);
         if(result < 0) {
-            r->_errno = result;
+            failed = 1;
         } else {
             done = result;
             file->pos += result;
@@ -299,7 +312,7 @@ static ssize_t sd_fat_write_r (struct _reent *r, void* fd, const char *ptr, size
         if(!tmpBuf) {
             r->_errno = ENOMEM;
             OSUnlockMutex(file->dev->pMutex);
-            return 0;
+            return -1;
         }
 
         while(done < len)
@@ -310,7 +323,7 @@ static ssize_t sd_fat_write_r (struct _reent *r, void* fd, const char *ptr, size
             int result = FSWriteFile(file->dev->pClient, file->dev->pCmd, tmpBuf, 0x01, write_size, file->fd, 0, -1);
             if(result < 0)
             {
-                r->_errno = result;
+                failed = 1;
                 break;
             }
             else if(result == 0)
@@ -330,77 +343,105 @@ static ssize_t sd_fat_write_r (struct _reent *r, void* fd, const char *ptr, size
     }
 
     OSUnlockMutex(file->dev->pMutex);
+
+    if (failed && !done)
+    {
+        r->_errno = EIO;
+        return -1;
+    }
     return done;
 }
 
+/* FS reads land by DMA, and the cache lines they cover are invalidated
+ * whole: a read into the caller's memory that ends partway through a
+ * line discards whatever the CPU last wrote to the rest of that line,
+ * such as the heap header of the next allocation. Only whole 64-byte
+ * lines starting on a line boundary are read in place; everything else
+ * goes through an aligned bounce buffer that owns its last line. */
 static ssize_t sd_fat_read_r (struct _reent *r, void* fd, char *ptr, size_t len)
 {
+    size_t done = 0;
+    int failed  = 0;
     sd_fat_file_state_t *file = (sd_fat_file_state_t *)fd;
     if(!file->dev) {
         r->_errno = ENODEV;
-        return 0;
+        return -1;
     }
 
     if(!file->read)
     {
         r->_errno = EACCES;
-        return 0;
+        return -1;
     }
 
     OSLockMutex(file->dev->pMutex);
 
-    size_t done = 0;
-
-    /* fast path: buffer is already correctly aligned */
-    if (!((uintptr_t)ptr & (FS_ALIGNMENT-1))) {
-        int result = FSReadFile(file->dev->pClient, file->dev->pCmd, (uint8_t*)ptr, 1, len, file->fd, 0, -1);
-        if(result < 0) {
-            r->_errno = result;
-        } else {
-            done = result;
-            file->pos += result;
+    if (!((uintptr_t)ptr & (FS_ALIGNMENT-1)))
+    {
+        size_t direct = len & ~(size_t)(FS_ALIGNMENT-1);
+        if (direct)
+        {
+            int result = FSReadFile(file->dev->pClient, file->dev->pCmd,
+                  (uint8_t*)ptr, 1, direct, file->fd, 0, -1);
+            if (result < 0)
+                failed = 1;
+            else
+            {
+                done       = (size_t)result;
+                file->pos += result;
+                /* Short of what was asked: end of file. */
+                if ((size_t)result < direct)
+                    len = done;
+            }
         }
-    } else {
-        size_t len_aligned = FS_ALIGN(len);
+    }
+
+    if (!failed && done < len)
+    {
+        size_t len_aligned = FS_ALIGN(len - done);
+        unsigned char *tmpBuf;
         if(len_aligned > 128*1024)
             len_aligned = 128*1024;
 
-        unsigned char *tmpBuf = (unsigned char *)memalign(FS_ALIGNMENT, len_aligned);
-        if(!tmpBuf) {
-            r->_errno = ENOMEM;
+        if (!(tmpBuf = (unsigned char *)memalign(FS_ALIGNMENT, len_aligned)))
+        {
             OSUnlockMutex(file->dev->pMutex);
-            return 0;
+            if (done)
+                return (ssize_t)done;
+            r->_errno = ENOMEM;
+            return -1;
         }
 
         while(done < len)
         {
             size_t read_size = (len_aligned < (len - done)) ? len_aligned : (len - done);
-
-            int result = FSReadFile(file->dev->pClient, file->dev->pCmd, tmpBuf, 0x01, read_size, file->fd, 0, -1);
-            if(result < 0)
+            int result = FSReadFile(file->dev->pClient, file->dev->pCmd,
+                  tmpBuf, 0x01, read_size, file->fd, 0, -1);
+            if (result < 0)
             {
-                r->_errno = result;
-                done = 0;
+                failed = 1;
                 break;
             }
-            else if(result == 0)
-            {
-                /*! TODO: error on read_size > 0 */
+            if (result == 0)
                 break;
-            }
-            else
-            {
-                memcpy(ptr + done, tmpBuf, read_size);
-                done += result;
-                file->pos += result;
-            }
+            memcpy(ptr + done, tmpBuf, (size_t)result);
+            done      += (size_t)result;
+            file->pos += result;
+            if ((size_t)result < read_size)
+                break;
         }
 
         free(tmpBuf);
     }
 
     OSUnlockMutex(file->dev->pMutex);
-    return done;
+
+    if (failed && !done)
+    {
+        r->_errno = EIO;
+        return -1;
+    }
+    return (ssize_t)done;
 }
 
 static int sd_fat_fstat_r (struct _reent *r, void* fd, struct stat *st)
@@ -509,6 +550,8 @@ static int sd_fat_stat_r (struct _reent *r, const char *path, struct stat *st)
     FSStat__ stats;
 
     int result = FSGetStat(dev->pClient, dev->pCmd, real_path, (FSStat*)&stats, -1);
+    /* The mount root is a directory too. */
+    bool is_root = strlen(dev->mount_path) + 1 == strlen(real_path);
 
     free(real_path);
 
@@ -518,8 +561,7 @@ static int sd_fat_stat_r (struct _reent *r, const char *path, struct stat *st)
         return -1;
     }
 
-    /* mark root also as directory */
-    st->st_mode = ((stats.flag & 0x80000000) || (strlen(dev->mount_path) + 1 == strlen(real_path)))? S_IFDIR : S_IFREG;
+    st->st_mode = ((stats.flag & 0x80000000) || is_root) ? S_IFDIR : S_IFREG;
     st->st_nlink = 1;
     st->st_size = stats.size;
     st->st_blocks = (stats.size + 511) >> 9;
