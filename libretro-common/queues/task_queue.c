@@ -1538,8 +1538,9 @@ static void threaded_worker(void *userdata)
       /* Workaround emscripten pthread bug where not parking the
          thread will prevent other important stuff from
          happening. Maybe due to lack of signals implementation in
-         emscripten's pthreads?  */
-      retro_sleep(1);
+         emscripten's pthreads?  The extras' passes are short. */
+      if (!self->parallel_only)
+         retro_sleep(1);
 #endif
 
       retro_task_threaded_settle(task);
