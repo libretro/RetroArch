@@ -28,6 +28,8 @@
 #include "../verbosity.h"
 #include "../frontend/thread_elevation.h"
 
+#define AUDIO_THREAD_ACK_EXITED 2
+
 /* How long a handshake between the main thread and the audio thread
  * may run before it is reported. Both are sub-millisecond on a device
  * that is answering, so anything near this is a device that has
@@ -240,7 +242,7 @@ static void audio_thread_loop(void *data)
        * was taken before. */
       if (!retro_atomic_load_acquire_int(&thr->alive))
       {
-         retro_atomic_store_release_int(&thr->stopped_ack, 1);
+         retro_atomic_store_release_int(&thr->stopped_ack, AUDIO_THREAD_ACK_EXITED);
          retro_eventcount_notify(&thr->ec);
          break;
       }
@@ -293,7 +295,8 @@ static void audio_thread_block(audio_thread_t *thr)
     * for. */
    if (!retro_atomic_load_acquire_int(&thr->alive))
       return;
-   retro_atomic_store_release_int(&thr->stopped_ack, 0);
+   /* A terminal acknowledgement cannot be cleared by a late stop. */
+   retro_atomic_cas_int(&thr->stopped_ack, 1, 0);
    retro_atomic_store_release_int(&thr->stopped, 1);
    retro_eventcount_notify(&thr->ec);
    /* The thread may be asleep in the pipeline waiting for data; wake it

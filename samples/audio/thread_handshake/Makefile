@@ -12,6 +12,7 @@ flags   += -std=gnu99
 
 SOURCES_C := \
 	thread_handshake_test.c \
+	terminal_ack_test.c \
 	../../../audio/audio_upmix.c \
 	../../../audio/audio_binaural.c \
 	stubs_retroarch.c \
@@ -23,6 +24,7 @@ SOURCES_C := \
 	$(LIBRETRO_COMM_DIR)/queues/fifo_queue.c \
 	$(LIBRETRO_COMM_DIR)/lists/string_list.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
+	$(LIBRETRO_COMM_DIR)/time/rtime.c \
 	$(LIBRETRO_COMM_DIR)/features/features_cpu.c
 
 CFLAGS += -Wall $(INCDIRS)

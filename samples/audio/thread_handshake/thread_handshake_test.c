@@ -28,6 +28,8 @@
 #include "../../../audio/audio_driver.h"
 #include "../../../audio/audio_thread_wrapper.h"
 
+void audio_thread_terminal_ack_test(void);
+
 static unsigned failures = 0;
 
 #define CHECK(cond, ...) \
@@ -240,6 +242,8 @@ int main(void)
    unsigned new_rate         = 0;
    unsigned i;
    double t0, t1;
+
+   audio_thread_terminal_ack_test();
 
    pthread_create(&dog, NULL, watchdog, NULL);
 
