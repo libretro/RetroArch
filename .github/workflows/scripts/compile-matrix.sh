@@ -904,6 +904,32 @@ salamander_link "salamander link: rtime.c" \
    "$HOSTOFF -UHAVE_THREADS -Itools/platform_stubs/vita -DVITA -DIS_SALAMANDER -DRARCH_CONSOLE" \
    libretro-common/time/rtime.c
 
+# Every launcher's whole libretro-common list, read from its Makefile,
+# linked with frontend_salamander.c and a host frontend driver: a unit
+# in a list that calls into one the list leaves out fails the link the
+# way that launcher's would.
+salamander_objs() {
+   case "$1" in
+      Makefile.wiiu)
+         sed -n '/^ifeq ($(SALAMANDER_BUILD),1)/,/^else/p' "$1" ;;
+      *) cat "$1" ;;
+   esac | grep -oE '(libretro-common/[A-Za-z0-9_/]+|verbosity)\.o' \
+        | sed 's/\.o$/.c/' | sort -u
+}
+for mk in Makefile.*.salamander Makefile.wiiu; do
+   if ! out=$($CC $WARN $INC $BASE -UHAVE_THREADS -DIS_SALAMANDER \
+         -DRARCH_CONSOLE -DHAVE_MAIN -o /tmp/salamander_link_check \
+         tools/platform_stubs/salamander_frontend.c \
+         frontend/frontend_salamander.c $(salamander_objs "$mk") 2>&1); then
+      echo "FAIL  salamander link: $mk object set"
+      show_out "$out"
+      fail=1
+   else
+      echo "ok    salamander link: $mk object set"
+   fi
+   rm -f /tmp/salamander_link_check
+done
+
 # runloop.c under Android: runloop_idle_wait's looper branch, and every
 # other ANDROID block in the file, compiled against hermetic NDK stubs
 # (jni, looper, native_activity, sensor, configuration, window) with
