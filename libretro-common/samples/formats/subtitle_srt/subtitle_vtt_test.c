@@ -1201,8 +1201,118 @@ static void applicable_languages(void)
    }
 }
 
+static void prepared_languages(void)
+{
+   static const char input[] =
+      "WEBVTT\n\n00:03.000 --> 00:04.000\n"
+      "<lang iw-BU><b>A</b><lang cmn><i>B</i></lang>"
+      "<lang><u>C</u></lang><lang not well formed><b>D</b></lang></lang><c>E</c>\n\n"
+      "00:01.000 --> 00:02.000\n"
+      "<lang en-US><c><lang ar-ajp>F</lang>G</c></lang>H\n\n";
+   rsubtitle_srt_t *track = parse(input, 1);
+   size_t cue, i;
+   assert(track);
+   for (cue = 0; cue < rsubtitle_srt_count(track); cue++)
+      for (i = 0; i < rsubtitle_vtt_node_count(track, cue); i++)
+      {
+         const rsubtitle_vtt_node_t *node = rsubtitle_vtt_node(track, cue, i);
+         const char *raw, *expected, *key, *again;
+         size_t length, raw_length, actual;
+         raw = rsubtitle_vtt_node_language(track, cue, i, "zh-cmn", 6, &raw_length);
+         expected = raw;
+         length = raw_length;
+         if (raw && raw_length == 5 && !memcmp(raw, "iw-BU", 5))
+         {
+            expected = "he-mm";
+            length = 5;
+         }
+         else if (raw && raw_length == 3 && !memcmp(raw, "cmn", 3))
+         {
+            expected = "zh-cmn";
+            length = 6;
+         }
+         else if (raw && raw_length == 6 && !memcmp(raw, "ar-ajp", 6))
+         {
+            expected = "ar-apc";
+            length = 6;
+         }
+         key = rsubtitle_vtt_node_language_key(track, cue, i, "zh-cmn", 6, &actual);
+         assert(actual == length && !!key == !!expected);
+         if (key)
+         {
+            assert(!memcmp(key, expected, length));
+            if (expected == raw) assert(key == raw);
+            again = rsubtitle_vtt_node_language_key(track, cue, i, "ar-apc", 6, &actual);
+            if (node->language_node) assert(again == key && actual == length);
+            else assert(actual == 6 && !memcmp(again, "ar-apc", 6));
+         }
+      }
+   assert(!rsubtitle_vtt_node_language_key(track, 999, 0, "en", 2, NULL));
+   assert(!rsubtitle_vtt_node_language_key(track, 0, 999, "en", 2, NULL));
+   assert(!rsubtitle_vtt_node_language_key(track, 0, 0, NULL, 1, NULL));
+   assert(!*rsubtitle_vtt_node_language_key(track, 0, 0, NULL, 0, NULL));
+   rsubtitle_srt_free(track);
+   {
+      char *body = (char*)malloc(20000);
+      const char *shared = NULL;
+      size_t used = 0;
+      assert(body);
+      for (i = 0; i < 600; i++)
+      {
+         static const char span[] = "<lang iw><b>x</b></lang>";
+         memcpy(body + used, span, sizeof(span) - 1);
+         used += sizeof(span) - 1;
+      }
+      body[used] = 0;
+      track = text_track(body, 1);
+      assert(track);
+      for (i = 1; i < rsubtitle_vtt_node_count(track, 0); i++)
+      {
+         const char *key;
+         size_t length;
+         if (rsubtitle_vtt_node(track, 0, i)->kind == RSUBTITLE_VTT_TEXT) continue;
+         key = rsubtitle_vtt_node_language_key(track, 0, i, NULL, 0, &length);
+         assert(key && length == 2 && !memcmp(key, "he", 2));
+         if (shared) assert(key == shared);
+         shared = key;
+      }
+      rsubtitle_srt_free(track);
+      free(body);
+   }
+   {
+      char *body = (char*)malloc(50000);
+      char span[64];
+      size_t used = 0;
+      assert(body);
+      for (i = 0; i < 1200; i++)
+      {
+         size_t length;
+         sprintf(span, "<lang iw-x-%04u><b>x</b></lang>", (unsigned)(i % 600));
+         length = strlen(span);
+         memcpy(body + used, span, length);
+         used += length;
+      }
+      body[used] = 0;
+      track = text_track(body, 13);
+      assert(track);
+      for (i = 0; i < 600; i++)
+      {
+         const char *first, *again;
+         size_t length, second;
+         sprintf(span, "he-x-%04u", (unsigned)i);
+         first = rsubtitle_vtt_node_language_key(track, 0, 1 + i * 3, NULL, 0, &length);
+         again = rsubtitle_vtt_node_language_key(track, 0, 1 + (i + 600) * 3, NULL, 0, &second);
+         assert(first && first == again && length == second && length == strlen(span));
+         assert(!memcmp(first, span, length));
+      }
+      rsubtitle_srt_free(track);
+      free(body);
+   }
+}
+
 int main(void)
 {
+   prepared_languages();
    applicable_languages();
    metadata();
    embedded();

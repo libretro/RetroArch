@@ -200,6 +200,11 @@ const rsubtitle_vtt_node_t *rsubtitle_vtt_node(const rsubtitle_srt_t *track,
 const char *rsubtitle_vtt_node_language(const rsubtitle_srt_t *track,
       size_t cue, size_t node, const char *fallback, size_t fallback_length,
       size_t *length);
+/* Load-prepared comparison key; borrows the caller's prepared fallback.
+ * Malformed annotations retain raw text, never become an empty language. */
+const char *rsubtitle_vtt_node_language_key(const rsubtitle_srt_t *track,
+      size_t cue, size_t node, const char *fallback, size_t fallback_length,
+      size_t *length);
 /* Strict clock comparisons; leaf nodes cannot match CSS pseudo-classes. */
 unsigned rsubtitle_vtt_node_state(const rsubtitle_srt_t *track,
       size_t cue, size_t node, int64_t position_us);

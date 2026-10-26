@@ -378,6 +378,27 @@ const char *rsubtitle_vtt_node_language(const rsubtitle_srt_t *track,
    return fallback ? fallback : "";
 }
 
+const char *rsubtitle_vtt_node_language_key(const rsubtitle_srt_t *track,
+      size_t cue, size_t index, const char *fallback, size_t fallback_length,
+      size_t *length)
+{
+   const rsubtitle_vtt_node_t *node = rsubtitle_vtt_node(track, cue, index);
+   if (length) *length = 0;
+   if (!node || (!fallback && fallback_length)
+         || node->kind == RSUBTITLE_VTT_TEXT || node->kind == RSUBTITLE_VTT_TIMESTAMP)
+      return NULL;
+   if (node->language_node)
+   {
+      const rsubtitle_vtt_entry_t *entry;
+      if (node->language_node > rsubtitle_vtt_node_count(track, cue)) return NULL;
+      entry = &track->vtt_cues[track->entries[cue].order];
+      return rsubtitle_vtt_text_language_key(track->vtt_text,
+            entry->first_node + node->language_node - 1, length);
+   }
+   if (length) *length = fallback_length;
+   return fallback ? fallback : "";
+}
+
 unsigned rsubtitle_vtt_node_state(const rsubtitle_srt_t *track,
       size_t cue, size_t index, int64_t position_us)
 {

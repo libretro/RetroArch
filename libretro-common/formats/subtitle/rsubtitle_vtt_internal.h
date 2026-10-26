@@ -139,6 +139,8 @@ typedef struct rsubtitle_vtt_selector_subject
 } rsubtitle_vtt_selector_subject_t;
 
 RETRO_BEGIN_DECLS
+const char *rsubtitle_vtt_text_language_key(const rsubtitle_vtt_text_t *text,
+      size_t index, size_t *length);
 rsubtitle_vtt_normalize_t *rsubtitle_vtt_normalize_new(void);
 void rsubtitle_vtt_normalize_free(rsubtitle_vtt_normalize_t *normal);
 /* Comparison keys only: never serialize into language metadata.

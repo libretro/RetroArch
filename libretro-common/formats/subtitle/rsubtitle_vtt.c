@@ -30,6 +30,7 @@
 #define VTT_TEXT_LIMIT 262144u
 #define VTT_TEXT_CHUNK 256u
 #define VTT_POOL_CHUNK 65536u
+#define VTT_LANGUAGE_BUCKETS 4096u
 
 enum vtt_text_state
 {
@@ -44,12 +45,19 @@ enum vtt_seal_stage
    VTT_SEAL_HINTS, VTT_SEAL_SUFFIX, VTT_SEAL_RELATIVE
 };
 
+enum vtt_language_state
+{
+   VTT_LANGUAGE_NONE, VTT_LANGUAGE_HASH, VTT_LANGUAGE_LOOKUP,
+   VTT_LANGUAGE_COMPARE, VTT_LANGUAGE_NORMALIZE
+};
+
 struct vtt_text_node
 {
    rsubtitle_vtt_node_t view;
    const char *raw;
    size_t offset, classes, last_child;
    uint32_t subtree_end, suffix_timestamp;
+   /* Sealed language nodes use storage as a prepared-key index. */
    unsigned depth, storage;
    char bytes[8];
 };
@@ -60,23 +68,37 @@ struct vtt_text_class
    size_t size;
 };
 
+struct vtt_text_language
+{
+   const char *raw;
+   size_t raw_length;
+   rsubtitle_vtt_language_key_t key;
+   uint32_t hash, next;
+};
+
 struct rsubtitle_vtt_text
 {
    struct vtt_text_node **nodes;
    struct vtt_text_class **classes;
+   struct vtt_text_language **languages;
+   rsubtitle_vtt_normalize_t *language_normal;
+   uint32_t *language_buckets;
    char **pool;
    const char *input;
    rsubtitle_vtt_cue_t cue;
-   size_t count, class_count, pool_size;
-   unsigned node_chunks, class_chunks, pool_chunks;
+   size_t count, class_count, language_count, pool_size;
+   size_t language_position;
+   unsigned node_chunks, class_chunks, language_chunks, pool_chunks;
    size_t size, position, raw_start, base, current, seal, seal_class;
    size_t name_start, class_start, class_mark, pool_mark;
    size_t reference_start, match, match_end, entity_node;
    unsigned name_length, base_number, number_digits, pending_count, pending_index;
    uint32_t number, pending[2];
    uint32_t before_timestamp;
+   uint32_t language_hash, language_lookup;
    enum vtt_text_state state, return_state;
    enum vtt_seal_stage seal_stage;
+   enum vtt_language_state language_state;
    enum rsubtitle_vtt_node_kind kind;
    int active, sealed, annotation_space;
    char name[33];
@@ -119,6 +141,12 @@ static struct vtt_text_node *vtt_text_at(const rsubtitle_vtt_text_t *text, size_
 static struct vtt_text_class *vtt_text_class_at(const rsubtitle_vtt_text_t *text, size_t index)
 {
    return &text->classes[index / VTT_TEXT_CHUNK][index % VTT_TEXT_CHUNK];
+}
+
+static struct vtt_text_language *vtt_text_language_at(
+      const rsubtitle_vtt_text_t *text, size_t index)
+{
+   return &text->languages[index / VTT_TEXT_CHUNK][index % VTT_TEXT_CHUNK];
 }
 
 static char *vtt_text_pool_at(const rsubtitle_vtt_text_t *text, size_t offset)
@@ -830,9 +858,13 @@ void rsubtitle_vtt_text_free(rsubtitle_vtt_text_t *text)
 {
    unsigned i;
    if (!text) return;
+   rsubtitle_vtt_normalize_free(text->language_normal);
+   for (i = 0; i < text->language_count; i++) free(vtt_text_language_at(text, i)->key.owned);
+   for (i = 0; i < text->language_chunks; i++) free(text->languages[i]);
    for (i = 0; i < text->node_chunks; i++) free(text->nodes[i]);
    for (i = 0; i < text->class_chunks; i++) free(text->classes[i]);
    for (i = 0; i < text->pool_chunks; i++) free(text->pool[i]);
+   free(text->language_buckets); free(text->languages);
    free(text->nodes); free(text->classes); free(text->pool); free(text);
 }
 
@@ -1078,6 +1110,128 @@ static void vtt_text_color_hint(rsubtitle_vtt_hints_t *hints,
       }
 }
 
+static int vtt_text_language_store(rsubtitle_vtt_text_t *text,
+      const rsubtitle_vtt_node_t *node, const rsubtitle_vtt_language_key_t *key)
+{
+   struct vtt_text_language *entry;
+   if (!text->language_buckets)
+   {
+      text->language_buckets = (uint32_t*)calloc(VTT_LANGUAGE_BUCKETS,
+            sizeof(*text->language_buckets));
+      if (!text->language_buckets) return 0;
+   }
+   if (!text->languages)
+   {
+      text->languages = (struct vtt_text_language**)calloc(VTT_TEXT_LIMIT / VTT_TEXT_CHUNK,
+            sizeof(*text->languages));
+      if (!text->languages) return 0;
+   }
+   if (text->language_count == (size_t)text->language_chunks * VTT_TEXT_CHUNK)
+   {
+      struct vtt_text_language *chunk = (struct vtt_text_language*)malloc(
+            VTT_TEXT_CHUNK * sizeof(*chunk));
+      if (!chunk) return 0;
+      text->languages[text->language_chunks++] = chunk;
+   }
+   entry = vtt_text_language_at(text, text->language_count++);
+   entry->raw = node->value;
+   entry->raw_length = node->value_length;
+   entry->key = *key;
+   entry->hash = text->language_hash;
+   entry->next = text->language_buckets[text->language_hash % VTT_LANGUAGE_BUCKETS];
+   text->language_buckets[text->language_hash % VTT_LANGUAGE_BUCKETS] = (uint32_t)text->language_count;
+   return 1;
+}
+
+static int vtt_text_language_step(rsubtitle_vtt_text_t *text, struct vtt_text_node *node)
+{
+   rsubtitle_vtt_language_key_t key;
+   const struct vtt_text_language *entry;
+   int status;
+   switch (text->language_state)
+   {
+      case VTT_LANGUAGE_NONE:
+         if (!node->view.value_length)
+         {
+            node->storage = 0;
+            return 1;
+         }
+         text->language_hash = 2166136261U;
+         text->language_position = 0;
+         text->language_state = VTT_LANGUAGE_HASH;
+         break;
+      case VTT_LANGUAGE_HASH:
+         if (text->language_position < node->view.value_length)
+         {
+            text->language_hash ^= (unsigned char)node->view.value[text->language_position++];
+            text->language_hash *= 16777619U;
+         }
+         else
+         {
+            text->language_lookup = text->language_buckets
+               ? text->language_buckets[text->language_hash % VTT_LANGUAGE_BUCKETS] : 0;
+            text->language_state = VTT_LANGUAGE_LOOKUP;
+         }
+         break;
+      case VTT_LANGUAGE_LOOKUP:
+         if (!text->language_lookup)
+         {
+            if (!text->language_normal)
+            {
+               text->language_normal = rsubtitle_vtt_normalize_new();
+               if (!text->language_normal) return -1;
+            }
+            if (!rsubtitle_vtt_normalize_begin(text->language_normal, node->view.value,
+                     node->view.value_length, RSUBTITLE_NORMALIZE_EXTLANG)) return -1;
+            text->language_state = VTT_LANGUAGE_NORMALIZE;
+         }
+         else
+         {
+            entry = vtt_text_language_at(text, text->language_lookup - 1);
+            if (entry->hash == text->language_hash && entry->raw_length == node->view.value_length)
+            {
+               text->language_position = 0;
+               text->language_state = VTT_LANGUAGE_COMPARE;
+            }
+            else
+               text->language_lookup = entry->next;
+         }
+         break;
+      case VTT_LANGUAGE_COMPARE:
+         entry = vtt_text_language_at(text, text->language_lookup - 1);
+         if (text->language_position == node->view.value_length)
+         {
+            node->storage = entry->key.owned ? text->language_lookup : 0;
+            text->language_state = VTT_LANGUAGE_NONE;
+            return 1;
+         }
+         if (entry->raw[text->language_position] != node->view.value[text->language_position])
+         {
+            text->language_lookup = entry->next;
+            text->language_state = VTT_LANGUAGE_LOOKUP;
+         }
+         else
+            text->language_position++;
+         break;
+      case VTT_LANGUAGE_NORMALIZE:
+         status = rsubtitle_vtt_normalize_step(text->language_normal);
+         if (status <= 0) return status;
+         key.text = node->view.value;
+         key.length = node->view.value_length;
+         key.owned = NULL;
+         if (status == 1 && !rsubtitle_vtt_normalize_take(text->language_normal, &key)) return -1;
+         if (!vtt_text_language_store(text, &node->view, &key))
+         {
+            free(key.owned);
+            return -1;
+         }
+         node->storage = key.owned ? (unsigned)text->language_count : 0;
+         text->language_state = VTT_LANGUAGE_NONE;
+         return 1;
+   }
+   return 0;
+}
+
 int rsubtitle_vtt_text_seal(rsubtitle_vtt_text_t *text)
 {
    struct vtt_text_node *node;
@@ -1113,12 +1267,19 @@ int rsubtitle_vtt_text_seal(rsubtitle_vtt_text_t *text)
          text->seal_stage = VTT_SEAL_SUFFIX;
          return 0;
       }
+      rsubtitle_vtt_normalize_free(text->language_normal);
+      text->language_normal = NULL;
       text->sealed = 1;
       return 1;
    }
    node = vtt_text_at(text, text->seal);
    if (text->seal_stage == VTT_SEAL_RELATIVE)
    {
+      if (node->view.kind == RSUBTITLE_VTT_LANGUAGE)
+      {
+         int status = vtt_text_language_step(text, node);
+         if (status <= 0) return status;
+      }
       if (node->view.kind == RSUBTITLE_VTT_ROOT) text->base = text->seal;
       if (node->view.kind == RSUBTITLE_VTT_LANGUAGE)
          node->view.language_node = (uint32_t)(text->seal - text->base + 1);
@@ -1161,6 +1322,26 @@ const rsubtitle_vtt_node_t *rsubtitle_vtt_text_node(
       const rsubtitle_vtt_text_t *text, size_t index)
 {
    return text && text->sealed && index < text->count ? &vtt_text_at(text, index)->view : NULL;
+}
+
+const char *rsubtitle_vtt_text_language_key(const rsubtitle_vtt_text_t *text,
+      size_t index, size_t *length)
+{
+   const struct vtt_text_node *node;
+   if (length) *length = 0;
+   if (!text || !text->sealed || index >= text->count) return NULL;
+   node = vtt_text_at(text, index);
+   if (node->view.kind != RSUBTITLE_VTT_LANGUAGE) return NULL;
+   if (node->storage)
+   {
+      const struct vtt_text_language *entry;
+      if (node->storage > text->language_count) return NULL;
+      entry = vtt_text_language_at(text, node->storage - 1);
+      if (length) *length = entry->key.length;
+      return entry->key.text;
+   }
+   if (length) *length = node->view.value_length;
+   return node->view.value;
 }
 
 const char *rsubtitle_vtt_text_class(const rsubtitle_vtt_text_t *text,
