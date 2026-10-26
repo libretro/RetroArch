@@ -10861,7 +10861,7 @@ static void vulkan_window_retire(vk_t *vk, unsigned w)
    if (!(win->flags & VK_WINDOW_FLAG_CLOSE))
    {
       win->flags |= VK_WINDOW_FLAG_CLOSE;
-      video_driver_publish_window_layout(w, 0, NULL, NULL, 0, 0);
+      video_driver_publish_window_layout(w, 0, 0, NULL, NULL, 0, 0);
    }
    win->flags &= ~(VK_WINDOW_FLAG_PREPARED | VK_WINDOW_FLAG_DRAWN);
    if (     (win->flags & VK_WINDOW_FLAG_OUTPUT)
@@ -11203,7 +11203,8 @@ static void vulkan_windows_present(vk_t *vk,
       }
       if (f)
          video_driver_publish_window_layout(w, win->native.generation,
-               &win->layout, &f->core, f->core_dims, win->native.dims);
+               vk->windows.held.display[w], &win->layout, &f->core,
+               f->core_dims, win->native.dims);
    }
 }
 

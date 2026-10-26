@@ -47,82 +47,79 @@ static void test_windows_policy(void)
    for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
       screens[i].mode = VIDEO_WINDOW_SEPARATE;
    mono_map(&map, 3);
-   video_windows_plan(&map, screens, true, true, 0, 0, &plan);
+   video_windows_plan(&map, screens, true, true, 0, NULL, &plan);
    CHECK(plan.main_mask == 1u && plan.separate_mask == 6u);
-   video_windows_plan(&map, screens, true, true, 2u, 0, &plan);
+   video_windows_plan(&map, screens, true, true, 2u, NULL, &plan);
    CHECK(plan.main_mask == 3u && plan.separate_mask == 4u);
    screens[2].mode = VIDEO_WINDOW_HIDDEN;
-   video_windows_plan(&map, screens, true, true, 4u, 0, &plan);
+   video_windows_plan(&map, screens, true, true, 4u, NULL, &plan);
    CHECK(plan.hidden_mask == 4u && plan.separate_mask == 2u);
-   video_windows_plan(&map, screens, false, true, 0, 0, &plan);
+   video_windows_plan(&map, screens, false, true, 0, NULL, &plan);
    CHECK(plan.main_mask == 7u && plan.hidden_mask == 0u);
-   video_windows_plan(&map, screens, true, false, 0, 0, &plan);
+   video_windows_plan(&map, screens, true, false, 0, NULL, &plan);
    CHECK(plan.main_mask == 3u && plan.separate_mask == 0u && plan.hidden_mask == 4u);
    screens[0].mode = VIDEO_WINDOW_HIDDEN;
    screens[1].mode = VIDEO_WINDOW_ATTACHED;
-   video_windows_plan(&map, screens, true, true, 0, 0, &plan);
+   video_windows_plan(&map, screens, true, true, 0, NULL, &plan);
    CHECK(plan.main_mask == 3u && plan.hidden_mask == 4u);
    screens[1].mode = 99;
-   video_windows_plan(&map, screens, true, true, 0, 0, &plan);
+   video_windows_plan(&map, screens, true, true, 0, NULL, &plan);
    CHECK(plan.main_mask == 3u);
    mono_map(&map, 0);
-   video_windows_plan(&map, screens, true, true, 0, 0, &plan);
+   video_windows_plan(&map, screens, true, true, 0, NULL, &plan);
    CHECK(plan.main_mask == 0u && plan.separate_mask == 0u && plan.hidden_mask == 0u);
    mono_map(&map, RETRO_VIDEO_VIEWS_MAX);
    for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
       screens[i].mode = VIDEO_WINDOW_SEPARATE;
-   video_windows_plan(&map, screens, true, true, 0, 0, &plan);
+   video_windows_plan(&map, screens, true, true, 0, NULL, &plan);
    CHECK(plan.main_mask == 1u && plan.separate_mask == 254u);
 }
 
-/* Screen @attached stays in the main window, and screen 0 takes its
- * place: the external monitor rule */
 static void test_windows_attached(void)
 {
    video_views_map_t map;
    video_window_settings_t screens[RETRO_VIDEO_VIEWS_MAX];
+   video_windows_route_t route;
    video_windows_plan_t plan;
    unsigned i;
    memset(screens, 0, sizeof(screens));
-   for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
+   memset(&route, 0, sizeof(route));
+   for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
       screens[i].mode = VIDEO_WINDOW_SEPARATE;
    mono_map(&map, 3);
-   video_windows_plan(&map, screens, true, true, 0, 1, &plan);
+   /* No route: screen 0 stays, whatever its mode */
+   video_windows_plan(&map, screens, true, true, 0, NULL, &plan);
+   CHECK(plan.main_mask == 1u && plan.separate_mask == 6u);
+   screens[0].mode = VIDEO_WINDOW_HIDDEN;
+   video_windows_plan(&map, screens, true, true, 0, NULL, &plan);
+   CHECK(plan.main_mask == 1u && plan.hidden_mask == 0u);
+   /* A route puts screen 0 out, whatever its mode */
+   screens[0].mode = VIDEO_WINDOW_ATTACHED;
+   route.own       = 1;
+   route.display   = 2;
+   route.screens   = 1u;
+   video_windows_plan(&map, screens, true, true, 0, &route, &plan);
+   CHECK(plan.main_mask == 6u && plan.separate_mask == 1u);
+   /* and a Separate screen it leaves out stays */
+   route.screens = 5u;
+   video_windows_plan(&map, screens, true, true, 0, &route, &plan);
    CHECK(plan.main_mask == 2u && plan.separate_mask == 5u);
-   CHECK(plan.hidden_mask == 0u);
    /* A close of screen 0's window puts it back */
-   video_windows_plan(&map, screens, true, true, 1u, 1, &plan);
+   video_windows_plan(&map, screens, true, true, 1u, &route, &plan);
    CHECK(plan.main_mask == 3u && plan.separate_mask == 4u);
-   /* Screen 0 has the attached screen's mode */
-   screens[1].mode = VIDEO_WINDOW_ATTACHED;
-   video_windows_plan(&map, screens, true, true, 0, 1, &plan);
-   CHECK(plan.main_mask == 3u && plan.separate_mask == 4u);
+   /* Hidden stays hidden */
    screens[1].mode = VIDEO_WINDOW_HIDDEN;
-   video_windows_plan(&map, screens, true, true, 0, 1, &plan);
-   CHECK(plan.main_mask == 2u && plan.hidden_mask == 1u);
-   CHECK(plan.separate_mask == 4u);
+   video_windows_plan(&map, screens, true, true, 0, &route, &plan);
+   CHECK(plan.main_mask == 0u && plan.hidden_mask == 2u);
+   CHECK(plan.separate_mask == 5u);
    screens[1].mode = VIDEO_WINDOW_SEPARATE;
    /* Off, or no window support: every screen in the main window */
-   video_windows_plan(&map, screens, false, true, 0, 1, &plan);
+   video_windows_plan(&map, screens, false, true, 0, &route, &plan);
    CHECK(plan.main_mask == 7u);
-   video_windows_plan(&map, screens, true, false, 0, 1, &plan);
+   video_windows_plan(&map, screens, true, false, 0, &route, &plan);
    CHECK(plan.main_mask == 7u && plan.separate_mask == 0u);
-   /* A screen the map does not have: screen 0 stays */
-   mono_map(&map, 1);
-   video_windows_plan(&map, screens, true, true, 0, 1, &plan);
-   CHECK(plan.main_mask == 1u && plan.separate_mask == 0u);
-   mono_map(&map, 3);
-   video_windows_plan(&map, screens, true, true, 0, 5, &plan);
-   CHECK(plan.main_mask == 1u && plan.separate_mask == 6u);
-   video_windows_plan(&map, screens, true, true, 0, 99, &plan);
-   CHECK(plan.main_mask == 1u && plan.separate_mask == 6u);
-   /* Screen 2 attached: screen 0 takes its mode */
-   screens[2].mode = VIDEO_WINDOW_HIDDEN;
-   video_windows_plan(&map, screens, true, true, 0, 2, &plan);
-   CHECK(plan.main_mask == 4u && plan.hidden_mask == 1u);
-   CHECK(plan.separate_mask == 2u);
-   /* No settings: screen 0 attached too */
-   video_windows_plan(&map, NULL, true, true, 0, 1, &plan);
+   /* No settings: all attached */
+   video_windows_plan(&map, NULL, true, true, 0, NULL, &plan);
    CHECK(plan.main_mask == 7u && plan.separate_mask == 0u && plan.hidden_mask == 0u);
 }
 
@@ -138,173 +135,15 @@ static void test_display(video_window_display_t *d, unsigned ordinal,
    d->physical   = true;
 }
 
-static bool test_routed(const video_windows_route_t *r, unsigned display,
-      unsigned screens, unsigned unplaced, unsigned attached)
+/* The Thor: the top panel, the bottom one and a DP monitor */
+static void test_thor(video_window_display_t *d, unsigned own)
 {
-   if (     r->display == display && r->screens == screens
-         && r->unplaced == unplaced && r->attached == attached)
-      return true;
-   printf("routed display %u screens %u unplaced %u attached %u\n",
-         r->display, r->screens, r->unplaced, r->attached);
-   return false;
-}
-
-/* Which display the separate screens go to */
-static void test_windows_route(void)
-{
-   video_window_display_t d[4];
-   video_window_settings_t screens[RETRO_VIDEO_VIEWS_MAX];
-   video_windows_route_t r;
-   unsigned i;
-   memset(screens, 0, sizeof(screens));
-   for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
-      screens[i].mode = VIDEO_WINDOW_SEPARATE;
-
-   /* A built-in second panel takes screen 1 */
-   test_display(&d[0], 1, VIDEO_WINDOW_CONNECTION_BUILT_IN, true);
-   test_display(&d[1], 2, VIDEO_WINDOW_CONNECTION_BUILT_IN, false);
-   video_windows_route(d, 2, screens, 2, &r);
-   CHECK(test_routed(&r, 2, 2u, 0u, 0));
-
-   /* The Thor: both panels' connection is unknown; a size changes
-    * nothing */
-   test_display(&d[0], 1, VIDEO_WINDOW_CONNECTION_UNKNOWN, true);
-   test_display(&d[1], 2, VIDEO_WINDOW_CONNECTION_UNKNOWN, false);
-   d[0].dims = VIDEO_SCALE_PACK(1920, 1080);
-   d[1].dims = VIDEO_SCALE_PACK(1240, 1080);
-   video_windows_route(d, 2, screens, 2, &r);
-   CHECK(test_routed(&r, 2, 2u, 0u, 0));
-
-   /* The Thor with a monitor: the DIRECT display beats Screen-2 and
-    * takes screen 0, and screen 1 stays */
-   test_display(&d[2], 3, VIDEO_WINDOW_CONNECTION_DIRECT, false);
-   video_windows_route(d, 3, screens, 2, &r);
-   CHECK(test_routed(&r, 3, 1u, 0u, 1));
-   d[2].connection = VIDEO_WINDOW_CONNECTION_TRANSITIVE;
-   video_windows_route(d, 3, screens, 2, &r);
-   CHECK(test_routed(&r, 3, 1u, 0u, 1));
-   /* ahead of a built-in one listed after it */
-   test_display(&d[0], 1, VIDEO_WINDOW_CONNECTION_DIRECT, false);
-   test_display(&d[1], 2, VIDEO_WINDOW_CONNECTION_UNKNOWN, true);
-   test_display(&d[2], 3, VIDEO_WINDOW_CONNECTION_BUILT_IN, false);
-   video_windows_route(d, 3, screens, 2, &r);
-   CHECK(test_routed(&r, 1, 1u, 0u, 1));
-   /* Every Auto screen goes with screen 0 */
-   video_windows_route(d, 3, screens, 3, &r);
-   CHECK(test_routed(&r, 1, 5u, 0u, 1));
-
-   /* No product info, as a cast or below API 31: not for Auto */
-   test_display(&d[0], 1, VIDEO_WINDOW_CONNECTION_UNKNOWN, true);
-   test_display(&d[1], 2, VIDEO_WINDOW_CONNECTION_UNKNOWN, false);
-   d[1].physical = false;
-   video_windows_route(d, 2, screens, 2, &r);
-   CHECK(test_routed(&r, 0, 0u, 2u, 0));
-   d[0].physical = false;
-   test_display(&d[2], 3, VIDEO_WINDOW_CONNECTION_UNKNOWN, false);
-   d[2].physical = false;
-   video_windows_route(d, 3, screens, 2, &r);
-   CHECK(test_routed(&r, 0, 0u, 2u, 0));
-
-   /* Private, off, invalid and the main window's own: not for Auto */
-   test_display(&d[1], 2, VIDEO_WINDOW_CONNECTION_BUILT_IN, false);
-   d[1].is_private = true;
-   video_windows_route(d, 2, screens, 2, &r);
-   CHECK(test_routed(&r, 0, 0u, 2u, 0));
-   d[1].is_private = false;
-   d[1].on         = false;
-   video_windows_route(d, 2, screens, 2, &r);
-   CHECK(test_routed(&r, 0, 0u, 2u, 0));
-   d[1].on         = true;
-   d[1].valid      = false;
-   video_windows_route(d, 2, screens, 2, &r);
-   CHECK(test_routed(&r, 0, 0u, 2u, 0));
-   d[1].valid      = true;
-   d[1].own        = true;
-   video_windows_route(d, 2, screens, 2, &r);
-   CHECK(test_routed(&r, 0, 0u, 2u, 0));
-   video_windows_route(d, 0, screens, 2, &r);
-   CHECK(test_routed(&r, 0, 0u, 2u, 0));
-   video_windows_route(NULL, 0, screens, 2, &r);
-   CHECK(test_routed(&r, 0, 0u, 2u, 0));
-
-   /* Several: the lowest ordinal, whatever the list's order */
-   test_display(&d[0], 4, VIDEO_WINDOW_CONNECTION_BUILT_IN, false);
-   test_display(&d[1], 1, VIDEO_WINDOW_CONNECTION_BUILT_IN, true);
-   test_display(&d[2], 3, VIDEO_WINDOW_CONNECTION_BUILT_IN, false);
-   video_windows_route(d, 3, screens, 2, &r);
-   CHECK(test_routed(&r, 3, 2u, 0u, 0));
-   d[0].connection = d[2].connection = VIDEO_WINDOW_CONNECTION_DIRECT;
-   video_windows_route(d, 3, screens, 2, &r);
-   CHECK(test_routed(&r, 3, 1u, 0u, 1));
-   /* No ordinal: not for Auto, even external and listed last */
-   test_display(&d[0], 1, VIDEO_WINDOW_CONNECTION_UNKNOWN, true);
-   test_display(&d[1], 3, VIDEO_WINDOW_CONNECTION_BUILT_IN, false);
-   test_display(&d[2], 0, VIDEO_WINDOW_CONNECTION_DIRECT, false);
-   video_windows_route(d, 3, screens, 2, &r);
-   CHECK(test_routed(&r, 3, 2u, 0u, 0));
-
-   /* The picker: display N takes the screen that names it, and the
-    * external rule is Auto's alone */
-   test_display(&d[0], 1, VIDEO_WINDOW_CONNECTION_UNKNOWN, true);
-   test_display(&d[1], 2, VIDEO_WINDOW_CONNECTION_BUILT_IN, false);
-   test_display(&d[2], 3, VIDEO_WINDOW_CONNECTION_DIRECT, false);
-   screens[1].monitor = 2;
-   video_windows_route(d, 3, screens, 2, &r);
-   CHECK(test_routed(&r, 2, 2u, 0u, 0));
-   screens[1].monitor = 3;
-   video_windows_route(d, 3, screens, 2, &r);
-   CHECK(test_routed(&r, 3, 2u, 0u, 0));
-   /* even without product info, and below API 31 */
-   d[1].physical = false;
-   screens[1].monitor = 2;
-   video_windows_route(d, 3, screens, 2, &r);
-   CHECK(test_routed(&r, 2, 2u, 0u, 0));
-   d[1].physical = true;
-   /* or off */
-   d[1].on = false;
-   video_windows_route(d, 3, screens, 2, &r);
-   CHECK(test_routed(&r, 2, 2u, 0u, 0));
-   d[1].on = true;
-   /* N the main window's own display, or missing: the screen stays */
-   screens[1].monitor = 1;
-   video_windows_route(d, 3, screens, 2, &r);
-   CHECK(test_routed(&r, 0, 0u, 2u, 0));
-   screens[1].monitor = 7;
-   video_windows_route(d, 3, screens, 2, &r);
-   CHECK(test_routed(&r, 0, 0u, 2u, 0));
-   d[1].valid = false;
-   screens[1].monitor = 2;
-   video_windows_route(d, 3, screens, 2, &r);
-   CHECK(test_routed(&r, 0, 0u, 2u, 0));
-   d[1].valid = true;
-   d[1].is_private = true;
-   video_windows_route(d, 3, screens, 2, &r);
-   CHECK(test_routed(&r, 0, 0u, 2u, 0));
-   d[1].is_private = false;
-
-   /* One display at a time: a screen bound for another stays */
-   screens[1].monitor = 2;
-   screens[2].monitor = 3;
-   video_windows_route(d, 3, screens, 3, &r);
-   CHECK(test_routed(&r, 2, 2u, 4u, 0));
-   /* Auto screen 1 on the monitor, screen 2 named to it: shared */
-   screens[1].monitor = 0;
-   video_windows_route(d, 3, screens, 3, &r);
-   CHECK(test_routed(&r, 3, 5u, 0u, 1));
-   screens[2].monitor = 0;
-
-   /* Only Separate screens go; screen 0 only by the external rule */
-   screens[1].mode = VIDEO_WINDOW_ATTACHED;
-   screens[2].mode = VIDEO_WINDOW_HIDDEN;
-   video_windows_route(d, 3, screens, 3, &r);
-   CHECK(test_routed(&r, 0, 0u, 0u, 0));
-   screens[1].mode = screens[2].mode = VIDEO_WINDOW_SEPARATE;
-   video_windows_route(d, 3, screens, 1, &r);
-   CHECK(test_routed(&r, 0, 0u, 0u, 0));
-   video_windows_route(d, 3, NULL, 3, &r);
-   CHECK(test_routed(&r, 0, 0u, 0u, 0));
-   video_windows_route(d, 3, screens, 99, &r);
-   CHECK(test_routed(&r, 3, 0xfdu, 0u, 1));
+   test_display(&d[0], 1, VIDEO_WINDOW_CONNECTION_UNKNOWN, own == 1);
+   test_display(&d[1], 2, VIDEO_WINDOW_CONNECTION_UNKNOWN, own == 2);
+   test_display(&d[2], 3, VIDEO_WINDOW_CONNECTION_UNKNOWN, own == 3);
+   strcpy(d[0].name, "Built-in Screen");
+   strcpy(d[1].name, "Screen-2");
+   strcpy(d[2].name, "DP Screen");
 }
 
 static void test_display_key(void)
@@ -353,6 +192,915 @@ static void test_display_record(void)
    /* is_default fits in padding: the eight records the JNI frame
     * holds keep their size */
    CHECK(sizeof(video_window_display_t) == 116);
+}
+
+#define PLACE_MENU VIDEO_WINDOW_UI_BIT(VIDEO_WINDOW_UI_MENU)
+#define PLACE_NOTE VIDEO_WINDOW_UI_BIT(VIDEO_WINDOW_UI_NOTIFICATIONS)
+
+static video_window_display_t place_d[3];
+static char place_screen[RETRO_VIDEO_VIEWS_MAX][VIDEO_WINDOW_DISPLAY_NAME_SIZE];
+static char place_menu[VIDEO_WINDOW_DISPLAY_NAME_SIZE];
+static video_windows_place_in_t place_in;
+static video_windows_host_t place_host;
+static video_windows_route_t place_r;
+
+/* The Thor with RetroArch on display @own, the top panel the default
+ * one, @count displays listed: Auto everywhere, Menu Follows Game Screen 1,
+ * no content, the menu open, a host that decides afresh */
+static void place_reset(unsigned own, unsigned count)
+{
+   test_thor(place_d, own);
+   place_d[0].is_default = true;
+   memset(place_screen, 0, sizeof(place_screen));
+   place_menu[0] = '\0';
+   memset(&place_in, 0, sizeof(place_in));
+   place_in.displays       = place_d;
+   place_in.count          = count;
+   place_in.screen_display =
+      (const char (*)[VIDEO_WINDOW_DISPLAY_NAME_SIZE])place_screen;
+   place_in.menu_display   = place_menu;
+   place_in.menu_open      = true;
+   video_windows_host_reset(&place_host);
+}
+
+/* Content with @num_screens screens, 0 for none; the menu closes with
+ * it and is open without */
+static void place_game(unsigned num_screens, bool mapless)
+{
+   place_in.num_screens = num_screens;
+   place_in.mapless     = mapless;
+   place_in.menu_open   = !num_screens;
+}
+
+/* RetroArch now on display @own, 0 for none */
+static void place_own(unsigned own)
+{
+   unsigned i;
+   for (i = 0; i < place_in.count; i++)
+      place_d[i].own = place_d[i].ordinal == own;
+}
+
+static void place_at(retro_time_t now)
+{
+   place_in.now = now;
+   video_windows_place(&place_host, &place_in, &place_r);
+}
+
+static bool placed(unsigned display, unsigned screens,
+      unsigned main_screens, unsigned ui, unsigned move)
+{
+   if (     place_r.display == display && place_r.screens == screens
+         && place_r.main_screens == main_screens && place_r.ui == ui
+         && place_r.move == move)
+      return true;
+   printf("placed display %u screens %u main %u ui %u move %u\n",
+         place_r.display, place_r.screens, place_r.main_screens,
+         place_r.ui, place_r.move);
+   return false;
+}
+
+/* Where the screens, the menu and the notifications go, with RetroArch
+ * already on the display placement decides for it */
+static void test_place_where(void)
+{
+   /* place: targets */
+   place_reset(1, 3);
+   place_at(0);
+   CHECK(placed(0, 0u, 0u, 0u, 0));
+   CHECK(place_r.own == 1 && place_r.menu == 1 && !place_r.target[0]);
+   place_game(2, false);
+   place_at(0);
+   CHECK(placed(2, 2u, 1u, 0u, 0));
+   CHECK(place_r.target[0] == 1 && place_r.target[1] == 2);
+   CHECK(!place_r.target[2] && !place_r.logo);
+   /* Off: not shown */
+   strcpy(place_screen[1], VIDEO_WINDOW_DISPLAY_OFF);
+   place_at(0);
+   CHECK(placed(0, 0u, 1u, 0u, 0) && !place_r.target[1]);
+   /* A name; one not listed is Auto */
+   strcpy(place_screen[1], "DP Screen");
+   place_at(0);
+   CHECK(placed(3, 2u, 1u, 0u, 0));
+   strcpy(place_screen[1], "Nowhere");
+   place_at(0);
+   CHECK(placed(2, 2u, 1u, 0u, 0));
+   /* Both on RetroArch's display: no Presentation */
+   place_reset(2, 3);
+   place_game(2, false);
+   strcpy(place_screen[0], "Screen-2");
+   place_at(0);
+   CHECK(placed(0, 0u, 3u, 0u, 0));
+   /* At most RETRO_VIDEO_VIEWS_MAX screens */
+   place_reset(1, 3);
+   place_game(99, false);
+   place_at(0);
+   CHECK(placed(2, 2u, 0xfdu, 0u, 0));
+   /* Nothing routed without a list or an own display */
+   place_in.displays = NULL;
+   place_at(0);
+   CHECK(placed(0, 0u, 0u, 0u, 0) && !place_r.own && !place_r.menu);
+   place_in.displays = place_d;
+   place_in.count    = 0;
+   place_at(0);
+   CHECK(placed(0, 0u, 0u, 0u, 0) && !place_r.own);
+   place_in.count    = 3;
+   place_own(0);
+   place_at(0);
+   CHECK(placed(0, 0u, 0u, 0u, 0) && !place_r.own);
+   /* A game without a map shows even when Off, in the main window */
+   place_reset(1, 3);
+   place_game(1, true);
+   strcpy(place_screen[0], VIDEO_WINDOW_DISPLAY_OFF);
+   place_at(0);
+   CHECK(placed(0, 0u, 1u, 0u, 0) && place_r.target[0] == 1);
+   /* and only there, with RetroArch moved off Game Screen 1's display: the
+    * open menu has that display */
+   place_reset(2, 3);
+   place_game(1, true);
+   strcpy(place_screen[0], "Screen-2");
+   place_at(0);
+   CHECK(placed(0, 0u, 1u, 0u, 0));
+   place_own(1);
+   place_at(0);
+   CHECK(place_r.target[0] == 2 && placed(0, 0u, 1u, PLACE_MENU, 0));
+   place_in.menu_open = true;
+   place_at(0);
+   CHECK(placed(2, 0u, 1u, PLACE_MENU, 0) && !place_r.logo);
+
+   /* place: Auto */
+   /* A DIRECT or TRANSITIVE monitor takes Game Screen 1, and Game Screen 2 the
+    * default display */
+   place_reset(3, 3);
+   place_d[2].connection = VIDEO_WINDOW_CONNECTION_DIRECT;
+   place_game(2, false);
+   place_at(0);
+   CHECK(placed(1, 2u, 1u, 0u, 0));
+   CHECK(place_r.target[0] == 3 && place_r.target[1] == 1);
+   CHECK(place_r.menu == 3);
+   place_d[2].connection = VIDEO_WINDOW_CONNECTION_TRANSITIVE;
+   place_at(0);
+   CHECK(placed(1, 2u, 1u, 0u, 0));
+   /* not without product info */
+   place_d[2].physical = false;
+   place_own(1);
+   place_at(0);
+   CHECK(placed(2, 2u, 1u, 0u, 0) && place_r.target[0] == 1);
+   /* No default display listed: RetroArch's own stands in */
+   place_reset(2, 3);
+   place_d[0].is_default = false;
+   place_game(2, false);
+   place_at(0);
+   CHECK(place_r.target[0] == 2 && place_r.target[1] == 1);
+   CHECK(placed(1, 2u, 1u, 0u, 0));
+   /* Game Screens 3 and up: the default display */
+   place_reset(1, 3);
+   place_game(3, false);
+   place_at(0);
+   CHECK(placed(2, 2u, 5u, 0u, 0) && place_r.target[2] == 1);
+   /* Private, off or invalid: not Auto's */
+   place_d[1].is_private = true;
+   place_at(0);
+   CHECK(place_r.target[1] == 3);
+   place_d[1].is_private = false;
+   place_d[1].on         = false;
+   place_at(0);
+   CHECK(place_r.target[1] == 3);
+   place_d[1].on         = true;
+   place_d[1].valid      = false;
+   place_at(0);
+   CHECK(place_r.target[1] == 3);
+   place_d[1].valid      = true;
+   /* A refused display is still Auto's */
+   place_own(2);
+   place_d[1].refused = true;
+   place_at(0);
+   CHECK(place_r.target[1] == 2);
+   CHECK(placed(1, 5u, 2u, PLACE_MENU | PLACE_NOTE, 0));
+   /* Menu Display Auto is Game Screen 1's Auto choice */
+   place_reset(1, 3);
+   place_in.menu_follows = VIDEO_MENU_FOLLOWS_SEPARATE;
+   place_at(0);
+   CHECK(place_r.menu == 1);
+   strcpy(place_menu, VIDEO_WINDOW_DISPLAY_OFF);
+   place_at(0);
+   CHECK(place_r.menu == 1);
+   strcpy(place_menu, "Nowhere");
+   place_at(0);
+   CHECK(place_r.menu == 1);
+   place_d[2].connection = VIDEO_WINDOW_CONNECTION_DIRECT;
+   place_own(3);
+   place_menu[0] = '\0';
+   place_at(0);
+   CHECK(place_r.menu == 3 && placed(0, 0u, 0u, 0u, 0));
+   strcpy(place_menu, "Screen-2");
+   place_own(2);
+   place_at(0);
+   CHECK(place_r.menu == 2 && placed(0, 0u, 0u, 0u, 0));
+
+   /* place: menu follows an Off screen */
+   place_reset(2, 3);
+   place_in.menu_follows = 1;
+   strcpy(place_screen[1], VIDEO_WINDOW_DISPLAY_OFF);
+   place_at(0);
+   CHECK(place_r.menu == 2 && placed(0, 0u, 0u, 0u, 0));
+   /* the default display while a monitor has Game Screen 1 */
+   place_reset(1, 3);
+   place_d[2].connection = VIDEO_WINDOW_CONNECTION_DIRECT;
+   place_in.menu_follows = 1;
+   strcpy(place_screen[1], VIDEO_WINDOW_DISPLAY_OFF);
+   place_at(0);
+   CHECK(place_r.menu == 1 && placed(0, 0u, 0u, 0u, 0));
+   /* or a screen the content does not have */
+   place_reset(1, 3);
+   place_in.menu_follows = 1;
+   strcpy(place_screen[1], "DP Screen");
+   place_game(1, false);
+   place_at(0);
+   CHECK(place_r.menu == 3 && !place_r.target[1]);
+   CHECK(placed(0, 0u, 1u, PLACE_MENU, 0));
+   place_in.menu_follows = 5;
+   place_at(0);
+   CHECK(place_r.menu == 1 && placed(0, 0u, 1u, 0u, 0));
+   /* Out of range: Separate */
+   place_in.menu_follows = 99;
+   strcpy(place_menu, "Screen-2");
+   place_at(0);
+   CHECK(place_r.menu == 2);
+
+   /* place: in use */
+   /* A display is in use while it shows a screen or the open menu */
+   place_reset(1, 3);
+   place_in.menu_follows = 1;
+   place_game(1, false);
+   place_at(0);
+   CHECK(placed(0, 0u, 1u, PLACE_MENU, 0));
+   place_in.menu_open = true;
+   place_at(0);
+   CHECK(placed(2, 0u, 1u, PLACE_MENU, 0));
+   /* Notifications never put one in use */
+   place_in.menu_open     = false;
+   place_in.notifications = VIDEO_NOTIFICATIONS_WITH_MENU;
+   place_at(0);
+   CHECK(placed(0, 0u, 1u, PLACE_MENU, 0));
+
+   /* place: three displays */
+   /* One Presentation, the lowest screen's; a third display's screens
+    * join the main window */
+   place_reset(1, 3);
+   place_game(3, false);
+   strcpy(place_screen[1], "DP Screen");
+   strcpy(place_screen[2], "Screen-2");
+   place_at(0);
+   CHECK(placed(3, 2u, 5u, 0u, 0));
+   /* and so does the menu's */
+   place_in.menu_follows = VIDEO_MENU_FOLLOWS_SEPARATE;
+   strcpy(place_menu, "Screen-2");
+   place_in.menu_open    = true;
+   place_at(0);
+   CHECK(placed(3, 2u, 5u, 0u, 0));
+   /* A refused display never has it: the next one does */
+   place_own(3);
+   place_d[2].refused = true;
+   place_at(0);
+   CHECK(placed(1, 1u, 6u, PLACE_NOTE, 0));
+
+   /* place: logo */
+   /* The menu on a refusing display, the screens elsewhere: the main
+    * window has nothing to show until the menu opens there */
+   place_reset(1, 3);
+   place_d[0].refused    = true;
+   place_in.menu_follows = VIDEO_MENU_FOLLOWS_SEPARATE;
+   strcpy(place_menu, "Built-in Screen");
+   strcpy(place_screen[0], "Screen-2");
+   place_game(2, false);
+   place_at(0);
+   CHECK(placed(2, 3u, 0u, PLACE_NOTE, 0) && place_r.logo);
+   place_in.menu_open = true;
+   place_at(0);
+   CHECK(placed(2, 3u, 0u, PLACE_NOTE, 0) && !place_r.logo);
+   /* Not with no game */
+   place_game(0, false);
+   place_at(0);
+   CHECK(placed(0, 0u, 0u, 0u, 0) && !place_r.logo);
+   /* A game whose screens are all Off */
+   place_reset(1, 3);
+   strcpy(place_screen[0], VIDEO_WINDOW_DISPLAY_OFF);
+   strcpy(place_screen[1], VIDEO_WINDOW_DISPLAY_OFF);
+   place_game(2, false);
+   place_at(0);
+   CHECK(placed(0, 0u, 0u, 0u, 0) && place_r.logo);
+
+   /* place: notifications */
+   /* With the Menu: a closed menu's display has no window for a
+    * mapless game; open, the menu's window has them */
+   place_reset(1, 3);
+   place_in.menu_follows  = 1;
+   place_in.notifications = VIDEO_NOTIFICATIONS_WITH_MENU;
+   place_game(1, true);
+   place_at(0);
+   CHECK(placed(0, 0u, 1u, PLACE_MENU, 0));
+   place_in.menu_open = true;
+   place_at(0);
+   CHECK(placed(2, 0u, 1u, PLACE_MENU | PLACE_NOTE, 0));
+   /* With the Game: a game without a map has them in the main window */
+   place_in.notifications = VIDEO_NOTIFICATIONS_WITH_GAME;
+   place_at(0);
+   CHECK(placed(2, 0u, 1u, PLACE_MENU, 0));
+   /* With the Menu, the menu in the main window: there too */
+   place_in.notifications = VIDEO_NOTIFICATIONS_WITH_MENU;
+   place_in.menu_follows  = 0;
+   place_game(2, false);
+   place_in.menu_open     = true;
+   place_at(0);
+   CHECK(placed(2, 2u, 1u, 0u, 0));
+   /* Closed, in Game Screen 2's window on the menu's display */
+   place_in.menu_follows = 1;
+   place_in.menu_open    = false;
+   place_at(0);
+   CHECK(placed(2, 2u, 1u, PLACE_MENU | PLACE_NOTE, 0));
+   /* No window there, the game's: a one-screen game */
+   place_game(1, false);
+   place_at(0);
+   CHECK(placed(0, 0u, 1u, PLACE_MENU, 0));
+   /* or a menu display with no screen */
+   place_game(2, false);
+   place_in.menu_follows = VIDEO_MENU_FOLLOWS_SEPARATE;
+   strcpy(place_menu, "DP Screen");
+   place_at(0);
+   CHECK(placed(2, 2u, 1u, 0u, 0));
+   /* With the Menu, the menu closed on the refusing display RetroArch
+    * has: the main window, not the game's */
+   place_reset(1, 3);
+   place_d[0].refused     = true;
+   place_in.notifications = VIDEO_NOTIFICATIONS_WITH_MENU;
+   place_in.menu_follows  = VIDEO_MENU_FOLLOWS_SEPARATE;
+   strcpy(place_menu, "Built-in Screen");
+   strcpy(place_screen[0], "Screen-2");
+   place_game(2, false);
+   place_at(0);
+   CHECK(place_r.menu == 1 && placed(2, 3u, 0u, 0u, 0));
+   /* Game Screen 2 on it, an open menu drawn off its display: they stay
+    * with the menu, in the main window */
+   strcpy(place_menu, "Screen-2");
+   strcpy(place_screen[0], "DP Screen");
+   strcpy(place_screen[1], "Built-in Screen");
+   place_in.menu_open = true;
+   place_at(0);
+   CHECK(place_r.menu == 2 && placed(3, 1u, 2u, 0u, 0));
+}
+
+/* When RetroArch moves, and the order its windows come and go in */
+static void test_place_moves(void)
+{
+   /* place: main window's display */
+   /* Cocoon starts RetroArch on the bottom panel: it moves to the menu's
+    * display, the top one, and the bottom one is free */
+   place_reset(2, 3);
+   place_at(0);
+   CHECK(placed(0, 0u, 0u, 0u, 1));
+   place_at(100000);
+   CHECK(placed(0, 0u, 0u, 0u, 0) && place_host.moving == 1);
+   place_own(1);
+   place_at(200000);
+   CHECK(placed(0, 0u, 0u, 0u, 0) && !place_host.moving);
+   /* A setting changing while a move is under way: deferred, decided
+    * once it arrives */
+   place_reset(2, 3);
+   place_at(0);
+   CHECK(placed(0, 0u, 0u, 0u, 1));
+   place_in.menu_follows = VIDEO_MENU_FOLLOWS_SEPARATE;
+   strcpy(place_menu, "DP Screen");
+   place_at(100000);
+   CHECK(placed(3, 0u, 0u, PLACE_MENU | PLACE_NOTE, 0));
+   CHECK(place_host.moving == 1);
+   place_own(1);
+   place_at(200000);
+   CHECK(placed(0, 0u, 0u, 0u, 3));
+   /* Menu Follows alone decides again, and so does Menu Display */
+   place_reset(1, 3);
+   place_at(0);
+   CHECK(placed(0, 0u, 0u, 0u, 0));
+   place_in.menu_follows = 1;
+   place_at(100000);
+   CHECK(placed(0, 0u, 0u, 0u, 2));
+   place_reset(1, 3);
+   place_in.menu_follows = VIDEO_MENU_FOLLOWS_SEPARATE;
+   place_at(0);
+   CHECK(placed(0, 0u, 0u, 0u, 0));
+   strcpy(place_menu, "DP Screen");
+   place_at(100000);
+   CHECK(placed(0, 0u, 0u, 0u, 3));
+   /* A display this game may use that refuses: RetroArch goes there,
+    * once its own display's Presentation shows */
+   place_reset(1, 3);
+   strcpy(place_screen[1], "DP Screen");
+   place_game(2, false);
+   place_at(0);
+   CHECK(placed(3, 2u, 1u, 0u, 0));
+   place_d[2].refused = true;
+   place_at(100000);
+   CHECK(placed(1, 1u, 2u, PLACE_MENU | PLACE_NOTE, 0));
+   CHECK(place_host.make == 1 && place_host.host == 3);
+   place_in.shown = 1;
+   place_at(200000);
+   CHECK(placed(1, 1u, 2u, PLACE_MENU | PLACE_NOTE, 3));
+   place_own(3);
+   place_at(300000);
+   CHECK(placed(1, 1u, 2u, PLACE_MENU | PLACE_NOTE, 0));
+   CHECK(!place_host.moving && !place_host.make);
+   /* A refusal clearing decides nothing */
+   place_d[2].refused = false;
+   place_at(400000);
+   CHECK(placed(1, 1u, 2u, PLACE_MENU | PLACE_NOTE, 0));
+   /* Nor when it clears as RetroArch arrives */
+   place_reset(1, 3);
+   strcpy(place_screen[1], "DP Screen");
+   place_game(2, false);
+   place_at(0);
+   place_d[2].refused = true;
+   place_at(100000);
+   place_in.shown = 1;
+   place_at(200000);
+   CHECK(place_r.move == 3);
+   place_own(3);
+   place_d[2].refused = false;
+   place_at(300000);
+   CHECK(placed(1, 1u, 2u, PLACE_MENU | PLACE_NOTE, 0));
+   /* A names change forgets it: back to Game Screen 1's display */
+   strcpy(place_d[1].name, "Screen-3");
+   place_at(400000);
+   CHECK(place_r.move == 1);
+   /* Two displays that refuse: Game Screen 2's before the menu's */
+   place_reset(1, 3);
+   place_d[1].refused    = true;
+   place_d[2].refused    = true;
+   place_in.menu_follows = VIDEO_MENU_FOLLOWS_SEPARATE;
+   strcpy(place_menu, "Screen-2");
+   strcpy(place_screen[1], "DP Screen");
+   place_game(2, false);
+   place_at(0);
+   place_in.shown = 1;
+   place_at(100000);
+   CHECK(place_r.move == 3);
+   /* Game Screen 1's before Game Screen 2's */
+   place_reset(1, 3);
+   place_d[1].refused = true;
+   place_d[2].refused = true;
+   strcpy(place_screen[0], "Screen-2");
+   strcpy(place_screen[1], "DP Screen");
+   place_game(2, false);
+   place_at(0);
+   CHECK(placed(0, 0u, 3u, 0u, 2));
+
+   /* place: one-screen game, menu on a refusing display */
+   /* The game wins: the menu opens over it */
+   place_reset(2, 3);
+   place_d[0].refused    = true;
+   place_in.menu_follows = VIDEO_MENU_FOLLOWS_SEPARATE;
+   strcpy(place_menu, "Built-in Screen");
+   strcpy(place_screen[0], "Screen-2");
+   place_game(1, true);
+   place_at(0);
+   CHECK(placed(0, 0u, 1u, 0u, 0) && !place_r.logo);
+   place_in.menu_open = true;
+   place_at(100000);
+   CHECK(placed(0, 0u, 1u, 0u, 0) && !place_r.logo);
+   /* One that takes a Presentation: the menu there while open, the
+    * display free while it is closed */
+   place_d[0].refused = false;
+   place_in.menu_open = false;
+   place_at(200000);
+   CHECK(placed(0, 0u, 1u, PLACE_MENU, 0));
+   place_in.menu_open = true;
+   place_at(300000);
+   CHECK(placed(1, 0u, 1u, PLACE_MENU, 0));
+   /* Its map arriving, the screen count the same: the menu's refusing
+    * display, once Game Screen 1's Presentation shows */
+   place_reset(2, 3);
+   place_d[0].refused    = true;
+   place_in.menu_follows = VIDEO_MENU_FOLLOWS_SEPARATE;
+   strcpy(place_menu, "Built-in Screen");
+   strcpy(place_screen[0], "Screen-2");
+   place_game(1, true);
+   place_at(0);
+   CHECK(placed(0, 0u, 1u, 0u, 0));
+   place_in.mapless = false;
+   place_at(100000);
+   CHECK(placed(2, 1u, 0u, PLACE_NOTE, 0));
+   place_in.shown = 2;
+   place_at(200000);
+   CHECK(placed(2, 1u, 0u, PLACE_NOTE, 1));
+
+   /* place: make before break at start */
+   /* Long after RetroArch last moved, a game still waits for its
+    * Presentation; Android putting RetroArch elsewhere drops the wait */
+   place_reset(1, 3);
+   place_in.menu_follows = 1;
+   place_at(0);
+   CHECK(placed(0, 0u, 0u, 0u, 2));
+   place_own(2);
+   place_at(100000);
+   place_game(2, false);
+   place_at(3000000);
+   CHECK(placed(2, 2u, 1u, PLACE_MENU, 0) && place_host.make == 2);
+   place_own(3);
+   place_in.shown = 2;
+   place_at(3100000);
+   CHECK(!place_r.move && !place_host.make);
+   /* Menu Follows Game Screen 2, on the bottom panel: with no game,
+    * RetroArch there */
+   place_reset(1, 3);
+   place_in.menu_follows = 1;
+   place_at(0);
+   CHECK(placed(0, 0u, 0u, 0u, 2));
+   place_own(2);
+   place_at(100000);
+   CHECK(placed(0, 0u, 0u, 0u, 0));
+   /* A two-screen game: Game Screen 2's Presentation on the bottom panel
+    * first, the main window showing Game Screen 1, then the move */
+   place_game(2, false);
+   place_at(200000);
+   CHECK(placed(2, 2u, 1u, PLACE_MENU, 0) && place_host.make == 2);
+   place_at(300000);
+   CHECK(placed(2, 2u, 1u, PLACE_MENU, 0));
+   place_in.shown = 2;
+   place_at(400000);
+   CHECK(placed(2, 2u, 1u, PLACE_MENU, 1));
+   place_at(500000);
+   CHECK(placed(2, 2u, 1u, PLACE_MENU, 0));
+   place_own(1);
+   place_at(600000);
+   CHECK(placed(2, 2u, 1u, PLACE_MENU, 0));
+   CHECK(!place_host.moving && !place_host.make);
+
+   /* place: keep at close */
+   /* RetroArch moves under the Presentation, which stays, not drawn,
+    * until the main window has drawn there */
+   place_game(0, false);
+   place_at(700000);
+   CHECK(placed(2, 0u, 0u, 0u, 2) && place_r.keep == 2);
+   place_at(800000);
+   CHECK(placed(2, 0u, 0u, 0u, 0) && place_r.keep == 2);
+   place_own(2);
+   place_at(900000);
+   CHECK(placed(2, 0u, 0u, 0u, 0) && place_r.keep == 2);
+   place_at(1000000);
+   CHECK(place_r.keep == 2);
+   place_at(1100000);
+   CHECK(place_r.keep == 2);
+   place_at(1200000);
+   CHECK(placed(0, 0u, 0u, 0u, 0) && !place_r.keep);
+   /* A swap: the move comes first, under the Presentation; the display
+    * left gets one after the keep */
+   place_reset(1, 3);
+   place_game(2, false);
+   place_at(0);
+   CHECK(placed(2, 2u, 1u, 0u, 0));
+   place_in.shown = 2;
+   strcpy(place_screen[0], "Screen-2");
+   strcpy(place_screen[1], "Built-in Screen");
+   place_at(100000);
+   CHECK(placed(2, 0u, 3u, 0u, 2) && place_r.keep == 2);
+   place_own(2);
+   place_at(200000);
+   place_at(300000);
+   place_at(400000);
+   CHECK(place_r.keep == 2);
+   place_at(500000);
+   CHECK(placed(1, 2u, 1u, 0u, 0) && !place_r.keep);
+   /* Kept, not drawn: the menu that follows Game Screen 2 is not in it */
+   place_reset(1, 3);
+   place_in.menu_follows = 1;
+   place_game(2, false);
+   place_at(0);
+   CHECK(placed(2, 2u, 1u, PLACE_MENU, 0));
+   place_in.shown = 2;
+   strcpy(place_screen[0], "Screen-2");
+   strcpy(place_screen[1], "Built-in Screen");
+   place_at(100000);
+   CHECK(placed(2, 0u, 3u, 0u, 2) && place_r.keep == 2);
+   /* A list change ends a keep */
+   place_reset(1, 3);
+   place_in.menu_follows = 1;
+   place_game(2, false);
+   place_at(0);
+   place_in.shown = 2;
+   place_game(0, false);
+   place_at(100000);
+   CHECK(place_r.keep == 2 && place_r.move == 2);
+   place_own(2);
+   place_at(200000);
+   CHECK(place_r.keep == 2);
+   strcpy(place_d[2].name, "HDMI Screen");
+   place_at(300000);
+   CHECK(placed(0, 0u, 0u, 0u, 0) && !place_r.keep);
+   /* So does RetroArch being put elsewhere */
+   place_reset(1, 3);
+   place_in.menu_follows = 1;
+   place_game(2, false);
+   place_at(0);
+   place_in.shown = 2;
+   place_game(0, false);
+   place_at(100000);
+   place_own(2);
+   place_at(200000);
+   CHECK(place_r.keep == 2);
+   place_own(3);
+   place_at(300000);
+   CHECK(!place_r.keep);
+   /* And the move under the Presentation failing, though a setting
+    * changed meanwhile moves RetroArch on at once */
+   place_reset(1, 3);
+   place_in.menu_follows = 1;
+   place_game(2, false);
+   place_at(0);
+   place_in.shown = 2;
+   place_game(0, false);
+   place_at(100000);
+   CHECK(place_r.keep == 2 && place_host.moving == 2);
+   place_in.menu_follows = VIDEO_MENU_FOLLOWS_SEPARATE;
+   strcpy(place_menu, "DP Screen");
+   place_in.move_failed = true;
+   place_at(200000);
+   place_in.move_failed = false;
+   CHECK(place_r.move == 3 && !place_r.keep);
+
+   /* place: menu open and close never move */
+   place_reset(1, 3);
+   place_d[0].refused    = true;
+   place_in.menu_follows = VIDEO_MENU_FOLLOWS_SEPARATE;
+   strcpy(place_menu, "Built-in Screen");
+   strcpy(place_screen[0], "Screen-2");
+   place_game(2, false);
+   place_at(0);
+   CHECK(placed(2, 3u, 0u, PLACE_NOTE, 0) && place_r.logo);
+   place_in.menu_open = true;
+   place_at(100000);
+   CHECK(placed(2, 3u, 0u, PLACE_NOTE, 0) && !place_r.logo);
+   place_in.menu_open = false;
+   place_at(200000);
+   CHECK(placed(2, 3u, 0u, PLACE_NOTE, 0) && place_r.logo);
+   /* Nor does RetroArch's own display changing */
+   place_own(2);
+   place_at(300000);
+   CHECK(placed(0, 0u, 3u, 0u, 0) && place_host.host == 1);
+   /* Nor Notifications */
+   place_in.notifications = VIDEO_NOTIFICATIONS_WITH_MENU;
+   place_at(400000);
+   CHECK(placed(0, 0u, 3u, 0u, 0) && place_host.host == 1);
+
+   /* place: failures */
+   /* A move that does not show in time gives its display up: what it
+    * would show stays in the main window, until the list changes */
+   place_reset(2, 3);
+   place_at(0);
+   CHECK(placed(0, 0u, 0u, 0u, 1));
+   place_at(VIDEO_WINDOWS_MOVE_USEC - 1);
+   CHECK(placed(0, 0u, 0u, 0u, 0) && place_host.moving == 1);
+   place_at(VIDEO_WINDOWS_MOVE_USEC);
+   CHECK(placed(0, 0u, 0u, 0u, 0));
+   CHECK(place_host.unable == 1u && !place_host.moving);
+   CHECK(place_host.host == 2);
+   strcpy(place_screen[2], "DP Screen");
+   place_at(VIDEO_WINDOWS_MOVE_USEC + 100000);
+   CHECK(placed(0, 0u, 0u, 0u, 0));
+   place_in.count = 2;
+   place_at(VIDEO_WINDOWS_MOVE_USEC + 200000);
+   CHECK(placed(0, 0u, 0u, 0u, 1) && !place_host.unable);
+   /* One the platform could not start: given up at once */
+   place_in.move_failed = true;
+   place_at(VIDEO_WINDOWS_MOVE_USEC + 300000);
+   CHECK(placed(0, 0u, 0u, 0u, 0) && place_host.unable == 1u);
+   place_in.move_failed = false;
+   /* A Presentation that never shows: the move after the time */
+   place_reset(2, 3);
+   place_in.menu_follows = 1;
+   place_at(0);
+   CHECK(placed(0, 0u, 0u, 0u, 0));
+   place_game(2, false);
+   place_at(100000);
+   CHECK(placed(2, 2u, 1u, PLACE_MENU, 0) && place_host.make == 2);
+   place_at(100000 + VIDEO_WINDOWS_MOVE_USEC);
+   CHECK(placed(2, 2u, 1u, PLACE_MENU, 1) && !place_host.make);
+   /* A display going away: Android moves RetroArch, placement decides
+    * again */
+   place_reset(1, 3);
+   place_in.menu_follows = 1;
+   place_at(0);
+   CHECK(placed(0, 0u, 0u, 0u, 2));
+   place_own(2);
+   place_at(100000);
+   place_in.count = 1;
+   place_own(1);
+   place_at(200000);
+   CHECK(placed(0, 0u, 0u, 0u, 0) && place_r.menu == 1);
+   /* A list change while a move is under way: asked again at once */
+   place_reset(2, 3);
+   place_at(0);
+   CHECK(placed(0, 0u, 0u, 0u, 1));
+   strcpy(place_d[2].name, "HDMI Screen");
+   place_at(100000);
+   CHECK(placed(0, 0u, 0u, 0u, 1));
+   /* A move that lands after its time: the display RetroArch is on is
+    * not unable, and arriving decides nothing */
+   place_reset(1, 3);
+   place_in.menu_follows = 1;
+   place_at(0);
+   CHECK(placed(0, 0u, 0u, 0u, 2));
+   place_at(VIDEO_WINDOWS_MOVE_USEC);
+   CHECK(place_host.unable == 2u && !place_host.moving);
+   place_own(2);
+   place_at(VIDEO_WINDOWS_MOVE_USEC + 100000);
+   CHECK(placed(0, 0u, 0u, 0u, 0));
+   CHECK(!place_host.unable && place_host.host == 1);
+   /* So a two-screen game's start makes Game Screen 2's Presentation there
+    * before the move */
+   place_game(2, false);
+   place_at(VIDEO_WINDOWS_MOVE_USEC + 200000);
+   CHECK(placed(2, 2u, 1u, PLACE_MENU, 0) && place_host.make == 2);
+   place_in.shown = 2;
+   place_at(VIDEO_WINDOWS_MOVE_USEC + 300000);
+   CHECK(placed(2, 2u, 1u, PLACE_MENU, 1));
+
+   /* place: map change mid-game */
+   /* Routed again once the start's time is up, RetroArch staying: it
+    * moved onto Game Screen 2's refusing display, and the game dropping
+    * Game Screen 2 leaves it there with Game Screen 1 on the Presentation */
+   place_reset(1, 3);
+   strcpy(place_screen[1], "DP Screen");
+   place_d[2].refused = true;
+   place_game(2, false);
+   place_at(0);
+   CHECK(placed(1, 1u, 2u, PLACE_MENU | PLACE_NOTE, 0));
+   place_in.shown = 1;
+   place_at(100000);
+   CHECK(place_r.move == 3);
+   place_own(3);
+   place_at(200000);
+   place_game(1, false);
+   place_at(VIDEO_WINDOWS_MOVE_USEC);
+   CHECK(placed(1, 1u, 0u, PLACE_MENU | PLACE_NOTE, 0) && place_r.logo);
+   CHECK(place_host.host == 3 && !place_host.make);
+   /* The map cleared: the frame in the main window */
+   place_game(1, true);
+   place_at(VIDEO_WINDOWS_MOVE_USEC + 100000);
+   CHECK(placed(0, 0u, 1u, PLACE_MENU, 0) && !place_r.logo);
+   /* Content close still moves */
+   place_in.shown = 0;
+   place_game(0, false);
+   place_at(VIDEO_WINDOWS_MOVE_USEC + 200000);
+   CHECK(placed(0, 0u, 0u, 0u, 1));
+   /* A first map a frame after a start without one is the start's */
+   place_reset(1, 3);
+   strcpy(place_screen[1], "DP Screen");
+   place_d[2].refused = true;
+   place_game(1, true);
+   place_at(1000000);
+   CHECK(placed(0, 0u, 1u, 0u, 0));
+   place_game(2, false);
+   place_at(1016667);
+   CHECK(placed(1, 1u, 2u, PLACE_MENU | PLACE_NOTE, 0));
+   CHECK(place_host.make == 1 && place_host.host == 3);
+   /* Not one that comes after the move's time */
+   place_reset(1, 3);
+   strcpy(place_screen[1], "DP Screen");
+   place_d[2].refused = true;
+   place_game(1, true);
+   place_at(1000000);
+   place_game(2, false);
+   place_at(1000000 + VIDEO_WINDOWS_MOVE_USEC);
+   CHECK(placed(0, 0u, 3u, 0u, 0) && !place_host.make);
+   /* Any map change soon after a start is the start's: a second screen
+    * a few frames in gets a two-screen start's make before break, and
+    * dropping it again decides again */
+   place_reset(1, 3);
+   strcpy(place_screen[1], "DP Screen");
+   place_d[2].refused = true;
+   place_game(1, false);
+   place_at(1000000);
+   CHECK(placed(0, 0u, 1u, 0u, 0));
+   place_game(2, false);
+   place_at(1050000);
+   CHECK(placed(1, 1u, 2u, PLACE_MENU | PLACE_NOTE, 0));
+   CHECK(place_host.make == 1 && place_host.host == 3);
+   place_game(1, false);
+   place_at(1100000);
+   CHECK(placed(0, 0u, 1u, 0u, 0));
+   CHECK(!place_host.make && place_host.host == 1);
+   /* A start's make, Game Screen 2 dropped as its Presentation shows: no
+    * move onto a display the game no longer uses */
+   place_reset(1, 3);
+   strcpy(place_screen[1], "DP Screen");
+   place_d[2].refused = true;
+   place_game(2, false);
+   place_at(1000000);
+   CHECK(place_host.make == 1 && place_host.host == 3);
+   place_in.shown = 1;
+   place_game(1, false);
+   place_at(1050000);
+   CHECK(placed(0, 0u, 1u, 0u, 0));
+   CHECK(!place_host.make && place_host.host == 1);
+   /* A start's move under way: the change is decided on arrival, and
+    * RetroArch may move again */
+   place_reset(1, 3);
+   strcpy(place_screen[1], "DP Screen");
+   place_d[2].refused = true;
+   place_game(2, false);
+   place_at(1000000);
+   place_in.shown = 1;
+   place_at(1050000);
+   CHECK(place_r.move == 3);
+   place_game(1, false);
+   place_at(1100000);
+   CHECK(!place_r.move && place_host.moving == 3);
+   place_own(3);
+   place_at(1150000);
+   CHECK(place_r.move == 1 && place_r.keep == 1);
+   /* A make asked late in the start, its map gone once the start's time
+    * is up: no move, though the Presentation shows or never does */
+   place_reset(1, 3);
+   strcpy(place_screen[1], "DP Screen");
+   place_d[2].refused = true;
+   place_game(1, false);
+   place_at(0);
+   place_game(2, false);
+   place_at(1900000);
+   CHECK(place_host.make == 1 && place_host.host == 3);
+   place_game(1, false);
+   place_at(2050000);
+   CHECK(placed(0, 0u, 1u, 0u, 0) && !place_host.make);
+   place_in.shown = 1;
+   place_at(2100000);
+   CHECK(placed(0, 0u, 1u, 0u, 0));
+   place_in.shown = 0;
+   place_at(1900000 + VIDEO_WINDOWS_MOVE_USEC);
+   CHECK(placed(0, 0u, 1u, 0u, 0) && !place_host.moving);
+   /* One a setting asked mid-game survives a map change: the move once
+    * the Presentation shows */
+   place_reset(1, 3);
+   strcpy(place_screen[2], "Built-in Screen");
+   place_d[2].refused = true;
+   place_game(2, false);
+   place_at(0);
+   CHECK(placed(2, 2u, 1u, 0u, 0));
+   strcpy(place_screen[1], "DP Screen");
+   place_at(3000000);
+   CHECK(place_host.make == 1 && place_host.host == 3);
+   place_game(3, false);
+   place_at(3050000);
+   CHECK(place_host.make == 1 && !place_r.move);
+   place_in.shown = 1;
+   place_at(3100000);
+   CHECK(place_r.move == 3);
+   /* Content replaced is a close and a start, decided once the new one
+    * is up: the old one closing and the new map coming move nothing */
+   place_reset(1, 3);
+   strcpy(place_screen[1], "DP Screen");
+   place_d[2].refused = true;
+   place_game(1, false);
+   place_at(0);
+   CHECK(placed(0, 0u, 1u, 0u, 0));
+   place_in.switching = true;
+   place_game(1, true);
+   place_at(100000);
+   CHECK(placed(0, 0u, 1u, 0u, 0));
+   place_game(2, false);
+   place_at(116667);
+   CHECK(placed(0, 0u, 3u, 0u, 0) && !place_host.make);
+   place_in.switching = false;
+   place_at(133333);
+   CHECK(placed(1, 1u, 2u, PLACE_MENU | PLACE_NOTE, 0));
+   CHECK(place_host.make == 1 && place_host.host == 3);
+   /* One whose load fails ends on the dummy core: a close */
+   place_reset(1, 3);
+   place_in.menu_follows = 1;
+   place_game(2, false);
+   place_at(0);
+   CHECK(placed(2, 2u, 1u, PLACE_MENU, 0));
+   place_in.shown     = 2;
+   place_in.switching = true;
+   place_game(0, false);
+   place_at(100000);
+   CHECK(!place_r.move && place_host.host == 1);
+   place_in.switching = false;
+   place_at(116667);
+   CHECK(placed(2, 0u, 0u, 0u, 2) && place_r.keep == 2);
+   /* A start without a map: its first map soon after is the start's */
+   place_reset(1, 3);
+   strcpy(place_screen[1], "DP Screen");
+   place_d[2].refused = true;
+   place_game(1, false);
+   place_at(0);
+   place_in.switching = true;
+   place_game(1, true);
+   place_at(5000000);
+   place_in.switching = false;
+   place_at(5016667);
+   CHECK(placed(0, 0u, 1u, 0u, 0));
+   place_game(2, false);
+   place_at(5033333);
+   CHECK(placed(1, 1u, 2u, PLACE_MENU | PLACE_NOTE, 0));
+   CHECK(place_host.make == 1);
 }
 
 static void test_selected_layout(void)
@@ -731,18 +1479,44 @@ static void test_windows_steps(void)
    CHECK(retire == 0 && create == 4u);
 }
 
+/* A window lives while it shows screens or a UI layer, or is kept */
+static void test_windows_steps_ui(void)
+{
+   video_windows_frame_t frame;
+   video_windows_held_t held;
+   unsigned retire, create;
+   memset(&frame, 0, sizeof(frame));
+   memset(&held, 0, sizeof(held));
+   frame.display = 2;
+   frame.window_ui[VIDEO_WINDOWS_PRESENTATION] =
+      VIDEO_WINDOW_UI_BIT(VIDEO_WINDOW_UI_MENU);
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 0 && create == 2u);
+   held.live       = 2u;
+   held.display[1] = 2;
+   frame.window_ui[VIDEO_WINDOWS_PRESENTATION] = 0;
+   frame.window_keep = 1u << VIDEO_WINDOWS_PRESENTATION;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 0 && create == 0);
+   frame.window_keep = 0;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 2u && create == 0);
+}
+
 int main(void)
 {
    test_windows_policy();
    test_windows_attached();
-   test_windows_route();
    test_display_key();
    test_display_record();
+   test_place_where();
+   test_place_moves();
    test_selected_layout();
    test_second_output_touch();
    test_window_events();
    test_window_place();
    test_windows_steps();
+   test_windows_steps_ui();
    if (failures)
       return 1;
    puts("video_windows: ok");

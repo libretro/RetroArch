@@ -2153,8 +2153,10 @@ static bool menu_input_views_fb_point(const gfx_display_t *p_disp,
 {
    struct video_viewport vp = {0};
 
-   /* Drivers keep the aspect once content has loaded. */
-   vp.full_dims             = layout->ui_dims;
+   /* Drivers keep the aspect once content has loaded. A window that
+    * shows no screen has no ui_dims: the UI is the whole window. */
+   vp.full_dims             = layout->num_placements
+      ? layout->ui_dims : video_driver_get_output_dims();
    video_driver_update_viewport(&vp, false, true, true);
 
    if (!VIDEO_SCALE_W(vp.dims) || !VIDEO_SCALE_H(vp.dims))
@@ -2388,9 +2390,12 @@ MENU_NOINLINE static void menu_input_get_touchscreen_hw_state(
    fb_height            = VIDEO_SCALE_H(p_disp->framebuf_dims);
    if (layout)
    {
-      /* The window: the canvas, unless that is offscreen. */
+      /* The window: the canvas, unless that is offscreen. One that
+       * shows no screen has neither. */
       unsigned dims     = layout->offscreen
          ? layout->ui_dims : layout->canvas_dims;
+      if (!layout->num_placements)
+         dims           = video_driver_get_output_dims();
       fb_width          = VIDEO_SCALE_W(dims);
       fb_height         = VIDEO_SCALE_H(dims);
    }
