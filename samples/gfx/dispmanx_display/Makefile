@@ -23,7 +23,7 @@ SOURCES   := dispmanx_display_test.c \
 CFLAGS    += -Wall -Werror=sign-compare -Werror=implicit-function-declaration \
              -std=gnu89 -g1 -O0 -I$(REPO_ROOT) -I$(LRC)/include \
              -I$(REPO_ROOT)/tools/platform_stubs/videocore \
-             -DHAVE_DISPMANX -DHAVE_THREADS
+             -DHAVE_DISPMANX -DHAVE_THREADS -DHAVE_OVERLAY
 LDFLAGS   += -lm -lpthread
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)

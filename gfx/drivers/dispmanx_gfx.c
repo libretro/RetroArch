@@ -14,6 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -38,6 +39,11 @@
 #include "../video_views.h"
 #include "../video_views_cpu.h"
 #include "../video_turn.h"
+#include "../../configuration.h"
+
+#ifdef HAVE_OVERLAY
+#include "../../input/input_overlay.h"
+#endif
 
 /* vc_dispmanx_element_change_attributes()'s change_flags bits, as the
  * userland's vc_vchi_dispmanx.h numbers them; bcm_host.h does not carry
@@ -116,6 +122,41 @@ struct dispmanx_surface
    bool dirty;
 };
 
+#ifdef HAVE_OVERLAY
+/* An input overlay image: an element of its own over its own resource,
+ * which the HVS crops, scales, mirrors and blends - nothing is drawn on
+ * the CPU after it is loaded */
+struct dispmanx_overlay_image
+{
+   VC_RECT_T dst_rect;
+   VC_RECT_T src_rect;
+   /* Texture and screen rectangles, 0..1, as the overlay sets them */
+   float tex[4];
+   float vert[4];
+   float alpha;
+   DISPMANX_RESOURCE_HANDLE_T resource;
+   DISPMANX_ELEMENT_HANDLE_T element;
+   DISPMANX_TRANSFORM_T transform;
+   unsigned dims;
+   unsigned opacity;
+};
+
+struct dispmanx_overlay
+{
+   struct dispmanx_overlay_image *img;
+   /* The rectangle the images are laid out on, as last laid out */
+   video_viewport_t base;
+   unsigned count;
+   bool enabled;
+   bool full_screen;
+   /* Something to tell the HVS with the next flip */
+   bool dirty;
+};
+
+/* Overlays sit above the menu, one layer an image */
+#define DISPMANX_OVERLAY_LAYER 2
+#endif
+
 struct dispmanx_video
 {
    DISPMANX_DISPLAY_HANDLE_T display;
@@ -148,6 +189,10 @@ struct dispmanx_video
     * the eventcount's wait window, so a callback landing between the
     * test and the park cannot be missed. */
    retro_atomic_int_t pageflip_pending;
+
+#ifdef HAVE_OVERLAY
+   struct dispmanx_overlay ov;
+#endif
 
    /* Where the frame shows on the screen, as the frontend lays it out:
     * aspect, integer scale and custom viewport alike */
@@ -296,62 +341,85 @@ static unsigned dispmanx_pitch(unsigned width, unsigned bpp)
    return (unsigned)ALIGN_UP(width * bpp, 16 * bpp);
 }
 
-/* @s shown over @vp's rectangle of the screen, turned by @transform:
- * what falls off the screen is cut from the source rather than handed
- * to the HVS. Marks @s dirty when where it shows changed. */
+/* @x,@y,@w x @h of the screen showing the 16.16 source rectangle
+ * @sx,@sy,@sw x @sh, mirrored across by @hflip and down by @vflip: what
+ * falls off the screen is cut from the source rather than handed to the
+ * HVS. False when none of it is on the screen. */
+static bool dispmanx_clip(const struct dispmanx_video *_dispvars,
+      int x, int y, int w, int h, uint32_t sx, uint32_t sy, uint32_t sw,
+      uint32_t sh, bool hflip, bool vflip, VC_RECT_T *dst, VC_RECT_T *src)
+{
+   int x1  = x + w;
+   int y1  = y + h;
+   int dw  = (int)VIDEO_SCALE_W(_dispvars->disp_dims);
+   int dh  = (int)VIDEO_SCALE_H(_dispvars->disp_dims);
+   int cl  = 0, cr = 0, ct = 0, cb = 0, t;
+   uint32_t fx, fy, fx1, fy1;
+
+   if (w <= 0 || h <= 0)
+      return false;
+   if (x < 0)
+   {
+      cl = -x;
+      x  = 0;
+   }
+   if (y < 0)
+   {
+      ct = -y;
+      y  = 0;
+   }
+   if (x1 > dw)
+   {
+      cr = x1 - dw;
+      x1 = dw;
+   }
+   if (y1 > dh)
+   {
+      cb = y1 - dh;
+      y1 = dh;
+   }
+   if (x1 <= x || y1 <= y)
+      return false;
+
+   /* Mirrored, the screen's left edge shows the source's right */
+   if (hflip)
+   {
+      t  = cl;
+      cl = cr;
+      cr = t;
+   }
+   if (vflip)
+   {
+      t  = ct;
+      ct = cb;
+      cb = t;
+   }
+   fx  = sx + (uint32_t)(((uint64_t)cl * sw) / (uint32_t)w);
+   fx1 = sx + sw - (uint32_t)(((uint64_t)cr * sw) / (uint32_t)w);
+   fy  = sy + (uint32_t)(((uint64_t)ct * sh) / (uint32_t)h);
+   fy1 = sy + sh - (uint32_t)(((uint64_t)cb * sh) / (uint32_t)h);
+
+   vc_dispmanx_rect_set(dst, (uint32_t)x, (uint32_t)y,
+         (uint32_t)(x1 - x), (uint32_t)(y1 - y));
+   vc_dispmanx_rect_set(src, fx, fy, fx1 - fx, fy1 - fy);
+   return true;
+}
+
+/* @s shown over @vp's rectangle of the screen, turned by @transform.
+ * Wholly off the screen it is left where it was. Marks @s dirty when
+ * where it shows changed. */
 static void dispmanx_surface_place(const struct dispmanx_video *_dispvars,
       struct dispmanx_surface *s, const video_viewport_t *vp,
       DISPMANX_TRANSFORM_T transform)
 {
    VC_RECT_T dst, src;
-   int x0      = VIDEO_POS_X(vp->pos);
-   int y0      = VIDEO_POS_Y(vp->pos);
-   int w       = (int)VIDEO_SCALE_W(vp->dims);
-   int h       = (int)VIDEO_SCALE_H(vp->dims);
-   int x1      = x0 + w;
-   int y1      = y0 + h;
-   int sw      = (int)VIDEO_SCALE_W(s->dims);
-   int sh      = (int)VIDEO_SCALE_H(s->dims);
-   int cx      = 0;
-   int cy      = 0;
-   uint32_t fx, fy, fw, fh;
+   bool half = transform == DISPMANX_ROTATE_180;
 
-   if (w <= 0 || h <= 0)
+   if (!dispmanx_clip(_dispvars, VIDEO_POS_X(vp->pos), VIDEO_POS_Y(vp->pos),
+            (int)VIDEO_SCALE_W(vp->dims), (int)VIDEO_SCALE_H(vp->dims),
+            0, 0, VIDEO_SCALE_W(s->dims) << 16, VIDEO_SCALE_H(s->dims) << 16,
+            half, half, &dst, &src))
       return;
-
-   if (x0 < 0)
-   {
-      cx = -x0;
-      x0 = 0;
-   }
-   if (y0 < 0)
-   {
-      cy = -y0;
-      y0 = 0;
-   }
-   if (x1 > (int)VIDEO_SCALE_W(_dispvars->disp_dims))
-      x1 = (int)VIDEO_SCALE_W(_dispvars->disp_dims);
-   if (y1 > (int)VIDEO_SCALE_H(_dispvars->disp_dims))
-      y1 = (int)VIDEO_SCALE_H(_dispvars->disp_dims);
-   /* Wholly off the screen: left where it was */
-   if (x1 <= x0 || y1 <= y0)
-      return;
-
-   /* The source in 16.16, scaled from the part of the rectangle shown */
-   fx = (uint32_t)(((uint64_t)cx * (uint32_t)sw << 16) / (uint32_t)w);
-   fy = (uint32_t)(((uint64_t)cy * (uint32_t)sh << 16) / (uint32_t)h);
-   fw = (uint32_t)(((uint64_t)(x1 - x0) * (uint32_t)sw << 16) / (uint32_t)w);
-   fh = (uint32_t)(((uint64_t)(y1 - y0) * (uint32_t)sh << 16) / (uint32_t)h);
-   /* Turned half round, the screen's left edge shows the source's right */
-   if (transform == DISPMANX_ROTATE_180)
-   {
-      fx = ((uint32_t)sw << 16) - fx - fw;
-      fy = ((uint32_t)sh << 16) - fy - fh;
-   }
-
-   vc_dispmanx_rect_set(&dst, (uint32_t)x0, (uint32_t)y0,
-         (uint32_t)(x1 - x0), (uint32_t)(y1 - y0));
-   vc_dispmanx_rect_set(&src, fx, fy, fw, fh);
 
    if (     memcmp(&dst, &s->dst_rect, sizeof(dst))
          || memcmp(&src, &s->src_rect, sizeof(src))
@@ -501,6 +569,292 @@ static void dispmanx_surface_update_async(const void *frame,
          &surface->bmp_rect);
 }
 
+#ifdef HAVE_OVERLAY
+/* Lays the images out on the frame's rectangle, or the whole screen,
+ * and tells the HVS what changed in @update: elements added, moved,
+ * faded or taken off */
+static void dispmanx_overlay_commit(struct dispmanx_video *_dispvars,
+      DISPMANX_UPDATE_HANDLE_T update)
+{
+   unsigned i;
+   video_viewport_t base;
+   struct dispmanx_overlay *ov = &_dispvars->ov;
+
+   if (ov->full_screen)
+   {
+      base.pos  = VIDEO_POS_PACK(0, 0);
+      base.dims = _dispvars->disp_dims;
+   }
+   else
+   {
+      base.pos  = _dispvars->vp.pos;
+      base.dims = _dispvars->vp.dims;
+   }
+   if (base.pos != ov->base.pos || base.dims != ov->base.dims)
+   {
+      ov->base = base;
+      ov->dirty = true;
+   }
+   if (!ov->dirty)
+      return;
+   ov->dirty = false;
+
+   for (i = 0; i < ov->count; i++)
+   {
+      VC_RECT_T dst, src;
+      VC_DISPMANX_ALPHA_T alpha;
+      struct dispmanx_overlay_image *o = &ov->img[i];
+      float bw   = (float)VIDEO_SCALE_W(base.dims);
+      float bh   = (float)VIDEO_SCALE_H(base.dims);
+      float fx   = VIDEO_POS_X(base.pos) + o->vert[0] * bw;
+      float fy   = VIDEO_POS_Y(base.pos) + o->vert[1] * bh;
+      float fw   = o->vert[2] * bw;
+      float fh   = o->vert[3] * bh;
+      float iw   = (float)(VIDEO_SCALE_W(o->dims) << 16);
+      float ih   = (float)(VIDEO_SCALE_H(o->dims) << 16);
+      bool hflip = fw < 0.0f;
+      bool vflip = fh < 0.0f;
+      int x0, y0, x1, y1;
+      unsigned opacity;
+      DISPMANX_TRANSFORM_T transform;
+
+      if (hflip)
+      {
+         fx += fw;
+         fw  = -fw;
+      }
+      if (vflip)
+      {
+         fy += fh;
+         fh  = -fh;
+      }
+      /* Both edges rounded, so images that meet still meet */
+      x0        = (int)floor(fx + 0.5f);
+      y0        = (int)floor(fy + 0.5f);
+      x1        = (int)floor(fx + fw + 0.5f);
+      y1        = (int)floor(fy + fh + 0.5f);
+      opacity   = (unsigned)((o->alpha < 0.0f ? 0.0f
+               : o->alpha > 1.0f ? 1.0f : o->alpha) * 255.0f + 0.5f);
+      transform = (DISPMANX_TRANSFORM_T)(
+              (hflip ? DISPMANX_FLIP_HRIZ : 0)
+            | (vflip ? DISPMANX_FLIP_VERT : 0));
+
+      /* Off, empty, transparent or off the screen: no element at all,
+       * so the HVS spends nothing on it */
+      if (     !ov->enabled || !o->resource || !opacity
+            || !dispmanx_clip(_dispvars, x0, y0, x1 - x0, y1 - y0,
+               (uint32_t)(o->tex[0] * iw), (uint32_t)(o->tex[1] * ih),
+               (uint32_t)(o->tex[2] * iw), (uint32_t)(o->tex[3] * ih),
+               hflip, vflip, &dst, &src))
+      {
+         if (o->element)
+            vc_dispmanx_element_remove(update, o->element);
+         o->element = 0;
+         continue;
+      }
+
+      if (!o->element)
+      {
+         alpha.flags   = (DISPMANX_FLAGS_ALPHA_T)(
+               DISPMANX_FLAGS_ALPHA_FROM_SOURCE | DISPMANX_FLAGS_ALPHA_MIX);
+         alpha.opacity = opacity;
+         alpha.mask    = 0;
+         o->element    = vc_dispmanx_element_add(update,
+               _dispvars->display, DISPMANX_OVERLAY_LAYER + (int)i, &dst,
+               o->resource, &src, DISPMANX_PROTECTION_NONE, &alpha, 0,
+               transform);
+      }
+      else if (   memcmp(&dst, &o->dst_rect, sizeof(dst))
+               || memcmp(&src, &o->src_rect, sizeof(src))
+               || transform != o->transform || opacity != o->opacity)
+         vc_dispmanx_element_change_attributes(update, o->element,
+               DISPMANX_CHANGE_OPACITY | DISPMANX_CHANGE_DEST_RECT
+               | DISPMANX_CHANGE_SRC_RECT | DISPMANX_CHANGE_TRANSFORM,
+               0, (uint8_t)opacity, &dst, &src, 0, transform);
+      o->dst_rect  = dst;
+      o->src_rect  = src;
+      o->transform = transform;
+      o->opacity   = opacity;
+   }
+}
+
+/* Every image's element off the screen and its resource gone */
+static void dispmanx_overlay_free(struct dispmanx_video *_dispvars)
+{
+   unsigned i;
+   struct dispmanx_overlay *ov = &_dispvars->ov;
+   bool shown                  = false;
+
+   for (i = 0; i < ov->count; i++)
+      shown = shown || ov->img[i].element;
+   if (shown)
+   {
+      dispmanx_drain_flips(_dispvars);
+      _dispvars->update = vc_dispmanx_update_start(0);
+      for (i = 0; i < ov->count; i++)
+         if (ov->img[i].element)
+            vc_dispmanx_element_remove(_dispvars->update,
+                  ov->img[i].element);
+      vc_dispmanx_update_submit_sync(_dispvars->update);
+   }
+   for (i = 0; i < ov->count; i++)
+      if (ov->img[i].resource)
+         vc_dispmanx_resource_delete(ov->img[i].resource);
+   free(ov->img);
+   ov->img   = NULL;
+   ov->count = 0;
+}
+
+static bool dispmanx_overlay_load(void *data, const void *image_data,
+      unsigned num_images)
+{
+   unsigned i;
+   uint32_t *row = NULL;
+   size_t row_cap = 0;
+   struct dispmanx_video *_dispvars   = (struct dispmanx_video*)data;
+   const struct texture_image *images = (const struct texture_image*)image_data;
+   struct dispmanx_overlay *ov;
+
+   if (!_dispvars)
+      return false;
+   ov = &_dispvars->ov;
+   dispmanx_overlay_free(_dispvars);
+   ov->dirty = true;
+   if (!num_images || !images)
+      return true;
+   if (!(ov->img = (struct dispmanx_overlay_image*)calloc(num_images,
+               sizeof(*ov->img))))
+      return false;
+   ov->count = num_images;
+
+   for (i = 0; i < num_images; i++)
+   {
+      unsigned x, y, pitch;
+      uint32_t vc_image_ptr = 0;
+      VC_RECT_T rect;
+      struct dispmanx_overlay_image *o = &ov->img[i];
+      const struct texture_image *img  = &images[i];
+
+      o->tex[2]  = o->tex[3]  = 1.0f;
+      o->vert[2] = o->vert[3] = 1.0f;
+      o->alpha   = 1.0f;
+      if (     !img->pixels || !img->width || !img->height
+            || img->pix10 || img->fp16)
+         continue;
+
+      /* As wide as its pitch, so the firmware's rows are the ones the
+       * upload sends; ARGB8888 is the overlay's own layout */
+      pitch = dispmanx_pitch(img->width, 4);
+      if ((size_t)pitch * img->height > row_cap)
+      {
+         uint32_t *grown = (uint32_t*)realloc(row,
+               (size_t)pitch * img->height);
+         if (!grown)
+            continue;
+         row     = grown;
+         row_cap = (size_t)pitch * img->height;
+      }
+      for (y = 0; y < img->height; y++)
+      {
+         const uint32_t *in = img->pixels + (size_t)y * img->width;
+         uint32_t *out      = row + (size_t)y * (pitch / 4);
+         if (img->supports_rgba)
+            for (x = 0; x < img->width; x++)
+               out[x] = (in[x] & 0xff00ff00u)
+                  | ((in[x] & 0xffu) << 16) | ((in[x] >> 16) & 0xffu);
+         else
+            memcpy(out, in, (size_t)img->width * 4);
+      }
+      if (!(o->resource = vc_dispmanx_resource_create(VC_IMAGE_ARGB8888,
+                  pitch / 4, img->height, &vc_image_ptr)))
+         continue;
+      o->dims = VIDEO_SCALE_PACK(img->width, img->height);
+      vc_dispmanx_rect_set(&rect, 0, 0, img->width, img->height);
+      vc_dispmanx_resource_write_data(o->resource, VC_IMAGE_ARGB8888,
+            (int)pitch, row, &rect);
+   }
+   free(row);
+   return true;
+}
+
+static void dispmanx_overlay_tex_geom(void *data, unsigned index,
+      float x, float y, float w, float h)
+{
+   struct dispmanx_video *_dispvars = (struct dispmanx_video*)data;
+   float *t;
+   if (!_dispvars || index >= _dispvars->ov.count)
+      return;
+   t = _dispvars->ov.img[index].tex;
+   if (t[0] != x || t[1] != y || t[2] != w || t[3] != h)
+   {
+      t[0] = x; t[1] = y; t[2] = w; t[3] = h;
+      _dispvars->ov.dirty = true;
+   }
+}
+
+static void dispmanx_overlay_vertex_geom(void *data, unsigned index,
+      float x, float y, float w, float h)
+{
+   struct dispmanx_video *_dispvars = (struct dispmanx_video*)data;
+   float *t;
+   if (!_dispvars || index >= _dispvars->ov.count)
+      return;
+   t = _dispvars->ov.img[index].vert;
+   if (t[0] != x || t[1] != y || t[2] != w || t[3] != h)
+   {
+      t[0] = x; t[1] = y; t[2] = w; t[3] = h;
+      _dispvars->ov.dirty = true;
+   }
+}
+
+static void dispmanx_overlay_enable(void *data, bool state)
+{
+   struct dispmanx_video *_dispvars = (struct dispmanx_video*)data;
+   if (_dispvars && _dispvars->ov.enabled != state)
+   {
+      _dispvars->ov.enabled = state;
+      _dispvars->ov.dirty   = true;
+   }
+}
+
+static void dispmanx_overlay_full_screen(void *data, bool enable)
+{
+   struct dispmanx_video *_dispvars = (struct dispmanx_video*)data;
+   if (_dispvars && _dispvars->ov.full_screen != enable)
+   {
+      _dispvars->ov.full_screen = enable;
+      _dispvars->ov.dirty       = true;
+   }
+}
+
+static void dispmanx_overlay_set_alpha(void *data, unsigned index, float mod)
+{
+   struct dispmanx_video *_dispvars = (struct dispmanx_video*)data;
+   if (     _dispvars && index < _dispvars->ov.count
+         && _dispvars->ov.img[index].alpha != mod)
+   {
+      _dispvars->ov.img[index].alpha = mod;
+      _dispvars->ov.dirty            = true;
+   }
+}
+
+static const video_overlay_interface_t dispmanx_overlay_interface = {
+   dispmanx_overlay_enable,
+   dispmanx_overlay_load,
+   NULL, /* load_textures */
+   dispmanx_overlay_tex_geom,
+   dispmanx_overlay_vertex_geom,
+   dispmanx_overlay_full_screen,
+   dispmanx_overlay_set_alpha
+};
+
+static void dispmanx_get_overlay_interface(void *data,
+      const video_overlay_interface_t **iface)
+{
+   *iface = &dispmanx_overlay_interface;
+}
+#endif
+
 static void dispmanx_surface_update(struct dispmanx_video *_dispvars,
       const void *frame, unsigned pitch, struct dispmanx_surface *surface)
 {
@@ -526,6 +880,9 @@ static void dispmanx_surface_update(struct dispmanx_video *_dispvars,
          surface->next_page->resource);
    if (surface->dirty)
       dispmanx_surface_restate(_dispvars->update, surface);
+#ifdef HAVE_OVERLAY
+   dispmanx_overlay_commit(_dispvars, _dispvars->update);
+#endif
 
    retro_atomic_fetch_add_int(&_dispvars->pageflip_pending, 1);
 
@@ -584,22 +941,45 @@ static void dispmanx_blank_console(struct dispmanx_video *_dispvars)
             _dispvars->back_surface);
 }
 
+/* video_monitor_index to a firmware display: 0 the firmware's own
+ * choice, then the HDMI ports, the LCD and composite */
+static const uint32_t dispmanx_displays[] = {
+   DISPMANX_ID_MAIN_LCD,
+   DISPMANX_ID_HDMI0,
+   DISPMANX_ID_HDMI1,
+   DISPMANX_ID_FORCE_LCD,
+   DISPMANX_ID_SDTV
+};
+
 static void *dispmanx_init(const video_info_t *video)
 {
    uint32_t disp_w = 0;
    uint32_t disp_h = 0;
+   uint32_t id     = DISPMANX_ID_MAIN_LCD;
+   settings_t *settings             = config_get_ptr();
    struct dispmanx_video *_dispvars = calloc(1, sizeof(struct dispmanx_video));
 
    if (!_dispvars)
       return NULL;
 
+   if (     settings && settings->uints.video_monitor_index
+         < sizeof(dispmanx_displays) / sizeof(dispmanx_displays[0]))
+      id = dispmanx_displays[settings->uints.video_monitor_index];
+
    bcm_host_init();
-   _dispvars->display = vc_dispmanx_display_open(0 /* LCD */);
+   _dispvars->display = vc_dispmanx_display_open(id);
+   if (!_dispvars->display && id != DISPMANX_ID_MAIN_LCD)
+   {
+      RARCH_WARN("[Dispmanx] Display %u not connected, using the default.\n",
+            (unsigned)id);
+      id                 = DISPMANX_ID_MAIN_LCD;
+      _dispvars->display = vc_dispmanx_display_open(id);
+   }
 
    /* If the console framebuffer has active overscan settings,
     * the user must have overscan_scale=1 in config.txt to have
     * the same size for both fb console and dispmanx. */
-   graphics_get_display_size(_dispvars->display, &disp_w, &disp_h);
+   graphics_get_display_size((uint16_t)id, &disp_w, &disp_h);
    _dispvars->disp_dims = VIDEO_SCALE_PACK(disp_w, disp_h);
 
    retro_atomic_store_release_int(&_dispvars->pageflip_pending, 0);
@@ -929,6 +1309,68 @@ static void dispmanx_viewport_info(void *data, struct video_viewport *vp)
    }
 }
 
+/* The screen as shown - frame, menu and overlay - cut to the viewport:
+ * BGR24, bottom row first. Off the screen is black. */
+static bool dispmanx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
+{
+   int x, y;
+   VC_RECT_T rect;
+   video_viewport_t vp;
+   uint32_t vc_image_ptr = 0;
+   uint8_t *shot;
+   DISPMANX_RESOURCE_HANDLE_T res;
+   struct dispmanx_video *vid = data;
+   unsigned dw, dh, pitch;
+   int vx, vy, vw, vh;
+
+   if (!vid || !buffer)
+      return false;
+   dispmanx_viewport_info(vid, &vp);
+   dw    = VIDEO_SCALE_W(vid->disp_dims);
+   dh    = VIDEO_SCALE_H(vid->disp_dims);
+   vx    = VIDEO_POS_X(vp.pos);
+   vy    = VIDEO_POS_Y(vp.pos);
+   vw    = (int)VIDEO_SCALE_W(vp.dims);
+   vh    = (int)VIDEO_SCALE_H(vp.dims);
+   /* The firmware's rows for an RGB888 resource: 32 bytes aligned */
+   pitch = (unsigned)ALIGN_UP(dw * 3, 32);
+   if (!dw || !dh || vw <= 0 || vh <= 0)
+      return false;
+   if (!(res = vc_dispmanx_resource_create(VC_IMAGE_RGB888, dw, dh,
+               &vc_image_ptr)))
+      return false;
+   if (!(shot = (uint8_t*)malloc((size_t)pitch * dh)))
+   {
+      vc_dispmanx_resource_delete(res);
+      return false;
+   }
+   vc_dispmanx_rect_set(&rect, 0, 0, dw, dh);
+   vc_dispmanx_snapshot(vid->display, res, DISPMANX_NO_ROTATE);
+   vc_dispmanx_resource_read_data(res, &rect, shot, pitch);
+   vc_dispmanx_resource_delete(res);
+
+   for (y = 0; y < vh; y++)
+   {
+      int sy       = vy + (vh - 1 - y);
+      uint8_t *out = buffer + (size_t)y * vw * 3;
+      for (x = 0; x < vw; x++, out += 3)
+      {
+         int sx = vx + x;
+         if (sx < 0 || sy < 0 || sx >= (int)dw || sy >= (int)dh)
+            out[0] = out[1] = out[2] = 0;
+         else
+         {
+            const uint8_t *in = shot + (size_t)sy * pitch + (size_t)sx * 3;
+            out[0] = in[2];
+            out[1] = in[1];
+            out[2] = in[0];
+         }
+      }
+   }
+   free(shot);
+   return true;
+}
+
 /* Taken up when the next frame comes, where the surfaces are made */
 static void dispmanx_set_rotation(void *data, unsigned rotation)
 {
@@ -1114,6 +1556,9 @@ static void dispmanx_free(void *data)
 
    if (_dispvars->menu_surface)
       dispmanx_surface_free(_dispvars, &_dispvars->menu_surface);
+#ifdef HAVE_OVERLAY
+   dispmanx_overlay_free(_dispvars);
+#endif
 
    /* The console and whatever runs next scale smooth again */
    if (_dispvars->kernel_loaded && !_dispvars->smooth)
@@ -1142,9 +1587,9 @@ video_driver_t video_dispmanx = {
    NULL, /* set_viewport */
    dispmanx_set_rotation,
    dispmanx_viewport_info,
-   NULL, /* read_viewport */
+   dispmanx_read_viewport,
 #ifdef HAVE_OVERLAY
-   NULL, /* overlay_interface */
+   dispmanx_get_overlay_interface,
 #endif
    dispmanx_get_poke_interface,
    NULL, /* wrap_type_to_enum */

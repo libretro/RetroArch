@@ -30,6 +30,9 @@ void RARCH_DBG(const char *fmt, ...) { (void)fmt; }
 void RARCH_WARN(const char *fmt, ...) { (void)fmt; }
 void RARCH_ERR(const char *fmt, ...) { (void)fmt; }
 
+static settings_t settings;
+settings_t *config_get_ptr(void) { return &settings; }
+
 void video_driver_display_type_set(enum rarch_display_type t) { (void)t; }
 void video_driver_set_output_dims(unsigned dims) { (void)dims; }
 
@@ -54,7 +57,7 @@ void video_driver_update_viewport(struct video_viewport *vp,
 #define DISP_W   1920
 #define DISP_H   1080
 #define MAX_RES  32
-#define MAX_ELEM 8
+#define MAX_ELEM 16
 
 struct fres
 {
@@ -83,17 +86,23 @@ static size_t frame_size;
 
 static unsigned type_bpp(VC_IMAGE_TYPE_T t)
 {
+   if (t == VC_IMAGE_RGB888)
+      return 3;
    return (t == VC_IMAGE_XRGB8888 || t == VC_IMAGE_ARGB8888
          || t == VC_IMAGE_RGBA32) ? 4 : 2;
 }
 
 void bcm_host_init(void) { }
 void bcm_host_deinit(void) { }
+/* Displays the board has: the default and HDMI0 at 1920x1080, HDMI1 at
+ * 1280x720 when connected, nothing else */
+static int hdmi1_connected;
+static uint32_t display_opened, size_asked = 99;
 int32_t graphics_get_display_size(const uint16_t n, uint32_t *w, uint32_t *h)
 {
-   (void)n;
-   *w = DISP_W;
-   *h = DISP_H;
+   size_asked = n;
+   *w = n == DISPMANX_ID_HDMI1 ? 1280 : DISP_W;
+   *h = n == DISPMANX_ID_HDMI1 ? 720 : DISP_H;
    return 0;
 }
 int vc_gencmd_send(const char *format, ...)
@@ -113,7 +122,13 @@ int vc_dispmanx_rect_set(VC_RECT_T *r, uint32_t x, uint32_t y,
    return 0;
 }
 DISPMANX_DISPLAY_HANDLE_T vc_dispmanx_display_open(uint32_t d)
-{ (void)d; return 1; }
+{
+   if (     d != DISPMANX_ID_MAIN_LCD && d != DISPMANX_ID_HDMI0
+         && !(d == DISPMANX_ID_HDMI1 && hdmi1_connected))
+      return 0;
+   display_opened = d;
+   return 1;
+}
 int vc_dispmanx_display_close(DISPMANX_DISPLAY_HANDLE_T d)
 { (void)d; return 0; }
 
@@ -136,6 +151,32 @@ DISPMANX_RESOURCE_HANDLE_T vc_dispmanx_resource_create(VC_IMAGE_TYPE_T type,
       res_made++;
       return i;
    }
+   return 0;
+}
+/* The screen as composed: R = x, G = y, B = 0x5a, low bytes */
+int vc_dispmanx_snapshot(DISPMANX_DISPLAY_HANDLE_T d,
+      DISPMANX_RESOURCE_HANDLE_T r, DISPMANX_TRANSFORM_T t)
+{
+   unsigned x, y;
+   (void)d; (void)t;
+   for (y = 0; y < res[r].h; y++)
+      for (x = 0; x < res[r].w; x++)
+      {
+         uint8_t *p = res[r].mem + (size_t)y * res[r].pitch + x * 3;
+         p[0] = (uint8_t)x;
+         p[1] = (uint8_t)y;
+         p[2] = 0x5a;
+      }
+   return 0;
+}
+int vc_dispmanx_resource_read_data(DISPMANX_RESOURCE_HANDLE_T r,
+      const VC_RECT_T *rect, void *dst, uint32_t dst_pitch)
+{
+   if (dst_pitch != res[r].pitch)
+      bad_pitch++;
+   memcpy((uint8_t*)dst + (size_t)dst_pitch * rect->y,
+         res[r].mem + (size_t)res[r].pitch * rect->y,
+         (size_t)dst_pitch * rect->height);
    return 0;
 }
 int vc_dispmanx_resource_delete(DISPMANX_RESOURCE_HANDLE_T r)
@@ -651,6 +692,163 @@ static void test_menu(void)
    lay_dims = 0;
 }
 
+static unsigned elems_on_from(int32_t layer)
+{
+   unsigned i, n = 0;
+   for (i = 1; i < MAX_ELEM; i++)
+      if (elem[i].live && elem[i].layer >= layer)
+         n++;
+   return n;
+}
+
+static void test_overlay(void)
+{
+   uint32_t px_a[4 * 2], px_b[2 * 2];
+   struct texture_image img[2];
+   const video_overlay_interface_t *ov;
+   void *d     = open_driver(true, true);
+   uint16_t *f = make_frame(320, 240, 640);
+   struct felem *e;
+   unsigned i, made, attrs;
+
+   for (i = 0; i < 8; i++)
+      px_a[i] = 0x80000000u | (i << 16) | 0x00ff00u | 0x11u;
+   for (i = 0; i < 4; i++)
+      px_b[i] = 0xff000000u | 0x0000aau; /* RGBA in memory: R = 0xaa */
+   memset(img, 0, sizeof(img));
+   img[0].pixels = px_a; img[0].width = 4; img[0].height = 2;
+   img[1].pixels = px_b; img[1].width = 2; img[1].height = 2;
+   img[1].supports_rgba = true;
+
+   lay_pos  = VIDEO_POS_PACK(240, 0);
+   lay_dims = VIDEO_SCALE_PACK(1440, 1080);
+   dispmanx_get_overlay_interface(d, &ov);
+   check(__LINE__, ov->load(d, img, 2), "overlay load");
+   ov->vertex_geom(d, 0, 0.5f, 0.5f, 0.25f, 0.25f);
+   ov->vertex_geom(d, 1, 0.0f, 0.0f, 0.1f, 0.1f);
+   push(d, f, 320, 240, 640);
+   check(__LINE__, elems_on_from(DISPMANX_OVERLAY_LAYER) == 0,
+         "overlay shown before it is enabled");
+
+   ov->enable(d, true);
+   push(d, f, 320, 240, 640);
+   e = elem_on(DISPMANX_OVERLAY_LAYER);
+   check(__LINE__, e && e->dst.x == 240 + 720 && e->dst.y == 540
+         && e->dst.width == 360 && e->dst.height == 270,
+         "overlay image at %d,%d %dx%d", e ? e->dst.x : -1,
+         e ? e->dst.y : -1, e ? e->dst.width : -1, e ? e->dst.height : -1);
+   check(__LINE__, e && e->src.width == (4 << 16) && e->src.height == (2 << 16)
+         && (e->aflags & DISPMANX_FLAGS_ALPHA_MIX) && e->opacity == 255,
+         "overlay image source or blend");
+   check(__LINE__, e && res_px(e, 1, 1) == (0x80000000u | (5u << 16)
+            | 0x00ff00u | 0x11u), "overlay pixels not uploaded as they are");
+   e = elem_on(DISPMANX_OVERLAY_LAYER + 1);
+   check(__LINE__, e && res_px(e, 0, 0) == 0xffaa0000u,
+         "RGBA overlay image not turned to ARGB");
+
+   /* Nothing changed: nothing told */
+   attrs = attr_changes;
+   push(d, f, 320, 240, 640);
+   check(__LINE__, attr_changes == attrs, "overlay restated unchanged");
+
+   /* Fade, crop, mirror: the element changes, nothing is uploaded */
+   made = res_made;
+   ov->set_alpha(d, 0, 0.5f);
+   ov->tex_geom(d, 0, 0.5f, 0.0f, 0.5f, 1.0f);
+   ov->vertex_geom(d, 0, 0.75f, 0.5f, -0.25f, 0.25f);
+   push(d, f, 320, 240, 640);
+   e = elem_on(DISPMANX_OVERLAY_LAYER);
+   check(__LINE__, e && e->opacity == 128 && e->src.x == (2 << 16)
+         && e->src.width == (2 << 16) && e->dst.x == 240 + 720
+         && e->transform == DISPMANX_FLIP_HRIZ && res_made == made,
+         "overlay fade/crop/mirror: opacity %u src %d+%d transform %u",
+         e ? e->opacity : 0, e ? e->src.x : -1, e ? e->src.width : -1,
+         e ? e->transform : 0);
+
+   /* Over the whole screen, partly off it: cut */
+   ov->full_screen(d, true);
+   ov->vertex_geom(d, 1, -0.05f, 0.0f, 0.1f, 0.1f);
+   push(d, f, 320, 240, 640);
+   e = elem_on(DISPMANX_OVERLAY_LAYER + 1);
+   check(__LINE__, e && e->dst.x == 0 && e->dst.width == 96
+         && e->src.x == (1 << 16) && e->src.width == (1 << 16),
+         "overlay off the screen at %d, %d wide, source %d+%d",
+         e ? e->dst.x : -1, e ? e->dst.width : -1, e ? e->src.x : -1,
+         e ? e->src.width : -1);
+
+   /* Transparent, then off: no elements */
+   ov->set_alpha(d, 1, 0.0f);
+   push(d, f, 320, 240, 640);
+   check(__LINE__, !elem_on(DISPMANX_OVERLAY_LAYER + 1),
+         "transparent overlay image left on the screen");
+   ov->enable(d, false);
+   push(d, f, 320, 240, 640);
+   check(__LINE__, elems_on_from(DISPMANX_OVERLAY_LAYER) == 0,
+         "overlay left up when disabled");
+
+   /* A new overlay over a shown one */
+   ov->enable(d, true);
+   push(d, f, 320, 240, 640);
+   check(__LINE__, ov->load(d, img, 1), "second overlay load");
+   push(d, f, 320, 240, 640);
+   check(__LINE__, elems_on_from(DISPMANX_OVERLAY_LAYER) == 1,
+         "old overlay images left on the screen");
+
+   dispmanx_free(d);
+   free(f);
+   lay_dims = 0;
+}
+
+static void test_screen(void)
+{
+   void *d;
+   uint8_t *buf;
+   uint16_t *f = make_frame(320, 240, 640);
+
+   /* The monitor index picks the display; one not there falls back */
+   settings.uints.video_monitor_index = 2;
+   hdmi1_connected = 1;
+   d = open_driver(true, true);
+   check(__LINE__, display_opened == DISPMANX_ID_HDMI1
+         && size_asked == DISPMANX_ID_HDMI1
+         && ((struct dispmanx_video*)d)->disp_dims
+            == VIDEO_SCALE_PACK(1280, 720),
+         "HDMI1 not opened at its size");
+   dispmanx_free(d);
+   hdmi1_connected = 0;
+   d = open_driver(true, true);
+   check(__LINE__, d && display_opened == DISPMANX_ID_MAIN_LCD
+         && size_asked == DISPMANX_ID_MAIN_LCD,
+         "missing display did not fall back to the default");
+   dispmanx_free(d);
+   settings.uints.video_monitor_index = 0;
+
+   /* Screenshots: the viewport of the screen as composed, BGR, bottom
+    * row first, black off the screen */
+   d        = open_driver(true, true);
+   lay_pos  = VIDEO_POS_PACK(-8, 0);
+   lay_dims = VIDEO_SCALE_PACK(1440, 1080);
+   push(d, f, 320, 240, 640);
+   buf       = (uint8_t*)malloc((size_t)1440 * 1080 * 3);
+   bad_pitch = 0;
+   check(__LINE__, dispmanx_read_viewport(d, buf, false), "read_viewport");
+   check(__LINE__, !bad_pitch, "snapshot read at a pitch not the resource's");
+   check(__LINE__, buf[0] == 0 && buf[1] == 0 && buf[2] == 0,
+         "off the screen not black");
+   /* Row 0 is the screen's row 1079; x 8 of it is the screen's x 0 */
+   check(__LINE__, buf[8 * 3] == 0x5a && buf[8 * 3 + 1] == (1079 & 0xff)
+         && buf[8 * 3 + 2] == 0,
+         "screenshot pixel %02x %02x %02x", buf[8 * 3], buf[8 * 3 + 1],
+         buf[8 * 3 + 2]);
+   check(__LINE__, buf[((size_t)1079 * 1440 + 100) * 3 + 2] == 92
+         && buf[((size_t)1079 * 1440 + 100) * 3 + 1] == 0,
+         "screenshot rows not bottom first");
+   free(buf);
+   dispmanx_free(d);
+   free(f);
+   lay_dims = 0;
+}
+
 int main(void)
 {
    unsigned i;
@@ -660,6 +858,8 @@ int main(void)
    test_rotation();
    test_lend();
    test_nonblock();
+   test_overlay();
+   test_screen();
    test_filtering();
    test_menu();
 

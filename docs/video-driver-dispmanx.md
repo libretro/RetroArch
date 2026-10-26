@@ -24,6 +24,8 @@ The video driver name is 'dispmanx'. It honors the following video settings:
    - `video_smooth`, at start and when changed in the menu
    - `video_rotation` and the core's rotation (`RETRO_ENVIRONMENT_SET_ROTATION`)
    - `video_vsync`
+   - `video_monitor_index`
+   - the input overlay, its opacity and full-screen settings
    - `video_max_swapchain_images` (2 to 4 pages for the frame)
    - a core's views, composed and scaled by the HVS over the whole screen
 
@@ -49,6 +51,18 @@ With vsync on, a frame waits for the flip before it to be done, as DispmanX take
 
 RGUI is drawn on a DispmanX layer of its own above the frame, blended by its own alpha as the other drivers blend it, where the frame shows or over the whole screen when the menu asks for that. It is uploaded only when RGUI redraws. XMB, Ozone and MaterialUI draw through a GPU display driver, which this driver does not have; RGUI is the menu to use with it.
 
+### Display
+
+`video_monitor_index` picks the firmware display the driver opens: 0 the firmware's default, 1 HDMI 0, 2 HDMI 1, 3 the LCD (DSI), 4 composite. A display that is not connected falls back to the default, with a warning in the log. The screen is used at the mode the firmware set up.
+
+### Input overlay
+
+Each overlay image is a DispmanX element of its own, above the menu, over a resource that holds the image as loaded. The HVS crops it to its texture coordinates, scales it, mirrors it and blends it by its own alpha times the image's opacity. Moving, fading, mirroring or switching the overlay off changes the elements in the same update as the next page flip; nothing is drawn or uploaded by the CPU after the overlay is loaded. An image that is switched off, fully transparent or wholly off the screen has no element, so the HVS spends nothing on it.
+
+### Screenshots
+
+Screenshots take the screen as the HVS composes it - frame, menu and overlay - with `vc_dispmanx_snapshot`, and cut it to the frame's viewport. Off the screen is black.
+
 ## How a frame reaches the screen
 
 The firmware copies a resource's rows from the frame in one bulk transfer (`vc_dispmanx_resource_write_data`): the VideoCore reads the frame from the ARM's memory itself, and the call returns once it has. Its rows must be the resource's: the firmware keeps a resource's rows 16 pixels aligned and reads the frame's rows that far apart.
@@ -64,12 +78,12 @@ Three pages (`video_max_swapchain_images`) let the core fill one while one is on
 
 ## Issues and TODOs
 
-   - Input overlays are not drawn. Each overlay image could be a DispmanX element of its own (ARGB8888, blended by its own alpha and scaled by the HVS), costing the CPU nothing per frame.
    - On-screen messages, notifications and statistics are not drawn. A small RGBA layer the font renderer draws into, uploaded only when the text changes, would carry them.
-   - `video_monitor_index` is not honoured: the driver opens the firmware's default display. On boards with two outputs, the index could select `DISPMANX_ID_HDMI0`, `DISPMANX_ID_HDMI1` or the LCD.
-   - Screenshots and GPU recording read nothing back (`read_viewport` is not implemented). `vc_dispmanx_snapshot` into an offscreen resource, read with `vc_dispmanx_resource_read_data`, would capture the screen as shown.
+   - GPU recording reads nothing back (`record_read` is not implemented); screenshots do.
    - The display mode is the one the firmware booted with; `set_video_mode` (through the firmware's TV service) would let `video_fullscreen_x`/`_y` and the refresh rate pick another, and CRT SwitchRes drive it.
    - RGUI's upscaled path and a menu of an odd width are laid out once by the CPU before upload; a menu framebuffer loan (`get_menu_framebuffer`) at the firmware's pitch would remove that copy. RGUI uploads only when it redraws, so this costs little.
    - A core's views are composed on the CPU and drawn without its rotation.
+
+The HVS composes every element anew each scanline, and a display list that does not fit its budget underflows: an overlay with dozens of images visible at once costs more of it than one with a few.
 
 The driver is tested against a fake VideoCore in `samples/gfx/dispmanx_display`, which keeps each resource at its own row pitch as the firmware does, so a frame laid out wrongly shows up skewed. It builds for Linux and, cross-compiled with mingw-w64, for Windows.
