@@ -9883,7 +9883,13 @@ void retroarch_task_queue_configure(void)
     * theirs. */
    {
       unsigned cores = cpu_features_get_core_amount();
-      task_queue_set_parallel_workers(cores > 3 ? cores - 3 : 0);
+      unsigned extra = cores > 3 ? cores - 3 : 0;
+#ifdef __EMSCRIPTEN__
+      /* these and the one worker fill PTHREAD_POOL_SIZE */
+      if (extra > 4)
+         extra = 4;
+#endif
+      task_queue_set_parallel_workers(extra);
    }
    if (threaded_enable)
       task_queue_set_threaded();

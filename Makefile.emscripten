@@ -119,7 +119,8 @@ HAVE_OPENGLES3 ?= 0
 WASM_WORKERS = 0
 
 LTO ?= 0
-PTHREAD_POOL_SIZE ?= 4
+# the task worker and the 4 extra workers retroarch.c asks for at most
+PTHREAD_POOL_SIZE ?= 5
 
 ASYNCIFY_ADD ?= dynCall_*,emscripten_mainloop
 ASYNCIFY_REMOVE ?= threaded_worker
