@@ -47,6 +47,7 @@
 #include "../common/drm_common.h"
 #include "../video_views.h"
 #include "../video_views_cpu.h"
+#include "../video_turn.h"
 #include "../font_driver.h"
 #ifdef HAVE_OVERLAY
 #include "../../input/input_overlay.h"
@@ -631,60 +632,6 @@ static unsigned drm_next_page(struct drm_surface *surface)
    }
 }
 
-/* Where output row @oy of @w x @h pixels turned @rot quarter turns
- * counter-clockwise starts in the source, and the step to the next
- * pixel of that row, in bytes */
-static const uint8_t *drm_turned_row(const uint8_t *src, size_t pitch,
-      unsigned w, unsigned h, unsigned bpp, unsigned rot, unsigned oy,
-      ptrdiff_t *step)
-{
-   switch (rot & 3)
-   {
-      case 1:
-         *step = (ptrdiff_t)pitch;
-         return src + (size_t)(w - 1 - oy) * bpp;
-      case 2:
-         *step = -(ptrdiff_t)bpp;
-         return src + (size_t)(h - 1 - oy) * pitch + (size_t)(w - 1) * bpp;
-      case 3:
-         *step = -(ptrdiff_t)pitch;
-         return src + (size_t)(h - 1) * pitch + (size_t)oy * bpp;
-      default:
-         break;
-   }
-   *step = (ptrdiff_t)bpp;
-   return src + (size_t)oy * pitch;
-}
-
-/* @w x @h pixels of @src turned @rot quarter turns counter-clockwise
- * into @dst, written in order */
-static void drm_turn_copy(uint8_t *dst, size_t stride, const uint8_t *src,
-      size_t pitch, unsigned w, unsigned h, unsigned bpp, unsigned rot)
-{
-   unsigned ox, oy;
-   unsigned ow = (rot & 1) ? h : w;
-   unsigned oh = (rot & 1) ? w : h;
-
-   for (oy = 0; oy < oh; oy++, dst += stride)
-   {
-      ptrdiff_t step;
-      const uint8_t *in = drm_turned_row(src, pitch, w, h, bpp, rot, oy,
-            &step);
-      if (bpp == 4)
-      {
-         uint32_t *out = (uint32_t*)dst;
-         for (ox = 0; ox < ow; ox++, in += step)
-            out[ox] = *(const uint32_t*)in;
-      }
-      else
-      {
-         uint16_t *out = (uint16_t*)dst;
-         for (ox = 0; ox < ow; ox++, in += step)
-            out[ox] = *(const uint16_t*)in;
-      }
-   }
-}
-
 static bool drm_fmem_busy(const struct drm_video *v,
       const struct drm_frame_mem *m)
 {
@@ -1002,7 +949,7 @@ static void drm_surface_update(void *data, const void *frame,
          w          = h;
          h          = t;
       }
-      drm_turn_copy(buf->map, buf->stride, (const uint8_t*)frame, pitch,
+      video_turn_copy(buf->map, buf->stride, (const uint8_t*)frame, pitch,
             w, h, surface->bpp, surface->rot);
    }
    /* A lent page holds the frame already */
@@ -2815,7 +2762,7 @@ static bool drm_read_viewport(void *data, uint8_t *buffer, bool is_idle)
    {
       ptrdiff_t step;
       uint8_t *out      = buffer + (size_t)(oh - 1 - oy) * ow * 3;
-      const uint8_t *in = drm_turned_row(buf->map, buf->stride, w, h,
+      const uint8_t *in = video_turned_row(buf->map, buf->stride, w, h,
             s->bpp, s->hw_rot, oy, &step);
       for (ox = 0; ox < ow; ox++, in += step, out += 3)
       {
