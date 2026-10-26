@@ -40,10 +40,10 @@
 #include <formats/rsubtitle_vtt.h>
 
 static retro_atomic_int_t embedded_read_bytes;
-int64_t __real_filestream_read(RFILE *stream, void *data, int64_t length);
-int64_t __wrap_filestream_read(RFILE *stream, void *data, int64_t length)
+int64_t subtitle_test_filestream_read_real(RFILE *stream, void *data, int64_t length);
+int64_t filestream_read(RFILE *stream, void *data, int64_t length)
 {
-   int64_t got = __real_filestream_read(stream, data, length);
+   int64_t got = subtitle_test_filestream_read_real(stream, data, length);
    if (got > 0 && got < 16777216)
       retro_atomic_fetch_add_int(&embedded_read_bytes, (int)got);
    return got;
@@ -256,6 +256,7 @@ static void embedded(const char *path, bool threaded)
       return;
    }
    assert(task_subtitle_status(request) == 1);
+   assert(retro_atomic_load_acquire_int(&embedded_read_bytes) > 0);
    assert(retro_atomic_load_acquire_int(&embedded_read_bytes) < 262144);
    track = task_subtitle_take(request);
    assert(track && rsubtitle_srt_count(track) == 2);
