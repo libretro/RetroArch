@@ -9693,9 +9693,7 @@ static bool netplay_mitm_query_ready(void)
    return !netplay_mitm_query_pending;
 }
 
-/* Set when host setup stopped waiting for the query (the deferral's
- * bound ran out): the next host setup goes direct instead of asking
- * again, and the in-flight answer, if it comes, is not ours any more. */
+/* A failed or expired deferred query resumes hosting directly once. */
 static bool netplay_mitm_query_gave_up = false;
 
 /* What the query produced: an address and port, or nothing. */
@@ -9792,6 +9790,9 @@ static void netplay_host_setup_handler(retro_task_t *task)
       netplay_mitm_query_gave_up = true;
    }
 
+   if (!netplay_mitm_query_result())
+      netplay_mitm_query_gave_up = true;
+
    task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
    command_event(CMD_EVENT_NETPLAY_INIT, NULL);
 }
@@ -9828,6 +9829,7 @@ bool netplay_host_setup_defer(void)
    if (   !(net_st->flags & NET_DRIVER_ST_FLAG_NETPLAY_ENABLED)
        ||  (net_st->flags & NET_DRIVER_ST_FLAG_NETPLAY_IS_CLIENT)
        ||  net_st->data
+       ||  netplay_mitm_query_gave_up
        || !settings->bools.netplay_use_mitm_server)
       return false;
 

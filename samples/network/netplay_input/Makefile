@@ -4,6 +4,7 @@ CORE_DIR = ../../..
 INCDIRS  := -I$(CORE_DIR)/libretro-common/include -I$(CORE_DIR) -I$(CORE_DIR)/deps
 
 CC ?= gcc
+PYTHON ?= python3
 
 # The two helpers are extracted from netplay_frontend.c between their
 # BEGIN/END markers, so the test runs the shipping code.
@@ -33,6 +34,7 @@ $(TARGET): netplay_input_test.c $(FRAGMENTS)
 
 check: $(TARGET)
 	./$(TARGET)
+	CC="$(CC)" CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" $(PYTHON) host_setup_run.py
 
 clean:
 	rm -f $(TARGET) $(TARGET).exe $(FRAGMENTS)
