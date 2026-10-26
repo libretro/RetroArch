@@ -499,6 +499,7 @@ static unsigned paced_pace;
 static double   paced_fps_scale = 1.0;
 static double   paced_adjust;
 static double   paced_startup_min;
+static unsigned paced_schedule_slips;
 
 static void audio_paced_once(unsigned latency_ms, double seconds, bool cap,
       bool video_paced, bool sync, unsigned jitter_us,
@@ -519,6 +520,7 @@ static void audio_paced_once(unsigned latency_ms, double seconds, bool cap,
    if (getenv("JITTER_US"))
       jitter_us = (unsigned)atoi(getenv("JITTER_US"));
 
+   paced_schedule_slips = 0;
    *avg_ms = *max_ms = 0.0;
    *short_pulls = *held = 0;
    if (!pipeline_up(latency_ms))
@@ -570,7 +572,10 @@ static void audio_paced_once(unsigned latency_ms, double seconds, bool cap,
          clock_gettime(CLOCK_MONOTONIC, &now);
          if ((now.tv_sec - next.tv_sec) * 1000000000L
                + (now.tv_nsec - next.tv_nsec) > step_ns)
+         {
+            paced_schedule_slips++;
             next = now;
+         }
       }
       next.tv_nsec += step_ns;
       next.tv_sec  += next.tv_nsec / 1000000000L;
@@ -859,26 +864,41 @@ static void sync_off_case(double seconds)
    {
       double deep = 0.0;
       int    cap;
+      bool   comparable = true;
       for (cap = 0; cap < 2; cap++)
       {
          double avg, mx;
          size_t sp, held;
          int    attempt;
-         /* Retried as above: a host that takes the consumer off its
-          * core shows the same holes with the deep pipe. */
+         /* Both runs must keep the same display schedule. */
          for (attempt = 0; attempt < 5; attempt++)
          {
             audio_paced_once(lat[i], seconds, cap != 0, true, false, 16000,
                   &avg, &mx, &sp, &held);
-            if (!(cap && sp))
+            if (!sp && !paced_schedule_slips)
                break;
-            printf("  %3u ms  shallow | %u short pulls; host or cushion, again\n",
-                  lat[i], (unsigned)sp);
+            printf("  %3u ms  %-7s | %u short pulls, %u schedule slips; again\n",
+                  lat[i], cap ? "shallow" : "deep", (unsigned)sp, paced_schedule_slips);
          }
-         printf("  %3u ms  %-7s | avg %6.1f ms, max %6.1f ms, short %u\n",
-               lat[i], cap ? "shallow" : "deep", avg, mx, (unsigned)sp);
+         printf("  %3u ms  %-7s | avg %6.1f ms, max %6.1f ms, short %u, schedule slips %u\n",
+               lat[i], cap ? "shallow" : "deep", avg, mx, (unsigned)sp, paced_schedule_slips);
+         if (paced_schedule_slips)
+         {
+            printf("FAIL: %s did not keep the display schedule in every run\n",
+                  cap ? "shallow" : "deep");
+            paced_failures++;
+            comparable = false;
+         }
          if (!cap)
+         {
             deep = avg;
+            if (sp)
+            {
+               printf("FAIL: the deep baseline ran the device dry in every run\n");
+               paced_failures++;
+               comparable = false;
+            }
+         }
          else
          {
             if (sp)
@@ -886,7 +906,7 @@ static void sync_off_case(double seconds)
                printf("FAIL: the shallow pipe let a late frame through in every run\n");
                paced_failures++;
             }
-            if (!(avg < deep * 0.85))
+            if (comparable && !sp && !(avg < deep * 0.85))
             {
                printf("FAIL: shallow left %.1f ms queued against %.1f ms deep\n",
                      avg, deep);
@@ -1121,6 +1141,11 @@ int main(int argc, char **argv)
 
    printf("threaded pipeline against a clocked device, %.0f s per setting, %g fps core\n",
          seconds, FPS);
+   if (getenv("SYNC_OFF_ONLY"))
+   {
+      sync_off_case(seconds);
+      return paced_failures ? 1 : 0;
+   }
    if (getenv("PACED_ONLY"))
    {
       audio_paced_case(seconds);
