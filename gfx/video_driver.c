@@ -4388,7 +4388,9 @@ static VIDEO_NOINLINE const video_windows_frame_t *video_driver_windows_frame(
       w->pos        = settings->uints.video_screen_window_pos[i];
       w->dims       = settings->uints.video_screen_window_dims[i];
       w->monitor    = settings->uints.video_screen_window_monitor[i];
-      w->mode       = settings->uints.video_screen_window_mode[i];
+      w->mode       = string_is_equal(settings->arrays.video_screen_display[i],
+            VIDEO_WINDOW_DISPLAY_OFF) ? VIDEO_WINDOW_HIDDEN
+         : i ? VIDEO_WINDOW_SEPARATE : VIDEO_WINDOW_ATTACHED;
       w->fullscreen = settings->bools.video_screen_window_fullscreen[i];
    }
    out->core          = video_st->views_core;

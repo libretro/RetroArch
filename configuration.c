@@ -6380,13 +6380,13 @@ void config_set_defaults(settings_t *target)
 #ifdef HAVE_VIDEO_WINDOWS
    for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
    {
-      settings->uints.video_screen_window_mode[i] = i
-         ? VIDEO_WINDOW_SEPARATE : VIDEO_WINDOW_ATTACHED;
       settings->uints.video_screen_window_pos[i] = 0;
       settings->uints.video_screen_window_dims[i] = 0;
       settings->uints.video_screen_window_monitor[i] = 0;
       settings->bools.video_screen_window_fullscreen[i] = false;
+      settings->arrays.video_screen_display[i][0] = '\0';
    }
+   settings->arrays.video_menu_display[0] = '\0';
 #endif
 
    custom_vp->dims   = 0;
@@ -7087,17 +7087,14 @@ CONFIG_NOINLINE static void config_load_video_windows(settings_t *settings, conf
       char cfg[64];
       int x = 0, y = 0;
       unsigned width = 0, height = 0;
+      unsigned old_mode = VIDEO_WINDOW_ATTACHED;
       size_t len = snprintf(cfg, sizeof(cfg), "video_screen%u_window_", i + 1);
 
-      settings->uints.video_screen_window_mode[i] = i
-         ? VIDEO_WINDOW_SEPARATE : VIDEO_WINDOW_ATTACHED;
       settings->uints.video_screen_window_monitor[i] = 0;
       settings->bools.video_screen_window_fullscreen[i] = false;
+      settings->arrays.video_screen_display[i][0] = '\0';
       strlcpy_lit(cfg + len, "mode", sizeof(cfg) - len);
-      config_get_uint(conf, cfg, &settings->uints.video_screen_window_mode[i]);
-      if (!i || settings->uints.video_screen_window_mode[i] > VIDEO_WINDOW_HIDDEN)
-         settings->uints.video_screen_window_mode[i] = i
-            ? VIDEO_WINDOW_SEPARATE : VIDEO_WINDOW_ATTACHED;
+      config_get_uint(conf, cfg, &old_mode);
       strlcpy_lit(cfg + len, "x", sizeof(cfg) - len);
       config_get_int(conf, cfg, &x);
       strlcpy_lit(cfg + len, "y", sizeof(cfg) - len);
@@ -7116,7 +7113,27 @@ CONFIG_NOINLINE static void config_load_video_windows(settings_t *settings, conf
       settings->uints.video_screen_window_dims[i] =
          width && height && VIDEO_SCALE_FITS(width, height)
          ? VIDEO_SCALE_PACK(width, height) : 0;
+      snprintf(cfg, sizeof(cfg), "video_screen%u_display", i + 1);
+      config_get_array(conf, cfg, settings->arrays.video_screen_display[i],
+            sizeof(settings->arrays.video_screen_display[i]));
+      /* Hidden, saved before a display could be Off. Auto does not
+       * stop it: a full save writes every display, "" included */
+      if (     old_mode == VIDEO_WINDOW_HIDDEN
+            && !settings->arrays.video_screen_display[i][0])
+         strlcpy(settings->arrays.video_screen_display[i],
+               VIDEO_WINDOW_DISPLAY_OFF,
+               sizeof(settings->arrays.video_screen_display[i]));
    }
+   settings->arrays.video_menu_display[0] = '\0';
+   config_get_array(conf, "video_menu_display",
+         settings->arrays.video_menu_display,
+         sizeof(settings->arrays.video_menu_display));
+   if (settings->uints.video_menu_follows > VIDEO_MENU_FOLLOWS_SEPARATE)
+      settings->uints.video_menu_follows = 0;
+   if (settings->uints.video_notifications_window
+         > VIDEO_NOTIFICATIONS_WITH_MENU)
+      settings->uints.video_notifications_window =
+         VIDEO_NOTIFICATIONS_WITH_GAME;
 }
 
 #undef CONFIG_NOINLINE
@@ -9970,12 +9987,10 @@ bool config_save_file(const char *path)
       char cfg[64];
       size_t len = snprintf(cfg, sizeof(cfg), "video_screen%u_window_", i + 1);
 
+      /* Migrated on load; one left in the file would hide the screen
+       * again */
       strlcpy_lit(cfg + len, "mode", sizeof(cfg) - len);
-      if (   !minimal
-          || settings->uints.video_screen_window_mode[i] != defaults->uints.video_screen_window_mode[i])
-         config_set_int(conf, cfg, settings->uints.video_screen_window_mode[i]);
-      else
-         config_unset(conf, cfg);
+      config_unset(conf, cfg);
 
       strlcpy_lit(cfg + len, "x", sizeof(cfg) - len);
       if (   !minimal
@@ -10018,7 +10033,22 @@ bool config_save_file(const char *path)
          config_set_string(conf, cfg, settings->bools.video_screen_window_fullscreen[i] ? "true" : "false");
       else
          config_unset(conf, cfg);
+
+      snprintf(cfg, sizeof(cfg), "video_screen%u_display", i + 1);
+      if (   !minimal
+          || !string_is_equal(settings->arrays.video_screen_display[i],
+                defaults->arrays.video_screen_display[i]))
+         config_set_string(conf, cfg, settings->arrays.video_screen_display[i]);
+      else
+         config_unset(conf, cfg);
    }
+   if (   !minimal
+       || !string_is_equal(settings->arrays.video_menu_display,
+             defaults->arrays.video_menu_display))
+      config_set_string(conf, "video_menu_display",
+            settings->arrays.video_menu_display);
+   else
+      config_unset(conf, "video_menu_display");
 #endif
 
    for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
@@ -10760,10 +10790,6 @@ int8_t config_save_overrides(enum override_type type,
          char cfg[64];
          size_t len = snprintf(cfg, sizeof(cfg), "video_screen%u_window_", i + 1);
 
-         strlcpy_lit(cfg + len, "mode", sizeof(cfg) - len);
-         if (settings->uints.video_screen_window_mode[i] != overrides->uints.video_screen_window_mode[i])
-            config_set_int(conf, cfg, overrides->uints.video_screen_window_mode[i]);
-
          strlcpy_lit(cfg + len, "x", sizeof(cfg) - len);
          if (VIDEO_POS_X(settings->uints.video_screen_window_pos[i]) != VIDEO_POS_X(overrides->uints.video_screen_window_pos[i]))
             config_set_int(conf, cfg, VIDEO_POS_X(overrides->uints.video_screen_window_pos[i]));
@@ -10787,7 +10813,16 @@ int8_t config_save_overrides(enum override_type type,
          strlcpy_lit(cfg + len, "fullscreen", sizeof(cfg) - len);
          if (settings->bools.video_screen_window_fullscreen[i] != overrides->bools.video_screen_window_fullscreen[i])
             config_set_string(conf, cfg, overrides->bools.video_screen_window_fullscreen[i] ? "true" : "false");
+
+         snprintf(cfg, sizeof(cfg), "video_screen%u_display", i + 1);
+         if (!string_is_equal(settings->arrays.video_screen_display[i],
+                  overrides->arrays.video_screen_display[i]))
+            config_set_string(conf, cfg, overrides->arrays.video_screen_display[i]);
       }
+      if (!string_is_equal(settings->arrays.video_menu_display,
+               overrides->arrays.video_menu_display))
+         config_set_string(conf, "video_menu_display",
+               overrides->arrays.video_menu_display);
 #endif
 
       for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)

@@ -308,10 +308,11 @@ typedef struct settings
       unsigned video_stereo_mode;
       unsigned video_screen_layout;
 #ifdef HAVE_VIDEO_WINDOWS
-      unsigned video_screen_window_mode[RETRO_VIDEO_VIEWS_MAX];
       unsigned video_screen_window_pos[RETRO_VIDEO_VIEWS_MAX];
       unsigned video_screen_window_dims[RETRO_VIDEO_VIEWS_MAX];
       unsigned video_screen_window_monitor[RETRO_VIDEO_VIEWS_MAX];
+      unsigned video_menu_follows;
+      unsigned video_notifications_window;
 #endif
       unsigned video_openxr_refresh_rate;
       unsigned video_openxr_controllers;
@@ -1413,6 +1414,13 @@ typedef struct settings
       char input_keyboard_device[MAX_USERS][64];
       /* and the mouse */
       char input_mouse_device[MAX_USERS][64];
+#ifdef HAVE_VIDEO_WINDOWS
+      /* Each screen's display, by video_windows_display_key(); empty
+       * for Auto, VIDEO_WINDOW_DISPLAY_OFF for none */
+      char video_screen_display[RETRO_VIDEO_VIEWS_MAX][64];
+      /* The menu's display when it follows no screen; empty for Auto */
+      char video_menu_display[64];
+#endif
 
       char youtube_stream_key[PATH_MAX_LENGTH];
       char twitch_stream_key[PATH_MAX_LENGTH];

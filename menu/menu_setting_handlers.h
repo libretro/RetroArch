@@ -61,6 +61,9 @@ SDX(LEFT, setting_bool_action_ok_video_openxr_enable)
 #ifdef HAVE_OZONE
 SDX(LEFT, setting_string_action_left_ozone_menu_color_theme)
 #endif
+#ifdef HAVE_VIDEO_WINDOWS
+SDX(LEFT, setting_uint_action_left_video_menu_follows)
+#endif
 #ifndef RARCH_CONSOLE
 SDX(LEFT, setting_string_action_left_audio_device)
 SDX(LEFT, setting_string_action_left_midi_input)
@@ -81,6 +84,9 @@ SDX(RIGHT, setting_uint_action_right_video_openxr_refresh_rate)
 SDX(RIGHT, setting_bool_action_ok_video_openxr_enable)
 #ifdef HAVE_OZONE
 SDX(RIGHT, setting_string_action_right_ozone_menu_color_theme)
+#endif
+#ifdef HAVE_VIDEO_WINDOWS
+SDX(RIGHT, setting_uint_action_right_video_menu_follows)
 #endif
 #ifndef RARCH_CONSOLE
 SDX(RIGHT, setting_string_action_right_audio_device)

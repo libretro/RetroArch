@@ -1180,6 +1180,14 @@ MSG_HASH(
    "video_screen%u_window_monitor"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SCREEN_DISPLAY,
+   "video_screen%u_display"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_MENU_DISPLAY,
+   "video_menu_display"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_VIDEO_SYNCHRONIZATION_SETTINGS_LIST,
    "deferred_video_synchronization_settings_list"
    )
