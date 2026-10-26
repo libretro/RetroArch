@@ -27,7 +27,7 @@
 
 #include "vulkan_common.h"
 #ifdef HAVE_NGX
-#include "vulkan_ngx.h"
+#include "vulkan_upscaler.h"
 #include "../video_upscaler.h"
 #endif
 #if defined(HAVE_RMP4) || defined(HAVE_RWEBM)
@@ -1121,19 +1121,44 @@ static unsigned vulkan_optional_device_count(const gfx_ctx_vulkan_data_t *vk)
 /* The temporal upscaler's device extensions, the ones @gpu has, when
  * the setting is on: a device made without them cannot run it */
 #ifdef HAVE_NGX
-#define VULKAN_UPSCALER_EXTS VULKAN_NGX_MAX_EXTS
+#define VULKAN_UPSCALER_EXTS VULKAN_UPSCALER_MAX_EXTS
+static enum video_temporal_upscaler vulkan_upscaler_kind(char *dir, size_t len)
+{
+   enum video_temporal_upscaler kind = (enum video_temporal_upscaler)
+      config_get_ptr()->uints.video_temporal_upscaler;
+   video_upscaler_dir(kind, dir, len);
+   return kind;
+}
+
 static unsigned vulkan_upscaler_device_exts(gfx_ctx_vulkan_data_t *vk,
       VkPhysicalDevice gpu, const char **list, unsigned count, unsigned cap)
 {
-   if (!config_get_ptr()->uints.video_temporal_upscaler)
+   char dir[DIR_MAX_LENGTH];
+   enum video_temporal_upscaler kind = vulkan_upscaler_kind(dir, sizeof(dir));
+   if (!kind)
       return count;
-   return vulkan_ngx_device_extensions(gpu,
+   return vulkan_upscaler_device_extensions(kind, dir, gpu,
          vulkan_symbol_wrapper_instance_proc_addr(), vk->context.instance,
          list, count, cap);
+}
+
+/* The features the upscaler's library needs, chained ahead of a
+ * device's @pnext */
+static const void *vulkan_upscaler_features(gfx_ctx_vulkan_data_t *vk,
+      VkPhysicalDevice gpu, const void *pnext)
+{
+   char dir[DIR_MAX_LENGTH];
+   enum video_temporal_upscaler kind = vulkan_upscaler_kind(dir, sizeof(dir));
+   if (!kind)
+      return pnext;
+   return vulkan_upscaler_device_features(kind, dir, gpu,
+         vulkan_symbol_wrapper_instance_proc_addr(), vk->context.instance,
+         pnext);
 }
 #else
 #define VULKAN_UPSCALER_EXTS 0
 #define vulkan_upscaler_device_exts(vk, gpu, list, count, cap) (count)
+#define vulkan_upscaler_features(vk, gpu, pnext) (pnext)
 #endif
 
 static VkResult vulkan_context_create_device(gfx_ctx_vulkan_data_t *vk,
@@ -1174,6 +1199,7 @@ static VkResult vulkan_context_create_device(gfx_ctx_vulkan_data_t *vk,
             }
             break;
          }
+   local.pNext = vulkan_upscaler_features(vk, gpu, local.pNext);
    info = &local;
    vk->context.flags &= ~VK_CTX_FLAG_VIDEO_GENERAL;
    if (enabled) vk->context.flags |= VK_CTX_FLAG_VIDEO_GENERAL;
@@ -2211,10 +2237,14 @@ static VkInstance vulkan_context_create_instance_wrapper(void *opaque, const VkI
       goto end;
    }
 #ifdef HAVE_NGX
-   if (config_get_ptr()->uints.video_temporal_upscaler)
-      info.enabledExtensionCount = vulkan_ngx_instance_extensions(
-            instance_extensions, info.enabledExtensionCount,
-            instance_extensions_cap);
+   {
+      char dir[DIR_MAX_LENGTH];
+      enum video_temporal_upscaler kind = vulkan_upscaler_kind(dir, sizeof(dir));
+      if (kind)
+         info.enabledExtensionCount = vulkan_upscaler_instance_extensions(
+               kind, dir, instance_extensions, info.enabledExtensionCount,
+               instance_extensions_cap);
+   }
 #endif
 
 #ifdef VULKAN_HDR_SWAPCHAIN

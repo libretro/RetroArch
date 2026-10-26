@@ -446,6 +446,16 @@ d3d_video "d3d12 NGX backend" "$D3DDEFS -DHAVE_D3D12 -DHAVE_NGX" \
    gfx/common/d3d12_ngx.c
 d3d_video "d3d12 NGX backend, no threads" \
    "$D3DDEFS -DHAVE_D3D12 -DHAVE_NGX -UHAVE_THREADS" gfx/common/d3d12_ngx.c
+d3d_video "d3d12 upscaler dispatch" "$D3DDEFS -DHAVE_D3D12 -DHAVE_NGX" \
+   gfx/common/d3d12_upscaler.c
+d3d_video "d3d12 FSR backend" "$D3DDEFS -DHAVE_D3D12 -DHAVE_NGX" \
+   gfx/common/d3d12_ffx.c
+d3d_video "d3d12 FSR backend, no threads" \
+   "$D3DDEFS -DHAVE_D3D12 -DHAVE_NGX -UHAVE_THREADS" gfx/common/d3d12_ffx.c
+d3d_video "d3d12 XeSS backend" "$D3DDEFS -DHAVE_D3D12 -DHAVE_NGX" \
+   gfx/common/d3d12_xess.c
+d3d_video "d3d12 XeSS backend, no threads" \
+   "$D3DDEFS -DHAVE_D3D12 -DHAVE_NGX -UHAVE_THREADS" gfx/common/d3d12_xess.c
 # With the MP4 previews: frames from rh264's D3D11 video backend,
 # imported by D3D11 and D3D12 through shared handles and fences (11.4
 # interfaces from the bundled headers), and the backend itself.

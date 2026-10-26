@@ -2,10 +2,13 @@ include ../../sample_objdir.mk
 
 TARGET := d3d12_upscaler_test
 
-# Links the real gfx/common/d3d12_ngx.c and gfx/video_upscaler.c and
-# drives them on a Direct3D 12 device against a stand-in NGX core
-# library, so the glue between the core's inputs and NGX's parameters
-# is pinned on every runner without an NVIDIA GPU.
+# Links the real gfx/common/d3d12_ngx.c, d3d12_ffx.c, d3d12_xess.c,
+# the dispatch of d3d12_upscaler.c and gfx/video_upscaler.c and drives
+# them on a Direct3D 12 device against stand-in NGX, FidelityFX API
+# and XeSS libraries (fake_ngx.c here; libretro-common's fake_ffx.c
+# and fake_xess.c, planted under the SDKs' file names in Zdir_fsr and
+# Zdir_xess), so the glue between the core's inputs and each library's
+# parameters is pinned on every runner without the GPU.
 #
 # Windows only. Elsewhere it is cross-built with mingw-w64 and run
 # under Wine, where vkd3d implements D3D12 over Vulkan (lavapipe; Wine
@@ -16,9 +19,16 @@ LIBRETRO_COMM_DIR := $(REPO_ROOT)/libretro-common
 
 SOURCES := d3d12_upscaler_test.c \
            ../vulkan_validation/stubs_retroarch.c \
+           $(REPO_ROOT)/gfx/common/d3d12_upscaler.c \
            $(REPO_ROOT)/gfx/common/d3d12_ngx.c \
+           $(REPO_ROOT)/gfx/common/d3d12_ffx.c \
+           $(REPO_ROOT)/gfx/common/d3d12_xess.c \
+           $(REPO_ROOT)/gfx/common/ffx_common.c \
+           $(REPO_ROOT)/gfx/common/xess_common.c \
            $(REPO_ROOT)/gfx/video_upscaler.c \
            $(LIBRETRO_COMM_DIR)/gfx/nvidia/ngx_loader.c \
+           $(LIBRETRO_COMM_DIR)/gfx/amd/ffx_loader.c \
+           $(LIBRETRO_COMM_DIR)/gfx/intel/xess_loader.c \
            $(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
            $(LIBRETRO_COMM_DIR)/compat/compat_strcasestr.c \
            $(LIBRETRO_COMM_DIR)/compat/compat_posix_string.c \
@@ -55,10 +65,21 @@ LDLIBS  += -ld3d12 -ldxguid -luuid -ladvapi32
 
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
-all: $(TARGET).exe _nvngx.dll
+FAKE_FFX  := $(LIBRETRO_COMM_DIR)/samples/gfx/amd/fake_ffx.c
+FAKE_XESS := $(LIBRETRO_COMM_DIR)/samples/gfx/intel/fake_xess.c
+
+all: $(TARGET).exe _nvngx.dll Zdir_fsr/amd_fidelityfx_dx12.dll Zdir_xess/libxess.dll
 
 _nvngx.dll: fake_ngx.c fake_ngx.h
 	$(CC) -shared -O1 -Wall -o $@ $< -ldxguid
+
+Zdir_fsr/amd_fidelityfx_dx12.dll: $(FAKE_FFX) $(FAKE_FFX:.c=.h)
+	@mkdir -p $(@D)
+	$(CC) -shared -O1 -Wall -o $@ $<
+
+Zdir_xess/libxess.dll: $(FAKE_XESS) $(FAKE_XESS:.c=.h)
+	@mkdir -p $(@D)
+	$(CC) -shared -O1 -Wall -o $@ $<
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -75,6 +96,6 @@ check: all
 
 clean:
 	rm -f $(TARGET).exe $(TARGET).o _nvngx.dll
-	rm -rf $(SAMPLE_OBJDIR) Zdir
+	rm -rf $(SAMPLE_OBJDIR) Zdir Zdir_fsr Zdir_xess Zdir_none
 
 .PHONY: all check clean

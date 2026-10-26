@@ -1,6 +1,10 @@
 /* gfx/common/d3d12_ngx.c and gfx/video_upscaler.c against a stand-in
  * NGX core library (fake_ngx.c) on a real Direct3D 12 device: Wine's,
- * over vkd3d and lavapipe, on a runner; the system's on Windows.
+ * over vkd3d and lavapipe, on a runner; the system's on Windows. Then
+ * gfx/common/d3d12_ffx.c and d3d12_xess.c behind the dispatch of
+ * d3d12_upscaler.c, against the stand-in FidelityFX API and XeSS
+ * libraries of libretro-common's samples planted in directories of
+ * the test's.
  *
  * What is pinned: the session comes up from the loaded library with
  * the project id and path list; the mode's render sizes reach the
@@ -22,12 +26,19 @@
 #include <math.h>
 
 #include <gfx/nvidia/ngx_loader.h>
+#include <gfx/amd/ffx_loader.h>
+#include <gfx/intel/xess_loader.h>
 
 #include "../../../configuration.h"
 #include "../../../gfx/video_upscaler.h"
 #include "../../../gfx/common/d3d12_ngx.h"
+#include "../../../gfx/common/d3d12_upscaler.h"
 #include <file/file_path.h>
 #include "fake_ngx.h"
+#include "../../../libretro-common/samples/gfx/amd/fake_ffx.h"
+#include "../../../libretro-common/samples/gfx/intel/fake_xess.h"
+
+extern const char *stub_video_ident;
 
 /* The DLSS runtime in @dir: an empty file with the runtime's name */
 static void plant_dlss_runtime(const char *dir)
@@ -57,9 +68,11 @@ static void clear_dlss_runtime(const char *dir)
 }
 
 static int failures;
+static int checks;
 
 #define CHECK(cond) \
    do { \
+      checks++; \
       if (!(cond)) \
       { \
          printf("FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); \
@@ -334,12 +347,30 @@ static void set_input(struct retro_hw_upscaler_image *dst, const texture_t *src)
    dst->height = src->height;
 }
 
+/* The frontend's mode word, as the driver hands it to the session */
 static bool optimal_cb(void *data, unsigned mode, unsigned out_dims,
       unsigned *render_dims, unsigned *min_dims, unsigned *max_dims)
 {
-   return d3d12_ngx_optimal((d3d12_ngx_t*)data, mode, out_dims,
+   return d3d12_ngx_optimal((d3d12_ngx_t*)data, video_upscaler_mode_ngx(mode),
+         out_dims, render_dims, min_dims, max_dims);
+}
+
+static bool dispatch_cb(void *data, unsigned mode, unsigned out_dims,
+      unsigned *render_dims, unsigned *min_dims, unsigned *max_dims)
+{
+   return d3d12_upscaler_optimal((d3d12_upscaler_t*)data, mode, out_dims,
          render_dims, min_dims, max_dims);
 }
+
+static void *symbol_of(void *handle, const char *name)
+{
+   void *fn = NULL;
+   FARPROC p = GetProcAddress((HMODULE)handle, name);
+   memcpy(&fn, &p, sizeof(fn));
+   return fn;
+}
+
+#define QUALITY(q) VIDEO_UPSCALER_MODE_PACK(VIDEO_TEMPORAL_UPSCALER_QUALITY_##q, 0)
 
 static bool output_desc_ok(ID3D12Resource *r, unsigned w, unsigned h)
 {
@@ -352,6 +383,352 @@ static bool output_desc_ok(ID3D12Resource *r, unsigned w, unsigned h)
    return desc.Width == w && desc.Height == h
       && desc.Format == DXGI_FORMAT_R8G8B8A8_UNORM
       && (desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+}
+
+/* FSR behind the dispatch: the library from the FSR directory and the
+ * version it offers the device, the sizes by its query, a frame's
+ * context and dispatch descriptor as the SDK reads them, the inputs
+ * back in their states and the output a copy source, a resize retiring
+ * the context, a failed dispatch */
+static void test_ffx(settings_t *settings, texture_t *color, texture_t *mv,
+      texture_t *depth)
+{
+   d3d12_upscaler_t *up;
+   fake_ffx_record_t *(*get)(void);
+   fake_ffx_record_t *rec;
+   const ffx_lib_t *lib;
+   d3d12_upscaler_image_t in, out;
+   struct retro_hw_upscaler_inputs inputs;
+   struct retro_hw_upscaler_request req;
+   video_upscaler_backend_t backend;
+   const struct retro_hw_render_upscaler_interface *iface;
+   unsigned i, render_dims, min_dims, max_dims;
+   char status[256];
+
+   stub_video_ident = "d3d12";
+   settings->uints.video_temporal_upscaler = VIDEO_TEMPORAL_UPSCALER_FSR;
+   strcpy(settings->paths.directory_fsr, "Zdir_none");
+   CHECK(video_upscaler_probe(VIDEO_TEMPORAL_UPSCALER_FSR) == 0);
+   video_upscaler_status_string(status, sizeof(status));
+   CHECK(strstr(status, "FSR (FSR library: not in FSR Directory)") == status);
+   CHECK(d3d12_upscaler_init(VIDEO_TEMPORAL_UPSCALER_FSR, device, "Zdir_none") == NULL);
+   strcpy(settings->paths.directory_fsr, "Zdir_fsr");
+   CHECK(video_upscaler_probe(VIDEO_TEMPORAL_UPSCALER_FSR) == VIDEO_UPSCALER_READY);
+   video_upscaler_status_string(status, sizeof(status));
+   CHECK(strstr(status, "FSR (FSR library: found)") == status);
+   video_upscaler_log_probe(VIDEO_TEMPORAL_UPSCALER_FSR);
+   lib = ffx_lib_get(FFX_API_D3D12, "Zdir_fsr");
+   CHECK(lib != NULL);
+   if (!lib)
+      return;
+   get = (fake_ffx_record_t *(*)(void))symbol_of(lib->handle, "fake_ffx_record");
+   CHECK(get != NULL);
+   if (!get)
+      return;
+   rec = get();
+
+   /* The session: the versions the library offers the device, the
+    * newest taken (none without the device, as SDK 2's loader has it) */
+   rec->versions_need_device = 1;
+   up = d3d12_upscaler_init(VIDEO_TEMPORAL_UPSCALER_FSR, device, "Zdir_fsr");
+   CHECK(up != NULL);
+   if (!up)
+      return;
+   CHECK(rec->creates == 0 && rec->queries >= 2);
+
+   CHECK(d3d12_upscaler_optimal(up, QUALITY(QUALITY), VIDEO_SCALE_PACK(1920, 1080),
+            &render_dims, &min_dims, &max_dims));
+   CHECK(render_dims == VIDEO_SCALE_PACK(1280, 720)
+         && min_dims == VIDEO_SCALE_PACK(640, 360)
+         && max_dims == VIDEO_SCALE_PACK(1920, 1080));
+   CHECK(d3d12_upscaler_optimal(up, QUALITY(BALANCED), VIDEO_SCALE_PACK(1920, 1080),
+            &render_dims, &min_dims, &max_dims) && render_dims == VIDEO_SCALE_PACK(1129, 635));
+   CHECK(d3d12_upscaler_optimal(up, QUALITY(NATIVE), VIDEO_SCALE_PACK(1920, 1080),
+            &render_dims, &min_dims, &max_dims) && render_dims == VIDEO_SCALE_PACK(1920, 1080));
+   CHECK(!d3d12_upscaler_optimal(up, QUALITY(NATIVE), VIDEO_SCALE_PACK(1920, 0),
+            &render_dims, &min_dims, &max_dims));
+
+   backend.data    = up;
+   backend.optimal = dispatch_cb;
+   video_upscaler_attach(&backend);
+   iface = video_upscaler_get_interface();
+   CHECK(iface != NULL);
+   video_upscaler_set_output(VIDEO_SCALE_PACK(1920, 1080));
+   settings->uints.video_temporal_upscaler_quality = VIDEO_TEMPORAL_UPSCALER_QUALITY_AUTO;
+   CHECK(iface->get_request(iface->handle, &req));
+   CHECK(req.render_width == 1280 && req.render_height == 720
+         && req.min_render_width == 640 && req.max_render_width == 1920);
+   settings->uints.video_temporal_upscaler_quality = VIDEO_TEMPORAL_UPSCALER_QUALITY_ULTRA_PERFORMANCE;
+   CHECK(iface->get_request(iface->handle, &req) && req.render_width == 640);
+   settings->uints.video_temporal_upscaler_quality = VIDEO_TEMPORAL_UPSCALER_QUALITY_QUALITY;
+
+   /* A frame */
+   memset(&inputs, 0, sizeof(inputs));
+   set_input(&inputs.motion_vectors, mv);
+   set_input(&inputs.depth, depth);
+   inputs.flags      = RETRO_HW_UPSCALER_DEPTH_INVERTED | RETRO_HW_UPSCALER_MV_OUTPUT_RES;
+   inputs.jitter_x   = 0.25f;
+   inputs.jitter_y   = -0.125f;
+   inputs.mv_scale_x = 2.0f;
+   inputs.mv_scale_y = 0.0f;
+   inputs.frame_time_ms = 0.0f;   /* unknown: a 60 Hz frame */
+   in.texture = color->resource;
+   in.format  = color->format;
+   in.state   = color->state;
+   in.dims    = VIDEO_SCALE_PACK(color->width, color->height);
+   begin_frame();
+   memset(&out, 0, sizeof(out));
+   CHECK(d3d12_upscaler_upscale(up, cmd, &in, &inputs, QUALITY(QUALITY),
+            VIDEO_SCALE_PACK(1920, 1080), &out));
+   end_frame();
+   d3d12_upscaler_frame_done(up);
+   CHECK(rec->creates == 1 && rec->dispatches == 1);
+   CHECK(rec->create[0].flags == (FFX_UPSCALE_ENABLE_DYNAMIC_RESOLUTION
+            | FFX_UPSCALE_ENABLE_DISPLAY_RESOLUTION_MVS | FFX_UPSCALE_ENABLE_DEPTH_INVERTED
+            | FFX_UPSCALE_ENABLE_NON_LINEAR_COLORSPACE | FFX_UPSCALE_ENABLE_AUTO_EXPOSURE));
+   CHECK(rec->create[0].max_render_w == 1920 && rec->create[0].max_upscale_h == 1080);
+   CHECK(rec->create[0].backend_type == FFX_TYPE_BACKEND_DX12
+         && rec->create[0].device == (void*)device
+         && rec->create[0].physical_device == NULL);
+   CHECK(rec->create[0].version_id == 0x4002 && rec->create[0].has_message);
+   CHECK(rec->dispatch[0].command_list == (void*)cmd);
+   CHECK(rec->dispatch[0].color.present && rec->dispatch[0].color.resource == (void*)color->resource
+         && rec->dispatch[0].color.format == FFX_FORMAT_R8G8B8A8_UNORM
+         && rec->dispatch[0].color.width == 1280 && rec->dispatch[0].color.height == 720
+         && rec->dispatch[0].color.usage == FFX_USAGE_READ_ONLY
+         && rec->dispatch[0].color.state == FFX_STATE_COMPUTE_READ);
+   CHECK(rec->dispatch[0].depth.resource == (void*)depth->resource
+         && rec->dispatch[0].depth.format == FFX_FORMAT_R32_FLOAT
+         && rec->dispatch[0].depth.state == FFX_STATE_COMPUTE_READ);
+   CHECK(rec->dispatch[0].motion_vectors.resource == (void*)mv->resource
+         && rec->dispatch[0].motion_vectors.format == FFX_FORMAT_R16G16_FLOAT
+         && rec->dispatch[0].motion_vectors.state == FFX_STATE_COMPUTE_READ);
+   CHECK(rec->dispatch[0].output.present && rec->dispatch[0].output.resource == (void*)out.texture
+         && rec->dispatch[0].output.usage == FFX_USAGE_UAV
+         && rec->dispatch[0].output.state == FFX_STATE_UNORDERED_ACCESS
+         && rec->dispatch[0].output.width == 1920 && rec->dispatch[0].output.height == 1080);
+   CHECK(!rec->dispatch[0].exposure.present && !rec->dispatch[0].transparency.present);
+   CHECK(rec->dispatch[0].jitter_x == 0.25f && rec->dispatch[0].jitter_y == -0.125f);
+   CHECK(rec->dispatch[0].mv_scale_x == 2.0f && rec->dispatch[0].mv_scale_y == 1.0f);
+   CHECK(rec->dispatch[0].render_w == 1280 && rec->dispatch[0].upscale_w == 1920);
+   CHECK(rec->dispatch[0].reset == 1 && !rec->dispatch[0].sharpening);
+   CHECK(rec->dispatch[0].frame_time > 16.6f && rec->dispatch[0].frame_time < 16.7f);
+   CHECK(rec->dispatch[0].flags == FFX_UPSCALE_FLAG_NON_LINEAR_COLOR_SRGB);
+   CHECK(out.dims == VIDEO_SCALE_PACK(1920, 1080) && out.format == DXGI_FORMAT_R8G8B8A8_UNORM
+         && out.state == D3D12_RESOURCE_STATE_COPY_SOURCE);
+   CHECK(output_desc_ok(out.texture, 1920, 1080));
+
+   /* The next frame: the same context, no reset; a resize: a new one,
+    * the old retired after the frames in flight */
+   begin_frame();
+   CHECK(d3d12_upscaler_upscale(up, cmd, &in, &inputs, QUALITY(QUALITY),
+            VIDEO_SCALE_PACK(1920, 1080), &out));
+   end_frame();
+   d3d12_upscaler_frame_done(up);
+   CHECK(rec->creates == 1 && rec->dispatches == 2 && rec->dispatch[1].reset == 0);
+   begin_frame();
+   CHECK(d3d12_upscaler_upscale(up, cmd, &in, &inputs, QUALITY(QUALITY),
+            VIDEO_SCALE_PACK(2560, 1440), &out));
+   end_frame();
+   d3d12_upscaler_frame_done(up);
+   CHECK(rec->creates == 2 && rec->create[1].max_upscale_w == 2560
+         && out.dims == VIDEO_SCALE_PACK(2560, 1440) && rec->dispatch[2].reset == 1);
+   CHECK(rec->destroys == 0);
+   for (i = 0; i < 30 && rec->destroys < 1; i++)
+      d3d12_upscaler_frame_done(up);
+   CHECK(rec->destroys == 1 && i >= 15);
+
+   /* A dispatch that fails: the frame shown as it is until the output
+    * or flags change */
+   rec->dispatch_fails = 1;
+   begin_frame();
+   CHECK(!d3d12_upscaler_upscale(up, cmd, &in, &inputs, QUALITY(QUALITY),
+            VIDEO_SCALE_PACK(2560, 1440), &out));
+   end_frame();
+   d3d12_upscaler_frame_done(up);
+   rec->dispatch_fails = 0;
+   begin_frame();
+   CHECK(!d3d12_upscaler_upscale(up, cmd, &in, &inputs, QUALITY(QUALITY),
+            VIDEO_SCALE_PACK(2560, 1440), &out));
+   end_frame();
+   d3d12_upscaler_frame_done(up);
+   CHECK(rec->dispatches == 4);
+   inputs.flags |= RETRO_HW_UPSCALER_HDR;
+   begin_frame();
+   CHECK(d3d12_upscaler_upscale(up, cmd, &in, &inputs, QUALITY(QUALITY),
+            VIDEO_SCALE_PACK(2560, 1440), &out));
+   end_frame();
+   d3d12_upscaler_frame_done(up);
+   CHECK(rec->creates == 3 && rec->dispatches == 5 && rec->dispatch[4].flags == 0
+         && (rec->create[2].flags & FFX_UPSCALE_ENABLE_HIGH_DYNAMIC_RANGE));
+
+   /* No inputs: refused */
+   CHECK(!d3d12_upscaler_upscale(up, cmd, &in, NULL, QUALITY(QUALITY),
+            VIDEO_SCALE_PACK(2560, 1440), &out));
+
+   d3d12_upscaler_free(up);
+   CHECK(rec->destroys == 3);
+   video_upscaler_detach();
+   rec->versions_need_device = 0;
+}
+
+/* XeSS behind the dispatch: the library from the XeSS directory, the
+ * sizes by its query, a context whose pipelines build in the
+ * background before init, the execute parameters as the SDK reads
+ * them, a resize retiring the context, a failed execute */
+static void test_xess(settings_t *settings, texture_t *color, texture_t *mv,
+      texture_t *depth)
+{
+   d3d12_upscaler_t *up;
+   fake_xess_record_t *(*get)(void);
+   fake_xess_record_t *rec;
+   const xess_lib_t *lib;
+   d3d12_upscaler_image_t in, out;
+   struct retro_hw_upscaler_inputs inputs;
+   struct retro_hw_upscaler_request req;
+   video_upscaler_backend_t backend;
+   const struct retro_hw_render_upscaler_interface *iface;
+   unsigned i, render_dims, min_dims, max_dims;
+   char status[256];
+
+   settings->uints.video_temporal_upscaler = VIDEO_TEMPORAL_UPSCALER_XESS;
+   strcpy(settings->paths.directory_xess, "Zdir_none");
+   CHECK(video_upscaler_probe(VIDEO_TEMPORAL_UPSCALER_XESS) == 0);
+   CHECK(d3d12_upscaler_init(VIDEO_TEMPORAL_UPSCALER_XESS, device, "Zdir_none") == NULL);
+   strcpy(settings->paths.directory_xess, "Zdir_xess");
+   CHECK(video_upscaler_probe(VIDEO_TEMPORAL_UPSCALER_XESS) == VIDEO_UPSCALER_READY);
+   video_upscaler_status_string(status, sizeof(status));
+   CHECK(strstr(status, "XeSS (XeSS library: found)") == status);
+   video_upscaler_log_probe(VIDEO_TEMPORAL_UPSCALER_XESS);
+   lib = xess_lib_get("Zdir_xess");
+   CHECK(lib != NULL);
+   if (!lib)
+      return;
+   get = (fake_xess_record_t *(*)(void))symbol_of(lib->handle, "fake_xess_record");
+   CHECK(get != NULL);
+   if (!get)
+      return;
+   rec = get();
+
+   up = d3d12_upscaler_init(VIDEO_TEMPORAL_UPSCALER_XESS, device, "Zdir_xess");
+   CHECK(up != NULL);
+   if (!up)
+      return;
+   CHECK(rec->creates == 1 && rec->create_device == (void*)device && rec->inits == 0);
+
+   CHECK(d3d12_upscaler_optimal(up, QUALITY(QUALITY), VIDEO_SCALE_PACK(1920, 1080),
+            &render_dims, &min_dims, &max_dims));
+   CHECK(render_dims == VIDEO_SCALE_PACK(1129, 635)
+         && min_dims == VIDEO_SCALE_PACK(640, 360)
+         && max_dims == VIDEO_SCALE_PACK(1920, 1080));
+   CHECK(d3d12_upscaler_optimal(up, QUALITY(BALANCED), VIDEO_SCALE_PACK(1920, 1080),
+            &render_dims, &min_dims, &max_dims) && render_dims == VIDEO_SCALE_PACK(960, 540));
+   CHECK(d3d12_upscaler_optimal(up, QUALITY(NATIVE), VIDEO_SCALE_PACK(1920, 1080),
+            &render_dims, &min_dims, &max_dims) && render_dims == VIDEO_SCALE_PACK(1920, 1080));
+
+   backend.data    = up;
+   backend.optimal = dispatch_cb;
+   video_upscaler_attach(&backend);
+   iface = video_upscaler_get_interface();
+   CHECK(iface != NULL);
+   video_upscaler_set_output(VIDEO_SCALE_PACK(1920, 1080));
+   settings->uints.video_temporal_upscaler_quality = VIDEO_TEMPORAL_UPSCALER_QUALITY_BALANCED;
+   CHECK(iface->get_request(iface->handle, &req) && req.render_width == 960);
+
+   /* A frame: the context, its pipelines building, then init and the
+    * execute, the inputs back in their states */
+   memset(&inputs, 0, sizeof(inputs));
+   set_input(&inputs.motion_vectors, mv);
+   set_input(&inputs.depth, depth);
+   inputs.flags      = RETRO_HW_UPSCALER_DEPTH_INVERTED | RETRO_HW_UPSCALER_MV_JITTERED;
+   inputs.jitter_x   = 0.25f;
+   inputs.jitter_y   = -0.125f;
+   inputs.mv_scale_x = 0.0f;
+   inputs.mv_scale_y = -1.0f;
+   in.texture = color->resource;
+   in.format  = color->format;
+   in.state   = color->state;
+   in.dims    = VIDEO_SCALE_PACK(color->width, color->height);
+   rec->build_pending = 1;
+   begin_frame();
+   memset(&out, 0, sizeof(out));
+   CHECK(!d3d12_upscaler_upscale(up, cmd, &in, &inputs, QUALITY(BALANCED),
+            VIDEO_SCALE_PACK(1920, 1080), &out));
+   end_frame();
+   d3d12_upscaler_frame_done(up);
+   CHECK(rec->creates == 2 && rec->pipelines == 1 && !rec->build_blocking
+         && rec->inits == 0 && rec->executes == 0);
+   begin_frame();
+   CHECK(d3d12_upscaler_upscale(up, cmd, &in, &inputs, QUALITY(BALANCED),
+            VIDEO_SCALE_PACK(1920, 1080), &out));
+   end_frame();
+   d3d12_upscaler_frame_done(up);
+   CHECK(rec->creates == 2 && rec->inits == 1 && rec->executes == 1);
+   CHECK(!rec->init[0].vk && rec->init[0].out_w == 1920 && rec->init[0].out_h == 1080
+         && rec->init[0].quality == XESS_QUALITY_BALANCED
+         && rec->init[0].flags == (XESS_INIT_FLAG_LDR_INPUT_COLOR | XESS_INIT_FLAG_JITTERED_MV
+            | XESS_INIT_FLAG_INVERTED_DEPTH | XESS_INIT_FLAG_ENABLE_AUTOEXPOSURE)
+         && rec->init[0].node_mask == 1);
+   CHECK(rec->velocity_scale_x == 1.0f && rec->velocity_scale_y == -1.0f);
+   CHECK(!rec->execute[0].vk && rec->execute[0].context == rec->init[0].context
+         && rec->execute[0].command_list == (void*)cmd);
+   CHECK(rec->execute[0].color.present && rec->execute[0].color.image == (uint64_t)(uintptr_t)color->resource);
+   CHECK(rec->execute[0].depth.image == (uint64_t)(uintptr_t)depth->resource);
+   CHECK(rec->execute[0].velocity.image == (uint64_t)(uintptr_t)mv->resource);
+   CHECK(rec->execute[0].output.present && rec->execute[0].output.image == (uint64_t)(uintptr_t)out.texture);
+   CHECK(!rec->execute[0].exposure.present && !rec->execute[0].mask.present);
+   CHECK(rec->execute[0].jitter_x == 0.25f && rec->execute[0].jitter_y == -0.125f);
+   CHECK(rec->execute[0].exposure_scale == 1.0f && rec->execute[0].reset == 1);
+   CHECK(rec->execute[0].input_w == 1280 && rec->execute[0].input_h == 720);
+   CHECK(out.dims == VIDEO_SCALE_PACK(1920, 1080) && out.format == DXGI_FORMAT_R8G8B8A8_UNORM
+         && out.state == D3D12_RESOURCE_STATE_COPY_SOURCE);
+   CHECK(output_desc_ok(out.texture, 1920, 1080));
+
+   begin_frame();
+   CHECK(d3d12_upscaler_upscale(up, cmd, &in, &inputs, QUALITY(BALANCED),
+            VIDEO_SCALE_PACK(1920, 1080), &out));
+   end_frame();
+   d3d12_upscaler_frame_done(up);
+   CHECK(rec->creates == 2 && rec->inits == 1 && rec->executes == 2 && rec->execute[1].reset == 0);
+
+   /* A resize: a new context, the old retired after the frames in flight */
+   begin_frame();
+   CHECK(d3d12_upscaler_upscale(up, cmd, &in, &inputs, QUALITY(BALANCED),
+            VIDEO_SCALE_PACK(2560, 1440), &out));
+   end_frame();
+   d3d12_upscaler_frame_done(up);
+   CHECK(rec->creates == 3 && rec->inits == 2 && rec->init[1].out_w == 2560
+         && rec->executes == 3 && out.dims == VIDEO_SCALE_PACK(2560, 1440));
+   CHECK(rec->destroys == 0);
+   for (i = 0; i < 30 && rec->destroys < 1; i++)
+      d3d12_upscaler_frame_done(up);
+   CHECK(rec->destroys == 1 && i >= 15);
+
+   /* An execute that fails: the frame shown as it is until the output
+    * or mode changes */
+   rec->execute_fails = 1;
+   begin_frame();
+   CHECK(!d3d12_upscaler_upscale(up, cmd, &in, &inputs, QUALITY(BALANCED),
+            VIDEO_SCALE_PACK(2560, 1440), &out));
+   end_frame();
+   d3d12_upscaler_frame_done(up);
+   rec->execute_fails = 0;
+   begin_frame();
+   CHECK(!d3d12_upscaler_upscale(up, cmd, &in, &inputs, QUALITY(BALANCED),
+            VIDEO_SCALE_PACK(2560, 1440), &out));
+   end_frame();
+   d3d12_upscaler_frame_done(up);
+   CHECK(rec->executes == 4);
+   begin_frame();
+   CHECK(d3d12_upscaler_upscale(up, cmd, &in, &inputs, QUALITY(QUALITY),
+            VIDEO_SCALE_PACK(2560, 1440), &out));
+   end_frame();
+   d3d12_upscaler_frame_done(up);
+   CHECK(rec->creates == 4 && rec->inits == 3 && rec->executes == 5);
+
+   d3d12_upscaler_free(up);
+   CHECK(rec->destroys == 4);   /* every context, the query one too */
+   video_upscaler_detach();
 }
 
 int main(void)
@@ -646,6 +1023,43 @@ int main(void)
    video_upscaler_detach();
    CHECK(video_upscaler_get_interface() == NULL);
 
+   /* DLSS behind the dispatch: the frontend's mode word translated to
+    * NGX's quality and preset */
+   {
+      d3d12_upscaler_t *up = d3d12_upscaler_init(VIDEO_TEMPORAL_UPSCALER_DLSS, device, "Zdir");
+      d3d12_upscaler_image_t din, dout;
+      unsigned creates = rec->creates;
+      CHECK(up != NULL);
+      if (up)
+      {
+         CHECK(d3d12_upscaler_optimal(up,
+                  VIDEO_UPSCALER_MODE_PACK(VIDEO_TEMPORAL_UPSCALER_QUALITY_PERFORMANCE, 0),
+                  VIDEO_SCALE_PACK(1920, 1080), &render_dims, &min_dims, &max_dims)
+               && render_dims == VIDEO_SCALE_PACK(960, 540));
+         din.texture = color.resource;
+         din.format  = color.format;
+         din.state   = color.state;
+         din.dims    = VIDEO_SCALE_PACK(color.width, color.height);
+         begin_frame();
+         CHECK(d3d12_upscaler_upscale(up, cmd, &din, &inputs,
+                  VIDEO_UPSCALER_MODE_PACK(VIDEO_TEMPORAL_UPSCALER_QUALITY_QUALITY,
+                     VIDEO_TEMPORAL_UPSCALER_PRESET_K),
+                  VIDEO_SCALE_PACK(1920, 1080), &dout));
+         end_frame();
+         d3d12_upscaler_frame_done(up);
+         CHECK(rec->creates == creates + 1
+               && rec->create[creates].quality == NGX_PERF_QUALITY_MAX_QUALITY
+               && rec->create[creates].preset == NGX_DLSS_PRESET_K
+               && rec->create[creates].out_width == 1920);
+         CHECK(dout.dims == VIDEO_SCALE_PACK(1920, 1080)
+               && dout.state == D3D12_RESOURCE_STATE_COPY_SOURCE);
+         d3d12_upscaler_free(up);
+      }
+   }
+
+   test_ffx(settings, &color, &mv, &depth);
+   test_xess(settings, &color, &mv, &depth);
+
    free_texture(&color);
    free_texture(&mv);
    free_texture(&depth);
@@ -661,6 +1075,6 @@ int main(void)
       printf("d3d12_upscaler_test: %d failure(s)\n", failures);
       return 1;
    }
-   printf("d3d12_upscaler_test: ok\n");
+   printf("d3d12_upscaler_test: ok (%d checks)\n", checks);
    return 0;
 }

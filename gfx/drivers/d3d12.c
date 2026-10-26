@@ -73,7 +73,7 @@
 #include "../common/d3d_common.h"
 #include "../common/dxgi_common.h"
 #ifdef HAVE_NGX
-#include "../common/d3d12_ngx.h"
+#include "../common/d3d12_upscaler.h"
 #include "../video_upscaler.h"
 #endif
 #include <libretro.h>
@@ -541,8 +541,8 @@ typedef struct
    D3D12Resource hw_render_texture;
    DXGI_FORMAT hw_render_texture_format;
 #ifdef HAVE_NGX
-   d3d12_ngx_t *ngx;
-   d3d12_ngx_image_t ngx_out;
+   d3d12_upscaler_t *ngx;
+   d3d12_upscaler_image_t ngx_out;
 #endif
    /* The threaded wrapper's hardware ring: a copy of the core's texture
     * per slot, captured on the core's thread with this list and
@@ -5610,7 +5610,7 @@ static void d3d12_gfx_free(void* data)
    if (d3d12->ngx)
    {
       video_upscaler_detach();
-      d3d12_ngx_free(d3d12->ngx);
+      d3d12_upscaler_free(d3d12->ngx);
       d3d12->ngx = NULL;
    }
 #endif
@@ -5920,8 +5920,9 @@ static bool d3d12_init_swapchain(d3d12_video_t* d3d12,
       DXGISetMaximumFrameLatency(d3d12->chain.handle, max_latency);
       DXGIGetMaximumFrameLatency(d3d12->chain.handle, &cur_latency);
 #ifdef HAVE_NGX
-      if (config_get_ptr()->uints.video_temporal_upscaler == VIDEO_TEMPORAL_UPSCALER_DLSS)
-         video_upscaler_log_probe();
+      if (config_get_ptr()->uints.video_temporal_upscaler)
+         video_upscaler_log_probe((enum video_temporal_upscaler)
+               config_get_ptr()->uints.video_temporal_upscaler);
 #endif
       RARCH_LOG("[D3D12] Requesting %u maximum frame latency, using %u%s.\n",
             max_latency,
@@ -6605,17 +6606,17 @@ static void d3d12_hw_v2_set_texture_fenced(void *data, ID3D12Resource *texture,
 }
 
 #ifdef HAVE_NGX
-static bool d3d12_upscaler_optimal(void *data, unsigned mode,
+static bool d3d12_upscaler_optimal_cb(void *data, unsigned mode,
       unsigned out_dims, unsigned *render_dims,
       unsigned *min_dims, unsigned *max_dims)
 {
    d3d12_video_t *d3d12 = (d3d12_video_t*)data;
-   return d3d12_ngx_optimal(d3d12->ngx, mode, out_dims, render_dims,
+   return d3d12_upscaler_optimal(d3d12->ngx, mode, out_dims, render_dims,
          min_dims, max_dims);
 }
 
 static video_upscaler_backend_t d3d12_upscaler_backend = {
-   NULL, d3d12_upscaler_optimal
+   NULL, d3d12_upscaler_optimal_cb
 };
 
 /* The core's texture through the upscaler, when it brought the inputs
@@ -6625,7 +6626,7 @@ static video_upscaler_backend_t d3d12_upscaler_backend = {
 static void d3d12_upscale_input(d3d12_video_t *d3d12,
       D3D12GraphicsCommandList cmd, const void *frame, unsigned *dims)
 {
-   d3d12_ngx_image_t color;
+   d3d12_upscaler_image_t color;
    const struct retro_hw_upscaler_inputs *inputs = video_upscaler_take_inputs();
    unsigned out_dims = d3d12->vp.dims;
    video_upscaler_set_output(out_dims);
@@ -6637,7 +6638,7 @@ static void d3d12_upscale_input(d3d12_video_t *d3d12,
       color.format  = d3d12->hw_render_texture_format;
       color.state   = D3D12_RESOURCE_STATE_COPY_SOURCE;
       color.dims    = *dims;
-      if (!inputs || !d3d12_ngx_upscale(d3d12->ngx, cmd, &color, inputs,
+      if (!inputs || !d3d12_upscaler_upscale(d3d12->ngx, cmd, &color, inputs,
                video_upscaler_mode(out_dims), out_dims, &d3d12->ngx_out))
       {
          d3d12->ngx_out.texture = NULL;
@@ -6932,11 +6933,13 @@ static void *d3d12_gfx_init(const video_info_t* video)
       d3d12->hw_iface.set_texture       = d3d12_set_hw_render_texture;
       d3d12->hw_iface.D3DCompile        = D3DCompile;
 #ifdef HAVE_NGX
-      if (config_get_ptr()->uints.video_temporal_upscaler == VIDEO_TEMPORAL_UPSCALER_DLSS)
+      if (config_get_ptr()->uints.video_temporal_upscaler)
       {
+         enum video_temporal_upscaler kind = (enum video_temporal_upscaler)
+            config_get_ptr()->uints.video_temporal_upscaler;
          char dir[DIR_MAX_LENGTH];
-         video_upscaler_dlss_dir(dir, sizeof(dir));
-         d3d12->ngx = d3d12_ngx_init(d3d12->device, dir);
+         video_upscaler_dir(kind, dir, sizeof(dir));
+         d3d12->ngx = d3d12_upscaler_init(kind, d3d12->device, dir);
          if (d3d12->ngx)
          {
             d3d12_upscaler_backend.data = d3d12;
@@ -10613,7 +10616,7 @@ recording_resize_deferred:;
    d3d12_cmd_execute(d3d12);
 #ifdef HAVE_NGX
    if (d3d12->ngx)
-      d3d12_ngx_frame_done(d3d12->ngx);
+      d3d12_upscaler_frame_done(d3d12->ngx);
 #endif
    if (video_info->recording_gpu_capture
          && !(d3d12->flags & D3D12_ST_FLAG_FRAME_DUPE_LOCK))

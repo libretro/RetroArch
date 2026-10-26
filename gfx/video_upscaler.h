@@ -27,39 +27,51 @@ RETRO_BEGIN_DECLS
 
 /* The temporal upscaler (video_temporal_upscaler): a backend the Vulkan
  * and Direct3D 12 drivers run over the color, depth, motion vectors and
- * jitter a hardware-rendered core exports. DLSS Super Resolution runs
- * on NVIDIA's NGX, loaded at run time (libretro-common gfx/nvidia):
- * the driver's NGX core library, and the DLSS feature library the user
- * puts in the DLSS directory (video_dlss_directory; the application
- * directory's upscalers/dlss when empty). Nothing NVIDIA is built in or
- * shipped. */
+ * jitter a hardware-rendered core exports. Each runs on its vendor's
+ * library, loaded at run time from a directory of the user's (nothing
+ * of theirs is built in or shipped; the application directory's
+ * upscalers/<name> when the setting is empty):
+ *  - DLSS Super Resolution on NVIDIA's NGX (libretro-common
+ *    gfx/nvidia): the driver's NGX core library, and the DLSS feature
+ *    library in the DLSS directory;
+ *  - FSR, AMD's FidelityFX Super Resolution through the FidelityFX API
+ *    (gfx/amd): its library in the FSR directory, FSR 3.1 on either
+ *    driver, FSR 4 on Direct3D 12 where SDK 2's library offers it;
+ *  - XeSS, Intel's Super Resolution (gfx/intel): libxess in the XeSS
+ *    directory, on either driver. */
 enum video_temporal_upscaler
 {
    VIDEO_TEMPORAL_UPSCALER_OFF = 0,
    VIDEO_TEMPORAL_UPSCALER_DLSS,
+   VIDEO_TEMPORAL_UPSCALER_FSR,
+   VIDEO_TEMPORAL_UPSCALER_XESS,
    VIDEO_TEMPORAL_UPSCALER_LAST
 };
 
-/* What a probe found, as video_upscaler_dlss_probe reports it */
-#define VIDEO_UPSCALER_DLSS_NGX     (1 << 0)   /* the NGX core library */
-#define VIDEO_UPSCALER_DLSS_FEATURE (1 << 1)   /* the feature library in the directory */
-#define VIDEO_UPSCALER_DLSS_READY \
-   (VIDEO_UPSCALER_DLSS_NGX | VIDEO_UPSCALER_DLSS_FEATURE)
+/* What a probe found, as video_upscaler_probe reports it */
+#define VIDEO_UPSCALER_FOUND_LIBRARY (1 << 0)   /* the API's library: NGX's core, FSR's, XeSS's */
+#define VIDEO_UPSCALER_FOUND_RUNTIME (1 << 1)   /* the feature library in the directory (DLSS); the library itself (FSR, XeSS) */
+#define VIDEO_UPSCALER_READY \
+   (VIDEO_UPSCALER_FOUND_LIBRARY | VIDEO_UPSCALER_FOUND_RUNTIME)
 
-/* What the probe found, to the log: the NGX core library, where it
- * was looked for, and the DLSS runtime in the DLSS directory */
-void video_upscaler_log_probe(void);
+/* What the probe of @kind found, to the log: the libraries, where they
+ * were looked for */
+void video_upscaler_log_probe(enum video_temporal_upscaler kind);
 
-/* The DLSS directory in effect into @s: the setting, else the application directory's upscalers/dlss */
-size_t video_upscaler_dlss_dir(char *s, size_t len);
+/* The directory of @kind in effect into @s: the setting, else the
+ * application directory's upscalers/<dlss|fsr|xess>. Empty for Off. */
+size_t video_upscaler_dir(enum video_temporal_upscaler kind, char *s, size_t len);
 
-/* The VIDEO_UPSCALER_DLSS_* bits found now: the menu offers DLSS when
- * both are there. A library found stays loaded. */
-unsigned video_upscaler_dlss_probe(void);
+/* The VIDEO_UPSCALER_FOUND_* bits of @kind found now. A library found
+ * stays loaded. */
+unsigned video_upscaler_probe(enum video_temporal_upscaler kind);
 
 /* The setting and what the probe found, for System Information; fits
  * NAME_MAX_LENGTH */
 size_t video_upscaler_status_string(char *s, size_t len);
+
+/* The upscaler's name for a log or the status */
+const char *video_upscaler_name(enum video_temporal_upscaler kind);
 
 /* video_temporal_upscaler_quality: the mode, as the backend names its
  * render size for it; Auto picks by output size. */
@@ -84,9 +96,21 @@ enum video_temporal_upscaler_preset
 };
 
 /* The mode for an output of @out_dims (VIDEO_SCALE_PACK): the quality
- * setting, Auto resolved, and the preset, as one word (NGX_MODE_PACK:
- * an enum ngx_perf_quality and an enum ngx_dlss_render_preset). */
+ * setting, Auto resolved, and the preset, as one word
+ * (VIDEO_UPSCALER_MODE_PACK), the backends' own mode words by the
+ * translations below. */
+#define VIDEO_UPSCALER_MODE_PACK(quality, preset) ((unsigned)(quality) | ((unsigned)(preset) << 8))
+#define VIDEO_UPSCALER_MODE_QUALITY(mode)         ((mode) & 0xffu)   /* enum video_temporal_upscaler_quality, never Auto */
+#define VIDEO_UPSCALER_MODE_PRESET(mode)          ((mode) >> 8)      /* enum video_temporal_upscaler_preset */
 unsigned video_upscaler_mode(unsigned out_dims);
+
+/* NGX_MODE_PACK: an enum ngx_perf_quality and an enum
+ * ngx_dlss_render_preset */
+unsigned video_upscaler_mode_ngx(unsigned mode);
+/* An FFX_UPSCALE_MODE_ (the preset has no FSR meaning) */
+unsigned video_upscaler_mode_ffx(unsigned mode);
+/* An XESS_QUALITY_ */
+unsigned video_upscaler_mode_xess(unsigned mode);
 
 /* A video driver's upscaler, attached while its session is up:
  * optimal names the mode's render sizes for an output size, false

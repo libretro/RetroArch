@@ -286,7 +286,7 @@ jobs:
           make -C samples/gfx/vulkan_driver_pacing clean
 
   vulkan-upscaler:
-    name: Vulkan temporal upscaler glue (lavapipe, stand-in NGX)
+    name: Vulkan temporal upscaler glue (lavapipe, stand-in NGX, FSR and XeSS)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
@@ -321,11 +321,12 @@ jobs:
       - name: Regression test
         run: |
           . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
-          # gfx/common/vulkan_ngx.c and gfx/video_upscaler.c on lavapipe
-          # under the validation layer, against a stand-in NGX core
-          # library: the session, the core's request, a frame's feature
-          # and evaluate parameters, resizes retiring the old output,
-          # refused frames, teardown.
+          # gfx/common/vulkan_ngx.c, vulkan_ffx.c, vulkan_xess.c, the
+          # dispatch of vulkan_upscaler.c and gfx/video_upscaler.c on
+          # lavapipe under the validation layer, against stand-in NGX,
+          # FidelityFX API and XeSS libraries: the session, the core's
+          # request, a frame's feature and dispatch parameters, resizes
+          # retiring the old output, refused frames, teardown.
           make -C samples/gfx/vulkan_upscaler check
           make -C samples/gfx/vulkan_upscaler clean
           make -C samples/gfx/vulkan_upscaler SANITIZER=address,undefined check
@@ -336,7 +337,7 @@ jobs:
           make -C samples/gfx/vulkan_upscaler clean
 
   d3d12-upscaler:
-    name: Direct3D 12 temporal upscaler glue (Wine vkd3d on lavapipe, stand-in NGX)
+    name: Direct3D 12 temporal upscaler glue (Wine vkd3d on lavapipe, stand-in NGX, FSR and XeSS)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
@@ -370,12 +371,14 @@ jobs:
 
       - name: Regression test
         run: |
-          # gfx/common/d3d12_ngx.c and gfx/video_upscaler.c, cross-built
-          # with mingw, on Wine's D3D12 (vkd3d over lavapipe, which
-          # wants a display) against a stand-in NGX core library: the
-          # session, the core's request, a frame's feature and evaluate
-          # on the frame's list with the output read back, resizes
-          # retiring the old output, refused frames, teardown.
+          # gfx/common/d3d12_ngx.c, d3d12_ffx.c, d3d12_xess.c, the
+          # dispatch of d3d12_upscaler.c and gfx/video_upscaler.c,
+          # cross-built with mingw, on Wine's D3D12 (vkd3d over
+          # lavapipe, which wants a display) against stand-in NGX,
+          # FidelityFX API and XeSS libraries: the session, the core's
+          # request, a frame's feature and dispatch on the frame's list
+          # with the output read back, resizes retiring the old output,
+          # refused frames, teardown.
           trap 'wineserver -k >/dev/null 2>&1 || true' EXIT
           export WINEDEBUG=-all
           timeout 120 xvfb-run -a sh -c 'wineboot -i && wineserver -w'

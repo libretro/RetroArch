@@ -2003,18 +2003,29 @@ ifneq ($(findstring Win32,$(OS)),)
    endif
 endif
 
-# Temporal Upscaler: DLSS Super Resolution through NGX, loaded at run
-# time, for the Vulkan and Direct3D 12 drivers where the driver has NGX
+# Temporal Upscaler: DLSS Super Resolution through NGX, FSR through the
+# FidelityFX API and XeSS, each loaded at run time, for the Vulkan and
+# Direct3D 12 drivers
 ifneq ($(findstring 1,$(HAVE_VULKAN) $(HAVE_D3D12)),)
    ifneq ($(findstring Win32,$(OS))$(findstring Linux,$(OS)),)
       DEFINES += -DHAVE_NGX
       OBJ += gfx/video_upscaler.o \
-             $(LIBRETRO_COMM_DIR)/gfx/nvidia/ngx_loader.o
+             gfx/common/ffx_common.o \
+             gfx/common/xess_common.o \
+             $(LIBRETRO_COMM_DIR)/gfx/nvidia/ngx_loader.o \
+             $(LIBRETRO_COMM_DIR)/gfx/amd/ffx_loader.o \
+             $(LIBRETRO_COMM_DIR)/gfx/intel/xess_loader.o
       ifeq ($(HAVE_VULKAN), 1)
-         OBJ += gfx/common/vulkan_ngx.o
+         OBJ += gfx/common/vulkan_upscaler.o \
+                gfx/common/vulkan_ngx.o \
+                gfx/common/vulkan_ffx.o \
+                gfx/common/vulkan_xess.o
       endif
       ifeq ($(HAVE_D3D12), 1)
-         OBJ += gfx/common/d3d12_ngx.o
+         OBJ += gfx/common/d3d12_upscaler.o \
+                gfx/common/d3d12_ngx.o \
+                gfx/common/d3d12_ffx.o \
+                gfx/common/d3d12_xess.o
       endif
    endif
 endif

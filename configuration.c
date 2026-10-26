@@ -2200,6 +2200,8 @@ static struct config_path_setting *populate_settings_path(
    SETTING_PATH("video_filter_dir",              settings->paths.directory_video_filter, true, NULL, true);
 #ifdef HAVE_NGX
    SETTING_PATH("video_dlss_directory",          settings->paths.directory_dlss, true, NULL, true);
+   SETTING_PATH("video_fsr_directory",           settings->paths.directory_fsr, true, NULL, true);
+   SETTING_PATH("video_xess_directory",          settings->paths.directory_xess, true, NULL, true);
 #endif
    SETTING_PATH("video_filter",                  settings->paths.path_softfilter_plugin, false, NULL, true);
    SETTING_PATH("video_font_path",               settings->paths.path_font, false, NULL, true);
@@ -6282,6 +6284,8 @@ void config_set_defaults(settings_t *target)
    *settings->paths.directory_video_filter = '\0';
    *settings->paths.directory_audio_filter = '\0';
    *settings->paths.directory_dlss = '\0';
+   *settings->paths.directory_fsr = '\0';
+   *settings->paths.directory_xess = '\0';
 
    retroarch_ctl(RARCH_CTL_UNSET_UPS_PREF, NULL);
    retroarch_ctl(RARCH_CTL_UNSET_BPS_PREF, NULL);
@@ -7639,6 +7643,10 @@ static bool config_load_file(const char *path, settings_t *settings)
       *settings->paths.directory_audio_filter = '\0';
    if (string_is_equal(settings->paths.directory_dlss, "default"))
       *settings->paths.directory_dlss = '\0';
+   if (string_is_equal(settings->paths.directory_fsr, "default"))
+      *settings->paths.directory_fsr = '\0';
+   if (string_is_equal(settings->paths.directory_xess, "default"))
+      *settings->paths.directory_xess = '\0';
    if (string_is_equal(settings->paths.directory_core_assets, "default"))
       *settings->paths.directory_core_assets = '\0';
 

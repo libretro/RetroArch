@@ -633,12 +633,22 @@ VIDEO DRIVER
 #endif
 #ifdef HAVE_NGX
 #include "../gfx/video_upscaler.c"
+#include "../gfx/common/ffx_common.c"
+#include "../gfx/common/xess_common.c"
 #include "../libretro-common/gfx/nvidia/ngx_loader.c"
+#include "../libretro-common/gfx/amd/ffx_loader.c"
+#include "../libretro-common/gfx/intel/xess_loader.c"
 #ifdef HAVE_VULKAN
+#include "../gfx/common/vulkan_upscaler.c"
 #include "../gfx/common/vulkan_ngx.c"
+#include "../gfx/common/vulkan_ffx.c"
+#include "../gfx/common/vulkan_xess.c"
 #endif
 #ifdef HAVE_D3D12
+#include "../gfx/common/d3d12_upscaler.c"
 #include "../gfx/common/d3d12_ngx.c"
+#include "../gfx/common/d3d12_ffx.c"
+#include "../gfx/common/d3d12_xess.c"
 #endif
 #endif
 #if defined(HAVE_D3D)

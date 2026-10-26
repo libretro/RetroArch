@@ -1,6 +1,10 @@
 /* gfx/common/vulkan_ngx.c and gfx/video_upscaler.c against a stand-in
  * NGX core library (fake_ngx.c) on a real Vulkan device (lavapipe),
- * under the validation layer where it is installed.
+ * under the validation layer where it is installed; then
+ * gfx/common/vulkan_ffx.c and vulkan_xess.c behind the dispatch of
+ * vulkan_upscaler.c, against the stand-in FidelityFX API and XeSS
+ * libraries of libretro-common's samples planted in directories of
+ * the test's.
  *
  * What is pinned: the session comes up from the loaded library with
  * the project id and path list; the mode's render sizes reach the
@@ -20,6 +24,8 @@
 
 #include <vulkan/vulkan_symbol_wrapper.h>
 #include <gfx/nvidia/ngx_loader.h>
+#include <gfx/amd/ffx_loader.h>
+#include <gfx/intel/xess_loader.h>
 #if defined(_WIN32)
 #include <windows.h>
 #else
@@ -47,8 +53,11 @@ static bool load_vulkan(void) { return true; }
 #include "../../../configuration.h"
 #include "../../../gfx/video_upscaler.h"
 #include "../../../gfx/common/vulkan_ngx.h"
+#include "../../../gfx/common/vulkan_upscaler.h"
 #include <file/file_path.h>
 #include "fake_ngx.h"
+#include "../../../libretro-common/samples/gfx/amd/fake_ffx.h"
+#include "../../../libretro-common/samples/gfx/intel/fake_xess.h"
 
 /* The DLSS runtime in @dir: an empty file with the runtime's name */
 static void plant_dlss_runtime(const char *dir)
@@ -78,10 +87,12 @@ static void clear_dlss_runtime(const char *dir)
 }
 
 static int failures;
+static int checks;
 static int validation_errors;
 
 #define CHECK(cond) \
    do { \
+      checks++; \
       if (!(cond)) \
       { \
          printf("FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); \
@@ -431,11 +442,556 @@ static void set_input(struct retro_hw_upscaler_image *dst, const image_t *src)
    dst->height = src->height;
 }
 
+/* The frontend's mode word, as the driver hands it to the session */
 static bool optimal_cb(void *data, unsigned mode, unsigned out_dims,
       unsigned *render_dims, unsigned *min_dims, unsigned *max_dims)
 {
-   return vulkan_ngx_optimal((vulkan_ngx_t*)data, mode, out_dims,
+   return vulkan_ngx_optimal((vulkan_ngx_t*)data, video_upscaler_mode_ngx(mode),
+         out_dims, render_dims, min_dims, max_dims);
+}
+
+static bool dispatch_cb(void *data, unsigned mode, unsigned out_dims,
+      unsigned *render_dims, unsigned *min_dims, unsigned *max_dims)
+{
+   return vulkan_upscaler_optimal((vulkan_upscaler_t*)data, mode, out_dims,
          render_dims, min_dims, max_dims);
+}
+
+static void *symbol_of(void *handle, const char *name)
+{
+   void *fn = NULL;
+#if defined(_WIN32)
+   FARPROC p = GetProcAddress((HMODULE)handle, name);
+#else
+   void *p = dlsym(handle, name);
+#endif
+   memcpy(&fn, &p, sizeof(fn));
+   return fn;
+}
+
+static unsigned chain_length(const void *pnext, VkStructureType *types, unsigned cap)
+{
+   const VkBaseInStructure *c;
+   unsigned n = 0;
+   for (c = (const VkBaseInStructure*)pnext; c; c = c->pNext)
+      if (n < cap)
+         types[n++] = c->sType;
+   return n;
+}
+
+#define QUALITY(q) VIDEO_UPSCALER_MODE_PACK(VIDEO_TEMPORAL_UPSCALER_QUALITY_##q, 0)
+
+/* FSR behind the dispatch: the library from the FSR directory, the
+ * device's 16-bit extensions and features, the sizes by the library's
+ * query, a frame's context and dispatch descriptor as the SDK reads
+ * them, a resize retiring the context, a failed dispatch */
+static void test_ffx(settings_t *settings, image_t *color, image_t *mv,
+      image_t *depth)
+{
+   vulkan_upscaler_t *up;
+   fake_ffx_record_t *(*get)(void);
+   fake_ffx_record_t *rec;
+   const ffx_lib_t *lib;
+   vulkan_upscaler_image_t in, out;
+   struct retro_hw_upscaler_inputs inputs;
+   struct retro_hw_upscaler_request req;
+   video_upscaler_backend_t backend;
+   const struct retro_hw_render_upscaler_interface *iface;
+   const char *ext[8];
+   VkStructureType types[8];
+   VkPhysicalDeviceShaderFloat16Int8FeaturesKHR f16;
+   const void *chain;
+   unsigned n, i, render_dims, min_dims, max_dims;
+   char status[256];
+
+   settings->uints.video_temporal_upscaler = VIDEO_TEMPORAL_UPSCALER_FSR;
+   strcpy(settings->paths.directory_fsr, "Zdir_none");
+   CHECK(video_upscaler_probe(VIDEO_TEMPORAL_UPSCALER_FSR) == 0);
+   video_upscaler_status_string(status, sizeof(status));
+   CHECK(strstr(status, "FSR (FSR library: not in FSR Directory)") == status);
+   CHECK(vulkan_upscaler_init(VIDEO_TEMPORAL_UPSCALER_FSR, instance, gpu, device,
+            vkGetInstanceProcAddr, vkGetDeviceProcAddr, &mem_props, "Zdir_none") == NULL);
+   CHECK(vulkan_upscaler_device_extensions(VIDEO_TEMPORAL_UPSCALER_FSR, "Zdir_none",
+            gpu, vkGetInstanceProcAddr, instance, ext, 0, 8) == 0);
+   strcpy(settings->paths.directory_fsr, "Zdir_fsr");
+   CHECK(video_upscaler_probe(VIDEO_TEMPORAL_UPSCALER_FSR) == VIDEO_UPSCALER_READY);
+   video_upscaler_status_string(status, sizeof(status));
+   CHECK(strstr(status, "FSR (FSR library: found)") == status);
+   video_upscaler_log_probe(VIDEO_TEMPORAL_UPSCALER_FSR);
+   lib = ffx_lib_get(FFX_API_VULKAN, "Zdir_fsr");
+   CHECK(lib != NULL);
+   if (!lib)
+      return;
+   get = (fake_ffx_record_t *(*)(void))symbol_of(lib->handle, "fake_ffx_record");
+   CHECK(get != NULL);
+   if (!get)
+      return;
+   rec = get();
+
+   /* What the device gets: the 16-bit extensions the GPU has, once */
+   n = vulkan_upscaler_device_extensions(VIDEO_TEMPORAL_UPSCALER_FSR, "Zdir_fsr",
+         gpu, vkGetInstanceProcAddr, instance, ext, 0, 8);
+   CHECK(n <= 2);
+   for (i = 0; i < n; i++)
+      CHECK(!strcmp(ext[i], "VK_KHR_shader_float16_int8") || !strcmp(ext[i], "VK_KHR_16bit_storage"));
+   CHECK(vulkan_upscaler_device_extensions(VIDEO_TEMPORAL_UPSCALER_FSR, "Zdir_fsr",
+            gpu, vkGetInstanceProcAddr, instance, ext, n, 8) == n);
+   CHECK(vulkan_upscaler_instance_extensions(VIDEO_TEMPORAL_UPSCALER_FSR, "Zdir_fsr",
+            ext, 0, 8) == 0);
+   chain = vulkan_upscaler_device_features(VIDEO_TEMPORAL_UPSCALER_FSR, "Zdir_fsr",
+         gpu, vkGetInstanceProcAddr, instance, NULL);
+   n = chain_length(chain, types, 8);
+   CHECK(n <= 2);
+   for (i = 0; i < n; i++)
+      CHECK(types[i] == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT16_INT8_FEATURES_KHR
+            || types[i] == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES_KHR);
+   /* (a chain naming the features already keeps its own) */
+   memset(&f16, 0, sizeof(f16));
+   f16.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT16_INT8_FEATURES_KHR;
+   chain = vulkan_upscaler_device_features(VIDEO_TEMPORAL_UPSCALER_FSR, "Zdir_fsr",
+         gpu, vkGetInstanceProcAddr, instance, &f16);
+   {
+      const VkBaseInStructure *c;
+      unsigned f16_nodes = 0;
+      for (c = (const VkBaseInStructure*)chain; c; c = c->pNext)
+         if (c->sType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT16_INT8_FEATURES_KHR)
+         {
+            f16_nodes++;
+            CHECK((const void*)c == (const void*)&f16);
+         }
+      CHECK(f16_nodes == 1);
+   }
+
+   /* The session: the newest version the library offers */
+   up = vulkan_upscaler_init(VIDEO_TEMPORAL_UPSCALER_FSR, instance, gpu, device,
+         vkGetInstanceProcAddr, vkGetDeviceProcAddr, &mem_props, "Zdir_fsr");
+   CHECK(up != NULL);
+   if (!up)
+      return;
+   CHECK(rec->creates == 0 && rec->queries >= 2);
+
+   /* The sizes: the library's render size of the mode, a third of the
+    * output up to the output */
+   CHECK(vulkan_upscaler_optimal(up, QUALITY(QUALITY), VIDEO_SCALE_PACK(1920, 1080),
+            &render_dims, &min_dims, &max_dims));
+   CHECK(render_dims == VIDEO_SCALE_PACK(1280, 720)
+         && min_dims == VIDEO_SCALE_PACK(640, 360)
+         && max_dims == VIDEO_SCALE_PACK(1920, 1080));
+   CHECK(vulkan_upscaler_optimal(up, QUALITY(BALANCED), VIDEO_SCALE_PACK(1920, 1080),
+            &render_dims, &min_dims, &max_dims) && render_dims == VIDEO_SCALE_PACK(1129, 635));
+   CHECK(vulkan_upscaler_optimal(up, QUALITY(PERFORMANCE), VIDEO_SCALE_PACK(1920, 1080),
+            &render_dims, &min_dims, &max_dims) && render_dims == VIDEO_SCALE_PACK(960, 540));
+   CHECK(vulkan_upscaler_optimal(up, QUALITY(ULTRA_PERFORMANCE), VIDEO_SCALE_PACK(1920, 1080),
+            &render_dims, &min_dims, &max_dims) && render_dims == VIDEO_SCALE_PACK(640, 360));
+   CHECK(vulkan_upscaler_optimal(up, QUALITY(NATIVE), VIDEO_SCALE_PACK(1920, 1080),
+            &render_dims, &min_dims, &max_dims) && render_dims == VIDEO_SCALE_PACK(1920, 1080));
+   CHECK(!vulkan_upscaler_optimal(up, QUALITY(NATIVE), VIDEO_SCALE_PACK(0, 1080),
+            &render_dims, &min_dims, &max_dims));
+
+   /* The core's request through the frontend module */
+   backend.data    = up;
+   backend.optimal = dispatch_cb;
+   video_upscaler_attach(&backend);
+   iface = video_upscaler_get_interface();
+   CHECK(iface != NULL);
+   video_upscaler_set_output(VIDEO_SCALE_PACK(1920, 1080));
+   settings->uints.video_temporal_upscaler_quality = VIDEO_TEMPORAL_UPSCALER_QUALITY_AUTO;
+   CHECK(iface->get_request(iface->handle, &req));
+   CHECK(req.render_width == 1280 && req.render_height == 720
+         && req.min_render_width == 640 && req.max_render_width == 1920);
+   settings->uints.video_temporal_upscaler_quality = VIDEO_TEMPORAL_UPSCALER_QUALITY_PERFORMANCE;
+   CHECK(iface->get_request(iface->handle, &req) && req.render_width == 960);
+   settings->uints.video_temporal_upscaler_quality = VIDEO_TEMPORAL_UPSCALER_QUALITY_QUALITY;
+
+   /* A frame: the context for the output size and the inputs' flags,
+    * the dispatch with the images as the SDK reads them */
+   memset(&inputs, 0, sizeof(inputs));
+   set_input(&inputs.motion_vectors, mv);
+   set_input(&inputs.depth, depth);
+   inputs.flags      = RETRO_HW_UPSCALER_DEPTH_INVERTED | RETRO_HW_UPSCALER_MV_JITTERED;
+   inputs.jitter_x   = 0.25f;
+   inputs.jitter_y   = -0.125f;
+   inputs.mv_scale_x = 0.0f;
+   inputs.mv_scale_y = -1.0f;
+   inputs.frame_time_ms = 16.6f;
+   in.image  = color->image;
+   in.view   = color->view;
+   in.layout = color->layout;
+   in.format = color->format;
+   in.dims   = VIDEO_SCALE_PACK(color->width, color->height);
+   begin_frame();
+   memset(&out, 0, sizeof(out));
+   CHECK(vulkan_upscaler_upscale(up, cmd, &in, &inputs, QUALITY(QUALITY),
+            VIDEO_SCALE_PACK(1920, 1080), &out));
+   end_frame();
+   vulkan_upscaler_frame_done(up);
+   CHECK(rec->creates == 1 && rec->dispatches == 1);
+   CHECK(rec->create[0].flags == (FFX_UPSCALE_ENABLE_DYNAMIC_RESOLUTION
+            | FFX_UPSCALE_ENABLE_MV_JITTER_CANCELLATION | FFX_UPSCALE_ENABLE_DEPTH_INVERTED
+            | FFX_UPSCALE_ENABLE_NON_LINEAR_COLORSPACE | FFX_UPSCALE_ENABLE_AUTO_EXPOSURE));
+   CHECK(rec->create[0].max_render_w == 1920 && rec->create[0].max_render_h == 1080
+         && rec->create[0].max_upscale_w == 1920 && rec->create[0].max_upscale_h == 1080);
+   CHECK(rec->create[0].backend_type == FFX_TYPE_BACKEND_VK
+         && rec->create[0].device == (void*)device
+         && rec->create[0].physical_device == (void*)gpu
+         && rec->create[0].get_device_proc_addr == (void*)vkGetDeviceProcAddr);
+   CHECK(rec->create[0].version_id == 0x4002 && rec->create[0].has_message);
+   CHECK(rec->dispatch[0].command_list == (void*)cmd);
+   CHECK(rec->dispatch[0].color.present && rec->dispatch[0].color.resource == (void*)color->image
+         && rec->dispatch[0].color.format == FFX_FORMAT_R8G8B8A8_UNORM
+         && rec->dispatch[0].color.width == 1280 && rec->dispatch[0].color.height == 720
+         && rec->dispatch[0].color.usage == FFX_USAGE_READ_ONLY
+         && rec->dispatch[0].color.state == FFX_STATE_COMPUTE_READ);
+   /* (the depth moved out of its depth layout for the read, the motion
+    * vectors read where they are, in GENERAL) */
+   CHECK(rec->dispatch[0].depth.resource == (void*)depth->image
+         && rec->dispatch[0].depth.format == FFX_FORMAT_R32_FLOAT
+         && (rec->dispatch[0].depth.usage & FFX_USAGE_DEPTHTARGET)
+         && rec->dispatch[0].depth.state == FFX_STATE_COMPUTE_READ);
+   CHECK(rec->dispatch[0].motion_vectors.resource == (void*)mv->image
+         && rec->dispatch[0].motion_vectors.format == FFX_FORMAT_R16G16_FLOAT
+         && rec->dispatch[0].motion_vectors.state == FFX_STATE_UNORDERED_ACCESS);
+   CHECK(rec->dispatch[0].output.present && rec->dispatch[0].output.resource == (void*)out.image
+         && rec->dispatch[0].output.usage == FFX_USAGE_UAV
+         && rec->dispatch[0].output.state == FFX_STATE_UNORDERED_ACCESS
+         && rec->dispatch[0].output.width == 1920 && rec->dispatch[0].output.height == 1080);
+   CHECK(!rec->dispatch[0].exposure.present && !rec->dispatch[0].transparency.present
+         && !rec->dispatch[0].reactive.present);
+   CHECK(rec->dispatch[0].jitter_x == 0.25f && rec->dispatch[0].jitter_y == -0.125f);
+   CHECK(rec->dispatch[0].mv_scale_x == 1.0f && rec->dispatch[0].mv_scale_y == -1.0f);
+   CHECK(rec->dispatch[0].render_w == 1280 && rec->dispatch[0].render_h == 720
+         && rec->dispatch[0].upscale_w == 1920 && rec->dispatch[0].upscale_h == 1080);
+   CHECK(!rec->dispatch[0].sharpening && rec->dispatch[0].reset == 1);
+   CHECK(rec->dispatch[0].frame_time == 16.6f && rec->dispatch[0].pre_exposure == 1.0f);
+   CHECK(rec->dispatch[0].camera_near == 0.1f && rec->dispatch[0].camera_far == 100000.0f);
+   CHECK(rec->dispatch[0].flags == FFX_UPSCALE_FLAG_NON_LINEAR_COLOR_SRGB);
+   CHECK(out.dims == VIDEO_SCALE_PACK(1920, 1080) && out.format == VK_FORMAT_R8G8B8A8_UNORM
+         && out.layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL && out.view != VK_NULL_HANDLE);
+
+   /* The next frames: the same context, no reset but the core's; a
+    * mode change needs no new context, only the render size changes */
+   begin_frame();
+   CHECK(vulkan_upscaler_upscale(up, cmd, &in, &inputs, QUALITY(QUALITY),
+            VIDEO_SCALE_PACK(1920, 1080), &out));
+   end_frame();
+   vulkan_upscaler_frame_done(up);
+   CHECK(rec->creates == 1 && rec->dispatches == 2 && rec->dispatch[1].reset == 0);
+   inputs.flags |= RETRO_HW_UPSCALER_RESET;
+   in.dims = VIDEO_SCALE_PACK(960, 540);
+   begin_frame();
+   CHECK(vulkan_upscaler_upscale(up, cmd, &in, &inputs, QUALITY(PERFORMANCE),
+            VIDEO_SCALE_PACK(1920, 1080), &out));
+   end_frame();
+   vulkan_upscaler_frame_done(up);
+   CHECK(rec->creates == 1 && rec->dispatches == 3 && rec->dispatch[2].reset == 1
+         && rec->dispatch[2].render_w == 960 && rec->dispatch[2].render_h == 540);
+   inputs.flags &= ~RETRO_HW_UPSCALER_RESET;
+   in.dims = VIDEO_SCALE_PACK(1280, 720);
+
+   /* HDR inputs: another context, linear color */
+   inputs.flags |= RETRO_HW_UPSCALER_HDR;
+   begin_frame();
+   CHECK(vulkan_upscaler_upscale(up, cmd, &in, &inputs, QUALITY(QUALITY),
+            VIDEO_SCALE_PACK(1920, 1080), &out));
+   end_frame();
+   vulkan_upscaler_frame_done(up);
+   CHECK(rec->creates == 2 && rec->dispatches == 4
+         && (rec->create[1].flags & FFX_UPSCALE_ENABLE_HIGH_DYNAMIC_RANGE)
+         && !(rec->create[1].flags & FFX_UPSCALE_ENABLE_NON_LINEAR_COLORSPACE)
+         && rec->dispatch[3].flags == 0);
+   inputs.flags &= ~RETRO_HW_UPSCALER_HDR;
+
+   /* A resize: a new context, the old retired after the frames in flight */
+   begin_frame();
+   CHECK(vulkan_upscaler_upscale(up, cmd, &in, &inputs, QUALITY(QUALITY),
+            VIDEO_SCALE_PACK(2560, 1440), &out));
+   end_frame();
+   vulkan_upscaler_frame_done(up);
+   CHECK(rec->creates == 3 && rec->create[2].max_upscale_w == 2560
+         && out.dims == VIDEO_SCALE_PACK(2560, 1440));
+   CHECK(rec->destroys == 0);
+   for (i = 0; i < 30 && rec->destroys < 2; i++)
+      vulkan_upscaler_frame_done(up);
+   CHECK(rec->destroys == 2 && i >= 15);
+
+   /* A dispatch that fails: the frame shown as it is, nothing tried
+    * again until the output or flags change */
+   rec->dispatch_fails = 1;
+   begin_frame();
+   CHECK(!vulkan_upscaler_upscale(up, cmd, &in, &inputs, QUALITY(QUALITY),
+            VIDEO_SCALE_PACK(2560, 1440), &out));
+   end_frame();
+   vulkan_upscaler_frame_done(up);
+   rec->dispatch_fails = 0;
+   begin_frame();
+   CHECK(!vulkan_upscaler_upscale(up, cmd, &in, &inputs, QUALITY(QUALITY),
+            VIDEO_SCALE_PACK(2560, 1440), &out));
+   end_frame();
+   vulkan_upscaler_frame_done(up);
+   CHECK(rec->dispatches == 6);
+   begin_frame();
+   CHECK(vulkan_upscaler_upscale(up, cmd, &in, &inputs, QUALITY(QUALITY),
+            VIDEO_SCALE_PACK(1920, 1080), &out));
+   end_frame();
+   vulkan_upscaler_frame_done(up);
+   CHECK(rec->creates == 4 && rec->dispatches == 7);
+
+   /* A context that will not create: refused, nothing leaks */
+   rec->create_fails = 1;
+   begin_frame();
+   CHECK(!vulkan_upscaler_upscale(up, cmd, &in, &inputs, QUALITY(QUALITY),
+            VIDEO_SCALE_PACK(1280, 720), &out));
+   end_frame();
+   vulkan_upscaler_frame_done(up);
+   rec->create_fails = 0;
+   CHECK(rec->creates == 5);
+
+   /* No inputs, no depth: refused */
+   CHECK(!vulkan_upscaler_upscale(up, cmd, &in, NULL, QUALITY(QUALITY),
+            VIDEO_SCALE_PACK(1920, 1080), &out));
+   inputs.depth.image = 0;
+   CHECK(!vulkan_upscaler_upscale(up, cmd, &in, &inputs, QUALITY(QUALITY),
+            VIDEO_SCALE_PACK(1920, 1080), &out));
+
+   vkDeviceWaitIdle(device);
+   vulkan_upscaler_free(up);
+   CHECK(rec->destroys == 4);
+   video_upscaler_detach();
+}
+
+/* XeSS behind the dispatch: the library from the XeSS directory, the
+ * instance and device extensions and the feature chain it asks for,
+ * the sizes by its query, a context whose pipelines build in the
+ * background before init, the execute parameters as the SDK reads
+ * them, a resize retiring the context, a failed execute */
+static void test_xess(settings_t *settings, image_t *color, image_t *mv,
+      image_t *depth)
+{
+   vulkan_upscaler_t *up;
+   fake_xess_record_t *(*get)(void);
+   fake_xess_record_t *rec;
+   const xess_lib_t *lib;
+   vulkan_upscaler_image_t in, out;
+   struct retro_hw_upscaler_inputs inputs;
+   struct retro_hw_upscaler_request req;
+   video_upscaler_backend_t backend;
+   const struct retro_hw_render_upscaler_interface *iface;
+   const char *ext[8];
+   VkStructureType types[8];
+   struct { VkStructureType sType; void *pNext; uint32_t a, b; } named;
+   const void *chain;
+   unsigned n, i, render_dims, min_dims, max_dims;
+   char status[256];
+
+   settings->uints.video_temporal_upscaler = VIDEO_TEMPORAL_UPSCALER_XESS;
+   strcpy(settings->paths.directory_xess, "Zdir_none");
+   CHECK(video_upscaler_probe(VIDEO_TEMPORAL_UPSCALER_XESS) == 0);
+   video_upscaler_status_string(status, sizeof(status));
+   CHECK(strstr(status, "XeSS (XeSS library: not in XeSS Directory)") == status);
+   CHECK(vulkan_upscaler_init(VIDEO_TEMPORAL_UPSCALER_XESS, instance, gpu, device,
+            vkGetInstanceProcAddr, vkGetDeviceProcAddr, &mem_props, "Zdir_none") == NULL);
+   CHECK(vulkan_upscaler_instance_extensions(VIDEO_TEMPORAL_UPSCALER_XESS, "Zdir_none",
+            ext, 0, 8) == 0);
+   strcpy(settings->paths.directory_xess, "Zdir_xess");
+   CHECK(video_upscaler_probe(VIDEO_TEMPORAL_UPSCALER_XESS) == VIDEO_UPSCALER_READY);
+   video_upscaler_status_string(status, sizeof(status));
+   CHECK(strstr(status, "XeSS (XeSS library: found)") == status);
+   video_upscaler_log_probe(VIDEO_TEMPORAL_UPSCALER_XESS);
+   lib = xess_lib_get("Zdir_xess");
+   CHECK(lib != NULL);
+   if (!lib)
+      return;
+   get = (fake_xess_record_t *(*)(void))symbol_of(lib->handle, "fake_xess_record");
+   CHECK(get != NULL);
+   if (!get)
+      return;
+   rec = get();
+
+   /* What the instance and device get: the library's lists, those the
+    * GPU has, none twice; its feature chain ahead of the device's */
+   ext[0] = "VK_KHR_surface";
+   n = vulkan_upscaler_instance_extensions(VIDEO_TEMPORAL_UPSCALER_XESS, "Zdir_xess", ext, 1, 8);
+   CHECK(n == 2 && !strcmp(ext[1], "VK_KHR_get_physical_device_properties2"));
+   CHECK(vulkan_upscaler_instance_extensions(VIDEO_TEMPORAL_UPSCALER_XESS, "Zdir_xess", ext, n, 8) == n);
+   n = vulkan_upscaler_device_extensions(VIDEO_TEMPORAL_UPSCALER_XESS, "Zdir_xess",
+         gpu, vkGetInstanceProcAddr, instance, ext, 0, 8);
+   CHECK(n <= 2);
+   for (i = 0; i < n; i++)
+      CHECK(!strcmp(ext[i], "VK_KHR_shader_float16_int8") || !strcmp(ext[i], "VK_KHR_16bit_storage"));
+   CHECK(vulkan_upscaler_device_extensions(VIDEO_TEMPORAL_UPSCALER_XESS, "Zdir_xess",
+            gpu, vkGetInstanceProcAddr, instance, ext, n, 8) == n);
+   chain = vulkan_upscaler_device_features(VIDEO_TEMPORAL_UPSCALER_XESS, "Zdir_xess",
+         gpu, vkGetInstanceProcAddr, instance, NULL);
+   n = chain_length(chain, types, 8);
+   CHECK(n == 1 && types[0] == (VkStructureType)1000082000);
+   memset(&named, 0, sizeof(named));
+   named.sType = (VkStructureType)1000082000;
+   chain = vulkan_upscaler_device_features(VIDEO_TEMPORAL_UPSCALER_XESS, "Zdir_xess",
+         gpu, vkGetInstanceProcAddr, instance, &named);
+   CHECK(chain == (const void*)&named);
+
+   /* The session: a context of its own for the queries */
+   up = vulkan_upscaler_init(VIDEO_TEMPORAL_UPSCALER_XESS, instance, gpu, device,
+         vkGetInstanceProcAddr, vkGetDeviceProcAddr, &mem_props, "Zdir_xess");
+   CHECK(up != NULL);
+   if (!up)
+      return;
+   CHECK(rec->creates == 1 && rec->create_instance == (void*)instance
+         && rec->create_physical_device == (void*)gpu && rec->create_device == (void*)device);
+   CHECK(rec->inits == 0);
+
+   /* The sizes: the library's, the range it names */
+   CHECK(vulkan_upscaler_optimal(up, QUALITY(QUALITY), VIDEO_SCALE_PACK(1920, 1080),
+            &render_dims, &min_dims, &max_dims));
+   CHECK(render_dims == VIDEO_SCALE_PACK(1129, 635)
+         && min_dims == VIDEO_SCALE_PACK(640, 360)
+         && max_dims == VIDEO_SCALE_PACK(1920, 1080));
+   CHECK(vulkan_upscaler_optimal(up, QUALITY(BALANCED), VIDEO_SCALE_PACK(1920, 1080),
+            &render_dims, &min_dims, &max_dims) && render_dims == VIDEO_SCALE_PACK(960, 540));
+   CHECK(vulkan_upscaler_optimal(up, QUALITY(PERFORMANCE), VIDEO_SCALE_PACK(1920, 1080),
+            &render_dims, &min_dims, &max_dims) && render_dims == VIDEO_SCALE_PACK(834, 469));
+   CHECK(vulkan_upscaler_optimal(up, QUALITY(ULTRA_PERFORMANCE), VIDEO_SCALE_PACK(1920, 1080),
+            &render_dims, &min_dims, &max_dims) && render_dims == VIDEO_SCALE_PACK(640, 360));
+   CHECK(vulkan_upscaler_optimal(up, QUALITY(NATIVE), VIDEO_SCALE_PACK(1920, 1080),
+            &render_dims, &min_dims, &max_dims) && render_dims == VIDEO_SCALE_PACK(1920, 1080));
+
+   backend.data    = up;
+   backend.optimal = dispatch_cb;
+   video_upscaler_attach(&backend);
+   iface = video_upscaler_get_interface();
+   CHECK(iface != NULL);
+   video_upscaler_set_output(VIDEO_SCALE_PACK(1920, 1080));
+   settings->uints.video_temporal_upscaler_quality = VIDEO_TEMPORAL_UPSCALER_QUALITY_BALANCED;
+   CHECK(iface->get_request(iface->handle, &req));
+   CHECK(req.render_width == 960 && req.render_height == 540
+         && req.min_render_width == 640 && req.max_render_width == 1920);
+
+   /* A frame: a context for the output size, quality and flags, its
+    * pipelines building; nothing shown until they are built, then the
+    * init and the execute */
+   memset(&inputs, 0, sizeof(inputs));
+   set_input(&inputs.motion_vectors, mv);
+   set_input(&inputs.depth, depth);
+   inputs.flags      = RETRO_HW_UPSCALER_DEPTH_INVERTED | RETRO_HW_UPSCALER_MV_JITTERED;
+   inputs.jitter_x   = 0.25f;
+   inputs.jitter_y   = -0.125f;
+   inputs.mv_scale_x = 0.0f;
+   inputs.mv_scale_y = -1.0f;
+   inputs.frame_time_ms = 16.6f;
+   in.image  = color->image;
+   in.view   = color->view;
+   in.layout = color->layout;
+   in.format = color->format;
+   in.dims   = VIDEO_SCALE_PACK(color->width, color->height);
+   rec->build_pending = 2;
+   begin_frame();
+   memset(&out, 0, sizeof(out));
+   CHECK(!vulkan_upscaler_upscale(up, cmd, &in, &inputs, QUALITY(BALANCED),
+            VIDEO_SCALE_PACK(1920, 1080), &out));
+   end_frame();
+   vulkan_upscaler_frame_done(up);
+   CHECK(rec->creates == 2 && rec->pipelines == 1 && !rec->build_blocking
+         && rec->inits == 0 && rec->executes == 0);
+   CHECK(rec->log_level == XESS_LOGGING_LEVEL_WARNING);
+   begin_frame();
+   CHECK(!vulkan_upscaler_upscale(up, cmd, &in, &inputs, QUALITY(BALANCED),
+            VIDEO_SCALE_PACK(1920, 1080), &out));
+   end_frame();
+   vulkan_upscaler_frame_done(up);
+   CHECK(rec->creates == 2 && rec->pipelines == 1 && rec->inits == 0);
+   begin_frame();
+   CHECK(vulkan_upscaler_upscale(up, cmd, &in, &inputs, QUALITY(BALANCED),
+            VIDEO_SCALE_PACK(1920, 1080), &out));
+   end_frame();
+   vulkan_upscaler_frame_done(up);
+   CHECK(rec->creates == 2 && rec->inits == 1 && rec->executes == 1);
+   CHECK(rec->init[0].vk && rec->init[0].out_w == 1920 && rec->init[0].out_h == 1080
+         && rec->init[0].quality == XESS_QUALITY_BALANCED
+         && rec->init[0].flags == (XESS_INIT_FLAG_LDR_INPUT_COLOR | XESS_INIT_FLAG_JITTERED_MV
+            | XESS_INIT_FLAG_INVERTED_DEPTH | XESS_INIT_FLAG_ENABLE_AUTOEXPOSURE)
+         && rec->init[0].node_mask == 1);
+   CHECK(rec->jitter_scale_x == 1.0f && rec->jitter_scale_y == 1.0f);
+   CHECK(rec->velocity_scale_x == 1.0f && rec->velocity_scale_y == -1.0f);
+   CHECK(rec->execute[0].vk && rec->execute[0].context == rec->init[0].context
+         && rec->execute[0].command_list == (void*)cmd);
+   CHECK(rec->execute[0].color.present && rec->execute[0].color.image == (uint64_t)(uintptr_t)color->image
+         && rec->execute[0].color.view == (uint64_t)(uintptr_t)color->view
+         && rec->execute[0].color.format == (int)VK_FORMAT_R8G8B8A8_UNORM
+         && rec->execute[0].color.aspect == VK_IMAGE_ASPECT_COLOR_BIT
+         && rec->execute[0].color.width == 1280 && rec->execute[0].color.height == 720);
+   CHECK(rec->execute[0].depth.image == (uint64_t)(uintptr_t)depth->image
+         && rec->execute[0].depth.aspect == VK_IMAGE_ASPECT_DEPTH_BIT
+         && rec->execute[0].depth.format == (int)VK_FORMAT_D32_SFLOAT);
+   CHECK(rec->execute[0].velocity.image == (uint64_t)(uintptr_t)mv->image
+         && rec->execute[0].velocity.format == (int)VK_FORMAT_R16G16_SFLOAT);
+   CHECK(rec->execute[0].output.present && rec->execute[0].output.image == (uint64_t)(uintptr_t)out.image
+         && rec->execute[0].output.view == (uint64_t)(uintptr_t)out.view
+         && rec->execute[0].output.width == 1920 && rec->execute[0].output.height == 1080);
+   CHECK(!rec->execute[0].exposure.present && !rec->execute[0].mask.present);
+   CHECK(rec->execute[0].jitter_x == 0.25f && rec->execute[0].jitter_y == -0.125f);
+   CHECK(rec->execute[0].exposure_scale == 1.0f && rec->execute[0].reset == 1);
+   CHECK(rec->execute[0].input_w == 1280 && rec->execute[0].input_h == 720);
+   CHECK(out.dims == VIDEO_SCALE_PACK(1920, 1080) && out.format == VK_FORMAT_R8G8B8A8_UNORM
+         && out.layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+   /* The next frame: the same context, no reset; the scale set once */
+   begin_frame();
+   CHECK(vulkan_upscaler_upscale(up, cmd, &in, &inputs, QUALITY(BALANCED),
+            VIDEO_SCALE_PACK(1920, 1080), &out));
+   end_frame();
+   vulkan_upscaler_frame_done(up);
+   CHECK(rec->creates == 2 && rec->inits == 1 && rec->executes == 2 && rec->execute[1].reset == 0);
+
+   /* A mode change: a new context (the old one's pipelines are its own) */
+   begin_frame();
+   CHECK(vulkan_upscaler_upscale(up, cmd, &in, &inputs, QUALITY(QUALITY),
+            VIDEO_SCALE_PACK(1920, 1080), &out));
+   end_frame();
+   vulkan_upscaler_frame_done(up);
+   CHECK(rec->creates == 3 && rec->inits == 2 && rec->init[1].quality == XESS_QUALITY_QUALITY
+         && rec->executes == 3 && rec->execute[2].reset == 1);
+   CHECK(rec->destroys == 0);
+   for (i = 0; i < 30 && rec->destroys < 1; i++)
+      vulkan_upscaler_frame_done(up);
+   CHECK(rec->destroys == 1 && i >= 15);
+
+   /* An execute that fails: the frame shown as it is until the output
+    * or mode changes */
+   rec->execute_fails = 1;
+   begin_frame();
+   CHECK(!vulkan_upscaler_upscale(up, cmd, &in, &inputs, QUALITY(QUALITY),
+            VIDEO_SCALE_PACK(1920, 1080), &out));
+   end_frame();
+   vulkan_upscaler_frame_done(up);
+   rec->execute_fails = 0;
+   begin_frame();
+   CHECK(!vulkan_upscaler_upscale(up, cmd, &in, &inputs, QUALITY(QUALITY),
+            VIDEO_SCALE_PACK(1920, 1080), &out));
+   end_frame();
+   vulkan_upscaler_frame_done(up);
+   CHECK(rec->executes == 4);
+   begin_frame();
+   CHECK(vulkan_upscaler_upscale(up, cmd, &in, &inputs, QUALITY(QUALITY),
+            VIDEO_SCALE_PACK(2560, 1440), &out));
+   end_frame();
+   vulkan_upscaler_frame_done(up);
+   CHECK(rec->creates == 4 && rec->inits == 3 && rec->executes == 5
+         && out.dims == VIDEO_SCALE_PACK(2560, 1440));
+
+   /* An init that fails: refused, the context gone */
+   rec->init_fails = 1;
+   begin_frame();
+   CHECK(!vulkan_upscaler_upscale(up, cmd, &in, &inputs, QUALITY(BALANCED),
+            VIDEO_SCALE_PACK(2560, 1440), &out));
+   end_frame();
+   vulkan_upscaler_frame_done(up);
+   rec->init_fails = 0;
+   CHECK(rec->creates == 5 && rec->executes == 5);
+
+   vkDeviceWaitIdle(device);
+   vulkan_upscaler_free(up);
+   CHECK(rec->destroys == 5);   /* every context, the query one too */
+   video_upscaler_detach();
 }
 
 int main(void)
@@ -751,6 +1307,47 @@ int main(void)
    video_upscaler_detach();
    CHECK(video_upscaler_get_interface() == NULL);
 
+   /* DLSS behind the dispatch: the frontend's mode word translated to
+    * NGX's quality and preset */
+   {
+      vulkan_upscaler_t *up = vulkan_upscaler_init(VIDEO_TEMPORAL_UPSCALER_DLSS,
+            instance, gpu, device, vkGetInstanceProcAddr, vkGetDeviceProcAddr,
+            &mem_props, "Zdir");
+      vulkan_upscaler_image_t din, dout;
+      unsigned creates = rec->creates;
+      CHECK(up != NULL);
+      if (up)
+      {
+         CHECK(vulkan_upscaler_optimal(up,
+                  VIDEO_UPSCALER_MODE_PACK(VIDEO_TEMPORAL_UPSCALER_QUALITY_PERFORMANCE, 0),
+                  VIDEO_SCALE_PACK(1920, 1080), &render_dims, &min_dims, &max_dims)
+               && render_dims == VIDEO_SCALE_PACK(960, 540));
+         din.image  = color.image;
+         din.view   = color.view;
+         din.layout = color.layout;
+         din.format = color.format;
+         din.dims   = VIDEO_SCALE_PACK(color.width, color.height);
+         begin_frame();
+         CHECK(vulkan_upscaler_upscale(up, cmd, &din, &inputs,
+                  VIDEO_UPSCALER_MODE_PACK(VIDEO_TEMPORAL_UPSCALER_QUALITY_QUALITY,
+                     VIDEO_TEMPORAL_UPSCALER_PRESET_K),
+                  VIDEO_SCALE_PACK(1920, 1080), &dout));
+         end_frame();
+         vulkan_upscaler_frame_done(up);
+         CHECK(rec->creates == creates + 1
+               && rec->create[creates].quality == NGX_PERF_QUALITY_MAX_QUALITY
+               && rec->create[creates].preset == NGX_DLSS_PRESET_K
+               && rec->create[creates].out_width == 1920);
+         CHECK(dout.dims == VIDEO_SCALE_PACK(1920, 1080)
+               && dout.layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+         vkDeviceWaitIdle(device);
+         vulkan_upscaler_free(up);
+      }
+   }
+
+   test_ffx(settings, &color, &mv, &depth);
+   test_xess(settings, &color, &mv, &depth);
+
    free_image(&color);
    free_image(&mv);
    free_image(&depth);
@@ -767,6 +1364,6 @@ int main(void)
       printf("vulkan_upscaler_test: %d failure(s)\n", failures);
       return 1;
    }
-   printf("vulkan_upscaler_test: ok\n");
+   printf("vulkan_upscaler_test: ok (%d checks)\n", checks);
    return 0;
 }

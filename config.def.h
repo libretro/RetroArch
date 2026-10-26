@@ -1772,8 +1772,8 @@
  * what it was; VIDEO_DRIVER_PACING_ON or VIDEO_DRIVER_PACING_BOOST to use it. */
 #define DEFAULT_VIDEO_DRIVER_PACING 0
 
-/* Temporal Upscaler: off; VIDEO_TEMPORAL_UPSCALER_DLSS runs DLSS Super
- * Resolution where the NGX and DLSS runtimes are found. */
+/* Temporal Upscaler: off; VIDEO_TEMPORAL_UPSCALER_DLSS, _FSR or _XESS
+ * runs that upscaler where its library is found. */
 #define DEFAULT_VIDEO_TEMPORAL_UPSCALER 0
 #define DEFAULT_VIDEO_TEMPORAL_UPSCALER_QUALITY 0
 #define DEFAULT_VIDEO_TEMPORAL_UPSCALER_PRESET 0

@@ -330,6 +330,12 @@ jobs:
             # library on LD_LIBRARY_PATH; the Windows discovery runs
             # in the mingw job below.
             nvidia_loader_test
+            # The FidelityFX API and XeSS loaders against stand-in
+            # libraries planted in a directory of the test's, as the
+            # user's runtime directory is; the Windows file names run
+            # in the mingw job below.
+            ffx_loader_test
+            xess_loader_test
           )
 
           # Targets that are built but deliberately not executed, each
@@ -1225,6 +1231,21 @@ jobs:
           make CC=x86_64-w64-mingw32-gcc all
           timeout 120 wine ./nvidia_loader_test.exe
           make clean
+
+      - name: Build and run the FidelityFX and XeSS loaders under Wine
+        shell: bash
+        working-directory: libretro-common/samples/gfx
+        env:
+          WINEDEBUG: -all
+        run: |
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
+          # The Windows half of the loaders: the SDK's .dll names by
+          # LoadLibraryEx from the directory, the stand-ins built with
+          # mingw.
+          for d in amd intel; do
+            t=$(sed -nE 's/^TARGET[[:space:]]*:?=[[:space:]]*//p' "$d/Makefile")
+            ( cd "$d" && make clean && make CC=x86_64-w64-mingw32-gcc all && timeout 120 wine "./$t.exe" && make clean )
+          done
 
       - name: Build and run native DVD packets under Wine
         shell: bash

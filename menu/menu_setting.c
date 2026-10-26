@@ -8060,9 +8060,20 @@ static size_t setting_get_string_representation_uint_video_temporal_upscaler(
 {
    if (setting)
    {
-      if (*setting->value.target.unsigned_integer == VIDEO_TEMPORAL_UPSCALER_DLSS)
-         return strlcpy(s, msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_DLSS), len);
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case VIDEO_TEMPORAL_UPSCALER_DLSS:
+            return strlcpy(s, msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_DLSS), len);
+         case VIDEO_TEMPORAL_UPSCALER_FSR:
+            return strlcpy(s, msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_FSR), len);
+         case VIDEO_TEMPORAL_UPSCALER_XESS:
+            return strlcpy(s, msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_XESS), len);
+         default:
+            break;
+      }
       return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
    }
    return 0;

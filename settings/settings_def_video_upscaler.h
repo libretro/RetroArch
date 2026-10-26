@@ -9,26 +9,36 @@
 #if defined(HAVE_NGX) || defined(SETTINGS_DEF_STRINGS_PASS)
 S_UINT(video_temporal_upscaler, VIDEO_TEMPORAL_UPSCALER,
       "video_temporal_upscaler",
-      DEFAULT_VIDEO_TEMPORAL_UPSCALER, SD_FLAG_CMD_APPLY_AUTO, SDESC_RANGE_MINMAX, CMD_EVENT_REINIT, 0, 1, 1, 0, setting_action_ok_uint, setting_get_string_representation_uint_video_temporal_upscaler,
+      DEFAULT_VIDEO_TEMPORAL_UPSCALER, SD_FLAG_CMD_APPLY_AUTO, SDESC_RANGE_MINMAX, CMD_EVENT_REINIT, 0, 3, 1, 0, setting_action_ok_uint, setting_get_string_representation_uint_video_temporal_upscaler,
       "Temporal Upscaler",
-      "Upscale hardware-rendered content with a temporal upscaler on the Vulkan and Direct3D 12 drivers, from the depth and motion vectors the core exports; cores that export none are shown as they are. NVIDIA DLSS Super Resolution needs the official DLSS runtime (nvngx_dlss.dll on Windows, libnvidia-ngx-dlss.so on Linux) in the DLSS Directory and an NVIDIA driver with NGX; nothing is bundled. Offered only when both are found. See Statistics/System Information for status.")
+      "Upscale hardware-rendered content with a temporal upscaler on the Vulkan and Direct3D 12 drivers, from the depth and motion vectors the core exports; cores that export none are shown as they are. Each runs on its vendor's library, not bundled: DLSS needs the DLSS runtime in the DLSS Directory and an NVIDIA driver; FSR the FidelityFX SDK's library in the FSR Directory (FSR 4 on the GPUs that have it, else FSR 3.1); XeSS libxess in the XeSS Directory, on any GPU. See System Information for status.")
 S_UINT(video_temporal_upscaler_quality, VIDEO_TEMPORAL_UPSCALER_QUALITY,
       "video_temporal_upscaler_quality",
       DEFAULT_VIDEO_TEMPORAL_UPSCALER_QUALITY, SD_FLAG_NONE, SDESC_RANGE_MINMAX, CMD_EVENT_NONE, 0, 5, 1, 0, setting_action_ok_uint, setting_get_string_representation_uint_video_temporal_upscaler_quality,
       "Temporal Upscaler Quality",
-      "The upscaler's mode: how much smaller than the screen the core renders. Quality renders at 2/3 of the output size, Balanced at 58%, Performance at 1/2, Ultra Performance at 1/3; Native keeps the output size and only anti-aliases (DLAA). Auto picks Quality, or Balanced above 1440 lines. The core is told the size each frame.")
+      "The upscaler's mode: how much smaller than the screen the core renders. Quality renders at about 2/3 of the output size, Balanced at about 58%, Performance at 1/2, Ultra Performance at 1/3 (each upscaler's own ratios); Native keeps the output size and only anti-aliases. Auto picks Quality, or Balanced above 1440 lines. The core is told the size each frame.")
 S_UINT(video_temporal_upscaler_preset, VIDEO_TEMPORAL_UPSCALER_PRESET,
       "video_temporal_upscaler_preset",
       DEFAULT_VIDEO_TEMPORAL_UPSCALER_PRESET, SD_FLAG_NONE, SDESC_RANGE_MINMAX, CMD_EVENT_NONE, 0, 2, 1, 0, setting_action_ok_uint, setting_get_string_representation_uint_video_temporal_upscaler_preset,
       "Temporal Upscaler Preset",
-      "The DLSS model the upscaler runs. Default lets the runtime pick (its transformer model for Native, Quality and Balanced). Preset K is that transformer model in every mode: the best image at a higher GPU cost. Preset J is its sibling with slightly less ghosting and some more flicker. Takes effect on the next frame.")
-/* config key "video_dlss_directory" is a path; the configuration.c row
- * stays literal for this setting. */
+      "The DLSS model the upscaler runs (DLSS only). Default lets the runtime pick (its transformer model for Native, Quality and Balanced). Preset K is that transformer model in every mode: the best image at a higher GPU cost. Preset J is its sibling with slightly less ghosting and some more flicker. Takes effect on the next frame.")
+/* config keys "video_dlss_directory" and its siblings are paths; the
+ * configuration.c rows stay literal for these settings. */
 #ifndef SETTINGS_DEF_CONFIG_PASS
 S_DIR(directory_dlss, VIDEO_DLSS_DIRECTORY,
       "video_dlss_directory",
       "", DIRECTORY_DEFAULT, SD_FLAG_NONE, 0, directory_action_start_generic,
       "DLSS Directory",
       "The directory the DLSS runtime is loaded from. Default: 'upscalers/dlss' in the RetroArch directory.")
+S_DIR(directory_fsr, VIDEO_FSR_DIRECTORY,
+      "video_fsr_directory",
+      "", DIRECTORY_DEFAULT, SD_FLAG_NONE, 0, directory_action_start_generic,
+      "FSR Directory",
+      "The directory the FidelityFX SDK's FSR library is loaded from. Default: 'upscalers/fsr' in the RetroArch directory.")
+S_DIR(directory_xess, VIDEO_XESS_DIRECTORY,
+      "video_xess_directory",
+      "", DIRECTORY_DEFAULT, SD_FLAG_NONE, 0, directory_action_start_generic,
+      "XeSS Directory",
+      "The directory the XeSS library (libxess.dll) is loaded from. Default: 'upscalers/xess' in the RetroArch directory.")
 #endif
 #endif

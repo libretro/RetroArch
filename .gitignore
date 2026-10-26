@@ -380,4 +380,10 @@ samples/gfx/integer_scale_axis/integer_scale_axis_test
 /wiiu/slang/slang-cafe
 /wiiu/slang/slang-cafe.exe
 samples/gfx/vulkan_upscaler/Zdir/
+samples/gfx/vulkan_upscaler/Zdir_fsr/
+samples/gfx/vulkan_upscaler/Zdir_xess/
+samples/gfx/vulkan_upscaler/Zdir_none/
 samples/gfx/d3d12_upscaler/Zdir/
+samples/gfx/d3d12_upscaler/Zdir_fsr/
+samples/gfx/d3d12_upscaler/Zdir_xess/
+samples/gfx/d3d12_upscaler/Zdir_none/

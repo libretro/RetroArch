@@ -57,7 +57,7 @@
 #include "../common/vulkan_common.h"
 #include "../common/spirv_shaders.h"
 #ifdef HAVE_NGX
-#include "../common/vulkan_ngx.h"
+#include "../common/vulkan_upscaler.h"
 #include "../video_upscaler.h"
 #endif
 #if defined(_WIN32) && !defined(__WINRT__)
@@ -731,8 +731,8 @@ typedef struct vk
    /* The temporal upscaler's session on this device, up while a
     * hardware core runs with the setting on; its output of the last
     * frame it took, which a repeated frame shows again. */
-   vulkan_ngx_t *ngx;
-   vulkan_ngx_image_t ngx_out;
+   vulkan_upscaler_t *ngx;
+   vulkan_upscaler_image_t ngx_out;
 #endif
 
    /* Textures released through vulkan_unload_texture, kept alive
@@ -7320,7 +7320,7 @@ static void vulkan_free(void *data)
       if (vk->ngx)
       {
          video_upscaler_detach();
-         vulkan_ngx_free(vk->ngx);
+         vulkan_upscaler_free(vk->ngx);
          vk->ngx = NULL;
       }
 #endif
@@ -7594,17 +7594,17 @@ static void vulkan_invalidate_hw_render_cache(void *data)
 }
 
 #ifdef HAVE_NGX
-static bool vulkan_upscaler_optimal(void *data, unsigned mode,
+static bool vulkan_upscaler_optimal_cb(void *data, unsigned mode,
       unsigned out_dims, unsigned *render_dims,
       unsigned *min_dims, unsigned *max_dims)
 {
    vk_t *vk = (vk_t*)data;
-   return vulkan_ngx_optimal(vk->ngx, mode, out_dims, render_dims,
+   return vulkan_upscaler_optimal(vk->ngx, mode, out_dims, render_dims,
          min_dims, max_dims);
 }
 
 static video_upscaler_backend_t vulkan_upscaler_backend = {
-   NULL, vulkan_upscaler_optimal
+   NULL, vulkan_upscaler_optimal_cb
 };
 
 /* The core's frame through the upscaler, when it brought the inputs
@@ -7613,7 +7613,7 @@ static video_upscaler_backend_t vulkan_upscaler_backend = {
 static void vulkan_upscale_input(vk_t *vk, const void *frame,
       struct vulkan_filter_chain_texture *input)
 {
-   vulkan_ngx_image_t color;
+   vulkan_upscaler_image_t color;
    const struct retro_hw_upscaler_inputs *inputs = video_upscaler_take_inputs();
    unsigned out_dims = vk->vp.dims;
    video_upscaler_set_output(out_dims);
@@ -7624,7 +7624,7 @@ static void vulkan_upscale_input(vk_t *vk, const void *frame,
       color.layout = input->layout;
       color.format = input->format;
       color.dims   = input->dims;
-      if (!inputs || !vulkan_ngx_upscale(vk->ngx, vk->cmd, &color, inputs,
+      if (!inputs || !vulkan_upscaler_upscale(vk->ngx, vk->cmd, &color, inputs,
                video_upscaler_mode(out_dims), out_dims, &vk->ngx_out))
       {
          vk->ngx_out.image = VK_NULL_HANDLE;
@@ -7676,11 +7676,13 @@ static void vulkan_init_hw_render(vk_t *vk)
    iface->get_instance_proc_addr = vulkan_symbol_wrapper_instance_proc_addr();
 
 #ifdef HAVE_NGX
-   if (config_get_ptr()->uints.video_temporal_upscaler == VIDEO_TEMPORAL_UPSCALER_DLSS)
+   if (config_get_ptr()->uints.video_temporal_upscaler)
    {
+      enum video_temporal_upscaler kind = (enum video_temporal_upscaler)
+         config_get_ptr()->uints.video_temporal_upscaler;
       char dir[DIR_MAX_LENGTH];
-      video_upscaler_dlss_dir(dir, sizeof(dir));
-      vk->ngx = vulkan_ngx_init(vk->context->instance, vk->context->gpu,
+      video_upscaler_dir(kind, dir, sizeof(dir));
+      vk->ngx = vulkan_upscaler_init(kind, vk->context->instance, vk->context->gpu,
             vk->context->device, vulkan_symbol_wrapper_instance_proc_addr(),
             vkGetDeviceProcAddr, &vk->context->memory_properties, dir);
       if (vk->ngx)
@@ -7980,8 +7982,9 @@ static void *vulkan_init(const video_info_t *video)
          VIDEO_SCALE_W(temp_dims), VIDEO_SCALE_H(temp_dims));
 #ifdef HAVE_NGX
    /* (what the upscaler would find, with or without a core to draw for it) */
-   if (config_get_ptr()->uints.video_temporal_upscaler == VIDEO_TEMPORAL_UPSCALER_DLSS)
-      video_upscaler_log_probe();
+   if (config_get_ptr()->uints.video_temporal_upscaler)
+      video_upscaler_log_probe((enum video_temporal_upscaler)
+            config_get_ptr()->uints.video_temporal_upscaler);
 #endif
 
    if (!vk->ctx_driver || !vk->ctx_driver->get_context_data)
@@ -13431,7 +13434,7 @@ static bool vulkan_frame(void *data, const void *frame,
    vk->context->swapchain_fences_signalled[frame_index] = true;
 #ifdef HAVE_NGX
    if (vk->ngx)
-      vulkan_ngx_frame_done(vk->ngx);
+      vulkan_upscaler_frame_done(vk->ngx);
 #endif
 #ifdef HAVE_OPENXR
    /* The quads with their images, before the XR thread's next frame. */

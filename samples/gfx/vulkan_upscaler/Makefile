@@ -2,18 +2,28 @@ include ../../sample_objdir.mk
 
 TARGET := vulkan_upscaler_test
 
-# Links the real gfx/common/vulkan_ngx.c and gfx/video_upscaler.c and
-# drives them on a Vulkan device (lavapipe) against a stand-in NGX core
-# library, so the glue between the core's inputs and NGX's parameters
-# is pinned on every runner without an NVIDIA GPU.
+# Links the real gfx/common/vulkan_ngx.c, vulkan_ffx.c, vulkan_xess.c,
+# the dispatch of vulkan_upscaler.c and gfx/video_upscaler.c and drives
+# them on a Vulkan device (lavapipe) against stand-in NGX, FidelityFX
+# API and XeSS libraries (fake_ngx.c here; libretro-common's fake_ffx.c
+# and fake_xess.c, planted under the SDKs' file names in Zdir_fsr and
+# Zdir_xess), so the glue between the core's inputs and each library's
+# parameters is pinned on every runner without the GPU.
 REPO_ROOT         := ../../..
 LIBRETRO_COMM_DIR := $(REPO_ROOT)/libretro-common
 
 SOURCES := vulkan_upscaler_test.c \
            ../vulkan_validation/stubs_retroarch.c \
+           $(REPO_ROOT)/gfx/common/vulkan_upscaler.c \
            $(REPO_ROOT)/gfx/common/vulkan_ngx.c \
+           $(REPO_ROOT)/gfx/common/vulkan_ffx.c \
+           $(REPO_ROOT)/gfx/common/vulkan_xess.c \
+           $(REPO_ROOT)/gfx/common/ffx_common.c \
+           $(REPO_ROOT)/gfx/common/xess_common.c \
            $(REPO_ROOT)/gfx/video_upscaler.c \
            $(LIBRETRO_COMM_DIR)/gfx/nvidia/ngx_loader.c \
+           $(LIBRETRO_COMM_DIR)/gfx/amd/ffx_loader.c \
+           $(LIBRETRO_COMM_DIR)/gfx/intel/xess_loader.c \
            $(LIBRETRO_COMM_DIR)/vulkan/vulkan_symbol_wrapper.c \
            $(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
            $(LIBRETRO_COMM_DIR)/compat/compat_strcasestr.c \
@@ -35,15 +45,20 @@ SOURCES := vulkan_upscaler_test.c \
 
 ifneq ($(findstring mingw,$(CC)),)
    EXE    := .exe
-   FAKE   := _nvngx.dll
+   FAKE   := _nvngx.dll Zdir_fsr/amd_fidelityfx_vk.dll Zdir_xess/libxess.dll
    LDLIBS := -ladvapi32
    RUNNER ?= wine
+   SOFLAGS :=
 else
    EXE    :=
-   FAKE   := libnvidia-ngx.so.1
+   FAKE   := libnvidia-ngx.so.1 Zdir_fsr/libamd_fidelityfx_vk.so Zdir_xess/libxess.so
    LDLIBS := -lvulkan -lpthread -ldl -lm
    RUNNER ?= env LD_LIBRARY_PATH=.
+   SOFLAGS := -fPIC
 endif
+
+FAKE_FFX  := $(LIBRETRO_COMM_DIR)/samples/gfx/amd/fake_ffx.c
+FAKE_XESS := $(LIBRETRO_COMM_DIR)/samples/gfx/intel/fake_xess.c
 
 CFLAGS  += -Wall -std=gnu99 -g1 -O0 \
            -DHAVE_VULKAN -DHAVE_NGX -DHAVE_THREADS -DHAVE_DYLIB -DHAVE_MENU \
@@ -67,6 +82,14 @@ _nvngx.dll: fake_ngx.c fake_ngx.h
 libnvidia-ngx.so.1: fake_ngx.c fake_ngx.h
 	$(CC) -shared -fPIC -O1 -Wall -Wl,-soname,libnvidia-ngx.so.1 -o $@ $<
 
+Zdir_fsr/amd_fidelityfx_vk.dll Zdir_fsr/libamd_fidelityfx_vk.so: $(FAKE_FFX) $(FAKE_FFX:.c=.h)
+	@mkdir -p $(@D)
+	$(CC) -shared $(SOFLAGS) -O1 -Wall -o $@ $<
+
+Zdir_xess/libxess.dll Zdir_xess/libxess.so: $(FAKE_XESS) $(FAKE_XESS:.c=.h)
+	@mkdir -p $(@D)
+	$(CC) -shared $(SOFLAGS) -O1 -Wall -o $@ $<
+
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
@@ -82,6 +105,6 @@ check: all
 
 clean:
 	rm -f $(TARGET) $(TARGET).exe $(TARGET).o _nvngx.dll libnvidia-ngx.so.1
-	rm -rf $(SAMPLE_OBJDIR) Zdir
+	rm -rf $(SAMPLE_OBJDIR) Zdir Zdir_fsr Zdir_xess Zdir_none
 
 .PHONY: all check clean
