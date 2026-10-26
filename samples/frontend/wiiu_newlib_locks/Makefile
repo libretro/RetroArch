@@ -28,10 +28,19 @@ all: $(TARGET)
 $(TARGET): wiiu_newlib_locks_test.c $(CORE_DIR)/wiiu/system/newlib_locks.c
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
 
-check: all
+# The same checks against the hooks newlib before 4.3 calls, the set
+# the Wii U toolchain's newlib 4.2 uses.
+TARGET_PRE43 := wiiu_newlib_locks_pre43_test$(EXE)
+
+$(TARGET_PRE43): wiiu_newlib_locks_test.c $(CORE_DIR)/wiiu/system/newlib_locks.c
+	$(CC) $(CFLAGS) -D__NEWLIB__=4 -D__NEWLIB_MINOR__=2 -o $@ $< $(LDFLAGS)
+
+check: all $(TARGET_PRE43)
 	$(RUNNER) ./$(TARGET)
+	$(RUNNER) ./$(TARGET_PRE43)
 
 clean:
-	rm -f wiiu_newlib_locks_test wiiu_newlib_locks_test.exe
+	rm -f wiiu_newlib_locks_test wiiu_newlib_locks_test.exe \
+	      wiiu_newlib_locks_pre43_test wiiu_newlib_locks_pre43_test.exe
 
 .PHONY: all check clean

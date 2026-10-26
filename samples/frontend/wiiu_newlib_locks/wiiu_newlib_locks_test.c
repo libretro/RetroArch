@@ -105,6 +105,32 @@ void OSUnlockMutex(OSMutex *mutex)
 #undef malloc
 #undef free
 
+/* The hooks as the checks call them: newlib 4.3's set, or the older
+ * one (the Makefile builds both), where the recursive locks are the
+ * plain ones with init told the lock is recursive. */
+#if defined(__NEWLIB__) && (__NEWLIB__ < 4 \
+      || (__NEWLIB__ == 4 && __NEWLIB_MINOR__ < 3))
+#define T_INIT(l)        (void)__syscall_lock_init((l), 0)
+#define T_INIT_REC(l)    (void)__syscall_lock_init((l), 1)
+#define T_ACQUIRE(l)     (void)__syscall_lock_acquire(l)
+#define T_ACQUIRE_REC(l) (void)__syscall_lock_acquire(l)
+#define T_TRY_REC(l)     __syscall_lock_try_acquire(l)
+#define T_RELEASE(l)     (void)__syscall_lock_release(l)
+#define T_RELEASE_REC(l) (void)__syscall_lock_release(l)
+#define T_CLOSE(l)       (void)__syscall_lock_close(l)
+#define T_CLOSE_REC(l)   (void)__syscall_lock_close(l)
+#else
+#define T_INIT(l)        __syscall_lock_init(l)
+#define T_INIT_REC(l)    __syscall_lock_init_recursive(l)
+#define T_ACQUIRE(l)     __syscall_lock_acquire(l)
+#define T_ACQUIRE_REC(l) __syscall_lock_acquire_recursive(l)
+#define T_TRY_REC(l)     __syscall_lock_try_acquire_recursive(l)
+#define T_RELEASE(l)     __syscall_lock_release(l)
+#define T_RELEASE_REC(l) __syscall_lock_release_recursive(l)
+#define T_CLOSE(l)       __syscall_lock_close(l)
+#define T_CLOSE_REC(l)   __syscall_lock_close_recursive(l)
+#endif
+
 static int word;            /* a newlib static lock: starts at 0 */
 static unsigned counter;    /* guarded by word */
 static pthread_barrier_t start;
@@ -117,10 +143,10 @@ static void *hammer(void *arg)
    for (i = 0; i < ROUNDS; i++)
    {
       unsigned v;
-      __syscall_lock_acquire_recursive(&word);
+      T_ACQUIRE_REC(&word);
       v       = counter;
       counter = v + 1;
-      __syscall_lock_release_recursive(&word);
+      T_RELEASE_REC(&word);
    }
    return NULL;
 }
@@ -129,9 +155,9 @@ static int try_result;
 
 static void *try_other(void *arg)
 {
-   try_result = __syscall_lock_try_acquire_recursive((int*)arg);
+   try_result = T_TRY_REC((int*)arg);
    if (try_result == 0)
-      __syscall_lock_release_recursive((int*)arg);
+      T_RELEASE_REC((int*)arg);
    return NULL;
 }
 
@@ -161,27 +187,27 @@ int main(void)
    CHECK(pool_live == 1);
 
    /* Recursive on one thread, excluded from another. */
-   __syscall_lock_init_recursive(&rec);
+   T_INIT_REC(&rec);
    CHECK(rec == 0);
-   __syscall_lock_acquire_recursive(&rec);
-   CHECK(__syscall_lock_try_acquire_recursive(&rec) == 0);
+   T_ACQUIRE_REC(&rec);
+   CHECK(T_TRY_REC(&rec) == 0);
    CHECK(try_from_other_thread(&rec) != 0);
-   __syscall_lock_release_recursive(&rec);
+   T_RELEASE_REC(&rec);
    CHECK(try_from_other_thread(&rec) != 0);
-   __syscall_lock_release_recursive(&rec);
+   T_RELEASE_REC(&rec);
    CHECK(try_from_other_thread(&rec) == 0);
 
    /* Close frees the mutex and returns the word to its initial state;
     * the next use creates a new one. */
-   __syscall_lock_close_recursive(&rec);
+   T_CLOSE_REC(&rec);
    CHECK(rec == 0);
    CHECK(pool_live == 1);
-   __syscall_lock_acquire(&rec);
+   T_ACQUIRE(&rec);
    CHECK(rec != 0);
    CHECK(pool_live == 2);
-   __syscall_lock_release(&rec);
-   __syscall_lock_close(&rec);
-   __syscall_lock_close(&word);
+   T_RELEASE(&rec);
+   T_CLOSE(&rec);
+   T_CLOSE(&word);
    CHECK(pool_live == 0);
 
    if (failures)

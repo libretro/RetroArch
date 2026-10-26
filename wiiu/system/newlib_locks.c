@@ -20,7 +20,11 @@
  * Its lock word (_LOCK_T, and _LOCK_RECURSIVE_T alike) is a plain int
  * that newlib's static locks start at 0, so a mutex is created on
  * first use and its address published into the word by compare-and-
- * swap. OSMutex is recursive, which serves both kinds of lock. */
+ * swap. OSMutex is recursive, which serves both kinds of lock.
+ *
+ * The hooks' shape changed in newlib 4.3; <stdlib.h> brings in
+ * __NEWLIB__ and __NEWLIB_MINOR__, which pick the set below, as
+ * os/gekko/kernel/newlib.c does. */
 
 #include <stdlib.h>
 #include <stdint.h>
@@ -84,6 +88,42 @@ static void wiiu_newlib_lock_release(wiiu_newlib_lock_t *lock)
       OSUnlockMutex(mutex);
 }
 
+#if defined(__NEWLIB__) && (__NEWLIB__ < 4 \
+      || (__NEWLIB__ == 4 && __NEWLIB_MINOR__ < 3))
+/* newlib before 4.3: four hooks, one kind of lock word - init says
+ * whether it is recursive, and every hook returns an int newlib does
+ * not read. OSMutex is recursive, so the flag needs nothing. */
+int __syscall_lock_init(wiiu_newlib_lock_t *lock, int recursive)
+{
+   (void)recursive;
+   *lock = 0;
+   return 0;
+}
+
+int __syscall_lock_acquire(wiiu_newlib_lock_t *lock)
+{
+   wiiu_newlib_lock_acquire(lock);
+   return 0;
+}
+
+int __syscall_lock_try_acquire(wiiu_newlib_lock_t *lock)
+{
+   return wiiu_newlib_lock_try_acquire(lock);
+}
+
+int __syscall_lock_release(wiiu_newlib_lock_t *lock)
+{
+   wiiu_newlib_lock_release(lock);
+   return 0;
+}
+
+int __syscall_lock_close(wiiu_newlib_lock_t *lock)
+{
+   wiiu_newlib_lock_free(lock);
+   return 0;
+}
+#else
+/* newlib 4.3 and later: separate hooks for the recursive locks. */
 void __syscall_lock_init(wiiu_newlib_lock_t *lock)
 {
    *lock = 0;
@@ -133,3 +173,4 @@ void __syscall_lock_close_recursive(wiiu_newlib_lock_t *lock)
 {
    wiiu_newlib_lock_free(lock);
 }
+#endif
