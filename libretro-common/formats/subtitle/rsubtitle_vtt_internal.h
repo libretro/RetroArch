@@ -73,12 +73,26 @@ enum rsubtitle_vtt_selector_kind
 
 typedef struct rsubtitle_vtt_selector_pattern rsubtitle_vtt_selector_pattern_t;
 typedef struct rsubtitle_vtt_tag rsubtitle_vtt_tag_t;
+typedef struct rsubtitle_vtt_normalize rsubtitle_vtt_normalize_t;
 
 enum rsubtitle_vtt_alias_kind
 {
    RSUBTITLE_ALIAS_LANGUAGE, RSUBTITLE_ALIAS_EXTLANG, RSUBTITLE_ALIAS_SCRIPT,
    RSUBTITLE_ALIAS_REGION, RSUBTITLE_ALIAS_VARIANT, RSUBTITLE_ALIAS_TAG
 };
+
+enum rsubtitle_vtt_normalize_flags
+{
+   RSUBTITLE_NORMALIZE_EXTLANG = 1,
+   RSUBTITLE_NORMALIZE_RANGE = 2
+};
+
+typedef struct rsubtitle_vtt_language_key
+{
+   const char *text;
+   size_t length;
+   char *owned;
+} rsubtitle_vtt_language_key_t;
 
 typedef struct rsubtitle_vtt_alias_lookup
 {
@@ -125,6 +139,21 @@ typedef struct rsubtitle_vtt_selector_subject
 } rsubtitle_vtt_selector_subject_t;
 
 RETRO_BEGIN_DECLS
+rsubtitle_vtt_normalize_t *rsubtitle_vtt_normalize_new(void);
+void rsubtitle_vtt_normalize_free(rsubtitle_vtt_normalize_t *normal);
+/* Comparison keys only: never serialize into language metadata.
+ * RANGE accepts extended ranges and CSS empty language; EXTLANG adds prefixes.
+ * Input/output limit is 65536 bytes; expansion errors never truncate. */
+int rsubtitle_vtt_normalize_begin(rsubtitle_vtt_normalize_t *normal,
+      const char *text, size_t length, unsigned flags);
+/* -1 error, 0 pending, 1 ready, 2 malformed; bounded work per step. */
+int rsubtitle_vtt_normalize_step(rsubtitle_vtt_normalize_t *normal);
+/* Borrowed until begin/free; unchanged results retain the input pointer. */
+const char *rsubtitle_vtt_normalize_result(
+      const rsubtitle_vtt_normalize_t *normal, size_t *length);
+/* Consumes a ready result without copying; caller frees key.owned. */
+int rsubtitle_vtt_normalize_take(rsubtitle_vtt_normalize_t *normal,
+      rsubtitle_vtt_language_key_t *key);
 rsubtitle_vtt_tag_t *rsubtitle_vtt_tag_new(void);
 void rsubtitle_vtt_tag_free(rsubtitle_vtt_tag_t *tag);
 /* Borrows at most 65536 bytes; checks grammar, not registry membership. */

@@ -194,12 +194,198 @@ static void tag_grammar(void)
    free(many);
 }
 
+static void normalized(rsubtitle_vtt_normalize_t *normal, const char *input,
+      unsigned extlang, const char *expected, unsigned borrowed)
+{
+   const char *result;
+   size_t length, i, ticks = 0, bound = (strlen(input) + 1) * 256 + 4096;
+   int status = 0;
+   assert(rsubtitle_vtt_normalize_begin(normal, input, strlen(input), extlang));
+   assert(!rsubtitle_vtt_normalize_result(normal, &length) && !length);
+   while (!status && ticks++ < bound)
+      status = rsubtitle_vtt_normalize_step(normal);
+   assert(ticks <= bound && status == (expected ? 1 : 2));
+   assert(rsubtitle_vtt_normalize_step(normal) == status);
+   result = rsubtitle_vtt_normalize_result(normal, &length);
+   if (!expected)
+   {
+      assert(!result && !length);
+      return;
+   }
+   if (!result || length != strlen(expected))
+      fprintf(stderr, "normal %s: got %.*s, expected %s\n", input,
+            (int)length, result ? result : "", expected);
+   assert(result && length == strlen(expected));
+   for (i = 0; i < length; i++)
+   {
+      unsigned a = (unsigned char)result[i], b = (unsigned char)expected[i];
+      if (a >= 'A' && a <= 'Z')
+         a += 'a' - 'A';
+      if (b >= 'A' && b <= 'Z')
+         b += 'a' - 'A';
+      if (a != b)
+         fprintf(stderr, "normal %s: got %.*s, expected %s\n", input,
+               (int)length, result, expected);
+      assert(a == b);
+   }
+   assert(!borrowed || result == input);
+}
+
+static void normalized_match(const char *range, const char *tag, int expected)
+{
+   rsubtitle_vtt_normalize_t *r = rsubtitle_vtt_normalize_new();
+   rsubtitle_vtt_normalize_t *t = rsubtitle_vtt_normalize_new();
+   rsubtitle_vtt_language_match_t match;
+   const char *rk, *tk = "";
+   size_t rn, tn = 0, ticks;
+   int status;
+   assert(r && t);
+   assert(rsubtitle_vtt_normalize_begin(r, range, strlen(range),
+            RSUBTITLE_NORMALIZE_RANGE | RSUBTITLE_NORMALIZE_EXTLANG));
+   status = 0;
+   for (ticks = 0; !status && ticks < 10000; ticks++)
+      status = rsubtitle_vtt_normalize_step(r);
+   assert(status == 1);
+   rk = rsubtitle_vtt_normalize_result(r, &rn);
+   if (*tag)
+   {
+      assert(rsubtitle_vtt_normalize_begin(t, tag, strlen(tag), RSUBTITLE_NORMALIZE_EXTLANG));
+      status = 0;
+      for (ticks = 0; !status && ticks < 10000; ticks++)
+         status = rsubtitle_vtt_normalize_step(t);
+      assert(status == 1);
+      tk = rsubtitle_vtt_normalize_result(t, &tn);
+   }
+   assert(rsubtitle_vtt_language_begin(&match, rk, rn, tk, tn));
+   status = 0;
+   for (ticks = 0; !status && ticks < 10000; ticks++)
+      status = rsubtitle_vtt_language_step(&match);
+   assert(status == expected);
+   rsubtitle_vtt_normalize_free(r);
+   rsubtitle_vtt_normalize_free(t);
+}
+
+static void tag_normalization(void)
+{
+   rsubtitle_vtt_normalize_t *normal = rsubtitle_vtt_normalize_new();
+   rsubtitle_vtt_language_key_t key;
+   size_t i, length;
+   assert(normal);
+   assert(rsubtitle_vtt_normalize_step(normal) == -1);
+   normalized(normal, "en-Latn-US", 0, "en-Latn-US", 1);
+   normalized(normal, "EN-latn-us", 1, "en-latn-us", 1);
+   normalized(normal, "qaa-Qaaa-QM", 1, "qaa-Qaaa-QM", 1);
+   normalized(normal, "iw-BU", 0, "he-MM", 0);
+   normalized(normal, "bh", 0, "bih", 0);
+   normalized(normal, "i-klingon", 1, "tlh", 0);
+   normalized(normal, "i-default", 1, "i-default", 1);
+   normalized(normal, "i-enochian", 0, "i-enochian", 1);
+   normalized(normal, "cmn-Hans-CN", 0, "cmn-Hans-CN", 1);
+   normalized(normal, "cmn-Hans-CN", 1, "zh-cmn-Hans-CN", 0);
+   normalized(normal, "zh-cmn-Hans-CN", 0, "cmn-Hans-CN", 0);
+   normalized(normal, "zh-cmn-Hans-CN", 1, "zh-cmn-Hans-CN", 1);
+   normalized(normal, "sgn-US", 0, "ase", 0);
+   normalized(normal, "sgn-US", 1, "sgn-ase", 0);
+   normalized(normal, "ar-ajp", 0, "apc", 0);
+   normalized(normal, "ar-ajp", 1, "ar-apc", 0);
+   normalized(normal, "ja-Latn-hepburn-heploc", 0, "ja-Latn-hepburn-alalc97", 0);
+   normalized(normal, "ja-Latn-hepburn-heploc-alalc97", 1, "ja-Latn-hepburn-alalc97-alalc97", 0);
+   normalized(normal, "en-b-ccc-bbb-a-aaa-X-xyz", 1, "en-a-aaa-b-ccc-bbb-X-xyz", 0);
+   normalized(normal, "en-a-aa-b-bb-x-iw-BU", 1, "en-a-aa-b-bb-x-iw-BU", 1);
+   normalized(normal, "x-iw-BU-cmn", 1, "x-iw-BU-cmn", 1);
+   normalized(normal, "en-a-iw-BU", 1, "en-a-iw-BU", 1);
+   normalized(normal, "en-abcde-abcdef", 1, "en-abcde-abcdef", 1);
+   normalized(normal, "en-abcde-ABCDE", 1, NULL, 0);
+   normalized(normal, "en-a-aa-A-bb", 0, NULL, 0);
+   normalized(normal, "en-", 0, NULL, 0);
+   normalized(normal, "", 1, NULL, 0);
+   normalized(normal, "", 3, "", 1);
+   normalized(normal, "*", 3, "*", 1);
+   normalized(normal, "*-*-Latn", 3, "*-Latn", 0);
+   normalized(normal, "zh-*-cmn-*-Hans", 3, "zh-cmn-Hans", 0);
+   normalized(normal, "i-*-klingon", 3, "tlh", 0);
+   normalized(normal, "art-*-lojban", 3, "jbo", 0);
+   normalized(normal, "*-cmn", 3, "*-cmn", 1);
+   normalized(normal, "*-ajp", 3, "*-apc", 0);
+   normalized(normal, "en-abcde-abcde", 3, "en-abcde-abcde", 1);
+   normalized(normal, "en-b-bb-a-aa-b-cc", 3, "en-b-bb-a-aa-b-cc", 1);
+   normalized(normal, "en-b-*-a", 3, "en-b-*-a", 1);
+   normalized(normal, "en-b-bb-a", 3, "en-b-bb-a", 1);
+   normalized(normal, "en-b-bb-a-*", 3, "en-b-bb-a-*", 1);
+   normalized(normal, "en-b-*-bb-a-aa", 3, "en-a-aa-b-*-bb", 0);
+   normalized(normal, "cmn-abc-def-ghi", 1, "zh-cmn-abc-def-ghi", 0);
+   normalized(normal, "zh-cmn-abc-def-ghi", 3, "zh-cmn-abc-def-ghi", 1);
+   normalized(normal, "zh-abc-cmn", 3, "zh-abc-cmn", 1);
+   normalized(normal, "en-ajp", 1, "en-apc", 0);
+   normalized(normal, "cmn-ajp-cmn-cmn-cmn", 3, "zh-cmn-apc-cmn-cmn-cmn", 0);
+   normalized(normal, "en-**", 3, NULL, 0);
+   normalized(normal, "zh-cmn-abc-ajp-ajp", 2, "cmn-abc-apc-apc", 0);
+   normalized(normal, "zh-cmn-abc-ajp-ajp", 3, "zh-cmn-abc-apc-apc", 0);
+   normalized_match("zh", "cmn-abc-def-ghi", 1);
+   normalized_match("cmn-*-ghi", "cmn-abc-def-ghi", 1);
+   normalized_match("*-ghi", "cmn-abc-def-ghi", 1);
+   normalized_match("zh-*-cmn", "cmn-Hans", 1);
+   normalized_match("*-ajp", "apc", 1);
+   normalized_match("i-*-klingon", "tlh", 1);
+   normalized_match("de-DE", "de-x-DE", 2);
+   normalized_match("de-*-DE", "de-Deva-DE", 1);
+   normalized_match("*", "", 2);
+   normalized_match("", "", 1);
+   normalized_match("", "und", 2);
+   normalized_match("*", "und", 1);
+   for (i = 0; i < ALIAS_COUNT; i++)
+      if (vtt_language_aliases[i].kind == RSUBTITLE_ALIAS_LANGUAGE)
+         normalized(normal, text(vtt_language_aliases[i].key), 0,
+               text(vtt_language_aliases[i].preferred), 0);
+   for (i = 0; i < 256; i++)
+   {
+      size_t j;
+      assert(rsubtitle_vtt_normalize_begin(normal, "iw-b-ccc-a-aaa", 14, 1));
+      for (j = 0; j < i; j++)
+         if (rsubtitle_vtt_normalize_step(normal))
+            break;
+      normalized(normal, "en-abcde-abcdef", 1, "en-abcde-abcdef", 1);
+   }
+   assert(!rsubtitle_vtt_normalize_begin(normal, "en", 65537, 0));
+   assert(rsubtitle_vtt_normalize_step(normal) == -1);
+   assert(!rsubtitle_vtt_normalize_result(normal, &length) && !length);
+   assert(!rsubtitle_vtt_normalize_begin(normal, NULL, 1, 0));
+   assert(!rsubtitle_vtt_normalize_begin(normal, "en", 2, 4));
+   assert(!rsubtitle_vtt_normalize_begin(NULL, "en", 2, 0));
+   assert(rsubtitle_vtt_normalize_step(NULL) == -1);
+   assert(!rsubtitle_vtt_normalize_result(NULL, &length) && !length);
+   assert(!rsubtitle_vtt_normalize_take(normal, &key));
+   assert(!key.text && !key.length && !key.owned);
+   normalized(normal, "iw", 1, "he", 0);
+   assert(!rsubtitle_vtt_normalize_take(normal, NULL));
+   assert(rsubtitle_vtt_normalize_result(normal, &length) && length == 2);
+   assert(rsubtitle_vtt_normalize_take(normal, &key));
+   assert(key.owned == key.text && key.length == 2 && !memcmp(key.text, "he", 2));
+   assert(!rsubtitle_vtt_normalize_result(normal, &length) && !length);
+   assert(rsubtitle_vtt_normalize_step(normal) == -1);
+   normalized(normal, "en", 1, "en", 1);
+   assert(key.length == 2 && !memcmp(key.text, "he", 2));
+   free(key.owned);
+   assert(rsubtitle_vtt_normalize_take(normal, &key));
+   assert(!key.owned && key.length == 2 && !memcmp(key.text, "en", 2));
+   assert(!rsubtitle_vtt_normalize_take(normal, &key));
+   assert(!key.text && !key.length && !key.owned);
+   assert(!rsubtitle_vtt_normalize_take(NULL, &key));
+   normalized(normal, "iw", 1, "he", 0);
+   assert(rsubtitle_vtt_normalize_take(normal, &key));
+   rsubtitle_vtt_normalize_free(normal);
+   assert(key.owned && key.length == 2 && !memcmp(key.text, "he", 2));
+   free(key.owned);
+   rsubtitle_vtt_normalize_free(NULL);
+}
+
 int main(void)
 {
    static const unsigned expected[] = {112, 258, 0, 6, 1, 51};
    unsigned counts[6] = {0, 0, 0, 0, 0, 0};
    size_t i;
    tag_grammar();
+   tag_normalization();
    assert(ALIAS_COUNT == 428);
    assert(vtt_language_strings[0] == 0 && sizeof(vtt_language_strings) < 65536);
    for (i = 0; i < ALIAS_COUNT; i++)
