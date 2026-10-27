@@ -124,6 +124,43 @@ static double reference(double x, unsigned mode)
                 : (exp((x - 0.55991073) / 0.17883277) + 0.28466892) / 12.0;
    return 12.5 * pow(x, 1.2);
 }
+static double reference_601(unsigned x, unsigned y, unsigned c, bool fp16, bool srgb)
+{
+   static const double to_xyz[3][3] = {
+      {0.393520903659, 0.365258076718, 0.191676946675},
+      {0.212376360705, 0.701059856926, 0.086563782369},
+      {0.018739090650, 0.111933926736, 0.958384733373}
+   };
+   static const double from_xyz[3][3] = {
+      {3.240969941905, -1.537383177570, -0.498610760293},
+      {-0.969243636281, 1.875967501508, 0.041555057407},
+      {0.055630079697, -0.203976958889, 1.056971514243}
+   };
+   double linear[3], xyz[3], value = 0.0;
+   unsigned i, j;
+   if (c == 3)
+      return 1.0;
+   for (i = 0; i < 3; i++)
+   {
+      double encoded = mapped[((y + 3) * 8 + x + 2) * 4 + i] / 255.0;
+      linear[i] = srgb ? reference(encoded, 1)
+            : encoded < 0.081 ? encoded / 4.5
+            : pow((encoded + 0.099) / 1.099, 1.0 / 0.45);
+   }
+   for (i = 0; i < 3; i++)
+   {
+      xyz[i] = 0.0;
+      for (j = 0; j < 3; j++)
+         xyz[i] += to_xyz[i][j] * linear[j];
+   }
+   for (i = 0; i < 3; i++)
+      value += from_xyz[c][i] * xyz[i];
+   if (fp16)
+      return value;
+   value = value < 0 ? 0 : value > 1 ? 1 : value;
+   return value <= 0.0031308 ? value * 12.92
+         : 1.055 * pow(value, 1.0 / 2.4) - 0.055;
+}
 static void execute(unsigned mode)
 {
    vulkan_android_pipeline_t p;
@@ -133,17 +170,18 @@ static void execute(unsigned mode)
    VkSubmitInfo submit;
    VkFenceCreateInfo fi;
    VkFence fence;
-   unsigned x, y, c, bps = mode ? 8 : 4;
+   bool fp16 = mode != 0 && mode != 4 && mode != 6;
+   unsigned x, y, c, bps = fp16 ? 8 : 4;
    float transfer = mode == 2 ? 16.0f
          : mode == 3          ? 18.0f
                               : 0.0f,
-         linear = mode ? -1.0f : 0.0f;
-   make_image(mode ? VK_FORMAT_R16G16B16A16_SFLOAT : VK_FORMAT_R8G8B8A8_UNORM,
+         linear = fp16 ? -1.0f : 0.0f;
+   make_image(fp16 ? VK_FORMAT_R16G16B16A16_SFLOAT : VK_FORMAT_R8G8B8A8_UNORM,
          3, 2, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
          &destination, &destination_memory, &destination_view);
    assert(vulkan_android_pipeline_create(device, &ops, sampler, 1, 1,
-         mode ? fp16_shader : rgba8_shader,
-         mode ? sizeof(fp16_shader) : sizeof(rgba8_shader), &p));
+         fp16 ? fp16_shader : rgba8_shader,
+         fp16 ? sizeof(fp16_shader) : sizeof(rgba8_shader), &p));
    assert(vulkan_android_pipeline_update(
          device, &ops, &p, 0, source_view, destination_view));
    memset(words, 0, sizeof(words));
@@ -152,6 +190,11 @@ static void execute(unsigned mode)
    words[2] = 2;
    words[3] = 3;
    words[4] = words[5] = 8;
+   if (mode >= 4)
+   {
+      words[6] = 6;
+      words[7] = mode >= 6 ? 13 : 6;
+   }
    memcpy(&words[16], &transfer, 4);
    memcpy(&words[19], &linear, 4);
    memset(&begin, 0, sizeof(begin));
@@ -220,7 +263,9 @@ static void execute(unsigned mode)
                   : reference(
                           mapped[((y + 3) * 8 + x + 2) * 4 + c] / 255.0, mode);
             double actual;
-            if (mode)
+            if (mode >= 4)
+               expected = reference_601(x, y, c, fp16, mode >= 6);
+            if (fp16)
             {
                uint16_t h;
                memcpy(&h, mapped + 256 + (y * 3 + x) * bps + c * 2, 2);
@@ -315,6 +360,17 @@ int main(void)
       mapped[i * 4 + 2] = (uint8_t)(i * 4);
       mapped[i * 4 + 3] = 255;
    }
+   {
+      static const uint8_t pixels[6][3] = {
+         {0, 0, 0}, {255, 255, 255}, {10, 20, 21},
+         {22, 64, 192}, {255, 0, 0}, {0, 255, 255}
+      };
+      for (i = 0; i < 6; i++)
+      {
+         unsigned x = i % 3 + 2, y = i / 3 + 3;
+         memcpy(mapped + (y * 8 + x) * 4, pixels[i], 3);
+      }
+   }
    make_image(VK_FORMAT_R8G8B8A8_UNORM, 8, 8,
          VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, &source,
          &source_memory, &source_view);
@@ -335,7 +391,7 @@ int main(void)
    ops.destroy_shader = vkDestroyShaderModule;
    ops.create_pipeline = vkCreateComputePipelines;
    ops.destroy_pipeline = vkDestroyPipeline;
-   for (i = 0; i < 4; i++)
+   for (i = 0; i < 8; i++)
       execute(i);
    vkDestroySampler(device, sampler, NULL);
    vkDestroyImageView(device, source_view, NULL);

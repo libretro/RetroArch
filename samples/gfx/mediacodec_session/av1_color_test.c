@@ -108,8 +108,38 @@ static void colors(unsigned depth, unsigned transfer)
    assert(android_image_queue_free(queue));
 }
 
+static void extended_color(void)
+{
+   video_color_metadata_t coded, resolved;
+   mediacodec_output_format_t format;
+   static const int invalid[] = { -1, 63, 113, 65536 };
+   unsigned i;
+   memset(&coded, 0, sizeof(coded));
+   memset(&format, 0, sizeof(format));
+   coded.primaries = coded.transfer = 2;
+   coded.matrix = coded.range = 1;
+   format.color_standard = 75;
+   format.color_transfer = 3;
+   format.color_range = 2;
+   assert(mediacodec_color_resolve(&format, &coded, &resolved));
+   assert(resolved.primaries == 6 && resolved.matrix == 1
+         && resolved.transfer == 6 && resolved.range == 1);
+   coded.primaries = 1;
+   assert(!mediacodec_color_resolve(&format, &coded, &resolved));
+   coded.primaries = 2;
+   coded.matrix = 6;
+   assert(!mediacodec_color_resolve(&format, &coded, &resolved));
+   coded.matrix = 1;
+   for (i = 0; i < sizeof(invalid) / sizeof(invalid[0]); i++)
+   {
+      format.color_standard = invalid[i];
+      assert(!mediacodec_color_resolve(&format, &coded, &resolved));
+   }
+}
+
 int main(void)
 {
+   extended_color();
    colors(8, 1);
    colors(10, 16);
    colors(10, 18);

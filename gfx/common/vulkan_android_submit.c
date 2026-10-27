@@ -20,9 +20,12 @@ bool vulkan_android_submission_configure(vulkan_android_submission_t *e,
                && source->color.transfer != 13 && source->color.transfer != 14
                && source->color.transfer != 15 && source->color.transfer != 16
                && source->color.transfer != 18)
-         || (source->color.primaries != 1 && source->color.primaries != 9)
+         || (source->color.primaries != 1 && source->color.primaries != 6
+               && source->color.primaries != 9)
+         || (source->color.primaries == 6 && source->color.transfer != 1
+               && source->color.transfer != 6 && source->color.transfer != 13)
          || ((source->color.transfer != 16 && source->color.transfer != 18)
-               && source->color.primaries != 1)
+               && source->color.primaries == 9)
          || !video_import_color(&yuv, &source->color, coefficients, hdr))
       return false;
    memset(e->header, 0, sizeof(e->header));
@@ -32,6 +35,8 @@ bool vulkan_android_submission_configure(vulkan_android_submission_t *e,
    e->header[3] = source->image.top;
    e->header[4] = source->image.buffer_width;
    e->header[5] = source->image.buffer_height;
+   e->header[6] = source->color.primaries;
+   e->header[7] = source->color.transfer;
    if (fp16)
       hdr[3] = -1.0f;
    memcpy(e->header + 16, hdr, sizeof(hdr));

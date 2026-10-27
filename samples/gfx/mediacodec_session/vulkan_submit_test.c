@@ -186,6 +186,15 @@ int main(void)
    assert(android_image_queue_acquire(queue, &v.image) == 1);
    assert(!android_frame_export(pool, &v, &f));
    setup(&v);
+   v.color.primaries = 6;
+   v.color.transfer = 6;
+   assert(vulkan_android_submission_configure(&entry, &v, false));
+   assert(entry.header[6] == 6 && entry.header[7] == 6);
+   v.color.transfer = 16;
+   assert(!vulkan_android_submission_configure(&entry, &v, false));
+   v.color.primaries = 1;
+   v.color.transfer = 13;
+   setup(&v);
    entry.source.color.range = 2;
    assert(vulkan_android_submission_present(&entry, &f, H(VkImage, 9),
                 H(VkImageView, 9), VK_IMAGE_LAYOUT_UNDEFINED)

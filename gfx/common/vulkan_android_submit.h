@@ -48,7 +48,7 @@ typedef struct vulkan_android_submission
 } vulkan_android_submission_t;
 /* Cold metadata preparation for this cached entry. Resources/command/fence and
  * operation tables are already populated. Does not take source's image ticket.
- * Only known BT.709 SDR and BT.709/2020 PQ/HLG are currently supported. */
+ * Supports BT.709/SMPTE 170M SDR and BT.709/2020 PQ/HLG. */
 bool vulkan_android_submission_configure(vulkan_android_submission_t *entry,
       const android_frame_view_t *source, bool fp16);
 /* Renderer-owner zero-timeout query. 1 reusable; 0 pending; -1 sticky failure.

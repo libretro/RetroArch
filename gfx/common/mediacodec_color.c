@@ -43,7 +43,18 @@ bool mediacodec_color_resolve(const mediacodec_output_format_t *native,
       primaries = matrix = 9;
       break;
    default:
-      return false;
+      {
+         static const unsigned primaries_map[7] = { 0, 1, 4, 5, 6, 8, 9 };
+         static const unsigned matrix_map[7] = { 0, 1, 4, 6, 7, 9, 10 };
+         unsigned packed;
+         /* Android ColorUtils packs extended primary/matrix pairs. */
+         if (native->color_standard < 64 || native->color_standard >= 113)
+            return false;
+         packed = (unsigned)native->color_standard - 64;
+         primaries = primaries_map[packed % 7];
+         matrix = matrix_map[packed / 7];
+      }
+      break;
    }
    if ((native->color_standard == 2 || native->color_standard == 4)
          && (color.matrix == 5 || color.matrix == 6))

@@ -78,7 +78,7 @@ int main(void)
          && out.transfer == 6);
    format.color_standard = 4;
    assert(!mediacodec_color_resolve(&format, &color, &out));
-   format.color_standard = 99;
+   format.color_standard = 113;
    assert(!mediacodec_color_resolve(&format, NULL, &out));
    memset(&format, 0, sizeof(format));
    assert(mediacodec_color_resolve(&format, NULL, &out));
