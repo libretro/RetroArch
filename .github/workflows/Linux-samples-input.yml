@@ -416,7 +416,7 @@ jobs:
           # button can go down and back up in between. Pins that such a
           # press is shown for one poll, that the order is kept, that
           # a repeat never holds anything back, and that rows,
-          # devices, fingers and buttons are told apart. A drain that
+          # devices, fingers, buttons and hats are told apart. A drain that
           # applies everything it has is put back and asserted to be
           # caught.
           make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
@@ -424,6 +424,28 @@ jobs:
              timeout 60 ./android_poll_changes_test
           make clean
           echo "[pass] android_poll_changes_test (ASan)"
+
+      - name: Build and run android_input_ring_test (ASan + UBSan, TSan, mingw-w64)
+        shell: bash
+        working-directory: samples/input/android_input_ring
+        run: |
+          set -eu
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
+          # The Android input reader's ring: each event a record of the
+          # size it needs, written where the poll applies it. Pins that
+          # the poll reads the reader's bytes in place, that no record
+          # crosses the ring's end over many laps, that a stick's moves
+          # merge only while unpublished, and that on two threads every
+          # record arrives once, whole and in order.
+          make clean && make all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 120 ./android_input_ring_test
+          make clean && make all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 300 ./android_input_ring_test
+          make clean && make CC=x86_64-w64-mingw32-gcc
+          WINEDEBUG=-all timeout 180 wine ./android_input_ring_test.exe
+          make clean
+          echo "[pass] android_input_ring_test (ASan, TSan, Wine)"
 
       - name: Build and run output_store_test (ASan + UBSan, TSan)
         shell: bash

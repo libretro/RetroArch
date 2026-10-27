@@ -18,6 +18,9 @@
  *      fingers than a poll tracks wait for the next.
  *   7. A mouse click between polls is shown for one, and the buttons
  *      are told apart.
+ *   8. A hat - a D-pad on many pads - tapped between polls is shown
+ *      pressed for one; a roll from one direction to the next shows
+ *      both held on its way; another pad's hat does not wait.
  *
  * A drain that ignores the answer, as one would that applies all it
  * has, loses the taps; it is put in and asserted to be caught. */
@@ -42,13 +45,14 @@ static bool     sabotage = false;
       } \
    } while (0)
 
-enum kind { KEY, POINTERS, MOUSE };
+enum kind { KEY, POINTERS, MOUSE, HAT };
 
 struct event
 {
    enum kind kind;
    unsigned  row;      /* a key's */
-   unsigned  code;     /* a key's keycode; a mouse's buttons after it */
+   unsigned  code;     /* a key's keycode; a mouse's buttons, a hat's
+                        * directions after it */
    int32_t   device;   /* the pointers' */
    int32_t   ids[4];
    unsigned  count;
@@ -63,6 +67,7 @@ struct state
    uint8_t  keys[ROWS][ANDROID_POLL_CHANGES_KEY_BYTES];
    bool     fingers[2][32];
    unsigned mouse;
+   unsigned hats[ROWS];
 };
 
 static android_poll_changes_t changes;
@@ -95,10 +100,14 @@ static unsigned poll_once(struct state *st, const struct event *ev,
             break;
          case POINTERS:
             ok = android_poll_changes_pointers(&changes, e->device,
-                  e->ids, e->count, e->down);
+                  e->ids, sizeof(e->ids[0]), e->count, e->down);
             break;
          case MOUSE:
             ok = android_poll_changes_mouse(&changes, st->mouse, e->code);
+            break;
+         case HAT:
+            ok = android_poll_changes_hat(&changes, e->row,
+                  st->hats[e->row], e->code);
             break;
       }
       if (!ok && !sabotage)
@@ -121,6 +130,9 @@ static unsigned poll_once(struct state *st, const struct event *ev,
             break;
          case MOUSE:
             st->mouse = e->code;
+            break;
+         case HAT:
+            st->hats[e->row] = e->code;
             break;
       }
    }
@@ -308,6 +320,59 @@ static void lane_mouse(void)
          "the buttons were not both let go at the next poll");
 }
 
+static struct event hat(unsigned row, unsigned dirs)
+{
+   struct event e;
+   memset(&e, 0, sizeof(e));
+   e.kind = HAT;
+   e.row  = row;
+   e.code = dirs;
+   return e;
+}
+
+static void lane_hat(void)
+{
+   struct state st;
+   struct event ev[4];
+   unsigned up    = android_poll_changes_hat_bits(0, -1);
+   unsigned right = android_poll_changes_hat_bits(1, 0);
+   unsigned next;
+
+   CHECK(up && right && !(up & right) && !android_poll_changes_hat_bits(0, 0),
+         "a hat's directions are not four bits of their own");
+
+   /* up tapped between polls */
+   ev[0] = hat(2, up);
+   ev[1] = hat(2, 0);
+   state_reset(&st);
+   next = poll_once(&st, ev, 0, 2);
+   CHECK(next == 1 && st.hats[2] == up, "a hat tap between two polls was never shown");
+   next = poll_once(&st, ev, next, 2);
+   CHECK(next == 2 && st.hats[2] == 0, "the hat was not let go at the next poll");
+
+   /* up, rolled through up-right to right, and let go: each shown */
+   ev[0] = hat(2, up);
+   ev[1] = hat(2, up | right);
+   ev[2] = hat(2, right);
+   ev[3] = hat(2, 0);
+   state_reset(&st);
+   next = poll_once(&st, ev, 0, 4);
+   CHECK(next == 2 && st.hats[2] == (up | right),
+         "a roll was taken past where up was let go in the same poll");
+   /* right was shown held with up: up and then right let go together */
+   next = poll_once(&st, ev, next, 4);
+   CHECK(next == 4 && st.hats[2] == 0, "the hat was not let go");
+
+   /* another pad's hat does not wait on this one's */
+   ev[0] = hat(2, up);
+   ev[1] = hat(3, up);
+   ev[2] = hat(3, 0);
+   state_reset(&st);
+   next = poll_once(&st, ev, 0, 3);
+   CHECK(next == 2 && st.hats[2] == up && st.hats[3] == up,
+         "a second pad's hat was held back by the first's");
+}
+
 static void all_lanes(void)
 {
    lane_tap();
@@ -317,6 +382,7 @@ static void all_lanes(void)
    lane_out_of_range();
    lane_fingers();
    lane_mouse();
+   lane_hat();
 }
 
 int main(void)

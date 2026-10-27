@@ -47,8 +47,10 @@
 #include <retro_atomic.h>
 #include <retro_spsc.h>
 #include <rthreads/retro_eventcount.h>
+#include <stddef.h>
 
 #include "android_lifecycle.h"
+#include "../../input/drivers/android_input_ring.h"
 #include "../../input/drivers/android_focus.h"
 
 /* struct android_app below embeds retro_atomic_int_t, which is
@@ -98,29 +100,47 @@ typedef struct android_input_fields
    float axes[ANDROID_JOYSTICK_AXES]; /* a move's */
 } android_input_fields_t;
 
-/* An event from the input queue as the input reader copied it: a key
- * or a joystick move in @fields; for a touch, a mouse or a pen, its
- * pointers, and what native input reads at the action's pointer */
+/* A finger, a mouse or a pen of a motion event */
+typedef struct android_input_pointer
+{
+   int32_t id;
+   float x;
+   float y;
+} android_input_pointer_t;
+
+/* An event from the input queue as the input reader wrote it into its
+ * ring (input/drivers/android_input_ring.h), and as long as it needs:
+ * a key ends before @fields.axes, a stick's move before @down_time,
+ * and a touch, a mouse or a pen has @pointer_count pointers, with
+ * what native input reads at the action's pointer. */
 typedef struct android_input_event
 {
+   android_input_rec_t rec;
    android_input_fields_t fields;
    int64_t down_time;
    int32_t button_state;
    int32_t tool_type;
    int32_t pointer_count;
-   int32_t pointer_id[MAX_TOUCH];
-   float x[MAX_TOUCH];
-   float y[MAX_TOUCH];
    float pressure;
    float distance;
    float vscroll;
    float relative_x;
    float relative_y;
+   android_input_pointer_t pointer[MAX_TOUCH];
 } android_input_event_t;
 
-/* The least number of events the input reader's ring holds. Full, it
- * leaves the rest in the input queue until the app thread makes room. */
-#define ANDROID_INPUT_EVENTS 256
+#define ANDROID_INPUT_KEY_BYTES \
+   offsetof(android_input_event_t, fields.axes)
+#define ANDROID_INPUT_STICK_BYTES \
+   offsetof(android_input_event_t, down_time)
+#define ANDROID_INPUT_MOTION_BYTES(pointers) \
+   (offsetof(android_input_event_t, pointer) \
+    + (size_t)(pointers) * sizeof(android_input_pointer_t))
+
+/* The input reader's ring, in bytes: some 1500 keys, or 200 touches
+ * of all ten fingers. Full, the reader leaves the rest in the input
+ * queue until the app thread makes room. */
+#define ANDROID_INPUT_RING_BYTES 65536
 
 /* The input queue is read on a thread of its own
  * (input/drivers/android_input.c): Android sends a window its next key
@@ -128,7 +148,8 @@ typedef struct android_input_event
  * event finished, as it comes, not once a frame */
 struct android_input_reader
 {
-   /* android_input_event_t records, reader thread to app thread */
+   /* android_input_event_t records of their own sizes, reader thread
+    * to app thread (android_input_ring.h) */
    retro_spsc_t events;
    /* What the reader waits on while @events is full: room made, a
     * queue handed over, or the stop */
