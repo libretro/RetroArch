@@ -24,6 +24,7 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <dirent.h>
 #include <poll.h>
 #include <libudev.h>
 #if defined(__linux__)
@@ -46,6 +47,7 @@
 #include "../common/output_writer.h"
 #include "../common/linux_pad_members.h"
 #include "../common/input_ignore_devices.h"
+#include "../common/linux_pad_leds.h"
 
 #include "../../configuration.h"
 #include "../../config.def.h"
@@ -123,6 +125,11 @@ struct udev_joypad
    char phys[NAME_MAX_LENGTH];
    /* the pad's HID device, which its other nodes share */
    char hid_syspath[256];
+   /* the device its lights are under: the HID device, or an Xbox 360
+    * pad's USB device (xpad) */
+   char led_scope[256];
+   uint8_t led_count;   /* lights found for the writer */
+   uint8_t led_tries;   /* looks for them while there are none */
 
    /* Sensor (IMU) support: sibling evdev node for accelerometer/gyroscope */
    int sensor_fd;
@@ -362,6 +369,10 @@ static void udev_rumble_write(unsigned p)
 
 /* On the writer's thread, after each wake; at the last, what it wrote
  * to is its own to close. */
+static void udev_led_write(unsigned p);
+static void udev_led_close_all(void);
+static void udev_led_init(void);
+
 static void udev_rumble_writer_cb(void *userdata, bool last)
 {
    unsigned p;
@@ -369,9 +380,13 @@ static void udev_rumble_writer_cb(void *userdata, bool last)
    if (!last)
    {
       for (p = 0; p < MAX_USERS; p++)
+      {
          udev_rumble_write(p);
+         udev_led_write(p);
+      }
       return;
    }
+   udev_led_close_all();
    for (p = 0; p < MAX_USERS; p++)
    {
       if (udev_rumble_out[p].fd >= 0)
@@ -472,15 +487,24 @@ static void udev_rumble_start(void)
       retro_atomic_store_release_int(&udev_rumble_want_gain[p], -1);
       retro_atomic_store_release_int(&udev_rumble_want[p], 0);
    }
+   udev_led_init();
    udev_rumble_writer = input_output_writer_new_timed(udev_rumble_writer_cb,
          udev_rumble_timeout, NULL);
 }
 
+static void udev_led_detach(unsigned p);
+
 static void udev_rumble_stop(void)
 {
    unsigned p;
+   bool writer = udev_rumble_writer != NULL;
    input_output_writer_free(udev_rumble_writer);
    udev_rumble_writer = NULL;
+   /* the writer's last call closed its lights */
+   if (!writer)
+      udev_led_close_all();
+   for (p = 0; p < MAX_USERS; p++)
+      udev_led_detach(p);
    udev_rumble_next   = 0;
    for (p = 0; p < MAX_USERS; p++)
    {
@@ -491,6 +515,276 @@ static void udev_rumble_stop(void)
          close(udev_rumble_out[p].fd);
       udev_rumble_out[p].fd = -1;
    }
+}
+
+
+/* Player lights, through the pad's LED class devices (linux_pad_leds.h).
+ *
+ * Writing one can wait on the pad: a Switch pad's is a request it
+ * answers. So the lights are written by the rumble writer, as rumble
+ * is. When a pad arrives its lights are found and opened here, and
+ * each descriptor is left in a slot for the writer, packed with which
+ * light it is; the player wanted is an atomic of its own. A pad that
+ * goes empties its slots and raises the rumble generation, at which
+ * the writer closes what it holds. The player wanted is kept by port
+ * slot, pad or not: the frontend tells every slot, so a pad that
+ * arrives is lit as it starts.
+ *
+ * The files are root's unless a udev rule gives them to the user; a
+ * pad whose lights cannot be opened is left as it is. */
+#define UDEV_LEDS_MAX           8
+/* a light bar's multi_intensity, which goes with its brightness */
+#define UDEV_LED_RGB_INTENSITY  15
+#define UDEV_LED_PACK(fd, led, n) (((fd) << 8) | ((led) << 4) | (n))
+
+struct udev_led_out
+{
+   int     gen;                 /* the pad generation it is for */
+   int     applied;             /* the player written, -2 for none */
+   bool    lit;                 /* lights this driver lit */
+   bool    has_players;
+   uint8_t count;
+   uint8_t led[UDEV_LEDS_MAX];
+   uint8_t n[UDEV_LEDS_MAX];
+   int     fd[UDEV_LEDS_MAX];
+};
+
+static struct udev_led_out udev_led_out[MAX_USERS];
+/* where the lights are listed; a test's directory in its place */
+static const char *udev_led_dir = "/sys/class/leds";
+static retro_atomic_int_t udev_led_slot[MAX_USERS][UDEV_LEDS_MAX];
+static retro_atomic_int_t udev_led_want[MAX_USERS];
+
+static void udev_led_out_reset(struct udev_led_out *o, int gen)
+{
+   unsigned i;
+   for (i = 0; i < o->count; i++)
+      close(o->fd[i]);
+   memset(o, 0, sizeof(*o));
+   o->gen     = gen;
+   o->applied = -2;
+}
+
+static void udev_led_write_one(int fd, const char *text)
+{
+   ssize_t len = (ssize_t)strlen(text);
+   if (lseek(fd, 0, SEEK_SET) < 0 || write(fd, text, len) != len)
+      RARCH_DBG("[udev] A player light was not written: %s.\n",
+            strerror(errno));
+}
+
+/* On the writer's thread; on the frontend's only when there is none */
+static void udev_led_write(unsigned p)
+{
+   unsigned i;
+   int want;
+   struct udev_led_out *o = &udev_led_out[p];
+   int gen                = retro_atomic_load_acquire_int(&udev_rumble_gen[p]);
+
+   if (gen != o->gen)
+      udev_led_out_reset(o, gen);
+   for (i = 0; i < UDEV_LEDS_MAX && o->count < UDEV_LEDS_MAX; i++)
+   {
+      int v = retro_atomic_exchange_int(&udev_led_slot[p][i], -1);
+      if (v < 0)
+         continue;
+      o->fd[o->count]  = v >> 8;
+      o->led[o->count] = (uint8_t)((v >> 4) & 15);
+      o->n[o->count]   = (uint8_t)(v & 15);
+      if (     o->led[o->count] == LINUX_PAD_LED_DS_PLAYER
+            || o->led[o->count] == LINUX_PAD_LED_SW_PLAYER
+            || o->led[o->count] == LINUX_PAD_LED_PS3_PLAYER)
+         o->has_players = true;
+      o->count++;
+      o->applied = -2;
+   }
+   want = retro_atomic_load_acquire_int(&udev_led_want[p]);
+   if (!o->count || want == o->applied)
+      return;
+   o->applied = want;
+   /* lights it never lit are left alone */
+   if (want < 1 && !o->lit)
+      return;
+   for (i = 0; i < o->count; i++)
+   {
+      char text[16];
+      uint8_t rgb[3];
+      enum linux_pad_led led = (enum linux_pad_led)o->led[i];
+      int value;
+      if (led == UDEV_LED_RGB_INTENSITY)
+         continue;
+      value = linux_pad_led_value(led, o->n[i], want, o->has_players, rgb);
+      if (value < 0)
+         continue;
+      if (led == LINUX_PAD_LED_RGB)
+      {
+         unsigned j;
+         /* its colour first, then how bright */
+         for (j = 0; j < o->count; j++)
+            if (o->led[j] == UDEV_LED_RGB_INTENSITY)
+            {
+               snprintf(text, sizeof(text), "%u %u %u\n",
+                     rgb[0], rgb[1], rgb[2]);
+               udev_led_write_one(o->fd[j], text);
+            }
+      }
+      snprintf(text, sizeof(text), "%d\n", value);
+      udev_led_write_one(o->fd[i], text);
+   }
+   o->lit = want >= 1;
+}
+
+static void udev_led_close_all(void)
+{
+   unsigned p;
+   for (p = 0; p < MAX_USERS; p++)
+      udev_led_out_reset(&udev_led_out[p], udev_led_out[p].gen);
+}
+
+static void udev_led_init(void)
+{
+   unsigned p, i;
+   for (p = 0; p < MAX_USERS; p++)
+   {
+      memset(&udev_led_out[p], 0, sizeof(udev_led_out[p]));
+      udev_led_out[p].gen     = retro_atomic_load_acquire_int(&udev_rumble_gen[p]);
+      udev_led_out[p].applied = -2;
+      retro_atomic_store_release_int(&udev_led_want[p], 0);
+      for (i = 0; i < UDEV_LEDS_MAX; i++)
+         retro_atomic_store_release_int(&udev_led_slot[p][i], -1);
+   }
+}
+
+/* The lights left for the writer in slot @p, taken back */
+static void udev_led_detach(unsigned p)
+{
+   unsigned i;
+   for (i = 0; i < UDEV_LEDS_MAX; i++)
+   {
+      int v = retro_atomic_exchange_int(&udev_led_slot[p][i], -1);
+      if (v >= 0)
+         close(v >> 8);
+   }
+}
+
+static void udev_led_leave(unsigned p, unsigned *at, int fd,
+      unsigned led, unsigned n)
+{
+   int old;
+   if (*at >= UDEV_LEDS_MAX)
+   {
+      close(fd);
+      return;
+   }
+   old = retro_atomic_exchange_int(&udev_led_slot[p][(*at)++],
+         UDEV_LED_PACK(fd, led, n));
+   if (old >= 0)
+      close(old >> 8);
+}
+
+/* Whether the light @name is under @scope, a /sys/devices path: its
+ * link in /sys/class/leds is "../../devices/..." */
+static bool udev_led_under(const char *scope, size_t scope_len,
+      const char *name)
+{
+   char file[512], link[512];
+   ssize_t len;
+   if (scope_len < 6 || strncmp(scope, "/sys/", 5))
+      return false;
+   snprintf(file, sizeof(file), "%s/%s", udev_led_dir, name);
+   if ((len = readlink(file, link, sizeof(link) - 1)) < 6)
+      return false;
+   link[len] = '\0';
+   return   !strncmp(link, "../../", 6)
+         && (size_t)len > scope_len + 1
+         && !strncmp(link + 5, scope + 4, scope_len - 4)
+         && link[5 + scope_len - 4] == '/';
+}
+
+/* The lights under the pad in slot @p, opened and left for the writer.
+ * Read where a pad arrives, and a few times after while it has none: a
+ * driver can add a pad's lights just after its input nodes. */
+static void udev_led_attach(unsigned p)
+{
+   DIR *dir;
+   struct dirent *e;
+   unsigned at             = 0;
+   unsigned xpads          = 0;
+   bool denied             = false;
+   struct udev_joypad *pad = &udev_pads[p];
+   size_t scope_len        = strlen(pad->led_scope);
+
+   pad->led_tries++;
+   if (!scope_len || !(dir = opendir(udev_led_dir)))
+      return;
+   /* xpad puts a wireless receiver's four pads' rings under its one USB
+    * device, and which is whose is not told: none is taken then */
+   while ((e = readdir(dir)))
+   {
+      unsigned n;
+      if (     linux_pad_led_of(e->d_name, &n) == LINUX_PAD_LED_XPAD
+            && udev_led_under(pad->led_scope, scope_len, e->d_name))
+         xpads++;
+   }
+   rewinddir(dir);
+   while ((e = readdir(dir)))
+   {
+      char file[512];
+      unsigned n;
+      int fd;
+      enum linux_pad_led led = linux_pad_led_of(e->d_name, &n);
+
+      if (     led == LINUX_PAD_LED_NONE
+            || (led == LINUX_PAD_LED_XPAD && xpads > 1)
+            || !udev_led_under(pad->led_scope, scope_len, e->d_name))
+         continue;
+      snprintf(file, sizeof(file), "%s/%s/brightness", udev_led_dir,
+            e->d_name);
+      if ((fd = open(file, O_WRONLY | O_CLOEXEC)) < 0)
+      {
+         denied = denied || errno == EACCES || errno == EPERM;
+         continue;
+      }
+      udev_led_leave(p, &at, fd, led, n);
+      if (led == LINUX_PAD_LED_RGB)
+      {
+         snprintf(file, sizeof(file), "%s/%s/multi_intensity",
+               udev_led_dir, e->d_name);
+         if ((fd = open(file, O_WRONLY | O_CLOEXEC)) >= 0)
+            udev_led_leave(p, &at, fd, UDEV_LED_RGB_INTENSITY, 0);
+      }
+   }
+   closedir(dir);
+
+   pad->led_count = (uint8_t)at;
+   if (at)
+   {
+      RARCH_LOG("[udev] Pad #%u: %u light(s) for its player.\n", p, at);
+      if (udev_rumble_writer)
+         input_output_writer_wake(udev_rumble_writer);
+      else
+         udev_led_write(p);
+   }
+   else if (denied)
+   {
+      pad->led_tries = 255;
+      RARCH_LOG("[udev] Pad #%u: its player lights are not writable;"
+            " pkg/linux/70-retroarch-player-lights.rules makes them so.\n", p);
+   }
+}
+
+/* The player pad @pad's lights are to show; 0 none */
+static void udev_joypad_set_player(unsigned pad, unsigned player)
+{
+   if (pad >= MAX_USERS)
+      return;
+   if (retro_atomic_load_acquire_int(&udev_led_want[pad]) == (int)player)
+      return;
+   retro_atomic_store_release_int(&udev_led_want[pad], (int)player);
+   if (udev_rumble_writer)
+      input_output_writer_wake(udev_rumble_writer);
+   else
+      udev_led_write(pad);
 }
 
 static INLINE int16_t udev_compute_axis(const struct input_absinfo *info, int value)
@@ -1060,6 +1354,23 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
 
    udev_open_members(pad, &nodes, p);
 
+   /* its lights: under its HID device, or an Xbox 360 pad's under its
+    * USB device */
+   pad->led_scope[0] = '\0';
+   pad->led_count    = 0;
+   pad->led_tries    = 0;
+   if (*pad->hid_syspath)
+      strlcpy(pad->led_scope, pad->hid_syspath, sizeof(pad->led_scope));
+   else
+   {
+      struct udev_device *usb = udev_device_get_parent_with_subsystem_devtype(
+            dev, "usb", "usb_device");
+      const char *syspath     = usb ? udev_device_get_syspath(usb) : NULL;
+      if (syspath)
+         strlcpy(pad->led_scope, syspath, sizeof(pad->led_scope));
+   }
+   udev_led_attach(p);
+
    if (*pad->ident)
    {
       input_autoconfigure_connect(
@@ -1142,6 +1453,7 @@ static void udev_check_device(struct udev_device *dev, const char *path)
 
 static void udev_free_pad(unsigned pad)
 {
+   udev_led_detach(pad);
    udev_rumble_detach(pad);
    if (udev_pads[pad].fd >= 0)
       close(udev_pads[pad].fd);
@@ -1312,8 +1624,16 @@ static bool udev_joypad_poll_hotplug_available(struct udev_monitor *dev)
 static void udev_joypad_poll(void)
 {
    unsigned p;
+   static unsigned led_tick;
 
    udev_rumble_poll();
+
+   /* lights a driver adds just after a pad's input nodes */
+   if (!(++led_tick & 63))
+      for (p = 0; p < MAX_USERS; p++)
+         if (     (udev_pads_active & (1u << p))
+               && !udev_pads[p].led_count && udev_pads[p].led_tries < 4)
+            udev_led_attach(p);
 
    while (udev_joypad_mon && udev_joypad_poll_hotplug_available(udev_joypad_mon))
    {
@@ -1841,6 +2161,6 @@ input_device_driver_t udev_joypad = {
    NULL, /* set_bt_host */
 #endif
    NULL, /* survives_video */
-   NULL, /* set_player */
+   udev_joypad_set_player,
    udev_joypad_view
 };

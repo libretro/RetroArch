@@ -1110,6 +1110,25 @@ jobs:
           timeout 120 ./udev_rumble_test
           make clean
           echo "[pass] udev_rumble_test"
+      - name: Build and run udev_player_lights_test (ASan + UBSan, then TSan)
+        shell: bash
+        working-directory: samples/input/udev_player_lights
+        run: |
+          set -eu
+          # The udev joypad driver lights each pad's player through its
+          # LED class devices, found under the pad in a directory laid
+          # out as /sys is: a DualSense's five and not its light bar, a
+          # DualShock 4's light bar by colour, a DualShock 3's, an Xbox
+          # 360 pad's ring and not a receiver's four; out when no port
+          # reads it, unless it was never lit. Written by the rumble
+          # writer's thread, and without threads by the caller.
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 timeout 60 ./udev_player_lights_test
+          ASAN_OPTIONS=detect_leaks=1 timeout 60 ./udev_player_lights_test_nothreads
+          make clean SANITIZER=thread && make -j$(nproc) all SANITIZER=thread
+          timeout 60 ./udev_player_lights_test
+          make clean
+          echo "[pass] udev_player_lights_test"
       - name: Build and run udev_ds3_pressure_test (ASan + UBSan)
         shell: bash
         working-directory: samples/input/udev_ds3_pressure

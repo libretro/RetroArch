@@ -1,0 +1,8 @@
+# Lets RetroArch's udev controller driver show each controller's player
+# on its lights: a DualSense's player lights, a DualShock 4's light bar,
+# a DualShock 3's, a Switch pad's and an Xbox 360 pad's player lights.
+# The kernel makes these files root's; this makes them writable by the
+# user playing. Install to /etc/udev/rules.d/ (or /usr/lib/udev/rules.d/
+# for a package), then reconnect the controller.
+ACTION=="add", SUBSYSTEM=="leds", DRIVERS=="playstation|sony|nintendo|xpad", KERNEL=="*:player-[1-5]|*:player[1-4]|*::sony[1-4]|*:rgb:indicator|*:red|*:green|*:blue|xpad[0-9]*", RUN+="/bin/chmod 0666 /sys%p/brightness"
+ACTION=="add", SUBSYSTEM=="leds", DRIVERS=="playstation", KERNEL=="*:rgb:indicator", RUN+="/bin/chmod 0666 /sys%p/multi_intensity"

@@ -1,0 +1,46 @@
+TARGET := udev_player_lights_test
+
+# The real udev joypad driver lighting a pad's player lights through its
+# LED class devices, stood in for by a directory laid out as /sys is,
+# and the names of the lights as each kernel driver gives them.
+#    make && make check
+REPO_ROOT := ../../..
+LRC       := $(REPO_ROOT)/libretro-common
+
+CFLAGS += -Wall -Wno-unused -std=gnu99 -g1 -O1 \
+          -DRARCH_INTERNAL -DHAVE_UDEV -DHAVE_MENU \
+          -I$(REPO_ROOT) -I$(REPO_ROOT)/input/include \
+          -I$(REPO_ROOT)/gfx/include \
+          -I$(LRC)/include -I$(REPO_ROOT)/deps
+
+ifneq ($(SANITIZER),)
+   CFLAGS  += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
+   LDFLAGS += -fsanitize=$(SANITIZER)
+endif
+
+COMMON := $(LRC)/compat/compat_strl.c $(REPO_ROOT)/input/common/output_writer.c
+
+# udev is Linux's: elsewhere there is no driver to test, and the
+# targets say so and succeed.
+ifeq ($(shell uname -s 2>/dev/null),Linux)
+all: $(TARGET) $(TARGET)_nothreads
+
+$(TARGET): udev_player_lights_test.c $(REPO_ROOT)/input/drivers_joypad/udev_joypad.c $(REPO_ROOT)/input/common/linux_pad_leds.h
+	$(CC) $(CFLAGS) -DHAVE_THREADS $(LDFLAGS) -o $@ udev_player_lights_test.c \
+		$(COMMON) $(LRC)/rthreads/rthreads.c -ludev -lpthread
+
+$(TARGET)_nothreads: udev_player_lights_test.c $(REPO_ROOT)/input/drivers_joypad/udev_joypad.c $(REPO_ROOT)/input/common/linux_pad_leds.h
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ udev_player_lights_test.c $(COMMON) -ludev
+
+check: all
+	./$(TARGET)
+	./$(TARGET)_nothreads
+else
+all check:
+	@echo "SKIP udev_player_lights_test: the udev joypad driver is Linux only"
+endif
+
+clean:
+	rm -f $(TARGET) $(TARGET)_nothreads
+
+.PHONY: all check clean
