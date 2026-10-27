@@ -25,6 +25,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <retro_inline.h>
+#include <retro_endianness.h>
 #include <encodings/rbzip2.h>
 
 #define RBZ_GROUPS_MAX 6
@@ -53,6 +55,15 @@ struct rbz_in
    const uint8_t *end;
    uint64_t       buf;
    size_t         over;
+   /* input given in two pieces, the second where a ring buffer wraps:
+    * where it is until p reaches it, then NULL */
+   const uint8_t *next;
+   const uint8_t *next_end;
+   /* what was taken before these pieces, and where they start */
+   uint64_t       base;
+   const uint8_t *first;
+   const uint8_t *second;
+   size_t         first_len;
    unsigned       n;
 };
 
@@ -88,17 +99,44 @@ struct rbzip2
 };
 
 
-#define RBZ_FILL(p, end, buf, n, over) \
-   while ((n) <= 56) \
+static INLINE uint64_t rbz_be64(const uint8_t *p)
+{
+   uint64_t v;
+   memcpy(&v, p, 8);
+   return swap_if_little64(v);
+}
+
+/* The bit buffer topped up once under the 24 bits the most any one
+ * read takes: as many whole octets as it holds in one load where eight
+ * are left, else one at a time, past the end of the first piece onto
+ * the second, which is the one test the end of the input already
+ * costs */
+#define RBZ_FILL(in, p, end, buf, n, over) \
+   if ((n) < 24) \
    { \
-      (buf) = ((buf) << 8) | ((p) < (end) ? *(p)++ : ((over)++, 0u)); \
-      (n)  += 8; \
+      if ((size_t)((end) - (p)) >= 8) \
+      { \
+         unsigned c_ = (64 - (n)) >> 3; \
+         (buf) = (((buf) << 1) << (c_ * 8 - 1)) \
+               | (rbz_be64(p) >> (64 - c_ * 8)); \
+         (p)  += c_; \
+         (n)  += c_ * 8; \
+      } \
+      else \
+         while ((n) <= 56) \
+         { \
+            (buf) = ((buf) << 8) | ((p) < (end) ? *(p)++ \
+                  : (in)->next ? ((p) = (in)->next, \
+                     (end) = (in)->next_end, (in)->next = NULL, *(p)++) \
+                  : ((over)++, 0u)); \
+            (n)  += 8; \
+         } \
    }
 
 /* @k octets wide or less, 1 <= k <= 24 */
 static uint32_t rbz_bits(struct rbz_in *in, unsigned k)
 {
-   RBZ_FILL(in->p, in->end, in->buf, in->n, in->over)
+   RBZ_FILL(in, in->p, in->end, in->buf, in->n, in->over)
    in->n -= k;
    return (uint32_t)(in->buf >> in->n) & ((1u << k) - 1);
 }
@@ -354,7 +392,7 @@ static int rbz_block(rbzip2_t *bz, struct rbz_in *in, uint32_t max_block,
       }
       left--;
       nsym++;
-      RBZ_FILL(p, end, buf, n, over)
+      RBZ_FILL(in, p, end, buf, n, over)
       ent = t->lut[(uint32_t)(buf >> (n - RBZ_LUT_BITS)) & ((1u << RBZ_LUT_BITS) - 1)];
       if (ent)
       {
@@ -406,6 +444,7 @@ static int rbz_block(rbzip2_t *bz, struct rbz_in *in, uint32_t max_block,
       }
    }
    in->p    = p;
+   in->end  = end;
    in->buf  = buf;
    in->n    = n;
    in->over = over;
@@ -553,14 +592,29 @@ static int rbz_start(rbzip2_t *bz, const uint8_t *src, size_t src_len)
       }
    }
 
-   bz->max_block = max_block;
-   bz->combined  = 0;
-   bz->in.p      = src + 4;
-   bz->in.end    = src + src_len;
-   bz->in.buf    = 0;
-   bz->in.n      = 0;
-   bz->in.over   = 0;
+   bz->max_block    = max_block;
+   bz->combined     = 0;
+   bz->in.p         = src + 4;
+   bz->in.end       = src + src_len;
+   bz->in.buf       = 0;
+   bz->in.n         = 0;
+   bz->in.over      = 0;
+   bz->in.next      = NULL;
+   bz->in.next_end  = NULL;
+   bz->in.base      = 0;
+   bz->in.first     = src;
+   bz->in.first_len = src_len;
+   bz->in.second    = NULL;
    return RBZIP2_OK;
+}
+
+/* How much of the input has been taken, what is held in the bit buffer
+ * with it */
+static uint64_t rbz_taken(const struct rbz_in *in)
+{
+   if (in->second && !in->next)
+      return in->base + in->first_len + (uint64_t)(in->p - in->second);
+   return in->base + (uint64_t)(in->p - in->first);
 }
 
 /* The next block, or the end of the stream and its CRC */
@@ -626,6 +680,44 @@ int rbzip2_begin_blocks(rbzip2_t *bz, const uint8_t *src, size_t src_len)
       return RBZIP2_ERROR_DATA;
    bz->blocks = 1;
    return rbz_start(bz, src, src_len);
+}
+
+int rbzip2_begin_ring(rbzip2_t *bz, const uint8_t *a, size_t a_len,
+      const uint8_t *b, size_t b_len)
+{
+   int e;
+   if (!bz)
+      return RBZIP2_ERROR_DATA;
+   bz->blocks = 1;
+   if ((e = rbz_start(bz, a, a_len)) != RBZIP2_OK)
+      return e;
+   if (b_len)
+   {
+      bz->in.second   = b;
+      bz->in.next     = b;
+      bz->in.next_end = b + b_len;
+   }
+   return RBZIP2_OK;
+}
+
+void rbzip2_input(rbzip2_t *bz, const uint8_t *a, size_t a_len,
+      const uint8_t *b, size_t b_len)
+{
+   if (!bz)
+      return;
+   bz->in.base      = rbz_taken(&bz->in);
+   bz->in.p         = a;
+   bz->in.end       = a + a_len;
+   bz->in.first     = a;
+   bz->in.first_len = a_len;
+   bz->in.second    = b_len ? b : NULL;
+   bz->in.next      = b_len ? b : NULL;
+   bz->in.next_end  = b + b_len;
+}
+
+uint64_t rbzip2_taken(const rbzip2_t *bz)
+{
+   return bz ? rbz_taken(&bz->in) : 0;
 }
 
 int rbzip2_step_block(rbzip2_t *bz, const uint8_t **block, size_t *len)

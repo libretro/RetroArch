@@ -5,7 +5,8 @@
  * reach the 255 the run coding holds and runs of rank 0 thousands long,
  * blocks filled to the last octet. Each must decode octet for octet,
  * into a buffer of its size and into one grown as it decodes, whether
- * a block's walk runs from one end or from both.
+ * a block's walk runs from one end or from both, and block by block
+ * from input in two pieces split anywhere, as a ring buffer wraps.
  * Then what must fail: every prefix of a stream, a block's CRC wrong,
  * the stream's changed, a randomised block, a buffer one octet short,
  * and a stream with octets flipped, which must fail or decode, never
@@ -92,6 +93,58 @@ static void decodes(rbzip2_t *bz, const uint8_t *s, size_t sn,
    else
       grown[n] = 0;    /* the octet to spare */
    free(grown);
+}
+
+static uint8_t *copy_of(const uint8_t *s, size_t n)
+{
+   uint8_t *c = (uint8_t*)malloc(n ? n : 1);
+   if (c && n)
+      memcpy(c, s, n);
+   return c;
+}
+
+/* @s handed over in two pieces each its own buffer, as a ring buffer
+ * wraps: for even @i split anew before every block from where the
+ * decoder has taken it to, for odd the same two throughout; the blocks
+ * must be @want's */
+static void ring_decodes(rbzip2_t *bz, const uint8_t *s, size_t sn,
+      const uint8_t *want, size_t n, unsigned i)
+{
+   size_t         k  = 4 + next() % (sn - 3);
+   uint8_t       *a  = copy_of(s, k);
+   uint8_t       *b  = copy_of(s + k, sn - k);
+   const uint8_t *blk;
+   size_t         len, at = 0;
+   int            e;
+   if (rbzip2_begin_ring(bz, a, k, b, sn - k) != RBZIP2_OK)
+   {
+      fail("a stream begun in two pieces", i);
+      free(a);
+      free(b);
+      return;
+   }
+   while ((e = rbzip2_step_block(bz, &blk, &len)) == RBZIP2_PENDING)
+   {
+      uint64_t t = rbzip2_taken(bz);
+      if (!len || len > n - at || memcmp(blk, want + at, len) || t > sn)
+      {
+         fail("a block from two pieces", i);
+         break;
+      }
+      at += len;
+      if (i & 1)
+         continue;   /* the same two pieces all through */
+      free(a);
+      free(b);
+      k = (size_t)t + next() % (sn - (size_t)t + 1);
+      a = copy_of(s + t, k - (size_t)t);
+      b = copy_of(s + k, sn - k);
+      rbzip2_input(bz, a, k - (size_t)t, b, sn - k);
+   }
+   if (e != RBZIP2_OK || at != n || rbzip2_taken(bz) > sn)
+      fail("a stream from two pieces", i);
+   free(a);
+   free(b);
 }
 
 /* plaintext shape @k, @n octets */
@@ -216,6 +269,25 @@ int main(void)
       }
       if (e != RBZIP2_OK || at != 350000 || blocks < 4)
          fail("a stream's blocks one after another", blocks);
+   }
+   for (i = 0; i < 40; i++)
+      ring_decodes(bz, s, sn, d, 350000, i);
+   /* half of it given, as if the rest were still to be read: a block
+    * past the half fails, taking nothing more */
+   {
+      uint8_t       *h = copy_of(s, sn / 2);
+      const uint8_t *blk;
+      size_t         len;
+      int            e;
+      if (rbzip2_begin_ring(bz, h, sn / 2, NULL, 0) == RBZIP2_OK)
+      {
+         while ((e = rbzip2_step_block(bz, &blk, &len)) == RBZIP2_PENDING) { }
+         if (e != RBZIP2_ERROR_DATA)
+            fail("half a stream in a ring", 0);
+      }
+      else
+         fail("half a stream begun", 0);
+      free(h);
    }
    if (rbzip2_begin(bz, o, 349999, s, sn) == RBZIP2_OK)
    {

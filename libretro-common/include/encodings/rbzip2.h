@@ -118,6 +118,44 @@ int rbzip2_step(rbzip2_t *bz, size_t *wrote);
 int rbzip2_begin_blocks(rbzip2_t *bz, const uint8_t *src, size_t src_len);
 
 /**
+ * rbzip2_begin_ring:
+ * @a        : the first of the stream, at least its four-octet header
+ * @b        : and what comes after @a, as where a ring buffer wraps; or
+ *             none, @b_len 0
+ *
+ * As rbzip2_begin_blocks(), for a stream given a part at a time, in a
+ * ring buffer the caller reads into: before each rbzip2_step_block()
+ * the input is either the rest of the stream or at least
+ * RBZIP2_AHEAD octets of it, handed over again with rbzip2_input().
+ *
+ * Returns: RBZIP2_OK, or an RBZIP2_ERROR_* value.
+ **/
+int rbzip2_begin_ring(rbzip2_t *bz, const uint8_t *a, size_t a_len,
+      const uint8_t *b, size_t b_len);
+
+/* The most of the stream one block can take up: 900000 symbols of up to
+ * twenty bits, the tables and the selectors before them, and the
+ * stream's end */
+#define RBZIP2_AHEAD (2304u * 1024u)
+
+/**
+ * rbzip2_input:
+ *
+ * The input from where rbzip2_taken() says the stream has been taken
+ * to: @a, then @b where the ring wraps (@b_len 0 for none).
+ **/
+void rbzip2_input(rbzip2_t *bz, const uint8_t *a, size_t a_len,
+      const uint8_t *b, size_t b_len);
+
+/**
+ * rbzip2_taken:
+ *
+ * Returns: how many octets of the stream the decoder has taken, which
+ * it does not need again.
+ **/
+uint64_t rbzip2_taken(const rbzip2_t *bz);
+
+/**
  * rbzip2_step_block:
  * @block    : receives where the block's octets are, until the next call
  * @len      : receives how many
