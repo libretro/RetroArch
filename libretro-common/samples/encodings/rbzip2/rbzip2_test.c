@@ -3,7 +3,9 @@
  * against bz_write.h's, whose shapes are chosen here: every block size,
  * two to six tables, selectors of every rank, all 256 octets, runs that
  * reach the 255 the run coding holds and runs of rank 0 thousands long,
- * blocks filled to the last octet. Each must decode octet for octet.
+ * blocks filled to the last octet. Each must decode octet for octet,
+ * into a buffer of its size and into one grown as it decodes, whether
+ * a block's walk runs from one end or from both.
  * Then what must fail: every prefix of a stream, a block's CRC wrong,
  * the stream's changed, a randomised block, a buffer one octet short,
  * and a stream with octets flipped, which must fail or decode, never
@@ -74,14 +76,22 @@ static size_t gen_c(uint8_t *d)
    return n;
 }
 
+/* into a buffer of the size, and into one grown as it goes */
 static void decodes(rbzip2_t *bz, const uint8_t *s, size_t sn,
       const uint8_t *want, size_t n, uint8_t *out, const char *what,
       unsigned i)
 {
-   size_t w = 0;
+   uint8_t *grown = NULL;
+   size_t   w     = 0;
    if (     rbzip2_decode(bz, out, n, s, sn, &w) != RBZIP2_OK
          || w != n || memcmp(out, want, n))
       fail(what, i);
+   if (     rbzip2_decode_alloc(bz, s, sn, &grown, &w) != RBZIP2_OK
+         || w != n || memcmp(grown, want, n))
+      fail(what, i + 10000);
+   else
+      grown[n] = 0;    /* the octet to spare */
+   free(grown);
 }
 
 /* plaintext shape @k, @n octets */

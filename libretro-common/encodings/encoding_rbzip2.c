@@ -46,7 +46,9 @@ struct rbz_table
 
 struct rbzip2
 {
-   uint32_t        *tt;             /* a block, then its inverse */
+   uint32_t        *tt;             /* a block, then each entry's next */
+   uint32_t        *inv;            /* each entry's previous */
+   uint8_t         *raw;            /* the block untransformed */
    uint32_t         tt_cap;
    uint32_t         crc[8][256];    /* CRC-32, MSB first, eight at a time */
    uint32_t         unz[256];       /* each octet's count in the block */
@@ -112,6 +114,8 @@ void rbzip2_free(rbzip2_t *bz)
    if (!bz)
       return;
    free(bz->tt);
+   free(bz->inv);
+   free(bz->raw);
    free(bz);
 }
 
@@ -208,16 +212,43 @@ static uint32_t rbz_crc(const rbzip2_t *bz, const uint8_t *p, size_t len)
    return ~v;
 }
 
-/* One block, after its magic: decoded and appended at dst + *@o.
- * *@crc receives the block's stored CRC once it has been checked. */
+/* Where a block's output goes: a buffer of fixed size, or one grown
+ * as it fills. */
+struct rbz_out
+{
+   uint8_t *dst;
+   size_t   cap;
+   size_t   at;
+   int      grow;
+};
+
+/* Room for @n more octets */
+static int rbz_room(struct rbz_out *o, size_t n)
+{
+   size_t   cap;
+   uint8_t *d;
+   if (n <= o->cap - o->at)
+      return RBZIP2_OK;
+   if (!o->grow)
+      return RBZIP2_ERROR_SPACE;
+   cap = o->cap + o->cap / 2 + n + 65536;
+   if (cap < o->cap || !(d = (uint8_t*)realloc(o->dst, cap + 1)))
+      return RBZIP2_ERROR_MEM;
+   o->dst = d;
+   o->cap = cap;
+   return RBZIP2_OK;
+}
+
+/* One block, after its magic: decoded and appended to @out. *@crc
+ * receives the block's stored CRC once it has been checked. */
 static int rbz_block(rbzip2_t *bz, struct rbz_in *in, uint32_t max_block,
-      uint8_t *dst, size_t cap, size_t *o, uint32_t *crc)
+      struct rbz_out *out, uint32_t *crc)
 {
    uint8_t  mtf[256];
    uint8_t  pos[RBZ_GROUPS_MAX];
    uint32_t stored, orig, used, i, j;
    uint32_t nblock = 0, n_sel, n_groups, n_in_use = 0, alpha, eob;
-   uint32_t run = 0, run_bit = 1, sel = 0, left = 0;
+   uint32_t run = 0, run_bit = 1, sel = 0, left = 0, nsym = 0;
    uint32_t *tt = bz->tt;
    const struct rbz_table *t = NULL;
    const uint8_t *p, *end;
@@ -311,6 +342,7 @@ static int rbz_block(rbzip2_t *bz, struct rbz_in *in, uint32_t max_block,
          left = RBZ_GROUP_SIZE;
       }
       left--;
+      nsym++;
       RBZ_FILL(p, end, buf, n, over)
       ent = t->lut[(uint32_t)(buf >> (n - RBZ_LUT_BITS)) & ((1u << RBZ_LUT_BITS) - 1)];
       if (ent)
@@ -369,75 +401,126 @@ static int rbz_block(rbzip2_t *bz, struct rbz_in *in, uint32_t max_block,
    if (rbz_short(in) || orig >= nblock)
       return RBZIP2_ERROR_DATA;
 
-   /* the inverse transform: each octet linked to the one before it */
+   /* the inverse transform: each entry linked to the one after it in
+    * the block. Where the block is mostly long runs of rank 0 its walk
+    * stays near itself; otherwise each step is a load from anywhere,
+    * so each entry is linked to the one before it as well and the
+    * block is walked from both ends at once, one walk's loads waiting
+    * alongside the other's. */
    {
-      uint32_t sum = 0;
+      uint32_t sum  = 0;
+      int      both = nsym > nblock / 8;
       for (i = 0; i < 256; i++)
       {
          uint32_t c = bz->unz[i];
          bz->unz[i] = sum;
          sum       += c;
       }
-      for (i = 0; i < nblock; i++)
-         tt[bz->unz[tt[i] & 0xff]++] |= i << 8;
-   }
-
-   /* and out, undoing the runs of four and a count */
-   {
-      size_t   at   = *o;
-      size_t   from = at;
-      uint32_t tp   = tt[orig] >> 8;
-      uint32_t last = 0x100;      /* no octet */
-      unsigned rep  = 0;
-      uint32_t k    = 0;
-      while (k < nblock)
+      if (both)
       {
-         uint32_t c;
-         tp = tt[tp];
-         c  = tp & 0xff;
-         tp >>= 8;
-         k++;
-         if (at >= cap)
-            return RBZIP2_ERROR_SPACE;
-         dst[at++] = (uint8_t)c;
-         if (c != last)
+         uint32_t *inv = bz->inv;
+         uint8_t  *raw = bz->raw;
+         uint32_t  f, b, k;
+         for (i = 0; i < nblock; i++)
          {
-            last = c;
-            rep  = 1;
-            continue;
+            uint32_t c  = tt[i] & 0xff;
+            uint32_t to = bz->unz[c]++;
+            tt[to] |= i << 8;
+            inv[i]  = (to << 8) | c;
          }
-         if (++rep < 4)
-            continue;
-         /* four alike: the next octet counts more of them */
-         rep = 0;
-         if (k == nblock)
-            break;
-         tp = tt[tp];
-         c  = tp & 0xff;
-         tp >>= 8;
-         k++;
-         if (c > cap - at)
-            return RBZIP2_ERROR_SPACE;
-         memset(dst + at, (int)last, c);
-         at += c;
+         /* the walk from orig comes round to orig last */
+         f = tt[orig] >> 8;
+         b = orig;
+         for (i = 0, k = nblock - 1; i < k; i++, k--)
+         {
+            uint32_t ef = tt[f], eb = inv[b];
+            raw[i] = (uint8_t)ef;
+            raw[k] = (uint8_t)eb;
+            f      = ef >> 8;
+            b      = eb >> 8;
+         }
+         if (i == k)
+            raw[i] = (uint8_t)tt[f];
       }
-      if (rbz_crc(bz, dst + from, at - from) != stored)
-         return RBZIP2_ERROR_DATA;
-      *o = at;
+      else
+         for (i = 0; i < nblock; i++)
+            tt[bz->unz[tt[i] & 0xff]++] |= i << 8;
+
+      /* and out, undoing the runs of four and a count */
+      {
+         const uint8_t *raw  = bz->raw;
+         size_t         from = out->at;
+         uint8_t       *d    = out->dst;
+         size_t         at   = out->at;
+         size_t         cap  = out->cap;
+         uint32_t       tp   = tt[orig] >> 8;
+         uint32_t       last = 0x100;      /* no octet */
+         unsigned       rep  = 0;
+         uint32_t       k    = 0;
+         uint32_t       c;
+/* the next octet of the block, from the walk done or walking */
+#define RBZ_NEXT() \
+         if (both) \
+            c = raw[k]; \
+         else \
+         { \
+            tp = tt[tp]; \
+            c  = tp & 0xff; \
+            tp >>= 8; \
+         } \
+         k++
+         while (k < nblock)
+         {
+            RBZ_NEXT();
+            if (at >= cap)
+            {
+               out->at = at;
+               if ((e = rbz_room(out, 1)) != RBZIP2_OK)
+                  return e;
+               d   = out->dst;
+               cap = out->cap;
+            }
+            d[at++] = (uint8_t)c;
+            if (c != last)
+            {
+               last = c;
+               rep  = 1;
+               continue;
+            }
+            if (++rep < 4)
+               continue;
+            /* four alike: the next octet counts more of them */
+            rep = 0;
+            if (k == nblock)
+               break;
+            RBZ_NEXT();
+            if (c > cap - at)
+            {
+               out->at = at;
+               if ((e = rbz_room(out, c)) != RBZIP2_OK)
+                  return e;
+               d   = out->dst;
+               cap = out->cap;
+            }
+            memset(d + at, (int)last, c);
+            at += c;
+         }
+#undef RBZ_NEXT
+         out->at = at;
+         if (rbz_crc(bz, out->dst + from, out->at - from) != stored)
+            return RBZIP2_ERROR_DATA;
+      }
    }
    *crc = stored;
    return RBZIP2_OK;
 }
 
-int rbzip2_decode(rbzip2_t *bz, uint8_t *dst, size_t dst_len,
-      const uint8_t *src, size_t src_len, size_t *wrote)
+static int rbz_stream(rbzip2_t *bz, struct rbz_out *out,
+      const uint8_t *src, size_t src_len)
 {
    struct rbz_in in;
    uint32_t max_block, combined = 0;
-   size_t   o = 0;
 
-   if (wrote)
-      *wrote = 0;
    if (     !bz || src_len < 4
          || src[0] != 'B' || src[1] != 'Z' || src[2] != 'h'
          || src[3] < '1' || src[3] > '9')
@@ -445,12 +528,18 @@ int rbzip2_decode(rbzip2_t *bz, uint8_t *dst, size_t dst_len,
    max_block = (uint32_t)(src[3] - '0') * 100000u;
    if (bz->tt_cap < max_block)
    {
-      uint32_t *tt = (uint32_t*)malloc(max_block * sizeof(uint32_t));
-      if (!tt)
-         return RBZIP2_ERROR_MEM;
       free(bz->tt);
-      bz->tt     = tt;
+      free(bz->inv);
+      free(bz->raw);
+      bz->tt     = (uint32_t*)malloc(max_block * sizeof(uint32_t));
+      bz->inv    = (uint32_t*)malloc(max_block * sizeof(uint32_t));
+      bz->raw    = (uint8_t*)malloc(max_block);
       bz->tt_cap = max_block;
+      if (!bz->tt || !bz->inv || !bz->raw)
+      {
+         bz->tt_cap = 0;
+         return RBZIP2_ERROR_MEM;
+      }
    }
 
    in.p    = src + 4;
@@ -465,7 +554,7 @@ int rbzip2_decode(rbzip2_t *bz, uint8_t *dst, size_t dst_len,
       if (hi == 0x314159u && lo == 0x265359u)
       {
          uint32_t crc;
-         int      e = rbz_block(bz, &in, max_block, dst, dst_len, &o, &crc);
+         int      e = rbz_block(bz, &in, max_block, out, &crc);
          if (e != RBZIP2_OK)
             return e;
          combined = ((combined << 1) | (combined >> 31)) ^ crc;
@@ -481,7 +570,44 @@ int rbzip2_decode(rbzip2_t *bz, uint8_t *dst, size_t dst_len,
       else
          return RBZIP2_ERROR_DATA;
    }
+   return RBZIP2_OK;
+}
+
+int rbzip2_decode(rbzip2_t *bz, uint8_t *dst, size_t dst_len,
+      const uint8_t *src, size_t src_len, size_t *wrote)
+{
+   struct rbz_out out;
+   int            e;
+   out.dst  = dst;
+   out.cap  = dst_len;
+   out.at   = 0;
+   out.grow = 0;
+   e        = rbz_stream(bz, &out, src, src_len);
    if (wrote)
-      *wrote = o;
+      *wrote = e == RBZIP2_OK ? out.at : 0;
+   return e;
+}
+
+int rbzip2_decode_alloc(rbzip2_t *bz, const uint8_t *src, size_t src_len,
+      uint8_t **dst, size_t *wrote)
+{
+   struct rbz_out out;
+   int            e;
+   *dst     = NULL;
+   *wrote   = 0;
+   out.dst  = NULL;
+   out.cap  = 0;
+   out.at   = 0;
+   out.grow = 1;
+   /* about what bzip2 makes of most data, to start */
+   if ((e = rbz_room(&out, src_len * 4)) == RBZIP2_OK)
+      e = rbz_stream(bz, &out, src, src_len);
+   if (e != RBZIP2_OK)
+   {
+      free(out.dst);
+      return e;
+   }
+   *dst   = out.dst;
+   *wrote = out.at;
    return RBZIP2_OK;
 }

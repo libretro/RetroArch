@@ -30,9 +30,9 @@
  * decodes to, and the end of the stream the combination of them all;
  * both are checked.
  *
- * Decoding only, of one whole stream held in memory into a buffer
- * already sized for it, as the WIA disc image format stores its
- * groups. Blocks marked randomised, which no bzip2 has written since
+ * Decoding only, of one whole stream held in memory: into a buffer
+ * already sized for it, as the WIA disc image format and zip archives
+ * store theirs, or into one grown as it goes, for a .bz2 file. Blocks marked randomised, which no bzip2 has written since
  * 0.9.5, are refused. No file I/O. */
 
 #ifndef __LIBRETRO_SDK_FORMAT_RBZIP2_H__
@@ -70,6 +70,20 @@ void rbzip2_free(rbzip2_t *bz);
  **/
 int rbzip2_decode(rbzip2_t *bz, uint8_t *dst, size_t dst_len,
       const uint8_t *src, size_t src_len, size_t *wrote);
+
+/**
+ * rbzip2_decode_alloc:
+ * @dst      : receives the decoded octets, allocated with malloc() and
+ *             the caller's to free; one octet past them is room to spare
+ * @wrote    : receives how many there are
+ *
+ * The same, for a stream whose size is not known: the buffer grows as
+ * blocks are decoded into it.
+ *
+ * Returns: RBZIP2_OK, or an RBZIP2_ERROR_* value, with *@dst NULL.
+ **/
+int rbzip2_decode_alloc(rbzip2_t *bz, const uint8_t *src, size_t src_len,
+      uint8_t **dst, size_t *wrote);
 
 RETRO_END_DECLS
 
