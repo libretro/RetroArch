@@ -11,7 +11,9 @@
 #     networking objects, it was compiled for the 3DS, Vita, Switch,
 #     Wii U, OpenDingux, RG350 and Emscripten, and broke the 3DS build.
 #   - the crypto library on GameCube, Wii and PS2: 24 and 32 MiB of RAM
-#     leave no room for it, so HAVE_CRYPTO is never set there.
+#     leave no room for it, so HAVE_CRYPTO is never set there. crypto.o
+#     alone, the ciphers RetroAchievements hashes RVZ and 3DS titles
+#     with, is allowed; the KDFs, public-key code and X.509 are not.
 #
 # The SDK variables point at an empty directory: they must be set for
 # the Makefiles to parse, and nothing is compiled.
@@ -31,7 +33,8 @@ objs()
 {
    DEVKITPRO="$fake" DEVKITARM="$fake/devkitARM" DEVKITPPC="$fake/devkitPPC" \
    VITASDK="$fake" PS2SDK="$fake" PSPSDK="$fake" PS2DEV="$fake" \
-      make -s -f "$1" -pn 2>/dev/null | sed -n 's/^OBJ :*= //p' | head -1
+      make -s -f "$1" -pn 2>/dev/null | sed -n 's/^OBJ :*= //p' | head -1 \
+      | sed 's|\$(LIBRETRO_COMM_DIR)|libretro-common|g; s|\(^\| \)\./|\1|g'
 }
 
 # refuse <makefile> <what> <pattern>
@@ -63,7 +66,7 @@ done
 
 for mk in Makefile.ngc Makefile.wii Makefile.ps2; do
    [ -f "$mk" ] || continue
-   refuse "$mk" "crypto library" '(^|/)libretro-common/crypto/[a-z0-9_]+\.o$'
+   refuse "$mk" "crypto library" '(^|/)libretro-common/crypto/(kdf|pk|x509)\.o$'
 done
 
 if [ "$checked" -eq 0 ]; then
