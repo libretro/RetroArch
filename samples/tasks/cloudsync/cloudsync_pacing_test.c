@@ -349,11 +349,14 @@ static void fetch_lane(void)
    task_cloud_sync_task_setup(task, st, "Cloud Sync in progress");
    grant = 3; runs = 0; max_granted = 0; transfers = 0;
    /* start the fetch and wait for its report */
-   for (i = 0; i < 5000 && !retro_atomic_load_acquire_int(&fetches_reported); i++)
-   {
+   for (i = 0; i < 5000 && !task_cloud_sync_waiting_get(st)
+         && !retro_atomic_load_acquire_int(&fetches_reported); i++)
       task_cloud_sync_task_handler(task);
+   /* Leave completed downloads queued until the fixture is ready. */
+   for (i = 0; i < 5000 && !retro_atomic_load_acquire_int(&fetches_reported); i++)
       retro_sleep(1);
-   }
+   check("fetch: callback returned before processing",
+         retro_atomic_load_acquire_int(&fetches_reported) != 0);
    /* the callback has returned: the file is not hashed yet, and one run
     * of the handler hashes only what its grant allows */
    task_cloud_sync_task_handler(task);
@@ -436,14 +439,20 @@ static void fetch_keep_lane(int live, const char *what_keep, const char *what_re
 
    task_cloud_sync_task_setup(task, st, "Cloud Sync in progress");
    grant = 100;
-   for (i = 0; i < 5000 && !retro_atomic_load_acquire_int(&fetches_reported); i++)
-   {
+   for (i = 0; i < 5000 && !task_cloud_sync_waiting_get(st)
+         && !retro_atomic_load_acquire_int(&fetches_reported); i++)
       task_cloud_sync_task_handler(task);
+   /* Leave completed downloads queued until the fixture is ready. */
+   for (i = 0; i < 5000 && !retro_atomic_load_acquire_int(&fetches_reported); i++)
       retro_sleep(1);
-   }
+   check("fetch: callback returned before processing",
+         retro_atomic_load_acquire_int(&fetches_reported) != 0);
    /* the download is in, not yet in place: a core takes the file now */
    if (live)
+   {
       strlcpy(live_path, path, sizeof(live_path));
+      pathname_conform_slashes_to_os(live_path);
+   }
    for (i = 0; i < 200000 && (task_cloud_sync_phase_get(st) == CLOUD_SYNC_PHASE_DIFF
             || task_cloud_sync_waiting_get(st) > 0); i++)
       task_cloud_sync_task_handler(task);
@@ -731,7 +740,7 @@ int main(void)
    int      ok;
 
    tcs_test_lock();
-   strcpy(dir, "/tmp/cs_pacing_XXXXXX");
+   strcpy(dir, "cs_pacing_XXXXXX");
    if (!mkdtemp(dir))
       return 2;
 
