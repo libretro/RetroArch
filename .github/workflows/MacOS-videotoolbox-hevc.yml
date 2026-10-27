@@ -10,6 +10,13 @@ on:
     - 'gfx/common/videotoolbox_hevc*.h'
     - 'gfx/common/metal_frame*.h'
     - 'gfx/common/metal_hevc_driver.h'
+    - 'gfx/common/metal_vp9_driver.h'
+    - 'gfx/common/metal_decoder_snapshot.h'
+    - 'gfx/common/videotoolbox_vp9*.h'
+    - 'samples/gfx/videotoolbox_vp9/**'
+    - 'libretro-common/formats/vp9/**'
+    - 'libretro-common/formats/mp4/rmp4_video.c'
+    - 'libretro-common/formats/webm/rwebm_video.c'
     - 'gfx/drivers/metal.m'
     - 'gfx/drivers/metal.h'
     - 'gfx/drivers/metal_shaders/Shaders.metal'
@@ -26,6 +33,13 @@ on:
     - 'gfx/common/videotoolbox_hevc*.h'
     - 'gfx/common/metal_frame*.h'
     - 'gfx/common/metal_hevc_driver.h'
+    - 'gfx/common/metal_vp9_driver.h'
+    - 'gfx/common/metal_decoder_snapshot.h'
+    - 'gfx/common/videotoolbox_vp9*.h'
+    - 'samples/gfx/videotoolbox_vp9/**'
+    - 'libretro-common/formats/vp9/**'
+    - 'libretro-common/formats/mp4/rmp4_video.c'
+    - 'libretro-common/formats/webm/rwebm_video.c'
     - 'gfx/drivers/metal.m'
     - 'gfx/drivers/metal.h'
     - 'gfx/drivers/metal_shaders/Shaders.metal'
@@ -51,6 +65,16 @@ jobs:
         python3 samples/gfx/videotoolbox_hevc/run.py --native --metal || rc=$?
         if [ "$rc" = 77 ]; then
           echo "::warning::HEVC hardware decode or Metal shared events unavailable; native bridge check did not complete"
+          exit 0
+        fi
+        exit "$rc"
+    - name: VideoToolbox VP9 hardware decode, MP4/WebM and Metal pixels
+      if: ${{ !cancelled() }}
+      run: |
+        rc=0
+        python3 samples/gfx/videotoolbox_vp9/run.py --native --pipeline || rc=$?
+        if [ "$rc" = 77 ]; then
+          echo "::warning::VP9 hardware decode or Metal unavailable; native acceptance did not complete"
           exit 0
         fi
         exit "$rc"

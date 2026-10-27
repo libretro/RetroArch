@@ -179,7 +179,7 @@ void rmp4_video_stream_set_output(rmp4_video_stream_t *stream,
 int rmp4_video_stream_set_output_stride(rmp4_video_stream_t *stream,
       uint32_t *out, unsigned stride);
 
-/* H.264/HEVC/AV1 on the hardware backend: true when the
+/* H.264/HEVC/VP9/AV1 on the hardware backend: true when the
  * frames will come from it, false when they stay in software - another
  * codec, a colour the GPU frame cannot carry, or a backend that will
  * not take the stream. A stream already under way starts over from

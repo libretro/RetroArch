@@ -52,6 +52,9 @@ typedef struct rvp9_hw_backend
    bool (*open_config)(void *user, const rvp9_hdr *header,
          const video_color_metadata_t *color, const rvp9_config_t *config,
          unsigned slots, rvp9_hw_ops_t *ops);
+   /* Same-format key-frame restart: 0 ready, 1 pending, negative failure.
+    * Discard old work without invalidating exported leases. */
+   int (*restart)(void *decoder);
 } rvp9_hw_backend_t;
 
 RETRO_BEGIN_DECLS
@@ -109,6 +112,19 @@ static INLINE bool rvp9_hw_session_init(rvp9_hw_session_t *s,
       const rvp9_hw_ops_t *ops, unsigned slots)
 {
    return rvp9_hw_session_init_mode(s, ops, slots, false);
+}
+
+static INLINE bool rvp9_hw_session_restart(rvp9_hw_session_t *s)
+{
+   rvp9_hw_ops_t ops;
+   unsigned slots;
+   bool packet_decoder;
+   if (!s)
+      return false;
+   ops = s->ops;
+   slots = s->slots;
+   packet_decoder = s->packet_decoder;
+   return rvp9_hw_session_init_mode(s, &ops, slots, packet_decoder);
 }
 
 static INLINE void rvp9_hw_session_clear_packet(rvp9_hw_session_t *s)

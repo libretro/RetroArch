@@ -294,6 +294,13 @@ unload:
       puts("SKIP: Matroska Vulkan fixture did not execute on a suitable device");
       result = 77;
    }
+#ifdef HAVE_RVP9
+   if (!result && getenv("VP9_TEST_MP4") && !vp9_mp4_executed)
+   {
+      puts("SKIP: VP9 MP4 Vulkan fixture did not execute on a suitable device");
+      result = 77;
+   }
+#endif
 #endif
 #ifdef _WIN32
    FreeLibrary(library);

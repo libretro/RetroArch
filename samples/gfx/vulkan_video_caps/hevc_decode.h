@@ -383,6 +383,7 @@ done:
 
 #ifdef HAVE_RVP9
 #include "vp9_decode.h"
+#include "vp9_mp4_decode.h"
 #endif
 
 #ifdef HAVE_RAV1
@@ -535,6 +536,18 @@ static int hevc_decode_probe(VkInstance instance, VkPhysicalDevice gpu,
       vulkan_video_decode_deinit();
       goto done;
    }
+#ifdef HAVE_RVP9
+   if (getenv("VP9_TEST_MP4"))
+   {
+      vkDeviceWaitIdle(device);
+      vulkan_video_decode_deinit();
+      ctx->video_codec_operations = codecs;
+      ok = vulkan_video_decode_init(ctx) && vp9_mp4_decode_fixture();
+      vkDeviceWaitIdle(device);
+      vulkan_video_decode_deinit();
+      goto done;
+   }
+#endif
    ok = 1;
    for (i = 0; i < 10; i++) if (!decode_fixture(&fixtures[i])) ok = 0;
    if (!decode_external()) ok = 0;
@@ -546,6 +559,7 @@ static int hevc_decode_probe(VkInstance instance, VkPhysicalDevice gpu,
       if (!vulkan_video_decode_init(ctx) || !h264_regression()) ok = 0;
 #ifdef HAVE_RVP9
       if ((codecs & VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR) && !vp9_decode_fixture()) ok = 0;
+      if ((codecs & VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR) && !vp9_mp4_decode_fixture()) ok = 0;
 #endif
 #ifdef HAVE_RAV1
       if ((codecs & VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR) && !av1_decode_fixture()) ok = 0;

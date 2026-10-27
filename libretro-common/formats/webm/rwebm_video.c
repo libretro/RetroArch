@@ -106,7 +106,7 @@ struct rwebm_video_stream
    rvp9_hw_session_t *hw;
    rvp9_hw_backend_t hw_backend;
    size_t super_sizes[RWEBM_VIDEO_MAX_SUPER], super_offset;
-   int super_count, super_index, last_show, submitted;
+   int super_count, super_index, last_show, submitted, hw_restart;
 #endif
 #ifdef HAVE_RAV1
    rav1_hw_stream_t *av1;
@@ -709,6 +709,7 @@ static void rwebm_video_stream_close_decoder(rwebm_video_stream_t *s)
    }
 #endif
 #ifdef HAVE_RVP9
+   s->hw_restart = 0;
    if (s->hw)
    {
       rvp9_hw_session_cancel(s->hw);
@@ -2080,6 +2081,16 @@ static int rwebm_video_hw_step(
 {
    int ret, duration;
    s->waiting = 0;
+   if (s->hw_restart)
+   {
+      ret = s->hw_backend.restart(s->hw->ops.decoder);
+      if (ret)
+      {
+         s->waiting = ret > 0;
+         return ret > 0 ? 2 : -1;
+      }
+      s->hw_restart = 0;
+   }
    if (s->pending && s->hw_skip != discard)
       return -1;
    if (!s->pending)
@@ -2969,6 +2980,18 @@ void rwebm_video_stream_rewind(rwebm_video_stream_t *s)
    s->pkt_idx = 0;
    s->have_frame_time = 0;
    s->have_decode_time = 0;
+#ifdef HAVE_RVP9
+   if (s->hw && s->hw_want && s->hw_backend.restart)
+   {
+      if (s->hw_untaken)
+         video_hw_frame_abandon(&s->hw_frame);
+      s->hw_untaken = s->pending = s->waiting = 0;
+      memset(&s->hw_frame, 0, sizeof(s->hw_frame));
+      rvp9_hw_session_restart(s->hw);
+      s->hw_restart = 1;
+      return;
+   }
+#endif
    /* The stream restarts at a key frame, so a fresh decoder (empty
     * reference chain, default probabilities) is the correct state. */
    rwebm_video_stream_close_decoder(s);

@@ -45,6 +45,7 @@
 #include <formats/rvp9.h>
 #include <formats/rvp9_config.h>
 #include <formats/rvp9_color.h>
+#include <formats/rvp9_hw.h>
 #endif
 /* The 10-bit / HDR I420->RGB blits are shared (image_hdr_blit.c) but still
  * declared in rwebm_video.h; the implementation is demuxer-independent.
@@ -59,6 +60,8 @@
 #include <formats/video_hw_frame.h>
 #ifdef HAVE_RAV1
 #include <formats/rav1_hw_stream.h>
+#endif
+#if defined(HAVE_RAV1) || defined(HAVE_RVP9)
 #include <features/features_cpu.h>
 #endif
 
@@ -87,6 +90,15 @@ struct rmp4_video_stream
    rvp8_video  *vp8;
 #ifdef HAVE_RVP9
    rvp9_dec    *vp9;
+   rvp9_hw_session_t *vp9_hw;
+   rvp9_hw_backend_t vp9_backend;
+   rvp9_hdr vp9_probe_header, vp9_initial_header;
+   int vp9_initial_valid;
+   video_color_metadata_t vp9_native_color;
+   size_t vp9_sizes[RMP4_VIDEO_MAX_SUPER], vp9_offset;
+   uint32_t vp9_sample;
+   int vp9_active, vp9_count, vp9_index, vp9_last_show;
+   int vp9_submitted, vp9_discard, vp9_restart;
    video_color_metadata_t vp9_color;
    int vp9_have_config;
    rvp9_config_t vp9_config;
@@ -156,7 +168,7 @@ struct rmp4_video_stream
    int          is_fp16;    /* last decoded frame written so          */
    int          emit_argb;  /* emit ARGB words instead of the default
                                R,G,B,A memory order (8-bit paths)     */
-   int          want_hw;    /* H.264/HEVC/AV1 on the hardware backend */
+   int          want_hw;    /* H.264/HEVC/VP9/AV1 on the hardware backend */
    /* The hardware frame of the picture the last step produced
     * (rndr_kind 5), and whether the caller has yet to take it: one
     * passed over is given back to the decoder. */
@@ -712,11 +724,10 @@ static bool rmp4_video_vp9_configure(rmp4_video_stream_t *s,
    return true;
 }
 
-static bool rmp4_video_vp9_color(rmp4_video_stream_t *s)
+static bool rmp4_video_vp9_header_color(const rmp4_video_stream_t *s,
+      const rvp9_hdr *header, video_color_metadata_t *color)
 {
-   const rvp9_hdr *header = &s->vp9->hd;
    const rvp9_config_t *config = &s->vp9_config;
-   video_color_metadata_t color;
    if (s->vp9_have_config
          && (config->profile != header->profile
                || config->bit_depth != header->bit_depth
@@ -724,8 +735,81 @@ static bool rmp4_video_vp9_color(rmp4_video_stream_t *s)
                || header->subsampling_x != (config->chroma != 3)
                || header->subsampling_y != (config->chroma < 2)))
       return false;
-   if (!rvp9_color_resolve(header, &s->vp9_color, &color))
+   return rvp9_color_resolve(header, &s->vp9_color, color);
+}
+
+static bool rmp4_video_vp9_color(rmp4_video_stream_t *s)
+{
+   video_color_metadata_t color;
+   if (!rmp4_video_vp9_header_color(s, &s->vp9->hd, &color))
       return false;
+   s->primaries = color.primaries;
+   s->transfer = color.transfer;
+   s->matrix = color.matrix;
+   s->range = color.range == 2;
+   return true;
+}
+#endif
+
+#ifdef HAVE_RVP9
+static bool rmp4_video_vp9_open_hw(rmp4_video_stream_t *s)
+{
+   rvp9_hw_session_t *candidate;
+   rvp9_hw_backend_t backend;
+   rvp9_hw_ops_t ops;
+   video_color_metadata_t color;
+   rmp4_packet packet;
+   size_t sizes[RMP4_VIDEO_MAX_SUPER];
+   int found;
+   if (!rmp4_video_hw_color_allowed(s))
+      return false;
+   candidate = (rvp9_hw_session_t *)calloc(1, sizeof(*candidate));
+   if (!candidate)
+      return false;
+   found = s->vp9_initial_valid;
+   if (found)
+      candidate->pending.header = s->vp9_initial_header;
+   else
+   {
+      found = rmp4_select_track_sample(s->demux, s->track, 0)
+         && rmp4_read_packet(s->demux, &packet) == 1;
+      rmp4_rewind(s->demux);
+      if (found)
+      {
+         rmp4_video_vp9_superframe(packet.data, packet.size,
+               sizes, RMP4_VIDEO_MAX_SUPER);
+         found = sizes[0] && !rvp9_parse_frame_header(packet.data, sizes[0],
+               NULL, NULL, &candidate->pending.header);
+      }
+      if (found)
+      {
+         s->vp9_initial_header = candidate->pending.header;
+         s->vp9_initial_valid = 1;
+      }
+   }
+   if (!found || candidate->pending.header.frame_type
+         || candidate->pending.header.w != (int)s->width
+         || candidate->pending.header.h != (int)s->height
+         || !rmp4_video_vp9_header_color(s,
+               &candidate->pending.header, &color)
+         || ((color.transfer == 16 || color.transfer == 18)
+               && candidate->pending.header.bit_depth != 10)
+         || !rvp9_hw_backend_open_config(&candidate->pending.header,
+               &color, s->vp9_have_config ? &s->vp9_config : NULL,
+               10, &ops, &backend))
+   {
+      free(candidate);
+      return false;
+   }
+   if (!rvp9_hw_session_init_mode(candidate, &ops, 10, backend.packet_decoder))
+   {
+      backend.close(&ops);
+      free(candidate);
+      return false;
+   }
+   s->vp9_hw = candidate;
+   s->vp9_backend = backend;
+   s->vp9_native_color = color;
    s->primaries = color.primaries;
    s->transfer = color.transfer;
    s->matrix = color.matrix;
@@ -748,6 +832,8 @@ static bool rmp4_video_stream_open_decoder(rmp4_video_stream_t *s)
          return true;
 #ifdef HAVE_RVP9
       case RMP4_CODEC_VP9:
+         if (s->want_hw && rmp4_video_vp9_open_hw(s))
+            return true;
          if (!(s->vp9 = (rvp9_dec*)calloc(1, sizeof(*s->vp9))))
             return false;
          rvp9_set_tile_pool(s->vp9, s->blit_pool, s->blit_bands);
@@ -853,6 +939,16 @@ static void rmp4_video_stream_close_decoder(rmp4_video_stream_t *s)
       s->vp8 = NULL;
    }
 #ifdef HAVE_RVP9
+   s->vp9_active = 0;
+   s->vp9_sample = 0;
+   s->vp9_restart = 0;
+   if (s->vp9_hw)
+   {
+      rvp9_hw_session_cancel(s->vp9_hw);
+      s->vp9_backend.close(&s->vp9_hw->ops);
+      free(s->vp9_hw);
+      s->vp9_hw = NULL;
+   }
    if (s->vp9)
    {
       rvp9_free(s->vp9);
@@ -1362,6 +1458,118 @@ static int rmp4_video_av1_output(rmp4_video_stream_t *s, int discard, int termin
 /* Decode one demuxed packet into s->frame. Returns 1 when a picture was
  * produced, 0 when the packet decoded but is not displayed, -1 on a
  * decode error. */
+#ifdef HAVE_RVP9
+static int rmp4_video_vp9_hw_packet(rmp4_video_stream_t *s,
+      const rmp4_packet *packet, int discard)
+{
+   int ret;
+   if (s->vp9_restart)
+   {
+      ret = s->vp9_backend.restart(s->vp9_hw->ops.decoder);
+      if (ret)
+         return ret > 0 ? 2 : -1;
+      s->vp9_restart = 0;
+   }
+   if (!s->vp9_active)
+   {
+      size_t offset = 0;
+      int i;
+      s->vp9_count = rmp4_video_vp9_superframe(packet->data,
+            packet->size, s->vp9_sizes, RMP4_VIDEO_MAX_SUPER);
+      s->vp9_last_show = -1;
+      for (i = 0; i < s->vp9_count; i++)
+      {
+         if (!s->vp9_sizes[i] || s->vp9_sizes[i] > packet->size - offset)
+            return -1;
+         if (packet->data[offset] & 0x0a)
+            s->vp9_last_show = i;
+         offset += s->vp9_sizes[i];
+      }
+      s->vp9_index = s->vp9_submitted = 0;
+      s->vp9_offset = 0;
+      s->vp9_discard = discard;
+      s->vp9_active = 1;
+   }
+   if (s->vp9_discard != discard)
+      return -1;
+   if (s->vp9_index < s->vp9_count)
+   {
+      if (!s->vp9_submitted)
+      {
+         if (!s->vp9_hw->phase)
+         {
+            video_color_metadata_t color;
+            int dims[RVP9_REF_FRAMES * 2];
+            unsigned i;
+            for (i = 0; i < RVP9_REF_FRAMES; i++)
+            {
+               dims[i * 2] = s->vp9_hw->reference_slots[i] >= 0
+                  ? s->vp9_hw->header.w : 0;
+               dims[i * 2 + 1] = s->vp9_hw->reference_slots[i] >= 0
+                  ? s->vp9_hw->header.h : 0;
+            }
+            ret = rvp9_parse_frame_header(packet->data + s->vp9_offset,
+                  s->vp9_sizes[s->vp9_index], &s->vp9_hw->header,
+                  dims, &s->vp9_probe_header);
+            if (ret < 0 || (!ret
+                  && (!rmp4_video_vp9_header_color(s, &s->vp9_probe_header, &color)
+                     || color.primaries != s->vp9_native_color.primaries
+                     || color.transfer != s->vp9_native_color.transfer
+                     || color.matrix != s->vp9_native_color.matrix
+                     || color.range != s->vp9_native_color.range)))
+               return -1;
+         }
+         ret = rvp9_hw_session_submit(s->vp9_hw,
+               packet->data + s->vp9_offset, s->vp9_sizes[s->vp9_index]);
+         if (ret > 0)
+            return 2;
+         if (ret < 0)
+            return -1;
+         s->vp9_submitted = 1;
+      }
+      if (s->vp9_hw->output_slot >= 0
+            && (discard || s->vp9_index < s->vp9_last_show))
+         rvp9_hw_session_discard_output(s->vp9_hw);
+      s->vp9_offset += s->vp9_sizes[s->vp9_index++];
+      s->vp9_submitted = 0;
+      /* Yield between coded pictures, retaining the packet's input floor. */
+      if (s->vp9_index < s->vp9_count)
+         return 4;
+   }
+   if (s->vp9_backend.drain && s->vp9_sample + 1 >= (uint32_t)s->num_frames)
+   {
+      ret = s->vp9_backend.drain(s->vp9_hw->ops.decoder, discard != 0);
+      if (ret < 0)
+         return -1;
+   }
+   if (s->vp9_hw->output_slot >= 0)
+   {
+      video_hw_frame_t frame;
+      ret = rvp9_hw_session_output(s->vp9_hw, &frame);
+      if (ret > 0)
+         return 2;
+      if (ret < 0)
+         return -1;
+      frame.color = s->vp9_native_color;
+      if (frame.color.matrix == 1)
+         frame.yuv |= IMAGE_YUV_FLAG_BT709;
+      else
+         frame.yuv &= ~IMAGE_YUV_FLAG_BT709;
+      if (frame.color.range == 2)
+         frame.yuv |= IMAGE_YUV_FLAG_FULL_RANGE;
+      else
+         frame.yuv &= ~IMAGE_YUV_FLAG_FULL_RANGE;
+      rmp4_video_hwf_drop(s);
+      s->hwf = frame;
+      s->hwf_untaken = 1;
+      s->rndr_kind = 5;
+   }
+   s->vp9_active = 0;
+   s->vp9_sample++;
+   return s->vp9_last_show >= 0 ? 1 : 0;
+}
+#endif
+
 static int rmp4_video_decode_packet(rmp4_video_stream_t *s,
       const rmp4_packet *pkt, int discard)
 {
@@ -1375,6 +1583,10 @@ static int rmp4_video_decode_packet(rmp4_video_stream_t *s,
       return rmp4_video_av1_packet(s, pkt, discard);
 #endif
    s->rndr_kind = 0;
+#ifdef HAVE_RVP9
+   if (s->vp9_hw)
+      return rmp4_video_vp9_hw_packet(s, pkt, discard);
+#endif
    /* A decoder can be absent if the re-open in rewind hit OOM. */
    if (!s->vp8
 #ifdef HAVE_RVP9
@@ -1529,6 +1741,9 @@ static int rmp4_video_stream_step(rmp4_video_stream_t *s,
 {
    rmp4_packet pkt;
    int drained = -1;
+#ifdef HAVE_RVP9
+   int vp9_eof = 0;
+#endif
 #ifdef HAVE_RAV1
    int av1_eof = 0;
 #endif
@@ -1574,6 +1789,9 @@ static int rmp4_video_stream_step(rmp4_video_stream_t *s,
       if (r != 1)
       {
          if (r < 0) return -1;
+#ifdef HAVE_RVP9
+         vp9_eof = r == 0;
+#endif
 #ifdef HAVE_RAV1
          av1_eof = r == 0;
 #endif
@@ -1635,6 +1853,26 @@ static int rmp4_video_stream_step(rmp4_video_stream_t *s,
          return 1;
       }
       s->completed = output == 0;
+      return -1;
+   }
+#endif
+#ifdef HAVE_RVP9
+   if (s->vp9_hw)
+   {
+      if (!vp9_eof)
+         return -1;
+      if (s->vp9_backend.drain)
+      {
+         int ret = s->vp9_backend.drain(s->vp9_hw->ops.decoder, discard != 0);
+         if (ret < 0)
+            return -1;
+         if (ret > 0)
+         {
+            s->waiting = RMP4_VIDEO_WAIT_DECODER;
+            return 2;
+         }
+      }
+      s->completed = 1;
       return -1;
    }
 #endif
@@ -1701,8 +1939,9 @@ static int rmp4_video_stream_advance(rmp4_video_stream_t *s,
       int *duration_ms, int discard)
 {
    int r;
-#ifdef HAVE_RAV1
+#if defined(HAVE_RAV1) || defined(HAVE_RVP9)
    int64_t started = 0;
+   int bounded = 0;
 #endif
 
    if (!s)
@@ -1710,16 +1949,21 @@ static int rmp4_video_stream_advance(rmp4_video_stream_t *s,
    s->completed = 0;
    s->waiting = 0;
 #ifdef HAVE_RAV1
-   if (s->codec == RMP4_CODEC_AV1)
+   bounded = s->codec == RMP4_CODEC_AV1;
+#endif
+#ifdef HAVE_RVP9
+   bounded |= s->vp9_hw != NULL;
+#endif
+#if defined(HAVE_RAV1) || defined(HAVE_RVP9)
+   if (bounded)
       started = cpu_features_get_time_usec();
 #endif
 
    /* Retry later for input or decoder capacity, without spinning. */
    while ((r = rmp4_video_stream_step(s, duration_ms, discard)) == 0)
    {
-#ifdef HAVE_RAV1
-      if (s->codec == RMP4_CODEC_AV1 &&
-            cpu_features_get_time_usec() - started >= 4000)
+#if defined(HAVE_RAV1) || defined(HAVE_RVP9)
+      if (bounded && cpu_features_get_time_usec() - started >= 4000)
       {
          s->waiting = RMP4_VIDEO_WAIT_DECODER;
          return 2;
@@ -1773,6 +2017,18 @@ int rmp4_video_stream_set_hw(rmp4_video_stream_t *s, int enable)
       if (!s->av1)
          s->want_hw = 0;
       return s->av1 != NULL;
+   }
+#endif
+#ifdef HAVE_RVP9
+   if (s && s->codec == RMP4_CODEC_VP9)
+   {
+      if (!enable || s->vp9_hw)
+         return s->vp9_hw != NULL;
+      s->want_hw = 1;
+      rmp4_video_stream_rewind(s);
+      if (!s->vp9_hw)
+         s->want_hw = 0;
+      return s->vp9_hw != NULL;
    }
 #endif
    if (!s || (s->codec != RMP4_CODEC_H264 && s->codec != RMP4_CODEC_H265))
@@ -2311,6 +2567,16 @@ void rmp4_video_stream_rewind(rmp4_video_stream_t *s)
    rmp4_rewind(s->demux);
    s->disp_idx = 0;
    s->wait_key = 0;
+#ifdef HAVE_RVP9
+   if (s->vp9_hw && s->want_hw && s->vp9_backend.restart)
+   {
+      rvp9_hw_session_restart(s->vp9_hw);
+      s->vp9_restart = 1;
+      s->vp9_active = 0;
+      s->vp9_sample = 0;
+      return;
+   }
+#endif
    /* The stream restarts at a key frame, so a fresh decoder (empty
     * reference chain, default probabilities) is the correct state. */
 #ifdef HAVE_RAV1
@@ -2668,6 +2934,9 @@ int rmp4_video_stream_seek_step(rmp4_video_stream_t *s, int64_t *position_us)
                s->av1_decode_sample = (uint32_t)sample;
                s->av1->hdr = *rmp4_video_av1_hdr_at(s, (uint32_t)sample);
             }
+#endif
+#ifdef HAVE_RVP9
+            s->vp9_sample = (uint32_t)sample;
 #endif
             if (!rmp4_select_track_sample(s->demux, s->track,
                      (uint32_t)sample))

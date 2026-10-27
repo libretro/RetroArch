@@ -65,7 +65,7 @@ AV1_MP4_SOURCES := $(RA)/libretro-common/formats/mp4/rmp4_video.c \
       $(RA)/libretro-common/formats/image/image_hdr_blit.c \
       $(RA)/libretro-common/features/features_cpu.c $(RA)/libretro-common/time/rtime.c
 
-hevc_decode_test$(EXE): av1_core_decode.h $(RA)/cores/libretro-media/media_core.c $(AV1_CORE_SOURCES) av1_mp4_decode.h av1_webm_decode.h $(AV1_MP4_SOURCES) $(AV1_PARAMS_DEPS) $(RA)/gfx/common/vulkan_video_decode_av1.h $(RA)/libretro-common/formats/av1/rav1_hw.c $(SAMPLED_DEPS) probe.c hevc_decode.h h264_decode.h vp9_decode.h av1_decode.h $(DECODERS) $(HEVC_DEPS) \
+hevc_decode_test$(EXE): av1_core_decode.h $(RA)/cores/libretro-media/media_core.c $(AV1_CORE_SOURCES) av1_mp4_decode.h av1_webm_decode.h $(AV1_MP4_SOURCES) $(AV1_PARAMS_DEPS) $(RA)/gfx/common/vulkan_video_decode_av1.h $(RA)/libretro-common/formats/av1/rav1_hw.c $(SAMPLED_DEPS) probe.c hevc_decode.h h264_decode.h vp9_decode.h vp9_mp4_decode.h av1_decode.h $(DECODERS) $(HEVC_DEPS) \
       $(RA)/gfx/common/vulkan_video_decode.c $(RA)/gfx/common/vulkan_video_decode_hevc.h \
       $(RA)/gfx/common/vulkan_video_decode_vp9.h $(RA)/gfx/common/vulkan_vp9_picture.h \
       $(RA)/gfx/common/vulkan_hevc_picture.h ../d3d11_video_decode/d3d11_video_decode_test_data.h \
@@ -92,7 +92,7 @@ import_test$(EXE): $(SAMPLED_DEPS) probe.c import_test.h build_import_test.py $(
       $(RA)/gfx/common/vulkan_video_import.h $(RA)/gfx/drivers/vulkan_shaders/yuv420_to_rgba8888.comp.inc
 	CC="$(CC)" CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" python3 build_import_test.py $@
 
-hevc_render_test$(EXE): av1_core_decode.h $(RA)/cores/libretro-media/media_core.c $(AV1_CORE_SOURCES) av1_mp4_decode.h av1_webm_decode.h $(AV1_MP4_SOURCES) $(AV1_PARAMS_DEPS) av1_decode.h $(RA)/gfx/common/vulkan_video_decode_av1.h $(RA)/libretro-common/formats/av1/rav1_hw.c $(SAMPLED_DEPS) probe.c hevc_decode.h vp9_decode.h hevc_render.c hevc_render.h import_test.h \
+hevc_render_test$(EXE): av1_core_decode.h $(RA)/cores/libretro-media/media_core.c $(AV1_CORE_SOURCES) av1_mp4_decode.h av1_webm_decode.h $(AV1_MP4_SOURCES) $(AV1_PARAMS_DEPS) av1_decode.h $(RA)/gfx/common/vulkan_video_decode_av1.h $(RA)/libretro-common/formats/av1/rav1_hw.c $(SAMPLED_DEPS) probe.c hevc_decode.h vp9_decode.h vp9_mp4_decode.h hevc_render.c hevc_render.h import_test.h \
       build_import_test.py $(HEVC_DEPS) $(DECODERS) $(RA)/gfx/drivers/vulkan.c \
       $(RA)/gfx/drivers/vulkan_win32_video.h \
       h264_decode.h ../d3d11_video_decode/d3d11_video_decode_test_data.h \

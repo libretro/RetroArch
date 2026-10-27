@@ -3,6 +3,11 @@
 #define RETROARCH_METAL_HEVC_DRIVER_H
 #include "videotoolbox_hevc_registry.h"
 #include <dispatch/dispatch.h>
+#ifdef HAVE_RVP9
+#include "metal_vp9_driver.h"
+#include <TargetConditionals.h>
+#include <dlfcn.h>
+#endif
 
 #ifdef VIDEOTOOLBOX_HEVC_REGISTRY
 #define METAL_HEVC_DRIVER 1
@@ -12,6 +17,25 @@ static videotoolbox_hevc_registry_t metal_hevc_registry;
 static retro_atomic_ptr_t metal_hevc_active_registry;
 static dispatch_once_t metal_hevc_once;
 static dispatch_queue_t metal_hevc_retirement_queue;
+#ifdef METAL_VP9_DRIVER
+static metal_vp9_driver_t metal_hevc_vp9;
+
+static videotoolbox_vp9_register_t metal_hevc_vp9_registration(void)
+{
+   videotoolbox_vp9_register_t registration = NULL;
+#if TARGET_OS_OSX && !TARGET_OS_MACCATALYST
+   if (@available(macOS 11.0, *))
+   {
+      void *symbol = dlsym(RTLD_DEFAULT,
+            "VTRegisterSupplementalVideoDecoderIfAvailable");
+      if (sizeof(registration) == sizeof(symbol))
+         memcpy(&registration, &symbol, sizeof(registration));
+   }
+#endif
+   return registration;
+}
+#endif
+
 
 static void *metal_hevc_retain(void *device) { return (void*)CFRetain(device); }
 static void metal_hevc_release(void *device) { CFRelease(device); }
@@ -33,6 +57,11 @@ static VIDEOTOOLBOX_HEVC_AVAILABLE void metal_hevc_initialize(void *unused)
             metal_hevc_retain, metal_hevc_release, metal_hevc_decode_enabled,
             NULL, metal_hevc_enqueue, NULL, true))
    { slock_free(lock); return; }
+#ifdef METAL_VP9_DRIVER
+   metal_vp9_driver_init(&metal_hevc_vp9, lock, metal_hevc_retain,
+         metal_hevc_release, metal_hevc_decode_enabled,
+         metal_hevc_vp9_registration(), &metal_hevc_registry.owner);
+#endif
    /* Process-lifetime storage/queue survive every driver and queued owner. */
    retro_atomic_store_release_ptr(&metal_hevc_active_registry, &metal_hevc_registry);
 }
@@ -44,7 +73,13 @@ static bool metal_hevc_start_supported(void *owner, void *device, void *sdr_pipe
    {
       dispatch_once_f(&metal_hevc_once, NULL, metal_hevc_initialize);
       registry = (videotoolbox_hevc_registry_t*)retro_atomic_load_acquire_ptr(&metal_hevc_active_registry);
-      return registry && videotoolbox_hevc_registry_publish_support(registry, owner, device, hdr_enabled);
+      if (!registry || !videotoolbox_hevc_registry_publish_support(
+               registry, owner, device, hdr_enabled))
+         return false;
+#ifdef METAL_VP9_DRIVER
+      metal_vp9_driver_start(&metal_hevc_vp9, owner, device, hdr_enabled);
+#endif
+      return true;
    }
    return false;
 }
@@ -56,7 +91,13 @@ static void metal_hevc_stop(void *owner)
 {
    videotoolbox_hevc_registry_t *registry = (videotoolbox_hevc_registry_t*)
       retro_atomic_load_acquire_ptr(&metal_hevc_active_registry);
-   if (registry) videotoolbox_hevc_registry_withdraw(registry, owner);
+   if (registry)
+   {
+#ifdef METAL_VP9_DRIVER
+      metal_vp9_driver_stop(&metal_hevc_vp9, owner);
+#endif
+      videotoolbox_hevc_registry_withdraw(registry, owner);
+   }
 }
 static bool metal_hevc_owns(void *owner)
 {
