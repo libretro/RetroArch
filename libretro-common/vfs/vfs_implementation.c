@@ -3706,7 +3706,6 @@ struct retro_vfs_copy_handle *retro_vfs_copy_begin_impl(
    int64_t src_size = 0;
    int     sflags, dflags;
    bool    native   = true;
-   char    dst_buf[PATH_MAX_LENGTH];
 
    if (!src || !*src || !dst || !*dst)
       return NULL;
@@ -3753,14 +3752,18 @@ struct retro_vfs_copy_handle *retro_vfs_copy_begin_impl(
       if (last && last > dst)
       {
          size_t n = (size_t)(last - dst);
-         if (n >= sizeof(dst_buf))
+         char  *dst_dir;
+         int    parent_ok;
+         if (n >= PATH_MAX_LENGTH || !(dst_dir = (char*)malloc(n + 1)))
             return NULL;
-         memcpy(dst_buf, dst, n);
-         dst_buf[n] = '\0';
+         memcpy(dst_dir, dst, n);
+         dst_dir[n] = '\0';
          /* mkdir reports "exists" for a file of that name too, so
           * confirm the parent really is a directory. */
-         if (     vfs_copy_mkdir_parents(dst_buf) != 0
-               || !(retro_vfs_stat_full(dst_buf, NULL, NULL) & RETRO_VFS_STAT_IS_DIRECTORY))
+         parent_ok =   vfs_copy_mkdir_parents(dst_dir) == 0
+                    && (retro_vfs_stat_full(dst_dir, NULL, NULL) & RETRO_VFS_STAT_IS_DIRECTORY);
+         free(dst_dir);
+         if (!parent_ok)
             return NULL;
       }
    }
@@ -4203,23 +4206,24 @@ const char *retro_vfs_dirent_get_name_impl(libretro_vfs_implementation_dir *rdir
 
 #if !defined(_WIN32) && !defined(VITA) && !defined(__PSL1GHT__) && !defined(__PS3__)
 /* Split out of retro_vfs_dirent_is_dir_impl() so that the d_type test
- * there does not have to carry this scratch buffer. Filesystems that
- * populate d_type - ext4, APFS, NTFS - answer from the dirent alone and
- * never reach this, but the array and the struct stat were declared in
- * the same scope as the test, so every entry paid a 2224-byte frame
- * plus, under -fstack-protector-strong, a canary written and re-read at
- * offset 2200 of a frame the fast path otherwise never touches. */
+ * there does not carry this one's frame. Filesystems that populate
+ * d_type - ext4, APFS, NTFS - answer from the dirent alone and never
+ * reach this. The joined path is on the heap: next to the stat it is
+ * cheap, and it keeps the frame within the 2 KiB thread-stack budget. */
 static VFS_NOINLINE bool retro_vfs_dirent_is_dir_stat(
       libretro_vfs_implementation_dir *rdir)
 {
    struct stat buf;
-   char path[PATH_MAX_LENGTH];
+   bool        is_dir;
+   char       *path = (char*)malloc(PATH_MAX_LENGTH);
 
-   fill_pathname_join_special(path, rdir->orig_path,
-         retro_vfs_dirent_get_name_impl(rdir), sizeof(path));
-   if (stat(path, &buf) < 0)
+   if (!path)
       return false;
-   return S_ISDIR(buf.st_mode);
+   fill_pathname_join_special(path, rdir->orig_path,
+         retro_vfs_dirent_get_name_impl(rdir), PATH_MAX_LENGTH);
+   is_dir = stat(path, &buf) == 0 && S_ISDIR(buf.st_mode);
+   free(path);
+   return is_dir;
 }
 #endif
 
@@ -4264,22 +4268,25 @@ bool retro_vfs_dirent_is_dir_impl(libretro_vfs_implementation_dir *rdir)
 }
 
 /* The join-and-stat fallback: one full-path stat per entry, which is
- * exactly what a caller without dirent_stat would do itself, so it is
- * never worse than today.  Split out so the PATH_MAX_LENGTH local
- * stays off the fast paths' stack.  Only compiled where some branch
- * of dirent_stat reaches it. */
+ * exactly what a caller without dirent_stat would do itself.  Split out
+ * so the fast paths do not carry its frame, and the joined path is on
+ * the heap to keep this one within the 2 KiB thread-stack budget.  Only
+ * compiled where some branch of dirent_stat reaches it. */
 #if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT) || (defined(ANDROID) && defined(HAVE_SAF)) \
       || !(defined(_WIN32) || defined(VITA) \
             || defined(VFS_HAVE_FSTATAT))
 static VFS_NOINLINE int retro_vfs_dirent_stat_slow(
       libretro_vfs_implementation_dir *rdir, int64_t *size, int64_t *mtime)
 {
-   char path[PATH_MAX_LENGTH];
+   char       *path;
+   int         flags;
    const char *name = retro_vfs_dirent_get_name_impl(rdir);
-   if (!name || !rdir->orig_path)
+   if (!name || !rdir->orig_path || !(path = (char*)malloc(PATH_MAX_LENGTH)))
       return 0;
-   fill_pathname_join_special(path, rdir->orig_path, name, sizeof(path));
-   return retro_vfs_stat_full(path, size, mtime);
+   fill_pathname_join_special(path, rdir->orig_path, name, PATH_MAX_LENGTH);
+   flags = retro_vfs_stat_full(path, size, mtime);
+   free(path);
+   return flags;
 }
 #endif
 

@@ -1649,10 +1649,9 @@ int filestream_rename(const char *old_path, const char *new_path)
    return retro_vfs_file_rename_impl(old_path, new_path);
 }
 
-/* v1-only frontends: copy through their open/read/write.  Large
- * heap buffer rather than the historical 256-byte stack one; the
- * destination directory is created before the destination is opened,
- * which the old order got backwards. */
+/* v1-only frontends: copy through their open/read/write, a large heap
+ * buffer at a time.  The destination directory is created before the
+ * destination is opened. */
 static int filestream_copy_loop(const char *src, const char *dst)
 {
    char   *buf                = NULL;
@@ -1661,12 +1660,14 @@ static int filestream_copy_loop(const char *src, const char *dst)
    int     ret                = -1;
    RFILE  *fp_src             = NULL;
    RFILE  *fp_dst             = NULL;
-   char    path_dst[PATH_MAX_LENGTH];
+   char   *path_dst;
 
-   if (!(buf = (char*)malloc(buf_len)))
+   /* The copy buffer, then the destination's directory. */
+   if (!(buf = (char*)malloc(buf_len + PATH_MAX_LENGTH)))
       return -1;
+   path_dst = buf + buf_len;
 
-   strlcpy(path_dst, dst, sizeof(path_dst));
+   strlcpy(path_dst, dst, PATH_MAX_LENGTH);
    path_basedir(path_dst);
    if (!path_is_directory(path_dst))
       path_mkdir(path_dst);
