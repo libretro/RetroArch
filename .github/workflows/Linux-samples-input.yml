@@ -657,6 +657,24 @@ jobs:
           make clean
           echo "[pass] device_registry_test (ASan)"
 
+      - name: Build and run input_group_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/input/input_group
+        run: |
+          set -eu
+          # Device groups: a controller that reaches the OS as several
+          # input devices, read as one pad. Pins that the Android
+          # driver's rule table takes the devices its old chain of
+          # special cases took, in the same order; that either join
+          # order gives one pad; that a member leaving keeps it and the
+          # lead leaving hands the slot on; that two groups stand at
+          # once; and that a button that only joins is nothing alone.
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 60 ./input_group_test
+          make clean
+          echo "[pass] input_group_test (ASan)"
+
       - name: Build and run device_pool_test (ASan + UBSan)
         shell: bash
         working-directory: samples/input/device_pool

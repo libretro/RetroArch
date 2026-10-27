@@ -45,6 +45,7 @@
 #include "../../command.h"
 #include "../../frontend/drivers/platform_unix.h"
 #include "android_pad_removed.h"
+#include "android_groups.h"
 #include "android_poll_wait.h"
 #include "android_press_group.h"
 #include "android_poll_changes.h"
@@ -191,8 +192,7 @@ struct input_pointer
    uint32_t full_pos;
 };
 
-static int pad_id1 = -1;
-static int pad_id2 = -1;
+static input_groups_t android_groups;
 static int kbd_id[MAX_NUM_KEYBOARDS];
 static int kbd_num = 0;
 
@@ -1263,8 +1263,7 @@ static bool android_input_init_handle(void)
 #endif
 #endif
 
-   pad_id1 = -1;
-   pad_id2 = -1;
+   input_groups_clear(&android_groups);
 
    return true;
 }
@@ -2202,6 +2201,8 @@ static void handle_hotplug(android_input_t *android,
 {
    char device_name[256];
    char name_buf[256];
+   int group;
+   unsigned role                = INPUT_GROUP_MEMBER;
    int vendorId                 = 0;
    int productId                = 0;
    const char *device_model     = android->device_model;
@@ -2212,105 +2213,40 @@ static void handle_hotplug(android_input_t *android,
             &productId, sizeof(device_name), id))
       return;
 
-   /* FIXME - per-device hacks for NVidia Shield, Xperia Play and
-    * similar devices
-    *
-    * These hacks depend on autoconf, but can work with user
-    * created autoconfs properly
-    */
+   group = input_group_rule_find(android_group_rules, ANDROID_GROUP_RULES,
+         device_model, device_name, &role);
+   if (     group > ANDROID_GROUP_SHIELD_GAMEPAD
+         && strstr(device_name, "NVIDIA"))
+      group = -1;
 
-   /* NVIDIA Shield Console
-    * This is the most complicated example, the built-in controller
-    * has an extra button that can't be used and a remote.
-    *
-    * We map the remote for navigation and overwrite whenever a
-    * real controller is connected.
-    * Also group the NVIDIA button on the controller with the
-    * main controller inputs so it's usable. It's mapped to
-    * menu by default
-    *
-    * The NVIDIA button is identified as "Virtual" device when first
-    * pressed. CEC remote input is also identified as "Virtual" device.
-    * If a virtual device is detected before a controller then it will
-    * be assigned to port 0 as "SHIELD Virtual Controller". When a real
-    * controller is detected it will overwrite the virtual controller
-    * and be grouped with the NVIDIA button of the virtual device.
-    *
-    */
-   if (strstr(device_model, "SHIELD Android TV") && (
-      strstr(device_name, "Virtual") ||
-      strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.0")))
+   if (group >= 0)
    {
-      /* only use the hack if the device is one of the built-in devices */
+      const input_group_rule_t *rule = &android_group_rules[group];
+      int32_t lead;
+
       RARCH_LOG("[Android] Special device detected: %s.\n", device_model);
+      /* On the SHIELD Android TV the remote, or the NVIDIA button come
+       * before its controller, holds port 1 until a controller comes */
+      if (     group == ANDROID_GROUP_SHIELD_TV
+            && role  == INPUT_GROUP_LEADS
+            && (   strstr(android->pad_states[0].name, "SHIELD Remote")
+                || strstr(android->pad_states[0].name,
+                     "SHIELD Virtual Controller")))
       {
-         /* Remove the remote or virtual controller device if it is mapped */
-         if (   strstr(android->pad_states[0].name, "SHIELD Remote")
-             || strstr(android->pad_states[0].name, "SHIELD Virtual Controller"))
-         {
-            pad_id1 = -1;
-            pad_id2 = -1;
-            android->pads_connected = 0;
+         input_groups_clear(&android_groups);
+         android->pads_connected = 0;
+         *port = 0;
+      }
+      lead = input_groups_join(&android_groups, group, role, id);
+      if (lead < 0 && group == ANDROID_GROUP_SHIELD_TV)
+         strlcpy_lit(name_buf, "SHIELD Virtual Controller", sizeof(name_buf));
+      else if (lead != id)
+         return;
+      else
+      {
+         strlcpy(name_buf, rule->name, sizeof(name_buf));
+         if (rule->first_port)
             *port = 0;
-            strlcpy(name_buf, device_name, sizeof(name_buf));
-         }
-
-         /* if the actual controller has not been mapped yet,
-          * then configure Virtual device for now */
-         if (strstr(device_name, "Virtual") && android->pads_connected==0)
-            strlcpy_lit(name_buf, "SHIELD Virtual Controller", sizeof(name_buf));
-         else
-            strlcpy_lit(name_buf, "NVIDIA SHIELD Controller", sizeof(name_buf));
-
-         /* apply the hack only for the first controller
-          * store the id for later use
-         */
-         if (strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.0")
-               && android->pads_connected==0)
-            pad_id1 = id;
-         else if (strstr(device_name, "Virtual") && pad_id1 != -1)
-         {
-            id = pad_id1;
-            return;
-         }
-      }
-   }
-
-   else if (strstr(device_model, "SHIELD") && (
-      strstr(device_name, "Virtual") || strstr(device_name, "gpio") ||
-      strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.01") ||
-      strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.02")))
-   {
-      /* only use the hack if the device is one of the built-in devices */
-      RARCH_LOG("[Android] Special device detected: %s.\n", device_model);
-      {
-         if ( pad_id1 < 0 )
-            pad_id1 = id;
-         else
-            pad_id2 = id;
-
-         if ( pad_id2 > 0)
-            return;
-         strlcpy_lit(name_buf, "NVIDIA SHIELD Portable", sizeof(name_buf));
-      }
-   }
-
-   else if (strstr(device_model, "SHIELD") && (
-      strstr(device_name, "Virtual") || strstr(device_name, "gpio") ||
-      strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.03")))
-   {
-      /* only use the hack if the device is one of the built-in devices */
-      RARCH_LOG("[Android] Special device detected: %s.\n", device_model);
-      {
-         if (strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.03")
-             && android->pads_connected==0)
-            pad_id1 = id;
-         else if (strstr(device_name, "Virtual") || strstr(device_name, "gpio"))
-         {
-            id = pad_id1;
-            return;
-         }
-         strlcpy_lit(name_buf, "NVIDIA SHIELD Gamepad", sizeof(name_buf));
       }
    }
 
@@ -2321,86 +2257,6 @@ static void handle_hotplug(android_input_t *android,
     /* to-do: add DS4 on Bravia ATV */
    else if (strstr(device_name, "NVIDIA"))
       strlcpy_lit(name_buf, "Android Gamepad", sizeof(name_buf));
-
-   /* GPD XD
-    * This is a simple hack, basically groups the "back"
-    * button with the rest of the gamepad
-    */
-   else if (strstr(device_model, "XD") && (
-      strstr(device_name, "Virtual") || strstr(device_name, "rk29-keypad") ||
-      strstr(device_name,"Playstation3") || strstr(device_name,"XBOX")))
-   {
-      /* only use the hack if the device is one of the built-in devices */
-      RARCH_LOG("[Android] Special device detected: %s.\n", device_model);
-      {
-         if ( pad_id1 < 0 )
-            pad_id1 = id;
-         else
-            pad_id2 = id;
-
-         if ( pad_id2 > 0)
-            return;
-
-         strlcpy_lit(name_buf, "GPD XD", sizeof(name_buf));
-         *port = 0;
-      }
-   }
-
-   /* XPERIA Play
-    * This device is composed of two hid devices
-    * We make it look like one device
-    */
-   else if (
-            (
-               string_starts_with_size(device_model, "R800", STRLEN_CONST("R800")) ||
-               strstr(device_model, "Xperia Play") ||
-               strstr(device_model, "Play") ||
-               strstr(device_model, "SO-01D")
-            ) || (
-               strstr(device_name, "keypad-game-zeus") ||
-               strstr(device_name, "keypad-zeus") ||
-               strstr(device_name, "Android Gamepad")
-            )
-         )
-   {
-      /* only use the hack if the device is one of the built-in devices */
-      RARCH_LOG("[Android] Special device detected: %s.\n", device_model);
-      {
-         if ( pad_id1 < 0 )
-            pad_id1 = id;
-         else
-            pad_id2 = id;
-
-         if ( pad_id2 > 0)
-            return;
-
-         strlcpy_lit(name_buf, "XPERIA Play", sizeof(name_buf));
-         *port = 0;
-      }
-   }
-
-   /* ARCHOS Gamepad
-    * This device is composed of two hid devices
-    * We make it look like one device
-    */
-   else if (strstr(device_model, "ARCHOS GAMEPAD") && (
-      strstr(device_name, "joy_key") || strstr(device_name, "joystick")))
-   {
-      /* only use the hack if the device is one of the built-in devices */
-      RARCH_LOG("[Android] ARCHOS GAMEPAD Detected: %s.\n", device_model);
-      {
-         if ( pad_id1 < 0 )
-            pad_id1 = id;
-         else
-            pad_id2 = id;
-
-         if ( pad_id2 > 0)
-            return;
-
-         strlcpy_lit(name_buf, "ARCHOS GamePad", sizeof(name_buf));
-         *port = 0;
-      }
-   }
 
    /* Amazon Fire TV & Fire stick */
    else if (
@@ -2537,9 +2393,7 @@ static void handle_hotplug(android_input_t *android,
 /* A device id as the pad slots know it */
 static int android_input_map_id(int id)
 {
-   if (id == pad_id2)
-      return pad_id1;
-   return id;
+   return input_groups_lead(&android_groups, id);
 }
 
 /* An event's pad slot, plugging its device in if it is new */
@@ -3433,6 +3287,23 @@ static void android_input_pad_removed(android_input_t *android,
    name[0] = '\0';
    if (engine_lookup_name(name, &vendor_id, &product_id, sizeof(name), id))
       return;
+
+   /* A member of a group: the pad stays while others remain. The slot
+    * is the lead's; when the lead goes, the next member's. */
+   {
+      int32_t lead = input_groups_lead(&android_groups, id);
+      int32_t next = input_groups_leave(&android_groups, id);
+      unsigned i;
+      if (lead != id)
+         return;
+      if (next >= 0)
+      {
+         for (i = 0; i < (unsigned)android->pads_connected; i++)
+            if (android->pad_states[i].id == id)
+               android->pad_states[i].id = g_android->id[i] = next;
+         return;
+      }
+   }
 
    port = android_pad_mark_removed(android->pad_states,
          android->pads_connected, id);
