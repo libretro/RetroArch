@@ -44,6 +44,7 @@
 #include "../input_driver.h"
 #include "../common/linux_not_joystick.h"
 #include "../common/output_writer.h"
+#include "../common/linux_pad_members.h"
 
 #include "../../configuration.h"
 #include "../../config.def.h"
@@ -742,201 +743,6 @@ static void udev_close_touch_node(struct udev_joypad *pad)
    pad->view.touch_down = 0;
 }
 
-/* The pad's touchpad: the node with ID_INPUT_TOUCHPAD under its HID
- * parent */
-static void udev_find_touch_sibling(struct udev_device *gamepad_dev,
-      unsigned p)
-{
-   struct udev_enumerate *enumerate;
-   struct udev_list_entry *item;
-   struct udev_device *hid_parent = udev_device_get_parent_with_subsystem_devtype(
-         gamepad_dev, "hid", NULL);
-   const char *parent_syspath     = hid_parent
-      ? udev_device_get_syspath(hid_parent) : NULL;
-
-   if (!parent_syspath || !(enumerate = udev_enumerate_new(udev_joypad_fd)))
-      return;
-   udev_enumerate_add_match_property(enumerate, "ID_INPUT_TOUCHPAD", "1");
-   udev_enumerate_add_match_subsystem(enumerate, "input");
-   udev_enumerate_scan_devices(enumerate);
-   udev_list_entry_foreach(item, udev_enumerate_get_list_entry(enumerate))
-   {
-      struct udev_device *dev = udev_device_new_from_syspath(udev_joypad_fd,
-            udev_list_entry_get_name(item));
-      struct udev_device *parent;
-      const char *devnode, *syspath;
-      if (!dev)
-         continue;
-      devnode = udev_device_get_devnode(dev);
-      parent  = udev_device_get_parent_with_subsystem_devtype(dev, "hid", NULL);
-      syspath = parent ? udev_device_get_syspath(parent) : NULL;
-      if (devnode && syspath && string_is_equal(parent_syspath, syspath))
-         udev_open_touch_node(&udev_pads[p], devnode, p);
-      udev_device_unref(dev);
-      if (udev_pads[p].touch_fd >= 0)
-         break;
-   }
-   udev_enumerate_unref(enumerate);
-}
-
-static void udev_find_sensor_sibling(struct udev_device *gamepad_dev,
-      unsigned p)
-{
-   struct udev_enumerate *enumerate  = NULL;
-   struct udev_list_entry *devs      = NULL;
-   struct udev_list_entry *item      = NULL;
-   struct udev_device *hid_parent    = NULL;
-   const char *parent_syspath        = NULL;
-   struct udev_joypad *pad           = &udev_pads[p];
-
-   hid_parent = udev_device_get_parent_with_subsystem_devtype(
-         gamepad_dev, "hid", NULL);
-   if (!hid_parent)
-   {
-      RARCH_DBG("[udev] Pad #%u: no HID parent found for sensor search.\n", p);
-      return;
-   }
-
-   parent_syspath = udev_device_get_syspath(hid_parent);
-   if (!parent_syspath)
-      return;
-
-   RARCH_DBG("[udev] Pad #%u: searching for sensor sibling under %s\n",
-         p, parent_syspath);
-
-   enumerate = udev_enumerate_new(udev_joypad_fd);
-   if (!enumerate)
-      return;
-
-   udev_enumerate_add_match_property(enumerate,
-         "ID_INPUT_ACCELEROMETER", "1");
-   udev_enumerate_add_match_subsystem(enumerate, "input");
-   udev_enumerate_scan_devices(enumerate);
-   devs = udev_enumerate_get_list_entry(enumerate);
-
-   if (!devs)
-      RARCH_DBG("[udev] Pad #%u: no ID_INPUT_ACCELEROMETER devices found.\n", p);
-
-   udev_list_entry_foreach(item, devs)
-   {
-      const char *name = udev_list_entry_get_name(item);
-      struct udev_device *dev = udev_device_new_from_syspath(
-            udev_joypad_fd, name);
-      const char *devnode;
-      struct udev_device *candidate_parent;
-      const char *candidate_syspath;
-
-      if (!dev)
-         continue;
-
-      devnode = udev_device_get_devnode(dev);
-      if (!devnode)
-      {
-         udev_device_unref(dev);
-         continue;
-      }
-
-      candidate_parent = udev_device_get_parent_with_subsystem_devtype(
-            dev, "hid", NULL);
-      if (!candidate_parent)
-      {
-         udev_device_unref(dev);
-         continue;
-      }
-
-      candidate_syspath = udev_device_get_syspath(candidate_parent);
-      if (  !candidate_syspath
-         || !string_is_equal(parent_syspath, candidate_syspath))
-      {
-         udev_device_unref(dev);
-         continue;
-      }
-
-      /* Found sibling sensor node */
-      udev_open_sensor_node(pad, devnode, p);
-      udev_device_unref(dev);
-      break;
-   }
-
-   udev_enumerate_unref(enumerate);
-
-   /* Fallback for devices like hid-wiimote whose accelerometer input node
-    * is not tagged with ID_INPUT_ACCELEROMETER=1 by udev */
-   if (pad->sensor_fd >= 0)
-      return; /* primary scan already found it */
-
-   RARCH_DBG("[udev] Pad #%u: no ID_INPUT_ACCELEROMETER device found, "
-         "trying fallback scan under %s\n", p, parent_syspath);
-
-   enumerate = udev_enumerate_new(udev_joypad_fd);
-   if (!enumerate)
-      return;
-
-   udev_enumerate_add_match_subsystem(enumerate, "input");
-   udev_enumerate_scan_devices(enumerate);
-   devs = udev_enumerate_get_list_entry(enumerate);
-
-   udev_list_entry_foreach(item, devs)
-   {
-      const char *name         = udev_list_entry_get_name(item);
-      struct udev_device *dev;
-      const char *devnode;
-      struct udev_device *candidate_parent;
-      const char *candidate_syspath;
-
-      /* Only look at eventNN nodes, not jsNN or the input parent itself */
-      if (!strstr(name, "/event"))
-         continue;
-
-      dev = udev_device_new_from_syspath(udev_joypad_fd, name);
-      if (!dev)
-         continue;
-
-      devnode = udev_device_get_devnode(dev);
-      if (!devnode)
-      {
-         udev_device_unref(dev);
-         continue;
-      }
-
-      /* Must share the same HID parent as the joypad */
-      candidate_parent = udev_device_get_parent_with_subsystem_devtype(
-            dev, "hid", NULL);
-      if (!candidate_parent)
-      {
-         udev_device_unref(dev);
-         continue;
-      }
-
-      candidate_syspath = udev_device_get_syspath(candidate_parent);
-      if (  !candidate_syspath
-         || !string_is_equal(parent_syspath, candidate_syspath))
-      {
-         udev_device_unref(dev);
-         continue;
-      }
-
-      /* Skip the joypad's own event node */
-      {
-         struct stat st;
-         if (stat(devnode, &st) == 0 && st.st_rdev == pad->device)
-         {
-            udev_device_unref(dev);
-            continue;
-         }
-      }
-
-      /* udev_open_sensor_node rejects nodes with no usable ABS axes */
-      udev_open_sensor_node(pad, devnode, p);
-      udev_device_unref(dev);
-
-      if (pad->sensor_fd >= 0)
-         break;
-   }
-
-   udev_enumerate_unref(enumerate);
-}
-
 /* The DualShock 3's input report bytes with the pressure of cross,
  * circle, square, triangle, L1, R1, up, down, left and right: the
  * order SDL gives them in, as axes after the pad's own. */
@@ -1022,58 +828,98 @@ static void udev_pressure_read(struct udev_joypad *pad)
    }
 }
 
-/* The hidraw node of the pad's HID device, for a DualShock 3. */
-static void udev_find_pressure_sibling(struct udev_device *gamepad_dev,
-      unsigned p, unsigned *axes)
+/* The pad's other nodes, under its HID device: listed once, and given
+ * their roles (linux_pad_members.h). */
+typedef struct udev_pad_nodes
 {
-   struct udev_enumerate *enumerate = NULL;
-   struct udev_list_entry *item     = NULL;
-   struct udev_device *hid_parent;
-   const char *parent_syspath;
-   struct udev_joypad *pad          = &udev_pads[p];
+   linux_pad_node_t    node[LINUX_PAD_MEMBERS_MAX];
+   char                path[LINUX_PAD_MEMBERS_MAX][64];
+   linux_pad_members_t members;
+} udev_pad_nodes_t;
 
-   if (     pad->vid != 0x054c || pad->pid != 0x0268
-         || *axes + UDEV_DS3_PRESSURES > NUM_AXES
-         || !(hid_parent = udev_device_get_parent_with_subsystem_devtype(
-               gamepad_dev, "hid", NULL))
-         || !(parent_syspath = udev_device_get_syspath(hid_parent))
-         || !(enumerate = udev_enumerate_new(udev_joypad_fd)))
-      return;
+static void udev_find_members(struct udev_device *gamepad_dev,
+      const struct udev_joypad *pad, uint64_t own, udev_pad_nodes_t *n)
+{
+   size_t count = 0;
+   struct udev_enumerate *enumerate;
+   struct udev_list_entry *item;
+   struct udev_device *hid_parent = udev_device_get_parent_with_subsystem_devtype(
+         gamepad_dev, "hid", NULL);
+   /* a DualShock 3's pressures are in its reports alone */
+   bool want_reports = pad->vid == 0x054c && pad->pid == 0x0268;
 
-   udev_enumerate_add_match_subsystem(enumerate, "hidraw");
-   udev_enumerate_scan_devices(enumerate);
-   udev_list_entry_foreach(item, udev_enumerate_get_list_entry(enumerate))
+   if (hid_parent && (enumerate = udev_enumerate_new(udev_joypad_fd)))
    {
-      struct udev_device *dev = udev_device_new_from_syspath(
-            udev_joypad_fd, udev_list_entry_get_name(item));
-      struct udev_device *parent;
-      const char *devnode;
-
-      if (!dev)
-         continue;
-      parent  = udev_device_get_parent_with_subsystem_devtype(
-            dev, "hid", NULL);
-      devnode = udev_device_get_devnode(dev);
-      if (     devnode && parent
-            && string_is_equal(udev_device_get_syspath(parent),
-               parent_syspath))
+      udev_enumerate_add_match_parent(enumerate, hid_parent);
+      udev_enumerate_add_match_subsystem(enumerate, "input");
+      udev_enumerate_add_match_subsystem(enumerate, "hidraw");
+      udev_enumerate_scan_devices(enumerate);
+      udev_list_entry_foreach(item, udev_enumerate_get_list_entry(enumerate))
       {
-         int fd = open(devnode, O_RDONLY | O_NONBLOCK | O_CLOEXEC);
-         if (fd >= 0)
+         struct udev_device *dev;
+         const char *devnode, *subsystem, *sysname, *tag;
+         linux_pad_node_t *node;
+         if (count >= LINUX_PAD_MEMBERS_MAX)
+            break;
+         if (!(dev = udev_device_new_from_syspath(udev_joypad_fd,
+                     udev_list_entry_get_name(item))))
+            continue;
+         devnode   = udev_device_get_devnode(dev);
+         subsystem = udev_device_get_subsystem(dev);
+         sysname   = udev_device_get_sysname(dev);
+         node      = &n->node[count];
+         node->hidraw = subsystem && string_is_equal(subsystem, "hidraw");
+         node->event  = subsystem && string_is_equal(subsystem, "input")
+            && sysname && string_starts_with_size(sysname, "event",
+                  STRLEN_CONST("event"));
+         if (devnode && (node->hidraw || node->event)
+               && strlen(devnode) < sizeof(n->path[0]))
          {
-            udev_pressure_attach(pad, fd, axes);
-            RARCH_LOG("[udev] Pad #%u: button pressures from %s.\n",
-                  p, devnode);
+            node->rdev     = (uint64_t)udev_device_get_devnum(dev);
+            tag            = udev_device_get_property_value(dev,
+                  "ID_INPUT_ACCELEROMETER");
+            node->accel    = tag && string_is_equal(tag, "1");
+            tag            = udev_device_get_property_value(dev,
+                  "ID_INPUT_TOUCHPAD");
+            node->touchpad = tag && string_is_equal(tag, "1");
+            strlcpy(n->path[count], devnode, sizeof(n->path[0]));
+            count++;
          }
-         else
-            RARCH_LOG("[udev] Pad #%u: no button pressures, %s cannot be"
-                  " read (%s).\n", p, devnode, strerror(errno));
          udev_device_unref(dev);
-         break;
       }
-      udev_device_unref(dev);
+      udev_enumerate_unref(enumerate);
    }
-   udev_enumerate_unref(enumerate);
+   linux_pad_members_choose(n->node, count, own, want_reports, &n->members);
+}
+
+/* The DualShock 3's pressures, from its hidraw node */
+static void udev_open_reports(struct udev_joypad *pad,
+      const udev_pad_nodes_t *n, unsigned p, unsigned *axes)
+{
+   const char *devnode;
+   int fd;
+   if (n->members.reports < 0 || *axes + UDEV_DS3_PRESSURES > NUM_AXES)
+      return;
+   devnode = n->path[n->members.reports];
+   if ((fd = open(devnode, O_RDONLY | O_NONBLOCK | O_CLOEXEC)) >= 0)
+   {
+      udev_pressure_attach(pad, fd, axes);
+      RARCH_LOG("[udev] Pad #%u: button pressures from %s.\n", p, devnode);
+   }
+   else
+      RARCH_LOG("[udev] Pad #%u: no button pressures, %s cannot be"
+            " read (%s).\n", p, devnode, strerror(errno));
+}
+
+/* The motion sensors - the first node with axes - and the touchpad */
+static void udev_open_members(struct udev_joypad *pad,
+      const udev_pad_nodes_t *n, unsigned p)
+{
+   unsigned i;
+   for (i = 0; n->members.sensors[i] >= 0 && pad->sensor_fd < 0; i++)
+      udev_open_sensor_node(pad, n->path[n->members.sensors[i]], p);
+   if (n->members.touchpad >= 0)
+      udev_open_touch_node(pad, n->path[n->members.touchpad], p);
 }
 
 static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char *path)
@@ -1086,6 +932,7 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
    unsigned axes                        = 0;
    struct udev_device *parent           = NULL;
    struct udev_joypad *pad              = (struct udev_joypad*)&udev_pads[p];
+   udev_pad_nodes_t nodes;
    struct input_id inputid              = {0};
    unsigned long keybit[NBITS(KEY_MAX)] = {0};
    unsigned long absbit[NBITS(ABS_MAX)] = {0};
@@ -1187,15 +1034,14 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
       }
    }
 
-   udev_find_pressure_sibling(dev, p, &axes);
+   udev_find_members(dev, pad, (uint64_t)st.st_rdev, &nodes);
+   udev_open_reports(pad, &nodes, p, &axes);
 
    pad->device = st.st_rdev;
    udev_pad_set_fd(p, fd);
    pad->path   = strdup(path);
 
-   /* Look for a sibling sensor (IMU) evdev node under the same HID parent */
-   udev_find_sensor_sibling(dev, p);
-   udev_find_touch_sibling(dev, p);
+   udev_open_members(pad, &nodes, p);
 
    if (*pad->ident)
    {
