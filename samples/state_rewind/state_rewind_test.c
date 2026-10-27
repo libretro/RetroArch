@@ -76,10 +76,13 @@ static uint32_t rnd(void) { rng ^= rng << 13; rng ^= rng >> 17; rng ^= rng << 5;
 static uint8_t *block_alloc(size_t block_size, unsigned uniq)
 {
    size_t alloc = block_size + sizeof(uint16_t) * 4 + STATE_MANAGER_SCAN_PAD;
-   uint8_t *b = (uint8_t*)calloc(alloc, 1);
+   uint8_t *b = (uint8_t*)memalign_alloc(64, alloc);
+   memset(b, 0, alloc);
    ((uint16_t*)b)[block_size / sizeof(uint16_t) + 3] = (uint16_t)uniq;
    return b;
 }
+
+static void block_free(uint8_t *b) { memalign_free(b); }
 
 /* compress(old, new); apply to a copy of new; must equal old. */
 static bool roundtrip(const uint8_t *oldb, const uint8_t *newb, size_t block_size,
@@ -112,7 +115,7 @@ static void t_ident_roundtrip(void)
    for (i = 0; i < bs; i++) a[i] = b[i] = (uint8_t)(i * 7);
    CHECK(roundtrip(a, b, bs, &plen), "identical blocks did not round-trip");
    CHECK(plen == 3 * sizeof(uint16_t), "identical blocks: patch is %u bytes, the terminator is 6", (unsigned)plen);
-   free(a); free(b);
+   block_free(a); block_free(b);
 }
 
 static void t_single_word_dirty(void)
@@ -127,7 +130,7 @@ static void t_single_word_dirty(void)
       for (i = 0; i < bs; i++) a[i] = b[i] = (uint8_t)(i ^ 0x5A);
       ((uint16_t*)b)[at[k]] ^= 0x1234;
       CHECK(roundtrip(a, b, bs, NULL), "one word dirty at %u did not restore old", (unsigned)at[k]);
-      free(a); free(b);
+      block_free(a); block_free(b);
    }
 }
 
@@ -140,7 +143,7 @@ static void t_long_skip_u32(void)
    for (i = 0; i < bs; i++) a[i] = b[i] = (uint8_t)(i * 13);
    ((uint16_t*)b)[bs / 2 - 1] ^= 0xFFFF;
    CHECK(roundtrip(a, b, bs, NULL), "a run past UINT16_MAX words did not round-trip");
-   free(a); free(b);
+   block_free(a); block_free(b);
 }
 
 static void alarm_fail(int sig) { (void)sig; printf("      FAIL: find_change did not terminate\n"); _exit(1); }
@@ -153,11 +156,16 @@ static void t_sentinel_terminates(void)
    memset(a, 0xA5, bs); memset(b, 0xA5, bs);
    signal(SIGALRM, alarm_fail);
    alarm(1);
-   got = find_change((const uint16_t*)a, (const uint16_t*)b);
+#ifdef STATE_MANAGER_HAVE_AVX2_SCAN
+   got = find_change((const uint16_t*)a, (const uint16_t*)b,
+         state_manager_scan_tier());
+#else
+   got = find_change((const uint16_t*)a, (const uint16_t*)b, 0);
+#endif
    alarm(0);
    CHECK(got >= bs / 2 && got <= bs / 2 + 4, "find_change on equal blocks stopped at word %u, sentinel is at %u",
          (unsigned)got, (unsigned)(bs / 2 + 3));
-   free(a); free(b);
+   block_free(a); block_free(b);
 }
 
 static void t_scan_pad(void)
@@ -169,7 +177,7 @@ static void t_scan_pad(void)
    for (i = 0; i < bs; i++) a[i] = b[i] = (uint8_t)i;
    for (i = bs - 16; i < bs; i++) b[i] ^= 0x80;
    CHECK(roundtrip(a, b, bs, NULL), "dirty tail did not round-trip");
-   free(a); free(b);
+   block_free(a); block_free(b);
 }
 
 static void t_codec_property_seeded(void)
@@ -199,11 +207,67 @@ static void t_codec_property_seeded(void)
       if (!roundtrip(a, b, bs, NULL))
       {
          CHECK(0, "seeded pair %u (size %u, mode %u) did not round-trip", it, (unsigned)bs, mode);
-         free(a); free(b);
+         block_free(a); block_free(b);
          return;
       }
-      free(a); free(b);
+      block_free(a); block_free(b);
    }
+}
+
+/* Every scan tier the CPU allows (SSE2, AVX2, AVX-512BW) must write the
+ * same patch byte for byte: the decoder and old rings depend on it. The
+ * sentinel and pad cases are run again under each tier so the wider loads
+ * are checked against the tail padding too. */
+static void t_scan_tiers_identical(void)
+{
+#ifdef STATE_MANAGER_HAVE_AVX2_SCAN
+   int top, tier;
+   unsigned it, diffs = 0;
+   state_manager_scan_cached = -1;
+   top = state_manager_scan_tier();
+   printf("   scan_tiers_identical: 300 seeded pairs, tiers 0..%d write the same patch\n", top);
+   for (it = 0; it < 300; it++)
+   {
+      size_t bs = 2 + (rnd() % 20000) * 2, i;
+      size_t maxp = state_manager_raw_maxsize(bs), len0 = 0;
+      uint8_t *a = block_alloc(bs, 0), *b = block_alloc(bs, 1);
+      uint8_t *p0 = (uint8_t*)malloc(maxp), *pt = (uint8_t*)malloc(maxp);
+      unsigned mode = rnd() % 4;
+      for (i = 0; i < bs; i++) a[i] = (uint8_t)rnd();
+      memcpy(b, a, bs);
+      for (i = 0; i < bs / 2; i++)
+      {
+         bool dirty = false;
+         switch (mode)
+         {
+            case 0: dirty = (rnd() % 64) == 0; break;
+            case 1: dirty = (rnd() % 2) == 0; break;
+            case 2: dirty = (rnd() % 3) != 0; break;
+            case 3: dirty = (i % 700) < 90; break;
+         }
+         if (dirty) ((uint16_t*)b)[i] ^= (uint16_t)(rnd() | 1);
+      }
+      for (tier = 0; tier <= top; tier++)
+      {
+         size_t len;
+         state_manager_scan_cached = tier;
+         len = state_manager_raw_compress(a, b, bs, tier ? pt : p0);
+         if (!tier)
+            len0 = len;
+         else if (len != len0 || memcmp(p0, pt, len))
+            diffs++;
+      }
+      block_free(a); block_free(b); free(p0); free(pt);
+   }
+   CHECK(!diffs, "%u patches differed between scan tiers", diffs);
+   for (tier = 0; tier <= top; tier++)
+   {
+      state_manager_scan_cached = tier;
+      t_sentinel_terminates();
+      t_scan_pad();
+   }
+   state_manager_scan_cached = -1;
+#endif
 }
 
 /* SM-02: a forged patch must not write past the block. Locked once the
@@ -361,7 +425,7 @@ static void t_decompress_oob(void)
    }
    else
       printf("      (decoder not yet bounded: case reported, not run)\n");
-   free(work);
+   block_free(work);
 }
 
 /* A malformed record must fail whole: a valid patch with one late
@@ -416,7 +480,7 @@ static void t_decompress_atomic(void)
             CHECK(memcmp(work, b, bs) == 0, "mutation %u: refused but changed the block", it);
       }
    }
-   free(a); free(b); free(patch); free(work);
+   block_free(a); block_free(b); free(patch); free(work);
 }
 
 
@@ -489,6 +553,7 @@ int main(void)
    t_sentinel_terminates();
    t_scan_pad();
    t_codec_property_seeded();
+   t_scan_tiers_identical();
    t_push_pop_n();
    t_wrap_near_end();
    t_drop_oldest();

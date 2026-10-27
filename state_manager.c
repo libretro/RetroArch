@@ -24,6 +24,7 @@
 #include <string.h>
 
 #include <retro_inline.h>
+#include <memalign.h>
 #include <compat/strl.h>
 #include <compat/intrinsics.h>
 
@@ -77,22 +78,55 @@
 #include <immintrin.h>
 #include <features/features_cpu.h>
 #define STATE_MANAGER_HAVE_AVX2_SCAN 1
+/* AVX-512BW intrinsics need GCC 5 or Clang 4. RETRO_SIMD_AVX512 promises
+ * BW, so the flag alone gates the scanner at runtime. */
+#if (defined(__clang__) && __clang_major__ >= 4) \
+   || (!defined(__clang__) && __GNUC__ >= 5)
+#define STATE_MANAGER_HAVE_AVX512_SCAN 1
+#endif
 #endif
 #endif
 
 /* Tail padding on each block, in bytes. Must be >= the widest vector load
- * find_change() can issue (32 for AVX2); 64 leaves room for a wider scanner
- * without having to revisit the allocation. */
+ * find_change() or find_same() can issue (64 for AVX-512). */
 #define STATE_MANAGER_SCAN_PAD 64
+
+/* The scan tiers are compiled as whole copies of raw_compress (below), so
+ * the scans must inline into each copy: a call per scan costs more than
+ * the scan on a densely dirty state. */
+#ifdef STATE_MANAGER_HAVE_AVX2_SCAN
+#define STATE_MANAGER_SCAN_INLINE static INLINE __attribute__((always_inline))
+#else
+#define STATE_MANAGER_SCAN_INLINE static INLINE
+#endif
 
 /* There's no equivalent in libc, you'd think so ...
  * std::mismatch exists, but it's not optimized at all. */
 #ifdef STATE_MANAGER_HAVE_AVX2_SCAN
 __attribute__((target("avx2")))
-static size_t find_change_avx2(const uint16_t *a, const uint16_t *b)
+static INLINE size_t find_change_avx2(const uint16_t *a, const uint16_t *b)
 {
-   const __m256i *a256 = (const __m256i*)a;
-   const __m256i *b256 = (const __m256i*)b;
+   const __m256i *a256;
+   const __m256i *b256;
+   /* Dirty states call this every few words; a 16-byte look first keeps
+    * those short scans at SSE2 latency before going wide. */
+   uint32_t head = (uint32_t)_mm_movemask_epi8(_mm_cmpeq_epi8(
+            _mm_loadu_si128((const __m128i*)a),
+            _mm_loadu_si128((const __m128i*)b)));
+
+   if (head != 0xffff)
+      return (size_t)compat_ctz(~head & 0xffff) >> 1;
+   head = (uint32_t)_mm256_movemask_epi8(_mm256_cmpeq_epi8(
+            _mm256_loadu_si256((const __m256i*)(a + 8)),
+            _mm256_loadu_si256((const __m256i*)(b + 8))));
+   if (head != 0xffffffffu)
+      return (16 + (size_t)compat_ctz(~head)) >> 1;
+
+   /* The first 48 bytes are equal; step back to the 32-byte boundary
+    * inside them so the loads below never straddle a line. */
+   a256 = (const __m256i*)((uintptr_t)(a + 24) & ~(uintptr_t)31);
+   b256 = (const __m256i*)((const uint8_t*)b
+         + ((const uint8_t*)a256 - (const uint8_t*)a));
 
    for (;;)
    {
@@ -103,10 +137,8 @@ static size_t find_change_avx2(const uint16_t *a, const uint16_t *b)
 
       if (mask != 0xffffffffu)
       {
-         /* Offset is a multiple of 32 and the tzcnt is 0..31, so the OR is
-          * an add, exactly as in the SSE2 form. */
-         size_t ret = (((uint8_t*)a256 - (uint8_t*)a) |
-               (compat_ctz(~mask)));
+         size_t ret = ((size_t)((const uint8_t*)a256 - (const uint8_t*)a)
+               + (size_t)compat_ctz(~mask));
 
          return (ret >> 1);
       }
@@ -116,23 +148,158 @@ static size_t find_change_avx2(const uint16_t *a, const uint16_t *b)
    }
 }
 
-static int state_manager_use_avx2(void)
+/* Same scan for the first equal 32-bit word as the SSE2 loop in
+ * find_same(), eight words per step. */
+__attribute__((target("avx2")))
+static INLINE const uint32_t *find_same_avx2(const uint32_t *a, const uint32_t *b)
 {
-   static int cached = -1;
-   if (cached < 0)
-      cached = (cpu_features_get() & RETRO_SIMD_AVX2) ? 1 : 0;
-   return cached;
+   /* A dirty run usually ends within a word or two: look at four first. */
+   unsigned head = (unsigned)_mm_movemask_ps(_mm_castsi128_ps(
+            _mm_cmpeq_epi32(_mm_loadu_si128((const __m128i*)a),
+               _mm_loadu_si128((const __m128i*)b))));
+
+   if (head)
+      return a + compat_ctz(head);
+
+   a += 4;
+   b += 4;
+
+   for (;;)
+   {
+      __m256i v0 = _mm256_loadu_si256((const __m256i*)a);
+      __m256i v1 = _mm256_loadu_si256((const __m256i*)b);
+      unsigned mask = (unsigned)_mm256_movemask_ps(_mm256_castsi256_ps(
+               _mm256_cmpeq_epi32(v0, v1)));
+
+      if (mask)
+         return a + compat_ctz(mask);
+
+      a += 8;
+      b += 8;
+   }
+}
+
+#ifdef STATE_MANAGER_HAVE_AVX512_SCAN
+/* 64 bytes per compare, and the compare writes the mask directly: no
+ * movemask, and the first differing byte is the lowest set bit. */
+__attribute__((target("avx512f,avx512bw")))
+static INLINE size_t find_change_avx512(const uint16_t *a, const uint16_t *b)
+{
+   const uint8_t *a8 = (const uint8_t*)a + 80;
+   const uint8_t *b8 = (const uint8_t*)b + 80;
+   /* Widen as the scan proves long: 16 bytes, then two 32-byte steps, and
+    * only then 64. Most scans in a dirty state end in the first 80 bytes,
+    * where the narrow compares answer sooner than a 64-byte one. */
+   unsigned head = (unsigned)_mm_movemask_epi8(_mm_cmpeq_epi8(
+            _mm_loadu_si128((const __m128i*)a),
+            _mm_loadu_si128((const __m128i*)b)));
+   uint32_t m32;
+
+   if (head != 0xffff)
+      return (size_t)compat_ctz(~head & 0xffff) >> 1;
+   m32 = (uint32_t)_mm256_movemask_epi8(_mm256_cmpeq_epi8(
+            _mm256_loadu_si256((const __m256i*)((const uint8_t*)a + 16)),
+            _mm256_loadu_si256((const __m256i*)((const uint8_t*)b + 16))));
+   if (m32 != 0xffffffffu)
+      return (16 + (size_t)compat_ctz(~m32)) >> 1;
+   m32 = (uint32_t)_mm256_movemask_epi8(_mm256_cmpeq_epi8(
+            _mm256_loadu_si256((const __m256i*)((const uint8_t*)a + 48)),
+            _mm256_loadu_si256((const __m256i*)((const uint8_t*)b + 48))));
+   if (m32 != 0xffffffffu)
+      return (48 + (size_t)compat_ctz(~m32)) >> 1;
+
+   /* The first 80 bytes are equal; step back to the line boundary inside
+    * them so every 64-byte load from here is a whole line. */
+   a8 = (const uint8_t*)((uintptr_t)a8 & ~(uintptr_t)63);
+   b8 = (const uint8_t*)b + (a8 - (const uint8_t*)a);
+
+   for (;;)
+   {
+      __mmask64 mask = _mm512_cmpneq_epi8_mask(
+            _mm512_loadu_si512((const void*)a8),
+            _mm512_loadu_si512((const void*)b8));
+
+      if (mask)
+         return ((size_t)(a8 - (const uint8_t*)a)
+               + compat_ctz_u64((uint64_t)mask)) >> 1;
+
+      a8 += 64;
+      b8 += 64;
+   }
+}
+
+__attribute__((target("avx512f,avx512bw")))
+static INLINE const uint32_t *find_same_avx512(const uint32_t *a, const uint32_t *b)
+{
+   /* Four words, then eight, then sixteen a step, as find_change_avx512. */
+   unsigned head = (unsigned)_mm_movemask_ps(_mm_castsi128_ps(
+            _mm_cmpeq_epi32(_mm_loadu_si128((const __m128i*)a),
+               _mm_loadu_si128((const __m128i*)b))));
+
+   if (head)
+      return a + compat_ctz(head);
+   head = (unsigned)_mm256_movemask_ps(_mm256_castsi256_ps(
+            _mm256_cmpeq_epi32(_mm256_loadu_si256((const __m256i*)(a + 4)),
+               _mm256_loadu_si256((const __m256i*)(b + 4)))));
+   if (head)
+      return a + 4 + compat_ctz(head);
+
+   a += 12;
+   b += 12;
+
+   for (;;)
+   {
+      __mmask16 mask = _mm512_cmpeq_epi32_mask(
+            _mm512_loadu_si512((const void*)a),
+            _mm512_loadu_si512((const void*)b));
+
+      if (mask)
+         return a + compat_ctz((unsigned)mask);
+
+      a += 16;
+      b += 16;
+   }
 }
 #endif
 
-static size_t find_change(const uint16_t *a, const uint16_t *b)
+/* 0 = SSE2, 1 = AVX2, 2 = AVX-512BW. Read once; the CPU does not change.
+ * File scope so samples/state_rewind can pin each tier the CPU allows and
+ * check they all produce the same patch. */
+static int state_manager_scan_cached = -1;
+
+static int state_manager_scan_tier(void)
+{
+   if (state_manager_scan_cached < 0)
+   {
+      uint64_t cpu = cpu_features_get();
+      int tier     = 0;
+      if (cpu & RETRO_SIMD_AVX2)
+         tier = 1;
+#ifdef STATE_MANAGER_HAVE_AVX512_SCAN
+      if (cpu & RETRO_SIMD_AVX512)
+         tier = 2;
+#endif
+      state_manager_scan_cached = tier;
+   }
+   return state_manager_scan_cached;
+}
+#endif
+
+/* 'tier' is a constant in each copy of raw_compress, so the branches on
+ * it fold away. */
+STATE_MANAGER_SCAN_INLINE size_t find_change(const uint16_t *a,
+      const uint16_t *b, int tier)
 {
 #if __SSE2__
    const __m128i *a128 = (const __m128i*)a;
    const __m128i *b128 = (const __m128i*)b;
 
+#ifdef STATE_MANAGER_HAVE_AVX512_SCAN
+   if (tier == 2)
+      return find_change_avx512(a, b);
+#endif
 #ifdef STATE_MANAGER_HAVE_AVX2_SCAN
-   if (state_manager_use_avx2())
+   if (tier == 1)
       return find_change_avx2(a, b);
 #endif
 
@@ -158,6 +325,7 @@ static size_t find_change(const uint16_t *a, const uint16_t *b)
    }
 #else
    const uint16_t *a_org = a;
+   (void)tier;
 #ifdef NO_UNALIGNED_MEM
    while (((uintptr_t)a & (sizeof(size_t) - 1)) && *a == *b)
    {
@@ -188,9 +356,11 @@ static size_t find_change(const uint16_t *a, const uint16_t *b)
 #endif
 }
 
-static size_t find_same(const uint16_t *a, const uint16_t *b)
+STATE_MANAGER_SCAN_INLINE size_t find_same(const uint16_t *a,
+      const uint16_t *b, int tier)
 {
    const uint16_t *a_org = a;
+   (void)tier;
 #ifdef NO_UNALIGNED_MEM
    if (((uintptr_t)a & (sizeof(uint32_t) - 1)) && *a != *b)
    {
@@ -214,7 +384,21 @@ static size_t find_same(const uint16_t *a, const uint16_t *b)
 #if __SSE2__
       /* Four words per iteration. The granularity stays 32-bit -- the lane
        * mask is per word, so this stops at exactly the word the scalar loop
-       * would, which the compressed output depends on. */
+       * would, which the compressed output depends on. The wider scans keep
+       * that granularity. */
+#ifdef STATE_MANAGER_HAVE_AVX2_SCAN
+      if (tier)
+      {
+         const uint32_t *hit =
+#ifdef STATE_MANAGER_HAVE_AVX512_SCAN
+            (tier == 2) ? find_same_avx512(a_big, b_big) :
+#endif
+            find_same_avx2(a_big, b_big);
+         b_big += hit - a_big;
+         a_big  = hit;
+      }
+      else
+#endif
       for (;;)
       {
          __m128i v0 = _mm_loadu_si128((const __m128i*)a_big);
@@ -321,8 +505,8 @@ static size_t state_manager_raw_maxsize(size_t uncomp)
  * 'patch' must be size 'state_manager_raw_maxsize(len)' or more.
  * Returns the number of bytes actually written to 'patch'.
  */
-static size_t state_manager_raw_compress(const void *src,
-      const void *dst, size_t len, void *patch)
+STATE_MANAGER_SCAN_INLINE size_t state_manager_raw_compress_tier(
+      const void *src, const void *dst, size_t len, void *patch, int tier)
 {
    const uint16_t  *old16 = (const uint16_t*)src;
    const uint16_t  *new16 = (const uint16_t*)dst;
@@ -333,7 +517,7 @@ static size_t state_manager_raw_compress(const void *src,
    while (num16s)
    {
       size_t i, changed;
-      size_t skip = find_change(old16, new16);
+      size_t skip = find_change(old16, new16, tier);
 
       if (skip >= num16s)
          break;
@@ -356,7 +540,7 @@ static size_t state_manager_raw_compress(const void *src,
          continue;
       }
 
-      changed = find_same(old16, new16);
+      changed = find_same(old16, new16, tier);
       if (changed > UINT16_MAX)
          changed = UINT16_MAX;
 
@@ -383,6 +567,45 @@ static size_t state_manager_raw_compress(const void *src,
    compressed16[2]  = 0;
 
    return (uint8_t*)(compressed16 + 3) - (uint8_t*)patch;
+}
+
+#ifdef STATE_MANAGER_HAVE_AVX2_SCAN
+/* flatten pulls the scans in: they share this target, but a plain
+ * always_inline cannot reach them through the baseline copy. */
+__attribute__((target("avx2"), flatten))
+static size_t state_manager_raw_compress_avx2(const void *src,
+      const void *dst, size_t len, void *patch)
+{
+   return state_manager_raw_compress_tier(src, dst, len, patch, 1);
+}
+#endif
+
+#ifdef STATE_MANAGER_HAVE_AVX512_SCAN
+__attribute__((target("avx512f,avx512bw"), flatten))
+static size_t state_manager_raw_compress_avx512(const void *src,
+      const void *dst, size_t len, void *patch)
+{
+   return state_manager_raw_compress_tier(src, dst, len, patch, 2);
+}
+#endif
+
+static size_t state_manager_raw_compress(const void *src,
+      const void *dst, size_t len, void *patch)
+{
+#ifdef STATE_MANAGER_HAVE_AVX2_SCAN
+   switch (state_manager_scan_tier())
+   {
+#ifdef STATE_MANAGER_HAVE_AVX512_SCAN
+      case 2:
+         return state_manager_raw_compress_avx512(src, dst, len, patch);
+#endif
+      case 1:
+         return state_manager_raw_compress_avx2(src, dst, len, patch);
+      default:
+         break;
+   }
+#endif
+   return state_manager_raw_compress_tier(src, dst, len, patch, 0);
 }
 
 /*
@@ -528,7 +751,7 @@ static void state_manager_free(state_manager_t *state)
       uint8_t *base = state->thisblock;
       if (state->nextblock && (!base || state->nextblock < base))
          base = state->nextblock;
-      free(base);
+      memalign_free(base);
    }
 #if STRICT_BUF_SIZE
    if (state->debugblock)
@@ -587,15 +810,22 @@ static state_manager_t *state_manager_new(
             sizeof(uint16_t) * 4 + STATE_MANAGER_SCAN_PAD,
             &single_block_alloc))
       goto error;
+   /* Both blocks start on a 64-byte line, so a scan position sits at the
+    * same offset within a line in each: once the wide scans align one side
+    * their loads never straddle a line on either. */
+   if (!state_manager_size_add(single_block_alloc, 63, &single_block_alloc))
+      goto error;
+   single_block_alloc &= ~(size_t)63;
    if (!state_manager_size_mul(single_block_alloc, 2, &alloc_size))
       goto error;
-   block_buf          = (uint8_t*)calloc(alloc_size, 1);
+   block_buf          = (uint8_t*)memalign_alloc(64, alloc_size);
 
    if (!block_buf)
       goto error;
+   memset(block_buf, 0, alloc_size);
 
    /* Set up sentinel bytes.
-    * thisblock gets uniq=0 (already zero from calloc).
+    * thisblock gets uniq=0 (already zero from the memset).
     * nextblock gets uniq=1. */
    ((uint16_t*)block_buf)[block_size / sizeof(uint16_t) + 3] = 0;
    ((uint16_t*)(block_buf + single_block_alloc))[block_size / sizeof(uint16_t) + 3] = 1;
@@ -621,7 +851,7 @@ error:
    if (state_data)
       free(state_data);
    if (block_buf)
-      free(block_buf);
+      memalign_free(block_buf);
    free(state);
 
    return NULL;
