@@ -77,12 +77,24 @@
 #if (defined(__GNUC__) || defined(__clang__)) && (defined(__i386__) || defined(__x86_64__))
 #include <immintrin.h>
 #include <features/features_cpu.h>
+#if defined(__clang__) && (defined(__SCE__) || defined(_MSC_VER))
+/* Clang's immintrin.h for PlayStation and clang-cl only declares the
+ * intrinsics of ISAs enabled for the whole build, so per-function
+ * targets cannot reach them; build a tier only when the baseline has it. */
+#ifdef __AVX2__
+#define STATE_MANAGER_HAVE_AVX2_SCAN 1
+#endif
+#if defined(__AVX512F__) && defined(__AVX512BW__)
+#define STATE_MANAGER_HAVE_AVX512_SCAN 1
+#endif
+#else
 #define STATE_MANAGER_HAVE_AVX2_SCAN 1
 /* AVX-512BW intrinsics need GCC 5 or Clang 4. RETRO_SIMD_AVX512 promises
  * BW, so the flag alone gates the scanner at runtime. */
 #if (defined(__clang__) && __clang_major__ >= 4) \
    || (!defined(__clang__) && __GNUC__ >= 5)
 #define STATE_MANAGER_HAVE_AVX512_SCAN 1
+#endif
 #endif
 #endif
 #endif

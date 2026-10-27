@@ -63,6 +63,18 @@
 #define SINC_HAVE_AVX512 1
 #define SINC_TARGET_AVX512
 #endif
+#elif defined(__clang__) && (defined(__SCE__) || defined(_MSC_VER))
+/* Clang's immintrin.h for PlayStation and clang-cl only declares the
+ * intrinsics of ISAs enabled for the whole build, so per-function
+ * targets cannot reach them; build a tier only when the baseline has it. */
+#ifdef __AVX__
+#define SINC_HAVE_AVX 1
+#define SINC_TARGET_AVX
+#endif
+#ifdef __AVX512F__
+#define SINC_HAVE_AVX512 1
+#define SINC_TARGET_AVX512
+#endif
 #elif (defined(__clang__) && __clang_major__ >= 4) \
    || (defined(__GNUC__) && !defined(__clang__) \
       && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 9)))

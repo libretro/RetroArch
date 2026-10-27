@@ -140,12 +140,27 @@ void convert_float_to_s16_init_simd(void)
 #if defined(_MSC_VER) && !defined(__clang__)
 #if _MSC_VER >= 1911
 #define FLOAT_TO_S16_HAVE_WIDE 1
+#define FLOAT_TO_S16_HAVE_AVX512 1
 #define FLOAT_TO_S16_TARGET_AVX2
 #define FLOAT_TO_S16_TARGET_AVX512
+#endif
+#elif defined(__clang__) && (defined(__SCE__) || defined(_MSC_VER))
+/* Clang's immintrin.h for PlayStation and clang-cl only declares the
+ * intrinsics of ISAs enabled for the whole build, so per-function
+ * targets cannot reach them; build a tier only when the baseline has
+ * it (PS5's Zen 2 keeps AVX2, PS4's Jaguar has neither). */
+#ifdef __AVX2__
+#define FLOAT_TO_S16_HAVE_WIDE 1
+#define FLOAT_TO_S16_TARGET_AVX2
+#ifdef __AVX512F__
+#define FLOAT_TO_S16_HAVE_AVX512 1
+#define FLOAT_TO_S16_TARGET_AVX512
+#endif
 #endif
 #elif (defined(__clang__) && __clang_major__ >= 4) \
    || (defined(__GNUC__) && !defined(__clang__) && __GNUC__ >= 5)
 #define FLOAT_TO_S16_HAVE_WIDE 1
+#define FLOAT_TO_S16_HAVE_AVX512 1
 #define FLOAT_TO_S16_TARGET_AVX2   __attribute__((target("avx2")))
 #define FLOAT_TO_S16_TARGET_AVX512 __attribute__((target("avx512f")))
 #endif
@@ -206,6 +221,7 @@ static size_t float_to_s16_avx2(int16_t *s, const float *in, size_t len)
 /* Sixteen samples a step, the last step masked: the loads and the
  * saturating narrow-and-store skip lanes past the end instead of a
  * scalar tail, so it converts the whole buffer. */
+#ifdef FLOAT_TO_S16_HAVE_AVX512
 FLOAT_TO_S16_TARGET_AVX512
 static void float_to_s16_avx512(int16_t *s, const float *in, size_t len)
 {
@@ -234,6 +250,7 @@ static void float_to_s16_avx512(int16_t *s, const float *in, size_t len)
    }
    FLOAT_TO_S16_ZEROUPPER();
 }
+#endif
 #endif
 
 /* The SSE2 / AltiVec / Allegrex loop and the scalar tail. */
@@ -390,11 +407,13 @@ void convert_float_to_s16(int16_t *s, const float *in, size_t len)
    if (float_to_s16_tier_cap >= 0 && tier > float_to_s16_tier_cap)
       tier = float_to_s16_tier_cap;
 #endif
+#ifdef FLOAT_TO_S16_HAVE_AVX512
    if (tier == 2)
    {
       float_to_s16_avx512(s, in, len);
       return;
    }
+#endif
    if (tier == 1)
    {
       size_t done = float_to_s16_avx2(s, in, len);
@@ -413,8 +432,10 @@ void convert_float_to_s16_init_simd(void)
    float_to_s16_tier = 0;
    if (cpu & RETRO_SIMD_AVX2)
       float_to_s16_tier = 1;
+#ifdef FLOAT_TO_S16_HAVE_AVX512
    if (cpu & RETRO_SIMD_AVX512)
       float_to_s16_tier = 2;
+#endif
 #endif
 }
 #endif

@@ -177,12 +177,27 @@ void conv_0rgb1555_rgb565(void *output_, const void *input_,
 #if defined(_MSC_VER) && !defined(__clang__)
 #if _MSC_VER >= 1911
 #define PIXCONV_HAVE_WIDE 1
+#define PIXCONV_HAVE_AVX512 1
 #define PIXCONV_TARGET_AVX2
 #define PIXCONV_TARGET_AVX512
+#endif
+#elif defined(__clang__) && (defined(__SCE__) || defined(_MSC_VER))
+/* Clang's immintrin.h for PlayStation and clang-cl only declares the
+ * intrinsics of ISAs enabled for the whole build, so per-function
+ * targets cannot reach them; build a tier only when the baseline has
+ * it (PS5's Zen 2 keeps AVX2, PS4's Jaguar has neither). */
+#ifdef __AVX2__
+#define PIXCONV_HAVE_WIDE 1
+#define PIXCONV_TARGET_AVX2
+#if defined(__AVX512F__) && defined(__AVX512BW__)
+#define PIXCONV_HAVE_AVX512 1
+#define PIXCONV_TARGET_AVX512
+#endif
 #endif
 #elif (defined(__clang__) && __clang_major__ >= 4) \
    || (defined(__GNUC__) && !defined(__clang__) && __GNUC__ >= 5)
 #define PIXCONV_HAVE_WIDE 1
+#define PIXCONV_HAVE_AVX512 1
 #define PIXCONV_TARGET_AVX2   __attribute__((target("avx2")))
 #define PIXCONV_TARGET_AVX512 __attribute__((target("avx512f,avx512bw")))
 #endif
@@ -229,8 +244,10 @@ static int pixconv_simd_tier(void)
       tier = 0;
       if (cpu & RETRO_SIMD_AVX2)
          tier = 1;
+#ifdef PIXCONV_HAVE_AVX512
       if (cpu & RETRO_SIMD_AVX512)
          tier = 2;
+#endif
       retro_atomic_store_release_int(&pixconv_tier_cached, 4 | tier);
    }
 #ifdef PIXCONV_TEST_HOOKS
@@ -314,6 +331,7 @@ static void pixconv_16to32_avx2(uint32_t *output, const uint16_t *input,
    PIXCONV_ZEROUPPER();
 }
 
+#ifdef PIXCONV_HAVE_AVX512
 PIXCONV_TARGET_AVX512
 static void pixconv_16to32_avx512(uint32_t *output, const uint16_t *input,
       int width, int height, int out_stride, int in_stride, int fmt)
@@ -371,6 +389,8 @@ static void pixconv_16to32_avx512(uint32_t *output, const uint16_t *input,
    PIXCONV_ZEROUPPER();
 }
 
+#endif
+
 /* Runs the conversion wide and returns 1, or returns 0 for the caller's
  * own SSE2 path. */
 static int pixconv_16to32_wide(void *output, const void *input,
@@ -378,10 +398,12 @@ static int pixconv_16to32_wide(void *output, const void *input,
 {
    switch (pixconv_simd_tier())
    {
+#ifdef PIXCONV_HAVE_AVX512
       case 2:
          pixconv_16to32_avx512((uint32_t*)output, (const uint16_t*)input,
                width, height, out_stride, in_stride, fmt);
          return 1;
+#endif
       case 1:
          pixconv_16to32_avx2((uint32_t*)output, (const uint16_t*)input,
                width, height, out_stride, in_stride, fmt);
