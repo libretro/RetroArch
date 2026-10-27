@@ -4682,6 +4682,20 @@ static void netplay_sync_input_post_frame(netplay_t *netplay, bool stalled)
       if (!netplay_process_savestate(netplay, &serial_info))
          RARCH_ERR("[Netplay] Netplay savestate loading failed: Prepare for desync!\n");
 
+      /* A state that arrived past the frame we would run next (a lagging
+       * client given a lockstep host's state) is that frame now: run on
+       * from it, never run an earlier frame's input on top of it. */
+      if (netplay->replay_frame_count > netplay->run_frame_count)
+      {
+         netplay->run_ptr         = netplay->replay_ptr;
+         netplay->run_frame_count = netplay->replay_frame_count;
+         if (netplay->self_frame_count < netplay->run_frame_count)
+         {
+            netplay->self_ptr         = netplay->run_ptr;
+            netplay->self_frame_count = netplay->run_frame_count;
+         }
+      }
+
       while (netplay->replay_frame_count < netplay->run_frame_count)
       {
          retro_time_t start, tm;

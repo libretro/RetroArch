@@ -15,7 +15,9 @@ port's stick. Passes when:
     asked for, lockstep for a state too large to roll back, and a
     lockstep host with a rollback client
   - a lockstep client whose RAM is upset is caught at a check frame and
-    given the host's state: frames differ for a while, then never again
+    given the host's state: frames differ for a while, then never again,
+    also when the client lags the host and the state arrives labeled
+    with a frame it has not reached
 
 Usage: netplay_e2e.py /path/to/retroarch /path/to/netplay_e2e_libretro.so
 """
@@ -111,7 +113,7 @@ def replays(order, start):
 
 
 def run(retroarch, core, analog, label, host_extra=None, client_extra=None,
-        pad=0, lockstep=(False, False), desync=0):
+        pad=0, lockstep=(False, False), desync=0, client_pace=4):
     d     = tempfile.mkdtemp(prefix="netplay_e2e_")
     nport = free_port(socket.SOCK_STREAM)
     rport = free_port(socket.SOCK_DGRAM)
@@ -144,7 +146,8 @@ def run(retroarch, core, analog, label, host_extra=None, client_extra=None,
             [retroarch, "-v", "-c", client_cfg, "-L", core,
              "--connect", "127.0.0.1", "--port", str(nport)],
             env=dict(env, NETPLAY_E2E_LOG=client_log,
-                     NETPLAY_E2E_DESYNC=str(desync)),
+                     NETPLAY_E2E_DESYNC=str(desync),
+                     NETPLAY_E2E_PACE_MS=str(client_pace)),
             stdout=open(os.path.join(d, "client.txt"), "w"),
             stderr=subprocess.STDOUT))
 
@@ -246,6 +249,10 @@ def main():
                  lock, None, lockstep=(True, False))
     fails += run(retroarch, core, True, "lockstep, a desync mended", lock, lock,
                  lockstep=(True, True), desync=200)
+    # a client slower than the host is behind the frame the host's state
+    # is labeled with when it arrives
+    fails += run(retroarch, core, True, "lockstep, a desync mended, slow client",
+                 lock, lock, lockstep=(True, True), desync=200, client_pace=12)
     # past the size rollback keeps one of per frame: lockstep unasked
     fails += run(retroarch, core, True, "a 40 MB state", pad=40 << 20,
                  lockstep=(True, True))

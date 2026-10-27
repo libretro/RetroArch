@@ -6,9 +6,11 @@
  * NETPLAY_E2E_LOG: the log. NETPLAY_E2E_PAD: bytes a state carries past
  * the RAM, to stand in for a large one. NETPLAY_E2E_DESYNC: frames run
  * after the first state load before the RAM is upset once.
+ * NETPLAY_E2E_PACE_MS: milliseconds slept a frame (4 if unset), to make
+ * one peer lag the other.
  *
- * Paced at about 250 frames a second: null video runs unthrottled, and
- * the logs would grow by the hundred thousand lines. */
+ * Paced at about 250 frames a second by default: null video runs
+ * unthrottled, and the logs would grow by the hundred thousand lines. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,12 +21,14 @@
 
 #ifdef _WIN32
 #include <windows.h>
-#define pace() Sleep(4)
+static void pace(unsigned ms) { Sleep(ms); }
 #else
 #include <time.h>
-static void pace(void)
+static void pace(unsigned ms)
 {
-   struct timespec ts = { 0, 4000000L };
+   struct timespec ts;
+   ts.tv_sec  = (time_t)(ms / 1000);
+   ts.tv_nsec = (long)(ms % 1000) * 1000000L;
    nanosleep(&ts, NULL);
 }
 #endif
@@ -41,6 +45,7 @@ static uint32_t pixels[64];
 static size_t   pad;
 static unsigned desync_after;
 static unsigned since_load;
+static unsigned pace_ms;
 static bool     loaded;
 static FILE    *log_file;
 
@@ -81,8 +86,10 @@ void retro_init(void)
    const char *p = getenv("NETPLAY_E2E_PAD");
    const char *l = getenv("NETPLAY_E2E_LOG");
    const char *u = getenv("NETPLAY_E2E_DESYNC");
+   const char *m = getenv("NETPLAY_E2E_PACE_MS");
    pad      = p ? (size_t)strtoul(p, NULL, 10) : 0;
    desync_after = u ? (unsigned)strtoul(u, NULL, 10) : 0;
+   pace_ms  = m ? (unsigned)strtoul(m, NULL, 10) : 4;
    loaded   = false;
    since_load = 0;
    log_file = l ? fopen(l, "w") : NULL;
@@ -160,7 +167,7 @@ void retro_run(void)
    }
    pixels[0] = frame;
    video_cb(pixels, 8, 8, 8 * sizeof(*pixels));
-   pace();
+   pace(pace_ms);
 }
 
 size_t retro_serialize_size(void) { return 4 + RAM_SIZE + pad; }
