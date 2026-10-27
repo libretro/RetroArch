@@ -86,8 +86,8 @@ struct android_app;
  * LTRIGGER, RTRIGGER, BRAKE, GAS */
 #define ANDROID_JOYSTICK_AXES 10
 
-/* What native input reads of a key or a joystick move, from the input
- * queue or from the second display's window */
+/* What native input reads of a key or a joystick move from the input
+ * queue */
 typedef struct android_input_fields
 {
    int64_t event_time; /* ns, AKeyEvent_getEventTime()'s clock */
@@ -174,11 +174,6 @@ struct android_input_reader
    retro_atomic_int_t quit;
 };
 
-/* The least number of keys and stick moves the second display's ring
- * holds; a down or a move leaves room for this many ups */
-#define ANDROID_SECOND_INPUTS    512
-#define ANDROID_SECOND_INPUT_UPS 32
-
 /* A touch on the second display, UI thread to the input poll */
 typedef struct android_second_touch
 {
@@ -203,9 +198,6 @@ struct android_second_display
 {
    /* android_second_touch_t records, UI thread to app thread */
    retro_spsc_t touches;
-   /* android_input_fields_t records: the keys and stick moves its
-    * window received, UI thread to app thread */
-   retro_spsc_t inputs;
    /* The newest surface not yet taken, struct android_second_surface *;
     * the taker owns it. UI thread in, video thread out. */
    retro_atomic_ptr_t surface;
@@ -289,8 +281,8 @@ struct android_app
    int destroy_from_framework;
 
    /*  Below are "private" implementation of RA code. */
-   /* Written by the app thread when the focus of its two windows
-    * changes (android_focus.h), read by the video thread in
+   /* Written by the app thread when the Activity's window gains or
+    * loses the focus (android_focus.h), read by the video thread in
     * dispserv_android.c. */
    retro_atomic_int_t unfocused;
    /* App thread only */
@@ -503,14 +495,7 @@ enum
     * surface or the display list changed, so the screens' windows get
     * another try.
     */
-   APP_CMD_SECOND_WINDOW_CHANGED,
-
-   /**
-    * Commands from the second display's controller, no ticket: its
-    * window gained focus, or lost it or went.
-    */
-   APP_CMD_SECOND_GAINED_FOCUS,
-   APP_CMD_SECOND_LOST_FOCUS
+   APP_CMD_SECOND_WINDOW_CHANGED
 };
 
 /* The JNI exception guard and call wrappers live in

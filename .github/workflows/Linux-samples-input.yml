@@ -572,9 +572,7 @@ jobs:
         run: |
           set -eu
           . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
-          # RetroArch's focus on Android from its two windows, the
-          # Activity's and the second display's, through the sequences
-          # the AYN Thor's focus modes and a one-focus system produce.
+          # RetroArch's focus on Android from its Activity's window.
           make -C samples/input/android_focus clean check SANITIZER=address,undefined
           make -C samples/input/android_focus clean check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
           make -C samples/input/android_focus clean
