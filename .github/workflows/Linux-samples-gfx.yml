@@ -386,11 +386,16 @@ jobs:
           # request, a frame's feature and dispatch on the frame's list
           # with the output read back, resizes retiring the old output,
           # refused frames, teardown.
-          trap 'wineserver -k >/dev/null 2>&1 || true' EXIT
+          export WINEPREFIX="$RUNNER_TEMP/d3d12-upscaler-wine"
           export WINEDEBUG=-all
-          timeout 120 xvfb-run -a sh -c 'wineboot -i && wineserver -w'
           make -C samples/gfx/d3d12_upscaler
-          xvfb-run -a make -C samples/gfx/d3d12_upscaler check
+          timeout 180 xvfb-run -a bash -c '
+            set -eu
+            . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
+            for pass in 1 2; do
+              make -C samples/gfx/d3d12_upscaler check
+            done
+          '
           make -C samples/gfx/d3d12_upscaler clean
 
   slang-rect:
