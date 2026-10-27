@@ -143,6 +143,20 @@ static int file_archive_extract_cb(const char *name, const char *valid_exts,
 /* The largest archive a 32-bit host maps whole. */
 #define ARCHIVE_MAP_CEILING_32 (256 * 1024 * 1024)
 
+/* Ask the VFS to map the archive. A 64-bit host maps it whatever its
+ * size, since pages are only faulted in as they are touched; a 32-bit
+ * one keeps the mapping to ARCHIVE_MAP_CEILING_32 so a huge archive
+ * cannot take the address space the core needs, and reads it through
+ * the stream instead. A URL scheme or a failed map just leaves no
+ * mapping, which every backend reads through the stream as well. */
+unsigned file_archive_open_hints(int64_t size)
+{
+   return (size > 0 && (sizeof(size_t) >= 8
+            || size <= ARCHIVE_MAP_CEILING_32))
+      ? RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS
+      : RETRO_VFS_FILE_ACCESS_HINT_NONE;
+}
+
 static int file_archive_parse_file_init(file_archive_transfer_t *state,
       const char *file)
 {
@@ -157,25 +171,11 @@ static int file_archive_parse_file_init(file_archive_transfer_t *state,
    if (!(state->backend = file_archive_get_file_backend(path)))
       return -1;
 
-   /* Ask the VFS to map the archive. A 64-bit host maps it whatever
-    * its size, since pages are only faulted in as they are touched;
-    * a 32-bit one keeps the mapping to ARCHIVE_MAP_CEILING_32 so a
-    * huge archive cannot take the address space the core needs, and
-    * reads it through the stream instead. A URL scheme or a failed
-    * map just leaves no mapping, which every backend reads through
-    * the stream as well. */
-   {
-      int64_t  sz    = path_get_size(path);
-      unsigned hints = (sz > 0 && (sizeof(size_t) >= 8
-               || sz <= ARCHIVE_MAP_CEILING_32))
-            ? RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS
-            : RETRO_VFS_FILE_ACCESS_HINT_NONE;
-
-      /* Failed to open archive. */
-      if (!(state->archive_file = filestream_open(path,
-            RETRO_VFS_FILE_ACCESS_READ, hints)))
-         return -1;
-   }
+   /* Failed to open archive. */
+   if (!(state->archive_file = filestream_open(path,
+         RETRO_VFS_FILE_ACCESS_READ,
+         file_archive_open_hints(path_get_size(path)))))
+      return -1;
 
    state->archive_size = filestream_get_size(state->archive_file);
 

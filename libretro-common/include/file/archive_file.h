@@ -280,6 +280,15 @@ const struct file_archive_file_backend* file_archive_get_rar_file_backend(void);
 const struct file_archive_file_backend* file_archive_get_file_backend(const char *path);
 
 /**
+ * file_archive_open_hints:
+ * @size                         : size of the archive, or <= 0 if unknown
+ *
+ * Returns: the hints an archive of @size is opened with, asking for a
+ * mapping where the host can afford one.
+ **/
+unsigned file_archive_open_hints(int64_t size);
+
+/**
  * file_archive_get_file_crc32:
  * @path                         : filename path of archive
  *

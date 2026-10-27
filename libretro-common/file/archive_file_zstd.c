@@ -47,9 +47,9 @@
 
 struct zstd_file_context
 {
+   file_archive_transfer_t *state;
    uint8_t *decompressed_data;
    char inner_filename[PATH_MAX_LENGTH];
-   char archive_path[PATH_MAX_LENGTH];
    int64_t archive_size;
    uint32_t decompressed_size;
    bool parsed;
@@ -65,6 +65,27 @@ static void zstd_derive_inner_filename(const char *path, char *s, size_t len)
    ext = strrchr(s, '.');
    if (ext && string_is_equal_noncase(ext, ".zst"))
       ((char*)ext)[0] = '\0';
+}
+
+/* The whole of @file, lent where the stream can (a mapping, a
+ * read-ahead window), else read into *@owned for the caller to free */
+static const uint8_t *zstd_whole(RFILE *file, int64_t size, void **owned)
+{
+   const uint8_t *src = NULL;
+   *owned = NULL;
+   filestream_seek(file, 0, RETRO_VFS_SEEK_POSITION_START);
+   if (filestream_view(file, size, &src) == size)
+      return src;
+   if (!(*owned = malloc((size_t)size)))
+      return NULL;
+   filestream_seek(file, 0, RETRO_VFS_SEEK_POSITION_START);
+   if (filestream_read(file, *owned, size) != size)
+   {
+      free(*owned);
+      *owned = NULL;
+      return NULL;
+   }
+   return (const uint8_t*)*owned;
 }
 
 static int zstd_parse_file_init(file_archive_transfer_t *state,
@@ -90,8 +111,8 @@ static int zstd_parse_file_init(file_archive_transfer_t *state,
 
    zstd_derive_inner_filename(file, ctx->inner_filename,
          sizeof(ctx->inner_filename));
-   strlcpy(ctx->archive_path, file, sizeof(ctx->archive_path));
    ctx->archive_size = state->archive_size;
+   ctx->state        = state;
 
    state->context    = ctx;
    state->step_total = 1;
@@ -194,10 +215,10 @@ static int zstd_stream_decompress_data_to_file_iterate(
       void *context, file_archive_file_handle_t *handle)
 {
    struct zstd_file_context *ctx = (struct zstd_file_context*)context;
-   void *compressed_data = NULL;
+   void          *owned = NULL;
+   const uint8_t *src;
    size_t result;
    int    e;
-   RFILE *file;
 
    if (!ctx || !handle)
       return -1;
@@ -208,40 +229,21 @@ static int zstd_stream_decompress_data_to_file_iterate(
       return 1;
    }
 
-   /* Read the entire compressed file */
-   file = filestream_open(ctx->archive_path,
-         RETRO_VFS_FILE_ACCESS_READ,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE);
-   if (!file)
+   if (!(src = zstd_whole(ctx->state->archive_file, ctx->archive_size,
+               &owned)))
       return -1;
-
-   compressed_data = malloc((size_t)ctx->archive_size);
-   if (!compressed_data)
-   {
-      filestream_close(file);
-      return -1;
-   }
-
-   if (filestream_read(file, compressed_data, ctx->archive_size)
-         != ctx->archive_size)
-   {
-      free(compressed_data);
-      filestream_close(file);
-      return -1;
-   }
-   filestream_close(file);
 
    ctx->decompressed_data = (uint8_t*)malloc(ctx->decompressed_size);
    if (!ctx->decompressed_data)
    {
-      free(compressed_data);
+      free(owned);
       return -1;
    }
 
    e = (rzstd_decode(ctx->decompressed_data, ctx->decompressed_size,
-         compressed_data, (size_t)ctx->archive_size, &result)
+         src, (size_t)ctx->archive_size, &result)
          != RZSTD_PROCESS_END);
-   free(compressed_data);
+   free(owned);
 
    if (e)
    {
@@ -263,56 +265,34 @@ static int64_t zstd_file_read(
       const char *optional_outfile)
 {
    char inner_name[PATH_MAX_LENGTH];
-   int64_t file_size;
-   void *compressed_data    = NULL;
-   uint8_t *decompressed    = NULL;
-   int64_t            content_size;
-   size_t result;
-   int    e;
-   RFILE *file;
+   int64_t        file_size;
+   int64_t        content_size;
+   void          *owned        = NULL;
+   const uint8_t *src;
+   uint8_t       *decompressed = NULL;
+   size_t         result       = 0;
+   int            e            = 1;
+   RFILE         *file;
 
    zstd_derive_inner_filename(path, inner_name, sizeof(inner_name));
 
    if (!string_is_equal(inner_name, needle))
       return -1;
 
-   file = filestream_open(path,
-         RETRO_VFS_FILE_ACCESS_READ,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE);
-   if (!file)
+   if (!(file = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ,
+               file_archive_open_hints(path_get_size(path)))))
       return -1;
 
-   file_size = filestream_get_size(file);
-   if (file_size <= 0)
-   {
-      filestream_close(file);
-      return -1;
-   }
+   /* The frame is decoded where the stream lends it, so the stream
+    * stays open until it is */
+   if (     (file_size = filestream_get_size(file)) <= 0
+         || !(src = zstd_whole(file, file_size, &owned)))
+      goto done;
 
-   compressed_data = malloc((size_t)file_size);
-   if (!compressed_data)
-   {
-      filestream_close(file);
-      return -1;
-   }
-
-   if (filestream_read(file, compressed_data, (int64_t)file_size) != file_size)
-   {
-      free(compressed_data);
-      filestream_close(file);
-      return -1;
-   }
-
-   filestream_close(file);
-
-   content_size = rzstd_frame_content_size(compressed_data,
-         (size_t)file_size);
+   content_size = rzstd_frame_content_size(src, (size_t)file_size);
    if (  content_size == ZSTD_SIZE_UNKNOWN
       || content_size == ZSTD_SIZE_ERROR)
-   {
-      free(compressed_data);
-      return -1;
-   }
+      goto done;
 
    /* Reject sizes that would overflow the "+1" NUL-byte allocation or
     * truncate when cast to size_t on 32-bit hosts.  Without this guard
@@ -320,22 +300,18 @@ static int64_t zstd_file_read(
     * malloc(0) may return a non-NULL pointer, and the following
     * decode writes 4 GiB into it. */
    if ((uint64_t)content_size >= (uint64_t)SIZE_MAX)
-   {
-      free(compressed_data);
-      return -1;
-   }
+      goto done;
 
-   decompressed = (uint8_t*)malloc((size_t)(content_size + 1));
-   if (!decompressed)
-   {
-      free(compressed_data);
-      return -1;
-   }
+   if (!(decompressed = (uint8_t*)malloc((size_t)(content_size + 1))))
+      goto done;
 
    e = (rzstd_decode(decompressed, (size_t)content_size,
-         compressed_data, (size_t)file_size, &result)
+         src, (size_t)file_size, &result)
          != RZSTD_PROCESS_END);
-   free(compressed_data);
+
+done:
+   free(owned);
+   filestream_close(file);
 
    if (e)
    {

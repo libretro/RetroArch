@@ -1,0 +1,204 @@
+/* Copyright  (C) 2010-2026 The RetroArch team
+ *
+ * ---------------------------------------------------------------------------------------
+ * The following license statement only applies to this file (archive_zst_test.c).
+ * ---------------------------------------------------------------------------------------
+ *
+ * Permission is hereby granted, free of charge,
+ * to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
+ * and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+/* A .zst archive read whole through file_archive_compressed_read() and
+ * extracted through a transfer, from a plain file and through a VFS
+ * that lends the whole file in place: the member comes out exact every
+ * way, and where the VFS lends the frame it is decoded there rather
+ * than read. */
+
+/* the lending VFS installs the implementation's own functions as a
+ * frontend's */
+#define VFS_FRONTEND
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include <boolean.h>
+#include <libretro.h>
+#include <file/archive_file.h>
+#include <encodings/rzstd.h>
+#include <streams/file_stream.h>
+#include <vfs/vfs_implementation.h>
+
+#define ZST_PATH  "archive_zst_test.bin.zst"
+#define OUT_PATH  "archive_zst_test.out"
+#define DATA_LEN  (3 * 1024 * 1024 + 17)
+
+static unsigned       failures;
+static uint8_t       *data;
+static uint8_t       *frame;
+static size_t         frame_len;
+static uint64_t       read_octets;
+
+static void fail(const char *what, const char *detail)
+{
+   printf("[FAIL] %s: %s\n", what, detail);
+   failures++;
+}
+
+static const uint8_t *lend_mapped_ptr(void *hfile, int64_t *len)
+{
+   (void)hfile;
+   *len = (int64_t)frame_len;
+   return frame;
+}
+
+static int64_t count_read(struct retro_vfs_file_handle *h, void *s,
+      uint64_t len)
+{
+   int64_t r = retro_vfs_file_read_impl(h, s, len);
+   if (r > 0)
+      read_octets += (uint64_t)r;
+   return r;
+}
+
+static void install_vfs(bool lend)
+{
+   static struct retro_vfs_interface iface;
+   struct retro_vfs_interface_info info;
+
+   memset(&iface, 0, sizeof(iface));
+   iface.get_path = retro_vfs_file_get_path_impl;
+   iface.open     = retro_vfs_file_open_impl;
+   iface.close    = retro_vfs_file_close_impl;
+   iface.size     = retro_vfs_file_size_impl;
+   iface.tell     = retro_vfs_file_tell_impl;
+   iface.seek     = retro_vfs_file_seek_impl;
+   iface.read     = count_read;
+   iface.write    = retro_vfs_file_write_impl;
+   iface.flush    = retro_vfs_file_flush_impl;
+   iface.remove   = retro_vfs_file_remove_impl;
+   iface.rename   = retro_vfs_file_rename_impl;
+   info.required_interface_version = FILESTREAM_REQUIRED_VFS_VERSION;
+   info.iface                      = &iface;
+   filestream_vfs_init(&info);
+   filestream_set_mapped_ptr_cb(lend ? lend_mapped_ptr : NULL);
+   read_octets = 0;
+}
+
+static int extract_cb(const char *name, const char *valid_exts,
+      const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
+      uint32_t checksum, struct archive_extract_userdata *userdata)
+{
+   if (file_archive_perform_mode(OUT_PATH, valid_exts, cdata, cmode,
+            csize, size, checksum, userdata))
+      (*(unsigned*)userdata->cb_data)++;
+   return 1;
+}
+
+static void check_read(const char *what, bool lend)
+{
+   void    *buf = NULL;
+   int64_t  len = 0;
+   char     detail[96];
+
+   install_vfs(lend);
+   if (     !file_archive_compressed_read(ZST_PATH "#archive_zst_test.bin",
+               &buf, NULL, &len)
+         || len != DATA_LEN || memcmp(buf, data, DATA_LEN))
+      fail(what, "member differs");
+   else if (lend && read_octets >= frame_len)
+   {
+      snprintf(detail, sizeof(detail), "%llu octets read, not lent",
+            (unsigned long long)read_octets);
+      fail(what, detail);
+   }
+   free(buf);
+}
+
+static void check_extract(const char *what, bool lend)
+{
+   struct archive_extract_userdata userdata;
+   file_archive_transfer_t state;
+   unsigned extracted = 0;
+   bool     returnerr = true;
+   void    *got       = NULL;
+   int64_t  got_len   = 0;
+   uint64_t archive_read;
+   char     detail[96];
+
+   install_vfs(lend);
+   memset(&state, 0, sizeof(state));
+   memset(&userdata, 0, sizeof(userdata));
+   state.type       = ARCHIVE_TRANSFER_INIT;
+   userdata.cb_data = &extracted;
+   while (file_archive_parse_file_iterate(&state, &returnerr, ZST_PATH,
+            NULL, extract_cb, &userdata) == 0) { }
+   archive_read = read_octets;
+
+   if (extracted != 1)
+      fail(what, "not extracted");
+   else if (!filestream_read_file(OUT_PATH, &got, &got_len)
+         || got_len != DATA_LEN || memcmp(got, data, DATA_LEN))
+      fail(what, "member differs");
+   else if (lend && archive_read >= frame_len)
+   {
+      snprintf(detail, sizeof(detail), "%llu octets read, not lent",
+            (unsigned long long)archive_read);
+      fail(what, detail);
+   }
+   free(got);
+   remove(OUT_PATH);
+}
+
+int main(void)
+{
+   size_t   cap;
+   uint32_t x = 1;
+   size_t   i;
+   FILE    *f;
+
+   if (!(data = (uint8_t*)malloc(DATA_LEN)))
+      return 2;
+   for (i = 0; i < DATA_LEN; i++)
+   {
+      x       = x * 1103515245u + 12345u;
+      data[i] = (uint8_t)('a' + ((x >> 16) % 11) + ((i >> 13) & 7));
+   }
+   cap = rzstd_compress_bound(DATA_LEN);
+   if (     !(frame = (uint8_t*)malloc(cap))
+         || rzstd_encode(frame, cap, data, DATA_LEN, 3, &frame_len)
+            != RZSTD_PROCESS_END
+         || !(f = fopen(ZST_PATH, "wb")))
+      return 2;
+   if (fwrite(frame, 1, frame_len, f) != frame_len)
+      return 2;
+   fclose(f);
+
+   check_read("read, plain file", false);
+   check_read("read, lent", true);
+   check_extract("extract, plain file", false);
+   check_extract("extract, lent", true);
+
+   remove(ZST_PATH);
+   free(frame);
+   free(data);
+   if (failures)
+   {
+      printf("%u check(s) failed\n", failures);
+      return 1;
+   }
+   printf("archive_zst_test: all checks passed\n");
+   return 0;
+}
