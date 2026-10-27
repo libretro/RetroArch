@@ -114,12 +114,10 @@ static int16_t android_joypad_state(
    uint8_t *buf;
    uint16_t port_idx                    = joypad_info->joy_idx;
 
-   /* buf is derived from port, hat/analog lookups use port_idx:
-    * both must be in range before anything is dereferenced. */
-   if (port >= DEFAULT_MAX_PADS || port_idx >= DEFAULT_MAX_PADS)
+   if (port_idx >= DEFAULT_MAX_PADS)
       return 0;
 
-   buf = android_keyboard_state_get(port);
+   buf = android_keyboard_state_get(port_idx);
 
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
    {
