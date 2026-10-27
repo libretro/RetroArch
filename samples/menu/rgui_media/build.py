@@ -35,6 +35,7 @@ run(cc)
 links=[c for c in commands if '-c' not in c and '-o' in c and c[c.index('-o')+1] in {'retroarch','retroarch.exe'}]
 if len(links)!=1:raise RuntimeError('Expected one frontend link command')
 c=links[0];c[c.index('-o')+1]=str(output)
+if os.name=='nt':c.append('-mconsole')
 c[c.index(retro_object)]=str(objects/'retroarch_nomain.o');c[c.index(rgui_object)]=str(objects/'harness.o')
 if os.environ.get('MEDIA_TEST_IMPORT_REFUSAL'):c.append('-Wl,--wrap=gfx_surface_submit_import')
 if os.environ.get('MEDIA_TEST_COLD_CANCEL') or os.environ.get('MEDIA_TEST_COLD_RESET'):c.append('-Wl,--wrap=image_transfer_anim_stream_set_hw')

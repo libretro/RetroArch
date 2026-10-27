@@ -877,7 +877,7 @@ jobs:
           set -eu
           samples/gfx/threaded_video/build.sh
           HARNESS_CORE_XRGB8888=${{ matrix.core_xrgb8888 || '' }} \
-            SAN=none DRIVER=${{ matrix.driver }} CYCLES=1 GDB=1 make -C samples/gfx/threaded_video check-driver
+            SAN=none DRIVER=${{ matrix.driver }} CYCLES=1 GDB=on-failure make -C samples/gfx/threaded_video check-driver
           make -C samples/gfx/threaded_video clean
 
       - name: Preserve failed Windows driver harness log
@@ -885,7 +885,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: threaded-video-${{ matrix.driver }}-failure
-          path: samples/gfx/threaded_video/check.log
+          path: |
+            samples/gfx/threaded_video/check.log
+            samples/gfx/threaded_video/debugger.log
           if-no-files-found: ignore
 
       - name: RGUI GPU subtitle output on ${{ matrix.driver }}

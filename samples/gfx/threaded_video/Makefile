@@ -145,7 +145,9 @@ check-vulkan-mapfail: all $(FR_LIB) fake_rebar_layer.json
 # backtraces: a stack says which function stopped, not which access
 # did, and a release build on a runner is the only place some of these
 # crashes happen.
-RUNNER := $(if $(filter 1,$(GDB)),gdb -q -batch -return-child-result -ex run -ex 'printf "--- fault site ---\n"' -ex 'x/i $$pc' -ex 'info symbol $$pc' -ex 'info registers rax rbx rcx rdx rsi rdi' -ex 'x/4i $$pc-12' -ex 'thread apply all bt 25' --args,)
+DEBUGGER := gdb -q -batch -return-child-result -ex run -ex 'printf "--- fault site ---\n"' -ex 'x/i $$pc' -ex 'info symbol $$pc' -ex 'info registers rax rbx rcx rdx rsi rdi' -ex 'x/4i $$pc-12' -ex 'thread apply all bt 25' --args
+RUNNER := $(if $(filter 1,$(GDB)),$(DEBUGGER),)
+# GDB=on-failure preserves the native result and replays only for stacks.
 
 check-driver: all
 	@if [ -z "$$DISPLAY" ] && [ "$${OS:-}" != Windows_NT ] && [ "$$(uname -s)" != Darwin ]; then echo "check-driver: no DISPLAY, skipping"; exit 77; fi; \
@@ -159,6 +161,14 @@ check-driver: all
 	 if [ $$rc -ne 0 ]; then \
 	    grep -vE '^\[(INFO|DEBUG|WARN)\]|XFree86-VidMode' check.log; \
 	    echo "--- last 60 lines of the run log ---"; tail -60 check.log; \
+	    if [ "$(GDB)" = on-failure ]; then \
+	       HARNESS_VIDEO_DRIVER=$(DRIVER) HARNESS_VERBOSE=1 \
+	       ASAN_OPTIONS=detect_leaks=0:abort_on_error=1 \
+	       UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+	       TSAN_OPTIONS=halt_on_error=1:second_deadlock_stack=1:suppressions=tsan-gl.supp \
+	       $(DEBUGGER) ./$(TARGET) $(CYCLES) > debugger.log 2>&1; \
+	       cat debugger.log; \
+	    fi; \
 	 else \
 	    rm -f check.log; \
 	 fi; \

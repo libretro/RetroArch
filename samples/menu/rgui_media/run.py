@@ -70,7 +70,8 @@ with tempfile.TemporaryDirectory(prefix='rgui-media-') as temp:
  if a.assets:values['assets_directory']=str(Path(a.assets).resolve())
  cfg.write_text(''.join(k+' = "'+v.replace('\\','/')+'"\n' for k,v in values.items()),encoding='utf-8')
  cmd=[str(exe),str(fixture),str(cfg)]
- if os.name=='nt':cmd=['gdb','--batch','-return-child-result','-ex','run','-ex','thread apply all bt','--args']+cmd
+ native_cmd=cmd
+ if os.name=='nt' and os.environ.get('GDB')=='1':cmd=['gdb','--batch','-return-child-result','-ex','run','-ex','thread apply all bt','--args']+cmd
  env=os.environ.copy();env['MEDIA_TEST_VIDEO_DRIVER']=a.video_driver
  if a.cadence_hz is not None:env['MEDIA_TEST_CADENCE_HZ']=str(a.cadence_hz)
  if a.modal:env['MEDIA_TEST_MODAL_MODE']=a.modal
@@ -95,6 +96,15 @@ with tempfile.TemporaryDirectory(prefix='rgui-media-') as temp:
  if a.dxgi:
   result=subprocess.run(cmd,cwd=r,env=env,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,encoding='utf-8',errors='replace')
   print(result.stdout,flush=True)
-  result.check_returncode()
-  if 'DXGI presentation active.' not in result.stdout or 'DXGI presentation unavailable' in result.stdout:raise RuntimeError('DXGI presentation was not retained')
- else:subprocess.run(cmd,cwd=r,env=env,check=True)
+ else:result=subprocess.run(cmd,cwd=r,env=env)
+ if result.returncode and os.name=='nt' and os.environ.get('GDB')!='1':
+  try:
+   debug_env=env.copy()
+   if env.get('MEDIA_TEST_CAPTURE_DIR'):
+    capture=Path(env['MEDIA_TEST_CAPTURE_DIR'])/'debugger'
+    capture.mkdir(parents=True,exist_ok=True)
+    debug_env['MEDIA_TEST_CAPTURE_DIR']=str(capture)
+   subprocess.run(['gdb','--batch','-ex','run','-ex','thread apply all bt','--args']+native_cmd,cwd=r,env=debug_env)
+  except OSError as error:print('Debugger replay unavailable: '+str(error),file=sys.stderr)
+ result.check_returncode()
+ if a.dxgi and ('DXGI presentation active.' not in result.stdout or 'DXGI presentation unavailable' in result.stdout):raise RuntimeError('DXGI presentation was not retained')
