@@ -1,6 +1,6 @@
 """Relink a built non-Qt frontend with a real menu translation unit."""
 from pathlib import Path
-import argparse, os, shlex, shutil, subprocess
+import argparse, os, shlex, shutil, subprocess, sys
 p=argparse.ArgumentParser();p.add_argument('--objdir',default='obj-unix/release');p.add_argument('--c89',action='store_true');p.add_argument('--shell',default='bash');p.add_argument('--driver',default='rgui');p.add_argument('--test-source');p.add_argument('--output');a=p.parse_args()
 if (os.environ.get('MEDIA_TEST_IMPORT_REFUSAL') or os.environ.get('MEDIA_TEST_COLD_CANCEL') or os.environ.get('MEDIA_TEST_COLD_RESET')) and a.driver!='rgui':p.error('native import refusal uses the RGUI harness')
 r=Path(__file__).resolve().parents[3];here=Path(__file__).resolve().parent
@@ -22,7 +22,9 @@ def run(c):
   # CreateProcess searches System32 before PATH and may select WSL's bash.
   shell=shutil.which(a.shell)
   if not shell:raise FileNotFoundError('Build shell not found: '+a.shell)
-  subprocess.run([shell,'--noprofile','--norc','-c',shlex.join(c)],cwd=r,check=True,creationflags=subprocess.CREATE_NO_WINDOW)
+  result=subprocess.run([shell,'--noprofile','--norc','-c',shlex.join(c)],cwd=r,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,creationflags=subprocess.CREATE_NO_WINDOW)
+  sys.stdout.buffer.write(result.stdout);sys.stdout.buffer.flush()
+  result.check_returncode()
  else:subprocess.run(c,cwd=r,check=True)
 cc=compile_line('retroarch.c');retro_object=cc[cc.index('-o')+1]
 cc[cc.index('-o')+1]=str(objects/'retroarch_nomain.o');cc.extend(['-Umain','-Dmain=rarch_harness_unused_main']);run(cc)

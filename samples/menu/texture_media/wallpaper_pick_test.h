@@ -3,6 +3,7 @@
 #ifndef MEDIA_WALLPAPER_PICK_TEST_H
 #define MEDIA_WALLPAPER_PICK_TEST_H
 #include "../../../menu/menu_cbs.h"
+#include "../../../menu/menu_dirwalk.h"
 
 /* The menu Background setting opens a browser whose image rows are
  * picks: OK on one must store it as the wallpaper, never open the
