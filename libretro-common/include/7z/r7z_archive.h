@@ -221,7 +221,8 @@ int r7z_archive_extract(r7z_archive_t *a, uint32_t index,
  * folder's entire output - every member of a non-solid archive - is
  * handed over as the decoded folder buffer itself, with nothing copied
  * and nothing left in the folder cache. Any other entry extracts
- * exactly as r7z_archive_extract() does.
+ * exactly as r7z_archive_extract() does. Either way the buffer has one
+ * octet more than @out_len, the caller's to write, as for a NUL.
  */
 int r7z_archive_extract_detach(r7z_archive_t *a, uint32_t index,
       uint8_t **out, size_t *out_len);

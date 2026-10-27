@@ -161,35 +161,34 @@ static int sevenzip_file_decompressed(
    {
       struct sevenzip_context_t *ctx =
          (struct sevenzip_context_t*)userdata->transfer->context;
-      const uint8_t *member     = NULL;
-      size_t         member_len = 0;
-      int            res;
+      const r7z_entry_t *e;
+      uint8_t           *member     = NULL;
+      size_t             member_len = 0;
+      uint32_t           index      = (uint32_t)(size_t)cdata;
+      int                res        = R7Z_OK;
 
-      if (!ctx || !ctx->archive)
+      if (     !ctx || !ctx->archive
+            || !(e = r7z_archive_entry(ctx->archive, index)) || e->is_dir)
          return 1;
 
       /* Sliced, but driven to completion here: the caller of
        * compressed_file_read wants the bytes on return and has nowhere
        * to yield to. */
-      do
-      {
-         res = sevenzip_member_step(ctx->archive,
-               (uint32_t)(size_t)cdata, &member, &member_len);
-      } while (res == R7Z_PENDING);
+      if (e->size)
+         while ((res = r7z_archive_decode_step(ctx->archive, index))
+               == R7Z_PENDING) { }
 
-      if (res != R7Z_OK)
+      /* the caller's to keep, with a NUL after the data: a member that
+       * is its folder is that folder's buffer, handed over, and any
+       * other is copied out of it */
+      if (     res != R7Z_OK
+            || r7z_archive_extract_detach(ctx->archive, index, &member,
+               &member_len) != R7Z_OK)
          return 1;
-
-      /* the caller's to keep, with a NUL after the data: copied out of
-       * where the member is held, once */
-      if ((*st->buf = malloc(member_len + 1)))
-      {
-         ((char*)(*st->buf))[member_len] = '\0';
-         if (member_len)
-            memcpy(*st->buf, member, member_len);
-         st->size  = member_len;
-         st->found = true;
-      }
+      member[member_len] = '\0';
+      *st->buf  = member;
+      st->size  = member_len;
+      st->found = true;
    }
 
    return 0;

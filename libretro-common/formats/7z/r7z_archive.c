@@ -68,6 +68,11 @@
  * Header block ids
  * -------------------------------------------------------------------- */
 
+/* Every buffer a folder's output may end up in has an octet to spare
+ * after it, so a member handed over whole can carry a NUL */
+#define R7Z_OUT_ALLOC(n) ((size_t)(n) < (size_t)-1 \
+      ? malloc((size_t)(n) + 1) : NULL)
+
 #define ID_END                 0
 #define ID_HEADER              1
 #define ID_ARCHIVE_PROPERTIES  2
@@ -1811,7 +1816,7 @@ static int resolve_input(r7z_archive_t *a, uint32_t fi, uint32_t port,
             *out = (uint8_t *)(a->data + 32 + (size_t)off);
             return R7Z_OK;
          }
-         *out = (uint8_t *)malloc(n ? n : 1);
+         *out = (uint8_t *)R7Z_OUT_ALLOC(n);
          if (!*out)
             return R7Z_ERROR_MEM;
          if ((res = r7z_fetch(a, 32 + off, *out, n)) != R7Z_OK)
@@ -1868,7 +1873,7 @@ static int resolve_input(r7z_archive_t *a, uint32_t fi, uint32_t port,
                else
                {
                   want = (size_t)a->coder_unpack_sizes[coder_out_base + out_port];
-                  if (!(dst = (uint8_t *)malloc(want ? want : 1)))
+                  if (!(dst = (uint8_t *)R7Z_OUT_ALLOC(want)))
                      res = R7Z_ERROR_MEM;
                   else
                      res = decode_coder(a, c, in, in_len, dst, want);
@@ -1941,7 +1946,7 @@ static int decode_folder_bcj2(r7z_archive_t *a, uint32_t fi,
       goto done;
    }
    dst_len = (size_t)f->unpack_size;
-   dst = (uint8_t *)malloc(dst_len ? dst_len : 1);
+   dst = (uint8_t *)R7Z_OUT_ALLOC(dst_len);
    if (!dst)
    {
       res = R7Z_ERROR_MEM;
@@ -2056,7 +2061,7 @@ static int decode_folder(r7z_archive_t *a, uint32_t fi, uint8_t **out,
       }
       else
       {
-         cur = (uint8_t *)malloc(cur_len ? cur_len : 1);
+         cur = (uint8_t *)R7Z_OUT_ALLOC(cur_len);
          if (!cur)
             return R7Z_ERROR_MEM;
          if ((res = r7z_fetch(a, 32 + pack_off, cur, cur_len)) != R7Z_OK)
@@ -2090,7 +2095,7 @@ static int decode_folder(r7z_archive_t *a, uint32_t fi, uint8_t **out,
          if (c->method == METHOD_COPY && next_len == cur_len)
             continue;
 
-         next = (uint8_t *)malloc(next_len ? next_len : 1);
+         next = (uint8_t *)R7Z_OUT_ALLOC(next_len);
          if (!next)
          {
             if (cur_owned)
@@ -2812,7 +2817,7 @@ static int decode_stage_begin(r7z_archive_t *a, const folder_t *f)
       return R7Z_OK;
    }
 
-   if (!(a->pend_out = (uint8_t *)malloc(out_len ? out_len : 1)))
+   if (!(a->pend_out = (uint8_t *)R7Z_OUT_ALLOC(out_len)))
       return R7Z_ERROR_MEM;
    a->pend_out_len = out_len;
    a->pend_fed     = 0;
@@ -3119,7 +3124,7 @@ static int decode_folder_bcj2_slice(r7z_archive_t *a, uint32_t fi,
                      a->pend_in_borrowed = a->data != NULL;
                      if (a->data)
                         a->pend_in = (uint8_t *)(a->data + 32 + (size_t)off);
-                     else if (!(a->pend_in = (uint8_t *)malloc(n ? n : 1)))
+                     else if (!(a->pend_in = (uint8_t *)R7Z_OUT_ALLOC(n)))
                      {
                         decode_pending_reset(a);
                         return R7Z_ERROR_MEM;
@@ -3189,8 +3194,7 @@ static int decode_folder_bcj2_slice(r7z_archive_t *a, uint32_t fi,
    if (!a->pend_b2st)
    {
       a->pend_b2dstlen = (size_t)f->unpack_size;
-      a->pend_b2dst    = (uint8_t *)malloc(
-            a->pend_b2dstlen ? a->pend_b2dstlen : 1);
+      a->pend_b2dst    = (uint8_t *)R7Z_OUT_ALLOC(a->pend_b2dstlen);
       a->pend_b2st     = malloc(sizeof(r7z_bcj2_state_t));
       if (!a->pend_b2dst || !a->pend_b2st)
       {
@@ -3327,7 +3331,7 @@ static int decode_folder_slice(r7z_archive_t *a, uint32_t fi, int *done)
          }
          else
          {
-            if (!(a->pend_in = (uint8_t *)malloc(n ? n : 1)))
+            if (!(a->pend_in = (uint8_t *)R7Z_OUT_ALLOC(n)))
             {
                decode_pending_reset(a);
                return R7Z_ERROR_MEM;
@@ -3435,7 +3439,7 @@ static int extract_from_cache(r7z_archive_t *a, const r7z_entry_t *e,
          || e->offset_in_folder > (uint64_t)((size_t)-1))
       return R7Z_ERROR_DATA;
 
-   if (!(buf = (uint8_t *)malloc((size_t)e->size)))
+   if (!(buf = (uint8_t *)R7Z_OUT_ALLOC((size_t)e->size)))
       return R7Z_ERROR_MEM;
 
    memcpy(buf, a->cached_data + (size_t)e->offset_in_folder,
@@ -3582,7 +3586,7 @@ int r7z_archive_extract(r7z_archive_t *a, uint32_t index,
          || e->offset_in_folder > (uint64_t)((size_t)-1))
       return R7Z_ERROR_DATA;
 
-   buf = (uint8_t *)malloc((size_t)e->size);
+   buf = (uint8_t *)R7Z_OUT_ALLOC((size_t)e->size);
    if (!buf)
       return R7Z_ERROR_MEM;
    memcpy(buf, folder_data + (size_t)e->offset_in_folder, (size_t)e->size);

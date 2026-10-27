@@ -17,6 +17,7 @@
  * that cache: in the solid archive both members can be held at once
  * and a detach of one of them (a copy, there) leaves them valid; in the
  * non-solid archive a borrow after a detach decodes the folder again.
+ * Either way what is handed over has an octet to spare after it.
  *
  * Build: make -C libretro-common/samples/formats/r7z check
  */
@@ -243,6 +244,9 @@ static void check_member(r7z_archive_t *a, uint32_t index, const char *name,
       res = r7z_archive_extract_detach(a, index, &out, &out_len);
       check(res == R7Z_OK && out_len == want_len
             && !memcmp(out, want, want_len), name);
+      /* the octet to spare after it, which a sanitizer sees written */
+      if (out)
+         out[out_len] = '\0';
       free(out);
       out = NULL;
    }
@@ -250,6 +254,8 @@ static void check_member(r7z_archive_t *a, uint32_t index, const char *name,
    res = r7z_archive_extract(a, index, &out, &out_len);
    check(res == R7Z_OK && out_len == want_len
          && !memcmp(out, want, want_len), name);
+   if (out)
+      out[out_len] = '\0';
    free(out);
 }
 
