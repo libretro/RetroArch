@@ -21,6 +21,7 @@
 #include <file/file_path.h>
 #include <retro_math.h>
 
+#include "../command.h"
 #include "../configuration.h"
 #include "../content.h"
 #include "../list_special.h"
