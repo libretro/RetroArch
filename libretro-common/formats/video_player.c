@@ -889,6 +889,10 @@ static enum video_player_state vp_poll_threaded(video_player_t *p,
       vp_job_start(p, jo);
    }
 
+   if ((su == VP_JOB_FINISHED || su == VP_JOB_COMPLETED)
+         && (p->flags & VP_HW) && !p->presented)
+      return video_player_request_software(p)
+         ? VIDEO_PLAYER_PLAYING : VIDEO_PLAYER_ENDED;
    if (p->movie_us && (su == VP_JOB_READY || su == VP_JOB_FINISHED
             || su == VP_JOB_COMPLETED))
       vp_movie_deadline(p, ju->time_us, now);
@@ -898,8 +902,6 @@ static enum video_player_state vp_poll_threaded(video_player_t *p,
     * already shown, so nothing is lost */
    if (su == VP_JOB_FINISHED || su == VP_JOB_COMPLETED)
    {
-      if ((p->flags & VP_HW) && !p->presented && video_player_request_software(p))
-         return VIDEO_PLAYER_PLAYING;
       p->completed = p->presented && su == VP_JOB_COMPLETED;
       return VIDEO_PLAYER_ENDED;
    }
