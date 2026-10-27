@@ -313,6 +313,9 @@ Description:
     Cause the other side to load a savestate, notionally one which the sending
     side has also loaded. If both sides support zlib compression, the
     serialized state is zlib compressed. Otherwise it is uncompressed.
+    From protocol 8 the frame may be one whose input the client already
+    has, as a lockstep host sends while it waits on that client; the
+    client loads the state there and runs on from it.
 
 Command: PAUSE
 Payload:

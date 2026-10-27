@@ -95,6 +95,11 @@ static bool netplay_cmd_stall(netplay_t *netplay,
 { (void)netplay; (void)connection; (void)frames; return true; }
 static void netplay_handle_frame_hash(netplay_t *netplay, struct delta_frame *delta)
 { (void)netplay; (void)delta; }
+static bool netplay_lockstep_wants_crc(netplay_t *netplay, struct delta_frame *delta)
+{ (void)netplay; (void)delta; return false; }
+static bool netplay_lockstep_take_crc(netplay_t *netplay,
+      struct delta_frame *delta, bool have_state)
+{ (void)netplay; (void)delta; return have_state; }
 static bool netplay_build_savestate(netplay_t *netplay,
       retro_ctx_serialize_info_t *info, bool achievements)
 { (void)netplay; (void)achievements; return core_serialize(info); }

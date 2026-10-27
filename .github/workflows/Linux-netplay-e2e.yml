@@ -1,0 +1,76 @@
+name: CI Linux netplay end to end
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+jobs:
+  netplay-e2e:
+    name: Two retroarch processes in netplay
+    runs-on: ubuntu-latest
+    env:
+      APT_PKGS: build-essential pkg-config zlib1g-dev python3 ccache
+    timeout-minutes: 40
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Apt cache key
+        id: apt
+        run: sh .github/workflows/scripts/apt-cache-key.sh "$APT_PKGS"
+
+      - name: Restore apt cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+          restore-keys: ${{ steps.apt.outputs.prefix }}
+
+      - name: Install dependencies
+        timeout-minutes: 10
+        run: sh .github/workflows/scripts/apt-install.sh $APT_PKGS
+
+      - name: Save apt cache
+        if: env.APT_CACHE_SAVE == '1'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+
+      - name: Link with lld
+        run: sh .github/workflows/scripts/use-lld.sh
+
+      - name: Build RetroArch with no menu, video or sound
+        shell: bash
+        run: |
+          set -eu
+          ./configure --disable-qt --disable-ffmpeg --disable-vulkan \
+            --disable-wayland --disable-x11 --disable-opengl --disable-egl \
+            --disable-kms --disable-sdl2 --disable-pulse --disable-alsa \
+            --disable-jack --disable-oss --disable-freetype --disable-menu
+          grep -q '^HAVE_NETWORKGAMEPAD = 1' config.mk
+          make -j"$(nproc)" CC="ccache gcc" CXX="ccache g++"
+
+      - name: Host and client over the loopback
+        shell: bash
+        run: |
+          set -eu
+          # analog sticks synced and not, lockstep asked for, a lockstep
+          # host with a rollback client, and a state too large to roll
+          # back; the peers' RAM agrees on every frame
+          make -C samples/network/netplay_e2e
+          timeout 600 make -C samples/network/netplay_e2e check RETROARCH=$PWD/retroarch
+          make -C samples/network/netplay_e2e clean

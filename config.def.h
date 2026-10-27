@@ -1650,6 +1650,11 @@
  * netplay protocol 8 cannot join a host with this on. */
 #define DEFAULT_NETPLAY_ANALOG_JOYPADS true
 
+/* Wait for every player's input instead of guessing and rewinding.
+ * Cores whose states are too large or not deterministic enough to
+ * rewind on play lockstep whatever this says. */
+#define DEFAULT_NETPLAY_LOCKSTEP false
+
 /* Allow connections in slave mode */
 #define DEFAULT_NETPLAY_ALLOW_SLAVES true
 

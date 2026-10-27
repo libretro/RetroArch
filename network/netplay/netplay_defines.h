@@ -88,6 +88,8 @@ enum rarch_netplay_ctl_state
    RARCH_NETPLAY_CTL_BAN_CLIENT,
    RARCH_NETPLAY_CTL_SET_CORE_PACKET_INTERFACE,
    RARCH_NETPLAY_CTL_USE_CORE_PACKET_INTERFACE,
+   /* The running content would play lockstep; it hosts in place */
+   RARCH_NETPLAY_CTL_USE_LOCKSTEP,
    RARCH_NETPLAY_CTL_ALLOW_TIMESKIP
 };
 
