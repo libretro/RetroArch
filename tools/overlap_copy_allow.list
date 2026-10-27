@@ -26,7 +26,6 @@
 audio/drivers/wiiu_audio.c|memcpy|offsets|offsets
 ctr/ctr_svchax.c|memcpy|flush_buffer|flush_buffer
 frontend/drivers/platform_gx_libogc.c|strlcpy|g_defaults.dirs|g_defaults.dirs
-frontend/drivers/platform_ps3.c|strlcpy|g_defaults.dirs|g_defaults.dirs
 gfx/drivers/sdl_rs90_gfx.c|memcpy|target|target
 gfx/video_filters/ntsc_crt.c|memcpy|v->out|v->out
 libretro-common/encodings/encoding_rlz4.c|memcpy|to|to
@@ -50,9 +49,6 @@ libretro-common/formats/opus/ropus.c|memcpy|buf|buf
 libretro-common/formats/opus/ropus.c|memcpy|ctrl->PredCoef_Q12|ctrl->PredCoef_Q12
 libretro-common/formats/opus/ropus.c|memcpy|oldBandE|oldBandE
 libretro-common/formats/opus/ropus.c|memcpy|sLPC_Q14|sLPC_Q14
-libretro-common/formats/vp8/rvp8.c|memcpy|v->ru|v->ru
-libretro-common/formats/vp8/rvp8.c|memcpy|v->rv|v->rv
-libretro-common/formats/vp8/rvp8.c|memcpy|v->ry|v->ry
 libretro-common/include/array/rhmap.h|memcpy|((char*)(hdr + 1))|((char*)(hdr + 1))
 menu/cbs/menu_cbs_ok.c|memcpy|cheat_manager_state.cheats|cheat_manager_state.cheats
 network/netplay/netplay_frontend.c|memcpy|chat->messages|chat->messages

@@ -3742,7 +3742,7 @@ int rinflate64_decode(uint8_t *dst, size_t dst_len,
             if (dist > at || len > dst_len - at)
                goto done;
             if (dist >= len)
-               memcpy(dst + at, dst + at - dist, len);
+               memmove(dst + at, dst + at - dist, len);
             else
             {
                uint8_t       *o = dst + at;
