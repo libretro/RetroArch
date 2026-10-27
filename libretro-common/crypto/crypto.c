@@ -1197,6 +1197,78 @@ static void aes_cmac_dbl(uint8_t *b)
    b[15] ^= (uint8_t)(0x87 & (0 - msb));
 }
 
+void aes_cmac_init(struct aes_cmac_ctx *s, const struct aes_ctx *aes)
+{
+   s->aes = aes;
+   s->n   = 0;
+   memset(s->x, 0, 16);
+}
+
+/* The last block takes a subkey, so a full block is held back until
+ * more of the message shows it was not the last. */
+void aes_cmac_update(struct aes_cmac_ctx *s, const uint8_t *msg, size_t len)
+{
+   unsigned i;
+   /* the chain in a local for the call: through @s, every octet of it
+    * may alias @msg and the block XOR is not vectorised */
+   uint8_t  x[16];
+
+   if (!len)
+      return;
+   memcpy(x, s->x, 16);
+   if (s->n)
+   {
+      size_t take = 16 - s->n;
+      if (take > len)
+         take = len;
+      memcpy(s->buf + s->n, msg, take);
+      s->n += take;
+      msg  += take;
+      len  -= take;
+      if (!len)
+         return;
+      for (i = 0; i < 16; i++)
+         x[i] ^= s->buf[i];
+      aes_encrypt_block(s->aes, x, x);
+      s->n = 0;
+   }
+   while (len > 16)
+   {
+      for (i = 0; i < 16; i++)
+         x[i] ^= msg[i];
+      aes_encrypt_block(s->aes, x, x);
+      msg += 16;
+      len -= 16;
+   }
+   memcpy(s->buf, msg, len);
+   s->n = len;
+   memcpy(s->x, x, 16);
+   crypto_memzero(x, sizeof(x));
+}
+
+void aes_cmac_final(struct aes_cmac_ctx *s, uint8_t *mac)
+{
+   unsigned i;
+   uint8_t  k[16];
+
+   memset(k, 0, 16);
+   aes_encrypt_block(s->aes, k, k);
+   aes_cmac_dbl(k);
+   if (s->n != 16)
+   {
+      /* Partial or empty last block: pad 10* and use K2 = dbl(K1). */
+      aes_cmac_dbl(k);
+      memset(s->buf + s->n, 0, 16 - s->n);
+      s->buf[s->n] = 0x80;
+   }
+   for (i = 0; i < 16; i++)
+      s->x[i] ^= s->buf[i] ^ k[i];
+   aes_encrypt_block(s->aes, s->x, mac);
+
+   crypto_memzero(k, sizeof(k));
+   crypto_memzero(s, sizeof(*s));
+}
+
 void aes_cmac(const struct aes_ctx *ctx,
       const uint8_t *msg, size_t len, uint8_t *mac)
 {
@@ -1246,6 +1318,187 @@ void aes_cmac(const struct aes_ctx *ctx,
 }
 
 /* ---- CCM (RFC 3610) ---------------------------------------------- */
+
+/* CBC-MAC over B_0 || AAD (length-prefixed, padded) || payload
+ * (padded), then CTR with A_i counters; the tag is the MAC under
+ * counter zero. */
+int aes_ccm_stream_init(struct aes_ccm_stream *s, const struct aes_ctx *ctx,
+      const uint8_t *nonce, size_t nonce_len,
+      const uint8_t *aad, size_t aad_len,
+      size_t msg_len, size_t tag_len)
+{
+   size_t   L, i, off;
+   size_t   remaining;
+   uint8_t *x = s->x;
+
+   if (nonce_len < 7 || nonce_len > 13 || tag_len < 4 || tag_len > 16 || (tag_len & 1))
+      return -1;
+   L = 15 - nonce_len;
+   /* the length must fit L octets; shifted as 64 bits, since a 32-bit
+    * size_t shifted by 32 (L = 4, the 11-octet nonce SMB uses) is
+    * undefined and comes back unshifted on MIPS */
+   if (L < 8 && ((uint64_t)msg_len >> (8 * L)) != 0)
+      return -1;
+   s->aes     = ctx;
+   s->len     = msg_len;
+   s->off     = 0;
+   s->L       = L;
+   s->tag_len = tag_len;
+
+   /* B_0: flags | nonce | length of the message */
+   x[0] = (uint8_t)((aad_len ? 0x40 : 0) | (((tag_len - 2) / 2) << 3) | (L - 1));
+   memcpy(x + 1, nonce, nonce_len);
+   remaining = msg_len;
+   for (i = 0; i < L; i++)
+   {
+      x[15 - i]  = (uint8_t)remaining;
+      remaining >>= 8;
+   }
+   aes_encrypt_block(ctx, x, x);
+
+   /* AAD, length-prefixed (2 or 6 octets here; > 2^32 is not needed) */
+   if (aad_len)
+   {
+      uint8_t blk[16];
+      size_t  n;
+      memset(blk, 0, 16);
+      if (aad_len < 0xff00)
+      {
+         blk[0] = (uint8_t)(aad_len >> 8);
+         blk[1] = (uint8_t)aad_len;
+         off    = 2;
+      }
+      else
+      {
+         blk[0] = 0xff; blk[1] = 0xfe;
+         crypto_store32_be(blk + 2, (uint32_t)aad_len);
+         off = 6;
+      }
+      n = 16 - off;
+      if (n > aad_len)
+         n = aad_len;
+      memcpy(blk + off, aad, n);
+      for (i = 0; i < 16; i++)
+         x[i] ^= blk[i];
+      aes_encrypt_block(ctx, x, x);
+      aad += n;
+      aad_len -= n;
+      while (aad_len)
+      {
+         n = aad_len < 16 ? aad_len : 16;
+         for (i = 0; i < n; i++)
+            x[i] ^= aad[i];
+         aes_encrypt_block(ctx, x, x);
+         aad += n;
+         aad_len -= n;
+      }
+   }
+
+   /* Counter blocks: flags = L - 1, nonce, counter */
+   memset(s->ctr, 0, 16);
+   s->ctr[0] = (uint8_t)(L - 1);
+   memcpy(s->ctr + 1, nonce, nonce_len);
+   aes_encrypt_block(ctx, s->ctr, s->s0);     /* S_0, for the tag */
+   return 0;
+}
+
+/* A piece that starts or ends inside a block carries its keystream
+ * and the MAC chain across in @s; the chain is run when the block
+ * fills or the message ends. The chain, counter and keystream are
+ * locals for the call - through @s every octet may alias the data and
+ * the block loops are not vectorised. */
+static void aes_ccm_stream_run(struct aes_ccm_stream *s, int encrypt,
+      const uint8_t *in, uint8_t *out, size_t len)
+{
+   uint8_t x[16], ctr[16], ks[16];
+   size_t  i, L = s->L, off = s->off;
+
+   if (len > s->len - off)
+      len = s->len - off;
+   if (!len)
+      return;
+   memcpy(x,   s->x,   16);
+   memcpy(ctr, s->ctr, 16);
+   memcpy(ks,  s->ks,  16);
+   while (len)
+   {
+      size_t pos = off & 15;
+      size_t n   = 16 - pos;
+      if (n > len)
+         n = len;
+      if (!pos)
+      {
+         size_t c = off / 16 + 1;
+         for (i = 0; i < L; i++)
+         {
+            ctr[15 - i] = (uint8_t)c;
+            c >>= 8;
+         }
+         aes_encrypt_block(s->aes, ctr, ks);
+      }
+      if (n == 16)
+      {
+         if (encrypt)
+         {
+            for (i = 0; i < 16; i++)
+               x[i] ^= in[i];
+            for (i = 0; i < 16; i++)
+               out[i] = in[i] ^ ks[i];
+         }
+         else
+            for (i = 0; i < 16; i++)
+            {
+               uint8_t p = (uint8_t)(in[i] ^ ks[i]);
+               out[i]    = p;
+               x[i]     ^= p;
+            }
+      }
+      else if (encrypt)
+         for (i = 0; i < n; i++)
+         {
+            x[pos + i] ^= in[i];
+            out[i]      = in[i] ^ ks[pos + i];
+         }
+      else
+         for (i = 0; i < n; i++)
+         {
+            out[i]      = in[i] ^ ks[pos + i];
+            x[pos + i] ^= out[i];
+         }
+      off += n;
+      if (!(off & 15) || off == s->len)
+         aes_encrypt_block(s->aes, x, x);
+      in  += n;
+      out += n;
+      len -= n;
+   }
+   s->off = off;
+   memcpy(s->x,   x,   16);
+   memcpy(s->ctr, ctr, 16);
+   memcpy(s->ks,  ks,  16);
+   crypto_memzero(x,  sizeof(x));
+   crypto_memzero(ks, sizeof(ks));
+}
+
+void aes_ccm_stream_encrypt(struct aes_ccm_stream *s,
+      const uint8_t *pt, uint8_t *ct, size_t len)
+{
+   aes_ccm_stream_run(s, 1, pt, ct, len);
+}
+
+void aes_ccm_stream_decrypt(struct aes_ccm_stream *s,
+      const uint8_t *ct, uint8_t *pt, size_t len)
+{
+   aes_ccm_stream_run(s, 0, ct, pt, len);
+}
+
+void aes_ccm_stream_tag(struct aes_ccm_stream *s, uint8_t *tag)
+{
+   size_t i;
+   for (i = 0; i < s->tag_len; i++)
+      tag[i] = s->x[i] ^ s->s0[i];
+   crypto_memzero(s, sizeof(*s));
+}
 
 /* CBC-MAC over B_0 || AAD (length-prefixed, padded) || payload
  * (padded), then CTR with A_i counters; the tag is the MAC under
@@ -1603,6 +1856,118 @@ int aes_gcm_decrypt(const struct aes_gcm_ctx *ctx,
    aes_ctr_inc32(ctr);
    aes_ctr_crypt(&ctx->aes, ctr, ct, pt, ct_len);
    return 0;
+}
+
+void aes_gcm_stream_init(struct aes_gcm_stream *s,
+      const struct aes_gcm_ctx *ctx, const uint8_t *nonce, size_t nonce_len)
+{
+   s->g        = ctx;
+   s->y_hi     = 0;
+   s->y_lo     = 0;
+   s->aad_len  = 0;
+   s->ct_len   = 0;
+   s->part_len = 0;
+   aes_gcm_j0(ctx, nonce, nonce_len, s->j0);
+}
+
+/* GHASH takes whole blocks; a piece's tail waits in part for the
+ * next piece of the same input, and is padded where that input ends. */
+static void aes_gcm_stream_feed(struct aes_gcm_stream *s,
+      const uint8_t *data, size_t len)
+{
+   size_t bulk;
+
+   if (s->part_len)
+   {
+      size_t take = 16 - s->part_len;
+      if (take > len)
+         take = len;
+      memcpy(s->part + s->part_len, data, take);
+      s->part_len += take;
+      data        += take;
+      len         -= take;
+      if (s->part_len < 16)
+         return;
+      aes_gcm_ghash_update(s->g, &s->y_hi, &s->y_lo, s->part, 16);
+      s->part_len = 0;
+   }
+   bulk = len & ~(size_t)15;
+   if (bulk)
+      aes_gcm_ghash_update(s->g, &s->y_hi, &s->y_lo, data, bulk);
+   memcpy(s->part, data + bulk, len - bulk);
+   s->part_len = len - bulk;
+}
+
+static void aes_gcm_stream_pad(struct aes_gcm_stream *s)
+{
+   if (s->part_len)
+   {
+      aes_gcm_ghash_update(s->g, &s->y_hi, &s->y_lo, s->part, s->part_len);
+      s->part_len = 0;
+   }
+}
+
+void aes_gcm_stream_aad(struct aes_gcm_stream *s,
+      const uint8_t *aad, size_t len)
+{
+   aes_gcm_stream_feed(s, aad, len);
+   s->aad_len += len;
+}
+
+void aes_gcm_stream_hash_ct(struct aes_gcm_stream *s,
+      const uint8_t *ct, size_t len)
+{
+   if (!s->ct_len)
+      aes_gcm_stream_pad(s);           /* the AAD ends here */
+   aes_gcm_stream_feed(s, ct, len);
+   s->ct_len += len;
+}
+
+void aes_gcm_stream_tag(struct aes_gcm_stream *s, uint8_t *tag)
+{
+   unsigned i;
+   uint8_t  ek[16];
+
+   aes_gcm_stream_pad(s);
+   s->y_hi ^= s->aad_len * 8;
+   s->y_lo ^= s->ct_len  * 8;
+   aes_gcm_mul(s->g, &s->y_hi, &s->y_lo);
+   aes_encrypt_block(&s->g->aes, s->j0, ek);
+   crypto_store64_be(tag,     s->y_hi);
+   crypto_store64_be(tag + 8, s->y_lo);
+   for (i = 0; i < 16; i++)
+      tag[i] ^= ek[i];
+   crypto_memzero(ek, sizeof(ek));
+}
+
+void aes_gcm_stream_crypt(const struct aes_gcm_stream *s, uint64_t off,
+      const uint8_t *in, uint8_t *out, size_t len)
+{
+   uint8_t  ctr[16];
+   size_t   pos = (size_t)(off & 15);
+
+   /* the ciphertext's block b runs under counter J0 + 1 + b */
+   memcpy(ctr, s->j0, 16);
+   crypto_store32_be(ctr + 12, crypto_load32_be(s->j0 + 12)
+         + 1 + (uint32_t)(off >> 4));
+   if (pos)
+   {
+      uint8_t ks[16];
+      size_t  i, n = 16 - pos;
+      if (n > len)
+         n = len;
+      aes_encrypt_block(&s->g->aes, ctr, ks);
+      aes_ctr_inc32(ctr);
+      for (i = 0; i < n; i++)
+         out[i] = in[i] ^ ks[pos + i];
+      crypto_memzero(ks, sizeof(ks));
+      in  += n;
+      out += n;
+      len -= n;
+   }
+   if (len)
+      aes_ctr_crypt(&s->g->aes, ctr, in, out, len);
+   crypto_memzero(ctr, sizeof(ctr));
 }
 
 #define QR(a, b, c, d)                                  \

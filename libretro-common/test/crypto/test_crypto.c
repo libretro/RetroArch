@@ -1117,6 +1117,124 @@ START_TEST (test_x509_ip_literals)
 }
 END_TEST
 
+/* The pieces of a message: up to three, cut at random points. */
+static unsigned stream_cuts(size_t len, size_t *cut)
+{
+   unsigned n = bulk_rand() % 3, i;
+   cut[0] = 0;
+   for (i = 1; i <= n; i++)
+      cut[i] = len ? bulk_rand() % (len + 1) : 0;
+   cut[n + 1] = len;
+   /* sorted, so pieces are in order (empty ones included) */
+   for (i = 1; i <= n; i++)
+   {
+      unsigned j;
+      for (j = i + 1; j <= n; j++)
+         if (cut[j] < cut[i])
+         {
+            size_t t = cut[i]; cut[i] = cut[j]; cut[j] = t;
+         }
+   }
+   return n + 1;
+}
+
+/* The streaming CMAC, GCM and CCM against their one-shot forms, the
+ * message in pieces cut anywhere, including inside a block and empty
+ * ones; and the GCM counter mode at any offset. */
+START_TEST(test_streams)
+{
+   static uint8_t in[2100], out[2100], ref[2100], aad[100];
+   uint8_t key[32], nonce[12], tag1[16], tag2[16];
+   size_t  cut[4];
+   unsigned it, i, k;
+
+   for (i = 0; i < sizeof(in); i++)
+      in[i] = (uint8_t)bulk_rand();
+   for (i = 0; i < sizeof(aad); i++)
+      aad[i] = (uint8_t)bulk_rand();
+   for (it = 0; it < 400; it++)
+   {
+      size_t   len     = bulk_rand() % 2049;
+      size_t   aad_len = bulk_rand() % 70;
+      unsigned pieces;
+      struct aes_ctx        a;
+      struct aes_gcm_ctx    g;
+      struct aes_cmac_ctx   m;
+      struct aes_ccm_stream c;
+      struct aes_gcm_stream gs;
+      for (i = 0; i < 32; i++)
+         key[i] = (uint8_t)bulk_rand();
+      for (i = 0; i < 12; i++)
+         nonce[i] = (uint8_t)bulk_rand();
+      ck_assert_int_eq(aes_init(&a, key, 16), 0);
+      ck_assert_int_eq(aes_gcm_init(&g, key, (it & 1) ? 32 : 16), 0);
+
+      /* CMAC */
+      aes_cmac(&a, in, len, tag1);
+      pieces = stream_cuts(len, cut);
+      aes_cmac_init(&m, &a);
+      for (k = 0; k < pieces; k++)
+         aes_cmac_update(&m, in + cut[k], cut[k + 1] - cut[k]);
+      aes_cmac_final(&m, tag2);
+      ck_assert_int_eq(memcmp(tag1, tag2, 16), 0);
+
+      /* GCM: the tag over AAD and ciphertext in pieces, the counter
+       * mode piece by piece at their offsets */
+      aes_gcm_encrypt(&g, nonce, 12, aad, aad_len, in, len, ref, tag1);
+      aes_gcm_stream_init(&gs, &g, nonce, 12);
+      pieces = stream_cuts(aad_len, cut);
+      for (k = 0; k < pieces; k++)
+         aes_gcm_stream_aad(&gs, aad + cut[k], cut[k + 1] - cut[k]);
+      pieces = stream_cuts(len, cut);
+      for (k = 0; k < pieces; k++)
+      {
+         aes_gcm_stream_crypt(&gs, cut[k], in + cut[k], out + cut[k],
+               cut[k + 1] - cut[k]);
+         aes_gcm_stream_hash_ct(&gs, out + cut[k], cut[k + 1] - cut[k]);
+      }
+      aes_gcm_stream_tag(&gs, tag2);
+      ck_assert_int_eq(memcmp(out, ref, len), 0);
+      ck_assert_int_eq(memcmp(tag1, tag2, 16), 0);
+      /* back again, last piece first, in place */
+      for (k = pieces; k-- > 0; )
+         aes_gcm_stream_crypt(&gs, cut[k], out + cut[k], out + cut[k],
+               cut[k + 1] - cut[k]);
+      ck_assert_int_eq(memcmp(out, in, len), 0);
+      /* GMAC: the AAD alone */
+      aes_gcm_encrypt(&g, nonce, 12, aad, aad_len, NULL, 0, NULL, tag1);
+      aes_gcm_stream_init(&gs, &g, nonce, 12);
+      pieces = stream_cuts(aad_len, cut);
+      for (k = 0; k < pieces; k++)
+         aes_gcm_stream_aad(&gs, aad + cut[k], cut[k + 1] - cut[k]);
+      aes_gcm_stream_tag(&gs, tag2);
+      ck_assert_int_eq(memcmp(tag1, tag2, 16), 0);
+
+      /* CCM, the SMB3 shape: encrypt in pieces, decrypt in other
+       * pieces in place */
+      ck_assert_int_eq(aes_ccm_encrypt(&a, nonce, 11, aad, aad_len,
+               in, len, ref, tag1, 16), 0);
+      ck_assert_int_eq(aes_ccm_stream_init(&c, &a, nonce, 11, aad, aad_len,
+               len, 16), 0);
+      pieces = stream_cuts(len, cut);
+      for (k = 0; k < pieces; k++)
+         aes_ccm_stream_encrypt(&c, in + cut[k], out + cut[k],
+               cut[k + 1] - cut[k]);
+      aes_ccm_stream_tag(&c, tag2);
+      ck_assert_int_eq(memcmp(out, ref, len), 0);
+      ck_assert_int_eq(memcmp(tag1, tag2, 16), 0);
+      ck_assert_int_eq(aes_ccm_stream_init(&c, &a, nonce, 11, aad, aad_len,
+               len, 16), 0);
+      pieces = stream_cuts(len, cut);
+      for (k = 0; k < pieces; k++)
+         aes_ccm_stream_decrypt(&c, out + cut[k], out + cut[k],
+               cut[k + 1] - cut[k]);
+      aes_ccm_stream_tag(&c, tag2);
+      ck_assert_int_eq(memcmp(out, in, len), 0);
+      ck_assert_int_eq(memcmp(tag1, tag2, 16), 0);
+   }
+}
+END_TEST
+
 Suite *create_suite(void)
 {
    Suite *s = suite_create(SUITE_NAME);
@@ -1145,6 +1263,7 @@ Suite *create_suite(void)
    tcase_add_test(tc_core, test_aes_decrypt_hmac_sha1);
    tcase_add_test(tc_core, test_krb5_enctypes);
    tcase_add_test(tc_core, test_bulk_paths);
+   tcase_add_test(tc_core, test_streams);
    suite_add_tcase(s, tc_core);
    return s;
 }

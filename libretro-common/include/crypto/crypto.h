@@ -185,6 +185,21 @@ void aes_ctr_crypt(const struct aes_ctx *ctx, uint8_t *counter,
 void aes_cmac(const struct aes_ctx *ctx,
       const uint8_t *msg, size_t len, uint8_t *mac);
 
+/* CMAC over a message given in pieces, which need not be blocks:
+ * init, update per piece, final for the tag. aes_cmac() is these
+ * three over one piece. */
+struct aes_cmac_ctx
+{
+   const struct aes_ctx *aes;
+   size_t  n;          /* octets held in buf */
+   uint8_t x[16];
+   uint8_t buf[16];
+};
+
+void aes_cmac_init(struct aes_cmac_ctx *s, const struct aes_ctx *aes);
+void aes_cmac_update(struct aes_cmac_ctx *s, const uint8_t *msg, size_t len);
+void aes_cmac_final(struct aes_cmac_ctx *s, uint8_t *mac);
+
 /**
  * aes_ccm_encrypt:
  * @nonce_len         : 7 to 13 octets (SMB3 uses 11).
@@ -213,6 +228,40 @@ int aes_ccm_decrypt(const struct aes_ctx *ctx,
       const uint8_t *aad, size_t aad_len,
       const uint8_t *ct, size_t ct_len,
       const uint8_t *tag, size_t tag_len, uint8_t *pt);
+
+/* CCM over a message given in pieces, in order, which need not be
+ * blocks: init with the whole message length, then encrypt or
+ * decrypt each piece (in place or not), then the tag. The one-shot
+ * calls above are these over one piece. */
+struct aes_ccm_stream
+{
+   const struct aes_ctx *aes;
+   size_t  len;        /* message length given at init */
+   size_t  off;        /* octets processed */
+   size_t  L;
+   size_t  tag_len;
+   uint8_t x[16];      /* CBC-MAC chain */
+   uint8_t ctr[16];
+   uint8_t ks[16];     /* keystream of the current block */
+   uint8_t s0[16];
+};
+
+/**
+ * aes_ccm_stream_init:
+ *
+ * Returns: 0, or -1 on a bad nonce or tag length or a @msg_len too
+ * long for the nonce.
+ **/
+int aes_ccm_stream_init(struct aes_ccm_stream *s, const struct aes_ctx *ctx,
+      const uint8_t *nonce, size_t nonce_len,
+      const uint8_t *aad, size_t aad_len,
+      size_t msg_len, size_t tag_len);
+void aes_ccm_stream_encrypt(struct aes_ccm_stream *s,
+      const uint8_t *pt, uint8_t *ct, size_t len);
+void aes_ccm_stream_decrypt(struct aes_ccm_stream *s,
+      const uint8_t *ct, uint8_t *pt, size_t len);
+/* @tag_len octets, once every octet of the message has been given */
+void aes_ccm_stream_tag(struct aes_ccm_stream *s, uint8_t *tag);
 
 /**
  * aes_gcm_init:
@@ -250,6 +299,36 @@ int aes_gcm_decrypt(const struct aes_gcm_ctx *ctx,
       const uint8_t *aad, size_t aad_len,
       const uint8_t *ct, size_t ct_len,
       const uint8_t *tag, uint8_t *pt);
+
+/* GCM with its two halves apart, over pieces that need not be blocks:
+ * the AAD and then the ciphertext are hashed piece by piece, in order,
+ * for the tag; aes_gcm_stream_crypt() runs the counter mode at any
+ * octet offset of the ciphertext, so pieces can be decrypted where
+ * they lie and in any order - after the tag is checked, as
+ * aes_gcm_decrypt() does. GMAC is the AAD alone. */
+struct aes_gcm_stream
+{
+   const struct aes_gcm_ctx *g;
+   uint64_t y_hi;
+   uint64_t y_lo;
+   uint64_t aad_len;
+   uint64_t ct_len;
+   size_t   part_len;  /* octets held in part */
+   uint8_t  j0[16];
+   uint8_t  part[16];
+};
+
+void aes_gcm_stream_init(struct aes_gcm_stream *s,
+      const struct aes_gcm_ctx *ctx, const uint8_t *nonce, size_t nonce_len);
+/* all of the AAD before any ciphertext */
+void aes_gcm_stream_aad(struct aes_gcm_stream *s,
+      const uint8_t *aad, size_t len);
+void aes_gcm_stream_hash_ct(struct aes_gcm_stream *s,
+      const uint8_t *ct, size_t len);
+void aes_gcm_stream_tag(struct aes_gcm_stream *s, uint8_t *tag);
+/* @len octets at octet @off of the ciphertext; @in and @out may alias */
+void aes_gcm_stream_crypt(const struct aes_gcm_stream *s, uint64_t off,
+      const uint8_t *in, uint8_t *out, size_t len);
 
 /* ChaCha20 (RFC 8439): 256-bit key, 96-bit nonce, 32-bit block counter. */
 
