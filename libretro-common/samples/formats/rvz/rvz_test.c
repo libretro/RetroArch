@@ -1,9 +1,10 @@
-/* rvz_test: writes RVZ files from disc images it makes up and checks
- * that formats/rvz reads each back as its image, octet for octet.
+/* rvz_test: writes RVZ and WIA files from disc images it makes up and
+ * checks that formats/rvz reads each back as its image, octet for octet.
  *
- * The images exercise what the format stores: GameCube and Wii discs,
- * chunks of 32 KiB to 4 MiB, groups stored as they are and with
- * Zstandard side by side, groups of zeros, padding stored as a
+ * The images exercise what the formats store: GameCube and Wii discs,
+ * chunks of 32 KiB to 4 MiB, groups stored as they are and compressed
+ * side by side, with Zstandard, bzip2, LZMA and LZMA2, WIA's PURGE
+ * groups, groups of zeros, padding stored as a
  * generator seed (cut where a group ends, and runs over many words),
  * Wii partitions in one segment and two (the first a whole number of
  * hash blocks, and not), encrypted and not, with hash
@@ -32,6 +33,8 @@
 #ifdef HAVE_RZSTD
 #include <encodings/rzstd.h>
 #endif
+
+#include "../../encodings/rbzip2/bz_write.h"
 
 #define SECTOR    0x8000
 #define SDATA     0x7c00
@@ -227,6 +230,7 @@ static void emit(struct out *o, const void *p, size_t len)
 /* the file's compression method, as the disc struct numbers it */
 #define M_NONE  0
 #define M_PURGE 1
+#define M_BZIP2 2
 #define M_LZMA  3
 #define M_LZMA2 4
 #define M_ZSTD  5
@@ -424,7 +428,16 @@ static void lzma2_raw(struct out *o, const uint8_t *d, size_t len)
 /* @in compressed with the method into @o */
 static void squeeze(int method, struct out *o, const uint8_t *in, size_t len)
 {
-   if (method == M_LZMA)
+   if (method == M_BZIP2)
+   {
+      size_t   cap = len + len / 4 + 4096, wrote;
+      uint8_t *z   = (uint8_t*)malloc(cap);
+      if (!(wrote = bz_write(z, cap, in, len, 1, (uint32_t)len)))
+         fail("bzip2 encode", "writer");
+      emit(o, z, wrote);
+      free(z);
+   }
+   else if (method == M_LZMA)
       lzma_raw(o, in, len);
    else if (method == M_LZMA2)
       lzma2_raw(o, in, len);
@@ -1047,9 +1060,10 @@ static void check_image(const struct config *cfg, const struct image *img)
    }
 
    /* anywhere, any size, across every boundary */
-   /* fewer where a group is slow to decode: LZMA, and 2 MiB groups
-    * of literals the encoder here makes */
-   for (i = 0; i < (cfg->method == M_LZMA || cfg->method == M_LZMA2 ? 12u : 300u); i++)
+   /* fewer where a group is slow to decode: LZMA and bzip2, and 2 MiB
+    * groups of literals the LZMA encoder here makes */
+   for (i = 0; i < (cfg->method == M_LZMA || cfg->method == M_LZMA2
+            || cfg->method == M_BZIP2 ? 12u : 300u); i++)
    {
       uint64_t off  = ((uint64_t)rnd() << 16 ^ rnd()) % img->size;
       size_t   want = (i & 7) == 0 ? 1 + rnd() % sizeof(buf) : 1 + rnd() % 0x9000;
@@ -1156,7 +1170,10 @@ int main(int argc, char **argv)
       { "wia-wii-2m-purge",  1, 0x200000, M_PURGE, 1, 2, 1, 1 },
       { "wia-wii-2m-lzma",   1, 0x200000, M_LZMA,  1, 2, 1, 1 },
       { "wia-wii-4m-lzma2",  1, 0x400000, M_LZMA2, 1, 2, 1, 1 },
-      { "wia-gc-4m-lzma2",   0, 0x400000, M_LZMA2, 0, 1, 0, 1 }
+      { "wia-gc-4m-lzma2",   0, 0x400000, M_LZMA2, 0, 1, 0, 1 },
+      { "wii-128k-bzip2",    1, 0x20000,  M_BZIP2, 1, 2, 1, 0 },
+      { "wia-wii-2m-bzip2",  1, 0x200000, M_BZIP2, 1, 2, 1, 1 },
+      { "wia-gc-2m-bzip2",   0, 0x200000, M_BZIP2, 0, 1, 0, 1 }
    };
    const char *dir = argc > 1 ? argv[1] : NULL;
    unsigned c, run = 0;

@@ -43,6 +43,7 @@
 #include <7z/r7z_lzma.h>
 #include <7z/r7z_lzma_stream.h>
 #include <7z/r7z_lzma2.h>
+#include <encodings/rbzip2.h>
 #ifdef HAVE_RZSTD
 #include <encodings/rzstd.h>
 #endif
@@ -133,6 +134,7 @@ struct rvz
    struct rvz_slot   *slots;    /* for a hash block's groups */
    uint8_t           *zbuf;     /* a compressed group, as read */
    uint16_t          *probs;    /* the LZMA model, for LZMA and LZMA2 */
+   rbzip2_t          *bz;       /* the bzip2 decoder, for bzip2 */
    uint8_t           *zeros;    /* a group's worth of zeroed data */
    uint8_t           *block;    /* the hash block reassembled */
    uint8_t           *hashes;   /* its 64 sectors' hash areas */
@@ -291,6 +293,17 @@ static int rvz_decompress(rvz_t *z, uint8_t *dst, size_t cap,
          return rzstd_decode(dst, cap, src, src_len, len) == RZSTD_PROCESS_END
             ? RVZ_OK : RVZ_ERROR_DATA;
 #endif
+      case RVZ_COMP_BZIP2:
+         switch (rbzip2_decode(z->bz, dst, cap, src, src_len, len))
+         {
+            case RBZIP2_OK:
+               return RVZ_OK;
+            case RBZIP2_ERROR_MEM:
+               return RVZ_ERROR_MEM;
+            default:
+               break;
+         }
+         return RVZ_ERROR_DATA;
       case RVZ_COMP_LZMA:
          /* the output is the window: a group is one stream */
          return rvz_lzma(z, dst, cap, src, src_len, n_lists, tail, len);
@@ -1041,6 +1054,7 @@ void rvz_free(rvz_t *z)
    free(z->hashes);
    free(z->h0);
    free(z->probs);
+   rbzip2_free(z->bz);
    free(z->disc);
    free(z->tab);
    free(z);
@@ -1304,6 +1318,8 @@ static int rvz_open_run(rvz_t *z)
                if (!(z->probs = (uint16_t*)malloc(probs * sizeof(uint16_t))))
                   return RVZ_ERROR_MEM;
             }
+            if (z->compression == RVZ_COMP_BZIP2 && !(z->bz = rbzip2_new()))
+               return RVZ_ERROR_MEM;
             z->encrypted = z->dhead[0x61] == 0;
             z->data_max  = z->chunk;
             z->stage     = RVZ_STAGE_PARTS;

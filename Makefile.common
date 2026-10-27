@@ -2786,7 +2786,8 @@ ifeq ($(HAVE_NETWORKING), 1)
       HAVE_CHEEVOS_RVZ ?= $(if $(filter 1,$(HAVE_RZSTD)),1,0)
       ifeq ($(HAVE_CHEEVOS_RVZ), 1)
          DEFINES += -DHAVE_CHEEVOS_RVZ
-         OBJ += $(LIBRETRO_COMM_DIR)/formats/rvz/rvz.o
+         OBJ += $(LIBRETRO_COMM_DIR)/formats/rvz/rvz.o \
+                $(LIBRETRO_COMM_DIR)/encodings/encoding_rbzip2.o
          ifneq ($(HAVE_CRYPTO), 1)
             OBJ += $(LIBRETRO_COMM_DIR)/crypto/crypto.o
          endif

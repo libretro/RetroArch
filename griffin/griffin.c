@@ -226,6 +226,7 @@ ACHIEVEMENTS
 
 #if defined(HAVE_CHEEVOS_RVZ) && defined(HAVE_RZSTD)
 #include "../libretro-common/formats/rvz/rvz.c"
+#include "../libretro-common/encodings/encoding_rbzip2.c"
 #ifndef HAVE_CRYPTO
 /* its AES, without the rest of the crypto library */
 #include "../libretro-common/crypto/crypto.c"
