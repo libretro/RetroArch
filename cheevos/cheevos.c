@@ -1412,27 +1412,62 @@ static void* rc_hash_handle_cd_open_track(
 
 #ifdef CHEEVOS_RVZ_READER
 /* rc_hash reads an RVZ file through these as the disc image it stands
- * for, a read at a time: the reader seeks for itself. */
+ * for. formats/rvz does no file I/O: what it asks for of the file is
+ * read here, through the VFS, straight to where it asks. */
 typedef struct
 {
    rvz_t  *rvz;
+   RFILE  *file;
    int64_t pos;
 } rcheevos_rvz_t;
 
+/* Runs an operation's step until it is done, reading what it asks */
+static int rcheevos_rvz_pump(rcheevos_rvz_t* handle, bool opening)
+{
+   for (;;)
+   {
+      rvz_request_t req;
+      int64_t       got = 0;
+      int           err = opening
+            ? rvz_open_step(handle->rvz, &req)
+            : rvz_read_step(handle->rvz, &req);
+
+      if (err != RVZ_PENDING)
+         return err;
+      if (filestream_seek(handle->file, (int64_t)req.offset,
+               RETRO_VFS_SEEK_POSITION_START) == 0)
+         got = filestream_read(handle->file, req.dst, (int64_t)req.length);
+      rvz_feed(handle->rvz, got > 0 ? (size_t)got : 0);
+   }
+}
+
+static void RC_CCONV rcheevos_rvz_close(void* file_handle)
+{
+   rcheevos_rvz_t* handle = (rcheevos_rvz_t*)file_handle;
+
+   if (handle)
+   {
+      rvz_free(handle->rvz);
+      if (handle->file)
+         filestream_close(handle->file);
+      free(handle);
+   }
+}
+
 static void* RC_CCONV rcheevos_rvz_open(const char* path)
 {
-   rcheevos_rvz_t* handle;
-   rvz_t*          rvz = rvz_open(path);
+   rcheevos_rvz_t* handle = (rcheevos_rvz_t*)calloc(1, sizeof(*handle));
 
-   if (!rvz)
+   if (!handle)
       return NULL;
-   if (!(handle = (rcheevos_rvz_t*)malloc(sizeof(*handle))))
+   if (     !(handle->file = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ,
+               RETRO_VFS_FILE_ACCESS_HINT_NONE))
+         || !(handle->rvz  = rvz_new())
+         || rcheevos_rvz_pump(handle, true) != RVZ_OK)
    {
-      rvz_close(rvz);
+      rcheevos_rvz_close(handle);
       return NULL;
    }
-   handle->rvz = rvz;
-   handle->pos = 0;
    return handle;
 }
 
@@ -1464,37 +1499,30 @@ static int64_t RC_CCONV rcheevos_rvz_tell(void* file_handle)
 static size_t RC_CCONV rcheevos_rvz_read(void* file_handle, void* buffer, size_t requested_bytes)
 {
    rcheevos_rvz_t* handle = (rcheevos_rvz_t*)file_handle;
-   int64_t         got    = rvz_read(handle->rvz, (uint64_t)handle->pos,
-         buffer, requested_bytes);
+   size_t          got;
 
-   if (got <= 0)
+   if (rvz_read_begin(handle->rvz, (uint64_t)handle->pos,
+            buffer, requested_bytes) != RVZ_OK)
       return 0;
-   handle->pos += got;
-   return (size_t)got;
-}
-
-static void RC_CCONV rcheevos_rvz_close(void* file_handle)
-{
-   rcheevos_rvz_t* handle = (rcheevos_rvz_t*)file_handle;
-
-   if (handle)
-   {
-      rvz_close(handle->rvz);
-      free(handle);
-   }
+   rcheevos_rvz_pump(handle, false);
+   /* what came before a failure is still read */
+   got          = rvz_read_progress(handle->rvz);
+   handle->pos += (int64_t)got;
+   return got;
 }
 
 /* A Wii or GameCube disc as its header's magic words say, or
  * RC_CONSOLE_UNKNOWN for a file the reader does not take */
 static uint32_t rcheevos_rvz_get_console_id(const char* path)
 {
-   uint8_t  magic[8];
-   uint32_t console_id = RC_CONSOLE_UNKNOWN;
-   rvz_t*   rvz        = rvz_open(path);
+   uint8_t         magic[8];
+   uint32_t        console_id = RC_CONSOLE_UNKNOWN;
+   rcheevos_rvz_t* handle     = (rcheevos_rvz_t*)rcheevos_rvz_open(path);
 
-   if (!rvz)
+   if (!handle)
       return console_id;
-   if (rvz_read(rvz, 0x18, magic, sizeof(magic)) == (int64_t)sizeof(magic))
+   rcheevos_rvz_seek(handle, 0x18, SEEK_SET);
+   if (rcheevos_rvz_read(handle, magic, sizeof(magic)) == sizeof(magic))
    {
       if (     magic[0] == 0x5D && magic[1] == 0x1C
             && magic[2] == 0x9E && magic[3] == 0xA3)
@@ -1503,7 +1531,7 @@ static uint32_t rcheevos_rvz_get_console_id(const char* path)
             && magic[6] == 0x9F && magic[7] == 0x3D)
          console_id = RC_CONSOLE_GAMECUBE;
    }
-   rvz_close(rvz);
+   rcheevos_rvz_close(handle);
    return console_id;
 }
 #endif

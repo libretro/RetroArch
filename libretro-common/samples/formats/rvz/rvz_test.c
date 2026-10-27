@@ -14,9 +14,12 @@
  * padding comes from a generator written out here as described, and
  * the hashes and encryption are worked out one sector at a time.
  *
+ * The files are made and read in memory, each range the reader asks
+ * for supplied from there, now and then short.
+ *
  * Usage: rvz_test [dir [sectors]]
- *   with dir, the files are kept there; with sectors, the Wii images'
- *   partitions are that large (at least 72). */
+ *   with dir, the files are also written there; with sectors, the Wii
+ *   images' partitions are that large (at least 72). */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -469,6 +472,8 @@ struct image
 {
    uint8_t *iso;
    uint64_t size;
+   uint8_t *file;       /* the RVZ file, in memory */
+   size_t   file_len;
    unsigned n_exc;
 };
 
@@ -678,39 +683,95 @@ static bool write_rvz(const struct config *cfg, const char *path, struct image *
    if (!w.packed_any)
       fail("the writer packed no group", cfg->name);
 
-   img->iso = disc.d;
-   f = fopen(path, "wb");
-   if (!f || fwrite(w.file.d, 1, w.file.len, f) != w.file.len)
+   img->iso      = disc.d;
+   img->file     = w.file.d;
+   img->file_len = w.file.len;
+   /* kept on disk only when asked to be */
+   if (path)
    {
-      fail("cannot write the file", cfg->name);
+      f = fopen(path, "wb");
+      if (!f || fwrite(w.file.d, 1, w.file.len, f) != w.file.len)
+         fail("cannot write the file", cfg->name);
       if (f)
          fclose(f);
-      f = NULL;
    }
-   else
-      fclose(f);
-   free(w.file.d);
    free(w.groups.d);
    free(raw.d);
    free(part.d);
    free(pd.d);
    free(exc);
-   return f != NULL;
+   return true;
+}
+
+/* ---- the reader, fed from memory ---- */
+
+static const uint8_t *feed_lo, *feed_hi; /* the read's own destination */
+static unsigned long  fed_in_place;      /* requests made straight into it */
+
+/* What the reader asks for, from the file in memory: now and then
+ * short, which it must ask for again, and nothing past the end. */
+static void supply(rvz_t *z, const rvz_request_t *req,
+      const uint8_t *file, size_t file_len)
+{
+   size_t n = 0;
+   if (req->dst >= feed_lo && req->dst < feed_hi)
+      fed_in_place++;
+   if (req->offset < file_len)
+   {
+      n = file_len - (size_t)req->offset;
+      if (n > req->length)
+         n = req->length;
+      if (n > 1 && (rnd() & 7) == 0)
+         n = 1 + rnd() % n;
+      memcpy(req->dst, file + req->offset, n);
+   }
+   rvz_feed(z, n);
+}
+
+static rvz_t *open_mem(const uint8_t *file, size_t file_len)
+{
+   rvz_t        *z = rvz_new();
+   rvz_request_t req;
+   int           e;
+   if (!z)
+      return NULL;
+   while ((e = rvz_open_step(z, &req)) == RVZ_PENDING)
+      supply(z, &req, file, file_len);
+   if (e != RVZ_OK)
+   {
+      rvz_free(z);
+      return NULL;
+   }
+   return z;
+}
+
+static int64_t read_mem(rvz_t *z, const struct image *img,
+      uint64_t off, void *dst, size_t len)
+{
+   rvz_request_t req;
+   int           e;
+   if (rvz_read_begin(z, off, dst, len) != RVZ_OK)
+      return -1;
+   feed_lo = (const uint8_t*)dst;
+   feed_hi = feed_lo + len;
+   while ((e = rvz_read_step(z, &req)) == RVZ_PENDING)
+      supply(z, &req, img->file, img->file_len);
+   feed_lo = feed_hi = NULL;
+   return e == RVZ_OK ? (int64_t)rvz_read_progress(z) : -1;
 }
 
 /* ---- the checks ---- */
 
-static void check_image(const struct config *cfg, const char *path,
-      const struct image *img)
+static void check_image(const struct config *cfg, const struct image *img)
 {
    static uint8_t buf[0x300000];
-   rvz_t   *z = rvz_open(path);
+   rvz_t   *z = open_mem(img->file, img->file_len);
    uint64_t at;
    unsigned i;
 
    if (!z)
    {
-      fail("rvz_open", cfg->name);
+      fail("open", cfg->name);
       return;
    }
    if (rvz_disc_type(z) != (cfg->wii ? RVZ_DISC_WII : RVZ_DISC_GAMECUBE))
@@ -722,7 +783,7 @@ static void check_image(const struct config *cfg, const char *path,
    for (at = 0; at < img->size; )
    {
       size_t  want = 1 + rnd() % 0x50000;
-      int64_t got  = rvz_read(z, at, buf, want);
+      int64_t got  = read_mem(z, img, at, buf, want);
       size_t  left = (size_t)(img->size - at);
       if (got != (int64_t)(want < left ? want : left)
             || memcmp(buf, img->iso + at, (size_t)got))
@@ -742,7 +803,7 @@ static void check_image(const struct config *cfg, const char *path,
    {
       uint64_t off  = ((uint64_t)rnd() << 16 ^ rnd()) % img->size;
       size_t   want = (i & 7) == 0 ? 1 + rnd() % sizeof(buf) : 1 + rnd() % 0x9000;
-      int64_t  got  = rvz_read(z, off, buf, want);
+      int64_t  got  = read_mem(z, img, off, buf, want);
       size_t   left = (size_t)(img->size - off);
       if (got != (int64_t)(want < left ? want : left)
             || memcmp(buf, img->iso + off, (size_t)got))
@@ -754,53 +815,65 @@ static void check_image(const struct config *cfg, const char *path,
    }
 
    /* at and past the end */
-   if (rvz_read(z, img->size, buf, 16) != 0 || rvz_read(z, img->size + 5, buf, 16) != 0)
+   if (read_mem(z, img, img->size, buf, 16) != 0 || read_mem(z, img, img->size + 5, buf, 16) != 0)
       fail("a read past the end", cfg->name);
-   if (rvz_read(z, img->size - 3, buf, 16) != 3 || memcmp(buf, img->iso + img->size - 3, 3))
+   if (read_mem(z, img, img->size - 3, buf, 16) != 3 || memcmp(buf, img->iso + img->size - 3, 3))
       fail("a read over the end", cfg->name);
-   rvz_close(z);
+   rvz_free(z);
+
+   /* a range that does not come fails the read, and the next read
+    * goes on as before; on a reader holding nothing, so that the read
+    * has to ask */
+   z = open_mem(img->file, img->file_len);
+   if (z)
+   {
+      rvz_request_t req;
+      int           e = RVZ_OK;
+      if (rvz_read_begin(z, img->size / 2, buf, 0x40000) == RVZ_OK)
+         while ((e = rvz_read_step(z, &req)) == RVZ_PENDING)
+            if (rvz_feed(z, 0) != RVZ_ERROR_DATA)
+               break;
+      if (e != RVZ_ERROR_DATA)
+         fail("a range that did not come", cfg->name);
+      if (read_mem(z, img, img->size / 2, buf, 0x40000) != 0x40000
+            || memcmp(buf, img->iso + img->size / 2, 0x40000))
+         fail("a read after a failed one", cfg->name);
+      rvz_free(z);
+   }
 }
 
 /* A damaged head, a damaged disc struct, and a cut-off file are not
  * read as images */
-static void check_damage(const char *path)
+static void check_damage(const struct config *cfg, const struct image *img)
 {
-   FILE    *f = fopen(path, "rb");
-   uint8_t *d;
-   long     len;
-   const char *bad = "rvz_test_bad.rvz";
+   uint8_t *d = (uint8_t*)malloc(img->file_len);
    unsigned k;
-   if (!f)
-      return;
-   fseek(f, 0, SEEK_END);
-   len = ftell(f);
-   fseek(f, 0, SEEK_SET);
-   d = (uint8_t*)malloc((size_t)len);
-   if (fread(d, 1, (size_t)len, f) != (size_t)len)
-      len = 0;
-   fclose(f);
-   for (k = 0; k < 3 && len; k++)
+   memcpy(d, img->file, img->file_len);
+   for (k = 0; k < 3; k++)
    {
       rvz_t *z;
-      long   at = k == 0 ? 0x24 : k == 1 ? 0x48 + 0x0c : 0;
-      long   write_len = k == 2 ? 0x100 : len;
+      size_t at = k == 0 ? 0x24 : k == 1 ? 0x48 + 0x0c : 0;
       if (k < 2)
          d[at] ^= 0x40;
-      f = fopen(bad, "wb");
-      fwrite(d, 1, (size_t)write_len, f);
-      fclose(f);
-      if ((z = rvz_open(bad)))
+      if ((z = open_mem(d, k == 2 ? 0x100 : img->file_len)))
       {
          fail(k == 0 ? "opened with a damaged head"
                : k == 1 ? "opened with a damaged disc struct"
-               : "opened cut off", path);
-         rvz_close(z);
+               : "opened cut off", cfg->name);
+         rvz_free(z);
       }
       if (k < 2)
          d[at] ^= 0x40;
    }
-   remove(bad);
    free(d);
+   /* nothing is read before the image is open */
+   {
+      rvz_t  *z = rvz_new();
+      uint8_t b[4];
+      if (z && rvz_read_begin(z, 0, b, sizeof(b)) != RVZ_ERROR_STATE)
+         fail("a read armed before opening", cfg->name);
+      rvz_free(z);
+   }
 }
 
 int main(int argc, char **argv)
@@ -843,23 +916,26 @@ int main(int argc, char **argv)
       if (dir && strlen(dir) > sizeof(path) - 64)
          return 2;
       sprintf(path, "%s%s%s.rvz", dir ? dir : "", dir ? "/" : "rvz_test_", cfg->name);
-      if (!write_rvz(cfg, path, &img))
+      if (!write_rvz(cfg, dir ? path : NULL, &img))
          continue;
       if (cfg->wii && cfg->exceptions && !img.n_exc)
          fail("the writer made no exceptions", cfg->name);
-      check_image(cfg, path, &img);
+      check_image(cfg, &img);
       if (c == 0 || c == 6)
-         check_damage(path);
-      if (!dir)
-         remove(path);
+         check_damage(cfg, &img);
       free(img.iso);
+      free(img.file);
       run++;
    }
+   /* groups stored as they are go straight where the read asked */
+   if (!fed_in_place)
+      fail("no request was made into a read's own buffer", "all");
    if (failures)
    {
       fprintf(stderr, "FAIL: %d checks\n", failures);
       return 1;
    }
-   printf("ok: %u images read back octet for octet\n", run);
+   printf("ok: %u images read back octet for octet, %lu requests made into the read's own buffer\n",
+         run, fed_in_place);
    return 0;
 }

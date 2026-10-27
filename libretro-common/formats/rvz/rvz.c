@@ -20,7 +20,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-/* The disc is a sorted list of regions, each read from a run of
+/* No file I/O: every range of the file is asked of the caller (see
+ * rvz.h). An operation that needs one says so and returns, and is run
+ * again from where it stood once the range has come; the work done
+ * before it asked is kept, and what it asks for the second time is
+ * the range that came.
+ *
+ * The disc is a sorted list of regions, each read from a run of
  * groups: raw data, stored as the disc has it, and Wii partition data,
  * stored decrypted with the hashes taken out. Partition data is put
  * back together a 2 MiB hash block at a time - the 64 sectors one H2
@@ -32,7 +38,6 @@
 
 #include <boolean.h>
 #include <formats/rvz.h>
-#include <streams/file_stream.h>
 #include <crypto/crypto.h>
 #include <lrc_hash.h>
 #ifdef HAVE_RZSTD
@@ -58,6 +63,15 @@
 /* the groups one hash block can need: one per chunk, and one more
  * where a segment ends inside the block */
 #define RVZ_MAX_SLOTS      (RVZ_BLOCK / RVZ_SECTOR + 1)
+
+/* opening, a stage at a time */
+#define RVZ_STAGE_HEAD     0
+#define RVZ_STAGE_DISC     1
+#define RVZ_STAGE_PARTS    2
+#define RVZ_STAGE_GROUPS   3
+#define RVZ_STAGE_RAW      4
+#define RVZ_STAGE_OPEN     5
+#define RVZ_STAGE_FAILED   6
 
 struct rvz_group
 {
@@ -105,7 +119,6 @@ struct rvz_slot
 
 struct rvz
 {
-   RFILE             *f;
    struct rvz_region *regions;
    struct rvz_part   *parts;
    struct rvz_group  *groups;
@@ -116,10 +129,37 @@ struct rvz
    uint8_t           *hashes;   /* its 64 sectors' hash areas */
    uint8_t           *h0;       /* H0 hashes of a run of sectors */
    uint8_t            zero_h0[20]; /* of a KiB of zeros */
+   /* Working state kept here rather than on the stack, which is 8 KiB
+    * on a PSP or GX thread: the padding generator's, and a hash
+    * block's sectors and the groups they came from. */
+   uint32_t           junk[RVZ_PRNG_WORDS];
+   const uint8_t     *sec_data[RVZ_BLOCK_SECTORS];
+   struct rvz_slot   *held[RVZ_BLOCK_SECTORS];
+   long               held_first[RVZ_BLOCK_SECTORS];
    uint64_t           disc_size;
    size_t             zbuf_cap;
    size_t             data_max; /* a group's largest data */
    struct rvz_slot    raw;      /* the last raw data group */
+   /* the range asked for: 1 while it is coming, 2 once it has */
+   uint64_t           fetch_off;
+   uint8_t           *fetch_dst;
+   size_t             fetch_len;
+   size_t             fetch_got;
+   int                fetching;
+   bool               failed;
+   /* opening: the stage, and the heads and tables as they come */
+   int                stage;
+   uint8_t           *disc;
+   uint8_t           *tab;
+   uint64_t           file_size;
+   uint64_t           part_off, raw_off, group_off;
+   uint32_t           disc_len, part_size, n_raw, raw_size, group_size;
+   /* the armed read */
+   uint8_t           *rd_dst;
+   uint64_t           rd_off;
+   size_t             rd_len;
+   size_t             rd_done;
+   bool               rd_armed;
    uint32_t           n_regions;
    uint32_t           n_parts;
    uint32_t           n_groups;
@@ -130,6 +170,7 @@ struct rvz
    uint32_t           block_index; /* and block, or UINT32_MAX */
    int                disc_type;
    bool               encrypted;
+   uint8_t            head[RVZ_HEAD_SIZE];
    uint8_t            dhead[RVZ_DHEAD];
 };
 
@@ -144,10 +185,29 @@ static uint64_t rvz_be64(const uint8_t *p)
    return ((uint64_t)rvz_be32(p) << 32) | rvz_be32(p + 4);
 }
 
-static bool rvz_pread(rvz_t *z, uint64_t off, void *dst, size_t len)
+/* @len octets of the file at @off into @dst: RVZ_OK once they are
+ * there, RVZ_PENDING after asking for them. The same range asked for
+ * again while it is coming is the same request. */
+static int rvz_need(rvz_t *z, uint64_t off, uint8_t *dst, size_t len)
 {
-   return filestream_seek(z->f, (int64_t)off, RETRO_VFS_SEEK_POSITION_START) == 0
-       && filestream_read(z->f, dst, (int64_t)len) == (int64_t)len;
+   if (     z->fetching && z->fetch_off == off
+         && z->fetch_dst == dst && z->fetch_len == len)
+   {
+      if (z->fetching == 1)
+         return RVZ_PENDING;
+      z->fetching = 0;
+      return RVZ_OK;
+   }
+   if (!len)
+      return RVZ_OK;
+   if (off > z->file_size || len > z->file_size - off)
+      return RVZ_ERROR_DATA;
+   z->fetching  = 1;
+   z->fetch_off = off;
+   z->fetch_dst = dst;
+   z->fetch_len = len;
+   z->fetch_got = 0;
+   return RVZ_PENDING;
 }
 
 static bool rvz_grow(uint8_t **buf, size_t *cap, size_t need)
@@ -162,32 +222,35 @@ static bool rvz_grow(uint8_t **buf, size_t *cap, size_t need)
    return true;
 }
 
-/* A table stored compressed with the file's method, or as it is: read
- * whole into a fresh allocation of exactly @len octets. */
-static uint8_t *rvz_table(rvz_t *z, uint64_t off, uint32_t stored, size_t len)
+/* A table stored compressed with the file's method, or as it is, into
+ * z->tab: exactly @len octets. */
+static int rvz_table(rvz_t *z, uint64_t off, uint32_t stored, size_t len)
 {
-   uint8_t *t = (uint8_t*)malloc(len ? len : 1);
-   if (!t)
-      return NULL;
+   int e;
+   if (!z->tab && !(z->tab = (uint8_t*)malloc(len ? len : 1)))
+      return RVZ_ERROR_MEM;
    if (z->compression == RVZ_COMP_NONE)
    {
-      if (stored < len || !rvz_pread(z, off, t, len))
-         goto fail;
-      return t;
+      if (stored < len)
+         return RVZ_ERROR_DATA;
+      return rvz_need(z, off, z->tab, len);
    }
 #ifdef HAVE_RZSTD
-   if (z->compression == RVZ_COMP_ZSTD && rvz_grow(&z->zbuf, &z->zbuf_cap, stored))
+   if (z->compression == RVZ_COMP_ZSTD)
    {
       size_t wrote = 0;
-      if (     rvz_pread(z, off, z->zbuf, stored)
-            && rzstd_decode(t, len, z->zbuf, stored, &wrote) == RZSTD_PROCESS_END
-            && wrote == len)
-         return t;
+      if (!rvz_grow(&z->zbuf, &z->zbuf_cap, stored))
+         return RVZ_ERROR_MEM;
+      if ((e = rvz_need(z, off, z->zbuf, stored)) != RVZ_OK)
+         return e;
+      if (     rzstd_decode(z->tab, len, z->zbuf, stored, &wrote) != RZSTD_PROCESS_END
+            || wrote != len)
+         return RVZ_ERROR_DATA;
+      return RVZ_OK;
    }
 #endif
-fail:
-   free(t);
-   return NULL;
+   (void)e;
+   return RVZ_ERROR_UNSUPPORTED;
 }
 
 /* ---- padding: the lagged Fibonacci generator the discs use ---- */
@@ -210,10 +273,11 @@ static void rvz_prng_advance(uint32_t *b)
  * That map is linear over xor, and advancing the generator is only
  * xors, so the state is kept mapped and stored: its octets are the
  * output, and the output is copied out of it whole. */
-static void rvz_junk(uint8_t *dst, size_t len, const uint8_t *seed, uint64_t off)
+static void rvz_junk(uint32_t *b, uint8_t *dst, size_t len,
+      const uint8_t *seed, uint64_t off)
 {
-   uint32_t b[RVZ_PRNG_WORDS];
-   size_t   pos = (size_t)(off % RVZ_SECTOR);
+   const size_t state = RVZ_PRNG_WORDS * sizeof(uint32_t);
+   size_t       pos   = (size_t)(off % RVZ_SECTOR);
    unsigned i;
 
    for (i = 0; i < RVZ_SEED_WORDS; i++)
@@ -231,18 +295,18 @@ static void rvz_junk(uint8_t *dst, size_t len, const uint8_t *seed, uint64_t off
    }
    for (i = 0; i < 4; i++)
       rvz_prng_advance(b);
-   for (; pos >= sizeof(b); pos -= sizeof(b))
+   for (; pos >= state; pos -= state)
       rvz_prng_advance(b);
    while (len)
    {
-      size_t take = sizeof(b) - pos;
+      size_t take = state - pos;
       if (take > len)
          take = len;
       memcpy(dst, (const uint8_t*)b + pos, take);
       dst += take;
       len -= take;
       pos += take;
-      if (pos == sizeof(b))
+      if (pos == state)
       {
          rvz_prng_advance(b);
          pos = 0;
@@ -252,7 +316,7 @@ static void rvz_junk(uint8_t *dst, size_t len, const uint8_t *seed, uint64_t off
 
 /* The packed stream at @src (@len octets) unpacked into @dst, exactly
  * @want octets; @off is the data offset @dst starts at. */
-static bool rvz_unpack(uint8_t *dst, size_t want,
+static bool rvz_unpack(uint32_t *junk, uint8_t *dst, size_t want,
       const uint8_t *src, size_t len, uint64_t off)
 {
    size_t done = 0;
@@ -269,7 +333,7 @@ static bool rvz_unpack(uint8_t *dst, size_t want,
          size &= 0x7fffffffu;
          if (len < 4 * RVZ_SEED_WORDS || size > want - done)
             return false;
-         rvz_junk(dst + done, size, src, off + done);
+         rvz_junk(junk, dst + done, size, src, off + done);
          src += 4 * RVZ_SEED_WORDS;
          len -= 4 * RVZ_SEED_WORDS;
       }
@@ -296,19 +360,20 @@ static bool rvz_unpack(uint8_t *dst, size_t want,
  * data group read whole is put where the caller wants it, the
  * decoder's output being the data itself, rather than decoded aside
  * and copied. */
-static bool rvz_group_load(rvz_t *z, struct rvz_slot *s, uint32_t g,
+static int rvz_group_load(rvz_t *z, struct rvz_slot *s, uint32_t g,
       size_t data_len, unsigned n_lists, uint64_t data_off, uint8_t *into)
 {
    const struct rvz_group *grp;
    const uint8_t          *p;
    size_t                  len, pos = 0;
    unsigned                l;
+   int                     e;
 
    if (s->group == g && !into)
-      return true;
+      return RVZ_OK;
    s->group = UINT32_MAX;
    if (g >= z->n_groups || data_len > z->data_max)
-      return false;
+      return RVZ_ERROR_DATA;
    grp = &z->groups[g];
 
    /* nothing stored: zeros, and no exceptions */
@@ -317,38 +382,48 @@ static bool rvz_group_load(rvz_t *z, struct rvz_slot *s, uint32_t g,
       if (into)
       {
          memset(into, 0, data_len);
-         return true;
+         return RVZ_OK;
       }
       s->data    = z->zeros;
       s->exc     = NULL;
       s->exc_len = 0;
       s->group   = g;
-      return true;
+      return RVZ_OK;
    }
    if (into && !n_lists && !grp->packed)
    {
       if (!grp->compressed)
-         return grp->size >= data_len && rvz_pread(z, grp->off, into, data_len);
+      {
+         if (grp->size < data_len)
+            return RVZ_ERROR_DATA;
+         return rvz_need(z, grp->off, into, data_len);
+      }
 #ifdef HAVE_RZSTD
       {
          size_t wrote = 0;
-         return z->compression == RVZ_COMP_ZSTD
-            && rvz_grow(&z->zbuf, &z->zbuf_cap, grp->size)
-            && rvz_pread(z, grp->off, z->zbuf, grp->size)
-            && rzstd_decode(into, data_len, z->zbuf, grp->size, &wrote)
-               == RZSTD_PROCESS_END
-            && wrote == data_len;
+         if (z->compression != RVZ_COMP_ZSTD)
+            return RVZ_ERROR_UNSUPPORTED;
+         if (!rvz_grow(&z->zbuf, &z->zbuf_cap, grp->size))
+            return RVZ_ERROR_MEM;
+         if ((e = rvz_need(z, grp->off, z->zbuf, grp->size)) != RVZ_OK)
+            return e;
+         if (     rzstd_decode(into, data_len, z->zbuf, grp->size, &wrote)
+                  != RZSTD_PROCESS_END
+               || wrote != data_len)
+            return RVZ_ERROR_DATA;
+         return RVZ_OK;
       }
 #else
-      return false;
+      return RVZ_ERROR_UNSUPPORTED;
 #endif
    }
 
    if (!grp->compressed)
    {
-      if (     !rvz_grow(&s->raw, &s->raw_cap, grp->size)
-            || !rvz_pread(z, grp->off, s->raw, grp->size))
-         return false;
+      if (!rvz_grow(&s->raw, &s->raw_cap, grp->size))
+         return RVZ_ERROR_MEM;
+      if ((e = rvz_need(z, grp->off, s->raw, grp->size)) != RVZ_OK)
+         return e;
       len = grp->size;
    }
    else
@@ -356,10 +431,12 @@ static bool rvz_group_load(rvz_t *z, struct rvz_slot *s, uint32_t g,
 #ifdef HAVE_RZSTD
       int64_t cs;
       size_t  cap;
-      if (     z->compression != RVZ_COMP_ZSTD
-            || !rvz_grow(&z->zbuf, &z->zbuf_cap, grp->size)
-            || !rvz_pread(z, grp->off, z->zbuf, grp->size))
-         return false;
+      if (z->compression != RVZ_COMP_ZSTD)
+         return RVZ_ERROR_UNSUPPORTED;
+      if (!rvz_grow(&z->zbuf, &z->zbuf_cap, grp->size))
+         return RVZ_ERROR_MEM;
+      if ((e = rvz_need(z, grp->off, z->zbuf, grp->size)) != RVZ_OK)
+         return e;
       /* the frame says how large it decompresses; when it does not,
        * the most a group can hold: its lists and its data, packed
        * or not */
@@ -368,12 +445,12 @@ static bool rvz_group_load(rvz_t *z, struct rvz_slot *s, uint32_t g,
           + (grp->packed ? grp->packed : data_len);
       if (cs >= 0 && (uint64_t)cs < cap)
          cap = (size_t)cs;
-      if (     !rvz_grow(&s->raw, &s->raw_cap, cap)
-            || rzstd_decode(s->raw, cap, z->zbuf, grp->size, &len)
-               != RZSTD_PROCESS_END)
-         return false;
+      if (!rvz_grow(&s->raw, &s->raw_cap, cap))
+         return RVZ_ERROR_MEM;
+      if (rzstd_decode(s->raw, cap, z->zbuf, grp->size, &len) != RZSTD_PROCESS_END)
+         return RVZ_ERROR_DATA;
 #else
-      return false;
+      return RVZ_ERROR_UNSUPPORTED;
 #endif
    }
    p = s->raw;
@@ -383,10 +460,10 @@ static bool rvz_group_load(rvz_t *z, struct rvz_slot *s, uint32_t g,
    {
       size_t n;
       if (len - pos < 2)
-         return false;
+         return RVZ_ERROR_DATA;
       n = ((size_t)p[pos] << 8) | p[pos + 1];
       if ((len - pos - 2) / RVZ_EXCEPTION < n)
-         return false;
+         return RVZ_ERROR_DATA;
       pos += 2 + n * RVZ_EXCEPTION;
    }
    s->exc     = n_lists ? p : NULL;
@@ -394,7 +471,7 @@ static bool rvz_group_load(rvz_t *z, struct rvz_slot *s, uint32_t g,
    if (n_lists && !grp->compressed)
       pos = (pos + 3) & ~(size_t)3;
    if (pos > len)
-      return false;
+      return RVZ_ERROR_DATA;
 
    if (grp->packed)
    {
@@ -402,28 +479,28 @@ static bool rvz_group_load(rvz_t *z, struct rvz_slot *s, uint32_t g,
       if (!out)
       {
          if (!rvz_grow(&s->out, &s->out_cap, data_len))
-            return false;
+            return RVZ_ERROR_MEM;
          out = s->out;
       }
-      if (!rvz_unpack(out, data_len, p + pos, len - pos, data_off))
-         return false;
+      if (!rvz_unpack(z->junk, out, data_len, p + pos, len - pos, data_off))
+         return RVZ_ERROR_DATA;
       if (into)
-         return true;
+         return RVZ_OK;
       s->data = s->out;
    }
    else
    {
       if (len - pos < data_len)
-         return false;
+         return RVZ_ERROR_DATA;
       if (into)
       {
          memcpy(into, p + pos, data_len);
-         return true;
+         return RVZ_OK;
       }
       s->data = p + pos;
    }
    s->group = g;
-   return true;
+   return RVZ_OK;
 }
 
 /* ---- Wii partition data ---- */
@@ -484,20 +561,21 @@ static void rvz_exceptions(rvz_t *z, const struct rvz_slot *s,
 }
 
 /* Reassembles hash block @b of partition @pi into z->block. */
-static bool rvz_block_load(rvz_t *z, uint32_t pi, uint32_t b)
+static int rvz_block_load(rvz_t *z, uint32_t pi, uint32_t b)
 {
    const struct rvz_part *pt = &z->parts[pi];
-   const uint8_t *data[RVZ_BLOCK_SECTORS];
-   struct rvz_slot *held[RVZ_BLOCK_SECTORS];  /* the groups, in order */
-   long     held_first[RVZ_BLOCK_SECTORS];    /* and their first sectors */
+   const uint8_t  **data       = z->sec_data;
+   struct rvz_slot **held       = z->held;
+   long            *held_first = z->held_first;
    unsigned char busy[RVZ_MAX_SLOTS];
    uint32_t first   = b * RVZ_BLOCK_SECTORS;
    uint32_t n       = pt->sectors - first;
    unsigned n_lists = z->chunk >= RVZ_BLOCK ? z->chunk / RVZ_BLOCK : 1;
    unsigned s, i, n_held = 0;
+   int      e;
 
    if (z->block_part == pi && z->block_index == b)
-      return true;
+      return RVZ_OK;
    z->block_part = z->block_index = UINT32_MAX;
    if (n > RVZ_BLOCK_SECTORS)
       n = RVZ_BLOCK_SECTORS;
@@ -524,9 +602,11 @@ static bool rvz_block_load(rvz_t *z, uint32_t pi, uint32_t b)
       for (k = 0; k < z->n_slots && !slot; k++)
          if (!busy[k])
             slot = &z->slots[k];
-      if (!slot || !rvz_group_load(z, slot, g, (size_t)g_count * RVZ_SECTOR_DATA,
-               n_lists, (uint64_t)g_first * RVZ_SECTOR_DATA, NULL))
-         return false;
+      if (!slot)
+         return RVZ_ERROR_DATA;
+      if ((e = rvz_group_load(z, slot, g, (size_t)g_count * RVZ_SECTOR_DATA,
+               n_lists, (uint64_t)g_first * RVZ_SECTOR_DATA, NULL)) != RVZ_OK)
+         return e;
       busy[slot - z->slots]  = 1;
       held[n_held]           = slot;
       held_first[n_held++]   = (long)g_first - (long)first;
@@ -616,7 +696,7 @@ static bool rvz_block_load(rvz_t *z, uint32_t pi, uint32_t b)
       }
    z->block_part  = pi;
    z->block_index = b;
-   return true;
+   return RVZ_OK;
 }
 
 /* ---- the disc ---- */
@@ -639,36 +719,31 @@ static const struct rvz_region *rvz_region_at(const rvz_t *z, uint64_t off,
    return NULL;
 }
 
-int64_t rvz_read(rvz_t *z, uint64_t off, void *dst, size_t len)
+/* Runs the armed read on from where it stands */
+static int rvz_read_run(rvz_t *z)
 {
-   uint8_t *out  = (uint8_t*)dst;
-   size_t   done = 0;
+   uint8_t *out = z->rd_dst;
+   int      e;
 
-   if (!z || !dst)
-      return -1;
-   if (off >= z->disc_size)
-      return 0;
-   if (len > z->disc_size - off)
-      len = (size_t)(z->disc_size - off);
-
-   while (done < len)
+   while (z->rd_done < z->rd_len)
    {
-      uint64_t pos = off + done, next;
-      size_t   take = len - done;
+      uint64_t pos  = z->rd_off + z->rd_done, next;
+      size_t   take = z->rd_len - z->rd_done;
+      uint8_t *at   = out + z->rd_done;
       const struct rvz_region *r;
 
       if (pos < RVZ_DHEAD)
       {
          if (take > RVZ_DHEAD - pos)
             take = (size_t)(RVZ_DHEAD - pos);
-         memcpy(out + done, z->dhead + pos, take);
+         memcpy(at, z->dhead + pos, take);
       }
       else if (!(r = rvz_region_at(z, pos, &next)))
       {
          /* nothing stored here: the disc has zeros */
          if (take > next - pos)
             take = (size_t)(next - pos);
-         memset(out + done, 0, take);
+         memset(at, 0, take);
       }
       else if (r->part < 0)
       {
@@ -681,43 +756,123 @@ int64_t rvz_read(rvz_t *z, uint64_t off, void *dst, size_t len)
          if (g_len > z->chunk)
             g_len = z->chunk;
          if (g >= r->n_groups)
-            return done ? (int64_t)done : -1;
+            return RVZ_ERROR_DATA;
          in_g = rel - g_off;
          grp  = &z->groups[r->group + g];
          if (take > g_len - in_g)
             take = (size_t)(g_len - in_g);
          if (z->raw.group == r->group + g)
-            memcpy(out + done, z->raw.data + in_g, take);
+            memcpy(at, z->raw.data + in_g, take);
          else if (grp->size && !grp->compressed && !grp->packed)
          {
-            /* stored as it is: read where it is asked for */
-            if (grp->size < g_len || !rvz_pread(z, grp->off + in_g, out + done, take))
-               return done ? (int64_t)done : -1;
+            /* stored as it is: asked for where it is to go */
+            if (grp->size < g_len)
+               return RVZ_ERROR_DATA;
+            if ((e = rvz_need(z, grp->off + in_g, at, take)) != RVZ_OK)
+               return e;
          }
-         else if (!rvz_group_load(z, &z->raw, r->group + g, (size_t)g_len, 0,
-                  r->origin + g_off, take == g_len ? out + done : NULL))
-            return done ? (int64_t)done : -1;
-         else if (take != g_len)
-            memcpy(out + done, z->raw.data + in_g, take);
+         else
+         {
+            if ((e = rvz_group_load(z, &z->raw, r->group + g, (size_t)g_len, 0,
+                     r->origin + g_off, take == g_len ? at : NULL)) != RVZ_OK)
+               return e;
+            if (take != g_len)
+               memcpy(at, z->raw.data + in_g, take);
+         }
       }
       else
       {
          const struct rvz_part *pt = &z->parts[r->part];
-         uint64_t rel = pos - (uint64_t)pt->base * RVZ_SECTOR;
-         uint32_t b   = (uint32_t)(rel / RVZ_BLOCK);
-         uint64_t in_b = rel % RVZ_BLOCK;
+         uint64_t rel   = pos - (uint64_t)pt->base * RVZ_SECTOR;
+         uint32_t b     = (uint32_t)(rel / RVZ_BLOCK);
+         uint64_t in_b  = rel % RVZ_BLOCK;
          uint64_t b_end = (uint64_t)pt->base * RVZ_SECTOR + (uint64_t)(b + 1) * RVZ_BLOCK;
          if (b_end > r->end)
             b_end = r->end;
-         if (!rvz_block_load(z, (uint32_t)r->part, b))
-            return done ? (int64_t)done : -1;
+         if ((e = rvz_block_load(z, (uint32_t)r->part, b)) != RVZ_OK)
+            return e;
          if (take > b_end - pos)
             take = (size_t)(b_end - pos);
-         memcpy(out + done, z->block + in_b, take);
+         memcpy(at, z->block + in_b, take);
       }
-      done += take;
+      z->rd_done += take;
    }
-   return (int64_t)done;
+   return RVZ_OK;
+}
+
+/* What an operation's return comes to for the caller: a request for
+ * the range still to come, or the end of the operation. */
+static int rvz_step_result(rvz_t *z, int e, rvz_request_t *req)
+{
+   if (e == RVZ_PENDING)
+   {
+      req->offset = z->fetch_off + z->fetch_got;
+      req->length = z->fetch_len - z->fetch_got;
+      req->dst    = z->fetch_dst + z->fetch_got;
+      return RVZ_PENDING;
+   }
+   z->fetching = 0;
+   return e;
+}
+
+int rvz_read_begin(rvz_t *z, uint64_t off, void *dst, size_t len)
+{
+   if (!z || (!dst && len))
+      return RVZ_ERROR_PARAM;
+   if (z->stage != RVZ_STAGE_OPEN)
+      return RVZ_ERROR_STATE;
+   if (off >= z->disc_size)
+      len = 0;
+   else if (len > z->disc_size - off)
+      len = (size_t)(z->disc_size - off);
+   z->fetching = 0;
+   z->failed   = false;
+   z->rd_dst   = (uint8_t*)dst;
+   z->rd_off   = off;
+   z->rd_len   = len;
+   z->rd_done  = 0;
+   z->rd_armed = true;
+   return RVZ_OK;
+}
+
+int rvz_read_step(rvz_t *z, rvz_request_t *req)
+{
+   int e;
+   if (!z || !req)
+      return RVZ_ERROR_PARAM;
+   if (!z->rd_armed)
+      return RVZ_ERROR_STATE;
+   if (z->failed)
+      e = RVZ_ERROR_DATA;
+   else
+      e = rvz_read_run(z);
+   if (e != RVZ_PENDING)
+      z->rd_armed = false;
+   return rvz_step_result(z, e, req);
+}
+
+size_t rvz_read_progress(const rvz_t *z)
+{
+   return z ? z->rd_done : 0;
+}
+
+int rvz_feed(rvz_t *z, size_t len)
+{
+   if (!z || z->fetching != 1)
+      return RVZ_ERROR_STATE;
+   if (!len)
+   {
+      /* nothing came: the operation cannot go on */
+      z->fetching = 0;
+      z->failed   = true;
+      return RVZ_ERROR_DATA;
+   }
+   if (len > z->fetch_len - z->fetch_got)
+      len = z->fetch_len - z->fetch_got;
+   z->fetch_got += len;
+   if (z->fetch_got == z->fetch_len)
+      z->fetching = 2;
+   return RVZ_OK;
 }
 
 static int rvz_region_cmp(const void *a, const void *b)
@@ -733,13 +888,11 @@ static void rvz_slot_free(struct rvz_slot *s)
    free(s->out);
 }
 
-void rvz_close(rvz_t *z)
+void rvz_free(rvz_t *z)
 {
    uint32_t i;
    if (!z)
       return;
-   if (z->f)
-      filestream_close(z->f);
    if (z->slots)
       for (i = 0; i < z->n_slots; i++)
          rvz_slot_free(&z->slots[i]);
@@ -755,6 +908,8 @@ void rvz_close(rvz_t *z)
    free(z->block);
    free(z->hashes);
    free(z->h0);
+   free(z->disc);
+   free(z->tab);
    free(z);
 }
 
@@ -768,153 +923,105 @@ uint64_t rvz_disc_size(const rvz_t *z)
    return z ? z->disc_size : 0;
 }
 
-rvz_t *rvz_open(const char *path)
+rvz_t *rvz_new(void)
 {
-   uint8_t  head[RVZ_HEAD_SIZE], hash[20];
-   uint8_t *disc = NULL, *t = NULL;
-   uint32_t disc_len, i, n_raw, raw_size, group_size, part_size, k;
-   uint64_t part_off, raw_off, group_off;
-   int64_t  file_size;
-   rvz_t   *z = (rvz_t*)calloc(1, sizeof(*z));
-
+   rvz_t *z = (rvz_t*)calloc(1, sizeof(*z));
    if (!z)
       return NULL;
    z->raw.group   = UINT32_MAX;
    z->block_part  = UINT32_MAX;
    z->block_index = UINT32_MAX;
-   if (!(z->f = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ,
-               RETRO_VFS_FILE_ACCESS_HINT_NONE)))
-      goto fail;
+   /* nothing is known of the file's size before its head */
+   z->file_size   = (uint64_t)-1;
+   return z;
+}
 
-   /* the file head, its own hash over everything before the hash */
-   if (!rvz_pread(z, 0, head, sizeof(head)) || memcmp(head, "RVZ\x01", 4))
-      goto fail;
-   SHA1Digest(head, RVZ_HEAD_SIZE - 20, hash);
-   if (memcmp(hash, head + RVZ_HEAD_SIZE - 20, 20))
-      goto fail;
-   disc_len     = rvz_be32(head + 0x0c);
-   z->disc_size = rvz_be64(head + 0x24);
-   if (disc_len < RVZ_DISC_MIN || disc_len > 0x10000)
-      goto fail;
-   if (!(disc = (uint8_t*)malloc(disc_len))
-         || !rvz_pread(z, RVZ_HEAD_SIZE, disc, disc_len))
-      goto fail;
-   SHA1Digest(disc, disc_len, hash);
-   if (memcmp(hash, head + 0x10, 20))
-      goto fail;
-
-   z->disc_type   = (int)rvz_be32(disc + 0x00);
-   z->compression = rvz_be32(disc + 0x04);
-   z->chunk       = rvz_be32(disc + 0x0c);
-   memcpy(z->dhead, disc + 0x10, RVZ_DHEAD);
-   z->n_parts  = rvz_be32(disc + 0x90);
-   part_size   = rvz_be32(disc + 0x94);
-   part_off    = rvz_be64(disc + 0x98);
-   n_raw       = rvz_be32(disc + 0xb4);
-   raw_off     = rvz_be64(disc + 0xb8);
-   raw_size    = rvz_be32(disc + 0xc0);
-   z->n_groups = rvz_be32(disc + 0xc4);
-   group_off   = rvz_be64(disc + 0xc8);
-   group_size  = rvz_be32(disc + 0xd0);
-   if (z->disc_type != RVZ_DISC_GAMECUBE && z->disc_type != RVZ_DISC_WII)
-      z->disc_type = 0;
-   /* at least 32 KiB; a power of two up to 2 MiB, multiples above */
-   if (     z->chunk < RVZ_SECTOR
-         || (z->chunk < RVZ_BLOCK ? (z->chunk & (z->chunk - 1)) != 0
-                                  : (z->chunk % RVZ_BLOCK) != 0)
-         || z->n_parts > 64 || part_size > 0x1000 || n_raw > 0x100000
-         || z->n_groups > 0x1000000)
-      goto fail;
-   z->encrypted = z->dhead[0x61] == 0;
-   z->data_max  = z->chunk;
-
-   /* the partitions, stored as they are, short entries zero filled */
-   if (z->n_parts)
+/* The partition entries, stored as they are, short entries zero
+ * filled */
+static int rvz_open_parts(rvz_t *z)
+{
+   uint8_t  ent[RVZ_PART_ENTRY], hash[20];
+   size_t   all = (size_t)z->n_parts * z->part_size;
+   uint32_t i, k;
+   if (!(z->parts = (struct rvz_part*)calloc(z->n_parts, sizeof(*z->parts))))
+      return RVZ_ERROR_MEM;
+   SHA1Digest(z->tab, all, hash);
+   if (memcmp(hash, z->disc + 0xa0, 20))
+      return RVZ_ERROR_DATA;
+   for (i = 0; i < z->n_parts; i++)
    {
-      size_t   all = (size_t)z->n_parts * part_size;
-      uint8_t  ent[RVZ_PART_ENTRY];
-      if (     !(z->parts = (struct rvz_part*)calloc(z->n_parts, sizeof(*z->parts)))
-            || !(t = (uint8_t*)malloc(all ? all : 1))
-            || !rvz_pread(z, part_off, t, all))
-         goto fail;
-      SHA1Digest(t, all, hash);
-      if (memcmp(hash, disc + 0xa0, 20))
-         goto fail;
-      for (i = 0; i < z->n_parts; i++)
+      struct rvz_part *pt = &z->parts[i];
+      memset(ent, 0, sizeof(ent));
+      memcpy(ent, z->tab + (size_t)i * z->part_size,
+            z->part_size < RVZ_PART_ENTRY ? z->part_size : RVZ_PART_ENTRY);
+      aes_init(&pt->aes, ent, 16);
+      for (k = 0; k < 2; k++)
       {
-         struct rvz_part *pt = &z->parts[i];
-         memset(ent, 0, sizeof(ent));
-         memcpy(ent, t + (size_t)i * part_size,
-               part_size < RVZ_PART_ENTRY ? part_size : RVZ_PART_ENTRY);
-         aes_init(&pt->aes, ent, 16);
-         for (k = 0; k < 2; k++)
-         {
-            pt->first[k]    = rvz_be32(ent + 16 + 16 * k);
-            pt->count[k]    = rvz_be32(ent + 20 + 16 * k);
-            pt->group[k]    = rvz_be32(ent + 24 + 16 * k);
-            pt->n_groups[k] = rvz_be32(ent + 28 + 16 * k);
-            if (     pt->count[k] > 0x1000000 || pt->first[k] > 0x1000000
-                  || (uint64_t)pt->group[k] + pt->n_groups[k] > z->n_groups)
-               goto fail;
-         }
-         pt->base    = pt->count[0] ? pt->first[0] : pt->first[1];
-         if (pt->count[0] && pt->count[1] && pt->first[1] < pt->first[0] + pt->count[0])
-            goto fail;
-         pt->sectors = (pt->count[1] ? pt->first[1] + pt->count[1]
-                                     : pt->first[0] + pt->count[0]) - pt->base;
+         pt->first[k]    = rvz_be32(ent + 16 + 16 * k);
+         pt->count[k]    = rvz_be32(ent + 20 + 16 * k);
+         pt->group[k]    = rvz_be32(ent + 24 + 16 * k);
+         pt->n_groups[k] = rvz_be32(ent + 28 + 16 * k);
+         if (     pt->count[k] > 0x1000000 || pt->first[k] > 0x1000000
+               || (uint64_t)pt->group[k] + pt->n_groups[k] > z->n_groups)
+            return RVZ_ERROR_DATA;
       }
-      crypto_memzero(ent, sizeof(ent));
-      crypto_memzero(t, all);
-      free(t);
-      t = NULL;
+      pt->base    = pt->count[0] ? pt->first[0] : pt->first[1];
+      if (pt->count[0] && pt->count[1] && pt->first[1] < pt->first[0] + pt->count[0])
+         return RVZ_ERROR_DATA;
+      pt->sectors = (pt->count[1] ? pt->first[1] + pt->count[1]
+                                  : pt->first[0] + pt->count[0]) - pt->base;
    }
+   crypto_memzero(ent, sizeof(ent));
+   crypto_memzero(z->tab, all);
+   return RVZ_OK;
+}
 
-   /* the groups: offsets in words, the top bit of the size the method */
-   if (!(t = rvz_table(z, group_off, group_size, (size_t)z->n_groups * RVZ_GROUP_ENTRY)))
-      goto fail;
+/* The groups: offsets in words, the top bit of the size the method */
+static int rvz_open_groups(rvz_t *z)
+{
+   uint32_t i;
    if (!(z->groups = (struct rvz_group*)calloc(z->n_groups ? z->n_groups : 1,
                sizeof(*z->groups))))
-      goto fail;
-   file_size = filestream_get_size(z->f);
+      return RVZ_ERROR_MEM;
    for (i = 0; i < z->n_groups; i++)
    {
-      const uint8_t *e  = t + (size_t)i * RVZ_GROUP_ENTRY;
+      const uint8_t *e  = z->tab + (size_t)i * RVZ_GROUP_ENTRY;
       uint32_t       sz = rvz_be32(e + 4);
       z->groups[i].off        = (uint64_t)rvz_be32(e) * 4;
       z->groups[i].size       = sz & 0x7fffffffu;
       /* nothing is read from past the end of the file */
-      if (     file_size < 0
-            || z->groups[i].off + z->groups[i].size > (uint64_t)file_size)
-         goto fail;
+      if (z->groups[i].off + z->groups[i].size > z->file_size)
+         return RVZ_ERROR_DATA;
       /* the top bit names the file's method, which may be none */
       z->groups[i].compressed = (sz & 0x80000000u) != 0
                              && z->compression != RVZ_COMP_NONE;
       z->groups[i].packed     = rvz_be32(e + 8);
    }
-   free(t);
-   t = NULL;
+   return RVZ_OK;
+}
 
-   /* the regions: each raw data entry, rounded down to its sector, and
-    * each partition data segment */
-   if (!(t = rvz_table(z, raw_off, raw_size, (size_t)n_raw * RVZ_RAW_ENTRY)))
-      goto fail;
-   if (!(z->regions = (struct rvz_region*)calloc(n_raw + 2 * z->n_parts + 1,
+/* The regions: each raw data entry, rounded down to its sector, and
+ * each partition data segment; then what a read works in */
+static int rvz_open_regions(rvz_t *z)
+{
+   uint32_t i, k;
+   if (!(z->regions = (struct rvz_region*)calloc(z->n_raw + 2 * z->n_parts + 1,
                sizeof(*z->regions))))
-      goto fail;
-   for (i = 0; i < n_raw; i++)
+      return RVZ_ERROR_MEM;
+   for (i = 0; i < z->n_raw; i++)
    {
-      const uint8_t *e = t + (size_t)i * RVZ_RAW_ENTRY;
+      const uint8_t *e = z->tab + (size_t)i * RVZ_RAW_ENTRY;
       uint64_t start   = rvz_be64(e), size = rvz_be64(e + 8);
       struct rvz_region *r = &z->regions[z->n_regions];
       if (start > z->disc_size || size > z->disc_size - start)
-         goto fail;
+         return RVZ_ERROR_DATA;
       r->start    = r->origin = start - start % RVZ_SECTOR;
       r->end      = start + size;
       r->group    = rvz_be32(e + 16);
       r->n_groups = rvz_be32(e + 20);
       r->part     = -1;
       if ((uint64_t)r->group + r->n_groups > z->n_groups)
-         goto fail;
+         return RVZ_ERROR_DATA;
       if (r->end > r->start)
          z->n_regions++;
    }
@@ -930,11 +1037,9 @@ rvz_t *rvz_open(const char *path)
          r->n_groups = z->parts[i].n_groups[k];
          r->part     = (int)i;
          if (r->end > z->disc_size)
-            goto fail;
+            return RVZ_ERROR_DATA;
          z->n_regions++;
       }
-   free(t);
-   t = NULL;
    qsort(z->regions, z->n_regions, sizeof(*z->regions), rvz_region_cmp);
    /* raw data rounded down to its sector may reach back over what
     * came before it; it starts, as read, where that ends */
@@ -944,32 +1049,150 @@ rvz_t *rvz_open(const char *path)
          if (     z->regions[i].part >= 0
                || z->regions[i].start + RVZ_SECTOR <= z->regions[i - 1].end
                || z->regions[i].end <= z->regions[i - 1].end)
-            goto fail;
+            return RVZ_ERROR_DATA;
          z->regions[i].start = z->regions[i - 1].end;
       }
 
    /* a hash block's groups at once: one when a group holds a block or
-    * more, else as many as it takes */
+    * more, else as many as it takes, and one more */
    z->n_slots = (z->chunk >= RVZ_BLOCK ? 1 : RVZ_BLOCK / z->chunk) + 1;
    if (!(z->zeros = (uint8_t*)calloc(1, z->data_max)))
-      goto fail;
+      return RVZ_ERROR_MEM;
    if (z->n_parts)
    {
       if (     !(z->slots  = (struct rvz_slot*)calloc(z->n_slots, sizeof(*z->slots)))
             || !(z->block  = (uint8_t*)malloc(RVZ_BLOCK))
             || !(z->hashes = (uint8_t*)malloc(RVZ_BLOCK_SECTORS * RVZ_SECTOR_HASHES))
             || !(z->h0     = (uint8_t*)malloc(RVZ_BLOCK_SECTORS * 31 * 20)))
-         goto fail;
+         return RVZ_ERROR_MEM;
       SHA1Digest(z->zeros, RVZ_SECTOR_HASHES, z->zero_h0);
       for (i = 0; i < z->n_slots; i++)
          z->slots[i].group = UINT32_MAX;
    }
-   free(disc);
-   return z;
+   return RVZ_OK;
+}
 
-fail:
-   free(t);
-   free(disc);
-   rvz_close(z);
-   return NULL;
+/* Reads the heads and the tables, a stage at a time */
+static int rvz_open_run(rvz_t *z)
+{
+   uint8_t hash[20];
+   int     e;
+
+   for (;;)
+   {
+      switch (z->stage)
+      {
+         case RVZ_STAGE_HEAD:
+            /* the file head, its own hash over everything before it */
+            if ((e = rvz_need(z, 0, z->head, RVZ_HEAD_SIZE)) != RVZ_OK)
+               return e;
+            if (memcmp(z->head, "RVZ\x01", 4))
+               return RVZ_ERROR_DATA;
+            SHA1Digest(z->head, RVZ_HEAD_SIZE - 20, hash);
+            if (memcmp(hash, z->head + RVZ_HEAD_SIZE - 20, 20))
+               return RVZ_ERROR_DATA;
+            z->disc_len  = rvz_be32(z->head + 0x0c);
+            z->disc_size = rvz_be64(z->head + 0x24);
+            z->file_size = rvz_be64(z->head + 0x2c);
+            if (     z->disc_len < RVZ_DISC_MIN || z->disc_len > 0x10000
+                  || z->file_size < RVZ_HEAD_SIZE + (uint64_t)z->disc_len)
+               return RVZ_ERROR_DATA;
+            if (!(z->disc = (uint8_t*)malloc(z->disc_len)))
+               return RVZ_ERROR_MEM;
+            z->stage = RVZ_STAGE_DISC;
+            break;
+         case RVZ_STAGE_DISC:
+         {
+            const uint8_t *d;
+            if ((e = rvz_need(z, RVZ_HEAD_SIZE, z->disc, z->disc_len)) != RVZ_OK)
+               return e;
+            SHA1Digest(z->disc, z->disc_len, hash);
+            if (memcmp(hash, z->head + 0x10, 20))
+               return RVZ_ERROR_DATA;
+            d              = z->disc;
+            z->disc_type   = (int)rvz_be32(d + 0x00);
+            z->compression = rvz_be32(d + 0x04);
+            z->chunk       = rvz_be32(d + 0x0c);
+            memcpy(z->dhead, d + 0x10, RVZ_DHEAD);
+            z->n_parts     = rvz_be32(d + 0x90);
+            z->part_size   = rvz_be32(d + 0x94);
+            z->part_off    = rvz_be64(d + 0x98);
+            z->n_raw       = rvz_be32(d + 0xb4);
+            z->raw_off     = rvz_be64(d + 0xb8);
+            z->raw_size    = rvz_be32(d + 0xc0);
+            z->n_groups    = rvz_be32(d + 0xc4);
+            z->group_off   = rvz_be64(d + 0xc8);
+            z->group_size  = rvz_be32(d + 0xd0);
+            if (z->disc_type != RVZ_DISC_GAMECUBE && z->disc_type != RVZ_DISC_WII)
+               z->disc_type = 0;
+            /* at least 32 KiB; a power of two up to 2 MiB, multiples above */
+            if (     z->chunk < RVZ_SECTOR
+                  || (z->chunk < RVZ_BLOCK ? (z->chunk & (z->chunk - 1)) != 0
+                                           : (z->chunk % RVZ_BLOCK) != 0)
+                  || z->n_parts > 64 || z->part_size > 0x1000
+                  || z->n_raw > 0x100000 || z->n_groups > 0x1000000)
+               return RVZ_ERROR_DATA;
+            z->encrypted = z->dhead[0x61] == 0;
+            z->data_max  = z->chunk;
+            z->stage     = RVZ_STAGE_PARTS;
+            break;
+         }
+         case RVZ_STAGE_PARTS:
+            if (z->n_parts)
+            {
+               size_t all = (size_t)z->n_parts * z->part_size;
+               if (!z->tab && !(z->tab = (uint8_t*)malloc(all ? all : 1)))
+                  return RVZ_ERROR_MEM;
+               if ((e = rvz_need(z, z->part_off, z->tab, all)) != RVZ_OK)
+                  return e;
+               if ((e = rvz_open_parts(z)) != RVZ_OK)
+                  return e;
+               free(z->tab);
+               z->tab = NULL;
+            }
+            z->stage = RVZ_STAGE_GROUPS;
+            break;
+         case RVZ_STAGE_GROUPS:
+            if ((e = rvz_table(z, z->group_off, z->group_size,
+                     (size_t)z->n_groups * RVZ_GROUP_ENTRY)) != RVZ_OK)
+               return e;
+            if ((e = rvz_open_groups(z)) != RVZ_OK)
+               return e;
+            free(z->tab);
+            z->tab   = NULL;
+            z->stage = RVZ_STAGE_RAW;
+            break;
+         case RVZ_STAGE_RAW:
+            if ((e = rvz_table(z, z->raw_off, z->raw_size,
+                     (size_t)z->n_raw * RVZ_RAW_ENTRY)) != RVZ_OK)
+               return e;
+            if ((e = rvz_open_regions(z)) != RVZ_OK)
+               return e;
+            free(z->tab);
+            free(z->disc);
+            z->tab   = NULL;
+            z->disc  = NULL;
+            z->stage = RVZ_STAGE_OPEN;
+            return RVZ_OK;
+         case RVZ_STAGE_OPEN:
+            return RVZ_OK;
+         default:
+            return RVZ_ERROR_STATE;
+      }
+   }
+}
+
+int rvz_open_step(rvz_t *z, rvz_request_t *req)
+{
+   int e;
+   if (!z || !req)
+      return RVZ_ERROR_PARAM;
+   if (z->stage == RVZ_STAGE_FAILED || z->failed)
+      e = RVZ_ERROR_DATA;
+   else
+      e = rvz_open_run(z);
+   /* an image that did not open stays unopened */
+   if (e < 0)
+      z->stage = RVZ_STAGE_FAILED;
+   return rvz_step_result(z, e, req);
 }
