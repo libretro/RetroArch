@@ -40,9 +40,12 @@ bool video_views_validate(const struct retro_video_view *views,
    if (!views || num_views > RETRO_VIDEO_VIEWS_MAX)
       return false;
 
-   memset(count_none,  0, sizeof(count_none));
-   memset(count_left,  0, sizeof(count_left));
-   memset(count_right, 0, sizeof(count_right));
+   for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
+   {
+      count_none [i] = 0;
+      count_left [i] = 0;
+      count_right[i] = 0;
+   }
 
    for (i = 0; i < num_views; i++)
    {
