@@ -94,7 +94,89 @@ void convert_s16_to_float_init_simd(void)
       s16_to_float_neon_enabled = true;
 }
 #else
-void convert_s16_to_float(float *s,
+/* AVX2 and AVX-512 forms of the SSE2 loop below, built per function and
+ * chosen by convert_s16_to_float_init_simd(), so older CPUs keep SSE2
+ * and compilers without per-function targets leave them out. Each
+ * sample is one exact widen and one multiply by gain / 32768 - the same
+ * single rounding as the SSE2 and scalar paths, so every target gives
+ * the same float for the same s16. */
+#if defined(__SSE2__) && (defined(__x86_64__) || defined(__i386__) \
+      || defined(_M_X64) || defined(_M_IX86))
+#if defined(_MSC_VER) && !defined(__clang__)
+#if _MSC_VER >= 1911
+#define S16_TO_FLOAT_HAVE_WIDE 1
+#define S16_TO_FLOAT_TARGET_AVX2
+#define S16_TO_FLOAT_TARGET_AVX512
+#endif
+#elif (defined(__clang__) && __clang_major__ >= 4) \
+   || (defined(__GNUC__) && !defined(__clang__) && __GNUC__ >= 5)
+#define S16_TO_FLOAT_HAVE_WIDE 1
+#define S16_TO_FLOAT_TARGET_AVX2   __attribute__((target("avx2")))
+#define S16_TO_FLOAT_TARGET_AVX512 \
+   __attribute__((target("avx512f,avx512bw,avx512vl")))
+#endif
+#endif
+
+#ifdef S16_TO_FLOAT_HAVE_WIDE
+#include <immintrin.h>
+
+/* 0 = SSE2, 1 = AVX2, 2 = AVX-512; set once by init, before audio runs. */
+static int s16_to_float_tier = 0;
+
+#ifdef S16_TO_FLOAT_TEST_HOOKS
+/* -1 leaves the tier alone; otherwise caps it for a test. */
+int s16_to_float_tier_cap = -1;
+#endif
+
+#if defined(_MSC_VER) && !defined(__clang__)
+#define S16_TO_FLOAT_ZEROUPPER() _mm256_zeroupper()
+#else
+#define S16_TO_FLOAT_ZEROUPPER()
+#endif
+
+/* Sixteen samples a step; returns how many it converted, leaving the
+ * rest (under 16) to the SSE2 loop and the scalar tail. */
+S16_TO_FLOAT_TARGET_AVX2
+static size_t s16_to_float_avx2(float *s, const int16_t *in, size_t len,
+      float gain)
+{
+   size_t i;
+   const __m256 factor = _mm256_set1_ps(gain / 0x8000);
+   for (i = 0; i + 16 <= len; i += 16)
+   {
+      _mm256_storeu_ps(s + i, _mm256_mul_ps(_mm256_cvtepi32_ps(
+                  _mm256_cvtepi16_epi32(_mm_loadu_si128(
+                        (const __m128i*)(in + i)))), factor));
+      _mm256_storeu_ps(s + i + 8, _mm256_mul_ps(_mm256_cvtepi32_ps(
+                  _mm256_cvtepi16_epi32(_mm_loadu_si128(
+                        (const __m128i*)(in + i + 8)))), factor));
+   }
+   S16_TO_FLOAT_ZEROUPPER();
+   return i;
+}
+
+/* Sixteen samples a step, the last masked, so no scalar tail. */
+S16_TO_FLOAT_TARGET_AVX512
+static void s16_to_float_avx512(float *s, const int16_t *in, size_t len,
+      float gain)
+{
+   size_t i;
+   const __m512 factor = _mm512_set1_ps(gain / 0x8000);
+   for (i = 0; i < len; i += 16)
+   {
+      size_t    left = len - i;
+      __mmask16 m    = (left >= 16) ? (__mmask16)0xffff
+         : (__mmask16)((1u << left) - 1u);
+      _mm512_mask_storeu_ps(s + i, m, _mm512_mul_ps(_mm512_cvtepi32_ps(
+                  _mm512_cvtepi16_epi32(_mm256_maskz_loadu_epi16(m,
+                        in + i))), factor));
+   }
+   S16_TO_FLOAT_ZEROUPPER();
+}
+#endif
+
+/* The SSE2 / AltiVec / Allegrex loop and the scalar tail. */
+static void convert_s16_to_float_base(float *s,
       const int16_t *in, size_t len, float gain)
 {
    unsigned i      = 0;
@@ -204,6 +286,41 @@ void convert_s16_to_float(float *s,
       s[i] = (float)in[i] * gain;
 }
 
-void convert_s16_to_float_init_simd(void) { }
+void convert_s16_to_float(float *s,
+      const int16_t *in, size_t len, float gain)
+{
+#ifdef S16_TO_FLOAT_HAVE_WIDE
+   int tier = s16_to_float_tier;
+#ifdef S16_TO_FLOAT_TEST_HOOKS
+   if (s16_to_float_tier_cap >= 0 && tier > s16_to_float_tier_cap)
+      tier = s16_to_float_tier_cap;
+#endif
+   if (tier == 2)
+   {
+      s16_to_float_avx512(s, in, len, gain);
+      return;
+   }
+   if (tier == 1)
+   {
+      size_t done = s16_to_float_avx2(s, in, len, gain);
+      s          += done;
+      in         += done;
+      len        -= done;
+   }
+#endif
+   convert_s16_to_float_base(s, in, len, gain);
+}
+
+void convert_s16_to_float_init_simd(void)
+{
+#ifdef S16_TO_FLOAT_HAVE_WIDE
+   uint64_t cpu      = cpu_features_get();
+   s16_to_float_tier = 0;
+   if (cpu & RETRO_SIMD_AVX2)
+      s16_to_float_tier = 1;
+   if (cpu & RETRO_SIMD_AVX512)
+      s16_to_float_tier = 2;
+#endif
+}
 #endif
 
