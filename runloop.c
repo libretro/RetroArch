@@ -71,9 +71,6 @@
 #include <encodings/utf.h>
 
 #include <libretro.h>
-#if defined(__PSL1GHT__) && defined(HAVE_GCM)
-#include <libretro_rsx.h>
-#endif
 #ifdef HAVE_RMP4
 #include <formats/rh264.h>
 #endif
@@ -1225,7 +1222,7 @@ static bool dynamic_verify_hw_context(
       size_t len = strlen(video_ident);
       switch (type)
       {
-#if defined(__PSL1GHT__) && defined(HAVE_GCM)
+#ifdef HAVE_GCM
          case RETRO_HW_CONTEXT_RSX:
             if (!(len == 3 && memcmp(video_ident, "rsx", 3) == 0))
                return false;
@@ -1312,10 +1309,8 @@ static bool dynamic_request_hw_context(enum retro_hw_context_type type,
          RARCH_LOG("[HW] Requesting no HW context.\n");
          break;
 
-#if defined(__PSL1GHT__) && defined(HAVE_GCM)
+#ifdef HAVE_GCM
       case RETRO_HW_CONTEXT_RSX:
-         if (major > 2 || minor != 0)
-            return false;
          RARCH_LOG("[HW] Requesting RSX context.\n");
          break;
 #endif

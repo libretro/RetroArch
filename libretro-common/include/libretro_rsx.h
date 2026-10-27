@@ -1,4 +1,4 @@
-/* Copyright (C) 2010-2020 The RetroArch team
+/* Copyright (C) 2010-2026 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------------
  * The following license statement only applies to this libretro API header (libretro_rsx.h)
@@ -29,9 +29,6 @@
 
 #include "libretro.h"
 
-/* Experimental extension IDs, not upstream-assigned libretro values. */
-#define RETRO_HW_CONTEXT_RSX ((enum retro_hw_context_type)0x525358)
-#define RETRO_HW_RENDER_INTERFACE_RSX ((enum retro_hw_render_interface_type)0x525358)
 #define RETRO_HW_RENDER_INTERFACE_RSX_VERSION 1
 
 /* Linear A8R8G8B8 texture in RSX local memory. The core owns the allocation
@@ -46,7 +43,8 @@ struct retro_rsx_image
 
 /* Query with GET_HW_RENDER_INTERFACE from context_reset, after requesting
  * RETRO_HW_CONTEXT_RSX through SET_HW_RENDER. Valid until context_destroy.
- * Both callers must submit commands on the main thread. */
+ * Both callers must submit commands on the main thread.
+ * Labels 198 and 199 belong to the frontend. */
 struct retro_hw_render_interface_rsx
 {
    enum retro_hw_render_interface_type interface_type;
@@ -61,17 +59,9 @@ struct retro_hw_render_interface_rsx
    /* Publish an image before video_refresh(RETRO_HW_FRAME_BUFFER_VALID).
     * NULL releases the cached image. No allocation or CPU wait is performed. */
    bool (*set_image)(void *handle, const struct retro_rsx_image *image);
-};
-
-/* Request context version 2 for nonblocking retirement of local allocations.
- * Version 1 clients continue receiving the version 1 interface. */
-#define RETRO_HW_RENDER_INTERFACE_RSX_V2_VERSION 2
-struct retro_hw_render_interface_rsx_v2
-{
-   struct retro_hw_render_interface_rsx base;
-   /* Transfers ownership of an rsxMemalign allocation to the frontend.
-    * It is freed after submitted commands finish. NULL is accepted.
-    * Label 199 belongs to the frontend. Returns false if the queue is full. */
+   /* Transfers ownership of an rsxMemalign allocation to the frontend,
+    * freed once the commands submitted before the next video_refresh have
+    * finished. NULL is accepted. Returns false if the queue is full. */
    bool (*retire_memory)(void *handle, void *memory);
 };
 

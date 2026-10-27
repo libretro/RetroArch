@@ -38,8 +38,10 @@ else
 endif
 
 MACHDEP := -D__PSL1GHT__ -D__PS3__ -mcpu=cell
-RSX_HOST_SIZE ?= 16777216
-CFLAGS += -Wall $(DEFINES) $(MACHDEP) $(INCLUDE) -DRSX_HOST_SIZE=$(RSX_HOST_SIZE)
+CFLAGS += -Wall $(DEFINES) $(MACHDEP) $(INCLUDE)
+ifneq ($(RSX_HOST_SIZE),)
+CFLAGS += -DRSX_HOST_SIZE=$(RSX_HOST_SIZE)
+endif
 LDFLAGS := $(MACHDEP)
 LIBS += -lrt -laudio -lrsx -lgcm_sys -lnet -lio -lsysutil -lsysmodule -lm -llv2 -lnet -lnetctl -lsysfs -lcamera -lgem -lspurs
 
